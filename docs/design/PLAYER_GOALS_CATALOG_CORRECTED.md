@@ -366,7 +366,7 @@ Every row has a `condition`, a `runtime_check` in the goal engine's own JSON, an
   - **Cooking in the fire store** does not credit `roast_forage`; the Clay hearth recipe does. The owner of this fix is still to be confirmed.
 - **WP-METAL:**
   - **Smelter credit** goes only to the station owner, and only while the owner is online. This affects 5 ingot rows (copper, tin, bronze, iron, steel). Decide whether the owner or the operator gets the credit.
-  - **Kiln charcoal** is not credited (`craft:charcoal`; the campfire recipe 341 counts).
+  - **Charcoal** (`craft:charcoal`, now "Get Charcoal"): counts charcoal had from any source, since recipe 341 is retired (Dave 17 Nov 2026: burning wood leaves charcoal).
   - **The event `bellows_iron`** for `activity:operate_bellows` is emitted in dev (`server_smelter.gd`, the worker, once per stint).
   - **Steel smelting credit** is in dev (#1102): the steel job credits `made:steel_ingot` per ingot, with the same owner caveat.
   - **The event `tempered`** for `activity:temper_steel` is emitted in dev (#1125, a variant craft at the Master smithy).

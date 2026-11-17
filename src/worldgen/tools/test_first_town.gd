@@ -13,6 +13,7 @@ const TradeScript := preload("res://src/stream/server_trade.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const SkillWebScript := preload("res://src/shared/skill_web.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 var failures: int = 0
 var step: int = 0
@@ -51,7 +52,7 @@ func pass_time(seconds: float, exertion: float) -> void:
 
 func craft(recipe: int, crafts: int) -> void:
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, recipe, 0, crafts, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe, 0, crafts, CraftHand.at(items, 1, recipe))
 	pass_time(10.0 * float(crafts), 0.2)
 
 

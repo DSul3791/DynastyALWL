@@ -4,7 +4,7 @@ extends SceneTree
 # (server_items.gd and its helpers, the live data), a new character from nothing to a warehouse, checking the resulting game state at each step:
 #   1. early survival: gather by hand, Stone - Axe and Stone - Knife, a Lean-to and a Wicker - Chest from their blueprints, a hunted deer cooked at a
 #      campfire and eaten, items stored in the chest;
-#   2. wood and metal: bog iron dug with a Wooden shovel, charcoal, the Improved smelter and the Smithy, the Smithy fired, an Iron - Saw, Planks and Hardwood
+#   2. wood and metal: bog iron dug with a Wooden shovel, charcoal left in the campfire, the Improved smelter and the Smithy, the Smithy fired, an Iron - Saw, Planks and Hardwood
 #      boards, nothing bought;
 #   3. construction and equipment: Leatherworking table, Loom, Tailor's table; Thread, Leather strap, Fibre cloth, a Fibre - Gambeson; a Rustic - Chest
 #      and a Crude - Chair from boards; an iron weapon and an iron armour piece at the Smithy; gambeson + mail worn in layers; a backpack
@@ -30,6 +30,7 @@ const BagRules := preload("res://src/shared/bag_rules.gd")
 const Carts := preload("res://src/stream/server_carts.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const Weather := preload("res://src/shared/weather.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 const DIR := "user://test_mission001_walkthrough"
 const KEYS := {1: "walkthrough01", 2: "walkthrough02"}
 
@@ -233,7 +234,7 @@ func craft(id: String, times: int, seconds: float = -1.0, variant: int = 0) -> v
 		seconds = float(r.get("craft_s", 10.0)) * float(times) * SmithingRules.time_mult(variant) + 4.0
 
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number(id), variant, times, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number(id), variant, times, CraftHand.at(items, 1, recipe_number(id)))
 	var waited: float = 0.0
 
 	while waited < seconds * 3.0 + 30.0 and not items.craft_queue_of(1).is_empty():   # the crafter's pace may be slower than the recipe time
@@ -389,9 +390,9 @@ func make_iron(wanted: int) -> bool:
 		items.action(1, Net.ACT_CHEST_PUT, slot_of("iron_ore"), smelter, ore, Vector3.ZERO)
 		items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
 		go((items._items[smelter]["pos"] as Vector3) + Vector3(-1.5, 0.0, 0.0))   # beside it: E reaches 3 m (use_reach_m)
-		items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E: work the bellows
-		run(float(smelt["ingot_s"]) / float(smelt["bellows_speed"]) * float(ore) + 5.0)
-		items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E again: leave them
+		items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E: light it (it smelts only while lit, Dave 17 Nov 2026)
+		items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E at the lit smelter: work the bellows
+		run(float(smelt["ingot_s"]) / float(smelt["bellows_speed"]) * float(ore) + 5.0)   # it goes out with its last fuel, which stops the bellows
 		items.action(1, Net.ACT_CHEST_OPEN, smelter, 0, 0, Vector3.ZERO)
 		items.action(1, Net.ACT_BULK, ItemsScript.BULK_TAKE_ALL, 0, 0, Vector3.ZERO)
 		items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
@@ -426,6 +427,7 @@ func make_steel(furnace: int, wanted: int) -> bool:
 	items.action(1, Net.ACT_CHEST_PUT, slot_of("iron_ore"), furnace, wanted, Vector3.ZERO)
 	items.action(1, Net.ACT_CHEST_PUT, slot_of("charcoal"), furnace, carbon, Vector3(float(int(def["smelt"]["hopper_slots"]) + 1), 0.0, 0.0))   # dragged onto the first input slot
 	items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_USE_STRUCT, furnace, 0, 0, Vector3.ZERO)   # E: light it (it smelts only while lit, Dave 17 Nov 2026)
 	var box = box_of(furnace)
 	run(float(def["smelt"]["ingot_s"]) * 2.0)
 	check(box.count_of(n("steel_ingot")) == 0 and box.count_of(n("iron_ore")) == wanted, "3w. in a calm the Advanced smelter's windmill stands: no steel, the ore kept")
@@ -449,10 +451,21 @@ func make_charcoal(wanted: int) -> void:
 	if have("charcoal") >= wanted:
 		return
 
-	var crafts: int = ceili(float(wanted - have("charcoal")) / float(gives_of("charcoal")))
-	feed("forge yard", 4)
-	items.give(1, n("firewood"), crafts * need_of("charcoal", "firewood"))   # firewood split at a chopping block (test_first_town, test_lumber_route)
-	craft("charcoal", crafts)
+	# Burning wood leaves charcoal in the fire (Dave 17 Nov 2026; cooking.json charcoal_left): firewood on the forge yard fire, burned, the charcoal taken from its store.
+	var fire: int = int(fires.get("forge yard", -1))
+	var per: float = float(items._cooking["fuel"]["firewood"]) / float(items._cooking["charcoal_left"]["game_s_each"])
+	feed("forge yard", ceili(float(wanted - have("charcoal")) / per) + 1)
+	var store = items._fire_store(items._items[fire]["fire"])
+
+	for _step in range(20000):   # only the fire's own burn: a minute a step (the walkthrough's clock is not moved)
+		if have("charcoal") + store.count_of(n("charcoal")) >= wanted:
+			break
+
+		items._fires(60.0)
+
+	items.action(1, Net.ACT_CHEST_OPEN, fire, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_CHEST_TAKE, store.numbers.find(n("charcoal")), fire, store.count_of(n("charcoal")), Vector3.ZERO)
+	items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
 
 
 # What the player has no more use for is put down a few steps off, out of reach of the next pickups (the carry limit fills).

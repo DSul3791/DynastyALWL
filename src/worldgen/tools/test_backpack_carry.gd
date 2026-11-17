@@ -15,6 +15,7 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const BagRules := preload("res://src/shared/bag_rules.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 const DIR := "user://test_backpack_carry"
 const KEY := "backpackcarry01"
@@ -159,7 +160,7 @@ func _init() -> void:
 	inv.add(table.number_of("hide"), 5)
 	inv.add(table.number_of("twine"), 20)
 	inv.add(table.number_of("stick"), 4)
-	items.action(1, Net.ACT_CRAFT_QUEUE, int(items.recipes.makers_of(hide)[0]), 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, int(items.recipes.makers_of(hide)[0]), 0, 1, CraftHand.at(items, 1, int(items.recipes.makers_of(hide)[0])))
 
 	for _tick in 200:
 		items._craft_tick(0.25)

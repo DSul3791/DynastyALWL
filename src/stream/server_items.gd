@@ -76,7 +76,6 @@ const SAPLING_GROWN_S := 12.0 * 86400.0  # ...and until it is a full grown tree 
 const SAPLINGS_PER_CHUNK := 64
 const RESPAWN_RADIUS_M := 25.0           # a sapling comes only near a standing tree of the same species
 const RESPAWN_PLACE_M := 6.0
-const REGROW_EXCLUDE_M := 50.0           # no sapling is seeded within this of anything placed on the ground (BUG-013; Dave: tunable)
 const RESPAWN_CHANCE := 0.5              # per rotted-away stump, rolled once from the seed and the spot
 const FLORA_CHUNK_M := 256.0
 const PROCESS_REACH_M := 4.0
@@ -336,6 +335,10 @@ var _boulder_cfg: Dictionary = {}    # data/items/boulders.json
 var _boulder_left: Dictionary = {}   # boulder key -> rough stones still in it (absent = untouched), saved in world_items.json
 var _bog_left: Dictionary = {}       # bog iron deposit key "gi,gj" -> [ore left, game seconds it is counted to] (absent = untouched, full), saved in world_items.json "bog_iron"
 const BOULDER_KEY := 1 << 50
+const BOULDER_TRIES_MAX := 16          # a cell's boulder keys: the low four bits
+const COPPER_ROCK_FIRST := 8           # boulders take keys 0..7, copper rocks 8..15 (the last the mountain-foot boulder)
+const ORE_ROCK_TRIES := 8              # tries a cell for each ore's rocks (_lay_out_ore_rocks)
+const ORE_KEY := 1 << 52               # copper and tin rocks picked by hand: ORE_KEY | cell x << 28 | cell y << 8 | slot; tin boulders add BOULDER_KEY
 const BOG_STATE := 229            # world-item row state of a bog iron deposit (next free structure state, 10 Nov 2026; no structure may take it)
 const BOG_ID_BASE := 2000000000   # bog deposit world row ids count down from here (int32, far above _next_id), one per deposit key per run
 const BOG_SAMPLE_M := 8.0         # the baked tile's sample spacing: deposits sit on samples (BogIron), so the scan steps by it
@@ -458,6 +461,7 @@ func setup(item_table, store_dir: String) -> void:
 		_struct_gap_m = float(structures.get("gap_m", 2.5))
 		_fire_gap_m = float(structures.get("campfire", {}).get("gap_m", FIRE_MIN_GAP_M))
 		_fires_per_chunk = int(structures.get("campfire", {}).get("cap_per_chunk", FIRES_PER_CHUNK))
+		_spawn_zones.radius_m = float(structures.get("no_spawn_m", 20.0))
 
 	_smelters = SmelterScript.new()
 	_smelters.host = self
@@ -1281,7 +1285,8 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_STRIKE:
 		_strike(peer, inv, a, at)
 	elif kind == Net.ACT_CRAFT:
-		recipes.craft(a, inv)
+		if _hand_tool_ok(peer, inv, recipes.recipe(a), int(at.x) - 1):   # the instant craft (test keys) keeps the in-hand rule too (126)
+			recipes.craft(a, inv)
 	elif kind == Net.ACT_FALL:
 		_fall(peer, a)
 	elif kind == Net.ACT_CRAFT_QUEUE or kind == Net.ACT_CRAFT_CANCEL:
@@ -1291,7 +1296,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 			_last_queue_act[peer] = now
 
 			if kind == Net.ACT_CRAFT_QUEUE:
-				_queue_craft(peer, inv, a, count, b)
+				_queue_craft(peer, inv, a, count, b, int(at.x) - 1)   # at.x: the held pack slot + 1 (126), for a recipe that needs its tool in hand
 			else:
 				_cancel_craft(peer, a)
 	elif kind == Net.ACT_ADMIN_GIVE:
@@ -1615,6 +1620,7 @@ func save() -> void:
 			row.append([int(counted.get("log", -1)), int(counted.get("firewood", -1)), int(counted.get("weak", -1))] if it["fire"].has("counted") else [])   # store pieces the last count knew ([] = never counted)
 			row.append(float(it["fire"].get("lit_s", 0.0)))   # seconds burned since it was last cold (a coal bed at coals.coal_bed_s)
 			row.append(int(it["fire"].get("damp", 0)))   # the wettest wood in it, drying left in tenths of a game hour (cooking.json wet_wood)
+			row.append(float(it["fire"].get("char", 0.0)))   # the part-made Charcoal of the wood burned (cooking.json charcoal_left); below 0, owed for wood taken back out
 
 		if it.has("world"):
 			world_rows.append(items.size())   # put down by the server (a den pile, a gift, loot): the world reset keeps it
@@ -1629,7 +1635,7 @@ func save() -> void:
 	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _water_tanks_save(), "wells": _wells_save()})
 	_write_atomic("lights.json", {"version": 1, "lit": _light_rows_save()})
 	_write_atomic("kilns.json", {"version": 1, "kilns": _kilns_save()})
-	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows()})
+	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows(), "lit": _smelters.lit_rows()})
 	_write_atomic("smithies.json", {"version": 1, "smithies": _smithies.save_rows()})
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "bog_iron": _bog_left, "layout": FloraLayout.VERSION, "no_kits": true, "world_rows": world_rows})
 
@@ -2202,10 +2208,13 @@ func reset_world() -> int:
 		gone += 1
 
 	_grid = StructureGridScript.new()
+	_spawn_zones.clear()
 
 	for id in _items:
 		if _items[id].has("struct"):
 			_grid_add(id, _items[id])
+		else:
+			_zone_add(id)
 
 	_taken.clear()
 	_cells_done.clear()
@@ -3449,12 +3458,14 @@ func _hoe_path(peer: int, inv, at: Vector3, held_slot: int) -> void:
 			if not is_nan(old_ground) and absf(old_ground + 0.02 - old["pos"].y) > 0.03:
 				_items.erase(id)
 				_items[_next_id] = {"number": old["number"], "count": 1, "pos": Vector3(old["pos"].x, old_ground + 0.02, old["pos"].z), "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
+				_zone_add(_next_id)
 				_next_id += 1
 
 		var new_ground: float = float(ground_height.call(at.x, at.z))
 		spot.y = (new_ground if not is_nan(new_ground) else ground) + 0.02
 
 	_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
+	_zone_add(_next_id)
 	_next_id += 1
 	_dirty = true
 	_goal_event(peer, "path_laid")
@@ -3868,6 +3879,7 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 
 		if not blocked and of_kind < int(_structures["path_patch"]["cap_per_chunk"]):
 			_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": pos, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
+			_zone_add(_next_id)
 			_next_id += 1
 			_dirty = true
 			_goal_event(peer, "path_laid")
@@ -4407,13 +4419,6 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 			_say(peer, why.left(1).to_upper() + why.substr(1) + ".")
 			return
 
-	if kit_id == "campfire_kit":   # a fire is laid on top of a foundation it is aimed at (Dave 10 Nov 2026), not on the ground under it
-		var base_top: float = PlacementRules.foundation_top(_structures_cfg, at, _foundation_rows())
-
-		if not is_nan(base_top):
-			at.y = base_top
-			on_base = true
-
 	if not on_base and bool(_structure_of_kit(kit_id).get("foundation", false)):
 		lift = float(clampi(lift_steps, 0, PlacementRules.LIFT_MAX_STEPS)) * PlacementRules.LIFT_STEP_M   # the client sent the lifted height; the ground is checked below it
 		at.y -= lift
@@ -4482,7 +4487,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 
 			if _chunk_of(_items[id]["pos"]) == _chunk_of(spot):
 				chunk_fires += 1
-		elif _items[id].has("struct") and _items[id]["pos"].distance_to(spot) < _struct_gap_m and not bool(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("walkover", false)) and not bool(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("gap_exempt", false)) and not bool(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("foundation", false)) and not (_is_pot(_items[id]) and _items[id]["pos"].distance_to(spot) <= POT_ON_FIRE_M):   # a foundation is a floor the fire may stand on
+		elif _items[id].has("struct") and _items[id]["pos"].distance_to(spot) < _struct_gap_m and PlacementRules.blocks_fire(_structures_cfg, int(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("state", -1))):   # the ghost's own rule: a foundation is a floor the fire may stand on
 			_say(peer, "Something is in the way.")
 			return
 
@@ -4493,6 +4498,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 	inv.take_from_slot(slot, 1)
 	var covered: bool = cover_at.is_valid() and float(cover_at.call(spot)) > 0.5
 	_items[_next_id] = {"number": number, "count": 1, "pos": spot, "left": FIRE_LAID_S, "fire": {"state": 9, "burn_left": 0.0, "wood": {"log": 0.0, "firewood": 0.0, "weak": 0.0}, "covered": covered, "recheck": COVER_RECHECK_S, "synced": true}}
+	_zone_add(_next_id)
 	var laid_fire: Dictionary = _items[_next_id]["fire"]
 	var stick_s: float = float((_cooking.get("fuel", {}) as Dictionary).get("stick", 2880.0))
 	var start_sticks: int = maxi(1, int(round(float(_cooking.get("start_burn_game_s", 3600.0)) / maxf(stick_s, 1.0))))   # a fresh fire holds its first sticks in its store, where Dave sees them
@@ -4622,7 +4628,8 @@ func _wheel_slow(peer: int, recipe: Dictionary) -> float:
 
 
 # How much slower a saw recipe (one that keeps "saw", any saw) runs for the saw in the pack (TREE_WOOD_TOOLS_DESIGN.md s5: items.json saw_speed, Copper 0.5,
-# Bronze 0.75, Iron 1.0, Steel 1.25; the saw the craft wears counts, the first on the hotbar) and, for a recipe marked "sawbuck" (Wooden blocks), at a
+# Bronze 0.75, Iron 1.0, Steel 1.25; the saw the craft wears counts, the first on the hotbar) and, for a recipe marked "sawbuck" (every hand-saw recipe:
+# Wooden blocks, Planks, Hardwood boards; Dave 17 Nov 2026 "if there is a saw buck around it will use that for cutting faster", W-33), at a
 # Sawbuck in reach, which saws twice as fast (W-4). serving_station walks the world items like any station recipe's check, once a tick for a sawing peer.
 func _saw_slow(peer: int, recipe: Dictionary) -> float:
 	var saw_n: int = table.number_of("saw")
@@ -4638,7 +4645,7 @@ func _saw_slow(peer: int, recipe: Dictionary) -> float:
 	var slot: int = _tool_slot(inv, "saw") if inv != null else -1   # the saw the craft wears (wears_tool "saw": the first one on the hotbar)
 	var speed: float = float(table.entry(table.id_of(int(inv.numbers[slot]))).get("saw_speed", 1.0)) if slot >= 0 else 1.0
 	var slow: float = 1.0 / maxf(speed, 0.1)
-	return slow * (0.5 if bool(recipe.get("sawbuck", false)) and serving_station(peer, "sawbuck") >= 0 else 1.0)   # the Sawbuck speeds sawing a log into blocks only (s1.3; the mill is for planks and boards)
+	return slow * (0.5 if bool(recipe.get("sawbuck", false)) and serving_station(peer, "sawbuck") >= 0 else 1.0)   # a Sawbuck in reach speeds every hand-saw recipe (W-33)
 
 
 # A placed piece's water wheel share in percent of full power (Sonny section 10: P / full_power_w, floored at min_power_w), or -1 for a piece with no
@@ -4794,6 +4801,7 @@ func _fires(delta: float) -> void:
 		var heavy: bool = rain_proof and in_rain and rain_v >= float(_coals_cfg().get("rain_burn_from", 0.6))
 		var pace: float = (float(_coals_cfg().get("rain_burn_x", 1.25)) if heavy else 1.0) / (maxf(float(table.wet_wood().get("wet_burn_x", 1.5)), 0.1) if damp else 1.0)
 		_fire_burn(fire, delta * pace)
+		_fire_leave_charcoal(id, it, fire)
 		fire["lit_s"] = float(fire.get("lit_s", 0.0)) + delta   # the coal bed builds while it burns
 		var smoke: int = 1 if (rain_proof and in_rain) or damp else 0
 
@@ -4833,7 +4841,7 @@ func _fires(delta: float) -> void:
 				_dirty = true
 
 
-# Item lifetimes run down; an item whose time is up goes, except coals and warm ash, which run on to their next stage (_fire_expire).
+# Item lifetimes run down; an item whose time is up goes, except coals and warm ash, which run on to their next stage, and a fire still holding charcoal (_fire_expire).
 func _expire_items(spent: float) -> void:
 	for id in _items.keys():
 		if _items[id].has("scatter") or float(_items[id]["left"]) > 1.0e8 or _items[id].get("inst", {}).has("bag"):
@@ -5136,7 +5144,7 @@ func _fire_to_ash(it: Dictionary, fire: Dictionary) -> void:
 
 # The fire is cold: cold ash (8) for FIRE_OUT_S, or a laid fire (9) when wood is in it.
 func _fire_cold(it: Dictionary, fire: Dictionary) -> void:
-	for key in ["lit_s", "wet_s", "catch"]:
+	for key in ["lit_s", "wet_s", "catch", "kept"]:
 		fire.erase(key)
 
 	if float(fire.get("burn_left", 0.0)) > 0.0:
@@ -5150,7 +5158,7 @@ func _fire_cold(it: Dictionary, fire: Dictionary) -> void:
 	_dirty = true
 
 
-# The item expiry loop found a fire's time run out: coals go on to warm ash, warm ash to cold. False for anything else (it is then removed).
+# The item expiry loop found a fire's time run out: coals go on to warm ash, warm ash to cold, a fire holding charcoal stays. False for anything else (it is then removed).
 func _fire_expire(it: Dictionary) -> bool:
 	if not it.has("fire"):
 		return false
@@ -5164,6 +5172,18 @@ func _fire_expire(it: Dictionary) -> bool:
 	if state == FIRE_STATE_ASH:
 		_fire_cold(it, it["fire"])
 		return true
+
+	if _fire_keeps_charcoal(it["fire"]):
+		if not bool(it["fire"].get("kept", false)):   # cold ash holding charcoal waits charcoal_left.keep_s for the player, once
+			it["fire"]["kept"] = true
+			it["left"] = float((_cooking.get("charcoal_left", {}) as Dictionary).get("keep_s", 86400.0))
+			return true
+
+		# shortcut: "kept" is not saved, so a restart gives an abandoned fire one more wait; it still ends, and the cap on fires a chunk stays honest.
+		var box = _chests[int(it["fire"]["uid"])]
+		var c: int = table.number_of("charcoal")
+		drop_in_world(c, box.count_of(c), it["pos"] + Vector3(0.6, 0.0, 0.0))   # nobody came for it: it is left on the ground and the fire goes
+		box.remove(c, box.count_of(c))
 
 	return false
 
@@ -5855,6 +5875,9 @@ func _load_world_items() -> void:
 			if row.size() > 16 and (typeof(row[16]) == TYPE_FLOAT or typeof(row[16]) == TYPE_INT) and int(row[16]) > 0:
 				entry["fire"]["damp"] = int(row[16])
 
+			if row.size() > 17 and (typeof(row[17]) == TYPE_FLOAT or typeof(row[17]) == TYPE_INT) and float(row[17]) != 0.0:
+				entry["fire"]["char"] = float(row[17])
+
 			if row.size() > 9 and int(row[9]) > 0:
 				entry["fire"]["uid"] = int(row[9])
 				_next_uid = maxi(_next_uid, int(row[9]) + 1)
@@ -5866,6 +5889,7 @@ func _load_world_items() -> void:
 			entry["world"] = true
 
 		_items[_next_id] = entry
+		_zone_add(_next_id)   # a saved fire still blocks spawning round it
 		_next_id += 1
 
 	_refresh_pots()   # a pot hangs over whatever fire shares its spot: nothing about it is saved
@@ -6135,7 +6159,10 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	part_usec = _cell_part("bank stones", part_usec)
 	_cell_parts[-1] += " (ground %.0f, water %.0f)" % [float(_bank_ground_usec) / 1000.0, float(_bank_water_usec) / 1000.0]
 	_lay_out_boulders(cell, cell_m)
-	_cell_part("boulders", part_usec)
+	part_usec = _cell_part("boulders", part_usec)
+	_lay_out_ore_rocks(cell, cell_m, "copper")
+	_lay_out_ore_rocks(cell, cell_m, "tin")
+	_cell_part("copper and tin rocks", part_usec)
 
 
 # A cell's own random stream for one part of its layout (Sonny, 10 Nov 2026). The loose stones and sticks drew first from one stream, and a stick's spot
@@ -6177,7 +6204,7 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
 
 	# Every try takes the same five draws whatever happens to it, and the boulder's key is its try, not its count: a try that the live water turns
 	# on or off (the bank chance) adds or drops that one boulder and moves no other boulder's key.
-	for attempt in range(mini(int(cfg.get("tries", 8)), 16)):
+	for attempt in range(mini(int(cfg.get("tries", 8)), COPPER_ROCK_FIRST)):   # keys from COPPER_ROCK_FIRST up are the copper rocks' (_lay_out_ore_rocks)
 		var x: float = (float(cell.x) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
 		var z: float = (float(cell.y) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
 		var draw: float = rng.randf()   # luck-exempt: seeded world layout
@@ -6208,13 +6235,153 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
 			continue
 
 		var row: Dictionary = {"radius": radius, "yaw": yaw, "total": total}
-		var ore_name: String = _boulder_ore(spot, key)
-
-		if ore_name != "":
-			row["ore"] = ore_name   # an outcrop: a pick takes this ore out of it (boulders.json ore)
-
+		_set_boulder_ore(row, _boulder_ore(spot, key), key)   # an outcrop: a pick takes this ore out of it (boulders.json ore)
 		_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": row}
 		_next_id += 1
+
+
+# A boulder row's ore: none for "", else the ore, and a copper or tin rock also its grade (boulders.json <ore>_rocks grade_min..grade_max, from
+# the key): the share of its pieces that come away as ore, so rocks hold different amounts and a bigger rock more (Dave 16 Nov 2026).
+func _set_boulder_ore(row: Dictionary, ore_name: String, key: int) -> void:
+	if ore_name == "":
+		return
+
+	row["ore"] = ore_name
+	var cfg: Dictionary = _boulder_cfg.get(ore_name + "_rocks", {})
+
+	if cfg.has("grade_min"):
+		row["grade"] = lerpf(float(cfg["grade_min"]), float(cfg.get("grade_max", cfg["grade_min"])), float(hash([key, "grade"]) % 1000) / 999.0)
+
+
+# Copper and tin rocks (Dave 16-17 Nov 2026, his photos; docs/design/COPPER_ROCKS.md, boulders.json copper_rocks and tin_rocks). Per cell,
+# from the cell's own stream named after the ore, 8 tries that each take the same five draws whatever happens to them:
+# - copper: a few anywhere on dry land, many in shallow water and on banks, and the last try a big boulder at a mountain's foot;
+# - tin: only in shallow water and on banks within near_body_m of a tin body of the geology (its river placers), sized by the relief
+#   around it: boulders where the valley climbs steeply (near the mountains), pebbles where it is flat (far downstream).
+# A rock under hand_max_radius is a loose ore item picked up by hand (ORE_KEY, kept in _taken like any scatter); a bigger one is a
+# boulder row with the ore, broken with a hammer or pick. Slots `slot`.. of the cell: copper 8..15 (BOULDER_KEY, after the cell's
+# boulders), tin 16..23 (ORE_KEY | BOULDER_KEY). Nothing depends on where spawn is.
+func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
+	var cfg: Dictionary = _boulder_cfg.get(ore + "_rocks", {})
+	var item: String = str((_boulder_cfg.get("ore", {}).get("items", {}) as Dictionary).get(ore, ""))
+
+	if cfg.is_empty() or item == "":
+		return
+
+	var rng: RandomNumberGenerator = _layout_rng(cell, ore)
+	var reach: float = float(cfg.get("bank_reach_m", 3.0))
+	var bed_m: float = float(cfg.get("bed_depth_m", 0.8))
+	var foot: Dictionary = cfg.get("foot", {})
+	var slot0: int = int(cfg.get("slot", COPPER_ROCK_FIRST))
+	var body_m: float = float(cfg.get("near_body_m", 0.0))
+	var hand_max: float = float(cfg.get("hand_max_radius", 0.0))
+	var cell_bits: int = ((cell.x & 0xfffff) << 28) | ((cell.y & 0xfffff) << 8)
+	var names: Dictionary = {ore: item}
+	var layer_m: float = float(_boulder_cfg.get("ore", {}).get("layer_depth_m", 10.0))
+
+	# Tin: one geology look for the whole cell first (any of its spots within near_body_m of a body), so a cell far from tin reads nothing more.
+	if body_m > 0.0:
+		var mid: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
+		var mid_y: float = float(ground_height.call(mid.x, mid.y))
+
+		if is_nan(mid_y) or not ore_near.is_valid() or str(ore_near.call(Vector3(mid.x, mid_y, mid.y), body_m + cell_m * 0.71, names, layer_m)) != ore:
+			return
+
+	for attempt in range(ORE_ROCK_TRIES):
+		var x: float = (float(cell.x) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
+		var z: float = (float(cell.y) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
+		var draw: float = rng.randf()   # luck-exempt: seeded world layout
+		var size_draw: float = rng.randf()   # luck-exempt: seeded world layout
+		var yaw: float = rng.randf() * 360.0   # luck-exempt: seeded world layout
+		var is_foot: bool = not foot.is_empty() and attempt == ORE_ROCK_TRIES - 1   # the last try is the mountain-foot boulder's
+
+		if is_foot:
+			if draw > float(foot.get("chance", 0.0)):
+				continue
+		elif attempt >= mini(int(cfg.get("tries", 4)), ORE_ROCK_TRIES - 1) or draw > maxf(float(cfg.get("chance", 0.0)), float(cfg.get("water_chance", 0.0))):
+			continue   # cheap refusals first: most tries end here without reading the ground or the water
+
+		var y: float = float(ground_height.call(x, z))
+
+		if is_nan(y) or y < 1.0:
+			continue
+
+		var spot: Vector3 = Vector3(x, y, z)
+		var depth: float = float(water_depth_at.call(spot)) if water_depth_at.is_valid() else 0.0
+
+		if depth > bed_m:
+			continue   # deep water: nobody would find it
+
+		if is_foot:
+			if depth > 0.0 or not _at_mountain_foot(spot, foot):
+				continue
+		elif draw > float(cfg.get("chance", 0.0)):
+			# Past the land share: only on a river or lake bed (shallow water) or a dry bank within reach of water.
+			var bank: bool = depth <= 0.0 and water_near.is_valid() and not bool(water_near.call(spot, 0.0)) and bool(water_near.call(spot, reach))
+
+			if depth <= 0.0 and not bank:
+				continue
+
+		if body_m > 0.0 and str(ore_near.call(spot, body_m, names, layer_m)) != ore:
+			continue   # tin lies only downstream of its own geology
+
+		var sizes: Dictionary = foot if is_foot else cfg
+		var radius: float
+
+		if cfg.has("relief_full_m") and not is_foot:
+			var t: float = clampf(_relief(spot, float(cfg.get("relief_reach_m", 24.0))) / maxf(float(cfg["relief_full_m"]), 0.1), 0.0, 1.0)
+			radius = lerpf(float(sizes.get("radius_min", 0.03)), float(sizes.get("radius_max", 1.0)), t * (0.5 + 0.5 * size_draw))
+		else:
+			radius = lerpf(float(sizes.get("radius_min", 0.06)), float(sizes.get("radius_max", 0.3)), pow(size_draw, float(sizes.get("radius_power", 2.0))))
+
+		var slot: int = slot0 + attempt
+
+		if radius < hand_max and not is_foot:
+			var loose_key: int = ORE_KEY | cell_bits | slot
+
+			if not _taken.has(loose_key):
+				_items[_next_id] = {"number": table.number_of(item), "count": 1, "pos": spot, "left": 1.0e9, "scatter": loose_key}
+				_next_id += 1
+
+			continue
+
+		var key: int = (BOULDER_KEY | ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | slot) if slot < BOULDER_TRIES_MAX else (ORE_KEY | BOULDER_KEY | cell_bits | slot)
+		var total: int = _boulder_stones(radius)
+		var left: int = mini(int(_boulder_left.get(key, total)), total)
+
+		if left <= 0:
+			continue
+
+		var row: Dictionary = {"radius": radius, "yaw": yaw, "total": total}
+		_set_boulder_ore(row, ore, key)
+		_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": row}
+		_next_id += 1
+
+
+# How far the ground climbs above the spot within reach (at most SCATTER_PAD_M - 4, inside the tiles _cell_ground_ready loaded: a
+# farther read loads a tile on the main thread), the highest of the four directions; 0 on flat or falling ground.
+func _relief(spot: Vector3, reach_m: float) -> float:
+	var reach: float = minf(reach_m, SCATTER_PAD_M - 4.0)
+	var best: float = 0.0
+
+	for d in [Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
+		var h: float = float(ground_height.call(spot.x + d.x, spot.z + d.y))
+
+		if not is_nan(h):
+			best = maxf(best, h - spot.y)
+
+	return best
+
+
+# The foot of a mountain: the spot itself is gentle (rise per metre under max_slope over 3 m) and the ground climbs more than rise_m
+# within reach_m (_relief) in one of the four directions (boulders.json copper_rocks foot).
+func _at_mountain_foot(spot: Vector3, foot: Dictionary) -> bool:
+	var near: float = (absf(float(ground_height.call(spot.x + 3.0, spot.z)) - spot.y) + absf(float(ground_height.call(spot.x, spot.z + 3.0)) - spot.y)) / 3.0
+
+	if is_nan(near) or near > float(foot.get("max_slope", 0.3)):
+		return false
+
+	return _relief(spot, float(foot.get("reach_m", 24.0))) > float(foot.get("rise_m", 20.0))
 
 
 # The ore a boulder is an outcrop of ("" for a plain boulder): the terrain's ore body within reach of it, for a share of the boulders chosen from the key.
@@ -6344,7 +6511,7 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 
 		if info.has("ore") and not ore_cfg.is_empty() and a_pick and material_ok:
 			var rock_piece: bool = (ore_cfg.get("rocks", {}) as Dictionary).has(str(info["ore"])) and not (ore_cfg.get("items", {}) as Dictionary).has(str(info["ore"]))
-			var share: float = float(ore_cfg.get("rock_piece_share", 0.5)) if rock_piece else float(ore_cfg.get("piece_share", 0.5))
+			var share: float = float(ore_cfg.get("rock_piece_share", 0.5)) if rock_piece else float(info.get("grade", ore_cfg.get("piece_share", 0.5)))   # a copper rock's own grade
 
 			if fate(peer, "boulder_ore", share):
 				var piece_id: String = str((ore_cfg.get("rocks", {}) as Dictionary).get(str(info["ore"]), "")) if rock_piece else str((ore_cfg.get("items", {}) as Dictionary).get(str(info["ore"]), ""))
@@ -6399,11 +6566,7 @@ func _lay_out_cave_items(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void
 
 			if left > 0:
 				var cave_row: Dictionary = {"radius": radius, "yaw": float(hash(key) % 360), "total": total}
-				var cave_ore: String = _boulder_ore(spot, key)   # a cave boulder is an outcrop like one on the surface (Kathleen 10 Nov 2026: caves never rolled ore)
-
-				if cave_ore != "":
-					cave_row["ore"] = cave_ore
-
+				_set_boulder_ore(cave_row, _boulder_ore(spot, key), key)   # a cave boulder is an outcrop like one on the surface (Kathleen 10 Nov 2026: caves never rolled ore)
 				_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": cave_row}
 				_next_id += 1
 
@@ -6921,6 +7084,17 @@ func _tool_slot(inv, tool_class: String) -> int:
 			return slot
 
 	return -1
+
+
+# A recipe that keeps a tool needs it in hand (CraftStock.in_hand, Dave 17 Nov 2026): it crafts only while that tool, unbroken, is the item in the
+# right hand (`hand`, the pack slot the client names); otherwise says what to do and answers false. A log on the shoulder does not stop it (the
+# client stows the tool while a log rides there, but it stays the chosen hand slot). Any other recipe: true.
+func _hand_tool_ok(peer: int, inv, recipe: Dictionary, hand: int) -> bool:
+	if CraftStock.in_hand(recipe, table, inv, hand):
+		return true
+
+	_say(peer, "That needs %s in your hand: pick it on the hotbar, then craft" % CraftStock.hand_words(recipe, table))
+	return false
 
 
 # _held_tool for a swing that needs this class, saying why nothing happened when the hand holds something else: the tool in hand is broken,
@@ -7679,23 +7853,6 @@ func _trunk_extras(id: int, tree: Dictionary, logs: int, cfg: Dictionary, at: Ve
 
 # A stump has rotted away: maybe a sapling grows near a standing tree of the same species. The dice come from the seed and the spot,
 # so a restart gives the same answer.
-# Is a placed structure, fire or other ground-placed thing within `radius` of the spot (flat distance)? Saplings keep away from these.
-func _built_within(spot: Vector3, radius: float) -> bool:
-	for id in _items:
-		var it: Dictionary = _items[id]
-
-		if not (it.has("struct") or it.has("fire")):
-			continue
-
-		if str(it.get("struct", {}).get("kind", "")) == "remains":
-			continue
-
-		if Vector2(it["pos"].x - spot.x, it["pos"].z - spot.z).length() <= radius:
-			return true
-
-	return false
-
-
 func _maybe_sapling(stump: Dictionary, planted_at: float = -1.0) -> void:
 	if not standing_near.is_valid() or not ground_height.is_valid():
 		return
@@ -7722,8 +7879,8 @@ func _maybe_sapling(stump: Dictionary, planted_at: float = -1.0) -> void:
 	if is_nan(ground) or ground < 1.0 or species_entry.is_empty():
 		return
 
-	if _built_within(spot, REGROW_EXCLUDE_M):
-		return
+	if spawn_blocked(spot.x, spot.z):
+		return   # nothing regrows near what players put down (no_spawn_m)
 
 	var home: Vector2i = Vector2i(int(floor(spot.x / FLORA_CHUNK_M)), int(floor(spot.z / FLORA_CHUNK_M)))
 	var used: Dictionary = {}
@@ -8274,6 +8431,9 @@ func _fire_burn(fire: Dictionary, delta: float) -> void:
 		wood[cls] = float(wood[cls]) - used
 		left -= used
 
+		if _charcoal_classes().has(cls):
+			fire["char"] = float(fire.get("char", 0.0)) + used * GAME_RATE / _charcoal_game_s()   # the charcoal this wood leaves (_fire_leave_charcoal)
+
 		if bool(fire.get("synced", false)) and used > 0.0:   # what has burned since the store was last counted: whole pieces of it leave the store (_fire_trim_store)
 			var burnt: Dictionary = fire.get("burnt", {})
 			burnt[cls] = float(burnt.get(cls, 0.0)) + used
@@ -8287,6 +8447,60 @@ func _fire_burn(fire: Dictionary, delta: float) -> void:
 
 	if fire_is_lit(state) and state != FIRE_STATE_SURVIVAL and float(wood[_fire_class_of_state(state)]) <= 0.0:
 		fire["state"] = _fire_best_state(fire)
+
+
+# --- Charcoal left by burning wood (Dave 17 Nov 2026: "anything that burns wood should leave behind charcoal"; cooking.json charcoal_left) ---
+# Wood of the classes in charcoal_left.classes (firewood and logs; sticks and kindling leave none) leaves charcoal by its burning time: one Charcoal
+# for each game_s_each game seconds burned (a Firewood 3, a Wooden block 6, a log 27). A fire keeps the part-made lump in fire["char"] (saved); a light
+# (fireplace, brazier: structures.json leaves_charcoal) in its struct (not saved).
+
+func _charcoal_game_s() -> float:
+	return maxf(float((_cooking.get("charcoal_left", {}) as Dictionary).get("game_s_each", 9600.0)), 1.0)
+
+
+func _charcoal_classes() -> Array:
+	return (_cooking.get("charcoal_left", {}) as Dictionary).get("classes", ["log", "firewood"])
+
+
+# The whole Charcoal a fire has made go into its own store; what the store has no room for lands on the ground beside it.
+func _fire_leave_charcoal(id: int, it: Dictionary, fire: Dictionary) -> void:
+	var lumps: int = int(floor(float(fire.get("char", 0.0)) + 0.0001))   # the small margin: three Firewood's sum of burned slices is 9, not 8.9999
+
+	if lumps <= 0:
+		return
+
+	fire["char"] = maxf(float(fire["char"]) - float(lumps), 0.0)
+	var box = _fire_store(fire)
+	var over: int = box.add(table.number_of("charcoal"), lumps)
+	_push_box(id, box)
+
+	if over > 0:
+		drop_in_world(table.number_of("charcoal"), over, it["pos"] + Vector3(0.6, 0.0, 0.0))
+
+	_dirty = true
+
+
+# A lit light that burns wood (structures.json leaves_charcoal) leaves its charcoal on the ground at its foot, by the share of its fuel item burned.
+func _light_leave_charcoal(it: Dictionary, def: Dictionary, spent: float) -> void:
+	var wood_id: String = str(def.get("fuel", ""))
+	var wood_s: float = float((_cooking.get("fuel", {}) as Dictionary).get(wood_id, 0.0))
+
+	if wood_s <= 0.0 or not _charcoal_classes().has(_fire_wood_class(wood_id)):
+		return
+
+	# shortcut: the part-made lump is not saved with the light (lights.json keeps fuel_left only), so a restart loses under one Charcoal.
+	var made: float = float(it["struct"].get("char", 0.0)) + spent / maxf(light_burn_s(def), 1.0) * wood_s / _charcoal_game_s()
+	var lumps: int = int(floor(made + 0.0001))
+	it["struct"]["char"] = maxf(made - float(lumps), 0.0)
+
+	if lumps > 0:
+		drop_in_world(table.number_of("charcoal"), lumps, it["pos"])
+		_dirty = true
+
+
+# A cold or laid fire whose store still holds Charcoal is not taken away for charcoal_left.keep_s (the charcoal is left in the fire for the player).
+func _fire_keeps_charcoal(fire: Dictionary) -> bool:
+	return _chests.has(int(fire.get("uid", 0))) and _chests[int(fire["uid"])].count_of(table.number_of("charcoal")) > 0
 
 
 # Wood on the fire: a stick or a log adds burning time (no cap). A fire the rain put out
@@ -9161,13 +9375,6 @@ func _structure_of_kit(kit_id: String) -> Dictionary:
 	return {}
 
 
-# Does a spot lie inside the covered box of a placed shelter (its half_x by half_z from structures.json, turned by its yaw)?
-func _inside_shelter(shelter: Dictionary, spot: Vector3) -> bool:
-	var def: Dictionary = _structures.get(str(shelter["struct"]["kind"]), {})
-	var local: Vector2 = Vector2(spot.x - shelter["pos"].x, spot.z - shelter["pos"].z).rotated(deg_to_rad(float(shelter["struct"].get("yaw", 0.0))))
-	return absf(local.x) <= float(def.get("half_x", 0.0)) and absf(local.y) <= float(def.get("half_z", 0.0)) and absf(spot.y - shelter["pos"].y) < 1.5
-
-
 func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, def: Dictionary, site_row: Dictionary = {}) -> void:
 	var attaching: bool = str(def.get("attach_to", "")) == "fire"
 
@@ -9201,33 +9408,30 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 	var here_chunk: Vector2i = _chunk_of(spot)
 	var of_kind: int = 0
-	var plot_cells: Array = _bed_cells({"pos": spot, "struct": {"kind": str(def.get("kind", "")), "yaw": float(yaw_deg)}}) if _is_plot_kind(str(def.get("kind", ""))) else []
 
 	for id in _items:
 		var other: Dictionary = _items[id]
 
-		var both_pieces: bool = bool(def.get("piece", false)) and other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("piece", false))
+		if not other.has("struct") and not other.has("fire"):
+			continue
 
-		var walkover: bool = other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("walkover", false))
+		var row: Dictionary = {"pos": other["pos"], "state": int(other["fire"]["state"]) if other.has("fire") else int(_structures.get(str(other["struct"]["kind"]), {}).get("state", -1)), "yaw": float(other["struct"].get("yaw", 0.0)) if other.has("struct") else 0.0}
 
-		var stands_on: bool = def.has("needs_base_lift_m") and other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("foundation", false))   # a sawmill stands on its foundation
-
-		# A rough bed goes INSIDE a lean-to (Dave 31 Oct 2026): its middle may lie within the shelter's covered box, whatever the gap.
-		var bed_in_shelter: bool = _is_bed_kind(str(def.get("kind", ""))) and other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("shelter", false)) and _inside_shelter(other, spot)
-
-		if bed_in_shelter:
-			yaw_deg = int(round(float(other["struct"].get("yaw", 0.0))))   # the bed lies along the lean-to (1 x 2 m inside 2.6 x 2.4 m), whatever way the player faced
+		if PlacementRules.bed_in_shelter(_structures_cfg, def, row, spot):   # a rough bed goes INSIDE a lean-to (Dave 31 Oct 2026), whatever the gap
+			yaw_deg = int(round(float(row["yaw"])))   # the bed lies along the lean-to (1 x 2 m inside 2.6 x 2.4 m), whatever way the player faced
 
 		if PlacementRules.one_to_a_point(str(def.get("piece_kind", ""))) and other.has("struct") and PlacementRules.point_family(str(_structures.get(str(other["struct"]["kind"]), {}).get("piece_kind", ""))) == PlacementRules.point_family(str(def.get("piece_kind", ""))) and PlacementRules.point_of(_structures.get(str(other["struct"]["kind"]), {}), other["pos"]).distance_to(PlacementRules.point_of(def, spot)) < PlacementRules.ANCHOR_TAKEN_M:
 			_say(peer, "Something is in the way.")   # one pillar to a point, one wall top to a wall (PlacementRules.blocked)
 			return
 
-		if not plot_cells.is_empty() and other.has("struct") and _is_plot_kind(str(other["struct"]["kind"])) and _beds_clash(plot_cells, other):
+		if PlacementRules.plots_clash(_structures_cfg, def, spot, float(yaw_deg), row):
 			_say(peer, "A bed or planter is already in that spot.")   # every square metre stands BED_GAP_M from every other bed's (two on one spot would share a crop record)
 			return
 
-		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")) and not both_pieces and not walkover and not stands_on and not (attaching and other.has("fire")) and not bed_in_shelter and not bool(def.get("gap_exempt", false)) and not (other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("gap_exempt", false))):   # furniture (gap_exempt) stands beside fires, shelters and each other
-			_say(peer, "Something is in the way.")
+		var why: String = PlacementRules.keeps_off(_structures_cfg, def, spot, float(yaw_deg), row)   # the ghost's own rule, so a green ghost always places
+
+		if why != "":
+			_say(peer, "Something is in the way." if why == "close" else PlacementRules.reason_text(why).left(1).to_upper() + PlacementRules.reason_text(why).substr(1) + ".")
 			return
 
 		if other.has("struct") and str(other["struct"]["kind"]) == str(def["kind"]) and _chunk_of(other["pos"]) == here_chunk:
@@ -9804,6 +10008,8 @@ var _grid = StructureGridScript.new()
 
 # Registers a freshly placed or loaded structure when its structures.json row says "blocks_walk".
 func _grid_add(id: int, entry: Dictionary) -> void:
+	_zone_add(id)   # every structure, a blueprint site too, blocks spawning round it
+
 	if entry["struct"].has("site"):
 		return   # a blueprint site is walked through and blocks nothing until it is finished (_finish_site)
 
@@ -9817,6 +10023,25 @@ func _grid_add(id: int, entry: Dictionary) -> void:
 # True when a wall or a heavy station stands over (x, z); margin grows each piece by an animal's body radius.
 func structure_blocks(x: float, z: float, margin: float = 0.0) -> bool:
 	return _grid.blocks(x, z, margin, _items)
+
+
+# --- No-spawn zones (Dave 17 Nov 2026): nothing wild appears or regrows within no_spawn_m of anything put down (spawn_zones.gd) ---
+const SpawnZonesScript := preload("res://src/stream/spawn_zones.gd")
+var _spawn_zones = SpawnZonesScript.new()
+
+
+# Registers a freshly placed or loaded row when it is something put down (a structure or a fire). Every spawner asks spawn_blocked.
+func _zone_add(id: int) -> void:
+	var entry: Dictionary = _items[id]
+
+	if SpawnZonesScript.counts(entry) and _carts.vehicle_of(entry).is_empty():   # a cart or barrow goes where it is pulled: not a build
+		_spawn_zones.add(id, entry["pos"].x, entry["pos"].z)
+
+
+# True when something a player put down (or a town piece) still stands within no_spawn_m of (x, z): no sapling, animal or other wild thing
+# appears there. What already stood there stays; once the last piece near is gone, spawning comes back.
+func spawn_blocked(x: float, z: float) -> bool:
+	return _spawn_zones.blocked(x, z, _items)
 
 
 # True when the straight step from (x0, z0) to (x1, z1) goes through such a piece: a long stride cannot jump a thin wall.
@@ -9856,6 +10081,25 @@ func _stands_on(base: Dictionary, def: Dictionary) -> bool:
 		var d: Vector3 = other["pos"] - base["pos"]
 
 		if d.y > 0.1 and absf(d.x) <= half_x and absf(d.z) <= half_z:
+			return true
+
+	return false
+
+
+# Whether a station, furniture or a fire stands on the top of floor `base` (a foundation or a ceiling cell, structures row `def`), as PlacementRules.support_top
+# set it there: taking the floor down would leave it in the air (Dave 17 Nov 2026: stations go on foundations and upper floors).
+func _holds_station(base: Dictionary, def: Dictionary) -> bool:
+	if not bool(def.get("foundation", false)) and str(def.get("piece_kind", "")) != "floor":
+		return false
+
+	var row: Dictionary = {"pos": base["pos"], "yaw": float(base["struct"].get("yaw", 0.0))}
+	var top: float = float(base["pos"].y) + PlacementRules.anchor_top(def)
+
+	for other in _items.values():
+		if other == base or not (other.has("fire") or (other.has("struct") and not bool(_structures.get(str(other["struct"]["kind"]), {}).get("piece", false)))):
+			continue
+
+		if absf(float(other["pos"].y) - top) < 0.05 and PlacementRules.holds(def, row, other["pos"]):
 			return true
 
 	return false
@@ -9910,7 +10154,7 @@ func _take_down(peer: int, inv, id: int) -> void:
 		_say(peer, "Empty it first.")
 		return
 
-	if bool(def.get("foundation", false)) and _stands_on(it, def):
+	if (bool(def.get("foundation", false)) and _stands_on(it, def)) or _holds_station(it, def):
 		_say(peer, "Take down what stands on it first.")
 		return
 
@@ -10008,8 +10252,8 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 		_kiln_use(peer, id, it, def)
 		return
 
-	if _smelters.is_smelter(def):   # E at a Smelter: works its bellows (Improved), or says how it is fed (master s2.7)
-		_smelters.use(peer, id, it, def)
+	if _smelters.is_smelter(def):   # E at a Smelter lights it or puts it out, as a campfire; at a lit Improved smelter it works the bellows (hold E, choice 1, puts it out)
+		_smelters.use(peer, id, it, def, choice)
 		return
 
 	if str(def.get("use", "")) != "split_log":
@@ -10225,33 +10469,74 @@ func _craft_store(peer: int, recipe: Dictionary, free_entry: bool) -> int:
 	return id
 
 
-# --- The Kiln batch (master s2.6 [D1]; Mission 001 T18) ---
-# Logs put in (at most batch_logs, the one burning included) turn to charcoal while the Kiln is lit: per_log pieces a log, one every
-# log_s / per_log real seconds, into its output. A log is taken when its turn starts, so taking logs out never undoes a piece. With every log done
-# and the Kiln still lit, it burns its own charcoal, one every self_burn_s, and goes out when none is left. E lights it while it holds wood and puts
-# it out; put out, it keeps everything (the part-burnt log too) and goes on where it stopped when lit again. A full output pauses it (it stays lit).
-# struct["kiln"] = {"left": pieces still to come from the log in the burn, "t": seconds toward the next piece}; saved in kilns.json by the store's uid.
+# --- The Kilns (master s2.6 [D1]; Mission 001 T18; Dave 17 Nov 2026: Primitive, Improved and Advanced kilns, any wood) ---
+# Wood put in (structures.json kilns.yield: a log 100 Charcoal, a Firewood 10, a stick 5, kindling none) turns to charcoal while the kiln is lit:
+# the biggest piece first, its yield in pieces, one every kilns.piece_s real seconds, into its output. A kiln holds wood worth batch_logs logs
+# (kilns.yield.log each; a piece takes at least kilns.min_space of that room), the piece in the burn included. A piece is taken when its turn
+# starts, so taking wood out never undoes a piece; a piece that yields nothing (kindling) burns away at once. With all its wood done and still
+# lit, it burns its own charcoal, one every self_burn_s, and goes out when none is left. E lights it while it holds wood and puts it out; put out,
+# it keeps everything (the part-burnt piece too). A full output pauses it (it stays lit).
+# struct["kiln"] = {"left": pieces still to come from the piece in the burn, "t": seconds toward the next piece}; saved in kilns.json by the store's uid.
 
-# Logs in the Kiln's input slots, plus the one in the burn.
-func _kiln_logs(it: Dictionary, box, def: Dictionary) -> int:
-	var logs: int = 1 if int(it["struct"].get("kiln", {}).get("left", 0)) > 0 else 0
-	var log_n: int = table.number_of("log")
+func _kilns_cfg() -> Dictionary:
+	return _structures_cfg.get("kilns", {})
+
+
+# The Charcoal one piece of this wood gives in a kiln (a species log counts as a log); -1 when a kiln does not burn it.
+func _kiln_yield(number: int) -> int:
+	var yields: Dictionary = _kilns_cfg().get("yield", {})
+	var id: String = table.id_of(number)
+
+	if yields.has(id):
+		return int(yields[id])
+
+	return int(yields.get("log", 100)) if table.group_members(table.number_of("log")).has(number) else -1
+
+
+# The room one piece takes in a kiln, in Charcoal of yield.
+func _kiln_space(number: int) -> int:
+	return maxi(_kiln_yield(number), int(_kilns_cfg().get("min_space", 5)))
+
+
+# The wood in a kiln's input slots, in room units, plus what is left of the piece in the burn.
+func _kiln_load(it: Dictionary, box, def: Dictionary) -> int:
+	var units: int = maxi(int(it["struct"].get("kiln", {}).get("left", 0)), 0)
 
 	for i in mini(int(def.get("slots", 0)), box.slot_count):
-		if box.numbers[i] != 0 and (box.numbers[i] == log_n or table.group_members(log_n).has(box.numbers[i])):
-			logs += box.counts[i]
+		if box.numbers[i] != 0 and _kiln_yield(box.numbers[i]) >= 0:
+			units += box.counts[i] * _kiln_space(box.numbers[i])
 
-	return logs
+	return units
 
 
-# How many of `amount` logs a Kiln still takes (every put path: a put, Store all, a view deposit, Stack to nearby); `amount` for anything else.
-func _kiln_room(id: int, box, amount: int) -> int:
+func _kiln_capacity(def: Dictionary) -> int:
+	return int(def.get("batch_logs", 0)) * int(_kilns_cfg().get("yield", {}).get("log", 100))
+
+
+# How many of `amount` pieces of `number` a kiln still takes (every put path: a put, Store all, a view deposit, Stack to nearby); `amount` for anything
+# that is not a kiln.
+func _kiln_room(id: int, box, number: int, amount: int) -> int:
 	var def: Dictionary = _structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {})
 
 	if int(def.get("batch_logs", 0)) <= 0 or box == null:
 		return amount
 
-	return clampi(int(def["batch_logs"]) - _kiln_logs(_items[id], box, def), 0, amount)
+	if _kiln_yield(number) < 0:
+		return 0
+
+	@warning_ignore("integer_division")   # whole pieces that fit
+	return clampi((_kiln_capacity(def) - _kiln_load(_items[id], box, def)) / _kiln_space(number), 0, amount)
+
+
+# The input slot of a kiln holding its biggest piece of wood, or -1.
+func _kiln_next_slot(box, def: Dictionary) -> int:
+	var best: int = -1
+
+	for i in mini(int(def.get("slots", 0)), box.slot_count):
+		if box.numbers[i] != 0 and box.counts[i] > 0 and _kiln_yield(box.numbers[i]) >= 0 and (best < 0 or _kiln_yield(box.numbers[i]) > _kiln_yield(box.numbers[best])):
+			best = i
+
+	return best
 
 
 # kiln world id -> the character key that lit it (server only, not saved, never sent: ADD-18 credits that character when the batch is done).
@@ -10270,14 +10555,14 @@ func _kiln_use(peer: int, id: int, it: Dictionary, def: Dictionary) -> void:
 		it["struct"]["lit"] = false
 		_kiln_lit_by.erase(id)
 		_say(peer, "You put the kiln out. What is in it stays.")
-	elif _kiln_logs(it, box, def) <= 0:
-		_say(peer, "Put logs in the kiln first (F).")
+	elif _kiln_next_slot(box, def) < 0 and int(it["struct"].get("kiln", {}).get("left", 0)) <= 0:
+		_say(peer, "Put wood in the kiln first (F).")
 		return
 	else:
 		it["struct"]["lit"] = true
 		it["struct"]["kiln"] = it["struct"].get("kiln", {"left": 0, "t": 0.0})
 		_kiln_lit_by[id] = str(_peer_key.get(peer, ""))
-		_say(peer, "The kiln is lit: each log gives %d charcoal." % int(def.get("per_log", 100)))
+		_say(peer, "The kiln is lit: a log gives %d charcoal, a firewood %d." % [_kiln_yield(table.number_of("log")), _kiln_yield(table.number_of("firewood"))])
 
 	_dirty = true
 
@@ -10292,16 +10577,21 @@ func _kiln_burn(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 
 	var k: Dictionary = it["struct"].get("kiln", {"left": 0, "t": 0.0})
 	it["struct"]["kiln"] = k
-	var per: float = maxf(float(def.get("log_s", 300.0)) / maxf(float(def.get("per_log", 100)), 1.0), 0.01)
+	var per: float = maxf(float(_kilns_cfg().get("piece_s", 3.0)), 0.01)
 	var self_s: float = maxf(float(def.get("self_burn_s", 150.0)), 0.01)
 	var charcoal: int = table.number_of("charcoal")
 	var changed: bool = false
 	k["t"] = float(k.get("t", 0.0)) + spent
 
 	for _step in 1000:   # a slow tick is a quarter second, a few pieces at most; the cap only bounds a long jump
-		if int(k.get("left", 0)) <= 0 and _kiln_logs(it, box, def) > 0 and box.remove_fill(table.number_of("log"), 1):
-			k["left"] = int(def.get("per_log", 100))   # the next log's turn starts: it is in the burn now
+		if int(k.get("left", 0)) <= 0 and _kiln_next_slot(box, def) >= 0:
+			var next: int = _kiln_next_slot(box, def)
+			k["left"] = _kiln_yield(box.numbers[next])   # the next piece's turn starts: it is in the burn now (kindling: 0, it burns away)
+			box.take_from_slot(next, 1)
 			changed = true
+
+			if int(k["left"]) <= 0:
+				continue
 
 		if int(k.get("left", 0)) > 0:
 			if float(k["t"]) < per:
@@ -10316,7 +10606,9 @@ func _kiln_burn(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 			k["t"] = float(k["t"]) - per
 			changed = true
 
-			if int(k["left"]) <= 0 and _kiln_logs(it, box, def) <= 0:   # ADD-18: the last log of the batch is charcoal: the character who lit it (_kiln_lit_by), if online, else no one
+			var after: int = _kiln_next_slot(box, def)
+
+			if int(k["left"]) <= 0 and (after < 0 or _kiln_yield(box.numbers[after]) <= 0):   # ADD-18: the last piece of the batch is charcoal (kindling left gives none): the character who lit it (_kiln_lit_by), if online, else no one
 				var lighter: String = str(_kiln_lit_by.get(id, ""))
 
 				for lighter_peer in _peer_key:
@@ -10371,7 +10663,7 @@ func _load_kilns() -> void:
 		if typeof(row) == TYPE_ARRAY and (row as Array).size() >= 3:
 			it["struct"]["lit"] = int(row[0]) == 1
 			var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
-			it["struct"]["kiln"] = {"left": clampi(int(row[1]), 0, int(def.get("per_log", 100))), "t": clampf(float(row[2]), 0.0, maxf(float(def.get("log_s", 300.0)), float(def.get("self_burn_s", 150.0))))}
+			it["struct"]["kiln"] = {"left": clampi(int(row[1]), 0, int(_kilns_cfg().get("yield", {}).get("log", 100))), "t": clampf(float(row[2]), 0.0, maxf(float(_kilns_cfg().get("piece_s", 3.0)), float(def.get("self_burn_s", 150.0))))}
 
 
 # --- Serving platters (master s3.15 [D15]; catalog Phase 8) ---
@@ -10570,11 +10862,16 @@ func _fire_apply_store(fire: Dictionary, box) -> void:
 
 	for cls in ["log", "firewood", "weak"]:
 		# The piece that is half burned counts only what is left of it, so counting the store again never gives burned wood back.
+		var burnt_was: float = float(burnt.get(cls, 0.0))
+
 		if float(seconds[cls]) <= 0.0:
 			burnt.erase(cls)
 		else:
 			burnt[cls] = minf(float(burnt.get(cls, 0.0)), float(seconds[cls]))
 			seconds[cls] = float(seconds[cls]) - float(burnt[cls])
+
+		if _charcoal_classes().has(cls):   # a half-burnt piece taken back out comes back whole: so does the charcoal it had made (a debt on the next)
+			fire["char"] = float(fire.get("char", 0.0)) - (burnt_was - float(burnt.get(cls, 0.0))) * GAME_RATE / _charcoal_game_s()
 
 		wood[cls] = maxf(float(seconds[cls]), 0.0)   # every piece in the store counts, however much (Dave 2 Nov 2026)
 
@@ -10911,11 +11208,11 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 			_reject(peer, 3)
 			return 0
 
-	if id >= 0 and int(_structures.get(kind, {}).get("batch_logs", 0)) > 0:   # a Kiln holds batch_logs logs, the one in the burn included (master s2.6)
-		amount = _kiln_room(id, chest, amount)
+	if id >= 0 and int(_structures.get(kind, {}).get("batch_logs", 0)) > 0:   # a kiln holds wood worth batch_logs logs, the piece in the burn included (master s2.6)
+		amount = _kiln_room(id, chest, number, amount)
 
 		if amount == 0:
-			_say(peer, "The kiln holds %d logs." % int(_structures[kind]["batch_logs"]))
+			_say(peer, "The kiln is full: it holds %d logs' worth of wood." % int(_structures[kind]["batch_logs"]))
 			_reject(peer, 3)
 			return 0
 
@@ -15201,7 +15498,7 @@ func _crop_table() -> Dictionary:
 # A bed's crop and moisture key: its position in BED_SNAP_M steps ("b" and two whole numbers). Beds stand at least BED_GAP_M apart, so no two share one.
 # Saves from before turned beds (14 Nov 2026) keyed a bed by its metre cell ("x,z"); _rekey_old_beds moves those over at load.
 const BED_SNAP_M := 0.05   # a turned bed's position is kept to this, so its key never sits on a rounding edge
-const BED_GAP_M := 0.9     # PROVISIONAL: a tilled bed's centre stays this far from another's (1 m beds; a turned one may overlap its neighbour's corner a little)
+const BED_GAP_M := PlacementRules.BED_GAP_M   # a tilled bed's centre stays this far from another's (the placement rule, shared with the ghost)
 
 
 func _bed_key(pos: Vector3) -> String:
@@ -15221,13 +15518,7 @@ func _beds_clash(cells: Array, other: Dictionary) -> bool:
 # The square metres of a bed or plot, each holding one crop (Dave 14 Nov 2026: a Medium gardening plot holds 4 crops and a Large 9): a 1 m bed, a pot or a
 # planter is one, at its own position (its key is the bed's own, as before); an n m plot is n by n, turned with it (FarmRules.bed_side, grid_points).
 func _bed_cells(it: Dictionary) -> Array:
-	var n: int = FarmRules.bed_side(_structures.get(str(it["struct"].get("kind", "")), {}))
-
-	if n <= 1:
-		return [it["pos"]]
-
-	var y: float = it["pos"].y
-	return FarmRules.grid_points(n, n, 1.0, Vector2(it["pos"].x, it["pos"].z), int(round(float(it["struct"].get("yaw", 0.0))))).map(func(p): return Vector3(p.x, y, p.y))
+	return PlacementRules.plot_cells(_structures.get(str(it["struct"].get("kind", "")), {}), it["pos"], float(it["struct"].get("yaw", 0.0)))
 
 
 # Which square metre of a bed a request is for: the one nearest `at` when the client names a point (not Vector3.ZERO), else the first that `wants`
@@ -16055,6 +16346,7 @@ func _till_cell(peer: int, inv, hoe: int, at: Vector3, yaw_deg: int, quiet: bool
 
 	_wear_slot(peer, inv, hoe, "dig")
 	_items[_next_id] = {"number": table.number_of("tilled_bed"), "count": 1, "pos": cell, "left": 1.0e9, "struct": {"kind": "tilled_bed", "yaw": float(yaw_deg)}}
+	_zone_add(_next_id)
 	_next_id += 1
 	_dirty = true
 	_goal_event(peer, "bed_tilled")   # ADD-04: a new bed tilled by this hoe stroke (the early returns above are not a tilling)
@@ -16525,7 +16817,7 @@ func _light_rows_save() -> Array:
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if it.has("struct") and bool(it["struct"].get("lit", false)) and str(_structures.get(str(it["struct"]["kind"]), {}).get("use", "")) != "kiln":   # a Kiln is saved in kilns.json
+		if it.has("struct") and bool(it["struct"].get("lit", false)) and not str(_structures.get(str(it["struct"]["kind"]), {}).get("use", "")) in ["kiln", "smelt"]:   # a Kiln is saved in kilns.json, a Smelter in smelters.json
 			rows.append([it["pos"].x, it["pos"].y, it["pos"].z, float(it["struct"].get("fuel_left", 0.0))])
 
 	return rows
@@ -16552,7 +16844,7 @@ func _apply_lit_rows(rows: Array) -> void:
 func _lights_tick(spent: float) -> void:
 	var rain: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
 
-	for id in _items:
+	for id in _items.keys():   # a light that burns wood may drop charcoal (a new world item) on this pass
 		var it: Dictionary = _items[id]
 
 		if it.has("struct") and bool(it["struct"].get("lit", false)):
@@ -16562,12 +16854,18 @@ func _lights_tick(spent: float) -> void:
 				_kiln_burn(int(id), it, lit_def, spent)
 				continue
 
+			if _smelters.is_smelter(lit_def):   # a Smelter burns its hopper fuel as it smelts (server_smelter.tick), not a fuel_left
+				continue
+
 			# A torch out in the open rain goes out like an open fire (Dave, 4 Nov 2026); one under a crown, a roof or an overhang burns on.
 			if rain >= FlameRules.RAIN_DOUSE and bool(_structures.get(str(it["struct"]["kind"]), {}).get("rain_douses", false)) and not (cover_at.is_valid() and float(cover_at.call(it["pos"] + Vector3(0.0, 0.5, 0.0))) > 0.5):
 				it["struct"]["lit"] = false
 				it["struct"].erase("fuel_left")
 				_dirty = true
 				continue
+
+			if bool(lit_def.get("leaves_charcoal", false)):
+				_light_leave_charcoal(it, lit_def, minf(spent, float(it["struct"].get("fuel_left", 0.0))))
 
 			it["struct"]["fuel_left"] = float(it["struct"].get("fuel_left", 0.0)) - spent
 
@@ -17001,6 +17299,7 @@ func dev_place(spec: String) -> int:
 		_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": at, "left": float(_coals_cfg().get("coals_s" if coals else "ash_s", 7200.0 if coals else 43200.0)),
 			"fire": {"state": FIRE_STATE_COALS if coals else FIRE_STATE_ASH, "burn_left": 0.0, "wood": {"log": 0.0, "firewood": 0.0, "weak": 0.0}, "covered": false, "recheck": COVER_RECHECK_S}}
 		_lit_valid = false
+		_zone_add(_next_id)
 		_next_id += 1
 		_dirty = true
 		return _next_id - 1
@@ -17012,6 +17311,7 @@ func dev_place(spec: String) -> int:
 		var lit_state: int = int(((_cooking.get("fire_tiers", {}) as Dictionary).get(wood_class, {}) as Dictionary).get("state", 1))
 		_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": at, "left": 1.0e9, "fire": {"state": lit_state if lit else 9, "burn_left": 36000.0, "wood": wood, "covered": false, "recheck": COVER_RECHECK_S}}
 		_lit_valid = false
+		_zone_add(_next_id)
 		_next_id += 1
 		_dirty = true
 		return _next_id - 1
@@ -18700,7 +19000,7 @@ func _box_room(sid: int, number: int, amount: int) -> int:
 
 	var box = _chests.get(int(_items.get(sid, {}).get("struct", {}).get("uid", -1)))
 	var max_kg: float = float(_structures.get(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), {}).get("max_kg", 0.0))
-	amount = _kiln_room(sid, box, amount)
+	amount = _kiln_room(sid, box, number, amount)
 	var sdef: Dictionary = _structures.get(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), {})
 
 	if _smelters.is_smelter(sdef):
@@ -18843,12 +19143,15 @@ func _sort_slots(inv, from: int, to: int, sort_key: int, keep_favs: bool) -> int
 
 # `variant` (SmithingRules code, 0 plain): Tempered and/or craftsmanship +1/+2, refused unless the stations beside the player allow it for this
 # recipe (craft_variants); its needs are scaled up and it takes longer (smithing.json).
-func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int = 0) -> void:
+func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int = 0, hand: int = -1) -> void:   # hand: the pack slot in the right hand (-1 empty)
 	var queue: Dictionary = _queue_of(peer)
 	var recipe: Dictionary = recipes.recipe(recipe_number)
 	var free: bool = free_craft_for(peer)
 
 	if queue.is_empty() or recipe.is_empty() or (not recipe_known_for(peer, recipe) and not free and not _try_learn(peer, inv, recipe)):
+		return
+
+	if not free and not _hand_tool_ok(peer, inv, recipe, hand):   # a kept tool must be in hand (Dave 17 Nov 2026), checked before any log is pulled onto the shoulder
 		return
 
 	# The station within the crafting reach but not beside you: go to it and craft there (Dave 10 Nov 2026), when the stock here covers one.
@@ -18914,10 +19217,13 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 	# Short of a part the stock could make (no twine, but the fibre for it): queue the missing parts first, then this (Dave 25 Oct). The planner
 	# knows only plain recipes, so a variant must be covered as it is.
 	if variant == 0 and not _stock_covers(inv, recipe, count, stock):
-		var outcome: int = _queue_with_parts(peer, inv, queue, recipe_number, count, stock)
+		var outcome: int = _queue_with_parts(peer, inv, queue, recipe_number, count, stock, hand)
 
 		if outcome == 1:
 			_send_stock(peer)
+			return
+
+		if outcome == 2:
 			return
 
 	var entries: Array = queue["entries"]
@@ -19036,8 +19342,9 @@ func _pack_covers(inv, recipe: Dictionary, times: int) -> bool:
 
 
 # Plans the missing parts of a craft and queues them, all or nothing, in one step. Returns 1 when queued, 0 when it could not be and the player
-# was told why, -1 when there is nothing to add (the plain craft goes on, or fails the old way).
-func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, count: int, stock: Dictionary = {}) -> int:
+# was told why, 2 when a part it would make needs a tool in hand that is not there (told why; the craft stops there), -1 when there is nothing to add (the plain craft
+# goes on, or fails the old way).
+func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, count: int, stock: Dictionary = {}, hand: int = -1) -> int:
 	if stock.is_empty():
 		stock = _stock_of(peer)
 
@@ -19060,6 +19367,10 @@ func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, co
 
 	if steps.size() == 1:
 		return -1   # nothing to make first: the plain path
+
+	for step in steps:   # a part made on the way with a tool (Wooden blocks sawn for a Wooden hammer) needs that tool in hand too
+		if not _hand_tool_ok(peer, inv, recipes.recipe(int(step["recipe"])), hand):
+			return 2   # refused, and said why: nothing else is tried (the plain path would only add "You do not have what that needs")
 
 	var entries: Array = queue["entries"]
 

@@ -6,8 +6,8 @@ extends SceneTree
 #   1. a Stone - Hammer by hand (stick, stone, twine; the Stone - Pickaxe recipe is retired, TREE_WOOD_TOOLS_DESIGN.md W-12);
 #   2. copper ore and tin ore broken out of a copper and a tin outcrop with it (boulders.json piece share as shipped); no iron ore (iron wants a pick);
 #   3. a Primitive smithy and a Primitive smelter from their blueprints with a wooden hammer: stone, clay and logs only, no metal, Planks or Nails;
-#   4. charcoal at a lit campfire;
-#   5. the Primitive smelter fed through its store: Charcoal in its hopper, 1 Copper ore + 1 Tin ore make 2 Bronze ingots by themselves,
+#   4. charcoal left in a lit campfire as its firewood burns;
+#   5. the Primitive smelter fed through its store and lit with E: Charcoal in its hopper, 1 Copper ore + 1 Tin ore make 2 Bronze ingots by themselves,
 #      dropped on the ground in front of it, and picked up;
 #   6. a Bronze - Pickaxe at the Primitive smithy (every amount read from the live recipes);
 #   7. the bronze pick takes iron ore out of an iron outcrop, which the stone hammer cannot.
@@ -16,6 +16,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 const HERE := Vector3(700.0, 10.0, 700.0)
 const FORGE_AT := Vector3(700.0, 10.0, 702.5)
@@ -54,11 +55,6 @@ func need_of(recipe_id: String, id: String) -> int:
 	return 0
 
 
-func gives_of(recipe_id: String) -> int:
-	var gives: Array = items.recipes.recipe(recipe_number(recipe_id)).get("gives", [0, 1])
-	return maxi(int(gives[1]), 1) if gives.size() > 1 else 1
-
-
 func recipe_number(id: String) -> int:
 	for n in items.recipes.numbers():
 		if str(items.recipes.recipe(int(n)).get("id", "")) == id:
@@ -70,7 +66,7 @@ func recipe_number(id: String) -> int:
 # Queues `times` of the recipe and runs the server clock until it is done (or `seconds` pass), then takes station products out.
 func craft(id: String, times: int, seconds: int) -> void:
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number(id), 0, times, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number(id), 0, times, CraftHand.at(items, 1, recipe_number(id)))
 
 	for s in range(seconds):
 		items.tick(1.0)
@@ -175,6 +171,24 @@ func rows_text(rows: Array) -> String:
 	return ", ".join(rows.map(func(r): return "%s %d" % [str(r[0]), int(r[1])]))
 
 
+
+# Burning wood leaves charcoal in the fire (Dave 17 Nov 2026; cooking.json charcoal_left): the fire burns (its own tick, a minute a step) until its
+# store holds `wanted` Charcoal, which is taken from the store (the F window).
+func charcoal_from_fire(fire: int, wanted: int) -> void:
+	var c: int = items.table.number_of("charcoal")
+	var store = items._fire_store(items._items[fire]["fire"])
+
+	for _step in range(20000):
+		if store.count_of(c) >= wanted:
+			break
+
+		items._fires(60.0)
+
+	items.report_position(1, items._items[fire]["pos"] + Vector3(1.0, 0.0, 0.0))
+	items.action(1, Net.ACT_CHEST_OPEN, fire, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_CHEST_TAKE, store.numbers.find(c), fire, store.count_of(c), Vector3.ZERO)
+	items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+
 func _init() -> void:
 	var dir: String = "user://test_bronze_path"
 	DirAccess.make_dir_recursive_absolute(dir)
@@ -210,7 +224,6 @@ func _init() -> void:
 	var pick_bronze: int = need_of("bronze_pickaxe", "bronze_ingot")
 	var pairs: int = ceili(float(pick_bronze) / 2.0)
 	var fuel_n: int = int(ceil(float(items._structures_cfg["smelting"].get("fuel_per_ore", 1)) * float(pairs * 2)))
-	var charcoal_crafts: int = ceili(float(fuel_n) / float(gives_of("charcoal")))
 	print("plan: %d bronze ingots for the pick = %d pairs = %d copper ore + %d tin ore, %d fuel" % [pick_bronze, pairs, pairs, pairs, fuel_n])
 	check(pick_bronze > 0, "the pick's recipe is there")
 
@@ -229,19 +242,25 @@ func _init() -> void:
 	check(items.station_near(1, "forge", 1), "3b. it serves as a forge, level 1 (copper and bronze work)")
 	var smelter_id: int = build("smelter", SMELTER_AT)
 	check(smelter_id >= 0 and int(items._structures["smelter"].get("out_slots", 0)) == 0, "3c. the Primitive smelter stands beside it, with no output rack")
-	check(not items.station_near(1, "smelter", 1), "3d. it is no crafting station: it smelts by itself")
+	check(not items.station_near(1, "smelter", 1), "3d. it is no crafting station: once lit it smelts by itself")
 
-	# 4. Charcoal at a lit campfire.
+	# 4. Charcoal left in a lit campfire as its firewood burns.
+	var fire_id: int = items._next_id
 	items._items[items._next_id] = {"number": items.table.number_of("campfire_kit"), "count": 1, "pos": FIRE_AT, "left": 1.0e9, "fire": {"state": 1, "burn_left": 1.0e6, "covered": false, "recheck": 5.0}}
 	items._next_id += 1
-	give("firewood", charcoal_crafts * need_of("charcoal", "firewood"))
-	craft("charcoal", charcoal_crafts, 120 * charcoal_crafts)
-	check(have("charcoal") >= fuel_n, "4. %d firewood make %d charcoal at the campfire (%d needed)" % [charcoal_crafts * need_of("charcoal", "firewood"), have("charcoal"), fuel_n])
+	var at_was: Vector3 = items.position_of(1)
+	charcoal_from_fire(fire_id, fuel_n)
+	items.report_position(1, at_was)
+	check(have("charcoal") >= fuel_n, "4. firewood burning in the campfire leaves %d charcoal, taken from its store (%d needed)" % [have("charcoal"), fuel_n])
 
 	# 5. The Primitive smelter: fuel in the hopper, both ores in the input; Bronze by itself, on the ground in front.
 	var front: Vector3 = items._smelters.front_of(items._items[smelter_id], items._structures["smelter"])
 	check(put_in(smelter_id, "charcoal", fuel_n) == fuel_n, "5a. %d Charcoal go into its hopper" % fuel_n)
 	check(put_in(smelter_id, "copper_ore", pairs) == pairs and put_in(smelter_id, "tin_ore", pairs) == pairs, "5b. %d Copper ore and %d Tin ore go into its input" % [pairs, pairs])
+	items.report_position(1, (items._items[smelter_id]["pos"] as Vector3) + Vector3(-1.5, 0.0, 0.0))   # beside it: E reaches 3 m (use_reach_m)
+	items.action(1, Net.ACT_USE_STRUCT, smelter_id, 0, 0, Vector3.ZERO)   # E: light it, as a campfire (it smelts only while lit, Dave 17 Nov 2026)
+	items.report_position(1, HERE)
+	check(bool(items._items[smelter_id]["struct"].get("lit", false)), "5b'. E lights it")
 	var per_ingot: float = float(items._structures["smelter"]["smelt"]["ingot_s"])
 
 	for s in range(int(per_ingot * 2.0) - 2):

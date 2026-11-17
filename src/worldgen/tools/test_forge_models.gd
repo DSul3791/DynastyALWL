@@ -2,7 +2,7 @@ extends SceneTree
 
 # Dave's four forge meshes as the game draws them (inventory_view._forge_glb): upright, centred, base on the ground, solid, the fire
 # opening toward +Z (the front of every building here) and the sizes agreeing with the placement footprints in structures.json; the medium
-# forge drawn as the Brick - Forge.
+# forge drawn as the Brick - Forge; a Smelter's fire shows only while it is lit, never on its ghost or site.
 #   godot --headless --path . --script res://src/worldgen/tools/test_forge_models.gd
 
 const PieceLook := preload("res://src/client/piece_look.gd")
@@ -81,6 +81,27 @@ func _init() -> void:
 	check(bricked > 0 and kept_iron, "the Brick - Forge: a brick body (%d surfaces), its iron straps kept" % bricked)
 	check(PieceLook.brick_skin().uv1_world_triplanar, "its bricks are laid in world space, level whatever the model's own axes")
 	smithy.free()
+
+	# A Smelter's fire burns only while its row says lit (Dave 17 Nov 2026: "it needs to show no fire when its not lit"): not as a blueprint
+	# ghost, not as a site, not cold; every tier. The Primitive smithy that shares the Primitive smelter's model keeps its fire.
+	for kind in ["smelter", "improved_smelter", "large_forge"]:
+		var state: int = int(structures[kind]["state"])
+
+		for extra in [{}, {"lit": false}, {"lit": true}, {"lit": true, "site": []}]:
+			var model: Node3D = view._model_for_state(state, extra)
+			var flames: Node3D = model.get_node_or_null("Flames") as Node3D
+			var smoke: GPUParticles3D = model.get_node_or_null("ForgeSmoke") as GPUParticles3D
+			var burns: bool = bool(extra.get("lit", false)) and not extra.has("site")
+			check(flames != null and smoke != null and flames.visible == burns and smoke.visible == burns and smoke.emitting == burns, "%s with %s: fire %s (flames %s, smoke %s)" % [kind, str(extra), "shown" if burns else "hidden", str(flames.visible) if flames != null else "none", str(smoke.emitting) if smoke != null else "none"])
+			model.free()
+
+		var ghost: Node3D = view.ghost_model(state)
+		check((ghost.get_node_or_null("Flames") as Node3D) != null and not (ghost.get_node_or_null("Flames") as Node3D).visible, "%s blueprint ghost shows no fire" % kind)
+		ghost.free()
+
+	var smithy_fire: Node3D = view._model_for_state(int(structures["stone_forge"]["state"]), {})
+	check((smithy_fire.get_node_or_null("Flames") as Node3D) != null and (smithy_fire.get_node_or_null("Flames") as Node3D).visible, "the Primitive smithy, which shares the model, keeps its fire")
+	smithy_fire.free()
 
 	print("forge models: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

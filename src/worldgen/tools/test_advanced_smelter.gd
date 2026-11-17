@@ -5,7 +5,8 @@ extends SceneTree
 #   1. one station (the old Blast furnace row, large_forge #93), its windmill and two bellows built in: hopper 80, input 80, a 160-ingot rack,
 #      two lanes at 1.30 x 1.30 = 1.69 times the Primitive rate; no crafting station; the old 2 Iron ingot steel recipe (193) is retired and
 #      no live recipe gives Steel;
-#   2. in a calm (wind below smelting.wind_min_mps) it makes no progress at all, the ore and fuel kept; in wind two Iron ore become two Iron
+#   2. cold (never lit) it makes nothing even in wind; lit (run() keeps every smelter with fuel lit, as a player pressing E: the E itself is
+#      test_smelters') in a calm (wind below smelting.wind_min_mps) it makes no progress at all, the ore and fuel kept; in wind two Iron ore become two Iron
 #      ingots together in about 11.83 s;
 #   3. a calm mid-batch stops both lanes with their time kept; the wind back finishes the SAME batch, no second batch of ore or fuel taken;
 #   4. carbon: Coal or Charcoal put plainly (or onto a hopper slot) goes to the hopper, never the input; Iron ore with fuel in the hopper only
@@ -119,8 +120,17 @@ func put_in(id: int, item: String, count: int, target: int = -1) -> int:
 	return before - pack(n(item))
 
 
+var auto_light: bool = true   # run() lights every cold smelter that has hopper fuel, each second (a smelter works only while lit, Dave 17 Nov 2026)
+
+
 func run(seconds: float) -> void:
 	for s in range(int(ceil(seconds))):
+		for id in items._items.keys():
+			var it: Dictionary = items._items[id]
+
+			if auto_light and it.has("struct") and it["struct"].has("uid") and items._smelters.is_smelter(def_of(int(id))) and not items._smelters.is_lit(it) and part(int(id), "hopper") > 0:
+				items._smelters.use(1, int(id), it, def_of(int(id)))
+
 		items.tick(1.0)
 
 
@@ -195,13 +205,18 @@ func _init() -> void:
 	var lane_s: float = float(smelt.get("ingot_s", 20.0)) / float(smelt.get("speed", 1.0))
 	check(absf(lane_s - 11.83) < 0.01, "a lane makes an ingot in %.2f s: two ingots together in about 11.83 s (master s2.7 item 7)" % lane_s)
 
-	# --- 2. Calm, then wind ---
-	wind[0] = min_mps * 0.5
+	# --- 2. Cold, then a calm, then wind ---
 	items.give(1, n("charcoal"), 2 * per_ore)
 	items.give(1, n("iron_ore"), 2)
 	put_in(adv, "charcoal", 2 * per_ore)
 	put_in(adv, "iron_ore", 2)
 	var before: Dictionary = total(adv, watch)
+	wind[0] = min_mps + 2.0
+	auto_light = false
+	run(60.0)
+	auto_light = true
+	check(not items._smelters.is_lit(items._items[adv]) and part(adv, "output") == 0 and JSON.stringify(total(adv, watch)) == JSON.stringify(before) and banked(adv).all(func(t): return t == 0.0), "cold, in wind with fuel and ore in, it makes nothing in 60 s: it smelts only once lit")
+	wind[0] = min_mps * 0.5
 	run(60.0)
 	check(part(adv, "output") == 0 and part(adv, "input", n("iron_ore")) == 2 and part(adv, "hopper") == 2 * per_ore and banked(adv).all(func(t): return t == 0.0), "in a calm (%.1f m/s) its windmill stands: 60 s and no progress at all, ore and fuel kept" % wind[0])
 	check(JSON.stringify(total(adv, watch)) == JSON.stringify(before), "nothing lost or made in the calm")
