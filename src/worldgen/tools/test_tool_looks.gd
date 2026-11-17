@@ -5,6 +5,8 @@ extends SceneTree
 const BasicLook := preload("res://src/client/basic_look.gd")
 const HeldItem := preload("res://src/client/held_item.gd")
 
+const HAND_HALF_M := 0.03   # from the middle of a closed hand to its front edge along the handle
+
 var failures: int = 0
 
 
@@ -108,6 +110,8 @@ func _init() -> void:
 	_check(_width_near(saw, 0.32, 0.012) < 0.06, "procedural saw: about 5 cm or less at the rounded toe (%.3f)" % _width_near(saw, 0.32, 0.012))
 	_check(_tris(saw) <= 1200, "procedural saw: %d triangles" % _tris(saw))
 	_check(_y_extent(saw, 0.0, 0.02, 0.03) < 0.01, "procedural saw: a thin plate (%.4f)" % _y_extent(saw, 0.0, 0.02, 0.03))
+	var saw_hand_x: float = -HeldItem.look_grip_y(BasicLook.mesh_for("steel_saw"), BasicLook.entry("steel_saw"), 1.0) * HeldItem.third_choke("saw")
+	_check(saw_hand_x < -0.17, "procedural saw: the third-person hand at x %.3f is behind the blade's heel (-0.17), in the grip" % saw_hand_x)
 
 	# Dave's handsaw meshes (assets/tools/handsaws, 15 Nov 2026) for the Copper, Bronze and Iron saws: drawn from the file with its own textured material, on the
 	# procedural saw's axes (handle at -x, blade toward +x, flat across y), copper the shortest, bronze a little longer, iron the longest.
@@ -130,6 +134,14 @@ func _init() -> void:
 		_check(edge.x > int(1.5 * float(edge.y)), id + ": the toothed edge is on +z, down when held (%d vertices on the +z edge, %d on the -z spine)" % [edge.x, edge.y])
 		_check(_tris(drawn) <= 5000, id + ": %d triangles (Dave's 5000 cap)" % _tris(drawn))
 		_check(BasicLook.mesh_for(id) == drawn, id + ": built once and shared")
+		# The hand closes on the handle, not the blade, in both views (Dave 17 Nov 2026: "it is stabbed right through his hand"): the grip point in third person
+		# and first person, and the front of the fist, lie on the thick handle end.
+		var held_x: float = -HeldItem.look_grip_y(drawn, def, 1.0)
+		var third_x: float = held_x * HeldItem.third_choke("saw")
+		var blade_t: float = _y_extent(drawn, x0 + 0.8 * box.size.x, 0.04 * box.size.x, 1.0)
+		for hand_x in [held_x, third_x]:
+			for at in [hand_x, hand_x + HAND_HALF_M]:   # the hand's middle and its front edge, toward the blade
+				_check(_y_extent(drawn, at, 0.01, 1.0) > 1.5 * blade_t, id + ": the hand at x %.3f is on the handle at %.3f (thickness %.3f there, blade %.3f)" % [hand_x, at, _y_extent(drawn, at, 0.01, 1.0), blade_t])
 
 	_check(lengths[0] < lengths[1] and lengths[1] < lengths[2], "copper saw shortest, bronze longer, iron longest (%.2f, %.2f, %.2f)" % lengths)
 

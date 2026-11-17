@@ -1830,7 +1830,7 @@ func _sync_cleared() -> void:
 
 	if _cleared_cfg.is_empty():
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(PLACED_CLEARING))
-		_cleared_cfg = parsed if parsed is Dictionary else {"radius_m": 5.0, "edge_m": 1.5}
+		_cleared_cfg = parsed if parsed is Dictionary else {"radius_m": 3.0, "edge_m": 1.0}
 
 	var spots: Array = []
 	var lying: Array = []
@@ -1932,8 +1932,8 @@ func _sync_cleared() -> void:
 		return
 
 	_cleared_key = key
-	var radius: float = float(_cleared_cfg.get("radius_m", 5.0))
-	grass.set_cleared(spots, radius, float(_cleared_cfg.get("edge_m", 1.5)))
+	var radius: float = float(_cleared_cfg.get("radius_m", 3.0))
+	grass.set_cleared(spots, radius, float(_cleared_cfg.get("edge_m", 1.0)))
 	grass.set_trunks(lying, float(_cleared_cfg.get("trunk_margin_m", 0.3)), float(_cleared_cfg.get("trunk_squash", 0.15)))
 	grass.set_bare(paths)
 	var plant_lying: Array = lying.duplicate()
