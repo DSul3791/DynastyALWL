@@ -4187,7 +4187,7 @@ func _def_serves(def: Dictionary, station: String, level: int) -> bool:
 
 # Whether the station window open lists recipe r (Dave 17 Nov 2026: "when you open an inventory other than yours like the workstation or the
 # primative smithy it should only list the crafting recipes for stuff that station makes"). Your own inventory or a plain chest lists everything.
-# A station lists the recipes it serves at its level, its add-ons (bellows) counted as station_near counts them, and those of the stations it
+# A station lists the recipes it serves at its level, its add-ons (a vice) counted as station_near and the server count them, and those of the stations it
 # stands in for ("also": a smithy is also a level 1 forge); a fire lists campfire recipes; a Sawbuck the recipes it speeds (Wooden block).
 func station_makes(r: Dictionary) -> bool:
 	if _station_screen == 0 or not _world.has(_station_screen):
@@ -4201,13 +4201,22 @@ func station_makes(r: Dictionary) -> bool:
 
 	var def: Dictionary = _structure_by_state(state)
 
+	if str(def.get("station", "")) == "" and (def.get("also", {}) as Dictionary).is_empty():
+		return true   # a store that makes nothing (a smelter): your own list, as a plain chest
+
 	if station == "":
 		return bool(r.get("sawbuck", false)) and str(def.get("station", "")) == "sawbuck"
 
 	var level: int = int(r.get("station_level", 1))
 
 	if str(def.get("station", "")) == station:
-		return int(def.get("station_level", 1)) + _addons_near(_station_screen, station, float(def.get("addon_reach_m", 5.0))) >= level
+		_memo_frame()   # the add-ons walk the world once per refresh, not once per recipe
+		var key: String = "addons|%d" % _station_screen
+
+		if not _near_memo.has(key):
+			_near_memo[key] = _addons_near(_station_screen, station, float(def.get("addon_reach_m", 5.0)))
+
+		return int(def.get("station_level", 1)) + int(_near_memo[key]) >= level
 
 	return int(def.get("also", {}).get(station, 0)) >= level
 
@@ -4218,7 +4227,7 @@ func _addons_near(bench_id: int, station: String, reach: float) -> int:
 	for id in _placed():
 		var def: Dictionary = _structure_by_state(int(_world[id]["state"]))
 
-		if not def.is_empty() and str(def.get("addon_of", "")) == station and _world[bench_id]["pos"].distance_to(_world[id]["pos"]) <= reach:
+		if not def.is_empty() and str(def.get("addon_of", "")) == station and bool(def.get("adds_level", true)) and _world[bench_id]["pos"].distance_to(_world[id]["pos"]) <= reach:
 			kinds[int(_world[id]["state"])] = true
 
 	return kinds.size()

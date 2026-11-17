@@ -29,23 +29,27 @@ func _init() -> void:
 		view._world[at[1]] = {"node": null, "number": 0, "count": 1, "pos": Vector3(float(at[1]) * 20.0, 0.0, 0.0), "state": int(kinds[at[0]]["state"]), "light": null}
 
 	view._world[8] = {"node": null, "number": 0, "count": 1, "pos": Vector3(200.0, 0.0, 0.0), "state": 1, "light": null}   # a lit campfire
+	view._world[9] = {"node": null, "number": 0, "count": 1, "pos": Vector3(41.0, 0.0, 0.0), "state": int(kinds["vice"]["state"]), "light": null}   # beside the Carpenter's bench: +1 level
+	view._world[10] = {"node": null, "number": 0, "count": 1, "pos": Vector3(81.0, 0.0, 0.0), "state": int(kinds["bellows"]["state"]), "light": null}   # beside the Improved smithy: adds_level false, as the server
 	var hand: Dictionary = {"number": 1, "station": ""}
 	var bench1: Dictionary = {"number": 2, "station": "workbench", "station_level": 1}
 	var bench2: Dictionary = {"number": 3, "station": "workbench", "station_level": 2}
+	var bench4: Dictionary = {"number": 9, "station": "workbench", "station_level": 4}
+	var bench3: Dictionary = {"number": 10, "station": "workbench", "station_level": 3}
 	var forge1: Dictionary = {"number": 4, "station": "forge", "station_level": 1}
 	var brick2: Dictionary = {"number": 5, "station": "brick_forge", "station_level": 2}
 	var brick3: Dictionary = {"number": 6, "station": "brick_forge", "station_level": 3}
 	var fire: Dictionary = {"number": 7, "station": "campfire"}
 	var block: Dictionary = {"number": 8, "station": "", "sawbuck": true}
-	var all: Array = [hand, bench1, bench2, forge1, brick2, brick3, fire, block]
+	var all: Array = [hand, bench1, bench2, bench3, bench4, forge1, brick2, brick3, fire, block]
 
 	check(all.all(func(r): return view.station_makes(r)), "your own inventory lists every recipe")
 	_expect(view, 1, all, [bench1], "Workbench: its level 1 recipes only, no hand or other station recipes")
-	_expect(view, 2, all, [bench1, bench2], "Carpenter's bench (workbench 2): level 1 and 2 bench recipes")
+	_expect(view, 2, all, [bench1, bench2, bench3], "Carpenter's bench (workbench 2) with a vice beside it: up to level 3, not 4")
 	_expect(view, 3, all, [forge1], "Primitive smithy (forge 1): forge recipes only")
-	_expect(view, 4, all, [forge1, brick2], "Improved smithy (brick forge 2, also forge 1): what it serves, not the level 3 ones")
+	_expect(view, 4, all, [forge1, brick2], "Improved smithy (brick forge 2, also forge 1): what it serves, not the level 3 ones (the bellows beside it adds no level)")
 	_expect(view, 5, all, [block], "Sawbuck: the recipe it speeds (Wooden block)")
-	_expect(view, 6, all, all, "a plain chest: your own list")
+	_expect(view, 6, all, all, "a plain chest (were it ever the screen): your own list")
 	_expect(view, 7, all, [fire], "Clay hearth (also a campfire): campfire recipes")
 	_expect(view, 8, all, [fire], "a campfire's window: campfire recipes")
 
