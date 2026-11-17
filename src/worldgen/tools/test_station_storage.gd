@@ -407,6 +407,7 @@ func _init() -> void:
 	var room_left: int = int(prim_def["batch_logs"]) * per_log - per_log - int(y["stick"]) - 2 * int(kilns["min_space"])
 	act(1, Net.ACT_CHEST_PUT, slot_of(1, n("firewood")), prim, 12)
 	var fw_in: int = in_count(prim, n("firewood"))
+	@warning_ignore("integer_division")
 	check(fw_in == mini(12, room_left / int(y["firewood"])) and pack(1, n("firewood")) == 12 - fw_in, "the Primitive kiln takes a Log, a stick, kindling and %d Firewood, up to %d logs' worth, and refuses the rest" % [fw_in, int(prim_def["batch_logs"])])
 	act(1, Net.ACT_CHEST_CLOSE, 0)
 	act(1, Net.ACT_USE_STRUCT, prim)

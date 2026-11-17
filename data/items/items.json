@@ -8181,7 +8181,7 @@
 				"look_alikes": [],
 				"value": 152
 			},
-			"kiln": {"number": 771, "name": "Primitive kiln", "description": "A small kiln of stone and clay. Fires bricks and lime, and burns any wood to charcoal: a log gives a hundred, a firewood ten.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 188 (the Primitive kiln, Dave 17 Nov 2026; was the brick Kiln).", "slots": 14},
+			"kiln": {"number": 771, "name": "Primitive kiln", "description": "A small kiln of stone and clay. Fires bricks and lime, and burns any wood to charcoal.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 188 (the Primitive kiln, Dave 17 Nov 2026; was the brick Kiln).", "slots": 14},
 			"improved_kiln": {"number": 1492, "name": "Improved kiln", "description": "A bigger kiln of stone and clay bound with iron. Holds four logs' worth of wood to burn to charcoal.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 450 (Dave 17 Nov 2026).", "slots": 14},
 			"advanced_kiln": {"number": 1493, "name": "Advanced kiln", "description": "A great kiln of stone and clay bound with iron and steel. Holds six logs' worth of wood to burn to charcoal.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed station: row state 451 (Dave 17 Nov 2026).", "slots": 16},
 			"tanning_rack_kit": {

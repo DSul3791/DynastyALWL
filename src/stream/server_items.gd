@@ -10497,6 +10497,7 @@ func _kiln_room(id: int, box, number: int, amount: int) -> int:
 	if _kiln_yield(number) < 0:
 		return 0
 
+	@warning_ignore("integer_division")   # whole pieces that fit
 	return clampi((_kiln_capacity(def) - _kiln_load(_items[id], box, def)) / _kiln_space(number), 0, amount)
 
 
