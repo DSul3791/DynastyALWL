@@ -5650,7 +5650,7 @@ func _sync_world_items() -> void:
 
 				var bin_def: Dictionary = _structures.get(str(it["struct"]["kind"]), {}) if it.has("struct") else {}
 				var bin_box = _chests.get(int(it["struct"].get("uid", -1))) if BinRules.is_bin(bin_def) and it["struct"].has("uid") else null
-				var fill: int = _store_fill(it) if it.has("struct") and (_out_slots(str(it["struct"]["kind"])) > 0 or _smelters.is_smelter(bin_def) or BinRules.is_bin(bin_def)) else -1
+				var fill: int = _store_fill(it) if it.has("struct") and (_keeps_products(str(it["struct"]["kind"])) or _smelters.is_smelter(bin_def) or BinRules.is_bin(bin_def)) else -1
 
 				if bin_box != null:
 					signature += 29 * int(round(BinRules.fill_share(bin_def, bin_box) * 50.0)) + 31 * BinRules.assigned(bin_box)   # a bin's surface moves by a fiftieth, or it holds another kind: sent again
@@ -9621,7 +9621,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 	if int(def.get("slots", 0)) > 0:
 		entry["struct"]["uid"] = _next_uid
 		entry["struct"]["owner"] = str(_peer_key.get(peer, ""))   # crafting draws only on the owner's containers (CraftStock.owner_ok)
-		_chests[_next_uid] = InventoryScript.new(table)
+		_chests[_next_uid] = _new_store(str(def["kind"]))
 		_next_uid += 1
 
 	if not site_row.is_empty():
@@ -10549,23 +10549,77 @@ func _out_slots(kind: String) -> int:
 	return int(_structures.get(kind, {}).get("out_slots", 0))
 
 
+# A crafting station with ONE store (Dave 17 Nov 2026: "in a station that has an inventory there should only be on inventory not a chest and
+# crafting. it should have unlimited inventory slots starting with 20"): structures.json "one_store". Its store holds what is put in and what it
+# makes alike, starts at its "slots" (20) and grows like a pack (Inventory.grows, up to MAX_SLOTS); no weight limit (it is never carried).
+func _one_store(kind: String) -> bool:
+	return bool(_structures.get(kind, {}).get("one_store", false))
+
+
+# A station store that keeps its owner's products: output slots after its input, or one growing store.
+func _keeps_products(kind: String) -> bool:
+	return _out_slots(kind) > 0 or _one_store(kind)
+
+
+# A new container's store: a chest's 30 slots, a one-store station's own "slots" (20), from which it grows.
+func _new_store(kind: String):
+	return InventoryScript.new(table, int(_structures[kind]["slots"]) if _one_store(kind) else InventoryScript.BASE_SLOTS)
+
+
+# The slots a container of `kind` fills from a put, Store all, Stack to nearby or a view deposit: its "slots", every slot of a one-store station
+# (which then grows when full). Every caller that readies a container's `usable` comes here.
+func _store_usable(kind: String, box) -> int:
+	if _one_store(kind):
+		box.grows = true
+		var last: int = box.slot_count - 1
+
+		while last >= 0 and box.numbers[last] == 0:
+			last -= 1
+
+		var want: int = maxi(int(_structures[kind].get("slots", 20)), last + 1)
+
+		if want < box.slot_count:   # empty slots past the 20 and past the last thing in it are given back (a reload brings a chest's 30)
+			box._resize(want)
+
+		return box.slot_count
+
+	return clampi(int(_structures.get(kind, {}).get("slots", box.slot_count)), 1, box.slot_count)
+
+
 # The slots a take may reach in a container: its usable slots, and a station's output slots after them.
 func _store_span(id: int, box) -> int:
-	var out: int = _out_slots(str(_items.get(id, {}).get("struct", {}).get("kind", ""))) if id >= 0 else 0
-	return mini(box.usable + out, box.slot_count)
+	var kind: String = str(_items.get(id, {}).get("struct", {}).get("kind", "")) if id >= 0 else ""
+
+	if _one_store(kind):
+		return box.slot_count
+
+	return mini(box.usable + (_out_slots(kind) if id >= 0 else 0), box.slot_count)
 
 
 func _is_station_store(it: Dictionary) -> bool:
-	return it.has("struct") and _out_slots(str(it["struct"]["kind"])) > 0 and _is_storage(it)
+	return it.has("struct") and _keeps_products(str(it["struct"]["kind"])) and _is_storage(it)
 
 
 # How many of an item (at this age and instance) a station's output slots still take; an instance only goes into an empty slot.
+# A one-store station takes it anywhere in its store, and the slots it may still grow by.
 func _out_room(it: Dictionary, number: int, item_inst: Dictionary = {}, item_wear: int = 0) -> int:
 	var box = _chests.get(int(it["struct"].get("uid", 0)))
 	var kind: String = str(it["struct"]["kind"])
 
 	if box == null or number <= 0:
 		return 0
+
+	if _one_store(kind):
+		var each: int = table.stack_of(number) if item_inst.is_empty() else 1
+		var space: int = (InventoryScript.MAX_SLOTS - box.slot_count) * each
+
+		for i in box.slot_count:
+			if box.numbers[i] == 0:
+				space += each
+			elif item_inst.is_empty() and box.inst[i].is_empty() and box.numbers[i] == number and box._mergeable(number, box.wear[i], item_wear):
+				space += maxi(table.stack_of(number) - box.counts[i], 0)
+
+		return space
 
 	var first: int = int(_structures.get(kind, {}).get("slots", 0))
 	var stack: int = table.stack_of(number)
@@ -10584,6 +10638,14 @@ func _out_room(it: Dictionary, number: int, item_inst: Dictionary = {}, item_wea
 func _out_add(id: int, number: int, count: int, item_wear: int = 0, item_inst: Dictionary = {}) -> int:
 	var it: Dictionary = _items[id]
 	var box = _chests[int(it["struct"]["uid"])]
+
+	if _one_store(str(it["struct"]["kind"])):
+		box.usable = _store_usable(str(it["struct"]["kind"]), box)
+		var spill: int = box.add(number, count, item_wear, item_inst)
+		_push_box(id, box)
+		_dirty = true
+		return spill
+
 	var first: int = int(_structures.get(str(it["struct"]["kind"]), {}).get("slots", 0))
 	box.usable = mini(first + _out_slots(str(it["struct"]["kind"])), box.slot_count)
 	var left: int = box.add(number, count, item_wear, item_inst, first)
@@ -10605,7 +10667,7 @@ func _store_fill(it: Dictionary) -> int:
 	if BinRules.is_bin(_structures.get(kind, {})):
 		return BinRules.fill_quarters(_structures[kind], box)   # a resource bin fills by units, not slots
 
-	var total: int = mini(int(_structures.get(kind, {}).get("slots", 0)) + _out_slots(kind), box.slot_count)
+	var total: int = box.slot_count if _one_store(kind) else mini(int(_structures.get(kind, {}).get("slots", 0)) + _out_slots(kind), box.slot_count)
 	var used: int = 0
 
 	for i in total:
@@ -11249,7 +11311,7 @@ func _chest_of(peer: int, id: int):
 		var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 		# A take-only store (a body's remains) never takes anything in, and holds the whole pack it came from, which may have grown past its
 		# slots (protocol 116): every slot is in use, so Take all reaches them all.
-		chest.usable = chest.slot_count if bool(def.get("take_only", false)) else clampi(int(def.get("slots", chest.slot_count)), 1, chest.slot_count)
+		chest.usable = chest.slot_count if bool(def.get("take_only", false)) else _store_usable(str(it["struct"]["kind"]), chest)
 
 	return chest
 
@@ -15313,7 +15375,7 @@ func _fish_traps_tick() -> void:
 		if whole_h <= 0 or _on_ice(it["pos"]):
 			continue
 
-		box.usable = clampi(int(_structures[str(it["struct"]["kind"])].get("slots", box.slot_count)), 1, box.slot_count)
+		box.usable = _store_usable(str(it["struct"]["kind"]), box)
 		var caught: int = 0
 
 		for h in mini(whole_h, int(cfg.get("catch_up_h", 24))):
@@ -17491,7 +17553,7 @@ func dev_place(spec: String) -> int:
 
 	if int(def.get("slots", 0)) > 0:
 		row["uid"] = _next_uid
-		_chests[_next_uid] = InventoryScript.new(table)
+		_chests[_next_uid] = _new_store(name)
 		_next_uid += 1
 
 	_items[_next_id] = entry
@@ -18385,7 +18447,7 @@ func _stock_note(stock: Dictionary, sid: int, here: Vector3, key: String, reach_
 		if d <= CraftStock.LOOSE_STOCK_M * reach_x:
 			(stock["near"] as Array).append([sid, d])
 	elif _is_storage(s) and not _smelters.is_smelter(_structures.get(str(s["struct"]["kind"]), {})) and CraftStock.box_counts(str(s["struct"].get("owner", "")), bool(s["struct"].get("keep_out", false)), key, d, CraftStock.CRAFT_REACH_M * reach_x):
-		(stock["boxes"] as Array).append([sid, _chests[int(s["struct"]["uid"])], d, 1 if _out_slots(str(s["struct"]["kind"])) > 0 else 0])
+		(stock["boxes"] as Array).append([sid, _chests[int(s["struct"]["uid"])], d, 1 if _keeps_products(str(s["struct"]["kind"])) else 0])
 
 
 # Loose stacks of an ingredient (or any member of its group: a `log` need takes any log) near the player: [[world id, count], ...], nearest first.
@@ -18865,7 +18927,7 @@ func _view_boxes(peer: int, vid: int) -> Array:
 
 		if _view_holder(s["pos"], views) == vid and _may_access(peer, s):
 			var box = _chests[int(s["struct"]["uid"])]
-			box.usable = clampi(int(_structures.get(str(s["struct"]["kind"]), {}).get("slots", box.slot_count)), 1, box.slot_count)
+			box.usable = _store_usable(str(s["struct"]["kind"]), box)
 			out.append([int(row[0]), box, float(row[1])])
 
 	out.sort_custom(func(a, b): return float(a[2]) < float(b[2]) or (float(a[2]) == float(b[2]) and int(a[0]) < int(b[0])))
@@ -19197,7 +19259,7 @@ func _bulk_stack_nearby(peer: int, inv) -> Array:
 		var chest = _chests.get(int(s["struct"]["uid"]))
 
 		if chest != null and d <= CraftStock.CRAFT_REACH_M:
-			chest.usable = clampi(int(_structures.get(str(s["struct"]["kind"]), {}).get("slots", chest.slot_count)), 1, chest.slot_count)
+			chest.usable = _store_usable(str(s["struct"]["kind"]), chest)
 			boxes.append([sid, chest, d])
 
 	boxes.sort_custom(func(a, b): return float(a[2]) < float(b[2]))
@@ -19922,7 +19984,7 @@ func _batch_spots(peer: int, number: int) -> Array:
 		if bool(box[3]):
 			continue   # a station's store keeps its own products; a sealed batch goes to the pack and storage only (master s3.14)
 
-		box[1].usable = clampi(int(_structures.get(str(_items[int(box[0])]["struct"]["kind"]), {}).get("slots", box[1].slot_count)), 1, box[1].slot_count)
+		box[1].usable = _store_usable(str(_items[int(box[0])]["struct"]["kind"]), box[1])
 
 		if _batch_slot(box[1], number):
 			out.append([box[1], int(box[0]), _box_room(int(box[0]), number, table.COUNT_MAX)])

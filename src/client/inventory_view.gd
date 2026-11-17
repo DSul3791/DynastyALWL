@@ -1066,7 +1066,7 @@ func _probe_structure_for(id: int) -> Dictionary:
 
 		return {"prompt": "Press E to put out", "tap": use_tap}
 
-	if str(store_def.get("station", "")) != "" and int(store_def.get("out_slots", 0)) > 0:   # a station with a store (master s2.5): E opens the store, F crafts
+	if str(store_def.get("station", "")) != "" and (int(store_def.get("out_slots", 0)) > 0 or bool(store_def.get("one_store", false))):   # a station with a store (master s2.5): E opens the store, F crafts
 		return {"prompt": "Press E to open the %s%s, F to use it%s (hold E to take it down)" % [table.sentence_name(_world[id]["number"]), _fill_note(id), wheel_note(id)], "tap": func(): _ask_open(id), "hold": take_down}
 
 	if _is_chest(state):
@@ -1429,7 +1429,7 @@ func open_container() -> bool:
 		_ask_open(best)
 		return true
 
-	if str(best_def.get("station", "")) != "" and int(best_def.get("out_slots", 0)) > 0:   # a station with a store: its window, on the Craft tab (the Kiln: on its store)
+	if str(best_def.get("station", "")) != "" and (int(best_def.get("out_slots", 0)) > 0 or bool(best_def.get("one_store", false))):   # a station with a store: its window, on the Craft tab (the Kiln: on its store)
 		_ask_open(best, str(best_def.get("use", "")) != "kiln")
 		return true
 
@@ -1444,6 +1444,7 @@ func open_container() -> bool:
 # A workbench or forge has no slots of its own: using it opens the crafting screen, which lists only what that station makes (station_makes).
 func _open_station(id: int) -> void:
 	_station_screen = id
+	_recipe_part.show_category("")   # a station's list starts on All: a tab left from before (the saw's Carpenter's) would show it empty
 
 	if not open:
 		toggle()
@@ -2754,6 +2755,7 @@ func _on_chest(id: int, bytes: PackedByteArray) -> void:
 	if not chest_mode:
 		chest_mode = true
 		_station_screen = id   # any container's window is not your own inventory: its Craft list shows only what it makes (station_makes)
+		_recipe_part.show_category("")   # on All, as _open_station
 		open = true
 		_build_panel()
 		_panel.visible = true      # one window, the container in its Craft column (4.4)
@@ -5520,20 +5522,22 @@ func _build_panel() -> void:
 # Chest mode (redesign 4.4): with a container open the Craft column shows it, named on the plate, or the recipes, by the Chest and
 # Craft tabs on the title row. With no container the tabs go and the column is Craft again.
 func _show_tab() -> void:
-	var chest: bool = chest_mode and chest_tab
+	var both: bool = _store_with_recipes()
+	var chest: bool = chest_mode and (chest_tab or both)
 
 	if _chest_panel != null and is_instance_valid(_chest_panel):
 		_chest_panel.visible = chest
+		_container_part.set_compact(both)
 
 	if _craft_root != null and is_instance_valid(_craft_root):
-		_craft_root.visible = not chest
+		_craft_root.visible = not chest or both
 
 	if not chest:
 		_chest_hover = []      # a hidden slot sends no mouse_exited
 
 	for i in _craft_tabs.size():
 		var tab: Button = _craft_tabs[i]
-		tab.visible = chest_mode
+		tab.visible = chest_mode and not both
 		var lit: bool = (i == 0) == chest
 		tab.add_theme_stylebox_override("normal", ArtKit.stylebox_raised(1 if lit else 0))
 		tab.add_theme_color_override("font_color", ArtKit.HEADING if lit else ArtKit.CREAM)
@@ -5543,6 +5547,17 @@ func _show_tab() -> void:
 
 	if _frame != null and is_instance_valid(_frame):
 		_frame.set_title(2, _container_part.title() if chest else "CRAFT")
+
+
+# A crafting station's store window shows its store under its recipe list, no Chest and Craft tabs (Dave 17 Nov 2026: "I just used the
+# primative smithy and didnt like the way there is a separate chest inventory. it should be combined so when it makes items they appear so the
+# player can see them"; "in a station that has an inventory there should only be on inventory"): a structures.json "one_store" station. The Kiln
+# (a batch of logs), the chopping block (E splits, no recipes), chests, fires and smelters keep their tabs.
+func _store_with_recipes() -> bool:
+	if not chest_mode or not _world.has(chest_id):
+		return false
+
+	return bool(_structure_by_state(int(_world[chest_id]["state"])).get("one_store", false))
 
 
 # A tab on the Craft panel's title row (4.4): a raised plate of 118 x 36, the word in Cinzel; lit when it is the one showing.
