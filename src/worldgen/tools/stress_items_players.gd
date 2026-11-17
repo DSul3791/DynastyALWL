@@ -10,6 +10,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 const TICK_S := 0.05            # the server scene's 20 Hz
 const SPAN_S := 25.0            # real seconds simulated
@@ -95,7 +96,7 @@ func run(players: int, label: String) -> void:
 
 				if kind == 0:
 					items._last_queue_act.clear()
-					items.action(p, Net.ACT_CRAFT_QUEUE, 1, 0, 4, Vector3.ZERO)
+					items.action(p, Net.ACT_CRAFT_QUEUE, 1, 0, 4, CraftHand.at(items, p, 1))
 				elif kind == 1:
 					items.place_item(p, items.table.number_of("campfire_kit"), pos[p - 1] + Vector3(2.0, 0.0, 0.0), 0)
 				elif kind == 2:
@@ -115,7 +116,7 @@ func run(players: int, label: String) -> void:
 					items.place_piece(p, "workbench_kit", pos[p - 1] + Vector3(0.0, 0.0, 2.0))
 				elif kind == 9:
 					items._last_queue_act.clear()
-					items.action(p, Net.ACT_CRAFT_QUEUE, 140, 0, 1, Vector3.ZERO)   # stone hoe: needs a camp bench (recipe 26, the Stone - Shovel, is retired)
+					items.action(p, Net.ACT_CRAFT_QUEUE, 140, 0, 1, CraftHand.at(items, p, 140))   # stone hoe: needs a camp bench (recipe 26, the Stone - Shovel, is retired)
 				else:
 					if rng.randf() < 0.3:
 						items.kill(p, "stress")

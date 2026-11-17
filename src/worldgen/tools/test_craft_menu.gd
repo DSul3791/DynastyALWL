@@ -6,6 +6,7 @@ extends SceneTree
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
+const CraftStock := preload("res://src/shared/craft_stock.gd")
 
 var failures: int = 0
 
@@ -41,6 +42,17 @@ func _init() -> void:
 		check(not inside.is_empty(), "the %s tab is not empty" % category)
 		check(inside.all(func(r): return str(r["category"]) == category), "the %s tab shows only %s" % [category, category])
 
+	var carpenters: Array = all.filter(func(r): return str(r["category"]) == "Carpenter's").map(func(r): return str(r["id"]))
+	carpenters.sort()
+	check(carpenters == ["hardwood_board_by_hand", "lumber_by_hand", "saw_blocks"], "the Carpenter's tab lists what a saw makes by hand: Wooden block, Planks, Hardwood boards (%s; Dave 17 Nov 2026)" % str(carpenters))
+	var saw_n: int = table.number_of("saw")
+	check(all.all(func(r): return CraftStock.hand_tools(r, table).has(saw_n) == (str(r["category"]) == "Carpenter's")), "every sawing recipe, and only those, is in Carpenter's and needs a saw in hand")
+	var kept_by: Callable = func(id: String) -> Array: return all.filter(func(r): return not bool(r.get("retired", false)) and (r["keeps"] as Array).any(func(k): return int(k[0]) == table.number_of(id)))
+	check(not kept_by.call("sewing_needle").is_empty() and kept_by.call("sewing_needle").all(func(r): return CraftStock.hand_tools(r, table).size() == 1), "a needle recipe needs the needle in hand (Dave 17 Nov 2026: a tool it requires must be in your hand)")
+	check(not kept_by.call("knife").is_empty() and kept_by.call("knife").all(func(r): return CraftStock.hand_words(r, table) == table.cost_sentence(table.number_of("knife"))), "a knife recipe needs any knife in hand")
+	check(kept_by.call("clay_griddle").is_empty() and kept_by.call("iron_cauldron").is_empty() and kept_by.call("stone").all(func(r): return CraftStock.hand_tools(r, table).is_empty()), "no recipe keeps cookware (Dave 17 Nov 2026: cooking stations) and a kept Stone is not held (W-32)")
+	check(all.all(func(r): return CraftStock.hand_tools(r, table).size() <= 1), "no recipe keeps two tools for the one hand")
+	check(all.filter(func(r): return str(r["category"]) == "Carpenter's").all(func(r): return bool(r.get("sawbuck", false))), "a Sawbuck speeds every Carpenter's recipe (W-33)")
 	check(str(recipes.recipe(2)["category"]) == "Tools" and str(recipes.recipe(1)["category"]) == "Materials", "axe is Tools, twine Materials")
 	check(recipes.recipe(165).is_empty() and recipes.recipe(1)["id"] == "twine" and recipes.recipe(170)["id"] == "wooden_bow" and recipes.recipe(9999).is_empty(), "no recipe number or name moved")
 	print("craft menu tests: %d failures" % failures)

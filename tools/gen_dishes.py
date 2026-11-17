@@ -9,9 +9,9 @@ An existing dish also keeps its items.json "value" (economy passes tune it there
 Prepare -> cook (master s3.12 [D12], Mission 001 phase 6), optional dish fields:
   "prepared": an item id. The dish's "needs" become recipe prep_<dish> at the Food preparation table (prep_s seconds, default 4), giving "gives"
      of the prepared item; cook_<dish> then takes those and nothing else (the ingredients are spent once, at the table).
-  "keeps": kept equipment for cook_<dish> (the Clay - Griddle on a campfire), like a recipe's own "keeps".
-  "also_cook": more ways to cook the same dish, each {"station", "keeps" (required: the equipment that makes it a different method),
-     "label" or "name", optional "times" (one craft makes that many batches: the cauldron) and "craft_s"}: recipe cook_<dish>_<first kept item>.
+  "also_cook": other cooking stations that make the same dish, each {"station" (required), "label" or "name", optional "times" (one craft
+     makes that many batches: the Cooking pot's big stews) and "craft_s"}: recipe cook_<dish>_<station>.
+  No dish keeps cookware (Dave 17 Nov 2026: "We dont use things like pots pans and griddles we use cooking stations"): the station alone cooks it.
   "ready_age": game hours a sealed batch matures before it may be eaten or used (master s3.14 [D14]); put on cook_<dish>.
 """
 import json
@@ -52,11 +52,14 @@ def put_recipe(recipe_id, row):
         row["number"] = recipes_doc["next_number"]
         recipes_doc["next_number"] += 1
 
-    recipes[recipe_id] = {key: row[key] for key in ["number", "name", "category", "needs", "keeps", "gives", "craft_s", "station", "ready_age", "known"] if key in row}
+    recipes[recipe_id] = {key: row[key] for key in ["number", "name", "category", "needs", "gives", "craft_s", "station", "ready_age", "known"] if key in row}
 
 
 for dish_id, d in dishes.items():
-    for ingredient, _ in d["needs"] + d.get("keeps", []) + [kept for way in d.get("also_cook", []) for kept in way["keeps"]]:
+    if "keeps" in d or any("keeps" in way for way in d.get("also_cook", [])):
+        raise SystemExit("%s: dishes keep no cookware; the station alone cooks them" % dish_id)
+
+    for ingredient, _ in d["needs"]:
         if not known_item(ingredient):
             raise SystemExit("%s: unknown ingredient %s" % (dish_id, ingredient))
 
@@ -80,9 +83,6 @@ for dish_id, d in dishes.items():
 
     cook = {"name": d["name"], "category": "Food and drink", "needs": cook_needs, "gives": [dish_id, d["gives"]], "craft_s": float(d["craft_s"]), "station": d.get("station", "campfire"), "known": True}
 
-    if d.get("keeps"):
-        cook["keeps"] = d["keeps"]
-
     if d.get("ready_age"):
         cook["ready_age"] = float(d["ready_age"])
 
@@ -90,10 +90,10 @@ for dish_id, d in dishes.items():
 
     for way in d.get("also_cook", []):
         times = int(way.get("times", 1))
-        put_recipe("cook_%s_%s" % (dish_id, way["keeps"][0][0]), {
+        put_recipe("cook_%s_%s" % (dish_id, way["station"]), {
             "name": way.get("name", "%s (%s)" % (d["name"], way.get("label", ""))), "category": "Food and drink",
-            "needs": [[need[0], need[1] * times] for need in cook_needs], "keeps": way["keeps"], "gives": [dish_id, d["gives"] * times],
-            "craft_s": float(way.get("craft_s", d["craft_s"])), "station": way.get("station", d.get("station", "campfire")), "known": True})
+            "needs": [[need[0], need[1] * times] for need in cook_needs], "gives": [dish_id, d["gives"] * times],
+            "craft_s": float(way.get("craft_s", d["craft_s"])), "station": way["station"], "known": True})
 
     vitals["food"]["by_id"][dish_id] = d["kcal"]
     spoilage["by_id"][dish_id] = d["shelf_h"]

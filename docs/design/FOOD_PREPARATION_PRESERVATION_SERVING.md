@@ -15,6 +15,8 @@
 
 ### Approved seven ADD equipment items
 
+> **SUPERSEDED IN PART, 17 Nov 2026 (Dave):** "We dont use things like pots pans and griddles we use cooking stations"; documents that call for cookware "were mistakes made by the ai." The Clay Griddle, Campfire Roasting Spit, Iron Grill Grate, Iron Frying Pan and Iron Cauldron rows below are void and those items are retired; their cooking moved to the Grill, Cooking pot and Griddle stations (docs/design/COOKING_STATIONS.md). The Food Preparation Table and the Fireplace Cooking Crane still stand.
+
 | Item | Type and role |
 |---|---|
 | Food Preparation Table | New independent prep station / recipe interface |
@@ -51,11 +53,11 @@
 **Delegated defaults from the master catalog's s3.12 reconciliation:**
 - Build the Food Preparation Table from logs and twine, like Log - Table 631, so bread stays pre-metal.
 - Move Nut cake (`energy_bar`) and Fruit juice from hand recipes to the Table.
-- Route Herb omelette and Egg-nettle fry to the Clay Griddle or Iron Frying Pan, so eggs stay pre-iron.
+- ~~Route Herb omelette and Egg-nettle fry to the Clay Griddle or Iron Frying Pan, so eggs stay pre-iron.~~ Superseded 17 Nov 2026: they cook at a plain campfire (pre-iron) or at the Griddle station (COOKING_STATIONS.md).
 - Uncooked Meatballs goes live together with Meatballs #837 (Campfire Pot or Pan).
 - Generated dishes are rewritten through `dishes.json` and `tools/gen_dishes.py`, not by hand.
 - Butter belongs with preservation.
-- Keep the Griddle, Spit, Grate, Pan and Cauldron as kept equipment used at the fire or hearth; only the Fireplace Cooking Crane gets new attach code.
+- ~~Keep the Griddle, Spit, Grate, Pan and Cauldron as kept equipment used at the fire or hearth~~ (an AI mistake, Dave 17 Nov 2026: no hand cookware; they are stations now, COOKING_STATIONS.md); only the Fireplace Cooking Crane gets new attach code.
 
 Keep existing finished food IDs. Original ingredients are consumed **once** at preparation. Finishing consumes the intermediate **without also charging ingredients again**. Reusable vessels survive. Uncooked items are actual inventory with spoilage. Suitable station and fuel/heat still matter. Cooking and storage may use permitted nearby workstation inventory under §2.5 of master catalog.
 

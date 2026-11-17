@@ -45,3 +45,31 @@ Final static audit: 561 original source lines preserved across the reviewed sect
 - Added Approved/Built records for natural fog: existing dated full verbatim instruction remains its single specification; original chat independently unavailable. Originating implementation commit and actual PR #1142 merge verified, with current static caller wiring and regression-file existence checked. Godot/visual/player checks NOT RUN; no full-completion claim.
 - Paths: both new status records, Unapproved provenance lead, DOC_MAP and this checkpoint. No source specifications, code, schedules or retired files changed. Exact candidate hashes, independent review, CI and merge receipt belong to this phase's PR.
 - Remaining: original family answers, additional bounded provenance batches and actual runtime/player evidence where absent. Retirement remains manual after 22 Nov with recovery/dependency checks; no automation.
+
+## Current checkpoint — succession clarification, 16 Nov 2026
+
+- Authority: Dave directly specified blood children grouped by mother in relationship order, followed by stepchild/spouse family groups; confirmed the full restatement and final-child fallback, then requested document changes. Exact quotes and the single specification are in Design_Ideas_Approved.md.
+- Base: `cf16e87da52a48bd8a809f667fe6330868dfa39a`. Paths: Approved, Unapproved, DESIGN_IDEAS legacy route, DOC_MAP, and this state. Old global age-sort/youngest-child prescriptions are replaced with links; unrelated design, code, retired files and schedules are unchanged.
+- Checks: hosted JavaScript exact-replacement, preservation and local-reference/anchor checks; published candidate and CI evidence will be recorded in this phase's PR. Runtime/player checks NOT RUN (documentation only). Independent non-author review pending; do not integrate before it passes.
+- Next action: inspect the exact published diff, complete required non-author review and static CI, then merge into dev. The PR owns exact head and integration receipt. Broader family status migration and adopted-child placement are outside this clarification.
+
+- Follow-up authority: Dave specified that arranging estate-debt payments is the successor's first responsibility, and explicitly deferred addressing that future mechanic. Recorded a short approved note and a link beside inherited debt; no payment design or code is added.
+
+## Integration checkpoint — 17 Nov 2026
+
+- Succession PR #1200 refreshed against dev `7495d2a08bbe889015045ab6f3dc3e2c64b5e26d`, retaining concurrent design/index additions. Non-author agent review passed original head `a400af0459131ece57cd150a99d0df26cd96f724`; refreshed exact-head review and CI are required before integration. No gameplay changes or runtime claims.
+- Aging PR #1201 follows after succession integration. Reviewer identified a birth-spacing route that must point to its proposal, not the approved fertility specification. Preserve both batches and record final head/merge/check evidence in each PR.
+
+## Current checkpoint — aging status migration, 16 Nov 2026
+
+- Base: `195ac57f0b370b8fb73fdf7ffbe60f91bc6fdf4f`. Dave's instruction that documented decisions are his is applied to ten recorded aging decisions. Eight explicit proposals remain separate. Full source paragraphs, numbers and unique consolidation receipt are preserved; retirement, wishes, clock/outage and illness qualifications stay attached to the approved specification. Clock semantics and other design questions are not settled by migration.
+- Five paths: Approved, Unapproved, DESIGN_IDEAS, DOC_MAP, this checkpoint. One full aging specification; old topic/numbered routes remain. Source-warning boilerplate is shortened; no new topic file. Unrelated recorded decisions await later bounded migration; no original chat recovery is required to recognize Dave's documented decisions.
+- Validation: hosted exact-text preservation, proposal-status, changed-link/anchor and candidate-content checks; exact head and CI results belong to this phase's PR. Independent non-author review pending; runtime/player checks NOT RUN. No code, main, schedule or retired-file changes.
+- PR #1200 remains unmerged: exact-head CI PASS (run 43980108156), independent review missing. This batch shares documentation paths: reconcile both PRs before integration, retaining its approved succession/deferred-debt additions. No user clarification is required.
+- Next: independent review and CI, reconcile the two documentation candidates without overwriting either, integrate into dev, then choose the next high-value topic. Do not claim pending work merged.
+
+## Reconciled candidate checkpoint — 17 Nov 2026
+
+- Combined aging and succession candidate retains both full specifications once, both phase receipts and concurrent dev design/index additions from `7495d2a08bbe889015045ab6f3dc3e2c64b5e26d`. Parent heads identify the exact reconciliation; each PR records final reviewed head, CI and actual integration commit.
+- Reviewer finding fixed: the family dependency links approved fertility and proposed birth spacing separately. Ten aging decision paragraphs and all eight proposals remain verbatim. Author checked 42 changed local links/anchors within the combined five-file candidate. Runtime/player checks NOT RUN; documentation only.
+- Independent final-head review and exact-head CI must pass before merging. Merge #1200 first, then #1201; record actual results in PR receipts and verify final dev contents. No new design choices or estate-debt implementation.

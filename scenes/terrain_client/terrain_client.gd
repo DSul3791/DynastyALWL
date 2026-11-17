@@ -1517,6 +1517,7 @@ func _welcome_body(info: Dictionary) -> void:
 	held.held_light_budget = func(): return quality >= 1
 	items.equip_requested = func(slot): held.equip_toggle(slot)
 	items.held_slot_now = func(): return held.held_slot if held.holding else -1
+	items.pick_hand = func(key: int): held.press_slot(key)
 	items.held_key_now = func(): return held.held_key if held.holding else -1
 	hotbar_strip = HotbarStripScript.new()
 	hotbar_strip.setup(items, layer, held)
