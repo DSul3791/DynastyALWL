@@ -49,7 +49,7 @@ const MAX_FIRE_LIGHTS := 3              # at High and Ultra; fewer below (max_li
 
 var _flame_lights: Array = []           # the lit fire lights that are on (nearest MAX_FIRE_LIGHTS), set by _update_fire_lights
 var open: bool = false
-var _station_screen: int = 0   # the world id of the station (or fire) whose own window is open: its Craft list shows only what it makes; 0 for your own inventory or a plain chest
+var _station_screen: int = 0   # the world id of the station, fire or container whose window is open: its Craft list shows only what it makes; 0 for your own inventory
 var table
 var inventory
 var recipes
@@ -2752,7 +2752,7 @@ func _on_chest(id: int, bytes: PackedByteArray) -> void:
 
 	if not chest_mode:
 		chest_mode = true
-		_station_screen = id if _world.has(id) and (StructureLook.CAMPFIRE_STATES.has(int(_world[id]["state"])) or str(_structure_by_state(int(_world[id]["state"])).get("station", "")) != "") else 0
+		_station_screen = id   # any container's window is not your own inventory: its Craft list shows only what it makes (station_makes)
 		open = true
 		_build_panel()
 		_panel.visible = true      # one window, the container in its Craft column (4.4)
@@ -4195,7 +4195,7 @@ func _def_serves(def: Dictionary, station: String, level: int) -> bool:
 
 
 # Whether the station window open lists recipe r (Dave 17 Nov 2026: "when you open an inventory other than yours like the workstation or the
-# primative smithy it should only list the crafting recipes for stuff that station makes"). Your own inventory or a plain chest lists everything.
+# primative smithy it should only list the crafting recipes for stuff that station makes"). Only your own inventory lists everything; a chest none.
 # A station lists the recipes it serves at its level, its add-ons (a vice) counted as station_near and the server count them, and those of the stations it
 # stands in for ("also": a smithy is also a level 1 forge); a fire lists campfire recipes; a Sawbuck the recipes it speeds (Wooden block).
 func station_makes(r: Dictionary) -> bool:
@@ -4211,7 +4211,7 @@ func station_makes(r: Dictionary) -> bool:
 	var def: Dictionary = _structure_by_state(state)
 
 	if str(def.get("station", "")) == "" and (def.get("also", {}) as Dictionary).is_empty():
-		return true   # a store that makes nothing (a smelter): your own list, as a plain chest
+		return false   # a chest or smelter makes nothing: no recipes (provisional SR-2)
 
 	if station == "":
 		return bool(r.get("sawbuck", false)) and str(def.get("station", "")) == "sawbuck"

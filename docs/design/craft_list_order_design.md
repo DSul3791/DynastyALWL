@@ -38,12 +38,12 @@ Dave, playtest:
 
 > "when you open an inventory other than yours like the workstation or the primative smithy it should only list the crafting recipes for stuff that station makes."
 
-F on a station opens its window: the crafting screen for a station without a store (workbench, carving station, tanning rack), or the store window on its Craft tab (smithies, kiln, leatherworking table, the campfire's window). That window's recipe list now holds only the recipes that station makes (`inventory_view.station_makes`, the view's `_station_screen`). Search, tabs and the three groups above work inside that list. Your own inventory (I) is unchanged: every recipe you know, in the order above, near a station or not.
+F on a station opens its window: the crafting screen for a station without a store (workbench, carving station, tanning rack), or the store window on its Craft tab (smithies, kiln, leatherworking table, the campfire's window). That window's recipe list now holds only the recipes that station makes (`inventory_view.station_makes`, the view's `_station_screen`). Search, tabs and the three groups above work inside that list. Any other container's window (a chest, a smelter) lists none (SR-2). Your own inventory (I) is unchanged: every recipe you know, in the order above, near a station or not.
 
 ### For Dave (provisional, assumed on his behalf; change any of them by saying so)
 
 - **SR-1, levels and stand-ins.** A station lists the recipes it can serve: its own station at its level or lower, add-ons that raise its level (the workbench's tool rack and vice) counted as the server's craft check counts them (the bellows and quenching trough raise nothing), and the stations it stands in for. So a Carpenter's bench (workbench 2) shows level 1 and 2 bench recipes, an Improved smithy (brick forge 2, also forge 1) shows brick forge 1 and 2 and the Primitive smithy's forge recipes, and a clay hearth shows the campfire's. Recipes above its level are not listed.
-- **SR-2, plain storage.** A chest, bin, smelter or other store that makes nothing keeps your own list on its Craft tab, as before.
+- **SR-2, plain storage.** A chest, bin, smelter or other store that makes nothing by crafting lists no recipes: its Craft tab is empty. Only your own inventory (I) shows your whole list.
 - **SR-3, the campfire's window** lists the campfire recipes, lit or not (an unlit fire's rows are dim, as before). Pot recipes (soups, stews) stay with the pot's own window and your own inventory.
 - **SR-4, the Sawbuck** lists Wooden block, the recipe it speeds. The chopping block has no recipes (E splits logs), so its Craft tab is empty.
 - **SR-5, your own inventory near a station** still lists everything, station recipes second as above. Dave's ruling named only other inventories.

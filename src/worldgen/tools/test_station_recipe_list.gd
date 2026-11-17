@@ -49,7 +49,7 @@ func _init() -> void:
 	_expect(view, 3, all, [forge1], "Primitive smithy (forge 1): forge recipes only")
 	_expect(view, 4, all, [forge1, brick2], "Improved smithy (brick forge 2, also forge 1): what it serves, not the level 3 ones (the bellows beside it adds no level)")
 	_expect(view, 5, all, [block], "Sawbuck: the recipe it speeds (Wooden block)")
-	_expect(view, 6, all, all, "a plain chest (were it ever the screen): your own list")
+	_expect(view, 6, all, [], "a plain chest makes nothing: no recipes")
 	_expect(view, 7, all, [fire], "Clay hearth (also a campfire): campfire recipes")
 	_expect(view, 8, all, [fire], "a campfire's window: campfire recipes")
 
