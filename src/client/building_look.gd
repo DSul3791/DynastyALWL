@@ -1388,7 +1388,9 @@ static func _stone_forge_coals() -> ArrayMesh:
 static func stone_forge() -> Node3D:
 	var root: Node3D = Node3D.new()
 	root.add_child(_instance(_stone_forge_mesh()))
-	root.add_child(_instance(_stone_forge_coals()))
+	var coals: MeshInstance3D = _instance(_stone_forge_coals())
+	coals.name = "Flames"   # its glowing coals are its fire: show_forge_fire hides them on a cold smelter (the stand-in when forge_basic.glb is missing)
+	root.add_child(coals)
 	return root
 
 
