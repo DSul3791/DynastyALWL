@@ -210,7 +210,7 @@ func _init() -> void:
 	var per_ore: int = int(cfg.get("fuel_per_ore", 1))
 
 	# --- 1. The Primitive smelter's store ---
-	var prim: int = place("smelter@8,0,0")
+	var prim: int = place("smelter@7,0,0")   # 2 m from the player: E reaches 3 m (use_reach_m)
 	var pdef: Dictionary = def_of(prim)
 	var p_s: float = float(pdef["smelt"]["ingot_s"])
 	check(prim > 0 and int(pdef.get("out_slots", 0)) == 0 and int(pdef["smelt"]["hopper"]) == 20 and int(pdef["smelt"]["input"]) == 20 and is_equal_approx(p_s, 20.0), "the Primitive smelter: hopper 20, input 20, no output rack, 20 s an ingot (master s2.7 item 1)")

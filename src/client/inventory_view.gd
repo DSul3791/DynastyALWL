@@ -2924,6 +2924,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 				if state == StructureLook.FIRE_COALS and _world[id].get("light") != null and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("glow"):
 					BuildingLook.coals_glow(_world[id]["light"], float(row[5]["glow"]))   # the coals dim as their time runs down
 
+				# A Smelter lit or put out is drawn again: its fire and light are set only when its model is built (_smelter_fire).
+				var smelter_lit_changed: bool = str(_structure_by_state(state).get("use", "")) == "smelt" and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and bool(row[5].get("lit", false)) != bool(_world[id].get("lit", false))
 				_note_platter(id, row, state)
 				_note_store(id, row)
 				_note_crop(id, row)
@@ -2935,7 +2937,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 					_world[id]["site"] = site_now   # a deposit or a change in what you have to hand: the list updates, the blue piece stays
 					continue
 
-				if (site_now != null) == (site_was != null):
+				if (site_now != null) == (site_was != null) and not smelter_lit_changed:
 					continue   # only a site finished (drawn again as the real piece) or a piece that became a site is drawn again
 
 			_forget(id)   # a changed state, or a site finished or begun: draw it again

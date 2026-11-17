@@ -15,6 +15,9 @@ Dave, 17 Nov 2026 (project thread "Make smelter work like campfire"), playing th
 ## Why it may not have smelted for Dave
 Before this change the server smelted with no lighting at all whenever Coal or Charcoal sat in the fuel slot and ore in the ore slots (`test_smelters` covers it). So the likely causes were: no Coal or Charcoal in the fuel slot (firewood and wood are not smelter fuel), or, on builds before PR #1199 (16 Nov 2026), the old 64-items-within-12 m ground limit refusing the ingot drop, which made the finished ingot wait. Not confirmed on his save, which was not looked at.
 
+## Saves from before this change
+smelters.json from before has no `lit` list, so every smelter loads cold, one half way through an ingot too: its time is kept and E lights it again.
+
 ## Not changed
 - The Primitive smithy shares the Primitive smelter's model and the Master smithy the Advanced smelter's; both keep their fire as before. Showing the smithies' fire only while fired is a separate change.
 - Fuel burnt: still one Coal or Charcoal a unit of ore, when the ingot is delivered (A-10). The every-300 s fuel pull from stores within 30 m (A-33) still fills a smelter's hopper, lit or cold.
@@ -27,4 +30,5 @@ Before this change the server smelted with no lighting at all whenever Coal or C
 - SL-4: the cold prompt is only "Press E to light", as asked: hold E still takes a cold smelter down (as before, now unsaid); F still opens it.
 - SL-5: E with no fuel does not light it and says to put Coal or Charcoal in its fuel slot.
 - SL-6: the look-at line offers no take-down while a smelter is lit, as with a burning campfire (put it out first).
+- SL-8: a lit smelter whose fuel slot holds less than its next job needs (1 Charcoal for a Bronze pair, which takes 2) stays lit and waits for more fuel; it goes out only when the fuel slot is empty.
 - SL-7: the Advanced smelter still needs the wind as well as being lit; lighting it in a calm says the windmill waits.

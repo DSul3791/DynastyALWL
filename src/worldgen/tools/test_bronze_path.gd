@@ -229,7 +229,7 @@ func _init() -> void:
 	check(items.station_near(1, "forge", 1), "3b. it serves as a forge, level 1 (copper and bronze work)")
 	var smelter_id: int = build("smelter", SMELTER_AT)
 	check(smelter_id >= 0 and int(items._structures["smelter"].get("out_slots", 0)) == 0, "3c. the Primitive smelter stands beside it, with no output rack")
-	check(not items.station_near(1, "smelter", 1), "3d. it is no crafting station: it smelts by itself")
+	check(not items.station_near(1, "smelter", 1), "3d. it is no crafting station: once lit it smelts by itself")
 
 	# 4. Charcoal at a lit campfire.
 	items._items[items._next_id] = {"number": items.table.number_of("campfire_kit"), "count": 1, "pos": FIRE_AT, "left": 1.0e9, "fire": {"state": 1, "burn_left": 1.0e6, "covered": false, "recheck": 5.0}}
