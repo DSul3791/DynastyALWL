@@ -7,7 +7,7 @@ extends SceneTree
 #   2. copper ore and tin ore broken out of a copper and a tin outcrop with it (boulders.json piece share as shipped); no iron ore (iron wants a pick);
 #   3. a Primitive smithy and a Primitive smelter from their blueprints with a wooden hammer: stone, clay and logs only, no metal, Planks or Nails;
 #   4. charcoal left in a lit campfire as its firewood burns;
-#   5. the Primitive smelter fed through its store: Charcoal in its hopper, 1 Copper ore + 1 Tin ore make 2 Bronze ingots by themselves,
+#   5. the Primitive smelter fed through its store and lit with E: Charcoal in its hopper, 1 Copper ore + 1 Tin ore make 2 Bronze ingots by themselves,
 #      dropped on the ground in front of it, and picked up;
 #   6. a Bronze - Pickaxe at the Primitive smithy (every amount read from the live recipes);
 #   7. the bronze pick takes iron ore out of an iron outcrop, which the stone hammer cannot.
@@ -241,7 +241,7 @@ func _init() -> void:
 	check(items.station_near(1, "forge", 1), "3b. it serves as a forge, level 1 (copper and bronze work)")
 	var smelter_id: int = build("smelter", SMELTER_AT)
 	check(smelter_id >= 0 and int(items._structures["smelter"].get("out_slots", 0)) == 0, "3c. the Primitive smelter stands beside it, with no output rack")
-	check(not items.station_near(1, "smelter", 1), "3d. it is no crafting station: it smelts by itself")
+	check(not items.station_near(1, "smelter", 1), "3d. it is no crafting station: once lit it smelts by itself")
 
 	# 4. Charcoal left in a lit campfire as its firewood burns.
 	var fire_id: int = items._next_id
@@ -256,6 +256,10 @@ func _init() -> void:
 	var front: Vector3 = items._smelters.front_of(items._items[smelter_id], items._structures["smelter"])
 	check(put_in(smelter_id, "charcoal", fuel_n) == fuel_n, "5a. %d Charcoal go into its hopper" % fuel_n)
 	check(put_in(smelter_id, "copper_ore", pairs) == pairs and put_in(smelter_id, "tin_ore", pairs) == pairs, "5b. %d Copper ore and %d Tin ore go into its input" % [pairs, pairs])
+	items.report_position(1, (items._items[smelter_id]["pos"] as Vector3) + Vector3(-1.5, 0.0, 0.0))   # beside it: E reaches 3 m (use_reach_m)
+	items.action(1, Net.ACT_USE_STRUCT, smelter_id, 0, 0, Vector3.ZERO)   # E: light it, as a campfire (it smelts only while lit, Dave 17 Nov 2026)
+	items.report_position(1, HERE)
+	check(bool(items._items[smelter_id]["struct"].get("lit", false)), "5b'. E lights it")
 	var per_ingot: float = float(items._structures["smelter"]["smelt"]["ingot_s"])
 
 	for s in range(int(per_ingot * 2.0) - 2):

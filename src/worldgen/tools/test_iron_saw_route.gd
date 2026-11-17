@@ -225,24 +225,27 @@ func _init() -> void:
 	var ore_in: int = put_in(smelter, "iron_ore", ore_n)
 	check(charcoal_in == ore_n and ore_in == ore_n, "3d. its hopper takes %d Charcoal and its input %d Iron ore" % [charcoal_in, ore_in])
 	var unmanned_s: float = float(items._structures["improved_smelter"]["smelt"]["ingot_s"]) * 3.0
+	items.report_position(1, (items._items[smelter]["pos"] as Vector3) + Vector3(-1.5, 0.0, 0.0))   # beside it: E reaches 3 m (use_reach_m)
+	items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E: light it (it smelts only while lit, Dave 17 Nov 2026)
+	check(bool(items._items[smelter]["struct"].get("lit", false)) and not items._smelters.bellows_worked(smelter), "3d'. E lights the Improved smelter; nobody works its bellows yet")
+	items.report_position(1, HERE)
 
 	for t in range(int(unmanned_s)):
 		items.tick(1.0)
 
-	check(items._chests[int(items._items[smelter]["struct"]["uid"])].count_of(items.table.number_of("iron_ingot")) == 0, "3e. nobody at the bellows: no iron in %d s" % int(unmanned_s))
+	check(items._chests[int(items._items[smelter]["struct"]["uid"])].count_of(items.table.number_of("iron_ingot")) == 0, "3e. lit but nobody at the bellows: no iron in %d s" % int(unmanned_s))
 	items.report_position(1, (items._items[smelter]["pos"] as Vector3) + Vector3(-1.5, 0.0, 0.0))   # beside it: E reaches 3 m (use_reach_m)
 	var goal_counts: Dictionary = items._goal_state_of(1).get("goal_counts", {})
 	var bellows_before: int = int(goal_counts.get("event:bellows_iron", 0))
-	items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E: work the bellows
+	items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E at the lit smelter: work the bellows
 	var manned_s: float = float(items._structures["improved_smelter"]["smelt"]["ingot_s"]) / float(items._structures["improved_smelter"]["smelt"]["bellows_speed"])
 
 	for t in range(int(ceil(manned_s * float(ore_n))) + 2):
 		items.tick(1.0)
 
 	take_all(smelter)
-	items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E again, still beside it: leave the bellows
 	items.report_position(1, HERE)
-	check(have("iron_ingot") >= ore_n and not items._smelters.bellows_worked(smelter), "3f. working the bellows it smelts bog iron into %d Iron ingots in its rack, about %.2f s each (%d); E again leaves them" % [ore_n, manned_s, have("iron_ingot")])
+	check(have("iron_ingot") >= ore_n and not items._smelters.bellows_worked(smelter) and not bool(items._items[smelter]["struct"].get("lit", false)), "3f. working the bellows it smelts bog iron into %d Iron ingots in its rack, about %.2f s each (%d); its last fuel burnt, it goes out and the bellows stop" % [ore_n, manned_s, have("iron_ingot")])
 	check(int(items._goal_state_of(1).get("goal_counts", {}).get("event:bellows_iron", 0)) == bellows_before + 1, "3g. working the bellows through an iron smelt counts the goal event bellows_iron once for the worker, not once an ingot (%d ingots)" % ore_n)
 
 	# 4. The Improved smithy from stones, clay, logs and bronze (given: the bronze route is test_bronze_path); it must burn to craft.

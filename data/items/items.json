@@ -9642,7 +9642,7 @@
 				"look_alikes": [],
 				"value": 12
 			},
-			"smelter": {"number": 908, "name": "Primitive smelter", "description": "A stone and clay furnace. Fed Coal or Charcoal and ore, it smelts copper, tin and bronze by itself.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 240 (Mission 001 phase 2b; Primitive Smelter, GOALS-REPAIR R2).", "slots": 3},
+			"smelter": {"number": 908, "name": "Primitive smelter", "description": "A stone and clay furnace. Fed Coal or Charcoal and ore and lit, it smelts copper, tin and bronze.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 240 (Mission 001 phase 2b; Primitive Smelter, GOALS-REPAIR R2).", "slots": 3},
 			"improved_smelter": {"number": 1304, "name": "Improved smelter", "description": "A smelter with bronze fittings and hand bellows. Work the bellows to smelt faster and to smelt iron.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 368 (Improved Smelter, GOALS-REPAIR R3).", "slots": 10},
 			"advanced_smithy": {"number": 1308, "name": "Advanced smithy", "description": "A smithy with an iron anvil. Fire it with charcoal or coal to work every metal up to steel.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 369 (Advanced Smithy, GOALS-REPAIR R4).", "slots": 12},
 			"bellows": {"number": 909, "name": "Bellows", "description": "Old leather bellows from a smithy. They no longer speed a forge; take them down for the leather.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 241 (add-on of the Smithy)."},
