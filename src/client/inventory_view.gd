@@ -165,6 +165,19 @@ var _pack_buttons: Array = []
 var _pack_view: Array = []             # the chest screen's pack side: button index -> real pack slot (a fire shows only what it takes, A to Z)
 const DRINK_WINDOW_MSEC := 3000        # a rise in thirst this soon after drink() is a mouthful at the water
 var _drink_msec: int = 0
+
+# Holding E on a food, drink or medicine in the pack keeps using it (Dave 17 Nov 2026: "when you hold e on an item like a food or raspberries it
+# should just keep eating them at a good speed"). One bite goes at a time: the next is sent only after the server has applied the last one
+# (the slot changed), so the server checks every bite as for a tap and nothing can over-eat. A bite the slot shows no sign of within
+# EAT_HOLD_REFUSED_MSEC counts as refused and the hold stops.
+const EAT_HOLD_INTERVAL_MSEC := 250   # provisional EH-1 (for Dave): about 4 bites a second while E is held
+const EAT_HOLD_REFUSED_MSEC := 1000   # no change in the slot this long after a bite: the server said no (full, not known), stop
+const EAT_SOUND_GAP_MSEC := 400       # a held run plays a mouth sound at most this often, so quick bites do not chatter
+var _eat_hold_slot: int = -1          # the pack slot being eaten from while E is held, -1 when none
+var _eat_hold_hover: int = -1         # _hover when the hold began: the pointer moving to another slot (or off) stops it
+var _eat_hold_sign: Array = []        # the slot's number, count and wear when the last bite was sent
+var _eat_hold_sent_msec: int = 0
+var _eat_sound_msec: int = -100000
 var pick_stamp: int = 0                       # msec of the latest pick-up or gather the player asked for: the Dynasty body bends to pick it up (avatar_driver.gd hook_clip)
 var gather_event: Callable             # () when the player gathers something by hand (E): the arm reaches and the view dips a little
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
@@ -1524,6 +1537,7 @@ func _process_body(_delta: float) -> void:
 	_drain_world_backlog()
 	FrameProbe.stop("inventory: world items", t)   # the pieces of a 65 ms "inventory view" in the 5 Nov lag run's one HITCH
 	var now: int = Time.get_ticks_msec()
+	_eat_hold_tick(now)
 	t = FrameProbe.start()
 	_roll_tick(_delta, now)
 	_glide_tick(_delta)
@@ -2505,13 +2519,20 @@ func faint_state() -> Array:
 func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int, new_thirst: int, new_luck: int, new_fitness: int) -> void:
 	var ate: bool = new_hunger > hunger + 3 or new_health > health + 8
 
+	var now: int = Time.get_ticks_msec()
+	var quiet: bool = now - _eat_sound_msec < EAT_SOUND_GAP_MSEC   # a held run of quick bites: one mouth sound per gap
+
 	if ate and _eat_item != "" and eat_event.is_valid():
-		eat_event.call(_eat_item)
+		if not quiet:
+			eat_event.call(_eat_item)
+			_eat_sound_msec = now
+
 		_eat_item = ""
 
 	# A mouthful at the water's edge (drink()) took effect: the gulp sound (Dave 2026-10-21: no sound when drinking).
-	if new_thirst > thirst and _drink_msec > 0 and Time.get_ticks_msec() - _drink_msec < DRINK_WINDOW_MSEC and eat_event.is_valid():
+	if new_thirst > thirst and _drink_msec > 0 and now - _drink_msec < DRINK_WINDOW_MSEC and eat_event.is_valid() and not quiet:
 		eat_event.call("drink")
+		_eat_sound_msec = now
 
 	if _vitals_seen and health - new_health >= HURT_MIN and hurt_event.is_valid():
 		hurt_event.call(health - new_health)
@@ -2685,34 +2706,70 @@ func take_off(place: int) -> void:
 
 
 # Eat the food or apply the medicine in a pack slot. Herbs that look like something else must be identified first.
-func eat_slot(slot: int) -> void:
+# True when a bite or mouthful went to the server (what holding E repeats); wearing or holding a tool is false.
+func eat_slot(slot: int) -> bool:
 	# Use on clothing or a pack puts it on.
 	if wear_slot_of(slot) != "":
 		wear_slot(slot)
-		return
+		return false
 
 	# Use on a tool, weapon or kit holds it in the hand (and again puts it away); on food or medicine it eats or applies it;
 	# on a water container that holds water it takes a mouthful.
 	if container_cap(slot) > 0 and inventory.wear[slot] > 0:
 		_drink_msec = Time.get_ticks_msec()
 		net.inventory_action.rpc_id(1, Net.ACT_EAT, slot, 0, 0, Vector3.ZERO)
-		return
+		return true
 
 	if not edible_slot(slot):
 		if equippable_slot(slot) and equip_requested.is_valid():
 			equip_with_move(slot)
 
-		return
+		return false
 
 	var number: int = inventory.numbers[slot]
 	var entry: Dictionary = table.entry(table.id_of(number))
 
 	if knowledge != null and not entry.get("look_alikes", []).is_empty() and not knowledge.is_known("i%d" % number):
 		_on_notice("You are not sure what %s really is. Hover it in inspection mode (/) before you use it." % table.sentence_name(number))
-		return
+		return false
 
 	_eat_item = table.id_of(number)
 	net.inventory_action.rpc_id(1, Net.ACT_EAT, slot, 0, 0, Vector3.ZERO)
+	return true
+
+
+func _eat_sign(slot: int) -> Array:
+	return [inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot]]
+
+
+# Each frame while E is held on a slot: the next bite once the last one landed and the pace allows; stop on release, an empty or changed slot,
+# the pointer leaving it, the screen closing or a container opening, or a bite the server refused.
+func _eat_hold_tick(now: int) -> void:
+	if _eat_hold_slot < 0:
+		return
+
+	var slot: int = _eat_hold_slot
+	var held: bool = Input.is_key_pressed(int(KeyBindings.binding("use_item")["key"]) as Key)
+
+	if not held or not open or chest_mode or _hover != _eat_hold_hover or slot >= inventory.slot_count or inventory.numbers[slot] != int(_eat_hold_sign[0]):
+		_eat_hold_slot = -1
+		return
+
+	if _eat_sign(slot) == _eat_hold_sign:
+		if now - _eat_hold_sent_msec >= EAT_HOLD_REFUSED_MSEC:
+			_eat_hold_slot = -1   # the last bite never landed: refused
+
+		return
+
+	if now - _eat_hold_sent_msec < EAT_HOLD_INTERVAL_MSEC:
+		return
+
+	if not eat_slot(slot):
+		_eat_hold_slot = -1
+		return
+
+	_eat_hold_sign = _eat_sign(slot)
+	_eat_hold_sent_msec = now
 
 
 # Asks the server to open a container. The server also pushes fresh contents while it is open (a fire eating wood); a push that arrives when
@@ -5622,8 +5679,11 @@ func quick_key(event: InputEventKey) -> bool:
 			hotbar_to_pack(hotbar_hover)
 			return true
 
-		if slot >= 0 and not chest_mode:
-			eat_slot(slot)
+		if slot >= 0 and not chest_mode and eat_slot(slot):
+			_eat_hold_slot = slot
+			_eat_hold_hover = _hover
+			_eat_hold_sign = _eat_sign(slot)
+			_eat_hold_sent_msec = Time.get_ticks_msec()
 
 		return true
 
