@@ -1285,7 +1285,8 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_STRIKE:
 		_strike(peer, inv, a, at)
 	elif kind == Net.ACT_CRAFT:
-		recipes.craft(a, inv)
+		if _hand_tool_ok(peer, inv, recipes.recipe(a), int(at.x) - 1):   # the instant craft (test keys) keeps the in-hand rule too (126)
+			recipes.craft(a, inv)
 	elif kind == Net.ACT_FALL:
 		_fall(peer, a)
 	elif kind == Net.ACT_CRAFT_QUEUE or kind == Net.ACT_CRAFT_CANCEL:
@@ -1295,7 +1296,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 			_last_queue_act[peer] = now
 
 			if kind == Net.ACT_CRAFT_QUEUE:
-				_queue_craft(peer, inv, a, count, b)
+				_queue_craft(peer, inv, a, count, b, int(at.x) - 1)   # at.x: the held pack slot + 1 (126), for a recipe that needs its tool in hand
 			else:
 				_cancel_craft(peer, a)
 	elif kind == Net.ACT_ADMIN_GIVE:
@@ -4418,13 +4419,6 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 			_say(peer, why.left(1).to_upper() + why.substr(1) + ".")
 			return
 
-	if kit_id == "campfire_kit":   # a fire is laid on top of a foundation it is aimed at (Dave 10 Nov 2026), not on the ground under it
-		var base_top: float = PlacementRules.foundation_top(_structures_cfg, at, _foundation_rows())
-
-		if not is_nan(base_top):
-			at.y = base_top
-			on_base = true
-
 	if not on_base and bool(_structure_of_kit(kit_id).get("foundation", false)):
 		lift = float(clampi(lift_steps, 0, PlacementRules.LIFT_MAX_STEPS)) * PlacementRules.LIFT_STEP_M   # the client sent the lifted height; the ground is checked below it
 		at.y -= lift
@@ -4493,7 +4487,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 
 			if _chunk_of(_items[id]["pos"]) == _chunk_of(spot):
 				chunk_fires += 1
-		elif _items[id].has("struct") and _items[id]["pos"].distance_to(spot) < _struct_gap_m and not bool(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("walkover", false)) and not bool(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("gap_exempt", false)) and not bool(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("foundation", false)) and not (_is_pot(_items[id]) and _items[id]["pos"].distance_to(spot) <= POT_ON_FIRE_M):   # a foundation is a floor the fire may stand on
+		elif _items[id].has("struct") and _items[id]["pos"].distance_to(spot) < _struct_gap_m and PlacementRules.blocks_fire(_structures_cfg, int(_structures.get(str(_items[id]["struct"]["kind"]), {}).get("state", -1))):   # the ghost's own rule: a foundation is a floor the fire may stand on
 			_say(peer, "Something is in the way.")
 			return
 
@@ -4634,7 +4628,8 @@ func _wheel_slow(peer: int, recipe: Dictionary) -> float:
 
 
 # How much slower a saw recipe (one that keeps "saw", any saw) runs for the saw in the pack (TREE_WOOD_TOOLS_DESIGN.md s5: items.json saw_speed, Copper 0.5,
-# Bronze 0.75, Iron 1.0, Steel 1.25; the saw the craft wears counts, the first on the hotbar) and, for a recipe marked "sawbuck" (Wooden blocks), at a
+# Bronze 0.75, Iron 1.0, Steel 1.25; the saw the craft wears counts, the first on the hotbar) and, for a recipe marked "sawbuck" (every hand-saw recipe:
+# Wooden blocks, Planks, Hardwood boards; Dave 17 Nov 2026 "if there is a saw buck around it will use that for cutting faster", W-33), at a
 # Sawbuck in reach, which saws twice as fast (W-4). serving_station walks the world items like any station recipe's check, once a tick for a sawing peer.
 func _saw_slow(peer: int, recipe: Dictionary) -> float:
 	var saw_n: int = table.number_of("saw")
@@ -4650,7 +4645,7 @@ func _saw_slow(peer: int, recipe: Dictionary) -> float:
 	var slot: int = _tool_slot(inv, "saw") if inv != null else -1   # the saw the craft wears (wears_tool "saw": the first one on the hotbar)
 	var speed: float = float(table.entry(table.id_of(int(inv.numbers[slot]))).get("saw_speed", 1.0)) if slot >= 0 else 1.0
 	var slow: float = 1.0 / maxf(speed, 0.1)
-	return slow * (0.5 if bool(recipe.get("sawbuck", false)) and serving_station(peer, "sawbuck") >= 0 else 1.0)   # the Sawbuck speeds sawing a log into blocks only (s1.3; the mill is for planks and boards)
+	return slow * (0.5 if bool(recipe.get("sawbuck", false)) and serving_station(peer, "sawbuck") >= 0 else 1.0)   # a Sawbuck in reach speeds every hand-saw recipe (W-33)
 
 
 # A placed piece's water wheel share in percent of full power (Sonny section 10: P / full_power_w, floored at min_power_w), or -1 for a piece with no
@@ -7091,6 +7086,17 @@ func _tool_slot(inv, tool_class: String) -> int:
 	return -1
 
 
+# A recipe that keeps a tool needs it in hand (CraftStock.in_hand, Dave 17 Nov 2026): it crafts only while that tool, unbroken, is the item in the
+# right hand (`hand`, the pack slot the client names); otherwise says what to do and answers false. A log on the shoulder does not stop it (the
+# client stows the tool while a log rides there, but it stays the chosen hand slot). Any other recipe: true.
+func _hand_tool_ok(peer: int, inv, recipe: Dictionary, hand: int) -> bool:
+	if CraftStock.in_hand(recipe, table, inv, hand):
+		return true
+
+	_say(peer, "That needs %s in your hand: pick it on the hotbar, then craft" % CraftStock.hand_words(recipe, table))
+	return false
+
+
 # _held_tool for a swing that needs this class, saying why nothing happened when the hand holds something else: the tool in hand is broken,
 # or it is not that tool.
 func _swing_tool(peer: int, inv, slot: int, tool_class: String) -> int:
@@ -9369,13 +9375,6 @@ func _structure_of_kit(kit_id: String) -> Dictionary:
 	return {}
 
 
-# Does a spot lie inside the covered box of a placed shelter (its half_x by half_z from structures.json, turned by its yaw)?
-func _inside_shelter(shelter: Dictionary, spot: Vector3) -> bool:
-	var def: Dictionary = _structures.get(str(shelter["struct"]["kind"]), {})
-	var local: Vector2 = Vector2(spot.x - shelter["pos"].x, spot.z - shelter["pos"].z).rotated(deg_to_rad(float(shelter["struct"].get("yaw", 0.0))))
-	return absf(local.x) <= float(def.get("half_x", 0.0)) and absf(local.y) <= float(def.get("half_z", 0.0)) and absf(spot.y - shelter["pos"].y) < 1.5
-
-
 func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, def: Dictionary, site_row: Dictionary = {}) -> void:
 	var attaching: bool = str(def.get("attach_to", "")) == "fire"
 
@@ -9409,33 +9408,30 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 	var here_chunk: Vector2i = _chunk_of(spot)
 	var of_kind: int = 0
-	var plot_cells: Array = _bed_cells({"pos": spot, "struct": {"kind": str(def.get("kind", "")), "yaw": float(yaw_deg)}}) if _is_plot_kind(str(def.get("kind", ""))) else []
 
 	for id in _items:
 		var other: Dictionary = _items[id]
 
-		var both_pieces: bool = bool(def.get("piece", false)) and other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("piece", false))
+		if not other.has("struct") and not other.has("fire"):
+			continue
 
-		var walkover: bool = other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("walkover", false))
+		var row: Dictionary = {"pos": other["pos"], "state": int(other["fire"]["state"]) if other.has("fire") else int(_structures.get(str(other["struct"]["kind"]), {}).get("state", -1)), "yaw": float(other["struct"].get("yaw", 0.0)) if other.has("struct") else 0.0}
 
-		var stands_on: bool = def.has("needs_base_lift_m") and other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("foundation", false))   # a sawmill stands on its foundation
-
-		# A rough bed goes INSIDE a lean-to (Dave 31 Oct 2026): its middle may lie within the shelter's covered box, whatever the gap.
-		var bed_in_shelter: bool = _is_bed_kind(str(def.get("kind", ""))) and other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("shelter", false)) and _inside_shelter(other, spot)
-
-		if bed_in_shelter:
-			yaw_deg = int(round(float(other["struct"].get("yaw", 0.0))))   # the bed lies along the lean-to (1 x 2 m inside 2.6 x 2.4 m), whatever way the player faced
+		if PlacementRules.bed_in_shelter(_structures_cfg, def, row, spot):   # a rough bed goes INSIDE a lean-to (Dave 31 Oct 2026), whatever the gap
+			yaw_deg = int(round(float(row["yaw"])))   # the bed lies along the lean-to (1 x 2 m inside 2.6 x 2.4 m), whatever way the player faced
 
 		if PlacementRules.one_to_a_point(str(def.get("piece_kind", ""))) and other.has("struct") and PlacementRules.point_family(str(_structures.get(str(other["struct"]["kind"]), {}).get("piece_kind", ""))) == PlacementRules.point_family(str(def.get("piece_kind", ""))) and PlacementRules.point_of(_structures.get(str(other["struct"]["kind"]), {}), other["pos"]).distance_to(PlacementRules.point_of(def, spot)) < PlacementRules.ANCHOR_TAKEN_M:
 			_say(peer, "Something is in the way.")   # one pillar to a point, one wall top to a wall (PlacementRules.blocked)
 			return
 
-		if not plot_cells.is_empty() and other.has("struct") and _is_plot_kind(str(other["struct"]["kind"])) and _beds_clash(plot_cells, other):
+		if PlacementRules.plots_clash(_structures_cfg, def, spot, float(yaw_deg), row):
 			_say(peer, "A bed or planter is already in that spot.")   # every square metre stands BED_GAP_M from every other bed's (two on one spot would share a crop record)
 			return
 
-		if other["pos"].distance_to(spot) < _struct_gap_m and (other.has("struct") or other.has("fire")) and not both_pieces and not walkover and not stands_on and not (attaching and other.has("fire")) and not bed_in_shelter and not bool(def.get("gap_exempt", false)) and not (other.has("struct") and bool(_structures.get(str(other["struct"]["kind"]), {}).get("gap_exempt", false))):   # furniture (gap_exempt) stands beside fires, shelters and each other
-			_say(peer, "Something is in the way.")
+		var why: String = PlacementRules.keeps_off(_structures_cfg, def, spot, float(yaw_deg), row)   # the ghost's own rule, so a green ghost always places
+
+		if why != "":
+			_say(peer, "Something is in the way." if why == "close" else PlacementRules.reason_text(why).left(1).to_upper() + PlacementRules.reason_text(why).substr(1) + ".")
 			return
 
 		if other.has("struct") and str(other["struct"]["kind"]) == str(def["kind"]) and _chunk_of(other["pos"]) == here_chunk:
@@ -10090,6 +10086,25 @@ func _stands_on(base: Dictionary, def: Dictionary) -> bool:
 	return false
 
 
+# Whether a station, furniture or a fire stands on the top of floor `base` (a foundation or a ceiling cell, structures row `def`), as PlacementRules.support_top
+# set it there: taking the floor down would leave it in the air (Dave 17 Nov 2026: stations go on foundations and upper floors).
+func _holds_station(base: Dictionary, def: Dictionary) -> bool:
+	if not bool(def.get("foundation", false)) and str(def.get("piece_kind", "")) != "floor":
+		return false
+
+	var row: Dictionary = {"pos": base["pos"], "yaw": float(base["struct"].get("yaw", 0.0))}
+	var top: float = float(base["pos"].y) + PlacementRules.anchor_top(def)
+
+	for other in _items.values():
+		if other == base or not (other.has("fire") or (other.has("struct") and not bool(_structures.get(str(other["struct"]["kind"]), {}).get("piece", false)))):
+			continue
+
+		if absf(float(other["pos"].y) - top) < 0.05 and PlacementRules.holds(def, row, other["pos"]):
+			return true
+
+	return false
+
+
 # Taking a structure down (E near it) gives its kit back. A chest with things in it cannot be taken down.
 func _take_down(peer: int, inv, id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
@@ -10139,7 +10154,7 @@ func _take_down(peer: int, inv, id: int) -> void:
 		_say(peer, "Empty it first.")
 		return
 
-	if bool(def.get("foundation", false)) and _stands_on(it, def):
+	if (bool(def.get("foundation", false)) and _stands_on(it, def)) or _holds_station(it, def):
 		_say(peer, "Take down what stands on it first.")
 		return
 
@@ -15483,7 +15498,7 @@ func _crop_table() -> Dictionary:
 # A bed's crop and moisture key: its position in BED_SNAP_M steps ("b" and two whole numbers). Beds stand at least BED_GAP_M apart, so no two share one.
 # Saves from before turned beds (14 Nov 2026) keyed a bed by its metre cell ("x,z"); _rekey_old_beds moves those over at load.
 const BED_SNAP_M := 0.05   # a turned bed's position is kept to this, so its key never sits on a rounding edge
-const BED_GAP_M := 0.9     # PROVISIONAL: a tilled bed's centre stays this far from another's (1 m beds; a turned one may overlap its neighbour's corner a little)
+const BED_GAP_M := PlacementRules.BED_GAP_M   # a tilled bed's centre stays this far from another's (the placement rule, shared with the ghost)
 
 
 func _bed_key(pos: Vector3) -> String:
@@ -15503,13 +15518,7 @@ func _beds_clash(cells: Array, other: Dictionary) -> bool:
 # The square metres of a bed or plot, each holding one crop (Dave 14 Nov 2026: a Medium gardening plot holds 4 crops and a Large 9): a 1 m bed, a pot or a
 # planter is one, at its own position (its key is the bed's own, as before); an n m plot is n by n, turned with it (FarmRules.bed_side, grid_points).
 func _bed_cells(it: Dictionary) -> Array:
-	var n: int = FarmRules.bed_side(_structures.get(str(it["struct"].get("kind", "")), {}))
-
-	if n <= 1:
-		return [it["pos"]]
-
-	var y: float = it["pos"].y
-	return FarmRules.grid_points(n, n, 1.0, Vector2(it["pos"].x, it["pos"].z), int(round(float(it["struct"].get("yaw", 0.0))))).map(func(p): return Vector3(p.x, y, p.y))
+	return PlacementRules.plot_cells(_structures.get(str(it["struct"].get("kind", "")), {}), it["pos"], float(it["struct"].get("yaw", 0.0)))
 
 
 # Which square metre of a bed a request is for: the one nearest `at` when the client names a point (not Vector3.ZERO), else the first that `wants`
@@ -19134,12 +19143,15 @@ func _sort_slots(inv, from: int, to: int, sort_key: int, keep_favs: bool) -> int
 
 # `variant` (SmithingRules code, 0 plain): Tempered and/or craftsmanship +1/+2, refused unless the stations beside the player allow it for this
 # recipe (craft_variants); its needs are scaled up and it takes longer (smithing.json).
-func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int = 0) -> void:
+func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int = 0, hand: int = -1) -> void:   # hand: the pack slot in the right hand (-1 empty)
 	var queue: Dictionary = _queue_of(peer)
 	var recipe: Dictionary = recipes.recipe(recipe_number)
 	var free: bool = free_craft_for(peer)
 
 	if queue.is_empty() or recipe.is_empty() or (not recipe_known_for(peer, recipe) and not free and not _try_learn(peer, inv, recipe)):
+		return
+
+	if not free and not _hand_tool_ok(peer, inv, recipe, hand):   # a kept tool must be in hand (Dave 17 Nov 2026), checked before any log is pulled onto the shoulder
 		return
 
 	# The station within the crafting reach but not beside you: go to it and craft there (Dave 10 Nov 2026), when the stock here covers one.
@@ -19205,10 +19217,13 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 	# Short of a part the stock could make (no twine, but the fibre for it): queue the missing parts first, then this (Dave 25 Oct). The planner
 	# knows only plain recipes, so a variant must be covered as it is.
 	if variant == 0 and not _stock_covers(inv, recipe, count, stock):
-		var outcome: int = _queue_with_parts(peer, inv, queue, recipe_number, count, stock)
+		var outcome: int = _queue_with_parts(peer, inv, queue, recipe_number, count, stock, hand)
 
 		if outcome == 1:
 			_send_stock(peer)
+			return
+
+		if outcome == 2:
 			return
 
 	var entries: Array = queue["entries"]
@@ -19327,8 +19342,9 @@ func _pack_covers(inv, recipe: Dictionary, times: int) -> bool:
 
 
 # Plans the missing parts of a craft and queues them, all or nothing, in one step. Returns 1 when queued, 0 when it could not be and the player
-# was told why, -1 when there is nothing to add (the plain craft goes on, or fails the old way).
-func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, count: int, stock: Dictionary = {}) -> int:
+# was told why, 2 when a part it would make needs a tool in hand that is not there (told why; the craft stops there), -1 when there is nothing to add (the plain craft
+# goes on, or fails the old way).
+func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, count: int, stock: Dictionary = {}, hand: int = -1) -> int:
 	if stock.is_empty():
 		stock = _stock_of(peer)
 
@@ -19351,6 +19367,10 @@ func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, co
 
 	if steps.size() == 1:
 		return -1   # nothing to make first: the plain path
+
+	for step in steps:   # a part made on the way with a tool (Wooden blocks sawn for a Wooden hammer) needs that tool in hand too
+		if not _hand_tool_ok(peer, inv, recipes.recipe(int(step["recipe"])), hand):
+			return 2   # refused, and said why: nothing else is tried (the plain path would only add "You do not have what that needs")
 
 	var entries: Array = queue["entries"]
 

@@ -6,10 +6,16 @@ extends RefCounted
 
 const PATH := "res://data/items/structures.json"
 const CHUNK_M := 256.0
-const FIRE_STATES := [1, 8, 9]
+const FarmRules := preload("res://src/shared/farm_rules.gd")   # a plot's square metres (bed_side, grid_points)
+const StructureLookScript := preload("res://src/shared/structure_look.gd")
+const FIRE_STATES := StructureLookScript.CAMPFIRE_STATES   # every campfire row, lit or not: the server keeps every fire its gap away (was 1, 8 and 9 only)
 const POT_FIRE_STATES := [1, 8, 9, 40]   # the small fires a campfire pot goes on (not the bonfire, 41)
 const POT_ATTACH_M := 2.0
-const STRUCTURE_STATES := [5, 6, 7]
+const STATION_HEIGHT_M := 1.6       # PROVISIONAL (PL-3): how tall a station or piece of furniture counts when checked against the walls round it (data height_m wins)
+const SUPPORT_REACH_M := 0.6        # a station aimed this near a floor's top (above or below) stands on that floor
+const OVERLAP_SLACK_M := 0.05       # boxes that only touch (a chest on a floor, a bench against a wall) do not clash
+const BED_GAP_M := 0.9              # PROVISIONAL: a bed's or plot's square metre stays this far from another's (1 m beds; a turned one may overlap its neighbour's corner a little)
+const FLOOR_SKIP := ["attach_to", "needs_base_lift_m", "needs_running_water", "min_water_m", "walkover", "support", "shelter", "water"]   # PROVISIONAL (PL-1): what never stands on a building floor: what hangs on something, the sawmill and water wheel (their own rules), a fish trap, a path or bed in the soil, a mine prop, a lean-to, a well or pump
 const WATER_BLOCK_M := 0.15          # water at least this deep under a kit blocks it
 const FIRE_WATER_BLOCK_M := 0.05     # a fire cannot go on any visible water (Dave 2 Nov 2026)
 const PILLAR_KIND := "pillar"        # structures.json piece_kind of a pillar (the buildables plan, batch B1c, Morgan 10 Nov 2026)
@@ -55,6 +61,7 @@ static func structure_of_kit(cfg: Dictionary, kit_id: String) -> Dictionary:
 	return {}
 
 
+# A station, furniture or a fire aimed at a foundation's or a ceiling's top stands on it (support_top); anything else not a building piece keeps its spot.
 # Building pieces (structures.json "piece": true) click to a grid: x and z to the piece's snap_m (else piece_snap_m) metres, the turn to
 # a quarter circle, so neighbours meet edge to edge. A wall or floor near a foundation (rows: {"pos", "state"}) snaps to the
 # nearest of the foundation's anchors instead and stands on its top; a pillar snaps to the middle or a corner of a foundation or a ceiling
@@ -76,8 +83,9 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 		var fit: Dictionary = doorway_fit(cfg, def, spot, rows)
 		return [spot, yaw_deg, false] if is_nan((fit["spot"] as Vector3).y) else [fit["spot"], int(fit["yaw"]), true]
 
-	if def.is_empty() or not bool(def.get("piece", false)):
-		return [spot, yaw_deg, false]
+	if def.is_empty() or not bool(def.get("piece", false)):   # a fire on a foundation (Dave 10 Nov 2026); a station or furniture on a foundation or an upper floor (Dave 17 Nov 2026)
+		var top: float = support_top(cfg, spot, rows, not def.is_empty()) if def.is_empty() or stands_on_floor(def) else NAN
+		return [spot, yaw_deg, false] if is_nan(top) else [Vector3(spot.x, top, spot.z), yaw_deg, true]
 
 	if bool(def.get("foundation", false)):   # a foundation beside another of its kind takes its height and its edge (Dave 4 Nov 2026)
 		var stacked: Array = foundation_stack(def, spot, rows)
@@ -759,16 +767,28 @@ static func attach_states(cfg: Dictionary, kit_id: String) -> Dictionary:
 	return out
 
 
+# The structures row drawn as `state`, with "kind" added; {} for none. The first kind with a state wins. The rows by state are made once and kept in
+# cfg["_kind_of_state"] as [how many rows they were made from, rows]: the ghost asks this for every fire and structure near it ten times a second. A copy
+# of the file with rows added (the tests' made-up pieces) counts again. The row is shared: read it, never change it.
 static func structure_of_state(cfg: Dictionary, state: int) -> Dictionary:
-	for kind in cfg.get("structures", {}):
-		var def: Dictionary = cfg["structures"][kind]
+	var structures: Dictionary = cfg.get("structures", {})
+	var cached: Array = cfg.get("_kind_of_state", [])
 
-		if int(def.get("state", -1)) == state:
-			var out: Dictionary = def.duplicate()
-			out["kind"] = kind
-			return out
+	if cached.is_empty() or int(cached[0]) != structures.size():
+		var by_state: Dictionary = {}
 
-	return {}
+		for kind in structures:
+			var at: int = int(structures[kind].get("state", -1))
+
+			if not by_state.has(at):
+				var row: Dictionary = structures[kind].duplicate()
+				row["kind"] = kind
+				by_state[at] = row
+
+		cached = [structures.size(), by_state]
+		cfg["_kind_of_state"] = cached
+
+	return (cached[1] as Dictionary).get(state, {})
 
 
 # The ghost's footprint in metres: zero for a campfire (drawn as a ring).
@@ -789,10 +809,11 @@ static func _chunk(p: Vector3) -> Vector2i:
 	return Vector2i(int(floor(p.x / CHUNK_M)), int(floor(p.z / CHUNK_M)))
 
 
-# "" when the spot is free, else why not: "close" (too near a fire or a structure) or "crowded" (the chunk's cap).
+# "" when the spot is free, else why not: "close" (too near a fire or a structure), "overlap" (through a wall or another piece), "bed" (on another bed's or
+# plot's square metre), "crowded" (the chunk's cap), or a door's, pot's or point piece's own reason.
 # A rough bed may lie inside a lean-to (any shelter structure): its middle within the shelter's half_x by half_z box, turned by the shelter's yaw (server_items.gd _inside_shelter
 # uses the same box). The row's yaw is in degrees when the client's world rows carry one.
-static func _bed_in_shelter(cfg: Dictionary, def: Dictionary, row: Dictionary, spot: Vector3) -> bool:
+static func bed_in_shelter(cfg: Dictionary, def: Dictionary, row: Dictionary, spot: Vector3) -> bool:
 	if str(def.get("use", "")) != "set_spawn":   # a bed: the rough, straw, feather and canopy beds carry use set_spawn
 		return false
 
@@ -802,7 +823,7 @@ static func _bed_in_shelter(cfg: Dictionary, def: Dictionary, row: Dictionary, s
 		return false
 
 	var local: Vector2 = Vector2(spot.x - row["pos"].x, spot.z - row["pos"].z).rotated(deg_to_rad(float(row.get("yaw", 0.0))))
-	return absf(local.x) <= float(shelter.get("half_x", 0.0)) and absf(local.y) <= float(shelter.get("half_z", 0.0))
+	return absf(local.x) <= float(shelter.get("half_x", 0.0)) and absf(local.y) <= float(shelter.get("half_z", 0.0)) and absf(spot.y - float(row["pos"].y)) < 1.5
 
 
 # The top of the highest foundation whose footprint (turned by its yaw) holds `spot` across the ground, or NAN. A fire is laid on it (Dave 10 Nov 2026:
@@ -813,12 +834,7 @@ static func foundation_top(cfg: Dictionary, spot: Vector3, rows: Array) -> float
 	for row in rows:
 		var base: Dictionary = structure_of_state(cfg, int(row["state"]))
 
-		if base.is_empty() or not bool(base.get("foundation", false)):
-			continue
-
-		var local: Vector2 = Vector2(spot.x - row["pos"].x, spot.z - row["pos"].z).rotated(deg_to_rad(float(row.get("yaw", 0.0))))
-
-		if absf(local.x) > float(base.get("footprint_x", 4.0)) * 0.5 or absf(local.y) > float(base.get("footprint_z", 4.0)) * 0.5:
+		if base.is_empty() or not bool(base.get("foundation", false)) or not holds(base, row, spot):
 			continue
 
 		var y: float = float(row["pos"].y) + float(base.get("top_m", 0.3))
@@ -829,17 +845,158 @@ static func foundation_top(cfg: Dictionary, spot: Vector3, rows: Array) -> float
 	return top
 
 
+# Whether `spot` lies over the footprint of `base` (a structures row) standing as `row` ({pos, yaw degrees}), across the ground.
+static func holds(base: Dictionary, row: Dictionary, spot: Vector3) -> bool:
+	var local: Vector2 = Vector2(spot.x - row["pos"].x, spot.z - row["pos"].z).rotated(deg_to_rad(float(row.get("yaw", 0.0))))
+	return absf(local.x) <= float(base.get("footprint_x", 4.0)) * 0.5 and absf(local.y) <= float(base.get("footprint_z", 4.0)) * 0.5
+
+
+# The top of the building floor a station, furniture or a fire is aimed at, or NAN: a foundation, or with `floors` a ceiling too (piece_kind "floor", the
+# floor of the storey above: Dave 17 Nov 2026 "on foundations and on top of ceilings like on the second floor"), whose footprint holds `spot` across the
+# ground and whose top lies within SUPPORT_REACH_M of the aim's height; the nearest such top wins, so a ground-floor aim is not lifted to the floor above.
+# Roofs, walls and the rest are never a floor (PROVISIONAL PL-1). Only the middle need be over it (PROVISIONAL PL-2).
+static func support_top(cfg: Dictionary, spot: Vector3, rows: Array, floors: bool) -> float:
+	var top: float = NAN
+
+	for row in rows:
+		var base: Dictionary = structure_of_state(cfg, int(row["state"]))
+
+		if not (bool(base.get("foundation", false)) or (floors and str(base.get("piece_kind", "")) == "floor")) or not holds(base, row, spot):
+			continue
+
+		var y: float = float(row["pos"].y) + anchor_top(base)
+
+		if absf(y - spot.y) <= SUPPORT_REACH_M and (is_nan(top) or absf(y - spot.y) < absf(top - spot.y)):
+			top = y
+
+	return top
+
+
+# Whether a structures row stands on a building floor it is aimed at (snap): any station or furniture that is not a building piece, but not FLOOR_SKIP's.
+static func stands_on_floor(def: Dictionary) -> bool:
+	if def.is_empty() or bool(def.get("piece", false)):
+		return false
+
+	for key in FLOOR_SKIP:
+		if def.has(key):
+			return false
+
+	return true
+
+
+# Why `row` (a fire or structure standing, {pos, state, yaw degrees}) keeps a new `def` (a structures row with "kind"; not the campfire) at `spot` turned
+# `yaw_deg` from going there, else "": the server's check (server_items._place_structure) and the ghost's colour, so green always places.
+# - furniture (gap_exempt), a walkover patch or bed, a pot over a fire and a bed inside a lean-to never clash (as before);
+# - two building pieces never clash here (their own points and anchors decide);
+# - a building piece and a station or furniture clash only where their boxes meet ("overlap"): a station stands on a floor, beside a wall, under a
+#   ceiling, but never through a wall, a pillar, a fence or a doorway (Dave 17 Nov 2026). Roofs never meet a station (PROVISIONAL PL-4);
+# - anything else (two stations, a fire and anything but a floor it stands on) keeps the gap_m between middles ("close").
+static func keeps_off(cfg: Dictionary, def: Dictionary, spot: Vector3, yaw_deg: float, row: Dictionary) -> String:
+	var state: int = int(row["state"])
+	var fire: bool = FIRE_STATES.has(state)
+	var other: Dictionary = {} if fire else structure_of_state(cfg, state)
+
+	if not fire and other.is_empty():
+		return ""
+
+	if bool(def.get("gap_exempt", false)) or bool(other.get("gap_exempt", false)) or bool(other.get("walkover", false)) or (fire and str(def.get("attach_to", "")) == "fire") or bed_in_shelter(cfg, def, row, spot):
+		return ""
+
+	var piece: bool = bool(def.get("piece", false))
+
+	if piece and bool(other.get("piece", false)):
+		return ""
+
+	if not fire and piece != bool(other.get("piece", false)):
+		if _is_roof(def) or _is_roof(other):
+			return ""
+
+		return "overlap" if _boxes_meet(_box(def, spot, yaw_deg), _box(other, row["pos"], float(row.get("yaw", 0.0)))) else ""
+
+	return "close" if (row["pos"] as Vector3).distance_to(spot) < float(cfg.get("gap_m", 2.5)) else ""
+
+
+static func _is_roof(def: Dictionary) -> bool:
+	return str(def.get("piece_kind", "")) in [ROOF_PANEL_KIND, ROOF_HIP_KIND]
+
+
+# The room a placed thing takes: [middle across the ground, half its footprint, its turn in radians, its foot, its top]. A foundation is its slab (top_m), a
+# ceiling its CEILING_TOP_M, any other piece its height_m else a wall's WALL_HEIGHT_M, a station or furniture its height_m else STATION_HEIGHT_M.
+static func _box(def: Dictionary, pos: Vector3, yaw_deg: float) -> Array:
+	var tall: float = float(def.get("height_m", STATION_HEIGHT_M))
+
+	if bool(def.get("foundation", false)) or str(def.get("piece_kind", "")) == "floor":
+		tall = anchor_top(def)
+	elif bool(def.get("piece", false)):
+		tall = float(def.get("height_m", WALL_HEIGHT_M))
+
+	return [Vector2(pos.x, pos.z), Vector2(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0))) * 0.5, deg_to_rad(yaw_deg), pos.y, pos.y + tall]
+
+
+# Whether two _box rooms overlap by more than OVERLAP_SLACK_M: up and down, then across the ground on the four sides of the two turned rectangles.
+static func _boxes_meet(a: Array, b: Array) -> bool:
+	if float(a[4]) <= float(b[3]) + OVERLAP_SLACK_M or float(b[4]) <= float(a[3]) + OVERLAP_SLACK_M:
+		return false
+
+	var apart: Vector2 = (b[0] as Vector2) - (a[0] as Vector2)
+
+	for axis in [_side(a, 0), _side(a, 1), _side(b, 0), _side(b, 1)]:
+		if absf(apart.dot(axis)) >= _reach(a, axis) + _reach(b, axis) - OVERLAP_SLACK_M:
+			return false
+
+	return true
+
+
+# A box's own x (0) or z (1) direction across the ground, turned as a structure's yaw turns it (local x runs to (cos, -sin), local z to (sin, cos)).
+static func _side(box: Array, which: int) -> Vector2:
+	var turn: float = float(box[2])
+	return Vector2(cos(turn), -sin(turn)) if which == 0 else Vector2(sin(turn), cos(turn))
+
+
+static func _reach(box: Array, axis: Vector2) -> float:
+	var half: Vector2 = box[1]
+	return half.x * absf(axis.dot(_side(box, 0))) + half.y * absf(axis.dot(_side(box, 1)))
+
+
+# Whether a bed, planter or plot `def` at `spot` turned `yaw_deg` would share a square metre with plot `row` (two on one spot would share a crop record).
+static func plots_clash(cfg: Dictionary, def: Dictionary, spot: Vector3, yaw_deg: float, row: Dictionary) -> bool:
+	var other: Dictionary = structure_of_state(cfg, int(row["state"]))
+
+	if not is_plot(def) or not is_plot(other):
+		return false
+
+	for mine in plot_cells(def, spot, yaw_deg):
+		for theirs in plot_cells(other, row["pos"], float(row.get("yaw", 0.0))):
+			if Vector2(theirs.x - mine.x, theirs.z - mine.z).length() < BED_GAP_M:
+				return true
+
+	return false
+
+
+static func is_plot(def: Dictionary) -> bool:
+	return str(def.get("kind", "")) == "tilled_bed" or bool(def.get("plot", false))
+
+
+# The square metres of a bed or plot, each holding one crop (Dave 14 Nov 2026: a Medium gardening plot holds 4 crops and a Large 9): a 1 m bed, a pot or a
+# planter is one, at its own position; an n m plot is n by n, turned with it (FarmRules.bed_side, grid_points).
+static func plot_cells(def: Dictionary, pos: Vector3, yaw_deg: float) -> Array:
+	var n: int = FarmRules.bed_side(def)
+
+	if n <= 1:
+		return [pos]
+
+	return FarmRules.grid_points(n, n, 1.0, Vector2(pos.x, pos.z), int(round(yaw_deg))).map(func(p): return Vector3(p.x, pos.y, p.y))
+
+
 # Whether a structure of `state` keeps a new fire its gap away, as the server does (server_items._place): every structure except a foundation (the
 # fire may be laid on one), a walkover piece, furniture (gap_exempt) and a campfire pot (it hangs over a fire).
 static func blocks_fire(cfg: Dictionary, state: int) -> bool:
-	if STRUCTURE_STATES.has(state):
-		return true
-
 	var def: Dictionary = structure_of_state(cfg, state)
 	return not def.is_empty() and not bool(def.get("foundation", false)) and not bool(def.get("walkover", false)) and not bool(def.get("gap_exempt", false)) and str(def.get("attach_to", "")) != "fire"
 
 
-static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array) -> String:
+# `rows`: every fire and structure standing ({pos, state, yaw degrees}), as the server checks them all; `yaw_deg` the turn the piece goes down at.
+static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array, yaw_deg: float = 0.0) -> String:
 	var gap: float = float(cfg.get("gap_m", 2.5))
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
 	var same: int = 0
@@ -884,8 +1041,13 @@ static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array)
 			elif row["pos"].distance_to(spot) < gap and blocks_fire(cfg, state):
 				return "close"
 		else:
-			if not bool(def.get("gap_exempt", false)) and not _bed_in_shelter(cfg, def, row, spot) and (FIRE_STATES.has(state) or STRUCTURE_STATES.has(state)) and row["pos"].distance_to(spot) < gap:   # furniture may stand beside a fire or a shelter
-				return "close"
+			var why: String = keeps_off(cfg, def, spot, yaw_deg, row)
+
+			if why != "":
+				return why
+
+			if plots_clash(cfg, def, spot, yaw_deg, row):
+				return "bed"
 
 			if int(def.get("state", -1)) == state and _chunk(row["pos"]) == _chunk(spot):
 				same += 1
@@ -944,6 +1106,10 @@ static func reason_text(state: String, opening: String = "") -> String:   # open
 			return "this doorway takes %s" % str(OPENING_DOORS.get(opening, opening))
 		"close":
 			return "too close to another fire or building"
+		"overlap":
+			return "something is in the way: a wall, a post or another piece stands there"
+		"bed":
+			return "a bed or planter is already in that spot"
 		"crowded":
 			return "too many of these here already"
 		"steep":

@@ -10,6 +10,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 var failures: int = 0
 var items
@@ -34,7 +35,7 @@ func queue_and_finish(recipe_id: String, crafts: int) -> void:
 			number = int(n)
 
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, number, 0, crafts, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, number, 0, crafts, CraftHand.at(items, 1, number))
 
 	for s in range(40):
 		items.tick(1.0)
@@ -117,7 +118,7 @@ func _init() -> void:
 	check(count("chopping_block") == 1 and count("wooden_block") == 0, "a chopping block from one Wooden block (15 Nov 2026: one block)")
 	items.dev_place("carving_station@2,0,0")   # the bowl and the hammer are carved at the wood carving station (15 Nov 2026, TREE_WOOD_TOOLS_DESIGN.md W-8)
 	pack.add(items.table.number_of("wooden_block"), 1)
-	pack.add(items.table.number_of("stone_knife"), 1)
+	items.give(1, items.table.number_of("stone_knife"), 1)   # given, so it goes on a hotbar key: a kept knife must be in hand (CraftHand.at picks it)
 	queue_and_finish("wooden_bowl", 1)
 	check(count("wooden_bowl") == 1 and count("wooden_block") == 0 and count("stone_knife") == 1, "a wooden bowl carved from a block, the stone knife kept (recipe audit 10 Nov 2026)")
 	pack.add(items.table.number_of("wooden_block"), 1)

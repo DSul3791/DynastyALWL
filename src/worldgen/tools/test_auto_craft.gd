@@ -7,6 +7,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const Planner := preload("res://src/shared/craft_planner.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 var failures: int = 0
 var items
@@ -69,7 +70,7 @@ func give(it, id: String, n: int) -> void:
 
 func queue(it, recipe: int, n: int) -> void:
 	it._last_queue_act.clear()
-	it.action(1, Net.ACT_CRAFT_QUEUE, recipe, 0, n, Vector3.ZERO)
+	it.action(1, Net.ACT_CRAFT_QUEUE, recipe, 0, n, CraftHand.at(it, 1, recipe))
 
 
 func entries(it) -> Array:

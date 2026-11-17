@@ -17,6 +17,7 @@ const BowAim := preload("res://src/shared/bow_aim.gd")
 const ListScript := preload("res://src/client/hammer_blueprints.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const LookTable := preload("res://src/client/look_table.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 const NEAR_TRIANGLES := 300
 # The blueprints a knife builds (W-9 and the three new benches and the station), by structure id.
@@ -96,7 +97,7 @@ func standing(kind: String) -> Array:
 
 func queue(recipe_id: String) -> void:
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, int(recipe_of(recipe_id)["number"]), 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, int(recipe_of(recipe_id)["number"]), 0, 1, CraftHand.at(items, 1, int(recipe_of(recipe_id)["number"])))
 
 	for _s in range(60):
 		items.tick(1.0)

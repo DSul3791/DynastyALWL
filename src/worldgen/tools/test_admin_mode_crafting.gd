@@ -9,6 +9,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ViewScript := preload("res://src/client/inventory_view.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 const KEY := "adminmodekey01"
 const TWINE := 1            # 3 plant fibre, by hand, known
@@ -36,7 +37,7 @@ func have(id: String) -> int:
 
 func queue(recipe: int, count: int) -> void:
 	items._last_queue_act.clear()   # the server ignores queue requests closer than 100 ms apart
-	items.action(1, Net.ACT_CRAFT_QUEUE, recipe, 0, count, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe, 0, count, CraftHand.at(items, 1, recipe))
 
 
 func run_ticks(seconds: float) -> void:

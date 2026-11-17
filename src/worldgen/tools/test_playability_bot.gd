@@ -12,6 +12,7 @@ const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 # What a first hour can fairly ask of the hands (the guide's pace: about 10 minutes of gathering). The bot fails when the recipes ask for more.
 const GATHER_BUDGET := {"stick": 70, "stone": 40, "plant_fibre": 90, "leaves": 220}
@@ -88,7 +89,7 @@ func craft(id: String, crafts: int) -> String:
 			return "recipe '%s' needs %d x %s, the pack holds %d" % [id, int(part[1]) * crafts, items.table.name_of(int(part[0])), have]
 
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, int(r["number"]), 0, crafts, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, int(r["number"]), 0, crafts, CraftHand.at(items, 1, int(r["number"])))
 	pass_time(float(r["craft_s"]) * float(crafts) + 6.0, 0.2)
 	var made: int = items.inventory_of(1).count_of(int(r["gives"][0])) - before
 

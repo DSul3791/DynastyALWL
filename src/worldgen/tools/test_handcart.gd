@@ -14,6 +14,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const Carts := preload("res://src/stream/server_carts.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 const DIR := "user://test_handcart"
 const RAMP_X := 40.0      # east of this the ground climbs 0.8 m per metre (too steep for a cart)
 const WATER_Z := 120.0    # from here to z 160 the water is 1 m deep
@@ -159,7 +160,7 @@ func recipe_number(id: String) -> int:
 
 func craft(id: String, times: int, seconds: int) -> void:
 	items._last_queue_act.clear()
-	act(1, Net.ACT_CRAFT_QUEUE, recipe_number(id), 0, times)
+	act(1, Net.ACT_CRAFT_QUEUE, recipe_number(id), 0, times, CraftHand.at(items, 1, recipe_number(id)))
 
 	for s in range(seconds):
 		items.tick(1.0)

@@ -9,6 +9,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 const FILES := ["inventories.json", "world_items.json", "tree_states.json", "chests.json", "vitals.json", "craft_queues.json", "characters.json"]
 const KEY := "drillkey00001"
@@ -159,7 +160,7 @@ func build_world(dir: String) -> Dictionary:
 	a._characters[KEY]["skills_v"] = 2
 	a._characters[KEY]["skills"] = {"mining": {"p": 12.5, "peak": 12.5, "last": 5.0}}
 	a._last_queue_act.clear()
-	a.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 3, Vector3.ZERO)
+	a.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 3, CraftHand.at(a, 1, 1))
 	a._dirty = true
 	a.save()
 	a._dirty = true

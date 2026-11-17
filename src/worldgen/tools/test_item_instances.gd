@@ -9,6 +9,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 const DIR := "user://test_item_instances"
 const KEY := "instances001"
@@ -254,7 +255,7 @@ func _init() -> void:
 
 	inv.add(fibre, 2)
 	inv.add(fibre, 1, 6, {"craft": 2})
-	items.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 1, CraftHand.at(items, 1, 1))
 	var queue: Array = items._queue_of(1).get("entries", [])
 	check(inv.count_of(fibre) == 0 and queue.size() == 1, "a queued Twine takes the three fibres, the instance one too")
 	items._last_queue_act.erase(1)   # queue actions are paced
@@ -344,7 +345,7 @@ func _init() -> void:
 
 	inv.add(fibre, 3, 7)
 	items._last_queue_act.erase(1)
-	items.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 1, CraftHand.at(items, 1, 1))
 	check(inv.count_of(fibre) == 0, "the Twine takes the three worn fibres")
 	items._last_queue_act.erase(1)
 	items.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
@@ -384,7 +385,7 @@ func _init() -> void:
 	items._items[items._next_id] = {"number": table.number_of("food_preparation_table"), "count": 1, "pos": Vector3(1.5, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "food_preparation_table", "yaw": 0.0}}   # Nut cake is made at the table (Mission 001 phase 6)
 	items._next_id += 1
 	items._last_queue_act.erase(1)
-	items.action(1, Net.ACT_CRAFT_QUEUE, 31, 0, 5, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, 31, 0, 5, CraftHand.at(items, 1, 31))
 	var food_queue: Array = items._queue_of(1).get("entries", [])
 	check(inv.count_of(nuts) == 0 and food_queue.size() == 1 and int(food_queue[0][1]) == 5, "five energy bars are queued (%s)" % str(food_queue))
 
@@ -499,7 +500,7 @@ func _init() -> void:
 
 	third_inv.add(fibre, 3, 4)
 	third._last_queue_act.erase(1)
-	third.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 1, Vector3.ZERO)
+	third.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 1, CraftHand.at(third, 1, 1))
 	third._dirty = true
 	third.save()
 	third._finish_writer()

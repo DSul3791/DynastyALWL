@@ -30,6 +30,7 @@ const BagRules := preload("res://src/shared/bag_rules.gd")
 const Carts := preload("res://src/stream/server_carts.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const Weather := preload("res://src/shared/weather.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 const DIR := "user://test_mission001_walkthrough"
 const KEYS := {1: "walkthrough01", 2: "walkthrough02"}
 
@@ -233,7 +234,7 @@ func craft(id: String, times: int, seconds: float = -1.0, variant: int = 0) -> v
 		seconds = float(r.get("craft_s", 10.0)) * float(times) * SmithingRules.time_mult(variant) + 4.0
 
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number(id), variant, times, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number(id), variant, times, CraftHand.at(items, 1, recipe_number(id)))
 	var waited: float = 0.0
 
 	while waited < seconds * 3.0 + 30.0 and not items.craft_queue_of(1).is_empty():   # the crafter's pace may be slower than the recipe time
