@@ -19,11 +19,11 @@ func check(ok: bool, what: String) -> void:
 
 
 func _init() -> void:
-	var root: Node3D = Node3D.new()
-	get_root().add_child.call_deferred(root)
+	var scene_root: Node3D = Node3D.new()
+	get_root().add_child.call_deferred(scene_root)
 	var view: Node = ViewScript.new()
 	view.table = ItemTableScript.load_default()
-	view._root = root
+	view._root = scene_root
 	view._ground_below = func(_at: Vector3) -> float: return 0.0
 	view._player_position = func() -> Vector3: return Vector3.ZERO
 	var structures: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/structures.json"))["structures"]
@@ -45,5 +45,5 @@ func _init() -> void:
 
 	print("test_smelter_redraw: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	view.free()
-	root.queue_free()
+	scene_root.queue_free()
 	quit(1 if failures > 0 else 0)
