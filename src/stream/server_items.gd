@@ -6256,6 +6256,16 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 	var body_m: float = float(cfg.get("near_body_m", 0.0))
 	var hand_max: float = float(cfg.get("hand_max_radius", 0.0))
 	var cell_bits: int = ((cell.x & 0xfffff) << 28) | ((cell.y & 0xfffff) << 8)
+	var names: Dictionary = {ore: item}
+	var layer_m: float = float(_boulder_cfg.get("ore", {}).get("layer_depth_m", 10.0))
+
+	# Tin: one geology look for the whole cell first (any of its spots within near_body_m of a body), so a cell far from tin reads nothing more.
+	if body_m > 0.0:
+		var mid: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
+		var mid_y: float = float(ground_height.call(mid.x, mid.y))
+
+		if is_nan(mid_y) or not ore_near.is_valid() or str(ore_near.call(Vector3(mid.x, mid_y, mid.y), body_m + cell_m * 0.71, names, layer_m)) != ore:
+			return
 
 	for attempt in range(ORE_ROCK_TRIES):
 		var x: float = (float(cell.x) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
@@ -6292,7 +6302,7 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 			if depth <= 0.0 and not bank:
 				continue
 
-		if body_m > 0.0 and (not ore_near.is_valid() or str(ore_near.call(spot, body_m, {ore: item}, float(_boulder_cfg.get("ore", {}).get("layer_depth_m", 10.0)))) != ore):
+		if body_m > 0.0 and str(ore_near.call(spot, body_m, names, layer_m)) != ore:
 			continue   # tin lies only downstream of its own geology
 
 		var sizes: Dictionary = foot if is_foot else cfg
