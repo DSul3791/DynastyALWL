@@ -2828,22 +2828,24 @@ func _stop_if_asked(now: int) -> void:
 	if not PlayServerScript.stop_is_for(asked, OS.get_process_id()):
 		return
 
-	DirAccess.remove_absolute(STOP_NOTE)
 	var from: String = str(asked.get("commit", ""))
 
 	if from == _commit:
+		DirAccess.remove_absolute(STOP_NOTE)
 		return   # a request left behind from before this server started (same process number again): Play only asks a server of other code
 
 	if not _peers.is_empty():
 		# Someone is playing here: they are not dropped. Play sees the request taken without "closing" and joins; its join screen says out of date.
 		print("server: Play from commit %s asked this server (commit %s) to close; %d players here, staying up" % [from, _commit, _peers.size()])
 		_events.event("STOP REFUSED: Play from commit %s asked; %d players here" % [from, _peers.size()])
+		DirAccess.remove_absolute(STOP_NOTE)
 		return
 
 	print("server: Play from commit %s asked this server (commit %s) to close" % [from, _commit])
 	_events.event("QUIT: Play from commit %s asked this server (commit %s) to close" % [from, _commit])
 	_quit_at_msec = now
 	_run_note("closing", _listen_port)
+	DirAccess.remove_absolute(STOP_NOTE)   # after "closing" is written: Play reads a taken request with no "closing" as refused
 
 
 func _send(peer_id: int, batch: Array) -> void:
