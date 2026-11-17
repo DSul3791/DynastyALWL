@@ -5490,7 +5490,7 @@ func _build_panel() -> void:
 	# You: the gear wells and the live character, an ornament rule, then the six stats.
 	_you_box = VBoxContainer.new()
 	_you_box.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_you_box.add_theme_constant_override("separation", 12)
+	_you_box.add_theme_constant_override("separation", 6)   # with the gear wells 6 apart, the stats fit the column at text 1.2 (was 12: 43 px over)
 	_you_part = YouColumnScript.new(self)
 	_you_box.add_child(_you_part.build())
 	var you_rule: Control = Control.new()
