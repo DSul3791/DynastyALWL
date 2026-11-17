@@ -26,6 +26,7 @@ var _footer: VBoxContainer                # under it, never scrolled away: the b
 var _quantity: SpinBox                    # the How many box (null while no recipe is shown)
 var _qty: int = 1                         # the last quantity chosen, kept between refreshes
 var _variant: int = 0                     # the variant chosen on the card (SmithingRules code: Tempered, +1, +2), kept between refreshes
+var store_holder: VBoxContainer           # right of the recipe list, over the card: a crafting station's own store sits here (container_panel.set_compact)
 
 
 func _init(owner_view) -> void:
@@ -68,7 +69,14 @@ func build(queue_root: Control) -> Control:
 	plate.content_margin_top = 12.0
 	plate.content_margin_bottom = 12.0
 	card.add_theme_stylebox_override("panel", plate)
-	columns.add_child(card)
+	var right: VBoxContainer = VBoxContainer.new()   # a crafting station's store over the card (Dave 17 Nov 2026: the list on the left, its inventory beside it)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_theme_constant_override("separation", 10)
+	store_holder = VBoxContainer.new()
+	store_holder.visible = false
+	right.add_child(store_holder)
+	right.add_child(card)
+	columns.add_child(right)
 	var stack: VBoxContainer = VBoxContainer.new()
 	stack.add_theme_constant_override("separation", 10)
 	card.add_child(stack)

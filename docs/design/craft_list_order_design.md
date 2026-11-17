@@ -47,3 +47,26 @@ F on a station opens its window: the crafting screen for a station without a sto
 - **SR-3, the campfire's window** lists the campfire recipes, lit or not (an unlit fire's rows are dim, as before). Pot recipes (soups, stews) stay with the pot's own window and your own inventory.
 - **SR-4, the Sawbuck** lists Wooden block, the recipe it speeds. The chopping block has no recipes (E splits logs), so its Craft tab is empty.
 - **SR-5, your own inventory near a station** still lists everything, station recipes second as above. Dave's ruling named only other inventories.
+
+## A crafting station has one inventory, beside its recipes (Dave 17 Nov 2026)
+
+Dave, playtest:
+
+> "I just used the primative smithy and didnt like the way there is a separate chest inventory. it should be combined so when it makes items they appear so the player can see them."
+
+> "in a station that has an inventory there should only be on inventory not a chest and crafting. it should have unlimited inventory slots starting with 20 and on the left it lists the items you can craft."
+
+He picked "Station's slots on the craft screen" (17 Nov 02:12Z) over products going straight to the pack, and "ship it all at once".
+
+- **One store.** The crafting stations that had input and output slots (Primitive, Improved and Advanced smithy, Master smithy, leatherworking table, tailor's table, loom, food preparation table, saw mill) have one store instead (`structures.json` `"one_store": true`, `"slots": 20`, no `out_slots`). It holds what you put in and what the station makes. A finished craft goes into it (`server_items._out_add`), never to the pack or the ground.
+- **Unlimited, from 20.** A new store has 20 slots and grows when full, as the pack does (`Inventory.grows`, 5 at a time, up to the 250 the protocol carries). Empty slots past 20 and past the last thing in it are given back when it is next used (`_store_usable`).
+- **Saves.** A store saved with the old input and output slots loads whole: every stack is in the one store, nothing moves or is lost (`test_station_storage`).
+- **The window.** No Chest and Craft tabs: the category tabs and recipe list on the left, the station's store on the right over the recipe card (`recipe_list.store_holder`, `container_panel.set_compact`, `inventory_view._store_with_recipes`). What the station makes is seen landing in it.
+
+### For Dave (provisional, assumed on his behalf; change any of them by saying so)
+
+- **SC-1, size.** Beside the recipes the store's wells are 60 px, 5 across, four rows (its first 20 slots) in view; a store grown past 20 scrolls. A chest's are 100 px, 6 across.
+- **SC-2, what steps aside.** The store keeps Keep out of crafting, Take all, Store all and Lock (on two lines); Sort both and Stack into my chests are left off for the room (their keys still work).
+- **SC-3, what keeps its old store.** The Kiln (a batch of logs into its output, being rebuilt in three tiers), the chopping block (E splits blocks into its output; no recipes), the smelters (fuel hopper, ore input, ingot rack), chests and fires.
+- **SC-4, no weight limit.** A station's store has no kilogram limit (it is never carried); the 250-slot protocol limit is the only cap.
+- **SC-5, the saw mill** still takes only logs from you; its planks land in the same store.
