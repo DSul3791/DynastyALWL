@@ -4,7 +4,8 @@ extends SceneTree
 # burns"; "anything that burns wood should leave behind charcoal"; cooking.json charcoal_left, server_items.gd _fire_leave_charcoal):
 #   1. a lit campfire's firewood leaves charcoal_left Charcoal a piece (by burn time) in its own store, a log its share; sticks leave none;
 #   2. charcoal is no campfire fuel: a store of only charcoal has no burn time, the store refuses it, and the charcoal left is never burned;
-#   3. the charcoal outlasts the fire: coals, warm ash and cold ash keep it, the cold fire stays while it holds charcoal and goes once it is taken;
+#   3. the charcoal outlasts the fire: coals, warm ash and cold ash keep it, the cold fire waits a day while it holds charcoal, goes once it is taken, or leaves it on the ground after the day;
+#   3b. a half-burnt piece taken back out owes back its charcoal;
 #   4. a store with no room: the charcoal lands on the ground beside the fire;
 #   5. save and load keep the store's charcoal and the part-made lump;
 #   6. a lit Fireplace and a Stone brazier drop charcoal at their foot by the fuel they burn; a Wall torch (sticks) drops none;
@@ -142,6 +143,26 @@ func _init() -> void:
 	items._items[a]["left"] = 0.0
 	items._expire_items(1.0)
 	check(not items._items.has(a), "taken, the cold ash goes as before")
+	var left_at: Vector3 = items._items[mixed]["pos"]
+	var left_count: int = charcoal_in(mixed)
+
+	for _stage in range(4):   # coals -> warm ash -> cold ash -> kept a day -> goes
+		items._items[mixed]["left"] = 0.0
+		items._expire_items(1.0)
+
+	check(not items._items.has(mixed) and charcoal_near(left_at) == left_count, "charcoal never taken: after its day the fire goes and leaves the %d Charcoal on the ground (%d)" % [left_count, charcoal_near(left_at)])
+
+	# 3b. A half-burnt firewood taken back out owes back the charcoal it made: no charcoal from wood that never burned.
+	var owe: int = fire_at(HERE + Vector3(24.0, 0.0, 0.0), {"firewood": 1})
+	burn(firewood_s * 0.5)
+	var owe_box = store(owe)
+	owe_box.remove(n("firewood"), 1)
+	items._fire_apply_store(items._items[owe]["fire"], owe_box)
+	owe_box.add(n("firewood"), 1)
+	items._fire_apply_store(items._items[owe]["fire"], owe_box)
+	items._items[owe]["fire"]["state"] = items._fire_best_state(items._items[owe]["fire"])
+	burn(firewood_s + 30.0)
+	check(charcoal_in(owe) == int(round(per_firewood)), "a firewood taken out half-burnt and put back leaves %d Charcoal in all, not more (%d)" % [int(round(per_firewood)), charcoal_in(owe)])
 
 	# 4. No room in the store: it lands beside the fire.
 	var slots_was: int = int(items._cooking["fire_slots"])

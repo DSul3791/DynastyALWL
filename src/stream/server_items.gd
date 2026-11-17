@@ -1615,7 +1615,7 @@ func save() -> void:
 			row.append([int(counted.get("log", -1)), int(counted.get("firewood", -1)), int(counted.get("weak", -1))] if it["fire"].has("counted") else [])   # store pieces the last count knew ([] = never counted)
 			row.append(float(it["fire"].get("lit_s", 0.0)))   # seconds burned since it was last cold (a coal bed at coals.coal_bed_s)
 			row.append(int(it["fire"].get("damp", 0)))   # the wettest wood in it, drying left in tenths of a game hour (cooking.json wet_wood)
-			row.append(float(it["fire"].get("char", 0.0)))   # the part-made Charcoal of the wood burned (cooking.json charcoal_left)
+			row.append(float(it["fire"].get("char", 0.0)))   # the part-made Charcoal of the wood burned (cooking.json charcoal_left); below 0, owed for wood taken back out
 
 		if it.has("world"):
 			world_rows.append(items.size())   # put down by the server (a den pile, a gift, loot): the world reset keeps it
@@ -5168,8 +5168,16 @@ func _fire_expire(it: Dictionary) -> bool:
 		return true
 
 	if _fire_keeps_charcoal(it["fire"]):
-		it["left"] = FIRE_OUT_S   # looked at again then: it goes once the charcoal has been taken
-		return true
+		if not bool(it["fire"].get("kept", false)):   # cold ash holding charcoal waits charcoal_left.keep_s for the player, once
+			it["fire"]["kept"] = true
+			it["left"] = float((_cooking.get("charcoal_left", {}) as Dictionary).get("keep_s", 86400.0))
+			return true
+
+		# shortcut: "kept" is not saved, so a restart gives an abandoned fire one more wait; it still ends, and the cap on fires a chunk stays honest.
+		var box = _chests[int(it["fire"]["uid"])]
+		var c: int = table.number_of("charcoal")
+		drop_in_world(c, box.count_of(c), it["pos"] + Vector3(0.6, 0.0, 0.0))   # nobody came for it: it is left on the ground and the fire goes
+		box.remove(c, box.count_of(c))
 
 	return false
 
@@ -5861,7 +5869,7 @@ func _load_world_items() -> void:
 			if row.size() > 16 and (typeof(row[16]) == TYPE_FLOAT or typeof(row[16]) == TYPE_INT) and int(row[16]) > 0:
 				entry["fire"]["damp"] = int(row[16])
 
-			if row.size() > 17 and (typeof(row[17]) == TYPE_FLOAT or typeof(row[17]) == TYPE_INT) and float(row[17]) > 0.0:
+			if row.size() > 17 and (typeof(row[17]) == TYPE_FLOAT or typeof(row[17]) == TYPE_INT) and float(row[17]) != 0.0:
 				entry["fire"]["char"] = float(row[17])
 
 			if row.size() > 9 and int(row[9]) > 0:
@@ -8350,7 +8358,7 @@ func _light_leave_charcoal(it: Dictionary, def: Dictionary, spent: float) -> voi
 		_dirty = true
 
 
-# A cold or laid fire whose store still holds Charcoal is not taken away while it does (the charcoal is left in the fire for the player).
+# A cold or laid fire whose store still holds Charcoal is not taken away for charcoal_left.keep_s (the charcoal is left in the fire for the player).
 func _fire_keeps_charcoal(fire: Dictionary) -> bool:
 	return _chests.has(int(fire.get("uid", 0))) and _chests[int(fire["uid"])].count_of(table.number_of("charcoal")) > 0
 
@@ -10636,11 +10644,16 @@ func _fire_apply_store(fire: Dictionary, box) -> void:
 
 	for cls in ["log", "firewood", "weak"]:
 		# The piece that is half burned counts only what is left of it, so counting the store again never gives burned wood back.
+		var burnt_was: float = float(burnt.get(cls, 0.0))
+
 		if float(seconds[cls]) <= 0.0:
 			burnt.erase(cls)
 		else:
 			burnt[cls] = minf(float(burnt.get(cls, 0.0)), float(seconds[cls]))
 			seconds[cls] = float(seconds[cls]) - float(burnt[cls])
+
+		if _charcoal_classes().has(cls):   # a half-burnt piece taken back out comes back whole: so does the charcoal it had made (a debt on the next)
+			fire["char"] = float(fire.get("char", 0.0)) - (burnt_was - float(burnt.get(cls, 0.0))) * GAME_RATE / _charcoal_game_s()
 
 		wood[cls] = maxf(float(seconds[cls]), 0.0)   # every piece in the store counts, however much (Dave 2 Nov 2026)
 
@@ -16618,7 +16631,7 @@ func _apply_lit_rows(rows: Array) -> void:
 func _lights_tick(spent: float) -> void:
 	var rain: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
 
-	for id in _items:
+	for id in _items.keys():   # a light that burns wood may drop charcoal (a new world item) on this pass
 		var it: Dictionary = _items[id]
 
 		if it.has("struct") and bool(it["struct"].get("lit", false)):
