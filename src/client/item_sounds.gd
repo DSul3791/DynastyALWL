@@ -17,8 +17,8 @@ extends Node
 # short and quiet; the world's sounds keep running while a panel is open.
 # Cooking and eating: a roast that appears in the bag sizzles at the nearest fire (sound.fire.cook); wood
 # used up within FUEL_WINDOW_MSEC of fuel_pressed() (the V key at a fire) plays sound.fire.fuel there.
-#   sound.itemfx.eat("crunch")    eating: "crunch" (roast, nuts, roots), "soft" (berries, greens), "drink"
-# Eating has no action yet: the Items thread calls eat() when it adds one (EAT_KINDS maps item ids).
+#   sound.itemfx.eat("drink")     a mouthful of water; "poultice_*" / "bandage_*" when a medicine is applied
+# Using food or drink from the pack is silent; eat() plays the water gulp and the medicine sounds (ItemSounds.EAT).
 # Sounds: generated in assets/audio/items/ (make_items.py); recordings in assets/audio/recorded/items/ win.
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
@@ -41,12 +41,9 @@ const SHAPE_CLASS := {
 const MIN_GAP_MSEC := 60
 const WORK_DB := -18.0
 const WORK_TYPES := {"twine": "twine", "stone_axe": "knap", "stone_knife": "knap", "wooden_spear": "carve", "spear": "bind", "torch": "bind", "campfire": "stack"}
-const EAT := {"crunch": ["eat_crunch", -15.0], "soft": ["eat_soft", -17.0], "drink": ["drink_gulp", -16.0],
-	"poultice": ["heal_poultice", -16.0], "bandage": ["heal_bandage", -16.0]}
-const EAT_KINDS := {"roast_forage": "crunch", "tree_roots": "crunch", "seed_bundle": "crunch"}   # by item id; other food is soft
-# An item id ending in one of these is crunchy (nuts, roots, hard fruit); "sap" is drunk; poultices and bandages heal.
-const CRUNCHY := ["nuts", "roots", "bulbs", "apples", "pears", "acorns", "chestnuts", "walnuts", "hazelnuts", "beechnuts", "coconuts", "dates", "roast_forage"]
-const DRINKS := ["sap", "water", "juice"]
+# Eating and drinking food make no sound (Dave 17 Nov 2026: "doesnt need sound for eating remove the sound"); a mouthful of water
+# (container or water's edge) gulps, and a poultice or bandage sounds as it is applied.
+const EAT := {"drink": ["drink_gulp", -16.0], "poultice": ["heal_poultice", -16.0], "bandage": ["heal_bandage", -16.0]}
 const COOKING_DIR := "res://assets/audio/cooking/"
 const COOKING_RECORDED_DIR := "res://assets/audio/recorded/cooking/"
 const FUEL_WINDOW_MSEC := 1500
@@ -253,7 +250,7 @@ func fuel_pressed() -> void:
 	_fuel_msec = Time.get_ticks_msec()
 
 
-# The eating kind of an item id: "poultice", "bandage", "drink", "crunch" or "soft".
+# The sound kind of an item used from the pack: "poultice", "bandage", or "" (food and drink are silent).
 static func eat_kind(item_id: String) -> String:
 	if item_id.begins_with("poultice"):
 		return "poultice"
@@ -261,24 +258,17 @@ static func eat_kind(item_id: String) -> String:
 	if item_id.begins_with("bandage"):
 		return "bandage"
 
-	if EAT_KINDS.has(item_id):
-		return str(EAT_KINDS[item_id])
-
-	for word in DRINKS:
-		if item_id.ends_with(word):
-			return "drink"
-
-	for word in CRUNCHY:
-		if item_id.ends_with(word):
-			return "crunch"
-
-	return "soft"
+	return ""
 
 
-# Eating or applying: "crunch", "soft", "drink", "poultice", "bandage", or an item id (the Items thread calls
-# this from `eat_event` when the server confirms the food or medicine took effect).
+# A mouthful of water or a medicine applied: "drink", "poultice", "bandage", or an item id (`eat_event`, when the server confirms it
+# took effect). Food and drink items are silent: false.
 func eat(kind: String) -> bool:
-	var entry: Array = EAT.get(kind, EAT.get(eat_kind(kind)))
+	var entry: Array = EAT.get(kind, EAT.get(eat_kind(kind), []))
+
+	if entry.is_empty():
+		return false
+
 	var list: Array = _variants(str(entry[0]))
 
 	if list.is_empty():

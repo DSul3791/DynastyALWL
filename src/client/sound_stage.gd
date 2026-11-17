@@ -1347,7 +1347,7 @@ func _build_warm_list() -> void:
 	for sound_name in ["pick_pluck", "pick_pull", "pick_snap", "pick_snip", "pick_twist", "plant_rustle_leaves", "plant_rustle_reeds"]:
 		early.append([harvestfx, sound_name])
 
-	for sound_name in ["craft_start", "craft_twine", "craft_knap", "craft_bind", "craft_carve", "craft_stack", "craft_pound", "craft_wrap", "item_reject", "hotbar_tick", "eat_soft", "eat_crunch", "drink_gulp"]:
+	for sound_name in ["craft_start", "craft_twine", "craft_knap", "craft_bind", "craft_carve", "craft_stack", "craft_pound", "craft_wrap", "item_reject", "hotbar_tick", "drink_gulp"]:
 		early.append([itemfx, sound_name])
 
 	for slot in ["bed_forest_day", "bed_night", "bed_crickets", "bed_surf", "bed_forest_winter"]:

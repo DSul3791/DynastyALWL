@@ -5647,7 +5647,7 @@ func _process(delta: float) -> void:
 		sound.fire.cook(spot)
 		sound.fire.fuel(spot)
 
-		for kind in ["crunch", "soft", "drink", "roast_forage", "raspberries", "poultice_plantain", "bandage_plantain"]:
+		for kind in ["drink", "roast_forage", "raspberries", "poultice_plantain", "bandage_plantain"]:   # food is silent (Dave 17 Nov 2026): 3 sounds
 			sound.itemfx.eat(kind)
 
 		# A mouthful at the water's edge (Dave 2026-10-21): E sends the drink, the server raises thirst, the gulp plays; a rise without E is silent.

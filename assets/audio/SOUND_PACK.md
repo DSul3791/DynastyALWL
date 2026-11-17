@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **216 slots: 23 recorded, 183 generated placeholders, 10 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **214 slots: 23 recorded, 181 generated placeholders, 10 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -112,8 +112,6 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `door_close` | generated | 2 | interior_sounds.gd: a door closes (object) | 2 to 3 wooden door closes with a thud and latch |
 | 3 | `door_open` | generated | 2 | interior_sounds.gd: a door opens (object) | 2 to 3 wooden door opens with latch and hinge creak |
 | 3 | `drink_gulp` | generated | 2 | item_sounds.gd eat("drink"): two swallows | 2 recordings of drinking and swallowing, 1 s |
-| 3 | `eat_crunch` | generated | 3 | item_sounds.gd eat(): a crisp bite and chews (roast, nuts, roots) | 2 to 3 recordings of biting and chewing something crisp, 1 s |
-| 3 | `eat_soft` | generated | 3 | item_sounds.gd eat(): soft chewing (berries, greens) | 2 to 3 recordings of chewing something soft, 1 s |
 | 3 | `flame_lantern` | generated | 1 | flame_sounds.gd: a lantern in the hand (quiet loop) | a lantern flame behind glass, 10 s loop |
 | 3 | `fox_bark` | recorded | 2 | creature_sounds.gd: a fox's bark (idle, alert), a night sound | 2 to 3 red fox barks, 1 to 3 per clip |
 | 3 | `fox_scream` | recorded | 1 | creature_sounds.gd: a vixen's scream (threat), a night sound | 2 to 3 red fox screams, about 1 s |

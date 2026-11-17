@@ -169,16 +169,15 @@ var _drink_msec: int = 0
 # Holding E on a food, drink or medicine in the pack keeps using it (Dave 17 Nov 2026: "when you hold e on an item like a food or raspberries it
 # should just keep eating them at a good speed"). One bite goes at a time: the next is sent only after the server has applied the last one
 # (the slot changed), so the server checks every bite as for a tap and nothing can over-eat. The pace is the server's own (vitals.json
-# eat_pace_ms, provisional EH-1 300 ms, about 3 a second; drink_pace_ms for a water container) plus EAT_HOLD_SLACK_MSEC, since the server
-# silently drops a bite sooner than that. A bite the slot shows no sign of within EAT_HOLD_REFUSED_MSEC of its turn counts as refused.
-const EAT_HOLD_SLACK_MSEC := 100   # room for network jitter: a bite that arrives too soon is dropped and ends the hold
+# eat_pace_ms, provisional EH-1 60 ms; drink_pace_ms for a water container) plus EAT_HOLD_SLACK_MSEC, since the server silently drops a bite
+# sooner than that: about 9 bites a second (Dave 17 Nov: "the speed should be at least 3 times faster" than 2.5 a second). A bite the slot
+# shows no sign of within EAT_HOLD_REFUSED_MSEC of its turn counts as refused. No resend: a resent refusal would repeat the server's notice.
+const EAT_HOLD_SLACK_MSEC := 50   # room for network jitter: a bite that arrives too soon is dropped and ends the hold (press E again)
 const EAT_HOLD_REFUSED_MSEC := 1000   # no change in the slot this long after a bite: the server said no (full, not known), stop
-const EAT_SOUND_GAP_MSEC := 400       # a held run plays a mouth sound at most this often, so quick bites do not chatter
 var _eat_hold_slot: int = -1          # the pack slot being eaten from while E is held, -1 when none
 var _eat_hold_hover: int = -1         # _hover when the hold began: the pointer moving to another slot (or off) stops it
 var _eat_hold_sign: Array = []        # the slot's number, count and wear when the last bite was sent
 var _eat_hold_sent_msec: int = 0
-var _eat_sound_msec: int = -100000
 var pick_stamp: int = 0                       # msec of the latest pick-up or gather the player asked for: the Dynasty body bends to pick it up (avatar_driver.gd hook_clip)
 var gather_event: Callable             # () when the player gathers something by hand (E): the arm reaches and the view dips a little
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
@@ -2520,20 +2519,13 @@ func faint_state() -> Array:
 func _on_vitals(new_hunger: int, new_health: int, weight_dkg: int, new_thirst: int, new_luck: int, new_fitness: int) -> void:
 	var ate: bool = new_hunger > hunger + 3 or new_health > health + 8
 
-	var now: int = Time.get_ticks_msec()
-	var quiet: bool = now - _eat_sound_msec < EAT_SOUND_GAP_MSEC   # a held run of quick bites: one mouth sound per gap
-
 	if ate and _eat_item != "" and eat_event.is_valid():
-		if not quiet:
-			eat_event.call(_eat_item)
-			_eat_sound_msec = now
-
+		eat_event.call(_eat_item)   # a medicine's sound; food is silent (ItemSounds.eat_kind)
 		_eat_item = ""
 
 	# A mouthful at the water's edge (drink()) took effect: the gulp sound (Dave 2026-10-21: no sound when drinking).
-	if new_thirst > thirst and _drink_msec > 0 and now - _drink_msec < DRINK_WINDOW_MSEC and eat_event.is_valid() and not quiet:
+	if new_thirst > thirst and _drink_msec > 0 and Time.get_ticks_msec() - _drink_msec < DRINK_WINDOW_MSEC and eat_event.is_valid():
 		eat_event.call("drink")
-		_eat_sound_msec = now
 
 	if _vitals_seen and health - new_health >= HURT_MIN and hurt_event.is_valid():
 		hurt_event.call(health - new_health)

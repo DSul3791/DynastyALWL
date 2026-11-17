@@ -127,8 +127,6 @@ Active RMS and peak in dBFS per slot (recorded files win over generated). Steps 
 |---|---|---|---|---|---|
 | cook_sizzle | generated | 2 | -20.5 | -4.6 | +1.1 |
 | drink_gulp | generated | 2 | -17.7 | -4.4 | +3.9 |
-| eat_crunch | generated | 3 | -25.5 | -2.9 | -3.9 |
-| eat_soft | generated | 3 | -22.7 | -4.1 | -1.1 |
 | fire_fuel | generated | 2 | -25.1 | -2.5 | -3.5 |
 | heal_bandage | generated | 2 | -21.6 | -5.3 | +0.0 |
 | heal_poultice | generated | 2 | -21.0 | -4.3 | +0.5 |
