@@ -458,11 +458,63 @@ func _select_recipe(number: int) -> void:
 
 
 # Queue the chosen recipe `quantity` times. The server takes the ingredients now and makes the crafts in order.
-func craft_selected() -> void:
+func craft_selected(count: int = 0) -> void:
 	if view._selected_recipe == 0:
 		return
 
-	view._start_craft(view._selected_recipe, chosen_quantity(), chosen_variant())
+	view._start_craft(view._selected_recipe, count if count > 0 else chosen_quantity(), chosen_variant())
+
+
+# A craft time in words short enough for a half-width button: "8 s" under a minute, "2:40" from one minute up.
+static func time_words(seconds: float) -> String:
+	var whole: int = int(round(seconds))
+	return "%d s" % whole if whole < 60 else "%d:%02d" % [floori(whole / 60.0), whole % 60]
+
+
+# Whether the stock in reach covers `count` crafts of recipe `number` (CB-2). A recipe that one craft cannot cover from stock alone (logs, parts
+# made first) is left to the server, which refuses what is short.
+func _covers(number: int, count: int) -> bool:
+	if view._free_craft() or not view._stock_can_make(number):
+		return true
+
+	var r: Dictionary = view.recipes.recipe(number)
+
+	for need in r["needs"]:
+		if view.stock_fill(int(need[0])) < int(need[1]) * count:
+			return false
+
+	return true
+
+
+# One brass Craft button, half the footer wide; long words trim with "..." rather than spill past the column.
+func _craft_button(words: String, off: bool) -> Button:
+	var make: Button = Button.new()
+	make.text = words
+	make.tooltip_text = words
+	make.disabled = off
+	make.custom_minimum_size = Vector2(0.0, 58.0)
+	make.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	make.clip_text = true
+	make.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	make.add_theme_font_override("font", ArtKit.font("cinzel_bold"))
+	make.add_theme_font_size_override("font_size", view._px(view.BODY_PX - 6))
+
+	for state in ["normal", "hover", "focus"]:
+		make.add_theme_stylebox_override(state, ArtKit.stylebox_brass(false))
+
+	make.add_theme_stylebox_override("pressed", ArtKit.stylebox_brass(true))
+	var dull: StyleBox = ArtKit.stylebox_brass(true).duplicate()
+
+	if dull is StyleBoxFlat:
+		(dull as StyleBoxFlat).bg_color = ArtKit.darker(ArtKit.BRASS, 0.45)
+
+	make.add_theme_stylebox_override("disabled", dull)
+
+	for colour_name in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		make.add_theme_color_override(colour_name, ArtKit.INK)
+
+	make.add_theme_color_override("font_disabled_color", Color(ArtKit.INK, 0.6))
+	return make
 
 
 # The variant chosen on the card when the stations here still allow it, else plain.
@@ -662,32 +714,26 @@ func _refresh_detail() -> void:
 		if users.size() > 2:
 			links.add_child(_text("+%d more" % (users.size() - 2), 18, ArtKit.DIM))
 
-	# The Craft button: cast brass, the word engraved; dim when the recipe cannot be made here now.
-	var make: Button = Button.new()
-	make.text = "Craft  (%.0f s)" % (float(r["craft_s"]) * SmithingRules.time_mult(variant))
-	make.disabled = not ((view._can_craft(view._selected_recipe) if variant == 0 else view._free_craft() or short == "") and view._station_ok(r))
-	make.custom_minimum_size = Vector2(0.0, 58.0)
-	make.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	make.add_theme_font_override("font", ArtKit.font("cinzel_bold"))
-	make.add_theme_font_size_override("font_size", view._px(view.BODY_PX - 6))
-
-	for state in ["normal", "hover", "focus"]:
-		make.add_theme_stylebox_override(state, ArtKit.stylebox_brass(false))
-
-	make.add_theme_stylebox_override("pressed", ArtKit.stylebox_brass(true))
-	var dull: StyleBox = ArtKit.stylebox_brass(true).duplicate()
-
-	if dull is StyleBoxFlat:
-		(dull as StyleBoxFlat).bg_color = ArtKit.darker(ArtKit.BRASS, 0.45)
-
-	make.add_theme_stylebox_override("disabled", dull)
-
-	for colour_name in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-		make.add_theme_color_override(colour_name, ArtKit.INK)
-
-	make.add_theme_color_override("font_disabled_color", Color(ArtKit.INK, 0.6))
-	make.pressed.connect(craft_selected)
-	_footer.add_child(make)
+	# Two Craft buttons side by side (Dave 17 Nov 2026): "Craft 1" makes one, "Craft x" makes the Make box's number and follows it as it changes.
+	# Cast brass, the word engraved; dim when that amount cannot be made here now (provisional CB-1..CB-3, craft_list_order_design.md).
+	var each_s: float = float(r["craft_s"]) * SmithingRules.time_mult(variant)
+	var one_ok: bool = (view._can_craft(view._selected_recipe) if variant == 0 else view._free_craft() or short == "") and view._station_ok(r)
+	var buttons: HBoxContainer = HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 8)
+	_footer.add_child(buttons)
+	var one: Button = _craft_button("Craft 1  (%s)" % time_words(each_s), not one_ok)
+	one.pressed.connect(func() -> void: craft_selected(1))
+	buttons.add_child(one)
+	var many: Button = _craft_button("", true)
+	buttons.add_child(many)
+	var many_number: int = view._selected_recipe
+	var set_many: Callable = func(count: int) -> void:
+		many.text = "Craft %d  (%s)" % [count, time_words(each_s * count)]
+		many.tooltip_text = many.text
+		many.disabled = not one_ok or not _covers(many_number, count)
+	set_many.call(_qty)
+	_quantity.value_changed.connect(func(v) -> void: set_many.call(int(v)))
+	many.pressed.connect(func() -> void: craft_selected())
 
 	# Pin (Morgan's report): the recipe stays on screen as a checklist, window open or shut. A key hint, not a boxed button.
 	var pinned: bool = view._pinned_part.number == view._selected_recipe
