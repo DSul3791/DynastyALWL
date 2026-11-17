@@ -31,3 +31,19 @@ You craft a station recipe from the pack (a click, or Craft). The station is wor
   - when you are already at the station.
 
 All the numbers are in `data/items/station_step.json`.
+
+## A station's own window lists only what it makes (Dave 17 Nov 2026)
+
+Dave, playtest:
+
+> "when you open an inventory other than yours like the workstation or the primative smithy it should only list the crafting recipes for stuff that station makes."
+
+F on a station opens its window: the crafting screen for a station without a store (workbench, carving station, tanning rack), or the store window on its Craft tab (smithies, kiln, leatherworking table, the campfire's window). That window's recipe list now holds only the recipes that station makes (`inventory_view.station_makes`, the view's `_station_screen`). Search, tabs and the three groups above work inside that list. Your own inventory (I) is unchanged: every recipe you know, in the order above, near a station or not.
+
+### For Dave (provisional, assumed on his behalf; change any of them by saying so)
+
+- **SR-1, levels and stand-ins.** A station lists the recipes it can serve: its own station at its level or lower, bench and forge add-ons (bellows, anvil, vice) counted as the craft check counts them, and the stations it stands in for. So a Carpenter's bench (workbench 2) shows level 1 and 2 bench recipes, an Improved smithy (brick forge 2, also forge 1) shows brick forge 1 and 2 and the Primitive smithy's forge recipes, and a clay hearth shows the campfire's. Recipes above its level are not listed.
+- **SR-2, plain storage.** A chest, bin or other store that makes nothing keeps your own list on its Craft tab, as before.
+- **SR-3, the campfire's window** lists the campfire recipes, lit or not (an unlit fire's rows are dim, as before). Pot recipes stay with the pot.
+- **SR-4, the Sawbuck** lists Wooden block, the recipe it speeds. The chopping block has no recipes (E splits logs), so its Craft tab is empty.
+- **SR-5, your own inventory near a station** still lists everything, station recipes second as above. Dave's ruling named only other inventories.

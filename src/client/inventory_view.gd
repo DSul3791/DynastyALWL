@@ -49,6 +49,7 @@ const MAX_FIRE_LIGHTS := 3              # at High and Ultra; fewer below (max_li
 
 var _flame_lights: Array = []           # the lit fire lights that are on (nearest MAX_FIRE_LIGHTS), set by _update_fire_lights
 var open: bool = false
+var _station_screen: int = 0   # the world id of the station (or fire) whose own window is open: its Craft list shows only what it makes; 0 for your own inventory or a plain chest
 var table
 var inventory
 var recipes
@@ -464,6 +465,7 @@ func toggle() -> void:
 
 	if not open:
 		_recipe_part.stop()   # a half-worked recipe list is dropped; the next open starts again
+		_station_screen = 0   # the next open is your own inventory unless a station opens it
 
 	if not open and _recipe_search != null:
 		_recipe_search.release_focus()   # the keys go back to the game
@@ -1110,7 +1112,7 @@ func _probe_structure_for(id: int) -> Dictionary:
 		return {"prompt": "Press E to drink, or to fill what you hold (hold E to take it down)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_DRINK, held_container_slot(), 0, 0, Vector3.ZERO), "hold": take_down}
 
 	if str(station_def.get("station", "")) != "":
-		return {"prompt": "Press F to use the %s%s" % [table.sentence_name(_world[id]["number"]), wheel_note(id)], "tap": _open_station, "hold": take_down}
+		return {"prompt": "Press F to use the %s%s" % [table.sentence_name(_world[id]["number"]), wheel_note(id)], "tap": _open_station.bind(id), "hold": take_down}
 
 	# A light (a torch stuck in the ground or on a wall, a wall torch, a chandelier): E lights it with its fuel from the pack (a stick for a torch), hold E takes it down.
 	if str(station_def.get("use", "")) == "light":
@@ -1426,17 +1428,21 @@ func open_container() -> bool:
 		return true
 
 	if str(best_def.get("station", "")) != "":
-		_open_station()
+		_open_station(best)
 		return true
 
 	_ask_open(best)
 	return true
 
 
-# A workbench or forge has no slots of its own: using it opens the crafting screen, which greys what the station cannot make.
-func _open_station() -> void:
+# A workbench or forge has no slots of its own: using it opens the crafting screen, which lists only what that station makes (station_makes).
+func _open_station(id: int) -> void:
+	_station_screen = id
+
 	if not open:
 		toggle()
+	else:
+		_refresh()
 
 
 # The pack slot in the right hand (-1 for empty hands or no client wired, as in tests): what a tool use at a station sends.
@@ -2741,6 +2747,7 @@ func _on_chest(id: int, bytes: PackedByteArray) -> void:
 
 	if not chest_mode:
 		chest_mode = true
+		_station_screen = id if _world.has(id) and (StructureLook.CAMPFIRE_STATES.has(int(_world[id]["state"])) or str(_structure_by_state(int(_world[id]["state"])).get("station", "")) != "") else 0
 		open = true
 		_build_panel()
 		_panel.visible = true      # one window, the container in its Craft column (4.4)
@@ -2769,6 +2776,7 @@ func _close_chest() -> void:
 
 	chest_mode = false
 	open = false
+	_station_screen = 0
 	_recipe_part.stop()   # the window shut: a half-worked recipe list is dropped
 	_show_tab()
 
@@ -4175,6 +4183,33 @@ func _nearest_serving(station: String, level: int = 1) -> int:
 
 func _def_serves(def: Dictionary, station: String, level: int) -> bool:
 	return (str(def.get("station", "")) == station and int(def.get("station_level", 1)) >= level) or int(def.get("also", {}).get(station, 0)) >= level
+
+
+# Whether the station window open lists recipe r (Dave 17 Nov 2026: "when you open an inventory other than yours like the workstation or the
+# primative smithy it should only list the crafting recipes for stuff that station makes"). Your own inventory or a plain chest lists everything.
+# A station lists the recipes it serves at its level, its add-ons (bellows) counted as station_near counts them, and those of the stations it
+# stands in for ("also": a smithy is also a level 1 forge); a fire lists campfire recipes; a Sawbuck the recipes it speeds (Wooden block).
+func station_makes(r: Dictionary) -> bool:
+	if _station_screen == 0 or not _world.has(_station_screen):
+		return true
+
+	var station: String = str(r.get("station", ""))
+	var state: int = int(_world[_station_screen]["state"])
+
+	if StructureLook.CAMPFIRE_STATES.has(state):
+		return station == "campfire"
+
+	var def: Dictionary = _structure_by_state(state)
+
+	if station == "":
+		return bool(r.get("sawbuck", false)) and str(def.get("station", "")) == "sawbuck"
+
+	var level: int = int(r.get("station_level", 1))
+
+	if str(def.get("station", "")) == station:
+		return int(def.get("station_level", 1)) + _addons_near(_station_screen, station, float(def.get("addon_reach_m", 5.0))) >= level
+
+	return int(def.get("also", {}).get(station, 0)) >= level
 
 
 func _addons_near(bench_id: int, station: String, reach: float) -> int:
