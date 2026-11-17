@@ -76,7 +76,6 @@ const SAPLING_GROWN_S := 12.0 * 86400.0  # ...and until it is a full grown tree 
 const SAPLINGS_PER_CHUNK := 64
 const RESPAWN_RADIUS_M := 25.0           # a sapling comes only near a standing tree of the same species
 const RESPAWN_PLACE_M := 6.0
-const REGROW_EXCLUDE_M := 50.0           # no sapling is seeded within this of anything placed on the ground (BUG-013; Dave: tunable)
 const RESPAWN_CHANCE := 0.5              # per rotted-away stump, rolled once from the seed and the spot
 const FLORA_CHUNK_M := 256.0
 const PROCESS_REACH_M := 4.0
@@ -462,6 +461,7 @@ func setup(item_table, store_dir: String) -> void:
 		_struct_gap_m = float(structures.get("gap_m", 2.5))
 		_fire_gap_m = float(structures.get("campfire", {}).get("gap_m", FIRE_MIN_GAP_M))
 		_fires_per_chunk = int(structures.get("campfire", {}).get("cap_per_chunk", FIRES_PER_CHUNK))
+		_spawn_zones.radius_m = float(structures.get("no_spawn_m", 20.0))
 
 	_smelters = SmelterScript.new()
 	_smelters.host = self
@@ -2207,10 +2207,13 @@ func reset_world() -> int:
 		gone += 1
 
 	_grid = StructureGridScript.new()
+	_spawn_zones.clear()
 
 	for id in _items:
 		if _items[id].has("struct"):
 			_grid_add(id, _items[id])
+		else:
+			_zone_add(id)
 
 	_taken.clear()
 	_cells_done.clear()
@@ -3454,12 +3457,14 @@ func _hoe_path(peer: int, inv, at: Vector3, held_slot: int) -> void:
 			if not is_nan(old_ground) and absf(old_ground + 0.02 - old["pos"].y) > 0.03:
 				_items.erase(id)
 				_items[_next_id] = {"number": old["number"], "count": 1, "pos": Vector3(old["pos"].x, old_ground + 0.02, old["pos"].z), "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
+				_zone_add(_next_id)
 				_next_id += 1
 
 		var new_ground: float = float(ground_height.call(at.x, at.z))
 		spot.y = (new_ground if not is_nan(new_ground) else ground) + 0.02
 
 	_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
+	_zone_add(_next_id)
 	_next_id += 1
 	_dirty = true
 	_goal_event(peer, "path_laid")
@@ -3873,6 +3878,7 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 
 		if not blocked and of_kind < int(_structures["path_patch"]["cap_per_chunk"]):
 			_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": pos, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
+			_zone_add(_next_id)
 			_next_id += 1
 			_dirty = true
 			_goal_event(peer, "path_laid")
@@ -4498,6 +4504,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 	inv.take_from_slot(slot, 1)
 	var covered: bool = cover_at.is_valid() and float(cover_at.call(spot)) > 0.5
 	_items[_next_id] = {"number": number, "count": 1, "pos": spot, "left": FIRE_LAID_S, "fire": {"state": 9, "burn_left": 0.0, "wood": {"log": 0.0, "firewood": 0.0, "weak": 0.0}, "covered": covered, "recheck": COVER_RECHECK_S, "synced": true}}
+	_zone_add(_next_id)
 	var laid_fire: Dictionary = _items[_next_id]["fire"]
 	var stick_s: float = float((_cooking.get("fuel", {}) as Dictionary).get("stick", 2880.0))
 	var start_sticks: int = maxi(1, int(round(float(_cooking.get("start_burn_game_s", 3600.0)) / maxf(stick_s, 1.0))))   # a fresh fire holds its first sticks in its store, where Dave sees them
@@ -5887,6 +5894,7 @@ func _load_world_items() -> void:
 			entry["world"] = true
 
 		_items[_next_id] = entry
+		_zone_add(_next_id)   # a saved fire still blocks spawning round it
 		_next_id += 1
 
 	_refresh_pots()   # a pot hangs over whatever fire shares its spot: nothing about it is saved
@@ -7839,23 +7847,6 @@ func _trunk_extras(id: int, tree: Dictionary, logs: int, cfg: Dictionary, at: Ve
 
 # A stump has rotted away: maybe a sapling grows near a standing tree of the same species. The dice come from the seed and the spot,
 # so a restart gives the same answer.
-# Is a placed structure, fire or other ground-placed thing within `radius` of the spot (flat distance)? Saplings keep away from these.
-func _built_within(spot: Vector3, radius: float) -> bool:
-	for id in _items:
-		var it: Dictionary = _items[id]
-
-		if not (it.has("struct") or it.has("fire")):
-			continue
-
-		if str(it.get("struct", {}).get("kind", "")) == "remains":
-			continue
-
-		if Vector2(it["pos"].x - spot.x, it["pos"].z - spot.z).length() <= radius:
-			return true
-
-	return false
-
-
 func _maybe_sapling(stump: Dictionary, planted_at: float = -1.0) -> void:
 	if not standing_near.is_valid() or not ground_height.is_valid():
 		return
@@ -7882,8 +7873,8 @@ func _maybe_sapling(stump: Dictionary, planted_at: float = -1.0) -> void:
 	if is_nan(ground) or ground < 1.0 or species_entry.is_empty():
 		return
 
-	if _built_within(spot, REGROW_EXCLUDE_M):
-		return
+	if spawn_blocked(spot.x, spot.z):
+		return   # nothing regrows near what players put down (no_spawn_m)
 
 	var home: Vector2i = Vector2i(int(floor(spot.x / FLORA_CHUNK_M)), int(floor(spot.z / FLORA_CHUNK_M)))
 	var used: Dictionary = {}
@@ -10021,6 +10012,8 @@ var _grid = StructureGridScript.new()
 
 # Registers a freshly placed or loaded structure when its structures.json row says "blocks_walk".
 func _grid_add(id: int, entry: Dictionary) -> void:
+	_zone_add(id)   # every structure, a blueprint site too, blocks spawning round it
+
 	if entry["struct"].has("site"):
 		return   # a blueprint site is walked through and blocks nothing until it is finished (_finish_site)
 
@@ -10034,6 +10027,25 @@ func _grid_add(id: int, entry: Dictionary) -> void:
 # True when a wall or a heavy station stands over (x, z); margin grows each piece by an animal's body radius.
 func structure_blocks(x: float, z: float, margin: float = 0.0) -> bool:
 	return _grid.blocks(x, z, margin, _items)
+
+
+# --- No-spawn zones (Dave 17 Nov 2026): nothing wild appears or regrows within no_spawn_m of anything put down (spawn_zones.gd) ---
+const SpawnZonesScript := preload("res://src/stream/spawn_zones.gd")
+var _spawn_zones = SpawnZonesScript.new()
+
+
+# Registers a freshly placed or loaded row when it is something put down (a structure or a fire). Every spawner asks spawn_blocked.
+func _zone_add(id: int) -> void:
+	var entry: Dictionary = _items[id]
+
+	if SpawnZonesScript.counts(entry) and _carts.vehicle_of(entry).is_empty():   # a cart or barrow goes where it is pulled: not a build
+		_spawn_zones.add(id, entry["pos"].x, entry["pos"].z)
+
+
+# True when something a player put down (or a town piece) still stands within no_spawn_m of (x, z): no sapling, animal or other wild thing
+# appears there. What already stood there stays; once the last piece near is gone, spawning comes back.
+func spawn_blocked(x: float, z: float) -> bool:
+	return _spawn_zones.blocked(x, z, _items)
 
 
 # True when the straight step from (x0, z0) to (x1, z1) goes through such a piece: a long stride cannot jump a thin wall.
@@ -16277,6 +16289,7 @@ func _till_cell(peer: int, inv, hoe: int, at: Vector3, yaw_deg: int, quiet: bool
 
 	_wear_slot(peer, inv, hoe, "dig")
 	_items[_next_id] = {"number": table.number_of("tilled_bed"), "count": 1, "pos": cell, "left": 1.0e9, "struct": {"kind": "tilled_bed", "yaw": float(yaw_deg)}}
+	_zone_add(_next_id)
 	_next_id += 1
 	_dirty = true
 	_goal_event(peer, "bed_tilled")   # ADD-04: a new bed tilled by this hoe stroke (the early returns above are not a tilling)
@@ -17229,6 +17242,7 @@ func dev_place(spec: String) -> int:
 		_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": at, "left": float(_coals_cfg().get("coals_s" if coals else "ash_s", 7200.0 if coals else 43200.0)),
 			"fire": {"state": FIRE_STATE_COALS if coals else FIRE_STATE_ASH, "burn_left": 0.0, "wood": {"log": 0.0, "firewood": 0.0, "weak": 0.0}, "covered": false, "recheck": COVER_RECHECK_S}}
 		_lit_valid = false
+		_zone_add(_next_id)
 		_next_id += 1
 		_dirty = true
 		return _next_id - 1
@@ -17240,6 +17254,7 @@ func dev_place(spec: String) -> int:
 		var lit_state: int = int(((_cooking.get("fire_tiers", {}) as Dictionary).get(wood_class, {}) as Dictionary).get("state", 1))
 		_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": at, "left": 1.0e9, "fire": {"state": lit_state if lit else 9, "burn_left": 36000.0, "wood": wood, "covered": false, "recheck": COVER_RECHECK_S}}
 		_lit_valid = false
+		_zone_add(_next_id)
 		_next_id += 1
 		_dirty = true
 		return _next_id - 1

@@ -725,6 +725,10 @@ func _natural(infos: Array) -> void:
 					_cell_note(key, home, "inside the exclude circle")
 					continue
 
+				if host.no_spawn.is_valid() and bool(host.no_spawn.call(home.x, home.y)):
+					_cell_note(key, home, "something a player put down stands near the den spot")
+					continue
+
 				if _den_resting(key):
 					_cell_note(key, home, "a killed pack's den, resting")
 					continue   # a killed pack's den: its orphans live there, or it rests for respawn_s (saved across restarts)
@@ -804,6 +808,9 @@ func make_pups(pid: int, forced: bool = false) -> int:
 
 
 func _spawn_pup(den: Vector3, k: int) -> int:
+	if host.no_spawn.is_valid() and bool(host.no_spawn.call(den.x, den.z)):
+		return 0   # a den a player has built beside makes no more pups
+
 	var ang: float = TAU * float(k) / 5.0
 	var id: int = host.spawn("wolf", den.x + cos(ang) * 2.0, den.z + sin(ang) * 2.0)
 
