@@ -97,7 +97,9 @@
 		"rock_piece_share": 0.4
 	},
 	"copper_rocks": {
-		"note": "Copper rocks (Dave 16 Nov 2026, his photo of real copper ore: rough rocks wholly coated in green to blue-green malachite, fist size to boulders; \"they should come in various sizes that have various amounts of copper in them. they should be strewn about the lands a bit and more abundant along river beds and shores. larger boulders should happen near the base of mountains some times.\"). Server rows like boulders with ore copper, mined the same way (a pick or the Stone Hammer, any material). Per 32 m cell: `tries` spots; a spot takes a rock with chance `chance` anywhere on land, or with chance `water_chance` when it lies in water no deeper than bed_depth_m (a river or lake bed) or on a dry bank within bank_reach_m of water; never in deeper water. Size radius_min..radius_max (radius_power > 1: small ones commoner). One more try per cell is the mountain-foot boulder: with chance foot.chance, on gentle ground (rise per metre under max_slope) where the ground climbs more than rise_m within reach_m (at most 26 m: the scatter reads no ground past its prefetched pad). grade_min..grade_max (from the rock's key): the share of its pieces that are copper ore, so the copper in a rock is its size times its grade; every copper outcrop boulder of the geology gets a grade too, in place of ore piece_share. All values PROVISIONAL, docs/design/COPPER_ROCKS.md For Dave CR-1..CR-7.",
+		"note": "Copper rocks (Dave 16 Nov 2026, his photo of real copper ore: rough rocks wholly coated in green to blue-green malachite, fist size to boulders; \"they should come in various sizes that have various amounts of copper in them. they should be strewn about the lands a bit and more abundant along river beds and shores. larger boulders should happen near the base of mountains some times.\"). Server rows like boulders with ore copper, mined the same way (a pick or the Stone Hammer, any material). Per 32 m cell: `tries` spots; a spot takes a rock with chance `chance` anywhere on land, or with chance `water_chance` when it lies in water no deeper than bed_depth_m (a river or lake bed) or on a dry bank within bank_reach_m of water; never in deeper water. Size radius_min..radius_max (radius_power > 1: small ones commoner). One more try per cell is the mountain-foot boulder: with chance foot.chance, on gentle ground (rise per metre under max_slope) where the ground climbs more than rise_m within reach_m (at most 26 m: the scatter reads no ground past its prefetched pad). grade_min..grade_max (from the rock's key): the share of its pieces that are copper ore, so the copper in a rock is its size times its grade; every copper outcrop boulder of the geology gets a grade too, in place of ore piece_share. A rock under hand_max_radius (Dave 17 Nov 2026: \"smaller rocks can be picked by hand and the larger rocks should be harvested with a hammer\") is a loose Copper ore picked up by hand instead of a boulder; slot: the cell's slots from 8. All values PROVISIONAL, docs/design/COPPER_ROCKS.md For Dave CR-1..CR-8.",
+		"slot": 8,
+		"hand_max_radius": 0.1,
 		"tries": 4,
 		"chance": 0.02,
 		"water_chance": 0.5,
@@ -117,6 +119,23 @@
 			"radius_max": 1.3,
 			"radius_power": 1.5
 		}
+	},
+	"tin_rocks": {
+		"note": "Tin rocks (Dave 17 Nov 2026, his photo of cassiterite: pale speckled granite with white quartz veins carrying dark brown-black crystals, a crusted chunk, and smooth dark water-worn pebbles; \"it is found along riverbeds often smaller the further down stream you go and the closer to the mountains it should be in bolder sizes and can be harvested by hammer. the smaller rocks should be picked by hand.\"). Laid out like copper_rocks (server_items._lay_out_ore_rocks) but only in shallow water and on banks, and only within near_body_m of a tin body of the geology (its river placers). Size from the relief: how far the ground climbs within relief_reach_m (steep valley sides near the mountains = boulders, flat ground far downstream = pebbles): radius = radius_min..radius_max x relief / relief_full_m, half of it jittered. Under hand_max_radius it is a loose Tin ore picked up by hand; bigger is a boulder row broken with a hammer (or a pick). grade_min..grade_max: share of a boulder's pieces that are Tin ore. Slots 16..23 of the cell. All PROVISIONAL, docs/design/COPPER_ROCKS.md For Dave TN-1..TN-6.",
+		"slot": 16,
+		"tries": 4,
+		"chance": 0.0,
+		"water_chance": 0.6,
+		"bank_reach_m": 3.0,
+		"bed_depth_m": 0.8,
+		"near_body_m": 80.0,
+		"relief_reach_m": 24.0,
+		"relief_full_m": 12.0,
+		"radius_min": 0.03,
+		"radius_max": 1.0,
+		"hand_max_radius": 0.1,
+		"grade_min": 0.15,
+		"grade_max": 0.45
 	},
 	"flint": {
 		"note": "Flint (guide finding F-02, FLINT_ORE_SPEC.md): each stone that comes off a boulder is a flint nodule instead with this chance, more near water. Bank stones (drops.json ground_scatter.bank.flint) are flint with their own chance. Flint makes the hide scraper, javelin and sickle.",

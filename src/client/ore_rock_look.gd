@@ -1,20 +1,18 @@
 extends RefCounted
 
-# Copper rocks (Dave 16 Nov 2026, his photo of real copper ore): rough, lumpy, broken-faced rocks almost wholly coated in green to
-# blue-green malachite, darker blue-black patches, a yellow-green dusting on the upper faces and a little pale host rock showing.
-# Every boulder row whose "ore" is copper is drawn with this mesh and material (inventory_view._show_boulder), from a 12 cm rock to a
-# boulder at a mountain's foot. Design and provisional values: docs/design/COPPER_ROCKS.md.
+# Ore rocks drawn from Dave's photos (inventory_view._show_boulder draws every boulder row whose "ore" has a look here; design and provisional
+# values: docs/design/COPPER_ROCKS.md). All share the lumpy, broken-faced meshes below; each ore has its own material:
+# - copper (16 Nov 2026): almost wholly coated in green to blue-green malachite, darker blue-black patches, a yellow-green dusting on the upper
+#   faces and a little pale host rock showing;
+# - tin (17 Nov 2026): pale speckled granite crossed by white quartz veins that carry dark brown-black cassiterite crystals, rust stain beside them.
 
 const VARIANTS := 3   # mesh shapes; a rock picks one from its yaw so neighbours differ
 
-const SHADER := """
+# The shared part: noise, and the rock's own coordinates (mesh space, 1 m across, shifted by where it lies, so a small rock shows the whole
+# pattern, not one patch). Each ore's fragment() follows it.
+const COMMON := """
 shader_type spatial;
 render_mode diffuse_lambert, specular_disabled;
-uniform vec3 malachite : source_color = vec3(0.09, 0.40, 0.29);
-uniform vec3 teal : source_color = vec3(0.07, 0.33, 0.38);
-uniform vec3 dark : source_color = vec3(0.04, 0.09, 0.11);
-uniform vec3 dust : source_color = vec3(0.46, 0.52, 0.22);
-uniform vec3 host : source_color = vec3(0.56, 0.50, 0.42);
 uniform float bump = 0.012;   // metres of grain on a 1 m rock; scaled with the rock
 varying vec3 rock_pos;
 varying vec3 world_normal;
@@ -35,10 +33,18 @@ float noise3(vec3 p) {
 
 void vertex() {
 	rock_scale = length(MODEL_MATRIX[0].xyz);
-	// The pattern lives on the rock (mesh space, 1 m across), shifted by where it lies, so a small rock shows the whole coat, not one patch.
 	rock_pos = VERTEX + NODE_POSITION_WORLD * 0.37;
 	world_normal = normalize((MODEL_MATRIX * vec4(NORMAL, 0.0)).xyz);
 }
+"""
+
+const FRAGMENT := {
+	"copper": """
+uniform vec3 malachite : source_color = vec3(0.09, 0.40, 0.29);
+uniform vec3 teal : source_color = vec3(0.07, 0.33, 0.38);
+uniform vec3 dark : source_color = vec3(0.04, 0.09, 0.11);
+uniform vec3 dust : source_color = vec3(0.46, 0.52, 0.22);
+uniform vec3 host : source_color = vec3(0.56, 0.50, 0.42);
 
 void fragment() {
 	float n1 = noise3(rock_pos * 3.0);
@@ -50,21 +56,56 @@ void fragment() {
 	float up = clamp(world_normal.y, 0.0, 1.0);
 	col = mix(col, dust, smoothstep(0.62, 0.85, grain) * up * 0.6);
 	ALBEDO = col * (0.7 + 0.6 * grain);
-	// Grain bump from the screen-space slope of the grain (surface gradient), so the coat looks crusty, not painted on.
+	float h = grain * bump * rock_scale;
+	// Grain bump from the screen-space slope of h (surface gradient), so the surface looks crusty, not painted on. Written out here: derivatives belong in fragment().
 	vec3 dpdx = dFdx(VERTEX);
 	vec3 dpdy = dFdy(VERTEX);
 	vec3 r1 = cross(dpdy, NORMAL);
 	vec3 r2 = cross(NORMAL, dpdx);
 	float det = dot(dpdx, r1);
-	float h = grain * bump * rock_scale;
 	vec3 grad = sign(det) * (dFdx(h) * r1 + dFdy(h) * r2);
 	NORMAL = normalize(abs(det) * NORMAL - grad);
 	ROUGHNESS = 0.9;
 }
-"""
+""",
+	"tin": """
+uniform vec3 granite : source_color = vec3(0.80, 0.76, 0.69);
+uniform vec3 grey : source_color = vec3(0.48, 0.48, 0.47);
+uniform vec3 speck : source_color = vec3(0.10, 0.10, 0.10);
+uniform vec3 quartz : source_color = vec3(0.90, 0.90, 0.88);
+uniform vec3 crystal : source_color = vec3(0.17, 0.08, 0.04);
+uniform vec3 rust : source_color = vec3(0.62, 0.36, 0.12);
+
+void fragment() {
+	float grain = noise3(rock_pos * 40.0);
+	vec3 col = mix(granite, grey, smoothstep(0.6, 0.75, noise3(rock_pos * 7.0)) * 0.8);
+	col = mix(col, speck, step(0.74, grain));
+	// One or two quartz veins across the rock, wandering a little; cassiterite crystals cluster along their middle, rust stains their edges.
+	float band = dot(rock_pos, normalize(vec3(0.7, 0.4, 0.3))) * 1.6 + 0.5 * noise3(rock_pos * 2.0);
+	float v = abs(sin(band * 3.14159));
+	float vein = 1.0 - smoothstep(0.22, 0.34, v);
+	float cryst = (1.0 - smoothstep(0.1, 0.2, v)) * smoothstep(0.42, 0.55, noise3(rock_pos * 13.0));
+	float stain = (1.0 - smoothstep(0.3, 0.5, v)) * smoothstep(0.45, 0.8, noise3(rock_pos * 6.0 + 2.3));
+	col = mix(col, rust * (0.7 + 0.3 * grain), stain * 0.6);
+	col = mix(col, quartz * (0.9 + 0.1 * grain), vein);
+	col = mix(col, crystal * (0.6 + 0.8 * noise3(rock_pos * 30.0)), cryst);
+	ALBEDO = col * (0.85 + 0.3 * grain);
+	float h = (grain * 0.5 + cryst) * bump * rock_scale;
+	// Grain bump from the screen-space slope of h (surface gradient), so the surface looks crusty, not painted on. Written out here: derivatives belong in fragment().
+	vec3 dpdx = dFdx(VERTEX);
+	vec3 dpdy = dFdy(VERTEX);
+	vec3 r1 = cross(dpdy, NORMAL);
+	vec3 r2 = cross(NORMAL, dpdx);
+	float det = dot(dpdx, r1);
+	vec3 grad = sign(det) * (dFdx(h) * r1 + dFdy(h) * r2);
+	NORMAL = normalize(abs(det) * NORMAL - grad);
+	ROUGHNESS = mix(0.9, 0.45, cryst);
+}
+""",
+}
 
 static var _meshes: Array = []
-static var _material: ShaderMaterial
+static var _materials: Dictionary = {}   # ore -> ShaderMaterial
 
 
 # The mesh for a rock of this yaw: one of VARIANTS lumpy, broken-faced shapes, 1 m across, flat underneath, made once.
@@ -76,14 +117,20 @@ static func mesh_for(yaw: float) -> ArrayMesh:
 	return _meshes[posmod(int(yaw), VARIANTS)]
 
 
-static func material() -> ShaderMaterial:
-	if _material == null:
-		var shader: Shader = Shader.new()
-		shader.code = SHADER
-		_material = ShaderMaterial.new()
-		_material.shader = shader
+static func has_look(ore: String) -> bool:
+	return FRAGMENT.has(ore)
 
-	return _material
+
+# The material for an ore's rocks (has_look first), made once.
+static func material(ore: String) -> ShaderMaterial:
+	if not _materials.has(ore):
+		var shader: Shader = Shader.new()
+		shader.code = COMMON + str(FRAGMENT[ore])
+		var m: ShaderMaterial = ShaderMaterial.new()
+		m.shader = shader
+		_materials[ore] = m
+
+	return _materials[ore]
 
 
 # An icosphere split twice (320 faces), each corner pushed in or out by a few broad lumps, then cut by a few random planes (the broken
