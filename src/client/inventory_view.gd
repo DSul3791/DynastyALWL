@@ -169,9 +169,10 @@ var _drink_msec: int = 0
 # Holding E on a food, drink or medicine in the pack keeps using it (Dave 17 Nov 2026: "when you hold e on an item like a food or raspberries it
 # should just keep eating them at a good speed"). One bite goes at a time: the next is sent only after the server has applied the last one
 # (the slot changed), so the server checks every bite as for a tap and nothing can over-eat. The pace is the server's own (vitals.json
-# eat_pace_ms, provisional EH-1 300 ms, about 3 a second; drink_pace_ms for a water container) plus EAT_HOLD_SLACK_MSEC, since the server
-# silently drops a bite sooner than that. A bite the slot shows no sign of within EAT_HOLD_REFUSED_MSEC of its turn counts as refused.
-const EAT_HOLD_SLACK_MSEC := 100   # room for network jitter: a bite that arrives too soon is dropped and ends the hold
+# eat_pace_ms, provisional EH-1 60 ms; drink_pace_ms for a water container) plus EAT_HOLD_SLACK_MSEC, since the server silently drops a bite
+# sooner than that: about 9 bites a second (Dave 17 Nov: "the speed should be at least 3 times faster" than 2.5 a second). A bite the slot
+# shows no sign of within EAT_HOLD_REFUSED_MSEC of its turn counts as refused. No resend: a resent refusal would repeat the server's notice.
+const EAT_HOLD_SLACK_MSEC := 50   # room for network jitter: a bite that arrives too soon is dropped and ends the hold (press E again)
 const EAT_HOLD_REFUSED_MSEC := 1000   # no change in the slot this long after a bite: the server said no (full, not known), stop
 const EAT_SOUND_GAP_MSEC := 400       # a held run plays a mouth sound at most this often, so quick bites do not chatter
 var _eat_hold_slot: int = -1          # the pack slot being eaten from while E is held, -1 when none
