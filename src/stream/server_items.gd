@@ -336,6 +336,10 @@ var _boulder_cfg: Dictionary = {}    # data/items/boulders.json
 var _boulder_left: Dictionary = {}   # boulder key -> rough stones still in it (absent = untouched), saved in world_items.json
 var _bog_left: Dictionary = {}       # bog iron deposit key "gi,gj" -> [ore left, game seconds it is counted to] (absent = untouched, full), saved in world_items.json "bog_iron"
 const BOULDER_KEY := 1 << 50
+const BOULDER_TRIES_MAX := 16          # a cell's boulder keys: the low four bits
+const COPPER_ROCK_FIRST := 8           # boulders take keys 0..7, copper rocks 8..15 (the last the mountain-foot boulder)
+const ORE_ROCK_TRIES := 8              # tries a cell for each ore's rocks (_lay_out_ore_rocks)
+const ORE_KEY := 1 << 52               # copper and tin rocks picked by hand: ORE_KEY | cell x << 28 | cell y << 8 | slot; tin boulders add BOULDER_KEY
 const BOG_STATE := 229            # world-item row state of a bog iron deposit (next free structure state, 10 Nov 2026; no structure may take it)
 const BOG_ID_BASE := 2000000000   # bog deposit world row ids count down from here (int32, far above _next_id), one per deposit key per run
 const BOG_SAMPLE_M := 8.0         # the baked tile's sample spacing: deposits sit on samples (BogIron), so the scan steps by it
@@ -1615,7 +1619,7 @@ func save() -> void:
 			row.append([int(counted.get("log", -1)), int(counted.get("firewood", -1)), int(counted.get("weak", -1))] if it["fire"].has("counted") else [])   # store pieces the last count knew ([] = never counted)
 			row.append(float(it["fire"].get("lit_s", 0.0)))   # seconds burned since it was last cold (a coal bed at coals.coal_bed_s)
 			row.append(int(it["fire"].get("damp", 0)))   # the wettest wood in it, drying left in tenths of a game hour (cooking.json wet_wood)
-			row.append(float(it["fire"].get("char", 0.0)))   # the part-made Charcoal of the wood burned (cooking.json charcoal_left)
+			row.append(float(it["fire"].get("char", 0.0)))   # the part-made Charcoal of the wood burned (cooking.json charcoal_left); below 0, owed for wood taken back out
 
 		if it.has("world"):
 			world_rows.append(items.size())   # put down by the server (a den pile, a gift, loot): the world reset keeps it
@@ -5138,7 +5142,7 @@ func _fire_to_ash(it: Dictionary, fire: Dictionary) -> void:
 
 # The fire is cold: cold ash (8) for FIRE_OUT_S, or a laid fire (9) when wood is in it.
 func _fire_cold(it: Dictionary, fire: Dictionary) -> void:
-	for key in ["lit_s", "wet_s", "catch"]:
+	for key in ["lit_s", "wet_s", "catch", "kept"]:
 		fire.erase(key)
 
 	if float(fire.get("burn_left", 0.0)) > 0.0:
@@ -5168,8 +5172,16 @@ func _fire_expire(it: Dictionary) -> bool:
 		return true
 
 	if _fire_keeps_charcoal(it["fire"]):
-		it["left"] = FIRE_OUT_S   # looked at again then: it goes once the charcoal has been taken
-		return true
+		if not bool(it["fire"].get("kept", false)):   # cold ash holding charcoal waits charcoal_left.keep_s for the player, once
+			it["fire"]["kept"] = true
+			it["left"] = float((_cooking.get("charcoal_left", {}) as Dictionary).get("keep_s", 86400.0))
+			return true
+
+		# shortcut: "kept" is not saved, so a restart gives an abandoned fire one more wait; it still ends, and the cap on fires a chunk stays honest.
+		var box = _chests[int(it["fire"]["uid"])]
+		var c: int = table.number_of("charcoal")
+		drop_in_world(c, box.count_of(c), it["pos"] + Vector3(0.6, 0.0, 0.0))   # nobody came for it: it is left on the ground and the fire goes
+		box.remove(c, box.count_of(c))
 
 	return false
 
@@ -5861,7 +5873,7 @@ func _load_world_items() -> void:
 			if row.size() > 16 and (typeof(row[16]) == TYPE_FLOAT or typeof(row[16]) == TYPE_INT) and int(row[16]) > 0:
 				entry["fire"]["damp"] = int(row[16])
 
-			if row.size() > 17 and (typeof(row[17]) == TYPE_FLOAT or typeof(row[17]) == TYPE_INT) and float(row[17]) > 0.0:
+			if row.size() > 17 and (typeof(row[17]) == TYPE_FLOAT or typeof(row[17]) == TYPE_INT) and float(row[17]) != 0.0:
 				entry["fire"]["char"] = float(row[17])
 
 			if row.size() > 9 and int(row[9]) > 0:
@@ -6144,7 +6156,10 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	part_usec = _cell_part("bank stones", part_usec)
 	_cell_parts[-1] += " (ground %.0f, water %.0f)" % [float(_bank_ground_usec) / 1000.0, float(_bank_water_usec) / 1000.0]
 	_lay_out_boulders(cell, cell_m)
-	_cell_part("boulders", part_usec)
+	part_usec = _cell_part("boulders", part_usec)
+	_lay_out_ore_rocks(cell, cell_m, "copper")
+	_lay_out_ore_rocks(cell, cell_m, "tin")
+	_cell_part("copper and tin rocks", part_usec)
 
 
 # A cell's own random stream for one part of its layout (Sonny, 10 Nov 2026). The loose stones and sticks drew first from one stream, and a stick's spot
@@ -6186,7 +6201,7 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
 
 	# Every try takes the same five draws whatever happens to it, and the boulder's key is its try, not its count: a try that the live water turns
 	# on or off (the bank chance) adds or drops that one boulder and moves no other boulder's key.
-	for attempt in range(mini(int(cfg.get("tries", 8)), 16)):
+	for attempt in range(mini(int(cfg.get("tries", 8)), COPPER_ROCK_FIRST)):   # keys from COPPER_ROCK_FIRST up are the copper rocks' (_lay_out_ore_rocks)
 		var x: float = (float(cell.x) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
 		var z: float = (float(cell.y) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
 		var draw: float = rng.randf()   # luck-exempt: seeded world layout
@@ -6217,13 +6232,153 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
 			continue
 
 		var row: Dictionary = {"radius": radius, "yaw": yaw, "total": total}
-		var ore_name: String = _boulder_ore(spot, key)
-
-		if ore_name != "":
-			row["ore"] = ore_name   # an outcrop: a pick takes this ore out of it (boulders.json ore)
-
+		_set_boulder_ore(row, _boulder_ore(spot, key), key)   # an outcrop: a pick takes this ore out of it (boulders.json ore)
 		_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": row}
 		_next_id += 1
+
+
+# A boulder row's ore: none for "", else the ore, and a copper or tin rock also its grade (boulders.json <ore>_rocks grade_min..grade_max, from
+# the key): the share of its pieces that come away as ore, so rocks hold different amounts and a bigger rock more (Dave 16 Nov 2026).
+func _set_boulder_ore(row: Dictionary, ore_name: String, key: int) -> void:
+	if ore_name == "":
+		return
+
+	row["ore"] = ore_name
+	var cfg: Dictionary = _boulder_cfg.get(ore_name + "_rocks", {})
+
+	if cfg.has("grade_min"):
+		row["grade"] = lerpf(float(cfg["grade_min"]), float(cfg.get("grade_max", cfg["grade_min"])), float(hash([key, "grade"]) % 1000) / 999.0)
+
+
+# Copper and tin rocks (Dave 16-17 Nov 2026, his photos; docs/design/COPPER_ROCKS.md, boulders.json copper_rocks and tin_rocks). Per cell,
+# from the cell's own stream named after the ore, 8 tries that each take the same five draws whatever happens to them:
+# - copper: a few anywhere on dry land, many in shallow water and on banks, and the last try a big boulder at a mountain's foot;
+# - tin: only in shallow water and on banks within near_body_m of a tin body of the geology (its river placers), sized by the relief
+#   around it: boulders where the valley climbs steeply (near the mountains), pebbles where it is flat (far downstream).
+# A rock under hand_max_radius is a loose ore item picked up by hand (ORE_KEY, kept in _taken like any scatter); a bigger one is a
+# boulder row with the ore, broken with a hammer or pick. Slots `slot`.. of the cell: copper 8..15 (BOULDER_KEY, after the cell's
+# boulders), tin 16..23 (ORE_KEY | BOULDER_KEY). Nothing depends on where spawn is.
+func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
+	var cfg: Dictionary = _boulder_cfg.get(ore + "_rocks", {})
+	var item: String = str((_boulder_cfg.get("ore", {}).get("items", {}) as Dictionary).get(ore, ""))
+
+	if cfg.is_empty() or item == "":
+		return
+
+	var rng: RandomNumberGenerator = _layout_rng(cell, ore)
+	var reach: float = float(cfg.get("bank_reach_m", 3.0))
+	var bed_m: float = float(cfg.get("bed_depth_m", 0.8))
+	var foot: Dictionary = cfg.get("foot", {})
+	var slot0: int = int(cfg.get("slot", COPPER_ROCK_FIRST))
+	var body_m: float = float(cfg.get("near_body_m", 0.0))
+	var hand_max: float = float(cfg.get("hand_max_radius", 0.0))
+	var cell_bits: int = ((cell.x & 0xfffff) << 28) | ((cell.y & 0xfffff) << 8)
+	var names: Dictionary = {ore: item}
+	var layer_m: float = float(_boulder_cfg.get("ore", {}).get("layer_depth_m", 10.0))
+
+	# Tin: one geology look for the whole cell first (any of its spots within near_body_m of a body), so a cell far from tin reads nothing more.
+	if body_m > 0.0:
+		var mid: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
+		var mid_y: float = float(ground_height.call(mid.x, mid.y))
+
+		if is_nan(mid_y) or not ore_near.is_valid() or str(ore_near.call(Vector3(mid.x, mid_y, mid.y), body_m + cell_m * 0.71, names, layer_m)) != ore:
+			return
+
+	for attempt in range(ORE_ROCK_TRIES):
+		var x: float = (float(cell.x) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
+		var z: float = (float(cell.y) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
+		var draw: float = rng.randf()   # luck-exempt: seeded world layout
+		var size_draw: float = rng.randf()   # luck-exempt: seeded world layout
+		var yaw: float = rng.randf() * 360.0   # luck-exempt: seeded world layout
+		var is_foot: bool = not foot.is_empty() and attempt == ORE_ROCK_TRIES - 1   # the last try is the mountain-foot boulder's
+
+		if is_foot:
+			if draw > float(foot.get("chance", 0.0)):
+				continue
+		elif attempt >= mini(int(cfg.get("tries", 4)), ORE_ROCK_TRIES - 1) or draw > maxf(float(cfg.get("chance", 0.0)), float(cfg.get("water_chance", 0.0))):
+			continue   # cheap refusals first: most tries end here without reading the ground or the water
+
+		var y: float = float(ground_height.call(x, z))
+
+		if is_nan(y) or y < 1.0:
+			continue
+
+		var spot: Vector3 = Vector3(x, y, z)
+		var depth: float = float(water_depth_at.call(spot)) if water_depth_at.is_valid() else 0.0
+
+		if depth > bed_m:
+			continue   # deep water: nobody would find it
+
+		if is_foot:
+			if depth > 0.0 or not _at_mountain_foot(spot, foot):
+				continue
+		elif draw > float(cfg.get("chance", 0.0)):
+			# Past the land share: only on a river or lake bed (shallow water) or a dry bank within reach of water.
+			var bank: bool = depth <= 0.0 and water_near.is_valid() and not bool(water_near.call(spot, 0.0)) and bool(water_near.call(spot, reach))
+
+			if depth <= 0.0 and not bank:
+				continue
+
+		if body_m > 0.0 and str(ore_near.call(spot, body_m, names, layer_m)) != ore:
+			continue   # tin lies only downstream of its own geology
+
+		var sizes: Dictionary = foot if is_foot else cfg
+		var radius: float
+
+		if cfg.has("relief_full_m") and not is_foot:
+			var t: float = clampf(_relief(spot, float(cfg.get("relief_reach_m", 24.0))) / maxf(float(cfg["relief_full_m"]), 0.1), 0.0, 1.0)
+			radius = lerpf(float(sizes.get("radius_min", 0.03)), float(sizes.get("radius_max", 1.0)), t * (0.5 + 0.5 * size_draw))
+		else:
+			radius = lerpf(float(sizes.get("radius_min", 0.06)), float(sizes.get("radius_max", 0.3)), pow(size_draw, float(sizes.get("radius_power", 2.0))))
+
+		var slot: int = slot0 + attempt
+
+		if radius < hand_max and not is_foot:
+			var loose_key: int = ORE_KEY | cell_bits | slot
+
+			if not _taken.has(loose_key):
+				_items[_next_id] = {"number": table.number_of(item), "count": 1, "pos": spot, "left": 1.0e9, "scatter": loose_key}
+				_next_id += 1
+
+			continue
+
+		var key: int = (BOULDER_KEY | ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | slot) if slot < BOULDER_TRIES_MAX else (ORE_KEY | BOULDER_KEY | cell_bits | slot)
+		var total: int = _boulder_stones(radius)
+		var left: int = mini(int(_boulder_left.get(key, total)), total)
+
+		if left <= 0:
+			continue
+
+		var row: Dictionary = {"radius": radius, "yaw": yaw, "total": total}
+		_set_boulder_ore(row, ore, key)
+		_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": row}
+		_next_id += 1
+
+
+# How far the ground climbs above the spot within reach (at most SCATTER_PAD_M - 4, inside the tiles _cell_ground_ready loaded: a
+# farther read loads a tile on the main thread), the highest of the four directions; 0 on flat or falling ground.
+func _relief(spot: Vector3, reach_m: float) -> float:
+	var reach: float = minf(reach_m, SCATTER_PAD_M - 4.0)
+	var best: float = 0.0
+
+	for d in [Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
+		var h: float = float(ground_height.call(spot.x + d.x, spot.z + d.y))
+
+		if not is_nan(h):
+			best = maxf(best, h - spot.y)
+
+	return best
+
+
+# The foot of a mountain: the spot itself is gentle (rise per metre under max_slope over 3 m) and the ground climbs more than rise_m
+# within reach_m (_relief) in one of the four directions (boulders.json copper_rocks foot).
+func _at_mountain_foot(spot: Vector3, foot: Dictionary) -> bool:
+	var near: float = (absf(float(ground_height.call(spot.x + 3.0, spot.z)) - spot.y) + absf(float(ground_height.call(spot.x, spot.z + 3.0)) - spot.y)) / 3.0
+
+	if is_nan(near) or near > float(foot.get("max_slope", 0.3)):
+		return false
+
+	return _relief(spot, float(foot.get("reach_m", 24.0))) > float(foot.get("rise_m", 20.0))
 
 
 # The ore a boulder is an outcrop of ("" for a plain boulder): the terrain's ore body within reach of it, for a share of the boulders chosen from the key.
@@ -6353,7 +6508,7 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 
 		if info.has("ore") and not ore_cfg.is_empty() and a_pick and material_ok:
 			var rock_piece: bool = (ore_cfg.get("rocks", {}) as Dictionary).has(str(info["ore"])) and not (ore_cfg.get("items", {}) as Dictionary).has(str(info["ore"]))
-			var share: float = float(ore_cfg.get("rock_piece_share", 0.5)) if rock_piece else float(ore_cfg.get("piece_share", 0.5))
+			var share: float = float(ore_cfg.get("rock_piece_share", 0.5)) if rock_piece else float(info.get("grade", ore_cfg.get("piece_share", 0.5)))   # a copper rock's own grade
 
 			if fate(peer, "boulder_ore", share):
 				var piece_id: String = str((ore_cfg.get("rocks", {}) as Dictionary).get(str(info["ore"]), "")) if rock_piece else str((ore_cfg.get("items", {}) as Dictionary).get(str(info["ore"]), ""))
@@ -6408,11 +6563,7 @@ func _lay_out_cave_items(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void
 
 			if left > 0:
 				var cave_row: Dictionary = {"radius": radius, "yaw": float(hash(key) % 360), "total": total}
-				var cave_ore: String = _boulder_ore(spot, key)   # a cave boulder is an outcrop like one on the surface (Kathleen 10 Nov 2026: caves never rolled ore)
-
-				if cave_ore != "":
-					cave_row["ore"] = cave_ore
-
+				_set_boulder_ore(cave_row, _boulder_ore(spot, key), key)   # a cave boulder is an outcrop like one on the surface (Kathleen 10 Nov 2026: caves never rolled ore)
 				_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": cave_row}
 				_next_id += 1
 
@@ -8350,7 +8501,7 @@ func _light_leave_charcoal(it: Dictionary, def: Dictionary, spent: float) -> voi
 		_dirty = true
 
 
-# A cold or laid fire whose store still holds Charcoal is not taken away while it does (the charcoal is left in the fire for the player).
+# A cold or laid fire whose store still holds Charcoal is not taken away for charcoal_left.keep_s (the charcoal is left in the fire for the player).
 func _fire_keeps_charcoal(fire: Dictionary) -> bool:
 	return _chests.has(int(fire.get("uid", 0))) and _chests[int(fire["uid"])].count_of(table.number_of("charcoal")) > 0
 
@@ -10683,11 +10834,16 @@ func _fire_apply_store(fire: Dictionary, box) -> void:
 
 	for cls in ["log", "firewood", "weak"]:
 		# The piece that is half burned counts only what is left of it, so counting the store again never gives burned wood back.
+		var burnt_was: float = float(burnt.get(cls, 0.0))
+
 		if float(seconds[cls]) <= 0.0:
 			burnt.erase(cls)
 		else:
 			burnt[cls] = minf(float(burnt.get(cls, 0.0)), float(seconds[cls]))
 			seconds[cls] = float(seconds[cls]) - float(burnt[cls])
+
+		if _charcoal_classes().has(cls):   # a half-burnt piece taken back out comes back whole: so does the charcoal it had made (a debt on the next)
+			fire["char"] = float(fire.get("char", 0.0)) - (burnt_was - float(burnt.get(cls, 0.0))) * GAME_RATE / _charcoal_game_s()
 
 		wood[cls] = maxf(float(seconds[cls]), 0.0)   # every piece in the store counts, however much (Dave 2 Nov 2026)
 
@@ -16665,7 +16821,7 @@ func _apply_lit_rows(rows: Array) -> void:
 func _lights_tick(spent: float) -> void:
 	var rain: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
 
-	for id in _items:
+	for id in _items.keys():   # a light that burns wood may drop charcoal (a new world item) on this pass
 		var it: Dictionary = _items[id]
 
 		if it.has("struct") and bool(it["struct"].get("lit", false)):
