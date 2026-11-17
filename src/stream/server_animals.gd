@@ -68,6 +68,7 @@ var big_game = null                # defending big game (moose; server_big_game.
 var biome_at: Callable             # (x, z) -> biome name of the ground there ("" unknown); species rows may list "biomes" weights (0 or missing = never)
 var hour_now: Callable             # () -> hour of the game day 0..24 (the server's clock); species rows may list "active" {day, dusk, night} spawn chances 0..1
 var air_at: Callable               # (Vector3) -> Weather.air_c at that point: its zone's air at that height, this hour (docs/design/one_temperature.md); unset: temp_c less the lapse
+var no_spawn: Callable                # (x, z) -> bool: true within no_spawn_m of something a player put down (server_items.spawn_blocked; Dave 17 Nov 2026): no animal is made there
 var lair_guarded: Callable            # (x, z, radius) -> bool: true when a burning placed fire lies within radius of a lair's mouth (lair.guard_m), so no new group comes (Dave 8 Nov 2026, decision 13)
 var _lair_state: Dictionary = {}   # mouth "x,z" -> {"made": a group has been made here, "empty_since": seconds when it was found empty, -1 while a group is there}
 var lair_path: Callable              # (mouth x, z) -> PackedVector3Array: the cave floor path from that den mouth to the den (tile goblin_den_paths), empty when none
@@ -201,6 +202,11 @@ func spawn(sp: String, x: float, z: float) -> int:
 	return id
 
 
+# True where no animal may be made (no_spawn_m round anything a player put down). Asked for every member's own spot, not only a group's centre.
+func no_spawn_at(x: float, z: float) -> bool:
+	return no_spawn.is_valid() and bool(no_spawn.call(x, z))
+
+
 # Young (Dave 6 Nov 2026): a mother with young runs from a player sooner, but a player who comes between her and them (near a young
 # one) is attacked hard, torch or not. The young are animals of the same species that follow her at follow_m and run when she runs.
 func _spawn_young(mother: int) -> void:
@@ -213,6 +219,10 @@ func _spawn_young(mother: int) -> void:
 	for _kid_n in rng.randi_range(int(span[0]), int(span[1])):   # luck-exempt: how many young
 		var ang: float = rng.randf() * TAU   # luck-exempt: where each young one keeps to
 		var off: Vector3 = Vector3(cos(ang), 0.0, sin(ang)) * float(y.get("follow_m", 3.0))
+
+		if no_spawn_at(m["pos"].x + off.x, m["pos"].z + off.z):
+			continue
+
 		var kid: int = spawn(m["sp"], m["pos"].x + off.x, m["pos"].z + off.z)
 
 		if kid > 0 and animals.has(kid):
@@ -1403,6 +1413,8 @@ func _top_up(players: Array, only: int) -> void:
 				for q in players:
 					too_near = too_near or Vector2(q.x - cx, q.z - cz).length() < (never if cfg.has("near_share") else maxf(never, float(cfg.get("spawn_min_m", 150.0)) * 0.9))
 
+				too_near = too_near or no_spawn_at(cx, cz)
+
 				if too_near or ((not def.has("flock") or bool(def["flock"].get("on_land", false))) and blocked.is_valid() and bool(blocked.call(cx, cz))) or crosses_wall(cx, cz, cx, cz):
 					continue
 
@@ -1433,6 +1445,9 @@ func _top_up(players: Array, only: int) -> void:
 				x = edge.x
 				z = edge.y
 
+				if no_spawn_at(x, z):
+					continue
+
 			var herd: Array = def.get("herd", [])
 
 			if herd.is_empty():
@@ -1445,7 +1460,13 @@ func _top_up(players: Array, only: int) -> void:
 			_herds[hid] = []
 
 			for k in members:
-				var id: int = spawn(sp, x + rng.randf_range(-6.0, 6.0), z + rng.randf_range(-6.0, 6.0))   # luck-exempt: herd spread
+				var hx: float = x + rng.randf_range(-6.0, 6.0)   # luck-exempt: herd spread
+				var hz: float = z + rng.randf_range(-6.0, 6.0)   # luck-exempt: herd spread
+
+				if no_spawn_at(hx, hz):
+					continue
+
+				var id: int = spawn(sp, hx, hz)
 
 				if id != 0:
 					animals[id]["herd"] = hid
@@ -1509,20 +1530,34 @@ func _top_up_lair(sp: String, def: Dictionary, p: Vector3, players: Array) -> vo
 			taken = taken or (other["sp"] == sp and d <= float(lair.get("claim_m", 40.0)))
 			taken = taken or ((lair.get("avoid", []) as Array).has(other["sp"]) and d <= float(lair.get("avoid_m", 120.0)))
 
-		if taken or (blocked.is_valid() and bool(blocked.call(m.x, m.y))) or crosses_wall(m.x, m.y, m.x, m.y):
+		if taken or (blocked.is_valid() and bool(blocked.call(m.x, m.y))) or crosses_wall(m.x, m.y, m.x, m.y) or no_spawn_at(m.x, m.y):
 			continue
+
+		if path.size() >= 2 and resting(def) and no_spawn_at(path[path.size() - 1].x, path[path.size() - 1].z):
+			continue   # made by day they would wake up in a den a player has built beside
+
+		var members: int = clampi(rng.randi_range(int(group[0]), int(group[1])), 1, maxi(int(cfg.get("per_player_cap", 30)) - animals.size(), 1))   # luck-exempt: how many goblins in a group
+		var spots: Array = []
+
+		for _k in members:
+			var spot: Vector2 = m + Vector2(rng.randf_range(-3.0, 3.0), rng.randf_range(-3.0, 3.0))   # luck-exempt: group spread
+
+			if not no_spawn_at(spot.x, spot.y):
+				spots.append(spot)
+
+		if spots.is_empty():
+			continue   # every spot fell inside a no-spawn zone: the mouth is not counted as made
 
 		state["made"] = true
 		state["empty_since"] = -1.0
 		_lair_state[key] = state
-		var members: int = clampi(rng.randi_range(int(group[0]), int(group[1])), 1, maxi(int(cfg.get("per_player_cap", 30)) - animals.size(), 1))   # luck-exempt: how many goblins in a group
 		var hid: int = _next_herd
 		_next_herd += 1
 		_herds[hid] = []
 		var den_at: Vector3 = Vector3.INF
 
-		for _k in members:
-			var id: int = spawn(sp, m.x + rng.randf_range(-3.0, 3.0), m.y + rng.randf_range(-3.0, 3.0))   # luck-exempt: group spread
+		for at in spots:
+			var id: int = spawn(sp, at.x, at.y)
 
 			if id != 0:
 				animals[id]["herd"] = hid

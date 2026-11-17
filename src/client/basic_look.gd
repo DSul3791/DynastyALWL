@@ -15,6 +15,8 @@ static var _table: Dictionary = {}
 static var _loaded: bool = false
 static var _material: StandardMaterial3D
 static var _metal_mats: Dictionary = {}
+const GLASS := -1.0   # _metal(parts, rough, GLASS): the glassy stone material (_glass_material) instead of metal (river tin)
+static var _glass: ShaderMaterial
 
 
 # The looks table, read once: item id -> {shape, color, size}. A missing or broken file means no entries (everything keeps its old look).
@@ -278,7 +280,7 @@ const ART_OVERRIDES := {
 	"javelin": {"shape": "shaft", "color": "#b8bcc4", "size": 0.85, "bits": ["metal"]},
 	"yeast": {"shape": "pot", "color": "#e6dbc0", "size": 0.5},
 	"copper_ore": {"shape": "malachite", "color": "#176a4e", "size": 1.0},     # a small copper rock picked up by hand (Dave's photo, 16 Nov 2026)
-	"tin_ore": {"shape": "tin_pebbles", "color": "#3a2618", "size": 1.0},     # water-worn cassiterite pebbles (Dave's photo, 17 Nov 2026)
+	"tin_ore": {"shape": "tin_glass", "color": "#7a3a20", "size": 1.0},     # a glassy plum-sized river tin stone (Dave, 17 Nov 2026)
 	"iron_ore": {"shape": "ore", "color": "#5e5650", "size": 1.0, "bits": ["#a04a28"]},
 	"coal": {"shape": "coal", "color": "#0e0e10", "size": 1.0},
 }
@@ -407,7 +409,7 @@ static func _model_mesh(item_id: String, def: Dictionary) -> ArrayMesh:
 static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = []) -> ArrayMesh:
 	var parts: Array = []
 
-	if shape not in ["bone", "coil", "coin", "ingot", "malachite", "tin_pebbles"]:
+	if shape not in ["bone", "coil", "coin", "ingot", "malachite", "tin_glass"]:
 		color = Color.from_hsv(color.h, minf(color.s * 1.35, 1.0), minf(color.v * 1.08, 1.0))      # bolder colours so loose items tell apart on the grass (Dave 2026-10-22)
 	var dark: Color = color.darkened(0.35)
 	var light: Color = color.lightened(0.25)
@@ -2469,11 +2471,19 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_sph(parts, 0.016 + 0.004 * float(k % 3), Vector3(1.0, 0.6, 1.0), Vector3(cos(a) * 0.055, 0.0 + 0.008 * float(k % 2), sin(a) * 0.045), blue_black if k % 3 == 0 else (teal if k % 3 == 1 else _tone(color, k, 0.15)))
 			for k in 4:
 				_sph(parts, 0.008, Vector3.ONE, Vector3(-0.03 + 0.02 * float(k), 0.02, 0.01 * float(k % 2)), Color(0.46, 0.52, 0.22))
-		"tin_pebbles":
-			# Water-worn cassiterite (Dave's photo, 17 Nov 2026): three smooth rounded pebbles, dark brown to reddish black, with a dull shine.
-			for pebble in [[0.05, Vector3(1.2, 0.7, 0.95), Vector3(0.0, -0.035, 0.0), color], [0.038, Vector3(1.1, 0.75, 1.0), Vector3(0.07, -0.045, 0.035), Color(0.24, 0.12, 0.08)], [0.032, Vector3(1.0, 0.7, 1.2), Vector3(-0.055, -0.048, -0.04), Color(0.13, 0.09, 0.07)]]:
-				_sph(parts, float(pebble[0]), pebble[1], pebble[2], pebble[3])
-				_metal(parts, 0.45, 0.0)
+		"tin_glass":
+			# A river tin stone (Dave 17 Nov 2026: "the river stream tin rocks should look like glass rocks shiny and reflective the size of plumbs"):
+			# one smooth water-worn cassiterite pebble, dark red-brown and glassy (GLASS: _glass_material, a glint and sheen from each light plus the
+			# sky's reflection in game), drawn about 7 cm across at the loose-item scale (inventory_view.BASIC_DROP_SCALE
+			# 1.8). A finer sphere than _sph so the highlight stays round. Colour converted to linear: this material reads vertex colours as linear.
+			# Pictures 17 Nov: roughness 0.06 metallic 0.2, then a clear coat, both drew matte; hence the written-out lighting.
+			var glass: SphereMesh = SphereMesh.new()
+			glass.radius = 0.019
+			glass.height = 0.038
+			glass.radial_segments = 16
+			glass.rings = 8
+			parts.append([glass, Transform3D(Basis.from_scale(Vector3(1.1, 0.82, 0.95)), Vector3(0.0, -0.074, 0.0)), color.srgb_to_linear()])
+			_metal(parts, 0.3, GLASS)
 		"coal":
 			# A lump of coal: black, angular and blocky, a few flat shiny facets, one broken face a shade lighter, and crumbs of coal dust beside it.
 			_box_rot(parts, Vector3(0.1, 0.075, 0.085), Vector3(0.0, -0.025, 0.0), Vector3(0.2, 0.5, 0.15), color)
@@ -2978,7 +2988,14 @@ static func _combine(parts: Array, size: float) -> ArrayMesh:
 
 		if not (metal_arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).is_empty():
 			result.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, metal_arrays)
-			result.surface_set_material(result.get_surface_count() - 1, _metal_material((kind as Vector2).x, (kind as Vector2).y))
+			var material: Material
+
+			if (kind as Vector2).y == GLASS:
+				material = _glass_material()
+			else:
+				material = _metal_material((kind as Vector2).x, (kind as Vector2).y)
+
+			result.surface_set_material(result.get_surface_count() - 1, material)
 
 	return result
 
@@ -3033,11 +3050,43 @@ static func _metal_material(rough: float = 0.4, metallic: float = 0.8) -> Standa
 	if not _metal_mats.has(key):
 		var material: StandardMaterial3D = StandardMaterial3D.new()
 		material.vertex_color_use_as_albedo = true
-		material.metallic = metallic
 		material.roughness = rough
+
+		material.metallic = metallic
 		_metal_mats[key] = material
 
 	return _metal_mats[key]
+
+
+# The glassy river tin stone's material, built once (Dave 17 Nov 2026: "glass rocks shiny and reflective"). Lane A pictures of a plain
+# low-roughness StandardMaterial3D (and then a clear coat) showed a matte stone: a sun highlight that small is under a pixel at play
+# distance. Here the lighting is written out: soft diffuse, a sharp glint plus a wider sheen from each light (so it reads shiny at a few
+# pixels and goes dark with the light at night, no glow), and a smooth surface so the game's sky shows in it (the engine adds the
+# environment reflection from ROUGHNESS). Vertex colour is the body colour.
+static func _glass_material() -> ShaderMaterial:
+	if _glass == null:
+		var shader: Shader = Shader.new()
+		shader.code = """
+shader_type spatial;
+render_mode specular_schlick_ggx;
+
+void fragment() {
+	ALBEDO = COLOR.rgb;
+	ROUGHNESS = 0.05;
+	SPECULAR = 0.9;
+}
+
+void light() {
+	float lit = max(dot(NORMAL, LIGHT), 0.0);
+	DIFFUSE_LIGHT += lit * ATTENUATION * LIGHT_COLOR / PI;
+	float h = max(dot(NORMAL, normalize(LIGHT + VIEW)), 0.0);
+	SPECULAR_LIGHT += (pow(h, 300.0) * 3.0 + pow(h, 24.0) * 0.25) * lit * ATTENUATION * LIGHT_COLOR;
+}
+"""
+		_glass = ShaderMaterial.new()
+		_glass.shader = shader
+
+	return _glass
 
 
 static func _shared_material() -> StandardMaterial3D:

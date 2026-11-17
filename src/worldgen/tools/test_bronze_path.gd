@@ -16,6 +16,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 const HERE := Vector3(700.0, 10.0, 700.0)
 const FORGE_AT := Vector3(700.0, 10.0, 702.5)
@@ -65,7 +66,7 @@ func recipe_number(id: String) -> int:
 # Queues `times` of the recipe and runs the server clock until it is done (or `seconds` pass), then takes station products out.
 func craft(id: String, times: int, seconds: int) -> void:
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number(id), 0, times, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number(id), 0, times, CraftHand.at(items, 1, recipe_number(id)))
 
 	for s in range(seconds):
 		items.tick(1.0)

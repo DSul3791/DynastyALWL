@@ -7,6 +7,7 @@ extends SceneTree
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 var failures: int = 0
 var said: Array = []
@@ -49,7 +50,7 @@ func _init() -> void:
 	items.action(1, Net.ACT_ADMIN_GIVE, stick, 0, 30, Vector3.ZERO)
 	items.action(1, Net.ACT_ADMIN_GIVE, twine, 0, 8, Vector3.ZERO)
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, shovel, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, shovel, 0, 1, CraftHand.at(items, 1, shovel))
 	check(items.craft_queue_of(1).is_empty() and not said.is_empty(), "no bench, no craft (%s)" % str(said))
 	check(not items.station_near(1, "workbench"), "no station near yet")
 
@@ -63,7 +64,7 @@ func _init() -> void:
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("wooden_hoe"), 0, 1, Vector3.ZERO)
 	items.action(1, Net.ACT_ADMIN_GIVE, stone, 0, 2, Vector3.ZERO)
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, shovel, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, shovel, 0, 1, CraftHand.at(items, 1, shovel))
 	check(not items.craft_queue_of(1).is_empty(), "near the bench the craft is queued")
 	items.report_position(1, Vector3(30.0, 10.0, 0.0))
 	items._craft_tick(60.0)

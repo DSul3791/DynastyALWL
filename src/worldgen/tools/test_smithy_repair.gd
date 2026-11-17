@@ -23,6 +23,7 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")
 const BuildingWear := preload("res://src/shared/building_wear.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 const DIR := "user://test_smithy_repair"
 const HERE := Vector3(5.0, 10.0, 0.0)
 const SMITHY_AT := Vector3(5.0, 10.0, 2.5)
@@ -142,7 +143,7 @@ func craft(item_id: String, seconds: float) -> void:
 		items.give(1, int(need[0]), int(need[1]))
 
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number(item_id), 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number(item_id), 0, 1, CraftHand.at(items, 1, recipe_number(item_id)))
 	run(seconds)
 
 
@@ -440,7 +441,7 @@ func _init() -> void:
 
 	check(items.craft_variants(1, knife_r).has(tempered), "10a. beside the Master smithy Tempered is offered")
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number("steel_knife"), tempered, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number("steel_knife"), tempered, 1, CraftHand.at(items, 1, recipe_number("steel_knife")))
 	run(float(knife_r["craft_s"]) * SmithingRules.time_mult(tempered) + 4.0)
 	var in_master: int = box(master).count_of(n("steel_knife"))
 	var at: int = box(master).numbers.find(n("steel_knife"))
