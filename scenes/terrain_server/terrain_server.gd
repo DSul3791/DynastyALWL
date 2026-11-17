@@ -332,6 +332,7 @@ func _ready() -> void:
 	items.send_goal_done = func(peer, id, copper): net.goal_done.rpc_id(peer, id, copper)
 	items.send_goal_progress = func(peer, changes): net.goal_progress.rpc_id(peer, changes)
 	items.send_marker_done = func(peer, at): net.road_marker_done.rpc_id(peer, at)
+	items.send_survey_refused = func(peer, last): net.survey_refused.rpc_id(peer, last)
 	@warning_ignore("confusable_local_declaration")
 	items.send_breath = func(peer, tenths): net.breath.rpc_id(peer, tenths)
 	@warning_ignore("confusable_local_declaration")
@@ -1644,6 +1645,7 @@ func _trees_near(point: Vector3, radius: float) -> Array:
 
 # Standing placer trees within `reach` of the straight line from a to b, as [chunk, id, how far along 0..1], from the flora chunks round `near` (a surveyed
 # road's station) not yet in `done` (each is marked): server_items _road_fell asks as the road goes, so each chunk is looked through once, when the road reaches it.
+# Only chunks the server already holds (items_cached): one not made yet is left unmarked and asked again at the next station.
 func _trees_along(a: Vector3, b: Vector3, reach: float, near: Vector3, done: Dictionary) -> Array:
 	var size: float = flora.placer.chunk_m
 	var a2: Vector2 = Vector2(a.x, a.z)
@@ -1656,12 +1658,12 @@ func _trees_along(a: Vector3, b: Vector3, reach: float, near: Vector3, done: Dic
 		if done.has(chunk):
 			continue
 
+		var trees: Dictionary = flora.items_cached(chunk)   # never made here: making a chunk is seconds of work on the main thread
+
+		if trees.is_empty() or not trees.has("ids"):
+			continue   # not made yet: asked again at the next station (not marked done)
+
 		done[chunk] = true
-		var trees: Dictionary = flora.items_of(chunk, true)
-
-		if trees.is_empty():
-			continue
-
 		var gone: Dictionary = {}
 
 		for id in flora.removed_in(chunk):

@@ -149,6 +149,7 @@ var world_seed: int = 0
 var rain_now: Callable         # () -> rain strength 0 to 1 over the world now; set by the server scene
 var send_notice: Callable      # (peer, text)
 var send_marker_done: Callable # (peer, Vector3): a road marker is reached or dropped, the client takes its flag down
+var send_survey_refused: Callable # (peer, Vector3): a survey marker was refused; the client's line goes on from this, the survey's last kept marker
 var standing_near: Callable    # (species name, position, radius) -> [position] of the nearest standing tree of that species, or []
 var flora_changed: Callable    # (chunk Vector2i) -> a chunk's saplings or trees changed: refresh the server cache and the clients near it
 var shrub_info: Callable       # (chunk Vector2i, id) -> {name, position, height} of a standing bush or shrub (placer or planted), or {}; set by the server scene
@@ -3765,31 +3766,39 @@ func _road_marker(peer: int, here: Vector3, chained: bool) -> void:
 		_say(peer, "Survey begun at this marker: set the next marker and the road builds toward it.")
 		return
 
+	var last: Vector3 = jobs.back()["last"] if not jobs.is_empty() else _road_last.get(peer, here)   # the road caught up: it carries on from its last marker
+
+	if not jobs.is_empty() and jobs.back()["markers"].size() >= ROAD_MAX_MARKERS:
+		_survey_refuse(peer, here, last, "Too many markers waiting: let the road catch up.")
+		return
+
+	if last != here and survey_blocked(last, here):
+		_survey_refuse(peer, here, last, "A building is in the way: survey the road round it.")
+		return
+
 	if jobs.is_empty():
-		var from: Vector3 = _road_last.get(peer, here)   # the road caught up: it carries on from its last marker (or, with none known, this one starts it)
-		jobs.append({"head": from, "last": from, "markers": [], "built": _road_last.has(peer), "seg": null, "stumps": []})
+		jobs.append({"head": last, "last": last, "markers": [], "built": _road_last.has(peer), "seg": null, "stumps": []})
 		_roads[peer] = jobs
 		_road_last.erase(peer)
 
-		if from == here:
+		if last == here:   # with no survey known (a restart), this marker starts one
 			_say(peer, "Survey begun at this marker: set the next marker and the road builds toward it.")
 			return
 
 	var job: Dictionary = jobs.back()
 
-	if job["markers"].size() >= ROAD_MAX_MARKERS:
-		_say(peer, "Too many markers waiting: let the road catch up.")
-		_marker_done(peer, here)
-		return
-
-	if survey_blocked(job["last"], here):
-		_say(peer, "A building is in the way: survey the road round it.")
-		_marker_done(peer, here)
-		return
-
 	job["markers"].append(here)
 	job["last"] = here
 	_say(peer, "Marker set: the road builds along the line, marker to marker." if job["built"] else "Marker set: the road builds toward it from the first marker.")
+
+
+# A marker refused: its flag comes down, the player is told why, and their line goes back to the survey's last kept marker.
+func _survey_refuse(peer: int, here: Vector3, last: Vector3, why: String) -> void:
+	_say(peer, why)
+	_marker_done(peer, here)
+
+	if send_survey_refused.is_valid():
+		send_survey_refused.call(peer, last)
 
 
 # Takes the next marker, in the order set, as the next stretch; returns false when no markers are left.
@@ -3852,6 +3861,10 @@ func _road_tick(delta: float) -> void:
 
 		seg["wait"] = ROAD_STEP_S
 		var i: int = int(seg["i"])
+
+		if i >= int(seg["n"]) and not seg.get("trees", []).is_empty():
+			_road_fell(job, seg, 1.0)   # trees left over at the stretch's end (at most ROAD_FELLS a station): felled before it closes
+			continue
 
 		if i >= int(seg["n"]):
 			_marker_done(peer, seg["a"])
@@ -4014,14 +4027,12 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 
 			if str(other["struct"]["kind"]) == "path_patch":
 				if Vector2(other["pos"].x - pos.x, other["pos"].z - pos.z).length() < PATH_SPACING_M:
-					blocked = true
-					break
+					blocked = true   # no break: the look round goes on for the stumps here
 
 				if _chunk_of(other["pos"]) == _chunk_of(pos):
 					of_kind += 1
 			elif other["pos"].distance_to(pos) < 1.0 and not bool(_structures.get(str(other["struct"]["kind"]), {}).get("walkover", false)):
 				blocked = true
-				break
 
 		if not blocked and of_kind < int(_structures["path_patch"]["cap_per_chunk"]):
 			_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": pos, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0, "road": true}}   # road: the grass is kept off 2 m either side

@@ -221,6 +221,7 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 		_net.wheel_share_received.connect(_on_wheel_share)
 	if _net != null:
 		_net.road_marker_reached.connect(_on_road_marker_reached)
+		_net.survey_refused_at.connect(_on_survey_refused)
 	_camera = camera
 	_root = world_root
 	_ground_below = ground_below
@@ -2278,7 +2279,6 @@ func _hoe_menu_close() -> void:
 # Grade line points: the first click sets A, the next B, the next starts a new line at A. Stakes mark them; the server keeps its own copy.
 var _grade_a: Vector3 = Vector3.ZERO
 var _grade_has_a: bool = false
-var _grade_has_b: bool = false
 var _stakes: Array = []
 
 
@@ -2351,7 +2351,6 @@ func _grade_point_here() -> void:
 
 	var chained: bool = _grade_has_a
 	_grade_has_a = true
-	_grade_has_b = chained
 	_net.inventory_action.rpc_id(1, Net.ACT_HOE_GRADE_POINT, held_slot, 1 if chained else 0, 0, at)
 	_inv._on_notice("Marker set: the road builds along the line. Set the next, or click this marker again to end" if chained else "Marker 1 set: aim where the road goes and set the next marker")
 
@@ -2364,7 +2363,6 @@ func _grade_point_here() -> void:
 
 func _survey_end() -> void:
 	_grade_has_a = false
-	_grade_has_b = false
 
 
 # True when a building the client knows of (StructureLook.survey_foot) stands in the road's way from a to b: the same question the server asks.
@@ -2422,7 +2420,7 @@ func _survey_line() -> void:
 
 	if not on:
 		if not _hoe_in_hand():
-			_survey_end()   # the hoe is put away: the survey is over (the server's road stops with it too)
+			_survey_end()   # the hoe is put away: the survey is over (the server's road goes on building while a hoe is on the hotbar)
 
 		if _survey_mesh != null:
 			_survey_mesh.visible = false
@@ -2508,6 +2506,13 @@ func _survey_material(color: Color) -> StandardMaterial3D:
 	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
 	mat.render_priority = 1
 	return mat
+
+
+# The server refused the last marker (a building it knows of that this client does not, or too many waiting): the line goes on from the survey's last kept marker.
+func _on_survey_refused(last: Vector3) -> void:
+	_grade_a = last
+	_grade_has_a = true
+	_survey_to = Vector3.INF
 
 
 # The server says the road builder has reached (or dropped) a marker: its red flag comes down.

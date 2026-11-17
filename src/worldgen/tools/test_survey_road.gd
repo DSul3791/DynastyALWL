@@ -72,6 +72,8 @@ func _server_road() -> void:
 	m.send_marker_done = func(_p, at): flags_down.append(at)
 	var says: Array = []
 	m.send_notice = func(_p, text): says.append(text)
+	var refused: Array = []
+	m.send_survey_refused = func(_p, last): refused.append(last)
 	var hoe: int = HeldTool.slot_of(m, "hoe")
 	# An old stump and a rock on the road, and a stump beside it that stays.
 	m._items[900001] = {"number": 0, "count": 1, "pos": Vector3(10.0, 10.0, 0.2), "left": 1.0e9, "tree": {"species": "oak", "yaw": 0.0, "pitch": 0.0, "length": 18.0, "radius": 0.3, "felled_at": 0.0, "state": 4, "chunk": [0, 0]}}
@@ -99,13 +101,15 @@ func _server_road() -> void:
 	check(_loose_named(m, "firewood") > firewood_before or _loose_firewood(m) > 0, "a broken stump leaves its firewood on the ground, as if chopped")
 	check(m._items.has(900003), "a rock on the road is left standing for tools")
 	check(_road_patches_near(m, Vector3(15.0, 10.0, 0.0), 1.0) > 0, "the road is laid straight under the rock")
-	check(_road_patches_near(m, Vector3(25.0, 10.0, 0.0), 30.0) >= 40, "the road is laid the whole way (%d patches)" % _road_patches_near(m, Vector3(25.0, 10.0, 0.0), 30.0))
+	check(_road_patches_near(m, Vector3(25.0, 10.0, 0.0), 30.0) >= 30, "the road is laid the whole way, a patch every other station (%d patches)" % _road_patches_near(m, Vector3(25.0, 10.0, 0.0), 30.0))
 	# A building stops a marker: the line is red on the client, the server refuses it too.
 	m._items[900010] = {"number": m.table.number_of("chest"), "count": 1, "pos": Vector3(50.0, 10.0, 20.0), "left": 1.0e9, "struct": {"kind": "chest", "yaw": 0.0}}
 	flags_down.clear()
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe, 1, 0, Vector3(50.0, 10.0, 40.0))
 	check(not m._roads.has(1) or m._roads[1][0]["markers"].is_empty(), "a marker past a chest on the line is refused")
 	check(says[says.size() - 1].begins_with("A building is in the way") and flags_down.size() == 1, "the player is told and its flag comes down")
+	check(refused.size() == 1 and Vector2(refused[0].x, refused[0].z).is_equal_approx(Vector2(50.0, 0.0)), "and their line goes back to the last kept marker (50, 0)")
+	check(not m._roads.has(1), "a refused marker after the road caught up leaves no empty job behind")
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe, 1, 0, Vector3(54.0, 10.0, 40.0))
 	check(m._roads.has(1) and m._roads[1][0]["markers"].size() == 1, "a marker on a line that clears the chest is set (round it)")
 	m._roads.clear()
@@ -113,7 +117,7 @@ func _server_road() -> void:
 	m._dirty = true
 	m.save()
 	var again = _make(dir)
-	check(_road_patches_near(again, Vector3(25.0, 10.0, 0.0), 30.0) >= 40, "the road's patches are saved and loaded with their road mark")
+	check(_road_patches_near(again, Vector3(25.0, 10.0, 0.0), 30.0) >= 30, "the road's patches are saved and loaded with their road mark")
 
 
 func _make(dir: String):

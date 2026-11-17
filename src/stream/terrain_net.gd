@@ -88,6 +88,7 @@ signal goals_received(rows: Array)
 signal goal_done_received(id: String, copper: int)
 signal goal_progress_received(changes: Dictionary)   # protocol 122: goal id -> count so far
 signal road_marker_reached(at: Vector3)
+signal survey_refused_at(last: Vector3)
 signal chest_received(id: int, bytes: PackedByteArray)
 signal chest_info_received(id: int, keep_out: bool, may_set: bool)
 signal chest_lock_received(id: int, locked: bool, mine: bool, may_open: bool, wait_s: int, allowed: int)
@@ -874,6 +875,12 @@ func reputation(ids: PackedStringArray, names: PackedStringArray, points: Packed
 @rpc("authority", "call_remote", "reliable")
 func road_marker_done(at: Vector3) -> void:
 	road_marker_reached.emit(at)
+
+
+# The server refused a survey marker (a building in the way, too many waiting): the surveyor's line goes on from `last`, the survey's last marker it kept (protocol 126).
+@rpc("authority", "call_remote", "reliable")
+func survey_refused(last: Vector3) -> void:
+	survey_refused_at.emit(last)
 
 
 # The whole goal list for this character, in the authored order (protocol 119): rows as ServerItems.goals_rows. Sent at the join; the client shows no placard for it.
