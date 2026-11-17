@@ -476,7 +476,7 @@ func _process(delta: float) -> void:
 		return
 
 	if _index == -1:
-		var scene_ready: bool = ready_held and not client.waiting_for_ground   # the item in the hand is waited for at the settle (it mounts on the third-person body only then)
+		var scene_ready: bool = ready_held and _collision_below(client.body.global_position)   # asked directly, like the gate below; the item in the hand is waited for at the settle (it mounts on the third-person body only then)
 
 		if not scene_ready and now - client.connected_msec < int(wait_s * 1000.0):
 			return
