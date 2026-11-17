@@ -31,12 +31,20 @@ extends Node
 #                       fire light at Low, and each picture logs the flame's state. Without it a dark one given (--shot-give=wooden_lantern_dark) stays dark
 #   --shot-sway         let the drawn bow's sway turn the camera as in play (terrain_client shot_sway): the rig's shot_lock otherwise holds the view still
 #   --shot-nograss      hide the grass; --shot-right puts the third-person camera on the body's right (look rig)
+#   --shot-ready=held   a held-item picture (look rig --give/--item): no fixed waits. The first shot starts once the ground under the player is in and the
+#                       item is in the hand (--shot-wait is only the most it waits); the item is given as soon as the pack arrives and held as soon as it is in
+#                       it; a spot whose ground already reads is not flown to 400 m first; the settle ends once the voxel engine has no work left and the
+#                       item is drawn in the hand (--shot-settle is only the most it waits). One "shot runner: timing" line per picture says where the time went.
+#   --shot-angles="name:deg:dist;..."  with a third-person shot: one picture per entry, all in one start, the camera deg round the body from its front
+#                       (0 front, 90 its left, -90 its right, 180 behind) dist m away (under 2 m it aims at the held item); frames <name>_<angle>.png
 #
 # yaw 0 faces -Z (north), 90 faces -X, -90 faces +X (Godot rotation about Y). Quits after the last shot.
 
 const Net := preload("res://src/stream/terrain_net.gd")
 const LookTable := preload("res://src/client/look_table.gd")
 const ItemCam := preload("res://src/debug/item_cam.gd")
+const AvatarDriver := preload("res://src/client/character/avatar_driver.gd")
+const StanceScript := preload("res://src/client/stance.gd")
 
 var client = null
 var shots: Array = []
@@ -158,7 +166,14 @@ var _lapse_state: int = 0
 var chop_strip: bool = false     # --shot-chop: after the main picture, swing the held axe once and save a picture at each phase of the swing (<name>_chop_NN.png; first person)
 var _chop_state: int = 0         # 0 not started, 1 running, 2 done
 var side_dist: float = 2.8      # --shot-dist=M: third-person camera distance; under 2 m it aims at the held item
-var side_sign: float = 1.0      # 1 = camera on the body's left side, -1 = right side (--shot-right)
+var side_deg: float = 90.0      # where the third-person camera stands round the body, degrees from its front: 90 its left, -90 its right (--shot-right)
+var ready_held: bool = false    # --shot-ready=held (see the header)
+var angles: Array = []          # --shot-angles: [{name, deg, dist}]
+var _angle_i: int = 0
+var _angle_msec: int = 0
+var _idle_since_msec: int = 0   # the voxel engine has had no work since then (ready settle)
+var _t_ready_msec: int = 0      # timing line: when the first shot could start
+var _t_landed_msec: int = 0
 
 const STORM := {"rain": 1.0, "snow": 0.0, "storm": 1.0, "cloud": 1.0, "sun": 0.0, "wind": 0.9, "wind_dir": 1.0, "temp_c": 8.0}
 const RAIN := {"rain": 0.65, "snow": 0.0, "storm": 0.0, "cloud": 0.8, "sun": 0.0, "wind": 0.3, "wind_dir": 1.0, "temp_c": 9.0}
@@ -198,7 +213,17 @@ func setup(owner_client, args: Array) -> void:
 		elif argument.begins_with("--shot-dist="):
 			side_dist = float(argument.trim_prefix("--shot-dist="))
 		elif argument == "--shot-right":
-			side_sign = -1.0
+			side_deg = -90.0
+		elif argument == "--shot-ready=held":
+			ready_held = true
+		elif argument.begins_with("--shot-angles="):
+			for part in argument.trim_prefix("--shot-angles=").split(";", false):
+				var bits: PackedStringArray = part.split(":", false)
+
+				if bits.size() == 3 and bits[1].is_valid_float() and bits[2].is_valid_float():
+					angles.append({"name": bits[0], "deg": float(bits[1]), "dist": float(bits[2])})
+				else:
+					print("shot runner: --angles error: %s is not name:deg:dist" % part)
 		elif argument.begins_with("--shot-frametime="):
 			frametime_s = float(argument.trim_prefix("--shot-frametime="))
 		elif argument.begins_with("--shot-build="):
@@ -358,7 +383,7 @@ func _process(delta: float) -> void:
 
 	var now: int = Time.get_ticks_msec()
 
-	if give_item != "" and not _given and now - client.connected_msec > 8000:
+	if give_item != "" and not _given and (now - client.connected_msec > 8000 or (ready_held and client.items.inventory != null)):
 		_given = true
 		client.items.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, client.items.table.number_of(give_item), 0, give_count, Vector3.ZERO)
 
@@ -368,7 +393,7 @@ func _process(delta: float) -> void:
 		if shot_lit:
 			_give_flame_fuel()
 
-	if give_item != "" and _given and not _selected and not place_it and now - client.connected_msec > 10000 and client.held != null and (not _given_keyed() or _given_key() >= 0 or now - client.connected_msec > 90000):
+	if give_item != "" and _given and not _selected and not place_it and (now - client.connected_msec > 10000 or (ready_held and client.items.inventory != null and client.items.inventory.numbers.has(client.items.table.number_of(give_item)))) and client.held != null and (not _given_keyed() or _given_key() >= 0 or now - client.connected_msec > 90000):
 		_selected = true
 		# The hotbar slot the server put the given item in (a tool or weapon goes into the first empty one when it arrives). Wait for it: a left-hand item
 		# (torch, lantern, shield) is chosen once, by what the key points at when it is selected, so selecting before the pack and keys arrived left
@@ -441,8 +466,11 @@ func _process(delta: float) -> void:
 		return
 
 	if _index == -1:
-		if now - client.connected_msec < int(wait_s * 1000.0):
+		var scene_ready: bool = ready_held and not client.waiting_for_ground and _held_ready()
+
+		if not scene_ready and now - client.connected_msec < int(wait_s * 1000.0):
 			return
+
 
 		_next(now)
 		return
@@ -490,6 +518,7 @@ func _process(delta: float) -> void:
 			return
 
 		_landed = true
+		_t_landed_msec = now
 		_land_failed = not landed_ok
 		_moved_msec = now - int(settle_s * 1000.0) if _land_failed else now
 
@@ -501,7 +530,7 @@ func _process(delta: float) -> void:
 
 		return
 
-	if now - _moved_msec < int(settle_s * 1000.0):
+	if now - _moved_msec < int(settle_s * 1000.0) and not (ready_held and _settled(now)):
 		return
 
 	# The ground under a shot is read once, when it is placed, and that reading can come from blocks still loading: on a steep face (the #802 spring
@@ -695,6 +724,26 @@ func _process(delta: float) -> void:
 
 		return
 
+	if _angle_i < angles.size() and float(shots[_index]["walk"]) >= 0.0:
+		if _angle_msec == 0:
+			side_deg = float(angles[_angle_i]["deg"])
+			side_dist = float(angles[_angle_i]["dist"])
+			_angle_msec = now
+			return
+
+		if now - _angle_msec < 300:   # a few frames with the camera at the new angle (it is placed every frame; nothing else moves)
+			return
+
+		var angle_path: String = "%s/%s_%s%s.png" % [dir, shots[_index]["name"], angles[_angle_i]["name"], "_FAILED" if _land_failed else ""]
+		var angle_image: Image = get_viewport().get_texture().get_image()
+		var angle_error: int = angle_image.save_png(angle_path)
+		print("shot runner: %s %s (%dx%d) angle %.0f dist %.2f" % ["saved" if angle_error == OK else "FAILED to save (error %d)" % angle_error, angle_path, angle_image.get_width(), angle_image.get_height(), float(angles[_angle_i]["deg"]), side_dist])
+		_angle_i += 1
+		_angle_msec = 0
+
+		if _angle_i < angles.size():
+			return
+
 	_print_state()
 	_print_body_height()
 
@@ -703,7 +752,14 @@ func _process(delta: float) -> void:
 
 	var image: Image = get_viewport().get_texture().get_image()
 	var path: String = "%s/%s%s.png" % [dir, shots[_index]["name"], "_FAILED" if _land_failed else ""]
-	image.save_png(path)
+
+	var base_picture: bool = angles.is_empty() or float(shots[_index]["walk"]) < 0.0   # with --shot-angles the angle pictures are the shot's pictures
+	var save_error: int = image.save_png(path) if base_picture else OK
+
+	if save_error != OK:
+		print("shot runner: FAILED to save %s (error %d)" % [path, save_error])
+
+	print("shot runner: timing %s: ready %.1f s after joining, landed %.1f s later, picture %.1f s after landing" % [shots[_index]["name"], float(_t_ready_msec - client.connected_msec) / 1000.0, float(_t_landed_msec - _t_ready_msec) / 1000.0, float(now - _t_landed_msec) / 1000.0])
 	var p: Vector3 = client.body.global_position
 	if client.held != null and give_item != "":
 		print("shot runner: held id %s holding %s model %s mounted %s" % [client.held.held_id(), str(client.held.holding), str(client.held._model != null), str(client.held._mounted)])
@@ -719,7 +775,8 @@ func _process(delta: float) -> void:
 			print("shot runner: camera at %s forward %s, model offset from camera %s, dot with forward %.2f, view_cam at %s" % [str(cam.global_position), str(-cam.global_transform.basis.z), str(hm.global_position - cam.global_position), (hm.global_position - cam.global_position).dot(-cam.global_transform.basis.z), str(client.view_cam.global_position) if client.view_cam != null else "-"])
 			print("shot runner: held model at %s visible %s in tree %s parent %s children %d first aabb %s; body at %s" % [str(hm.global_position), str(hm.visible), str(hm.is_visible_in_tree()), str(hm.get_parent().name), hm.get_child_count(), str(aabb.size), str(client.body.global_position)])
 
-	print("shot runner: saved %s (%dx%d) at %s, ground %.1f" % [path, image.get_width(), image.get_height(), str(p), _ground(p.x, p.z)])
+	if base_picture and save_error == OK:
+		print("shot runner: saved %s (%dx%d) at %s, ground %.1f" % [path, image.get_width(), image.get_height(), str(p), _ground(p.x, p.z)])
 
 	if shot_lit and client.held != null:
 		print("shot runner: lit %s" % _flame_state())
@@ -1706,6 +1763,17 @@ func _side_view(walk: float) -> void:
 	client.debug_pace = walk
 	client.debug_clip = clip_name
 
+	# The rig's body flies (no floor), so the client's own pick was the air clip: legs mid-stride, "running on the spot" (Dave 17 Nov 2026). A body shot plays the
+	# clip a body on the ground would at that pace: standing still (walk 0) the idle, else the gait; a torch in the left hand keeps its carry pose.
+	if walk >= 0.0 and clip_name == "" and client._avatar != null:
+		var clip: String = AvatarDriver.choose_clip(stance_index if stance_index >= 0 else StanceScript.STAND, walk, str(client._avatar.call("current")), false)
+		var player: AnimationPlayer = client._avatar.get("animation_player") as AnimationPlayer
+
+		if bool(client._avatar.get_meta("torch_left", false)) and player != null and player.has_animation(clip + "_torch"):
+			clip += "_torch"
+
+		client.debug_clip = clip
+
 	if walk < 0.0 or client._avatar == null or client.view_cam == null:
 		return
 
@@ -1725,13 +1793,13 @@ func _side_view(walk: float) -> void:
 			_want_y = stand_y
 
 	var origin: Vector3 = client._avatar.global_position + Vector3(0.0, 0.95, 0.0)
-	var left: Vector3 = client.body.global_transform.basis * Vector3(-1.0, 0.0, 0.0)
+	var side: Vector3 = client.body.global_transform.basis * Vector3(-sin(deg_to_rad(side_deg)), 0.0, -cos(deg_to_rad(side_deg)))   # 90: the body's left (-x)
 	var aim: Vector3 = origin
 
 	if side_dist < 2.0 and client.held != null and client.held._model != null:
 		aim = client.held._model.global_position
 
-	client.view_cam.global_position = aim + left * side_dist * side_sign + Vector3(0.0, 0.1, 0.0)
+	client.view_cam.global_position = aim + side * side_dist + Vector3(0.0, 0.1, 0.0)
 	client.view_cam.look_at(aim, Vector3.UP)
 
 
@@ -1844,6 +1912,32 @@ func _print_body_height() -> void:
 	print("shot runner: body height: stance %d clip %s, feet level %.2f, collision ground %.2f (feet %+.2f m), hips %.2f (%+.2f m above the ground), body origin %.2f, on floor %s" % [stance_index, avatar.call("current"), foot_y, ground, foot_y - ground, hips_y, hips_y - ground, client.body.global_position.y, str(client.body.is_on_floor())])
 
 
+# --shot-ready=held: the item is in the hand, drawn (a holdable item mounts a model within a frame or two of being selected).
+func _held_ready() -> bool:
+	if client.held == null or client.held._model == null or not client.held._mounted:
+		return false
+
+	return give_item == "" or _selected
+
+
+# --shot-ready=held: the settle is over once the shot has stood a moment, the voxel engine has had no streaming, generation or meshing work for half
+# a second (the near ground is drawn at its finest) and the item is in the hand.
+func _settled(now: int) -> bool:
+	var tasks: Dictionary = VoxelEngine.get_stats().get("tasks", {})
+	var busy: int = int(tasks.get("streaming", 0)) + int(tasks.get("generation", 0)) + int(tasks.get("meshing", 0)) + int(tasks.get("main_thread", 0))
+
+	if busy > 0:
+		_idle_since_msec = 0
+	elif _idle_since_msec == 0:
+		_idle_since_msec = now
+
+	return now - _moved_msec >= READY_STAND_MS and _idle_since_msec > 0 and now - _idle_since_msec >= READY_IDLE_MS and _held_ready()
+
+
+const READY_STAND_MS := 1500
+const READY_IDLE_MS := 500
+
+
 # from_y: where the ray starts going down (the sky by default; the ground guard starts just above the camera, so in a cave it finds the floor).
 func _ground(x: float, z: float, from_y: float = 1500.0) -> float:
 	var tool = client.terrain.get_voxel_tool()
@@ -1935,7 +2029,12 @@ func _next(now: int) -> void:
 	_ground_steady = false
 	_placed_ground = NAN
 	_ground_wait_msec = now
-	client.body.global_position = Vector3(shot["pos"].x, 400.0, shot["pos"].z)
+	_t_ready_msec = now
+	_angle_i = 0
+	_angle_msec = 0
+	_idle_since_msec = 0
+	var known: float = _ground(shot["pos"].x, shot["pos"].z) if ready_held else NAN
+	client.body.global_position = Vector3(shot["pos"].x, 400.0 if is_nan(known) else known + 2.0, shot["pos"].z)   # a spot whose ground is already in is not left for 400 m (its blocks would stream again)
 	client.body.rotation = Vector3(0.0, deg_to_rad(float(shot["yaw"])), 0.0)
 	client.pitch = deg_to_rad(float(shot["pitch"]))
 	client.camera.rotation.x = client.pitch
