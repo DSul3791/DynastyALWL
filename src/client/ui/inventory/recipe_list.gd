@@ -473,13 +473,12 @@ static func time_words(seconds: float) -> String:
 
 # Whether the stock in reach covers `count` crafts of recipe `number` (CB-2). A recipe that one craft cannot cover from stock alone (logs, parts
 # made first) is left to the server, which refuses what is short.
-func _covers(number: int, count: int) -> bool:
+# `needs` are the card's needs for the variant chosen (made_as).
+func _covers(number: int, needs: Array, count: int) -> bool:
 	if view._free_craft() or not view._stock_can_make(number):
 		return true
 
-	var r: Dictionary = view.recipes.recipe(number)
-
-	for need in r["needs"]:
+	for need in needs:
 		if view.stock_fill(int(need[0])) < int(need[1]) * count:
 			return false
 
@@ -727,10 +726,11 @@ func _refresh_detail() -> void:
 	var many: Button = _craft_button("", true)
 	buttons.add_child(many)
 	var many_number: int = view._selected_recipe
+	var many_needs: Array = made_as["needs"]
 	var set_many: Callable = func(count: int) -> void:
 		many.text = "Craft %d  (%s)" % [count, time_words(each_s * count)]
 		many.tooltip_text = many.text
-		many.disabled = not one_ok or not _covers(many_number, count)
+		many.disabled = not one_ok or not _covers(many_number, many_needs, count)
 	set_many.call(_qty)
 	_quantity.value_changed.connect(func(v) -> void: set_many.call(int(v)))
 	many.pressed.connect(func() -> void: craft_selected())
