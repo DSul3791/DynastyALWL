@@ -4,8 +4,9 @@
 #   A  naming another process          -> ignored, server stays up, note stays
 #   B  naming it, from its own commit  -> note taken, server stays up (a request left behind)
 #   C  naming it, from other code      -> server writes "closing", saves and exits; note and server_run.json gone
-#   GODOT=/path/to/godot bash tools/play_stop_smoke.sh        (Git Bash on Windows or Linux; about 1 to 2 minutes)
+#   GODOT=/path/to/voxel/godot bash tools/play_stop_smoke.sh   (Git Bash on Windows or Linux; about 1 to 2 minutes; the voxel build, as for world tests)
 set -u
+cd "$(dirname "$0")/.." || exit 2
 # No --quit-after: a server with a set quit time does not look for stop requests (nor empties); the trap ends it.
 GODOT="${GODOT:-godot}"
 RIG=$(mktemp -d); mkdir -p "$RIG/store" "$RIG/home"
@@ -20,8 +21,8 @@ ok() { echo "ok   $1"; }; bad() { echo "FAIL $1"; FAIL=1; }
 env "${SENV[@]}" "$GODOT" --headless --path . res://scenes/terrain_server/terrain_server.tscn -- --port=$PORT --store="$RIG/store" --quit-when-empty > "$RIG/server.log" 2>&1 &
 SP=$!
 trap 'kill $SP 2>/dev/null; sleep 1; rm -rf "$RIG"' EXIT
-for _ in $(seq 1 240); do [ -f "$UD/server_run.json" ] && break; kill -0 $SP 2>/dev/null || break; sleep 0.5; done
-[ -f "$UD/server_run.json" ] || { echo "FAIL no server_run.json (server.log tail below)"; tail -20 "$RIG/server.log" | cut -c1-200; exit 1; }
+for _ in $(seq 1 240); do grep -q '"pid"' "$UD/server_run.json" 2>/dev/null && break; kill -0 $SP 2>/dev/null || break; sleep 0.5; done
+grep -q '"pid"' "$UD/server_run.json" 2>/dev/null || { echo "FAIL no server_run.json (server.log tail below)"; tail -20 "$RIG/server.log" | cut -c1-200; exit 1; }
 NOTE=$(cat "$UD/server_run.json"); echo "run note: $NOTE"
 GPID=$(echo "$NOTE" | grep -oE '"pid": ?[0-9]+' | grep -oE '[0-9]+$'); COMMIT=$(echo "$NOTE" | grep -oE '"commit": ?"[^"]*"' | sed -E 's/.*"([^"]*)"$/\1/')
 echo "$NOTE" | grep -qE '"stop": ?1' && ok "a Play-style server says it obeys (stop 1)" || bad "run note has no stop 1"
