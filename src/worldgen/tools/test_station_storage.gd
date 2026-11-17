@@ -255,7 +255,8 @@ func _init() -> void:
 	check(box(old_style).is_empty() and pack(1, nail) >= 2, "its old products come out like anything else")
 	act(1, Net.ACT_PICKUP, old_style)   # taken down, out of the way of the stations below
 	check(not items._items.has(old_style), "the emptied old-style Primitive smithy is taken down (so the stores checked after the reload are the ones above)")
-	clear_pack(1)   # its refunded stone, clay and Logs and the spare nails stay out of what follows (Stack to nearby would put the nails in the first smithy)
+	items.inventory_of(1).remove(nail, pack(1, nail))   # the spare nails out of the pack: Stack to nearby (the Kiln, below) would put them in the first smithy
+	items.inventory_of(1).remove(n("log"), pack(1, n("log")))   # and the Logs its take-down refunded, out of the Kiln's count (the Charcoal stays: it fires the Smithy)
 
 	# --- 3 and 4. The Smithy draws Iron ingots from the player's own (locked) chest first, then from their own station store ---
 	var smithy: int = place("blacksmithy@5,3.5,0", 1)
