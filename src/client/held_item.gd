@@ -59,6 +59,7 @@ const THIRD_HOE_PITCH_DEG := -50.0     # third person: a hoe carried blade-down,
 const THIRD_SAW_PITCH_DEG := -120.0   # third person: a saw carried by the handle, blade pointing down and back about 30 degrees
 const THIRD_TORCH_RAISE_DEG := 35.0   # third person: a torch in the left hand points forward and 35 degrees up, its flame clear of the body (Dave 5 Nov: it lay along the arm by the hip)
 const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the way from the middle to the end, so less of the tool stands above the hand
+const THIRD_FULL_GRIP := ["saw"]   # held right on the grip point, no choke: a saw's handle is its last third or less, so the choke put the hand on the blade (Dave 17 Nov 2026: "it is stabbed right through his hand")
 # A tool with a stage-one look (data/items/looks.json) is held as the same mesh that lies on the ground (Dave 2026-10-24: the held tools
 # looked like old placeholders). BasicLook tool meshes run handle to head along +X; HELD_LOOK_TURN turns that to the held convention
 # (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a shovel facing up.
@@ -67,6 +68,7 @@ const HELD_SPEAR_SCALE := 1.0
 const BOW_AMMO := ["stone_arrow", "bone_arrow", "wooden_arrow", "fibre_arrow", "fire_arrow", "bronze_arrow", "iron_arrow", "steel_arrow"]   # the same as "ammo" in data/items/bow.json (test_slot_sounds checks)
 const BowAim := preload("res://src/shared/bow_aim.gd")
 const BowReticle := preload("res://src/client/bow_reticle.gd")
+const SAW_CATEGORY := "Carpenter's"   # the craft tab a left click with a saw opens (Dave 17 Nov 2026: "the carpenters category")
 const HELD_FIXED_SCALE := {"rod": 1.0, "hoe": 1.0, "saw": 1.0, "bow": 1.0, "arrow": 1.0, "quern": 1.0}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
 const HELD_LOOK_MAX_M := 1.0      # no held tool longer than this (a big look size or a long hoe is scaled down to it)
 const HELD_GRIP_FROM_END_M := 0.12
@@ -175,7 +177,7 @@ var _blueprint_at: Vector3 = Vector3.ZERO
 var _blueprint_ok: bool = false
 var _ghost_on_base: bool = false           # the ghost is snapped to a base: a piece on a foundation, or a foundation beside another (the wheel does not lift it)
 var _placement: Dictionary = {}              # structures.json: footprints, gaps, caps (shared with the server's rules)
-var blueprint_state: String = ""            # what the ghost shows now: "open", "covered", "far", or a red reason of PlacementRules.reason_text / blocked(): "close", "crowded", "steep", "float", "water", "shallow", "nofire", "notable", "taken", "nodoorway", "mismatch", "wheel_*" (tests read it)
+var blueprint_state: String = ""            # what the ghost shows now: "open", "covered", "far", or a red reason of PlacementRules.reason_text / blocked(): "close", "overlap", "bed", "crowded", "steep", "float", "water", "shallow", "nofire", "notable", "taken", "nodoorway", "mismatch", "wheel_*" (tests read it)
 var _door_shape: String = ""                # the opening of the doorway a door's ghost is aimed at ("" for any other piece or no doorway): the words of "mismatch" and "taken"
 var _blueprint_shape: Vector2 = Vector2(-1.0, -1.0)
 var _blueprint_next_msec: int = 0
@@ -1232,6 +1234,11 @@ func mouse_button(button: int, pressed: bool) -> bool:
 			_hoe_apply()
 			return true
 
+		# Left click with a saw (Dave 17 Nov 2026): the crafting screen opens on the Carpenter's tab, what the saw makes; Craft takes the log from near you.
+		if button == MOUSE_BUTTON_LEFT and pressed and str(_inv.table.entry(held_id()).get("tool_class", "")) == "saw":
+			_inv.open_crafting_on(SAW_CATEGORY)
+			return true
+
 		if button == MOUSE_BUTTON_LEFT and pressed:
 			_arm_play("use", 0.6)
 
@@ -1893,7 +1900,7 @@ func _update_blueprint() -> void:
 		return
 
 	var attach: String = str(PlacementRules.structure_of_kit(_placement, kit).get("attach_to", ""))
-	var on_grid: Array = PlacementRules.snap(_placement, kit, hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.placed_rows() if attach == "fire" else (_inv.surface_rows(PlacementRules.attach_states(_placement, kit)) if attach == "table" else _inv.foundation_rows()), clampi(lift_steps, 0, 1))
+	var on_grid: Array = PlacementRules.snap(_placement, kit, hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.placement_rows() if attach == "fire" else (_inv.surface_rows(PlacementRules.attach_states(_placement, kit)) if attach == "table" else _inv.foundation_rows()), clampi(lift_steps, 0, 1))
 	_blueprint_at = on_grid[0]
 	_blueprint_yaw = int(on_grid[1])
 
@@ -1903,7 +1910,7 @@ func _update_blueprint() -> void:
 	_blueprint.rotation.y = deg_to_rad(float(_blueprint_yaw)) if PlacementRules.structure_of_kit(_placement, kit).get("piece", false) else _camera.global_rotation.y
 	var on_base: bool = bool(on_grid[2])
 	_ghost_on_base = on_base
-	blueprint_state = PlacementRules.blocked(_placement, kit, _blueprint_at, _inv.placed_rows() + _inv.foundation_rows())   # the building pieces too, as the server sees them
+	blueprint_state = PlacementRules.blocked(_placement, kit, _blueprint_at, _inv.placement_rows(), float(_blueprint_yaw))   # every fire and structure, at the turn it goes down at, as the server checks them
 	_door_shape = str(PlacementRules.doorway_fit(_placement, PlacementRules.structure_of_kit(_placement, kit), _blueprint_at, _inv.foundation_rows())["opening"]) if attach == PlacementRules.DOOR_ATTACH else ""
 
 	if attach == "table" and not on_base:
@@ -1939,9 +1946,7 @@ func _update_blueprint() -> void:
 		var probe: Callable = func(x: float, z: float) -> float: return _terrain_y(x, z, ground_at.y, 6.0)
 		blueprint_state = PlacementRules.steep(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), probe)   # the turn it is placed at, as the server samples it (the camera's turn sampled other corners: BUG-008)
 
-	var fire_on_base: bool = kit == "campfire_kit" and not is_nan(PlacementRules.foundation_top(_placement, _blueprint_at, _inv.foundation_rows()))   # the server lays a fire on a foundation's top and skips the check
-
-	if blueprint_state == "" and not fire_on_base:
+	if blueprint_state == "":
 		var lifted: float = float(lift_steps) * PlacementRules.LIFT_STEP_M if (not on_base and bool(PlacementRules.structure_of_kit(_placement, kit).get("foundation", false))) else 0.0
 		var terrain: float = _terrain_y(_blueprint_at.x, _blueprint_at.z, _blueprint_at.y, 14.0)   # 14 m reaches down past a stack of four foundations
 
@@ -1966,7 +1971,7 @@ func _update_blueprint() -> void:
 	if (blueprint_state == "open" or blueprint_state == "covered") and _inv._player_position.is_valid() and (_inv._player_position.call() as Vector3).distance_to(_blueprint_at) > PLACE_REACH_M:
 		blueprint_state = "far"
 
-	var blocked: bool = blueprint_state.begins_with("wheel_") or blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "float" or blueprint_state == "water" or blueprint_state == "shallow" or blueprint_state == "nofire" or blueprint_state == "notable" or blueprint_state == "taken" or blueprint_state == "far" or blueprint_state == "nopanel" or blueprint_state == "nocorner" or blueprint_state == "buried" or blueprint_state == "nodoorway" or blueprint_state == "mismatch"
+	var blocked: bool = blueprint_state != "open" and blueprint_state != "covered"   # every reason is red, so a new one can never leave a green ghost that will not place
 	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.plan_picked < 0 or blueprints.can_afford(_build_tier()))   # a single piece without the materials is set down as a blue blueprint site (Dave 5 Nov 2026); a saved plan still needs them all
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
 
@@ -2800,6 +2805,11 @@ func _mount_model() -> void:
 	_model.position = tilt * grip / ARMS_SCALE
 
 
+# The share of the grip distance (middle to grip point) the third-person hand takes on a tool of this tool_class.
+static func third_choke(tool_class: String) -> float:
+	return 1.0 if tool_class in THIRD_FULL_GRIP else THIRD_CHOKE
+
+
 # Third person: the hand hangs at the side (mount -Z down the fingers, +Y forward, +Z up), so a tool is turned to stand up and a little forward.
 func _mount_model_third(kind: String) -> void:
 	_avatar_rig.hand_mount_r.add_child(_model)
@@ -2809,9 +2819,8 @@ func _mount_model_third(kind: String) -> void:
 		return
 
 	var turn: Basis = Basis(Vector3.RIGHT, deg_to_rad(THIRD_LEAN_DEG))
-	var grip: Vector3 = Vector3(0.0, float(_model.get_meta("grip_y", GRIP_ALONG_Y.get(kind, 0.0))) * THIRD_CHOKE, 0.0)   # the hand sits grip below the model middle, on the handle end (Dave 2026-10-22: it was held by the head)
-
 	var carried: String = str(_inv.table.entry(held_id()).get("tool_class", ""))
+	var grip: Vector3 = Vector3(0.0, float(_model.get_meta("grip_y", GRIP_ALONG_Y.get(kind, 0.0))) * third_choke(carried), 0.0)   # the hand sits grip below the model middle, on the handle end (Dave 2026-10-22: it was held by the head)
 
 	if carried == "shovel":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(THIRD_SHOVEL_PITCH_DEG))
@@ -3210,6 +3219,11 @@ func _make_container_model() -> Node3D:
 	return node
 
 
+# How far the hand sits from a held look's origin, toward its handle end (-x): a little in from that end (looks.json grip_from_end_m: on a model's own handle).
+static func look_grip_y(held: Mesh, def: Dictionary, held_scale: float) -> float:
+	return maxf(-held.get_aabb().position.x * held_scale - float(def.get("grip_from_end_m", HELD_GRIP_FROM_END_M)), 0.03)
+
+
 # Any other tool: a handle with a flat blade (a shovel) or a plain head, until the tool has its own model.
 # The ground mesh of a held tool, turned and sized for the hand, or null when the item has no tool look (it keeps its old model).
 # The grip distance from the model middle goes in the "grip_y" meta (see _mount_model).
@@ -3231,7 +3245,7 @@ func _make_look_tool_model() -> Node3D:
 	mesh.mesh = held
 	mesh.basis = (HELD_LOOK_TURN[shape] as Basis) * Basis.from_scale(Vector3(1.0, 2.0, 2.0) * held_scale if shape == "arrow" else Vector3.ONE * held_scale)   # an arrow's shaft is drawn twice as thick in hand, or it is a hairline on screen
 	node.add_child(mesh)
-	node.set_meta("grip_y", maxf(-held.get_aabb().position.x * held_scale - float(def.get("grip_from_end_m", HELD_GRIP_FROM_END_M)), 0.03))   # the hand sits a little in from the handle end (looks.json grip_from_end_m: on a model's own handle)
+	node.set_meta("grip_y", look_grip_y(held, def, held_scale))
 
 	if shape == "bow":
 		node.set_meta("grip_y", 0.03)   # a bow is held at its middle

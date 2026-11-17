@@ -16,6 +16,7 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const FoodEffects := preload("res://src/shared/food_effects.gd")
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 const HERE := Vector3(0.0, 10.0, 0.0)
 const BOARDS := ["seafood_platter", "roast_platter", "mixed_grill_platter", "charcuterie_board", "harvest_platter", "tavern_supper_board", "breakfast_platter", "dessert_platter"]
@@ -150,7 +151,7 @@ func _init() -> void:
 	var inv = items.inventory_of(1)
 	inv.wear[inv.numbers.find(stale)] = items.table.shelf_units(stale) / 2   # one ingredient half gone
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number("roast_platter"), 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number("roast_platter"), 0, 1, CraftHand.at(items, 1, recipe_number("roast_platter")))
 
 	for s in 10:
 		items.tick(1.0)

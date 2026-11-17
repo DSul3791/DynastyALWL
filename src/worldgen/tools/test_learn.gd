@@ -8,6 +8,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 var failures: int = 0
 var said: Array = []
@@ -44,7 +45,7 @@ func join(items, peer: int, key: String) -> void:
 
 func craft(items, peer: int, number: int) -> void:
 	items._last_queue_act.clear()
-	items.action(peer, Net.ACT_CRAFT_QUEUE, number, 0, 1, Vector3.ZERO)
+	items.action(peer, Net.ACT_CRAFT_QUEUE, number, 0, 1, CraftHand.at(items, peer, number))
 
 	for s in range(8):
 		items.tick(1.0)

@@ -99,7 +99,7 @@ func _init() -> void:
 	states.sort()
 	check(states == [8, 9], "old out fires load as empty (8) or loaded (9): %s" % str(states))
 
-	# Stress: 1000 drops over 4 chunks hit the 64 per chunk cap.
+	# Stress: 1000 drops over 4 chunks all lie on the ground (Dave 16 Nov 2026: "there should be no limit").
 	var sd: String = "user://test_persist_b"
 	wipe(sd)
 	var s = make(sd)
@@ -114,7 +114,7 @@ func _init() -> void:
 		if s.drop_in_world(s.table.number_of("stone_axe"), 1, pos, 1):
 			accepted += 1
 
-	check(accepted == 4 * ItemsScript.MAX_DROPPED_NEAR and s.world_item_count() == accepted, "world items stop at the near-spot cap (%d accepted of 1000)" % accepted)
+	check(accepted == 1000 and s.world_item_count() == accepted, "no cap on world items (%d accepted of 1000)" % accepted)
 
 	# Fires: 40 kits in one chunk give 8 fires.
 	s.peer_connected_hello(1, "abcdef123456")

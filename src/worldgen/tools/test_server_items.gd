@@ -10,6 +10,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const GatherRulesScript := preload("res://src/shared/gather_rules.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 var failures: int = 0
 var slots_sent: Array = []
 var world_sent: Array = []
@@ -147,15 +148,16 @@ func _init() -> void:
 	items.action(7, Net.ACT_PICKUP, 2, 0, 0, Vector3.ZERO)
 	check(items.world_item_count() == 1, "cannot pick up from far away")
 
-	var axe_number: int = items.table.number_of("stone_axe")   # a tool: never merges, so the crowd limit still bites
+	var axe_number: int = items.table.number_of("stone_axe")   # a tool: never merges, each lies as its own item
+	var all_laid: bool = true
 
-	for n in range(100):
-		items.drop_in_world(axe_number, 1, Vector3(10.0, 0.0, 10.0), 1)
-	check(items.world_item_count() == ItemsScript.MAX_DROPPED_NEAR + 1, "dropped cap near a spot holds")
+	for n in range(100):   # no limit on what lies on the ground (Dave 16 Nov 2026: "there should be no limit")
+		all_laid = items.drop_in_world(axe_number, 1, Vector3(10.0, 0.0, 10.0), 1) and all_laid
+	check(all_laid and items.world_item_count() == 100 + 1, "100 tools dropped on one spot all lie there (%d items)" % items.world_item_count())
 
 	items.drop_in_world(stone, 1, Vector3(4000.0, 0.0, 4000.0))
-	check(items.clear_dropped(Vector3(10.0, 0.0, 10.0), 50.0) == ItemsScript.MAX_DROPPED_NEAR and items.world_item_count() == 2, "clear dropped items removes the nearby loose ones only")
-	check(items.drop_in_world(stone, 1, Vector3(10.0, 0.0, 10.0)), "and drops work again afterwards")
+	check(items.clear_dropped(Vector3(10.0, 0.0, 10.0), 50.0) == 100 and items.world_item_count() == 2, "clear dropped items removes the nearby loose ones only")
+	check(items.drop_in_world(stone, 1, Vector3(10.0, 0.0, 10.0)), "and drops work afterwards")
 	items.clear_dropped(Vector3(10.0, 0.0, 10.0), 50.0)
 	items.clear_dropped(Vector3(4000.0, 0.0, 4000.0), 50.0)
 
@@ -204,7 +206,7 @@ func _init() -> void:
 	items.inventory_of(7).remove(stone, items.inventory_of(7).count_of(stone) - rig_before)
 	items.clear_dropped(Vector3.ZERO, 1.0e7)
 
-	# Rock piles: stackable drops within a metre merge, ignore the crowd limit, a pile gives a handful and lives longer.
+	# Rock piles: stackable drops within a metre merge, a pile gives a handful and lives longer.
 	items.clear_dropped(Vector3.ZERO, 1.0e7)
 	var pile_at: Vector3 = Vector3(2000.0, 0.0, 2000.0)
 	items.report_position(7, pile_at)
@@ -212,7 +214,7 @@ func _init() -> void:
 	for n in range(100):
 		items.drop_in_world(stone, 1, pile_at + Vector3(0.1 * float(n % 5), 0.0, 0.0))
 	check(items.world_item_count() == 1, "100 stones dropped together are one ground item")
-	check(items.drop_in_world(stone, 5, pile_at), "and a pile never meets the crowd limit")
+	check(items.drop_in_world(stone, 5, pile_at), "and the pile takes more")
 	items.drop_in_world(stone, 3, pile_at + Vector3(5.0, 0.0, 0.0))
 	check(items.world_item_count() == 2, "a drop 5 m away is a separate item")
 	items.tick(ItemsScript.WORLD_ITEM_LIFETIME_S + 1.0)
@@ -1344,15 +1346,16 @@ func _init() -> void:
 	var none: int = q._saplings.size()
 	q._maybe_sapling({"pos": Vector3(500.0, 10.0, 500.0), "tree": {"species": "birch", "chunk": [1, 1], "state": 4}})
 	check(q._saplings.size() == none, "no standing tree of that species near, no sapling")
-	# Nothing regrows within 50 m of a placed structure (BUG-013).
-	q._items[q._next_id] = {"number": 0, "count": 1, "pos": Vector3(700.0, 10.0, 700.0), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 0.0}}
+	# Nothing regrows within no_spawn_m (20 m) of a placed structure (BUG-013; Dave 17 Nov 2026). 40 stumps, each its own roll; the saplings would land 2 to 6 m off 710..717, 710..714.
+	q._items[q._next_id] = {"number": 0, "count": 1, "pos": Vector3(712.0, 10.0, 710.0), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 0.0}}
+	q._grid_add(q._next_id, q._items[q._next_id])
 	q._next_id += 1
 	var before_ban: int = q._saplings.size()
 
 	for n in range(40):
-		q._maybe_sapling({"pos": Vector3(700.0 + fmod(float(n), 5.0), 10.0, 710.0), "tree": {"species": "oak", "chunk": [14, 14], "state": 4}})
+		q._maybe_sapling({"pos": Vector3(700.0 + float(n % 8), 10.0, 710.0 + floorf(float(n) / 8.0)), "tree": {"species": "oak", "chunk": [14, 14], "state": 4}})
 
-	check(q._saplings.size() == before_ban, "no sapling is seeded within 50 m of a placed foundation")
+	check(q._saplings.size() == before_ban, "no sapling is seeded within 20 m of a placed foundation")
 	var items0: Dictionary = q.dynamic_items(Vector2i(0, 0))
 	check(not items0.is_empty() and items0["ids"].size() > 0, "saplings are listed as flora items")
 	check(items0["heights"][0] < 2.0, "a new sapling is small")
@@ -2487,6 +2490,9 @@ func _init() -> void:
 	var saw_slot: int = hs.inventory_of(1).numbers.find(hs.table.number_of("hand_saw"))
 	hs._last_queue_act.clear()
 	hs.action(1, Net.ACT_CRAFT_QUEUE, int(by_hand.get("number", 0)), 0, 1, Vector3.ZERO)
+	check(hs.craft_queue_of(1).is_empty() and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 2, "a saw in the pack but not in hand saws nothing (Dave 17 Nov 2026: equip the saw)")
+	hs._last_queue_act.clear()
+	hs.action(1, Net.ACT_CRAFT_QUEUE, int(by_hand.get("number", 0)), 0, 1, Vector3(float(saw_slot + 1), 0.0, 0.0))   # at.x: the saw in hand + 1 (126)
 
 	for n in 100:
 		hs._craft_tick(0.25)
@@ -2503,10 +2509,31 @@ func _init() -> void:
 	hs.give(1, hs.table.number_of("copper_saw"), 1)
 	check(is_equal_approx(hs._saw_slow(1, by_hand), 2.0), "a copper saw takes twice as long (x%.2f)" % hs._saw_slow(1, by_hand))
 	hs._items[900901] = {"number": hs.table.number_of("sawbuck"), "count": 1, "pos": Vector3(1.0, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "sawbuck", "yaw": 0.0, "uid": 0, "owner": "", "born": 0.0}}
-	var blocks_recipe: Dictionary = hs.recipes.recipe(728)   # saw_blocks: a log into 6 Wooden blocks, the one recipe a Sawbuck speeds (W-4)
+	var blocks_recipe: Dictionary = hs.recipes.recipe(728)   # saw_blocks: a log into 6 Wooden blocks (W-4)
 	check(hs.serving_station(1, "sawbuck") == 900901 and is_equal_approx(hs._saw_slow(1, blocks_recipe), 1.0), "a Sawbuck in reach halves sawing blocks: the copper saw is back to the recipe's pace (x%.2f)" % hs._saw_slow(1, blocks_recipe))
-	check(is_equal_approx(hs._saw_slow(1, by_hand), 2.0), "the Sawbuck does not speed sawing planks (the sawmill does that; x%.2f)" % hs._saw_slow(1, by_hand))
+	check(is_equal_approx(hs._saw_slow(1, by_hand), 1.0), "the Sawbuck speeds sawing planks too (W-33; x%.2f)" % hs._saw_slow(1, by_hand))
 	hs._items.erase(900901)
+
+	# A part sawn on the way needs the saw in hand too (W-32): a Chopping block (1 Wooden block) from the last log plans saw_blocks first.
+	var chop_rec: Dictionary = {}
+
+	for rn in hs.recipes.numbers():
+		if hs.recipes.recipe(rn)["id"] == "chopping_block":
+			chop_rec = hs.recipes.recipe(rn)
+
+	var copper_slot: int = hs._tool_slot(hs.inventory_of(1), "saw")
+	var chop_said: Array = []
+	hs.send_notice = func(_p, text): chop_said.append(text)
+	hs.vitals_of(1)["weight"] = 5000.0   # the six blocks the plan makes must fit; carrying is not under test here
+	hs._last_queue_act.clear()
+	hs.action(1, Net.ACT_CRAFT_QUEUE, int(chop_rec.get("number", 0)), 0, 1, Vector3.ZERO)
+	check(hs.craft_queue_of(1).is_empty() and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 1, "a Chopping block that would saw its block from a log is refused without the saw in hand, and the log stays")
+	hs._last_queue_act.clear()
+	hs.action(1, Net.ACT_CRAFT_QUEUE, int(chop_rec.get("number", 0)), 0, 1, Vector3(float(copper_slot + 1), 0.0, 0.0))
+	check(copper_slot >= 0 and hs.craft_queue_of(1).size() == 2 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 0, "with the saw in hand it queues the sawing, then the Chopping block (%d entries; said %s)" % [hs.craft_queue_of(1).size(), str(chop_said)])
+	hs._cancel_craft(1, 1)
+	hs._cancel_craft(1, 0)
+	hs.send_notice = Callable()
 
 	for rid in ["wooden_hammer", "stone_hammer"]:
 		var rec: Dictionary = {}
@@ -2538,16 +2565,16 @@ func _init() -> void:
 	var cord: int = cq.table.number_of("twine")
 	cq.give(1, fibre, 30)
 	cq._last_queue_act.clear()
-	cq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 4, Vector3.ZERO)
+	cq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 4, CraftHand.at(cq, 1, 1))
 	check(cq.inventory_of(1).count_of(fibre) == 18, "queueing 4 twine takes 12 fibre now (%d left)" % cq.inventory_of(1).count_of(fibre))
 	check(cq.craft_queue_of(1) == [[1, 4]], "queue holds one entry of 4")
 	cq._last_queue_act.clear()
-	cq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 2, Vector3.ZERO)
+	cq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 2, CraftHand.at(cq, 1, 1))
 	check(cq.craft_queue_of(1) == [[1, 6]], "queueing the same recipe again merges")
 	cq._last_queue_act.clear()
-	cq.action(1, Net.ACT_CRAFT_QUEUE, 99, 0, 1, Vector3.ZERO)
+	cq.action(1, Net.ACT_CRAFT_QUEUE, 99, 0, 1, CraftHand.at(cq, 1, 99))
 	cq._last_queue_act.clear()
-	cq.action(1, Net.ACT_CRAFT_QUEUE, 16, 0, 1, Vector3.ZERO)
+	cq.action(1, Net.ACT_CRAFT_QUEUE, 16, 0, 1, CraftHand.at(cq, 1, 16))
 	check(cq.craft_queue_of(1).size() == 1, "unknown recipes are refused")
 
 	for n in range(4 * 2 + 1):
@@ -2570,7 +2597,7 @@ func _init() -> void:
 
 	for n in range(14):
 		cq._last_queue_act.clear()
-		cq.action(1, Net.ACT_CRAFT_QUEUE, 1 if n % 2 == 0 else 7, 0, 1, Vector3.ZERO)
+		cq.action(1, Net.ACT_CRAFT_QUEUE, 1 if n % 2 == 0 else 7, 0, 1, CraftHand.at(cq, 1, 1 if n % 2 == 0 else 7))
 
 	check(cq.craft_queue_of(1).size() <= 10, "queue is capped at 10 entries (%d)" % cq.craft_queue_of(1).size())
 	cq._last_queue_act.clear()
@@ -2592,7 +2619,7 @@ func _init() -> void:
 	ad.admin_ok = func(_p): return true
 	ad.action(1, Net.ACT_ADMIN_MODE, 1, 0, 0, Vector3.ZERO)   # off by default: switched on as in Esc > Admin
 	ad._last_queue_act.clear()
-	ad.action(1, Net.ACT_CRAFT_QUEUE, 18, 0, 1, Vector3.ZERO)   # the iron pickaxe: not known, needs a forge and iron
+	ad.action(1, Net.ACT_CRAFT_QUEUE, 18, 0, 1, CraftHand.at(ad, 1, 18))   # the iron pickaxe: not known, needs a forge and iron
 	check(ad.craft_queue_of(1) == [[18, 1]], "an admin queues a locked recipe with nothing in the pack")
 
 	for n in range(60):
@@ -2601,7 +2628,7 @@ func _init() -> void:
 	check(ad.inventory_of(1).count_of(ad.table.number_of("iron_pickaxe")) == 1, "an admin's craft finishes without a station or ingredients")
 	ad.admin_mode_on = func(_p): return false
 	ad._last_queue_act.clear()
-	ad.action(1, Net.ACT_CRAFT_QUEUE, 18, 0, 1, Vector3.ZERO)
+	ad.action(1, Net.ACT_CRAFT_QUEUE, 18, 0, 1, CraftHand.at(ad, 1, 18))
 	check(ad.craft_queue_of(1).is_empty(), "with admin mode off the same craft is refused again")
 
 	# Restart mid-craft keeps the progress; a refund into a pack at its carry limit drops the rest at the player's feet.
@@ -2616,7 +2643,7 @@ func _init() -> void:
 	rq.peer_connected_hello(1, "queuekey0002")
 	rq.report_position(1, Vector3(0.0, 10.0, 0.0))
 	rq.give(1, fibre, 9)
-	rq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 3, Vector3.ZERO)
+	rq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 3, CraftHand.at(rq, 1, 1))
 	rq._craft_tick(1.5)
 	rq._save_craft_queues()
 	var rq2 = make(qd + "_full")
@@ -2945,7 +2972,7 @@ func _init() -> void:
 	sk.skill_level = func(_peer, _skill): return 2.0
 	check(sk.skill_factor(1, "craft") == 2.0 and sk.skill_factor(1, "no_such_action") == 1.0, "a skill level of 2 gives a factor of 2 for a listed action only")
 	sk.give(1, sk.table.number_of("plant_fibre"), 9)
-	sk.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 1, Vector3.ZERO)
+	sk.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 1, CraftHand.at(sk, 1, 1))
 
 	for n in range(4 * 1 + 1):
 		sk._craft_tick(0.25)
@@ -3152,7 +3179,7 @@ func _init() -> void:
 
 	var cord6b: int = sx6.inventory_of(1).count_of(cord6)
 	sx6._last_queue_act.clear()
-	sx6.action(1, Net.ACT_CRAFT_QUEUE, 900, 0, 1, Vector3.ZERO)
+	sx6.action(1, Net.ACT_CRAFT_QUEUE, 900, 0, 1, CraftHand.at(sx6, 1, 900))
 	check(sx6.inventory_of(1).count_of(sx6.table.number_of("bark")) == 1 and sx6.inventory_of(1).count_of(sx6.table.number_of("firewood")) == 1, "queueing it takes all six ingredients")
 
 	for n in 40:
@@ -3344,13 +3371,14 @@ func _init() -> void:
 	bw.give(1, bw.table.number_of("hide"), 2)
 	bw.give(1, bw.table.number_of("thread"), 2)   # needle work takes Thread, not Twine (master s3.4, Mission 001 phase 2b)
 	bw.give(1, bw.table.number_of("sewing_needle"), 1)   # sewn things keep a Bone - Needle (item system, 10 Nov 2026); it stays for the hood below
+	bw.give(1, bw.table.number_of("stone_knife"), 1)   # the knife in hand, so the refusal below is the missing station, not the missing knife (W-32)
 	bw._last_queue_act.clear()
-	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec["wooden_bow"]["number"]), 0, 1, Vector3.ZERO)
+	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec["wooden_bow"]["number"]), 0, 1, CraftHand.at(bw, 1, int(bw_rec["wooden_bow"]["number"])))
 	check(bw.craft_queue_of(1).is_empty(), "the bow is refused away from a carving station (W-8)")
 
 	for rid in ["wooden_arrow", "stone_arrow", "quiver"]:
 		bw._last_queue_act.clear()
-		bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec[rid]["number"]), 0, 1, Vector3.ZERO)
+		bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec[rid]["number"]), 0, 1, CraftHand.at(bw, 1, int(bw_rec[rid]["number"])))
 
 		for n in 80:
 			bw._craft_tick(0.25)
@@ -3361,7 +3389,7 @@ func _init() -> void:
 	bw.give(1, bw.table.number_of("twine"), 3)
 	bw.give(1, bw.table.number_of("stick"), 2)
 	bw._last_queue_act.clear()
-	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw.recipes.recipe(177)["number"]), 0, 1, Vector3.ZERO)
+	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw.recipes.recipe(177)["number"]), 0, 1, CraftHand.at(bw, 1, int(bw.recipes.recipe(177)["number"])))
 
 	for n in 40:
 		bw._craft_tick(0.25)
@@ -3373,7 +3401,7 @@ func _init() -> void:
 	bw.give(1, bw.table.number_of("hide"), 1)
 	bw.give(1, bw.table.number_of("thread"), 1)
 	bw._last_queue_act.clear()
-	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec["hide_hood"]["number"]), 0, 1, Vector3.ZERO)
+	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec["hide_hood"]["number"]), 0, 1, CraftHand.at(bw, 1, int(bw_rec["hide_hood"]["number"])))
 
 	for n in 40:
 		bw._craft_tick(0.25)

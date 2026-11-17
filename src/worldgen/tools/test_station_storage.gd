@@ -6,8 +6,10 @@ extends SceneTree
 #   2. deposits go to the input slots and withdrawals come out, item totals kept; a guest's craft goes to the guest's pack;
 #   3. the Smithy draws Iron ingots from the player's own chest, then their own station store, and keeps the Iron - Saw (the Smelters: test_smelters);
 #   4. locks: a stranger never draws on someone's station store nor opens their locked chest; the owner draws on their own locked chest;
-#   5. a Kiln of 6 logs (a 7th refused) makes 600 Charcoal over its burn, gradually; put out it keeps everything; relit it goes on; done and still
+#   5. an Advanced kiln of 6 logs (a 7th, even a stick, refused) makes 600 Charcoal over its burn, gradually; put out it keeps everything; relit it goes on; done and still
 #      lit it burns its own charcoal and goes out when none is left; save and load keep a part-burnt log;
+#   5b. the Primitive, Improved and Advanced kilns (Dave 17 Nov 2026): names, materials, 4 and 6 logs; the Primitive takes any wood up to its logs'
+#      worth, burns the biggest first and gives 100 a log, 10 a firewood, 5 a stick, none for kindling;
 #   6. the Chopping block refuses Planks; E with an axe takes one Wooden block (pack first, then the player's own chest in reach) and drops 4 Firewood beside it;
 #   7. the wood names read Wooden block and Firewood (the soft and large kinds are retired), and costs read the same;
 #   8. a steel hammer sources a blueprint from a chest farther away than a wooden hammer reaches, and the reach rises with every tier.
@@ -16,6 +18,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 const DIR := "user://test_station_storage"
 const HERE := Vector3(5.0, 10.0, 0.0)
 
@@ -124,7 +127,7 @@ func recipe_number(id: String) -> int:
 
 func craft(peer: int, id: String, times: int, seconds: int) -> void:
 	items._last_queue_act.clear()
-	act(peer, Net.ACT_CRAFT_QUEUE, recipe_number(id), 0, times)
+	items.action(peer, Net.ACT_CRAFT_QUEUE, recipe_number(id), 0, times, CraftHand.at(items, peer, recipe_number(id)))
 
 	for s in range(seconds):
 		items.tick(1.0)
@@ -275,9 +278,10 @@ func _init() -> void:
 	check(out_count(smithy, saw) == 1 and pack(1, saw) == 0, "the Iron - Saw is kept in the Smithy's output")
 
 	# --- 5. The Kiln batch ---
-	var kiln: int = place("kiln@3,1.5,0", 1)
+	var kiln: int = place("advanced_kiln@3,1.5,0", 1)   # the Advanced kiln: six logs' worth (Dave 17 Nov 2026)
 	var kdef: Dictionary = def_of(kiln)
-	var per_log: int = int(kdef.get("per_log", 100))
+	var kilns: Dictionary = items._structures_cfg["kilns"]
+	var per_log: int = int(kilns["yield"]["log"])
 	var batch: int = int(kdef.get("batch_logs", 6))
 	var log_n: int = n("log_oak")   # 3 m species logs (one a slot, carried on the shoulder), and one plain Log
 	var plain: int = n("log")
@@ -296,12 +300,14 @@ func _init() -> void:
 	act(1, Net.ACT_BULK, ItemsScript.BULK_STACK_NEARBY, 0)
 	check(in_count(kiln, plain) == 1 and pack(1, plain) == 1, "Stack to nearby does not push a Log past the Kiln's %d either" % batch)
 	clear_pack(1)
-	act(1, Net.ACT_CHEST_PUT, slot_of(1, n("stick")) if slot_of(1, n("stick")) >= 0 else 0, kiln, 1)
-	check(box(kiln).count_of(n("stick")) == 0, "the Kiln takes logs only")
+	items.give(1, n("stick"), 1)
+	act(1, Net.ACT_CHEST_PUT, slot_of(1, n("stick")), kiln, 1)
+	check(box(kiln).count_of(n("stick")) == 0 and pack(1, n("stick")) == 1, "full with six logs, the Kiln refuses even a stick")
+	clear_pack(1)
 	act(1, Net.ACT_CHEST_CLOSE, 0)
 	act(1, Net.ACT_USE_STRUCT, kiln)
 	check(bool(items._items[kiln]["struct"].get("lit", false)), "E lights the Kiln")
-	var per_s: float = float(kdef.get("log_s", 300.0)) / float(per_log)
+	var per_s: float = float(kilns["piece_s"])
 	burn(kiln, per_s * 50.0)
 	check(out_count(kiln, charcoal) == 50 and (in_count(kiln, log_n) + in_count(kiln, plain)) == batch - 1, "gradual: after half a log's burn 50 Charcoal are out and the first log is in the burn")
 	act(1, Net.ACT_USE_STRUCT, kiln)
@@ -317,7 +323,7 @@ func _init() -> void:
 	items.peer_connected_hello(1, keys[1])
 	items.report_position(1, HERE)
 	items.vitals_of(1)["weight"] = 5000.0
-	kiln = id_of_kind("kiln")
+	kiln = id_of_kind("advanced_kiln")
 	check(kiln > 0 and not bool(items._items[kiln]["struct"].get("lit", false)) and int(items._items[kiln]["struct"].get("kiln", {}).get("left", 0)) == per_log - 50 and out_count(kiln, charcoal) == 50, "save and load keep the put-out Kiln, its part-burnt log and its charcoal")
 	forge = id_of_kind("stone_forge")
 	smithy = id_of_kind("blacksmithy")
@@ -367,6 +373,53 @@ func _init() -> void:
 	check(items._items.has(kiln) and int(items._items[kiln]["struct"]["kiln"]["left"]) > 0 and said.back() == "Empty it first.", "an empty Kiln with a part-burnt log is not taken down (the log would be lost)")
 	act(1, Net.ACT_PICKUP, forge)
 	check(items._items.has(forge) and said.back() == "Empty it first.", "a Primitive smithy with things in its store is not taken down")
+
+	# --- 5b. The three kilns and any wood (Dave 17 Nov 2026: Primitive, Improved and Advanced; "the bigger the wood the more charcoal") ---
+	var y: Dictionary = kilns["yield"]
+	check(int(y["log"]) == 100 and int(y["firewood"]) == 10 and int(y["stick"]) == 5 and int(y["kindling"]) == 0, "kiln yields: a log 100, a firewood 10, a stick 5, kindling none")
+	check(int(items._structures["kiln"]["batch_logs"]) < int(items._structures["improved_kiln"]["batch_logs"]) and int(items._structures["improved_kiln"]["batch_logs"]) == 4 and int(items._structures["advanced_kiln"]["batch_logs"]) == 6, "the Improved kiln holds 4 logs, the Advanced 6, the Primitive fewer")
+	check(items.table.name_of(n("kiln")) == "Primitive kiln" and items.table.name_of(n("improved_kiln")) == "Improved kiln" and items.table.name_of(n("advanced_kiln")) == "Advanced kiln", "the three are named Primitive kiln, Improved kiln, Advanced kiln")
+	var costs: Dictionary = {"kiln": ["clay", "stone"], "improved_kiln": ["clay", "iron_ingot", "stone"], "advanced_kiln": ["clay", "iron_ingot", "steel_ingot", "stone"]}
+
+	for kind in costs:
+		var mats: Array = []
+		var raw: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/blueprints.json"))["blueprints"]
+
+		for bp_id in raw:
+			if str(raw[bp_id].get("structure", "")) == kind and not bool(raw[bp_id].get("retired", false)):
+				for need in raw[bp_id]["cost"]:
+					mats.append(str(need[0]))
+
+		mats.sort()
+		check(mats == costs[kind], "the %s is built from %s" % [items.table.name_of(n(kind)), ", ".join(mats)])
+
+	var prim: int = place("kiln@-6,1.5,0", 1)
+	var prim_def: Dictionary = def_of(prim)
+	clear_pack(1)
+	items.give(1, plain, 1)
+	items.give(1, n("firewood"), 12)
+	items.give(1, n("stick"), 1)
+	items.give(1, n("kindling"), 2)
+	items.report_position(1, items._items[prim]["pos"] + Vector3(1.5, 0.0, 0.0))
+	act(1, Net.ACT_CHEST_OPEN, prim)
+	act(1, Net.ACT_CHEST_PUT, slot_of(1, plain), prim, 1)
+	act(1, Net.ACT_CHEST_PUT, slot_of(1, n("stick")), prim, 1)
+	act(1, Net.ACT_CHEST_PUT, slot_of(1, n("kindling")), prim, 2)
+	var room_left: int = int(prim_def["batch_logs"]) * per_log - per_log - int(y["stick"]) - 2 * int(kilns["min_space"])
+	act(1, Net.ACT_CHEST_PUT, slot_of(1, n("firewood")), prim, 12)
+	var fw_in: int = in_count(prim, n("firewood"))
+	@warning_ignore("integer_division")
+	check(fw_in == mini(12, room_left / int(y["firewood"])) and pack(1, n("firewood")) == 12 - fw_in, "the Primitive kiln takes a Log, a stick, kindling and %d Firewood, up to %d logs' worth, and refuses the rest" % [fw_in, int(prim_def["batch_logs"])])
+	act(1, Net.ACT_CHEST_CLOSE, 0)
+	act(1, Net.ACT_USE_STRUCT, prim)
+	check(bool(items._items[prim]["struct"].get("lit", false)), "E lights the Primitive kiln")
+	burn(prim, per_s * float(per_log) - 2.0)   # one piece short of the log
+	check(out_count(prim, charcoal) == per_log - 1 and in_count(prim, n("firewood")) == fw_in, "the biggest wood burns first: the Log gives its charcoal before any Firewood (%d)" % out_count(prim, charcoal))
+	var want: int = per_log + fw_in * int(y["firewood"]) + int(y["stick"])
+	burn(prim, per_s * float(want - per_log + 1) + 0.5)
+	check(out_count(prim, charcoal) == want and in_count(prim, n("kindling")) == 0 and in_count(prim, n("stick")) == 0 and in_count(prim, n("firewood")) == 0, "all of it burned: %d Charcoal (log %d + %d firewood x %d + stick %d), the kindling burned away for none (%d)" % [want, per_log, fw_in, int(y["firewood"]), int(y["stick"]), out_count(prim, charcoal)])
+	act(1, Net.ACT_USE_STRUCT, prim)
+	items.report_position(1, HERE)
 
 	# --- 6. The Chopping block ---
 	var block: int = place("chopping_block@6,-2,0", 1)

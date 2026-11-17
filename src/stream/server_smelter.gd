@@ -1,8 +1,8 @@
 extends RefCounted
 
 # The Smelters (master s2.5 and s2.7; CATALOG_IMPLEMENTATION_PLAN R2 to R4; GOALS-REPAIR WP-METAL). A placed smelter is a station store whose
-# structures.json row has "use": "smelt" and a "smelt" block; the jobs and the fuel are structures.json "smelting". It works by itself, like
-# the Kiln, never through the player's craft queue:
+# structures.json row has "use": "smelt" and a "smelt" block; the jobs and the fuel are structures.json "smelting". It is lit with E like a
+# campfire (use()) and, while lit, works by itself, like the Kiln, never through the player's craft queue:
 #   - the store's first smelt.hopper_slots slots are the fuel hopper (Coal or Charcoal only, at most smelt.hopper units), the rest of its
 #     `slots` the material input (the ore its jobs take, and at a smelt.carbon station the steel carbon, at most smelt.input units together),
 #     and its out_slots (if any) the output rack (at most smelt.output ingots);
@@ -13,7 +13,7 @@ extends RefCounted
 #   - a job takes smelt.ingot_s / smelt.speed real seconds an ingot (a job that gives two takes twice as long);
 #   - a finished job takes its ore, its carbon and its fuel (smelting.fuel_per_ore hopper fuel a unit of ore) only when it delivers: into the
 #     output rack, or, with no rack (the Primitive Smelter), onto the ground in front. Nothing is held in between, so taking ore or fuel out
-#     never loses anything, and a job that cannot deliver (a full rack, a crowded ground) waits with its time kept;
+#     never loses anything, and a job that cannot deliver (a full rack) waits with its time kept;
 #   - a job may need air from bellows (smelting.jobs[...].bellows: Iron and Steel). At a smelt.bellows station (the Improved smelter) a player gives it by
 #     working the bellows (E beside it; they stop when they press E again, walk away or leave), which also speeds every job by
 #     smelt.bellows_speed. An unfinished air job keeps its time when the bellows stop and goes on when they start again (master s2.7 item 4);
@@ -21,8 +21,8 @@ extends RefCounted
 #     its windmill (smelting.wind_min_mps): in a calm nothing moves, every lane keeping its job and time, and it goes on by itself when the
 #     wind comes back (master s2.7 item 7, plan P3).
 # struct["smelt_t"] / struct["smelt_job"] are lane 0's seconds banked toward its next delivery and its job, struct["smelt_lanes"] the same
-# [seconds, job] for lanes 1 and on; saved in smelters.json by the store's uid as [seconds, job, seconds, job, ...]. Who works the bellows
-# is not saved.
+# [seconds, job] for lanes 1 and on; saved in smelters.json by the store's uid as [seconds, job, seconds, job, ...], and the uids of the lit
+# ones in its "lit" list. Who works the bellows is not saved.
 
 const NEAR_M := 1.0          # beyond the station's reach_m: how far a bellows worker may stand
 # PROVISIONAL (GOALS-REPAIR A-11): ingots a smelter drops in front last as long as a pile (server_items.PILE_LIFETIME_S), not the 20 minutes of a
@@ -192,14 +192,35 @@ func put(def: Dictionary, box, number: int, amount: int, item_wear: int = 0, ite
 
 # --- Working ---
 
-# E on a smelter: a station with bellows starts or stops this player working them; any other says how it is fed.
-func use(peer: int, id: int, it: Dictionary, def: Dictionary) -> void:
-	if bool(def["smelt"].get("wind", false)):
-		host._say(peer, "Coal or Charcoal in its fuel slots, ore in the others; for steel, drag Coal or Charcoal onto an ore slot too. %s" % ("Its windmill turns." if _wind_turns(def) else "The wind is too weak to turn its windmill: it waits."))
+# E on a smelter, as on a campfire (Dave 17 Nov 2026: "it should say Press E to light ... it should work similar to a campfire"): E lights a
+# cold one that has Coal or Charcoal in its hopper and puts a lit one out. It smelts only while lit and goes out by itself when its hopper is
+# empty. At a bellows station (the Improved smelter) E on a lit one starts or stops this player working the bellows instead, and hold E
+# (choice 1) puts it out.
+func use(peer: int, id: int, it: Dictionary, def: Dictionary, choice: int = 0) -> void:
+	var box = host._chests.get(int(it["struct"].get("uid", 0)))
+
+	if box == null:
 		return
 
-	if not bool(def["smelt"].get("bellows", false)):
-		host._say(peer, "Put Coal or Charcoal in its fuel slot and ore in the others (F). It smelts by itself; the ingots drop in front.")
+	if not is_lit(it):
+		if _units(box, _span(def, "hopper")) <= 0:
+			host._say(peer, "Put Coal or Charcoal in its fuel slot first (F).")
+			return
+
+		_set_lit(id, it, true)
+
+		if bool(def["smelt"].get("wind", false)):
+			host._say(peer, "It is lit. %s" % ("Its windmill turns: it smelts the ore in it." if _wind_turns(def) else "The wind is too weak to turn its windmill: it waits."))
+		elif bool(def["smelt"].get("bellows", false)):
+			host._say(peer, "It is lit: it smelts the ore in it. Press E to work the bellows (iron needs them).")
+		else:
+			host._say(peer, "It is lit: it smelts the ore in it; the ingots drop in front.")
+
+		return
+
+	if not bool(def["smelt"].get("bellows", false)) or choice == 1:
+		_set_lit(id, it, false)
+		host._say(peer, "You put it out. What is in it stays.")
 		return
 
 	if int(_bellows.get(id, -1)) == peer:
@@ -214,6 +235,21 @@ func use(peer: int, id: int, it: Dictionary, def: Dictionary) -> void:
 	_bellows[id] = peer
 	_bellows_goal.erase(id)   # a new stint at the bellows
 	host._say(peer, "You work the bellows: it smelts faster and can work iron while you stay at it (E again to stop).")
+
+
+func is_lit(it: Dictionary) -> bool:
+	return bool(it["struct"].get("lit", false))
+
+
+# Lights or puts out a smelter (the row's "lit", sent to the clients for its fire). Put out, nobody works its bellows; a job keeps its time.
+func _set_lit(id: int, it: Dictionary, on: bool) -> void:
+	it["struct"]["lit"] = on
+
+	if not on:
+		_bellows.erase(id)
+
+	host._lit_valid = false
+	host._dirty = true
 
 
 # True while a player works the station's bellows: still connected and beside it.
@@ -432,6 +468,9 @@ func tick(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 	if box == null:
 		return
 
+	if is_lit(it) and _units(box, _span(def, "hopper")) <= 0:
+		_set_lit(id, it, false)   # no fuel left (taken out, or burnt): it goes out, as a campfire does
+
 	var smelt: Dictionary = def["smelt"]
 	var windmill: bool = bool(smelt.get("wind", false))
 	var worked: bool = _working(id, it, def)
@@ -448,8 +487,8 @@ func tick(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 			lane[0] = 0.0
 			lane[1] = ""
 
-	if windmill and not air:
-		rate = 0.0   # a calm: the windmill stands and nothing moves; every lane keeps its job and time
+	if (windmill and not air) or not is_lit(it):
+		rate = 0.0   # cold, or a calm (the windmill stands): nothing moves; every lane keeps its job and time
 
 	for k in lanes.size():
 		var held: Dictionary = {}   # what the other lanes' jobs hold of the input
@@ -491,7 +530,7 @@ func tick(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 			budget -= add
 
 			if t < need_s or rate <= 0.0:
-				break   # not done yet, or a calm: a windmill smelter makes nothing at all, not even an ingot waiting on a full rack
+				break   # not done yet, or cold or a calm: it makes nothing at all, not even an ingot waiting on a full rack
 
 			if not _deliver(id, it, def, host.table.number_of(str(out[0])), count):
 				t = need_s   # nowhere to put it: it waits
@@ -523,6 +562,9 @@ func tick(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 	if changed:
 		host._push_box(id, box)
 		host._dirty = true
+
+		if _units(box, _span(def, "hopper")) <= 0:
+			_set_lit(id, it, false)   # the last fuel burnt: it goes out
 
 
 # Ingots into the output rack, or on the ground in front with no rack. False (nothing moved) when there is no room.
@@ -585,9 +627,23 @@ func save_rows() -> Dictionary:
 	return rows
 
 
+# The store uids of the lit smelters (smelters.json "lit").
+func lit_rows() -> Array:
+	var uids: Array = []
+
+	for id in _ids:
+		var it: Dictionary = host._items.get(id, {})
+
+		if it.has("struct") and it["struct"].has("uid") and not it["struct"].has("site") and is_lit(it):
+			uids.append(str(it["struct"]["uid"]))
+
+	return uids
+
+
 # After the chests and world items: each smelter's banked time back, and its store laid out as its row says (_fix_layout).
 func load_rows(parsed: Variant) -> void:
 	var rows: Dictionary = parsed.get("smelters", {}) if typeof(parsed) == TYPE_DICTIONARY and typeof(parsed.get("smelters", null)) == TYPE_DICTIONARY else {}
+	var lit: Array = parsed.get("lit", []) if typeof(parsed) == TYPE_DICTIONARY and typeof(parsed.get("lit", null)) == TYPE_ARRAY else []
 	var ids: Array = []
 
 	for id in host._items:
@@ -619,6 +675,7 @@ func load_rows(parsed: Variant) -> void:
 			lanes.append([t, job])
 
 		_set_lanes(it, lanes)
+		it["struct"]["lit"] = lit.has(str(it["struct"]["uid"]))
 		_fix_layout(id, it, def)
 
 
@@ -650,20 +707,9 @@ func _fix_layout(id: int, it: Dictionary, def: Dictionary) -> void:
 			var fit: int = room(def, box, int(row[0]), left, int(row[5]))
 			left = put(def, box, int(row[0]), fit, int(row[2]), row[3], int(row[5])) + (left - fit)
 
-		if left > 0 and not host.drop_in_world(int(row[0]), left, front_of(it, def), int(row[2]), GROUND_S, NAN, NAN, "", row[3]):
-			_lay_down(int(row[0]), left, front_of(it, def), int(row[2]), row[3])   # crowded ground: this one-time move still loses nothing
+		if left > 0:
+			host.drop_in_world(int(row[0]), left, front_of(it, def), int(row[2]), GROUND_S, NAN, NAN, "", row[3])
 
-	host._dirty = true
-
-
-# A ground item put down past drop_in_world's crowd limit (fields as drop_in_world writes them).
-func _lay_down(number: int, count: int, at: Vector3, item_wear: int, item_inst: Dictionary) -> void:
-	host._items[host._next_id] = {"number": number, "count": count, "pos": at, "left": GROUND_S, "wear": item_wear}
-
-	if not item_inst.is_empty():
-		host._items[host._next_id]["inst"] = item_inst.duplicate(true)
-
-	host._next_id += 1
 	host._dirty = true
 
 

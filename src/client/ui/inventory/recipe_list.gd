@@ -111,6 +111,12 @@ func running() -> bool:
 	return not _pass.is_empty()
 
 
+# Picks a category tab from outside the list (left click with a saw opens Carpenter's); refresh() lights its tab and the pass picks its first card.
+func show_category(category: String) -> void:
+	_recipe_category = category if RecipeFilter.CATEGORIES.has(category) else ""
+	view._selected_recipe = 0   # the card shows the tab's first recipe (the next pass picks it), not one from another tab
+
+
 func refresh() -> void:
 	for tab_name in _category_buttons:
 		(_category_buttons[tab_name] as Button).button_pressed = str(tab_name) == _recipe_category
@@ -173,7 +179,7 @@ func step() -> void:
 		_pass["shown"] = groups[0] + groups[1] + groups[2]
 		_pass["ordered"] = true
 
-		if view._selected_recipe == 0 or view.recipes.recipe(view._selected_recipe).is_empty():
+		if view._selected_recipe == 0 or view.recipes.recipe(view._selected_recipe).is_empty() or not view.station_makes(view.recipes.recipe(view._selected_recipe)):   # a station opened: not a card it does not list
 			view._selected_recipe = _pass["shown"][0]["number"] if not (_pass["shown"] as Array).is_empty() else 0
 			_refresh_detail()   # the first recipe's card, now that there is one
 
@@ -378,7 +384,7 @@ func _build_recipe_filter() -> Control:
 	return holder
 
 
-# The category tabs (redesign 4.3): All and the 10 recipe categories as a column of 48 px raised tabs, each an engraved glyph;
+# The category tabs (redesign 4.3): All and the 11 recipe categories (Carpenter's, what a saw makes, since 17 Nov 2026) as a column of 48 px raised tabs, each an engraved glyph;
 # the chosen tab is lit with a gold glyph. The category's name is the tab's tooltip.
 func _build_tabs() -> Control:
 	var tabs: VBoxContainer = VBoxContainer.new()
@@ -415,7 +421,7 @@ func _build_tabs() -> Control:
 
 
 func _recipe_shown(r: Dictionary) -> bool:
-	return RecipeFilter.shown(r, _recipe_category, view._recipe_search.text if view._recipe_search != null else "", view.table)
+	return view.station_makes(r) and RecipeFilter.shown(r, _recipe_category, view._recipe_search.text if view._recipe_search != null else "", view.table)
 
 
 # A click on a recipe row (Dave 12 Nov 2026, PLAYTEST-001 TEST-005): it selects the recipe and shows its card, and never crafts; the Craft button
@@ -787,11 +793,16 @@ func _hint_button(text: String) -> Button:
 func missing_text(r: Dictionary) -> String:
 	var short: Array = []
 
+	var hand_tool: String = view.hand_tool_short(int(r.get("number", 0)))
+
 	for need in r["needs"] + r["keeps"]:
 		var have: int = view.stock_fill(int(need[0]))
 
-		if have < int(need[1]):
+		if have < int(need[1]) and view.table.cost_sentence(int(need[0])) != hand_tool:   # a tool named as wanted in hand is said once
 			short.append("%s %d / %d" % [view.table.cost_sentence(int(need[0])), have, int(need[1])])
+
+	if hand_tool != "":
+		short.push_front("%s in your hand" % hand_tool)   # first, so the card says it even when a log is short too
 
 	if short.is_empty():
 		return ""

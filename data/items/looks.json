@@ -225,7 +225,7 @@
    "model": "res://assets/tools/handsaws/Handsaw_Iron_Optimized.glb",
    "model_turn": [[-1, 0, 0], [0, 0, -1], [0, -1, 0]],
    "model_length_m": 0.75,
-   "grip_from_end_m": 0.11,
+   "grip_from_end_m": 0.035,
    "note_provisional": "Dave's iron handsaw mesh (15 Nov 2026). Length and grip PROVISIONAL (copper smallest, bronze about 20% longer, iron biggest): adjust after he sees it in game."
   },
   "copper_saw": {
@@ -4762,7 +4762,8 @@
    "shape": "saw",
    "color": "#9aa3ad",
    "size": 1.0,
-   "bits": ["metal", "steel"]
+   "bits": ["metal", "steel"],
+   "grip_from_end_m": 0.025
   },
   "bronze_sickle": {
    "shape": "sickle",

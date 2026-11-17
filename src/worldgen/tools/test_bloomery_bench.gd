@@ -12,6 +12,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 const BLOOMERY_AT := Vector3(3000.0, 10.0, 0.0)
 const FORGE_AT := Vector3(3400.0, 10.0, 0.0)
@@ -46,7 +47,7 @@ func _recipe(row: Dictionary) -> Dictionary:
 
 func _queue(number: int) -> void:
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, number, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, number, 0, 1, CraftHand.at(items, 1, number))
 
 
 func _tick(seconds: int) -> void:
@@ -117,11 +118,13 @@ func _init() -> void:
 	items.report_position(1, BENCH_AT + Vector3(1.0, 0.0, 0.0))
 	pack.add(table.number_of("stone"), 4)
 	pack.add(table.number_of("stone_hammer"), 1)
+	pack.move(pack.numbers.find(table.number_of("stone_hammer")), 0)   # held, so the refusal below is the tier rule, not an empty hand
 	var blocks_before: int = count("cut_stone_block")
 	_queue(99962)
 	_tick(10)
 	check(count("cut_stone_block") == blocks_before and count("stone") == 4, "with only a stone tool the bench refuses: the kept tool is bronze or better")
 	pack.add(table.number_of("iron_hammer"), 1)
+	pack.move(pack.numbers.find(table.number_of("iron_hammer")), 0)   # onto hotbar key 1 in the stone hammer's place, so it is the tool in hand (protocol 126)
 	_queue(99962)
 	_tick(10)
 	check(count("cut_stone_block") == blocks_before + 2 and count("stone") == 2 and count("iron_hammer") == 1, "with an iron one it carves, and the tool is kept")

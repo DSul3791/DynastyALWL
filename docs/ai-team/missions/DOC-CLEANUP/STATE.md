@@ -54,3 +54,8 @@ Final static audit: 561 original source lines preserved across the reviewed sect
 - Next action: inspect the exact published diff, complete required non-author review and static CI, then merge into dev. The PR owns exact head and integration receipt. Broader family status migration and adopted-child placement are outside this clarification.
 
 - Follow-up authority: Dave specified that arranging estate-debt payments is the successor's first responsibility, and explicitly deferred addressing that future mechanic. Recorded a short approved note and a link beside inherited debt; no payment design or code is added.
+
+## Integration checkpoint — 17 Nov 2026
+
+- Succession PR #1200 refreshed against dev `7495d2a08bbe889015045ab6f3dc3e2c64b5e26d`, retaining concurrent design/index additions. Non-author agent review passed original head `a400af0459131ece57cd150a99d0df26cd96f724`; refreshed exact-head review and CI are required before integration. No gameplay changes or runtime claims.
+- Aging PR #1201 follows after succession integration. Reviewer identified a birth-spacing route that must point to its proposal, not the approved fertility specification. Preserve both batches and record final head/merge/check evidence in each PR.
