@@ -14,6 +14,7 @@ extends SceneTree
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 var failures: int = 0
 var items
@@ -116,7 +117,7 @@ var _taken: Dictionary = {}
 
 func craft(times: int = 1) -> void:
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number("herb_antidote"), 0, times, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number("herb_antidote"), 0, times, CraftHand.at(items, 1, recipe_number("herb_antidote")))
 
 	for s in range(8 * times):
 		items.tick(1.0)
@@ -124,7 +125,7 @@ func craft(times: int = 1) -> void:
 
 func queue_only() -> void:
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number("herb_antidote"), 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number("herb_antidote"), 0, 1, CraftHand.at(items, 1, recipe_number("herb_antidote")))
 
 
 # One pour on the test bed through the real action (b = the pack slot of the container in hand, -1 none); true when water left the pack.

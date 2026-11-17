@@ -11,6 +11,7 @@ extends SceneTree
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 var failures: int = 0
 var items
@@ -60,7 +61,7 @@ func sap_in(rows: Array) -> int:
 
 func craft(id: String, times: int) -> void:
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, int(recipe(id).get("number", 0)), 0, times, Vector3(float(items._tool_slot(items.inventory_of(1), "saw") + 1), 0.0, 0.0))   # the first saw on the hotbar stands for the one in hand (sawing needs it there, protocol 126)
+	items.action(1, Net.ACT_CRAFT_QUEUE, int(recipe(id).get("number", 0)), 0, times, CraftHand.at(items, 1, int(recipe(id).get("number", 0))))
 
 	for s in range(120 * times):
 		items._craft_tick(0.5)

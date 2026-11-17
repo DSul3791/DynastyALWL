@@ -1285,7 +1285,8 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_STRIKE:
 		_strike(peer, inv, a, at)
 	elif kind == Net.ACT_CRAFT:
-		recipes.craft(a, inv)
+		if _hand_tool_ok(peer, inv, recipes.recipe(a), int(at.x) - 1):   # the instant craft (test keys) keeps the in-hand rule too (126)
+			recipes.craft(a, inv)
 	elif kind == Net.ACT_FALL:
 		_fall(peer, a)
 	elif kind == Net.ACT_CRAFT_QUEUE or kind == Net.ACT_CRAFT_CANCEL:
@@ -7084,19 +7085,14 @@ func _tool_slot(inv, tool_class: String) -> int:
 	return -1
 
 
-# A recipe that needs its tool in hand (CraftStock.hand_tool: sawing, Dave 17 Nov 2026) crafts only while that tool, unbroken, is the item in the
+# A recipe that keeps a tool needs it in hand (CraftStock.in_hand, Dave 17 Nov 2026): it crafts only while that tool, unbroken, is the item in the
 # right hand (`hand`, the pack slot the client names); otherwise says what to do and answers false. A log on the shoulder does not stop it (the
-# client stows the saw while a log rides there, but it stays the chosen hand slot). Any other recipe: true.
+# client stows the tool while a log rides there, but it stays the chosen hand slot). Any other recipe: true.
 func _hand_tool_ok(peer: int, inv, recipe: Dictionary, hand: int) -> bool:
-	var tool: String = CraftStock.hand_tool(recipe)
-
-	if tool == "":
+	if CraftStock.in_hand(recipe, table, inv, hand):
 		return true
 
-	if inv != null and hand >= 0 and hand < inv.slot_count and inv.on_hotbar(hand) and not _is_broken(inv, hand) and str(table.entry(table.id_of(inv.numbers[hand])).get("tool_class", "")) == tool:
-		return true
-
-	_say(peer, "Hold a %s in your hand for that: pick it on the hotbar, then craft" % tool)
+	_say(peer, "That needs %s in your hand: pick it on the hotbar, then craft" % CraftStock.hand_words(recipe, table))
 	return false
 
 
@@ -19096,7 +19092,7 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 	if queue.is_empty() or recipe.is_empty() or (not recipe_known_for(peer, recipe) and not free and not _try_learn(peer, inv, recipe)):
 		return
 
-	if not free and not _hand_tool_ok(peer, inv, recipe, hand):   # sawing needs the saw in hand (Dave 17 Nov 2026), checked before any log is pulled onto the shoulder
+	if not free and not _hand_tool_ok(peer, inv, recipe, hand):   # a kept tool must be in hand (Dave 17 Nov 2026), checked before any log is pulled onto the shoulder
 		return
 
 	# The station within the crafting reach but not beside you: go to it and craft there (Dave 10 Nov 2026), when the stock here covers one.
@@ -19287,7 +19283,7 @@ func _pack_covers(inv, recipe: Dictionary, times: int) -> bool:
 
 
 # Plans the missing parts of a craft and queues them, all or nothing, in one step. Returns 1 when queued, 0 when it could not be and the player
-# was told why, 2 when a part it would saw needs the saw in hand (told why; the craft stops there), -1 when there is nothing to add (the plain craft
+# was told why, 2 when a part it would make needs a tool in hand that is not there (told why; the craft stops there), -1 when there is nothing to add (the plain craft
 # goes on, or fails the old way).
 func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, count: int, stock: Dictionary = {}, hand: int = -1) -> int:
 	if stock.is_empty():
@@ -19313,7 +19309,7 @@ func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, co
 	if steps.size() == 1:
 		return -1   # nothing to make first: the plain path
 
-	for step in steps:   # a part sawn on the way (Wooden blocks for a Wooden hammer) needs the saw in hand too
+	for step in steps:   # a part made on the way with a tool (Wooden blocks sawn for a Wooden hammer) needs that tool in hand too
 		if not _hand_tool_ok(peer, inv, recipes.recipe(int(step["recipe"])), hand):
 			return 2   # refused, and said why: nothing else is tried (the plain path would only add "You do not have what that needs")
 

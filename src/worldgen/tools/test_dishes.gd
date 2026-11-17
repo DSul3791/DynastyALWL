@@ -7,6 +7,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 var failures: int = 0
 var items
@@ -42,7 +43,7 @@ func _init() -> void:
 	# Away from a fire nothing can be cooked.
 	var first: String = str(dishes.keys()[0])
 	_stock(first, dishes[first])
-	items.action(1, Net.ACT_CRAFT_QUEUE, int(recipes["cook_" + first]["number"]), 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, int(recipes["cook_" + first]["number"]), 0, 1, CraftHand.at(items, 1, int(recipes["cook_" + first]["number"])))
 	_pass(20.0)
 	check(items.count_for(1, first) == 0, "no dish without a fire")
 
@@ -85,7 +86,7 @@ func _init() -> void:
 		if prepared != "":
 			var had: Array = (d["needs"] as Array).map(func(n): return items.count_for(1, str(n[0])))   # the first dish's stock from the no-fire check may still be there
 			items._last_queue_act.clear()
-			items.action(1, Net.ACT_CRAFT_QUEUE, int(recipes["prep_" + dish_id]["number"]), 0, 1, Vector3.ZERO)
+			items.action(1, Net.ACT_CRAFT_QUEUE, int(recipes["prep_" + dish_id]["number"]), 0, 1, CraftHand.at(items, 1, int(recipes["prep_" + dish_id]["number"])))
 			_pass(float(d.get("prep_s", 4)) + 4.0)
 			var spent: bool = true
 
@@ -95,7 +96,7 @@ func _init() -> void:
 			check(items.count_for(1, prepared) == int(d["gives"]) and spent, "%s: the table makes %d %s from the ingredients" % [dish_id, items.count_for(1, prepared), prepared])
 
 		items._last_queue_act.clear()
-		items.action(1, Net.ACT_CRAFT_QUEUE, int(recipes["cook_" + dish_id]["number"]), 0, 1, Vector3.ZERO)
+		items.action(1, Net.ACT_CRAFT_QUEUE, int(recipes["cook_" + dish_id]["number"]), 0, 1, CraftHand.at(items, 1, int(recipes["cook_" + dish_id]["number"])))
 		_pass(float(d["craft_s"]) + 4.0)
 		check(items.count_for(1, dish_id) == int(d["gives"]) and (prepared == "" or items.count_for(1, prepared) == 0), "%s is made at the lit fire (%d)" % [dish_id, items.count_for(1, dish_id)])
 
@@ -115,7 +116,7 @@ func _init() -> void:
 					items.give_to(1, str(need[0]), int(need[1]) * times)
 
 			items._last_queue_act.clear()
-			items.action(1, Net.ACT_CRAFT_QUEUE, int(recipes["cook_%s_%s" % [dish_id, way["keeps"][0][0]]]["number"]), 0, 1, Vector3.ZERO)
+			items.action(1, Net.ACT_CRAFT_QUEUE, int(recipes["cook_%s_%s" % [dish_id, way["keeps"][0][0]]]["number"]), 0, 1, CraftHand.at(items, 1, int(recipes["cook_%s_%s" % [dish_id, way["keeps"][0][0]]]["number"])))
 			_pass(float(way.get("craft_s", d["craft_s"])) + 4.0)
 			check(items.count_for(1, dish_id) - had == int(d["gives"]) * times and items.count_for(1, str(way["keeps"][0][0])) == int(way["keeps"][0][1]), "%s is made with the %s, which is kept (%d)" % [dish_id, way["keeps"][0][0], items.count_for(1, dish_id) - had])
 		var kinds: int = (d["needs"] as Array).size()

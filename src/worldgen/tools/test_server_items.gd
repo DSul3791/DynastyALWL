@@ -10,6 +10,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const GatherRulesScript := preload("res://src/shared/gather_rules.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 var failures: int = 0
 var slots_sent: Array = []
 var world_sent: Array = []
@@ -2559,16 +2560,16 @@ func _init() -> void:
 	var cord: int = cq.table.number_of("twine")
 	cq.give(1, fibre, 30)
 	cq._last_queue_act.clear()
-	cq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 4, Vector3.ZERO)
+	cq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 4, CraftHand.at(cq, 1, 1))
 	check(cq.inventory_of(1).count_of(fibre) == 18, "queueing 4 twine takes 12 fibre now (%d left)" % cq.inventory_of(1).count_of(fibre))
 	check(cq.craft_queue_of(1) == [[1, 4]], "queue holds one entry of 4")
 	cq._last_queue_act.clear()
-	cq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 2, Vector3.ZERO)
+	cq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 2, CraftHand.at(cq, 1, 1))
 	check(cq.craft_queue_of(1) == [[1, 6]], "queueing the same recipe again merges")
 	cq._last_queue_act.clear()
-	cq.action(1, Net.ACT_CRAFT_QUEUE, 99, 0, 1, Vector3.ZERO)
+	cq.action(1, Net.ACT_CRAFT_QUEUE, 99, 0, 1, CraftHand.at(cq, 1, 99))
 	cq._last_queue_act.clear()
-	cq.action(1, Net.ACT_CRAFT_QUEUE, 16, 0, 1, Vector3.ZERO)
+	cq.action(1, Net.ACT_CRAFT_QUEUE, 16, 0, 1, CraftHand.at(cq, 1, 16))
 	check(cq.craft_queue_of(1).size() == 1, "unknown recipes are refused")
 
 	for n in range(4 * 2 + 1):
@@ -2591,7 +2592,7 @@ func _init() -> void:
 
 	for n in range(14):
 		cq._last_queue_act.clear()
-		cq.action(1, Net.ACT_CRAFT_QUEUE, 1 if n % 2 == 0 else 7, 0, 1, Vector3.ZERO)
+		cq.action(1, Net.ACT_CRAFT_QUEUE, 1 if n % 2 == 0 else 7, 0, 1, CraftHand.at(cq, 1, 1 if n % 2 == 0 else 7))
 
 	check(cq.craft_queue_of(1).size() <= 10, "queue is capped at 10 entries (%d)" % cq.craft_queue_of(1).size())
 	cq._last_queue_act.clear()
@@ -2613,7 +2614,7 @@ func _init() -> void:
 	ad.admin_ok = func(_p): return true
 	ad.action(1, Net.ACT_ADMIN_MODE, 1, 0, 0, Vector3.ZERO)   # off by default: switched on as in Esc > Admin
 	ad._last_queue_act.clear()
-	ad.action(1, Net.ACT_CRAFT_QUEUE, 18, 0, 1, Vector3.ZERO)   # the iron pickaxe: not known, needs a forge and iron
+	ad.action(1, Net.ACT_CRAFT_QUEUE, 18, 0, 1, CraftHand.at(ad, 1, 18))   # the iron pickaxe: not known, needs a forge and iron
 	check(ad.craft_queue_of(1) == [[18, 1]], "an admin queues a locked recipe with nothing in the pack")
 
 	for n in range(60):
@@ -2622,7 +2623,7 @@ func _init() -> void:
 	check(ad.inventory_of(1).count_of(ad.table.number_of("iron_pickaxe")) == 1, "an admin's craft finishes without a station or ingredients")
 	ad.admin_mode_on = func(_p): return false
 	ad._last_queue_act.clear()
-	ad.action(1, Net.ACT_CRAFT_QUEUE, 18, 0, 1, Vector3.ZERO)
+	ad.action(1, Net.ACT_CRAFT_QUEUE, 18, 0, 1, CraftHand.at(ad, 1, 18))
 	check(ad.craft_queue_of(1).is_empty(), "with admin mode off the same craft is refused again")
 
 	# Restart mid-craft keeps the progress; a refund into a pack at its carry limit drops the rest at the player's feet.
@@ -2637,7 +2638,7 @@ func _init() -> void:
 	rq.peer_connected_hello(1, "queuekey0002")
 	rq.report_position(1, Vector3(0.0, 10.0, 0.0))
 	rq.give(1, fibre, 9)
-	rq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 3, Vector3.ZERO)
+	rq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 3, CraftHand.at(rq, 1, 1))
 	rq._craft_tick(1.5)
 	rq._save_craft_queues()
 	var rq2 = make(qd + "_full")
@@ -2966,7 +2967,7 @@ func _init() -> void:
 	sk.skill_level = func(_peer, _skill): return 2.0
 	check(sk.skill_factor(1, "craft") == 2.0 and sk.skill_factor(1, "no_such_action") == 1.0, "a skill level of 2 gives a factor of 2 for a listed action only")
 	sk.give(1, sk.table.number_of("plant_fibre"), 9)
-	sk.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 1, Vector3.ZERO)
+	sk.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 1, CraftHand.at(sk, 1, 1))
 
 	for n in range(4 * 1 + 1):
 		sk._craft_tick(0.25)
@@ -3173,7 +3174,7 @@ func _init() -> void:
 
 	var cord6b: int = sx6.inventory_of(1).count_of(cord6)
 	sx6._last_queue_act.clear()
-	sx6.action(1, Net.ACT_CRAFT_QUEUE, 900, 0, 1, Vector3.ZERO)
+	sx6.action(1, Net.ACT_CRAFT_QUEUE, 900, 0, 1, CraftHand.at(sx6, 1, 900))
 	check(sx6.inventory_of(1).count_of(sx6.table.number_of("bark")) == 1 and sx6.inventory_of(1).count_of(sx6.table.number_of("firewood")) == 1, "queueing it takes all six ingredients")
 
 	for n in 40:
@@ -3366,12 +3367,12 @@ func _init() -> void:
 	bw.give(1, bw.table.number_of("thread"), 2)   # needle work takes Thread, not Twine (master s3.4, Mission 001 phase 2b)
 	bw.give(1, bw.table.number_of("sewing_needle"), 1)   # sewn things keep a Bone - Needle (item system, 10 Nov 2026); it stays for the hood below
 	bw._last_queue_act.clear()
-	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec["wooden_bow"]["number"]), 0, 1, Vector3.ZERO)
+	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec["wooden_bow"]["number"]), 0, 1, CraftHand.at(bw, 1, int(bw_rec["wooden_bow"]["number"])))
 	check(bw.craft_queue_of(1).is_empty(), "the bow is refused away from a carving station (W-8)")
 
 	for rid in ["wooden_arrow", "stone_arrow", "quiver"]:
 		bw._last_queue_act.clear()
-		bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec[rid]["number"]), 0, 1, Vector3.ZERO)
+		bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec[rid]["number"]), 0, 1, CraftHand.at(bw, 1, int(bw_rec[rid]["number"])))
 
 		for n in 80:
 			bw._craft_tick(0.25)
@@ -3382,7 +3383,7 @@ func _init() -> void:
 	bw.give(1, bw.table.number_of("twine"), 3)
 	bw.give(1, bw.table.number_of("stick"), 2)
 	bw._last_queue_act.clear()
-	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw.recipes.recipe(177)["number"]), 0, 1, Vector3.ZERO)
+	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw.recipes.recipe(177)["number"]), 0, 1, CraftHand.at(bw, 1, int(bw.recipes.recipe(177)["number"])))
 
 	for n in 40:
 		bw._craft_tick(0.25)
@@ -3394,7 +3395,7 @@ func _init() -> void:
 	bw.give(1, bw.table.number_of("hide"), 1)
 	bw.give(1, bw.table.number_of("thread"), 1)
 	bw._last_queue_act.clear()
-	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec["hide_hood"]["number"]), 0, 1, Vector3.ZERO)
+	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec["hide_hood"]["number"]), 0, 1, CraftHand.at(bw, 1, int(bw_rec["hide_hood"]["number"])))
 
 	for n in 40:
 		bw._craft_tick(0.25)

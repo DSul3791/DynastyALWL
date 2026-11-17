@@ -11,6 +11,7 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")
 const BowAim := preload("res://src/shared/bow_aim.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 const HERE := Vector3(5.0, 10.0, 0.0)
 const KEY := "armour000001"
@@ -229,7 +230,7 @@ func _init() -> void:
 				inv.add(filler(int(need[0])), int(need[1]))
 
 			items._last_queue_act.clear()
-			items.action(1, Net.ACT_CRAFT_QUEUE, number, 0, 1, Vector3.ZERO)
+			items.action(1, Net.ACT_CRAFT_QUEUE, number, 0, 1, CraftHand.at(items, 1, number))
 			run(float(r["craft_s"]) + 2.0)
 			var got: bool = have(id) >= int(r["gives"][1])
 			check(got, "1. %s is made by recipe %d at %s from live materials" % [id, number, kind_serving(station, int(r.get("station_level", 1))) if station != "" else "hand"])
@@ -357,7 +358,7 @@ func _init() -> void:
 		inv.add(int(need[0]), int(need[1]))
 
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, cuirass_recipe, tempered, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, cuirass_recipe, tempered, 1, CraftHand.at(items, 1, cuirass_recipe))
 	run(float(cr["craft_s"]) * SmithingRules.time_mult(tempered) + 3.0)
 	var cs: int = slot_of("plate_cuirass")
 	var cuirass: Dictionary = items.table.entry("plate_cuirass")

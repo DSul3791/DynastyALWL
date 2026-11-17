@@ -7,6 +7,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 var failures: int = 0
 var items
@@ -317,10 +318,10 @@ func _init() -> void:
 	_give(1, "unbaked_flatbread", 2)   # Mission 001 phase 6 (master s3.12): both bake from what the Food preparation table made
 	_give(1, "unbaked_honey_loaf", 2)
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, int(dish_nums["cook_honey_loaf"]), 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, int(dish_nums["cook_honey_loaf"]), 0, 1, CraftHand.at(items, 1, int(dish_nums["cook_honey_loaf"])))
 	check(items.craft_queue_of(1).is_empty(), "a honey loaf is refused at a hearth (oven dish)")
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, int(dish_nums["cook_flatbread"]), 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, int(dish_nums["cook_flatbread"]), 0, 1, CraftHand.at(items, 1, int(dish_nums["cook_flatbread"])))
 	check(not items.craft_queue_of(1).is_empty(), "flatbread is accepted at a hearth")
 	items.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
 	_give(1, "brick", 10)
@@ -330,7 +331,7 @@ func _init() -> void:
 	check(_ids_standing("oven").size() == 1 and _have(1, "brick") == 0 and _have(1, "clay") == 0 and _have(1, "stone") == 0, "with a hearth near the oven stands for 24 brick, 10 clay, 8 stone")
 	check(items.station_near(1, "oven", 3) and items.station_near(1, "clay_hearth", 2) and items.station_near(1, "campfire"), "an oven cooks what a hearth and a campfire cook")
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, int(dish_nums["cook_honey_loaf"]), 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, int(dish_nums["cook_honey_loaf"]), 0, 1, CraftHand.at(items, 1, int(dish_nums["cook_honey_loaf"])))
 	check(not items.craft_queue_of(1).is_empty(), "a honey loaf is accepted at the oven")
 	items.report_position(1, Vector3(233.0, 10.0, 231.0))
 	items.action(1, Net.ACT_PICKUP, _ids_standing("oven")[0], 0, 0, Vector3.ZERO)

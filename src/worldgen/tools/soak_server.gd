@@ -12,6 +12,7 @@ const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 const TICK_S := 0.05
 const SPAN_S := 60.0
@@ -124,7 +125,7 @@ func _init() -> void:
 
 				if kind == 0:
 					items._last_queue_act.clear()
-					items.action(p, Net.ACT_CRAFT_QUEUE, 1, 0, 4, Vector3.ZERO)
+					items.action(p, Net.ACT_CRAFT_QUEUE, 1, 0, 4, CraftHand.at(items, p, 1))
 				elif kind == 1:
 					items.place_item(p, items.table.number_of("campfire_kit"), pos[p - 1] + Vector3(2.0, 0.0, 0.0), 0)
 				elif kind == 2:

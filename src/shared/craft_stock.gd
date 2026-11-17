@@ -9,16 +9,56 @@ const CRAFT_REACH_M := 12.0     # one distance for crafting and blueprint sites 
 const LOOSE_STOCK_M := 12.0     # loose stacks on the ground this close count as stock (Dave 10 Nov 2026: "or they are within 12m of you"; was 3 m)
 
 
-# Sawing needs the saw in hand (Dave 17 Nov 2026: "we should have to equip the saw then we can do it"): a recipe that wears one of these tools
-# crafts only while that tool is the item in the right hand, not merely in the pack. Other kept tools are unchanged (a question for Dave,
-# TREE_WOOD_TOOLS_DESIGN.md W-32).
-const IN_HAND_TOOLS := ["saw"]
+# A tool a recipe keeps must be in hand (Dave 17 Nov 2026: "we should have to equip the saw then we can do it"; "yes if you are making something that
+# requires a tool that tool must be in your hand. if it requires a station you must be in that station or close to it"). A kept item that is a tool
+# (items.json kind "tool"), or a group of tools (any knife, any saw), crafts only while one of them, unbroken, is the item in the right hand.
+# Cookware a recipe keeps is set over the fire, not held, and a kept Stone is a material that cannot be taken in hand: those still count from the
+# pack as before (TREE_WOOD_TOOLS_DESIGN.md W-32).
+const NOT_HELD_CLASSES := ["griddle", "grill_grate", "roasting_spit"]
 
 
-# The tool class a recipe needs in hand, or "" when any copy in the pack will do.
-static func hand_tool(recipe: Dictionary) -> String:
-	var tool: String = str(recipe.get("wears_tool", ""))
-	return tool if IN_HAND_TOOLS.has(tool) else ""
+# The kept item numbers of `recipe` (numbers, as RecipeTable gives them) that need to be in hand; [] when none.
+static func hand_tools(recipe: Dictionary, table) -> PackedInt32Array:
+	var out: PackedInt32Array = PackedInt32Array()
+
+	for keep in recipe.get("keeps", []):
+		var number: int = int(keep[0])
+		var members: PackedInt32Array = table.group_members(number)
+		var entry: Dictionary = table.entry(table.id_of(members[0] if not members.is_empty() else number))
+
+		if str(entry.get("kind", "")) == "tool" and not NOT_HELD_CLASSES.has(str(entry.get("tool_class", ""))):
+			out.append(number)
+
+	return out
+
+
+# Whether the pack slot `hand` (the right hand; -1 empty) holds what the recipe needs in hand: on the hotbar, not broken, and filling one of its hand
+# tools (a recipe that keeps two would need only one of them; none does today). Any recipe with no hand tool: true.
+static func in_hand(recipe: Dictionary, table, inv, hand: int) -> bool:
+	var tools: PackedInt32Array = hand_tools(recipe, table)
+
+	if tools.is_empty():
+		return true
+
+	if inv == null or hand < 0 or hand >= inv.slot_count or not inv.on_hotbar(hand):
+		return false
+
+	var most: int = inv.max_durability(hand)
+
+	if most > 0 and inv.wear[hand] >= most:
+		return false
+
+	for tool in tools:
+		if inv.fills_of(tool).has(inv.numbers[hand]):
+			return true
+
+	return false
+
+
+# The words for what to hold: "any knife", "bone sewing needle" (the first hand tool's cost name, in a sentence); "" when none.
+static func hand_words(recipe: Dictionary, table) -> String:
+	var tools: PackedInt32Array = hand_tools(recipe, table)
+	return table.cost_sentence(tools[0]) if not tools.is_empty() else ""
 
 
 # Whether a container's owner lets this player's crafting use it. Households come later: today a player's own containers only.

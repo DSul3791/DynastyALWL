@@ -14,6 +14,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 const HERE := Vector3(0.0, 10.0, 0.0)
 const RANK := {"wood": 1, "stone": 2, "copper": 2, "bronze": 3, "iron": 4, "steel": 5}   # Copper shares Stone's tier: between Stone and Bronze in its rates (GOALS-REPAIR R2b)
@@ -88,7 +89,7 @@ func give_needs(id: String) -> void:
 
 func craft(id: String, seconds: int = 60) -> void:
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number(id), 0, 1, Vector3(float(items._tool_slot(items.inventory_of(1), "saw") + 1), 0.0, 0.0))   # the first saw on the hotbar stands for the one in hand (sawing needs it there, protocol 126)
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number(id), 0, 1, CraftHand.at(items, 1, recipe_number(id)))
 
 	for s in range(seconds):
 		items.tick(1.0)

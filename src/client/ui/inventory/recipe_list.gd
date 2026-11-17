@@ -802,7 +802,7 @@ func missing_text(r: Dictionary) -> String:
 	var hand_tool: String = view.hand_tool_short(int(r.get("number", 0)))
 
 	if hand_tool != "":
-		short.push_front("a %s in your hand" % hand_tool)   # first, so the card says it even when a log is short too
+		short.push_front("%s in your hand" % hand_tool)   # first, so the card says it even when a log is short too
 
 	if short.is_empty():
 		return ""

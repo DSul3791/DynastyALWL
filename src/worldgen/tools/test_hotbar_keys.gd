@@ -11,6 +11,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 var failures: int = 0
 var items
@@ -174,10 +175,10 @@ func _init() -> void:
 
 	give(clay, 60)
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, pot_recipe, 0, 5, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, pot_recipe, 0, 5, CraftHand.at(items, 1, pot_recipe))
 	var queued: Array = items.craft_queue_of(1)
 	check(pot_recipe > 0 and queued.size() == 1 and int(queued[0][1]) == 5, "five pots (the Craft button's quantity) go in one queue request (%s)" % str(queued))
-	items.action(1, Net.ACT_CRAFT_QUEUE, pot_recipe, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, pot_recipe, 0, 1, CraftHand.at(items, 1, pot_recipe))
 	check(int(items.craft_queue_of(1)[0][1]) == 5 and items.craft_queue_of(1).size() == 1, "a second request straight after is paced away: why a craft of several is one request")
 
 	# 9. A torch put out by the rain stays in its hotbar slot (the same torch, marked out): the key is the slot, so pressing it lights it again.

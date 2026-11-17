@@ -10,6 +10,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const CraftStock := preload("res://src/shared/craft_stock.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 var failures: int = 0
 var items
@@ -51,7 +52,7 @@ func box(id: int):
 
 func craft_pot() -> void:
 	items._last_queue_act.clear()   # the server paces queue requests (QUEUE_ACT_GAP_MS); each step here is a fresh request
-	items.action(1, Net.ACT_CRAFT_QUEUE, pot_recipe, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, pot_recipe, 0, 1, CraftHand.at(items, 1, pot_recipe))
 
 
 func reset() -> void:
@@ -227,7 +228,7 @@ func step_checks() -> void:
 	items.inventory_of(1).add(stone, 3)
 	stepped.clear()
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, cobble, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, cobble, 0, 1, CraftHand.at(items, 1, cobble))
 	var queue: Array = items._craft_queues[items._peer_key[1]]["entries"]
 	var front: Vector3 = Vector3(8.0, 10.0, 1.3)
 	check(stepped.size() == 3 and int(stepped[0]) == 1 and (stepped[1] as Vector3).distance_to(front) < 0.05, "the player is moved in front of the bench (%s)" % str(stepped[1] if stepped.size() == 3 else "none"))
@@ -241,7 +242,7 @@ func step_checks() -> void:
 	items.inventory_of(1).add(stone, 3)
 	stepped.clear()
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, cobble, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, cobble, 0, 1, CraftHand.at(items, 1, cobble))
 	check(stepped.size() == 3 and (stepped[1] as Vector3).distance_to(front) > 1.0 and (stepped[1] as Vector3).distance_to(Vector3(8.0, 10.0, 0.0)) < 2.5, "another player in the spot: beside the bench instead (%s)" % str(stepped[1] if stepped.size() == 3 else "none"))
 
 	# Not enough stone: no move.
@@ -250,7 +251,7 @@ func step_checks() -> void:
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	stepped.clear()
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, cobble, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, cobble, 0, 1, CraftHand.at(items, 1, cobble))
 	check(stepped.is_empty() and items._peer_pos[1].distance_to(Vector3(0.0, 10.0, 0.0)) < 0.01, "without the stone nobody is moved")
 
 	# Beyond 12 m: no move, the old answer.
@@ -259,5 +260,5 @@ func step_checks() -> void:
 	said.clear()
 	stepped.clear()
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, cobble, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, cobble, 0, 1, CraftHand.at(items, 1, cobble))
 	check(stepped.is_empty() and said.size() > 0 and str(said[said.size() - 1]).begins_with("That needs a"), "18 m away: no move, it says it needs the bench nearby")
