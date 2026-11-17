@@ -1611,8 +1611,8 @@ func _nearest_struct(skip_fires: bool = false) -> int:
 	var ids: Array = []
 
 	for id in _world:
-		if skip_fires and int(_world[id]["state"]) in StructureLook.CAMPFIRE_STATES:
-			continue
+		if (skip_fires and int(_world[id]["state"]) in StructureLook.CAMPFIRE_STATES) or _world[id].get("camp", false):
+			continue   # Edda and Hob's fire is never offered
 
 		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(_world[id]["pos"]) <= 3.0:
 			ids.append(id)
@@ -1661,13 +1661,13 @@ func _aimed_or_nearest(ids: Array, here: Vector3) -> int:
 	return best
 
 
-# The id of the fire (lit or out) within 3 m that the cursor is on, else the nearest one; 0 when none.
+# The id of the fire (lit or out) within 3 m that the cursor is on, else the nearest one; 0 when none. Never Edda and Hob's fire: players cannot use it.
 func _nearest_fire() -> int:
 	var here: Vector3 = _player_position.call()
 	var ids: Array = []
 
 	for id in _world:
-		if _world[id]["state"] in StructureLook.CAMPFIRE_STATES and here.distance_to(_world[id]["pos"]) <= 3.0:
+		if _world[id]["state"] in StructureLook.CAMPFIRE_STATES and not _world[id].get("camp", false) and here.distance_to(_world[id]["pos"]) <= 3.0:
 			ids.append(id)
 
 	return _aimed_or_nearest(ids, here)
@@ -3072,6 +3072,9 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 		if state != 0 and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("burn"):   # a fire: the burn time left (the label counts it down while it burns)
 			_world[id]["burn"] = float(row[5]["burn"])
 			_world[id]["burn_at"] = Time.get_ticks_msec()
+
+		if state != 0 and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("camp"):
+			_world[id]["camp"] = true   # Edda and Hob's fire (PROTOCOL.md, world-item rows): no prompt, no store, no burn time
 
 		prof["loose_mesh"] = int(prof.get("loose_mesh", 0)) + Time.get_ticks_usec() - t_d
 		var t_e: int = Time.get_ticks_usec()
@@ -5201,6 +5204,9 @@ func world_item_name_near(point: Vector3, r: float) -> String:
 
 # "Campfire 00:04:00 Burn time": the fuel left in the fire (a lit one counts down, a laid one shows what its wood would burn).
 func _fire_label(entry: Dictionary, number: int) -> String:
+	if entry.get("camp", false):
+		return "Edda and Hob's campfire"
+
 	if not entry.has("burn"):
 		return _item_label(number)
 

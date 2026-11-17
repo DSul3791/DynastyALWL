@@ -57,11 +57,16 @@ func town_point() -> Vector2:
 		return Vector2(INF, INF)
 
 	var sum: Vector2 = Vector2.ZERO
+	var counted: int = 0
 
 	for row in rows:
-		sum += Vector2(float(row.get("x", 0.0)), float(row.get("z", 0.0)))
+		if row.has("npc"):
+			continue   # an NPC's own spot (Edda and Hob's camp, data/npcs/camp.json) does not move the town's middle
 
-	return sum / float(rows.size())
+		sum += Vector2(float(row.get("x", 0.0)), float(row.get("z", 0.0)))
+		counted += 1
+
+	return sum / float(counted) if counted > 0 else Vector2(INF, INF)
 
 
 func _read(path: String) -> Dictionary:
@@ -78,7 +83,7 @@ func _add_marker(row: Dictionary) -> void:
 	if id == "":
 		return
 
-	markers[id] = {"kind": str(row.get("kind", "")), "x": float(row.get("x", 0.0)), "z": float(row.get("z", 0.0)), "slots": maxi(int(row.get("slots", 1)), 1), "yaw": float(row.get("yaw", 0.0)), "users": []}
+	markers[id] = {"kind": str(row.get("kind", "")), "x": float(row.get("x", 0.0)), "z": float(row.get("z", 0.0)), "slots": maxi(int(row.get("slots", 1)), 1), "yaw": float(row.get("yaw", 0.0)), "users": [], "npc": str(row.get("npc", ""))}
 
 
 func _add_npc(row: Dictionary, home: Vector3) -> void:
@@ -100,7 +105,8 @@ func _marker_pos(marker: Dictionary) -> Vector3:
 	return Vector3(marker["x"], 0.0 if is_nan(y) else y, marker["z"])
 
 
-# The marker of this kind the NPC holds, or the nearest free one to where it is (or its home); "" when none is free.
+# The marker of this kind the NPC holds, else its own one (a marker row naming it in "npc": Edda's and Hob's camp spots), else the nearest free
+# one to where it is (or its home) that is nobody's own; "" when none is free.
 func _claim(npc: Dictionary, kind: String) -> String:
 	var held: String = str(npc["claims"].get(kind, ""))
 
@@ -114,10 +120,10 @@ func _claim(npc: Dictionary, kind: String) -> String:
 	for id in markers:
 		var m: Dictionary = markers[id]
 
-		if m["kind"] != kind or m["users"].size() >= int(m["slots"]):
+		if m["kind"] != kind or m["users"].size() >= int(m["slots"]) or (m["npc"] != "" and m["npc"] != npc["id"]):
 			continue
 
-		var d: float = Vector2(m["x"] - from.x, m["z"] - from.z).length()
+		var d: float = -1.0 if m["npc"] == npc["id"] else Vector2(m["x"] - from.x, m["z"] - from.z).length()
 
 		if d < best_d:
 			best_d = d

@@ -22,6 +22,7 @@ extends Node
 
 const FishWaterScript := preload("res://src/server/server_fish_water.gd")
 const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
+const NpcCampScript := preload("res://src/shared/npc_camp.gd")   # the camp tree is never cut (_cut_tree)
 const EventLogScript := preload("res://src/shared/event_log.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const BuildInfo := preload("res://src/shared/build.gd")
@@ -326,6 +327,7 @@ func _ready() -> void:
 	items.flora_changed = _flora_changed
 	flora.dynamic = func(home): return items.dynamic_items(home)
 	items.cut_tree = _cut_tree
+	items.camp_fire_on = true   # Edda and Hob's fire (data/npcs/camp.json) burns in every real world
 	@warning_ignore("confusable_local_declaration")
 	items.send_notice = func(peer, text): net.notice.rpc_id(peer, text)
 	items.send_goals = func(peer, rows): net.goals.rpc_id(peer, rows)
@@ -1608,6 +1610,10 @@ func _shrub_info(chunk: Vector2i, id: int) -> Dictionary:
 
 func _cut_tree(chunk: Vector2i, id: int) -> bool:
 	var home: Vector2i = flora.placer.normalize(chunk)
+	var standing: Dictionary = _tree_info(chunk, id)
+
+	if not standing.is_empty() and NpcCampScript.is_camp_tree(standing["position"]):
+		return false   # the oak over Edda and Hob's camp (data/npcs/camp.json): no axe, undermining or surveyed road brings it down
 
 	if items.remove_dynamic(home, id):
 		net.flora_cut.rpc(chunk, id)
