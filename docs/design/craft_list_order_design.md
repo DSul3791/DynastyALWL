@@ -47,3 +47,18 @@ F on a station opens its window: the crafting screen for a station without a sto
 - **SR-3, the campfire's window** lists the campfire recipes, lit or not (an unlit fire's rows are dim, as before). Pot recipes (soups, stews) stay with the pot's own window and your own inventory.
 - **SR-4, the Sawbuck** lists Wooden block, the recipe it speeds. The chopping block has no recipes (E splits logs), so its Craft tab is empty.
 - **SR-5, your own inventory near a station** still lists everything, station recipes second as above. Dave's ruling named only other inventories.
+
+## A crafting station's store shows under its recipes (Dave 17 Nov 2026)
+
+Dave, playtest:
+
+> "I just used the primative smithy and didnt like the way there is a separate chest inventory. it should be combined so when it makes items they appear so the player can see them."
+
+A crafting station with a store (the smithies, leatherworking table, tailor's table, loom, food preparation table, saw mill) used to open with Chest and Craft tabs, so a product went into its output slots out of sight. Its window now has no tabs: the recipe list and card on top, the station's store under them in the same Craft column (`inventory_view._store_with_recipes`, `container_panel.set_compact`). What the station makes is seen landing in its output slots. The store's input and output slots stay as they are (master s2.5), and so does everything in them.
+
+### For Dave (provisional, assumed on his behalf; change any of them by saying so)
+
+- **SC-1, size.** Under the recipes the store's wells are 70 px, 8 across (a chest's are 100 px, 6 across), so a smithy's 12 slots take two rows and the category tabs still fit.
+- **SC-2, what steps aside.** The store keeps its bar (Keep out of crafting, Take all, Store all, Lock); Sort both and Stack into my chests are left off under the recipes for the room.
+- **SC-3, what keeps tabs.** The Kiln (a batch of logs, being rebuilt in three tiers), the chopping block (E splits, no recipes), chests, fires and smelters keep the old window.
+- **SC-4, reading.** "Combined" is read as one screen with the station's store in view. The other reading, products going straight to your pack, was put to Dave as a choice.
