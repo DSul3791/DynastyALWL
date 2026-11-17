@@ -626,11 +626,11 @@ See [approved aging and lifespan](Design_Ideas_Approved.md#aging-and-lifespan) f
 
 #### Danger, rescue and logging out
 
-See [death and rescue](Design_Ideas_Unapproved.md#death-and-rescue) for preserved recorded decisions, proposals and open questions.
+See [approved danger, rescue and logout rules](Design_Ideas_Approved.md#danger-rescue-and-logging-out); [proposals and questions](Design_Ideas_Unapproved.md#danger-rescue-and-logging-out) remain separate.
 
 #### Remains
 
-See [death and rescue](Design_Ideas_Unapproved.md#death-and-rescue) for preserved recorded decisions, proposals and open questions.
+See [approved remains rules](Design_Ideas_Approved.md#remains); [proposals](Design_Ideas_Unapproved.md#remains) remain separate.
 
 #### Absence and duress
 
@@ -699,7 +699,7 @@ See [succession and inheritance](Design_Ideas_Unapproved.md#succession-and-inher
 
 ### 6.5 Staying alive
 
-See [death and rescue](Design_Ideas_Unapproved.md#death-and-rescue) for preserved recorded decisions, proposals and open questions.
+See [approved survival intent](Design_Ideas_Approved.md#staying-alive); [rescue proposals and questions](Design_Ideas_Unapproved.md#staying-alive) remain separate.
 
 ### 6.6 Children and family growth
 
@@ -883,7 +883,7 @@ One server clock drives aging, marriage, children growing up, crop growth, regro
 ### 7.1 Time conventions
 
 - **[Decided]** **Unlabeled times are game time.** Any amount of time in this document, in the game or in the rules ("a month", "a year", "three days") means game time unless it says **real**. Real time is written out ("real hours", "real month") only where a rule is tied to the player's own life.
-- **[Decided]** **Real-time items:** the presence timer, takeover and challenge windows, the 24-hour owner notice before a manager quits, the duress rules (a real month away; protection at $5 per real month; first real month free), receivership windows, remains lasting 8 real days, the reputation fade of about a real week, and trade offers that stand for a real week. 
+- **[Decided]** **Real-time items:** the presence timer, takeover and challenge windows, the 24-hour owner notice before a manager quits, the duress rules (a real month away; protection at $5 per real month; first real month free), receivership windows, remains lasting 8 real days ([expiry discrepancy](Design_Ideas_Approved.md#qualifications-and-working-evidence)), the reputation fade of about a real week, and trade offers that stand for a real week. 
 - **[Decided]** **Crops** ripen on the game clock but their tiers are quoted in real days (Section 5.1), because they follow the player's rhythm. **Game-time items:** boat build times (6 game hours for the first tier, converted from 15 real minutes at the 24-to-1 ratio), aging and lifespans, pregnancy and growing up, seasons, loan and wage terms (loans 4 to 16 percent per game year, wage raises per game month), guard notice (one game month), work hours, shop hours, building and production schedules, wear and decay (Section 8.13) and expansion balance tests in game years. Town spirit decays on a real-day clock (Section 8.12).
 
 ### 7.2 The time ratio and the calendar

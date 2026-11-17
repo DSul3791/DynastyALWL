@@ -98,3 +98,51 @@ Source: [DESIGN_IDEAS §§6.6, 6.8–6.9](https://github.com/DSul3791/DynastyALW
 - [Inheritance and partial training](DESIGN_IDEAS.md#62-what-an-heir-inherits) retains the parental head-start idea and its unresolved size; [skills](DESIGN_IDEAS.md#54-skills) retains the wider learning design.
 - [Succession and household limits](DESIGN_IDEAS.md#67-succession-inheritance-and-the-dynasty) qualifies eligibility and household size. [Adopted-heir eligibility](Design_Ideas_Unapproved.md#adoption-and-inclusion) remains a proposal; this migration does not place adopted children in the approved succession order.
 - [Farming](DESIGN_IDEAS.md#51-farming-rhythm) retains distinct household labor and offline-work rules; [NPC population](DESIGN_IDEAS.md#82-npc-population) retains NPC-family behavior. Do not generalize a player-household pregnancy rule into an NPC-population ruling.
+
+## Death and rescue
+
+DIRECTOR-APPROVED under [Dave's recorded-decision instruction](#aging-and-lifespan), 16 Nov 2026. [Proposals and questions](Design_Ideas_Unapproved.md#death-and-rescue) stay separate; runtime unverified.
+
+Source: [DESIGN_IDEAS §§6.1 and 6.5](https://github.com/DSul3791/DynastyALWL/blob/b8130aecd2d6325a772c065b9e73959953f3d64a/DESIGN_IDEAS.md#61-aging-and-death). Extracted 16 Nov 2026.
+
+### Danger, rescue and logging out
+
+- **[Decided]** A character who is killed with no way to recover, or who is too old or wounded to recover, dies. The player restarts as a new character.
+- **[Decided]** If the player restarts as their child, the child inherits everything that remains. The child's first quest may be to find the fallen parent, or hire local adventurers or services to retrieve the parent's gear.
+- **[Decided]** ARK-style unconsciousness before death. A downed character can be revived, carried or dragged to safety by party members.
+- **[Decided]** Because offline characters stay vulnerable, the downed timer keeps running while the player is offline.
+- **[Decided]** Co-op: friends in the same friends group (Section 6.13) can tend animals and harvest crops for an absent owner, with permission.
+
+### Remains
+
+- **[Decided]** **Remains.** When a character dies they leave a two-dimensional image of themselves, a body with a backpack and all their gear still on it, instead of a tombstone or loot bag. The body decays over time (timeline below).
+- **[Decided]** Intelligent creatures may come along, pick up the gear and add it to their hoards. Otherwise it lies where it fell, waiting for someone to pick it up.
+- **[Decided]** **Remains timeline (real days).** Remains follow a fixed seven-day timeline, then are cleaned up.
+  - **Day 1:** the character falls to the ground and looks like a fresh dead body, as they looked in life. For this first real day **only the owner** (the dead character's player or dynasty) can pick up the gear. That is at least one day of grace to come back for it.
+  - **Days 2 to 7:** the body gradually decomposes until it is a skeleton, and slowly sinks into the ground a little, as if the terrain or the sand were absorbing it. From day 2 **anyone** can pick up the gear, and intelligent creatures (goblins, bandits, trolls, dragons) may come along and take it into their hoards. Only intelligent creatures collect gear.
+  - **Day 8:** the remains disappear and are cleaned up off the server.
+  - **On rock:** where the ground is rock and nothing can sink into it, the remains weather instead. They shrink and fade over the same seven days, getting smaller and harder to see.
+- **[Decided]** **Remains must never be lost.** The tombstone problem of other games (remains that fall through the ground or vanish) is a design requirement here. The remains are a server record with a position, not a physics object, and the server checks them:
+  - When created, the server finds the surface by looking straight down from the death position, and places the remains on it, even over water's edge or a cliff.
+  - Every time the area loads, and when terrain changes under them, the remains are checked and moved back onto the surface if the ground is missing or has changed.
+  - The sinking is only a visual offset applied to the model, never to the stored position. The record is never deleted before day 8.
+  - The heir's retrieval quest map marks the spot to within about 20 m.
+- **[Decided]** **The wizard can retrieve your remains.** At the nearest wizard tower, the town wizard (town mage, Section 8.15) will fetch your remains for a fee.
+  - He retrieves everything from every one of your unretrieved dead bodies still in the world, so if you died six times and none has disappeared yet, one visit gathers all six.
+  - The gear is delivered to you, and the remains are deleted or marked retrieved on your map.
+- **[Decided]** **Party leader retrieval.** If you were the party leader when party members died, the wizard also retrieves the gear of your NPC party members. Another player character in the party has to retrieve their own remains, or hire the wizard themselves. Each player pays for their own retrieval.
+- **[Decided]** **Any wizard tower works.** You can use the service at any wizard tower, in any town. Later, some random unaffiliated wizard towers may be placed around the map.
+- **[Decided]** **Day 8 cleans up everything on the body.** Gear still on the remains goes with them when they are cleaned up, with no warning notice.
+- **[Decided]** **Death marker on the map.** Each set of remains has a marker on the owner's map, such as a skull and crossbones or a tombstone, with a countdown timer showing how long is left before the remains are cleaned up. The marker is deleted or flagged as retrieved when the gear is collected, including by the wizard.
+
+### Staying alive
+
+- **[Decided]** Design intent: the game tries to keep you from dying, even though the whole world is trying to kill you.
+- **[Decided]** Systems let good NPCs rescue a character who has fallen, and let friends save them.
+
+### Qualifications and working evidence
+
+- [Absence, duress and notifications](DESIGN_IDEAS.md#absence-and-duress) stay in the source; [inheritance](DESIGN_IDEAS.md#62-what-an-heir-inherits) and [succession](DESIGN_IDEAS.md#67-succession-inheritance-and-the-dynasty) qualify restart and ownership. The [family proposals](Design_Ideas_Unapproved.md#children-and-family-growth) retains adoption's proposed successor eligibility.
+- [Time conventions](DESIGN_IDEAS.md#71-time-conventions) say remains last eight real days, while the detailed timeline above says cleanup on day eight after seven days. The exact expiry boundary remains unresolved; this migration does not choose a duration.
+- The [21 Oct death/respawn plan](https://github.com/DSul3791/DynastyALWL/blob/b8130aecd2d6325a772c065b9e73959953f3d64a/docs/mirror/items/DEATH_RESPAWN_DESIGN.md) is dated implementation evidence and a backlog, not current built/tested certification. Its wall-clock remains expiry differs from the proposed paused game clock for aging.
+- Source-relative “above/below” refers to the linked original snapshot; nested exceptions remain intact.

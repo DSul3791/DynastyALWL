@@ -80,3 +80,10 @@ Final static audit: 561 original source lines preserved across the reviewed sect
 - Five paths: Approved, Unapproved, DESIGN_IDEAS, DOC_MAP, this state. Keep one full specification, existing family/subtopic anchors and source snapshot. Move dependencies with the approved design; explicitly link proposed birth spacing and adopted-heir eligibility without promoting them. Remove redundant proposal subheadings; preserve all sibling concepts and deferral.
 - Checks: preservation, affected links/anchors and scope. Exact reviewed head, independent review, CI and integration receipt belong to this phase's PR. Runtime/player checks NOT RUN (documentation only). No code, main, schedule or retired-file changes.
 - Next: independent review, resolve substantive findings, pass exact-head CI, merge into dev and verify actual merged contents. Then choose the next bounded high-value topic; do not leave an unreviewed draft described as merged.
+
+## Current checkpoint — death/rescue status migration, 17 Nov 2026
+
+- Base: `290a40f8ea980f3e6bf3321dc89818d2b2fc1682`. Apply Dave's recorded-decision instruction to death/rescue decisions, preserving complete nested remains, surface-safety, owner/party, wizard-service and map-marker exceptions. Explicit proposals/open questions remain separate and unchanged. No new design or gameplay values.
+- Five paths: Approved, Unapproved, DESIGN_IDEAS, DOC_MAP, this state. One full death/rescue specification; numbered/subtopic routes preserved. Keep “eight real days” versus cleanup on day eight visible and unresolved. Dated respawn plan remains an immutable history link, not a built/tested claim; no retired file is edited.
+- Checks: exact full-block preservation including nested bullets, proposal/open-question preservation, affected links and scope. Independent final-head review and CI must pass before merge. PR owns exact head, review/check results and actual integration receipt. Runtime/player checks NOT RUN (documentation only).
+- Next: resolve review findings, merge into dev after checks pass, verify merged contents and record receipt. No code, main, schedule, deletion or estate-debt implementation.
