@@ -39,7 +39,7 @@
 		},
 		"by_suffix": {}
 	},
-	"eat_pace_ms": 800,
+	"eat_pace_ms": 300,
 	"food": {
 		"by_id": {
 			"roast_forage": 400,
