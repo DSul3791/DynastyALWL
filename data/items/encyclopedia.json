@@ -1923,7 +1923,7 @@
 			"used_for": [
 				"Used in Campfire",
 				"Used in Cobblestone",
-				"Used in Hand mill",
+				"Used to build Hand mill",
 				"Used in Rock pile",
 				"Used in Fishing net",
 				"Used in Stone - Arrow",
@@ -2737,11 +2737,7 @@
 			"how_to_get": [
 				"Craft at a wood carving station: 1 Wooden block (keep Stone - Knife)"
 			],
-			"used_for": [
-				"Used in Chamomile tea",
-				"Used in Stomach tea",
-				"Used in Willow bark tea"
-			],
+			"used_for": [],
 			"obtainable_now": true
 		},
 		"clay_pot": {
@@ -2944,7 +2940,7 @@
 			"kind": "food",
 			"description": "A folk remedy: mint and chamomile steeped for a sick stomach. Settles vomiting and the runs.",
 			"how_to_get": [
-				"Craft at a campfire pot: 2 Mint, 2 Chamomile flowers, 1 Water (keep Wooden bowl)"
+				"Craft at a campfire pot: 2 Mint, 2 Chamomile flowers, 1 Water"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2954,7 +2950,7 @@
 			"kind": "food",
 			"description": "A folk remedy: chamomile flowers steeped in water. Calms the stomach and helps you sleep.",
 			"how_to_get": [
-				"Craft at a campfire pot: 3 Chamomile flowers, 1 Water (keep Wooden bowl)"
+				"Craft at a campfire pot: 3 Chamomile flowers, 1 Water"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2964,7 +2960,7 @@
 			"kind": "food",
 			"description": "A folk remedy: bitter willow bark steeped for pain and fever. It also eases a sick stomach a little.",
 			"how_to_get": [
-				"Craft at a campfire pot: 2 Willow bark, 1 Water (keep Wooden bowl)"
+				"Craft at a campfire pot: 2 Willow bark, 1 Water"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -5003,8 +4999,7 @@
 				"Smelted by a Primitive or Improved smelter from Copper ore, one ingot an ore"
 			],
 			"used_for": [
-				"Used in Bronze ingot",
-				"Used in Copper - Pot"
+				"Used in Bronze ingot"
 			],
 			"obtainable_now": true
 		},
@@ -5042,11 +5037,11 @@
 			"kind": "material",
 			"description": "Ground grain. The start of bread.",
 			"how_to_get": [
-				"Craft: 3 Wheat (keep Hand mill)",
-				"Craft: 3 Barley (keep Hand mill)",
-				"Craft: 3 Oats (keep Hand mill)",
-				"Craft: 3 Rye (keep Hand mill)",
-				"Craft: 3 Wild grain (keep Hand mill)"
+				"Craft at a hand mill: 3 Wheat",
+				"Craft at a hand mill: 3 Barley",
+				"Craft at a hand mill: 3 Oats",
+				"Craft at a hand mill: 3 Rye",
+				"Craft at a hand mill: 3 Wild grain"
 			],
 			"used_for": [
 				"Used in Banana fritter",
@@ -5604,18 +5599,13 @@
 		},
 		"quern": {
 			"name": "Hand mill",
-			"kind": "tool",
-			"description": "Two flat stones for grinding grain by hand. Slow but steady.",
+			"kind": "structure",
+			"description": "Two heavy millstones set on a stone base, turned by a handle. Grinds grain to flour.",
 			"how_to_get": [
-				"Craft: 2 Stone, 1 Stick"
+				"Build with a hammer (press R): 2 Stone, 1 Stick"
 			],
 			"used_for": [
-				"Used in Barley flour",
-				"Used in Flour",
-				"Used in Oat flour",
-				"Used in Rye flour",
-				"Used in Wild grain flour",
-				"Used in Bonemeal"
+				"Grinds Flour, Barley flour, Oat flour, Rye flour, Wild grain flour and Bonemeal"
 			],
 			"obtainable_now": true
 		},
@@ -9876,6 +9866,42 @@
 			],
 			"obtainable_now": true
 		},
+		"grill": {
+			"name": "Grill",
+			"kind": "structure",
+			"description": "A brick barbecue with an iron grate over the coals. Grills skewers, sausages and joints.",
+			"how_to_get": [
+				"Build with a hammer (press R): 12 Brick, 4 Stone, 2 Iron ingot"
+			],
+			"used_for": [
+				"Cooks Meat skewer, Mushroom skewer, Sausage and Rosemary joint"
+			],
+			"obtainable_now": true
+		},
+		"cooking_pot": {
+			"name": "Cooking pot",
+			"kind": "structure",
+			"description": "A big iron pot on a chain over a fire. Cooks stews in big batches, and all a campfire pot cooks.",
+			"how_to_get": [
+				"Build with a hammer (press R): 5 Iron ingot, 2 Iron band"
+			],
+			"used_for": [
+				"Cooks big batches of Hunter's stew, Forager's stew, Fish stew, Cabbage stew, Mussel stew, Seal stew and Hearty pottage, and everything a campfire pot cooks"
+			],
+			"obtainable_now": true
+		},
+		"griddle": {
+			"name": "Griddle",
+			"kind": "structure",
+			"description": "A flat iron griddle on iron legs over an open fire. Fries eggs, cakes and fritters and bakes flatbread.",
+			"how_to_get": [
+				"Build with a hammer (press R): 3 Iron ingot, 4 Stone"
+			],
+			"used_for": [
+				"Cooks Crab cakes, Egg and nettle fry, Herb omelette, Banana fritter, Meatballs, Flatbread, Rye flatbread, Garlic bread, Oat cakes and Chestnut cakes"
+			],
+			"obtainable_now": true
+		},
 		"tanning_rack_kit": {
 			"name": "Tanning rack",
 			"kind": "placeable",
@@ -10234,7 +10260,7 @@
 			"kind": "material",
 			"description": "Bone ground to a pale powder. Feeds a crop bed as well as compost.",
 			"how_to_get": [
-				"Craft: 2 Bone (keep Hand mill)"
+				"Craft at a hand mill: 2 Bone"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -10461,23 +10487,18 @@
 		"copper_pot": {
 			"name": "Copper - Pot",
 			"kind": "container",
-			"description": "A hammered copper pot. Holds three litres and cooks soups over a fire.",
-			"how_to_get": [
-				"Craft at a forge: 3 Copper ingot"
-			],
-			"used_for": [
-				"Used in Fish soup",
-				"Used in Meatballs"
-			],
+			"description": "No longer made (Dave 17 Nov 2026: cooking uses stations, not pots and pans).",
+			"how_to_get": [],
+			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"fish_soup": {
 			"name": "Fish soup",
 			"kind": "food",
 			"description": "Fish, wild garlic and salt simmered in a copper pot. Hot and filling.",
 			"how_to_get": [
-				"Craft at a campfire pot: 2 Fish, 1 Wild garlic leaves, 1 Salt, 1 Water (keep Copper - Pot)"
+				"Craft at a campfire pot: 2 Fish, 1 Wild garlic leaves, 1 Salt, 1 Water"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -10488,7 +10509,7 @@
 			"kind": "food",
 			"description": "Minced meat rolled with flour and salt and cooked in a copper pot.",
 			"how_to_get": [
-				"Craft at a campfire pot: 3 Raw meat, 1 Flour, 1 Salt (keep Copper - Pot)"
+				"Craft at a campfire pot: 3 Raw meat, 1 Flour, 1 Salt"
 			],
 			"used_for": [],
 			"obtainable_now": true

@@ -12,9 +12,8 @@ const LOOSE_STOCK_M := 12.0     # loose stacks on the ground this close count as
 # A tool a recipe keeps must be in hand (Dave 17 Nov 2026: "we should have to equip the saw then we can do it"; "yes if you are making something that
 # requires a tool that tool must be in your hand. if it requires a station you must be in that station or close to it"). A kept item that is a tool
 # (items.json kind "tool"), or a group of tools (any knife, any saw), crafts only while one of them, unbroken, is the item in the right hand.
-# Cookware a recipe keeps is set over the fire, not held, and a kept Stone is a material that cannot be taken in hand: those still count from the
-# pack as before (TREE_WOOD_TOOLS_DESIGN.md W-32).
-const NOT_HELD_CLASSES := ["griddle", "grill_grate", "roasting_spit"]
+# A kept Stone is a material that cannot be taken in hand: it still counts from the pack as before (TREE_WOOD_TOOLS_DESIGN.md W-32). No recipe keeps
+# cookware (Dave 17 Nov 2026: "we use cooking stations"; docs/design/COOKING_STATIONS.md).
 
 
 # The kept item numbers of `recipe` (numbers, as RecipeTable gives them) that need to be in hand; [] when none.
@@ -31,7 +30,7 @@ static func hand_tools(recipe: Dictionary, table) -> PackedInt32Array:
 		for member in members:   # a group lists its own id first (the plain "knife", a material), then its tools
 			var entry: Dictionary = table.entry(table.id_of(member))
 
-			if str(entry.get("kind", "")) == "tool" and not NOT_HELD_CLASSES.has(str(entry.get("tool_class", ""))):
+			if str(entry.get("kind", "")) == "tool":
 				out.append(number)
 				break
 
