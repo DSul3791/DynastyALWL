@@ -1,5 +1,5 @@
 {
-	"note": "World markers NPCs walk to (step A placeholders near the spawn; moved 6 Nov 2026 by (-20, -396) m with the spawn (#473), moved 31 Oct 2026 by (-11, +45) m from the old spot at x 53301 z 68427 onto the level spawn pad, where no tree or shrub stands within 4 m of any marker (tools/npc_clear_spot.gd); a marker must not stand in a flora collider; the admin tool moves them). kind: bed, chair, post. slots: how many NPCs may use it at once (two NPCs never share a chair). yaw in degrees is the way the NPC faces there.",
+	"note": "World markers NPCs walk to (step A placeholders near the spawn; moved 6 Nov 2026 by (-20, -396) m with the spawn (#473), moved 31 Oct 2026 by (-11, +45) m from the old spot at x 53301 z 68427 onto the level spawn pad, where no tree or shrub stands within 4 m of any marker (tools/npc_clear_spot.gd); a marker must not stand in a flora collider; the admin tool moves them). npc: only that NPC takes the marker, and takes it before any other of its kind; clear false: no flora clearing round it (Edda and Hob's camp under the oak Dave picked, data/npcs/camp.json; tools/npc_camp_spot.gd checked no tree or shrub stands within 1.5 m, 17 Nov 2026). kind: bed, chair, post. slots: how many NPCs may use it at once (two NPCs never share a chair). yaw in degrees is the way the NPC faces there.",
 	"markers": [
 		{
 			"id": "bed_1",
@@ -80,6 +80,26 @@
 			"z": 68077.0,
 			"slots": 2,
 			"yaw": 180
+		},
+		{
+			"id": "camp_hob",
+			"kind": "post",
+			"npc": "hob",
+			"clear": false,
+			"x": 53286.21,
+			"z": 68082.82,
+			"slots": 1,
+			"yaw": -83
+		},
+		{
+			"id": "camp_edda",
+			"kind": "chair",
+			"npc": "edda",
+			"clear": false,
+			"x": 53282.9,
+			"z": 68080.59,
+			"slots": 1,
+			"yaw": -29
 		}
 	]
 }

@@ -8,6 +8,7 @@ const PATH := "res://data/items/structures.json"
 const CHUNK_M := 256.0
 const FarmRules := preload("res://src/shared/farm_rules.gd")   # a plot's square metres (bed_side, grid_points)
 const StructureLookScript := preload("res://src/shared/structure_look.gd")
+const NpcCamp := preload("res://src/shared/npc_camp.gd")   # nothing is put down round Edda and Hob's camp (data/npcs/camp.json keep_m)
 const FIRE_STATES := StructureLookScript.CAMPFIRE_STATES   # every campfire row, lit or not: the server keeps every fire its gap away (was 1, 8 and 9 only)
 const POT_FIRE_STATES := [1, 8, 9, 40]   # the small fires a campfire pot goes on (not the bonfire, 41)
 const POT_ATTACH_M := 2.0
@@ -810,7 +811,7 @@ static func _chunk(p: Vector3) -> Vector2i:
 
 
 # "" when the spot is free, else why not: "close" (too near a fire or a structure), "overlap" (through a wall or another piece), "bed" (on another bed's or
-# plot's square metre), "crowded" (the chunk's cap), or a door's, pot's or point piece's own reason.
+# plot's square metre), "crowded" (the chunk's cap), "camp" (by Edda and Hob's camp), or a door's, pot's or point piece's own reason.
 # A rough bed may lie inside a lean-to (any shelter structure): its middle within the shelter's half_x by half_z box, turned by the shelter's yaw (server_items.gd _inside_shelter
 # uses the same box). The row's yaw is in degrees when the client's world rows carry one.
 static func bed_in_shelter(cfg: Dictionary, def: Dictionary, row: Dictionary, spot: Vector3) -> bool:
@@ -1001,6 +1002,9 @@ static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array,
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
 	var same: int = 0
 
+	if NpcCamp.within_keep(spot):
+		return "camp"   # the server says the same (server_items._place)
+
 	if str(def.get("piece_kind", "")) == ROOF_HIP_KIND:   # a roof corner's point is the shape at `spot` (the ghost's own, by the exact-middle rule)
 		var hip: Array = roof_hip_pick(cfg, def, spot, 0, rows)
 
@@ -1112,6 +1116,8 @@ static func reason_text(state: String, opening: String = "") -> String:   # open
 			return "a bed or planter is already in that spot"
 		"crowded":
 			return "too many of these here already"
+		"camp":
+			return "that is Edda and Hob's camp: build away from their oak"
 		"steep":
 			return "the ground is too steep here"
 		"float":

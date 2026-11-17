@@ -303,6 +303,9 @@ func _starter_clearings() -> Array:
 
 	if typeof(parsed) == TYPE_DICTIONARY:
 		for marker in (parsed as Dictionary).get("markers", []):
+			if not bool(marker.get("clear", true)):
+				continue   # a spot beside a chosen tree (Edda and Hob's camp, data/npcs/camp.json) keeps the wood round it; tools/npc_camp_spot.gd checks it is clear
+
 			list.append([Vector2(float(marker["x"]), float(marker["z"])), CLEAR_MARKER_M, CLEAR_SOFT_M])
 
 	return list

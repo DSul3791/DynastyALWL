@@ -326,6 +326,7 @@ func _ready() -> void:
 	items.flora_changed = _flora_changed
 	flora.dynamic = func(home): return items.dynamic_items(home)
 	items.cut_tree = _cut_tree
+	items.camp_fire_on = true   # Edda and Hob's fire (data/npcs/camp.json) burns in every real world
 	@warning_ignore("confusable_local_declaration")
 	items.send_notice = func(peer, text): net.notice.rpc_id(peer, text)
 	items.send_goals = func(peer, rows): net.goals.rpc_id(peer, rows)

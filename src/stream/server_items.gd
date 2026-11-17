@@ -91,6 +91,7 @@ const GatherRules := preload("res://src/shared/gather_rules.gd")
 const SkillRules := preload("res://src/shared/skill_rules.gd")
 const SkillWeb := preload("res://src/shared/skill_web.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
+const NpcCamp := preload("res://src/shared/npc_camp.gd")   # Edda and Hob's camp: its fire, its tree and the ground kept clear round it (data/npcs/camp.json)
 const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
 const CraftStock := preload("res://src/shared/craft_stock.gd")   # what a craft may draw on: the pack, ground within 12 m, own containers within 12 m
@@ -1469,6 +1470,7 @@ func tick(delta: float) -> void:
 		_lights_tick(spent)
 		_smelters.tick_all(spent)
 		_dev_pending_tick(spent)
+		_camp_fire_tick()
 		_slow_mark("lights-dev", t0)
 		_comfort_tick(spent)
 		_slow_mark("comfort", t0)
@@ -1581,8 +1583,8 @@ func save() -> void:
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if it.has("scatter") or it.has("tree") or it.has("showroom"):
-			continue   # the showroom is never saved: an admin fills it again after a restart
+		if it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("fire") and it["fire"].has("camp")):
+			continue   # the showroom is never saved: an admin fills it again after a restart; the camp fire is laid again at every start (_camp_fire_tick)
 
 		if it.has("struct") and bool(it["struct"].get("transient", false)):
 			continue
@@ -4542,6 +4544,10 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "Too far to place that.")   # every refusal below says why, so the ghost doing nothing is never a mystery (Dave 31 Oct 2026)
 		return
 
+	if NpcCamp.within_keep(at):
+		_say(peer, PlacementRules.reason_text("camp").left(1).to_upper() + PlacementRules.reason_text("camp").substr(1) + ".")   # the ghost's own rule (PlacementRules.blocked)
+		return
+
 	var on_grid: Array = PlacementRules.snap(_structures_cfg, kit_id, at, yaw_deg, _foundation_rows(), clampi(lift_steps, 0, 1))   # lift_steps is also a roof panel's rise (0) or fall (1) from where it rests
 	at = on_grid[0]
 	yaw_deg = int(on_grid[1])
@@ -4932,6 +4938,9 @@ func _fires(delta: float) -> void:
 
 		var fire: Dictionary = it["fire"]
 
+		if fire.has("camp"):
+			continue   # Edda and Hob's fire burns as it is: no wood runs down, no rain puts it out
+
 		if fire.has("uid"):
 			_tend_fire(id, it, fire, delta)
 
@@ -5012,6 +5021,9 @@ func _expire_items(spent: float) -> void:
 # A fire's world row extra: its burn time, smoke 1 while a large fire burns on in the rain, and, for coals and warm ash, glow (1 fresh .. 0 at
 # the end of that stage).
 func _fire_extra(it: Dictionary) -> Dictionary:
+	if it["fire"].has("camp"):
+		return {"camp": 1}   # Edda and Hob's fire: the client offers nothing on it and shows no burn time (PROTOCOL.md, world-item rows)
+
 	var extra: Dictionary = {"burn": snappedf(float(it["fire"]["burn_left"]), 0.1)}
 	var state: int = int(it["fire"]["state"])
 
@@ -5229,7 +5241,9 @@ func _wood_tick(spent: float) -> void:
 		var it: Dictionary = _items[id]
 
 		if it.has("fire"):
-			_wood_tick_fire(id, it, units, fire_x, raining)
+			if not it["fire"].has("camp"):   # the camp fire holds no wood
+				_wood_tick_fire(id, it, units, fire_x, raining)
+
 			continue
 
 		if it.has("struct") or it.has("tree") or it.has("boulder") or it.has("scatter") or table.wood_class(int(it["number"])) == "":
@@ -5392,11 +5406,49 @@ func _fire_catch_s(fire: Dictionary) -> float:
 	return float(times.get("weak", 10.0))
 
 
+# Edda and Hob's camp fire (Dave 17 Nov 2026, data/npcs/camp.json): a large fire that is laid at every start (it is never saved) as soon as the
+# ground under it is known, and laid again if anything clears it (an admin world reset). It holds no wood and burns as it is (_fires skips it).
+var _camp_fire_id: int = 0
+var camp_fire_on: bool = false   # set by the server scene; unit tests that never ask for it see no camp fire in their world
+
+
+func _camp_fire_tick() -> void:
+	if not camp_fire_on or (_items.get(_camp_fire_id, {}).get("fire", {}) as Dictionary).has("camp") or not ground_height.is_valid():   # the id itself may be reused after a world reset
+		return
+
+	var spot: Vector2 = NpcCamp.fire_spot()
+
+	if spot.x == INF or (ground_ready.is_valid() and not bool(ground_ready.call(spot.x, spot.y))):
+		return   # no camp, or its ground is still being read in the background: never read a tile on the main thread here
+
+	var y: float = float(ground_height.call(spot.x, spot.y))
+
+	if is_nan(y):
+		return   # the ground there is not made yet: the next slow tick tries again
+
+	var state: int = int(((_cooking.get("fire_tiers", {}) as Dictionary).get(NpcCamp.fire_wood(), {}) as Dictionary).get("state", FIRE_STATE_BONFIRE))
+	_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": Vector3(spot.x, y, spot.y), "left": 1.0e9,
+		"fire": {"state": state, "burn_left": 1.0e9, "camp": true, "covered": true, "recheck": COVER_RECHECK_S}}
+	_camp_fire_id = _next_id
+	_lit_valid = false
+	_zone_add(_next_id)   # nothing wild spawns round it (no_spawn_m), as round any fire
+	_next_id += 1
+
+
+# True (after telling the player) when `it` is Edda and Hob's fire: nobody feeds, lights, puts out, cooks on, opens or picks it up.
+func _camp_refuses(peer: int, it: Dictionary) -> bool:
+	if not it.get("fire", {}).has("camp"):
+		return false
+
+	_say(peer, "That is Edda and Hob's fire. It is not yours to tend.")
+	return true
+
+
 # E on a burning fire puts it out (Dave 2 Nov 2026). It goes back to a laid fire with its wood kept, the same as when rain puts it out, so it can be lit again.
 func _put_out_fire(peer: int, id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
-	if it.is_empty() or not it.has("fire") or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > FIRE_USE_M:
+	if it.is_empty() or not it.has("fire") or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > FIRE_USE_M or _camp_refuses(peer, it):
 		return
 
 	var fire: Dictionary = it["fire"]
@@ -5415,7 +5467,7 @@ func _put_out_fire(peer: int, id: int) -> void:
 func _pick_up_fire(peer: int, inv, id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
-	if it.is_empty() or not it.has("fire") or not _peer_pos.has(peer):
+	if it.is_empty() or not it.has("fire") or not _peer_pos.has(peer) or _camp_refuses(peer, it):
 		return
 
 	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
@@ -6873,6 +6925,11 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void
 	if info.is_empty():
 		return
 
+	if NpcCamp.is_camp_tree(info["position"]):
+		_say(peer, "This tree shelters Edda and Hob's camp. Leave it be.")   # Dave 17 Nov 2026: the camp tree stays (_fell refuses it too: undermining, roads)
+		_reject(peer, 0)
+		return
+
 	var spot: Vector3 = info["position"]
 	var flat: float = Vector2(_peer_pos[peer].x - spot.x, _peer_pos[peer].z - spot.z).length()
 
@@ -6922,7 +6979,7 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void
 # Cuts a standing tree and brings it down in its logs beside its stump (the last axe blow and a dug-out tree both end here). `away` is the
 # direction it falls in.
 func _fell(chunk: Vector2i, tree_id: int, info: Dictionary, away: Vector2) -> int:   # the stump's world id, -1 when the tree was not cut
-	if not bool(cut_tree.call(chunk, tree_id)):
+	if NpcCamp.is_camp_tree(info.get("position", Vector3.INF)) or not bool(cut_tree.call(chunk, tree_id)):   # the oak over Edda and Hob's camp never comes down (undermined, on a road)
 		return -1
 
 	return _fell_record(chunk, info, away)
@@ -9082,6 +9139,10 @@ func _place_torch(peer: int, inv, slot: int, on_wall: bool, yaw_deg: int, at: Ve
 		_say(peer, "Too far to place that.")
 		return
 
+	if NpcCamp.within_keep(at):
+		_say(peer, PlacementRules.reason_text("camp").left(1).to_upper() + PlacementRules.reason_text("camp").substr(1) + ".")
+		return
+
 	if water_depth_at.is_valid() and float(water_depth_at.call(at)) > 0.05:
 		_say(peer, "A torch will not burn in water.")
 		return
@@ -9243,7 +9304,7 @@ func _torch_burn(peer: int, inv, slot: int) -> void:
 func _fire_in_reach(peer: int, id: int) -> Dictionary:
 	var it: Dictionary = _items.get(id, {})
 
-	if it.is_empty() or not it.has("fire") or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > FIRE_USE_M:
+	if it.is_empty() or not it.has("fire") or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > FIRE_USE_M or _camp_refuses(peer, it):
 		return {}
 
 	return it["fire"]
@@ -9685,7 +9746,7 @@ func _snap_to_fire(peer: int, spot: Vector3) -> Vector3:
 	var best_d: float = POT_ATTACH_M
 
 	for id in _items:
-		if _items[id].has("fire") and (_items[id]["pos"] as Vector3).distance_to(spot) <= best_d:
+		if _items[id].has("fire") and not _items[id]["fire"].has("camp") and (_items[id]["pos"] as Vector3).distance_to(spot) <= best_d:
 			best = id
 			best_d = (_items[id]["pos"] as Vector3).distance_to(spot)
 
@@ -11006,7 +11067,7 @@ func _struct_empty(id: int) -> bool:
 # A campfire's own little store (Dave 2026-10-22, F beside a fire): a few slots for wood that feeds it and food that cooks on it.
 # Made the first time anyone opens it. _tend_fire does the feeding and cooking.
 func _fire_box(peer: int, it: Dictionary):
-	if _peer_pos[peer].distance_to(it["pos"]) > CHEST_REACH_M:
+	if _peer_pos[peer].distance_to(it["pos"]) > CHEST_REACH_M or _camp_refuses(peer, it):
 		return null
 
 	var fire: Dictionary = it["fire"]
@@ -14567,7 +14628,7 @@ func serving_station(peer: int, station: String, level: int = 1, far_m: float = 
 			var fire_item: Dictionary = _items[id]
 			var d: float = here.distance_to(fire_item["pos"])
 
-			if fire_item.has("fire") and fire_is_lit(int(fire_item["fire"]["state"])) and d <= maxf(FIRE_USE_M + 1.0, far_m) and d < best_d:
+			if fire_item.has("fire") and fire_is_lit(int(fire_item["fire"]["state"])) and not fire_item["fire"].has("camp") and d <= maxf(FIRE_USE_M + 1.0, far_m) and d < best_d:
 				best = int(id)
 				best_d = d
 
