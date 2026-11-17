@@ -113,3 +113,16 @@ The whole of section 1 is a coordinator decision that Dave may revert. Each part
 - `coals_s` 0 brings back the 5-minute cold ash;
 - `rain_burn_x` 0 brings back the old rain rule for large fires;
 - `wet_h` 0 turns wet wood off.
+
+## 8. Charcoal left by burning wood (17 Nov 2026)
+
+Dave, 17 Nov 2026: "I shouldn't have to craft charcoal it should just automatically get left int he campfire as wood burns. it should be a biproduct", then "anything that burns wood should leave behind charcoal". Built in `server_items.gd` (`_fire_burn` counts it, `_fire_leave_charcoal`, `_light_leave_charcoal`), set in `cooking.json` `charcoal_left`, tested by `test_fire_charcoal`. Nobody has played it yet.
+
+### For Dave (provisional, chosen on your behalf; change the numbers in `cooking.json` `charcoal_left`)
+- **CH-1 How much.** One Charcoal for every 9600 game seconds of wood burned: a Firewood leaves 3, a Wooden block 6, a log 27. Part-made lumps carry over and are saved with the fire. The kiln yields you gave (log about 100, firewood about 10) stay far better: a log in a fire gives about a quarter of a kiln's. An evening's medium fire (3 Firewood, an hour) leaves 9; one bonfire log leaves 27, more than a Primitive smelter's full hopper (20).
+- **CH-2 Small wood.** Sticks, driftwood, kindling and tinder leave none (`classes` lists only firewood and logs), in line with your "kindling really won't make any" for kilns.
+- **CH-3 Where it goes.** Into the fire's own store, where you take it with F like food or wood. If the store has no free slot it lands on the ground beside the fire (never refused; no ground cap).
+- **CH-4 Charcoal is not campfire fuel.** Its rows in `fuel` and `fuel_class` are gone, so the charcoal a fire leaves is never burned away, a store of only charcoal has no burn time, and the F window will not take charcoal into a fire. It is still the smelters' and smithies' fuel. Before, a charcoal in a fire burned 150 real seconds.
+- **CH-5 It outlasts the fire.** Coals, warm ash and cold ash keep it. A cold fire holding charcoal stays until the charcoal is taken, then goes 5 minutes later as before. A smelter within 30 m still draws charcoal from an unlit fire's store by itself (GOALS-REPAIR A-30).
+- **CH-6 What else leaves it.** The Fireplace (one Firewood per 2 hours, 3 charcoal) and the Stone and Iron braziers (a log per half hour, 27) drop it at their foot (`structures.json` `leaves_charcoal`). Left out on purpose: torches and sconces (they burn sticks), the Kiln (it already turns logs to charcoal; its slow self-burn burns charcoal, not wood), smithies and smelters (they burn coal or charcoal), and the Clay hearth and Oven (they cook on a nearby campfire, which leaves its own). A light's part-made lump is not saved over a restart (under one charcoal lost).
+- **CH-7 The old recipe.** Campfire recipe 341 (2 Firewood to 12 Charcoal) is retired, its number kept. The design goal `craft:charcoal` is now "Get Charcoal" (have one, from any source) in `PLAYER_GOALS_CATALOG_CORRECTED.csv`; the goal catalog is still off. The Encyclopedia and the Coal and charcoal guide page say charcoal is left in the fire.

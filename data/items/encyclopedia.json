@@ -2428,7 +2428,7 @@
 				"Picked from old stump"
 			],
 			"used_for": [
-				"Used in Charcoal"
+				"Burned on a fire, it leaves charcoal: 3 from each"
 			],
 			"obtainable_now": true
 		},
@@ -4508,8 +4508,7 @@
 				"Chopped at a chopping block: 1 Softwood log (keep any axe) gives 12, a plain Log 6, as by hand"
 			],
 			"used_for": [
-				"Fast, short fuel for a fire (pine, spruce, fir).",
-				"Used in Charcoal"
+				"Fast, short fuel for a fire (pine, spruce, fir)."
 			],
 			"obtainable_now": false,
 			"status": "retired"
@@ -7654,7 +7653,8 @@
 			"kind": "material",
 			"description": "Wood burned slow and starved of air: a kiln makes a hundred from a log. The best fuel.",
 			"how_to_get": [
-				"Craft at a campfire: 2 Firewood",
+				"Left in a fire as its wood burns: about 3 from each firewood, 27 from a log",
+				"Left at the foot of a burning fireplace or brazier",
 				"Burned in a lit kiln: 100 from each log, up to six logs a batch"
 			],
 			"used_for": [
@@ -13164,7 +13164,7 @@
 				},
 				{
 					"title": "Coal and charcoal",
-					"text": "Coal lies a long way from the first camp, so you will not wait for it. Make charcoal from firewood at a campfire or a kiln instead; it burns hot and clean and fuels the forge just as well."
+					"text": "Coal lies a long way from the first camp, so you will not wait for it. Burn wood on a campfire and charcoal is left in it, ready to take from the fire; a kiln makes far more. It burns hot and clean and fuels the forge just as well."
 				},
 				{
 					"title": "Salt",
