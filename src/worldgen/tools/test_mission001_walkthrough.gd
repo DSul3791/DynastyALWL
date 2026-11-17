@@ -997,7 +997,7 @@ func eat_from_platter() -> bool:
 func step4_cooking_and_preservation() -> void:
 	step("4 cooking and preservation")
 	go(KITCHEN)
-	var twine_n: int = cost_of("food_preparation_table", "twine") + cost_of("drying_rack", "twine") + need_of("campfire_roasting_spit", "twine")
+	var twine_n: int = cost_of("food_preparation_table", "twine") + cost_of("drying_rack", "twine")
 	items.give(1, n("plant_fibre"), twine_n * need_of("twine", "plant_fibre"))   # gathered by hand (test_first_hour)
 	craft("twine", twine_n)
 	campfire_at("kitchen", KITCHEN + Vector3(0.0, 0.0, -3.0))
@@ -1011,15 +1011,17 @@ func step4_cooking_and_preservation() -> void:
 	pick_up_all(4)
 	leave({"sinew": 0, "antler": 0, "gut": 0, "bone": 0, "hide": 0, "animal_fat": need_of("cook_onion_roast", "animal_fat"), "plant_fibre": 0})
 
-	# The Food preparation table (logs: test_first_hour); Flatbread from flour milled by hand with a quern (wheat harvested: test_farming; water
+	# The Food preparation table (logs: test_first_hour); Flatbread from flour ground at a built Hand mill (a placed station since Dave chose the cooking
+	# station plan, 17 Nov 2026; wheat harvested: test_farming; water
 	# filled at fresh water with the real fill action, fill_water), prepared at the table and baked at a Clay hearth of campfire bricks.
 	give_cost("food_preparation_table", ["log"])
 	prep_table = build("food_preparation_table", KITCHEN + Vector3(3.0, 0.0, 0.0), "4a")
-	give_needs("quern", ["stone", "stick"])   # stones and sticks lie about (test_first_hour)
-	craft("quern", 1)
+	give_cost("quern", ["stone", "stick"])   # stones and sticks lie about (test_first_hour)
+	var mill: int = build("quern", KITCHEN + Vector3(-3.0, 0.0, 3.5), "4b")
+	go(KITCHEN + Vector3(-1.5, 0.0, 2.5))
 	give_needs("flour_from_wheat", ["wheat"])
 	craft("flour_from_wheat", 1)
-	check(have("flour") >= need_of("prep_flatbread", "flour"), "4b. wheat milled by hand with the quern: %d flour" % have("flour"))
+	check(mill >= 0 and have("flour") >= need_of("prep_flatbread", "flour"), "4b. wheat ground at the Hand mill: %d flour" % have("flour"))
 	fill_water(need_of("prep_flatbread", "water"))
 	go(KITCHEN + Vector3(1.5, 0.0, 0.0))
 	craft("prep_flatbread", 1)
@@ -1066,15 +1068,20 @@ func step4_cooking_and_preservation() -> void:
 	craft("dried_mushrooms_porcini", 1)
 	check(have("dried_mushrooms") == gives_of("dried_mushrooms_porcini"), "4i. the Drying rack dries porcini into Dried mushrooms")
 
-	# A Roast platter: roast meat at the campfire, a roast joint on a spit, roast roots and onion roast at the hearth (onions a crop as in test_farming; rosemary,
+	# A Roast platter: roast meat at the campfire, a roast joint on a built Grill (no spit: Dave 17 Nov 2026, "we use cooking stations"), roast roots and onion roast at the hearth (onions a crop as in test_farming; rosemary,
 	# wild garlic, burdock and wild carrot given: no route test proves foraging them, T19_RESULTS gaps), assembled at the table.
 	go(items._items[fires["kitchen"]]["pos"] + Vector3(1.0, 0.0, 0.0) if items._items.has(int(fires["kitchen"])) else KITCHEN)
 	items._last_cook.clear()
 	items.action(1, Net.ACT_COOK, fires["kitchen"], 0, 0, Vector3.ZERO)
-	give_needs("campfire_roasting_spit", ["stick"])
-	craft("campfire_roasting_spit", 1)
-	give_needs("cook_roast_joint_campfire_roasting_spit", ["rosemary", "wild_garlic_leaves"])
-	craft("cook_roast_joint_campfire_roasting_spit", 1)
+	var grill_bricks: int = crafts_for("brick", cost_of("grill", "brick"))
+	items.give(1, n("clay"), grill_bricks * need_of("brick", "clay"))   # dug clay (test_server_items)
+	craft("brick", grill_bricks)
+	give_cost("grill", ["stone", "iron_ingot"])   # iron smelted as in step 2 (make_iron)
+	var grill: int = build("grill", KITCHEN + Vector3(0.0, 0.0, -6.5), "4j")
+	go(KITCHEN + Vector3(0.0, 0.0, -5.0))
+	give_needs("cook_roast_joint_grill", ["rosemary", "wild_garlic_leaves"])
+	craft("cook_roast_joint_grill", 1)
+	check(grill >= 0 and have("roast_joint") == gives_of("cook_roast_joint_grill"), "4j. the Grill roasts %d Rosemary joint" % have("roast_joint"))
 	go(KITCHEN + Vector3(-1.5, 0.0, 0.0))
 	give_needs("cook_roast_roots", ["burdock_roots", "wild_carrot_roots"])
 	craft("cook_roast_roots", 1)
@@ -1161,7 +1168,7 @@ func step5_food_effects() -> void:
 	check(items.energy_of(1) > 40.0 and float(items._characters[KEYS[1]].get("train", 0.0)) == train_before, "5g. it gives energy (%.0f) and costs no Fitness (train %.2f -> %.2f)" % [items.energy_of(1), train_before, float(items._characters[KEYS[1]].get("train", 0.0))])
 
 	# The kitchen tools and the spare bricks stay in the kitchen; the food left over goes into the Wicker - Chest at the camp.
-	leave({"quern": 0, "flour": 0, "brick": 0, "campfire_roasting_spit": 0, "wooden_block": 0})
+	leave({"flour": 0, "brick": 0, "wooden_block": 0})
 	go(CAMP + Vector3(0.0, 0.0, 3.5))
 	items.action(1, Net.ACT_CHEST_OPEN, camp_chest, 0, 0, Vector3.ZERO)
 	var stored: int = 0

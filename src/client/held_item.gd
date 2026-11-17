@@ -69,7 +69,7 @@ const BOW_AMMO := ["stone_arrow", "bone_arrow", "wooden_arrow", "fibre_arrow", "
 const BowAim := preload("res://src/shared/bow_aim.gd")
 const BowReticle := preload("res://src/client/bow_reticle.gd")
 const SAW_CATEGORY := "Carpenter's"   # the craft tab a left click with a saw opens (Dave 17 Nov 2026: "the carpenters category")
-const HELD_FIXED_SCALE := {"rod": 1.0, "hoe": 1.0, "saw": 1.0, "bow": 1.0, "arrow": 1.0, "quern": 1.0}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
+const HELD_FIXED_SCALE := {"rod": 1.0, "hoe": 1.0, "saw": 1.0, "bow": 1.0, "arrow": 1.0}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
 const HELD_LOOK_MAX_M := 1.0      # no held tool longer than this (a big look size or a long hoe is scaled down to it)
 const HELD_GRIP_FROM_END_M := 0.12
 const HELD_LOOK_TURN := {
@@ -95,7 +95,6 @@ const HELD_LOOK_TURN := {
 	"club": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"candle": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),   # a candle is held upright, flame up
 	"sword": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
-	"quern": Basis(Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1)),   # the grinding stones are carried flat in the hand as they lie
 }
 const JAB_REACH := 0.7
 const JAB_S := 0.28

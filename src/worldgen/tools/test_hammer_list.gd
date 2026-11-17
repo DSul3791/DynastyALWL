@@ -22,7 +22,7 @@ func _init() -> void:
 	var list = ListScript.new()
 	list.setup(table, pack, null, "user://test_hammer_list_none.json")
 	var rows: Array = list.rows(1)
-	check(rows.size() == 216, "a wooden hammer lists every known blueprint (216 with the Improved and Advanced kilns, Dave 17 Nov 2026; 214 with the Small log sled and Small wagon, TREE_WOOD_TOOLS_DESIGN.md W-14; 212 once the 16 knife rows of W-9 left its list, TREE_WOOD_TOOLS_DESIGN.md; 228 with the Sawbuck of TREE_WOOD_TOOLS_DESIGN.md W-4; 227 with the Small, Medium and Large gardening plots for the four tier plots, Dave 14 Nov 2026; 228 with the stone channels, Stone - Trough and Cistern unlocked, plumbing PR 3, the three clay pipes retired (Dave 14 Nov 2026); 223 with the six wooden water pieces unlocked and the three log pipes of plumbing PR 2; 214 with the three well tiers of plumbing PR 1; 211 with the Engineered fence and gate of GOALS-REPAIR A-40, the four new Fortified pieces need a metal hammer; 209 with the Medium and Large resource bins of GOALS-REPAIR R6; 207 with the five tier Roof 65 panels of GOALS-REPAIR A-36; 202 without the standalone Quenching trough, no longer built, GOALS-REPAIR R5; 203 with the Advanced smithy of GOALS-REPAIR R4; 202 without the standalone Bellows, no longer built, GOALS-REPAIR R3; 203 with the Improved smelter of GOALS-REPAIR R2a; 202 with the 20 empty doorway frames and 28 doors of BUGLIST-002, 7 of them need an iron hammer; 161 with Crude - Roof 65 of BUGLIST-001 BUG-011; 160 with the Handcart of phase 10; 159 with the Food preparation table and Fireplace cooking crane of phase 6; 157 with the 15 storage rows of phase 9 a wooden hammer builds; 142 with the Grindstone of phase 2c; 141 with the Leatherworking table, Tailor's table and Loom of phase 2b part 2; 138 with the Crude chest, chair and table of phase 3; 135 after Mission 001 phase 2b: Smelter, Blast furnace, Bellows and Quenching trough in, Clay bloomery and Anvil out; 133 after the Woodworking table retired; 134 after the building tiers: the Mixer and nine Engineered pieces in, Log - Bench, Table and Shelf out; Fortified and iron pieces need an iron hammer): the rough bed is a pack craft; the wool rug, compost bin, cold frame and the water pieces other than the wells are locked (%d)" % rows.size())
+	check(rows.size() == 220, "a wooden hammer lists every known blueprint (220 with the Grill, Cooking pot, Griddle and Hand mill, Dave 17 Nov 2026 cooking stations; 216 with the Improved and Advanced kilns, Dave 17 Nov 2026; 214 with the Small log sled and Small wagon, TREE_WOOD_TOOLS_DESIGN.md W-14; 212 once the 16 knife rows of W-9 left its list, TREE_WOOD_TOOLS_DESIGN.md; 228 with the Sawbuck of TREE_WOOD_TOOLS_DESIGN.md W-4; 227 with the Small, Medium and Large gardening plots for the four tier plots, Dave 14 Nov 2026; 228 with the stone channels, Stone - Trough and Cistern unlocked, plumbing PR 3, the three clay pipes retired (Dave 14 Nov 2026); 223 with the six wooden water pieces unlocked and the three log pipes of plumbing PR 2; 214 with the three well tiers of plumbing PR 1; 211 with the Engineered fence and gate of GOALS-REPAIR A-40, the four new Fortified pieces need a metal hammer; 209 with the Medium and Large resource bins of GOALS-REPAIR R6; 207 with the five tier Roof 65 panels of GOALS-REPAIR A-36; 202 without the standalone Quenching trough, no longer built, GOALS-REPAIR R5; 203 with the Advanced smithy of GOALS-REPAIR R4; 202 without the standalone Bellows, no longer built, GOALS-REPAIR R3; 203 with the Improved smelter of GOALS-REPAIR R2a; 202 with the 20 empty doorway frames and 28 doors of BUGLIST-002, 7 of them need an iron hammer; 161 with Crude - Roof 65 of BUGLIST-001 BUG-011; 160 with the Handcart of phase 10; 159 with the Food preparation table and Fireplace cooking crane of phase 6; 157 with the 15 storage rows of phase 9 a wooden hammer builds; 142 with the Grindstone of phase 2c; 141 with the Leatherworking table, Tailor's table and Loom of phase 2b part 2; 138 with the Crude chest, chair and table of phase 3; 135 after Mission 001 phase 2b: Smelter, Blast furnace, Bellows and Quenching trough in, Clay bloomery and Anvil out; 133 after the Woodworking table retired; 134 after the building tiers: the Mixer and nine Engineered pieces in, Log - Bench, Table and Shelf out; Fortified and iron pieces need an iron hammer): the rough bed is a pack craft; the wool rug, compost bin, cold frame and the water pieces other than the wells are locked (%d)" % rows.size())
 	var ordered: bool = true
 
 	for k in range(rows.size() - 1):
@@ -85,7 +85,7 @@ func _init() -> void:
 	check(list.is_open and list.picked == 0, "R opens the list with nothing picked")
 	check(list.mode == "repair" and list.actions()[0]["kind"] == "repair" and list.actions()[1]["kind"] == "save", "a hammer starts on Repair, the first line above its list (Dave 10 Nov 2026), Save building plan beside it")
 	var all_count: int = list.entries(1).size()
-	check(all_count == 216, "All lists every blueprint (%d)" % all_count)
+	check(all_count == 220, "All lists every blueprint (%d)" % all_count)
 	# The search box (Dave 16 Nov 2026: "smel" shows every smelter), whatever group is chosen.
 	list.category = "Walls and doors"
 	list.search = "smel"
@@ -116,7 +116,7 @@ func _init() -> void:
 	shown.setup(table, pack, hud_layer, "user://test_hammer_list_none.json")
 	shown.set_open(true, 1)
 	var visible_rows: int = shown._row_buttons.values().filter(func(b): return b.visible).size()
-	check(shown._screen.visible and visible_rows == 216, "the open screen shows every row of All (%d)" % visible_rows)
+	check(shown._screen.visible and visible_rows == 220, "the open screen shows every row of All (%d)" % visible_rows)
 	shown._search_box.text_changed.emit("smel")
 	visible_rows = shown._row_buttons.values().filter(func(b): return b.visible).size()
 	check(visible_rows == found.size(), "typing filters the rows on screen (%d)" % visible_rows)
@@ -146,6 +146,6 @@ func _init() -> void:
 	strict_list.setup(table, pack, null, "user://test_hammer_list_none.json")
 	var first_hammer_row: Dictionary = strict_list._book.filter(func(r): return str(r["tool"]) == "hammer")[0]   # the first row may be a knife row now (Crude - Chair): the hammer's list is what is tested
 	first_hammer_row["hammer"] = 2
-	check(strict_list.rows(1).size() == 215 and strict_list.rows(2).size() == 216, "a row with hammer 2 hides from a wooden hammer")
+	check(strict_list.rows(1).size() == 219 and strict_list.rows(2).size() == 220, "a row with hammer 2 hides from a wooden hammer")
 	print("test_hammer_list: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
