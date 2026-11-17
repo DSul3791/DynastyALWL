@@ -1645,7 +1645,7 @@ func _trees_near(point: Vector3, radius: float) -> Array:
 
 # Standing placer trees within `reach` of the straight line from a to b, as [chunk, id, how far along 0..1], from the flora chunks round `near` (a surveyed
 # road's station) not yet in `done` (each is marked): server_items _road_fell asks as the road goes, so each chunk is looked through once, when the road reaches it.
-# Only chunks the server already holds (items_cached): one not made yet is left unmarked and asked again at the next station.
+# Only chunks whose full list the server already holds (has_items): one not made yet is left unmarked and asked again at the next station.
 func _trees_along(a: Vector3, b: Vector3, reach: float, near: Vector3, done: Dictionary) -> Array:
 	var size: float = flora.placer.chunk_m
 	var a2: Vector2 = Vector2(a.x, a.z)
@@ -1658,10 +1658,13 @@ func _trees_along(a: Vector3, b: Vector3, reach: float, near: Vector3, done: Dic
 		if done.has(chunk):
 			continue
 
-		var trees: Dictionary = flora.items_cached(chunk)   # never made here: making a chunk is seconds of work on the main thread
+		if not flora.has_items(chunk):
+			continue   # its full list is not made yet (making it is seconds of work on the main thread, and felling needs it): asked again at the next station, not marked done
+
+		var trees: Dictionary = flora.items_of(chunk, true)
 
 		if trees.is_empty() or not trees.has("ids"):
-			continue   # not made yet: asked again at the next station (not marked done)
+			continue
 
 		done[chunk] = true
 		var gone: Dictionary = {}

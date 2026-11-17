@@ -2510,6 +2510,9 @@ func _survey_material(color: Color) -> StandardMaterial3D:
 
 # The server refused the last marker (a building it knows of that this client does not, or too many waiting): the line goes on from the survey's last kept marker.
 func _on_survey_refused(last: Vector3) -> void:
+	if not _grade_has_a or not _hoe_in_hand():
+		return   # the survey was ended (or the hoe put away) meanwhile
+
 	_grade_a = last
 	_grade_has_a = true
 	_survey_to = Vector3.INF
