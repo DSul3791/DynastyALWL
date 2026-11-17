@@ -237,6 +237,7 @@ var _strain_note: Label
 var _eat_item: String = ""
 var equip_requested: Callable = Callable()   # (hotbar key) -> hold what is in that key's slot, or put it away (the client wires it to the held item)
 var held_slot_now: Callable = Callable()     # () -> the pack slot in hand, or -1 for empty hands
+var pick_hand: Callable = Callable()         # (hotbar key 0-9) -> takes that key in hand, as the number keys do in the world (HeldItem.press_slot)
 var hotbar_strip                              # HotbarStrip, set by the client
 var heart_pulse                               # HeartPulse (the line over the hotbar), set by the client
 var heart_bpm: Callable = Callable()   # () -> the heart rate now (the heartbeat sound's), set by the client
@@ -3585,7 +3586,42 @@ func _free_craft() -> bool:
 
 
 func _can_craft(number: int) -> bool:
-	return _free_craft() or _stock_can_make(number) or _logs_cover(number) or bool(_parts_plan(number)["ok"])
+	return _free_craft() or (hand_tool_ok(number) and (_stock_can_make(number) or _logs_cover(number) or (bool(_parts_plan(number)["ok"]) and hand_tool_short(number) == "")))
+
+
+# A recipe that keeps a tool crafts only with that tool, unbroken, in the right hand (CraftStock.in_hand, Dave 17 Nov 2026); the server checks it again.
+func hand_tool_ok(number: int) -> bool:
+	return CraftStock.in_hand(recipes.recipe(number), table, inventory, _hand_slot())
+
+
+# The words for the tool the recipe, or a part its auto-make plan makes on the way (a Wooden block sawn for a Wooden hammer), needs in hand and
+# lacks there ("any saw"); "" when none.
+func hand_tool_short(number: int) -> String:
+	if not hand_tool_ok(number):
+		return CraftStock.hand_words(recipes.recipe(number), table)
+
+	if _stock_can_make(number):
+		return ""
+
+	for step in _parts_plan(number)["steps"]:
+		if not hand_tool_ok(int(step["recipe"])):
+			return CraftStock.hand_words(recipes.recipe(int(step["recipe"])), table)
+
+	return ""
+
+
+# Left click with a saw in hand (Dave 17 Nov 2026): the crafting screen opens on the Carpenter's tab, what a saw makes; Craft then draws the logs
+# from the ground near you as any craft does.
+func open_crafting_on(category: String) -> void:
+	if chest_mode:
+		_close_chest()
+
+	_recipe_part.show_category(category)
+
+	if open:
+		_refresh()
+	else:
+		toggle()
 
 
 # --- Crafting stock (docs/design/INVENTORY_CRAFTING_REPORT.md step 2; src/shared/craft_stock.gd): a craft may use the pack, loose stacks within 12 m
@@ -5605,6 +5641,15 @@ func quick_key(event: InputEventKey) -> bool:
 				bulk(int(spec[1]))
 				return true
 
+	# The number keys take a hotbar key in hand with the screen open, as in the world, so the tool a craft needs in hand can be picked here
+	# (Dave 17 Nov 2026: "if you are making something that requires a tool that tool must be in your hand"). The search box keeps its own digits.
+	var key: int = event.keycode - KEY_1 if event.keycode >= KEY_1 and event.keycode <= KEY_9 else (9 if event.keycode == KEY_0 else -1)
+
+	if key >= 0 and pick_hand.is_valid():
+		pick_hand.call(key)
+		_refresh()   # the Craft button and the "in your hand" line follow the new hand
+		return true
+
 	return false
 
 
@@ -5618,7 +5663,7 @@ func _start_craft(number: int, count: int = 1, variant: int = 0) -> void:
 			_on_notice("You are not sure what %s really is. Hover it in inspection mode (/) before you use it." % table.sentence_name(item))
 			return
 
-	net.inventory_action.rpc_id(1, Net.ACT_CRAFT_QUEUE, number, variant, count, Vector3.ZERO)
+	net.inventory_action.rpc_id(1, Net.ACT_CRAFT_QUEUE, number, variant, count, Vector3(float(_hand_slot() + 1), 0.0, 0.0))   # at.x: the hand slot + 1 (126): a kept tool must be in hand
 
 
 func _on_reject(reason: int) -> void:

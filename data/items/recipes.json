@@ -3509,7 +3509,7 @@
 		"lumber_by_hand": {
 			"number": 159,
 			"name": "Planks by hand",
-			"category": "Materials",
+			"category": "Carpenter's",
 			"needs": [
 				[
 					"log_spruce",
@@ -3528,7 +3528,8 @@
 				6
 			],
 			"craft_s": 24.0,
-			"known": true
+			"known": true,
+			"sawbuck": true
 		},
 		"wooden_bow": {"number": 170, "name": "Shortbow", "category": "Weapons", "needs": [["wooden_block", 1], ["twine", 2]], "keeps": [["knife", 1]], "gives": ["wooden_bow", 1], "craft_s": 20.0, "known": true, "station": "carving_station"},
 		"wooden_arrow": {
@@ -7707,13 +7708,14 @@
 		"hardwood_board_by_hand": {
 			"number": 408,
 			"name": "Hardwood boards by hand",
-			"category": "Materials",
+			"category": "Carpenter's",
 			"needs": [["log_oak", 1]],
 			"keeps": [["saw", 1]],
 			"wears_tool": "saw",
 			"gives": ["hardwood_board", 4],
 			"craft_s": 24.0,
-			"known": true
+			"known": true,
+			"sawbuck": true
 		},
 		"thread": {
 			"number": 409,
@@ -8098,7 +8100,7 @@
 		"chopping_hard_firewood": {"number": 721, "retired": true, "name": "Hard firewood", "category": "Materials", "needs": [["log_oak", 1]], "keeps": [["axe", 1]], "wears_tool": "axe", "gives": ["firewood", 12], "craft_s": 12.0, "known": true, "station": "chopping_block", "chop": true},
 		"copper_saw": {"number": 726, "name": "Copper - Saw", "category": "Tools", "needs": [["copper_ingot", 2], ["stick", 2]], "gives": ["copper_saw", 1], "craft_s": 10.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (TREE_WOOD_TOOLS_DESIGN.md W-1): the Iron - Saw recipe in copper, at the Primitive Smithy."},
 		"bronze_saw": {"number": 727, "name": "Bronze - Saw", "category": "Tools", "needs": [["bronze_ingot", 2], ["stick", 2]], "gives": ["bronze_saw", 1], "craft_s": 10.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (TREE_WOOD_TOOLS_DESIGN.md W-2)."},
-		"saw_blocks": {"number": 728, "name": "Wooden block", "category": "Materials", "needs": [["log", 1]], "keeps": [["saw", 1]], "wears_tool": "saw", "gives": ["wooden_block", 6], "craft_s": 15.0, "known": true, "sawbuck": true, "note": "Dave 15 Nov 2026 (W-3): six wooden blocks per log. craft_s is for an Iron saw; the saw in the pack and a Sawbuck in reach change it (server_items._saw_slow, design s5)."},
+		"saw_blocks": {"number": 728, "name": "Wooden block", "category": "Carpenter's", "needs": [["log", 1]], "keeps": [["saw", 1]], "wears_tool": "saw", "gives": ["wooden_block", 6], "craft_s": 15.0, "known": true, "sawbuck": true, "note": "Dave 15 Nov 2026 (W-3): six wooden blocks per log. craft_s is for an Iron saw; the saw in the pack and a Sawbuck in reach change it (server_items._saw_slow, design s5)."},
 		"primitive_bow": {"number": 729, "name": "Primitive bow", "category": "Weapons", "needs": [["stick", 2], ["plant_fibre", 2]], "gives": ["primitive_bow", 1], "craft_s": 10.0, "known": true, "note": "W-8 (TREE_WOOD_TOOLS_DESIGN.md, PROVISIONAL): a hand craft, so it comes before any saw."},
 		"simple_backpack": {"number": 730, "name": "Simple - Backpack", "category": "Containers and furniture", "needs": [["hide", 5], ["twine", 20], ["stick", 4]], "gives": ["simple_backpack", 1], "craft_s": 20.0, "known": true, "note_provisional": "PROVISIONAL (backpacks, Dave 15 Nov 2026): materials and station are Dave's; the craft time is assumed."},
 		"improved_backpack": {"number": 731, "name": "Improved - Backpack", "category": "Containers and furniture", "needs": [["leather", 5], ["twine", 20], ["hardwood_board", 1]], "gives": ["improved_backpack", 1], "craft_s": 24.0, "known": true, "station": "leatherworking_table", "note_provisional": "PROVISIONAL (backpacks, Dave 15 Nov 2026): materials and station are Dave's; the craft time is assumed."},
