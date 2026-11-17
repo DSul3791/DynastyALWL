@@ -307,7 +307,7 @@ SCENARIOS = [
         ("tool warning, break and repair", r"wear sounds (\{[^}]*\})", 3, 3, "sum"),
     ]),
     ("cooking", ["--cooking"], 4500, [
-        ("eaten or healed", r"eaten " + NUM, 8, 8),
+        ("drunk or healed (food is silent)", r"eaten " + NUM, 4, 4),
         ("a thirst rise without E is silent", r"drink check: " + NUM + r" gulps without E", 0, 0),
         ("a mouthful at the water gulps once", r"without E, " + NUM + r" gulp after E", 1, 1),
         ("the gulp is the drinking sound", r"last (drink_gulp_\d)", 0, 1, "text"),

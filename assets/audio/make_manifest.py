@@ -202,8 +202,6 @@ SLOTS = [
     ("treewind_bare", "treewind", "tree_wind.gd: wind in bare winter branches, creaks (loop)", "A seamless loop of wind in bare branches with soft creaks", 2),
     ("cook_sizzle", "cooking", "fire_sounds.gd cook(): food laid on the embers (heard when a roast appears in the bag at a fire)", "2 to 3 recordings of meat or food sizzling on embers, 3 s", 2),
     ("fire_fuel", "cooking", "fire_sounds.gd fuel(): a stick or log laid on a fire (V key)", "2 recordings of wood put on a fire with a flare of crackles, 1 s", 2),
-    ("eat_crunch", "cooking", "item_sounds.gd eat(): a crisp bite and chews (roast, nuts, roots)", "2 to 3 recordings of biting and chewing something crisp, 1 s", 3),
-    ("eat_soft", "cooking", "item_sounds.gd eat(): soft chewing (berries, greens)", "2 to 3 recordings of chewing something soft, 1 s", 3),
     ("drink_gulp", "cooking", "item_sounds.gd eat(\"drink\"): two swallows", "2 recordings of drinking and swallowing, 1 s", 3),
     ("place_leanto", "placed", "placed_sounds.gd: a lean-to set up (hook place(\"leanto\"); also heard from a world row of item id lean_to)", "2 to 3 recordings of planting poles and laying brush, 1 s", 2),
     ("place_chest", "placed", "placed_sounds.gd: a chest set down", "2 to 3 recordings of a heavy wooden box put on the ground", 2),

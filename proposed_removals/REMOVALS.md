@@ -148,3 +148,9 @@ Preservation/reader receipts: independent review PASS on exact tree `09c98947328
 | path (under proposed_removals/) | who | date | why | replaced by |
 |---|---|---|---|---|
 | assets/ui/item_icons/torch_doused.png, assets/ui/item_icons/improved_torch_doused.png | Claude, doused-torch PR | 16 Nov | their items are retired: a torch that goes out stays the same torch (docs/design/TORCH_TREE_SAP.md) | the torches' own icons |
+| assets/audio/cooking/eat_crunch_0.ogg | Claude, hold-E eating PR | 17 Nov | eating food makes no sound (Dave 17 Nov: "doesnt need sound for eating remove the sound") | none |
+| assets/audio/cooking/eat_crunch_1.ogg | Claude, hold-E eating PR | 17 Nov | eating food makes no sound (Dave 17 Nov: "doesnt need sound for eating remove the sound") | none |
+| assets/audio/cooking/eat_crunch_2.ogg | Claude, hold-E eating PR | 17 Nov | eating food makes no sound (Dave 17 Nov: "doesnt need sound for eating remove the sound") | none |
+| assets/audio/cooking/eat_soft_0.ogg | Claude, hold-E eating PR | 17 Nov | eating food makes no sound (Dave 17 Nov: "doesnt need sound for eating remove the sound") | none |
+| assets/audio/cooking/eat_soft_1.ogg | Claude, hold-E eating PR | 17 Nov | eating food makes no sound (Dave 17 Nov: "doesnt need sound for eating remove the sound") | none |
+| assets/audio/cooking/eat_soft_2.ogg | Claude, hold-E eating PR | 17 Nov | eating food makes no sound (Dave 17 Nov: "doesnt need sound for eating remove the sound") | none |
