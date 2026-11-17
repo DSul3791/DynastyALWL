@@ -202,6 +202,11 @@ func spawn(sp: String, x: float, z: float) -> int:
 	return id
 
 
+# True where no animal may be made (no_spawn_m round anything a player put down). Asked for every member's own spot, not only a group's centre.
+func no_spawn_at(x: float, z: float) -> bool:
+	return no_spawn.is_valid() and bool(no_spawn.call(x, z))
+
+
 # Young (Dave 6 Nov 2026): a mother with young runs from a player sooner, but a player who comes between her and them (near a young
 # one) is attacked hard, torch or not. The young are animals of the same species that follow her at follow_m and run when she runs.
 func _spawn_young(mother: int) -> void:
@@ -214,6 +219,10 @@ func _spawn_young(mother: int) -> void:
 	for _kid_n in rng.randi_range(int(span[0]), int(span[1])):   # luck-exempt: how many young
 		var ang: float = rng.randf() * TAU   # luck-exempt: where each young one keeps to
 		var off: Vector3 = Vector3(cos(ang), 0.0, sin(ang)) * float(y.get("follow_m", 3.0))
+
+		if no_spawn_at(m["pos"].x + off.x, m["pos"].z + off.z):
+			continue
+
 		var kid: int = spawn(m["sp"], m["pos"].x + off.x, m["pos"].z + off.z)
 
 		if kid > 0 and animals.has(kid):
@@ -1404,7 +1413,7 @@ func _top_up(players: Array, only: int) -> void:
 				for q in players:
 					too_near = too_near or Vector2(q.x - cx, q.z - cz).length() < (never if cfg.has("near_share") else maxf(never, float(cfg.get("spawn_min_m", 150.0)) * 0.9))
 
-				too_near = too_near or (no_spawn.is_valid() and bool(no_spawn.call(cx, cz)))
+				too_near = too_near or no_spawn_at(cx, cz)
 
 				if too_near or ((not def.has("flock") or bool(def["flock"].get("on_land", false))) and blocked.is_valid() and bool(blocked.call(cx, cz))) or crosses_wall(cx, cz, cx, cz):
 					continue
@@ -1436,6 +1445,9 @@ func _top_up(players: Array, only: int) -> void:
 				x = edge.x
 				z = edge.y
 
+				if no_spawn_at(x, z):
+					continue
+
 			var herd: Array = def.get("herd", [])
 
 			if herd.is_empty():
@@ -1448,7 +1460,13 @@ func _top_up(players: Array, only: int) -> void:
 			_herds[hid] = []
 
 			for k in members:
-				var id: int = spawn(sp, x + rng.randf_range(-6.0, 6.0), z + rng.randf_range(-6.0, 6.0))   # luck-exempt: herd spread
+				var hx: float = x + rng.randf_range(-6.0, 6.0)   # luck-exempt: herd spread
+				var hz: float = z + rng.randf_range(-6.0, 6.0)   # luck-exempt: herd spread
+
+				if no_spawn_at(hx, hz):
+					continue
+
+				var id: int = spawn(sp, hx, hz)
 
 				if id != 0:
 					animals[id]["herd"] = hid
@@ -1512,7 +1530,7 @@ func _top_up_lair(sp: String, def: Dictionary, p: Vector3, players: Array) -> vo
 			taken = taken or (other["sp"] == sp and d <= float(lair.get("claim_m", 40.0)))
 			taken = taken or ((lair.get("avoid", []) as Array).has(other["sp"]) and d <= float(lair.get("avoid_m", 120.0)))
 
-		if taken or (blocked.is_valid() and bool(blocked.call(m.x, m.y))) or crosses_wall(m.x, m.y, m.x, m.y) or (no_spawn.is_valid() and bool(no_spawn.call(m.x, m.y))):
+		if taken or (blocked.is_valid() and bool(blocked.call(m.x, m.y))) or crosses_wall(m.x, m.y, m.x, m.y) or no_spawn_at(m.x, m.y):
 			continue
 
 		state["made"] = true
@@ -1525,7 +1543,13 @@ func _top_up_lair(sp: String, def: Dictionary, p: Vector3, players: Array) -> vo
 		var den_at: Vector3 = Vector3.INF
 
 		for _k in members:
-			var id: int = spawn(sp, m.x + rng.randf_range(-3.0, 3.0), m.y + rng.randf_range(-3.0, 3.0))   # luck-exempt: group spread
+			var gx: float = m.x + rng.randf_range(-3.0, 3.0)   # luck-exempt: group spread
+			var gz: float = m.y + rng.randf_range(-3.0, 3.0)   # luck-exempt: group spread
+
+			if no_spawn_at(gx, gz):
+				continue
+
+			var id: int = spawn(sp, gx, gz)
 
 			if id != 0:
 				animals[id]["herd"] = hid

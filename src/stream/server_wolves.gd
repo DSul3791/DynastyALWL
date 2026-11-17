@@ -62,6 +62,16 @@ func wolf_count() -> int:
 
 
 # Admin and tests: a whole pack at once around (x, z). Returns the pack id or 0.
+# True when a wild pack may not be made at this den: the den or any spot of the 4 m ring spawn_pack stands its wolves on is within
+# no_spawn_m of something a player put down (checked at the ring's widest, so no wolf lands inside). Admin packs are not asked.
+func _den_blocked(home: Vector2) -> bool:
+	for p in [Vector2.ZERO, Vector2(4.0, 0.0), Vector2(-4.0, 0.0), Vector2(0.0, 4.0), Vector2(0.0, -4.0), Vector2(2.83, 2.83), Vector2(-2.83, 2.83), Vector2(2.83, -2.83), Vector2(-2.83, -2.83)]:
+		if host.no_spawn_at(home.x + p.x, home.y + p.y):
+			return true
+
+	return false
+
+
 func spawn_pack(x: float, z: float) -> int:
 	var size: Array = host.species_def("wolf").get("pack_size", [3, 5])
 	var count: int = host.rng.randi_range(int(size[0]), int(size[1]))   # luck-exempt: how many wolves in a pack
@@ -725,7 +735,7 @@ func _natural(infos: Array) -> void:
 					_cell_note(key, home, "inside the exclude circle")
 					continue
 
-				if host.no_spawn.is_valid() and bool(host.no_spawn.call(home.x, home.y)):
+				if _den_blocked(home):
 					_cell_note(key, home, "something a player put down stands near the den spot")
 					continue
 
@@ -808,10 +818,11 @@ func make_pups(pid: int, forced: bool = false) -> int:
 
 
 func _spawn_pup(den: Vector3, k: int) -> int:
-	if host.no_spawn.is_valid() and bool(host.no_spawn.call(den.x, den.z)):
-		return 0   # a den a player has built beside makes no more pups
-
 	var ang: float = TAU * float(k) / 5.0
+
+	if host.no_spawn_at(den.x + cos(ang) * 2.0, den.z + sin(ang) * 2.0):
+		return 0   # a den a player has built beside makes no more pups there
+
 	var id: int = host.spawn("wolf", den.x + cos(ang) * 2.0, den.z + sin(ang) * 2.0)
 
 	if id == 0:

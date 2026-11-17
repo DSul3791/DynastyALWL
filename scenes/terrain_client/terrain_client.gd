@@ -1830,7 +1830,7 @@ func _sync_cleared() -> void:
 
 	if _cleared_cfg.is_empty():
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(PLACED_CLEARING))
-		_cleared_cfg = parsed if parsed is Dictionary else {"radius_m": 5.0, "edge_m": 1.5}
+		_cleared_cfg = parsed if parsed is Dictionary else {"radius_m": 3.0, "edge_m": 1.0}
 
 	var spots: Array = []
 	var lying: Array = []

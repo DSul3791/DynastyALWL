@@ -76,7 +76,7 @@ func _init() -> void:
 	var before: int = again._saplings.size()
 
 	for n in range(40):
-		again._maybe_sapling({"pos": Vector3(1000.0 + fmod(float(n), 5.0), 10.0, 1005.0), "tree": {"species": "oak", "chunk": [3, 3], "state": 4}})
+		again._maybe_sapling({"pos": Vector3(1000.0 + float(n % 8), 10.0, 1000.0 + float(n / 8)), "tree": {"species": "oak", "chunk": [3, 3], "state": 4}})
 
 	check(again._saplings.size() == before, "no sapling is seeded within 20 m of a placed workbench")
 
@@ -87,7 +87,7 @@ func _init() -> void:
 	check(not again.spawn_blocked(1015.0, 1000.0), "the bench taken down: the spot is free again")
 
 	for n in range(40):
-		again._maybe_sapling({"pos": Vector3(1000.0 + fmod(float(n), 5.0), 10.0, 1005.0), "tree": {"species": "oak", "chunk": [3, 3], "state": 4}})
+		again._maybe_sapling({"pos": Vector3(1000.0 + float(n % 8), 10.0, 1000.0 + float(n / 8)), "tree": {"species": "oak", "chunk": [3, 3], "state": 4}})
 
 	check(again._saplings.size() > before, "and saplings come back there")
 
@@ -115,16 +115,21 @@ func _init() -> void:
 
 	check(a.animals.is_empty(), "no animal spawns where every spot is blocked (%d)" % a.animals.size())
 	a.no_spawn = func(x, _z): return x < 0.0
+	var made_at: Dictionary = {}   # id -> where it was first seen (the tick it was made)
 
 	for n in 800:
 		a.tick(0.05)
 
+		for id in a.animals:
+			if not made_at.has(id):
+				made_at[id] = a.animals[id]["pos"]
+
 	var west: int = 0
 
-	for id in a.animals:
-		west += 1 if a.animals[id]["pos"].x < 0.0 else 0
+	for id in made_at:
+		west += 1 if made_at[id].x < -1.0 else 0   # a metre of slack: one tick of walking after it was made
 
-	check(a.animals.size() > 0 and west == 0, "with half blocked they spawn only on the free half (%d, %d west)" % [a.animals.size(), west])
+	check(made_at.size() > 0 and west == 0, "with half blocked they are made only on the free half (%d, %d west)" % [made_at.size(), west])
 
 	print("test_spawn_zones: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	quit(1 if failures > 0 else 0)

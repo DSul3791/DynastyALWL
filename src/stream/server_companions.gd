@@ -181,7 +181,7 @@ func _make_stray(sp: String, c: Dictionary, p: Dictionary) -> void:
 		if Vector2(at.x - p["pos"].x, at.y - p["pos"].z).length() < float(stray.get("keep_m", 12.0)) * 2.5:
 			continue   # never right beside the player
 
-		if host.no_spawn.is_valid() and bool(host.no_spawn.call(at.x, at.y)):
+		if host.no_spawn_at(at.x, at.y):
 			continue   # not inside anyone's build (no_spawn_m)
 
 		var id: int = host.spawn(sp, at.x, at.y)
