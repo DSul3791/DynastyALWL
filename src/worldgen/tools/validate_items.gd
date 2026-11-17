@@ -991,8 +991,10 @@ func _init() -> void:
 		if def.has("lockable") and (typeof(def["lockable"]) != TYPE_BOOL or int(def.get("slots", 0)) <= 0 or bool(def.get("take_only", false))):
 			fail("structures.json %s: lockable must be true or false, and only on a container with slots" % kind)
 
-		for take in def.get("takes", []):
-			if not items_file["items"].has(String(take)) or bool(items_file["items"][String(take)].get("retired", false)):
+		for take in def.get("takes", []):   # an item of items.json or gathered.json (Kindling is a gathered item)
+			var take_row: Dictionary = items_file["items"].get(String(take), gathered_file["items"].get(String(take), {}))
+
+			if take_row.is_empty() or bool(take_row.get("retired", false)):
 				fail("structures.json %s: takes '%s', which is not a live item or group" % [kind, take])
 
 		# Resource bins (GOALS-REPAIR R6, src/shared/bin_rules.gd): units of one kind, never weight; slots for layout; a takes list of what it holds.
