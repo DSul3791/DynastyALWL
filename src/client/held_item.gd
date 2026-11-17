@@ -59,6 +59,7 @@ const THIRD_HOE_PITCH_DEG := -50.0     # third person: a hoe carried blade-down,
 const THIRD_SAW_PITCH_DEG := -120.0   # third person: a saw carried by the handle, blade pointing down and back about 30 degrees
 const THIRD_TORCH_RAISE_DEG := 35.0   # third person: a torch in the left hand points forward and 35 degrees up, its flame clear of the body (Dave 5 Nov: it lay along the arm by the hip)
 const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the way from the middle to the end, so less of the tool stands above the hand
+const THIRD_FULL_GRIP := ["saw"]   # held right on the grip point, no choke: a saw's handle is its last third or less, so the choke put the hand on the blade (Dave 17 Nov 2026: "it is stabbed right through his hand")
 # A tool with a stage-one look (data/items/looks.json) is held as the same mesh that lies on the ground (Dave 2026-10-24: the held tools
 # looked like old placeholders). BasicLook tool meshes run handle to head along +X; HELD_LOOK_TURN turns that to the held convention
 # (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a shovel facing up.
@@ -2806,6 +2807,11 @@ func _mount_model() -> void:
 	_model.position = tilt * grip / ARMS_SCALE
 
 
+# The share of the grip distance (middle to grip point) the third-person hand takes on a tool of this tool_class.
+static func third_choke(tool_class: String) -> float:
+	return 1.0 if tool_class in THIRD_FULL_GRIP else THIRD_CHOKE
+
+
 # Third person: the hand hangs at the side (mount -Z down the fingers, +Y forward, +Z up), so a tool is turned to stand up and a little forward.
 func _mount_model_third(kind: String) -> void:
 	_avatar_rig.hand_mount_r.add_child(_model)
@@ -2815,9 +2821,8 @@ func _mount_model_third(kind: String) -> void:
 		return
 
 	var turn: Basis = Basis(Vector3.RIGHT, deg_to_rad(THIRD_LEAN_DEG))
-	var grip: Vector3 = Vector3(0.0, float(_model.get_meta("grip_y", GRIP_ALONG_Y.get(kind, 0.0))) * THIRD_CHOKE, 0.0)   # the hand sits grip below the model middle, on the handle end (Dave 2026-10-22: it was held by the head)
-
 	var carried: String = str(_inv.table.entry(held_id()).get("tool_class", ""))
+	var grip: Vector3 = Vector3(0.0, float(_model.get_meta("grip_y", GRIP_ALONG_Y.get(kind, 0.0))) * third_choke(carried), 0.0)   # the hand sits grip below the model middle, on the handle end (Dave 2026-10-22: it was held by the head)
 
 	if carried == "shovel":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(THIRD_SHOVEL_PITCH_DEG))
@@ -3216,6 +3221,11 @@ func _make_container_model() -> Node3D:
 	return node
 
 
+# How far the hand sits from a held look's origin, toward its handle end (-x): a little in from that end (looks.json grip_from_end_m: on a model's own handle).
+static func look_grip_y(held: Mesh, def: Dictionary, held_scale: float) -> float:
+	return maxf(-held.get_aabb().position.x * held_scale - float(def.get("grip_from_end_m", HELD_GRIP_FROM_END_M)), 0.03)
+
+
 # Any other tool: a handle with a flat blade (a shovel) or a plain head, until the tool has its own model.
 # The ground mesh of a held tool, turned and sized for the hand, or null when the item has no tool look (it keeps its old model).
 # The grip distance from the model middle goes in the "grip_y" meta (see _mount_model).
@@ -3237,7 +3247,7 @@ func _make_look_tool_model() -> Node3D:
 	mesh.mesh = held
 	mesh.basis = (HELD_LOOK_TURN[shape] as Basis) * Basis.from_scale(Vector3(1.0, 2.0, 2.0) * held_scale if shape == "arrow" else Vector3.ONE * held_scale)   # an arrow's shaft is drawn twice as thick in hand, or it is a hairline on screen
 	node.add_child(mesh)
-	node.set_meta("grip_y", maxf(-held.get_aabb().position.x * held_scale - float(def.get("grip_from_end_m", HELD_GRIP_FROM_END_M)), 0.03))   # the hand sits a little in from the handle end (looks.json grip_from_end_m: on a model's own handle)
+	node.set_meta("grip_y", look_grip_y(held, def, held_scale))
 
 	if shape == "bow":
 		node.set_meta("grip_y", 0.03)   # a bow is held at its middle

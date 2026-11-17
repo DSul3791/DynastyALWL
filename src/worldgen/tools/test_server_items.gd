@@ -1346,15 +1346,16 @@ func _init() -> void:
 	var none: int = q._saplings.size()
 	q._maybe_sapling({"pos": Vector3(500.0, 10.0, 500.0), "tree": {"species": "birch", "chunk": [1, 1], "state": 4}})
 	check(q._saplings.size() == none, "no standing tree of that species near, no sapling")
-	# Nothing regrows within 50 m of a placed structure (BUG-013).
-	q._items[q._next_id] = {"number": 0, "count": 1, "pos": Vector3(700.0, 10.0, 700.0), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 0.0}}
+	# Nothing regrows within no_spawn_m (20 m) of a placed structure (BUG-013; Dave 17 Nov 2026). 40 stumps, each its own roll; the saplings would land 2 to 6 m off 710..717, 710..714.
+	q._items[q._next_id] = {"number": 0, "count": 1, "pos": Vector3(712.0, 10.0, 710.0), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 0.0}}
+	q._grid_add(q._next_id, q._items[q._next_id])
 	q._next_id += 1
 	var before_ban: int = q._saplings.size()
 
 	for n in range(40):
-		q._maybe_sapling({"pos": Vector3(700.0 + fmod(float(n), 5.0), 10.0, 710.0), "tree": {"species": "oak", "chunk": [14, 14], "state": 4}})
+		q._maybe_sapling({"pos": Vector3(700.0 + float(n % 8), 10.0, 710.0 + floorf(float(n) / 8.0)), "tree": {"species": "oak", "chunk": [14, 14], "state": 4}})
 
-	check(q._saplings.size() == before_ban, "no sapling is seeded within 50 m of a placed foundation")
+	check(q._saplings.size() == before_ban, "no sapling is seeded within 20 m of a placed foundation")
 	var items0: Dictionary = q.dynamic_items(Vector2i(0, 0))
 	check(not items0.is_empty() and items0["ids"].size() > 0, "saplings are listed as flora items")
 	check(items0["heights"][0] < 2.0, "a new sapling is small")
