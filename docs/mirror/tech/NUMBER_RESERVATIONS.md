@@ -56,3 +56,6 @@ Taken from gardening's held items block after phase 5 (items next_number was 148
 
 ## Torches and Tree sap (16 Nov 2026, Dave: Simple and Improved torch, tree sap; docs/design/TORCH_TREE_SAP.md)
 Taken from gardening's held blocks after the backpacks (items next_number was 1488, recipes 735, states 448): items 1488 `improved_torch`, 1489 `improved_torch_doused` (retired the same day, Dave: no doused torch; the number stays taken), 1490 `improved_standing_torch`, 1491 `improved_torch_sconce`; recipe 735 `improved_torch`; structure states 448 `improved_standing_torch`, 449 `improved_torch_sconce`. Tree sap is the existing item 1115 `resin`, renamed; no number taken for it. No blueprints. Next free: item 1492, recipe 736, blueprint 358, structure state 450.
+
+## Kilns (Dave 17 Nov 2026, thread "Make campfires leave charcoal")
+Dave: "there are suppose to be 3 tiers of kilns": Primitive (stones and clay), Improved (stones, clay, iron ingots; up to 4 logs), Advanced (stones, clay, iron and steel ingots; 6 logs). The brick Kiln (item 771 `kiln`, blueprint 150, state 188) becomes the Primitive kiln, same numbers. New: items 1492 `improved_kiln`, 1493 `advanced_kiln`; blueprints 358 `improved_kiln`, 359 `advanced_kiln`; structure states 450 `improved_kiln`, 451 `advanced_kiln`. No recipes. Next free: item 1494, recipe 736, blueprint 360, structure state 452.

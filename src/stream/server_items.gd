@@ -10291,33 +10291,73 @@ func _craft_store(peer: int, recipe: Dictionary, free_entry: bool) -> int:
 	return id
 
 
-# --- The Kiln batch (master s2.6 [D1]; Mission 001 T18) ---
-# Logs put in (at most batch_logs, the one burning included) turn to charcoal while the Kiln is lit: per_log pieces a log, one every
-# log_s / per_log real seconds, into its output. A log is taken when its turn starts, so taking logs out never undoes a piece. With every log done
-# and the Kiln still lit, it burns its own charcoal, one every self_burn_s, and goes out when none is left. E lights it while it holds wood and puts
-# it out; put out, it keeps everything (the part-burnt log too) and goes on where it stopped when lit again. A full output pauses it (it stays lit).
-# struct["kiln"] = {"left": pieces still to come from the log in the burn, "t": seconds toward the next piece}; saved in kilns.json by the store's uid.
+# --- The Kilns (master s2.6 [D1]; Mission 001 T18; Dave 17 Nov 2026: Primitive, Improved and Advanced kilns, any wood) ---
+# Wood put in (structures.json kilns.yield: a log 100 Charcoal, a Firewood 10, a stick 5, kindling none) turns to charcoal while the kiln is lit:
+# the biggest piece first, its yield in pieces, one every kilns.piece_s real seconds, into its output. A kiln holds wood worth batch_logs logs
+# (kilns.yield.log each; a piece takes at least kilns.min_space of that room), the piece in the burn included. A piece is taken when its turn
+# starts, so taking wood out never undoes a piece; a piece that yields nothing (kindling) burns away at once. With all its wood done and still
+# lit, it burns its own charcoal, one every self_burn_s, and goes out when none is left. E lights it while it holds wood and puts it out; put out,
+# it keeps everything (the part-burnt piece too). A full output pauses it (it stays lit).
+# struct["kiln"] = {"left": pieces still to come from the piece in the burn, "t": seconds toward the next piece}; saved in kilns.json by the store's uid.
 
-# Logs in the Kiln's input slots, plus the one in the burn.
-func _kiln_logs(it: Dictionary, box, def: Dictionary) -> int:
-	var logs: int = 1 if int(it["struct"].get("kiln", {}).get("left", 0)) > 0 else 0
-	var log_n: int = table.number_of("log")
+func _kilns_cfg() -> Dictionary:
+	return _structures_cfg.get("kilns", {})
+
+
+# The Charcoal one piece of this wood gives in a kiln (a species log counts as a log); -1 when a kiln does not burn it.
+func _kiln_yield(number: int) -> int:
+	var yields: Dictionary = _kilns_cfg().get("yield", {})
+	var id: String = table.id_of(number)
+
+	if yields.has(id):
+		return int(yields[id])
+
+	return int(yields.get("log", 100)) if table.group_members(table.number_of("log")).has(number) else -1
+
+
+# The room one piece takes in a kiln, in Charcoal of yield.
+func _kiln_space(number: int) -> int:
+	return maxi(_kiln_yield(number), int(_kilns_cfg().get("min_space", 5)))
+
+
+# The wood in a kiln's input slots, in room units, plus what is left of the piece in the burn.
+func _kiln_load(it: Dictionary, box, def: Dictionary) -> int:
+	var units: int = maxi(int(it["struct"].get("kiln", {}).get("left", 0)), 0)
 
 	for i in mini(int(def.get("slots", 0)), box.slot_count):
-		if box.numbers[i] != 0 and (box.numbers[i] == log_n or table.group_members(log_n).has(box.numbers[i])):
-			logs += box.counts[i]
+		if box.numbers[i] != 0 and _kiln_yield(box.numbers[i]) >= 0:
+			units += box.counts[i] * _kiln_space(box.numbers[i])
 
-	return logs
+	return units
 
 
-# How many of `amount` logs a Kiln still takes (every put path: a put, Store all, a view deposit, Stack to nearby); `amount` for anything else.
-func _kiln_room(id: int, box, amount: int) -> int:
+func _kiln_capacity(def: Dictionary) -> int:
+	return int(def.get("batch_logs", 0)) * int(_kilns_cfg().get("yield", {}).get("log", 100))
+
+
+# How many of `amount` pieces of `number` a kiln still takes (every put path: a put, Store all, a view deposit, Stack to nearby); `amount` for anything
+# that is not a kiln.
+func _kiln_room(id: int, box, number: int, amount: int) -> int:
 	var def: Dictionary = _structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {})
 
 	if int(def.get("batch_logs", 0)) <= 0 or box == null:
 		return amount
 
-	return clampi(int(def["batch_logs"]) - _kiln_logs(_items[id], box, def), 0, amount)
+	if _kiln_yield(number) < 0:
+		return 0
+
+	return clampi((_kiln_capacity(def) - _kiln_load(_items[id], box, def)) / _kiln_space(number), 0, amount)
+
+
+# The input slot of a kiln holding its biggest piece of wood, or -1.
+func _kiln_next_slot(box, def: Dictionary) -> int:
+	var best: int = -1
+
+	for i in mini(int(def.get("slots", 0)), box.slot_count):
+		if box.numbers[i] != 0 and box.counts[i] > 0 and _kiln_yield(box.numbers[i]) >= 0 and (best < 0 or _kiln_yield(box.numbers[i]) > _kiln_yield(box.numbers[best])):
+			best = i
+
+	return best
 
 
 # kiln world id -> the character key that lit it (server only, not saved, never sent: ADD-18 credits that character when the batch is done).
@@ -10336,14 +10376,14 @@ func _kiln_use(peer: int, id: int, it: Dictionary, def: Dictionary) -> void:
 		it["struct"]["lit"] = false
 		_kiln_lit_by.erase(id)
 		_say(peer, "You put the kiln out. What is in it stays.")
-	elif _kiln_logs(it, box, def) <= 0:
-		_say(peer, "Put logs in the kiln first (F).")
+	elif _kiln_next_slot(box, def) < 0 and int(it["struct"].get("kiln", {}).get("left", 0)) <= 0:
+		_say(peer, "Put wood in the kiln first (F).")
 		return
 	else:
 		it["struct"]["lit"] = true
 		it["struct"]["kiln"] = it["struct"].get("kiln", {"left": 0, "t": 0.0})
 		_kiln_lit_by[id] = str(_peer_key.get(peer, ""))
-		_say(peer, "The kiln is lit: each log gives %d charcoal." % int(def.get("per_log", 100)))
+		_say(peer, "The kiln is lit: a log gives %d charcoal, a firewood %d." % [_kiln_yield(table.number_of("log")), _kiln_yield(table.number_of("firewood"))])
 
 	_dirty = true
 
@@ -10358,16 +10398,21 @@ func _kiln_burn(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 
 	var k: Dictionary = it["struct"].get("kiln", {"left": 0, "t": 0.0})
 	it["struct"]["kiln"] = k
-	var per: float = maxf(float(def.get("log_s", 300.0)) / maxf(float(def.get("per_log", 100)), 1.0), 0.01)
+	var per: float = maxf(float(_kilns_cfg().get("piece_s", 3.0)), 0.01)
 	var self_s: float = maxf(float(def.get("self_burn_s", 150.0)), 0.01)
 	var charcoal: int = table.number_of("charcoal")
 	var changed: bool = false
 	k["t"] = float(k.get("t", 0.0)) + spent
 
 	for _step in 1000:   # a slow tick is a quarter second, a few pieces at most; the cap only bounds a long jump
-		if int(k.get("left", 0)) <= 0 and _kiln_logs(it, box, def) > 0 and box.remove_fill(table.number_of("log"), 1):
-			k["left"] = int(def.get("per_log", 100))   # the next log's turn starts: it is in the burn now
+		if int(k.get("left", 0)) <= 0 and _kiln_next_slot(box, def) >= 0:
+			var next: int = _kiln_next_slot(box, def)
+			k["left"] = _kiln_yield(box.numbers[next])   # the next piece's turn starts: it is in the burn now (kindling: 0, it burns away)
+			box.take_from_slot(next, 1)
 			changed = true
+
+			if int(k["left"]) <= 0:
+				continue
 
 		if int(k.get("left", 0)) > 0:
 			if float(k["t"]) < per:
@@ -10382,7 +10427,9 @@ func _kiln_burn(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 			k["t"] = float(k["t"]) - per
 			changed = true
 
-			if int(k["left"]) <= 0 and _kiln_logs(it, box, def) <= 0:   # ADD-18: the last log of the batch is charcoal: the character who lit it (_kiln_lit_by), if online, else no one
+			var after: int = _kiln_next_slot(box, def)
+
+			if int(k["left"]) <= 0 and (after < 0 or _kiln_yield(box.numbers[after]) <= 0):   # ADD-18: the last piece of the batch is charcoal (kindling left gives none): the character who lit it (_kiln_lit_by), if online, else no one
 				var lighter: String = str(_kiln_lit_by.get(id, ""))
 
 				for lighter_peer in _peer_key:
@@ -10437,7 +10484,7 @@ func _load_kilns() -> void:
 		if typeof(row) == TYPE_ARRAY and (row as Array).size() >= 3:
 			it["struct"]["lit"] = int(row[0]) == 1
 			var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
-			it["struct"]["kiln"] = {"left": clampi(int(row[1]), 0, int(def.get("per_log", 100))), "t": clampf(float(row[2]), 0.0, maxf(float(def.get("log_s", 300.0)), float(def.get("self_burn_s", 150.0))))}
+			it["struct"]["kiln"] = {"left": clampi(int(row[1]), 0, int(_kilns_cfg().get("yield", {}).get("log", 100))), "t": clampf(float(row[2]), 0.0, maxf(float(_kilns_cfg().get("piece_s", 3.0)), float(def.get("self_burn_s", 150.0))))}
 
 
 # --- Serving platters (master s3.15 [D15]; catalog Phase 8) ---
@@ -10977,11 +11024,11 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 			_reject(peer, 3)
 			return 0
 
-	if id >= 0 and int(_structures.get(kind, {}).get("batch_logs", 0)) > 0:   # a Kiln holds batch_logs logs, the one in the burn included (master s2.6)
-		amount = _kiln_room(id, chest, amount)
+	if id >= 0 and int(_structures.get(kind, {}).get("batch_logs", 0)) > 0:   # a kiln holds wood worth batch_logs logs, the piece in the burn included (master s2.6)
+		amount = _kiln_room(id, chest, number, amount)
 
 		if amount == 0:
-			_say(peer, "The kiln holds %d logs." % int(_structures[kind]["batch_logs"]))
+			_say(peer, "The kiln is full: it holds %d logs' worth of wood." % int(_structures[kind]["batch_logs"]))
 			_reject(peer, 3)
 			return 0
 
@@ -18769,7 +18816,7 @@ func _box_room(sid: int, number: int, amount: int) -> int:
 
 	var box = _chests.get(int(_items.get(sid, {}).get("struct", {}).get("uid", -1)))
 	var max_kg: float = float(_structures.get(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), {}).get("max_kg", 0.0))
-	amount = _kiln_room(sid, box, amount)
+	amount = _kiln_room(sid, box, number, amount)
 	var sdef: Dictionary = _structures.get(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), {})
 
 	if _smelters.is_smelter(sdef):
