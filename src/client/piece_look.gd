@@ -3634,7 +3634,7 @@ static func grill() -> Node3D:
 
 
 # The Cooking pot, 1.4 x 1.4 (Dave: "like a caldron hanging on a chain from some metal frame work"): an iron A-frame each side joined by a top bar, a chain
-# from its middle down to a round-bellied iron pot, and a ring of stones with a fire under it.
+# from its middle down to a round-bellied iron pot, and a ring of four stones with a fire under it.
 static func cooking_pot() -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
@@ -3646,16 +3646,15 @@ static func cooking_pot() -> Node3D:
 
 	_rod(root, Vector3(-0.65, 1.4, 0.0), Vector3(0.65, 1.4, 0.0), 0.06, iron)          # the top bar
 	_rod(root, Vector3(0.0, 1.4, 0.0), Vector3(0.0, 0.9, 0.0), 0.024, iron)            # the chain
-	_cyl(root, 0.34, 0.42, Vector3(0.0, 0.6, 0.0), _pot, 14, 0.3)                       # the pot, narrowing to its rim
-	_cyl(root, 0.26, 0.16, Vector3(0.0, 0.33, 0.0), _pot, 14)                           # its rounded belly underneath
-	_cyl(root, 0.29, 0.02, Vector3(0.0, 0.81, 0.0), _tone_mat(Color(0.42, 0.3, 0.16)), 12)   # the stew in it
+	_cyl(root, 0.34, 0.42, Vector3(0.0, 0.6, 0.0), _pot, 10, 0.3)                       # the pot, narrowing to its rim
+	_cyl(root, 0.26, 0.16, Vector3(0.0, 0.33, 0.0), _pot, 6)                            # its rounded belly underneath
+	_cyl(root, 0.29, 0.02, Vector3(0.0, 0.81, 0.0), _tone_mat(Color(0.42, 0.3, 0.16)), 6)   # the stew in it
 	_rod(root, Vector3(-0.3, 0.82, 0.0), Vector3(0.0, 0.95, 0.0), 0.016, iron)         # the bail handle to the chain
 	_rod(root, Vector3(0.3, 0.82, 0.0), Vector3(0.0, 0.95, 0.0), 0.016, iron)
-	_cyl(root, 0.24, 0.04, Vector3(0.0, 0.02, 0.0), _pot, 10)                           # the burnt ground
-	_cyl(root, 0.16, 0.03, Vector3(0.0, 0.05, 0.0), _tone_mat(Color(0.75, 0.28, 0.08)), 8)   # the embers
+	_box(root, Vector3(0.3, 0.03, 0.3), Vector3(0.0, 0.03, 0.0), _tone_mat(Color(0.75, 0.28, 0.08)))   # the embers
 
-	for k in 8:
-		var a: float = TAU * float(k) / 8.0
+	for k in 4:   # a ring of four stones round the fire (kept under the 300-triangle near cap)
+		var a: float = TAU * (float(k) + 0.5) / 4.0
 		_stone_at(root, Vector3(cos(a) * 0.4, 0.07, sin(a) * 0.4), a)
 
 	_solid(root, Vector3(1.3, 1.4, 1.0), Vector3(0.0, 0.7, 0.0))
@@ -3692,11 +3691,11 @@ static func hand_mill() -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
 	_box(root, Vector3(0.7, 0.4, 0.7), Vector3(0.0, 0.2, 0.0), _stone)                  # the base
-	_cyl(root, 0.32, 0.12, Vector3(0.0, 0.46, 0.0), _flag, 14)                          # the lower stone
-	_cyl(root, 0.3, 0.1, Vector3(0.0, 0.57, 0.0), _flag, 14)                            # the upper stone
-	_cyl(root, 0.05, 0.02, Vector3(0.0, 0.63, 0.0), _pot, 8)                            # the feed hole
+	_cyl(root, 0.32, 0.12, Vector3(0.0, 0.46, 0.0), _flag, 12)                          # the lower stone
+	_cyl(root, 0.3, 0.1, Vector3(0.0, 0.57, 0.0), _flag, 12)                            # the upper stone
+	_cyl(root, 0.05, 0.02, Vector3(0.0, 0.63, 0.0), _pot, 6)                            # the feed hole
 	_rod(root, Vector3(0.22, 0.62, 0.0), Vector3(0.22, 0.86, 0.0), 0.04, _log)          # the handle
-	_cyl(root, 0.4, 0.01, Vector3(0.0, 0.005, 0.0), _tone_mat(Color(0.86, 0.82, 0.72)), 12)   # spilled flour
+	_cyl(root, 0.4, 0.01, Vector3(0.0, 0.005, 0.0), _tone_mat(Color(0.86, 0.82, 0.72)), 8)   # spilled flour
 	_solid(root, Vector3(0.75, 0.65, 0.75), Vector3(0.0, 0.33, 0.0))
 	return root
 
