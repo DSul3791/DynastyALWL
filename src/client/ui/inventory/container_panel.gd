@@ -44,6 +44,7 @@ func build() -> void:
 	if view._chest_panel != null:
 		return
 
+	compact = false   # a new box starts full size; InventoryView._show_tab makes it compact under a station's recipes
 	var box: VBoxContainer = VBoxContainer.new()
 	box.add_theme_constant_override("separation", 14)
 	box.size_flags_vertical = Control.SIZE_EXPAND_FILL
