@@ -11,6 +11,10 @@
 
 > this is tin or cassiterite it is found along riverbeds often smaller the further down stream you go and the closer to the mountains it should be in bolder sizes and can be harvested by hammer. the smaller rocks should be picked by hand.
 
+**Tin in rivers (17 Nov, after seeing the picture):**
+
+> the river stream tin rocks should look like glass rocks shiny and reflective the size of plumbs
+
 **Copper by hand (17 Nov):**
 
 > copper should be the same smaller rocks can be picked by hand and the larger rocks should be harvested with a hammer.
@@ -20,7 +24,7 @@
   - copper: green to teal malachite coat, blue-black patches, yellow-green dust on upper faces, a little pale host rock, a crusty grain;
   - tin: pale speckled granite with grey patches, a white quartz vein carrying dark brown-black cassiterite crystals (a little shinier), rust stain along the vein.
   The old streaked-granite outcrop looks for copper and tin (`OUTCROP_LOOK`) are deleted; iron, coal, salt and limestone keep theirs.
-- **Small rocks by hand.** A copper or tin rock under 10 cm radius (20 cm across) is a loose Copper ore or Tin ore lying on the ground, picked up with E like a stone; once taken it stays gone. Their loose look (`basic_look.gd`): copper a small malachite-coated lump; tin three smooth dark water-worn pebbles with a dull shine. The inventory icons are unchanged (the icon bake runs on Dave's PC).
+- **Small rocks by hand.** A copper or tin rock under 10 cm radius (20 cm across) is a loose Copper ore or Tin ore lying on the ground, picked up with E like a stone; once taken it stays gone. Their loose look (`basic_look.gd`): copper a small malachite-coated lump; tin one smooth, glassy, dark brown to reddish-black river stone about 6 cm across, plum size (Dave 17 Nov: "the river stream tin rocks should look like glass rocks shiny and reflective the size of plumbs"), drawn with a low-roughness, slightly metallic material shared by every loose tin stone (no reflection probe). The inventory icons are unchanged (the icon bake runs on Dave's PC).
 - **Bigger rocks are boulder rows** with ore `copper` or `tin`, broken with a hammer (the Stone Hammer, any material) or a pick, like any outcrop. No item was added, renamed or removed; the pieces are the existing Copper ore, Tin ore and Stone.
 - **Ore amount.** Each rock has a grade (the share of its pieces that are ore), fixed from its key. Its pieces follow its size (the boulder volume rule in `boulders.json`), so the ore in a rock is its pieces times its grade: a rock 40 cm across is about 37 pieces (copper 7-22 ore), 60 cm about 125 (25-75), a 2 m boulder about 4,600 (copper 900-2,800). Geology copper and tin outcrops get a grade too, in place of the old flat `piece_share` 0.3.
 - **Copper placement** (`boulders.json` `copper_rocks`; per 32 m cell, from the cell's own seeded stream; nothing depends on where spawn is):
@@ -51,6 +55,7 @@
 | TN-4 | Small tin by hand; "small" ends at 20 cm across | radius under 10 cm: loose Tin ore, 1 piece | His words; same line as copper. |
 | TN-5 | Tin per boulder | grade 0.15-0.45 (avg 0.3, the old tin share) | Tin sits in veins, so less of the rock is ore than copper's coat. |
 | TN-6 | Loose Tin ore looks like his water-worn pebbles, loose Copper ore like a small malachite lump | item looks only | Same item, new ground look; icons unchanged until a PC icon bake. |
+| TN-7 | "River stream tin rocks" means the small tin picked up by hand (loose Tin ore); tin boulders (20 cm across and up) keep the granite look he liked | one glassy stone per loose Tin ore, about 6 cm across (drawn size at the loose-item scale), roughness 0.06, metallic 0.2 | His plum size matches the hand-picked stones; he said "I like them" of the boulder looks. If he wants river tin boulders glassy too, that is the next step. |
 
 ## Not changed
 - Iron, coal, salt and limestone outcrops keep their look and rules.
