@@ -128,7 +128,6 @@ const BOG_STATE := 229                    # the world-item row state of a bog ir
 var bogs: Dictionary = {}                 # bog deposit world id -> {"pos", "left", "total", "wet", "key"}: kept apart from _world; Kathleen's _show_bog draws them
 var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now}
 var crown_landed: Callable = Callable()   # (centre Vector3, radius m): a felled crown hit the ground there; the client flattens the grass (Dave 10 Nov 2026)
-var boulder_budget: Callable = Callable()   # () -> how many boulders may be drawn at once (by quality, the client sets it)
 var _boulder_mesh: ArrayMesh
 var _boulder_rock: ShaderMaterial
 var _outcrop_rock: Dictionary = {}       # the boulder row's "ore" -> its own ShaderMaterial (OUTCROP_LOOK)
@@ -3428,9 +3427,6 @@ func _show_boulder(id: int, row: Array) -> void:
 		_boulders[id]["left"] = left
 		_size_boulder(_boulders[id])
 		return
-
-	if boulder_budget.is_valid() and _boulders.size() >= int(boulder_budget.call()):
-		return   # drawn up to the quality budget; the rest wait until some are gone
 
 	if _boulder_mesh == null:
 		_boulder_mesh = load("res://src/client/grass_view.gd")._make_boulder()

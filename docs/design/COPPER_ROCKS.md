@@ -56,6 +56,8 @@
 | TN-5 | Tin per boulder | grade 0.15-0.45 (avg 0.3, the old tin share) | Tin sits in veins, so less of the rock is ore than copper's coat. |
 | TN-6 | Loose Tin ore looks like one of his water-worn pebbles (glassy since TN-7), loose Copper ore like a small malachite lump | item looks only | Same item, new ground look; icons unchanged until a PC icon bake. |
 | TN-7 | "River stream tin rocks" means the small tin picked up by hand (loose Tin ore); tin boulders (20 cm across and up) keep the granite look he liked | one glassy stone per loose Tin ore, about 7 cm across (drawn size at the loose-item scale), dark red-brown, glassy (written-out glint and sheen from each light, roughness 0.05 for the sky reflection) | His plum size matches the hand-picked stones; he said "I like them" on seeing the picture of the rocks (ore_rocks.png). If he wants river tin boulders glassy too, that is the next step. |
+| CR-9 | Copper and tin rocks to break, 0.5-2 m across (Dave 17 Nov: "anywhere from .5m to 2m in size ... for both of them") | radius 0.25-1.0, even spread; geology outcrops clamped to it; loose hand pieces kept: 40% of copper, tin on flat ground | His size ruling covers the rocks; he did not rule on the loose pieces, so they stay. |
+| CR-10 | Copper "near rivers and mountains", land scatter kept (Dave 17 Nov) | banks within 10 m of water, 6 tries a cell at 70%; mountain foot 25% a cell, radius 0.6-1.0; land 2% a try | He could not find copper by a river. The client's boulder draw limit (24-120 by quality) is deleted: every boulder in range is drawn. |
 
 ## Not changed
 - Iron, coal, salt and limestone outcrops keep their look and rules.
