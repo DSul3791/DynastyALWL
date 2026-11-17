@@ -1634,7 +1634,7 @@ func save() -> void:
 	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _water_tanks_save(), "wells": _wells_save()})
 	_write_atomic("lights.json", {"version": 1, "lit": _light_rows_save()})
 	_write_atomic("kilns.json", {"version": 1, "kilns": _kilns_save()})
-	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows()})
+	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows(), "lit": _smelters.lit_rows()})
 	_write_atomic("smithies.json", {"version": 1, "smithies": _smithies.save_rows()})
 	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "bog_iron": _bog_left, "layout": FloraLayout.VERSION, "no_kits": true, "world_rows": world_rows})
 
@@ -10225,8 +10225,8 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 		_kiln_use(peer, id, it, def)
 		return
 
-	if _smelters.is_smelter(def):   # E at a Smelter: works its bellows (Improved), or says how it is fed (master s2.7)
-		_smelters.use(peer, id, it, def)
+	if _smelters.is_smelter(def):   # E at a Smelter lights it or puts it out, as a campfire; at a lit Improved smelter it works the bellows (hold E, choice 1, puts it out)
+		_smelters.use(peer, id, it, def, choice)
 		return
 
 	if str(def.get("use", "")) != "split_log":
@@ -16794,7 +16794,7 @@ func _light_rows_save() -> Array:
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if it.has("struct") and bool(it["struct"].get("lit", false)) and str(_structures.get(str(it["struct"]["kind"]), {}).get("use", "")) != "kiln":   # a Kiln is saved in kilns.json
+		if it.has("struct") and bool(it["struct"].get("lit", false)) and not str(_structures.get(str(it["struct"]["kind"]), {}).get("use", "")) in ["kiln", "smelt"]:   # a Kiln is saved in kilns.json, a Smelter in smelters.json
 			rows.append([it["pos"].x, it["pos"].y, it["pos"].z, float(it["struct"].get("fuel_left", 0.0))])
 
 	return rows
@@ -16829,6 +16829,9 @@ func _lights_tick(spent: float) -> void:
 
 			if str(lit_def.get("use", "")) == "kiln":   # a Kiln burns its logs to charcoal, not a fuel_left
 				_kiln_burn(int(id), it, lit_def, spent)
+				continue
+
+			if _smelters.is_smelter(lit_def):   # a Smelter burns its hopper fuel as it smelts (server_smelter.tick), not a fuel_left
 				continue
 
 			# A torch out in the open rain goes out like an open fire (Dave, 4 Nov 2026); one under a crown, a roof or an overhang burns on.
