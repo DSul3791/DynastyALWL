@@ -180,7 +180,7 @@ func step() -> void:
 		_pass["shown"] = groups[0] + groups[1] + groups[2]
 		_pass["ordered"] = true
 
-		if view._selected_recipe == 0 or view.recipes.recipe(view._selected_recipe).is_empty():
+		if view._selected_recipe == 0 or view.recipes.recipe(view._selected_recipe).is_empty() or not view.station_makes(view.recipes.recipe(view._selected_recipe)):   # a station opened: not a card it does not list
 			view._selected_recipe = _pass["shown"][0]["number"] if not (_pass["shown"] as Array).is_empty() else 0
 			_refresh_detail()   # the first recipe's card, now that there is one
 
@@ -422,7 +422,7 @@ func _build_tabs() -> Control:
 
 
 func _recipe_shown(r: Dictionary) -> bool:
-	return RecipeFilter.shown(r, _recipe_category, view._recipe_search.text if view._recipe_search != null else "", view.table)
+	return view.station_makes(r) and RecipeFilter.shown(r, _recipe_category, view._recipe_search.text if view._recipe_search != null else "", view.table)
 
 
 # A click on a recipe row (Dave 12 Nov 2026, PLAYTEST-001 TEST-005): it selects the recipe and shows its card, and never crafts; the Craft button
