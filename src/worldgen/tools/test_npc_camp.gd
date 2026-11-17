@@ -212,7 +212,7 @@ func _server(tree: Vector2, fire: Vector2) -> void:
 	var cfg: Dictionary = PlacementRules.load_config()
 	check(PlacementRules.blocked(cfg, "campfire_kit", Vector3(fire.x + 1.0, 10.0, fire.y + 1.0), []) == "camp", "the ghost is red by the camp")
 	check(PlacementRules.blocked(cfg, "campfire_kit", Vector3(tree.x + 20.0, 10.0, tree.y), []) == "", "and free 20 m off")
-	check(NpcCamp.keeps_off(Vector3(tree.x, 0.0, tree.y + float(NpcCamp.cfg()["keep_m"]) - 0.1)) and not NpcCamp.keeps_off(Vector3(tree.x, 0.0, tree.y + float(NpcCamp.cfg()["keep_m"]) + 0.1)), "keep_m is the edge")
+	check(NpcCamp.within_keep(Vector3(tree.x, 0.0, tree.y + float(NpcCamp.cfg()["keep_m"]) - 0.1)) and not NpcCamp.within_keep(Vector3(tree.x, 0.0, tree.y + float(NpcCamp.cfg()["keep_m"]) + 0.1)), "keep_m is the edge")
 	inv.add(items.table.number_of("campfire_kit"), 1)
 	var fires_before: int = items._items.size()
 	said.clear()

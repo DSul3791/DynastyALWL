@@ -4544,7 +4544,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "Too far to place that.")   # every refusal below says why, so the ghost doing nothing is never a mystery (Dave 31 Oct 2026)
 		return
 
-	if NpcCamp.keeps_off(at):
+	if NpcCamp.within_keep(at):
 		_say(peer, PlacementRules.reason_text("camp").left(1).to_upper() + PlacementRules.reason_text("camp").substr(1) + ".")   # the ghost's own rule (PlacementRules.blocked)
 		return
 
@@ -5418,8 +5418,8 @@ func _camp_fire_tick() -> void:
 
 	var spot: Vector2 = NpcCamp.fire_spot()
 
-	if spot.x == INF:
-		return
+	if spot.x == INF or (ground_ready.is_valid() and not bool(ground_ready.call(spot.x, spot.y))):
+		return   # no camp, or its ground is still being read in the background: never read a tile on the main thread here
 
 	var y: float = float(ground_height.call(spot.x, spot.y))
 
@@ -6926,7 +6926,7 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void
 		return
 
 	if NpcCamp.is_camp_tree(info["position"]):
-		_say(peer, "This tree shelters Edda and Hob's camp. Leave it be.")   # Dave 17 Nov 2026: the camp tree stays (terrain_server._cut_tree refuses it too)
+		_say(peer, "This tree shelters Edda and Hob's camp. Leave it be.")   # Dave 17 Nov 2026: the camp tree stays (_fell refuses it too: undermining, roads)
 		_reject(peer, 0)
 		return
 
@@ -6979,7 +6979,7 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void
 # Cuts a standing tree and brings it down in its logs beside its stump (the last axe blow and a dug-out tree both end here). `away` is the
 # direction it falls in.
 func _fell(chunk: Vector2i, tree_id: int, info: Dictionary, away: Vector2) -> int:   # the stump's world id, -1 when the tree was not cut
-	if not bool(cut_tree.call(chunk, tree_id)):
+	if NpcCamp.is_camp_tree(info.get("position", Vector3.INF)) or not bool(cut_tree.call(chunk, tree_id)):   # the oak over Edda and Hob's camp never comes down (undermined, on a road)
 		return -1
 
 	return _fell_record(chunk, info, away)
@@ -9139,7 +9139,7 @@ func _place_torch(peer: int, inv, slot: int, on_wall: bool, yaw_deg: int, at: Ve
 		_say(peer, "Too far to place that.")
 		return
 
-	if NpcCamp.keeps_off(at):
+	if NpcCamp.within_keep(at):
 		_say(peer, PlacementRules.reason_text("camp").left(1).to_upper() + PlacementRules.reason_text("camp").substr(1) + ".")
 		return
 

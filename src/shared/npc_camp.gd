@@ -41,5 +41,5 @@ static func is_camp_tree(foot: Vector3) -> bool:
 
 
 # True when nothing may be put down here (a building piece, station, fire or torch): within keep_m of the camp tree.
-static func keeps_off(spot: Vector3) -> bool:
+static func within_keep(spot: Vector3) -> bool:
 	return Vector2(spot.x, spot.z).distance_to(tree_spot()) <= float(cfg().get("keep_m", 0.0))

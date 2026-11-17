@@ -15,7 +15,6 @@ const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
-const PLANT := 2                     # FloraPlacer.KINDS: tree, shrub, plant (plants are left out: they are no collider and give no shelter)
 
 
 func _init() -> void:
@@ -52,7 +51,7 @@ func _init() -> void:
 			for n in range(made["ids"].size()):
 				var row: Dictionary = placer.species_of(made["ids"][n])
 
-				if not row.is_empty() and int(row["kind"]) != PLANT:
+				if not row.is_empty() and int(row["kind"]) != PlacerScript.KIND_PLANT:   # plants are no collider and give no shelter
 					flora.append([row, made["positions"][n], float(made["heights"][n])])
 
 	flora.sort_custom(func(a, b): return Vector2(a[1].x, a[1].z).distance_to(at) < Vector2(b[1].x, b[1].z).distance_to(at))
@@ -98,7 +97,7 @@ func _init() -> void:
 		for f in flora:
 			var d: float = Vector2(f[1].x, f[1].z).distance_to(p)
 
-			if d <= 1.5 and int(f[0]["kind"]) != PLANT:
+			if d <= 1.5 and int(f[0]["kind"]) != PlacerScript.KIND_PLANT:
 				near.append("%s %.1f m" % [str(f[0]["name"]), d])
 
 		var face: float = rad_to_deg(atan2(fire.y - p.y, fire.x - p.x))   # server_npcs heading: atan2(dz, dx) (Steering)

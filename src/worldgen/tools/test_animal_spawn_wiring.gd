@@ -110,11 +110,14 @@ func _init() -> void:
 	var town_npcs = load("res://src/stream/server_npcs.gd").new()
 	var marker_rows: Array = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/markers.json"))["markers"]
 	var marker_sum: Vector2 = Vector2.ZERO
+	var town_rows: int = 0
 
 	for row in marker_rows:
-		marker_sum += Vector2(float(row["x"]), float(row["z"]))
+		if not row.has("npc"):   # an NPC's own spot (Edda and Hob's camp) is not part of the town
+			marker_sum += Vector2(float(row["x"]), float(row["z"]))
+			town_rows += 1
 
-	check(town_npcs.town_point().distance_to(marker_sum / float(marker_rows.size())) < 0.01, "the town point is the middle of the NPC markers (%s)" % str(town_npcs.town_point()))
+	check(town_npcs.town_point().distance_to(marker_sum / float(town_rows)) < 0.01, "the town point is the middle of the NPC markers (%s)" % str(town_npcs.town_point()))
 	check(not lv.cfg["island_level"].has("town"), "no hand-set town point in animals.json")
 	var no_town = make(players, "rabbit")
 	check(no_town.town.x == INF and no_town.island_level(9000.0, 0.0) == 0.0, "with no town point the island level is 0 everywhere")

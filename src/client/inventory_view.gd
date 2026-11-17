@@ -1391,7 +1391,7 @@ func _container_near() -> int:
 		var state: int = int(_world[id]["state"])
 		var is_station: bool = str(_structure_by_state(state).get("station", "")) != ""
 
-		if (is_station or _is_chest(state) or state == 11 or state == 12 or _lit_state(state) or StructureLook.is_unlit_fire(state)) and here.distance_to(_world[id]["pos"]) <= best_d:
+		if (is_station or _is_chest(state) or state == 11 or state == 12 or _lit_state(state) or StructureLook.is_unlit_fire(state)) and not _world[id].get("camp", false) and here.distance_to(_world[id]["pos"]) <= best_d:
 			best_d = here.distance_to(_world[id]["pos"])
 			best = id
 
@@ -4168,7 +4168,7 @@ func _station_near_now(station: String, level: int, reach_m: float) -> bool:
 
 	if station == "campfire":   # a lit campfire (state 1) within reach, or a clay hearth or oven beside you ("also")
 		for fire_id in _placed():
-			if _lit_state(int(_world[fire_id]["state"])) and here.distance_to(_world[fire_id]["pos"]) <= maxf(4.5, reach_m):
+			if _lit_state(int(_world[fire_id]["state"])) and not _world[fire_id].get("camp", false) and here.distance_to(_world[fire_id]["pos"]) <= maxf(4.5, reach_m):
 				return true
 
 	for id in _placed():

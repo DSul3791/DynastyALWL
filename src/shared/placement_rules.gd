@@ -1002,7 +1002,7 @@ static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array,
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
 	var same: int = 0
 
-	if NpcCamp.keeps_off(spot):
+	if NpcCamp.within_keep(spot):
 		return "camp"   # the server says the same (server_items._place)
 
 	if str(def.get("piece_kind", "")) == ROOF_HIP_KIND:   # a roof corner's point is the shape at `spot` (the ghost's own, by the exact-middle rule)
