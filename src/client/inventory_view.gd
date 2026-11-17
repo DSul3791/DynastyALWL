@@ -168,9 +168,10 @@ var _drink_msec: int = 0
 
 # Holding E on a food, drink or medicine in the pack keeps using it (Dave 17 Nov 2026: "when you hold e on an item like a food or raspberries it
 # should just keep eating them at a good speed"). One bite goes at a time: the next is sent only after the server has applied the last one
-# (the slot changed), so the server checks every bite as for a tap and nothing can over-eat. A bite the slot shows no sign of within
-# EAT_HOLD_REFUSED_MSEC counts as refused and the hold stops.
-const EAT_HOLD_INTERVAL_MSEC := 250   # provisional EH-1 (for Dave): about 4 bites a second while E is held
+# (the slot changed), so the server checks every bite as for a tap and nothing can over-eat. The pace is the server's own (vitals.json
+# eat_pace_ms, provisional EH-1 300 ms, about 3 a second; drink_pace_ms for a water container) plus EAT_HOLD_SLACK_MSEC, since the server
+# silently drops a bite sooner than that. A bite the slot shows no sign of within EAT_HOLD_REFUSED_MSEC of its turn counts as refused.
+const EAT_HOLD_SLACK_MSEC := 50
 const EAT_HOLD_REFUSED_MSEC := 1000   # no change in the slot this long after a bite: the server said no (full, not known), stop
 const EAT_SOUND_GAP_MSEC := 400       # a held run plays a mouth sound at most this often, so quick bites do not chatter
 var _eat_hold_slot: int = -1          # the pack slot being eaten from while E is held, -1 when none
@@ -2738,6 +2739,14 @@ func eat_slot(slot: int) -> bool:
 	return true
 
 
+# The server's gap between bites (server_items._eat) or mouthfuls (_drink_from_slot), plus slack.
+func _eat_hold_pace(slot: int) -> int:
+	if container_cap(slot) > 0:
+		return int((_vitals_cfg.get("thirst", {}) as Dictionary).get("drink_pace_ms", 900)) + EAT_HOLD_SLACK_MSEC
+
+	return int(_vitals_cfg.get("eat_pace_ms", 800)) + EAT_HOLD_SLACK_MSEC
+
+
 func _eat_sign(slot: int) -> Array:
 	return [inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot]]
 
@@ -2755,13 +2764,15 @@ func _eat_hold_tick(now: int) -> void:
 		_eat_hold_slot = -1
 		return
 
+	var pace: int = _eat_hold_pace(slot)
+
 	if _eat_sign(slot) == _eat_hold_sign:
-		if now - _eat_hold_sent_msec >= EAT_HOLD_REFUSED_MSEC:
+		if now - _eat_hold_sent_msec >= pace + EAT_HOLD_REFUSED_MSEC:
 			_eat_hold_slot = -1   # the last bite never landed: refused
 
 		return
 
-	if now - _eat_hold_sent_msec < EAT_HOLD_INTERVAL_MSEC:
+	if now - _eat_hold_sent_msec < pace:
 		return
 
 	if not eat_slot(slot):
