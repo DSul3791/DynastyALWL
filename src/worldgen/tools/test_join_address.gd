@@ -17,7 +17,8 @@ func check(ok: bool, what: String) -> void:
 		failures += 1
 
 
-func _init() -> void:
+# _initialize, not _init: in _init the root is not in the tree yet, so the page's _ready (which fills the box) would not run.
+func _initialize() -> void:
 	var plain: Dictionary = JoinAddress.parse("  play.example.org ")
 	check(plain.get("host") == "play.example.org" and int(plain.get("port", 0)) == 24600, "a name alone joins port 24600, spaces trimmed")
 	var with_port: Dictionary = JoinAddress.parse("203.0.113.5:25000")
@@ -35,6 +36,7 @@ func _init() -> void:
 	check(JoinAddress.current() == "198.51.100.7:24610", "the typed address is remembered, trimmed")
 	var page = JoinPage.new()
 	root.add_child(page)
+	await process_frame
 	check(page.address_box.text == "198.51.100.7:24610", "the join page shows the remembered address")
 	page.address_box.text = "nowhere:99999"
 	check(not page.join() and page.error_label.text.contains("65534"), "a bad port is named on the page and the game does not join")
