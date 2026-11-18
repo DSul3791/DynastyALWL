@@ -8,7 +8,8 @@ a structure of that station at that level or higher). An item no recipe makes is
 the fewest stations is taken (the player picks the easy road). Blueprints count their own station and their costs' stations.
 
 shortcut: an item that has a recipe is taken as made, never gathered, so a raw item that also has a station-only recipe would read as needing
-that station; none does today (stick, stone, plant fibre, clay have no recipe). Revisit if one appears.
+that station; none does today (stick, stone, plant fibre, clay have no recipe). Revisit if one appears. Also not checked: a blueprint's
+hammer or hand tool (the hammer and knife goals come first today) and `what_any` placed goals (the bed).
 
 Run: python3 tools/goal_station_audit.py         (prints every gap, exit 1 when any)
 """

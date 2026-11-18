@@ -1,5 +1,5 @@
 {
-	"_about": "PROPOSAL (Sal, 2026-10-31), read by nothing yet. Camp-life and winter quests, same shape as data/items/starter_goals.json (see its _about for check kinds) with two additions: `needs_code` (true when a check kind or item chain does not exist yet: sea salt, new events worn_warmth, talked, moved_lit_night) and `after` may name goals from starter_goals.json. They teach the winter chain: render fat, smoke fish, dry berries, salt meat, keep a store, dress for the cold. The drying rack is not a structure yet (campfire does the drying in the recipes); jerky and salted fish need sea salt (WATER_GATHER_SPEC.md).",
+	"_about": "PROPOSAL (Sal, 2026-10-31), read by nothing yet. Camp-life and winter quests, same shape as data/items/starter_goals.json (see its _about for check kinds) with two additions: `needs_code` (true when a check kind or item chain does not exist yet: sea salt, new events worn_warmth, talked, moved_lit_night) and `after` may name goals from starter_goals.json. They teach the winter chain: render fat, smoke fish, dry berries, salt meat, keep a store, dress for the cold. The campfire pot, smoker and drying rack each have a build goal ahead of their first use (tools/goal_station_audit.py checks it); jerky and salted fish need sea salt (WATER_GATHER_SPEC.md).",
 	"goals": [
 		{
 			"id": "torch_night",
@@ -18,7 +18,7 @@
 		{
 			"id": "campfire_pot",
 			"title": "Hang a campfire pot",
-			"hint": "Fire 6 clay into a Clay - Pot at a lit campfire, then hold your hammer, press R, pick Campfire pot and click on the fire (3 sticks, 3 twine, the pot). Tallow and salt are made at it.",
+			"hint": "Fire 6 clay into a Clay - Pot at a lit campfire, then hold your hammer, press R, pick Campfire pot and click on the fire once its logs have burned down (3 sticks, 3 twine, the pot). Tallow and salt are made at it.",
 			"after": [
 				"fire",
 				"hammer"
