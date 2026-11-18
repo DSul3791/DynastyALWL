@@ -7,8 +7,8 @@ generator stay one build): checks export_presets.cfg without exporting, since ou
   python3 tools/export_check.py --list P   print the files preset P ("client" or "server") would carry
   python3 tools/export_check.py --disk     look at every file on disk, untracked and gitignored ones too, as Godot does: run it on
                                            the machine that exports, just before the export
-  python3 tools/export_check.py --ci       for tools/merge_check.py: exit 1 only when a pack lacks a file its build loads; server-only
-                                           code that crept into the client is a warning there (run the full check before an export)
+  python3 tools/export_check.py --ci       for tools/merge_check.py: as the plain check, except that server-only code that crept into
+                                           the client is a warning (routine work adds server scripts; --write puts them in the list)
 
 What it does:
   1. Works out which tracked files each preset would put in the pack, the way Godot's "all_resources" filter does: every resource
@@ -57,6 +57,9 @@ DEVELOPER = DEVELOPER_FOLDERS + ["*.md", "*.py", "*.sh", "*.bat", "*.ps1", "*.lo
                                  "INSTALL_README.txt"]
 # Files a machine keeps for itself (gitignored): the real admin keys, the generator's setup cache, export settings with passwords.
 LOCAL = ["data/admin.json", "worlds/*/setup_cache/*", "export.cfg", "export_credentials.cfg", ".godot/*"]
+# Untracked files that belong in a pack (--disk reports any other untracked file a pack would carry): the build stamp, the
+# installer's server address (step A2) and the bought animal models (gitignored by licence, decision 83).
+UNTRACKED_OK = ["build_stamp.json", "client_config.json", "assets/animals/*"]
 SERVER_NEEDS = ["worlds/base_world/world.json", "worlds/base_world/plan/tile_rules.json", "worlds/base_world/erosion_delta_v2.bin"]
 STAMP = "build_stamp.json"   # tools/build_stamp.py writes it before an export (step A1); untracked, so checked against the filter
 
@@ -84,6 +87,8 @@ def read(f):
 
 class Project:
     def __init__(self, disk=False):
+        self.disk = disk
+        self.committed = set(tracked()) if disk else set()
         self.files = tracked(disk)
         self.fileset = set(self.files)
         self.uids = {}
@@ -301,9 +306,11 @@ def check(project):
                 problems.append("the %s lacks %s, which it loads from a developer folder no pack carries (or add the load to LAUNCH_ONLY)" % (name, f))
 
     for name in ("client", "server"):
-        for f in sorted(packs_of(project, presets[name])):
+        for f in sorted(pack(project, presets[name])):
             if matches(f, LOCAL):
                 problems.append("%s pack carries %s, a file this machine keeps for itself" % (name, f))
+            elif project.disk and f not in project.committed and not matches(f, UNTRACKED_OK):
+                problems.append("%s pack carries %s, which is not in git (gitignored or left by a tool; exclude it or remove it)" % (name, f))
 
     for f in sorted(client_needs - client_pack):
         problems.append("client pack lacks %s, which the client loads" % f)
@@ -333,10 +340,6 @@ def check(project):
             problems.append("%s pack would not carry %s (the build stamp, step A1)" % (name, STAMP))
 
     return problems, {"client": client_pack, "server": server_pack, "client_needs": client_needs}
-
-
-def packs_of(project, preset):
-    return pack(project, preset)
 
 
 def size_mb(project, files):
