@@ -269,7 +269,7 @@ func standing_at(structure: String, at: Vector3) -> int:
 	return -1
 
 
-# Builds from the blueprint with the hammer in the hand bar: the pack must give exactly the cost, and the piece must stand.
+# Builds from the blueprint with the hammer in the hand bar (placed, then one hammer hit on the site): the pack must give exactly the cost, and the piece must stand.
 func build(structure: String, at: Vector3, what: String) -> int:
 	var bp: Dictionary = blueprint_of(structure)
 	var before: Dictionary = {}
@@ -278,6 +278,7 @@ func build(structure: String, at: Vector3, what: String) -> int:
 		before[str(c[0])] = have(str(c[0]))
 
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(bp.get("number", 0)), 0, 0, at)
+	HeldTool.hit_site(items, HeldTool.site_of(items, structure))   # placing only sets down a site; the hammer hit fills it (Dave 18 Nov 2026)
 	var id: int = standing_at(structure, at)
 	var spent: bool = bp.get("cost", []).all(func(c): return have(str(c[0])) == int(before[str(c[0])]) - int(c[1]))
 	check(id >= 0 and spent, "%s: the %s stands, built from its blueprint %s" % [what, structure, str(bp.get("cost", []))])
@@ -768,7 +769,7 @@ func step3_construction_and_equipment() -> void:
 	craft("thread", 1)
 	check(have("thread") == gives_of("thread"), "3e. Thread is twisted by hand from plant fibre")
 	# The Loom is first set down as a blueprint site, its materials still to come: an unbuilt site weaves nothing (docs/BLUEPRINT_SITES.md: a site
-	# counts as nothing built; M001-T19 found sites serving as stations). The materials are then deposited with E and it stands.
+	# counts as nothing built; M001-T19 found sites serving as stations). E on it only says to use the hammer; a hammer hit puts the materials in and it stands.
 	var loom_at: Vector3 = WORKSHOP + Vector3(0.0, 0.0, 3.0)
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(blueprint_of("loom")["number"]), 0, 0, loom_at)
 	var loom_site: int = -1
@@ -783,7 +784,9 @@ func step3_construction_and_equipment() -> void:
 	give_cost("loom", ["log", "stick", "clay"])
 	items._last_use.clear()
 	items.action(1, Net.ACT_USE_STRUCT, loom_site, 0, 0, Vector3.ZERO)
-	check(standing_at("loom", loom_at) >= 0 and cost_of("loom", "log") > 0 and have("log") == 0 and have("clay") == 0, "3f. the materials deposited with E, the Loom stands")
+	check(standing_at("loom", loom_at) < 0 and have("clay") == cost_of("loom", "clay"), "3f. E on the Loom site takes nothing (only the hammer fills a site, Dave 18 Nov 2026)")
+	HeldTool.hit_site(items, loom_site)
+	check(standing_at("loom", loom_at) >= 0 and cost_of("loom", "log") > 0 and have("log") == 0 and have("clay") == 0, "3f. a hammer hit puts the materials in, the Loom stands")
 	craft("fibre_cloth", crafts_for("fibre_cloth", cloth_n))
 	check(have("fibre_cloth") >= cloth_n, "3f. the Loom weaves %d Fibre cloth" % have("fibre_cloth"))
 	give_cost("tailors_table", ["log", "stick"])
