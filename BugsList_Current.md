@@ -12,7 +12,7 @@ The six existing entry numbers are retained for tracking. Detailed behaviour has
 
 ## 1. Level terrain without lifting the player or creating free fill
 
-**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Tested on Dave's PC: test_server_items Level checks (target held, nothing edited under the feet, no soil means no fill, fills use soil, foundation target). Not yet played.
+**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): test_server_items Level checks (target held, nothing edited under the feet, no soil means no fill, fills use soil, foundation target). Not yet played.
 
 **Problem:** Raising soil beneath the player lifts them, and their new height then drives further raising. The resulting terrain climbs higher with repeated use.
 
@@ -27,7 +27,7 @@ The six existing entry numbers are retained for tracking. Detailed behaviour has
 
 ## 2. Foundations must use the edited ground surface
 
-**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Tested on Dave's PC: test_server_items: a foundation placed on ground raised 1.6 m by a saved fill. Not yet played.
+**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): test_server_items: a foundation placed on ground raised 1.6 m by a saved fill. Not yet played.
 
 **Problem:** A raised, flattened building site is rejected as too far above or below ground, as though the new soil were not ground.
 
@@ -37,7 +37,7 @@ The six existing entry numbers are retained for tracking. Detailed behaviour has
 
 ## 3. Rocks must visibly deplete as they are mined
 
-**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Tested on Dave's PC: test_server_items stone counts by size (yield 0.04, provisional RK-1); the cracks and crumble are drawn by the client and have not been seen. Not yet played.
+**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): test_server_items stone counts by size (yield 0.04, provisional RK-1); the cracks and crumble are drawn by the client and have not been seen. Not yet played.
 
 **Problem:** A rock can yield hundreds of stones without shrinking or breaking.
 
@@ -51,7 +51,7 @@ The six existing entry numbers are retained for tracking. Detailed behaviour has
 
 ## 4. Keep the hoe menu readable on screen
 
-**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Tested on Dave's PC: none possible headless; the 75% width and wrapping have not been seen. Not yet played.
+**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): none possible headless; the 75% width and wrapping have not been seen. Not yet played.
 
 **Problem:** The hoe's right-click menu extends beyond the screen.
 
@@ -61,7 +61,7 @@ The six existing entry numbers are retained for tracking. Detailed behaviour has
 
 ## 5. Present the hoe actions in a practical order
 
-**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Tested on Dave's PC: test_server_items Pathen one-click checks; the menu order is in the code and CONTROLS.md, not seen. Not yet played.
+**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): test_server_items Pathen one-click checks; the menu order is in the code and CONTROLS.md, not seen. Not yet played.
 
 Use this order and these labels:
 
@@ -78,7 +78,7 @@ Survey a Path is included for menu placement; this list does not request rebuild
 
 ## 6. Make gardening and planting deliberate, quick and predictable
 
-**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Tested on Dave's PC: test_farming garden, soil patch, obstacle, countdown and plant-grid checks; the neon preview and countdown have not been seen. Not yet played.
+**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): test_farming garden, soil patch, obstacle, countdown and plant-grid checks; the neon preview and countdown have not been seen. Not yet played.
 
 ### Shared placement behaviour
 

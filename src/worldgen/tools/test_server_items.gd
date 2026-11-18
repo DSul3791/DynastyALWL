@@ -1051,7 +1051,7 @@ func _init() -> void:
 	var raised_ids: Array = m._items.keys()
 	m.place_piece(1, "wood_foundation_kit", Vector3(-20.0, 11.6, 0.0))
 	var raised: Array = m._items.keys().filter(func(new_id): return not raised_ids.has(new_id) and m._items[new_id].has("struct") and str(m._items[new_id]["struct"]["kind"]) == "wood_foundation")
-	check(raised.size() == 1 and absf(float(m._items[raised[0]]["pos"].y) - 11.6) < 0.1, "a foundation sits on hoe-raised ground 1.6 m above the generated surface (%s)" % str(raised.map(func(id): return m._items[id]["pos"])))
+	check(raised.size() == 1 and absf(float(m._items[raised[0]]["pos"].y) - 11.6) < 0.1, "a foundation sits on hoe-raised ground 1.6 m above the generated surface (%s)" % str(raised.map(func(new_id): return m._items[new_id]["pos"])))
 
 	for raised_id in raised:
 		m._items.erase(raised_id)
