@@ -289,7 +289,6 @@ func _ready() -> void:
 		store_dir = "user://server_store/%s" % settings.world_name.validate_filename()
 
 	_store_path = store_dir
-	DirAccess.remove_absolute(ProjectSettings.globalize_path(store_dir + STOP_NOW))   # a request left by a run that was killed before it saw it
 	_load_game_clock()
 	var problem: String = store.setup(generator, store_dir)
 
@@ -569,6 +568,9 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.admin_ok = func(peer: int) -> bool: return admin.is_admin(items.key_of(peer))
 	admin.open_to_all = OS.get_cmdline_user_args().has("--open-admin") and not _dedicated
+
+	if _dedicated and OS.get_cmdline_user_args().has("--open-admin"):
+		print("server: --dedicated ignores --open-admin")
 
 	if _dedicated:
 		admin.enforce = true

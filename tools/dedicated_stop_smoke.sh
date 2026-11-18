@@ -12,7 +12,7 @@ GODOT="${GODOT:-godot}"
 RIG=$(mktemp -d); mkdir -p "$RIG/store" "$RIG/home"
 export HOME="$RIG/home" XDG_DATA_HOME="$RIG/data"
 UD="$RIG/data/godot/app_userdata/Dynasty a life well lived"; mkdir -p "$UD"
-PORT=$((8100 + 2 * (RANDOM % 70))); FAIL=0; WP=0; CP=0
+PORT=$((8100 + 2 * (RANDOM % 70))); FAIL=0; WP=""; CP=""   # empty, never 0: "kill 0" signals the whole process group
 ok() { echo "ok   $1"; }; bad() { echo "FAIL $1"; FAIL=1; }
 trap 'kill $CP $WP 2>/dev/null; sleep 1; pkill -KILL -f -- "--store=$RIG/store" 2>/dev/null; rm -rf "$RIG"' EXIT
 

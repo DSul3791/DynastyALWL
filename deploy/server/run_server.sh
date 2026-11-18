@@ -17,7 +17,13 @@ if [ -z "$store" ]; then
   exit 2
 fi
 
+case "$store" in user://* | res://*)
+  echo "run_server: give --store as a real folder path, not $store" >&2
+  exit 2 ;;
+esac
+
 mkdir -p "$store" || exit 2
+rm -f "$store/stop.now"   # left by a run that was killed; removed here, not by the server, so a stop during its start-up still counts
 ask_stop() {
   echo "run_server: stop signal; asking the server to save and close" >&2
   : > "$store/stop.now"
