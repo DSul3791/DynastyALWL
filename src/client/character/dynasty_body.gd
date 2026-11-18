@@ -58,11 +58,10 @@ const CLIP_MAP := {
 	"use": ["Push_Forward_and_Stop", 0.0, -1.0, false, 0.5],
 	"carry_idle": ["Idle", 0.0, -1.0, true, 1.0],
 	"carry_walk": ["Walking", 0.0, -1.0, true, 0.95],    # 1.15 m/s in place, 1.1 wanted
-	# Not played by the game yet (needs a state hook, docs/DYNASTY_BODY.md): swimming, drinking, picking up, sitting down and standing up, waking.
+	# Not played by the game yet (needs a state hook, docs/DYNASTY_BODY.md): swimming, drinking, sitting down and standing up, waking.
 	"swim": ["Swim_Forward", 0.0, -1.0, true, 1.0],
 	"swim_idle": ["Swim_Idle", 0.0, -1.0, true, 1.0],
 	"drink": ["Stand_and_Drink", 0.0, -1.0, false, 1.0],
-	"pick_up": ["Male_Bend_Over_Pick_Up", 0.0, -1.0, false, 1.0],
 	"sit_down": ["Stand_to_Sit_Transition_M", 0.0, -1.0, false, 1.0],
 	"stand_up": ["Sit_to_Stand_Transition_M", 0.0, -1.0, false, 1.0],
 	"wake_up": ["Wake_Up_and_Look_Up", 0.0, -1.0, false, 1.0],

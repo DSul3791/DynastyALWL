@@ -34,7 +34,7 @@ const SHOWROOM_CAP := 300                # most items one showroom fill places
 const SHOWROOM_PATH := "res://data/items/showroom.json"
 const MERGE_M := 1.0                     # a stackable drop landing this close to the same kind on the ground joins it (Dave 2026-10-23, rock piles)
 const PILE_MIN := 6                      # a ground item holding this many is a pile (the client draws it from the count)
-const PILE_HANDFUL := 5                  # one E on a pile takes this many when the item has no "pile" row in items.json
+const PILE_HANDFUL := 25                 # one E on a pile takes this many when the item has no "pile" row in items.json (Dave 18 Nov 2026: 5 -> 25, provisional PU-1)
 const PILE_CAP := 100000                 # most one ground item holds; more starts a second pile beside it
 const PILE_LIFETIME_S := 7200.0          # a pile lives this long after the last add or take (loose items keep WORLD_ITEM_LIFETIME_S)
 const WORLD_ITEM_LIFETIME_S := 1200.0    # real seconds until a dropped item despawns
@@ -2919,17 +2919,18 @@ func _log_surround() -> void:
 				else:
 					_log_static("i%d" % sid, _log_post(float((other["tree"] as Dictionary).get("radius", 0.3)), STUMP_H_M), Transform3D(Basis(), other["pos"] + Vector3(0.0, STUMP_H_M * 0.5, 0.0)))
 
-		if trees_near.is_valid() and tree_info.is_valid():
-			for found in trees_near.call(at, reach):
-				var info: Dictionary = tree_info.call(found[0], int(found[1]))
+		# The standing trunks from the server's cached 16 m tree cells (terrain_server _arrow_trunks, felled trees left out). Asked through
+		# trees_near and tree_info, every awake log scanned every tree of the nine 256 m flora chunks round it (and could place a chunk) on the
+		# main thread every look_s: the server stalled, its physics with it, and every log paused at once (Dave 17 Nov 2026, build 826:
+		# "they roll a few feet then pause and they all do it at the same time").
+		if trunks_near.is_valid():
+			for trunk in trunks_near.call(at, reach):
+				var root: Vector3 = trunk[0]
+				var key: String = "t%d:%d" % [int(round(root.x * 100.0)), int(round(root.z * 100.0))]
+				keep[key] = true
 
-				var key: String = "t%s:%d" % [str(found[0]), int(found[1])]
-
-				if _logs.has_static(key):
-					keep[key] = true
-				elif not info.is_empty():
-					keep[key] = true
-					_log_static(key, _log_post(float(info.get("trunk", 0.3)), TRUNK_H_M), Transform3D(Basis(), info["position"] + Vector3(0.0, TRUNK_H_M * 0.5, 0.0)))
+				if not _logs.has_static(key):
+					_log_static(key, _log_post(float(trunk[1]), TRUNK_H_M), Transform3D(Basis(), root + Vector3(0.0, TRUNK_H_M * 0.5, 0.0)))
 
 		for rect in _grid.rects_near(at.x, at.z, reach, _items):
 			var key: String = "w%d" % int(rect["id"])
@@ -20856,7 +20857,7 @@ func _train_fitness(peer: int, effort: float, spent: float) -> void:
 		_dirty = true
 
 		if banked > 0.0:
-			train = minf(train + banked, float(cfg.get("max_gain", 10)))
+			train = minf(train + banked, minf(float(cfg.get("max_gain", 10)), float(_fitness_max() - int(row.get("fitness", _fitness_default())))))   # no hidden points above the top of the range
 			row["train"] = train
 			_say(peer, "Your day's work has made you fitter." if int(floor(train)) > int(floor(train - banked)) else "You feel your day's work in your legs.")
 	elif not row.has("xp_day"):

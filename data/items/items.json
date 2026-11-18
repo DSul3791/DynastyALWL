@@ -13,7 +13,7 @@
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 30,
-			"pile": {"shape": "pyramid", "handful": 5, "color": [0.47, 0.46, 0.44], "rock": 1.0, "squash": 0.75}
+			"pile": {"shape": "pyramid", "handful": 25, "color": [0.47, 0.46, 0.44], "rock": 1.0, "squash": 0.75}
 		},
 		"stick": {
 			"number": 2,
@@ -285,7 +285,7 @@
 			"look_alikes": [],
 			"value": 2
 		},
-		"firewood": {"number": 26, "name": "Firewood", "description": "Split wood, half a metre long. Small trees break into it, and an axe splits a wooden block into it.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.42, 0.28, 0.18], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 2},
+		"firewood": {"number": 26, "name": "Firewood", "description": "Split wood, half a metre long. Small trees break into it, and an axe splits a wooden block into it.", "kind": "material", "pile": {"shape": "logs", "handful": 25, "color": [0.42, 0.28, 0.18], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 2},
 		"lumber": {
 			"number": 27,
 			"name": "Plank",
@@ -391,7 +391,7 @@
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 20,
-			"pile": {"shape": "mound", "handful": 5, "color": [0.29, 0.2, 0.13], "rock": 0.185, "squash": 0.7, "tight": 0.14, "jitter": 0.1}
+			"pile": {"shape": "mound", "handful": 25, "color": [0.29, 0.2, 0.13], "rock": 0.185, "squash": 0.7, "tight": 0.14, "jitter": 0.1}
 		},
 		"clay": {
 			"number": 36,
@@ -402,7 +402,7 @@
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 20,
-			"pile": {"shape": "mound", "handful": 5, "color": [0.63, 0.38, 0.24], "rock": 0.185, "squash": 0.7, "tight": 0.14, "jitter": 0.1}
+			"pile": {"shape": "mound", "handful": 25, "color": [0.63, 0.38, 0.24], "rock": 0.185, "squash": 0.7, "tight": 0.14, "jitter": 0.1}
 		},
 		"sand": {
 			"number": 37,
@@ -413,7 +413,7 @@
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 20,
-			"pile": {"shape": "mound", "handful": 5, "color": [0.84, 0.76, 0.55], "rock": 0.45, "squash": 0.7}
+			"pile": {"shape": "mound", "handful": 25, "color": [0.84, 0.76, 0.55], "rock": 0.45, "squash": 0.7}
 		},
 		"gravel": {
 			"number": 38,
@@ -424,7 +424,7 @@
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 20,
-			"pile": {"shape": "mound", "handful": 5, "color": [0.55, 0.54, 0.52], "rock": 0.4, "squash": 0.8}
+			"pile": {"shape": "mound", "handful": 25, "color": [0.55, 0.54, 0.52], "rock": 0.4, "squash": 0.8}
 		},
 		"wooden_bowl": {
 			"number": 39,
@@ -2779,15 +2779,15 @@
 			"value": 1,
 			"sell_lot": 12
 		},
-		"wooden_block": {"number": 234, "name": "Wooden block", "description": "A short round sawn from a log. Split it into firewood with an axe, or carve it.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.4, 0.27, 0.17], "len": 0.3, "radius": 0.09, "round": true}, "stack": 10, "look_alikes": [], "value": 3},
-		"firewood_soft": {"number": 236, "retired": true, "name": "Soft firewood", "description": "Split pine, spruce or fir. It catches fast and burns out quick.", "kind": "material", "pile": {"shape": "logs", "handful": 5, "color": [0.48, 0.32, 0.2], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 2, "sell_lot": 12},
+		"wooden_block": {"number": 234, "name": "Wooden block", "description": "A short round sawn from a log. Split it into firewood with an axe, or carve it.", "kind": "material", "pile": {"shape": "logs", "handful": 25, "color": [0.4, 0.27, 0.17], "len": 0.3, "radius": 0.09, "round": true}, "stack": 10, "look_alikes": [], "value": 3},
+		"firewood_soft": {"number": 236, "retired": true, "name": "Soft firewood", "description": "Split pine, spruce or fir. It catches fast and burns out quick.", "kind": "material", "pile": {"shape": "logs", "handful": 25, "color": [0.48, 0.32, 0.2], "len": 0.64, "radius": 0.104, "min": 2}, "stack": 40, "look_alikes": [], "value": 2, "sell_lot": 12},
 		"wooden_block_soft": {
 			"number": 237,
 			"retired": true,
 			"name": "Softwood block",
 			"description": "A short round of a small softwood log. Burns longer than soft firewood, or split it on a chopping block.",
 			"kind": "material",
-			"pile": {"shape": "logs", "handful": 5, "color": [0.46, 0.31, 0.2], "len": 0.3, "radius": 0.09, "round": true},
+			"pile": {"shape": "logs", "handful": 25, "color": [0.46, 0.31, 0.2], "len": 0.3, "radius": 0.09, "round": true},
 			"stack": 10,
 			"look_alikes": [],
 			"value": 2
