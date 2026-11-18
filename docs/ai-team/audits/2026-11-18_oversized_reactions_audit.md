@@ -110,6 +110,9 @@ Only the live window changed, but `clear_water` empties all, so every later ask 
 - **How others solved it:** by analogy with the [Minecraft Bedrock client blob cache (Mojang)](https://gist.github.com/Tomcc/4be79d3eafcd158c5059abd4ab2e8d35), which keeps what has not changed and fetches only what has.
 - **Pick for Dynasty: on the server, forget only the chunks inside the changed area.**
 
+### Follow-up for Dave to pick (not built): fine dig water goes to every player (`scenes/terrain_server/terrain_server.gd:1464`)
+Found while building 7 and 12 (18 Nov). `deliver_fine_water` sends each dig region's 2 m water to every connected player, wherever they stand, every time it changes. It is the same shape as finding 9 (digs sent to everyone). A likely fix is to send each region only to players within its reach, as 9 does for digs. Not built: it changes who gets what water, so it waits for Dave's pick.
+
 Left out: about 60 other loops over every world item inside one-off player actions (placing, station checks, seats, beds, crafting). Each is one pass per click; they matter only at the scale in finding 3 and share its fix.
 
 **Verdict:** fix 1 first (it is Dave's bug again, at every join), then 2 and 3, which decide whether a long-running shared server stays smooth.

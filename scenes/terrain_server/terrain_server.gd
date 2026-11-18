@@ -21,6 +21,7 @@ extends Node
 # Clients start at the starter spawn point of tile (3,4).
 
 const FishWaterScript := preload("res://src/server/server_fish_water.gd")
+const WaterAreas := preload("res://src/shared/water_areas.gd")
 const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 const EventLogScript := preload("res://src/shared/event_log.gd")
 const PlayServerScript := preload("res://src/shared/play_server.gd")
@@ -1504,18 +1505,9 @@ func _poll_water() -> void:
 		# name two small areas, not one box over the ground between; and the server forgets only its packed water there (finding 12).
 		# A different tile set: its first levels can hold sleeping dig regions that were never drawn into it, which no area names, so everywhere.
 		if _water_window.has_area() and same_tiles:
-			var areas: Array = [_water_window]
-
-			if _water_window_told.has_area() and _water_window_told != _water_window:
-				areas.append(_water_window_told)
-
-			_water_window_told = _water_window
 			var live: Array = water_live.live_rects() if water_live.has_method("live_rects") else []
-
-			for r in live + _live_told:
-				if (r as Rect2).has_area() and not areas.has(r):
-					areas.append(r)
-
+			var areas: Array = WaterAreas.changed_areas(_water_window, _water_window_told, live, _live_told)
+			_water_window_told = _water_window
 			_live_told = live
 			flora.clear_water_in(areas)
 			net.water_changed_in.rpc(areas)

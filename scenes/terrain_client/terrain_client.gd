@@ -187,6 +187,7 @@ const WATER_MIN_MSEC := 3000          # and never more often than this, ground l
 const WATER_MAX_MSEC := 12000         # a re-ask that brought no new water doubles the wait, up to this (settled water: the log spam in the lag logs)
 const GroundColumn := preload("res://src/client/ground_column.gd")
 const WaterReask := preload("res://src/client/water_reask.gd")
+const WaterAreas := preload("res://src/shared/water_areas.gd")
 # Spawn near the ground (Dave 25 Oct, Tyler): the server's spawn y is already the ground height at the spawn x,z plus 2 m (terrain_server._spawn_point), and a respawn point is
 # a real standing place, so the player is put there with this small lift instead of 28 m up. The old +28 m was only waiting for ground to appear.
 const SPAWN_LIFT_M := 0.5
@@ -2992,20 +2993,12 @@ func _send_water_request(now: int) -> void:
 	_water_dirty = false
 	_water_asked_msec = now
 	var chunks: PackedInt32Array = PackedInt32Array()
-	var areas: Array = []
-
-	if not _water_dirty_all:
-		for area in _water_dirty_areas:
-			areas.append((area as Rect2).grow(flora.chunk_m))
-
+	var areas: Array = [] if _water_dirty_all else _water_dirty_areas
 	_water_dirty_all = false
 	_water_dirty_areas = []
 
-	for chunk in flora.held_chunks():
-		# Only the chunks the moving water touches (protocol 88); the rest still hold the right water.
-		if not areas.is_empty() and not WaterReask.touches_any(areas, Rect2(Vector2(chunk) * flora.chunk_m, Vector2(flora.chunk_m, flora.chunk_m))):
-			continue
-
+	# Only the chunks the moving water touches (protocol 88, a list since 130); the rest still hold the right water.
+	for chunk in WaterAreas.chunks_to_ask(flora.held_chunks(), areas, flora.chunk_m):
 		chunks.append_array(PackedInt32Array([chunk.x, chunk.y]))
 
 	if _water_quiet_asks <= 1 and not chunks.is_empty():   # "asking again for 0 chunks" (the moved water is outside every chunk held) says nothing
