@@ -374,6 +374,7 @@ const BowScript := preload("res://src/stream/server_bow.gd")
 const BowAim := preload("res://src/shared/bow_aim.gd")
 const TrapsScript := preload("res://src/stream/server_traps.gd")
 const SmelterScript := preload("res://src/stream/server_smelter.gd")   # the Smelters: hopper, input, output or ground, bellows (master s2.5, s2.7)
+const StoreRules := preload("res://src/shared/store_rules.gd")   # what a fire, container or station store takes; the pack's station line asks the same
 const BinRules := preload("res://src/shared/bin_rules.gd")             # resource bins: one kind, units capacity (master s2.5, R6)
 const SmithyScript := preload("res://src/stream/server_smithy.gd")     # the Smithies' use wear (master s2.7 items 5-8)
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
@@ -9117,17 +9118,7 @@ func _warm_bite(v: Dictionary, item_id: String) -> void:
 
 
 func _cookable(item_id: String) -> bool:
-	if _cooking.get("cooks_into", {}).has(item_id):
-		return true
-
-	if item_id == "" or item_id == str(_cooking.get("gives", "")):
-		return false
-
-	for suffix in _cooking.get("cookable_suffixes", []):
-		if item_id.ends_with(str(suffix)):
-			return true
-
-	return false
+	return StoreRules.cookable(item_id, _cooking)
 
 
 # The fire record of a world item id when the player stands within reach of it, else {}.
@@ -11354,7 +11345,7 @@ func _sync_fire_from_box(peer: int, id: int) -> void:
 
 # Wood or food a fire's store accepts.
 func _fire_takes(item_id: String) -> bool:
-	return _cooking.get("fuel", {}).has(item_id) or _cookable(item_id)
+	return StoreRules.fire_takes(item_id, _cooking)
 
 
 # Once every couple of seconds: wood in the store feeds a fire that is nearly out (or loads a cold one), and raw food on a lit fire cooks, one item per box_cook_s.
@@ -11632,23 +11623,7 @@ func _box_take(peer: int, inv, chest, a: int, count: int, weighed: bool = false)
 # Whether a container kind takes an item (structures.json "takes_kinds": items.json kinds, "takes": item ids or ingredient groups, any member).
 # A kind with neither takes anything (master s3.13: a log rack takes logs, a wardrobe clothes).
 func _box_takes(kind: String, number: int) -> bool:
-	var def: Dictionary = _structures.get(kind, {})
-	var kinds: Array = def.get("takes_kinds", [])
-	var ids: Array = def.get("takes", [])
-
-	if kinds.is_empty() and ids.is_empty():
-		return true
-
-	if kinds.has(str(table.entry(table.id_of(number)).get("kind", ""))):
-		return true
-
-	for id in ids:
-		var n: int = table.number_of(str(id))
-
-		if n == number or table.group_members(n).has(number):
-			return true
-
-	return false
+	return StoreRules.takes(_structures.get(kind, {}), number, table)
 
 
 func _save_chests() -> void:
