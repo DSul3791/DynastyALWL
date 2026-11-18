@@ -16,6 +16,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const Carts := preload("res://src/stream/server_carts.gd")
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const DIR := "user://test_wood_phase5"
 
 var failures: int = 0
@@ -94,6 +95,17 @@ func box(id: int):
 func empty(id: int) -> void:
 	for s in box(id).slot_count:
 		box(id).clear_slot(s)
+
+
+# How many of an item lie loose on the ground.
+func of_kind_loose(id: String) -> int:
+	var total: int = 0
+
+	for k in items._items:
+		var it: Dictionary = items._items[k]
+		total += int(it["count"]) if items._is_loose(it) and int(it["number"]) == n(id) else 0
+
+	return total
 
 
 func of_kind(kind: String) -> Array:
@@ -205,8 +217,8 @@ func build_checks() -> void:
 	var sleds: Array = of_kind("small_log_sled")
 	var sled: int = sleds[0] if sleds.size() == 1 else 0
 
-	if sled != 0 and items._items[sled]["struct"].has("site"):
-		act(Net.ACT_USE_STRUCT, sled)   # the materials go in from the pack
+	check(sled != 0 and items._items[sled]["struct"].has("site") and inv.count_of(n("log")) == 2, "placed, the Small log sled is a blueprint site and nothing is taken (Dave 18 Nov 2026)")
+	HeldTool.hit_site(items, sled)   # a hammer hit puts the materials in from the pack
 
 	check(sled != 0 and not items._items[sled]["struct"].has("site") and items._items[sled]["struct"].has("uid") and not items._carts.vehicle_of(items._items[sled]).is_empty(), "the Small log sled is built from its blueprint with a Stone hammer, and is a vehicle with its own store (%s)" % str(said.get(1, "")))
 	check(inv.count_of(n("log")) == 0 and inv.count_of(n("stick")) == 0 and inv.count_of(n("twine")) == 0, "its logs, sticks and twine were used")
@@ -218,14 +230,13 @@ func build_checks() -> void:
 	var wagons: Array = of_kind("small_wagon")
 	var wagon: int = wagons[0] if wagons.size() == 1 else 0
 
-	if wagon != 0 and items._items[wagon]["struct"].has("site"):
-		act(Net.ACT_USE_STRUCT, wagon)
+	HeldTool.hit_site(items, wagon)
 
 	check(wagon != 0 and not items._items[wagon]["struct"].has("site") and not items._carts.vehicle_of(items._items[wagon]).is_empty(), "the Small wagon is built from its blueprint, and is a vehicle (%s)" % str(said.get(1, "")))
 	check(inv.count_of(n("lumber")) == 0 and inv.count_of(n("wooden_cart_wheel")) == 0 and inv.count_of(n("axle")) == 0 and inv.count_of(n("wooden_pin")) == 0, "its planks, wheels, axles and pins were used")
 
 
-# A sled is built with the two logs on the shoulder (the pack's log group counts them as its Logs).
+# A sled built with two oak logs carried on the shoulder: put down beside the site, the hammer pulls them in as its Logs (the log group).
 func shoulder_build_checks() -> void:
 	var inv = items.inventory_of(1)
 	# One log at a time, as the game picks them up (_give_shoulder takes one a call and lays any more at the feet; the two-log carry is test_wood_phase3).
@@ -240,10 +251,16 @@ func shoulder_build_checks() -> void:
 	var after: Array = of_kind("small_log_sled").filter(func(id): return not before.has(id))
 	var made: int = after[0] if after.size() == 1 else 0
 
-	if made != 0 and items._items[made]["struct"].has("site"):
-		act(Net.ACT_USE_STRUCT, made)
+	# Logs on the shoulder keep both hands busy, so the hammer cannot swing (_hands_full); the builder puts them down beside the site and the hammer
+	# hit pulls them in from the ground (Dave 18 Nov 2026: only a hammer hit fills a site).
+	check(made != 0 and not HeldTool.hit_site(items, made) and items.shoulder_count(1) == 2 and str(said.get(1, "")).contains("hands are full"), "with logs on the shoulder the hammer cannot swing at the sled site (%s)" % str(said.get(1, "")))
 
-	check(made != 0 and not items._items[made]["struct"].has("site") and items.shoulder_count(1) == 0 and inv.count_of(n("log_oak")) == 0, "a sled is placed and built with two shoulder logs as its Logs (%s)" % str(said.get(1, "")))
+	for k in range(2):
+		inv.remove(n("log_oak"), 1)
+		items.drop_in_world(n("log_oak"), 1, Vector3(2.0 + float(k), 10.0, 4.0))   # put down beside the site, as Q does
+
+	HeldTool.hit_site(items, made)
+	check(made != 0 and not items._items[made]["struct"].has("site") and items.shoulder_count(1) == 0 and inv.count_of(n("log_oak")) == 0 and of_kind_loose("log_oak") == 0, "the two oak logs put down beside it are pulled in as its Logs by the hammer (%s)" % str(said.get(1, "")))
 	check(inv.count_of(n("stick")) == 0 and inv.count_of(n("twine")) == 0, "with its sticks and twine")
 
 

@@ -113,12 +113,8 @@ func build(structure: String, at: Vector3) -> int:
 		items.give(1, items.table.number_of(str(need[0])), int(need[1]))   # gathered materials: stone, clay, logs (the iron is made below and checked)
 
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(bp.get("number", 0)), 0, 0, at)
-
-	for id in items._items:
-		if items._items[id].has("struct") and str(items._items[id]["struct"]["kind"]) == structure and not items._items[id]["struct"].has("site"):
-			return int(id)
-
-	return -1
+	var site: int = HeldTool.site_of(items, structure)   # placing only sets down a site; the hammer hit fills it (Dave 18 Nov 2026)
+	return site if HeldTool.hit_site(items, site) else -1
 
 
 # A job's [id, count] rows as "id count" text: parsed JSON numbers are floats, so the rows are not compared as JSON text.
@@ -260,10 +256,10 @@ func _init() -> void:
 			items.give(1, items.table.number_of(str(need[0])), int(need[1]))
 
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(bp.get("number", 0)), 0, 0, SMITHY_AT)
+	var smithy_site: int = HeldTool.site_of(items, "blacksmithy")
 
-	for id in items._items:
-		if items._items[id].has("struct") and str(items._items[id]["struct"]["kind"]) == "blacksmithy" and not items._items[id]["struct"].has("site"):
-			smithy_id = int(id)
+	if HeldTool.hit_site(items, smithy_site):   # the hammer fills the site from the pack, iron left alone
+		smithy_id = smithy_site
 
 	check(smithy_id >= 0 and have("iron_ingot") == iron_before, "4a. the Improved smithy stands, built without iron")
 	var charcoal_n: int = have("charcoal")

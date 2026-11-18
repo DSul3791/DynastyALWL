@@ -14,6 +14,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const Carts := preload("res://src/stream/server_carts.gd")
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 const DIR := "user://test_handcart"
 const RAMP_X := 40.0      # east of this the ground climbs 0.8 m per metre (too steep for a cart)
@@ -247,8 +248,8 @@ func _init() -> void:
 	act(1, Net.ACT_PLACE_BLUEPRINT, 250, 0, 0, Vector3(17.0, 10.0, 4.0))
 	var cart: int = of_kind("handcart")[0] if of_kind("handcart").size() == 1 else 0
 
-	if cart != 0 and items._items[cart]["struct"].has("site"):
-		act(1, Net.ACT_USE_STRUCT, cart)   # the materials go in from the pack
+	check(cart != 0 and items._items[cart]["struct"].has("site") and have(1, "lumber") == 6, "placed, the Handcart is a blueprint site and nothing is taken (Dave 18 Nov 2026)")
+	HeldTool.hit_site(items, cart)   # a hammer hit puts the materials in from the pack
 
 	check(cart != 0 and not items._items[cart]["struct"].has("site") and items._items[cart]["struct"].has("uid") and str(items._items[cart]["struct"]["owner"]) == keys[1], "the Handcart stands, built from its blueprint, owned by its builder")
 	check(have(1, "wooden_cart_wheel") == 0 and have(1, "axle") == 0 and have(1, "lumber") == 0 and have(1, "wooden_pin") == 0, "its wheels, axle, Planks and pins were used")
