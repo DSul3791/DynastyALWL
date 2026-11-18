@@ -195,6 +195,12 @@ carry = subprocess.run([sys.executable, "tools/carry_audit.py"], capture_output=
 if carry.returncode != 0:   # a warning only until Dave picks the heavy-kits fix (docs/HEAVY_KITS_OPTIONS.md)
     print("WARNING: carry_audit: %d recipe(s) over the carry cap (python3 tools/carry_audit.py)" % sum(1 for l in carry.stdout.split("OVER CAP")[1].split("SLOWING")[0].splitlines() if " kg  recipe " in l))
 
+export = subprocess.run([sys.executable, "tools/export_check.py", "--ci"], capture_output=True, text=True)
+if export.returncode != 0:   # the client or server release build would lack a file it loads (server/client split C2)
+    bad("export_check: " + " | ".join(l.strip() for l in export.stdout.splitlines() if l.startswith("  - ")))
+elif "warnings" in export.stdout:
+    print("WARNING: export_check: " + export.stdout.strip().splitlines()[-1])
+
 master = subprocess.run([sys.executable, "tools/item_master.py", "--check"], capture_output=True, text=True)
 if master.returncode != 0:   # a warning only: the master list lives outside the repo (tech/ITEM_MASTER.md)
     print("WARNING:", master.stdout.strip())
