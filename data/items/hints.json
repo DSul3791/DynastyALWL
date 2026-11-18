@@ -98,7 +98,7 @@
 		{
 			"id": "bed",
 			"trigger": "leanto_placed",
-			"text": "Make a Rough bed from your pack: 10 thatch, 4 sticks and 2 twine. Place it inside your lean-to.",
+			"text": "Make a bed: a Thatch - Bed from your pack (10 thatch, 4 sticks, 2 twine) or a Straw - Bed with the hammer. Place it inside your lean-to.",
 			"goal": "bed"
 		},
 		{
