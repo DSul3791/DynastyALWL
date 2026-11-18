@@ -1645,7 +1645,12 @@ var _save_sig: Dictionary = {}     # world id -> [hash of its saved fields, its 
 var _area_ids: Dictionary = {}     # area key -> {world id: true}: the items each area file holds
 var _area_dirty: Dictionary = {}   # area key -> true: changed since the last periodic save
 var _save_side: Dictionary = {}    # world id -> true: a trunk or stump, a light or a kiln (tree_states, lights, kilns.json are made from these)
-var _sweep_id: int = 0            # the pass under way: the next world id it looks at
+var _walk_ids := PackedInt64Array()   # the pass under way: the ids live at the last pass, and how far it is through them
+var _walk_at: int = 0
+var _walk_hi: int = 0             # then the ids made since the last pass began, from _walk_lo (_walk_hi: how far) up to _walk_end
+var _walk_lo: int = 0
+var _walk_end: int = 0
+var _walk_next := PackedInt64Array()  # the ids found live this pass: the next pass's list
 var _sweep_began_ms: int = 0
 var _load_changed: Dictionary = {}  # at load: world ids a load step changed in a way the area files must get (server_carts.gd after_load)
 var _load_row_of: Dictionary = {}  # at load: world id -> its row's index in the loaded rows, and the area file each row came from
@@ -1834,7 +1839,8 @@ static func _not_in_area(it: Dictionary) -> bool:
 
 # The hash of what a world item's saved row holds, its countdowns in AREA_STEP_S steps. The live record is changed only for the native hash and put
 # back at once, value for value, in place (its keys keep their order). Anything not named here is hashed as it is: a change there marks the area.
-# Written out field by field, with no arrays made, since it runs for every item once a pass.
+# Written out field by field, with no arrays made, since it runs for every item once a pass. The hash is 32 bits: a change that hashes the
+# same as before (about one in four billion) waits for the next change in its area or the shutdown save, which writes every area exactly.
 func _save_sig_of(it: Dictionary) -> int:
 	var has_left: bool = it.has("left")
 	var left: Variant = it.get("left")
@@ -1968,32 +1974,47 @@ func _save_forget(id) -> void:
 	_save_side.erase(id)
 
 
-# One tick's slice of the rolling check: the world ids from where the pass is up to, at most `count` of them and no longer than `budget_us`.
-# World ids all come from _next_id, so a pass walks 1 to _next_id and needs no list of the items made at its start (that list cost one tick
-# about 6 ms at 50,000 items): a live id is looked at, an id the check knew that is gone is forgotten, an unused id costs two look-ups.
+# One tick's slice of the rolling check: from where the pass is up to, at most `count` ids and no longer than `budget_us`.
+# A pass walks the ids that were live at the last pass (_walk_ids) and then the ids made since it began (_walk_hi to _walk_end; world ids all
+# come from _next_id), building the next pass's list as it goes. So no list of every item is made on one tick (that cost a tick about 6 ms at
+# 50,000 items), and the ids that came and went (scatter laid out and taken away as players walk) cost a pass only once, in the interval they
+# were made: a pass costs about the live items plus the ids made in one interval, never every id ever given out.
 func _save_sweep(count: int, budget_us: int = SWEEP_BUDGET_US) -> void:
 	var t0: int = Time.get_ticks_usec()
 	var n: int = 0
 
 	while n < count:
-		if _sweep_id >= _next_id:
+		var id: int = 0
+
+		if _walk_at < _walk_ids.size():
+			id = _walk_ids[_walk_at]
+			_walk_at += 1
+		elif _walk_hi < _walk_end:
+			id = _walk_hi
+			_walk_hi += 1
+		else:
 			var took_ms: int = Time.get_ticks_msec() - _sweep_began_ms
 
 			if _sweep_began_ms > 0 and took_ms > int(SAVE_EVERY_S * 1000.0):
 				_log_off_main("server items: the save check took %.1f s for %d items, longer than a save interval (changes reach the disk later)" % [float(took_ms) / 1000.0, _items.size()])
 
-			_sweep_id = 0
+			_walk_ids = _walk_next
+			_walk_next = PackedInt64Array()
+			_walk_at = 0
+			_walk_lo = _walk_hi
+			_walk_end = _next_id
 			_sweep_began_ms = Time.get_ticks_msec()
 
-			if _next_id <= 1 or n > 0:
+			if n > 0 or (_walk_ids.is_empty() and _walk_hi >= _walk_end):
 				return   # the next pass starts on the next tick
 
-		var id: int = _sweep_id
-		_sweep_id += 1
+			continue
+
 		n += 1
 
 		if _items.has(id):
 			_save_note(id)
+			_walk_next.append(id)
 		elif _save_sig.has(id):
 			_save_forget(id)
 
@@ -2001,9 +2022,9 @@ func _save_sweep(count: int, budget_us: int = SWEEP_BUDGET_US) -> void:
 			return
 
 
-# How many world ids the tick's slice takes, so a pass covers them all in about 0.8 of a save interval.
+# How many ids the tick's slice takes, so a pass covers them all in about 0.8 of a save interval.
 func _sweep_slice(delta: float) -> int:
-	return maxi(64, ceili(float(_next_id) * delta / SAVE_EVERY_S * 1.25))
+	return maxi(64, ceili(float(_walk_ids.size() + _walk_end - _walk_lo) * delta / SAVE_EVERY_S * 1.25))
 
 
 # The whole check at once (tests and tools; the tick spreads it with _save_sweep).
@@ -2015,7 +2036,12 @@ func save_check_now() -> void:
 		if not _items.has(id):
 			_save_forget(id)
 
-	_sweep_id = 0
+	_walk_ids = PackedInt64Array()   # a fresh pass over every live item
+	_walk_next = PackedInt64Array(_items.keys())
+	_walk_at = 0
+	_walk_hi = _next_id
+	_walk_lo = _next_id
+	_walk_end = _next_id
 
 
 # The save check's index, once, after every load step (one hash pass: two made the load 0.7 s longer at 50,000 items). The load steps change

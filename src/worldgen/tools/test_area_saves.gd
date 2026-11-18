@@ -269,6 +269,70 @@ func _init() -> void:
 
 	check(exact and new_stick and after_stop._items.size() == 19999, "a shutdown save right after changes writes them: a count, an erase, a new item (%d items)" % after_stop._items.size())
 
+	# Ids that came and went (scatter laid out and taken away as players walk) cost the check once, not every pass after: a pass walks the
+	# items live at the last pass and the ids made since, and a change after the gap still reaches the disk within two save intervals.
+	var gap_was: int = big._next_id
+	big._next_id += 200000   # 200,000 ids given out and taken away again
+	var ran: int = 0
+
+	while big._walk_hi < big._next_id and ran < 100000:
+		big._save_sweep(big._sweep_slice(0.05), 1000000)
+		ran += 1
+
+	for t in 2:
+		big._save_sweep(big._sweep_slice(0.05), 1000000)   # the pass over the gap ends, the next begins
+
+	var span: int = big._walk_ids.size() + big._walk_end - big._walk_lo
+	check(span < big._items.size() + 1000 and big._next_id > gap_was, "after the gap a pass walks about the live items (%d ids for %d items, %d ids given out)" % [span, big._items.size(), big._next_id])
+	var after_gap: int = big._items.keys()[50]
+	big._items[after_gap]["count"] = 61
+
+	for t in 2 * ticks_per_save:
+		big._save_sweep(big._sweep_slice(0.05), 1000000)
+
+		if (t + 1) % ticks_per_save == 0:
+			big._dirty = true
+			big._async_writes = true
+			big.save()
+			big._async_writes = false
+			big._start_writer()
+			big._finish_writer()
+
+	var gap_back = make()
+	var seen61: bool = false
+
+	for id in gap_back._items:
+		seen61 = seen61 or int(gap_back._items[id]["count"]) == 61
+
+	check(seen61, "and a change after the gap reaches the disk within two save intervals")
+
+	# The save check's hash puts back every field it rounds, value for value and in the same key order.
+	var fire_it: Dictionary = {"number": stick, "count": 1, "pos": Vector3(3.0, 10.0, 3.0), "left": 1234.5, "fire": {"state": 2, "burn_left": 333.3, "lit_s": 77.7, "wood": {"log": 10.5, "weak": 2.25}, "burnt": {"log": 1.5}, "char": 0.37, "recheck": 4.0, "covered": true}}
+	var lit_it: Dictionary = {"number": stick, "count": 1, "pos": Vector3(4.0, 10.0, 4.0), "struct": {"kind": "campfire", "yaw": 0.0, "lit": true, "fuel_left": 55.5, "kiln": {"t": 3.0}}}
+
+	for it in [fire_it, lit_it]:
+		var was: Dictionary = it.duplicate(true)
+		var keys_was: Array = [it.keys(), (it.get("fire", {}) as Dictionary).keys(), (it.get("struct", {}) as Dictionary).keys()]
+		var sig1: int = gap_back._save_sig_of(it)
+		check(it == was and [it.keys(), (it.get("fire", {}) as Dictionary).keys(), (it.get("struct", {}) as Dictionary).keys()] == keys_was and gap_back._save_sig_of(it) == sig1, "the save hash leaves the item as it was (%s)" % str(it.keys()))
+
+	fire_it["fire"]["burn_left"] = 330.0   # the same 10-minute step
+	var sig_same: int = gap_back._save_sig_of(fire_it)
+	fire_it["fire"]["burn_left"] = 333.3
+	check(sig_same == gap_back._save_sig_of(fire_it), "a fire burning within one step hashes the same")
+
+	# A load step that changes a saved row (a crate set down off a gone cart: server_carts.gd after_load) has its area written at the first save.
+	var marked = make()
+	var some: int = -1
+
+	for id in marked._save_sig:
+		if some < 0 and str(marked._save_sig[id][1]) != "":
+			some = int(id)
+
+	marked._load_changed[some] = true
+	marked._index_after_load(marked._next_id)
+	check(some >= 0 and marked._area_dirty.has(str(marked._save_sig[some][1])), "a load step's change marks its area to write")
+
 	# A load leaves nothing to write: the first periodic save after it, with nothing changed, writes no area file.
 	var clean = make()
 	check(clean._area_dirty.is_empty(), "a clean load marks no area to write (%d marked)" % clean._area_dirty.size())
