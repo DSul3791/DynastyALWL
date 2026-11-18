@@ -17759,8 +17759,8 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 			return inv.count_of(table.number_of("wooden_hammer")) >= 1   # the shelter is a hammer blueprint now: with the hammer in the pack, the next step is to click it down
 		"leanto_placed":
 			return _hint_count(st, "event:placed:lean_to") >= 1
-		"bed_placed":
-			return _hint_count(st, "event:placed:rough_bed") >= 1
+		"bed_placed":   # any bed: the Thatch - Bed kit or a built Straw, Feather or Canopy bed (the starter bed goal counts the same four)
+			return _hint_count(st, "event:placed:rough_bed") + _hint_count(st, "event:placed:straw_bed") + _hint_count(st, "event:placed:feather_bed") + _hint_count(st, "event:placed:canopy_bed") >= 1
 		"wall_placed":   # any wall, doorway or window stands: the roof panels come next (GA-18)
 			for k in st.get("goal_counts", {}):
 				if str(k).begins_with("event:placed:") and str(_structures.get(str(k).trim_prefix("event:placed:"), {}).get("piece_kind", "")) == "wall":

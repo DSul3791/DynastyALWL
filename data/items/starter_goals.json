@@ -151,13 +151,18 @@
 		{
 			"id": "bed",
 			"title": "Make a bed",
-			"hint": "Make a Rough bed from your pack (10 thatch from thatch grass or heather, 4 sticks, 2 twine) and place it in your lean-to.",
+			"hint": "Make a bed and place it in your lean-to: a Thatch - Bed from your pack (10 thatch from thatch grass or heather, 4 sticks, 2 twine), or a Straw - Bed with the hammer. Any bed counts.",
 			"after": [
 				"shelter"
 			],
 			"check": {
 				"event": "placed",
-				"what": "rough_bed",
+				"what_any": [
+					"rough_bed",
+					"straw_bed",
+					"feather_bed",
+					"canopy_bed"
+				],
 				"count": 1
 			},
 			"stage": "start"
