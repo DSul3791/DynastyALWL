@@ -2927,7 +2927,9 @@ func _log_surround() -> void:
 				var root: Vector3 = trunk[0]
 				var key: String = "t%d:%d" % [int(round(root.x * 100.0)), int(round(root.z * 100.0))]
 				keep[key] = true
-				_log_static(key, _log_post(float(trunk[1]), TRUNK_H_M), Transform3D(Basis(), root + Vector3(0.0, TRUNK_H_M * 0.5, 0.0)))
+
+				if not _logs.has_static(key):
+					_log_static(key, _log_post(float(trunk[1]), TRUNK_H_M), Transform3D(Basis(), root + Vector3(0.0, TRUNK_H_M * 0.5, 0.0)))
 
 		for rect in _grid.rects_near(at.x, at.z, reach, _items):
 			var key: String = "w%d" % int(rect["id"])
