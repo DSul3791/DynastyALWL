@@ -155,7 +155,6 @@ const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
 const PieceLook := preload("res://src/client/piece_look.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
-const TileBakeScript := preload("res://src/admin/tile_bake_launcher.gd")
 const AmbientCrittersScript := preload("res://src/client/ambient_critters.gd")
 const GrassViewScript := preload("res://src/client/grass_view.gd")
 const SoundStageScript := preload("res://src/client/sound_stage.gd")
@@ -496,7 +495,7 @@ var _jitter_test                      # float-precision test, J or Esc > Advance
 var _machine_probe                    # "Measure this machine" run for the minimum-spec test (Esc > Advanced)
 var _gpu_probe                        # GPU cost per piece of the scene, Ctrl+Shift+P
 var weather_look                      # WeatherLook: clouds, rain, snow, fog, lightning from `weather`
-var _bake = TileBakeScript.new()      # admin: background tile bake
+var _bake = null                      # admin: background tile bake (src/admin/tile_bake_launcher.gd), made when started; editor runs only (game_menu.gd)
 var _bake_check_msec: int = 0
 var _bake_status: String = ""
 var _bake_alert_until: int = 0
@@ -1090,7 +1089,7 @@ func _welcome_body(info: Dictionary) -> void:
 		_finish(1)
 		return
 
-	# A release server names its build in the welcome (protocol 132): another build stops here, before anything is loaded or the hello is
+	# A release server names its build in the welcome (protocol 133): another build stops here, before anything is loaded or the hello is
 	# sent, with the server's own wording. The server refuses it at hello too (BuildStamp.refusal), so a client that skips this is still kept out.
 	if bool(info.get("server_stamped", false)):
 		var refused: String = BuildStamp.refusal(int(info.get("server_build", 0)), BuildStamp.stamped_build())
@@ -3546,7 +3545,7 @@ var _dig_spam_next_msec: int = 0
 var _step_lift: float = 0.0               # metres the eye still has to rise after a step-up (eased out)
 var _movement: Dictionary = {}        # data/movement.json
 var _telemetry = EventLogScript.new()       # crash_reports/telemetry_client.log: traffic, backlog and frame gaps once a second
-var _join_refused: String = ""            # the server's reason when it refused this build (join_refused, protocol 132)
+var _join_refused: String = ""            # the server's reason when it refused this build (join_refused, protocol 133)
 var _connect_window = null                # shown until the ground under the player is ready (connect_window.gd)
 var _link_up_msec: int = 0                # when ENet reported the connection up (welcome still to come)
 var _pit_shadow_msec: int = 0
@@ -5531,7 +5530,7 @@ func _process(delta: float) -> void:
 	Probe.stop("anchor", ta0)
 	# Owner (2026-10-19): while a bake runs, ask only for the ground the game is waiting on
 	# right now, not the extra ground around it (it is all thrown away when the bake ends).
-	stream.only_urgent = _bake.running
+	stream.only_urgent = _bake != null and _bake.running
 	link.pump()
 	var wanted: Array = [PackedInt32Array(), 0] if _building_paused else stream.take_requests()
 
@@ -5604,7 +5603,7 @@ func _process(delta: float) -> void:
 		Probe.stop("grass: stamp", tg_stamp)
 		Probe.stop("grass", tg)
 
-	if _bake.running and now >= _bake_check_msec:
+	if _bake != null and _bake.running and now >= _bake_check_msec:
 		_bake_check_msec = now + 2000
 		_bake_status = _bake.status()
 

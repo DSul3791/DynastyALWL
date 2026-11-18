@@ -462,9 +462,15 @@ func _build_admin() -> void:
 		var key: String = _c.items.player_key() if _c.items != null else ""
 		DisplayServer.clipboard_set(key)
 		note.text = "Your player key (copied): %s\nPut it in data/admin.json as {\"keys\": [\"%s\"]}" % [key, key])
-	_button(admin, "Rebuild the starter ground (slow, 5 to 10 min)", func():
-		var problem: String = _c._bake.start()
-		note.text = "Baking the starter tiles in the background (about 5 to 10 minutes). The game stays usable; the result shows here." if problem == "" else problem)
+	# The bake runs the project's own bake script beside the editor's local server, so only an editor run has it: an installed client has
+	# no project and no tiles (server/client split A3).
+	if OS.has_feature("editor"):
+		_button(admin, "Rebuild the starter ground (slow, 5 to 10 min)", func():
+			if _c._bake == null:
+				_c._bake = load("res://src/admin/tile_bake_launcher.gd").new()
+
+			var problem: String = _c._bake.start()
+			note.text = "Baking the starter tiles in the background (about 5 to 10 minutes). The game stays usable; the result shows here." if problem == "" else problem)
 	_button(admin, "Respawn showroom (take it away and fill it again)", func(): if _c.showroom != null: _c.showroom.respawn())
 	_button(admin, "Clear dropped items within 50 m", func(): _c.net.inventory_action.rpc_id(1, Net.ACT_CLEAR_DROPS, 50, 0, 0, Vector3.ZERO))
 	_button(admin, "Developer tools", func(): show_page("developer"))

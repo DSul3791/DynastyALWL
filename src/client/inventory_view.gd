@@ -432,7 +432,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_thought_label.add_theme_color_override("font_color", Color(0.78, 0.86, 1.0))
 	_thought_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer.add_child(_thought_label)
-	net.hello.rpc_id(1, _player_key(), BuildStamp.stamped_build())   # a stamped server refuses another build (protocol 132)
+	net.hello.rpc_id(1, _player_key(), BuildStamp.stamped_build())   # a stamped server refuses another build (protocol 133)
 
 	for forgotten in CharacterKeys.take_forgotten():
 		net.forget_character.rpc_id(1, str(forgotten))
