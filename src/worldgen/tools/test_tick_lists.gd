@@ -95,7 +95,7 @@ func _init() -> void:
 		raining = 1.0 if step >= 40 and step < 60 else 0.0
 
 		for w in [lists, walk]:
-			if step == 5 and w._w.has(int(ids_a["standing_torch"])):
+			if step == 5 and w._items.has(int(ids_a["standing_torch"])):
 				var torch: Dictionary = w._items[int(ids_a["standing_torch"])]
 				torch["struct"]["lit"] = true   # lit in place, between full sorts
 				torch["struct"]["fuel_left"] = 600.0
