@@ -1867,9 +1867,9 @@ static func standing_torch(lit: bool = false) -> Node3D:
 	return root
 
 
-# One bed builder for the comfort beds (Dave's comfort feature): `kind` "straw" (a log frame, a thick straw tick, a folded wool blanket, a rolled pillow), "feather" (a plank frame, a white
-# linen cover over a plump feather tick, two pillows, a blue wool blanket) or "canopy" (the feather bed with four turned posts, a top frame and a curtain on each long side). 1.0 x 2.0 m like the rough bed
-# (long axis along x), top of the mattress 0.5 to 0.62 m up.
+# One bed builder for the comfort beds (Dave's comfort feature): `kind` "straw" (a log frame, a flat straw mattress, a flat pillow band), "feather" (a plank frame, a flat white
+# linen mattress, a flat pillow band, a flat blue wool blanket) or "canopy" (the feather bed with four turned posts, a top frame and a curtain on each long side). 1.0 x 2.0 m like the rough bed
+# (long axis along x, head at -x), top of the mattress 0.44 m up, its solid the same height so a sleeper lies on it.
 static func comfort_bed(kind: String = "straw") -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
@@ -1890,17 +1890,13 @@ static func comfort_bed(kind: String = "straw") -> Node3D:
 		for z in [-0.4, 0.4]:
 			_box(root, Vector3(0.12, 0.2, 0.12), Vector3(x, 0.1, z), _frame)
 
+	# A plain flat bed (Dave 18 Nov 2026: "it should just be a flat bed like in minecraft or ark", the old heaped tick, folded blanket and round pillows read as stuff on top):
+	# one flat mattress filling the frame, a flat pillow band at the head (-X, where the lie pose puts the head) and, on the feather bed, a flat blanket over the foot end.
+	_box(root, Vector3(1.8, 0.12, 0.8), Vector3(0.0, 0.36, 0.0), linen if feather else straw)
+	_box(root, Vector3(0.36, 0.02, 0.78), Vector3(-0.7, 0.43, 0.0), pillow)
+
 	if feather:
-		_dome(root, 0.95, Vector3(0.0, 0.3, 0.0), Vector3(1.0, 0.2, 0.46), linen, 14, 4)                                # the plump feather tick under its cover
-		_box(root, Vector3(0.7, 0.05, 0.84), Vector3(0.35, 0.5, 0.0), wool)                                          # the blanket over the lower two thirds
-		_box(root, Vector3(0.7, 0.03, 0.86), Vector3(0.35, 0.53, 0.0), _tone_mat(Color(0.35, 0.4, 0.55)))
-		_dome(root, 0.3, Vector3(-0.72, 0.5, -0.2), Vector3(1.0, 0.45, 0.8), pillow, 10, 4)
-		_dome(root, 0.3, Vector3(-0.72, 0.5, 0.2), Vector3(1.0, 0.45, 0.8), pillow, 10, 4)
-	else:
-		_box(root, Vector3(1.8, 0.07, 0.8), Vector3(0.0, 0.34, 0.0), straw)
-		_dome(root, 0.95, Vector3(0.0, 0.36, 0.0), Vector3(1.0, 0.2, 0.42), straw, 14, 4)                              # the heaped straw tick
-		_box(root, Vector3(0.5, 0.05, 0.7), Vector3(0.45, 0.52, 0.0), wool)                                          # a folded blanket
-		_dome(root, 0.25, Vector3(-0.75, 0.5, 0.0), Vector3(1.0, 0.45, 1.2), pillow, 10, 4)
+		_box(root, Vector3(1.1, 0.02, 0.82), Vector3(0.35, 0.43, 0.0), wool)
 
 	if kind == "canopy":
 		for x in [-0.95, 0.95]:
@@ -1924,7 +1920,7 @@ static func comfort_bed(kind: String = "straw") -> Node3D:
 			for k in 2:
 				_box(root, Vector3(0.03, 1.5, 0.22), Vector3(x + (-0.01 if x > 0.0 else 0.01), 1.25, -0.3 + 0.55 * float(k) + (0.1 if k == 1 else 0.0)), curtain)
 
-	_solid(root, Vector3(2.0, 0.5, 1.0), Vector3(0.0, 0.25, 0.0))
+	_solid(root, Vector3(2.0, 0.44, 1.0), Vector3(0.0, 0.22, 0.0))
 	return root
 
 
