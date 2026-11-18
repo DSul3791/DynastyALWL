@@ -519,6 +519,16 @@ func setup(item_table, store_dir: String) -> void:
 	_load_inventories()
 	_load_chests()
 	_load_world_items()
+	_reindex_save()   # the save check's index of what the files held
+	_area_dirty = _area_recovered.duplicate()
+
+	for id in _load_row_of:   # a row filed in another area's file than where it lies (moved since that file was written): both are written again
+		if _save_sig.has(id) and int(_load_row_of[id]) < _load_row_area.size() and str(_load_row_area[int(_load_row_of[id])]) != str(_save_sig[id][1]):
+			_area_dirty[str(_load_row_area[int(_load_row_of[id])])] = true
+			_area_dirty[str(_save_sig[id][1])] = true
+
+	_load_row_of = {}
+	_load_row_area = []
 	_carts.after_load()
 	var lights_parsed: Variant = _read_json_version("lights.json", 1)
 	_apply_lit_rows(lights_parsed.get("lit", []) if lights_parsed != null and typeof(lights_parsed.get("lit", null)) == TYPE_ARRAY else [])
@@ -533,18 +543,8 @@ func setup(item_table, store_dir: String) -> void:
 			(crops_parsed.get("wells", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("wells", null)) == TYPE_DICTIONARY else {})
 	_rebuild_supports(true)
 	_load_trees()
-	# The save check's index, once everything that makes or changes world items at load has run (lights lit, kilns, the trunks and stumps of
-	# tree_states.json: a save before the first pass must still hold them).
-	_reindex_save()
-	_area_dirty = _area_recovered.duplicate()
-
-	for id in _load_row_of:   # a row filed in another area's file than where it lies (moved since that file was written): both are written again
-		if _save_sig.has(id) and int(_load_row_of[id]) < _load_row_area.size() and str(_load_row_area[int(_load_row_of[id])]) != str(_save_sig[id][1]):
-			_area_dirty[str(_load_row_area[int(_load_row_of[id])])] = true
-			_area_dirty[str(_save_sig[id][1])] = true
-
-	_load_row_of = {}
-	_load_row_area = []
+	save_check_now()   # what the load steps since the index made or changed (crates set down, lights lit, the trunks and stumps of tree_states.json) is
+	                   # noted now, so a save before the first pass holds it and a repaired row is written again
 	var cooking: Variant = JSON.parse_string(FileAccess.get_file_as_string(COOKING_PATH))
 	_cooking = cooking if typeof(cooking) == TYPE_DICTIONARY else {}
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(DROPS_PATH))
@@ -1926,7 +1926,9 @@ func _save_note(id) -> void:
 	var key: String = "" if _not_in_area(it) else area_key_of(float(it["pos"].x), float(it["pos"].z))
 
 	if it.has("tree") or (it.has("struct") and (it["struct"].has("lit") or bool(_structures.get(str(it["struct"]["kind"]), {}).get("lights", false)) or str(_structures.get(str(it["struct"]["kind"]), {}).get("use", "")) == "kiln")):
-		_save_side[id] = true
+		if not _save_side.has(id):
+			_save_side[id] = true
+			_dirty = true   # a new trunk, stump, light or kiln: tree_states, lights or kilns.json change
 	else:
 		_save_side.erase(id)
 
@@ -1954,7 +1956,9 @@ func _save_note(id) -> void:
 		_area_dirty[key] = true
 
 	_save_sig[id] = [sig, key]
-	_dirty = true   # the save writes it even when nothing else asked for a save
+
+	if key != "" or (old != null and str(old[1]) != ""):
+		_dirty = true   # an area changed: the save writes it even when nothing else asked for a save
 
 
 func _save_forget(id) -> void:
