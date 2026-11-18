@@ -77,5 +77,5 @@ This is linked to the compounding-height issue in entry 1.
 - This averaging operation is separate from Level: it does not use the player's foot height as its target.
 - The tree/building protection and rock placement rules above still apply.
 
-**Open detail, not an approved requirement:**
-- Planting resource-consumption rules and exact nearby resource sources remain unspecified. Dave's latest clarification did not settle this question.
+**Planting resource sources (Dave's clarification):**
+- Planting uses and consumes the selected seeds or plants from the player's inventory, local containers, or loose seeds/plants sitting on the ground nearby, through the normal crafting resource system.
