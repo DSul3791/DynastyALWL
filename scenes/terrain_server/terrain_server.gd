@@ -2022,7 +2022,10 @@ func _on_cut_swath_requested(peer_id: int, held_slot: int, plants: PackedInt32Ar
 	var reach: float = float(swing["radius"]) + SWATH_SLACK_M
 	var cut: int = int(swing["crops"])
 
-	for n in range(mini(plants.size() / 3, SWATH_MOST)):
+	@warning_ignore("integer_division")
+	var triples: int = plants.size() / 3   # whole triples only
+
+	for n in range(mini(triples, SWATH_MOST)):
 		var chunk: Vector2i = Vector2i(plants[n * 3], plants[n * 3 + 1])
 		var id: int = plants[n * 3 + 2]
 		var species: Dictionary = flora.placer._by_id.get(id >> 16, {})

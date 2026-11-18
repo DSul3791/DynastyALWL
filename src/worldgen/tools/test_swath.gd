@@ -61,7 +61,7 @@ func _init() -> void:
 	items.set_fitness(1, 0)   # an average adult: new characters start at fitness 5 (FIT-1), whose tool care makes one use wear about 0.97, carried, so one swing would read 0
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var cfg: Dictionary = items._drops.get("swath", {})
-	check(float(cfg["sickle"]["radius_m"]) == 1.5 and float(cfg["scythe"]["radius_m"]) == 3.0, "the sickle reaches 1.5 m and the scythe 3 m round the player (Dave: radius)")
+	check(float(cfg["tool_sickle"]["radius_m"]) == 1.5 and float(cfg["tool_scythe"]["radius_m"]) == 3.0, "the sickle reaches 1.5 m and the scythe 3 m round the player (Dave: radius)")
 
 	bed(930001, 1.0, 0.0, "wheat", true)     # inside the sickle's circle
 	bed(930002, 0.0, 2.5, "wheat", true)     # outside it, inside the scythe's

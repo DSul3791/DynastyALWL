@@ -162,14 +162,14 @@ func _pick(c: Dictionary) -> void:
 # the ground grass in the circle lies down like trodden grass. Answers the radius (0 for a tool with no swath).
 func swath(held_slot: int, tool_class: String) -> float:
 	var cfg: Dictionary = _drops.get("swath", {})
-	var radius: float = float((cfg.get(tool_class, {}) as Dictionary).get("radius_m", 0.0))
+	var radius: float = float((cfg.get("tool_" + tool_class, {}) as Dictionary).get("radius_m", 0.0))
 
 	if radius <= 0.0 or _client.body == null:
 		return 0.0
 
 	var now: int = Time.get_ticks_msec()
 
-	if now - _swath_ms < int((cfg.get(tool_class, {}) as Dictionary).get("swing_ms", 0)):
+	if now - _swath_ms < int((cfg.get("tool_" + tool_class, {}) as Dictionary).get("swing_ms", 0)):
 		return 0.0   # the server takes one swing a swing_ms: a faster click would lay the grass down for nothing
 
 	_swath_ms = now

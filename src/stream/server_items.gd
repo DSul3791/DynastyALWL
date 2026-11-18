@@ -18204,7 +18204,7 @@ func swath_swing(peer: int, held_slot: int) -> Dictionary:
 		return {}
 
 	var cfg: Dictionary = _drops.get("swath", {})
-	var tool_cfg: Dictionary = cfg.get(tool_class, {})
+	var tool_cfg: Dictionary = cfg.get("tool_" + tool_class, {})
 	var now: int = Time.get_ticks_msec()
 
 	if now - int(_swath_ms.get(peer, -100000)) < int(tool_cfg.get("swing_ms", 600)):
