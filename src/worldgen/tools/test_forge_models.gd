@@ -83,7 +83,7 @@ func _init() -> void:
 	smithy.free()
 
 	# A Smelter's fire burns only while its row says lit (Dave 17 Nov 2026: "it needs to show no fire when its not lit"): not as a blueprint
-	# ghost, not as a site, not cold; every tier. The Primitive smithy that shares the Primitive smelter's model keeps its fire.
+	# ghost, not as a site, not cold; every tier. The built Primitive smithy that shares the Primitive smelter's model keeps its fire.
 	for kind in ["smelter", "improved_smelter", "large_forge"]:
 		var state: int = int(structures[kind]["state"])
 
@@ -100,8 +100,25 @@ func _init() -> void:
 		ghost.free()
 
 	var smithy_fire: Node3D = view._model_for_state(int(structures["stone_forge"]["state"]), {})
-	check((smithy_fire.get_node_or_null("Flames") as Node3D) != null and (smithy_fire.get_node_or_null("Flames") as Node3D).visible, "the Primitive smithy, which shares the model, keeps its fire")
+	check((smithy_fire.get_node_or_null("Flames") as Node3D) != null and (smithy_fire.get_node_or_null("Flames") as Node3D).visible, "the built Primitive smithy, which shares the model and has no lighting yet, keeps its fire")
+	check(smithy_fire.get_node_or_null("StoneAnvil") != null, "the Primitive smithy has its stone anvil beside the fire (Dave 17 Nov 2026)")
 	smithy_fire.free()
+	var smelter_model: Node3D = view._model_for_state(int(structures["smelter"]["state"]), {})
+	check(smelter_model.get_node_or_null("StoneAnvil") == null, "the Primitive smelter, which shares the model, has no anvil")
+	smelter_model.free()
+
+	# No smithy blueprint burns (Dave 17 Nov 2026: "it currently has a fire in the blueprint that is burning before you make it"): ghost or site.
+	for kind in ["stone_forge", "blacksmithy", "advanced_smithy", "master_forge"]:
+		if not structures.has(kind):
+			continue
+
+		var smithy_state: int = int(structures[kind]["state"])
+
+		for blueprint in [view.ghost_model(smithy_state), view._model_for_state(smithy_state, {"site": []})]:
+			var flames_bp: Node3D = blueprint.get_node_or_null("Flames") as Node3D
+			var smoke_bp: GPUParticles3D = blueprint.get_node_or_null("ForgeSmoke") as GPUParticles3D
+			check((flames_bp == null or not flames_bp.visible) and (smoke_bp == null or not smoke_bp.emitting), "%s blueprint shows no fire or smoke" % kind)
+			blueprint.free()
 
 	print("forge models: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
