@@ -89,10 +89,11 @@ func _init() -> void:
 	var states: Dictionary = {}
 	var differ_at: int = -1
 	var stone: int = lists.table.number_of("stone")
-	var steps: int = 1600   # 60 s a slow tick: about 27 game hours, past the log fire's 10 h, its coals (2 h) and warm ash (12 h)
+	var steps: int = 1600   # 60 s a slow tick: about 27 game hours, past coals (2 h) and warm ash (12 h)
 
 	for step in steps:
-		raining = 1.0 if step >= 900 and step < 920 else 0.0   # after the log fire's flames: rain early puts an open fire out to a laid fire (9), and it never reaches coals
+		raining = 1.0 if step == 40 or (step >= 900 and step < 920) else 0.0   # a shower while lights and open fires burn (an open fire rained out is laid, 9, and
+		                                                                       # never reaches coals: the dev coals fire shows those), and rain on warm ash later
 
 		for w in [lists, walk]:
 			if step == 5 and w._items.has(int(ids_a["standing_torch"])):
