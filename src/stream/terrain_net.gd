@@ -363,7 +363,7 @@ func water_changed() -> void:
 	water_changed_received.emit()
 
 
-# Protocol 88 (lag review, Steve 3 Nov 2026), a list since 129: the water moved only inside `areas` (Rect2s, world x, z metres: the live water
+# Protocol 88 (lag review, Steve 3 Nov 2026), a list since 130: the water moved only inside `areas` (Rect2s, world x, z metres: the live water
 # window now and where it was, each dig window now and where they were): clients ask again only for the chunks they hold that touch one.
 @rpc("authority", "call_remote", "reliable")
 func water_changed_in(areas: Array) -> void:

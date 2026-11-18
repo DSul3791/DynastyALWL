@@ -26,7 +26,7 @@ func _init() -> void:
 	_check(reask.wait_after(low, 0, low, high) == low * 2, "a re-ask that brought nothing new doubles the wait")
 	_check(reask.wait_after(high, 0, low, high) == high, "the wait never passes the cap")
 	_check(reask.wait_after(high, 3, low, high) == low, "changed water brings the wait straight back to 3 s")
-	# Protocol 129 (audit findings 7 and 12): areas apart stay apart. Two dig windows 2 km apart re-ask the chunks at each, not those between.
+	# Protocol 130 (audit findings 7 and 12): areas apart stay apart. Two dig windows 2 km apart re-ask the chunks at each, not those between.
 	var areas: Array = [Rect2(0.0, 0.0, 96.0, 96.0), Rect2(2000.0, 0.0, 96.0, 96.0)]
 	_check(reask.touches_any(areas, Rect2(0.0, 0.0, 256.0, 256.0)) and reask.touches_any(areas, Rect2(1792.0, 0.0, 256.0, 256.0)), "a chunk under either dig window asks again")
 	_check(not reask.touches_any(areas, Rect2(1024.0, 0.0, 256.0, 256.0)), "a chunk between them does not")
