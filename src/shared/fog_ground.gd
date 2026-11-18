@@ -28,7 +28,7 @@ const PACK_STEP_M := 0.125          # TileFile.HEIGHT_STEP_M: heights go over th
 const PACK_UNKNOWN := -32768        # a cell no tile covers
 const ASK_AGAIN_MSEC := 15000       # client: asks again when the server has not answered in this long
 
-var tiles_dir: String = "res://worlds/base_world/tiles"   # the server's windows: set by server_animals.gd
+var tiles_dir: String = ""          # the server's windows: set by server_animals.gd (the client has no tiles)
 var tile_size_m: float = 15360.0
 var grid: Dictionary = {}           # the last finished build (build_grid), empty until the first
 var _task: int = -1
