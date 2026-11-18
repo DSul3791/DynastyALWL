@@ -7,9 +7,11 @@ extends RefCounted
 # the slopes and hills round it stand clear, and the top is a property of the place, not of the player. Steam fog is a shallow layer
 # over the water near rivers and lakes. A stand-in for the cold-air pooling record (docs/design/fog_pools_and_sea_fog.md part A).
 #
-# Read on the player's machine from the baked tiles (the coarse "low_height" map, 32 m, and the "fresh_m" distance to fresh water), in a
-# WINDOW_M square round the player on a worker thread, rebuilt when the player has moved REBUILD_M from its centre. No network traffic.
-# Every function below the loader is pure, so the server builds the same grid from its own tiles (server_animals.gd: animals' sight in fog).
+# Built from the baked tiles (the coarse "low_height" map, 32 m, and the "fresh_m" distance to fresh water), in a WINDOW_M square round
+# the player on a worker thread, rebuilt when the player has moved REBUILD_M from its centre. Only the server reads the tiles (the
+# client is a separate install without them, server/client split A3): the server's own windows (server_animals.gd: animals' sight in
+# fog) read them here; a client's window is read by the server (server_coarse_ground.gd), sent as cells (fog_cells, pack_cells) and
+# built into the grid on the client (receive). Every function below the loader is pure.
 
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 
@@ -22,22 +24,26 @@ const SMOOTH_PASSES := 2            # 3 x 3 box passes over the floor, so the to
 const STEAM_REACH_M := 60.0         # steam fog reaches this far from the water's edge, fading out
 const STEAM_DEPTH_M := 4.0          # and lies this deep over the water (low wisps)
 const FRESH_STEP_M := 2.0           # WaterRecord.FRESH_STEP_M: the fresh_m section's units
+const PACK_STEP_M := 0.125          # TileFile.HEIGHT_STEP_M: heights go over the wire in the tiles' own step
+const PACK_UNKNOWN := -32768        # a cell no tile covers
+const ASK_AGAIN_MSEC := 15000       # client: asks again when the server has not answered in this long
 
-var tiles_dir: String = "res://worlds/base_world/tiles"
+var tiles_dir: String = "res://worlds/base_world/tiles"   # the server's windows: set by server_animals.gd
 var tile_size_m: float = 15360.0
 var grid: Dictionary = {}           # the last finished build (build_grid), empty until the first
 var _task: int = -1
 var _next: Dictionary = {}
 var _centre: Vector2 = Vector2(INF, INF)
 var who: String = "client"          # for the log line: "client" or "server"
+var ask: Callable                   # client: asks the server for the cells of the window at an origin (Vector2); unset: read the tiles here
+var _asked_msec: int = 0
+var _asked: Vector2 = Vector2(INF, INF)   # client: the origin last asked for
+var _pending: Array = []            # client: [origin, bytes] that came while a build was running
 
 
-func setup(world: Dictionary) -> void:
-	tile_size_m = float(world.get("tile_size_m", 15360))
-
-	for argument in OS.get_cmdline_user_args():
-		if argument.begins_with("--world="):
-			tiles_dir = argument.trim_prefix("--world=").trim_suffix("/") + "/tiles"
+# Client: the server reads the tiles; `asker` sends it a window's origin (Vector2), and its fog_cells answer comes to receive().
+func setup(asker: Callable) -> void:
+	ask = asker
 
 
 # Every frame or so: starts a read when the player has moved far enough, picks up a finished one.
@@ -47,6 +53,17 @@ func update(at: Vector3) -> void:
 		return
 
 	var here: Vector2 = Vector2(at.x, at.z)
+	var origin: Vector2 = Vector2(snappedf(here.x - WINDOW_M * 0.5, CELL_M), snappedf(here.y - WINDOW_M * 0.5, CELL_M))
+
+	if ask.is_valid():
+		# The server answers with fog_cells (receive); asked again after ASK_AGAIN_MSEC with no answer (a refused or lost ask).
+		if here.distance_to(_centre) >= REBUILD_M or (_asked_msec > 0 and Time.get_ticks_msec() - _asked_msec > ASK_AGAIN_MSEC):
+			_centre = here
+			_asked_msec = Time.get_ticks_msec()
+			_asked = origin
+			ask.call(origin)
+
+		return
 
 	if here.distance_to(_centre) < REBUILD_M:
 		return
@@ -54,22 +71,24 @@ func update(at: Vector3) -> void:
 	_centre = here
 	var dir: String = tiles_dir
 	var size: float = tile_size_m
-	var origin: Vector2 = Vector2(snappedf(here.x - WINDOW_M * 0.5, CELL_M), snappedf(here.y - WINDOW_M * 0.5, CELL_M))
 	var job: Callable = func() -> void:
-		var read: Dictionary = read_window(dir, size, origin)
+		_next = with_range(read_window(dir, size, origin))
 
-		if not read.is_empty():     # the floor's range for the log line, here on the worker, not on the main thread
-			var floor_m: PackedFloat32Array = read["floor"]
-			var low_m: float = INF
-			var high_m: float = -INF
+	_task = WorkerThreadPool.add_task(job, false, "fog ground")
 
-			for value in floor_m:
-				low_m = minf(low_m, value)
-				high_m = maxf(high_m, value)
 
-			read["floor_range"] = Vector2(low_m, high_m)
+# Client: the server's cells for the window at `origin` (fog_cells; empty bytes: no tile there), built into the grid on a worker.
+func receive(origin: Vector2, bytes: PackedByteArray) -> void:
+	if origin == _asked:
+		_asked_msec = 0
 
-		_next = read
+	if _task != -1:
+		_pending = [origin, bytes]
+		return
+
+	var job: Callable = func() -> void:
+		var cells: Dictionary = unpack_cells(bytes)
+		_next = with_range(build_grid(cells["heights"], cells["fresh"], int(cells["n"]), origin)) if not cells.is_empty() else {}
 
 	_task = WorkerThreadPool.add_task(job, false, "fog ground")
 
@@ -89,6 +108,11 @@ func poll() -> void:
 			grid = _next
 
 		_log_read()
+
+		if not _pending.is_empty():
+			var next: Array = _pending
+			_pending = []
+			receive(next[0], next[1])
 
 
 # One line per finished read, so a smoke can show the worker ran (client and server).
@@ -137,6 +161,12 @@ func water_level(x: float, z: float) -> float:
 
 # Reads the window [origin, origin + WINDOW_M] from the tiles it overlaps: {"origin", "n", "floor", "view", "near", "low"}; {} when no tile is there.
 static func read_window(dir: String, tile_size: float, origin: Vector2) -> Dictionary:
+	var cells: Dictionary = read_cells(dir, tile_size, origin)
+	return build_grid(cells["heights"], cells["fresh"], int(cells["n"]), origin) if not cells.is_empty() else {}
+
+
+# The window's cells from the tiles: {"n", "heights" (NAN unknown), "fresh" (m, INF none)}; {} when no tile is there.
+static func read_cells(dir: String, tile_size: float, origin: Vector2) -> Dictionary:
 	var n: int = int(WINDOW_M / CELL_M)
 	var heights: PackedFloat32Array = PackedFloat32Array()
 	var fresh: PackedFloat32Array = PackedFloat32Array()
@@ -152,7 +182,68 @@ static func read_window(dir: String, tile_size: float, origin: Vector2) -> Dicti
 		for tx in range(first.x, last.x + 1):
 			any = _read_tile(dir, Vector2i(tx, ty), tile_size, origin, n, heights, fresh) or any
 
-	return build_grid(heights, fresh, n, origin) if any else {}
+	return {"n": n, "heights": heights, "fresh": fresh} if any else {}
+
+
+# The floor's range for the log line, worked out on the worker, not on the main thread.
+static func with_range(read: Dictionary) -> Dictionary:
+	if not read.is_empty():
+		var low_m: float = INF
+		var high_m: float = -INF
+
+		for value in read["floor"]:
+			low_m = minf(low_m, value)
+			high_m = maxf(high_m, value)
+
+		read["floor_range"] = Vector2(low_m, high_m)
+
+	return read
+
+
+# Cells for the wire (fog_cells): u16 n, then n x n heights as s16 in steps of PACK_STEP_M (PACK_UNKNOWN: unknown), then n x n
+# fresh-water distances as u8 in FRESH_STEP_M (255: none), zstd-compressed; about 60 KB before compression. Empty for no cells.
+static func pack_cells(cells: Dictionary) -> PackedByteArray:
+	if cells.is_empty():
+		return PackedByteArray()
+
+	var n: int = int(cells["n"])
+	var heights: PackedFloat32Array = cells["heights"]
+	var fresh: PackedFloat32Array = cells["fresh"]
+	var raw: PackedByteArray = PackedByteArray()
+	raw.resize(2 + n * n * 3)
+	raw.encode_u16(0, n)
+
+	for k in range(n * n):
+		var h: float = heights[k]
+		raw.encode_s16(2 + k * 2, PACK_UNKNOWN if is_nan(h) else clampi(roundi(h / PACK_STEP_M), -32767, 32767))
+		raw[2 + n * n * 2 + k] = 255 if not is_finite(fresh[k]) else clampi(roundi(fresh[k] / FRESH_STEP_M), 0, 254)
+
+	return raw.compress(FileAccess.COMPRESSION_ZSTD)
+
+
+# The cells pack_cells sent: {"n", "heights", "fresh"}; {} for empty or damaged bytes.
+static func unpack_cells(bytes: PackedByteArray) -> Dictionary:
+	if bytes.is_empty():
+		return {}
+
+	var n: int = int(WINDOW_M / CELL_M)
+	var raw: PackedByteArray = bytes.decompress(2 + n * n * 3, FileAccess.COMPRESSION_ZSTD)
+
+	if raw.size() != 2 + n * n * 3 or raw.decode_u16(0) != n:
+		return {}
+
+	var heights: PackedFloat32Array = PackedFloat32Array()
+	var fresh: PackedFloat32Array = PackedFloat32Array()
+	heights.resize(n * n)
+	fresh.resize(n * n)
+
+	for k in range(n * n):
+		var h: int = raw.decode_s16(2 + k * 2)
+		heights[k] = NAN if h == PACK_UNKNOWN else float(h) * PACK_STEP_M
+		var f: int = raw[2 + n * n * 2 + k]
+		fresh[k] = INF if f == 255 else float(f) * FRESH_STEP_M
+
+	return {"n": n, "heights": heights, "fresh": fresh}
 
 
 static func _read_tile(dir: String, tile: Vector2i, tile_size: float, origin: Vector2, n: int, heights: PackedFloat32Array, fresh: PackedFloat32Array) -> bool:
