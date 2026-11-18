@@ -11,7 +11,7 @@ The following six entries record Dave's latest playtest reports and requested be
 **Expected:**
 - Anchor the operation's maximum height to the bottom of the player's feet when the operation begins.
 - Do not move the player up or down or let raising terrain continually increase that reference height.
-- Raising ground, including filling low areas while levelling, requires and consumes soil.
+- Raising ground, including filling low areas with Level, requires and consumes soil. Till a Garden is a separate averaging operation and does not require soil (entry 6).
 - Obtain soil through the normal crafting resource system: inventory, loose soil on the ground, or a nearby container.
 
 ## 2. Foundations do not recognize raised terrain as ground
@@ -55,7 +55,7 @@ This is linked to the compounding-height issue in entry 1.
 2. **Plant** — Open a selection window showing plants and seeds available on the player or nearby. Selecting what to plant activates a neon-green planting grid. Alt + arrow keys adjust the number of rows and columns. Plant type determines spacing between plants.
 3. **Till a Garden** — Show a similar grid, with length and width adjustable using Alt + arrow keys. Left-click levels and tills the selected area, removes grass, and creates a garden, subject to the obstacle rules below.
 4. **Pathen** — One click creates one level path spot with the normal path texture.
-5. **Survey a Path** — Include after Pathen; its intended behaviour still needs defining.
+5. **Survey a Path** — Already implemented, as confirmed by Dave. Keep it after Pathen and use its existing behaviour.
 
 **Grid and obstacle rules (including Dave's latest correction):**
 - Grids form around trees and buildings and leave the area beneath them unchanged. Players should remove trees before placing gardens.
@@ -63,9 +63,19 @@ This is linked to the compounding-height issue in entry 1.
 - Large rocks block placement and turn the grid red until removed.
 - The earlier suggestion that rocks simply disappear is superseded by these small-rock/large-rock rules.
 
-**Open details, not approved requirements:**
-- Planting confirmation and cancellation controls.
-- Whether planting requires tilled soil.
-- Planting resource-consumption rules and exact nearby resource sources.
-- Whether Till a Garden uses Level's exact height-reference and soil-consumption rules.
-- Survey a Path behaviour.
+**Planting controls and soil requirements (Dave's clarification):**
+- Left-click plants the selected plant.
+- Right-click opens the selection to pick a new plant.
+- Crops such as wheat and barley require tilled soil.
+- Bushes and trees do not require tilled soil.
+
+**Till a Garden levelling (Dave's clarification):**
+- Garden levelling does not require or consume soil.
+- Take the heights of all garden grid points together and calculate their average. For example, with 100 points, average all 100 heights.
+- Instantly set the whole garden to that average height.
+- Blend the outside edge into the surrounding land at a slope of 45 degrees or less, extending out to 20 metres in all directions.
+- This averaging operation is separate from Level: it does not use the player's foot height as its target.
+- The tree/building protection and rock placement rules above still apply.
+
+**Open detail, not an approved requirement:**
+- Planting resource-consumption rules and exact nearby resource sources remain unspecified. Dave's latest clarification did not settle this question.
