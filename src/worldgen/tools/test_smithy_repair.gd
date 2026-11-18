@@ -288,7 +288,7 @@ func _init() -> void:
 	give_needs(needs, "pack", 0.5)
 	give_needs(needs, "ground", 0.25)
 	give_needs(needs, "chest", 0.1)
-	var slot: int = hold("wooden_hammer")
+	var slot: int = hold("stone_hammer")
 	var before_pack: Array = needs.map(func(need): return pack(str(need[0])))
 	var before_ground: Array = needs.map(func(need): return ground(str(need[0])))
 	var before_box: Array = needs.map(func(need): return box(chest).count_of(n(str(need[0]))))
@@ -301,7 +301,7 @@ func _init() -> void:
 
 	# 6. Every ordinary hammer repairs, from each source and mixed; exactly the cost is taken.
 	var sources: Array = ["pack", "chest", "ground", "mixed", "pack"]
-	var hammers: Array = ["wooden_hammer", "stone_hammer", "bronze_hammer", "iron_hammer", "steel_hammer"]
+	var hammers: Array = ["stone_hammer", "copper_hammer", "bronze_hammer", "iron_hammer", "steel_hammer"]
 
 	for i in hammers.size():
 		clear_world()
@@ -339,7 +339,7 @@ func _init() -> void:
 	give_needs(needs, "pack")
 	give_needs(needs, "chest")
 	give_needs(needs, "ground")
-	slot = hold("wooden_hammer")
+	slot = hold("stone_hammer")
 	repair(smithy, slot)
 	check(not items._smithies.broken(smithy) and needs.all(func(need): return ground(str(need[0])) == 0 and box(chest).count_of(n(str(need[0]))) == int(need[1]) and pack(str(need[0])) == int(need[1])), "6d. the ground is used first: the chest and the pack keep theirs")
 	break_it(smithy)
@@ -361,7 +361,7 @@ func _init() -> void:
 	clear_pack()
 	needs = repair_needs(smithy)
 	give_needs(needs, "pack")
-	slot = hold("wooden_hammer")
+	slot = hold("stone_hammer")
 	repair(smithy, slot)
 	check(not items._smithies.broken(smithy) and box(smithy).to_bytes() == store_was and bool(items._items[smithy]["struct"].get("lit", false)) and str(items._items[smithy]["struct"]["kind"]) == "blacksmithy", "7a. repaired, its store, kind and fire are as they were")
 	said.clear()

@@ -151,11 +151,11 @@ func _init() -> void:
 
 	# 7. A blueprint paid with logs on the ground (the material check pulls them in).
 	reset()
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("wooden_hammer"), 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_hammer"), 0, 1, Vector3.ZERO)
 	var row: Dictionary = {"structure": "workbench", "known": true, "hammer": 1, "cost": [["log", 3]]}
 	items.drop_in_world(oak, 2, Vector3(0.5, 10.0, 0.5))
 	items.give(1, birch, 1)
-	var hammer_slot: int = items.inventory_of(1).numbers.find(items.table.number_of("wooden_hammer"))
+	var hammer_slot: int = items.inventory_of(1).numbers.find(items.table.number_of("stone_hammer"))
 	items.inventory_of(1).numbers[0] = items.inventory_of(1).numbers[hammer_slot] if hammer_slot > 0 else items.inventory_of(1).numbers[0]
 	var ok: bool = items._can_blueprint(1, items.inventory_of(1), row)
 	check(ok and items.inventory_of(1).count_fill(items.table.number_of("log")) == 3 and ground_logs() == 0 and items.shoulder_of(1) == "log_birch", "a blueprint costing 3 logs is covered by a shoulder log and two ground logs")

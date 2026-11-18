@@ -3658,7 +3658,7 @@ func hand_tool_ok(number: int) -> bool:
 	return CraftStock.in_hand(recipes.recipe(number), table, inventory, _hand_slot())
 
 
-# The words for the tool the recipe, or a part its auto-make plan makes on the way (a Wooden block sawn for a Wooden hammer), needs in hand and
+# The words for the tool the recipe, or a part its auto-make plan makes on the way (a Wooden block sawn for a carved Wooden bowl), needs in hand and
 # lacks there ("any saw"); "" when none.
 func hand_tool_short(number: int) -> String:
 	if not hand_tool_ok(number):
@@ -6483,7 +6483,7 @@ func run_plant_test(client) -> void:
 const CHEST_BLUEPRINT := 26
 const CHEST_MATERIALS := [["stone_knife", 1], ["stick", 10], ["twine", 4]]
 const LEAN_TO_BLUEPRINT := 25
-const LEAN_TO_MATERIALS := [["wooden_hammer", 1], ["stick", 30], ["leaves", 100], ["leaves", 100], ["twine", 10]]
+const LEAN_TO_MATERIALS := [["stone_hammer", 1], ["stick", 30], ["leaves", 100], ["leaves", 100], ["twine", 10]]
 
 
 func _give_blueprint_kit(materials: Array) -> void:

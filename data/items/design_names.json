@@ -9,8 +9,8 @@
 		"book": "culture", "journal": "culture", "dice": "culture", "chess_set": "culture", "toy": "culture", "holy_symbol": "culture"
 	},
 	"aliases": {
-		"axe": ["stone_axe"], "pickaxe": ["iron_pickaxe", "steel_pickaxe"], "shovel": ["stone_shovel", "wooden_shovel"], "knife": ["stone_knife"], "hoe": ["wooden_hoe", "stone_hoe", "iron_hoe", "steel_hoe"],
-		"hammer": ["wooden_hammer", "stone_hammer", "bronze_hammer", "iron_hammer", "steel_hammer"], "saw": ["copper_saw", "bronze_saw", "hand_saw", "steel_saw"],
+		"axe": ["stone_axe"], "pickaxe": ["iron_pickaxe", "steel_pickaxe"], "shovel": ["wooden_shovel", "copper_shovel", "bronze_shovel", "iron_shovel", "steel_shovel"], "knife": ["stone_knife", "copper_knife", "bronze_knife", "iron_knife", "steel_knife"], "hoe": ["wooden_hoe", "copper_hoe", "bronze_hoe", "iron_hoe", "steel_hoe"],
+		"hammer": ["stone_hammer", "copper_hammer", "bronze_hammer", "iron_hammer", "steel_hammer"], "saw": ["stone_saw", "copper_saw", "bronze_saw", "hand_saw", "steel_saw"],
 		"forge": ["stone_forge"], "backpack": ["simple_backpack"], "boots": ["hide_boots"], "cloak": ["hide_cloak", "grass_cloak"], "hood": ["hide_hood"]
 	}
 }

@@ -218,13 +218,13 @@ func _init() -> void:
 	_give(1, "nails", 8)
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, spot)
 	check(items.world_item_count() == before and _have(1, "lumber") == 5, "no hammer: nothing placed, nothing taken")
-	_give(1, "wooden_hammer", 1)
+	_give(1, "stone_hammer", 1)
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, spot)
 	check(items.world_item_count() == before and _have(1, "lumber") == 5, "no workbench near: nothing placed, nothing taken")
 	items.place_piece(1, "log_workbench_kit", Vector3(200.0, 10.0, 202.0))
 	check(_ids_standing("log_workbench").size() == 1, "a log workbench stands (the station)")
 	_clear(1)
-	_give(1, "wooden_hammer", 1)
+	_give(1, "stone_hammer", 1)
 	_give(1, "lumber", 4)
 	_give(1, "nails", 8)
 	var with_bench: int = items.world_item_count()
@@ -235,7 +235,7 @@ func _init() -> void:
 	_give(1, "lumber", 1)
 	items.action(1, Net.ACT_USE_STRUCT, site_id, 0, 0, Vector3.ZERO)
 	check(items.world_item_count() == with_bench + 1 and _ids_standing("wooden_crate").size() == 1 and not items._items[site_id]["struct"].has("site"), "E on the site deposits the materials and the crate stands")
-	check(_have(1, "lumber") == 0 and _have(1, "nails") == 0 and _have(1, "wooden_crate_kit") == 0 and _have(1, "wooden_hammer") == 1, "exactly the materials were taken, no kit item, the hammer kept")
+	check(_have(1, "lumber") == 0 and _have(1, "nails") == 0 and _have(1, "wooden_crate_kit") == 0 and _have(1, "stone_hammer") == 1, "exactly the materials were taken, no kit item, the hammer kept")
 
 	# A station level the bench cannot give: a row asking for level 4 (set here), the log workbench is level 2.
 	var smith: Dictionary = live["blacksmithy"]
@@ -266,7 +266,7 @@ func _init() -> void:
 
 	# Takedown into a pack whose 30 slots are all taken: the pack grows (Dave 12 Nov 2026 23:06Z, protocol 116) and the materials come back.
 	_clear(1)
-	_give(1, "wooden_hammer", 1)
+	_give(1, "stone_hammer", 1)
 	_give(1, "lumber", 5)
 	_give(1, "nails", 8)
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, Vector3(196.0, 10.0, 205.0))
@@ -294,7 +294,7 @@ func _init() -> void:
 
 	# Clay hearth (13) and oven (14): hammer blueprints; the oven needs a hearth within reach; the tiers cook what the lower tier cooks.
 	_clear(1)
-	_give(1, "wooden_hammer", 1)
+	_give(1, "stone_hammer", 1)
 	_give(1, "brick", 24)
 	_give(1, "clay", 10)
 	_give(1, "stone", 8)

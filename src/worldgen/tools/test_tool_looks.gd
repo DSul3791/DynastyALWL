@@ -78,7 +78,7 @@ func _init() -> void:
 	_check(blade_dir.z < -0.5 and from_vertical >= 20.0, "the carried shovel points its blade down, %.0f degrees from vertical" % from_vertical)
 
 	# Axes and hammers: a straight haft along x with the head at its +x end, head wider in z than the haft is thick, all on one plain surface (no metal heads yet).
-	for id in ["stone_axe", "stone_hammer", "wooden_hammer"]:
+	for id in ["stone_axe", "stone_hammer"]:
 		var mesh: Mesh = BasicLook.mesh_for(id)
 		var box: AABB = mesh.get_aabb()
 		var scale: float = float(BasicLook.entry(id).get("size", 1.0))
@@ -87,7 +87,7 @@ func _init() -> void:
 		_check(box.size.z > 0.1 * scale, id + ": the head is wide across the haft (z %.3f)" % box.size.z)
 		_check(_width_near(mesh, 0.22 * scale, 0.1 * scale) > 0.1 * scale, id + ": the head sits at the haft's end (width %.3f near x 0.22)" % _width_near(mesh, 0.22 * scale, 0.1 * scale))
 	# Hoes (size 1.0): a 1.25 m haft along x, the blade hanging toward +z, thin in x, wide across y, widening toward the edge; metal tiers on the metal surface.
-	for tier in ["wooden", "stone", "iron", "steel"]:
+	for tier in ["wooden", "iron", "steel"]:   # the Stone - Hoe retired 18 Nov 2026
 		var id: String = tier + "_hoe"
 		var mesh: Mesh = BasicLook.mesh_for(id)
 		var box: AABB = mesh.get_aabb()
@@ -158,7 +158,7 @@ func _init() -> void:
 		brightest = maxf(brightest, v.get_luminance())
 
 	_check(brightest < 0.4, "stone_knife: matt stone, no pale steel tones (brightest %.2f)" % brightest)
-	_check(str(BasicLook.entry("wooden_hammer").get("shape", "")) == "hammer", "wooden_hammer is drawn as a mallet, not an axe")
+	_check(str(BasicLook.entry("stone_hammer").get("shape", "")) == "hammer", "stone_hammer is drawn as a hammer, not an axe")
 
 	print("tool looks: %d failures" % failures)
 

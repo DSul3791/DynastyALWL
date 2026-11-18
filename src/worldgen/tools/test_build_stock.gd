@@ -80,7 +80,7 @@ func _init() -> void:
 			mortar = int(need[1])
 
 	check(blocks > 0 and mortar > 0, "the stone wall blueprint costs blocks and mortar")
-	_give("wooden_hammer", 1)
+	_give("stone_hammer", 1)
 	_give("mortar", mortar)
 
 	# Blocks stacked 2 m away, none in the pack: the wall goes up and the stack is used.

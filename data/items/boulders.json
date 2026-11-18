@@ -20,6 +20,7 @@
 		},
 		"hammer": {
 			"stone": 1,
+			"copper": 1.25,
 			"bronze": 1.5,
 			"iron": 2,
 			"steel": 2

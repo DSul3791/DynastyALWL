@@ -17756,7 +17756,7 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 		"fire_burning_cold":
 			return _hint_count(st, "event:fire_lit") >= 1 and not v.is_empty() and float(v.get("warmth", 100.0)) < 70.0
 		"leanto_made":
-			return inv.count_of(table.number_of("wooden_hammer")) >= 1   # the shelter is a hammer blueprint now: with the hammer in the pack, the next step is to click it down
+			return inv.count_of(table.number_of("stone_hammer")) >= 1   # the shelter is a hammer blueprint now: with the hammer in the pack, the next step is to click it down
 		"leanto_placed":
 			return _hint_count(st, "event:placed:lean_to") >= 1
 		"bed_placed":   # any bed: the Thatch - Bed kit or a built Straw, Feather or Canopy bed (the starter bed goal counts the same four)
@@ -18164,7 +18164,7 @@ func _goal_progress(peer: int, st: Dictionary, check: Dictionary, goal_id: Strin
 		for id in check["made_item_any"]:
 			made_any += int(st["goal_counts"].get("made:" + str(id), 0))
 
-			if bool(check.get("or_have", false)) and inv != null:   # one held counts too, as for made_item (the hammer goal: a Stone or a Wooden hammer)
+			if bool(check.get("or_have", false)) and inv != null:   # one held counts too, as for made_item (the hammer goal: a Stone - Hammer)
 				have_any += _goal_have(st, inv, str(id))
 
 		return Vector2i(maxi(made_any, have_any), need)
@@ -19697,7 +19697,7 @@ func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, co
 	if steps.size() == 1:
 		return -1   # nothing to make first: the plain path
 
-	for step in steps:   # a part made on the way with a tool (Wooden blocks sawn for a Wooden hammer) needs that tool in hand too
+	for step in steps:   # a part made on the way with a tool (Wooden blocks sawn for a carved Wooden bowl) needs that tool in hand too
 		if not _hand_tool_ok(peer, inv, recipes.recipe(int(step["recipe"])), hand):
 			return 2   # refused, and said why: nothing else is tried (the plain path would only add "You do not have what that needs")
 

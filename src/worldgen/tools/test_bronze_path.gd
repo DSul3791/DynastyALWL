@@ -236,7 +236,7 @@ func _init() -> void:
 	check(have("iron_ore") == 0, "2c. it takes no iron ore out of an iron outcrop")
 
 	# 3. The Primitive smithy and the Primitive smelter, with a wooden hammer.
-	give("wooden_hammer", 1)
+	give("stone_hammer", 1)
 	var forge_id: int = build("stone_forge", FORGE_AT)
 	check(forge_id >= 0, "3a. the Primitive smithy stands")
 	check(items.station_near(1, "forge", 1), "3b. it serves as a forge, level 1 (copper and bronze work)")

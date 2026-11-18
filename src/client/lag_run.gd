@@ -85,7 +85,7 @@ func run() -> void:
 	print("LAGRUN logged in, at %s" % str(client.body.global_position.round()))
 	_give("stone_axe")
 	_give("wooden_shovel")
-	_give("stone_hoe")
+	_give("wooden_hoe")
 	await _wait(2.0)
 
 	await _walk()
@@ -201,7 +201,7 @@ func _hoe() -> void:
 		var spot: Vector3 = _ground_at(here.x + 1.2, here.z + 0.7 * float(n % 4) - 1.0)
 
 		if not is_nan(spot.y):
-			client.net.inventory_action.rpc_id(1, NetScript.ACT_HOE_PATH if n % 3 != 2 else NetScript.ACT_HOE_SMOOTH, _slot_of("stone_hoe"), 0, 0, spot)   # a: the hoe in hand
+			client.net.inventory_action.rpc_id(1, NetScript.ACT_HOE_PATH if n % 3 != 2 else NetScript.ACT_HOE_SMOOTH, _slot_of("wooden_hoe"), 0, 0, spot)   # a: the hoe in hand
 			done += 1
 
 		await _wait(0.7)   # the server's hoe pace is 0.5 s

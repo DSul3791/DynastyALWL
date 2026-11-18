@@ -2556,7 +2556,7 @@ func _init() -> void:
 	hs._cancel_craft(1, 0)
 	hs.send_notice = Callable()
 
-	for rid in ["wooden_hammer", "stone_hammer"]:
+	for rid in ["stone_hammer"]:
 		var rec: Dictionary = {}
 
 		for rn in hs.recipes.numbers():
@@ -2568,7 +2568,7 @@ func _init() -> void:
 		for row in rec.get("needs", []):
 			live = live and int(row[0]) > 0 and not bool(hs.table.entry(hs.table.id_of(int(row[0]))).get("retired", false))
 
-		check(live and int(rec["gives"][0]) == hs.table.number_of(rid), "%s is made from live items (the Wooden hammer at the carving station, W-8)" % rid)
+		check(live and int(rec["gives"][0]) == hs.table.number_of(rid), "%s is made from live items (the Wooden - Hammer retired 18 Nov 2026: tools start at Stone)" % rid)
 
 	# Crafting queue: ingredients taken when queued, crafts run on the tick, cancel refunds, caps, restart.
 	var qd: String = "user://test_server_items_queue"
