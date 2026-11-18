@@ -10,6 +10,8 @@ const Store := preload("res://src/client/character/character_store.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const TitleArt := preload("res://scenes/title/title_art.gd")
 const TitleSettings := preload("res://scenes/title/title_settings.gd")
+const BuildStamp := preload("res://src/shared/build_stamp.gd")
+const GitStamp := preload("res://src/debug/git_stamp.gd")
 
 const CREATOR_SCENE := "res://scenes/creator_proto/creator_proto.tscn"
 const SELECT_SCENE := "res://scenes/character_select/character_select.tscn"
@@ -18,6 +20,7 @@ var painting: int = -1                    # index into TitleArt.PAINTINGS; tests
 var art: Control                          # the painted page (title_art.gd)
 var _settings = null
 var _fade: ColorRect
+var build_label: Label                    # bottom right: the build this copy runs (step A1), so a tester can name it in a report
 
 
 func _ready() -> void:
@@ -36,6 +39,16 @@ func _ready() -> void:
 	_settings.closed.connect(_on_settings_closed)
 	add_child(_settings)
 	_settings.visible = false
+	build_label = Label.new()
+	build_label.text = build_text()
+	build_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT, Control.PRESET_MODE_MINSIZE, 16)
+	build_label.grow_horizontal = Control.GROW_DIRECTION_BEGIN
+	build_label.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	build_label.add_theme_font_size_override("font_size", 18)
+	build_label.add_theme_constant_override("outline_size", 4)
+	build_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
+	build_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(build_label)
 	_fade = ColorRect.new()
 	_fade.color = Color.BLACK
 	_fade.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -44,6 +57,15 @@ func _ready() -> void:
 	create_tween().tween_property(_fade, "color:a", 0.0, 0.6)
 	refresh()
 	art.focus_first(["continue", "new_game"])
+
+
+# "Build 412" for a release; an editor run adds its commit ("Build 826 (6dedf7f)"), as the HUD does.
+static func build_text() -> String:
+	if BuildStamp.stamped_build() > 0:
+		return "Build %d" % BuildStamp.number()
+
+	var commit: String = GitStamp.short_commit()
+	return "Build %d (%s)" % [BuildStamp.number(), commit] if commit != "" else "Build %d" % BuildStamp.number()
 
 
 # Continue is on only when this machine has a character.

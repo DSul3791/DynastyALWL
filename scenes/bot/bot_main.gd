@@ -9,6 +9,7 @@ const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 
 const NetScript := preload("res://src/stream/terrain_net.gd")
 const NetSettings := preload("res://src/shared/net_settings.gd")
+const BuildStamp := preload("res://src/shared/build_stamp.gd")
 const BLOCK_M := 16.0
 
 var _net
@@ -67,7 +68,7 @@ func _ready() -> void:
 	multiplayer.multiplayer_peer = peer
 	multiplayer.connected_to_server.connect(func():
 		NetSettings.apply(peer.get_peer(1))
-		_net.hello.rpc_id(1, "bot_" + _name))
+		_net.hello.rpc_id(1, "bot_" + _name, BuildStamp.stamped_build()))
 	multiplayer.server_disconnected.connect(func():
 		print("BOT %s: server left" % _name)
 		_finish())

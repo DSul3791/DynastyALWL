@@ -35,6 +35,7 @@ const EventLogScript := preload("res://src/shared/event_log.gd")
 const PlayServerScript := preload("res://src/shared/play_server.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const BuildInfo := preload("res://src/shared/build.gd")
+const BuildStamp := preload("res://src/shared/build_stamp.gd")
 const CpuBudgetScript := preload("res://src/shared/cpu_budget.gd")
 const STOP_NOTE := "user://server_stop.json"   # Play asks the server it started to close: {"pid", "commit"} (launcher.gd)
 const RUN_NOTE := "user://server_run.json"      # which server holds the port (read by the launcher)
@@ -97,6 +98,7 @@ const IDLE_RADIUS_BLOCKS := 12         # circle around each player, in blocks of
 const IDLE_MAX_DONE := 400000          # remembered built blocks (skips re-checking the store)
 
 var _commit: String = GitStamp.short_commit()   # read once at start (Dave 17 Nov 2026): a server left running after a pull must name the code it runs, not the checkout now on disk, or the client's out-of-date check is fooled
+var _stamped_build: int = BuildStamp.stamped_build()   # read once at start, like the commit: 0 = an editor run, which lets every build in (step A1)
 var generator
 var store
 var flora
@@ -846,8 +848,14 @@ func _ready() -> void:
 		_slow_rpc("water_requested", t0))
 	net.forget_requested.connect(func(peer, key): items.forget_key(peer, identity.store_key(identity.authenticate(peer, key))))
 	@warning_ignore("confusable_local_declaration")
-	net.hello_requested.connect(func(peer, key):
+	net.hello_requested.connect(func(peer, key, build):
 		var t0: int = Time.get_ticks_usec()
+		var refused: String = BuildStamp.refusal(_stamped_build, build)
+
+		if refused != "":
+			_refuse_join(peer, build, refused)
+			return
+
 		var account: String = identity.authenticate(peer, key)
 
 		if account == "":
@@ -1016,7 +1024,8 @@ func _on_peer_connected(peer_id: int) -> void:
 	_events.event("peer %d connected" % peer_id)
 	net.welcome.rpc_id(peer_id, {
 		"protocol": NetScript.PROTOCOL_VERSION,
-		"server_build": BuildInfo.NUMBER,       # the build id: a client on another commit says so plainly (empty commit = unknown = match)
+		"server_build": _stamped_build if _stamped_build > 0 else BuildInfo.NUMBER,   # the build id
+		"server_stamped": _stamped_build > 0,   # a release server: it checks the build at hello, so the client skips its commit check (protocol 133): a client on another commit says so plainly (empty commit = unknown = match)
 		"server_commit": _commit,
 		"world_name": settings.world_name,
 		"master_seed": settings.master_seed,
@@ -1034,6 +1043,22 @@ func _on_peer_connected(peer_id: int) -> void:
 		"zones": settings.zones.map(func(zone): return [str(zone["group"]), int(zone["max_abs_row"])]),
 		"equator_row": settings.equator_tile_row,
 	})
+
+
+# A stamped server and a client of another build (step A1, Dave 18 Nov 2026): the client is told why, gets nothing of the player's,
+# and is dropped a moment later so the reason arrives first.
+func _refuse_join(peer: int, build: int, text: String) -> void:
+	if not _peers.has(peer) or _peers[peer].has("refused"):
+		return   # one refusal per connection, however many hellos it sends
+
+	_peers[peer]["refused"] = true
+	print("Join refused for peer %d: client build %d, this server build %d" % [peer, build, _stamped_build])
+	_events.event("peer %d refused: client build %d, server build %d" % [peer, build, _stamped_build])
+	net.join_refused.rpc_id(peer, text)
+	await get_tree().create_timer(1.0).timeout
+
+	if multiplayer.multiplayer_peer != null and _peers.has(peer):
+		multiplayer.multiplayer_peer.disconnect_peer(peer)
 
 
 # Starts the starter tile's running water on the tile as it is now loaded.
