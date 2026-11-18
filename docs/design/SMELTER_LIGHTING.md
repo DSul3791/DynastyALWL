@@ -32,3 +32,16 @@ smelters.json from before has no `lit` list, so every smelter loads cold, one ha
 - SL-6: the look-at line offers no take-down while a smelter is lit, as with a burning campfire (put it out first).
 - SL-8: a lit smelter whose fuel slot holds less than its next job needs (1 Charcoal for a Bronze pair, which takes 2) stays lit and waits for more fuel; it goes out only when the fuel slot is empty.
 - SL-7: the Advanced smelter still needs the wind as well as being lit; lighting it in a calm says the windmill waits.
+
+## Primitive smithy: no fire in a blueprint, a stone anvil (Dave 17 Nov 2026)
+
+Dave: "it currently has a fire in the blueprint that is burning before you make it and it needs a stone anvil so basically a flat topped carved rough stone beside it for hammering on materials".
+
+- No blueprint burns: `inventory_view._model_for_state` puts out the flames and smoke of every forge, smithy and smelter look (the `Flames` and `ForgeSmoke` hooks) for a placement ghost (`ghost_model`) or a site waiting for materials. Checked: kilns, the Grill, Cooking pot, Griddle, fireplace and campfires draw no flames when not lit (a ghost is drawn in one ghost colour, so their painted embers do not read as fire). Fire stations have no fire sound outside the campfire states.
+- The Primitive smithy's model (Dave's `forge_basic.glb`, shared with the Primitive smelter) gets a rough stone anvil beside the fire: `BuildingLook.add_stone_anvil`, with its own solid. Not a catalog item, recipe or separate placeable; the cost is unchanged. The smelters that share the model have no anvil.
+
+For Dave (assumed on his behalf, provisional):
+- PS-1: the anvil is three uneven stone courses narrowing to a dressed flat top about 34 by 29 cm, 0.6 m up.
+- PS-2: it stands to one side of the fire (the model's +x side; not yet seen in a picture), the forge moved 0.25 m the other way; the footprint grows from 0.9 to 1.4 m wide to hold both.
+- PS-3: a built Primitive smithy still burns all the time (it has no lighting, unlike the smelters). Making it light with E like a smelter is left for his call.
+- PS-4: the built Brick, Advanced and Master smithies also burn all the time; only their blueprints were put out.

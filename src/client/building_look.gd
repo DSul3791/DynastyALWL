@@ -1394,6 +1394,53 @@ static func stone_forge() -> Node3D:
 	return root
 
 
+# The Primitive smithy's stone anvil (Dave 17 Nov 2026: "a flat topped carved rough stone beside it for hammering on materials"): a rough block of
+# three uneven courses narrowing upwards to a dressed flat top 0.6 m up (provisional PS-1), a few chips at its foot. Part of the smithy's model.
+static func _stone_anvil_mesh() -> ArrayMesh:
+	if _cache.has("stone_anvil"):
+		return _cache["stone_anvil"]
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 88
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var widths: Array = [Vector2(0.4, 0.34), Vector2(0.36, 0.31), Vector2(0.33, 0.28)]
+
+	for c in range(3):   # the rough body, each course a little off true
+		var w: Vector2 = widths[c]
+		_box(st, Vector3(rng.randf_range(-0.012, 0.012), 0.09 + 0.18 * float(c), rng.randf_range(-0.012, 0.012)), Vector3(w.x, 0.19, w.y), _tone(STONE_FORGE, rng, 0.08), rng.randf_range(-0.06, 0.06))
+
+	_box(st, Vector3(0.0, 0.575, 0.0), Vector3(0.34, 0.05, 0.29), _tone(STONE_PALE, rng, 0.04))   # the carved flat top, paler where it is worked
+
+	for n in range(4):   # chips knocked off it
+		var a: float = TAU * (float(n) + rng.randf()) / 4.0
+		_blob(st, Vector3(cos(a) * 0.27, 0.02, sin(a) * 0.24), Vector3(0.035, 0.02, 0.03), _tone(STONE, rng, 0.1), rng, 5, 2, 0.25)
+
+	return _finish_cached("stone_anvil", st, _solid_material())
+
+
+# Puts the stone anvil into a forge model built by inventory_view._forge_glb: every part of the forge (mesh, solid, fire hooks) moves `aside` along x
+# and the anvil, with a solid of its own, stands at `at`. Ghosts and sites drop or switch off the solid as for any station.
+static func add_stone_anvil(model: Node3D, aside: float, at: float) -> void:
+	for child in model.get_children():
+		if child is Node3D:
+			(child as Node3D).position.x += aside
+
+	var anvil: MeshInstance3D = _instance(_stone_anvil_mesh())
+	anvil.name = "StoneAnvil"
+	anvil.position = Vector3(at, 0.0, 0.0)
+	model.add_child(anvil)
+	var body: StaticBody3D = StaticBody3D.new()
+	body.set_meta("placed_structure", true)   # not rock: the cave module's enclosure rays skip it (BUG-027)
+	var shape: CollisionShape3D = CollisionShape3D.new()
+	var solid: BoxShape3D = BoxShape3D.new()
+	solid.size = Vector3(0.4, 0.6, 0.34)
+	shape.shape = solid
+	shape.position = Vector3(at, 0.3, 0.0)
+	body.add_child(shape)
+	model.add_child(body)
+
+
 # --------------------------------------------------------------- hooks for Dave's own station meshes
 
 # Hooks for Dave's forge models: the "Fire" and "Smoke" marker nodes in each .glb give the points (inventory_view.gd finds them).

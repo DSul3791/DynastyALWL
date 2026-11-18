@@ -1,7 +1,7 @@
 extends SceneTree
 
 # A Smelter lit or put out is drawn again on the client (Dave 17 Nov 2026: "it needs to show no fire when its not lit"): the same placed row
-# sent cold, then lit, then cold again, as the server re-sends it when E lights or puts it out (inventory_view._on_world_items, _smelter_fire).
+# sent cold, then lit, then cold again, as the server re-sends it when E lights or puts it out (inventory_view._on_world_items, _forge_fire).
 # Every tier: Primitive, Improved, Advanced.
 # Run: godot --headless --path . --script res://src/worldgen/tools/test_smelter_redraw.gd
 

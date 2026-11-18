@@ -3,7 +3,7 @@ extends Node
 # The inner voice (owner, 2026-10-21): the character's own thoughts, spoken in the headset. The
 # server sends thought(line_id, text, kind) and the client shows the subtitle; items.thought_event
 # calls speak(line_id, kind), which plays assets/audio/inner_voice/<voice set>/<line_id>.ogg (the
-# set is compiled from the character's gender and traits, src/shared/inner_voice_profile.gd; set
+# set is compiled from the character's body model and traits, src/shared/inner_voice_profile.gd; set
 # with set_character), else assets/audio/inner_voice/<line_id>.ogg, when a file exists (no file:
 # the subtitle is all there is). The files are text to voice (tools/gen_inner_voice.py, Kokoro). Line ids and voice direction:
 # /mnt/project-files/sound/INNER_VOICE_LINES.md. Dry and close: 2D, no room reverb, on its own
@@ -53,9 +53,9 @@ func setup(_stage) -> void:
 	add_child(_player)
 
 
-# The character's voice, from their gender and traits (name -> 0..1) and id; call it when the character is known or changes.
-func set_character(gender: String, traits: Dictionary, character_id: String) -> void:
-	voice_set = ProfileScript.set_id(gender, traits, character_id)
+# The character's voice, from their body model and traits (name -> 0..1) and id; call it when the character is known or changes.
+func set_character(body: String, traits: Dictionary, character_id: String) -> void:
+	voice_set = ProfileScript.set_id(body, traits, character_id)
 
 
 var enabled: bool = true               # Esc > Advanced experiment switch

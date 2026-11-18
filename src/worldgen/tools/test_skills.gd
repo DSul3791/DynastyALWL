@@ -164,7 +164,8 @@ func _init() -> void:
 	var clock: Array = [day0]
 	var items = make(dir, clock)
 	items.peer_connected_hello(1, "skill-key-0001")
-	check(items.skill_factor(1, "fell_tree") == 1.0, "a new character fells at factor 1.0")
+	items.set_fitness(1, 0)   # an average adult (0); new characters start fitter (fitness.json default), which nudges fitness-weighted skills
+	check(items.skill_factor(1, "fell_tree") == 1.0, "a new character of average fitness fells at factor 1.0")
 	check(sent.size() >= 1 and sent[0][2].is_empty(), "the client is told at hello (no rows yet)")
 	items.set_attribute(1, "strength", 8)
 	check(items.skill_factor(1, "fell_tree") > 1.0, "strength 8 makes woodcutting faster before any practice")
@@ -214,6 +215,7 @@ func _init() -> void:
 	raw["players"]["skill-key-0001"].erase("skills")
 	raw["players"]["skill-key-0001"].erase("strength")
 	raw["players"]["skill-key-0001"].erase("skills_v")
+	raw["players"]["skill-key-0001"]["fitness"] = 0   # average adult, so only the missing skills are read
 	out = FileAccess.open(dir + "/characters.json", FileAccess.WRITE)
 	out.store_string(JSON.stringify(raw))
 	out.close()
