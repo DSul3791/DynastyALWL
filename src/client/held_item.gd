@@ -2854,10 +2854,7 @@ func _caption() -> String:
 		if short and blueprints.plan_picked >= 0:
 			return text + "   (red: not enough materials; right click: the list)"
 
-		if short:
-			return text + "   (left click: set down a blue blueprint, then E on it to deposit materials; right click: the list)"
-
-		return text + "   (left click: build it with the materials in your pack; right click: the list)"
+		return text + "   (left click: set down a blue blueprint, then hit it with a hammer to add the materials; right click: the list)"   # placing never takes materials (Dave 18 Nov 2026)
 
 	if _hammer_tier() > 0 and blueprints.mode == "repair":
 		return "Repair: left click a worn piece to mend it, or a blueprint to fill it from all around you; right click: the menu"

@@ -4553,7 +4553,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 			_say(peer, "The game does not know where you are yet. Try again in a moment.")
 			return
 
-		if not _can_blueprint(peer, inv, blueprint, true):
+		if not _can_blueprint(peer, inv, blueprint):
 			return   # _can_blueprint says why
 
 		kit_id = str(_structures.get(str(blueprint["structure"]), {}).get("kit", ""))
@@ -4683,7 +4683,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 			if is_nan(spot.y):
 				return
 
-		_place_structure(peer, inv, slot, spot, yaw_deg, placed_def, blueprint if (not blueprint.is_empty() and not free_build and _blueprint_short(peer, inv, blueprint)) else {})
+		_place_structure(peer, inv, slot, spot, yaw_deg, placed_def, blueprint if (not blueprint.is_empty() and not free_build) else {})   # every hammer placement is a blueprint site: nothing is taken, the hammer fills it (Dave 18 Nov 2026)
 		return
 
 	var chunk_fires: int = 0
@@ -9423,7 +9423,7 @@ func place_item(peer: int, number: int, at: Vector3, lift_steps: int = 0, yaw_de
 	action(peer, Net.ACT_PLACE, inv.numbers.find(number), lift_steps, yaw_deg, at)
 
 
-func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> bool:
+func _can_blueprint(peer: int, inv, row: Dictionary) -> bool:
 	if free_build:
 		return not _structures.get(str(row["structure"]), {}).is_empty()
 
@@ -9452,22 +9452,6 @@ func _can_blueprint(peer: int, inv, row: Dictionary, site_ok: bool = false) -> b
 	if str(row.get("near", "")) != "" and not station_near(peer, str(row["near"]), int(row.get("near_level", 1))):
 		_say(peer, "You need a %s close by." % str(row["near"]).replace("_", " "))
 		return false
-
-	var cost_rows: Array = []
-
-	for need in row["cost"]:
-		cost_rows.append([table.number_of(str(need[0])), int(need[1])])
-
-	_pull_nearby_logs(peer, inv, _log_need(cost_rows, 1))   # shoulder and ground logs count (F-16)
-	var stock: Dictionary = _stock_of(peer, false, _hammer_x(peer))
-
-	for need in row["cost"]:
-		if _stock_have(inv, table.number_of(str(need[0])), stock, true) < int(need[1]):
-			if site_ok:
-				continue   # a blueprint site is set down anyway; the materials are deposited later (Dave 5 Nov 2026)
-
-			_say(peer, "Not enough %s (%d needed)." % [table.in_sentence(str(table.entry(str(need[0])).get("name", need[0]))), int(need[1])])
-			return false
 
 	return true
 
@@ -9527,87 +9511,6 @@ func _hammers_for(tier_needed: int) -> String:
 
 	var listed: String = str(words[0]) if words.size() == 1 else ", ".join(words.slice(0, words.size() - 1)) + " or " + str(words[-1])
 	return "a %s hammer%s" % [listed, " or better" if int(hammers[-1][0]) > lightest else ""]
-
-
-# True when the craft stock cannot cover the blueprint's materials: the click then sets down a blueprint site.
-# A blueprint draws on what a craft draws on (CraftStock, coordinator 10 Nov 2026): the pack, loose stacks within LOOSE_STOCK_M (12 m) and the
-# builder's own containers within CRAFT_REACH_M (12 m) that are not kept out. The hammer list counts the same stock (craft_stock, protocol 98), so it
-# never shows a piece as covered that the server would set down as a site.
-func _blueprint_short(peer: int, inv, row: Dictionary) -> bool:
-	var stock: Dictionary = _stock_of(peer, false, _hammer_x(peer))
-
-	for need in row["cost"]:
-		if _stock_have(inv, table.number_of(str(need[0])), stock, true) < int(need[1]):
-			return true
-
-	return false
-
-
-func _pay_blueprint(inv, row: Dictionary, peer: int = -1) -> void:
-	var stock: Dictionary = _stock_of(peer, false, _hammer_x(peer))
-
-	for need in row["cost"]:
-		var number: int = table.number_of(str(need[0]))
-		var left: int = int(need[1]) - _take_ground_stock(peer, number, int(need[1]))   # heavy stock laid on the ground beside the build goes first (Dave 2 Nov)
-
-		if left > 0:
-			_stock_take(inv, number, left, stock, [], true)   # then the pack, loose stacks within 12 m and the builder's own containers, nearest first
-
-	if peer >= 0:
-		_send_stock(peer, false, true)   # the hammer list's counts follow what was taken
-
-
-# Heavy building stock on the ground (Dave 2 Nov 2026: "we use the hammer to make blueprints on the spot"): a blueprint takes its materials from loose
-# stacks lying within BUILD_STOCK_M of the builder before the pack, so stone blocks and bricks can be carried over in several trips and stacked beside
-# the site. Logs keep their own rule (_pull_nearby_logs).
-const BUILD_STOCK_M := 4.0
-
-
-func _ground_stock(peer: int, number: int) -> Array:
-	var out: Array = []
-
-	if peer < 0 or number <= 0 or not _peer_pos.has(peer) or number == table.number_of("log"):
-		return out
-
-	var fills: PackedInt32Array = _fills(number)   # a group cost (nails: any nails) is filled by any member lying there
-
-	for id in _items:
-		var it: Dictionary = _items[id]
-
-		if it.has("scatter") or it.has("tree") or it.has("fire") or it.has("struct") or it.has("boulder") or it.has("inst") or not fills.has(int(it.get("number", 0))):
-			continue
-
-		var d: float = _peer_pos[peer].distance_to(it["pos"])
-
-		if d <= BUILD_STOCK_M:
-			out.append([id, int(it["count"]), d])
-
-	out.sort_custom(func(a, b): return float(a[2]) < float(b[2]))
-	return _spend_sorted(out, number, func(row): return int(_items[int(row[0])]["number"]))
-
-
-# Takes up to `want` of `number` from the ground stock near the builder; returns how many it took.
-func _take_ground_stock(peer: int, number: int, want: int) -> int:
-	var took: int = 0
-
-	for row in _ground_stock(peer, number):
-		if took >= want:
-			break
-
-		var it: Dictionary = _items[int(row[0])]
-		var take: int = mini(int(row[1]), want - took)
-
-		if int(it["count"]) > take:
-			it["count"] = int(it["count"]) - take
-		else:
-			_items.erase(int(row[0]))
-
-		took += take
-
-	if took > 0:
-		_dirty = true
-
-	return took
 
 
 # All the materials back into the pack, or none (with a word) when they do not fit.
@@ -9726,10 +9629,8 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 	if slot < 0 and free_build:
 		pass   # a test or admin piece: nothing is taken
-	elif slot < 0 and not site_row.is_empty():
-		pass   # a blueprint site: nothing is taken now, the materials are deposited with E (_deposit_site)
 	elif slot < 0:
-		_pay_blueprint(inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], peer)
+		pass   # a blueprint site: nothing is taken on placement; only a hammer hit adds the materials (_gather_site, Dave 18 Nov 2026)
 	else:
 		inv.take_from_slot(slot, 1)
 
@@ -9743,7 +9644,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 	if not site_row.is_empty():
 		entry["struct"]["site"] = {"bp": int(site_row["number"]), "have": {}}
-		_say(peer, "Blueprint down. Press E on it to deposit the materials.")
+		_say(peer, "Blueprint down. Hit it with a hammer to add the materials.")
 
 	_items[_next_id] = entry
 	_grid_add(_next_id, entry)
@@ -10067,6 +9968,10 @@ func _site_needs(site: Dictionary) -> Array:
 	return out
 
 
+# How far beside the builder loose stock counts as "to hand" on a blueprint site's list (times the hammer's reach).
+const BUILD_STOCK_M := 4.0
+
+
 # What a site's list shows one player: [[item id, still needed, on hand], ...], "on hand" being the pack, loose stock beside them and containers within reach.
 func _site_view(peer: int, it: Dictionary) -> Array:
 	var out: Array = []
@@ -10088,72 +9993,6 @@ func _site_view(peer: int, it: Dictionary) -> Array:
 		out.append([str(need[0]), int(need[1]), on_hand])
 
 	return out
-
-
-# E on a site: moves what the builder has of each missing material into it, then finishes it when nothing is missing.
-func _deposit_site(peer: int, inv, id: int) -> void:
-	var it: Dictionary = _items.get(id, {})
-	var site: Dictionary = _site_of(it)
-
-	if site.is_empty() or not _peer_pos.has(peer):
-		return
-
-	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
-		_say(peer, "Too far to deposit materials there.")
-		return
-
-	var reach_x: float = _hammer_x(peer)
-	var boxes: Array = _craft_boxes(peer, reach_x)
-	var have: Dictionary = site["have"]
-	var moved: int = 0
-
-	for need in _site_needs(site):
-		var left: int = int(need[1])
-
-		if left <= 0:
-			continue
-
-		var number: int = table.number_of(str(need[0]))
-		var put: int = 0
-		var from_pack: int = mini(left, inv.count_fill(number, true))   # building takes plain units only (remove_fill takes plain first)
-
-		if from_pack > 0 and inv.remove_fill(number, from_pack, [], true):
-			put += from_pack
-
-		if put < left:
-			put += _ground_take(number, left - put, _peer_pos[peer], BUILD_STOCK_M * reach_x)
-
-		for box in boxes:
-			if put >= left:
-				break
-
-			var from_box: int = mini(left - put, box[1].count_fill(number, true))
-
-			if from_box > 0 and box[1].remove_fill(number, from_box, [], true):
-				put += from_box
-				_push_box(int(box[0]), box[1])
-
-		if put > 0:
-			have[str(need[0])] = int(have.get(str(need[0]), 0)) + put
-			moved += put
-
-	var missing: PackedStringArray = []
-
-	for need in _site_needs(site):
-		if int(need[1]) > 0:
-			missing.append("%d %s" % [int(need[1]), table.in_sentence(str(table.entry(str(need[0])).get("name", need[0])))])
-
-	if moved == 0:
-		_say(peer, "You have none of what it needs: %s." % ", ".join(missing))
-		return
-
-	_dirty = true
-
-	if missing.is_empty():
-		_finish_site(peer, id)
-		_say(peer, "Built.")
-	else:
-		_say(peer, "Deposited. Still needed: %s." % ", ".join(missing))
 
 
 # The hammer in Repair mode on a blueprint site (Dave 10 Nov 2026: "search the area around me for 12 meters. on the ground, in my inventory, in any containers
@@ -10475,7 +10314,7 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 		return
 
 	if it["struct"].has("site"):
-		_deposit_site(peer, inv, id)
+		_say(peer, "Hit the blueprint with a hammer to add the materials.")   # only the hammer fills a site (Dave 18 Nov 2026)
 		return
 
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
