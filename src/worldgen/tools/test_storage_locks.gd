@@ -341,7 +341,8 @@ func _init() -> void:
 	var secret_uid: int = int(items._items[secret]["struct"]["uid"])
 	items._dirty = true
 	items.save()
-	var saved: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "/world_items.json"))
+	var area_path: String = "%s/%s/%s.json" % [DIR, ItemsScript.AREA_DIR, ItemsScript.area_key_of(items._items[secret]["pos"].x, items._items[secret]["pos"].z)]
+	var saved: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(area_path))   # the area file that holds its row (world_items.json version 4)
 	var broke: int = 0
 
 	for row in saved["items"]:
@@ -349,7 +350,7 @@ func _init() -> void:
 			row[17] = "{\"salt\": 7, \"hash\": \"short\"}"
 			broke += 1
 
-	var f: FileAccess = FileAccess.open(DIR + "/world_items.json", FileAccess.WRITE)
+	var f: FileAccess = FileAccess.open(area_path, FileAccess.WRITE)
 	f.store_string(JSON.stringify(saved))
 	f.close()
 	items = make_server()

@@ -28,7 +28,7 @@ const StructureLookScript := preload("res://src/shared/structure_look.gd")
 const SurveyLine := preload("res://src/shared/survey_line.gd")   # the survey line: only a building stops a surveyed road (Dave 17 Nov 2026)
 const Net := preload("res://src/stream/terrain_net.gd")
 
-const VERSION := 3                       # world_items.json: 3 (protocol 111) adds a crate's cart (index 18, its uid) and bed spot (19); 2 (protocol 108) the code lock at row index 17; versions 1 and 2 load with no crate on a cart, 1 with no locks
+const VERSION := 4                       # world_items.json: 4 (18 Nov 2026, audit finding 2) is a header naming the area files in world_items/ (AREA_M squares, each with its own rows; only the areas that changed are written); 3 (protocol 111) adds a crate's cart (index 18, its uid) and bed spot (19); 2 (protocol 108) the code lock at row index 17; versions 1 and 2 load with no crate on a cart, 1 with no locks
 const INVENTORY_VERSION := 2            # 2 added wear per slot; version 1 files load with zero wear
 const SHOWROOM_CAP := 300                # most items one showroom fill places
 const SHOWROOM_PATH := "res://data/items/showroom.json"
@@ -1600,7 +1600,14 @@ func save() -> void:
 # tick (_item_job), and the periodic save hands that copy to the background writer, which builds the rows, turns them into JSON and writes
 # them. Building the rows and the JSON of every world item on the tick froze the server once per save, longer the more the world held
 # (audit 18 Nov 2026, docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md finding 2). The tick now pays only the native copy.
-# The file format is unchanged. Any other save (shutdown, world reset, tests) builds and writes at once.
+# The world items are saved by area (Minecraft region files, Paper's chunk saving): each AREA_M square has its own file, and a save writes only the
+# areas whose rows changed (an md5 of the rows against the last write), then world_items.json, the header naming each area file's gen. A crash
+# between the two leaves the header naming the gens of the save before, which the files' .prev copies hold (_read_area). Any other save
+# (shutdown, world reset, tests) builds and writes at once.
+const AREA_M := 128.0              # PROVISIONAL: the side of a world items area (one file in AREA_DIR)
+const AREA_DIR := "world_items"    # the area files, "<ax>_<az>.json": {"version", "gen": the save that wrote it, "items": rows, "world_rows": indices}
+var _area_sums: Dictionary = {}    # area key -> [md5 of its rows, gen] as last written: touched by the writer only (the job carries it)
+var _save_gen: int = 0             # the save count, kept in the header: an area file's gen says which save wrote it
 var _tilted: Dictionary = {}       # world ids of arrows stuck in a tree (_stick_arrow): saved as fallen to the ground under them
 var _kind_info: Dictionary = {}    # structure kind -> [save state, use], for the writer (which must not read _structures)
 
@@ -1641,7 +1648,8 @@ func _item_job() -> Dictionary:
 	var t0: int = Time.get_ticks_usec()
 	var copy: Dictionary = _items.duplicate(true)
 	_note_save_part("world item copy", t0)
-	return {"dir": _dir, "items": copy, "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(),
+	_save_gen += 1
+	return {"dir": _dir, "items": copy, "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(), "gen": _save_gen, "sums": _area_sums,
 		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "bog_iron": _bog_left.duplicate(true), "layout": FloraLayout.VERSION, "no_kits": true}}
 
 
@@ -1650,85 +1658,152 @@ func _save_item_files(job: Dictionary) -> void:
 		_pending_writes.append(job)   # built and written by the background writer (_write_batch)
 		return
 
-	for file in _item_files(job):
-		_write_atomic(str(file[0]), file[1])
+	var t0: int = Time.get_ticks_usec()
+	_finish_writer()
+	_write_item_job(job)
+	_note_save_part("world items", t0)
 
 
-# [[file name, data], ...] for a job. Static and reads only the job, so the writer thread can run it.
-static func _item_files(job: Dictionary) -> Array:
+# Writes a job's files: tree_states, lights, kilns, the areas that changed, then the header, then takes away the files of areas left empty.
+# Static and reads only the job (and its `sums`, which only the writer touches), so the writer thread can run it.
+static func _write_item_job(job: Dictionary) -> void:
+	var dir: String = str(job["dir"])
 	var items: Dictionary = job["items"]
 	var kinds: Dictionary = job["kinds"]
-	var rows_and_world: Array = _world_item_rows(items, kinds, job["tilt_y"])
+	var gen: int = int(job["gen"])
+	var sums: Dictionary = job["sums"]
+	_write_file(dir + "/tree_states.json", JSON.stringify({"version": TREE_SAVE_VERSION, "trees": _tree_rows_of(items), "saplings": job["saplings"]}))
+	_write_file(dir + "/lights.json", JSON.stringify({"version": 1, "lit": _light_rows_of(items, kinds)}))
+	_write_file(dir + "/kilns.json", JSON.stringify({"version": 1, "kilns": _kiln_rows_of(items, kinds)}))
+	var areas: Dictionary = _world_item_areas(items, kinds, job["tilt_y"])
+	var listed: Dictionary = {}
+	DirAccess.make_dir_recursive_absolute(dir + "/" + AREA_DIR)
+
+	for key in areas:
+		var body: String = JSON.stringify({"items": areas[key][0], "world_rows": areas[key][1]})
+		var sum: String = body.md5_text()
+		var path: String = "%s/%s/%s.json" % [dir, AREA_DIR, key]
+
+		if sums.has(key) and str(sums[key][0]) == sum and FileAccess.file_exists(path):
+			listed[key] = int(sums[key][1])   # unchanged since it was written: not written again
+			continue
+
+		_write_file(path, "{\"version\":%d,\"gen\":%d,%s" % [VERSION, gen, body.substr(1)])
+		sums[key] = [sum, gen]
+		listed[key] = gen
+
 	var world: Dictionary = (job["world"] as Dictionary).duplicate()
-	world["items"] = rows_and_world[0]
-	world["world_rows"] = rows_and_world[1]
-	return [
-		["tree_states.json", {"version": TREE_SAVE_VERSION, "trees": _tree_rows_of(items), "saplings": job["saplings"]}],
-		["lights.json", {"version": 1, "lit": _light_rows_of(items, kinds)}],
-		["kilns.json", {"version": 1, "kilns": _kiln_rows_of(items, kinds)}],
-		["world_items.json", world],
-	]
+	world["areas"] = listed
+	world["gen"] = gen
+	_write_file(dir + "/world_items.json", JSON.stringify(world))
+
+	for key in sums.keys():
+		if not listed.has(key):
+			sums.erase(key)
+
+	for file in DirAccess.get_files_at(dir + "/" + AREA_DIR):
+		if file.ends_with(".json") and not listed.has(file.trim_suffix(".json")):
+			DirAccess.remove_absolute(dir + "/" + AREA_DIR + "/" + file)   # an area left empty (its .prev goes too: the header no longer names it)
+			DirAccess.remove_absolute(dir + "/" + AREA_DIR + "/" + file + ".prev")
 
 
-# The world_items.json rows of `items` and the indices of the server-put rows among them.
-static func _world_item_rows(items_in: Dictionary, kinds: Dictionary, tilt_y: Dictionary) -> Array:
-	var items: Array = []
-	var world_rows: Array = []
+# Every saved world item row of a store, for the tests and tools: the header's area files in order, or an older file's own rows.
+static func saved_world_rows(dir: String) -> Array:
+	var head: Variant = JSON.parse_string(FileAccess.get_file_as_string(dir + "/world_items.json")) if FileAccess.file_exists(dir + "/world_items.json") else null
+
+	if typeof(head) != TYPE_DICTIONARY:
+		return []
+
+	if not head.has("areas"):
+		return head.get("items", [])
+
+	var rows: Array = []
+
+	for key in head["areas"]:
+		var area: Variant = JSON.parse_string(FileAccess.get_file_as_string("%s/%s/%s.json" % [dir, AREA_DIR, key]))
+
+		if typeof(area) == TYPE_DICTIONARY:
+			rows.append_array(area.get("items", []))
+
+	return rows
+
+
+static func area_key_of(x: float, z: float) -> String:
+	return "%d_%d" % [int(floor(x / AREA_M)), int(floor(z / AREA_M))]
+
+
+# area key -> [rows, indices of the server-put rows among them], by where each row lies.
+static func _world_item_areas(items_in: Dictionary, kinds: Dictionary, tilt_y: Dictionary) -> Dictionary:
+	var out: Dictionary = {}
 
 	for id in items_in:
-		var it: Dictionary = items_in[id]
+		var key: String = area_key_of(float(items_in[id]["pos"].x), float(items_in[id]["pos"].z))
 
-		if it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("fire") and it["fire"].has("camp")):
-			continue   # the showroom is never saved: an admin fills it again after a restart; the camp fire is laid again at every start (_camp_fire_tick)
+		if not out.has(key):
+			out[key] = [[], []]
 
-		if it.has("struct") and bool(it["struct"].get("transient", false)):
-			continue
+		var area: Array = out[key]
+		_world_item_row(items_in[id], id, kinds, tilt_y, area[0], area[1])
 
-		if it.has("struct"):
-			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[0]), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0)), 1 if bool(it["struct"].get("road", false)) else 0])
-			continue
+	for key in out.keys():
+		if (out[key][0] as Array).is_empty():
+			out.erase(key)   # only unsaved things (scatter, trees, the showroom) lie there
 
-		var at: Vector3 = it["pos"]
+	return out
 
-		if tilt_y.has(id):
-			at.y = float(tilt_y[id])   # an arrow stuck in a tree is saved as fallen to the foot of it (the tilt is not saved)
 
-		var row: Array = [int(it["number"]), int(it["count"]), at.x, at.y, at.z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0, int(it.get("wear", 0))]
+# Appends a world item's row to `items` (and its index to `world_rows` when the server put it down), or nothing for what is never saved.
+static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dictionary, items: Array, world_rows: Array) -> void:
+	if it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("fire") and it["fire"].has("camp")):
+		return   # the showroom is never saved: an admin fills it again after a restart; the camp fire is laid again at every start (_camp_fire_tick)
 
-		if not it.has("fire") and it.has("rot_y"):
-			row.append(float(it["rot_y"]))   # a loose item's turn (a split log along its trunk); fires use this slot for their store
+	if it.has("struct") and bool(it["struct"].get("transient", false)):
+		return
 
-			if it.has("girth") or it.has("pitch") or it.has("spin"):
-				row.append(float(it.get("girth", 1.0)))   # a split log's thickness against the drawn log
+	if it.has("struct"):
+		items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[0]), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0)), 1 if bool(it["struct"].get("road", false)) else 0])
+		return
 
-			if it.has("pitch") or it.has("spin"):
-				row.append(float(it.get("pitch", 0.0)))   # a log's pose as physics left it (lying_logs.gd): tilted on another log, rolled on its axis
-				row.append(float(it.get("spin", 0.0)))
+	var at: Vector3 = it["pos"]
 
-		if not it.has("fire") and it.has("inst"):
-			row.append(it["inst"])   # the instance data, always the last value of a loose row (a Dictionary: rot_y and girth are floats)
+	if tilt_y.has(id):
+		at.y = float(tilt_y[id])   # an arrow stuck in a tree is saved as fallen to the foot of it (the tilt is not saved)
 
-		if it.has("fire"):
-			var wood: Dictionary = _fire_wood_of(it["fire"])
-			row.append(int(it["fire"].get("uid", 0)))   # a campfire's store (a number here; a structure's kind is a string); 0 = none
-			row.append([float(wood["log"]), float(wood["firewood"]), float(wood["weak"])])   # burning seconds by wood class (fire tiers)
-			var pc: Dictionary = it["fire"].get("pieces", {})
-			row.append([int(pc.get("log", -1)), int(pc.get("firewood", -1)), int(pc.get("weak", -1))])   # pieces laid by class (-1 = not known: counted by time)
-			row.append(1 if bool(it["fire"].get("synced", false)) else 0)   # the store holds the fire's wood (older saves: 0, converted at the first opening)
-			var burnt: Dictionary = it["fire"].get("burnt", {})
-			row.append([float(burnt.get("log", 0.0)), float(burnt.get("firewood", 0.0)), float(burnt.get("weak", 0.0))])   # burned seconds not yet taken out of the store
-			var counted: Dictionary = it["fire"].get("counted", {})
-			row.append([int(counted.get("log", -1)), int(counted.get("firewood", -1)), int(counted.get("weak", -1))] if it["fire"].has("counted") else [])   # store pieces the last count knew ([] = never counted)
-			row.append(float(it["fire"].get("lit_s", 0.0)))   # seconds burned since it was last cold (a coal bed at coals.coal_bed_s)
-			row.append(int(it["fire"].get("damp", 0)))   # the wettest wood in it, drying left in tenths of a game hour (cooking.json wet_wood)
-			row.append(float(it["fire"].get("char", 0.0)))   # the part-made Charcoal of the wood burned (cooking.json charcoal_left); below 0, owed for wood taken back out
+	var row: Array = [int(it["number"]), int(it["count"]), at.x, at.y, at.z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0, int(it.get("wear", 0))]
 
-		if it.has("world"):
-			world_rows.append(items.size())   # put down by the server (a den pile, a gift, loot): the world reset keeps it
+	if not it.has("fire") and it.has("rot_y"):
+		row.append(float(it["rot_y"]))   # a loose item's turn (a split log along its trunk); fires use this slot for their store
 
-		items.append(row)
+		if it.has("girth") or it.has("pitch") or it.has("spin"):
+			row.append(float(it.get("girth", 1.0)))   # a split log's thickness against the drawn log
 
-	return [items, world_rows]
+		if it.has("pitch") or it.has("spin"):
+			row.append(float(it.get("pitch", 0.0)))   # a log's pose as physics left it (lying_logs.gd): tilted on another log, rolled on its axis
+			row.append(float(it.get("spin", 0.0)))
+
+	if not it.has("fire") and it.has("inst"):
+		row.append(it["inst"])   # the instance data, always the last value of a loose row (a Dictionary: rot_y and girth are floats)
+
+	if it.has("fire"):
+		var wood: Dictionary = _fire_wood_of(it["fire"])
+		row.append(int(it["fire"].get("uid", 0)))   # a campfire's store (a number here; a structure's kind is a string); 0 = none
+		row.append([float(wood["log"]), float(wood["firewood"]), float(wood["weak"])])   # burning seconds by wood class (fire tiers)
+		var pc: Dictionary = it["fire"].get("pieces", {})
+		row.append([int(pc.get("log", -1)), int(pc.get("firewood", -1)), int(pc.get("weak", -1))])   # pieces laid by class (-1 = not known: counted by time)
+		row.append(1 if bool(it["fire"].get("synced", false)) else 0)   # the store holds the fire's wood (older saves: 0, converted at the first opening)
+		var burnt: Dictionary = it["fire"].get("burnt", {})
+		row.append([float(burnt.get("log", 0.0)), float(burnt.get("firewood", 0.0)), float(burnt.get("weak", 0.0))])   # burned seconds not yet taken out of the store
+		var counted: Dictionary = it["fire"].get("counted", {})
+		row.append([int(counted.get("log", -1)), int(counted.get("firewood", -1)), int(counted.get("weak", -1))] if it["fire"].has("counted") else [])   # store pieces the last count knew ([] = never counted)
+		row.append(float(it["fire"].get("lit_s", 0.0)))   # seconds burned since it was last cold (a coal bed at coals.coal_bed_s)
+		row.append(int(it["fire"].get("damp", 0)))   # the wettest wood in it, drying left in tenths of a game hour (cooking.json wet_wood)
+		row.append(float(it["fire"].get("char", 0.0)))   # the part-made Charcoal of the wood burned (cooking.json charcoal_left); below 0, owed for wood taken back out
+
+	if it.has("world"):
+		world_rows.append(items.size())   # put down by the server (a den pile, a gift, loot): the world reset keeps it
+
+	items.append(row)
+
 
 
 # A fire's wood by class, as _fire_wood gives it, without adding it to the fire (the writer reads a copy).
@@ -6153,6 +6228,23 @@ func _load_world_items() -> void:
 	if parsed == null:
 		return
 
+	if parsed.has("areas"):   # version 4: the rows are in the area files the header names (an older file holds them itself)
+		_save_gen = int(parsed.get("gen", 0))
+		var all_rows: Array = []
+		var all_world: Array = []
+
+		for key in parsed["areas"]:
+			var area: Dictionary = _read_area(str(key), int(parsed["areas"][key]))
+			var base: int = all_rows.size()
+
+			for n in area.get("world_rows", []):
+				all_world.append(base + int(n))
+
+			all_rows.append_array(area.get("items", []))
+
+		parsed["items"] = all_rows
+		parsed["world_rows"] = all_world
+
 	_next_id = int(parsed.get("next_id", 1))
 
 	_picked = parsed.get("picked", {})
@@ -6359,6 +6451,42 @@ func _load_world_items() -> void:
 	_refresh_pots()   # a pot hangs over whatever fire shares its spot: nothing about it is saved
 
 
+# An area file of the gen the header names. A save that wrote the area but not the header (a crash between) left the gen before in .prev.
+# A file that does not parse is set aside as .bad; one of another version is set aside and not replaced, as _read_json_version does.
+func _read_area(key: String, gen: int) -> Dictionary:
+	var path: String = "%s/%s/%s.json" % [_dir, AREA_DIR, key]
+	var main: Variant = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+
+	if typeof(main) == TYPE_DICTIONARY and int(main.get("version", 0)) > VERSION:
+		push_error("server items: %s is from a newer version; kept as %s.bad" % [path, path])
+		DirAccess.rename_absolute(path, path + ".bad")
+		return {}
+
+	if typeof(main) == TYPE_DICTIONARY and int(main.get("gen", -1)) == gen and typeof(main.get("items")) == TYPE_ARRAY:
+		return main
+
+	if FileAccess.file_exists(path) and typeof(main) != TYPE_DICTIONARY:
+		push_error("server items: %s is not usable; kept as %s.bad" % [path, path])
+		DirAccess.copy_absolute(path, path + ".bad")
+
+	var prev: Variant = JSON.parse_string(FileAccess.get_file_as_string(path + ".prev")) if FileAccess.file_exists(path + ".prev") else null
+
+	if typeof(prev) == TYPE_DICTIONARY and int(prev.get("gen", -1)) == gen and int(prev.get("version", 0)) <= VERSION and typeof(prev.get("items")) == TYPE_ARRAY:
+		push_error("server items: %s read from the save before it (.prev, the gen the header names)" % path)
+		return prev
+
+	if typeof(main) == TYPE_DICTIONARY and typeof(main.get("items")) == TYPE_ARRAY:
+		push_error("server items: %s is gen %d, the header names %d; the newest copy is used" % [path, int(main.get("gen", -1)), gen])
+		return main
+
+	if typeof(prev) == TYPE_DICTIONARY and int(prev.get("version", 0)) <= VERSION and typeof(prev.get("items")) == TYPE_ARRAY:
+		push_error("server items: %s restored from the save before it (gen %d)" % [path, int(prev.get("gen", -1))])
+		return prev   # as _read_json_version: a damaged file costs at most one save interval of that area
+
+	push_error("server items: %s is missing or damaged and has no usable copy; that area's items are lost" % path)
+	return {}
+
+
 # Reads a save file. A file that does not parse (a torn write, a damaged disk) is set aside as .bad and the copy kept
 # from the save before it (.prev, at most one save interval old) is used instead, so a corrupt file costs seconds,
 # not the world. A file from another version is set aside as .bad and NOT replaced by the older copy.
@@ -6452,6 +6580,13 @@ func _start_writer() -> void:
 	if _pending_writes.is_empty():
 		return
 
+	if _writer != null:
+		if _writer.is_alive():
+			return   # the last batch is still being written (a slow disk): this one follows it (_reap_writer), never beside it
+
+		_writer.wait_to_finish()
+		_writer = null
+
 	var batch: Array = _pending_writes
 	_pending_writes = []
 	_writer = Thread.new()
@@ -6460,9 +6595,8 @@ func _start_writer() -> void:
 
 static func _write_batch(batch: Array) -> void:
 	for row in batch:
-		if typeof(row) == TYPE_DICTIONARY:   # an item job (_item_job): its four files
-			for file in _item_files(row):
-				_write_file(str(row["dir"]) + "/" + str(file[0]), JSON.stringify(file[1]))
+		if typeof(row) == TYPE_DICTIONARY:   # an item job (_item_job): its files
+			_write_item_job(row)
 		else:
 			_write_file(str(row[0]), JSON.stringify(row[1]))
 
@@ -6471,6 +6605,8 @@ func _reap_writer() -> void:
 	if _writer != null and not _writer.is_alive():
 		_writer.wait_to_finish()
 		_writer = null
+
+	_start_writer()   # a batch that waited for the one before
 
 
 # The periodic save (_async_writes) waits for the last file batch only, never for log lines: it waited for queued lines, and those sat in the
@@ -6488,6 +6624,11 @@ func _finish_writer() -> void:
 	if _writer != null:
 		_writer.wait_to_finish()
 		_writer = null
+
+	if not _pending_writes.is_empty() and not _async_writes:
+		var waiting: Array = _pending_writes   # queued behind a slow batch: written now, before anything newer
+		_pending_writes = []
+		_write_batch(waiting)
 
 
 # Loose stones and fallen sticks lie about the ground (Dave, 2026-10-20: more stones near rock

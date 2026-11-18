@@ -33,6 +33,27 @@ func wipe(dir: String) -> void:
 	for file in DirAccess.get_files_at(dir):
 		DirAccess.remove_absolute(dir + "/" + file)
 
+	for file in DirAccess.get_files_at(dir + "/" + ItemsScript.AREA_DIR):
+		DirAccess.remove_absolute(dir + "/" + ItemsScript.AREA_DIR + "/" + file)
+
+
+# The world items as saved, without the save count: [header text, rows text].
+func world_save(dir: String) -> Array:
+	var head: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(dir + "/world_items.json"))
+	head.erase("gen")
+	head.erase("areas")
+	return [JSON.stringify(head), JSON.stringify(ItemsScript.saved_world_rows(dir))]
+
+
+func folder_size(dir: String) -> int:
+	var total: int = 0
+
+	for file in DirAccess.get_files_at(dir):
+		if file.ends_with(".json"):
+			total += size_of(dir + "/" + file)
+
+	return total
+
 
 func size_of(path: String) -> int:
 	var f: FileAccess = FileAccess.open(path, FileAccess.READ)
@@ -82,13 +103,17 @@ func _init() -> void:
 	a._dirty = true
 	a.save()
 	var direct: Dictionary = {}
-	var files: Array = ["inventories.json", "world_items.json", "tree_states.json", "lights.json", "kilns.json", "chests.json"]
+	var files: Array = ["inventories.json", "tree_states.json", "lights.json", "kilns.json", "chests.json"]
+	var direct_world: Array = world_save(dir)
 
-	for file in files:
+	for file in files + ["world_items.json"]:
 		direct[file] = FileAccess.get_file_as_string(dir + "/" + file)
 		DirAccess.remove_absolute(dir + "/" + file)
 
-	check(str(direct["lights.json"]).contains("40") and str(direct["world_items.json"]).contains("500"), "the direct save holds the lit light and the fire")
+	for file in DirAccess.get_files_at(dir + "/" + ItemsScript.AREA_DIR):
+		DirAccess.remove_absolute(dir + "/" + ItemsScript.AREA_DIR + "/" + file)   # the periodic save must write the areas again (the file is gone)
+
+	check(str(direct["lights.json"]).contains("40") and str(direct_world[1]).contains("500"), "the direct save holds the lit light and the fire")
 	a._dirty = true
 	a._async_writes = true
 	a.save()
@@ -100,6 +125,8 @@ func _init() -> void:
 
 	for file in files:
 		check(FileAccess.file_exists(dir + "/" + file) and FileAccess.get_file_as_string(dir + "/" + file) == direct[file], "%s: the periodic save writes what a direct save writes, as of its copy" % file)
+
+	check(FileAccess.file_exists(dir + "/world_items.json") and world_save(dir) == direct_world, "world items: the periodic save writes what a direct save writes, as of its copy")
 
 	for id in a._items.keys():
 		if id != tree_id and int(id) >= a._next_id - 3:
@@ -205,7 +232,7 @@ func _init() -> void:
 	var again = make(sd)
 	var load_ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
 	check(again.world_item_count() == s.world_item_count(), "everything survives the restart (%d items)" % again.world_item_count())
-	print("stress: %d items+stumps saved in %.1f ms, loaded in %.1f ms; world_items.json %d bytes, tree_states.json %d bytes" % [s.world_item_count(), save_ms, load_ms, size_of(sd + "/world_items.json"), size_of(sd + "/tree_states.json")])
+	print("stress: %d items+stumps saved in %.1f ms, loaded in %.1f ms; world_items.json %d bytes, tree_states.json %d bytes" % [s.world_item_count(), save_ms, load_ms, size_of(sd + "/world_items.json") + folder_size(sd + "/" + ItemsScript.AREA_DIR), size_of(sd + "/tree_states.json")])
 
 	t0 = Time.get_ticks_usec()
 

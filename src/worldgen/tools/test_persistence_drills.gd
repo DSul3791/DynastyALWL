@@ -36,10 +36,26 @@ func make(dir: String):
 
 
 func wipe(dir: String) -> void:
-	DirAccess.make_dir_recursive_absolute(dir)
+	DirAccess.make_dir_recursive_absolute(dir + "/" + ItemsScript.AREA_DIR)
 
 	for file in DirAccess.get_files_at(dir):
 		DirAccess.remove_absolute(dir + "/" + file)
+
+	for file in DirAccess.get_files_at(dir + "/" + ItemsScript.AREA_DIR):
+		DirAccess.remove_absolute(dir + "/" + ItemsScript.AREA_DIR + "/" + file)
+
+
+# The save files and the world item area files (world_items/, version 4), with their .prev copies when `prev`.
+func copy_store(from: String, to: String, prev: bool = true) -> void:
+	for name in FILES:
+		DirAccess.copy_absolute(from + "/" + name, to + "/" + name)
+
+		if prev:
+			DirAccess.copy_absolute(from + "/" + name + ".prev", to + "/" + name + ".prev")
+
+	for file in DirAccess.get_files_at(from + "/" + ItemsScript.AREA_DIR):
+		if prev or not file.ends_with(".prev"):
+			DirAccess.copy_absolute(from + "/" + ItemsScript.AREA_DIR + "/" + file, to + "/" + ItemsScript.AREA_DIR + "/" + file)
 
 
 func write(path: String, text: String) -> void:
@@ -191,8 +207,7 @@ func _init() -> void:
 	# unchanged and the missing parts read as neutral, then the next save writes the new fields.
 	wipe(dir + "_old")
 
-	for name in FILES:
-		DirAccess.copy_absolute(dir + "/" + name, dir + "_old/" + name)
+	copy_store(dir, dir + "_old", false)
 
 	var old_vitals: Variant = JSON.parse_string(FileAccess.get_file_as_string(dir + "_old/vitals.json"))
 
@@ -226,9 +241,7 @@ func _init() -> void:
 		wipe(dir + "_x")
 		var snap: String = dir + "_x"
 
-		for name in FILES:
-			DirAccess.copy_absolute(dir + "/" + name, snap + "/" + name)
-			DirAccess.copy_absolute(dir + "/" + name + ".prev", snap + "/" + name + ".prev")
+		copy_store(dir, snap)
 
 		write(snap + "/" + file, "{\"version\": 1, \"trunc")
 		var restored: Dictionary = state_of(reload(snap))
@@ -239,9 +252,7 @@ func _init() -> void:
 		# A kill mid-write leaves a half-written .tmp beside the good file: loads as if it was not there.
 		wipe(snap)
 
-		for name in FILES:
-			DirAccess.copy_absolute(dir + "/" + name, snap + "/" + name)
-			DirAccess.copy_absolute(dir + "/" + name + ".prev", snap + "/" + name + ".prev")
+		copy_store(dir, snap)
 
 		write(snap + "/" + file + ".tmp", "{\"version\": 1, \"half")
 		var torn_tmp = reload(snap)
@@ -253,9 +264,7 @@ func _init() -> void:
 		# Both the file and its copy damaged: only this file starts clean, the rest stay, no crash.
 		wipe(snap)
 
-		for name in FILES:
-			DirAccess.copy_absolute(dir + "/" + name, snap + "/" + name)
-			DirAccess.copy_absolute(dir + "/" + name + ".prev", snap + "/" + name + ".prev")
+		copy_store(dir, snap)
 
 		write(snap + "/" + file, "not json")
 		write(snap + "/" + file + ".prev", "{\"version\": 1, \"trunc")
@@ -276,9 +285,7 @@ func _init() -> void:
 	# A newer-version file is set aside and the older copy is not used in its place.
 	wipe(dir + "_x")
 
-	for name in FILES:
-		DirAccess.copy_absolute(dir + "/" + name, dir + "_x/" + name)
-		DirAccess.copy_absolute(dir + "/" + name + ".prev", dir + "_x/" + name + ".prev")
+	copy_store(dir, dir + "_x")
 
 	write(dir + "_x/world_items.json", "{\"version\": 9999, \"items\": []}")
 	var newer = reload(dir + "_x")
