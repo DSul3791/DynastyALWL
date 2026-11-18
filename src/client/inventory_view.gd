@@ -210,7 +210,8 @@ var strain_fade: float = 0.0
 var stance_confirmed: int = 0                # the server's answer: 0 stand, 1 crouch, 2 sit, 3 lie (fainting forces 3)
 var notice_event: Callable = Callable()      # (text) every notice line, for the sounds that follow a server line (the shore net)
 var stance_event: Callable = Callable()      # (stance) when the server confirms or changes it
-var lie_on_bed: Callable = Callable()        # (bed position, yaw degrees) after E on a bed: the client lays the player along it
+var lie_on_bed: Callable = Callable()        # (bed position, yaw degrees, structures.json row) after E on a bed: the client lays the player along it
+var on_bed: Callable = Callable()            # () -> true while the player lies on a bed (E then gets them up)
 var sit_on_seat: Callable = Callable()       # (seat position, yaw degrees, structures.json row) after E on a seat: the client sits the player on it
 const SINK_M := 0.35                        # most the remains sink into the ground by day 7 (death.json sink_m)
 const DEATH_FADE_S := 4.0                   # black, then waking, after a death (death.json respawn_delay_s)
@@ -1098,12 +1099,15 @@ func _probe_structure_for(id: int) -> Dictionary:
 		return {"prompt": "Press E to see what is stored here (hold E to take it down)", "tap": func(): _storage_ui.ask_view(id), "hold": take_down}
 
 	if str(station_def.get("use", "")) == "set_spawn":   # a bed: E lies down on it and makes it the spawn point (Dave 4 Nov 2026), hold E takes it down
+		if on_bed.is_valid() and bool(on_bed.call()):   # lying on it already: E gets up (Dave 18 Nov 2026, "lay on it"; Z and the movement keys still get up too)
+			return {"prompt": "Press E to get up", "tap": func(): lie_on_bed.call(Vector3.ZERO, 0.0, {})}
+
 		var bed: Dictionary = {"prompt": "Press E to lie down (hold E to take it down)", "hold": take_down}
 		bed["tap"] = func():
 			net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO)
 
 			if lie_on_bed.is_valid() and _world.has(id):
-				lie_on_bed.call(_world[id]["pos"], float(_world[id].get("yaw", 0.0)))
+				lie_on_bed.call(_world[id]["pos"], float(_world[id].get("yaw", 0.0)), station_def)
 
 		return bed
 
