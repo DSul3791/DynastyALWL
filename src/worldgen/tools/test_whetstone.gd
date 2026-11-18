@@ -70,7 +70,6 @@ func _init() -> void:
 	items.setup(ItemTableScript.load_default(), dir)
 	items.skill_level = func(_p, _s): return 1.0
 	items.peer_connected_hello(1, "whet-key-00000001")
-	items.set_fitness(1, 0)   # an average adult (0): new characters start at fitness 5 (fitness.json default, provisional FIT-1), which slows tool wear a little (tool_care)
 	items.report_position(1, HERE)
 	inv = items.inventory_of(1)
 	var c: Dictionary = SmithingRules.cfg()
