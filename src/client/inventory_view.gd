@@ -45,7 +45,7 @@ const CropLook := preload("res://src/client/crop_look.gd")   # PLACEHOLDER stage
 const KEY_FILE := "user://player_key.txt"
 const STUCK_ARROW_BACK_M := 0.22         # an arrow stuck in a tree: its middle this far (model metres) back from the hit along its flight, the point just in the bark
 const BASIC_DROP_SCALE := 1.8           # loose items with a stage-one look (basic_look.gd) are drawn this much bigger so they show in the grass
-const MAX_FIRE_LIGHTS := 3              # at High and Ultra; fewer below (max_lights)
+const MAX_FIRE_LIGHTS := 32             # Dave 18 Nov 2026: a fire always lights its ground, at any distance; was 3, so a fire went dark once 3 nearer lights (fires, lanterns, lit stations) took the slots. Shadowless omnis, culled by the engine off screen
 
 var _flame_lights: Array = []           # the lit fire lights that are on (nearest MAX_FIRE_LIGHTS), set by _update_fire_lights
 var open: bool = false
