@@ -15631,7 +15631,7 @@ func _drop_free_crafts(peer: int) -> void:
 		return
 
 	if kept.is_empty() or not is_same(kept[0], entries[0]):
-		queue["elapsed"] = 0.0
+		_restart_head(queue)
 
 	queue["entries"] = kept
 	_dirty = true
@@ -19856,7 +19856,7 @@ func _cancel_craft(peer: int, index: int) -> void:
 	queue["entries"].remove_at(index)
 
 	if index == 0:
-		queue["elapsed"] = 0.0
+		_restart_head(queue)
 
 	_refund_entry(peer, entry)
 
@@ -19877,6 +19877,26 @@ func _cancel_craft(peer: int, index: int) -> void:
 	_sync_craft_queue(peer)
 
 
+# The head craft's time is fixed when it starts (Dave 17 Nov 2026: "it stops at zero and keeps me waiting longer"): the countdown the client is sent
+# and the server's finish read the same number, so a change of pace during the craft (cold setting in at the river, the Rested buff ending, a
+# skill step) no longer stretches it past zero. Provisional CF-2 (docs/design/CRAFT_FINISH.md): the pace that counts is the one when the craft starts.
+func _head_need_s(peer: int, queue: Dictionary, recipe: Dictionary, variant: int) -> float:
+	if not queue.has("need_s"):
+		queue["need_s"] = _need_now(peer, recipe, variant)
+
+	return float(queue["need_s"])
+
+
+func _need_now(peer: int, recipe: Dictionary, variant: int) -> float:
+	return float(recipe.get("craft_s", 3.0)) * _wheel_slow(peer, recipe) * _saw_slow(peer, recipe) * SmithingRules.time_mult(variant) / _pace_factor(peer, "craft")   # skill, rest, cold
+
+
+# The head craft starts over (a new head, or the next craft of the same entry): no time spent, its time worked out again when it next runs.
+func _restart_head(queue: Dictionary) -> void:
+	queue["elapsed"] = 0.0
+	queue.erase("need_s")
+
+
 func _craft_tick(spent: float) -> void:
 	for peer in _peer_key:
 		var queue: Dictionary = _craft_queues.get(_peer_key[peer], {})
@@ -19892,7 +19912,7 @@ func _craft_tick(spent: float) -> void:
 
 		if recipe.is_empty():
 			queue["entries"].remove_at(0)
-			queue["elapsed"] = 0.0
+			_restart_head(queue)
 			_refund_entry(peer, head)
 			_say(peer, "A craft was cancelled: that recipe is gone")
 			_dirty = true
@@ -19905,7 +19925,7 @@ func _craft_tick(spent: float) -> void:
 		# Admin mode is off now (switched off, a new session, a new player): a free craft still queued is dropped, never made free.
 		if free_entry and not free_craft_for(peer):
 			queue["entries"].remove_at(0)
-			queue["elapsed"] = 0.0
+			_restart_head(queue)
 			_say(peer, "%s was cancelled: Admin mode is off" % str(recipe.get("name", "A free craft")))
 			_dirty = true
 			_sync_craft_queue(peer)
@@ -19943,7 +19963,12 @@ func _craft_tick(spent: float) -> void:
 
 		queue["elapsed"] = float(queue["elapsed"]) + spent
 
-		if float(queue["elapsed"]) < float(recipe.get("craft_s", 3.0)) * _wheel_slow(peer, recipe) * _saw_slow(peer, recipe) * SmithingRules.time_mult(variant) / _pace_factor(peer, "craft"):
+		var starting: bool = not queue.has("need_s")
+
+		if float(queue["elapsed"]) < _head_need_s(peer, queue, recipe, variant):
+			if starting:
+				_sync_craft_queue(peer)   # the time is fixed now, beside its station or sawbuck: the countdown is re-sent from it
+
 			continue
 
 		# A sealed batch done while its room was filled meanwhile waits, finished, until there is space again (never onto the ground).
@@ -19968,14 +19993,32 @@ func _craft_tick(spent: float) -> void:
 
 			continue
 
-		queue["elapsed"] = 0.0
+		_restart_head(queue)
 		var inv = inventory_of(peer)
 
-		# A kept tool that is no longer there stops the craft: the entry is refunded.
+		# A kept tool that is no longer there stops the craft: the entry is refunded and the player is told which one. The rule is the one the
+		# craft was queued under (_stock_covers): a tool held in the hand (CraftStock.hand_tools) must be in the pack; any other kept item (the
+		# Stone of a wooden shovel) may lie on the ground or in the player's containers within reach. Before 18 Nov 2026 the end asked for every
+		# kept item in the pack, so a shovel queued beside a loose stone ran its countdown and then gave back its sticks (Dave's report).
 		var tools_ok: bool = inv != null
+		var missing: int = 0
+		var hand_tools: PackedInt32Array = CraftStock.hand_tools(recipe, table)
+		var keep_stock: Dictionary = {}
 
-		for keep in recipe.get("keeps", []):
-			tools_ok = tools_ok and (free_entry or inv.has_fill(keep[0], keep[1]))
+		for keep in (recipe.get("keeps", []) if tools_ok and not free_entry else []):
+			if inv.has_fill(keep[0], keep[1]):
+				continue
+
+			if not hand_tools.has(int(keep[0])):
+				if keep_stock.is_empty():
+					keep_stock = _stock_of(peer)
+
+				if _stock_have(inv, int(keep[0]), keep_stock) >= int(keep[1]):
+					continue
+
+			tools_ok = false
+			missing = int(keep[0])
+			break
 
 		# A recipe that wears its tool (the hand saw) needs an unbroken one of that class on the hotbar.
 		var wears_tool: String = str(recipe.get("wears_tool", ""))
@@ -19989,7 +20032,8 @@ func _craft_tick(spent: float) -> void:
 		if not tools_ok:
 			queue["entries"].remove_at(0)
 			_refund_entry(peer, head)
-			_say(peer, "%s was cancelled: a tool is missing" % str(recipe.get("name", "That")))
+			var what: String = table.cost_sentence(missing) if missing > 0 else "a tool"
+			_say(peer, "%s was cancelled: %s it keeps is no longer with you or close by. Nothing was used." % [str(recipe.get("name", "That")), what])
 		elif sealed and _stalest_input(head) < SEAL_MIN_FRESH:
 			queue["entries"].remove_at(0)
 			_refund_entry(peer, head)
@@ -20156,7 +20200,13 @@ func _sync_craft_queue(peer: int) -> void:
 
 	if not entries.is_empty():
 		var head_recipe: Dictionary = recipes.recipe(int(entries[0][0]))
-		var craft_s: float = float(head_recipe.get("craft_s", 3.0)) * _wheel_slow(peer, head_recipe) * _saw_slow(peer, head_recipe) * SmithingRules.time_mult(_variant_of(entries[0])) / _pace_factor(peer, "craft")   # as _craft_tick times it (skill, rest, cold)
+
+		if _variant_of(entries[0]) != 0 and not head_recipe.is_empty():
+			head_recipe = _variant_recipe(head_recipe, _variant_of(entries[0]))   # as _craft_tick works it
+
+		# The fixed time _craft_tick finishes on once the craft runs; before that, the time it would take now (the craft fixes it when it starts,
+		# so a head that waits for its station takes the station's pace from then, not from when it was queued).
+		var craft_s: float = float(queue["need_s"]) if queue.has("need_s") else _need_now(peer, head_recipe, _variant_of(entries[0]))
 		left_ms = int(maxf(craft_s - float(queue["elapsed"]), 0.0) * 1000.0)
 
 	send_craft_queue.call(peer, _pairs(entries), left_ms)
