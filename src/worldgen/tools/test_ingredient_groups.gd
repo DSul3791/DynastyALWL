@@ -68,7 +68,7 @@ func _init() -> void:
 	tiers.add(table.number_of("bronze_knife"), 1)
 	tiers.add(table.number_of("copper_knife"), 1)
 	tiers.add(table.number_of("stone_knife"), 1)
-	check(table.spend_order(knife)[0] == table.number_of("stone_knife") and tiers.remove_fill(knife, 1) and tiers.count_of(table.number_of("stone_knife")) == 0 and tiers.count_of(table.number_of("copper_knife")) == 1 and tiers.count_of(table.number_of("bronze_knife")) == 1, "mixed tiers: a knife cost takes the stone knife (tier 1) before the copper and bronze ones")
+	check(table.spend_order(knife)[0] == table.number_of("stone_knife") and tiers.remove_fill(knife, 1) and tiers.count_of(table.number_of("stone_knife")) == 0 and tiers.count_of(table.number_of("copper_knife")) == 1 and tiers.count_of(table.number_of("bronze_knife")) == 1, "mixed tiers: a knife cost takes the stone knife (tier 2, stone before copper) before the copper and bronze ones")
 	check(tiers.remove_fill(knife, 2) and tiers.count_fill(knife) == 0, "the lowest short, the rest comes from the next members")
 	var nails_n: int = table.number_of("nails")
 	var bronze_nails: int = table.number_of("bronze_nails")

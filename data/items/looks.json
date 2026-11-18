@@ -261,7 +261,7 @@
    "size": 0.7,
    "bits": ["metal"]
   },
-  "copper_hammer": {"shape": "hammer", "color": "#b87333", "size": 1.0, "bits": ["metal"]},
+  "copper_hammer": {"shape": "hammer", "color": "#b87333", "size": 1.0, "bits": ["bronze", "forged"]},
   "copper_knife": {"shape": "knife", "color": "#b87333", "size": 1.35, "bits": ["metal"]},
   "stone_saw": {"shape": "saw", "color": "#7d7a74", "size": 0.8},
   "copper_hoe": {"shape": "hoe", "color": "#b87333", "size": 1.0, "bits": ["metal"]},

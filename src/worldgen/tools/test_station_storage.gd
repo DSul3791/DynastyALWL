@@ -498,7 +498,7 @@ func _init() -> void:
 	var last: float = 0.0
 	var rising: bool = true
 
-	for h in ["stone_hammer", "copper_hammer", "bronze_hammer", "iron_hammer", "steel_hammer"]:
+	for h in ["stone_hammer", "bronze_hammer", "iron_hammer", "steel_hammer"]:   # the Copper - Hammer shares Stone's tier, so its reach
 		clear_pack(1)
 		hold_tool(1, h)
 		rising = rising and items._hammer_x(1) > last

@@ -2,7 +2,7 @@ extends SceneTree
 
 # Wood system phase 4, the carving station, the knife's blueprints and the bows and benches (docs/design/TREE_WOOD_TOOLS_DESIGN.md s1.4, s1.6, s1.7, s6 W-6 to W-11, W-17; Dave 15 Nov 2026):
 #   1. the Wood carving station is an item, a structure with station "carving_station" and a knife blueprint of 2 Wooden blocks, with a look under 300 triangles;
-#   2. the bowl, Serving platter, Wooden - Quarterstaff, Wooden - Club and Wooden - Hammer, the Shortbow and the Longbow are carved at it keeping a knife, and are refused without it;
+#   2. the bowl, Serving platter, Wooden - Quarterstaff, Wooden - Club, the Shortbow and the Longbow are carved at it keeping a knife, and are refused without it;
 #   3. the Primitive bow is a by-hand craft (2 sticks, 2 plant fibre) with a weaker bow.json row and a lower durability than the Shortbow;
 #   4. a blueprint row with "tool": "knife" is built with a knife in the hand bar and refused with only a hammer, and a hammer row the other way round;
 #   5. the knife's list (hammer_blueprints.gd tool "knife") holds exactly the knife rows, the hammer's list none of them, and the knife list has no Save or plan lines;

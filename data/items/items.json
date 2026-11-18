@@ -12145,7 +12145,7 @@
 		"copper_saw": {
 			"number": 1474,
 			"name": "Copper - Saw",
-			"description": "The first saw, of copper. On the hotbar it saws logs into wooden blocks, planks and boards, slowly.",
+			"description": "A copper saw. On the hotbar it saws logs into wooden blocks, planks and boards, slowly.",
 			"kind": "tool",
 			"tool_class": "saw",
 			"material": "copper",
