@@ -214,12 +214,7 @@
 			"identify": [
 				"plantain_leaves"
 			],
-			"keeps": [
-				[
-					"mortar_pestle",
-					1
-				]
-			]
+			"station": "mortar_pestle"
 		},
 		"poultice_comfrey": {
 			"number": 9,
@@ -240,12 +235,7 @@
 			"identify": [
 				"comfrey_leaves"
 			],
-			"keeps": [
-				[
-					"mortar_pestle",
-					1
-				]
-			]
+			"station": "mortar_pestle"
 		},
 		"bandage_plantain": {
 			"number": 10,
@@ -270,12 +260,7 @@
 			"identify": [
 				"plantain_leaves"
 			],
-			"keeps": [
-				[
-					"mortar_pestle",
-					1
-				]
-			]
+			"station": "mortar_pestle"
 		},
 		"bandage_staunchmoss": {
 			"number": 11,
@@ -3837,7 +3822,8 @@
 				2
 			],
 			"craft_s": 10.0,
-			"known": true
+			"known": true,
+			"station": "mortar_pestle"
 		},
 		"splint": {
 			"number": 199,
@@ -7101,12 +7087,7 @@
 					1
 				]
 			],
-			"keeps": [
-				[
-					"mortar_pestle",
-					1
-				]
-			],
+			"station": "mortar_pestle",
 			"gives": [
 				"herb_antidote",
 				1
