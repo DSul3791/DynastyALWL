@@ -11,7 +11,7 @@ The following six entries record Dave's latest playtest reports and requested be
 **Expected:**
 - Anchor the operation's maximum height to the bottom of the player's feet when the operation begins.
 - Do not move the player up or down or let raising terrain continually increase that reference height.
-- Raising ground, including filling low areas with Level, requires and consumes soil. Till a Garden is a separate averaging operation and does not require soil (entry 6).
+- Raising ground, including filling low areas with Level, requires and consumes soil. Both tilling modes are separate averaging operations and do not require soil (entry 6).
 - Obtain soil through the normal crafting resource system: inventory, loose soil on the ground, or a nearby container.
 
 ## 2. Foundations do not recognize raised terrain as ground
@@ -73,15 +73,17 @@ This is linked to the compounding-height issue in entry 1.
 **Till Garden Grid - 20m Edge Blend:**
 - Garden levelling does not require or consume soil.
 - On the one confirming left-click, capture the original heights of all garden grid points together and calculate their average before changing any heights. For example, with 100 points, average all 100 original heights.
-- Instantly set the whole garden grid to that average height and till it in that single operation. Do not continually recalculate while the mouse button is held.
-- Block repeat tilling of that soil for at least 20 seconds after the operation, displaying "This soil is already tilled."
+- Instantly set the whole garden grid to that average height, till it, remove grass and apply a dark, rich garden-soil texture in that single operation. Do not continually recalculate while the mouse button is held.
+- After a successful Garden Grid till, start a 20-second hoe countdown. Replace the grid graphic with medium-sized red numbers counting down in the middle of the screen. Block further Garden Grid tilling until the countdown ends; shifting the preview cannot bypass the timer. This replaces the earlier per-soil repeat-block/message description.
 - Blend the outside edge into the surrounding land at a slope of 45 degrees or less, extending no farther than 20 metres in any direction.
 - Do not blend beneath buildings or within 2 metres of a building piece. Do not wrap around buildings.
 - If the garden cannot be blended within the slope, distance and building-clearance limits, turn the grid red and block placement. Validate before applying terrain changes.
 - This averaging operation is separate from Level: it does not use the player's foot height as its target.
 
 **Till Soil 2m:**
-- Till and level a 2-metre-wide patch and apply a dark, rich garden-soil texture.
+- Use the same height-averaging approach as Garden Grid on a 2-metre-wide patch: capture the original heights beneath the patch together on the confirming click, calculate their average, and level the patch to that average.
+- No soil is required or consumed. Do not use the player's foot height as the target.
+- Till the patch, remove grass and apply a dark, rich garden-soil texture.
 - Do not apply edge blending.
 - The garden grid's 20-second repeat-tilling block does not apply to this option.
 
