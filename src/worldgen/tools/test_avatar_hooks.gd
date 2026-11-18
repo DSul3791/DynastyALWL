@@ -36,9 +36,9 @@ func _body(clips: Array) -> FakeBody:
 
 
 func _initialize() -> void:
-	var all: Array = ["idle", "swim", "swim_idle", "drink", "pick_up", "sit_down", "stand_up", "wake_up"]
+	var all: Array = ["idle", "swim", "swim_idle", "drink", "sit_down", "stand_up", "wake_up"]
 	var body: FakeBody = _body(all)
-	var ctx: Dictionary = {"swimming": false, "asleep": false, "stance": StanceScript.STAND, "drink_stamp": 0, "pick_stamp": 0}
+	var ctx: Dictionary = {"swimming": false, "asleep": false, "stance": StanceScript.STAND, "drink_stamp": 0}
 	check(AvatarDriver.hook_clip(body, ctx, 0.0, 0.016) == "", "nothing happening: no hook")
 
 	# Swimming: the stroke while moving, the tread while still; leaving the water ends it at once.
@@ -53,13 +53,6 @@ func _initialize() -> void:
 	check(AvatarDriver.hook_clip(body, ctx, 0.0, 0.016) == "drink", "a drink: drink")
 	check(AvatarDriver.hook_clip(body, ctx, 0.0, 0.5) == "drink", "still drinking half a second later")
 	check(AvatarDriver.hook_clip(body, ctx, 0.0, 0.6) == "", "and finished after the clip's length")
-
-	# Pick up: standing still, a pick-up bends over; at a run it is skipped.
-	ctx["pick_stamp"] = 2000
-	check(AvatarDriver.hook_clip(body, ctx, 0.0, 0.016) == "pick_up", "a pick-up: pick_up")
-	check(AvatarDriver.hook_clip(body, ctx, 0.0, 1.5) == "", "and over")
-	ctx["pick_stamp"] = 3000
-	check(AvatarDriver.hook_clip(body, ctx, 4.0, 0.016) == "", "a pick-up on the run is not played")
 
 	# Sitting down and standing up: the chair transitions are not played for the ground sit (the sit clip blends in directly).
 	ctx["stance"] = StanceScript.SIT

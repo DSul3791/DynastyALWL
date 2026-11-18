@@ -1422,7 +1422,6 @@ func _welcome_body(info: Dictionary) -> void:
 		if not talker.is_empty():       # nobody in earshot is talking: no voice (the text still shows)
 			npc_voice.speak(voice_id, text, talker["pos"])
 	items.knowledge = knowledge
-	items.max_lights = func(): return [1, 2, 3, 3][clampi(quality, 0, 3)]
 	items.is_inspecting = func(): return inspecting
 	items.auto_pickup_blocked = func(): return swimming or (held != null and (held.placing() or held.tool_busy()))
 	items.stance_event = _on_stance_from_server
@@ -1444,7 +1443,6 @@ func _welcome_body(info: Dictionary) -> void:
 		_save_display()
 		items.set_text_scale(display.TEXT_SCALES[display.text_index])
 	items.gather_event = func():
-		held.play_gather()
 		feel.strike(0.0, 0.3)
 	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
 	items.worn_event = func(changed: Array, ids: Array) -> void:
@@ -4044,7 +4042,7 @@ func _update_view(delta: float) -> void:
 
 		# Tool work (31 Oct 2026): swinging an axe plays the wide chop, a pick axe the overhead arc (the generated body only: the old body has no such clip). The clip restarts at every
 		# swing and its impact frame is the moment held_item.gd sends the blow.
-		var hook: String = AvatarDriver.hook_clip(_avatar, {"swimming": swimming, "asleep": items != null and items.asleep, "stance": stance.stance if shot_stance < 0 else shot_stance, "drink_stamp": items._drink_msec if items != null else 0, "pick_stamp": items.pick_stamp if items != null else 0}, pace, delta)
+		var hook: String = AvatarDriver.hook_clip(_avatar, {"swimming": swimming, "asleep": items != null and items.asleep, "stance": stance.stance if shot_stance < 0 else shot_stance, "drink_stamp": items._drink_msec if items != null else 0}, pace, delta)
 
 		if hook != "" and debug_clip == "":
 			clip = hook
