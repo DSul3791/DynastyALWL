@@ -177,8 +177,7 @@ var _eat_hold_slot: int = -1          # the pack slot being eaten from while E i
 var _eat_hold_hover: int = -1         # _hover when the hold began: the pointer moving to another slot (or off) stops it
 var _eat_hold_sign: Array = []        # the slot's number, count and wear when the last bite was sent
 var _eat_hold_sent_msec: int = 0
-var pick_stamp: int = 0                       # msec of the latest pick-up or gather the player asked for: the Dynasty body bends to pick it up (avatar_driver.gd hook_clip)
-var gather_event: Callable             # () when the player gathers something by hand (E): the arm reaches and the view dips a little
+var gather_event: Callable             # () when the player gathers something by hand (E): the view dips a little (no arm or body clip: Dave 17 Nov 2026)
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
 var worn_event: Callable               # (changed item ids Array, all worn item ids Array) when what is worn changes; changed is empty for the first list after joining (sounds)
 var skill_up_event: Callable           # () when a skills message shows a skill's level higher than the last one (sounds; not on the first list after joining)
@@ -723,7 +722,7 @@ func _probe_pickup() -> Dictionary:
 	var id: int = near[0]
 	return {"kind": "pickup", "id": id, "point": _world[id]["pos"], "prompt": "Press E to gather", "quiet": not aimed_at(_world[id]["pos"]), "tap": func():
 		clear_prompt()
-		pick_stamp = Time.get_ticks_msec()
+		var asked_msec: int = Time.get_ticks_msec()
 
 		if not liftable(id):   # too heavy: no "too heavy" yet, held E may find something lighter around (Dave 10 Nov 2026)
 			_pending_heavy = id
@@ -734,7 +733,7 @@ func _probe_pickup() -> Dictionary:
 		_hold_took = true
 
 		if _world.has(id) and aimed_at(_world[id]["pos"]):
-			_reticle_took_msec = pick_stamp   # the reticle's own item: held E waits reticle_pause_s before it goes on to what lies around
+			_reticle_took_msec = asked_msec   # the reticle's own item: held E waits reticle_pause_s before it goes on to what lies around
 
 		if gather_event.is_valid():
 			gather_event.call()
@@ -788,7 +787,6 @@ func sweep_target(radius: float) -> Array:
 
 func sweep_pick(id: int) -> void:
 	_sweep_asked[id] = Time.get_ticks_msec()
-	pick_stamp = _sweep_asked[id]
 	_last_pick = id
 	_hold_took = true
 	net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
@@ -1493,8 +1491,6 @@ func pick_up_nearest() -> bool:
 	if _is_chest(int(_world[id]["state"])) and not Input.is_key_pressed(KEY_SHIFT):
 		_ask_open(id)
 		return true
-
-	pick_stamp = Time.get_ticks_msec()
 
 	if gather_event.is_valid():
 		gather_event.call()
