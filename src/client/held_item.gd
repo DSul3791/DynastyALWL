@@ -199,7 +199,7 @@ const MISS_POINT_M := 2.5   # the point a swing at nothing reports (inside the s
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
 const HammerBlueprints := preload("res://src/client/hammer_blueprints.gd")
 const FlameUp := preload("res://src/client/flame_up.gd")
-const FarmRules := preload("res://src/shared/farm_rules.gd")   # the hoe's Garden list and click (plantables, garden_action)
+const FarmRules := preload("res://src/shared/farm_rules.gd")   # the hoe's plant list and grid (plantables, grid_points, spacing_of)
 
 func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hud_layer: CanvasLayer, ground_below: Callable, sound_stage = null, tree_near: Callable = Callable(), cover_at: Callable = Callable()) -> void:
 	_cover_at = cover_at
@@ -223,6 +223,9 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 	if _net != null:
 		_net.road_marker_reached.connect(_on_road_marker_reached)
 		_net.survey_refused_at.connect(_on_survey_refused)
+
+		if _net.has_signal("hoe_verdict_got"):
+			_net.hoe_verdict_got.connect(_on_hoe_verdict)
 	_camera = camera
 	_root = world_root
 	_ground_below = ground_below
@@ -1211,9 +1214,9 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 			if _hoe_menu_open:
 				if button == MOUSE_BUTTON_LEFT:
-					_hoe_menu_choose()   # closes the list, or goes on to the Garden list
+					_hoe_menu_choose()   # closes the list, or goes on to the plant list
 				else:
-					_hoe_menu_close()
+					_hoe_menu_back()   # the plant list goes back to the actions; the actions close
 
 				return true
 
@@ -1222,7 +1225,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 					_arm_play("use", 0.6)
 					_grade_point_here()
 				else:
-					_hoe_menu_open_now()
+					_hoe_menu_open_now("garden" if hoe_mode == "garden" else "modes")   # Plant: right click goes back to choosing the plant (BugsList entry 6)
 
 				return true
 
@@ -1425,7 +1428,6 @@ func _process_body(delta: float) -> void:
 	_update_blueprint()
 	_hammer_stock(delta)
 	_plan_step()
-	_garden_step()
 	_garden_preview()
 	_survey_line()
 	_hoe_repeat(delta)
@@ -2106,9 +2108,11 @@ func _dig_here() -> void:
 	_net.inventory_action.rpc_id(1, Net.ACT_DIG, held_slot, 0, 0, hit["position"])
 
 
-# Holding a mouse button with the hoe repeats the stroke every HOE_REPEAT_S (the server paces it at 0.5 s too), so a road is one drag.
+# Holding the left button with the hoe in Level repeats the stroke every HOE_REPEAT_S (the server paces it at 0.5 s too, and keeps the height it started
+# from for the whole hold: BugsList entry 1). Every other action is one click (Pathen: one level spot a click; the grids and the survey: one a click).
 const HOE_REPEAT_S := 0.55
 var _hoe_t: float = 0.0
+var _hoe_menu_t: float = 0.0
 
 
 func _hoe_repeat(delta: float) -> void:
@@ -2117,32 +2121,41 @@ func _hoe_repeat(delta: float) -> void:
 		_hoe_menu_close()
 		return
 
-	if _hoe_menu_open or not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+	if _hoe_menu_open and _hoe_menu_page == "garden":
+		_hoe_menu_t += delta
+
+		if _hoe_menu_t >= 0.5:   # the plant list follows the stock in reach as it changes
+			_hoe_menu_t = 0.0
+			_hoe_menu_refresh()
+
+	if _hoe_menu_open or not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or hoe_mode != "smooth":
 		_hoe_t = 0.0
 		return
 
 	_hoe_t += delta
 
-	if _hoe_t >= HOE_REPEAT_S and (hoe_mode == "survey" or hoe_mode == "garden" or hoe_mode == "till"):
-		_hoe_t = 0.0   # a held click sets one marker (or plants or tills one grid), not a line of them
-	elif _hoe_t >= HOE_REPEAT_S:
+	if _hoe_t >= HOE_REPEAT_S:
 		_hoe_t = 0.0
 		_arm_play("use", 0.6)
 		_hoe_apply()
 
 
-# What the hoe's mode does (left click, held). Grade needs points A and B (Shift + right click); Shift + left click grades in any mode.
+# What the hoe does (BugsList_Current.md entry 5, Dave 18 Nov 2026: this order and these names). Right click opens the list; Shift + right click sets a
+# survey marker in any mode.
 const HOE_MODES := [
-	{"id": "path", "name": "Path", "note": "averages the ground about 2 m round and treads a soft brown patch"},
-	{"id": "smooth", "name": "Smooth", "note": "levels the ground about 3 m round to where you stand (a little under your feet on a foundation), no path"},
-	{"id": "till", "name": "Till a garden", "note": "green markers show the garden: Alt + arrow keys size it, the wheel turns it; left click levels it and tills every bed (red: the ground rises or falls more than 1 m)"},
-	{"id": "survey", "name": "Survey a path", "note": "left click sets a marker; a green line runs from it to where you aim, at any distance (red: a building is in the way); click again and the road builds along it. Click the last marker again to end the survey (Shift + right click does the same in any mode)"},
-	{"id": "garden", "name": "Plant something", "note": "pick seeds, a dug-up bush or a tree's seed from your pack, then plant a grid of them (spaced for the plant; Alt + arrow keys size it, the wheel turns it)"},
+	{"id": "smooth", "name": "Level", "note": "hold the left button: the ground about 3 m round is cut or filled to the height of your feet (filling uses soil from your pack, the ground near you or your containers)"},
+	{"id": "garden", "name": "Plant", "note": "choose a plant, then one left click fills the green grid as far as your supplies go (Alt + arrow keys: rows and columns; wheel: turn; right click: choose another plant)"},
+	{"id": "till", "name": "Till Garden Grid - 20m Edge Blend", "note": "one left click levels the grid to its average height, tills it into garden soil and blends its edges into the land within 20 m (Alt + arrow keys: size; wheel: turn; red: something is in the way)"},
+	{"id": "soil", "name": "Till Soil 2m", "note": "one left click levels a 2 m patch to its average height and tills it into garden soil (no edge blending)"},
+	{"id": "path", "name": "Pathen", "note": "one left click makes one level spot of path"},
+	{"id": "survey", "name": "Survey a Path", "note": "left click sets a marker; a green line runs from it to where you aim, at any distance (red: a building is in the way); click again and the road builds along it. Click the last marker again to end the survey (Shift + right click does the same in any mode)"},
 ]
-var hoe_mode: String = "path"
-var garden_pick: String = ""             # Garden mode: the item id picked to plant (seeds, a dug-up bush or a tree seed), "" for none (tests read it)
-var _hoe_menu_page: String = "modes"     # "modes" (HOE_MODES) or "garden" (what the pack can plant, FarmRules.plantables)
-var _garden_rows: Array = []             # the Garden list as opened: [{"id", "kind"}]
+const HOE_MENU_WIDTH_SHARE := 0.75   # BugsList entry 4: the list is at most this share of the game window wide, its lines wrapped inside it
+const HOE_MENU_FONT := 26
+var hoe_mode: String = "smooth"
+var garden_pick: String = ""             # Plant: the item id picked to plant (seeds, a dug-up bush or a tree seed), "" for none (tests read it)
+var _hoe_menu_page: String = "modes"     # "modes" (HOE_MODES) or "garden" (what can be planted: the pack and the stock in reach)
+var _garden_rows: Array = []             # the plant list as shown: [{"id", "kind"}]
 var _hoe_menu_open: bool = false
 var _hoe_menu_index: int = 0
 var _hoe_menu_panel: PanelContainer = null
@@ -2153,8 +2166,8 @@ var _hud_layer: CanvasLayer = null
 func _hoe_apply() -> void:
 	if hoe_mode == "smooth":
 		_hoe_here(Net.ACT_HOE_SMOOTH)
-	elif hoe_mode == "till":
-		_till_garden_here()   # one garden a click
+	elif hoe_mode == "till" or hoe_mode == "soil":
+		_till_garden_here()   # one garden or patch a click
 	elif hoe_mode == "survey":
 		_grade_point_here()   # one marker a click, never repeated while the button is held
 	elif hoe_mode == "garden":
@@ -2163,18 +2176,19 @@ func _hoe_apply() -> void:
 		_hoe_here(Net.ACT_HOE_PATH)
 
 
-func _hoe_menu_open_now() -> void:
+func _hoe_menu_open_now(page: String = "modes") -> void:
 	if _hud_layer == null:
 		return
 
 	if _hoe_menu_panel == null:
 		_hoe_menu_panel = PanelContainer.new()
-		_hoe_menu_panel.set_anchors_preset(Control.PRESET_CENTER)
+		_hoe_menu_panel.set_anchors_preset(Control.PRESET_CENTER)   # centred: it grows both ways from the middle of the screen
 		_hoe_menu_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 		_hoe_menu_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 		_hoe_menu_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_hoe_menu_label = Label.new()
-		_hoe_menu_label.add_theme_font_size_override("font_size", 26)
+		_hoe_menu_label.add_theme_font_size_override("font_size", HOE_MENU_FONT)
+		_hoe_menu_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_hoe_menu_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_hoe_menu_panel.add_child(_hoe_menu_label)
 		_hud_layer.add_child(_hoe_menu_panel)
@@ -2188,19 +2202,87 @@ func _hoe_menu_open_now() -> void:
 
 	_hoe_menu_open = true
 	_hoe_menu_panel.visible = true
+
+	if page == "garden":
+		_garden_page()
+	else:
+		_hoe_menu_refresh()
+
+
+# Plant's list (BugsList entry 6): what can be planted from the pack, the loose things near the player and their nearby containers (the crafting stock,
+# asked for again as it opens), with how many of each.
+func _garden_page() -> void:
+	_inv.ask_stock_now()
+	_hoe_menu_page = "garden"
+	_garden_rows = _plantable_rows()
+	_hoe_menu_index = 0
+
+	for n in _garden_rows.size():
+		if str(_garden_rows[n]["id"]) == garden_pick:
+			_hoe_menu_index = n
+
 	_hoe_menu_refresh()
+
+
+func _plantable_rows() -> Array:
+	var ids: Array = []
+
+	for slot in range(_inv.inventory.slot_count):
+		ids.append(_inv.table.id_of(_inv.inventory.numbers[slot]) if _inv.inventory.numbers[slot] != 0 else "")
+
+	for number in _inv.reach_stock:
+		if int(_inv.reach_stock[number]) > 0:
+			ids.append(_inv.table.id_of(int(number)))
+
+	return FarmRules.plantables(_inv.crop_table(), ids, "_bush", _inv.tree_seed_table())
 
 
 func _hoe_menu_refresh() -> void:
 	var text: String = "What should the hoe do?   (wheel: move, left click: choose, right click: close)\n\n"
 
 	if _hoe_menu_page == "garden":
-		text = "What to plant?   (wheel: move, left click: choose, right click: close)\n\n"
+		_garden_rows = _plantable_rows()
+		_hoe_menu_index = clampi(_hoe_menu_index, 0, maxi(_garden_rows.size() - 1, 0))
+		text = "What to plant?   (wheel: move, left click: choose, right click: back to the hoe's actions)\n\n"
+
+		if _garden_rows.is_empty():
+			text += "Nothing to plant: carry seeds, a dug-up bush or a tree's seed, or put them in a container or on the ground near you.\n"
 
 	for n in _hoe_menu_size():
 		text += "%s %s\n" % ["->" if n == _hoe_menu_index else "    ", _hoe_menu_line(n)]
 
-	_hoe_menu_label.text = text
+	_hoe_menu_label.text = text.strip_edges(false, true)
+	_hoe_menu_fit()
+
+
+# Keeps the list on screen (BugsList entry 4): no wider than HOE_MENU_WIDTH_SHARE of the game window (its lines wrap inside that), centred, and its type a
+# little smaller when the wrapped list would still be taller than the window (the height is worked out from the wrapped line count, not waited for).
+func _hoe_menu_fit() -> void:
+	var view: Vector2 = _hud_layer.get_viewport().get_visible_rect().size
+	var font: Font = _hoe_menu_label.get_theme_font("font")
+	var room: float = maxf(view.x * HOE_MENU_WIDTH_SHARE - 24.0, 120.0)   # the panel's own margins come off the share
+	var size: int = HOE_MENU_FONT
+	var width: float = room
+
+	while true:
+		var widest: float = 0.0
+		var lines: int = 0
+
+		for line in _hoe_menu_label.text.split("\n"):
+			var w: float = font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
+			widest = maxf(widest, w)
+			lines += maxi(1, ceili(w / room))
+
+		width = minf(widest + 4.0, room)
+
+		if float(lines) * font.get_height(size) <= view.y * 0.9 or size <= 14:
+			break
+
+		size -= 2
+
+	_hoe_menu_label.add_theme_font_size_override("font_size", size)
+	_hoe_menu_label.custom_minimum_size = Vector2(width, 0.0)
+	_hoe_menu_panel.reset_size()
 
 
 func _hoe_menu_size() -> int:
@@ -2209,30 +2291,20 @@ func _hoe_menu_size() -> int:
 
 func _hoe_menu_line(n: int) -> String:
 	if _hoe_menu_page != "garden":
-		return "%s: %s" % [str(HOE_MODES[n]["name"]), str(HOE_MODES[n]["note"])]
+		return "%d. %s: %s" % [n + 1, str(HOE_MODES[n]["name"]), str(HOE_MODES[n]["note"])]
 
 	var row: Dictionary = _garden_rows[n]
-
-	var hint: String = "click a bed or garden plot to sow, open ground to till and sow" if str(row["kind"]) == "seed" else "click open ground to plant it"
+	var hint: String = "on tilled soil" if str(row["kind"]) == "seed" else "in open ground"
 	var number: int = _inv.table.number_of(str(row["id"]))
-	return "%s (%d): %s" % [_inv.table.name_of(number), _inv.inventory.count_of(number), hint]
+	return "%s (%d): %s" % [_inv.table.name_of(number), _inv.stock_fill(number), hint]
 
 
-func _pack_slot_of(id: String) -> int:
-	for slot in range(_inv.inventory.slot_count):
-		if _inv.inventory.numbers[slot] != 0 and _inv.table.id_of(_inv.inventory.numbers[slot]) == id:
-			return slot
-
-	return -1
-
-
-# Left click in the hoe's list: on the first page it sets the mode (Garden goes on to the list of what to plant); on the Garden page it picks what to plant.
+# Left click in the hoe's list: on the first page it sets the action (Plant goes on to the list of what to plant); on the plant list it picks the plant.
 func _hoe_menu_choose() -> void:
 	if _hoe_menu_page == "garden":
 		if _hoe_menu_index < _garden_rows.size():
 			var row: Dictionary = _garden_rows[_hoe_menu_index]
 			garden_pick = str(row["id"])
-			_garden_queue.clear()   # what was queued for the last pick is dropped, not sent with the new pick's slot
 			_inv._on_notice("Hoe: plant %s" % _inv.table.name_of(_inv.table.number_of(garden_pick)).to_lower())
 
 		_hoe_menu_close()
@@ -2245,26 +2317,22 @@ func _hoe_menu_choose() -> void:
 		_hoe_menu_close()
 		return
 
-	var ids: Array = []
+	_garden_page()
 
-	for slot in range(_inv.inventory.slot_count):
-		ids.append(_inv.table.id_of(_inv.inventory.numbers[slot]) if _inv.inventory.numbers[slot] != 0 else "")
 
-	_garden_rows = FarmRules.plantables(_inv.crop_table(), ids, "_bush", _inv.tree_seed_table())
+# Right click in the list: the plant list goes back to the hoe's actions; the actions close.
+func _hoe_menu_back() -> void:
+	if _hoe_menu_page == "garden":
+		_hoe_menu_page = "modes"
 
-	if _garden_rows.is_empty():
-		_inv._on_notice("Hoe: Garden. Carry seeds, a dug-up bush or a tree's seed to plant them")
-		_hoe_menu_close()
+		for n in HOE_MODES.size():
+			if str(HOE_MODES[n]["id"]) == hoe_mode:
+				_hoe_menu_index = n
+
+		_hoe_menu_refresh()
 		return
 
-	_hoe_menu_page = "garden"
-	_hoe_menu_index = 0
-
-	for n in _garden_rows.size():
-		if str(_garden_rows[n]["id"]) == garden_pick:
-			_hoe_menu_index = n
-
-	_hoe_menu_refresh()
+	_hoe_menu_close()
 
 
 func _hoe_menu_close() -> void:
@@ -2544,123 +2612,138 @@ func _hoe_here(action: int) -> void:
 		_sound.hits.hit("shovel", "soil", hit["position"], 0.4)
 
 
-# The hoe grid (Dave 14 Nov 2026): one grid of green markers for Till a garden and Plant something, garden_w across by garden_d along (Alt + arrow keys,
-# 1 to FarmRules.GRID_MAX_SIDE), turned garden_yaw degrees (the wheel, FarmRules.GRID_TURN_DEG a notch). Unturned, a 1 m grid sits on the world's metre
-# cells; aimed at a bed, it lines up on that bed. Till a garden: one click sends the grid to the server, which levels and tills it (server_items.till_garden);
-# red when the ground rises or falls more than FarmRules.GARDEN_LEVEL_LIMIT_M from its average. Plant something: the picked seeds go into every point, spaced for
-# the plant (FarmRules.spacing_of): an empty bed or garden plot is sown, open ground is tilled and then sown once the bed is there; a picked dug-up bush or tree
-# seed is planted in open ground. Never more points than the pack holds of the pick. The requests go out one by one (_garden_step), each when the player is within
-# reach of it (walk along a big grid); the server checks reach, season, ground and spacing and says why it refuses.
+# The hoe grid (Dave 14 Nov 2026; BugsList_Current.md entry 6, 18 Nov 2026): one grid of markers for Plant, Till Garden Grid and Till Soil 2m, garden_w across by
+# garden_d along (Alt + arrow keys, 1 to FarmRules.GRID_MAX_SIDE; Till Soil 2m is always 2 by 2), turned garden_yaw degrees (the wheel). Unturned, a 1 m grid sits on
+# the world's metre cells; aimed at a bed, a seed grid lines up on that bed. The server decides every marker: the preview asks it (a check request, answered by
+# hoe_verdict) whenever the grid changes, and colours the markers by the answer, neon green where the click will work and red where it will not (a tree, a large
+# rock, a building or the ground round it, too steep for the blend; for a plant: no tilled soil for a crop, a bed for a bush). One left click then does the whole
+# grid on the server. Before the first answer the markers are green.
 var garden_w: int = 1
 var garden_d: int = 1
 var garden_yaw: int = 0                  # degrees, the way a structure's yaw turns
-var _garden_centre: Vector2 = Vector2.ZERO   # the last plan's grid centre (the till click sends it)
-var _garden_queue: Array = []            # [{"act": "till" | "sow" | "sow_at" | "plant_bush", "pos": Vector3, "bed": id, "until": msec a sow_at waits for its bed}]
-var _garden_next_msec: int = 0
+var _garden_centre: Vector2 = Vector2.ZERO   # the last plan's grid centre (the click sends it)
+var _verdict: Dictionary = {}            # the server's last hoe_verdict: {"kind", "code", "at", "state", "why", "cells"}
+var _asked: Array = []                   # the last check sent: [kind, code, at]
+var _asked_msec: int = 0
+const GARDEN_ASK_MSEC := 300             # a changed grid is asked about at most this often (the server answers at most every 250 ms)
+const GARDEN_REASK_MSEC := 1500          # and an unchanged one again this often (the world round it changes)
+const GARDEN_COUNTDOWN_MS := 20000       # Dave: after a garden, 20 s before the next Garden Grid
+var _garden_ready_msec: int = 0
+var _countdown_label: Label = null
 
 
+# What the click would send now for the grid round `aim`: {"kind" (ACT_TILL_GARDEN or ACT_PLANT_GRID), "code", "at", "number" (the plant's item), "points"
+# (in the server's FarmRules.grid_points order), "step"}; {} when Plant has nothing picked or none of it left.
+func _grid_request(aim: Vector3) -> Dictionary:
+	var step: float = 1.0
+	var w: int = garden_w
+	var d: int = garden_d
+	var kind: String = "till"
+	var number: int = 0
+
+	if hoe_mode == "soil":
+		w = 2
+		d = 2
+	elif hoe_mode == "garden":
+		number = _inv.table.number_of(garden_pick) if garden_pick != "" else 0
+		var picked: Array = FarmRules.plantables(_inv.crop_table(), [garden_pick] if number > 0 and _inv.stock_fill(number) > 0 else [], "_bush", _inv.tree_seed_table())
+
+		if picked.is_empty():
+			return {}
+
+		kind = str(picked[0]["kind"])
+		step = FarmRules.spacing_of(kind, _inv.crop_table().get(FarmRules.crop_of_seed(_inv.crop_table(), garden_pick), {}) if kind == "seed" else {})
+
+	var flat_aim: Vector2 = Vector2(aim.x, aim.z)
+	var anchor: Variant = null
+
+	if kind == "seed":
+		var beds: Array = _inv.bed_rows(aim, Vector2(float(w), float(d)).length() * step + 3.0)
+		var under: int = _inv.bed_in(beds, aim)
+
+		for row in beds:
+			if int(row[0]) == under and under != 0:
+				anchor = Vector2(row[1].x, row[1].z)   # line up on the bed aimed at
+
+	if anchor == null and (kind == "seed" or kind == "till") and garden_yaw == 0 and is_equal_approx(step, roundf(step)):
+		anchor = Vector2(floor(aim.x) + 0.5, floor(aim.z) + 0.5)   # unturned: on the world's metre cells, like the beds the server snaps
+
+	_garden_centre = FarmRules.grid_centre(w, d, step, flat_aim, garden_yaw, anchor)
+	var at: Vector3 = Vector3(_garden_centre.x, aim.y, _garden_centre.y)
+
+	if hoe_mode == "garden":
+		return {"kind": Net.ACT_PLANT_GRID, "code": garden_yaw * 10000 + w * 100 + d, "at": at, "number": number, "points": FarmRules.grid_points(w, d, step, _garden_centre, garden_yaw), "step": step}
+
+	return {"kind": Net.ACT_TILL_GARDEN, "code": (10000 if hoe_mode == "soil" else 0) + w * 100 + d, "at": at, "number": 0, "points": FarmRules.grid_points(w, d, 1.0, _garden_centre, garden_yaw), "step": 1.0}
+
+
+func _send_grid(request: Dictionary, check: bool) -> void:
+	var code: int = int(request["code"]) + (10000000 if check else 0)
+
+	if int(request["kind"]) == Net.ACT_PLANT_GRID:
+		_net.inventory_action.rpc_id(1, Net.ACT_PLANT_GRID, held_slot, int(request["number"]), code, request["at"])
+	else:
+		_net.inventory_action.rpc_id(1, Net.ACT_TILL_GARDEN, held_slot, garden_yaw, code, request["at"])
+
+
+# The server's answer for the grid as `request` asks it, {} when it has not answered that one yet.
+func _verdict_for(request: Dictionary) -> Dictionary:
+	if _verdict.is_empty() or int(_verdict["kind"]) != int(request["kind"]) or int(_verdict["code"]) != int(request["code"]):
+		return {}
+
+	var at: Vector3 = _verdict["at"]
+	return _verdict if Vector2(at.x - request["at"].x, at.z - request["at"].z).length() < 0.03 else {}
+
+
+func _on_hoe_verdict(kind: int, code: int, at: Vector3, state: int, why: String, cells: PackedByteArray) -> void:
+	_verdict = {"kind": kind, "code": code, "at": at, "state": state, "why": why, "cells": cells}
+
+	if state == 2 and kind == Net.ACT_TILL_GARDEN and floori(float(code) / 10000.0) == 0:
+		_garden_ready_msec = Time.get_ticks_msec() + GARDEN_COUNTDOWN_MS   # the garden is taken on: the grid gives way to the countdown
+
+
+func garden_countdown_s() -> int:
+	return maxi(ceili(float(_garden_ready_msec - Time.get_ticks_msec()) / 1000.0), 0)
+
+
+# Plant (left click): the whole grid goes to the server, which plants every usable point from the supplies (server_items.plant_grid).
 func _garden_here() -> void:
-	if not _garden_queue.is_empty():
-		_inv._on_notice("Still planting the last lot")
-		return
-
 	var hit: Dictionary = _ground_under_crosshair()
 
 	if hit.is_empty():
 		_inv._on_notice("Aim the hoe at the ground or a bed within reach to plant")
 		return
 
-	var plan: Array = _garden_plan(hit["position"])
+	var request: Dictionary = _grid_request(hit["position"])
 
-	if plan.is_empty():
+	if request.is_empty():
+		_inv._on_notice("Nothing to plant: right click and choose what to plant" if garden_pick == "" else "No %s left to plant: right click and choose another plant" % _inv.table.name_of(_inv.table.number_of(garden_pick)).to_lower())
 		return
 
-	var said: String = ""
-
-	for cell in plan:
-		if str(cell["act"]) == "none":
-			said = str(cell["say"]) if said == "" else said
-		else:
-			cell["yaw"] = garden_yaw   # the bed a till makes is turned with the grid it came from
-			_garden_queue.append(cell)
-
-			if str(cell["act"]) == "till":
-				_garden_queue.append({"act": "sow_at", "pos": cell["pos"], "until": 0})
-
-	if said != "" and _garden_queue.is_empty():
-		_inv._on_notice(said)
+	_send_grid(request, false)
+	_arm_play("use", 0.6)
 
 
-# What one click would do at each point of the grid: [{"act", "pos", "bed", "say", "ok", "far"}], nearest the aim first, at most as many planting points as the pack holds
-# of the pick (Till a garden: every bed of the grid). Empty when nothing is picked or none is left (the notice says so). The preview draws the same plan.
-func _garden_plan(aim: Vector3, quiet: bool = false) -> Array:
-	var kind: String = "till"
-	var step: float = 1.0
-	var have: int = FarmRules.GRID_MAX_SIDE * FarmRules.GRID_MAX_SIDE
-
-	if hoe_mode != "till":
-		var slot: int = _pack_slot_of(garden_pick) if garden_pick != "" else -1
-		var picked: Array = FarmRules.plantables(_inv.crop_table(), [garden_pick] if slot >= 0 else [], "_bush", _inv.tree_seed_table())
-		kind = str(picked[0]["kind"]) if not picked.is_empty() else ""
-		var plant_name: String = _inv.table.name_of(_inv.table.number_of(garden_pick)).to_lower() if garden_pick != "" else ""
-
-		if kind == "":
-			if not quiet:
-				_inv._on_notice("No %s left in your pack: right click and pick something else to plant" % plant_name if garden_pick != "" else str(FarmRules.garden_action("", false, "")["say"]))
-
-			return []
-
-		have = _inv.inventory.count_of(_inv.table.number_of(garden_pick))
-		step = FarmRules.spacing_of(kind, _inv.crop_table().get(FarmRules.crop_of_seed(_inv.crop_table(), garden_pick), {}) if kind == "seed" else {})
-
-	var feet: Vector3 = _inv._player_position.call() if _inv._player_position.is_valid() else _camera.global_position
-	var beds: Array = _inv.bed_rows(aim, Vector2(float(garden_w), float(garden_d)).length() * step + 3.0)   # read once for the whole grid, only the beds it can touch (a plot reaches 1.5 m from its middle)
-	var flat_aim: Vector2 = Vector2(aim.x, aim.z)
-	var anchor: Variant = null
-	var under: int = _inv.bed_in(beds, aim)
-
-	if (kind == "seed" or kind == "till") and under != 0:
-		for row in beds:
-			if int(row[0]) == under:
-				anchor = Vector2(row[1].x, row[1].z)   # line up on the bed aimed at
-
-	elif (kind == "seed" or kind == "till") and garden_yaw == 0 and is_equal_approx(step, roundf(step)):
-		anchor = Vector2(floor(aim.x) + 0.5, floor(aim.z) + 0.5)   # unturned: on the world's metre cells, like the beds the server snaps
-
-	_garden_centre = FarmRules.grid_centre(garden_w, garden_d, step, flat_aim, garden_yaw, anchor)
-	var spots: Array = []
-
-	for flat in FarmRules.nearest_first(FarmRules.grid_points(garden_w, garden_d, step, _garden_centre, garden_yaw), flat_aim):
-		var pos: Vector3 = Vector3(flat.x, _terrain_y(flat.x, flat.y, aim.y, 3.0), flat.y)
-		var bed: int = _inv.bed_in(beds, pos)
-		spots.append([pos, bed, _inv.bed_crop(bed, pos) if bed != 0 else "", "%d:%d" % [bed, _inv.bed_cell_index(bed, pos)]])   # a plot holds a crop on each square metre
-
-	var plan: Array = FarmRules.garden_plan(kind, spots, feet, GARDEN_REACH_M, have)
-
-	if kind == "till" and not FarmRules.level_ok(spots.map(func(spot): return spot[0].y)):
-		for cell in plan:   # too uneven to till: every marker red, and the click says why
-			cell["ok"] = false
-			cell["act"] = "none"
-			cell["say"] = "The ground here rises and falls more than %d m: level it first (Smooth), then till" % int(FarmRules.GARDEN_LEVEL_LIMIT_M)
-
-	return plan
-
-
-# Till a garden (left click): the grid as the preview shows it goes to the server, which levels it and tills every bed in it (server_items.till_garden).
+# Till Garden Grid and Till Soil 2m (left click): the grid goes to the server, which checks the whole area, then levels, blends and tills it (server_items.till_garden).
 func _till_garden_here() -> void:
+	if hoe_mode == "till" and garden_countdown_s() > 0:
+		_inv._on_notice("The next garden grid is ready in %d s" % garden_countdown_s())
+		return
+
 	var hit: Dictionary = _ground_under_crosshair()
 
 	if hit.is_empty():
 		_inv._on_notice("Aim the hoe at the ground within reach to mark out a garden")
 		return
 
-	var plan: Array = _garden_plan(hit["position"])
+	var request: Dictionary = _grid_request(hit["position"])
+	var known: Dictionary = _verdict_for(request)
 
-	if not plan.any(func(cell): return bool(cell["ok"])):
-		_inv._on_notice(str(plan[0]["say"]) if not plan.is_empty() and str(plan[0]["say"]) != "" else "Nothing to till there")
+	if not known.is_empty() and int(known["state"]) == 0 and str(known["why"]) != "":
+		_inv._on_notice(str(known["why"]))   # the server would refuse it: say why without asking again
 		return
 
-	_net.inventory_action.rpc_id(1, Net.ACT_TILL_GARDEN, held_slot, garden_yaw, garden_w * 100 + garden_d, Vector3(_garden_centre.x, hit["position"].y, _garden_centre.y))
+	_send_grid(request, false)
 	_arm_play("use", 0.6)
 
 	if _sound != null:
@@ -2672,18 +2755,19 @@ func garden_resize(across: int, along: int) -> bool:
 	if not _hoe_grid_on():
 		return false
 
+	if hoe_mode == "soil":
+		_inv._on_notice("Till Soil 2m is always a 2 m patch")
+		return true
+
 	garden_w = clampi(garden_w + across, 1, FarmRules.GRID_MAX_SIDE)
 	garden_d = clampi(garden_d + along, 1, FarmRules.GRID_MAX_SIDE)
 	_inv._on_notice("Hoe grid: %d by %d" % [garden_w, garden_d])
 	return true
 
 
-# Whether the hoe's grid is out (in hand, Till a garden, or Plant something with something picked, its list shut).
+# Whether the hoe's grid is out (in hand, a tilling mode, or Plant with something picked, its list shut).
 func _hoe_grid_on() -> bool:
-	return _hoe_in_hand() and not _hoe_menu_open and (hoe_mode == "till" or (hoe_mode == "garden" and garden_pick != ""))
-
-
-const GARDEN_REACH_M := 3.7   # inside the server's PLANT_BUSH_REACH_M (4 m flat; DIG_REACH_M 4.5 for tilling and sowing), flat from the player's feet, with room for the server's position lagging a tick
+	return _hoe_in_hand() and not _hoe_menu_open and (hoe_mode == "till" or hoe_mode == "soil" or (hoe_mode == "garden" and garden_pick != ""))
 
 
 # The ground point under the crosshair within reach, {} for none (or a plant's collider).
@@ -2693,64 +2777,19 @@ func _ground_under_crosshair() -> Dictionary:
 	return {} if hit.is_empty() or hit["collider"].has_meta("species_ids") else hit
 
 
-# Sends the queued Garden requests one at a time: a till waits FarmRules.GARDEN_TILL_MSEC after the last one (the server's hoe pace), a sow of a just-tilled cell waits for its bed
-# to show (up to FarmRules.GARDEN_BED_WAIT_MSEC; FarmRules.garden_step), and the queue stops when the hoe leaves the hand or the pack runs out of the pick.
-func _garden_step() -> void:
-	if _garden_queue.is_empty():
-		return
-
-	if not _hoe_in_hand() or hoe_mode != "garden":
-		_garden_queue.clear()
-		return
-
-	var now: int = Time.get_ticks_msec()
-
-	if now < _garden_next_msec:
-		return
-
-	var slot: int = _pack_slot_of(garden_pick)
-
-	if slot < 0 and str(_garden_queue[0]["act"]) != "till":
-		_garden_queue.clear()
-		return
-
-	var bed_at := func(pos: Vector3) -> Array:
-		var bed: int = _inv.bed_id_at(pos)
-		return [bed, _inv.bed_crop(bed, pos) if bed != 0 else ""]
-
-	var feet: Vector3 = _inv._player_position.call() if _inv._player_position.is_valid() else _camera.global_position
-	var near := func(pos: Vector3) -> bool:
-		return Vector2(pos.x - feet.x, pos.z - feet.z).length() <= GARDEN_REACH_M   # a far point waits for the player to walk over
-
-	var step: Dictionary = FarmRules.garden_step(_garden_queue, now, bed_at, near)
-	var send: Dictionary = step["send"]
-	_garden_next_msec = int(step["next"])
-
-	match str(send.get("act", "")):
-		"till":
-			_net.inventory_action.rpc_id(1, Net.ACT_TILL, held_slot, int(send.get("yaw", 0)), 0, send["pos"])   # the hoe in hand tills one bed, turned with its grid
-			_arm_play("use", 0.6)
-
-			if _sound != null:
-				_sound.hits.hit("shovel", "soil", send["pos"], 0.7)
-		"sow":
-			_net.inventory_action.rpc_id(1, Net.ACT_SOW, int(send["bed"]), slot, 0, send["pos"])   # b: the seed's pack slot; at: the square metre of a plot it goes in
-		"plant_bush":
-			_net.inventory_action.rpc_id(1, Net.ACT_PLANT_BUSH, slot, 0, 0, send["pos"])   # a: the bush's pack slot (it need not be in hand)
-			_arm_play("use", 0.6)
-
-
-# The Garden preview (the "plant easily" feel): a flat marker on every cell the next click would work, green where it will plant, red where it will not (a crop already
-# growing, a bush on a bed, too far). Redrawn ten times a second while the hoe is in Garden mode with something to plant picked and its list shut. PLACEHOLDER look.
+# The grid preview: a flat marker on every point of the grid, neon green where the next click will work, red where it will not, faint green where a plant would
+# go but the supplies run out first; after a garden, the countdown in its place. Redrawn ten times a second while a grid is out. PLACEHOLDER look.
 var _garden_marks: Array = []            # MeshInstance3D pool
 var _garden_mark_ok: StandardMaterial3D = null
 var _garden_mark_bad: StandardMaterial3D = null
+var _garden_mark_short: StandardMaterial3D = null
 var _garden_preview_msec: int = 0
-var garden_preview_cells: int = 0        # how many markers show now
+var garden_preview_cells: int = 0        # how many markers show now (tests read it)
 
 
 func _garden_preview() -> void:
-	var on: bool = _hoe_grid_on() and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+	_show_countdown()
+	var on: bool = _hoe_grid_on() and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not (hoe_mode == "till" and garden_countdown_s() > 0)
 
 	if not on:
 		if garden_preview_cells > 0:
@@ -2768,35 +2807,92 @@ func _garden_preview() -> void:
 
 	_garden_preview_msec = now + 100
 	var hit: Dictionary = _ground_under_crosshair()
-	var plan: Array = _garden_plan(hit["position"], true) if not hit.is_empty() else []
+	var request: Dictionary = _grid_request(hit["position"]) if not hit.is_empty() else {}
+	var points: Array = request.get("points", [])
+
+	if not request.is_empty():
+		var key: Array = [int(request["kind"]), int(request["code"]), Vector2(request["at"].x, request["at"].z).snapped(Vector2(0.05, 0.05))]
+
+		if (key != _asked and now - _asked_msec >= GARDEN_ASK_MSEC) or now - _asked_msec >= GARDEN_REASK_MSEC:
+			if hoe_mode == "garden" and key == _asked:
+				_inv.ask_stock_now()   # the supplies in reach change as the player walks: the plant count follows
+
+			_asked = key
+			_asked_msec = now
+			_send_grid(request, true)
+
+	var known: Dictionary = _verdict_for(request) if not request.is_empty() else {}
 
 	if _garden_mark_ok == null:
 		_garden_mark_ok = StandardMaterial3D.new()
 		_garden_mark_ok.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		_garden_mark_ok.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-		_garden_mark_ok.albedo_color = Color(0.3, 0.9, 0.3, 0.45)
+		_garden_mark_ok.albedo_color = Color(0.25, 1.0, 0.2, 0.6)   # neon green (Dave)
 		_garden_mark_bad = _garden_mark_ok.duplicate()
-		_garden_mark_bad.albedo_color = Color(0.95, 0.25, 0.2, 0.45)
+		_garden_mark_bad.albedo_color = Color(0.95, 0.2, 0.15, 0.55)
+		_garden_mark_short = _garden_mark_ok.duplicate()
+		_garden_mark_short.albedo_color = Color(0.25, 1.0, 0.2, 0.2)
 
-	while _garden_marks.size() < plan.size():
+	var side: float = minf(float(request.get("step", 1.0)), 1.0) * 0.8
+
+	while _garden_marks.size() < points.size():
 		var mark: MeshInstance3D = MeshInstance3D.new()
 		var box: BoxMesh = BoxMesh.new()
-		box.size = Vector3(0.8, 0.04, 0.8)
+		box.size = Vector3(1.0, 0.04, 1.0)
 		mark.mesh = box
 		mark.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_root.add_child(mark)
 		_garden_marks.append(mark)
 
+	var cells: PackedByteArray = known.get("cells", PackedByteArray())
+
 	for n in _garden_marks.size():
 		var mark: MeshInstance3D = _garden_marks[n]
-		mark.visible = n < plan.size() and not is_nan(float(plan[n]["pos"].y))
+		var flat: Vector2 = points[n] if n < points.size() else Vector2.ZERO
+		var y: float = _terrain_y(flat.x, flat.y, hit["position"].y, 3.0) if n < points.size() else NAN
+		mark.visible = n < points.size() and not is_nan(y)
 
-		if mark.visible:
-			mark.global_position = plan[n]["pos"] + Vector3(0.0, 0.05 if int(plan[n]["bed"]) == 0 else 0.35, 0.0)   # over a bed or plot: above its frame
-			mark.rotation.y = deg_to_rad(float(garden_yaw))   # square with the grid
-			mark.material_override = _garden_mark_ok if bool(plan[n]["ok"]) else _garden_mark_bad
+		if not mark.visible:
+			continue
 
-	garden_preview_cells = plan.size()
+		var on_bed: bool = _inv.bed_id_at(Vector3(flat.x, y, flat.y)) != 0
+		mark.global_position = Vector3(flat.x, y + (0.35 if on_bed else 0.05), flat.y)   # over a bed or plot: above its frame
+		mark.rotation.y = deg_to_rad(float(garden_yaw))   # square with the grid
+		mark.scale = Vector3(side, 1.0, side)
+		var state: int = 1
+
+		if not known.is_empty():
+			state = int(cells[n]) if n < cells.size() else (1 if int(known["state"]) != 0 else 0)
+
+		mark.material_override = _garden_mark_ok if state == 1 else (_garden_mark_short if state == 2 else _garden_mark_bad)
+
+	garden_preview_cells = points.size()
+
+
+# After a Garden Grid (Dave 18 Nov 2026): a 20 s countdown in medium red numbers at the middle of the screen takes the grid's place while the hoe is out in that
+# mode; the next garden waits for it wherever the player goes.
+func _show_countdown() -> void:
+	var left: int = garden_countdown_s()
+	var show: bool = left > 0 and _hoe_in_hand() and hoe_mode == "till" and not _hoe_menu_open and _hud_layer != null
+
+	if show and _countdown_label == null:
+		_countdown_label = Label.new()
+		_countdown_label.set_anchors_preset(Control.PRESET_CENTER)
+		_countdown_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		_countdown_label.grow_vertical = Control.GROW_DIRECTION_BOTH
+		_countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_countdown_label.add_theme_font_size_override("font_size", 44)
+		_countdown_label.add_theme_color_override("font_color", Color(0.9, 0.1, 0.08))
+		_countdown_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
+		_countdown_label.add_theme_constant_override("outline_size", 6)
+		_countdown_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_hud_layer.add_child(_countdown_label)
+
+	if _countdown_label != null:
+		_countdown_label.visible = show
+
+		if show:
+			_countdown_label.text = str(left)
 
 
 # A shovel fill at the ground under the crosshair (right click): the server spends a shovelful and puts the ground back.
@@ -2881,16 +2977,16 @@ func _caption() -> String:
 
 func _hoe_mode_name() -> String:
 	if hoe_mode == "garden":
-		return "Plant %s" % ("%s, %d by %d, turned %d degrees (Alt + arrows: size; wheel: turn)" % [_inv.table.name_of(_inv.table.number_of(garden_pick)).to_lower(), garden_w, garden_d, garden_yaw] if garden_pick != "" else "something: pick what to plant")
+		return "Plant %s, %d by %d, turned %d degrees (Alt + arrows: rows and columns; wheel: turn)" % [_inv.table.name_of(_inv.table.number_of(garden_pick)).to_lower(), garden_w, garden_d, garden_yaw] if garden_pick != "" else "Plant: choose what to plant"
 
 	if hoe_mode == "till":
-		return "Till a garden, %d by %d, turned %d degrees (Alt + arrows: size; wheel: turn)" % [garden_w, garden_d, garden_yaw]
+		return "Till Garden Grid - 20m Edge Blend, %d by %d, turned %d degrees (Alt + arrows: size; wheel: turn)%s" % [garden_w, garden_d, garden_yaw, "; ready in %d s" % garden_countdown_s() if garden_countdown_s() > 0 else ""]
 
 	for mode in HOE_MODES:
 		if str(mode["id"]) == hoe_mode:
 			return str(mode["name"])
 
-	return "Path"
+	return "Level"
 
 
 func _show_model() -> void:

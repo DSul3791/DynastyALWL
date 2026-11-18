@@ -2,6 +2,7 @@ extends SceneTree
 
 const SkillWebCheck := preload("res://src/shared/skill_web.gd")
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
+const InventoryCheck := preload("res://src/shared/inventory.gd")
 
 # Item data validator: items.json, gathered.json, recipes.json, drops.json, cooking.json.
 # Checks numbers, unknown ids, orphan core items and recipes that can never be made.
@@ -978,8 +979,8 @@ func _init() -> void:
 		if float(def.get("footprint_x", 0.0)) <= 0.0 or float(def.get("footprint_z", 0.0)) <= 0.0:
 			fail("structures.json %s: footprint_x and footprint_z (the ghost's size in metres) are required" % kind)
 
-		if def.has("slots") and (int(def.get("slots", 0)) < 1 or int(def.get("slots", 0)) > 30):
-			fail("structures.json %s: slots must be 1 to 30" % kind)
+		if def.has("slots") and (int(def.get("slots", 0)) < 1 or int(def.get("slots", 0)) > InventoryCheck.MAX_SLOTS):   # chests go to 48 (Dave 18 Nov 2026: 3 rows of 6, a row more each tier)
+			fail("structures.json %s: slots must be 1 to %d" % [kind, InventoryCheck.MAX_SLOTS])
 
 		if def.has("max_kg") and float(def.get("max_kg", 0.0)) <= 0.0:
 			fail("structures.json %s: max_kg must be above 0" % kind)

@@ -150,6 +150,7 @@ var rain_now: Callable         # () -> rain strength 0 to 1 over the world now; 
 var send_notice: Callable      # (peer, text)
 var send_marker_done: Callable # (peer, Vector3): a road marker is reached or dropped, the client takes its flag down
 var send_survey_refused: Callable # (peer, Vector3): a survey marker was refused; the client's line goes on from this, the survey's last kept marker
+var send_hoe_verdict: Callable   # (peer, kind, code, at, state, why, cells): the server's answer to a hoe grid (Till Garden Grid, Till Soil 2m, Plant): protocol 128
 var standing_near: Callable    # (species name, position, radius) -> [position] of the nearest standing tree of that species, or []
 var flora_changed: Callable    # (chunk Vector2i) -> a chunk's saplings or trees changed: refresh the server cache and the clients near it
 var shrub_info: Callable       # (chunk Vector2i, id) -> {name, position, height} of a standing bush or shrub (placer or planted), or {}; set by the server scene
@@ -719,6 +720,9 @@ func peer_left(peer: int) -> void:
 	if _peer_key.keys().filter(func(p): return p != peer and str(_peer_key[p]) == key_left).is_empty():
 		FoodEffects.pause(_food_of(peer), _now_game_s())   # food effects are kept through logout (master s3.16): the timers stop, unless the character is still in the game on another connection
 	_bed_cache.erase(peer)
+	_level_hold.erase(peer)
+	_garden_ready_ms.erase(peer)
+	_hoe_check_ms.erase(peer)
 	_stock_sig.erase(peer)
 	_stock_poll_ms.erase(peer)
 	_zone_sent.erase(peer)
@@ -769,7 +773,6 @@ func peer_left(peer: int) -> void:
 	_last_dig.erase(peer)
 	_push_last.erase(peer)   # their last log push (ACT_PUSH_LOG)
 	_garden_jobs.erase(peer)
-	_last_average.erase(peer)
 	_roads.erase(peer)
 	_road_last.erase(peer)
 	_grade_points.erase(peer)
@@ -1254,7 +1257,9 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_PUSH_LOG:
 		_push_log(peer, a, b >= 1000, float(count), float(b % 1000) / 100.0, at)   # b: 1000 when sprinting + how square the walk is into it in hundredths; count: the heading in degrees (protocol 125)
 	elif kind == Net.ACT_TILL_GARDEN:
-		till_garden(peer, inv, at, a, b, count)   # a: the held pack slot, b: the grid's turn in degrees, count: width * 100 + length
+		till_garden(peer, inv, at, a, b, count)   # a: the held pack slot, b: the grid's turn in degrees, count: check * 10000000 + mode * 10000 + width * 100 + length (protocol 128)
+	elif kind == Net.ACT_PLANT_GRID:
+		plant_grid(peer, inv, a, b, count, at)   # a: the held pack slot (the hoe), b: the item to plant, count: check * 10000000 + yaw * 10000 + width * 100 + length (protocol 128)
 	elif kind == Net.ACT_TILL:
 		till(peer, inv, at, a, b)   # b: the hoe grid's turn in whole degrees (0: the bed snaps to the world's metre cells)
 	elif kind == Net.ACT_SOW:
@@ -3336,9 +3341,15 @@ const LEVEL_MAX_M := 0.5          # at most this much cut or filled at a spot by
 const LEVEL_MIN_M := 0.05         # a spot this close to the target height counts as level
 const LEVEL_SPHERE_M := 2.5       # the cut and fill spheres: on a 1 m grid the ground between spots is within about 0.1 m of level
 const LEVEL_MAX_OPS := 4          # at most this many ground edits a stroke (every edit is a message to every client and a remesh; a path averages 4 per 1.5 s)
-const LEVEL_ON_PIECE_M := 0.2     # feet this far above the ground under them stand on something built (a foundation, a floor)...
+const LEVEL_ON_PIECE_M := 0.2     # feet this far above the ground under them, over a built piece, stand on it (a foundation, a floor)...
 const LEVEL_BELOW_PIECE_M := 0.1  # ...and the ground is levelled this far below the feet, so the soil stays under the top of the piece
-const LEVEL_MAX_RAISE_M := 1.5    # but never more than this above the ground under the feet (a jump, a log or a cart is not a foundation to build up to)
+# Level (BugsList_Current.md entry 1, Dave 18 Nov 2026): the target is the bottom of the feet when the action starts, kept for the whole held action, so ground the
+# action raises never becomes a higher target; the ground the player stands on is never edited; raising ground uses up soil. PROVISIONAL values (LV-1..LV-3).
+const LEVEL_HOLD_MS := 1500       # LV-1: a stroke this soon after the last one, with the feet still within LEVEL_HOLD_MOVE_M, belongs to the same held action
+const LEVEL_HOLD_MOVE_M := 0.6
+const LEVEL_KEEP_M := 1.2         # LV-2: no levelling spot this close (flat) to the feet: the ground holding the player up stays as it is
+const SOIL_FILL_M3 := 0.75        # LV-3: one Soil fills this much ground (a shovel dig of about 1.5 m3 gives two, digging.json)
+var _level_hold: Dictionary = {}  # peer -> [target height, msec of the last stroke, the feet then]
 const GRADE_CLEAR_M := 2.5        # a grade stroke takes up the path patches this close to it (the ground under them moved)
 const SMOOTH_MAX_M := 0.25
 const SMOOTH_MIN_M := 0.04
@@ -3371,14 +3382,13 @@ func _hoe_ready(peer: int, inv, at: Vector3, held_slot: int) -> int:
 	return hoe
 
 
-# Path (Dave 2 Nov 2026): the stroke first AVERAGES the ground within PATH_AVERAGE_M of the point (ground moved from the high spots to the low ones,
-# volume balanced, at most SMOOTH_MAX_M a stroke, like smooth but wider), then lays a round trodden patch exactly where the player pointed (not snapped
-# to a grid). The client draws it strong brown for the middle half metre and fading to see-through by 1.25 m. A drag lays one every PATH_SPACING_M.
+# Pathen (Dave 2 Nov 2026; one level spot a click, 18 Nov 2026): the click levels the ground under the spot to its own average (_hoe_path), then lays a round
+# trodden patch exactly where the player pointed (not snapped to a grid). The client draws it strong brown for the middle half metre and fading to see-through by
+# 1.25 m. Patches stay PATH_SPACING_M apart; patches laid before within PATH_AVERAGE_M + 1.25 m are laid again on ground the click moved.
 const PATH_AVERAGE_M := 2.0
 const PATH_AVERAGE_MIN_M := 0.08    # ground within a path's reach that is flatter than this is left alone (no edit, no remesh)
-const PATH_AVERAGE_OPS := 4         # at most this many ground edits a stroke: every edit is a message to every client, a remesh and a grass rebuild
-const PATH_AVERAGE_GAP_MS := 1500   # and the ground is averaged at most this often per player (patches are still laid every stroke)
-var _last_average: Dictionary = {}  # peer -> msec of the last averaging
+const PATH_LEVEL_REACH_M := 0.75   # Pathen: the ring round the patch's middle that is levelled with it (the strong brown is 1 m across)
+const PATH_LEVEL_OPS := 6          # PROVISIONAL PA-1: at most this many ground edits a click (every edit is a message to every client, a remesh and a grass rebuild)
 const PATH_SPACING_M := 0.7   # the strong middle is 1 m across, so patches this far apart still join; fewer patches means fewer decals along a road
 
 const PATH_BOULDER_MARGIN_M := 1.0   # a path patch is laid no nearer a boulder's edge than this: its brown fades out to 1.25 m, so the path goes round a rock instead of painting on it (Dave 3 Nov)
@@ -3435,27 +3445,28 @@ func _hoe_path(peer: int, inv, at: Vector3, held_slot: int) -> void:
 			_say(peer, "Something stands there.")
 			return
 
+	# Pathen (BugsList entry 5, Dave 18 Nov 2026): "one click makes one level path spot": the ground under the patch is levelled to its own average in the one
+	# click (PATH_LEVEL_OPS small cuts and fills, read through the saved edits), then the patch is laid on it.
+	var edits: Array = (edits_near.call(at, PATH_LEVEL_REACH_M + SMOOTH_SPHERE_M + 1.0) if edits_near.is_valid() else []) as Array
 	var spots: Array = [Vector2.ZERO]
+	var radii: Array = [SMOOTH_SPHERE_M]
+	var mean: float = _edited_height(at.x, at.z, edits)
 
 	for k in 8:
-		spots.append(Vector2.from_angle(float(k) * TAU / 8.0) * PATH_AVERAGE_M * 0.75)
+		var offset: Vector2 = Vector2.from_angle(float(k) * TAU / 8.0) * PATH_LEVEL_REACH_M
+		spots.append(offset)
+		radii.append(SMOOTH_SPHERE_M)
+		mean += _edited_height(at.x + offset.x, at.z + offset.y, edits)
 
-	var moved: bool = false
-	var now: int = Time.get_ticks_msec()
-
-	if now - int(_last_average.get(peer, -100000)) >= PATH_AVERAGE_GAP_MS:
-		moved = _average_ground(at, spots, PATH_AVERAGE_MIN_M, PATH_AVERAGE_OPS)
-
-		if moved:
-			_last_average[peer] = now
-
+	mean /= float(spots.size())
+	var moved: bool = not is_nan(mean) and dig_ground.is_valid() and fill_ground.is_valid() and _level_ground(at, spots, mean, edits, [], radii, Callable(), PATH_LEVEL_OPS) > 0
 	_wear_slot(peer, inv, hoe, "dig")
 
 	if moved:
 		# The ground under the patches laid before has moved: they are laid again on the new surface (new ids, so the clients redraw them).
 		for id in near_paths:
 			var old: Dictionary = _items[id]
-			var old_ground: float = float(ground_height.call(old["pos"].x, old["pos"].z))
+			var old_ground: float = _edited_height(old["pos"].x, old["pos"].z, edits)
 
 			if not is_nan(old_ground) and absf(old_ground + 0.02 - old["pos"].y) > 0.03:
 				_items.erase(id)
@@ -3463,7 +3474,7 @@ func _hoe_path(peer: int, inv, at: Vector3, held_slot: int) -> void:
 				_zone_add(_next_id)
 				_next_id += 1
 
-		var new_ground: float = float(ground_height.call(at.x, at.z))
+		var new_ground: float = _edited_height(at.x, at.z, edits)
 		spot.y = (new_ground if not is_nan(new_ground) else ground) + 0.02
 
 	_items[_next_id] = {"number": table.number_of("path_patch"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "path_patch", "yaw": 0.0}}
@@ -3471,66 +3482,6 @@ func _hoe_path(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	_next_id += 1
 	_dirty = true
 	_goal_event(peer, "path_laid")
-
-
-# Moves ground between the sample spots (offsets from `at`) toward their mean height: cut above, fill below, volume balanced, at most SMOOTH_MAX_M each.
-# Returns true when any ground moved.
-func _average_ground(at: Vector3, spots: Array, min_m: float = SMOOTH_MIN_M, max_ops: int = 99) -> bool:
-	if not dig_ground.is_valid() or not fill_ground.is_valid():
-		return false
-
-	var heights: Array = []
-	var total: float = 0.0
-
-	for offset in spots:
-		var h: float = float(ground_height.call(at.x + offset.x, at.z + offset.y))
-
-		if is_nan(h):
-			return false
-
-		heights.append(h)
-		total += h
-
-	var mean: float = total / float(spots.size())
-	var cut_sum: float = 0.0
-	var fill_sum: float = 0.0
-	var moves: Array = []   # [index, depth, +1 cut / -1 fill]
-
-	for n in spots.size():
-		var d: float = float(heights[n]) - mean
-
-		if absf(d) < min_m:
-			continue
-
-		moves.append([n, minf(absf(d), SMOOTH_MAX_M), 1 if d > 0.0 else -1])
-
-	if moves.size() > max_ops:   # only the biggest bumps and dips are worked
-		moves.sort_custom(func(p, q): return float(p[1]) > float(q[1]))
-		moves = moves.slice(0, max_ops)
-
-	for move in moves:
-		if int(move[2]) > 0:
-			cut_sum += float(move[1])
-		else:
-			fill_sum += float(move[1])
-
-	var shifted: float = minf(cut_sum, fill_sum)
-
-	if moves.is_empty() or shifted <= 0.0:
-		return false
-
-	var worked: int = 0
-
-	for move in moves:
-		var offset: Vector2 = spots[int(move[0])]
-		var spot: Vector3 = Vector3(at.x + offset.x, float(heights[int(move[0])]), at.z + offset.y)
-		var depth: float = float(move[1]) * shifted / (cut_sum if int(move[2]) > 0 else fill_sum)
-		var done: Variant = dig_ground.call(Vector3(spot.x, spot.y - depth + SMOOTH_SPHERE_M, spot.z), SMOOTH_SPHERE_M) if int(move[2]) > 0 else fill_ground.call(Vector3(spot.x, spot.y + depth - SMOOTH_SPHERE_M, spot.z), SMOOTH_SPHERE_M, int(FILL_SOIL["soil"]))
-
-		if typeof(done) != TYPE_BOOL or bool(done):
-			worked += 1
-
-	return worked > 0
 
 
 func _hoe_smooth(peer: int, inv, at: Vector3, held_slot: int) -> void:
@@ -3544,34 +3495,95 @@ func _hoe_smooth(peer: int, inv, at: Vector3, held_slot: int) -> void:
 
 	var feet: Vector3 = _peer_pos[peer]
 	var near: Array = edits_near.call(at, DIG_REACH_M + 1.5) if edits_near.is_valid() else []   # one scan of the edit log: the feet are within DIG_REACH_M of the point
-	var under: float = _edited_height(feet.x, feet.z, near)   # the ground as dug and filled under the feet
+	var target: float = _level_target(peer, feet, near)
 
-	if is_nan(under):
+	if is_nan(target):
 		return
 
 	var edits: Array = near.filter(func(op): return Vector2(op[1].x - at.x, op[1].z - at.z).length() < SMOOTH_REACH_M + float(op[2]))   # the edits over the circle, for the spot loops
-
-	var target: float = minf(feet.y - LEVEL_BELOW_PIECE_M, under + LEVEL_MAX_RAISE_M) if feet.y - under > LEVEL_ON_PIECE_M else under   # on a foundation: a little below the feet; on the ground: the ground the player stands on
 	var spots: Array = []
 	var reach: int = int(floor(SMOOTH_REACH_M))
 
 	for i in range(-reach, reach + 1):
 		for j in range(-reach, reach + 1):
-			if float(i * i + j * j) <= SMOOTH_REACH_M * SMOOTH_REACH_M:
+			if float(i * i + j * j) <= SMOOTH_REACH_M * SMOOTH_REACH_M and Vector2(at.x + float(i) - feet.x, at.z + float(j) - feet.z).length() >= LEVEL_KEEP_M:
 				spots.append(Vector2(float(i), float(j)))
 
-	var worked: int = _level_ground(at, spots, target, edits)
+	var before: Array = _snapshot(inv)
+	var stock: Dictionary = _stock_of(peer)
+	var soil: int = table.number_of("soil")
+	var units_of := func(depth: float, sphere: float) -> int: return maxi(1, ceili(PI * depth * depth * (3.0 * sphere - depth) / 3.0 / SOIL_FILL_M3))   # the cap of the fill sphere that rises above the ground
+	var can_pay := func(depth: float, sphere: float) -> bool: return soil > 0 and _stock_have(inv, soil, stock, true) >= int(units_of.call(depth, sphere))
+	var pay := func(depth: float, sphere: float) -> bool: return _stock_take(inv, soil, int(units_of.call(depth, sphere)), stock, [], true) > 0
+
+	var worked: int = _level_ground(at, spots, target, edits, [], [], pay, LEVEL_MAX_OPS, can_pay)
+	_send_changes(peer, inv, before)
 
 	if worked < 0:
 		return   # the ground there is not loaded
 
 	if worked == 0:
-		_say(peer, str(dig_refusal.call()) if _level_refused and dig_refusal.is_valid() else "The ground here is already level with where you stand.")
+		if _level_unpaid:
+			_say(peer, "Not enough soil to raise the low ground: dig some, or carry it or leave it nearby.")
+		elif _level_refused and dig_refusal.is_valid():
+			_say(peer, str(dig_refusal.call()))
+		else:
+			_say(peer, "The ground here is already level with where you stand.")
+
 		return
+
+	if _level_unpaid:
+		_say(peer, "Out of soil: the high ground was cut, the low ground needs soil to fill.")
 
 	_wear_slot(peer, inv, hoe, "dig")
 	_remove_paths_near(at, SMOOTH_REACH_M + 1.0)
 	_dirty = true
+
+
+# The height Level works toward (BugsList entry 1): the bottom of the feet when the action starts, kept while the button is held (strokes LEVEL_HOLD_MS apart,
+# the feet within LEVEL_HOLD_MOVE_M), so ground raised by the action never lifts the target. Standing on the ground the feet are the ground under them; on a
+# built piece a little below the feet. Feet above the ground with no piece under them (a jump, a log) use the ground under them. NAN where not loaded.
+func _level_target(peer: int, feet: Vector3, near: Array) -> float:
+	var now: int = Time.get_ticks_msec()
+	var held: Array = _level_hold.get(peer, [])
+
+	if held.size() == 3 and now - int(held[1]) <= LEVEL_HOLD_MS and Vector2(feet.x - held[2].x, feet.z - held[2].z).length() <= LEVEL_HOLD_MOVE_M:
+		held[1] = now
+		return float(held[0])
+
+	var under: float = _edited_height(feet.x, feet.z, near)   # the ground as dug and filled under the feet
+
+	if is_nan(under):
+		return NAN
+
+	var target: float = under
+
+	if feet.y - under > LEVEL_ON_PIECE_M and _piece_under(feet):
+		target = feet.y - LEVEL_BELOW_PIECE_M
+
+	_level_hold[peer] = [target, now, feet]
+	return target
+
+
+# Whether a built piece (not a walk-over one) stands under these feet: its footprint holds them and its middle is no higher than they are.
+func _piece_under(feet: Vector3) -> bool:
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct") or (it["pos"] as Vector3).y > feet.y + 0.1:
+			continue
+
+		var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+		if def.is_empty() or bool(def.get("walkover", false)) or _is_plot_kind(str(it["struct"]["kind"])):
+			continue
+
+		var half: float = maxf(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0))) * 0.5 + 0.3
+
+		if Vector2(it["pos"].x - feet.x, it["pos"].z - feet.z).length() <= half:
+			return true
+
+	return false
 
 
 # The ground height at a column with the saved edits laid over the generated surface, oldest first: a dig sphere the surface passes through lowers it to the
@@ -3601,44 +3613,60 @@ func _edited_height(x: float, z: float, edits: Array) -> float:
 	return surface
 
 
-# Cuts or fills the ground toward `target` at the spots (offsets from `at`), at most LEVEL_MAX_OPS edits, each time at the spot now farthest from level
+# Cuts or fills the ground toward `target` at the spots (offsets from `at`), at most `max_ops` edits, each time at the spot now farthest from level
 # (heights read through the edits, the ones made in this stroke included, so strokes add up and every spot gets its turn), at most LEVEL_MAX_M an edit.
-# Not volume balanced (the Valheim feel Dave asked for): the soil is the hoe's to move. Returns the edits made, -1 when a spot is not loaded.
+# Not volume balanced (the Valheim feel Dave asked for). `pay` (Level, BugsList entry 1), when given, is asked before every fill (depth, sphere) -> bool: a fill
+# it refuses is not made and that spot is left for this stroke (_level_unpaid). Returns the edits made, -1 when a spot is not loaded.
 var _level_refused: bool = false   # the last _level_ground stopped on a refused edit (a full block), not because the ground was level
+var _level_unpaid: bool = false    # the last _level_ground left low ground unfilled for want of soil
 
 
 # `targets` and `radii` (a garden: till_garden), when given, are each spot's own height and sphere size.
-func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targets: Array = [], radii: Array = []) -> int:
+func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targets: Array = [], radii: Array = [], pay: Callable = Callable(), max_ops: int = LEVEL_MAX_OPS, can_pay: Callable = Callable()) -> int:
 	var worked: int = 0
+	var skip: Dictionary = {}   # spots whose fill was not paid for, this stroke
+	var grid: Dictionary = _edit_buckets(edits) if spots.size() > 64 else {}   # a garden's hundreds of spots read only the edits near each
 	_level_refused = false
+	_level_unpaid = false
 
-	for n in LEVEL_MAX_OPS:
+	while worked < max_ops:
 		var best: Vector3 = Vector3.ZERO
+		var best_n: int = -1
 		var best_off: float = 0.0
 		var best_excess: float = 0.0   # how far the worst spot is past its slack
 		var sphere: float = LEVEL_SPHERE_M
 
 		for n_spot in spots.size():
+			if skip.has(n_spot):
+				continue
+
 			var offset: Vector2 = spots[n_spot]
-			var h: float = _edited_height(at.x + offset.x, at.z + offset.y, edits)
+			var h: float = _bucket_height(at.x + offset.x, at.z + offset.y, grid) if spots.size() > 64 else _edited_height(at.x + offset.x, at.z + offset.y, edits)
 
 			if is_nan(h):
 				return -1
 
 			var want: float = float(targets[n_spot]) if not targets.is_empty() else target
 			var radius: float = float(radii[n_spot]) if not radii.is_empty() else LEVEL_SPHERE_M
-			var slack: float = LEVEL_MIN_M if radius >= LEVEL_SPHERE_M else GARDEN_FEATHER_SLACK_M   # a garden's feather band (smaller spheres) is near enough sooner
+			var slack: float = LEVEL_MIN_M if radius >= LEVEL_SPHERE_M else GARDEN_FEATHER_SLACK_M   # smaller spheres (a garden's blend) are near enough sooner
 
 			if absf(h - want) - slack > best_excess:
 				best_excess = absf(h - want) - slack
 				best_off = h - want
 				best = Vector3(at.x + offset.x, h, at.z + offset.y)
+				best_n = n_spot
 				sphere = radius
 
 		if best_excess <= 0.0:
 			break
 
 		var depth: float = minf(absf(best_off), LEVEL_MAX_M)
+
+		if best_off < 0.0 and can_pay.is_valid() and not bool(can_pay.call(depth, sphere)):
+			skip[best_n] = true
+			_level_unpaid = true
+			continue
+
 		var centre: Vector3 = Vector3(best.x, best.y - depth + sphere, best.z) if best_off > 0.0 else Vector3(best.x, best.y + depth - sphere, best.z)
 		var done: Variant = dig_ground.call(centre, sphere) if best_off > 0.0 else fill_ground.call(centre, sphere, int(FILL_SOIL["soil"]))
 
@@ -3646,8 +3674,14 @@ func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targe
 			_level_refused = true
 			break   # the ground took no more (a full block, a refusal): the next stroke tries again
 
+		if best_off < 0.0 and pay.is_valid():
+			pay.call(depth, sphere)   # the soil is taken once the ground has taken the fill
+
 		edits.append([0 if best_off > 0.0 else 1, centre, sphere])
 		worked += 1
+
+		if spots.size() > 64:
+			_bucket_add(grid, edits[-1])
 
 	return worked
 
@@ -4577,6 +4611,9 @@ func _foundation_rows() -> Array:
 
 
 # A placeable item (the campfire kit) becomes a fire on the ground in front of the player.
+const PLACE_EDITS_REACH_M := 16.0   # the saved ground edits read round a placement: the widest footprint and a 65 roof panel's run, with the edit spheres
+
+
 func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps: int = 0, blueprint: Dictionary = {}) -> void:
 	var number: int = 0
 	var kit_id: String = ""
@@ -4671,7 +4708,11 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		lift = float(clampi(lift_steps, 0, PlacementRules.LIFT_MAX_STEPS)) * PlacementRules.LIFT_STEP_M   # the client sent the lifted height; the ground is checked below it
 		at.y -= lift
 
-	var ground: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
+	# The ground as the player left it (BugsList entry 2, Dave 18 Nov 2026): ground_height is the generated surface, so a site raised and levelled with the hoe
+	# read as the old ground and a foundation on it was "too far above or below the ground". Every height check below reads the saved digs and fills too.
+	var site_edits: Array = (edits_near.call(at, PLACE_EDITS_REACH_M) if edits_near.is_valid() else []) as Array
+	var surface := func(x: float, z: float) -> float: return _edited_height(x, z, site_edits)
+	var ground: float = float(surface.call(at.x, at.z)) if ground_height.is_valid() else at.y
 
 	if is_nan(ground):
 		_say(peer, "The ground there is not ready yet. Try again in a moment.")   # the terrain under the ghost has not streamed in
@@ -4687,7 +4728,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 
 	var spot: Vector3 = Vector3(at.x, at.y if on_base else ground + lift, at.z)
 
-	if panel and ground_height.is_valid() and PlacementRules.roof_panel_buried(_structures_cfg, kit_id, spot, yaw_deg, func(x, z): return float(ground_height.call(x, z))):
+	if panel and ground_height.is_valid() and PlacementRules.roof_panel_buried(_structures_cfg, kit_id, spot, yaw_deg, surface):
 		_say(peer, "That end of the roof panel would sink into the ground.")
 		return
 
@@ -4700,7 +4741,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "A %s needs water at least %s m deep." % [table.sentence_name(table.number_of(str(trap_def.get("item", kit_id)))), str(float(trap_def["min_water_m"]))])
 		return
 
-	if not on_base and ground_height.is_valid() and PlacementRules.steep(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw_deg)), func(x, z): return float(ground_height.call(x, z))) == "steep":
+	if not on_base and ground_height.is_valid() and PlacementRules.steep(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw_deg)), surface) == "steep":
 		_say(peer, "The ground is too steep there.")
 		return
 
@@ -8408,34 +8449,69 @@ func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
 	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0 or not _peer_pos.has(peer):
 		return
 
-	var suffix: String = str(_drops.get("shrub_work", {}).get("dig_suffix", "_bush"))
 	var item_id: String = table.id_of(inv.numbers[slot])
-	var tree_species: String = tree_seed_species(item_id)   # a tree's seed goes in as a sapling that grows (gardening, 14 Nov 2026)
-	var entry: Dictionary = _flora_by_name.get(tree_species if tree_species != "" else item_id.trim_suffix(suffix), {})
 
-	if tree_species == "" and (not item_id.ends_with(suffix) or entry.is_empty() or str(entry.get("kind", "")) != "shrub"):
+	if _flora_of_plant(item_id).is_empty():
 		return
-
-	if tree_species != "" and (entry.is_empty() or str(entry.get("kind", "")) != "tree"):
-		return
-
-	var gap: float = PLANT_TREE_GAP_M if tree_species != "" else PLANT_BUSH_GAP_M
 
 	if Vector2(_peer_pos[peer].x - at.x, _peer_pos[peer].z - at.z).length() > PLANT_BUSH_REACH_M:
 		_reject(peer, 0)
 		return
 
-	var ground: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
+	var edits: Array = (edits_near.call(at, 4.0) if edits_near.is_valid() else []) as Array
+	var spot: Vector3 = Vector3(at.x, _edited_height(at.x, at.z, edits) if ground_height.is_valid() else at.y, at.z)   # the ground as dug and filled
+	var why: String = _sapling_refusal(item_id, spot)
 
-	if is_nan(ground) or ground < 1.0:
-		_say(peer, "The ground is too wet here.")
+	if why != "":
+		_say(peer, why)
 		return
 
-	if water_depth_at.is_valid() and float(water_depth_at.call(Vector3(at.x, ground, at.z))) >= PlacementRules.FIRE_WATER_BLOCK_M:
-		_say(peer, "You cannot plant it in water.")
-		return
+	inv.take_from_slot(slot, 1)
+	_plant_sapling(peer, item_id, spot)
 
-	var spot: Vector3 = Vector3(at.x, ground, at.z)
+
+# The flora row a plantable item grows into: a dug-up bush's shrub, a tree seed's tree; {} when the item is neither.
+func _flora_of_plant(item_id: String) -> Dictionary:
+	var suffix: String = str(_drops.get("shrub_work", {}).get("dig_suffix", "_bush"))
+	var tree_species: String = tree_seed_species(item_id)   # a tree's seed goes in as a sapling that grows (gardening, 14 Nov 2026)
+	var entry: Dictionary = _flora_by_name.get(tree_species if tree_species != "" else item_id.trim_suffix(suffix), {})
+
+	if tree_species == "" and (not item_id.ends_with(suffix) or entry.is_empty() or str(entry.get("kind", "")) != "shrub"):
+		return {}
+
+	if tree_species != "" and (entry.is_empty() or str(entry.get("kind", "")) != "tree"):
+		return {}
+
+	return entry
+
+
+# Why a bush or tree seed cannot go into the ground at `spot` (its height the ground's), "" when it can.
+func _sapling_refusal(item_id: String, spot: Vector3) -> String:
+	var gap: float = PLANT_TREE_GAP_M if tree_seed_species(item_id) != "" else PLANT_BUSH_GAP_M
+
+	if is_nan(spot.y) or spot.y < 1.0:
+		return "The ground is too wet here."
+
+	if water_depth_at.is_valid() and float(water_depth_at.call(spot)) >= PlacementRules.FIRE_WATER_BLOCK_M:
+		return "You cannot plant it in water."
+
+	var home: Vector2i = Vector2i(int(floor(spot.x / FLORA_CHUNK_M)), int(floor(spot.z / FLORA_CHUNK_M)))
+	var used: int = 0
+
+	for sapling in _saplings:
+		if sapling["chunk"] == [home.x, home.y]:
+			used += 1
+
+			if (sapling["pos"] as Vector3).distance_to(spot) < gap:
+				return "Too close to another plant."
+
+	return "Too many young plants here." if used >= SAPLINGS_PER_CHUNK else ""
+
+
+# A bush or tree seed (already taken) goes into the ground at `spot`.
+func _plant_sapling(peer: int, item_id: String, spot: Vector3) -> void:
+	var entry: Dictionary = _flora_of_plant(item_id)
+	var tree_species: String = tree_seed_species(item_id)
 	var home: Vector2i = Vector2i(int(floor(spot.x / FLORA_CHUNK_M)), int(floor(spot.z / FLORA_CHUNK_M)))
 	var used: Dictionary = {}
 
@@ -8443,20 +8519,11 @@ func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
 		if sapling["chunk"] == [home.x, home.y]:
 			used[sapling["slot"]] = true
 
-			if (sapling["pos"] as Vector3).distance_to(spot) < gap:
-				_say(peer, "Too close to another plant.")
-				return
-
-	if used.size() >= SAPLINGS_PER_CHUNK:
-		_say(peer, "Too many young plants here.")
-		return
-
 	var new_slot: int = 0
 
 	while used.has(new_slot):
 		new_slot += 1
 
-	inv.take_from_slot(slot, 1)
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 	_saplings.append({"slot": new_slot, "chunk": [home.x, home.y], "species": int(entry["id"]), "pos": spot, "planted_at": now_s if tree_species != "" else now_s - SAPLING_GROWN_S})   # a dug bush goes in full size; a seed starts as a sapling and grows like wild regrowth
 	_dirty = true
@@ -16584,7 +16651,9 @@ func _till_cell(peer: int, inv, hoe: int, at: Vector3, yaw_deg: int, quiet: bool
 
 		return 0
 
-	_wear_slot(peer, inv, hoe, "dig")
+	if hoe >= 0:   # a garden job goes on with the hoe put away (it wears only while held)
+		_wear_slot(peer, inv, hoe, "dig")
+
 	_items[_next_id] = {"number": table.number_of("tilled_bed"), "count": 1, "pos": cell, "left": 1.0e9, "struct": {"kind": "tilled_bed", "yaw": float(yaw_deg)}}
 	_zone_add(_next_id)
 	_next_id += 1
@@ -16593,39 +16662,95 @@ func _till_cell(peer: int, inv, hoe: int, at: Vector3, yaw_deg: int, quiet: bool
 	return _next_id - 1
 
 
-# Till a garden (Dave 14 Nov 2026): "once you left click to actually start the Action. It will automatically survey the selected area find the highs and lows
-# on the greater according to 1 m spacing and it will calculate the means average height, and it will absolute level the exact area and it will feather the
-# edges outside of the area up to 2 m". One click sends the grid (centre `at`, `size` = width * 100 + length in beds, turned `yaw_deg`); the server keeps one
-# garden job a player and works it on its tick: first the levelling (a few ground edits every HOE_COOLDOWN_MS, each spot cut or filled toward its own
-# height: the mean over the marked beds inside, and outside a band that blends from the mean back to the ground as it was, over GARDEN_FEATHER_M), then
-# the beds, GARDEN_TILLS_A_STEP at a time. The soil is free, as with Smooth. The job stops when the hoe leaves the hand, the player walks off
-# (GARDEN_STAY_M) or the hoe breaks. Ground within GARDEN_CLEAR_M of a built piece is left as it is (a foundation is never undercut). PROVISIONAL values.
-const GARDEN_FEATHER_M := 2.0          # Dave: "feather the edges outside of the area up to 2 m"
-const GARDEN_STAY_M := 20.0            # PROVISIONAL: the job stops when the player is this far from the garden's centre
-const GARDEN_CLEAR_M := 1.5            # PROVISIONAL: no levelling spot this close to a built piece (its sphere would cut or bury it)
-const GARDEN_FEATHER_SPHERE_M := 1.2   # PROVISIONAL: smaller cut and fill spheres in the feather band, so its slope survives (a 2.5 m sphere is flatter than a 2 m blend)
-const GARDEN_FEATHER_SLACK_M := 0.1    # a feather spot within this of its target is left: the 1.2 m spheres of neighbouring rings undo each other by up to about 0.09 m on a small garden's slope, and a tighter stop cuts and fills without end
-# Keep GARDEN_FEATHER_GRADE at 0.5 or below: an inner 2.5 m sphere moves the first ring (1 m off) by 0.21 m, which a steeper grade turns into a cycle.
-const GARDEN_FEATHER_GRADE := 0.5      # the feather band rises or falls at most this much a metre: a steeper blend has each 1.2 m cut or fill undo its neighbour's, without end (the 600-edit cap would stop it); past it the ground meets the natural with a step
-const GARDEN_MAX_EDITS := 600          # PROVISIONAL: a garden's levelling stops after this many ground edits whatever is left (never an endless job)
-const GARDEN_TILLS_A_STEP := 4         # PROVISIONAL: beds tilled each HOE_COOLDOWN_MS once the ground is level
-var _garden_jobs: Dictionary = {}      # peer -> {"slot", "centre": Vector3, "yaw", "spots": [Vector2 offsets], "targets", "radii", "edits", "cells": [Vector2], "made", "worked", "next_ms"}
+# Till Garden Grid - 20m Edge Blend and Till Soil 2m (BugsList_Current.md entries 5 and 6, Dave 18 Nov 2026). One click sends the grid (centre `at`,
+# `size` = check * 10000000 + mode * 10000 + width * 100 + length in beds, turned `yaw_deg`); `mode` 0 is the garden, 1 the 2 m soil patch, and `check` asks only
+# whether it would go (the preview: the answer is a hoe_verdict, nothing changes). The whole area is surveyed and checked before any ground moves: the
+# original heights of the beds are averaged together; the garden is levelled to that average and every bed tilled (dark garden soil, no grass); a garden's
+# edge blends back to the land no steeper than GARDEN_BLEND_GRADE and within GARDEN_BLEND_M; trees, large rocks, buildings (and ground within
+# GARDEN_BUILD_CLEAR_M of one) refuse the whole thing, red, before anything changes. Small loose rocks in it are picked up. No soil is used. The work then runs
+# as one job on the slow tick (GARDEN_EDITS_A_STEP ground edits, then GARDEN_TILLS_A_STEP beds, every HOE_COOLDOWN_MS) and finishes whatever the player
+# holds. A garden opens the next Garden Grid GARDEN_COOLDOWN_MS later (the client's red countdown); the soil patch has no wait. PROVISIONAL values TG-1..TG-6.
+const GARDEN_BLEND_M := 20.0           # Dave: the blend reaches the existing ground within 20 m of the garden's edge
+const GARDEN_BLEND_GRADE := 0.5        # TG-1: at most this rise a metre (27 degrees; Dave allows up to 45): with 1.2 m spheres a steeper blend has each cut or fill undo its neighbour's
+const GARDEN_BUILD_CLEAR_M := 2.0      # Dave: no ground changed under a building or within 2 m of any building piece
+const GARDEN_FEATHER_SPHERE_M := 1.2   # the blend's cut and fill spheres (a 2.5 m sphere is flatter than the slope it should leave)
+const GARDEN_FEATHER_SLACK_M := 0.1    # a blend spot within this of its target is left: neighbouring 1.2 m spheres undo each other by up to about 0.09 m
+const GARDEN_MAX_EDITS := 1500         # TG-2: a garden that needs more ground edits than this is refused before anything changes
+const GARDEN_EDITS_A_STEP := 8         # TG-3: ground edits each HOE_COOLDOWN_MS
+const GARDEN_TILLS_A_STEP := 4         # beds tilled each HOE_COOLDOWN_MS once the ground is level
+const GARDEN_COOLDOWN_MS := 20000      # Dave: 20 s before the next Garden Grid
+const SOIL_PATCH_BEDS := 2             # Till Soil 2m: a 2 m patch, 2 by 2 metre beds
+const GARDEN_GIVE_UP_MS := 120000    # a garden whose ground will not load or take the edits for this long is tilled as it lies
+const SOIL_SPHERE_M := 0.9             # TG-4: its cut and fill spheres (no blend: the change stays inside about a metre of the patch)
+const HOE_CHECK_MS := 250              # TG-5: a preview's question is answered at most this often per player
+const TILL_GARDEN := 0
+const TILL_SOIL := 1
+var _garden_jobs: Dictionary = {}      # peer -> {"centre": Vector3, "yaw", "spots": [Vector2 offsets], "targets", "radii", "edits", "cells": [Vector2], "made", "worked", "next_ms", "reach", "slot"}
+var _garden_ready_ms: Dictionary = {}  # peer -> msec when Garden Grid tilling opens again
+var _hoe_check_ms: Dictionary = {}     # peer -> msec of the last preview answer
 const FarmRules := preload("res://src/shared/farm_rules.gd")
 
 
 func till_garden(peer: int, inv, at: Vector3, held_slot: int, yaw_deg: int, size: int) -> bool:
-	if not ground_height.is_valid() or not dig_ground.is_valid() or not fill_ground.is_valid() or not _structures.has("tilled_bed") or not _peer_pos.has(peer):
+	if not ground_height.is_valid() or not dig_ground.is_valid() or not fill_ground.is_valid() or not _structures.has("tilled_bed") or not _peer_pos.has(peer) or not at.is_finite():
 		return false
+
+	var check: bool = size >= 10000000
+	var now: int = Time.get_ticks_msec()
+
+	if check:
+		if now - int(_hoe_check_ms.get(peer, -100000)) < HOE_CHECK_MS:
+			return false
+
+		_hoe_check_ms[peer] = now
+
+	var plan: Dictionary = _till_plan(peer, inv, at, held_slot, yaw_deg, size % 10000000, check)
+	var why: String = str(plan.get("why", ""))
+
+	if check or why != "":
+		if not check and why != "-":
+			_say(peer, why)
+
+		_hoe_verdict(peer, Net.ACT_TILL_GARDEN, size % 10000000, at, 1 if why == "" else 0, "" if why == "-" else why)
+		return false
+
+	for stone in plan["stones"]:   # small loose rocks in the way are picked up (Dave: on the confirming click, never by the preview)
+		var it: Dictionary = _items.get(int(stone), {})
+
+		if not it.is_empty():
+			var count: int = int(it["count"])
+			_take_in(peer, inv, int(it["number"]), count)
+			_take_from(int(stone), count)
+
+	if int(plan["mode"]) == TILL_GARDEN:
+		_garden_ready_ms[peer] = now + GARDEN_COOLDOWN_MS
+
+	plan["give_up_ms"] = Time.get_ticks_msec() + GARDEN_GIVE_UP_MS
+	_garden_jobs[peer] = plan
+	_hoe_verdict(peer, Net.ACT_TILL_GARDEN, size % 10000000, at, 2, "")
+	_say(peer, "Levelling and tilling a %d by %d garden." % [int(plan["w"]), int(plan["d"])] if int(plan["mode"]) == TILL_GARDEN else "Tilling a 2 m patch of soil.")
+	return true
+
+
+# The survey of a garden or soil patch: {"why": the refusal ("" when it goes; "-" a quiet no), and when it goes the job: "mode", "w", "d", "yaw", "centre"
+# (its y the average), "spots", "targets", "radii", "edits", "cells", "stones", "reach", "slot"}. Reads the ground and the world; changes nothing.
+func _till_plan(peer: int, inv, at: Vector3, held_slot: int, yaw_deg: int, code: int, check: bool) -> Dictionary:
+	var mode: int = TILL_SOIL if floori(float(code) / 10000.0) == TILL_SOIL else TILL_GARDEN
 
 	if _garden_jobs.has(peer):
-		_say(peer, "Still working the last garden.")
-		return false
+		return {"why": "Still working the last garden."}
 
-	if not at.is_finite() or _hoe_ready(peer, inv, at, held_slot) < 0:   # in reach, a hoe in hand, and the hoe's pace (a refused garden costs a scan)
-		return false
+	if mode == TILL_GARDEN and Time.get_ticks_msec() < int(_garden_ready_ms.get(peer, 0)):
+		return {"why": "The next garden grid is ready in %d s." % ceili(float(int(_garden_ready_ms[peer]) - Time.get_ticks_msec()) / 1000.0)}
 
-	var w: int = clampi(floori(float(size) / 100.0), 1, FarmRules.GRID_MAX_SIDE)
-	var d: int = clampi(size % 100, 1, FarmRules.GRID_MAX_SIDE)
+	if check:
+		if _held_tool(inv, held_slot, "hoe") < 0 or _peer_pos[peer].distance_to(at) > DIG_REACH_M:
+			return {"why": "-"}
+	elif _hoe_ready(peer, inv, at, held_slot) < 0:   # in reach, a hoe in hand, and the hoe's pace
+		return {"why": "-"}
+
+	var w: int = SOIL_PATCH_BEDS if mode == TILL_SOIL else clampi(floori(float(code % 10000) / 100.0), 1, FarmRules.GRID_MAX_SIDE)
+	var d: int = SOIL_PATCH_BEDS if mode == TILL_SOIL else clampi(code % 100, 1, FarmRules.GRID_MAX_SIDE)
 	yaw_deg = posmod(yaw_deg, 360)
 	var centre: Vector2 = Vector2(at.x, at.z)
 	var cells: Array = FarmRules.grid_points(w, d, 1.0, centre, yaw_deg)
@@ -16634,69 +16759,202 @@ func till_garden(peer: int, inv, at: Vector3, held_slot: int, yaw_deg: int, size
 		centre += Vector2(floor(cells[0].x) + 0.5 - cells[0].x, floor(cells[0].y) + 0.5 - cells[0].y)
 		cells = FarmRules.grid_points(w, d, 1.0, centre, yaw_deg)
 
-	var reach: float = Vector2(float(w), float(d)).length() * 0.5 + GARDEN_FEATHER_M + LEVEL_SPHERE_M + 1.0
-	var edits: Array = (edits_near.call(at, reach) if edits_near.is_valid() else []) as Array
+	var blend: float = GARDEN_BLEND_M if mode == TILL_GARDEN else 0.0
+	var reach: float = Vector2(float(w), float(d)).length() * 0.5 + blend + LEVEL_SPHERE_M + 1.0
+	var edits: Array = (edits_near.call(Vector3(centre.x, at.y, centre.y), reach) if edits_near.is_valid() else []) as Array
+	var grid: Dictionary = _edit_buckets(edits)
 	var mean: float = 0.0
-	var heights: Array = []
 
 	for c in cells:
-		var h: float = _edited_height(c.x, c.y, edits)
+		var h: float = _bucket_height(c.x, c.y, grid)
 
 		if is_nan(h):
-			_say(peer, "The ground there is not ready yet.")
-			return false
+			return {"why": "The ground there is not ready yet."}
 
-		heights.append(h)
+		if water_depth_at.is_valid() and float(water_depth_at.call(Vector3(c.x, h, c.y))) > 0.05:
+			return {"why": "You cannot till ground under water."}
+
 		mean += h
 
-	if not FarmRules.level_ok(heights):
-		_say(peer, "The ground there rises and falls too much for a garden: level it to within %d m of its average height first." % int(FarmRules.GARDEN_LEVEL_LIMIT_M))
-		return false
-
 	mean /= float(cells.size())
-	var pieces: Array = []   # [flat position, how far it reaches] of the built pieces near the garden
-
-	for id in _items:
-		var it: Dictionary = _items[id]
-
-		if it.has("struct") and not _is_plot_kind(str(it["struct"]["kind"])) and not bool(_structures.get(str(it["struct"]["kind"]), {}).get("walkover", false)) and Vector2(it["pos"].x - at.x, it["pos"].z - at.z).length() < reach + 4.0:
-			var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
-			pieces.append([Vector2(it["pos"].x, it["pos"].z), maxf(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0))) * 0.5])
-
+	var turn: float = -deg_to_rad(float(yaw_deg))
 	var spots: Array = []
 	var targets: Array = []
 	var radii: Array = []
-	var ring: int = int(ceil(GARDEN_FEATHER_M))
-	var turn: float = -deg_to_rad(float(yaw_deg))
+	var cost: int = 0
+	var touched: Array = []   # [flat point, how far its edit reaches] of every spot whose ground will change
 
-	for a in range(-ring, d + ring):
-		for c in range(-ring, w + ring):
-			var local: Vector2 = Vector2(float(c) - float(w - 1) * 0.5, float(a) - float(d - 1) * 0.5)
-			var out: float = Vector2(maxf(absf(local.x) - float(w) * 0.5, 0.0), maxf(absf(local.y) - float(d) * 0.5, 0.0)).length()   # how far outside the marked edge
+	if mode == TILL_SOIL:
+		for a in 4:
+			for c in 4:
+				var flat: Vector2 = centre + Vector2((float(c) - 1.5) * 0.5, (float(a) - 1.5) * 0.5).rotated(turn)
+				var h: float = _bucket_height(flat.x, flat.y, grid)
 
-			if out > GARDEN_FEATHER_M:
-				continue
+				if is_nan(h):
+					return {"why": "The ground there is not ready yet."}
 
-			var flat: Vector2 = centre + local.rotated(turn)
+				spots.append(flat - centre)
+				targets.append(mean)
+				radii.append(SOIL_SPHERE_M)
+				touched.append([flat, _edit_reach(SOIL_SPHERE_M)])
+				cost += ceili(absf(h - mean) / LEVEL_MAX_M)
+	else:
+		var met: bool = false
 
-			if pieces.any(func(piece): return flat.distance_to(piece[0]) < float(piece[1]) + GARDEN_CLEAR_M):
-				continue   # near a building: left as it is
+		for ring in range(0, int(blend) + 1):   # ring 0 the garden; ring k the square band k metres out; the blend ends at the first band that already meets the land
+			var meets: bool = true
 
-			var h: float = _edited_height(flat.x, flat.y, edits)
+			for a in range(-ring, d + ring):
+				for c in range(-ring, w + ring):
+					if ring > 0 and a > -ring and a < d + ring - 1 and c > -ring and c < w + ring - 1:
+						continue   # inside the band: done in an earlier ring
 
-			if is_nan(h):
-				continue
+					var local: Vector2 = Vector2(float(c) - float(w - 1) * 0.5, float(a) - float(d - 1) * 0.5)
+					var out: float = Vector2(maxf(absf(local.x) - float(w) * 0.5, 0.0), maxf(absf(local.y) - float(d) * 0.5, 0.0)).length()   # how far outside the garden's edge
+					var flat: Vector2 = centre + local.rotated(turn)
+					var h: float = _bucket_height(flat.x, flat.y, grid)
 
-			spots.append(flat - centre)
-			targets.append(clampf(lerpf(mean, h, out / GARDEN_FEATHER_M), mean - out * GARDEN_FEATHER_GRADE, mean + out * GARDEN_FEATHER_GRADE))   # inside: the mean; outside: back to the ground as it was by the band's far side, at most GARDEN_FEATHER_GRADE steep
-			radii.append(LEVEL_SPHERE_M if out <= 0.0 else GARDEN_FEATHER_SPHERE_M)
+					if is_nan(h):
+						return {"why": "The ground there is not ready yet."}
 
-	_garden_jobs[peer] = {"slot": held_slot, "centre": Vector3(centre.x, mean, centre.y), "yaw": yaw_deg, "spots": spots, "targets": targets, "radii": radii, "edits": edits, "cells": cells, "made": 0, "worked": 0, "next_ms": 0, "reach": reach}
-	_say(peer, "Levelling and tilling a %d by %d garden." % [w, d])
-	return true
+					var want: float = mean if out <= 0.0 else clampf(h, mean - out * GARDEN_BLEND_GRADE, mean + out * GARDEN_BLEND_GRADE)   # outside: the land as it is wherever it lies within the slope, else the slope
+
+					if out > 0.0 and absf(want - h) <= GARDEN_FEATHER_SLACK_M and ring > 2:
+						continue   # the land already meets the blend here: left as it is
+
+					if out > 0.0 and absf(want - h) > GARDEN_FEATHER_SLACK_M:
+						meets = false
+
+					spots.append(flat - centre)
+					targets.append(want)
+					radii.append(LEVEL_SPHERE_M if out <= 0.0 else GARDEN_FEATHER_SPHERE_M)
+					touched.append([flat, _edit_reach(LEVEL_SPHERE_M if out <= 0.0 else GARDEN_FEATHER_SPHERE_M)])
+					cost += ceili(absf(h - want) / LEVEL_MAX_M)
+
+			if ring > 2 and meets:
+				met = true
+				break
+
+		if not met:
+			return {"why": "The land falls away too steeply here: the garden's edge cannot meet it within %d m. Pick flatter ground." % int(GARDEN_BLEND_M)}
+
+	if cost > GARDEN_MAX_EDITS:
+		return {"why": "Too much ground to move for one garden here: pick flatter ground or a smaller garden."}
+
+	var seen: Dictionary = _till_obstacles(Vector3(centre.x, mean, centre.y), reach + 2.0)
+
+	for spot in touched:
+		var why: String = _obstacle_at(seen, spot[0], float(spot[1]), GARDEN_BUILD_CLEAR_M)
+
+		if why != "":
+			return {"why": why}
+
+	var stones: Array = []
+
+	for row in seen["stones"]:   # only the loose rocks on the beds themselves; ones the blend runs under stay where they lie
+		if cells.any(func(c): return FarmRules.on_square(row[1], c, 0.6, float(yaw_deg))):
+			stones.append(row[0])
+
+	return {"why": "", "mode": mode, "w": w, "d": d, "yaw": yaw_deg, "centre": Vector3(centre.x, mean, centre.y), "spots": spots, "targets": targets, "radii": radii, "edits": edits, "cells": cells, "stones": stones, "made": 0, "worked": 0, "next_ms": 0, "reach": reach, "slot": held_slot}
 
 
-# Every slow tick: each garden job takes one step when its hoe is ready again.
+# What stands round a hoe grid: {"pieces": [[flat position, half its footprint]], "boulders": [[flat position, radius now]], "trees": [[flat position, trunk radius]],
+# "stones": [[world id, flat position]] the small loose rocks (scatter stone, flint and ore) a confirming click picks up}.
+func _till_obstacles(centre: Vector3, reach: float) -> Dictionary:
+	var seen: Dictionary = {"pieces": [], "boulders": [], "trees": [], "stones": []}
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+		var flat: Vector2 = Vector2(it["pos"].x, it["pos"].z)
+
+		if flat.distance_to(Vector2(centre.x, centre.z)) > reach + 6.0:
+			continue
+
+		if it.has("boulder"):
+			var info: Dictionary = it["boulder"]
+			seen["boulders"].append([flat, float(info["radius"]) * pow(float(it["count"]) / float(maxi(int(info["total"]), 1)), 1.0 / 3.0)])
+		elif it.has("struct"):
+			var kind: String = str(it["struct"]["kind"])
+			var def: Dictionary = _structures.get(kind, {})
+
+			if not _is_plot_kind(kind) and not bool(def.get("walkover", false)):
+				seen["pieces"].append([flat, Vector2(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0))) * 0.5, float(it["struct"].get("yaw", 0.0))])
+		elif it.has("scatter") and int(it.get("number", 0)) > 0:
+			var item_id: String = table.id_of(int(it["number"]))
+
+			if item_id == "stone" or item_id == "flint" or item_id.ends_with("_ore"):
+				seen["stones"].append([int(id), flat])
+
+	if trunks_near.is_valid():
+		for trunk in trunks_near.call(centre, reach):
+			seen["trees"].append([Vector2(trunk[0].x, trunk[0].z), float(trunk[1])])
+
+	return seen
+
+
+# Why the ground at a flat point may not change, "" when it may: `spread` how far round the point the change reaches, `clear` the room kept to a building.
+func _obstacle_at(seen: Dictionary, flat: Vector2, spread: float, clear: float) -> String:
+	for piece in seen["pieces"]:
+		var local: Vector2 = (flat - piece[0]).rotated(deg_to_rad(float(piece[2])))   # into the piece's own frame (as SurveyLine.crosses)
+		var half: Vector2 = piece[1]
+
+		if Vector2(maxf(absf(local.x) - half.x, 0.0), maxf(absf(local.y) - half.y, 0.0)).length() < clear + spread:   # to the nearest point of its turned footprint
+			return "Too close to a building: keep it %d m clear of buildings." % int(clear) if clear > 0.0 else "A building is in the way."
+
+	for tree in seen["trees"]:
+		if flat.distance_to(tree[0]) < float(tree[1]) + spread + 0.3:
+			return "A tree is in the way: fell it and clear the stump first."
+
+	for rock in seen["boulders"]:
+		if flat.distance_to(rock[0]) < float(rock[1]) + spread:
+			return "A large rock is in the way: break it up first."
+
+	return ""
+
+
+# How far across the ground one cut or fill sphere of this radius changes it: the circle where a sphere sunk LEVEL_MAX_M deep (or less) meets the surface.
+func _edit_reach(sphere: float) -> float:
+	var depth: float = minf(LEVEL_MAX_M, sphere)
+	return sqrt(depth * (2.0 * sphere - depth))
+
+
+# The saved edits filed by 4 m cell (each edit in every cell it reaches, oldest first), so a survey of hundreds of spots reads only the edits near each.
+const EDIT_BUCKET_M := 4.0
+
+
+func _edit_buckets(edits: Array) -> Dictionary:
+	var grid: Dictionary = {}
+
+	for op in edits:
+		_bucket_add(grid, op)
+
+	return grid
+
+
+func _bucket_add(grid: Dictionary, op: Array) -> void:
+	var r: float = float(op[2])
+
+	for gx in range(floori((op[1].x - r) / EDIT_BUCKET_M), floori((op[1].x + r) / EDIT_BUCKET_M) + 1):
+		for gz in range(floori((op[1].z - r) / EDIT_BUCKET_M), floori((op[1].z + r) / EDIT_BUCKET_M) + 1):
+			var key: Vector2i = Vector2i(gx, gz)
+
+			if not grid.has(key):
+				grid[key] = []
+
+			grid[key].append(op)
+
+
+func _bucket_height(x: float, z: float, grid: Dictionary) -> float:
+	return _edited_height(x, z, grid.get(Vector2i(floori(x / EDIT_BUCKET_M), floori(z / EDIT_BUCKET_M)), []))
+
+
+func _hoe_verdict(peer: int, kind: int, code: int, at: Vector3, state: int, why: String, cells: PackedByteArray = PackedByteArray()) -> void:
+	if send_hoe_verdict.is_valid():
+		send_hoe_verdict.call(peer, kind, code, at, state, why, cells)
+
+
+# Every slow tick: each garden job takes one step when it is due: the ground first, then the beds. It finishes whatever the player holds (the area was
+# checked when it was taken on); it is dropped only when the player leaves the game.
 func _garden_jobs_tick() -> void:
 	var now: int = Time.get_ticks_msec()
 
@@ -16708,26 +16966,29 @@ func _garden_jobs_tick() -> void:
 
 		job["next_ms"] = now + HOE_COOLDOWN_MS
 		var inv = inventory_of(peer) if _peer_pos.has(peer) else null
-		var hoe: int = _held_tool(inv, int(job["slot"]), "hoe") if inv != null else -1
-		var centre: Vector3 = job["centre"]
 
-		if hoe < 0 or Vector2(_peer_pos[peer].x - centre.x, _peer_pos[peer].z - centre.z).length() > GARDEN_STAY_M:
+		if inv == null:
 			_garden_jobs.erase(peer)
-
-			if inv != null:
-				_say(peer, "The garden is left half done: %d beds tilled." % int(job["made"]))
-
 			continue
 
+		var hoe: int = _held_tool(inv, int(job["slot"]), "hoe")   # still in hand: it wears with the work; put away, the work goes on unworn
+		var centre: Vector3 = job["centre"]
+
 		if int(job["worked"]) < GARDEN_MAX_EDITS and not (job["spots"] as Array).is_empty():
-			var worked: int = _level_ground(centre, job["spots"], centre.y, job["edits"], job["targets"], job["radii"])
+			var worked: int = _level_ground(centre, job["spots"], centre.y, job["edits"], job["targets"], job["radii"], Callable(), GARDEN_EDITS_A_STEP)
 
 			if worked > 0:
 				job["worked"] = int(job["worked"]) + worked
-				_wear_slot(peer, inv, hoe, "dig")
+
+				if hoe >= 0:
+					_wear_slot(peer, inv, hoe, "dig")
+
 				_remove_paths_near(centre, float(job["reach"]))
 				_dirty = true
 				continue
+
+			if (worked < 0 or _level_refused) and now < int(job.get("give_up_ms", 0)):
+				continue   # ground not loaded yet, or it took no more this step: try again next step rather than till unlevelled ground
 
 			job["worked"] = GARDEN_MAX_EDITS   # level (or the ground takes no more): on to the beds
 
@@ -16739,17 +17000,188 @@ func _garden_jobs_tick() -> void:
 
 			var flat: Vector2 = cells.pop_front()
 
-			if _till_cell(peer, inv, hoe, Vector3(flat.x, centre.y, flat.y), int(job["yaw"]), true, job["edits"]) > 0:
+			if _till_cell(peer, inv, _held_tool(inv, int(job["slot"]), "hoe"), Vector3(flat.x, centre.y, flat.y), int(job["yaw"]), true, job["edits"]) > 0:
 				job["made"] = int(job["made"]) + 1
-
-			hoe = _held_tool(inv, int(job["slot"]), "hoe")
-
-			if hoe < 0:
-				break   # it broke on that bed: the next step stops the job
 
 		if cells.is_empty():
 			_garden_jobs.erase(peer)
-			_say(peer, "The garden is ready: %d beds tilled." % int(job["made"]))
+			_say(peer, "The garden is ready: %d beds tilled." % int(job["made"]) if int(job["mode"]) == TILL_GARDEN else "The soil is tilled: %d beds." % int(job["made"]))
+
+
+# Plant (BugsList entry 6, Dave 18 Nov 2026): the picked plant goes into every usable point of the hoe's grid in one click, spaced for the plant (FarmRules.spacing_of),
+# as far as the supplies go: the pack, then loose ones nearby, then nearby containers (the crafting stock). A crop seed needs a tilled bed or plot under the point;
+# a bush or a tree seed open ground. Trees, large rocks and buildings make a point unusable; small loose rocks on a planted point are picked up. `a` the held
+# pack slot (the hoe), `number` the item, `code` = check * 10000000 + yaw * 10000 + width * 100 + length; `check` only answers which points would take a plant
+# (a hoe_verdict whose cells are 1 usable, 2 usable but beyond the supplies, 0 not). PROVISIONAL PG-1.
+const PLANT_GRID_REACH_M := 12.0   # PG-1: the grid's points this far (flat) from the player take a plant in the one click
+
+
+func plant_grid(peer: int, inv, held_slot: int, number: int, code: int, at: Vector3) -> int:
+	if inv == null or not _peer_pos.has(peer) or not at.is_finite() or not ground_height.is_valid():
+		return 0
+
+	var check: bool = code >= 10000000
+	var now: int = Time.get_ticks_msec()
+
+	if check:
+		if now - int(_hoe_check_ms.get(peer, -100000)) < HOE_CHECK_MS:
+			return 0
+
+		_hoe_check_ms[peer] = now
+
+	code = code % 10000000
+	var reply := func(state: int, why: String, cells: PackedByteArray) -> void:
+		_hoe_verdict(peer, Net.ACT_PLANT_GRID, code, at, state, why, cells)
+
+		if not check and why != "":
+			_say(peer, why)
+
+	if (check and _held_tool(inv, held_slot, "hoe") < 0) or (not check and _hoe_ready(peer, inv, at, held_slot) < 0):   # a hoe in hand; a planting click also its reach and pace
+		return 0
+
+	var item_id: String = table.id_of(number) if number > 0 else ""
+	var picked: Array = FarmRules.plantables(_crop_table(), [item_id], str(_drops.get("shrub_work", {}).get("dig_suffix", "_bush")), _tree_seed_items())
+
+	if picked.is_empty():
+		reply.call(0, "That cannot be planted.", PackedByteArray())
+		return 0
+
+	var kind: String = str(picked[0]["kind"])
+	var crop_id: String = FarmRules.crop_of_seed(_crop_table(), item_id)
+	var step: float = FarmRules.spacing_of(kind, _crop_table().get(crop_id, {}) if kind == "seed" else {})
+	var w: int = clampi(floori(float(code % 10000) / 100.0), 1, FarmRules.GRID_MAX_SIDE)
+	var d: int = clampi(code % 100, 1, FarmRules.GRID_MAX_SIDE)
+	var yaw_deg: int = posmod(floori(float(code) / 10000.0), 360)
+	var points: Array = FarmRules.grid_points(w, d, step, Vector2(at.x, at.z), yaw_deg)
+	var reach: float = Vector2(float(w), float(d)).length() * step * 0.5 + 2.0
+	var edits: Array = (edits_near.call(at, reach + 1.0) if edits_near.is_valid() else []) as Array
+	var grid: Dictionary = _edit_buckets(edits)
+	var seen: Dictionary = _till_obstacles(at, reach)
+	var beds: Array = []
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") and not it["struct"].has("site") and _is_plot_kind(str(it["struct"].get("kind", ""))) and Vector2(it["pos"].x - at.x, it["pos"].z - at.z).length() < reach + 2.0:
+			beds.append(it)
+
+	var stock: Dictionary = _stock_of(peer)
+	var have: int = _stock_have(inv, number, stock)
+	var cells: PackedByteArray = PackedByteArray()
+	var ok_spots: Array = []   # [point index, spot, bed, crop key]
+	var used: Dictionary = {}
+	var first_why: String = ""
+
+	cells.resize(points.size())
+
+	for n in points.size():
+		var row: Array = _plant_point(peer, kind, item_id, points[n], grid, seen, beds, used)
+
+		if str(row[0]) == "":
+			ok_spots.append([n, row[1], row[2], row[3]])
+			cells[n] = 1
+		elif first_why == "":
+			first_why = str(row[0])
+
+	var feet: Vector3 = _peer_pos[peer]
+	ok_spots.sort_custom(func(p, q): return Vector2(p[1].x - feet.x, p[1].z - feet.z).length() < Vector2(q[1].x - feet.x, q[1].z - feet.z).length())   # the nearest are planted first when the supplies run short
+
+	for k in range(have, ok_spots.size()):
+		cells[int(ok_spots[k][0])] = 2
+
+	if check:
+		reply.call(1 if not ok_spots.is_empty() and have > 0 else 0, first_why if ok_spots.is_empty() else ("You have none to plant." if have <= 0 else ""), cells)
+		return 0
+
+	if ok_spots.is_empty() or have <= 0:
+		reply.call(0, first_why if ok_spots.is_empty() else "You have none to plant.", cells)
+		return 0
+
+	var before: Array = _snapshot(inv)
+	var planted: int = 0
+
+	for spot in ok_spots:
+		if (kind != "seed" and _sapling_refusal(item_id, spot[1]) != "") or _stock_take(inv, number, 1, stock) < 1:
+			continue   # a point the last plant made too close, or the supplies ran out
+
+		if kind == "seed":
+			_sow_cell(peer, spot[2], str(spot[3]), crop_id)
+		else:
+			_plant_sapling(peer, item_id, spot[1])
+
+		planted += 1
+
+		for stone in seen["stones"]:
+			if (stone[1] as Vector2).distance_to(Vector2(spot[1].x, spot[1].z)) < 0.6 and _items.has(int(stone[0])):
+				var count: int = int(_items[int(stone[0])]["count"])
+				_take_in(peer, inv, int(_items[int(stone[0])]["number"]), count)
+				_take_from(int(stone[0]), count)
+
+	if planted > 0:
+		_wear_slot(peer, inv, held_slot, "dig")
+
+	_send_changes(peer, inv, before)
+	_dirty = true
+	reply.call(2, "", cells)
+	_say(peer, "Planted %d %s." % [planted, table.name_of(number).to_lower()] if planted >= ok_spots.size() else "Planted %d: no more %s to plant." % [planted, table.name_of(number).to_lower()])
+	return planted
+
+
+# One point of a planting grid: [why it takes no plant ("" when it does), the ground spot, the bed (or {}), the bed's square metre key ("")].
+func _plant_point(peer: int, kind: String, item_id: String, flat: Vector2, grid: Dictionary, seen: Dictionary, beds: Array, used: Dictionary) -> Array:
+	if Vector2(_peer_pos[peer].x - flat.x, _peer_pos[peer].z - flat.y).length() > PLANT_GRID_REACH_M:
+		return ["Too far away: walk closer to plant there.", Vector3.ZERO, {}, ""]
+
+	var h: float = _bucket_height(flat.x, flat.y, grid)
+
+	if is_nan(h):
+		return ["The ground there is not ready yet.", Vector3.ZERO, {}, ""]
+
+	var spot: Vector3 = Vector3(flat.x, h, flat.y)
+	var blocked: String = _obstacle_at(seen, flat, 0.2, 0.0)
+
+	if blocked != "":
+		return [blocked, spot, {}, ""]
+
+	var bed: Dictionary = {}
+	var key: String = ""
+
+	for it in beds:
+		for cell in _bed_cells(it):
+			if FarmRules.on_square(flat, Vector2(cell.x, cell.z), 0.5, float(it["struct"].get("yaw", 0.0))):
+				bed = it
+				key = _bed_key(cell)
+
+	if kind != "seed":
+		return ["A bush or tree goes in open ground, not in a bed.", spot, {}, ""] if not bed.is_empty() else [_sapling_refusal(item_id, spot), spot, {}, ""]
+
+	if bed.is_empty():
+		return ["Crops need tilled soil: till the ground first.", spot, {}, ""]
+
+	if used.has(key):
+		return ["That bed already takes a plant from this grid.", spot, bed, key]
+
+	var why: String = _sow_refusal(key, item_id)
+
+	if why == "season":
+		why = _season_refusal(item_id)
+
+	if why == "":
+		used[key] = true
+
+	return [why, spot, bed, key]
+
+
+# The tree seed items (drops.json trunk.felled_seeds by_species): item id -> species, for FarmRules.plantables.
+func _tree_seed_items() -> Dictionary:
+	var out: Dictionary = {}
+	var by: Dictionary = ((_drops.get("trunk", {}) as Dictionary).get("felled_seeds", {}) as Dictionary).get("by_species", {})
+
+	for species in by:
+		if not out.has(str(by[species])):
+			out[str(by[species])] = str(species)
+
+	return out
 
 
 # A seed from the pack slot goes into the bed: right season, empty bed, the seed is used up.
@@ -16768,38 +17200,46 @@ func sow(peer: int, inv, bed_id: int, slot: int, at: Vector3 = Vector3.ZERO) -> 
 		return false
 
 	var key: String = _cell_key(bed, at, "empty")
-
-	if key == "" or _crops.has(key):
-		_say(peer, "Something is growing there already.")
-		return false
-
 	var seed_id: String = table.id_of(inv.numbers[slot])
-	var crop_id: String = ""
+	var why: String = _sow_refusal(key, seed_id)
 
-	for id in _crop_table():
-		if str(_crop_table()[id].get("seed", "")) == seed_id:
-			crop_id = str(id)
-
-	if crop_id == "":
-		_say(peer, "That cannot be sown.")
-		return false
-
-	var def: Dictionary = _crop_table()[crop_id]
-
-	var sow_seasons: Array = def.get("sow_seasons", [def.get("sow_season", "spring")])   # Sal's data: a list of sowing seasons (older rows: one string)
-
-	if not sow_seasons.has(_season()):
-		_say(peer, "Not the season for %s. Hold the seeds you want to sow." % table.in_sentence(str(def.get("name", crop_id))))   # the client sows the seed in hand, else the first seed in the pack (A-6)
+	if why != "":
+		_say(peer, why if why != "season" else "%s Hold the seeds you want to sow." % _season_refusal(seed_id))   # the client sows the seed in hand, else the first seed in the pack (A-6)
 		return false
 
 	inv.remove(inv.numbers[slot], 1)
+	_sow_cell(peer, bed, key, FarmRules.crop_of_seed(_crop_table(), seed_id))
+	return true
+
+
+# Why a seed cannot go into a bed's square metre `key` now ("" when it can; "season" when it is out of season, _season_refusal words it).
+func _sow_refusal(key: String, seed_id: String) -> String:
+	if key == "" or _crops.has(key):
+		return "Something is growing there already."
+
+	var crop_id: String = FarmRules.crop_of_seed(_crop_table(), seed_id)
+
+	if crop_id == "":
+		return "That cannot be sown."
+
+	var def: Dictionary = _crop_table()[crop_id]
+	var sow_seasons: Array = def.get("sow_seasons", [def.get("sow_season", "spring")])   # Sal's data: a list of sowing seasons (older rows: one string)
+	return "" if sow_seasons.has(_season()) else "season"
+
+
+func _season_refusal(seed_id: String) -> String:
+	var crop_id: String = FarmRules.crop_of_seed(_crop_table(), seed_id)
+	return "Not the season for %s." % table.in_sentence(str((_crop_table().get(crop_id, {}) as Dictionary).get("name", crop_id)))
+
+
+# The crop record of a seed just sown (the seed already taken).
+func _sow_cell(peer: int, bed: Dictionary, key: String, crop_id: String) -> void:
 	_crops[key] = {"crop": crop_id, "sown": _game_day(), "age": 0.0, "wet": 0, "day": _game_day(), "compost": false, "poured": -1}
 
 	if key != _bed_key(bed["pos"]):
 		_crops[key]["plot"] = _bed_key(bed["pos"])   # one square metre of a plot: its moisture is the plot's
 	_dirty = true
 	_goal_event(peer, "seed_sown")   # ADD-05
-	return true
 
 
 # Water from the pack's containers on the bed (GOALS-REPAIR GA-04, A-3): one bucket (crops.json moisture pour_ml, 8 L) is pour_pct, so a pour adds pour_pct
