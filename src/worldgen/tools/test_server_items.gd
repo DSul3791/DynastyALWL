@@ -3468,5 +3468,32 @@ func _init() -> void:
 
 	check(bw.inventory_of(1).count_of(bw.table.number_of("hide_hood")) == 1, "a hide hood by hand from a hide and thread")
 
+	# Animal searches by grid (finding 8): before any sync every item is looked at; after one, the sync's cells round the point and anything made
+	# since; a fox reads the piece it is after by id.
+	DirAccess.make_dir_recursive_absolute("user://test_server_items_near")
+
+	for file in DirAccess.get_files_at("user://test_server_items_near"):
+		DirAccess.remove_absolute("user://test_server_items_near/" + file)
+
+	var near_items = make("user://test_server_items_near")
+	var near_forage: int = near_items.table.number_of("roast_forage")
+	var food_a: int = near_items._next_id
+	near_items._items[food_a] = {"number": near_forage, "count": 3, "pos": Vector3(1000.0, 5.0, 1000.0), "left": 1.0e9}
+	near_items._next_id += 1
+	check(near_items.loose_food_near(Vector3(1010.0, 5.0, 1000.0), 30.0).size() == 1, "before any sync, loose food is found")
+	near_items._sync_world_items()
+	var food_b: int = near_items._next_id
+	near_items._items[food_b] = {"number": near_forage, "count": 1, "pos": Vector3(1205.0, 5.0, 1000.0), "left": 1.0e9}
+	near_items._next_id += 1
+	var near_found: Array = near_items.loose_food_near(Vector3(1190.0, 5.0, 1000.0), 30.0)
+	check(near_found.size() == 1 and int(near_found[0][0]) == food_b, "food dropped since the last sync is found, far food is not (%s)" % str(near_found))
+	near_items._sync_world_items()
+	near_found = near_items.loose_food_near(Vector3(1190.0, 5.0, 1000.0), 30.0)
+	check(near_found.size() == 1 and int(near_found[0][0]) == food_b, "after the next sync it is found from the grid, in the next cell over (%s)" % str(near_found))
+	check(near_items.stealable_near(Vector3(1001.0, 5.0, 1000.0), 5.0).size() == 1 and near_items.stealable_near(Vector3(1050.0, 5.0, 1000.0), 5.0).is_empty(), "a goblin finds the loose stack within its reach only")
+	check(near_items.loose_food_pos(food_a) == Vector3(1000.0, 5.0, 1000.0) and near_items.loose_food_pos(999999) == null, "a fox reads its food by id")
+	near_items.take_loose(food_a)
+	check(near_items.loose_food_pos(food_a) == null and near_items.loose_food_near(Vector3(1000.0, 5.0, 1000.0), 5.0).is_empty(), "food taken is gone, though the grid still files its id")
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

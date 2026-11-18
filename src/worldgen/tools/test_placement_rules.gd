@@ -461,6 +461,8 @@ func _init() -> void:
 	check(items.support_strength_at(Vector3(700.0, 10.0, 707.5)) == 1.0, "a second prop beside it extends the held area (overlapping spheres)")
 	var half_s: float = 1000.0 + 30.0 * 86400.0
 	check(items.support_strength_at(Vector3(702.0, 10.0, 702.0), half_s) == 1.0 and items.support_strength_at(Vector3(704.0, 10.0, 702.0), half_s) == 0.0, "at about half health the sphere is about half as wide")
+	items._rebuild_supports(true)
+	check(items._support_ids.size() >= 2 and items.support_strength_at(Vector3(700.0, 10.0, 707.5)) == 1.0 and items.support_strength_at(Vector3(704.9, 10.0, 702.0)) == 1.0, "filed by square (finding 10): a full scan, as at load, finds the props again, across a square's edge too")
 	items.report_position(2, Vector3(450.0, 10.0, 450.0))
 	# A dead branch on the forest floor gives one stick, only within reach.
 	var sticks_had: int = items.inventory_of(2).count_of(items.table.number_of("stick"))
