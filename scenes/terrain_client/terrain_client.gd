@@ -437,7 +437,7 @@ var test_quickkeys: bool = false
 var test_texttest: bool = false
 var test_plantpick: bool = false
 var test_embed: bool = false
-var test_resume: String = ""          # --resume-test=logout|drop (leave 60 m from the spawn) or =check (say where the game starts)
+var test_resume: String = ""          # --resume-test=logout|drop (leave 60 m from the spawn), =stay (then 90 m, and stay in) or =check (say where the game starts)
 var test_dig_next: bool = false
 var test_spear: bool = false
 var test_chop: bool = false
@@ -6887,8 +6887,9 @@ func _run_dig_next_test() -> void:
 	print("Dig-next test: %d digs around the player; start y %.1f, lowest y %.1f, now y %.1f, longest time off the floor %d frames, rescues %d, %s" % [spots.size(), start.y, lowest, body.global_position.y, off_floor_max, rescue.rescued, "NEVER BELOW THE WORLD" if lowest > start.y - 6.0 else "FELL THROUGH"])
 
 
-# Headless check (--resume-test=logout|drop|check): two runs against one server. "logout"/"drop" walk 60 m from the spawn and leave
-# with or without telling the server; "check" prints how far from the spawn the game starts (a resume puts it back at the spot).
+# Headless check (--resume-test=logout|drop|stay|check): two runs against one server. "logout"/"drop" walk 60 m from the spawn and leave
+# with or without telling the server; "stay" then moves on to 90 m and stays in while the server is stopped; "check" prints how far
+# from the spawn the game starts (a resume puts it back at the spot).
 func _run_resume_test() -> void:
 	var waited: float = 0.0
 
@@ -6909,6 +6910,14 @@ func _run_resume_test() -> void:
 	await _server_caught_up()   # the server has read the reports from the new spot (a slow first save can hold its tick for a minute)
 	await get_tree().create_timer(12.0).timeout   # past one 10 s spot note (server_items SAVE_SPOT_EVERY_MSEC): a drop is saved without the leave note
 	await _server_caught_up()
+
+	if test_resume == "stay":   # tools/dedicated_stop_smoke.sh: the server knows 60 m; only its save at the stop can keep 90 m
+		body.global_position = spawn + Vector3(90.0, 4.0, 0.0)
+		body.velocity = Vector3.ZERO
+		await _server_caught_up()
+		print("Resume test: staying in at %s" % str(body.global_position.round()))
+		return
+
 	print("Resume test: leaving (%s) at %s" % [test_resume, str(body.global_position.round())])
 
 	if test_resume == "logout":
