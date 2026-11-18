@@ -226,6 +226,7 @@ func _init() -> void:
 	# A skilled crafter wears tools slower: factor 2 charges half a point per use, carried in fractions (no dice).
 	var care = make(dir + "_care", clock)
 	care.peer_connected_hello(1, "skill-key-0002")
+	care.set_fitness(1, 0)   # an average adult (0): new characters start at fitness 5 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
 	var axe_n: int = care.table.number_of("stone_axe")
 	care.action(1, Net.ACT_ADMIN_GIVE, axe_n, 0, 1, Vector3.ZERO)
 	var inv = care.inventory_of(1)

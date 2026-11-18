@@ -10,6 +10,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const LookTable := preload("res://src/client/look_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 
 # Blueprint (and structure) ids, lowest grade first.
 const FAMILIES := {
@@ -124,7 +125,8 @@ func _data_checks() -> void:
 	check(kg[0] < kg[1] and kg[1] < kg[2] and kg[2] < kg[3] and kg[3] < kg[4], "chest weight limits rise by grade %s" % str(kg))
 
 
-# Each grade places from its blueprint: Planks in place of the boards leave a blueprint site and are never taken; the boards finish it.
+# Each grade places from its blueprint as a site (Dave 18 Nov 2026: placing takes nothing; only a hammer hit fills it, knife rows too): Planks in place of
+# the boards are never taken; with the boards a hammer hit finishes it.
 func _place_checks() -> void:
 	var x: float = 300.0
 
@@ -143,16 +145,22 @@ func _place_checks() -> void:
 
 			items.action(1, Net.ACT_PLACE_BLUEPRINT, int(bp["number"]), 0, 0, spot)
 			var piece: int = _standing_at(str(bp["structure"]), spot)
-			check(piece != 0 and items._items[piece]["struct"].has("site") and _have("lumber") == boards, "%s: with Planks for the boards it is only a site and no Plank is taken" % id)
+			check(piece != 0 and items._items[piece]["struct"].has("site") and _have("lumber") == boards, "%s: placed, it is only a site and no Plank is taken" % id)
 
 			if piece == 0:
 				continue
 
 			items.action(1, Net.ACT_USE_STRUCT, piece, 0, 0, Vector3.ZERO)
 			check(items._items[piece]["struct"].has("site") and _have("lumber") == boards, "%s: E on the site takes no Plank for a board (%d Planks left)" % [id, _have("lumber")])
+
+			if HeldTool.slot_of(items, "hammer") < 0:
+				_give("stone_hammer", 1)   # a knife row is placed with the knife and filled with a hammer (provisional BP-3)
+
+			HeldTool.hit_site(items, piece)
+			check(items._items[piece]["struct"].has("site") and _have("lumber") == boards, "%s: a hammer hit takes no Plank for a board (%d Planks left)" % [id, _have("lumber")])
 			_give("hardwood_board", boards)
-			items.action(1, Net.ACT_USE_STRUCT, piece, 0, 0, Vector3.ZERO)
-			check(not items._items[piece]["struct"].has("site") and _have("hardwood_board") == 0 and _have("lumber") == boards, "%s: with %d Hardwood boards it stands" % [id, boards])
+			HeldTool.hit_site(items, piece)
+			check(not items._items[piece]["struct"].has("site") and _have("hardwood_board") == 0 and _have("lumber") == boards, "%s: with %d Hardwood boards a hammer hit finishes it" % [id, boards])
 
 			if family == "Chest":
 				var box = items._chest_of(1, piece)

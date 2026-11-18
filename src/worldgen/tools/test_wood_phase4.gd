@@ -18,6 +18,7 @@ const ListScript := preload("res://src/client/hammer_blueprints.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const LookTable := preload("res://src/client/look_table.gd")
 const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 
 const NEAR_TRIANGLES := 300
 # The blueprints a knife builds (W-9 and the three new benches and the station), by structure id.
@@ -246,7 +247,11 @@ func knife_vs_hammer() -> void:
 	items.inventory_of(1).add(n("wooden_block"), 2)
 	said.clear()
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, station_bp, 0, 0, Vector3(40.0, 10.0, 3.0))
-	check(standing("carving_station").size() == 2 and have("wooden_block") == 0, "a knife in the hand bar builds it from two Wooden blocks")
+	var carving_site: int = HeldTool.site_of(items, "carving_station")
+	check(carving_site >= 0 and standing("carving_station").size() == 1 and have("wooden_block") == 2, "a knife in the hand bar sets the carving station down as a site, taking nothing (Dave 18 Nov 2026)")
+	hold("stone_hammer")   # a knife row is filled by a hammer hit too (provisional BP-3)
+	HeldTool.hit_site(items, carving_site)
+	check(standing("carving_station").size() == 2 and have("wooden_block") == 0, "a hammer hit fills it from two Wooden blocks and it stands")
 
 	# A hammer row (the Lean-to, blueprint 25) the other way round: a knife is no hammer.
 	var lean: int = int(bp_rows["lean_to"]["number"])
@@ -262,7 +267,8 @@ func knife_vs_hammer() -> void:
 	check(standing("lean_to").is_empty() and have("stick") == 20 and said.any(func(t): return str(t).contains("hammer")), "a knife cannot build a hammer blueprint: nothing placed or taken, and it says to use a hammer")
 	hold("stone_hammer")
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, lean, 0, 0, Vector3(80.0, 10.0, 3.0))
-	check(standing("lean_to").size() == 1 and have("stick") == 0, "a hammer builds it")
+	HeldTool.hit_site(items, HeldTool.site_of(items, "lean_to"))   # placing sets down a site; the hammer hit fills it
+	check(standing("lean_to").size() == 1 and have("stick") == 0, "a hammer places it and fills it")
 
 
 # --- 5. The menus ---

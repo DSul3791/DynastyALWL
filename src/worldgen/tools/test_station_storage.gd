@@ -20,6 +20,7 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const DIR := "user://test_station_storage"
 const HERE := Vector3(5.0, 10.0, 0.0)
 
@@ -489,12 +490,6 @@ func _init() -> void:
 	for need in jar_row.get("cost", []):
 		box(far_chest).add(n(str(need[0])), int(need[1]))
 
-	clear_pack(1)
-	hold_tool(1, "stone_hammer")
-	check(items._blueprint_short(1, items.inventory_of(1), jar_row), "with a wooden hammer a chest 20 m away is out of sourcing range")
-	clear_pack(1)
-	hold_tool(1, "steel_hammer")
-	check(not items._blueprint_short(1, items.inventory_of(1), jar_row), "a steel hammer sources the same blueprint from that chest")
 	var last: float = 0.0
 	var rising: bool = true
 
@@ -513,17 +508,25 @@ func _init() -> void:
 	var wood_at: int = items.inventory_of(1).numbers.find(n("stone_hammer"))
 	var steel_at: int = items.inventory_of(1).numbers.find(n("steel_hammer"))
 	check(items.inventory_of(1).on_hotbar(steel_at) and items._hammer_x(1, wood_at) < items._hammer_x(1, steel_at) and items._hammer_x(1) == items._hammer_x(1, steel_at), "the wooden hammer in hand sets the reach, not the steel one on the hotbar (x%.2f vs x%.2f)" % [items._hammer_x(1, wood_at), items._hammer_x(1, steel_at)])
+	# Placing takes nothing (Dave 18 Nov 2026); the hammer hit on the site sources from site_gather_m (12 m) times the reach of the hammer in hand.
+	clear_pack(1)
+	hold_tool(1, "stone_hammer")
+	var jars_before: int = count_kind("storage_jar")
+	items.report_position(1, Vector3(5.0, 10.0, -6.0))   # the far chest is 21 m away: beyond a stone hammer's 15 m, within a steel one's 30 m
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(jar_row["number"]), 0, 0, Vector3(5.0, 10.0, -8.0))
+	var jar_site: int = HeldTool.site_of(items, "storage_jar")
+	var far_full: Callable = func(): return jar_row.get("cost", []).all(func(need): return box(far_chest).count_of(n(str(need[0]))) == int(need[1]))
+	check(jar_site >= 0 and far_full.call(), "placed, the Storage jar is a site and the far chest is untouched")
+	check(not HeldTool.hit_site(items, jar_site) and count_kind("storage_jar") == jars_before and far_full.call(), "with a stone hammer the chest 21 m away is out of sourcing range: the Storage jar stays a site and nothing is taken")
 	clear_pack(1)
 	hold_tool(1, "steel_hammer")
-	var jars_before: int = count_kind("storage_jar")
-	items.report_position(1, Vector3(5.0, 10.0, -6.0))   # the far chest is 21 m away: beyond a wooden hammer's 12 m, within a steel one's 30 m
-	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(jar_row["number"]), 0, 0, Vector3(5.0, 10.0, -8.0))
+	HeldTool.hit_site(items, jar_site)
 	var far_left: int = 0
 
 	for need in jar_row.get("cost", []):
 		far_left += box(far_chest).count_of(n(str(need[0])))
 
-	check(count_kind("storage_jar") == jars_before + 1 and far_left == 0, "with the steel hammer the Storage jar is built, paid from the chest 20 m away")
+	check(count_kind("storage_jar") == jars_before + 1 and far_left == 0, "a steel hammer hit fills the same site from that chest and the Storage jar stands")
 
 	# Repairs draw only on the player's own containers (CraftStock.owner_ok, not kept out), never another player's open chest.
 	items.report_position(1, HERE)

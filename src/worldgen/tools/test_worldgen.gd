@@ -1898,6 +1898,12 @@ func _test_streaming(generator, data) -> void:
 	var tile: Vector2i = generator.tile_of(x_mid, z_mid)
 	var tiles: Array = store.dig_sphere(center, 4.0)
 	_check(tiles == [tile] and store.revision_of(tile) == 2, "a dig raises its tile's revision")
+	var since_one: Dictionary = store.edits_since(tile, 1)
+	var since_now: Dictionary = store.edits_since(tile, 2)
+	_check(int(since_one["revision"]) == 2 and not bool(since_one["whole"]) and (since_one["spheres"] as PackedFloat32Array).size() == 4
+		and is_equal_approx(float(since_one["spheres"][3]), 3.0) and (since_now["spheres"] as PackedFloat32Array).is_empty() and not bool(since_now["whole"])
+		and bool(store.edits_since(tile, 0)["whole"]) and bool(store.edits_since(tile, 5)["whole"]),
+		"the server lists a tile's edits since a revision (protocol 128), and says whole when it cannot")
 	var dug: VoxelBuffer = TerrainLayout.make_buffer(16)
 	var dug_block: Vector3i = Vector3i((center / 16.0).floor())
 	store.load_block(dug, dug_block, 0)
@@ -1908,6 +1914,17 @@ func _test_streaming(generator, data) -> void:
 	var reopened = ServerStoreScript.new()
 	reopened.setup(generator, root + "/server")
 	_check(reopened.revision_of(tile) == 2, "tile revisions survive a server restart")
+	# Protocol 128: after an admin reset of the ground edits, a copy from before it is dropped whole even when new edits follow.
+	var reset_root: String = root + "/server_reset"
+	var reset_store = ServerStoreScript.new()
+	reset_store.setup(generator, reset_root)
+	reset_store.dig_sphere(center, 2.0)
+	var before_reset: int = reset_store.revision_of(tile)
+	reset_store.reset_edits()
+	reset_store.dig_sphere(center + Vector3(0.0, -6.0, 0.0), 2.0)
+	_check(bool(reset_store.edits_since(tile, before_reset)["whole"]), "a copy from before a ground reset is dropped whole")
+	reset_store.flush()
+	reset_store = null
 	# A re-bake throws the generated ground away; the saved dig replays over the new ground.
 	reopened.clear_generated()
 	var replayed: VoxelBuffer = TerrainLayout.make_buffer(16)
@@ -1937,8 +1954,24 @@ func _test_streaming(generator, data) -> void:
 	cache.save_block(original, block, 0)
 	cache.flush()
 	_check(cache.load_block(cached, block, 0), "the server's new copy of an edited block is saved and read again")
+	# Protocol 128: a newer server revision holds the tile until the edits since come; then only the blocks round them are outdated.
+	cache.flush()
 	cache.set_revision(tile, 2)
-	_check(not cache.load_block(cached, block, 0), "a newer tile revision empties that tile from the client cache")
+	_check(not cache.load_block(cached, far_block, 0) and cache.take_catch_up().size() == 1, "a newer tile revision holds the tile and asks for the edits since")
+	var caught: Array = cache.apply_catch_up(tile, 1, 2, PackedFloat32Array([edit_at.x, edit_at.y, edit_at.z, 2.0]), false)
+	_check(caught.has(Vector4i(block.x, block.y, block.z, 0)) and not cache.load_block(cached, block, 0) and cache.load_block(cached, far_block, 0),
+		"the edits since outdate only their blocks; the rest of the tile is kept")
+	var reopened_cache = ClientCacheScript.new()
+	cache.flush()
+	reopened_cache.setup(root + "/client", world, {"%d,%d" % [tile.x, tile.y]: 2}, 2048)
+	_check(reopened_cache.take_catch_up().is_empty() and not reopened_cache.load_block(cached, block, 0) and reopened_cache.load_block(cached, far_block, 0),
+		"the next join knows the outdated blocks and asks nothing when the tile has not changed")
+	reopened_cache = null   # its database closes before the file is dropped below
+	cache.set_revision(tile, 3)
+	cache.take_catch_up()
+	_check(cache.apply_catch_up(tile, 1, 3, PackedFloat32Array([edit_at.x, edit_at.y, edit_at.z, 2.0]), false).is_empty(), "an answer to another ask (since 1, the copy is at 2) is ignored")
+	cache.apply_catch_up(tile, 2, 3, PackedFloat32Array(), true)
+	_check(not cache.load_block(cached, far_block, 0), "when the server cannot list the edits the tile is emptied")
 	var tile_blocks: int = int(generator.tile_size_m / 16.0)
 
 	for step in [0, 1, 5, 8]:
