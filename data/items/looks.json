@@ -204,6 +204,13 @@
    "color": "#a98f52",
    "size": 1.0
   },
+  "wooden_hammer": {
+   "shape": "hammer",
+   "color": "#8a6a3a",
+   "size": 1.0,
+   "bits": ["wood"],
+   "placeholder": true
+  },
   "stone_hammer": {
    "shape": "hammer",
    "color": "#7d7a74",
@@ -979,6 +986,11 @@
   "wooden_hoe": {
    "shape": "hoe",
    "color": "#8a6a3a",
+   "size": 1.0
+  },
+  "stone_hoe": {
+   "shape": "hoe",
+   "color": "#7d7a74",
    "size": 1.0
   },
   "iron_hoe": {
