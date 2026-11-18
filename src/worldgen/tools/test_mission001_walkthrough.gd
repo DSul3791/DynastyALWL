@@ -277,6 +277,9 @@ func build(structure: String, at: Vector3, what: String) -> int:
 	for c in bp.get("cost", []):
 		before[str(c[0])] = have(str(c[0]))
 
+	if int(bp.get("chisel", 0)) > 0 and have("steel_chisel") == 0:
+		items.give(1, n("steel_chisel"), 1)   # a chisel piece needs a chisel on the hand bar (Dave 18 Nov 2026); given here, the route's smithy comes later
+
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(bp.get("number", 0)), 0, 0, at)
 	HeldTool.hit_site(items, HeldTool.site_of(items, structure))   # placing only sets down a site; the hammer hit fills it (Dave 18 Nov 2026)
 	var id: int = standing_at(structure, at)
