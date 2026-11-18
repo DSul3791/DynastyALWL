@@ -108,8 +108,8 @@ const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
 const RescueScript := preload("res://src/client/rescue.gd")
-const BuildInfo := preload("res://src/shared/build.gd")
-const BUILD: int = BuildInfo.NUMBER
+const BuildStamp := preload("res://src/shared/build_stamp.gd")
+var BUILD: int = BuildStamp.number()   # the release stamp's build number, or build.gd NUMBER in an editor run (step A1)
 var rig_flora_hold: Dictionary = {}   # look rig (--shot-flora): chunks whose plants the rig drew itself; incoming server flora for them is dropped
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+Shift+N shortcut
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -814,6 +814,7 @@ func _ready() -> void:
 			test_creatures = true
 
 	net.welcome_received.connect(_on_welcome)
+	net.join_refused_received.connect(_on_join_refused)
 	net.blocks_received.connect(_on_blocks)
 	net.tile_changed_received.connect(_on_tile_changed)
 	net.edits_since_received.connect(_on_edits_since)
@@ -890,6 +891,9 @@ func _ready() -> void:
 
 # What the connection window says: the step the game is on, how long it has been there, and (when it is stuck) the likely reason.
 func _update_connect_window() -> void:
+	if _join_refused != "":
+		return   # the refusal stays on the window until the player quits
+
 	var now: int = Time.get_ticks_msec()
 	var waited: int = int(float(now - started_msec) * 0.001)
 	var where: String = "%s:%d" % [_host, _port]
@@ -955,6 +959,9 @@ func _connect() -> void:
 func _on_server_lost() -> void:
 	print("Terrain client: server left")
 	_telemetry.event("EXIT: server_disconnected (the server dropped this client or ended); last link: %s" % (EventLogScript.peer_stats((multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(1)) if multiplayer.multiplayer_peer is ENetMultiplayerPeer else "gone"))
+
+	if _join_refused != "":
+		return   # dropped after a refusal: the window already says why (_on_join_refused)
 
 	if crash_report != null:
 		crash_report.report_now("server left: the connection to the server was lost")
@@ -1046,6 +1053,20 @@ func _on_connection_failed() -> void:
 		return
 
 	_finish(1)
+
+
+# The server runs another build (step A1): its reason stays on the join window until the player quits. The server drops this client next.
+func _on_join_refused(text: String) -> void:
+	_join_refused = text if text != "" else "The server refused this game."
+	print("Terrain client: join refused: ", _join_refused.replace("\n", " "))
+	_telemetry.event("JOIN: refused by the server: " + _join_refused.replace("\n", " "))
+
+	if _connect_window != null:
+		_connect_window.fail("Update required", _join_refused, func(): _finish(1))
+	elif DisplayServer.get_name() != "headless":
+		_show_lost_notice(_join_refused.replace("\n", " "))
+	else:
+		_finish(1)
 
 
 func _on_welcome(info: Dictionary) -> void:
@@ -3511,6 +3532,7 @@ var _dig_spam_next_msec: int = 0
 var _step_lift: float = 0.0               # metres the eye still has to rise after a step-up (eased out)
 var _movement: Dictionary = {}        # data/movement.json
 var _telemetry = EventLogScript.new()       # crash_reports/telemetry_client.log: traffic, backlog and frame gaps once a second
+var _join_refused: String = ""            # the server's reason when it refused this build (join_refused, protocol 132)
 var _connect_window = null                # shown until the ground under the player is ready (connect_window.gd)
 var _link_up_msec: int = 0                # when ENet reported the connection up (welcome still to come)
 var _pit_shadow_msec: int = 0

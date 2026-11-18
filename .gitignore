@@ -54,3 +54,6 @@ crash_reports/telemetry_client.log
 # Bought animal models (Dave 6 Nov 2026; decision 83, no vendor name): licensed, never committed to this public repo. They live only on the
 # machines that build the game; data/animals/models.json falls back to the code-built animals when they are missing.
 /assets/animals/
+
+# The release build stamp, written by tools/build_stamp.py just before an export (step A1); never committed
+build_stamp.json
