@@ -3717,7 +3717,7 @@ func _make_torch_model(id: String = "", out: bool = false) -> Node3D:
 	var light: OmniLight3D = OmniLight3D.new()
 	light.name = "Light"
 	light.light_color = Color(1.0, 0.65, 0.3)
-	light.omni_range = float(_inv.table.entry(id if id != "" else held_id()).get("light_m", 9.0))
+	light.omni_range = float(_inv.table.entry(id if id != "" else held_id()).get("light_m", 9.0)) * FlameRules.TORCH_REACH_MULT
 	light.omni_attenuation = FlameRules.TORCH_LIGHT_ATTENUATION
 	light.shadow_enabled = false
 	light.light_volumetric_fog_energy = 0.0   # FireWeather.register below gives it its halo share in the volumetric fog

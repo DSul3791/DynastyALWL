@@ -9,10 +9,15 @@ const RAIN_DOUSE := 0.2        # rain strength that puts an open flame out: the 
 const RAIN_GRACE_S := 5.0      # seconds in the open rain before a torch gives up: a shower you run through to cover keeps it
 
 # The held torch's light, in one place so the large fire can be held to a multiple of it (BUG-002; docs/ai-team/missions/BUGLIST-001/environment-presentation.md):
-# the main light reaches the item's light_m (items.json torch: 12 m) with omni attenuation 1 (Godot's default), this energy with a flicker of this much each way; the hand light is the short warm one low on the stick.
+# the main light reaches the item's light_m (items.json torch and improved_torch: 12 m) times TORCH_REACH_MULT with this omni attenuation, this energy with a flicker of this much
+# each way; the hand light is the short warm one low on the stick.
+# TORCH REACH EXPERIMENT (Dave 18 Nov 2026: "whatever it is now mark it as a starting point and then lets experiment by making it travel 50% further"). These two lines are the
+# whole experiment; docs/design/TORCH_TREE_SAP.md "Torch light reach" has the numbers. STARTING POINT: TORCH_REACH_MULT 1.0 (12 m) and TORCH_LIGHT_ATTENUATION 1.0.
+# Provisional TS-14: 1.5 (18 m) and 0.8, so the light the old torch gave at 8 m now reaches about 12 m; at 1 m it is unchanged (d^-attenuation is 1 there).
+const TORCH_REACH_MULT := 1.5
+const TORCH_LIGHT_ATTENUATION := 0.8
 const TORCH_LIGHT_ENERGY := 2.0
 const TORCH_LIGHT_FLICKER := 0.4
-const TORCH_LIGHT_ATTENUATION := 1.0
 const TORCH_HAND_ENERGY := 0.7
 const TORCH_HAND_RANGE_M := 1.6
 
