@@ -14,6 +14,7 @@ extends RefCounted
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")
 
 var host = null   # the items module (server_items.gd)
+var _worn: Dictionary = {}   # world id -> true for every smithy with use wear (crafted, set_wear, load_rows): the save walks these, not every item
 
 
 func is_smithy(def: Dictionary) -> bool:
@@ -36,11 +37,22 @@ func crafted(id: int, recipe: Dictionary, peer: int = 0) -> void:
 
 	var most: float = durability(def)
 	var was: float = float(it["struct"].get("use_wear", 0.0))
-	it["struct"]["use_wear"] = minf(was + add, most) if most > 0.0 else was + add
-	host._dirty = true
+	set_wear(id, minf(was + add, most) if most > 0.0 else was + add)
 
 	if most > 0.0 and was < most and float(it["struct"]["use_wear"]) >= most and peer > 0:
 		host._say(peer, "The %s is worn out. Needs repair: take a hammer on Repair to it." % str(host.table.entry(str(def.get("item", ""))).get("name", "smithy")))
+
+
+# Sets a smithy's use wear (crafted, tests): the one way it is set, so the save finds it.
+func set_wear(id: int, wear: float) -> void:
+	var it: Dictionary = host._items.get(id, {})
+
+	if not it.has("struct"):
+		return
+
+	it["struct"]["use_wear"] = wear
+	_worn[id] = true
+	host._dirty = true
 
 
 func wear_of(id: int) -> float:
@@ -87,6 +99,8 @@ func repaired(id: int) -> void:
 		it["struct"].erase("use_wear")
 		host._dirty = true
 
+	_worn.erase(id)
+
 
 # Iron or steel worked: an iron or steel ingot among the needs, or a product of iron or steel.
 func _works_iron(recipe: Dictionary) -> bool:
@@ -103,10 +117,12 @@ func _works_iron(recipe: Dictionary) -> bool:
 func save_rows() -> Dictionary:
 	var rows: Dictionary = {}
 
-	for id in host._items:
-		var it: Dictionary = host._items[id]
+	for id in _worn.keys():
+		var it: Dictionary = host._items.get(id, {})
 
-		if it.has("struct") and it["struct"].has("uid") and float(it["struct"].get("use_wear", 0.0)) > 0.0:
+		if not it.has("struct") or float(it["struct"].get("use_wear", 0.0)) <= 0.0:
+			_worn.erase(id)   # taken down or mended
+		elif it["struct"].has("uid"):
 			rows[str(it["struct"]["uid"])] = float(it["struct"]["use_wear"])
 
 	return rows
@@ -125,3 +141,4 @@ func load_rows(parsed: Variant) -> void:
 			var most: float = durability(host._structures[str(it["struct"]["kind"])])
 			var wear: float = maxf(float(rows[str(it["struct"]["uid"])]), 0.0)
 			it["struct"]["use_wear"] = minf(wear, most) if most > 0.0 else wear
+			_worn[id] = true

@@ -438,7 +438,7 @@ func smithy_needs(smithy: int) -> Array:
 
 
 func break_smithy() -> void:
-	items._items[target]["struct"]["use_wear"] = items._smithies.durability(items._structures["blacksmithy"])
+	items._smithies.set_wear(target, items._smithies.durability(items._structures["blacksmithy"]))
 
 
 func do_repair_station(_i: int) -> void:

@@ -188,7 +188,7 @@ func repair(id: int, slot: int) -> void:
 
 
 func break_it(id: int) -> void:
-	items._items[id]["struct"]["use_wear"] = items._smithies.durability(def_of(id))
+	items._smithies.set_wear(id, items._smithies.durability(def_of(id)))
 
 
 # The materials one full repair of this smithy takes (building_wear repair_share of its cost less the anvil, at condition 0).
@@ -240,7 +240,7 @@ func _init() -> void:
 	check(is_equal_approx(items._smithies.wear_of(smithy), per_craft) and not items._smithies.broken(smithy), "2a. a bronze craft wears the Improved smithy %.1f" % per_craft)
 	craft("iron_knife", 90.0)
 	check(is_equal_approx(items._smithies.wear_of(smithy), per_craft + per_craft * float(wear_cfg["iron_on_bronze"])), "2b. iron on its bronze anvil wears it x%.1f" % float(wear_cfg["iron_on_bronze"]))
-	items._items[smithy]["struct"]["use_wear"] = most - per_craft
+	items._smithies.set_wear(smithy, most - per_craft)
 	said.clear()
 	craft("bronze_knife", 60.0)
 	check(items._smithies.broken(smithy) and is_equal_approx(items._smithies.wear_of(smithy), most), "2c. the craft that reaches its durability (%.0f) breaks it" % most)
@@ -383,7 +383,7 @@ func _init() -> void:
 	smithy = place("blacksmithy", SMITHY_AT)
 	var other: int = place("stone_forge", HERE + Vector3(-4.0, 0.0, 0.0))
 	break_it(smithy)
-	items._items[other]["struct"]["use_wear"] = 5.0
+	items._smithies.set_wear(other, 5.0)
 	var smithy_at: Vector3 = items._items[smithy]["pos"]
 	items.save()
 	items._finish_writer()

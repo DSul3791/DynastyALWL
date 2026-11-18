@@ -522,16 +522,8 @@ func setup(item_table, store_dir: String) -> void:
 	_load_inventories()
 	_load_chests()
 	_load_world_items()
-	_reindex_save()   # the save check's index of what the files held
-	_area_dirty = _area_recovered.duplicate()
-
-	for id in _load_row_of:   # a row filed in another area's file than where it lies (moved since that file was written): both are written again
-		if _save_sig.has(id) and int(_load_row_of[id]) < _load_row_area.size() and str(_load_row_area[int(_load_row_of[id])]) != str(_save_sig[id][1]):
-			_area_dirty[str(_load_row_area[int(_load_row_of[id])])] = true
-			_area_dirty[str(_save_sig[id][1])] = true
-
-	_load_row_of = {}
-	_load_row_area = []
+	var loaded_next: int = _next_id
+	_load_changed = {}
 	_carts.after_load()
 	var lights_parsed: Variant = _read_json_version("lights.json", 1)
 	_apply_lit_rows(lights_parsed.get("lit", []) if lights_parsed != null and typeof(lights_parsed.get("lit", null)) == TYPE_ARRAY else [])
@@ -546,8 +538,7 @@ func setup(item_table, store_dir: String) -> void:
 			(crops_parsed.get("wells", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("wells", null)) == TYPE_DICTIONARY else {})
 	_rebuild_supports(true)
 	_load_trees()
-	save_check_now()   # what the load steps since the index made or changed (crates set down, lights lit, the trunks and stumps of tree_states.json) is
-	                   # noted now, so a save before the first pass holds it and a repaired row is written again
+	_index_after_load(loaded_next)
 	var cooking: Variant = JSON.parse_string(FileAccess.get_file_as_string(COOKING_PATH))
 	_cooking = cooking if typeof(cooking) == TYPE_DICTIONARY else {}
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(DROPS_PATH))
@@ -1541,7 +1532,7 @@ func tick(delta: float) -> void:
 		_slow_mark("sync-world-items " + _sync_detail, t0)
 
 	_save_in -= delta
-	_save_sweep(maxi(64, ceili(float(_items.size()) * delta / SAVE_EVERY_S * 1.25)))   # one pass of the save check per save interval (see _item_job)
+	_save_sweep(_sweep_slice(delta))   # one pass of the save check per save interval (see _item_job)
 
 	_reap_writer()
 
@@ -1633,33 +1624,38 @@ func save() -> void:
 # them. Building the rows and the JSON of every world item on the tick froze the server once per save, longer the more the world held
 # (audit 18 Nov 2026, docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md finding 2). The tick now pays only the native copy.
 # The world items are saved by area (Minecraft region files, Paper's chunk saving): each AREA_M square has its own file. A periodic save copies
-# and builds only the areas marked dirty, writes those whose rows changed (an md5 of the rows against the last write), then world_items.json,
+# and builds only the areas marked dirty and writes them, then world_items.json,
 # the header naming each area file's gen. A crash between the two leaves the header naming the gens of the save before, which the files' .prev
 # copies hold (_read_area). Any other save (shutdown, world reset, tests) re-indexes every item and writes every area exactly.
 #
 # The dirty marks come from a rolling check, not from hooks at the change sites: world items change in place at hundreds of spots, and one
 # missed hook would lose that change from the save without a sound. Each tick looks at a slice of the items (_save_sweep, bounded in time by
 # SWEEP_BUDGET_US, so a huge world stretches the pass, never the tick): a native hash of each item, its running countdowns in AREA_STEP_S steps
-# (_save_sig_of), and its area. A changed hash or area marks the old and new areas dirty; a second slice finds ids gone from the world. One pass
+# (_save_sig_of), and its area. A changed hash or area marks the old and new areas dirty; the same walk over the world ids finds the gone ones. One pass
 # covers the world within a save interval (a longer one is logged), so a change reaches the disk within two save intervals: PROVISIONAL, for
-# Dave's review, a crash can lose up to about a minute of world item changes (it was about 30 s). Any field the hash does not round is in it,
+# Dave's review, a crash can lose up to about a minute of world item changes (it was about 30 s); on a world too big for one pass a save interval
+# within the budget, up to two passes (logged; David4 18 Nov: about 5 us an item, so a pass fits an interval up to about 100,000 items). Any field the hash does not round is in it,
 # so the check errs toward writing too much, never too little.
 const AREA_M := 128.0              # PROVISIONAL: the side of a world items area (one file in AREA_DIR)
 const AREA_STEP_S := 600.0        # PROVISIONAL: a periodic save compares countdowns (an item's lifetime, a fire's burn) in steps this long, so an area
                                    # where only a fire burns or a drop ages is written about every 10 minutes, not every save; a clean shutdown writes exactly
 const AREA_DIR := "world_items"    # the area files, "<ax>_<az>.json": {"version", "gen": the save that wrote it, "items": rows, "world_rows": indices}
-var _area_sums: Dictionary = {}    # area key -> [md5 of its rows, gen] as last written: touched by the writer only (the job carries it)
+var _area_sums: Dictionary = {}    # area key -> the gen of its file as last written: touched by the writer only (the job carries it)
 var _save_gen: int = 0             # the save count, kept in the header: an area file's gen says which save wrote it
 const SWEEP_BUDGET_US := 1000      # PROVISIONAL: the most a tick spends on the rolling check (2% of a 50 ms tick)
 var _save_sig: Dictionary = {}     # world id -> [hash of its saved fields, its area key ("" = not saved in an area)] as the check last saw it
 var _area_ids: Dictionary = {}     # area key -> {world id: true}: the items each area file holds
 var _area_dirty: Dictionary = {}   # area key -> true: changed since the last periodic save
 var _save_side: Dictionary = {}    # world id -> true: a trunk or stump, a light or a kiln (tree_states, lights, kilns.json are made from these)
-var _sweep_keys: Array = []        # the pass under way: the world ids to look at, and the ids it knew (to find the gone ones)
-var _sweep_gone: Array = []
-var _sweep_at: int = 0
-var _sweep_gone_at: int = 0
+var _walk_ids := PackedInt64Array()   # the pass under way walks the new ids (below), then these: the ids live at the last pass, and how far it is
+var _walk_at: int = 0
+var _walk_hi: int = 0             # first: the ids made since the last pass began, from _walk_lo (_walk_hi: how far) up to _walk_end
+var _walk_lo: int = 0
+var _sweep_passes: int = 0        # passes begun (tools: measure_save_cost)
+var _walk_end: int = 0
+var _walk_next := PackedInt64Array()  # the ids found live this pass: the next pass's list
 var _sweep_began_ms: int = 0
+var _load_changed: Dictionary = {}  # at load: world ids a load step changed in a way the area files must get (server_carts.gd after_load)
 var _load_row_of: Dictionary = {}  # at load: world id -> its row's index in the loaded rows, and the area file each row came from
 var _load_row_area: Array = []
 var _save_failed: Array = []       # area keys the writer could not write (filled by the writer, read on the tick when it is done)
@@ -1777,31 +1773,21 @@ static func _write_item_job(job: Dictionary) -> void:
 
 	for key in job["all"]:
 		if not job["areas"].has(key) and sums.has(key):
-			listed[key] = int(sums[key][1])   # not dirty: its file stands as written
+			listed[key] = int(sums[key])   # not dirty: its file stands as written
 
 	for key in areas:
 		var body: String = JSON.stringify({"items": areas[key][0], "world_rows": areas[key][1]})
-		var coarse: Array = []
-
-		for row in areas[key][0]:
-			coarse.append(_coarse_row(row))
-
-		var sum: String = JSON.stringify([coarse, areas[key][1]]).md5_text()
 		var path: String = "%s/%s/%s.json" % [dir, AREA_DIR, key]
-
-		if not bool(job.get("exact", false)) and sums.has(key) and str(sums[key][0]) == sum and FileAccess.file_exists(path):
-			listed[key] = int(sums[key][1])   # unchanged since it was written: not written again
-			continue
 
 		if not _write_file(path, "{\"version\":%d,\"gen\":%d,%s" % [VERSION, gen, body.substr(1)]):
 			failed.append(key)   # not written: the header names the gen still on disk, and the next save builds it again (no sum)
 
 			if sums.has(key):
-				listed[key] = int(sums[key][1])
+				listed[key] = int(sums[key])
 
 			continue
 
-		sums[key] = [sum, gen]
+		sums[key] = gen
 		listed[key] = gen
 
 	var world: Dictionary = (job["world"] as Dictionary).duplicate()
@@ -1845,36 +1831,6 @@ static func saved_world_rows(dir: String) -> Array:
 	return rows
 
 
-# A row as the periodic save compares it: the countdowns that run every tick (a loose item's lifetime; a fire's burn, its wood by class, what has
-# burned, its seconds lit and its part-made charcoal) in AREA_STEP_S steps. A structure row (its kind, a string, at index 9) has none.
-static func _coarse_row(row: Array) -> Array:
-	if row.size() > 9 and typeof(row[9]) == TYPE_STRING:
-		return row
-
-	var out: Array = row.duplicate()
-	out[5] = floorf(float(out[5]) / AREA_STEP_S)
-
-	if out.size() > 7 and int(out[6]) != 0:
-		out[7] = floorf(float(out[7]) / AREA_STEP_S)
-
-		for n in [10, 13]:
-			if out.size() > n and typeof(out[n]) == TYPE_ARRAY:
-				var steps: Array = []
-
-				for v in out[n]:
-					steps.append(floorf(float(v) / AREA_STEP_S))
-
-				out[n] = steps
-
-		if out.size() > 15:
-			out[15] = floorf(float(out[15]) / AREA_STEP_S)
-
-		if out.size() > 17:
-			out[17] = snappedf(float(out[17]), 0.25)
-
-	return out
-
-
 static func area_key_of(x: float, z: float) -> String:
 	return "%d_%d" % [int(floor(x / AREA_M)), int(floor(z / AREA_M))]
 
@@ -1886,61 +1842,89 @@ static func _not_in_area(it: Dictionary) -> bool:
 
 # The hash of what a world item's saved row holds, its countdowns in AREA_STEP_S steps. The live record is changed only for the native hash and put
 # back at once, value for value, in place (its keys keep their order). Anything not named here is hashed as it is: a change there marks the area.
+# Written out field by field, with no arrays made, since it runs for every item once a pass. The hash is 32 bits: a change that hashes the
+# same as before (about one in four billion) waits for the next change in its area or the shutdown save, which writes every area exactly.
 func _save_sig_of(it: Dictionary) -> int:
-	var kept: Array = []
+	var has_left: bool = it.has("left")
+	var left: Variant = it.get("left")
 
-	if it.has("left"):
-		kept.append([it, "left", it["left"]])
-		it["left"] = floorf(float(it["left"]) / AREA_STEP_S)
+	if has_left:
+		it["left"] = floorf(float(left) / AREA_STEP_S)
 
-	if it.has("fire"):
-		var fire: Dictionary = it["fire"]
+	var fire: Dictionary = it.get("fire", {})
+	var st: Dictionary = it.get("struct", {})
+	var fire_kept: Dictionary = {}
+	var st_kept: Dictionary = {}
 
-		for field in ["burn_left", "lit_s"]:
+	if not fire.is_empty():
+		for field in FIRE_STEPPED:
 			if fire.has(field):
-				kept.append([fire, field, fire[field]])
-				fire[field] = floorf(float(fire[field]) / AREA_STEP_S)
+				fire_kept[field] = fire[field]
 
-		for field in ["wood", "burnt"]:
-			if fire.has(field) and typeof(fire[field]) == TYPE_DICTIONARY:
-				kept.append([fire, field, fire[field]])
-				var steps: Array = []
+				if field == "recheck" or field == "covered":
+					fire[field] = 0   # not saved
+				elif field == "char":
+					fire[field] = snappedf(float(fire[field]), 0.25)
+				elif field == "wood" or field == "burnt":
+					if typeof(fire[field]) == TYPE_DICTIONARY:
+						var steps: Array = []
 
-				for wood in fire[field]:
-					steps.append(floorf(float(fire[field][wood]) / AREA_STEP_S))
+						for wood in fire[field]:
+							steps.append(floorf(float(fire[field][wood]) / AREA_STEP_S))
 
-				fire[field] = steps
+						fire[field] = steps
+				else:
+					fire[field] = floorf(float(fire[field]) / AREA_STEP_S)
 
-		if fire.has("char"):
-			kept.append([fire, "char", fire["char"]])
-			fire["char"] = snappedf(float(fire["char"]), 0.25)
-
-		for field in ["recheck", "covered"]:   # not saved
-			if fire.has(field):
-				kept.append([fire, field, fire[field]])
-				fire[field] = 0
-
-	if it.has("struct"):
-		var st: Dictionary = it["struct"]
-
-		for field in ["fuel_left", "kiln"]:   # in lights.json and kilns.json, written every save
+	if not st.is_empty():
+		for field in STRUCT_SIDE_FIELDS:
 			if st.has(field):
-				kept.append([st, field, st[field]])
+				st_kept[field] = st[field]
 				st[field] = 0
 
 	var sig: int = it.hash()
 
-	for back in kept:
-		back[0][back[1]] = back[2]
+	if has_left:
+		it["left"] = left
+
+	for field in fire_kept:
+		fire[field] = fire_kept[field]
+
+	for field in st_kept:
+		st[field] = st_kept[field]
 
 	return sig
+
+
+const FIRE_STEPPED := ["burn_left", "lit_s", "wood", "burnt", "char", "recheck", "covered"]   # a fire's running fields (_save_sig_of)
+const STRUCT_SIDE_FIELDS := ["fuel_left", "kiln"]   # in lights.json and kilns.json, which every save writes
+var _side_kind: Dictionary = {}   # structure kind -> true when it is a light or a kiln (tree_states, lights, kilns.json come from these)
+
+
+func _is_side(it: Dictionary) -> bool:
+	if it.has("tree"):
+		return true
+
+	if not it.has("struct"):
+		return false
+
+	if it["struct"].has("lit"):
+		return true
+
+	var kind: String = str(it["struct"]["kind"])
+
+	if not _side_kind.has(kind):
+		var def: Dictionary = _structures.get(kind, {})
+		_side_kind[kind] = bool(def.get("lights", false)) or str(def.get("use", "")) == "kiln"
+
+	return bool(_side_kind[kind])
 
 
 func _save_note(id) -> void:
 	var it: Dictionary = _items[id]
 	var key: String = "" if _not_in_area(it) else area_key_of(float(it["pos"].x), float(it["pos"].z))
 
-	if it.has("tree") or (it.has("struct") and (it["struct"].has("lit") or bool(_structures.get(str(it["struct"]["kind"]), {}).get("lights", false)) or str(_structures.get(str(it["struct"]["kind"]), {}).get("use", "")) == "kiln")):
+	if _is_side(it):
 		if not _save_side.has(id):
 			_save_side[id] = true
 			_dirty = true   # a new trunk, stump, light or kiln: tree_states, lights or kilns.json change
@@ -1993,41 +1977,58 @@ func _save_forget(id) -> void:
 	_save_side.erase(id)
 
 
-# One tick's slice of the rolling check: at most `count` items and `count` known ids, and no longer than SWEEP_BUDGET_US.
+# One tick's slice of the rolling check: from where the pass is up to, at most `count` ids and no longer than `budget_us`.
+# A pass walks the ids made since the last pass began (_walk_lo to _walk_end; world ids all come from _next_id) and then the ids live at the last pass (_walk_ids;
+# their new ids were walked once), building the next pass's list as it goes. So no list of every item is made on one tick (that cost a tick about 6 ms at
+# 50,000 items), and the ids that came and went (scatter laid out and taken away as players walk) cost a pass only once, in the interval they
+# were made: a pass costs about the live items plus the ids made in one interval, never every id ever given out.
 func _save_sweep(count: int, budget_us: int = SWEEP_BUDGET_US) -> void:
 	var t0: int = Time.get_ticks_usec()
-
-	if _sweep_at >= _sweep_keys.size() and _sweep_gone_at >= _sweep_gone.size():
-		var took_ms: int = Time.get_ticks_msec() - _sweep_began_ms
-
-		if _sweep_began_ms > 0 and took_ms > int(SAVE_EVERY_S * 1000.0):
-			_log_off_main("server items: the save check took %.1f s for %d items, longer than a save interval (changes reach the disk later)" % [float(took_ms) / 1000.0, _sweep_keys.size()])
-
-		_sweep_keys = _items.keys()
-		_sweep_gone = _save_sig.keys()
-		_sweep_at = 0
-		_sweep_gone_at = 0
-		_sweep_began_ms = Time.get_ticks_msec()
-
 	var n: int = 0
 
-	while n < count and _sweep_at < _sweep_keys.size() and Time.get_ticks_usec() - t0 < budget_us:
-		var id = _sweep_keys[_sweep_at]
-		_sweep_at += 1
+	while n < count:
+		var id: int = 0
+
+		if _walk_hi < _walk_end:   # the new ids first, so a new item is noticed early in the pass after it was made
+			id = _walk_hi
+			_walk_hi += 1
+		elif _walk_at < _walk_ids.size():
+			id = _walk_ids[_walk_at]
+			_walk_at += 1
+		else:
+			var took_ms: int = Time.get_ticks_msec() - _sweep_began_ms
+
+			if _sweep_began_ms > 0 and took_ms > int(SAVE_EVERY_S * 1000.0):
+				_log_off_main("server items: the save check took %.1f s for %d items, longer than a save interval (changes reach the disk later)" % [float(took_ms) / 1000.0, _items.size()])
+
+			_walk_ids = _walk_next
+			_walk_next = PackedInt64Array()
+			_walk_at = 0
+			_walk_lo = _walk_hi
+			_walk_end = _next_id
+			_sweep_began_ms = Time.get_ticks_msec()
+			_sweep_passes += 1
+
+			if n > 0 or (_walk_ids.is_empty() and _walk_hi >= _walk_end):
+				return   # the next pass starts on the next tick
+
+			continue
+
 		n += 1
 
 		if _items.has(id):
 			_save_note(id)
-
-	n = 0
-
-	while n < count and _sweep_gone_at < _sweep_gone.size() and Time.get_ticks_usec() - t0 < budget_us:
-		var id = _sweep_gone[_sweep_gone_at]
-		_sweep_gone_at += 1
-		n += 1
-
-		if not _items.has(id):
+			_walk_next.append(id)
+		elif _save_sig.has(id):
 			_save_forget(id)
+
+		if (n & 7) == 0 and Time.get_ticks_usec() - t0 >= budget_us:
+			return
+
+
+# How many ids the tick's slice takes, so a pass covers them all in about 0.8 of a save interval.
+func _sweep_slice(delta: float) -> int:
+	return maxi(64, ceili(float(_walk_ids.size() + _walk_end - _walk_lo) * delta / SAVE_EVERY_S * 1.25))
 
 
 # The whole check at once (tests and tools; the tick spreads it with _save_sweep).
@@ -2039,10 +2040,38 @@ func save_check_now() -> void:
 		if not _items.has(id):
 			_save_forget(id)
 
-	_sweep_keys = []
-	_sweep_gone = []
-	_sweep_at = 0
-	_sweep_gone_at = 0
+	_walk_ids = PackedInt64Array()   # a fresh pass over every live item
+	_walk_next = PackedInt64Array(_items.keys())
+	_walk_at = 0
+	_walk_hi = _next_id
+	_walk_lo = _next_id
+	_walk_end = _next_id
+
+
+# The save check's index, once, after every load step (one hash pass: two made the load 0.7 s longer at 50,000 items). The load steps change
+# what the files hold only where it matters for the area files here: a crate whose cart is gone set down (_load_changed), an item a step made
+# (an id from `loaded_next` on), a row filed in another area than where it lies, an area read from its .prev. Those areas are written at the first
+# save; the rest of what the steps do they do again at every load (old layouts, beds, supports), or it lives in the side files every save writes
+# (lights, kilns, trunks and stumps).
+func _index_after_load(loaded_next: int) -> void:
+	_reindex_save()
+	_area_dirty = _area_recovered.duplicate()
+
+	for id in _load_row_of:
+		if _save_sig.has(id) and int(_load_row_of[id]) < _load_row_area.size() and str(_load_row_area[int(_load_row_of[id])]) != str(_save_sig[id][1]):
+			_area_dirty[str(_load_row_area[int(_load_row_of[id])])] = true
+			_area_dirty[str(_save_sig[id][1])] = true
+
+	for id in range(loaded_next, _next_id):
+		_load_changed[id] = true
+
+	for id in _load_changed:
+		if _save_sig.has(id) and str(_save_sig[id][1]) != "":
+			_area_dirty[str(_save_sig[id][1])] = true
+
+	_load_row_of = {}
+	_load_row_area = []
+	_load_changed = {}
 
 
 # Every item looked at afresh: after a load, and before a save that writes every area.
@@ -6664,7 +6693,7 @@ func _load_world_items() -> void:
 		for key in parsed["areas"]:
 			var area: Dictionary = _read_area(str(key), int(parsed["areas"][key]))
 			var base: int = all_rows.size()
-			_area_sums[str(key)] = ["", int(parsed["areas"][key])]   # as written: the header goes on naming it until it changes
+			_area_sums[str(key)] = int(parsed["areas"][key])   # as written: the header goes on naming it until it changes
 
 			for row in area.get("items", []):
 				_load_row_area.append(str(key))
