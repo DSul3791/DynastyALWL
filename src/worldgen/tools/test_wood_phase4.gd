@@ -179,7 +179,7 @@ func station_data() -> void:
 func recipe_data() -> void:
 	for id in CARVED:
 		var r: Dictionary = recipe_of(id)
-		check(not r.is_empty() and str(r.get("station", "")) == "carving_station" and pairs_of(r.get("keeps", [])) == [["knife", 1]], "%s is made at the carving station, keeping a knife" % id)
+		check(not r.is_empty() and str(r.get("station", "")) == "carving_station" and pairs_of(r.get("keeps", [])) == ([["knife", 1], ["copper_chisel", 1]] if ["wooden_bowl", "serving_platter"].has(id) else [["knife", 1]]), "%s is made at the carving station, keeping a knife (the bowl and platter also a Copper chisel or better, Dave 18 Nov 2026)" % id)
 
 	check(pairs_of(recipe_of("wooden_bow")["needs"]) == [["wooden_block", 1], ["twine", 2]], "the Shortbow is 1 Wooden block and 2 Twine")
 	check(pairs_of(recipe_of("wooden_longbow")["needs"]) == [["log", 1], ["twine", 3]], "the Longbow is 1 Log and 3 Twine")
