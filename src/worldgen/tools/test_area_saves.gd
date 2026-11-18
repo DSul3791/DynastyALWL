@@ -219,7 +219,7 @@ func _init() -> void:
 	var ticks_per_save: int = int(ItemsScript.SAVE_EVERY_S / 0.05)
 
 	for t in 2 * ticks_per_save:
-		big._save_sweep(maxi(64, ceili(float(big._items.size()) * 0.05 / ItemsScript.SAVE_EVERY_S * 1.25)), 1000000)   # as tick() does, with no time limit (a slow test machine must not cut the slice)
+		big._save_sweep(big._sweep_slice(0.05), 1000000)   # as tick() does, with no time limit (a slow test machine must not cut the slice)
 
 		if (t + 1) % ticks_per_save == 0:
 			big._dirty = true
@@ -268,6 +268,10 @@ func _init() -> void:
 		new_stick = new_stick or (int(after_stop._items[id]["number"]) == stick and int(after_stop._items[id]["count"]) == 9)
 
 	check(exact and new_stick and after_stop._items.size() == 19999, "a shutdown save right after changes writes them: a count, an erase, a new item (%d items)" % after_stop._items.size())
+
+	# A load leaves nothing to write: the first periodic save after it, with nothing changed, writes no area file.
+	var clean = make()
+	check(clean._area_dirty.is_empty(), "a clean load marks no area to write (%d marked)" % clean._area_dirty.size())
 
 	# A periodic save straight after a load, before the check's first pass, still writes every trunk and stump (tree_states.json).
 	wipe()

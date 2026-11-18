@@ -56,12 +56,12 @@ func check_interval(items) -> void:
 
 	for t in ticks:
 		var t0: int = Time.get_ticks_usec()
-		items._save_sweep(maxi(64, ceili(float(items._items.size()) * 0.05 / ItemsScript.SAVE_EVERY_S * 1.25)))
+		items._save_sweep(items._sweep_slice(0.05) if items.has_method("_sweep_slice") else maxi(64, ceili(float(items._items.size()) * 0.05 / ItemsScript.SAVE_EVERY_S * 1.25)))
 		var spent: int = Time.get_ticks_usec() - t0
 		worst = maxi(worst, spent)
 		total += spent
 
-	print("save_cost: the save check over one save interval: %.3f ms a tick on average, %.3f ms at worst; pass at %d of %d items" % [float(total) / float(ticks) / 1000.0, float(worst) / 1000.0, items._sweep_at, items._sweep_keys.size()])
+	print("save_cost: the save check over one save interval: %.3f ms a tick on average, %.3f ms at worst; pass at id %d of %d" % [float(total) / float(ticks) / 1000.0, float(worst) / 1000.0, int(items.get("_sweep_id")) if items.get("_sweep_id") != null else -1, items._next_id])
 
 
 # One periodic save as the tick runs it. A file the save rewrites gets a fresh .prev (_write_file copies the old one there first), so with every

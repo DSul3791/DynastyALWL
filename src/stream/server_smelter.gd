@@ -607,8 +607,8 @@ func _credit(it: Dictionary, number: int, count: int) -> void:
 func save_rows() -> Dictionary:
 	var rows: Dictionary = {}
 
-	for id in host._items:
-		var it: Dictionary = host._items[id]
+	for id in _ids:   # every placed smelter (not every item: this runs on the tick at each save)
+		var it: Dictionary = host._items.get(id, {})
 		var def: Dictionary = host._structures.get(str(it.get("struct", {}).get("kind", "")), {}) if it.has("struct") else {}
 
 		if def.is_empty() or not it["struct"].has("uid") or not is_smelter(def) or it["struct"].has("site"):
