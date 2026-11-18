@@ -27,6 +27,7 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 | deliver_water | server to client | reliable | chunk: Vector2i, water: PackedByteArray | 6 |
 | hello | client to server | reliable | player_key: String, build: int (the stamped release build number, src/shared/build_stamp.gd; 0 for an editor run; since 133) | 10 |
 | join_refused | server to client | reliable | text: String (why, for the join window). A stamped server sends it when the hello named another build, sends the player nothing else and drops the client about 1 s later. An unstamped server (editor Play) refuses no build | 133 |
+| admin_status | server to client | reliable | on: bool. After each accepted hello: whether this player key is an admin on this server (always true with the admin check off). The client hides Esc > Admin and refuses fly and go-to-NPC when false; the server still checks every admin request (docs/design/ADMIN_CHECK.md). | 134 |
 | inventory_action | client to server | reliable | kind: int, a: int, b: int, count: int, at: Vector3 | 10 |
 | inventory_full | server to client | reliable | bytes: PackedByteArray (Inventory.to_bytes, FORMAT 4: format byte, slot count byte, 8 bytes per slot, then the instance data; protocol 116) | 10 |
 | inventory_slots | server to client | reliable | bytes: PackedByteArray (count byte, 9 bytes per changed slot, then the instance data of those slots; protocol 106) | 10 |

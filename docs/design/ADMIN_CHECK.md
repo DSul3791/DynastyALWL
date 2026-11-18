@@ -13,6 +13,8 @@ A player key is per character: `CharacterKeys.key_for(character id, machine key)
 
 ## Audit: every admin or cheat path (dev `6dedf7fe`)
 
+Re-checked after A1 and A3 merged (dev `89d981ed`): their rpcs (`ask_summits`, `summits`, `ask_fog_cells`, `fog_cells`, `join_refused`, the hello `build`) are read-only, rate-limited or refusals; none is an admin path.
+
 | Path | Who may, with the check on | Where checked |
 |---|---|---|
 | Give items (`ACT_ADMIN_GIVE`; starter items key, Admin build list) | admins | server_items `action` |
