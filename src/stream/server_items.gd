@@ -1473,6 +1473,7 @@ func tick(delta: float) -> void:
 	if _slow_in >= SLOW_TICK_S:
 		var spent: float = _slow_in
 		_slow_in = 0.0
+		_tick_ids = _tick_index()
 		_rot(spent)
 		_slow_mark("rot", t0)
 		_fires(spent)
@@ -1515,6 +1516,7 @@ func tick(delta: float) -> void:
 		_slow_mark("learn-fish-remains-spoil-traps", t0)
 
 		_expire_items(spent)
+		_tick_ids = {}
 
 	_sync_in -= delta
 
@@ -5538,12 +5540,68 @@ func _showroom_retry(delta: float) -> void:
 
 
 # Fires burn down; open fires are put out by rain (Dave, 2026-10-20), covered ones are not.
+# The slow tick's parts that look for a few kinds of item (fires, lit lights, pots, items that age) each walked every world item, about six passes
+# every SLOW_TICK_S, growing with everything ever dropped or built (audit 18 Nov 2026, docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md
+# finding 3). Now each part walks its own list. The lists are sorted from every item once every TICK_INDEX_S, and items made since (world ids only
+# grow) are sorted in on each tick from their ids alone, so a new fire or light is tended on the next tick. An item that changes kind in place
+# (a torch lit, a fire rained out and given a lifetime) joins its list at the next full sort, at most TICK_INDEX_S later. Each part checks the
+# item again, since earlier parts of the tick change items. Outside the tick (tests, a placement) _tick_list is every id, as before.
+const TICK_INDEX_S := 2.0
+var _tick_ids: Dictionary = {}
+var _tick_index_kept: Dictionary = {}   # the last full sort: {"fires", "lit", "pots", "ageing": [ids], "upto": first id not sorted, "at": msec}
+
+
+func _tick_index() -> Dictionary:
+	var now: int = Time.get_ticks_msec()
+
+	if _tick_index_kept.is_empty() or now - int(_tick_index_kept["at"]) >= int(TICK_INDEX_S * 1000.0) or int(_tick_index_kept["upto"]) > _next_id:
+		_tick_index_kept = {"fires": [], "lit": [], "pots": [], "ageing": [], "upto": _next_id, "at": now}
+
+		for id in _items:
+			_sort_into(_tick_index_kept, id)
+
+		return _tick_index_kept
+
+	if int(_tick_index_kept["upto"]) < _next_id:
+		for id in range(int(_tick_index_kept["upto"]), _next_id):
+			if _items.has(id):
+				_sort_into(_tick_index_kept, id)
+
+		_tick_index_kept["upto"] = _next_id
+
+	return _tick_index_kept
+
+
+func _sort_into(index: Dictionary, id) -> void:
+	var it: Dictionary = _items[id]
+
+	if it.has("fire"):
+		index["fires"].append(id)
+
+	if it.has("struct"):
+		if bool(it["struct"].get("lit", false)):
+			index["lit"].append(id)
+
+		if _is_pot(it):
+			index["pots"].append(id)
+
+	if not it.has("scatter") and float(it["left"]) <= 1.0e8:
+		index["ageing"].append(id)
+
+
+func _tick_list(kind: String) -> Array:
+	return _tick_ids[kind] if not _tick_ids.is_empty() else _items.keys()
+
+
 func _fires(delta: float) -> void:
 	var rain_v: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
 	var raining: bool = rain_v >= RAIN_PUTS_OUT
 	_refresh_pots()
 
-	for id in _items.keys():
+	for id in _tick_list("fires"):
+		if not _items.has(id):
+			continue   # gone since the list was made
+
 		var it: Dictionary = _items[id]
 
 		if not it.has("fire"):
@@ -5618,7 +5676,10 @@ func _fires(delta: float) -> void:
 
 # Item lifetimes run down; an item whose time is up goes, except coals and warm ash, which run on to their next stage, and a fire still holding charcoal (_fire_expire).
 func _expire_items(spent: float) -> void:
-	for id in _items.keys():
+	for id in _tick_list("ageing"):
+		if not _items.has(id):
+			continue   # gone since the list was made
+
 		if _items[id].has("scatter") or float(_items[id]["left"]) > 1.0e8 or _items[id].get("inst", {}).has("bag"):
 			continue   # a dropped bag that holds anything never despawns, so its contents are never lost (master s3.9 rule 3); empty, it ages as any item
 
@@ -9288,11 +9349,14 @@ func _fire_under_pot(pos: Vector3) -> int:
 func _refresh_pots() -> void:
 	var pots: Array = []
 
-	for id in _items:
-		if _is_pot(_items[id]):
+	for id in _tick_list("pots"):
+		if _items.has(id) and _is_pot(_items[id]):
 			pots.append(_items[id]["pos"])
 
-	for id in _items:
+	for id in _tick_list("fires"):
+		if not _items.has(id):
+			continue
+
 		var it: Dictionary = _items[id]
 
 		if not it.has("fire"):
@@ -13628,7 +13692,9 @@ func _sync_breath(peer: int, tenths: int) -> void:
 		send_breath.call(peer, tenths)
 
 
-# Whether a path patch has its centre within data/path_speed.json range_m of the player, checked at most once a second per player (one pass over the items).
+# Whether a path patch has its centre within data/path_speed.json range_m of the player, checked at most once a second per player, in the grid
+# cells round the player that the last sync filed (it walked every world item, per player, every second: audit 18 Nov 2026 finding 3). Before
+# the first sync there is no grid: every item, as before.
 func _on_path(peer: int, position: Vector3) -> bool:
 	var now: int = Time.get_ticks_msec()
 	var cached: Array = _on_path_cache.get(peer, [])
@@ -13639,7 +13705,10 @@ func _on_path(peer: int, position: Vector3) -> bool:
 	var reach: float = float(_path_cfg.get("range_m", 3.0))
 	var found: bool = false
 
-	for id in _items:
+	for id in (_cells_near(position, reach) if not _sync_grid.is_empty() else _items.keys()):
+		if not _items.has(id):
+			continue
+
 		var other: Dictionary = _items[id]
 
 		if other.has("struct") and str(other["struct"]["kind"]) == "path_patch" and Vector2(other["pos"].x - position.x, other["pos"].z - position.z).length() <= reach:
@@ -18061,7 +18130,10 @@ func _apply_lit_rows(rows: Array) -> void:
 func _lights_tick(spent: float) -> void:
 	var rain: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
 
-	for id in _items.keys():   # a light that burns wood may drop charcoal (a new world item) on this pass
+	for id in _tick_list("lit"):   # a light that burns wood may drop charcoal (a new world item) on this pass
+		if not _items.has(id):
+			continue   # gone since the list was made
+
 		var it: Dictionary = _items[id]
 
 		if it.has("struct") and bool(it["struct"].get("lit", false)):
@@ -19552,7 +19624,11 @@ func _stock_covers(inv, recipe: Dictionary, times: int, stock: Dictionary) -> bo
 
 # The world ids the last sync filed in the grid cells that a craft's reach around `here` touches (one to four NEAR_M cells).
 func _stock_cells(here: Vector3, reach_x: float = 1.0) -> Array:
-	var reach: float = maxf(CraftStock.LOOSE_STOCK_M, CraftStock.CRAFT_REACH_M) * reach_x
+	return _cells_near(here, maxf(CraftStock.LOOSE_STOCK_M, CraftStock.CRAFT_REACH_M) * reach_x)
+
+
+# The world ids the last sync filed in the NEAR_M grid cells that a reach around `here` touches.
+func _cells_near(here: Vector3, reach: float) -> Array:
 	var lo: Vector2i = Vector2i(int(floor((here.x - reach) / NEAR_M)), int(floor((here.z - reach) / NEAR_M)))
 	var hi: Vector2i = Vector2i(int(floor((here.x + reach) / NEAR_M)), int(floor((here.z + reach) / NEAR_M)))
 	var out: Array = []
