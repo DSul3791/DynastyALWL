@@ -223,7 +223,7 @@ func _init() -> void:
 	var def: Dictionary = items._structures["handcart"]
 	check(int(def.get("slots", 0)) > 10 and float(def.get("max_kg", 0.0)) == 120.0 and def.has("vehicle"), "the Handcart has its own cargo store of 120 kg (W-15), more than a backpack (%d slots, %d kg)" % [int(def.get("slots", 0)), int(def.get("max_kg", 0))])
 	check(bool(items._structures["wooden_crate"].get("cargo", false)) and bool(items._structures["warehouse_crate"].get("cargo", false)), "the Crate and the Warehouse crate ride as cargo")
-	check(Net.PROTOCOL_VERSION >= 111 and Net.ACT_CART == 78 and ItemsScript.VERSION == 3, "protocol 111, ACT_CART 78, world_items version 3")
+	check(Net.PROTOCOL_VERSION >= 111 and Net.ACT_CART == 78 and ItemsScript.VERSION >= 3, "protocol 111, ACT_CART 78, world_items version 3 or later")
 
 	# --- 2. Make the parts at a Carpenter's bench and build the cart from its blueprint ---
 	join(1, Vector3(2.0, 10.0, 2.0))
@@ -322,11 +322,11 @@ func _init() -> void:
 	var saved: Variant = JSON.parse_string(FileAccess.get_file_as_string(DIR + "/world_items.json"))
 	var row_on: int = 0
 
-	for row in saved["items"]:
+	for row in ItemsScript.saved_world_rows(DIR):
 		if row.size() > 19 and int(row[10]) == crate_uid:
 			row_on = int(row[18])
 
-	check(int(saved["version"]) == 3 and row_on == cart_uid, "world_items.json version 3 keeps the crate on its cart (row index 18)")
+	check(int(saved["version"]) == ItemsScript.VERSION and row_on == cart_uid, "world_items.json (version 3 on) keeps the crate on its cart (row index 18)")
 	items = make_server()
 	cart = id_of_uid(cart_uid)
 	crate = id_of_uid(crate_uid)

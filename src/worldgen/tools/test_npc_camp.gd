@@ -203,7 +203,7 @@ func _server(tree: Vector2, fire: Vector2) -> void:
 	check(typeof(saved) == TYPE_DICTIONARY, "the world items were saved")
 	var in_save: bool = false
 
-	for row in (saved as Dictionary).get("items", []) if typeof(saved) == TYPE_DICTIONARY else []:
+	for row in ItemsScript.saved_world_rows(dir):
 		in_save = in_save or Vector2(float(row[2]), float(row[4])).distance_to(fire) < 0.5
 
 	check(not in_save, "the camp fire is not in the save")

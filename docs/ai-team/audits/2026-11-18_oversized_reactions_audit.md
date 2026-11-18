@@ -118,3 +118,10 @@ Left out: about 60 other loops over every world item inside one-off player actio
 **Verdict:** fix 1 first (it is Dave's bug again, at every join), then 2 and 3, which decide whether a long-running shared server stays smooth.
 
 **Not checked:** client UI (`inventory_view.gd`, 7,000 lines; its loops are over items within 100 m, so bounded), animal AI internals, water simulation internals, worldgen and bake tools, rendering and GPU cost. No test or measurement ran.
+
+## For Dave (provisional choices made while building, 18 Nov 2026)
+Assumed on Dave's behalf under his "these should all be built" (11:08Z). Each value can be changed with one constant.
+- **Finding 2, crash window.** World items are now saved by area: only the areas that changed are copied and written. Changes are found by a check that walks the world a little every tick. Because of that, a change can take up to two saves (about a minute) to reach the disk, where it used to take one (about 30 s). If the server crashes, up to about a minute of world item changes can be lost: dropped items, placed pieces, fires. A clean shutdown loses nothing. (`SAVE_EVERY_S`, `SWEEP_BUDGET_US` in `server_items.gd`.)
+- **Finding 2, timers after a crash.** Running timers, such as how long a dropped item lasts or how long a fire burns, are rounded to 10 minutes when deciding whether an area changed. After a crash, a dropped item can last up to 10 minutes longer, or a fire burn up to 10 minutes longer, than it would have. (`AREA_STEP_S`.)
+- **Finding 2, area size.** Each area is 128 m square. (`AREA_M`.)
+- **Finding 2, older builds.** A world saved by this build cannot be opened by an older build.
