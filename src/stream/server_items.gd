@@ -467,6 +467,7 @@ func setup(item_table, store_dir: String) -> void:
 	if typeof(structures) == TYPE_DICTIONARY:
 		_structures_cfg = structures
 		_structures = structures.get("structures", {})
+		_litable_kind = {}
 		_struct_gap_m = float(structures.get("gap_m", 2.5))
 		_fire_gap_m = float(structures.get("campfire", {}).get("gap_m", FIRE_MIN_GAP_M))
 		_fires_per_chunk = int(structures.get("campfire", {}).get("cap_per_chunk", FIRES_PER_CHUNK))
@@ -5591,15 +5592,19 @@ func _tick_index() -> Dictionary:
 		return _tick_index_kept
 
 	_tick_index_kept["ticks"] = int(_tick_index_kept["ticks"]) + 1
+	_tick_sort_new()
+	return _tick_index_kept
 
+
+# The ids made since the lists were last brought up to date, sorted in: at the start of the tick and again whenever a part asks for its
+# list, so an item made by an earlier part of the same tick (charcoal a light or a fire leaves) is tended by the later parts, as the full walk did.
+func _tick_sort_new() -> void:
 	if int(_tick_index_kept["upto"]) < _next_id:
 		for id in range(int(_tick_index_kept["upto"]), _next_id):
 			if _items.has(id):
 				_sort_into(_tick_index_kept, id)
 
 		_tick_index_kept["upto"] = _next_id
-
-	return _tick_index_kept
 
 
 var _litable_kind: Dictionary = {}   # structure kind -> whether it can be lit (_sort_into)
@@ -5634,11 +5639,13 @@ func _tick_ageing(id) -> void:
 		_tick_index_kept["ageing"][id] = true
 
 
+# A copy, as _items.keys() was: what the part makes while it walks waits for the next part or tick, as before.
 func _tick_list(kind: String) -> Array:
 	if _tick_ids.is_empty():
 		return _items.keys()
 
-	return (_tick_ids[kind] as Dictionary).keys() if kind == "ageing" else _tick_ids[kind]
+	_tick_sort_new()
+	return (_tick_ids[kind] as Dictionary).keys() if kind == "ageing" else (_tick_ids[kind] as Array).duplicate()
 
 
 func _fires(delta: float) -> void:

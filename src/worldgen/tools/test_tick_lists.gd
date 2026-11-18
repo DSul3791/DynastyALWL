@@ -94,23 +94,33 @@ func _init() -> void:
 	for step in steps:
 		raining = 1.0 if step >= 40 and step < 60 else 0.0
 
-		for items in [lists, walk]:
-			if step == 5 and items._items.has(int(ids_a["standing_torch"])):
-				var torch: Dictionary = items._items[int(ids_a["standing_torch"])]
+		for w in [lists, walk]:
+			if step == 5 and w._w.has(int(ids_a["standing_torch"])):
+				var torch: Dictionary = w._items[int(ids_a["standing_torch"])]
 				torch["struct"]["lit"] = true   # lit in place, between full sorts
 				torch["struct"]["fuel_left"] = 600.0
-				items._lit_valid = false
+				w._lit_valid = false
 
 			if step == 7:
-				items.drop_in_world(stone, 1, Vector3(50.0, 10.0, 140.0), 0, 1200.0)   # onto the kept pile: it is given a lifetime in place
+				w.drop_in_world(stone, 1, Vector3(50.0, 10.0, 140.0), 0, 1200.0)   # onto the kept pile: it is given a lifetime in place
 
-			items.tick(60.0)
+			w.tick(60.0)
 
 		if lists._items.has(int(ids_a["fire_log"])):
 			states[int(lists._items[int(ids_a["fire_log"])]["fire"]["state"])] = true
 
 		if differ_at < 0 and picture(lists) != picture(walk):
 			differ_at = step
+			var pa: Array = picture(lists)
+			var pb: Array = picture(walk)
+
+			for k in mini(pa.size(), pb.size()):
+				if pa[k] != pb[k]:
+					print("tick lists: first difference at tick %d:\n  lists: %s\n  walk:  %s" % [step, str(pa[k]).left(400), str(pb[k]).left(400)])
+					break
+
+			if pa.size() != pb.size():
+				print("tick lists: %d items on the lists, %d on the walk" % [pa.size(), pb.size()])
 
 	check(differ_at < 0, "the lists and the old walk leave every item the same after every slow tick (first difference at tick %d)" % differ_at)
 	check(states.has(ItemsScript.FIRE_STATE_COALS) and states.has(ItemsScript.FIRE_STATE_ASH), "a lit fire went through coals and warm ash (states %s)" % str(states.keys()))
@@ -123,11 +133,20 @@ func _init() -> void:
 
 	check(not pile_left, "the kept pile given a lifetime in place aged away")
 
-	# A fire lit since the last full sort burns on the next tick; an item gone from the world is skipped.
+	# A fire lit since the last full sort burns on the next tick; an item gone from the world is skipped; an item made by an earlier part of
+	# a tick (a lit brazier's charcoal) ages in that same tick, as with the full walk.
 	var items = make("user://test_tick_lists_a", false)
 
 	for step in 4:
 		items.tick(0.25)   # the lists are sorted
+
+	items._tick_ids = items._tick_index()   # as the tick does at its start
+	var made: int = items._next_id
+	items.drop_in_world(stone, 1, Vector3(200.0, 10.0, 200.0), 0, 500.0)   # made mid-tick, after the lists were taken
+	var left0: float = float(items._items[made]["left"])
+	items._expire_items(10.0)
+	items._tick_ids = {}
+	check(items._items.has(made) and is_equal_approx(float(items._items[made]["left"]), left0 - 10.0), "an item made earlier in the tick ages in the same tick (%.1f -> %.1f)" % [left0, float(items._items[made]["left"]) if items._items.has(made) else -1.0])
 
 	var fire: int = items.dev_place("campfire@20,20,0,lit")
 	var burn0: float = float(items._items[fire]["fire"]["burn_left"])
