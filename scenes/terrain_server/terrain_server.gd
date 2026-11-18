@@ -1255,10 +1255,6 @@ var _dump_last: Dictionary = {}
 
 
 func _on_dump_requested(peer_id: int, x: float, y: float, z: float) -> void:
-	if not admin.is_admin(items.key_of(peer_id)):   # a developer tool (Esc > Admin > Developer tools), server/client split A5
-		net.dump_result.rpc_id(peer_id, "server: the ground dump is for admins")
-		return
-
 	var now: int = Time.get_ticks_msec()
 
 	if now - int(_dump_last.get(peer_id, -10000)) < 1000:

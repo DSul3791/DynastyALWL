@@ -240,7 +240,7 @@ var _sound_now_log_msec: int = -100000
 var compass                         # temporary admin compass (AdminCompass)
 var sea: MeshInstance3D
 var _work_serial: int = 0               # the held tool's swing count the avatar's chop clip was last started for
-var is_admin_here: bool = false   # protocol 132: the server says after the hello whether this player is an admin there (always, in local play)
+var is_admin_here: bool = false   # protocol 132: the server says after the hello whether this player is an admin there (in local play it says yes; false until it does)
 var flying: bool = false
 var grass_while_flying: bool = false   # the shot runner sets this: its camera flies, but a picture must show the grass a walking player sees (no grass in any rig shot until 9 Nov 2026)
 var underwater: bool = false

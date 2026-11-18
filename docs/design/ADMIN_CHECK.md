@@ -6,7 +6,7 @@ Server/client split step A5 (18 Nov 2026; plan: Library `server-client-split/PLA
 
 - **The server decides.** `src/stream/server_admin.gd` holds the admin keys, shape `{"keys": ["<player key>"]}` (`data/admin.example.json`).
 - **The check is off in local play,** so everybody is an admin, as before (`data/items/admin_setting.json` `check_admin` stays false, so Dave's editor Play is unchanged).
-- **A server for other players runs with `--dedicated`** (step A4, PR #1274): the check is on, admins are the keys in `<store>/admin.json` only, `--open-admin` is ignored, and the start line gives the key count (never the keys).
+- **A server for other players runs with `--dedicated`** (step A4, PR #1274, which lands before this): the check is on, admins are the keys in `<store>/admin.json` only, `--open-admin` is ignored, and the start line gives the key count (never the keys).
 - **Protocol 132:** after each hello the server sends `admin_status(on)`. When it is false, the client hides Esc > Admin (on the main and settings pages), switches flying off, turns Admin mode off, and ignores the two admin keys that act only on the client (fly, and go to the nearest NPC).
 
 A player key is per character: `CharacterKeys.key_for(character id, machine key)`. Esc > Admin > "Show my player key" copies it. Dave reads his in local Play with the character he will use on the server, and that key goes into the server's `<store>/admin.json`.
@@ -28,13 +28,15 @@ A player key is per character: `CharacterKeys.key_for(character id, machine key)
 | Place markers, NPC homes, rabbits (`admin_place`) | admins | terrain_server `_on_admin_place` |
 | Tunnel collapse switch (`tunnel_setting`) | admins | terrain_server `_on_tunnel_setting` |
 | **Spring flow up/down (`step_water_rate`)** | **admins (new: anyone could before)** | terrain_server `_on_water_rate_requested` |
-| **Ground report "Dump ground here" (`request_dump`)** | **admins (new: anyone could before)** | terrain_server `_on_dump_requested` |
+| **Instant craft (`ACT_CRAFT`, test keys: no station, no craft time)** | **admins (new: anyone with the ingredients could before)** | server_items `action` |
+| Ground report (`request_dump`): read-only, one a second; the client sends it by itself on a ground mismatch, for bug reports | everybody (kept open on purpose) | terrain_server `_on_dump_requested` (rate limit only) |
 | Fly (Ctrl+Shift+G), go to the nearest NPC (Ctrl+Shift+N), Go to spawn and "Day, sunny, no fog" (Esc > Admin) | admins, on the client only (below) | terrain_client, game_menu |
 | Quality, debug details, HUD text, sound panel, water hide/colour, jitter test, GPU probe | everybody: they change only the player's own picture | none needed |
 
 ## Known limits (not fixed here)
 
 - **The server trusts the position a client reports.** Fly, go to NPC and go to spawn move the player on the client only; the server has no movement check. The client now refuses them for non-admins, but a changed client could still fly or jump. A movement check is a design decision for Dave (not built).
+- **The ground report stays open to testers** so a ground-mismatch report keeps the server's half. It reads one voxel a second near where the player looks; a changed client could use it to probe underground. Closing it is one line if Dave prefers (assumption AC-5).
 - **A player key is a bearer secret,** sent in the clear at each hello (ENet is not encrypted). Anyone who learns Dave's key can be admin. This is today's machine-key sign-in, kept by choice (no new sign-in scheme in this step). Dave should not show "Show my player key" on stream or in screenshots.
 
 ## Assumed on Dave's behalf, for his review (provisional)
@@ -45,3 +47,4 @@ A player key is per character: `CharacterKeys.key_for(character id, machine key)
 | AC-2 | Testers sign in with today's machine key; no passwords or accounts. | Coordinator's pick, provisional |
 | AC-3 | A server for other players is started with `--dedicated`; `check_admin` in the repo stays false so local Play is unchanged. | Assumed, provisional |
 | AC-4 | Non-admins get no Esc > Admin page at all (the "Show my player key" button is in it; Dave reads his key in local Play). | Assumed, provisional |
+| AC-5 | The ground report (`request_dump`) stays open to everybody, for tester bug reports. | Assumed, provisional |

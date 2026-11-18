@@ -108,14 +108,20 @@ func _init() -> void:
 	said.clear()
 	items.action(2, Net.ACT_DUMP_WATER, 0, 0, 0, Vector3.ZERO)
 	items.action(2, Net.ACT_LAND_TYPES, 0, 0, 0, Vector3.ZERO)
-	check(said.filter(func(row): return str(row[1]).contains("dumped") or str(row[1]).contains("typed")).is_empty(), "a player cannot dump the water or the land types")
+	check(said.filter(func(row): return str(row[1]).contains("Water dump") or str(row[1]).contains("Land types")).is_empty(), "a player cannot dump the water or the land types")
 	items.action(1, Net.ACT_DUMP_WATER, 0, 0, 0, Vector3.ZERO)
-	check(not said.filter(func(row): return int(row[0]) == 1 and str(row[1]).contains("dumped")).is_empty(), "the admin can")
+	check(not said.filter(func(row): return int(row[0]) == 1 and str(row[1]) == "Water dump: dumped").is_empty(), "the admin can")
 
 	# Start over as a new player.
 	items.inventory_of(2).add(stone, 3)
 	items.action(2, Net.ACT_NEW_PLAYER, 0, 0, 0, Vector3.ZERO)
 	check(items.inventory_of(2).count_of(stone) == 3, "a player's Play as a new player is refused (their pack stays)")
+
+	# The checks that live in the server scene (it needs the world to run): read from its source.
+	var server_src: String = FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd")
+	check(server_src.contains("if water_live == null or not admin.is_admin(items.key_of(peer_id)):"), "the spring flow keys are admin only on the server")
+	check(server_src.contains("net.admin_status.rpc_id(peer, admin.is_admin(items.key_of(peer)))"), "the server tells each client after its hello whether it is an admin (protocol 132)")
+	check(FileAccess.get_file_as_string("res://src/stream/server_items.gd").contains("if (not admin_ok.is_valid() or admin_ok.call(peer)) and _hand_tool_ok("), "the instant craft (ACT_CRAFT, no station, no time) is admin only")
 
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
