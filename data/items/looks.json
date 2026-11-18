@@ -4056,6 +4056,9 @@
    "color": "#8a6a3a",
    "size": 1.0
   },
+  "copper_sickle": {"shape": "sickle", "color": "#b87333", "size": 1.0, "bits": ["bronze"]},
+  "copper_scythe": {"shape": "scythe", "color": "#b87333", "size": 1.0, "bits": ["bronze"]},
+  "copper_chisel": {"shape": "knife", "color": "#b87333", "size": 1.0},
   "bronze_chisel": {
    "shape": "knife",
    "color": "#b0803a",
