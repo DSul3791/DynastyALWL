@@ -8,8 +8,10 @@ extends Node3D
 # Known gaps (docs/DYNASTY_BODY.md): worn clothing is not hung (the worn pieces are written for other bones), the skin and clothes colours are baked into the texture, the log on the
 # shoulder does not raise the arm, the lie clip is the nearest of Dave's, the first-person arms stay the ragdoll arms.
 
-const GLB := "res://assets/character/Humanoid/Dynasty_Base_Male.glb"
-const ARMS_GLB := "res://assets/character/Humanoid/Dynasty_Base_Male_Parts_Split.glb"   # dynasty_arms.gd PARTS_GLB, warmed with the body
+const BodyModels := preload("res://src/client/character/body_models.gd")
+# shortcut: every character wears the first body model; when a second mesh is listed in body_models.gd, load the active character's "glb" and "parts_glb" here instead.
+const GLB := BodyModels.DEFAULT_GLB
+const ARMS_GLB := BodyModels.DEFAULT_PARTS_GLB   # dynasty_arms.gd PARTS_GLB, warmed with the body
 const P := "mixamorig_"
 static var _loaded_here: Dictionary = {}   # path -> Resource: the files warm() read on the main thread (headless only)
 const WornLook := preload("res://src/client/worn_look.gd")

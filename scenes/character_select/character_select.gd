@@ -163,7 +163,7 @@ func _make_row(one: Dictionary) -> Button:
 	return row
 
 
-# The name, and under it the gender and pronouns the player chose (plain labels; nothing in the game depends on them).
+# The name, and under it the body model and frame the player chose (plain labels; nothing in the game depends on them).
 func _make_labels(one: Dictionary) -> Control:
 	var margin: MarginContainer = MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
