@@ -6,7 +6,6 @@ extends RefCounted
 
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
-const AdminScript := preload("res://src/stream/server_admin.gd")
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
@@ -531,9 +530,10 @@ func chosen_quantity() -> int:
 
 
 # The Admin heading at the bottom of the list (Dave 2026-10-22): the building pieces to test plus the other placeables, free and unlocked. Click one to get it; put it in a quick key
-# and it is the usual placement blueprint (left click places one). Shown while the admin check is off (local play) and Admin mode is on (Dave 11 Nov 2026).
+# and it is the usual placement blueprint (left click places one). Shown while Admin mode is on (Dave 11 Nov 2026), which only an admin on this server can switch on:
+# the client turns it off when the server says this player is not an admin (protocol admin_status, server/client split A5), and the server refuses the give anyway.
 func _add_admin_builds() -> void:
-	if AdminScript.check_enabled() or not view.admin_craft:
+	if not view.admin_craft:
 		return
 
 	var typed: String = view._recipe_search.text if view._recipe_search != null else ""

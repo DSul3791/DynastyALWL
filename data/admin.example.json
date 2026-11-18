@@ -1,4 +1,4 @@
 {
-	"note": "Copy to data/admin.json (gitignored) and list the player keys that may place NPC markers and NPCs. With no data/admin.json there are no admins.",
+	"note": "Copy to data/admin.json (gitignored) or, on a server, to <store>/admin.json, and list the player keys that are admins (Esc > Admin > Show my player key). With the admin check on (--dedicated) and no file there are no admins. docs/design/ADMIN_CHECK.md.",
 	"keys": ["replace-with-a-real-player-key"]
 }

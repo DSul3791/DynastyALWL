@@ -864,6 +864,7 @@ func _ready() -> void:
 		_slow_rpc("hello: authenticate", t0)
 		items.peer_connected_hello(peer, identity.store_key(account))
 		_slow_rpc("hello: peer_connected_hello", t0)
+		net.admin_status.rpc_id(peer, admin.is_admin(items.key_of(peer)))   # protocol 134: the client's Admin menu follows it
 		net.npc_roster.rpc_id(peer, npcs.roster())
 		var resume: Array = items.start_position_for(peer)
 
@@ -1296,8 +1297,9 @@ func _on_flora_requested(peer_id: int, chunks: PackedInt32Array) -> void:
 		_work.post()
 
 
-func _on_water_rate_requested(_peer_id: int, direction: int) -> void:
-	if water_live == null:
+# Admin only (server/client split A5): it changes the water for everybody.
+func _on_water_rate_requested(peer_id: int, direction: int) -> void:
+	if water_live == null or not admin.is_admin(items.key_of(peer_id)):
 		return
 
 	var rate: float = water_live.step_rate(direction)

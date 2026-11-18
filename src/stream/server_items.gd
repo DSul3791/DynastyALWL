@@ -1306,7 +1306,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_STRIKE:
 		_strike(peer, inv, a, at)
 	elif kind == Net.ACT_CRAFT:
-		if _hand_tool_ok(peer, inv, recipes.recipe(a), int(at.x) - 1):   # the instant craft (test keys) keeps the in-hand rule too (126)
+		if (not admin_ok.is_valid() or admin_ok.call(peer)) and _hand_tool_ok(peer, inv, recipes.recipe(a), int(at.x) - 1):   # the instant craft (test keys; admin only, split A5: no station, no time) keeps the in-hand rule too (126)
 			recipes.craft(a, inv)
 	elif kind == Net.ACT_FALL:
 		_fall(peer, a)

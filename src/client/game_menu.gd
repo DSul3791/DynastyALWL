@@ -39,6 +39,7 @@ var _hints_switch
 var _dialogue_switch
 var _tunnel_switch
 var _admin_mode_switch
+var _admin_buttons: Array = []   # the Admin buttons on the main and settings pages: shown only to an admin on this server (protocol 134)
 var _cave_button: Button
 var _sound_list: VBoxContainer
 var _controls_from_settings: bool = false   # Back on the Controls page returns to Settings when it was opened from there
@@ -173,6 +174,9 @@ func show_page(page_name: String) -> void:
 
 # The controls follow the game's state (quality marks, switches, cave-in time).
 func refresh() -> void:
+	for control in _admin_buttons:
+		control.visible = _c.is_admin_here
+
 	for n in range(quality_buttons.size()):
 		quality_buttons[n].text = _c.QUALITY_NAMES[n] + ("  (active)" if n == _c.quality else "")
 
@@ -217,8 +221,9 @@ func _build_main() -> void:
 	_button(main, "Quit game", func(): show_page("quit"))
 
 	if SHOW_ADMIN:
-		main.add_child(HSeparator.new())
-		_button(main, "Admin", func(): show_page("admin"))
+		_admin_buttons.append(HSeparator.new())
+		main.add_child(_admin_buttons.back())
+		_admin_buttons.append(_button(main, "Admin", func(): show_page("admin")))
 
 	var quit: VBoxContainer = _page("quit")
 	var ask: Label = Label.new()
@@ -275,7 +280,7 @@ func _build_settings() -> void:
 		show_page("controls"))
 
 	if SHOW_ADMIN:
-		_button(settings, "Admin", func(): show_page("admin"))
+		_admin_buttons.append(_button(settings, "Admin", func(): show_page("admin")))
 
 	_button(settings, "Back", func(): show_page("main"))
 
