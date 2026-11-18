@@ -4603,11 +4603,9 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 
 	if _structures.has("path_patch") and not (water_depth_at.is_valid() and float(water_depth_at.call(Vector3(pos.x, ground, pos.z))) > 0.05):
 		var blocked: bool = false
-		# From the sync grid around the station, plus what the road made since the grid was filed (audit 18 Nov 2026 finding 4: every
-		# record in the world was looked at for each station, four times a second). Before the first full sync (tests) every record.
-		var look: Array = _items.keys() if _sync_grid.is_empty() else _cells_near(pos, ROAD_HALF_WIDTH_M + 8.0) + _road_fresh
-
-		for id in look:
+		# From the sync grid around the station and every id made since it was filed (audit 18 Nov 2026 finding 4: every record in the world
+		# was looked at for each station, four times a second).
+		for id in _ids_near(pos, ROAD_HALF_WIDTH_M + 8.0):   # every record when no sync has filed a grid yet
 			if not _items.has(id):
 				continue
 
@@ -6340,39 +6338,36 @@ func _pickup_batch(peer: int, inv, id: int, batch: int) -> void:
 
 
 # `fresh` empty: the full sync (every SYNC_EVERY_S), which files every record in the grid. Otherwise a road's quick sync (_road_tick, every
-# ROAD_SYNC_S while a road builds): only the records `fresh` names are filed into the last grid, and only players within NEAR_M of a spot in
-# `near_to` are looked at, so one road no longer runs the whole world's sync four times a second (audit 18 Nov 2026 finding 4). In a quick
-# sync only the `fresh` records are looked at: one is taken off a player's list only when it is gone from the world; bog rows and everything
-# else wait for the full sync.
+# ROAD_SYNC_S while a road builds): only the records `fresh` names are looked at, for only the players within 1.5 NEAR_M of a spot in `near_to`,
+# so one road no longer runs the whole world's sync four times a second (audit 18 Nov 2026 finding 4). A quick sync files nothing in the grid
+# (the road's ids came after the full sync, and _ids_near adds every such id); it drops a record from a player's list only when it is gone from
+# the world, and bog rows and everything else wait for the full sync.
 func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 	# The records are filed into a NEAR_M grid once, so each player looks only at the nine cells around them instead of every
 	# record in the world (the soak test found 2 to 9 ms a second at 20 players and 500 records, growing with both).
 	var t_grid: int = Time.get_ticks_usec()
 	var send_usec: int = 0
 	var sent: int = 0
-	var quick: bool = not fresh.is_empty() and not _sync_grid.is_empty()
-	var grid: Dictionary = _sync_grid if quick else {}
+	var quick: bool = not fresh.is_empty()
+	var grid: Dictionary = {}
 	var lit: Array = []
 
-	for id in (fresh if quick else _items.keys()):
-		if not _items.has(id):
-			continue
-
+	for id in ([] if quick else _items.keys()):   # a quick sync files nothing: the road's ids came since the full sync, and _ids_near adds those
 		var cell: Vector2i = Vector2i(int(floor(_items[id]["pos"].x / NEAR_M)), int(floor(_items[id]["pos"].z / NEAR_M)))
 
-		if not quick and _items[id].has("fire") and fire_is_lit(int(_items[id]["fire"]["state"])):
+		if _items[id].has("fire") and fire_is_lit(int(_items[id]["fire"]["state"])):
 			lit.append([_items[id]["pos"], fire_tier_of(int(_items[id]["fire"]["state"]))])
 
 		if not grid.has(cell):
 			grid[cell] = []
 
-		if not quick or not (grid[cell] as Array).has(id):
-			grid[cell].append(id)
+		grid[cell].append(id)
 
 	var t_scan: int = Time.get_ticks_usec()
-	_sync_grid = grid
+
 	if not quick:
-		_sync_grid_next = _next_id   # a quick sync files only the road's ids: the ids since the full sync are still not all in the grid
+		_sync_grid = grid
+		_sync_grid_next = _next_id
 		_far_fire_spots = lit
 
 	for peer in _known:
@@ -6400,7 +6395,7 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 
 		for id in candidates:
 			if not _items.has(id):
-				continue   # gone since the full sync filed it (a quick sync's grid)
+				continue   # a road's id gone again before its quick sync
 
 			var it: Dictionary = _items[id]
 
@@ -13012,11 +13007,7 @@ func _ids_near(centre: Vector3, r: float) -> Array:
 	if _sync_grid.is_empty():
 		return _items.keys()
 
-	var out: Array = []
-
-	for cx in range(floori((centre.x - r) / NEAR_M), floori((centre.x + r) / NEAR_M) + 1):
-		for cz in range(floori((centre.z - r) / NEAR_M), floori((centre.z + r) / NEAR_M) + 1):
-			out.append_array(_sync_grid.get(Vector2i(cx, cz), []))
+	var out: Array = _cells_near(centre, r)
 
 	for id in range(_sync_grid_next, _next_id):
 		out.append(id)
@@ -13746,7 +13737,7 @@ func _on_path(peer: int, position: Vector3) -> bool:
 	var reach: float = float(_path_cfg.get("range_m", 3.0))
 	var found: bool = false
 
-	for id in (_cells_near(position, reach) if not _sync_grid.is_empty() else _items.keys()):
+	for id in _ids_near(position, reach):
 		if not _items.has(id):
 			continue
 
