@@ -70,6 +70,29 @@ func _initialize() -> void:
 	fog.update(Vector3(SPAWN.x + 100.0, 0.0, SPAWN.y))
 	_check(origins.size() == 1, "the client asks for a fog window once until it moves %.0f m" % FogGround.REBUILD_M)
 
+	# A late answer for an older window does not stop the client asking again for the newer one.
+	var newer: Vector2 = origins[0]
+	fog.receive(newer + Vector2(1024.0, 0.0), PackedByteArray())
+	_check(fog._asked_msec != 0, "an answer for an older window leaves the newer ask waiting")
+	fog.receive(newer, PackedByteArray())
+	_check(fog._asked_msec == 0, "the answer for the window asked for ends the wait")
+
+	while fog.busy():
+		fog.poll()
+		OS.delay_msec(5)
+
+	# The server's queue: at most PEER_MAX waiting asks per player, repeats once, a leaving player's asks go.
+	var coarse = CoarseGround.new()
+
+	for i in range(CoarseGround.PEER_MAX + 2):
+		coarse.ask_summits(7, Vector2i(i, 0))
+
+	coarse.ask_summits(7, Vector2i(0, 0))
+	coarse.ask_fog(8, Vector2(0.0, 0.0))
+	_check(coarse._queue.size() == CoarseGround.PEER_MAX + 1, "one player cannot fill the queue, another still gets in (%d waiting)" % coarse._queue.size())
+	coarse.drop(7)
+	_check(coarse._queue.size() == 1, "a player who left loses their waiting asks")
+
 	# The server half on the real tiles, if this checkout has them: the same grid as reading the tiles directly.
 	if DirAccess.dir_exists_absolute(TILES):
 		var origin: Vector2 = origins[0]
@@ -84,7 +107,7 @@ func _initialize() -> void:
 		var tops: Array = CoarseGround.search(TILES, Vector2i(3, 4), 15360.0)
 		_check(not tops.is_empty() and tops.size() <= CoarseGround.SUMMIT_KEEP and float(tops[0].y) >= CoarseGround.SUMMIT_MIN_M, "the server finds the summits round the starter tile (%d, highest %.0f m)" % [tops.size(), float(tops[0].y) if not tops.is_empty() else 0.0])
 
-	# No client source opens the world's tiles or the tile reader, so a client install without them stands on its own.
+	# No client source opens the world's tile files, so a client install without them stands on its own.
 	var readers: Array = []
 
 	for dir in CLIENT_DIRS:
