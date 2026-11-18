@@ -289,6 +289,81 @@ func revision_of(tile: Vector2i) -> int:
 	return revision
 
 
+# The ground edits a client's saved copy of `tile` at revision `since` lacks (Dave 18 Nov 2026: after any edit, every join threw the whole
+# 15 km tile out of the client's saved ground and fetched it all again). A tile's revision rose by one for every logged edit whose blocks
+# lie on it (edit_sphere), so revisions since+1 .. now are the tile's newest (now - since) edits in the log. Returns {"revision": now,
+# "spheres": PackedFloat32Array of x, y, z, radius per edit, oldest first, "whole": true when the log cannot say (since is newer than
+# now, or older than the log's edits on the tile, as after a ground reset; or more than CATCH_UP_MAX edits): the client then drops the tile.
+const CATCH_UP_MAX := 5000        # more edits than this since a client's copy: it is dropped whole (the list and the client's marking grow with it)
+const CATCH_UP_SPARE := 64     # edits sent beyond the count: revisions.json is written at most once a second, so after a server crash the
+                               # revision can lag the log by a second of edits; marking a few edits twice costs a few blocks fetched again
+
+
+# Admin "Reset all terrain edits": the log is emptied, and every tile's revision jumps past CATCH_UP_MAX so a client's saved copy from
+# before the reset is dropped whole at its next join (edits_since cannot list edits the log no longer holds). Returns "" or an error.
+func reset_edits() -> String:
+	var error: String = ops.reset()
+
+	if error != "":
+		return error
+
+	_edit_mutex.lock()
+
+	for key in tile_revisions:
+		tile_revisions[key] = int(tile_revisions[key]) + CATCH_UP_MAX + 1
+
+	_revisions_dirty = true
+	_edit_mutex.unlock()
+	save_revisions()
+	return ""
+
+
+func edits_since(tile: Vector2i, since: int) -> Dictionary:
+	var now: int = revision_of(tile)
+	var out: Dictionary = {"revision": now, "spheres": PackedFloat32Array(), "whole": false}
+	var wanted: int = now - since
+
+	if wanted == 0:
+		return out
+
+	if wanted < 0 or wanted > CATCH_UP_MAX or since < 1:
+		out["whole"] = true
+		return out
+
+	var on_tile: Array = []   # [centre, radius] of the tile's edits, oldest first
+	# An edit's blocks reach at most this far from its centre (GroundOps.blocks_of), so one farther from the tile cannot lie on it.
+	var margin: float = GroundOps.MAX_RADIUS_M + 2.0 + float(BLOCK_SIZE)
+	var lo: Vector2 = Vector2(float(tile.x), float(tile.y)) * generator.tile_size_m - Vector2.ONE * margin
+	var hi: Vector2 = Vector2(float(tile.x + 1), float(tile.y + 1)) * generator.tile_size_m + Vector2.ONE * margin
+	var seam_lo: float = generator.world_min_m + margin
+	var seam_hi: float = generator.world_min_m + generator.period_m - margin
+
+	for edit in ops.edits():
+		var wx: float = generator.wrap_x((edit[1] as Vector3).x)
+		var wz: float = generator.wrap_x((edit[1] as Vector3).z)
+		var near_seam: bool = wx < seam_lo or wx > seam_hi or wz < seam_lo or wz > seam_hi   # checked in full: its blocks may wrap onto the tile
+
+		if not near_seam and (wx < lo.x or wx > hi.x or wz < lo.y or wz > hi.y):
+			continue
+
+		for block in GroundOps.blocks_of(edit[1], float(edit[2])):
+			if generator.tile_of(float(block.x * BLOCK_SIZE), float(block.z * BLOCK_SIZE)) == tile:
+				on_tile.append([edit[1], edit[2]])
+				break
+
+	if wanted > on_tile.size():
+		out["whole"] = true
+		return out
+
+	var spheres: PackedFloat32Array = PackedFloat32Array()
+
+	for edit in on_tile.slice(maxi(0, on_tile.size() - wanted - CATCH_UP_SPARE)):
+		spheres.append_array(PackedFloat32Array([edit[0].x, edit[0].y, edit[0].z, edit[1]]))
+
+	out["spheres"] = spheres
+	return out
+
+
 func revisions() -> Dictionary:
 	_edit_mutex.lock()
 	var copy: Dictionary = tile_revisions.duplicate()

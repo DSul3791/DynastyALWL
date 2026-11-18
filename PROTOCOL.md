@@ -60,6 +60,8 @@ Kept current by whoever changes the wire: add the row, bump PROTOCOL_VERSION to 
 | road_marker_done | server to client | reliable | at: Vector3 | 89 |
 | survey_refused | server to client | reliable | last: Vector3: a survey marker was refused (a building in the way, too many waiting); the surveyor's line goes on from `last`, the survey's last kept marker. Only to that player | 127 |
 | map_blocks | server to client | reliable | block_x: int, block_z: int, bytes: PackedByteArray (src/shared/map_codec.gd: this character's own surveyed cells of one 512 m block, {index: [q, height, water, trees]}) | 120 |
+| ask_edits_since | client to server | reliable | tile: Vector2i, since: int (the revision the client's saved copy of the tile is good for; sent at the join for each saved tile older than the welcome's revisions; limited by data/limits.json edits_since) | 128 |
+| edits_since | server to client | reliable | tile: Vector2i, since: int, revision: int, spheres: PackedFloat32Array (x, y, z, radius of each ground edit on the tile after `since`, oldest first, up to 64 more than that), whole: bool (true: the log cannot list them; the client drops its saved copy of the tile). The client outdates only the blocks round the edits (client_block_cache.gd apply_catch_up) | 128 |
 
 ## Inventory action kinds (inventory_action(kind, a, b, count, at))
 
