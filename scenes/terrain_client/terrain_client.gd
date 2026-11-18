@@ -4664,7 +4664,7 @@ func _leave_seat() -> void:
 const BED_STEP_OFF_M := 0.95       # getting up puts the player this far to the side of the bed's middle (a bed is 1.0 m wide, the capsule 0.33 m)
 const BED_TOP_M := 0.5
 
-var _bed_hold: Dictionary = {}     # while lying on a bed: {"at": the body position held, "off": where getting up puts the body}
+var _bed_hold: Dictionary = {}     # while lying on a bed: {"at": the body position held, "off": where getting up puts the body, "yaw": the body's turn held}
 
 
 func _lie_on_bed(bed_pos: Vector3, yaw_deg: float, def: Dictionary) -> void:
@@ -4684,12 +4684,16 @@ func _lie_on_bed(bed_pos: Vector3, yaw_deg: float, def: Dictionary) -> void:
 	_set_stance(StanceScript.LIE)
 
 	if stance.stance == StanceScript.LIE:
-		_bed_hold = {"at": at, "off": off}
+		_bed_hold = {"at": at, "off": off, "yaw": body.rotation.y}
 
 
 # Holds a player lying on a bed there (true while held: no gravity, no sliding off). A stance the server changed ends it.
 func _hold_bed() -> bool:
 	if _bed_hold.is_empty():
+		return false
+
+	if body.global_position.distance_to(_bed_hold["at"]) > 2.0:   # moved away by something else (a respawn, a teleport): no longer on the bed
+		_bed_hold = {}
 		return false
 
 	if stance.stance != StanceScript.LIE:
@@ -4698,6 +4702,7 @@ func _hold_bed() -> bool:
 
 	body.velocity = Vector3.ZERO
 	body.global_position = _bed_hold["at"]
+	body.rotation.y = float(_bed_hold["yaw"])   # mouse look turns the head, not the body across the bed
 	return true
 
 
