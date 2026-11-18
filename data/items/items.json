@@ -260,7 +260,7 @@
 			"stack": 1,
 			"unstackable": true,
 			"look_alikes": [],
-			"slots": 12,
+			"slots": 18,
 			"material": "wicker",
 			"note": "First chest: woven twine and sticks (no boards without a sawmill). A plank chest (more slots, wood) comes after the saw mill under its own id."
 		},
@@ -316,7 +316,7 @@
 			"stack": 1,
 			"unstackable": true,
 			"look_alikes": [],
-			"slots": 20,
+			"slots": 30,
 			"material": "planks",
 			"note": "Comes after the saw mill. Same row state as the woven chest (6); Art gives it a plank look."
 		},
@@ -10205,7 +10205,7 @@
 			"uncooked_crab_cakes": {"number": 1222, "name": "Uncooked crab cakes", "description": "Shaped crab meat, ready to fry.", "kind": "food", "stack": 10, "look_alikes": [], "value": 8},
 			"banana_fritter_batter": {"number": 1223, "name": "Banana fritter batter", "description": "Mashed banana in batter, ready to fry.", "kind": "food", "stack": 10, "look_alikes": [], "value": 5},
 			"uncooked_meatballs": {"number": 1224, "name": "Uncooked meatballs", "description": "Seasoned minced meat rolled into balls, ready to cook.", "kind": "food", "stack": 10, "look_alikes": [], "value": 10},
-			"large_wooden_chest": {"number": 1225, "name": "Large wooden chest", "description": "A big wooden chest that holds more weight than a plain chest.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 260 (Mission 001 phase 9, master s3.13).", "slots": 30},
+			"large_wooden_chest": {"number": 1225, "name": "Large wooden chest", "description": "A big wooden chest that holds more weight than a plain chest.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 260 (Mission 001 phase 9, master s3.13).", "slots": 42},
 			"wardrobe": {"number": 1226, "name": "Wardrobe", "description": "A tall cupboard for clothes, cloaks, boots and gear.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 261 (Mission 001 phase 9, master s3.13).", "slots": 16},
 			"dresser": {"number": 1227, "name": "Dresser", "description": "A chest of drawers for small personal things.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 262 (Mission 001 phase 9, master s3.13).", "slots": 12},
 			"bookcase": {"number": 1228, "name": "Bookcase", "description": "A shelved case for books, maps, scrolls and papers.", "kind": "structure", "stack": 1, "unstackable": true, "look_alikes": [], "note": "Placed piece: row state 263 (Mission 001 phase 9, master s3.13).", "slots": 12},
