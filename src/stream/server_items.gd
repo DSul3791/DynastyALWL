@@ -717,6 +717,9 @@ func peer_left(peer: int) -> void:
 	if _peer_key.keys().filter(func(p): return p != peer and str(_peer_key[p]) == key_left).is_empty():
 		FoodEffects.pause(_food_of(peer), _now_game_s())   # food effects are kept through logout (master s3.16): the timers stop, unless the character is still in the game on another connection
 	_bed_cache.erase(peer)
+	_level_hold.erase(peer)
+	_garden_ready_ms.erase(peer)
+	_hoe_check_ms.erase(peer)
 	_stock_sig.erase(peer)
 	_stock_poll_ms.erase(peer)
 	_zone_sent.erase(peer)
@@ -3453,7 +3456,7 @@ func _hoe_path(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		mean += _edited_height(at.x + offset.x, at.z + offset.y, edits)
 
 	mean /= float(spots.size())
-	var moved: bool = not is_nan(mean) and _level_ground(at, spots, mean, edits, [], radii, Callable(), PATH_LEVEL_OPS) > 0
+	var moved: bool = not is_nan(mean) and dig_ground.is_valid() and fill_ground.is_valid() and _level_ground(at, spots, mean, edits, [], radii, Callable(), PATH_LEVEL_OPS) > 0
 	_wear_slot(peer, inv, hoe, "dig")
 
 	if moved:
@@ -3506,15 +3509,11 @@ func _hoe_smooth(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	var before: Array = _snapshot(inv)
 	var stock: Dictionary = _stock_of(peer)
 	var soil: int = table.number_of("soil")
-	var pay := func(depth: float, sphere: float) -> bool:
-		var units: int = maxi(1, ceili(PI * depth * depth * (3.0 * sphere - depth) / 3.0 / SOIL_FILL_M3))   # the cap of the fill sphere that rises above the ground
+	var units_of := func(depth: float, sphere: float) -> int: return maxi(1, ceili(PI * depth * depth * (3.0 * sphere - depth) / 3.0 / SOIL_FILL_M3))   # the cap of the fill sphere that rises above the ground
+	var can_pay := func(depth: float, sphere: float) -> bool: return soil > 0 and _stock_have(inv, soil, stock, true) >= int(units_of.call(depth, sphere))
+	var pay := func(depth: float, sphere: float) -> bool: return _stock_take(inv, soil, int(units_of.call(depth, sphere)), stock, [], true) > 0
 
-		if soil <= 0 or _stock_have(inv, soil, stock, true) < units:
-			return false
-
-		return _stock_take(inv, soil, units, stock, [], true) == units
-
-	var worked: int = _level_ground(at, spots, target, edits, [], [], pay)
+	var worked: int = _level_ground(at, spots, target, edits, [], [], pay, LEVEL_MAX_OPS, can_pay)
 	_send_changes(peer, inv, before)
 
 	if worked < 0:
@@ -3620,9 +3619,10 @@ var _level_unpaid: bool = false    # the last _level_ground left low ground unfi
 
 
 # `targets` and `radii` (a garden: till_garden), when given, are each spot's own height and sphere size.
-func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targets: Array = [], radii: Array = [], pay: Callable = Callable(), max_ops: int = LEVEL_MAX_OPS) -> int:
+func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targets: Array = [], radii: Array = [], pay: Callable = Callable(), max_ops: int = LEVEL_MAX_OPS, can_pay: Callable = Callable()) -> int:
 	var worked: int = 0
 	var skip: Dictionary = {}   # spots whose fill was not paid for, this stroke
+	var grid: Dictionary = _edit_buckets(edits) if spots.size() > 64 else {}   # a garden's hundreds of spots read only the edits near each
 	_level_refused = false
 	_level_unpaid = false
 
@@ -3638,7 +3638,7 @@ func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targe
 				continue
 
 			var offset: Vector2 = spots[n_spot]
-			var h: float = _edited_height(at.x + offset.x, at.z + offset.y, edits)
+			var h: float = _bucket_height(at.x + offset.x, at.z + offset.y, grid) if spots.size() > 64 else _edited_height(at.x + offset.x, at.z + offset.y, edits)
 
 			if is_nan(h):
 				return -1
@@ -3659,7 +3659,7 @@ func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targe
 
 		var depth: float = minf(absf(best_off), LEVEL_MAX_M)
 
-		if best_off < 0.0 and pay.is_valid() and not bool(pay.call(depth, sphere)):
+		if best_off < 0.0 and can_pay.is_valid() and not bool(can_pay.call(depth, sphere)):
 			skip[best_n] = true
 			_level_unpaid = true
 			continue
@@ -3671,8 +3671,14 @@ func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targe
 			_level_refused = true
 			break   # the ground took no more (a full block, a refusal): the next stroke tries again
 
+		if best_off < 0.0 and pay.is_valid():
+			pay.call(depth, sphere)   # the soil is taken once the ground has taken the fill
+
 		edits.append([0 if best_off > 0.0 else 1, centre, sphere])
 		worked += 1
+
+		if spots.size() > 64:
+			_bucket_add(grid, edits[-1])
 
 	return worked
 
@@ -16601,6 +16607,7 @@ const GARDEN_EDITS_A_STEP := 8         # TG-3: ground edits each HOE_COOLDOWN_MS
 const GARDEN_TILLS_A_STEP := 4         # beds tilled each HOE_COOLDOWN_MS once the ground is level
 const GARDEN_COOLDOWN_MS := 20000      # Dave: 20 s before the next Garden Grid
 const SOIL_PATCH_BEDS := 2             # Till Soil 2m: a 2 m patch, 2 by 2 metre beds
+const GARDEN_GIVE_UP_MS := 120000    # a garden whose ground will not load or take the edits for this long is tilled as it lies
 const SOIL_SPHERE_M := 0.9             # TG-4: its cut and fill spheres (no blend: the change stays inside about a metre of the patch)
 const HOE_CHECK_MS := 250              # TG-5: a preview's question is answered at most this often per player
 const TILL_GARDEN := 0
@@ -16645,6 +16652,7 @@ func till_garden(peer: int, inv, at: Vector3, held_slot: int, yaw_deg: int, size
 	if int(plan["mode"]) == TILL_GARDEN:
 		_garden_ready_ms[peer] = now + GARDEN_COOLDOWN_MS
 
+	plan["give_up_ms"] = Time.get_ticks_msec() + GARDEN_GIVE_UP_MS
 	_garden_jobs[peer] = plan
 	_hoe_verdict(peer, Net.ACT_TILL_GARDEN, size % 10000000, at, 2, "")
 	_say(peer, "Levelling and tilling a %d by %d garden." % [int(plan["w"]), int(plan["d"])] if int(plan["mode"]) == TILL_GARDEN else "Tilling a 2 m patch of soil.")
@@ -16715,7 +16723,7 @@ func _till_plan(peer: int, inv, at: Vector3, held_slot: int, yaw_deg: int, code:
 				spots.append(flat - centre)
 				targets.append(mean)
 				radii.append(SOIL_SPHERE_M)
-				touched.append([flat, SOIL_SPHERE_M])
+				touched.append([flat, _edit_reach(SOIL_SPHERE_M)])
 				cost += ceili(absf(h - mean) / LEVEL_MAX_M)
 	else:
 		var met: bool = false
@@ -16747,7 +16755,7 @@ func _till_plan(peer: int, inv, at: Vector3, held_slot: int, yaw_deg: int, code:
 					spots.append(flat - centre)
 					targets.append(want)
 					radii.append(LEVEL_SPHERE_M if out <= 0.0 else GARDEN_FEATHER_SPHERE_M)
-					touched.append([flat, LEVEL_SPHERE_M * 0.5 if out <= 0.0 else GARDEN_FEATHER_SPHERE_M * 0.5])
+					touched.append([flat, _edit_reach(LEVEL_SPHERE_M if out <= 0.0 else GARDEN_FEATHER_SPHERE_M)])
 					cost += ceili(absf(h - want) / LEVEL_MAX_M)
 
 			if ring > 2 and meets:
@@ -16797,7 +16805,7 @@ func _till_obstacles(centre: Vector3, reach: float) -> Dictionary:
 			var def: Dictionary = _structures.get(kind, {})
 
 			if not _is_plot_kind(kind) and not bool(def.get("walkover", false)):
-				seen["pieces"].append([flat, maxf(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0))) * 0.5])
+				seen["pieces"].append([flat, Vector2(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0))) * 0.5, float(it["struct"].get("yaw", 0.0))])
 		elif it.has("scatter") and int(it.get("number", 0)) > 0:
 			var item_id: String = table.id_of(int(it["number"]))
 
@@ -16814,7 +16822,10 @@ func _till_obstacles(centre: Vector3, reach: float) -> Dictionary:
 # Why the ground at a flat point may not change, "" when it may: `spread` how far round the point the change reaches, `clear` the room kept to a building.
 func _obstacle_at(seen: Dictionary, flat: Vector2, spread: float, clear: float) -> String:
 	for piece in seen["pieces"]:
-		if flat.distance_to(piece[0]) < float(piece[1]) + clear + spread:
+		var local: Vector2 = (flat - piece[0]).rotated(deg_to_rad(float(piece[2])))   # into the piece's own frame (as SurveyLine.crosses)
+		var half: Vector2 = piece[1]
+
+		if Vector2(maxf(absf(local.x) - half.x, 0.0), maxf(absf(local.y) - half.y, 0.0)).length() < clear + spread:   # to the nearest point of its turned footprint
 			return "Too close to a building: keep it %d m clear of buildings." % int(clear) if clear > 0.0 else "A building is in the way."
 
 	for tree in seen["trees"]:
@@ -16828,6 +16839,12 @@ func _obstacle_at(seen: Dictionary, flat: Vector2, spread: float, clear: float) 
 	return ""
 
 
+# How far across the ground one cut or fill sphere of this radius changes it: the circle where a sphere sunk LEVEL_MAX_M deep (or less) meets the surface.
+func _edit_reach(sphere: float) -> float:
+	var depth: float = minf(LEVEL_MAX_M, sphere)
+	return sqrt(depth * (2.0 * sphere - depth))
+
+
 # The saved edits filed by 4 m cell (each edit in every cell it reaches, oldest first), so a survey of hundreds of spots reads only the edits near each.
 const EDIT_BUCKET_M := 4.0
 
@@ -16836,18 +16853,22 @@ func _edit_buckets(edits: Array) -> Dictionary:
 	var grid: Dictionary = {}
 
 	for op in edits:
-		var r: float = float(op[2])
-
-		for gx in range(floori((op[1].x - r) / EDIT_BUCKET_M), floori((op[1].x + r) / EDIT_BUCKET_M) + 1):
-			for gz in range(floori((op[1].z - r) / EDIT_BUCKET_M), floori((op[1].z + r) / EDIT_BUCKET_M) + 1):
-				var key: Vector2i = Vector2i(gx, gz)
-
-				if not grid.has(key):
-					grid[key] = []
-
-				grid[key].append(op)
+		_bucket_add(grid, op)
 
 	return grid
+
+
+func _bucket_add(grid: Dictionary, op: Array) -> void:
+	var r: float = float(op[2])
+
+	for gx in range(floori((op[1].x - r) / EDIT_BUCKET_M), floori((op[1].x + r) / EDIT_BUCKET_M) + 1):
+		for gz in range(floori((op[1].z - r) / EDIT_BUCKET_M), floori((op[1].z + r) / EDIT_BUCKET_M) + 1):
+			var key: Vector2i = Vector2i(gx, gz)
+
+			if not grid.has(key):
+				grid[key] = []
+
+			grid[key].append(op)
 
 
 func _bucket_height(x: float, z: float, grid: Dictionary) -> float:
@@ -16892,6 +16913,9 @@ func _garden_jobs_tick() -> void:
 				_remove_paths_near(centre, float(job["reach"]))
 				_dirty = true
 				continue
+
+			if (worked < 0 or _level_refused) and now < int(job.get("give_up_ms", 0)):
+				continue   # ground not loaded yet, or it took no more this step: try again next step rather than till unlevelled ground
 
 			job["worked"] = GARDEN_MAX_EDITS   # level (or the ground takes no more): on to the beds
 

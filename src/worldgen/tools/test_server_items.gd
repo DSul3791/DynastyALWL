@@ -1043,6 +1043,17 @@ func _init() -> void:
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, level_at)
 	check(is_equal_approx(float(m._level_hold[1][0]), held_target), "a held stroke keeps the height the action started from")
+	# A foundation on raised ground (BugsList entry 2): placement reads the saved fills, so a site built up 1.6 m above the generated ground takes a foundation on top.
+	m.edits_near = func(_point, _radius) -> Array: return [[1, Vector3(-20.0, -18.4, 0.0), 30.0]]   # one wide fill: the ground round x -20 now stands about 11.6
+	m.report_position(1, Vector3(-18.0, 11.7, 0.0))
+	var raised_ids: Array = m._items.keys()
+	m.place_piece(1, "wood_foundation_kit", Vector3(-20.0, 11.6, 0.0))
+	var raised: Array = m._items.keys().filter(func(id): return not raised_ids.has(id) and m._items[id].has("struct") and str(m._items[id]["struct"]["kind"]) == "wood_foundation")
+	check(raised.size() == 1 and absf(float(m._items[raised[0]]["pos"].y) - 11.6) < 0.1, "a foundation sits on hoe-raised ground 1.6 m above the generated surface (%s)" % str(raised.map(func(id): return m._items[id]["pos"])))
+
+	for id in raised:
+		m._items.erase(id)
+
 	m.send_notice = Callable()
 	m.edits_near = Callable()
 	digs.clear()
