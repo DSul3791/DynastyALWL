@@ -2918,17 +2918,16 @@ func _log_surround() -> void:
 				else:
 					_log_static("i%d" % sid, _log_post(float((other["tree"] as Dictionary).get("radius", 0.3)), STUMP_H_M), Transform3D(Basis(), other["pos"] + Vector3(0.0, STUMP_H_M * 0.5, 0.0)))
 
-		if trees_near.is_valid() and tree_info.is_valid():
-			for found in trees_near.call(at, reach):
-				var info: Dictionary = tree_info.call(found[0], int(found[1]))
-
-				var key: String = "t%s:%d" % [str(found[0]), int(found[1])]
-
-				if _logs.has_static(key):
-					keep[key] = true
-				elif not info.is_empty():
-					keep[key] = true
-					_log_static(key, _log_post(float(info.get("trunk", 0.3)), TRUNK_H_M), Transform3D(Basis(), info["position"] + Vector3(0.0, TRUNK_H_M * 0.5, 0.0)))
+		# The standing trunks from the server's cached 16 m tree cells (terrain_server _arrow_trunks, felled trees left out). Asked through
+		# trees_near and tree_info, every awake log scanned every tree of the nine 256 m flora chunks round it (and could place a chunk) on the
+		# main thread every look_s: the server stalled, its physics with it, and every log paused at once (Dave 17 Nov 2026, build 826:
+		# "they roll a few feet then pause and they all do it at the same time").
+		if trunks_near.is_valid():
+			for trunk in trunks_near.call(at, reach):
+				var root: Vector3 = trunk[0]
+				var key: String = "t%d:%d" % [int(round(root.x * 100.0)), int(round(root.z * 100.0))]
+				keep[key] = true
+				_log_static(key, _log_post(float(trunk[1]), TRUNK_H_M), Transform3D(Basis(), root + Vector3(0.0, TRUNK_H_M * 0.5, 0.0)))
 
 		for rect in _grid.rects_near(at.x, at.z, reach, _items):
 			var key: String = "w%d" % int(rect["id"])
