@@ -9028,6 +9028,7 @@
 				"description": "A carved hardwood strongbox bound with iron bands. Holds 48 stacks, more than any other chest.",
 				"kind": "structure",
 				"stack": 1,
+				"slots": 48,
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed piece: row state 209."
@@ -9664,6 +9665,7 @@
 				"description": "A rough chest of boards pinned together and tied with twine.",
 				"kind": "structure",
 				"stack": 1,
+				"slots": 24,
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed piece: row state 230."
@@ -9674,6 +9676,7 @@
 				"description": "A well-made chest of hardwood boards with nails and hinges.",
 				"kind": "structure",
 				"stack": 1,
+				"slots": 36,
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed piece: row state 231."
