@@ -1,7 +1,7 @@
 extends SceneTree
 
-# The survey line (Dave 17 Nov 2026): a surveyed road goes straight from marker to marker at any distance; a tree on it falls in its logs, a stump on it
-# is broken up into what chopping it gives (left on the ground), a rock is left standing with the road under it, and only a building stops a marker.
+# The survey line (Dave 17 Nov 2026): a surveyed road goes straight from marker to marker at any distance; a tree on it is cleared, dropping at once beside
+# the road in what chopping it gives (Dave 18 Nov 2026: no fall), a stump on it is broken up into what chopping it gives (left on the ground), a rock is left standing with the road under it, and only a building stops a marker.
 # The road's patches carry "road" (the client keeps the grass off 2 m either side), saved and loaded.
 #   godot --headless --path . --script res://src/worldgen/tools/test_survey_road.gd
 
@@ -84,18 +84,40 @@ func _server_road() -> void:
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe, 1, 0, Vector3(50.0, 10.0, 0.0))
 	check(m._roads.has(1) and m._roads[1][0]["markers"].size() == 1, "a marker 50 m on joins the survey")
 	var guard: int = 0
+	var fell_at: int = -1   # the tick the first tree came down
 
 	while m._roads.has(1) and guard < 400:
 		m._road_tick(0.6)
-		m._fall_tick(0.6)
 		guard += 1
 
+		if fell_at < 0 and not standing.has(11):
+			fell_at = guard
+
 	check(not m._roads.has(1), "the 50 m road is built and caught up (%d ticks)" % guard)
+	check(guard <= 36, "at about 2.8 m/s the 50 m road takes about 18 s, 31 ticks of 0.6 s (%d ticks)" % guard)
+	check(m._falls.is_empty() and fell_at > 0, "the road's trees never fall: nothing is coming down, no wait for a landing")
 	check(listed.size() == 1, "each chunk's trees are listed once, not every station (%d)" % listed.size())
 	check(not standing.has(11) and not standing.has(12), "both trees on the road fell")
 	check(standing.has(13), "the tree 3.5 m off the road still stands")
-	check(_loose_named(m, "log_oak") + _loose_named(m, "log") > 0, "the felled trees lie in their logs (the wood system's fall)")
-	check(_stumps_near(m, Vector3(20.0, 10.0, 0.4)) == 0 and _stumps_near(m, Vector3(30.0, 10.0, -0.6)) == 0, "the felled trees' stumps on the road are broken up once they land")
+	check(_loose_named(m, "log_oak") + _loose_named(m, "log") > 0, "the cleared trees lie in their logs, as if chopped")
+	check(_stumps_near(m, Vector3(20.0, 10.0, 0.4)) == 0 and _stumps_near(m, Vector3(30.0, 10.0, -0.6)) == 0, "the cleared trees leave no stump on the road")
+	var on_road: int = 0
+	var still: bool = true
+
+	for k in m._items:
+		var it: Dictionary = m._items[k]
+
+		if it.has("struct") or it.has("tree") or it.has("boulder") or float(it["pos"].x) < 15.0 or float(it["pos"].x) > 35.0:
+			continue   # the old stump at x 10 is broken up where it stands
+
+		if absf(float(it["pos"].z)) < ItemsScript.ROAD_HALF_WIDTH_M:
+			on_road += 1
+
+		if it.has("fall") or m._logs.has(k):
+			still = false
+
+	check(on_road == 0, "everything the cleared trees give lies beside the road, none on it (%d on it)" % on_road)
+	check(still, "it lies still: no fall, no log woken into the physics")
 	check(not m._items.has(900001), "the old stump on the road is broken up")
 	check(m._items.has(900002), "a stump 6 m off the road stays")
 	check(_loose_named(m, "firewood") > firewood_before or _loose_firewood(m) > 0, "a broken stump leaves its firewood on the ground, as if chopped")
@@ -128,6 +150,11 @@ func _server_road() -> void:
 	again.report_position(1, Vector3(80.0, 10.0, 80.0))
 	again.action(1, Net.ACT_HOE_GRADE_POINT, HeldTool.slot_of(again, "hoe"), 0, 0, Vector3(76.0, 10.0, 80.0))
 	again.action(1, Net.ACT_HOE_GRADE_POINT, HeldTool.slot_of(again, "hoe"), 1, 0, Vector3(84.0, 10.0, 80.0))
+
+	again._sync_in = 1.0
+	again._road_tick(5.0)   # a slow moment: the road makes up the lost time, at most ROAD_CATCHUP stations in one tick
+	check(int(again._roads[1][0]["seg"]["i"]) == ItemsScript.ROAD_CATCHUP, "after a 5 s stall one tick builds ROAD_CATCHUP stations, no more (%d)" % int(again._roads[1][0]["seg"]["i"]))
+	check(again._sync_in <= ItemsScript.ROAD_SYNC_S, "the new road pieces go out within ROAD_SYNC_S, not at the next once-a-second sync")
 
 	for step in 30:
 		again._road_tick(0.6)
