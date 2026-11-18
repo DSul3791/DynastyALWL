@@ -35,6 +35,8 @@ class FakeNet:
 	signal road_marker_reached(at: Vector3)   # HeldItem.setup connects it on any net it is given
 	@warning_ignore("unused_signal")
 	signal survey_refused_at(last: Vector3)   # and this one (the survey line, protocol 127)
+	@warning_ignore("unused_signal")
+	signal hoe_verdict_got(kind: int, code: int, at: Vector3, state: int, why: String, cells: PackedByteArray)   # and the hoe grid's answers (protocol 128)
 	var inventory_action: FakeAction = FakeAction.new()
 
 

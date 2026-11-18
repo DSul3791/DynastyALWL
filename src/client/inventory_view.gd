@@ -131,6 +131,7 @@ var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lu
 var crown_landed: Callable = Callable()   # (centre Vector3, radius m): a felled crown hit the ground there; the client flattens the grass (Dave 10 Nov 2026)
 var _boulder_mesh: ArrayMesh
 var _boulder_rock: ShaderMaterial
+var _boulder_cracks: ShaderMaterial   # the cracks drawn over a worked boulder (BugsList entry 3), one material, its depth per boulder (instance uniforms)
 var _outcrop_rock: Dictionary = {}       # the boulder row's "ore" -> its own ShaderMaterial (OUTCROP_LOOK)
 const OreRockLook := preload("res://src/client/ore_rock_look.gd")
 # Outcrop boulders (Kathleen, 10 Nov 2026; Dave could not tell an ore boulder from a plain one). The server sends a boulder's "ore" (boulders.json ore:
@@ -1159,7 +1160,7 @@ func bed_id_at(point: Vector3) -> int:
 	return bed_in(bed_rows(), point)
 
 
-# Every bed and plot standing (not a blueprint site) as [id, position, half footprint + 5 cm, yaw degrees], read once for a whole Garden grid (held_item._garden_plan).
+# Every bed and plot standing (not a blueprint site) as [id, position, half footprint + 5 cm, yaw degrees], read once for a whole hoe grid (held_item._grid_request).
 func bed_rows(near: Vector3 = Vector3.INF, radius: float = 0.0) -> Array:   # `near`/`radius`: only the beds within that flat distance (the hoe grid's area)
 	var rows: Array = []
 
@@ -3459,6 +3460,7 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 	var ore_rock: bool = OreRockLook.has_look(str(extra.get("ore", "")))   # copper and tin: Dave's photos
 	lump.mesh = OreRockLook.mesh_for(float(extra.get("yaw", 0.0))) if ore_rock else _boulder_mesh
 	lump.material_override = OreRockLook.material(str(extra.get("ore", ""))) if ore_rock else _boulder_material(str(extra.get("ore", "")))
+	lump.material_overlay = _crack_material()
 	body.add_child(lump)
 	body.position = row[3]
 	body.rotation.y = deg_to_rad(float(extra.get("yaw", 0.0)))
@@ -3503,6 +3505,74 @@ func _size_boulder(entry: Dictionary) -> void:
 	entry["lump"].position = Vector3(0.0, -(box.position.y + box.size.y * 0.2) * scale, 0.0)
 	entry["shape"].shape.radius = radius * 0.85
 	entry["shape"].position = Vector3(0.0, radius * 0.5, 0.0)
+	var lump: GeometryInstance3D = entry["lump"]
+	lump.set_instance_shader_parameter("crack", 1.0 - float(entry["left"]) / float(entry["total"]))   # how much of the rock is gone: more, wider cracks
+	lump.set_instance_shader_parameter("crack_scale", 1.0 / unit)
+
+
+# Cracks over a worked boulder (BugsList entry 3, Dave 18 Nov 2026: a rock must visibly use up as it is mined). Drawn as an overlay on whatever rock
+# material the boulder has (granite, copper, tin): dark Voronoi cell edges in the rock's own space, none on a whole rock, a few fine ones once it is worked,
+# more and wider ones as it nears its end. PLACEHOLDER look: not visually checked.
+const CRACK_SHADER := """shader_type spatial;
+render_mode blend_mix, depth_draw_never, cull_back, unshaded, shadows_disabled;
+instance uniform float crack = 0.0;
+instance uniform float crack_scale = 1.0;
+varying vec3 obj;
+void vertex() { obj = VERTEX; }
+vec3 h3(vec3 p) {
+	p = vec3(dot(p, vec3(127.1, 311.7, 74.7)), dot(p, vec3(269.5, 183.3, 246.1)), dot(p, vec3(113.5, 271.9, 124.6)));
+	return fract(sin(p) * 43758.5453);
+}
+void fragment() {
+	if (crack < 0.01) { discard; }
+	vec3 p = obj * crack_scale * (1.5 + crack * 4.0);
+	vec3 i = floor(p);
+	vec3 f = fract(p);
+	float d1 = 8.0;
+	float d2 = 8.0;
+	for (int x = -1; x <= 1; x++) { for (int y = -1; y <= 1; y++) { for (int z = -1; z <= 1; z++) {
+		vec3 g = vec3(float(x), float(y), float(z));
+		vec3 r = g + h3(i + g) - f;
+		float d = dot(r, r);
+		if (d < d1) { d2 = d1; d1 = d; } else if (d < d2) { d2 = d; }
+	} } }
+	float width = 0.015 + 0.06 * crack;
+	float edge = sqrt(d2) - sqrt(d1);
+	ALBEDO = vec3(0.03, 0.025, 0.02);
+	ALPHA = (1.0 - smoothstep(width * 0.3, width, edge)) * clamp(crack * 4.0, 0.0, 0.9);
+}
+"""
+
+
+func _crack_material() -> ShaderMaterial:
+	if _boulder_cracks == null:
+		var shader: Shader = Shader.new()
+		shader.code = CRACK_SHADER
+		_boulder_cracks = ShaderMaterial.new()
+		_boulder_cracks.shader = shader
+
+	return _boulder_cracks
+
+
+# A boulder worked down to its last stones breaks apart where it stood (BugsList entry 3): a few fragments of its rock fly out and shrink away in under a
+# second. Drawing only; the server has already taken the rock out of the world. PLACEHOLDER look: not visually checked.
+func _crumble_boulder(entry: Dictionary) -> void:
+	var lump: MeshInstance3D = entry["lump"]
+	var at: Vector3 = (entry["node"] as Node3D).global_position + Vector3(0.0, float(entry.get("now", 0.3)) * 0.5, 0.0)
+
+	for n in 6:
+		var bit: MeshInstance3D = MeshInstance3D.new()
+		bit.mesh = lump.mesh
+		bit.material_override = lump.material_override
+		bit.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_root.add_child(bit)
+		bit.global_position = at
+		bit.scale = lump.scale * 0.3
+		var out: Vector3 = Vector3.FORWARD.rotated(Vector3.UP, TAU * float(n) / 6.0) * (0.4 + float(entry.get("now", 0.3)))
+		var tween: Tween = bit.create_tween().set_parallel(true)
+		tween.tween_property(bit, "global_position", at + out + Vector3(0.0, -0.2, 0.0), 0.8).set_ease(Tween.EASE_OUT)
+		tween.tween_property(bit, "scale", Vector3.ONE * 0.001, 0.8).set_ease(Tween.EASE_IN)
+		tween.chain().tween_callback(bit.queue_free)
 
 
 # The boulder a strike at this point landed on (0 when none): within its radius and a little.
@@ -3594,7 +3664,12 @@ func _forget(id: int) -> void:
 	_unsnapped.erase(id)
 
 	if _boulders.has(id):
-		_boulders[id]["node"].queue_free()
+		var gone: Dictionary = _boulders[id]
+
+		if int(gone["left"]) <= maxi(3, int(float(gone["total"]) * 0.03)) and _player_position.is_valid() and (gone["pos"] as Vector3).distance_to(_player_position.call()) < 30.0:
+			_crumble_boulder(gone)   # mined out, not just out of range
+
+		gone["node"].queue_free()
 		_boulders.erase(id)
 		return
 
