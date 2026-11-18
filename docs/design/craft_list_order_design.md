@@ -80,3 +80,24 @@ Dave: "cut the Craft button into two buttons left button says Craft 1, right but
 - **CB-1, times.** Each button shows its own time: Craft 1 the time for one, Craft x the time for x ("8 s" under a minute, "2:40" from a minute up). Words too long for half the column end in "..." and show whole on hover.
 - **CB-2, greyed.** Craft 1 is greyed exactly as the old button was. Craft x is also greyed when the stock in reach covers one but not x. A recipe whose one craft needs logs or parts made first is left to the server, which refuses what is short.
 - **CB-3, quantity box** still runs 1 to 20.
+
+## Chests have no Craft side, and their size follows their slots (Dave 18 Nov 2026)
+
+"get rid of the craft button/window in the chests. chest models also need to be bigger the larger their inventory is ... its ok for it to be directly proportional"; "they dont grow. they just have different sizes according to how many inventory slots they have"; "use common sense and think about how the physics of chests should work in the real world".
+
+A container that makes nothing (no structures.json `station`, no `also`, not a fire) opens on its store alone: no Chest and Craft tabs, no recipe list, no Craft buttons (`inventory_view._store_only`). Each chest's body holds about 0.012 m³ per slot, so its volume is directly proportional to its slots; its footprint (placement, ghost, no-spawn) is the drawn size. The woven look shared by three chests is drawn at a uniform `look_scale`, so its proportions and any collision box stay true; the crude and large wooden chests draw the crate look at their own size (`PieceLook.crate(size)`).
+
+| Chest | Slots | Drawn size, metres (wide x high x deep) | Footprint |
+|---|---|---|---|
+| Chest (woven) | 12 | 0.67 x 0.50 x 0.44 (scale 0.71) | 0.67 x 0.44 |
+| Crude chest | 15 | 0.75 x 0.48 x 0.50 | 0.75 x 0.50 |
+| Plank chest | 20 | 0.79 x 0.59 x 0.52 (scale 0.84) | 0.79 x 0.52 |
+| Fine chest | 25 | 0.85 x 0.63 x 0.56 (scale 0.90) | 0.85 x 0.56 |
+| Iron chest | 30 | 1.00 x 0.60 x 0.60 (unchanged) | 1.00 x 0.60 |
+| Large wooden chest | 30 | 1.20 x 0.60 x 0.50 | 1.20 x 0.50 |
+
+### For Dave (provisional, assumed on his behalf; change any of them by saying so)
+
+- **CH-1, which windows.** Every container that cannot craft loses the Craft side, not only chests: shelves, cupboards, racks, barrels, jars, sacks, baskets, bins, crates, carts, sleds, wagons, the root cellar and the smelters (their Craft list was already empty, SR-2). Fires, kilns, the chopping block, the Sawbuck and every station keep theirs.
+- **CH-2, sizes.** Volume follows slots at about 0.012 m³ a slot, from the 30-slot iron chest (1.0 x 0.6 x 0.6 m) as the reference; the table above. Slots, weight limits and the catalog are unchanged.
+- **CH-3, equal slots.** The iron and large wooden chests both have 30 slots, so both hold the same volume; the large wooden chest is the longer, lower one (1.2 m long) and keeps its higher weight limit (350 kg). Placed chests already in a world take their new size when drawn.

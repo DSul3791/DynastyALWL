@@ -4312,7 +4312,7 @@ func station_makes(r: Dictionary) -> bool:
 
 	var def: Dictionary = _structure_by_state(state)
 
-	if str(def.get("station", "")) == "" and (def.get("also", {}) as Dictionary).is_empty():
+	if _makes_nothing(def):
 		return false   # a chest or smelter makes nothing: no recipes (provisional SR-2)
 
 	if station == "":
@@ -4411,6 +4411,17 @@ func _make_remains(age: float) -> Node3D:
 func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
 	var look: String = StructureLook.look_of(state)
 
+	var sized: float = float(_structure_by_state(state).get("look_scale", 1.0))
+
+	if sized != 1.0:   # a look shared by pieces of different sizes (chests by slot count, Dave 18 Nov 2026), drawn and its ghost at their own size
+		var scaled: Node3D = _model_for_look(look, state, extra)
+		scaled.scale = Vector3.ONE * sized   # uniform, so any collision box in it scales true
+		return scaled
+
+	return _model_for_look(look, state, extra)
+
+
+func _model_for_look(look: String, state: int, extra: Dictionary) -> Node3D:
 	if LookTable.has_look(look):
 		var piece: Node3D = LookTable.build(look)   # building pieces: one table in look_table.gd
 		var surface: String = StructureLook.step_surface(state)
@@ -5585,7 +5596,8 @@ func _build_panel() -> void:
 # Craft tabs on the title row. With no container the tabs go and the column is Craft again.
 func _show_tab() -> void:
 	var both: bool = _store_with_recipes()
-	var chest: bool = chest_mode and (chest_tab or both)
+	var store_only: bool = _store_only()
+	var chest: bool = chest_mode and (chest_tab or both or store_only)
 
 	if _chest_panel != null and is_instance_valid(_chest_panel):
 		_chest_panel.visible = chest
@@ -5599,7 +5611,7 @@ func _show_tab() -> void:
 
 	for i in _craft_tabs.size():
 		var tab: Button = _craft_tabs[i]
-		tab.visible = chest_mode and not both
+		tab.visible = chest_mode and not both and not store_only
 		var lit: bool = (i == 0) == chest
 		tab.add_theme_stylebox_override("normal", ArtKit.stylebox_raised(1 if lit else 0))
 		tab.add_theme_color_override("font_color", ArtKit.HEADING if lit else ArtKit.CREAM)
@@ -5620,6 +5632,24 @@ func _store_with_recipes() -> bool:
 		return false
 
 	return bool(_structure_by_state(int(_world[chest_id]["state"])).get("one_store", false))
+
+
+# A container that makes nothing (chests, shelves, racks, carts, smelters: no station, no "also", not a fire) shows only its store, no Craft tab, list or
+# buttons (Dave 18 Nov 2026: "get rid of the craft button/window in the chests"). Its Craft list was already empty (station_makes, SR-2).
+func _store_only() -> bool:
+	if not chest_mode or not _world.has(chest_id):
+		return false
+
+	var state: int = int(_world[chest_id]["state"])
+
+	if StructureLook.CAMPFIRE_STATES.has(state):
+		return false
+
+	return _makes_nothing(_structure_by_state(state))
+
+
+func _makes_nothing(def: Dictionary) -> bool:
+	return str(def.get("station", "")) == "" and (def.get("also", {}) as Dictionary).is_empty()
 
 
 # A tab on the Craft panel's title row (4.4): a raised plate of 118 x 36, the word in Cinzel; lit when it is the one showing.

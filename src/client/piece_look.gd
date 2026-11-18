@@ -4452,26 +4452,31 @@ static func loom() -> Node3D:
 
 # The Wooden - Crate (B3b, item system: per buildables B3), a 0.8 m cube: plank sides with a frame along every edge and a diagonal brace on
 # each side.
-static func crate() -> Node3D:
-	_tier_materials()
+static func crate(size: Vector3 = Vector3(0.8, 0.8, 0.8)) -> Node3D:
+	_tier_materials()   # `size` is the whole box with its frame: the wooden crate is 0.8 m cube; the crude and large wooden chests borrow it at their own sizes
 	var root: Node3D = Node3D.new()
-	_box(root, Vector3(0.76, 0.76, 0.76), Vector3(0.0, 0.4, 0.0), _planks)
+	var hx: float = size.x * 0.5 - 0.025
+	var hy: float = size.y * 0.5
+	var hz: float = size.z * 0.5 - 0.025
+	_box(root, Vector3(size.x - 0.04, size.y - 0.04, size.z - 0.04), Vector3(0.0, hy, 0.0), _planks)
 
-	for a in [Vector3(0.375, 0.0, 0.375), Vector3(-0.375, 0.0, 0.375), Vector3(0.375, 0.0, -0.375), Vector3(-0.375, 0.0, -0.375)]:
-		_box(root, Vector3(0.05, 0.8, 0.05), a + Vector3(0.0, 0.4, 0.0), _frame)                 # upright edges
+	for a in [Vector3(hx, 0.0, hz), Vector3(-hx, 0.0, hz), Vector3(hx, 0.0, -hz), Vector3(-hx, 0.0, -hz)]:
+		_box(root, Vector3(0.05, size.y, 0.05), a + Vector3(0.0, hy, 0.0), _frame)                 # upright edges
 
-	for y in [0.025, 0.775]:
-		for z in [-0.375, 0.375]:
-			_box(root, Vector3(0.8, 0.05, 0.05), Vector3(0.0, y, z), _frame)
-		for x in [-0.375, 0.375]:
-			_box(root, Vector3(0.05, 0.05, 0.8), Vector3(x, y, 0.0), _frame)
+	for y in [0.025, size.y - 0.025]:
+		for z in [-hz, hz]:
+			_box(root, Vector3(size.x, 0.05, 0.05), Vector3(0.0, y, z), _frame)
+		for x in [-hx, hx]:
+			_box(root, Vector3(0.05, 0.05, size.z), Vector3(x, y, 0.0), _frame)
 
-	for z in [-0.385, 0.385]:
-		_box_rot(root, Vector3(0.95, 0.05, 0.03), Vector3(0.0, 0.4, z), Vector3(0.0, 0.0, PI * 0.25), _frame)   # braces front and back
-	for x in [-0.385, 0.385]:
-		_box_rot(root, Vector3(0.03, 0.05, 0.95), Vector3(x, 0.4, 0.0), Vector3(PI * 0.25, 0.0, 0.0), _frame)   # and on the ends
+	var front: float = sqrt(size.x * size.x + size.y * size.y) - 0.18   # a brace corner to corner, front and back and on the ends
+	var side: float = sqrt(size.z * size.z + size.y * size.y) - 0.18
+	for z in [-hz - 0.01, hz + 0.01]:
+		_box_rot(root, Vector3(front, 0.05, 0.03), Vector3(0.0, hy, z), Vector3(0.0, 0.0, atan2(size.y, size.x)), _frame)
+	for x in [-hx - 0.01, hx + 0.01]:
+		_box_rot(root, Vector3(0.03, 0.05, side), Vector3(x, hy, 0.0), Vector3(atan2(size.y, size.z), 0.0, 0.0), _frame)
 
-	_solid(root, Vector3(0.8, 0.8, 0.8), Vector3(0.0, 0.4, 0.0))
+	_solid(root, size, Vector3(0.0, hy, 0.0))
 	return root
 
 
