@@ -417,15 +417,3 @@ func fire_takes(item_id: String) -> bool:
 		view._cooking_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"raw_sick": {}}
 
 	return StoreRules.fire_takes(item_id, view._cooking_cfg)
-
-	if view._cooking_cfg.get("fuel", {}).has(item_id) or view._cooking_cfg.get("cooks_into", {}).has(item_id):
-		return true
-
-	if item_id == str(view._cooking_cfg.get("gives", "")):
-		return false
-
-	for suffix in view._cooking_cfg.get("cookable_suffixes", []):
-		if item_id.ends_with(str(suffix)):
-			return true
-
-	return false
