@@ -2154,6 +2154,18 @@ func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
 	var restarted = ServerFloraScript.new()
 	restarted.setup(placer, root)
 	_check(restarted.removed_in(best) == [ids[0]] and not restarted.layout_cleared, "flora removals survive a server restart")
+	_check(FileAccess.file_exists("%s/flora_removed/%d_%d.json" % [root, best.x, best.y]) and not FileAccess.file_exists(root + "/flora_removed.json"), "removals are saved in their chunk's own file (audit finding 6)")
+	# A one-file save from before 18 Nov 2026 loads, is written out per chunk at the next save and kept as .migrated.
+	var legacy_file: FileAccess = FileAccess.open(root + "/flora_removed.json", FileAccess.WRITE)
+	legacy_file.store_string(JSON.stringify({"layout": FloraLayoutScript.VERSION, "%d,%d" % [best.x, best.y]: [ids[0], ids[1]]}))
+	legacy_file.close()
+	var migrated = ServerFloraScript.new()
+	migrated.setup(placer, root)
+	migrated.save_removed(true)
+	var again = ServerFloraScript.new()
+	again.setup(placer, root)
+	_check(again.removed_in(best).size() == 2 and FileAccess.file_exists(root + "/flora_removed.json.migrated") and not FileAccess.file_exists(root + "/flora_removed.json"), "a one-file removals save is written out per chunk and kept as .migrated")
+	DirAccess.remove_absolute(root + "/flora_removed.json.migrated")
 	# A save made under another flora layout is dropped (patches move plants); a save without a stamp counts as the first layout.
 	var stale: Dictionary = {"layout": FloraLayoutScript.VERSION + 1, "%d,%d" % [best.x, best.y]: [ids[0]]}
 	var stale_file: FileAccess = FileAccess.open(root + "/flora_removed.json", FileAccess.WRITE)

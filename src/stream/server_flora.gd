@@ -4,7 +4,7 @@ extends RefCounted
 # minus the items players removed, packed for clients.
 #
 # Removals are the only flora state stored (design Section 4.3): "item N in
-# chunk C is gone", kept in `flora_removed.json` in the server store folder.
+# chunk C is gone", kept in the server store folder, one file per chunk in `flora_removed/` (REMOVED_DIR).
 # Regrowth comes later.
 #
 # Packed chunks are kept in memory (up to MEMORY_CHUNKS, oldest dropped
@@ -17,7 +17,9 @@ const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
 const LayoutScript := preload("res://src/worldgen/runtime/flora_layout.gd")
-const LAYOUT_KEY := "layout"        # flora_removed.json: the flora layout version the marks were made under (flora_layout.gd)
+const LAYOUT_KEY := "layout"        # a removals file: the flora layout version the marks were made under (flora_layout.gd)
+const REMOVED_DIR := "flora_removed"    # one file per chunk with removals, <cx>_<cz>.json: {"layout", "ids"} (audit 18 Nov 2026 finding 6)
+const LEGACY_FILE := "flora_removed.json"   # the one file of every chunk before 18 Nov 2026: read once, written out per chunk, kept as .migrated
 const MEMORY_CHUNKS := 2048
 const ITEMS_CHUNKS := 160             # chunks of placed items kept by items_of
 const TREES_CHUNKS := 512             # trees-only placed lists kept (_placed; about 30 KB each)
@@ -32,7 +34,8 @@ var chunks_made: int = 0
 var layout_cleared: bool = false            # true when setup dropped saved removals because the flora layout changed
 var memory_hits: int = 0
 
-var _path: String = ""
+var _dir: String = ""                 # the removals folder (REMOVED_DIR in the store)
+var _legacy: String = ""              # LEGACY_FILE in the store, while it waits to be written out per chunk
 var _removed: Dictionary = {}          # Vector2i chunk -> {item id: true}
 var _memory: Dictionary = {}           # Vector3i (chunk x, z, 1 full / 0 trees only) -> PackedByteArray
 var _water: Dictionary = {}            # Vector2i chunk -> PackedByteArray (cleared when the water moves)
@@ -42,7 +45,7 @@ var _items_mutex: Mutex = Mutex.new()
 var _trees_kept: Dictionary = {}       # Vector3i (chunk x, z, 0) -> chunk_items(trees only) result, shared read-only (_placed; under _items_mutex)
 var _placing: Dictionary = {}          # Vector3i keys being placed now (_placed; under _items_mutex)
 var _ground_age: int = 0               # bumped by clear_memory: a placement begun on the old ground is not kept (under _items_mutex)
-var _removed_dirty: bool = false       # removals not yet written to flora_removed.json
+var _dirty_chunks: Dictionary = {}    # Vector2i chunk -> true: its removals file is out of date (written, or deleted when it has none)
 var _removed_saved_msec: int = 0
 var cover = CoverScript.Index.new()    # tree crowns of the chunks made so far (Cover.at; read it under cover_lock)
 var _cover_order: Array = []           # chunks in the index, oldest first
@@ -157,35 +160,78 @@ func has_items(chunk: Vector2i) -> bool:
 
 func setup(flora_placer, store_dir: String) -> void:
 	placer = flora_placer
-	_path = store_dir + "/flora_removed.json"
+	_dir = store_dir + "/" + REMOVED_DIR
+	var legacy: String = store_dir + "/" + LEGACY_FILE
 
-	if not FileAccess.file_exists(_path):
+	# A one-file save (an older server, or a store seeded that way) is the newest record when it is there: it is read, and the chunk files are
+	# made from it at the first save (a chunk file it does not name is removed then).
+	if FileAccess.file_exists(legacy):
+		_legacy = legacy
+
+		for file in _chunk_files():
+			_dirty_chunks[file[0]] = true
+
+		_read_removals(JSON.parse_string(FileAccess.get_file_as_string(legacy)), legacy, true)
 		return
 
-	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(_path))
+	for file in _chunk_files():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(_dir + "/" + str(file[1])))
 
+		if typeof(parsed) == TYPE_DICTIONARY and parsed.has("ids"):
+			_read_removals({LAYOUT_KEY: parsed.get(LAYOUT_KEY, 1), "%d,%d" % [file[0].x, file[0].y]: parsed["ids"]}, file[1], false)
+		else:
+			push_error("server flora: %s/%s is not a removals file" % [_dir, str(file[1])])
+
+
+# [[chunk, file name], ...] of the removals folder.
+func _chunk_files() -> Array:
+	var out: Array = []
+
+	if not DirAccess.dir_exists_absolute(_dir):
+		return out
+
+	for file in DirAccess.get_files_at(_dir):
+		var parts: PackedStringArray = file.trim_suffix(".json").split("_")
+
+		if file.ends_with(".json") and parts.size() == 2 and parts[0].is_valid_int() and parts[1].is_valid_int():
+			out.append([Vector2i(int(parts[0]), int(parts[1])), file])
+
+	return out
+
+
+# Reads {"layout": V, "cx,cz": [ids], ...}. Removals made under another layout point at plants that no longer stand there: they are dropped
+# (a file without a stamp is version 1), and their files go at the next save.
+func _read_removals(parsed: Variant, source: String, whole: bool) -> void:
 	if typeof(parsed) != TYPE_DICTIONARY:
-		push_error("server flora: %s is not valid JSON" % _path)
+		push_error("server flora: %s is not valid JSON" % source)
 		return
 
-	# Removals made under another layout point at plants that no longer stand there: start clean (a file without a stamp is version 1).
-	if int(parsed.get(LAYOUT_KEY, 1)) != LayoutScript.VERSION:
-		layout_cleared = true
-		_removed_dirty = true
-		print("server flora: layout %d is not %d, saved removals cleared" % [int(parsed.get(LAYOUT_KEY, 1)), LayoutScript.VERSION])
-		return
+	var keys: Array = []
 
 	for key in parsed:
-		if str(key) == LAYOUT_KEY:
-			continue
+		if str(key) != LAYOUT_KEY:
+			var parts: PackedStringArray = str(key).split(",")
+			keys.append(Vector2i(int(parts[0]), int(parts[1])))
 
-		var parts: PackedStringArray = str(key).split(",")
+	if int(parsed.get(LAYOUT_KEY, 1)) != LayoutScript.VERSION:
+		layout_cleared = true
+
+		for chunk in keys:
+			_dirty_chunks[chunk] = true
+
+		print("server flora: layout %d is not %d, saved removals cleared (%s)" % [int(parsed.get(LAYOUT_KEY, 1)), LayoutScript.VERSION, source])
+		return
+
+	for chunk in keys:
 		var ids: Dictionary = {}
 
-		for id in parsed[key]:
+		for id in parsed["%d,%d" % [chunk.x, chunk.y]]:
 			ids[int(id)] = true
 
-		_removed[Vector2i(int(parts[0]), int(parts[1]))] = ids
+		_removed[chunk] = ids
+
+		if whole:
+			_dirty_chunks[chunk] = true
 
 
 # A chunk's flora for clients, with removals applied, packed relative to
@@ -373,11 +419,18 @@ func invalidate(chunk: Vector2i) -> void:
 # plants with the ground reset that follows.
 func restore_all() -> void:
 	_mutex.lock()
+
+	for chunk in _removed:
+		_dirty_chunks[chunk] = true
+
 	_removed.clear()
 	_brush.clear()
 	_memory.clear()
-	_removed_dirty = true
 	_mutex.unlock()
+
+	for file in _chunk_files():
+		_dirty_chunks[file[0]] = true
+
 	save_removed(true)
 
 
@@ -402,28 +455,46 @@ func clear_water() -> void:
 	_mutex.unlock()
 
 
-# Writes the removals when some are new, at most once a second (rewriting the whole file per cut stalled the server); `force` at exit.
+# Writes the removals files of the chunks cut in since the last write, at most once a second; `force` at exit. Only those chunks are written,
+# so felling or clearing costs the chunks it touches, not every removal since the world began (audit 18 Nov 2026 finding 6: the one file was
+# rewritten in full, pretty-printed, every second while anything was cut).
 func save_removed(force: bool = false) -> void:
 	var now: int = Time.get_ticks_msec()
 	_mutex.lock()
 
-	if not _removed_dirty or (not force and now - _removed_saved_msec < 1000):
+	if (_dirty_chunks.is_empty() and _legacy == "") or (not force and now - _removed_saved_msec < 1000):
 		_mutex.unlock()
 		return
 
-	_removed_dirty = false
 	_removed_saved_msec = now
-	var copy: Dictionary = {LAYOUT_KEY: LayoutScript.VERSION}
+	var writes: Dictionary = {}
 
-	for key in _removed:
-		copy["%d,%d" % [key.x, key.y]] = _removed[key].keys()
+	for chunk in _dirty_chunks:
+		writes[chunk] = _removed[chunk].keys() if _removed.has(chunk) and not (_removed[chunk] as Dictionary).is_empty() else []
 
+	_dirty_chunks = {}
+	var legacy: String = _legacy
+	_legacy = ""
 	_mutex.unlock()
-	var file: FileAccess = FileAccess.open(_path, FileAccess.WRITE)
+	DirAccess.make_dir_recursive_absolute(_dir)
 
-	if file != null:
-		file.store_string(JSON.stringify(copy, "\t", true))
-		file.close()
+	for chunk in writes:
+		var path: String = "%s/%d_%d.json" % [_dir, chunk.x, chunk.y]
+
+		if (writes[chunk] as Array).is_empty():
+			if FileAccess.file_exists(path):
+				DirAccess.remove_absolute(path)
+
+			continue
+
+		var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
+
+		if file != null:
+			file.store_string(JSON.stringify({LAYOUT_KEY: LayoutScript.VERSION, "ids": writes[chunk]}))
+			file.close()
+
+	if legacy != "":
+		DirAccess.rename_absolute(legacy, legacy + ".migrated")   # kept, not deleted: the chunk files now hold what it held
 
 
 # True when the chunk's packed water is ready (water_bytes then costs nothing).
@@ -477,7 +548,7 @@ func cut(chunk: Vector2i, id: int) -> bool:
 	_brush.erase(home)
 	_memory.erase(Vector3i(home.x, home.y, 1))
 	_memory.erase(Vector3i(home.x, home.y, 0))
-	_removed_dirty = true
+	_dirty_chunks[home] = true
 	_mutex.unlock()
 	return true
 
