@@ -1532,6 +1532,8 @@ func tick(delta: float) -> void:
 		_scatter_around_players()
 		_slow_mark("scatter", t0)
 		_sync_world_items()
+		_road_fresh = []   # the full sync sent them
+		_road_near = []
 		_slow_mark("sync-world-items " + _sync_detail, t0)
 
 	_save_in -= delta
@@ -4558,7 +4560,7 @@ func _road_drop(info: Dictionary, side: Vector2, off: float) -> void:
 	var heap_ground: float = float(ground_height.call(heap.x, heap.z)) if ground_height.is_valid() else NAN
 	_stump_pieces(seed_id, Vector3(heap.x, heap_ground if not is_nan(heap_ground) else heap.y, heap.z), radius)   # beside the road with the rest, not on it
 	_dirty = true
-	_sync_in = 0.0   # the pieces go out with the flora cut, so the tree never vanishes before they lie there (as _fell_record, bug 6)
+	_road_sync_in = 0.0   # the pieces go out on the next tick with the flora cut, so the tree never vanishes before they lie there (as _fell_record, bug 6), to the players near the road only (finding 4)
 
 
 func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> void:
@@ -4601,8 +4603,14 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 
 	if _structures.has("path_patch") and not (water_depth_at.is_valid() and float(water_depth_at.call(Vector3(pos.x, ground, pos.z))) > 0.05):
 		var blocked: bool = false
+		# From the sync grid around the station, plus what the road made since the grid was filed (audit 18 Nov 2026 finding 4: every
+		# record in the world was looked at for each station, four times a second). Before the first full sync (tests) every record.
+		var look: Array = _items.keys() if _sync_grid.is_empty() else _cells_near(pos, ROAD_HALF_WIDTH_M + 8.0) + _road_fresh
 
-		for id in _items:
+		for id in look:
+			if not _items.has(id):
+				continue
+
 			var other: Dictionary = _items[id]
 
 			if other.has("tree") and int(other["tree"]["state"]) == 4 and not _falls.has(id) and Vector2(other["pos"].x - pos.x, other["pos"].z - pos.z).length() < ROAD_HALF_WIDTH_M + float(other["tree"]["radius"]) + ROAD_STATION_M * 0.5:
@@ -6334,7 +6342,8 @@ func _pickup_batch(peer: int, inv, id: int, batch: int) -> void:
 # `fresh` empty: the full sync (every SYNC_EVERY_S), which files every record in the grid. Otherwise a road's quick sync (_road_tick, every
 # ROAD_SYNC_S while a road builds): only the records `fresh` names are filed into the last grid, and only players within NEAR_M of a spot in
 # `near_to` are looked at, so one road no longer runs the whole world's sync four times a second (audit 18 Nov 2026 finding 4). In a quick
-# sync a record is taken off a player's list only when it is gone from the world; anything else waits for the full sync.
+# sync only the `fresh` records are looked at: one is taken off a player's list only when it is gone from the world; bog rows and everything
+# else wait for the full sync.
 func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 	# The records are filed into a NEAR_M grid once, so each player looks only at the nine cells around them instead of every
 	# record in the world (the soak test found 2 to 9 ms a second at 20 players and 500 records, growing with both).
@@ -6383,7 +6392,11 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 
 		for dx in range(-1, 2):
 			for dz in range(-1, 2):
-				candidates.append_array(grid.get(Vector2i(home.x + dx, home.y + dz), []))
+				if not quick:
+					candidates.append_array(grid.get(Vector2i(home.x + dx, home.y + dz), []))
+
+		if quick:
+			candidates = fresh   # only the road's new records: nothing else is added or dropped in a quick sync
 
 		for id in candidates:
 			if not _items.has(id):
@@ -6470,7 +6483,7 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 							(added[added.size() - 1][5] as Dictionary)["fill_pm"] = int(round(BinRules.fill_share(bin_def, bin_box) * 1000.0))
 					known[id] = signature
 
-		for bog in _bog_rows_near(peer, here):
+		for bog in ([] if quick else _bog_rows_near(peer, here)):
 			near[int(bog[0])] = true
 			var bog_signature: int = int(bog[2]) + 1000 * BOG_STATE + (7 if bool(bog[5]["wet"]) else 0)
 
@@ -6478,8 +6491,8 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 				added.append(bog)
 				known[int(bog[0])] = bog_signature
 
-		for id in known.keys():
-			if not near.has(id) and (not quick or not _items.has(id)):
+		for id in (fresh if quick else known.keys()):
+			if known.has(id) and not near.has(id) and (not quick or not _items.has(id)):
 				removed.append(id)
 				known.erase(id)
 
