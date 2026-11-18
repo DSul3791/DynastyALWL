@@ -157,6 +157,13 @@ func _init() -> void:
 	var late_well: int = put("primitive_well", Vector3(400.0, 10.0, 400.0))
 	check(not items._water_kind.has(plot) and items._well_store.has(late_well), "a piece placed just after a plot is taken down: the plot leaves and the new well gets its store")
 
+	# Each connected run is relinked on its own (finding 5): a channel built far away leaves the pump's run as it was, and a run is found from its end.
+	var held: Dictionary = items._water.pieces[a]
+	var far: int = put("wooden_channel", Vector3(500.0, 10.0, 500.0))
+	check(is_same(items._water.pieces[a], held), "a channel built far away does not turn the pump's run again")
+	var pump_run: Array = items._water.runs([Vector3(101.0, 10.23, 100.0)])
+	check(pump_run.size() == 1 and (pump_run[0] as Array).has(pump) and (pump_run[0] as Array).has(low) and not (pump_run[0] as Array).has(far), "the pump's run reaches down to the lower trough and not to the far channel")
+
 	# Taking the pump away: the channel stands alone and runs from its first end again.
 	items._items.erase(pump)
 	items._water_tick(0.0)
