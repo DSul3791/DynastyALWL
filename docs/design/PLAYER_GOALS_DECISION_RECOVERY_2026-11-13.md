@@ -54,7 +54,7 @@
 | GA-24 | HIGH | REPAIR | Teach doorway/frame before actual door for each family; doors are separate placeable items, matching approved single/double and arched rules. |
 | GA-25 | MED | TEST | Practical F6 checks for all doors/frames and Roof 65 placement, including corner failures; not pass on static model. |
 | GA-26 | MED | REPAIR | Rebuild instructional tier groups (foundation, wall, doorway, door, window, roof) at first obtainable material; no disconnected late doors. |
-| GA-27 | MED | REPAIR | Honor current master rule: chisel is for sculpture/art, not a hidden required stone-construction tool; reconcile inconsistent Stonecutter recipes or teach a genuine valid dependency. |
+| GA-27 | MED | REPAIR | Teach the Stonecutter's bench's actual chisel dependency before the bench's first use. |
 | GA-28 | LOW | REPAIR | Explain Workbench upgrades using real station levels, not a fictitious dependency on a later Carpenter's Bench. |
 | GA-29 | LOW | REPAIR | Rewrite station descriptions for integrated Improved Smelter bellows, Advanced Smelter integrated windmill/dual bellows and Master Smithy quencher; do not advertise retired standalone add-ons. |
 | GA-30 | LOW | REPAIR | Use in-game generic material/group labels (Log, Knife, Axe, Fuel etc.), not internal key-item names. |

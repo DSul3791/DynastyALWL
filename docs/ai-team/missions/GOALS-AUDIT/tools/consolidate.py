@@ -213,7 +213,7 @@ add("GA-26", "MED", "CONFIRMED_DEFECT", "Construction tiers in the main route ar
     ids("build:wood_foundation", "build:log_foundation", "build:foundation_section", "build:brick_foundation", "build:refined_door", "build:rustic_door", "build:sturdy_door", "build:engineered_door"), "NEEDS_CORRECTION",
     "Teach each tier as a block (foundation, wall, doorway, door, window, roof) at the point its materials first exist.", "", "W-L07")
 add("GA-27", "MED", "CONFIRMED_DEFECT", "Stonecutter's bench is a dead end in the main route: every recipe keeps a Bronze - Chisel the route never makes",
-    "recipes.json bench_stone_block, carved_stone_block, carved_stone_shingle keep bronze_chisel; master s2.1 chisel is sculpture/art only.",
+    "recipes.json bench_stone_block, carved_stone_block, carved_stone_shingle keep bronze_chisel.",
     ids("build:stonecutters_bench"), "NEEDS_CORRECTION", "Move it to the side branch, or add craft:bronze_chisel before it.", "", "W-L08")
 add("GA-28", "LOW", "CONFIRMED_DEFECT", "Workbench levels are not explained; the draft implies the Carpenter's bench is needed for the Stone - Workbench",
     "structures.json workbench/log_workbench/stone_workbench station_level 1/2/3, add-ons tool_rack/vice +1 each (server_items.gd:13184-13190); water_wheel and spyglass need L3; test_stations.gd:80, 117.",
