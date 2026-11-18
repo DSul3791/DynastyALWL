@@ -221,11 +221,12 @@ func take_catch_up() -> Array:
 
 # The server's answer for a held tile (protocol 128): the edits since (x, y, z, radius each) outdate only their blocks, or whole = true
 # drops the tile's file. Returns the outdated keys (the stream drops its prefetched copies of them).
-func apply_catch_up(tile: Vector2i, revision: int, spheres: PackedFloat32Array, whole: bool) -> Array:
+func apply_catch_up(tile: Vector2i, since: int, revision: int, spheres: PackedFloat32Array, whole: bool) -> Array:
 	var key: String = "%d,%d" % [tile.x, tile.y]
 	var keys: Array = []
 
-	if not _held.has(key):
+	# Only the answer to this cache's own ask (an answer from before a reload or a reconnect is for another copy).
+	if not _held.has(key) or since != int(_valid.get(key, -1)):
 		return keys
 
 	if whole:
@@ -243,9 +244,10 @@ func apply_catch_up(tile: Vector2i, revision: int, spheres: PackedFloat32Array, 
 
 	_mutex.lock()
 	_valid[key] = revision
-	_write_side(key)
+	var rows: Dictionary = _side_rows([key])
 	_held.erase(key)
 	_mutex.unlock()
+	_write_sides(rows)
 	return keys
 
 
@@ -287,106 +289,39 @@ func _read_side(key: String, file_rev: int) -> Dictionary:
 	return {"valid": int(data["valid"]), "stale": stale}
 
 
-# Writes a tile's .stale file: the revision its file is good for and the tile's outdated blocks. Call with _mutex held.
-func _write_side(key: String) -> void:
-	if not _file_rev.has(key):
-		_file_rev[key] = int(_valid.get(key, _revisions.get(key, 1)))
+# The .stale contents of the given tiles: {path: {"valid", "stale": PackedInt32Array}}, the outdated blocks grouped by tile in one pass.
+# Call with _mutex held; write them with _write_sides after letting it go.
+func _side_rows(keys: Array) -> Dictionary:
+	var flat: Dictionary = {}   # "x,z" -> PackedInt32Array
 
-	var flat: PackedInt32Array = PackedInt32Array()
+	for key in keys:
+		if not _file_rev.has(key):
+			_file_rev[key] = int(_valid.get(key, _revisions.get(key, 1)))
+
+		flat[key] = PackedInt32Array()
 
 	for k in _stale:
 		var t: Vector2i = tile_of_block(Vector3i(k.x, k.y, k.z), k.w)
+		var key: String = "%d,%d" % [t.x, t.y]
 
-		if "%d,%d" % [t.x, t.y] == key:
-			flat.append_array(PackedInt32Array([k.x, k.y, k.z, k.w]))
+		if flat.has(key):
+			(flat[key] as PackedInt32Array).append_array(PackedInt32Array([k.x, k.y, k.z, k.w]))
 
-	var f: FileAccess = FileAccess.open(_side_path(key, int(_file_rev[key])), FileAccess.WRITE)
+	var rows: Dictionary = {}
 
-	if f != null:
-		f.store_var({"valid": int(_valid.get(key, 1)), "stale": flat})
-		f.close()
+	for key in flat:
+		rows[_side_path(key, int(_file_rev[key]))] = {"valid": int(_valid.get(key, 1)), "stale": flat[key]}
 
-
-func set_revision(tile: Vector2i, revision: int) -> void:
-	set_revisions({"%d,%d" % [tile.x, tile.y]: revision})
+	return rows
 
 
-# A ground edit (dig or fill sphere) made while this client is connected: only the saved blocks it touches, at every LOD, are
-# outdated, and are asked of the server again. Dave 18 Nov 2026 (x 53282 z 67587, ground "unloaded" for many minutes): every
-# edit raised the 15 km tile's revision and the client threw its whole saved tile away (set_revision), so with a road being
-# built (several edits a second) nearly every block was fetched again and the ground near the player took minutes to come.
-# The marks are kept in the tile's .stale file (flush), and the next join asks for the edits since the join before (set_revisions).
-# Returns the marked keys (the stream drops its prefetched copies of the same blocks).
-func forget_area(center: Vector3, radius: float) -> Array:
-	var keys: Array = []
-	_mutex.lock()
+func _write_sides(rows: Dictionary) -> void:
+	for path in rows:
+		var f: FileAccess = FileAccess.open(path, FileAccess.WRITE)
 
-	for lod in range(STALE_LODS):
-		var size: float = float(BLOCK_SIZE << lod)
-		var reach: float = radius + float(STALE_MARGIN_VOXELS << lod)
-		var lo: Vector3i = Vector3i(((center - Vector3.ONE * reach) / size).floor())
-		var hi: Vector3i = Vector3i(((center + Vector3.ONE * reach) / size).floor())
-
-		for x in range(lo.x, hi.x + 1):
-			for y in range(lo.y, hi.y + 1):
-				for z in range(lo.z, hi.z + 1):
-					var key: Vector4i = Vector4i(x, y, z, lod)
-					_stale[key] = true
-					keys.append(key)
-
-	_stale_dirty = true
-	_mutex.unlock()
-	return keys
-
-
-func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> bool:
-	var tile: Vector2i = tile_of_block(block, lod)
-	_mutex.lock()
-	var skip: bool = _stale.has(Vector4i(block.x, block.y, block.z, lod)) or _held.has("%d,%d" % [tile.x, tile.y])
-	_mutex.unlock()
-	var found: bool = not skip and _stream_for(tile).load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND
-	_mutex.lock()
-
-	if found:
-		hits += 1
-	else:
-		misses += 1
-
-	_mutex.unlock()
-	return found
-
-
-# Saves a copy: the caller's buffer goes on to the mesher. Voxel Tools 1.7 moves the buffer's channels into the stream's memory cache when the block
-# is still there from an earlier save (a block asked for again before the cache flushed), and leaves the buffer all zero: a zeroed block meshed as a
-# box (server_block_store.copy_of has the details).
-func save_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
-	var tile: Vector2i = tile_of_block(block, lod)
-	_mutex.lock()
-	var held: bool = _held.has("%d,%d" % [tile.x, tile.y])
-	_mutex.unlock()
-
-	if held:
-		return   # the file may yet be dropped (apply_catch_up); the block is fetched again later if needed
-
-	_stream_for(tile).save_voxel_block(_copy_of(buffer), block, lod)
-	_mutex.lock()
-
-	if _stale.erase(Vector4i(block.x, block.y, block.z, lod)):   # the server's copy, made after the edit
-		_stale_dirty = true
-
-	_mutex.unlock()
-
-
-static func _copy_of(buffer: VoxelBuffer) -> VoxelBuffer:
-	var size: Vector3i = buffer.get_size()
-	var copy: VoxelBuffer = VoxelBuffer.new()
-	copy.create(size.x, size.y, size.z)
-
-	for channel in range(VoxelBuffer.MAX_CHANNELS):
-		copy.set_channel_depth(channel, buffer.get_channel_depth(channel))
-		copy.copy_channel_from(buffer, channel)
-
-	return copy
+		if f != null:
+			f.store_var(rows[path])
+			f.close()
 
 
 # Writes pending blocks to disk. CACHE_SLOW_MS (a test setting) adds that many ms to each flush, to
@@ -395,21 +330,23 @@ func flush() -> void:
 	if OS.has_environment("CACHE_SLOW_MS"):
 		OS.delay_msec(int(OS.get_environment("CACHE_SLOW_MS")))
 
+	# The outdated blocks go to disk with the blocks, so a later join still knows them; held tiles are written when they catch up.
+	# Taken before the blocks are flushed and written after: a block saved meanwhile stays marked (fetched once more), never the
+	# other way round (a mark dropped for a block that never reached the disk).
 	_mutex.lock()
 	var streams: Array = _streams.values()
+	var rows: Dictionary = {}
 
-	# The outdated blocks go to disk with the blocks, so a later join still knows them; held tiles are written when they catch up.
 	if _stale_dirty:
 		_stale_dirty = false
-
-		for key in _file_rev:
-			if not _held.has(key):
-				_write_side(key)
+		rows = _side_rows(_file_rev.keys().filter(func(key): return not _held.has(key)))
 
 	_mutex.unlock()
 
 	for stream in streams:
 		stream.flush()
+
+	_write_sides(rows)
 
 
 func size_bytes() -> int:

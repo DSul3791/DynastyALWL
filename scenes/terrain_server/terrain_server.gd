@@ -2238,7 +2238,7 @@ func _floor_below(from: Vector3) -> float:
 # Admin "Reset all terrain edits": every saved dig and fill (rubble included) is deleted, the ground and water are made again from the
 # baked tiles, the tunnel clocks start clean and every player reloads. Buildings, items and plants are not touched.
 func _reset_terrain_edits() -> void:
-	var error: String = store.ops.reset()
+	var error: String = store.reset_edits()
 
 	if error != "":
 		print("server: reset of terrain edits failed: ", error)

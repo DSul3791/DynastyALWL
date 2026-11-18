@@ -1649,7 +1649,7 @@ func _on_edits_since(tile: Vector2i, since: int, revision: int, spheres: PackedF
 	if cache == null:
 		return
 
-	var keys: Array = cache.apply_catch_up(tile, revision, spheres, whole)
+	var keys: Array = cache.apply_catch_up(tile, since, revision, spheres, whole)
 
 	if stream != null:
 		stream.forget_blocks(keys)
