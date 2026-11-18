@@ -1028,8 +1028,8 @@ func _probe_structure_for(id: int) -> Dictionary:
 		clear_prompt()
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
-	if _world[id].get("site") != null:   # a blueprint site: E deposits the materials, hold E takes it down and gives back what was put in
-		return {"prompt": "Press E to deposit materials (hold E to take the blueprint down)", "lines": _site_lines(_world[id]["site"]), "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
+	if _world[id].get("site") != null:   # a blueprint site: only a hammer hit adds the materials (Dave 18 Nov 2026); hold E takes it down and gives back what was put in
+		return {"prompt": "Hit it with a hammer to add materials (hold E to take the blueprint down)", "lines": _site_lines(_world[id]["site"]), "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
 	if state == 11 or state == 12:
 		return {"prompt": "Press E to search the remains", "tap": func(): _ask_open(id)}
