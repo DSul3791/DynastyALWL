@@ -773,6 +773,10 @@ func _ready() -> void:
 		_on_blocks_requested(peer_id, keys, urgent)
 		_slow_rpc("blocks_requested", t0))
 	net.dig_requested.connect(_on_dig_requested)
+	net.edits_since_requested.connect(func(peer_id, tile, since) -> void:
+		var t0: int = Time.get_ticks_usec()
+		_on_edits_since_requested(peer_id, tile, since)
+		_slow_rpc("edits_since_requested", t0))
 	net.flora_requested.connect(func(peer_id, chunks) -> void:
 		var t0: int = Time.get_ticks_usec()
 		_on_flora_requested(peer_id, chunks)
@@ -2013,6 +2017,15 @@ func _on_dig_requested(peer_id: int, center: Vector3, radius: float) -> void:
 	_dig_ground(center, radius)
 
 
+# A joining client's saved copy of a tile is older than the tile (protocol 128): it gets the edits since, to forget only those blocks.
+func _on_edits_since_requested(peer_id: int, tile: Vector2i, since: int) -> void:
+	if not limits.allow(peer_id, "edits_since"):
+		return
+
+	var answer: Dictionary = store.edits_since(tile, since)
+	net.edits_since.rpc_id(peer_id, tile, since, int(answer["revision"]), answer["spheres"], bool(answer["whole"]))
+
+
 # The first edit after a quiet half second is announced at once; edits that follow within it are announced together when it ends
 # (_process); each client then marks the blocks round its recent edits as outdated again (terrain_client.gd _on_tile_changed).
 func _tell_tile_changed(tile: Vector2i) -> void:
@@ -2225,7 +2238,7 @@ func _floor_below(from: Vector3) -> float:
 # Admin "Reset all terrain edits": every saved dig and fill (rubble included) is deleted, the ground and water are made again from the
 # baked tiles, the tunnel clocks start clean and every player reloads. Buildings, items and plants are not touched.
 func _reset_terrain_edits() -> void:
-	var error: String = store.ops.reset()
+	var error: String = store.reset_edits()
 
 	if error != "":
 		print("server: reset of terrain edits failed: ", error)
