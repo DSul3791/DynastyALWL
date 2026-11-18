@@ -815,6 +815,7 @@ func _ready() -> void:
 	net.welcome_received.connect(_on_welcome)
 	net.blocks_received.connect(_on_blocks)
 	net.tile_changed_received.connect(_on_tile_changed)
+	net.edits_since_received.connect(_on_edits_since)
 	net.dug_received.connect(_on_dug)
 	net.filled_received.connect(_on_filled)
 	net.flora_received.connect(_on_flora)
@@ -1102,6 +1103,8 @@ func _welcome_body(info: Dictionary) -> void:
 	if seeded > 0:
 		cache.set_revisions(info["revisions"])
 		print("Terrain client: first run, copied the starter ground for the spawn (%d tile)" % seeded)
+
+	_ask_catch_up()
 	stream = StreamScript.new()
 	stream.cache = cache
 	stream.drop_lods = _drop_ground_lods
@@ -1632,6 +1635,27 @@ func _on_tile_changed(tile: Vector2i, revision: int) -> void:
 	_edits_untold.clear()
 
 	print("Terrain client: tile %s is now revision %d" % [str(tile), revision])
+
+
+# Protocol 128 (Dave 18 Nov 2026): saved tiles older than the server's are held while the server is asked for the edits since, so only
+# the blocks round those edits are fetched again at a join (it used to fetch the whole 15 km tile after any edit by anyone).
+func _ask_catch_up() -> void:
+	for ask in cache.take_catch_up():
+		net.ask_edits_since.rpc_id(1, ask[0], int(ask[1]))
+		print("Terrain client: saved ground of tile %s is at revision %d; asking for the edits since" % [str(ask[0]), int(ask[1])])
+
+
+func _on_edits_since(tile: Vector2i, since: int, revision: int, spheres: PackedFloat32Array, whole: bool) -> void:
+	if cache == null:
+		return
+
+	var keys: Array = cache.apply_catch_up(tile, revision, spheres, whole)
+
+	if stream != null:
+		stream.forget_blocks(keys)
+
+	@warning_ignore("integer_division")
+	print("Terrain client: tile %s caught up from revision %d to %d: %s" % [str(tile), since, revision, "saved ground dropped (the server could not list the edits)" if whole else "%d edits, %d blocks to fetch again" % [spheres.size() / 4, keys.size()]])
 
 
 var _edits_untold: Array = []   # [center, radius] of the dug / filled edits since the last tile_changed
@@ -3679,6 +3703,8 @@ func _reload_ground() -> void:
 	link.stream = stream
 	terrain.stream = stream
 	cache.seed_starter("res://worlds/base_world/starter_cache", str(world.get("starter_stamp", "")))
+	cache.set_revisions({})   # the starter ground just copied in is caught up like any older saved tile
+	_ask_catch_up()
 
 
 # Inspection mode (the / key): names whatever the crosshair points at. Checked

@@ -289,6 +289,49 @@ func revision_of(tile: Vector2i) -> int:
 	return revision
 
 
+# The ground edits a client's saved copy of `tile` at revision `since` lacks (Dave 18 Nov 2026: after any edit, every join threw the whole
+# 15 km tile out of the client's saved ground and fetched it all again). A tile's revision rose by one for every logged edit whose blocks
+# lie on it (edit_sphere), so revisions since+1 .. now are the tile's newest (now - since) edits in the log. Returns {"revision": now,
+# "spheres": PackedFloat32Array of x, y, z, radius per edit, oldest first, "whole": true when the log cannot say (since is newer than
+# now, or older than the log's edits on the tile, as after a ground reset; or more than CATCH_UP_MAX edits): the client then drops the tile.
+const CATCH_UP_MAX := 100000
+const CATCH_UP_SPARE := 64     # edits sent beyond the count: revisions.json is written at most once a second, so after a server crash the
+                               # revision can lag the log by a second of edits; marking a few edits twice costs a few blocks fetched again
+
+
+func edits_since(tile: Vector2i, since: int) -> Dictionary:
+	var now: int = revision_of(tile)
+	var out: Dictionary = {"revision": now, "spheres": PackedFloat32Array(), "whole": false}
+	var wanted: int = now - since
+
+	if wanted == 0:
+		return out
+
+	if wanted < 0 or wanted > CATCH_UP_MAX:
+		out["whole"] = true
+		return out
+
+	var on_tile: Array = []   # [centre, radius] of the tile's edits, oldest first
+
+	for edit in ops.edits():
+		for block in GroundOps.blocks_of(edit[1], float(edit[2])):
+			if generator.tile_of(float(block.x * BLOCK_SIZE), float(block.z * BLOCK_SIZE)) == tile:
+				on_tile.append([edit[1], edit[2]])
+				break
+
+	if wanted > on_tile.size():
+		out["whole"] = true
+		return out
+
+	var spheres: PackedFloat32Array = PackedFloat32Array()
+
+	for edit in on_tile.slice(maxi(0, on_tile.size() - wanted - CATCH_UP_SPARE)):
+		spheres.append_array(PackedFloat32Array([edit[0].x, edit[0].y, edit[0].z, edit[1]]))
+
+	out["spheres"] = spheres
+	return out
+
+
 func revisions() -> Dictionary:
 	_edit_mutex.lock()
 	var copy: Dictionary = tile_revisions.duplicate()
