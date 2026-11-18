@@ -2015,7 +2015,7 @@ func _on_dig_requested(peer_id: int, center: Vector3, radius: float) -> void:
 
 
 # The first edit after a quiet half second is announced at once; edits that follow within it are announced together when it ends
-# (_process), each announcement making every client forget what it fetched ahead and ask again.
+# (_process); each client then marks the blocks round its recent edits as outdated again (terrain_client.gd _on_tile_changed).
 func _tell_tile_changed(tile: Vector2i) -> void:
 	var now: int = Time.get_ticks_msec()
 
@@ -2317,11 +2317,11 @@ func _dig_ground(center: Vector3, radius: float) -> bool:
 		return false
 
 	_fill_last = []
+	net.dug.rpc(center, radius)   # before tile_changed: the client re-marks the edits it has heard of when that comes (terrain_client.gd _on_tile_changed)
 
 	for tile in tiles:
 		_tell_tile_changed(tile)
 
-	net.dug.rpc(center, radius)
 	tunnels.mark_edit(center, radius)
 	var t2: int = Time.get_ticks_usec()
 
@@ -2464,12 +2464,12 @@ func _fill_ground(center: Vector3, radius: float, material: int) -> bool:
 
 	if not tiles.is_empty():
 		_fill_last = [center, radius, material]
+		net.filled.rpc(center, radius, material)   # before tile_changed, as in _dig_ground
 
 	for tile in tiles:
 		_tell_tile_changed(tile)
 
 	if not tiles.is_empty():
-		net.filled.rpc(center, radius, material)
 		tunnels.mark_edit(center, radius)
 		_bury_plants(center, radius)
 
@@ -2694,8 +2694,7 @@ func _process(delta: float) -> void:
 	_events.mark("checks")
 	var now: int = Time.get_ticks_msec()
 
-	# One tile_changed per tile per half second however many edits there were (each makes every client forget what it
-	# fetched ahead and ask again), and the revision file once a second.
+	# One tile_changed per tile per half second however many edits there were, and the revision file once a second.
 	if now - _tiles_told_msec >= 500:
 		_tiles_told_msec = now
 

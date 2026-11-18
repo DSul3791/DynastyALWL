@@ -214,7 +214,7 @@ func _init() -> void:
 	check(have("charcoal") >= fuel_n, "2. firewood burning in the campfire leaves %d charcoal, taken from its store (%d needed)" % [have("charcoal"), fuel_n])
 
 	# 3. The iron: not at the Primitive smelter; at the Improved smelter only with its bellows worked.
-	items.give(1, items.table.number_of("wooden_hammer"), 1)
+	items.give(1, items.table.number_of("stone_hammer"), 1)
 	var primitive: int = build("smelter", PRIMITIVE_AT)
 	check(primitive >= 0, "3a. a Primitive smelter stands, built from %s" % str(blueprint_of("smelter").get("cost", [])))
 	items.report_position(1, PRIMITIVE_AT + Vector3(1.5, 0.0, 0.0))

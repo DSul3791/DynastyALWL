@@ -171,7 +171,7 @@ func rows(hammer_tier: int) -> Array:
 	return out
 
 
-# What a build may draw on for one cost (server_items.gd _blueprint_short reads the same stock): the pack, loose stacks within 12 m and the player's own
+# What a build may draw on for one cost (the counts the server sends, protocol 98): the pack, loose stacks within 12 m and the player's own
 # containers within 12 m that are not kept out (CraftStock), any member of a group counting for it.
 func _have(number: int) -> int:
 	return int(stock_count.call(number)) if stock_count.is_valid() else int(_pack.count_fill(number))

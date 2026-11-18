@@ -1926,6 +1926,17 @@ func _test_streaming(generator, data) -> void:
 	var cached: VoxelBuffer = TerrainLayout.make_buffer(16)
 	_check(cache.load_block(cached, block, 0) and cached.get_voxel(3, 3, 3, TerrainLayout.CHANNEL_ROCK) == original.get_voxel(3, 3, 3, TerrainLayout.CHANNEL_ROCK),
 		"the client cache returns a saved block")
+	# Dave 18 Nov 2026: an edit this session outdates only the blocks round it, not the whole tile.
+	var far_block: Vector3i = block + Vector3i(4, 0, 0)
+	cache.save_block(original, far_block, 0)
+	cache.flush()
+	var edit_at: Vector3 = (Vector3(block) + Vector3(0.5, 0.5, 0.5)) * 16.0
+	var forgotten: Array = cache.forget_area(edit_at, 2.0)
+	_check(forgotten.has(Vector4i(block.x, block.y, block.z, 0)) and not cache.load_block(cached, block, 0) and cache.load_block(cached, far_block, 0),
+		"a ground edit outdates the saved blocks round it and keeps the rest of the tile")
+	cache.save_block(original, block, 0)
+	cache.flush()
+	_check(cache.load_block(cached, block, 0), "the server's new copy of an edited block is saved and read again")
 	cache.set_revision(tile, 2)
 	_check(not cache.load_block(cached, block, 0), "a newer tile revision empties that tile from the client cache")
 	var tile_blocks: int = int(generator.tile_size_m / 16.0)

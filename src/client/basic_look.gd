@@ -271,7 +271,6 @@ const ART_OVERRIDES := {
 	"potato_seeds": {"shape": "seedpile", "color": "#c9a878", "size": 1.1},
 	"turnip_seeds": {"shape": "seedpile", "color": "#3a2a22", "size": 0.9},
 	"flax_seeds": {"shape": "seedpile", "color": "#7a5230", "size": 0.9, "bits": ["long"]},
-	"obsidian_knife": {"shape": "knife", "color": "#101014", "size": 1.0, "bits": ["glass"]},
 	"stone_pickaxe": {"shape": "pick", "color": "#7d7a74", "size": 1.0, "bits": ["stone"]},
 	"hide_scraper": {"shape": "scraper", "color": "#4a4238", "size": 1.0},
 	"sickle": {"shape": "sickle", "color": "#8a8d92", "size": 1.0},

@@ -1029,8 +1029,8 @@ func _probe_structure_for(id: int) -> Dictionary:
 		clear_prompt()
 		net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
-	if _world[id].get("site") != null:   # a blueprint site: E deposits the materials, hold E takes it down and gives back what was put in
-		return {"prompt": "Press E to deposit materials (hold E to take the blueprint down)", "lines": _site_lines(_world[id]["site"]), "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
+	if _world[id].get("site") != null:   # a blueprint site: only a hammer hit adds the materials (Dave 18 Nov 2026); hold E takes it down and gives back what was put in
+		return {"prompt": "Hit it with a hammer to add materials (hold E to take the blueprint down)", "lines": _site_lines(_world[id]["site"]), "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
 	if state == 11 or state == 12:
 		return {"prompt": "Press E to search the remains", "tap": func(): _ask_open(id)}
@@ -3733,7 +3733,7 @@ func hand_tool_ok(number: int) -> bool:
 	return CraftStock.in_hand(recipes.recipe(number), table, inventory, _hand_slot())
 
 
-# The words for the tool the recipe, or a part its auto-make plan makes on the way (a Wooden block sawn for a Wooden hammer), needs in hand and
+# The words for the tool the recipe, or a part its auto-make plan makes on the way (a Wooden block sawn for a carved Wooden bowl), needs in hand and
 # lacks there ("any saw"); "" when none.
 func hand_tool_short(number: int) -> String:
 	if not hand_tool_ok(number):
@@ -6558,7 +6558,7 @@ func run_plant_test(client) -> void:
 const CHEST_BLUEPRINT := 26
 const CHEST_MATERIALS := [["stone_knife", 1], ["stick", 10], ["twine", 4]]
 const LEAN_TO_BLUEPRINT := 25
-const LEAN_TO_MATERIALS := [["wooden_hammer", 1], ["stick", 30], ["leaves", 100], ["leaves", 100], ["twine", 10]]
+const LEAN_TO_MATERIALS := [["stone_hammer", 1], ["stick", 30], ["leaves", 100], ["leaves", 100], ["twine", 10]]
 
 
 func _give_blueprint_kit(materials: Array) -> void:

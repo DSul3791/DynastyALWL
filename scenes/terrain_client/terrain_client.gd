@@ -1620,14 +1620,35 @@ func _on_blocks(keys: PackedInt32Array, payloads: Array) -> void:
 		Probe.stop("blocks in", t)
 
 
+# The server's note that a tile's ground was edited (sent at most every half second, after the edits' own dug / filled messages).
+# Dave 18 Nov 2026 (ground "unloaded" for many minutes while a road was built): this used to throw the whole 15 km tile out of the
+# saved ground and every prefetched block with it, at every edit. Only the blocks round this session's edits are outdated
+# (_forget_edit); they are marked again here, so a block the server answered just before the edit and that landed after it is
+# asked for again too. Edits made while this client was away still empty the tile at the next join (the welcome's revisions).
 func _on_tile_changed(tile: Vector2i, revision: int) -> void:
-	if cache != null:
-		cache.set_revision(tile, revision)
+	for edit in _edits_untold:
+		_forget_edit(edit[0], edit[1], false)
 
-	if stream != null:
-		stream.forget_prefetch()
+	_edits_untold.clear()
 
 	print("Terrain client: tile %s is now revision %d" % [str(tile), revision])
+
+
+var _edits_untold: Array = []   # [center, radius] of the dug / filled edits since the last tile_changed
+
+
+# A ground edit: the saved and prefetched copies of the blocks it touches are outdated and come from the server again.
+func _forget_edit(center: Vector3, radius: float, remember: bool = true) -> void:
+	if cache == null:
+		return
+
+	var keys: Array = cache.forget_area(center, radius)
+
+	if stream != null:
+		stream.forget_blocks(keys)
+
+	if remember:
+		_edits_untold.append([center, radius])
 
 
 # Applies an edit to the terrain already loaded; blocks loaded later come
@@ -1708,6 +1729,8 @@ func _tunnel_step() -> void:
 
 
 func _on_dug(center: Vector3, radius: float) -> void:
+	_forget_edit(center, radius)
+
 	if terrain == null:
 		return
 
@@ -1737,6 +1760,8 @@ func _on_dug(center: Vector3, radius: float) -> void:
 
 # A fill (a dam, a filled hole): the same sphere put back as ground, the grass under it buried.
 func _on_filled(center: Vector3, radius: float, _material: int) -> void:
+	_forget_edit(center, radius)
+
 	if terrain == null:
 		return
 
