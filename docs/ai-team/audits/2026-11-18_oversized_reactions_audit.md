@@ -14,12 +14,12 @@ What this area does: the server (`scenes/terrain_server/terrain_server.gd`, `src
 ### 1. Rejoining throws away the whole saved island ground after any dig (`src/stream/client_block_cache.gd:148`)
 - **What this is:** each client keeps one ground file per 15 km tile, named by the tile's revision (`tile_X_Z_rN.sqlite`, `:321`). At the join the server sends every tile's revision (`terrain_server.gd:969`) and `set_revisions` deletes any file whose revision differs.
 - **Problem:** every dig, fill, hoe stroke or road piece raises the tile revision (`server_block_store.gd:633`). Today's fix (`0359cf13`, `forget_area` at `:179`) stops the in-session wipe, but the file name never advances, so at the **next join** the whole tile file is deleted and every block round the player is fetched again. Any edit by anyone on the tile counts, including your own from last session. This is the same symptom Dave saw (ground missing for minutes), moved to the join.
-- **Fix (S to M):** at the join, send the edit spheres made since the client's revision (the edit log `ground_ops.gd` already numbers edits) and forget only those areas, then rename the file to the current revision. Fall back to the whole-tile wipe only when the gap is too large or a re-bake changed the tile stamp. Belongs with the terrain thread ("Fix terrain wall by the stream").
+- **Fix (S to M):** at the join, send the edit spheres made since the client's revision (the edit log `ground_ops.gd` already numbers edits; it needs a per-tile revision-to-sequence map, since revisions count per tile and the log counts for the whole world) and forget only those areas, then rename the file to the current revision. Fall back to the whole-tile wipe only when the gap is too large or a re-bake changed the tile stamp. Belongs with the terrain thread ("Fix terrain wall by the stream").
 - **If we skip it:** every join after any building or digging reloads the island's ground from scratch.
 
 ### 2. Every save rewrites the whole world on the server's main thread (`src/stream/server_items.gd:1562`)
 - **What this is:** every 30 s (`SAVE_EVERY_S`, `:49`) `save()` runs if `_dirty` is set.
-- **Problem:** there is one `_dirty` flag for everything (set in about 90 places). One pickup, one item ageing out or one moved log makes the next save turn every inventory, world item, chest, tree, character, crop, light, kiln, smelter and smithy into JSON on the tick (`_write_atomic`, `:6197`: "the snapshot is taken now, on the tick"; only the disk write is in the background). A 675 ms save in one tick was already logged on 5 Nov. The cost grows with everything ever built or dropped.
+- **Problem:** there is one `_dirty` flag for everything (`_dirty = true` appears about 200 times). One pickup, one item ageing out or one moved log makes the next save turn every inventory, world item, chest, tree, character, crop, light, kiln, smelter and smithy into JSON on the tick (`_write_atomic`, `:6197`: "the snapshot is taken now, on the tick"; only the disk write is in the background). A 675 ms save in one tick was already logged on 5 Nov. The cost grows with everything ever built or dropped.
 - **Fix (M):** one dirty flag per file, so a pickup saves `inventories.json` only; world items and chests only when they changed. Later, world items as SQLite rows (only changed rows written).
 - **If we skip it:** a server freeze every 30 s that every player feels as a hitch, longer each week the world is played.
 
@@ -37,7 +37,7 @@ What this area does: the server (`scenes/terrain_server/terrain_server.gd`, `src
 - **If we skip it:** road building gets slower and laggier for everyone as the world fills; it is the action Dave was doing when the ground went missing.
 
 ### 5. Placing one pipe or channel rebuilds the water network of the whole world (`src/stream/server_items.gd:16178`)
-- **Problem:** once any piece with ports exists anywhere (`_water_has_ports`, `:16050`), every new water piece calls `_water_relink` (`:16071`), which rebuilds the network from all pieces. Each `WaterNetwork.add` compares the new piece with every piece (`water_network.gd:177`, `:187`), so the rebuild is n squared, and the turning loop (`:16100`) can repeat it. Cost grows with all plumbing on the server, not with the channel placed. `unmeasured risk`.
+- **Problem:** once any piece with ports exists anywhere (`_water_has_ports`, `:16050`), every new water piece calls `_water_relink` (`:16071`), which rebuilds the network from all pieces. Each `WaterNetwork.add` compares the new piece with every piece (`water_network.gd:177`, `:187`), so the rebuild is n squared over every water piece on the server, and the turning loop (`:16100`) can repeat it. One connected group is capped at 256 pieces (`MAX_PIECES`, `water_network.gd:39`), but the scans cover every group in the world, so cost grows with all plumbing on the server, not with the channel placed. `unmeasured risk`.
 - **Fix (M):** relink only the connected group round the new piece; a small grid for port look-ups (ports join within `PORT_JOIN_M`).
 - **If we skip it:** each pipe placed in a big irrigation or plumbing build freezes the server a little longer.
 
@@ -67,7 +67,7 @@ Placing or removing any support rescans all items; `support_strength_at` (used b
 ### 11. Whole-file saves that grow with exploring (`src/stream/server_map.gd:319`, `src/stream/server_trails.gd:173`)
 A player's whole explored map is rewritten when any of it changes; the animal trails file every 120 s. Small now. **Fix (S):** write only changed blocks.
 
-### 12. Each water update drops every chunk's packed water on the server (`scenes/terrain_server/terrain_server.gd:1474`, `server_flora.gd:399`)
+### 12. Each water update drops every chunk's packed water on the server (`scenes/terrain_server/terrain_server.gd:1475`, `server_flora.gd:399`)
 Only the live window changed, but `clear_water` empties all, so every later ask repacks. **Fix (S):** clear only chunks in the changed area.
 
 Left out: about 60 other loops over every world item inside one-off player actions (placing, station checks, seats, beds, crafting). Each is one pass per click; they matter only at the scale in finding 3 and share its fix.
