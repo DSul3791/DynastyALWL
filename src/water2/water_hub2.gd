@@ -352,7 +352,7 @@ func _run() -> void:
 				_pending = levels
 
 			_flow_pending = packet
-			_live_rects = _live.drawn_rects()
+			_live_rects = _live.take_drawn_rects()
 			_mutex.unlock()
 			# Outside the lock: building the 2 m textures takes a few ms. Sleeping regions every 4th publish (late joiners get them within a minute).
 			var fine: Dictionary = _live.fine_packets(ticks % (PUBLISH_TICKS * 4) == 1)

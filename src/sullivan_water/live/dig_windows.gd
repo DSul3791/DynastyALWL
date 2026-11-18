@@ -45,6 +45,7 @@ const MAX_SLEEPING := 32       # sleeping regions kept (each at most MAX_TILES t
 var source = null
 var windows: Array = []        # the running regions, oldest first: each {"grid", "adapter", "coordinator", "origin": Vector2, "tiles": Rect2i}
 var sleeping: Array = []       # regions put to sleep for the tile budget, oldest first, same shape; not stepped, still drawn
+var _dropped: Array = []   # Rect2s of sleeping regions dropped since the last take_drawn_rects
 var built: int = 0
 var joined: int = 0            # regions that were joined into a bigger one
 var closed_m3: float = 0.0     # water dropped with sleeping regions past MAX_SLEEPING
@@ -271,6 +272,7 @@ func _open(wanted: Rect2i, level_at: Callable) -> void:
 		var gone = sleeping.pop_front()
 		closed_m3 += gone["grid"].total_volume()
 		print("water live: sleeping region %s dropped past %d sleeping, %.0f m3 of 2 m water lost (the 8 m levels show again)" % [str(gone["tiles"]), MAX_SLEEPING, gone["grid"].total_volume()])
+		_dropped.append(Rect2(gone["origin"], Vector2(gone["tiles"].size) * TILE_M))   # its ground's water changes back: named once more
 
 	windows.append({"grid": grid, "adapter": adapter, "coordinator": coordinator, "origin": origin, "tiles": rect})
 	built += 1
@@ -351,10 +353,12 @@ func fine_packets(with_sleeping: bool) -> Dictionary:
 	return {"keys": keys, "packets": packets}
 
 
-# The world rectangles (x, z) of the running regions (the only ones whose drawing changes), one each: two regions far apart are named apart,
-# not as one box over the ground between (finding 7, docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md). Water thread.
-func drawn_rects() -> Array:
-	var out: Array = []
+# The world rectangles (x, z) whose drawing changed: each running region, and once each a sleeping region dropped since the last call. One each:
+# two regions far apart are named apart, not as one box over the ground between (finding 7, docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md).
+# Call it after publish. Water thread.
+func take_drawn_rects() -> Array:
+	var out: Array = _dropped
+	_dropped = []
 
 	for win in windows:
 		out.append(Rect2(win["origin"], Vector2(win["tiles"].size) * TILE_M))
