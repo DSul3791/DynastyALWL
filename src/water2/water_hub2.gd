@@ -46,7 +46,7 @@ var _last_levels: PackedFloat32Array = PackedFloat32Array()   # the levels last 
 var _fine_pending: Dictionary = {}   # the newest fine sheet packets (dig_windows.fine_packets), taken once by take_fine
 var _fine_built: int = 0          # 2 m water packet sets built (the log line for the PC check)
 var _fine_sent: bool = false      # the last fine packets named any region (so one more, empty, tells clients to drop them)
-var _live_rect: Rect2 = Rect2()   # world x, z the dig windows draw into, as of the last publish (clients must re-ask chunks there too)
+var _live_rects: Array = []   # Rect2 world x, z each running dig window draws into, as of the last publish (clients must re-ask chunks there too)
 
 
 func setup(centre_tile: Vector2i, _water_dir: String, _base_rate: float, tile_generator, _dry_start: bool = false) -> void:
@@ -151,10 +151,10 @@ func take_fine() -> Dictionary:
 	return packet
 
 
-# Where the dig windows draw (world x, z), so the server tells clients to re-ask those chunks as well as the 8 m window's. Empty when none.
-func live_rect() -> Rect2:
+# Where the dig windows draw (world x, z, one Rect2 each), so the server tells clients to re-ask those chunks as well as the 8 m window's. Empty when none.
+func live_rects() -> Array:
 	_mutex.lock()
-	var r: Rect2 = _live_rect
+	var r: Array = _live_rects.duplicate()
 	_mutex.unlock()
 	return r
 
@@ -352,7 +352,7 @@ func _run() -> void:
 				_pending = levels
 
 			_flow_pending = packet
-			_live_rect = _live.drawn_rect()
+			_live_rects = _live.drawn_rects()
 			_mutex.unlock()
 			# Outside the lock: building the 2 m textures takes a few ms. Sleeping regions every 4th publish (late joiners get them within a minute).
 			var fine: Dictionary = _live.fine_packets(ticks % (PUBLISH_TICKS * 4) == 1)

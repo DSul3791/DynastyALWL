@@ -161,7 +161,7 @@ var _water_answered_msec: Dictionary = {}   # peer -> last time its water reques
 var _water_window: Rect2 = Rect2()          # the live water window (world m) from the last flow packet: water only moves inside it
 var _water_window_told: Rect2 = Rect2()     # the window the last "water moved" named
 var _fine_sends: int = 0                    # 2 m water messages sent (the log line for the PC check)
-var _live_told: Rect2 = Rect2()             # the dig windows' area the last "water moved" named (Sullivan water)
+var _live_told: Array = []                 # the dig windows' areas (Rect2) the last "water moved" named (Sullivan water)
 var _cave_streams_sent: Dictionary = {}     # peer -> {tile: true}: spring cave streams already sent (protocol 87)
 var _water_sent: Dictionary = {}            # peer -> {chunk: hash of the water bytes it holds}: unchanged water is not sent again
 var _gather_msec: Dictionary = {}           # peer -> last gather request handled
@@ -1488,22 +1488,29 @@ func _poll_water() -> void:
 			_wet_centre = _wet_squares(_centre_levels)
 			print("server: water update %d (%d tiles), %d wet squares on the starter tile" % [_water_updates, updates.size(), _wet_centre])
 
-		flora.clear_water()
-
 		# Lag review (Steve 3 Nov 2026): the levels change only inside the live window (outside it the baked ones stay, water_hub2.publish_levels),
 		# so clients re-ask only for the chunks there and where the window was, not for every chunk they hold. No window known: everything.
+		# Sullivan water (Sonny, 7 Nov 2026): a dug ditch can lie outside the 8 m window, so each dig window is named too, now and where they were
+		# last time. Each area is its own rectangle (finding 7, docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md): two digs far apart
+		# name two small areas, not one box over the ground between; and the server forgets only its packed water there (finding 12).
 		if _water_window.has_area():
-			net.water_changed_in.rpc(_water_window.merge(_water_window_told) if _water_window_told.has_area() else _water_window)
+			var areas: Array = [_water_window]
+
+			if _water_window_told.has_area() and _water_window_told != _water_window:
+				areas.append(_water_window_told)
+
 			_water_window_told = _water_window
+			var live: Array = water_live.live_rects() if water_live.has_method("live_rects") else []
 
-			# Sullivan water (Sonny, 7 Nov 2026): a dug ditch can lie outside the 8 m window, so the chunks under the dig windows are named
-			# too, in their own message (one rectangle round both could cover kilometres of chunks), with where they were last time.
-			var live: Rect2 = water_live.live_rect() if water_live.has_method("live_rect") else Rect2()
+			for r in live + _live_told:
+				if (r as Rect2).has_area() and not areas.has(r):
+					areas.append(r)
 
-			if live.has_area() or _live_told.has_area():
-				net.water_changed_in.rpc(live.merge(_live_told) if live.has_area() and _live_told.has_area() else (live if live.has_area() else _live_told))
-				_live_told = live
+			_live_told = live
+			flora.clear_water_in(areas)
+			net.water_changed_in.rpc(areas)
 		else:
+			flora.clear_water()
 			net.water_changed.rpc()
 
 		if not water_live.busy:

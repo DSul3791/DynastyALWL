@@ -530,7 +530,7 @@ var _water_asked_msec: int = 0
 var _water_wait_msec: int = WATER_MIN_MSEC   # the wait between re-asks now (WATER_MIN_MSEC to WATER_MAX_MSEC)
 var _water_new_since_ask: int = 0           # chunks with changed water since the last re-ask
 var _water_quiet_asks: int = 0              # re-asks in a row that brought nothing new (the log line is printed for the first only)
-var _water_dirty_area: Rect2 = Rect2()   # protocol 88: where the water moved since the last ask (no area: everywhere)
+var _water_dirty_areas: Array = []   # protocol 88, a list since 129: the Rect2s where the water moved since the last ask
 var _water_dirty_all: bool = false
 var _flora_chunks: int = 0
 var _flora_bytes: int = 0
@@ -2963,9 +2963,12 @@ func _on_water_changed() -> void:
 	_water_dirty_all = true
 
 
-func _on_water_changed_in(area: Rect2) -> void:
+func _on_water_changed_in(areas: Array) -> void:
 	_water_dirty = true
-	_water_dirty_area = area if not _water_dirty_area.has_area() else _water_dirty_area.merge(area)
+
+	for area in areas:
+		if typeof(area) == TYPE_RECT2 and (area as Rect2).has_area() and not _water_dirty_areas.has(area):
+			_water_dirty_areas.append(area)   # each kept apart: two digs far apart do not make a box over the ground between (audit finding 7)
 
 
 # Asks again for the water of the chunks held. While ground is still loading this waits up
@@ -2989,13 +2992,18 @@ func _send_water_request(now: int) -> void:
 	_water_dirty = false
 	_water_asked_msec = now
 	var chunks: PackedInt32Array = PackedInt32Array()
-	var area: Rect2 = Rect2() if _water_dirty_all else _water_dirty_area.grow(flora.chunk_m)
+	var areas: Array = []
+
+	if not _water_dirty_all:
+		for area in _water_dirty_areas:
+			areas.append((area as Rect2).grow(flora.chunk_m))
+
 	_water_dirty_all = false
-	_water_dirty_area = Rect2()
+	_water_dirty_areas = []
 
 	for chunk in flora.held_chunks():
 		# Only the chunks the moving water touches (protocol 88); the rest still hold the right water.
-		if area.has_area() and not area.intersects(Rect2(Vector2(chunk) * flora.chunk_m, Vector2(flora.chunk_m, flora.chunk_m))):
+		if not areas.is_empty() and not WaterReask.touches_any(areas, Rect2(Vector2(chunk) * flora.chunk_m, Vector2(flora.chunk_m, flora.chunk_m))):
 			continue
 
 		chunks.append_array(PackedInt32Array([chunk.x, chunk.y]))

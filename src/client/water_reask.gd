@@ -11,3 +11,13 @@ static func wait_after(wait_msec: int, new_chunks: int, min_msec: int, max_msec:
 		return min_msec
 
 	return mini(wait_msec * 2, max_msec)
+
+
+# Whether a held chunk's square (world x, z) touches any of the areas the water moved in (protocol 129: one Rect2 per area, so two digs far apart
+# do not make every chunk between them ask again; audit finding 7).
+static func touches_any(areas: Array, chunk: Rect2) -> bool:
+	for area in areas:
+		if (area as Rect2).intersects(chunk):
+			return true
+
+	return false

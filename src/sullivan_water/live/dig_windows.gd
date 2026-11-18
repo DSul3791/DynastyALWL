@@ -351,13 +351,14 @@ func fine_packets(with_sleeping: bool) -> Dictionary:
 	return {"keys": keys, "packets": packets}
 
 
-# The world rectangle (x, z) round the running regions (the only ones whose drawing changes), or an empty Rect2. Water thread.
-func drawn_rect() -> Rect2:
-	var out: Rect2 = Rect2()
+# The world rectangles (x, z) of the running regions (the only ones whose drawing changes), one each: two regions far apart are named apart,
+# not as one box over the ground between (finding 7, docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md). Water thread.
+func drawn_rects() -> Array:
+	var out: Array = []
 
 	for win in windows:
-		var r: Rect2 = Rect2(win["origin"], Vector2(win["tiles"].size) * TILE_M)
-		out = r if not out.has_area() else out.merge(r)
+		out.append(Rect2(win["origin"], Vector2(win["tiles"].size) * TILE_M))
+
 	return out
 
 
