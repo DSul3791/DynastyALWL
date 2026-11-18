@@ -347,6 +347,7 @@ func _ready() -> void:
 	items.send_goal_progress = func(peer, changes): net.goal_progress.rpc_id(peer, changes)
 	items.send_marker_done = func(peer, at): net.road_marker_done.rpc_id(peer, at)
 	items.send_survey_refused = func(peer, last): net.survey_refused.rpc_id(peer, last)
+	items.send_hoe_verdict = func(peer, kind, code, at, state, why, cells): net.hoe_verdict.rpc_id(peer, kind, code, at, state, why, cells)
 	@warning_ignore("confusable_local_declaration")
 	items.send_breath = func(peer, tenths): net.breath.rpc_id(peer, tenths)
 	@warning_ignore("confusable_local_declaration")

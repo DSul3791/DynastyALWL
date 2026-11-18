@@ -949,7 +949,6 @@ func _init() -> void:
 	fills.clear()
 	accept[0] = true
 	m._last_dig.clear()
-	m._last_average.clear()
 	m.action(1, Net.ACT_HOE_PATH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(7.2, 10.0, 0.4))
 	check(patches_of.call() == 2, "a second patch 0.9 m along is laid")
 	# Dave 3 Nov: the path goes round a rock instead of painting on it.
@@ -958,12 +957,12 @@ func _init() -> void:
 	m.action(1, Net.ACT_HOE_PATH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(8.2, 10.0, 0.4))
 	check(patches_of.call() == 2, "no path patch is laid within a boulder's radius plus 1 m")
 	m._items.erase(999001)
-	check(digs.size() + fills.size() >= 2 and digs.size() + fills.size() <= 4, "a path stroke averages the ground round it with at most 4 edits (%d cuts, %d fills)" % [digs.size(), fills.size()])
+	check(digs.size() + fills.size() >= 1 and digs.size() + fills.size() <= ItemsScript.PATH_LEVEL_OPS, "Pathen: one click levels the spot to its average with at most %d edits (%d cuts, %d fills)" % [ItemsScript.PATH_LEVEL_OPS, digs.size(), fills.size()])
 	digs.clear()
 	fills.clear()
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_PATH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(8.0, 10.0, 3.0))
-	check(digs.is_empty() and fills.is_empty() and patches_of.call() == 3, "a second path stroke within 1.5 s lays its patch but leaves the ground alone")
+	check(patches_of.call() == 3, "the next click lays its own level spot at once (no wait between clicks)")
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_PATH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(30.0, 10.0, 0.0))
 	check(patches_of.call() == 3, "a path out of reach does nothing")
@@ -1009,22 +1008,55 @@ func _init() -> void:
 	m._last_dig.clear()
 	m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, level_at)
 	check(digs.size() + fills.size() == level_made, "once level, a stroke makes no more edits (the edit log does not grow)")
-	# Standing on a foundation 0.5 m up: levelled to 0.1 m below the feet (10.4); fills top out there.
+	# Standing on a foundation 0.5 m up: levelled to 0.1 m below the feet (10.4); fills top out there, and every fill is paid for in soil (BugsList entry 1).
 	var cuts_before: int = digs.size()
+	var soil_n2: int = m.table.number_of("soil")
+	var notes_seen: Array = []
+	m.send_notice = func(_p, text): notes_seen.append(text)
+	m._items[999101] = {"number": m.table.number_of("wood_foundation"), "count": 1, "pos": Vector3(5.0, 10.4, 0.0), "left": 1.0e9, "struct": {"kind": "wood_foundation", "yaw": 0.0}}
 	m.report_position(1, Vector3(5.0, 10.5, 0.0))
+	m._level_hold.clear()
+	m.inventory_of(1).remove(soil_n2, m.inventory_of(1).count_of(soil_n2))
+	m._last_dig.clear()
+	notes_seen.clear()
+	m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, level_at)
+	check(fills.is_empty() and notes_seen.any(func(n): return str(n).begins_with("Not enough soil")), "no soil: the low ground is not filled (no free fill) and the player is told (%s)" % str(notes_seen))
+	m.action(1, Net.ACT_ADMIN_GIVE, soil_n2, 0, 400, Vector3.ZERO)
+	m._level_hold.clear()
 
 	for stroke in 40:
 		m._last_dig.clear()
 		m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, level_at)
 	check(digs.size() == cuts_before and not fills.is_empty() and fills.all(func(put): return float(put[0].y) + ItemsScript.LEVEL_SPHERE_M <= 10.4 + 0.001), "on a foundation: the ground is filled up toward just under the feet, never above (%d fills)" % fills.size())
-	check(flat_after.call(10.4, ItemsScript.LEVEL_MIN_M), "and the whole circle ends 0.1 m under the feet")
-	# Feet far above the ground (a jump, a cart): the target is capped LEVEL_MAX_RAISE_M above the ground under the feet.
+	check(m.inventory_of(1).count_of(soil_n2) < 400, "and the fill used up soil (%d of 400 left)" % m.inventory_of(1).count_of(soil_n2))
+	check(fills.all(func(put): return Vector2(put[0].x - 5.0, put[0].z).length() >= ItemsScript.LEVEL_KEEP_M - 0.001), "no edit is centred under the player: the ground holding them up is kept")
+	m._items.erase(999101)
+	# Feet in the air with nothing built under them (a jump, a log): the target is the ground under the feet, not the feet; and while the button is held the target
+	# stays where the action started, so ground it raised never lifts it (the creep Dave saw).
 	m.report_position(1, Vector3(5.0, 14.0, 0.0))
+	m._level_hold.clear()
 	m._last_dig.clear()
 	var fills_before: int = fills.size()
 	var under_feet: float = m._edited_height(5.0, 0.0, level_ops.call(level_at, 0.0))
 	m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, level_at)
-	check(fills.size() > fills_before and fills.slice(fills_before).all(func(put): return float(put[0].y) + ItemsScript.LEVEL_SPHERE_M <= under_feet + ItemsScript.LEVEL_MAX_RAISE_M + 0.001), "feet 3.6 m up: nothing is filled higher than %.1f m over the ground under them" % ItemsScript.LEVEL_MAX_RAISE_M)
+	check(fills.slice(fills_before).all(func(put): return float(put[0].y) + ItemsScript.LEVEL_SPHERE_M <= under_feet + 0.001), "feet 3.6 m up, nothing built under them: nothing is filled above the ground under them")
+	var held_target: float = float(m._level_hold[1][0])
+	m.report_position(1, Vector3(5.0, 15.0, 0.0))
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, level_at)
+	check(is_equal_approx(float(m._level_hold[1][0]), held_target), "a held stroke keeps the height the action started from")
+	# A foundation on raised ground (BugsList entry 2): placement reads the saved fills, so a site built up 1.6 m above the generated ground takes a foundation on top.
+	m.edits_near = func(_point, _radius) -> Array: return [[1, Vector3(-20.0, -18.4, 0.0), 30.0]]   # one wide fill: the ground round x -20 now stands about 11.6
+	m.report_position(1, Vector3(-18.0, 11.7, 0.0))
+	var raised_ids: Array = m._items.keys()
+	m.place_piece(1, "wood_foundation_kit", Vector3(-20.0, 11.6, 0.0))
+	var raised: Array = m._items.keys().filter(func(new_id): return not raised_ids.has(new_id) and m._items[new_id].has("struct") and str(m._items[new_id]["struct"]["kind"]) == "wood_foundation")
+	check(raised.size() == 1 and absf(float(m._items[raised[0]]["pos"].y) - 11.6) < 0.1, "a foundation sits on hoe-raised ground 1.6 m above the generated surface (%s)" % str(raised.map(func(new_id): return m._items[new_id]["pos"])))
+
+	for raised_id in raised:
+		m._items.erase(raised_id)
+
+	m.send_notice = Callable()
 	m.edits_near = Callable()
 	digs.clear()
 	fills.clear()
@@ -3023,12 +3055,12 @@ func _init() -> void:
 	bo.report_position(1, Vector3(5.0, 11.5, 5.0))
 	bo.vitals_of(1)["weight"] = 5000.0   # a big body: the carry limit stays out of the stone counts below
 	var big: int = bo._boulder_stones(1.0)
-	check(big >= 4000 and big <= 5200, "a 1 m radius boulder makes about 4600 stones at 0.85 height, 2600 kg/m3, half usable (%d)" % big)
-	check(bo._boulder_stones(0.3) >= 100 and bo._boulder_stones(0.3) <= 150 and bo._boulder_stones(1.2) > 7000, "small boulders make a hundred or so, a 1.2 m one several thousand (%d, %d)" % [bo._boulder_stones(0.3), bo._boulder_stones(1.2)])
+	check(big >= 330 and big <= 410, "a 1 m radius boulder makes about 370 stones at 0.85 height, 2600 kg/m3, 0.04 coming away as stones (BugsList entry 3, RK-1) (%d)" % big)
+	check(bo._boulder_stones(0.3) >= 8 and bo._boulder_stones(0.3) <= 12 and bo._boulder_stones(1.2) >= 600 and bo._boulder_stones(1.2) <= 680, "stones go with the rock's volume: a 0.3 m one about 10, a 1.2 m one about 640 (%d, %d)" % [bo._boulder_stones(0.3), bo._boulder_stones(1.2)])
 	bo._boulder_cfg["luck_extra"] = 0.0   # the exact-count checks below; luck's extra stone has its own check
 	bo._boulder_cfg["flint"] = {}   # flint has its own test (test_flint); these checks count plain stones
-	var small_total: int = bo._boulder_stones(0.3)
-	bo._items[900001] = {"number": 0, "count": small_total, "pos": Vector3(5.0, 11.5, 6.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 7, "boulder": {"radius": 0.3, "yaw": 0.0, "total": small_total}}
+	var small_total: int = bo._boulder_stones(0.6)   # about 80: enough for the blow counts below
+	bo._items[900001] = {"number": 0, "count": small_total, "pos": Vector3(5.0, 11.5, 6.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 7, "boulder": {"radius": 0.6, "yaw": 0.0, "total": small_total}}
 	bo._last_hit.clear()
 	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)
 	check(bo_rejects == [1] and int(bo._items[900001]["count"]) == small_total, "nothing in hand: refused (no tool), nothing taken (%s)" % str(bo_rejects))
