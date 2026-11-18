@@ -64,7 +64,7 @@ Labels in sections 3 and 7 and Appendix A: **APPROVED** (Dave), **DECIDED** (Cha
 | Hand saw | **Copper (first, Primitive Smithy)**, Bronze, Iron, Steel | Cuts logs on the ground into Wooden Blocks, Planks or Hardwood Boards; same yields as the sawmill, slower; better saws are faster, never higher-yield [D1][WOOD]. |
 | Sickle | Bronze, Iron, Steel (Stone retired) | Portable, precise harvesting. |
 | Scythe | Bronze, Iron, Steel | Large-area harvesting. |
-| Chisel | Bronze, Iron, Steel | Sculpture and art only; not required for stone construction. |
+| Chisel | Bronze, Iron, Steel | Break, repair and sharpening follow the metal-tool rules. |
 | Sewing needle | One reusable needle, no tiers | Sewing with consumed Thread; portable simple repairs. |
 
 ### 2.2 Durability, repair and sharpening [D1][R][C]
@@ -218,7 +218,7 @@ These seven rows define **four distinct door configurations per tier = 28 door v
 | new | | Copper - Saw, Bronze - Saw | ADD [WOOD] | Copper saw: the first saw, Primitive Smithy, smelted copper and a wooden handle, no sawn input. Rows and recipes: TREE_WOOD_TOOLS_DESIGN s6 W-1, W-2 (adopted, provisional; Dave adjusts after play). |
 | 297 | stone_pickaxe | Stone - Pickaxe | UPDATE [WOOD] | No longer a required step: the Stone Hammer harvests stone and ore. Disposition W-12 (adopted, provisional; Dave adjusts after play). |
 | 299 | scythe | Iron - Scythe | UPDATE (APPROVED) | Break, repair, sharpening. |
-| 798, 799 / 800 | bronze/iron_chisel / steel_chisel | Chisels | UPDATE / FUTURE | Break, repair, sharpening; sculpture only. |
+| 798, 799 / 800 | bronze/iron_chisel / steel_chisel | Chisels | UPDATE / FUTURE | Break, repair, sharpening. |
 | 815 | whetstone | Whetstone | UPDATE (APPROVED) | Portable sharpening (2.2). |
 | new | | Iron/Steel Axe and Knife, Steel Saw, Bronze/Iron/Steel Sickle and Scythe, and approved purposeful Copper tools | ADD / REVIEW | Keep useful original tool families; Copper items require tested ore/tool relevance and recipes. Bronze work at Primitive/Improved Smithy, Iron work at Improved/Advanced, Steel at Advanced/Master. No separate Stone Forge. |
 | new | | **Copper tool item(s)** | ADD — CREATOR-APPROVED CAPABILITY | Primitive Smithy shapes functional Copper tools before Bronze and Iron. Decide exact useful roster, properties, input counts and stable numbers in the new catalog ledger; do not revive the old 'Copper tools are only future' instruction. |
@@ -1045,7 +1045,7 @@ Dave directed that meals have meaningful, temporary effects related to their ing
 4. **Tool groups:** add groups `axe` (stone, bronze, iron, steel axes) and `saw` (every hand saw: Copper, Bronze, Iron, Steel since [WOOD]); extend `knife` with the iron and steel knives. Recipes that keep one specific primitive tool switch to the group, so a better tool works and a disposable one is not required forever: 20, 278, 344 (`stone_knife` → `knife`); 339, 340 (`stone_axe` → `axe`); 159 (`hand_saw` → `saw`). New tool rows carry `tool_class` and `material`, which the code reads; `boulders.json tools.axe` gains iron and steel.
 5. **Iron Saw recipe 157:** Make Iron Saw at **Improved Smithy**, which can work Iron on its Bronze Anvil (accelerated wear). No Saw Blade ingredient. Do not require a Plank to craft this tool or to build the stations preceding it.
 6. **Sawmill blueprint 11:** drop `saw_blade` (replacement cost in s5).
-7. **Chisels:** drop the chisel from recipe 368 `bench_stone_block` (construction). Recipes 369 and 370 (carved stone block and shingle) keep the `bronze_chisel` group: ornament only.
+7. **Chisels:** apply the metal break, repair and sharpening rules in §2.2.
 8. **First charcoal:** Primitive Smelter is reachable using Coal/Charcoal produced **before** a Kiln is built; the fire byproduct is that early route (the Campfire Charcoal recipe 341 is retired, 17 Nov 2026: Dave "I shouldn't have to craft charcoal"). A Kiln later produces **100 Charcoal per Log** in batches. Preserve true source/action data and do not make a Kiln a prerequisite for the Primitive Smelter.
 9. **Charcoal as fuel:** fires burn by `cooking.json fuel` (burn seconds per item) and `fuel_class` (log, firewood, weak), not by an ingredient group. Charcoal was given a `fuel` burn time and a `fuel_class` entry; since 17 Nov 2026 it has neither (it is not a campfire fuel, so the charcoal a fire leaves is never burned: `docs/design/fire_coals_design.md` §8 CH-4). It is **not** in the `firewood` ingredient group. Coal and Charcoal stay in the `fuel` group for smelting. There is one Firewood since [WOOD].
 10. **Stations:** Implement **three Smelters and four Smithies** defined in §2.7 and §3.3. Bronze fittings enable Improved Smelter; Improved's operated bellows unlock Iron and +30% throughput. Advanced Smelter is one windmill/dual-bellows assembly, zero processing below wind threshold. Iron Anvil crafted at Improved Smithy is an Advanced Smithy construction component; Steel Anvil crafted at Advanced is a Master component. Master quencher is integrated. All require exact new blueprint/recipe/catalog-ID mapping; no standalone smithy add-on progression.
@@ -1075,7 +1075,7 @@ Use [PLAYER_GOALS_REWARDS_AUDIT.md](PLAYER_GOALS_REWARDS_AUDIT.md) as the unchan
 4. **Charcoal:** kiln recipe 364 to logs → 100 Charcoal each, batch; Charcoal not a campfire fuel since 17 Nov 2026 (no `cooking.json fuel` or `fuel_class` row; it is left by burning wood, `charcoal_left`; not the `firewood` group); Charcoal stack size and value rescaled (s5).
 5. **Stations:** implement three Smelters and four Smithies in §3.3, with distinct, persistent capacities and output handling, and the approved Grindstone, Leatherworking Table, Tailor's Table, Loom and Chopping Block. **No separate Bellows/Quenching Trough or proximity Anvil add-ons**. Stable IDs/blueprints of obsolete stations need careful reconciliation; station inventory and wind/bellows tests.
 6. **Tools:** add the 10 ladder tools with recipes; groups `axe`, `saw`, extended `knife`; recipes 20, 278, 344, 159 to the groups (339 and 340, the large-block splits, retire with the wood merge, TREE_WOOD_TOOLS_DESIGN.md); tier renumbering.
-7. **Recipes:** implement the 1:1 Copper/Tin/Iron ore conversions, 1 Copper Ore+1 Tin Ore → 2 Bronze Ingots, Advanced steel with input carbon distinct from hopper fuel, and new station tier requirements in §2.7. Chisel removed from mandatory structural stone-block creation, retained only for decorative carving where appropriate.
+7. **Recipes:** implement the 1:1 Copper/Tin/Iron ore conversions, 1 Copper Ore+1 Tin Ore → 2 Bronze Ingots, Advanced steel with input carbon distinct from hopper fuel, and new station tier requirements in §2.7.
 8. **Textiles:** Thread item and hand recipe; Twine → Thread in recipes 23, 39–42, 173, 194–196, 237, 238, 241, 388.
 9. **Enhancements:** per-instance slot data and the eligibility in 2.9 (code and save format, no item rows).
 10. **Furniture (s3.5):** 14 blueprint cost changes and 8 renames; 6 new item, blueprint and structure rows; `comfort.json` grade kinds and the best-one rule; `slots` per chest grade; looks.

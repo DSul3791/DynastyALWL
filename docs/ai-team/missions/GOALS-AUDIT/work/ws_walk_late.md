@@ -178,7 +178,7 @@ Severity: HIGH = a player following the guide as written fails or is badly misle
   - The Master smithy (105) can then be the last smithing step.
 
 **W-L08 — MEDIUM — the Stonecutter's bench (step 71) is a dead end in the main route.**
-- Problem: every recipe of the bench keeps a Bronze - Chisel. The chisel is never in the main route (side L522, forge L1), and bronze first appears at step 87. Catalog s2.1: "Chisel … Sculpture and art only; not required for stone construction". So the bench gives a main-route player nothing.
+- Problem: every recipe of the bench keeps a Bronze - Chisel. The chisel is never in the main route (side L522, forge L1), and bronze first appears at step 87. So the bench gives a main-route player nothing.
 - Evidence: `recipes.json recipes.bench_stone_block`, `carved_stone_block` and `carved_stone_shingle` all have `keeps` bronze_chisel.
 - Correction: move `build:stonecutters_bench` to the side tables. Alternatively move it after step 91 and ADD `craft:bronze_chisel` immediately before it.
 
@@ -541,7 +541,7 @@ Out of scope here:
 - build:wooden_torch_post L451, wall_torch L452: YES (tallow L414).
 
 **Stoneworking** (stonecutters_bench, step 71)
-- craft:carved_stone_block L571, carved_stone_shingle L572: YES only after craft:bronze_chisel L522. This is the bench's only use (W-L08). Inputs: Stone block L227, Stone shingle L228.
+- craft:carved_stone_block L571, carved_stone_shingle L572: YES only after craft:bronze_chisel L522. Inputs: Stone block L227, Stone shingle L228.
 
 **Pottery and kiln**
 - No side goal at levels 6-17 uses the kiln. Kiln bricks (`recipes.kiln_brick`) and Kiln charcoal (use action) have no goal at all (W-L04).

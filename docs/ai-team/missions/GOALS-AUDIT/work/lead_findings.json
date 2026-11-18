@@ -860,7 +860,7 @@
   "severity": "MED",
   "cls": "CONFIRMED_DEFECT",
   "title": "Stonecutter's bench is a dead end in the main route: every recipe keeps a Bronze - Chisel the route never makes",
-  "evidence": "recipes.json bench_stone_block, carved_stone_block, carved_stone_shingle keep bronze_chisel; master s2.1 chisel is sculpture/art only.",
+  "evidence": "recipes.json bench_stone_block, carved_stone_block, carved_stone_shingle keep bronze_chisel.",
   "goals": [
    "build:stonecutters_bench"
   ],
