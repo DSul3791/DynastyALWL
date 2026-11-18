@@ -109,8 +109,8 @@ const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
 const RescueScript := preload("res://src/client/rescue.gd")
-const BuildInfo := preload("res://src/shared/build.gd")
-const BUILD: int = BuildInfo.NUMBER
+const BuildStamp := preload("res://src/shared/build_stamp.gd")
+var BUILD: int = BuildStamp.number()   # the release stamp's build number, or build.gd NUMBER in an editor run (step A1)
 var rig_flora_hold: Dictionary = {}   # look rig (--shot-flora): chunks whose plants the rig drew itself; incoming server flora for them is dropped
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+Shift+N shortcut
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
@@ -156,7 +156,6 @@ const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
 const PieceLook := preload("res://src/client/piece_look.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
-const TileBakeScript := preload("res://src/admin/tile_bake_launcher.gd")
 const AmbientCrittersScript := preload("res://src/client/ambient_critters.gd")
 const GrassViewScript := preload("res://src/client/grass_view.gd")
 const SoundStageScript := preload("res://src/client/sound_stage.gd")
@@ -497,7 +496,7 @@ var _jitter_test                      # float-precision test, J or Esc > Advance
 var _machine_probe                    # "Measure this machine" run for the minimum-spec test (Esc > Advanced)
 var _gpu_probe                        # GPU cost per piece of the scene, Ctrl+Shift+P
 var weather_look                      # WeatherLook: clouds, rain, snow, fog, lightning from `weather`
-var _bake = TileBakeScript.new()      # admin: background tile bake
+var _bake = null                      # admin: background tile bake (src/admin/tile_bake_launcher.gd), made when started; editor runs only (game_menu.gd)
 var _bake_check_msec: int = 0
 var _bake_status: String = ""
 var _bake_alert_until: int = 0
@@ -822,6 +821,7 @@ func _ready() -> void:
 			test_creatures = true
 
 	net.welcome_received.connect(_on_welcome)
+	net.join_refused_received.connect(_on_join_refused)
 	net.blocks_received.connect(_on_blocks)
 	net.tile_changed_received.connect(_on_tile_changed)
 	net.edits_since_received.connect(_on_edits_since)
@@ -898,6 +898,9 @@ func _ready() -> void:
 
 # What the connection window says: the step the game is on, how long it has been there, and (when it is stuck) the likely reason.
 func _update_connect_window() -> void:
+	if _join_refused != "":
+		return   # the refusal stays on the window until the player quits
+
 	var now: int = Time.get_ticks_msec()
 	var waited: int = int(float(now - started_msec) * 0.001)
 	var where: String = "%s:%d" % [_host, _port]
@@ -981,7 +984,11 @@ func _connect() -> void:
 # visible (the game is paused); a headless test run quits as before. The crash report is written first.
 func _on_server_lost() -> void:
 	print("Terrain client: server left")
-	_telemetry.event("EXIT: server_disconnected (the server dropped this client or ended); last link: %s" % (EventLogScript.peer_stats((multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(1)) if multiplayer.multiplayer_peer is ENetMultiplayerPeer else "gone"))
+	var enet: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	_telemetry.event("EXIT: server_disconnected (the server dropped this client or ended); last link: %s" % (EventLogScript.peer_stats(enet.get_peer(1)) if enet != null and enet.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED else "gone"))
+
+	if _join_refused != "":
+		return   # dropped after a refusal: the window already says why (_on_join_refused)
 
 	if crash_report != null:
 		crash_report.report_now("server left: the connection to the server was lost")
@@ -1091,6 +1098,23 @@ func _cannot_reach(text: String) -> void:
 	_connect_window.fail("Cannot reach the server", text, func(): _finish(1))
 
 
+# The server runs another build (step A1): its reason stays on the join window until the player quits. The server drops this client next.
+func _on_join_refused(text: String) -> void:
+	if _join_refused != "":
+		return   # already showing (the welcome's check came first)
+
+	_join_refused = text if text != "" else "The server refused this game."
+	print("Terrain client: join refused: ", _join_refused.replace("\n", " "))
+	_telemetry.event("JOIN: refused by the server: " + _join_refused.replace("\n", " "))
+
+	if _connect_window != null:
+		_connect_window.fail("Update required", _join_refused, func(): _finish(1))
+	elif DisplayServer.get_name() != "headless":
+		_show_lost_notice(_join_refused.replace("\n", " "))
+	else:
+		_finish(1)
+
+
 func _on_welcome(info: Dictionary) -> void:
 	var tw: int = Probe.start()
 	_welcome_body(info)
@@ -1101,6 +1125,10 @@ func _welcome_body(info: Dictionary) -> void:
 	if int(info.get("protocol", 0)) != NetScript.PROTOCOL_VERSION:
 		push_error("Terrain client: server speaks protocol %s, this client %d" % [str(info.get("protocol")), NetScript.PROTOCOL_VERSION])
 
+		if _remote:   # a tester's game: no local server to restart, only an update helps
+			_on_join_refused("This game and the server are different versions (protocol %d; the server %s).\nUpdate the game and try again." % [NetScript.PROTOCOL_VERSION, str(info.get("protocol"))])
+			return
+
 		if _connect_window != null:
 			_connect_window.fail("The server is out of date", "The server on port %d speaks protocol %s, this game speaks %d.\nAn old server from an earlier run is still running. Close the game, end every \"Godot\" process except the editor in Task Manager, then press Play again." % [_port, str(info.get("protocol")), NetScript.PROTOCOL_VERSION], func(): _finish(1))
 			return
@@ -1108,9 +1136,19 @@ func _welcome_body(info: Dictionary) -> void:
 		_finish(1)
 		return
 
+	# A release server names its build in the welcome (protocol 133): another build stops here, before anything is loaded or the hello is
+	# sent, with the server's own wording. The server refuses it at hello too (BuildStamp.refusal), so a client that skips this is still kept out.
+	if bool(info.get("server_stamped", false)):
+		var refused: String = BuildStamp.refusal(int(info.get("server_build", 0)), BuildStamp.stamped_build())
+
+		if refused != "":
+			_on_join_refused(refused)
+			return
+
 	var server_commit: String = str(info.get("server_commit", ""))
 
-	if server_commit != "" and _commit != "" and server_commit != _commit and _connect_window != null:
+	# A stamped server checks the build itself (above and at hello); this commit check is for editor Play.
+	if not bool(info.get("server_stamped", false)) and server_commit != "" and _commit != "" and server_commit != _commit and _connect_window != null:
 		# Dave (build 621): an old server answered and sent no ground. A different checkout is named at once. A joined server
 		# cannot be restarted from here, so the player closes the game and presses Play again.
 		_telemetry.event("JOIN: server is build %s commit %s, this game is build %d commit %s" % [str(info.get("server_build", "?")), server_commit, BUILD, _commit])
@@ -3554,6 +3592,7 @@ var _dig_spam_next_msec: int = 0
 var _step_lift: float = 0.0               # metres the eye still has to rise after a step-up (eased out)
 var _movement: Dictionary = {}        # data/movement.json
 var _telemetry = EventLogScript.new()       # crash_reports/telemetry_client.log: traffic, backlog and frame gaps once a second
+var _join_refused: String = ""            # the server's reason when it refused this build (join_refused, protocol 133)
 var _connect_window = null                # shown until the ground under the player is ready (connect_window.gd)
 var _link_up_msec: int = 0                # when ENet reported the connection up (welcome still to come)
 var _pit_shadow_msec: int = 0
@@ -5538,7 +5577,7 @@ func _process(delta: float) -> void:
 	Probe.stop("anchor", ta0)
 	# Owner (2026-10-19): while a bake runs, ask only for the ground the game is waiting on
 	# right now, not the extra ground around it (it is all thrown away when the bake ends).
-	stream.only_urgent = _bake.running
+	stream.only_urgent = _bake != null and _bake.running
 	link.pump()
 	var wanted: Array = [PackedInt32Array(), 0] if _building_paused else stream.take_requests()
 
@@ -5611,7 +5650,7 @@ func _process(delta: float) -> void:
 		Probe.stop("grass: stamp", tg_stamp)
 		Probe.stop("grass", tg)
 
-	if _bake.running and now >= _bake_check_msec:
+	if _bake != null and _bake.running and now >= _bake_check_msec:
 		_bake_check_msec = now + 2000
 		_bake_status = _bake.status()
 

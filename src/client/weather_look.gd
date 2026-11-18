@@ -296,8 +296,8 @@ const CapCloudScript := preload("res://src/client/cap_cloud.gd")
 const WeatherRules := preload("res://src/shared/weather.gd")
 const HazeScript := preload("res://src/client/haze.gd")
 var haze = HazeScript.new()             # Haze: the clear-air haze follows temperature and humidity, (art_weather_light.md 7.2)
-var fog_ground = FogGroundScript.new()   # FogGround: where land fog lies (the cold-air floor, steam by the water), from the tiles
-var summits                             # Summits: the tops near the player from the tiles' coarse heights (cap cloud, summit snow)
+var fog_ground = FogGroundScript.new()   # FogGround: where land fog lies (the cold-air floor, steam by the water), from the server's tiles
+var summits                             # Summits: the tops near the player, from the server (cap cloud, summit snow)
 var cap_cloud                           # CapCloud: caps on high summits, (art_weather_light.md 7.1)
 var summit_snow: Vector2 = Vector2.ZERO # what the ground was last told: summit height, lowest share (for checks)
 var _summit_next_msec: int = 0
@@ -825,7 +825,7 @@ func _process_body(delta: float) -> void:
 		# most inside (strength x depth at the eye), or, above them all, the strongest (fog_look.gd pick_layer).
 		var eye_y: float = eye.y           # eye: the camera's position, read above for the night light
 
-		if _summits_set and fog_shown:          # the world's tiles are known (set with the summits); no reading for an undrawn fog
+		if _summits_set and fog_shown:          # set up with the summits, once joined; no asking for an undrawn fog
 			fog_ground.update(eye)
 
 		# The floors ease toward a new grid's values (a first read or a teleport), so the top never jumps.
@@ -1174,9 +1174,6 @@ func _update_tree_wind() -> void:
 
 
 func _exit_tree() -> void:
-	if summits != null:
-		summits.finish()
-
 	fog_ground.finish()
 
 
@@ -1187,8 +1184,10 @@ func _update_summits(delta: float, heading: float) -> void:
 
 	if not _summits_set:
 		_summits_set = true
-		summits.setup(_client.world)
-		fog_ground.setup(_client.world)
+		summits.setup(_client.world, func(tile: Vector2i) -> void: _client.net.ask_summits.rpc_id(1, tile))
+		fog_ground.setup(func(origin: Vector2) -> void: _client.net.ask_fog_cells.rpc_id(1, origin))
+		_client.net.summits_received.connect(summits.receive)
+		_client.net.fog_cells_received.connect(fog_ground.receive)
 
 	var eye: Vector3 = _client.camera.global_position
 	summits.update(eye)
