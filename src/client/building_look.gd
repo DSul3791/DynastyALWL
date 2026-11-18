@@ -755,7 +755,7 @@ const FLAME_TONGUES := {
 # Godot's omni gives energy x (1 - (d/range)^4)^2 / d^attenuation, and the torch is 2 (+-0.4) at range 12 with attenuation 1 (FlameRules.TORCH_*), so a bonfire at 14 m / energy 4 / attenuation 2 was dimmer than the torch beyond about 2 m.
 # The large fire is 20 m, energy 18, attenuation 1.5: a softer core and a longer tail than the inverse square, still dark past its reach. test_fire_light_vs_torch.gd holds it to 4x by source, emitted flux and light on the ground, against the torch's mean and its flicker peak (ledger BUGLIST-001 BUG-002).
 # Smoke, sparks and flames are unchanged (TEST-011). No shadows on any fire light: a shadow-casting omni is six shadow passes, too dear at three fires on a GTX 1050.
-const FIRE_LIGHT := {1: [3.5, 1.0, 2.0], 2: [7.0, 2.0, 2.0], 3: [20.0, 18.0, 1.5]}
+const FIRE_LIGHT := {1: [3.5, 1.0, 2.0], 2: [7.0, 2.0, 2.0], 3: [20.0, 36.0, 1.5]}   # large fire energy 18 -> 36 (18 Nov 2026, provisional TS-15) so it stays 4x the longer-reaching held torch (BUG-002 rule)
 const FIRE_LIGHT_COLOR := {1: Color(1.0, 0.64, 0.34), 2: Color(1.0, 0.62, 0.3), 3: Color(1.0, 0.54, 0.2)}
 const LIGHT_FALLOFF := 2.0
 const FIRE_HALO_SCALE := {1: 1.0, 2: 1.2, 3: 1.5}   # the fog halo round a fire, as a share of a torch's (firelight_weather_design.md)

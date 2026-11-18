@@ -15,7 +15,7 @@ const FIRE_HEIGHT_M := 0.8         # the fire's Light node position y in Buildin
 const STEPS := 4000
 
 var failures: int = 0
-var torch_range_m: float = 12.0     # items.json torch light_m, read in _init
+var torch_range_m: float = 18.0     # items.json torch light_m x FlameRules.TORCH_REACH_MULT, read in _init
 
 
 func check(ok: bool, what: String) -> void:
@@ -73,7 +73,7 @@ func torch_ground(energy: float) -> float:
 
 func _init() -> void:
 	var items: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/items.json"))
-	torch_range_m = float(items["items"]["torch"]["light_m"])
+	torch_range_m = float(items["items"]["torch"]["light_m"]) * FlameRules.TORCH_REACH_MULT   # the held light is light_m times the reach experiment's multiplier
 	var peak: float = FlameRules.TORCH_LIGHT_ENERGY + FlameRules.TORCH_LIGHT_FLICKER
 	var tier: Array = BuildingLook.FIRE_LIGHT[3]
 	var fire_range: float = float(tier[0])

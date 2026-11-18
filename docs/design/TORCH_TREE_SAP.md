@@ -33,5 +33,22 @@ Dave's design, 16 Nov 2026 (project thread "Restore torch recipes and add tree s
 - TS-12: a doused torch in an old save loads as the torch, burning.
 - TS-8: carrying an Improved torch counts as a lit torch for the night-walk goal, as the Simple one does. The "Light the night" camp goal (`camp_goals.json` torch_night) still asks for a crafted Simple - Torch, as its hint says.
 
+## Torch light reach (Dave 18 Nov 2026, experiment)
+Dave: "I want the torch light fall off to be a little weaker so it shines a little further... whatever it is now mark it as a starting point and then lets experiment by making it travel 50% further."
+All held-torch light numbers are in `src/shared/flame_rules.gd`; the reach experiment is the two lines `TORCH_REACH_MULT` and `TORCH_LIGHT_ATTENUATION`. Both torch tiers use them.
+
+| | Starting point (before 18 Nov) | Now (provisional) |
+|---|---|---|
+| Reach (items.json light_m 12 m x TORCH_REACH_MULT) | 12 m (x1.0) | 18 m (x1.5) |
+| Falloff (omni attenuation) | 1.0 | 0.8 |
+| Energy, flicker | 2.0, +-0.4 | unchanged |
+| Hand light | 0.7 over 1.6 m | unchanged |
+| Large fire light (to keep the 4x-torch rule, BUG-002) | 20 m, energy 18, attenuation 1.5 | 20 m, energy 36, attenuation 1.5 |
+
+To go back to the starting point: TORCH_REACH_MULT 1.0, TORCH_LIGHT_ATTENUATION 1.0, and the large fire energy 18 in `building_look.gd` FIRE_LIGHT[3] and `cooking.json` fire_tiers.log.
+- TS-14: reach x1.5 and attenuation 0.8. Brightness at 1 m is the same; the old torch's light at 8 m now reaches about 12 m, at 6 m about 9 m; nothing past 18 m.
+- TS-15: the large fire's energy doubled (18 to 36) so it still gives at least 4 times the torch's light (test_fire_light_vs_torch.gd), otherwise that rule fails at about 2 to 3 times. Say if you would rather keep the fire as it was and relax the rule.
+- Limits: fog and snow still shorten the reach in proportion (FireWeather). Placed torches (standing, wedged) are not changed. Not played or seen; no tests run.
+
 ## Not checked
 Nobody has played it. The felled sap heap and the craft sap are covered by `src/worldgen/tools/test_tree_sap.gd` (run on a test lane, never in the cloud).
