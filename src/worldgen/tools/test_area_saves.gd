@@ -168,6 +168,8 @@ func _init() -> void:
 	check(FileAccess.file_exists(area_path(here) + ".bad") and typeof(near_prev) == TYPE_DICTIONARY and loose(d) == (near_prev["items"] as Array).size(), "a damaged area file is set aside and the save before it read (%d items)" % loose(d))
 
 	# A torn header: set aside as .bad, the header before it read, and each area at the gen it names (from .prev where the area changed since).
+	a._dirty = true
+	a.save()   # writes the damaged area again (a direct save writes every area)
 	a.drop_in_world(stick, 1, Vector3(12.0, 10.0, 40.0))
 	periodic(a)
 	f = FileAccess.open(dir + "/world_items.json", FileAccess.WRITE)
