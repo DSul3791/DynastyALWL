@@ -42,6 +42,6 @@ Dave: "it currently has a fire in the blueprint that is burning before you make 
 
 For Dave (assumed on his behalf, provisional):
 - PS-1: the anvil is three uneven stone courses narrowing to a dressed flat top about 34 by 29 cm, 0.6 m up.
-- PS-2: it stands to one side of the fire (the model's +x side; not yet seen in a picture), the forge moved 0.25 m the other way; the footprint grows from 0.9 to 1.4 m wide to hold both.
+- PS-2: it stands to one side of the fire (the model's +x side; not yet seen in a picture), the forge moved 0.25 m the other way; the footprint grows from 0.9 to 1.6 m wide to hold both (1.4 at first; Lane A measured the forge with its anvil at x -0.79 to 0.73, 1.52 m, so 18 Nov 2026 it became 1.6; the look is unchanged).
 - PS-3: a built Primitive smithy still burns all the time (it has no lighting, unlike the smelters). Making it light with E like a smelter is left for his call.
 - PS-4: the built Brick, Advanced and Master smithies also burn all the time; only their blueprints were put out.
