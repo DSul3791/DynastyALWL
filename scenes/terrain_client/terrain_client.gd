@@ -958,7 +958,8 @@ func _connect() -> void:
 # visible (the game is paused); a headless test run quits as before. The crash report is written first.
 func _on_server_lost() -> void:
 	print("Terrain client: server left")
-	_telemetry.event("EXIT: server_disconnected (the server dropped this client or ended); last link: %s" % (EventLogScript.peer_stats((multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(1)) if multiplayer.multiplayer_peer is ENetMultiplayerPeer else "gone"))
+	var enet: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	_telemetry.event("EXIT: server_disconnected (the server dropped this client or ended); last link: %s" % (EventLogScript.peer_stats(enet.get_peer(1)) if enet != null and enet.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED else "gone"))
 
 	if _join_refused != "":
 		return   # dropped after a refusal: the window already says why (_on_join_refused)
@@ -1057,6 +1058,9 @@ func _on_connection_failed() -> void:
 
 # The server runs another build (step A1): its reason stays on the join window until the player quits. The server drops this client next.
 func _on_join_refused(text: String) -> void:
+	if _join_refused != "":
+		return   # already showing (the welcome's check came first)
+
 	_join_refused = text if text != "" else "The server refused this game."
 	print("Terrain client: join refused: ", _join_refused.replace("\n", " "))
 	_telemetry.event("JOIN: refused by the server: " + _join_refused.replace("\n", " "))
@@ -1086,9 +1090,18 @@ func _welcome_body(info: Dictionary) -> void:
 		_finish(1)
 		return
 
+	# A release server names its build in the welcome (protocol 132): another build stops here, before anything is loaded or the hello is
+	# sent, with the server's own wording. The server refuses it at hello too (BuildStamp.refusal), so a client that skips this is still kept out.
+	if bool(info.get("server_stamped", false)):
+		var refused: String = BuildStamp.refusal(int(info.get("server_build", 0)), BuildStamp.stamped_build())
+
+		if refused != "":
+			_on_join_refused(refused)
+			return
+
 	var server_commit: String = str(info.get("server_commit", ""))
 
-	# A stamped server checks the build itself at hello and says "Update required" (protocol 132); this commit check is for editor Play.
+	# A stamped server checks the build itself (above and at hello); this commit check is for editor Play.
 	if not bool(info.get("server_stamped", false)) and server_commit != "" and _commit != "" and server_commit != _commit and _connect_window != null:
 		# Dave (build 621): an old server answered and sent no ground. A different checkout is named at once. A joined server
 		# cannot be restarted from here, so the player closes the game and presses Play again.
