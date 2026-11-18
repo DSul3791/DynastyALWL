@@ -11,3 +11,4 @@ static func wait_after(wait_msec: int, new_chunks: int, min_msec: int, max_msec:
 		return min_msec
 
 	return mini(wait_msec * 2, max_msec)
+
