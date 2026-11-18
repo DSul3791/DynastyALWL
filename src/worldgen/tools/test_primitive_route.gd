@@ -292,9 +292,11 @@ func route() -> void:
 	# Lean-to (blueprint 25: 20 sticks, 60 leaves, 6 twine) and a Crude piece (the thatch floor, blueprint 29), both with the hammer on the hotbar.
 	items.report_position(1, Vector3(-6.0, 10.0, -5.0))
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, 25, 0, 0, Vector3(-6.0, 10.0, -8.0))
+	HeldTool.hit_site(items, HeldTool.site_of(items, "lean_to"))   # placing only sets down a site; the hammer hit fills it (Dave 18 Nov 2026)
 	check(piece_of("lean_to") != 0 and counts("event:placed:lean_to") == 1 and done("shelter"), "the lean-to is built with the hammer and counted once (%d)" % counts("event:placed:lean_to"))
 	items.report_position(1, Vector3(6.0, 10.0, -5.0))
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, 29, 0, 0, Vector3(6.0, 10.0, -8.0))
+	HeldTool.hit_site(items, HeldTool.site_of(items, "thatch_floor"))   # placing only sets down a site; the hammer hit fills it (Dave 18 Nov 2026)
 	check(piece_of("thatch_floor") != 0 and counts("event:placed:thatch_floor") == 1, "a Crude thatch floor is built and counted once (%d)" % counts("event:placed:thatch_floor"))
 
 	var admin_keys: int = 0
@@ -305,7 +307,7 @@ func route() -> void:
 	check(admin_keys == 0, "no Admin-mode craft (an admin: counter) was written on the route")
 
 
-# --- 2. F1: a site finished by deposit counts the piece's own kind ---
+# --- 2. F1: a site finished by the hammer counts the piece's own kind ---
 func site_lean_to() -> void:
 	fresh("site")
 	items.vitals_of(1)["weight"] = 150.0
@@ -316,10 +318,12 @@ func site_lean_to() -> void:
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, 25, 0, 0, Vector3(0.0, 10.0, 3.0))
 	var site: int = piece_of("lean_to")
-	check(site != 0 and items._items[site]["struct"].has("site") and counts("event:placed:lean_to") == 0, "short of sticks the lean-to is a site, and a site counts nothing yet")
+	check(site != 0 and items._items[site]["struct"].has("site") and counts("event:placed:lean_to") == 0, "the placed lean-to is a site, and a site counts nothing yet")
 	items.give(1, n("stick"), 10)
 	items.action(1, Net.ACT_USE_STRUCT, site, 0, 0, Vector3.ZERO)
-	check(not items._items[site]["struct"].has("site") and counts("event:placed:lean_to") == 1 and counts("event:placed") == 1 and done("shelter"), "depositing the rest finishes it: placed:lean_to once, the shelter goal done (%d, any kind %d)" % [counts("event:placed:lean_to"), counts("event:placed")])
+	check(items._items[site]["struct"].has("site") and have("stick") == 20 and counts("event:placed:lean_to") == 0, "E on the site takes nothing: only the hammer fills a site (Dave 18 Nov 2026)")
+	HeldTool.hit_site(items, site)
+	check(not items._items[site]["struct"].has("site") and counts("event:placed:lean_to") == 1 and counts("event:placed") == 1 and done("shelter"), "a hammer hit puts the materials in and finishes it: placed:lean_to once, the shelter goal done (%d, any kind %d)" % [counts("event:placed:lean_to"), counts("event:placed")])
 
 
 # --- 3. F3: manual firewood and blocks ---

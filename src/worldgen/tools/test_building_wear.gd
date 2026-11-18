@@ -76,12 +76,8 @@ func _init() -> void:
 	_give("log", 6)
 	_give("twine", 2)
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(bp["number"]), 0, 0, Vector3(200.0, 10.0, 202.0))
-	var wall: int = 0
-
-	for id in items._items:
-		if items._items[id].has("struct") and str(items._items[id]["struct"]["kind"]) == "log_wall":
-			wall = id
-
+	var wall: int = HeldTool.site_of(items, "log_wall")   # placing only sets down a site; the first hammer hit fills it (Dave 18 Nov 2026)
+	check(HeldTool.hit_site(items, wall) and _have("log") == 0, "a hammer hit on the log wall's site builds it from the pack")
 	check(wall != 0 and is_equal_approx(items.piece_condition(wall), 1.0), "a fresh log wall is in full condition")
 	var before_repair: int = _have("log")
 	items.action(1, Net.ACT_REPAIR_STRUCT, wall, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)

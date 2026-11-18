@@ -1,13 +1,14 @@
 extends SceneTree
 
-# Hammer blueprints (data/items/blueprints.json, ACT_PLACE_BLUEPRINT): the materials come out of the pack, no kit item, and a piece takes
-# down into its materials. Old kits still place. Kit recipes are retired, not removed.
+# Hammer blueprints (data/items/blueprints.json, ACT_PLACE_BLUEPRINT): placing sets down a site and takes nothing; a hammer hit on the site
+# takes the materials out of the pack (Dave 18 Nov 2026), no kit item, and a piece takes down into its materials. Old kits still place. Kit recipes are retired, not removed.
 #   godot --headless --path . --script res://src/worldgen/tools/test_blueprints.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 
 var failures: int = 0
 var items
@@ -68,8 +69,9 @@ func _fortified_gate_checks(live: Dictionary) -> void:
 	_give(1, "iron_hammer", 1)
 	check(items.inventory_of(1).numbers.find(items.table.number_of("stone_hammer")) < items.inventory_of(1).numbers.find(items.table.number_of("iron_hammer")), "the stone hammer sits before the iron one on the hotbar")
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(gate_bp["number"]), 0, 0, spot)
+	HeldTool.hit_site(items, HeldTool.site_of(items, "fortified_gate"))   # placing sets down a site; the hammer hit fills it
 	var gates: Array = _ids_standing("fortified_gate")
-	check(gates.size() == 1 and not items._items[gates[0]]["struct"].has("site") and _have(1, "concrete") == 0 and _have(1, "iron_band") == 0, "with an iron hammer on the hotbar (behind a stone one) the Fortified gate stands and its materials are taken")
+	check(gates.size() == 1 and not items._items[gates[0]]["struct"].has("site") and _have(1, "concrete") == 0 and _have(1, "iron_band") == 0, "with an iron hammer on the hotbar (behind a stone one) the Fortified gate is placed, and a hammer hit fills it: it stands and its materials are taken")
 	items.send_notice = Callable()
 
 	if gates.size() != 1:
@@ -234,7 +236,9 @@ func _init() -> void:
 	check(items._items[site_id]["struct"].has("site"), "the piece is a site until its materials are in")
 	_give(1, "lumber", 1)
 	items.action(1, Net.ACT_USE_STRUCT, site_id, 0, 0, Vector3.ZERO)
-	check(items.world_item_count() == with_bench + 1 and _ids_standing("wooden_crate").size() == 1 and not items._items[site_id]["struct"].has("site"), "E on the site deposits the materials and the crate stands")
+	check(items._items[site_id]["struct"].has("site") and _have(1, "lumber") == 5, "E on the site takes nothing: only the hammer fills a site (Dave 18 Nov 2026)")
+	HeldTool.hit_site(items, site_id)
+	check(items.world_item_count() == with_bench + 1 and _ids_standing("wooden_crate").size() == 1 and not items._items[site_id]["struct"].has("site"), "a hammer hit on the site puts the materials in and the crate stands")
 	check(_have(1, "lumber") == 0 and _have(1, "nails") == 0 and _have(1, "wooden_crate_kit") == 0 and _have(1, "stone_hammer") == 1, "exactly the materials were taken, no kit item, the hammer kept")
 
 	# A station level the bench cannot give: a row asking for level 4 (set here), the log workbench is level 2.
@@ -270,7 +274,7 @@ func _init() -> void:
 	_give(1, "lumber", 5)
 	_give(1, "nails", 8)
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, Vector3(196.0, 10.0, 205.0))
-	check(_ids_standing("wooden_crate").size() == 1, "the crate stands again")
+	check(HeldTool.hit_site(items, HeldTool.site_of(items, "wooden_crate")) and _ids_standing("wooden_crate").size() == 1, "the crate is placed and hammered up again")
 	var inv = items.inventory_of(1)
 
 	for slot in range(inv.slot_count):
@@ -307,7 +311,9 @@ func _init() -> void:
 	check(items.world_item_count() == oven_before and _have(1, "brick") == 24, "an oven without a hearth near places nothing and takes nothing")
 	check(not items.station_near(1, "campfire"), "no fire, no hearth: nothing cooks")
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(hearth_bp["number"]), 0, 0, Vector3(230.0, 10.0, 233.0))
-	check(_ids_standing("clay_hearth").size() == 1 and _have(1, "brick") == 14 and _have(1, "clay") == 4 and _have(1, "stone") == 4, "the hearth stands for 10 brick, 6 clay, 4 stone")
+	check(_ids_standing("clay_hearth").size() == 1 and items._items[_ids_standing("clay_hearth")[0]]["struct"].has("site") and _have(1, "brick") == 24 and not items.station_near(1, "campfire"), "placed, the hearth is a site: it takes nothing and cooks nothing")
+	HeldTool.hit_site(items, HeldTool.site_of(items, "clay_hearth"))
+	check(_ids_standing("clay_hearth").size() == 1 and _have(1, "brick") == 14 and _have(1, "clay") == 4 and _have(1, "stone") == 4, "a hammer hit and the hearth stands for 10 brick, 6 clay, 4 stone")
 	check(items.station_near(1, "clay_hearth", 2) and items.station_near(1, "campfire") and not items.station_near(1, "oven", 3), "a hearth cooks what a campfire cooks, not oven dishes")
 	var dish_nums: Dictionary = {}
 
@@ -328,7 +334,8 @@ func _init() -> void:
 	_give(1, "clay", 6)
 	_give(1, "stone", 4)
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(oven_bp["number"]), 0, 0, Vector3(234.0, 10.0, 230.0))
-	check(_ids_standing("oven").size() == 1 and _have(1, "brick") == 0 and _have(1, "clay") == 0 and _have(1, "stone") == 0, "with a hearth near the oven stands for 24 brick, 10 clay, 8 stone")
+	HeldTool.hit_site(items, HeldTool.site_of(items, "oven"))   # placing sets down a site; the hammer hit fills it
+	check(_ids_standing("oven").size() == 1 and _have(1, "brick") == 0 and _have(1, "clay") == 0 and _have(1, "stone") == 0, "with a hearth near the oven is placed and hammered up for 24 brick, 10 clay, 8 stone")
 	check(items.station_near(1, "oven", 3) and items.station_near(1, "clay_hearth", 2) and items.station_near(1, "campfire"), "an oven cooks what a hearth and a campfire cook")
 	items._last_queue_act.clear()
 	items.action(1, Net.ACT_CRAFT_QUEUE, int(dish_nums["cook_honey_loaf"]), 0, 1, CraftHand.at(items, 1, int(dish_nums["cook_honey_loaf"])))

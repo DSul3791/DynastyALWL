@@ -17,6 +17,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 
 const HERE := Vector3(700.0, 10.0, 700.0)
 const FORGE_AT := Vector3(700.0, 10.0, 702.5)
@@ -137,12 +138,8 @@ func build(structure: String, at: Vector3) -> int:
 		give(str(need[0]), int(need[1]))
 
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(bp["number"]), 0, 0, at)
-
-	for id in items._items:
-		if items._items[id].has("struct") and str(items._items[id]["struct"]["kind"]) == structure and not items._items[id]["struct"].has("site"):
-			return int(id)
-
-	return -1
+	var site: int = HeldTool.site_of(items, structure)   # placing only sets down a site; the hammer hit fills it (Dave 18 Nov 2026)
+	return site if HeldTool.hit_site(items, site) else -1
 
 
 func pick_out(ore: String, item: String, want: int, blows: int) -> void:

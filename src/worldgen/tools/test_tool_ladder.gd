@@ -15,6 +15,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 
 const HERE := Vector3(0.0, 10.0, 0.0)
 const RANK := {"wood": 1, "stone": 2, "copper": 2, "bronze": 3, "iron": 4, "steel": 5}   # Copper shares Stone's tier: between Stone and Bronze in its rates (GOALS-REPAIR R2b)
@@ -128,7 +129,7 @@ func standing_at(structure: String, at: Vector3) -> int:
 	return -1
 
 
-# Places a blueprint with the cost in the pack; true when the piece stands there.
+# Places a blueprint with the cost in the pack and hits the site with the hammer; true when the piece stands there.
 func place(structure: String, at: Vector3) -> bool:
 	var bp: Dictionary = blueprint_of(structure)
 
@@ -136,6 +137,7 @@ func place(structure: String, at: Vector3) -> bool:
 		items.give(1, n_of(str(need[0])), int(need[1]))
 
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(bp.get("number", 0)), 0, 0, at)
+	HeldTool.hit_site(items, HeldTool.site_of(items, structure))   # placing only sets down a site; the hammer hit fills it from the pack (Dave 18 Nov 2026)
 	return standing_at(structure, at) >= 0
 
 

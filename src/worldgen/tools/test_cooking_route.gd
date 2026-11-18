@@ -22,6 +22,7 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const TradeScript := preload("res://src/stream/server_trade.gd")
 const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 
 const HERE := Vector3(0.0, 10.0, 0.0)
 const PRE_SAW := ["log", "stick", "twine", "stone", "clay"]   # master s3.12 reconciliation: the table needs no Planks or metal
@@ -118,6 +119,7 @@ func build(structure: String, at: Vector3) -> int:
 		items.give(1, num(str(need[0])), int(need[1]))
 
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(bp.get("number", 0)), 0, 0, at)
+	HeldTool.hit_site(items, HeldTool.site_of(items, structure))   # placing only sets down a site; the hammer hit fills it from the pack (Dave 18 Nov 2026)
 	var id: int = standing(structure)
 	var spent: bool = bp.get("cost", []).all(func(c): return have(str(c[0])) == 0) if id >= 0 else false
 	check(id >= 0 and spent, "the %s stands, built from %s" % [structure, str(bp.get("cost", []))])

@@ -12,6 +12,7 @@ const InventoryScript := preload("res://src/shared/inventory.gd")
 const ListScript := preload("res://src/client/hammer_blueprints.gd")
 const LookTable := preload("res://src/client/look_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 
 # id -> [name, item number, blueprint number, state, counterpart (kind, placement), cost, hammer tier]
 const PIECES := {
@@ -164,8 +165,11 @@ func _server_checks() -> void:
 			_give(items, "stone_hammer", 1)
 
 		items.action(1, Net.ACT_PLACE_BLUEPRINT, int(p[2]), 0, 0, spot)
+		var placed: Array = _standing(items, id)
+		check(placed.size() == 1 and items._items[placed[0]]["struct"].has("site") and p[5].all(func(c): return _have(items, str(c[0])) == int(c[1])), "%s: placing sets down a site and takes nothing (Dave 18 Nov 2026)" % id)
+		HeldTool.hit_site(items, HeldTool.site_of(items, id))   # the hammer hit fills it from the pack
 		var built: Array = _standing(items, id)
-		check(built.size() == 1 and not items._items[built[0]]["struct"].has("site") and p[5].all(func(c): return _have(items, str(c[0])) == 0), "%s: it stands and its materials are taken" % id)
+		check(built.size() == 1 and not items._items[built[0]]["struct"].has("site") and p[5].all(func(c): return _have(items, str(c[0])) == 0), "%s: a hammer hit and it stands, its materials taken" % id)
 
 		if built.size() != 1:
 			x += 10.0
@@ -177,7 +181,8 @@ func _server_checks() -> void:
 		check(_standing(items, id).is_empty() and p[5].all(func(c): return _have_back(items, str(c[0])) == int(c[1])), "%s: taken down, every material comes back" % id)
 		items.report_position(1, Vector3(x, 10.0, 300.0))
 		items.action(1, Net.ACT_PLACE_BLUEPRINT, int(p[2]), 0, 0, spot)
-		check(_standing(items, id).size() == 1, "%s: built again from the refund" % id)
+		var again: bool = HeldTool.hit_site(items, HeldTool.site_of(items, id))
+		check(again and _standing(items, id).size() == 1, "%s: placed and hammered again from the refund" % id)
 		x += 10.0
 
 	# The Engineered gate: E opens and shuts it.
