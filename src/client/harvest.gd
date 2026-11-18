@@ -16,6 +16,7 @@ const SWEEP_EVERY_S := 0.2          # then one pick per step (5 a second)
 const REGROW_GAME_S := 3.0 * 86400.0
 const RETRY_GAME_S := 72.0              # about 3 real seconds: a pick the server refused can be tried again
 const CHUNK_M := 256.0
+var _swath_ms: int = -100000         # the last sickle or scythe swing sent (swath)
 
 var _client
 var _items
@@ -165,6 +166,13 @@ func swath(held_slot: int, tool_class: String) -> float:
 
 	if radius <= 0.0 or _client.body == null:
 		return 0.0
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - _swath_ms < int((cfg.get(tool_class, {}) as Dictionary).get("swing_ms", 0)):
+		return 0.0   # the server takes one swing a swing_ms: a faster click would lay the grass down for nothing
+
+	_swath_ms = now
 
 	var grasses: Array = cfg.get("grasses", [])
 	var plants: PackedInt32Array = PackedInt32Array()

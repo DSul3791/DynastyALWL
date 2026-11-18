@@ -66,6 +66,7 @@ func _init() -> void:
 	bed(930002, 0.0, 2.5, "wheat", true)     # outside it, inside the scythe's
 	bed(930003, -0.5, 0.0, "barley", false)  # unripe grain
 	bed(930004, 0.0, -1.0, "carrot", true)   # not a grain
+	bed(930005, -1.0, 0.5, "rye", true)      # a second ripe grain in the sickle's circle
 
 	# No tool in hand: refused, and told.
 	check(items.swath_swing(1, 0).is_empty() and has_crop(1.0, 0.0), "no sickle in hand: the swing is refused and nothing is reaped")
@@ -77,11 +78,11 @@ func _init() -> void:
 	var wear_before: int = items.inventory_of(1).wear[sickle]
 	notes.clear()
 	var swing: Dictionary = items.swath_swing(1, sickle)
-	check(not swing.is_empty() and int(swing["crops"]) == 1 and str(swing["tool"]) == "sickle", "a sickle swing reaps the one ripe grain crop in its circle (%s)" % str(swing))
+	check(not swing.is_empty() and int(swing["crops"]) == 2 and str(swing["tool"]) == "sickle", "a sickle swing reaps the two ripe grain crops in its circle (%s)" % str(swing))
 	check(count("wheat") == wheat_yield, "at the full yield (%d of %d)" % [count("wheat"), wheat_yield])
-	check(not has_crop(1.0, 0.0) and has_crop(0.0, 2.5), "the wheat 1 m away is cut, the wheat 2.5 m away is not")
+	check(not has_crop(1.0, 0.0) and not has_crop(-1.0, 0.5) and has_crop(0.0, 2.5), "the wheat and rye within 1.5 m are cut, the wheat 2.5 m away is not")
 	check(has_crop(-0.5, 0.0) and has_crop(0.0, -1.0), "unripe barley and a ripe carrot are left standing")
-	check(items.inventory_of(1).wear[sickle] > wear_before, "the swing wears the sickle")
+	check(items.inventory_of(1).wear[sickle] - wear_before == 1, "the swing wears the sickle once for the whole circle (%d)" % (items.inventory_of(1).wear[sickle] - wear_before))
 	check(is_equal_approx(float(swing["mult"]), float(cfg["yield"]["bronze"])) and (swing["grasses"] as Array).has("tall_grass"), "a bronze sickle cuts grass at the bronze yield (%s)" % str(swing["mult"]))
 	check(notes.is_empty(), "a swing says nothing about the plants it leaves (%s)" % str(notes))
 	check(items.swath_swing(1, sickle).is_empty(), "a second swing at once is refused (the swing pace)")
@@ -91,20 +92,32 @@ func _init() -> void:
 	var scythe: int = HeldTool.slot_of(items, "scythe")
 	items._swath_ms.clear()
 	var before: int = count("wheat")
+	var sickle_wear: int = items.inventory_of(1).wear[sickle]
+	var scythe_wear: int = items.inventory_of(1).wear[scythe]
 	swing = items.swath_swing(1, scythe)
 	check(not swing.is_empty() and str(swing["tool"]) == "scythe" and not has_crop(0.0, 2.5) and count("wheat") - before == wheat_yield, "a scythe swing reaps the ripe wheat 2.5 m away at the full yield")
+	check(items.inventory_of(1).wear[scythe] - scythe_wear == 1 and items.inventory_of(1).wear[sickle] == sickle_wear, "it wears the scythe in hand once and not the sickle on the hotbar")
 
 	# Every tier has a yield factor, the new copper ones too.
 	for material in ["copper", "bronze", "iron", "steel"]:
 		check(float((cfg["yield"] as Dictionary).get(material, 0.0)) > 1.0, "%s gathers more than the hand" % material)
 
-	for id in ["copper_sickle", "copper_scythe", "iron_scythe"]:
-		if items.table.has_id(id):
-			give(id, 1)
-			var slot: int = items.inventory_of(1).numbers.find(items.table.number_of(id))
-			items._swath_ms.clear()
-			swing = items.swath_swing(1, slot)
-			check(not swing.is_empty() and float(swing["mult"]) > 1.0, "%s swings (yield x%s)" % [id, str(swing.get("mult", 0))])
+	for crop_item in ["wheat", "wheat_seeds", "rye", "rye_seeds", "worm"]:   # the harvests above took pack slots: the tools below must land on the hotbar
+		items.inventory_of(1).remove(items.table.number_of(crop_item), count(crop_item))
+
+	# Every sickle and scythe in items.json swings at its material's factor (the Copper ones too, once they are in the catalog).
+	for id in ["iron_sickle", "steel_sickle", "scythe", "steel_scythe", "copper_sickle", "copper_scythe"]:
+		if id.begins_with("copper") and not items.table.has_id(id):
+			print("skip %s: not in items.json yet (the tool tiers change adds it)" % id)
+			continue
+
+		give(id, 1)
+		var slot: int = items.inventory_of(1).numbers.find(items.table.number_of(id))
+		var material: String = str(items.table.entry(id).get("material", ""))
+		items._swath_ms.clear()
+		swing = items.swath_swing(1, slot)
+		items.inventory_of(1).remove(items.table.number_of(id), 1)   # keep the hotbar free for the next one
+		check(slot >= 0 and not swing.is_empty() and is_equal_approx(float(swing["mult"]), float((cfg["yield"] as Dictionary).get(material, -1.0))), "%s swings at the %s factor (x%s)" % [id, material, str(swing.get("mult", 0))])
 
 	# Grass: a swing's gather gives more than a hand's pick of the same plant.
 	items.gather_pace_ms = 0

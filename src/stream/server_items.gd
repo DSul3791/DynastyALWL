@@ -18144,8 +18144,8 @@ func harvest(peer: int, inv, bed_id: int, at: Vector3 = Vector3.ZERO) -> bool:
 	if rng.randf() < float((_crops_file_extra.get("worm", {}) as Dictionary).get("chance", 0.0)):
 		give(peer, table.number_of(str(_crops_file_extra["worm"].get("item", "worm"))), 1)   # gardens breed worms (Dave 14 Nov 2026: about 20 from 100 crops)
 
-	if full and tool_class != "hand":
-		_wear_tool(peer, inv, tool_class, "gather")
+	if full and tool_class != "hand" and swath_mult <= 0.0:
+		_wear_tool(peer, inv, tool_class, "gather")   # a sickle or scythe swing wore the tool in hand once for the whole circle (swath_swing)
 
 	_crops.erase(key)
 	_dirty = true
@@ -18170,7 +18170,8 @@ func swath_swing(peer: int, held_slot: int) -> Dictionary:
 			tool_class = reaper
 
 	if tool_class == "":
-		_swing_tool(peer, inv, held_slot, "sickle")   # says why: broken, hands full, or no sickle in hand
+		var in_hand: String = str(table.entry(table.id_of(inv.numbers[held_slot])).get("tool_class", "")) if held_slot >= 0 and held_slot < inv.slot_count else ""
+		_swing_tool(peer, inv, held_slot, in_hand if in_hand == "scythe" else "sickle")   # says why: broken, hands full, or no sickle in hand
 		return {}
 
 	var cfg: Dictionary = _drops.get("swath", {})

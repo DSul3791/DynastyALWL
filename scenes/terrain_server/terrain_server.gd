@@ -2020,6 +2020,9 @@ func _on_cut_swath_requested(peer_id: int, held_slot: int, plants: PackedInt32Ar
 		if species.is_empty():
 			continue
 
+		if not _chunk_in_reach(player_at, chunk):
+			continue   # nothing is looked up, or generated, far away
+
 		if int(species["kind"]) == PlacerScript.KIND_SHRUB:
 			var info: Dictionary = _shrub_info(chunk, id)   # a placer bush or one planted from a dug-up bush
 
@@ -2027,6 +2030,7 @@ func _on_cut_swath_requested(peer_id: int, held_slot: int, plants: PackedInt32Ar
 				cut += 1
 		elif int(species["kind"]) != PlacerScript.KIND_TREE and grasses.has(str(species["name"])):
 			items.swath_mult = float(swing["mult"])
+			items.plant_stays = false   # a pick that skips gather() (was_picked) must not take the last plant's "stays standing"
 
 			if _pick_flora(peer_id, chunk, id, reach):
 				cut += 1
@@ -2037,20 +2041,20 @@ func _on_cut_swath_requested(peer_id: int, held_slot: int, plants: PackedInt32Ar
 		net.notice.rpc_id(peer_id, "Nothing to cut here: the %s cuts grass, ripe grain and bushes" % str(swing["tool"]))
 
 
+# Whether the chunk's square comes within GATHER_REACH_M (flat) of the player: nothing is gathered, or generated, far away.
+func _chunk_in_reach(player_at: Vector3, chunk: Vector2i) -> bool:
+	var chunk_m: float = flora.placer.chunk_m
+	var near_x: float = clampf(player_at.x, float(chunk.x) * chunk_m, float(chunk.x + 1) * chunk_m)
+	var near_z: float = clampf(player_at.z, float(chunk.y) * chunk_m, float(chunk.y + 1) * chunk_m)
+	return Vector2(player_at.x - near_x, player_at.z - near_z).length() <= GATHER_REACH_M
+
+
 # One plant or shrub picked by `peer` (E, or a grass in a sickle or scythe swing): what drops.json and its season allow. `near_m` >= 0: only when the plant
 # stands that close (flat) to the player (a swing), and never a tree. True when it gave something.
 func _pick_flora(peer_id: int, chunk: Vector2i, id: int, near_m: float = -1.0) -> bool:
 	var player_at: Variant = items.position_of(peer_id)
-	var chunk_m: float = flora.placer.chunk_m
 
-	if player_at == null:
-		return false
-
-	# Nearest point of the chunk's square to the player: nothing is gathered, or generated, far away.
-	var near_x: float = clampf((player_at as Vector3).x, float(chunk.x) * chunk_m, float(chunk.x + 1) * chunk_m)
-	var near_z: float = clampf((player_at as Vector3).z, float(chunk.y) * chunk_m, float(chunk.y + 1) * chunk_m)
-
-	if Vector2((player_at as Vector3).x - near_x, (player_at as Vector3).z - near_z).length() > GATHER_REACH_M:
+	if player_at == null or not _chunk_in_reach(player_at, chunk):
 		return false
 
 	var home: Vector2i = flora.placer.normalize(chunk)

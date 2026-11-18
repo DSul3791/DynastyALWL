@@ -140,7 +140,7 @@ Intended behaviour (Dave, 18 Nov 2026):
 - "they only gather grasses or destroy bushes. they do not pickup bushes like a pickaxe. and they do not pick berries. they only pick grasses and grains like tall grass, wheet, barley, they are great for harvesting a garden full of grains."
 - "if you use them on bushes or tall grasses they should gather more faster. just like the pickaxe on a rock" (higher tiers give more).
 
-Status: Implemented - awaiting player verification. One left click with the tool in hand, round the player: grasses gathered, ripe grain on beds and plots reaped at the full yield, bushes cut down, everything else left; the ground grass in the circle lies down. Works for every sickle and scythe tier, the copper ones included. Values in `data/items/drops.json` `swath`.
+Status: Implemented - awaiting player verification. One left click with the tool in hand, round the player: grasses gathered, ripe grain on beds and plots reaped at the full yield, bushes cut down, everything else left; the ground grass in the circle lies down. Every sickle and scythe works by its material, so the Copper sickle and scythe the tool tiers change is adding get the Copper factor without further work. Values in `data/items/drops.json` `swath`.
 
 Assumed on Dave's behalf (provisional):
 
