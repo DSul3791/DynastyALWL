@@ -158,4 +158,4 @@ Preservation/reader receipts: independent review PASS on exact tree `09c98947328
 ## No pickup animation, 18 Nov 2026 (Dave 17 Nov: "I would like the player character to stop waving his arms when picking up stuff. its just not necessary.")
 | path (under proposed_removals/) | who | date | why | replaced by |
 |---|---|---|---|---|
-| src/worldgen/tools/test_gather_clip.gd, src/worldgen/tools/test_gather_clip.gd.uid | Claude, commit cd69d5f5 (copy added by the main-readiness PR) | 18 Nov | it tested only the first-person gather clip, which was deleted with the pickup animations | none |
+| src/worldgen/tools/test_gather_clip.gd, src/worldgen/tools/test_gather_clip.gd.uid.removed | Claude, commit cd69d5f5 (copy added by the main-readiness PR) | 18 Nov | it tested only the first-person gather clip, which was deleted with the pickup animations | none |
