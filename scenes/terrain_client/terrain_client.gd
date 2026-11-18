@@ -155,7 +155,6 @@ const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
 const PieceLook := preload("res://src/client/piece_look.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
-const TileBakeScript := preload("res://src/admin/tile_bake_launcher.gd")
 const AmbientCrittersScript := preload("res://src/client/ambient_critters.gd")
 const GrassViewScript := preload("res://src/client/grass_view.gd")
 const SoundStageScript := preload("res://src/client/sound_stage.gd")
@@ -497,7 +496,7 @@ var _jitter_test                      # float-precision test, J or Esc > Advance
 var _machine_probe                    # "Measure this machine" run for the minimum-spec test (Esc > Advanced)
 var _gpu_probe                        # GPU cost per piece of the scene, Ctrl+Shift+P
 var weather_look                      # WeatherLook: clouds, rain, snow, fog, lightning from `weather`
-var _bake = TileBakeScript.new()      # admin: background tile bake
+var _bake = null                      # admin: background tile bake (src/admin/tile_bake_launcher.gd), made when started; editor runs only (game_menu.gd)
 var _bake_check_msec: int = 0
 var _bake_status: String = ""
 var _bake_alert_until: int = 0
@@ -5511,7 +5510,7 @@ func _process(delta: float) -> void:
 	Probe.stop("anchor", ta0)
 	# Owner (2026-10-19): while a bake runs, ask only for the ground the game is waiting on
 	# right now, not the extra ground around it (it is all thrown away when the bake ends).
-	stream.only_urgent = _bake.running
+	stream.only_urgent = _bake != null and _bake.running
 	link.pump()
 	var wanted: Array = [PackedInt32Array(), 0] if _building_paused else stream.take_requests()
 
@@ -5584,7 +5583,7 @@ func _process(delta: float) -> void:
 		Probe.stop("grass: stamp", tg_stamp)
 		Probe.stop("grass", tg)
 
-	if _bake.running and now >= _bake_check_msec:
+	if _bake != null and _bake.running and now >= _bake_check_msec:
 		_bake_check_msec = now + 2000
 		_bake_status = _bake.status()
 
