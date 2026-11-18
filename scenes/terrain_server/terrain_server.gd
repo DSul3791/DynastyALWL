@@ -27,6 +27,7 @@ const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 const EventLogScript := preload("res://src/shared/event_log.gd")
 const PlayServerScript := preload("res://src/shared/play_server.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
+const BuildInfo := preload("res://src/shared/build.gd")
 const BuildStamp := preload("res://src/shared/build_stamp.gd")
 const CpuBudgetScript := preload("res://src/shared/cpu_budget.gd")
 const STOP_NOTE := "user://server_stop.json"   # Play asks the server it started to close: {"pid", "commit"} (launcher.gd)
@@ -991,7 +992,8 @@ func _on_peer_connected(peer_id: int) -> void:
 	_events.event("peer %d connected" % peer_id)
 	net.welcome.rpc_id(peer_id, {
 		"protocol": NetScript.PROTOCOL_VERSION,
-		"server_build": BuildStamp.number(),    # the build id: a client on another commit says so plainly (empty commit = unknown = match)
+		"server_build": _stamped_build if _stamped_build > 0 else BuildInfo.NUMBER,   # the build id
+		"server_stamped": _stamped_build > 0,   # a release server: it checks the build at hello, so the client skips its commit check (protocol 132): a client on another commit says so plainly (empty commit = unknown = match)
 		"server_commit": _commit,
 		"world_name": settings.world_name,
 		"master_seed": settings.master_seed,
@@ -1014,6 +1016,10 @@ func _on_peer_connected(peer_id: int) -> void:
 # A stamped server and a client of another build (step A1, Dave 18 Nov 2026): the client is told why, gets nothing of the player's,
 # and is dropped a moment later so the reason arrives first.
 func _refuse_join(peer: int, build: int, text: String) -> void:
+	if not _peers.has(peer) or _peers[peer].has("refused"):
+		return   # one refusal per connection, however many hellos it sends
+
+	_peers[peer]["refused"] = true
 	print("Join refused for peer %d: client build %d, this server build %d" % [peer, build, _stamped_build])
 	_events.event("peer %d refused: client build %d, server build %d" % [peer, build, _stamped_build])
 	net.join_refused.rpc_id(peer, text)

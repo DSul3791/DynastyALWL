@@ -1088,7 +1088,8 @@ func _welcome_body(info: Dictionary) -> void:
 
 	var server_commit: String = str(info.get("server_commit", ""))
 
-	if server_commit != "" and _commit != "" and server_commit != _commit and _connect_window != null:
+	# A stamped server checks the build itself at hello and says "Update required" (protocol 132); this commit check is for editor Play.
+	if not bool(info.get("server_stamped", false)) and server_commit != "" and _commit != "" and server_commit != _commit and _connect_window != null:
 		# Dave (build 621): an old server answered and sent no ground. A different checkout is named at once. A joined server
 		# cannot be restarted from here, so the player closes the game and presses Play again.
 		_telemetry.event("JOIN: server is build %s commit %s, this game is build %d commit %s" % [str(info.get("server_build", "?")), server_commit, BUILD, _commit])

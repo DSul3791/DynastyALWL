@@ -76,7 +76,12 @@ func _init() -> void:
 	var refuse_at: int = server.find("BuildStamp.refusal(_stamped_build, build)", hello_at)
 	check(hello_at >= 0 and refuse_at > hello_at and refuse_at < server.find("identity.authenticate(peer, key)", hello_at), "the build is checked before the player is let in")
 	check(server.contains("net.join_refused.rpc_id(peer, text)") and server.contains("disconnect_peer(peer)"), "a refused client is told why and dropped")
-	check(server.contains("\"server_build\": BuildStamp.number()"), "the welcome names the stamped build")
+	check(server.contains("\"server_build\": _stamped_build if _stamped_build > 0 else BuildInfo.NUMBER") and server.contains("\"server_stamped\": _stamped_build > 0"), "the welcome names the enforced build and says it is a release server")
+	check(server.contains("_peers[peer].has(\"refused\")"), "one refusal per connection")
+	# The client's own commit check runs before hello is sent; against a release server it must stand aside, or two builds (whose commits
+	# always differ) would see "the server is out of date" and never the server's "Update required".
+	var commit_check_at: int = client.find("server_commit != _commit and _connect_window != null")
+	check(commit_check_at >= 0 and client.substr(maxi(commit_check_at - 120, 0), 120).contains("not bool(info.get(\"server_stamped\", false))"), "the client's commit check stands aside for a release server")
 	check(net.contains("func hello(player_key: String, build: int)") and net.contains("func join_refused(text: String)"), "hello carries the build; join_refused exists")
 	check(FileAccess.get_file_as_string("res://src/client/inventory_view.gd").contains("net.hello.rpc_id(1, _player_key(), BuildStamp.stamped_build())"), "the client sends its stamped build")
 	check(FileAccess.get_file_as_string("res://scenes/bot/bot_main.gd").contains("BuildStamp.stamped_build()"), "the load-test bot sends it too")
