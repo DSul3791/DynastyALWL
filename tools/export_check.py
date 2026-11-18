@@ -5,8 +5,10 @@ generator stay one build): checks export_presets.cfg without exporting, since ou
   python3 tools/export_check.py            check both presets; exit 1 on a problem
   python3 tools/export_check.py --write    rewrite the client preset's generated exclude list, then check
   python3 tools/export_check.py --list P   print the files preset P ("client" or "server") would carry
+  python3 tools/export_check.py --disk     look at every file on disk, untracked and gitignored ones too, as Godot does: run it on
+                                           the machine that exports, just before the export
   python3 tools/export_check.py --ci       for tools/merge_check.py: exit 1 only when a pack lacks a file its build loads; server-only
-                                           code that crept into the client is a warning there (the release script checks in full)
+                                           code that crept into the client is a warning there (run the full check before an export)
 
 What it does:
   1. Works out which tracked files each preset would put in the pack, the way Godot's "all_resources" filter does: every resource
@@ -46,9 +48,15 @@ LAUNCH_ONLY = {
 
 # Never in the client pack, whatever loads them; the server pack needs the world ones (WORLD).
 WORLD = ["worlds/base_world/tiles/*", "worlds/base_world/erosion_delta_v2.bin", "worlds/base_world/water/*"]
-DEVELOPER = ["docs/*", "tools/*", "art/*", "deploy/*", "native/*", "proposed_removals/*", "design/*", "tech/*", "items/*", "120/*",
-             ".claude/*", ".github/*", "src/worldgen/tools/*", "src/admin/*", "scenes/terrain_preview/*", "crash_reports/*",
-             "*.md", "*.py", "*.sh", "*.bat", "*.ps1", "*.log", "*.out", "*.result", "*.patch", "*.bak", "INSTALL_README.txt"]
+# In neither pack. Folders first: a game file that loads anything under them is a problem (--ci fails); the file kinds after them
+# are notes and scripts that sit beside the media and are never loaded.
+DEVELOPER_FOLDERS = ["docs/*", "tools/*", "art/*", "deploy/*", "native/*", "proposed_removals/*", "design/*", "tech/*", "items/*",
+                     "120/*", ".claude/*", ".github/*", "src/worldgen/tools/*", "src/admin/*", "scenes/terrain_preview/*", "crash_reports/*",
+                     "src/water2/test_*", "src/water2/probe_*", "src/water2/demo_*", "src/water2/art/*"]
+DEVELOPER = DEVELOPER_FOLDERS + ["*.md", "*.py", "*.sh", "*.bat", "*.ps1", "*.log", "*.out", "*.result", "*.patch", "*.bak", "*.pyc",
+                                 "INSTALL_README.txt"]
+# Files a machine keeps for itself (gitignored): the real admin keys, the generator's setup cache, export settings with passwords.
+LOCAL = ["data/admin.json", "worlds/*/setup_cache/*", "export.cfg", "export_credentials.cfg", ".godot/*"]
 SERVER_NEEDS = ["worlds/base_world/world.json", "worlds/base_world/plan/tile_rules.json", "worlds/base_world/erosion_delta_v2.bin"]
 STAMP = "build_stamp.json"   # tools/build_stamp.py writes it before an export (step A1); untracked, so checked against the filter
 
@@ -63,9 +71,10 @@ UID = re.compile(r'uid://[a-z0-9]+')
 WORD = re.compile(r'\b([A-Z]\w+)\b')
 
 
-def tracked():
-    out = subprocess.run(["git", "-C", ROOT, "ls-files"], check=True, capture_output=True, text=True).stdout.split("\n")
-    return [f for f in out if f and os.path.exists(os.path.join(ROOT, f))]
+def tracked(disk=False):
+    command = ["git", "-C", ROOT, "ls-files", "-z"] + (["--cached", "--others"] if disk else [])
+    out = subprocess.run(command, check=True, capture_output=True, text=True).stdout.split("\0")
+    return sorted({f for f in out if f and os.path.isfile(os.path.join(ROOT, f))})
 
 
 def read(f):
@@ -74,8 +83,8 @@ def read(f):
 
 
 class Project:
-    def __init__(self):
-        self.files = tracked()
+    def __init__(self, disk=False):
+        self.files = tracked(disk)
         self.fileset = set(self.files)
         self.uids = {}
         self.classes = {}
@@ -106,7 +115,7 @@ class Project:
         out = set()
 
         for ref in RES.findall(text):
-            ref = ref.rstrip("/")
+            ref = re.split(r"[%{]", ref)[0].rstrip("/")   # a path filled in at run time ("res://looks/%s.gd") is followed as a prefix
 
             if not ref or ref in skip.get(f, ()):
                 continue
@@ -210,20 +219,21 @@ def load_presets():
     return by_name
 
 
-# Files a load can name that are no part of the game: notes, generator scripts and placeholders beside the media.
+# Files a load can name that are no part of the game: notes, generator scripts and placeholders beside the media. A file under a
+# developer folder is not one of these: a game file that loads it is reported (check).
 def game_file(f):
     return not matches(f, DEVELOPER) and not os.path.basename(f).startswith(".")
 
 
 def server_only(project):
     client = project.closure(CLIENT_ROOTS, LAUNCH_ONLY)
-    server = project.closure(SERVER_ROOTS, {})
+    server = project.closure(SERVER_ROOTS, {})   # with the editor's bake too: the generator it runs is server-side code
     # Code and scenes only: a data file left in the client costs a few KB, and one wrongly left out (a path built at run time) breaks a feature.
     return sorted(f for f in server - client if game_file(f) and f.endswith(CODE_EXT))
 
 
 # The fewest globs that cover `files`: a whole folder when nothing in it is loaded by the client.
-def folder_globs(project, files, client):
+def folder_globs(files, client):
     out = []
 
     for f in files:
@@ -243,23 +253,27 @@ def folder_globs(project, files, client):
     return sorted(set(out))
 
 
+# The exclude_filter lines: the client's from WORLD, DEVELOPER, LOCAL and the server-only code, the server's from DEVELOPER and LOCAL.
 def write(project):
     client = project.closure(CLIENT_ROOTS, LAUNCH_ONLY)
-    generated = folder_globs(project, server_only(project), client)
+    generated = folder_globs(server_only(project), client)
     text = open(PRESETS, encoding="utf-8").read()
-    marker = re.search(r'(\[preset\.\d+\]\n(?:(?!\[preset).*\n)*?custom_features="[^"]*client_only[^"]*"\n(?:(?!\[preset).*\n)*?)'
-                       r'exclude_filter="([^"]*)"', text)
+    blocks = re.split(r'(?m)^(?=\[preset\.\d+\]$)', text)
+    written = 0
 
-    if marker is None:
-        sys.exit("export_check: no client preset (custom_features client_only) with an exclude_filter in export_presets.cfg")
+    for i, block in enumerate(blocks):
+        if not block.startswith("[preset.") or "exclude_filter=" not in block:
+            continue
 
-    fixed = ", ".join(WORLD + DEVELOPER + generated)
-    text = text[:marker.start(2)] + fixed + text[marker.end(2):]
+        client_block = re.search(r'(?m)^custom_features="[^"]*client_only', block) is not None
+        wanted = WORLD + DEVELOPER + LOCAL + generated if client_block else DEVELOPER + LOCAL
+        blocks[i] = re.sub(r'(?m)^exclude_filter="[^"]*"$', lambda m: 'exclude_filter="%s"' % ", ".join(wanted), block, count=1)
+        written += 1
 
     with open(PRESETS, "w", encoding="utf-8", newline="\n") as handle:
-        handle.write(text)
+        handle.write("".join(blocks))
 
-    print("export_check: client exclude_filter written (%d globs, %d of them server-only code)" % (len(WORLD + DEVELOPER + generated), len(generated)))
+    print("export_check: exclude_filter written in %d presets (client: %d server-only code globs)" % (written, len(generated)))
 
 
 def check(project):
@@ -275,18 +289,37 @@ def check(project):
 
     client_pack = pack(project, presets["client"])
     server_pack = pack(project, presets["server"])
-    client_needs = {f for f in project.closure(CLIENT_ROOTS, LAUNCH_ONLY) if game_file(f) and not f.endswith((".import", ".uid")) and f != "project.godot"}
-    server_needs = {f for f in project.closure(SERVER_ROOTS, {}) if game_file(f) and not f.endswith((".import", ".uid")) and f != "project.godot"}
+    client_loads = project.closure(CLIENT_ROOTS, LAUNCH_ONLY)
+    server_loads = project.closure(SERVER_ROOTS, LAUNCH_ONLY)
+    client_needs = {f for f in client_loads if game_file(f) and not matches(f, LOCAL) and not f.endswith((".import", ".uid")) and f != "project.godot"}
+    server_needs = {f for f in server_loads if game_file(f) and not matches(f, LOCAL) and not f.endswith((".import", ".uid")) and f != "project.godot"}
     forbidden = set(server_only(project))
+
+    for name, loads in (("client", client_loads), ("server", server_loads)):
+        for f in sorted(loads):
+            if matches(f, DEVELOPER_FOLDERS) and not f.endswith(".uid"):
+                problems.append("the %s lacks %s, which it loads from a developer folder no pack carries (or add the load to LAUNCH_ONLY)" % (name, f))
+
+    for name in ("client", "server"):
+        for f in sorted(packs_of(project, presets[name])):
+            if matches(f, LOCAL):
+                problems.append("%s pack carries %s, a file this machine keeps for itself" % (name, f))
 
     for f in sorted(client_needs - client_pack):
         problems.append("client pack lacks %s, which the client loads" % f)
 
     for f in sorted(client_pack):
+        if matches(f, LOCAL):
+            continue
+
         if matches(f, WORLD) or matches(f, DEVELOPER):
             problems.append("client pack carries %s (world data, tools, tests or docs)" % f)
         elif f in forbidden:
             problems.append("client pack carries server-only %s (run tools/export_check.py --write)" % f)
+
+    for f in sorted(server_pack):
+        if matches(f, DEVELOPER) and not matches(f, LOCAL):
+            problems.append("server pack carries %s (tools, tests or docs)" % f)
 
     for f in sorted(server_needs - server_pack):
         problems.append("server pack lacks %s, which the server loads" % f)
@@ -302,18 +335,31 @@ def check(project):
     return problems, {"client": client_pack, "server": server_pack, "client_needs": client_needs}
 
 
+def packs_of(project, preset):
+    return pack(project, preset)
+
+
 def size_mb(project, files):
     return sum(os.path.getsize(os.path.join(ROOT, f)) for f in files) / 1048576.0
 
 
+# Known answers for the filter rules (Godot's String.matchn and the all_resources order), so a change to them shows at once.
+def self_test():
+    files = ["a.gd", "docs/x.md", "data/x.json", "worlds/base_world/tiles/t.tile", "art/p.png", "notes.txt", "Data/Up.JSON"]
+    project = type("P", (), {"files": files, "fileset": set(files)})()
+    got = pack(project, {"include_filter": "*.json, *.tile", "exclude_filter": "docs/*, res://art/*, worlds/base_world/tiles/*"})
+    want = {"a.gd", "data/x.json", "Data/Up.JSON"}
+    return [] if got == want else ["self test: the filter rules give %s, not %s" % (sorted(got), sorted(want))]
+
+
 def main(argv):
-    project = Project()
+    project = Project("--disk" in argv)
 
     if "--write" in argv:
         write(project)
 
     if "--list" in argv:
-        name = argv[argv.index("--list") + 1]
+        name = argv[argv.index("--list") + 1] if argv.index("--list") + 1 < len(argv) else "client"
         problems, packs = check(project)
 
         for f in sorted(packs.get(name, [])):
@@ -322,6 +368,7 @@ def main(argv):
         return 0
 
     problems, packs = check(project)
+    problems = self_test() + problems
 
     if packs:
         client = packs["client"]
@@ -334,8 +381,8 @@ def main(argv):
         print("  - " + problem)
 
     if "--ci" in argv:
-        broken = [p for p in problems if " lacks " in p]
-        print("export_check: %s" % ("FAILED (%d files missing from a pack)" % len(broken) if broken else
+        broken = [p for p in problems if "server-only" not in p]   # only server-only code that crept in drifts with routine work
+        print("export_check: %s" % ("FAILED (%d problems)" % len(broken) if broken else
                                     "%d warnings (python3 tools/export_check.py --write)" % len(problems) if problems else "all clear"))
         return 1 if broken else 0
 
