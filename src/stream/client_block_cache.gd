@@ -305,7 +305,9 @@ func _side_rows(keys: Array) -> Dictionary:
 		var key: String = "%d,%d" % [t.x, t.y]
 
 		if flat.has(key):
-			(flat[key] as PackedInt32Array).append_array(PackedInt32Array([k.x, k.y, k.z, k.w]))
+			var list: PackedInt32Array = flat[key]
+			list.append_array(PackedInt32Array([k.x, k.y, k.z, k.w]))
+			flat[key] = list   # packed arrays are values: put the longer one back
 
 	var rows: Dictionary = {}
 
