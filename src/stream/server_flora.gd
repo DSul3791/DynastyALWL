@@ -165,22 +165,36 @@ func setup(flora_placer, store_dir: String) -> void:
 
 	# A one-file save (an older server, or a store seeded that way) is the newest record when it is there: it is read, and the chunk files are
 	# made from it at the first save (a chunk file it does not name is removed then).
+	# An unreadable one-file save is left where it is and the chunk files are read instead, so a broken file never wipes good ones.
 	if FileAccess.file_exists(legacy):
-		_legacy = legacy
+		var whole: Variant = JSON.parse_string(FileAccess.get_file_as_string(legacy))
 
-		for file in _chunk_files():
-			_dirty_chunks[file[0]] = true
+		if typeof(whole) == TYPE_DICTIONARY:
+			_legacy = legacy
 
-		_read_removals(JSON.parse_string(FileAccess.get_file_as_string(legacy)), legacy, true)
-		return
+			for file in _chunk_files():
+				_dirty_chunks[file[0]] = true
+
+			if not _read_removals(whole, true):
+				print("server flora: layout %d is not %d, saved removals cleared (%s)" % [int(whole.get(LAYOUT_KEY, 1)), LayoutScript.VERSION, legacy])
+
+			return
+
+		push_error("server flora: %s is not valid JSON; it is left in place and the chunk files are read" % legacy)
+
+	var stale: int = 0
 
 	for file in _chunk_files():
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(_dir + "/" + str(file[1])))
 
 		if typeof(parsed) == TYPE_DICTIONARY and parsed.has("ids"):
-			_read_removals({LAYOUT_KEY: parsed.get(LAYOUT_KEY, 1), "%d,%d" % [file[0].x, file[0].y]: parsed["ids"]}, file[1], false)
+			if not _read_removals({LAYOUT_KEY: parsed.get(LAYOUT_KEY, 1), "%d,%d" % [file[0].x, file[0].y]: parsed["ids"]}, false):
+				stale += 1
 		else:
 			push_error("server flora: %s/%s is not a removals file" % [_dir, str(file[1])])
+
+	if stale > 0:
+		print("server flora: %d chunk removal files were made under another flora layout (now %d), cleared" % [stale, LayoutScript.VERSION])
 
 
 # [[chunk, file name], ...] of the removals folder.
@@ -200,12 +214,8 @@ func _chunk_files() -> Array:
 
 
 # Reads {"layout": V, "cx,cz": [ids], ...}. Removals made under another layout point at plants that no longer stand there: they are dropped
-# (a file without a stamp is version 1), and their files go at the next save.
-func _read_removals(parsed: Variant, source: String, whole: bool) -> void:
-	if typeof(parsed) != TYPE_DICTIONARY:
-		push_error("server flora: %s is not valid JSON" % source)
-		return
-
+# (a file without a stamp is version 1), and their files go at the next save. False when the layout did not match.
+func _read_removals(parsed: Dictionary, whole: bool) -> bool:
 	var keys: Array = []
 
 	for key in parsed:
@@ -219,8 +229,7 @@ func _read_removals(parsed: Variant, source: String, whole: bool) -> void:
 		for chunk in keys:
 			_dirty_chunks[chunk] = true
 
-		print("server flora: layout %d is not %d, saved removals cleared (%s)" % [int(parsed.get(LAYOUT_KEY, 1)), LayoutScript.VERSION, source])
-		return
+		return false
 
 	for chunk in keys:
 		var ids: Dictionary = {}
@@ -232,6 +241,8 @@ func _read_removals(parsed: Variant, source: String, whole: bool) -> void:
 
 		if whole:
 			_dirty_chunks[chunk] = true
+
+	return true
 
 
 # A chunk's flora for clients, with removals applied, packed relative to
@@ -423,14 +434,13 @@ func restore_all() -> void:
 	for chunk in _removed:
 		_dirty_chunks[chunk] = true
 
+	for file in _chunk_files():
+		_dirty_chunks[file[0]] = true
+
 	_removed.clear()
 	_brush.clear()
 	_memory.clear()
 	_mutex.unlock()
-
-	for file in _chunk_files():
-		_dirty_chunks[file[0]] = true
-
 	save_removed(true)
 
 
@@ -477,6 +487,7 @@ func save_removed(force: bool = false) -> void:
 	_legacy = ""
 	_mutex.unlock()
 	DirAccess.make_dir_recursive_absolute(_dir)
+	var failed: Array = []
 
 	for chunk in writes:
 		var path: String = "%s/%d_%d.json" % [_dir, chunk.x, chunk.y]
@@ -489,11 +500,29 @@ func save_removed(force: bool = false) -> void:
 
 		var file: FileAccess = FileAccess.open(path, FileAccess.WRITE)
 
-		if file != null:
-			file.store_string(JSON.stringify({LAYOUT_KEY: LayoutScript.VERSION, "ids": writes[chunk]}))
-			file.close()
+		if file == null:
+			failed.append(chunk)
+			continue
 
-	if legacy != "":
+		file.store_string(JSON.stringify({LAYOUT_KEY: LayoutScript.VERSION, "ids": writes[chunk]}))
+		file.close()
+
+	if not failed.is_empty():
+		# Tried again at the next save; the one-file save is kept until every chunk it held is written.
+		push_error("server flora: %d chunk removal files could not be written in %s" % [failed.size(), _dir])
+		_mutex.lock()
+
+		for chunk in failed:
+			_dirty_chunks[chunk] = true
+
+		if legacy != "":
+			_legacy = legacy
+
+		_mutex.unlock()
+	elif legacy != "":
+		if FileAccess.file_exists(legacy + ".migrated"):
+			DirAccess.remove_absolute(legacy + ".migrated")   # an earlier migration's copy (rename does not overwrite on Windows)
+
 		DirAccess.rename_absolute(legacy, legacy + ".migrated")   # kept, not deleted: the chunk files now hold what it held
 
 

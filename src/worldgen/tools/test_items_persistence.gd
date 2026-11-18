@@ -7,6 +7,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const BowScript := preload("res://src/stream/server_bow.gd")
 
 var failures: int = 0
 
@@ -64,11 +65,14 @@ func _init() -> void:
 	# The periodic save (audit 18 Nov 2026 finding 2): the tick copies, the background writer builds and writes. Its files must match a direct save's
 	# (a fire, a lit standing torch and an arrow stuck in a tree among the items), and a change made on the tick after the copy must not reach them.
 	a.drop_in_world(stone, 1, Vector3(12.0, 10.0, 12.0))
+	a._bow = BowScript.new()   # made at the first shot in play; _stick_arrow reads its config
+	var arrow_id: int = a._next_id
 	a._stick_arrow(stone, Vector3(14.0, 13.0, 14.0), Vector3(1.0, 0.2, 0.0))
 	a._items[a._next_id] = {"number": stone, "count": 1, "pos": Vector3(16.0, 10.0, 16.0), "left": 1.0e9, "fire": {"state": 1, "burn_left": 500.0, "recheck": 0.0, "covered": false}}
 	a._next_id += 1
 	a._items[a._next_id] = {"number": stone, "count": 1, "pos": Vector3(18.0, 10.0, 18.0), "left": 1.0e9, "struct": {"kind": "standing_torch", "yaw": 0.0, "lit": true, "fuel_left": 40.0}}
 	a._next_id += 1
+	check(a._items.has(arrow_id) and a._tilted.has(arrow_id), "the stuck arrow is in the world and marked tilted")
 	var tree_id: int = -1
 
 	for id in a._items:
