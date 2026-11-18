@@ -3327,6 +3327,13 @@ func _make_kit_model() -> Node3D:
 		node.add_child(mark)
 		return node
 
+	if id == "mortar_pestle":
+		var bowl: MeshInstance3D = MeshInstance3D.new()   # the stone bowl with its pestle, carried at 70 percent (MORTAR_PESTLE.md MP-1: a placed station, carried like a kit)
+		bowl.mesh = BasicLook.mesh_for(id)
+		bowl.scale = Vector3.ONE * 0.7
+		node.add_child(bowl)
+		return node
+
 	if id == "chopping_block":
 		var model: Node3D = BuildingLook.block()       # the same model as the placed block, carried at 30 percent so it fits the hand
 		model.scale = Vector3.ONE * 0.3
