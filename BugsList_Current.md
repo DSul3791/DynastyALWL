@@ -1,0 +1,123 @@
+# Current Bugs
+
+All Currently unfixed bugs go here.
+
+This list records Dave's current playtest problems and the intended player experience needed to resolve them. It includes requested behaviour where a bug fix alone would be incomplete. All entries remain open until their outcomes are verified; this document does not claim implementation or successful testing. When an entry is verified fixed, move it to [BugsList_Fixed.md](BugsList_Fixed.md).
+
+## Intended experience
+
+The hoe should make preparing land predictable and convenient. The player can level a building site, prepare a garden in one deliberate action, or plant an orderly patch using available supplies. Terrain changes must respect buildings and obstacles. Mining should visibly use up a rock rather than provide an endless supply.
+
+The six existing entry numbers are retained for tracking. Detailed behaviour has one home below; cross-references replace repeated instructions.
+
+## 1. Level terrain without lifting the player or creating free fill
+
+**Problem:** Raising soil beneath the player lifts them, and their new height then drives further raising. The resulting terrain climbs higher with repeated use.
+
+**Required outcome:**
+- Level uses the bottom of the player's feet as its target height, captured before that action changes terrain.
+- It cuts high ground down and fills low ground up to that target. Terrain altered by the action must not create a higher reference and feed back into further raising.
+- The action must not move the player up or down. Preserve the ground supporting the player as needed to accomplish this.
+- Filling low ground consumes soil, using the normal crafting resource system: inventory, loose soil nearby, and nearby containers. Without sufficient soil, do not create unpaid fill.
+- The soil requirement belongs to raising/filling with Level. The two tilling modes in entry 6 instead redistribute terrain to an average height and require no soil.
+
+**Acceptance:** Level a site while standing still. The player stays at the same height, the target does not creep upward, and filling consumes available soil.
+
+## 2. Foundations must use the edited ground surface
+
+**Problem:** A raised, flattened building site is rejected as too far above or below ground, as though the new soil were not ground.
+
+**Required outcome:** Foundation height/contact checks must use the current terrain surface, including player edits. A valid site made with the hoe must be usable immediately. Other existing foundation requirements, such as support and obstruction checks, still apply.
+
+**Acceptance:** Raise and level a suitable site, then place a foundation on its new surface without an erroneous original-ground-height refusal.
+
+## 3. Rocks must visibly deplete as they are mined
+
+**Problem:** A rock can yield hundreds of stones without shrinking or breaking.
+
+**Required outcome:**
+- Give each rock a finite stone supply proportional to its original physical size. Use original rock volume as the basis for this proportionality.
+- As that supply is extracted, show increasing cracks and a shrinking rock.
+- Exhausted rocks break and stop yielding stone.
+- Yield, visible depletion and exhaustion must describe the same remaining resource, including after saving and reloading.
+
+**Acceptance:** Larger rocks provide proportionally more stone, every rock is exhaustible, and visual changes communicate progress toward exhaustion.
+
+## 4. Keep the hoe menu readable on screen
+
+**Problem:** The hoe's right-click menu extends beyond the screen.
+
+**Required outcome:** Cap its width at 75% of the game viewport width and wrap text within that limit. Keep the menu inside the visible viewport.
+
+**Acceptance:** All menu choices remain readable and selectable at the player's window size.
+
+## 5. Present the hoe actions in a practical order
+
+Use this order and these labels:
+
+| Order | Menu label | Purpose |
+|---|---|---|
+| 1 | Level | Prepare ground at the player's standing height; entry 1. |
+| 2 | Plant | Choose a plant and place it with a planting grid; entry 6. |
+| 3 | Till Garden Grid - 20m Edge Blend | Create an adjustable garden with blended edges; entry 6. |
+| 4 | Till Soil 2m | Prepare a small level patch without edge blending; entry 6. |
+| 5 | Pathen | One click makes one level path spot with the normal path texture. |
+| 6 | Survey a Path | Retain the existing implemented behaviour. |
+
+Survey a Path is included for menu placement; this list does not request rebuilding it.
+
+## 6. Make gardening and planting deliberate, quick and predictable
+
+### Shared placement behaviour
+
+- Show the area the player is about to use before they commit. Planting uses a neon-green grid; garden tilling uses a similar preview.
+- Trees and large rocks obstruct placement. Turn the preview red and refuse the action until the site is cleared.
+- Automatically pick up small, collectable rocks when the action is successfully confirmed. Do not destroy them or pick them up merely by hovering a preview.
+- Buildings obstruct placement. Do not wrap a grid around them or leave building-shaped holes.
+- Neither tilling mode may change ground beneath a building or within 2 metres of any building piece. This protection also applies to garden edge blending.
+- Validate the complete affected terrain area before modifying it. If an obstacle or protected building area prevents the operation, refuse it without partially tilling or blending the terrain.
+
+### Plant
+
+1. Open a selection window listing the plant types and seeds available from inventory, nearby containers and loose items on the ground, using the normal crafting resource system.
+2. After selection, show a neon-green planting grid. Alt + arrow keys change the number of rows and columns. The selected plant type determines spacing.
+3. One left-click fills usable positions with the selected type until the grid is full or available planting supplies run out. Consume resources for the plants actually placed. A shortage permits a partially filled grid.
+4. Right-click returns to plant selection so the player can choose another type.
+
+Crops, including wheat and barley, require tilled soil. Bushes and trees do not. Existing plants and other occupied positions must not receive duplicate plants.
+
+### Till Garden Grid - 20m Edge Blend
+
+**Purpose:** Turn a cleared area into one flat garden that joins naturally to the surrounding land.
+
+- Alt + arrow keys adjust the garden's length and width.
+- On the confirming left-click, capture all original terrain heights within the garden together and calculate their average.
+- In that single operation, level the entire garden to the average, remove grass, till it and apply a dark, rich garden-soil texture. No soil is required or consumed.
+- Blend the perimeter into the surrounding terrain. The transition must be 45 degrees or gentler and reach the existing terrain within a maximum of 20 metres outward from the garden edge.
+- The full affected area, including the blend, must respect the obstacle and building-clearance rules above.
+- If these conditions cannot all be satisfied, show a red grid and block placement. Do not silently steepen the slope, extend past 20 metres or modify protected ground.
+- After a successful action, replace the garden grid with a 20-second countdown in medium-sized red numbers at the centre of the screen. Further Garden Grid tilling is unavailable until it reaches zero, even if the player changes position. Restore the preview when the countdown ends.
+- This is one click and one terrain operation, not continuous tilling while the button is held.
+
+### Till Soil 2m
+
+**Purpose:** Quickly prepare a small patch with the same soil treatment, without the large garden's edge transition.
+
+- Affect a 2-metre-wide patch.
+- Capture the original heights beneath it, average them, and level the patch to that average in one action.
+- Remove grass, till the patch and apply the same dark, rich garden-soil texture.
+- Require no soil and perform no edge blending.
+- Apply the shared tilling obstacle and building-clearance rules.
+- Do not apply the Garden Grid's 20-second countdown to this mode.
+
+### Acceptance
+
+- Both tilling modes average the original ground rather than repeatedly chasing a changed height or the player's position.
+- A garden's preview and actual placement agree about obstacles, blending and building clearance.
+- A successful garden creates level, plantable soil with compliant edges and starts the visible countdown.
+- Crops can be planted on either tilled surface; trees and bushes can also be planted on suitable untilled ground.
+- One planting click uses available supplies without demanding enough resources to fill every grid position.
+
+## Rewrite interpretation
+
+Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
