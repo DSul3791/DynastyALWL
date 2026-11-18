@@ -464,8 +464,8 @@ func _plot_size_checks(dir: String) -> void:
 
 
 # The hoe grid's tilling (Dave 14 Nov 2026): a turned bed stands where its grid point is, turned with it; old metre-cell crop keys move to the bed at load;
-# Till a garden surveys the marked beds, refuses ground that rises or falls more than 1 m from its average, levels the beds to the average, blends the
-# ground outside back to the natural over 2 m, leaves ground by a building alone, and tills every bed; it stops when the player walks off.
+# Till Garden Grid, Till Soil 2m and Plant (BugsList_Current.md entry 6): the whole area is checked first, then levelled, blended and tilled as one job;
+# Plant fills a grid in one click from the crafting stock.
 func _garden_till_checks() -> void:
 	var inv = items.inventory_of(1)
 	var hoe: int = HeldTool.slot_of(items, "hoe")
@@ -491,19 +491,27 @@ func _garden_till_checks() -> void:
 	items._plot_water.erase(new_key)
 	items._items.erase(920020)
 
-	# Till a garden on a slope of 0.3 m a metre: 3 by 3 beds within 0.3 m of their average, so it is levelled and tilled.
-	# Aimed a little off the metre cells: an unturned garden's beds snap to them, and it is surveyed and levelled there.
+	# Till Garden Grid (BugsList entry 6, Dave 18 Nov 2026) on a slope of 0.3 m a metre: the beds' heights are averaged, the 3 by 3 garden is levelled to the average
+	# and tilled, and its edge blends back to the slope no steeper than GARDEN_BLEND_GRADE. Aimed a little off the metre cells: an unturned garden's beds snap to them.
 	var made_edits: Array = []
+	var verdicts: Array = []
+	items.send_hoe_verdict = func(_p, kind, code, at, state, why, cells): verdicts.append([kind, code, at, state, why, cells])
 	items.ground_height = func(x, _z): return 10.0 + 0.3 * (x - 40.5)
 	items.edits_near = func(_p, _r): return made_edits.duplicate()
 	items.dig_ground = func(c, r): made_edits.append([0, c, r]); return true
 	items.fill_ground = func(c, r, _m): made_edits.append([1, c, r]); return true
 	items.report_position(1, Vector3(40.0, 10.0, 40.0))
 	notes.clear()
+	items._hoe_check_ms.clear()
+	check(not items.till_garden(1, inv, Vector3(40.3, 10.0, 40.7), hoe, 0, 10000303) and not items._garden_jobs.has(1) and made_edits.is_empty() and verdicts.size() == 1 and int(verdicts[0][3]) == 1, "the preview's question is answered green and changes nothing (%s)" % str(verdicts))
+	items._items[920030] = {"number": items.table.number_of("stone"), "count": 1, "pos": Vector3(40.5, 10.0, 40.5), "left": 1.0e9, "scatter": 777001}
+	var stones_before: int = inv.count_of(items.table.number_of("stone"))
 	items._last_dig.clear()
-	check(items.till_garden(1, inv, Vector3(40.3, 10.0, 40.7), hoe, 0, 303) and items._garden_jobs.has(1), "a 3 by 3 garden on a gentle slope is taken on (%s)" % str(notes))
+	check(items.till_garden(1, inv, Vector3(40.3, 10.0, 40.7), hoe, 0, 303) and items._garden_jobs.has(1) and int(verdicts[-1][3]) == 2, "a 3 by 3 garden on a gentle slope is taken on in one click (%s)" % str(notes))
+	check(not items._items.has(920030) and inv.count_of(items.table.number_of("stone")) == stones_before + 1, "the small rock on the garden is picked up on the click")
 	items._last_dig.clear()
 	check(not items.till_garden(1, inv, Vector3(40.3, 10.0, 40.7), hoe, 0, 303), "one garden at a time")
+	items.report_position(1, Vector3(90.0, 10.0, 40.0))   # walking off does not stop it: the area was checked when it was taken on
 	var steps: int = 0
 
 	while items._garden_jobs.has(1) and steps < 500:
@@ -512,8 +520,8 @@ func _garden_till_checks() -> void:
 		steps += 1
 
 	var beds: Array = items._items.keys().filter(func(k): return items._items[k].has("struct") and str(items._items[k]["struct"]["kind"]) == "tilled_bed" and Vector2(items._items[k]["pos"].x - 40.5, items._items[k]["pos"].z - 40.5).length() < 1.6)
-	check(not items._garden_jobs.has(1) and beds.size() == 9 and notes.has("The garden is ready: 9 beds tilled."), "the garden is levelled and its 9 beds tilled in %d steps (%s)" % [steps, str(notes)])
-	check(made_edits.any(func(op): return int(op[0]) == 0) and made_edits.any(func(op): return int(op[0]) == 1), "the high side is cut and the low side filled")
+	check(not items._garden_jobs.has(1) and beds.size() == 9 and notes.has("The garden is ready: 9 beds tilled."), "the garden is levelled and its 9 beds tilled in %d steps, the player gone (%s)" % [steps, str(notes)])
+	check(made_edits.any(func(op): return int(op[0]) == 0) and made_edits.any(func(op): return int(op[0]) == 1) and inv.count_of(items.table.number_of("soil")) == 0, "the high side is cut and the low side filled, with no soil")
 	var flat: bool = true
 
 	for x in [39.5, 40.5, 41.5]:
@@ -528,17 +536,22 @@ func _garden_till_checks() -> void:
 		items._items.erase(k)
 
 	var edge: float = items._edited_height(43.0, 40.5, made_edits)
-	check(edge > 10.0 - 0.06 and edge < 10.0 + 0.3 * 2.5 + 0.06, "a metre outside the garden the ground lies between the average and the slope as it was (%.2f)" % edge)
-
-	# Too uneven: a slope of 0.6 m a metre over 5 beds is 1.2 m above and below the average: refused, nothing touched.
-	items.ground_height = func(x, _z): return 10.0 + 0.6 * (x - 60.5)
+	check(edge > 10.0 - 0.06 and edge <= 10.0 + items.GARDEN_BLEND_GRADE * 1.0 + 0.12, "a metre outside the garden the ground is no higher than the blend's slope allows (%.2f)" % edge)
+	check(items.GARDEN_BLEND_GRADE <= 1.0 and items.GARDEN_BLEND_GRADE <= 0.5, "the blend is 45 degrees or gentler, and at most 1 in 2 (steeper, neighbouring spheres undo each other)")
 	items.report_position(1, Vector3(60.5, 10.0, 40.5))
+	items._last_dig.clear()
+	notes.clear()
+	check(not items.till_garden(1, inv, Vector3(60.5, 10.0, 40.5), hoe, 0, 101) and notes.any(func(n): return str(n).begins_with("The next garden grid is ready in")), "the next garden waits for the 20 s countdown, wherever the player is (%s)" % str(notes))
+	items._garden_ready_ms.clear()
+
+	# Too steep: a slope of 0.6 m a metre never meets a 0.5 blend within 20 m: refused, red, nothing touched.
+	items.ground_height = func(x, _z): return 10.0 + 0.6 * (x - 60.5)
 	made_edits.clear()
 	notes.clear()
 	items._last_dig.clear()
-	check(not items.till_garden(1, inv, Vector3(60.5, 10.0, 40.5), hoe, 0, 501) and made_edits.is_empty() and notes.any(func(n): return str(n).contains("rises and falls too much")), "ground that rises or falls more than 1 m from its average is refused (%s)" % str(notes))
+	check(not items.till_garden(1, inv, Vector3(60.5, 10.0, 40.5), hoe, 0, 501) and made_edits.is_empty() and notes.any(func(n): return str(n).contains("falls away too steeply")) and int(verdicts[-1][3]) == 0, "ground the blend cannot meet within 20 m is refused (%s)" % str(notes))
 
-	# A 5 by 5 garden on the same gentle slope: the feather band settles well inside the edit cap (a steeper blend cut and filled without end).
+	# A 5 by 5 garden on a gentle slope: done well inside the edit cap.
 	items.ground_height = func(x, _z): return 10.0 + 0.3 * (x - 120.5)
 	items.report_position(1, Vector3(120.5, 10.0, 40.5))
 	made_edits.clear()
@@ -552,54 +565,85 @@ func _garden_till_checks() -> void:
 		steps += 1
 
 	check(not items._garden_jobs.has(1) and made_edits.size() < items.GARDEN_MAX_EDITS, "the 5 by 5 garden is levelled in %d edits, under the cap of %d" % [made_edits.size(), items.GARDEN_MAX_EDITS])
+	items._garden_ready_ms.clear()
 
-	# A 2 by 2 on a 0.4 slope: its first and second rings' targets are 0.6 m apart, which the feather slack lets settle too.
-	items.ground_height = func(x, _z): return 10.0 + 0.4 * (x - 140.0)
-	items.report_position(1, Vector3(140.0, 10.0, 40.0))
-	made_edits.clear()
-	items._last_dig.clear()
-	check(items.till_garden(1, inv, Vector3(140.0, 10.0, 40.0), hoe, 0, 202), "a 2 by 2 garden on a 0.4 slope is taken on")
-	steps = 0
-
-	while items._garden_jobs.has(1) and steps < 800:
-		items._garden_jobs[1]["next_ms"] = 0
-		items._garden_jobs_tick()
-		steps += 1
-
-	check(not items._garden_jobs.has(1) and made_edits.size() < items.GARDEN_MAX_EDITS, "the 2 by 2 garden is levelled in %d edits, under the cap" % made_edits.size())
-	check(items.GARDEN_FEATHER_GRADE <= 0.5, "the feather grade stays at most 1 in 2 (steeper, the inner spheres and the first ring undo each other)")
-
-	# A wall beside the garden: no cut or fill near it.
+	# A wall beside the garden: Dave: no ground changed within 2 m of a building, and no hole round it: the whole garden is refused before anything changes.
 	items.ground_height = func(x, _z): return 10.0 + 0.3 * (x - 80.5)
 	items._items[920021] = {"number": items.table.number_of("thatch_wall"), "count": 1, "pos": Vector3(83.1, 10.0, 40.5), "left": 1.0e9, "struct": {"kind": "thatch_wall", "yaw": 0.0}}
 	items.report_position(1, Vector3(80.5, 10.0, 40.5))
 	made_edits.clear()
+	notes.clear()
 	items._last_dig.clear()
-	check(items.till_garden(1, inv, Vector3(80.5, 10.0, 40.5), hoe, 0, 303), "a garden beside a wall is taken on")
+	check(not items.till_garden(1, inv, Vector3(80.5, 10.0, 40.5), hoe, 0, 303) and made_edits.is_empty() and notes.any(func(n): return str(n).begins_with("Too close to a building")), "a garden whose ground or blend comes within 2 m of a wall is refused, nothing changed (%s)" % str(notes))
+	items._items.erase(920021)
+
+	# A tree or a large rock on the garden: refused.
+	items.trunks_near = func(_p, _r): return [[Vector3(80.5, 10.0, 40.5), 0.3, 12.0]]
+	items._last_dig.clear()
+	notes.clear()
+	check(not items.till_garden(1, inv, Vector3(80.5, 10.0, 40.5), hoe, 0, 303) and made_edits.is_empty() and notes.any(func(n): return str(n).begins_with("A tree is in the way")), "a tree on the garden refuses it (%s)" % str(notes))
+	items.trunks_near = Callable()
+	items._items[920022] = {"number": 0, "count": 40, "pos": Vector3(81.5, 10.0, 41.5), "left": 1.0e9, "scatter": 777002, "boulder": {"radius": 0.6, "yaw": 0.0, "total": 40}}
+	items._last_dig.clear()
+	notes.clear()
+	check(not items.till_garden(1, inv, Vector3(80.5, 10.0, 40.5), hoe, 0, 303) and made_edits.is_empty() and notes.any(func(n): return str(n).begins_with("A large rock is in the way")), "a large rock on the garden refuses it (%s)" % str(notes))
+	items._items.erase(920022)
+
+	# Till Soil 2m: a 2 by 2 patch levelled to its average and tilled, no blend, no countdown.
+	items.ground_height = func(x, _z): return 10.0 + 0.2 * (x - 100.0)
+	items.report_position(1, Vector3(100.0, 10.0, 40.0))
+	made_edits.clear()
+	items._last_dig.clear()
+	check(items.till_garden(1, inv, Vector3(100.0, 10.0, 40.0), hoe, 0, 10000 + 909) and not items._garden_ready_ms.has(1), "Till Soil 2m is taken on whatever grid size is sent, and starts no countdown")
 	steps = 0
 
-	while items._garden_jobs.has(1) and steps < 500:
+	while items._garden_jobs.has(1) and steps < 300:
 		items._garden_jobs[1]["next_ms"] = 0
 		items._garden_jobs_tick()
 		steps += 1
 
-	check(not made_edits.is_empty() and made_edits.all(func(op): return Vector2(op[1].x - 83.1, op[1].z - 40.5).length() >= 2.4), "no levelling spot within the wall's reach plus 1.5 m")
-	items._items.erase(920021)
+	var soil_beds: Array = items._items.keys().filter(func(k): return items._items[k].has("struct") and str(items._items[k]["struct"]["kind"]) == "tilled_bed" and Vector2(items._items[k]["pos"].x - 100.0, items._items[k]["pos"].z - 40.0).length() < 1.5)
+	check(soil_beds.size() == 4 and made_edits.all(func(op): return absf(float(op[2]) - items.SOIL_SPHERE_M) < 0.001 and Vector2(op[1].x - 100.0, op[1].z - 40.0).length() < 1.2), "the 2 m patch has 4 beds and only small spheres inside it (no blend; %d edits)" % made_edits.size())
 
-	# Walking off leaves it half done.
-	items.ground_height = func(x, _z): return 10.0 + 0.3 * (x - 100.0)
-	items.report_position(1, Vector3(100.0, 10.0, 40.0))
+	for k in soil_beds:
+		items._items.erase(k)
+
+	# Plant: one click fills the grid's usable points, from the pack and then from what lies nearby; a crop needs a tilled bed.
+	items.ground_height = func(_x, _z): return 10.0
+	made_edits.clear()
+	items.report_position(1, Vector3(200.0, 10.0, 200.0))
 	items._last_dig.clear()
-	check(items.till_garden(1, inv, Vector3(100.0, 10.0, 40.0), hoe, 0, 505), "a 5 by 5 garden is taken on")
-	items.report_position(1, Vector3(140.0, 10.0, 40.0))
+	var bed_a: int = items.till(1, inv, Vector3(200.5, 10.0, 200.5), hoe, 0)
+	items._last_dig.clear()
+	var bed_b: int = items.till(1, inv, Vector3(201.5, 10.0, 200.5), hoe, 0)
+	var was_season: String = season[0]
+	season[0] = "spring"
+	var seed_n: int = items.table.number_of("wheat_seeds")
+	inv.remove(seed_n, inv.count_of(seed_n))
+	items.action(1, Net.ACT_ADMIN_GIVE, seed_n, 0, 1, Vector3.ZERO)
+	items._items[920031] = {"number": seed_n, "count": 1, "pos": Vector3(199.5, 10.0, 199.5), "left": 1.0e9}
+	items._hoe_check_ms.clear()
+	verdicts.clear()
+	items.plant_grid(1, inv, hoe, seed_n, 10000000 + 301, Vector3(201.5, 10.0, 200.5))
+	var cells: PackedByteArray = verdicts[0][5] if not verdicts.is_empty() else PackedByteArray()
+	check(bed_a != 0 and bed_b != 0 and cells.size() == 3 and cells[0] == 1 and cells[1] == 1 and cells[2] == 0 and inv.count_of(seed_n) == 1, "the planting preview: the two beds green, open ground red for a crop, nothing taken (%s)" % str(cells))
+	items._last_dig.clear()
 	notes.clear()
-	items._garden_jobs[1]["next_ms"] = 0
-	items._garden_jobs_tick()
-	check(not items._garden_jobs.has(1) and notes.any(func(n): return str(n).begins_with("The garden is left half done")), "walking off stops the garden job (%s)" % str(notes))
+	check(items.plant_grid(1, inv, hoe, seed_n, 301, Vector3(201.5, 10.0, 200.5)) == 2 and inv.count_of(seed_n) == 0 and not items._items.has(920031), "one click sows both beds: the seed in the pack and the one on the ground (%s)" % str(notes))
+	check(items._crops.has(items._bed_key(items._items[bed_a]["pos"])) and items._crops.has(items._bed_key(items._items[bed_b]["pos"])), "both beds have wheat growing")
+	items._last_dig.clear()
+	check(items.plant_grid(1, inv, hoe, seed_n, 301, Vector3(201.5, 10.0, 200.5)) == 0, "nothing left: nothing planted, and a growing bed takes no second plant")
+	season[0] = was_season
+
+	for k in [bed_a, bed_b]:
+		items._crops.erase(items._bed_key(items._items[k]["pos"]))
+		items._items.erase(k)
+
 	items.ground_height = func(_x, _z): return 10.0
 	items.dig_ground = Callable()
 	items.fill_ground = Callable()
 	items.edits_near = Callable()
+	items.send_hoe_verdict = Callable()
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 
 
