@@ -186,6 +186,7 @@ var _tiles_told_msec: int = 0
 const EDIT_SEND_M := 512.0
 const EDITS_HELD_MAX := 1024           # per player; past it the oldest held edit is sent anyway (out of range costs only a fetch)
 const EDITS_RELEASE_MAX := 256         # held edits sent to one player per half second, so arriving at a long road is no hitch
+var _edit_by: int = 0                  # the admin whose dig this is (_on_dig_requested): it reaches them wherever their reported spot is
 var _edits_held: Dictionary = {}        # peer -> [[centre, radius, material (-1 = a dig)], ...] oldest first, not yet sent to that player
 var _events = EventLogScript.new()      # user://server_events.log: peers, stalls, quit reason (why a client was dropped)
 var _report_at_msec: int = 0
@@ -2024,7 +2025,11 @@ func _on_dig_requested(peer_id: int, center: Vector3, radius: float) -> void:
 	if not limits.allow(peer_id, "dig"):
 		return
 
+	# A flying admin's reported spot stays where they last stood still (terrain_client.gd _update_anchor), so their own dig would
+	# wait in _edits_held until they stop (Lane A, 18 Nov 2026); it goes to them at once.
+	_edit_by = peer_id
 	_dig_ground(center, radius)
+	_edit_by = 0
 
 
 # A joining client's saved copy of a tile is older than the tile (protocol 128): it gets the edits since, to forget only those blocks.
@@ -2333,7 +2338,7 @@ func _tunnel_tick() -> void:
 func _send_edit(center: Vector3, radius: float, material: int) -> void:
 	for peer in multiplayer.get_peers():
 		var peer_id: int = int(peer)
-		var at: Variant = items.position_of(peer_id)
+		var at: Variant = center if peer_id == _edit_by else items.position_of(peer_id)
 
 		# Behind a backlog of held edits near the player it waits its turn, so edits to one spot keep their order.
 		if at != null and _edit_near(at, center) and not _send_held_edits(peer_id, at):
