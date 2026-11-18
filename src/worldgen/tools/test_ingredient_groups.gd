@@ -118,7 +118,8 @@ func _init() -> void:
 	check(count("chopping_block") == 1 and count("wooden_block") == 0, "a chopping block from one Wooden block (15 Nov 2026: one block)")
 	items.dev_place("carving_station@2,0,0")   # the bowl and the hammer are carved at the wood carving station (15 Nov 2026, TREE_WOOD_TOOLS_DESIGN.md W-8)
 	pack.add(items.table.number_of("wooden_block"), 1)
-	items.give(1, items.table.number_of("stone_knife"), 1)   # given, so it goes on a hotbar key: a kept knife must be in hand (CraftHand.at picks it)
+	items.give(1, items.table.number_of("stone_knife"), 1)   # given, so it goes on a hotbar key
+	items.give(1, items.table.number_of("copper_chisel"), 1)   # the bowl's chisel goes in hand, the knife is kept in the pack (Dave 18 Nov 2026)
 	queue_and_finish("wooden_bowl", 1)
 	check(count("wooden_bowl") == 1 and count("wooden_block") == 0 and count("stone_knife") == 1, "a wooden bowl carved from a block, the stone knife kept (recipe audit 10 Nov 2026)")
 	pack.add(items.table.number_of("log_spruce"), 1)

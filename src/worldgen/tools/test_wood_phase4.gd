@@ -221,6 +221,10 @@ func carving() -> void:
 		var r: Dictionary = recipe_of(id)
 		clear_pack()
 		hold("stone_knife")
+
+		if ["wooden_bowl", "serving_platter"].has(id):
+			hold("copper_chisel")   # carved with a Copper chisel or better in hand, the knife kept in the pack (Dave 18 Nov 2026)
+
 		put_needs(r)
 		queue(id)
 		var gives: Array = r["gives"]

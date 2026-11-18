@@ -201,6 +201,10 @@ func _init() -> void:
 	for pair in [["wooden_bowl", "iron_knife", "stone_knife"], ["saw_blocks", "copper_saw", "hand_saw"], ["lumber_by_hand", "steel_saw", "hand_saw"]]:
 		empty_pack()
 		hold(str(pair[1]))
+
+		if str(pair[0]) == "wooden_bowl":
+			hold("copper_chisel")   # the bowl is carved with a Copper chisel or better in hand, the knife kept in the pack (Dave 18 Nov 2026)
+
 		give_needs(str(pair[0]))
 		var gives: Array = recipe(str(pair[0])).get("gives", [0, 0])
 		craft(str(pair[0]))
@@ -269,6 +273,28 @@ func _init() -> void:
 	var cost_ids: Array = blueprint_of("grindstone").get("cost", []).map(func(c): return str(c[0]))
 	check(not cost_ids.is_empty() and cost_ids.all(func(c): return c in ["stone", "log"]), "the Grindstone costs only stone and logs (%s)" % str(cost_ids))
 	check(place("grindstone", grind_at) and items.station_near(1, "grindstone"), "the Grindstone stands and is a grindstone station")
+
+	# 6. Chisel tiers (Dave 18 Nov 2026): a blueprint's "chisel" is the lowest chisel on the hand bar, a better one serves; a recipe keeps its chisel group, held in hand.
+	var chisel_rows: Dictionary = {"log_trough": 2, "chair": 3, "stone_trough": 4, "iron_chest": 5}
+
+	for st in chisel_rows:
+		check(int(blueprint_of(st).get("chisel", 0)) == int(chisel_rows[st]), "%s needs chisel tier %d" % [st, int(chisel_rows[st])])
+
+	check(recipe("carved_stone_block").get("keeps", []).any(func(c): return int(c[0]) == n_of("steel_chisel")) and recipe("bench_stone_block").get("keeps", []).any(func(c): return int(c[0]) == n_of("iron_chisel")) and recipe("wooden_bowl").get("keeps", []).any(func(c): return int(c[0]) == n_of("copper_chisel")), "carved stone wants a steel chisel, the bench Stone block an iron one, the bowl a copper one")
+	check(items.table.group_members(n_of("iron_chisel")).has(n_of("steel_chisel")) and not items.table.group_members(n_of("iron_chisel")).has(n_of("bronze_chisel")) and not items.table.group_members(n_of("bronze_chisel")).has(n_of("copper_chisel")), "a better chisel fills a lower group, a lesser one never does")
+	var chisel_spot: int = 0
+
+	for trial in [["log_trough", "", false], ["log_trough", "copper_chisel", true], ["iron_chest", "iron_chisel", false], ["iron_chest", "steel_chisel", true]]:
+		empty_pack()
+		hold("steel_hammer")
+
+		if str(trial[1]) != "":
+			items.give(1, n_of(str(trial[1])), 1)   # given, so it lands on a hand bar key
+
+		chisel_spot += 1
+		var cat: Vector3 = HERE + Vector3(12.0 * float(chisel_spot), 0.0, 24.0)
+		items.report_position(1, cat + Vector3(0.0, 0.0, 2.0))
+		check(place(str(trial[0]), cat) == bool(trial[2]), "%s with %s: %s" % [trial[0], "no chisel" if str(trial[1]) == "" else str(trial[1]), "builds" if bool(trial[2]) else "refused"])
 
 	print("tool ladder: %d failures" % failures)
 	items._finish_writer()

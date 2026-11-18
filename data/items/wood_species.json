@@ -5,7 +5,9 @@
 		"log": ["log_oak", "log_beech", "log_birch", "log_scots_pine", "log_spruce", "log_tropical_hardwood", "log_walnut", "log_maple"],
 		"log_spruce": ["log_scots_pine", "log"],
 		"log_oak": ["log_beech", "log_birch", "log_tropical_hardwood", "log_walnut", "log_maple"],
+		"copper_chisel": ["copper_chisel", "bronze_chisel", "iron_chisel", "steel_chisel"],
 		"bronze_chisel": ["bronze_chisel", "iron_chisel", "steel_chisel"],
+		"iron_chisel": ["iron_chisel", "steel_chisel"],
 		"knife": ["stone_knife", "copper_knife", "bronze_knife", "iron_knife", "steel_knife"], "axe": ["stone_axe", "copper_axe", "bronze_axe", "iron_axe", "steel_axe"], "saw": ["stone_saw", "copper_saw", "bronze_saw", "hand_saw", "steel_saw"],
 		"nails": ["nails", "bronze_nails"],
 		"copper_nails": ["bronze_nails", "nails"],
@@ -22,7 +24,7 @@
 	},
 	"tree_sap": {"note": "Dave 16 Nov 2026: you get Tree sap whenever you cut down a softwood tree (a species with class softwood below) or process softwood logs (the log_spruce group: Spruce log, Scots pine log, the plain Log) into anything. item is the Tree sap item (id resin, the conifer sap that was named Resin). felled: how many every felled softwood tree gives, small or large, beside the trunk; per_softwood_log: how many each softwood log a finished craft used up gives the crafter. Amounts PROVISIONAL (TORCH-SAP TS-2, TS-3).", "item": "resin", "felled": 2, "per_softwood_log": 1},
 	"key_woods": ["oak", "beech", "maple", "walnut", "birch", "scots_pine", "spruce", "tropical_hardwood"],
-	"group_labels": {"note": "Master s4 item 14: a group cost reads under this label, not its key item's name (item_table.gd cost_name).", "log_spruce": "Softwood log", "log_oak": "Hardwood log", "knife": "Any knife", "axe": "Any axe", "saw": "Any saw", "copper_nails": "Any nails"},
+	"group_labels": {"note": "Master s4 item 14: a group cost reads under this label, not its key item's name (item_table.gd cost_name).", "log_spruce": "Softwood log", "log_oak": "Hardwood log", "knife": "Any knife", "axe": "Any axe", "saw": "Any saw", "copper_nails": "Any nails", "copper_chisel": "Copper chisel or better", "bronze_chisel": "Bronze chisel or better", "iron_chisel": "Iron chisel or better"},
 	"retired_to": {"note": "Master s4 item 3. Data only; renames.json is the live mechanism, and Dynasty is a new game (Dave 12 Nov 2026), so no rename rows are needed.", "log_": "log", "lumber_": {"hardwood": "hardwood_board", "softwood": "lumber"}, "beam_": "lumber"},
 	"default": {
 		"class": "softwood",
