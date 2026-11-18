@@ -795,6 +795,7 @@ func _ready() -> void:
 		_on_flora_requested(peer_id, chunks)
 		_slow_rpc("flora_requested", t0))
 	net.cut_flora_requested.connect(_on_cut_flora_requested)
+	net.cut_swath_requested.connect(_on_cut_swath_requested)
 	net.position_reported.connect(func(peer_id, position, velocity) -> void:
 		var t0: int = Time.get_ticks_usec()
 		_on_position_reported(peer_id, position, velocity)
@@ -1987,18 +1988,70 @@ func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 		return
 
 	_gather_msec[peer_id] = tick
+	_pick_flora(peer_id, chunk, id)
+
+
+const SWATH_MOST := 400               # plants one sickle or scythe swing may name (a 3 m circle of dense grass holds far fewer)
+const SWATH_SLACK_M := 0.75           # a plant this far past the tool's radius still counts: the player moved between the client's look and the server's
+
+# One sickle or scythe swing (BugsList_Current.md entry 7; protocol 131): the server checks the tool in hand and the pace and harvests the ripe grain round
+# the player (items.swath_swing), then each named plant within the radius: a grass (drops.json swath grasses) is gathered as E would, times the tier's
+# yield; a bush is cut down and gives nothing (no sticks, no berries); anything else is left alone.
+func _on_cut_swath_requested(peer_id: int, held_slot: int, plants: PackedInt32Array) -> void:
+	var swing: Dictionary = items.swath_swing(peer_id, held_slot)
+
+	if swing.is_empty():
+		return
+
+	var player_at: Variant = items.position_of(peer_id)
+
+	if player_at == null:
+		return
+
+	var grasses: Array = swing["grasses"]
+	var reach: float = float(swing["radius"]) + SWATH_SLACK_M
+	var cut: int = int(swing["crops"])
+
+	for n in range(mini(plants.size() / 3, SWATH_MOST)):
+		var chunk: Vector2i = Vector2i(plants[n * 3], plants[n * 3 + 1])
+		var id: int = plants[n * 3 + 2]
+		var species: Dictionary = flora.placer._by_id.get(id >> 16, {})
+
+		if species.is_empty():
+			continue
+
+		if int(species["kind"]) == PlacerScript.KIND_SHRUB:
+			var info: Dictionary = _shrub_info(chunk, id)   # a placer bush or one planted from a dug-up bush
+
+			if not info.is_empty() and Vector2((player_at as Vector3).x - info["position"].x, (player_at as Vector3).z - info["position"].z).length() <= reach and _cut_tree(chunk, id):
+				cut += 1
+		elif int(species["kind"]) != PlacerScript.KIND_TREE and grasses.has(str(species["name"])):
+			items.swath_mult = float(swing["mult"])
+
+			if _pick_flora(peer_id, chunk, id, reach):
+				cut += 1
+
+			items.swath_mult = 0.0
+
+	if cut == 0:
+		net.notice.rpc_id(peer_id, "Nothing to cut here: the %s cuts grass, ripe grain and bushes" % str(swing["tool"]))
+
+
+# One plant or shrub picked by `peer` (E, or a grass in a sickle or scythe swing): what drops.json and its season allow. `near_m` >= 0: only when the plant
+# stands that close (flat) to the player (a swing), and never a tree. True when it gave something.
+func _pick_flora(peer_id: int, chunk: Vector2i, id: int, near_m: float = -1.0) -> bool:
 	var player_at: Variant = items.position_of(peer_id)
 	var chunk_m: float = flora.placer.chunk_m
 
 	if player_at == null:
-		return
+		return false
 
 	# Nearest point of the chunk's square to the player: nothing is gathered, or generated, far away.
 	var near_x: float = clampf((player_at as Vector3).x, float(chunk.x) * chunk_m, float(chunk.x + 1) * chunk_m)
 	var near_z: float = clampf((player_at as Vector3).z, float(chunk.y) * chunk_m, float(chunk.y + 1) * chunk_m)
 
 	if Vector2((player_at as Vector3).x - near_x, (player_at as Vector3).z - near_z).length() > GATHER_REACH_M:
-		return
+		return false
 
 	var home: Vector2i = flora.placer.normalize(chunk)
 	var all: Dictionary = flora.items_of(home)
@@ -2008,7 +2061,10 @@ func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 	var fruit_tree: bool = not species.is_empty() and int(species["kind"]) == PlacerScript.KIND_TREE and (items._drops.get("fruit_tree", {}) as Dictionary).has(str(species["name"]))
 
 	if at < 0 or species.is_empty() or (int(species["kind"]) == PlacerScript.KIND_TREE and not fruit_tree):
-		return
+		return false
+
+	if near_m >= 0.0 and (int(species["kind"]) == PlacerScript.KIND_TREE or Vector2((player_at as Vector3).x - all["positions"][at].x, (player_at as Vector3).z - all["positions"][at].z).length() > near_m):
+		return false
 
 	# Dave 2026-10-20: a picked plant disappears from the world, like a picked stone. Only a pick that gave
 	# something removes it (server_items.gd); one that gave nothing leaves the plant alone.
@@ -2027,6 +2083,8 @@ func _on_cut_flora_requested(peer_id: int, chunk: Vector2i, id: int) -> void:
 		net.flora_stripped.rpc(chunk, PackedInt32Array([id]))      # a berry bush: it stays, bare until the season changes
 	elif gave and flora.cut(chunk, id):
 		net.flora_cut.rpc(chunk, id)
+
+	return gave
 
 
 func _on_dig_requested(peer_id: int, center: Vector3, radius: float) -> void:

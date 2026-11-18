@@ -398,6 +398,8 @@ var _fruit: Dictionary = {}           # fruit trees: chunk key -> {tree id -> [s
 var _stripped: Dictionary = {}        # "cx,cz" -> {plant id -> season stamp}: a berry bush picked this season stays, bare, until the season changes (saved in world_items.json "stripped")
 var season_stamp: Callable            # set by the server: () -> int, game year * 4 + season index; changes once a season
 var plant_stays: bool = false         # set by gather(): the last pick left the plant standing (berries only), so the caller must not cut it
+var swath_mult: float = 0.0           # set round gather() by a sickle or scythe swing (swath_swing): its yield factor; 0 is a pick by hand (no change, the hand pace applies)
+var _swath_ms: Dictionary = {}        # peer -> msec of the last sickle or scythe swing
 var _arrows: Array = []             # arrows in the air: {peer, number, tip, damage, pos, vel, age, flown}
 var _traps = null                   # server_traps.gd (snares), made in setup
 var _smelters = null                # server_smelter.gd (the Smelters), made in setup
@@ -2167,8 +2169,8 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 
 	var now_ms: int = Time.get_ticks_msec()
 
-	if now_ms - int(_last_gather.get(peer, -100000)) < gather_pace_ms:
-		return false
+	if swath_mult <= 0.0 and now_ms - int(_last_gather.get(peer, -100000)) < gather_pace_ms:
+		return false   # a swing cuts its whole circle at once; the hand pace is for E
 
 	_last_gather[peer] = now_ms
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
@@ -2231,6 +2233,8 @@ func gather(peer: int, species_name: String, kind: String, flora_key: String, fl
 
 	var more: float = skill_factor(peer, "gather_plant")
 	practice(peer, "gather_plant")
+
+	more *= maxf(swath_mult, 1.0)   # a sickle or scythe swing gives more by its tier (drops.json swath yield)
 
 	for row in rows:
 		give(peer, table.number_of(str(row[0])), maxi(1, int(round(float(roll_amount(peer, rng, int(row[1]), int(row[2]))) * more))))
@@ -2385,6 +2389,7 @@ func _gather_berries(peer: int, species_name: String, flora_key: String, berry: 
 		return false
 
 	var count: int = GatherRules.harvest_count(berry, GatherRules.harvest_scale(_drops, plant_height, entry))      # the one count rule (Dave: size scaled, 3x cap, rounded up, never 0)
+	count = maxi(count, int(round(float(count) * swath_mult)))   # thatching grass cut by a sickle or scythe: more by its tier
 	practice(peer, "gather_plant")
 	give(peer, number, count)
 	_goal_event(peer, "foraged_new", str(berry["item"]), true)   # ADD-24: a berry bush or other harvest plant stripped by hand
@@ -2646,6 +2651,9 @@ func _reject(peer: int, reason: int) -> void:
 
 
 func _say(peer: int, text: String) -> void:
+	if swath_mult > 0.0:
+		return   # a sickle or scythe swing cuts many plants at once: what one of them refuses is not told (swath_swing says when nothing was cut)
+
 	if send_notice.is_valid():
 		send_notice.call(peer, text)
 
@@ -18117,6 +18125,10 @@ func harvest(peer: int, inv, bed_id: int, at: Vector3 = Vector3.ZERO) -> bool:
 	var def: Dictionary = _crop_table().get(str(crop["crop"]), {})
 	var tool_class: String = str(def.get("tool_to_harvest", "hand"))
 	var full: bool = tool_class == "hand" or _has_tool(inv, tool_class)
+
+	if not full and tool_class == "sickle" and _has_tool(inv, "scythe"):
+		tool_class = "scythe"   # the scythe reaps grain as the sickle does (master s2.1: "large-area harvesting")
+		full = true
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(key) ^ int(crop["sown"])
 
@@ -18139,6 +18151,63 @@ func harvest(peer: int, inv, bed_id: int, at: Vector3 = Vector3.ZERO) -> bool:
 	_dirty = true
 	_goal_event(peer, "crop_harvested")   # ADD-06: a ripe crop taken by hand from the bed (Dave 14 Nov: gathering counts by your own hand)
 	return true
+
+
+# Sickle and scythe (Dave 18 Nov 2026, BugsList_Current.md entry 7; drops.json "swath"): one left-click swing with the tool in hand (held_slot, the pack
+# slot the client names) checks the tool and the swing pace, wears it once and harvests every ripe grain crop (swath crops) on a bed within the tool's
+# radius of the player, at the full yield. Answers {"tool", "radius", "mult", "grasses", "crops"} for the plants the caller then cuts (terrain_server
+# _on_cut_swath_requested: grasses gathered with gather() times mult, bushes cut down), or {} when the swing is refused (the player is told why).
+func swath_swing(peer: int, held_slot: int) -> Dictionary:
+	var inv = inventory_of(peer)
+
+	if inv == null or not _peer_pos.has(peer):
+		return {}
+
+	var tool_class: String = ""
+
+	for reaper in ["sickle", "scythe"]:
+		if _held_tool(inv, held_slot, reaper) >= 0:
+			tool_class = reaper
+
+	if tool_class == "":
+		_swing_tool(peer, inv, held_slot, "sickle")   # says why: broken, hands full, or no sickle in hand
+		return {}
+
+	var cfg: Dictionary = _drops.get("swath", {})
+	var tool_cfg: Dictionary = cfg.get(tool_class, {})
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_swath_ms.get(peer, -100000)) < int(tool_cfg.get("swing_ms", 600)):
+		return {}
+
+	_swath_ms[peer] = now
+	_wear_slot(peer, inv, held_slot, "swath")   # one wear a swing, whatever it cuts; holds the tool's effort (exertion.json tool_effort)
+	var radius: float = float(tool_cfg.get("radius_m", 1.5))
+	var material: String = str(table.entry(table.id_of(inv.numbers[held_slot])).get("material", ""))
+	var grains: Array = cfg.get("crops", [])
+	var here: Vector3 = _peer_pos[peer]
+	var crops: int = 0
+
+	for id in _ids_near(here, radius + DIG_REACH_M):
+		var bed: Dictionary = _bed_at(int(id))
+
+		if bed.is_empty():
+			continue
+
+		for cell in _bed_cells(bed):
+			var crop: Dictionary = _crops.get(_bed_key(cell), {})
+
+			if crop.is_empty() or not grains.has(str(crop["crop"])) or crop_stage(crop) < 3 or Vector2(cell.x - here.x, cell.z - here.z).length() > radius:
+				continue   # unripe grain stays standing; other crops are left for E
+
+			swath_mult = 1.0   # quiet, and no hand pace; a crop's yield is the full one, not raised by the tier
+
+			if harvest(peer, inv, int(id), cell):
+				crops += 1
+
+			swath_mult = 0.0
+
+	return {"tool": tool_class, "radius": radius, "mult": float((cfg.get("yield", {}) as Dictionary).get(material, 1.0)), "grasses": cfg.get("grasses", []), "crops": crops}
 
 
 # Lights (wall torch: a stick, chandelier: a candle, fireplace: firewood; structures.json fuel and fuel_s = burning seconds per fuel item, topped up to twice that). Lit lights count

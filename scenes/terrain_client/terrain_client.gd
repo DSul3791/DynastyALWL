@@ -1513,6 +1513,7 @@ func _welcome_body(info: Dictionary) -> void:
 	var tq_tail: int = Probe.start()   # Low-quality lag runs (5 Nov) stuck up to 2.2 s "after held item": the rest of the welcome was not timed
 	held.struck.connect(func(side: float, weight: float): feel.strike(side, weight))
 	held.shrub_near = _shrub_near
+	held.swath_cut = func(slot: int, tool_class: String) -> float: return harvest.swath(slot, tool_class) if harvest != null else 0.0
 	held.water_depth_at = func(x: float, z: float) -> float:
 		var surface: float = flora.water_surface_at(x, z)
 		return 0.0 if is_nan(surface) else WaterVolume.depth(surface, _ground_below(Vector3(x, body.global_position.y, z)))

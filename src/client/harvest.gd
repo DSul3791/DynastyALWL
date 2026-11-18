@@ -156,6 +156,48 @@ func _pick(c: Dictionary) -> void:
 	_hint_left = 0.0
 
 
+# One sickle or scythe swing (BugsList_Current.md entry 7; drops.json "swath"): every grass (swath grasses) and bush within the tool's radius of the player
+# goes to the server in one cut_swath (protocol 131), which gathers the grasses, cuts the bushes down and reaps the ripe grain round the player itself;
+# the ground grass in the circle lies down like trodden grass. Answers the radius (0 for a tool with no swath).
+func swath(held_slot: int, tool_class: String) -> float:
+	var cfg: Dictionary = _drops.get("swath", {})
+	var radius: float = float((cfg.get(tool_class, {}) as Dictionary).get("radius_m", 0.0))
+
+	if radius <= 0.0 or _client.body == null:
+		return 0.0
+
+	var grasses: Array = cfg.get("grasses", [])
+	var plants: PackedInt32Array = PackedInt32Array()
+	var first: Dictionary = {}
+
+	for c in _candidates(radius, false):
+		var row: Dictionary = _flora_by_id.get(int(c["id"]) >> 16, {})
+		var kind: int = int((_client.flora._species.get(int(c["id"]) >> 16, {}) as Dictionary).get("kind", 0))
+
+		if kind == 0 or not (kind == 1 or grasses.has(str(row.get("name", "")))):
+			continue   # trees, berries' fruit trees, herbs and flowers are left alone
+
+		plants.append_array(PackedInt32Array([c["chunk"].x, c["chunk"].y, int(c["id"])]))
+
+		if first.is_empty():
+			first = c
+
+		if kind != 1:
+			_picked_until[c["key"]] = _client.game_clock.seconds + RETRY_GAME_S   # until the server's answer removes it
+
+	_net.cut_swath.rpc_id(1, held_slot, plants)
+
+	if _client.grass != null:
+		_client.grass.flatten(_client.body.global_position, radius)
+
+	if not first.is_empty() and _client.sound != null:
+		_client.sound.harvestfx.pick(_flora_by_id.get(int(first["id"]) >> 16, {}), first["pos"])
+
+	_items.clear_prompt()
+	_hint_left = 0.0
+	return radius
+
+
 # "Nothing to pick" (out of season, no yield) is not worth a prompt: only say why when a tool is missing.
 func _is_nothing(c: Dictionary) -> bool:
 	var why: String = str(c["reason"])   # Dave 2026-10-31: nothing to pick, out of season or picked bare means no prompt at all
