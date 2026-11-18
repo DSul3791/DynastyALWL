@@ -210,8 +210,6 @@ func _check_frames() -> void:
 	locked.apply_frame("feminine")
 	_ok(float(locked.genome["hips"]) == 0.2 and (locked.genome["tunic"] as Color).is_equal_approx(tunic_before) and float(locked.genome["bust"]) == 0.3, "a frame leaves locked values alone and sets the rest")
 	_ok(Generator.FRAMES.keys().size() == 3 and Record.FRAMES.size() == 3, "three frames")
-	_ok(Record.default_frame("woman") == "feminine" and Record.default_frame("man") == "masculine" and Record.default_frame("non_binary") == "neutral" and Record.default_frame("prefer_not_to_say") == "neutral", "gender picks its default frame")
-	_ok(Record.default_pronouns("woman") == "she_her" and Record.default_pronouns("man") == "he_him" and Record.default_pronouns("non_binary") == "they_them" and Record.default_pronouns("prefer_not_to_say") == "they_them", "gender picks its default pronouns")
 
 	# The chest: an old genome has none and its body does not change; a feminine frame adds a visible bump.
 	var plain: Dictionary = Generator.make_genome("average")

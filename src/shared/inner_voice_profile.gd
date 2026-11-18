@@ -1,14 +1,15 @@
 class_name InnerVoiceProfile
 extends RefCounted
 
-# Which voice a character's inner voice speaks with (Dave 2026-10-21): compiled from the character's gender and traits, no pick
+# Which voice a character's inner voice speaks with (Dave 2026-10-21): compiled from the character's body model and traits, no pick
 # screen. DESIGN_IDEAS 6.14: a veteran steadies themselves or jokes, a nervous apprentice thinks differently; heirs do not inherit it.
 # The set id is "<family>_<temperament>_<n>":
-#   family       masculine or feminine, from the gender the character creator stores (man/woman; any other value takes one of
-#                the two by the character id, so it stays the same for that character)
+#   family       masculine or feminine voice timbre, from the body model the character creator stores (body_families in
+#                inner_voice_sets.json; a model not listed there takes one of the two by the character id, so it stays the same for that
+#                character). The character has no gender (Dave 17 Nov 2026).
 #   temperament  steady when the mean of the traits named in inner_voice_sets.json (boldness, wisdom; 0..1) reaches steady_at,
 #                nervous below it
-#   n            which of the family's voices, from the character id, so two bold men do not sound the same
+#   n            which of the family's voices, from the character id, so two bold characters on the same body do not sound the same
 # The audio for a set lives in assets/audio/inner_voice/<set id>/<line id>.ogg (tools/gen_inner_voice.py).
 # Pure and deterministic: the same character always gets the same set, on the server and on every client.
 
@@ -30,17 +31,17 @@ static func _hash(character_id: String) -> int:
 	return character_id.md5_text().substr(0, 6).hex_to_int()
 
 
-# traits: trait name -> 0..1 (missing traits count as 0.5). gender: whatever the character creator calls it.
-static func set_id(gender: String, traits: Dictionary, character_id: String) -> String:
+# traits: trait name -> 0..1 (missing traits count as 0.5). body: the body model id (src/client/character/body_models.gd).
+static func set_id(body: String, traits: Dictionary, character_id: String) -> String:
 	var cfg: Dictionary = _cfg()
 	var families: Dictionary = cfg.get("families", {})
 
 	if families.is_empty():
 		return DEFAULT_SET
 
-	var family_map: Dictionary = cfg.get("gender_families", {})
+	var family_map: Dictionary = cfg.get("body_families", {})
 	var h: int = _hash(character_id)
-	var family: String = str(family_map.get(gender.to_lower(), "masculine" if h % 2 == 0 else "feminine"))
+	var family: String = str(family_map.get(body, "masculine" if h % 2 == 0 else "feminine"))
 
 	if not families.has(family):
 		family = "masculine"

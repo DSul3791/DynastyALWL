@@ -9,7 +9,7 @@ extends "res://src/client/ragdoll_body.gd"
 
 const DynastyBody := preload("res://src/client/character/dynasty_body.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
-const PARTS_GLB := "res://assets/character/Humanoid/Dynasty_Base_Male_Parts_Split.glb"
+const PARTS_GLB := DynastyBody.ARMS_GLB
 const UPPER_LEN := 0.29            # the rig's bone lengths (ragdoll_body.gd BONES): shoulder to elbow, elbow to wrist
 const FORE_LEN := 0.26
 const ELBOW_AT := 0.405            # fractions of the arm's length from the shoulder: the elbow, the wrist

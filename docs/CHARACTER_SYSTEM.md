@@ -3,7 +3,7 @@
 **Dated implementation reference:** Steve's static read of main, 2 Nov 2026; nothing run. Search function names. Later location design: [Resume spot](design/RESUME_SPOT.md); save compatibility: [Catalog/save policy](design/CATALOG_SAVE_MIGRATION.md).
 
 ## Two halves
-- **Client, local files** (`src/client/character/`): `character_store.gd` keeps one file per character in `user://characters/` (name, body code, gender, pronouns, frame) and the active id in `active.txt`. `character_select.gd` (scenes/character_select) lists, creates, renames, deletes and picks. Appearance: [Dynasty body](DYNASTY_BODY.md). Owners belong in current task state.
+- **Client, local files** (`src/client/character/`): `character_store.gd` keeps one file per character in `user://characters/` (name, body code, body model, frame; the character has no gender) and the active id in `active.txt`. `character_select.gd` (scenes/character_select) lists, creates, renames, deletes and picks. Appearance: [Dynasty body](DYNASTY_BODY.md). Owners belong in current task state.
 - **Server, per key** (`src/stream/server_items.gd`): everything that matters in play (pack, vitals, learned recipes, goals, hints, Rested, spawn bed, coins, skills) is stored under a **player key**, in `characters.json`, `inventories.json`, vitals and craft-queue files.
 
 ## How the two meet: the key
@@ -28,3 +28,14 @@ Select screen calls `CharacterStore.add`. No server record exists yet. The recor
 
 ## Future ideas retained from the snapshot
 Listed as not built on 2 Nov: real death with heirs and children, new-character start options, accounts. See [game ideas](../DESIGN_IDEAS.md) and the historical [scope record, section 11](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/handoff/SCOPE_STEVE.md).
+
+## Body models instead of gender (Dave 17 Nov 2026)
+Dave: "remove the gender selection in the character creation and remove gender from character. we will simply provide various model meshes people can choose from." The creator's About you section has Name, Body and Frame; gender and pronouns are gone from the record (format version 3), the store, the select page and the inner voice. `src/client/character/body_models.gd` lists the models; adding a row adds a choice.
+
+### For Dave (assumed on his behalf, provisional)
+- BM-1: the models are named plainly, "Body 1", "Body 2" and so on. Today there is one: Body 1 (Dynasty_Base_Male.glb).
+- BM-2: pronouns went with gender. Nothing in the game used them.
+- BM-3: the three frames keep their saved keys but are shown as Curved, Broad and Even instead of Feminine, Masculine and Neutral. A new character starts Even.
+- BM-4: the inner voice timbre follows the body model (`body_families` in data/items/inner_voice_sets.json; Body 1 speaks with the deeper voices). A model not listed there takes either timbre by character id.
+- BM-5: an old character file still loads: its gender and pronouns are dropped and it wears Body 1. Nothing touches live saves.
+- Shortcut: every character wears the first model's mesh (dynasty_body.gd). When a second mesh is listed, dynasty_body.gd must load the chosen model's glb.

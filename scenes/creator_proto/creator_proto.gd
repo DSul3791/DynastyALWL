@@ -11,6 +11,7 @@ const GeneratedBody := preload("res://src/client/character/generated_body.gd")
 const DynastyBody := preload("res://src/client/character/dynasty_body.gd")
 const Store := preload("res://src/client/character/character_store.gd")
 const Record := preload("res://src/client/character/character_record.gd")
+const BodyModels := preload("res://src/client/character/body_models.gd")
 const Style := preload("res://src/client/character/page_style.gd")
 
 const SELECT_SCENE := "res://scenes/character_select/character_select.tscn"
@@ -29,12 +30,10 @@ var _status: Label
 var _undo_button: Button
 var _redo_button: Button
 var _wild: CheckBox
-var _gender: String = Record.DEFAULT_GENDER
-var _pronouns: String = Record.DEFAULT_PRONOUNS
+var _body_model: String = BodyModels.DEFAULT
 var _frame: String = Record.DEFAULT_FRAME
 var _name_field: LineEdit
-var _gender_pick: OptionButton
-var _pronoun_pick: OptionButton
+var _body_pick: OptionButton
 var _frame_buttons: Dictionary = {}
 var _style_pick: OptionButton
 var _name_dialog: ConfirmationDialog
@@ -50,7 +49,7 @@ var turntable: bool = true
 
 
 func _ready() -> void:
-	logic.apply_frame(_frame)       # the neutral frame to start with (no gender chosen yet); not an undo step
+	logic.apply_frame(_frame)       # the even frame to start with; not an undo step
 	logic.clear_history()
 	_build_ui()
 	_refresh_controls()
@@ -191,8 +190,8 @@ func _build_bar(page: VBoxContainer) -> void:
 	info.add_child(_wild)
 
 
-# The About you section: name, gender, pronouns and the body frame. Gender sets a starting frame and the default pronouns, nothing more: the frame row lets any gender pick any
-# frame, pronouns can always be changed, and every slider and colour below stays editable. No gameplay number depends on these.
+# The About you section: name, body model and frame. The character has no gender (Dave 17 Nov 2026); the frame is a starting point, and every slider and colour
+# below stays editable. No gameplay number depends on these.
 func _build_about(body: VBoxContainer) -> void:
 	var name_row: HBoxContainer = HBoxContainer.new()
 	body.add_child(name_row)
@@ -206,38 +205,23 @@ func _build_about(body: VBoxContainer) -> void:
 	_name_field.custom_minimum_size = Vector2(0, 44)
 	_name_field.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_row.add_child(_name_field)
-	var gender_row: HBoxContainer = HBoxContainer.new()
-	body.add_child(gender_row)
-	var gender_label: Label = Label.new()
-	gender_label.text = "Gender"
-	gender_label.custom_minimum_size = Vector2(120, 0)
-	gender_row.add_child(gender_label)
-	_gender_pick = OptionButton.new()
-	_gender_pick.custom_minimum_size = Vector2(0, 44)
-	_gender_pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var body_row: HBoxContainer = HBoxContainer.new()
+	body.add_child(body_row)
+	var body_label: Label = Label.new()
+	body_label.text = "Body"
+	body_label.custom_minimum_size = Vector2(120, 0)
+	body_row.add_child(body_label)
+	_body_pick = OptionButton.new()
+	_body_pick.custom_minimum_size = Vector2(0, 44)
+	_body_pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	var models: Array = BodyModels.ids()
 
-	for g in Record.GENDERS:
-		_gender_pick.add_item(Record.GENDER_LABELS[g])
+	for id in models:
+		_body_pick.add_item(BodyModels.label(id))
 
-	_gender_pick.select(Record.GENDERS.find(_gender))
-	_gender_pick.item_selected.connect(func(index: int) -> void: set_gender(Record.GENDERS[index]))
-	gender_row.add_child(_gender_pick)
-	var pronoun_row: HBoxContainer = HBoxContainer.new()
-	body.add_child(pronoun_row)
-	var pronoun_label: Label = Label.new()
-	pronoun_label.text = "Pronouns"
-	pronoun_label.custom_minimum_size = Vector2(120, 0)
-	pronoun_row.add_child(pronoun_label)
-	_pronoun_pick = OptionButton.new()
-	_pronoun_pick.custom_minimum_size = Vector2(0, 44)
-	_pronoun_pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	for pr in Record.PRONOUNS:
-		_pronoun_pick.add_item(Record.PRONOUN_LABELS[pr])
-
-	_pronoun_pick.select(Record.PRONOUNS.find(_pronouns))
-	_pronoun_pick.item_selected.connect(func(index: int) -> void: _pronouns = Record.PRONOUNS[index])
-	pronoun_row.add_child(_pronoun_pick)
+	_body_pick.select(models.find(_body_model))
+	_body_pick.item_selected.connect(func(index: int) -> void: _body_model = str(models[index]))
+	body_row.add_child(_body_pick)
 	var frame_row: HBoxContainer = HBoxContainer.new()
 	body.add_child(frame_row)
 	var frame_label: Label = Label.new()
@@ -257,28 +241,13 @@ func _build_about(body: VBoxContainer) -> void:
 
 	_show_frame()
 	var note: Label = Label.new()
-	note.text = "Gender and frame only set a starting body and clothes. Every slider and colour can still be changed, and your pronouns are yours to pick."
+	note.text = "The frame only sets a starting shape and clothes. Every slider and colour can still be changed."
 
 	if _use_dynasty():      # Dave's body (3 Nov 2026): say plainly what it does not show yet, so a slider that does nothing does not read as a bug
-		note.text += "\nThis body is still being finished: height, limbs, build, muscle, belly, hips, chest, jaw, nose, brow, ears and skin colour show now; hair and the feminine body are coming."
+		note.text += "\nThis body is still being finished: height, limbs, build, muscle, belly, hips, chest, jaw, nose, brow, ears and skin colour show now; hair is coming."
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.add_theme_color_override("font_color", Color(0.75, 0.8, 0.7))
 	body.add_child(note)
-
-
-# Choosing a gender sets its default pronouns and its starting frame (one undo step for the body); both can be changed afterwards.
-func set_gender(gender: String) -> void:
-	if not Record.GENDERS.has(gender):
-		return
-
-	_gender = gender
-	_pronouns = Record.default_pronouns(gender)
-
-	if _pronoun_pick != null:
-		_gender_pick.select(Record.GENDERS.find(gender))
-		_pronoun_pick.select(Record.PRONOUNS.find(_pronouns))
-
-	set_frame(Record.default_frame(gender))
 
 
 func set_frame(frame: String) -> void:
@@ -337,7 +306,7 @@ func _ask_name(message: String = "") -> void:
 
 func _finish(chosen: String) -> void:
 	_name_field.text = chosen
-	var id: String = Store.add(chosen, logic.code(), _gender, _pronouns, _frame)
+	var id: String = Store.add(chosen, logic.code(), _body_model, _frame)
 
 	if id == "":
 		_ask_name("That name will not do (1 to %d characters). Try another." % Record.NAME_MAX)
