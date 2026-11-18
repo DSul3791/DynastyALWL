@@ -9387,8 +9387,8 @@ func _load_blueprints() -> void:
 		_blueprint_of_kit[str(_structures.get(str(row["structure"]), {}).get("kit", ""))] = int(row["number"])
 
 
-# Whether this blueprint can go down now: a hammer of enough tier on the hotbar (a knife for a "tool": "knife" row), the station near when it needs one, every material in the pack.
-# Says why when it cannot, and takes nothing.
+# Whether this blueprint can go down now: a hammer of enough tier on the hotbar (a knife for a "tool": "knife" row), the station near when it needs one. Materials are not checked:
+# placing always sets down a site (Dave 18 Nov 2026). Says why when it cannot, and takes nothing.
 # Tests and admin tools: lay a piece by its old kit name with no hammer, station or materials needed (kits are gone from the game, Dave 4 Nov 2026).
 # The piece still takes down into its blueprint materials like any hammer build.
 var free_build: bool = false
@@ -9944,9 +9944,8 @@ func _boxes_near(peer: int, reach_x: float = 1.0) -> Array:
 
 
 # --- Blueprint sites (Dave 5 Nov 2026) ---
-# A hammer click without the materials sets down a site instead: the real piece, drawn blue and see-through, that can be walked through. E on it deposits
-# what the builder has (pack, loose stock beside them and their own containers within CraftStock.CRAFT_REACH_M, the crafting rule: _craft_boxes);
-# when every material is in, it becomes the real piece. The site is the piece's own entry with struct["site"] = {"bp": blueprint number,
+# Every hammer or knife placement sets down a site, taking nothing (Dave 18 Nov 2026): the real piece, drawn blue and see-through, that can be walked
+# through. Only a hammer hit fills it (_gather_site: pack, loose items and the builder's own containers within reach); when every material is in, it becomes the real piece. The site is the piece's own entry with struct["site"] = {"bp": blueprint number,
 # "have": {item id: count}}; taking a site down gives back what was put in.
 
 
