@@ -28,7 +28,11 @@ var _period_m: float = 322560.0
 var _tiles_per_side: int = 21
 var _revisions: Dictionary = {}       # "x,z" -> revision
 var _streams: Dictionary = {}         # "x,z" -> VoxelStreamSQLite
+var _stale: Dictionary = {}           # Vector4i(block, lod) -> true: saved copies a ground edit this session has outdated (forget_area)
 var _mutex: Mutex = Mutex.new()
+
+const STALE_LODS := 16                # LODs an edit marks (more than any terrain uses)
+const STALE_MARGIN_VOXELS := 2        # an edit also changes the distances this many voxels round it (the mesher's band)
 
 
 # `world` holds tile_size_m, min_tile and tiles_per_side (from the server's
@@ -166,9 +170,39 @@ func set_revision(tile: Vector2i, revision: int) -> void:
 	set_revisions({"%d,%d" % [tile.x, tile.y]: revision})
 
 
+# A ground edit (dig or fill sphere) made while this client is connected: only the saved blocks it touches, at every LOD, are
+# outdated, and are asked of the server again. Dave 18 Nov 2026 (x 53282 z 67587, ground "unloaded" for many minutes): every
+# edit raised the 15 km tile's revision and the client threw its whole saved tile away (set_revision), so with a road being
+# built (several edits a second) nearly every block was fetched again and the ground near the player took minutes to come.
+# The tile revision still empties the tile at the next join (set_revisions at the welcome), for edits made while away.
+# Returns the marked keys (the stream drops its prefetched copies of the same blocks).
+func forget_area(center: Vector3, radius: float) -> Array:
+	var keys: Array = []
+	_mutex.lock()
+
+	for lod in range(STALE_LODS):
+		var size: float = float(BLOCK_SIZE << lod)
+		var reach: float = radius + float(STALE_MARGIN_VOXELS << lod)
+		var lo: Vector3i = Vector3i(((center - Vector3.ONE * reach) / size).floor())
+		var hi: Vector3i = Vector3i(((center + Vector3.ONE * reach) / size).floor())
+
+		for x in range(lo.x, hi.x + 1):
+			for y in range(lo.y, hi.y + 1):
+				for z in range(lo.z, hi.z + 1):
+					var key: Vector4i = Vector4i(x, y, z, lod)
+					_stale[key] = true
+					keys.append(key)
+
+	_mutex.unlock()
+	return keys
+
+
 func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> bool:
+	_mutex.lock()
+	var stale: bool = _stale.has(Vector4i(block.x, block.y, block.z, lod))
+	_mutex.unlock()
 	var stream: VoxelStreamSQLite = _stream_for(tile_of_block(block, lod))
-	var found: bool = stream.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND
+	var found: bool = not stale and stream.load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND
 	_mutex.lock()
 
 	if found:
@@ -185,6 +219,9 @@ func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> bool:
 # box (server_block_store.copy_of has the details).
 func save_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
 	_stream_for(tile_of_block(block, lod)).save_voxel_block(_copy_of(buffer), block, lod)
+	_mutex.lock()
+	_stale.erase(Vector4i(block.x, block.y, block.z, lod))   # the server's copy, made after the edit
+	_mutex.unlock()
 
 
 static func _copy_of(buffer: VoxelBuffer) -> VoxelBuffer:

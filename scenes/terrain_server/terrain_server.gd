@@ -2014,7 +2014,7 @@ func _on_dig_requested(peer_id: int, center: Vector3, radius: float) -> void:
 
 
 # The first edit after a quiet half second is announced at once; edits that follow within it are announced together when it ends
-# (_process), each announcement making every client forget what it fetched ahead and ask again.
+# (_process); each client then marks the blocks round its recent edits as outdated again (terrain_client.gd _on_tile_changed).
 func _tell_tile_changed(tile: Vector2i) -> void:
 	var now: int = Time.get_ticks_msec()
 
@@ -2693,8 +2693,7 @@ func _process(delta: float) -> void:
 	_events.mark("checks")
 	var now: int = Time.get_ticks_msec()
 
-	# One tile_changed per tile per half second however many edits there were (each makes every client forget what it
-	# fetched ahead and ask again), and the revision file once a second.
+	# One tile_changed per tile per half second however many edits there were, and the revision file once a second.
 	if now - _tiles_told_msec >= 500:
 		_tiles_told_msec = now
 
