@@ -595,7 +595,7 @@ func _ready() -> void:
 	var port: int = 24600
 	_remote = JoinAddress.client_only()
 
-	if _remote:
+	if _remote and AppConfig.get_command_line_value("server", "") == "":   # --server= (tests, rigs) names its own host and port
 		var joined: Dictionary = JoinAddress.parse(JoinAddress.current())
 		host = str(joined.get("host", ""))
 		port = int(joined.get("port", JoinAddress.DEFAULT_PORT))
@@ -946,7 +946,7 @@ func _update_connect_window() -> void:
 	var trying: String = "1. Opening the connection to %s: %s, %d s\n2. Waiting for the server's welcome\n3. Loading the ground under you" % [where, "trying" if status == MultiplayerPeer.CONNECTION_CONNECTING else "not connected", waited]
 
 	if waited >= 20 and _remote:
-		trying += "\n\nNo server has answered yet at %s. The game keeps trying for 30 seconds." % where
+		trying += "\n\nNo server has answered yet at %s. The game keeps trying for about half a minute." % where
 	elif waited >= 20:
 		trying += "\n\nNo server has answered yet. The server may still be starting (the game keeps trying for up to 2 minutes), or it did not start: if port %d is held by another program the new server cannot use it." % _port
 
@@ -954,7 +954,7 @@ func _update_connect_window() -> void:
 
 
 func _connect() -> void:
-	if _host == "":
+	if _remote and _host == "":
 		_cannot_reach("This game has no server address yet. Start it again and type the server's address on the join page.")
 		return
 
@@ -963,6 +963,11 @@ func _connect() -> void:
 
 	if error != OK:
 		push_error("Terrain client: cannot connect to %s:%d (%s)" % [_host, _port, error_string(error)])
+
+		if not _remote:
+			get_tree().quit(1)
+			return
+
 		_cannot_reach("The game cannot open a connection to %s:%d (%s). If that is a name, check its spelling and this computer's internet connection." % [_host, _port, error_string(error)])
 		return
 

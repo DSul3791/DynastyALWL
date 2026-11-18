@@ -61,6 +61,9 @@ func _ready() -> void:
 
 # Joins the typed address, or names what is wrong with it and stays. Returns true when it joins.
 func join() -> bool:
+	if Engine.has_meta("join_done"):
+		return true   # Enter and a click in the same frame join once
+
 	var parsed: Dictionary = JoinAddress.parse(address_box.text)
 
 	if parsed.has("error"):
