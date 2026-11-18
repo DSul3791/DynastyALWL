@@ -12,6 +12,7 @@ const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const BagRules := preload("res://src/shared/bag_rules.gd")
 const CarryRules := preload("res://src/shared/carry_rules.gd")
+const StoreRules := preload("res://src/shared/store_rules.gd")   # what a store takes, the server's own rule
 const LOOK_COLUMNS := 6     # slots across the container: the Craft column's 650 px, the same 100 px wells as the pack (redesign 4.4)
 const COMPACT_COLUMNS := 5  # a crafting station's store beside its recipe list (set_compact): 5 wells of 60 px across the card's 360 px
 const COMPACT_WELL := 60.0
@@ -409,14 +410,13 @@ func pack_view_slots(fire: bool) -> Array:
 	return slots
 
 
-# Same rule as server_items._fire_takes: wood the fire burns (cooking.json fuel) or food it cooks.
+# The server's own rule (store_rules.gd, as server_items._fire_takes): wood the fire burns (cooking.json fuel) or food it cooks.
 func fire_takes(item_id: String) -> bool:
 	if view._cooking_cfg.is_empty():
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/cooking.json"))
 		view._cooking_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"raw_sick": {}}
 
-	if item_id == "":
-		return false
+	return StoreRules.fire_takes(item_id, view._cooking_cfg)
 
 	if view._cooking_cfg.get("fuel", {}).has(item_id) or view._cooking_cfg.get("cooks_into", {}).has(item_id):
 		return true

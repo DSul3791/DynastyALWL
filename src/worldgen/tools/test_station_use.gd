@@ -8,6 +8,7 @@ extends SceneTree
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const StationUse := preload("res://src/client/ui/inventory/station_use.gd")
 const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
+const StoreRules := preload("res://src/shared/store_rules.gd")
 
 var failures: int = 0
 
@@ -32,6 +33,38 @@ func _init() -> void:
 	check(fire.get(n.call("firewood"), -1) == StationUse.FUEL, "and firewood")
 	check(fire.get(n.call("raw_meat"), -1) == StationUse.INPUT, "raw meat is food it cooks")
 	check(not fire.has(n.call("stone")) and not fire.has(n.call("hide")) and not fire.has(n.call("iron_ore")), "stone, hide and iron ore are not lifted at a fire")
+
+	# Dave 17 Nov 2026: a campfire lit fiddleheads it refuses. A fire lights exactly what its store takes (the server's rule), no campfire
+	# recipe ingredient it would refuse.
+	check(not fire.has(n.call("fiddleheads")) and not fire.has(n.call("thyme")) and not fire.has(n.call("egg")) and not fire.has(n.call("clay")), "fiddleheads, herbs, eggs and clay are not lifted at a fire")
+	var fire_same: bool = true
+
+	for id in table.ids():
+		fire_same = fire_same and fire.has(n.call(str(id))) == StoreRules.fire_takes(str(id), cooking)
+
+	check(fire_same, "a fire lights every item its store takes and nothing else")
+
+	# A container that names what it takes lights exactly those (structures.json takes / takes_kinds, the server's _box_takes).
+	var structures: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/structures.json"))["structures"]
+	var named_same: bool = true
+
+	for kind in structures:
+		var def: Dictionary = structures[kind]
+
+		if not StoreRules.limited(def):
+			continue
+
+		var lit: Dictionary = StationUse.usable([str(def.get("station", ""))] if str(def.get("station", "")) != "" else [], false, [], recipes, table, cooking, str(def.get("state", "")), def)
+
+		for id in table.ids():
+			named_same = named_same and lit.has(n.call(str(id))) == StoreRules.takes(def, n.call(str(id)), table)
+
+	check(named_same, "every container that names what it takes lights exactly that")
+	var kiln: Dictionary = StationUse.usable(["kiln"], false, [], recipes, table, cooking, "kiln", structures["kiln"])
+	check(kiln.get(n.call("firewood"), -1) == StationUse.FUEL and not kiln.has(n.call("clay")) and not kiln.has(n.call("copper_ore")), "a kiln: its wood, nothing else")
+	var smelt: Dictionary = StationUse.usable([], false, [], recipes, table, cooking, "smelter", structures["smelter"])
+	check(smelt.has(n.call("copper_ore")) and smelt.has(n.call("charcoal")) and not smelt.has(n.call("iron_ore")), "a Smelter: copper and tin ore, coal and charcoal, no iron ore")
+	check(StationUse.usable([], false, [], recipes, table, cooking, "chest", {}).is_empty(), "a plain chest lights nothing")
 
 	var bench: Dictionary = StationUse.usable(["workbench"], false, [], recipes, table, cooking)
 	check(bench.get(n.call("stone"), -1) == StationUse.INPUT and bench.get(n.call("hide"), -1) == StationUse.INPUT, "a workbench: the ingredients of its recipes")

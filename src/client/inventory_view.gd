@@ -31,6 +31,7 @@ const Net := preload("res://src/stream/terrain_net.gd")
 const StructureLook := preload("res://src/shared/structure_look.gd")
 const BinRules := preload("res://src/shared/bin_rules.gd")   # resource bins: the resource surface (_note_bin, GOALS-REPAIR R6)
 const StationUse := preload("res://src/client/ui/inventory/station_use.gd")
+const StoreRules := preload("res://src/shared/store_rules.gd")   # what a store takes (the server's rule)
 
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")   # sharpness, Tempered and craftsmanship (catalog Phase 2c)
@@ -4137,8 +4138,9 @@ func _lit_fire_near(pos: Vector3, r: float) -> bool:
 
 # What the open station can use (station_use.gd, Dave 10 Nov 2026): item number -> StationUse.FUEL or INPUT, for the pack's order and its
 # golden line. Only while a station's own window is open (Dave 10 Nov 2026: "even when I open my inventory and Im not in the campfires
-# inventory the wood is still highlighted which it shouldnt be"): the container on screen is a fire (any campfire state) or a structure with a
-# "station", stations it stands in for ("also") or its own "fuel". {} with the pack open on its own, a plain chest open, or the window shut.
+# inventory the wood is still highlighted which it shouldnt be"): the container on screen is a fire (any campfire state), a structure that names
+# what it takes ("takes" / "takes_kinds"), or one with a "station", stations it stands in for ("also") or its own "fuel". What a store takes is
+# the server's rule (store_rules.gd). {} with the pack open on its own, a plain chest open, or the window shut.
 func station_use() -> Dictionary:
 	if not open or not chest_mode or not _world.has(chest_id):
 		return {}
@@ -4147,11 +4149,12 @@ func station_use() -> Dictionary:
 	var stations: Array = []
 	var fire: bool = StructureLook.CAMPFIRE_STATES.has(state)
 	var fuels: Array = []
+	var def: Dictionary = {}
 
 	if fire:
 		stations.append("campfire")
 	else:
-		var def: Dictionary = _structure_by_state(state)
+		def = _structure_by_state(state)
 
 		for station in [str(def.get("station", ""))] + (def.get("also", {}) as Dictionary).keys():
 			if str(station) != "" and not stations.has(str(station)):
@@ -4160,14 +4163,14 @@ func station_use() -> Dictionary:
 		if str(def.get("fuel", "")) != "":
 			fuels.append(str(def["fuel"]))
 
-	if stations.is_empty() and fuels.is_empty():
+	if stations.is_empty() and fuels.is_empty() and not StoreRules.limited(def):
 		return {}
 
-	if (fire or not fuels.is_empty()) and _cooking_cfg.is_empty():
+	if _cooking_cfg.is_empty():
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/cooking.json"))
 		_cooking_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"raw_sick": {}}
 
-	return StationUse.usable(stations, fire, fuels, recipes, table, _cooking_cfg)
+	return StationUse.usable(stations, fire, fuels, recipes, table, _cooking_cfg, str(def.get("state", "")), def)
 
 
 # Is a placed station of this kind within its reach? Display only (the server decides): greys recipes that need one.
