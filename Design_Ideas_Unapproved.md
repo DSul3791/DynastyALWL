@@ -821,3 +821,21 @@ Source: [DESIGN_IDEAS §§8.10 and 8.13](https://github.com/DSul3791/DynastyALWL
 ## Historical provenance leads — 16 Nov 2026
 
 Aging/clock/lifespan: [bb524cc, 14 Oct](https://github.com/DSul3791/DynastyALWL/commit/bb524cca918855d002efa71b3189749eed833c4e). Succession/loan wording: [8e6fe51, 14 Oct](https://github.com/DSul3791/DynastyALWL/commit/8e6fe51dce5709593fcaacafe92b61ca90715777). Both cite [Claude session 01FW2oP4t11pHqGQwUfqgGZ9](https://claude.ai/code/session_01FW2oP4t11pHqGQwUfqgGZ9); inspected commits did not expose original answers. These are recovery leads, not an approval prerequisite after Dave's clarification. Aging decisions now reside in [Approved](Design_Ideas_Approved.md#aging-and-lifespan); other topics migrate in bounded batches.
+
+## Personal finances and obligations
+
+Source: [DESIGN_IDEAS.md sections 6.3–6.4](DESIGN_IDEAS.md#63-personal-finances), migrated 18 Nov 2026 without changing the design. Historical `[Decided]` labels below are recorded decisions, not newly verified direct approvals; source approval is not independently verified. No implementation, testing or player verification is asserted. References to Section 13.5 and the while-away report refer to the original source document.
+
+### Personal finances
+
+- **[Decided]** Each individual has a finances tab showing what they own, what they owe, how much they have banked and how much they carry on them.
+- **[Decided]** Money in the bank is reached at the bank in person. A character away from their own town can instead try to write a letter of credit, based on their reputation (Section 13.5).
+- **[Proposed]** The tab also shows a calendar of upcoming payments and a forecast ("your account covers the next three payments").
+- **[Proposed]** Carried cash is exposed: it can drop on death or be stolen like any item. Banked money is safe but needs a visit to a bank.
+
+### Obligations
+
+- **[Proposed]** Loans, tax bills, wages and tolls are all one kind of record: who owes whom, how much, and when it is next due.
+- **[Proposed]** At each periodic settlement the server pays what is due from the account, whether or not the player is online. A payment that cannot be made is a missed payment, with a reputation hit and eventually penalties or seizure of collateral.
+- **[Proposed]** Missed payments while away appear in the "while you were away" report.
+
