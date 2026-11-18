@@ -315,13 +315,16 @@ func _init() -> void:
 	check(total2 == total and total > 0, "the map comes back after quit and rejoin (%d of %d cells)" % [total2, total])
 
 	# 8b. A save re-encodes only changed blocks (audit 18 Nov 2026 finding 11): cells added to a block after one save must reach the next.
+	m2.note_position(7, Vector3(-1007.0, 10.0, 2004.0))   # the first report only sets the start
+	m2.note_position(7, Vector3(-1000.0, 10.0, 2009.0))   # one surveyed step: the record is dirty, so this save encodes and keeps each block's text
 	m2.save()
+	check(not bool(m2._records["map-key-0001"].get("dirty", true)), "the primed save ran")
 	var sizes: Dictionary = {}
 
 	for blk in m2.blocks_of("map-key-0001"):
 		sizes[blk] = m2.blocks_of("map-key-0001")[blk].size()
 
-	for step in 6:
+	for step in range(1, 7):
 		m2.note_position(7, Vector3(-1000.0 + 7.0 * float(step), 10.0, 2009.0 + 5.0 * float(step)))
 
 	var grown: Vector2i = Vector2i(999999, 999999)
