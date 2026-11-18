@@ -87,8 +87,7 @@ func _init() -> void:
 	var again = _items(dir)
 	var rows: int = again._items.values().filter(func(it): return not it.has("world")).size()
 	var world: int = again._items.values().filter(func(it): return it.has("world")).size()
-	var flora_marks: Variant = JSON.parse_string(FileAccess.get_file_as_string(dir + "/flora_removed.json"))
-	var felled: int = (flora_marks as Dictionary).size() - 1 if typeof(flora_marks) == TYPE_DICTIONARY else -1   # chunk keys besides "layout"
+	var felled: int = DirAccess.get_files_at(dir + "/flora_removed").size() if DirAccess.dir_exists_absolute(dir + "/flora_removed") else 0   # chunk files with removals (server_flora.gd REMOVED_DIR)
 	var chests: int = again._chests.size()
 	again.peer_connected_hello(1, KEY)
 	var inv = again.inventory_of(1)

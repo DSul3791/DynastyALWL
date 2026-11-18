@@ -1586,11 +1586,97 @@ func save() -> void:
 		invs[key] = _inventories[key].to_json_array()
 
 	_write_atomic("inventories.json", {"version": INVENTORY_VERSION, "inventories": invs})
+	_save_chests()
+	_save_vitals()
+	_save_characters()
+	_save_craft_queues()
+	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _water_tanks_save(), "wells": _wells_save()})
+	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows(), "lit": _smelters.lit_rows()})
+	_write_atomic("smithies.json", {"version": 1, "smithies": _smithies.save_rows()})
+	_save_item_files(_item_job())
+
+
+# The files made from the world items (world_items.json, tree_states.json, lights.json, kilns.json) are built from a deep copy taken on the
+# tick (_item_job), and the periodic save hands that copy to the background writer, which builds the rows, turns them into JSON and writes
+# them. Building the rows and the JSON of every world item on the tick froze the server once per save, longer the more the world held
+# (audit 18 Nov 2026, docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md finding 2). The tick now pays only the native copy.
+# The file format is unchanged. Any other save (shutdown, world reset, tests) builds and writes at once.
+var _tilted: Dictionary = {}       # world ids of arrows stuck in a tree (_stick_arrow): saved as fallen to the ground under them
+var _kind_info: Dictionary = {}    # structure kind -> [save state, use], for the writer (which must not read _structures)
+
+
+func _kind_info_now() -> Dictionary:
+	if _kind_info.size() != _structures.size():
+		_kind_info = {}
+
+		for kind in _structures:
+			_kind_info[kind] = [int((_structures[kind] as Dictionary).get("state", 5)), str((_structures[kind] as Dictionary).get("use", ""))]
+
+	return _kind_info
+
+
+func _sapling_rows() -> Array:
+	var plants: Array = []
+
+	for sapling in _saplings:
+		plants.append({"slot": sapling["slot"], "chunk": (sapling["chunk"] as Array).duplicate(), "species": sapling["species"], "pos": {"x": sapling["pos"].x, "y": sapling["pos"].y, "z": sapling["pos"].z}, "planted_at": sapling["planted_at"]})
+
+	return plants
+
+
+# Everything the item files need, copied now: the writer reads only this.
+func _item_job() -> Dictionary:
+	var tilt_y: Dictionary = {}
+
+	for id in _tilted.keys():
+		if not _items.has(id) or not _items[id].has("tilt"):
+			_tilted.erase(id)
+			continue
+
+		var at: Vector3 = _items[id]["pos"]
+
+		if ground_height.is_valid() and not is_nan(float(ground_height.call(at.x, at.z))):
+			tilt_y[id] = float(ground_height.call(at.x, at.z))
+
+	var t0: int = Time.get_ticks_usec()
+	var copy: Dictionary = _items.duplicate(true)
+	_note_save_part("world item copy", t0)
+	return {"dir": _dir, "items": copy, "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(),
+		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "bog_iron": _bog_left.duplicate(true), "layout": FloraLayout.VERSION, "no_kits": true}}
+
+
+func _save_item_files(job: Dictionary) -> void:
+	if _async_writes:
+		_pending_writes.append(job)   # built and written by the background writer (_write_batch)
+		return
+
+	for file in _item_files(job):
+		_write_atomic(str(file[0]), file[1])
+
+
+# [[file name, data], ...] for a job. Static and reads only the job, so the writer thread can run it.
+static func _item_files(job: Dictionary) -> Array:
+	var items: Dictionary = job["items"]
+	var kinds: Dictionary = job["kinds"]
+	var rows_and_world: Array = _world_item_rows(items, kinds, job["tilt_y"])
+	var world: Dictionary = (job["world"] as Dictionary).duplicate()
+	world["items"] = rows_and_world[0]
+	world["world_rows"] = rows_and_world[1]
+	return [
+		["tree_states.json", {"version": TREE_SAVE_VERSION, "trees": _tree_rows_of(items), "saplings": job["saplings"]}],
+		["lights.json", {"version": 1, "lit": _light_rows_of(items, kinds)}],
+		["kilns.json", {"version": 1, "kilns": _kiln_rows_of(items, kinds)}],
+		["world_items.json", world],
+	]
+
+
+# The world_items.json rows of `items` and the indices of the server-put rows among them.
+static func _world_item_rows(items_in: Dictionary, kinds: Dictionary, tilt_y: Dictionary) -> Array:
 	var items: Array = []
 	var world_rows: Array = []
 
-	for id in _items:
-		var it: Dictionary = _items[id]
+	for id in items_in:
+		var it: Dictionary = items_in[id]
 
 		if it.has("scatter") or it.has("tree") or it.has("showroom") or (it.has("fire") and it["fire"].has("camp")):
 			continue   # the showroom is never saved: an admin fills it again after a restart; the camp fire is laid again at every start (_camp_fire_tick)
@@ -1599,13 +1685,13 @@ func save() -> void:
 			continue
 
 		if it.has("struct"):
-			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int(_structures.get(str(it["struct"]["kind"]), {}).get("state", 5)), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0)), 1 if bool(it["struct"].get("road", false)) else 0])
+			items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[0]), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0)), 1 if bool(it["struct"].get("road", false)) else 0])
 			continue
 
 		var at: Vector3 = it["pos"]
 
-		if it.has("tilt") and ground_height.is_valid() and not is_nan(float(ground_height.call(at.x, at.z))):
-			at.y = float(ground_height.call(at.x, at.z))   # an arrow stuck in a tree is saved as fallen to the foot of it (the tilt is not saved)
+		if tilt_y.has(id):
+			at.y = float(tilt_y[id])   # an arrow stuck in a tree is saved as fallen to the foot of it (the tilt is not saved)
 
 		var row: Array = [int(it["number"]), int(it["count"]), at.x, at.y, at.z, it["left"], int(it["fire"]["state"]) if it.has("fire") else 0, float(it["fire"]["burn_left"]) if it.has("fire") else 0.0, int(it.get("wear", 0))]
 
@@ -1623,7 +1709,7 @@ func save() -> void:
 			row.append(it["inst"])   # the instance data, always the last value of a loose row (a Dictionary: rot_y and girth are floats)
 
 		if it.has("fire"):
-			var wood: Dictionary = _fire_wood(it["fire"])
+			var wood: Dictionary = _fire_wood_of(it["fire"])
 			row.append(int(it["fire"].get("uid", 0)))   # a campfire's store (a number here; a structure's kind is a string); 0 = none
 			row.append([float(wood["log"]), float(wood["firewood"]), float(wood["weak"])])   # burning seconds by wood class (fire tiers)
 			var pc: Dictionary = it["fire"].get("pieces", {})
@@ -1642,17 +1728,52 @@ func save() -> void:
 
 		items.append(row)
 
-	_save_trees()
-	_save_chests()
-	_save_vitals()
-	_save_characters()
-	_save_craft_queues()
-	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _water_tanks_save(), "wells": _wells_save()})
-	_write_atomic("lights.json", {"version": 1, "lit": _light_rows_save()})
-	_write_atomic("kilns.json", {"version": 1, "kilns": _kilns_save()})
-	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows(), "lit": _smelters.lit_rows()})
-	_write_atomic("smithies.json", {"version": 1, "smithies": _smithies.save_rows()})
-	_write_atomic("world_items.json", {"version": VERSION, "next_id": _next_id, "items": items, "taken": _taken.keys(), "picked": _picked, "stripped": _stripped_now(), "fruit": _fruit_now(), "boulders": _boulder_left, "bog_iron": _bog_left, "layout": FloraLayout.VERSION, "no_kits": true, "world_rows": world_rows})
+	return [items, world_rows]
+
+
+# A fire's wood by class, as _fire_wood gives it, without adding it to the fire (the writer reads a copy).
+static func _fire_wood_of(fire: Dictionary) -> Dictionary:
+	if fire.has("wood"):
+		return fire["wood"]
+
+	var all: float = maxf(float(fire.get("burn_left", 0.0)), 0.0)
+	return {"log": 0.0, "firewood": all if int(fire.get("state", 0)) == 1 else 0.0, "weak": 0.0 if int(fire.get("state", 0)) == 1 else all}
+
+
+static func _tree_rows_of(items: Dictionary) -> Array:
+	var rows: Array = []
+
+	for id in items:
+		if items[id].has("tree"):
+			var it: Dictionary = items[id]
+			rows.append({"pos": [it["pos"].x, it["pos"].y, it["pos"].z], "tree": it["tree"]})
+
+	return rows
+
+
+static func _light_rows_of(items: Dictionary, kinds: Dictionary) -> Array:
+	var rows: Array = []
+
+	for id in items:
+		var it: Dictionary = items[id]
+
+		if it.has("struct") and bool(it["struct"].get("lit", false)) and not str((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[1]) in ["kiln", "smelt"]:   # a Kiln is saved in kilns.json, a Smelter in smelters.json
+			rows.append([it["pos"].x, it["pos"].y, it["pos"].z, float(it["struct"].get("fuel_left", 0.0))])
+
+	return rows
+
+
+static func _kiln_rows_of(items: Dictionary, kinds: Dictionary) -> Dictionary:
+	var rows: Dictionary = {}
+
+	for id in items:
+		var it: Dictionary = items[id]
+
+		if it.has("struct") and it["struct"].has("uid") and str((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[1]) == "kiln" and (it["struct"].has("kiln") or bool(it["struct"].get("lit", false))):
+			var k: Dictionary = it["struct"].get("kiln", {})
+			rows[str(it["struct"]["uid"])] = [1 if bool(it["struct"].get("lit", false)) else 0, int(k.get("left", 0)), float(k.get("t", 0.0))]
+
+	return rows
 
 
 # Picking from a plant or shrub by hand. The plant stays where it is and is picked bare for
@@ -2689,6 +2810,7 @@ func _arrow_trunk(from: Vector3, to: Vector3) -> float:
 func _stick_arrow(number: int, at: Vector3, along: Vector3, item_inst: Dictionary = {}) -> void:
 	_items[_next_id] = {"number": number, "count": 1, "pos": at, "left": float(_bow.cfg.get("stuck_s", 300.0)), "wear": 0,
 		"rot_y": atan2(-along.z, along.x), "tilt": asin(clampf(along.y, -1.0, 1.0))}
+	_tilted[_next_id] = true
 
 	if not item_inst.is_empty():
 		_items[_next_id]["inst"] = item_inst.duplicate(true)
@@ -6273,18 +6395,24 @@ func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant
 func _write_atomic(name: String, data: Dictionary) -> void:
 	var path: String = _dir + "/" + name
 	var t0: int = Time.get_ticks_usec()
-	var text: String = JSON.stringify(data)   # the snapshot is taken now, on the tick
+
+	if _async_writes:
+		_pending_writes.append([path, data.duplicate(true)])   # a copy of its own: the background writer makes the JSON (see _start_writer)
+		_note_save_part(name, t0)
+		return
+
+	var text: String = JSON.stringify(data)
+	_note_save_part(name, t0)
+	_finish_writer()
+	_write_file(path, text)
+
+
+# A save part that took more than 10 ms on the tick, for the slow-tick line (lag run 5 Nov: a 675 ms save in one tick).
+func _note_save_part(name: String, t0: int) -> void:
 	var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
 
 	if ms > 10.0:
-		_save_parts.append("%s %.0f (%d KB)" % [name.get_basename(), ms, int(text.length() / 1024.0)])   # for the slow-tick line (lag run 5 Nov: a 675 ms save in one tick)
-
-	if _async_writes:
-		_pending_writes.append([path, text])   # the files are written by the background writer (see _start_writer)
-		return
-
-	_finish_writer()
-	_write_file(path, text)
+		_save_parts.append("%s %.0f" % [name.get_basename(), ms])
 
 
 # The disk part of a save: the text goes to .tmp, the file it replaces is copied to .prev, then .tmp is renamed over it.
@@ -6312,8 +6440,8 @@ static func _write_file(path: String, text: String) -> void:
 	_file_lock.unlock()
 
 
-# The autosave only serialises on the tick (about 3 ms at 500 records); the file writes (renames, copies) run on one short-lived
-# background thread, so the 20 Hz tick never waits for the disk. A save() from anywhere else (shutdown, tests) first waits for
+# The autosave only copies on the tick; the rows, the JSON and the file writes (renames, copies) run on one short-lived
+# background thread, so the 20 Hz tick never waits for them. A save() from anywhere else (shutdown, tests) first waits for
 # that thread, so files always land in order.
 var _async_writes: bool = false
 var _pending_writes: Array = []
@@ -6332,7 +6460,11 @@ func _start_writer() -> void:
 
 static func _write_batch(batch: Array) -> void:
 	for row in batch:
-		_write_file(str(row[0]), str(row[1]))
+		if typeof(row) == TYPE_DICTIONARY:   # an item job (_item_job): its four files
+			for file in _item_files(row):
+				_write_file(str(row["dir"]) + "/" + str(file[0]), JSON.stringify(file[1]))
+		else:
+			_write_file(str(row[0]), JSON.stringify(row[1]))
 
 
 func _reap_writer() -> void:
@@ -7804,20 +7936,8 @@ func _rot(delta: float) -> void:
 		_chops.erase(key)
 
 
-func _save_trees() -> void:
-	var rows: Array = []
-
-	for id in _items:
-		if _items[id].has("tree"):
-			var it: Dictionary = _items[id]
-			rows.append({"pos": [it["pos"].x, it["pos"].y, it["pos"].z], "tree": it["tree"]})
-
-	var plants: Array = []
-
-	for sapling in _saplings:
-		plants.append({"slot": sapling["slot"], "chunk": sapling["chunk"], "species": sapling["species"], "pos": {"x": sapling["pos"].x, "y": sapling["pos"].y, "z": sapling["pos"].z}, "planted_at": sapling["planted_at"]})
-
-	_write_atomic("tree_states.json", {"version": TREE_SAVE_VERSION, "trees": rows, "saplings": plants})
+func _save_trees() -> void:   # tree_states.json alone (the soak's timing); save() writes it with the other item files
+	_write_atomic("tree_states.json", {"version": TREE_SAVE_VERSION, "trees": _tree_rows_of(_items), "saplings": _sapling_rows()})
 
 
 func _load_trees() -> void:
@@ -10917,19 +11037,6 @@ func _kiln_burn(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 	if changed:
 		_push_box(id, box)
 		_dirty = true
-
-
-func _kilns_save() -> Dictionary:
-	var rows: Dictionary = {}
-
-	for id in _items:
-		var it: Dictionary = _items[id]
-
-		if it.has("struct") and it["struct"].has("uid") and str(_structures.get(str(it["struct"]["kind"]), {}).get("use", "")) == "kiln" and (it["struct"].has("kiln") or bool(it["struct"].get("lit", false))):
-			var k: Dictionary = it["struct"].get("kiln", {})
-			rows[str(it["struct"]["uid"])] = [1 if bool(it["struct"].get("lit", false)) else 0, int(k.get("left", 0)), float(k.get("t", 0.0))]
-
-	return rows
 
 
 func _load_kilns() -> void:
@@ -17492,16 +17599,7 @@ func light_burn_s(def: Dictionary, fallback_s: float = 1800.0) -> float:
 
 # The lit lights (and the fuel each has left) are saved beside the world items in lights.json as [x, y, z, fuel_left] and put back on the structures at those spots after a load.
 func _light_rows_save() -> Array:
-	var rows: Array = []
-
-	for id in _items:
-		var it: Dictionary = _items[id]
-
-		if it.has("struct") and bool(it["struct"].get("lit", false)) and not str(_structures.get(str(it["struct"]["kind"]), {}).get("use", "")) in ["kiln", "smelt"]:   # a Kiln is saved in kilns.json, a Smelter in smelters.json
-			rows.append([it["pos"].x, it["pos"].y, it["pos"].z, float(it["struct"].get("fuel_left", 0.0))])
-
-	return rows
-
+	return _light_rows_of(_items, _kind_info_now())
 
 func _apply_lit_rows(rows: Array) -> void:
 	for row in rows:

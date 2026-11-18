@@ -314,6 +314,35 @@ func _init() -> void:
 
 	check(total2 == total and total > 0, "the map comes back after quit and rejoin (%d of %d cells)" % [total2, total])
 
+	# 8b. A save re-encodes only changed blocks (audit 18 Nov 2026 finding 11): cells added to a block after one save must reach the next.
+	m2.note_position(7, Vector3(-1007.0, 10.0, 2004.0))   # the first report only sets the start
+	m2.note_position(7, Vector3(-1000.0, 10.0, 2009.0))   # one surveyed step: the record is dirty, so this save encodes and keeps each block's text
+	m2.save()
+	check(not bool(m2._records["map-key-0001"].get("dirty", true)), "the primed save ran")
+	var sizes: Dictionary = {}
+
+	for blk in m2.blocks_of("map-key-0001"):
+		sizes[blk] = m2.blocks_of("map-key-0001")[blk].size()
+
+	for step in range(1, 7):
+		m2.note_position(7, Vector3(-1000.0 + 7.0 * float(step), 10.0, 2009.0 + 5.0 * float(step)))
+
+	var grown: Vector2i = Vector2i(999999, 999999)
+
+	for blk in m2.blocks_of("map-key-0001"):
+		if sizes.has(blk) and m2.blocks_of("map-key-0001")[blk].size() > int(sizes[blk]):
+			grown = blk
+
+	check(grown != Vector2i(999999, 999999), "walking on adds cells to a block that was already saved")
+	var grown_size: int = m2.blocks_of("map-key-0001").get(grown, {}).size()
+	m2.save()
+	var m3 = make(dir)
+	keys[8] = "map-key-0001"
+	sent_cells(m3, 8)
+	check(m3.blocks_of("map-key-0001").get(grown, {}).size() == grown_size, "the later cells of an already-saved block come back after a reload (%d of %d)" % [m3.blocks_of("map-key-0001").get(grown, {}).size(), grown_size])
+	m3.forget_peer(8)
+	keys.erase(8)
+
 	# 9. Deleting the character deletes its map.
 	m2.forget_peer(7)
 	m2.forget_key("map-key-0001")

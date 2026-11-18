@@ -221,6 +221,11 @@ func _init() -> void:
 		print("soak: serialise %s: %.2f ms" % [fname, float(Time.get_ticks_usec() - t7) / 1000.0])
 
 	items._pending_writes.clear()
+	var t8: int = Time.get_ticks_usec()
+	items._dirty = true
+	items.save()   # the periodic save: what the tick pays (the copies); the rows, JSON and files are the writer's
+	print("soak: periodic save on the tick: %.2f ms" % [float(Time.get_ticks_usec() - t8) / 1000.0])
+	items._pending_writes.clear()
 	items._async_writes = false
 	var t6: int = Time.get_ticks_usec()
 	items._dirty = true
