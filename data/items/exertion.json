@@ -12,7 +12,9 @@
 		"needle": 0.3,
 		"torch": 0.4,
 		"default": 0.6,
-		"hoe": 0.8
+		"hoe": 0.8,
+		"sickle": 0.5,
+		"scythe": 0.95
 	},
 	"rise_per_s": 0.06,
 	"fall_per_s": 0.05,

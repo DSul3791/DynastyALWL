@@ -581,6 +581,14 @@
 			}
 		}
 	},
+	"swath": {
+		"note": "Sickle and scythe (Dave 18 Nov 2026, BugsList_Current.md entry 7: \"the sickle should be faster than picking grass by hand so it can gather everything in a 1.5 circle instantly one swing. the scythe gathers everything in a 3m circle instantly\"; \"its radius\"; \"they only gather grasses or destroy bushes. they do not pickup bushes like a pickaxe. and they do not pick berries. they only pick grasses and grains like tall grass, wheet, barley, they are great for harvesting a garden full of grains\"). One left-click swing with the tool in hand, around the player within radius_m (tool_<tool class>; the key is not the bare class name, which validate_items reads as the retired Stone sickle item): every grass in `grasses` is gathered as E would gather it, its yields times yield[material] (the pickaxe-on-rock pattern: higher tiers give more per swing; PROVISIONAL SW-2); every bush (flora kind shrub) is cut down and gives nothing (PROVISIONAL SW-3: no sticks, leaves or berries); every ripe crop in `crops` on a bed is harvested at the full yield (unripe grain stays, PROVISIONAL SW-4); everything else (berries, herbs, flowers, other crops, trees) is left alone. One swing every swing_ms (the scythe is the heavier tool, exertion.json tool_effort; PROVISIONAL SW-5) and one wear per swing (tool_wear swath). The ground grass in the circle lies down as trodden grass does (the client's look only).",
+		"tool_sickle": {"radius_m": 1.5, "swing_ms": 450},
+		"tool_scythe": {"radius_m": 3.0, "swing_ms": 1100},
+		"yield": {"copper": 1.5, "bronze": 2.0, "iron": 2.5, "steel": 3.0},
+		"grasses": ["tall_grass", "thatch_grass", "dune_grass", "cotton_grass", "reeds", "stormreed"],
+		"crops": ["wheat", "barley", "oats", "rye"]
+	},
 	"tool_rules": {
 		"note": "Natural yields of a picked plant need a tool when their item id ends with one of these words (Dave 2026-10-20: roots and bulbs need a shovel, bark, gum, sap and resin a stone knife, wood an axe; berries, leaves, flowers and herbs are by hand). The tool must be in the pack. Fixed drops above (fibre, sticks) are always by hand.",
 		"suffixes": {

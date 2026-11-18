@@ -16,6 +16,7 @@ const SWEEP_EVERY_S := 0.2          # then one pick per step (5 a second)
 const REGROW_GAME_S := 3.0 * 86400.0
 const RETRY_GAME_S := 72.0              # about 3 real seconds: a pick the server refused can be tried again
 const CHUNK_M := 256.0
+var _swath_ms: int = -100000         # the last sickle or scythe swing sent (swath)
 
 var _client
 var _items
@@ -154,6 +155,55 @@ func _pick(c: Dictionary) -> void:
 		_picked_until[c["key"]] = _client.game_clock.seconds + RETRY_GAME_S   # until the server's answer removes the plant
 	_items.clear_prompt()
 	_hint_left = 0.0
+
+
+# One sickle or scythe swing (BugsList_Current.md entry 7; drops.json "swath"): every grass (swath grasses) and bush within the tool's radius of the player
+# goes to the server in one cut_swath (protocol 131), which gathers the grasses, cuts the bushes down and reaps the ripe grain round the player itself;
+# the ground grass in the circle lies down like trodden grass. Answers the radius (0 for a tool with no swath).
+func swath(held_slot: int, tool_class: String) -> float:
+	var cfg: Dictionary = _drops.get("swath", {})
+	var radius: float = float((cfg.get("tool_" + tool_class, {}) as Dictionary).get("radius_m", 0.0))
+
+	if radius <= 0.0 or _client.body == null:
+		return 0.0
+
+	var now: int = Time.get_ticks_msec()
+
+	if now - _swath_ms < int((cfg.get("tool_" + tool_class, {}) as Dictionary).get("swing_ms", 0)):
+		return 0.0   # the server takes one swing a swing_ms: a faster click would lay the grass down for nothing
+
+	_swath_ms = now
+
+	var grasses: Array = cfg.get("grasses", [])
+	var plants: PackedInt32Array = PackedInt32Array()
+	var first: Dictionary = {}
+
+	for c in _candidates(radius, false):
+		var row: Dictionary = _flora_by_id.get(int(c["id"]) >> 16, {})
+		var kind: int = int((_client.flora._species.get(int(c["id"]) >> 16, {}) as Dictionary).get("kind", 0))
+
+		if kind == 0 or not (kind == 1 or grasses.has(str(row.get("name", "")))):
+			continue   # trees, berries' fruit trees, herbs and flowers are left alone
+
+		plants.append_array(PackedInt32Array([c["chunk"].x, c["chunk"].y, int(c["id"])]))
+
+		if first.is_empty():
+			first = c
+
+		if kind != 1:
+			_picked_until[c["key"]] = _client.game_clock.seconds + RETRY_GAME_S   # until the server's answer removes it
+
+	_net.cut_swath.rpc_id(1, held_slot, plants)
+
+	if _client.grass != null:
+		_client.grass.flatten(_client.body.global_position, radius)
+
+	if not first.is_empty() and _client.sound != null:
+		_client.sound.harvestfx.pick(_flora_by_id.get(int(first["id"]) >> 16, {}), first["pos"])
+
+	_items.clear_prompt()
+	_hint_left = 0.0
+	return radius
 
 
 # "Nothing to pick" (out of season, no yield) is not worth a prompt: only say why when a tool is missing.

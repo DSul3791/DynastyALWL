@@ -158,6 +158,7 @@ var _flights: Array = []                  # local visuals of spears this player 
 var _shown_number: int = 0
 var _sound                                # SoundStage (hit sounds)
 var shrub_near: Callable = Callable()   # (from, to) -> [chunk, id] of the bush or shrub the swing line passes through, or []; set by the client scene
+var swath_cut: Callable                 # (held pack slot, tool class) -> radius: one sickle or scythe swing (harvest.gd swath; 0 when nothing was sent)
 var _tree_near: Callable                  # (point) -> [chunk, id] of the tree trunk standing there, or []
 var _swing_t: float = -1.0
 signal struck(side: float, weight: float)   # a tool blow reached its impact frame: the camera jolts (feel_kicks.gd)
@@ -1231,6 +1232,16 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 			_arm_play("use", 0.6)
 			_hoe_apply()
+			return true
+
+		# Left click with a sickle or scythe (Dave 18 Nov 2026, BugsList_Current.md entry 7): one swing gathers the grasses and ripe grain and cuts down the
+		# bushes round the player, within 1.5 m for the sickle and 3 m for the scythe (drops.json swath); the server rules on every plant.
+		if button == MOUSE_BUTTON_LEFT and pressed and str(_inv.table.entry(held_id()).get("tool_class", "")) in ["sickle", "scythe"]:
+			_arm_play("use", 0.6)
+
+			if swath_cut.is_valid():
+				swath_cut.call(held_slot, str(_inv.table.entry(held_id()).get("tool_class", "")))
+
 			return true
 
 		# Left click with a saw (Dave 17 Nov 2026): the crafting screen opens on the Carpenter's tab, what the saw makes; Craft takes the log from near you.
