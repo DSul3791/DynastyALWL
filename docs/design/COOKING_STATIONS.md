@@ -38,7 +38,7 @@ The cookware recipes kept their numbers under new ids, `cook_<dish>_<station>`:
 
 Retired (rows kept for their numbers): 835 Copper - Pot, 1203 Clay - Griddle, 1204 Campfire roasting spit, 1205 Iron - Grill grate, 1206 Iron - Frying pan, 1207 Iron - Cauldron. No save migration (new game, Dave 12 Nov 2026).
 
-Kept: Wooden bowl #39 (holds water, sold by Hob, carved at the carving station) and Clay - Pot #40 (holds water and builds the Campfire pot). Mortar and pestle #807 stays a hand tool (CS-7).
+Kept: Wooden bowl #39 (holds water, sold by Hob, carved at the carving station) and Clay - Pot #40 (holds water and builds the Campfire pot). Mortar and pestle #807 stays a hand tool (CS-7; superseded 18 Nov 2026: it is a placed station, MORTAR_PESTLE.md).
 
 ## For Dave (assumed on your behalf, provisional)
 
@@ -48,4 +48,4 @@ Kept: Wooden bowl #39 (holds water, sold by Hob, carved at the carving station) 
 - **CS-4** Before iron nothing gets harder: flatbreads and cakes bake at the Clay hearth, stews use the Campfire pot, the Rosemary joint roasts in the Oven, and Crab cakes, Egg and nettle fry, Herb omelette and Banana fritter cook on a plain campfire (they needed the 4-clay Clay griddle before).
 - **CS-5** The Cooking pot also cooks everything a Campfire pot cooks. The Grill and Griddle cook only their own recipes.
 - **CS-6** The Hand mill is a placed station built from what the hand tool cost (2 Stone, 1 Stick).
-- **CS-7** Mortar and pestle stays a hand tool held while grinding medicine (four recipes).
+- **CS-7** Mortar and pestle stays a hand tool held while grinding medicine (four recipes). Superseded 18 Nov 2026: Dave agreed MORTAR_PESTLE.md, it is a placed station.

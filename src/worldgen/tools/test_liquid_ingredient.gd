@@ -8,7 +8,7 @@ extends SceneTree
 #   - the water and a queued craft survive a save and load;
 #   - two crafts for the same water cannot both have it; a stranger's chest is never used, the owner's chest is;
 #   - the bed pour scales pour_pct by the mL poured, takes the container in hand first, and distrusts the slot the client names.
-# The herb antidote (needs 1 water, no station) is the probe recipe; the fill itself is the real drink/fill action.
+# The herb antidote (needs 1 water, made at a Mortar and pestle: MORTAR_PESTLE.md MP-2) is the probe recipe; the fill itself is the real drink/fill action.
 #   godot --headless --path . --script res://src/worldgen/tools/test_liquid_ingredient.gd
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -87,7 +87,6 @@ func reset() -> void:
 	said.clear()
 	give("plantain_leaves", 2)
 	give("comfrey_leaves", 1)
-	give("mortar_pestle", 1)
 
 
 func give(id: String, count: int) -> void:
@@ -146,6 +145,8 @@ func join() -> void:
 	items.peer_connected_hello(2, "liquidtest002")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items.report_position(2, Vector3(0.0, 10.0, 300.0))
+	if not items.station_near(1, "mortar_pestle"):
+		items.dev_place("mortar_pestle@1,0")   # the antidote is ground at a placed Mortar and pestle beside player 1 (MORTAR_PESTLE.md MP-2)
 	items.vitals_of(1)["weight"] = 2000.0
 	items.vitals_of(2)["weight"] = 2000.0
 

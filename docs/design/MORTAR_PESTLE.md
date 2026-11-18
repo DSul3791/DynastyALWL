@@ -1,6 +1,6 @@
 # Mortar and pestle: what it is and how the game should use it
 
-Status: PROPOSAL for Dave (18 Nov 2026). Nothing in items, recipes or code changes until he answers the "For Dave" section. The catalog is frozen.
+Status: AGREED. Dave, 18 Nov 2026 10:12Z: "Mortar and Pestle I agree with your assessment." Built with the assumed answers MP-1..MP-5 (section 4).
 
 Asked by Dave, 17 Nov 2026: "when I made a morter and pestle I expected a stone bowl with a pestle in it. but instead it made me type of hammer tool" and "the mortar and pestle is a work station for making stuff from plants and such. you use it to grind things. do some research into it and give me a report on how you think we should use it."
 
@@ -30,6 +30,13 @@ Asked by Dave, 17 Nov 2026: "when I made a morter and pestle I expected a stone 
 3. **Progression: the very first station**, stone age, before the Hand mill. It is the player's first medicine station, which fits the four early medicine recipes it already serves.
 4. **Recipes, first step (no new items):** the four medicine recipes it already keeps move onto it (they stop needing it in hand), and Herb salve moves onto it too.
 5. **Later, with the item list (new items, so Dave's call when he gets to medicine, spices and dyes):** dried herb powders for teas and remedies, ground spices and seasoning, nut and garlic pastes, pigments and dyes from charcoal, berries and plants, and a slow small-batch Wild grain meal so a player without a Hand mill can still make a little flour. The many unused herbs in the world are the natural input.
+
+## 4. What was built (18 Nov 2026)
+
+- Item #807 is kind `placeable` (no tool class, durability or repair); number, name, recipe #377 (2 Stone, 8 s, by hand) and value unchanged. Structure `mortar_pestle`, state 456, 0.4 x 0.4 m, station `mortar_pestle`, reach 3 m.
+- Plantain poultice #8, Comfrey poultice #9, Leaf bandage #10, Herb antidote #378 and Herb salve #198 name `"station": "mortar_pestle"`; none keeps it in hand.
+- Look: one stone bowl and pestle mesh (basic_look.gd shape `mortar`) on the ground, in the hand (70 percent) and placed (piece_look.gd `mortar_pestle`). The existing icon already shows a bowl and pestle and was not rebaked.
+- Not run in Godot (Dave's token rule); never seen in a picture.
 
 ## For Dave
 
