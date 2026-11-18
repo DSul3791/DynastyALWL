@@ -17,10 +17,16 @@ const LOOSE_STOCK_M := 12.0     # loose stacks on the ground this close count as
 
 
 # The kept item numbers of `recipe` (numbers, as RecipeTable gives them) that need to be in hand; [] when none.
+# A recipe that keeps two tools names the one for the hand with "hand_keep" (its index in keeps): the Wooden bowl and Serving platter keep a knife
+# in the pack and need their chisel in hand (Dave 18 Nov 2026: "The required chisel must be equipped in the player's hand").
 static func hand_tools(recipe: Dictionary, table) -> PackedInt32Array:
 	var out: PackedInt32Array = PackedInt32Array()
+	var keeps: Array = recipe.get("keeps", [])
 
-	for keep in recipe.get("keeps", []):
+	if int(recipe.get("hand_keep", -1)) >= 0 and int(recipe["hand_keep"]) < keeps.size():
+		keeps = [keeps[int(recipe["hand_keep"])]]
+
+	for keep in keeps:
 		var number: int = int(keep[0])
 		var members: PackedInt32Array = table.group_members(number)
 

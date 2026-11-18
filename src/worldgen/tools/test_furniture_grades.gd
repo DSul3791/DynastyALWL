@@ -140,6 +140,9 @@ func _place_checks() -> void:
 			_clear()
 			_give("stone_knife" if str(bp.get("tool", "hammer")) == "knife" else "iron_hammer", 1)   # the Crude chest, chair, table and the Bench are knife rows (15 Nov 2026, W-9)
 
+			if int(bp.get("chisel", 0)) > 0:
+				_give("steel_chisel", 1)   # Rustic, Fine and Ornate pieces need a chisel on the hand bar (Dave 18 Nov 2026); steel serves every tier
+
 			for row in bp["cost"]:
 				_give("lumber" if str(row[0]) == "hardwood_board" else str(row[0]), int(row[1]))
 

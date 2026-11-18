@@ -277,6 +277,9 @@ func build(structure: String, at: Vector3, what: String) -> int:
 	for c in bp.get("cost", []):
 		before[str(c[0])] = have(str(c[0]))
 
+	if int(bp.get("chisel", 0)) > 0 and have("steel_chisel") == 0:
+		items.give(1, n("steel_chisel"), 1)   # a chisel piece needs a chisel on the hand bar (Dave 18 Nov 2026); given here, the route's smithy comes later
+
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(bp.get("number", 0)), 0, 0, at)
 	HeldTool.hit_site(items, HeldTool.site_of(items, structure))   # placing only sets down a site; the hammer hit fills it (Dave 18 Nov 2026)
 	var id: int = standing_at(structure, at)
@@ -1102,6 +1105,7 @@ func step4_cooking_and_preservation() -> void:
 	go(KITCHEN + Vector3(1.5, 0.0, -2.0))
 	var carving: int = build("carving_station", KITCHEN + Vector3(3.0, 0.0, -3.5), "4l")   # clear of the kitchen campfire at (0, -3): structures stand 2.5 m apart
 	check(carving >= 0 and have("wooden_block") == 2, "4l. the wood carving station stands, built from two wooden blocks with the knife (%d blocks left)" % have("wooden_block"))
+	items.give(1, n("copper_chisel"), 1)   # the platter is carved with a Copper chisel or better in hand (Dave 18 Nov 2026); copper comes later on the real route
 	craft("serving_platter", 1)
 	check(have("serving_platter") == 1 and have("stone_knife") == 1, "4l. a Serving platter is carved at the carving station, the knife kept")
 	go(KITCHEN + Vector3(1.5, 0.0, 0.0))

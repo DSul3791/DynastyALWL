@@ -50,6 +50,7 @@ func load_file(path: String, item_table) -> bool:
 			"station": str(row.get("station", "")), "station_level": int(row.get("station_level", 1)),
 			"wears_tool": str(row.get("wears_tool", "")),
 			"sawbuck": bool(row.get("sawbuck", false)),   # sawn twice as fast beside a Sawbuck (server_items._saw_slow; TREE_WOOD_TOOLS_DESIGN.md W-4)
+			"hand_keep": int(row.get("hand_keep", -1)),   # which kept tool goes in hand when a recipe keeps two (craft_stock.gd hand_tools; the bowl's chisel, Dave 18 Nov 2026)
 			"ready_age": float(row.get("ready_age", 0.0)),   # game hours a sealed batch matures (master s3.14): one timer for the whole batch, output at age 0
 		}
 		_by_number[entry["number"]] = entry

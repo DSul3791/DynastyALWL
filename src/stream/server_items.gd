@@ -10278,6 +10278,10 @@ func _can_blueprint(peer: int, inv, row: Dictionary) -> bool:
 			_say(peer, "This hammer is too light for that. You need %s." % _hammers_for(int(row.get("hammer", 1))))
 			return false
 
+	if int(row.get("chisel", 0)) > 0 and _best_tier_slot(inv, "chisel") < int(row["chisel"]):   # blueprints.json "chisel": the lowest chisel tier (Dave 18 Nov 2026: Copper 2, Bronze 3, Iron 4, Steel 5; a better one serves), on the hand bar beside the hammer
+		_say(peer, "You need %s in your hand bar to build that." % _tools_for("chisel", int(row["chisel"])))
+		return false
+
 	if str(row.get("station", "")) != "" and not station_near(peer, str(row["station"]), int(row.get("station_level", 1))):
 		_say(peer, "You need a %s close by." % str(row["station"]).replace("_", " "))
 		return false
@@ -10323,16 +10327,37 @@ func _heaviest_hammer_slot(inv) -> int:
 # The hammers heavy enough for a blueprint row's "hammer" tier, as said in a sentence, lightest first ("a stone hammer or better"; tier 3 is any
 # metal one: "a bronze, iron or steel hammer"). From items.json, so a new hammer is named without a code change.
 func _hammers_for(tier_needed: int) -> String:
-	var hammers: Array = []   # [tier, number, material] of every live hammer heavy enough
+	return _tools_for("hammer", tier_needed)
+
+
+# The highest tier of an unbroken tool of this class on the hotbar; 0 with none.
+func _best_tier_slot(inv, tool_class: String) -> int:
+	var best: int = 0
+
+	for slot in range(inv.slot_count):
+		if inv.numbers[slot] == 0 or not inv.on_hotbar(slot) or _is_broken(inv, slot):
+			continue
+
+		var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
+
+		if str(entry.get("tool_class", "")) == tool_class:
+			best = maxi(best, int(entry.get("tier", 1)))
+
+	return best
+
+
+# The tools of a class good enough for a tier, as said in a sentence, lightest first ("a bronze, iron or steel chisel" reads "a bronze chisel or better").
+func _tools_for(tool_class: String, tier_needed: int) -> String:
+	var hammers: Array = []   # [tier, number, material] of every live tool of the class good enough
 
 	for id in table.ids():
 		var entry: Dictionary = table.entry(id)
 
-		if str(entry.get("tool_class", "")) == "hammer" and not bool(entry.get("retired", false)) and int(entry.get("tier", 1)) >= tier_needed:
-			hammers.append([int(entry.get("tier", 1)), int(entry.get("number", 0)), str(entry.get("material", id.trim_suffix("_hammer")))])
+		if str(entry.get("tool_class", "")) == tool_class and not bool(entry.get("retired", false)) and int(entry.get("tier", 1)) >= tier_needed:
+			hammers.append([int(entry.get("tier", 1)), int(entry.get("number", 0)), str(entry.get("material", id.trim_suffix("_" + tool_class)))])
 
 	if hammers.is_empty():
-		return "a heavier hammer"
+		return "a better %s" % tool_class
 
 	hammers.sort()
 	var lightest: int = int(hammers[0][0])
@@ -10343,7 +10368,7 @@ func _hammers_for(tier_needed: int) -> String:
 			words.append(str(row[2]))
 
 	var listed: String = str(words[0]) if words.size() == 1 else ", ".join(words.slice(0, words.size() - 1)) + " or " + str(words[-1])
-	return "a %s hammer%s" % [listed, " or better" if int(hammers[-1][0]) > lightest else ""]
+	return "a %s %s%s" % [listed, tool_class, " or better" if int(hammers[-1][0]) > lightest else ""]
 
 
 # All the materials back into the pack, or none (with a word) when they do not fit.
