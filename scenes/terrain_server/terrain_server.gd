@@ -44,6 +44,7 @@ const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const CoarseGroundScript := preload("res://src/stream/server_coarse_ground.gd")
+const FogGroundScript := preload("res://src/shared/fog_ground.gd")
 const TrailsScript := preload("res://src/stream/server_trails.gd")
 const MapScript := preload("res://src/stream/server_map.gd")
 const MapCodec := preload("res://src/shared/map_codec.gd")
@@ -2128,13 +2129,22 @@ func _on_dig_requested(peer_id: int, center: Vector3, radius: float) -> void:
 
 
 # The client has no world tiles (protocol 132): the summits round its tile and its valley-fog cells are read here (server_coarse_ground.gd).
+# Only for the ground round the player, as the tiles on the client gave before; a far ask is refused (the client asks again in 15 s).
 func _on_summits_requested(peer_id: int, tile: Vector2i) -> void:
-	if limits.allow(peer_id, "coarse_ground"):
-		coarse_ground.ask_summits(peer_id, tile)
+	var at: Variant = items.position_of(peer_id)
+
+	if at is Vector3 and limits.allow(peer_id, "coarse_ground"):
+		var here: Vector2i = Vector2i(int(floor(at.x / float(settings.tile_size_m))), int(floor(at.z / float(settings.tile_size_m))))
+
+		if absi(tile.x - here.x) <= 1 and absi(tile.y - here.y) <= 1:
+			coarse_ground.ask_summits(peer_id, tile)
 
 
 func _on_fog_cells_requested(peer_id: int, origin: Vector2) -> void:
-	if origin.is_finite() and limits.allow(peer_id, "coarse_ground"):
+	var at: Variant = items.position_of(peer_id)
+	var centre: Vector2 = origin + Vector2.ONE * FogGroundScript.WINDOW_M * 0.5
+
+	if at is Vector3 and origin.is_finite() and centre.distance_to(Vector2(at.x, at.z)) < FogGroundScript.REBUILD_M * 2.0 and limits.allow(peer_id, "coarse_ground"):
 		coarse_ground.ask_fog(peer_id, origin)
 
 

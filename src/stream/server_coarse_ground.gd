@@ -3,12 +3,14 @@ extends RefCounted
 # The client's questions about the coarse ground, answered from the server's baked tiles, so the client needs no tiles of its own
 # (server/client split A3, /mnt/project-files/server-client-split/PLAN.md): the summits round a tile (summits.gd: cap clouds and
 # summit snow) and the cells of a valley-fog window (fog_ground.gd). One read at a time on a worker thread; the answer goes to the
-# asking player only. Asks are limited by data/limits.json coarse_ground and at most QUEUE_MAX wait.
+# asking player only. Asks are limited by data/limits.json coarse_ground, refused far from the player (terrain_server.gd), and at most
+# PEER_MAX per player and QUEUE_MAX in all wait. shortcut: the summits round a tile are read again for each player, cache them per tile if many join at once.
 
 const FogGroundScript := preload("res://src/shared/fog_ground.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 
 const QUEUE_MAX := 32
+const PEER_MAX := 4                    # waiting asks per player, so one player cannot fill the queue
 const SUMMIT_MIN_M := 300.0            # lower tops are hills, not summits
 const SUMMIT_BLOCK_M := 640.0          # a summit is the highest point of its block of this size and the eight round it
 const SUMMIT_KEEP := 12                # the highest this many are kept
@@ -34,7 +36,7 @@ func _add(job: Array) -> void:
 	if _queue.has(job):
 		return
 
-	if _queue.size() >= QUEUE_MAX:
+	if _queue.size() >= QUEUE_MAX or _queue.filter(func(other: Array) -> bool: return other[0] == job[0]).size() >= PEER_MAX:
 		return
 
 	_queue.append(job)

@@ -1,7 +1,8 @@
 extends SceneTree
 
 # The client reads no world tiles (server/client split A3, /mnt/project-files/server-client-split/PLAN.md): the server answers the
-# summits round a tile and the valley-fog cells (src/stream/server_coarse_ground.gd, protocol 132), and no client source opens the tiles.
+# summits round a tile and the valley-fog cells (src/stream/server_coarse_ground.gd, protocol 132), and no client source opens the tile
+# files (the tile reader script itself still loads with the shared fog_ground.gd, which the server's own fog windows use).
 # Run: godot --headless --path . --script res://src/worldgen/tools/test_coarse_ground.gd
 
 const FogGround := preload("res://src/shared/fog_ground.gd")
@@ -89,7 +90,7 @@ func _initialize() -> void:
 	for dir in CLIENT_DIRS:
 		_scan(dir, readers)
 
-	_check(readers.is_empty(), "no client source reads the world tiles %s" % str(readers))
+	_check(readers.is_empty(), "no client source opens the world tile files %s" % str(readers))
 
 	print("test_coarse_ground: %s" % ("PASS" if _fails == 0 else "FAIL (%d)" % _fails))
 	quit(0 if _fails == 0 else 1)

@@ -37,6 +37,7 @@ var _centre: Vector2 = Vector2(INF, INF)
 var who: String = "client"          # for the log line: "client" or "server"
 var ask: Callable                   # client: asks the server for the cells of the window at an origin (Vector2); unset: read the tiles here
 var _asked_msec: int = 0
+var _asked: Vector2 = Vector2(INF, INF)   # client: the origin last asked for
 var _pending: Array = []            # client: [origin, bytes] that came while a build was running
 
 
@@ -59,6 +60,7 @@ func update(at: Vector3) -> void:
 		if here.distance_to(_centre) >= REBUILD_M or (_asked_msec > 0 and Time.get_ticks_msec() - _asked_msec > ASK_AGAIN_MSEC):
 			_centre = here
 			_asked_msec = Time.get_ticks_msec()
+			_asked = origin
 			ask.call(origin)
 
 		return
@@ -77,7 +79,8 @@ func update(at: Vector3) -> void:
 
 # Client: the server's cells for the window at `origin` (fog_cells; empty bytes: no tile there), built into the grid on a worker.
 func receive(origin: Vector2, bytes: PackedByteArray) -> void:
-	_asked_msec = 0
+	if origin == _asked:
+		_asked_msec = 0
 
 	if _task != -1:
 		_pending = [origin, bytes]
