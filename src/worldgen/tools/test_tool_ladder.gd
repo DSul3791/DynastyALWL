@@ -23,7 +23,8 @@ const FAMILIES := ["axe", "pick", "shovel", "hammer", "hoe", "knife", "saw", "si
 const EDGED := ["axe", "pick", "knife", "saw", "sickle", "scythe", "chisel"]
 const NEW_TOOLS := ["iron_axe", "steel_axe", "iron_knife", "steel_knife", "steel_saw", "bronze_sickle", "iron_sickle", "steel_sickle",
 		"bronze_scythe", "steel_scythe", "copper_pickaxe", "copper_axe", "copper_saw", "bronze_saw",
-		"copper_hammer", "copper_knife", "copper_hoe", "bronze_hoe", "copper_shovel", "bronze_shovel"]
+		"copper_hammer", "copper_knife", "copper_hoe", "bronze_hoe", "copper_shovel", "bronze_shovel",
+		"copper_sickle", "copper_scythe", "copper_chisel"]
 const DISPOSABLE := ["stone_axe", "stone_knife", "stone_saw", "stone_hammer", "stone_pickaxe", "wooden_shovel", "wooden_hoe",
 		"hide_scraper", "spear", "stone_mace", "javelin", "sewing_needle"]
 const STATION := {"copper": "forge", "bronze": "forge", "iron": "brick_forge", "steel": "brick_forge"}
