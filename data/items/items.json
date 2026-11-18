@@ -311,7 +311,7 @@
 		"plank_chest": {
 			"number": 29,
 			"name": "Rustic - Chest",
-			"description": "A plain chest of nailed hardwood boards with a hinged lid. Holds 20 stacks.",
+			"description": "A plain chest of nailed hardwood boards with a hinged lid. Holds 30 stacks.",
 			"kind": "structure",
 			"stack": 1,
 			"unstackable": true,
@@ -9025,7 +9025,7 @@
 			"iron_chest": {
 				"number": 852,
 				"name": "Ornate - Chest",
-				"description": "A carved hardwood strongbox bound with iron bands. Holds 30 stacks, more than any other chest.",
+				"description": "A carved hardwood strongbox bound with iron bands. Holds 48 stacks, more than any other chest.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,

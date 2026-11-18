@@ -196,13 +196,13 @@ const LOOKS := {
 	"iron_chest": {"builder": "iron_chest", "args": []},
 	"wooden_crate": {"builder": "crate", "args": []},
 	# shortcut: Mission 001 furniture grades (master s3.5) borrow a family look, not their own grade look (pegs and lashings, carved trim), until Art draws them.
-	"crude_chest": {"builder": "crate", "args": [Vector3(0.75, 0.48, 0.5)]},   # 15 slots: volume follows slots (CH-2)
+	"crude_chest": {"builder": "crate", "args": [Vector3(0.9, 0.64, 0.5)]},   # 24 slots: volume follows slots (CH-2)
 	"crude_chair": {"builder": "chair", "args": []},
 	"ornate_chair": {"builder": "chair", "args": []},
 	"crude_table": {"builder": "table", "args": []},
 	"ornate_table": {"builder": "table", "args": []},
 	# shortcut: Mission 001 phase 9 storage rows (master s3.13) borrow the nearest existing look, with no fill states, until Art draws them (NOT visually complete).
-	"large_wooden_chest": {"builder": "crate", "args": [Vector3(1.2, 0.6, 0.5)]},   # 30 slots, as the iron chest (CH-2)
+	"large_wooden_chest": {"builder": "crate", "args": [Vector3(1.4, 0.6, 0.6)]},   # 42 slots (CH-2)
 	"wardrobe": {"builder": "cupboard", "args": []},
 	"dresser": {"builder": "cupboard", "args": []},
 	"bookcase": {"builder": "shelf", "args": []},

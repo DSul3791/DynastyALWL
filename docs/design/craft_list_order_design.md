@@ -87,17 +87,19 @@ Dave: "cut the Craft button into two buttons left button says Craft 1, right but
 
 A container that makes nothing (no structures.json `station`, no `also`, not a fire) opens on its store alone: no Chest and Craft tabs, no recipe list, no Craft buttons (`inventory_view._store_only`). Each chest's body holds about 0.012 m³ per slot, so its volume is directly proportional to its slots; its footprint (placement, ghost, no-spawn) is the drawn size. The woven look shared by three chests is drawn at a uniform `look_scale`, so its proportions and any collision box stay true; the crude and large wooden chests draw the crate look at their own size (`PieceLook.crate(size)`).
 
-| Chest | Slots | Drawn size, metres (wide x high x deep) | Footprint |
-|---|---|---|---|
-| Chest (woven) | 12 | 0.67 x 0.50 x 0.44 (scale 0.71) | 0.67 x 0.44 |
-| Crude chest | 15 | 0.75 x 0.48 x 0.50 | 0.75 x 0.50 |
-| Plank chest | 20 | 0.79 x 0.59 x 0.52 (scale 0.84) | 0.79 x 0.52 |
-| Fine chest | 25 | 0.85 x 0.63 x 0.56 (scale 0.90) | 0.85 x 0.56 |
-| Iron chest | 30 | 1.00 x 0.60 x 0.60 (unchanged) | 1.00 x 0.60 |
-| Large wooden chest | 30 | 1.20 x 0.60 x 0.50 | 1.20 x 0.50 |
+Slots (Dave 18 Nov 2026: "the lowest tier should have 3 rows of slots. then each tier up gives it another row"): rows of 6, the chest window's width.
+
+| Chest (tier order) | Rows | Slots | Weight | Drawn size, metres (wide x high x deep) | Footprint |
+|---|---|---|---|---|---|
+| Wicker - Chest | 3 | 18 | 40 kg | 0.76 x 0.57 x 0.50 (woven look, scale 0.81) | 0.76 x 0.50 |
+| Crude - Chest | 4 | 24 | 110 kg | 0.90 x 0.64 x 0.50 | 0.90 x 0.50 |
+| Rustic - Chest | 5 | 30 | 150 kg | 0.90 x 0.67 x 0.59 (woven look, scale 0.96) | 0.90 x 0.59 |
+| Fine - Chest | 6 | 36 | 200 kg | 0.96 x 0.71 x 0.63 (woven look, scale 1.02) | 0.96 x 0.63 |
+| Large wooden chest | 7 | 42 | 350 kg | 1.40 x 0.60 x 0.60 | 1.40 x 0.60 |
+| Ornate - Chest | 8 | 48 | 250 kg | 1.17 x 0.70 x 0.70 (iron look, scale 1.17) | 1.17 x 0.70 |
 
 ### For Dave (provisional, assumed on his behalf; change any of them by saying so)
 
 - **CH-1, which windows.** Every container that cannot craft loses the Craft side, not only chests: shelves, cupboards, racks, barrels, jars, sacks, baskets, bins, crates, carts, sleds, wagons, the root cellar and the smelters (their Craft list was already empty, SR-2). Fires, kilns, the chopping block, the Sawbuck and every station keep theirs.
-- **CH-2, sizes.** Volume follows slots at about 0.012 m³ a slot, from the 30-slot iron chest (1.0 x 0.6 x 0.6 m) as the reference; the table above. Slots, weight limits and the catalog are unchanged.
-- **CH-3, equal slots.** The iron and large wooden chests both have 30 slots, so both hold the same volume; the large wooden chest is the longer, lower one (1.2 m long) and keeps its higher weight limit (350 kg). Placed chests already in a world take their new size when drawn.
+- **CH-2, sizes.** Volume follows slots at about 0.012 m³ a slot; the table above. Weight limits and the catalog's items are unchanged.
+- **CH-3, tier order.** Wicker, Crude, Rustic, Fine, Large wooden, Ornate (the Ornate - Chest is iron-bound, hammer level 3, "more than any other chest"); the Large wooden chest sits one row below it. Odd, left as it is: the Large wooden chest still holds more weight (350 kg) than the Ornate (250 kg), the [D17] ruling. Placed chests already in a world are drawn at their new size; their slot count in an old save was not checked (new game expected).
