@@ -12,6 +12,8 @@ The six existing entry numbers are retained for tracking. Detailed behaviour has
 
 ## 1. Level terrain without lifting the player or creating free fill
 
+**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): test_server_items Level checks (target held, nothing edited under the feet, no soil means no fill, fills use soil, foundation target). Not yet played.
+
 **Problem:** Raising soil beneath the player lifts them, and their new height then drives further raising. The resulting terrain climbs higher with repeated use.
 
 **Required outcome:**
@@ -25,6 +27,8 @@ The six existing entry numbers are retained for tracking. Detailed behaviour has
 
 ## 2. Foundations must use the edited ground surface
 
+**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): test_server_items: a foundation placed on ground raised 1.6 m by a saved fill. Not yet played.
+
 **Problem:** A raised, flattened building site is rejected as too far above or below ground, as though the new soil were not ground.
 
 **Required outcome:** Foundation height/contact checks must use the current terrain surface, including player edits. A valid site made with the hoe must be usable immediately. Other existing foundation requirements, such as support and obstruction checks, still apply.
@@ -32,6 +36,8 @@ The six existing entry numbers are retained for tracking. Detailed behaviour has
 **Acceptance:** Raise and level a suitable site, then place a foundation on its new surface without an erroneous original-ground-height refusal.
 
 ## 3. Rocks must visibly deplete as they are mined
+
+**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): test_server_items stone counts by size (yield 0.04, provisional RK-1); the cracks and crumble are drawn by the client and have not been seen. Not yet played.
 
 **Problem:** A rock can yield hundreds of stones without shrinking or breaking.
 
@@ -45,6 +51,8 @@ The six existing entry numbers are retained for tracking. Detailed behaviour has
 
 ## 4. Keep the hoe menu readable on screen
 
+**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): none possible headless; the 75% width and wrapping have not been seen. Not yet played.
+
 **Problem:** The hoe's right-click menu extends beyond the screen.
 
 **Required outcome:** Cap its width at 75% of the game viewport width and wrap text within that limit. Keep the menu inside the visible viewport.
@@ -52,6 +60,8 @@ The six existing entry numbers are retained for tracking. Detailed behaviour has
 **Acceptance:** All menu choices remain readable and selectable at the player's window size.
 
 ## 5. Present the hoe actions in a practical order
+
+**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): test_server_items Pathen one-click checks; the menu order is in the code and CONTROLS.md, not seen. Not yet played.
 
 Use this order and these labels:
 
@@ -67,6 +77,8 @@ Use this order and these labels:
 Survey a Path is included for menu placement; this list does not request rebuilding it.
 
 ## 6. Make gardening and planting deliberate, quick and predictable
+
+**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): test_farming garden, soil patch, obstacle, countdown and plant-grid checks; the neon preview and countdown have not been seen. Not yet played.
 
 ### Shared placement behaviour
 
@@ -121,3 +133,15 @@ Crops, including wheat and barley, require tilled soil. Bushes and trees do not.
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
+
+## Assumed on Dave's behalf (provisional values, for review)
+
+- LV-1: one held Level action lasts while strokes come within 1.5 s and the feet move less than 0.6 m; its target height is kept for that long.
+- LV-2: Level leaves the ground within 1.2 m of the feet untouched.
+- LV-3: one Soil fills 0.75 m3.
+- RK-1: boulders give 0.04 stones per unit of volume (1 m rock about 370 stones, 0.3 m about 10).
+- TG-1: the garden blend is no steeper than 1 in 2 (about 27 degrees), gentler than the 45-degree limit.
+- TG-2..TG-5: at most 1,500 ground edits for one garden, 8 a step; Till Soil 2m uses 0.9 m spheres; the preview asks the server every 250 ms at most.
+- PG-1: Plant takes seeds from the crafting stock within 12 m.
+- PA-1: Pathen makes at most 6 ground edits a click.
+- Crops need tilled soil (Plant does not till); scatter stone, flint and ores count as small rocks to pick up; wild shrubs are not checked for duplicates.

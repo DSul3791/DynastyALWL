@@ -179,6 +179,15 @@ var limits = ActionLimitsScript.new()      # per-peer token buckets (data/limits
 var _fill_last: Array = []                  # [centre, radius, material] of the last fill that changed something; a repeat is dropped
 var _tiles_changed: Dictionary = {}     # tiles edited since the clients were told (tile_changed goes out at most every 0.5 s)
 var _tiles_told_msec: int = 0
+# Audit finding 9 (Dave 18 Nov 2026): a dig or fill goes only to the players within EDIT_SEND_M of it. A player farther away gets it
+# when they come within that range (_send_held_edits, every half second), or at their next join through the edits since (protocol 128).
+# The client's finest ground reaches about 48 m and each coarser level doubles it (48, 96, 192, 384 m), so beyond about 384 m a 3 m
+# edit no longer shows in its ground; 512 m leaves room for a rider between two half-second checks.
+const EDIT_SEND_M := 512.0
+const EDITS_HELD_MAX := 1024           # per player; past it the oldest held edit is sent anyway (out of range costs only a fetch)
+const EDITS_RELEASE_MAX := 256         # held edits sent to one player per half second, so arriving at a long road is no hitch
+var _edit_by: int = 0                  # the admin whose dig this is (_on_dig_requested): it reaches them wherever their reported spot is
+var _edits_held: Dictionary = {}        # peer -> [[centre, radius, material (-1 = a dig)], ...] oldest first, not yet sent to that player
 var _events = EventLogScript.new()      # user://server_events.log: peers, stalls, quit reason (why a client was dropped)
 var _report_at_msec: int = 0
 var _usable_cpus: int = 1               # CPUs this process may use (cpu_budget.gd: a container's limit counts)
@@ -339,6 +348,7 @@ func _ready() -> void:
 	items.send_goal_progress = func(peer, changes): net.goal_progress.rpc_id(peer, changes)
 	items.send_marker_done = func(peer, at): net.road_marker_done.rpc_id(peer, at)
 	items.send_survey_refused = func(peer, last): net.survey_refused.rpc_id(peer, last)
+	items.send_hoe_verdict = func(peer, kind, code, at, state, why, cells): net.hoe_verdict.rpc_id(peer, kind, code, at, state, why, cells)
 	@warning_ignore("confusable_local_declaration")
 	items.send_breath = func(peer, tenths): net.breath.rpc_id(peer, tenths)
 	@warning_ignore("confusable_local_declaration")
@@ -644,6 +654,7 @@ func _ready() -> void:
 	animals.wolves.take_meat = func(peer): return items.take_all_meat(peer)
 	animals.big_game.player_info = func(): return items.wolf_info()
 	animals.thieves.loose_food = func(centre, r): return items.loose_food_near(centre, r)
+	animals.thieves.food_at = func(id): return items.loose_food_pos(id)   # a fox after one piece reads it by id
 	animals.thieves.take_food = func(id): return items.take_loose(id)
 	animals.goblins.stealable = func(centre, r): return items.stealable_near(centre, r)   # goblins steal one small unlit thing at a time and pile it in their den
 	animals.goblins.take_one = func(id): return items.take_one(id)
@@ -1124,6 +1135,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_cave_streams_sent.erase(peer_id)
 	_gather_msec.erase(peer_id)
 	_npc_sent.erase(peer_id)
+	_edits_held.erase(peer_id)   # a rejoin catches up through the edits since (protocol 128)
 	_animal_sent.erase(peer_id)
 	trails.forget_peer(peer_id)
 
@@ -2014,7 +2026,11 @@ func _on_dig_requested(peer_id: int, center: Vector3, radius: float) -> void:
 	if not limits.allow(peer_id, "dig"):
 		return
 
+	# A flying admin's reported spot stays where they last stood still (terrain_client.gd _update_anchor), so their own dig would
+	# wait in _edits_held until they stop (Lane A, 18 Nov 2026); it goes to them at once.
+	_edit_by = peer_id
 	_dig_ground(center, radius)
+	_edit_by = 0
 
 
 # A joining client's saved copy of a tile is older than the tile (protocol 128): it gets the edits since, to forget only those blocks.
@@ -2318,6 +2334,72 @@ func _tunnel_tick() -> void:
 			_fill_ground(fill[0], fill[1], tunnels.rubble_material)
 
 
+# A dig (material -1) or fill to the players near it (EDIT_SEND_M); the others' copies wait in _edits_held. A player's held edits
+# near them go first, so edits to the same spot arrive in the order they were made.
+func _send_edit(center: Vector3, radius: float, material: int) -> void:
+	for peer in multiplayer.get_peers():
+		var peer_id: int = int(peer)
+		var at: Variant = center if peer_id == _edit_by else items.position_of(peer_id)
+
+		# Behind a backlog of held edits near the player it waits its turn, so edits to one spot keep their order.
+		if at != null and _edit_near(at, center) and not _send_held_edits(peer_id, at):
+			_send_one_edit(peer_id, center, radius, material)
+			continue
+
+		var held: Array = _edits_held.get(peer_id, [])
+		held.append([center, radius, material])
+		_edits_held[peer_id] = held
+
+		if held.size() > EDITS_HELD_MAX:
+			var oldest: Array = held.pop_front()
+			_send_one_edit(peer_id, oldest[0], oldest[1], oldest[2])
+
+
+func _send_one_edit(peer_id: int, center: Vector3, radius: float, material: int) -> void:
+	if material < 0:
+		net.dug.rpc_id(peer_id, center, radius)
+	else:
+		net.filled.rpc_id(peer_id, center, radius, material)
+
+
+# Sends a player the held edits now within EDIT_SEND_M of them, oldest first and at most EDITS_RELEASE_MAX; the rest keep waiting.
+# True when some near ones are still waiting. (Two edits to the same spot that straddle the range edge can arrive out of order;
+# that far out the client's finest ground is not loaded, so each only marks its saved blocks to be fetched again, which does not
+# depend on the order.)
+func _send_held_edits(peer_id: int, at: Vector3) -> bool:
+	var held: Array = _edits_held.get(peer_id, [])
+
+	if held.is_empty():
+		return false
+
+	var waiting: Array = []
+	var sent: int = 0
+	var behind: bool = false
+
+	for edit in held:
+		if sent < EDITS_RELEASE_MAX and _edit_near(at, edit[0]):
+			_send_one_edit(peer_id, edit[0], edit[1], edit[2])
+			sent += 1
+		else:
+			behind = behind or sent >= EDITS_RELEASE_MAX
+			waiting.append(edit)
+
+	if waiting.is_empty():
+		_edits_held.erase(peer_id)
+	else:
+		_edits_held[peer_id] = waiting
+
+	return behind
+
+
+# Within EDIT_SEND_M across the ground, the world's wrap included.
+func _edit_near(at: Vector3, center: Vector3) -> bool:
+	var period: float = generator.period_m
+	var dx: float = fposmod(center.x - at.x + period * 0.5, period) - period * 0.5
+	var dz: float = fposmod(center.z - at.z + period * 0.5, period) - period * 0.5
+	return dx * dx + dz * dz <= EDIT_SEND_M * EDIT_SEND_M
+
+
 func _dig_ground(center: Vector3, radius: float) -> bool:
 	var t0: int = Time.get_ticks_usec()
 	var tiles: Array = store.dig_sphere(center, radius)
@@ -2329,7 +2411,7 @@ func _dig_ground(center: Vector3, radius: float) -> bool:
 		return false
 
 	_fill_last = []
-	net.dug.rpc(center, radius)   # before tile_changed: the client re-marks the edits it has heard of when that comes (terrain_client.gd _on_tile_changed)
+	_send_edit(center, radius, -1)   # before tile_changed: the client re-marks the edits it has heard of when that comes (terrain_client.gd _on_tile_changed)
 
 	for tile in tiles:
 		_tell_tile_changed(tile)
@@ -2476,7 +2558,7 @@ func _fill_ground(center: Vector3, radius: float, material: int) -> bool:
 
 	if not tiles.is_empty():
 		_fill_last = [center, radius, material]
-		net.filled.rpc(center, radius, material)   # before tile_changed, as in _dig_ground
+		_send_edit(center, radius, material)   # before tile_changed, as in _dig_ground
 
 	for tile in tiles:
 		_tell_tile_changed(tile)
@@ -2714,6 +2796,15 @@ func _process(delta: float) -> void:
 			net.tile_changed.rpc(tile, store.revision_of(tile))
 
 		_tiles_changed.clear()
+
+		for peer_id in _edits_held.keys():
+			var at: Variant = items.position_of(int(peer_id))
+
+			if not multiplayer.get_peers().has(int(peer_id)):
+				_edits_held.erase(peer_id)
+			elif at != null:
+				_send_held_edits(int(peer_id), at)
+
 		store.save_revisions()
 		flora.save_removed()
 

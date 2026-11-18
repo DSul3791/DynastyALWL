@@ -56,6 +56,13 @@ var _quality: Dictionary = {}             # id -> the water's quality at the las
 var _litres: Dictionary = {}              # tank id -> litres at the last solve
 var _last_in_s: Dictionary = {}           # tank id -> real second its last inflow was seen
 var _solved_s: float = 0.0
+# Port look-ups (finding 5 of docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md): every piece is filed by the CELL_M squares its ends
+# stand in, so a piece is tried only against the pieces whose ends are near, and a connected run can be found without walking the world.
+const CELL_M := 2.0
+var _cells: Dictionary = {}               # Vector2i -> ids with an end in that square
+var _seq: Dictionary = {}                 # id -> when it joined (links are listed in joining order, as when every piece was tried)
+var _next_seq: int = 0
+var _reach_m: float = PORT_JOIN_M         # the widest catch_m of any piece that joined: no link reaches farther across the ground
 
 
 # --- Rates from effort (Sonny section 1 and 2) ---
@@ -94,9 +101,14 @@ func check(piece: Dictionary) -> String:
 # Adds a piece and links it, unless check() says no (then it stands alone). Returns check()'s answer. Solve again after.
 func add(id: int, piece: Dictionary) -> String:
 	var why: String = check(piece)
+
+	if pieces.has(id):
+		_unfile(id)
+
 	pieces[id] = piece
 	_down[id] = []
 	_up[id] = []
+	_file(id)
 
 	if str(piece.get("role", "")) == "tank" and not _litres.has(id):
 		_litres[id] = 0.0
@@ -121,6 +133,9 @@ func remove(id: int) -> void:
 
 	for d in _down.get(id, []):
 		_up[d].erase(id)
+
+	if pieces.has(id):
+		_unfile(id)
 
 	for table in [pieces, _down, _up, _in, _out, _quality, _litres, _last_in_s]:
 		table.erase(id)
@@ -153,20 +168,130 @@ func _links(from_piece: Dictionary, to_piece: Dictionary) -> bool:
 	return false
 
 
-# After the server builds the network again from the same pieces (a channel turned): each tank's litres, the water's quality and the still clock
-# carry over from `old`, which was solved at `now_s`. Solve again after.
-func carry_from(old, now_s: float) -> void:
-	for id in pieces:
-		if _litres.has(id) and old._litres.has(id):
-			_litres[id] = clampf(old.litres(id, now_s), 0.0, float(pieces[id].get("litres_max", 0.0)))
+# What a piece's water knows (a tank's litres at `now_s`, the water's quality, its still clock), so the server can take a run out and put it back
+# turned again (keep before remove(), restore after add()). Solve again after.
+func keep(id: int, now_s: float) -> Dictionary:
+	var out: Dictionary = {}
 
-		if old._quality.has(id):
-			_quality[id] = old._quality[id]
+	if _litres.has(id):
+		out["litres"] = litres(id, now_s)
 
-		if old._last_in_s.has(id):
-			_last_in_s[id] = old._last_in_s[id]
+	if _quality.has(id):
+		out["quality"] = _quality[id]
 
-	_solved_s = now_s
+	if _last_in_s.has(id):
+		out["last_in_s"] = _last_in_s[id]
+
+	return out
+
+
+func restore(id: int, kept: Dictionary) -> void:
+	if kept.has("litres") and _litres.has(id):
+		_litres[id] = clampf(float(kept["litres"]), 0.0, float(pieces[id].get("litres_max", 0.0)))
+
+	if kept.has("quality"):
+		_quality[id] = kept["quality"]
+
+	if kept.has("last_in_s"):
+		_last_in_s[id] = kept["last_in_s"]
+
+
+# Every point a piece may join at: its inlet and outlets, and every port of a channel or pipe (whichever way it is turned).
+static func ends(piece: Dictionary) -> Array:
+	var out: Array = []
+
+	for key in ["inlet", "outlet"]:
+		if piece.has(key):
+			out.append(piece[key])
+
+	for key in ["outlets", "ports"]:
+		if piece.has(key):
+			out.append_array(piece[key])
+
+	return out
+
+
+func _cell(at: Vector3) -> Vector2i:
+	return Vector2i(floori(at.x / CELL_M), floori(at.z / CELL_M))
+
+
+func _file(id: int) -> void:
+	_seq[id] = _next_seq
+	_next_seq += 1
+	_reach_m = maxf(_reach_m, float(pieces[id].get("catch_m", 0.0)))
+
+	for at in ends(pieces[id]):
+		var c: Vector2i = _cell(at)
+
+		if not _cells.has(c):
+			_cells[c] = []
+
+		if not (_cells[c] as Array).has(id):
+			_cells[c].append(id)
+
+
+func _unfile(id: int) -> void:
+	for at in ends(pieces[id]):
+		var c: Vector2i = _cell(at)
+
+		if _cells.has(c):
+			_cells[c].erase(id)
+
+			if (_cells[c] as Array).is_empty():
+				_cells.erase(c)
+
+	_seq.erase(id)
+
+
+# The pieces with an end within `reach` metres across the ground of any of `points` (or a little farther: whole squares), in joining order.
+func _near(points: Array, reach: float) -> Array:
+	var found: Dictionary = {}
+	var span: int = ceili(reach / CELL_M)
+
+	for at in points:
+		var c: Vector2i = _cell(at)
+
+		for dx in range(-span, span + 1):
+			for dz in range(-span, span + 1):
+				for id in _cells.get(c + Vector2i(dx, dz), []):
+					found[id] = true
+
+	var out: Array = found.keys()
+
+	if out.size() > 1:
+		out.sort_custom(func(a, b): return int(_seq[a]) < int(_seq[b]))
+
+	return out
+
+
+# The connected runs (pieces whose ends come within a link's reach of each other, whichever way they are turned) that have a piece near any of
+# `points`; with no points, every run. Each run is a list of ids in joining order. Nothing outside a run can link to it or change how it turns.
+func runs(points: Array = []) -> Array:
+	var starts: Array = pieces.keys() if points.is_empty() else _near(points, _reach_m)
+	var seen: Dictionary = {}
+	var out: Array = []
+
+	for start in starts:
+		if seen.has(start):
+			continue
+
+		var run: Array = []
+		var stack: Array = [start]
+		seen[start] = true
+
+		while not stack.is_empty():
+			var at: int = stack.pop_back()
+			run.append(at)
+
+			for other in _near(ends(pieces[at]), _reach_m):
+				if not seen.has(other):
+					seen[other] = true
+					stack.append(other)
+
+		run.sort_custom(func(a, b): return int(_seq[a]) < int(_seq[b]))
+		out.append(run)
+
+	return out
 
 
 # The pieces whose outlet would feed `piece` as it stands (the server turns a channel or pipe so its inlet is the port the water comes from).
@@ -177,7 +302,10 @@ func feeders_of(piece: Dictionary) -> Array:
 func _feeders(piece: Dictionary) -> Array:
 	var out: Array = []
 
-	for id in pieces:
+	if not piece.has("inlet"):
+		return out
+
+	for id in _near([piece["inlet"]], maxf(PORT_JOIN_M, float(piece.get("catch_m", 0.0)))):
 		if _links(pieces[id], piece):
 			out.append(id)
 
@@ -187,7 +315,15 @@ func _feeders(piece: Dictionary) -> Array:
 func _fed(piece: Dictionary) -> Array:
 	var out: Array = []
 
-	for id in pieces:
+	if not piece.has("outlet"):
+		return out
+
+	var points: Array = [piece["outlet"]]
+
+	if piece.has("outlets"):
+		points.append_array(piece["outlets"])
+
+	for id in _near(points, _reach_m):
 		if _links(piece, pieces[id]):
 			out.append(id)
 
