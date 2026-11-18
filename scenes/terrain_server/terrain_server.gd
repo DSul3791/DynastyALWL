@@ -43,6 +43,7 @@ const SwimScript := preload("res://src/shared/swim.gd")
 const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
+const CoarseGroundScript := preload("res://src/stream/server_coarse_ground.gd")
 const TrailsScript := preload("res://src/stream/server_trails.gd")
 const MapScript := preload("res://src/stream/server_map.gd")
 const MapCodec := preload("res://src/shared/map_codec.gd")
@@ -94,6 +95,7 @@ var flora
 var trails                             # ServerTrails: worn game trails the animals leave
 var map_knowledge                      # ServerMap: what each character has surveyed for its charcoal Map (protocol 120)
 var animals                            # ServerAnimals: wildlife around the players (rabbits)
+var coarse_ground = CoarseGroundScript.new()   # summits and valley-fog cells for the clients, from the tiles (protocol 132)
 var _animal_sent: Dictionary = {}
 var _send_round: int = 0
 var identity = IdentityScript.new()      # who a peer is (src/stream/identity_provider.gd): the swap point for real logins
@@ -595,6 +597,9 @@ func _ready() -> void:
 	animals.player_positions = npcs.player_positions
 	animals.player_stances = func(): return items.peer_stances()
 	animals.wind = func(): return weather
+	coarse_ground.net = net
+	coarse_ground.tiles_dir = world_dir + "/tiles"
+	coarse_ground.tile_size_m = float(settings.tile_size_m)
 	animals.fog_world = {"tiles_dir": world_dir + "/tiles", "tile_size_m": float(settings.tile_size_m)}   # the cold-air floor for animals' sight in fog (fog_ground.gd)
 	animals.weather_ahead = func(hours): return WeatherScript.state(settings.master_seed, game_clock.seconds + float(hours) * 3600.0, settings.get_zone_group_for_row(4), 0.0, 0.0)   # the starter tile's row, as _update_weather (animals_in_weather_design.md 3)
 	animals.canopy = func(point): return flora.covered(point)
@@ -797,6 +802,8 @@ func _ready() -> void:
 		var t0: int = Time.get_ticks_usec()
 		_on_edits_since_requested(peer_id, tile, since)
 		_slow_rpc("edits_since_requested", t0))
+	net.summits_requested.connect(_on_summits_requested)
+	net.fog_cells_requested.connect(_on_fog_cells_requested)
 	net.flora_requested.connect(func(peer_id, chunks) -> void:
 		var t0: int = Time.get_ticks_usec()
 		_on_flora_requested(peer_id, chunks)
@@ -1146,6 +1153,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_gather_msec.erase(peer_id)
 	_npc_sent.erase(peer_id)
 	_edits_held.erase(peer_id)   # a rejoin catches up through the edits since (protocol 128)
+	coarse_ground.drop(peer_id)
 	_fine_told.erase(peer_id)
 	_fine_named.erase(peer_id)
 	_animal_sent.erase(peer_id)
@@ -2119,6 +2127,17 @@ func _on_dig_requested(peer_id: int, center: Vector3, radius: float) -> void:
 	_edit_by = 0
 
 
+# The client has no world tiles (protocol 132): the summits round its tile and its valley-fog cells are read here (server_coarse_ground.gd).
+func _on_summits_requested(peer_id: int, tile: Vector2i) -> void:
+	if limits.allow(peer_id, "coarse_ground"):
+		coarse_ground.ask_summits(peer_id, tile)
+
+
+func _on_fog_cells_requested(peer_id: int, origin: Vector2) -> void:
+	if origin.is_finite() and limits.allow(peer_id, "coarse_ground"):
+		coarse_ground.ask_fog(peer_id, origin)
+
+
 # A joining client's saved copy of a tile is older than the tile (protocol 128): it gets the edits since, to forget only those blocks.
 func _on_edits_since_requested(peer_id: int, tile: Vector2i, since: int) -> void:
 	if not limits.allow(peer_id, "edits_since"):
@@ -2834,6 +2853,7 @@ func _process(delta: float) -> void:
 	npcs.tick(delta)
 	_events.mark("animals")
 	animals.tick(delta)
+	coarse_ground.tick()
 	_events.mark("trails")
 	trails.tick(delta)
 	map_knowledge.tick(delta)   # the save interval only
@@ -3316,6 +3336,8 @@ func _exit_tree() -> void:
 
 	if animals != null:
 		animals.fog_ground_finish()
+
+	coarse_ground.finish()
 
 	if trails != null:
 		trails.save()
