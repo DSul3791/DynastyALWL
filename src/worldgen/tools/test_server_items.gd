@@ -142,6 +142,7 @@ func _init() -> void:
 	check(items.inventory_of(7).count_of(stone) == 40 and items.world_item_count() == 0, "pick up")
 	items.action(7, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 	check(items.inventory_of(7).count_of(stone) == 40, "second pick up of the same item does nothing")
+	items.inventory_of(7).remove(stone, 25)   # back to 15 (the rest of the test and the restart checks count 15): a 25 handful on top of 40 would pass the carry limit
 
 	items.report_position(7, Vector3(100.0, 5.0, 100.0))
 	items.drop_in_world(stone, 3, Vector3(5000.0, 0.0, 5000.0))
@@ -273,6 +274,7 @@ func _init() -> void:
 	g.game_seconds = func(): return clock[0]
 	g.season_now = func(): return "summer"
 	g.peer_connected_hello(1, "abcdef123456")
+	g.set_fitness(1, 0)   # an average adult (0): new characters start at fitness 5 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
 	g.report_position(1, Vector3(500.0, 70.0, 500.0))
 	check(g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "flax can be gathered")
 	check(g.inventory_of(1).count_of(g.table.number_of("plant_fibre")) >= 2, "flax gives fibre")
@@ -1592,6 +1594,7 @@ func _init() -> void:
 	var notes: Array = []
 	cb.send_notice = func(_p, text): notes.append(text)
 	cb.peer_connected_hello(1, "abcdef123456")
+	cb.set_fitness(1, 0)   # an average adult (0): new characters start at fitness 5 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
 	cb.report_position(1, Vector3(0.0, 10.0, 0.0))
 	cb.action(1, Net.ACT_ADMIN_GIVE, cb.table.number_of("chopping_block"), 0, 1, Vector3.ZERO)
 	cb.place_item(1, cb.table.number_of("chopping_block"), Vector3(2.0, 10.0, 0.0), 0)
@@ -2496,6 +2499,7 @@ func _init() -> void:
 	hs.send_craft_queue = func(_p, _e, _l): pass
 	hs.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	hs.peer_connected_hello(1, "handsawkey01")
+	hs.set_fitness(1, 0)   # an average adult (0): new characters start at fitness 5 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
 	var by_hand: Dictionary = {}
 
 	for rn in hs.recipes.numbers():
@@ -2833,6 +2837,7 @@ func _init() -> void:
 	fl.send_reject = func(_p, reason): rejects.append(reason)
 	fl.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	fl.peer_connected_hello(1, "fallkey00001")
+	fl.set_fitness(1, 0)   # an average adult (0): new characters start at fitness 5 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
 	fl.report_position(1, Vector3(0.0, 10.0, 0.0))
 	fl.action(1, Net.ACT_FALL, 500, 0, 0, Vector3.ZERO)
 	check(float(fl.vitals_of(1)["health"]) == 100.0, "a 5 m drop does no damage")
@@ -2989,6 +2994,7 @@ func _init() -> void:
 	sk.send_craft_queue = func(_p, _e, _l): pass
 	sk.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	sk.peer_connected_hello(1, "skillkey0001")
+	sk.set_fitness(1, 0)   # an average adult (0): new characters start at fitness 5 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
 	check(sk.skill_factor(1, "craft") == 1.0 and sk.skill_factor(1, "no_such_action") == 1.0, "with no skill system every factor is 1.0")
 	sk.skill_level = func(_peer, _skill): return 2.0
 	check(sk.skill_factor(1, "craft") == 2.0 and sk.skill_factor(1, "no_such_action") == 1.0, "a skill level of 2 gives a factor of 2 for a listed action only")
@@ -3013,6 +3019,7 @@ func _init() -> void:
 	bo.send_reject = func(_p, reason): bo_rejects.append(reason)
 	bo.ground_height = func(x, _z): return 10.0 + x * 0.3
 	bo.peer_connected_hello(1, "boulderkey01")
+	bo.set_fitness(1, 0)   # an average adult (0): new characters start at fitness 5 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
 	bo.report_position(1, Vector3(5.0, 11.5, 5.0))
 	bo.vitals_of(1)["weight"] = 5000.0   # a big body: the carry limit stays out of the stone counts below
 	var big: int = bo._boulder_stones(1.0)
