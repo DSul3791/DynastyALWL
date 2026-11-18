@@ -458,10 +458,32 @@ func clear_memory() -> void:
 	_items_mutex.unlock()
 
 
-# Forgets the packed water (the simulated water changed).
+# Forgets the packed water (the simulated water changed, and where is not known).
 func clear_water() -> void:
 	_mutex.lock()
 	_water.clear()
+	_mutex.unlock()
+
+
+# Forgets the packed water of the chunks touching any of `areas` (Rect2, world x, z), grown by a chunk as the clients' re-ask is: the rest still
+# holds the right water (finding 12, docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md). The chunks are named by the wrapped home
+# chunk the packed water is kept under, so an area past the world's edge clears the same chunks.
+func clear_water_in(areas: Array) -> void:
+	var m: float = placer.chunk_m
+	var homes: Dictionary = {}
+
+	for r in areas:
+		var g: Rect2 = (r as Rect2).grow(m)
+
+		for cx in range(floori(g.position.x / m), floori(g.end.x / m) + 1):
+			for cz in range(floori(g.position.y / m), floori(g.end.y / m) + 1):
+				homes[placer.normalize(Vector2i(cx, cz))] = true
+
+	_mutex.lock()
+
+	for home in homes:
+		_water.erase(home)
+
 	_mutex.unlock()
 
 
