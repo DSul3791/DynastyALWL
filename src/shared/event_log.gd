@@ -17,11 +17,11 @@ var _watchdog: Thread
 var _stop: bool = false
 
 
-# The file goes into the project's crash_reports folder (the one the game is played from, so it shows up in GitHub Desktop);
-# user:// when that folder cannot be written.
-func start(name: String) -> void:
-	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path("res://crash_reports"))
-	_path = "res://crash_reports/" + name
+# The file goes into the project's crash_reports folder (the one the game is played from, so it shows up in GitHub Desktop),
+# or `folder` (a dedicated server's store); user:// when that folder cannot be written.
+func start(name: String, folder: String = "res://crash_reports") -> void:
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(folder))
+	_path = folder + "/" + name
 	_file = FileAccess.open(_path, FileAccess.WRITE)
 
 	if _file == null:

@@ -17,6 +17,13 @@ extends Node
 #   --timeout=S     (testing, also "--timeout S") the same as --quit-after; --watch-parent=PID stops when that process is gone. Neither flag = no limit.
 #   --quit-when-empty  stop 10 s after the last player leaves, or after 5 min
 #                      if nobody joins (the "play" launcher's own server)
+#   --dedicated     a server for other machines (plan A4, Dave 18 Nov 2026): the admin check is on whatever
+#                   admin_setting.json says, admins are the keys in <store>/admin.json only, --quit-when-empty
+#                   and --open-admin are ignored, and the telemetry log and run note go in <store> and <store>/logs
+#
+# Creating the file stop.now in the store folder closes any server the normal way (ground flushed, spots noted,
+# everything saved, exit 0). A stop signal kills Godot at once (exit 143, nothing saved: David4, 18 Nov 2026), so
+# deploy/server/run_server.sh turns TERM/INT into that file; run a dedicated server through it.
 #
 # Clients start at the starter spawn point of tile (3,4).
 
@@ -158,6 +165,8 @@ var _watch_next_msec: int = 0
 var _listen_port: int = 0                    # the game port this server listens on (its run note)
 var _stop_check_msec: int = 0                 # next look for Play's stop request (STOP_NOTE)
 var _quit_when_empty: bool = false
+var _dedicated: bool = false                  # --dedicated (header)
+const STOP_NOW := "/stop.now"                 # in the store folder: close the normal way (run_server.sh writes it on a stop signal)
 var _empty_since_msec: int = 0
 var _quit_grace_msec: int = 10000
 var _never_joined: bool = true
@@ -241,10 +250,17 @@ func _ready() -> void:
 			_idle_threads = maxi(int(argument.trim_prefix("--idle-threads=")), 0)
 		elif argument == "--quit-when-empty":
 			_quit_when_empty = true
+		elif argument == "--dedicated":
+			_dedicated = true
 		elif argument.begins_with("--dev-reset-world="):
 			_dev_reset_at_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--dev-reset-world=")) * 1000.0)
 		elif argument.begins_with("--quit-after="):
 			_quit_at_msec = Time.get_ticks_msec() + int(float(argument.trim_prefix("--quit-after=")) * 1000.0)
+
+	if _dedicated and _quit_when_empty:
+		print("server: --dedicated ignores --quit-when-empty")
+
+	_quit_when_empty = _quit_when_empty and not _dedicated
 
 	# Testing only (self_timeout.gd): --timeout=N (or --timeout N) quits after N seconds the same clean way as --quit-after; --watch-parent=PID quits when that process is gone.
 	var self_flags: Dictionary = SelfTimeoutScript.parse(OS.get_cmdline_user_args())
@@ -542,7 +558,7 @@ func _ready() -> void:
 	items.dig_support = func(base, radius, depth): return TreeSupport.solid_share(store.ops.edits_near(base, radius + depth), base, radius, depth)
 	items.setup(ItemTableScript.load_default(), store_dir)
 	admin = AdminScript.new()
-	admin.load_keys(["res://data/admin.json", store_dir + "/admin.json"])
+	admin.load_keys([store_dir + "/admin.json"] if _dedicated else ["res://data/admin.json", store_dir + "/admin.json"])
 	items.reset_terrain_edits = _reset_terrain_edits
 	items.restore_flora = func() -> void: flora.restore_all()
 	items.floor_below = _floor_below
@@ -553,7 +569,15 @@ func _ready() -> void:
 	items.land_types = _land_types
 	@warning_ignore("confusable_local_declaration")
 	items.admin_ok = func(peer: int) -> bool: return admin.is_admin(items.key_of(peer))
-	admin.open_to_all = OS.get_cmdline_user_args().has("--open-admin")
+	admin.open_to_all = OS.get_cmdline_user_args().has("--open-admin") and not _dedicated
+
+	if _dedicated and OS.get_cmdline_user_args().has("--open-admin"):
+		print("server: --dedicated ignores --open-admin")
+
+	if _dedicated:
+		admin.enforce = true
+		print("server: dedicated; admin check on, %d admin keys in %s/admin.json" % [admin.count(), store_dir])
+
 	npcs = NpcsScript.new()
 	npcs.hour_now = func(): return game_clock.hour()
 	npcs.ground_height = func(x, z): return generator.surface_height(x, z)
@@ -759,13 +783,13 @@ func _ready() -> void:
 
 	if error != OK:
 		push_error("Terrain server: cannot listen on port %d (%s)" % [port, error_string(error)])
-		_events.start("telemetry_server_failed.log")
+		_events.start("telemetry_server_failed.log", _log_dir())
 		_events.event("cannot listen on port %d (%s): another server may still be running on it" % [port, error_string(error)])
 		get_tree().quit(1)
 		return
 
 	multiplayer.multiplayer_peer = server_peer
-	_events.start("telemetry_server_%d.log" % port)
+	_events.start("telemetry_server_%d.log" % port, _log_dir())
 	_events.start_watchdog()
 	_events.event("server listening on port %d after %d ms of start-up, %s, ram %d MB, commit %s" % [port, Time.get_ticks_msec(), OS.get_name(), int(OS.get_static_memory_usage() / 1048576.0), _commit])
 	_listen_port = port
@@ -2957,6 +2981,13 @@ func _process(delta: float) -> void:
 			if spot.size() >= 2:
 				print("server: water dump asked for: ", _dump_water(float(spot[0]), float(spot[1])))
 
+		if FileAccess.file_exists(_store_path + STOP_NOW):
+			DirAccess.remove_absolute(ProjectSettings.globalize_path(_store_path + STOP_NOW))
+			print("server: stop asked (stop.now); saving and closing with %d players here" % _peers.size())
+			_events.event("QUIT: stop asked (stop.now), %d players here" % _peers.size())
+			_quit_at_msec = now
+			_run_note("closing", _listen_port)
+
 		if FileAccess.file_exists(flag_path):
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(flag_path))
 			store.clear_generated()
@@ -3034,11 +3065,20 @@ func _process(delta: float) -> void:
 		var flush_from: int = Time.get_ticks_msec()
 		store.flush()
 		_events.event("shutdown: ground flushed in %d ms" % (Time.get_ticks_msec() - flush_from))
-		DirAccess.remove_absolute(RUN_NOTE)
+		DirAccess.remove_absolute(_run_note_path())
 		print("server: done; generated %d, cache hits %d, edit hits %d" % [store.blocks_generated, store.cache_hits, store.edit_hits])
 		get_tree().quit(0)
 
 	_events.mark("between frames (rpc handlers, engine)")
+
+
+# A dedicated server keeps its notes and logs with its store (a container's one volume); Play's server keeps them where the launcher looks.
+func _run_note_path() -> String:
+	return _store_path + "/server_run.json" if _dedicated else RUN_NOTE
+
+
+func _log_dir() -> String:
+	return _store_path + "/logs" if _dedicated else "res://crash_reports"
 
 
 # Tells the launcher (another process, same user folder) which server is on the port: its process, commit, whether it is closing and
@@ -3046,7 +3086,7 @@ func _process(delta: float) -> void:
 # A game started while the old server is closing, or from a newer checkout, replaces it instead of joining a server that
 # will stop answering (Dave, build 619: stuck on "0 blocks arriving").
 func _run_note(state: String, listen_port: int) -> void:
-	var file: FileAccess = FileAccess.open(RUN_NOTE, FileAccess.WRITE)
+	var file: FileAccess = FileAccess.open(_run_note_path(), FileAccess.WRITE)
 
 	if file != null:
 		file.store_string(JSON.stringify({"pid": OS.get_process_id(), "port": listen_port, "commit": _commit, "state": state, "stop": 1 if _quit_when_empty else 0}))
