@@ -1102,6 +1102,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 				var added: int = mini(count, room)
 				near["count"] = int(near["count"]) + added
 				near["left"] = maxf(PILE_LIFETIME_S if int(near["count"]) >= PILE_MIN else WORLD_ITEM_LIFETIME_S, lifetime_s)
+				_tick_ageing(id)   # a kept pile can start ageing here
 
 				if by != "":
 					near["by"] = by   # the last player to add to it (goblin gifts; kept while the server runs, not saved)
@@ -5561,27 +5562,35 @@ func _showroom_retry(delta: float) -> void:
 
 
 # Fires burn down; open fires are put out by rain (Dave, 2026-10-20), covered ones are not.
-# The slow tick's parts that look for a few kinds of item (fires, lit lights, pots, items that age) each walked every world item, about six passes
+# The slow tick's parts that look for a few kinds of item (fires, lights, pots, items that age) each walked every world item, about six passes
 # every SLOW_TICK_S, growing with everything ever dropped or built (audit 18 Nov 2026, docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md
-# finding 3). Now each part walks its own list. The lists are sorted from every item once every TICK_INDEX_S, and items made since (world ids only
-# grow) are sorted in on each tick from their ids alone, so a new fire or light is tended on the next tick. An item that changes kind in place
-# (a torch lit, a fire rained out and given a lifetime) joins its list at the next full sort, at most TICK_INDEX_S later. Each part checks the
-# item again, since earlier parts of the tick change items. Outside the tick (tests, a placement) _tick_list is every id, as before.
-const TICK_INDEX_S := 2.0
+# finding 3). Now each part walks its own list. An item is on a list by what it is, never by a state that changes in place, so no state drops off:
+#   fires:  every item with a fire (laid, lit, coals, warm ash, cold, kept for its charcoal), whatever its state;
+#   lit:    every structure of a kind that can be lit (a light, a kiln, a smelter, anything with a fuel) and any with a "lit" field, lit or not;
+#   pots:   every structure that hangs over a fire;
+#   ageing: every fire, every item with a lifetime, and an item given one in place (a kept pile: _tick_ageing).
+# The lists are sorted from every item once every TICK_INDEX_TICKS slow ticks, and items made since (world ids only grow) are sorted in on each
+# tick from their ids alone. Each part checks the item again, as the full walk did. Outside the tick (tests, a placement) _tick_list is every id,
+# as before. test_tick_lists runs the old walk and the lists side by side and compares every item after each tick.
+const TICK_INDEX_TICKS := 8   # a full sort every 8 slow ticks (2 s): only to drop the ids gone or no longer on a list
 var _tick_ids: Dictionary = {}
-var _tick_index_kept: Dictionary = {}   # the last full sort: {"fires", "lit", "pots", "ageing": [ids], "upto": first id not sorted, "at": msec}
+var _tick_index_kept: Dictionary = {}   # the last full sort: {"fires", "lit", "pots": [ids], "ageing": {id: true}, "upto": first id not sorted, "ticks": slow ticks since}
+var _tick_lists_off: bool = false       # tests: the old walk over every item, to compare
 
 
 func _tick_index() -> Dictionary:
-	var now: int = Time.get_ticks_msec()
+	if _tick_lists_off:
+		return {}
 
-	if _tick_index_kept.is_empty() or now - int(_tick_index_kept["at"]) >= int(TICK_INDEX_S * 1000.0) or int(_tick_index_kept["upto"]) > _next_id:
-		_tick_index_kept = {"fires": [], "lit": [], "pots": [], "ageing": [], "upto": _next_id, "at": now}
+	if _tick_index_kept.is_empty() or int(_tick_index_kept["ticks"]) >= TICK_INDEX_TICKS or int(_tick_index_kept["upto"]) > _next_id:
+		_tick_index_kept = {"fires": [], "lit": [], "pots": [], "ageing": {}, "upto": _next_id, "ticks": 0}
 
 		for id in _items:
 			_sort_into(_tick_index_kept, id)
 
 		return _tick_index_kept
+
+	_tick_index_kept["ticks"] = int(_tick_index_kept["ticks"]) + 1
 
 	if int(_tick_index_kept["upto"]) < _next_id:
 		for id in range(int(_tick_index_kept["upto"]), _next_id):
@@ -5593,6 +5602,9 @@ func _tick_index() -> Dictionary:
 	return _tick_index_kept
 
 
+var _litable_kind: Dictionary = {}   # structure kind -> whether it can be lit (_sort_into)
+
+
 func _sort_into(index: Dictionary, id) -> void:
 	var it: Dictionary = _items[id]
 
@@ -5600,18 +5612,33 @@ func _sort_into(index: Dictionary, id) -> void:
 		index["fires"].append(id)
 
 	if it.has("struct"):
-		if bool(it["struct"].get("lit", false)):
+		var kind: String = str(it["struct"].get("kind", ""))
+
+		if not _litable_kind.has(kind):
+			var def: Dictionary = _structures.get(kind, {})
+			_litable_kind[kind] = def.has("fuel") or def.has("fuel_s") or def.has("smelt") or bool(def.get("lights", false)) or str(def.get("use", "")) in ["light", "kiln"]
+
+		if bool(_litable_kind[kind]) or it["struct"].has("lit"):
 			index["lit"].append(id)
 
 		if _is_pot(it):
 			index["pots"].append(id)
 
-	if not it.has("scatter") and float(it["left"]) <= 1.0e8:
-		index["ageing"].append(id)
+	if not it.has("scatter") and (it.has("fire") or float(it["left"]) <= 1.0e8):
+		index["ageing"][id] = true
+
+
+# An item given a lifetime in place (a kept pile added to or taken from) ages from this tick on.
+func _tick_ageing(id) -> void:
+	if not _tick_index_kept.is_empty() and _items.has(id) and not _items[id].has("scatter"):
+		_tick_index_kept["ageing"][id] = true
 
 
 func _tick_list(kind: String) -> Array:
-	return _tick_ids[kind] if not _tick_ids.is_empty() else _items.keys()
+	if _tick_ids.is_empty():
+		return _items.keys()
+
+	return (_tick_ids[kind] as Dictionary).keys() if kind == "ageing" else _tick_ids[kind]
 
 
 func _fires(delta: float) -> void:
@@ -6280,6 +6307,7 @@ func _take_from(id: int, n: int) -> void:
 
 		if left >= PILE_MIN:
 			it["left"] = PILE_LIFETIME_S
+			_tick_ageing(id)
 
 	_dirty = true
 
