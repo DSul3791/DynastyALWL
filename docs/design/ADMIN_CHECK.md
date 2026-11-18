@@ -4,10 +4,9 @@ Server/client split step A5 (18 Nov 2026; plan: Library `server-client-split/PLA
 
 ## The rule in code
 
-- **The server decides.** `src/stream/server_admin.gd` holds the admin keys. They are read from `data/admin.json` (gitignored) and `<store>/admin.json`, shape `{"keys": ["<player key>"]}` (`data/admin.example.json`).
-- **The check is off in local play,** so everybody is an admin, as before. It is on when `data/items/admin_setting.json` `check_admin` is true, or when the server is started with `--check-admin`. A server for other players is started with `--check-admin`; the repo setting stays false so Dave's editor Play is unchanged.
-- **`--check-admin` beats `--open-admin`** (a headless-test switch), so a test switch can't open a server for other players.
-- **The server logs one line at start:** `server: admin check on: N admin keys` (never the keys), or that nobody is an admin when no `admin.json` lists one.
+- **The server decides.** `src/stream/server_admin.gd` holds the admin keys, shape `{"keys": ["<player key>"]}` (`data/admin.example.json`).
+- **The check is off in local play,** so everybody is an admin, as before (`data/items/admin_setting.json` `check_admin` stays false, so Dave's editor Play is unchanged).
+- **A server for other players runs with `--dedicated`** (step A4, PR #1274): the check is on, admins are the keys in `<store>/admin.json` only, `--open-admin` is ignored, and the start line gives the key count (never the keys).
 - **Protocol 132:** after each hello the server sends `admin_status(on)`. When it is false, the client hides Esc > Admin (on the main and settings pages), switches flying off, turns Admin mode off, and ignores the two admin keys that act only on the client (fly, and go to the nearest NPC).
 
 A player key is per character: `CharacterKeys.key_for(character id, machine key)`. Esc > Admin > "Show my player key" copies it. Dave reads his in local Play with the character he will use on the server, and that key goes into the server's `<store>/admin.json`.
@@ -44,5 +43,5 @@ A player key is per character: `CharacterKeys.key_for(character id, machine key)
 |---|---|---|
 | AC-1 | Only Dave's player key is an admin on the test server (its `<store>/admin.json` lists one key). | Coordinator's pick, provisional |
 | AC-2 | Testers sign in with today's machine key; no passwords or accounts. | Coordinator's pick, provisional |
-| AC-3 | A server for other players is started with `--check-admin`; `check_admin` in the repo stays false so local Play is unchanged. | Assumed, provisional |
+| AC-3 | A server for other players is started with `--dedicated`; `check_admin` in the repo stays false so local Play is unchanged. | Assumed, provisional |
 | AC-4 | Non-admins get no Esc > Admin page at all (the "Show my player key" button is in it; Dave reads his key in local Play). | Assumed, provisional |

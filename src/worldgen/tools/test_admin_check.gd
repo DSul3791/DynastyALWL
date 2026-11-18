@@ -1,9 +1,8 @@
 extends SceneTree
 
-# The admin check switched on (server/client split A5, 18 Nov 2026): a server for other players runs with --check-admin, and only the
-# player keys in its admin.json are admins. This wires a real ServerAdmin into the items server the way terrain_server.gd does and
-# sends every admin action from a listed key and from an unlisted one: the unlisted player changes nothing. --open-admin (open_to_all)
-# is ignored while strict, so a test switch cannot open such a server.
+# The admin check switched on (server/client split A5, 18 Nov 2026): a server for other players runs with --dedicated, and only the
+# player keys in its <store>/admin.json are admins. This wires a real ServerAdmin into the items server the way terrain_server.gd does
+# and sends every admin action from a listed key and from an unlisted one: the unlisted player changes nothing.
 #   godot --headless --path . --script res://src/worldgen/tools/test_admin_check.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -36,21 +35,17 @@ func _init() -> void:
 	f.close()
 
 	var admin = AdminScript.new()
-	admin.strict = true            # as --check-admin
-	admin.enforce = true
-	admin.open_to_all = true       # as --open-admin as well: strict must win
+	admin.enforce = true           # as --dedicated
 	admin.load_keys(["user://test_admin_check/nope.json", dir + "/admin.json"])
 	check(admin.is_admin(ADMIN_KEY) and admin.is_admin("local:" + ADMIN_KEY), "the listed key is an admin, as a raw key or an account id")
-	check(not admin.is_admin(PLAYER_KEY) and not admin.is_admin(""), "an unlisted key and no key are not admins, --open-admin or not")
-	check(admin.describe().contains("on: 1 admin key") and not admin.describe().contains(ADMIN_KEY), "the start line says the check is on with one key and never prints it")
+	check(not admin.is_admin(PLAYER_KEY) and not admin.is_admin(""), "an unlisted key and no key are not admins")
 	var off = AdminScript.new()
 	off.enforce = false
-	check(off.is_admin(PLAYER_KEY) and off.describe().contains("off"), "with the check off (local play) everybody is an admin")
+	check(off.is_admin(PLAYER_KEY), "with the check off (local play) everybody is an admin")
 	var empty = AdminScript.new()
-	empty.strict = true
 	empty.enforce = true
 	empty.load_keys(["user://test_admin_check/nope.json"])
-	check(not empty.is_admin(ADMIN_KEY) and empty.describe().contains("nobody is an admin"), "with the check on and no admin.json nobody is an admin, and the start line says so")
+	check(not empty.is_admin(ADMIN_KEY), "with the check on and no admin.json nobody is an admin")
 
 	var said: Array = []
 	var items = ItemsScript.new()

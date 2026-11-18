@@ -52,7 +52,7 @@ These retain the existing topic routes, with design sources separated from imple
 | World-water reference | [Water design](DYNASTY_WATER_DESIGN.md) | Water-system design and dated feature support; broader watershed sources are listed below. | Use the relevant current task record |
 | Save compatibility | [Catalog/save policy](design/CATALOG_SAVE_MIGRATION.md) | Approved compatibility and preservation requirements. | Relevant mission verification record |
 | Admin/debug input | [Keyboard policy](design/ADMIN_KEYBINDINGS_POLICY.md) | Admin/debug bindings; [CONTROLS](../CONTROLS.md) owns the controls reference. | Relevant task record |
-| Who is an admin on a server | [Admin check](design/ADMIN_CHECK.md) | Server-decided admin keys, `--check-admin`, the audit of every admin path; provisional AC-1..AC-4. | This design's assumptions section |
+| Who is an admin on a server | [Admin check](design/ADMIN_CHECK.md) | Server-decided admin keys (`--dedicated`), the audit of every admin path; provisional AC-1..AC-4. | This design's assumptions section |
 
 ## Working records
 

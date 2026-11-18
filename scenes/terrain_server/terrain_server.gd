@@ -552,7 +552,6 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.admin_ok = func(peer: int) -> bool: return admin.is_admin(items.key_of(peer))
 	admin.open_to_all = OS.get_cmdline_user_args().has("--open-admin")
-	print("server: " + admin.describe())
 	npcs = NpcsScript.new()
 	npcs.hour_now = func(): return game_clock.hour()
 	npcs.ground_height = func(x, z): return generator.surface_height(x, z)
