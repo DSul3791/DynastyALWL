@@ -184,7 +184,8 @@ var _tiles_told_msec: int = 0
 # The client's finest ground reaches about 48 m and each coarser level doubles it (48, 96, 192, 384 m), so beyond about 384 m a 3 m
 # edit no longer shows in its ground; 512 m leaves room for a rider between two half-second checks.
 const EDIT_SEND_M := 512.0
-const EDITS_HELD_MAX := 4096           # per player; past it the oldest held edit is sent anyway (out of range costs only a fetch)
+const EDITS_HELD_MAX := 1024           # per player; past it the oldest held edit is sent anyway (out of range costs only a fetch)
+const EDITS_RELEASE_MAX := 256         # held edits sent to one player per half second, so arriving at a long road is no hitch
 var _edits_held: Dictionary = {}        # peer -> [[centre, radius, material (-1 = a dig)], ...] oldest first, not yet sent to that player
 var _events = EventLogScript.new()      # user://server_events.log: peers, stalls, quit reason (why a client was dropped)
 var _report_at_msec: int = 0
@@ -2333,8 +2334,8 @@ func _send_edit(center: Vector3, radius: float, material: int) -> void:
 		var peer_id: int = int(peer)
 		var at: Variant = items.position_of(peer_id)
 
-		if at != null and _edit_near(at, center):
-			_send_held_edits(peer_id, at)
+		# Behind a backlog of held edits near the player it waits its turn, so edits to one spot keep their order.
+		if at != null and _edit_near(at, center) and not _send_held_edits(peer_id, at):
 			_send_one_edit(peer_id, center, radius, material)
 			continue
 
@@ -2354,27 +2355,34 @@ func _send_one_edit(peer_id: int, center: Vector3, radius: float, material: int)
 		net.filled.rpc_id(peer_id, center, radius, material)
 
 
-# Sends a player the held edits now within EDIT_SEND_M of them, oldest first; the rest keep waiting. (Two edits to the same spot
-# that straddle the range edge can arrive out of order; that far out the client's finest ground is not loaded, so each only marks
-# its saved blocks to be fetched again, which does not depend on the order.)
-func _send_held_edits(peer_id: int, at: Vector3) -> void:
+# Sends a player the held edits now within EDIT_SEND_M of them, oldest first and at most EDITS_RELEASE_MAX; the rest keep waiting.
+# True when some near ones are still waiting. (Two edits to the same spot that straddle the range edge can arrive out of order;
+# that far out the client's finest ground is not loaded, so each only marks its saved blocks to be fetched again, which does not
+# depend on the order.)
+func _send_held_edits(peer_id: int, at: Vector3) -> bool:
 	var held: Array = _edits_held.get(peer_id, [])
 
 	if held.is_empty():
-		return
+		return false
 
 	var waiting: Array = []
+	var sent: int = 0
+	var behind: bool = false
 
 	for edit in held:
-		if _edit_near(at, edit[0]):
+		if sent < EDITS_RELEASE_MAX and _edit_near(at, edit[0]):
 			_send_one_edit(peer_id, edit[0], edit[1], edit[2])
+			sent += 1
 		else:
+			behind = behind or sent >= EDITS_RELEASE_MAX
 			waiting.append(edit)
 
 	if waiting.is_empty():
 		_edits_held.erase(peer_id)
 	else:
 		_edits_held[peer_id] = waiting
+
+	return behind
 
 
 # Within EDIT_SEND_M across the ground, the world's wrap included.
@@ -2789,6 +2797,7 @@ func _process(delta: float) -> void:
 				_edits_held.erase(peer_id)
 			elif at != null:
 				_send_held_edits(int(peer_id), at)
+
 		store.save_revisions()
 		flora.save_removed()
 
