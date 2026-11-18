@@ -629,3 +629,4 @@ func after_load() -> void:
 
 		if it.has("struct") and it["struct"].has("on") and not carts.has(int(it["struct"]["on"])):
 			_set_down(it, set_down_spot(0, id, true))
+			host._load_changed[id] = true   # its area file still has it on the cart
