@@ -19906,9 +19906,13 @@ func _cancel_craft(peer: int, index: int) -> void:
 # skill step) no longer stretches it past zero. Provisional CF-2 (docs/design/CRAFT_FINISH.md): the pace that counts is the one when the craft starts.
 func _head_need_s(peer: int, queue: Dictionary, recipe: Dictionary, variant: int) -> float:
 	if not queue.has("need_s"):
-		queue["need_s"] = float(recipe.get("craft_s", 3.0)) * _wheel_slow(peer, recipe) * _saw_slow(peer, recipe) * SmithingRules.time_mult(variant) / _pace_factor(peer, "craft")   # skill, rest, cold
+		queue["need_s"] = _need_now(peer, recipe, variant)
 
 	return float(queue["need_s"])
+
+
+func _need_now(peer: int, recipe: Dictionary, variant: int) -> float:
+	return float(recipe.get("craft_s", 3.0)) * _wheel_slow(peer, recipe) * _saw_slow(peer, recipe) * SmithingRules.time_mult(variant) / _pace_factor(peer, "craft")   # skill, rest, cold
 
 
 # The head craft starts over (a new head, or the next craft of the same entry): no time spent, its time worked out again when it next runs.
@@ -19983,7 +19987,12 @@ func _craft_tick(spent: float) -> void:
 
 		queue["elapsed"] = float(queue["elapsed"]) + spent
 
+		var starting: bool = not queue.has("need_s")
+
 		if float(queue["elapsed"]) < _head_need_s(peer, queue, recipe, variant):
+			if starting:
+				_sync_craft_queue(peer)   # the time is fixed now, beside its station or sawbuck: the countdown is re-sent from it
+
 			continue
 
 		# A sealed batch done while its room was filled meanwhile waits, finished, until there is space again (never onto the ground).
@@ -20219,7 +20228,9 @@ func _sync_craft_queue(peer: int) -> void:
 		if _variant_of(entries[0]) != 0 and not head_recipe.is_empty():
 			head_recipe = _variant_recipe(head_recipe, _variant_of(entries[0]))   # as _craft_tick works it
 
-		var craft_s: float = _head_need_s(peer, queue, head_recipe, _variant_of(entries[0]))   # the same fixed time _craft_tick finishes on
+		# The fixed time _craft_tick finishes on once the craft runs; before that, the time it would take now (the craft fixes it when it starts,
+		# so a head that waits for its station takes the station's pace from then, not from when it was queued).
+		var craft_s: float = float(queue["need_s"]) if queue.has("need_s") else _need_now(peer, head_recipe, _variant_of(entries[0]))
 		left_ms = int(maxf(craft_s - float(queue["elapsed"]), 0.0) * 1000.0)
 
 	send_craft_queue.call(peer, _pairs(entries), left_ms)

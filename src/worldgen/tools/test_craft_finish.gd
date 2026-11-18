@@ -143,8 +143,10 @@ func _init() -> void:
 	var promised_ms: int = left_sent
 	var craft_s: float = float(items.recipes.recipe(shovel_recipe).get("craft_s", 3.0))
 	check(promised_ms > 0, "the client is told %d ms" % promised_ms)
+	items._craft_tick(0.1)   # the craft starts: its time is fixed
+	check(left_sent > 0 and absi(left_sent - (promised_ms - 100)) <= 5, "starting re-sends the same countdown (%d ms)" % left_sent)
 	items.recipes.recipe(shovel_recipe)["craft_s"] = craft_s * 3.0   # slower pace mid-craft (cold, the Rested buff ending)
-	items._craft_tick(float(promised_ms) / 1000.0 - 0.3)
+	items._craft_tick(float(promised_ms) / 1000.0 - 0.4)
 	check(pack(shovel) == 0, "not done before the countdown ends")
 	items._craft_tick(0.31)
 	check(pack(shovel) == 1, "done when the countdown ends, not later")
