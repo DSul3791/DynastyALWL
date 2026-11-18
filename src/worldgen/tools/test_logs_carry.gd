@@ -149,7 +149,9 @@ func _init() -> void:
 	craft("two_logs_test", 1)
 	check(count("chopping_block") == 1 and not said.has("Using nearby logs"), "logs in the pack work as before, with no 'nearby' notice")
 
-	# 7. A blueprint paid with logs on the ground (the material check pulls them in).
+	# 7. A blueprint's placement check takes no logs (Dave 18 Nov 2026: blueprints never autocomplete on placement; only a hammer hit fills the site).
+	# The ground logs and the shoulder log stay where they are; filling a site with logs put down beside it is test_wood_phase5 (the hammer cannot
+	# swing while logs are on the shoulder).
 	reset()
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_hammer"), 0, 1, Vector3.ZERO)
 	var row: Dictionary = {"structure": "workbench", "known": true, "hammer": 1, "cost": [["log", 3]]}
@@ -158,7 +160,7 @@ func _init() -> void:
 	var hammer_slot: int = items.inventory_of(1).numbers.find(items.table.number_of("stone_hammer"))
 	items.inventory_of(1).numbers[0] = items.inventory_of(1).numbers[hammer_slot] if hammer_slot > 0 else items.inventory_of(1).numbers[0]
 	var ok: bool = items._can_blueprint(1, items.inventory_of(1), row)
-	check(ok and items.inventory_of(1).count_fill(items.table.number_of("log")) == 3 and ground_logs() == 0 and items.shoulder_of(1) == "log_birch", "a blueprint costing 3 logs is covered by a shoulder log and two ground logs")
+	check(ok and items.inventory_of(1).count_fill(items.table.number_of("log")) == 1 and ground_logs() == 2 and items.shoulder_of(1) == "log_birch", "a blueprint costing 3 logs can be placed, and placing takes no log: the shoulder log and the two ground logs stay")
 
 	# 8. Mission 001 phase 2a: the saw recipes take a Hardwood log (log_oak group) lying on the ground beside the player, like a plain-log recipe.
 	reset()
