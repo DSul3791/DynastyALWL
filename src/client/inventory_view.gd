@@ -4312,7 +4312,7 @@ func station_makes(r: Dictionary) -> bool:
 
 	var def: Dictionary = _structure_by_state(state)
 
-	if str(def.get("station", "")) == "" and (def.get("also", {}) as Dictionary).is_empty():
+	if _makes_nothing(def):
 		return false   # a chest or smelter makes nothing: no recipes (provisional SR-2)
 
 	if station == "":
@@ -5645,7 +5645,10 @@ func _store_only() -> bool:
 	if StructureLook.CAMPFIRE_STATES.has(state):
 		return false
 
-	var def: Dictionary = _structure_by_state(state)
+	return _makes_nothing(_structure_by_state(state))
+
+
+func _makes_nothing(def: Dictionary) -> bool:
 	return str(def.get("station", "")) == "" and (def.get("also", {}) as Dictionary).is_empty()
 
 
