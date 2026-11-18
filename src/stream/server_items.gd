@@ -467,6 +467,7 @@ func setup(item_table, store_dir: String) -> void:
 	if typeof(structures) == TYPE_DICTIONARY:
 		_structures_cfg = structures
 		_structures = structures.get("structures", {})
+		_litable_kind = {}
 		_struct_gap_m = float(structures.get("gap_m", 2.5))
 		_fire_gap_m = float(structures.get("campfire", {}).get("gap_m", FIRE_MIN_GAP_M))
 		_fires_per_chunk = int(structures.get("campfire", {}).get("cap_per_chunk", FIRES_PER_CHUNK))
@@ -1102,6 +1103,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 				var added: int = mini(count, room)
 				near["count"] = int(near["count"]) + added
 				near["left"] = maxf(PILE_LIFETIME_S if int(near["count"]) >= PILE_MIN else WORLD_ITEM_LIFETIME_S, lifetime_s)
+				_tick_ageing(id)   # a kept pile can start ageing here
 
 				if by != "":
 					near["by"] = by   # the last player to add to it (goblin gifts; kept while the server runs, not saved)
@@ -1473,6 +1475,7 @@ func tick(delta: float) -> void:
 	if _slow_in >= SLOW_TICK_S:
 		var spent: float = _slow_in
 		_slow_in = 0.0
+		_tick_ids = _tick_index()
 		_rot(spent)
 		_slow_mark("rot", t0)
 		_fires(spent)
@@ -1515,14 +1518,24 @@ func tick(delta: float) -> void:
 		_slow_mark("learn-fish-remains-spoil-traps", t0)
 
 		_expire_items(spent)
+		_tick_ids = {}
 
 	_sync_in -= delta
+	_road_sync_in -= delta
+
+	if _road_sync_in <= 0.0 and not _road_fresh.is_empty() and _sync_in > 0.0:
+		_road_sync_in = ROAD_SYNC_S
+		_sync_world_items(_road_fresh, _road_near)
+		_road_fresh = []
+		_road_near = []
 
 	if _sync_in <= 0.0:
 		_sync_in = SYNC_EVERY_S
 		_scatter_around_players()
 		_slow_mark("scatter", t0)
 		_sync_world_items()
+		_road_fresh = []   # the full sync sent them
+		_road_near = []
 		_slow_mark("sync-world-items " + _sync_detail, t0)
 
 	_save_in -= delta
@@ -4200,7 +4213,10 @@ func _hoe_grade_point(peer: int, inv, which: int, at: Vector3, held_slot: int) -
 const ROAD_STATION_M := 0.7   # PROVISIONAL (SV-10): with ROAD_STEP_S, the road's speed (0.7 m every 0.25 s = 2.8 m/s)
 const ROAD_STEP_S := 0.25     # PROVISIONAL (SV-10): seconds a station (Dave 18 Nov 2026: double the old 0.5)
 const ROAD_CATCHUP := 4       # PROVISIONAL (SV-11): stations one tick may build to make up time lost to a slow moment; more is let go
-const ROAD_SYNC_S := 0.25     # PROVISIONAL (SV-12): while a road builds, its new pieces go out to the players this soon, not at the next once-a-second sync
+const ROAD_SYNC_S := 0.25     # PROVISIONAL (SV-12): while a road builds, its new pieces go out to the players near it this soon, not at the next once-a-second sync
+var _road_fresh: Array = []    # world ids a road made since its last quick sync (_sync_world_items fresh)
+var _road_near: Array = []     # where those stations were (only players near them are looked at)
+var _road_sync_in: float = 0.0
 const ROAD_EDITS := 3
 const ROAD_WEAR_EVERY := 4
 const ROAD_HALF_WIDTH_M := SurveyLine.HALF_WIDTH_M
@@ -4384,7 +4400,10 @@ func _road_tick(delta: float) -> void:
 			var i: int = int(seg["i"])
 
 			if i >= int(seg["n"]) and not seg.get("trees", []).is_empty():
+				var first_left: int = _next_id
 				_road_fell(seg, 1.0)   # trees left over at the stretch's end (at most ROAD_FELLS a station): cleared before it closes
+				_road_fresh.append_array(range(first_left, _next_id))   # their logs go out with the quick sync
+				_road_near.append(seg["b"])
 				continue
 
 			if i >= int(seg["n"]):
@@ -4394,10 +4413,12 @@ func _road_tick(delta: float) -> void:
 				job["seg"] = null
 				break
 
+			var first_new: int = _next_id
 			_road_fell(seg, float(i) / float(maxi(int(seg["n"]) - 1, 1)))
 			_road_station(peer, inv, seg["a"], seg["b"], i, int(seg["n"]))
 			seg["i"] = i + 1
-			_sync_in = minf(_sync_in, ROAD_SYNC_S)   # the new piece goes out soon, not up to SYNC_EVERY_S later
+			_road_fresh.append_array(range(first_new, _next_id))   # the new pieces (patches, felled logs) go out soon, to the players near the road only
+			_road_near.append((seg["a"] as Vector3).lerp(seg["b"], float(i) / float(maxi(int(seg["n"]) - 1, 1))))
 
 
 # The ground height a road station is brought to: the average of the ground along the line within ROAD_SECTION_M (3 m) around the station, so the road
@@ -4544,7 +4565,7 @@ func _road_drop(info: Dictionary, side: Vector2, off: float) -> void:
 	var heap_ground: float = float(ground_height.call(heap.x, heap.z)) if ground_height.is_valid() else NAN
 	_stump_pieces(seed_id, Vector3(heap.x, heap_ground if not is_nan(heap_ground) else heap.y, heap.z), radius)   # beside the road with the rest, not on it
 	_dirty = true
-	_sync_in = 0.0   # the pieces go out with the flora cut, so the tree never vanishes before they lie there (as _fell_record, bug 6)
+	_road_sync_in = 0.0   # the pieces go out on the next tick with the flora cut, so the tree never vanishes before they lie there (as _fell_record, bug 6), to the players near the road only (finding 4)
 
 
 func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> void:
@@ -4587,8 +4608,12 @@ func _road_station(peer: int, inv, a: Vector3, b: Vector3, i: int, n: int) -> vo
 
 	if _structures.has("path_patch") and not (water_depth_at.is_valid() and float(water_depth_at.call(Vector3(pos.x, ground, pos.z))) > 0.05):
 		var blocked: bool = false
+		# From the sync grid around the station and every id made since it was filed (audit 18 Nov 2026 finding 4: every record in the world
+		# was looked at for each station, four times a second).
+		for id in _ids_near(pos, ROAD_HALF_WIDTH_M + 8.0):   # every record when no sync has filed a grid yet
+			if not _items.has(id):
+				continue
 
-		for id in _items:
 			var other: Dictionary = _items[id]
 
 			if other.has("tree") and int(other["tree"]["state"]) == 4 and not _falls.has(id) and Vector2(other["pos"].x - pos.x, other["pos"].z - pos.z).length() < ROAD_HALF_WIDTH_M + float(other["tree"]["radius"]) + ROAD_STATION_M * 0.5:
@@ -5538,12 +5563,100 @@ func _showroom_retry(delta: float) -> void:
 
 
 # Fires burn down; open fires are put out by rain (Dave, 2026-10-20), covered ones are not.
+# The slow tick's parts that look for a few kinds of item (fires, lights, pots, items that age) each walked every world item, about six passes
+# every SLOW_TICK_S, growing with everything ever dropped or built (audit 18 Nov 2026, docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md
+# finding 3). Now each part walks its own list. An item is on a list by what it is, never by a state that changes in place, so no state drops off:
+#   fires:  every item with a fire (laid, lit, coals, warm ash, cold, kept for its charcoal), whatever its state;
+#   lit:    every structure of a kind that can be lit (a light, a kiln, a smelter, anything with a fuel) and any with a "lit" field, lit or not;
+#   pots:   every structure that hangs over a fire;
+#   ageing: every fire, every item with a lifetime, and an item given one in place (a kept pile: _tick_ageing).
+# The lists are sorted from every item once every TICK_INDEX_TICKS slow ticks, and items made since (world ids only grow) are sorted in on each
+# tick from their ids alone. Each part checks the item again, as the full walk did. Outside the tick (tests, a placement) _tick_list is every id,
+# as before. test_tick_lists runs the old walk and the lists side by side and compares every item after each tick.
+const TICK_INDEX_TICKS := 8   # a full sort every 8 slow ticks (2 s): only to drop the ids gone or no longer on a list
+var _tick_ids: Dictionary = {}
+var _tick_index_kept: Dictionary = {}   # the last full sort: {"fires", "lit", "pots": [ids], "ageing": {id: true}, "upto": first id not sorted, "ticks": slow ticks since}
+var _tick_lists_off: bool = false       # tests: the old walk over every item, to compare
+
+
+func _tick_index() -> Dictionary:
+	if _tick_lists_off:
+		return {}
+
+	if _tick_index_kept.is_empty() or int(_tick_index_kept["ticks"]) >= TICK_INDEX_TICKS or int(_tick_index_kept["upto"]) > _next_id:
+		_tick_index_kept = {"fires": [], "lit": [], "pots": [], "ageing": {}, "upto": _next_id, "ticks": 0}
+
+		for id in _items:
+			_sort_into(_tick_index_kept, id)
+
+		return _tick_index_kept
+
+	_tick_index_kept["ticks"] = int(_tick_index_kept["ticks"]) + 1
+	_tick_sort_new()
+	return _tick_index_kept
+
+
+# The ids made since the lists were last brought up to date, sorted in: at the start of the tick and again whenever a part asks for its
+# list, so an item made by an earlier part of the same tick (charcoal a light or a fire leaves) is tended by the later parts, as the full walk did.
+func _tick_sort_new() -> void:
+	if int(_tick_index_kept["upto"]) < _next_id:
+		for id in range(int(_tick_index_kept["upto"]), _next_id):
+			if _items.has(id):
+				_sort_into(_tick_index_kept, id)
+
+		_tick_index_kept["upto"] = _next_id
+
+
+var _litable_kind: Dictionary = {}   # structure kind -> whether it can be lit (_sort_into)
+
+
+func _sort_into(index: Dictionary, id) -> void:
+	var it: Dictionary = _items[id]
+
+	if it.has("fire"):
+		index["fires"].append(id)
+
+	if it.has("struct"):
+		var kind: String = str(it["struct"].get("kind", ""))
+
+		if not _litable_kind.has(kind):
+			var def: Dictionary = _structures.get(kind, {})
+			_litable_kind[kind] = def.has("fuel") or def.has("fuel_s") or def.has("smelt") or bool(def.get("lights", false)) or str(def.get("use", "")) in ["light", "kiln"]
+
+		if bool(_litable_kind[kind]) or it["struct"].has("lit"):
+			index["lit"].append(id)
+
+		if _is_pot(it):
+			index["pots"].append(id)
+
+	if not it.has("scatter") and (it.has("fire") or float(it["left"]) <= 1.0e8):
+		index["ageing"][id] = true
+
+
+# An item given a lifetime in place (a kept pile added to or taken from) ages from this tick on.
+func _tick_ageing(id) -> void:
+	if not _tick_index_kept.is_empty() and _items.has(id) and not _items[id].has("scatter"):
+		_tick_index_kept["ageing"][id] = true
+
+
+# A copy, as _items.keys() was: what the part makes while it walks waits for the next part or tick, as before.
+func _tick_list(kind: String) -> Array:
+	if _tick_ids.is_empty():
+		return _items.keys()
+
+	_tick_sort_new()
+	return (_tick_ids[kind] as Dictionary).keys() if kind == "ageing" else (_tick_ids[kind] as Array).duplicate()
+
+
 func _fires(delta: float) -> void:
 	var rain_v: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
 	var raining: bool = rain_v >= RAIN_PUTS_OUT
 	_refresh_pots()
 
-	for id in _items.keys():
+	for id in _tick_list("fires"):
+		if not _items.has(id):
+			continue   # gone since the list was made
+
 		var it: Dictionary = _items[id]
 
 		if not it.has("fire"):
@@ -5618,7 +5731,10 @@ func _fires(delta: float) -> void:
 
 # Item lifetimes run down; an item whose time is up goes, except coals and warm ash, which run on to their next stage, and a fire still holding charcoal (_fire_expire).
 func _expire_items(spent: float) -> void:
-	for id in _items.keys():
+	for id in _tick_list("ageing"):
+		if not _items.has(id):
+			continue   # gone since the list was made
+
 		if _items[id].has("scatter") or float(_items[id]["left"]) > 1.0e8 or _items[id].get("inst", {}).has("bag"):
 			continue   # a dropped bag that holds anything never despawns, so its contents are never lost (master s3.9 rule 3); empty, it ages as any item
 
@@ -6198,6 +6314,7 @@ func _take_from(id: int, n: int) -> void:
 
 		if left >= PILE_MIN:
 			it["left"] = PILE_LIFETIME_S
+			_tick_ageing(id)
 
 	_dirty = true
 
@@ -6258,16 +6375,22 @@ func _pickup_batch(peer: int, inv, id: int, batch: int) -> void:
 		_reject(peer, 2)
 
 
-func _sync_world_items() -> void:
+# `fresh` empty: the full sync (every SYNC_EVERY_S), which files every record in the grid. Otherwise a road's quick sync (_road_tick, every
+# ROAD_SYNC_S while a road builds): only the records `fresh` names are looked at, for only the players within 1.5 NEAR_M of a spot in `near_to`,
+# so one road no longer runs the whole world's sync four times a second (audit 18 Nov 2026 finding 4). A quick sync files nothing in the grid
+# (the road's ids came after the full sync, and _ids_near adds every such id); it drops a record from a player's list only when it is gone from
+# the world, and bog rows and everything else wait for the full sync.
+func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 	# The records are filed into a NEAR_M grid once, so each player looks only at the nine cells around them instead of every
 	# record in the world (the soak test found 2 to 9 ms a second at 20 players and 500 records, growing with both).
 	var t_grid: int = Time.get_ticks_usec()
 	var send_usec: int = 0
 	var sent: int = 0
+	var quick: bool = not fresh.is_empty()
 	var grid: Dictionary = {}
 	var lit: Array = []
 
-	for id in _items:
+	for id in ([] if quick else _items.keys()):   # a quick sync files nothing: the road's ids came since the full sync, and _ids_near adds those
 		var cell: Vector2i = Vector2i(int(floor(_items[id]["pos"].x / NEAR_M)), int(floor(_items[id]["pos"].z / NEAR_M)))
 
 		if _items[id].has("fire") and fire_is_lit(int(_items[id]["fire"]["state"])):
@@ -6279,13 +6402,18 @@ func _sync_world_items() -> void:
 		grid[cell].append(id)
 
 	var t_scan: int = Time.get_ticks_usec()
-	_sync_grid = grid
-	_sync_grid_next = _next_id
-	_far_fire_spots = lit
+
+	if not quick:
+		_sync_grid = grid
+		_sync_grid_next = _next_id
+		_far_fire_spots = lit
 
 	for peer in _known:
 		if not _peer_pos.has(peer):
 			continue
+
+		if quick and not near_to.any(func(at): return Vector2((at as Vector3).x - _peer_pos[peer].x, (at as Vector3).z - _peer_pos[peer].z).length() <= NEAR_M * 1.5):
+			continue   # nowhere near the road: the full sync looks after them
 
 		var here: Vector3 = _peer_pos[peer]
 		var known: Dictionary = _known[peer]
@@ -6293,13 +6421,17 @@ func _sync_world_items() -> void:
 		var removed: PackedInt32Array = PackedInt32Array()
 		var near: Dictionary = {}
 		var home: Vector2i = Vector2i(int(floor(here.x / NEAR_M)), int(floor(here.z / NEAR_M)))
-		var candidates: Array = []
+		var candidates: Array = fresh if quick else []   # a quick sync: only the road's new records; nothing else is added or dropped
 
-		for dx in range(-1, 2):
-			for dz in range(-1, 2):
-				candidates.append_array(grid.get(Vector2i(home.x + dx, home.y + dz), []))
+		if not quick:
+			for dx in range(-1, 2):
+				for dz in range(-1, 2):
+					candidates.append_array(grid.get(Vector2i(home.x + dx, home.y + dz), []))
 
 		for id in candidates:
+			if not _items.has(id):
+				continue   # a road's id gone again before its quick sync
+
 			var it: Dictionary = _items[id]
 
 			if it["pos"].distance_to(here) <= NEAR_M:
@@ -6381,7 +6513,7 @@ func _sync_world_items() -> void:
 							(added[added.size() - 1][5] as Dictionary)["fill_pm"] = int(round(BinRules.fill_share(bin_def, bin_box) * 1000.0))
 					known[id] = signature
 
-		for bog in _bog_rows_near(peer, here):
+		for bog in ([] if quick else _bog_rows_near(peer, here)):
 			near[int(bog[0])] = true
 			var bog_signature: int = int(bog[2]) + 1000 * BOG_STATE + (7 if bool(bog[5]["wet"]) else 0)
 
@@ -6389,8 +6521,8 @@ func _sync_world_items() -> void:
 				added.append(bog)
 				known[int(bog[0])] = bog_signature
 
-		for id in known.keys():
-			if not near.has(id):
+		for id in (fresh if quick else known.keys()):
+			if known.has(id) and not near.has(id) and (not quick or not _items.has(id)):
 				removed.append(id)
 				known.erase(id)
 
@@ -9288,11 +9420,14 @@ func _fire_under_pot(pos: Vector3) -> int:
 func _refresh_pots() -> void:
 	var pots: Array = []
 
-	for id in _items:
-		if _is_pot(_items[id]):
+	for id in _tick_list("pots"):
+		if _items.has(id) and _is_pot(_items[id]):
 			pots.append(_items[id]["pos"])
 
-	for id in _items:
+	for id in _tick_list("fires"):
+		if not _items.has(id):
+			continue
+
 		var it: Dictionary = _items[id]
 
 		if not it.has("fire"):
@@ -12907,11 +13042,7 @@ func _ids_near(centre: Vector3, r: float) -> Array:
 	if _sync_grid.is_empty():
 		return _items.keys()
 
-	var out: Array = []
-
-	for cx in range(floori((centre.x - r) / NEAR_M), floori((centre.x + r) / NEAR_M) + 1):
-		for cz in range(floori((centre.z - r) / NEAR_M), floori((centre.z + r) / NEAR_M) + 1):
-			out.append_array(_sync_grid.get(Vector2i(cx, cz), []))
+	var out: Array = _cells_near(centre, r)
 
 	for id in range(_sync_grid_next, _next_id):
 		out.append(id)
@@ -13628,7 +13759,9 @@ func _sync_breath(peer: int, tenths: int) -> void:
 		send_breath.call(peer, tenths)
 
 
-# Whether a path patch has its centre within data/path_speed.json range_m of the player, checked at most once a second per player (one pass over the items).
+# Whether a path patch has its centre within data/path_speed.json range_m of the player, checked at most once a second per player, among the
+# grid cells round the player that the last full sync filed and the ids made since (_ids_near; it walked every world item, per player, every
+# second: audit 18 Nov 2026 finding 3). Before the first sync there is no grid: every item, as before.
 func _on_path(peer: int, position: Vector3) -> bool:
 	var now: int = Time.get_ticks_msec()
 	var cached: Array = _on_path_cache.get(peer, [])
@@ -13639,7 +13772,10 @@ func _on_path(peer: int, position: Vector3) -> bool:
 	var reach: float = float(_path_cfg.get("range_m", 3.0))
 	var found: bool = false
 
-	for id in _items:
+	for id in _ids_near(position, reach):
+		if not _items.has(id):
+			continue
+
 		var other: Dictionary = _items[id]
 
 		if other.has("struct") and str(other["struct"]["kind"]) == "path_patch" and Vector2(other["pos"].x - position.x, other["pos"].z - position.z).length() <= reach:
@@ -18061,7 +18197,10 @@ func _apply_lit_rows(rows: Array) -> void:
 func _lights_tick(spent: float) -> void:
 	var rain: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
 
-	for id in _items.keys():   # a light that burns wood may drop charcoal (a new world item) on this pass
+	for id in _tick_list("lit"):   # a light that burns wood may drop charcoal (a new world item) on this pass
+		if not _items.has(id):
+			continue   # gone since the list was made
+
 		var it: Dictionary = _items[id]
 
 		if it.has("struct") and bool(it["struct"].get("lit", false)):
@@ -19552,7 +19691,11 @@ func _stock_covers(inv, recipe: Dictionary, times: int, stock: Dictionary) -> bo
 
 # The world ids the last sync filed in the grid cells that a craft's reach around `here` touches (one to four NEAR_M cells).
 func _stock_cells(here: Vector3, reach_x: float = 1.0) -> Array:
-	var reach: float = maxf(CraftStock.LOOSE_STOCK_M, CraftStock.CRAFT_REACH_M) * reach_x
+	return _cells_near(here, maxf(CraftStock.LOOSE_STOCK_M, CraftStock.CRAFT_REACH_M) * reach_x)
+
+
+# The world ids the last sync filed in the NEAR_M grid cells that a reach around `here` touches.
+func _cells_near(here: Vector3, reach: float) -> Array:
 	var lo: Vector2i = Vector2i(int(floor((here.x - reach) / NEAR_M)), int(floor((here.z - reach) / NEAR_M)))
 	var hi: Vector2i = Vector2i(int(floor((here.x + reach) / NEAR_M)), int(floor((here.z + reach) / NEAR_M)))
 	var out: Array = []

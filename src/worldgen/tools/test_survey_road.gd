@@ -151,10 +151,48 @@ func _server_road() -> void:
 	again.action(1, Net.ACT_HOE_GRADE_POINT, HeldTool.slot_of(again, "hoe"), 0, 0, Vector3(76.0, 10.0, 80.0))
 	again.action(1, Net.ACT_HOE_GRADE_POINT, HeldTool.slot_of(again, "hoe"), 1, 0, Vector3(84.0, 10.0, 80.0))
 
+	again._sync_world_items()   # the full sync files the world, as the tick does once a second
 	again._sync_in = 1.0
 	again._road_tick(5.0)   # a slow moment: the road makes up the lost time, at most ROAD_CATCHUP stations in one tick
 	check(int(again._roads[1][0]["seg"]["i"]) == ItemsScript.ROAD_CATCHUP, "after a 5 s stall one tick builds ROAD_CATCHUP stations, no more (%d)" % int(again._roads[1][0]["seg"]["i"]))
-	check(again._sync_in <= ItemsScript.ROAD_SYNC_S, "the new road pieces go out within ROAD_SYNC_S, not at the next once-a-second sync")
+	check(again._sync_in == 1.0, "a road no longer pulls the whole world's sync forward (audit 18 Nov 2026 finding 4)")
+	check(not again._road_fresh.is_empty() and again._road_near.size() == ItemsScript.ROAD_CATCHUP, "the new road pieces wait for a quick sync to the players near the road")
+	var seen: Array = []
+	var far_seen: Array = []
+	again.send_world_items = func(p, added, _r): (seen if p == 1 else far_seen).append_array(added)
+	again._known[2] = {}
+	again._peer_pos[2] = Vector3(2000.0, 10.0, 2000.0)   # a player far away: not looked at by the quick sync
+	again._sync_world_items(again._road_fresh, again._road_near)
+	check(seen.size() > 0 and far_seen.is_empty(), "a quick sync sends the new pieces to the near player only (%d sent)" % seen.size())
+	again._known.erase(2)
+	again._peer_pos.erase(2)
+	again._road_fresh = []
+	again._road_near = []
+	# A quick sync drops a new piece the player knew once it is gone from the world, and drops nothing else.
+	var known_before: int = (again._known[1] as Dictionary).size()
+	var gone_id: int = -1
+
+	for id in (again._known[1] as Dictionary):
+		if again._items.has(id) and again._items[id].has("struct") and str(again._items[id]["struct"]["kind"]) == "path_patch":
+			gone_id = int(id)
+
+	var dropped: Array = []
+	again.send_world_items = func(_p, _a, removed): dropped.append_array(Array(removed))
+	again._items.erase(gone_id)
+	again._sync_world_items([gone_id], [again._peer_pos[1]])
+	check(gone_id > 0 and dropped == [gone_id] and (again._known[1] as Dictionary).size() == known_before - 1, "a quick sync drops a known piece that is gone, and nothing else")
+	again.send_world_items = func(p, added, _r): (seen if p == 1 else far_seen).append_array(added)
+	seen.clear()
+
+	for step in 4:   # stations 0.7 m apart, patches PATH_SPACING_M apart: one of the next few lays a patch
+		if again._road_fresh.is_empty():
+			again._road_tick(ItemsScript.ROAD_STEP_S)
+
+	check(not again._road_fresh.is_empty(), "the next station's pieces wait for the quick sync")
+	again._road_sync_in = 0.0
+	again.tick(0.05)
+	check(again._road_fresh.is_empty() and seen.size() > 0 and again._sync_in > 0.0, "the tick sends them within ROAD_SYNC_S without a full sync")
+	again.send_world_items = func(_p, _a, _r): pass
 
 	for step in 30:
 		again._road_tick(0.6)
