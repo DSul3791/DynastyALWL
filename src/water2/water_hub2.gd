@@ -47,6 +47,7 @@ var _fine_pending: Dictionary = {}   # the newest fine sheet packets (dig_window
 var _fine_built: int = 0          # 2 m water packet sets built (the log line for the PC check)
 var _fine_sent: bool = false      # the last fine packets named any region (so one more, empty, tells clients to drop them)
 var _live_rects: Array = []   # Rect2 world x, z each running dig window draws into, as of the last publish (clients must re-ask chunks there too)
+var _dropped_rects: Array = []   # Rect2s of sleeping dig regions dropped since the server last read live_rects: named once
 
 
 func setup(centre_tile: Vector2i, _water_dir: String, _base_rate: float, tile_generator, _dry_start: bool = false) -> void:
@@ -154,7 +155,8 @@ func take_fine() -> Dictionary:
 # Where the dig windows draw (world x, z, one Rect2 each), so the server tells clients to re-ask those chunks as well as the 8 m window's. Empty when none.
 func live_rects() -> Array:
 	_mutex.lock()
-	var r: Array = _live_rects.duplicate()
+	var r: Array = _live_rects + _dropped_rects
+	_dropped_rects = []
 	_mutex.unlock()
 	return r
 
@@ -342,6 +344,8 @@ func _run() -> void:
 			var moved: bool = levels_moved(_told, levels, tile_data.samples, window_origin, _field.w, _field.h)
 			_last_levels = levels.duplicate()   # before the dig windows draw in: a new window starts from the 8 m water, not from itself
 			moved = _live.publish(levels, tile_data.samples, tile_data.x0, tile_data.z0) or moved
+			var dropped: Array = _live.take_dropped_rects()
+			moved = moved or not dropped.is_empty()   # a dropped region's ground went back to the 8 m water
 
 			if moved:
 				_told = levels
@@ -352,7 +356,8 @@ func _run() -> void:
 				_pending = levels
 
 			_flow_pending = packet
-			_live_rects = _live.take_drawn_rects()
+			_live_rects = _live.drawn_rects()
+			_dropped_rects.append_array(dropped)
 			_mutex.unlock()
 			# Outside the lock: building the 2 m textures takes a few ms. Sleeping regions every 4th publish (late joiners get them within a minute).
 			var fine: Dictionary = _live.fine_packets(ticks % (PUBLISH_TICKS * 4) == 1)
