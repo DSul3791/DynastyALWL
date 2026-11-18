@@ -1422,7 +1422,6 @@ func _welcome_body(info: Dictionary) -> void:
 		if not talker.is_empty():       # nobody in earshot is talking: no voice (the text still shows)
 			npc_voice.speak(voice_id, text, talker["pos"])
 	items.knowledge = knowledge
-	items.max_lights = func(): return [1, 2, 3, 3][clampi(quality, 0, 3)]
 	items.is_inspecting = func(): return inspecting
 	items.auto_pickup_blocked = func(): return swimming or (held != null and (held.placing() or held.tool_busy()))
 	items.stance_event = _on_stance_from_server

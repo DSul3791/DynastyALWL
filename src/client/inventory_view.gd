@@ -45,7 +45,7 @@ const CropLook := preload("res://src/client/crop_look.gd")   # PLACEHOLDER stage
 const KEY_FILE := "user://player_key.txt"
 const STUCK_ARROW_BACK_M := 0.22         # an arrow stuck in a tree: its middle this far (model metres) back from the hit along its flight, the point just in the bark
 const BASIC_DROP_SCALE := 1.8           # loose items with a stage-one look (basic_look.gd) are drawn this much bigger so they show in the grass
-const MAX_FIRE_LIGHTS := 3              # at High and Ultra; fewer below (max_lights)
+const MAX_FIRE_LIGHTS := 32             # Dave 18 Nov 2026: a fire always lights its ground, at any distance; was 1 to 3 by quality, so a fire went dark once 3 nearer lights (fires, lanterns, lit stations) took the slots. Shadowless omnis, culled by the engine off screen
 
 var _flame_lights: Array = []           # the lit fire lights that are on (nearest MAX_FIRE_LIGHTS), set by _update_fire_lights
 var open: bool = false
@@ -1969,12 +1969,11 @@ func _update_fire_lights() -> void:
 		return   # no fires or lanterns near: nothing to sort or flicker
 
 	lit.sort_custom(func(a, b): return a[0] < b[0])
-	var limit: int = int(max_lights.call()) if max_lights.is_valid() else MAX_FIRE_LIGHTS
 	var ticks: float = float(Time.get_ticks_msec())
 
 	for n in lit.size():
 		var light: Light3D = lit[n][1]
-		light.visible = n < limit
+		light.visible = n < MAX_FIRE_LIGHTS
 
 		if light.has_meta("flame_flicker"):
 			if light.visible:
@@ -4405,7 +4404,7 @@ func _make_remains(age: float) -> Node3D:
 	return BuildingLook.remains(age)
 
 
-# Only the nearest MAX_FIRE_LIGHTS lit fires keep their light on (cost cap at every quality).
+# Only the nearest MAX_FIRE_LIGHTS lit fires keep their light on (the same cap at every quality).
 # The model of a world state (structures.json "look", read through StructureLook): the same builders draw a placed thing and the placement ghost.
 # `extra` is the row's extras (remains age, carcass species).
 func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
@@ -4975,7 +4974,6 @@ var _recipe_list: VBoxContainer
 var _selected_recipe: int = 0
 var _hover_recipe: int = 0                 # the recipe under the mouse in the crafting list, 0 when none (E crafts it)
 var knowledge                          # InspectionKnowledge (set by the client): item names follow what the character knows
-var max_lights: Callable               # () -> how many fire lights the quality tier allows
 var is_inspecting: Callable            # () -> true while inspection mode is on
 
 
