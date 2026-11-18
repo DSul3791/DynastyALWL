@@ -275,12 +275,9 @@ func _init() -> void:
 	big._next_id += 200000   # 200,000 ids given out and taken away again
 	var ran: int = 0
 
-	while big._walk_hi < big._next_id and ran < 100000:
+	while big._walk_lo < big._next_id and ran < 100000:   # until the pass that walked the gap has ended and the next begun (its range starts at _next_id)
 		big._save_sweep(big._sweep_slice(0.05), 1000000)
 		ran += 1
-
-	for t in 2:
-		big._save_sweep(big._sweep_slice(0.05), 1000000)   # the pass over the gap ends, the next begins
 
 	var span: int = big._walk_ids.size() + big._walk_end - big._walk_lo
 	check(span < big._items.size() + 1000 and big._next_id > gap_was, "after the gap a pass walks about the live items (%d ids for %d items, %d ids given out)" % [span, big._items.size(), big._next_id])

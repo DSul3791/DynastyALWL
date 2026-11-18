@@ -51,6 +51,7 @@ func check_interval(items) -> void:
 		return
 
 	var ticks: int = int(ItemsScript.SAVE_EVERY_S / 0.05)
+	var passes_was: int = int(items.get("_sweep_passes")) if items.get("_sweep_passes") != null else -1
 	var worst: int = 0
 	var total: int = 0
 
@@ -61,7 +62,8 @@ func check_interval(items) -> void:
 		worst = maxi(worst, spent)
 		total += spent
 
-	print("save_cost: the save check over one save interval: %.3f ms a tick on average, %.3f ms at worst; pass at %d of %d ids" % [float(total) / float(ticks) / 1000.0, float(worst) / 1000.0, int(items.get("_walk_at")) if items.get("_walk_at") != null else -1, (items.get("_walk_ids") as PackedInt64Array).size() if items.get("_walk_ids") != null else -1])
+	var passes: int = int(items.get("_sweep_passes")) - passes_was if passes_was >= 0 else -1
+	print("save_cost: the save check over one save interval: %.3f ms a tick on average, %.3f ms at worst; %d passes begun in it, now %d into a pass of %d listed ids" % [float(total) / float(ticks) / 1000.0, float(worst) / 1000.0, passes, int(items.get("_walk_at")) if items.get("_walk_at") != null else -1, (items.get("_walk_ids") as PackedInt64Array).size() if items.get("_walk_ids") != null else -1])
 
 
 # One periodic save as the tick runs it. A file the save rewrites gets a fresh .prev (_write_file copies the old one there first), so with every

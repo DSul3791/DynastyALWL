@@ -1632,7 +1632,7 @@ func save() -> void:
 # (_save_sig_of), and its area. A changed hash or area marks the old and new areas dirty; the same walk over the world ids finds the gone ones. One pass
 # covers the world within a save interval (a longer one is logged), so a change reaches the disk within two save intervals: PROVISIONAL, for
 # Dave's review, a crash can lose up to about a minute of world item changes (it was about 30 s); on a world too big for one pass a save interval
-# within the budget, up to two passes (logged; at 50,000 items before the 18 Nov speed-up a pass took about 75 s). Any field the hash does not round is in it,
+# within the budget, up to two passes (logged; David4 18 Nov: about 5 us an item, so a pass fits an interval up to about 100,000 items). Any field the hash does not round is in it,
 # so the check errs toward writing too much, never too little.
 const AREA_M := 128.0              # PROVISIONAL: the side of a world items area (one file in AREA_DIR)
 const AREA_STEP_S := 600.0        # PROVISIONAL: a periodic save compares countdowns (an item's lifetime, a fire's burn) in steps this long, so an area
@@ -1649,6 +1649,7 @@ var _walk_ids := PackedInt64Array()   # the pass under way: the ids live at the 
 var _walk_at: int = 0
 var _walk_hi: int = 0             # then the ids made since the last pass began, from _walk_lo (_walk_hi: how far) up to _walk_end
 var _walk_lo: int = 0
+var _sweep_passes: int = 0        # passes begun (tools: measure_save_cost)
 var _walk_end: int = 0
 var _walk_next := PackedInt64Array()  # the ids found live this pass: the next pass's list
 var _sweep_began_ms: int = 0
@@ -2004,6 +2005,7 @@ func _save_sweep(count: int, budget_us: int = SWEEP_BUDGET_US) -> void:
 			_walk_lo = _walk_hi
 			_walk_end = _next_id
 			_sweep_began_ms = Time.get_ticks_msec()
+			_sweep_passes += 1
 
 			if n > 0 or (_walk_ids.is_empty() and _walk_hi >= _walk_end):
 				return   # the next pass starts on the next tick
