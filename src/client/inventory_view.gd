@@ -31,6 +31,7 @@ const Net := preload("res://src/stream/terrain_net.gd")
 const StructureLook := preload("res://src/shared/structure_look.gd")
 const BinRules := preload("res://src/shared/bin_rules.gd")   # resource bins: the resource surface (_note_bin, GOALS-REPAIR R6)
 const StationUse := preload("res://src/client/ui/inventory/station_use.gd")
+const StoreRules := preload("res://src/shared/store_rules.gd")   # what a store takes (the server's rule)
 
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")   # sharpness, Tempered and craftsmanship (catalog Phase 2c)
@@ -45,7 +46,7 @@ const CropLook := preload("res://src/client/crop_look.gd")   # PLACEHOLDER stage
 const KEY_FILE := "user://player_key.txt"
 const STUCK_ARROW_BACK_M := 0.22         # an arrow stuck in a tree: its middle this far (model metres) back from the hit along its flight, the point just in the bark
 const BASIC_DROP_SCALE := 1.8           # loose items with a stage-one look (basic_look.gd) are drawn this much bigger so they show in the grass
-const MAX_FIRE_LIGHTS := 3              # at High and Ultra; fewer below (max_lights)
+const MAX_FIRE_LIGHTS := 32             # Dave 18 Nov 2026: a fire always lights its ground, at any distance; was 1 to 3 by quality, so a fire went dark once 3 nearer lights (fires, lanterns, lit stations) took the slots. Shadowless omnis, culled by the engine off screen
 
 var _flame_lights: Array = []           # the lit fire lights that are on (nearest MAX_FIRE_LIGHTS), set by _update_fire_lights
 var open: bool = false
@@ -177,8 +178,7 @@ var _eat_hold_slot: int = -1          # the pack slot being eaten from while E i
 var _eat_hold_hover: int = -1         # _hover when the hold began: the pointer moving to another slot (or off) stops it
 var _eat_hold_sign: Array = []        # the slot's number, count and wear when the last bite was sent
 var _eat_hold_sent_msec: int = 0
-var pick_stamp: int = 0                       # msec of the latest pick-up or gather the player asked for: the Dynasty body bends to pick it up (avatar_driver.gd hook_clip)
-var gather_event: Callable             # () when the player gathers something by hand (E): the arm reaches and the view dips a little
+var gather_event: Callable             # () when the player gathers something by hand (E): the view dips a little (no arm or body clip: Dave 17 Nov 2026)
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
 var worn_event: Callable               # (changed item ids Array, all worn item ids Array) when what is worn changes; changed is empty for the first list after joining (sounds)
 var skill_up_event: Callable           # () when a skills message shows a skill's level higher than the last one (sounds; not on the first list after joining)
@@ -723,7 +723,7 @@ func _probe_pickup() -> Dictionary:
 	var id: int = near[0]
 	return {"kind": "pickup", "id": id, "point": _world[id]["pos"], "prompt": "Press E to gather", "quiet": not aimed_at(_world[id]["pos"]), "tap": func():
 		clear_prompt()
-		pick_stamp = Time.get_ticks_msec()
+		var asked_msec: int = Time.get_ticks_msec()
 
 		if not liftable(id):   # too heavy: no "too heavy" yet, held E may find something lighter around (Dave 10 Nov 2026)
 			_pending_heavy = id
@@ -734,7 +734,7 @@ func _probe_pickup() -> Dictionary:
 		_hold_took = true
 
 		if _world.has(id) and aimed_at(_world[id]["pos"]):
-			_reticle_took_msec = pick_stamp   # the reticle's own item: held E waits reticle_pause_s before it goes on to what lies around
+			_reticle_took_msec = asked_msec   # the reticle's own item: held E waits reticle_pause_s before it goes on to what lies around
 
 		if gather_event.is_valid():
 			gather_event.call()
@@ -788,7 +788,6 @@ func sweep_target(radius: float) -> Array:
 
 func sweep_pick(id: int) -> void:
 	_sweep_asked[id] = Time.get_ticks_msec()
-	pick_stamp = _sweep_asked[id]
 	_last_pick = id
 	_hold_took = true
 	net.inventory_action.rpc_id(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
@@ -1494,8 +1493,6 @@ func pick_up_nearest() -> bool:
 		_ask_open(id)
 		return true
 
-	pick_stamp = Time.get_ticks_msec()
-
 	if gather_event.is_valid():
 		gather_event.call()
 
@@ -1969,12 +1966,11 @@ func _update_fire_lights() -> void:
 		return   # no fires or lanterns near: nothing to sort or flicker
 
 	lit.sort_custom(func(a, b): return a[0] < b[0])
-	var limit: int = int(max_lights.call()) if max_lights.is_valid() else MAX_FIRE_LIGHTS
 	var ticks: float = float(Time.get_ticks_msec())
 
 	for n in lit.size():
 		var light: Light3D = lit[n][1]
-		light.visible = n < limit
+		light.visible = n < MAX_FIRE_LIGHTS
 
 		if light.has_meta("flame_flicker"):
 			if light.visible:
@@ -4148,8 +4144,9 @@ func _lit_fire_near(pos: Vector3, r: float) -> bool:
 
 # What the open station can use (station_use.gd, Dave 10 Nov 2026): item number -> StationUse.FUEL or INPUT, for the pack's order and its
 # golden line. Only while a station's own window is open (Dave 10 Nov 2026: "even when I open my inventory and Im not in the campfires
-# inventory the wood is still highlighted which it shouldnt be"): the container on screen is a fire (any campfire state) or a structure with a
-# "station", stations it stands in for ("also") or its own "fuel". {} with the pack open on its own, a plain chest open, or the window shut.
+# inventory the wood is still highlighted which it shouldnt be"): the container on screen is a fire (any campfire state), a structure that names
+# what it takes ("takes" / "takes_kinds"), or one with a "station", stations it stands in for ("also") or its own "fuel". What a store takes is
+# the server's rule (store_rules.gd). {} with the pack open on its own, a plain chest open, or the window shut.
 func station_use() -> Dictionary:
 	if not open or not chest_mode or not _world.has(chest_id):
 		return {}
@@ -4158,11 +4155,12 @@ func station_use() -> Dictionary:
 	var stations: Array = []
 	var fire: bool = StructureLook.CAMPFIRE_STATES.has(state)
 	var fuels: Array = []
+	var def: Dictionary = {}
 
 	if fire:
 		stations.append("campfire")
 	else:
-		var def: Dictionary = _structure_by_state(state)
+		def = _structure_by_state(state)
 
 		for station in [str(def.get("station", ""))] + (def.get("also", {}) as Dictionary).keys():
 			if str(station) != "" and not stations.has(str(station)):
@@ -4171,14 +4169,14 @@ func station_use() -> Dictionary:
 		if str(def.get("fuel", "")) != "":
 			fuels.append(str(def["fuel"]))
 
-	if stations.is_empty() and fuels.is_empty():
+	if stations.is_empty() and fuels.is_empty() and not StoreRules.limited(def):
 		return {}
 
-	if (fire or not fuels.is_empty()) and _cooking_cfg.is_empty():
+	if _cooking_cfg.is_empty():
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/cooking.json"))
 		_cooking_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"raw_sick": {}}
 
-	return StationUse.usable(stations, fire, fuels, recipes, table, _cooking_cfg)
+	return StationUse.usable(stations, fire, fuels, recipes, table, _cooking_cfg, str(def.get("state", "")), def)
 
 
 # Is a placed station of this kind within its reach? Display only (the server decides): greys recipes that need one.
@@ -4416,7 +4414,7 @@ func _make_remains(age: float) -> Node3D:
 	return BuildingLook.remains(age)
 
 
-# Only the nearest MAX_FIRE_LIGHTS lit fires keep their light on (cost cap at every quality).
+# Only the nearest MAX_FIRE_LIGHTS lit fires keep their light on (the same cap at every quality).
 # The model of a world state (structures.json "look", read through StructureLook): the same builders draw a placed thing and the placement ghost.
 # `extra` is the row's extras (remains age, carcass species).
 func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
@@ -4994,7 +4992,6 @@ var _recipe_list: VBoxContainer
 var _selected_recipe: int = 0
 var _hover_recipe: int = 0                 # the recipe under the mouse in the crafting list, 0 when none (E crafts it)
 var knowledge                          # InspectionKnowledge (set by the client): item names follow what the character knows
-var max_lights: Callable               # () -> how many fire lights the quality tier allows
 var is_inspecting: Callable            # () -> true while inspection mode is on
 
 

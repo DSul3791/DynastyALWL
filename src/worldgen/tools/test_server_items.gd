@@ -56,14 +56,14 @@ func _init() -> void:
 	check(items.inventory_of(8) == null, "bad key refused")
 	items.report_position(7, Vector3(100.0, 5.0, 100.0))
 
-	items.action(7, Net.ACT_ADMIN_GIVE, stone, 0, 15, Vector3.ZERO)
-	check(items.inventory_of(7).count_of(stone) == 15, "admin give")
+	items.action(7, Net.ACT_ADMIN_GIVE, stone, 0, 40, Vector3.ZERO)
+	check(items.inventory_of(7).count_of(stone) == 40, "admin give")
 	check(not slots_sent.is_empty(), "slot change sent")
 
 	items.action(7, Net.ACT_DROP, 99, 0, 5, Vector3.ZERO)
 	items.action(7, Net.ACT_DROP, 0, 0, -3, Vector3.ZERO)
 	items.action(7, Net.ACT_MOVE, -1, 400, 0, Vector3.ZERO)
-	check(items.inventory_of(7).count_of(stone) == 15 and items.world_item_count() == 0, "bad slots and counts change nothing")
+	check(items.inventory_of(7).count_of(stone) == 40 and items.world_item_count() == 0, "bad slots and counts change nothing")
 
 	# The pickup feed: every gain is reported once with its source; moving a stack reports nothing.
 	DirAccess.make_dir_recursive_absolute("user://test_server_items_feed")
@@ -136,12 +136,12 @@ func _init() -> void:
 	check(world_sent.size() == 1 and world_sent[0][1].size() == 1, "nearby item is announced")
 	var id: int = world_sent[0][1][0][0]
 	items.action(7, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
-	check(items.inventory_of(7).count_of(stone) == ItemsScript.PILE_HANDFUL and items.world_item_count() == 1, "a pile of 15 gives one handful")
+	check(items.inventory_of(7).count_of(stone) == ItemsScript.PILE_HANDFUL and items.world_item_count() == 1, "a pile of 40 gives one handful")
 	items.action(7, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 	items.action(7, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
-	check(items.inventory_of(7).count_of(stone) == 15 and items.world_item_count() == 0, "pick up")
+	check(items.inventory_of(7).count_of(stone) == 40 and items.world_item_count() == 0, "pick up")
 	items.action(7, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
-	check(items.inventory_of(7).count_of(stone) == 15, "second pick up of the same item does nothing")
+	check(items.inventory_of(7).count_of(stone) == 40, "second pick up of the same item does nothing")
 
 	items.report_position(7, Vector3(100.0, 5.0, 100.0))
 	items.drop_in_world(stone, 3, Vector3(5000.0, 0.0, 5000.0))
@@ -2168,14 +2168,14 @@ func _init() -> void:
 	to._train_fitness(1, 1.0, 3400.0)
 	clk[0] += 86400.0 * 3.0
 	to._train_fitness(1, 0.0, 1.0)
-	check(to.fitness_of(1) == 1, "a midnight that passed while away is paid at the next tick, once (%d)" % to.fitness_of(1))
+	check(to.fitness_of(1) == to._fitness_default() + 1, "a midnight that passed while away is paid at the next tick, once (%d)" % to.fitness_of(1))
 	tr._train_fitness(1, 1.0, 1.0e7)
 	midnight.call(tr)
 	check(tr.fitness_of(1) == 10, "training stops at the top of the range")
 	tr.set_fitness(1, 2)
 	tr._train_fitness(1, 1.0, 1.0e7)
 	midnight.call(tr)
-	check(float(tr._characters[tr._peer_key[1]]["train"]) == 10.0 and tr.fitness_of(1) == 10, "training stops at max_gain above the base, clamped to the range")
+	check(float(tr._characters[tr._peer_key[1]]["train"]) == 8.0 and tr.fitness_of(1) == 10, "training stops at the top of the range, no hidden points above it (base 2, 8 trained)")
 	tr.set_fitness(1, 2)
 	tr._characters[tr._peer_key[1]]["xp_today"] = 0.0
 	tr._train_fitness(1, 1.0, 1800.0 * 3.0)
