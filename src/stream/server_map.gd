@@ -326,7 +326,7 @@ func _save_one(key: String) -> void:
 	var rows: Dictionary = {}
 
 	for block in rec["blocks"]:
-		rows["%d,%d" % [block.x, block.y]] = Marshalls.raw_to_base64(Codec.encode(rec["blocks"][block]["cells"]))
+		rows["%d,%d" % [block.x, block.y]] = _encoded(rec["blocks"][block])
 
 	var file: FileAccess = FileAccess.open(path + ".tmp", FileAccess.WRITE)
 
@@ -368,3 +368,16 @@ func _load(key: String) -> Dictionary:
 			rec["blocks"][Vector2i(int(parts[0]), int(parts[1]))] = {"cells": cells, "ver": 1}
 
 	return rec
+
+
+# A block's saved text, encoded again only when it changed since the last save ("ver" counts every change): a save costs the blocks that
+# changed, not every block ever recorded (audit 18 Nov 2026, docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md finding 11).
+static func _encoded(row: Dictionary) -> String:
+	var kept: Array = row.get("saved", [])
+
+	if kept.size() == 2 and int(kept[0]) == int(row["ver"]):
+		return str(kept[1])
+
+	var text: String = Marshalls.raw_to_base64(Codec.encode(row["cells"]))
+	row["saved"] = [int(row["ver"]), text]
+	return text
