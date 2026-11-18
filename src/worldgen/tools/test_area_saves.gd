@@ -219,7 +219,7 @@ func _init() -> void:
 	var ticks_per_save: int = int(ItemsScript.SAVE_EVERY_S / 0.05)
 
 	for t in 2 * ticks_per_save:
-		big._save_sweep(maxi(64, ceili(float(big._items.size()) * 0.05 / ItemsScript.SAVE_EVERY_S * 1.25)))   # as tick() does
+		big._save_sweep(maxi(64, ceili(float(big._items.size()) * 0.05 / ItemsScript.SAVE_EVERY_S * 1.25)), 1000000)   # as tick() does, with no time limit (a slow test machine must not cut the slice)
 
 		if (t + 1) % ticks_per_save == 0:
 			big._dirty = true
@@ -250,8 +250,11 @@ func _init() -> void:
 
 	check(bool(found["counted"]) and bool(found["worn"]) and bool(found["stepped"]) and int(found["far"]) == 1 and int(found["rows"]) == 19999, "changes in place reach the disk within two save intervals, an item moved to another area once, the erased one gone (%s)" % str(found))
 	big._items[ids[600]]["count"] = 55
+	big._items.erase(ids[700])
+	big._items[big._next_id] = {"number": stick, "count": 9, "pos": Vector3(1.0, 10.0, 1.0), "left": 1.0e9}   # made since the last check
+	big._next_id += 1
 	big._dirty = true
-	big.save()   # shutdown: no check has seen this change
+	big.save()   # shutdown: no check has seen these changes
 	var after_stop = make()
 	var exact: bool = false
 
@@ -259,7 +262,31 @@ func _init() -> void:
 		if int(after_stop._items[id]["count"]) == 55 and after_stop._items[id]["pos"].distance_to(big._items[ids[600]]["pos"]) < 0.01:
 			exact = true
 
-	check(exact, "a shutdown save right after a change writes it")
+	var new_stick: bool = false
+
+	for id in after_stop._items:
+		new_stick = new_stick or (int(after_stop._items[id]["number"]) == stick and int(after_stop._items[id]["count"]) == 9)
+
+	check(exact and new_stick and after_stop._items.size() == 19999, "a shutdown save right after changes writes them: a count, an erase, a new item (%d items)" % after_stop._items.size())
+
+	# A periodic save straight after a load, before the check's first pass, still writes every trunk and stump (tree_states.json).
+	wipe()
+	var with_stump = make()
+	with_stump._items[with_stump._next_id] = {"number": 0, "count": 1, "pos": Vector3(40.0, 10.0, 40.0), "left": 1.0e9, "tree": {"state": 4, "chunk": [0, 0], "species": "oak", "yaw": 0.0, "length": 12.0, "radius": 0.3, "felled_at": 0.0}}
+	with_stump._next_id += 1
+	with_stump.drop_in_world(stone, 1, Vector3(41.0, 10.0, 41.0))
+	with_stump._dirty = true
+	with_stump.save()
+	var reloaded = make()
+	reloaded._dirty = true
+	reloaded._async_writes = true
+	reloaded.save()   # no check has run
+	reloaded._async_writes = false
+	reloaded._start_writer()
+	reloaded._finish_writer()
+	var trees_file: Variant = JSON.parse_string(FileAccess.get_file_as_string(dir + "/tree_states.json"))
+	check(typeof(trees_file) == TYPE_DICTIONARY and (trees_file.get("trees", []) as Array).size() == 1, "a periodic save right after a load keeps the stump in tree_states.json")
+	check(loose(make()) == 1, "and the area items")
 	wipe()
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)

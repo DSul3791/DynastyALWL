@@ -61,7 +61,7 @@ func check_interval(items) -> void:
 		worst = maxi(worst, spent)
 		total += spent
 
-	print("save_cost: the save check over one save interval: %.3f ms a tick on average, %.3f ms at worst" % [float(total) / float(ticks) / 1000.0, float(worst) / 1000.0])
+	print("save_cost: the save check over one save interval: %.3f ms a tick on average, %.3f ms at worst; pass at %d of %d items" % [float(total) / float(ticks) / 1000.0, float(worst) / 1000.0, items._sweep_at, items._sweep_keys.size()])
 
 
 # One periodic save as the tick runs it. A file the save rewrites gets a fresh .prev (_write_file copies the old one there first), so with every

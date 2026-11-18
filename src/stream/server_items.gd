@@ -519,16 +519,6 @@ func setup(item_table, store_dir: String) -> void:
 	_load_inventories()
 	_load_chests()
 	_load_world_items()
-	_reindex_save()
-	_area_dirty = _area_recovered.duplicate()
-
-	for id in _load_row_of:   # a row filed in another area's file than where it lies (moved since that file was written): both are written again
-		if _save_sig.has(id) and int(_load_row_of[id]) < _load_row_area.size() and str(_load_row_area[int(_load_row_of[id])]) != str(_save_sig[id][1]):
-			_area_dirty[str(_load_row_area[int(_load_row_of[id])])] = true
-			_area_dirty[str(_save_sig[id][1])] = true
-
-	_load_row_of = {}
-	_load_row_area = []
 	_carts.after_load()
 	var lights_parsed: Variant = _read_json_version("lights.json", 1)
 	_apply_lit_rows(lights_parsed.get("lit", []) if lights_parsed != null and typeof(lights_parsed.get("lit", null)) == TYPE_ARRAY else [])
@@ -543,6 +533,18 @@ func setup(item_table, store_dir: String) -> void:
 			(crops_parsed.get("wells", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("wells", null)) == TYPE_DICTIONARY else {})
 	_rebuild_supports(true)
 	_load_trees()
+	# The save check's index, once everything that makes or changes world items at load has run (lights lit, kilns, the trunks and stumps of
+	# tree_states.json: a save before the first pass must still hold them).
+	_reindex_save()
+	_area_dirty = _area_recovered.duplicate()
+
+	for id in _load_row_of:   # a row filed in another area's file than where it lies (moved since that file was written): both are written again
+		if _save_sig.has(id) and int(_load_row_of[id]) < _load_row_area.size() and str(_load_row_area[int(_load_row_of[id])]) != str(_save_sig[id][1]):
+			_area_dirty[str(_load_row_area[int(_load_row_of[id])])] = true
+			_area_dirty[str(_save_sig[id][1])] = true
+
+	_load_row_of = {}
+	_load_row_area = []
 	var cooking: Variant = JSON.parse_string(FileAccess.get_file_as_string(COOKING_PATH))
 	_cooking = cooking if typeof(cooking) == TYPE_DICTIONARY else {}
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(DROPS_PATH))
@@ -1528,6 +1530,10 @@ func tick(delta: float) -> void:
 
 	_reap_writer()
 
+	if _writer == null and not _save_failed.is_empty():
+		_save_failed.clear()
+		_dirty = true   # an area file could not be written: the next save builds it again
+
 	_save_parts = []
 
 	if _save_in <= 0.0:
@@ -1641,6 +1647,7 @@ var _sweep_gone_at: int = 0
 var _sweep_began_ms: int = 0
 var _load_row_of: Dictionary = {}  # at load: world id -> its row's index in the loaded rows, and the area file each row came from
 var _load_row_area: Array = []
+var _save_failed: Array = []       # area keys the writer could not write (filled by the writer, read on the tick when it is done)
 var _area_recovered: Dictionary = {}   # areas read from a .prev or a mismatched copy at load: written again at the first save
 var _tilted: Dictionary = {}       # world ids of arrows stuck in a tree (_stick_arrow): saved as fallen to the ground under them
 var _kind_info: Dictionary = {}    # structure kind -> [save state, use], for the writer (which must not read _structures)
@@ -1712,7 +1719,7 @@ func _item_job() -> Dictionary:
 	_area_dirty = {}
 	_note_save_part("world item copy", t0)
 	_save_gen += 1
-	return {"dir": _dir, "items": copy, "areas": areas, "all": _area_ids.keys(), "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(), "gen": _save_gen, "sums": _area_sums, "exact": exact,
+	return {"dir": _dir, "items": copy, "areas": areas, "all": _area_ids.keys(), "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(), "gen": _save_gen, "sums": _area_sums, "exact": exact, "failed_out": _save_failed,
 		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "bog_iron": _bog_left.duplicate(true), "layout": FloraLayout.VERSION, "no_kits": true}}
 
 
@@ -1740,6 +1747,7 @@ static func _write_item_job(job: Dictionary) -> void:
 	_write_file(dir + "/kilns.json", JSON.stringify({"version": 1, "kilns": _kiln_rows_of(items, kinds)}))
 	var areas: Dictionary = {}
 	var listed: Dictionary = {}
+	var failed: Array = []
 	DirAccess.make_dir_recursive_absolute(dir + "/" + AREA_DIR)
 
 	for key in job["areas"]:
@@ -1770,7 +1778,14 @@ static func _write_item_job(job: Dictionary) -> void:
 			listed[key] = int(sums[key][1])   # unchanged since it was written: not written again
 			continue
 
-		_write_file(path, "{\"version\":%d,\"gen\":%d,%s" % [VERSION, gen, body.substr(1)])
+		if not _write_file(path, "{\"version\":%d,\"gen\":%d,%s" % [VERSION, gen, body.substr(1)]):
+			failed.append(key)   # not written: the header names the gen still on disk, and the next save builds it again (no sum)
+
+			if sums.has(key):
+				listed[key] = int(sums[key][1])
+
+			continue
+
 		sums[key] = [sum, gen]
 		listed[key] = gen
 
@@ -1787,6 +1802,11 @@ static func _write_item_job(job: Dictionary) -> void:
 		if file.ends_with(".json") and not listed.has(file.trim_suffix(".json")):
 			DirAccess.remove_absolute(dir + "/" + AREA_DIR + "/" + file)   # an area left empty (its .prev goes too: the header no longer names it)
 			DirAccess.remove_absolute(dir + "/" + AREA_DIR + "/" + file + ".prev")
+
+	for key in failed:
+		sums.erase(key)
+
+	(job["failed_out"] as Array).append_array(failed)   # read on the tick once this writer is done: the save runs again for them
 
 
 # Every saved world item row of a store, for the tests and tools: the header's area files in order, or an older file's own rows.
@@ -1910,8 +1930,12 @@ func _save_note(id) -> void:
 	else:
 		_save_side.erase(id)
 
-	var sig: int = _save_sig_of(it)
 	var old: Variant = _save_sig.get(id)
+
+	if key == "" and old != null and str(old[1]) == "":
+		return   # scatter, a trunk or stump: in no area file, and its coming into one shows as a new key
+
+	var sig: int = 0 if key == "" else _save_sig_of(it)
 
 	if old != null and int(old[0]) == sig and str(old[1]) == key:
 		return
@@ -1930,6 +1954,7 @@ func _save_note(id) -> void:
 		_area_dirty[key] = true
 
 	_save_sig[id] = [sig, key]
+	_dirty = true   # the save writes it even when nothing else asked for a save
 
 
 func _save_forget(id) -> void:
@@ -1943,20 +1968,21 @@ func _save_forget(id) -> void:
 			(_area_ids[old[1]] as Dictionary).erase(id)
 
 		_area_dirty[old[1]] = true
+		_dirty = true
 
 	_save_sig.erase(id)
 	_save_side.erase(id)
 
 
 # One tick's slice of the rolling check: at most `count` items and `count` known ids, and no longer than SWEEP_BUDGET_US.
-func _save_sweep(count: int) -> void:
+func _save_sweep(count: int, budget_us: int = SWEEP_BUDGET_US) -> void:
 	var t0: int = Time.get_ticks_usec()
 
 	if _sweep_at >= _sweep_keys.size() and _sweep_gone_at >= _sweep_gone.size():
 		var took_ms: int = Time.get_ticks_msec() - _sweep_began_ms
 
 		if _sweep_began_ms > 0 and took_ms > int(SAVE_EVERY_S * 1000.0):
-			print("server items: the save check took %.1f s for %d items, longer than a save interval (changes reach the disk later)" % [float(took_ms) / 1000.0, _sweep_keys.size()])
+			_log_off_main("server items: the save check took %.1f s for %d items, longer than a save interval (changes reach the disk later)" % [float(took_ms) / 1000.0, _sweep_keys.size()])
 
 		_sweep_keys = _items.keys()
 		_sweep_gone = _save_sig.keys()
@@ -1966,7 +1992,7 @@ func _save_sweep(count: int) -> void:
 
 	var n: int = 0
 
-	while n < count and _sweep_at < _sweep_keys.size() and Time.get_ticks_usec() - t0 < SWEEP_BUDGET_US:
+	while n < count and _sweep_at < _sweep_keys.size() and Time.get_ticks_usec() - t0 < budget_us:
 		var id = _sweep_keys[_sweep_at]
 		_sweep_at += 1
 		n += 1
@@ -1976,7 +2002,7 @@ func _save_sweep(count: int) -> void:
 
 	n = 0
 
-	while n < count and _sweep_gone_at < _sweep_gone.size() and Time.get_ticks_usec() - t0 < SWEEP_BUDGET_US:
+	while n < count and _sweep_gone_at < _sweep_gone.size() and Time.get_ticks_usec() - t0 < budget_us:
 		var id = _sweep_gone[_sweep_gone_at]
 		_sweep_gone_at += 1
 		n += 1
@@ -6816,14 +6842,14 @@ func _note_save_part(name: String, t0: int) -> void:
 static var _file_lock: Mutex = Mutex.new()
 
 
-static func _write_file(path: String, text: String) -> void:
+static func _write_file(path: String, text: String) -> bool:
 	_file_lock.lock()
 	var file: FileAccess = FileAccess.open(path + ".tmp", FileAccess.WRITE)
 
 	if file == null:
 		_file_lock.unlock()
 		push_error("server items: cannot write %s" % path)
-		return
+		return false
 
 	file.store_string(text)
 	file.close()
@@ -6831,8 +6857,9 @@ static func _write_file(path: String, text: String) -> void:
 	if FileAccess.file_exists(path):
 		DirAccess.copy_absolute(path, path + ".prev")
 
-	DirAccess.rename_absolute(path + ".tmp", path)
+	var moved: bool = DirAccess.rename_absolute(path + ".tmp", path) == OK
 	_file_lock.unlock()
+	return moved
 
 
 # The autosave only copies on the tick; the rows, the JSON and the file writes (renames, copies) run on one short-lived
