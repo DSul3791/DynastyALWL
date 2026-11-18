@@ -57,23 +57,24 @@ This is linked to the compounding-height issue in entry 1.
 4. **Pathen** — One click creates one level path spot with the normal path texture.
 5. **Survey a Path** — Already implemented, as confirmed by Dave. Keep it after Pathen and use its existing behaviour.
 
-**Grid and obstacle rules (including Dave's latest correction):**
-- Grids form around trees and buildings and leave the area beneath them unchanged. Players should remove trees before placing gardens.
-- Small rocks that can be picked up are automatically picked up.
-- Large rocks block placement and turn the grid red until removed.
-- The earlier suggestion that rocks simply disappear is superseded by these small-rock/large-rock rules.
+**Grid and obstacle rules:**
+- Ground to be used must be free of obstacles such as trees and large rocks. These obstacles turn the grid red and block placement until removed; do not wrap around trees.
+- Small rocks that can be picked up are automatically picked up as part of confirmed placement, clearing those spots rather than destroying the rocks.
+- Buildings block only their occupied area. The grid may wrap around buildings, leaving their occupied positions unused and the ground beneath them unchanged.
+- These rules replace the earlier instruction to wrap around trees. Rocks do not simply disappear.
 
 **Planting controls and soil requirements (Dave's clarification):**
-- Left-click plants the selected plant.
+- One left-click fills available grid positions with the selected plant type, using available seeds/plants/trees until the supply runs out or the grid is filled. Each placed plant consumes its required planting resource. A shortage permits a partially filled grid; do not require enough resources to fill the entire grid.
 - Right-click opens the selection to pick a new plant.
 - Crops such as wheat and barley require tilled soil.
 - Bushes and trees do not require tilled soil.
 
 **Till a Garden levelling (Dave's clarification):**
 - Garden levelling does not require or consume soil.
-- Take the heights of all garden grid points together and calculate their average. For example, with 100 points, average all 100 heights.
-- Instantly set the whole garden to that average height.
-- Blend the outside edge into the surrounding land at a slope of 45 degrees or less, extending out to 20 metres in all directions.
+- Take the original heights of all usable garden grid points together and calculate their average before changing any heights. Exclude positions occupied by buildings. For example, with 100 usable points, average all 100 original heights.
+- Instantly set all usable garden grid points to that average height, leaving ground beneath buildings unchanged.
+- Blend the outside edge into the surrounding land at a slope of 45 degrees or less, extending no farther than 20 metres in any direction. Preserve ground beneath buildings during blending.
+- If the garden cannot be blended within these slope and distance limits while respecting obstacle/building rules, turn the grid red and block placement. Validate before applying terrain changes.
 - This averaging operation is separate from Level: it does not use the player's foot height as its target.
 - The tree/building protection and rock placement rules above still apply.
 
