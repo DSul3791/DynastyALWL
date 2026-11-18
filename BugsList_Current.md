@@ -54,7 +54,7 @@ This is linked to the compounding-height issue in entry 1.
 1. **Level** — Behaviour described in entry 5.
 2. **Plant** — Open a selection window showing plants and seeds available on the player or nearby. Selecting what to plant activates a neon-green planting grid. Alt + arrow keys adjust the number of rows and columns. Plant type determines spacing between plants.
 3. **Till Garden Grid - 20m Edge Blend** — Show a garden grid with length and width adjustable using Alt + arrow keys. One left-click averages, levels and tills the selected area, removes grass, and blends its edges under the rules below.
-4. **Till Soil 2m** — The second soil-tilling option, without edge blending. The meaning of 2m beyond the requested label has not yet been specified.
+4. **Till Soil 2m** — Till and level a 2-metre-wide patch, applying a dark, rough, rich garden-soil texture, without edge blending.
 5. **Pathen** — One click creates one level path spot with the normal path texture.
 6. **Survey a Path** — Already implemented, as confirmed by Dave. Keep it after Pathen and use its existing behaviour.
 
@@ -81,8 +81,9 @@ This is linked to the compounding-height issue in entry 1.
 - This averaging operation is separate from Level: it does not use the player's foot height as its target.
 
 **Till Soil 2m:**
-- Provide a separate soil-tilling option with this exact label and no edge blending.
-- The 2m measurement and whether this option also averages terrain heights remain unspecified; do not infer them from the label.
+- Till and level a 2-metre-wide patch and apply a dark, rough, rich garden-soil texture.
+- Do not apply edge blending.
+- The garden grid's 20-second repeat-tilling block does not apply to this option.
 
 **Planting resource sources (Dave's clarification):**
 - Planting uses and consumes the selected seeds or plants from the player's inventory, local containers, or loose seeds/plants sitting on the ground nearby, through the normal crafting resource system.
