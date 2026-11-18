@@ -177,6 +177,7 @@ const LOOKS := {
 	"cooking_pot": {"builder": "cooking_pot", "args": []},
 	"griddle": {"builder": "griddle", "args": []},
 	"hand_mill": {"builder": "hand_mill", "args": []},
+	"mortar_pestle": {"builder": "mortar_pestle", "args": []},
 	"oil_press": {"builder": "oil_press", "args": []},
 	"storage_jar": {"builder": "storage_jar", "args": []},
 	"hide_sack": {"builder": "hide_sack", "args": []},
