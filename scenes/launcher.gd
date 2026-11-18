@@ -2,6 +2,8 @@ extends Node
 
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const PlayServer := preload("res://src/shared/play_server.gd")
+const JoinAddress := preload("res://src/client/join_address.gd")
+const JoinPage := preload("res://src/client/join_page.gd")
 const RUN_NOTE := "user://server_run.json"
 const STOP_NOTE := "user://server_stop.json"   # asks the server Play started to close (terrain_server._stop_if_asked)
 const STOP_WAIT_MSEC := 60000                   # how long Play waits for that server to save and let go of the port
@@ -38,6 +40,8 @@ func _launch_role(role: String) -> void:
 					get_tree().change_scene_to_file("res://scenes/title/title.tscn")
 				else:
 					get_tree().change_scene_to_file("res://scenes/character_select/character_select.tscn")
+			elif JoinAddress.client_only():
+				_join_only()
 			else:
 				_host_and_play()
 
@@ -48,6 +52,16 @@ func _launch_role(role: String) -> void:
 
 		_:
 			push_error("Unknown launcher role: " + role)
+
+
+# "play" in a client-only build (the testers' download): never a server of its own. The join page asks for the address once per
+# launch; --server=, --test or a join already made this launch (back here after a death) go straight to the game.
+func _join_only() -> void:
+	if Engine.has_meta("join_done") or AppConfig.get_command_line_value("server", "") != "" or AppConfig.has_flag("test"):
+		get_tree().change_scene_to_file("res://scenes/terrain_client/terrain_client.tscn")
+		return
+
+	add_child(JoinPage.new())
 
 
 # "play": starts a terrain server for this world in the background (no

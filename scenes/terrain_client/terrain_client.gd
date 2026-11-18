@@ -41,6 +41,7 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const SlotSoundsScript := preload("res://src/client/slot_sounds.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
+const JoinAddress := preload("res://src/client/join_address.gd")
 const OceanWaves := preload("res://src/sullivan_water/ocean/ocean_waves.gd")
 const OceanMesh := preload("res://src/sullivan_water/ocean/ocean_mesh.gd")
 const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
@@ -540,6 +541,7 @@ var _flora_done_msec: int = 0
 var _host: String = "127.0.0.1"
 var _port: int = 24600
 var _wait_until_msec: int = 0
+var _remote: bool = false                 # a client-only build joining someone's server: no local Play server to restart (join_address.gd)
 
 
 func _ready() -> void:
@@ -591,6 +593,12 @@ func _ready() -> void:
 			break
 	var host: String = "127.0.0.1"
 	var port: int = 24600
+	_remote = JoinAddress.client_only()
+
+	if _remote:
+		var joined: Dictionary = JoinAddress.parse(JoinAddress.current())
+		host = str(joined.get("host", ""))
+		port = int(joined.get("port", JoinAddress.DEFAULT_PORT))
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--server="):
@@ -873,7 +881,7 @@ func _ready() -> void:
 
 	# Started by the "play" launcher, whose server may still be loading.
 	if waits_for_server(AppConfig.get_command_line_value("role", "")) and _wait_until_msec == 0:
-		_wait_until_msec = Time.get_ticks_msec() + 120000
+		_wait_until_msec = Time.get_ticks_msec() + (30000 if _remote else 120000)   # a remote server is already up; 30 s rides out a brief drop
 	multiplayer.server_disconnected.connect(_on_server_lost)
 	multiplayer.connected_to_server.connect(func():
 		_link_up_msec = Time.get_ticks_msec()
@@ -908,6 +916,10 @@ func _update_connect_window() -> void:
 		if silent_server and since >= 20:
 			_telemetry.event("JOIN: %d s in the world with no ground, 0 blocks received, 0 asked for; link: %s" % [since, link_bars.text() if link_bars != null else "?"])
 			var advice: String = "The server welcomed this game but no ground has arrived for %d s and none is being asked for. Most likely the server is an old one from an earlier run that is closing or out of date. Quit, wait a few seconds, and press Play again (a new game replaces an out-of-date server)." % since
+
+			if _remote:
+				advice = "The server welcomed this game but no ground has arrived for %d s and none is being asked for. The server may be restarting. Quit, wait a minute and join again; if it keeps happening, tell whoever runs the server." % since
+
 			_connect_window.fail("The server is not sending ground", "1. Server found at %s: done\n2. Welcome received\n3. Loading the ground under you: nothing arriving\n\n%s" % [where, advice], func(): _finish(1))
 
 		_connect_window.update("1. Server found at %s: done\n2. Welcome received, server protocol %s, this game %d: matches\n3. Loading the ground under you: %d blocks still arriving, %d received, %d s so far\n\nThe game opens as soon as there is ground to stand on.%s%s" % [where, str(world.get("protocol", "?")), NetScript.PROTOCOL_VERSION, stream.pending() if stream != null else 0, _ground_received(), since, ("\n\n" + _ground_watchdog.note()) if _ground_watchdog.tries > 0 else "", ("\n\nThe ground is taking long: %d blocks received, %d failed, %d still arriving, player height %.0f m." % [_ground_received(), _ground_failed(), stream.pending() if stream != null else 0, body.global_position.y]) if since > 60 and body != null else ""])
@@ -921,7 +933,11 @@ func _update_connect_window() -> void:
 		var text: String = "1. Opening the connection to %s: done\n2. Waiting for the server's welcome: %d s" % [where, quiet]
 
 		if quiet >= 8:
-			text += "\n\nThe server accepted the connection but has not welcomed this game. Most likely an OLD server from an earlier run is still running on port %d. Close the game, end every \"Godot\" process except the editor in Task Manager, then press Play again." % _port
+			if _remote:
+				text += "\n\nThe server at %s accepted the connection but has not welcomed this game. It may be busy or restarting. Quit, wait a minute and try again; if it keeps happening, tell whoever runs the server." % where
+			else:
+				text += "\n\nThe server accepted the connection but has not welcomed this game. Most likely an OLD server from an earlier run is still running on port %d. Close the game, end every \"Godot\" process except the editor in Task Manager, then press Play again." % _port
+
 			_connect_window.fail("The server is not answering this game", text, func(): _finish(1))
 
 		_connect_window.update(text)
@@ -929,19 +945,25 @@ func _update_connect_window() -> void:
 
 	var trying: String = "1. Opening the connection to %s: %s, %d s\n2. Waiting for the server's welcome\n3. Loading the ground under you" % [where, "trying" if status == MultiplayerPeer.CONNECTION_CONNECTING else "not connected", waited]
 
-	if waited >= 20:
+	if waited >= 20 and _remote:
+		trying += "\n\nNo server has answered yet at %s. The game keeps trying for 30 seconds." % where
+	elif waited >= 20:
 		trying += "\n\nNo server has answered yet. The server may still be starting (the game keeps trying for up to 2 minutes), or it did not start: if port %d is held by another program the new server cannot use it." % _port
 
 	_connect_window.update(trying)
 
 
 func _connect() -> void:
+	if _host == "":
+		_cannot_reach("This game has no server address yet. Start it again and type the server's address on the join page.")
+		return
+
 	var peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
 	var error: int = peer.create_client(_host, _port)
 
 	if error != OK:
 		push_error("Terrain client: cannot connect to %s:%d (%s)" % [_host, _port, error_string(error)])
-		get_tree().quit(1)
+		_cannot_reach("The game cannot open a connection to %s:%d (%s). If that is a name, check its spelling and this computer's internet connection." % [_host, _port, error_string(error)])
 		return
 
 	multiplayer.multiplayer_peer = peer
@@ -1045,7 +1067,23 @@ func _on_connection_failed() -> void:
 		_show_lost_notice("the connection failed after joining")
 		return
 
+	if _remote:
+		_cannot_reach("No server answered at %s:%d. Check the address (it is remembered on the join page), that the server is running, and this computer's internet connection." % [_host, _port])
+		return
+
 	_finish(1)
+
+
+# The server cannot be reached before joining: a window says why, with Quit (the next start shows the join page with the address);
+# a headless run quits with code 1 as before.
+func _cannot_reach(text: String) -> void:
+	_telemetry.event("JOIN: cannot reach the server: %s" % text)
+
+	if _connect_window == null:
+		_finish(1)
+		return
+
+	_connect_window.fail("Cannot reach the server", text, func(): _finish(1))
 
 
 func _on_welcome(info: Dictionary) -> void:
