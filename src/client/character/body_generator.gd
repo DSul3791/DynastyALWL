@@ -56,8 +56,8 @@ const HAIR_STYLES := ["long_loose", "bald", "buzz", "short_crop", "side_part", "
 const HAIR_STYLE_LABELS := {"long_loose": "Long and loose", "bald": "Bald", "buzz": "Buzz cut", "short_crop": "Short crop", "side_part": "Side part", "ponytail": "Ponytail",
 	"bun": "Bun", "braid": "Braid", "curly": "Curly", "shaved_sides": "Shaved sides"}
 
-# Body frames (Sonny, 30 Oct 2026): a starting point for hips, chest, shoulders, belly and neck plus a default clothing set, chosen with the Gender step of the creator or on
-# its own in the Frame row. Only starting values: every slider and colour stays editable. No gameplay number depends on a frame.
+# Body frames (Sonny, 30 Oct 2026): a starting point for hips, chest, shoulders, belly and neck plus a default clothing set, chosen in the Frame row of the creator
+# (the character has no gender, Dave 17 Nov 2026). Only starting values: every slider and colour stays editable. No gameplay number depends on a frame.
 const FRAMES := {
 	"feminine": {"hips": 0.45, "chest": -0.1, "bust": 0.3, "shoulders": -0.3, "belly": -0.15, "neck": -0.25,
 		"tunic": Color(0.52, 0.34, 0.42), "trousers": Color(0.3, 0.26, 0.22), "boots": Color(0.34, 0.22, 0.13)},

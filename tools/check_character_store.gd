@@ -92,33 +92,31 @@ func _check_store() -> void:
 
 func _check_identity() -> void:
 	_wipe()
-	var w: String = Store.add("Wren", _code("lean"), "woman")
-	var m: String = Store.add("Brock", _code("broad"), "man")
-	var n: String = Store.add("Sky", _code("average"), "non_binary", "she_her", "feminine")
-	var p: String = Store.add("Quill", _code("average"), "prefer_not_to_say")
+	var w: String = Store.add("Wren", _code("lean"), "body_1", "feminine")
+	var p: String = Store.add("Quill", _code("average"))
 	var one: Dictionary = Store.get_character(w)
-	_ok(one["gender"] == "woman" and one["pronouns"] == "she_her" and one["frame"] == "feminine", "a woman defaults to she/her and the feminine frame")
-	one = Store.get_character(m)
-	_ok(one["gender"] == "man" and one["pronouns"] == "he_him" and one["frame"] == "masculine", "a man defaults to he/him and the masculine frame")
-	one = Store.get_character(n)
-	_ok(one["gender"] == "non_binary" and one["pronouns"] == "she_her" and one["frame"] == "feminine", "pronouns and frame can be chosen freely whatever the gender")
+	_ok(one["body"] == "body_1" and one["frame"] == "feminine" and not one.has("gender") and not one.has("pronouns"), "a character keeps its body model and frame and has no gender")
 	one = Store.get_character(p)
-	_ok(one["pronouns"] == "they_them" and one["frame"] == "neutral", "prefer not to say defaults to they/them and the neutral frame")
-	_ok(Store.add("Zed", _code("average"), "robot") == "" and Store.add("Zed", _code("average"), "man", "it_its") == "" and Store.add("Zed", _code("average"), "man", "he_him", "round") == "", "unknown gender, pronouns or frame are refused")
-	_ok(Store.rename(w, "Wren Ash") and Store.get_character(w)["gender"] == "woman" and Store.get_character(w)["pronouns"] == "she_her" and Store.get_character(w)["frame"] == "feminine", "rename keeps gender, pronouns and frame")
-	_ok(Store.set_pronouns(m, "they_them") and Store.get_character(m)["pronouns"] == "they_them" and Store.get_character(m)["gender"] == "man" and Store.get_character(m)["name"] == "Brock", "pronouns can be changed later")
-	_ok(not Store.set_pronouns(m, "xe") and not Store.set_pronouns("nope", "he_him"), "bad pronouns or an unknown character change nothing")
+	_ok(one["body"] == "body_1" and one["frame"] == "neutral", "the first body model and the even frame by default")
+	_ok(Store.add("Zed", _code("average"), "robot") == "" and Store.add("Zed", _code("average"), "body_1", "round") == "", "an unknown body model or frame is refused")
+	_ok(Store.rename(w, "Wren Ash") and Store.get_character(w)["body"] == "body_1" and Store.get_character(w)["frame"] == "feminine", "rename keeps the body model and frame")
 	# The hair style rides in the share code, so a saved character keeps it.
 	var styled: Dictionary = Generator.make_genome("average")
 	styled["hair_style"] = 7
 	var sid: String = Store.add("Braida", Generator.encode(styled))
 	_ok(int(Store.get_character(sid)["genome"]["hair_style"]) == 7, "a saved character keeps its hair style")
-	# A version 1 file (before gender, pronouns and frame).
+	# A version 2 file with a gender and pronouns still loads and wears a body.
+	var two := FileAccess.open(TEST_DIR + "/2.json", FileAccess.WRITE)
+	two.store_string(JSON.stringify({"version": 2, "gender": "man", "pronouns": "he_him", "frame": "masculine", "name": "Old Brock", "genome_code": _code("broad"), "ancestry": "", "background": "", "fear": 1, "method": "points", "roll_seed": 0, "rerolls": 0, "base": {"luck": 0, "fitness": 0, "strength": 0, "dexterity": 0, "memory": 0, "wisdom": 0, "courage": 0}}))
+	two.close()
+	one = Store.get_character("2")
+	_ok(not one.is_empty() and one["body"] == "body_1" and one["frame"] == "masculine" and not one.has("gender"), "a version 2 file loads on the first body model without its gender")
+	# A version 1 file (before frames and body models).
 	var legacy := FileAccess.open(TEST_DIR + "/1.json", FileAccess.WRITE)
 	legacy.store_string(JSON.stringify({"name": "Old Hob", "genome_code": _code("average"), "ancestry": "", "background": "", "fear": 1, "method": "points", "roll_seed": 0, "rerolls": 0, "base": {"luck": 0, "fitness": 0, "strength": 0, "dexterity": 0, "memory": 0, "wisdom": 0, "courage": 0}}))
 	legacy.close()
 	one = Store.get_character("1")
-	_ok(not one.is_empty() and one["gender"] == "prefer_not_to_say" and one["pronouns"] == "they_them" and one["frame"] == "neutral", "a version 1 file loads with the plain defaults")
+	_ok(not one.is_empty() and one["body"] == "body_1" and one["frame"] == "neutral", "a version 1 file loads with the plain defaults")
 	_wipe()
 
 
@@ -132,7 +130,7 @@ func _check_page() -> void:
 	await process_frame
 	_ok(page._rows.get_child_count() == 2, "the page lists two characters")
 	var about: Label = page._rows.get_child(1).find_child("AboutLabel", true, false)
-	_ok(about != null and about.text == "Prefer not to say, they/them", "the page shows gender and pronouns under the name")
+	_ok(about != null and about.text == "Body 1, Even frame", "the page shows the body model and frame under the name")
 	_ok(page.selected_id == b and not page._play.disabled, "the active character starts selected and Play is ready")
 	(page._rows.get_child(0) as Button).button_pressed = true
 	(page._rows.get_child(0) as Button).pressed.emit()

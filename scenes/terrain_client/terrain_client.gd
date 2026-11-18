@@ -1422,11 +1422,11 @@ func _welcome_body(info: Dictionary) -> void:
 		if not talker.is_empty():       # nobody in earshot is talking: no voice (the text still shows)
 			npc_voice.speak(voice_id, text, talker["pos"])
 	items.knowledge = knowledge
-	items.max_lights = func(): return [1, 2, 3, 3][clampi(quality, 0, 3)]
 	items.is_inspecting = func(): return inspecting
 	items.auto_pickup_blocked = func(): return swimming or (held != null and (held.placing() or held.tool_busy()))
 	items.stance_event = _on_stance_from_server
 	items.lie_on_bed = _lie_on_bed
+	items.on_bed = func(): return not _bed_hold.is_empty()
 	items.sit_on_seat = _sit_on_seat
 	items.notice_event = func(text: String):
 		var cue: String = SlotSoundsScript.net_cue(text)
@@ -1444,7 +1444,6 @@ func _welcome_body(info: Dictionary) -> void:
 		_save_display()
 		items.set_text_scale(display.TEXT_SCALES[display.text_index])
 	items.gather_event = func():
-		held.play_gather()
 		feel.strike(0.0, 0.3)
 	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
 	items.worn_event = func(changed: Array, ids: Array) -> void:
@@ -4044,7 +4043,7 @@ func _update_view(delta: float) -> void:
 
 		# Tool work (31 Oct 2026): swinging an axe plays the wide chop, a pick axe the overhead arc (the generated body only: the old body has no such clip). The clip restarts at every
 		# swing and its impact frame is the moment held_item.gd sends the blow.
-		var hook: String = AvatarDriver.hook_clip(_avatar, {"swimming": swimming, "asleep": items != null and items.asleep, "stance": stance.stance if shot_stance < 0 else shot_stance, "drink_stamp": items._drink_msec if items != null else 0, "pick_stamp": items.pick_stamp if items != null else 0}, pace, delta)
+		var hook: String = AvatarDriver.hook_clip(_avatar, {"swimming": swimming, "asleep": items != null and items.asleep, "stance": stance.stance if shot_stance < 0 else shot_stance, "drink_stamp": items._drink_msec if items != null else 0}, pace, delta)
 
 		if hook != "" and debug_clip == "":
 			clip = hook
@@ -4549,6 +4548,9 @@ func _set_stance(wanted: int, toggle: bool = false) -> void:
 	if target != StanceScript.SIT and not _seat.is_empty():
 		_leave_seat()   # off the seat first: the room check would find the seat itself
 
+	if target != StanceScript.LIE and not _bed_hold.is_empty():
+		_leave_bed()   # off the bed first, to its side
+
 	if target < stance.stance and not _room_to_rise(target):
 		_menu_note.text = "Not enough room to stand up here"
 		return
@@ -4655,15 +4657,59 @@ func _leave_seat() -> void:
 	stance.seated = false
 
 
-# E on a bed (Dave 4 Nov 2026): the player is laid on top of it along its length, head at the pillow end, and lies down.
-func _lie_on_bed(bed_pos: Vector3, yaw_deg: float) -> void:
-	if swimming:
+# E on a bed (Dave 4 Nov 2026): the player is laid on top of it along its length, head at the pillow end, and lies down. Held there while lying (Dave 18 Nov 2026,
+# "should allow me to lay on it": before, nothing held the body on the bed, and the straw and feather beds laid it across the bed, not along it). E again, Z,
+# a movement key or the server standing the player up gets them up beside the bed. structures.json: lie_turn_deg turns the lie pose (head along its +Z) to the
+# bed's head end (the comfort beds have the head at -X: -90), lie_top_m is the top of its solid (default 0.5). E with no bed (an empty row) gets up.
+const BED_STEP_OFF_M := 0.95       # getting up puts the player this far to the side of the bed's middle (a bed is 1.0 m wide, the capsule 0.33 m)
+const BED_TOP_M := 0.5
+
+var _bed_hold: Dictionary = {}     # while lying on a bed: {"at": the body position held, "off": where getting up puts the body, "yaw": the body's turn held}
+
+
+func _lie_on_bed(bed_pos: Vector3, yaw_deg: float, def: Dictionary) -> void:
+	if def.is_empty():
+		_set_stance(StanceScript.STAND)
 		return
 
+	if swimming or flying:
+		return
+
+	var half: float = float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5
 	body.velocity = Vector3.ZERO
-	body.global_position = Vector3(bed_pos.x, bed_pos.y + 0.5 + float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5, bed_pos.z)
-	body.rotation.y = deg_to_rad(yaw_deg)
+	body.rotation.y = deg_to_rad(yaw_deg + float(def.get("lie_turn_deg", 0.0)))
+	var at: Vector3 = Vector3(bed_pos.x, bed_pos.y + float(def.get("lie_top_m", BED_TOP_M)) + half, bed_pos.z)
+	var off: Vector3 = bed_pos + body.global_transform.basis.x * BED_STEP_OFF_M + Vector3(0.0, half + 0.05, 0.0)
+	body.global_position = at
 	_set_stance(StanceScript.LIE)
+
+	if stance.stance == StanceScript.LIE:
+		_bed_hold = {"at": at, "off": off, "yaw": body.rotation.y}
+
+
+# Holds a player lying on a bed there (true while held: no gravity, no sliding off). A stance the server changed ends it.
+func _hold_bed() -> bool:
+	if _bed_hold.is_empty():
+		return false
+
+	if body.global_position.distance_to(_bed_hold["at"]) > 2.0:   # moved away by something else (a respawn, a teleport): no longer on the bed
+		_bed_hold = {}
+		return false
+
+	if stance.stance != StanceScript.LIE:
+		_leave_bed()
+		return false
+
+	body.velocity = Vector3.ZERO
+	body.global_position = _bed_hold["at"]
+	body.rotation.y = float(_bed_hold["yaw"])   # mouse look turns the head, not the body across the bed
+	return true
+
+
+func _leave_bed() -> void:
+	body.global_position = _bed_hold["off"]
+	body.velocity = Vector3.ZERO
+	_bed_hold = {}
 
 
 # The server's answer (or its own change: fainting forces lying, walking off stands you up).
@@ -4825,6 +4871,8 @@ func _move_player(delta: float) -> void:
 		direction.y += float(_move_held("jump")) - float(_move_held("down"))
 		body.global_position += direction * FLY_SPEED * fast * delta
 	elif _hold_seat():
+		pass
+	elif _hold_bed():
 		pass
 	elif _climb_ladder(delta, strain_cap):
 		pass

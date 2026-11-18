@@ -8,8 +8,10 @@ extends Node3D
 # Known gaps (docs/DYNASTY_BODY.md): worn clothing is not hung (the worn pieces are written for other bones), the skin and clothes colours are baked into the texture, the log on the
 # shoulder does not raise the arm, the lie clip is the nearest of Dave's, the first-person arms stay the ragdoll arms.
 
-const GLB := "res://assets/character/Humanoid/Dynasty_Base_Male.glb"
-const ARMS_GLB := "res://assets/character/Humanoid/Dynasty_Base_Male_Parts_Split.glb"   # dynasty_arms.gd PARTS_GLB, warmed with the body
+const BodyModels := preload("res://src/client/character/body_models.gd")
+# shortcut: every character wears the first body model; when a second mesh is listed in body_models.gd, load the active character's "glb" and "parts_glb" here instead.
+const GLB := BodyModels.DEFAULT_GLB
+const ARMS_GLB := BodyModels.DEFAULT_PARTS_GLB   # dynasty_arms.gd PARTS_GLB, warmed with the body
 const P := "mixamorig_"
 static var _loaded_here: Dictionary = {}   # path -> Resource: the files warm() read on the main thread (headless only)
 const WornLook := preload("res://src/client/worn_look.gd")
@@ -58,11 +60,10 @@ const CLIP_MAP := {
 	"use": ["Push_Forward_and_Stop", 0.0, -1.0, false, 0.5],
 	"carry_idle": ["Idle", 0.0, -1.0, true, 1.0],
 	"carry_walk": ["Walking", 0.0, -1.0, true, 0.95],    # 1.15 m/s in place, 1.1 wanted
-	# Not played by the game yet (needs a state hook, docs/DYNASTY_BODY.md): swimming, drinking, picking up, sitting down and standing up, waking.
+	# Not played by the game yet (needs a state hook, docs/DYNASTY_BODY.md): swimming, drinking, sitting down and standing up, waking.
 	"swim": ["Swim_Forward", 0.0, -1.0, true, 1.0],
 	"swim_idle": ["Swim_Idle", 0.0, -1.0, true, 1.0],
 	"drink": ["Stand_and_Drink", 0.0, -1.0, false, 1.0],
-	"pick_up": ["Male_Bend_Over_Pick_Up", 0.0, -1.0, false, 1.0],
 	"sit_down": ["Stand_to_Sit_Transition_M", 0.0, -1.0, false, 1.0],
 	"stand_up": ["Sit_to_Stand_Transition_M", 0.0, -1.0, false, 1.0],
 	"wake_up": ["Wake_Up_and_Look_Up", 0.0, -1.0, false, 1.0],

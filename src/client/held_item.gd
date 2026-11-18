@@ -933,12 +933,6 @@ func _is_axe() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) in ["axe", "pick"] and not _inv.is_broken(held_slot)
 
 
-# E gathers something by hand: the arm reaches down, takes hold and draws back (its own "gather" clip, ragdoll_body.gd _gather), unless a swing or another action is already playing.
-func play_gather() -> void:
-	if _swing_t < 0.0 and _jab_t < 0.0 and not aiming and _arms != null and _arms.visible and not _arms.is_one_shot_playing():
-		_arm_play("gather" if _arms.animation_player.has_animation("gather") else "use", 0.3)
-
-
 # True while a tool action is going on (a swing, the pause between chained swings, the hit stop): nothing nearby is picked up meanwhile.
 func tool_busy() -> bool:
 	return _swing_t >= 0.0 or _pause_t > 0.0 or _stop_t > 0.0

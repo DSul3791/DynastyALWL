@@ -74,13 +74,13 @@ func _run() -> void:
 
 	sheet.save_png(ProjectSettings.globalize_path(_out + "/frames_front_side.png"))
 	viewport.queue_free()
-	# The creator's About you section with a woman chosen.
+	# The creator's About you section with the curved frame chosen.
 	root.size = Vector2i(1920, 1080)
 	var screen: Control = Creator.instantiate()
 	root.add_child(screen)
 	screen.turntable = false
 	await _frames(10)
-	screen.set_gender("woman")
+	screen.set_frame("feminine")
 	screen._name_field.text = "Wren Ash"
 	screen._body.rotation_degrees.y = 180.0
 	await _frames(40)

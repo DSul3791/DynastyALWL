@@ -1,5 +1,5 @@
 {
-	"note": "Voice sets for the inner voice (Dave 2026-10-21): the voice is compiled from the character's gender and traits, with no pick screen. src/shared/inner_voice_profile.gd chooses the set id <family>_<temperament>_<n>; tools/gen_inner_voice.py renders every line in data/items/inner_voice.json once per set with the text to voice engine Kokoro (Apache 2.0) into assets/audio/inner_voice/<set id>/<line id>.ogg. Voices are Kokoro voice ids; speed below 1 is slower.",
+	"note": "Voice sets for the inner voice (Dave 2026-10-21): the voice is compiled from the character's body model and traits (the character has no gender, Dave 17 Nov 2026; body_families maps a body model to a voice timbre, provisional BM-4), with no pick screen. src/shared/inner_voice_profile.gd chooses the set id <family>_<temperament>_<n>; tools/gen_inner_voice.py renders every line in data/items/inner_voice.json once per set with the text to voice engine Kokoro (Apache 2.0) into assets/audio/inner_voice/<set id>/<line id>.ogg. Voices are Kokoro voice ids; speed below 1 is slower.",
 	"families": {
 		"masculine": {
 			"steady": [{"voice": "bm_george", "lang": "en-gb", "speed": 0.92}, {"voice": "am_michael", "lang": "en-us", "speed": 0.92}],
@@ -14,5 +14,5 @@
 		"traits": ["boldness", "wisdom"],
 		"steady_at": 0.5
 	},
-	"gender_families": {"man": "masculine", "male": "masculine", "woman": "feminine", "female": "feminine"}
+	"body_families": {"body_1": "masculine"}
 }

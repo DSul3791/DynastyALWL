@@ -103,3 +103,20 @@ Slots (Dave 18 Nov 2026: "the lowest tier should have 3 rows of slots. then each
 - **CH-1, which windows.** Every container that cannot craft loses the Craft side, not only chests: shelves, cupboards, racks, barrels, jars, sacks, baskets, bins, crates, carts, sleds, wagons, the root cellar and the smelters (their Craft list was already empty, SR-2). Fires, kilns, the chopping block, the Sawbuck and every station keep theirs.
 - **CH-2, sizes.** Volume follows slots at about 0.012 m³ a slot; the table above. Weight limits and the catalog's items are unchanged.
 - **CH-3, tier order.** Wicker, Crude, Rustic, Fine, Large wooden, Ornate (the Ornate - Chest is iron-bound, hammer level 3, "more than any other chest"); the Large wooden chest sits one row below it. Odd, left as it is: the Large wooden chest still holds more weight (350 kg) than the Ornate (250 kg), the [D17] ruling. Placed chests already in a world are drawn at their new size; their slot count in an old save was not checked (new game expected).
+
+## The golden line marks only what the store takes (Dave 17 Nov 2026)
+
+Dave: "when I open stations or containers or fires its suppose to highlight the stuff in my inventory that can go in that station or campfire or container. I just opened a campfire and it had fiddle heads highlighted and they cant go into a campfire."
+
+Cause: the line at a fire lit every ingredient of a recipe made at a campfire (herbs, eggs, clay, nettles ...) as well as what the fire's store takes, so it marked things the fire refuses (`station_use.gd`). Smelters, kilns, racks and bins named what they take but lit nothing. The fix: one rule, `src/shared/store_rules.gd`, decides what a store takes; the server's put (`server_items._fire_takes`, `_box_takes`) and the pack's line (`station_use.gd`) both ask it.
+
+- A fire lights exactly its store's rule: wood it burns and food it cooks (`cooking.json`).
+- A container that names what it takes (`structures.json` `takes` / `takes_kinds`: kilns, smelters, racks, bins, the chopping block, the saw mill, the log sled) lights exactly those.
+- A crafting station whose store takes anything lights the ingredients of its recipes, as before; its own fuel is lit too.
+- A plain chest lights nothing, as before.
+
+### For Dave (provisional, assumed on his behalf; change any of them by saying so)
+
+- **SU-1, campfire recipe ingredients.** Herbs, eggs, clay and the rest of a campfire recipe stay unlit at a fire, because the fire does not take them; those recipes still craft from the pack.
+- **SU-2, fiddleheads.** No campfire recipe in the data takes fiddleheads (only the Clay hearth roasts them); the campfire recipes do take nettles, wild garlic leaves and herbs, which the old line lit. If fiddleheads themselves still light at a plain campfire after this, that is a separate cause to chase.
+- **SU-3, a store that is full** (a smelter's hopper, a kiln's batch) still lights what it takes; the put then says it is full.
