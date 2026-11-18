@@ -20882,7 +20882,7 @@ func _train_fitness(peer: int, effort: float, spent: float) -> void:
 		_dirty = true
 
 		if banked > 0.0:
-			train = minf(train + banked, float(cfg.get("max_gain", 10)))
+			train = minf(train + banked, minf(float(cfg.get("max_gain", 10)), float(_fitness_max() - int(row.get("fitness", _fitness_default())))))   # no hidden points above the top of the range
 			row["train"] = train
 			_say(peer, "Your day's work has made you fitter." if int(floor(train)) > int(floor(train - banked)) else "You feel your day's work in your legs.")
 	elif not row.has("xp_day"):

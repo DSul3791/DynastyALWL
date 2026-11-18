@@ -2168,14 +2168,14 @@ func _init() -> void:
 	to._train_fitness(1, 1.0, 3400.0)
 	clk[0] += 86400.0 * 3.0
 	to._train_fitness(1, 0.0, 1.0)
-	check(to.fitness_of(1) == 1, "a midnight that passed while away is paid at the next tick, once (%d)" % to.fitness_of(1))
+	check(to.fitness_of(1) == to._fitness_default() + 1, "a midnight that passed while away is paid at the next tick, once (%d)" % to.fitness_of(1))
 	tr._train_fitness(1, 1.0, 1.0e7)
 	midnight.call(tr)
 	check(tr.fitness_of(1) == 10, "training stops at the top of the range")
 	tr.set_fitness(1, 2)
 	tr._train_fitness(1, 1.0, 1.0e7)
 	midnight.call(tr)
-	check(float(tr._characters[tr._peer_key[1]]["train"]) == 10.0 and tr.fitness_of(1) == 10, "training stops at max_gain above the base, clamped to the range")
+	check(float(tr._characters[tr._peer_key[1]]["train"]) == 8.0 and tr.fitness_of(1) == 10, "training stops at the top of the range, no hidden points above it (base 2, 8 trained)")
 	tr.set_fitness(1, 2)
 	tr._characters[tr._peer_key[1]]["xp_today"] = 0.0
 	tr._train_fitness(1, 1.0, 1800.0 * 3.0)
