@@ -32,7 +32,15 @@ func _init() -> void:
 		var b: AABB = view._bounds_in(meshes, m)
 		var def: Dictionary = structures[tiers[tier]]
 		var k: float = view._forge_scale("forge_" + tier)
-		check(absf(b.size.x - float(def["footprint_x"])) <= 0.35 and absf(b.size.z - float(def["footprint_z"])) <= 0.35, "%s footprint %.2f x %.2f matches the mesh %.2f x %.2f" % [tier, def["footprint_x"], def["footprint_z"], b.size.x, b.size.z])
+		var foot: AABB = b
+
+		if tier == "basic":   # the Primitive smithy's footprint holds its forge and the stone anvil beside it (Dave 17 Nov 2026, provisional PS-2)
+			var whole: Node3D = view._make_forge(int(def["state"]))
+			foot = view._bounds_in(whole, whole)
+			check(foot.position.x >= -float(def["footprint_x"]) * 0.5 - 0.02 and foot.end.x <= float(def["footprint_x"]) * 0.5 + 0.02, "the Primitive smithy and its anvil (x %.2f to %.2f) stand inside its footprint" % [foot.position.x, foot.end.x])
+			whole.free()
+
+		check(absf(foot.size.x - float(def["footprint_x"])) <= 0.35 and absf(foot.size.z - float(def["footprint_z"])) <= 0.35, "%s footprint %.2f x %.2f matches the mesh %.2f x %.2f" % [tier, def["footprint_x"], def["footprint_z"], foot.size.x, foot.size.z])
 		check(absf(b.position.y) < 0.02 and b.size.y > 2.0 * k and b.size.y > b.size.x * 0.6, "%s stands upright with its base on the ground (height %.2f)" % [tier, b.size.y])
 		check(absf(b.position.x + b.size.x * 0.5) < 0.02 and absf(b.position.z + b.size.z * 0.5) < 0.02, "%s footprint is centred on the pivot" % tier)
 		var light: Node3D = m.get_node_or_null("Light")
