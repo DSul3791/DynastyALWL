@@ -4102,9 +4102,9 @@
    "size": 0.8
   },
   "mortar_pestle": {
-   "shape": "chunk",
+   "shape": "mortar",
    "color": "#8a8580",
-   "size": 0.9
+   "size": 1.0
   },
   "herb_antidote": {
    "shape": "bottle",

@@ -8568,20 +8568,13 @@
 			"mortar_pestle": {
 				"number": 807,
 				"name": "Mortar and pestle",
-				"description": "A hollowed stone and a round grinder for crushing herbs into poultices and cures.",
-				"kind": "tool",
-				"tool_class": "mortar_pestle",
+				"description": "A heavy stone bowl with a stone pestle. Set it down and grind herbs in it into poultices and cures.",
+				"kind": "placeable",
 				"stack": 1,
 				"unstackable": true,
-				"durability": 2000,
-				"repair": [
-					[
-						"stone",
-						1
-					]
-				],
 				"look_alikes": [],
-				"value": 6
+				"value": 6,
+				"note": "Placed station since 18 Nov 2026 (Dave agreed docs/design/MORTAR_PESTLE.md: crafted by hand from 2 stone, set down, grinds medicine). Row state 456."
 			},
 			"herb_antidote": {
 				"number": 808,

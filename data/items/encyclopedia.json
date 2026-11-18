@@ -2319,8 +2319,8 @@
 			"kind": "medicine",
 			"description": "Crushed herb leaves bound on a wound.",
 			"how_to_get": [
-				"Craft: 3 Plantain leaves (keep Mortar and pestle)",
-				"Craft: 2 Comfrey leaves (keep Mortar and pestle)"
+				"Craft at a mortar and pestle: 3 Plantain leaves",
+				"Craft at a mortar and pestle: 2 Comfrey leaves"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2330,7 +2330,7 @@
 			"kind": "medicine",
 			"description": "Leaves and fibre bound round a wound.",
 			"how_to_get": [
-				"Craft: 1 Plantain leaves, 2 Plant fibre (keep Mortar and pestle)",
+				"Craft at a mortar and pestle: 1 Plantain leaves, 2 Plant fibre",
 				"Craft: 1 Staunchmoss, 2 Plant fibre"
 			],
 			"used_for": [],
@@ -5258,7 +5258,7 @@
 			"kind": "medicine",
 			"description": "Comfrey worked into fat. Soothes burns and sore skin.",
 			"how_to_get": [
-				"Craft: 2 Comfrey leaves, 1 Animal fat"
+				"Craft at a mortar and pestle: 2 Comfrey leaves, 1 Animal fat"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -10232,16 +10232,13 @@
 		},
 		"mortar_pestle": {
 			"name": "Mortar and pestle",
-			"kind": "tool",
-			"description": "A hollowed stone and a round grinder for crushing herbs into poultices and cures.",
+			"kind": "placeable",
+			"description": "A heavy stone bowl with a stone pestle. Set it down and grind herbs in it into poultices and cures.",
 			"how_to_get": [
-				"Craft: 2 Stone"
+				"Craft: 2 Stone, then set it down"
 			],
 			"used_for": [
-				"Used in Plantain poultice",
-				"Used in Comfrey poultice",
-				"Used in Leaf bandage",
-				"Used in Herb antidote"
+				"Grinds Plantain poultice, Comfrey poultice, Leaf bandage, Herb antidote and Herb salve"
 			],
 			"obtainable_now": true
 		},
@@ -10250,7 +10247,7 @@
 			"kind": "medicine",
 			"description": "Plantain and comfrey ground into water. A cure for poison and a sick stomach.",
 			"how_to_get": [
-				"Craft: 2 Plantain leaves, 1 Comfrey leaves, 1 Water (keep Mortar and pestle)"
+				"Craft at a mortar and pestle: 2 Plantain leaves, 1 Comfrey leaves, 1 Water"
 			],
 			"used_for": [],
 			"obtainable_now": true

@@ -5,6 +5,7 @@ extends RefCounted
 # quarter circles and sit on a 1 m grid (placement_rules.gd snap), so neighbours meet edge to edge.
 
 const RockLook := preload("res://src/client/rock_look.gd")
+const BasicLook := preload("res://src/client/basic_look.gd")
 const WOOD := Color(0.5, 0.36, 0.21)
 const WOOD_DARK := Color(0.3, 0.2, 0.11)
 const TEX := 128                 # texture side in pixels: small and cheap at every quality setting
@@ -3693,6 +3694,17 @@ static func hand_mill() -> Node3D:
 	_rod(root, Vector3(0.22, 0.62, 0.0), Vector3(0.22, 0.86, 0.0), 0.04, _log)          # the handle
 	_cyl(root, 0.4, 0.01, Vector3(0.0, 0.005, 0.0), _tone_mat(Color(0.86, 0.82, 0.72)), 8)   # spilled flour
 	_solid(root, Vector3(0.75, 0.65, 0.75), Vector3(0.0, 0.33, 0.0))
+	return root
+
+
+# The Mortar and pestle, 0.4 x 0.4 (MORTAR_PESTLE.md MP-1, MP-5): the same stone bowl and pestle as the loose item (basic_look.gd "mortar"), standing on y = 0.
+static func mortar_pestle() -> Node3D:
+	var root: Node3D = Node3D.new()
+	var bowl: MeshInstance3D = MeshInstance3D.new()
+	bowl.mesh = BasicLook.mesh_for("mortar_pestle")
+	bowl.position = Vector3(0.0, -bowl.mesh.get_aabb().position.y, 0.0)
+	root.add_child(bowl)
+	_solid(root, Vector3(0.32, 0.16, 0.32), Vector3(0.0, 0.08, 0.0))
 	return root
 
 

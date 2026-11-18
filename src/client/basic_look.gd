@@ -1865,6 +1865,15 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_sph(parts, 0.03, Vector3(1.0, 0.25, 1.0), Vector3(0.0, 0.052, 0.0), Color(0.3, 0.45, 0.2))
 		"bowl":
 			_bowl(parts, color)
+		"mortar":
+			# The Mortar and pestle (MORTAR_PESTLE.md MP-5): a heavy grey stone bowl about 30 cm across, its hollow dark with a smear of green herb mash,
+			# and a short club-shaped stone pestle standing in it, its thick end down in the bowl and its handle leaning out over the rim.
+			_frustum(parts, 0.12, 0.15, 0.14, Vector3(0.0, -0.01, 0.0), color)
+			_torus(parts, 0.135, 0.018, Vector3(0.0, 0.06, 0.0), light)
+			_cyl(parts, 0.12, 0.006, Vector3(0.0, 0.062, 0.0), Vector3.ZERO, color.darkened(0.55))
+			_cyl(parts, 0.07, 0.005, Vector3(0.0, 0.066, 0.0), Vector3.ZERO, Color(0.3, 0.42, 0.18))
+			_root_seg(parts, 0.032, 0.02, Vector3(-0.05, 0.03, 0.0), Vector3(0.14, 0.22, 0.03), light.darkened(0.08))
+			_sph(parts, 0.022, Vector3.ONE, Vector3(0.14, 0.22, 0.03), light.darkened(0.08))
 		"stew":
 			_bowl(parts, Color(0.5, 0.34, 0.19))      # one shared wooden bowl under every soup and stew (Dave 2026-10-22)
 			_fill(parts, color, bits, false)
