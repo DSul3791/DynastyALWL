@@ -22,6 +22,7 @@ extends Node
 
 const FishWaterScript := preload("res://src/server/server_fish_water.gd")
 const WaterAreas := preload("res://src/shared/water_areas.gd")
+const FineWaterSend := preload("res://src/shared/fine_water_send.gd")
 const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 const EventLogScript := preload("res://src/shared/event_log.gd")
 const PlayServerScript := preload("res://src/shared/play_server.gd")
@@ -162,6 +163,12 @@ var _water_answered_msec: Dictionary = {}   # peer -> last time its water reques
 var _water_window: Rect2 = Rect2()          # the live water window (world m) from the last flow packet: water only moves inside it
 var _water_window_told: Rect2 = Rect2()     # the window the last "water moved" named
 var _fine_sends: int = 0                    # 2 m water messages sent (the log line for the PC check)
+# Dave 18 Nov 2026 ("water from small digs should be sent to local players"): each player is sent only the dig regions' 2 m water within
+# EDIT_SEND_M of them (fine_water_send.gd). The newest packet of each region is kept, so one who comes within reach gets it at once.
+var _fine_keys: PackedStringArray = PackedStringArray()   # every drawn region, as the last take_fine named them
+var _fine_cache: Dictionary = {}       # key -> that region's newest packet
+var _fine_told: Dictionary = {}        # peer -> {key: true}: the regions that player has a picture of
+var _fine_named: Dictionary = {}       # peer -> PackedStringArray: the keys they were last named
 var _live_told: Array = []                 # the dig windows' areas (Rect2) the last "water moved" named (Sullivan water)
 var _water_tiles_told: Array = []          # the tiles (Vector2i) the last water update set: a new tile's first update may draw sleeping dig regions in
 var _cave_streams_sent: Dictionary = {}     # peer -> {tile: true}: spring cave streams already sent (protocol 87)
@@ -1139,6 +1146,8 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_gather_msec.erase(peer_id)
 	_npc_sent.erase(peer_id)
 	_edits_held.erase(peer_id)   # a rejoin catches up through the edits since (protocol 128)
+	_fine_told.erase(peer_id)
+	_fine_named.erase(peer_id)
 	_animal_sent.erase(peer_id)
 	trails.forget_peer(peer_id)
 
@@ -1462,7 +1471,8 @@ func _poll_water() -> void:
 		var fine: Dictionary = water_live.take_fine()
 
 		if not fine.is_empty():
-			net.deliver_fine_water.rpc(fine["keys"], fine["packets"])
+			_fine_keys = fine["keys"]
+			_send_fine(FineWaterSend.remember(_fine_cache, fine))
 			_fine_sends += 1
 
 			if _fine_sends == 1 or _fine_sends % 20 == 0:
@@ -2465,6 +2475,29 @@ func _send_held_edits(peer_id: int, at: Vector3) -> bool:
 	return behind
 
 
+# The dig regions' 2 m water to each player within EDIT_SEND_M of them (fine_water_send.gd): `fresh` names the regions whose picture just
+# changed. Nothing goes to a player for whom nothing changed, or whose spot is not known yet (the next half-second check sends it).
+func _send_fine(fresh: Dictionary) -> void:
+	if _fine_keys.is_empty() and _fine_named.values().all(func(k): return (k as PackedStringArray).is_empty()):
+		return   # no dig water anywhere, and every player has been told so
+
+	for peer in multiplayer.get_peers():
+		var peer_id: int = int(peer)
+		var at: Variant = items.position_of(peer_id)
+
+		if at == null:
+			continue
+
+		var told: Dictionary = _fine_told.get(peer_id, {})
+		var out: Dictionary = FineWaterSend.for_peer(at, generator.period_m, EDIT_SEND_M, _fine_keys, _fine_cache, fresh, told,
+				_fine_named.get(peer_id, PackedStringArray()))
+		_fine_told[peer_id] = told
+
+		if out["send"]:
+			_fine_named[peer_id] = out["keys"]
+			net.deliver_fine_water.rpc_id(peer_id, out["keys"], out["packets"])
+
+
 # Within EDIT_SEND_M across the ground, the world's wrap included.
 func _edit_near(at: Vector3, center: Vector3) -> bool:
 	var period: float = generator.period_m
@@ -2878,6 +2911,7 @@ func _process(delta: float) -> void:
 			elif at != null:
 				_send_held_edits(int(peer_id), at)
 
+		_send_fine({})   # a player who came within reach of a wet dig gets its water
 		store.save_revisions()
 		flora.save_removed()
 
