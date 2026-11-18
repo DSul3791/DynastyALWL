@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs. 'ready_age' (game hours, Mission 001 phase 6, master s3.14): a sealed batch at the Preserving jar; the whole queued count is made at once at age 0 and is Maturing (not eaten, used, sold or merged with a Ready stack) until its age reaches ready_age; its inputs must be at least half fresh.",
-	"next_number": 736,
+	"next_number": 743,
 	"hand_saw_balance": {
 		"note": "Master s2.3 item 1 (Dave [D1], Mission 001 phase 2a): a softwood or plain log gives 6 Planks and a hardwood log 4 Hardwood boards, at the sawmill and with the hand saw alike; hand sawing is four times slower. recipes.lumber / lumber_by_hand and hardwood_board / hardwood_board_by_hand must match this row (validate_items checks it); change the balance by editing this row and those recipes together.",
 		"sawmill": {"lumber_per_log": 6, "boards_per_log": 4, "craft_s": 6.0},
@@ -3145,7 +3145,7 @@
 			"craft_s": 8.0,
 			"known": true
 		},
-		"stone_hoe": {
+		"stone_hoe": { "retired": true,
 			"number": 140,
 			"name": "Stone - Hoe",
 			"category": "Tools",
@@ -3403,7 +3403,7 @@
 			"craft_s": 20.0,
 			"known": true
 		},
-		"wooden_hammer": {
+		"wooden_hammer": { "retired": true,
 			"number": 161,
 			"name": "Wooden - Hammer",
 			"category": "Tools",
@@ -3610,7 +3610,7 @@
 		"processed_hide": {"number": 179, "name": "Scraped hide", "category": "Materials", "needs": [["hide", 1]], "keeps": [["hide_scraper", 1]], "gives": ["processed_hide", 1], "craft_s": 20.0, "known": true, "station": "drying_rack"},
 		"hide_scraper": {"number": 180, "name": "Scraper", "category": "Tools", "needs": [["flint", 1], ["stick", 1], ["twine", 1]], "gives": ["hide_scraper", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
 		"javelin": {"number": 181, "name": "Javelin", "category": "Weapons", "needs": [["stick", 2], ["flint", 1]], "gives": ["javelin", 2], "craft_s": 6.0, "known": true, "station": "workbench"},
-		"obsidian_knife": {"number": 182, "name": "Obsidian - Knife", "category": "Tools", "needs": [["obsidian", 1], ["stick", 1], ["twine", 1]], "gives": ["obsidian_knife", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
+		"obsidian_knife": { "retired": true,"number": 182, "name": "Obsidian - Knife", "category": "Tools", "needs": [["obsidian", 1], ["stick", 1], ["twine", 1]], "gives": ["obsidian_knife", 1], "craft_s": 6.0, "known": true, "station": "workbench"},
 		"steel_striker": {"number": 183, "name": "Steel - Striker", "category": "Tools", "needs": [["steel_ingot", 1]], "gives": ["steel_striker", 1], "craft_s": 8.0, "known": true, "station": "brick_forge", "station_level": 3},
 		"rivets": {"number": 184, "name": "Rivets", "category": "Materials", "needs": [["iron_ingot", 1]], "gives": ["rivets", 50], "craft_s": 8.0, "known": true, "station": "brick_forge", "station_level": 2},
 		"bronze_ingot": {"number": 185, "name": "Bronze ingot", "category": "Materials", "needs": [["copper_ingot", 3], ["tin_ingot", 1]], "gives": ["bronze_ingot", 4], "craft_s": 10.0, "known": true, "station": "smelter", "retired": true},
@@ -8054,6 +8054,13 @@
 		"improved_backpack": {"number": 731, "name": "Improved - Backpack", "category": "Containers and furniture", "needs": [["leather", 5], ["twine", 20], ["hardwood_board", 1]], "gives": ["improved_backpack", 1], "craft_s": 24.0, "known": true, "station": "leatherworking_table", "note_provisional": "PROVISIONAL (backpacks, Dave 15 Nov 2026): materials and station are Dave's; the craft time is assumed."},
 		"quality_backpack": {"number": 732, "name": "Quality - Backpack", "category": "Containers and furniture", "needs": [["leather", 10], ["sinew", 20], ["copper_nails", 15], ["hardwood_board", 2]], "gives": ["quality_backpack", 1], "craft_s": 30.0, "known": true, "station": "leatherworking_table", "note_provisional": "PROVISIONAL (backpacks, Dave 15 Nov 2026): materials and station are Dave's; the craft time is assumed. The 15 Copper nails may be any nails (Dave: \"really it can use any nails\"; wood_species.json group copper_nails)."},
 		"advanced_backpack": {"number": 733, "name": "Advanced - Backpack", "category": "Containers and furniture", "needs": [["steel_ingot", 2], ["leather", 25], ["sinew", 40]], "gives": ["advanced_backpack", 1], "craft_s": 40.0, "known": true, "station": "brick_forge", "station_level": 3, "note_provisional": "PROVISIONAL (backpacks, Dave 15 Nov 2026): materials and station are Dave's; the craft time is assumed."},
-		"copper_nails": {"number": 734, "name": "Copper nails", "category": "Materials", "needs": [["copper_ingot", 1]], "gives": ["copper_nails", 100], "craft_s": 10.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (Dave 15 Nov 2026 asked for Copper nails; the recipe is assumed): Bronze nails' recipe in copper, at the Primitive smithy."}
+		"copper_nails": {"number": 734, "name": "Copper nails", "category": "Materials", "needs": [["copper_ingot", 1]], "gives": ["copper_nails", 100], "craft_s": 10.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (Dave 15 Nov 2026 asked for Copper nails; the recipe is assumed): Bronze nails' recipe in copper, at the Primitive smithy."},
+		"copper_hammer": {"number": 736, "name": "Copper - Hammer", "category": "Tools", "needs": [["copper_ingot", 2], ["stick", 1]], "gives": ["copper_hammer", 1], "craft_s": 20.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
+		"copper_knife": {"number": 737, "name": "Copper - Knife", "category": "Tools", "needs": [["copper_ingot", 1], ["stick", 1]], "gives": ["copper_knife", 1], "craft_s": 12.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
+		"stone_saw": {"number": 738, "name": "Stone - Saw", "category": "Tools", "needs": [["stone", 2], ["stick", 1], ["twine", 1]], "gives": ["stone_saw", 1], "craft_s": 10.0, "known": true, "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
+		"copper_hoe": {"number": 739, "name": "Copper - Hoe", "category": "Tools", "needs": [["copper_ingot", 2], ["stick", 2]], "gives": ["copper_hoe", 1], "craft_s": 12.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
+		"bronze_hoe": {"number": 740, "name": "Bronze - Hoe", "category": "Tools", "needs": [["bronze_ingot", 2], ["stick", 2]], "gives": ["bronze_hoe", 1], "craft_s": 12.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
+		"copper_shovel": {"number": 741, "name": "Copper - Shovel", "category": "Tools", "needs": [["copper_ingot", 2], ["stick", 2]], "gives": ["copper_shovel", 1], "craft_s": 10.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
+		"bronze_shovel": {"number": 742, "name": "Bronze - Shovel", "category": "Tools", "needs": [["bronze_ingot", 2], ["stick", 2]], "gives": ["bronze_shovel", 1], "craft_s": 10.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."}
 	}
 }

@@ -24,7 +24,7 @@ const NEAR_TRIANGLES := 300
 const KNIFE_ROWS := ["log_seat", "stool", "bench", "crude_chair", "crude_table", "crude_chest", "wooden_shelf", "drying_rack", "tool_rack", "firewood_rack", "log_rack", "tanning_rack",
 	"tailors_table", "food_preparation_table", "chest", "wicker_basket", "log_bench", "log_table", "log_double_bench", "log_backed_bench", "carving_station"]
 # The recipes carved at the station (the Shortbow is wooden_bow, the Quarterstaff has no wooden prefix).
-const CARVED := ["wooden_bowl", "serving_platter", "quarterstaff", "wooden_club", "wooden_hammer", "wooden_bow", "wooden_longbow"]
+const CARVED := ["wooden_bowl", "serving_platter", "quarterstaff", "wooden_club", "wooden_bow", "wooden_longbow"]
 
 var failures: int = 0
 var said: Array = []
@@ -236,7 +236,7 @@ func knife_vs_hammer() -> void:
 	items.report_position(1, Vector3(40.0, 10.0, 0.0))
 	var station_bp: int = int(bp_rows["carving_station"]["number"])
 	clear_pack()
-	hold("wooden_hammer")
+	hold("stone_hammer")
 	items.inventory_of(1).add(n("wooden_block"), 2)
 	said.clear()
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, station_bp, 0, 0, Vector3(40.0, 10.0, 3.0))
@@ -260,7 +260,7 @@ func knife_vs_hammer() -> void:
 	items.report_position(1, Vector3(80.0, 10.0, 0.0))
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, lean, 0, 0, Vector3(80.0, 10.0, 3.0))
 	check(standing("lean_to").is_empty() and have("stick") == 20 and said.any(func(t): return str(t).contains("hammer")), "a knife cannot build a hammer blueprint: nothing placed or taken, and it says to use a hammer")
-	hold("wooden_hammer")
+	hold("stone_hammer")
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, lean, 0, 0, Vector3(80.0, 10.0, 3.0))
 	check(standing("lean_to").size() == 1 and have("stick") == 0, "a hammer builds it")
 

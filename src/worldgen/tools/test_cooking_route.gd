@@ -193,7 +193,7 @@ func _init() -> void:
 		check(cook_needs.size() == 1 and int(cook_needs[0][0]) == num(PREPARED[dish]) and str(recipe(cook_id).get("station", "")) != "food_preparation_table", "1d. %s cooks from %s alone" % [dish, PREPARED[dish]])
 
 	# 2. Pre-iron Flatbread.
-	items.give(1, num("wooden_hammer"), 1)
+	items.give(1, num("stone_hammer"), 1)
 	items.give(1, num("stone_knife"), 1)   # the Food preparation table is a knife blueprint now (15 Nov 2026, W-9): a knife in the hand bar builds it
 	give_needs("prep_flatbread")
 	craft("prep_flatbread", 1, 20)

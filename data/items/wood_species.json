@@ -6,7 +6,7 @@
 		"log_spruce": ["log_scots_pine", "log"],
 		"log_oak": ["log_beech", "log_birch", "log_tropical_hardwood", "log_walnut", "log_maple"],
 		"bronze_chisel": ["bronze_chisel", "iron_chisel", "steel_chisel"],
-		"knife": ["stone_knife", "obsidian_knife", "bronze_knife", "iron_knife", "steel_knife"], "axe": ["stone_axe", "copper_axe", "bronze_axe", "iron_axe", "steel_axe"], "saw": ["copper_saw", "bronze_saw", "hand_saw", "steel_saw"],
+		"knife": ["stone_knife", "copper_knife", "bronze_knife", "iron_knife", "steel_knife"], "axe": ["stone_axe", "copper_axe", "bronze_axe", "iron_axe", "steel_axe"], "saw": ["stone_saw", "copper_saw", "bronze_saw", "hand_saw", "steel_saw"],
 		"nails": ["nails", "bronze_nails"],
 		"copper_nails": ["bronze_nails", "nails"],
 		"hinges": ["hinges", "bronze_hinges"],

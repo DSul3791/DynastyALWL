@@ -39,14 +39,14 @@ func _init() -> void:
 	var shovel: int = items.recipes.recipe(0).get("number", 0)
 
 	for number in items.recipes.numbers():
-		if str(items.recipes.recipe(number)["id"]) == "stone_hoe":
+		if str(items.recipes.recipe(number)["id"]) == "hide_scraper":
 			shovel = number
 
-	check(str(items.recipes.recipe(shovel).get("station", "")) == "workbench", "the stone hoe is a camp bench recipe")
-	var stone: int = items.table.number_of("stone")
+	check(str(items.recipes.recipe(shovel).get("station", "")) == "workbench", "the hide scraper is a camp bench recipe (the Stone - Hoe retired 18 Nov 2026)")
+	var flint: int = items.table.number_of("flint")
 	var stick: int = items.table.number_of("stick")
 	var twine: int = items.table.number_of("twine")
-	items.action(1, Net.ACT_ADMIN_GIVE, stone, 0, 4, Vector3.ZERO)
+	items.action(1, Net.ACT_ADMIN_GIVE, flint, 0, 4, Vector3.ZERO)
 	items.action(1, Net.ACT_ADMIN_GIVE, stick, 0, 30, Vector3.ZERO)
 	items.action(1, Net.ACT_ADMIN_GIVE, twine, 0, 8, Vector3.ZERO)
 	items._last_queue_act.clear()
@@ -61,17 +61,15 @@ func _init() -> void:
 	check(not items.station_near(1, "workbench", 2), "a level 2 recipe needs a better bench")
 
 	# Craft near it; step away and the craft waits.
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("wooden_hoe"), 0, 1, Vector3.ZERO)
-	items.action(1, Net.ACT_ADMIN_GIVE, stone, 0, 2, Vector3.ZERO)
 	items._last_queue_act.clear()
 	items.action(1, Net.ACT_CRAFT_QUEUE, shovel, 0, 1, CraftHand.at(items, 1, shovel))
 	check(not items.craft_queue_of(1).is_empty(), "near the bench the craft is queued")
 	items.report_position(1, Vector3(30.0, 10.0, 0.0))
 	items._craft_tick(60.0)
-	check(not items.craft_queue_of(1).is_empty() and items.inventory_of(1).count_of(items.table.number_of("stone_hoe")) == 0, "away from the bench the craft waits")
+	check(not items.craft_queue_of(1).is_empty() and items.inventory_of(1).count_of(items.table.number_of("hide_scraper")) == 0, "away from the bench the craft waits")
 	items.report_position(1, Vector3(1.0, 10.0, 0.0))
 	items._craft_tick(60.0)
-	check(items.inventory_of(1).count_of(items.table.number_of("stone_hoe")) == 1, "back at the bench it finishes")
+	check(items.inventory_of(1).count_of(items.table.number_of("hide_scraper")) == 1, "back at the bench it finishes")
 
 	# Add-ons raise the bench's level: a tool rack beside it.
 	check(not items.station_near(1, "workbench", 2), "a bare bench is level 1")

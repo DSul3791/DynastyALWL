@@ -3,7 +3,7 @@ extends SceneTree
 # Mission 001 phase 2c data (M001-T09; master s2.1, s2.2, s3.1, s4 items 1, 4, 13): the tool ladders, through the real server, recipes
 # and blueprints. Every amount is read from the live data, so tuning keeps the test valid.
 #   1. the rows: each family's tiers rise with its material (Wooden 1 ... Steel 5); disposable gear has no repair; metal tools repair at
-#      the station type that makes them; edge only on sharpening-eligible metal tools; the Stone - Shovel and Stone - Sickle are retired;
+#      the station type that makes them; edge only on sharpening-eligible metal tools; the Stone - Shovel, Stone - Sickle, Wooden - Hammer, Stone - Hoe and Obsidian - Knife are retired;
 #   2. the groups take the better tool: an Iron - Knife for the Wooden bowl (recipe 20), a Copper - Saw for Wooden blocks (728), a
 #      Steel - Saw for Planks by hand (159), with no stone knife or Iron - Saw in the pack;
 #   3. every new ladder tool is made at its station from live materials: copper and bronze at the Primitive smithy (stone_forge), iron and steel at the lit Smithy;
@@ -21,8 +21,9 @@ const RANK := {"wood": 1, "stone": 2, "copper": 2, "bronze": 3, "iron": 4, "stee
 const FAMILIES := ["axe", "pick", "shovel", "hammer", "hoe", "knife", "saw", "sickle", "scythe", "chisel"]
 const EDGED := ["axe", "pick", "knife", "saw", "sickle", "scythe", "chisel"]
 const NEW_TOOLS := ["iron_axe", "steel_axe", "iron_knife", "steel_knife", "steel_saw", "bronze_sickle", "iron_sickle", "steel_sickle",
-		"bronze_scythe", "steel_scythe", "copper_pickaxe", "copper_axe", "copper_saw", "bronze_saw"]
-const DISPOSABLE := ["stone_axe", "stone_knife", "stone_hoe", "stone_hammer", "stone_pickaxe", "wooden_shovel", "wooden_hoe", "wooden_hammer",
+		"bronze_scythe", "steel_scythe", "copper_pickaxe", "copper_axe", "copper_saw", "bronze_saw",
+		"copper_hammer", "copper_knife", "copper_hoe", "bronze_hoe", "copper_shovel", "bronze_shovel"]
+const DISPOSABLE := ["stone_axe", "stone_knife", "stone_saw", "stone_hammer", "stone_pickaxe", "wooden_shovel", "wooden_hoe",
 		"hide_scraper", "spear", "stone_mace", "javelin", "sewing_needle"]
 const STATION := {"copper": "forge", "bronze": "forge", "iron": "brick_forge", "steel": "brick_forge"}
 
@@ -183,7 +184,7 @@ func _init() -> void:
 	for id in ["steel_pickaxe", "steel_chisel"] + NEW_TOOLS:
 		check(bool(recipe(id).get("known", false)) and not bool(recipe(id).get("locked", false)), "the %s recipe is known from the start" % id)
 
-	for id in ["stone_shovel", "sickle"]:
+	for id in ["stone_shovel", "sickle", "wooden_hammer", "stone_hoe", "obsidian_knife"]:   # extras off the one ladder (Dave 18 Nov 2026)
 		check(bool(row(id).get("retired", false)) and recipe_number(id) == 0, "%s and its recipe are retired" % id)
 
 	check(int(row("javelin").get("stack", 0)) == 1 and int(recipe("spear").get("needs", []).filter(func(c): return int(c[0]) == n_of("stone")).size()) == 1 and recipe("spear").get("keeps", []).is_empty(), "the Javelin stacks 1; the Stone - Spear uses up its stone")
@@ -210,7 +211,7 @@ func _init() -> void:
 
 	# 3. Every new tool at its station, from live materials.
 	empty_pack()
-	hold("wooden_hammer")
+	hold("stone_hammer")
 	var forge_at: Vector3 = HERE + Vector3(4.0, 0.0, 0.0)
 	var smithy_at: Vector3 = HERE + Vector3(0.0, 0.0, 30.0)
 	check(place("stone_forge", forge_at), "a Stone - Forge stands")
@@ -227,7 +228,7 @@ func _init() -> void:
 
 	items.report_position(1, smithy_at)
 	empty_pack()
-	hold("wooden_hammer")
+	hold("stone_hammer")
 	check(place("advanced_smithy", smithy_at + Vector3(2.0, 0.0, 0.0)), "an Advanced smithy stands (iron at brick forge level 2 and steel at 3, GOALS-REPAIR R4)")
 	items.give(1, n_of("charcoal"), 20)   # fires the Smithy
 
@@ -236,7 +237,7 @@ func _init() -> void:
 		craft(id)
 		check(have(id) == 1, "%s is made at the lit Advanced smithy" % id)
 
-	# 4. Any metal hammer builds the top hammer tier; the wooden and stone ones do not.
+	# 4. Any bronze or better hammer builds the top hammer tier; the stone and copper ones do not.
 	var top: int = 0
 
 	for number in items._blueprints:
@@ -248,18 +249,18 @@ func _init() -> void:
 
 	var spot: int = 0
 
-	for hammer in ["wooden_hammer", "stone_hammer", "bronze_hammer", "iron_hammer", "steel_hammer"]:
+	for hammer in ["stone_hammer", "copper_hammer", "bronze_hammer", "iron_hammer", "steel_hammer"]:
 		empty_pack()
 		hold(hammer)
 		spot += 1
 		var at: Vector3 = HERE + Vector3(-8.0 * float(spot), 0.0, -12.0)
 		items.report_position(1, at + Vector3(0.0, 0.0, 2.0))
-		var metal: bool = STATION.has(str(row(hammer).get("material", "")))
+		var metal: bool = int(row(hammer).get("tier", 1)) >= top   # Copper shares Stone's tier (RANK), so the Copper - Hammer builds what the Stone one does
 		check(place(top_row, at) == metal, "%s %s a %s (hammer tier %d)" % [hammer, "builds" if metal else "cannot build", top_row, top])
 
 	# 5. The Grindstone: before the first saw, a station.
 	empty_pack()
-	hold("wooden_hammer")
+	hold("stone_hammer")
 	var grind_at: Vector3 = HERE + Vector3(-6.0, 0.0, 12.0)
 	items.report_position(1, grind_at + Vector3(0.0, 0.0, 1.5))
 	var cost_ids: Array = blueprint_of("grindstone").get("cost", []).map(func(c): return str(c[0]))

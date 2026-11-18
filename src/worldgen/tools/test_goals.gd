@@ -193,7 +193,7 @@ func _init() -> void:
 
 	check(str(live["fish"].get("event", "")) == "fish_caught" and int(live["fish"].get("count", 0)) == 1 and not live["fish"].has("have_item_any") and not live["fish"].has("or_event")
 		and str(live["workbench"].get("what", "")) == "workbench" and not live["workbench"].has("what_any"), "the fish goal counts only a catch and the workbench goal only the workbench (corrected catalog, GA-47)")
-	check((live["hammer"].get("made_item_any", []) as Array).has("stone_hammer") and (live["hammer"].get("made_item_any", []) as Array).has("wooden_hammer") and str(live["hoe"].get("made_item", "")) == "wooden_hoe" and not JSON.stringify(live).contains("wooden_hammer_soft"), "the hammer goal counts a made Stone or Wooden hammer (TREE_WOOD_TOOLS_DESIGN.md s1.4) and the hoe goal a Wooden - Hoe; no wooden_hammer_soft item is named")
+	check((live["hammer"].get("made_item_any", []) as Array).has("stone_hammer") and not (live["hammer"].get("made_item_any", []) as Array).has("wooden_hammer") and str(live["hoe"].get("made_item", "")) == "wooden_hoe" and not JSON.stringify(live).contains("wooden_hammer_soft"), "the hammer goal counts a made Stone - Hammer (the Wooden one retired 18 Nov 2026) and the hoe goal a Wooden - Hoe; no wooden_hammer_soft item is named")
 
 	# Axe, then fell a tree.
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone"), 0, 6, Vector3.ZERO)
@@ -311,7 +311,7 @@ func _init() -> void:
 	check(done("fire"), "lighting the fire completes the fire goal")
 
 	# Shelter and workbench come after the hammer goal: a wooden hammer in the pack, then a lean-to and a bench placed.
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("wooden_hammer"), 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_hammer"), 0, 1, Vector3.ZERO)
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 12, Vector3.ZERO)
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 32, Vector3.ZERO)   # the lean-to costs 16 sticks, 4 leaves, 2 twine (lighter 3 Nov; was 32/8/4)
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("twine"), 0, 4, Vector3.ZERO)

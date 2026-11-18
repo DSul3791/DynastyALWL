@@ -72,8 +72,7 @@
 			],
 			"check": {
 				"made_item_any": [
-					"stone_hammer",
-					"wooden_hammer"
+					"stone_hammer"
 				],
 				"count": 1,
 				"or_have": true

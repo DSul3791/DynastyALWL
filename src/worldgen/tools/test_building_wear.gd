@@ -72,7 +72,7 @@ func _init() -> void:
 			bp = row
 
 	_clear()
-	_give("wooden_hammer", 1)
+	_give("stone_hammer", 1)
 	_give("log", 6)
 	_give("twine", 2)
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(bp["number"]), 0, 0, Vector3(200.0, 10.0, 202.0))
@@ -93,7 +93,7 @@ func _init() -> void:
 	check(worn < 0.9 and worn >= 0.5, "after most of T the wall has worn (%f)" % worn)
 
 	_clear()
-	_give("wooden_hammer", 1)
+	_give("stone_hammer", 1)
 	items.action(1, Net.ACT_REPAIR_STRUCT, wall, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)
 	check(items.piece_condition(wall) < 0.9, "no materials: nothing is repaired")
 
@@ -102,6 +102,6 @@ func _init() -> void:
 	_give("log", need_logs)
 	items.action(1, Net.ACT_REPAIR_STRUCT, wall, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)
 	check(is_equal_approx(items.piece_condition(wall), 1.0), "with the logs in the pack and the twine on the ground the wall is mended")
-	check(_have("log") == 0 and _have("wooden_hammer") == 1, "exactly the logs were taken and the hammer kept")
+	check(_have("log") == 0 and _have("stone_hammer") == 1, "exactly the logs were taken and the hammer kept")
 	print("test_building_wear: %d fail" % failures)
 	quit(1 if failures > 0 else 0)

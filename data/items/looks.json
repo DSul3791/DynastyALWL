@@ -204,13 +204,6 @@
    "color": "#a98f52",
    "size": 1.0
   },
-  "wooden_hammer": {
-   "shape": "hammer",
-   "color": "#8a6a3a",
-   "size": 1.0,
-   "bits": ["wood"],
-   "placeholder": true
-  },
   "stone_hammer": {
    "shape": "hammer",
    "color": "#7d7a74",
@@ -261,6 +254,13 @@
    "size": 0.7,
    "bits": ["metal"]
   },
+  "copper_hammer": {"shape": "hammer", "color": "#b87333", "size": 1.0, "bits": ["metal"]},
+  "copper_knife": {"shape": "knife", "color": "#b87333", "size": 1.35, "bits": ["metal"]},
+  "stone_saw": {"shape": "saw", "color": "#7d7a74", "size": 0.8},
+  "copper_hoe": {"shape": "hoe", "color": "#b87333", "size": 1.0, "bits": ["metal"]},
+  "bronze_hoe": {"shape": "hoe", "color": "#b5803a", "size": 1.0, "bits": ["metal"]},
+  "copper_shovel": {"shape": "shovel", "color": "#b87333", "size": 0.7, "bits": ["metal"]},
+  "bronze_shovel": {"shape": "shovel", "color": "#b5803a", "size": 0.7, "bits": ["metal"]},
   "steel_shovel": {
    "shape": "shovel",
    "color": "#9aa3ad",
@@ -979,11 +979,6 @@
   "wooden_hoe": {
    "shape": "hoe",
    "color": "#8a6a3a",
-   "size": 1.0
-  },
-  "stone_hoe": {
-   "shape": "hoe",
-   "color": "#7d7a74",
    "size": 1.0
   },
   "iron_hoe": {

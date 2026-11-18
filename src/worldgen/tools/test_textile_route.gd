@@ -258,7 +258,7 @@ func _init() -> void:
 
 	# 4. Leather, then the Leatherworking table and a Leather strap there.
 	items.give(1, items.table.number_of("hide_scraper"), 1)
-	items.give(1, items.table.number_of("wooden_hammer"), 1)
+	items.give(1, items.table.number_of("stone_hammer"), 1)
 	craft("processed_hide", 1, 30)
 	check(have("processed_hide") == 0 and have("hide") >= 1, "4. no Drying rack: the hide is not scraped and dried (master s3.4: the rack adds the hide drying step)")
 	var rack: int = build("drying_rack", HERE + Vector3(-2.6, 0.0, 0.5))

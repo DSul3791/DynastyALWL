@@ -287,7 +287,7 @@ func do_repair_building(_i: int) -> void:
 
 
 func building_checks() -> void:
-	items.give(1, n("wooden_hammer"), 1)
+	items.give(1, n("stone_hammer"), 1)
 	var wall: int = items.dev_place("log_wall@0.0,2.0,0")
 	items.action(1, Net.ACT_REPAIR_STRUCT, wall, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)
 	check(ev("building_repaired") == 0, "a new wall is in good repair and needs none: building_repaired stays 0")
@@ -452,7 +452,7 @@ func do_repair_station(_i: int) -> void:
 
 func station_checks() -> void:
 	empty_pack()
-	items.give(1, n("wooden_hammer"), 1)
+	items.give(1, n("stone_hammer"), 1)
 	target = items.dev_place("blacksmithy@0.0,-3.0,0,lit")
 	break_smithy()
 	items.action(1, Net.ACT_REPAIR_STRUCT, target, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)

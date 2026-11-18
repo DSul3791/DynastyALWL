@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1497,
+	"next_number": 1504,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -2605,7 +2605,7 @@
 			"look_alikes": [],
 			"tier": 1
 		},
-		"stone_hoe": {
+		"stone_hoe": { "retired": true,
 			"number": 222,
 			"name": "Stone - Hoe",
 			"description": "A hoe with a stone blade. Lasts longer than wood.",
@@ -2846,7 +2846,7 @@
 			"look_alikes": [],
 			"value": 45
 		},
-		"wooden_hammer": {
+		"wooden_hammer": { "retired": true,
 			"number": 247,
 			"name": "Wooden - Hammer",
 			"description": "A wooden head on a stick. The weakest hammer; it wears out fast.",
@@ -3319,7 +3319,7 @@
 			"value": 30
 		},
 		"javelin": {"number": 295, "name": "Javelin", "description": "A light, balanced throwing spear. Flies farther and straighter than a plain spear.", "kind": "weapon", "weapon_class": "javelin", "tier": 2, "stack": 1, "unstackable": true, "damage": 4.0, "throw_damage": 9.0, "durability": 120, "look_alikes": [], "value": 15, "damage_mode": "piercing"},
-		"obsidian_knife": {
+		"obsidian_knife": { "retired": true,
 			"number": 296,
 			"name": "Obsidian - Knife",
 			"description": "A razor-sharp black glass blade. Cuts better than flint, but chips more easily.",
@@ -12278,6 +12278,13 @@
 			"value": 1,
 			"sell_lot": 15,
 			"note_provisional": "Dave 15 Nov 2026: \"add copper nails to our items list\". The recipe (1 Copper ingot to 100 at the Primitive smithy) mirrors Bronze nails and is assumed for his review. The Quality - Backpack asks for them and takes any nails instead (wood_species.json group copper_nails)."
-		}
+		},
+		"copper_hammer": {"number": 1497, "name": "Copper - Hammer", "description": "A cast copper head on a short haft. Builds from blueprints, repairs, and breaks stone from boulders.", "kind": "tool", "tool_class": "hammer", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 5000, "repair": [["copper_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 45, "look_alikes": [], "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
+		"copper_knife": {"number": 1498, "name": "Copper - Knife", "description": "A copper blade on a bone grip. Dresses a kill and cuts bark.", "kind": "tool", "tool_class": "knife", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 1000, "repair": [["copper_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 20, "look_alikes": [], "edge": true, "cut": 1.1, "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
+		"stone_saw": {"number": 1499, "name": "Stone - Saw", "description": "A notched flint blade on a stick. Saws logs into wooden blocks, planks and boards, very slowly.", "kind": "tool", "tool_class": "saw", "material": "stone", "tier": 2, "stack": 1, "unstackable": true, "durability": 600, "value": 15, "look_alikes": [], "saw_speed": 0.3, "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
+		"copper_hoe": {"number": 1500, "name": "Copper - Hoe", "description": "A hoe with a copper blade.", "kind": "tool", "tool_class": "hoe", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 8000, "repair": [["copper_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 45, "look_alikes": [], "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
+		"bronze_hoe": {"number": 1501, "name": "Bronze - Hoe", "description": "A hoe with a bronze blade.", "kind": "tool", "tool_class": "hoe", "material": "bronze", "tier": 3, "stack": 1, "unstackable": true, "durability": 12000, "repair": [["bronze_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 60, "look_alikes": [], "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
+		"copper_shovel": {"number": 1502, "name": "Copper - Shovel", "description": "A shovel with a copper blade.", "kind": "tool", "tool_class": "shovel", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 8000, "repair": [["copper_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 45, "look_alikes": [], "shovel_size": "medium", "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
+		"bronze_shovel": {"number": 1503, "name": "Bronze - Shovel", "description": "A shovel with a bronze blade.", "kind": "tool", "tool_class": "shovel", "material": "bronze", "tier": 3, "stack": 1, "unstackable": true, "durability": 12000, "repair": [["bronze_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 60, "look_alikes": [], "shovel_size": "large", "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."}
 	}
 }

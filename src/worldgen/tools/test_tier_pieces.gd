@@ -161,7 +161,7 @@ func _server_checks() -> void:
 			check(_standing(items, id).is_empty() and _have(items, "concrete") == int(p[5][0][1]), "%s: a stone hammer cannot build it, and nothing is taken" % id)
 			_give(items, "iron_hammer", 1)
 		else:
-			_give(items, "wooden_hammer", 1)
+			_give(items, "stone_hammer", 1)
 
 		items.action(1, Net.ACT_PLACE_BLUEPRINT, int(p[2]), 0, 0, spot)
 		var built: Array = _standing(items, id)

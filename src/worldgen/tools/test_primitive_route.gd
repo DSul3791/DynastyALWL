@@ -309,7 +309,7 @@ func route() -> void:
 func site_lean_to() -> void:
 	fresh("site")
 	items.vitals_of(1)["weight"] = 150.0
-	items.give(1, n("wooden_hammer"), 1)
+	items.give(1, n("stone_hammer"), 1)
 	items.give(1, n("stick"), 10)   # the lean-to needs 20
 	items.give(1, n("leaves"), 60)
 	items.give(1, n("twine"), 6)
