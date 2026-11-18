@@ -4398,7 +4398,10 @@ func _road_tick(delta: float) -> void:
 			var i: int = int(seg["i"])
 
 			if i >= int(seg["n"]) and not seg.get("trees", []).is_empty():
+				var first_left: int = _next_id
 				_road_fell(seg, 1.0)   # trees left over at the stretch's end (at most ROAD_FELLS a station): cleared before it closes
+				_road_fresh.append_array(range(first_left, _next_id))   # their logs go out with the quick sync
+				_road_near.append(seg["b"])
 				continue
 
 			if i >= int(seg["n"]):
@@ -6383,15 +6386,12 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 		var removed: PackedInt32Array = PackedInt32Array()
 		var near: Dictionary = {}
 		var home: Vector2i = Vector2i(int(floor(here.x / NEAR_M)), int(floor(here.z / NEAR_M)))
-		var candidates: Array = []
+		var candidates: Array = fresh if quick else []   # a quick sync: only the road's new records; nothing else is added or dropped
 
-		for dx in range(-1, 2):
-			for dz in range(-1, 2):
-				if not quick:
+		if not quick:
+			for dx in range(-1, 2):
+				for dz in range(-1, 2):
 					candidates.append_array(grid.get(Vector2i(home.x + dx, home.y + dz), []))
-
-		if quick:
-			candidates = fresh   # only the road's new records: nothing else is added or dropped in a quick sync
 
 		for id in candidates:
 			if not _items.has(id):
@@ -13724,9 +13724,9 @@ func _sync_breath(peer: int, tenths: int) -> void:
 		send_breath.call(peer, tenths)
 
 
-# Whether a path patch has its centre within data/path_speed.json range_m of the player, checked at most once a second per player, in the grid
-# cells round the player that the last sync filed (it walked every world item, per player, every second: audit 18 Nov 2026 finding 3). Before
-# the first sync there is no grid: every item, as before.
+# Whether a path patch has its centre within data/path_speed.json range_m of the player, checked at most once a second per player, among the
+# grid cells round the player that the last full sync filed and the ids made since (_ids_near; it walked every world item, per player, every
+# second: audit 18 Nov 2026 finding 3). Before the first sync there is no grid: every item, as before.
 func _on_path(peer: int, position: Vector3) -> bool:
 	var now: int = Time.get_ticks_msec()
 	var cached: Array = _on_path_cache.get(peer, [])
