@@ -13,6 +13,7 @@ const TORCH_HEIGHT_M := 1.3        # the main light about at head-and-hand heigh
 const HAND_HEIGHT_M := 0.9
 const FIRE_HEIGHT_M := 0.8         # the fire's Light node position y in BuildingLook.fire
 const STEPS := 4000
+const HAND_ATTENUATION := 1.0     # the hand light keeps Godot's default attenuation (held_item.gd does not set it)
 
 var failures: int = 0
 var torch_range_m: float = 18.0     # items.json torch light_m x FlameRules.TORCH_REACH_MULT, read in _init
@@ -64,11 +65,11 @@ func ground_flux(energy: float, range_m: float, attenuation: float, height: floa
 
 # The torch's light at `energy` (its mean FlameRules.TORCH_LIGHT_ENERGY, or its flicker peak) plus its hand light.
 func torch_sphere(energy: float) -> float:
-	return sphere_flux(energy, torch_range_m, FlameRules.TORCH_LIGHT_ATTENUATION) + sphere_flux(FlameRules.TORCH_HAND_ENERGY, FlameRules.TORCH_HAND_RANGE_M, FlameRules.TORCH_LIGHT_ATTENUATION)
+	return sphere_flux(energy, torch_range_m, FlameRules.TORCH_LIGHT_ATTENUATION) + sphere_flux(FlameRules.TORCH_HAND_ENERGY, FlameRules.TORCH_HAND_RANGE_M, HAND_ATTENUATION)
 
 
 func torch_ground(energy: float) -> float:
-	return ground_flux(energy, torch_range_m, FlameRules.TORCH_LIGHT_ATTENUATION, TORCH_HEIGHT_M) + ground_flux(FlameRules.TORCH_HAND_ENERGY, FlameRules.TORCH_HAND_RANGE_M, FlameRules.TORCH_LIGHT_ATTENUATION, HAND_HEIGHT_M)
+	return ground_flux(energy, torch_range_m, FlameRules.TORCH_LIGHT_ATTENUATION, TORCH_HEIGHT_M) + ground_flux(FlameRules.TORCH_HAND_ENERGY, FlameRules.TORCH_HAND_RANGE_M, HAND_ATTENUATION, HAND_HEIGHT_M)
 
 
 func _init() -> void:
