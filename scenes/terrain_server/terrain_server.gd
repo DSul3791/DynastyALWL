@@ -2316,11 +2316,11 @@ func _dig_ground(center: Vector3, radius: float) -> bool:
 		return false
 
 	_fill_last = []
+	net.dug.rpc(center, radius)   # before tile_changed: the client re-marks the edits it has heard of when that comes (terrain_client.gd _on_tile_changed)
 
 	for tile in tiles:
 		_tell_tile_changed(tile)
 
-	net.dug.rpc(center, radius)
 	tunnels.mark_edit(center, radius)
 	var t2: int = Time.get_ticks_usec()
 
@@ -2464,11 +2464,13 @@ func _fill_ground(center: Vector3, radius: float, material: int) -> bool:
 	if not tiles.is_empty():
 		_fill_last = [center, radius, material]
 
+	if not tiles.is_empty():
+		net.filled.rpc(center, radius, material)   # before tile_changed, as in _dig_ground
+
 	for tile in tiles:
 		_tell_tile_changed(tile)
 
 	if not tiles.is_empty():
-		net.filled.rpc(center, radius, material)
 		tunnels.mark_edit(center, radius)
 		_bury_plants(center, radius)
 
