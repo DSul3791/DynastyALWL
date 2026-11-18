@@ -7,7 +7,7 @@ Server/client split step A5 (18 Nov 2026; plan: Library `server-client-split/PLA
 - **The server decides.** `src/stream/server_admin.gd` holds the admin keys, shape `{"keys": ["<player key>"]}` (`data/admin.example.json`).
 - **The check is off in local play,** so everybody is an admin, as before (`data/items/admin_setting.json` `check_admin` stays false, so Dave's editor Play is unchanged).
 - **A server for other players runs with `--dedicated`** (step A4, PR #1274, which lands before this): the check is on, admins are the keys in `<store>/admin.json` only, `--open-admin` is ignored, and the start line gives the key count (never the keys).
-- **Protocol 132:** after each hello the server sends `admin_status(on)`. When it is false, the client hides Esc > Admin (on the main and settings pages), switches flying off, turns Admin mode off, and ignores the two admin keys that act only on the client (fly, and go to the nearest NPC).
+- **Protocol 134:** after each hello the server sends `admin_status(on)`. When it is false, the client hides Esc > Admin (on the main and settings pages), switches flying off, turns Admin mode off, and ignores the two admin keys that act only on the client (fly, and go to the nearest NPC).
 
 A player key is per character: `CharacterKeys.key_for(character id, machine key)`. Esc > Admin > "Show my player key" copies it. Dave reads his in local Play with the character he will use on the server, and that key goes into the server's `<store>/admin.json`.
 

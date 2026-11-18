@@ -1,9 +1,20 @@
 extends RefCounted
-# Short id of the commit this checkout is on, read from .git (no git program needed),
-# so the HUD can tell which code is running now that build numbers come in blocks per
-# thread and are not in time order. Empty when there is no .git folder (exports).
+# Short id of the commit this copy runs, so the HUD and the join check can tell which code is running. Read from .git (no git
+# program needed); an export has no .git folder, so it reads the commit from the release stamp (src/shared/build_stamp.gd,
+# step A1) instead. Empty only with neither.
 
 static func short_commit() -> String:
+	var id: String = git_commit()
+
+	if id != "":
+		return id
+
+	var stamp: Dictionary = load("res://src/shared/build_stamp.gd").read()   # load, not preload: build_stamp.gd preloads this file
+	return str(stamp.get("commit", "")).substr(0, 7)
+
+
+# The short commit from .git alone, "" when there is none (exports).
+static func git_commit() -> String:
 	var git_dir: String = ProjectSettings.globalize_path("res://.git")
 
 	if FileAccess.file_exists(git_dir):

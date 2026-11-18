@@ -39,7 +39,7 @@ var _hints_switch
 var _dialogue_switch
 var _tunnel_switch
 var _admin_mode_switch
-var _admin_buttons: Array = []   # the Admin buttons on the main and settings pages: shown only to an admin on this server (protocol 132)
+var _admin_buttons: Array = []   # the Admin buttons on the main and settings pages: shown only to an admin on this server (protocol 134)
 var _cave_button: Button
 var _sound_list: VBoxContainer
 var _controls_from_settings: bool = false   # Back on the Controls page returns to Settings when it was opened from there

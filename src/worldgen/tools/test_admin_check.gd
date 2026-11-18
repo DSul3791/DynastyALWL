@@ -121,7 +121,7 @@ func _init() -> void:
 	var server_src: String = FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd")
 	check(server_src.contains("admin.open_to_all = OS.get_cmdline_user_args().has(\"--open-admin\") and not _dedicated") and server_src.contains("admin.enforce = true"), "--dedicated turns the check on and ignores --open-admin (A4)")
 	check(server_src.contains("if water_live == null or not admin.is_admin(items.key_of(peer_id)):"), "the spring flow keys are admin only on the server")
-	check(server_src.contains("net.admin_status.rpc_id(peer, admin.is_admin(items.key_of(peer)))"), "the server tells each client after its hello whether it is an admin (protocol 132)")
+	check(server_src.contains("net.admin_status.rpc_id(peer, admin.is_admin(items.key_of(peer)))"), "the server tells each client after its hello whether it is an admin (protocol 134)")
 	check(FileAccess.get_file_as_string("res://src/stream/server_items.gd").contains("if (not admin_ok.is_valid() or admin_ok.call(peer)) and _hand_tool_ok("), "the instant craft (ACT_CRAFT, no station, no time) is admin only")
 
 	print("Test done: %d fail" % failures)
