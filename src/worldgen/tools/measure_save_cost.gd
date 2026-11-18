@@ -3,7 +3,8 @@ extends SceneTree
 # What the periodic world save costs on a big world (audit 18 Nov 2026 finding 2): seeds a throwaway store with ITEMS world items
 # (loose stacks, a few burning fires and many building pieces spread over 4 km), then times the save as the tick runs it: the part on the
 # tick, the background writer's part, and how many files and bytes it wrote, for a save with one item changed and a save after
-# a fire has burned a minute. Works on builds before and after the area saves, so the same numbers compare. Prints "save_cost:" lines.
+# a fire has burned a minute. Before each, one save interval of the rolling save check runs as the tick runs it, and its cost a tick is
+# printed. Works on builds before and after the area saves and the check, so the same numbers compare. Prints "save_cost:" lines.
 # Never point it at a live save.
 #   godot --headless --path . --script res://src/worldgen/tools/measure_save_cost.gd -- [--items=N] [--store=DIR]
 
@@ -44,6 +45,25 @@ func size_of(path: String) -> int:
 	return f.get_length() if f != null else 0
 
 
+# One save interval of the rolling save check as the tick runs it (builds with the check, 18 Nov 2026 on): its cost per tick.
+func check_interval(items) -> void:
+	if not items.has_method("save_check_now"):
+		return
+
+	var ticks: int = int(ItemsScript.SAVE_EVERY_S / 0.05)
+	var worst: int = 0
+	var total: int = 0
+
+	for t in ticks:
+		var t0: int = Time.get_ticks_usec()
+		items._save_sweep(maxi(64, ceili(float(items._items.size()) * 0.05 / ItemsScript.SAVE_EVERY_S * 1.25)))
+		var spent: int = Time.get_ticks_usec() - t0
+		worst = maxi(worst, spent)
+		total += spent
+
+	print("save_cost: the save check over one save interval: %.3f ms a tick on average, %.3f ms at worst" % [float(total) / float(ticks) / 1000.0, float(worst) / 1000.0])
+
+
 # One periodic save as the tick runs it. A file the save rewrites gets a fresh .prev (_write_file copies the old one there first), so with every
 # .prev taken away beforehand, the files that have one afterwards are the ones written.
 func periodic(items, dir: String, what: String) -> void:
@@ -68,7 +88,7 @@ func periodic(items, dir: String, what: String) -> void:
 			written += 1
 			bytes += size_of(path.trim_suffix(".prev"))
 
-	print("save_cost: %s: on the tick %.1f ms, writer %.1f ms, world item files written %d (%d KB)" % [what, float(t1 - t0) / 1000.0, float(t2 - t1) / 1000.0, written, bytes / 1024])
+	print("save_cost: %s: on the tick %.1f ms, writer %.1f ms, world item files written %d (%d KB)" % [what, float(t1 - t0) / 1000.0, float(t2 - t1) / 1000.0, written, bytes >> 10])
 
 
 func _init() -> void:
@@ -114,9 +134,11 @@ func _init() -> void:
 	var t0: int = Time.get_ticks_usec()
 	items.save()
 	print("save_cost: first full save (direct) %.1f ms" % [float(Time.get_ticks_usec() - t0) / 1000.0])
+	check_interval(items)
 	periodic(items, dir, "nothing changed")
-	var some: int = items._items.keys()[n / 2]
+	var some: int = items._items.keys()[n >> 1]
 	items._items[some]["count"] = int(items._items[some]["count"]) + 1
+	check_interval(items)
 	periodic(items, dir, "one item changed")
 
 	for id in items._items:   # a minute of play: every countdown runs
@@ -126,6 +148,7 @@ func _init() -> void:
 		if items._items[id].has("fire"):
 			items._items[id]["fire"]["burn_left"] = float(items._items[id]["fire"]["burn_left"]) - 60.0
 
+	check_interval(items)
 	periodic(items, dir, "a minute of countdowns")
 	t0 = Time.get_ticks_usec()
 	var again = make(dir)

@@ -58,6 +58,7 @@ func loose(items) -> int:
 
 # The periodic save (the tick's): copied on the tick, written by the background writer, skipping the areas that did not change.
 func periodic(items) -> void:
+	items.save_check_now()   # the rolling check finished (the tick spreads it over a save interval; see the last section)
 	items._dirty = true
 	items._async_writes = true
 	items.save()
@@ -189,6 +190,76 @@ func _init() -> void:
 	old.save()
 	check((header().get("areas", {}) as Dictionary).size() == 2 and FileAccess.file_exists(dir + "/world_items.json.prev"), "the next save writes it out by area and keeps the old file as .prev")
 	check(loose(make()) == 2, "and it loads again from the areas")
+	# The rolling check as the tick runs it, on a bigger world: an item changed in place (count, wear, a step aside, erased, moved to another
+	# area) reaches the disk within two save intervals with no help; a shutdown (direct) save right after a change is exact.
+	wipe()
+	var big = make()
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 1811
+
+	for k in 20000:
+		big._items[big._next_id] = {"number": stone, "count": 1 + k % 4, "pos": Vector3(rng.randf_range(-1500.0, 1500.0), 10.0, rng.randf_range(-1500.0, 1500.0)), "left": 1.0e9, "wear": 0}
+		big._next_id += 1
+
+	big._dirty = true
+	big.save()   # a direct save: indexed and written
+	var ids: Array = big._items.keys()
+	var counted: int = ids[100]
+	var worn: int = ids[200]
+	var stepped: int = ids[300]
+	var erased: int = ids[400]
+	var moved_far: int = ids[500]
+	big._items[counted]["count"] = 77
+	big._items[worn]["wear"] = 33
+	big._items[stepped]["pos"] = big._items[stepped]["pos"] + Vector3(0.3, 0.0, 0.0)
+	var stepped_at: Vector3 = big._items[stepped]["pos"]
+	big._items.erase(erased)
+	var far_at: Vector3 = big._items[moved_far]["pos"] + Vector3(600.0, 0.0, 0.0)
+	big._items[moved_far]["pos"] = far_at
+	var ticks_per_save: int = int(ItemsScript.SAVE_EVERY_S / 0.05)
+
+	for t in 2 * ticks_per_save:
+		big._save_sweep(maxi(64, ceili(float(big._items.size()) * 0.05 / ItemsScript.SAVE_EVERY_S * 1.25)))   # as tick() does
+
+		if (t + 1) % ticks_per_save == 0:
+			big._dirty = true
+			big._async_writes = true
+			big.save()
+			big._async_writes = false
+			big._start_writer()
+			big._finish_writer()
+
+	var back = make()
+	var found: Dictionary = {"counted": false, "worn": false, "stepped": false, "far": 0, "rows": 0}
+
+	for id in back._items:
+		var it: Dictionary = back._items[id]
+		found["rows"] = int(found["rows"]) + 1
+
+		if int(it["count"]) == 77:
+			found["counted"] = true
+
+		if int(it.get("wear", 0)) == 33:
+			found["worn"] = true
+
+		if it["pos"].distance_to(stepped_at) < 0.01:
+			found["stepped"] = true
+
+		if it["pos"].distance_to(far_at) < 0.01:
+			found["far"] = int(found["far"]) + 1
+
+	check(bool(found["counted"]) and bool(found["worn"]) and bool(found["stepped"]) and int(found["far"]) == 1 and int(found["rows"]) == 19999, "changes in place reach the disk within two save intervals, an item moved to another area once, the erased one gone (%s)" % str(found))
+	big._items[ids[600]]["count"] = 55
+	big._dirty = true
+	big.save()   # shutdown: no check has seen this change
+	var after_stop = make()
+	var exact: bool = false
+
+	for id in after_stop._items:
+		if int(after_stop._items[id]["count"]) == 55 and after_stop._items[id]["pos"].distance_to(big._items[ids[600]]["pos"]) < 0.01:
+			exact = true
+
+	check(exact, "a shutdown save right after a change writes it")
 	wipe()
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)

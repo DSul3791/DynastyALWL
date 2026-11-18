@@ -117,6 +117,10 @@ func _init() -> void:
 
 	check(str(direct["lights.json"]).contains("40") and str(direct_world[1]).contains("500"), "the direct save holds the lit light and the fire")
 	a._dirty = true
+
+	for key in a._area_ids:
+		a._area_dirty[key] = true   # the files were taken away: every area is built and written again, as the direct save did
+
 	a._async_writes = true
 	a.save()
 	a._async_writes = false
