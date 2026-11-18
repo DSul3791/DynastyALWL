@@ -730,6 +730,7 @@ func _init() -> void:
 	m.ground_height = func(x, z): return 10.0
 	m.rock_at = func(x, z): return x > 0.0
 	m.peer_connected_hello(1, "abcdef123456")
+	m.set_fitness(1, 0)   # an average adult (0): new characters start at fitness 5 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
 	m.report_position(1, Vector3(5.0, 10.0, 0.0))
 	var rock_stone: int = m.table.number_of("stone")
 	m.action(1, Net.ACT_MINE, HeldTool.slot_of(m, "axe") + 1, 0, 0, Vector3(6.0, 10.0, 0.0))
