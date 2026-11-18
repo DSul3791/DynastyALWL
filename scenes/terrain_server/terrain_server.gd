@@ -552,6 +552,7 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.admin_ok = func(peer: int) -> bool: return admin.is_admin(items.key_of(peer))
 	admin.open_to_all = OS.get_cmdline_user_args().has("--open-admin")
+	print("server: " + admin.describe())
 	npcs = NpcsScript.new()
 	npcs.hour_now = func(): return game_clock.hour()
 	npcs.ground_height = func(x, z): return generator.surface_height(x, z)
@@ -824,6 +825,7 @@ func _ready() -> void:
 		_slow_rpc("hello: authenticate", t0)
 		items.peer_connected_hello(peer, identity.store_key(account))
 		_slow_rpc("hello: peer_connected_hello", t0)
+		net.admin_status.rpc_id(peer, admin.is_admin(items.key_of(peer)))   # protocol 132: the client's Admin menu follows it
 		net.npc_roster.rpc_id(peer, npcs.roster())
 		var resume: Array = items.start_position_for(peer)
 
@@ -1238,8 +1240,9 @@ func _on_flora_requested(peer_id: int, chunks: PackedInt32Array) -> void:
 		_work.post()
 
 
-func _on_water_rate_requested(_peer_id: int, direction: int) -> void:
-	if water_live == null:
+# Admin only (server/client split A5): it changes the water for everybody.
+func _on_water_rate_requested(peer_id: int, direction: int) -> void:
+	if water_live == null or not admin.is_admin(items.key_of(peer_id)):
 		return
 
 	var rate: float = water_live.step_rate(direction)
@@ -1253,6 +1256,10 @@ var _dump_last: Dictionary = {}
 
 
 func _on_dump_requested(peer_id: int, x: float, y: float, z: float) -> void:
+	if not admin.is_admin(items.key_of(peer_id)):   # a developer tool (Esc > Admin > Developer tools), server/client split A5
+		net.dump_result.rpc_id(peer_id, "server: the ground dump is for admins")
+		return
+
 	var now: int = Time.get_ticks_msec()
 
 	if now - int(_dump_last.get(peer_id, -10000)) < 1000:

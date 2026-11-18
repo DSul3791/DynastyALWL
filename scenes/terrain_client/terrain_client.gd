@@ -240,6 +240,7 @@ var _sound_now_log_msec: int = -100000
 var compass                         # temporary admin compass (AdminCompass)
 var sea: MeshInstance3D
 var _work_serial: int = 0               # the held tool's swing count the avatar's chop clip was last started for
+var is_admin_here: bool = false   # protocol 132: the server says after the hello whether this player is an admin there (always, in local play)
 var flying: bool = false
 var grass_while_flying: bool = false   # the shot runner sets this: its camera flies, but a picture must show the grass a walking player sees (no grass in any rig shot until 9 Nov 2026)
 var underwater: bool = false
@@ -856,6 +857,7 @@ func _ready() -> void:
 		if display.damage_numbers:
 			HitNumbersScript.spawn(self, at, amount))
 	net.start_at_received.connect(_on_start_at)
+	net.admin_status_received.connect(_on_admin_status)
 	net.step_to_received.connect(_on_step_to)
 	net.water_received.connect(_on_water_received)
 	net.cave_streams_received.connect(_on_cave_streams)
@@ -2250,6 +2252,20 @@ func _go_to_npc() -> void:
 		items.show_notice("Next to %s (roster %d, drawn %d)" % [str(near["name"]), _npc_view.roster.size(), _npc_view.drawn_count()])
 
 	body.global_position = near["pos"] + Vector3(2.0, 1.5, 0.0)
+
+
+# Not an admin on this server (server/client split A5): no Esc > Admin, no flying, no admin free crafting. The server refuses the
+# admin requests anyway; this keeps the client's own admin keys (fly, go to the nearest NPC) from working.
+func _on_admin_status(on: bool) -> void:
+	is_admin_here = on
+
+	if not on:
+		flying = false
+
+		if items != null:
+			items.admin_craft = false
+
+	game_menu.refresh()
 
 
 # The server's answer to hello with where this character resumes (protocol 69): the spot they left, made safe by the server.
@@ -4421,7 +4437,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			sound_panel.toggle()
 		elif KeyBindings.matches(event, "admin_dig"):
 			_admin_dig()
-		elif KeyBindings.matches(event, "admin_npc"):
+		elif KeyBindings.matches(event, "admin_npc") and is_admin_here:
 			_go_to_npc()
 		elif KeyBindings.matches(event, "admin_rabbit"):
 			_admin_rabbit()
@@ -4498,7 +4514,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif KeyBindings.matches(event, "open"):
 			if items != null and not flying:
 				items.press_f(Time.get_ticks_msec())   # F opens the chest beside you (Dave 2026-10-22; fly is Ctrl+Shift+G); with a log on the shoulder and nothing to open, F twice puts the log down
-		elif KeyBindings.matches(event, "fly"):
+		elif KeyBindings.matches(event, "fly") and is_admin_here:
 			flying = not flying
 			body.velocity = Vector3.ZERO
 
