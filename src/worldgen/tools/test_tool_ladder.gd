@@ -275,7 +275,7 @@ func _init() -> void:
 	check(place("grindstone", grind_at) and items.station_near(1, "grindstone"), "the Grindstone stands and is a grindstone station")
 
 	# 6. Chisel tiers (Dave 18 Nov 2026): a blueprint's "chisel" is the lowest chisel on the hand bar, a better one serves; a recipe keeps its chisel group, held in hand.
-	var chisel_rows: Dictionary = {"log_trough": 2, "chair": 3, "stone_trough": 4, "iron_chest": 5}
+	var chisel_rows: Dictionary = {"chair": 3, "stone_trough": 4, "iron_chest": 5}   # the Copper row, the Log - Trough, is a retired blueprint; Copper is covered by the bowl
 
 	for st in chisel_rows:
 		check(int(blueprint_of(st).get("chisel", 0)) == int(chisel_rows[st]), "%s needs chisel tier %d" % [st, int(chisel_rows[st])])
@@ -284,7 +284,7 @@ func _init() -> void:
 	check(items.table.group_members(n_of("iron_chisel")).has(n_of("steel_chisel")) and not items.table.group_members(n_of("iron_chisel")).has(n_of("bronze_chisel")) and not items.table.group_members(n_of("bronze_chisel")).has(n_of("copper_chisel")), "a better chisel fills a lower group, a lesser one never does")
 	var chisel_spot: int = 0
 
-	for trial in [["log_trough", "", false], ["log_trough", "copper_chisel", true], ["iron_chest", "iron_chisel", false], ["iron_chest", "steel_chisel", true]]:
+	for trial in [["chair", "", false], ["chair", "copper_chisel", false], ["chair", "bronze_chisel", true], ["iron_chest", "iron_chisel", false], ["iron_chest", "steel_chisel", true]]:
 		empty_pack()
 		hold("steel_hammer")
 

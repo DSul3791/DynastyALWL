@@ -321,6 +321,7 @@ func _check_spend_lowest(spot: Vector3) -> void:
 	var barrel: int = int(JSON.parse_string(FileAccess.get_file_as_string("res://data/items/blueprints.json"))["blueprints"]["wooden_barrel"]["number"])
 	var site_spot: Vector3 = spot + Vector3(0.0, 0.0, -40.0)
 	items.report_position(1, site_spot)
+	_give("steel_chisel", 1)   # the Barrel needs a Bronze chisel or better on the hand bar (Dave 18 Nov 2026)
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, barrel, 0, 0, site_spot + Vector3(0.0, 0.0, 3.0))
 	var site: int = _site_at(site_spot + Vector3(0.0, 0.0, 3.0))
 	check(site != 0, "a barrel with nothing to hand is set down as a site")
