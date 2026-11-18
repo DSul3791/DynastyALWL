@@ -78,7 +78,7 @@ func _init() -> void:
 	_check(blade_dir.z < -0.5 and from_vertical >= 20.0, "the carried shovel points its blade down, %.0f degrees from vertical" % from_vertical)
 
 	# Axes and hammers: a straight haft along x with the head at its +x end, head wider in z than the haft is thick, all on one plain surface (no metal heads yet).
-	for id in ["stone_axe", "stone_hammer", "copper_hammer"]:
+	for id in ["stone_axe", "stone_hammer"]:
 		var mesh: Mesh = BasicLook.mesh_for(id)
 		var box: AABB = mesh.get_aabb()
 		var scale: float = float(BasicLook.entry(id).get("size", 1.0))
