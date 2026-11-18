@@ -1519,6 +1519,13 @@ func tick(delta: float) -> void:
 		_tick_ids = {}
 
 	_sync_in -= delta
+	_road_sync_in -= delta
+
+	if _road_sync_in <= 0.0 and not _road_fresh.is_empty() and _sync_in > 0.0:
+		_road_sync_in = ROAD_SYNC_S
+		_sync_world_items(_road_fresh, _road_near)
+		_road_fresh = []
+		_road_near = []
 
 	if _sync_in <= 0.0:
 		_sync_in = SYNC_EVERY_S
@@ -4202,7 +4209,10 @@ func _hoe_grade_point(peer: int, inv, which: int, at: Vector3, held_slot: int) -
 const ROAD_STATION_M := 0.7   # PROVISIONAL (SV-10): with ROAD_STEP_S, the road's speed (0.7 m every 0.25 s = 2.8 m/s)
 const ROAD_STEP_S := 0.25     # PROVISIONAL (SV-10): seconds a station (Dave 18 Nov 2026: double the old 0.5)
 const ROAD_CATCHUP := 4       # PROVISIONAL (SV-11): stations one tick may build to make up time lost to a slow moment; more is let go
-const ROAD_SYNC_S := 0.25     # PROVISIONAL (SV-12): while a road builds, its new pieces go out to the players this soon, not at the next once-a-second sync
+const ROAD_SYNC_S := 0.25     # PROVISIONAL (SV-12): while a road builds, its new pieces go out to the players near it this soon, not at the next once-a-second sync
+var _road_fresh: Array = []    # world ids a road made since its last quick sync (_sync_world_items fresh)
+var _road_near: Array = []     # where those stations were (only players near them are looked at)
+var _road_sync_in: float = 0.0
 const ROAD_EDITS := 3
 const ROAD_WEAR_EVERY := 4
 const ROAD_HALF_WIDTH_M := SurveyLine.HALF_WIDTH_M
@@ -4396,10 +4406,12 @@ func _road_tick(delta: float) -> void:
 				job["seg"] = null
 				break
 
+			var first_new: int = _next_id
 			_road_fell(seg, float(i) / float(maxi(int(seg["n"]) - 1, 1)))
 			_road_station(peer, inv, seg["a"], seg["b"], i, int(seg["n"]))
 			seg["i"] = i + 1
-			_sync_in = minf(_sync_in, ROAD_SYNC_S)   # the new piece goes out soon, not up to SYNC_EVERY_S later
+			_road_fresh.append_array(range(first_new, _next_id))   # the new pieces (patches, felled logs) go out soon, to the players near the road only
+			_road_near.append((seg["a"] as Vector3).lerp(seg["b"], float(i) / float(maxi(int(seg["n"]) - 1, 1))))
 
 
 # The ground height a road station is brought to: the average of the ground along the line within ROAD_SECTION_M (3 m) around the station, so the road
@@ -6319,34 +6331,47 @@ func _pickup_batch(peer: int, inv, id: int, batch: int) -> void:
 		_reject(peer, 2)
 
 
-func _sync_world_items() -> void:
+# `fresh` empty: the full sync (every SYNC_EVERY_S), which files every record in the grid. Otherwise a road's quick sync (_road_tick, every
+# ROAD_SYNC_S while a road builds): only the records `fresh` names are filed into the last grid, and only players within NEAR_M of a spot in
+# `near_to` are looked at, so one road no longer runs the whole world's sync four times a second (audit 18 Nov 2026 finding 4). In a quick
+# sync a record is taken off a player's list only when it is gone from the world; anything else waits for the full sync.
+func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 	# The records are filed into a NEAR_M grid once, so each player looks only at the nine cells around them instead of every
 	# record in the world (the soak test found 2 to 9 ms a second at 20 players and 500 records, growing with both).
 	var t_grid: int = Time.get_ticks_usec()
 	var send_usec: int = 0
 	var sent: int = 0
-	var grid: Dictionary = {}
+	var quick: bool = not fresh.is_empty() and not _sync_grid.is_empty()
+	var grid: Dictionary = _sync_grid if quick else {}
 	var lit: Array = []
 
-	for id in _items:
+	for id in (fresh if quick else _items.keys()):
+		if not _items.has(id):
+			continue
+
 		var cell: Vector2i = Vector2i(int(floor(_items[id]["pos"].x / NEAR_M)), int(floor(_items[id]["pos"].z / NEAR_M)))
 
-		if _items[id].has("fire") and fire_is_lit(int(_items[id]["fire"]["state"])):
+		if not quick and _items[id].has("fire") and fire_is_lit(int(_items[id]["fire"]["state"])):
 			lit.append([_items[id]["pos"], fire_tier_of(int(_items[id]["fire"]["state"]))])
 
 		if not grid.has(cell):
 			grid[cell] = []
 
-		grid[cell].append(id)
+		if not quick or not (grid[cell] as Array).has(id):
+			grid[cell].append(id)
 
 	var t_scan: int = Time.get_ticks_usec()
 	_sync_grid = grid
-	_sync_grid_next = _next_id
-	_far_fire_spots = lit
+	if not quick:
+		_sync_grid_next = _next_id   # a quick sync files only the road's ids: the ids since the full sync are still not all in the grid
+		_far_fire_spots = lit
 
 	for peer in _known:
 		if not _peer_pos.has(peer):
 			continue
+
+		if quick and not near_to.any(func(at): return Vector2((at as Vector3).x - _peer_pos[peer].x, (at as Vector3).z - _peer_pos[peer].z).length() <= NEAR_M * 1.5):
+			continue   # nowhere near the road: the full sync looks after them
 
 		var here: Vector3 = _peer_pos[peer]
 		var known: Dictionary = _known[peer]
@@ -6361,6 +6386,9 @@ func _sync_world_items() -> void:
 				candidates.append_array(grid.get(Vector2i(home.x + dx, home.y + dz), []))
 
 		for id in candidates:
+			if not _items.has(id):
+				continue   # gone since the full sync filed it (a quick sync's grid)
+
 			var it: Dictionary = _items[id]
 
 			if it["pos"].distance_to(here) <= NEAR_M:
@@ -6451,7 +6479,7 @@ func _sync_world_items() -> void:
 				known[int(bog[0])] = bog_signature
 
 		for id in known.keys():
-			if not near.has(id):
+			if not near.has(id) and (not quick or not _items.has(id)):
 				removed.append(id)
 				known.erase(id)
 
