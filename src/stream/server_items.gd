@@ -4500,7 +4500,7 @@ func _rebuild_supports(scan_all: bool = false) -> void:
 		for id in _items:
 			_note_support(id, _items[id])
 
-	var cells: Dictionary = {}
+	var entries: Array = []
 
 	for id in _support_ids.keys():
 		var it: Dictionary = _items.get(id, {})
@@ -4510,9 +4510,21 @@ func _rebuild_supports(scan_all: bool = false) -> void:
 			_support_ids.erase(id)   # taken down, or no longer a support
 			continue
 
-		var entry: Array = [it["pos"], float(support["reach_m"]), float(support["strength"]), float(support["wear_game_days"]) * 86400.0, float(support.get("floor", 0.25)), float(it["struct"].get("born", 0.0))]
-		var pos: Vector3 = it["pos"]
-		var reach: float = float(support["reach_m"])
+		entries.append([it["pos"], float(support["reach_m"]), float(support["strength"]), float(support["wear_game_days"]) * 86400.0, float(support.get("floor", 0.25)), float(it["struct"].get("born", 0.0))])
+
+	var cells: Dictionary = _file_supports(entries)
+	_supports_mutex.lock()
+	_supports = cells
+	_supports_mutex.unlock()
+
+
+# Support entries [pos, reach_m, ...] filed into every SUPPORT_CELL_M square their sphere reaches into.
+static func _file_supports(entries: Array) -> Dictionary:
+	var cells: Dictionary = {}
+
+	for entry in entries:
+		var pos: Vector3 = entry[0]
+		var reach: float = float(entry[1])
 
 		for cx in range(floori((pos.x - reach) / SUPPORT_CELL_M), floori((pos.x + reach) / SUPPORT_CELL_M) + 1):
 			for cz in range(floori((pos.z - reach) / SUPPORT_CELL_M), floori((pos.z + reach) / SUPPORT_CELL_M) + 1):
@@ -4523,9 +4535,7 @@ func _rebuild_supports(scan_all: bool = false) -> void:
 
 				cells[cell].append(entry)
 
-	_supports_mutex.lock()
-	_supports = cells
-	_supports_mutex.unlock()
+	return cells
 
 
 func _note_support(id: int, entry: Dictionary) -> void:

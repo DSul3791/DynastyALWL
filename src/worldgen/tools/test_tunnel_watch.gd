@@ -99,7 +99,7 @@ func _init() -> void:
 	wired.mark_dirty([Vector3i.ZERO])
 	wired.process_dirty(0)
 	_check(items.support_strength_at(Vector3(8.0, 8.0, 8.0)) == 0.0, "no supports: strength 0")
-	items._supports = {Vector2i(1, 1): [[Vector3(8.0, 8.0, 8.0), 200.0, 1.0, 86400.0, 0.25, 0.0], [Vector3(4.0, 8.0, 8.0), 200.0, 1.0, 86400.0, 0.25, 0.0]]}   # filed in the square of (8, 8)
+	items._supports = items._file_supports([[Vector3(8.0, 8.0, 8.0), 200.0, 1.0, 86400.0, 0.25, 0.0], [Vector3(4.0, 8.0, 8.0), 200.0, 1.0, 86400.0, 0.25, 0.0]])   # filed in every square their 200 m reaches
 	_check(items.support_strength_at(Vector3(8.0, 8.0, 8.0)) == 1.0, "a new support at the spot gives full strength")
 	_check(wired.tick(grace * 3, peers)["collapse"].is_empty(), "wired items: supported tunnel does not fall")
 	var again: Watch = _watch()
