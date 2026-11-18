@@ -1607,6 +1607,15 @@ func _kind_info_now() -> Dictionary:
 	return _kind_info
 
 
+func _sapling_rows() -> Array:
+	var plants: Array = []
+
+	for sapling in _saplings:
+		plants.append({"slot": sapling["slot"], "chunk": (sapling["chunk"] as Array).duplicate(), "species": sapling["species"], "pos": {"x": sapling["pos"].x, "y": sapling["pos"].y, "z": sapling["pos"].z}, "planted_at": sapling["planted_at"]})
+
+	return plants
+
+
 # Everything the item files need, copied now: the writer reads only this.
 func _item_job() -> Dictionary:
 	var tilt_y: Dictionary = {}
@@ -1621,12 +1630,10 @@ func _item_job() -> Dictionary:
 		if ground_height.is_valid() and not is_nan(float(ground_height.call(at.x, at.z))):
 			tilt_y[id] = float(ground_height.call(at.x, at.z))
 
-	var plants: Array = []
-
-	for sapling in _saplings:
-		plants.append({"slot": sapling["slot"], "chunk": sapling["chunk"], "species": sapling["species"], "pos": {"x": sapling["pos"].x, "y": sapling["pos"].y, "z": sapling["pos"].z}, "planted_at": sapling["planted_at"]})
-
-	return {"dir": _dir, "items": _items.duplicate(true), "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": plants,
+	var t0: int = Time.get_ticks_usec()
+	var copy: Dictionary = _items.duplicate(true)
+	_note_save_part("world item copy", t0)
+	return {"dir": _dir, "items": copy, "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(),
 		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "bog_iron": _bog_left.duplicate(true), "layout": FloraLayout.VERSION, "no_kits": true}}
 
 
@@ -7853,9 +7860,8 @@ func _rot(delta: float) -> void:
 		_chops.erase(key)
 
 
-func _save_trees() -> void:
-	var job: Dictionary = _item_job()
-	_write_atomic("tree_states.json", {"version": TREE_SAVE_VERSION, "trees": _tree_rows_of(job["items"]), "saplings": job["saplings"]})
+func _save_trees() -> void:   # tree_states.json alone (the soak's timing); save() writes it with the other item files
+	_write_atomic("tree_states.json", {"version": TREE_SAVE_VERSION, "trees": _tree_rows_of(_items), "saplings": _sapling_rows()})
 
 
 func _load_trees() -> void:
@@ -10929,9 +10935,6 @@ func _kiln_burn(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 		_push_box(id, box)
 		_dirty = true
 
-
-func _kilns_save() -> Dictionary:
-	return _kiln_rows_of(_items, _kind_info_now())
 
 func _load_kilns() -> void:
 	var parsed: Variant = _read_json_version("kilns.json", 1)

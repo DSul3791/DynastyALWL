@@ -61,27 +61,47 @@ func _init() -> void:
 	ok.peer_connected_hello(1, "abcdef123456")
 	check(ok.inventory_of(1).count_of(stone) == 5 and ok.world_item_count() >= 2, "clean restart brings everything back")
 
-	# The periodic save (audit 18 Nov 2026 finding 2): the tick copies, the background writer builds and writes. Its files must match a direct save's,
-	# and a change made on the tick after the copy must not reach them.
+	# The periodic save (audit 18 Nov 2026 finding 2): the tick copies, the background writer builds and writes. Its files must match a direct save's
+	# (a fire, a lit standing torch and an arrow stuck in a tree among the items), and a change made on the tick after the copy must not reach them.
+	a.drop_in_world(stone, 1, Vector3(12.0, 10.0, 12.0))
+	a._stick_arrow(stone, Vector3(14.0, 13.0, 14.0), Vector3(1.0, 0.2, 0.0))
+	a._items[a._next_id] = {"number": stone, "count": 1, "pos": Vector3(16.0, 10.0, 16.0), "left": 1.0e9, "fire": {"state": 1, "burn_left": 500.0, "recheck": 0.0, "covered": false}}
+	a._next_id += 1
+	a._items[a._next_id] = {"number": stone, "count": 1, "pos": Vector3(18.0, 10.0, 18.0), "left": 1.0e9, "struct": {"kind": "standing_torch", "yaw": 0.0, "lit": true, "fuel_left": 40.0}}
+	a._next_id += 1
+	var tree_id: int = -1
+
+	for id in a._items:
+		if a._items[id].has("tree"):
+			tree_id = id
+
+	a._dirty = true
+	a.save()
 	var direct: Dictionary = {}
+	var files: Array = ["inventories.json", "world_items.json", "tree_states.json", "lights.json", "kilns.json", "chests.json"]
 
-	for file in ["inventories.json", "world_items.json", "tree_states.json", "lights.json", "kilns.json", "chests.json"]:
+	for file in files:
 		direct[file] = FileAccess.get_file_as_string(dir + "/" + file)
+		DirAccess.remove_absolute(dir + "/" + file)
 
+	check(str(direct["lights.json"]).contains("40") and str(direct["world_items.json"]).contains("500"), "the direct save holds the lit light and the fire")
 	a._dirty = true
 	a._async_writes = true
 	a.save()
 	a._async_writes = false
-	a._items[a._next_id] = {"number": stone, "count": 1, "pos": Vector3(30.0, 10.0, 30.0), "left": 600.0}   # after the copy, before the writer runs
-	a._next_id += 1
+	a._items[tree_id]["tree"]["state"] = 3   # a nested change after the copy, before the writer runs
+	a._items[a._next_id - 2]["fire"]["burn_left"] = 7.0
 	a._start_writer()
 	a._finish_writer()
 
-	for file in direct:
-		check(FileAccess.get_file_as_string(dir + "/" + file) == direct[file], "%s: the periodic save writes what a direct save writes" % file)
+	for file in files:
+		check(FileAccess.file_exists(dir + "/" + file) and FileAccess.get_file_as_string(dir + "/" + file) == direct[file], "%s: the periodic save writes what a direct save writes, as of its copy" % file)
 
-	a._items.erase(a._next_id - 1)
-	a._next_id -= 1
+	for id in a._items.keys():
+		if id != tree_id and int(id) >= a._next_id - 3:
+			a._items.erase(id)
+
+	a._items[tree_id]["tree"]["state"] = 4
 
 	for file in ["world_items.json", "tree_states.json"]:
 		var f: FileAccess = FileAccess.open(dir + "/" + file, FileAccess.WRITE)
