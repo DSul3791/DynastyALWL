@@ -326,6 +326,88 @@ func _write_sides(rows: Dictionary) -> void:
 			f.close()
 
 
+func set_revision(tile: Vector2i, revision: int) -> void:
+	set_revisions({"%d,%d" % [tile.x, tile.y]: revision})
+
+
+# A ground edit (dig or fill sphere) made while this client is connected: only the saved blocks it touches, at every LOD, are
+# outdated, and are asked of the server again. Dave 18 Nov 2026 (x 53282 z 67587, ground "unloaded" for many minutes): every
+# edit raised the 15 km tile's revision and the client threw its whole saved tile away (set_revision), so with a road being
+# built (several edits a second) nearly every block was fetched again and the ground near the player took minutes to come.
+# The marks are kept in the tile's .stale file (flush), and the next join asks for the edits since the join before (set_revisions).
+# Returns the marked keys (the stream drops its prefetched copies of the same blocks).
+func forget_area(center: Vector3, radius: float) -> Array:
+	var keys: Array = []
+	_mutex.lock()
+
+	for lod in range(STALE_LODS):
+		var size: float = float(BLOCK_SIZE << lod)
+		var reach: float = radius + float(STALE_MARGIN_VOXELS << lod)
+		var lo: Vector3i = Vector3i(((center - Vector3.ONE * reach) / size).floor())
+		var hi: Vector3i = Vector3i(((center + Vector3.ONE * reach) / size).floor())
+
+		for x in range(lo.x, hi.x + 1):
+			for y in range(lo.y, hi.y + 1):
+				for z in range(lo.z, hi.z + 1):
+					var key: Vector4i = Vector4i(x, y, z, lod)
+					_stale[key] = true
+					keys.append(key)
+
+	_stale_dirty = true
+	_mutex.unlock()
+	return keys
+
+
+func load_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> bool:
+	var tile: Vector2i = tile_of_block(block, lod)
+	_mutex.lock()
+	var skip: bool = _stale.has(Vector4i(block.x, block.y, block.z, lod)) or _held.has("%d,%d" % [tile.x, tile.y])
+	_mutex.unlock()
+	var found: bool = not skip and _stream_for(tile).load_voxel_block(buffer, block, lod) == VoxelStream.RESULT_BLOCK_FOUND
+	_mutex.lock()
+
+	if found:
+		hits += 1
+	else:
+		misses += 1
+
+	_mutex.unlock()
+	return found
+
+
+# Saves a copy: the caller's buffer goes on to the mesher. Voxel Tools 1.7 moves the buffer's channels into the stream's memory cache when the block
+# is still there from an earlier save (a block asked for again before the cache flushed), and leaves the buffer all zero: a zeroed block meshed as a
+# box (server_block_store.copy_of has the details).
+func save_block(buffer: VoxelBuffer, block: Vector3i, lod: int) -> void:
+	var tile: Vector2i = tile_of_block(block, lod)
+	_mutex.lock()
+	var held: bool = _held.has("%d,%d" % [tile.x, tile.y])
+	_mutex.unlock()
+
+	if held:
+		return   # the file may yet be dropped (apply_catch_up); the block is fetched again later if needed
+
+	_stream_for(tile).save_voxel_block(_copy_of(buffer), block, lod)
+	_mutex.lock()
+
+	if _stale.erase(Vector4i(block.x, block.y, block.z, lod)):   # the server's copy, made after the edit
+		_stale_dirty = true
+
+	_mutex.unlock()
+
+
+static func _copy_of(buffer: VoxelBuffer) -> VoxelBuffer:
+	var size: Vector3i = buffer.get_size()
+	var copy: VoxelBuffer = VoxelBuffer.new()
+	copy.create(size.x, size.y, size.z)
+
+	for channel in range(VoxelBuffer.MAX_CHANNELS):
+		copy.set_channel_depth(channel, buffer.get_channel_depth(channel))
+		copy.copy_channel_from(buffer, channel)
+
+	return copy
+
+
 # Writes pending blocks to disk. CACHE_SLOW_MS (a test setting) adds that many ms to each flush, to
 # try a slow disk.
 func flush() -> void:
