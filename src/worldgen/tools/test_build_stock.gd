@@ -140,7 +140,7 @@ func _site_at(at: Vector3) -> int:
 
 
 # The hammer in Repair mode on a blueprint site (Dave 10 Nov 2026, craft from containers built in): it pulls what the site still needs from within
-# building_wear.json site_gather_m (12 m) of the builder, the pack first, then the ground and the builder's own containers nearest first; never more than
+# building_wear.json site_gather_m (12 m) times the swing hammer's reach (building_wear.json hammer_reach_x) of the builder, the pack first, then the ground and the builder's own containers nearest first; never more than
 # it needs, never from a stranger's chest; one line says what came and what is missing.
 func _check_site_gather(blocks: int, mortar: int, site3: Vector3) -> void:
 	var half: int = floori(float(blocks) / 2.0)
@@ -156,7 +156,8 @@ func _check_site_gather(blocks: int, mortar: int, site3: Vector3) -> void:
 	items.inventory_of(1).remove(items.table.number_of("mortar"), _have("mortar"))
 	said.clear()
 	items.action(1, Net.ACT_REPAIR_STRUCT, site, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)
-	check(_on_ground("cut_stone_block") == blocks and said.size() == 1 and str(said[0]).begins_with("Nothing within 12 m"), "stock 20 m away is not taken (%s)" % str(said))
+	var reach_m: int = int(round(12.0 * items._hammer_x(1, HeldTool.slot_of(items, "hammer"))))   # 12 m times the swing hammer's reach (stone, tier 2: x1.25, 15 m)
+	check(reach_m < 20 and _on_ground("cut_stone_block") == blocks and said.size() == 1 and str(said[0]).begins_with("Nothing within %d m" % reach_m), "stock 20 m away is not taken (%s)" % str(said))
 	# Half the blocks 8 m away on the ground, a few in the pack, the mortar in the builder's own chest 6 m away, more mortar in a stranger's chest.
 	items.drop_in_world(block_n, half, site3 + Vector3(8.0, 0.0, 0.0))
 	_give("cut_stone_block", 2)

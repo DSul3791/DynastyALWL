@@ -254,18 +254,18 @@ func _init() -> void:
 	items._blueprints[int(smith["number"])]["station"] = ""
 	items._blueprints[int(table_bp["number"])]["station"] = ""
 
-	# Row hammer tier: a row asking for hammer 2 refuses the wooden hammer.
-	items._blueprints[int(table_bp["number"])]["hammer"] = 2
+	# Row hammer tier: a row asking for hammer 3 refuses the stone hammer (tier 2; the wooden hammer is retired, one tool tier ladder).
+	items._blueprints[int(table_bp["number"])]["hammer"] = 3
 	_give(1, "lumber", 5)
 	_give(1, "nails", 8)
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(table_bp["number"]), 0, 0, Vector3(196.0, 10.0, 205.0))
-	check(_ids_standing("wooden_crate").size() == 1 and _have(1, "lumber") == 5, "a row with hammer 2 refuses the wooden hammer")
+	check(_ids_standing("wooden_crate").size() == 1 and _have(1, "lumber") == 5, "a row with hammer 3 refuses the stone hammer")
 	items._blueprints[int(table_bp["number"])]["hammer"] = 1
 
 	# Take down: every material back, no kit.
 	items.action(1, Net.ACT_PICKUP, _ids_standing("wooden_crate")[0], 0, 0, Vector3.ZERO)
 	# The nails cost is a group (nails, bronze_nails): a take-down gives back the group's lowest member, Bronze nails (#1004), so the 8 nails paid
-	# come back as 8 bronze nails and the 8 refused at the hammer-2 row stay as nails.
+	# come back as 8 bronze nails and the 8 refused at the hammer-3 row stay as nails.
 	check(_ids_standing("wooden_crate").is_empty() and _have(1, "lumber") == 10 and _have(1, "nails") == 8 and _have(1, "bronze_nails") == 8 and _have(1, "wooden_crate_kit") == 0, "taking it down gives the materials back (lumber %d, nails %d, bronze nails %d)" % [_have(1, "lumber"), _have(1, "nails"), _have(1, "bronze_nails")])
 
 	# Takedown into a pack whose 30 slots are all taken: the pack grows (Dave 12 Nov 2026 23:06Z, protocol 116) and the materials come back.
