@@ -2463,8 +2463,6 @@ func _fill_ground(center: Vector3, radius: float, material: int) -> bool:
 
 	if not tiles.is_empty():
 		_fill_last = [center, radius, material]
-
-	if not tiles.is_empty():
 		net.filled.rpc(center, radius, material)   # before tile_changed, as in _dig_ground
 
 	for tile in tiles:
