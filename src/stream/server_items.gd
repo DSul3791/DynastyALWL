@@ -1975,8 +1975,8 @@ func _save_forget(id) -> void:
 
 
 # One tick's slice of the rolling check: from where the pass is up to, at most `count` ids and no longer than `budget_us`.
-# A pass walks the ids that were live at the last pass (_walk_ids) and then the ids made since it began (_walk_hi to _walk_end; world ids all
-# come from _next_id), building the next pass's list as it goes. So no list of every item is made on one tick (that cost a tick about 6 ms at
+# A pass walks the ids made since the last pass began (_walk_lo to _walk_end; world ids all come from _next_id) and then the ids live at the last pass (_walk_ids;
+# their new ids were walked once), building the next pass's list as it goes. So no list of every item is made on one tick (that cost a tick about 6 ms at
 # 50,000 items), and the ids that came and went (scatter laid out and taken away as players walk) cost a pass only once, in the interval they
 # were made: a pass costs about the live items plus the ids made in one interval, never every id ever given out.
 func _save_sweep(count: int, budget_us: int = SWEEP_BUDGET_US) -> void:
@@ -1986,12 +1986,12 @@ func _save_sweep(count: int, budget_us: int = SWEEP_BUDGET_US) -> void:
 	while n < count:
 		var id: int = 0
 
-		if _walk_at < _walk_ids.size():
-			id = _walk_ids[_walk_at]
-			_walk_at += 1
-		elif _walk_hi < _walk_end:
+		if _walk_hi < _walk_end:   # the new ids first, so a new item is noticed early in the pass after it was made
 			id = _walk_hi
 			_walk_hi += 1
+		elif _walk_at < _walk_ids.size():
+			id = _walk_ids[_walk_at]
+			_walk_at += 1
 		else:
 			var took_ms: int = Time.get_ticks_msec() - _sweep_began_ms
 
