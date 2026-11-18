@@ -61,6 +61,28 @@ func _init() -> void:
 	ok.peer_connected_hello(1, "abcdef123456")
 	check(ok.inventory_of(1).count_of(stone) == 5 and ok.world_item_count() >= 2, "clean restart brings everything back")
 
+	# The periodic save (audit 18 Nov 2026 finding 2): the tick copies, the background writer builds and writes. Its files must match a direct save's,
+	# and a change made on the tick after the copy must not reach them.
+	var direct: Dictionary = {}
+
+	for file in ["inventories.json", "world_items.json", "tree_states.json", "lights.json", "kilns.json", "chests.json"]:
+		direct[file] = FileAccess.get_file_as_string(dir + "/" + file)
+
+	a._dirty = true
+	a._async_writes = true
+	a.save()
+	a._async_writes = false
+	a._items[a._next_id] = {"number": stone, "count": 1, "pos": Vector3(30.0, 10.0, 30.0), "left": 600.0}   # after the copy, before the writer runs
+	a._next_id += 1
+	a._start_writer()
+	a._finish_writer()
+
+	for file in direct:
+		check(FileAccess.get_file_as_string(dir + "/" + file) == direct[file], "%s: the periodic save writes what a direct save writes" % file)
+
+	a._items.erase(a._next_id - 1)
+	a._next_id -= 1
+
 	for file in ["world_items.json", "tree_states.json"]:
 		var f: FileAccess = FileAccess.open(dir + "/" + file, FileAccess.WRITE)
 		f.store_string("{\"version\": 1, \"trunc")
