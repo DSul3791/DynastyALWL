@@ -56,6 +56,16 @@ func loose(items) -> int:
 	return n
 
 
+# The periodic save (the tick's): copied on the tick, written by the background writer, skipping the areas that did not change.
+func periodic(items) -> void:
+	items._dirty = true
+	items._async_writes = true
+	items.save()
+	items._async_writes = false
+	items._start_writer()
+	items._finish_writer()
+
+
 func area_path(key: String) -> String:
 	return "%s/%s/%s.json" % [dir, ItemsScript.AREA_DIR, key]
 
@@ -79,8 +89,7 @@ func _init() -> void:
 	# Only the changed area is written.
 	var there_text: String = FileAccess.get_file_as_string(area_path(there))
 	a.drop_in_world(stick, 1, Vector3(20.0, 10.0, 30.0))
-	a._dirty = true
-	a.save()
+	periodic(a)
 	var h2: Dictionary = header()
 	check(int(h2["areas"][here]) == int(h2["gen"]) and int(h2["areas"][there]) == int(h1["gen"]) and FileAccess.get_file_as_string(area_path(there)) == there_text, "a save writes only the area that changed (gens %s)" % str(h2["areas"]))
 	var b = make()
@@ -89,14 +98,53 @@ func _init() -> void:
 	# A crash after an area was written but before the header: the header's gen is in .prev and is loaded.
 	var h2_text: String = FileAccess.get_file_as_string(dir + "/world_items.json")
 	a.drop_in_world(stone, 1, Vector3(310.0, 10.0, 20.0))
-	a._dirty = true
-	a.save()
+	periodic(a)
 	check(int(header()["areas"][there]) == int(header()["gen"]), "the far area was written again")
 	var f: FileAccess = FileAccess.open(dir + "/world_items.json", FileAccess.WRITE)
 	f.store_string(h2_text)   # as if the header write never happened
 	f.close()
 	var c = make()
 	check(loose(c) == 3, "a crash between an area and the header loads the save the header names (%d items, not 4)" % loose(c))
+
+	# A drop ageing on the ground does not make the periodic save write its area again; a clean (direct) save writes the exact time left.
+	for id in a._items:
+		if a._items[id].has("left") and float(a._items[id]["left"]) < 1.0e8:
+			a._items[id]["left"] = 1000.0   # mid-step (AREA_STEP_S 600): five seconds less stays in the same step
+
+	periodic(a)
+	var gens_before: Dictionary = (header()["areas"] as Dictionary).duplicate()
+
+	for id in a._items:
+		if a._items[id].has("left") and float(a._items[id]["left"]) < 1.0e8:
+			a._items[id]["left"] = float(a._items[id]["left"]) - 5.0
+
+	periodic(a)
+	check(header()["areas"] == gens_before, "five seconds of ageing writes no area in the periodic save (%s vs %s)" % [str(header()["areas"]), str(gens_before)])
+	a._dirty = true
+	a.save()
+	check(int(header()["areas"][here]) == int(header()["gen"]), "a direct save writes every area exactly")
+
+	# An item moved from one area to another leaves the first and is in the second, once, after the next save.
+	var mover: int = -1
+
+	for id in a._items:
+		if a._items[id]["pos"].x < 100.0 and int(a._items[id]["number"]) == stick:
+			mover = int(id)
+
+	a._items[mover]["pos"] = Vector3(305.0, 10.0, 40.0)
+	periodic(a)
+	var moved = make()
+	var near_sticks: int = 0
+	var far_sticks: int = 0
+
+	for id in moved._items:
+		if int(moved._items[id]["number"]) == stick:
+			if moved._items[id]["pos"].x < 100.0:
+				near_sticks += 1
+			else:
+				far_sticks += 1
+
+	check(near_sticks == 0 and far_sticks == 2 and loose(moved) == 4, "a moved item is saved in its new area only (%d near, %d far, %d items)" % [near_sticks, far_sticks, loose(moved)])
 
 	# An area left empty loses its file.
 	a._dirty = true
@@ -109,7 +157,7 @@ func _init() -> void:
 	a._dirty = true
 	a.save()
 	check(not (header()["areas"] as Dictionary).has(there) and not FileAccess.file_exists(area_path(there)) and not FileAccess.file_exists(area_path(there) + ".prev"), "an area left empty loses its file and the header forgets it")
-	check(loose(make()) == 2, "the near area still loads")
+	check(loose(make()) == 1, "the near area still loads")
 
 	# A damaged area file is set aside as .bad and its .prev (the save before) is read.
 	var near_prev: Variant = JSON.parse_string(FileAccess.get_file_as_string(area_path(here) + ".prev"))
@@ -118,6 +166,15 @@ func _init() -> void:
 	f.close()
 	var d = make()
 	check(FileAccess.file_exists(area_path(here) + ".bad") and typeof(near_prev) == TYPE_DICTIONARY and loose(d) == (near_prev["items"] as Array).size(), "a damaged area file is set aside and the save before it read (%d items)" % loose(d))
+
+	# A torn header: set aside as .bad, the header before it read, and each area at the gen it names (from .prev where the area changed since).
+	a.drop_in_world(stick, 1, Vector3(12.0, 10.0, 40.0))
+	periodic(a)
+	f = FileAccess.open(dir + "/world_items.json", FileAccess.WRITE)
+	f.store_string("{\"version\": 4, \"gen\"")
+	f.close()
+	var e = make()
+	check(FileAccess.file_exists(dir + "/world_items.json.bad") and loose(e) == 1, "a torn header loads the save before it, the changed area from its .prev (%d items, not 2)" % loose(e))
 
 	# A one-file save from before (version 3) loads, and the next save writes it out by area.
 	wipe()

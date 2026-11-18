@@ -1605,6 +1605,8 @@ func save() -> void:
 # between the two leaves the header naming the gens of the save before, which the files' .prev copies hold (_read_area). Any other save
 # (shutdown, world reset, tests) builds and writes at once.
 const AREA_M := 128.0              # PROVISIONAL: the side of a world items area (one file in AREA_DIR)
+const AREA_STEP_S := 600.0        # PROVISIONAL: a periodic save compares countdowns (an item's lifetime, a fire's burn) in steps this long, so an area
+                                   # where only a fire burns or a drop ages is written about every 10 minutes, not every save; a clean shutdown writes exactly
 const AREA_DIR := "world_items"    # the area files, "<ax>_<az>.json": {"version", "gen": the save that wrote it, "items": rows, "world_rows": indices}
 var _area_sums: Dictionary = {}    # area key -> [md5 of its rows, gen] as last written: touched by the writer only (the job carries it)
 var _save_gen: int = 0             # the save count, kept in the header: an area file's gen says which save wrote it
@@ -1649,7 +1651,7 @@ func _item_job() -> Dictionary:
 	var copy: Dictionary = _items.duplicate(true)
 	_note_save_part("world item copy", t0)
 	_save_gen += 1
-	return {"dir": _dir, "items": copy, "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(), "gen": _save_gen, "sums": _area_sums,
+	return {"dir": _dir, "items": copy, "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(), "gen": _save_gen, "sums": _area_sums, "exact": not _async_writes,
 		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "bog_iron": _bog_left.duplicate(true), "layout": FloraLayout.VERSION, "no_kits": true}}
 
 
@@ -1681,10 +1683,15 @@ static func _write_item_job(job: Dictionary) -> void:
 
 	for key in areas:
 		var body: String = JSON.stringify({"items": areas[key][0], "world_rows": areas[key][1]})
-		var sum: String = body.md5_text()
+		var coarse: Array = []
+
+		for row in areas[key][0]:
+			coarse.append(_coarse_row(row))
+
+		var sum: String = JSON.stringify([coarse, areas[key][1]]).md5_text()
 		var path: String = "%s/%s/%s.json" % [dir, AREA_DIR, key]
 
-		if sums.has(key) and str(sums[key][0]) == sum and FileAccess.file_exists(path):
+		if not bool(job.get("exact", false)) and sums.has(key) and str(sums[key][0]) == sum and FileAccess.file_exists(path):
 			listed[key] = int(sums[key][1])   # unchanged since it was written: not written again
 			continue
 
@@ -1726,6 +1733,36 @@ static func saved_world_rows(dir: String) -> Array:
 			rows.append_array(area.get("items", []))
 
 	return rows
+
+
+# A row as the periodic save compares it: the countdowns that run every tick (a loose item's lifetime; a fire's burn, its wood by class, what has
+# burned, its seconds lit and its part-made charcoal) in AREA_STEP_S steps. A structure row (its kind, a string, at index 9) has none.
+static func _coarse_row(row: Array) -> Array:
+	if row.size() > 9 and typeof(row[9]) == TYPE_STRING:
+		return row
+
+	var out: Array = row.duplicate()
+	out[5] = floorf(float(out[5]) / AREA_STEP_S)
+
+	if out.size() > 7 and int(out[6]) != 0:
+		out[7] = floorf(float(out[7]) / AREA_STEP_S)
+
+		for n in [10, 13]:
+			if out.size() > n and typeof(out[n]) == TYPE_ARRAY:
+				var steps: Array = []
+
+				for v in out[n]:
+					steps.append(floorf(float(v) / AREA_STEP_S))
+
+				out[n] = steps
+
+		if out.size() > 15:
+			out[15] = floorf(float(out[15]) / AREA_STEP_S)
+
+		if out.size() > 17:
+			out[17] = snappedf(float(out[17]), 0.25)
+
+	return out
 
 
 static func area_key_of(x: float, z: float) -> String:

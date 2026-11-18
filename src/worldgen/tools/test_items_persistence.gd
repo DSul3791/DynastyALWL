@@ -33,6 +33,8 @@ func wipe(dir: String) -> void:
 	for file in DirAccess.get_files_at(dir):
 		DirAccess.remove_absolute(dir + "/" + file)
 
+	DirAccess.make_dir_recursive_absolute(dir + "/" + ItemsScript.AREA_DIR)
+
 	for file in DirAccess.get_files_at(dir + "/" + ItemsScript.AREA_DIR):
 		DirAccess.remove_absolute(dir + "/" + ItemsScript.AREA_DIR + "/" + file)
 
