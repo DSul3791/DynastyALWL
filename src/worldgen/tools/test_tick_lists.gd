@@ -92,7 +92,7 @@ func _init() -> void:
 	var steps: int = 1600   # 60 s a slow tick: about 27 game hours, past the log fire's 10 h, its coals (2 h) and warm ash (12 h)
 
 	for step in steps:
-		raining = 1.0 if step >= 40 and step < 60 else 0.0
+		raining = 1.0 if step >= 900 and step < 920 else 0.0   # after the log fire's flames: rain early puts an open fire out to a laid fire (9), and it never reaches coals
 
 		for w in [lists, walk]:
 			if step == 5 and w._items.has(int(ids_a["standing_torch"])):
@@ -106,8 +106,9 @@ func _init() -> void:
 
 			w.tick(60.0)
 
-		if lists._items.has(int(ids_a["fire_log"])):
-			states[int(lists._items[int(ids_a["fire_log"])]["fire"]["state"])] = true
+		for name in ["fire_log", "fire_weak", "coals"]:
+			if lists._items.has(int(ids_a[name])):
+				states[int(lists._items[int(ids_a[name])]["fire"]["state"])] = true
 
 		if differ_at < 0 and picture(lists) != picture(walk):
 			differ_at = step
@@ -123,7 +124,7 @@ func _init() -> void:
 				print("tick lists: %d items on the lists, %d on the walk" % [pa.size(), pb.size()])
 
 	check(differ_at < 0, "the lists and the old walk leave every item the same after every slow tick (first difference at tick %d)" % differ_at)
-	check(states.has(ItemsScript.FIRE_STATE_COALS) and states.has(ItemsScript.FIRE_STATE_ASH), "a lit fire went through coals and warm ash (states %s)" % str(states.keys()))
+	check(states.has(ItemsScript.FIRE_STATE_COALS) and states.has(ItemsScript.FIRE_STATE_ASH), "the fires went through coals and warm ash (states seen %s)" % str(states.keys()))
 	check(not lists._items.has(int(ids_a["coals"])) and not lists._items.has(int(ids_a["ash"])), "fires left as coals and warm ash are cleared away in time")
 	check(not lists._items.has(int(ids_a["standing_torch"])) or not bool(lists._items[int(ids_a["standing_torch"])]["struct"].get("lit", false)), "the torch lit in place burned out")
 	var pile_left: bool = false
