@@ -2989,7 +2989,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 				if state == StructureLook.FIRE_COALS and _world[id].get("light") != null and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("glow"):
 					BuildingLook.coals_glow(_world[id]["light"], float(row[5]["glow"]))   # the coals dim as their time runs down
 
-				# A Smelter lit or put out is drawn again: its fire and light are set only when its model is built (_smelter_fire).
+				# A Smelter lit or put out is drawn again: its fire and light are set only when its model is built (_forge_fire).
 				var smelter_lit_changed: bool = str(_structure_by_state(state).get("use", "")) == "smelt" and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and bool(row[5].get("lit", false)) != bool(_world[id].get("lit", false))
 				_note_platter(id, row, state)
 				_note_store(id, row)
@@ -3033,7 +3033,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			var fixture_light: Light3D = null
 
 			if row.size() > 5 and bool((row[5] as Dictionary).get("lit", false)) and str(_structure_by_state(state).get("use", "")) == "smelt":
-				fixture_light = node.get_node_or_null("Light")   # a lit Smelter: its forge's own fire light (_smelter_fire shows its flames)
+				fixture_light = node.get_node_or_null("Light")   # a lit Smelter: its forge's own fire light (_forge_fire shows its flames)
 			elif row.size() > 5 and bool((row[5] as Dictionary).get("lit", false)):
 				var fixture: Node3D = BuildingLook.lit_fixture(StructureLook.look_of(state))
 				node.add_child(fixture)
@@ -3970,9 +3970,18 @@ func _make_log_bench() -> Node3D:
 
 
 # Large: a stone hearth with a hooded chimney, an anvil on a stump, a bellows of leather and wood, and a plank bench alongside.
-func _make_forge() -> Node3D:
+# The Primitive smithy (the same model without "use": "smelt") has a rough stone anvil beside its fire (Dave 17 Nov 2026: "a flat topped carved
+# rough stone beside it for hammering on materials"); the forge moves aside so the two sit centred on its footprint (structures.json).
+func _make_forge(state: int) -> Node3D:
 	var model: Node3D = _forge_glb("forge_basic")
-	return model if model != null else BuildingLook.stone_forge()
+
+	if model == null:
+		return BuildingLook.stone_forge()   # the stand-in already has an anvil
+
+	if str(_structure_by_state(state).get("use", "")) != "smelt":
+		BuildingLook.add_stone_anvil(model, FORGE_ASIDE_M, ANVIL_AT_M)
+
+	return model
 
 
 # The Brick - Forge (the old Masonry forge, id blacksmithy), drawn in building_look.gd; a model of Dave's in assets/stations wins, its cut stone
@@ -4014,6 +4023,8 @@ func _make_big_forge(state: int) -> Node3D:
 
 
 var _forge_sizes: Dictionary = {}
+const FORGE_ASIDE_M := -0.25   # the Primitive smithy's forge moved along x to make room for its stone anvil (provisional PS-2)
+const ANVIL_AT_M := 0.45       # where the anvil stands along x, beside the fire
 
 
 # Dave's forge meshes (assets/stations/forge_basic, forge_medium, forge_large, forge_master .glb). They arrive Z up with the fire
@@ -4411,12 +4422,20 @@ func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
 
 	var sized: float = float(_structure_by_state(state).get("look_scale", 1.0))
 
-	if sized != 1.0:   # a look shared by pieces of different sizes (chests by slot count, Dave 18 Nov 2026), drawn and its ghost at their own size
-		var scaled: Node3D = _model_for_look(look, state, extra)
-		scaled.scale = Vector3.ONE * sized   # uniform, so any collision box in it scales true
-		return scaled
+	var model: Node3D = _model_for_look(look, state, extra)
 
-	return _model_for_look(look, state, extra)
+	if model == null:
+		return null
+
+	if sized != 1.0:   # a look shared by pieces of different sizes (chests by slot count, Dave 18 Nov 2026), drawn and its ghost at their own size
+		model.scale = Vector3.ONE * sized   # uniform, so any collision box in it scales true
+
+	# A blueprint never burns (Dave 17 Nov 2026: the Primitive smithy's blueprint "has a fire ... burning before you make it"): the one place every
+	# forge, smithy and smelter look's flames and smoke are put out for a placement ghost or a site waiting for materials. Lights stay off unlit.
+	if extra.has("ghost") or extra.has("site"):
+		BuildingLook.show_forge_fire(model, false)
+
+	return model
 
 
 func _model_for_look(look: String, state: int, extra: Dictionary) -> Node3D:
@@ -4447,11 +4466,11 @@ func _model_for_look(look: String, state: int, extra: Dictionary) -> Node3D:
 		"log_workbench":
 			return _make_log_bench()
 		"stone_forge":
-			return _smelter_fire(_make_forge(), state, extra)
+			return _forge_fire(_make_forge(state), state, extra)
 		"blacksmithy":
 			return _make_smithy()
 		"big_forge":
-			return _smelter_fire(_make_big_forge(state), state, extra)
+			return _forge_fire(_make_big_forge(state), state, extra)
 		"carcass":
 			return _make_carcass(str(extra.get("sp", "")))
 
@@ -4494,18 +4513,18 @@ func _blue_all(node: Node, blue: Material) -> void:
 		_blue_all(child, blue)
 
 
-# A Smelter's forge model burns only while its row says lit: never as a blueprint ghost or site, never cold (Dave 17 Nov 2026). The smithies
-# that share these looks keep their fire as before.
-func _smelter_fire(model: Node3D, state: int, extra: Dictionary) -> Node3D:
+# A Smelter's forge model burns only while its row says lit, never cold (Dave 17 Nov 2026). A built smithy that shares the look, which has no
+# lighting yet, keeps its fire; no blueprint burns (_model_for_state).
+func _forge_fire(model: Node3D, state: int, extra: Dictionary) -> Node3D:
 	if str(_structure_by_state(state).get("use", "")) == "smelt":
-		BuildingLook.show_forge_fire(model, bool(extra.get("lit", false)) and not extra.has("site"))
+		BuildingLook.show_forge_fire(model, bool(extra.get("lit", false)))
 
 	return model
 
 
-# The ghost's model: a lit campfire is shown cold.
+# The ghost's model: a lit campfire is shown cold, a forge with no fire.
 func ghost_model(state: int) -> Node3D:
-	return _model_for_state(state)
+	return _model_for_state(state, {"ghost": true})
 
 
 func _make_fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
