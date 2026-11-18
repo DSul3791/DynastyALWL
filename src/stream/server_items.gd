@@ -225,6 +225,7 @@ var _next_id: int = 1
 var _known: Dictionary = {}         # peer -> {id: true} world items the peer was told about
 var _far_fire_spots: Array = []     # [pos Vector3, fire tier 1..3] of every lit campfire at the last world sync (far_fires_near)
 var _sync_grid: Dictionary = {}     # the last world sync's NEAR_M grid, cell -> [world ids] (at most SYNC_EVERY_S old); the hammer list's stock polls read it
+var _sync_grid_next: int = 0        # _next_id when that grid was filed: ids from here on came since and are not in it
 var _stock_sig: Dictionary = {}     # peer -> hash of the last craft stock sent (a hammer poll that would send the same is skipped)
 var _stock_poll_ms: Dictionary = {} # peer -> msec of the last hammer poll answered
 var _sync_in: float = 0.0
@@ -241,7 +242,9 @@ var _structures_cfg: Dictionary = {}   # the whole structures.json, for the shar
 var _fire_gap_m: float = FIRE_MIN_GAP_M
 var _fires_per_chunk: int = FIRES_PER_CHUNK
 var support_changed: Callable            # (Vector3) -> void: a bracing support was placed, taken down or loaded; the tunnel watch restarts its grace windows near it
-var _supports: Array = []                # bracing supports [pos, reach_m, strength, wear_s, floor, born_s], rebuilt on the main thread, read by the tunnel watch's worker under the mutex
+var _supports: Dictionary = {}           # SUPPORT_CELL_M square -> bracing supports reaching into it [pos, reach_m, strength, wear_s, floor, born_s], rebuilt on the main thread, read by the tunnel watch's worker under the mutex
+var _support_ids: Dictionary = {}        # world id -> true for every structure that may brace (filed by _grid_add), so a change re-files only these
+const SUPPORT_CELL_M := 8.0              # wider than the longest reach (a timber set's 7.5 m), so a support is filed in at most four squares
 var _supports_mutex: Mutex = Mutex.new()
 var _chest_viewer: Dictionary = {}   # peer -> world id of the container they last opened (fresh contents are pushed while it changes); -1 - worn position for a worn bag
 var _bag_edit: Dictionary = {}       # peer -> [worn position, Inventory]: the worn bag one action works on, written back when the action ends (_end_bag_edit)
@@ -527,7 +530,7 @@ func setup(item_table, store_dir: String) -> void:
 	_rekey_old_beds()
 	_water_rebuild((crops_parsed.get("tanks", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("tanks", null)) == TYPE_DICTIONARY else {},
 			(crops_parsed.get("wells", {}) as Dictionary) if crops_parsed != null and typeof(crops_parsed.get("wells", null)) == TYPE_DICTIONARY else {})
-	_rebuild_supports()
+	_rebuild_supports(true)
 	_load_trees()
 	var cooking: Variant = JSON.parse_string(FileAccess.get_file_as_string(COOKING_PATH))
 	_cooking = cooking if typeof(cooking) == TYPE_DICTIONARY else {}
@@ -2245,7 +2248,7 @@ func reset_world() -> int:
 	_crops.clear()
 	_plot_water.clear()
 	_water_rebuild({})
-	_rebuild_supports()
+	_rebuild_supports(true)
 	_refresh_pots()
 	_lit_valid = false
 	_bed_cache.clear()
@@ -4487,26 +4490,47 @@ func _mine(peer: int, inv, at: Vector3, held_slot: int, struck_nothing: bool = f
 	_dirty = true
 
 
-# Bracing supports (Dave 2026-10-22, BRACING_ITEMS.md): the strength they give the ground at a point, for the tunnel watch.
-func _rebuild_supports() -> void:
-	var list: Array = []
+# Bracing supports (Dave 2026-10-22, BRACING_ITEMS.md): the strength they give the ground at a point, for the tunnel watch. Filed by square
+# (finding 10, docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md): a change re-files the supports only, and a query reads one square.
+# `scan_all` (load, reset) looks through every world item for them; otherwise the ones _grid_add filed are read again, gone ones dropped.
+func _rebuild_supports(scan_all: bool = false) -> void:
+	if scan_all:
+		_support_ids.clear()
 
-	for id in _items:
-		var it: Dictionary = _items[id]
+		for id in _items:
+			_note_support(id, _items[id])
 
-		if not it.has("struct"):
-			continue
+	var cells: Dictionary = {}
 
-		var support: Dictionary = _structures.get(str(it["struct"]["kind"]), {}).get("support", {})
+	for id in _support_ids.keys():
+		var it: Dictionary = _items.get(id, {})
+		var support: Dictionary = _structures.get(str(it["struct"]["kind"]), {}).get("support", {}) if it.has("struct") else {}
 
 		if support.is_empty():
+			_support_ids.erase(id)   # taken down, or no longer a support
 			continue
 
-		list.append([it["pos"], float(support["reach_m"]), float(support["strength"]), float(support["wear_game_days"]) * 86400.0, float(support.get("floor", 0.25)), float(it["struct"].get("born", 0.0))])
+		var entry: Array = [it["pos"], float(support["reach_m"]), float(support["strength"]), float(support["wear_game_days"]) * 86400.0, float(support.get("floor", 0.25)), float(it["struct"].get("born", 0.0))]
+		var pos: Vector3 = it["pos"]
+		var reach: float = float(support["reach_m"])
+
+		for cx in range(floori((pos.x - reach) / SUPPORT_CELL_M), floori((pos.x + reach) / SUPPORT_CELL_M) + 1):
+			for cz in range(floori((pos.z - reach) / SUPPORT_CELL_M), floori((pos.z + reach) / SUPPORT_CELL_M) + 1):
+				var cell: Vector2i = Vector2i(cx, cz)
+
+				if not cells.has(cell):
+					cells[cell] = []
+
+				cells[cell].append(entry)
 
 	_supports_mutex.lock()
-	_supports = list
+	_supports = cells
 	_supports_mutex.unlock()
+
+
+func _note_support(id: int, entry: Dictionary) -> void:
+	if entry.has("struct") and _structures.get(str(entry["struct"]["kind"]), {}).has("support"):
+		_support_ids[id] = true
 
 
 # Support at `at`, 0 or 1 (Dave 2026-10-22, spheres of influence): each support covers a sphere of its reach_m radius at full health; the radius
@@ -4515,7 +4539,7 @@ func _rebuild_supports() -> void:
 func support_strength_at(at: Vector3, now_game_s: float = -1.0) -> float:
 	var now_s: float = _now_game_s() if now_game_s < 0.0 else now_game_s
 	_supports_mutex.lock()
-	var list: Array = _supports
+	var list: Array = _supports.get(Vector2i(floori(at.x / SUPPORT_CELL_M), floori(at.z / SUPPORT_CELL_M)), [])
 	_supports_mutex.unlock()
 
 	for entry in list:
@@ -5722,6 +5746,7 @@ func _sync_world_items() -> void:
 
 	var t_scan: int = Time.get_ticks_usec()
 	_sync_grid = grid
+	_sync_grid_next = _next_id
 	_far_fire_spots = lit
 
 	for peer in _known:
@@ -10124,6 +10149,7 @@ var _grid = StructureGridScript.new()
 # Registers a freshly placed or loaded structure when its structures.json row says "blocks_walk".
 func _grid_add(id: int, entry: Dictionary) -> void:
 	_zone_add(id)   # every structure, a blueprint site too, blocks spawning round it
+	_note_support(id, entry)   # read by the next _rebuild_supports, as the old full scan found it
 
 	if entry["struct"].has("site"):
 		return   # a blueprint site is walked through and blocks nothing until it is finished (_finish_site)
@@ -12251,24 +12277,49 @@ func wolf_info() -> Array:
 	return out
 
 
+# World ids that may lie within r (flat) of a point, for the animals' searches (finding 8, docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md):
+# the last world sync's NEAR_M cells that the circle touches, plus every id made since that sync; every id when no sync has filed a grid yet.
+# The caller checks each id is still there and how far it is.
+func _ids_near(centre: Vector3, r: float) -> Array:
+	if _sync_grid.is_empty():
+		return _items.keys()
+
+	var out: Array = []
+
+	for cx in range(floori((centre.x - r) / NEAR_M), floori((centre.x + r) / NEAR_M) + 1):
+		for cz in range(floori((centre.z - r) / NEAR_M), floori((centre.z + r) / NEAR_M) + 1):
+			out.append_array(_sync_grid.get(Vector2i(cx, cz), []))
+
+	for id in range(_sync_grid_next, _next_id):
+		out.append(id)
+
+	return out
+
+
 # Loose food lying on the ground within r of a point, for a fox to smell: [[world id, position], ...]. Chests, remains, fires and
 # placed things are not loose; whatever is in a chest or a pack is safe.
 func loose_food_near(centre: Vector3, r: float) -> Array:
 	var out: Array = []
 
-	for id in _items:
-		var it: Dictionary = _items[id]
-
-		if it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder") or it.has("scatter"):
-			continue
-
-		if str(table.entry(table.id_of(int(it["number"]))).get("kind", "")) != "food":
-			continue
-
-		if Vector2(it["pos"].x - centre.x, it["pos"].z - centre.z).length() <= r:
-			out.append([id, it["pos"]])
+	for id in _ids_near(centre, r):
+		if _is_loose_food(id) and Vector2(_items[id]["pos"].x - centre.x, _items[id]["pos"].z - centre.z).length() <= r:
+			out.append([id, _items[id]["pos"]])
 
 	return out
+
+
+# Where loose food `id` lies, or null when it is gone (taken, eaten, picked up) or is no longer loose food: a fox after it reads it by id.
+func loose_food_pos(id: int) -> Variant:
+	return _items[id]["pos"] if _is_loose_food(id) else null
+
+
+func _is_loose_food(id: int) -> bool:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder") or it.has("scatter"):
+		return false
+
+	return str(table.entry(table.id_of(int(it["number"]))).get("kind", "")) == "food"
 
 
 # A thief takes a loose item whole: [item number, count], or [] when it is no longer there.
@@ -12292,7 +12343,10 @@ const STEAL_NEVER_KINDS := ["structure", "placeable", "container"]
 func stealable_near(centre: Vector3, r: float) -> Array:
 	var out: Array = []
 
-	for id in _items:
+	for id in _ids_near(centre, r):
+		if not _items.has(id):
+			continue   # taken since the last sync filed it
+
 		var it: Dictionary = _items[id]
 
 		if it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder") or it.has("scatter") or it.has("showroom") or it.has("inst") or int(it["count"]) <= 0:

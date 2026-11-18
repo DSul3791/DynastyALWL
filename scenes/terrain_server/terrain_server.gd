@@ -644,6 +644,7 @@ func _ready() -> void:
 	animals.wolves.take_meat = func(peer): return items.take_all_meat(peer)
 	animals.big_game.player_info = func(): return items.wolf_info()
 	animals.thieves.loose_food = func(centre, r): return items.loose_food_near(centre, r)
+	animals.thieves.food_at = func(id): return items.loose_food_pos(id)   # a fox after one piece reads it by id
 	animals.thieves.take_food = func(id): return items.take_loose(id)
 	animals.goblins.stealable = func(centre, r): return items.stealable_near(centre, r)   # goblins steal one small unlit thing at a time and pile it in their den
 	animals.goblins.take_one = func(id): return items.take_one(id)

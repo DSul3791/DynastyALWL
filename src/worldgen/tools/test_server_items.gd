@@ -3436,5 +3436,32 @@ func _init() -> void:
 
 	check(bw.inventory_of(1).count_of(bw.table.number_of("hide_hood")) == 1, "a hide hood by hand from a hide and thread")
 
+	# Animal searches by grid (finding 8): before any sync every item is looked at; after one, the sync's cells round the point and anything made
+	# since; a fox reads the piece it is after by id.
+	DirAccess.make_dir_recursive_absolute("user://test_server_items_near")
+
+	for file in DirAccess.get_files_at("user://test_server_items_near"):
+		DirAccess.remove_absolute("user://test_server_items_near/" + file)
+
+	var near = make("user://test_server_items_near")
+	var forage: int = near.table.number_of("roast_forage")
+	var first: int = near._next_id
+	near._items[first] = {"number": forage, "count": 3, "pos": Vector3(1000.0, 5.0, 1000.0), "left": 1.0e9}
+	near._next_id += 1
+	check(near.loose_food_near(Vector3(1010.0, 5.0, 1000.0), 30.0).size() == 1, "before any sync, loose food is found")
+	near._sync_world_items()
+	var second: int = near._next_id
+	near._items[second] = {"number": forage, "count": 1, "pos": Vector3(1205.0, 5.0, 1000.0), "left": 1.0e9}
+	near._next_id += 1
+	var found: Array = near.loose_food_near(Vector3(1190.0, 5.0, 1000.0), 30.0)
+	check(found.size() == 1 and int(found[0][0]) == second, "food dropped since the last sync is found, far food is not (%s)" % str(found))
+	near._sync_world_items()
+	found = near.loose_food_near(Vector3(1190.0, 5.0, 1000.0), 30.0)
+	check(found.size() == 1 and int(found[0][0]) == second, "after the next sync it is found from the grid, in the next cell over (%s)" % str(found))
+	check(near.stealable_near(Vector3(1001.0, 5.0, 1000.0), 5.0).size() == 1 and near.stealable_near(Vector3(1050.0, 5.0, 1000.0), 5.0).is_empty(), "a goblin finds the loose stack within its reach only")
+	check(near.loose_food_pos(first) == Vector3(1000.0, 5.0, 1000.0) and near.loose_food_pos(999999) == null, "a fox reads its food by id")
+	near.take_loose(first)
+	check(near.loose_food_pos(first) == null and near.loose_food_near(Vector3(1000.0, 5.0, 1000.0), 5.0).is_empty(), "food taken is gone, though the grid still files its id")
+
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

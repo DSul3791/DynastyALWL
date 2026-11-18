@@ -13,6 +13,7 @@ const CARRY := 14
 var host                        # ServerAnimals
 var loose_food: Callable        # (centre Vector3, radius) -> Array of [id, position Vector3]
 var take_food: Callable         # (id) -> Array [item number, count] taken, or [] when it is gone
+var food_at: Callable           # (id) -> position Vector3 of that loose food, or null when it is gone (server_items.loose_food_pos)
 var player_positions: Callable  # () -> Array of Vector3 (host's list is used when unset)
 var fires: Callable             # () -> Array of Vector3, burning fires
 
@@ -125,14 +126,15 @@ func step(a: Dictionary, dt: float) -> void:
 		host.animals.erase(a["id"])   # it eats the meal somewhere out of sight; a fox elsewhere will turn up later
 
 
-# Where the food the fox is after lies, or null when it is gone. `reach` covers the farthest a downwind fox smells (the search was a
-# fixed 80 m, so a fox that smelled food from farther gave up at once).
+# Where the food the fox is after lies, or null when it is gone or farther than `reach` (at least 80 m: it covers the farthest a downwind fox
+# smells). Read by id, not by searching round the fox (finding 8 of docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md).
 func _food_pos(id: int, from: Vector3, reach: float = 80.0) -> Variant:
-	for row in (loose_food.call(from, maxf(reach, 80.0)) if loose_food.is_valid() else []):
-		if int(row[0]) == id:
-			return row[1]
+	var at: Variant = food_at.call(id) if food_at.is_valid() else null
 
-	return null
+	if at == null or Vector2((at as Vector3).x - from.x, (at as Vector3).z - from.z).length() > maxf(reach, 80.0):
+		return null
+
+	return at
 
 
 func _give_up(a: Dictionary) -> void:
