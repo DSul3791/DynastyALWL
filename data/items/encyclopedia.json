@@ -10668,7 +10668,7 @@
 		"iron_chest": {
 			"name": "Ornate - Chest",
 			"kind": "structure",
-			"description": "A plank chest plated and strapped in iron. Holds 30 stacks, more than a wooden chest.",
+			"description": "A plank chest plated and strapped in iron. Holds 48 stacks, more than any other chest.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true

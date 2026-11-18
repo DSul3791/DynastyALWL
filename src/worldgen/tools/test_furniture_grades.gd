@@ -116,11 +116,11 @@ func _data_checks() -> void:
 
 	check(_need("wooden_crate", "lumber") > 0 and _need("wooden_crate", "hardwood_board") == 0, "the Crate is still a Plank packing box")
 
-	# Slots: Crate 10 < Crude < Rustic 20 < Fine < Ornate 30, and the weight limit rises with them.
+	# Slots: Crate 10, then six-slot rows by grade (Dave 18 Nov 2026: the lowest chest 3 rows, each tier one more): Crude 24 < Rustic 30 < Fine 36 < Ornate 48.
 	var ladder: Array = ["wooden_crate"] + FAMILIES["Chest"]
 	var slots: Array = ladder.map(func(k): return int(items._structures[k]["slots"]))
 	var kg: Array = ladder.map(func(k): return float(items._structures[k]["max_kg"]))
-	check(slots[0] == 10 and slots[2] == 20 and slots[4] == 30 and slots[0] < slots[1] and slots[1] < slots[2] and slots[2] < slots[3] and slots[3] < slots[4], "chest slots rise by grade %s" % str(slots))
+	check(slots[0] == 10 and slots[1] == 24 and slots[2] == 30 and slots[3] == 36 and slots[4] == 48 and slots[0] < slots[1] and slots[1] < slots[2] and slots[2] < slots[3] and slots[3] < slots[4], "chest slots rise by grade %s" % str(slots))
 	check(kg[0] < kg[1] and kg[1] < kg[2] and kg[2] < kg[3] and kg[3] < kg[4], "chest weight limits rise by grade %s" % str(kg))
 
 

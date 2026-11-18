@@ -10633,9 +10633,10 @@ func _keeps_products(kind: String) -> bool:
 	return _out_slots(kind) > 0 or _one_store(kind)
 
 
-# A new container's store: a chest's 30 slots, a one-store station's own "slots" (20), from which it grows.
+# A new container's store: a one-store station's own "slots" (20), from which it grows; any other container at least BASE_SLOTS (30), more when its
+# "slots" are more (the Fine, Large wooden and Ornate chests, Dave 18 Nov 2026: a row of 6 more per chest tier).
 func _new_store(kind: String):
-	return InventoryScript.new(table, int(_structures[kind]["slots"]) if _one_store(kind) else InventoryScript.BASE_SLOTS)
+	return InventoryScript.new(table, int(_structures[kind]["slots"]) if _one_store(kind) else maxi(InventoryScript.BASE_SLOTS, int(_structures[kind].get("slots", 0))))
 
 
 # The slots a container of `kind` fills from a put, Store all, Stack to nearby or a view deposit: its "slots", every slot of a one-store station
@@ -10655,7 +10656,12 @@ func _store_usable(kind: String, box) -> int:
 
 		return box.slot_count
 
-	return clampi(int(_structures.get(kind, {}).get("slots", box.slot_count)), 1, box.slot_count)
+	var slots: int = int(_structures.get(kind, {}).get("slots", box.slot_count))
+
+	if slots > box.slot_count:   # a store saved smaller than its row now says (chest rows grew 18 Nov 2026): the new slots are added empty
+		box._resize(mini(slots, InventoryScript.MAX_SLOTS))
+
+	return clampi(slots, 1, box.slot_count)
 
 
 # The slots a take may reach in a container: its usable slots, and a station's output slots after them.

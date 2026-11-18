@@ -1530,18 +1530,18 @@ func _init() -> void:
 	check(sent.is_empty(), "too far from the chest to open it")
 	ch.action(1, Net.ACT_CHEST_OPEN, chest_id, 0, 0, Vector3.ZERO)
 	check(sent.size() == 1 and sent[0][0] == 1, "opening sends the contents to the opener only")
-	check(ch._chests[1].usable == 12, "the woven chest has 12 slots")
+	check(ch._chests[1].usable == 18, "the woven chest has 18 slots (3 rows)")
 	ch.action(1, Net.ACT_ADMIN_GIVE, ch.table.number_of("plant_fibre"), 0, 1, Vector3.ZERO)
 
-	for n in range(14):
+	for n in range(20):
 		ch._chests[1].numbers[n] = 0
 
-	for n in range(12):
+	for n in range(18):
 		ch._chests[1].add(1000 + n, 1)
 
 	check(ch._chests[1].add(ch.table.number_of("stone"), 1) == 1, "a full woven chest takes no more")
 
-	for n in range(12):
+	for n in range(18):
 		ch._chests[1].numbers[n] = 0
 		ch._chests[1].counts[n] = 0
 

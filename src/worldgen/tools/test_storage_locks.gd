@@ -143,7 +143,7 @@ func _init() -> void:
 		check(items._structures.has(kind) and not bool(items.table.entry(kind).get("future", false)), "%s is a live structure row" % kind)
 
 	check(bool(items._structures["wooden_crate"].get("lockable", false)) and bool(items._structures["warehouse_crate"].get("lockable", false)) and not bool(items._structures.get("wooden_shelf", {}).get("lockable", false)), "crates and chests take a code lock, shelves do not")
-	check(int(items._structures["large_wooden_chest"]["slots"]) <= 30 and float(items._structures["large_wooden_chest"]["max_kg"]) > float(items._structures["iron_chest"]["max_kg"]), "the Large wooden chest holds more weight than the Ornate - Chest within 30 slots [D17]")
+	check(int(items._structures["large_wooden_chest"]["slots"]) < int(items._structures["iron_chest"]["slots"]) and float(items._structures["large_wooden_chest"]["max_kg"]) > float(items._structures["iron_chest"]["max_kg"]), "the Large wooden chest holds more weight than the Ornate - Chest, one row fewer slots (Dave 18 Nov 2026, was [D17] within 30)")
 	check(float(items._structures["warehouse_crate"]["max_kg"]) > float(items._structures["wooden_crate"]["max_kg"]), "the Warehouse crate carries more than the Crate (freight role)")
 	check(ItemsScript.lock_code(42) == "0042" and ItemsScript.lock_code(0) == "0000" and ItemsScript.lock_code(9999) == "9999" and ItemsScript.lock_code(10000) == "" and ItemsScript.lock_code(-1) == "", "codes are four digit characters with leading zeros, 0000 to 9999")
 
