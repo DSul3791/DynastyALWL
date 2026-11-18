@@ -164,5 +164,20 @@ func _init() -> void:
 	print("water network: one solve of a 256-piece network took %d us (target under 1500 us)" % solve_us)
 	check(solve_us < 10000, "the 256-piece solve stays far under 10 ms even on a loaded machine (%d us)" % solve_us)
 
+	# Port look-ups by square (finding 5): a wide catch reaches across the squares; far-off pieces form runs of their own, and a run is found whole.
+	var grid = Network.new()
+	grid.add(1, {"role": "source", "outlet": Vector3(1.9, 2.0, 1.9), "rate_lpm": 30.0, "cap_lpm": 30.0})
+	grid.add(2, {"role": "tank", "inlet": Vector3(3.0, 1.5, 1.9), "catch_m": 1.2, "drop_m": 1.5, "litres_max": 100.0, "outlet": Vector3(4.0, 0.5, 1.9)})
+	check(grid.downstream(1).has(2), "a tank's 1.2 m catch takes a spout 1.1 m away in the next square")
+	grid.add(3, _channel(Vector3(4.0, 0.5, 1.9), Vector3(6.0, 0.49, 1.9)))
+	grid.add(4, _channel(Vector3(900.0, 0.5, 0.0), Vector3(902.0, 0.49, 0.0)))
+	grid.add(5, _channel(Vector3(902.0, 0.49, 0.0), Vector3(904.0, 0.48, 0.0)))
+	check(grid.downstream(2).has(3) and grid.downstream(4).has(5) and not grid.downstream(3).has(4), "pieces link only to the pieces whose ends are near")
+	var runs: Array = grid.runs()
+	check(runs.size() == 2 and runs[0] == [1, 2, 3] and runs[1] == [4, 5], "two runs, each listed whole in joining order (%s)" % str(runs))
+	check(grid.runs([Vector3(904.0, 0.48, 0.0)]) == [[4, 5]] and grid.runs([Vector3(500.0, 0.0, 0.0)]).is_empty(), "a run is found from a point at its end; nothing from empty ground")
+	grid.remove(2)
+	check(grid.runs().size() == 3 and grid.feeders_of(grid.pieces[3]).is_empty(), "taking the tank away splits the run")
+
 	print("water network: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
