@@ -686,16 +686,11 @@ See [succession and inheritance](Design_Ideas_Unapproved.md#succession-and-inher
 
 ### 6.3 Personal finances
 
-- **[Decided]** Each individual has a finances tab showing what they own, what they owe, how much they have banked and how much they carry on them.
-- **[Decided]** Money in the bank is reached at the bank in person. A character away from their own town can instead try to write a letter of credit, based on their reputation (Section 13.5).
-- **[Proposed]** The tab also shows a calendar of upcoming payments and a forecast ("your account covers the next three payments").
-- **[Proposed]** Carried cash is exposed: it can drop on death or be stolen like any item. Banked money is safe but needs a visit to a bank.
+See [personal finances and obligations](Design_Ideas_Unapproved.md#personal-finances-and-obligations) for the preserved recorded decisions, proposals and source qualifications.
 
 ### 6.4 Obligations
 
-- **[Proposed]** Loans, tax bills, wages and tolls are all one kind of record: who owes whom, how much, and when it is next due.
-- **[Proposed]** At each periodic settlement the server pays what is due from the account, whether or not the player is online. A payment that cannot be made is a missed payment, with a reputation hit and eventually penalties or seizure of collateral.
-- **[Proposed]** Missed payments while away appear in the "while you were away" report.
+See [personal finances and obligations](Design_Ideas_Unapproved.md#personal-finances-and-obligations) for the proposed obligations model.
 
 ### 6.5 Staying alive
 
