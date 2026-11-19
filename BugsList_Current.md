@@ -154,9 +154,9 @@ Assumed on Dave's behalf (provisional):
 - SW-4: grain is wheat, barley, oats and rye; unripe grain stays standing; flax and other crops stay for E; reaped grain gets the normal full yield, not the tier bonus. A scythe now also gives grain its full yield, as a sickle does.
 - SW-5: one sickle swing every 0.45 s at light effort (0.5), one scythe swing every 1.1 s at heavy effort (0.95); weights are unchanged (sickle 0.4 kg, scythe 1.8 kg). One wear per swing.
 
-## 8-49. Problems Dave found in play, 12-18 Nov 2026
+## 8-48. Problems Dave found in play, 12-18 Nov 2026 (49 is in BugsList_Fixed.md)
 
-Recorded 19 Nov from Dave's own messages. Each of his lists of answers and problems was the result of a play session, so each row comes from a message of his, nearly all of them reports from play (rows 15 and 24 were questions). "Fix in dev" is the change made after his report; "Fix not yet played" means no message from him about the fixed version yet. Where a row says *inferred*, his words imply it rather than say it. Dates are UTC. Nothing here has been confirmed fixed in play, so nothing moves to BugsList_Fixed.md yet.
+Recorded 19 Nov from Dave's own messages. Each of his lists of answers and problems was the result of a play session, so each row comes from a message of his, nearly all of them reports from play (rows 15 and 24 were questions). "Fix in dev" is the change made after his report; "Fix not yet played" means no message from him about the fixed version yet. Where a row says *inferred*, his words imply it rather than say it. Dates are UTC. An entry moves to BugsList_Fixed.md once Dave confirms its fix in play.
 
 | # | What Dave found in play (date) | Fix in dev | Play status |
 |---|---|---|---|
@@ -201,7 +201,6 @@ Recorded 19 Nov from Dave's own messages. Each of his lists of answers and probl
 | 46 | Craft button should be Craft 1 / Craft x (17 Nov, *inferred* from using the Craft button of #1056) | #1228 | Fix not yet played |
 | 47 | Crafting ran on past the quantity; click should only select (12 Nov) | #1056 | Unclear (two-step inference: he used a Craft button and asked for it to be split, entry 46) |
 | 48 | Felling, carrying and processing of the 15 Nov wood system | #1148-#1153 | Partly played: felling (entry 16), logs (17), saw (26); chopping block, sawbuck, carving station, bows and benches unclear |
-| 49 | Shovel name (16 Nov rename request) | #1182 | Unclear: on 17 Nov he wrote of making a "shovel" (entry 32), but that was his own word for it |
 
 ## 50. Level gives no soil back when it cuts ground
 
@@ -368,6 +367,18 @@ Assumed on Dave's behalf (provisional):
 - GM-6: Irrigation trench, new item 1507, structure state 457, no recipe: dug with the hoe, 2 m by 0.5 m, catches water within 1.2 m and up to 1.5 m above.
 - GM-7: a trench waters every bed and plot within 30 m of it in any direction that is no more than 0.5 m higher, shared by how much room each soil has.
 - GM-8: the hoe's list gains Irrigation Trench as its last row; the other six keep Dave's order.
+
+## 59. Crafting search only looked inside the chosen tab
+
+**Status: Implemented - awaiting player verification.** Dave's ruling on 19 Nov 2026. Fixed by PR #1308, merged to dev at 63166c94 (head 3267cf27) after independent review. Lane B (David4) on the exact head: 62 of 62 selected tests passed, including test_craft_menu, test_craft_search, test_craft_search_long and test_station_recipe_list; validate_items 0 errors; join smoke clean. Fix not yet played.
+
+Dave, 19 Nov 2026: "the build screen I assume you mean crafting should always search all items. there is no need to have it only search specific categories."
+
+**Cause:** the crafting screen's search (also every station window's) matched only recipes in the chosen tab. The build screen (#1181, entry 18) already searched every group while words were typed, so it is unchanged.
+
+**Required outcome:** words typed in the crafting or station search box search every recipe, whatever tab is chosen. With the box empty a tab shows only its own. No tab is lit while typing; clicking a tab clears the box. A station window still lists only what that station makes.
+
+**Acceptance:** with the Medicine tab chosen, typing "axe" lists the axes. Clearing the box shows only Medicine again.
 
 ## Rewrite interpretation
 

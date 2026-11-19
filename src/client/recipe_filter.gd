@@ -1,6 +1,7 @@
 extends RefCounted
 
-# The craft menu's search box and category tabs (Dave 25 Oct; 5 Nov 2026 by name only; 10 Nov the Admin kits too; 10 Nov one food tab, the soup bowl, in place of Fire and cooking plus Food and drink). A recipe is shown when it is in the chosen category ("" = All) and
+# The craft menu's search box and category tabs (Dave 25 Oct; 5 Nov 2026 by name only; 10 Nov the Admin kits too; 10 Nov one food tab, the soup bowl, in place of Fire and cooking plus Food and drink). With the box empty a
+# recipe is shown when it is in the chosen category ("" = All); with words typed every category is searched (Dave 19 Nov 2026: "should always search all items"), and a recipe is shown when
 # every word typed (any case) is found in its own name or the name of what it makes. Ingredients and tools are not searched (Dave 5 Nov: a word that is not in
 # the name must not list the recipe; 1 Nov's search by ingredient is dropped). The same box serves the inventory's Make list and every crafting table or station.
 
@@ -8,10 +9,10 @@ const CATEGORIES := ["Tools", "Weapons", "Armour", "Shelter and building", "Work
 
 
 static func shown(recipe: Dictionary, category: String, typed: String, table = null) -> bool:
-	if category != "" and str(recipe.get("category", "")) != category:
-		return false
+	if typed.strip_edges() != "":
+		return matches(text_of(recipe, table), typed)   # typing searches every category, whatever tab is chosen
 
-	return matches(text_of(recipe, table), typed)
+	return category == "" or str(recipe.get("category", "")) == category
 
 
 # Whether every word typed (any case) is in `text`; an empty box matches everything. The Admin kits under the list use it too (Dave 10 Nov).
