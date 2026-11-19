@@ -22,6 +22,18 @@ func check(ok: bool, what: String) -> void:
 		failures += 1
 
 
+# A status that has answered with this info (for the words rules without a server).
+func _fake(info: Dictionary):
+	var status = ServerStatus.new("127.0.0.1")
+	status.state = "online"
+	status.info = info
+	return status
+
+
+func _words(info: Dictionary, my_build: int, my_protocol: int) -> Array:
+	return ServerStatus.words(_fake(info), my_build, my_protocol)
+
+
 func _initialize() -> void:
 	var dir: String = OS.get_cache_dir().path_join("dynasty_test_pick_%d" % OS.get_process_id())
 	DirAccess.make_dir_recursive_absolute(dir)
@@ -44,7 +56,9 @@ func _initialize() -> void:
 	check(page.add_server("127.0.0.1:%d" % (port + 50), "Old LAN box") == "", "a server with nothing on it is added, with a name")
 	check(ServerList.load_rows().size() == 2 and page.selected == "127.0.0.1:%d" % (port + 50), "both are saved and the new one is chosen")
 
-	for i in 400:   # up to about 6 s: the status asks run in the background
+	var waited_from: int = Time.get_ticks_msec()
+
+	while Time.get_ticks_msec() - waited_from < 6000:   # up to 6 s by the clock (headless frames are fast): the status asks run in the background
 		await process_frame
 
 		if page.statuses.values().all(func(status): return status.done()):
@@ -57,6 +71,19 @@ func _initialize() -> void:
 	check(down != null and down.state == "no_answer" and ServerStatus.words(down, 0, 0)[1] == "down", "the other does not answer: red")
 	check(ServerList.find(page.rows, "127.0.0.1:%d" % (port + 50)) >= 0, "a server that does not answer stays on the list")
 	check(str(page.rows[ServerList.find(page.rows, "127.0.0.1:%d" % port)].get("server_name", "")) == "Hannibal's House", "the server's own name is kept for its row")
+	var proto: int = load("res://src/stream/terrain_net.gd").PROTOCOL_VERSION
+	check(_words({"stamped": true, "build": 12, "protocol": proto}, 10, proto)[0].begins_with("Needs update") and _words({"stamped": true, "build": 12}, 10, proto)[1] == "warn", "a newer stamped server: Needs update, amber")
+	check(_words({"stamped": true, "build": 8, "protocol": proto}, 10, proto)[0].begins_with("Server is older"), "an older stamped server: its owner must update it")
+	check(_words({"stamped": false, "build": 99, "protocol": proto}, 10, proto) == ["Online", "ok"], "an unstamped build number is not compared")
+	check(_words({"protocol": proto + 1}, 0, proto)[0].begins_with("Needs update") and _words({"protocol": proto - 1}, 0, proto)[0].begins_with("Server is older"), "another protocol: Needs update or Server is older")
+	check(_words({"protocol": proto, "players": 32, "max_players": 32}, 0, proto) == ["Full", "warn"], "a full server reads Full")
+	var lost = ServerStatus.new("127.0.0.1")
+	lost.state = "not_found"
+	check(ServerStatus.words(lost, 0, proto)[1] == "down", "a name that is not found is red")
+	page.statuses["127.0.0.1:%d" % port] = _fake({"protocol": proto + 1})
+	page.select("127.0.0.1:%d" % port)
+	check(not page.join_selected(), "Join refuses a server this game must update for")
+	page.statuses["127.0.0.1:%d" % port] = up
 	page.select("127.0.0.1:%d" % (port + 50))
 	page.rename_selected("Basement")
 	check(ServerList.shown_name(ServerList.load_rows()[ServerList.find(ServerList.load_rows(), "127.0.0.1:%d" % (port + 50))]) == "Basement", "Rename saves the new name")

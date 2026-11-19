@@ -59,7 +59,7 @@ func _launch_role(role: String) -> void:
 
 # "play" in a client-only build (the testers' download; docs/design/SERVER_PICK_PAGE.md): never a server of its own. The pages, in order:
 # title (once per launch), the server pick page, the character page (or the creator when there is none), then the game. Back here after a
-# death, the same server and character are still chosen, so the game rejoins at once. --to-servers (Back to servers from the joining screen,
+# death, the server is still chosen and the dead character is gone, so the character page comes next. --to-servers (Back to servers from the joining screen,
 # which starts the game again) skips the title.
 func _client_pages() -> void:
 	if AppConfig.has_flag("to-servers") and not Engine.has_meta("title_done"):

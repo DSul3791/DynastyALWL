@@ -1200,7 +1200,7 @@ func _back_to_servers() -> void:
 	var user_args: Array = []
 
 	for argument in OS.get_cmdline_user_args():
-		if argument != "--to-servers" and not argument.begins_with("--password="):
+		if argument not in ["--to-servers", "--test"] and not argument.begins_with("--password=") and not argument.begins_with("--server="):   # else the launcher rejoins
 			user_args.append(argument)
 
 	OS.set_restart_on_exit(true, OS.get_cmdline_args() + PackedStringArray(["--"]) + PackedStringArray(user_args + ["--to-servers"]))
