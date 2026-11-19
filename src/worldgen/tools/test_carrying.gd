@@ -358,11 +358,11 @@ func _init() -> void:
 
 	# 11. Over the limit: slowed, not stripped, told once.
 	back.vitals_of(1)["weight"] = 10.0
-	give(back, 1, "stone", 10)
+	give(back, 1, "stone", 20)   # 10 kg of 0.5 kg stones (Dave 19 Nov 2026)
 	notices.clear()
 	back._carry_notice(1)
 	back._carry_notice(1)
-	check(notices.count("You carry more than you can. It slows you down until you put something down.") == 1 and back.inventory_of(1).count_of(stone) == 10, "over the carry limit a player is told once and keeps everything")
+	check(notices.count("You carry more than you can. It slows you down until you put something down.") == 1 and back.inventory_of(1).count_of(stone) == 20, "over the carry limit a player is told once and keeps everything")
 
 	# 12. No bag takes a large log (the retired pack frame was the only one that did, Dave 13 Nov 2026): a worn bag refuses it and it stays in the pack.
 	var inv1 = back.inventory_of(1)

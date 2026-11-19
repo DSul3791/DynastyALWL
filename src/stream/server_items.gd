@@ -742,6 +742,10 @@ func peer_left(peer: int) -> void:
 	_level_hold.erase(peer)
 	_garden_ready_ms.erase(peer)
 	_hoe_check_ms.erase(peer)
+	for key in _boulder_drops.keys():
+		if int(key[0]) == peer:
+			_boulder_drops.erase(key)   # a miner who leaves: the next one starts their own pile
+
 	_stock_sig.erase(peer)
 	_stock_poll_ms.erase(peer)
 	_zone_sent.erase(peer)
@@ -1113,7 +1117,14 @@ func _pile_blocked(centre: Vector3, radius: float, self_id: int) -> bool:
 			if def.is_empty() or kind == "path_patch" or bool(it["struct"].get("road", false)) or PlacementRules.is_plot(def):
 				continue
 
-			var half: Vector2 = Vector2(float(def.get("footprint_x", 0.0)), float(def.get("footprint_z", 0.0))) * 0.5
+			# Only what stands in the pile's own height range stops it (gate review, PR #1322): a foundation or floor it lies on, or a roof or
+			# upper floor over it, does not, so a pile in a house or on a stone yard's floor stays one pile.
+			var room: Array = PlacementRules._box(def, it["pos"], float(it["struct"].get("yaw", 0.0)))
+
+			if float(room[4]) <= centre.y + 0.1 or float(room[3]) >= centre.y + PileRules.cone_height(radius):
+				continue
+
+			var half: Vector2 = room[1]
 			var local: Vector2 = PlacementRules.local_of({"pos": it["pos"], "yaw": float(it["struct"].get("yaw", 0.0))}, centre)
 			var nearest: Vector2 = Vector2(clampf(local.x, -half.x, half.x), clampf(local.y, -half.y, half.y))
 
@@ -2917,8 +2928,11 @@ func settle_loose_near(centre: Vector3, radius: float) -> void:
 			# A boulder dug under comes down into the hole (Dave 19 Nov 2026, boulders PLAN.md stage 1: boulders floated when dug under):
 			# it rests on what is left under its middle, like a loose item. Nothing is saved: laid out again it is settled on the saved digs the same way.
 			if Vector2(it["pos"].x - centre.x, it["pos"].z - centre.z).length() <= radius + size_now + 0.5:
-				it["pos"] = _settled(it["pos"])
-				_dirty = true
+				var rest: Vector3 = _settled(it["pos"])
+
+				if rest != it["pos"]:
+					it["pos"] = rest
+					_dirty = true
 
 			continue
 
@@ -7704,8 +7718,7 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 	var stone: int = table.number_of("stone")
 
 	# Dave 19 Nov 2026 (boulders PLAN.md 5): never refused for weight. What fits goes in the pack; the rest drops behind the miner, away from
-	# the rock, at one spot kept for this miner and this rock so the job makes one pile ("just drop it right behind them and let them pile up").
-	var behind: Vector3 = _boulder_drop_spot(peer, it, size_now)
+	# the rock, at one spot kept for this miner and this rock so the job makes one pile (_overflow_spot: "just drop it right behind them").
 	var held: Dictionary = table.entry(table.id_of(inv.numbers[int(tool[0])]))   # read before the wear: a stone tool that breaks on this blow leaves its slot empty
 	_last_hit[peer] = now
 	_wear_slot(peer, inv, int(tool[0]), "rock")
@@ -7765,13 +7778,13 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 
 		# Flint (F-02): now and then the piece that comes away is a flint nodule (more near water). A nodule or an ore is one piece, never a double.
 		if ore_item > 0:
-			_take_in(peer, inv, ore_item, 1, 0, _beside(behind, it["pos"], 1.5))   # ore and flint make their own piles beside the stone one
+			_take_in(peer, inv, ore_item, 1, 0, _overflow_spot(peer, inv, ore_item, 1, it, size_now, 1.5))   # ore and flint make their own piles beside the stone one
 			out = 1
 		elif flint_n > 0 and flint_p > 0.0 and fate(peer, "boulder_flint", flint_p):
-			_take_in(peer, inv, flint_n, 1, 0, _beside(behind, it["pos"], -1.5))
+			_take_in(peer, inv, flint_n, 1, 0, _overflow_spot(peer, inv, flint_n, 1, it, size_now, -1.5))
 			out = 1
 		else:
-			_take_in(peer, inv, stone, out, 0, behind)   # past the carry limit the stones lie in the pile behind the miner
+			_take_in(peer, inv, stone, out, 0, _overflow_spot(peer, inv, stone, out, it, size_now, 0.0))   # past the carry limit the stones lie in the pile behind the miner
 
 		taken += out
 
@@ -7799,6 +7812,16 @@ func _boulder_drop_spot(peer: int, it: Dictionary, size_now: float) -> Vector3:
 	var spot: Vector3 = Vector3(it["pos"].x + away.x * reach, _peer_pos[peer].y, it["pos"].z + away.y * reach)
 	_boulder_drops[key] = spot
 	return spot
+
+
+# Where `count` of `number` that do not fit in the pack land (_boulder_drop_spot, `side` metres across for ore and flint), or INF (the feet,
+# unused) when they all fit, so no spot is kept for a miner whose pack never overflows.
+func _overflow_spot(peer: int, inv, number: int, count: int, it: Dictionary, size_now: float, side: float) -> Vector3:
+	if _fit(peer, inv, number, count) >= count:
+		return Vector3.INF
+
+	var spot: Vector3 = _boulder_drop_spot(peer, it, size_now)
+	return _beside(spot, it["pos"], side) if side != 0.0 else spot
 
 
 # `spot` moved `side` metres across the line from `from` (to the miner's right for a positive side).

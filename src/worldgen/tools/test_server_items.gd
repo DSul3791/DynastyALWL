@@ -1611,11 +1611,11 @@ func _init() -> void:
 	var chest_stone_slot: int = ch.inventory_of(1).numbers.find(stones_n)
 	ch.action(1, Net.ACT_CHEST_PUT, chest_stone_slot, chest_id, 6, Vector3.ZERO)
 	check(ch.inventory_of(1).count_of(stones_n) == 4 and ch._chests[1].count_of(stones_n) == 6, "putting stones in moves them")
-	ch._chests[1].add(stones_n, 14)   # 20 kg of stone in the woven chest: a 22 kg oak log still goes in (Dave 19 Nov 2026: storage has no weight limit, only slots)
+	ch._chests[1].add(stones_n, 14)   # 20 stones (10 kg) in the woven chest: a 22 kg oak log still goes in (Dave 19 Nov 2026: storage has no weight limit, only slots)
 	var oak_n: int = ch.table.number_of("log_oak")
 	ch.give(1, oak_n, 1)
 	ch.action(1, Net.ACT_CHEST_PUT, -1, chest_id, 1, Vector3.ZERO)
-	check(ch.shoulder_of(1) == "" and ch._chests[1].count_of(oak_n) == 1, "a 22 kg oak log goes into a woven chest already holding 20 kg of stone (shoulder %s)" % ch.shoulder_of(1))
+	check(ch.shoulder_of(1) == "" and ch._chests[1].count_of(oak_n) == 1, "a 22 kg oak log goes into a woven chest already holding 20 stones (shoulder %s)" % ch.shoulder_of(1))
 	ch._chests[1].remove(oak_n, 1)
 	ch._chests[1].remove(stones_n, 14)
 	var chest_log: int = ch.table.number_of("log_willow")
@@ -1994,7 +1994,7 @@ func _init() -> void:
 	th2.peer_connected_hello(1, "thirstkey0001")
 	check(float(th2.vitals_of(1)["wet"]) == float(th.vitals_of(1)["wet"]), "thirst survives a restart")
 
-	# Carrying weight: stones weigh 1 kg; a 75 kg player carries 52.5 kg at most and up to 80 percent of that (42 kg) with no hindrance.
+	# Carrying weight: stones weigh 0.5 kg (Dave 19 Nov 2026); a 75 kg player carries 52.5 kg at most and up to 80 percent of that (42 kg) with no hindrance.
 	var cwd: String = "user://test_server_items_carry"
 	DirAccess.make_dir_recursive_absolute(cwd)
 
@@ -2005,10 +2005,10 @@ func _init() -> void:
 	cw.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	cw.peer_connected_hello(1, "carrykey0001")
 	cw.report_position(1, Vector3(0.0, 10.0, 0.0))
-	cw.give(1, cw.table.number_of("stone"), 20)
-	check(absf(cw.carried_kg_of(1) - 20.0) < 0.01, "twenty stones weigh 20 kg (%.1f)" % cw.carried_kg_of(1))
-	cw.give(1, cw.table.number_of("stone"), 100)
-	check(cw.carried_kg_of(1) <= 52.01 and cw.carried_kg_of(1) > 50.0, "give stops at the hard cap, %.1f kg" % cw.carried_kg_of(1))
+	cw.give(1, cw.table.number_of("stone"), 40)
+	check(absf(cw.carried_kg_of(1) - 20.0) < 0.01, "forty stones weigh 20 kg (%.1f)" % cw.carried_kg_of(1))
+	cw.give(1, cw.table.number_of("stone"), 200)
+	check(cw.carried_kg_of(1) <= 52.51 and cw.carried_kg_of(1) > 50.0, "give stops at the hard cap, %.1f kg" % cw.carried_kg_of(1))
 	var CarryScript = load("res://src/shared/carry_rules.gd")
 	var ccfg: Dictionary = CarryScript.load_config()
 	check(CarryScript.speed_factor(20.0, 75.0, ccfg) == 1.0 and absf(CarryScript.speed_factor(52.5, 75.0, ccfg) - 0.25) < 0.001, "no slowdown when comfortable, 25 percent speed at the cap")
@@ -2029,9 +2029,10 @@ func _init() -> void:
 			inv_c.numbers[slot] = 0
 			inv_c.counts[slot] = 0
 
-		var whole: int = int(floor(load))
+		var stone_kg: float = CarryScript.weight_of("stone", ccfg)
+		var whole: int = int(floor(load / stone_kg))
 		inv_c.add(cw.table.number_of("stone"), whole)
-		inv_c.add(cw.table.number_of("stick"), int(round((load - float(whole)) / CarryScript.weight_of("stick", ccfg))))
+		inv_c.add(cw.table.number_of("stick"), int(round((load - float(whole) * stone_kg) / CarryScript.weight_of("stick", ccfg))))
 		cw._moving[1] = 1.0
 		cw._exertion[1] = 0.0
 		var speed: float = CarryScript.speed_factor(cw.carried_kg_of(1), 75.0, ccfg)
@@ -3174,7 +3175,7 @@ func _init() -> void:
 	bo._boulder_left.erase(78)
 	bo._boulder_cfg["luck_extra"] = 0.0   # the exact-count checks below; luck's extra stone has its own check
 	bo._boulder_cfg["flint"] = {}   # flint has its own test (test_flint); these checks count plain stones
-	var small_total: int = bo._boulder_stones(0.6)   # about 80: enough for the blow counts below
+	var small_total: int = bo._boulder_stones(0.6)   # about 2,800: enough for the blow counts below
 	bo._items[900001] = {"number": 0, "count": small_total, "pos": Vector3(5.0, 11.5, 6.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 7, "boulder": {"radius": 0.6, "yaw": 0.0, "total": small_total}}
 	bo._last_hit.clear()
 	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)

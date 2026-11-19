@@ -317,9 +317,9 @@ func _init() -> void:
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("twine"), 0, 4, Vector3.ZERO)
 	items.place_piece(1, "lean_to_kit", Vector3(-3.0, 10.0, 0.0))
 	check(done("shelter"), "placing a lean-to completes the shelter goal")
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 24, Vector3.ZERO)   # the workbench now costs 20 sticks, 6 twine and 4 stones (pacing pass)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 24, Vector3.ZERO)   # the workbench now costs 20 sticks, 6 twine and 8 stones (0.5 kg each, Dave 19 Nov 2026)
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("twine"), 0, 6, Vector3.ZERO)
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone"), 0, 4, Vector3.ZERO)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone"), 0, 8, Vector3.ZERO)
 	items.place_piece(1, "workbench_kit", Vector3(0.0, 10.0, 5.0))
 	check(done("workbench"), "placing a workbench completes the workbench goal")
 
