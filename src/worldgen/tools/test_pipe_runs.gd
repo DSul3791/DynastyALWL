@@ -110,6 +110,12 @@ func at_kind(kind: String, at: Vector3) -> int:
 	return 0
 
 
+# One pipe_lay, as a player's click (the server paces them: PIPE_LAY_PACE_MS; the test does not wait).
+func lay(slot: int, from: Vector3, to: Vector3) -> void:
+	items._pipe_lay_msec.clear()
+	items.pipe_lay(1, slot, from, to)
+
+
 func litres(id: int) -> float:
 	return items._water.litres(id, items._water_now_s())
 
@@ -167,7 +173,7 @@ func _init() -> void:
 	var b: int = barrel(104.0, 100.0)
 	items.give(1, n("copper_pipe"), 5)
 	said.clear()
-	items.pipe_lay(1, slot_of("copper_pipe"), Vector3(100.1, 10.1, 100.0), Vector3(103.9, 10.0, 100.05))   # aimed a little off each point: they snap
+	lay(slot_of("copper_pipe"), Vector3(100.1, 10.1, 100.0), Vector3(103.9, 10.0, 100.05))   # aimed a little off each point: they snap
 	var ab: int = run_between(Vector3(100.0, 10.05, 100.0), Vector3(104.0, 10.05, 100.0))
 	check(ab != 0 and str(items._items[ab]["struct"]["kind"]) == "copper_pipe" and absf(float(items._items[ab]["struct"]["len"]) - 4.0) < 0.001 and int(items._items[ab]["struct"]["paid"]) == 2, "two clicks lay one 4 m copper run between the barrels' bottom points, paid with 2 pieces")
 	check(have("copper_pipe") == 3 and heard("You lay 4.0 m"), "two pieces leave the pack and the player is told (%d left; %s)" % [have("copper_pipe"), str(said)])
@@ -202,7 +208,7 @@ func _init() -> void:
 
 	# --- A junction: a run started in the middle of another ---
 	said.clear()
-	items.pipe_lay(1, slot_of("copper_pipe"), Vector3(102.0, 10.1, 100.0), Vector3(102.0, 10.05, 103.0))
+	lay(slot_of("copper_pipe"), Vector3(102.0, 10.1, 100.0), Vector3(102.0, 10.05, 103.0))
 	var mid: Vector3 = Vector3(102.0, 10.05, 100.0)
 	var tip: Vector3 = Vector3(102.0, 10.05, 103.0)
 	var first: int = run_between(Vector3(100.0, 10.05, 100.0), mid)
@@ -215,7 +221,7 @@ func _init() -> void:
 	# --- A tap on the branch's open end, pouring into a trough under it ---
 	var trough: int = put("wooden_trough", Vector3(102.0, 9.0, 103.0))   # its rim 0.45 m under the spout (and more than a joint below the pipe end)
 	items.give(1, n("copper_tap"), 1)
-	items.pipe_lay(1, slot_of("copper_tap"), tip, tip + Vector3(0.1, 0.0, 0.0))
+	lay(slot_of("copper_tap"), tip, tip + Vector3(0.1, 0.0, 0.0))
 	var tap: int = at_kind("copper_tap", tip)
 	check(tap != 0 and have("copper_tap") == 0 and items._water.downstream(branch).has(tap), "a tap is fitted on the open end and the pipe feeds it")
 	items._water.set_litres(a, 150.0)
@@ -240,9 +246,9 @@ func _init() -> void:
 	var near_bed: int = put("tilled_bed", Vector3(203.0, 10.0, 200.0))
 	var far_bed: int = put("tilled_bed", Vector3(205.5, 10.0, 200.0))
 	var high_bed: int = put("tilled_bed", Vector3(202.5, 11.0, 200.5))
-	items.pipe_lay(1, slot_of("copper_pipe"), Vector3(200.0, 10.05, 200.0), Vector3(202.0, 10.05, 200.0))
+	lay(slot_of("copper_pipe"), Vector3(200.0, 10.05, 200.0), Vector3(202.0, 10.05, 200.0))
 	items.give(1, n("copper_drip_head"), 1)
-	items.pipe_lay(1, slot_of("copper_drip_head"), Vector3(202.0, 10.05, 200.0), Vector3(202.0, 10.05, 200.0))
+	lay(slot_of("copper_drip_head"), Vector3(202.0, 10.05, 200.0), Vector3(202.0, 10.05, 200.0))
 	var drip: int = at_kind("copper_drip_head", Vector3(202.0, 10.05, 200.0))
 	var beds: Array = items._trench_beds.get(drip, [])
 	check(drip != 0 and beds.has(near_bed) and not beds.has(far_bed) and not beds.has(high_bed), "a drip head waters the bed 1 m off, not one 3.5 m off or one a metre above it (%s)" % str(beds))
@@ -259,7 +265,7 @@ func _init() -> void:
 	var f: int = barrel(300.0, 300.0)
 	items.report_position(1, Vector3(300.0, 10.0, 300.0))
 	items.give(1, n("wooden_pipe"), 1)
-	items.pipe_lay(1, slot_of("wooden_pipe"), Vector3(300.0, 10.05, 300.0), Vector3(301.9, 10.05, 300.0))
+	lay(slot_of("wooden_pipe"), Vector3(300.0, 10.05, 300.0), Vector3(301.9, 10.05, 300.0))
 	var wood: int = run_between(Vector3(300.0, 10.05, 300.0), Vector3(301.9, 10.05, 300.0))
 	check(wood != 0 and have("wooden_pipe") == 0 and absf(float(items._water.pieces[wood].get("cap_lpm", 0.0)) - 60.0) < 0.01, "a new 1.9 m wooden run takes 1 piece and carries 60 L/min")
 	items._items[wood]["struct"]["born"] = items._now_game_s() - 40.0 * 86400.0
@@ -272,17 +278,17 @@ func _init() -> void:
 	# --- Refusals ---
 	items.report_position(1, Vector3(102.0, 10.0, 100.0))
 	said.clear()
-	items.pipe_lay(1, slot_of("copper_pipe"), Vector3(110.0, 10.0, 110.0), Vector3(102.0, 10.0, 102.0))
+	lay(slot_of("copper_pipe"), Vector3(110.0, 10.0, 110.0), Vector3(102.0, 10.0, 102.0))
 	check(heard("Start a pipe at"), "a run must start at a connection point (%s)" % str(said))
 	said.clear()
 	var lots: int = barrel(140.0, 100.0)
 	items.report_position(1, Vector3(136.0, 10.0, 100.0))
-	items.pipe_lay(1, slot_of("copper_pipe"), Vector3(104.0, 10.05, 100.0), Vector3(140.0, 10.05, 100.0))
+	lay(slot_of("copper_pipe"), Vector3(104.0, 10.05, 100.0), Vector3(140.0, 10.05, 100.0))
 	check(heard("at most 30 m") and lots != 0, "a run longer than 30 m is refused (%s)" % str(said))
 	said.clear()
 	var c: int = barrel(110.0, 100.0)
 	items.report_position(1, Vector3(108.0, 10.0, 100.0))
-	items.pipe_lay(1, slot_of("copper_pipe"), Vector3(104.0, 10.05, 100.0), Vector3(110.0, 10.05, 100.0))
+	lay(slot_of("copper_pipe"), Vector3(104.0, 10.05, 100.0), Vector3(110.0, 10.05, 100.0))
 	check(heard("needs 2") and c != 0 and have("copper_pipe") == 1, "6 m of copper needs 2 pieces: with 1 it is refused and nothing is taken (%s)" % str(said))
 
 	# --- Taking down: a run keeps its tap until that comes off, then gives its pieces back ---
@@ -308,6 +314,27 @@ func _init() -> void:
 	check(first2 != 0 and second2 != 0 and wood2 != 0 and absf(float(items._items[first2]["struct"]["len"]) - kept_len) < 0.001 and int(items._items[first2]["struct"]["paid"]) + int(items._items[second2]["struct"]["paid"]) == 2, "after a load the runs lie where they were, with their length and pieces")
 	var a2: int = at_kind("wooden_barrel", a_pos)
 	check(a2 != 0 and absf(litres(a2) - a_l) < 0.5 and items._water.level_groups().size() >= 1, "the barrel keeps its water (%.1f of %.1f L) and its link" % [litres(a2) if a2 != 0 else -1.0, a_l])
+
+	# Both ends on one pipe is refused and leaves it whole; a junction in a 1-piece run and taking all three runs down gives back exactly the pieces paid.
+	items.peer_connected_hello(1, "piper0000001")   # back after the load, with the same pack
+	items.report_position(1, Vector3(301.0, 10.0, 300.5))
+	said.clear()
+	lay(slot_of("copper_pipe"), Vector3(300.5, 10.05, 300.0), Vector3(301.5, 10.05, 300.0))
+	check(heard("same pipe") and run_between(Vector3(300.0, 10.05, 300.0), Vector3(301.9, 10.05, 300.0)) == wood2, "both ends on the same pipe are refused and it stays whole (%s)" % str(said))
+	var wood_before: int = have("wooden_pipe")
+	var copper_before: int = have("copper_pipe")
+	var split_at: Vector3 = Vector3(300.95, 10.05, 300.0)
+	lay(slot_of("copper_pipe"), split_at, split_at + Vector3(0.0, 0.0, 2.0))
+	var w1: int = run_between(Vector3(300.0, 10.05, 300.0), split_at)
+	var w2: int = run_between(split_at, Vector3(301.9, 10.05, 300.0))
+	var br: int = run_between(split_at, split_at + Vector3(0.0, 0.0, 2.0))
+	check(w1 != 0 and w2 != 0 and br != 0 and int(items._items[w1]["struct"]["paid"]) + int(items._items[w2]["struct"]["paid"]) == 1 and have("copper_pipe") == copper_before - 1, "a branch from the middle of a 1-piece wooden run splits it; its halves share that one piece")
+
+	for id in [br, w1, w2]:
+		if id != 0:
+			items._take_down(1, items.inventory_of(1), id)
+
+	check(have("wooden_pipe") == wood_before + 1 and have("copper_pipe") == copper_before, "taken down, the three runs give back exactly 1 wooden and 1 copper pipe, nothing made (%d wooden, %d copper)" % [have("wooden_pipe") - wood_before, have("copper_pipe") - copper_before + 1])
 
 	# An old save's Wooden - Pipe (a hammer piece, no laid row) loads as a 2 m run on its old axis, 0.13 m up.
 	var old: Dictionary = {"pos": Vector3(0.0, 10.0, 0.0), "struct": {"kind": "wooden_pipe", "yaw": 90.0}}

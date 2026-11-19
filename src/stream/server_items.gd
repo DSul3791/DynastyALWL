@@ -6884,7 +6884,7 @@ func _load_world_items() -> void:
 				if typeof(laid) == TYPE_DICTIONARY:
 					entry["struct"]["pitch"] = float((laid as Dictionary).get("pitch", 0.0))
 					entry["struct"]["len"] = clampf(float((laid as Dictionary).get("len", LEGACY_PIPE_M)), PipeRules.MIN_RUN_M, PipeRules.MAX_RUN_M)
-					entry["struct"]["paid"] = maxi(int((laid as Dictionary).get("paid", 1)), 1)
+					entry["struct"]["paid"] = maxi(int((laid as Dictionary).get("paid", 1)), 0)   # a half left by a junction may hold none
 
 			_pipe_from_legacy(entry)
 
@@ -17665,7 +17665,7 @@ func _pipe_split(id: int, at: Vector3) -> int:
 	if at.distance_to(e[0]) < PipeRules.MIN_RUN_M or at.distance_to(e[1]) < PipeRules.MIN_RUN_M:
 		return -1
 
-	var paid: int = maxi(int(it["struct"].get("paid", 1)), 1)
+	var paid: int = maxi(int(it["struct"].get("paid", 1)), 0)
 	var first_paid: int = clampi(int(round(float(paid) * at.distance_to(e[0]) / maxf(float(it["struct"].get("len", LEGACY_PIPE_M)), 0.01))), 0, paid)
 	var first: Dictionary = PipeRules.pose(e[0], at)
 	var second: Dictionary = PipeRules.pose(at, e[1])
@@ -17674,6 +17674,7 @@ func _pipe_split(id: int, at: Vector3) -> int:
 	it["struct"]["pitch"] = first["pitch"]
 	it["struct"]["len"] = first["len"]
 	it["struct"]["paid"] = first_paid
+	# shortcut: pipe_lay's network-size check counts the new run, not this twin; a network at its MAX_PIECES could leave the twin standing alone (dry).
 	var twin: int = _new_pipe(str(it["struct"]["kind"]), second, paid - first_paid, it["struct"].get("born", _now_game_s()))
 	_water_relink_at.append_array(e)
 	_water_relink_at.append(at)
@@ -17681,6 +17682,29 @@ func _pipe_split(id: int, at: Vector3) -> int:
 	_water_kind.erase(id)
 	_water_add(id)
 	return twin
+
+
+# A refused run takes back the splits made for it: each twin goes and its pipe is whole again (last split first).
+func _pipe_unsplit(undo: Array) -> void:
+	for n in range(undo.size() - 1, -1, -1):
+		var row: Array = undo[n]
+		var id: int = int(row[0])
+		var twin: int = int(row[2])
+
+		if _items.has(twin):
+			_water_relink_at.append_array(pipe_ends(_items[twin]))
+			_water.remove(twin)
+			_water_kind.erase(twin)
+			_items.erase(twin)
+
+		if _items.has(id):
+			_items[id]["struct"] = (row[1][0] as Dictionary).duplicate()
+			_items[id]["pos"] = row[1][1]
+			_water.remove(id)
+			_water_kind.erase(id)
+			_water_add(id)
+
+	_dirty = true
 
 
 func _new_pipe(kind: String, pose: Dictionary, paid: int, born: float) -> int:
@@ -17695,16 +17719,26 @@ func _new_pipe(kind: String, pose: Dictionary, paid: int, born: float) -> int:
 
 # pipe_lay (protocol 136): the held pack slot holds a pipe (lay a run from `from` to `to`) or a tap or drip head (fit it on the open pipe end at `to`).
 # Every refusal says why.
+const PIPE_LAY_PACE_MS := 150   # one pipe_lay a player at most this often (each one looks over the water pieces)
+var _pipe_lay_msec: Dictionary = {}   # peer -> msec of the last pipe_lay
+
+
 func pipe_lay(peer: int, slot: int, from: Vector3, to: Vector3) -> void:
 	var inv = inventory_of(peer)
 
 	if inv == null or not _peer_pos.has(peer) or slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0 or not from.is_finite() or not to.is_finite():
 		return
 
+	var now_ms: int = Time.get_ticks_msec()
+
+	if now_ms - int(_pipe_lay_msec.get(peer, -100000)) < PIPE_LAY_PACE_MS:
+		return
+
+	_pipe_lay_msec[peer] = now_ms
 	var held: String = table.id_of(int(inv.numbers[slot]))
 	var entry: Dictionary = table.entry(held)
 
-	if _peer_pos[peer].distance_to(to) > PLACE_REACH_M:
+	if _peer_pos[peer].distance_to(to) > PLACE_REACH_M or _peer_pos[peer].distance_to(from) > PLACE_REACH_M + PipeRules.MAX_RUN_M:   # the first click was in reach when made; the player walks the run
 		_say(peer, "Too far to reach there.")
 		return
 
@@ -17728,8 +17762,8 @@ func pipe_lay(peer: int, slot: int, from: Vector3, to: Vector3) -> void:
 	var a: Vector3 = start["at"]
 	var b: Vector3 = finish.get("at", to)
 
-	if not finish.is_empty() and int(finish["id"]) == int(start["id"]) and not bool(start["pipe"]):
-		_say(peer, "Both ends are on the same piece.")
+	if not finish.is_empty() and int(finish["id"]) == int(start["id"]):
+		_say(peer, "Both ends are on the same pipe." if bool(start["pipe"]) else "Both ends are on the same piece.")
 		return
 
 	var length: float = a.distance_to(b)
@@ -17749,22 +17783,36 @@ func pipe_lay(peer: int, slot: int, from: Vector3, to: Vector3) -> void:
 		_say(peer, "That run needs %d %s; you carry %d." % [need, table.sentence_name(int(inv.numbers[slot])), have])
 		return
 
-	# Into the middle of a laid run: it splits there first, so three ends meet (a refused run below leaves two runs end to end: the same pipe).
+	var of_kind: int = 0
+
+	for id in _water_kind:
+		if str(_water_kind[id]) == held and _items.has(id) and _chunk_of(_items[id]["pos"]) == _chunk_of((a + b) * 0.5):
+			of_kind += 1
+
+	if of_kind >= int(_structures[held].get("cap_per_chunk", 400)):
+		_say(peer, "Too many of these lie here already.")
+		return
+
+	# Into the middle of a laid run: it splits there first, so three ends meet. A run refused below puts the split pipe back as it was.
+	var undo: Array = []   # [split id, its struct and pos before, the twin]
+
 	for point in [start, finish]:
 		if not point.is_empty() and bool(point["pipe"]) and _items.has(int(point["id"])):
-			_pipe_split(int(point["id"]), point["at"])
+			var was: Array = [(_items[int(point["id"])]["struct"] as Dictionary).duplicate(), _items[int(point["id"])]["pos"]]
+			var twin: int = _pipe_split(int(point["id"]), point["at"])
+
+			if twin >= 0:
+				undo.append([int(point["id"]), was, twin])
 
 	var pose: Dictionary = PipeRules.pose(a, b)
 	var trial: Dictionary = water_piece(_structures[held], pose["pos"], float(pose["yaw"]), pose)
 	var turned: Dictionary = _fed_turn(trial)
+	var why: String = _water.check(turned if not turned.is_empty() else trial)
 
-	match _water.check(turned if not turned.is_empty() else trial):
-		"loop":
-			_say(peer, "This would make a loop.")
-			return
-		"full":
-			_say(peer, "This water network cannot grow any bigger.")
-			return
+	if why != "":
+		_pipe_unsplit(undo)
+		_say(peer, "This would make a loop." if why == "loop" else "This water network cannot grow any bigger.")
+		return
 
 	var number: int = int(inv.numbers[slot])
 	var before: Array = _snapshot(inv)
@@ -17806,9 +17854,13 @@ func _take_down_laid(peer: int, inv, id: int, it: Dictionary, def: Dictionary) -
 					_say(peer, "Take the %s off first." % table.sentence_name(int(_items[other]["number"])))
 					return
 
-	var count: int = maxi(int(it["struct"].get("paid", 1)), 1) if str(def.get("hand_laid", "")) == "pipe" else 1
+	var count: int = maxi(int(it["struct"].get("paid", 1)), 0) if str(def.get("hand_laid", "")) == "pipe" else 1   # exactly what it took: a junction's half may hold none
 	_items.erase(id)
 	_dirty = true
+
+	if count <= 0:
+		return
+
 	var was_src: String = _gain_source
 	_gain_source = SRC_RETURN
 	give(peer, int(it["number"]), count)
