@@ -98,7 +98,7 @@ func payload_kg(cart: Dictionary) -> float:
 	return float(host._structures.get(str(cart["struct"]["kind"]), {}).get("max_kg", 0.0))
 
 
-# Kilograms more a container may take before the cart it is or rides on is full; INF for one not on a cart (its own max_kg still applies).
+# Kilograms more a container may take before the cart it is or rides on is full; INF for one not on a cart (storage has no weight limit of its own).
 func room_kg(id: int) -> float:
 	var cart_id: int = cart_for(id)
 

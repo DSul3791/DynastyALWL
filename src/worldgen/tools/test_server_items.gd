@@ -1583,11 +1583,12 @@ func _init() -> void:
 	var chest_stone_slot: int = ch.inventory_of(1).numbers.find(stones_n)
 	ch.action(1, Net.ACT_CHEST_PUT, chest_stone_slot, chest_id, 6, Vector3.ZERO)
 	check(ch.inventory_of(1).count_of(stones_n) == 4 and ch._chests[1].count_of(stones_n) == 6, "putting stones in moves them")
-	ch._chests[1].add(stones_n, 14)   # 20 kg of stone in the 40 kg woven chest: a 22 kg oak log no longer fits
-	ch.give(1, ch.table.number_of("log_oak"), 1)
+	ch._chests[1].add(stones_n, 14)   # 20 kg of stone in the woven chest: a 22 kg oak log still goes in (Dave 19 Nov 2026: storage has no weight limit, only slots)
+	var oak_n: int = ch.table.number_of("log_oak")
+	ch.give(1, oak_n, 1)
 	ch.action(1, Net.ACT_CHEST_PUT, -1, chest_id, 1, Vector3.ZERO)
-	check(ch.shoulder_of(1) == "log_oak", "a 22 kg oak log is too heavy for the 40 kg woven chest holding 20 kg of stone and stays on the shoulder")
-	ch.lay_down_shoulder(1)
+	check(ch.shoulder_of(1) == "" and ch._chests[1].count_of(oak_n) == 1, "a 22 kg oak log goes into a woven chest already holding 20 kg of stone (shoulder %s)" % ch.shoulder_of(1))
+	ch._chests[1].remove(oak_n, 1)
 	ch._chests[1].remove(stones_n, 14)
 	var chest_log: int = ch.table.number_of("log_willow")
 	ch.give(1, chest_log, 1)
@@ -2974,7 +2975,7 @@ func _init() -> void:
 	lazy_clock[0] = 13.0 * day_s
 	check(not lz.dynamic_tree_info(Vector2i(0, 0), (int(lz._flora_by_name[tree_name]["id"]) << 16) | 0xFFFF).is_empty(), "after 12 game days it is a full tree that can be felled")
 
-	# Container rules as data (job 73): the woven chest takes 40 kg, and partial puts, full chests and full packs behave.
+	# Container rules as data (job 73): a woven chest takes stacks until its slots are full, whatever they weigh (Dave 19 Nov 2026), and full packs behave.
 	DirAccess.make_dir_recursive_absolute(qd + "_box")
 
 	for file in DirAccess.get_files_at(qd + "_box"):
@@ -3008,14 +3009,11 @@ func _init() -> void:
 			bx.action(1, Net.ACT_CHEST_PUT, slot_n, box_id, 40, Vector3.ZERO)
 
 	bx.action(1, Net.ACT_CHEST_PUT, bx.inventory_of(1).numbers.find(box_stone), box_id, 10, Vector3.ZERO)
-	check(box.count_of(box_stone) == 40 and bx.inventory_of(1).count_of(box_stone) == in_pack - 40, "a put past the 40 kg limit puts what fits (%d in the chest, %d left in the pack)" % [box.count_of(box_stone), bx.inventory_of(1).count_of(box_stone)])
-	check(box_rejects == [2], "the stack that no longer fits is refused as too heavy (%s)" % str(box_rejects))
-	bx.action(1, Net.ACT_CHEST_PUT, bx.inventory_of(1).numbers.find(box_stone), box_id, 5, Vector3.ZERO)
-	check(box.count_of(box_stone) == 40 and box_rejects == [2, 2], "a full chest takes no more and refuses it as too heavy (%s)" % str(box_rejects))
+	check(box.count_of(box_stone) == 50 and bx.inventory_of(1).count_of(box_stone) == in_pack - 50 and box_rejects.is_empty(), "a chest that is not full takes all 50 stones, never refused by weight (%d in the chest, rejects %s)" % [box.count_of(box_stone), str(box_rejects)])
 	bx.give(1, box_stone, 500)
 	var before_take: int = bx.inventory_of(1).count_of(box_stone)
 	bx.action(1, Net.ACT_CHEST_TAKE, box.numbers.find(box_stone), box_id, 40, Vector3.ZERO)
-	check(bx.inventory_of(1).count_of(box_stone) == before_take and box.count_of(box_stone) == 40, "a take into a pack at its weight cap moves nothing and loses nothing")
+	check(bx.inventory_of(1).count_of(box_stone) == before_take and box.count_of(box_stone) == 50, "a take into a pack at its weight cap moves nothing and loses nothing")
 
 	# Skill hooks (job 70): factor 1.0 changes nothing; a stub skill of 2.0 doubles yield and halves craft time.
 	DirAccess.make_dir_recursive_absolute(qd + "_skill")

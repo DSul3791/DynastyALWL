@@ -982,8 +982,8 @@ func _init() -> void:
 		if def.has("slots") and (int(def.get("slots", 0)) < 1 or int(def.get("slots", 0)) > InventoryCheck.MAX_SLOTS):   # chests go to 48 (Dave 18 Nov 2026: 3 rows of 6, a row more each tier)
 			fail("structures.json %s: slots must be 1 to %d" % [kind, InventoryCheck.MAX_SLOTS])
 
-		if def.has("max_kg") and float(def.get("max_kg", 0.0)) <= 0.0:
-			fail("structures.json %s: max_kg must be above 0" % kind)
+		if def.has("max_kg") and (float(def.get("max_kg", 0.0)) <= 0.0 or not def.has("vehicle")):   # storage is limited by slots only (Dave 19 Nov 2026)
+			fail("structures.json %s: max_kg is a vehicle's payload, above 0; a storage container has no weight limit" % kind)
 
 		if String(def.get("who", "anyone")) != "anyone" and not (bool(def.get("take_only", false)) and String(def.get("who")) == "owner"):   # remains: owner first day
 			fail("structures.json %s: who is '%s' but only \"anyone\" is built (owner and town wait for ownership)" % [kind, def.get("who")])

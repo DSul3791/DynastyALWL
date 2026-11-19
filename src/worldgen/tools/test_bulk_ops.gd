@@ -203,7 +203,7 @@ func _init() -> void:
 	check(pack().numbers[0] == stick and pack().counts[0] == 5 and pack().numbers[11] == fibre and pack().counts[11] == 3, "the hotbar slot and the favourite stay put")
 	check(done.size() == 5 and int(done[1]) == 1 and int(done[2]) == 2 and int(done[3]) == 1 and ids_of_done() == [store_chest], "bulk_done: Store all, 2 stacks, 1 container, its id (got %s)" % str(done))
 
-	# A chest takes only its kilograms (structures.json chest max_kg 40): a lighter stack still goes in after a heavy one is cut short.
+	# A chest has no weight limit, only its slots (Dave 19 Nov 2026): Store all moves 45 stones and the clay into a chest that is not full.
 	reset()
 	var heavy_chest: int = chest_at(2.0, 1)
 	open(heavy_chest)
@@ -211,9 +211,8 @@ func _init() -> void:
 	put(11, clay, 4)
 	put(12, stone, 15)
 	bulk(1)
-	var max_kg: float = float(items._structures.get("chest", {}).get("max_kg", 0.0))
 	var chest_kg: float = CarryRules.carried_kg(box(heavy_chest), items.table, items._carry_cfg)
-	check(max_kg > 0.0 and chest_kg <= max_kg + 0.001 and total(box(heavy_chest), clay) == 4 and total(pack(), stone) == 45 - total(box(heavy_chest), stone) and total(pack(), stone) > 0, "Store all stops at the chest's %.0f kg (chest %.1f kg, %d stone left in the pack)" % [max_kg, chest_kg, total(pack(), stone)])
+	check(not items._structures.get("chest", {}).has("max_kg") and total(box(heavy_chest), clay) == 4 and total(box(heavy_chest), stone) == 45 and total(pack(), stone) == 0, "Store all puts every stone in, whatever it weighs (chest %.1f kg, %d stone left in the pack)" % [chest_kg, total(pack(), stone)])
 
 	# A fire takes only what it takes today (wood and food).
 	reset()

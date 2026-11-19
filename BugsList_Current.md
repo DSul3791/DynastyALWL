@@ -150,6 +150,19 @@ Assumed on Dave's behalf (provisional):
 - SW-4: grain is wheat, barley, oats and rye; unripe grain stays standing; flax and other crops stay for E; reaped grain gets the normal full yield, not the tier bonus. A scythe now also gives grain its full yield, as a sickle does.
 - SW-5: one sickle swing every 0.45 s at light effort (0.5), one scythe swing every 1.1 s at heavy effort (0.95); weights are unchanged (sickle 0.4 kg, scythe 1.8 kg). One wear per swing.
 
+## 8. Chests refuse items when they are not full
+
+Dave, play test 19 Nov 2026: "chests must have a weight limit which they shouldn't because they are not full but I cant put anything in them." Cause: every storage container had a weight cap in its data (`data/items/structures.json` `max_kg`: Woven chest 40 kg, Plank chest 150 kg and so on, placeholders since the first chest), and the server refused a put past it even with free slots. It was not a recent regression and not the player's own carry check.
+
+Intended behaviour (Dave, 19 Nov 2026): a chest takes items until its slots are full, whatever they weigh.
+
+Status: Implemented - awaiting player verification. No storage container has a weight limit now (chests, crates, shelves, barrels, cupboards, racks, cellar and the rest); only a handcart, sled or wagon keeps its payload, which also limits a crate riding on it. The validator refuses a weight limit on anything but a vehicle.
+
+Assumed on Dave's behalf (provisional):
+
+- CH-1: the ruling covers every storage container, not only those named chest; vehicles keep their payload.
+- CH-2: this supersedes the 18 Nov ruling that the Large wooden chest holds more weight than the Ornate chest; the Large wooden chest now differs by its larger footprint and its slots (42 against 48).
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.

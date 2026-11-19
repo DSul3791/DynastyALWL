@@ -120,9 +120,8 @@ func _data_checks() -> void:
 	# Slots: Crate 10, then six-slot rows by grade (Dave 18 Nov 2026: the lowest chest 3 rows, each tier one more): Crude 24 < Rustic 30 < Fine 36 < Ornate 48.
 	var ladder: Array = ["wooden_crate"] + FAMILIES["Chest"]
 	var slots: Array = ladder.map(func(k): return int(items._structures[k]["slots"]))
-	var kg: Array = ladder.map(func(k): return float(items._structures[k]["max_kg"]))
 	check(slots[0] == 10 and slots[1] == 24 and slots[2] == 30 and slots[3] == 36 and slots[4] == 48 and slots[0] < slots[1] and slots[1] < slots[2] and slots[2] < slots[3] and slots[3] < slots[4], "chest slots rise by grade %s" % str(slots))
-	check(kg[0] < kg[1] and kg[1] < kg[2] and kg[2] < kg[3] and kg[3] < kg[4], "chest weight limits rise by grade %s" % str(kg))
+	check(ladder.all(func(k): return not items._structures[k].has("max_kg")), "no chest has a weight limit, only its slots (Dave 19 Nov 2026)")
 
 
 # Each grade places from its blueprint as a site (Dave 18 Nov 2026: placing takes nothing; only a hammer hit fills it, knife rows too): Planks in place of
