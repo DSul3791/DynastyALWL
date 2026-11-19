@@ -11,8 +11,10 @@ Output: {"class":"docs|data|code|bake","fast":[...],"timing":[...],"slow":[...],
 Rules (tools/test_lanes.json): docs-only diff = no tests; a test is chosen when the files it loads (followed through preload, load,
 res:// strings, class_name use, directories and path-prefix strings) include a changed path; the always set, the item group, the path
 rules and the extra inputs add to that; a path nobody knows, or a test file the scan cannot read, means ALL fast tests: more, never fewer.
-Fast = every test_*.gd in the test folders (TEST_DIRS: src/worldgen/tools and src/water2) that is not timing or slow. Diff is `git diff --name-only base head` (two dots: the exact
-tree difference, the gate passes the trial-merge base)."""
+Fast = every test_*.gd in the test folders (TEST_DIRS: src/worldgen/tools and src/water2) that is not timing or slow. Diff is `git diff --name-only M head` where M is
+`git merge-base base head`: the head's own changes since it left base, as `git diff base...head` (19 Nov 2026: a two-dot diff against a
+dev that had moved on also selected the tests for dev's newer commits, which the head does not even contain). When base is an ancestor of
+head (a trial merge, main, the last green commit) M is base and nothing changes; with no merge base the plain two-dot diff is kept."""
 import fnmatch, json, os, re, subprocess, sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -167,8 +169,14 @@ def serial_list(lanes, tests):
     return [t for t in out if t in tests]
 
 
-def changed_paths(base, head):
-    out = subprocess.run(["git", "diff", "--name-only", base, head], cwd=ROOT, capture_output=True, text=True)
+# Where head left base (git merge-base), so only head's own changes are diffed; base itself when they share no history (more, never fewer).
+def diff_base(base, head, cwd=ROOT):
+    out = subprocess.run(["git", "merge-base", base, head], cwd=cwd, capture_output=True, text=True)
+    return out.stdout.strip() if out.returncode == 0 and out.stdout.strip() else base
+
+
+def changed_paths(base, head, cwd=ROOT):
+    out = subprocess.run(["git", "diff", "--name-only", diff_base(base, head, cwd), head], cwd=cwd, capture_output=True, text=True)
     if out.returncode != 0:
         raise SystemExit("git diff failed: " + out.stderr.strip())
     return [p for p in out.stdout.splitlines() if p]
