@@ -42,6 +42,7 @@ const SlotSoundsScript := preload("res://src/client/slot_sounds.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
 const JoinAddress := preload("res://src/client/join_address.gd")
+const ServerAuthScript := preload("res://src/shared/server_auth.gd")
 const OceanWaves := preload("res://src/sullivan_water/ocean/ocean_waves.gd")
 const OceanMesh := preload("res://src/sullivan_water/ocean/ocean_mesh.gd")
 const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
@@ -541,6 +542,8 @@ var _flora_done_msec: int = 0
 var _host: String = "127.0.0.1"
 var _port: int = 24600
 var _wait_until_msec: int = 0
+var _auth = null                          # the join handshake (server_auth.gd): an open server passes at once, one with a password asks
+var _password_arg: String = ""            # --password= (tests, bots): typed for the player once
 var _remote: bool = false                 # a client-only build joining someone's server: no local Play server to restart (join_address.gd)
 
 
@@ -886,6 +889,7 @@ func _ready() -> void:
 		_link_up_msec = Time.get_ticks_msec()
 		NetSettings.apply((multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(1)))
 	multiplayer.connection_failed.connect(_on_connection_failed)
+	multiplayer.peer_authentication_failed.connect(_on_auth_failed)
 	started_msec = Time.get_ticks_msec()
 
 	if DisplayServer.get_name() != "headless":
@@ -973,6 +977,7 @@ func _connect() -> void:
 		_cannot_reach("The game cannot open a connection to %s:%d (%s). If that is a name, check its spelling and this computer's internet connection." % [_host, _port, error_string(error)])
 		return
 
+	_attach_auth()
 	multiplayer.multiplayer_peer = peer
 	print("Terrain client: connecting to %s:%d" % [_host, _port])
 	GroundMaterialScript.start_early(quality)   # the ground photos are sized on a worker while the welcome is on its way
@@ -1067,6 +1072,9 @@ static func waits_for_server(role: String) -> bool:
 
 # While a --wait is running, a server not up yet is tried again.
 func _on_connection_failed() -> void:
+	if _join_refused != "":
+		return   # refused at the password or the build: the window already says why, and a retry would only ask again
+
 	if Time.get_ticks_msec() < _wait_until_msec:
 		multiplayer.multiplayer_peer = null
 		get_tree().create_timer(1.0).timeout.connect(_connect)
@@ -1097,8 +1105,48 @@ func _cannot_reach(text: String) -> void:
 	_connect_window.fail("Cannot reach the server", text, func(): _finish(1))
 
 
+# Every server runs the join handshake (server_auth.gd); it must be attached before the connection opens. A server with a password asks for it:
+# --password= answers once (tests); the password box on the server pick page comes with the page (docs/design/SERVER_PICK_PAGE.md).
+func _attach_auth() -> void:
+	if _auth != null:
+		_auth.new_connection()
+		return
+
+	_password_arg = AppConfig.get_command_line_value("password", "")
+	_auth = ServerAuthScript.new()
+	_auth.password_needed.connect(func(tries_left: int, wrong: bool) -> void:
+		_telemetry.event("JOIN: the server asks for a password (%d tries left%s)" % [tries_left, ", the last one was wrong" if wrong else ""])
+
+		if _password_arg != "" and not wrong:
+			_auth.submit(_password_arg)
+		elif wrong:
+			_on_join_refused("The password was wrong.", "Wrong password")
+		else:
+			_on_join_refused("The server at %s:%d has a password. This game cannot ask for it yet." % [_host, _port], "Password needed"))
+	_auth.refused.connect(func(reason: String) -> void:
+		if reason == "busy":
+			_on_join_refused("Too many wrong passwords from this computer. Wait a minute and try again.", "Wait a minute")
+		else:
+			_on_join_refused("You got it wrong 3 times. Check your Caps Lock, and take a minute to recompose.", "Wrong password"))
+	_auth.attach_client(multiplayer as SceneMultiplayer)
+
+
+# The join handshake ended without getting in (server_auth.gd). A server that never said a word there does not speak this game's join: it is
+# an older or newer build. Otherwise the server dropped the join (a refusal already says why), or it went away: as a failed connection.
+func _on_auth_failed(_peer: int) -> void:
+	if _join_refused != "":
+		return
+
+	if _auth != null and not _auth.heard:
+		_on_join_refused("The server at %s:%d answered but does not speak this game's way of joining: it runs an older or newer build of the game. Update the game, or ask whoever runs the server to update it." % [_host, _port], "Different version")
+		return
+
+	_on_connection_failed()
+
+
 # The server runs another build (step A1): its reason stays on the join window until the player quits. The server drops this client next.
-func _on_join_refused(text: String) -> void:
+# Also a password the server would not take (title says which).
+func _on_join_refused(text: String, title: String = "Update required") -> void:
 	if _join_refused != "":
 		return   # already showing (the welcome's check came first)
 
@@ -1107,7 +1155,7 @@ func _on_join_refused(text: String) -> void:
 	_telemetry.event("JOIN: refused by the server: " + _join_refused.replace("\n", " "))
 
 	if _connect_window != null:
-		_connect_window.fail("Update required", _join_refused, func(): _finish(1))
+		_connect_window.fail(title, _join_refused, func(): _finish(1))
 	elif DisplayServer.get_name() != "headless":
 		_show_lost_notice(_join_refused.replace("\n", " "))
 	else:
