@@ -246,14 +246,14 @@ func _init() -> void:
 	items._use_struct(1, items.inventory_of(1), tap)
 	check(heard("No water comes from the tap") and float(v["wet"]) == wet_was, "with the barrels dry it gives nothing (%s)" % str(said))
 	var tap_box = items._chest_of(1, tap)
-	check(tap_box != null and tap_box.slot_count == 3, "F opens the tap's 3 slots")
+	check(tap_box != null and tap_box.usable == 3, "F opens the tap's 3 slots")
 	items.give(1, n("stick"), 1)
 	said.clear()
 
 	if tap_box != null:
 		items._box_put(1, items.inventory_of(1), tap, tap_box, slot_of("stick"), 1)
 
-	check(heard("Only a water container") and have("stick") == 1, "only a water container goes in (%s)" % str(said))
+	check(heard("does not take that") and have("stick") == 1, "only a water container goes in (%s)" % str(said))
 	items.inventory_of(1).take_from_slot(slot_of("stick"), 1)
 	items.give(1, n("waterskin"), 1)
 	var skin_slot: int = slot_of("waterskin")

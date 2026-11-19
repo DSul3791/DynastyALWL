@@ -12321,11 +12321,6 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 		_reject(peer, 3)
 		return 0
 
-	if str(_structures.get(kind, {}).get("use", "")) == "tap" and _container_cap(number) <= 0:
-		_say(peer, "Only a water container goes in a tap.")
-		_reject(peer, 3)
-		return 0
-
 	if _barrel_water_l(id) >= BARREL_DRY_L:   # a barrel holds water or goods, never both (PLUMBING_DESIGN s9, PV-6)
 		_say(peer, "It holds water. Drink or draw it off first.")
 		_reject(peer, 3)
@@ -12430,7 +12425,8 @@ func _box_take(peer: int, inv, chest, a: int, count: int, weighed: bool = false)
 # Whether a container kind takes an item (structures.json "takes_kinds": items.json kinds, "takes": item ids or ingredient groups, any member).
 # A kind with neither takes anything (master s3.13: a log rack takes logs, a wardrobe clothes).
 func _box_takes(kind: String, number: int) -> bool:
-	return StoreRules.takes(_structures.get(kind, {}), number, table)
+	var def: Dictionary = _structures.get(kind, {})
+	return StoreRules.takes(def, number, table) and (str(def.get("use", "")) != "tap" or _container_cap(number) > 0)   # a tap takes water containers only
 
 
 func _save_chests() -> void:
@@ -17150,7 +17146,7 @@ func _trench_resolve(id: int, now_s: float) -> float:
 					_plot_water[_bed_key(pos)] = [100.0, float(row[1]) if row.size() >= 2 else _now_game_s()]   # its weather clock goes on as it was
 					_dirty = true
 
-		return 1.0   # it always draws its trickle while water reaches it
+		return 1.0 if not beds.is_empty() else 0.0   # it draws its trickle while water reaches it and there is a bed in its circle to keep wet
 
 	var rooms: Array = []
 	var total: float = 0.0
@@ -17965,6 +17961,9 @@ func _tap_supply(id: int) -> int:
 				continue
 
 			seen[u] = true
+
+			if not bool(_water.pieces[u].get("open", true)):
+				continue   # a shut sluice lets nothing through to the tap
 
 			if str(_water.pieces[u].get("role", "")) == "tank" and _water.litres(u, now_s) >= 0.01:
 				return int(u)
