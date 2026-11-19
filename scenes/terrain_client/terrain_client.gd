@@ -1109,6 +1109,7 @@ func _cannot_reach(text: String) -> void:
 # --password= answers once (tests); the password box on the server pick page comes with the page (docs/design/SERVER_PICK_PAGE.md).
 func _attach_auth() -> void:
 	if _auth != null:
+		_auth.new_connection()
 		return
 
 	_password_arg = AppConfig.get_command_line_value("password", "")

@@ -43,6 +43,23 @@ func load_from(store_dir: String) -> void:
 	if kept_salt.size() < 16:
 		kept_salt = Crypto.new().generate_random_bytes(16)
 
+	if str(data.get("password", "")) != "":
+		salt = Crypto.new().generate_random_bytes(16)   # a new password gets a new salt: players' remembered old one is quietly ignored
+		password_hash = ServerAuth.hash_password(salt, str(data["password"]))
+		data.erase("password")
+		data["password_salt"] = salt.hex_encode()
+		data["password_hash"] = password_hash.hex_encode()
+		kept_salt = salt
+		var written: String = _write(path, data)
+		note += written if written != "" else "the password in server.json is now stored hashed. "
+	elif str(data.get("password_hash", "")) != "":
+		if str(data.get("password_salt", "")).hex_decode().size() < 16 or str(data["password_hash"]).hex_decode().size() != 32:
+			problem = "%s has a password_hash without a usable password_salt. Put the password back as \"password\" (it is hashed again at start) and start again." % path
+			return
+
+		salt = kept_salt
+		password_hash = str(data["password_hash"]).hex_decode()
+
 	if OS.get_environment(ENV_PASSWORD) != "":
 		salt = kept_salt
 		password_hash = ServerAuth.hash_password(salt, OS.get_environment(ENV_PASSWORD))
@@ -51,17 +68,6 @@ func load_from(store_dir: String) -> void:
 		if str(data.get("password_salt", "")) != salt.hex_encode():
 			data["password_salt"] = salt.hex_encode()
 			note += _write(path, data)
-	elif str(data.get("password", "")) != "":
-		salt = kept_salt
-		password_hash = ServerAuth.hash_password(salt, str(data["password"]))
-		data.erase("password")
-		data["password_salt"] = salt.hex_encode()
-		data["password_hash"] = password_hash.hex_encode()
-		var written: String = _write(path, data)
-		note += written if written != "" else "the password in server.json is now stored hashed. "
-	elif str(data.get("password_hash", "")) != "" and kept_salt.hex_encode() == str(data.get("password_salt", "")):
-		salt = kept_salt
-		password_hash = str(data["password_hash"]).hex_decode()
 
 	note += "password: %s" % ("on" if not password_hash.is_empty() else "off")
 
