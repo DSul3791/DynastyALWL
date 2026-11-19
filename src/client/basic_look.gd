@@ -281,6 +281,7 @@ const ART_OVERRIDES := {
 	"copper_ore": {"shape": "malachite", "color": "#176a4e", "size": 1.0},     # a small copper rock picked up by hand (Dave's photo, 16 Nov 2026)
 	"tin_ore": {"shape": "tin_glass", "color": "#7a3a20", "size": 1.0},     # a glassy plum-sized river tin stone (Dave, 17 Nov 2026)
 	"iron_ore": {"shape": "ore", "color": "#5e5650", "size": 1.0, "bits": ["#a04a28"]},
+	"bog_iron_ore": {"shape": "bog_iron", "color": "#7a3a1c", "size": 1.0},     # a lumpy red-brown bog iron rock (Dave 19 Nov 2026)
 	"coal": {"shape": "coal", "color": "#0e0e10", "size": 1.0},
 }
 
@@ -2466,6 +2467,18 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				var a: float = TAU * float(k) / 8.0 + 0.4
 				_sph(parts, 0.012 + 0.004 * float(k % 3), Vector3(1.0, 0.7, 1.0), Vector3(cos(a) * 0.06, -0.01 + 0.012 * float(k % 3), sin(a) * 0.055), _tone(mineral, k, 0.15))
 			_box_rot(parts, Vector3(0.07, 0.006, 0.012), Vector3(0.0, 0.026, 0.0), Vector3(0.0, 0.6, 0.0), mineral)
+		"bog_iron":
+			# Bog iron ore (Dave 19 Nov 2026: "its own lumpy redbrown rock"): limonite, a knobbly cluster of small rounded nodules grown together,
+			# red-brown (color) with rust-orange crusts and a few dark, almost black-brown knobs; no pale host rock, unlike the rock Iron ore.
+			var rust: Color = Color(0.7, 0.36, 0.13)
+			var deep: Color = Color(0.24, 0.1, 0.05)
+			_sph(parts, 0.06, Vector3(1.15, 0.75, 1.0), Vector3(0.0, -0.035, 0.0), color)
+			for k in 9:
+				var a: float = TAU * float(k) / 9.0 + 0.2
+				var r: float = 0.035 + 0.012 * float(k % 3)
+				_sph(parts, 0.022 + 0.006 * float(k % 3), Vector3(1.0, 0.8, 1.0), Vector3(cos(a) * r, -0.03 + 0.012 * float(k % 2), sin(a) * r), deep if k % 4 == 0 else (rust if k % 3 == 1 else _tone(color, k, 0.15)))
+			for k in 4:
+				_sph(parts, 0.018, Vector3(1.0, 0.75, 1.0), Vector3(-0.02 + 0.014 * float(k), 0.006, 0.012 * float(k % 2) - 0.006), rust if k % 2 == 0 else _tone(color, k, 0.12))
 		"malachite":
 			# A small copper rock (Dave's photo, 16 Nov 2026): a rough lump of three blobs wholly coated in malachite, green to teal (color is the
 			# green), dark blue-black patches and a few yellow-green flecks on top. Drawn without the colour boost below: the coat's own greens.

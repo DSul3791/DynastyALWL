@@ -72,7 +72,7 @@ func _shares(map: PackedByteArray, side: int, cfg: Dictionary) -> Array:
 
 func _init() -> void:
 	var cfg: Dictionary = _cfg()
-	check(not cfg.is_empty() and str(cfg.get("item", "")) == "iron_ore", "digging.json has the bog_iron block, digging Iron ore")
+	check(not cfg.is_empty() and str(cfg.get("item", "")) == "bog_iron_ore", "digging.json has the bog_iron block, digging Bog iron ore (Dave 19 Nov 2026)")
 
 	# 1. Where: only fen, marsh, swamp and bog; about 4% inside a fen and 8% at its dry edge; the same every time.
 	var fen: Array = _blocks(FEN)
@@ -219,10 +219,10 @@ func _init() -> void:
 	quit(1 if failures > 0 else 0)
 
 
-# One shovel dig at (x, 10, 0) by peer 1: [Iron ore gained, soil gained]. The soil is put away again so the pack never gets too heavy.
+# One shovel dig at (x, 10, 0) by peer 1: [Bog iron ore gained, soil gained]. The soil is put away again so the pack never gets too heavy.
 func _dig_once(items, x: float) -> Array:
 	var inv = items.inventory_of(1)
-	var ore: int = items.table.number_of("iron_ore")
+	var ore: int = items.table.number_of("bog_iron_ore")
 	var soil: int = items.table.number_of("soil")
 	var ore_was: int = inv.count_of(ore)
 	var soil_was: int = inv.count_of(soil)

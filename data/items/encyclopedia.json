@@ -5193,10 +5193,22 @@
 			"kind": "material",
 			"description": "A rusty brown lump. Smelts to iron in an Improved smelter with its bellows worked, or an Advanced smelter.",
 			"how_to_get": [
-				"Dig with a shovel in fen or marsh mud, most often at its edge. Bog iron grows back slowly."
+				"Break iron rock outcrops with a bronze or better pick."
 			],
 			"used_for": [
 				"Smelted into Iron ingots and, with carbon, Steel ingots"
+			],
+			"obtainable_now": true
+		},
+		"bog_iron_ore": {
+			"name": "Bog iron ore",
+			"kind": "material",
+			"description": "A lumpy red-brown rock dug from wet peat. Two smelt to one iron ingot in an Improved or Advanced smelter.",
+			"how_to_get": [
+				"Dig with any shovel on a rust-orange stain in fen, marsh, swamp or bog ground, most often at its edge. Bog iron grows back slowly."
+			],
+			"used_for": [
+				"Smelted two to one into Iron ingots"
 			],
 			"obtainable_now": true
 		},
