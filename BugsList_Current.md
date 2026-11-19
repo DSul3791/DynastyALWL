@@ -330,7 +330,7 @@ Dave, 19 Nov 2026: "testing the hoes functionality for placing a garden and some
 
 **Cause:** pressing E on an empty tilled bed sowed the seed in hand, else the first seed in the pack, with no check of the tool in hand (an older provisional choice, GOALS-REPAIR A-6). Every crop on a bed was drawn with placeholder boxes, even crops whose wild plant has a model.
 
-**Required outcome:** only the hoe in hand with Plant chosen sows. The server checks the hoe on every planting click. E on a bed only waters or harvests; on an empty bed it says to use the hoe's Plant. A crop that also grows wild (chamomile, yarrow, nettle and the other herbs and flowers, 70 of 84 crops) wears its wild plant's model, smaller while young. A part-planted plot can be watered with E.
+**Required outcome:** only the hoe in hand with Plant chosen sows. The server checks the hoe on every planting click. E on a bed only waters or harvests; on an empty bed it says to use the hoe's Plant. A crop that also grows wild (chamomile, yarrow, nettle and the other wild herbs, flowers, berries, ferns, reeds and grasses, 70 of 84 crops) wears its wild plant's model, smaller while young. A part-planted plot can be watered with E.
 
 **Acceptance:** with seeds in the pack and no hoe in hand, E on a tilled bed plants nothing and says to use the hoe. With the hoe in hand and Plant chosen, the grid plants. Chamomile seedlings look like small chamomile plants, not boxes.
 
