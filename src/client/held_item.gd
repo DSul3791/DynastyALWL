@@ -2167,6 +2167,7 @@ const HOE_MODES := [
 const HOE_MENU_WIDTH := 600.0      # the plate's width at text size 1.0; never more than the window less HOE_MENU_EDGE each side
 const HOE_MENU_EDGE := 16.0        # kept clear at the window's edges and above the caption
 const HOE_MENU_PX := {"title": 26, "row": 24, "help": 20, "keys": 18}
+const HOE_HELP_BREAKS := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE   # the explanation's AUTOWRAP_WORD_SMART
 var hoe_mode: String = "smooth"
 var garden_pick: String = ""             # Plant: the item id picked to plant (seeds, a dug-up bush or a tree seed), "" for none (tests read it)
 var _hoe_menu_page: String = "modes"     # "modes" (HOE_MODES) or "garden" (what can be planted: the pack and the stock in reach)
@@ -2275,6 +2276,7 @@ func _hoe_menu_build() -> void:
 	_hoe_menu_help = _hoe_menu_text("garamond", ArtKit.CREAM)
 	_hoe_menu_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_hoe_menu_help.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+	_hoe_menu_help.add_theme_constant_override("line_spacing", 0)   # its height is worked out from the font (_hoe_menu_show): no extra gap between lines
 	column.add_child(_hoe_menu_help)
 	_hoe_menu_keys = _hoe_menu_text("garamond", ArtKit.DIM)
 	column.add_child(_hoe_menu_keys)
@@ -2331,7 +2333,7 @@ func _hoe_menu_show(title: String, rows: Array, index: int, help: String, keys: 
 	var bottom: float = _hoe_menu_bottom(view)
 	var garamond: Font = ArtKit.font("garamond")
 	var row_h: float = garamond.get_height(px["row"])
-	var help_h: float = garamond.get_multiline_string_size(help, HORIZONTAL_ALIGNMENT_LEFT, inner, px["help"]).y if help != "" else 0.0
+	var help_h: float = garamond.get_multiline_string_size(help, HORIZONTAL_ALIGNMENT_LEFT, inner, px["help"], -1, HOE_HELP_BREAKS).y + 2.0 if help != "" else 0.0
 	var fixed: float = 24.0 + 4.0 * 6.0 + 4.0 + ArtKit.font("cinzel_bold").get_height(px["title"]) + help_h + garamond.get_height(px["keys"])
 	var room: int = maxi(3, floori((bottom - HOE_MENU_EDGE - fixed) / row_h))
 	var first: int = 0

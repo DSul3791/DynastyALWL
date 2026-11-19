@@ -1,7 +1,7 @@
 extends SceneTree
 # Headless check of the hoe's right-click list (src/client/held_item.gd, BugsList_Current.md entry 4; Dave's play test 19 Nov 2026: the list began at
 # the middle of the screen, ran off the right edge with every action's explanation on its line, and lay over the hotbar and its caption).
-# At every text size (display_settings.gd TEXT_SCALES) and two window sizes the plate is inside the window, above the caption, the rows
+# At every text size (display_settings.gd TEXT_SCALES) the plate is inside the window, above the caption, the rows
 # are the six short names in Dave's order with only the highlighted one marked, and the explanation shown is the highlighted action's. A long plant
 # list shows a window of rows that keeps the highlighted row on the plate.
 # With a window (not --headless) and `-- --pictures=DIR` it also saves hoe_menu_<text size>.png at 1920 x 1080 over the hotbar tray, for Dave to see.
@@ -113,7 +113,7 @@ func run() -> void:
 	for mode in HeldItem.HOE_MODES:
 		names.append(str(mode["name"]))
 
-	for window in [Vector2i(1920, 1080), Vector2i(1280, 720)]:
+	for window in [Vector2i(1920, 1080)]:   # the game draws its HUD on a 1920 x 1080 canvas at any window size (display_settings.gd)
 		root.size = window
 		await process_frame
 
@@ -139,7 +139,7 @@ func run() -> void:
 			var marked: Array = rows.filter(func(label: Label) -> bool: return label.get_theme_stylebox("normal") is StyleBoxFlat)
 			_check(marked.size() == 1 and marked[0].text == "3. Till Garden Grid - 20m Edge Blend", "%s: only the current action is marked" % tag)
 			_check(held._hoe_menu_help.text.begins_with("Till Garden Grid - 20m Edge Blend: one left click"), "%s: the explanation is the marked action's" % tag)
-			_check(held._hoe_menu_help.get_line_count() * held._hoe_menu_help.get_line_height() <= held._hoe_menu_help.size.y + 1.0, "%s: the explanation's lines all fit on the plate" % tag)
+			_check(held._hoe_menu_help.get_line_count() >= 2 and held._hoe_menu_help.get_visible_line_count() == held._hoe_menu_help.get_line_count(), "%s: every line of the explanation is shown (%d of %d)" % [tag, held._hoe_menu_help.get_visible_line_count(), held._hoe_menu_help.get_line_count()])
 
 			for label in rows:
 				_check(label.size.x <= plate.size.x, "%s: row '%s' is no wider than the plate" % [tag, label.text])
@@ -151,7 +151,6 @@ func run() -> void:
 			held._hoe_menu_close()
 
 	# A long plant list at the largest text: a window of rows round the highlighted one, still inside the window and above the caption.
-	root.size = Vector2i(1280, 720)
 	view.scale = 1.5
 	held._hoe_menu_open = true
 	held._hoe_menu_panel.visible = true
