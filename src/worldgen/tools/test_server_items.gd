@@ -222,6 +222,18 @@ func _init() -> void:
 	check(items.world_item_count() == 1, "a pile outlives the loose 20 minutes")
 	items.tick(ItemsScript.PILE_LIFETIME_S + 1.0)
 	check(items.world_item_count() == 0, "and goes after its 2 hours")
+	# Cone piles (Dave 19 Nov 2026, boulders PLAN.md 5b): a big pile takes in what lands beside it, however wide it grew, but stops at a building.
+	items.drop_in_world(stone, 20000, pile_at)
+	var cone_r: float = items._cone_radius_of(stone, 20000)
+	check(cone_r > 1.5 and cone_r < 2.0, "20,000 stones of 0.5 kg make a solid cone about 1.75 m in radius (%f)" % cone_r)
+	items.drop_in_world(stone, 10, pile_at + Vector3(cone_r + 0.5, 0.0, 0.0))
+	check(items.world_item_count() == 1 and int(items._items[items._items.keys()[0]]["count"]) == 20010, "a drop at the foot of a big pile joins it")
+	items._items[880001] = {"number": items.table.number_of("storage_chest") if items.table.number_of("storage_chest") > 0 else 1, "count": 1, "pos": pile_at + Vector3(-(cone_r + 0.3), 0.0, 0.0), "left": 1.0e9, "struct": {"kind": "chest", "yaw": 0.0}}
+	if items._structures.has("chest"):
+		items.drop_in_world(stone, 200000, pile_at + Vector3(0.5, 0.0, 0.0))
+		check(items.world_item_count() == 3 and int(items._items[items._items.keys()[0]]["count"]) == 20010, "a pile that would grow into a building stops; the stone starts a new pile where it fell")
+	items._items.erase(880001)
+	items.clear_dropped(Vector3.ZERO, 1.0e7)
 	items.drop_in_world(stone, ItemsScript.PILE_CAP + 50, pile_at)
 	check(items.world_item_count() == 2, "over the cap a second pile starts")
 	var pile_id: int = -1
@@ -3151,8 +3163,15 @@ func _init() -> void:
 	bo.report_position(1, Vector3(5.0, 11.5, 5.0))
 	bo.vitals_of(1)["weight"] = 5000.0   # a big body: the carry limit stays out of the stone counts below
 	var big: int = bo._boulder_stones(1.0)
-	check(big >= 330 and big <= 410, "a 1 m radius boulder makes about 370 stones at 0.85 height, 2600 kg/m3, 0.04 coming away as stones (BugsList entry 3, RK-1) (%d)" % big)
-	check(bo._boulder_stones(0.3) >= 8 and bo._boulder_stones(0.3) <= 12 and bo._boulder_stones(1.2) >= 600 and bo._boulder_stones(1.2) <= 680, "stones go with the rock's volume: a 0.3 m one about 10, a 1.2 m one about 640 (%d, %d)" % [bo._boulder_stones(0.3), bo._boulder_stones(1.2)])
+	check(big >= 12800 and big <= 13100, "a 1 m radius boulder makes about 12,960 stones at 0.85 height, 2600 kg/m3, 0.7 coming away as 0.5 kg stones (Dave 19 Nov 2026, boulders PLAN.md 3) (%d)" % big)
+	check(bo._boulder_stones(0.3) >= 340 and bo._boulder_stones(0.3) <= 360 and bo._boulder_stones(1.2) >= 22200 and bo._boulder_stones(1.2) <= 22600, "stones go with the rock's volume: a 0.3 m one about 350, a 1.2 m one about 22,400 (%d, %d)" % [bo._boulder_stones(0.3), bo._boulder_stones(1.2)])
+	check(is_equal_approx(bo._boulder_per_kg(), 1.4), "1.4 stones of 0.5 kg per kg of rock (%f)" % bo._boulder_per_kg())
+	bo._load_boulders_left({"boulders": {"77": 10}})
+	check(int(bo._boulder_left[77]) == 350, "a worked boulder in an older save (0.04 stones per kg) is scaled once to today's count: 10 left is 350 (%d)" % int(bo._boulder_left[77]))
+	bo._load_boulders_left({"boulders": {"78": 10}, "boulder_per_kg": 1.4})
+	check(int(bo._boulder_left[78]) == 10, "a save at today's rate loads as it is")
+	bo._boulder_left.erase(77)
+	bo._boulder_left.erase(78)
 	bo._boulder_cfg["luck_extra"] = 0.0   # the exact-count checks below; luck's extra stone has its own check
 	bo._boulder_cfg["flint"] = {}   # flint has its own test (test_flint); these checks count plain stones
 	var small_total: int = bo._boulder_stones(0.6)   # about 80: enough for the blow counts below
@@ -3230,6 +3249,42 @@ func _init() -> void:
 
 	check(extras[0] > extras[1] and extras[1] >= 0, "luck nudges the double stones: luck 100 got %d extra, luck 0 got %d in 400 blows" % [extras[0], extras[1]])
 	bo._boulder_cfg["luck_extra"] = 0.0
+	# A full pack is never refused (Dave 19 Nov 2026, boulders PLAN.md 5): the stones go into one pile behind the miner, away from the rock,
+	# the same pile however the miner moves round it.
+	bo.action(1, Net.ACT_ADMIN_GIVE, bo.table.number_of("iron_pickaxe"), 0, 1, Vector3.ZERO)
+	var full_pick: int = bo.inventory_of(1).numbers.find(bo.table.number_of("iron_pickaxe"))
+	bo.vitals_of(1)["weight"] = 1.0   # a tiny body: nothing more fits in the pack
+	bo._items[900003] = {"number": 0, "count": 500, "pos": Vector3(5.0, 11.5, 6.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 10, "boulder": {"radius": 1.0, "yaw": 0.0, "total": 500}}
+	var full_rejects: int = bo_rejects.size()
+
+	for n in range(6):
+		bo._last_hit.clear()
+		bo.report_position(1, Vector3(5.0 + 0.3 * float(n % 2), 11.5, 5.0))   # stepping about a little
+		bo.action(1, Net.ACT_HIT, 900003, Net.HIT_BOULDER, full_pick + 1, Vector3.ZERO)
+
+	var behind_piles: Array = []
+
+	for k in bo._items:
+		if int(bo._items[k]["number"]) == stone_id and not bo._items[k].has("scatter"):
+			behind_piles.append(bo._items[k])
+
+	check(bo_rejects.size() == full_rejects and int(bo._items[900003]["count"]) == 500 - 18, "a full pack is not refused: 6 blows of an iron pick still take 18 stones (%d left)" % int(bo._items[900003]["count"]))
+	check(behind_piles.size() == 1 and int(behind_piles[0]["count"]) == 18 and behind_piles[0]["pos"].z < 5.0, "and they lie in one pile behind the miner, away from the rock (%s)" % str(behind_piles))
+	bo._items.erase(900003)
+	bo.clear_dropped(Vector3.ZERO, 1.0e7)
+	bo.vitals_of(1)["weight"] = 5000.0
+	bo.inventory_of(1).numbers[full_pick] = 0
+	# A boulder dug under comes down into the hole (Dave 19 Nov 2026, boulders PLAN.md stage 1), and a cave boulder is left alone.
+	var dug_y: Array = [11.5]
+	bo.floor_below = func(_p: Vector3) -> float: return dug_y[0]
+	bo._items[900004] = {"number": 0, "count": 50, "pos": Vector3(30.0, 11.5, 30.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 11, "boulder": {"radius": 0.6, "yaw": 0.0, "total": 50}}
+	bo._items[900005] = {"number": 0, "count": 50, "pos": Vector3(30.0, 11.5, 31.0), "left": 1.0e9, "scatter": bo.CAVE_KEY | 1, "boulder": {"radius": 0.6, "yaw": 0.0, "total": 50}}
+	dug_y[0] = 10.0
+	bo.settle_loose_near(Vector3(30.0, 11.0, 30.0), 1.0)
+	check(is_equal_approx(bo._items[900004]["pos"].y, 10.0) and is_equal_approx(bo._items[900005]["pos"].y, 11.5), "a boulder dug under settles into the hole; a cave boulder stays")
+	bo._items.erase(900004)
+	bo._items.erase(900005)
+	bo.floor_below = Callable()
 	# Layout: on a slope the cells hold boulders, the same ones every time, none on flat ground.
 	var laid: Array = []
 
