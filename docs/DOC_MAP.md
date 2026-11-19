@@ -89,6 +89,7 @@ These sources remain available. Their inclusion preserves discoverability; it do
 | Area | References to review |
 |---|---|
 | Goblins | [Goblins](GOBLINS.md) |
+| Caves, cave dens and abandoned mines | [Cave dens and mines](design/CAVE_DENS_AND_MINES.md) (Dave 19 Nov 2026; provisional answers given for him) |
 | Generation and natural watersheds | [Generator vision](../GENERATOR_VISION.md), [Dave's watersheds](water/Dynasty_How_Natural_Watersheds_Work.md), [watershed build design](water/watershed_rebuild_design.md) |
 | Outdoor audio | [Sound outdoors](design/sound_outdoors_design.md) |
 | Other future systems awaiting topic review | [Remaining mixed ideas](../DESIGN_IDEAS.md) |

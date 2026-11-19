@@ -2,7 +2,8 @@ extends Node3D
 
 # Cave dressing (Dave 4 Nov 2026: bone piles at cave entrances and far ends, animal and human; stalagmites and stalactites in big caves). The bake puts
 # them in each spring cave (Sonny); the server sends a tile's lists with its cave dens and the client draws them here, one MultiMesh per look per tile.
-#   bones:      per entry x, y, z (the pile's floor point), kind (0 animal, 1 human), yaw (radians)
+#   bones:      per entry x, y, z (the pile's floor point), kind (0 animal, 1 human, 2 goblin litter, 3 goblin fire, 4 den droppings, 5 den bedding), yaw (radians)
+# Den signs (Dave 19 Nov 2026, protocol 141): a cave a bear, wolf or fox dens in shows droppings a few metres inside the mouth and a trampled bed at the den.
 #   formations: per entry x, y, z, kind (0 stalagmite: the point is its foot on the floor; 1 stalactite: its root on the roof, hanging down), height m, radius m
 # A stalagmite 0.25 m or more in radius is solid (a cylinder collider on the ground layer), so a player walks round it; stalactites hang out of reach.
 # Looks (Art_Direction: believable material, age and wear, a little storybook charm): aged bone in warm ivory with darker stains; wet pale limestone with
@@ -65,12 +66,12 @@ func set_tile(tile: Vector2i, bones: PackedFloat32Array, formations: PackedFloat
 
 	var holder: Node3D = Node3D.new()
 	holder.name = "Tile_%d_%d" % [tile.x, tile.y]
-	var rows: Dictionary = {"bones_animal": [], "bones_human": [], "goblin_litter": [], "goblin_fire": [], "goblin_flame": [], "stalagmite": [], "stalactite": []}
+	var rows: Dictionary = {"bones_animal": [], "bones_human": [], "goblin_litter": [], "goblin_fire": [], "goblin_flame": [], "den_droppings": [], "den_bedding": [], "stalagmite": [], "stalactite": []}
 
 	for n in range(0, bones.size() - BONE_FIELDS + 1, BONE_FIELDS):
 		var spin: Basis = Basis(Vector3.UP, bones[n + 4])
-		var kind: int = int(bones[n + 3])      # 0 animal bones, 1 human bones, 2 goblin den litter, 3 goblin den fire (Dave 7 Nov 2026)
-		rows[["bones_animal", "bones_human", "goblin_litter", "goblin_fire"][clampi(kind, 0, 3)]].append(Transform3D(spin, Vector3(bones[n], bones[n + 1], bones[n + 2])))
+		var kind: int = int(bones[n + 3])      # 0 animal bones, 1 human bones, 2 goblin den litter, 3 goblin den fire (Dave 7 Nov 2026), 4 den droppings, 5 den bedding (Dave 19 Nov 2026)
+		rows[["bones_animal", "bones_human", "goblin_litter", "goblin_fire", "den_droppings", "den_bedding"][clampi(kind, 0, 5)]].append(Transform3D(spin, Vector3(bones[n], bones[n + 1], bones[n + 2])))
 
 	for n in range(0, formations.size() - FORMATION_FIELDS + 1, FORMATION_FIELDS):
 		var at: Vector3 = Vector3(formations[n], formations[n + 1], formations[n + 2])
@@ -176,6 +177,10 @@ static func look_mesh(look: String) -> ArrayMesh:
 			_goblin_fire(parts)
 		"goblin_flame":
 			_goblin_flame(parts)
+		"den_droppings":
+			_den_droppings(parts)
+		"den_bedding":
+			_den_bedding(parts)
 		"stalagmite":
 			_formation(parts, false)
 		"stalactite":
@@ -301,6 +306,41 @@ static func _goblin_litter(parts: Array) -> void:
 	for k in 7:
 		var a: float = TAU * float(k) * 0.618034
 		BasicLook._box_rot(parts, Vector3(0.38, 0.012, 0.05), Vector3(cos(a) * 0.22, 0.01 + 0.004 * float(k), sin(a) * 0.22), Vector3(0.0, a * 1.7, 0.0), BasicLook._tone(straw, k, 0.12))
+
+
+# Droppings by a den's mouth: a scatter of dark, twisted scat with grey hair in it (an animal that eats meat lives here), about 0.5 m across.
+static func _den_droppings(parts: Array) -> void:
+	var scat: Color = Color(0.2, 0.16, 0.11)
+
+	for k in 7:
+		var a: float = TAU * float(k) * 0.618034
+		var r: float = 0.06 + 0.035 * float(k % 4)
+		var at: Vector3 = Vector3(cos(a) * r * 2.2, 0.02, sin(a) * r * 2.2)
+		BasicLook._sph(parts, 0.028 + 0.006 * float(k % 3), Vector3(2.2, 0.8, 1.0), at, BasicLook._tone(scat, k, 0.18))
+		BasicLook._sph(parts, 0.022, Vector3(1.6, 0.8, 1.0), at + Vector3(0.05, 0.005, 0.02), BasicLook._tone(scat.lightened(0.08), k + 3, 0.15))
+
+	for k in 4:
+		var a: float = TAU * float(k) * 0.381966 + 0.4
+		BasicLook._box_rot(parts, Vector3(0.07, 0.006, 0.012), Vector3(cos(a) * 0.12, 0.035, sin(a) * 0.12), Vector3(0.0, a * 2.0, 0.0), Color(0.55, 0.53, 0.5))   # hair in the scat
+
+
+# A den's bed: a trampled oval hollow of dry leaves and grass, about 1.4 m long, with tufts of shed fur and a gnawed bone at its edge.
+static func _den_bedding(parts: Array) -> void:
+	var leaf: Color = Color(0.45, 0.33, 0.18)
+	var grass: Color = Color(0.62, 0.55, 0.32)
+	var fur: Color = Color(0.4, 0.33, 0.27)
+	BasicLook._sph(parts, 0.5, Vector3(1.4, 0.06, 0.95), Vector3(0.0, 0.0, 0.0), leaf.darkened(0.25))   # the pressed-down floor of the bed
+
+	for k in 14:
+		var a: float = TAU * float(k) * 0.618034
+		var r: float = 0.45 + 0.12 * float(k % 3)
+		BasicLook._box_rot(parts, Vector3(0.28, 0.02, 0.08), Vector3(cos(a) * r, 0.04 + 0.01 * float(k % 3), sin(a) * r * 0.9), Vector3(0.0, a + 1.2, 0.15 * float((k % 3) - 1)), BasicLook._tone(leaf if k % 2 == 0 else grass, k, 0.15))   # the raised rim
+
+	for k in 3:
+		var a: float = TAU * float(k) / 3.0 + 0.5
+		BasicLook._sph(parts, 0.05, Vector3(1.6, 0.5, 1.0), Vector3(cos(a) * 0.25, 0.03, sin(a) * 0.18), BasicLook._tone(fur, k, 0.12))
+
+	BasicLook._box_rot(parts, Vector3(0.3, 0.03, 0.035), Vector3(0.62, 0.04, 0.12), Vector3(0.0, 0.7, 0.0), BONE.darkened(0.1))   # a gnawed leg bone
 
 
 # A small goblin campfire (the base, without the flame): a ring of stones round a teepee of five charred logs on a dark bed of dull embers.

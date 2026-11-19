@@ -654,6 +654,12 @@ func _ready() -> void:
 	animals.lair_mouths = func(x, z):   # the mouths of the inland caves with a goblin den (TileTerrainData.goblin_den_nodes) in the tile the player stands in (already loaded, so no wait); goblin groups come out of them
 		var lair_tile = generator.get_tile(generator.tile_of(x, z))
 		return PackedVector2Array() if lair_tile.placeholder else lair_tile.goblin_den_mouths
+	animals.cave_den_mouths = func(x, z, sp):   # the mouths of the caves a species dens in (TileTerrainData.animal_den_species) in the tile there, if it is loaded (a wolf cell may reach a tile nobody stands on: no wait); bears, wolves and foxes are made at them
+		if not generator.tile_cached(x, z):
+			return PackedVector2Array()
+
+		var den_tile = generator.get_tile(generator.tile_of(x, z))
+		return PackedVector2Array() if den_tile.placeholder else den_tile.animal_den_mouths.get(sp, PackedVector2Array())
 	animals.lair_path = func(x, z):   # the cave floor path from a goblin den's mouth (x, z) to the den (tile goblin_den_paths); empty when none is known
 		var path_tile = generator.get_tile(generator.tile_of(x, z))
 

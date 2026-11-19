@@ -727,6 +727,12 @@ func _natural(infos: Array) -> void:
 				var h: int = hash(key + str(w.get("seed", 7)))   # JSON reads the seed as the float 7.0, so the key is "cx,cz7.0"; kept, since changing it moves every den (design_notes/wolf_den_seed_note.md)
 				var home: Vector2 = Vector2((float(cx) + float(absi(h) % 1000) / 1000.0) * cell_m, (float(cz) + float(absi(h / 1000) % 1000) / 1000.0) * cell_m)
 
+				# A wolf cave in the cell is the pack's den (Dave 19 Nov 2026: wolves may den in caves; TileTerrainData.animal_den_species), when its mouth is wolf ground.
+				var cave: Vector2 = host.cave_den_in(Rect2(float(cx) * cell_m, float(cz) * cell_m, cell_m, cell_m), "wolf")
+
+				if cave.x != INF and host._habitat_score(host.species_def("wolf"), cave.x, cave.y, p.y) >= 0.0:
+					home = cave
+
 				if absi(h / 1000000) % 100 >= int(float(w.get("cell_share", 1.0)) * 100.0):
 					_cell_note(key, home, "a cell without a pack (cell_share)")
 					continue
