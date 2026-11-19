@@ -126,11 +126,13 @@ Every value below is PROVISIONAL (coordinator ruling: build costs and numbers ma
 - (19 Nov 2026, s9) PV-1 Wooden - Pipe: 1 Log + 1 Twine by hand, knife kept; 2 m a piece, 60 L/min; wears to 0.25 in 56 game days, flow x condition.
 - PV-2 Copper - Pipe: 1 Copper ingot at the Primitive smithy for 3 m; 180 L/min; never wears.
 - PV-3 A run is straight, up to 30 m, paid in whole pieces; the start must be a connection point; within 6 m reach of where you stand at each click.
-- PV-4 Copper - Tap: 1 Copper ingot; only on a pipe's open end; its 3 slots fill water containers at up to 30 L a real minute between them (Dave 19 Nov 20:11Z gave E to drink, F with about 3 slots; the fill rate is assumed). Water reaches it from the first tank up its pipes that holds any.
+- PV-4 Copper - Tap: 1 Copper ingot; only on a pipe's end or joint; its 3 slots fill water containers at up to 30 L a real minute between them (Dave 19 Nov 20:11Z gave E to drink, F with about 3 slots; the fill rate is assumed). Water reaches it from the first tank up its pipes that holds any.
 - PV-5 Copper - Drip head: 1 Copper ingot; draws 2 L/min while water reaches it; Dave (19 Nov 20:09Z) set the 10 m circle; assumed: the beds and plots there are kept fully watered, at any height within 10 m.
 - PV-6 Barrel: 200 L; water or goods, never both; rain 1 L a real minute at full rain in the open; a pipe from its foot runs as if its water stood 0.4 m deep (about half full; the network gives a tank one fixed head, as a cistern's 0.5 m).
 - PV-7 Linked barrels (by any pipe, copper or wooden) level to one water surface, height respected; levelled at most every 3 real seconds while changing.
 - PV-8 A barrel's bottom point feeds pipes out but takes no water in (it fills from above or by rain).
+- PV-9 (Dave 19 Nov 20:31Z) A pipe is a row of segments, one per pack piece (Wooden 2 m, Copper 3 m) counted from the end it was laid from; each joint between them is a connection point. A tap or drip head fits on any end or joint not already taken, and a barrel set down with its bottom point within 0.6 m across (0.4 m up or down) of one moves onto it; a joint splits the run in two there (pieces shared, none made). A run's second click may be on the ground (or anything) within 6 m. Assumed: a junction made with the sliding start point measures its new half's joints from that point.
+- PV-10 (Dave 19 Nov 20:31Z, "pipes without taps or drips do not leak any water") A pipe end with nothing on it is capped: no water leaves it. Assumed: an end laid right over a trough, trench or barrel top still pours into it, as before, because that water is caught, not lost (the irrigation trench is fed this way).
 
 ## 9. Pipes, taps and barrels (Dave, 19 Nov 2026), PROVISIONAL values
 
@@ -161,11 +163,11 @@ past it; a click on the next connection point lays the whole run, taking the pip
   (the old blueprint cost). It wears three times as fast as other wood: down to a quarter in 56 game days (building wear, about 2.3 real days),
   and a worn pipe leaks, carrying only its condition's share of its flow; a hammer repair (1 Log, 1 Twine share) makes it good again (PV-1).
 - **Copper - Pipe**: 3 m a piece, 1 Copper ingot at the Primitive smithy, 180 L/min under head, never wears (PV-2).
-- **Copper - Tap** (1 Copper ingot, Primitive smithy; Dave 19 Nov 2026 20:11Z): in hand, left click on a pipe's open end fits it there. "Press E
+- **Copper - Tap** (1 Copper ingot, Primitive smithy; Dave 19 Nov 2026 20:11Z): in hand, left click on a pipe's end or joint fits it there. "Press E
   to take a drink"; F opens its 3 slots, and a water container put there fills. Both work only while its pipes reach a water source that holds
   water, such as a barrel: the water comes out of that tank. It lets no water out otherwise (PV-4). It is not opened and shut (the first plan's
   open twin, state 460, is retired).
-- **Copper - Drip head** (1 Copper ingot, Primitive smithy; Dave 19 Nov 2026 20:09Z): fitted on a pipe's open end the same way. While its pipes
+- **Copper - Drip head** (1 Copper ingot, Primitive smithy; Dave 19 Nov 2026 20:09Z): fitted on a pipe's end or joint the same way. While its pipes
   bring it any water it irrigates the soil in a circle of 10 m radius round it: every tilled bed and garden plot there is kept fully watered.
   It draws 2 L/min while water reaches it (PV-5).
 - **Barrels hold water** (PV-6): 200 L, as well as their 8 slots of goods, but never both at once: a barrel with goods in it takes no water and

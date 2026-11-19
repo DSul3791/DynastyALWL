@@ -10525,6 +10525,8 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 				_say(peer, "The fire is too big for a pot. Let the logs burn down first.")
 				return
 
+	spot = _tank_spot_on_pipe(str(def.get("kind", "")), spot, yaw_deg)   # a barrel set down by a pipe's end or joint sits on it (Dave 19 Nov 2026 20:31Z)
+
 	if str(def.get("attach_to", "")) == "table":   # a Serving Platter goes on a table top (master s3.15), one to a spot
 		spot = PlacementRules.table_spot(_structures_cfg, def, spot, _surface_rows(def))
 
@@ -10623,6 +10625,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		return   # a site counts as built, holds nothing up and shelters nobody until _finish_site
 
 	_after_built(peer, entry, def)
+	_tank_split_pipe(_next_id - 1)
 	_water_add(_next_id - 1)
 	_dirty = true
 
@@ -11057,6 +11060,7 @@ func _finish_site(peer: int, id: int) -> void:
 	_grid_add(id, it)
 	_add_roof(it)
 	_after_built(peer, it, def)
+	_tank_split_pipe(id)
 	_water_add(id)
 	_dirty = true
 
@@ -17646,29 +17650,92 @@ func _pipe_point(at: Vector3) -> Dictionary:
 	return best
 
 
-# The laid run with an end at `at` (within SNAP_M) that nothing else is joined to: {"id", "at", "yaw"}, or {}. A tap or drip head goes only there.
-func _pipe_open_end(at: Vector3) -> Dictionary:
+# Where a tap, drip head or barrel goes on the laid pipes near `at` (within `reach` across, `rise` up or down; Dave 19 Nov 2026 20:31Z): a run's end or
+# one of its joints (PipeRules.joints) that no fitting or tank point already takes, the nearest: {"id", "at", "yaw", "joint": true when along the run}, or {}.
+func _pipe_fit_point(at: Vector3, reach: float = PipeRules.SNAP_M, rise: float = PipeRules.SNAP_M) -> Dictionary:
+	var best: Dictionary = {}
+	var best_d: float = INF
+
 	for id in _water_kind:
-		if not is_pipe_kind(str(_water_kind[id])) or not _items.has(id):
+		if not is_pipe_kind(str(_water_kind[id])) or not _items.has(id) or _items[id]["struct"].has("site"):
 			continue
 
-		for end in pipe_ends(_items[id]):
-			if (end as Vector3).distance_to(at) > PipeRules.SNAP_M or _joined_at(end, id):
+		var e: Array = pipe_ends(_items[id])
+		var joints: Array = PipeRules.joints(e[0], e[1], _pipe_piece_len(str(_water_kind[id])))
+
+		for k in e.size() + joints.size():
+			var point: Vector3 = e[k] if k < e.size() else joints[k - e.size()]
+			var d: float = Vector2(point.x - at.x, point.z - at.z).length()
+
+			if d > reach or absf(point.y - at.y) > rise or d >= best_d or _point_taken(point):
 				continue
 
-			return {"id": id, "at": end, "yaw": float(_items[id]["struct"].get("yaw", 0.0))}
+			best_d = d
+			best = {"id": id, "at": point, "yaw": float(_items[id]["struct"].get("yaw", 0.0)), "joint": k >= e.size()}
 
-	return {}
+	return best
 
 
-# Whether any water piece but `skip` has an end sealed at `point` (another run, a fitting, a tank's outlet, a spout).
-func _joined_at(point: Vector3, skip: int) -> bool:
+# A barrel (a tank with a level_port, its bottom point) set down with that point within TANK_SNAP_M across and TANK_SNAP_RISE_M up or down of a free
+# pipe end or joint is moved the little way onto it, so pipes laid first can take a barrel anywhere they join (PLUMBING_DESIGN s9, PV-9).
+const TANK_SNAP_M := 0.6
+const TANK_SNAP_RISE_M := 0.4
+
+
+func _tank_port(kind: String) -> Variant:
+	var water: Variant = _structures.get(kind, {}).get("water", {})
+
+	if typeof(water) != TYPE_DICTIONARY or str((water as Dictionary).get("role", "")) != "tank" or typeof(water.get("level_port")) != TYPE_ARRAY:
+		return null
+
+	var v: Array = water["level_port"]
+	return Vector3(float(v[0]), float(v[1]), float(v[2]))
+
+
+func _tank_spot_on_pipe(kind: String, spot: Vector3, yaw_deg: int) -> Vector3:
+	var port: Variant = _tank_port(kind)
+
+	if port == null:
+		return spot
+
+	var offset: Vector3 = (port as Vector3).rotated(Vector3.UP, deg_to_rad(float(yaw_deg)))
+	var on: Dictionary = _pipe_fit_point(spot + offset, TANK_SNAP_M, TANK_SNAP_RISE_M)
+	return (on["at"] as Vector3) - offset if not on.is_empty() else spot
+
+
+# A barrel just standing whose bottom point lies on a run's joint: the run is split there, so the barrel joins both halves.
+func _tank_split_pipe(id: int) -> void:
+	var port: Variant = _tank_port(str(_items[id]["struct"]["kind"]))
+
+	if port == null:
+		return
+
+	var at: Vector3 = (_items[id]["pos"] as Vector3) + (port as Vector3).rotated(Vector3.UP, deg_to_rad(float(_items[id]["struct"].get("yaw", 0.0))))
+	var on: Dictionary = _pipe_fit_point(at, WaterNetwork.PORT_JOIN_M, WaterNetwork.PORT_JOIN_M)
+
+	if not on.is_empty() and bool(on["joint"]):
+		_pipe_split(int(on["id"]), on["at"])
+
+
+# The length of pipe one pack piece of a run's kind covers (items.json pipe_m: Wooden - Pipe 2 m, Copper - Pipe 3 m).
+func _pipe_piece_len(kind: String) -> float:
+	return float(table.entry(str(_structures.get(kind, {}).get("item", kind))).get("pipe_m", 0.0))
+
+
+# Whether a fitting or a tank's or source's own connection point sits at `point` (a run's end there is not free for another).
+func _point_taken(point: Vector3) -> bool:
 	for other in _water_kind:
-		if other == skip or not _water.pieces.has(other):
+		if not _water.pieces.has(other) or is_pipe_kind(str(_water_kind[other])):
 			continue
 
-		for e in WaterNetwork.ends(_water.pieces[other]):
-			if (e as Vector3).distance_to(point) <= WaterNetwork.PORT_JOIN_M:
+		var piece: Dictionary = _water.pieces[other]
+		var spots: Array = _offered_points(piece)
+
+		if str(_structures.get(str(_water_kind[other]), {}).get("hand_laid", "")) == "fitting" and piece.has("inlet"):
+			spots.append(piece["inlet"])
+
+		for spot in spots:
+			if (spot as Vector3).distance_to(point) <= WaterNetwork.PORT_JOIN_M:
 				return true
 
 	return false
@@ -17844,11 +17911,14 @@ func _pipe_fit(peer: int, inv, slot: int, kind: String, at: Vector3) -> void:
 	if not _structures.has(kind):
 		return
 
-	var end: Dictionary = _pipe_open_end(at)
+	var end: Dictionary = _pipe_fit_point(at)
 
 	if end.is_empty():
-		_say(peer, "Fit it on the open end of a pipe.")
+		_say(peer, "Fit it on a pipe's end or a joint (a glowing ring).")
 		return
+
+	if bool(end["joint"]):
+		_pipe_split(int(end["id"]), end["at"])   # the run becomes two meeting at the joint, the fitting on both
 
 	var number: int = int(inv.numbers[slot])
 	var before: Array = _snapshot(inv)

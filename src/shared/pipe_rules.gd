@@ -40,6 +40,24 @@ static func pieces_for(length: float, piece_m: float) -> int:
 	return maxi(1, ceili(length / maxf(piece_m, 0.1) - 0.001))
 
 
+# A run's joints (Dave 19 Nov 2026 20:31Z: "pipes are segments and each section has a connection point"): where one pack piece meets the next, one
+# every `piece_m` from `a`, leaving out any within SNAP_M of `b` (that is the end). A tap, drip head or barrel goes on a joint or an end.
+static func joints(a: Vector3, b: Vector3, piece_m: float) -> Array:
+	var out: Array = []
+	var length: float = a.distance_to(b)
+
+	if piece_m < 0.1 or length < 0.0001:
+		return out
+
+	var at: float = piece_m
+
+	while at < length - SNAP_M:
+		out.append(a.lerp(b, at / length))
+		at += piece_m
+
+	return out
+
+
 # The point on the segment a-b nearest `p`.
 static func closest_on(a: Vector3, b: Vector3, p: Vector3) -> Vector3:
 	var d: Vector3 = b - a

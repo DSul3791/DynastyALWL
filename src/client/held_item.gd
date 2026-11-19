@@ -4267,7 +4267,7 @@ const PipeRules := preload("res://src/shared/pipe_rules.gd")
 const PIPE_SEE_M := 40.0          # rings and blue pipes are shown this near the player (looked for twice a second)
 const PIPE_AIM_M := 8.0           # the aim takes a ring or a pipe at most this far from the eye
 const PIPE_PICK_M := 0.4          # and passing at most this near it
-const PIPE_FREE_M := 3.0          # nothing taken: a run ends this far along the aim, or on what the aim hits first
+const PIPE_FREE_M := 6.0          # nothing taken: a run ends on the ground or what the aim hits first within this (the server's PLACE_REACH_M), else this far along the aim (Dave 19 Nov 2026 20:31Z: lay the far end on the ground)
 const PIPE_SCAN_MSEC := 500
 const PIPE_RING_R_M := 0.14
 var pipe_start: Vector3 = Vector3.INF     # the run's first point, INF until the first click (tests read these)
@@ -4299,7 +4299,7 @@ func _pipe_hand() -> bool:
 
 func _pipe_caption() -> String:
 	if _pipe_fitting() != "":
-		return "Left click the open end of a pipe (a glowing ring) to fit it"
+		return "Left click a pipe's end or joint (a glowing ring) to fit it"
 
 	if not pipe_start.is_finite():
 		return "Left click a glowing ring or a blue pipe to start a pipe"
@@ -4327,7 +4327,7 @@ func _pipe_click(button: int, pressed: bool) -> bool:
 
 	if _pipe_fitting() != "":
 		if pipe_aim_kind != "ring":
-			_inv._on_notice("Aim at the open end of a pipe (a glowing ring)")
+			_inv._on_notice("Aim at a pipe's end or joint (a glowing ring)")
 		else:
 			_arm_play("use", 0.6)
 			_net.pipe_lay.rpc_id(1, held_slot, pipe_aim, pipe_aim)
@@ -4432,7 +4432,7 @@ func _pipe_scan() -> void:
 
 		if str(def.get("hand_laid", "")) == "pipe" and row.has("len"):
 			var e: Array = PipeRules.ends(row["pos"], float(row.get("yaw", 0.0)), float(row.get("pitch", 0.0)), float(row["len"]))
-			runs.append([e[0], e[1], id])
+			runs.append([e[0], e[1], id, float(_inv.table.entry(str(def.get("item", ""))).get("pipe_m", 0.0))])
 			seen[id] = true
 			continue
 
@@ -4451,21 +4451,19 @@ func _pipe_scan() -> void:
 				if not fitting and point.distance_to(here) <= PIPE_SEE_M and (rings.is_empty() or rings[rings.size() - 1][1] != id or (rings[rings.size() - 1][0] as Vector3).distance_to(point) > 0.05):   # a barrel's outlet and bottom point are one ring
 					rings.append([point, id])
 
-	if fitting:   # the open ends: no other run's end, fitting or water point at them
+	if fitting:   # each run's ends and joints (Dave 19 Nov 2026 20:31Z: each segment has a connection point) that no fitting or water point takes
 		for run in runs:
-			for k in 2:
-				var end: Vector3 = run[k]
-				var open: bool = end.distance_to(here) <= PIPE_SEE_M
+			for point in [run[0], run[1]] + PipeRules.joints(run[0], run[1], float(run[3])):
+				var free: bool = (point as Vector3).distance_to(here) <= PIPE_SEE_M
 
 				for taken in ends_taken:
-					open = open and end.distance_to(taken) > PipeRules.SNAP_M
+					free = free and (point as Vector3).distance_to(taken) > PipeRules.SNAP_M
 
-				for other in runs:
-					if other[2] != run[2]:
-						open = open and end.distance_to(other[0]) > PipeRules.SNAP_M and end.distance_to(other[1]) > PipeRules.SNAP_M
+				for ring in rings:
+					free = free and (point as Vector3).distance_to(ring[0]) > 0.05   # two runs' ends at one joint are one ring
 
-				if open:
-					rings.append([end, run[2]])
+				if free:
+					rings.append([point, run[2]])
 
 	_pipe_rings_at = rings
 	_pipe_runs_near = runs

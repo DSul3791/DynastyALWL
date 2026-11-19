@@ -9407,7 +9407,7 @@
 		"copper_tap": {
 			"name": "Copper - Tap",
 			"kind": "material",
-			"description": "A copper tap for a pipe's open end. E drinks from it; F holds water containers to fill.",
+			"description": "A copper tap for a pipe's end or joint. E drinks from it; F holds water containers to fill.",
 			"how_to_get": [
 				"Craft at a forge: 1 Copper ingot"
 			],
@@ -9417,7 +9417,7 @@
 		"copper_drip_head": {
 			"name": "Copper - Drip head",
 			"kind": "material",
-			"description": "A copper drip head for a pipe's open end. It waters the soil within ten metres.",
+			"description": "A copper drip head for a pipe's end or joint. It waters the soil within ten metres.",
 			"how_to_get": [
 				"Craft at a forge: 1 Copper ingot"
 			],

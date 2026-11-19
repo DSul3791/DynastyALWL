@@ -396,6 +396,50 @@ func _init() -> void:
 	var old_ends: Array = PipeRules.ends(old["pos"], 90.0, float(old["struct"]["pitch"]), float(old["struct"]["len"]))
 	check(absf((old["pos"] as Vector3).y - 10.13) < 0.001 and float(old["struct"]["len"]) == 2.0 and int(old["struct"]["paid"]) == 1 and absf(absf((old_ends[0] as Vector3).z) - 1.0) < 0.001, "an old Wooden - Pipe loads as a 2 m run along its old axis (%s)" % str(old_ends))
 
+	# --- A run ending on the ground, capped ends, and a fitting or barrel on a joint (Dave 19 Nov 2026 20:31Z) ---
+	var g: int = barrel(400.0, 400.0)
+	var g_start: Vector3 = Vector3(400.0, 10.05, 400.0)
+	var g_end: Vector3 = Vector3(408.0, 10.0, 400.0)
+	items.give(1, n("copper_pipe"), 3)
+	items.report_position(1, Vector3(405.0, 10.0, 400.0))
+	said.clear()
+	lay(slot_of("copper_pipe"), g_start, g_end)
+	var garden: int = run_between(g_start, g_end)
+	check(garden != 0 and int(items._items[garden]["struct"]["paid"]) == 3, "a run from a barrel can end on the ground across the garden (8 m, 3 copper pieces; %s)" % str(said))
+	var joints: Array = PipeRules.joints(g_start, g_end, 3.0)
+	check(joints.size() == 2 and (joints[0] as Vector3).distance_to(g_start.lerp(g_end, 3.0 / 8.0)) < 0.001, "its 3 m segments meet at 2 joints, at 3 m and 6 m (%s)" % str(joints))
+	items._water.set_litres(g, 100.0)
+	items._water_dirty = true
+	items._water_tick(0.0)
+	clock[0] += 600.0 * GameClockScript.RATIO
+	items._water_dirty = true
+	items._water_tick(0.0)
+	check(absf(litres(g) - 100.0) < 0.01, "its open end on the ground is capped: the barrel loses nothing (%.2f L)" % litres(g))
+	items.give(1, n("copper_drip_head"), 1)
+	lay(slot_of("copper_drip_head"), joints[0], joints[0])
+	var joint_drip: int = at_kind("copper_drip_head", joints[0])
+	var to_joint: int = run_between(g_start, joints[0])
+	var past_joint: int = run_between(joints[0], g_end)
+	check(joint_drip != 0 and to_joint == garden and past_joint != 0 and items._water.downstream(to_joint).has(joint_drip), "a drip head fits on a joint: the run is two meeting there and the pipe feeds it (%s)" % str(said))
+	check(int(items._items[to_joint]["struct"]["paid"]) + int(items._items[past_joint]["struct"]["paid"]) == 3, "the halves share the run's 3 pieces")
+	items._water_dirty = true
+	items._water_tick(0.0)
+	check(joint_drip != 0 and items._water.inflow_lpm(joint_drip) == 0.0, "with no bed in its circle the drip head draws nothing")
+	items.give(1, n("copper_tap"), 1)
+	lay(slot_of("copper_tap"), g_end, g_end)
+	check(at_kind("copper_tap", g_end) != 0, "a tap fits on the run's end on the ground")
+	items.give(1, n("wooden_barrel_kit"), 1)
+	var late: Vector3 = (joints[1] as Vector3) - FOOT
+	items._place_structure(1, items.inventory_of(1), slot_of("wooden_barrel_kit"), late + Vector3(0.3, 0.0, 0.2), 0, items._structure_of_kit("wooden_barrel_kit"))
+	var on_joint: int = at_kind("wooden_barrel", late)
+	check(on_joint != 0 and run_between(g_start.lerp(g_end, 3.0 / 8.0), joints[1]) != 0 and run_between(joints[1], g_end) != 0, "a barrel set down by a joint sits on it and the run is split there (%s)" % str(said))
+	var linked: bool = false
+
+	for group in items._water.level_groups():
+		linked = linked or ((group as Array).has(g) and (group as Array).has(on_joint))
+
+	check(linked, "and it is linked to the first barrel through the pipe")
+
 	print("pipe runs: %d failures" % failures)
 	items._finish_writer()
 	quit(1 if failures > 0 else 0)
