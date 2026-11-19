@@ -306,6 +306,10 @@ func _key_number(key: int) -> int:
 
 # A hotbar key (0 to 9): hold what is in its slot, or put it away when it is the one already held.
 func press_slot(slot: int) -> void:
+	# Food on the hotbar is eaten, not held (Dave's play test 19 Nov 2026); holding the key keeps eating (InventoryView.eat_from_hotbar).
+	if _inv.edible_slot(int(_inv.key_slot(clampi(slot, 0, HOTBAR_SLOTS - 1)))) and _inv.eat_from_hotbar(clampi(slot, 0, HOTBAR_SLOTS - 1)):
+		return
+
 	# Torch and shield go in the left hand beside whatever the right hand holds (Dave 2026-10-23); the same key again stows it.
 	if is_offhand(_key_number(slot)):
 		slot = clampi(slot, 0, HOTBAR_SLOTS - 1)
