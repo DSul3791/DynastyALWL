@@ -282,7 +282,7 @@ Checked, not changed: standing trees already fall when dug under; loose items an
 
 Assumed on Dave's behalf (provisional):
 
-- SU-1: a stump other than a dug-out tree's breaks when less than 35 % of the ground is left in a disc twice its radius plus 0.5 m wide and 0.6 m deep under it (drops.json dig_fell stump_*).
+- SU-1: a stump other than a dug-out tree's breaks when less than 35 % of the ground is left in a disc under it whose radius is twice the stump radius plus 0.5 m, 0.6 m deep (drops.json dig_fell stump_*).
 - SU-2: the pieces are world drops (no player's luck), as when a road clears a stump.
 - SU-3: stumps loaded from a save are checked 25 at a time each slow tick.
 
