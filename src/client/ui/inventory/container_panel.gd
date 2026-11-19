@@ -31,7 +31,7 @@ var _tools: HBoxContainer      # Sort both and Stack into my chests under the we
 var compact: bool = false      # shown under a crafting station's recipe list (set_compact), not in place of it
 var _autoload: Button         # Autoload: a list of what lies on the ground round the container; a pick loads it (protocol 139)
 var _autoload_keep: CheckBox   # beside it: keep loading the picked item every 10 minutes
-var _autoload_rows: Array = []   # the open list's rows as autoload_choices gave them; empty while no list is open
+var _choosing: bool = false     # the Autoload list is open: a refresh leaves the tick the player just set
 
 
 func _init(owner_view) -> void:
@@ -240,33 +240,35 @@ func autoload_shown() -> bool:
 # total there and the nearest pile's distance. Closed without a pick, the tick goes back to what the server says.
 func open_autoload() -> void:
 	var def: Dictionary = view._structure_by_state(int(view._world.get(view.chest_id, {}).get("state", -1)))
-	_autoload_rows = view.autoload_choices(func(number: int) -> bool: return StoreRules.takes(def, number, view.table))
+	var rows: Array = view.autoload_choices(func(number: int) -> bool: return StoreRules.takes(def, number, view.table))
 	var menu: PopupMenu = PopupMenu.new()
 	menu.theme = view._panel.theme if view._panel != null else null
 	menu.add_theme_font_size_override("font_size", view._px(view.BODY_PX - 4))
 
-	if _autoload_rows.is_empty():
+	if rows.is_empty():
 		menu.add_item("Nothing it takes lies within 30 m", -1)
 		menu.set_item_disabled(0, true)
 
-	for i in _autoload_rows.size():
-		var row: Array = _autoload_rows[i]
+	for i in rows.size():
+		var row: Array = rows[i]
 		menu.add_item("%s  x%d  (%d m)" % [view.table.name_of(int(row[0])), int(row[1]), int(round(float(row[2])))], i)
 
-	menu.id_pressed.connect(pick_autoload)
-	menu.popup_hide.connect(func() -> void:
-		_autoload_rows = []
-		_autoload_keep.set_pressed_no_signal(view.chest_autoload != 0)
-		menu.queue_free())
+	menu.id_pressed.connect(func(index: int) -> void:   # the rows are the closure's own, whichever of the menu's signals comes first
+		if index >= 0 and index < rows.size():
+			view.autoload(int(rows[index][0]), _autoload_keep.button_pressed))
+	menu.popup_hide.connect(func() -> void: _end_choosing.call_deferred(menu))   # after id_pressed has read the tick
 	menu.close_requested.connect(menu.queue_free)
+	_choosing = true
 	view._layer.add_child(menu)
 	menu.position = Vector2i(view._layer.get_viewport().get_mouse_position())
 	menu.popup()
 
 
-func pick_autoload(index: int) -> void:
-	if index >= 0 and index < _autoload_rows.size():
-		view.autoload(int(_autoload_rows[index][0]), _autoload_keep.button_pressed)
+# The list closed: the tick goes back to what the server last said (its autoload_info answers a pick).
+func _end_choosing(menu: PopupMenu) -> void:
+	_choosing = false
+	_autoload_keep.set_pressed_no_signal(view.chest_autoload != 0)
+	menu.queue_free()
 
 
 # The four bulk buttons go to the server in one action each (inventory step 3, protocol 99; Net.ACT_BULK kinds 0 to 3). It skips the hotbar's
@@ -383,7 +385,7 @@ func _refresh_look(capacity: int, fire: bool) -> void:
 		_autoload.visible = shown
 		_autoload_keep.visible = shown
 
-		if shown and _autoload_rows.is_empty():   # an open list keeps the tick the player just set
+		if shown and not _choosing:   # an open list keeps the tick the player just set
 			_autoload_keep.set_pressed_no_signal(view.chest_autoload != 0)
 			_autoload_keep.tooltip_text = ("Loading %s from the ground every 10 minutes; untick to stop" % view.table.name_of(view.chest_autoload)) if view.chest_autoload != 0 else "Keep loading the chosen item from the ground every 10 minutes while there is room"
 
