@@ -127,7 +127,7 @@ func item_checks() -> void:
 	items.ground_height = func(_x, _z): return 0.0
 	items.setup(ItemTableScript.load_default(), dir)
 	items.peer_connected_hello(1, "spy-key-00000001")
-	items.set_fitness(1, 0)   # an average adult (0): new characters start at fitness 5 (fitness.json default, provisional FIT-1), which slows tool wear a little (tool_care)
+	items.set_fitness(1, 50)   # an average adult (50): new characters start at fitness 75 (fitness.json default, provisional FIT-1), which slows tool wear a little (tool_care)
 	items.report_position(1, Vector3.ZERO)
 	var number: int = items.table.number_of("spyglass")
 	check(number != 0 and str(items.table.entry("spyglass").get("tool_class", "")) == "spyglass", "the spyglass item exists")

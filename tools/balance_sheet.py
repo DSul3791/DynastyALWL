@@ -55,13 +55,13 @@ for label, e in (("Resting", 0.0), ("Walking about", walk), ("Hard work all day"
         flags.append("Water at full work lasts %.0f h, under a game day (Dave's rule: at least one day)." % hours)
 L += ["", "Reading: one good drink a day when working normally; hard work needs a drink about every %d game hours." % (th["cap_ml"] / (th["rest_ml_day"] + th["work_ml_day"]) * 24), ""]
 
-mult = lambda f: math.exp(-f * fit["strength"])
+mult = lambda f: math.exp(-(f - 50) / 5.0 * fit["strength"])   # fitness 0 to 100, 50 an average adult, strength per 5 points (Dave 19 Nov 2026)
 L += ["## Exertion and fitness", "",
-      "Walking is sustainable; running is not. From the design notes: an unfit (fitness 0) character jogging is winded in about 70 s and sprinting in about 35 s. Recovery is not changed by fitness.", "",
+      "Walking is sustainable; running is not. From the design notes: an average (fitness 50) character jogging is winded in about 70 s and sprinting in about 35 s. Recovery is not changed by fitness.", "",
       "| Fitness | Exertion rises at | Jog until winded | Sprint until winded |", "|---|---|---|---|"]
-for f in (-10, -5, 0, 5, 10):
+for f in (0, 25, 50, 75, 100):
     m = mult(f)
-    L.append("| %+d | %d%% of normal | %.0f s | %.0f s |" % (f, round(m * 100), 70 / m, 35 / m))
+    L.append("| %d | %d%% of normal | %.0f s | %.0f s |" % (f, round(m * 100), 70 / m, 35 / m))
 L += ["", "Thresholds: over-exerted at %.2f (pace x%.1f, running on allowed), faint at %.2f, recover below %.2f. Faint lasts %.0f s, waking %.0f s." % (exe["over_on"], exe["over_speed_factor"], exe["faint_at"], exe["over_off"], exe["faint_s"], exe["wake_s"]), ""]
 
 limit = wts["carry_kg_per_body_kg"] * body

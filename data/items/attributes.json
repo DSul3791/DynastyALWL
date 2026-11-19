@@ -1,0 +1,13 @@
+{
+	"note": "Character attributes (Dave 19 Nov 2026): every attribute (luck, fitness, strength, memory, dexterity, perception, charisma) is a whole number from 0 to 100 and reads like a percentage; nothing may take one outside that range. 50 is an average person (neutral: no help and no hindrance); below 50 hinders and above 50 helps, each 5 points doing what one point did on the old -10 to +10 scale (src/shared/attributes.gd offset), so every older tuning number (luck.json strength, fitness.json strength, skills.json trait_speed and trait_effect, coins.json charisma_step and luck_strength) keeps its meaning. A rolled attribute uses the graded roll below (Dave 19 Nov, five grades, his ruling): a band is picked by weight, then a whole number uniformly inside it, so most people land low and high values are rare. Weights are percent of characters and must add up to 100. Characters saved on the old scale are converted once when the server loads them (characters.json version 1 to 2: value 50 + 5 x old).",
+	"min": 0,
+	"max": 100,
+	"neutral": 50,
+	"roll_bands": [
+		{"from": 0, "to": 40, "weight": 45},
+		{"from": 41, "to": 60, "weight": 25},
+		{"from": 61, "to": 75, "weight": 15},
+		{"from": 76, "to": 90, "weight": 10},
+		{"from": 91, "to": 100, "weight": 5}
+	]
+}

@@ -45,7 +45,7 @@ func make(dir_name: String, tool_id: String):
 		items.peer_connected_hello(1, "copperrock01")
 		items.report_position(1, Vector3(5.0, 11.5, 5.0))
 		items.vitals_of(1)["weight"] = 5000.0
-		items._characters["copperrock01"]["luck"] = 0   # a new character's luck is rolled -10..10 and nudges every ore piece (fate); the yield checks need it neutral
+		items._characters["copperrock01"]["luck"] = 50   # a new character's luck is rolled 0..100 and nudges every ore piece (fate); the yield checks need it neutral
 		items._fate_rng.seed = 1702   # and the same fate stream every run
 		items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of(tool_id), 0, 1, Vector3.ZERO)
 

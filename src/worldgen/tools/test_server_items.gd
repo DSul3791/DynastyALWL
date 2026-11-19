@@ -274,7 +274,7 @@ func _init() -> void:
 	g.game_seconds = func(): return clock[0]
 	g.season_now = func(): return "summer"
 	g.peer_connected_hello(1, "abcdef123456")
-	g.set_fitness(1, 0)   # an average adult (0): new characters start at fitness 5 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
+	g.set_fitness(1, 50)   # an average adult (50): new characters start at fitness 75 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
 	g.report_position(1, Vector3(500.0, 70.0, 500.0))
 	check(g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "flax can be gathered")
 	check(g.inventory_of(1).count_of(g.table.number_of("plant_fibre")) >= 2, "flax gives fibre")
@@ -730,7 +730,7 @@ func _init() -> void:
 	m.ground_height = func(x, z): return 10.0
 	m.rock_at = func(x, z): return x > 0.0
 	m.peer_connected_hello(1, "abcdef123456")
-	m.set_fitness(1, 0)   # an average adult (0): new characters start at fitness 5 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
+	m.set_fitness(1, 50)   # an average adult (50): new characters start at fitness 75 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
 	m.report_position(1, Vector3(5.0, 10.0, 0.0))
 	var rock_stone: int = m.table.number_of("stone")
 	m.action(1, Net.ACT_MINE, HeldTool.slot_of(m, "axe") + 1, 0, 0, Vector3(6.0, 10.0, 0.0))
@@ -1644,7 +1644,7 @@ func _init() -> void:
 	var notes: Array = []
 	cb.send_notice = func(_p, text): notes.append(text)
 	cb.peer_connected_hello(1, "abcdef123456")
-	cb.set_fitness(1, 0)   # an average adult (0): new characters start at fitness 5 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
+	cb.set_fitness(1, 50)   # an average adult (50): new characters start at fitness 75 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
 	cb.report_position(1, Vector3(0.0, 10.0, 0.0))
 	cb.action(1, Net.ACT_ADMIN_GIVE, cb.table.number_of("chopping_block"), 0, 1, Vector3.ZERO)
 	cb.place_item(1, cb.table.number_of("chopping_block"), Vector3(2.0, 10.0, 0.0), 0)
@@ -2074,7 +2074,7 @@ func _init() -> void:
 	var winded: Dictionary = {}
 	var passed_out: Dictionary = {}
 
-	for fit in [-8, 0, 8]:
+	for fit in [10, 50, 90]   # 0 to 100, 50 an average adult (Dave 19 Nov 2026):
 		var fd: String = "user://test_server_items_fitness%d" % (fit + 8)
 		DirAccess.make_dir_recursive_absolute(fd)
 
@@ -2101,9 +2101,9 @@ func _init() -> void:
 				passed_out[fit] = float(n) * 0.25
 				break
 
-	check(winded[8] > winded[0] and winded[0] > winded[-8] and winded[-8] > 0.0, "fitter characters are winded later: %s" % str(winded))
-	check(passed_out[8] > passed_out[0] and passed_out[0] > passed_out[-8] and passed_out[-8] > 0.0, "and black out later: %s" % str(passed_out))
-	check(absf(winded[8] / winded[0] - exp(8.0 * 0.05)) < 0.1, "fitness +8 stretches the time to get winded by about exp(0.4) (%.2f)" % (winded[8] / winded[0]))
+	check(winded[90] > winded[50] and winded[50] > winded[10] and winded[10] > 0.0, "fitter characters are winded later: %s" % str(winded))
+	check(passed_out[90] > passed_out[50] and passed_out[50] > passed_out[10] and passed_out[10] > 0.0, "and black out later: %s" % str(passed_out))
+	check(absf(winded[90] / winded[50] - exp(8.0 * 0.05)) < 0.1, "fitness 90 (8 steps of 5 over average) stretches the time to get winded by about exp(0.4) (%.2f)" % (winded[90] / winded[50]))
 	check(strains.size() > 0 and strains.size() < 1300, "strain updates are at most one per 4 Hz tick (never more than 4 a second while it changes) (%d sent)" % strains.size())
 	# Stance: sitting drops strain to 0; standing under a heavy pack only to about half; walking off stands you up.
 	var xd: String = "user://test_server_items_stance"
@@ -2134,7 +2134,7 @@ func _init() -> void:
 	var floor_level: float = float(sa.strain_of(1)["s"])
 	check(floor_level > 0.4 and floor_level < 0.6, "standing with a pack at the limit rests only to about half (%.2f)" % floor_level)
 	# Fitness XP (fitness.json train, Dave 4 Nov): effort above 0.1 gives 1 + 2 x effort XP per 10 s into the day's bucket, which turns into points
-	# at game midnight (1,000 XP a point, the same at every level); only true rest (under 0.02 for 10 minutes) takes it back, never below the base.
+	# at game midnight (200 XP a point on the 0 to 100 scale, the old 1,000 per 5 points; the same at every level); only true rest (under 0.02 for 10 minutes) takes it back, never below the base.
 	var clk: Array = [100.0]   # game seconds, day 0
 	var fit_gs: Callable = func(): return clk[0]
 	var midnight: Callable = func(x): clk[0] += 86400.0; x._train_fitness(1, 0.0, 0.0)
@@ -2144,13 +2144,13 @@ func _init() -> void:
 	tr.send_training = func(_p, percent): training_sent.append(percent)
 	tr.game_seconds = fit_gs
 	tr.peer_connected_hello(1, "trainkey0001")
-	tr.set_fitness(1, 2)
-	check(tr.fitness_of(1) == 2, "fitness starts at its creation value")
-	tr._train_fitness(1, 1.0, 3300.0)
+	tr.set_fitness(1, 60)
+	check(tr.fitness_of(1) == 60, "fitness starts at its creation value")
+	tr._train_fitness(1, 1.0, 660.0)
 	midnight.call(tr)
-	check(tr.fitness_of(1) == 2, "just under a point of running changes nothing")
+	check(tr.fitness_of(1) == 60, "just under a point of running changes nothing")
 	tr._train_fitness(1, 1.0, 400.0)
-	check(tr.fitness_of(1) == 2, "XP earned today does not count until midnight")
+	check(tr.fitness_of(1) == 60, "XP earned today does not count until midnight")
 	check(float(tr._characters[tr._peer_key[1]]["xp_today"]) > 100.0, "the day's XP waits in the character's bucket")
 	check(not training_sent.is_empty() and int(training_sent[-1]) == tr.training_pm_of(1) and tr.training_pm_of(1) > 10, "today's training goes to the Tab screen as a percent of a point (%s)" % str(training_sent.slice(-1)))
 	var sends_before: int = training_sent.size()
@@ -2158,11 +2158,11 @@ func _init() -> void:
 	check(training_sent.size() == sends_before, "a tick that adds less than a whole percent sends nothing")
 	midnight.call(tr)
 	check(int(training_sent[-1]) == 0, "at midnight the Tab screen's training goes back to 0")
-	check(tr.fitness_of(1) == 3, "the day's running tips a point over at midnight")
+	check(tr.fitness_of(1) == 61, "the day's running tips a point over at midnight")
 	var before_stroll: float = float(tr._characters[tr._peer_key[1]]["train"])
 	tr._train_fitness(1, 0.05, 36000.0)
 	midnight.call(tr)
-	check(tr.fitness_of(1) == 3 and float(tr._characters[tr._peer_key[1]]["train"]) == before_stroll, "effort under the 10 percent line neither earns nor costs, even for hours")
+	check(tr.fitness_of(1) == 61 and float(tr._characters[tr._peer_key[1]]["train"]) == before_stroll, "effort under the 10 percent line neither earns nor costs, even for hours")
 	tr._train_fitness(1, 0.0, 300.0)
 	check(float(tr._characters[tr._peer_key[1]]["train"]) == before_stroll, "a short rest under the grace time costs nothing")
 	tr._asleep[1] = {"rested": 0.0, "t": 0.0}
@@ -2202,12 +2202,12 @@ func _init() -> void:
 	var gj: float = float(tj._characters[tj._peer_key[1]]["train"])
 	var gc: float = float(tc._characters[tc._peer_key[1]]["train"])
 	check(gw > 0.0 and gw < gj and gj < gc, "an hour of walking trains less than jogging, less than hard tool work (%.2f %.2f %.2f)" % [gw, gj, gc])
-	check(absf(gw - 0.72) < 0.01, "an hour of walking is 720 XP, 0.72 of a point (%.3f)" % gw)
+	check(absf(gw - 3.6) < 0.01, "an hour of walking is 720 XP, 3.6 points (%.3f)" % gw)
 	var t1 = make(xd)
 	t1.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	t1.game_seconds = fit_gs
 	t1.peer_connected_hello(1, "trainkey0007")
-	t1.set_fitness(1, 0)
+	t1.set_fitness(1, 50)
 	t1._train_fitness(1, 1.0, 1800.0)
 	midnight.call(t1)
 	var first_pt: float = float(t1._characters[t1._peer_key[1]]["train"])
@@ -2224,33 +2224,33 @@ func _init() -> void:
 	to._train_fitness(1, 1.0, 3400.0)
 	clk[0] += 86400.0 * 3.0
 	to._train_fitness(1, 0.0, 1.0)
-	check(to.fitness_of(1) == to._fitness_default() + 1, "a midnight that passed while away is paid at the next tick, once (%d)" % to.fitness_of(1))
+	check(to.fitness_of(1) == to._fitness_default() + 5, "a midnight that passed while away is paid at the next tick, once (%d)" % to.fitness_of(1))
 	tr._train_fitness(1, 1.0, 1.0e7)
 	midnight.call(tr)
-	check(tr.fitness_of(1) == 10, "training stops at the top of the range")
-	tr.set_fitness(1, 2)
+	check(tr.fitness_of(1) == 100, "training stops at the top of the range")
+	tr.set_fitness(1, 60)
 	tr._train_fitness(1, 1.0, 1.0e7)
 	midnight.call(tr)
-	check(float(tr._characters[tr._peer_key[1]]["train"]) == 8.0 and tr.fitness_of(1) == 10, "training stops at the top of the range, no hidden points above it (base 2, 8 trained)")
-	tr.set_fitness(1, 2)
+	check(float(tr._characters[tr._peer_key[1]]["train"]) == 40.0 and tr.fitness_of(1) == 100, "training stops at the top of the range, no hidden points above it (base 60, 40 trained)")
+	tr.set_fitness(1, 60)
 	tr._characters[tr._peer_key[1]]["xp_today"] = 0.0
 	tr._train_fitness(1, 1.0, 1800.0 * 3.0)
 	midnight.call(tr)
-	check(tr.fitness_of(1) > 2, "an hour and a half of running earns a point")
+	check(tr.fitness_of(1) > 60, "an hour and a half of running earns points")
 	tr._train_fitness(1, 0.0, 43200.0 * 12.0)
-	check(tr.fitness_of(1) == 2, "full rest takes points back, slowly")
+	check(tr.fitness_of(1) == 60, "full rest takes points back, slowly")
 	tr._train_fitness(1, 0.0, 1.0e7)
-	check(tr.fitness_of(1) == 2, "and never below the creation value")
+	check(tr.fitness_of(1) == 60, "and never below the creation value")
 	# Saved: the training survives a restart (characters.json).
 	tr._train_fitness(1, 1.0, 6700.0)
 	midnight.call(tr)
-	check(tr.fitness_of(1) == 4, "two points earned")
+	check(tr.fitness_of(1) == 70, "ten points earned (the old two)")
 	tr.save()
 	tr._finish_writer()
 	var tr2 = make(xd)
 	tr2.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	tr2.peer_connected_hello(1, "trainkey0001")
-	check(tr2.fitness_of(1) == 4, "trained fitness is saved and read back (%d)" % tr2.fitness_of(1))
+	check(tr2.fitness_of(1) == 70, "trained fitness is saved and read back (%d)" % tr2.fitness_of(1))
 
 	# Energy (job 95, energy.json): 3 game days of ordinary play empty it, rest refills it, supplements cost fitness, 0 forces sleep.
 	var en = make(xd)
@@ -2552,7 +2552,7 @@ func _init() -> void:
 	hs.send_craft_queue = func(_p, _e, _l): pass
 	hs.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	hs.peer_connected_hello(1, "handsawkey01")
-	hs.set_fitness(1, 0)   # an average adult (0): new characters start at fitness 5 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
+	hs.set_fitness(1, 50)   # an average adult (50): new characters start at fitness 75 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
 	var by_hand: Dictionary = {}
 
 	for rn in hs.recipes.numbers():
@@ -2785,13 +2785,37 @@ func _init() -> void:
 		var u: float = lrng.randf()
 
 		for k in range(3):
-			var luck: int = [-10, 0, 10][k]
+			var luck: int = [0, 50, 100][k]   # 0 to 100, 50 neutral (Dave 19 Nov 2026)
 			hits[k] += 1 if Luck.chance(u, 0.5, luck, 0.04) else 0
 			sums[k] += Luck.amount(u, 1, 3, luck, 0.04)
 
-	check(hits[0] < hits[1] - 300 and hits[2] > hits[1] + 300 and absf(float(hits[1]) / 6000.0 - 0.5) < 0.02, "luck moves a 50 percent chance down and up and 0 is neutral (%s of 6000)" % str(hits))
-	check(sums[0] < sums[1] and sums[1] < sums[2] and Luck.amount(0.0, 1, 3, 10, 0.04) == 1 and Luck.amount(0.999999, 1, 3, -10, 0.04) <= 3, "luck moves the average of a 1 to 3 yield and keeps it in range (%s)" % str(sums))
-	check(not Luck.chance(0.99, 0.0, 10, 0.04) and Luck.chance(0.0, 1.0, -10, 0.04), "luck never makes the impossible possible or the certain doubtful")
+	check(hits[0] < hits[1] - 300 and hits[2] > hits[1] + 300 and absf(float(hits[1]) / 6000.0 - 0.5) < 0.02, "luck moves a 50 percent chance down and up and 50 is neutral (%s of 6000)" % str(hits))
+	check(sums[0] < sums[1] and sums[1] < sums[2] and Luck.amount(0.0, 1, 3, 100, 0.04) == 1 and Luck.amount(0.999999, 1, 3, 0, 0.04) <= 3 and Luck.amount(0.999999, 1, 3, 250, 0.04) <= 3, "luck moves the average of a 1 to 3 yield and keeps it in range (%s)" % str(sums))
+	check(not Luck.chance(0.99, 0.0, 100, 0.04) and Luck.chance(0.0, 1.0, 0, 0.04), "luck never makes the impossible possible or the certain doubtful")
+	check(Luck.low(0.5, 150, 0.04) == Luck.low(0.5, 100, 0.04) and Luck.low(0.5, -40, 0.04) == Luck.low(0.5, 0, 0.04), "a luck outside 0 to 100 counts as the nearest end")
+
+	# The 0 to 100 scale (Dave 19 Nov 2026, attributes.json): the graded creation roll and the conversion of old -10 to +10 values.
+	var Attr = load("res://src/shared/attributes.gd")
+	var acfg: Dictionary = Attr.load_config()
+	var arng: RandomNumberGenerator = RandomNumberGenerator.new()
+	arng.seed = 19
+	var bands: Array = [0, 0, 0, 0, 0]
+	var out_of_range: int = 0
+
+	for n in range(20000):
+		var v: int = Attr.roll(arng, acfg)
+		out_of_range += 0 if v >= 0 and v <= 100 else 1
+		bands[0 if v <= 40 else (1 if v <= 60 else (2 if v <= 75 else (3 if v <= 90 else 4)))] += 1
+
+	var want: Array = [0.45, 0.25, 0.15, 0.10, 0.05]
+	var close: bool = true
+
+	for b in range(5):
+		close = close and absf(float(bands[b]) / 20000.0 - float(want[b])) < 0.015
+
+	check(out_of_range == 0 and close, "the graded roll stays in 0 to 100 and lands 45/25/15/10/5 percent in the five grades (%s of 20000)" % str(bands))
+	check(Attr.from_old(-10) == 0 and Attr.from_old(0) == 50 and Attr.from_old(10) == 100 and Attr.from_old(-3) == 35 and Attr.from_old(40) == 100 and Attr.from_old("x") == 50, "an old -10 to +10 value moves to 0 to 100 (0 is 50), out-of-range and broken values are clamped")
+	check(Attr.clamp_value(-7) == 0 and Attr.clamp_value(130) == 100 and Attr.clamp_value(64) == 64 and Attr.offset(50.0) == 0.0 and Attr.offset(100.0) == 10.0 and Attr.offset(0.0) == -10.0, "values are kept in 0 to 100 and 50 is neutral")
 	var luck_dir: String = "user://test_server_items_luck"
 	DirAccess.make_dir_recursive_absolute(luck_dir)
 
@@ -2801,7 +2825,7 @@ func _init() -> void:
 	var lk = make(luck_dir)
 	lk.peer_connected_hello(1, "luckkey000001")
 	lk.peer_connected_hello(2, "luckkey000002")
-	check(lk.luck_of(1) >= -10 and lk.luck_of(1) <= 10 and lk.luck_of(99) == 0, "a character gets luck from -10 to 10 at first sight; an unknown peer is neutral")
+	check(lk.luck_of(1) >= 0 and lk.luck_of(1) <= 100 and lk.luck_of(99) == 50, "a character gets luck from 0 to 100 at first sight; an unknown peer is neutral (50)")
 	lk._characters["luckkey000001"]["luck"] = 9
 	lk._dirty = true
 	lk.save()
@@ -2816,15 +2840,15 @@ func _init() -> void:
 	var same: RandomNumberGenerator = RandomNumberGenerator.new()
 	plain.seed = 3
 	same.seed = 3
-	lk2._characters["luckkey000001"]["luck"] = 0
+	lk2._characters["luckkey000001"]["luck"] = 50
 	var agree: int = 0
 
 	for n in range(200):
 		agree += 1 if (plain.randf() < 0.3) == lk2.roll_chance(1, same, 0.3) else 0
 
-	check(agree == 200, "with luck 0 a roll is exactly the plain random roll")
+	check(agree == 200, "with luck 50 a roll is exactly the plain random roll")
 	lk2._luck_cfg["strength"] = 0.0
-	lk2._characters["luckkey000001"]["luck"] = 10
+	lk2._characters["luckkey000001"]["luck"] = 100
 	plain.seed = 4
 	same.seed = 4
 	agree = 0
@@ -2834,6 +2858,40 @@ func _init() -> void:
 
 	check(agree == 200, "strength 0 switches luck off")
 	check(lk2.fate(1, "test", 1.0) and int(lk2.fate_counts["test"]) == 1, "the fate hook rolls and counts by kind")
+
+	# Old saves (characters.json version 1, attributes -10 to +10) load converted to 0 to 100; out-of-range values are brought into range (Dave 19 Nov 2026).
+	var scale_dir: String = "user://test_server_items_scale"
+	DirAccess.make_dir_recursive_absolute(scale_dir)
+
+	for file in DirAccess.get_files_at(scale_dir):
+		DirAccess.remove_absolute(scale_dir + "/" + file)
+
+	var old_file: FileAccess = FileAccess.open(scale_dir + "/characters.json", FileAccess.WRITE)
+	old_file.store_string(JSON.stringify({"version": 1, "players": {"scalekey00001": {"luck": -3, "fitness": 5, "train": 1.5, "charisma": -10}, "scalekey00002": {"luck": -14, "fitness": 22, "strength": 10}, "scalekey00003": {}}}))
+	old_file.close()
+	var sc1 = make(scale_dir)
+	var r1: Dictionary = sc1._characters["scalekey00001"]
+	var r2: Dictionary = sc1._characters["scalekey00002"]
+	var r3: Dictionary = sc1._characters["scalekey00003"]
+	check(int(r1["luck"]) == 35 and int(r1["fitness"]) == 75 and float(r1["train"]) == 7.5 and int(r1["charisma"]) == 0 and int(r1["strength"]) == 50, "an old save's attributes move to 0 to 100 (luck -3 is 35, fitness 5 is 75, training x5, a missing one is average) (%s)" % str(r1))
+	check(int(r2["luck"]) == 0 and int(r2["fitness"]) == 100 and int(r2["strength"]) == 100, "an old save's out-of-range values are clamped into 0 to 100 (%s)" % str(r2))
+	check(int(r3["luck"]) == 50 and int(r3["fitness"]) == sc1._fitness_default(), "an old row with no attributes is average, fitness its default")
+	sc1._dirty = true
+	sc1.save()
+	sc1._finish_writer()
+	check(int(JSON.parse_string(FileAccess.get_file_as_string(scale_dir + "/characters.json")).get("version", 0)) == 2, "the next save writes characters.json version 2")
+	var sc2 = make(scale_dir)
+	check(int(sc2._characters["scalekey00001"]["luck"]) == 35 and int(sc2._characters["scalekey00001"]["fitness"]) == 75 and float(sc2._characters["scalekey00001"]["train"]) == 7.5, "a version 2 save reads back unchanged (no second conversion)")
+	var new_file: FileAccess = FileAccess.open(scale_dir + "/characters.json", FileAccess.WRITE)
+	new_file.store_string(JSON.stringify({"version": 2, "players": {"scalekey00004": {"luck": -5, "fitness": 140, "perception": 300.0, "memory": "x"}}}))
+	new_file.close()
+	var sc3 = make(scale_dir)
+	var r4: Dictionary = sc3._characters["scalekey00004"]
+	check(int(r4["luck"]) == 0 and int(r4["fitness"]) == 100 and int(r4["perception"]) == 100 and int(r4["memory"]) == 50, "a new-scale save with values outside 0 to 100 loads clamped (%s)" % str(r4))
+	sc3.peer_connected_hello(1, "scalekey00004")
+	sc3.set_attribute(1, "charisma", 250)
+	sc3.set_fitness(1, -20)
+	check(int(sc3._characters["scalekey00004"]["charisma"]) == 100 and sc3.fitness_of(1) == 0 and sc3.attributes_of(1)["charisma"] == 100.0, "setting an attribute or fitness keeps it in 0 to 100")
 
 	# Bank stones: real pickable stones along the water's edge, none where there is no water.
 	sc.ground_height = func(x, z): return 10.0
@@ -2893,7 +2951,7 @@ func _init() -> void:
 	fl.send_reject = func(_p, reason): rejects.append(reason)
 	fl.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	fl.peer_connected_hello(1, "fallkey00001")
-	fl.set_fitness(1, 0)   # an average adult (0): new characters start at fitness 5 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
+	fl.set_fitness(1, 50)   # an average adult (50): new characters start at fitness 75 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
 	fl.report_position(1, Vector3(0.0, 10.0, 0.0))
 	fl.action(1, Net.ACT_FALL, 500, 0, 0, Vector3.ZERO)
 	check(float(fl.vitals_of(1)["health"]) == 100.0, "a 5 m drop does no damage")
@@ -3047,7 +3105,7 @@ func _init() -> void:
 	sk.send_craft_queue = func(_p, _e, _l): pass
 	sk.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	sk.peer_connected_hello(1, "skillkey0001")
-	sk.set_fitness(1, 0)   # an average adult (0): new characters start at fitness 5 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
+	sk.set_fitness(1, 50)   # an average adult (50): new characters start at fitness 75 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
 	check(sk.skill_factor(1, "craft") == 1.0 and sk.skill_factor(1, "no_such_action") == 1.0, "with no skill system every factor is 1.0")
 	sk.skill_level = func(_peer, _skill): return 2.0
 	check(sk.skill_factor(1, "craft") == 2.0 and sk.skill_factor(1, "no_such_action") == 1.0, "a skill level of 2 gives a factor of 2 for a listed action only")
@@ -3072,7 +3130,7 @@ func _init() -> void:
 	bo.send_reject = func(_p, reason): bo_rejects.append(reason)
 	bo.ground_height = func(x, _z): return 10.0 + x * 0.3
 	bo.peer_connected_hello(1, "boulderkey01")
-	bo.set_fitness(1, 0)   # an average adult (0): new characters start at fitness 5 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
+	bo.set_fitness(1, 50)   # an average adult (50): new characters start at fitness 75 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
 	bo.report_position(1, Vector3(5.0, 11.5, 5.0))
 	bo.vitals_of(1)["weight"] = 5000.0   # a big body: the carry limit stays out of the stone counts below
 	var big: int = bo._boulder_stones(1.0)
@@ -3130,7 +3188,7 @@ func _init() -> void:
 	bo._boulder_cfg["luck_extra"] = 0.2
 	var extras: Array = []
 
-	for fortune in [10, -10]:
+	for fortune in [100, 0]:
 		bo._characters["boulderkey01"]["luck"] = fortune
 		bo.action(1, Net.ACT_ADMIN_GIVE, bo.table.number_of("iron_pickaxe"), 0, 1, Vector3.ZERO)
 		var luck_pick: int = bo.inventory_of(1).numbers.find(bo.table.number_of("iron_pickaxe"))
@@ -3153,7 +3211,7 @@ func _init() -> void:
 		bo._items.erase(900002)
 		bo.inventory_of(1).numbers[bo.inventory_of(1).numbers.find(bo.table.number_of("iron_pickaxe"))] = 0
 
-	check(extras[0] > extras[1] and extras[1] >= 0, "luck nudges the double stones: luck +10 got %d extra, luck -10 got %d in 400 blows" % [extras[0], extras[1]])
+	check(extras[0] > extras[1] and extras[1] >= 0, "luck nudges the double stones: luck 100 got %d extra, luck 0 got %d in 400 blows" % [extras[0], extras[1]])
 	bo._boulder_cfg["luck_extra"] = 0.0
 	# Layout: on a slope the cells hold boulders, the same ones every time, none on flat ground.
 	var laid: Array = []

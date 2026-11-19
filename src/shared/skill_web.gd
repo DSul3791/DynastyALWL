@@ -5,6 +5,7 @@ extends RefCounted
 # a missing field reads as zero, so every skill of every character starts at value 1.
 
 const Old := preload("res://src/shared/skill_rules.gd")   # decay and rusty are unchanged
+const Attributes := preload("res://src/shared/attributes.gd")
 const DAY_S := 86400.0
 
 static var _graph_cache: Dictionary = {}
@@ -144,12 +145,13 @@ static func unlocked(cfg: Dictionary, skill: String, records: Dictionary) -> boo
 	return true
 
 
-# The weighted trait points of a skill (traits run -10..10): negative for a weak character, 0 for an average one.
+# The weighted trait points of a skill: attributes are 0 to 100 (Dave 19 Nov 2026) and each counts as Attributes.offset, -10 at 0, 0 at 50 (an average
+# character), +10 at 100, so trait_speed and trait_effect stay per 5 points. A missing attribute is average.
 static func trait_points(cfg: Dictionary, skill: String, attrs: Dictionary) -> float:
 	var sum: float = 0.0
 
 	for name in cfg.get("skills", {}).get(skill, {}).get("traits", {}):
-		sum += float(cfg["skills"][skill]["traits"][name]) * float(attrs.get(name, 0.0))
+		sum += float(cfg["skills"][skill]["traits"][name]) * Attributes.offset(float(attrs.get(name, Attributes.NEUTRAL)))
 
 	return sum
 
