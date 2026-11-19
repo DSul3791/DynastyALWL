@@ -174,11 +174,14 @@ func _server() -> void:
 	w._work_until.clear()
 	w._work_level.clear()
 	w._last_mine.clear()
+	var mine_t0: int = Time.get_ticks_msec()
 	w.action(1, Net.ACT_MINE, slot + 1, 1, 0, air)
 	check(w.effort_of(1) >= 1.0, "after one swing into the air the body works as hard as running (%.2f)" % w.effort_of(1))
 
 	# A swing inside the cooldown is not a swing: it holds nothing new.
 	w._work_until.clear()
+	check(int(w._last_mine.get(1, -1)) >= mine_t0, "the first request starts the pace")
+	w._last_mine[1] = Time.get_ticks_msec()   # pin the clock: no time has passed since it (a loaded test PC can take longer than the pace between two lines)
 	w.action(1, Net.ACT_MINE, slot + 1, 0, 0, air)
 	check(not w._work_until.has(1), "a second click inside the swing's cooldown costs nothing")
 	# Nothing in hand, or a tool that is not a pick or axe: no swing, no effort.

@@ -175,9 +175,12 @@ func _init() -> void:
 
 	give(clay, 60)
 	items._last_queue_act.clear()
+	var queue_t0: int = Time.get_ticks_msec()
 	items.action(1, Net.ACT_CRAFT_QUEUE, pot_recipe, 0, 5, CraftHand.at(items, 1, pot_recipe))
 	var queued: Array = items.craft_queue_of(1)
 	check(pot_recipe > 0 and queued.size() == 1 and int(queued[0][1]) == 5, "five pots (the Craft button's quantity) go in one queue request (%s)" % str(queued))
+	check(int(items._last_queue_act.get(1, -1)) >= queue_t0, "the first request starts the pace")
+	items._last_queue_act[1] = Time.get_ticks_msec()   # pin the clock: no time has passed since it (a loaded test PC can take longer than the pace between two lines)
 	items.action(1, Net.ACT_CRAFT_QUEUE, pot_recipe, 0, 1, CraftHand.at(items, 1, pot_recipe))
 	check(int(items.craft_queue_of(1)[0][1]) == 5 and items.craft_queue_of(1).size() == 1, "a second request straight after is paced away: why a craft of several is one request")
 

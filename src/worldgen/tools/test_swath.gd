@@ -78,6 +78,7 @@ func _init() -> void:
 	var wheat_yield: int = int(items._crop_table()["wheat"]["yields"][0][1])
 	var wear_before: int = items.inventory_of(1).wear[sickle]
 	notes.clear()
+	var swing_t0: int = Time.get_ticks_msec()
 	var swing: Dictionary = items.swath_swing(1, sickle)
 	check(not swing.is_empty() and int(swing["crops"]) == 2 and str(swing["tool"]) == "sickle", "a sickle swing reaps the two ripe grain crops in its circle (%s)" % str(swing))
 	check(count("wheat") == wheat_yield, "at the full yield (%d of %d)" % [count("wheat"), wheat_yield])
@@ -86,6 +87,8 @@ func _init() -> void:
 	check(items.inventory_of(1).wear[sickle] - wear_before == 1, "the swing wears the sickle once for the whole circle (%d)" % (items.inventory_of(1).wear[sickle] - wear_before))
 	check(is_equal_approx(float(swing["mult"]), float(cfg["yield"]["bronze"])) and (swing["grasses"] as Array).has("tall_grass"), "a bronze sickle cuts grass at the bronze yield (%s)" % str(swing["mult"]))
 	check(notes.is_empty(), "a swing says nothing about the plants it leaves (%s)" % str(notes))
+	check(int(items._swath_ms.get(1, -1)) >= swing_t0, "the first request starts the pace")
+	items._swath_ms[1] = Time.get_ticks_msec()   # pin the clock: no time has passed since it (a loaded test PC can take longer than the pace between two lines)
 	check(items.swath_swing(1, sickle).is_empty(), "a second swing at once is refused (the swing pace)")
 
 	# The scythe: 3 m, the same grain.

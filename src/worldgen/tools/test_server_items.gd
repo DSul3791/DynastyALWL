@@ -1676,9 +1676,12 @@ func _init() -> void:
 
 		return total
 	cb.action(1, Net.ACT_ADMIN_GIVE, block_n, 0, 2, Vector3.ZERO)
+	var split_t0: int = Time.get_ticks_msec()
 	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, HeldTool.slot_of(cb, "axe") + 1, Vector3.ZERO)
 	check(cb.inventory_of(1).count_of(block_n) == 1 and loose_of.call(firewood_n) == 4, "a wooden block splits into four firewood that falls beside the block")
 	check(cb.inventory_of(1).wear[cb.inventory_of(1).numbers.find(cb.table.number_of("stone_axe"))] == 1, "and wears the axe one use")
+	check(int(cb._last_use.get(1, -1)) >= split_t0, "the first request starts the pace")
+	cb._last_use[1] = Time.get_ticks_msec()   # pin the clock: no time has passed since it (a loaded test PC can take longer than the pace between two lines)
 	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, HeldTool.slot_of(cb, "axe") + 1, Vector3.ZERO)
 	check(cb.inventory_of(1).count_of(block_n) == 1, "the pace limit holds")
 	cb._last_use.clear()
