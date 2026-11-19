@@ -112,8 +112,10 @@ func _init() -> void:
 	var ripe_tex: Texture2D = (ripe.material_override as StandardMaterial3D).albedo_texture
 	check(ripe_tex != null and ripe_tex.get_height() == 512 and is_equal_approx(ripe.get_aabb().end.y, 1.0) and (young.material_override as StandardMaterial3D).albedo_texture != ripe_tex, "ripe wheat wears its 512 px picture 1 m tall; a wheat seedling the green blades")
 	check((cabbage.material_override as StandardMaterial3D).albedo_texture.get_width() > 100 and (cabbage.material_override as StandardMaterial3D).transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR, "a cabbage seedling is its own picture, cut out")
+
 	for card in [ripe, young, cabbage]:
 		card.get_parent().free()
+
 	var plot: Node3D = CropLook.build("wheat", 3, 2.0)
 	check(plot.get_child_count() == 16, "a 2 m garden plot gets 16 plants")
 	plot.free()
