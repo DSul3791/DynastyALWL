@@ -14,7 +14,9 @@ const MAX_SLOPE := 0.9                  # rise over run a walker will climb
 # {"pos": Vector3 (y on the ground), "heading": radians of travel in x/z, "moved": bool, "arrived": bool}.
 # `cross` (optional) is Callable(x0, z0, x1, z1) -> bool, true when the straight step goes through a wall, so a long stride
 # cannot jump a thin one (MikeW, 4 Nov 2026: animals no longer walk through buildings).
-static func step(pos: Vector3, target: Vector3, speed: float, dt: float, ground: Callable, blocked: Callable, arrive_m: float = 0.4, heading: float = 0.0, cross: Callable = Callable()) -> Dictionary:
+# `climb_m` and `drop_m` (optional) are a rise and a fall a walker takes in one step whatever the slope: an animal jumps down into a dug hole
+# and scrambles out of it (Dave 19 Nov 2026 play test), where the slope rule alone made a hole's steep rim a wall.
+static func step(pos: Vector3, target: Vector3, speed: float, dt: float, ground: Callable, blocked: Callable, arrive_m: float = 0.4, heading: float = 0.0, cross: Callable = Callable(), climb_m: float = 0.0, drop_m: float = 0.0) -> Dictionary:
 	var to_x: float = target.x - pos.x
 	var to_z: float = target.z - pos.z
 	var dist: float = sqrt(to_x * to_x + to_z * to_z)
@@ -38,7 +40,7 @@ static func step(pos: Vector3, target: Vector3, speed: float, dt: float, ground:
 
 		var ny: float = float(ground.call(nx, nz)) if ground.is_valid() else pos.y
 
-		if is_nan(ny) or absf(ny - pos.y) > MAX_SLOPE * reach + 0.05:
+		if is_nan(ny) or ny - pos.y > maxf(MAX_SLOPE * reach + 0.05, climb_m) or pos.y - ny > maxf(MAX_SLOPE * reach + 0.05, drop_m):
 			continue
 
 		return {"pos": Vector3(nx, ny, nz), "heading": angle, "moved": true, "arrived": false}

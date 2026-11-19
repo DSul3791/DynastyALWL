@@ -33,6 +33,7 @@ var cfg: Dictionary = {}
 var animals: Dictionary = {}       # id int -> {id, sp, num, pos Vector3, heading, state, target Vector3, timer, acc, home}
 var watched: Dictionary = {}       # id int -> true: watched by an admin through the spyglass (set by the server scene each send pass), kept living
 var ground_height: Callable        # (x, z) -> height
+var ground_edited: Callable        # (x, z) -> bool: a dig or fill touches the ground there (edited_ground.gd); unset: none
 var springs_near: Callable         # (Vector3, reach m) -> PackedVector3Array: the ground springs (heads) within reach, from the tiles (unset: none)
 var blocked: Callable              # (x, z) -> bool (deep water)
 var ice_cover_at: Callable         # (Vector3) -> Ice.cover there (0 open .. 1 a 20 cm sheet; 0.5, 10 cm, bears a person); set by the server scene
@@ -321,7 +322,7 @@ func _step_young(a: Dictionary, dt: float) -> void:
 		ground_for = func(x: float, z: float) -> float: return swim_height(def, x, z)
 		blocked_for = Callable()
 
-	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
+	var r: Dictionary = walk_step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
 
 	if r["moved"]:
 		a["pos"] = r["pos"]
@@ -694,6 +695,45 @@ func alarm_near(point: Vector3, radius: float) -> void:
 			continue
 
 		_bolt(a, point, species_def(str(a["sp"])))
+
+
+# One walking step of any animal of this module (Steering.step, the same arguments). Where a dig or fill touches the walker's spot or the half metre ahead, a
+# hole's steep rim is a jump down of at most ground_step.drop_m or a scramble up of at most climb_m (data/animals/animals.json, provisional GS-1),
+# so no animal is caught in a hole; natural ground keeps Steering's slope rule.
+func walk_step(pos: Vector3, target: Vector3, speed: float, dt: float, ground: Callable, blocked_at: Callable, arrive_m: float = 0.4, heading: float = 0.0, cross: Callable = Callable()) -> Dictionary:
+	var ahead: Vector2 = Vector2(target.x - pos.x, target.z - pos.z).limit_length(0.5)   # the next half metre: the step itself, never the far goal
+
+	if ground_edited.is_valid() and (bool(ground_edited.call(pos.x, pos.z)) or bool(ground_edited.call(pos.x + ahead.x, pos.z + ahead.y))):
+		var gs: Dictionary = cfg.get("ground_step", {})
+		return Steering.step(pos, target, speed, dt, ground, blocked_at, arrive_m, heading, cross, float(gs.get("climb_m", 1.0)), float(gs.get("drop_m", 2.0)))
+
+	return Steering.step(pos, target, speed, dt, ground, blocked_at, arrive_m, heading, cross)
+
+
+# A dig or fill changed the ground round `centre` (terrain_server _dig_ground / _fill_ground): every animal standing there comes to rest on
+# the ground as it is now, so one dug out from under drops and one buried under a fill climbs onto it (Dave 19 Nov 2026 play test). Animals in
+# the air, on a perch, in a burrow, in a cave or on water keep their height. Cost: one pass over the animals and a ground read for each one there.
+func ground_changed(centre: Vector3, radius: float) -> void:
+	if not ground_height.is_valid():
+		return
+
+	for id in animals:
+		var a: Dictionary = animals[id]
+		var p: Vector3 = a["pos"]
+
+		if Vector2(p.x - centre.x, p.z - centre.z).length() > radius + 1.0:
+			continue
+
+		if a["state"] == HIDDEN or a.has("fly") or bool(a.get("perched", false)) or bool(a.get("in_cave", false)):
+			continue
+
+		if in_water(species_def(str(a["sp"])), p):
+			continue   # on or in water (a swimmer, a flock resting on a lake, an animal on ice): the water holds it, not the bed
+
+		var y: float = float(ground_height.call(p.x, p.z))
+
+		if not is_nan(y) and absf(y - p.y) > 0.05:
+			a["pos"] = Vector3(p.x, y, p.z)
 
 
 # The animals a snare can reach: [{id, sp, pos}] within radius of the point (flat distance), burrowed ones left out.
@@ -1183,7 +1223,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		if in_water(def, a["pos"]):
 			speed = float(def["water"].get("swim_mps", speed)) * (1.0 if a["state"] == FLEE else 0.4)      # cruising slowly, bolting at full speed
 
-	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
+	var r: Dictionary = walk_step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
 
 	if r["moved"]:
 		a["pos"] = r["pos"]
