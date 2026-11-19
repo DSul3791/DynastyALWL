@@ -69,6 +69,7 @@ const HELD_LOOK_SCALE := 1.0      # real size against the body (Dave QA BUG-012:
 const HELD_SPEAR_SCALE := 1.0
 const BOW_AMMO := ["stone_arrow", "bone_arrow", "wooden_arrow", "fibre_arrow", "fire_arrow", "bronze_arrow", "iron_arrow", "steel_arrow"]   # the same as "ammo" in data/items/bow.json (test_slot_sounds checks)
 const BowAim := preload("res://src/shared/bow_aim.gd")
+const MeleeRules := preload("res://src/shared/melee_rules.gd")   # anything in hand is a weapon (data/items/melee.json, Dave 19 Nov 2026)
 const BowReticle := preload("res://src/client/bow_reticle.gd")
 const SAW_CATEGORY := "Carpenter's"   # the craft tab a left click with a saw opens (Dave 17 Nov 2026: "the carpenters category")
 const HELD_FIXED_SCALE := {"rod": 1.0, "hoe": 1.0, "saw": 1.0, "bow": 1.0, "arrow": 1.0}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
@@ -933,6 +934,39 @@ func _make_look_model() -> Node3D:
 	return node
 
 
+# Anything in hand is a weapon (Dave 19 Nov 2026 play test: "I just tried to hit a pig with an axe and it is doing no damage"; "any thing in your
+# hand should be able to be used as a weapon"): true when an animal is drawn in front within the held item's reach (MeleeRules; the server's
+# target_along rule: inside 0.6 m, or within about 35 degrees of the look). A left click then strikes it instead of the item's own use.
+var _melee_cfg: Dictionary = {}
+
+
+func _animal_in_reach() -> bool:
+	if not animal_aim_rows.is_valid() or _camera == null or not holding or held_number() == 0 or _inv.is_broken(held_slot):
+		return false
+
+	if _melee_cfg.is_empty():
+		_melee_cfg = MeleeRules.load_config()
+
+	var reach: float = float(MeleeRules.blow(_inv.table.entry(held_id()), _melee_cfg)["reach_m"])
+	var eye: Vector3 = _camera.global_position
+	var look: Vector3 = -_camera.global_transform.basis.z
+	var flat: Vector2 = Vector2(look.x, look.z).normalized()
+
+	for row in animal_aim_rows.call():
+		var at: Vector3 = row[0]
+		var to: Vector2 = Vector2(at.x - eye.x, at.z - eye.z)
+
+		if to.length() <= reach and (to.length() < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - eye.y) < 3.5:
+			return true
+
+	return false
+
+
+# One blow at the animal in front with whatever is in hand: the server checks the item, the reach and the pace, and answers a hit with hit_number.
+func _melee_strike() -> void:
+	_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot, 0, 0, -_camera.global_transform.basis.z)
+
+
 func _is_axe() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) in ["axe", "pick"] and not _inv.is_broken(held_slot)
 
@@ -1120,6 +1154,13 @@ func mouse_button(button: int, pressed: bool) -> bool:
 	# Right click with a torch in the left hand and nothing in the right that uses right click: stick the torch in the ground or on a wall (Dave, 4 Nov 2026).
 	if button == MOUSE_BUTTON_RIGHT and pressed and not blueprints.is_open and _right_hand_free() and _torch_hand_slot() >= 0:
 		_place_torch_here()
+		return true
+
+	# A left click at an animal in reach strikes it with whatever is in hand (Dave 19 Nov 2026). The axe and pick strike at the impact of their
+	# swing (_strike); a spear jabs and a bow shoots as before; placing a piece or a blueprint keeps its click.
+	if button == MOUSE_BUTTON_LEFT and pressed and not _is_axe() and not _is_spear() and not _is_bow() and not _blueprinting() and not _is_placeable() and _animal_in_reach():
+		_arm_play("use", 0.6)
+		_melee_strike()
 		return true
 
 	if holding and _hammer_tier() > 0 and (blueprints.mode == "save" or blueprints.mode == "repair"):
@@ -2052,6 +2093,10 @@ func _on_wheel_share(at: Vector3, yaw_deg: int, percent: int, why: String) -> vo
 # The blow lands: what is in reach decides the sound. (Chopping trees and digging stone come with
 # tree-fall and the harvest of ground; for now the axe only swings and sounds.)
 func _strike() -> void:
+	if _animal_in_reach():   # an animal in front takes the blow (Dave 19 Nov 2026: the axe did nothing to a pig)
+		_melee_strike()
+		return
+
 	var from: Vector3 = _camera.global_position
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)
 	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
