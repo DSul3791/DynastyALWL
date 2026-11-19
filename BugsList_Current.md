@@ -429,6 +429,24 @@ Assumed on Dave's behalf (provisional):
 - SP-1: 5 wrong passwords from one address within a minute refuse that address for a minute.
 - SP-2: a client waits 15 s for the server's first handshake word, then 180 s while the player types.
 
+## 63. Animals float when the ground is dug from under them (part 1 of 3 of the animal fixes)
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test on 19 Nov 2026. Fixed by PR #1317, merged to dev at 845b33d0 (head 13258218) after independent review (3 rounds, final PASS on the exact head). Lane A (Dave's PC) on the exact head: 78 of 78 selected tests passed (75 fast + 2 timing + 1 slow), including test_animals_dug_ground; parse check ok. Fix not yet played.
+
+Dave, 19 Nov 2026: "the animals are not moving naturally they are floating in the air if I dig the dirt out under them."
+
+**Cause:** the server placed animals on the generated ground only, never on the digs and fills, and an animal standing still never read the ground again. A hole's steep rim was also a wall to animal walking, so none entered a hole and one dropped in could not leave.
+
+**Required outcome:** an animal stands on the ground as it is now; one dug out from under drops to the new ground, one on a fill stands on it; animals walk into and out of shallow dug holes; natural slopes are unchanged.
+
+**Acceptance:** dig out the ground under a standing animal: it drops into the hole at once; fill under one: it stands on the fill; animals walk over dug ground on its surface, not in the air.
+
+Not changed: boulders (planned separately), NPCs (still on the generated ground), animal attacks.
+
+Assumed on Dave's behalf (provisional):
+
+- GS-1: an animal jumps down at most 2 m and scrambles up at most 1 m in one step where a dig or fill touches its spot; deeper holes stay pits.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
