@@ -3348,10 +3348,6 @@ static func _conduit_run(root: Node3D, kind: String, x0: float, x1: float) -> vo
 			for s in [-1.0, 1.0]:
 				_box(root, Vector3(length, 0.18, 0.12), Vector3(mid, 0.21, s * 0.19), _stone)
 			_box(root, Vector3(length, 0.01, 0.26), Vector3(mid, 0.125, 0.0), _tone_mat(Color(0.3, 0.29, 0.27)))
-		"log":
-			_cyl(root, 0.13, length, Vector3(mid, 0.13, 0.0), _log, 8).rotation = Vector3(0.0, 0.0, PI * 0.5)
-		_:
-			_cyl(root, 0.06, length, Vector3(mid, 0.1, 0.0), _iron_mat(), 8).rotation = Vector3(0.0, 0.0, PI * 0.5)
 
 
 # The supports and joints at a conduit's port or joint at `at` (a trestle, a collar or a saddle), turned `yaw` about Y.
@@ -3366,20 +3362,15 @@ static func _conduit_joint(root: Node3D, kind: String, at: Vector3, yaw: float) 
 			for s in [-1.0, 1.0]:
 				_box_rot(holder, Vector3(0.04, 0.22, 0.04), Vector3(0.0, 0.115, s * 0.14), Vector3(s * 0.25, 0.0, 0.0), _frame)   # a trestle leg, its foot on the ground
 			_box(holder, Vector3(0.06, 0.04, 0.38), Vector3(0.0, 0.18, 0.0), _frame)
-		"log":
-			_cyl(holder, 0.145, 0.06, Vector3(0.0, 0.13, 0.0), _frame, 8).rotation = Vector3(0.0, 0.0, PI * 0.5)   # the twine lashing round a joint (no bore disc: the tee stays under the 300-triangle cap)
-		"iron":
-			_cyl(holder, 0.075, 0.04, Vector3(0.0, 0.1, 0.0), _iron_mat(), 8).rotation = Vector3(0.0, 0.0, PI * 0.5)
-			_box(holder, Vector3(0.06, 0.04, 0.16), Vector3(0.0, 0.02, 0.0), _iron_mat())
 
 
-# A conduit piece (B6). `kind` "wood" (channel), "stone" (channel), "iron" (pipe) or "log" (bored log pipe); `shape` "straight" (ports -X, +X), "corner" (-X, +Z) or
+# A conduit piece (B6). `kind` "wood" (channel) or "stone" (channel) (pipes are laid runs: pipe_run); `shape` "straight" (ports -X, +X), "corner" (-X, +Z) or
 # "tee" (-X, +X, +Z). Solid along the runs (low: you step over a pipe, not a flume on trestles).
 static func conduit(kind: String = "wood", shape: String = "straight") -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
-	var high: float = {"wood": 0.3, "stone": 0.3, "iron": 0.2, "log": 0.26}.get(kind, 0.3)
-	var width: float = {"wood": 0.4, "stone": 0.5, "iron": 0.2, "log": 0.26}.get(kind, 0.3)
+	var high: float = 0.3
+	var width: float = {"wood": 0.4, "stone": 0.5}.get(kind, 0.3)
 
 	if shape == "straight":
 		_conduit_run(root, kind, -1.0, 1.0)
@@ -3420,23 +3411,69 @@ static func sluice(open: bool = false) -> Node3D:
 	return root
 
 
-# An iron tap (B6b), 0.3 x 0.3 x 0.4: a valve body on a short riser at a pipe end, a cross handle on top and a spout curving down toward +Z.
-static func iron_tap() -> Node3D:
+# A pipe run laid from the hand (PLUMBING_DESIGN s9, Dave 19 Nov 2026): one straight pipe `length` metres along +X, centred on the origin (its axis is
+# the run's own line; the row's pitch and yaw turn it). Wood is a bored log 15 cm (6 in) across with a darker bore at each end; copper a 6 cm tube.
+# No collision: a pipe goes through anything and never blocks a walker (the client picks one by its line, PipeRules.ray_nearest).
+static func pipe_run(kind: String = "wood", length: float = 2.0) -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
-	_cyl(root, 0.06, 0.2, Vector3(0.0, 0.1, 0.0), _iron_mat(), 8)
-	_cyl(root, 0.08, 0.1, Vector3(0.0, 0.25, 0.0), _iron_mat(), 8)
-	_cyl(root, 0.012, 0.08, Vector3(0.0, 0.34, 0.0), _iron_mat(), 6)
-	_box(root, Vector3(0.18, 0.02, 0.02), Vector3(0.0, 0.38, 0.0), _iron_mat())
-	_box(root, Vector3(0.02, 0.02, 0.18), Vector3(0.0, 0.38, 0.0), _iron_mat())
-	_cyl(root, 0.025, 0.12, Vector3(0.0, 0.25, 0.09), _iron_mat(), 6).rotation = Vector3(PI * 0.5, 0.0, 0.0)
-	_cyl(root, 0.025, 0.06, Vector3(0.0, 0.22, 0.15), _iron_mat(), 6)
-	_solid(root, Vector3(0.16, 0.3, 0.16), Vector3(0.0, 0.15, 0.0))
+	var length_m: float = maxf(length, 0.05)
+
+	if kind == "copper":
+		_cyl(root, 0.03, length_m, Vector3.ZERO, _copper_mat(), 10).rotation = Vector3(0.0, 0.0, PI * 0.5)
+		return root
+
+	_cyl(root, 0.075, length_m, Vector3.ZERO, _log, 10).rotation = Vector3(0.0, 0.0, PI * 0.5)
+
+	for s in [-1.0, 1.0]:
+		_cyl(root, 0.03, 0.01, Vector3(s * length_m * 0.5, 0.0, 0.0), _tone_mat(Color(0.12, 0.09, 0.06)), 8).rotation = Vector3(0.0, 0.0, PI * 0.5)   # the bore
+
+	return root
+
+
+static var _copper: StandardMaterial3D
+
+
+static func _copper_mat() -> StandardMaterial3D:
+	if _copper == null:
+		_copper = StandardMaterial3D.new()
+		_copper.albedo_color = Color(0.72, 0.45, 0.2)
+		_copper.metallic = 0.8
+		_copper.roughness = 0.35
+
+	return _copper
+
+
+# A Copper - Tap (PLUMBING_DESIGN s9), about 0.15 m: fitted on a pipe's open end at the origin, a valve body hanging under it, a cross handle on top
+# (turned a quarter when open) and a spout pointing down to 0.12 m below the pipe end.
+static func copper_tap(open: bool = false) -> Node3D:
+	var root: Node3D = Node3D.new()
+	_cyl(root, 0.035, 0.08, Vector3(0.0, -0.04, 0.0), _copper_mat(), 8)
+	_cyl(root, 0.01, 0.05, Vector3(0.0, 0.025, 0.0), _copper_mat(), 6)
+	var handle: Node3D = Node3D.new()
+	handle.position = Vector3(0.0, 0.055, 0.0)
+	handle.rotation = Vector3(0.0, PI * 0.25 if open else 0.0, 0.0)
+	root.add_child(handle)
+	_box(handle, Vector3(0.09, 0.012, 0.012), Vector3.ZERO, _copper_mat())
+	_box(handle, Vector3(0.012, 0.012, 0.09), Vector3.ZERO, _copper_mat())
+	_cyl(root, 0.012, 0.05, Vector3(0.0, -0.1, 0.0), _copper_mat(), 6)
+	return root
+
+
+# A Copper - Drip head (PLUMBING_DESIGN s9): a small copper cap on a pipe's open end, pierced round its rim.
+static func drip_head() -> Node3D:
+	var root: Node3D = Node3D.new()
+	_cyl(root, 0.04, 0.05, Vector3(0.0, -0.025, 0.0), _copper_mat(), 10, 0.025)
+
+	for n in 6:
+		var a: float = TAU * float(n) / 6.0
+		_cyl(root, 0.006, 0.01, Vector3(cos(a) * 0.033, -0.04, sin(a) * 0.033), _tone_mat(Color(0.1, 0.08, 0.06)), 4)
+
 	return root
 
 
 # The deep-well force pump (B6b), 0.8 x 0.8 x 1.6, on a well's coping: an iron base plate, a tall iron barrel, an air chamber dome beside it, a long two-man
-# lever across the top (X) on a pivot post and an outlet stub for the iron pipe toward +Z.
+# lever across the top (X) on a pivot post and an outlet stub for a pipe toward +Z.
 static func deep_well_pump() -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()

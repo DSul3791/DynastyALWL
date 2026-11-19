@@ -17,6 +17,11 @@ extends RefCounted
 #   drop_m     how far a feeder's water may fall into an open piece (a spout over a trough; default PORT_JOIN_M)
 #   head_m     a tank's water stands this far over its base outlet (a raised cistern's tank on its plinth, its downpipe built in; plumbing PR 3)
 #   lift_m     a tank fed at its foot through a closed riser takes water only from a surface at least this far over its inlet (the raised cistern)
+#   rain_lpm   rain falling straight into a tank now, L/min (a barrel in the open; the server sets it from the weather; PLUMBING_DESIGN s9)
+#   cap_lpm    on a consumer: the most it takes (a drip head's 2 L/min); none takes whatever comes
+#   level_port a tank's point at its foot (a barrel's bottom centre) that pipes join to: tanks linked through pipes there level out (level_groups)
+#   spout      a closed piece whose outlet always pours into what is under it (a tap: the pipe end it hangs from never caps it)
+#   level_h_m  how tall the water in such a tank can stand above its spot (for levelling by water surface, level_litres)
 #
 # Rules (Sonny's numbers):
 #   - Links: an outlet feeds an inlet within PORT_JOIN_M across the ground. Into an open piece only when its inlet is at or below the outlet (+2 cm),
@@ -124,6 +129,16 @@ func add(id: int, piece: Dictionary) -> String:
 		_up[d].append(id)
 		_down[id].append(d)
 
+	if bool(piece.get("closed", false)):
+		for u in _near(ends(piece), PORT_JOIN_M):   # a pipe end this piece now caps stops spilling into the open pieces under the joint
+			if u == id or not _down.has(u):
+				continue
+
+			for d in (_down[u] as Array).duplicate():
+				if d != id and not _links(pieces[u], pieces[d]):
+					_down[u].erase(d)
+					_up[d].erase(u)
+
 	return ""
 
 
@@ -162,8 +177,29 @@ func _links(from_piece: Dictionary, to_piece: Dictionary) -> bool:
 			if Vector2(a.x - b.x, a.z - b.z).length() <= PORT_JOIN_M and absf(a.y - b.y) <= PORT_JOIN_M:
 				return true
 		elif Vector2(a.x - b.x, a.z - b.z).length() <= maxf(PORT_JOIN_M, float(to_piece.get("catch_m", 0.0))) \
-				and b.y <= a.y + OPEN_SLACK_M and a.y - b.y <= maxf(PORT_JOIN_M, float(to_piece.get("drop_m", 0.0))):
+				and b.y <= a.y + OPEN_SLACK_M and a.y - b.y <= maxf(PORT_JOIN_M, float(to_piece.get("drop_m", 0.0))) \
+				and not (bool(from_piece.get("closed", false)) and not bool(from_piece.get("spout", false)) and _capped(a, from_piece)):
 			return true
+
+	return false
+
+
+static func _sealed_near(a: Vector3, b: Vector3) -> bool:
+	return Vector2(a.x - b.x, a.z - b.z).length() <= PORT_JOIN_M and absf(a.y - b.y) <= PORT_JOIN_M
+
+
+# A closed outlet joined to a closed piece's inlet or port (the next pipe, a junction, a Tap) pours nowhere else: it does not spill into a trough,
+# barrel or plot under the joint. add() also drops such a spill when the capping piece joins after the pipe, so the build order does not matter.
+func _capped(a: Vector3, owner: Dictionary) -> bool:
+	for id in _near([a], PORT_JOIN_M):
+		var p: Dictionary = pieces[id]
+
+		if is_same(p, owner) or not bool(p.get("closed", false)):
+			continue
+
+		for at in ([p["inlet"]] if p.has("inlet") else []) + (p.get("ports", []) as Array):
+			if _sealed_near(a, at):
+				return true
 
 	return false
 
@@ -407,6 +443,12 @@ func solve(now_s: float) -> void:
 				out = maxf(minf(float(piece.get("rate_lpm", 0.0)), float(piece.get("cap_lpm", BIG))), 0.0)
 				q = str(piece.get("quality", "clean"))
 			"tank":
+				var rain: float = maxf(float(piece.get("rain_lpm", 0.0)), 0.0)
+
+				if rain > 0.0:
+					got += rain
+					q = _worse(q, "clean")   # rain is clean water
+
 				var held: float = float(_litres.get(id, 0.0))
 				out = BIG if held > 0.0 else got   # holding water, it passes what the pieces below take; empty, at most its inflow
 
@@ -477,7 +519,7 @@ func _take(id: int, surface: Dictionary, take: Dictionary) -> float:
 
 	match str(piece.get("role", "")):
 		"consumer":
-			return BIG if float(piece.get("room_l", 0.0)) > 0.0 else 0.0
+			return float(piece.get("cap_lpm", BIG)) if float(piece.get("room_l", 0.0)) > 0.0 else 0.0
 		"tank":
 			if piece.has("lift_m") and piece.has("inlet") and float(surface[id]) < (piece["inlet"] as Vector3).y + float(piece["lift_m"]):
 				return 0.0   # the water reaching its riser cannot climb to the tank
@@ -637,3 +679,116 @@ func save_litres(now_s: float) -> Dictionary:
 func set_litres(id: int, value: float) -> void:
 	if pieces.has(id):
 		_litres[id] = clampf(value, 0.0, float(pieces[id].get("litres_max", 0.0)))
+
+
+# --- Linked barrels (PLUMBING_DESIGN s9, PV-7) ---
+
+# The sets of tanks with a level_port whose ports are joined through closed pipes (any run, any junction), each a list of ids in joining order;
+# only sets of two or more. Walks only the pipes round the ports (the cell index), so it costs about the linked pipes, not all plumbing.
+func level_groups() -> Array:
+	var port_of: Dictionary = {}
+
+	for id in pieces:
+		if str(pieces[id].get("role", "")) == "tank" and pieces[id].has("level_port"):
+			port_of[id] = pieces[id]["level_port"]
+
+	var seen: Dictionary = {}
+	var out: Array = []
+
+	for start in port_of:
+		if seen.has(start):
+			continue
+
+		seen[start] = true
+		var group: Array = [start]
+		var points: Array = [port_of[start]]
+		var walked: Dictionary = {}
+
+		while not points.is_empty():
+			var at: Vector3 = points.pop_back()
+
+			for other in _near([at], PORT_JOIN_M):
+				if walked.has(other):
+					continue
+
+				var p: Dictionary = pieces[other]
+
+				if port_of.has(other):
+					if not seen.has(other) and _sealed_near(at, port_of[other]):
+						seen[other] = true
+						walked[other] = true
+						group.append(other)
+						points.append(port_of[other])
+
+					continue
+
+				if str(p.get("role", "")) != "conduit" or not bool(p.get("closed", false)) or not p.has("ports"):
+					continue
+
+				var touches: bool = false
+
+				for end in p["ports"]:
+					touches = touches or _sealed_near(at, end)
+
+				if touches:
+					walked[other] = true
+					points.append_array(p["ports"])
+
+		if group.size() > 1:
+			group.sort_custom(func(a, b): return int(_seq[a]) < int(_seq[b]))
+			out.append(group)
+
+	return out
+
+
+# How `total` litres stand in linked tanks, like water: one surface height over them all, each tank holding what lies under that surface between
+# its foot (base_y) and its top (base_y + height), up to its size (cap). rows: [[base_y, height, cap], ...]. Returns the litres of each, in order.
+static func level_litres(rows: Array, total: float) -> Array:
+	var room: float = 0.0
+	var lo: float = INF
+	var hi: float = -INF
+
+	for row in rows:
+		room += float(row[2])
+		lo = minf(lo, float(row[0]))
+		hi = maxf(hi, float(row[0]) + maxf(float(row[1]), 0.01))
+
+	var out: Array = []
+
+	if rows.is_empty():
+		return out
+
+	total = clampf(total, 0.0, room)
+
+	for _n in 40:   # bisect the surface: 40 halvings of a few metres is far under a millimetre
+		var mid: float = (lo + hi) * 0.5
+
+		if _held_under(rows, mid) < total:
+			lo = mid
+		else:
+			hi = mid
+
+	var sum: float = 0.0
+
+	for row in rows:
+		out.append(_tank_under(row, hi))
+		sum += float(out[out.size() - 1])
+
+	if sum > 0.0:   # the bisection's last crumb goes back in proportion, so no water is made or lost
+		for n in out.size():
+			out[n] = float(out[n]) * total / sum
+
+	return out
+
+
+static func _tank_under(row: Array, surface: float) -> float:
+	return float(row[2]) * clampf((surface - float(row[0])) / maxf(float(row[1]), 0.01), 0.0, 1.0)
+
+
+static func _held_under(rows: Array, surface: float) -> float:
+	var sum: float = 0.0
+
+	for row in rows:
+		sum += _tank_under(row, surface)
+
+	return sum

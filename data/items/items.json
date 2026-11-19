@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1508,
+	"next_number": 1511,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -7787,32 +7787,35 @@
 			"wooden_pipe": {
 				"number": 1352,
 				"name": "Wooden - Pipe",
-				"description": "A bored log, two metres long. A closed pipe that carries water downhill.",
-				"kind": "structure",
-				"stack": 1,
-				"unstackable": true,
+				"description": "A bored log, six inches across and two metres long. Lay it from the hand between water points; it rots faster than other wood.",
+				"kind": "material",
+				"stack": 10,
 				"look_alikes": [],
-				"note": "Water piece: row state 423 (PROVISIONAL, plumbing PR 2, docs/design/PLUMBING_DESIGN.md): built with the hammer (blueprint 342)."
+				"value": 4,
+				"pipe_m": 2.0,
+				"note": "Laid from the hand (PLUMBING_DESIGN s9, Dave 19 Nov 2026): one piece covers 2 m of a run; the laid run is structure kind wooden_pipe (state 423). PROVISIONAL (PLUMBING_DESIGN s9, Dave 19 Nov 2026 pipe rework): values assumed for Dave to retune."
 			},
 			"wooden_pipe_elbow": {
 				"number": 1353,
+				"retired": true,
 				"name": "Wooden - Pipe elbow",
 				"description": "A bored log pipe that turns a quarter circle.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 424 (PROVISIONAL, plumbing PR 2, docs/design/PLUMBING_DESIGN.md): built with the hammer (blueprint 343)."
+				"note": "Retired 19 Nov 2026 (Dave's pipe rework, PLUMBING_DESIGN s9: any angle and junctions anywhere replace it). A saved one loads as a 2 m Wooden - Pipe."
 			},
 			"wooden_pipe_tee": {
 				"number": 1354,
+				"retired": true,
 				"name": "Wooden - Pipe tee",
 				"description": "A bored log pipe that splits its water two ways.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 425 (PROVISIONAL, plumbing PR 2, docs/design/PLUMBING_DESIGN.md): built with the hammer (blueprint 344)."
+				"note": "Retired 19 Nov 2026 (Dave's pipe rework, PLUMBING_DESIGN s9: junctions anywhere replace it). A saved one loads as a 2 m Wooden - Pipe."
 			},
 			"clay_pipe": {
 				"number": 730,
@@ -7988,13 +7991,14 @@
 			},
 			"iron_pipe": {
 				"number": 746,
+				"retired": true,
 				"name": "Iron - Pipe",
 				"description": "A closed iron pipe, two metres long. A force pump can push water up it.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 182. Locked until Steve's water_network module lands."
+				"note": "Retired 19 Nov 2026 (Dave: no iron or steel pipe, 'iron would rust'; PLUMBING_DESIGN s7, s9). Never buildable (its blueprint was locked)."
 			},
 			"iron_pipe_elbow_kit": {
 				"number": 747,
@@ -8009,13 +8013,14 @@
 			},
 			"iron_pipe_elbow": {
 				"number": 748,
+				"retired": true,
 				"name": "Iron - Pipe elbow",
 				"description": "An iron pipe that turns a quarter circle.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 183. Locked until Steve's water_network module lands."
+				"note": "Retired 19 Nov 2026 (Dave: no iron or steel pipe, 'iron would rust'; PLUMBING_DESIGN s7, s9). Never buildable (its blueprint was locked)."
 			},
 			"iron_tap_kit": {
 				"number": 749,
@@ -8030,13 +8035,14 @@
 			},
 			"iron_tap": {
 				"number": 750,
+				"retired": true,
 				"name": "Tap",
 				"description": "A shut-off tap for a pipe's end. E opens or shuts it.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 184. Locked until Steve's water_network module lands."
+				"note": "Retired 19 Nov 2026 (Dave: no iron or steel pipe, 'iron would rust'; PLUMBING_DESIGN s7, s9). Never buildable (its blueprint was locked)."
 			},
 			"iron_deep_well_pump_kit": {
 				"number": 751,
@@ -12292,6 +12298,9 @@
 		"bronze_shovel": {"number": 1503, "name": "Bronze - Shovel", "description": "A shovel with a bronze blade.", "kind": "tool", "tool_class": "shovel", "material": "bronze", "tier": 3, "stack": 1, "unstackable": true, "durability": 12000, "repair": [["bronze_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 60, "look_alikes": [], "shovel_size": "large", "note_provisional": "PROVISIONAL (TOOL-TIERS-1, Dave 18 Nov 2026: every tool Stone or Wooden, Copper, Bronze, Iron, Steel): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
 		"copper_sickle": {"number": 1504, "name": "Copper - Sickle", "description": "A curved copper blade on a short handle. Cuts grain and grass.", "kind": "tool", "tool_class": "sickle", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 1100, "repair": [["copper_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 30, "look_alikes": [], "edge": true, "note_provisional": "PROVISIONAL (TOOL-TIERS-2, Dave 18 Nov 2026: \"yes all tools get the same tiers\", sickle, scythe and chisel start at Copper): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
 		"copper_scythe": {"number": 1505, "name": "Copper - Scythe", "description": "A long copper blade on a snath. Mows grain and grass.", "kind": "tool", "tool_class": "scythe", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 4000, "repair": [["copper_ingot", 1], ["stick", 1]], "repair_station": "forge", "value": 45, "look_alikes": [], "edge": true, "note_provisional": "PROVISIONAL (TOOL-TIERS-2, Dave 18 Nov 2026: \"yes all tools get the same tiers\", sickle, scythe and chisel start at Copper): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
-		"copper_chisel": {"number": 1506, "name": "Copper - Chisel", "description": "A copper chisel. Carves stone.", "kind": "tool", "tool_class": "chisel", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 300, "repair": [["copper_ingot", 1]], "repair_station": "forge", "value": 30, "look_alikes": [], "edge": true, "note_provisional": "PROVISIONAL (TOOL-TIERS-2, Dave 18 Nov 2026: \"yes all tools get the same tiers\", sickle, scythe and chisel start at Copper): cost and stats follow the neighbouring tiers of this tool; adjust after play."}
+		"copper_chisel": {"number": 1506, "name": "Copper - Chisel", "description": "A copper chisel. Carves stone.", "kind": "tool", "tool_class": "chisel", "material": "copper", "tier": 2, "stack": 1, "unstackable": true, "durability": 300, "repair": [["copper_ingot", 1]], "repair_station": "forge", "value": 30, "look_alikes": [], "edge": true, "note_provisional": "PROVISIONAL (TOOL-TIERS-2, Dave 18 Nov 2026: \"yes all tools get the same tiers\", sickle, scythe and chisel start at Copper): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
+		"copper_pipe": {"number": 1508, "name": "Copper - Pipe", "description": "A drawn copper pipe, three metres long. Lay it from the hand between water points; it never rots.", "kind": "material", "stack": 20, "look_alikes": [], "value": 18, "pipe_m": 3.0, "note": "Laid from the hand (PLUMBING_DESIGN s9): one piece covers 3 m of a run (Dave: one copper makes about 3 m); the laid run is structure kind copper_pipe (state 458). PROVISIONAL (PLUMBING_DESIGN s9, Dave 19 Nov 2026 pipe rework): values assumed for Dave to retune."},
+		"copper_tap": {"number": 1509, "name": "Copper - Tap", "description": "A copper tap. Fit it on the open end of a pipe; E opens or shuts it.", "kind": "material", "stack": 10, "look_alikes": [], "value": 18, "fitting": "copper_tap", "note": "Fitted from the hand on a pipe's open end (PLUMBING_DESIGN s9): structure copper_tap (state 459, shut) / copper_tap_open (460). PROVISIONAL (PLUMBING_DESIGN s9, Dave 19 Nov 2026 pipe rework): values assumed for Dave to retune."},
+		"copper_drip_head": {"number": 1510, "name": "Copper - Drip head", "description": "A copper drip head. Fit it on the open end of a pipe; it waters the beds within two metres.", "kind": "material", "stack": 10, "look_alikes": [], "value": 18, "fitting": "copper_drip_head", "note": "Fitted from the hand on a pipe's open end (PLUMBING_DESIGN s9): structure copper_drip_head (state 461). PROVISIONAL (PLUMBING_DESIGN s9, Dave 19 Nov 2026 pipe rework): values assumed for Dave to retune."}
 	}
 }

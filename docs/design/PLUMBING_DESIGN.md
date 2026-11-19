@@ -102,36 +102,12 @@ How it fits together:
 Engine additions (water_network.gd): a tank's `head_m` (its water over its base outlet) and `lift_m` (a riser-fed tank takes water only from a
 surface that high over its inlet). The cisterns' "overflow" is not modelled: a full tank backs up, as the engine already does.
 
-## 7. FUTURE: iron plumbing (deferred, not built), PROVISIONAL design
+## 7. Iron plumbing: SUPERSEDED (Dave, 19 Nov 2026)
 
-**Deferred 14 Nov 2026** (Dave: "Regarding the plumbing finish up what you're working on, but put the rest aside under future"). Nothing below
-is in the game. The design is kept so it can be picked up later; a working implementation of it was reviewed (gate PASS) but never merged, and
-sits in the project Library bundle `plumbing/plumbing-stack.bundle` (branch `plumbing-iron`) (it predates the clay retirement, so it needs
-rebasing and its clay references removed). The plumbing number block's unused numbers are released (docs/mirror/tech/NUMBER_RESERVATIONS.md),
-so a revival takes fresh numbers for the Iron pipe section, Iron - Pipe tee, the Tap's open twin and the forge recipe.
-
-**The gate is the Master smithy.** The pieces are known from the start and need an iron hammer (tier 3). Every one of them costs the new
-material **Iron pipe section** (new item, number to reserve). It is forged only at the Master smithy (`master_forge`, station `master_smithy`) by a new recipe:
-1 Iron ingot gives 2 sections in 20 s. It is learned by discovery, the first time an Iron ingot is in the pack at the Master smithy.
-
-| Piece | Water block | Cost |
-|---|---|---|
-| Iron pipe section (new material) | none | the recipe above |
-| Iron - Pipe / elbow (unlocked) | closed, 240 L/min under head, ends 0.1 m up | 2 Iron pipe sections each |
-| Iron - Pipe tee (new) | closed, 240 L/min, one inlet and two outlets | 3 Iron pipe sections |
-| Tap (unlocked) | a closed 30 L/min gate on a pipe's end; built shut, E opens and shuts it (open twin `iron_tap_open`); its spout is 0.22 m up, so a trough under it stands lower | 1 Iron pipe section, 1 Hinges |
-| Iron - Hand pump (unlocked) | suction source, 7 m, 1.2 L/s at 50 W (72 L/min cap); spout 0.76 m up | 2 Iron pipe sections, 4 Iron ingot, 1 Hide, 1 Hinges |
-| Deep-well pump (unlocked) | force pump, lifts from 40 m, 1.0 L/s at 60 W, closed outlet pushing 10 m up an iron pipe (fills a Raised cistern) | 4 Iron pipe sections, 4 Iron ingot, 2 Hide, 2 Hinges, 12 Nails |
-
-What a player does once the Master smithy stands: forge Iron pipe sections there, build a Deep-well pump, lay iron pipe from it to a Raised cistern's
-riser, work the pump (E), and run iron pipe from the cistern's foot to Taps over troughs around the village. Open a Tap with E.
-
-Engine addition (water_network.gd `_capped`): a closed outlet joined to a closed piece's inlet (the next pipe, a Tap) pours nowhere else, so a
-pipe's end under a shut Tap does not spill into the trough below it; order-independent (`add` drops such a spill when the cap comes later).
-
-Not modelled (PROVISIONAL): the catalog's Deep-well pump "for a stone well" (the old data's `"on": "stone_well"`) is not enforced; it lifts
-ground water within 200 m like any well or pump. The Tap is placed freely (no snap to a pipe port): its inlet must land within 0.3 m of a pipe
-end, a play check on the PC. The Raised cistern would be unlocked with it, once the Deep-well pump can fill it.
+The deferred iron plan (Iron pipe section, Iron - Pipe / elbow / tee, the iron Tap) is dropped. Dave, 19 Nov 2026 15:06Z: "There's really no need
+to go into iron cause iron would rust and steel would do the same thing so there's no point in having iron or steel [...] copper would be the best".
+Section 9 replaces it. The old design stays in git history (and the unmerged bundle `plumbing/plumbing-stack.bundle`); nothing of it is built. The
+Iron - Hand pump, the Deep-well pump and the Raised cistern were not part of that ruling and stay as they are (locked).
 
 ## 8. Assumed on Dave's behalf, for his review
 
@@ -147,5 +123,73 @@ Every value below is PROVISIONAL (coordinator ruling: build costs and numbers ma
 - P-8 Stone channels 300 L/min; Stone - Trough 200 L (s6). (Clay pipes retired by Dave, not assumed.)
 - P-9 Cistern 2,000 L, 0.5 m head; Raised cistern 2,000 L, 2.5 m head, filled only by a force pump, so locked until iron plumbing (s6).
 - P-10 A saved Clay pipe loads as Clay (renames.json): nothing else uses it, and its recipe took 3 Clay for 2 (s3).
-- Iron plumbing values (s7) are FUTURE and unreviewed by Dave: Iron pipe section 1 Iron ingot for 2 at the Master smithy; Iron - Pipe and elbow 2
-  sections, Pipe tee 3, 240 L/min; Tap 1 section + 1 Hinges, 30 L/min; Iron - Hand pump 72 L/min; Deep-well pump lifts 40 m and pushes 10 m.
+- (19 Nov 2026, s9) PV-1 Wooden - Pipe: 1 Log + 1 Twine by hand, knife kept; 2 m a piece, 60 L/min; wears to 0.25 in 56 game days, flow x condition.
+- PV-2 Copper - Pipe: 1 Copper ingot at the Primitive smithy for 3 m; 180 L/min; never wears.
+- PV-3 A run is straight, up to 30 m, paid in whole pieces; the start must be a connection point; within 6 m reach of where you stand at each click.
+- PV-4 Copper - Tap: 1 Copper ingot; 30 L/min; built shut; only on a pipe's open end.
+- PV-5 Copper - Drip head: 1 Copper ingot; 2 L/min; waters beds and plots within 2 m, no more than 0.5 m above it.
+- PV-6 Barrel: 200 L; water or goods, never both; rain 1 L a real minute at full rain in the open; a pipe from its foot runs as if its water stood 0.4 m deep (about half full; the network gives a tank one fixed head, as a cistern's 0.5 m).
+- PV-7 Linked barrels (by any pipe, copper or wooden) level to one water surface, height respected; levelled at most every 3 real seconds while changing.
+- PV-8 A barrel's bottom point feeds pipes out but takes no water in (it fills from above or by rain).
+
+## 9. Pipes, taps and barrels (Dave, 19 Nov 2026), PROVISIONAL values
+
+Dave, project chat 19 Nov 2026 (voice, read through the typos): 15:06Z wood is the original pipe, "big thick pipes like 6 inches around" that "break
+down faster"; "copper would be the best and one copper it could make about 3 meters of pipe"; a pipe snaps to the end of another and pivots there
+until a click sets it, "so we should be able to lay pipes out in any direction"; "a copper tap or a copper irrigation drip head"; copper pipes join
+barrels to barrels, and "any barrels connected together would share their contents equally [...] like water does [...] if you added multiple
+barrels". 15:08Z: "Pipes can be run anywhere so they can go through things so they would ignore collision". 15:11Z: with pipe in hand the barrels
+show a glowing connection point at the bottom centre, every laid pipe lights up (bright blue) and is a connection point anywhere along it (a dot
+slides along it where you look); the first click starts, a line follows you, green while the pipe in the pack covers the distance and red (blocked)
+past it; a click on the next connection point lays the whole run, taking the pipes it needs from the pack; a barrel's point takes any number of pipes.
+
+### 9.1 How it works
+
+- **One model for every run.** Pipe is a pack item. With it in hand, the connection points show: the bottom centre of every barrel (a glowing
+  ring), the base outlet of every trough and cistern, the spout of every well and pump, and every laid pipe along its whole length (lit bright
+  blue). Left click on one starts a run there. A line runs from that point to where you aim, at any angle and through anything (walls, ground,
+  other pieces); it is green while the pack holds enough pipe for its length and you are in reach, red otherwise. The second left click lays it:
+  on another connection point the run ends there; anywhere else it ends in the open at the aimed point (where a tap or drip head goes, or over
+  a barrel, trough, plot or trench to pour in). Right click or Esc lets go of the start. This is Dave's pivot (the start is the fixed end, the run
+  swings and tilts round it as you look) and his click-to-click run in one: the start always snaps, the far end snaps when it is on a point.
+- **A run is one straight pipe** of any length up to 30 m (PV-3), paid in whole pieces: a wooden piece covers 2 m, a copper piece 3 m (Dave's
+  "one copper [...] about 3 meters"). A 7 m copper run takes 3 Copper - Pipe. Taking a run down (hold E on it) gives back exactly what it took.
+- **Junctions anywhere.** A run started in the middle of a laid pipe splits that pipe there (its pieces shared out, none lost or gained), so
+  three pipe ends meet and the water splits or joins there as at a tee. That is why the elbows and tees are retired: any angle and any branch is
+  a run. Ends that meet are sealed; an end joined to another pipe never spills into what is under the joint.
+- **Wooden - Pipe**: a bored log 15 cm (6 in) across, 2 m a piece, 60 L/min under head, made by hand from 1 Log and 1 Twine with a knife kept
+  (the old blueprint cost). It wears three times as fast as other wood: down to a quarter in 56 game days (building wear, about 2.3 real days),
+  and a worn pipe leaks, carrying only its condition's share of its flow; a hammer repair (1 Log, 1 Twine share) makes it good again (PV-1).
+- **Copper - Pipe**: 3 m a piece, 1 Copper ingot at the Primitive smithy, 180 L/min under head, never wears (PV-2).
+- **Copper - Tap** (1 Copper ingot, Primitive smithy): in hand, left click on a pipe's open end fits it there. Built shut; E opens and shuts it.
+  Open, it pours up to 30 L/min into what is under it (a barrel, trough, cistern, garden plot or irrigation trench); with nothing under it, it
+  passes nothing (no water is spilled on the ground) (PV-4).
+- **Copper - Drip head** (1 Copper ingot, Primitive smithy): fitted on a pipe's open end the same way. It lets out up to 2 L/min and waters the
+  tilled beds and garden plots within 2 m that stand no more than 0.5 m above it, the driest first, as the irrigation trench does (PV-5).
+- **Barrels hold water** (PV-6): 200 L, as well as their 8 slots of goods, but never both at once: a barrel with goods in it takes no water and
+  one holding water takes no goods ("It holds water."). Out in the open (not under a roof or tree) a barrel catches rain: 1 L a real minute in
+  full rain (its 0.25 m2 top at about 10 mm a game hour), less in lighter rain. A pipe end or open tap over its rim pours in. E at a barrel holding
+  water drinks or fills the container in hand; one with no water opens as before.
+- **Linked barrels level out** (PV-7): barrels whose bottom points are joined by pipe (copper or wooden, any number of runs and junctions) share
+  their water so the surfaces stay at one height, like water does: rain into the outdoor barrel spreads to every barrel linked to it, and a
+  barrel on lower ground fills before one higher up. The server levels a linked set only while its water is changing, at most every 3 real
+  seconds, so it costs nothing while the water stands. A barrel's bottom point also feeds a pipe like a trough's outlet (to a tap, a drip head
+  or a trough), but water never climbs into a barrel through its bottom (PV-8).
+
+### 9.2 Catalog changes (Dave's rework; numbers in docs/mirror/tech/NUMBER_RESERVATIONS.md)
+
+| Item | What happens |
+|---|---|
+| Wooden - Pipe (1352) | Kept, now a pack item made by hand (recipe 746), laid from the hand; the placed run keeps the `wooden_pipe` kind (state 423) |
+| Copper - Pipe (1508, new) | Pack item, recipe 747 at the Primitive smithy; laid run state 458 |
+| Copper - Tap (1509, new) | Pack item, recipe 748; fitted shut (state 459), open twin `copper_tap_open` (state 460) |
+| Copper - Drip head (1510, new) | Pack item, recipe 749; fitted state 461 |
+| Barrel (649) | Kept; also holds 200 L of water (above) |
+| Wooden - Pipe elbow (1353), Wooden - Pipe tee (1354) | Retired (any angle and junctions anywhere replace them); a saved one loads as a 2 m Wooden - Pipe |
+| Iron - Pipe (746), Iron - Pipe elbow (748), Tap (750, iron) | Retired (Dave: no iron or steel pipe); they were never buildable |
+| Blueprints 342-344 (wooden pipes), 144-146 (iron pipes and Tap) | Retired: pipes are laid from the hand, not built with the hammer |
+
+### 9.3 Not built here
+
+Filling a bucket straight from a tap (put a barrel or trough under it); water climbing into a barrel through its bottom; a run that bends
+(lay two runs); pipes over 30 m in one go (lay another from its end); freezing.

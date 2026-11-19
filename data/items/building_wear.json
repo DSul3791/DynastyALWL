@@ -3,12 +3,14 @@
 	"materials": {
 		"log": {"T_game_days": 168, "floor": 0.5},
 		"wood": {"T_game_days": 168, "floor": 0.5},
-		"brick": {"T_game_days": 600, "floor": 0.8}
+		"brick": {"T_game_days": 600, "floor": 0.8},
+		"pipe_wood": {"T_game_days": 56, "floor": 0.25}
 	},
 	"kinds": {
 		"log_wall": "log", "log_floor": "log", "log_roof": "log", "log_roof_65": "log",
 		"brick_wall": "brick", "brick_floor": "brick", "brick_roof": "brick", "brick_roof_65": "brick",
-		"log_workbench": "log", "woodworking_table": "wood", "saw_mill": "wood", "stone_forge": "brick", "blacksmithy": "brick", "clay_hearth": "brick", "oven": "brick", "fireplace": "brick"
+		"log_workbench": "log", "woodworking_table": "wood", "saw_mill": "wood", "stone_forge": "brick", "blacksmithy": "brick", "clay_hearth": "brick", "oven": "brick", "fireplace": "brick",
+		"wooden_pipe": "pipe_wood"
 	},
 	"repair_share": 0.5,
 	"good_condition": 0.98,

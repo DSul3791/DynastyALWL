@@ -884,6 +884,7 @@ func _ready() -> void:
 	net.dump_requested.connect(_on_dump_requested)
 	@warning_ignore("confusable_local_declaration")
 	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at): items.action(peer, kind, a, b, count, at))
+	net.pipe_lay_requested.connect(func(peer, slot, from, to): items.pipe_lay(peer, slot, from, to))
 	_report_at_msec = Time.get_ticks_msec() + 10000
 
 	for n in range(_max_running):

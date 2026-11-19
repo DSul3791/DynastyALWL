@@ -1,8 +1,8 @@
 extends SceneTree
 
 # Wooden plumbing (plumbing PR 2, docs/design/PLUMBING_DESIGN.md s5; Dave 14 Nov 2026 06:30Z "pipes were originally made from wood"; values PROVISIONAL):
-# the real structures.json rows of the Wooden - Hand pump, Wooden - Channel / corner / tee, Sluice, Wooden - Trough and the new Wooden - Pipe / elbow /
-# tee join the water network. A channel or pipe turns so its inlet is the end the water comes from, whatever order it was built in; a spout pours into
+# the real structures.json rows of the Wooden - Hand pump, Wooden - Channel / corner / tee, Sluice, Wooden - Trough and the Wooden - Pipe (set down as
+# an old 2 m hammer piece loads; pipes laid from the hand are test_pipe_runs.gd) join the water network. A channel or pipe turns so its inlet is the end the water comes from, whatever order it was built in; a spout pours into
 # a channel or trough below it; a shut sluice stops the flow and E opens it; a trough drains down a log pipe into a lower trough under head.
 #   godot --headless --path . --script res://src/worldgen/tools/test_wooden_plumbing.gd
 
@@ -48,6 +48,7 @@ func put(kind: String, pos: Vector3, yaw: float = 0.0) -> int:
 	var id: int = items._next_id
 	items._items[id] = {"number": items.table.number_of(str(items._structures[kind]["item"])), "count": 1, "pos": pos, "left": 1.0e9, "struct": {"kind": kind, "yaw": yaw}}
 	items._next_id += 1
+	items._pipe_from_legacy(items._items[id])   # a Wooden - Pipe set down this way is an old 2 m hammer piece, as a save from before laid runs loads (PLUMBING_DESIGN s9)
 	items._water_add(id)
 	return id
 
@@ -60,11 +61,15 @@ func _init() -> void:
 	items = make("user://test_wooden_plumbing")
 	var bp: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/blueprints.json"))["blueprints"]
 
-	# Data: the wooden pieces are built with the hammer from the start; the three log pipes are new.
-	for id in ["wooden_hand_pump", "wooden_trough", "wooden_channel", "wooden_channel_corner", "wooden_channel_tee", "wooden_sluice", "wooden_pipe", "wooden_pipe_elbow", "wooden_pipe_tee"]:
+	# Data: the wooden pieces are built with the hammer from the start. The log pipes are laid from the hand since 19 Nov 2026 (PLUMBING_DESIGN s9): their
+	# hammer blueprints are retired and the elbow and tee load as plain pipe (a laid run turns any way, so they are not needed).
+	for id in ["wooden_hand_pump", "wooden_trough", "wooden_channel", "wooden_channel_corner", "wooden_channel_tee", "wooden_sluice"]:
 		check(bp.has(id) and bool(bp[id].get("known", false)) and not bool(bp[id].get("locked", false)), "blueprint %s is known and unlocked" % id)
 
-	check(str(bp["wooden_pipe"]["name"]) == "Wooden - Pipe" and str(bp["wooden_pipe_tee"]["name"]) == "Wooden - Pipe tee", "the log pipes are named Wooden - Pipe ...")
+	for id in ["wooden_pipe", "wooden_pipe_elbow", "wooden_pipe_tee"]:
+		check(bool(bp[id].get("retired", false)) and not bool(bp[id].get("known", true)), "blueprint %s is retired: pipe is laid from the hand" % id)
+
+	check(str(items._structures["wooden_pipe_elbow"].get("becomes", "")) == "wooden_pipe" and str(items._structures["wooden_pipe_tee"].get("becomes", "")) == "wooden_pipe" and not items._structures["wooden_pipe_tee"].has("water"), "a saved elbow or tee becomes a Wooden - Pipe")
 	check(bool(items._structures["wooden_pipe"]["water"]["closed"]) and not bool(items._structures["wooden_channel"]["water"]["closed"]), "a log pipe is closed, a flume open")
 
 	# A tee has one inlet and two outlets; a channel's outlet sits its 1 cm fall lower.

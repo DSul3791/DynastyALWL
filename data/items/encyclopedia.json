@@ -4999,7 +4999,10 @@
 				"Smelted by a Primitive or Improved smelter from Copper ore, one ingot an ore"
 			],
 			"used_for": [
-				"Used in Bronze ingot"
+				"Used in Bronze ingot",
+				"Used in Copper - Pipe",
+				"Used in Copper - Tap",
+				"Used in Copper - Drip head"
 			],
 			"obtainable_now": true
 		},
@@ -9361,10 +9364,10 @@
 		},
 		"wooden_pipe": {
 			"name": "Wooden - Pipe",
-			"kind": "structure",
-			"description": "A bored log, two metres long. A closed pipe that carries water downhill.",
+			"kind": "material",
+			"description": "A bored log, six inches across and two metres long. Lay it from the hand between water points; it rots faster than other wood.",
 			"how_to_get": [
-				"Build with a hammer (press R): 1 Log, 1 Twine"
+				"Craft by hand: 1 Log, 1 Twine (keep Stone - Knife)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9377,7 +9380,8 @@
 				"Build with a hammer (press R): 1 Log, 1 Twine"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"wooden_pipe_tee": {
 			"name": "Wooden - Pipe tee",
@@ -9385,6 +9389,37 @@
 			"description": "A bored log pipe that splits its water two ways.",
 			"how_to_get": [
 				"Build with a hammer (press R): 2 Log, 1 Twine"
+			],
+			"used_for": [],
+			"obtainable_now": false,
+			"status": "retired"
+		},
+		"copper_pipe": {
+			"name": "Copper - Pipe",
+			"kind": "material",
+			"description": "A drawn copper pipe, three metres long. Lay it from the hand between water points; it never rots.",
+			"how_to_get": [
+				"Craft at a forge: 1 Copper ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"copper_tap": {
+			"name": "Copper - Tap",
+			"kind": "material",
+			"description": "A copper tap. Fit it on the open end of a pipe; E opens or shuts it.",
+			"how_to_get": [
+				"Craft at a forge: 1 Copper ingot"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"copper_drip_head": {
+			"name": "Copper - Drip head",
+			"kind": "material",
+			"description": "A copper drip head. Fit it on the open end of a pipe; it waters the beds within two metres.",
+			"how_to_get": [
+				"Craft at a forge: 1 Copper ingot"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9554,7 +9589,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"iron_pipe_elbow_kit": {
 			"name": "Iron - Pipe elbow",
@@ -9574,7 +9609,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"iron_tap_kit": {
 			"name": "Tap",
@@ -9594,7 +9629,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"iron_deep_well_pump_kit": {
 			"name": "Deep-well pump",

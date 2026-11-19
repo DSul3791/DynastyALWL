@@ -2,7 +2,8 @@ extends SceneTree
 
 # Buildables plan B5 and B6 (10 Nov 2026): the garden and water pieces build inside their footprints (the plan's w x d x h, centred, standing on y = 0; a
 # scarecrow's arms and a pump's handle reach a little past the footprint, which is their solid) and every conduit reaches its ports: a straight piece
-# x = -1 and +1, a corner -X and +Z, a tee -X, +X and +Z (the rows' "water" ports). Bounds only (no pictures).
+# x = -1 and +1, a corner -X and +Z, a tee -X, +X and +Z (the rows' "water" ports). Bounds only (no pictures). Pipes are laid from the hand at any length
+# since 19 Nov 2026 (PLUMBING_DESIGN s9) and the iron pipe, elbow and tap were retired: test_pipe_runs.gd checks the pipe, tap and drip head looks.
 #   godot --headless --path . --script res://src/worldgen/tools/test_buildable_looks_b5_b6.gd
 
 const LookTable := preload("res://src/client/look_table.gd")
@@ -13,13 +14,12 @@ const SIZES := {
 	"thatch_scarecrow": Vector3(1.1, 2.0, 0.6), "wooden_cold_frame": Vector3(1.0, 0.5, 1.0),
 	"stone_well": Vector3(1.6, 1.1, 1.6), "wooden_hand_pump": Vector3(0.5, 1.1, 0.5), "iron_hand_pump": Vector3(0.5, 1.1, 0.5),
 	"log_trough": Vector3(1.6, 0.5, 0.5), "wooden_trough": Vector3(2.0, 0.5, 0.6), "stone_trough": Vector3(2.0, 0.6, 0.7), "wooden_sluice": Vector3(2.0, 0.6, 0.4),
-	"iron_tap": Vector3(0.3, 0.4, 0.3), "iron_deep_well_pump": Vector3(0.8, 1.6, 0.8), "stone_cistern": Vector3(2.0, 1.0, 2.0), "stone_raised_cistern": Vector3(2.0, 3.0, 2.0),
+	"iron_deep_well_pump": Vector3(0.8, 1.6, 0.8), "stone_cistern": Vector3(2.0, 1.0, 2.0), "stone_raised_cistern": Vector3(2.0, 3.0, 2.0),
 }
 
 const CONDUITS := {
 	"wooden_channel": ["straight", 0.4, 0.3], "wooden_channel_corner": ["corner", 0.4, 0.3], "wooden_channel_tee": ["tee", 0.4, 0.3],
 	"stone_channel": ["straight", 0.5, 0.3], "stone_channel_corner": ["corner", 0.5, 0.3], "stone_channel_tee": ["tee", 0.5, 0.3],
-	"iron_pipe": ["straight", 0.2, 0.2], "iron_pipe_elbow": ["corner", 0.2, 0.2],
 }
 
 var failures: int = 0
