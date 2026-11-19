@@ -2161,8 +2161,12 @@ const HOE_MODES := [
 	{"id": "path", "name": "Pathen", "note": "one left click makes one level spot of path"},
 	{"id": "survey", "name": "Survey a Path", "note": "left click sets a marker; a green line runs from it to where you aim, at any distance (red: a building is in the way); click again and the road builds along it. Click the last marker again to end the survey (Shift + right click does the same in any mode)"},
 ]
-const HOE_MENU_WIDTH_SHARE := 0.75   # BugsList entry 4: the list is at most this share of the game window wide, its lines wrapped inside it
-const HOE_MENU_FONT := 26
+# The list is a small plate above the hotbar and its caption (BugsList entry 4, Dave's play test 19 Nov 2026: it ran off the right edge and over the
+# hotbar): short names, one to a line, the highlighted one marked; the highlighted one's explanation below them. Sizes are 1920 x 1080 canvas px
+# before the player's text size (_inv.text_px), so the plate grows with the text and is still kept inside the window.
+const HOE_MENU_WIDTH := 600.0      # the plate's width at text size 1.0; never more than the window less HOE_MENU_EDGE each side
+const HOE_MENU_EDGE := 16.0        # kept clear at the window's edges and above the caption
+const HOE_MENU_PX := {"title": 26, "row": 24, "help": 20, "keys": 18}
 var hoe_mode: String = "smooth"
 var garden_pick: String = ""             # Plant: the item id picked to plant (seeds, a dug-up bush or a tree seed), "" for none (tests read it)
 var _hoe_menu_page: String = "modes"     # "modes" (HOE_MODES) or "garden" (what can be planted: the pack and the stock in reach)
@@ -2170,7 +2174,10 @@ var _garden_rows: Array = []             # the plant list as shown: [{"id", "kin
 var _hoe_menu_open: bool = false
 var _hoe_menu_index: int = 0
 var _hoe_menu_panel: PanelContainer = null
-var _hoe_menu_label: Label = null
+var _hoe_menu_title: Label = null
+var _hoe_menu_rows: VBoxContainer = null
+var _hoe_menu_help: Label = null
+var _hoe_menu_keys: Label = null
 var _hud_layer: CanvasLayer = null
 
 
@@ -2192,17 +2199,7 @@ func _hoe_menu_open_now(page: String = "modes") -> void:
 		return
 
 	if _hoe_menu_panel == null:
-		_hoe_menu_panel = PanelContainer.new()
-		_hoe_menu_panel.set_anchors_preset(Control.PRESET_CENTER)   # centred: it grows both ways from the middle of the screen
-		_hoe_menu_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-		_hoe_menu_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
-		_hoe_menu_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_hoe_menu_label = Label.new()
-		_hoe_menu_label.add_theme_font_size_override("font_size", HOE_MENU_FONT)
-		_hoe_menu_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		_hoe_menu_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_hoe_menu_panel.add_child(_hoe_menu_label)
-		_hud_layer.add_child(_hoe_menu_panel)
+		_hoe_menu_build()
 
 	_hoe_menu_page = "modes"
 	_hoe_menu_index = 0
@@ -2248,66 +2245,183 @@ func _plantable_rows() -> Array:
 	return FarmRules.plantables(_inv.crop_table(), ids, "_bush", _inv.tree_seed_table())
 
 
+func _hoe_menu_build() -> void:
+	_hoe_menu_panel = PanelContainer.new()
+	_hoe_menu_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Bottom centre: it grows up and both ways, so a list that comes out taller than worked out still stays above the hotbar.
+	_hoe_menu_panel.anchor_left = 0.5
+	_hoe_menu_panel.anchor_right = 0.5
+	_hoe_menu_panel.anchor_top = 1.0
+	_hoe_menu_panel.anchor_bottom = 1.0
+	_hoe_menu_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_hoe_menu_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	var plate: StyleBox = ArtKit.stylebox_raised(0).duplicate()
+	plate.content_margin_left = 18
+	plate.content_margin_right = 18
+	plate.content_margin_top = 12
+	plate.content_margin_bottom = 12
+	_hoe_menu_panel.add_theme_stylebox_override("panel", plate)
+	var column: VBoxContainer = VBoxContainer.new()
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_theme_constant_override("separation", 6)
+	_hoe_menu_panel.add_child(column)
+	_hoe_menu_title = _hoe_menu_text("cinzel_bold", ArtKit.HEADING)
+	column.add_child(_hoe_menu_title)
+	_hoe_menu_rows = VBoxContainer.new()
+	_hoe_menu_rows.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hoe_menu_rows.add_theme_constant_override("separation", 0)
+	column.add_child(_hoe_menu_rows)
+	column.add_child(HSeparator.new())
+	_hoe_menu_help = _hoe_menu_text("garamond", ArtKit.CREAM)
+	_hoe_menu_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_hoe_menu_help.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+	column.add_child(_hoe_menu_help)
+	_hoe_menu_keys = _hoe_menu_text("garamond", ArtKit.DIM)
+	column.add_child(_hoe_menu_keys)
+	_hud_layer.add_child(_hoe_menu_panel)
+
+
+# One line of the plate: never wider than the plate (a long name ends in "..." instead of pushing the plate out).
+func _hoe_menu_text(face: String, colour: Color) -> Label:
+	var label: Label = Label.new()
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_font_override("font", ArtKit.font(face))
+	label.add_theme_color_override("font_color", colour)
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	label.clip_text = true
+	return label
+
+
 func _hoe_menu_refresh() -> void:
-	var text: String = "What should the hoe do?   (wheel: move, left click: choose, right click: close)\n\n"
+	var title: String = "What should the hoe do?"
+	var keys: String = "Wheel: move    Left click: choose    Right click: close"
+	var rows: Array = []
+	var help: String = ""
 
 	if _hoe_menu_page == "garden":
 		_garden_rows = _plantable_rows()
 		_hoe_menu_index = clampi(_hoe_menu_index, 0, maxi(_garden_rows.size() - 1, 0))
-		text = "What to plant?   (wheel: move, left click: choose, right click: back to the hoe's actions)\n\n"
+		title = "What to plant?"
+		keys = "Wheel: move    Left click: choose    Right click: back"
 
 		if _garden_rows.is_empty():
-			text += "Nothing to plant: carry seeds, a dug-up bush or a tree's seed, or put them in a container or on the ground near you.\n"
+			help = "Nothing to plant: carry seeds, a dug-up bush or a tree's seed, or put them in a container or on the ground near you."
 
 	for n in _hoe_menu_size():
-		text += "%s %s\n" % ["->" if n == _hoe_menu_index else "    ", _hoe_menu_line(n)]
+		rows.append(_hoe_menu_line(n))
 
-	_hoe_menu_label.text = text.strip_edges(false, true)
-	_hoe_menu_fit()
+	if not rows.is_empty():
+		help = _hoe_menu_note(_hoe_menu_index)
+
+	_hoe_menu_show(title, rows, _hoe_menu_index, help, keys)
 
 
-# Keeps the list on screen (BugsList entry 4): no wider than HOE_MENU_WIDTH_SHARE of the game window (its lines wrap inside that), centred, and its type a
-# little smaller when the wrapped list would still be taller than the window (the height is worked out from the wrapped line count, not waited for).
-func _hoe_menu_fit() -> void:
+# Lays the plate out for the window as it is now: its width, the text sizes, how many rows fit (a long plant list shows a window of rows that follows
+# the highlight, with "..." where more are hidden), and its place above the hotbar caption. The height is worked out here, not waited for.
+func _hoe_menu_show(title: String, rows: Array, index: int, help: String, keys: String) -> void:
 	var view: Vector2 = _hud_layer.get_viewport().get_visible_rect().size
-	var font: Font = _hoe_menu_label.get_theme_font("font")
-	var room: float = maxf(view.x * HOE_MENU_WIDTH_SHARE - 24.0, 120.0)   # the panel's own margins come off the share
-	var size: int = HOE_MENU_FONT
-	var width: float = room
+	var px: Dictionary = {}
 
-	while true:
-		var widest: float = 0.0
-		var lines: int = 0
+	for part in HOE_MENU_PX:
+		px[part] = _inv.text_px(int(HOE_MENU_PX[part])) if _inv != null and _inv.has_method("text_px") else int(HOE_MENU_PX[part])
 
-		for line in _hoe_menu_label.text.split("\n"):
-			var w: float = font.get_string_size(line, HORIZONTAL_ALIGNMENT_LEFT, -1, size).x
-			widest = maxf(widest, w)
-			lines += maxi(1, ceili(w / room))
+	var grow: float = float(px["row"]) / float(HOE_MENU_PX["row"])
+	var width: float = minf(HOE_MENU_WIDTH * maxf(grow, 1.0), view.x - 2.0 * HOE_MENU_EDGE)
+	var inner: float = width - 36.0   # the plate's side margins
+	var bottom: float = _hoe_menu_bottom(view)
+	var garamond: Font = ArtKit.font("garamond")
+	var row_h: float = garamond.get_height(px["row"])
+	var help_h: float = garamond.get_multiline_string_size(help, HORIZONTAL_ALIGNMENT_LEFT, inner, px["help"]).y if help != "" else 0.0
+	var fixed: float = 24.0 + 4.0 * 6.0 + 4.0 + ArtKit.font("cinzel_bold").get_height(px["title"]) + help_h + garamond.get_height(px["keys"])
+	var room: int = maxi(3, floori((bottom - HOE_MENU_EDGE - fixed) / row_h))
+	var first: int = 0
+	var count: int = rows.size()
 
-		width = minf(widest + 4.0, room)
+	if count > room:   # a window of rows round the highlight; the end rows say "..." when more are hidden past them
+		@warning_ignore("integer_division")
+		first = clampi(index - room / 2, 0, count - room)
+		count = room
 
-		if float(lines) * font.get_height(size) <= view.y * 0.9 or size <= 14:
-			break
+	_hoe_menu_title.text = title
+	_hoe_menu_title.add_theme_font_size_override("font_size", px["title"])
+	_hoe_menu_keys.text = keys
+	_hoe_menu_keys.add_theme_font_size_override("font_size", px["keys"])
+	_hoe_menu_help.text = help
+	_hoe_menu_help.visible = help != ""
+	_hoe_menu_help.add_theme_font_size_override("font_size", px["help"])
+	_hoe_menu_help.custom_minimum_size = Vector2(inner, help_h)
 
-		size -= 2
+	while _hoe_menu_rows.get_child_count() < count:
+		_hoe_menu_rows.add_child(_hoe_menu_text("garamond", ArtKit.CREAM))
 
-	_hoe_menu_label.add_theme_font_size_override("font_size", size)
-	_hoe_menu_label.custom_minimum_size = Vector2(width, 0.0)
-	_hoe_menu_panel.reset_size()
+	for n in _hoe_menu_rows.get_child_count():
+		var label: Label = _hoe_menu_rows.get_child(n) as Label
+		var at: int = first + n
+		label.visible = n < count
+
+		if not label.visible:
+			continue
+
+		var on: bool = at == index
+		var more: bool = (n == 0 and first > 0) or (n == count - 1 and at < rows.size() - 1)
+		label.text = "..." if more else str(rows[at])
+		label.add_theme_font_override("font", ArtKit.font("garamond_semibold" if on else "garamond"))
+		label.add_theme_stylebox_override("normal", _hoe_menu_mark(on))
+		label.add_theme_color_override("font_color", ArtKit.GOLD_BRIGHT if on else (ArtKit.DIM if more else ArtKit.CREAM))
+		label.add_theme_font_size_override("font_size", px["row"])
+
+	_hoe_menu_panel.offset_left = -width / 2.0
+	_hoe_menu_panel.offset_right = width / 2.0
+	_hoe_menu_panel.offset_bottom = bottom - view.y
+	_hoe_menu_panel.offset_top = _hoe_menu_panel.offset_bottom - _hoe_menu_panel.get_combined_minimum_size().y
+
+
+# The highlighted row sits on a lit band with a gold bar at its left; the others keep the same margins so no row moves when the highlight does.
+func _hoe_menu_mark(on: bool) -> StyleBox:
+	var box: StyleBox = StyleBoxEmpty.new()
+
+	if on:
+		var band: StyleBoxFlat = StyleBoxFlat.new()
+		band.bg_color = ArtKit.RAISED_LIT
+		band.border_color = ArtKit.GOLD_BRIGHT
+		band.border_width_left = 4
+		band.set_corner_radius_all(3)
+		box = band
+
+	box.content_margin_left = 12
+	box.content_margin_right = 6
+	return box
+
+
+# The plate's lowest point: above the held-item caption, which sits above the hotbar tray (LABEL_ABOVE).
+func _hoe_menu_bottom(view: Vector2) -> float:
+	var caption_h: float = 0.0
+
+	if _label != null and _label.text != "":
+		caption_h = float(_label.text.split("\n").size()) * _label.get_theme_font("font").get_height(20)
+
+	return view.y - LABEL_ABOVE - caption_h - 8.0
 
 
 func _hoe_menu_size() -> int:
 	return _garden_rows.size() if _hoe_menu_page == "garden" else HOE_MODES.size()
 
 
+# A row's short name: the action's name, or the plant's name and how many there are.
 func _hoe_menu_line(n: int) -> String:
 	if _hoe_menu_page != "garden":
-		return "%d. %s: %s" % [n + 1, str(HOE_MODES[n]["name"]), str(HOE_MODES[n]["note"])]
+		return "%d. %s" % [n + 1, str(HOE_MODES[n]["name"])]
 
-	var row: Dictionary = _garden_rows[n]
-	var hint: String = "on tilled soil" if str(row["kind"]) == "seed" else "in open ground"
-	var number: int = _inv.table.number_of(str(row["id"]))
-	return "%s (%d): %s" % [_inv.table.name_of(number), _inv.stock_fill(number), hint]
+	var number: int = _inv.table.number_of(str(_garden_rows[n]["id"]))
+	return "%s (%d)" % [_inv.table.name_of(number), _inv.stock_fill(number)]
+
+
+# The highlighted row's explanation, shown under the list.
+func _hoe_menu_note(n: int) -> String:
+	if _hoe_menu_page != "garden":
+		return "%s: %s." % [str(HOE_MODES[n]["name"]), str(HOE_MODES[n]["note"])]
+
+	return "Plant on tilled soil." if str(_garden_rows[n]["kind"]) == "seed" else "Plant in open ground."
 
 
 # Left click in the hoe's list: on the first page it sets the action (Plant goes on to the list of what to plant); on the plant list it picks the plant.
