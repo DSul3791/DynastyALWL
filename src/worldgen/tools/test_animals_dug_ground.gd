@@ -82,7 +82,10 @@ func _init() -> void:
 	check(near(bare_down["pos"].y, 10.0), "the slope rule alone does not go over the 1 m rim")
 	a.ground_edited = Callable()
 	var natural: Dictionary = a.walk_step(Vector3(0.05, 10.0, 0.0), Vector3(-5.0, 10.0, 0.0), 1.5, 0.1, ledge, a.blocked)
-	check(near(natural["pos"].y, 10.0), "a natural 1 m ledge (no edit there) still stops an animal")
+	check(not natural["moved"] or natural["pos"].x >= 0.0, "a natural 1 m ledge (no edit there) still stops an animal")
+	a.ground_edited = func(x, _z): return x < -50.0   # only the far goal's ground is edited
+	var far_goal: Dictionary = a.walk_step(Vector3(0.05, 10.0, 0.0), Vector3(-60.0, 10.0, 0.0), 1.5, 0.1, ledge, a.blocked)
+	check(not far_goal["moved"] or far_goal["pos"].x >= 0.0, "a goal far off in edited ground does not let it jump a natural ledge")
 	a.ground_edited = func(_x, _z): return true
 	var down: Dictionary = a.walk_step(Vector3(0.05, 10.0, 0.0), Vector3(-5.0, 10.0, 0.0), 1.5, 0.1, ledge, a.blocked)
 	check(down["moved"] and near(down["pos"].y, 9.0), "over a dug 1 m rim an animal jumps down (y %.2f)" % down["pos"].y)

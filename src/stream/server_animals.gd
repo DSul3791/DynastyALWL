@@ -697,11 +697,13 @@ func alarm_near(point: Vector3, radius: float) -> void:
 		_bolt(a, point, species_def(str(a["sp"])))
 
 
-# One walking step of any animal of this module (Steering.step, the same arguments). Where a dig or fill touches the step's start or end, a
+# One walking step of any animal of this module (Steering.step, the same arguments). Where a dig or fill touches the walker's spot or the half metre ahead, a
 # hole's steep rim is a jump down of at most ground_step.drop_m or a scramble up of at most climb_m (data/animals/animals.json, provisional GS-1),
 # so no animal is caught in a hole; natural ground keeps Steering's slope rule.
 func walk_step(pos: Vector3, target: Vector3, speed: float, dt: float, ground: Callable, blocked_at: Callable, arrive_m: float = 0.4, heading: float = 0.0, cross: Callable = Callable()) -> Dictionary:
-	if ground_edited.is_valid() and (bool(ground_edited.call(pos.x, pos.z)) or bool(ground_edited.call(target.x, target.z))):
+	var ahead: Vector2 = Vector2(target.x - pos.x, target.z - pos.z).limit_length(0.5)   # the next half metre: the step itself, never the far goal
+
+	if ground_edited.is_valid() and (bool(ground_edited.call(pos.x, pos.z)) or bool(ground_edited.call(pos.x + ahead.x, pos.z + ahead.y))):
 		var gs: Dictionary = cfg.get("ground_step", {})
 		return Steering.step(pos, target, speed, dt, ground, blocked_at, arrive_m, heading, cross, float(gs.get("climb_m", 1.0)), float(gs.get("drop_m", 2.0)))
 

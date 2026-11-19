@@ -32,6 +32,11 @@ func is_edited(x: float, z: float) -> bool:
 	if ops == null:
 		return false
 
+	var cell: Vector2i = _cell_of(x, z)
+
+	if _cells.has(cell):
+		return not (_cells[cell] as Array).is_empty()
+
 	var s: float = float(surface.call(x, z))
 	return not is_nan(s) and not _ops_near(x, z, s).is_empty()
 
