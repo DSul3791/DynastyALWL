@@ -4,6 +4,7 @@ extends SceneTree
 # At every text size (display_settings.gd TEXT_SCALES) and two window sizes the plate is inside the window, above the caption, the rows
 # are the six short names in Dave's order with only the highlighted one marked, and the explanation shown is the highlighted action's. A long plant
 # list shows a window of rows that keeps the highlighted row on the plate.
+# With a window (not --headless) and `-- --pictures=DIR` it also saves hoe_menu_<text size>.png at 1920 x 1080 over the hotbar tray, for Dave to see.
 
 const HeldItem := preload("res://src/client/held_item.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -99,6 +100,14 @@ func run() -> void:
 	held.setup(view, null, camera, world, layer, Callable())
 	held.set_process(false)   # its frame step closes the list when no hoe is in hand; the list is driven by hand here
 	held._label.text = "Level (right click: choose what it does)"   # the caption above the hotbar the plate must stay above
+	var pictures: String = ""
+
+	for arg in OS.get_cmdline_user_args():
+		if arg.begins_with("--pictures="):
+			pictures = arg.trim_prefix("--pictures=")
+
+	if pictures != "" and DisplayServer.get_name() != "headless":
+		await _save_pictures(held, view, layer, pictures)
 	var names: Array = []
 
 	for mode in HeldItem.HOE_MODES:
@@ -161,3 +170,35 @@ func run() -> void:
 	_check(shown[0].text == "..." and shown[shown.size() - 1].text == "...", "long list: '...' at both ends where rows are hidden")
 	print("hoe_menu: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+# The plate as the player sees it at 1920 x 1080, over a dark ground with the hotbar tray, at the normal text size and the largest.
+func _save_pictures(held, view: FakeView, layer: CanvasLayer, folder: String) -> void:
+	DirAccess.make_dir_recursive_absolute(folder)
+	root.size = Vector2i(1920, 1080)
+	var ground: ColorRect = ColorRect.new()
+	ground.color = Color(0.16, 0.13, 0.09)
+	ground.set_anchors_preset(Control.PRESET_FULL_RECT)
+	layer.add_child(ground)
+	layer.move_child(ground, 0)
+	var tray: Control = Control.new()
+	tray.set_anchors_preset(Control.PRESET_FULL_RECT)
+	tray.draw.connect(func() -> void: ArtKit.draw_hotbar_tray(tray))
+	layer.add_child(tray)
+	layer.move_child(tray, 1)
+
+	for scale in [0.85, 1.2]:
+		view.scale = scale
+		held.hoe_mode = "smooth"
+		held._hoe_menu_open_now("modes")
+
+		for frame in 4:
+			await process_frame
+
+		var path: String = folder.path_join("hoe_menu_%.2f.png" % scale)
+		root.get_texture().get_image().save_png(path)
+		print("picture: ", path)
+		held._hoe_menu_close()
+
+	ground.queue_free()
+	tray.queue_free()
