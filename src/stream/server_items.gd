@@ -3865,7 +3865,7 @@ func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 # Path: one stroke treads the metre of ground under the crosshair: a path patch (state 32) clears the grass and draws flat tan; the height does
 # not change. Smooth (the levelling stroke, _hoe_smooth): the ground within SMOOTH_REACH_M of the point is cut or filled toward the height the player
 # stands at. Raising ground uses up Soil and cutting ground gives Soil back at the same rate (_level_soil_units), so levelling neither makes nor
-# loses soil (BugsList entries 1 and 7); Pathen and the garden jobs level to the ground's own average and move no items.
+# loses soil (BugsList entry 1); Pathen and the garden jobs level to the ground's own average and move no items.
 const HOE_COOLDOWN_MS := 500
 # Levelling (Dave 14 Nov 2026: "its to small an area and its too week"; "make the ground level with where you are standing and if you are standing on say a
 # foundation it make the ground just a little bit below your feet so it stays below the top of the foundation", the Valheim feel). PROVISIONAL values for Dave
@@ -3883,7 +3883,7 @@ const LEVEL_HOLD_MS := 1500       # LV-1: a stroke this soon after the last one,
 const LEVEL_HOLD_MOVE_M := 0.6
 const LEVEL_KEEP_M := 1.2         # LV-2: no levelling spot this close (flat) to the feet: the ground holding the player up stays as it is
 const SOIL_FILL_M3 := 0.75        # LV-3: one Soil fills this much ground (a shovel dig of about 1.5 m3 gives two, digging.json)
-# LV-4 (BugsList entry 7, Dave play test 19 Nov 2026: "if I am leveling and it has to cut down the soil it should give me back the soil its removing"):
+# LV-4 (BugsList entry 1, Dave play test 19 Nov 2026: "if I am leveling and it has to cut down the soil it should give me back the soil its removing"):
 # a cut gives Soil at the fill's rate, whatever the ground was; what the pack cannot take drops at the player's feet (give), where the next fill can use it.
 var _level_hold: Dictionary = {}  # peer -> [target height, msec of the last stroke, the feet then]
 const GRADE_CLEAR_M := 2.5        # a grade stroke takes up the path patches this close to it (the ground under them moved)
@@ -4162,7 +4162,7 @@ func _edited_height(x: float, z: float, edits: Array) -> float:
 # Cuts or fills the ground toward `target` at the spots (offsets from `at`), at most `max_ops` edits, each time at the spot now farthest from level
 # (heights read through the edits, the ones made in this stroke included, so strokes add up and every spot gets its turn), at most LEVEL_MAX_M an edit.
 # Not volume balanced (the Valheim feel Dave asked for). `pay` (Level, BugsList entry 1), when given, is asked before every fill (depth, sphere) -> bool: a fill
-# it refuses is not made and that spot is left for this stroke (_level_unpaid); `gain` (Level, entry 7) is told the (depth, sphere) of every cut made.
+# it refuses is not made and that spot is left for this stroke (_level_unpaid); `gain` (Level, entry 1) is told the (depth, sphere) of every cut made.
 # Returns the edits made, -1 when a spot is not loaded.
 var _level_refused: bool = false   # the last _level_ground stopped on a refused edit (a full block), not because the ground was level
 var _level_unpaid: bool = false    # the last _level_ground left low ground unfilled for want of soil
