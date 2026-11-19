@@ -29,6 +29,10 @@ var _parts: Label         # a Smelter's parts under its wells: which slots are t
 var _scroll: ScrollContainer   # the wells' scroll
 var _tools: HBoxContainer      # Sort both and Stack into my chests under the wells
 var compact: bool = false      # shown under a crafting station's recipe list (set_compact), not in place of it
+var _autoload: Button         # Autoload: a list of what lies on the ground round the container; a pick loads it (protocol 139)
+var _autoload_keep: CheckBox   # beside it: keep loading the picked item every 10 minutes
+var _autoload_menu: PopupMenu
+var _autoload_rows: Array = []   # the menu's rows as autoload_choices gave them
 
 
 func _init(owner_view) -> void:
@@ -80,6 +84,33 @@ func build() -> void:
 	bar.add_child(gap)
 	bar.add_child(_hint("Take all", "take_all", "Take every stack from the container into your pack", take_all))
 	bar.add_child(_hint("Store all", "store_all", "Put every pack stack the container takes into it (the hotbar's items and favourites stay)", store_all))
+	_autoload = Button.new()
+	_autoload.text = "Autoload"
+	_autoload.tooltip_text = "Choose an item lying on the ground within 30 m: as much of it as fits is loaded in"
+	_autoload.flat = true
+	_autoload.add_theme_font_override("font", ArtKit.font("garamond_semibold"))
+	_autoload.add_theme_font_size_override("font_size", view._px(18))
+	_autoload.add_theme_color_override("font_color", ArtKit.CREAM)
+	_autoload.add_theme_color_override("font_hover_color", ArtKit.HEADING)
+	_autoload.pressed.connect(open_autoload)
+	bar.add_child(_autoload)
+	_autoload_keep = CheckBox.new()
+	_autoload_keep.text = "Every 10 min"
+	_autoload_keep.tooltip_text = "Keep loading the chosen item from the ground every 10 minutes while there is room"
+	_autoload_keep.add_theme_font_override("font", ArtKit.font("garamond_semibold"))
+	_autoload_keep.add_theme_font_size_override("font_size", view._px(18))
+	_autoload_keep.add_theme_color_override("font_color", ArtKit.CREAM)
+	_autoload_keep.toggled.connect(func(on: bool) -> void:
+		if not on and view.chest_autoload != 0:
+			view.autoload(0, false)   # stop it; ticking it again keeps the next pick
+		elif on and view.chest_autoload == 0:
+			open_autoload())   # ticked with nothing chosen: pick the item it keeps loading
+	bar.add_child(_autoload_keep)
+	_autoload_menu = PopupMenu.new()
+	_autoload_menu.add_theme_font_override("font", ArtKit.font("garamond_semibold"))
+	_autoload_menu.add_theme_font_size_override("font_size", view._px(18))
+	_autoload_menu.id_pressed.connect(pick_autoload)
+	bar.add_child(_autoload_menu)
 	_code_lock = Button.new()
 	_code_lock.text = "Lock"
 	_code_lock.tooltip_text = "Set, change or remove a four-digit code, and choose who else may open it"
@@ -203,6 +234,39 @@ func put_from_pack(slot: int, target: int = -1) -> bool:
 	return true
 
 
+# Whether the open container takes part in Autoload (StoreRules.autoloads, the server's own rule).
+func autoload_shown() -> bool:
+	if view.chest_id < 0 or is_fire() or not view.has_method("_structure_by_state"):   # the tests' stand-in views have no table of rows
+		return false
+
+	return StoreRules.autoloads(view._structure_by_state(int(view._world.get(view.chest_id, {}).get("state", -1))))
+
+
+# The Autoload list: each item on the ground within 30 m of the container that it takes, its total there and the nearest pile's distance.
+func open_autoload() -> void:
+	var def: Dictionary = view._structure_by_state(int(view._world.get(view.chest_id, {}).get("state", -1))) if view.has_method("_structure_by_state") else {}
+	_autoload_rows = view.autoload_choices(func(number: int) -> bool: return StoreRules.takes(def, number, view.table))
+	_autoload_menu.clear()
+
+	if _autoload_rows.is_empty():
+		_autoload_menu.add_item("Nothing it takes lies within 30 m", -1)
+		_autoload_menu.set_item_disabled(0, true)
+
+	for i in _autoload_rows.size():
+		var row: Array = _autoload_rows[i]
+		_autoload_menu.add_item("%s  x%d  (%d m)" % [view.table.name_of(int(row[0])), int(row[1]), int(round(float(row[2])))], i)
+
+	_autoload_menu.reset_size()
+	_autoload_menu.popup(Rect2i(Vector2i(_autoload.get_screen_position() + Vector2(0.0, _autoload.size.y)), Vector2i.ZERO))
+
+
+func pick_autoload(index: int) -> void:
+	if index >= 0 and index < _autoload_rows.size():
+		view.autoload(int(_autoload_rows[index][0]), _autoload_keep.button_pressed)
+
+	_autoload_rows = []
+
+
 # The four bulk buttons go to the server in one action each (inventory step 3, protocol 99; Net.ACT_BULK kinds 0 to 3). It skips the hotbar's
 # items and favourites, and a fire takes only what it burns or cooks. Its bulk_done answer brings the toast and the chest glow (InventoryView.bulk_event).
 func take_all() -> void:
@@ -311,6 +375,15 @@ func _refresh_look(capacity: int, fire: bool) -> void:
 
 	if is_instance_valid(_lock):
 		_lock.visible = view.chest_keep_out and not fire
+
+	if is_instance_valid(_autoload):
+		var shown: bool = autoload_shown()
+		_autoload.visible = shown
+		_autoload_keep.visible = shown
+
+		if shown and not _autoload_menu.visible:   # an open list keeps the tick the player just set
+			_autoload_keep.set_pressed_no_signal(view.chest_autoload != 0)
+			_autoload_keep.tooltip_text = ("Loading %s from the ground every 10 minutes; untick to stop" % view.table.name_of(view.chest_autoload)) if view.chest_autoload != 0 else "Keep loading the chosen item from the ground every 10 minutes while there is room"
 
 	var storage_ui = view.get("_storage_ui")   # absent on the tests' stand-in views
 
