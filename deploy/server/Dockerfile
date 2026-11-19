@@ -15,8 +15,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates
 COPY tools/build_godot_linux.sh /src/build_godot_linux.sh
 COPY deploy/server/engine/ /prebuilt/
 RUN if [ -f /prebuilt/godot ]; then cp /prebuilt/godot /godot; \
-    else bash /src/build_godot_linux.sh /build && cp /build/godot/bin/godot.linuxbsd.editor.x86_64 /godot && rm -rf /build; fi \
-    && chmod +x /godot && /godot --version | tee /dev/stderr | grep -q '^4\.7\.2\.' \
+    else bash /src/build_godot_linux.sh /build && cp /build/godot/bin/godot.linuxbsd.editor.x86_64 /godot && rm -rf /build; fi
+RUN chmod +x /godot && /godot --version | tee /dev/stderr | grep -q '^4\.7\.2\.' \
     || { echo "the engine must be Godot 4.7.2 with Voxel Tools 1.7 (tools/build_godot_linux.sh)" >&2; exit 1; }
 
 # Stage 2: the server. The project goes in /game without what the server never loads (art, docs, tools: the "Linux Server" export
@@ -24,7 +24,7 @@ RUN if [ -f /prebuilt/godot ]; then cp /prebuilt/godot /godot; \
 # build_stamp.json is there only when build_image.sh --stamp wrote it (a release); the odd spelling lets the copy go on without it.
 # Everything the server writes goes in the /data volume: the world's store (edits, characters, admin.json, logs, run note) in /data/store, and Godot's user folder under /data/home.
 FROM ubuntu:24.04
-RUN useradd --create-home dynasty && mkdir -p /data /game && chown dynasty:dynasty /data /game
+RUN useradd --create-home --uid 1001 dynasty && mkdir -p /data /game && chown dynasty:dynasty /data /game
 COPY --from=engine /godot /usr/local/bin/godot
 COPY --chown=dynasty:dynasty project.godot icon.svg icon.svg.import build_stamp.jso[n] /game/
 COPY --chown=dynasty:dynasty addons /game/addons
@@ -33,7 +33,7 @@ COPY --chown=dynasty:dynasty data /game/data
 COPY --chown=dynasty:dynasty scenes /game/scenes
 COPY --chown=dynasty:dynasty src /game/src
 COPY --chown=dynasty:dynasty worlds /game/worlds
-COPY --chown=dynasty:dynasty deploy/server/run_server.sh /game/deploy/server/run_server.sh
+COPY --chown=dynasty:dynasty --chmod=755 deploy/server/run_server.sh /game/deploy/server/run_server.sh
 USER dynasty
 WORKDIR /game
 # A first import can fail on a resource it has not seen yet and pass on the second run (tools/gate_pc.sh does the same).
@@ -46,7 +46,7 @@ LABEL org.opencontainers.image.source="https://github.com/DSul3791/DynastyALWL" 
 ENV HOME=/data/home
 VOLUME /data
 EXPOSE 24600/udp 24601/tcp
-# The server writes its run note once it is listening and removes it when it closes.
-HEALTHCHECK --interval=30s --timeout=5s --start-period=10m CMD grep -q '"pid"' /data/store/server_run.json
+# The server writes its run note (state running) once it is listening, and removes it when it closes.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10m CMD grep -q '"state":"running"' /data/store/server_run.json
 # run_server.sh is PID 1: it turns docker stop's TERM into stop.now, so the server saves and closes (compose gives it 90 s).
 ENTRYPOINT ["/game/deploy/server/run_server.sh", "godot", "--headless", "--path", "/game", "res://scenes/terrain_server/terrain_server.tscn", "--", "--dedicated", "--store=/data/store"]

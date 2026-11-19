@@ -31,10 +31,10 @@ To skip the engine compile, copy a ready Linux engine (for example David4's engi
 1. Get the image there. Either build it there (above), or on the PC: `docker save dynasty-server:latest | gzip > dynasty-server.tar.gz`, copy the file over, and on the server `docker load < dynasty-server.tar.gz`. (Plan pick for later: push to ghcr.io, not yet agreed.)
 2. Copy `compose.yaml` there and start it: `docker compose -f compose.yaml up -d`.
 3. Watch it come up: `docker logs -f dynasty-server` (the first start makes the ground round the spawn, a few minutes). `docker ps` shows "healthy" once it listens.
-4. Admins: the store's `admin.json` lists the admin player keys (`docs/design/ADMIN_CHECK.md`; Esc > Admin > "Show my player key" in local Play). Make a file `admin.json` with `{"keys": ["<your key>"]}`, then `docker cp admin.json dynasty-server:/data/store/admin.json` and `docker restart dynasty-server`. Without it nobody is an admin there.
+4. Admins: the store's `admin.json` lists the admin player keys (`docs/design/ADMIN_CHECK.md`; Esc > Admin > "Show my player key" in local Play). Make a file `admin.json` with `{"keys": ["<your key>"]}`, then `docker exec -i -u dynasty dynasty-server sh -c 'cat > /data/store/admin.json' < admin.json` and `docker restart dynasty-server`. The start line in `docker logs dynasty-server` then says "1 admin keys". Without it nobody is an admin there.
 5. The router forwards UDP 24600 and TCP 24601 to the gaming server.
 
-Stop: `docker compose -f compose.yaml down` (saves first). Another build: load the new image, then `docker compose -f compose.yaml up -d`. Go back a build: `DYNASTY_TAG=dev-<commit> docker compose -f compose.yaml up -d`.
+Stop: `docker compose -f compose.yaml down` (saves first). Run without compose, give `docker run` and `docker stop` `--stop-timeout 90` / `-t 90`, or docker kills it after 10 s. Another build: load the new image, then `docker compose -f compose.yaml up -d`. Go back a build: `DYNASTY_TAG=dev-<commit> docker compose -f compose.yaml up -d`.
 
 The server takes the CPUs Docker gives it (`src/shared/cpu_budget.gd` reads a container limit). On the machine David4 shares, a limit such as `cpus: "6"` under the service keeps the two from slowing each other.
 

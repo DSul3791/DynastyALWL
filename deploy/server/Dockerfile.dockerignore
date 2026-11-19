@@ -13,11 +13,13 @@ proposed_removals
 crash_reports
 .claude
 .github
-tools
+tools/*
 !tools/build_godot_linux.sh
 # Local files that must never go into an image: Dave's admin keys and the island water record (bake input, ~90 MB a tile); the
-# per-machine sound import files (.gitignore), which the image makes again.
+# per-machine sound import files (.gitignore), which the image makes again; the bought animal models (licensed, never published;
+# the server never loads them, and the client falls back to its code-built animals).
 data/admin.json
 worlds/*/record
 worlds/*/setup_cache
 assets/audio/**/*.import
+assets/animals
