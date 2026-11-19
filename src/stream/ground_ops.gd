@@ -171,6 +171,27 @@ func ops_in(block: Vector3i) -> int:
 	return n
 
 
+# The operations listed in any of `blocks`, each once and oldest first, as [kind, centre, radius] (edited_ground.gd: the ground animals stand on).
+func ops_in_blocks(blocks: Array) -> Array:
+	var seqs: Dictionary = {}
+	_mutex.lock()
+
+	for block in blocks:
+		if _by_block.has(block):
+			for n in _by_block[block]:
+				seqs[n] = true
+
+	var order: Array = seqs.keys()
+	order.sort()
+	var list: Array = []
+
+	for n in order:
+		list.append([int(_kinds[n]), _centres[n], _radii[n]])
+
+	_mutex.unlock()
+	return list
+
+
 # Every operation, oldest first, as [kind, centre, radius] (the water thread replays them at start).
 func edits() -> Array:
 	var list: Array = []

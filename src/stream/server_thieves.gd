@@ -5,7 +5,6 @@ extends RefCounted
 # away. Food in a chest or the pack is safe. A player near the food or near the fox, a fire at the food, or a fox that is hurt or
 # frightened, stops it: it never goes near people for a meal unless nobody is around. Numbers: the species' "thief" block in animals.json.
 
-const Steering := preload("res://src/shared/steering.gd")
 
 const SNEAK := 13
 const CARRY := 14
@@ -91,7 +90,7 @@ func step(a: Dictionary, dt: float) -> void:
 			_give_up(a)
 			return
 
-		var r: Dictionary = Steering.step(a["pos"], goal, float(def.get("sneak_mps", 2.5)), dt, host.ground_height, host.blocked, 0.8, a["heading"], host.crossing)
+		var r: Dictionary = host.walk_step(a["pos"], goal, float(def.get("sneak_mps", 2.5)), dt, host.ground_height, host.blocked, 0.8, a["heading"], host.crossing)
 
 		if r["moved"]:
 			a["pos"] = r["pos"]
@@ -115,7 +114,7 @@ func step(a: Dictionary, dt: float) -> void:
 		return
 
 	# CARRY: sprint away with the food and eat it far off.
-	var r2: Dictionary = Steering.step(a["pos"], a["target"], float(def.get("run_mps", 9.0)), dt, host.ground_height, host.blocked, 1.0, a["heading"], host.crossing)
+	var r2: Dictionary = host.walk_step(a["pos"], a["target"], float(def.get("run_mps", 9.0)), dt, host.ground_height, host.blocked, 1.0, a["heading"], host.crossing)
 
 	if r2["moved"]:
 		a["ran"] = float(a["ran"]) + a["pos"].distance_to(r2["pos"])

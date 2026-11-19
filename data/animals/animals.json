@@ -4278,6 +4278,7 @@
 		"bleed_hp_per_s": 0.15
 	},
 	"wall_margin_m": 0.3,
+	"ground_step": {"note": "Provisional GS-1 (Dave 19 Nov 2026 play test, animals in dug ground): the most an animal jumps down (drop_m) or scrambles up (climb_m) in one step, whatever the slope, so a dug hole's steep rim is not a wall (server_animals.walk_step). Only where a dig or fill touches the step; natural ground keeps the slope rule. Deeper holes stay pits.", "climb_m": 1.0, "drop_m": 2.0},
 	"nests": {
 		"note": "Inland bird nests (MikeW 3 Nov; eggs and seasons in data/items/nests.json, Sal): one roll per cell_m square per kind, chance x the species biome weight; grouse on open ground, songbirds under trees or bushes; never steeper than slope_max.",
 		"cell_m": 48.0,
