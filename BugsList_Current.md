@@ -447,6 +447,20 @@ Assumed on Dave's behalf (provisional):
 
 - GS-1: an animal jumps down at most 2 m and scrambles up at most 1 m in one step where a dig or fill touches its spot; deeper holes stay pits.
 
+## 64. Bandit camps: sites woken by road traffic (part 1 of 5)
+
+**Status: Part 1 implemented - awaiting parts 2 to 5 and player verification.** Dave's request and plan approval, 19 Nov 2026 (docs/design/BANDIT_CAMPS.md). Part 1 is PR #1319, merged to dev at 68aad2dd (head e99987a4) after independent review (2 rounds, final PASS on the exact head). Lane B (David4) on the exact head: 204 of 204 selected tests passed (201 fast + 3 timing), including test_bandit_sites; parse check ok, warnings unchanged; join smoke ok. Nothing appears in the game yet: part 2 (the camp itself) is next.
+
+Dave, 19 Nov 2026: "We also need to introduce bandit camp spawn areas. I'm thinking these should be predetermined by the seed like plants and trees but they only activate if someone builds a road within 500m of a spawn point. then it will also check to make sure there are no other bandit camps spawn activated within a few kms." Then: "it should be an actual camp though. so in a good spot place a campfire maybe a couple of tamed horses with saddles and a tent or two and from 1 to 5 bandits." And: "I agree with all 5 bandit ideas."
+
+**Required outcome:** bandit camp sites are fixed by the world seed and wake only when a road near them gets busy, with no camp near the starter town, the spawn, buildings or another camp; later parts place the camp, its warnings, the toll and robbery, and the clearing.
+
+**Acceptance (after part 2):** walk or pull a loaded cart up and down a surveyed road far from town for a while: a camp appears 100 to 300 m off the road; none appears near town, near buildings, or within 3 km of another camp.
+
+Assumed on Dave's behalf (provisional):
+
+- BANDIT-1 to BANDIT-7 (docs/design/BANDIT_CAMPS.md): one chance of a site per 1 km square; trip points per 100 m stretch (road 1, hand path 0.5, loaded cart 3), halving every 3 game days; 30 points within 500 m wake a site; sites sit 100 to 300 m off a road on gentle dry ground, 1.5 km from town and spawn, 150 m from buildings, 3 km from another camp; checked once a game hour.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
