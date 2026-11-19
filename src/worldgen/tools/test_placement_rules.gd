@@ -141,7 +141,7 @@ func _init() -> void:
 	var taken: Array = Rules.snap(cfg, "foundation_section_kit", Vector3(53.1, 10.0, 50.3), 0, beside_rows)
 	check(taken[0] != Vector3(54.0, 11.0, 50.0), "a neighbour spot already taken is not offered again (%s)" % str(taken))
 	check(not bool(Rules.snap(cfg, "foundation_section_kit", Vector3(70.0, 10.0, 70.0), 0, beside_rows)[2]), "a foundation far from any other is placed on the ground, the wheel may lift it")
-	_first_foundation_checks(cfg)
+	_first_foundation_checks(cfg, items)
 
 	var onto: Array = Rules.snap(cfg, "foundation_section_kit", Vector3(50.0, 10.3, 50.0), 0, base_rows)
 	check(bool(onto[2]) and onto[0].x == 50.0 and onto[0].z == 50.0 and onto[0].y > base_rows[0]["pos"].y + 1.9, "aiming at a foundation's middle stacks one on it (BUG-026)")
@@ -606,7 +606,7 @@ func _wall_top_checks(cfg: Dictionary) -> void:
 # Dave 19 Nov 2026 play test: "the first foundation should be able to be placed anywhere facing any direction according to which way I am facing". A
 # foundation with nothing to go beside or on keeps the aimed spot and the player's turn (no world grid, no quarter turns); everything that snaps to it then
 # follows its turn: its wall and floor anchors, the next foundation along its sides, one stacked on it, a pillar, a roof panel on a wall top.
-func _first_foundation_checks(cfg: Dictionary) -> void:
+func _first_foundation_checks(cfg: Dictionary, items) -> void:
 	for kit in ["foundation_section_kit", "thatch_floor_kit", "wood_foundation_kit"]:
 		var alone: Array = Rules.snap(cfg, kit, Vector3(70.3, 10.0, 70.7), 37, [])
 		check(alone[0] == Vector3(70.3, 10.0, 70.7) and int(alone[1]) == 37 and not bool(alone[2]), "%s alone: where aimed and turned as the player faces (%s)" % [kit, str(alone)])
@@ -614,7 +614,7 @@ func _first_foundation_checks(cfg: Dictionary) -> void:
 	check(int(Rules.snap(cfg, "foundation_section_kit", Vector3(70.0, 10.0, 70.0), -20, [])[1]) == 340, "a turn below zero comes back in 0 to 359")
 	var yaw: float = 30.0
 	var turn: float = deg_to_rad(yaw)
-	var at: Vector3 = Vector3(200.0, 10.0, 200.0)
+	var at: Vector3 = Vector3(1200.0, 10.0, 1200.0)   # away from every other piece in this test
 	var base: Array = [{"pos": at, "state": 25, "yaw": yaw}]
 	var corner: Vector3 = at + Vector3(-1.0, 0.0, -2.0).rotated(Vector3.UP, turn)   # the wall anchor [-1, -2, 0] where the turned slab's look draws it
 	var wall: Array = Rules.snap(cfg, "wall_section_kit", corner + Vector3(0.2, 0.0, -0.1), 0, base)
@@ -639,3 +639,23 @@ func _first_foundation_checks(cfg: Dictionary) -> void:
 	var panel: Array = Rules.snap(cfg, "thatch_roof_kit", aim, 200, walls)
 	check(bool(panel[2]) and int(panel[1]) == 210, "facing within 45 degrees of the wall's across, a panel rests on it at the wall's turn (%s)" % str(panel))
 	check(not bool(Rules.snap(cfg, "thatch_roof_kit", aim, 120, walls)[2]), "facing along the wall, no panel")
+	# A roof corner on that building: the same two walls and corner as an unturned one, turned 30 degrees about the first wall, gives the same answer turned.
+	var wall_state: int = int(cfg["structures"]["wall_section"]["state"])
+	var hip_def: Dictionary = Rules.structure_of_kit(cfg, "thatch_roof_corner_kit")
+	var pivot: Vector3 = Vector3(300.0, 10.3, 300.0)
+	var square_rows: Array = [{"pos": pivot, "state": wall_state, "yaw": 0.0}, {"pos": pivot + Vector3(-1.0, 0.0, 1.0), "state": wall_state, "yaw": 90.0}]
+	var turned_rows: Array = square_rows.map(func(r): return {"pos": pivot + ((r["pos"] as Vector3) - pivot).rotated(Vector3.UP, turn), "state": wall_state, "yaw": float(r["yaw"]) + yaw})
+	var cursor: Vector3 = Vector3(300.2, 13.0, 300.8)
+	var square_hip: Array = Rules.roof_hip_pick(cfg, hip_def, cursor, 0, square_rows)
+	var turned_hip: Array = Rules.roof_hip_pick(cfg, hip_def, pivot + (cursor - pivot).rotated(Vector3.UP, turn), 0, turned_rows)
+	var want_mid: Vector3 = Vector3.ZERO if square_hip.is_empty() else pivot + ((square_hip[0] as Vector3) - pivot).rotated(Vector3.UP, turn)
+	check(not square_hip.is_empty() and not turned_hip.is_empty() and (turned_hip[0] as Vector3).distance_to(want_mid) < 0.01 and int(turned_hip[1]) == posmod(int(square_hip[1]) + 30, 360) and str(turned_hip[2]) == str(square_hip[2]), "a roof corner on a building turned 30 degrees sits on its turned corner, turned 30 more (%s against %s)" % [str(turned_hip), str(square_hip)])
+	# The server: a piece standing on the turned slab's corner holds the slab up (it cannot be taken out from under it); one beside it does not.
+	var slab_def: Dictionary = cfg["structures"]["foundation_section"]
+	var slab: Dictionary = {"pos": at, "struct": {"kind": "foundation_section", "yaw": yaw}}
+	var post_at: Vector3 = at + Vector3(1.9, 0.3, 1.9).rotated(Vector3.UP, turn)   # inside the turned square; across the ground 2.6 m east of the middle, outside an unturned one
+	items._items[990001] = {"number": items.table.number_of("thatch_pillar"), "count": 1, "pos": post_at, "left": 1.0e9, "struct": {"kind": "thatch_pillar", "yaw": yaw}}
+	check(items._stands_on(slab, slab_def), "a pillar on the turned slab's corner stands on it (the server's own check)")
+	items._items[990001]["pos"] = at + Vector3(2.6, 0.3, -1.5).rotated(Vector3.UP, turn)
+	check(not items._stands_on(slab, slab_def), "a pillar just off the turned slab's side does not")
+	items._items.erase(990001)
