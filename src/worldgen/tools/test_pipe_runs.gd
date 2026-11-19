@@ -153,7 +153,7 @@ func _init() -> void:
 
 	check(items.recipes.makers_of(n("wooden_pipe")).size() == 1 and str(items.recipes.recipe(int(items.recipes.makers_of(n("wooden_pipe"))[0])).get("station", "")) == "", "a Wooden - Pipe is made by hand")
 
-	for look in ["wooden_pipe", "copper_pipe", "copper_tap", "copper_tap_open", "copper_drip_head"]:
+	for look in ["wooden_pipe", "copper_pipe", "copper_tap", "copper_drip_head"]:
 		check(LookTable.has_look(look), "look %s is in the look table" % look)
 
 	# --- PipeRules ---
@@ -218,48 +218,95 @@ func _init() -> void:
 	check(first != 0 and second != 0 and int(items._items[first]["struct"]["paid"]) + int(items._items[second]["struct"]["paid"]) == 2 and have("copper_pipe") == 2, "the split pipe keeps its 2 pieces between its halves; the branch took 1")
 	check(items._water.level_groups().size() == 1 and (items._water.level_groups()[0] as Array).size() == 2, "the barrels are still linked through the junction")
 
-	# --- A tap on the branch's open end, pouring into a trough under it ---
-	var trough: int = put("wooden_trough", Vector3(102.0, 9.0, 103.0))   # its rim 0.45 m under the spout (and more than a joint below the pipe end)
+	# --- A tap on the branch's open end (Dave 19 Nov 2026 20:11Z): E takes a drink, its 3 slots fill water containers, only while its pipes reach water ---
 	items.give(1, n("copper_tap"), 1)
 	lay(slot_of("copper_tap"), tip, tip + Vector3(0.1, 0.0, 0.0))
 	var tap: int = at_kind("copper_tap", tip)
 	check(tap != 0 and have("copper_tap") == 0 and items._water.downstream(branch).has(tap), "a tap is fitted on the open end and the pipe feeds it")
+	check(items._kind_now("copper_tap_open") == "copper_tap" and not items._structures["copper_tap"].has("toggle"), "the tap is not opened and shut: a saved open one loads as a tap")
 	items._water.set_litres(a, 150.0)
 	items._water.set_litres(b, 150.0)
 	items._water_dirty = true
 	items._water_tick(0.0)
-	check(items._water.inflow_lpm(trough) == 0.0, "shut, it pours nothing")
+	check(tap != 0 and items._water.inflow_lpm(tap) == 0.0, "it lets no water out on its own")
 	items.report_position(1, Vector3(102.0, 10.0, 102.0))
+	var v: Dictionary = items.vitals_of(1)
+	v["wet"] = 0.0
+	var held: float = litres(a) + litres(b)
 	items._use_struct(1, items.inventory_of(1), tap)
-	items._water_dirty = true
-	items._water_tick(0.0)
-	check(str(items._items[tap]["struct"]["kind"]) == "copper_tap_open" and items._water.inflow_lpm(trough) > 0.0 and items._water.inflow_lpm(trough) <= 30.01, "E opens it: it pours into the trough under its spout, at most 30 L/min (%.2f)" % items._water.inflow_lpm(trough))
+	check(float(v["wet"]) > 0.0 and absf(held - litres(a) - litres(b) - float(v["wet"]) / 1000.0) < 0.01, "E takes a drink: the barrels give what the player drank (%.0f ml; %.2f -> %.2f L)" % [float(v["wet"]), held, litres(a) + litres(b)])
+	var keep_a: float = litres(a)
+	var keep_b: float = litres(b)
+	items._water.set_litres(a, 0.0)
+	items._water.set_litres(b, 0.0)
 	items._last_use.erase(1)
-	items._use_struct(1, items.inventory_of(1), tap)   # shut again: the rest of the test keeps the barrels' water
-	items._water_dirty = true
-	items._water_tick(0.0)
-	check(str(items._items[tap]["struct"]["kind"]) == "copper_tap" and items._water.inflow_lpm(trough) == 0.0, "E again shuts it")
+	items._last_drink.erase(1)
+	said.clear()
+	var wet_was: float = float(v["wet"])
+	items._use_struct(1, items.inventory_of(1), tap)
+	check(heard("No water comes from the tap") and float(v["wet"]) == wet_was, "with the barrels dry it gives nothing (%s)" % str(said))
+	var tap_box = items._chest_of(1, tap)
+	check(tap_box != null and tap_box.slot_count == 3, "F opens the tap's 3 slots")
+	items.give(1, n("stick"), 1)
+	said.clear()
 
-	# --- A drip head waters the beds within 2 m that are not above it ---
+	if tap_box != null:
+		items._box_put(1, items.inventory_of(1), tap, tap_box, slot_of("stick"), 1)
+
+	check(heard("Only a water container") and have("stick") == 1, "only a water container goes in (%s)" % str(said))
+	items.inventory_of(1).take_from_slot(slot_of("stick"), 1)
+	items.give(1, n("waterskin"), 1)
+	var skin_slot: int = slot_of("waterskin")
+	items.inventory_of(1).wear[skin_slot] = 0
+
+	if tap_box != null:
+		items._box_put(1, items.inventory_of(1), tap, tap_box, skin_slot, 1)
+
+	var in_tap: int = -1
+
+	for s in (tap_box.slot_count if tap_box != null else 0):
+		if tap_box.numbers[s] == n("waterskin"):
+			in_tap = s
+
+	check(in_tap >= 0 and have("waterskin") == 0, "a Waterskin goes in")
+	level_now()
+	check(in_tap >= 0 and tap_box.wear[in_tap] == 0, "it stays empty while the barrels are dry")
+	items._water.set_litres(a, keep_a)
+	items._water.set_litres(b, keep_b)
+	held = litres(a) + litres(b)
+	level_now()
+	var got_ml: int = tap_box.wear[in_tap] if in_tap >= 0 else 0
+	check(got_ml == 1500 and absf(held - litres(a) - litres(b) - 1.5) < 0.01, "with water in the barrels it fills (%d of 1500 ml) and the barrels give 1.5 L (%.2f -> %.2f L)" % [got_ml, held, litres(a) + litres(b)])
+
+	# --- A drip head keeps the soil in a 10 m circle round it watered while its pipes bring any water (Dave 19 Nov 2026 20:09Z) ---
 	items.report_position(1, Vector3(200.0, 10.0, 200.0))
 	var e: int = barrel(200.0, 200.0)
 	var near_bed: int = put("tilled_bed", Vector3(203.0, 10.0, 200.0))
-	var far_bed: int = put("tilled_bed", Vector3(205.5, 10.0, 200.0))
+	var far_bed: int = put("tilled_bed", Vector3(209.5, 10.0, 200.0))
 	var high_bed: int = put("tilled_bed", Vector3(202.5, 11.0, 200.5))
+	var out_bed: int = put("tilled_bed", Vector3(202.0, 10.0, 210.5))
 	lay(slot_of("copper_pipe"), Vector3(200.0, 10.05, 200.0), Vector3(202.0, 10.05, 200.0))
 	items.give(1, n("copper_drip_head"), 1)
 	lay(slot_of("copper_drip_head"), Vector3(202.0, 10.05, 200.0), Vector3(202.0, 10.05, 200.0))
 	var drip: int = at_kind("copper_drip_head", Vector3(202.0, 10.05, 200.0))
 	var beds: Array = items._trench_beds.get(drip, [])
-	check(drip != 0 and beds.has(near_bed) and not beds.has(far_bed) and not beds.has(high_bed), "a drip head waters the bed 1 m off, not one 3.5 m off or one a metre above it (%s)" % str(beds))
-	items._water.set_litres(e, 150.0)
-	var wet_before: float = items.plot_moisture(Vector3(203.0, 10.0, 200.0))
+	check(drip != 0 and beds.has(near_bed) and beds.has(far_bed) and beds.has(high_bed) and not beds.has(out_bed), "a drip head waters the beds 1 m, 7.5 m and a metre up from it, not one 10.5 m off (%s)" % str(beds))
+	var wet_dry: float = items.plot_moisture(Vector3(209.5, 10.0, 200.0))
 	items._water_dirty = true
 	items._water_tick(0.0)
 	clock[0] += 120.0 * GameClockScript.RATIO
 	items._water_dirty = true
 	items._water_tick(0.0)
-	check(drip != 0 and items._water.inflow_lpm(drip) > 0.0 and items._water.inflow_lpm(drip) <= 2.01 and items.plot_moisture(Vector3(203.0, 10.0, 200.0)) > wet_before, "it lets out at most 2 L/min and the bed gets wetter (%.2f L/min, %.1f -> %.1f %%)" % [items._water.inflow_lpm(drip) if drip != 0 else 0.0, wet_before, items.plot_moisture(Vector3(203.0, 10.0, 200.0))])
+	check(items.plot_moisture(Vector3(209.5, 10.0, 200.0)) <= wet_dry + 0.01, "with its barrel empty it waters nothing (%.1f %%)" % items.plot_moisture(Vector3(209.5, 10.0, 200.0)))
+	items._water.set_litres(e, 150.0)
+	items._water_dirty = true
+	items._water_tick(0.0)
+	clock[0] += 120.0 * GameClockScript.RATIO
+	items._water_dirty = true
+	items._water_tick(0.0)
+	var wet_now: Array = [items.plot_moisture(Vector3(203.0, 10.0, 200.0)), items.plot_moisture(Vector3(209.5, 10.0, 200.0)), items.plot_moisture(Vector3(202.5, 11.0, 200.5))]
+	check(drip != 0 and items._water.inflow_lpm(drip) > 0.0 and items._water.inflow_lpm(drip) <= 2.01 and float(wet_now[0]) >= 99.9 and float(wet_now[1]) >= 99.9 and float(wet_now[2]) >= 99.9, "with water it draws at most 2 L/min and keeps every bed in its circle fully watered (%.2f L/min, %s %%)" % [items._water.inflow_lpm(drip) if drip != 0 else 0.0, str(wet_now)])
+	check(items.plot_moisture(Vector3(202.0, 10.0, 210.5)) < 99.0, "the bed outside the circle is not watered (%.1f %%)" % items.plot_moisture(Vector3(202.0, 10.0, 210.5)))
 
 	# --- A worn wooden pipe leaks: it carries its condition's share ---
 	var f: int = barrel(300.0, 300.0)
@@ -296,6 +343,13 @@ func _init() -> void:
 	said.clear()
 	items._take_down(1, items.inventory_of(1), branch)
 	check(items._items.has(branch) and heard("Take the"), "a run with a tap on its end stays until the tap comes off (%s)" % str(said))
+	said.clear()
+	items._take_down(1, items.inventory_of(1), tap)
+	check(items._items.has(tap) and heard("Empty it first"), "a tap with a container in it stays until that is taken out (%s)" % str(said))
+
+	if in_tap >= 0:
+		tap_box.take_from_slot(in_tap, 1)
+
 	items._take_down(1, items.inventory_of(1), tap)
 	items._take_down(1, items.inventory_of(1), branch)
 	check(not items._items.has(tap) and not items._items.has(branch) and have("copper_tap") == 1 and have("copper_pipe") == 2, "the tap and the branch come back to the pack (%d tap, %d pipe)" % [have("copper_tap"), have("copper_pipe")])

@@ -3445,14 +3445,13 @@ static func _copper_mat() -> StandardMaterial3D:
 
 
 # A Copper - Tap (PLUMBING_DESIGN s9), about 0.15 m: fitted on a pipe's open end at the origin, a valve body hanging under it, a cross handle on top
-# (turned a quarter when open) and a spout pointing down to 0.12 m below the pipe end.
-static func copper_tap(open: bool = false) -> Node3D:
+# and a spout pointing down to 0.12 m below the pipe end.
+static func copper_tap() -> Node3D:
 	var root: Node3D = Node3D.new()
 	_cyl(root, 0.035, 0.08, Vector3(0.0, -0.04, 0.0), _copper_mat(), 8)
 	_cyl(root, 0.01, 0.05, Vector3(0.0, 0.025, 0.0), _copper_mat(), 6)
 	var handle: Node3D = Node3D.new()
 	handle.position = Vector3(0.0, 0.055, 0.0)
-	handle.rotation = Vector3(0.0, PI * 0.25 if open else 0.0, 0.0)
 	root.add_child(handle)
 	_box(handle, Vector3(0.09, 0.012, 0.012), Vector3.ZERO, _copper_mat())
 	_box(handle, Vector3(0.012, 0.012, 0.09), Vector3.ZERO, _copper_mat())

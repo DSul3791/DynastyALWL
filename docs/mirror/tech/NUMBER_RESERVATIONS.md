@@ -71,3 +71,5 @@ Dave named it ("into an irrigation trench"). New: item 1507 `irrigation_trench` 
 
 ## Pipes, taps and barrels (Dave 19 Nov 2026, PLUMBING_DESIGN s9; held by the coordinator)
 Items 1508 `copper_pipe`, 1509 `copper_tap`, 1510 `copper_drip_head`; recipes 746 `wooden_pipe` (the pack item 1352, now made by hand), 747 `copper_pipe`, 748 `copper_tap`, 749 `copper_drip_head`; structure states 458 `copper_pipe` (a laid run), 459 `copper_tap`, 460 `copper_tap_open`, 461 `copper_drip_head`; protocol 136 (pipe_lay). Retired, numbers kept and never reused: items 1353 `wooden_pipe_elbow`, 1354 `wooden_pipe_tee`, 746 `iron_pipe`, 748 `iron_pipe_elbow`, 750 `iron_tap`; blueprints 342-344 and 144-146; structure states 424, 425 (load as a Wooden - Pipe run) and 182-184. Next free: item 1511, recipe 750, structure state 462, protocol 137.
+
+Pipes follow-up (Dave 19 Nov 2026 20:11Z, the tap is drunk from and fills containers): structure state 460 `copper_tap_open` retired before any release (kept, never reused; loads as `copper_tap`). No new numbers.

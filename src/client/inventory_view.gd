@@ -1085,6 +1085,9 @@ func _probe_structure_for(id: int) -> Dictionary:
 	if str(store_def.get("station", "")) != "" and (int(store_def.get("out_slots", 0)) > 0 or bool(store_def.get("one_store", false))):   # a station with a store (master s2.5): E opens the store, F crafts
 		return {"prompt": "Press E to open the %s%s, F to use it%s (hold E to take it down)" % [table.sentence_name(_world[id]["number"]), _fill_note(id), wheel_note(id)], "tap": func(): _ask_open(id), "hold": take_down}
 
+	if str(_structure_by_state(state).get("use", "")) == "tap":   # a Copper - Tap (Dave 19 Nov 2026): E drinks, F opens its slots where water containers fill
+		return {"prompt": "Press E to take a drink, F to fill water containers (hold E to take it down)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
+
 	if _is_chest(state) and int(_world[id].get("water_l", 0)) >= 1:   # a barrel holding water (PLUMBING_DESIGN s9, PV-6): water or goods, never both
 		return {"prompt": "Press E to drink, or to fill what you hold (%d L in it; hold E to take it down)" % int(_world[id]["water_l"]), "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_DRINK, held_container_slot(), 0, 0, Vector3.ZERO), "hold": take_down}
 

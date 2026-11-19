@@ -126,8 +126,8 @@ Every value below is PROVISIONAL (coordinator ruling: build costs and numbers ma
 - (19 Nov 2026, s9) PV-1 Wooden - Pipe: 1 Log + 1 Twine by hand, knife kept; 2 m a piece, 60 L/min; wears to 0.25 in 56 game days, flow x condition.
 - PV-2 Copper - Pipe: 1 Copper ingot at the Primitive smithy for 3 m; 180 L/min; never wears.
 - PV-3 A run is straight, up to 30 m, paid in whole pieces; the start must be a connection point; within 6 m reach of where you stand at each click.
-- PV-4 Copper - Tap: 1 Copper ingot; 30 L/min; built shut; only on a pipe's open end.
-- PV-5 Copper - Drip head: 1 Copper ingot; 2 L/min; waters beds and plots within 2 m, no more than 0.5 m above it.
+- PV-4 Copper - Tap: 1 Copper ingot; only on a pipe's open end; its 3 slots fill water containers at up to 30 L a real minute between them (Dave 19 Nov 20:11Z gave E to drink, F with about 3 slots; the fill rate is assumed). Water reaches it from the first tank up its pipes that holds any.
+- PV-5 Copper - Drip head: 1 Copper ingot; draws 2 L/min while water reaches it; Dave (19 Nov 20:09Z) set the 10 m circle; assumed: the beds and plots there are kept fully watered, at any height within 10 m.
 - PV-6 Barrel: 200 L; water or goods, never both; rain 1 L a real minute at full rain in the open; a pipe from its foot runs as if its water stood 0.4 m deep (about half full; the network gives a tank one fixed head, as a cistern's 0.5 m).
 - PV-7 Linked barrels (by any pipe, copper or wooden) level to one water surface, height respected; levelled at most every 3 real seconds while changing.
 - PV-8 A barrel's bottom point feeds pipes out but takes no water in (it fills from above or by rain).
@@ -161,11 +161,13 @@ past it; a click on the next connection point lays the whole run, taking the pip
   (the old blueprint cost). It wears three times as fast as other wood: down to a quarter in 56 game days (building wear, about 2.3 real days),
   and a worn pipe leaks, carrying only its condition's share of its flow; a hammer repair (1 Log, 1 Twine share) makes it good again (PV-1).
 - **Copper - Pipe**: 3 m a piece, 1 Copper ingot at the Primitive smithy, 180 L/min under head, never wears (PV-2).
-- **Copper - Tap** (1 Copper ingot, Primitive smithy): in hand, left click on a pipe's open end fits it there. Built shut; E opens and shuts it.
-  Open, it pours up to 30 L/min into what is under it (a barrel, trough, cistern, garden plot or irrigation trench); with nothing under it, it
-  passes nothing (no water is spilled on the ground) (PV-4).
-- **Copper - Drip head** (1 Copper ingot, Primitive smithy): fitted on a pipe's open end the same way. It lets out up to 2 L/min and waters the
-  tilled beds and garden plots within 2 m that stand no more than 0.5 m above it, the driest first, as the irrigation trench does (PV-5).
+- **Copper - Tap** (1 Copper ingot, Primitive smithy; Dave 19 Nov 2026 20:11Z): in hand, left click on a pipe's open end fits it there. "Press E
+  to take a drink"; F opens its 3 slots, and a water container put there fills. Both work only while its pipes reach a water source that holds
+  water, such as a barrel: the water comes out of that tank. It lets no water out otherwise (PV-4). It is not opened and shut (the first plan's
+  open twin, state 460, is retired).
+- **Copper - Drip head** (1 Copper ingot, Primitive smithy; Dave 19 Nov 2026 20:09Z): fitted on a pipe's open end the same way. While its pipes
+  bring it any water it irrigates the soil in a circle of 10 m radius round it: every tilled bed and garden plot there is kept fully watered.
+  It draws 2 L/min while water reaches it (PV-5).
 - **Barrels hold water** (PV-6): 200 L, as well as their 8 slots of goods, but never both at once: a barrel with goods in it takes no water and
   one holding water takes no goods ("It holds water."). Out in the open (not under a roof or tree) a barrel catches rain: 1 L a real minute in
   full rain (its 0.25 m2 top at about 10 mm a game hour), less in lighter rain. A pipe end or open tap over its rim pours in. E at a barrel holding
@@ -182,7 +184,7 @@ past it; a click on the next connection point lays the whole run, taking the pip
 |---|---|
 | Wooden - Pipe (1352) | Kept, now a pack item made by hand (recipe 746), laid from the hand; the placed run keeps the `wooden_pipe` kind (state 423) |
 | Copper - Pipe (1508, new) | Pack item, recipe 747 at the Primitive smithy; laid run state 458 |
-| Copper - Tap (1509, new) | Pack item, recipe 748; fitted shut (state 459), open twin `copper_tap_open` (state 460) |
+| Copper - Tap (1509, new) | Pack item, recipe 748; fitted state 459 with 3 slots; `copper_tap_open` (state 460) retired before release, loads as the tap |
 | Copper - Drip head (1510, new) | Pack item, recipe 749; fitted state 461 |
 | Barrel (649) | Kept; also holds 200 L of water (above) |
 | Wooden - Pipe elbow (1353), Wooden - Pipe tee (1354) | Retired (any angle and junctions anywhere replace them); a saved one loads as a 2 m Wooden - Pipe |

@@ -138,7 +138,6 @@ const GOLDEN := {
 	"wooden_pipe": "wooden_pipe",   # laid from the hand since 19 Nov 2026 (PLUMBING_DESIGN s9); the elbow, tee and iron pieces were retired then and have no look
 	"copper_pipe": "copper_pipe",
 	"copper_tap": "copper_tap",
-	"copper_tap_open": "copper_tap_open",
 	"copper_drip_head": "copper_drip_head",
 	"wooden_sluice_open": "wooden_sluice_open",
 	"wooden_channel_corner": "wooden_channel_corner",

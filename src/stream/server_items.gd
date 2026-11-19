@@ -11301,6 +11301,10 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 		_toggle_water_gate(peer, id, def)
 		return
 
+	if str(def.get("use", "")) == "tap":   # a Copper - Tap (Dave 19 Nov 2026): E takes a drink while its pipes reach water
+		_drink_at_tap(peer, inv, id)
+		return
+
 	if str(def.get("use", "")) == "door":
 		# A door opens and shuts: the structure turns into its other kind (structures.json "toggle"), the row's state follows.
 		var now_ms: int = Time.get_ticks_msec()
@@ -12314,6 +12318,11 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 
 	if not _box_takes(kind, number):
 		_say(peer, "The %s does not take that." % table.in_sentence(table.name_of(int(_items[id]["number"]))))
+		_reject(peer, 3)
+		return 0
+
+	if str(_structures.get(kind, {}).get("use", "")) == "tap" and _container_cap(number) <= 0:
+		_say(peer, "Only a water container goes in a tap.")
 		_reject(peer, 3)
 		return 0
 
@@ -17130,6 +17139,19 @@ func _plot_litres_per_pct(kind: String) -> float:
 # full; returns the litres its beds still have room for (the trench's room_l: 0 when every bed is full or it waters none).
 func _trench_resolve(id: int, now_s: float) -> float:
 	var beds: Array = (_trench_beds.get(id, []) as Array).filter(func(b): return _items.has(b))
+
+	if bool(_structures.get(str(_water_kind.get(id, "")), {}).get("keeps_wet", false)):   # a drip head (Dave 19 Nov 2026): any water through it keeps its circle's beds fully watered
+		if _water_at_s >= 0.0 and _water.inflow_lpm(id) > 0.0 and now_s > _water_at_s:
+			for bed in beds:
+				var pos: Vector3 = _items[bed]["pos"]
+				var row: Array = _plot_water.get(_bed_key(pos), [])
+
+				if plot_moisture(pos) < 99.99:
+					_plot_water[_bed_key(pos)] = [100.0, float(row[1]) if row.size() >= 2 else _now_game_s()]   # its weather clock goes on as it was
+					_dirty = true
+
+		return 1.0   # it always draws its trickle while water reaches it
+
 	var rooms: Array = []
 	var total: float = 0.0
 
@@ -17839,6 +17861,12 @@ func _pipe_fit(peer: int, inv, slot: int, kind: String, at: Vector3) -> void:
 	var id: int = _next_id
 	_next_id += 1
 	_items[id] = {"number": number, "count": 1, "pos": end["at"], "left": 1.0e9, "struct": {"kind": kind, "yaw": float(end["yaw"])}}
+
+	if int(_structures[kind].get("slots", 0)) > 0:   # a tap's few slots, where water containers fill
+		_items[id]["struct"]["uid"] = _next_uid
+		_chests[_next_uid] = _new_store(kind)
+		_next_uid += 1
+
 	_grid_add(id, _items[id])
 	_water_add(id)
 	_dirty = true
@@ -17854,7 +17882,12 @@ func _take_down_laid(peer: int, inv, id: int, it: Dictionary, def: Dictionary) -
 					_say(peer, "Take the %s off first." % table.sentence_name(int(_items[other]["number"])))
 					return
 
+	if not _struct_empty(id):
+		_say(peer, "Empty it first.")   # a tap with containers in its slots
+		return
+
 	var count: int = maxi(int(it["struct"].get("paid", 1)), 0) if str(def.get("hand_laid", "")) == "pipe" else 1   # exactly what it took: a junction's half may hold none
+	_chests.erase(int(it["struct"].get("uid", 0)))
 	_items.erase(id)
 	_dirty = true
 
@@ -17914,7 +17947,106 @@ func _barrels_tick() -> void:
 			piece["rain_lpm"] = lpm
 			_water_dirty = true
 
+	_taps_fill(now_s)
 	_level_barrels(now_s)
+
+
+# The tank a tap's pipes reach that holds water (walking up the network from the tap), -1 for none. A tap only lets water out to a drink or a container.
+func _tap_supply(id: int) -> int:
+	var now_s: float = _water_now_s()
+	var seen: Dictionary = {id: true}
+	var stack: Array = [id]
+
+	while not stack.is_empty():
+		var at: int = stack.pop_back()
+
+		for u in _water._up.get(at, []):
+			if seen.has(u) or not _water.pieces.has(u):
+				continue
+
+			seen[u] = true
+
+			if str(_water.pieces[u].get("role", "")) == "tank" and _water.litres(u, now_s) >= 0.01:
+				return int(u)
+
+			stack.append(u)
+
+	return -1
+
+
+# E at a Copper - Tap: a mouthful from the tank its pipes reach, as at the tank itself (_drink_from_tank, paced the same way).
+func _drink_at_tap(peer: int, inv, id: int) -> void:
+	var v: Dictionary = vitals_of(peer)
+
+	if v.is_empty() or not _water_kind.has(id):
+		return
+
+	var thirst: Dictionary = _vitals_cfg.get("thirst", {})
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_drink.get(peer, -100000)) < int(thirst.get("drink_pace_ms", 900)):
+		return
+
+	var tank: int = _tap_supply(id)
+
+	if tank < 0:
+		_say(peer, "No water comes from the tap.")
+		return
+
+	_drink_from_tank(peer, -1, inv, tank, v, thirst, now)
+
+
+# Every BARREL_TICK_S: the water containers in each tap's slots fill from the tank its pipes reach, up to the tap's fill_lpm between them (Dave 19 Nov 2026).
+func _taps_fill(now_s: float) -> void:
+	var resolved: bool = false
+
+	for id in _water_kind:
+		var def: Dictionary = _structures.get(str(_water_kind[id]), {})
+
+		if str(def.get("use", "")) != "tap" or not _items.has(id):
+			continue
+
+		var box = _chests.get(int(_items[id]["struct"].get("uid", 0)))
+
+		if box == null or box.is_empty():
+			continue
+
+		var want: Array = []
+
+		for s in box.slot_count:
+			if box.numbers[s] != 0 and _container_cap(box.numbers[s]) > box.wear[s]:
+				want.append(s)
+
+		if want.is_empty():
+			continue
+
+		var tank: int = _tap_supply(id)
+
+		if tank < 0:
+			continue
+
+		if not resolved:
+			_water_resolve(now_s)   # the tanks are brought to now before water is taken from them
+			resolved = true
+
+		var held_ml: int = int(floor(_water.litres(tank, now_s) * 1000.0))
+		var budget: int = mini(int(float(def.get("fill_lpm", 30.0)) * BARREL_TICK_S / 60.0 * 1000.0), held_ml)
+		var used: int = 0
+
+		for s in want:
+			var take: int = mini(_container_cap(box.numbers[s]) - box.wear[s], budget - used)
+
+			if take <= 0:
+				break
+
+			box.wear[s] += take
+			used += take
+
+		if used > 0:
+			_water.set_litres(tank, float(held_ml - used) / 1000.0)
+			_water_dirty = true
+			_dirty = true
+			_push_box(id, box)
 
 
 # Linked barrels share their water to one surface (PV-7). Only a set that is off level by more than LEVEL_SLACK_L is touched: the tanks are brought
