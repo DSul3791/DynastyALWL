@@ -2074,7 +2074,7 @@ func _init() -> void:
 	var winded: Dictionary = {}
 	var passed_out: Dictionary = {}
 
-	for fit in [10, 50, 90]   # 0 to 100, 50 an average adult (Dave 19 Nov 2026):
+	for fit in [10, 50, 90]:   # 0 to 100, 50 an average adult (Dave 19 Nov 2026)
 		var fd: String = "user://test_server_items_fitness%d" % (fit + 8)
 		DirAccess.make_dir_recursive_absolute(fd)
 
