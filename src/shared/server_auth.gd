@@ -157,6 +157,17 @@ func attach_client(mp: SceneMultiplayer) -> void:
 	mp.auth_callback = _client_got
 
 
+# A new connection (the game's --wait retry): the server has said nothing yet on it.
+func new_connection() -> void:
+	heard = false
+	_tried_remembered = false
+	remembered_was_wrong = false
+	_trying_hash = PackedByteArray()
+
+	if _mp != null:
+		_mp.auth_timeout = FIRST_WORD_S
+
+
 func _client_got(_peer: int, data: PackedByteArray) -> void:
 	var message: Variant = JSON.parse_string(data.get_string_from_utf8())
 

@@ -1122,6 +1122,7 @@ func _cannot_reach(text: String) -> void:
 # 3 times..." and back to the server pick page. A password the player chose to remember is tried first (only its salted hash is kept).
 func _attach_auth() -> void:
 	if _auth != null:
+		_auth.new_connection()
 		return
 
 	_password_arg = AppConfig.get_command_line_value("password", "")
