@@ -19,7 +19,7 @@ extends Node
 #                                      so the server makes the ground ahead of and under them first
 #   client -> server  cut_flora        remove one flora item (test harvest)
 #   client -> server  cut_swath        one sickle or scythe swing: the held slot and the plants in its circle (131)
-#   client -> server  pipe_lay         lay a pipe run between two points, or fit a tap or drip head on a pipe end (136)
+#   client -> server  pipe_lay         lay a pipe run between two points, or fit a tap or drip head on a pipe end or joint (138)
 #   server -> client  flora_cut        a flora item was removed
 #   server -> client  vent             the nearest volcanic vent within 1500 m (x, y, z), or INF when none: the volcano rumble bed sits there
 #   server -> client  zone             the biome id under the player (ambience slots): at login, after a teleport or respawn, and when it changes
@@ -308,7 +308,7 @@ func cut_swath(held_slot: int, plants: PackedInt32Array) -> void:
 		cut_swath_requested.emit(multiplayer.get_remote_sender_id(), held_slot, plants)
 
 
-# Pipes laid from the hand (136, PLUMBING_DESIGN s9): `slot` is the held pack slot. A pipe lays one straight run from the connection point at `from` to
+# Pipes laid from the hand (138, PLUMBING_DESIGN s9): `slot` is the held pack slot. A pipe lays one straight run from the connection point at `from` to
 # `to`; a tap or drip head is fitted on the open pipe end at `to` (`from` unused). The server checks the points, the reach and the pack.
 @rpc("any_peer", "call_remote", "reliable")
 func pipe_lay(slot: int, from: Vector3, to: Vector3) -> void:
