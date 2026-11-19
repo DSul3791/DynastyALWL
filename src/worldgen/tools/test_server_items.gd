@@ -973,11 +973,17 @@ func _init() -> void:
 	fills.clear()
 	accept[0] = true
 	m._last_dig.clear()
+	var soil_n1: int = m.table.number_of("soil")
+	var soil_before_cut: int = m.inventory_of(1).count_of(soil_n1)
 	m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	# Levelling (Dave 14 Nov 2026): a 1 m grid of 29 spots within 3 m, toward the ground the player stands on (10.0 at x 5), at most LEVEL_MAX_OPS edits a stroke,
 	# the spot farthest from level first. The 0.4 m step past x 6.5 is cut, nothing filled, and no cut goes below the player's ground.
 	check(digs.size() >= 1 and digs.size() <= ItemsScript.LEVEL_MAX_OPS and fills.is_empty() and m.inventory_of(1).wear[hoe_slot] == hoe_wear + 1, "levelling cuts the high side toward the ground the player stands on, fills nothing, at most %d edits (%d cuts, %d fills)" % [ItemsScript.LEVEL_MAX_OPS, digs.size(), fills.size()])
 	check(digs.all(func(cut): return absf(float(cut[1]) - ItemsScript.LEVEL_SPHERE_M) < 0.001 and float(cut[0].y) - ItemsScript.LEVEL_SPHERE_M >= 10.0 - 0.001), "no cut sphere reaches below the player's ground")
+	# BugsList entry 7 (Dave play test 19 Nov 2026): the soil a cut takes away comes back, at least one Soil a cut, at the rate a fill of the same depth costs.
+	var soil_from_cut: int = m.inventory_of(1).count_of(soil_n1) - soil_before_cut
+	check(soil_from_cut >= digs.size() and not digs.is_empty(), "cutting gives the soil back (%d Soil from %d cuts)" % [soil_from_cut, digs.size()])
+	check(ItemsScript._level_soil_units(ItemsScript.LEVEL_MAX_M, ItemsScript.LEVEL_SPHERE_M) > ItemsScript._level_soil_units(0.1, ItemsScript.LEVEL_SPHERE_M), "a deeper cut or fill moves more soil")
 	check(patches_of.call() == 0, "levelled ground loses its path patches within 4 m (all three, the farthest 3.6 m away)")
 	# Strokes add up: the heights are read through the edits made (the server's saved-edit log, here the digs and fills recorded), so held strokes level the whole circle and then stop.
 	var level_ops = func(_point, _radius) -> Array:
