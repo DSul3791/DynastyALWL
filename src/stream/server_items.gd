@@ -17677,9 +17677,9 @@ func _pipe_fit_point(at: Vector3, reach: float = PipeRules.SNAP_M, rise: float =
 
 
 # A barrel (a tank with a level_port, its bottom point) set down with that point within TANK_SNAP_M across and TANK_SNAP_RISE_M up or down of a free
-# pipe end or joint is moved the little way onto it, so pipes laid first can take a barrel anywhere they join (PLUMBING_DESIGN s9, PV-9).
+# pipe end or joint is moved the little way across onto it, so pipes laid first can take a barrel anywhere they join (PLUMBING_DESIGN s9, PV-9).
 const TANK_SNAP_M := 0.6
-const TANK_SNAP_RISE_M := 0.4
+const TANK_SNAP_RISE_M := 0.25   # under WaterNetwork.PORT_JOIN_M: the barrel keeps its own height (its ground checks passed there) and still joins
 
 
 func _tank_port(kind: String) -> Variant:
@@ -17700,7 +17700,11 @@ func _tank_spot_on_pipe(kind: String, spot: Vector3, yaw_deg: int) -> Vector3:
 
 	var offset: Vector3 = (port as Vector3).rotated(Vector3.UP, deg_to_rad(float(yaw_deg)))
 	var on: Dictionary = _pipe_fit_point(spot + offset, TANK_SNAP_M, TANK_SNAP_RISE_M)
-	return (on["at"] as Vector3) - offset if not on.is_empty() else spot
+	if on.is_empty():
+		return spot
+
+	var moved: Vector3 = (on["at"] as Vector3) - offset
+	return Vector3(moved.x, spot.y, moved.z)   # moved across only
 
 
 # A barrel just standing whose bottom point lies on a run's joint: the run is split there, so the barrel joins both halves.
