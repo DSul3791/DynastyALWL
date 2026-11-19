@@ -429,6 +429,7 @@ var _grade_points: Dictionary = {}   # peer -> [A, B] ground points of the hoe g
 var _last_mine: Dictionary = {}     # peer -> msec
 var _last_hit: Dictionary = {}      # peer -> msec
 var _last_process: Dictionary = {}  # peer -> msec
+var _stumps_to_check: Array = []   # stumps loaded from tree_states.json, looked at once on the first rot pass for ground dug out from under them (_rot)
 var _falls: Dictionary = {}         # stump id -> {shared: the pieces' fall record (hinge, yaw, seconds left), pieces: [world ids], hinge, along, length, radius, small, peer}: a tree coming down (_fell_record, _land_fall); not saved
 var _chops: Dictionary = {}         # "cx,cz,id" -> {hits, msec}
 var _rot_in: float = 60.0
@@ -3789,6 +3790,7 @@ func _dig(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		_goal_event(peer, "dug_under")
 
 	_fell_undermined(peer, at)
+	_break_undermined_stumps(at)
 	settle_loose_near(at, DIG_RADIUS_M * reach + DIG_DEPTH_M)
 	_dirty = true
 
@@ -4818,7 +4820,36 @@ func _fell_undermined(peer: int, at: Vector3) -> void:
 		if share >= limit:
 			continue
 
-		_fell(chunk, int(found[1]), info, Vector2(info["position"].x - at.x, info["position"].z - at.z))
+		var stump_id: int = _fell(chunk, int(found[1]), info, Vector2(info["position"].x - at.x, info["position"].z - at.z))
+
+		if _falls.has(stump_id):
+			_falls[stump_id]["undermined"] = true   # its ground is gone: the stump breaks up when the tree lands (_land_fall)
+
+
+# A stump whose ground is dug away breaks into what chopping it gives, and the pieces fall to the ground (Dave 19 Nov 2026: "the stump can just break
+# into its components and fall"; before, it hung in the air where no axe could reach it). True when the share of ground left in the disc under it
+# (dig_fell stump_support_r_per_radius x its radius + stump_support_r_base wide, stump_depth_m deep) is under stump_fall_below.
+func _stump_undermined(it: Dictionary) -> bool:
+	var cfg: Dictionary = _drops.get("dig_fell", {})
+
+	if cfg.is_empty() or not dig_support.is_valid() or not it.has("tree") or int(it["tree"]["state"]) != 4:
+		return false
+
+	var radius: float = float(cfg.get("stump_support_r_per_radius", 2.0)) * float(it["tree"]["radius"]) + float(cfg.get("stump_support_r_base", 0.5))
+	return float(dig_support.call(it["pos"], radius, float(cfg.get("stump_depth_m", 0.6)))) < float(cfg.get("stump_fall_below", 0.35))
+
+
+# After a dig: the stumps near it (the sync grid's cells round the hole, not the world) whose ground is now gone break up (_stump_undermined).
+# A stump still "fresh" belongs to a tree coming down: it is looked at when it lands.
+func _break_undermined_stumps(at: Vector3) -> void:
+	var reach: float = float(_drops.get("dig_fell", {}).get("search_m", 4.0))
+
+	for id in _ids_near(at, reach):
+		if not _items.has(id) or not _items[id].has("tree") or _items[id]["tree"].has("fresh"):
+			continue
+
+		if Vector2(_items[id]["pos"].x - at.x, _items[id]["pos"].z - at.z).length() <= reach and _stump_undermined(_items[id]):
+			_break_stump(int(id))
 
 
 # What a dig brings up (data/items/digging.json): shovelfuls by the surface material at the hole, through luck, counted by weight.
@@ -8110,6 +8141,9 @@ func _land_fall(stump_id: int, fall: Dictionary) -> void:
 		_items[id]["pos"] += along * clear
 		_wake_log(id)
 
+	if bool(fall.get("undermined", false)) or (_items.has(stump_id) and _stump_undermined(_items[stump_id])):
+		_break_stump(stump_id)   # dug out from under: no stump is left hanging over the hole
+
 
 # Where on segment a0-a1 (0 at a0 .. 1 at a1) the point p is nearest.
 static func _seg_t(a0: Vector2, a1: Vector2, p: Vector2) -> float:
@@ -8534,6 +8568,13 @@ func _rot(delta: float) -> void:
 	rot_scanned = 0
 	rot_removed = 0
 
+	if not _stumps_to_check.is_empty() and dig_support.is_valid():   # stumps loaded from a save, once: one left over a dug hole breaks up
+		for id in _stumps_to_check:
+			if _items.has(id) and _stump_undermined(_items[id]):
+				_break_stump(int(id))
+
+		_stumps_to_check.clear()
+
 	for id in _items.keys():
 		if _items.has(id) and _items[id].has("tree"):
 			rot_scanned += 1
@@ -8584,6 +8625,7 @@ func _load_trees() -> void:
 		tree.erase("fresh")   # it landed long ago
 		tree.erase("fall_left")
 		_items[_next_id] = {"number": 0, "count": 1, "pos": Vector3(row["pos"][0], row["pos"][1], row["pos"][2]), "left": 1.0e9, "tree": tree}
+		_stumps_to_check.append(_next_id)
 		_next_id += 1
 
 
