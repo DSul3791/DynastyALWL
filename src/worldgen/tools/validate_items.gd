@@ -973,7 +973,6 @@ func _init() -> void:
 			if String(def.get("kit", "")) != "" or not bool(def.get("walkover", false)):
 				want_item.call(String(def.get("kit", "")), "structures.json %s kit" % kind)
 
-
 		want_item.call(String(def.get("item", "")), "structures.json %s item" % kind)
 
 		if float(def.get("footprint_x", 0.0)) <= 0.0 or float(def.get("footprint_z", 0.0)) <= 0.0:

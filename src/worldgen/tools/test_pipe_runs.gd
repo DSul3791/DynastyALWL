@@ -480,6 +480,18 @@ func _init() -> void:
 
 	net_ok("joints")
 
+	# A run so short and steep that its two ends lie within a joint of each other never feeds itself (a loop would stop every solve).
+	var h: int = barrel(420.0, 400.0)
+	items.give(1, n("copper_pipe"), 1)
+	items.report_position(1, Vector3(419.0, 10.0, 400.0))
+	lay(slot_of("copper_pipe"), Vector3(420.0, 10.05, 400.0), Vector3(420.25, 10.3, 400.0))
+	var stub: int = run_between(Vector3(420.0, 10.05, 400.0), Vector3(420.25, 10.3, 400.0))
+	check(h != 0 and stub != 0 and not items._water.downstream(stub).has(stub) and not (items._water._up.get(stub, []) as Array).has(stub), "a 0.35 m steep run from a barrel is not linked to itself")
+	items._water.set_litres(h, 50.0)
+	items._water_dirty = true
+	items._water_tick(0.0)
+	net_ok("short steep run")
+
 	print("pipe runs: %d failures" % failures)
 	items._finish_writer()
 	quit(1 if failures > 0 else 0)

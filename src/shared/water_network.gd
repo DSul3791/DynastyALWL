@@ -342,7 +342,7 @@ func _feeders(piece: Dictionary) -> Array:
 		return out
 
 	for id in _near([piece["inlet"]], maxf(PORT_JOIN_M, float(piece.get("catch_m", 0.0)))):
-		if _links(pieces[id], piece):
+		if not is_same(pieces[id], piece) and _links(pieces[id], piece):   # never itself: a short closed piece's outlet can lie within a joint of its own inlet
 			out.append(id)
 
 	return out
@@ -360,7 +360,7 @@ func _fed(piece: Dictionary) -> Array:
 		points.append_array(piece["outlets"])
 
 	for id in _near(points, _reach_m):
-		if _links(piece, pieces[id]):
+		if not is_same(pieces[id], piece) and _links(piece, pieces[id]):
 			out.append(id)
 
 	return out
