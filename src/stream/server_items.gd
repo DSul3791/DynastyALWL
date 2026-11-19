@@ -17951,7 +17951,7 @@ func _pipe_fit(peer: int, inv, slot: int, kind: String, at: Vector3) -> void:
 
 # Hold E on a laid run, a tap or a drip head: it comes back to the pack (a run as the pieces it took). A run with a tap or drip head on its end
 # keeps it until that comes off.
-func _take_down_laid(peer: int, inv, id: int, it: Dictionary, def: Dictionary) -> void:
+func _take_down_laid(peer: int, _inv, id: int, it: Dictionary, def: Dictionary) -> void:
 	if str(def.get("hand_laid", "")) == "pipe":
 		for end in pipe_ends(it):
 			for other in _water_kind:
@@ -18114,13 +18114,13 @@ func _taps_fill(now_s: float) -> void:
 		var used: int = 0
 
 		for s in want:
-			var take: int = mini(_container_cap(box.numbers[s]) - box.wear[s], budget - used)
+			var add_ml: int = mini(_container_cap(box.numbers[s]) - box.wear[s], budget - used)
 
-			if take <= 0:
+			if add_ml <= 0:
 				break
 
-			box.wear[s] += take
-			used += take
+			box.wear[s] += add_ml
+			used += add_ml
 
 		if used > 0:
 			_water.set_litres(tank, float(held_ml - used) / 1000.0)
