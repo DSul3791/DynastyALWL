@@ -35,6 +35,7 @@ These retain the existing topic routes, with design sources separated from imple
 | Construction | [Buildables](design/buildables_plan.md) | Pieces, frames, roof shapes and placement behavior; item definitions remain in the catalog. | Door records below |
 | Backpacks | [Backpack design](design/BACKPACKS.md) | Backpack design and carrying rules; values and decision status stay in the source. | Relevant task record |
 | No spawning near builds | [No-spawn zones](design/NO_SPAWN_ZONES.md) | Nothing wild spawns or regrows within 20 m of what players put down; grass cleared close round it. | This design's For Dave section |
+| Server pick page (client) | [Server pick page](design/SERVER_PICK_PAGE.md) | PROPOSED 19 Nov: official server, saved direct connects with live status, plain failure words. Awaiting Dave's approval. | This design's For Dave section |
 | Torches and Tree sap | [Torches and Tree sap](design/TORCH_TREE_SAP.md) | Simple and Improved torch recipes, where Tree sap comes from; provisional values TS-1..TS-7. | Relevant task record |
 | Smelters | [Smelters light like a campfire](design/SMELTER_LIGHTING.md) | E lights and puts out every smelter tier, fire shown only while lit; provisional choices SL-1..SL-8. | Relevant task record |
 | Craft finish and countdown | [A craft ends with its product or a reason](design/CRAFT_FINISH.md) | Kept items count from the ground and nearby containers at both ends of a craft; the countdown is the finish; provisional CF-1..CF-2. | This design's For Dave section |
