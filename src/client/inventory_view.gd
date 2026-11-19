@@ -177,7 +177,7 @@ var _drink_msec: int = 0
 const EAT_HOLD_SLACK_MSEC := 50   # room for network jitter: a bite that arrives too soon is dropped and ends the hold (press E again)
 const EAT_HOLD_REFUSED_MSEC := 1000   # no change in the slot this long after a bite: the server said no (full, not known), stop
 var _eat_hold_slot: int = -1          # the pack slot being eaten from while E is held, -1 when none
-var _eat_hold_hover: int = -1         # _hover when the hold began: the pointer moving to another slot (or off) stops it
+var _eat_hold_still: Callable = Callable()   # () -> true while the hold goes on: E on the same pack slot, or the hotbar key or click (eat_from_hotbar)
 var _eat_hold_sign: Array = []        # the slot's number, count and wear when the last bite was sent
 var _eat_hold_sent_msec: int = 0
 var gather_event: Callable             # () when the player gathers something by hand (E): the view dips a little (no arm or body clip: Dave 17 Nov 2026)
@@ -2732,6 +2732,36 @@ func eat_slot(slot: int) -> bool:
 	return true
 
 
+func _start_eat_hold(slot: int, still: Callable) -> void:
+	_eat_hold_slot = slot
+	_eat_hold_still = still
+	_eat_hold_sign = _eat_sign(slot)
+	_eat_hold_sent_msec = Time.get_ticks_msec()
+
+
+# Food, drink or medicine on the hotbar is eaten straight from it, never taken in hand (Dave's play test 19 Nov 2026: "if you click on food in a
+# hotbar or hold down the hotbar key on a food item it should just eat the food and keep eating it like holding E in the inventory"). Its number
+# key (HeldItem.press_slot, in the world or with the screen open) or a left click on its hotbar box eats one bite, and holding the key or the button
+# keeps eating through the same hold as E in the pack (_eat_hold_tick: one bite at a time at the server's pace, every bite checked by the server).
+# The hand keeps what it held. Provisional (Dave to confirm): a quick tap eats one bite; the empty slot simply leaves the hotbar.
+# `by_click`: the hold follows the left button and the pointer staying on that box; otherwise it follows the key's own number key.
+# True when the slot was food and a bite went (or was refused with the usual notice): the caller does nothing else with it.
+func eat_from_hotbar(key: int, by_click: bool = false) -> bool:
+	var slot: int = key_slot(key)
+
+	if slot < 0 or not edible_slot(slot):
+		return false
+
+	if eat_slot(slot):
+		if by_click:
+			_start_eat_hold(slot, func() -> bool: return Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and open and hotbar_hover == key and not get_viewport().gui_is_dragging())
+		else:
+			var number_key: Key = KEY_0 if key == 9 else (KEY_1 + key) as Key
+			_start_eat_hold(slot, func() -> bool: return Input.is_key_pressed(number_key))
+
+	return true
+
+
 # The server's gap between bites (server_items._eat) or mouthfuls (_drink_from_container), plus slack.
 func _eat_hold_pace(slot: int) -> int:
 	if container_cap(slot) > 0:
@@ -2751,9 +2781,8 @@ func _eat_hold_tick(now: int) -> void:
 		return
 
 	var slot: int = _eat_hold_slot
-	var held: bool = Input.is_key_pressed(int(KeyBindings.binding("use_item")["key"]) as Key)
 
-	if not held or not open or chest_mode or _hover != _eat_hold_hover or slot >= inventory.slot_count or inventory.numbers[slot] != int(_eat_hold_sign[0]):
+	if not bool(_eat_hold_still.call()) or slot >= inventory.slot_count or inventory.numbers[slot] != int(_eat_hold_sign[0]):
 		_eat_hold_slot = -1
 		return
 
@@ -5805,10 +5834,9 @@ func quick_key(event: InputEventKey) -> bool:
 			return true
 
 		if slot >= 0 and not chest_mode and eat_slot(slot):
-			_eat_hold_slot = slot
-			_eat_hold_hover = _hover
-			_eat_hold_sign = _eat_sign(slot)
-			_eat_hold_sent_msec = Time.get_ticks_msec()
+			var hover: int = _hover   # the pointer moving to another slot (or off) stops it
+			var e_key: Key = int(KeyBindings.binding("use_item")["key"]) as Key
+			_start_eat_hold(slot, func() -> bool: return Input.is_key_pressed(e_key) and open and not chest_mode and _hover == hover)
 
 		return true
 
