@@ -7768,6 +7768,7 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 		flint_p = float(flint_cfg.get("near_water_chance", flint_p))
 
 	var taken: int = 0
+	var stone_kg: float = maxf(CarryRules.weight_of("stone", _carry_cfg) if not _carry_cfg.is_empty() else 1.0, 0.05)
 
 	for n in range(pieces):
 		var left: int = int(it["count"]) - taken
@@ -7787,9 +7788,15 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 		if info.has("ore") and not ore_cfg.is_empty() and a_pick and material_ok:
 			var rock_piece: bool = (ore_cfg.get("rocks", {}) as Dictionary).has(str(info["ore"])) and not (ore_cfg.get("items", {}) as Dictionary).has(str(info["ore"]))
 			var share: float = float(ore_cfg.get("rock_piece_share", 0.5)) if rock_piece else float(info.get("grade", ore_cfg.get("piece_share", 0.5)))   # a copper rock's own grade
+			var piece_id: String = str((ore_cfg.get("rocks", {}) as Dictionary).get(str(info["ore"]), "")) if rock_piece else str((ore_cfg.get("items", {}) as Dictionary).get(str(info["ore"]), ""))
+			# Ore by weight (boulders PLAN.md 3c, answered for Dave 19 Nov 2026, PROVISIONAL): the share is of the rock's weight, and an ore piece
+			# takes its own weight out of the rock in stones (a 1.5 kg ore piece is 3 stones of 0.5 kg), so a 30% copper rock gives about 30% of its
+			# kg as ore, not 35 times more pieces than before the 0.5 kg stones. A piece costs c stones (its weight in stones, at least 1), and the
+			# chance p per piece meets p c / (p c + 1 - p) = share, the share of the rock taken out as ore; at c = 1 (salt, coal) p is the share.
+			var ore_cost: int = _ore_cost(piece_id, stone_kg)
+			var chance: float = clampf(share, 0.0, 1.0) / maxf(float(ore_cost) * (1.0 - clampf(share, 0.0, 1.0)) + clampf(share, 0.0, 1.0), 0.0001)
 
-			if fate(peer, "boulder_ore", share):
-				var piece_id: String = str((ore_cfg.get("rocks", {}) as Dictionary).get(str(info["ore"]), "")) if rock_piece else str((ore_cfg.get("items", {}) as Dictionary).get(str(info["ore"]), ""))
+			if left >= ore_cost and fate(peer, "boulder_ore", chance):
 				ore_item = table.number_of(piece_id)
 
 				if ore_item > 0 and not rock_piece:
@@ -7798,7 +7805,7 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 		# Flint (F-02): now and then the piece that comes away is a flint nodule (more near water). A nodule or an ore is one piece, never a double.
 		if ore_item > 0:
 			_take_in(peer, inv, ore_item, 1, 0, _overflow_spot(peer, inv, ore_item, 1, it, size_now, 1.5))   # ore and flint make their own piles beside the stone one
-			out = 1
+			out = _ore_cost(table.id_of(ore_item), stone_kg)   # the rock gives up the ore's own weight in stones
 		elif flint_n > 0 and flint_p > 0.0 and fate(peer, "boulder_flint", flint_p):
 			_take_in(peer, inv, flint_n, 1, 0, _overflow_spot(peer, inv, flint_n, 1, it, size_now, -1.5))
 			out = 1
@@ -7815,6 +7822,14 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 	if int(it["count"]) <= 0:
 		_boulder_drops.erase([peer, it["scatter"]])
 		_items.erase(id)
+
+
+# How many stones of rock one ore piece `id` takes out of a boulder: its own weight in stones of `stone_kg`, at least one (ore by weight, PLAN.md 3c).
+func _ore_cost(id: String, stone_kg: float) -> int:
+	if id == "" or _carry_cfg.is_empty():
+		return 1
+
+	return maxi(int(round(CarryRules.weight_of(id, _carry_cfg) / stone_kg)), 1)
 
 
 # Where a miner's stones land when the pack is full (boulders PLAN.md 5): 1 m behind the miner on the line from the rock, fixed the first
@@ -11445,7 +11460,7 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 		# A rock pile gives back all the stones it was made of (what does not fit in the pack lies on the ground).
 		var was_src: String = _gain_source
 		_gain_source = SRC_RETURN
-		give(peer, table.number_of("stone"), int(def.get("stones", 45)))
+		give(peer, table.number_of("stone"), int(def.get("stones", 90)))
 		_gain_source = was_src
 		_items.erase(id)
 		_dirty = true

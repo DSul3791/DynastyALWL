@@ -218,8 +218,9 @@ func _init() -> void:
 
 	print("mined: grade 0.2 gave %d ore of %d pieces, grade 0.6 gave %d of %d" % [got[0][0], got[0][1], got[1][0], got[1][1]])
 	check(got[0][1] > 100 and got[1][1] > 100 and got[1][0] > got[0][0] * 2, "a richer rock gives more copper (%d against %d)" % [got[1][0], got[0][0]])
-	var rate_low: float = float(got[0][0]) / float(maxi(got[0][1], 1))
-	check(rate_low > 0.1 and rate_low < 0.3, "a grade 0.2 rock gives about a fifth copper (%.2f)" % rate_low)
+	# Ore by weight (boulders PLAN.md 3c, 19 Nov 2026): a 1.5 kg ore piece takes 3 stones of 0.5 kg out of the rock, so the grade is the share of the rock's weight.
+	var rate_low: float = float(got[0][0] * 3) / float(maxi(got[0][1] + got[0][0] * 2, 1))
+	check(rate_low > 0.1 and rate_low < 0.3, "a grade 0.2 rock gives about a fifth of its weight as copper (%.2f)" % rate_low)
 
 	# 5. The client mesh: three lumpy shapes about 1 m across, flat underneath, wider than tall.
 	var box_ok: bool = true
