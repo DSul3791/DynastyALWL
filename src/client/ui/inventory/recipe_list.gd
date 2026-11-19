@@ -125,8 +125,10 @@ func show_category(category: String) -> void:
 
 
 func refresh() -> void:
+	var typing: bool = view._recipe_search != null and view._recipe_search.text.strip_edges() != ""   # words typed search every tab, so none is lit
+
 	for tab_name in _category_buttons:
-		(_category_buttons[tab_name] as Button).button_pressed = str(tab_name) == _recipe_category
+		(_category_buttons[tab_name] as Button).button_pressed = not typing and str(tab_name) == _recipe_category
 
 	var rows: Array = []
 	var numbers: PackedInt32Array = PackedInt32Array()
@@ -348,8 +350,8 @@ func _style_row(entry: Button, number: int, makeable: bool, ready: bool) -> void
 		InventoryLook.glow_recipe_row(entry, ItemSlot.glow_cfg(), InventoryLook.unit_of(view))
 
 
-# The search box and the category tabs at the top of the Make list (Dave 25 Oct). Search matches the recipe's name, what it makes and its ingredients (1 Nov);
-# a tab shows one category and the search works inside it. The same list is the crafting table, forge and every other station's menu.
+# The search box and the category tabs at the top of the Make list (Dave 25 Oct). Search matches the recipe's name and what it makes (RecipeFilter);
+# a tab shows one category, and words typed search every category (Dave 19 Nov 2026). The same list is the crafting table, forge and every other station's menu.
 func _build_recipe_filter() -> Control:
 	var holder: VBoxContainer = VBoxContainer.new()
 	# A real search box (Dave 4 Nov): a field background and border, a magnifying glass on the left, and no words in it.
@@ -420,6 +422,8 @@ func _build_tabs() -> Control:
 		tab.toggled.connect(func(_on: bool) -> void: tab.queue_redraw())
 		tab.pressed.connect(func():
 			_recipe_category = str(label)
+			if view._recipe_search != null:
+				view._recipe_search.text = ""   # a tab click shows that tab whole (the search covers every tab, Dave 19 Nov 2026)
 			view._refresh())
 		tabs.add_child(tab)
 		_category_buttons[str(label)] = tab

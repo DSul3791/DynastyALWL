@@ -48,9 +48,10 @@ func _init() -> void:
 	check(fire.all(func(r): return not ["Beet roast", "Cabbage stew", "Plantain poultice"].has(str(r["name"]))), "Beet roast, Cabbage stew and Plantain poultice are gone")
 	check(RecipeFilter.matches("Rough bed", "") and not RecipeFilter.matches("Rough bed", "campfire") and RecipeFilter.matches("Campfire", "CAMP"), "the Admin kits follow the box by name")
 
-	# Several words must all match; a tab narrows first.
+	# Several words must all match; typed words search every tab (Dave 19 Nov 2026: "should always search all items").
 	check(not RecipeFilter.shown(axe, "", "axe zzzzqq", table), "a word that matches nothing hides it")
-	check(RecipeFilter.shown(axe, str(axe["category"]), "axe", table) and not RecipeFilter.shown(axe, "Medicine" if str(axe["category"]) != "Medicine" else "Tools", "axe", table), "the search works inside the tab you are on")
+	check(RecipeFilter.shown(axe, str(axe["category"]), "axe", table) and RecipeFilter.shown(axe, "Medicine" if str(axe["category"]) != "Medicine" else "Tools", "axe", table), "the search finds it from any tab")
+	check(not RecipeFilter.shown(axe, "Medicine" if str(axe["category"]) != "Medicine" else "Tools", "", table), "with the box empty a tab still shows only its own")
 
 	# Typing never loses a recipe the name search would show.
 	var broke: int = 0

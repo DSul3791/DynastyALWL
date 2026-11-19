@@ -35,7 +35,7 @@ func _init() -> void:
 	check(tw.all(func(r): return str(r["name"]).to_lower().contains("tw")), "typing 'tw' shows only names with tw")
 	check(RecipeFilter.shown(recipes.recipe(1), "", "  TWINE "), "search ignores case and spaces")
 	check(not RecipeFilter.shown(recipes.recipe(1), "", "axe"), "typing 'axe' hides Twine")
-	check(RecipeFilter.shown(recipes.recipe(2), "Tools", "axe") and not RecipeFilter.shown(recipes.recipe(2), "Weapons", "axe"), "a tab and a search work together")
+	check(RecipeFilter.shown(recipes.recipe(2), "Tools", "axe") and RecipeFilter.shown(recipes.recipe(2), "Weapons", "axe"), "a search looks in every tab, whichever is chosen (Dave 19 Nov 2026)")
 
 	for category in RecipeFilter.CATEGORIES:
 		var inside: Array = all.filter(func(r): return RecipeFilter.shown(r, category, ""))
