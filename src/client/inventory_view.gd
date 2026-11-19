@@ -1292,7 +1292,9 @@ func _note_crop(id: int, row: Array, again: bool = false) -> void:
 	var stage: int = int(extra.get("stage", 0)) if crop != "" else -1
 	var cells: Array = extra.get("cells", [])   # a plot of several square metres: one crop each (server_items.crop_row_extra)
 	var rec: Dictionary = _world[id]
-	rec["moist"] = int(extra.get("moist", -1))   # the soil's moisture for the E prompt (FarmRules.soil_words)
+
+	if not again:
+		rec["moist"] = int(extra.get("moist", -1))   # the soil's moisture for the E prompt (FarmRules.soil_words); a redrawn look's row may be older
 
 	if not again and str(rec.get("crop", "")) == crop and int(rec.get("stage", -1)) == stage and str(rec.get("cells", [])) == str(cells):
 		return

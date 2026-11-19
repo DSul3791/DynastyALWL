@@ -18105,7 +18105,7 @@ func compost_bed(peer: int, inv, bed_id: int) -> bool:
 # A bed's world-row extra: {"moist": its soil moisture percent in MOIST_STEP_PCT steps} for every bed (garden moisture, Dave 19 Nov 2026), with
 # "crop": crop id and "stage": 0 to 3 when a crop grows on it; {} for any other piece (no protocol bump: PROTOCOL.md, row extras).
 # A plot of several square metres adds "cells": [[crop id or "", stage or -1]] in _bed_cells order, and its "crop" and "stage" name what E does next: the first ripe
-# crop, else "" when a square metre is still empty (E sows it), else its first crop.
+# crop, else its first crop (a square metre still empty does not hide the others from E's watering: only the hoe's Plant grid sows, 19 Nov 2026).
 func crop_row_extra(it: Dictionary) -> Dictionary:
 	if not _is_plot_kind(str(it["struct"].get("kind", ""))) or it["struct"].has("site"):
 		return {}
@@ -18120,13 +18120,11 @@ func crop_row_extra(it: Dictionary) -> Dictionary:
 
 	var rows: Array = []
 	var ripe: Array = []
-	var empty: bool = false
 	var first: Array = []
 
 	for cell in cells:
 		var crop: Dictionary = _crops.get(_bed_key(cell), {})
 		rows.append(["", -1] if crop.is_empty() else [str(crop["crop"]), crop_stage(crop)])
-		empty = empty or crop.is_empty()
 
 		if not crop.is_empty() and ripe.is_empty() and crop_stage(crop) >= 3:
 			ripe = rows[rows.size() - 1]
@@ -18137,7 +18135,7 @@ func crop_row_extra(it: Dictionary) -> Dictionary:
 	if first.is_empty():
 		return {"moist": moist}
 
-	var shown: Array = ripe if not ripe.is_empty() else (["", 0] if empty else first)
+	var shown: Array = ripe if not ripe.is_empty() else first
 	return {"crop": shown[0], "stage": shown[1], "cells": rows, "moist": moist}
 
 

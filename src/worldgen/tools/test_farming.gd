@@ -326,6 +326,7 @@ func _plot_takedown_checks() -> void:
 	give("barley_seeds", 1)
 	sow(920002, "barley_seeds")
 	check(items._crops.has(key) and str(items.crop_row_extra(items._items[920002])["cells"][0][0]) == "barley", "barley is sown in a garden plot's first square metre")
+	check(str(items.crop_row_extra(items._items[920002]).get("crop", "")) == "barley", "a part-planted plot's row names its crop, so E waters it (an empty square metre is the hoe's to sow)")
 	# A garden plot is a hammer blueprint piece (blueprints.json), so taking it down gives its materials back, not a kit.
 	# A group cost (Nails) comes back as its lowest member (Bronze nails, ItemTable.spend_order), so the count is of the item the refund gives.
 	var cost: Array = items._blueprints[int(items._blueprint_of_kit["wooden_garden_plot_kit"])]["cost"]
