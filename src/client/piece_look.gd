@@ -4530,7 +4530,7 @@ static func bin_wall_m(side: float) -> float:
 # cuts into the core, black peat in each, a dug-out lump beside each. Nothing is solid.
 # Dave 19 Nov 2026 ("make sure they are obvious and visible for characters to find"): a bright ochre against dark peat and mud, 3 m across its
 # rust, lifted 2 to 4 cm and draped on a middle ring so the ground does not swallow it, a faint glow of its own so it still reads at dusk and
-# in rain, and the grass and small plants cleared off it (terrain_client _sync_cleared). Under 800 triangles in every state.
+# in rain, and the grass and small plants cleared off it (terrain_client _sync_cleared). Under the 300 triangle piece budget in every state.
 # `ground` (x, z) -> the ground's height there above the patch's own origin, both in the patch's frame: every ring point, lump and cut is
 # lifted onto it, so the stain drapes over a gentle rise instead of sinking into it. Unset: flat ground.
 static func _on_ground(ground: Callable, p: Vector3) -> Vector3:
@@ -4582,29 +4582,29 @@ static func _ochre_mat(c: Color) -> StandardMaterial3D:
 static func bog_iron_patch(state: String = "dry", ground: Callable = Callable()) -> Node3D:
 	var root: Node3D = Node3D.new()
 	var ore: StandardMaterial3D = _tone_mat(Color(0.4, 0.15, 0.07))
-	_blob(root, 3.0, 0.02, 811, _ochre_mat(Color(0.58, 0.31, 0.12)), 18, ground)     # the outer stain, orange-brown
-	_blob(root, 2.3, 0.03, 812, _ochre_mat(Color(0.78, 0.38, 0.1)), 18, ground)      # bright rust-orange ochre
-	_blob(root, 1.3, 0.04, 813, _ochre_mat(Color(0.62, 0.22, 0.07)), 18, ground)     # the red heart
+	_blob(root, 3.0, 0.02, 811, _ochre_mat(Color(0.58, 0.31, 0.12)), 12, ground)     # the outer stain, orange-brown
+	_blob(root, 2.3, 0.03, 812, _ochre_mat(Color(0.78, 0.38, 0.1)), 12, ground)      # bright rust-orange ochre
+	_blob(root, 1.3, 0.04, 813, _ochre_mat(Color(0.62, 0.22, 0.07)), 12, ground)     # the red heart
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = 814
 
-	for k in 12:
+	for k in 6:
 		var a: float = rng.randf_range(0.0, TAU)
 		var r: float = rng.randf_range(0.2, 1.7)
-		_dome(root, rng.randf_range(0.14, 0.24), _on_ground(ground, Vector3(cos(a) * r, 0.03, sin(a) * r)), Vector3(1.3, 0.6, 1.0), ore, 5, 1)
+		_dome(root, rng.randf_range(0.18, 0.28), _on_ground(ground, Vector3(cos(a) * r, 0.03, sin(a) * r)), Vector3(1.3, 0.6, 1.0), ore, 5, 1)
 
 	if state == "wet":
-		_blob(root, 1.5, 0.05, 815, _tone_mat(Color(0.36, 0.2, 0.09)), 14, ground)   # the orange-tinted water over the core
+		_blob(root, 1.5, 0.05, 815, _tone_mat(Color(0.36, 0.2, 0.09)), 10, ground)   # the orange-tinted water over the core
 		var film: Array = [_tone_mat(Color(0.42, 0.44, 0.5)), _tone_mat(Color(0.36, 0.45, 0.4)), _tone_mat(Color(0.5, 0.44, 0.34))]
 
-		for k in 6:
+		for k in 3:
 			var a: float = rng.randf_range(0.0, TAU)
 			var r: float = rng.randf_range(0.1, 1.0)
-			_box_rot(root, Vector3(rng.randf_range(0.25, 0.5), 0.004, rng.randf_range(0.2, 0.4)), _on_ground(ground, Vector3(cos(a) * r, 0.054, sin(a) * r)), Vector3(0.0, rng.randf_range(0.0, PI), 0.0), film[k % 3])
+			_box_rot(root, Vector3(rng.randf_range(0.3, 0.55), 0.004, rng.randf_range(0.2, 0.4)), _on_ground(ground, Vector3(cos(a) * r, 0.054, sin(a) * r)), Vector3(0.0, rng.randf_range(0.0, PI), 0.0), film[k % 3])
 	elif state == "dug":
 		var peat: StandardMaterial3D = _tone_mat(Color(0.14, 0.1, 0.07))
 
-		for at in [Vector3(-0.5, 0.0, 0.3), Vector3(0.45, 0.0, -0.2), Vector3(0.1, 0.0, 0.8)]:
+		for at in [Vector3(-0.5, 0.0, 0.3), Vector3(0.45, 0.0, -0.2)]:
 			var cut: Vector3 = _on_ground(ground, at)
 			_box_rot(root, Vector3(0.5, 0.02, 0.32), cut + Vector3(0.0, 0.042, 0.0), Vector3(0.0, rng.randf_range(-0.5, 0.5), 0.0), peat)   # the shovel cut, black peat
 			_dome(root, 0.16, cut + Vector3(0.38, 0.04, 0.0), Vector3(1.2, 0.7, 1.0), ore, 5, 1)                                              # the lump it turned up

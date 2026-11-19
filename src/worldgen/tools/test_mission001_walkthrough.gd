@@ -397,7 +397,7 @@ func make_iron(wanted: int) -> bool:
 		go((items._items[smelter]["pos"] as Vector3) + Vector3(-1.5, 0.0, 0.0))   # beside it: E reaches 3 m (use_reach_m)
 		items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E: light it (it smelts only while lit, Dave 17 Nov 2026)
 		items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E at the lit smelter: work the bellows
-		run(float(smelt["ingot_s"]) / float(smelt["bellows_speed"]) * float(ore / 2) + 5.0)   # it goes out with its last fuel, which stops the bellows
+		run(float(smelt["ingot_s"]) / float(smelt["bellows_speed"]) * float(ore) / 2.0 + 5.0)   # it goes out with its last fuel, which stops the bellows
 		items.action(1, Net.ACT_CHEST_OPEN, smelter, 0, 0, Vector3.ZERO)
 		items.action(1, Net.ACT_BULK, ItemsScript.BULK_TAKE_ALL, 0, 0, Vector3.ZERO)
 		items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
