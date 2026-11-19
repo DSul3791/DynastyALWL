@@ -10625,8 +10625,9 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		return   # a site counts as built, holds nothing up and shelters nobody until _finish_site
 
 	_after_built(peer, entry, def)
-	_tank_split_pipe(_next_id - 1)
-	_water_add(_next_id - 1)
+	var placed: int = _next_id - 1   # before a split: the split's new half takes the next id
+	_tank_split_pipe(placed)
+	_water_add(placed)
 	_dirty = true
 
 
@@ -17677,9 +17678,9 @@ func _pipe_fit_point(at: Vector3, reach: float = PipeRules.SNAP_M, rise: float =
 
 
 # A barrel (a tank with a level_port, its bottom point) set down with that point within TANK_SNAP_M across and TANK_SNAP_RISE_M up or down of a free
-# pipe end or joint is moved the little way across onto it, so pipes laid first can take a barrel anywhere they join (PLUMBING_DESIGN s9, PV-9).
+# pipe end or joint is moved the little way onto it, so pipes laid first can take a barrel anywhere they join (PLUMBING_DESIGN s9, PV-9).
 const TANK_SNAP_M := 0.6
-const TANK_SNAP_RISE_M := 0.25   # under WaterNetwork.PORT_JOIN_M: the barrel keeps its own height (its ground checks passed there) and still joins
+const TANK_SNAP_RISE_M := 0.25   # at most this up or down: the ground checks passed this near
 
 
 func _tank_port(kind: String) -> Variant:
@@ -17703,8 +17704,7 @@ func _tank_spot_on_pipe(kind: String, spot: Vector3, yaw_deg: int) -> Vector3:
 	if on.is_empty():
 		return spot
 
-	var moved: Vector3 = (on["at"] as Vector3) - offset
-	return Vector3(moved.x, spot.y, moved.z)   # moved across only
+	return (on["at"] as Vector3) - offset   # Dave 19 Nov 2026 21:56Z: the middle of its bottom lands exactly on the pipe's end or joint
 
 
 # A barrel just standing whose bottom point lies on a run's joint: the run is split there, so the barrel joins both halves.

@@ -187,5 +187,11 @@ func _init() -> void:
 	short.solve(0.0)
 	check(short.downstream(1).has(2) and not short.downstream(2).has(2) and (short._order() as Array).size() == short.pieces.size(), "a 0.2 m closed piece under a spout is fed, but not by itself (%s)" % str(short.downstream(2)))
 
+	# Added again in place (moved or turned) a piece keeps no old link: no neighbour lists it twice or after it moved away.
+	short.add(2, _pipe(Vector3(0, 1.0, 0), Vector3(2.0, 0.9, 0)))
+	short.add(2, _pipe(Vector3(5, 1.0, 0), Vector3(7.0, 0.9, 0)))
+	short.solve(1.0)
+	check(not short.downstream(1).has(2) and (short._order() as Array).size() == short.pieces.size(), "a piece added again somewhere else leaves its old feeder (%s)" % str(short.downstream(1)))
+
 	print("water network: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -105,11 +105,21 @@ func check(piece: Dictionary) -> String:
 
 # Adds a piece and links it, unless check() says no (then it stands alone). Returns check()'s answer. Solve again after.
 func add(id: int, piece: Dictionary) -> String:
-	var why: String = check(piece)
+	if pieces.has(id):   # added again in place: its old self and links go first (its litres and quality stay), so no neighbour keeps a stale link
+		for u in _up.get(id, []):
+			if _down.has(u):
+				_down[u].erase(id)
 
-	if pieces.has(id):
+		for d in _down.get(id, []):
+			if _up.has(d):
+				_up[d].erase(id)
+
 		_unfile(id)
+		pieces.erase(id)
+		_down[id] = []
+		_up[id] = []
 
+	var why: String = check(piece)
 	pieces[id] = piece
 	_down[id] = []
 	_up[id] = []
@@ -425,7 +435,8 @@ func solve(now_s: float) -> void:
 		var feed_y: float = _feed_y(id, float(surface[id]))
 
 		for d in _down[id]:
-			surface[d] = maxf(float(surface[d]), feed_y)
+			if surface.has(d):   # a link to a piece out of the order (a loop or a stale id) is skipped, never a stopped solve; check() and add() keep both out
+				surface[d] = maxf(float(surface[d]), feed_y)
 
 	var take: Dictionary = {}       # id -> most it accepts, L/min, given what is below it
 
@@ -473,6 +484,9 @@ func _share(id: int, amount: float, take: Dictionary, arriving: Dictionary, inco
 	var room: Array = []
 
 	for d in _down[id]:
+		if not take.has(d):
+			continue
+
 		var r: float = minf(_limit(id, d), float(take[d]) - float(arriving[d]))
 
 		if r > 0.0:
@@ -543,7 +557,8 @@ func _below(id: int, take: Dictionary) -> float:
 	var sum: float = 0.0
 
 	for d in _down[id]:
-		sum += minf(_limit(id, d), float(take[d]))
+		if take.has(d):
+			sum += minf(_limit(id, d), float(take[d]))
 
 	return sum
 
@@ -608,6 +623,9 @@ func _order() -> Array:
 		out.append(id)
 
 		for d in _down[id]:
+			if not left.has(d):
+				continue
+
 			left[d] = int(left[d]) - 1
 
 			if int(left[d]) == 0:
