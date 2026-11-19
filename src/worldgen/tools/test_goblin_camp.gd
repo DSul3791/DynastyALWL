@@ -209,7 +209,7 @@ func _npcs() -> void:
 	# A stranger walks up slowly: the trader lets them to its trader keep distance (inside talking range), and backs off from closer.
 	var att: Dictionary = data_att()
 	var keep: float = float(att["trader_keep_m"]["Stranger"])
-	check(keep < 4.5, "a stranger can come within talking range of the trader (%.1f m)" % keep)
+	check(keep < 3.0, "a stranger can come within the client's talk reach of the trader (dialogue_view.gd 3 m; keeps %.1f m)" % keep)
 	var npc_s: Dictionary = npcs.npcs["skritch"]
 	player[0] = spot + Vector3(-(keep - 1.5), 0.0, 0.0)
 	items.report_position(1, player[0])
@@ -235,7 +235,10 @@ func _npcs() -> void:
 	player[0] = spot + Vector3(-30.0, 0.0, 0.0)
 	run.call(20.0)
 	var inv = items.inventory_of(1)
+	var bag_from: int = inv.bag_from
+	inv.bag_from = 0   # onto the hotbar, as server_items gives in hand
 	inv.add(items.table.number_of("spear"), 1)
+	inv.bag_from = bag_from
 	check(tribes.armed(1), "a spear on the hotbar counts as a weapon carried")
 	var near_p: Dictionary = {"peer": 1, "key": "goblin-test-key1", "pos": spot + Vector3(-5.0, 0.0, 0.0)}
 	check(tribes.keep_from("skritch", near_p) >= keep + float(att["armed_keep_m"]) - 0.01, "a weapon carrier is kept further off")

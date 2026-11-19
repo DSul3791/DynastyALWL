@@ -763,12 +763,13 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> Dictionary:
 		var member: String = tribes.member_along(origin, dir, reach)
+		var target: int = animals.target_along(origin, dir, reach)
+		var member_d: float = Vector2(npcs.npcs[member]["pos"].x - origin.x, npcs.npcs[member]["pos"].z - origin.z).length() if member != "" else INF
+		var animal_d: float = Vector2(animals.animals[target]["pos"].x - origin.x, animals.animals[target]["pos"].z - origin.z).length() if target != 0 else INF
 
-		if member != "":   # a blow at a goblin tribe member hurts nobody: the tribe turns on that player (server_tribes.gd harm)
+		if member != "" and member_d <= animal_d:   # a blow at a goblin tribe member (the nearer one) hurts nobody: the tribe turns on that player (server_tribes.gd harm)
 			tribes.harm(peer, member)
 			return {}
-
-		var target: int = animals.target_along(origin, dir, reach)
 
 		if target == 0:
 			return {}
@@ -797,7 +798,9 @@ func _ready() -> void:
 
 		if said != "":
 			items._say(peer, said)
-			trade.open(peer, npc_id))   # the window is sent again with the new demand
+
+			if tribes.refuse(peer, npc_id, false) == "":   # a refused deal (an angry tribe) has said why once: no window again
+				trade.open(peer, npc_id))   # the window is sent again with the new demand
 	items.npc_name = func(id): return tribes.name_of_rep(id) if tribes.name_of_rep(id) != "" else str(npcs.npcs.get(id, {}).get("name", id))   # a tribe's standing is named for the tribe
 	dialogue.hour_now = func(): return game_clock.hour()
 	@warning_ignore("confusable_local_declaration")

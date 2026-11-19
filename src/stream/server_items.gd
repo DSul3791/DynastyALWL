@@ -6252,7 +6252,9 @@ func _camp_fire_tick() -> void:
 	var fires: Array = NpcCamp.fires()
 
 	for k in fires.size():
-		if (_items.get(int(_camp_fire_ids.get(k, 0)), {}).get("fire", {}) as Dictionary).has("camp"):   # the id itself may be reused after a world reset
+		var laid: Dictionary = _items.get(int(_camp_fire_ids.get(k, 0)), {}).get("fire", {})
+
+		if laid.has("camp") and int(laid["camp"]) == k:   # this fire still stands (its id may be reused after a world reset, even by another camp fire)
 			continue
 
 		var spot: Vector2 = Vector2(float(fires[k]["x"]), float(fires[k]["z"]))
@@ -13767,8 +13769,10 @@ func add_rep(peer: int, npc_id: String, points: int) -> void:
 	_dirty = true
 	sync_reputation(peer)
 
-	if rank_of(after) != rank_of(before):
-		_say(peer, "You are now a %s of that person: %s." % [rank_of(after).to_lower(), npc_name.call(_rep_id(npc_id)) if npc_name.is_valid() else npc_id])   # a tribe member: the tribe's name
+	if rank_of(after) != rank_of(before) and _rep_id(npc_id) != npc_id:   # a goblin tribe member: the standing is the tribe's
+		_say(peer, "You are now a %s of %s." % [rank_of(after).to_lower(), npc_name.call(_rep_id(npc_id)) if npc_name.is_valid() else _rep_id(npc_id)])
+	elif rank_of(after) != rank_of(before):
+		_say(peer, "You are now a %s of that person: %s." % [rank_of(after).to_lower(), npc_name.call(npc_id) if npc_name.is_valid() else npc_id])
 
 
 var npc_name: Callable   # (npc id) -> display name, wired by the server

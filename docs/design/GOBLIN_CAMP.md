@@ -19,7 +19,7 @@ Answered for him (coordinator, 19 Nov 2026, provisional): the cave 2.8 km east o
   - Each one stands at its own spot all day and night.
   - The client draws them with the wild goblin's model and clips (`npc_view.gd` asks `animal_view.make_goblin`), and their names show above their heads.
 - **Apprehensive** (`server_tribes.gd avoid`):
-  - A goblin keeps a distance that depends on your standing with the tribe. Other goblins keep 6 / 4 / 3 / 2 m for Stranger / Known / Friend / Trusted. The trader keeps 3 / 2.5 / 2 / 1.5 m, which is inside talking range (4.5 m).
+  - A goblin keeps a distance that depends on your standing with the tribe. Other goblins keep 6 / 4 / 3 / 2 m for Stranger / Known / Friend / Trusted. The trader keeps 2.5 / 2 / 1.5 / 1.2 m, which is inside the 3 m "Press E to talk" reach.
   - Come closer than that and it backs away from you while still facing you, but never more than 8 m from its spot. Just outside the distance it holds still and watches. It turns to watch anyone within 20 m.
   - Inside 10 m, running (faster than 3 m/s) or carrying a weapon on the hotbar makes them keep 4 m further away. The trader won't start a talk or a trade then: "No blades near the camp. Put weapons in your pack." / "Slow! Slow, big-folk."
 - **Warming up.** Standing is kept for the whole tribe (`rep_key` tribe_ragtooth): what you earn with one goblin counts with all of them. A completed purchase or sale earns 1 standing, at most once a game day. Better standing brings them closer and lowers prices through Hob's own trade rule (rank steps in `coins.json` trade). The dialogue's rank barks also change: Skritch greets a Friend warmly.
@@ -33,7 +33,7 @@ Answered for him (coordinator, 19 Nov 2026, provisional): the cave 2.8 km east o
 ## For Dave (PROVISIONAL, change any of these)
 - **GOBLIN-1 Where.** The cave 2.8 km east, at its mouth. Getting up from the river is steep (30 degrees or more), so the easy way in is along the bench from the east.
 - **GOBLIN-2 Who.** Three goblins (Skritch the trader, Rukz the lookout, Snag at the fire) and the tribe name Ragtooth. They stand day and night. They do not sleep or sit yet, because the goblin sit clip lies too flat.
-- **GOBLIN-3 Keep distances.** 6 / 4 / 3 / 2 m by rank, the trader 3 / 2.5 / 2 / 1.5 m. Running or a weapon within 10 m adds 4 m. They back off up to 8 m from their spot.
+- **GOBLIN-3 Keep distances.** 6 / 4 / 3 / 2 m by rank, the trader 2.5 / 2 / 1.5 / 1.2 m. Running or a weapon within 10 m adds 4 m. They back off up to 8 m from their spot.
 - **GOBLIN-4 What counts as a weapon.** Any item of kind weapon on the hotbar, shields included. The server doesn't know which hotbar slot is in your hand.
 - **GOBLIN-5 Trade.** Coins, Hob's window, the stock and buy list above, purse 120 copper. Torches are not refused yet (the shop rules have no per-item refusal).
 - **GOBLIN-6 Lines.** Skritch's speech style ("Slow, big-folk", no articles) and every line in `data/npcs/dialogue/skritch.json`, `rukz.json` and `snag.json`. Their voices are listed in `voices.json` but no voice clips are rendered yet (tools/gen_npc_voice.py), so they are silent for now.
