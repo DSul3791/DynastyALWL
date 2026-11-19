@@ -155,9 +155,10 @@ func do_till(i: int) -> void:
 	items.till(1, inv(), Vector3(1.2 - 2.4 * float(i), 10.0, 1.2), HeldTool.slot_of(items, "hoe"))
 
 
-func do_sow(i: int) -> void:
+func do_sow(i: int) -> void:   # the hoe's Plant grid, one point on the bed (Dave play test 19 Nov 2026: only the hoe in hand sows)
 	items.give(1, n("wheat_seeds"), 1)
-	items.sow(1, inv(), beds()[i], slot_of("wheat_seeds"))
+	items._last_dig.clear()
+	items.plant_grid(1, inv(), HeldTool.slot_of(items, "hoe"), n("wheat_seeds"), 101, items._items[beds()[i]]["pos"])
 
 
 func do_harvest(i: int) -> void:

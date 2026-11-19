@@ -1348,6 +1348,41 @@ static func _label_for(entry: Dictionary) -> String:
 	return text
 
 
+# A garden crop's look (CropLook.build; Dave play test 19 Nov 2026: tilled-bed seedlings showed as green boxes, though "they have a model in the game"): the wild
+# plant of the crop's name (flora.json), its own full model and leaf tint as the wild ones draw, one at each of `spots` (local to the bed, on its soil), `share` of
+# its usual height, each turned its own way. null when no wild plant has that name or its model is not built yet (models_ready says whether to ask again).
+func crop_model(name: String, share: float, spots: Array) -> Node3D:
+	var id: Variant = _slugs.find_key(name)
+
+	if id == null or not _species.has(int(id)) or spots.is_empty():
+		return null
+
+	var info: Dictionary = _species[int(id)]
+	var multimesh: MultiMesh = MultiMesh.new()
+	multimesh.transform_format = MultiMesh.TRANSFORM_3D
+	multimesh.use_custom_data = bool(info["tinted"])
+	multimesh.mesh = (info["near"] as Array)[0]
+	multimesh.instance_count = spots.size()
+	var tint: Color = info["tint"]
+
+	for n in spots.size():
+		multimesh.set_instance_transform(n, Transform3D(Basis(Vector3.UP, float(n) * 2.4).scaled(Vector3.ONE * share), spots[n]))
+
+		if multimesh.use_custom_data:
+			multimesh.set_instance_custom_data(n, Color(tint.r, tint.g, tint.b, 0.0))   # a: no glow, nothing picked
+
+	var draw: MultiMeshInstance3D = MultiMeshInstance3D.new()
+	draw.multimesh = multimesh
+	draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF   # as the wild plants
+	draw.visibility_range_end = view_m[KIND_PLANT]
+	return draw
+
+
+# True once every species' models are built (crop_model can then answer for every wild plant).
+func models_ready() -> bool:
+	return _setup_done
+
+
 func label_of(species_id: int) -> String:
 	return str(_labels.get(species_id, ""))
 

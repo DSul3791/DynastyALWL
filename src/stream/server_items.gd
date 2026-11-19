@@ -1269,8 +1269,6 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		plant_grid(peer, inv, a, b, count, at)   # a: the held pack slot (the hoe), b: the item to plant, count: check * 10000000 + yaw * 10000 + width * 100 + length (protocol 128)
 	elif kind == Net.ACT_TILL:
 		till(peer, inv, at, a, b)   # b: the hoe grid's turn in whole degrees (0: the bed snaps to the world's metre cells)
-	elif kind == Net.ACT_SOW:
-		sow(peer, inv, a, b, at)   # at: the point aimed at on a plot of several square metres (Vector3.ZERO: the first empty one)
 	elif kind == Net.ACT_HARVEST:
 		harvest(peer, inv, a, at)
 	elif kind == Net.ACT_WATER_BED:
@@ -16529,7 +16527,7 @@ func take_nest(peer: int, inv) -> bool:
 # crop (data/items/crops.json); a game day that ends with the bed's moisture at wet_min_pct or more (plot_water.gd: rain and pours fill it, the weather dries it) counts as watered; a crop is ripe when it is old enough (grow_days) AND has had enough wet days (water_per_day x grow_days); winter
 # pauses growth (turnip excepted) and frost kills a seedling; compost speeds one crop cycle by 20 percent; E on a ripe crop gives its yields (half without the sickle
 # where the crop needs one) and seeds back, and the bed is empty soil again. The crop records live beside the beds in crops.json (keyed by the bed's position, _bed_key). The client side
-# (hoe till mode, E on a bed to sow, water or harvest, the placeholder stage looks) is in inventory_view.gd, farm_rules.gd and crop_look.gd; a bed's world row carries its crop and stage.
+# (hoe till and Plant modes, E on a bed to water or harvest, the stage looks) is in inventory_view.gd, farm_rules.gd and crop_look.gd; a bed's world row carries its crop and stage.
 const TILLED_STATE := 47
 var _crops: Dictionary = {}              # _bed_key (the bed's position) -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool, "poured": game day water was poured, "poured_ml": mL poured that day (a bucket a day, water_bed)}; the bed's moisture is in _plot_water
 var _crops_cfg: Dictionary = {}
@@ -16580,7 +16578,7 @@ func _bed_cells(it: Dictionary) -> Array:
 
 
 # Which square metre of a bed a request is for: the one nearest `at` when the client names a point (not Vector3.ZERO), else the first that `wants`
-# ("empty": no crop; "ripe": a crop at stage 3; "crop": any crop). -> the crop key, "" when none fits.
+# ("ripe": a crop at stage 3; "crop": any crop). -> the crop key, "" when none fits.
 func _cell_key(it: Dictionary, at: Vector3, wants: String) -> String:
 	var cells: Array = _bed_cells(it)
 
@@ -16596,7 +16594,7 @@ func _cell_key(it: Dictionary, at: Vector3, wants: String) -> String:
 	for cell in cells:
 		var crop: Dictionary = _crops.get(_bed_key(cell), {})
 
-		if (wants == "empty" and crop.is_empty()) or (wants == "ripe" and not crop.is_empty() and crop_stage(crop) >= 3) or (wants == "crop" and not crop.is_empty()):
+		if (wants == "ripe" and not crop.is_empty() and crop_stage(crop) >= 3) or (wants == "crop" and not crop.is_empty()):
 			return _bed_key(cell)
 
 	return ""
@@ -17942,34 +17940,6 @@ func _tree_seed_items() -> Dictionary:
 			out[str(by[species])] = str(species)
 
 	return out
-
-
-# A seed from the pack slot goes into the bed: right season, empty bed, the seed is used up.
-func sow(peer: int, inv, bed_id: int, slot: int, at: Vector3 = Vector3.ZERO) -> bool:
-	var bed: Dictionary = _bed_at(bed_id)
-
-	if bed.is_empty() or not _peer_pos.has(peer):
-		return false
-
-	if _peer_pos[peer].distance_to(bed["pos"]) > DIG_REACH_M:
-		_say(peer, "Too far from the bed to sow it.")
-		return false
-
-	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0:
-		_say(peer, "There are no seeds in that slot to sow.")
-		return false
-
-	var key: String = _cell_key(bed, at, "empty")
-	var seed_id: String = table.id_of(inv.numbers[slot])
-	var why: String = _sow_refusal(key, seed_id)
-
-	if why != "":
-		_say(peer, why if why != "season" else "%s Hold the seeds you want to sow." % _season_refusal(seed_id))   # the client sows the seed in hand, else the first seed in the pack (A-6)
-		return false
-
-	inv.remove(inv.numbers[slot], 1)
-	_sow_cell(peer, bed, key, FarmRules.crop_of_seed(_crop_table(), seed_id))
-	return true
 
 
 # Why a seed cannot go into a bed's square metre `key` now ("" when it can; "season" when it is out of season, _season_refusal words it).
