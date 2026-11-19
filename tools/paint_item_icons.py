@@ -455,7 +455,7 @@ def carrot(seed):
 
 
 def parsnip(seed):
-    """Parsnip (#940): the carrot's shape in cream, a little fatter at the shoulder, its leaves a paler green."""
+    """Parsnip seed (#940): the carrot's shape in cream, a little fatter at the shoulder, its leaves a paler green."""
     faces = rod((STALK[0] + 0.1, -0.8, STALK[2]), (STALK[0] - 0.05, 0.2, STALK[2]), 0.25, (232, 216, 170), end=(242, 232, 200), taper=0.15,
                 seed=seed)
     for k, d in enumerate(((-0.35, 1.0, 0.0), (0.0, 1.0, 0.15), (0.4, 1.0, -0.1))):
@@ -1199,7 +1199,6 @@ def _pieces():
         "horn_pane": (horn_pane, rot_x(math.radians(40.0)) @ rot_y(math.radians(15.0))),
         "carved_stone_block": (carved_stone_block, rot_y(math.radians(-28.0))),
         "carved_stone_shingle": (carved_stone_shingle, rot_x(math.radians(35.0))),
-        "parsnip": (lambda: parsnip(46), rot_z(math.radians(-28.0))),
         "meat_skewer": (meat_skewer, DIAGONAL),
         "sausage": (sausage, rot_x(math.radians(40.0))),
         "mug": (mug, rot_x(math.radians(14.0))),

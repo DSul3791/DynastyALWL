@@ -118,7 +118,7 @@ func _init() -> void:
 	check(view._world[3]["crop_node"] == null and second.is_queued_for_deletion() and str(view._world[3]["crop"]) == "", "a row with no crop drops the look")
 
 	# The wild plant's model (Dave play test 19 Nov 2026: the seedlings were green boxes though the plant has a model): a crop the flora knows wears it, a crop it does not
-	# (wheat) keeps the placeholder; one drawn while the flora models were still being built waits and is drawn again once they are.
+	# (wheat) wears its painted card without asking; one drawn while the flora models were still being built waits and is drawn again once they are.
 	var ready: Array = [false]
 	var asked: Array = []
 	view.crop_model = func(crop: String, share: float, spots: Array):
@@ -133,8 +133,11 @@ func _init() -> void:
 	view._redo_crop_looks()
 	var real: Node3D = view._world[3]["crop_node"]
 	check(real != early and early.is_queued_for_deletion() and not bool(real.get_meta("placeholder", true)) and view._crop_looks_waiting.is_empty() and str(view._world[3]["crop"]) == "chamomile", "once the flora is built the seedling wears the chamomile model")
+	var asks_before: int = asked.size()
+	ready[0] = false   # the flora still building: a painted crop does not wait for it
 	view._note_crop(3, [3, bed_number, 1, Vector3.ZERO, 47, {"yaw": 0.0, "crop": "wheat", "stage": 1}])
-	check(bool(view._world[3]["crop_node"].get_meta("placeholder", false)) and view._crop_looks_waiting.is_empty(), "wheat has no wild plant: the placeholder stays and nothing waits")
+	check(not bool(view._world[3]["crop_node"].get_meta("placeholder", true)) and view._crop_looks_waiting.is_empty() and asked.size() == asks_before, "wheat has no wild plant: it wears its painted card at once, never asks the flora and nothing waits")
+	ready[0] = true
 	view._note_crop(3, [3, bed_number, 1, Vector3.ZERO, 47, {"yaw": 0.0}])
 	view.crop_model = Callable()
 	view.crop_models_ready = Callable()

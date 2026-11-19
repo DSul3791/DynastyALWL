@@ -84,24 +84,40 @@ func _init() -> void:
 	check(with_trees.size() == 3 and with_trees[0] == {"id": "oak_seed", "kind": "tree"} and with_trees[1]["kind"] == "seed" and with_trees[2] == {"id": "maple_keys", "kind": "tree"}, "plantables: tree seeds list as trees (%s)" % str(with_trees))
 	check(FarmRules.plantables(crops, ["oak_seed"]).is_empty(), "plantables: no tree seed table, no tree rows")
 	check(FarmRules.bed_side({"footprint_x": 1.0}) == 1 and FarmRules.bed_side({"footprint_x": 2.0, "footprint_z": 2.0}) == 2 and FarmRules.bed_side({"footprint_x": 3.0, "footprint_z": 3.0}) == 3 and FarmRules.bed_side({"footprint_x": 0.6}) == 1 and FarmRules.bed_side({"footprint_x": 3.0, "footprint_z": 2.0}) == 2, "bed_side: 1, 2 and 3 m beds hold 1, 2 and 3 square metres a side; a pot one")
-	# Placeholder looks: every crop, every stage, a tuft grid for a 1 m bed and a 2 m plot, taller with the stage.
+	# Stage looks: every crop, every stage, four plants on a 1 m bed and sixteen on a 2 m plot, taller with the stage. Dave's painted crops (CropLook.PICTURE_HEIGHT_M)
+	# are picture cards from the start; the rest are placeholder tufts until the wild plant's model is passed in.
 	var all_built: bool = true
 	var taller: bool = true
+	var right_kind: bool = true
 
 	for id in crops:
 		var last_top: float = -1.0
 
 		for stage in range(4):
 			var look: Node3D = CropLook.build(str(id), stage, 1.0)
-			var top: float = (look.get_child(0) as MeshInstance3D).position.y if look.get_child_count() > 0 else -1.0
+			var first: MeshInstance3D = look.get_child(0) as MeshInstance3D if look.get_child_count() > 0 else null
+			var top: float = first.position.y + first.get_aabb().end.y if first != null else -1.0
 			all_built = all_built and look.get_child_count() == 4
 			taller = taller and top > last_top
 			last_top = top
+			right_kind = right_kind and bool(look.get_meta("placeholder", true)) != CropLook.PICTURE_HEIGHT_M.has(str(id))
 			look.free()
 
-	check(all_built and taller, "every crop has four stage looks of 4 tufts on a bed, each taller than the last")
+	check(all_built and taller, "every crop has four stage looks of 4 plants on a bed, each taller than the last")
+	check(right_kind, "the painted crops are picture cards, the others placeholder tufts when no wild model is given")
+	check(crops.has("wheat") and crops.has("cabbage") and CropLook.PICTURE_HEIGHT_M.keys().all(func(k): return crops.has(k)), "every painted crop is a crop in crops.json")
+	var ripe: MeshInstance3D = CropLook.build("wheat", 3, 1.0).get_child(0) as MeshInstance3D
+	var young: MeshInstance3D = CropLook.build("wheat", 0, 1.0).get_child(0) as MeshInstance3D
+	var cabbage: MeshInstance3D = CropLook.build("cabbage", 0, 1.0).get_child(0) as MeshInstance3D
+	var ripe_tex: Texture2D = (ripe.material_override as StandardMaterial3D).albedo_texture
+	check(ripe_tex != null and ripe_tex.get_height() == 512 and is_equal_approx(ripe.get_aabb().end.y, 1.0) and (young.material_override as StandardMaterial3D).albedo_texture != ripe_tex, "ripe wheat wears its 512 px picture 1 m tall; a wheat seedling the green blades")
+	check((cabbage.material_override as StandardMaterial3D).albedo_texture.get_width() > 100 and (cabbage.material_override as StandardMaterial3D).transparency == BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR, "a cabbage seedling is its own picture, cut out")
+
+	for card in [ripe, young, cabbage]:
+		card.get_parent().free()
+
 	var plot: Node3D = CropLook.build("wheat", 3, 2.0)
-	check(plot.get_child_count() == 16, "a 2 m garden plot gets 16 tufts")
+	check(plot.get_child_count() == 16, "a 2 m garden plot gets 16 plants")
 	plot.free()
 	print("farm prompt: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
