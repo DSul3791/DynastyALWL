@@ -51,11 +51,15 @@ The existing entry numbers are retained for tracking. Detailed behaviour has one
 
 ## 4. Keep the hoe menu readable on screen
 
-**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): none possible headless; the 75% width and wrapping have not been seen. Found in Dave's play test. Fix not yet played.
+**Status: Implemented — awaiting player verification.** Second fix (PR #1283), after Dave's play test of the first one (PR #1252). Found in Dave's play test. Second fix not yet played.
+
+**Dave play test 19 Nov 2026** (screenshot of the hoe's right-click list): "this is what the right click menu on the hoe looks like. what is wrong here". The first fix did not work: the list started at the middle of the screen and ran off the right edge (the panel was anchored at the centre but grew only to the right), every row carried its full explanation so each line was cut off mid-sentence, and it lay over the hotbar and the "Level (right click: choose what it does)" caption on a faint backdrop.
 
 **Problem:** The hoe's right-click menu extends beyond the screen.
 
-**Required outcome:** Cap its width at 75% of the game viewport width and wrap text within that limit. Keep the menu inside the visible viewport.
+**Required outcome:** The list always fits inside the game window at any window size and text size, does not cover the hotbar or its caption, and reads as a menu.
+
+**Now:** a raised plate centred just above the hotbar caption; the six actions as short names (Dave's entry 5 names and order, unchanged), the current one on a lit band with a gold bar; only the highlighted action's explanation, wrapped inside the plate, under the list; the keys on a short line at the bottom. It follows the player's text size and is capped to the window; a plant list too long for the window shows the rows round the highlighted one with "..." for the rest. Headless test `test_hoe_menu` checks the plate is inside the window, above the caption and centred at every text size.
 
 **Acceptance:** All menu choices remain readable and selectable at the player's window size.
 
@@ -215,4 +219,5 @@ Dave requested this rewrite around the intended experience rather than a literal
 - TG-2..TG-5: at most 1,500 ground edits for one garden, 8 a step; Till Soil 2m uses 0.9 m spheres; the preview asks the server every 250 ms at most.
 - PG-1: Plant takes seeds from the crafting stock within 12 m.
 - PA-1: Pathen makes at most 6 ground edits a click.
+- HM-1: the hoe list is a 600 px plate (grows with text sizes above 1.0) centred above the hotbar caption; row names 24 px, explanation 20 px before the text size; the names stay as entry 5 has them ("Pathen" is the catalog's word, DYNASTY_MASTER_ITEMS.md).
 - Crops need tilled soil (Plant does not till); scatter stone, flint and ores count as small rocks to pick up; wild shrubs are not checked for duplicates.
