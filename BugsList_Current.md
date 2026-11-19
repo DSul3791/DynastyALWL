@@ -334,12 +334,15 @@ Dave, 19 Nov 2026: "testing the hoes functionality for placing a garden and some
 
 **Acceptance:** with seeds in the pack and no hoe in hand, E on a tilled bed plants nothing and says to use the hoe. With the hoe in hand and Plant chosen, the grid plants. Chamomile seedlings look like small chamomile plants, not boxes.
 
-Not done: wheat, barley, oats, rye, carrot, potato, turnip, cabbage, onion, peas, beet, radish, lettuce and parsnip have no plant model in the game, so they still show the placeholder boxes (new models are Dave's call). Plants already in Dave's world stay where they are.
+Follow-up, 19 Nov 2026: wheat, barley, oats, rye, carrot, potato, turnip, cabbage, onion, peas, beet, radish, lettuce and parsnip (no wild plant) now wear Dave's own pictures as crossed picture cards, and the ten vegetables' item icons are cut from his picture of them picked. PR #1304, merged to dev at 25b6ec0f (head 54afede0) after independent review; Lane B (David4) on the exact head: 61 of 61 selected tests passed, including test_farm_prompt and test_farm_view; join smoke clean. Not yet played; the cards and icons are not visually checked in game. The vegetables on the ground or in hand keep their old look. Plants already in Dave's world stay where they are.
+
+**Acceptance (follow-up):** a bed of wheat shows green blades while young, greener ears while growing and golden ears when ripe; each vegetable looks like its picture, smaller while young; the picked vegetables' inventory icons match Dave's picture.
 
 Assumed on Dave's behalf (provisional):
 
 - G-15 (coordinator for Dave): a dug-up bush or a tree seed held in hand is still planted by clicking open ground without the hoe; only bed crops need the hoe.
 - CL-1: a crop's wild model is 35, 60, 85 and 100 % of the wild plant's usual height from seedling to ripe, four to a square metre, and is drawn within 40 m.
+- CL-2 (#1304): grown heights of the painted crops: wheat 1 m, barley 0.9, oats 1, rye 1.3, carrot 0.35, potato 0.6, turnip 0.4, cabbage 0.4, onion 0.45, peas 0.9, beet 0.4, radish 0.3, lettuce 0.3, parsnip 0.5. A grain is green blades at 12 % and 35 % of its height, then its picture at 85 % tinted green, then as painted when ripe; a vegetable is its picture at 35, 60, 85 and 100 %.
 
 ## 58. Garden soil moisture you can see, and irrigation from pipes
 
