@@ -138,10 +138,9 @@ const OreRockLook := preload("res://src/client/ore_rock_look.gd")
 # Outcrop boulders (Kathleen, 10 Nov 2026; Dave could not tell an ore boulder from a plain one). The server sends a boulder's "ore" (boulders.json ore:
 # an ore body within reach, or the boulder's own limestone, chalk or marble); the client draws it in the same granite-and-moss shader with the stone tinted
 # toward the ore's rock and mineral streaks through it, and the streaks keep the moss off. Subtle on purpose: read from about 10 m, not a neon tell.
-# Copper and tin are not here: they are their own rocks (OreRockLook, Dave's photos 16 and 17 Nov 2026).
+# Copper, tin and iron are not here: they are their own rocks (OreRockLook, Dave's photos and words 16, 17 and 19 Nov 2026).
 # ore: [stone tint, tint share, streak colour, streak width (0..0.5 of the band), flat (0 steep veins, 1 flat seams), halo share, fleck share]
 const OUTCROP_LOOK := {
-	"iron": [Color(0.36, 0.27, 0.21), 0.45, Color(0.4, 0.2, 0.09), 0.1, 0.0, 0.5, 0.03],           # rust
 	"coal": [Color(0.21, 0.21, 0.21), 0.45, Color(0.05, 0.05, 0.05), 0.2, 1.0, 0.15, 0.0],         # flat black seams
 	"salt": [Color(0.42, 0.4, 0.37), 0.4, Color(0.8, 0.78, 0.72), 0.16, 1.0, 0.2, 0.05],           # pale crusted beds
 	"limestone": [Color(0.58, 0.55, 0.47), 0.7, Color(0.66, 0.63, 0.56), 0.04, 0.6, 0.0, 0.05],     # pale cream bedding
@@ -3577,7 +3576,7 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 	shape.shape = SphereShape3D.new()
 	body.add_child(shape)
 	var lump: MeshInstance3D = MeshInstance3D.new()
-	var ore_rock: bool = OreRockLook.has_look(str(extra.get("ore", "")))   # copper and tin: Dave's photos
+	var ore_rock: bool = OreRockLook.has_look(str(extra.get("ore", "")))   # copper, tin and iron: Dave's photos
 	lump.mesh = OreRockLook.mesh_for(float(extra.get("yaw", 0.0))) if ore_rock else _boulder_mesh
 	lump.material_override = OreRockLook.material(str(extra.get("ore", ""))) if ore_rock else _boulder_material(str(extra.get("ore", "")))
 	lump.material_overlay = _crack_material()

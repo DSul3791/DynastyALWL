@@ -5,6 +5,9 @@ extends RefCounted
 # - copper (16 Nov 2026): almost wholly coated in green to blue-green malachite, darker blue-black patches, a yellow-green dusting on the upper
 #   faces and a little pale host rock showing;
 # - tin (17 Nov 2026): pale speckled granite crossed by white quartz veins that carry dark brown-black cassiterite crystals, rust stain beside them.
+# - iron (19 Nov 2026, Dave: "red brown lines all over them like the limestone and the copper but it should also have red brown streaks down the
+#   sides", and his photo of iron-stained slabs): rust orange with red-brown and ochre blotches, pale mineral patches, a little yellow-green lichen
+#   on top, thin dark red-brown lines all over and red-brown rust streaks running down the steep sides.
 
 const VARIANTS := 3   # mesh shapes; a rock picks one from its yaw so neighbours differ
 
@@ -100,6 +103,44 @@ void fragment() {
 	vec3 grad = sign(det) * (dFdx(h) * r1 + dFdy(h) * r2);
 	NORMAL = normalize(abs(det) * NORMAL - grad);
 	ROUGHNESS = mix(0.9, 0.45, cryst);
+}
+""",
+	"iron": """
+uniform vec3 rust : source_color = vec3(0.70, 0.36, 0.13);
+uniform vec3 red_brown : source_color = vec3(0.40, 0.15, 0.07);
+uniform vec3 ochre : source_color = vec3(0.78, 0.55, 0.22);
+uniform vec3 pale : source_color = vec3(0.82, 0.76, 0.66);
+uniform vec3 lichen : source_color = vec3(0.62, 0.64, 0.26);
+uniform vec3 line_col : source_color = vec3(0.26, 0.09, 0.04);
+
+void fragment() {
+	float n1 = noise3(rock_pos * 2.6);
+	float n2 = noise3(rock_pos * 6.0 + 3.7);
+	float grain = noise3(rock_pos * 28.0) * 0.6 + noise3(rock_pos * 63.0) * 0.4;
+	vec3 col = mix(rust, ochre, smoothstep(0.55, 0.8, n2) * 0.7);
+	col = mix(col, red_brown, smoothstep(0.5, 0.72, n1) * 0.85);
+	col = mix(col, pale, smoothstep(0.72, 0.86, noise3(rock_pos * 4.3 + 9.1)) * 0.85);
+	// Thin dark lines all over: where two wandering noises cross their middle (a crack network, like the copper and limestone lines).
+	float l1 = 1.0 - smoothstep(0.0, 0.035, abs(noise3(rock_pos * 3.4 + 1.3) - 0.5));
+	float l2 = 1.0 - smoothstep(0.0, 0.025, abs(noise3(rock_pos * 7.1 + 6.2) - 0.5));
+	col = mix(col, line_col, max(l1, l2 * 0.8) * 0.9);
+	// Rust streaks down the steep sides: stripes stretched downwards (little change with height), only where the face is near vertical.
+	float steep = 1.0 - smoothstep(0.35, 0.7, abs(world_normal.y));
+	float drip = smoothstep(0.55, 0.75, noise3(vec3(rock_pos.x * 11.0, rock_pos.y * 0.9, rock_pos.z * 11.0)));
+	col = mix(col, red_brown * (0.75 + 0.3 * grain), drip * steep * 0.85);
+	float up = clamp(world_normal.y, 0.0, 1.0);
+	col = mix(col, lichen, smoothstep(0.7, 0.88, grain) * smoothstep(0.5, 0.9, up) * 0.6);
+	ALBEDO = col * (0.8 + 0.4 * grain);
+	float h = grain * bump * rock_scale;
+	// Grain bump from the screen-space slope of h (surface gradient), so the surface looks crusty, not painted on. Written out here: derivatives belong in fragment().
+	vec3 dpdx = dFdx(VERTEX);
+	vec3 dpdy = dFdy(VERTEX);
+	vec3 r1 = cross(dpdy, NORMAL);
+	vec3 r2 = cross(NORMAL, dpdx);
+	float det = dot(dpdx, r1);
+	vec3 grad = sign(det) * (dFdx(h) * r1 + dFdy(h) * r2);
+	NORMAL = normalize(abs(det) * NORMAL - grad);
+	ROUGHNESS = 0.85;
 }
 """,
 }
