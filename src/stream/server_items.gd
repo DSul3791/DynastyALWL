@@ -278,7 +278,7 @@ var _energy_cfg: Dictionary = {}    # data/items/energy.json
 var _death_cfg: Dictionary = {}     # data/items/death.json
 var hit_animal_path: Callable        # (peer, from, to, damage) -> {"at": position} or {}: the first animal an arrow passes through is hurt (set by the server)
 var animal_alarm: Callable           # (point, radius): a loud noise (a shot) startles animals near it (set by the server)
-var hit_animal: Callable            # (peer, origin, direction, reach, damage) -> bool: set by the server, hits the animal in front
+var hit_animal: Callable            # (peer, origin, direction, reach, damage) -> {"at": the point struck} or {} (tests may answer a bool): set by the server, hits the animal in front
 var _last_strike: Dictionary = {}
 var _carcass_cfg: Dictionary = {}   # data/items/carcass.json
 var _sick_cfg: Dictionary = {}      # data/items/sickness.json
@@ -2907,10 +2907,13 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 	var melee: Dictionary = MeleeRules.blow(entry, _melee_cfg)
 	var damage: float = float(weapon_blow(entry, inv.inst[slot])["damage"]) if float(entry.get("damage", 0.0)) > 0.0 else float(melee["damage"])   # a +2 weapon strikes two harder (master s2.9 item 4)
 	var reach: float = float(melee["reach_m"])   # a pike reaches further than a sword; a knife less than an axe
-	var hit: bool = bool(hit_animal.call(peer, eye, direction, reach, damage))
+	var answer: Variant = hit_animal.call(peer, eye, direction, reach, damage)   # {"at": where it struck} from the server (or true from older hooks), {} or false for a miss
+	var hit: bool = not (answer as Dictionary).is_empty() if answer is Dictionary else bool(answer)
 
 	if hit:
-		hit_number(peer, eye + direction.normalized() * minf(reach, 1.5), damage)
+		# The number floats where the blow struck the animal (Dave 19 Nov 2026: "I couldnt tell it was doing damage"), else in front of the eye.
+		var at: Vector3 = (answer as Dictionary).get("at", eye + direction.normalized() * minf(reach, 1.5)) if answer is Dictionary else eye + direction.normalized() * minf(reach, 1.5)
+		hit_number(peer, at + Vector3(0.0, 0.3, 0.0), damage)
 		_wear_slot(peer, inv, slot, "strike")
 	else:
 		_note_work(peer, str(entry.get("tool_class", "")))   # a jab at nothing tires as much as one that lands (BUG-001)

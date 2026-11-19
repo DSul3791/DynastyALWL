@@ -72,6 +72,17 @@ func _init() -> void:
 			"a Stone axe strikes an animal for its melee damage and a Steel axe three tiers harder (%s)" % str(struck))
 	check(struck.size() == 3 and is_equal_approx(float(struck[2][1]), float(melee["other"]["damage"])) and float(struck[2][0]) < float(struck[0][0]), "berries in hand strike weakly and at a shorter reach (%s)" % str(struck))
 	check(float(MeleeRules.blow(items.table.entry("spear"), melee)["reach_m"]) == 3.0 and float(MeleeRules.blow(items.table.entry("spear"), melee)["damage"]) == 0.0, "a spear keeps its own damage and 3 m reach")
+	# The server's hook answers where the blow struck: the number floats just above that point, not in front of the eye (Dave 19 Nov 2026).
+	sent.clear()
+	items.hit_animal = func(_peer, _origin, _aim, _reach, _amount) -> Dictionary: return {"at": Vector3(10.0, 0.6, 12.0)}
+	items._last_strike.clear()
+	items.action(1, Net.ACT_STRIKE, slot, 0, 0, Vector3(0.0, 0.0, 1.0))
+	check(sent.size() == 1 and (sent[0][1] as Vector3).is_equal_approx(Vector3(10.0, 0.9, 12.0)), "the number floats where the blow struck the animal (%s)" % str(sent))
+	items.hit_animal = func(_peer, _origin, _aim, _reach, _amount) -> Dictionary: return {}
+	items._last_strike.clear()
+	items.action(1, Net.ACT_STRIKE, slot, 0, 0, Vector3(0.0, 0.0, 1.0))
+	check(sent.size() == 1, "an empty answer is a miss: no number")
+	sent.clear()
 	items.hit_animal = func(_peer, _origin, _aim, _reach, _amount) -> bool: return lands[0]
 
 	# A tree or a boulder shows its share of 100 a blow; tiny shares still show 1.
@@ -107,6 +118,10 @@ func _init() -> void:
 	check(net_text.contains("func hit_number(at: Vector3, amount: int)") and net_text.contains("signal hit_number_received(at: Vector3, amount: int)"), "terrain_net declares hit_number")
 	check(FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd").contains("net.hit_number.rpc_id(peer, at, amount)"), "the server sends it")
 	check(FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd").contains("net.hit_number_received.connect"), "the client receives it")
+	var client_text: String = FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd")
+	check(client_text.contains("net.animal_hit_point_received.connect") and client_text.contains("animal_view.flinch(id)") and client_text.contains("sound.spear.hit(\"flesh\", at, 1.0)"), "a landed blow on an animal thuds and the body flinches")
+	var server_text: String = FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd")
+	check(server_text.contains("return {\"at\": point}"), "the server's hook answers where it struck")
 	check(FileAccess.get_file_as_string("res://src/client/game_menu.gd").contains("\"Damage numbers\""), "Gameplay has the Damage numbers switch")
 
 	items._finish_writer()
