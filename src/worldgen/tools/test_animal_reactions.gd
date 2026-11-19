@@ -40,11 +40,14 @@ func bolts(dist: float, speed: float, weather: Dictionary) -> bool:
 	a.animals[id]["timer"] = 100.0
 	a.animals[id]["protective"] = false   # one standing its ground warns instead (test_big_game)
 
+	var fled: bool = false
+
 	for n in 60:
 		players[0] = players[0] + Vector3(0.0, 0.0, speed * 0.05)
 		a.tick(0.05)
+		fled = fled or int(a.animals[id]["state"]) == AnimalsScript.FLEE   # at any moment, not only at the end of a zigzag leg
 
-	return int(a.animals[id]["state"]) == AnimalsScript.FLEE
+	return fled
 
 
 # Is the deer watching (ALERT) a standing player `dist` m off after a second?
