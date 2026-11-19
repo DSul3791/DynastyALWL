@@ -21,11 +21,11 @@ The senses shrink those distances by multiplying factors together.
 - deer: 50 / 30 / 60 became 60 / 35 / 70
 - elk: 55 / 35 / 70 became 70 / 40 / 80
 
-Every other species keeps its old numbers. The reasoning follows how well-regarded hunting and survival games, and field flight-distance studies, treat prey: deer-sized prey notice and run well before you reach them, while small animals sit tight until close. Predators and livestock are governed by their temperament and `defend` rows, as before.
+Every other species keeps its old numbers. `tools/add_species.py` writes a new species' row into the table. These are the author's judgement, not a sourced figure: deer-sized prey should notice and run well before a player reaches them, while small animals sit tight until the player is close. Predators and livestock are governed by their temperament and `defend` rows, as before.
 
 **RX-2: the upwind cut is smaller.** `senses.scent_loss` is 0.25, where the old cut was 0.5. Upwind, an animal loses only the scent. In a full wind the factor is therefore 0.75, not 0.5. The downwind gain (`scent_gain` 0.5) is unchanged.
 
-**RX-3: running players are noticed farther.** A player moving at `senses.run_ms` (5 m/s) or faster is sensed `run_x` (1.5) times farther off, by eye and ear. Walking (3.2 m/s) is unchanged.
+**RX-3: running players are noticed farther.** A player moving at `senses.run_ms` (5 m/s) or faster over two noise samples is sensed `run_x` (1.5) times farther off, by eye and ear. Walking (3.2 m/s) is unchanged. Riding or rowing that fast counts too.
 
 **Cost.** One speed comparison per player per noise sample, four times a second. Nothing is added per animal.
 

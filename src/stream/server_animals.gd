@@ -130,11 +130,15 @@ func setup() -> void:
 	var reactions: Dictionary = cfg.get("reactions", {}).get("notice_flee_safe_m", {})
 
 	for sp in reactions:
-		if cfg.get("species", {}).has(sp):
-			var row: Array = reactions[sp]
+		var row: Variant = reactions[sp]
+
+		if not (row is Array) or (row as Array).size() != 3:
+			push_error("animals.json reactions.notice_flee_safe_m.%s: not [notice_m, flee_m, safe_m]" % sp)
+		elif cfg.get("species", {}).has(sp):
 			cfg["species"][sp]["alert_m"] = float(row[0])
 			cfg["species"][sp]["spook_m"] = float(row[1])
 			cfg["species"][sp]["safe_m"] = float(row[2])
+
 	rng.randomize()   # luck-exempt: world wildlife placement, no player outcome
 	wolves = WolvesScript.new()
 	wolves.host = self
@@ -1933,7 +1937,10 @@ func _sample_noise(players: Array, delta: float) -> void:
 		vel.append(moved)
 
 		# A running player is seen and heard from farther off (run_ms, run_x; Dave 19 Nov 2026: animals did not react to him running past); walking is 3.2 m/s.
-		if moved.length() >= float(sen.get("run_ms", 5.0)):
+		# Two samples running, so two position updates landing in one sample never make a walk count as a run.
+		var before: float = (_player_vel[pi] as Vector2).length() if pi < _player_vel.size() else 0.0
+
+		if minf(moved.length(), before) >= float(sen.get("run_ms", 5.0)):
 			noise *= float(sen.get("run_x", 1.5))
 
 		if players.size() == _noise_from.size() and undergrowth.is_valid():
