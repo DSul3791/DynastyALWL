@@ -125,6 +125,24 @@ func level_now() -> void:
 	items._barrels_tick()
 
 
+# The network's links are whole: every link names a piece still in it, each one both ways, and no loop (every piece is in the solve order).
+func net_ok(where: String) -> void:
+	var w = items._water
+	var bad: Array = []
+
+	for id in w.pieces:
+		for d in w._down.get(id, []):
+			if not w.pieces.has(d) or not (w._up.get(d, []) as Array).has(id):
+				bad.append("%d->%d" % [id, d])
+
+		for u in w._up.get(id, []):
+			if not w.pieces.has(u) or not (w._down.get(u, []) as Array).has(id):
+				bad.append("%d<-%d" % [id, u])
+
+	var in_order: int = (w._order() as Array).size()
+	check(bad.is_empty() and in_order == w.pieces.size(), "%s: the network's links are whole (%d of %d pieces in order; bad %s)" % [where, in_order, w.pieces.size(), str(bad)])
+
+
 func heard(part: String) -> bool:
 	for line in said:
 		if part in str(line):
@@ -179,6 +197,8 @@ func _init() -> void:
 	check(have("copper_pipe") == 3 and heard("You lay 4.0 m"), "two pieces leave the pack and the player is told (%d left; %s)" % [have("copper_pipe"), str(said)])
 	check(items._water.level_groups().size() == 1 and (items._water.level_groups()[0] as Array).has(a) and (items._water.level_groups()[0] as Array).has(b), "the two barrels are linked")
 
+	net_ok("laying")
+
 	# --- Levelling (PV-7) ---
 	items._water.set_litres(a, 100.0)
 	level_now()
@@ -187,6 +207,8 @@ func _init() -> void:
 	var share: Array = Network.level_litres(rows, 300.0)
 	check(absf(float(share[0]) - float(share[1])) < 0.01 and float(share[2]) > 30.0 and float(share[2]) < 45.0 and absf(float(share[0]) + float(share[1]) + float(share[2]) - 300.0) < 0.01, "a barrel standing 0.4 m higher holds less, like water finding one level (%s)" % str(share))
 	check(absf(float(Network.level_litres(rows, 100.0)[2])) < 0.01, "and nothing until the water reaches its foot")
+
+	net_ok("levelling")
 
 	# --- Rain (PV-6) ---
 	var lone: int = barrel(120.0, 120.0)
@@ -206,6 +228,8 @@ func _init() -> void:
 	level_now()
 	check(float(items._water.pieces[lone].get("litres_max", 0.0)) == 200.0, "emptied, it holds 200 L again")
 
+	net_ok("rain")
+
 	# --- A junction: a run started in the middle of another ---
 	said.clear()
 	lay(slot_of("copper_pipe"), Vector3(102.0, 10.1, 100.0), Vector3(102.0, 10.05, 103.0))
@@ -217,6 +241,8 @@ func _init() -> void:
 	check(first == ab and second != 0 and branch != 0, "a run started on a laid pipe splits it there: three runs meet (%d, %d, %d)" % [first, second, branch])
 	check(first != 0 and second != 0 and int(items._items[first]["struct"]["paid"]) + int(items._items[second]["struct"]["paid"]) == 2 and have("copper_pipe") == 2, "the split pipe keeps its 2 pieces between its halves; the branch took 1")
 	check(items._water.level_groups().size() == 1 and (items._water.level_groups()[0] as Array).size() == 2, "the barrels are still linked through the junction")
+
+	net_ok("junction")
 
 	# --- A tap on the branch's open end (Dave 19 Nov 2026 20:11Z): E takes a drink, its 3 slots fill water containers, only while its pipes reach water ---
 	items.give(1, n("copper_tap"), 1)
@@ -278,6 +304,8 @@ func _init() -> void:
 	var got_ml: int = tap_box.wear[in_tap] if in_tap >= 0 else 0
 	check(got_ml == 1500 and absf(held - litres(a) - litres(b) - 1.5) < 0.01, "with water in the barrels it fills (%d of 1500 ml) and the barrels give 1.5 L (%.2f -> %.2f L)" % [got_ml, held, litres(a) + litres(b)])
 
+	net_ok("tap")
+
 	# --- A drip head keeps the soil in a 10 m circle round it watered while its pipes bring any water (Dave 19 Nov 2026 20:09Z) ---
 	items.report_position(1, Vector3(200.0, 10.0, 200.0))
 	var e: int = barrel(200.0, 200.0)
@@ -308,6 +336,8 @@ func _init() -> void:
 	check(drip != 0 and items._water.inflow_lpm(drip) > 0.0 and items._water.inflow_lpm(drip) <= 2.01 and float(wet_now[0]) >= 99.9 and float(wet_now[1]) >= 99.9 and float(wet_now[2]) >= 99.9, "with water it draws at most 2 L/min and keeps every bed in its circle fully watered (%.2f L/min, %s %%)" % [items._water.inflow_lpm(drip) if drip != 0 else 0.0, str(wet_now)])
 	check(items.plot_moisture(Vector3(202.0, 10.0, 210.5)) < 99.0, "the bed outside the circle is not watered (%.1f %%)" % items.plot_moisture(Vector3(202.0, 10.0, 210.5)))
 
+	net_ok("drip head")
+
 	# --- A worn wooden pipe leaks: it carries its condition's share ---
 	var f: int = barrel(300.0, 300.0)
 	items.report_position(1, Vector3(300.0, 10.0, 300.0))
@@ -321,6 +351,8 @@ func _init() -> void:
 	items._water_tick(0.0)
 	check(wood != 0 and float(items._water.pieces[wood].get("cap_lpm", 60.0)) < 59.5 and float(items._water.pieces[wood].get("cap_lpm", 0.0)) >= 14.99, "an old one carries less (%.1f L/min at %.2f condition)" % [float(items._water.pieces[wood].get("cap_lpm", 0.0)), items.piece_condition(wood)])
 	check(f != 0, "(its barrel)")
+
+	net_ok("wear")
 
 	# --- Refusals ---
 	items.report_position(1, Vector3(102.0, 10.0, 100.0))
@@ -338,6 +370,8 @@ func _init() -> void:
 	lay(slot_of("copper_pipe"), Vector3(104.0, 10.05, 100.0), Vector3(110.0, 10.05, 100.0))
 	check(heard("needs 2") and c != 0 and have("copper_pipe") == 1, "6 m of copper needs 2 pieces: with 1 it is refused and nothing is taken (%s)" % str(said))
 
+	net_ok("refusals")
+
 	# --- Taking down: a run keeps its tap until that comes off, then gives its pieces back ---
 	items.report_position(1, Vector3(102.0, 10.0, 102.0))
 	said.clear()
@@ -353,6 +387,8 @@ func _init() -> void:
 	items._take_down(1, items.inventory_of(1), tap)
 	items._take_down(1, items.inventory_of(1), branch)
 	check(not items._items.has(tap) and not items._items.has(branch) and have("copper_tap") == 1 and have("copper_pipe") == 2, "the tap and the branch come back to the pack (%d tap, %d pipe)" % [have("copper_tap"), have("copper_pipe")])
+
+	net_ok("take-down")
 
 	# --- Save and load ---
 	var a_pos: Vector3 = items._items[a]["pos"]
@@ -395,6 +431,8 @@ func _init() -> void:
 	items._pipe_from_legacy(old)
 	var old_ends: Array = PipeRules.ends(old["pos"], 90.0, float(old["struct"]["pitch"]), float(old["struct"]["len"]))
 	check(absf((old["pos"] as Vector3).y - 10.13) < 0.001 and float(old["struct"]["len"]) == 2.0 and int(old["struct"]["paid"]) == 1 and absf(absf((old_ends[0] as Vector3).z) - 1.0) < 0.001, "an old Wooden - Pipe loads as a 2 m run along its old axis (%s)" % str(old_ends))
+
+	net_ok("after load")
 
 	# --- A run ending on the ground, capped ends, and a fitting or barrel on a joint (Dave 19 Nov 2026 20:31Z) ---
 	var g: int = barrel(400.0, 400.0)
@@ -439,6 +477,8 @@ func _init() -> void:
 		linked = linked or ((group as Array).has(g) and (group as Array).has(on_joint))
 
 	check(linked, "and it is linked to the first barrel through the pipe")
+
+	net_ok("joints")
 
 	print("pipe runs: %d failures" % failures)
 	items._finish_writer()

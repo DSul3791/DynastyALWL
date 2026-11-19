@@ -9365,7 +9365,7 @@
 		"wooden_pipe": {
 			"name": "Wooden - Pipe",
 			"kind": "material",
-			"description": "A bored log, six inches across and two metres long. Lay it from the hand between water points; it rots faster than other wood.",
+			"description": "A bored log, six inches across and two metres long. Laid from the hand; it rots faster than copper.",
 			"how_to_get": [
 				"Craft by hand: 1 Log, 1 Twine (keep Stone - Knife)"
 			],

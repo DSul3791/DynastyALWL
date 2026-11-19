@@ -7787,7 +7787,7 @@
 			"wooden_pipe": {
 				"number": 1352,
 				"name": "Wooden - Pipe",
-				"description": "A bored log, six inches across and two metres long. Lay it from the hand between water points; it rots faster than other wood.",
+				"description": "A bored log, six inches across and two metres long. Laid from the hand; it rots faster than copper.",
 				"kind": "material",
 				"stack": 10,
 				"look_alikes": [],
