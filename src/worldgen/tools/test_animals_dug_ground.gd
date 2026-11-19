@@ -75,9 +75,17 @@ func _init() -> void:
 	a.ground_changed(Vector3(120.0, 10.0, 100.0), 1.0)
 	check(near(a.animals[far]["pos"].y, 11.0), "a fill under it: it stands on the fill")
 
-	# A walker crossing the old hole follows the ground down into it instead of walking on air.
-	var r: Dictionary = Steering.step(Vector3(97.6, 10.0, 100.0), Vector3(104.0, 10.0, 100.0), 1.5, 0.1, a.ground_height, a.blocked)
-	check(r["moved"] and r["pos"].y < 10.0, "a step into the hole's edge goes down (y %.2f)" % r["pos"].y)
+	# A hole's steep rim: the slope rule alone made it a wall, so an animal never went in and one dropped in never came out. A walker now jumps
+	# down at most ground_step.drop_m and scrambles up at most climb_m in one step (a 1 m ledge here: x < 0 is the bottom).
+	var ledge: Callable = func(x, _z): return 9.0 if x < 0.0 else 10.0
+	var bare_down: Dictionary = Steering.step(Vector3(0.05, 10.0, 0.0), Vector3(-5.0, 10.0, 0.0), 1.5, 0.1, ledge, a.blocked)
+	var down: Dictionary = a.walk_step(Vector3(0.05, 10.0, 0.0), Vector3(-5.0, 10.0, 0.0), 1.5, 0.1, ledge, a.blocked)
+	check(near(bare_down["pos"].y, 10.0) and down["moved"] and near(down["pos"].y, 9.0), "over the 1 m rim: the slope rule refuses it, an animal jumps down (y %.2f)" % down["pos"].y)
+	var up: Dictionary = a.walk_step(Vector3(-0.05, 9.0, 0.0), Vector3(5.0, 9.0, 0.0), 1.5, 0.1, ledge, a.blocked)
+	check(up["moved"] and near(up["pos"].y, 10.0), "and scrambles out again (y %.2f)" % up["pos"].y)
+	var cliff: Callable = func(x, _z): return 7.0 if x < 0.0 else 10.0
+	var no_up: Dictionary = a.walk_step(Vector3(-0.05, 7.0, 0.0), Vector3(5.0, 7.0, 0.0), 1.5, 0.1, cliff, a.blocked)
+	check(not no_up["moved"] or no_up["pos"].x < 0.0, "a 3 m wall is too high to climb in one step")
 
 	print("test_animals_dug_ground: %s" % ("PASS" if failures == 0 else "%d FAILED" % failures))
 	quit(0 if failures == 0 else 1)

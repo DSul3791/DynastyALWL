@@ -2434,6 +2434,7 @@ func _reset_terrain_edits() -> void:
 
 	store.clear_generated()
 	edited_ground.forget()
+	animals.ground_changed(Vector3.ZERO, INF)   # every animal back onto the generated ground
 	flora.clear_memory()
 	generator.forget_tiles()
 	WaterGridScript.forget_ground()

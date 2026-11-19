@@ -20,7 +20,6 @@ extends RefCounted
 const SNEAK := 13              # the thief's states (server_thieves.gd): the client's creep and carry poses
 const CARRY := 14
 
-const Steering := preload("res://src/shared/steering.gd")
 const TrustScript := preload("res://src/stream/server_goblin_trust.gd")
 
 var host                       # ServerAnimals
@@ -345,7 +344,7 @@ func _step_steal(a: Dictionary, def: Dictionary, dt: float) -> bool:
 		host._bolt(a, lit, def)
 		return true
 
-	var r: Dictionary = Steering.step(a["pos"], prize_at, float(row.get("sneak_mps", 1.0)), dt, host.ground_height, host.blocked, 0.8, a["heading"], host.crossing)
+	var r: Dictionary = host.walk_step(a["pos"], prize_at, float(row.get("sneak_mps", 1.0)), dt, host.ground_height, host.blocked, 0.8, a["heading"], host.crossing)
 
 	if r["moved"]:
 		a["pos"] = r["pos"]
@@ -377,7 +376,7 @@ func _step_carry(a: Dictionary, def: Dictionary, dt: float) -> bool:
 		return true
 
 	a["state"] = CARRY
-	var r: Dictionary = Steering.step(a["pos"], mouth, float(_cfg(def).get("carry_mps", 4.5)), dt, host.ground_height, host.blocked, 1.0, a["heading"], host.crossing)
+	var r: Dictionary = host.walk_step(a["pos"], mouth, float(_cfg(def).get("carry_mps", 4.5)), dt, host.ground_height, host.blocked, 1.0, a["heading"], host.crossing)
 
 	if r["moved"]:
 		a["pos"] = r["pos"]
@@ -535,7 +534,7 @@ func _step_watch(a: Dictionary, def: Dictionary, dt: float, seen_d: float, seen_
 
 		return true
 
-	var r: Dictionary = Steering.step(a["pos"], a["target"], float(def.get("walk_mps", 1.2)), dt, host.ground_height, host.blocked, 0.4, a["heading"], host.crossing)
+	var r: Dictionary = host.walk_step(a["pos"], a["target"], float(def.get("walk_mps", 1.2)), dt, host.ground_height, host.blocked, 0.4, a["heading"], host.crossing)
 
 	if r["moved"]:
 		a["pos"] = r["pos"]

@@ -6,7 +6,7 @@ extends RefCounted
 # first, and the top of the highest span is the ground. Cheap: an unedited column costs the surface read and a few dictionary looks; an edited 4 m cell
 # keeps its list of operations until a dig or fill near it (changed) drops it.
 
-const BLOCK := 16                 # GroundOps.BLOCK_SIZE
+const GroundOps := preload("res://src/stream/ground_ops.gd")
 const CELL_M := 4.0               # the operations touching a column are kept per cell this wide
 const CELL_KEEP := 4096           # cells kept before the cache starts again
 const REACH_BLOCKS := [-2, -1, 0, 1]   # the blocks above and below the surface looked in: holes up to about 32 m deep, fills up to about 16 m high
@@ -16,7 +16,7 @@ var surface: Callable             # (x, z) -> the generated ground height
 var _cells: Dictionary = {}       # Vector2i cell -> Array of [kind, centre, radius], oldest first ([] when no operation is near)
 
 
-# The height of the ground at (x, z): the top of the highest solid span of the column (NAN when everything there is dug away).
+# The height of the ground at (x, z): the top of the highest solid span of the column (the generated ground below every edit always holds one).
 func height(x: float, z: float) -> float:
 	var s: float = float(surface.call(x, z))
 
@@ -29,6 +29,7 @@ func height(x: float, z: float) -> float:
 
 # A dig or fill at `centre` reaching `radius`: the cells it touches are worked out again when next asked.
 func changed(centre: Vector3, radius: float) -> void:
+	radius = maxf(radius, 0.5)   # GroundOps.add makes a smaller operation this wide
 	var lo: Vector2i = _cell_of(centre.x - radius, centre.z - radius)
 	var hi: Vector2i = _cell_of(centre.x + radius, centre.z + radius)
 
@@ -56,11 +57,11 @@ func _ops_near(x: float, z: float, s: float) -> Array:
 		_cells.clear()
 
 	# The blocks round the cell (an operation is listed in every block it reaches, so a cell's corner blocks are enough).
-	var by: int = floori(s / BLOCK)
+	var by: int = floori(s / GroundOps.BLOCK_SIZE)
 	var blocks: Array = []
 
-	for bz in range(floori(cell.y * CELL_M / BLOCK), floori((cell.y + 1) * CELL_M / BLOCK - 0.001) + 1):
-		for bx in range(floori(cell.x * CELL_M / BLOCK), floori((cell.x + 1) * CELL_M / BLOCK - 0.001) + 1):
+	for bz in range(floori(cell.y * CELL_M / GroundOps.BLOCK_SIZE), floori((cell.y + 1) * CELL_M / GroundOps.BLOCK_SIZE - 0.001) + 1):
+		for bx in range(floori(cell.x * CELL_M / GroundOps.BLOCK_SIZE), floori((cell.x + 1) * CELL_M / GroundOps.BLOCK_SIZE - 0.001) + 1):
 			for dy in REACH_BLOCKS:
 				if ops.has_ops(Vector3i(bx, by + int(dy), bz)):
 					blocks.append(Vector3i(bx, by + int(dy), bz))

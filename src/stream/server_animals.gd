@@ -321,7 +321,7 @@ func _step_young(a: Dictionary, dt: float) -> void:
 		ground_for = func(x: float, z: float) -> float: return swim_height(def, x, z)
 		blocked_for = Callable()
 
-	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
+	var r: Dictionary = walk_step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
 
 	if r["moved"]:
 		a["pos"] = r["pos"]
@@ -696,9 +696,16 @@ func alarm_near(point: Vector3, radius: float) -> void:
 		_bolt(a, point, species_def(str(a["sp"])))
 
 
+# One walking step of any animal of this module (Steering.step, the same arguments), taking a dug hole's rim as a jump down or a scramble
+# up of at most ground_step.climb_m and drop_m (data/animals/animals.json, provisional GS-1), so no animal is caught in a hole.
+func walk_step(pos: Vector3, target: Vector3, speed: float, dt: float, ground: Callable, blocked_at: Callable, arrive_m: float = 0.4, heading: float = 0.0, cross: Callable = Callable()) -> Dictionary:
+	var gs: Dictionary = cfg.get("ground_step", {})
+	return Steering.step(pos, target, speed, dt, ground, blocked_at, arrive_m, heading, cross, float(gs.get("climb_m", 1.0)), float(gs.get("drop_m", 2.0)))
+
+
 # A dig or fill changed the ground round `centre` (terrain_server _dig_ground / _fill_ground): every animal standing there comes to rest on
 # the ground as it is now, so one dug out from under drops and one buried under a fill climbs onto it (Dave 19 Nov 2026 play test). Animals in
-# the air, on a perch, in a burrow, in a cave or swimming keep their height. Cost: one pass over the animals and a ground read for each one there.
+# the air, on a perch, in a burrow, in a cave or on water keep their height. Cost: one pass over the animals and a ground read for each one there.
 func ground_changed(centre: Vector3, radius: float) -> void:
 	if not ground_height.is_valid():
 		return
@@ -713,10 +720,8 @@ func ground_changed(centre: Vector3, radius: float) -> void:
 		if a["state"] == HIDDEN or a.has("fly") or bool(a.get("perched", false)) or bool(a.get("in_cave", false)):
 			continue
 
-		var def: Dictionary = species_def(str(a["sp"]))
-
-		if swims(def) and in_water(def, p):
-			continue
+		if in_water(species_def(str(a["sp"])), p):
+			continue   # on or in water (a swimmer, a flock resting on a lake, an animal on ice): the water holds it, not the bed
 
 		var y: float = float(ground_height.call(p.x, p.z))
 
@@ -1211,7 +1216,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		if in_water(def, a["pos"]):
 			speed = float(def["water"].get("swim_mps", speed)) * (1.0 if a["state"] == FLEE else 0.4)      # cruising slowly, bolting at full speed
 
-	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
+	var r: Dictionary = walk_step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
 
 	if r["moved"]:
 		a["pos"] = r["pos"]
