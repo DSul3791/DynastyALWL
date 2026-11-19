@@ -22,6 +22,7 @@ const CoverScript := preload("res://src/shared/cover.gd")
 const CaveClimate := preload("res://src/shared/cave_climate.gd")
 const DrinkRules := preload("res://src/shared/drink_rules.gd")
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")   # durability, sharpening, craftsmanship and Tempered (catalog Phase 2c)
+const MeleeRules := preload("res://src/shared/melee_rules.gd")   # anything in hand is a weapon (data/items/melee.json, Dave 19 Nov 2026)
 const BogIron := preload("res://src/shared/bog_iron.gd")   # bog iron under fens and marshes (digging.json bog_iron)
 const SwimRules := preload("res://src/shared/swim.gd")
 const StructureLookScript := preload("res://src/shared/structure_look.gd")
@@ -80,7 +81,6 @@ const RESPAWN_PLACE_M := 6.0
 const RESPAWN_CHANCE := 0.5              # per rotted-away stump, rolled once from the seed and the spot
 const FLORA_CHUNK_M := 256.0
 const PROCESS_REACH_M := 4.0
-const JAB_REACH_M := 3.0
 const STRIKE_COOLDOWN_MS := 600
 const CARCASS_REACH_M := 3.0
 const CARCASS_LIFE_S := 7200.0          # 2 game days of real time
@@ -234,6 +234,7 @@ var _save_in: float = SAVE_EVERY_S
 var _dirty: bool = false
 var _drops: Dictionary = {}
 var _batch_cfg: Dictionary = {}       # data/items/pickup_batch.json
+var _melee_cfg: Dictionary = {}       # data/items/melee.json: the blow of an item with no damage of its own
 var _cooking: Dictionary = {}
 var _structures: Dictionary = {}    # structures.json: kind -> definition
 var _struct_gap_m: float = 2.5
@@ -545,6 +546,7 @@ func setup(item_table, store_dir: String) -> void:
 	_cooking = cooking if typeof(cooking) == TYPE_DICTIONARY else {}
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(DROPS_PATH))
 	_drops = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+	_melee_cfg = MeleeRules.load_config()
 	var batch_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(PICKUP_BATCH_PATH)) if FileAccess.file_exists(PICKUP_BATCH_PATH) else null
 	_batch_cfg = batch_parsed if typeof(batch_parsed) == TYPE_DICTIONARY else {}
 	var flora_table: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/flora.json"))
@@ -2883,15 +2885,18 @@ func hit_number(peer: int, at: Vector3, amount: float) -> void:
 		send_hit_number.call(peer, at, maxi(1, int(round(amount))))
 
 
-# One jab with a weapon (items.json "damage"): hits the animal in front within its reach_m (else JAB_REACH_M) through the animal hook, at most
-# once per its recover_ms (else STRIKE_COOLDOWN_MS).
+# One blow at an animal with the item in hand (Dave 19 Nov 2026: "any thing in your hand should be able to be used as a weapon"): hits the animal in
+# front within reach through the animal hook, at most once per recover_ms (else STRIKE_COOLDOWN_MS). A weapon with items.json "damage" (a spear, a
+# sword) strikes for that and its reach_m (else MeleeRules.WEAPON_REACH_M, 3 m); any other item for its row in data/items/melee.json (an axe by its class and tier,
+# food or a stone weakly; PROVISIONAL MELEE-1). The item is the slot the client names as in hand, checked first (Dave 13 Nov 2026); a broken one
+# does nothing, and logs on the shoulder leave no hand free.
 func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
-	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or direction.length() < 0.1 or not hit_animal.is_valid():
+	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0 or _hands_full(inv) or not _peer_pos.has(peer) or direction.length() < 0.1 or not hit_animal.is_valid():
 		return
 
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
 
-	if str(entry.get("kind", "")) != "weapon" or _is_broken(inv, slot) or float(entry.get("damage", 0.0)) <= 0.0:
+	if _is_broken(inv, slot):
 		return
 
 	var now: int = Time.get_ticks_msec()
@@ -2901,8 +2906,9 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 
 	_last_strike[peer] = now
 	var eye: Vector3 = _peer_pos[peer] + Vector3(0.0, 1.4, 0.0)
-	var damage: float = float(weapon_blow(entry, inv.inst[slot])["damage"])   # a +2 weapon strikes two harder (master s2.9 item 4)
-	var reach: float = float(entry.get("reach_m", JAB_REACH_M))   # a pike reaches further than a sword
+	var melee: Dictionary = MeleeRules.blow(entry, _melee_cfg)
+	var damage: float = float(weapon_blow(entry, inv.inst[slot])["damage"]) if float(entry.get("damage", 0.0)) > 0.0 else float(melee["damage"])   # a +2 weapon strikes two harder (master s2.9 item 4)
+	var reach: float = float(melee["reach_m"])   # a pike reaches further than a sword; a knife less than an axe
 	var hit: bool = bool(hit_animal.call(peer, eye, direction, reach, damage))
 
 	if hit:

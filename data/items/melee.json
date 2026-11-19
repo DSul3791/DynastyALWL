@@ -1,0 +1,21 @@
+{
+	"note": "Anything in hand is a weapon (Dave 19 Nov 2026 play test: \"I just tried to hit a pig with an axe and it is doing no damage\"; \"any thing in your hand should be able to be used as a weapon\"). A left click with the item in hand at an animal in reach strikes it (server_items.gd _strike). An item with items.json damage strikes for that (spears, swords, maces: unchanged). Any other item strikes for its class here: a tool by its tool_class (key tool_<class>), plus tier_step for each tier above base_tier (Stone and Copper are tier 2, Steel 5); a weapon with no damage (a shield, a sling) for weapon_no_damage; anything else (food, a stone, a stick) for other. mode is the damage mode an armoured animal reads (items.json damage_mode words). reach_m is how far the blow reaches (a spear's JAB_REACH_M is 3). All numbers PROVISIONAL MELEE-1 (picked 19 Nov 2026 against animal health in data/animals/animals.json: rabbit 5, deer 20, wolf 30, boar 40, bear 120; a Stone spear does 8): a Stone axe takes a boar in six blows, a Steel axe in four.",
+	"base_tier": 2,
+	"tier_step": 1.0,
+	"reach_m": 2.5,
+	"tool": {
+		"tool_axe": {"damage": 7.0, "mode": "slashing"},
+		"tool_pick": {"damage": 6.0, "mode": "piercing"},
+		"tool_hammer": {"damage": 5.0, "mode": "blunt"},
+		"tool_knife": {"damage": 4.0, "mode": "slashing", "reach_m": 1.8},
+		"tool_shovel": {"damage": 4.0, "mode": "blunt"},
+		"tool_scythe": {"damage": 4.0, "mode": "slashing"},
+		"tool_hoe": {"damage": 3.0, "mode": "blunt"},
+		"tool_sickle": {"damage": 3.0, "mode": "slashing", "reach_m": 1.8},
+		"tool_saw": {"damage": 2.0, "mode": "slashing", "reach_m": 1.8},
+		"tool_chisel": {"damage": 2.0, "mode": "piercing", "reach_m": 1.8}
+	},
+	"tool_default": {"damage": 2.0, "mode": "blunt"},
+	"weapon_no_damage": {"damage": 3.0, "mode": "blunt"},
+	"other": {"damage": 1.0, "mode": "blunt", "reach_m": 1.8}
+}

@@ -80,6 +80,11 @@ func _build_look() -> void:
 		look.focus_mode = Control.FOCUS_NONE     # the number keys belong to the game, not to a focused slot
 		look.mouse_entered.connect(func(): _items.hotbar_hover = slot)
 		look.mouse_exited.connect(func(): _items.hotbar_hover = -1 if _items.hotbar_hover == slot else _items.hotbar_hover)
+		# A left click on food here eats it, holding the button keeps eating (Dave's play test 19 Nov 2026); a quick second click is a double-click.
+		look.clicked.connect(func(button: int, _shift: bool) -> void:
+			if button == MOUSE_BUTTON_LEFT:
+				_items.eat_from_hotbar(slot, true))
+		look.double_clicked.connect(func() -> void: _items.eat_from_hotbar(slot, true))
 		look.drag_data = func() -> Variant:
 			if _items.key_number(slot) == 0:
 				return null
