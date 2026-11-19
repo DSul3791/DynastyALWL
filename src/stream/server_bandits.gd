@@ -15,6 +15,7 @@ var town: Vector2 = Vector2(INF, INF)
 var spawn: Vector2 = Vector2(INF, INF)
 var game_seconds: Callable     # () -> game clock seconds
 var ground_height: Callable    # (x, z) -> metres, or NAN
+var ground_ready: Callable     # (x, z) -> bool: the ground there can be read now without a tile read stalling the server (unset: always)
 var in_water: Callable         # (x, z) -> bool
 var building_near: Callable    # (Vector3, r) -> bool: a placed building (SurveyLine.is_building) within r
 var road_distance: Callable    # (Vector3, r) -> metres to the nearest road patch within r, or INF
@@ -23,6 +24,7 @@ var stretches: Dictionary = {}   # Vector2i stretch -> [points, game seconds whe
 var sites: Dictionary = {}       # Vector2i cell -> {"x", "z", "woke": game seconds, "points"}
 var _last: Dictionary = {}       # mover key -> the stretch it is in
 var _dirty: Dictionary = {}      # stretches that gained points since the last check
+var _retry: Dictionary = {}      # candidate cells whose ground was not loaded at the last check: tried again at the next
 var _checked_at: float = -INF
 var _path: String = ""
 
@@ -124,15 +126,23 @@ func refusal(cell: Vector2i, spot: Vector2, now: float) -> String:
 	if points_near(spot, now) < float(cfg.get("wake_points", 30.0)):
 		return "quiet road"
 
+	var step: float = float(cfg.get("slope_step_m", 5.0))
+
+	var around: Array = [Vector2(step, 0.0), Vector2(-step, 0.0), Vector2(0.0, step), Vector2(0.0, -step)]
+
+	if ground_ready.is_valid():
+		for d in [Vector2.ZERO] + around:
+			if not bool(ground_ready.call(spot.x + d.x, spot.y + d.y)):
+				return "unloaded"
+
 	var h: float = float(ground_height.call(spot.x, spot.y)) if ground_height.is_valid() else NAN
 
 	if is_nan(h) or (in_water.is_valid() and bool(in_water.call(spot.x, spot.y))):
 		return "water"
 
-	var step: float = float(cfg.get("slope_step_m", 5.0))
 	var most: float = tan(deg_to_rad(float(cfg.get("slope_max_deg", 15.0)))) * step
 
-	for d in [Vector2(step, 0.0), Vector2(-step, 0.0), Vector2(0.0, step), Vector2(0.0, -step)]:
+	for d in around:
 		var other_h: float = float(ground_height.call(spot.x + d.x, spot.y + d.y))
 
 		if is_nan(other_h) or absf(other_h - h) > most:
@@ -155,14 +165,15 @@ func refusal(cell: Vector2i, spot: Vector2, now: float) -> String:
 func tick() -> Array:
 	var now: float = _now()
 
-	if now - _checked_at < float(cfg.get("check_s", 3600.0)) or _dirty.is_empty():
+	if now - _checked_at < float(cfg.get("check_s", 3600.0)) or (_dirty.is_empty() and _retry.is_empty()):
 		return []
 
 	_checked_at = now
 	var reach: float = float(cfg.get("near_road_m", 500.0))
 	var size: float = float(cfg.get("cell_m", 1000.0))
 	var stretch_m: float = float(cfg.get("stretch_m", 100.0))
-	var cells: Dictionary = {}
+	var cells: Dictionary = _retry.duplicate()
+	_retry.clear()
 
 	for stretch in _dirty:
 		var middle: Vector2 = (Vector2(stretch) + Vector2(0.5, 0.5)) * stretch_m
@@ -184,7 +195,12 @@ func tick() -> Array:
 	var woke: Array = []
 
 	for row in tries:
-		if refusal(row[1], row[2], now) == "":
+		var why: String = refusal(row[1], row[2], now)
+
+		if why == "unloaded":
+			_retry[row[1]] = true
+
+		if why == "":
 			sites[row[1]] = {"x": row[2].x, "z": row[2].y, "woke": now, "points": row[0]}
 			woke.append(row[1])
 			print("BANDIT site woke at %.0f, %.0f (%.1f trip points)" % [row[2].x, row[2].y, float(row[0])])

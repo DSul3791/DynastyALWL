@@ -14,7 +14,7 @@ Status: stage 1 of 5 (sites and traffic) on branch `claude/project-thread-2c1rn3
 
 - **Sites.** One candidate per `cell_m` square, at a spot fixed by a hash of the cell and the world seed; `share` of the cells have one. Nothing is stored for a sleeping site.
 - **Trip points.** On each position report the server already looks up whether the player is on a path (`server_items._on_path`, once a second). A player entering a new `stretch_m` stretch on a surveyed road adds `weights.road`, on a hand path `weights.path`, pulling a loaded cart `weights.cart`. Off every path the player is forgotten. Points halve every `half_life_days` game days.
-- **Waking.** Once a game hour (`check_s`), only round the stretches that gained points, the candidates are tried, busiest first. A candidate wakes when the stretches within `near_road_m` hold `wake_points`, its ground is dry and gentle (no step of `slope_step_m` rises more than `slope_max_deg`), the nearest road patch is `road_off_m` away, no building stands within `building_clear_m`, it is `start_clear_m` from the town point and the spawn, and no awake site is within `spacing_m`.
+- **Waking.** Once a game hour (`check_s`), only round the stretches that gained points, the candidates are tried, busiest first. A candidate wakes when the stretches within `near_road_m` hold `wake_points`, its ground is dry and gentle (no step of `slope_step_m` rises more than `slope_max_deg`), the nearest road patch is `road_off_m` away, no building or campfire stands within `building_clear_m`, it is `start_clear_m` from the town point and the spawn, and no awake site is within `spacing_m`.
 - **Saved** in the server store as `bandit_sites.json` (awake sites, trip points). Each awake site prints one `BANDIT site` line at server start.
 - Nothing appears in the world yet: the camp is stage 2.
 
@@ -33,5 +33,8 @@ Status: stage 1 of 5 (sites and traffic) on branch `claude/project-thread-2c1rn3
 ## Known limits (stage 1)
 
 - Trip points since the last save are lost in a crash (saved at each wake and at shutdown).
+- A candidate whose ground tile is not loaded is not read (no tile read stalls the server); it is tried again at the next check.
+- Water means deeper than 0.7 m (the NPC walking test): a shallow pond counts as dry.
+- Walking back and forth over one stretch boundary counts each crossing; harmless in stage 1, to be limited per mover before stage 2 puts camps in the world.
 - The pinch-point preference (ford, forest stretch, pass) is not built: the busiest candidate that passes the rules wakes.
 - Patrols, wagoneers and the used-site dormancy come with later stages; no patrol or wagoneer NPC exists yet.

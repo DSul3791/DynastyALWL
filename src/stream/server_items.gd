@@ -13947,7 +13947,7 @@ func _note_road_trip(peer: int, position: Vector3) -> void:
 		road_trip.call(peer, position, "")
 		return
 
-	var pulling: bool = _carts.puller_of.has(peer) and _carts.load_kg(int(_carts.puller_of[peer])) > 0.0
+	var pulling: bool = _carts.puller_of.has(peer) and float(_carts.pulls.get(int(_carts.puller_of[peer]), {}).get("share", 0.0)) > 0.0   # the load share the cart's last move worked out: no item scan per report
 	road_trip.call(peer, position, "cart" if pulling else ("road" if bool(_on_path_cache[peer][2]) else "path"))
 
 
@@ -13962,15 +13962,16 @@ func road_distance(at: Vector3, r: float) -> float:
 	return best if best <= r else INF
 
 
-# True when a placed building (SurveyLine.is_building: not a path, bed, remains or carcass) stands within r of a spot.
+# True when a placed building (SurveyLine.is_building: not a path, bed, remains or carcass; a campfire counts, as on the survey line) stands
+# within r of a spot.
 func building_near(at: Vector3, r: float) -> bool:
 	for id in _ids_near(at, r):
-		if not _items.has(id) or not _items[id].has("struct"):
+		if not _items.has(id) or not (_items[id].has("struct") or _items[id].has("fire")):
 			continue
 
-		var kind: String = str(_items[id]["struct"]["kind"])
+		var kind: String = str(_items[id]["struct"]["kind"]) if _items[id].has("struct") else ""
 
-		if SurveyLine.is_building(kind, _structures.get(kind, {})) and Vector2(_items[id]["pos"].x - at.x, _items[id]["pos"].z - at.z).length() <= r:
+		if (kind == "" or SurveyLine.is_building(kind, _structures.get(kind, {}))) and Vector2(_items[id]["pos"].x - at.x, _items[id]["pos"].z - at.z).length() <= r:
 			return true
 
 	return false

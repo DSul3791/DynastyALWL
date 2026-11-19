@@ -789,6 +789,7 @@ func _ready() -> void:
 	bandits.spawn = Vector2(spawn.x, spawn.z)
 	bandits.game_seconds = func(): return game_clock.seconds
 	bandits.ground_height = func(x, z): return generator.surface_height(x, z)
+	bandits.ground_ready = func(x, z): return generator.tile_cached(x, z)   # the hourly check never reads a tile from disk (1.8 to 4 s)
 	bandits.in_water = npcs.blocked
 	bandits.building_near = func(site_at, reach_m): return items.building_near(site_at, reach_m)
 	bandits.road_distance = func(site_at, reach_m): return items.road_distance(site_at, reach_m)

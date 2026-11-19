@@ -182,6 +182,17 @@ func _waking() -> void:
 	fresh.building_near = func(_at, _r): return true
 	check(fresh.refusal(cell, spot, clock[0]) == "buildings near", "none near a building")
 
+	# Ground not loaded: no tile is read, the candidate is tried again at the next check and wakes once it is.
+	var later: BanditsScript = _sites()
+	var loaded: Array = [false]
+	later.ground_ready = func(_x, _z): return loaded[0]
+	_traffic(later, spot, need + 1.0)
+	check(later.refusal(cell, spot, clock[0]) == "unloaded", "unloaded ground is not read")
+	check(later.tick().is_empty() and later._retry.has(cell), "an unloaded candidate waits for the next check")
+	loaded[0] = true
+	clock[0] += float(later.cfg["check_s"])
+	check(later.tick() == [cell], "it wakes at the next check once its ground is loaded, with no new traffic")
+
 
 func _saved() -> void:
 	var dir: String = "user://test_bandit_sites"
@@ -215,6 +226,8 @@ func _server_hooks() -> void:
 	check(items.road_distance(Vector3(500.0, 0.0, 200.0), 300.0) == INF, "a hand path is not a road for the distance")
 	check(items.building_near(Vector3(0.0, 0.0, 300.0), 150.0), "a building within reach counts")
 	check(not items.building_near(Vector3(0.0, 0.0, -300.0), 150.0), "remains are not a building")
+	items._items[5] = {"number": 1, "count": 1, "pos": Vector3(900.0, 0.0, 0.0), "left": 1.0e9, "fire": {}}
+	check(items.building_near(Vector3(900.0, 0.0, 100.0), 150.0), "a campfire counts as a building, as on the survey line")
 	var seen: Array = []
 	items.road_trip = func(peer, _at, kind): seen.append([peer, kind])
 	items._note_road_trip(7, Vector3(1.0, 0.0, 0.0))
@@ -222,4 +235,11 @@ func _server_hooks() -> void:
 	items._note_road_trip(8, Vector3(501.0, 0.0, 0.0))
 	items._on_path_cache.clear()
 	items._note_road_trip(9, Vector3(250.0, 0.0, 0.0))
-	check(seen == [[7, "road"], [8, "path"], [9, ""]], "a player counts road, hand path or off every path (%s)" % str(seen))
+	items._on_path_cache.clear()
+	items._carts.puller_of[10] = 77
+	items._carts.pulls[77] = {"peer": 10, "share": 0.0, "riders": []}
+	items._note_road_trip(10, Vector3(1.0, 0.0, 0.0))
+	items._carts.pulls[77]["share"] = 0.4
+	items._on_path_cache.clear()
+	items._note_road_trip(10, Vector3(1.0, 0.0, 0.0))
+	check(seen == [[7, "road"], [8, "path"], [9, ""], [10, "road"], [10, "cart"]], "a player counts road, hand path, off every path, an empty cart as road and a loaded cart as cart (%s)" % str(seen))
