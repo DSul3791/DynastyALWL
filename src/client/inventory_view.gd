@@ -1095,7 +1095,7 @@ func _probe_structure_for(id: int) -> Dictionary:
 
 	var station_def: Dictionary = _structure_by_state(state)
 
-	if _is_bed_def(station_def):   # a tilled bed or garden plot (FARMING_SPEC.md steps 3 to 5): E sows, waters or harvests; a plot, which has a kit, still comes down with hold E
+	if _is_bed_def(station_def):   # a tilled bed or garden plot (FARMING_SPEC.md steps 3 to 5): E waters or harvests; a plot, which has a kit, still comes down with hold E
 		return _bed_interaction(id, station_def, take_down)
 
 	if str(station_def.get("use", "")) == "storage_view":   # a Storage sign or Warehouse desk (catalog phase 9): E shows what the containers round it hold
@@ -1252,28 +1252,12 @@ func _crop_cfg() -> Dictionary:
 	return _crops_cfg
 
 
-# The pack slot of the seed E would sow: the one in hand, else the first seed in the pack; -1 for none.
-# PROVISIONAL (GOALS-REPAIR A-6): E on an empty bed sows the seed in hand, else the first seed in the pack (REPAIR_DECISIONS.md section 4).
-func _seed_slot() -> int:
-	var hand: int = _hand_slot()
-
-	if hand >= 0 and hand < inventory.slot_count and inventory.numbers[hand] != 0 and FarmRules.crop_of_seed(_crop_cfg(), table.id_of(inventory.numbers[hand])) != "":
-		return hand
-
-	for slot in range(inventory.slot_count):
-		if inventory.numbers[slot] != 0 and FarmRules.crop_of_seed(_crop_cfg(), table.id_of(inventory.numbers[slot])) != "":
-			return slot
-
-	return -1
-
-
-# E on a bed: the one request FarmRules.bed_action words (sow the seed in hand or pack, water with the filled container in hand, harvest a ripe crop). The server does
-# the checking; a refusal (not the season, not ripe, too far) comes back as its notice.
+# E on a bed: the one request FarmRules.bed_action words (water with the filled container in hand, harvest a ripe crop; never a sow: that is the hoe's Plant grid). The
+# server does the checking; a refusal (not ripe, too far) comes back as its notice.
 func _bed_interaction(id: int, def: Dictionary, take_down: Callable) -> Dictionary:
 	var row: Dictionary = _world[id]
-	var seed_slot: int = _seed_slot() if str(row.get("crop", "")) == "" else -1   # only an empty bed takes a seed (this probe runs every frame the bed is aimed at)
 	var water_slot: int = held_container_slot() if held_container_has_water() else -1
-	var plan: Dictionary = FarmRules.bed_action(_crop_cfg(), str(row.get("crop", "")), int(row.get("stage", 0)), seed_slot, table.sentence_name(inventory.numbers[seed_slot]) if seed_slot >= 0 else "", water_slot, int(row.get("moist", -1)), _moist_cfg)
+	var plan: Dictionary = FarmRules.bed_action(_crop_cfg(), str(row.get("crop", "")), int(row.get("stage", 0)), water_slot, int(row.get("moist", -1)), _moist_cfg)
 	var found: Dictionary = {"prompt": plan["prompt"], "tap": func(): _bed_tap(id, plan)}
 
 	if str(def.get("kit", "")) != "":
@@ -1285,8 +1269,6 @@ func _bed_interaction(id: int, def: Dictionary, take_down: Callable) -> Dictiona
 # Sends the one request the bed's plan names (a block body in a lambda inside a dictionary literal does not parse with a match in it: hence a method).
 func _bed_tap(id: int, plan: Dictionary) -> void:
 	match str(plan["act"]):
-		"sow":
-			net.inventory_action.rpc_id(1, Net.ACT_SOW, id, int(plan["b"]), 0, Vector3.ZERO)   # b: the seed's pack slot
 		"harvest":
 			net.inventory_action.rpc_id(1, Net.ACT_HARVEST, id, 0, 0, Vector3.ZERO)
 		"water":
@@ -1295,17 +1277,26 @@ func _bed_tap(id: int, plan: Dictionary) -> void:
 			show_notice(str(plan["prompt"]))
 
 
-# A bed's crop and stage from its world row (server_items.crop_row_extra): kept on the record for the E prompt, with its PLACEHOLDER stage look hung on the bed's node;
-# swapped when the stage changes and dropped when the crop is gone (harvest, frost).
-func _note_crop(id: int, row: Array) -> void:
+# A bed's crop and stage from its world row (server_items.crop_row_extra): kept on the record for the E prompt, with its stage look (CropLook: the wild plant's own model
+# where flora.json has one, else a PLACEHOLDER) hung on the bed's node; swapped when the stage changes and dropped when the crop is gone (harvest, frost). A look made while the
+# flora models were still being built is a placeholder for now: the bed waits in _crop_looks_waiting and is drawn again once they are (_redo_crop_looks).
+var crop_model: Callable = Callable()        # (crop id, share of height, spots) -> Node3D or null: FloraView.crop_model, set by the client; unset (tests) gives placeholders
+var crop_models_ready: Callable = Callable()  # () -> true once every wild plant's model is built (FloraView.models_ready)
+var _crop_looks_waiting: Dictionary = {}     # bed world id -> true: drawn with a placeholder while the flora models were not all built
+var _crop_looks_msec: int = 0
+
+
+func _note_crop(id: int, row: Array, again: bool = false) -> void:
 	var extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
 	var crop: String = str(extra.get("crop", ""))
 	var stage: int = int(extra.get("stage", 0)) if crop != "" else -1
 	var cells: Array = extra.get("cells", [])   # a plot of several square metres: one crop each (server_items.crop_row_extra)
 	var rec: Dictionary = _world[id]
-	rec["moist"] = int(extra.get("moist", -1))   # the soil's moisture for the E prompt (FarmRules.soil_words)
 
-	if str(rec.get("crop", "")) == crop and int(rec.get("stage", -1)) == stage and str(rec.get("cells", [])) == str(cells):
+	if not again:
+		rec["moist"] = int(extra.get("moist", -1))   # the soil's moisture for the E prompt (FarmRules.soil_words); a redrawn look's row may be older
+
+	if not again and str(rec.get("crop", "")) == crop and int(rec.get("stage", -1)) == stage and str(rec.get("cells", [])) == str(cells):
 		return
 
 	if is_instance_valid(rec.get("crop_node")):
@@ -1315,7 +1306,10 @@ func _note_crop(id: int, row: Array) -> void:
 	rec["stage"] = stage
 	rec["cells"] = cells
 	rec["crop_node"] = null
+	rec["crop_row"] = row
+	_crop_looks_waiting.erase(id)
 	var bed_def: Dictionary = _structure_by_state(int(rec["state"]))
+	var looks: Array = []
 
 	if not cells.is_empty():
 		var holder: Node3D = Node3D.new()   # a crop look on each square metre, laid out as the server's _bed_cells (the bed's node is already turned)
@@ -1324,17 +1318,40 @@ func _note_crop(id: int, row: Array) -> void:
 
 		for k in mini(cells.size(), spots.size()):
 			if str(cells[k][0]) != "":
-				var one: Node3D = CropLook.build(str(cells[k][0]), int(cells[k][1]), 1.0)
+				var one: Node3D = CropLook.build(str(cells[k][0]), int(cells[k][1]), 1.0, crop_model)
 				one.position = Vector3(spots[k].x, float(bed_def.get("soil_y", 0.0)), spots[k].y)
 				holder.add_child(one)
+				looks.append(one)
 
 		(rec["node"] as Node3D).add_child(holder)
 		rec["crop_node"] = holder
 	elif crop != "":
-		var look: Node3D = CropLook.build(crop, stage, minf(float(bed_def.get("footprint_x", 1.0)), float(bed_def.get("footprint_z", bed_def.get("footprint_x", 1.0)))))
+		var look: Node3D = CropLook.build(crop, stage, minf(float(bed_def.get("footprint_x", 1.0)), float(bed_def.get("footprint_z", bed_def.get("footprint_x", 1.0)))), crop_model)
 		look.position.y = float(bed_def.get("soil_y", 0.0))   # a planter's soil is raised (structures.json soil_y); a bed or plot grows from the ground
 		(rec["node"] as Node3D).add_child(look)
 		rec["crop_node"] = look
+		looks.append(look)
+
+	if crop_models_ready.is_valid() and not bool(crop_models_ready.call()) and looks.any(func(l): return bool(l.get_meta("placeholder", false))):
+		_crop_looks_waiting[id] = true
+
+
+# Once a second while some bed waits: when the flora models are all built, its crop look is made again (the wild plant's model where there is one).
+func _redo_crop_looks() -> void:
+	if _crop_looks_waiting.is_empty() or Time.get_ticks_msec() < _crop_looks_msec:
+		return
+
+	_crop_looks_msec = Time.get_ticks_msec() + 1000
+
+	if crop_models_ready.is_valid() and not bool(crop_models_ready.call()):
+		return
+
+	var waiting: Array = _crop_looks_waiting.keys()
+	_crop_looks_waiting.clear()
+
+	for id in waiting:
+		if _world.has(id) and _world[id].has("crop_row") and is_instance_valid(_world[id].get("node")):
+			_note_crop(id, _world[id]["crop_row"], true)
 
 
 func press_e() -> bool:
@@ -1526,6 +1543,7 @@ func _process(_delta: float) -> void:
 
 
 func _process_body(_delta: float) -> void:
+	_redo_crop_looks()
 	_flicker_flames()
 
 	if _recipe_part.running():

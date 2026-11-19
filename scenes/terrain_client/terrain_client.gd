@@ -1609,6 +1609,8 @@ func _welcome_body(info: Dictionary) -> void:
 	items.held_slot_now = func(): return held.held_slot if held.holding else -1
 	items.pick_hand = func(key: int): held.press_slot(key)
 	items.held_key_now = func(): return held.held_key if held.holding else -1
+	items.crop_model = func(crop: String, share: float, spots: Array): return flora.crop_model(crop, share, spots) if flora != null else null   # a garden crop wears its wild plant's model (Dave play test 19 Nov 2026)
+	items.crop_models_ready = func(): return flora == null or flora.models_ready()
 	hotbar_strip = HotbarStripScript.new()
 	hotbar_strip.setup(items, layer, held)
 	items.hotbar_strip = hotbar_strip

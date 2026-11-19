@@ -1,11 +1,12 @@
 extends RefCounted
 
-# What E does on a tilled bed or garden plot (GOALS-REPAIR WP-R1B; FARMING_SPEC.md steps 3 to 5, 6 for the prompts). The client only asks: the server (server_items.gd sow,
+# What E does on a tilled bed or garden plot (GOALS-REPAIR WP-R1B; FARMING_SPEC.md steps 3 to 5, 6 for the prompts). The client only asks: the server (server_items.gd plant_grid,
 # water_bed, harvest) checks reach, seed, season, bed state and water, and its refusal text reaches the player as a notice. This is the client's wording of the one request it will
 # send, from the bed's world-row extras (crop id, stage 0 to 3; server_items.crop_row_extra) and data/items/crops.json. It is pure so test_farm_prompt.gd can hold it.
 
 const STAGE_NAMES := ["seedling", "young", "growing", "ripe"]
 const RIPE := 3
+const EMPTY_BED_PROMPT := "hold the hoe, right click and choose Plant to sow it"
 const PlotWater := preload("res://src/shared/plot_water.gd")
 
 
@@ -21,20 +22,16 @@ static func crop_of_seed(crops: Dictionary, seed_id: String) -> String:
 	return ""
 
 
-# The decision for one bed: {"act": "sow" | "harvest" | "water" | "none", "prompt": the E line, "b": the pack slot the request carries (the seed for a sow, the container for a water, else 0)}.
-# inventory_view._bed_interaction sends ACT_SOW / ACT_HARVEST / ACT_WATER_BED with the bed id as `a` and this `b`; "none" sends nothing and shows the prompt as a notice.
-# crop_id/stage: the bed's crop ("" for an empty bed); seed_slot/seed_name: the seed to sow (-1 and "" when none is held or carried);
-# water_slot: the held container that holds water, the one E uses to drink and fill (-1 when none).
+# The decision for one bed: {"act": "harvest" | "water" | "none", "prompt": the E line, "b": the pack slot the request carries (the container for a water, else 0)}.
+# inventory_view._bed_interaction sends ACT_HARVEST / ACT_WATER_BED with the bed id as `a` and this `b`; "none" sends nothing and shows the prompt as a notice.
+# crop_id/stage: the bed's crop ("" for an empty bed); water_slot: the held container that holds water, the one E uses to drink and fill (-1 when none).
 # moist: the bed's soil moisture percent from its row (server_items.crop_row_extra "moist", -1 when the row has none); moist_cfg: crops.json "moisture".
-static func bed_action(crops: Dictionary, crop_id: String, stage: int, seed_slot: int, seed_name: String, water_slot: int, moist: int = -1, moist_cfg: Dictionary = {}) -> Dictionary:
+# E never sows (Dave play test 19 Nov 2026: seeds went in without the hoe in hand): sowing is the hoe's Plant grid only (ACT_PLANT_GRID), so an empty bed only says how.
+static func bed_action(crops: Dictionary, crop_id: String, stage: int, water_slot: int, moist: int = -1, moist_cfg: Dictionary = {}) -> Dictionary:
 	var soil: String = soil_words(moist, moist_cfg)
 
 	if crop_id == "":
-		# PROVISIONAL (GOALS-REPAIR A-6): the seed is the one in hand, else the first in the pack (chosen by inventory_view._seed_slot).
-		if seed_slot >= 0:
-			return {"act": "sow", "prompt": "Press E to sow %s%s" % [seed_name, " (%s)" % soil if soil != "" else ""], "b": seed_slot}
-
-		return {"act": "none", "prompt": "A tilled bed%s: carry seeds and press E to sow it" % (" (%s)" % soil if soil != "" else ""), "b": 0}
+		return {"act": "none", "prompt": "A tilled bed%s: %s" % [" (%s)" % soil if soil != "" else "", EMPTY_BED_PROMPT], "b": 0}
 
 	var def: Dictionary = crops.get(crop_id, {})
 	var name: String = str(def.get("name", crop_id)).to_lower()
