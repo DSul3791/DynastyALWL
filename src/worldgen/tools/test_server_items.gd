@@ -2680,7 +2680,10 @@ func _init() -> void:
 	check(cq.craft_queue_of(1).size() <= 10, "queue is capped at 10 entries (%d)" % cq.craft_queue_of(1).size())
 	cq._last_queue_act.clear()
 	var in_a_row: int = cq.craft_queue_of(1).size()
+	var cancel_t0: int = Time.get_ticks_msec()
 	cq.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+	check(int(cq._last_queue_act.get(1, -1)) >= cancel_t0, "the first request starts the pace")
+	cq._last_queue_act[1] = Time.get_ticks_msec()   # pin the clock: no time has passed since it (a loaded test PC can take longer than the pace between two lines)
 	cq.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
 	check(cq.craft_queue_of(1).size() == in_a_row - 1, "queue requests faster than 100 ms apart are ignored")
 

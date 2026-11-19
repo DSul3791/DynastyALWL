@@ -402,7 +402,7 @@ func _init() -> void:
 	empty_pack()
 	inv.add(n("wooden_bow"), 1)
 	inv.add(n("wooden_arrow"), 5)
-	items._last_shot[1] = Time.get_ticks_msec() - 300
+	items._last_shot[1] = Time.get_ticks_msec()   # a shot just now: inside the pace however long this line takes (was now - 300 against the 700 ms pace)
 	items.action(1, Net.ACT_SHOOT, slot_of("wooden_bow"), 1200, 0, Vector3(0.0, 0.2, -1.0))
 	check(said.is_empty() and have("wooden_arrow") == 5, "7. a bow inside its pace stays silent (no spanning line)")
 	empty_pack()
