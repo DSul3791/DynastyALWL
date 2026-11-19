@@ -17,8 +17,9 @@
 - **Rule:** `TileTerrainData.animal_den_species(cave)` (CD-3, CD-4). The server and the dressing read the same rule. Goblin caves are decided first and never hold an animal.
 - **Signs a player can read:** droppings a few metres in from the mouth, to the side of the stream. A bear or wolf den also has old bones there, from kills brought home. A trampled bed of leaves, grass and fur lies at the den spot: the cave's dry branch, else its den nearest the entrance. These are `cave_bones` kinds 4 (droppings) and 5 (bedding), protocol 141, drawn by `src/client/cave_dressing.gd`.
 - **The animals:**
-  - A bear or fox top-up near a player takes an empty den mouth first, within the normal spawn reach, never within `never_within_m` of a player and never twice (`server_animals.cave_den_spot`). A bear made there has the mouth as its den.
+  - A bear or fox top-up near a player takes an empty den mouth first (`server_animals.cave_den_spot`). The mouth must be within the normal spawn reach, never within `never_within_m` of a player, and on ground the species lives on (its biomes and habitat, as for any spawn spot). It is not taken while one of its kind, or that animal's den, is within `cave_den_claim_m` (40 m) of the mouth. A bear made there has the mouth as its den.
   - A wolf pack's 2 km cell uses a wolf cave inside it as the pack's den, if the mouth is wolf ground (`server_wolves._natural`, `server_animals.cave_den_in`). Otherwise the pack keeps its hashed spot.
+- **Goblins and bears:** the goblins' old rule stays: no goblin band at a mouth with a bear within 120 m. Bear caves now make that happen more often near large caves; caves are at least 120 m apart, so it only bites when a bear wanders. The goblin camp cave is held free (CD-4).
 - **Not changed:** the bake, tile files and saves; the goblins' share and their floor rule; the ordinary habitat spawning.
 - **Test:** `src/worldgen/tools/test_cave_animal_dens.gd`, plus the den looks in `test_cave_dressing.gd`.
 

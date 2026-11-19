@@ -109,14 +109,14 @@ func _init() -> void:
 	a.setup()
 	a.traits = false
 	a.cave_den_mouths = func(_x, _z, sp): return PackedVector2Array([Vector2(200.0, 0.0)]) if sp == "bear" else PackedVector2Array()
-	var far: Vector2 = a.cave_den_spot("bear", Vector3(0.0, 10.0, 0.0), [Vector3(0.0, 10.0, 0.0)])
+	var far: Vector2 = a.cave_den_spot("bear", a.species_def("bear"), Vector3(0.0, 10.0, 0.0), [Vector3(0.0, 10.0, 0.0)])
 	check(far.is_equal_approx(Vector2(200.0, 0.0)), "a bear cave 200 m from the player is a spawn spot (%s)" % str(far))
-	check(a.cave_den_spot("wolf", Vector3(0.0, 10.0, 0.0), [Vector3(0.0, 10.0, 0.0)]).x == INF, "no wolf cave, no spot")
-	check(a.cave_den_spot("bear", Vector3(150.0, 10.0, 0.0), [Vector3(150.0, 10.0, 0.0), Vector3(180.0, 10.0, 0.0)]).x == INF, "never with a player beside the mouth")
-	check(a.cave_den_spot("bear", Vector3(-200.0, 10.0, 0.0), [Vector3(-200.0, 10.0, 0.0)]).x == INF, "a mouth beyond spawn_max_m is too far")
+	check(a.cave_den_spot("wolf", a.species_def("wolf"), Vector3(0.0, 10.0, 0.0), [Vector3(0.0, 10.0, 0.0)]).x == INF, "no wolf cave, no spot")
+	check(a.cave_den_spot("bear", a.species_def("bear"), Vector3(150.0, 10.0, 0.0), [Vector3(150.0, 10.0, 0.0), Vector3(180.0, 10.0, 0.0)]).x == INF, "never with a player beside the mouth")
+	check(a.cave_den_spot("bear", a.species_def("bear"), Vector3(-200.0, 10.0, 0.0), [Vector3(-200.0, 10.0, 0.0)]).x == INF, "a mouth beyond spawn_max_m is too far")
 	var id: int = a.spawn("bear", 200.0, 0.0)
 	check(id != 0 and a.animals[id].get("den", Vector3.INF) == Vector3(200.0, 10.0, 0.0), "a bear made at the mouth has its den there")
-	check(a.cave_den_spot("bear", Vector3(0.0, 10.0, 0.0), [Vector3(0.0, 10.0, 0.0)]).x == INF, "a den with its bear in it is taken")
+	check(a.cave_den_spot("bear", a.species_def("bear"), Vector3(0.0, 10.0, 0.0), [Vector3(0.0, 10.0, 0.0)]).x == INF, "a den with its bear in it is taken")
 
 	# A wolf pack's 2 km cell takes a wolf cave inside it as its den.
 	a.cave_den_mouths = func(_x, _z, sp): return PackedVector2Array([Vector2(2500.0, 300.0)]) if sp == "wolf" else PackedVector2Array()
