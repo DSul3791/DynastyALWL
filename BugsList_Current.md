@@ -322,6 +322,25 @@ Assumed on Dave's behalf (provisional):
 - HIT-2: the flinch squashes the body to 1.08 wide and 0.88 tall and springs back in 0.2 s.
 - HIT-3: the flesh thud is the same loudness for every hit (the hit message carries no damage).
 
+## 57. Seeds planted without the hoe, and seedlings drawn as green boxes
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test on 19 Nov 2026. Fixed by PR #1291, merged to dev at a800f0ba (head c37c0a36) after independent review. Lane B (David4) on the exact head: 423 of 423 tests passed, including test_farming, test_farm_view, test_farm_prompt and test_goal_events; validate_items 0 errors; join smoke clean. Fix not yet played; the plant models are not visually checked.
+
+Dave, 19 Nov 2026: "testing the hoes functionality for placing a garden and somehow after I made the garden and didnt have the hoe in my hand I planted these flowers." Then: "that look like green boxes which makes no sense because they have a model in the game".
+
+**Cause:** pressing E on an empty tilled bed sowed the seed in hand, else the first seed in the pack, with no check of the tool in hand (an older provisional choice, GOALS-REPAIR A-6). Every crop on a bed was drawn with placeholder boxes, even crops whose wild plant has a model.
+
+**Required outcome:** only the hoe in hand with Plant chosen sows. The server checks the hoe on every planting click. E on a bed only waters or harvests; on an empty bed it says to use the hoe's Plant. A crop that also grows wild (chamomile, yarrow, nettle and the other wild herbs, flowers, berries, ferns, reeds and grasses, 70 of 84 crops) wears its wild plant's model, smaller while young. A part-planted plot can be watered with E.
+
+**Acceptance:** with seeds in the pack and no hoe in hand, E on a tilled bed plants nothing and says to use the hoe. With the hoe in hand and Plant chosen, the grid plants. Chamomile seedlings look like small chamomile plants, not boxes.
+
+Not done: wheat, barley, oats, rye, carrot, potato, turnip, cabbage, onion, peas, beet, radish, lettuce and parsnip have no plant model in the game, so they still show the placeholder boxes (new models are Dave's call). Plants already in Dave's world stay where they are.
+
+Assumed on Dave's behalf (provisional):
+
+- G-15 (coordinator for Dave): a dug-up bush or a tree seed held in hand is still planted by clicking open ground without the hoe; only bed crops need the hoe.
+- CL-1: a crop's wild model is 35, 60, 85 and 100 % of the wild plant's usual height from seedling to ripe, four to a square metre, and is drawn within 40 m.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
