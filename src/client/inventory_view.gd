@@ -3489,7 +3489,7 @@ func placement_rows() -> Array:
 
 # Removes a world row's node and, for a lean-to, its roof in the cover index.
 # A bog iron deposit the server says is in sight (Sonny's water rules section 11): its spot, the ore left and its full size, and whether it lies under
-# standing water. Kept, not drawn yet: Kathleen's look (_show_bog) builds on this entry and puts its node in "node".
+# standing water. Drawn by _show_bog; terrain_client keeps the grass off it.
 func _note_bog(id: int, row: Array) -> void:
 	var extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
 	var entry: Dictionary = bogs.get(id, {})
@@ -3499,6 +3499,42 @@ func _note_bog(id: int, row: Array) -> void:
 	entry["wet"] = bool(extra.get("wet", false))
 	entry["key"] = str(extra.get("key", ""))
 	bogs[id] = entry
+	_show_bog(id)
+
+
+# A bog iron deposit's ground stain (PieceLook.bog_iron_patch): "wet" under standing water, "dug" once ore has been taken (until it grows back to
+# full), else "dry". Rebuilt only when the state changes; no collision; turned by the key's hash so neighbours differ.
+func _show_bog(id: int) -> void:
+	var entry: Dictionary = bogs.get(id, {})
+
+	if entry.is_empty() or _root == null:
+		return
+
+	var state: String = "wet" if bool(entry["wet"]) else ("dug" if int(entry["left"]) < int(entry["total"]) else "dry")
+
+	if entry.get("node") is Node3D and str(entry.get("state", "")) == state:
+		(entry["node"] as Node3D).position = entry["pos"]
+		return
+
+	if entry.get("node") is Node3D:
+		(entry["node"] as Node3D).queue_free()
+
+	var at: Vector3 = entry["pos"]
+	var yaw: float = float(absi(hash(str(entry["key"]))) % 360) * PI / 180.0
+	var ground: Callable = Callable()
+
+	if _ground_below.is_valid():   # drape the stain over the ground: the patch's frame turned by yaw, from its origin
+		ground = func(x: float, z: float) -> float:
+			var spot: Vector3 = at + Vector3(x, 0.0, z).rotated(Vector3.UP, yaw)
+			var y: float = float(_ground_below.call(spot))
+			return 0.0 if is_nan(y) else y - at.y
+
+	var node: Node3D = PieceLook.bog_iron_patch(state, ground)
+	node.position = at
+	node.rotation.y = yaw
+	_root.add_child(node)
+	entry["node"] = node
+	entry["state"] = state
 
 
 # Boulders (Dave 2026-10-21): server-owned lumps of rock a pick breaks into stones. Drawn with Art's boulder mesh scaled to the

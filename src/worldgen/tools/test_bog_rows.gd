@@ -80,7 +80,7 @@ func _init() -> void:
 	items.peer_connected_hello(1, "bogrows00001")
 	items.vitals_of(1)["weight"] = 500.0
 	var cfg: Dictionary = items._dig_cfg.get("bog_iron", {})
-	check(not cfg.is_empty() and float(cfg.get("seen_m", 0.0)) == 30.0, "digging.json bog_iron sees 30 m")
+	check(not cfg.is_empty() and float(cfg.get("seen_m", 0.0)) == 50.0, "digging.json bog_iron sees 50 m (Dave 19 Nov 2026: easy to find)")
 
 	# State 229 is the deposit's own: no structure may take it.
 	var clash: Array = []
@@ -97,7 +97,7 @@ func _init() -> void:
 	var rows: Dictionary = _bog_added()
 	var dry_key: String = "100,100"
 	var wet_key: String = "102,100"
-	check(rows.size() == 2 and rows.has(dry_key) and rows.has(wet_key), "the two deposits within 30 m are sent, the one 80 m off is not (%s)" % str(rows.keys()))
+	check(rows.size() == 2 and rows.has(dry_key) and rows.has(wet_key), "the two deposits within 50 m are sent, the one 80 m off is not (%s)" % str(rows.keys()))
 
 	if not rows.has(dry_key) or not rows.has(wet_key):
 		quit(1)

@@ -206,7 +206,7 @@
 		],
 		"regrow_game_days": 3,
 		"item": "iron_ore",
-		"seen_m": 30,
+		"seen_m": 50,
 		"first_find": "Rust-red lumps come up with the peat: bog iron."
 	}
 }
