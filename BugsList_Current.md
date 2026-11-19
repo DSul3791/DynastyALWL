@@ -239,6 +239,16 @@ Dave, 19 Nov 2026: "trying to place a foundation down and it seems to be snappin
 
 **Acceptance:** with no foundation nearby, hold a foundation and turn. The ghost turns smoothly with you and follows the aim with no jumps. Place it at an odd angle. Then add a second foundation, walls, a doorway and a roof: each one lines up with the turned first foundation.
 
+## 52. Eat food straight from the hotbar
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test on 19 Nov 2026. Fixed by PR #1287, merged to dev at 356f73ba (head deade241) after independent review. Lane A (Dave's PC) passed on the exact head: 60 of 60 fast tests, including the new test_hotbar_eat. The fix has not been played yet.
+
+Dave, 19 Nov 2026: "if you click on foot in a hotbar or hold down the hotbar key on a food item it should just eat the food and keep eating it like holding E in the inventory."
+
+**Required outcome:** food, drink or medicine on the hotbar is eaten, not taken in hand. Its number key, or a left click on its hotbar box with the inventory open, eats one bite. Holding the key or the button keeps eating through the same hold as E in the inventory, with the same pace, sounds, fullness limit and server checks. It stops when you let go, the stack runs out (the slot empties) or you are full. The hand keeps whatever it held.
+
+**Acceptance:** put berries in a hotbar slot with an axe in hand. Tap the berries' key: one bite, and the axe stays in hand. Hold the key: bites keep coming until you let go or the berries are gone. With the inventory open, click the berries' box for one bite, or hold it to keep eating. Dragging the berries off the hotbar eats nothing.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
@@ -257,4 +267,7 @@ Dave requested this rewrite around the intended experience rather than a literal
 - HM-1: the hoe list is a 600 px plate (grows with text sizes above 1.0) centred above the hotbar caption; row names 24 px, explanation 20 px before the text size; the names stay as entry 5 has them ("Pathen" is the catalog's word, DYNASTY_MASTER_ITEMS.md).
 - FF-1 (entry 51): only foundations leave the grid when nothing is near them. Other building pieces with nothing to snap to keep the grid and quarter turns. That covers a lone wall, a fence or a garden plot. Dave's ruling named only the first foundation.
 - FF-2 (entry 51): a roof panel rests across the edge the player is facing, if that edge is within 45 degrees of where they look. It takes that edge's turn. Before, the facing was rounded to a quarter turn, which matched only unturned buildings.
+- HE-1 (entry 52): a quick tap of the key or a click eats one bite. Eating from the hotbar never changes the selected slot or what is in hand.
+- HE-2 (entry 52): a click on a food box bites when the button comes up, or after 0.2 s held, so dragging food elsewhere eats nothing. Holding still on the box longer than that before dragging eats one bite.
+- HE-3 (entry 52): water containers on the hotbar still go in hand (they are needed to fill and pour). Drink from them as before.
 - Crops need tilled soil (Plant does not till); scatter stone, flint and ores count as small rocks to pick up; wild shrubs are not checked for duplicates.
