@@ -201,7 +201,6 @@ Recorded 19 Nov from Dave's own messages. Each of his lists of answers and probl
 | 46 | Craft button should be Craft 1 / Craft x (17 Nov, *inferred* from using the Craft button of #1056) | #1228 | Fix not yet played |
 | 47 | Crafting ran on past the quantity; click should only select (12 Nov) | #1056 | Unclear (two-step inference: he used a Craft button and asked for it to be split, entry 46) |
 | 48 | Felling, carrying and processing of the 15 Nov wood system | #1148-#1153 | Partly played: felling (entry 16), logs (17), saw (26); chopping block, sawbuck, carving station, bows and benches unclear |
-| 49 | Shovel name (16 Nov rename request) | #1182 | Unclear: on 17 Nov he wrote of making a "shovel" (entry 32), but that was his own word for it |
 
 ## 50. Level gives no soil back when it cuts ground
 
