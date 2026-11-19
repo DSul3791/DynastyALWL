@@ -161,7 +161,7 @@ func _moisture_checks(bed: int) -> void:
 	items._structures.erase("test_plot")
 
 
-# The player's route, as the client sends it (inventory_view.gd _bed_interaction): sow by bed id and seed slot, water, harvest. Leaves the bed empty.
+# The player's route, as the client sends it (inventory_view.gd _bed_interaction): sow with the hoe's Plant grid (sow above), water, harvest. Leaves the bed empty.
 func _route_checks(bed: int, crops: Dictionary) -> void:
 	var inv = items.inventory_of(1)
 	var key: String = items._bed_key(items._items[bed]["pos"])

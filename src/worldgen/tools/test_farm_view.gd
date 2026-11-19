@@ -42,6 +42,9 @@ func _init() -> void:
 	view.table = table
 	view._player_position = func(): return Vector3.ZERO
 	view.held_slot_now = func(): return held[0]
+	var said: Array = []
+	view.notice_event = func(t): said.append(t)
+	view._prompt = Label.new()   # setup() is not run here: the notice line a "none" tap shows
 	view.inventory = load("res://src/shared/inventory.gd").new(table)
 	var inv = view.inventory
 	inv.add(table.number_of("flax_seeds"), 3)
@@ -59,7 +62,7 @@ func _init() -> void:
 	var found: Dictionary = view._probe_structure_for(1)
 	net.inventory_action.calls.clear()
 	found["tap"].call()
-	check(str(found.get("prompt", "")).contains("hoe") and net.inventory_action.calls.is_empty(), "an empty bed with seeds in the pack sends nothing and points to the hoe (%s, %s)" % [str(found.get("prompt", "")), str(net.inventory_action.calls)])
+	check(str(found.get("prompt", "")).contains("hoe") and net.inventory_action.calls.is_empty() and said.size() == 1 and str(said[0]).contains("hoe"), "an empty bed with seeds in the pack sends nothing and points to the hoe (%s, %s)" % [str(found.get("prompt", "")), str(net.inventory_action.calls)])
 	held[0] = wheat_slot
 	found = view._probe_structure_for(1)
 	net.inventory_action.calls.clear()
@@ -151,5 +154,6 @@ func _init() -> void:
 	check(view.bed_crop(11, Vector3(9.6, 0.0, 9.4)) == "wheat" and view.bed_crop(11, Vector3(10.4, 0.0, 9.6)) == "" and view.bed_crop(11, Vector3(10.6, 0.0, 10.7)) == "barley", "bed_crop at a point reads that square metre's crop")
 	var near_rows: Array = view.bed_rows(Vector3(0.0, 0.0, 0.0), 3.0)
 	check(near_rows.size() == 1 and int(near_rows[0][0]) == 10 and view.bed_rows().size() == 2, "bed_rows near a point keeps only the beds within reach (the site is never a bed)")
+	view._prompt.free()
 	print("farm view: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

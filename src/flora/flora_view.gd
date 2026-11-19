@@ -1348,11 +1348,14 @@ static func _label_for(entry: Dictionary) -> String:
 	return text
 
 
+const CROP_VIEW_M := 40.0   # PROVISIONAL CL-1: a garden crop's model is drawn within this distance
+
+
 # A garden crop's look (CropLook.build; Dave play test 19 Nov 2026: tilled-bed seedlings showed as green boxes, though "they have a model in the game"): the wild
 # plant of the crop's name (flora.json), its own full model and leaf tint as the wild ones draw, one at each of `spots` (local to the bed, on its soil), `share` of
 # its usual height, each turned its own way. null when no wild plant has that name or its model is not built yet (models_ready says whether to ask again).
-func crop_model(name: String, share: float, spots: Array) -> Node3D:
-	var id: Variant = _slugs.find_key(name)
+func crop_model(crop: String, share: float, spots: Array) -> Node3D:
+	var id: Variant = _slugs.find_key(crop)
 
 	if id == null or not _species.has(int(id)) or spots.is_empty():
 		return null
@@ -1374,7 +1377,7 @@ func crop_model(name: String, share: float, spots: Array) -> Node3D:
 	var draw: MultiMeshInstance3D = MultiMeshInstance3D.new()
 	draw.multimesh = multimesh
 	draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF   # as the wild plants
-	draw.visibility_range_end = view_m[KIND_PLANT]
+	draw.visibility_range_end = minf(view_m[KIND_PLANT], CROP_VIEW_M)   # every crop is the full model (no mid or far one): drawn only this close
 	return draw
 
 

@@ -70,7 +70,7 @@ These are PROVISIONAL values the thread or the coordinator chose under Dave's st
 | G-11 | Tree seeds go 3 m apart in a grid. The server keeps a tree seed 2 m from other plants (bushes 1 m). The heap lands within half the crown radius. | `FarmRules.TREE_SPACING_M`, `server_items.PLANT_TREE_GAP_M` |
 | G-12 | The existing per-log fruit roll (`trunk.seed_chance`: a species' fruit or nut, else Wild grain) is unchanged. It comes on top of the 1 to 5 felled seeds. | `drops.json trunk.seed_chance` |
 | G-15 | (19 Nov 2026, coordinator for Dave) Only bed crops need the hoe: a dug-up bush or a tree seed held in hand is still planted by clicking open ground without the hoe (ACT_PLANT_BUSH), as well as through the hoe's Plant grid. Dave's report was about crops in tilled beds. | `server_items._plant_bush`, `held_item._plant_here` |
-| CL-1 | (19 Nov 2026) A garden crop that grows wild wears that wild plant's model at 35, 60, 85 and 100 percent of its usual height by stage (seedling to ripe), four to a square metre. | `CropLook.MODEL_SHARE` |
+| CL-1 | (19 Nov 2026) A garden crop that grows wild wears that wild plant's model at 35, 60, 85 and 100 percent of its usual height by stage (seedling to ripe), four to a square metre, drawn within 40 m (the full model only, so it is kept near). | `CropLook.MODEL_SHARE`, `FloraView.CROP_VIEW_M` |
 
 G-4 (a species' own fruit or nut is its seed) and G-10 (fantasy trees drop none) are withdrawn by Dave's ruling that every tree follows the same rules with its own "<Tree> seed".
 
