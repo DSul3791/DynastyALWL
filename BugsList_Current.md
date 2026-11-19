@@ -380,6 +380,26 @@ Dave, 19 Nov 2026: "the build screen I assume you mean crafting should always se
 
 **Acceptance:** with the Medicine tab chosen, typing "axe" lists the axes. Clearing the box shows only Medicine again.
 
+## 60. Luck rolled below zero; every attribute 0 to 100
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test on 19 Nov 2026. Fixed by PR #1309, merged to dev at 62190765 (head 2940ac6a) after independent review. Lane A (Dave's PC) on the exact head: 253 of 253 selected tests passed (249 fast + 4 timing), including test_server_items, test_save_compat, test_persistence_drills, test_corrupt_character, test_skills, test_trade, test_traps and test_fish_balance; parse check ok; validate_items 0 errors. Fix not yet played. Design: docs/design/ATTRIBUTES.md.
+
+Dave, 19 Nov 2026: "I noticed two different new characters had lucky attribute less than zero. that shouldnt be a thing. all attributes should be between 0 and 100 acting like a percentage." Then: "the most common attribute number people will ever have should be between 40-60 making it like an average attribute but lower or higher like 20-39 or 61-80 should be uncommon and 0-19 and 81-100 should be even rarer but not impossible." On fitness: "no fitness should just start rolled in the middle range", "but only for player characters. when rolling NPCs they could be all over the place".
+
+**Cause:** luck was rolled as two dice of -5 to +5 centred on zero, so about half of new characters went negative; every attribute lived on -10 to +10.
+
+**Required outcome:** every attribute (luck, fitness, strength, memory, dexterity, perception, charisma) is 0 to 100, shown as a percent, and the server never lets one leave that range. A new player character rolls each one: 5 % get 0-19, 20 % 20-39, 50 % 40-60, 20 % 61-80, 5 % 81-100; a player's fitness rolls 40-60. 50 is average. Existing characters keep their values, moved onto the new scale.
+
+**Acceptance:** several new characters on the Tab screen show luck, fitness, strength and memory as percents, none below 0 or above 100, most luck/strength/memory between 40 and 60, fitness always 40 to 60. An existing character loads with its old luck moved onto the new scale (old 0 shows 50).
+
+Not done: NPCs have no attributes yet (the roll has an NPC switch for later). The character creator's draft attribute screen is not connected to the game and still uses the old scale.
+
+Assumed on Dave's behalf (provisional):
+
+- ATTR-1: 50 is the neutral point; below hinders, above helps, each 5 points worth one old point.
+- ATTR-3: existing characters are converted (50 + 5 x old), not re-rolled; attributes they never had read 50.
+- ATTR-4: the band weights 5/20/50/20/5 (data/items/attributes.json).
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.

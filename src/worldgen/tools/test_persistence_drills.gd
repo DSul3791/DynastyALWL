@@ -230,7 +230,7 @@ func _init() -> void:
 		if not ["warmth", "sick", "skill_p", "strength", "energy", "worn"].has(field):
 			check(after[field] == want[field], "an older save keeps %s (%s vs %s)" % [field, str(after[field]), str(want[field])])
 
-	check(int(after["warmth"]) == 100 and int(after["sick"]) == 0 and int(after["strength"]) == 0 and float(after["skill_p"]) == -1.0, "an older save reads warm, well, no skills and no attributes (%s)" % str(after))
+	check(int(after["warmth"]) == 100 and int(after["sick"]) == 0 and int(after["strength"]) == 50 and float(after["skill_p"]) == -1.0, "an older save reads warm, well, no skills and average attributes (%s)" % str(after))
 	check(migrated.worn_of(1).size() == migrated._worn_places().size() and migrated.worn_of(1).all(func(x): return x == 0), "an older save wears nothing (one entry per worn position since protocol 107)")
 	migrated._dirty = true
 	migrated.save()

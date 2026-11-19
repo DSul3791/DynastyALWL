@@ -32,7 +32,7 @@ func _init() -> void:
 	items._goals_loaded = true   # no goals here: a goal's own reward (coins) would change the amounts this test checks; test_goals covers goals (protocol 119 lifted the `after` lock)
 	items.peer_connected_hello(1, "tradekey0001")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
-	items._characters["tradekey0001"]["luck"] = 0
+	items._characters["tradekey0001"]["luck"] = 50   # neutral (0 to 100)
 	var npcs := {"npcs": {"hob": {"dormant": false, "placed": true, "pos": Vector3(1.0, 10.0, 0.0)}}}
 	var trade = TradeScript.new()
 	trade.items = items
@@ -86,23 +86,23 @@ func _init() -> void:
 	# Reputation, charisma and luck move the prices both ways, never past the floors.
 	var m_rep0: Dictionary = trade.multipliers(1, "hob")
 	items.add_rep(1, "hob", 30)
-	items._characters["tradekey0001"]["luck"] = 10
+	items._characters["tradekey0001"]["luck"] = 100
 	var m_luck: Dictionary = trade.multipliers(1, "hob")
-	items._characters["tradekey0001"]["luck"] = 0
+	items._characters["tradekey0001"]["luck"] = 50   # neutral (0 to 100)
 	check(float(m_luck["pay"]) < float(m_rep0["pay"]), "luck helps")
 	var m_rep: Dictionary = trade.multipliers(1, "hob")
 	check(float(m_rep["pay"]) < 1.3 and float(m_rep["get"]) > 0.55, "a Trusted friend pays less and is paid more (%.2f, %.2f)" % [m_rep["pay"], m_rep["get"]])
-	items.set_attribute(1, "charisma", 10)
+	items.set_attribute(1, "charisma", 100)
 	var m_cha: Dictionary = trade.multipliers(1, "hob")
 	check(float(m_cha["pay"]) < float(m_rep["pay"]) and float(m_cha["get"]) > float(m_rep["get"]), "charisma helps too")
 	check(float(m_cha["pay"]) >= 1.05 and float(m_cha["get"]) <= 0.9, "but never past the floors (%.2f, %.2f)" % [m_cha["pay"], m_cha["get"]])
-	items.set_attribute(1, "charisma", -10)
+	items.set_attribute(1, "charisma", 0)
 	var m_bad: Dictionary = trade.multipliers(1, "hob")
 	check(float(m_bad["pay"]) > float(m_rep["pay"]), "poor charisma costs more")
 
 	# Demand: selling the same thing over and over pays less each time and recovers with time.
-	items._characters["tradekey0001"]["luck"] = 0
-	items.set_attribute(1, "charisma", 0)
+	items._characters["tradekey0001"]["luck"] = 50   # neutral (0 to 100)
+	items.set_attribute(1, "charisma", 50)
 	items.add_rep(1, "hob", -30)
 	var stone: int = items.table.number_of("stone")
 	items.give_to(1, "stone", 60)

@@ -1126,7 +1126,7 @@ func set_cleared(spots: Array, radius: float, edge: float) -> void:
 	clear_edge_m = edge
 
 	for spot in changed:
-		var reach: float = radius + 1.0
+		var reach: float = radius + SCATTER_M   # a far cell's cards land up to SCATTER_M outside it
 		var cells: Array = []
 
 		for cz in range(int(floor((spot.z - reach) / CELL_M)), int(floor((spot.z + reach) / CELL_M)) + 1):
@@ -1183,7 +1183,7 @@ func set_bare(spots: Array, roads: Array = []) -> void:
 	var cells: Dictionary = {}
 
 	for spot in changed:
-		var reach: float = ROAD_BARE_EDGE_M + 1.0
+		var reach: float = ROAD_BARE_EDGE_M + SCATTER_M   # a far cell's cards land up to SCATTER_M outside it
 
 		for cz in range(int(floor((spot.z - reach) / CELL_M)), int(floor((spot.z + reach) / CELL_M)) + 1):
 			for cx in range(int(floor((spot.x - reach) / CELL_M)), int(floor((spot.x + reach) / CELL_M)) + 1):
@@ -1216,9 +1216,60 @@ func _bare_at(x: float, z: float) -> bool:
 	return false
 
 
+# Dave 19 Nov 2026 ("grass is regrowing into the paths in patches"): the path and clearing tests were made only at a cell's ground points, but each
+# point scatters its clump of cards up to half the point spacing away (about 0.6 m near, up to 2.85 m in the farthest band). A point just outside a path
+# dropped its clump onto it, and the 0.6 m bare patch of a trodden path is narrower than that reach. Every grass and litter card is now tested
+# where it stands, in the cells a patch or clearing reaches (_cell_clears).
+
+
+const SCATTER_M := 0.5 * CELL_M * 0.95    # the farthest a card lands from its ground point (one point per cell side, the farthest band)
+
+
+# What a cell's cards must be kept off: {"bare": a path patch may reach them, "spots": the placed pieces whose clearing may}, or {} when
+# nothing reaches. `margin` is how far its cards land outside the cell (half the point spacing, 0.95 of it). Built once per cell, so each
+# card asks only the few spots near it.
+func _cell_clears(cell: Vector2i, margin: float) -> Dictionary:
+	var x0: float = float(cell.x) * CELL_M - margin
+	var z0: float = float(cell.y) * CELL_M - margin
+	var x1: float = float(cell.x + 1) * CELL_M + margin
+	var z1: float = float(cell.y + 1) * CELL_M + margin
+	var near_bare: bool = false
+
+	if not bare.is_empty():
+		# The buckets already hold every patch whose edge reaches them.
+		for bz in range(int(floor(z0 / BARE_BUCKET_M)), int(floor(z1 / BARE_BUCKET_M)) + 1):
+			for bx in range(int(floor(x0 / BARE_BUCKET_M)), int(floor(x1 / BARE_BUCKET_M)) + 1):
+				if bare.has(Vector2i(bx, bz)):
+					near_bare = true
+
+	var spots: Array = []
+
+	for spot in cleared:
+		var nx: float = clampf(spot.x, x0, x1)
+		var nz: float = clampf(spot.z, z0, z1)
+
+		if Vector2(spot.x - nx, spot.z - nz).length() < clear_m:
+			spots.append(spot)
+
+	if not near_bare and spots.is_empty():
+		return {}
+
+	return {"bare": near_bare, "spots": spots}
+
+
+# True when no card may stand at (x, z): on a path patch or inside a placed piece's clearing. `near` is the cell's _cell_clears.
+func _kept_off(x: float, z: float, near: Dictionary) -> bool:
+	return (bool(near["bare"]) and _bare_at(x, z)) or _cleared_in(near["spots"], x, z)
+
+
 # Is (x, z) inside a placed item's circle (with the soft edge decided by a fixed scatter, so the same spot always gives the same answer).
 func _cleared_at(x: float, z: float) -> bool:
-	for spot in cleared:
+	return _cleared_in(cleared, x, z)
+
+
+# The same, for the given placed spots only.
+func _cleared_in(spots: Array, x: float, z: float) -> bool:
+	for spot in spots:
 		var d: float = Vector2(x - spot.x, z - spot.z).length()
 
 		if d >= clear_m:
@@ -1796,6 +1847,7 @@ func _build(cell: Vector2i) -> int:
 		break
 
 	var t_points: int = Probe.start()
+	var clear_near: Dictionary = _cell_clears(cell, 0.5 * spacing * 0.95)   # a path patch or placed piece reaches this cell's cards: each is tested where it lands
 	var shore_us: int = 0
 	var litter_us: int = 0
 	var soil_us: int = 0
@@ -1852,7 +1904,7 @@ func _build(cell: Vector2i) -> int:
 
 			if litter_here and under > 0.0 and litter_cards + int(counts[3]) + int(counts[4]) < litter_cap:
 				var t1: int = Time.get_ticks_usec()
-				_put_litter(buffers, counts, rng, point, spacing, under)
+				_put_litter(buffers, counts, rng, point, spacing, under, clear_near)
 				litter_us += Time.get_ticks_usec() - t1
 
 			var t2: int = Time.get_ticks_usec()
@@ -1914,6 +1966,10 @@ func _build(cell: Vector2i) -> int:
 
 					var ox: float = point.x + rng.randf_range(-0.5, 0.5) * spacing * 0.95
 					var oz: float = point.z + rng.randf_range(-0.5, 0.5) * spacing * 0.95
+
+					if not clear_near.is_empty() and _kept_off(ox, oz, clear_near):
+						continue
+
 					var kept: float = _far_share(Vector2(ox - _center.x, oz - _center.z).length(), layer) if layer >= 1 else 1.0
 
 					if kept < 1.0 and rng.randf() > kept:
@@ -2120,7 +2176,7 @@ func _put_shore(buffers: Array, counts: Array, rng: RandomNumberGenerator, point
 
 
 # One ground sample under a crown: leaf cards and, now and then, a dead branch (layers GRASS_LAYERS on).
-func _put_litter(buffers: Array, counts: Array, rng: RandomNumberGenerator, point: Vector3, spacing: float, under: float) -> void:
+func _put_litter(buffers: Array, counts: Array, rng: RandomNumberGenerator, point: Vector3, spacing: float, under: float, clear_near: Dictionary) -> void:
 	var deep: float = smoothstep(CROWN_LITTER_FROM, CROWN_LITTER_TO, under)
 	var rim: float = smoothstep(0.0, 0.12, under)   # litter thins out to nothing at the drip line, no sharp circle
 
@@ -2133,6 +2189,10 @@ func _put_litter(buffers: Array, counts: Array, rng: RandomNumberGenerator, poin
 		for k in range(count):
 			var ox: float = point.x + rng.randf_range(-0.5, 0.5) * spacing * 0.95
 			var oz: float = point.z + rng.randf_range(-0.5, 0.5) * spacing * 0.95
+
+			if not clear_near.is_empty() and _kept_off(ox, oz, clear_near):
+				continue
+
 			var yaw: float = rng.randf() * TAU
 			var c: float = cos(yaw)
 			var s: float = sin(yaw)

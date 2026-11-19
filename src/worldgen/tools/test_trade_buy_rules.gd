@@ -33,8 +33,8 @@ func _init() -> void:
 	items._goals_loaded = true   # no goals here: a goal's own reward (coins) would change the amounts this test checks; test_goals covers goals (protocol 119 lifted the `after` lock)
 	items.peer_connected_hello(1, "buyruleskey01")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
-	items._characters["buyruleskey01"]["luck"] = 0
-	items.set_attribute(1, "charisma", 0)
+	items._characters["buyruleskey01"]["luck"] = 50   # neutral (0 to 100)
+	items.set_attribute(1, "charisma", 50)
 	var trade = TradeScript.new()
 	trade.items = items
 	trade.npcs = {"npcs": {"hob": {"dormant": false, "placed": true, "pos": Vector3(1.0, 10.0, 0.0)}}}
