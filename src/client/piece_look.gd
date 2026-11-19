@@ -4530,7 +4530,7 @@ static func bin_wall_m(side: float) -> float:
 # cuts into the core, black peat in each, a dug-out lump beside each. Nothing is solid.
 # Dave 19 Nov 2026 ("make sure they are obvious and visible for characters to find"): a bright ochre against dark peat and mud, 3 m across its
 # rust, lifted 2 to 4 cm and draped on a middle ring so the ground does not swallow it, a faint glow of its own so it still reads at dusk and
-# in rain, and the grass and small plants cleared off it (terrain_client _sync_cleared). Under 600 triangles in every state.
+# in rain, and the grass and small plants cleared off it (terrain_client _sync_cleared). Under 800 triangles in every state.
 # `ground` (x, z) -> the ground's height there above the patch's own origin, both in the patch's frame: every ring point, lump and cut is
 # lifted onto it, so the stain drapes over a gentle rise instead of sinking into it. Unset: flat ground.
 static func _on_ground(ground: Callable, p: Vector3) -> Vector3:

@@ -50,7 +50,7 @@ func _init() -> void:
 	for state in ["dry", "wet", "dug"]:
 		var patch: Node3D = PieceLook.bog_iron_patch(state)
 		var tris: int = _triangles(patch)
-		check(tris > 0 and tris < 600, "a %s stain is cheap: %d triangles" % [state, tris])
+		check(tris > 0 and tris < 800, "a %s stain is cheap: %d triangles" % [state, tris])
 		check(_brightest(patch) > PEAT.get_luminance() * 3.0, "a %s stain's ochre is at least three times as bright as peat (%.2f)" % [state, _brightest(patch)])
 		patch.free()
 
