@@ -17,7 +17,7 @@ The master items catalog (s2.1) lists the hoe's "Create Garden Plot" and "Plant"
    - Seeds go in a tilled bed (or a garden plot built with the hammer). Seeds clicked on open ground till it first.
    - Dug-up bushes and tree seeds go in open ground.
    - The client sends the existing ACT_SOW / ACT_TILL / ACT_PLANT_BUSH, so there is no protocol change. The server rules on reach, season, ground and spacing.
-   - Since the grid (#1145) the Plant mode sends ACT_PLANT_GRID. **19 Nov 2026 (Dave play test: seeds went into beds with no hoe in hand):** E on a bed no longer sows and ACT_SOW is gone; only the hoe in hand with Plant chosen sows (the server checks the hoe on every plant click). A crop that grows wild wears its wild plant's model (CropLook; the field crops and vegetables with no wild plant keep the placeholder boxes).
+   - Since the grid (#1145) the Plant mode sends ACT_PLANT_GRID. **19 Nov 2026 (Dave play test: seeds went into beds with no hoe in hand):** E on a bed no longer sows and ACT_SOW is gone; only the hoe in hand with Plant chosen sows (the server checks the hoe on every plant click). A crop that grows wild wears its wild plant's model (CropLook; the field crops and vegetables with no wild plant wear Dave's painted pictures, CL-2).
 2. **Levelling (PR #1119).** Smooth levels a 1 m grid within 3 m to the ground under your feet. When you stand on a piece (0.2 m or more above the ground, such as a foundation), it levels to 0.1 m under your feet.
    - Heights are read through the saved dig/fill log, so strokes add up and stop once level.
    - Constants are in `src/stream/server_items.gd` (`SMOOTH_REACH_M`, `LEVEL_*`).

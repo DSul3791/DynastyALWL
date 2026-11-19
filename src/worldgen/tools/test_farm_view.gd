@@ -134,8 +134,10 @@ func _init() -> void:
 	var real: Node3D = view._world[3]["crop_node"]
 	check(real != early and early.is_queued_for_deletion() and not bool(real.get_meta("placeholder", true)) and view._crop_looks_waiting.is_empty() and str(view._world[3]["crop"]) == "chamomile", "once the flora is built the seedling wears the chamomile model")
 	var asks_before: int = asked.size()
+	ready[0] = false   # the flora still building: a painted crop does not wait for it
 	view._note_crop(3, [3, bed_number, 1, Vector3.ZERO, 47, {"yaw": 0.0, "crop": "wheat", "stage": 1}])
 	check(not bool(view._world[3]["crop_node"].get_meta("placeholder", true)) and view._crop_looks_waiting.is_empty() and asked.size() == asks_before, "wheat has no wild plant: it wears its painted card at once, never asks the flora and nothing waits")
+	ready[0] = true
 	view._note_crop(3, [3, bed_number, 1, Vector3.ZERO, 47, {"yaw": 0.0}])
 	view.crop_model = Callable()
 	view.crop_models_ready = Callable()

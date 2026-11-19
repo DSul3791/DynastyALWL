@@ -2,7 +2,7 @@ extends RefCounted
 
 # The look of a crop on a tilled bed or garden plot, stage 0 (seedling) to 3 (ripe).
 # The field crops and vegetables with no wild plant wear Dave's painted plants (19 Nov 2026: his picture of wheat, barley, oats and rye, and his row of carrot,
-# potato, turnip, cabbage, onion, peas, beet, radish, lettuce and parsnip, cut out into assets/crops/<crop>.png by assets/crops/make_crop_cards.py): crossed
+# potato, turnip, cabbage, onion, peas, beet, radish, lettuce and parsnip, cut out into assets/crops/<crop>.png by tools/cut_crop_pictures.py): crossed
 # picture cards, one clump every half metre. The pictures are the grown plant, so (PROVISIONAL CL-2) a grain's seedling and young stages are green blades (the
 # grass card), its growing stage the picture a little shorter and greener; a vegetable is its own picture, smaller while young.
 # A crop that grows wild too (flora.json has a plant of the same name: chamomile, yarrow, nettle ... 70 of the 84 crops) wears that wild plant's own model, as the
