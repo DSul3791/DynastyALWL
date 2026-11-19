@@ -109,8 +109,11 @@ func _init() -> void:
 
 	# Pace: a second press inside the pace does nothing.
 	items._last_shot.clear()
+	var shot_t0: int = Time.get_ticks_msec()
 	items.action(1, Net.ACT_SHOOT, slot, 1200, 0, Vector3(0.0, 0.2, -1.0))
 	var in_air: int = items._arrows.size()
+	check(int(items._last_shot.get(1, -1)) >= shot_t0, "the first request starts the pace")
+	items._last_shot[1] = Time.get_ticks_msec()   # pin the clock: no time has passed since it (a loaded test PC can take longer than the pace between two lines)
 	items.action(1, Net.ACT_SHOOT, slot, 1200, 0, Vector3(0.0, 0.2, -1.0))
 	check(items._arrows.size() == in_air, "a second shot inside the pace is ignored")
 	fly(items, 8.0)

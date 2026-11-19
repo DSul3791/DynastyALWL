@@ -428,7 +428,10 @@ func _server_checks(cfg: Dictionary) -> void:
 	# The door's pace: not faster than 400 ms, as every door.
 	var paced: int = _find(items, "sturdy_door", mix)
 	items._last_use.clear()
+	var door_t0: int = Time.get_ticks_msec()
 	items.action(1, Net.ACT_USE_STRUCT, paced, 0, 0, Vector3.ZERO)
+	check(int(items._last_use.get(1, -1)) >= door_t0, "the first request starts the pace")
+	items._last_use[1] = Time.get_ticks_msec()   # pin the clock: no time has passed since it (a loaded test PC can take longer than the pace between two lines)
 	items.action(1, Net.ACT_USE_STRUCT, paced, 0, 0, Vector3.ZERO)
 	check(str(items._items[paced]["struct"]["kind"]) == "sturdy_door_open", "the door will not flap faster than its pace")
 	items.report_position(1, Vector3(5000.0, 10.0, 5000.0))
