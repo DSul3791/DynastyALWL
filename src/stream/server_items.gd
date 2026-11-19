@@ -6550,8 +6550,11 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 
 				var crop_extra: Dictionary = crop_row_extra(it) if it.has("struct") else {}
 
-				if not crop_extra.is_empty():
+				if crop_extra.has("crop"):
 					signature += 61 * (2 + int(crop_extra["stage"])) + 7 * (str(crop_extra["crop"]).hash() % 997) + 13 * (str(crop_extra.get("cells", "")).hash() % 991)   # a crop sown, grown a stage or gone (harvested, frost), in any square metre of a plot, is sent again
+
+				if crop_extra.has("moist"):
+					signature += 433 * (1 + int(crop_extra["moist"]))   # a bed's soil wetter or drier by a step is sent again (the look-at line shows it)
 
 				if it.has("struct") and bool(_serve_kinds().get(str(it["struct"]["kind"]), false)) and it["struct"].has("uid") and _chests.has(int(it["struct"]["uid"])):
 					signature += 7919 * int(_chests[int(it["struct"]["uid"])].counts[0]) + 3 * int(_chests[int(it["struct"]["uid"])].numbers[0])   # a portion eaten or a board set out is sent again
@@ -16584,7 +16587,7 @@ func take_nest(peer: int, inv) -> bool:
 # where the crop needs one) and seeds back, and the bed is empty soil again. The crop records live beside the beds in crops.json (keyed by the bed's position, _bed_key). The client side
 # (hoe till mode, E on a bed to sow, water or harvest, the placeholder stage looks) is in inventory_view.gd, farm_rules.gd and crop_look.gd; a bed's world row carries its crop and stage.
 const TILLED_STATE := 47
-var _crops: Dictionary = {}              # _bed_key (the bed's position) -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool, "poured": game day water was poured, "poured_ml": mL poured that day (a bucket a day, water_bed)}; the bed's moisture is in _plot_water
+var _crops: Dictionary = {}              # _bed_key (the bed's position) -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool}; the bed's moisture is in _plot_water
 var _crops_cfg: Dictionary = {}
 var _crops_loaded: bool = false
 var _moisture_cfg: Dictionary = {}       # crops.json "moisture" (plot_water.gd)
@@ -16592,6 +16595,8 @@ var _crops_file_extra: Dictionary = {}   # crops.json "worm": {"item", "chance"}
 var _plot_water: Dictionary = {}         # _bed_key -> [moisture percent, game second it was worked out at]; saved in crops.json "plots"
 var _plots_at_s: float = -1.0e18         # game second of the last _plots_tick pass
 const PLOT_STEP_S := 3600.0              # plots are looked at once a game hour (150 real seconds)
+const WET_THROUGH_PCT := 99.0            # a bed this wet takes no more poured water
+const MOIST_STEP_PCT := 5                # the moisture a bed's world row carries, in these steps: a row is sent again only when it moves a step
 const PlotWater := preload("res://src/shared/plot_water.gd")
 
 
@@ -17042,11 +17047,11 @@ func _water_tanks_save() -> Dictionary:
 	return out
 
 
-# Litres a garden plot takes for 1 percent of moisture: its store over its area (25 mm on 2 x 2 m: 1 L).
+# Litres a bed or garden plot takes for 1 percent of moisture: its store over its area (25 mm on a 1 m bed: 0.25 L; on 2 x 2 m: 1 L).
 func _plot_litres_per_pct(kind: String) -> float:
 	var def: Dictionary = _structures.get(kind, {})
 	_crop_table()
-	return maxf(float(_moisture_cfg.get("store_mm", 25.0)) * float(def.get("footprint_x", 1.0)) * float(def.get("footprint_z", 1.0)) / 100.0, 0.01)
+	return PlotWater.litres_per_pct(_moisture_cfg, float(def.get("footprint_x", 1.0)) * float(def.get("footprint_z", 1.0)))
 
 
 # Pieces whose structure is gone leave; then, when anything changed or the next event is due, the water that flowed into plots since the last solve
@@ -18047,7 +18052,7 @@ func _season_refusal(seed_id: String) -> String:
 
 # The crop record of a seed just sown (the seed already taken).
 func _sow_cell(peer: int, bed: Dictionary, key: String, crop_id: String) -> void:
-	_crops[key] = {"crop": crop_id, "sown": _game_day(), "age": 0.0, "wet": 0, "day": _game_day(), "compost": false, "poured": -1}
+	_crops[key] = {"crop": crop_id, "sown": _game_day(), "age": 0.0, "wet": 0, "day": _game_day(), "compost": false}
 
 	if key != _bed_key(bed["pos"]):
 		_crops[key]["plot"] = _bed_key(bed["pos"])   # one square metre of a plot: its moisture is the plot's
@@ -18055,10 +18060,11 @@ func _sow_cell(peer: int, bed: Dictionary, key: String, crop_id: String) -> void
 	_goal_event(peer, "seed_sown")   # ADD-05
 
 
-# Water from the pack's containers on the bed (GOALS-REPAIR GA-04, A-3): one bucket (crops.json moisture pour_ml, 8 L) is pour_pct, so a pour adds pour_pct
-# by the share of a bucket poured, and a bed takes up to a bucket a game day (several small pours add up). The water comes first from the container in
-# hand (`held`, the pack slot the client names, -1 for none: when named it must hold a filled container, else the pour is refused), then from the pack's
-# other containers, so the pour is the full bucket whenever the pack holds that much. Every refusal says why (a notice) and takes nothing.
+# Water from the pack's containers on the bed (GOALS-REPAIR GA-04, A-3; garden moisture, Dave 19 Nov 2026): each pour is up to a bucket (crops.json
+# moisture pour_ml, 8 L) and never more than the soil has room for; its litres become moisture over the bed's store (PlotWater.pour, the same litres as
+# piped water: a 1 m bed's 8 L bucket is 32 percent, a 2 x 2 plot's 8). There is no daily limit: a soil wet through takes no more. The water comes
+# first from the container in hand (`held`, the pack slot the client names, -1 for none: when named it must hold a filled container, else the pour is
+# refused), then from the pack's other containers. Every refusal says why (a notice) and takes nothing.
 func water_bed(peer: int, inv, bed_id: int, held: int = -1) -> bool:
 	var bed: Dictionary = _bed_at(bed_id)
 
@@ -18069,9 +18075,7 @@ func water_bed(peer: int, inv, bed_id: int, held: int = -1) -> bool:
 		_say(peer, "Too far from the bed to water it.")
 		return false
 
-	var crop: Dictionary = _crops.get(_cell_key(bed, Vector3.ZERO, "crop"), {})   # a plot is watered whole: every crop in it keeps the day's tally (one harvested takes no tally with it)
-
-	if crop.is_empty():
+	if _cell_key(bed, Vector3.ZERO, "crop") == "":
 		_say(peer, "Nothing is growing there to water.")
 		return false
 
@@ -18079,21 +18083,18 @@ func water_bed(peer: int, inv, bed_id: int, held: int = -1) -> bool:
 		_say(peer, "That holds no water.")
 		return false
 
-	var bucket_ml: int = maxi(int(_moisture_cfg.get("pour_ml", 8000)), 1)
-	var today: int = _game_day()
-	var growing: Array = _bed_cells(bed).map(func(cell): return _crops.get(_bed_key(cell), {})).filter(func(c): return not c.is_empty())
-	var done_ml: int = 0
+	var pct: float = plot_moisture(bed["pos"])
+	var per_pct: float = _plot_litres_per_pct(str(bed["struct"]["kind"]))
 
-	for c in growing:
-		if int(c["poured"]) == today:
-			done_ml = maxi(done_ml, int(c.get("poured_ml", bucket_ml)))
+	if pct >= WET_THROUGH_PCT:
+		_say(peer, "The soil is wet through already.")
+		return false
 
-	var ml: int = mini(bucket_ml - done_ml, inv.liquid_ml())
+	var room_ml: int = int(ceil((100.0 - pct) * per_pct * 1000.0))
+	var ml: int = mini(mini(maxi(int(_moisture_cfg.get("pour_ml", 8000)), 1), room_ml), inv.liquid_ml())
 
 	if ml <= 0:
-		if done_ml >= bucket_ml:
-			_say(peer, "The bed has had its water today.")
-		elif inv.count_of(table.number_of("sea_water")) > 0:
+		if inv.count_of(table.number_of("sea_water")) > 0:
 			_say(peer, "Salt water would kill the crop. You need fresh water in a container.")
 		else:
 			_say(peer, "You have no water to pour.")
@@ -18101,13 +18102,8 @@ func water_bed(peer: int, inv, bed_id: int, held: int = -1) -> bool:
 		return false
 
 	inv.drain_liquid(ml, held)
-
-	for c in growing:
-		c["poured"] = today
-		c["poured_ml"] = done_ml + ml
-
-	var key: String = _bed_key(bed["pos"])
-	_plot_water[key] = [PlotWater.pour(_moisture_cfg, plot_moisture(bed["pos"]), float(ml) / float(bucket_ml)), float(game_seconds.call()) if game_seconds.is_valid() else 0.0]
+	_plot_water[_bed_key(bed["pos"])] = [PlotWater.pour(pct, float(ml) / 1000.0, per_pct), float(game_seconds.call()) if game_seconds.is_valid() else 0.0]
+	_water_dirty = _water_dirty or not _water_kind.is_empty()   # a piped plot's room changed
 	_dirty = true
 	return true
 
@@ -18136,18 +18132,21 @@ func compost_bed(peer: int, inv, bed_id: int) -> bool:
 	return true
 
 
-# A bed's world-row extra: {"crop": crop id, "stage": 0 to 3} for a bed with a crop on it, {} for an empty bed or any other piece (no protocol bump: PROTOCOL.md, row extras).
+# A bed's world-row extra: {"moist": its soil moisture percent in MOIST_STEP_PCT steps} for every bed (garden moisture, Dave 19 Nov 2026), with
+# "crop": crop id and "stage": 0 to 3 when a crop grows on it; {} for any other piece (no protocol bump: PROTOCOL.md, row extras).
 # A plot of several square metres adds "cells": [[crop id or "", stage or -1]] in _bed_cells order, and its "crop" and "stage" name what E does next: the first ripe
 # crop, else "" when a square metre is still empty (E sows it), else its first crop.
 func crop_row_extra(it: Dictionary) -> Dictionary:
-	if not _is_plot_kind(str(it["struct"].get("kind", ""))):
+	if not _is_plot_kind(str(it["struct"].get("kind", ""))) or it["struct"].has("site"):
 		return {}
 
+	var pct: float = plot_moisture(it["pos"])
+	var moist: int = 100 if pct >= WET_THROUGH_PCT else floori(pct / float(MOIST_STEP_PCT)) * MOIST_STEP_PCT   # rounded down: "25" is a wet day, "100" takes no more water
 	var cells: Array = _bed_cells(it)
 
 	if cells.size() == 1:
 		var crop: Dictionary = _crops.get(_bed_key(it["pos"]), {})
-		return {} if crop.is_empty() else {"crop": str(crop["crop"]), "stage": crop_stage(crop)}
+		return {"moist": moist} if crop.is_empty() else {"crop": str(crop["crop"]), "stage": crop_stage(crop), "moist": moist}
 
 	var rows: Array = []
 	var ripe: Array = []
@@ -18166,10 +18165,10 @@ func crop_row_extra(it: Dictionary) -> Dictionary:
 			first = rows[rows.size() - 1]
 
 	if first.is_empty():
-		return {}
+		return {"moist": moist}
 
 	var shown: Array = ripe if not ripe.is_empty() else (["", 0] if empty else first)
-	return {"crop": shown[0], "stage": shown[1], "cells": rows}
+	return {"crop": shown[0], "stage": shown[1], "cells": rows, "moist": moist}
 
 
 # The stage of a crop 0 seedling .. 3 ripe; a crop short of water stays at 2.
@@ -18185,7 +18184,7 @@ func crop_stage(crop: Dictionary) -> int:
 
 
 # Looks at the clock once per game day: a bed holding wet_min_pct of moisture (plot_water.gd: rain fills it, a pour adds to it, the weather dries it)
-# makes it a wet day; winter pauses growth (turnip excepted) and kills a seedling.
+# makes it a wet day, and a dry day grows the crop only dry_growth of a day; winter pauses growth (turnip excepted) and kills a seedling.
 func _crops_tick() -> void:
 	_plots_tick()
 	_fish_traps_tick()
@@ -18211,9 +18210,10 @@ func _crops_tick() -> void:
 
 				continue
 
-			crop["age"] = float(crop["age"]) + (1.2 if bool(crop["compost"]) else 1.0)
+			var wet: bool = PlotWater.is_wet(_moisture_cfg, float((_plot_water.get(str(crop.get("plot", key)), [float(_moisture_cfg.get("start_pct", 50.0))]) as Array)[0]))   # a plot's square metre: the plot's moisture
+			crop["age"] = float(crop["age"]) + (1.2 if bool(crop["compost"]) else 1.0) * PlotWater.day_growth(_moisture_cfg, wet)   # a dry day grows it dry_growth of a day
 
-			if PlotWater.is_wet(_moisture_cfg, float((_plot_water.get(str(crop.get("plot", key)), [float(_moisture_cfg.get("start_pct", 50.0))]) as Array)[0])):   # a plot's square metre: the plot's moisture
+			if wet:
 				crop["wet"] = int(crop["wet"]) + 1
 
 			_dirty = true

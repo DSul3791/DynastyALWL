@@ -237,6 +237,7 @@ var _tracking_index: int = -1               # position of "tracking" in skills.j
 var _cooking_cfg: Dictionary = {}
 var _structures_cfg: Dictionary = {}
 var _crops_cfg: Dictionary = {}   # data/items/crops.json "crops", read once (_crop_cfg)
+var _moist_cfg: Dictionary = {}   # data/items/crops.json "moisture", read with it (_crop_cfg)
 var remains_marks: Array = []                # [[position, seconds left, msec received], ...] the owner's remains with gear (protocol 39)
 var sick_hours: int = 0                      # game hours of sickness left, 0 = well (protocol 38)
 var _sick_label: Label
@@ -1246,6 +1247,7 @@ func _crop_cfg() -> Dictionary:
 	if _crops_cfg.is_empty():
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/crops.json"))
 		_crops_cfg = parsed.get("crops", {}) if typeof(parsed) == TYPE_DICTIONARY else {"none": {}}
+		_moist_cfg = parsed.get("moisture", {}) if typeof(parsed) == TYPE_DICTIONARY else {}   # the look-at line's words for the soil (FarmRules.soil_words)
 
 	return _crops_cfg
 
@@ -1271,7 +1273,7 @@ func _bed_interaction(id: int, def: Dictionary, take_down: Callable) -> Dictiona
 	var row: Dictionary = _world[id]
 	var seed_slot: int = _seed_slot() if str(row.get("crop", "")) == "" else -1   # only an empty bed takes a seed (this probe runs every frame the bed is aimed at)
 	var water_slot: int = held_container_slot() if held_container_has_water() else -1
-	var plan: Dictionary = FarmRules.bed_action(_crop_cfg(), str(row.get("crop", "")), int(row.get("stage", 0)), seed_slot, table.sentence_name(inventory.numbers[seed_slot]) if seed_slot >= 0 else "", water_slot)
+	var plan: Dictionary = FarmRules.bed_action(_crop_cfg(), str(row.get("crop", "")), int(row.get("stage", 0)), seed_slot, table.sentence_name(inventory.numbers[seed_slot]) if seed_slot >= 0 else "", water_slot, int(row.get("moist", -1)), _moist_cfg)
 	var found: Dictionary = {"prompt": plan["prompt"], "tap": func(): _bed_tap(id, plan)}
 
 	if str(def.get("kit", "")) != "":
@@ -1301,6 +1303,7 @@ func _note_crop(id: int, row: Array) -> void:
 	var stage: int = int(extra.get("stage", 0)) if crop != "" else -1
 	var cells: Array = extra.get("cells", [])   # a plot of several square metres: one crop each (server_items.crop_row_extra)
 	var rec: Dictionary = _world[id]
+	rec["moist"] = int(extra.get("moist", -1))   # the soil's moisture for the E prompt (FarmRules.soil_words)
 
 	if str(rec.get("crop", "")) == crop and int(rec.get("stage", -1)) == stage and str(rec.get("cells", [])) == str(cells):
 		return

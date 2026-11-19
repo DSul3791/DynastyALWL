@@ -92,7 +92,8 @@ func days(n: int) -> void:
 
 
 # Plot moisture (buildables plan B5; Sonny's water rules section 8): heavy rain fills a bed, the dry weather takes its evaporation (more when hot or
-# windy, little near freezing, less from a framed plot with moisture_factor), a pour adds a bucket's 8 percent, a crop's day is wet at 25 percent or more.
+# windy, little near freezing, less from a framed plot with moisture_factor), a pour adds its litres over the soil store, a crop's day is wet at 25 percent
+# or more and a dry day grows it half a day (garden moisture GM-3, Dave 19 Nov 2026); the look-at words are wet, damp and dry.
 func _moisture_checks(bed: int) -> void:
 	var cfg: Dictionary = items._moisture_cfg
 	check(not cfg.is_empty() and PlotWater.step(cfg, 10.0, 0.1, 20.0, 0.0, 0.8) == 100.0, "heavy rain fills a plot")
@@ -103,7 +104,10 @@ func _moisture_checks(bed: int) -> void:
 	check(100.0 - PlotWater.step(cfg, 100.0, 1.0, 25.0, 1.0, 0.0) > hot, "wind dries it faster")
 	check(absf((100.0 - PlotWater.step(cfg, 100.0, 1.0, 25.0, 0.0, 0.0, 0.7)) - hot * 0.7) < 0.01, "a framed plot (factor 0.7) loses 0.7 of that")
 	check(PlotWater.step(cfg, 40.0, 0.25, 15.0, 0.0, 0.2) > 40.0, "a light rain wets it")
-	check(is_equal_approx(PlotWater.pour(cfg, 50.0), 58.0) and PlotWater.pour(cfg, 97.0) == 100.0, "a pour adds 8 percent, up to full")
+	check(is_equal_approx(PlotWater.litres_per_pct(cfg, 1.0), 0.25) and is_equal_approx(PlotWater.litres_per_pct(cfg, 4.0), 1.0), "a 1 m bed's percent is 0.25 L, a 2 x 2 plot's 1 L")
+	check(is_equal_approx(PlotWater.pour(50.0, 8.0, 0.25), 82.0) and is_equal_approx(PlotWater.pour(50.0, 8.0, 1.0), 58.0) and PlotWater.pour(97.0, 8.0, 0.25) == 100.0, "a bucket adds 32 percent to a 1 m bed, 8 to a 2 x 2 plot, up to full")
+	check(PlotWater.day_growth(cfg, true) == 1.0 and is_equal_approx(PlotWater.day_growth(cfg, false), 0.5), "a wet day grows a whole day, a dry one half")
+	check(PlotWater.word(cfg, 70.0) == "wet" and PlotWater.word(cfg, 69.0) == "damp" and PlotWater.word(cfg, 25.0) == "damp" and PlotWater.word(cfg, 24.0) == "dry", "70 percent and up is wet, 25 damp, below that dry")
 	check(PlotWater.is_wet(cfg, 25.0) and not PlotWater.is_wet(cfg, 24.9), "25 percent is wet enough")
 
 	# On the server: the bed dries over dry days and its crop's day is not wet once it is low; a garden plot (plot: true) is a bed too.
@@ -112,11 +116,17 @@ func _moisture_checks(bed: int) -> void:
 	season[0] = "summer"
 	items._plot_water[key] = [30.0, clock[0]]
 	var wet_before: int = int(items._crops[key]["wet"])
+	var age_before: float = float(items._crops[key]["age"])
 	days(1)
-	check(items.plot_moisture(items._items[bed]["pos"]) < 30.0 and int(items._crops[key]["wet"]) == wet_before, "a dry day dries the bed below wet: the day is not wet (%.1f)" % items.plot_moisture(items._items[bed]["pos"]))
+	check(items.plot_moisture(items._items[bed]["pos"]) < 25.0 and int(items._crops[key]["wet"]) == wet_before, "a dry day dries the bed below wet: the day is not wet (%.1f)" % items.plot_moisture(items._items[bed]["pos"]))
+	check(absf(float(items._crops[key]["age"]) - age_before - 0.5) < 0.01, "and the crop grew half a day (%.2f)" % (float(items._crops[key]["age"]) - age_before))
+	var extra: Dictionary = items.crop_row_extra(items._items[bed])
+	var shown: float = items.plot_moisture(items._items[bed]["pos"]) - float(extra.get("moist", -100))
+	check(int(extra.get("moist", -1)) % 5 == 0 and shown >= 0.0 and shown < 5.0, "the bed's row carries its moisture rounded down to 5 percent steps (%s)" % str(extra))
 	rain[0] = 0.8
 	days(1)
 	check(items.plot_moisture(items._items[bed]["pos"]) == 100.0 and int(items._crops[key]["wet"]) == wet_before + 1, "a rainy day fills it and counts")
+	check(int(items.crop_row_extra(items._items[bed]).get("moist", -1)) == 100, "and the row says 100")
 	rain[0] = 0.0
 	items._structures["test_plot"] = {"kit": "test_plot_kit", "item": "tilled_bed", "state": 9907, "plot": true, "moisture_factor": 0.7, "cap_per_chunk": 12}
 	items._items[920001] = {"number": items.table.number_of("tilled_bed"), "count": 1, "pos": Vector3(40.5, 10.0, 40.5), "left": 1.0e9, "struct": {"kind": "test_plot", "yaw": 0.0}}
@@ -191,8 +201,9 @@ func _route_checks(bed: int, crops: Dictionary) -> void:
 	var extra: Dictionary = row_extra(bed)
 	check(extra.get("crop", "") == "flax" and int(extra.get("stage", -1)) == 0, "the bed's world row now says flax, stage 0 (%s)" % str(extra))
 
-	# Water from a real filled bucket in hand, as the client sends it (b = the container's pack slot; crops.json moisture pour_ml, GOALS-REPAIR A-3): a full bucket is pour_pct
-	# and empties, the same day's second pour is refused with a notice, and an empty container or an item that is no container is refused. Nothing is taken when refused.
+	# Water from a real filled bucket in hand, as the client sends it (b = the container's pack slot; crops.json moisture pour_ml, GOALS-REPAIR A-3, GM-2): a full
+	# bucket adds 32 percent to a 1 m bed and empties, a second goes in the same day up to what the soil has room for, soil wet through is refused with a notice,
+	# and an empty container or an item that is no container is refused. Nothing is taken when refused.
 	if slot_of("bucket") < 0:
 		give("bucket", 1)
 
@@ -208,11 +219,16 @@ func _route_checks(bed: int, crops: Dictionary) -> void:
 	inv.wear[bucket] = 8000
 	notes.clear()
 	act(Net.ACT_WATER_BED, bed, bucket)
-	check(inv.wear[bucket] == 0 and absf(items.plot_moisture(pos) - 38.0) < 0.01 and int(items._crops[key]["poured"]) == items._game_day(), "a filled bucket in hand waters the bed: the bucket is emptied, the bed gains a bucket's 8 percent (%.1f)" % items.plot_moisture(pos))
+	check(inv.wear[bucket] == 0 and absf(items.plot_moisture(pos) - 62.0) < 0.01, "a filled bucket in hand waters the bed: the bucket is emptied, the 1 m bed gains 32 percent (%.1f)" % items.plot_moisture(pos))
 	inv.wear[bucket] = 8000
+	act(Net.ACT_WATER_BED, bed, bucket)
+	check(inv.wear[bucket] == 0 and absf(items.plot_moisture(pos) - 94.0) < 0.01, "a second bucket the same day goes in too (%.1f)" % items.plot_moisture(pos))
+	inv.wear[bucket] = 8000
+	act(Net.ACT_WATER_BED, bed, bucket)
+	check(inv.wear[bucket] == 6500 and absf(items.plot_moisture(pos) - 100.0) < 0.01, "a third pours only the 1.5 L the soil has room for (%d mL left)" % inv.wear[bucket])
 	notes.clear()
 	act(Net.ACT_WATER_BED, bed, bucket)
-	check(inv.wear[bucket] == 8000 and absf(items.plot_moisture(pos) - 38.0) < 0.01 and notes.has("The bed has had its water today."), "a second bucket the same day is refused, kept full, and the player is told")
+	check(inv.wear[bucket] == 6500 and notes.has("The soil is wet through already."), "soil wet through takes no more, the bucket is kept and the player is told")
 	inv.wear[bucket] = 0
 
 	notes.clear()
@@ -295,7 +311,7 @@ func _plot_takedown_checks() -> void:
 	check(not items._items.has(920002) and refunded, "the plot is taken down and its blueprint materials come back (%s)" % str(cost))
 	check(not items._crops.has(key), "its crop record went with it")
 	items._items[920003] = {"number": items.table.number_of(kind), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": kind, "yaw": 0.0}}
-	check(not items._bed_at(920003).is_empty() and items.crop_row_extra(items._items[920003]).is_empty(), "a new plot built on the same spot is empty")
+	check(not items._bed_at(920003).is_empty() and not items.crop_row_extra(items._items[920003]).has("crop"), "a new plot built on the same spot is empty")
 	act(Net.ACT_HARVEST, 920003)
 	check(not items._crops.has(key), "and has nothing to harvest")
 	items._items.erase(920003)
@@ -334,13 +350,14 @@ func _plot_cell_checks() -> void:
 	check(items._crops.has(keys[2]), "the Garden grid sows the square metre it aims at")
 	check(str(items._crops[keys[0]].get("plot", "")) == items._bed_key(spot), "a square metre's crop takes the plot's moisture")
 
-	# The day's bucket is the whole plot's: harvesting the crop that was first does not let a second bucket in.
+	# The water is the whole plot's: a bucket on the 2 x 2 plot adds 8 percent to its one moisture, and a second the same day adds 8 more.
 	give("bucket", 1)
+	items._plot_water[items._bed_key(spot)] = [30.0, clock[0]]
 	items.inventory_of(1).wear[slot_of("bucket")] = 8000
-	check(items.water_bed(1, items.inventory_of(1), 920030), "a bucket waters the plot")
+	check(items.water_bed(1, items.inventory_of(1), 920030) and absf(items.plot_moisture(spot) - 38.0) < 0.01, "a bucket waters the plot: 8 percent on 2 x 2 m (%.1f)" % items.plot_moisture(spot))
 	items.inventory_of(1).wear[slot_of("bucket")] = 8000
 	items._crops.erase(keys[0])
-	check(not items.water_bed(1, items.inventory_of(1), 920030), "the plot has had its water today, whichever crop went")
+	check(items.water_bed(1, items.inventory_of(1), 920030) and absf(items.plot_moisture(spot) - 46.0) < 0.01, "a second bucket the same day adds 8 more, whichever crop went (%.1f)" % items.plot_moisture(spot))
 
 	# No two beds share a square metre: a Large plot whose square metre lies on the Medium one's clashes, one a metre clear does not; a bed is not tilled on a plot.
 	check(items._beds_clash(items._bed_cells({"pos": Vector3(1.0, 10.0, -1.0), "struct": {"kind": "large_garden_plot", "yaw": 0.0}}), items._items[920030]), "a Large plot over the Medium one's edge square metres is refused")
@@ -481,9 +498,9 @@ func _garden_till_checks() -> void:
 
 	# A save from before turned beds: its crop and moisture keys are metre cells; they move to the bed in that cell, and a key with no bed is dropped.
 	items._items[920020] = {"number": items.table.number_of("tilled_bed"), "count": 1, "pos": Vector3(30.5, 10.02, 30.5), "left": 1.0e9, "struct": {"kind": "tilled_bed", "yaw": 0.0}}
-	items._crops["30,30"] = {"crop": "wheat", "sown": 0, "age": 1.0, "wet": 0, "day": 0, "compost": false, "poured": -1}
+	items._crops["30,30"] = {"crop": "wheat", "sown": 0, "age": 1.0, "wet": 0, "day": 0, "compost": false}
 	items._plot_water["30,30"] = [60.0, 0.0]
-	items._crops["77,77"] = {"crop": "wheat", "sown": 0, "age": 1.0, "wet": 0, "day": 0, "compost": false, "poured": -1}
+	items._crops["77,77"] = {"crop": "wheat", "sown": 0, "age": 1.0, "wet": 0, "day": 0, "compost": false}
 	items._rekey_old_beds()
 	var new_key: String = items._bed_key(Vector3(30.5, 10.0, 30.5))
 	check(items._crops.has(new_key) and str(items._crops[new_key]["crop"]) == "wheat" and items._plot_water.has(new_key) and not items._crops.has("30,30") and not items._crops.has("77,77"), "old metre-cell keys move to their bed; one with no bed is dropped")
@@ -738,7 +755,7 @@ func _init() -> void:
 
 	# A dry bed: same age, no wet days: stalls at stage 2.
 	var dry_key: String = "99,99"
-	items._crops[dry_key] = {"crop": "wheat", "sown": 0, "age": float(grow) + 5.0, "wet": 0, "day": items._game_day(), "compost": false, "rained": -1, "poured": -1}
+	items._crops[dry_key] = {"crop": "wheat", "sown": 0, "age": float(grow) + 5.0, "wet": 0, "day": items._game_day(), "compost": false, "rained": -1}
 	check(items.crop_stage(items._crops[dry_key]) == 2, "old enough but never watered: stalls at stage 2, not ripe")
 	items._crops.erase(dry_key)
 
@@ -764,7 +781,7 @@ func _init() -> void:
 
 	# Wheat with the sickle: put a ripe crop in directly (growth was tested above) and harvest it with the tool.
 	items._crops.erase(key)
-	items._crops[key] = {"crop": "wheat", "sown": 0, "age": float(grow), "wet": grow, "day": items._game_day(), "compost": false, "rained": -1, "poured": -1}
+	items._crops[key] = {"crop": "wheat", "sown": 0, "age": float(grow), "wet": grow, "day": items._game_day(), "compost": false, "rained": -1}
 	var before: int = count("wheat")
 	check(items.harvest(1, items.inventory_of(1), bed) and count("wheat") - before == yield_wheat, "with a sickle the full yield (%d)" % (count("wheat") - before))
 	# Worms (Dave 14 Nov 2026): each ripe garden crop taken rolls crops.json worm.chance (0.2) for a Worm; forced to 1 and 0 here to see both ends.
@@ -772,10 +789,10 @@ func _init() -> void:
 	var worm_chance: Dictionary = items._crops_file_extra["worm"]
 	var worms: int = count("worm")
 	worm_chance["chance"] = 1.0
-	items._crops[key] = {"crop": "wheat", "sown": 0, "age": float(grow), "wet": grow, "day": items._game_day(), "compost": false, "rained": -1, "poured": -1}
+	items._crops[key] = {"crop": "wheat", "sown": 0, "age": float(grow), "wet": grow, "day": items._game_day(), "compost": false, "rained": -1}
 	check(items.harvest(1, items.inventory_of(1), bed) and count("worm") == worms + 1, "a sure worm roll gives one Worm with the harvest")
 	worm_chance["chance"] = 0.0
-	items._crops[key] = {"crop": "wheat", "sown": 0, "age": float(grow), "wet": grow, "day": items._game_day(), "compost": false, "rained": -1, "poured": -1}
+	items._crops[key] = {"crop": "wheat", "sown": 0, "age": float(grow), "wet": grow, "day": items._game_day(), "compost": false, "rained": -1}
 	check(items.harvest(1, items.inventory_of(1), bed) and count("worm") == worms + 1, "no worm roll, no worm")
 	worm_chance["chance"] = 0.2
 
@@ -785,7 +802,8 @@ func _init() -> void:
 	items.inventory_of(1).wear[slot_of("bucket")] = 8000   # a filled bucket (the fill and the pour scaling: test_liquid_ingredient)
 	give("barley_seeds", 1)
 	items.sow(1, items.inventory_of(1), bed, slot_of("barley_seeds"))
-	check(items.water_bed(1, items.inventory_of(1), bed) and not items.water_bed(1, items.inventory_of(1), bed), "one bucket of water pours on the bed per day")
+	items._plot_water[key] = [20.0, clock[0]]   # a dry bed
+	check(items.water_bed(1, items.inventory_of(1), bed) and absf(items.plot_moisture(items._items[bed]["pos"]) - 52.0) < 0.01, "a bucket of water pours on the dry bed")
 	days(1)
 	check(int(items._crops[key]["wet"]) == 1, "water poured makes the next game day wet")
 
