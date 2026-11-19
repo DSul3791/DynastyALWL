@@ -10,7 +10,7 @@ extends SceneTree
 #   4. the Fireplace cooking crane cooks a stew only while its fireplace burns;
 #   5. Sauerkraut sealed as one batch at a built Preserving jar #830: Maturing (not eaten, not an ingredient), then Ready and eaten; stale
 #      cabbage is refused; batches sealed at different times never merge until both are Ready; the age survives save and load;
-#   6. batch room: a pack at its carry limit sends the batch to the player's nearby chest; a batch is capped to the room there, refused with none, waits when the
+#   6. batch room: a pack at its carry limit sends the batch to the player's nearby chest; a chest has no weight limit, so the batch is refused only when no slot is free, waits when the
 #      room fills before it is done, and never lands on the ground; Maturing stacks in a chest or on the ground are no craft stock; Hob will not
 #      buy one and an NPC order does not count or take one;
 #   7. Smoked meat at a built Smoker, Dried mushrooms at a built Drying rack (outside the mushrooms group).
@@ -384,15 +384,8 @@ func _init() -> void:
 		if not items._items[wid].has("struct") and int(items._items[wid].get("number", 0)) == kraut_n:
 			items._items.erase(wid)
 
-	# A chest has no weight limit, only its slots (Dave 19 Nov 2026): one with a free slot takes the whole batch, whatever it weighs.
-	items.drop_in_world(cabbage, cab_need * batch, jar_at + Vector3(0.5, 0.0, 0.5))
-	items.drop_in_world(num("sea_salt"), salt_need * batch, jar_at + Vector3(-0.5, 0.0, 0.5))
-	craft("cook_sauerkraut", batch, int(recipe("cook_sauerkraut")["craft_s"]) + 3)
-	check(box.count_of(kraut_n) == per * batch and loose("cabbage") == 0 and loose("sauerkraut") == 0, "6d. a chest with a free slot takes all %d crafts, never cut short by weight (%d sealed into the chest)" % [batch, box.count_of(kraut_n)])
-	box.remove(kraut_n, box.count_of(kraut_n))
-
 	# No room at all (every slot of the chest holds something else): refused, nothing taken.
-	_fill_slots(box, kraut_n)
+	_fill_slots(box)
 	items.drop_in_world(cabbage, cab_need, jar_at + Vector3(0.5, 0.0, 0.5))
 	items.drop_in_world(num("sea_salt"), salt_need, jar_at + Vector3(-0.5, 0.0, 0.5))
 	craft("cook_sauerkraut", 1, int(recipe("cook_sauerkraut")["craft_s"]) + 3)
@@ -403,7 +396,7 @@ func _init() -> void:
 	items._last_queue_act.clear()
 	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number("cook_sauerkraut"), 0, 1, CraftHand.at(items, 1, recipe_number("cook_sauerkraut")))
 	var queued: bool = not items.craft_queue_of(1).is_empty()
-	_fill_slots(box, kraut_n)
+	_fill_slots(box)
 	items._station_said.clear()   # the wait is said at most every 8 s; this run is faster than that
 
 	for s in range(int(recipe("cook_sauerkraut")["craft_s"]) + 3):
@@ -458,13 +451,12 @@ func _init() -> void:
 	quit(1 if failures > 0 else 0)
 
 
-# Every free usable slot of a store holds one of something else (item numbers from 1000, never `skip`), so no new stack fits.
-func _fill_slots(box, skip: int) -> void:
+# Every free slot of a store holds one of something else (item numbers from 1000, above every ingredient here), so no new stack fits.
+func _fill_slots(box) -> void:
 	var n: int = 1000
 
 	for i in box.slot_count:
 		if box.numbers[i] == 0:
-			n += 1 if n == skip else 0
 			box.numbers[i] = n
 			box.counts[i] = 1
 			box.wear[i] = 0
