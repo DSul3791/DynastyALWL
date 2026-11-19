@@ -27,6 +27,15 @@ func height(x: float, z: float) -> float:
 	return s if list.is_empty() else column_top(s, list, x, z)
 
 
+# Whether a dig or fill touches the column at (x, z): only there may an animal jump down or scramble up a hole's rim (server_animals.walk_step).
+func is_edited(x: float, z: float) -> bool:
+	if ops == null:
+		return false
+
+	var s: float = float(surface.call(x, z))
+	return not is_nan(s) and not _ops_near(x, z, s).is_empty()
+
+
 # A dig or fill at `centre` reaching `radius`: the cells it touches are worked out again when next asked.
 func changed(centre: Vector3, radius: float) -> void:
 	radius = maxf(radius, 0.5)   # GroundOps.add makes a smaller operation this wide

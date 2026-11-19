@@ -33,6 +33,7 @@ var cfg: Dictionary = {}
 var animals: Dictionary = {}       # id int -> {id, sp, num, pos Vector3, heading, state, target Vector3, timer, acc, home}
 var watched: Dictionary = {}       # id int -> true: watched by an admin through the spyglass (set by the server scene each send pass), kept living
 var ground_height: Callable        # (x, z) -> height
+var ground_edited: Callable        # (x, z) -> bool: a dig or fill touches the ground there (edited_ground.gd); unset: none
 var springs_near: Callable         # (Vector3, reach m) -> PackedVector3Array: the ground springs (heads) within reach, from the tiles (unset: none)
 var blocked: Callable              # (x, z) -> bool (deep water)
 var ice_cover_at: Callable         # (Vector3) -> Ice.cover there (0 open .. 1 a 20 cm sheet; 0.5, 10 cm, bears a person); set by the server scene
@@ -696,11 +697,15 @@ func alarm_near(point: Vector3, radius: float) -> void:
 		_bolt(a, point, species_def(str(a["sp"])))
 
 
-# One walking step of any animal of this module (Steering.step, the same arguments), taking a dug hole's rim as a jump down or a scramble
-# up of at most ground_step.climb_m and drop_m (data/animals/animals.json, provisional GS-1), so no animal is caught in a hole.
+# One walking step of any animal of this module (Steering.step, the same arguments). Where a dig or fill touches the step's start or end, a
+# hole's steep rim is a jump down of at most ground_step.drop_m or a scramble up of at most climb_m (data/animals/animals.json, provisional GS-1),
+# so no animal is caught in a hole; natural ground keeps Steering's slope rule.
 func walk_step(pos: Vector3, target: Vector3, speed: float, dt: float, ground: Callable, blocked_at: Callable, arrive_m: float = 0.4, heading: float = 0.0, cross: Callable = Callable()) -> Dictionary:
-	var gs: Dictionary = cfg.get("ground_step", {})
-	return Steering.step(pos, target, speed, dt, ground, blocked_at, arrive_m, heading, cross, float(gs.get("climb_m", 1.0)), float(gs.get("drop_m", 2.0)))
+	if ground_edited.is_valid() and (bool(ground_edited.call(pos.x, pos.z)) or bool(ground_edited.call(target.x, target.z))):
+		var gs: Dictionary = cfg.get("ground_step", {})
+		return Steering.step(pos, target, speed, dt, ground, blocked_at, arrive_m, heading, cross, float(gs.get("climb_m", 1.0)), float(gs.get("drop_m", 2.0)))
+
+	return Steering.step(pos, target, speed, dt, ground, blocked_at, arrive_m, heading, cross)
 
 
 # A dig or fill changed the ground round `centre` (terrain_server _dig_ground / _fill_ground): every animal standing there comes to rest on
