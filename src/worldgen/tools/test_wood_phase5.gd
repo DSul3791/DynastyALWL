@@ -358,7 +358,7 @@ func crate_checks() -> void:
 	check(str(said.get(1, "")) == "Set it down off the wagon first.", "a crate on the wagon must be set down before it is taken apart (%s)" % str(said.get(1, "")))
 	box(wagon).add(n("stone"), 230)   # 70 kg of crates and 230 kg of stone: the wagon is full, the crate on it is not
 	put(items._carts.riders_of(wagon)[0], "stone", 1)
-	check(str(said.get(1, "")) == "The wagon cannot carry more." and items.inventory_of(1).count_of(n("stone")) == 1, "a crate riding on the full wagon refuses more with the wagon's message, not the chest's (%s)" % str(said.get(1, "")))
+	check(str(said.get(1, "")) == "The wagon cannot carry more." and items.inventory_of(1).count_of(n("stone")) == 1, "a crate riding on the full wagon refuses more with the wagon's message (%s)" % str(said.get(1, "")))
 
 
 # --- A Handcart saved before the 120 kg limit, holding 150 kg ---

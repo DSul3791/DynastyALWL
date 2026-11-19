@@ -143,8 +143,11 @@ func _init() -> void:
 		check(items._structures.has(kind) and not bool(items.table.entry(kind).get("future", false)), "%s is a live structure row" % kind)
 
 	check(bool(items._structures["wooden_crate"].get("lockable", false)) and bool(items._structures["warehouse_crate"].get("lockable", false)) and not bool(items._structures.get("wooden_shelf", {}).get("lockable", false)), "crates and chests take a code lock, shelves do not")
-	check(int(items._structures["large_wooden_chest"]["slots"]) < int(items._structures["iron_chest"]["slots"]) and float(items._structures["large_wooden_chest"]["max_kg"]) > float(items._structures["iron_chest"]["max_kg"]), "the Large wooden chest holds more weight than the Ornate - Chest, one row fewer slots (Dave 18 Nov 2026, was [D17] within 30)")
-	check(float(items._structures["warehouse_crate"]["max_kg"]) > float(items._structures["wooden_crate"]["max_kg"]), "the Warehouse crate carries more than the Crate (freight role)")
+	check(int(items._structures["large_wooden_chest"]["slots"]) < int(items._structures["iron_chest"]["slots"]) and float(items._structures["large_wooden_chest"]["footprint_x"]) > float(items._structures["iron_chest"]["footprint_x"]), "the Large wooden chest has a larger footprint than the Ornate - Chest, one row fewer slots (Dave 18 Nov 2026, was [D17] within 30)")
+	check(int(items._structures["warehouse_crate"]["slots"]) > int(items._structures["wooden_crate"]["slots"]), "the Warehouse crate holds more than the Crate (freight role)")
+
+	for kind in items._structures:   # storage is limited by its slots, never by weight (Dave 19 Nov 2026); only a vehicle has a payload (max_kg)
+		check(not items._structures[kind].has("max_kg") or items._structures[kind].has("vehicle"), "%s has no weight limit (only a vehicle's payload)" % kind)
 	check(ItemsScript.lock_code(42) == "0042" and ItemsScript.lock_code(0) == "0000" and ItemsScript.lock_code(9999) == "9999" and ItemsScript.lock_code(10000) == "" and ItemsScript.lock_code(-1) == "", "codes are four digit characters with leading zeros, 0000 to 9999")
 
 	# 1. An open container: anyone beside it opens it and takes from it.

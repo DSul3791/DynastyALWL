@@ -12211,7 +12211,7 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int, targe
 
 
 # One put from pack slot `a` into container `id` (its inventory `chest`), up to `count`: the container's own rules (take-only, what it takes,
-# its max_kg). The caller has already checked reach and access (_chest_of, or a storage view's _view_boxes). Returns how many went in.
+# its slots; a vehicle's payload). The caller has already checked reach and access (_chest_of, or a storage view's _view_boxes). Returns how many went in.
 # `target`: the store slot the stack was dragged onto (-1: none). Only a smelter reads it: Coal or Charcoal dragged onto an Advanced smelter's
 # input goes in as steel carbon (server_smelter.part_for).
 func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = -1) -> int:
@@ -12241,7 +12241,6 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 	var held_wear: int = inv.wear[a]
 	var held_inst: Dictionary = inv.inst_of(a)
 	var amount: int = mini(count, inv.counts[a])
-	var max_kg: float = float(_structures.get(kind, {}).get("max_kg", 0.0))
 	var smelter: bool = id >= 0 and _smelters.is_smelter(_structures.get(kind, {}))
 
 	if smelter:   # a Smelter's hopper holds smelt.hopper units of fuel and its input smelt.input units of ore (master s2.7)
@@ -12271,15 +12270,16 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 	if id < 0:
 		amount = mini(amount, BagRules.room(table, _bag_number(peer, id), chest))   # a quiver holds its ammo_capacity of arrows
 
-	# A container takes only so many kilograms (structures.json max_kg): put what fits, keep the rest. A bag weighs with what it holds.
-	if max_kg > 0.0 and not _carry_cfg.is_empty():
+	# A storage container has no weight limit, only its slots (Dave 19 Nov 2026: "chests ... shouldn't" have one). Only a vehicle's store, or a crate
+	# riding on one, stays within the vehicle's payload (its structures.json max_kg, server_carts.room_kg): put what fits, keep the rest. A bag weighs with what it holds.
+	var cart_room: float = _carts.room_kg(id) if id >= 0 else INF
+
+	if cart_room < INF and not _carry_cfg.is_empty():
 		var each: float = maxf(CarryRules.weight_of(table.id_of(number), _carry_cfg) + CarryRules.bag_kg(held_inst, table, _carry_cfg), 0.001)
-		var room: float = max_kg - CarryRules.carried_kg(chest, table, _carry_cfg)
-		var cart_room: float = _carts.room_kg(id) if id >= 0 else INF   # a cart, or a crate riding on one, also stays within the cart's payload
-		amount = clampi(int(floor(minf(room, cart_room) / each + 0.0001)), 0, amount)
+		amount = clampi(int(floor(cart_room / each + 0.0001)), 0, amount)
 
 		if amount == 0:
-			_say(peer, "It is too heavy for the chest" if cart_room > maxf(room, 0.0) else "The %s cannot carry more." % _carts.noun_for(id))
+			_say(peer, "The %s cannot carry more." % _carts.noun_for(id))
 			_reject(peer, 2)
 
 	var left: int = 0
@@ -20472,7 +20472,7 @@ func _bulk_take_all(peer: int, inv, id: int, box) -> int:
 
 
 # Store all: every pack stack that is not a favourite and not the log on the shoulder, into the open container (the rules of one put:
-# a fire takes only wood and food, a take-only container nothing, a heavy one up to its max_kg). Returns the stacks moved.
+# a fire takes only wood and food, a take-only container nothing, a vehicle up to its payload). Returns the stacks moved.
 func _bulk_store_all(peer: int, inv, id: int, _box) -> int:
 	var it: Dictionary = _items.get(id, {})
 	var def: Dictionary = _structures.get(str(it.get("struct", {}).get("kind", "")), {})
@@ -20489,7 +20489,7 @@ func _bulk_store_all(peer: int, inv, id: int, _box) -> int:
 			continue
 
 		if _box_room(id, number, inv.counts[slot]) == 0:
-			continue   # full by weight for this item: a lighter one may still go in, and the refusal is not said once per stack
+			continue   # no room for this item (a vehicle's payload, a bin, kiln or smelter): another may still go in, and the refusal is not said once per stack
 
 		var had: int = inv.counts[slot]
 		_chest_action(peer, inv, Net.ACT_CHEST_PUT, slot, id, had)
@@ -20500,13 +20500,13 @@ func _bulk_store_all(peer: int, inv, id: int, _box) -> int:
 	return moved
 
 
-# How many of `amount` a storage container still takes by weight (structures.json max_kg); all of it when it has no weight limit.
+# How many of `amount` a storage container still takes: what it takes, a kiln's, smelter's or bin's room, and a vehicle's payload (a vehicle's
+# store or a crate riding on one); storage itself has no weight limit (Dave 19 Nov 2026).
 func _box_room(sid: int, number: int, amount: int) -> int:
 	if not _box_takes(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), number):
 		return 0   # what the container does not take (structures.json takes): a sealed batch never goes into a Stone bin
 
 	var box = _chests.get(int(_items.get(sid, {}).get("struct", {}).get("uid", -1)))
-	var max_kg: float = float(_structures.get(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), {}).get("max_kg", 0.0))
 	amount = _kiln_room(sid, box, number, amount)
 	var sdef: Dictionary = _structures.get(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), {})
 
@@ -20516,11 +20516,13 @@ func _box_room(sid: int, number: int, amount: int) -> int:
 	if BinRules.is_bin(sdef) and box != null:
 		amount = BinRules.room(sdef, box, number, amount)
 
-	if max_kg <= 0.0 or _carry_cfg.is_empty() or box == null:
+	var cart_room: float = _carts.room_kg(sid)
+
+	if cart_room == INF or _carry_cfg.is_empty() or box == null:
 		return amount
 
 	var each: float = maxf(CarryRules.weight_of(table.id_of(number), _carry_cfg), 0.001)
-	return clampi(int(floor(minf(max_kg - CarryRules.carried_kg(box, table, _carry_cfg), _carts.room_kg(sid)) / each + 0.0001)), 0, amount)
+	return clampi(int(floor(cart_room / each + 0.0001)), 0, amount)
 
 
 # Stack to nearby: each pack stack (not a favourite, not the shoulder log) goes into the player's own storage chests within
@@ -21298,7 +21300,7 @@ func _made_age(made: int, entry: Array) -> int:
 
 
 # Where a sealed batch may go (master s3.14 bulk): the pack, then the player's own storage within the crafting reach, nearest first, each up to its
-# free space for `number` at age 0 (carry weight or max_kg, and a slot to put it in). [[inventory, world id or -1 for the pack, room], ...].
+# free space for `number` at age 0 (carry weight or a vehicle's payload, and a slot to put it in). [[inventory, world id or -1 for the pack, room], ...].
 func _batch_spots(peer: int, number: int) -> Array:
 	var out: Array = []
 	var inv = inventory_of(peer)
