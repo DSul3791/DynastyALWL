@@ -7,7 +7,7 @@ extends SceneTree
 #   - a cancelled craft pours its water back into containers and never mints the stackable item (even with no container left: it spills);
 #   - the water and a queued craft survive a save and load;
 #   - two crafts for the same water cannot both have it; a stranger's chest is never used, the owner's chest is;
-#   - the bed pour scales pour_pct by the mL poured, takes the container in hand first, and distrusts the slot the client names.
+#   - the bed pour adds its litres over the bed's soil store, up to a bucket and the soil's room, takes the container in hand first, and distrusts the slot the client names.
 # The herb antidote (needs 1 water, made at a Mortar and pestle: MORTAR_PESTLE.md MP-2) is the probe recipe; the fill itself is the real drink/fill action.
 #   godot --headless --path . --script res://src/worldgen/tools/test_liquid_ingredient.gd
 
@@ -319,34 +319,36 @@ func _init() -> void:
 	check(inv().wear[carrier] == 500 and have("water") == 0 and sold_box.liquid_ml() == 500, "a chest that is no longer theirs gets none of it back: the 500 mL land in the pack")
 	items._items.erase(sold_chest)
 
-	# The bed: a bucket's 8000 mL is pour_pct; the container in hand first, the pack's other water after; up to a bucket a game day; every refusal says why.
+	# The bed: a pour is up to a bucket's 8000 mL and its litres over the 1 m bed's 25 L store (0.25 L a percent, garden moisture GM-2); the container in hand
+	# first, the pack's other water after; no daily limit, but never more than the soil has room for; every refusal says why.
 	fresh()
 	items._structures["test_plot"] = {"kit": "test_plot_kit", "item": "tilled_bed", "state": 9907, "plot": true, "moisture_factor": 1.0, "cap_per_chunk": 12}
 	var spot: Vector3 = Vector3(40.5, 10.0, 40.5)
 	items._items[920001] = {"number": n("tilled_bed"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "test_plot", "yaw": 0.0}}
 	var key: String = items._bed_key(spot)
-	items._crops[key] = {"crop": "barley", "sown": 0, "age": 0.0, "wet": 0, "day": items._game_day(), "compost": false, "poured": -1}
+	items._crops[key] = {"crop": "barley", "sown": 0, "age": 0.0, "wet": 0, "day": items._game_day(), "compost": false}
 	items._plot_water[key] = [50.0, clock[0]]
 	items.report_position(1, spot + Vector3(0.0, 0.0, 1.0))
 	var cfg: Dictionary = items._moisture_cfg
-	var full_pct: float = float(cfg["pour_pct"])
+	var full_pct: float = 8.0 / 0.25   # a bucket on a 1 m bed: 32 percent
 	check(int(cfg.get("pour_ml", 0)) == 8000 and str(cfg.get("pour_ml_note", "")).begins_with("PROVISIONAL (GOALS-REPAIR A-3)"), "a bed's bucket is 8000 mL, tagged PROVISIONAL (GOALS-REPAIR A-3)")
 	check(not pour(-1) and absf(items.plot_moisture(spot) - 50.0) < 0.01 and said.any(func(t): return t.contains("no water")), "no water: refused with a notice, nothing changes")
 	var big: int = vessel("bucket", 6500)
 	var little: int = vessel("waterskin", 1500)
 	check(pour(-1), "8000 mL across two containers pour as one bucket")
-	check(absf(items.plot_moisture(spot) - (50.0 + full_pct)) < 0.01 and inv().wear[little] == 0 and inv().wear[big] == 0 and have("bucket") == 1 and have("waterskin") == 1, "that adds pour_pct (%.2f); both containers stay, empty" % items.plot_moisture(spot))
-	inv().wear[big] = 3000
+	check(absf(items.plot_moisture(spot) - (50.0 + full_pct)) < 0.01 and inv().wear[little] == 0 and inv().wear[big] == 0 and have("bucket") == 1 and have("waterskin") == 1, "that adds 32 percent on a 1 m bed (%.2f); both containers stay, empty" % items.plot_moisture(spot))
+	inv().wear[big] = 8000
+	check(pour(big) and inv().wear[big] == 3500 and absf(items.plot_moisture(spot) - 100.0) < 0.01, "a second pour the same day goes in, but only what the soil has room for: 4.5 L of the bucket (%d mL left, %.2f)" % [inv().wear[big], items.plot_moisture(spot)])
 	said.clear()
-	check(not pour(big) and inv().wear[big] == 3000 and said.any(func(t): return t.contains("had its water")), "a second pour the same day is refused with a notice: the day's bucket is poured, nothing is taken")
+	check(not pour(big) and inv().wear[big] == 3500 and said.any(func(t): return t.contains("wet through")), "soil wet through takes no more: refused with a notice, nothing is taken")
 
 	clock[0] += 86400.0
 	items._plot_water[key] = [50.0, clock[0]]
 	inv().wear[big] = 0
 	inv().wear[little] = 1500
-	check(pour(little) and absf(items.plot_moisture(spot) - (50.0 + full_pct * 1500.0 / 8000.0)) < 0.01 and inv().wear[little] == 0, "1500 mL adds pour_pct x 1500/8000 (%.3f)" % (items.plot_moisture(spot) - 50.0))
+	check(pour(little) and absf(items.plot_moisture(spot) - (50.0 + 1.5 / 0.25)) < 0.01 and inv().wear[little] == 0, "1500 mL adds 6 percent on a 1 m bed (%.3f)" % (items.plot_moisture(spot) - 50.0))
 	inv().wear[little] = 1500
-	check(pour(little) and absf(items.plot_moisture(spot) - (50.0 + full_pct * 3000.0 / 8000.0)) < 0.01, "small pours the same day add up toward the one bucket (%.3f)" % (items.plot_moisture(spot) - 50.0))
+	check(pour(little) and absf(items.plot_moisture(spot) - (50.0 + 3.0 / 0.25)) < 0.01, "small pours add up (%.3f)" % (items.plot_moisture(spot) - 50.0))
 
 	clock[0] += 86400.0
 	items._plot_water[key] = [50.0, clock[0]]
