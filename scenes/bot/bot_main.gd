@@ -76,6 +76,9 @@ func _ready() -> void:
 		print("BOT %s: password refused (%s)" % [_name, reason])
 		_finish())
 	_auth.attach_client(multiplayer as SceneMultiplayer)
+	multiplayer.peer_authentication_failed.connect(func(_peer: int) -> void:
+		print("BOT %s: the join handshake failed (%s)" % [_name, "dropped" if _auth.heard else "the server never answered it: another build?"])
+		_finish())
 
 	if peer.create_client(_host, _port) != OK:
 		print("BOT %s: cannot connect" % _name)

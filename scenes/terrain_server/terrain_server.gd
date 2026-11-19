@@ -300,6 +300,12 @@ func _ready() -> void:
 
 	_store_path = store_dir
 	_server_settings.load_from(store_dir)   # name, message and password for the server pick page (store's server.json; DYNASTY_SERVER_PASSWORD)
+
+	if _server_settings.problem != "":
+		push_error("Terrain server: " + _server_settings.problem)   # never open a password server to everyone by a typo in server.json
+		get_tree().quit(1)
+		return
+
 	print("server: name \"%s\"; %s" % [_server_settings.server_name, _server_settings.note])
 	_load_game_clock()
 	var problem: String = store.setup(generator, store_dir)

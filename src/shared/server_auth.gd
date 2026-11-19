@@ -17,6 +17,7 @@ const TRIES := 3                    # per connection (Dave: "you get 3 tries")
 const GUARD_WRONG := 5              # wrong proofs from one address within GUARD_MSEC refuse that address for GUARD_MSEC
 const GUARD_MSEC := 60000
 const TIMEOUT_S := 180.0            # time to type a password; the engine's default (3 s) would drop a player mid-word
+const FIRST_WORD_S := 15.0          # a client waits this long for the server's first word: a server of another protocol never sends one
 
 # Server side
 var password_hash: PackedByteArray = PackedByteArray()    # empty: an open server
@@ -36,6 +37,7 @@ var _client_salt: PackedByteArray = PackedByteArray()
 var _client_nonce: PackedByteArray = PackedByteArray()
 var _trying_hash: PackedByteArray = PackedByteArray()
 var _tried_remembered: bool = false
+var heard: bool = false             # the server has said anything in the handshake (false at a failure: it does not speak this join)
 var remembered_was_wrong: bool = false   # the last wrong try was the remembered password (the server's password changed since): forget it
 
 var _mp: SceneMultiplayer
@@ -134,7 +136,7 @@ func _drop(peer: int, message: Dictionary, why: String) -> void:
 
 	if tree != null:
 		tree.create_timer(1.0).timeout.connect(func() -> void:
-			if _mp.multiplayer_peer != null:
+			if _mp.multiplayer_peer != null and _mp.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED:
 				_mp.disconnect_peer(peer))
 
 
@@ -151,7 +153,7 @@ func _address(peer: int) -> String:
 
 func attach_client(mp: SceneMultiplayer) -> void:
 	_mp = mp
-	mp.auth_timeout = TIMEOUT_S
+	mp.auth_timeout = FIRST_WORD_S   # raised to TIMEOUT_S once the server speaks (a player may be typing)
 	mp.auth_callback = _client_got
 
 
@@ -160,6 +162,9 @@ func _client_got(_peer: int, data: PackedByteArray) -> void:
 
 	if not message is Dictionary:
 		return
+
+	heard = true
+	_mp.auth_timeout = TIMEOUT_S
 
 	match str(message.get("t", "")):
 		"ok":

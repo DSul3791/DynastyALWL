@@ -894,6 +894,7 @@ func _ready() -> void:
 		_link_up_msec = Time.get_ticks_msec()
 		NetSettings.apply((multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(1)))
 	multiplayer.connection_failed.connect(_on_connection_failed)
+	multiplayer.peer_authentication_failed.connect(_on_auth_failed)
 	started_msec = Time.get_ticks_msec()
 
 	if DisplayServer.get_name() != "headless":
@@ -1221,6 +1222,19 @@ func _note_played() -> void:
 
 	ServerListScript.mark_played(rows, str(rows[index]["address"]), CharacterStoreScript.active_id())
 	ServerListScript.save_rows(rows)
+
+
+# The join handshake ended without getting in (server_auth.gd). A server that never said a word there does not speak this game's join: it is
+# an older or newer build. Otherwise the server dropped the join (a refusal already says why), or it went away: as a failed connection.
+func _on_auth_failed(_peer: int) -> void:
+	if _join_refused != "":
+		return
+
+	if _auth != null and not _auth.heard:
+		_on_join_refused("The server at %s:%d answered but does not speak this game's way of joining: it runs an older or newer build of the game. Update the game, or ask whoever runs the server to update it." % [_host, _port], "Different version")
+		return
+
+	_on_connection_failed()
 
 
 # The server runs another build (step A1): its reason stays on the join window until the player quits. The server drops this client next.

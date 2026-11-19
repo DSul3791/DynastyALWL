@@ -22,7 +22,9 @@ static func normalise(text: String) -> Dictionary:
 		if address.to_lower().begins_with(prefix):
 			address = address.substr(prefix.length())
 
-	address = address.trim_suffix("/")
+	if address.contains("/"):
+		address = address.left(address.find("/"))   # a path pasted from a browser ("host/play") is not part of the address
+
 	var parsed: Dictionary = JoinAddress.parse(address)
 
 	if parsed.has("error"):

@@ -54,7 +54,7 @@ func join(password: String, answers: Array, server_auth = null) -> Dictionary:
 	client_peer.create_client("127.0.0.1", port)
 	client_mp.multiplayer_peer = client_peer
 
-	for i in 300:   # up to about 5 s
+	for i in 600:   # a few seconds (headless frames are fast)
 		server_mp.poll()
 		client_mp.poll()
 		await process_frame
@@ -90,7 +90,9 @@ func _initialize() -> void:
 	var three: Dictionary = await join("Hannibal", ["a", "b", "c"], guard)
 	check(not three["connected"] and three["refused"] == "wrong" and three["asked"].size() == 3, "three wrong tries: refused, the client is told")
 	var fourth: Dictionary = await join("", ["d", "e", "f"], guard)
-	check(not fourth["connected"] and fourth["refused"] == "busy", "five wrong from one address in a minute: the next join is refused at once")
+	check(not fourth["connected"] and fourth["refused"] == "busy" and fourth["asked"].size() == 2, "the fifth wrong from one address within a minute: refused (busy)")
+	var fifth: Dictionary = await join("", [], guard)
+	check(not fifth["connected"] and fifth["refused"] == "busy" and fifth["asked"].is_empty(), "the next join from that address is refused at once, before any ask")
 
 	var dir: String = OS.get_cache_dir().path_join("dynasty_test_auth_%d" % OS.get_process_id())
 	DirAccess.make_dir_recursive_absolute(dir)
@@ -111,7 +113,17 @@ func _initialize() -> void:
 	var docker = ServerSettings.new()
 	docker.load_from(dir)
 	check(docker.password_hash == ServerAuth.hash_password(docker.salt, "FromDocker"), "DYNASTY_SERVER_PASSWORD wins over the file")
+	var restart = ServerSettings.new()
+	OS.set_environment(ServerSettings.ENV_PASSWORD, "FromDocker")
+	restart.load_from(dir)
+	check(restart.salt == docker.salt and restart.password_hash == docker.password_hash, "the same Docker password after a restart keeps its salt (remembered passwords keep working)")
 	OS.unset_environment(ServerSettings.ENV_PASSWORD)
+	var broken: FileAccess = FileAccess.open(dir.path_join("server.json"), FileAccess.WRITE)
+	broken.store_string("{\"password\": \"x\",")
+	broken.close()
+	var typo = ServerSettings.new()
+	typo.load_from(dir)
+	check(typo.problem != "", "an unreadable server.json stops the server instead of opening it to everyone")
 	DirAccess.remove_absolute(dir.path_join("server.json"))
 	var none = ServerSettings.new()
 	none.load_from(dir)
