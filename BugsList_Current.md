@@ -341,6 +341,31 @@ Assumed on Dave's behalf (provisional):
 - G-15 (coordinator for Dave): a dug-up bush or a tree seed held in hand is still planted by clicking open ground without the hoe; only bed crops need the hoe.
 - CL-1: a crop's wild model is 35, 60, 85 and 100 % of the wild plant's usual height from seedling to ripe, four to a square metre, and is drawn within 40 m.
 
+## 58. Garden soil moisture you can see, and irrigation from pipes
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test on 19 Nov 2026. Built in two stages, each independently reviewed. Stage 1, moisture: PR #1292, merged to dev at e93f7cea (head 32e7973c). Lane B (David4): 255 of 256 on 88106362, where the one failure was a note-prefix check; the scoped rerun on 32e7973c passed 15 of 15. Stage 2, irrigation: PR #1299, merged to dev at 921d9950 (head bf3ec38b). Lane B on the exact head: 424 of 424, including test_irrigation, test_farming and test_farm_prompt; validate_items 0 errors; join smoke clean. Fix not yet played; the trench look is a placeholder and has not been seen on screen. Design: docs/design/GARDEN_MOISTURE.md.
+
+Dave, 19 Nov 2026: "now the text does mention watering it which should be a possibility. I also think the rain should water it pretty good. also if it needs water it should show its moisture content that can slowly reduce on hot days with no rain. Im hoping in a temperate climate the rain will provide enough but if not we should be able to run pipes from a water source uphill and have the water run out of irrigation taps or just the end of the pipe onto the garden or into an irrigation trench that should improve the moisture level of the soil around it for upto 30 meters in either direction." Then: "or something like that. think it over come up with a plan and implement it."
+
+**Cause:** soil moisture, rain, drying and hand watering already existed, but nothing showed the moisture. A bucket added only 8 percent, once a day, and a dry day barely mattered. No pipe or channel could reach a bed.
+
+**Required outcome:** aiming at a bed or plot shows its soil as a percentage and as wet, damp or dry (needs water). Rain waters well. Hot dry days dry the soil slowly. A bucket or waterskin pour is worth doing, and dry soil slows the crop. The open end of a pipe or channel over a garden plot pours into it. The hoe's new Irrigation Trench mode digs a trench, and water poured into it soaks every bed and plot within 30 m that is not more than 0.5 m higher.
+
+**Acceptance:** a bed's prompt shows e.g. "soil 15% dry, needs water", and the figure rises after rain and after a bucket pour. With a well or pump uphill and a channel ending over a Medium plot or over a trench dug with the hoe, working the pump raises the moisture of the plot, or of the beds round the trench.
+
+Not done: irrigation taps (the catalog Tap is iron, behind the Master smithy, on Dave's future list; a wooden tap would be a new item, Dave's call). A trench cannot be filled in or picked up yet. A pipe joint in the middle of a run that sits over a plot or trench also pours into it. A plot's room can be one solve out of date, so it may take a little more water than it has room for.
+
+Assumed on Dave's behalf (provisional):
+
+- GM-1: rain adds 600 percent a day times its strength (was 200); heavy rain still fills a bed at once.
+- GM-2: a hand pour is up to 8 L into the soil store (25 mm over the bed): 32 percent on a 1 m bed, 8 on a Medium plot. No daily limit; refused at 99 percent.
+- GM-3: a day ending below 25 percent grows the crop half a day.
+- GM-4: wet from 70 percent, damp from 25, dry below; shown in 5 percent steps.
+- GM-5: garden plots catch a pipe or channel end within half their side plus 0.3 m and up to 1.5 m above.
+- GM-6: Irrigation trench, new item 1507, structure state 457, no recipe: dug with the hoe, 2 m by 0.5 m, catches water within 1.2 m and up to 1.5 m above.
+- GM-7: a trench waters every bed and plot within 30 m of it in any direction that is no more than 0.5 m higher, shared by how much room each soil has.
+- GM-8: the hoe's list gains Irrigation Trench as its last row; the other six keep Dave's order.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
