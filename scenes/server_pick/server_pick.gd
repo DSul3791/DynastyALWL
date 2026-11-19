@@ -331,15 +331,24 @@ func _make_row(row: Dictionary) -> PanelContainer:
 	return panel
 
 
+# One piece of a row: from column start x to the next column (so a long name is cut, never drawn under the next column).
 func _cell(parent: Control, x: float, y: float, text: String, size: int, colour: Color) -> void:
+	var right: float = 1.0
+
+	for column in COLUMNS:
+		if float(column[1]) > x + 0.001:
+			right = float(column[1]) - 0.01
+			break
+
 	var label: Label = Label.new()
 	label.text = text
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	label.add_theme_font_size_override("font_size", size)
 	label.add_theme_color_override("font_color", colour)
 	label.anchor_left = x
-	label.anchor_right = 1.0
+	label.anchor_right = right
 	label.offset_top = y
+	label.offset_bottom = y + size * 1.5
 	label.clip_text = true
 	parent.add_child(label)
 
@@ -399,6 +408,7 @@ func _build_ui() -> void:
 		label.add_theme_font_size_override("font_size", 15)
 		label.add_theme_color_override("font_color", SUB)
 		label.anchor_left = float(column[1])
+		label.anchor_right = float(column[1])
 		label.offset_left = 21.0
 		header.add_child(label)
 

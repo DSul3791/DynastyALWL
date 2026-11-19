@@ -125,7 +125,7 @@ Join opens the existing connect window (`connect_window.gd`), which already name
 
 - Editor and PC Play (Dave's own work): unchanged, still a local server, no page.
 - `--server=` on the command line and `--test` still go straight to the game.
-- After a death the game goes back to the Characters page for the same server (as today, without the Servers page).
+- After a death the game rejoins the same server as the same character at once, as today (no pages).
 - No bug reporting in the client (Dave, 18 Nov).
 
 ## Build plan (after approval)
@@ -144,4 +144,10 @@ Settled by Dave (19 Nov): the game remembers a correct password (choice 3); pass
 2. **Player names before joining.** Pick: the Players column shows the count only, and hovering a row lists who is on. Built for now: the count only, because the server does not yet know the players' character names (characters are kept on each player's computer); names on hover follow when characters move to the server. Other way: count only, never names.
 3. **Remember a password.** SETTLED (Dave 19 Nov, "yes it should"): a "Remember on this computer" tick in the popup, on by default. What is remembered is the salted hash, never the typed password, kept in `servers.json`; Remove forgets it, and if the server's password changes the popup simply asks again. Someone who copied that file could join that one server, but never learns the password, so it is useless anywhere else. Other way: always ask.
 
-Assumed meanwhile (provisional, can change): the official server's name and crest come from the release setting; New Game is renamed Play because it now leads to this page; the server's short message (set by its owner) shows when a row is hovered.
+Assumed meanwhile (provisional, can change, for Dave's review):
+- Choices 1 and 2 are built as the picks.
+- The painted title button still reads "New Game" (it is part of the painting); in a client-only build it opens this page, i.e. it is Play. Repainting it to say Play is Dave's call.
+- The official server shows as "Dynasty Official"-style only once the release setting (`client_config.json` "official") names an address; there is no crest picture yet, only the gold edge.
+- The server's short message and its IP show when a row is hovered.
+- Back to servers (from the joining screen or the password popup) starts the game again on this page: the cleanest way out of a half-made join.
+- To see the page in the editor: run with the user argument `--client-only`.
