@@ -4590,7 +4590,7 @@
 		"rock_pile": {
 			"name": "Rock pile",
 			"kind": "placeable",
-			"description": "A heap of 45 stones. Set it down to store rock; pick it up to carry it.",
+			"description": "A heap of 90 stones. Set it down to store rock; pick it up to carry it.",
 			"how_to_get": [
 				"Craft: 90 Stone"
 			],

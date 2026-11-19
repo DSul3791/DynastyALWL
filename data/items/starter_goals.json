@@ -82,7 +82,7 @@
 		{
 			"id": "fire",
 			"title": "Light a fire",
-			"hint": "Make a Campfire (6 sticks, 3 stones) and place it. Put sticks on it with F, then press E near it to light it.",
+			"hint": "Make a Campfire (6 sticks, 6 stones) and place it. Put sticks on it with F, then press E near it to light it.",
 			"after": [
 				"fell"
 			],
@@ -169,7 +169,7 @@
 		{
 			"id": "workbench",
 			"title": "Build a Workbench",
-			"hint": "Hold your hammer, press R and pick Workbench: 16 sticks, 6 twine and 4 stones. It unlocks better tools.",
+			"hint": "Hold your hammer, press R and pick Workbench: 16 sticks, 6 twine and 8 stones. It unlocks better tools.",
 			"after": [
 				"hammer"
 			],

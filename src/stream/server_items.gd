@@ -1147,7 +1147,14 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	position = _settled(position)
 
 	# Same kind within MERGE_M joins the item already lying there (stackables without wear or instance data only), so a heap grows as one ground item.
-	if item_wear == 0 and item_inst.is_empty() and table.stack_of(number) > 1:
+	# A pile stopped by a building or solid object moves the rest beside it, on the side away from the pile's centre where it fell, and looks
+	# again there (PLAN.md 5b PL-1, gate review PR #1322), so the next drop joins that pile instead of stacking a second cone on the first.
+	var tries: int = 4 if item_wear == 0 and item_inst.is_empty() and table.stack_of(number) > 1 else 0
+
+	while tries > 0:
+		tries -= 1
+		var stopped: Dictionary = {}
+
 		for id in _items.keys():
 			if not _items.has(id):
 				continue
@@ -1170,7 +1177,8 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 				var added: int = mini(count, room)
 
 				if _cone_radius_of(number, int(near["count"]) + added) > 0.0 and _pile_blocked(near["pos"], _cone_radius_of(number, int(near["count"]) + added), id):
-					continue   # Dave 19 Nov 2026 (PLAN.md 5b): a building or solid object stops a pile; the stone starts a new pile where it fell (PROVISIONAL PL-1)
+					stopped = near   # Dave 19 Nov 2026 (PLAN.md 5b): a building or solid object stops a pile; the rest starts a new pile beside it (PROVISIONAL PL-1)
+					continue
 
 				near["count"] = int(near["count"]) + added
 				near["left"] = maxf(PILE_LIFETIME_S if int(near["count"]) >= PILE_MIN else WORLD_ITEM_LIFETIME_S, lifetime_s)
@@ -1186,6 +1194,17 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 					return true
 
 				break   # the rest (over the cap) falls through and starts a second pile
+
+		if stopped.is_empty():
+			break
+
+		var away: Vector2 = Vector2(position.x - stopped["pos"].x, position.z - stopped["pos"].z)
+
+		if away.length() < 0.01:
+			away = Vector2(1.0, 0.0)
+
+		away = away.normalized() * (_cone_radius_of(number, int(stopped["count"])) + MERGE_M)
+		position = _settled(Vector3(stopped["pos"].x + away.x, position.y, stopped["pos"].z + away.y))
 
 	var first: int = mini(count, PILE_CAP)
 	_items[_next_id] = {"number": number, "count": first, "pos": position, "left": maxf(PILE_LIFETIME_S if first >= PILE_MIN else WORLD_ITEM_LIFETIME_S, lifetime_s), "wear": item_wear}
@@ -19223,8 +19242,8 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 			return _hint_count(st, "made:stone_axe") >= 1
 		"tree_down":
 			return _hint_count(st, "event:tree_felled") >= 1
-		"6_sticks_3_stones":
-			return inv.count_of(table.number_of("stick")) >= 6 and inv.count_of(table.number_of("stone")) >= 3
+		"6_sticks_6_stones":
+			return inv.count_of(table.number_of("stick")) >= 6 and inv.count_of(table.number_of("stone")) >= 6
 		"kit_made":
 			return _hint_count(st, "made:campfire_kit") >= 1
 		"fire_placed":

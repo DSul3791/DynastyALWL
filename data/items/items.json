@@ -2850,7 +2850,7 @@
 		"rock_pile": {
 			"number": 235,
 			"name": "Rock pile",
-			"description": "A heap of 45 stones. Set it down to store rock; pick it up to carry it.",
+			"description": "A heap of 90 stones. Set it down to store rock; pick it up to carry it.",
 			"kind": "placeable",
 			"stack": 1,
 			"unstackable": true,

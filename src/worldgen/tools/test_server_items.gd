@@ -231,9 +231,26 @@ func _init() -> void:
 	items._items[880001] = {"number": items.table.number_of("storage_chest") if items.table.number_of("storage_chest") > 0 else 1, "count": 1, "pos": pile_at + Vector3(-(cone_r + 0.3), 0.0, 0.0), "left": 1.0e9, "struct": {"kind": "chest", "yaw": 0.0}}
 	if items._structures.has("chest"):
 		items.drop_in_world(stone, 200000, pile_at + Vector3(0.5, 0.0, 0.0))
-		check(items.world_item_count() == 3 and int(items._items[items._items.keys()[0]]["count"]) == 20010, "a pile that would grow into a building stops; the stone starts a new pile where it fell")
+		var beside: Array = items._items.keys().filter(func(k): return int(items._items[k]["count"]) == 200000)
+		check(items.world_item_count() == 3 and int(items._items[items._items.keys()[0]]["count"]) == 20010 and beside.size() == 1 and items._items[beside[0]]["pos"].x > pile_at.x + cone_r, "a pile that would grow into a building stops; the rest starts a new pile beside it, away from the building")
+		items.drop_in_world(stone, 10, pile_at + Vector3(0.5, 0.0, 0.0))
+		check(items.world_item_count() == 3 and int(items._items[beside[0]]["count"]) == 200010, "and the next drop there joins the pile beside, not a third cone on the first")
 	items._items.erase(880001)
 	items.clear_dropped(Vector3.ZERO, 1.0e7)
+	# A floor under a pile or a roof over it does not stop it (gate review, PR #1322): only what stands in the pile's own height range does.
+	if items._structures.has("foundation_section"):
+		items.drop_in_world(stone, 1000, pile_at)
+		var on_floor: int = items._items.keys()[0]
+		var floor_y: float = float(items._items[on_floor]["pos"].y)
+		var floor_def: Dictionary = items._structures["foundation_section"]
+		var floor_top: float = float(floor_def.get("top_m", 0.3))
+		items._items[880002] = {"number": 1, "count": 1, "pos": Vector3(pile_at.x, floor_y - floor_top, pile_at.z), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 0.0}}
+		items._items[880003] = {"number": 1, "count": 1, "pos": Vector3(pile_at.x, floor_y + 3.0, pile_at.z), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 0.0}}
+		items.drop_in_world(stone, 1000, pile_at + Vector3(0.2, 0.0, 0.0))
+		check(items.world_item_count() == 3 and int(items._items[on_floor]["count"]) == 2000, "a pile on a floor and under a roof stays one pile (%d items)" % items.world_item_count())
+		items._items.erase(880002)
+		items._items.erase(880003)
+		items.clear_dropped(Vector3.ZERO, 1.0e7)
 	items.drop_in_world(stone, ItemsScript.PILE_CAP + 50, pile_at)
 	check(items.world_item_count() == 2, "over the cap a second pile starts")
 	var pile_id: int = -1

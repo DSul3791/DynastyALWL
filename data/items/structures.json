@@ -433,7 +433,7 @@
 			"sound": "foundation",
 			"clears_grass": true,
 			"use": "unpile",
-			"stones": 45
+			"stones": 90
 		},
 "log_seat": {"kit": "log_seat_kit", "item": "log_seat", "state": 59, "footprint_x": 0.5, "footprint_z": 0.5, "cap_per_chunk": 12, "look": "log_seat", "sound": "timber", "clears_grass": false, "comfort": "log_seat", "gap_exempt": true, "use": "sit", "sit_face": "free"},
 		"stool": {"kit": "stool_kit", "item": "stool", "state": 60, "footprint_x": 0.45, "footprint_z": 0.45, "cap_per_chunk": 12, "look": "stool", "sound": "timber", "clears_grass": false, "comfort": "stool", "gap_exempt": true, "use": "sit", "sit_face": "free"},

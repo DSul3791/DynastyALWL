@@ -423,7 +423,7 @@ func _init() -> void:
 	check(door_id != 0, "a doorway frame is placed")
 	items.action(2, Net.ACT_USE_STRUCT, door_id, 0, 0, Vector3.ZERO)
 	check(items._items[door_id]["struct"]["kind"] == "doorway_section" and items._struct_state(items._items[door_id]) == 26, "E on an empty doorway frame does nothing")
-	# A rock pile: placed from the item, E gives back all 45 stones.
+	# A rock pile: placed from the item, E gives back all 90 stones (0.5 kg each, Dave 19 Nov 2026).
 	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("rock_pile"), 0, 1, Vector3.ZERO)
 	items.place_item(2, items.table.number_of("rock_pile"), Vector3(600.0, 10.0, 606.0), 0)
 	var pile_id: int = 0
@@ -446,7 +446,7 @@ func _init() -> void:
 	var stones_before: int = items.inventory_of(2).count_of(stone_n) + int(on_ground.call())
 	items.action(2, Net.ACT_USE_STRUCT, pile_id, 0, 0, Vector3.ZERO)
 	var stones_after: int = items.inventory_of(2).count_of(stone_n) + int(on_ground.call())
-	check(not items._items.has(pile_id) and stones_after == stones_before + 45, "E on a rock pile gives all 45 stones back, to the pack or the ground (%d to %d)" % [stones_before, stones_after])
+	check(not items._items.has(pile_id) and stones_after == stones_before + 90, "E on a rock pile gives all 90 stones back, to the pack or the ground (%d to %d)" % [stones_before, stones_after])
 	items.report_position(2, Vector3(450.0, 10.0, 450.0))
 	# Bracing supports are spheres of influence (Dave 2026-10-22): a prop holds everything within 5 m, the radius shrinks with its condition, spheres overlap.
 	items.report_position(2, Vector3(700.0, 10.0, 700.0))
