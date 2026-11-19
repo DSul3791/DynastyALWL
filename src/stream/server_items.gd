@@ -6594,7 +6594,7 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 						(added[added.size() - 1][5] as Dictionary)["road"] = true   # a surveyed road's patch (the client keeps the grass off 2 m either side)
 
 					if it.has("struct") and it["struct"].has("len"):
-						(added[added.size() - 1][5] as Dictionary)["pitch"] = float(it["struct"]["pitch"])   # a pipe run laid from the hand: its tilt and length (protocol 136)
+						(added[added.size() - 1][5] as Dictionary)["pitch"] = float(it["struct"]["pitch"])   # a pipe run laid from the hand: its tilt and length (protocol 138)
 						(added[added.size() - 1][5] as Dictionary)["len"] = float(it["struct"]["len"])
 
 					if it.has("struct") and _water.pieces.get(id, {}).has("level_port"):
@@ -17813,7 +17813,7 @@ func _new_pipe(kind: String, pose: Dictionary, paid: int, born: float) -> int:
 	return id
 
 
-# pipe_lay (protocol 136): the held pack slot holds a pipe (lay a run from `from` to `to`) or a tap or drip head (fit it on the open pipe end at `to`).
+# pipe_lay (protocol 138): the held pack slot holds a pipe (lay a run from `from` to `to`) or a tap or drip head (fit it on the open pipe end at `to`).
 # Every refusal says why.
 const PIPE_LAY_PACE_MS := 150   # one pipe_lay a player at most this often (each one looks over the water pieces)
 var _pipe_lay_msec: Dictionary = {}   # peer -> msec of the last pipe_lay

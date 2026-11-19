@@ -400,6 +400,20 @@ Assumed on Dave's behalf (provisional):
 - ATTR-3: existing characters are converted (50 + 5 x old), not re-rolled; attributes they never had read 50.
 - ATTR-4: the band weights 5/20/50/20/5 (data/items/attributes.json).
 
+## 61. Grass grows back onto paths in patches
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test on 19 Nov 2026. Fixed by PR #1313, merged to dev at 7f80e652 (head e33a3a8c) after independent review. Lane A (Dave's PC) on the exact head: 52 of 52 selected tests passed (51 fast + test_flora_density), including test_placed_clearing; parse check ok. Fix not yet played.
+
+Dave, 19 Nov 2026: "often grass is regrowing into the paths in patches can you check to see why that is happening. it should not be happening."
+
+**Cause:** the grass checked "is this a path or a cleared spot" only at a few ground points per 6 m cell. Each point then scattered its clump of blades up to half the point spacing away (about 0.6 m near, up to 2.85 m far off). A point just beside a path dropped its clump onto it; a trodden path is only 0.6 m wide. Forest litter had the same flaw.
+
+**Required outcome:** no grass blade or litter leaf stands on a trodden path, a surveyed road's 3 m strip, or a placed piece's clearing, near or far.
+
+**Acceptance:** walk a long trodden path and a surveyed road, near and looking far down them: no grass tufts or leaves on them; grass stands right beside them as before.
+
+Not changed: shore reeds and pebbles at a water's edge, and wild small plants (a separate system). A wide grass blade beside a path can still lean over its edge by up to about 0.4 m.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.

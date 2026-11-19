@@ -4260,7 +4260,7 @@ func inv_slots() -> int:
 # With a pipe in hand every laid pipe near by glows bright blue and every point a pipe can start from shows a glowing ring: a barrel's bottom centre, a
 # trough's or cistern's outlet, a well's or pump's spout. The aim takes the nearest ring, or the nearest point along a blue pipe (a dot slides along it
 # as you look). The first left click starts a run there; a line then follows the aim, green while the pipe in the pack covers it (in reach, at most
-# 30 m), red when it does not. The second click lays the run (pipe_lay, protocol 136): to a ring or a pipe, or ending in the open air ahead. Right click,
+# 30 m), red when it does not. The second click lays the run (pipe_lay, protocol 138): to a ring or a pipe, or ending in the open air ahead. Right click,
 # or putting the pipe away, drops the start. With a tap or drip head in hand the open pipe ends show as rings and a click fits it on the one aimed at.
 # The server checks it all again (server_items.pipe_lay). Client side only: nobody else sees the rings, the blue or the line.
 const PipeRules := preload("res://src/shared/pipe_rules.gd")
