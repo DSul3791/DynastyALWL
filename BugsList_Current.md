@@ -266,6 +266,26 @@ Assumed on Dave's behalf (provisional):
 - CH-1: the ruling covers every storage container, not only those named chest; vehicles keep their payload.
 - CH-2: this supersedes the 18 Nov ruling that the Large wooden chest holds more weight than the Ornate chest; the Large wooden chest now differs by its larger footprint and its slots (42 against 48).
 
+## 54. Stumps hang in the air after digging out a tree
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test on 19 Nov 2026. Fixed by PR #1294, merged to dev at 4bd5b878 (head ae18b8a5) after independent review. Lane B (David4) on the exact head: 252 of 252 selected tests passed, including the new test_stump_undermined; validate_items 0 errors; join smoke clean. Fix not yet played.
+
+Dave, 19 Nov 2026: "when I dig under trees with a shovel and remove all the dirt the trees fall but the stumps get stuck in the air and cant be broken or chopped up. they should just break and fall to the gorund." Then: "I was thinking the stump can just break into its components and fall".
+
+**Cause:** a tree brought down by digging always left its stump at the old ground height, and nothing looked at a stump's ground again (loose things settle after a dig; stumps were skipped). A stump has no collision for the axe, so over a hole the swing went through it to the bottom of the hole and never named the stump.
+
+**Required outcome:** a stump whose ground is dug away breaks into what chopping it gives (firewood, kindling, sticks by stump size, the existing stump drops) and the pieces fall to the ground below. A dug-out tree leaves no stump. Stumps already hanging over holes in a saved world break on their own soon after the server starts. Only the stumps near the dig are looked at.
+
+**Acceptance:** dig all the dirt from under a tree: it falls, its stump breaks, and firewood, kindling and sticks lie in the hole. Dig the ground from under an old stump: the same. Load a world with a floating stump: it is gone within a minute or so, its pieces on the ground.
+
+Checked, not changed: standing trees already fall when dug under; loose items and logs already settle. Boulders do not move when dug under either; not reported, left as they are.
+
+Assumed on Dave's behalf (provisional):
+
+- SU-1: a stump other than a dug-out tree's breaks when less than 35 % of the ground is left in a disc twice its radius plus 0.5 m wide and 0.6 m deep under it (drops.json dig_fell stump_*).
+- SU-2: the pieces are world drops (no player's luck), as when a road clears a stump.
+- SU-3: stumps loaded from a save are checked 25 at a time each slow tick.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
