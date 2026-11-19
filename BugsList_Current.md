@@ -12,7 +12,7 @@ The existing entry numbers are retained for tracking. Detailed behaviour has one
 
 ## 1. Level terrain without lifting the player or creating free fill
 
-**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): test_server_items Level checks (target held, nothing edited under the feet, no soil means no fill, fills use soil, foundation target). Found in Dave's play test (14 Nov he found the old Level working but "to small an area and its too week"; later the lifting below). Fix not yet played.
+**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): test_server_items Level checks (target held, nothing edited under the feet, no soil means no fill, fills use soil, foundation target). Found in Dave's play test (14 Nov he found the old Level working but "to small an area and its too week"; later the lifting below). Fix played 19 Nov (Dave play test: filling took soil to raise the level; cutting gave none back, entry 50).
 
 **Problem:** Raising soil beneath the player lifts them, and their new height then drives further raising. The resulting terrain climbs higher with repeated use.
 
@@ -51,11 +51,15 @@ The existing entry numbers are retained for tracking. Detailed behaviour has one
 
 ## 4. Keep the hoe menu readable on screen
 
-**Status: Implemented — awaiting player verification.** PR #1252 (branch claude/project-thread-8d4n34). Independently reviewed. Automated checks (run on Dave's PC, results in the PR): none possible headless; the 75% width and wrapping have not been seen. Found in Dave's play test. Fix not yet played.
+**Status: Implemented — awaiting player verification.** Second fix (PR #1283), after Dave's play test of the first one (PR #1252). Found in Dave's play test. Second fix not yet played.
+
+**Dave play test 19 Nov 2026** (screenshot of the hoe's right-click list): "this is what the right click menu on the hoe looks like. what is wrong here". The first fix did not work: the list started at the middle of the screen and ran off the right edge (the panel was anchored at the centre but grew only to the right), every row carried its full explanation so each line was cut off mid-sentence, and it lay over the hotbar and the "Level (right click: choose what it does)" caption on a faint backdrop.
 
 **Problem:** The hoe's right-click menu extends beyond the screen.
 
-**Required outcome:** Cap its width at 75% of the game viewport width and wrap text within that limit. Keep the menu inside the visible viewport.
+**Required outcome:** The list always fits inside the game window at any window size and text size, does not cover the hotbar or its caption, and reads as a menu.
+
+**Now:** a raised plate centred just above the hotbar caption; the six actions as short names (Dave's entry 5 names and order, unchanged), the current one on a lit band with a gold bar; only the highlighted action's explanation, wrapped inside the plate, under the list; the keys on a short line at the bottom. It follows the player's text size and is capped to the window; a plant list too long for the window shows the rows round the highlighted one with "..." for the rest. Headless test `test_hoe_menu` checks the plate is inside the window, above the caption and centred at every text size.
 
 **Acceptance:** All menu choices remain readable and selectable at the player's window size.
 
@@ -199,20 +203,41 @@ Recorded 19 Nov from Dave's own messages. Each of his lists of answers and probl
 | 48 | Felling, carrying and processing of the 15 Nov wood system | #1148-#1153 | Partly played: felling (entry 16), logs (17), saw (26); chopping block, sawbuck, carving station, bows and benches unclear |
 | 49 | Shovel name (16 Nov rename request) | #1182 | Unclear: on 17 Nov he wrote of making a "shovel" (entry 32), but that was his own word for it |
 
+## 50. Level gives no soil back when it cuts ground
+
+**Status: Implemented - awaiting player verification.** PR #1286, merged to dev e5272847 (head 607a6dde). The code was independently reviewed. Automated checks: Lane B (David4) 201 of 201 on the exact head, test_server_items included (a refused cut gives no soil; a cutting stroke gives soil back). Found in Dave's play test 19 Nov 2026. Fix not yet played.
+
+Dave, 19 Nov 2026: "when using the hoe in this playtest it takes soil to bring up the level but its not giving me soil back when it cuts down the level. if I am leveling and it has to cut down the soil it should give me back the soil its removing."
+
+**Cause:** entry 1 (#1252) charged soil for every fill, but nothing was ever credited for a cut; the soil was not lost or dropped, it was never given.
+
+**Required outcome:** when Level cuts high ground down, the player gets that soil back, at the same rate a fill of the same depth costs, so levelling neither creates nor destroys soil. Pathen, the two tilling modes (entry 6) and the survey road level to the ground's own average and move no soil either way; the shovel already gives soil when it digs and uses it when it fills.
+
+**Acceptance:** Level a slope with a high side. Cutting the high side adds Soil to the pack (or at the feet when the pack is full), and that Soil fills the low side on the strokes that follow.
+
 Delivered with no play evidence yet (not yet played): door system (13 Nov), plumbing and wells, backpack tiers #1171, cooking stations #1218, no spawning near builds #1215, tool tiers #1247 #1267, chisel tiers #1272, dig water #1268, the 18 Nov audit fixes, and the server and client split pieces.
 
-## 50. Chests refuse items when they are not full
+## 50. The first foundation snaps to an invisible grid
 
-Dave, play test 19 Nov 2026: "chests must have a weight limit which they shouldn't because they are not full but I cant put anything in them." Cause: every storage container had a weight cap in its data (`data/items/structures.json` `max_kg`: Woven chest 40 kg, Plank chest 150 kg and so on, placeholders since the first chest), and the server refused a put past it even with free slots. It was not a recent regression and not the player's own carry check.
+**Status: Implemented — awaiting player verification.** Found in Dave's play test on 19 Nov 2026, on dev around 607e25db. Fixed by PR #1284, merged to dev at 5d10056e after independent review. Lane B (David4) passed on the exact head 0000caa0: 30 of 30 placement and always-set tests, plus the startup and world-load smoke. The fix has not been played yet.
 
-Intended behaviour (Dave, 19 Nov 2026): a chest takes items until its slots are full, whatever they weigh.
+Dave, 19 Nov 2026: "trying to place a foundation down and it seems to be snapping to some imaginary grid but there are no other foundations down. the first foundation should be able to be placed anywhere facing any direction according to which way I am facing. if I turn it should turn with me."
 
-Status: Implemented - awaiting player verification. Found in Dave's play test, 19 Nov; PR #1281, fix not yet played. No storage container has a weight limit now (chests, crates, shelves, barrels, cupboards, racks, cellar and the rest); only a handcart, sled or wagon keeps its payload, which also limits a crate riding on it. The validator refuses a weight limit on anything but a vehicle.
+**Cause:** in `src/shared/placement_rules.gd`, `snap()` handled a foundation with no other foundation within reach the same way as any other building piece. It rounded the spot to a 2 m grid and the turn to a quarter turn. The ghost and the server both use `snap()`, so both snapped the same way. This has been the behaviour since building pieces were first added. Entries 1 to 6 and the placement work in #1216 did not cause it.
 
-Assumed on Dave's behalf (provisional):
+**Required outcome:**
+- **First foundation:** with no foundation beside it or under it, a foundation of any tier, including the Crude thatch floor, goes exactly where it is aimed. It faces the way the player faces and turns as the player turns. The ghost and the server agree.
+- **Later foundations:** a foundation placed next to or on top of a standing one still snaps to it, edge to edge, corner to corner or stacked, at that foundation's turn.
+- **Pieces on a turned foundation:** everything that snaps to a foundation follows its turn. That covers:
+  - walls, doorways and windows on its edges;
+  - floors, pillars and railings;
+  - the next foundation;
+  - stations and furniture on its top;
+  - roof panels and roof corners on its walls and ceilings;
+  - saved building plans.
+- **Slopes:** the ground under a turned foundation is read at its own turn. So on a slope, a foundation turned 45 degrees can be too steep where the same foundation square on is not. The red ghost and the server's refusal agree.
 
-- CH-1: the ruling covers every storage container, not only those named chest; vehicles keep their payload.
-- CH-2: this supersedes the 18 Nov ruling that the Large wooden chest holds more weight than the Ornate chest; the Large wooden chest now differs by its larger footprint and its slots (42 against 48).
+**Acceptance:** with no foundation nearby, hold a foundation and turn. The ghost turns smoothly with you and follows the aim with no jumps. Place it at an odd angle. Then add a second foundation, walls, a doorway and a roof: each one lines up with the turned first foundation.
 
 ## Rewrite interpretation
 
@@ -223,9 +248,13 @@ Dave requested this rewrite around the intended experience rather than a literal
 - LV-1: one held Level action lasts while strokes come within 1.5 s and the feet move less than 0.6 m; its target height is kept for that long.
 - LV-2: Level leaves the ground within 1.2 m of the feet untouched.
 - LV-3: one Soil fills 0.75 m3.
+- LV-4: Level's cuts give Soil whatever the ground was (sand or clay ground too); Soil the pack cannot hold drops at the player's feet, where the next fill can use it (weight is the real limit; no ground-item cap).
 - RK-1: boulders give 0.04 stones per unit of volume (1 m rock about 370 stones, 0.3 m about 10).
 - TG-1: the garden blend is no steeper than 1 in 2 (about 27 degrees), gentler than the 45-degree limit.
 - TG-2..TG-5: at most 1,500 ground edits for one garden, 8 a step; Till Soil 2m uses 0.9 m spheres; the preview asks the server every 250 ms at most.
 - PG-1: Plant takes seeds from the crafting stock within 12 m.
 - PA-1: Pathen makes at most 6 ground edits a click.
+- HM-1: the hoe list is a 600 px plate (grows with text sizes above 1.0) centred above the hotbar caption; row names 24 px, explanation 20 px before the text size; the names stay as entry 5 has them ("Pathen" is the catalog's word, DYNASTY_MASTER_ITEMS.md).
+- FF-1 (entry 50): only foundations leave the grid when nothing is near them. Other building pieces with nothing to snap to keep the grid and quarter turns. That covers a lone wall, a fence or a garden plot. Dave's ruling named only the first foundation.
+- FF-2 (entry 50): a roof panel rests across the edge the player is facing, if that edge is within 45 degrees of where they look. It takes that edge's turn. Before, the facing was rounded to a quarter turn, which matched only unturned buildings.
 - Crops need tilled soil (Plant does not till); scatter stone, flint and ores count as small rocks to pick up; wild shrubs are not checked for duplicates.

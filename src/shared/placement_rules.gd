@@ -36,6 +36,7 @@ const ROOF_PANEL_KIND := "roof_panel"   # structures.json piece_kind of a sloped
 const ROOF_HIP_KIND := "roof_hip"     # structures.json piece_kind of a roof corner (GOALS-REPAIR A-37): a hip over a building's corner, two sloped faces meeting the panels on both sides
 const ROOF_PANEL_WIDTH_M := 2.0      # a panel is as wide as a wall (and a ceiling cell), so a row of them roofs a wall's length
 const ROOF_ROW_REACH_M := 6.0        # roof edges are looked for only on pieces this near the cursor (an edge within ANCHOR_REACH_M, or a panel middle with its run and a wall cell)
+const FACING_COS := 0.7071          # a roof panel rises across an edge the player faces within 45 degrees of (cos 45)
 const ROOF_BURY_M := 0.1             # a panel's low edge may sink this far into the ground before it is "buried"
 const DOOR_ATTACH := "doorway"       # structures.json attach_to of a door (BUGLIST-002): it hangs in the opening of a doorway frame, whose row has "opening"
 const DOORWAY_HEIGHT_M := 2.0        # a doorway's clear height: the cursor is "in" the opening from the frame's foot up to here
@@ -63,9 +64,10 @@ static func structure_of_kit(cfg: Dictionary, kit_id: String) -> Dictionary:
 
 
 # A station, furniture or a fire aimed at a foundation's or a ceiling's top stands on it (support_top); anything else not a building piece keeps its spot.
-# Building pieces (structures.json "piece": true) click to a grid: x and z to the piece's snap_m (else piece_snap_m) metres, the turn to
-# a quarter circle, so neighbours meet edge to edge. A wall or floor near a foundation (rows: {"pos", "state"}) snaps to the
-# nearest of the foundation's anchors instead and stands on its top; a pillar snaps to the middle or a corner of a foundation or a ceiling
+# A foundation with nothing of its kind to go beside or on stays where it is aimed, turned as the player faces (Dave 19 Nov 2026: "the first foundation
+# should be able to be placed anywhere facing any direction"). Other building pieces (structures.json "piece": true) with nothing to snap to click to a
+# grid: x and z to the piece's snap_m (else piece_snap_m) metres, the turn to a quarter circle (PROVISIONAL FF-1). A wall or floor near a foundation
+# (rows: {"pos", "state", "yaw"}) snaps to the nearest of the foundation's anchors instead, turned with it (local_of, world_of), and stands on its top; a pillar snaps to the middle or a corner of a foundation or a ceiling
 # (pillar_anchors). Where two bases offer the same point (a ceiling laid on a foundation), the one whose top is nearest the cursor's height
 # wins. Anything else keeps its spot and turn. `mode` is a roof panel's rise or fall from where it rests (0 rises, 1 falls: roof_panel_spot), or a
 # roof corner's shape where no panel beside it decides (0: 45, 1: 65: roof_hip_pick).
@@ -98,6 +100,8 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 
 		if not beside.is_empty():
 			return beside
+
+		return [spot, posmod(yaw_deg, 360), false]   # the first foundation: anywhere, facing the player's way
 
 	var piece_kind: String = str(def.get("piece_kind", ""))
 
@@ -143,7 +147,9 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 			if anchors.is_empty():
 				continue
 
-			var local: Vector2 = Vector2(spot.x - row["pos"].x, spot.z - row["pos"].z)
+			var local: Vector2 = local_of(row, spot)
+			var base_yaw: float = float(row.get("yaw", 0.0))
+			var own_turn: int = posmod(int(round(base_yaw)) + int(round((float(yaw_deg) - base_yaw) / float(step))) * step, 360)   # an anchor with no turn of its own: the player's, in quarter turns of the base
 
 			if absf(local.x) > float(base.get("footprint_x", 4.0)) * 0.5 + 1.0 or absf(local.y) > float(base.get("footprint_z", 4.0)) * 0.5 + 1.0:
 				continue
@@ -154,16 +160,18 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 				if d >= ANCHOR_REACH_M:
 					continue
 
-				var at: Vector3 = Vector3(row["pos"].x + float(anchor[0]), row["pos"].y + anchor_top(base), row["pos"].z + float(anchor[1]))
+				var flat: Vector2 = world_of(row, Vector2(float(anchor[0]), float(anchor[1])))
+				var at: Vector3 = Vector3(flat.x, row["pos"].y + anchor_top(base), flat.y)
+				var anchor_turn: int = posmod(int(round(float(anchor[2]) + base_yaw)), 360) if anchor.size() > 2 else own_turn
 
 				if piece_kind == PILLAR_KIND and _pillar_at(cfg, at, rows):
 					if held.is_empty() or d < float(held[2]):
-						held = [at, turned, d]
+						held = [at, anchor_turn, d]
 
 					continue
 
 				if best.is_empty() or d < float(best[2]) - ANCHOR_TIE_M or (d <= float(best[2]) + ANCHOR_TIE_M and absf(at.y - spot.y) < absf((best[0] as Vector3).y - spot.y)):
-					best = [at, int(anchor[2]) if anchor.size() > 2 else turned, d]
+					best = [at, anchor_turn, d]
 
 		if best.is_empty():
 			best = held
@@ -178,6 +186,16 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 
 	var grid: float = maxf(float(def.get("snap_m", cfg.get("piece_snap_m", 1.0))), 0.1)
 	return [Vector3(round(spot.x / grid) * grid, spot.y, round(spot.z / grid) * grid), turned, false]
+
+
+# `spot` across the ground in the frame of `row` ({pos, yaw degrees}): metres along the piece's own x and z from its middle. world_of goes back.
+# A foundation may stand at any turn (the first one faces the player's way), so every anchor, edge and neighbour of one is read through these.
+static func local_of(row: Dictionary, spot: Vector3) -> Vector2:
+	return Vector2(spot.x - row["pos"].x, spot.z - row["pos"].z).rotated(deg_to_rad(float(row.get("yaw", 0.0))))
+
+
+static func world_of(row: Dictionary, local: Vector2) -> Vector2:
+	return local.rotated(-deg_to_rad(float(row.get("yaw", 0.0)))) + Vector2(row["pos"].x, row["pos"].z)
 
 
 # Where a pillar may stand on `base` (a structures.json row): the middle and the four corners of a foundation (4 x 4 m) or of a ceiling cell
@@ -318,7 +336,8 @@ static func roof_connections(cfg: Dictionary, rows: Array, near: Vector3) -> Arr
 				out.append({"p": Vector3(pos.x + shift.x, pos.y + float(base.get("height_m", WALL_HEIGHT_M)), pos.z + shift.y), "n": across})
 		elif kind == "floor":
 			for edge in edge_anchors(base):
-				out.append({"p": Vector3(pos.x + float(edge[0]), pos.y + anchor_top(base), pos.z + float(edge[1])), "n": Vector2(float(edge[0]), float(edge[1])).normalized()})
+				var flat: Vector2 = world_of(row, Vector2(float(edge[0]), float(edge[1])))
+				out.append({"p": Vector3(flat.x, pos.y + anchor_top(base), flat.y), "n": Vector2(float(edge[0]), float(edge[1])).normalized().rotated(-turn)})
 		elif kind == ROOF_PANEL_KIND:
 			var half_run: float = float(base.get("run_m", ROOF_PANEL_WIDTH_M)) * 0.5
 			var half_rise: float = roof_panel_rise(base) * 0.5
@@ -330,7 +349,8 @@ static func roof_connections(cfg: Dictionary, rows: Array, near: Vector3) -> Arr
 
 
 # A roof panel rests by one end on a horizontal edge (roof_connections) and runs across it, so either end can be the anchored one. Its spot is its middle and
-# it rises the way the player faces (its -Z; `yaw_deg` is that facing in quarter turns, and comes back unchanged): so the edge must lie across the facing.
+# it rises across the edge, the one of its two ways within 45 degrees of the way the player faces (its -Z; `yaw_deg`): so the edge must lie across the
+# facing. The turn that comes back is the edge's (a building on a foundation turned any way, local_of), not the camera's.
 # `mode` 0: the anchored end is the low one, the panel goes on past the edge and rises (a roof leaving a wall top); `mode` 1: the anchored end is the high one,
 # the panel comes back the other way and falls from the edge. Returns [spot, yaw in degrees, true], or [] when no edge across the facing is near.
 # `spot` is the cursor, or an earlier answer (the client sends the ghost's middle, and the server snaps again): the edge counts by the nearer of its own
@@ -338,18 +358,22 @@ static func roof_connections(cfg: Dictionary, rows: Array, near: Vector3) -> Arr
 # A `spot` that is exactly the middle of the panel the OTHER mode would put on an edge (within 0.05 m) is that panel: a saved building plan replays pieces by
 # position and turn only, so a falling panel comes back falling whatever mode the replay sends.
 static func roof_panel_spot(cfg: Dictionary, def: Dictionary, spot: Vector3, yaw_deg: int, mode: int, rows: Array) -> Array:
-	var yaw: int = posmod(int(round(float(yaw_deg) / 90.0)) * 90, 360)
-	var rising: Vector2 = Vector2(-sin(deg_to_rad(float(yaw))), -cos(deg_to_rad(float(yaw))))
+	var facing: Vector2 = Vector2(-sin(deg_to_rad(float(yaw_deg))), -cos(deg_to_rad(float(yaw_deg))))
 	var half_run: float = float(def.get("run_m", ROOF_PANEL_WIDTH_M)) * 0.5
 	var half_rise: float = roof_panel_rise(def) * 0.5
-	var leave: Vector2 = -rising if mode > 0 else rising   # the way the panel goes on from the edge
 	var best: Vector3 = Vector3(NAN, NAN, NAN)
+	var best_yaw: int = 0
 	var best_d: float = ANCHOR_REACH_M
 
 	for edge in roof_connections(cfg, rows, spot):
-		if absf(rising.dot(edge["n"])) < 0.99:
+		var across: float = facing.dot(edge["n"])
+
+		if absf(across) < FACING_COS - 0.001:
 			continue
 
+		var rising: Vector2 = (edge["n"] as Vector2) * signf(across)
+		var yaw: int = posmod(int(round(rad_to_deg(atan2(-rising.x, -rising.y)))), 360)   # the turn whose -Z is `rising`
+		var leave: Vector2 = -rising if mode > 0 else rising   # the way the panel goes on from the edge
 		var at: Vector3 = edge["p"]
 		var other: Vector3 = Vector3(at.x - leave.x * half_run, at.y + (half_rise if mode > 0 else -half_rise), at.z - leave.y * half_run)   # the middle the other mode puts on this edge
 
@@ -364,9 +388,10 @@ static func roof_panel_spot(cfg: Dictionary, def: Dictionary, spot: Vector3, yaw
 
 		if is_nan(best.x) or d < best_d - ANCHOR_TIE_M or (d <= best_d + ANCHOR_TIE_M and absf(middle.y - spot.y) < absf(best.y - spot.y)):
 			best = middle
+			best_yaw = yaw
 			best_d = d
 
-	return [] if is_nan(best.x) else [best, yaw, true]
+	return [] if is_nan(best.x) else [best, best_yaw, true]
 
 
 # A roof corner (GOALS-REPAIR A-37, piece_kind ROOF_HIP_KIND) covers the 2 m square at a building's corner where two roof runs meet: two sloped faces, each
@@ -416,13 +441,12 @@ static func roof_hip_pick(cfg: Dictionary, def: Dictionary, spot: Vector3, mode:
 	var base_y: float = best[1]
 	var yaw: int = -1
 
-	for q in [0, 90, 180, 270]:   # the quarter turn whose -Z and -X are the two rising ways
-		var t: float = deg_to_rad(float(q))
-		var minus_z: Vector2 = Vector2(-sin(t), -cos(t))
+	for pair in [[best[2], best[3]], [best[3], best[2]]]:   # the turn whose -Z and -X are the two rising ways (a building may stand at any turn)
+		var t: float = atan2(-(pair[0] as Vector2).x, -(pair[0] as Vector2).y)
 		var minus_x: Vector2 = Vector2(-cos(t), sin(t))
 
-		if (minus_z.dot(best[2]) > 0.99 and minus_x.dot(best[3]) > 0.99) or (minus_z.dot(best[3]) > 0.99 and minus_x.dot(best[2]) > 0.99):
-			yaw = q
+		if minus_x.dot(pair[1]) > 0.99:
+			yaw = posmod(int(round(rad_to_deg(t))), 360)
 			break
 
 	var kind: String = str(def.get("kind", ""))
@@ -514,7 +538,9 @@ static func foundation_stack(def: Dictionary, spot: Vector3, rows: Array) -> Arr
 		if int(row["state"]) != int(def.get("state", -1)):
 			continue
 
-		if absf(spot.x - row["pos"].x) > half_x or absf(spot.z - row["pos"].z) > half_z:
+		var local: Vector2 = local_of(row, spot)
+
+		if absf(local.x) > half_x or absf(local.y) > half_z:
 			continue
 
 		layers += 1
@@ -548,7 +574,8 @@ static func foundation_neighbor(def: Dictionary, spot: Vector3, rows: Array) -> 
 				if ox == 0 and oz == 0:
 					continue
 
-				var cand: Vector3 = Vector3(row["pos"].x + float(ox) * width, row["pos"].y, row["pos"].z + float(oz) * depth)
+				var flat: Vector2 = world_of(row, Vector2(float(ox) * width, float(oz) * depth))   # edge to edge along the neighbour's own sides, at its turn
+				var cand: Vector3 = Vector3(flat.x, row["pos"].y, flat.y)
 				var d: float = Vector2(spot.x - cand.x, spot.z - cand.z).length()
 
 				if d >= best_d:

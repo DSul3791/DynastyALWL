@@ -90,14 +90,16 @@ func _slope_checks(cfg: Dictionary) -> void:
 		check((Rules.steep(cfg, BASE_KIT, Vector3(x, 10.0, 500.0), 0.0, plane) == "") == bool(c[2]), "the ghost's slope rule agrees on %s ground" % str(c[0]))
 		x += 40.0
 
-	# Turned a camera's 45 degrees the same 4 m square reaches 2.83 m from its middle (rise 0.79 m on a 0.14 slope), but a foundation is placed at a quarter turn: the
-	# server samples 2 m corners and takes it, so the ghost must sample the snapped turn (held_item passes the snapped yaw) and not the camera's.
+	# Turned 45 degrees the same 4 m square reaches 2.83 m from its middle (rise 0.79 m on a 0.14 slope). The first foundation now goes down at the player's
+	# own turn (Dave 19 Nov 2026), so at 45 degrees it IS steep there: the server refuses it and the ghost, sampling the same turn, is red too; facing square on it places.
 	slope = [0.14, x]
 	var plane14: Callable = func(px: float, _pz: float) -> float: return 10.0 + 0.14 * (px - x)
-	check(Rules.steep(cfg, BASE_KIT, Vector3(x, 10.0, 500.0), 0.0, plane14) == "" and Rules.steep(cfg, BASE_KIT, Vector3(x, 10.0, 500.0), deg_to_rad(45.0), plane14) == "steep", "a 0.14 slope: quarter turn passes, the camera's 45 degrees would read it as steep")
+	check(Rules.steep(cfg, BASE_KIT, Vector3(x, 10.0, 500.0), 0.0, plane14) == "" and Rules.steep(cfg, BASE_KIT, Vector3(x, 10.0, 500.0), deg_to_rad(45.0), plane14) == "steep", "a 0.14 slope: square on passes, 45 degrees reads it as steep")
 	var before45: int = rows_of(BASE_KIND).size()
 	place(BASE_KIT, Vector3(x, 10.0, 500.0), 45)
-	check(rows_of(BASE_KIND).size() == before45 + 1, "the server takes that foundation asked at 45 degrees (it snaps to a quarter turn; %s)" % str(said))
+	check(rows_of(BASE_KIND).size() == before45 and said.has("The ground is too steep there."), "the server refuses that foundation at 45 degrees, as the ghost shows (%s)" % str(said))
+	place(BASE_KIT, Vector3(x, 10.0, 500.0), 0)
+	check(rows_of(BASE_KIND).size() == before45 + 1, "and takes it square on (%s)" % str(said))
 
 
 func _off_ground_checks(cfg: Dictionary) -> void:
