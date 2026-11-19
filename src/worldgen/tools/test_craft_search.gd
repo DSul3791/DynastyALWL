@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Craft menu search (Dave 5 Nov 2026, by name only; 10 Nov the made item's own name and the Admin kits): a typed word matches the recipe's name or what it makes, never its ingredients or tools; any case, several words together,
-# inside the chosen category tab; an empty box shows everything.
+# across every category tab (Dave 19 Nov 2026); an empty box shows the chosen tab, All everything.
 #   godot --headless --path . --script res://src/worldgen/tools/test_craft_search.gd
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
