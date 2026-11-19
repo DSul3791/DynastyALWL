@@ -85,7 +85,7 @@ func _init() -> void:
 	check(net.contains("func hello(player_key: String, build: int)") and net.contains("func join_refused(text: String)"), "hello carries the build; join_refused exists")
 	check(FileAccess.get_file_as_string("res://src/client/inventory_view.gd").contains("net.hello.rpc_id(1, _player_key(), BuildStamp.stamped_build())"), "the client sends its stamped build")
 	check(FileAccess.get_file_as_string("res://scenes/bot/bot_main.gd").contains("BuildStamp.stamped_build()"), "the load-test bot sends it too")
-	check(client.contains("net.join_refused_received.connect(_on_join_refused)") and client.contains("_connect_window.fail(\"Update required\""), "the client shows the refusal")
+	check(client.contains("net.join_refused_received.connect(_on_join_refused)") and client.contains("func _on_join_refused(text: String, title: String = \"Update required\")") and client.contains("_connect_window.fail(title, _join_refused"), "the client shows the refusal")
 	# One line each: Windows checkouts end lines with CRLF, so no check spans a line break.
 	var lost_at: int = client.find("func _on_server_lost() -> void:")
 	var guard_at: int = client.find("return   # dropped after a refusal", lost_at)
