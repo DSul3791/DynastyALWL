@@ -696,6 +696,34 @@ func alarm_near(point: Vector3, radius: float) -> void:
 		_bolt(a, point, species_def(str(a["sp"])))
 
 
+# A dig or fill changed the ground round `centre` (terrain_server _dig_ground / _fill_ground): every animal standing there comes to rest on
+# the ground as it is now, so one dug out from under drops and one buried under a fill climbs onto it (Dave 19 Nov 2026 play test). Animals in
+# the air, on a perch, in a burrow, in a cave or swimming keep their height. Cost: one pass over the animals and a ground read for each one there.
+func ground_changed(centre: Vector3, radius: float) -> void:
+	if not ground_height.is_valid():
+		return
+
+	for id in animals:
+		var a: Dictionary = animals[id]
+		var p: Vector3 = a["pos"]
+
+		if Vector2(p.x - centre.x, p.z - centre.z).length() > radius + 1.0:
+			continue
+
+		if a["state"] == HIDDEN or a.has("fly") or bool(a.get("perched", false)) or bool(a.get("in_cave", false)):
+			continue
+
+		var def: Dictionary = species_def(str(a["sp"]))
+
+		if swims(def) and in_water(def, p):
+			continue
+
+		var y: float = float(ground_height.call(p.x, p.z))
+
+		if not is_nan(y) and absf(y - p.y) > 0.05:
+			a["pos"] = Vector3(p.x, y, p.z)
+
+
 # The animals a snare can reach: [{id, sp, pos}] within radius of the point (flat distance), burrowed ones left out.
 func list_near(point: Vector3, radius: float) -> Array:
 	var out: Array = []
