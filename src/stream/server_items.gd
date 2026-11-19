@@ -16,6 +16,7 @@ const FellPose := preload("res://src/flora/fell_pose.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const RecipeTableScript := preload("res://src/shared/recipe_table.gd")
 const LuckScript := preload("res://src/shared/luck.gd")
+const Attributes := preload("res://src/shared/attributes.gd")   # every attribute is 0 to 100, 50 average (Dave 19 Nov 2026)
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const FloraLayout := preload("res://src/worldgen/runtime/flora_layout.gd")
 const CoverScript := preload("res://src/shared/cover.gd")
@@ -31,6 +32,8 @@ const Net := preload("res://src/stream/terrain_net.gd")
 
 const VERSION := 4                       # world_items.json: 4 (18 Nov 2026, audit finding 2) is a header naming the area files in world_items/ (AREA_M squares, each with its own rows; only the areas that changed are written); 3 (protocol 111) adds a crate's cart (index 18, its uid) and bed spot (19); 2 (protocol 108) the code lock at row index 17; versions 1 and 2 load with no crate on a cart, 1 with no locks
 const INVENTORY_VERSION := 2            # 2 added wear per slot; version 1 files load with zero wear
+const CHARACTERS_VERSION := 2           # characters.json: 2 (19 Nov 2026) has attributes on the 0 to 100 scale; a version 1 file's -10 to +10 values (and fitness training) are converted once at load
+const ATTRIBUTE_KEYS := ["luck", "fitness", "strength", "memory", "dexterity", "perception", "charisma"]
 const SHOWROOM_CAP := 300                # most items one showroom fill places
 const SHOWROOM_PATH := "res://data/items/showroom.json"
 const MERGE_M := 1.0                     # a stackable drop landing this close to the same kind on the ground joins it (Dave 2026-10-23, rock piles)
@@ -270,8 +273,10 @@ const CRAFT_QUEUE_ENTRIES := 10
 const CRAFT_QUEUE_MAX_COUNT := 20
 var _stance: Dictionary = {}        # peer -> 0 stand, 1 crouch, 2 sit, 3 lie
 var _moving: Dictionary = {}        # peer -> smoothed 0..1, 1 while walking about
-var _characters: Dictionary = {}   # player key -> {luck: int}, rolled once at first sight and never changed (job 77)
+var _characters: Dictionary = {}   # player key -> {luck: int 0..100, ...}, luck rolled once at first sight and never changed (job 77)
 var _luck_cfg: Dictionary = {}
+var _attr_cfg: Dictionary = {}      # data/items/attributes.json: the 0 to 100 scale and the graded creation roll
+var roll_new_characters: bool = false   # the game server turns this on (terrain_server.gd): a new character rolls its attributes; off (tools, unit tests) it starts average, 50 in each
 var _fitness_cfg: Dictionary = {}
 var send_energy: Callable       # (peer, energy percent 0..100)
 var _energy_cfg: Dictionary = {}    # data/items/energy.json
@@ -489,6 +494,7 @@ func setup(item_table, store_dir: String) -> void:
 	_vitals_cfg = VitalsRules.load_config()
 	_food_cfg = FoodEffects.load_config()
 	_luck_cfg = LuckScript.load_config()
+	_attr_cfg = Attributes.load_config()
 	_fitness_cfg = _load_fitness_config()
 	var energy_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/energy.json"))
 	_energy_cfg = energy_parsed if typeof(energy_parsed) == TYPE_DICTIONARY else {}
@@ -588,7 +594,8 @@ func peer_connected_hello(peer: int, key: String) -> void:
 		_dirty = true
 
 	if not _characters.has(key):
-		_characters[key] = {"luck": _create_luck(), "fitness": _fitness_default(), "train": 0.0, "skills_v": 2, "grace_s": _eat_cfg_value("first_hour_s", 3600.0)}
+		_characters[key] = {"train": 0.0, "skills_v": 2, "grace_s": _eat_cfg_value("first_hour_s", 3600.0)}
+		_characters[key].merge(_new_attributes())
 		_dirty = true
 
 	FoodEffects.resume(_food_of(peer), _now_game_s())   # and run on from where they stopped
@@ -2517,13 +2524,13 @@ func skill_factor(peer: int, action_name: String) -> float:
 
 func attributes_of(peer: int) -> Dictionary:
 	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
-	return {"strength": float(row.get("strength", 0)), "memory": float(row.get("memory", 0)), "fitness": float(fitness_of(peer)),
-		"dexterity": float(row.get("dexterity", 0)), "perception": float(row.get("perception", 0)), "charisma": float(row.get("charisma", 0))}
+	return {"strength": float(Attributes.clamp_value(row.get("strength", Attributes.NEUTRAL))), "memory": float(Attributes.clamp_value(row.get("memory", Attributes.NEUTRAL))), "fitness": float(fitness_of(peer)),
+		"dexterity": float(Attributes.clamp_value(row.get("dexterity", Attributes.NEUTRAL))), "perception": float(Attributes.clamp_value(row.get("perception", Attributes.NEUTRAL))), "charisma": float(Attributes.clamp_value(row.get("charisma", Attributes.NEUTRAL)))}
 
 
 func set_attribute(peer: int, name: String, value: int) -> void:
 	if _characters.has(_peer_key.get(peer, "")) and (_skills_cfg.get("traits", []) as Array).has(name):
-		_characters[_peer_key[peer]][name] = clampi(value, -10, 10)
+		_characters[_peer_key[peer]][name] = Attributes.clamp_value(value)
 		_dirty = true
 		_sync_skills(peer, true)
 
@@ -22160,26 +22167,30 @@ func _sync_food(peer: int, force: bool) -> void:
 
 
 # --- Luck (job 77) ---
-# Each character has a luck number, -10 to +10, rolled once when the server first sees the key (the creation screen will
-# send a chosen value instead) and stored in characters.json. Every server roll that a player takes part in goes through
+# Each character has a luck number, 0 to 100 (50 neutral, Dave 19 Nov 2026), rolled once with the other attributes (_new_attributes) when the server
+# first sees the key (the creation screen will send a chosen value instead) and stored in characters.json. Every server roll that a player takes part in goes through
 # roll_chance / roll_amount / fate so luck can nudge it (data/items/luck.json strength; 0 switches luck off).
 func luck_of(peer: int) -> int:
-	return int(_characters.get(_peer_key.get(peer, ""), {}).get("luck", 0))
+	return Attributes.clamp_value(_characters.get(_peer_key.get(peer, ""), {}).get("luck", Attributes.NEUTRAL))   # an unknown peer is neutral
 
 
 func _luck_strength() -> float:
 	return float(_luck_cfg.get("strength", 0.04))
 
 
-# The creation roll: the sum of dice rolls of -faces to +faces, centred on 0.
-func _create_luck() -> int:
-	var make: Dictionary = _luck_cfg.get("creation", {})
-	var total: int = 0
+# A new player character's attributes, rolled once from attributes.json (the bell-shaped bands; a player's fitness in the middle range), or all
+# average when roll_new_characters is off.
+func _new_attributes() -> Dictionary:
+	var out: Dictionary = {}
 
-	for n in int(make.get("dice", 2)):
-		total += _fate_rng.randi_range(-int(make.get("faces", 5)), int(make.get("faces", 5)))   # luck-exempt: the creation roll itself
+	for a in ATTRIBUTE_KEYS:
+		out[a] = _fitness_default() if a == "fitness" else Attributes.NEUTRAL
 
-	return clampi(total, -LuckScript.MAX, LuckScript.MAX)
+	if roll_new_characters:
+		out.merge(Attributes.roll_character(_fate_rng, _attr_cfg, true), true)
+
+	out["fitness"] = clampi(int(out["fitness"]), _fitness_min(), _fitness_max())
+	return out
 
 
 # True with probability p, nudged by the peer's luck. `rng` is the caller's own stream (often seeded so a plant or a
@@ -22201,7 +22212,7 @@ func fate(peer: int, kind: String, p: float) -> bool:
 
 
 func _save_characters() -> void:
-	_write_atomic("characters.json", {"version": 1, "players": _characters})
+	_write_atomic("characters.json", {"version": CHARACTERS_VERSION, "players": _characters})
 
 
 # Fitness (Dave 2026-10-21), see data/items/fitness.json: scales how fast exertion rises, a whole number min..max.
@@ -22211,15 +22222,15 @@ func _load_fitness_config() -> Dictionary:
 
 
 func _fitness_min() -> int:
-	return int(_fitness_cfg.get("min", -10))
+	return clampi(int(_fitness_cfg.get("min", Attributes.MIN)), Attributes.MIN, Attributes.MAX)
 
 
 func _fitness_max() -> int:
-	return int(_fitness_cfg.get("max", 10))
+	return clampi(int(_fitness_cfg.get("max", Attributes.MAX)), Attributes.MIN, Attributes.MAX)
 
 
 func _fitness_default() -> int:
-	return clampi(int(_fitness_cfg.get("default", 0)), _fitness_min(), _fitness_max())
+	return clampi(int(_fitness_cfg.get("default", Attributes.NEUTRAL)), _fitness_min(), _fitness_max())
 
 
 func fitness_of(peer: int) -> int:
@@ -22296,7 +22307,7 @@ func _train_fitness(peer: int, effort: float, spent: float) -> void:
 
 # The shared multiplier on the exertion rise: below 1 for the fit, above 1 for the unfit.
 func fitness_rise_mult(peer: int) -> float:
-	return exp(-float(fitness_of(peer)) * float(_fitness_cfg.get("strength", 0.05)))
+	return exp(-Attributes.offset(fitness_of(peer)) * float(_fitness_cfg.get("strength", 0.05)))   # strength is per 5 points (50 is an average adult)
 
 
 # Hook for training (not designed yet): set a character's fitness, clamped, saved with the character, sent to the client.
@@ -22364,10 +22375,15 @@ func _clean_rests(rests: Variant) -> Array:
 
 
 func _load_characters() -> void:
-	var parsed: Variant = _read_json_version("characters.json", 1)
+	var parsed: Variant = _read_json_version("characters.json", CHARACTERS_VERSION, 1)
 
 	if typeof(parsed) != TYPE_DICTIONARY or typeof((parsed as Dictionary).get("players", {})) != TYPE_DICTIONARY:
 		return
+
+	var old_scale: bool = int(parsed.get("version", 1)) < 2   # attributes saved on the -10 to +10 scale: converted once here, written back as version 2 on the next save
+
+	if old_scale:
+		_dirty = true
 
 	for key in parsed.get("players", {}):
 		if typeof(parsed["players"][key]) != TYPE_DICTIONARY:
@@ -22375,17 +22391,10 @@ func _load_characters() -> void:
 			continue
 
 		_characters[str(key)] = {
-			"luck": clampi(int(parsed["players"][key].get("luck", 0)), -LuckScript.MAX, LuckScript.MAX),
-			"fitness": clampi(int(parsed["players"][key].get("fitness", _fitness_default())), _fitness_min(), _fitness_max()),
-			"train": clampf(float(parsed["players"][key].get("train", 0.0)), -10.0, 10.0),
-			"strength": clampi(int(parsed["players"][key].get("strength", 0)), -10, 10),
-			"memory": clampi(int(parsed["players"][key].get("memory", 0)), -10, 10),
+			"train": clampf(float(parsed["players"][key].get("train", 0.0)) * (float(Attributes.PER_OLD_POINT) if old_scale else 1.0), -float(Attributes.MAX), float(Attributes.MAX)),
 			"worn": _clean_worn(parsed["players"][key].get("worn", [])),
 			"shelter": parsed["players"][key].get("shelter", []) if typeof(parsed["players"][key].get("shelter", [])) == TYPE_ARRAY else [],
 			"skills": parsed["players"][key].get("skills", {}) if typeof(parsed["players"][key].get("skills", {})) == TYPE_DICTIONARY else {},
-			"dexterity": clampi(int(parsed["players"][key].get("dexterity", 0)), -10, 10),
-			"perception": clampi(int(parsed["players"][key].get("perception", 0)), -10, 10),
-			"charisma": clampi(int(parsed["players"][key].get("charisma", 0)), -10, 10),
 			"purse": _clean_purse(parsed["players"][key]),
 			"rep": parsed["players"][key].get("rep", {}) if typeof(parsed["players"][key].get("rep", {})) == TYPE_DICTIONARY else {},
 			"new_player": bool(parsed["players"][key].get("new_player", false)),
@@ -22401,6 +22410,16 @@ func _load_characters() -> void:
 			"hints_seen": parsed["players"][key].get("hints_seen", {}) if typeof(parsed["players"][key].get("hints_seen", {})) == TYPE_DICTIONARY else {},   # events and crafts counted for the goals
 			"grace_s": maxf(float(parsed["players"][key].get("grace_s", 0.0)), 0.0),   # eat-once: an older save has none, so no first-hour protection
 		}
+
+		for a in ATTRIBUTE_KEYS:   # every attribute 0 to 100 (an old-scale value moves to the new scale; a missing one is average, fitness its default)
+			var saved: Variant = parsed["players"][key].get(a, null)
+
+			if saved == null:
+				_characters[str(key)][a] = _fitness_default() if a == "fitness" else Attributes.NEUTRAL
+			else:
+				_characters[str(key)][a] = Attributes.from_old(saved) if old_scale else Attributes.clamp_value(saved)
+
+		_characters[str(key)]["fitness"] = clampi(int(_characters[str(key)]["fitness"]), _fitness_min(), _fitness_max())
 
 		if typeof(parsed["players"][key].get("hotbar", null)) == TYPE_ARRAY:   # a pointer-hotbar save (protocol 100 to 111): its keys move into the hotbar slots once at the join
 			_characters[str(key)]["hotbar"] = parsed["players"][key]["hotbar"]
