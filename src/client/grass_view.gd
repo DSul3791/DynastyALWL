@@ -1216,6 +1216,39 @@ func _bare_at(x: float, z: float) -> bool:
 	return false
 
 
+# Dave 19 Nov 2026 ("grass is regrowing into the paths in patches"): the path and clearing tests were made only at a cell's ground points, but each
+# point scatters its clump of cards up to half the point spacing away (about 0.6 m near, 1.5 m in the far bands). A point just outside a path
+# dropped its clump onto it, and the 0.6 m bare patch of a trodden path is narrower than that reach. Every grass and litter card is now tested
+# where it stands, in the cells a patch or clearing reaches (_cell_clears).
+
+
+# True when a path patch or a placed piece's clearing reaches into the cell: only then are its cards tested one by one.
+func _cell_clears(cell: Vector2i) -> bool:
+	var x0: float = float(cell.x) * CELL_M
+	var z0: float = float(cell.y) * CELL_M
+
+	if not bare.is_empty():
+		# The buckets already hold every patch whose edge reaches them.
+		for bz in range(int(floor(z0 / BARE_BUCKET_M)), int(floor((z0 + CELL_M) / BARE_BUCKET_M)) + 1):
+			for bx in range(int(floor(x0 / BARE_BUCKET_M)), int(floor((x0 + CELL_M) / BARE_BUCKET_M)) + 1):
+				if bare.has(Vector2i(bx, bz)):
+					return true
+
+	for spot in cleared:
+		var nx: float = clampf(spot.x, x0, x0 + CELL_M)
+		var nz: float = clampf(spot.z, z0, z0 + CELL_M)
+
+		if Vector2(spot.x - nx, spot.z - nz).length() < clear_m:
+			return true
+
+	return false
+
+
+# True when no card may stand at (x, z): on a path patch or inside a placed piece's clearing.
+func _kept_off(x: float, z: float) -> bool:
+	return (not bare.is_empty() and _bare_at(x, z)) or (not cleared.is_empty() and _cleared_at(x, z))
+
+
 # Is (x, z) inside a placed item's circle (with the soft edge decided by a fixed scatter, so the same spot always gives the same answer).
 func _cleared_at(x: float, z: float) -> bool:
 	for spot in cleared:
@@ -1796,6 +1829,7 @@ func _build(cell: Vector2i) -> int:
 		break
 
 	var t_points: int = Probe.start()
+	var clear_here: bool = _cell_clears(cell)   # a path patch or placed piece reaches this cell: its cards are tested one by one
 	var shore_us: int = 0
 	var litter_us: int = 0
 	var soil_us: int = 0
@@ -1852,7 +1886,7 @@ func _build(cell: Vector2i) -> int:
 
 			if litter_here and under > 0.0 and litter_cards + int(counts[3]) + int(counts[4]) < litter_cap:
 				var t1: int = Time.get_ticks_usec()
-				_put_litter(buffers, counts, rng, point, spacing, under)
+				_put_litter(buffers, counts, rng, point, spacing, under, clear_here)
 				litter_us += Time.get_ticks_usec() - t1
 
 			var t2: int = Time.get_ticks_usec()
@@ -1914,6 +1948,10 @@ func _build(cell: Vector2i) -> int:
 
 					var ox: float = point.x + rng.randf_range(-0.5, 0.5) * spacing * 0.95
 					var oz: float = point.z + rng.randf_range(-0.5, 0.5) * spacing * 0.95
+
+					if clear_here and _kept_off(ox, oz):
+						continue
+
 					var kept: float = _far_share(Vector2(ox - _center.x, oz - _center.z).length(), layer) if layer >= 1 else 1.0
 
 					if kept < 1.0 and rng.randf() > kept:
@@ -2120,7 +2158,7 @@ func _put_shore(buffers: Array, counts: Array, rng: RandomNumberGenerator, point
 
 
 # One ground sample under a crown: leaf cards and, now and then, a dead branch (layers GRASS_LAYERS on).
-func _put_litter(buffers: Array, counts: Array, rng: RandomNumberGenerator, point: Vector3, spacing: float, under: float) -> void:
+func _put_litter(buffers: Array, counts: Array, rng: RandomNumberGenerator, point: Vector3, spacing: float, under: float, clear_here: bool) -> void:
 	var deep: float = smoothstep(CROWN_LITTER_FROM, CROWN_LITTER_TO, under)
 	var rim: float = smoothstep(0.0, 0.12, under)   # litter thins out to nothing at the drip line, no sharp circle
 
@@ -2133,6 +2171,10 @@ func _put_litter(buffers: Array, counts: Array, rng: RandomNumberGenerator, poin
 		for k in range(count):
 			var ox: float = point.x + rng.randf_range(-0.5, 0.5) * spacing * 0.95
 			var oz: float = point.z + rng.randf_range(-0.5, 0.5) * spacing * 0.95
+
+			if clear_here and _kept_off(ox, oz):
+				continue
+
 			var yaw: float = rng.randf() * TAU
 			var c: float = cos(yaw)
 			var s: float = sin(yaw)

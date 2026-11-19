@@ -76,6 +76,16 @@ func _init() -> void:
 	grass.set_bare(patches)
 	check(grass._bare_at(100.0, 300.0) and grass._bare_at(139.3, 300.2) and grass._bare_at(120.5, 300.0), "every patch of a 40 patch path is bare, near and far")
 	check(not grass._bare_at(120.0, 301.5) and not grass._bare_at(97.5, 300.0), "grass well beside the path and past its end stays")
+	# Dave 19 Nov 2026: grass came back onto paths in patches. A ground point beside a path scattered its clump of cards onto it, so every card
+	# is tested where it stands, in the cells a path or clearing reaches.
+	check(grass._cell_clears(Vector2i(20, 50)), "a cell the path crosses is tested card by card")
+	check(grass._cell_clears(Vector2i(16, 33)), "a cell a placed piece's clearing reaches is tested card by card")
+	check(not grass._cell_clears(Vector2i(-40, -40)), "a cell no path or clearing reaches is not")
+	check(grass._kept_off(120.0, 300.2) and grass._kept_off(100.5, 200.0), "a card on a path patch or in a clearing is kept off")
+	check(not grass._kept_off(120.0, 302.0) and not grass._kept_off(100.0, 205.0), "a card beside them stands")
+	grass.set_bare([], [Vector3(300.0, 0.0, 300.0)])
+	check(grass._kept_off(302.5, 300.0) and not grass._kept_off(304.0, 300.0), "a road patch keeps cards off 3 m round it, not 4 m")
+	grass.set_bare(patches)
 	grass.set_bare([])
 	check(not grass._bare_at(100.0, 300.0), "a path taken away leaves no bare spot")
 
