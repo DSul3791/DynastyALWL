@@ -42,7 +42,7 @@ func _init() -> void:
 	view.net = net
 	view.table = table
 	view._vitals_cfg = VitalsRules.load_config()
-	view.inventory = load("res://src/shared/inventory.gd").new(table)
+	view.inventory = load("res://src/shared/inventory.gd").pack(table)   # pack(): the ten hotbar keys
 	var inv = view.inventory
 	var berries: int = table.number_of("raspberries")
 	inv.numbers[0] = table.number_of("stone_axe")
@@ -69,10 +69,26 @@ func _init() -> void:
 	view._eat_hold_tick(Time.get_ticks_msec() + 5000)
 	check(view._eat_hold_slot == -1 and net.inventory_action.calls.size() == 1, "a tap eats one bite")
 
-	# Held: the next bite goes only once the last one landed (the slot changed) and the server's pace has passed.
+	# A click on the box: nothing on the press itself, one bite when the button comes up on the box without a drag (headless, no button is down).
 	net.inventory_action.calls.clear()
-	check(view.eat_from_hotbar(2, true) and net.inventory_action.calls.size() == 1, "a click on the box eats one bite")
-	view._eat_hold_still = func() -> bool: return true   # stands for the button held on the box
+	view.open = true
+	view.hotbar_hover = 2
+	check(view.eat_from_hotbar(2, true) and net.inventory_action.calls.is_empty(), "pressing the box sends nothing yet")
+	view._hotbar_press_tick(Time.get_ticks_msec())
+	check(net.inventory_action.calls == [[Net.ACT_EAT, 2, 0]] and view._eat_hold_slot == -1 and view._hotbar_press.is_empty(), "let go on the box: one bite, no hold")
+
+	# A press that leaves the box (a drag to the pack) eats nothing.
+	net.inventory_action.calls.clear()
+	view.eat_from_hotbar(2, true)
+	view.hotbar_hover = -1
+	view._hotbar_press_tick(Time.get_ticks_msec())
+	check(net.inventory_action.calls.is_empty() and view._hotbar_press.is_empty(), "a press dragged off the box eats nothing")
+	view.hotbar_hover = 2
+
+	# Held: the next bite goes only once the last one landed (the slot changed) and the server's pace has passed.
+	held.press_slot(2)
+	check(net.inventory_action.calls.size() == 1, "the key again: one bite")
+	view._eat_hold_still = func() -> bool: return true   # stands for the key held down
 	var sent: int = view._eat_hold_sent_msec
 	var pace: int = view._eat_hold_pace(2)
 	view._eat_hold_tick(sent + pace + 10)
@@ -92,7 +108,7 @@ func _init() -> void:
 	# Let go: the hold ends.
 	inv.numbers[2] = berries
 	inv.counts[2] = 3
-	view.eat_from_hotbar(2, true)
+	held.press_slot(2)
 	view._eat_hold_still = func() -> bool: return false
 	view._eat_hold_tick(view._eat_hold_sent_msec + 5 * pace)
 	check(view._eat_hold_slot == -1 and net.inventory_action.calls.size() == 3, "letting go ends the hold")

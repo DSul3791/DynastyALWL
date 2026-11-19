@@ -1539,6 +1539,7 @@ func _process_body(_delta: float) -> void:
 	_drain_world_backlog()
 	FrameProbe.stop("inventory: world items", t)   # the pieces of a 65 ms "inventory view" in the 5 Nov lag run's one HITCH
 	var now: int = Time.get_ticks_msec()
+	_hotbar_press_tick(now)
 	_eat_hold_tick(now)
 	t = FrameProbe.start()
 	_roll_tick(_delta, now)
@@ -2741,7 +2742,7 @@ func _start_eat_hold(slot: int, still: Callable) -> void:
 
 # Food, drink or medicine on the hotbar is eaten straight from it, never taken in hand (Dave's play test 19 Nov 2026: "if you click on food in a
 # hotbar or hold down the hotbar key on a food item it should just eat the food and keep eating it like holding E in the inventory"). Its number
-# key (HeldItem.press_slot, in the world or with the screen open) or a left click on its hotbar box eats one bite, and holding the key or the button
+# key (HeldItem.press_slot, in the world or with the screen open) or a left click on its hotbar box (on release, _hotbar_press_tick) eats one bite, and holding the key or the button
 # keeps eating through the same hold as E in the pack (_eat_hold_tick: one bite at a time at the server's pace, every bite checked by the server).
 # The hand keeps what it held. Provisional (Dave to confirm): a quick tap eats one bite; the empty slot simply leaves the hotbar.
 # `by_click`: the hold follows the left button and the pointer staying on that box; otherwise it follows the key's own number key.
@@ -2752,14 +2753,46 @@ func eat_from_hotbar(key: int, by_click: bool = false) -> bool:
 	if slot < 0 or not edible_slot(slot):
 		return false
 
+	if by_click:
+		_hotbar_press = [key, Time.get_ticks_msec()]   # the bite waits for the release or HOTBAR_PRESS_HOLD_MSEC, so a drag off the hotbar eats nothing
+		return true
+
 	if eat_slot(slot):
-		if by_click:
-			_start_eat_hold(slot, func() -> bool: return Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and open and hotbar_hover == key and not get_viewport().gui_is_dragging())
-		else:
-			var number_key: Key = KEY_0 if key == 9 else (KEY_1 + key) as Key
-			_start_eat_hold(slot, func() -> bool: return Input.is_key_pressed(number_key))
+		var number_key: Key = KEY_0 if key == 9 else (KEY_1 + key) as Key
+		_start_eat_hold(slot, func() -> bool: return Input.is_key_pressed(number_key))
 
 	return true
+
+
+# A press on a food box (eat_from_hotbar by_click): let go on the box without dragging and it is a click, one bite; still down after
+# HOTBAR_PRESS_HOLD_MSEC and it is a hold, the first bite and then the E hold while the button stays down on the box. A drag, the pointer
+# leaving the box or the screen closing first eats nothing (provisional: moving food about on the hotbar never eats it).
+const HOTBAR_PRESS_HOLD_MSEC := 200
+var _hotbar_press: Array = []   # [hotbar key, msec] of a press on a food box not yet a bite, [] when none
+
+
+func _hotbar_press_tick(now: int) -> void:
+	if _hotbar_press.is_empty():
+		return
+
+	var key: int = int(_hotbar_press[0])
+
+	if not open or hotbar_hover != key or (is_inside_tree() and get_viewport().gui_is_dragging()):
+		_hotbar_press = []
+		return
+
+	var down: bool = Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT)
+
+	if down and now - int(_hotbar_press[1]) < HOTBAR_PRESS_HOLD_MSEC:
+		return
+
+	_hotbar_press = []
+	var slot: int = key_slot(key)
+
+	if slot < 0 or not edible_slot(slot) or not eat_slot(slot) or not down:
+		return
+
+	_start_eat_hold(slot, func() -> bool: return Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) and open and hotbar_hover == key and not (is_inside_tree() and get_viewport().gui_is_dragging()))
 
 
 # The server's gap between bites (server_items._eat) or mouthfuls (_drink_from_container), plus slack.
