@@ -676,6 +676,16 @@ static func tilled_soil() -> Node3D:
 	return root
 
 
+# An irrigation trench (garden moisture stage 2, 19 Nov 2026): PLACEHOLDER look, the tilled soil's furrows laid as a 2 m by 0.5 m decal along the piece's
+# x and darkened like wet earth. No water surface is drawn.
+static func irrigation_trench() -> Node3D:
+	var root: Node3D = tilled_soil()
+	var decal: Decal = root.get_child(0) as Decal
+	decal.size = Vector3(2.0, 1.2, 0.5)
+	decal.modulate = Color(0.55, 0.5, 0.48)
+	return root
+
+
 # A rock pile: a mound of about a dozen faceted stones (the coarse loose-stone mesh of rock_look.gd, RockLook.pile_mesh, turned and scaled one by one), big ones at the
 # foot and smaller ones heaped on top, about 1.2 m across. The solid box under it is the collision.
 static func rock_pile() -> Node3D:

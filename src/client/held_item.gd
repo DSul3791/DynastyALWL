@@ -2209,6 +2209,7 @@ const HOE_MODES := [
 	{"id": "soil", "name": "Till Soil 2m", "note": "one left click levels a 2 m patch to its average height and tills it into garden soil (no edge blending)"},
 	{"id": "path", "name": "Pathen", "note": "one left click makes one level spot of path"},
 	{"id": "survey", "name": "Survey a Path", "note": "left click sets a marker; a green line runs from it to where you aim, at any distance (red: a building is in the way); click again and the road builds along it. Click the last marker again to end the survey (Shift + right click does the same in any mode)"},
+	{"id": "trench", "name": "Irrigation Trench", "note": "one left click digs 2 m of trench where you aim, along the way you face; water from a pipe or channel end over it soaks the garden beds within 30 m that are not higher than it"},
 ]
 # The list is a small plate above the hotbar and its caption (BugsList entry 4, Dave's play test 19 Nov 2026: it ran off the right edge and over the
 # hotbar): short names, one to a line, the highlighted one marked; the highlighted one's explanation below them. Sizes are 1920 x 1080 canvas px
@@ -2240,8 +2241,16 @@ func _hoe_apply() -> void:
 		_grade_point_here()   # one marker a click, never repeated while the button is held
 	elif hoe_mode == "garden":
 		_garden_here()   # one planting a click
+	elif hoe_mode == "trench":
+		_hoe_here(Net.ACT_DIG_TRENCH, _facing_deg())   # one trench piece a click, along the way the player faces
 	else:
 		_hoe_here(Net.ACT_HOE_PATH)
+
+
+# The way the camera faces as a structure's turn in whole degrees: the piece's length (its x) runs along the view (Godot's rotation about y).
+func _facing_deg() -> int:
+	var ahead: Vector3 = -_camera.global_transform.basis.z
+	return posmod(roundi(rad_to_deg(atan2(-ahead.z, ahead.x))), 360)
 
 
 func _hoe_menu_open_now(page: String = "modes") -> void:
@@ -2771,7 +2780,7 @@ func _on_road_marker_reached(at: Vector3) -> void:
 
 
 # A hoe stroke (path or smooth) at the ground under the crosshair; the server checks the hoe, the reach and the pace.
-func _hoe_here(action: int) -> void:
+func _hoe_here(action: int, b: int = 0) -> void:
 	var from: Vector3 = _camera.global_position
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)
 	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
@@ -2780,7 +2789,7 @@ func _hoe_here(action: int) -> void:
 		_inv._on_notice("Nothing to work there: aim the hoe at the ground within reach")
 		return
 
-	_net.inventory_action.rpc_id(1, action, held_slot, 0, 0, hit["position"])
+	_net.inventory_action.rpc_id(1, action, held_slot, b, 0, hit["position"])
 
 	# The hoe was silent (first-day tool audit, 3 Nov 2026): a soft scrape of the blade on the soil (a garden till is firmer, _till_garden_here). Played when the click is sent, like the
 	# shovel fill (the server may still refuse). It borrows the shovel-on-soil clips (no hoe recording yet).
@@ -3097,7 +3106,7 @@ func _other_tool_hint() -> String:
 		"net":
 			return "Stand at the water's edge facing the water and hold the left button for about 20 seconds"
 		"hoe":
-			return "The hoe does what its mode says (left click; now: %s). Right click opens a window to pick: path, smooth, till a garden, survey a path or plant something (seeds, a dug-up bush or a tree's seed from your pack). With a garden grid out, Alt + arrow keys size it and the wheel turns it. Only planting uses items" % _hoe_mode_name()
+			return "The hoe does what its mode says (left click; now: %s). Right click opens a window to pick: path, smooth, till a garden, survey a path, plant something (seeds, a dug-up bush or a tree's seed from your pack) or dig an irrigation trench. With a garden grid out, Alt + arrow keys size it and the wheel turns it. Only planting uses items" % _hoe_mode_name()
 		"hammer":
 			return "Right click opens the hammer menu: pick a blueprint, then left click places it"
 		"shovel":

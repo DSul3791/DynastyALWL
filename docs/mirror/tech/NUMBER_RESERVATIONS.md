@@ -65,3 +65,6 @@ Dave: "We dont use things like pots pans and griddles we use cooking stations", 
 
 ## Mortar and pestle placed (Dave 18 Nov 2026, "Mortar and Pestle I agree with your assessment"; docs/design/MORTAR_PESTLE.md)
 Item 807 `mortar_pestle` keeps its number and recipe 377 (2 Stone, crafted by hand) and becomes a placed station. New: structure state 456 `mortar_pestle`. No new items, recipes or blueprints. Next free: item 1497, recipe 736, blueprint 364, structure state 457.
+
+## Irrigation trench (Dave 19 Nov 2026, thread "Add garden soil moisture and irrigation"; docs/design/GARDEN_MOISTURE.md)
+Dave named it ("into an irrigation trench"). New: item 1507 `irrigation_trench` (items.json next_number was 1507, now 1508; gathered.json follows), structure state 457 `irrigation_trench` (dug with the hoe, no kit). Protocol 135 (coordinator), action ACT_DIG_TRENCH 83. No recipes or blueprints. Next free: item 1508, structure state 458.

@@ -42,11 +42,31 @@ default spirit) with these numbers: in temperate spring and autumn a bed is dry 
 fully watered ones; in high summer (the drier part of the year) about 13 to 16 days, about 12 percent later, and in the worst dry spells up to a
 quarter later. So rain is normally enough, as Dave hoped, and watering or irrigation pays off in a dry, hot summer.
 
-## 3. Stage 2: irrigation (PR 2, planned)
+## 3. Stage 2: irrigation (PR 2)
 
-The reading used: water comes from a source on higher ground (well, hand pump, trough or cistern) through the existing channels and log pipes;
-where it comes out it wets the soil, either onto one bed, or into an irrigation trench that carries it along and wets every bed within 30 m along the
-trench either way. Planned in detail in this section once stage 1 is in dev.
+The reading used: water comes from a source on higher ground (a well or hand pump spout, a trough's or cistern's base outlet) through the existing
+wooden or stone channels and log pipes (docs/design/PLUMBING_DESIGN.md). Where a run ends, the water pours out of its open end, onto a garden plot or
+into an irrigation trench. "30 metres in either direction" is read as 30 m from the trench every way round, so one trench can serve a whole garden
+around it; water never climbs, so a bed more than 0.5 m above the trench gets none.
+
+What the player does: build a well or hand pump on higher ground, lay channels or log pipes downhill towards the garden, and either end the run over a
+garden plot, or pick the hoe's **Irrigation Trench** (the last row of its list) and dig a trench under the run's end. Work the pump (or let a trough
+drain down a pipe) and the beds round the trench get wetter.
+
+- **The end of a pipe or channel onto the garden.** Small, Medium and Large gardening plots are water-network consumers: an open end or a spout over
+  the plot (within its half side plus 0.3 m across, up to 1.5 m above) pours in, and the litres become moisture over its soil store (a Medium plot,
+  1 L a percent). A full plot takes no more and the water backs up the run. Tilled beds do not take pipe water themselves (there can be 200 a chunk,
+  and the hoe grid tills up to 100 in a click); they are watered by a trench.
+- **Irrigation trench** (new, Dave named it): one left click with the hoe digs a 2 m by 0.5 m trench piece where you aim, along the way you face. No
+  items are used and it wears the hoe like tilling. It catches a channel's or pipe's end or a spout within 1.2 m of its middle and up to 1.5 m above. Its
+  water is shared among every tilled bed and garden plot within 30 m that is no more than 0.5 m above it, each by the room its soil has, so the driest
+  bed takes most; once they are all full the trench takes nothing. Refused under water, on a bed, and within 1 m of another trench or anything standing.
+- **Taps.** Not built. The catalog's Tap is iron and belongs to the iron plumbing behind the Master smithy, which is on Dave's future list. An open
+  pipe end already pours, and the Sluice already shuts a channel. A wooden tap would be a new item: Dave's call.
+- **Cost.** A trench's list of beds is worked out when it is dug and again in the hourly plots pass (one pass over the beds for every trench), never
+  per frame; its water is shared out only when the network is solved (a change, or the next fill or empty event).
+- **Look.** PLACEHOLDER: the tilled-soil furrows laid 2 m long and darkened; no water surface is drawn. It cannot be filled in or picked up yet, like a
+  tilled bed.
 
 ## 4. Assumed on Dave's behalf, for his review
 
@@ -55,4 +75,10 @@ trench either way. Planned in detail in this section once stage 1 is in dev.
   99 percent wet. Replaces the earlier GOALS-REPAIR A-3 rule (8 percent a bucket, one bucket a day).
 - GM-3 A day ending below 25 percent grows the crop half a day.
 - GM-4 The prompt words: wet from 70 percent, damp from 25, dry (needs water) below; shown in 5 percent steps on every bed and plot.
+- GM-5 Garden plots catch a channel's or pipe's end or a spout within their half side plus 0.3 m and up to 1.5 m above (tilled beds do not; trenches
+  water them).
+- GM-6 Irrigation trench (new item 1507, structure state 457, no recipe): dug with the hoe, 2 m by 0.5 m, catches water within 1.2 m and 1.5 m above.
+- GM-7 A trench waters every bed and plot within 30 m of it (any direction) no more than 0.5 m above it, shared by each soil's room.
+- GM-8 The hoe's list gains Irrigation Trench as its last row (after Survey a Path); Dave's order of the other six is unchanged.
+- Not built, Dave's call: an irrigation tap (the Tap is iron, behind the Master smithy, on the future list); filling in a trench.
 - Unchanged and still provisional: a 25 mm soil store, 1.25 to 4 mm a day of evaporation from 5 to 25 C, start at 50 percent, wet day from 25.
