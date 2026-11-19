@@ -6,7 +6,7 @@ Server/client split plan step C4 (`/mnt/project-files/server-client-split/PLAN.m
 
 ## What is in it
 
-- `Dockerfile`: stage 1 makes the engine (Godot 4.7.2 with Voxel Tools 1.7, headless, by `tools/build_godot_linux.sh`, about 30 to 40 minutes the first time, then cached), or takes a ready binary from `deploy/server/engine/godot`. Stage 2 is Debian slim with the engine and the project in `/game`, imported once at build time.
+- `Dockerfile`: stage 1 makes the engine (Godot 4.7.2 with Voxel Tools 1.7, headless, by `tools/build_godot_linux.sh`, about 30 to 40 minutes the first time, then cached), or takes a ready binary from `deploy/server/engine/godot`. Stage 2 is Ubuntu 24.04 with the engine and the project in `/game`, imported once at build time.
 - It runs the project from source with that engine (`godot --headless --path /game ... terrain_server.tscn -- --dedicated --store=/data/store`), because there are no export templates for our engine yet (plan C1). When C1 lands, the image switches to the exported "Linux Server" preset.
 - `run_server.sh` is the container's first process. `docker stop` sends it TERM; it writes `stop.now`, and the server saves and closes with exit 0 (plan A4, PR #1274). Compose allows 90 s for that.
 - Everything the server writes lives in the `/data` volume: `/data/store` (ground edits, characters, chests, `admin.json`, `logs/`, `server_run.json`) and Godot's user folder under `/data/home`. A new image keeps the volume, so the world carries on.
@@ -24,7 +24,7 @@ deploy/server/build_image.sh --stamp    # release image: dynasty-server:build-<N
 
 A test image has no build stamp, so the game run from the editor can join it. A stamped image refuses every other build, the editor included, so it only makes sense once there is an exported client of the same build.
 
-To skip the engine compile, copy a ready Linux engine (for example David4's `/work/bin/godot`, the same engine) to `deploy/server/engine/godot` first. It must run on Debian 12 (bookworm).
+To skip the engine compile, copy a ready Linux engine (for example David4's engine: `/work/bin/godot` is a link to `/work/engine/godot`, so copy the real file, `cp -L`) to `deploy/server/engine/godot` first. It must run on Ubuntu 24.04 (glibc 2.39 or older), as David4's does.
 
 ## Run (on the gaming server)
 

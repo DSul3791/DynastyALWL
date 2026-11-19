@@ -5,10 +5,11 @@
 # shortcut: runs the project from source with the headless voxel editor build, because no export templates exist yet for our engine
 # (Godot 4.7.2 + Voxel Tools 1.7, plan C1). Revisit when C1 lands: export the "Linux Server" preset and run that on the template.
 
+# Both stages use Ubuntu 24.04: David4's engine binary needs its glibc 2.39 (Debian 12 has 2.36).
 # Stage 1: the engine. tools/build_godot_linux.sh compiles it (about 30 to 40 minutes the first time; Docker keeps the result until
 # the script changes). A ready binary of the same engine placed at deploy/server/engine/godot (for example a copy of David4's
 # /work/bin/godot) is used instead and skips the compile.
-FROM debian:bookworm AS engine
+FROM ubuntu:24.04 AS engine
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates git build-essential pkg-config scons python3 \
     && rm -rf /var/lib/apt/lists/*
 COPY tools/build_godot_linux.sh /src/build_godot_linux.sh
@@ -22,8 +23,8 @@ RUN if [ -f /prebuilt/godot ]; then cp /prebuilt/godot /godot; \
 # preset leaves them out too, and tools/export_check.py checks that), imported once here so a start does not import.
 # build_stamp.json is there only when build_image.sh --stamp wrote it (a release); the odd spelling lets the copy go on without it.
 # Everything the server writes goes in the /data volume: the world's store (edits, characters, admin.json, logs, run note) in /data/store, and Godot's user folder under /data/home.
-FROM debian:bookworm-slim
-RUN useradd --create-home --uid 1000 dynasty && mkdir -p /data /game && chown dynasty:dynasty /data /game
+FROM ubuntu:24.04
+RUN useradd --create-home dynasty && mkdir -p /data /game && chown dynasty:dynasty /data /game
 COPY --from=engine /godot /usr/local/bin/godot
 COPY --chown=dynasty:dynasty project.godot icon.svg icon.svg.import build_stamp.jso[n] /game/
 COPY --chown=dynasty:dynasty addons /game/addons
