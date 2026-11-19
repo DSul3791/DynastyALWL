@@ -274,7 +274,7 @@ func _init() -> void:
 	g.game_seconds = func(): return clock[0]
 	g.season_now = func(): return "summer"
 	g.peer_connected_hello(1, "abcdef123456")
-	g.set_fitness(1, 50)   # an average adult (50): new characters start at fitness 75 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
+	g.set_fitness(1, 50)   # an average adult (50): on the game server a new player rolls fitness 40 to 60 (attributes.json), and fitness nudges fitness-weighted factors (tool care, jumping, crafting)
 	g.report_position(1, Vector3(500.0, 70.0, 500.0))
 	check(g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "flax can be gathered")
 	check(g.inventory_of(1).count_of(g.table.number_of("plant_fibre")) >= 2, "flax gives fibre")
@@ -730,7 +730,7 @@ func _init() -> void:
 	m.ground_height = func(x, z): return 10.0
 	m.rock_at = func(x, z): return x > 0.0
 	m.peer_connected_hello(1, "abcdef123456")
-	m.set_fitness(1, 50)   # an average adult (50): new characters start at fitness 75 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
+	m.set_fitness(1, 50)   # an average adult (50): on the game server a new player rolls fitness 40 to 60 (attributes.json), and fitness nudges fitness-weighted factors (tool care, jumping, crafting)
 	m.report_position(1, Vector3(5.0, 10.0, 0.0))
 	var rock_stone: int = m.table.number_of("stone")
 	m.action(1, Net.ACT_MINE, HeldTool.slot_of(m, "axe") + 1, 0, 0, Vector3(6.0, 10.0, 0.0))
@@ -1644,7 +1644,7 @@ func _init() -> void:
 	var notes: Array = []
 	cb.send_notice = func(_p, text): notes.append(text)
 	cb.peer_connected_hello(1, "abcdef123456")
-	cb.set_fitness(1, 50)   # an average adult (50): new characters start at fitness 75 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
+	cb.set_fitness(1, 50)   # an average adult (50): on the game server a new player rolls fitness 40 to 60 (attributes.json), and fitness nudges fitness-weighted factors (tool care, jumping, crafting)
 	cb.report_position(1, Vector3(0.0, 10.0, 0.0))
 	cb.action(1, Net.ACT_ADMIN_GIVE, cb.table.number_of("chopping_block"), 0, 1, Vector3.ZERO)
 	cb.place_item(1, cb.table.number_of("chopping_block"), Vector3(2.0, 10.0, 0.0), 0)
@@ -2552,7 +2552,7 @@ func _init() -> void:
 	hs.send_craft_queue = func(_p, _e, _l): pass
 	hs.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	hs.peer_connected_hello(1, "handsawkey01")
-	hs.set_fitness(1, 50)   # an average adult (50): new characters start at fitness 75 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
+	hs.set_fitness(1, 50)   # an average adult (50): on the game server a new player rolls fitness 40 to 60 (attributes.json), and fitness nudges fitness-weighted factors (tool care, jumping, crafting)
 	var by_hand: Dictionary = {}
 
 	for rn in hs.recipes.numbers():
@@ -2794,7 +2794,7 @@ func _init() -> void:
 	check(not Luck.chance(0.99, 0.0, 100, 0.04) and Luck.chance(0.0, 1.0, 0, 0.04), "luck never makes the impossible possible or the certain doubtful")
 	check(Luck.low(0.5, 150, 0.04) == Luck.low(0.5, 100, 0.04) and Luck.low(0.5, -40, 0.04) == Luck.low(0.5, 0, 0.04), "a luck outside 0 to 100 counts as the nearest end")
 
-	# The 0 to 100 scale (Dave 19 Nov 2026, attributes.json): the graded creation roll and the conversion of old -10 to +10 values.
+	# The 0 to 100 scale (Dave 19 Nov 2026, attributes.json): the bell-shaped creation roll and the conversion of old -10 to +10 values.
 	var Attr = load("res://src/shared/attributes.gd")
 	var acfg: Dictionary = Attr.load_config()
 	var arng: RandomNumberGenerator = RandomNumberGenerator.new()
@@ -2802,18 +2802,30 @@ func _init() -> void:
 	var bands: Array = [0, 0, 0, 0, 0]
 	var out_of_range: int = 0
 
-	for n in range(20000):
-		var v: int = Attr.roll(arng, acfg)
-		out_of_range += 0 if v >= 0 and v <= 100 else 1
-		bands[0 if v <= 40 else (1 if v <= 60 else (2 if v <= 75 else (3 if v <= 90 else 4)))] += 1
+	var npc_fit: Array = [101, -1]
+	var player_fit: Array = [101, -1]
 
-	var want: Array = [0.45, 0.25, 0.15, 0.10, 0.05]
+	for n in range(20000):
+		var v: int = Attr.roll(arng, acfg["roll_bands"])
+		out_of_range += 0 if v >= 0 and v <= 100 else 1
+		bands[0 if v <= 19 else (1 if v <= 39 else (2 if v <= 60 else (3 if v <= 80 else 4)))] += 1
+
+		if n < 2000:
+			var pc: Dictionary = Attr.roll_character(arng, acfg, true)
+			var npc: Dictionary = Attr.roll_character(arng, acfg, false)
+			player_fit = [mini(player_fit[0], int(pc["fitness"])), maxi(player_fit[1], int(pc["fitness"]))]
+			npc_fit = [mini(npc_fit[0], int(npc["fitness"])), maxi(npc_fit[1], int(npc["fitness"]))]
+			out_of_range += 0 if pc.size() == 7 and pc.values().all(func(x): return int(x) >= 0 and int(x) <= 100) else 1
+
+	var want: Array = [0.05, 0.20, 0.50, 0.20, 0.05]
 	var close: bool = true
 
 	for b in range(5):
 		close = close and absf(float(bands[b]) / 20000.0 - float(want[b])) < 0.015
 
-	check(out_of_range == 0 and close, "the graded roll stays in 0 to 100 and lands 45/25/15/10/5 percent in the five grades (%s of 20000)" % str(bands))
+	check(out_of_range == 0 and close, "the roll stays in 0 to 100 and lands 5/20/50/20/5 percent in 0-19, 20-39, 40-60, 61-80, 81-100 (%s of 20000)" % str(bands))
+	check(player_fit[0] >= 40 and player_fit[1] <= 60 and npc_fit[0] < 40 and npc_fit[1] > 60, "a player's fitness starts in the middle range (40 to 60), an NPC's anywhere (player %s, NPC %s)" % [str(player_fit), str(npc_fit)])
+	check(Attr.roll(arng, []) == 50 and Attr.roll(arng, [{"from": 70, "to": 70, "weight": 1}, "bad"]) == 70, "no bands give an average 50; a broken band is skipped")
 	check(Attr.from_old(-10) == 0 and Attr.from_old(0) == 50 and Attr.from_old(10) == 100 and Attr.from_old(-3) == 35 and Attr.from_old(40) == 100 and Attr.from_old("x") == 50, "an old -10 to +10 value moves to 0 to 100 (0 is 50), out-of-range and broken values are clamped")
 	check(Attr.clamp_value(-7) == 0 and Attr.clamp_value(130) == 100 and Attr.clamp_value(64) == 64 and Attr.offset(50.0) == 0.0 and Attr.offset(100.0) == 10.0 and Attr.offset(0.0) == -10.0, "values are kept in 0 to 100 and 50 is neutral")
 	var luck_dir: String = "user://test_server_items_luck"
@@ -2823,9 +2835,14 @@ func _init() -> void:
 		DirAccess.remove_absolute(luck_dir + "/" + file)
 
 	var lk = make(luck_dir)
+	lk.peer_connected_hello(3, "luckkey000003")
+	check(lk.luck_of(3) == 50 and lk.fitness_of(3) == 50 and lk.attributes_of(3).values().all(func(x): return x == 50.0), "with rolling off (tools and tests) a new character is average in everything")
+	lk.roll_new_characters = true   # as the game server sets it
 	lk.peer_connected_hello(1, "luckkey000001")
 	lk.peer_connected_hello(2, "luckkey000002")
+	var rolled_row: Dictionary = lk._characters["luckkey000001"]
 	check(lk.luck_of(1) >= 0 and lk.luck_of(1) <= 100 and lk.luck_of(99) == 50, "a character gets luck from 0 to 100 at first sight; an unknown peer is neutral (50)")
+	check(lk.fitness_of(1) >= 40 and lk.fitness_of(1) <= 60 and ["strength", "memory", "dexterity", "perception", "charisma"].all(func(a): return rolled_row.has(a) and int(rolled_row[a]) >= 0 and int(rolled_row[a]) <= 100), "a new player character rolls every attribute, fitness in 40 to 60 (%s)" % str(rolled_row))
 	lk._characters["luckkey000001"]["luck"] = 9
 	lk._dirty = true
 	lk.save()
@@ -2951,7 +2968,7 @@ func _init() -> void:
 	fl.send_reject = func(_p, reason): rejects.append(reason)
 	fl.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	fl.peer_connected_hello(1, "fallkey00001")
-	fl.set_fitness(1, 50)   # an average adult (50): new characters start at fitness 75 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
+	fl.set_fitness(1, 50)   # an average adult (50): on the game server a new player rolls fitness 40 to 60 (attributes.json), and fitness nudges fitness-weighted factors (tool care, jumping, crafting)
 	fl.report_position(1, Vector3(0.0, 10.0, 0.0))
 	fl.action(1, Net.ACT_FALL, 500, 0, 0, Vector3.ZERO)
 	check(float(fl.vitals_of(1)["health"]) == 100.0, "a 5 m drop does no damage")
@@ -3105,7 +3122,7 @@ func _init() -> void:
 	sk.send_craft_queue = func(_p, _e, _l): pass
 	sk.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	sk.peer_connected_hello(1, "skillkey0001")
-	sk.set_fitness(1, 50)   # an average adult (50): new characters start at fitness 75 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
+	sk.set_fitness(1, 50)   # an average adult (50): on the game server a new player rolls fitness 40 to 60 (attributes.json), and fitness nudges fitness-weighted factors (tool care, jumping, crafting)
 	check(sk.skill_factor(1, "craft") == 1.0 and sk.skill_factor(1, "no_such_action") == 1.0, "with no skill system every factor is 1.0")
 	sk.skill_level = func(_peer, _skill): return 2.0
 	check(sk.skill_factor(1, "craft") == 2.0 and sk.skill_factor(1, "no_such_action") == 1.0, "a skill level of 2 gives a factor of 2 for a listed action only")
@@ -3130,7 +3147,7 @@ func _init() -> void:
 	bo.send_reject = func(_p, reason): bo_rejects.append(reason)
 	bo.ground_height = func(x, _z): return 10.0 + x * 0.3
 	bo.peer_connected_hello(1, "boulderkey01")
-	bo.set_fitness(1, 50)   # an average adult (50): new characters start at fitness 75 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
+	bo.set_fitness(1, 50)   # an average adult (50): on the game server a new player rolls fitness 40 to 60 (attributes.json), and fitness nudges fitness-weighted factors (tool care, jumping, crafting)
 	bo.report_position(1, Vector3(5.0, 11.5, 5.0))
 	bo.vitals_of(1)["weight"] = 5000.0   # a big body: the carry limit stays out of the stone counts below
 	var big: int = bo._boulder_stones(1.0)

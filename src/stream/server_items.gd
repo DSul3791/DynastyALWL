@@ -276,6 +276,7 @@ var _moving: Dictionary = {}        # peer -> smoothed 0..1, 1 while walking abo
 var _characters: Dictionary = {}   # player key -> {luck: int 0..100, ...}, luck rolled once at first sight and never changed (job 77)
 var _luck_cfg: Dictionary = {}
 var _attr_cfg: Dictionary = {}      # data/items/attributes.json: the 0 to 100 scale and the graded creation roll
+var roll_new_characters: bool = false   # the game server turns this on (terrain_server.gd): a new character rolls its attributes; off (tools, unit tests) it starts average, 50 in each
 var _fitness_cfg: Dictionary = {}
 var send_energy: Callable       # (peer, energy percent 0..100)
 var _energy_cfg: Dictionary = {}    # data/items/energy.json
@@ -593,7 +594,8 @@ func peer_connected_hello(peer: int, key: String) -> void:
 		_dirty = true
 
 	if not _characters.has(key):
-		_characters[key] = {"luck": _create_luck(), "fitness": _fitness_default(), "train": 0.0, "skills_v": 2, "grace_s": _eat_cfg_value("first_hour_s", 3600.0)}
+		_characters[key] = {"train": 0.0, "skills_v": 2, "grace_s": _eat_cfg_value("first_hour_s", 3600.0)}
+		_characters[key].merge(_new_attributes())
 		_dirty = true
 
 	FoodEffects.resume(_food_of(peer), _now_game_s())   # and run on from where they stopped
@@ -22165,7 +22167,7 @@ func _sync_food(peer: int, force: bool) -> void:
 
 
 # --- Luck (job 77) ---
-# Each character has a luck number, 0 to 100 (50 neutral, Dave 19 Nov 2026), rolled once with the graded roll of attributes.json when the server
+# Each character has a luck number, 0 to 100 (50 neutral, Dave 19 Nov 2026), rolled once with the other attributes (_new_attributes) when the server
 # first sees the key (the creation screen will send a chosen value instead) and stored in characters.json. Every server roll that a player takes part in goes through
 # roll_chance / roll_amount / fate so luck can nudge it (data/items/luck.json strength; 0 switches luck off).
 func luck_of(peer: int) -> int:
@@ -22176,9 +22178,19 @@ func _luck_strength() -> float:
 	return float(_luck_cfg.get("strength", 0.04))
 
 
-# The creation roll: the graded roll of attributes.json (five weighted bands, most people low, high values rare).
-func _create_luck() -> int:
-	return Attributes.roll(_fate_rng, _attr_cfg)
+# A new player character's attributes, rolled once from attributes.json (the bell-shaped bands; a player's fitness in the middle range), or all
+# average when roll_new_characters is off.
+func _new_attributes() -> Dictionary:
+	var out: Dictionary = {}
+
+	for a in ATTRIBUTE_KEYS:
+		out[a] = _fitness_default() if a == "fitness" else Attributes.NEUTRAL
+
+	if roll_new_characters:
+		out.merge(Attributes.roll_character(_fate_rng, _attr_cfg, true), true)
+
+	out["fitness"] = clampi(int(out["fitness"]), _fitness_min(), _fitness_max())
+	return out
 
 
 # True with probability p, nudged by the peer's luck. `rng` is the caller's own stream (often seeded so a plant or a

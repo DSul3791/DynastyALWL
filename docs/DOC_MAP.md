@@ -34,7 +34,7 @@ These retain the existing topic routes, with design sources separated from imple
 | Trees, wood, tools and hauling | [Wood system](design/TREE_WOOD_TOOLS_DESIGN.md) | Felling, processing, tools, carving and transport. | [WOOD-SYSTEM state](ai-team/missions/WOOD-SYSTEM/STATE.md) |
 | Construction | [Buildables](design/buildables_plan.md) | Pieces, frames, roof shapes and placement behavior; item definitions remain in the catalog. | Door records below |
 | Backpacks | [Backpack design](design/BACKPACKS.md) | Backpack design and carrying rules; values and decision status stay in the source. | Relevant task record |
-| Character attributes | [Attributes 0 to 100](design/ATTRIBUTES.md) | Every attribute 0 to 100 like a percent, 50 average; the five-grade creation roll; old saves converted; provisional ATTR-1..ATTR-3. | This design's For Dave section |
+| Character attributes | [Attributes 0 to 100](design/ATTRIBUTES.md) | Every attribute 0 to 100 like a percent, 50 average; the bell-shaped creation roll (player fitness 40 to 60); old saves converted; provisional ATTR-1, ATTR-3, ATTR-4. | This design's For Dave section |
 | No spawning near builds | [No-spawn zones](design/NO_SPAWN_ZONES.md) | Nothing wild spawns or regrows within 20 m of what players put down; grass cleared close round it. | This design's For Dave section |
 | Torches and Tree sap | [Torches and Tree sap](design/TORCH_TREE_SAP.md) | Simple and Improved torch recipes, where Tree sap comes from; provisional values TS-1..TS-7. | Relevant task record |
 | Smelters | [Smelters light like a campfire](design/SMELTER_LIGHTING.md) | E lights and puts out every smelter tier, fire shown only while lit; provisional choices SL-1..SL-8. | Relevant task record |

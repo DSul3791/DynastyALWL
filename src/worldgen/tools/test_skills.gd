@@ -164,7 +164,7 @@ func _init() -> void:
 	var clock: Array = [day0]
 	var items = make(dir, clock)
 	items.peer_connected_hello(1, "skill-key-0001")
-	items.set_fitness(1, 50)   # an average adult (50); new characters start fitter (fitness.json default), which nudges fitness-weighted skills
+	items.set_fitness(1, 50)   # an average adult (50); on the game server a new player rolls fitness 40 to 60, which nudges fitness-weighted skills
 	check(items.skill_factor(1, "fell_tree") == 1.0, "a new character of average fitness fells at factor 1.0")
 	check(sent.size() >= 1 and sent[0][2].is_empty(), "the client is told at hello (no rows yet)")
 	items.set_attribute(1, "strength", 90)
@@ -229,7 +229,7 @@ func _init() -> void:
 	# A skilled crafter wears tools slower: factor 2 charges half a point per use, carried in fractions (no dice).
 	var care = make(dir + "_care", clock)
 	care.peer_connected_hello(1, "skill-key-0002")
-	care.set_fitness(1, 50)   # an average adult (50): new characters start at fitness 75 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
+	care.set_fitness(1, 50)   # an average adult (50): on the game server a new player rolls fitness 40 to 60 (attributes.json), and fitness nudges fitness-weighted factors (tool care, jumping, crafting)
 	var axe_n: int = care.table.number_of("stone_axe")
 	care.action(1, Net.ACT_ADMIN_GIVE, axe_n, 0, 1, Vector3.ZERO)
 	var inv = care.inventory_of(1)

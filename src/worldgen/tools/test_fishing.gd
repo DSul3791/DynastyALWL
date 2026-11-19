@@ -36,7 +36,7 @@ func _init() -> void:
 	items.water_near = func(_p, _r): return false
 	items.setup(ItemTableScript.load_default(), dir)
 	items.peer_connected_hello(1, "fish-key-000001")
-	items.set_fitness(1, 50)   # an average adult (50): new characters start at fitness 75 (fitness.json default, provisional FIT-1), which slows tool wear a little (tool_care)
+	items.set_fitness(1, 50)   # an average adult (50): on the game server a new player rolls fitness 40 to 60 (attributes.json), and fitness slows tool wear a little (tool_care)
 	items.report_position(1, Vector3(5.0, 10.0, 5.0))
 	var rod: int = items.table.number_of("fishing_rod")
 	items.action(1, Net.ACT_ADMIN_GIVE, rod, 0, 1, Vector3.ZERO)

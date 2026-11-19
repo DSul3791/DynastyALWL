@@ -1,13 +1,19 @@
 {
-	"note": "Character attributes (Dave 19 Nov 2026): every attribute (luck, fitness, strength, memory, dexterity, perception, charisma) is a whole number from 0 to 100 and reads like a percentage; nothing may take one outside that range. 50 is an average person (neutral: no help and no hindrance); below 50 hinders and above 50 helps, each 5 points doing what one point did on the old -10 to +10 scale (src/shared/attributes.gd offset), so every older tuning number (luck.json strength, fitness.json strength, skills.json trait_speed and trait_effect, coins.json charisma_step and luck_strength) keeps its meaning. A rolled attribute uses the graded roll below (Dave 19 Nov, five grades, his ruling): a band is picked by weight, then a whole number uniformly inside it, so most people land low and high values are rare. Weights are percent of characters and must add up to 100. Characters saved on the old scale are converted once when the server loads them (characters.json version 1 to 2: value 50 + 5 x old).",
+	"note": "Character attributes (Dave 19 Nov 2026): every attribute (luck, fitness, strength, memory, dexterity, perception, charisma) is a whole number from 0 to 100 and reads like a percentage; nothing may take one outside that range. 50 is an average person (neutral: no help and no hindrance); below 50 hinders and above 50 helps, each 5 points doing what one point did on the old -10 to +10 scale (src/shared/attributes.gd offset), so every older tuning number (luck.json strength, fitness.json strength, skills.json trait_speed and trait_effect, coins.json charisma_step and luck_strength) keeps its meaning. A new character rolls every attribute in `rolled` once (Dave 19 Nov 2026, bell shape: 'the most common attribute number people will ever have should be between 40-60 ... 20-39 or 61-80 should be uncommon and 0-19 and 81-100 should be even rarer but not impossible'): a band of roll_bands is picked by weight, then a whole number uniformly inside it. Weights are percent of characters (provisional ATTR-4, kept here to tune). player_bands replaces roll_bands for a player character's attribute (Dave: 'fitness should just start rolled in the middle range', 'but only for player characters. when rolling NPCs they could be all over the place'). Characters saved on the old scale are converted once when the server loads them (characters.json version 1 to 2: value 50 + 5 x old).",
 	"min": 0,
 	"max": 100,
 	"neutral": 50,
+	"rolled": ["luck", "fitness", "strength", "memory", "dexterity", "perception", "charisma"],
 	"roll_bands": [
-		{"from": 0, "to": 40, "weight": 45},
-		{"from": 41, "to": 60, "weight": 25},
-		{"from": 61, "to": 75, "weight": 15},
-		{"from": 76, "to": 90, "weight": 10},
-		{"from": 91, "to": 100, "weight": 5}
-	]
+		{"from": 0, "to": 19, "weight": 5},
+		{"from": 20, "to": 39, "weight": 20},
+		{"from": 40, "to": 60, "weight": 50},
+		{"from": 61, "to": 80, "weight": 20},
+		{"from": 81, "to": 100, "weight": 5}
+	],
+	"player_bands": {
+		"fitness": [
+			{"from": 40, "to": 60, "weight": 100}
+		]
+	}
 }

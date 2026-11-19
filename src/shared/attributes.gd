@@ -32,9 +32,33 @@ static func from_old(old: Variant) -> int:
 	return clamp_value(int(round(NEUTRAL + o * PER_OLD_POINT)))
 
 
-# The graded creation roll: a band by weight, then a whole number uniformly inside it. `rng` is the caller's stream. Bad or empty bands give NEUTRAL.
-static func roll(rng: RandomNumberGenerator, cfg: Dictionary) -> int:
-	var bands: Array = cfg.get("roll_bands", []) if typeof(cfg.get("roll_bands", [])) == TYPE_ARRAY else []
+# A new character's attributes (attributes.json "rolled"), each from roll_bands, or from player_bands for that attribute when `player` is true (a
+# player's fitness starts in the middle range; an NPC's may land anywhere). Returns {name: value}.
+static func roll_character(rng: RandomNumberGenerator, cfg: Dictionary, player: bool) -> Dictionary:
+	var out: Dictionary = {}
+	var names: Variant = cfg.get("rolled", [])
+	var own: Variant = cfg.get("player_bands", {})
+
+	for name in (names if typeof(names) == TYPE_ARRAY else []):
+		var bands: Variant = cfg.get("roll_bands", [])
+
+		if player and typeof(own) == TYPE_DICTIONARY and (own as Dictionary).has(name):
+			bands = own[name]
+
+		out[str(name)] = roll(rng, bands)
+
+	return out
+
+
+# The graded roll: a band ({from, to, weight}) picked by weight, then a whole number uniformly inside it. `rng` is the caller's stream. Bad or empty
+# bands give NEUTRAL.
+static func roll(rng: RandomNumberGenerator, bands_in: Variant) -> int:
+	var bands: Array = []
+
+	for b in (bands_in if typeof(bands_in) == TYPE_ARRAY else []):
+		if typeof(b) == TYPE_DICTIONARY:
+			bands.append(b)
+
 	var total: float = 0.0
 
 	for b in bands:
@@ -45,7 +69,6 @@ static func roll(rng: RandomNumberGenerator, cfg: Dictionary) -> int:
 
 	var pick: float = rng.randf() * total   # luck-exempt: the creation roll itself
 	var u: float = rng.randf()   # luck-exempt: the creation roll itself
-
 	var chosen: Dictionary = {}
 
 	for b in bands:
