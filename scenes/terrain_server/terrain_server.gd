@@ -51,6 +51,7 @@ const SwimScript := preload("res://src/shared/swim.gd")
 const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
+const EditedGroundScript := preload("res://src/stream/edited_ground.gd")
 const CoarseGroundScript := preload("res://src/stream/server_coarse_ground.gd")
 const FogGroundScript := preload("res://src/shared/fog_ground.gd")
 const TrailsScript := preload("res://src/stream/server_trails.gd")
@@ -110,6 +111,7 @@ var flora
 var trails                             # ServerTrails: worn game trails the animals leave
 var map_knowledge                      # ServerMap: what each character has surveyed for its charcoal Map (protocol 120)
 var animals                            # ServerAnimals: wildlife around the players (rabbits)
+var edited_ground                      # EditedGround: the ground with its digs and fills, for the animals
 var coarse_ground = CoarseGroundScript.new()   # summits and valley-fog cells for the clients, from the tiles (protocol 132)
 var _animal_sent: Dictionary = {}
 var _send_round: int = 0
@@ -605,7 +607,11 @@ func _ready() -> void:
 	npcs.rain_now = func(): return float(weather.get("rain", 0.0))
 	npcs.setup(store_dir)
 	animals = AnimalsScript.new()
-	animals.ground_height = npcs.ground_height
+	edited_ground = EditedGroundScript.new()
+	edited_ground.ops = store.ops
+	edited_ground.surface = func(x, z): return generator.surface_height(x, z)
+	animals.ground_height = edited_ground.height   # the ground with every dig and fill (edited_ground.gd): animals walk on and drop to it
+	animals.ground_edited = edited_ground.is_edited
 	animals.blocked = npcs.blocked
 	animals.walls = func(x0, z0, x1, z1, margin): return items.structure_blocks_step(x0, z0, x1, z1, margin)
 	animals.water_level = func(x, z):
@@ -2468,6 +2474,8 @@ func _reset_terrain_edits() -> void:
 		return
 
 	store.clear_generated()
+	edited_ground.forget()
+	animals.ground_changed(Vector3.ZERO, INF)   # every animal back onto the generated ground
 	flora.clear_memory()
 	generator.forget_tiles()
 	WaterGridScript.forget_ground()
@@ -2647,6 +2655,7 @@ func _dig_ground(center: Vector3, radius: float) -> bool:
 		_tell_tile_changed(tile)
 
 	tunnels.mark_edit(center, radius)
+	_ground_moved(center, radius)
 	var t2: int = Time.get_ticks_usec()
 
 	if water_live != null:
@@ -2776,6 +2785,15 @@ func _send_buried() -> void:
 		net.flora_cut.rpc(cut[0], cut[1])
 
 
+# The animals' ground changed round a dig or fill: its cells are read again and the animals standing there come to rest on it.
+func _ground_moved(center: Vector3, radius: float) -> void:
+	if edited_ground != null:
+		edited_ground.changed(center, radius)
+
+	if animals != null:
+		animals.ground_changed(center, radius)
+
+
 # A shovel fill: the sphere of ground is saved in the edit log (store.fill_sphere), the water thread raises its ground
 # there, and everyone is told. Returns false when nothing changed (the block holds its edit limit).
 func _fill_ground(center: Vector3, radius: float, material: int) -> bool:
@@ -2795,6 +2813,7 @@ func _fill_ground(center: Vector3, radius: float, material: int) -> bool:
 
 	if not tiles.is_empty():
 		tunnels.mark_edit(center, radius)
+		_ground_moved(center, radius)
 		_bury_plants(center, radius)
 
 		if water_live != null:
