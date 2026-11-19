@@ -3864,7 +3864,8 @@ func _fill(peer: int, inv, at: Vector3, held_slot: int) -> void:
 # --- The garden hoe (Dave 2026-10-22, items/HOE_AND_SHOVEL_DESIGN.md) ---
 # Path: one stroke treads the metre of ground under the crosshair: a path patch (state 32) clears the grass and draws flat tan; the height does
 # not change. Smooth (the levelling stroke, _hoe_smooth): the ground within SMOOTH_REACH_M of the point is cut or filled toward the height the player
-# stands at. No items go in or out; the only cost is the hoe's own wear.
+# stands at. Raising ground uses up Soil and cutting ground gives Soil back at the same rate (_level_soil_units), so levelling neither makes nor
+# loses soil (BugsList entry 1); Pathen and the garden jobs level to the ground's own average and move no items.
 const HOE_COOLDOWN_MS := 500
 # Levelling (Dave 14 Nov 2026: "its to small an area and its too week"; "make the ground level with where you are standing and if you are standing on say a
 # foundation it make the ground just a little bit below your feet so it stays below the top of the foundation", the Valheim feel). PROVISIONAL values for Dave
@@ -3882,6 +3883,8 @@ const LEVEL_HOLD_MS := 1500       # LV-1: a stroke this soon after the last one,
 const LEVEL_HOLD_MOVE_M := 0.6
 const LEVEL_KEEP_M := 1.2         # LV-2: no levelling spot this close (flat) to the feet: the ground holding the player up stays as it is
 const SOIL_FILL_M3 := 0.75        # LV-3: one Soil fills this much ground (a shovel dig of about 1.5 m3 gives two, digging.json)
+# LV-4 (BugsList entry 1, Dave play test 19 Nov 2026: "if I am leveling and it has to cut down the soil it should give me back the soil its removing"):
+# a cut gives Soil at the fill's rate, whatever the ground was; what the pack cannot take drops at the player's feet (give), where the next fill can use it.
 var _level_hold: Dictionary = {}  # peer -> [target height, msec of the last stroke, the feet then]
 const GRADE_CLEAR_M := 2.5        # a grade stroke takes up the path patches this close to it (the ground under them moved)
 const SMOOTH_MAX_M := 0.25
@@ -4045,12 +4048,16 @@ func _hoe_smooth(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	var before: Array = _snapshot(inv)
 	var stock: Dictionary = _stock_of(peer)
 	var soil: int = table.number_of("soil")
-	var units_of := func(depth: float, sphere: float) -> int: return maxi(1, ceili(PI * depth * depth * (3.0 * sphere - depth) / 3.0 / SOIL_FILL_M3))   # the cap of the fill sphere that rises above the ground
-	var can_pay := func(depth: float, sphere: float) -> bool: return soil > 0 and _stock_have(inv, soil, stock, true) >= int(units_of.call(depth, sphere))
-	var pay := func(depth: float, sphere: float) -> bool: return _stock_take(inv, soil, int(units_of.call(depth, sphere)), stock, [], true) > 0
+	var can_pay := func(depth: float, sphere: float) -> bool: return soil > 0 and _stock_have(inv, soil, stock, true) >= _level_soil_units(depth, sphere)
+	var pay := func(depth: float, sphere: float) -> bool: return _stock_take(inv, soil, _level_soil_units(depth, sphere), stock, [], true) > 0
+	var cut_soil: Array = [0]   # Soil the cuts of this stroke dug out, given once the stroke is done
+	var gain := func(depth: float, sphere: float) -> void: cut_soil[0] += _level_soil_units(depth, sphere)
 
-	var worked: int = _level_ground(at, spots, target, edits, [], [], pay, LEVEL_MAX_OPS, can_pay)
+	var worked: int = _level_ground(at, spots, target, edits, [], [], pay, LEVEL_MAX_OPS, can_pay, gain)
 	_send_changes(peer, inv, before)
+
+	if int(cut_soil[0]) > 0 and soil > 0:
+		give(peer, soil, int(cut_soil[0]))   # the pack first, the rest at the feet (LV-4)
 
 	if worked < 0:
 		return   # the ground there is not loaded
@@ -4071,6 +4078,12 @@ func _hoe_smooth(peer: int, inv, at: Vector3, held_slot: int) -> void:
 	_wear_slot(peer, inv, hoe, "dig")
 	_remove_paths_near(at, SMOOTH_REACH_M + 1.0)
 	_dirty = true
+
+
+# The Soil a Level edit of `depth` with a sphere of radius `sphere` moves: the cap of the sphere above the ground (a fill) or below it (a cut) is the same
+# shape, so a cut and a fill of the same depth move the same Soil (LV-3, LV-4).
+static func _level_soil_units(depth: float, sphere: float) -> int:
+	return maxi(1, ceili(PI * depth * depth * (3.0 * sphere - depth) / 3.0 / SOIL_FILL_M3))
 
 
 # The height Level works toward (BugsList entry 1): the bottom of the feet when the action starts, kept while the button is held (strokes LEVEL_HOLD_MS apart,
@@ -4149,13 +4162,14 @@ func _edited_height(x: float, z: float, edits: Array) -> float:
 # Cuts or fills the ground toward `target` at the spots (offsets from `at`), at most `max_ops` edits, each time at the spot now farthest from level
 # (heights read through the edits, the ones made in this stroke included, so strokes add up and every spot gets its turn), at most LEVEL_MAX_M an edit.
 # Not volume balanced (the Valheim feel Dave asked for). `pay` (Level, BugsList entry 1), when given, is asked before every fill (depth, sphere) -> bool: a fill
-# it refuses is not made and that spot is left for this stroke (_level_unpaid). Returns the edits made, -1 when a spot is not loaded.
+# it refuses is not made and that spot is left for this stroke (_level_unpaid); `gain` (Level, entry 1) is told the (depth, sphere) of every cut made.
+# Returns the edits made, -1 when a spot is not loaded.
 var _level_refused: bool = false   # the last _level_ground stopped on a refused edit (a full block), not because the ground was level
 var _level_unpaid: bool = false    # the last _level_ground left low ground unfilled for want of soil
 
 
 # `targets` and `radii` (a garden: till_garden), when given, are each spot's own height and sphere size.
-func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targets: Array = [], radii: Array = [], pay: Callable = Callable(), max_ops: int = LEVEL_MAX_OPS, can_pay: Callable = Callable()) -> int:
+func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targets: Array = [], radii: Array = [], pay: Callable = Callable(), max_ops: int = LEVEL_MAX_OPS, can_pay: Callable = Callable(), gain: Callable = Callable()) -> int:
 	var worked: int = 0
 	var skip: Dictionary = {}   # spots whose fill was not paid for, this stroke
 	var grid: Dictionary = _edit_buckets(edits) if spots.size() > 64 else {}   # a garden's hundreds of spots read only the edits near each
@@ -4209,6 +4223,8 @@ func _level_ground(at: Vector3, spots: Array, target: float, edits: Array, targe
 
 		if best_off < 0.0 and pay.is_valid():
 			pay.call(depth, sphere)   # the soil is taken once the ground has taken the fill
+		elif best_off > 0.0 and gain.is_valid():
+			gain.call(depth, sphere)   # the soil cut away is counted once the ground has taken the cut
 
 		edits.append([0 if best_off > 0.0 else 1, centre, sphere])
 		worked += 1
