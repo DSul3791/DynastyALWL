@@ -30,6 +30,7 @@ const QUARTER_M := 70.0
 var roster: Dictionary = {}      # id -> {name, role, outfit}
 var _outfits: Dictionary = {}    # outfit name -> item ids worn on top of the ragdoll (data/npcs/outfits.json)
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state}
+var goblin_maker: Callable       # (variant, seed) -> Node3D or null: a goblin tribe member's body (AnimalView.make_goblin), set by the client
 
 
 func _exit_tree() -> void:
@@ -135,6 +136,10 @@ func _process_body(delta: float) -> void:
 		var body: Dictionary = _bodies[id]
 		var node: Node3D = body["node"]
 		var state: int = body["state"]
+
+		if node.has_meta("goblin"):
+			_process_goblin(node, body, delta)
+			continue
 		var before: Vector3 = node.position
 		node.position = node.position.lerp(body["target"], clampf(delta * 6.0, 0.0, 1.0))
 		node.rotation.y = lerp_angle(node.rotation.y, -float(body["heading"]) - PI * 0.5, clampf(delta * 8.0, 0.0, 1.0))
@@ -178,6 +183,31 @@ func _process_body(delta: float) -> void:
 			body["owed"] = 0.0
 		elif every == 0:
 			body["owed"] = 0.0
+
+
+# A goblin tribe member (outfit "goblin:<variant>"): it glides and turns like the others and plays its model's idle, walk or run clip by the
+# measured speed (data/animals/models.json goblin clips "0", "walk", "run"); the clips run on the model's own player, as a wild goblin's do.
+func _process_goblin(node: Node3D, body: Dictionary, delta: float) -> void:
+	var before: Vector3 = node.position
+	node.position = node.position.lerp(body["target"], clampf(delta * 6.0, 0.0, 1.0))
+	node.rotation.y = lerp_angle(node.rotation.y, -float(body["heading"]) - PI * 0.5, clampf(delta * 8.0, 0.0, 1.0))
+	var pace: float = lerpf(float(body.get("pace", 0.0)), Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), clampf(delta * 5.0, 0.0, 1.0))
+	body["pace"] = pace
+	var model: Node3D = node.get_node_or_null("Goblin")
+	var player: AnimationPlayer = model.get_meta("player") as AnimationPlayer if model != null and model.has_meta("player") else null
+
+	if player == null:
+		return
+
+	var roles: Dictionary = player.get_meta("roles", {})
+	var role: String = "run" if pace > 2.2 else ("walk" if pace > 0.4 else "0")
+	var clip: String = str(roles.get(role, roles.get("0", "")))
+
+	if clip != "" and player.current_animation != clip:
+		player.play(clip, 0.25)
+
+	var ref: float = float(player.get_animation(clip).get_meta("travel_mps", 0.0)) if clip != "" and player.has_animation(clip) and role != "0" else 0.0
+	player.speed_scale = clampf(pace / ref, 0.5, 2.0) if ref > 0.0 else 1.0
 
 
 # The sitting clip: on the chair (the clip the player sits on a seat with) when the body has it, else the ground sit.
@@ -232,6 +262,11 @@ func _make_rig(id: String) -> Node3D:
 
 func _make_body(id: String) -> Node3D:
 	var info: Dictionary = roster.get(id, {})
+	var goblin: Node3D = _make_goblin(id, str(info.get("outfit", "")), str(info.get("name", id)))
+
+	if goblin != null:
+		return goblin
+
 	var root: Node3D = Node3D.new()
 	var ragdoll: Node3D = _make_rig(id)
 	ragdoll.name = "Rig"
@@ -264,6 +299,34 @@ func _make_body(id: String) -> Node3D:
 	label.no_depth_test = false           # Dave, build 612: names showed through the walls of a hole
 	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
 	label.position = Vector3(0.0, 2.05, 0.0)
+	label.modulate = Color(1.0, 0.95, 0.8)
+	label.outline_size = 8
+	root.add_child(label)
+	return root
+
+
+# A goblin tribe member's body (data/creatures/goblin_tribes.json "body" sent as outfit "goblin:<variant>"), the wild goblin's model, with the
+# name above its head; null for anyone else, or when the model cannot be made (then the ordinary body stands in).
+func _make_goblin(id: String, outfit: String, title: String) -> Node3D:
+	if not outfit.begins_with("goblin:") or not goblin_maker.is_valid():
+		return null
+
+	var model: Node3D = goblin_maker.call(int(outfit.substr(7)), id.hash()) as Node3D
+
+	if model == null:
+		return null
+
+	var root: Node3D = Node3D.new()
+	root.set_meta("goblin", true)
+	model.name = "Goblin"
+	root.add_child(model)
+	var label: Label3D = Label3D.new()
+	label.text = title
+	label.font_size = 48
+	label.pixel_size = 0.008
+	label.no_depth_test = false
+	label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+	label.position = Vector3(0.0, 1.75, 0.0)   # over a goblin's head (0.6-1.6 m tall)
 	label.modulate = Color(1.0, 0.95, 0.8)
 	label.outline_size = 8
 	root.add_child(label)

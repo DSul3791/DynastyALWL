@@ -10,12 +10,16 @@ const STAND := 0
 const WALK := 1
 const SIT := 2
 const SLEEP := 3
+const TRIBES_PATH := "res://data/creatures/goblin_tribes.json"   # goblin tribe members (server_tribes.gd): NPCs at their own camp spots
+const OWN := "own"              # a tribe member's one package and marker kind: it stands at its own spot all day (data/creatures/goblin_tribes.json)
 
 var hour_now: Callable          # () -> hour of the game day, 0..24
 var ground_height: Callable     # (x, z) -> height
 var blocked: Callable           # (x, z) -> bool: water or anything an NPC may not enter (may be invalid)
 var player_positions: Callable  # () -> Array of Vector3
 var rain_now: Callable          # () -> rain strength 0..1 over the world (may be invalid: no rain)
+var wary: Callable              # (npc record) -> ServerTribes.avoid's answer for a tribe member: back off, hide, hold or watch (may be invalid)
+var back_off_mps: float = 2.4   # how fast a tribe member backs away (goblin_tribes.json back_off_mps)
 
 var cfg: Dictionary = {}
 static var test_hold_off: bool = false   # unit tests read the real day schedules
@@ -41,6 +45,8 @@ func setup(store_dir: String = "") -> void:
 
 	for row in cfg.get("npcs", []):
 		_add_npc(row, Vector3.INF)
+
+	_add_tribes(_read(TRIBES_PATH))
 
 	if _dir != "":
 		for row in _read(_dir + "/npc_admin.json").get("npc_homes", []):
@@ -98,6 +104,24 @@ func _add_npc(row: Dictionary, home: Vector3) -> void:
 		"dormant": true, "placed": false, "home": home, "acc": 0.0, "stuck": 0}
 
 
+# The goblin tribes' members (data/creatures/goblin_tribes.json, Dave 19 Nov 2026): each an NPC with its own spot (a marker of kind OWN only it
+# takes) and the goblin look ("goblin:<variant>" as its outfit: npc_view.gd draws data/animals/models.json goblin variant <variant>).
+func _add_tribes(data: Dictionary) -> void:
+	back_off_mps = float(data.get("back_off_mps", back_off_mps))
+
+	for tribe in data.get("tribes", {}):
+		for row in (data["tribes"][tribe] as Dictionary).get("members", []):
+			var id: String = str(row.get("id", ""))
+			var spot: Dictionary = row.get("spot", {})
+
+			if id == "" or npcs.has(id):
+				continue
+
+			_add_marker({"id": id + "_spot", "kind": OWN, "npc": id, "x": float(spot.get("x", 0.0)), "z": float(spot.get("z", 0.0)), "yaw": float(spot.get("yaw", 0.0))})
+			_add_npc({"id": id, "name": row.get("name", id), "role": row.get("role", "goblin"), "voice": row.get("voice", id), "outfit": "goblin:%d" % int(row.get("body", 0))}, Vector3.INF)   # no home: its own spot is all it has (and nothing goes in npc_admin.json)
+			npcs[id]["tribe"] = str(tribe)
+
+
 # --- Markers: slots so two NPCs never take one chair ---
 
 func _marker_pos(marker: Dictionary) -> Vector3:
@@ -153,6 +177,9 @@ func package_of(npc: Dictionary, hour: float) -> String:
 	var table: Array = npc["schedule"]
 	var hold: Dictionary = {} if test_hold_off else cfg.get("test_hold", {})
 
+	if str(npc.get("tribe", "")) != "":
+		return OWN   # a tribe member keeps its camp spot, AI or not
+
 	if unwell:
 		return "sit" if hour >= 6.0 and hour < 21.0 else "sleep"
 
@@ -169,6 +196,11 @@ func package_of(npc: Dictionary, hour: float) -> String:
 		return "shelter"
 
 	return planned
+
+
+# A package by name (data/npcs/npcs.json packages); OWN is a tribe member's own spot.
+func _package(name: String) -> Dictionary:
+	return {"marker": OWN, "state": "stand"} if name == OWN else cfg.get("packages", {}).get(name, {})
 
 
 # Run the NPCs a little: dormant ones (no player within active_radius_m) are not touched; the rest tick at their rate.
@@ -210,7 +242,7 @@ func _anchor(npc: Dictionary) -> Vector3:
 		return npc["pos"]
 
 	var hour: float = float(hour_now.call()) if hour_now.is_valid() else 12.0
-	var pkg: Dictionary = cfg.get("packages", {}).get(package_of(npc, hour), {})
+	var pkg: Dictionary = _package(package_of(npc, hour))
 	var id: String = _claim(npc, str(pkg.get("marker", ""))) if not pkg.is_empty() else ""
 
 	if id != "":
@@ -222,7 +254,7 @@ func _anchor(npc: Dictionary) -> Vector3:
 # A player came in range: put the NPC where its schedule says it is now (lazy resolution; nothing was simulated meanwhile).
 func _activate(npc: Dictionary, hour: float) -> void:
 	var pkg_name: String = package_of(npc, hour)
-	var pkg: Dictionary = cfg.get("packages", {}).get(pkg_name, {})
+	var pkg: Dictionary = _package(pkg_name)
 	npc["package"] = pkg_name
 	var id: String = _claim(npc, str(pkg.get("marker", ""))) if not pkg.is_empty() else ""
 	_release_other(npc, str(pkg.get("marker", "")))
@@ -245,7 +277,7 @@ func _state_code(name: String) -> int:
 func _step(npc: Dictionary, hour: float, dt: float) -> void:
 	ticks_run += 1
 	var pkg_name: String = package_of(npc, hour)
-	var pkg: Dictionary = cfg.get("packages", {}).get(pkg_name, {})
+	var pkg: Dictionary = _package(pkg_name)
 
 	if pkg_name != npc["package"]:
 		npc["package"] = pkg_name
@@ -255,6 +287,9 @@ func _step(npc: Dictionary, hour: float, dt: float) -> void:
 			npc["state"] = STAND
 
 	if pkg.is_empty():
+		return
+
+	if str(npc.get("tribe", "")) != "" and wary.is_valid() and _step_wary(npc, wary.call(npc), dt):
 		return
 
 	var id: String = _claim(npc, str(pkg.get("marker", "")))
@@ -272,6 +307,7 @@ func _step(npc: Dictionary, hour: float, dt: float) -> void:
 		npc["heading"] = deg_to_rad(marker["yaw"])
 		npc["state"] = _state_code(str(pkg.get("state", "stand")))
 		npc["stuck"] = 0
+		_watch(npc, npc.get("look", Vector3.INF))
 	elif r["moved"]:
 		npc["pos"] = r["pos"]
 		npc["heading"] = r["heading"]
@@ -284,6 +320,52 @@ func _step(npc: Dictionary, hour: float, dt: float) -> void:
 		if npc["stuck"] >= 20:   # boxed in for a while: put it on its marker rather than leave it standing in a wall
 			npc["pos"] = _marker_pos(marker)
 			npc["stuck"] = 0
+
+
+# A tribe member near players (ServerTribes.avoid): true when that decided this step. It goes into the cave mouth and out of sight from an angry
+# character, backs off from one too near, or holds still watching one just outside its keep distance; otherwise the schedule walk goes on,
+# and it watches anyone inside watch_m from its spot.
+func _step_wary(npc: Dictionary, w: Dictionary, dt: float) -> bool:
+	npc["look"] = w.get("look", Vector3.INF)
+	var goal: Vector3 = w.get("hide", w.get("goal", Vector3.INF))
+
+	if goal == Vector3.INF:
+		if bool(npc.get("hidden", false)):   # nobody angry near any more: it comes out of the mouth where it went in
+			npc["hidden"] = false
+
+		if bool(w.get("hold", false)):
+			npc["state"] = STAND
+			_watch(npc, npc["look"])
+			return true
+
+		return false
+
+	if bool(npc.get("hidden", false)):
+		return true   # in the cave: it stays out of sight until the angry character goes
+
+	var r: Dictionary = Steering.step(npc["pos"], goal, back_off_mps, dt, ground_height, blocked, float(cfg.get("arrive_m", 0.4)), npc["heading"])
+
+	if r["moved"]:
+		npc["pos"] = r["pos"]
+		npc["state"] = WALK
+		npc["heading"] = r["heading"] if w.has("hide") else _facing(npc["pos"], npc["look"], r["heading"])   # backing off it keeps its eyes on the player
+	else:
+		npc["state"] = STAND
+
+	if w.has("hide") and (r["arrived"] or Vector2(npc["pos"].x - goal.x, npc["pos"].z - goal.z).length() <= 1.0):
+		npc["hidden"] = true
+
+	return true
+
+
+func _watch(npc: Dictionary, look: Vector3) -> void:
+	if look != Vector3.INF:
+		npc["heading"] = _facing(npc["pos"], look, npc["heading"])
+
+
+static func _facing(from: Vector3, to: Vector3, fallback: float) -> float:
+	var d: Vector2 = Vector2(to.x - from.x, to.z - from.z)
+	return atan2(d.y, d.x) if to != Vector3.INF and d.length() > 0.05 else fallback
 
 
 # --- What clients see ---
@@ -305,7 +387,7 @@ func rows_near(point: Vector3) -> Array:
 	for id in npcs:
 		var npc: Dictionary = npcs[id]
 
-		if npc["dormant"] or not npc["placed"]:
+		if npc["dormant"] or not npc["placed"] or bool(npc.get("hidden", false)):
 			continue
 
 		if Vector2(npc["pos"].x - point.x, npc["pos"].z - point.z).length() <= radius:

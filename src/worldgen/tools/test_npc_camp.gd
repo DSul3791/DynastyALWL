@@ -165,10 +165,10 @@ func _server(tree: Vector2, fire: Vector2) -> void:
 	items._goals_loaded = true
 	items.peer_connected_hello(1, "camp-test-key01")
 	items._camp_fire_tick()
-	check(not items._items.has(items._camp_fire_id) or items._camp_fire_id == 0, "no camp fire unless the server scene asks for it")
+	check(not items._items.has(int(items._camp_fire_ids.get(0, 0))) or int(items._camp_fire_ids.get(0, 0)) == 0, "no camp fire unless the server scene asks for it")
 	items.camp_fire_on = true
 	items._camp_fire_tick()
-	var id: int = items._camp_fire_id
+	var id: int = int(items._camp_fire_ids.get(0, 0))
 	check(items._items.has(id), "the camp fire is laid")
 
 	if not items._items.has(id):
@@ -209,7 +209,7 @@ func _server(tree: Vector2, fire: Vector2) -> void:
 	check(not in_save, "the camp fire is not in the save")
 	items._items.erase(id)
 	items._camp_fire_tick()
-	check(items._items.has(items._camp_fire_id) and items._camp_fire_id != id, "a cleared camp fire is laid again")
+	check(items._items.has(int(items._camp_fire_ids.get(0, 0))) and int(items._camp_fire_ids.get(0, 0)) != id, "a cleared camp fire is laid again")
 
 	# Nothing is put down near the tree: the ghost's rule and the server's.
 	var cfg: Dictionary = PlacementRules.load_config()
@@ -283,7 +283,7 @@ func _old_world(fire: Vector2, own: Dictionary) -> void:
 	check(kept, "the old world's own fire loads as it was")
 	after.camp_fire_on = true
 	after._camp_fire_tick()
-	var camp: Dictionary = after._items.get(after._camp_fire_id, {})
+	var camp: Dictionary = after._items.get(int(after._camp_fire_ids.get(0, 0)), {})
 	check(camp.get("fire", {}).has("camp") and Vector2(camp["pos"].x, camp["pos"].z).distance_to(fire) < 0.01, "the camp fire is laid in the old world")
 
 

@@ -1434,6 +1434,7 @@ func _welcome_body(info: Dictionary) -> void:
 	animal_view.name = "Animals"
 	add_child(animal_view)
 	_animal_view_node = animal_view
+	npc_view.goblin_maker = animal_view.make_goblin   # goblin tribe members wear the wild goblin's model (data/creatures/goblin_tribes.json)
 	animal_view.water_level = func(x: float, z: float) -> float: return flora.water_level_at(x, z) if flora != null else NAN      # swimmers play their swim clip in water
 	net.animals_received.connect(animal_view.on_rows)
 	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3) -> void:

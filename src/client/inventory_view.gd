@@ -18,6 +18,7 @@ const CarcassLook := preload("res://src/client/carcass_look.gd")
 const RockLook := preload("res://src/client/rock_look.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
 const BasicLook := preload("res://src/client/basic_look.gd")
+const NpcCamp := preload("res://src/shared/npc_camp.gd")   # whose camp fire it is (owner_near)
 const PlacementRules := preload("res://src/shared/placement_rules.gd")   # DOOR_TAKEN_M: a doorway frame and its door share one spot
 
 # The client side of items: the inventory panel (I), things lying on the ground (E picks up
@@ -5450,8 +5451,9 @@ func world_item_name_near(point: Vector3, r: float) -> String:
 
 # "Campfire 00:04:00 Burn time": the fuel left in the fire (a lit one counts down, a laid one shows what its wood would burn).
 func _fire_label(entry: Dictionary, number: int) -> String:
-	if entry.get("camp", false):
-		return "Edda and Hob's campfire"
+	if entry.get("camp", false):   # a camp fire (Edda and Hob's, or a goblin tribe's): named for whose it is
+		var owner: String = NpcCamp.owner_near(entry.get("pos", Vector3.ZERO))
+		return owner.left(1).to_upper() + owner.substr(1) + " campfire"
 
 	if not entry.has("burn"):
 		return _item_label(number)
