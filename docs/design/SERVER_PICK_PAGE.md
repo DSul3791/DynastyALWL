@@ -76,6 +76,25 @@ Join stays possible on a red (offline) row: the server may have just come up. On
 
 **How the status is asked (server change, small):** a new request on the existing TCP block line (port + 1, `src/stream/block_link_server.gd`): a client that sends a STATUS frame instead of HELLO gets one small reply and the line closes: server name, build, protocol, players online, max players, the short message, and player names if the server shares them. Ping is the time to that reply. No ENet join, no character, nothing logged as a join. The server name and message are two lines in the server's store (`<store>/server.json`, set by whoever runs it). An old server with no STATUS answers nothing useful and the row says "Online (no details)" when the TCP line opened, else Offline.
 
+## Server passwords (Dave, 19 Nov 2026)
+
+Dave: "servers need the ability to also have a password. so once you pick your server and try to connect we will have a popup that asks for the password. you get 3 tries if you get it wrong. then you get a message that says. you got it wrong 3 times. check your caps lock, and take a minute to recompose. then it should set you back at the pick a server page."
+
+**Player side**
+- A server with a password shows a **padlock** on its row (from the status reply), so the player knows before pressing Join.
+- Join on a locked server opens a small popup: "Hannibal's House needs a password", a hidden-text box with a show/hide eye, a **Caps Lock is on** warning when it is, OK and Cancel. Enter is OK.
+- Wrong: the popup stays, the box empties, and it says "Wrong password. 2 tries left." then "1 try left."
+- Third wrong: the popup closes and a message says **"You got it wrong 3 times. Check your Caps Lock, and take a minute to recompose."** with OK, which goes back to the server page with that server still chosen. The player may try again from there.
+- Cancel goes back to the server page at any time.
+- Continue on a locked server asks for the password the same way (unless it is remembered; Dave's choice 3).
+
+**Server side**
+- Optional setting: no password means an open server, exactly as today. The setting lives in the server's store (`<store>/server.json`, beside the name and message) and can also be given to the Docker container as an environment variable, so it never has to sit in a file inside the image. The exact setting name is agreed with the Docker/server work before it is built.
+- The server keeps only a salted hash of the password, never the password itself. The password never crosses the network: at join the server sends its salt and a fresh one-time number; the client sends back a proof made from the password and that number. The server checks the proof. A copied proof is useless for the next join.
+- The check is on the server, before the player gets anything of the world. The client's three tries are the page's rule; the server has its own guard against a script guessing: after 5 wrong proofs from one address in a minute it refuses that address for a minute.
+- The admin key check is separate and unchanged: the password lets a player in, it never makes anyone an admin.
+- Protocol bump (with the status request).
+
 ## Joining and the failures after Join
 
 Join opens the existing connect window (`connect_window.gd`), which already names each step. Changes:
@@ -96,7 +115,7 @@ Join opens the existing connect window (`connect_window.gd`), which already name
 
 ## What is remembered, and where
 
-- `user://servers.json` on the player's computer (for Windows: `%APPDATA%\Godot\app_userdata\Dynasty a life well lived\`). One list per Windows user. Per row: address as typed, the name the player gave it (empty means "use the server's own name"), the server's last-known name, first joined, last played, last answered, last build seen. No passwords (there are none) and no character data except which character was last played on each server.
+- `user://servers.json` on the player's computer (for Windows: `%APPDATA%\Godot\app_userdata\Dynasty a life well lived\`). One list per Windows user. Per row: address as typed, the name the player gave it (empty means "use the server's own name"), the server's last-known name, first joined, last played, last answered, last build seen. A remembered server password only as its salted hash (choice 3), and no character data except which character was last played on each server.
 - The old single address in `user://join_address.cfg` is read once and becomes the first row, so a tester who already typed an address keeps it.
 - The selected row is remembered: next launch the page opens with the server last played already chosen, so Enter or Join gets back in with one key.
 - Remove takes the row off at once, with an "Undo" bar for 8 seconds instead of a confirm box.
@@ -112,16 +131,17 @@ Join opens the existing connect window (`connect_window.gd`), which already name
 ## Build plan (after approval)
 
 1. `src/client/server_list.gd` + test: parse and normalise an address, de-duplicate, save/load `servers.json`, move the old `join_address.cfg`. No UI. (Can be prepared before approval: it only follows Dave's stated requirements.)
-2. Status request: STATUS frame on the block line, `<store>/server.json` name and message, client query with lookup in the background and a 5 s limit + tests. Protocol bump.
+2. Status request and password: STATUS frame on the block line (with "locked"), the password check at join (salt, one-time number, proof), the guard against guessing, the setting in `server.json` and the container, `<store>/server.json` name and message, client query with lookup in the background and a 5 s limit + tests. Protocol bump.
 3. The page itself (replaces `join_page.gd`), the connect window's Back to servers and its new words. One client smoke against a separate server on Lane A.
 4. The flow: Welcome Play/Continue, Servers before Characters, per-server last character, Continue straight in with Cancel and the fall-back to the Servers page.
 Each is one reviewed PR to dev with the selector's tests on the exact head.
 
 ## For Dave: the choices left to him
 
-Settled by Dave (19 Nov): Play opens this page; official first, then every added server; down servers stay, in red; name, ping and status on each row; Add new server and Join server buttons; double-click joins.
+Settled by Dave (19 Nov): passwords with a popup, 3 tries, then the caps-lock message and back to this page; Play opens this page; official first, then every added server; down servers stay, in red; name, ping and status on each row; Add new server and Join server buttons; double-click joins.
 
 1. **Continue.** Pick: straight into the last server as the character last played there, with Cancel on the joining screen, and back to this page with the reason on the row if it cannot join. Other ways: Continue opens this page with the last server chosen (one more click), or opens the Characters page for the last server.
 2. **Player names before joining.** Pick: the Players column shows the count only, and hovering a row lists who is on (the server owner can turn names off in `server.json`). Other way: count only, never names.
+3. **Remember a password.** Pick: a "Remember on this computer" tick in the popup, on by default. What is remembered is the salted hash, never the typed password, kept in `servers.json`; Remove forgets it, and if the server's password changes the popup simply asks again. Someone who copied that file could join that one server, but never learns the password, so it is useless anywhere else. Other way: always ask.
 
 Assumed meanwhile (provisional, can change): the official server's name and crest come from the release setting; New Game is renamed Play because it now leads to this page; the server's short message (set by its owner) shows when a row is hovered.
