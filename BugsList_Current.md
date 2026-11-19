@@ -296,11 +296,11 @@ Dave, 19 Nov 2026: "I just tried to hit a pig with an axe and it is doing no dam
 
 **Required outcome:** a left click with anything in hand at an animal in reach hurts it. An axe or pick hits it at the impact of its normal swing. A weapon keeps its own damage and reach. A spear still jabs and a bow still shoots. Placing a piece, the hoe's list and the build screen keep their clicks. A broken item, or logs on the shoulder, strike nothing.
 
-**Acceptance:** swing a Stone axe at a boar: it takes damage and dies in about six blows. Do the same with a pickaxe, a hammer, a sword and a knife: each hurts it. Swing an axe at a tree with no animal near: it chops as before.
+**Acceptance:** swing a Stone axe at a boar (the game's pig; there is no pig animal): it takes damage and dies in about six blows. Do the same with a pickaxe, a hammer, a sword and a knife: each hurts it. Swing an axe at a tree with no animal near: it chops as before.
 
 Assumed on Dave's behalf (provisional):
 
-- MELEE-1: the damage of an item with none of its own (`data/items/melee.json`): axe 7, pick 6, hammer 5, knife 4, shovel 4, scythe 4, hoe 3, sickle 3, saw 2, chisel 2, any other tool 2, a weapon with no damage (shield, sling) 3, anything else 1. Tools and such weapons gain 1 for each tier above Stone and Copper: Stone axe 7, Bronze 8, Iron 9, Steel 10. Reach 2.5 m, and 1.8 m for a knife, sickle, saw, chisel or anything else. Picked against animal health (rabbit 5, deer 20, wolf 30, boar 40, bear 120) and the Stone spear's 8.
+- MELEE-1: the damage of an item with none of its own (`data/items/melee.json`): axe 7, pick 6, hammer 5, knife 4, shovel 4, scythe 4, hoe 3, sickle 3, saw 2, chisel 2, any other tool 2, a weapon with no damage (a shield; a sling shoots instead) 3, anything else 1. Tools and such weapons gain 1 for each tier above Stone and Copper: Stone axe 7, Bronze 8, Iron 9, Steel 10. Reach 2.5 m, and 1.8 m for a knife, sickle, saw, chisel or anything else. Picked against animal health (rabbit 5, deer 20, wolf 30, boar 40, bear 120) and the Stone spear's 8.
 
 ## 56. Hits on an animal are hard to see or hear
 
@@ -310,9 +310,9 @@ Dave, 19 Nov 2026: "yesterday I hit a bear with a spear and it killed it but I c
 
 **Cause:** damage numbers already existed (on by default, Esc > Settings > Gameplay) but floated 1.5 m in front of the eye, small, for under a second. The flesh thud played for every number, tree and rock blows too, so it did not mean "you hit the animal", and the animal itself showed nothing.
 
-**Required outcome:** both. Every blow that lands on an animal shows its damage as a large number at the wound that pops in, holds and floats up. It thuds with the flesh sound at the wound, which every player near can hear. The animal flinches. A miss is only the swing or the jab. Tree and rock blows no longer thud as flesh.
+**Required outcome:** both. Every blow in hand that lands on an animal shows its damage as a large number at the wound that pops in, holds and floats up. It thuds with the flesh sound at the wound, which every player near can hear. The animal flinches. A miss is only the swing or the jab. Tree and rock blows no longer thud as flesh.
 
-**Acceptance:** jab a deer with a spear and hit a boar with an axe: each hit shows a number on the animal, thuds and makes the body jolt. Swing at the air: no number, no thud.
+**Acceptance:** jab a deer with a spear and hit a boar with an axe: each hit shows a number on the animal, thuds and makes the body jolt. Swing at the air: no number, no thud. An arrow or a thrown spear also thuds and makes the body jolt; its number shows at the animal's feet, as before.
 
 Not done: a boar or pig makes no pain call when hit, since there is no boar or pig sound. Bears, wolves, deer, rabbits, foxes and moose already call when a hit makes them flee or charge. A hit always does at least 1 damage, so there is no zero-damage hit to tell apart.
 
