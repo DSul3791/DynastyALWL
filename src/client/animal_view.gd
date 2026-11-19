@@ -3,15 +3,15 @@ extends Node3D
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
 
 # Animals on the client (protocol 48): a simple rabbit until Art makes a real one (brown body, head, two ears, white
-# tail). The server sends rows about four times a second; the view glides to each, faces the way it goes and hops while moving
+# tail). The server sends rows about four times a second; the view draws each between the sent points (motion_buffer.gd), faces the way it goes and hops while moving
 # (higher and quicker when it bolts). At most MAX_DRAWN are drawn, the nearest ones (the server already sends only 30 within 120 m).
 
 const MAX_DRAWN := 30
 const SPYGLASS_DRAWN := 60      # while an admin looks through the spyglass the server sends up to 60 within 300 m (animals.json "spyglass")
 const MODELS_PATH := "res://data/animals/models.json"
 const BoneOffsetsScript := preload("res://src/client/bone_offsets.gd")
-const BreathLook := preload("res://src/client/breath_look.gd")
-const MotionBuffer := preload("res://src/client/motion_buffer.gd")   # drawn between sent points, a send behind (Dave 19 Nov 2026: no more lunging)   # head_bone_of: where an animal breathes from in the cold
+const BreathLook := preload("res://src/client/breath_look.gd")   # head_bone_of: where an animal breathes from in the cold
+const MotionBuffer := preload("res://src/client/motion_buffer.gd")   # drawn between sent points, a little behind (Dave 19 Nov 2026)
 const GRAZE := 0
 const HOP := 1
 const FLEE := 2
@@ -406,16 +406,13 @@ func on_rows(rows: Array) -> void:
 				node.scale = Vector3.ONE * YOUNG_SCALE
 
 			add_child(node)
-			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13, "id": int(id)}
+			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13, "id": int(id), "samples": []}
 
 		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
 
 		_bodies[id]["target"] = row[2]
 		_bodies[id]["heading"] = float(row[3])
-
-		if not _bodies[id].has("samples"):
-			_bodies[id]["samples"] = []
 
 		MotionBuffer.push(_bodies[id]["samples"], row[2], float(row[3]), now_s, _gap)
 		_bodies[id]["state"] = int(row[4])
