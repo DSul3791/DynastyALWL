@@ -4,6 +4,7 @@ extends RefCounted
 # client uses the reach to know a left click is aimed at an animal (held_item.gd).
 
 const PATH := "res://data/items/melee.json"
+const WEAPON_REACH_M := 3.0   # a weapon row with no reach_m of its own (a spear's jab)
 
 
 static func load_config() -> Dictionary:
@@ -17,7 +18,7 @@ static func blow(entry: Dictionary, cfg: Dictionary) -> Dictionary:
 	var reach: float = float(cfg.get("reach_m", 2.5))
 
 	if float(entry.get("damage", 0.0)) > 0.0:
-		return {"damage": 0.0, "mode": str(entry.get("damage_mode", "blunt")), "reach_m": float(entry.get("reach_m", 3.0))}
+		return {"damage": 0.0, "mode": str(entry.get("damage_mode", "blunt")), "reach_m": float(entry.get("reach_m", WEAPON_REACH_M))}
 
 	var row: Dictionary = {}
 	var tiered: bool = false

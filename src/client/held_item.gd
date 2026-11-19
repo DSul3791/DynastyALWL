@@ -1157,8 +1157,8 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		return true
 
 	# A left click at an animal in reach strikes it with whatever is in hand (Dave 19 Nov 2026). The axe and pick strike at the impact of their
-	# swing (_strike); a spear jabs and a bow shoots as before; placing a piece or a blueprint keeps its click.
-	if button == MOUSE_BUTTON_LEFT and pressed and not _is_axe() and not _is_spear() and not _is_bow() and not _blueprinting() and not _is_placeable() and _animal_in_reach():
+	# swing (_strike); a spear jabs and a bow shoots as before; placing a piece or a blueprint, the hoe's list and the build screen keep their click.
+	if button == MOUSE_BUTTON_LEFT and pressed and not _is_axe() and not _is_spear() and not _is_bow() and not _blueprinting() and not _is_placeable() and not _hoe_menu_open and not blueprints.is_open and _animal_in_reach():
 		_arm_play("use", 0.6)
 		_melee_strike()
 		return true

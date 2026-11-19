@@ -81,7 +81,6 @@ const RESPAWN_PLACE_M := 6.0
 const RESPAWN_CHANCE := 0.5              # per rotted-away stump, rolled once from the seed and the spot
 const FLORA_CHUNK_M := 256.0
 const PROCESS_REACH_M := 4.0
-const JAB_REACH_M := 3.0
 const STRIKE_COOLDOWN_MS := 600
 const CARCASS_REACH_M := 3.0
 const CARCASS_LIFE_S := 7200.0          # 2 game days of real time
@@ -2886,7 +2885,7 @@ func hit_number(peer: int, at: Vector3, amount: float) -> void:
 
 # One blow at an animal with the item in hand (Dave 19 Nov 2026: "any thing in your hand should be able to be used as a weapon"): hits the animal in
 # front within reach through the animal hook, at most once per recover_ms (else STRIKE_COOLDOWN_MS). A weapon with items.json "damage" (a spear, a
-# sword) strikes for that and its reach_m (else JAB_REACH_M); any other item for its row in data/items/melee.json (an axe by its class and tier,
+# sword) strikes for that and its reach_m (else MeleeRules.WEAPON_REACH_M, 3 m); any other item for its row in data/items/melee.json (an axe by its class and tier,
 # food or a stone weakly; PROVISIONAL MELEE-1). The item is the slot the client names as in hand, checked first (Dave 13 Nov 2026); a broken one
 # does nothing, and logs on the shoulder leave no hand free.
 func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
