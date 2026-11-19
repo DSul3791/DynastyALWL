@@ -141,6 +141,7 @@ func _init() -> void:
 	var taken: Array = Rules.snap(cfg, "foundation_section_kit", Vector3(53.1, 10.0, 50.3), 0, beside_rows)
 	check(taken[0] != Vector3(54.0, 11.0, 50.0), "a neighbour spot already taken is not offered again (%s)" % str(taken))
 	check(not bool(Rules.snap(cfg, "foundation_section_kit", Vector3(70.0, 10.0, 70.0), 0, beside_rows)[2]), "a foundation far from any other is placed on the ground, the wheel may lift it")
+	_first_foundation_checks(cfg)
 
 	var onto: Array = Rules.snap(cfg, "foundation_section_kit", Vector3(50.0, 10.3, 50.0), 0, base_rows)
 	check(bool(onto[2]) and onto[0].x == 50.0 and onto[0].z == 50.0 and onto[0].y > base_rows[0]["pos"].y + 1.9, "aiming at a foundation's middle stacks one on it (BUG-026)")
@@ -600,3 +601,41 @@ func _wall_top_checks(cfg: Dictionary) -> void:
 	check(Rules.blocked(with, "test_wall_top_kit", on_wall[0], [wall_row, {"pos": on_wall[0], "state": 9902, "yaw": 0.0}]) == "close", "one wall top to a wall")
 	var away: Array = Rules.snap(with, "test_wall_top_kit", Vector3(310.3, 10.0, 310.2), 0, [wall_row])
 	check(not bool(away[2]), "with no wall near it is placed like any piece (%s)" % str(away))
+
+
+# Dave 19 Nov 2026 play test: "the first foundation should be able to be placed anywhere facing any direction according to which way I am facing". A
+# foundation with nothing to go beside or on keeps the aimed spot and the player's turn (no world grid, no quarter turns); everything that snaps to it then
+# follows its turn: its wall and floor anchors, the next foundation along its sides, one stacked on it, a pillar, a roof panel on a wall top.
+func _first_foundation_checks(cfg: Dictionary) -> void:
+	for kit in ["foundation_section_kit", "thatch_floor_kit", "wood_foundation_kit"]:
+		var alone: Array = Rules.snap(cfg, kit, Vector3(70.3, 10.0, 70.7), 37, [])
+		check(alone[0] == Vector3(70.3, 10.0, 70.7) and int(alone[1]) == 37 and not bool(alone[2]), "%s alone: where aimed and turned as the player faces (%s)" % [kit, str(alone)])
+
+	check(int(Rules.snap(cfg, "foundation_section_kit", Vector3(70.0, 10.0, 70.0), -20, [])[1]) == 340, "a turn below zero comes back in 0 to 359")
+	var yaw: float = 30.0
+	var turn: float = deg_to_rad(yaw)
+	var at: Vector3 = Vector3(200.0, 10.0, 200.0)
+	var base: Array = [{"pos": at, "state": 25, "yaw": yaw}]
+	var corner: Vector3 = at + Vector3(-1.0, 0.0, -2.0).rotated(Vector3.UP, turn)   # the wall anchor [-1, -2, 0] where the turned slab's look draws it
+	var wall: Array = Rules.snap(cfg, "wall_section_kit", corner + Vector3(0.2, 0.0, -0.1), 0, base)
+	check(bool(wall[2]) and Vector2(wall[0].x, wall[0].z).distance_to(Vector2(corner.x, corner.z)) < 0.01 and is_equal_approx(wall[0].y, 10.3) and int(wall[1]) == 30, "a wall on a foundation turned 30 degrees takes the turned anchor and its turn (%s)" % str(wall))
+	var side: Vector3 = at + Vector3(-2.0, 0.0, 1.0).rotated(Vector3.UP, turn)
+	check(int(Rules.snap(cfg, "wall_section_kit", side, 0, base)[1]) == 120, "the side anchor runs along that side: 90 plus the slab's 30")
+	var next_spot: Vector3 = at + Vector3(4.0, 0.0, 0.0).rotated(Vector3.UP, turn)
+	var next_to: Array = Rules.snap(cfg, "foundation_section_kit", next_spot + Vector3(-0.6, 0.0, 0.5), 0, base)
+	check(bool(next_to[2]) and Vector2(next_to[0].x, next_to[0].z).distance_to(Vector2(next_spot.x, next_spot.z)) < 0.01 and int(next_to[1]) == 30, "the next foundation goes edge to edge along the turned side, at its turn (%s)" % str(next_to))
+	var stacked: Array = Rules.snap(cfg, "foundation_section_kit", at + Vector3(0.9, 0.3, 0.9), 0, base)
+	check(bool(stacked[2]) and stacked[0].x == at.x and stacked[0].z == at.z and int(stacked[1]) == 30, "aimed at the turned slab's middle a foundation stacks on it at its turn (%s)" % str(stacked))
+	var out_corner: Vector3 = at + Vector3(1.9, 0.0, 1.9).rotated(Vector3.UP, turn)   # inside the turned square, outside an unturned one's middle band
+	check(not is_nan(Rules.support_top(cfg, out_corner + Vector3(0.0, 0.3, 0.0), base, true)), "a station aimed near a turned slab's corner stands on it")
+	var pillar_at: Vector3 = at + Vector3(2.0, 0.0, 2.0).rotated(Vector3.UP, turn)
+	var pillar: Array = Rules.snap(cfg, "thatch_pillar_kit", pillar_at + Vector3(0.2, 0.3, 0.1), 10, base)
+	check((bool(pillar[2]) and Vector2(pillar[0].x, pillar[0].z).distance_to(Vector2(pillar_at.x, pillar_at.z)) < 0.01 and int(pillar[1]) == 30), "a pillar takes the turned slab's corner (%s)" % str(pillar))
+	# A roof panel on that building's wall top rises across the wall, at the wall's turn (not the camera's quarter turns).
+	var walls: Array = base + [{"pos": wall[0], "state": 22, "yaw": float(wall[1])}]
+	var across: Vector2 = Vector2(sin(turn), cos(turn))   # the wall's across, as roof_connections reads it
+	var top: Vector3 = Vector3(wall[0].x, wall[0].y + Rules.WALL_HEIGHT_M, wall[0].z)
+	var aim: Vector3 = top + Vector3(across.x, 0.5, across.y) * 1.0
+	var panel: Array = Rules.snap(cfg, "thatch_roof_kit", aim, 200, walls)
+	check(bool(panel[2]) and int(panel[1]) == 210, "facing within 45 degrees of the wall's across, a panel rests on it at the wall's turn (%s)" % str(panel))
+	check(not bool(Rules.snap(cfg, "thatch_roof_kit", aim, 120, walls)[2]), "facing along the wall, no panel")

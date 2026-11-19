@@ -5357,7 +5357,7 @@ func _station_site(peer: int, def: Dictionary, spot: Vector3, yaw_deg: int) -> V
 			if base.is_empty() or not bool(base.get("foundation", false)):
 				continue
 
-			if absf(spot.x - row["pos"].x) > float(base.get("footprint_x", 4.0)) * 0.5 or absf(spot.z - row["pos"].z) > float(base.get("footprint_z", 4.0)) * 0.5:
+			if not PlacementRules.holds(base, row, spot):   # its footprint at its turn (a foundation may face any way)
 				continue
 
 			var under: float = float(ground_height.call(row["pos"].x, row["pos"].z)) if ground_height.is_valid() else row["pos"].y
@@ -11047,14 +11047,15 @@ func register_roofs() -> void:
 func _stands_on(base: Dictionary, def: Dictionary) -> bool:
 	var half_x: float = float(def.get("footprint_x", 4.0)) * 0.5 + 0.1
 	var half_z: float = float(def.get("footprint_z", 4.0)) * 0.5 + 0.1
+	var row: Dictionary = {"pos": base["pos"], "yaw": float(base["struct"].get("yaw", 0.0))}
 
 	for other in _items.values():
 		if other == base or not other.has("struct") or not bool(_structures.get(str(other["struct"]["kind"]), {}).get("piece", false)):
 			continue
 
-		var d: Vector3 = other["pos"] - base["pos"]
+		var local: Vector2 = PlacementRules.local_of(row, other["pos"])   # along the foundation's own sides, at its turn
 
-		if d.y > 0.1 and absf(d.x) <= half_x and absf(d.z) <= half_z:
+		if other["pos"].y - base["pos"].y > 0.1 and absf(local.x) <= half_x and absf(local.y) <= half_z:
 			return true
 
 	return false
