@@ -18,6 +18,7 @@ const LOOKS := {
 	"ladder": {"builder": "ladder", "args": []},
 	"trodden_path": {"builder": "trodden_path", "args": []},
 	"tilled_soil": {"builder": "tilled_soil", "args": []},
+	"irrigation_trench": {"builder": "irrigation_trench", "args": []},
 	"rock_pile": {"builder": "rock_pile", "args": []},
 	"window_wall": {"builder": "window_wall", "args": []},
 	"doorway_section": {"builder": "plank_frame", "args": ["single"]},

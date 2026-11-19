@@ -6432,6 +6432,16 @@
 			"used_for": [],
 			"obtainable_now": true
 		},
+		"irrigation_trench": {
+			"name": "Irrigation trench",
+			"kind": "structure",
+			"description": "A hoed ditch: water piped into it soaks the garden beds within 30 m.",
+			"how_to_get": [
+				"Dug with the hoe (Irrigation Trench)"
+			],
+			"used_for": [],
+			"obtainable_now": true
+		},
 		"fibre_cloth": {
 			"name": "Fibre cloth",
 			"kind": "material",

@@ -1271,6 +1271,8 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		till_garden(peer, inv, at, a, b, count)   # a: the held pack slot, b: the grid's turn in degrees, count: check * 10000000 + mode * 10000 + width * 100 + length (protocol 128)
 	elif kind == Net.ACT_PLANT_GRID:
 		plant_grid(peer, inv, a, b, count, at)   # a: the held pack slot (the hoe), b: the item to plant, count: check * 10000000 + yaw * 10000 + width * 100 + length (protocol 128)
+	elif kind == Net.ACT_DIG_TRENCH:
+		dig_trench(peer, inv, at, a, b)   # a: the held pack slot (the hoe), b: the way the player faces, whole degrees (protocol 135)
 	elif kind == Net.ACT_TILL:
 		till(peer, inv, at, a, b)   # b: the hoe grid's turn in whole degrees (0: the bed snaps to the world's metre cells)
 	elif kind == Net.ACT_SOW:
@@ -16748,6 +16750,16 @@ func _plots_tick() -> void:
 		if not seen.has(key):
 			_plot_water.erase(key)
 
+	_trench_beds.clear()   # beds tilled or gone since: each trench's list is worked out again (one pass over the beds for all of them)
+	var plots: Array = []
+
+	for id in _water_kind:
+		if str(_water_kind[id]) == TRENCH_KIND:
+			if plots.is_empty():
+				plots = _plot_ids()
+
+			_trench_beds[id] = _beds_by_trench(_items[id]["pos"], plots)
+
 	_water_dirty = _water_dirty or not _water_kind.is_empty()   # the weather moved the plots' moisture: their room changed
 
 
@@ -16932,6 +16944,7 @@ func _water_prune() -> void:
 			_water_relink_at.append_array(WaterNetwork.ends(_water.pieces[id]))   # what a channel or pipe there turned to may be gone
 			_water.remove(id)
 			_water_kind.erase(id)
+			_trench_beds.erase(id)
 			_water_depth.erase(id)
 			_well_store.erase(id)
 			_water_dirty = true
@@ -17054,6 +17067,36 @@ func _plot_litres_per_pct(kind: String) -> float:
 	return PlotWater.litres_per_pct(_moisture_cfg, float(def.get("footprint_x", 1.0)) * float(def.get("footprint_z", 1.0)))
 
 
+# An irrigation trench's water since the last solve goes into the beds it waters, each by the room its soil has (so the driest takes most), up to
+# full; returns the litres its beds still have room for (the trench's room_l: 0 when every bed is full or it waters none).
+func _trench_resolve(id: int, now_s: float) -> float:
+	var beds: Array = (_trench_beds.get(id, []) as Array).filter(func(b): return _items.has(b))
+	var rooms: Array = []
+	var total: float = 0.0
+
+	for bed in beds:
+		var room: float = (100.0 - plot_moisture(_items[bed]["pos"])) * _plot_litres_per_pct(str(_items[bed]["struct"]["kind"]))
+		rooms.append(maxf(room, 0.0))
+		total += maxf(room, 0.0)
+
+	var litres: float = _water.inflow_lpm(id) * maxf(now_s - _water_at_s, 0.0) / 60.0 if _water_at_s >= 0.0 else 0.0
+
+	if litres > 0.0 and total > 0.0:
+		var share: float = minf(litres / total, 1.0)   # every bed gets the same share of its room
+
+		for n in beds.size():
+			var pos: Vector3 = _items[beds[n]]["pos"]
+			var key: String = _bed_key(pos)
+			var row: Array = _plot_water.get(key, [])
+			var pct: float = PlotWater.pour(plot_moisture(pos), float(rooms[n]) * share, _plot_litres_per_pct(str(_items[beds[n]]["struct"]["kind"])))
+			_plot_water[key] = [pct, float(row[1]) if row.size() >= 2 else _now_game_s()]   # its weather clock goes on as it was
+			total -= float(rooms[n]) * share
+
+		_dirty = true
+
+	return total if total >= 0.01 else 0.0
+
+
 # Pieces whose structure is gone leave; then, when anything changed or the next event is due, the water that flowed into plots since the last solve
 # becomes moisture, each plot's room is set from its moisture, and the network is solved again.
 func _water_tick(spent: float = 0.0) -> void:
@@ -17082,7 +17125,14 @@ func _water_resolve(now_s: float) -> void:
 	for id in _water_kind:
 		var piece: Dictionary = _water.pieces[id]
 
-		if str(piece.get("role", "")) != "consumer" or not _is_plot_kind(str(_water_kind[id])):
+		if str(piece.get("role", "")) != "consumer":
+			continue
+
+		if str(_water_kind[id]) == TRENCH_KIND:
+			piece["room_l"] = _trench_resolve(id, now_s)
+			continue
+
+		if not _is_plot_kind(str(_water_kind[id])):
 			continue
 
 		var key: String = _bed_key(_items[id]["pos"])
@@ -17478,6 +17528,107 @@ func _till_cell(peer: int, inv, hoe: int, at: Vector3, yaw_deg: int, quiet: bool
 	_dirty = true
 	_goal_event(peer, "bed_tilled")   # ADD-04: a new bed tilled by this hoe stroke (the early returns above are not a tilling)
 	return _next_id - 1
+
+
+# Irrigation trench (garden moisture stage 2, Dave 19 Nov 2026: pipes from a water source uphill run "into an irrigation trench that should improve the
+# moisture level of the soil around it for upto 30 meters in either direction"; docs/design/GARDEN_MOISTURE.md s3). The hoe's Irrigation Trench mode digs
+# one 2 m trench piece where the player aims, along the way they face (`yaw_deg`). It is a water-network consumer: a channel's or pipe's open end, or a
+# spout, over it pours in (structures.json water block), and what flows in is shared among every bed and garden plot within irrigates_m of it whose
+# ground is no more than irrigate_rise_m above it (water does not climb), each by the room its soil has (_water_resolve). No items are used.
+const TRENCH_KIND := "irrigation_trench"
+const TRENCH_CLEAR_M := 1.0   # a trench piece stays this far from another piece, a bed or anything standing
+var _trench_beds: Dictionary = {}   # trench id -> the ids of the beds and plots it waters (worked out when dug and each hourly plots pass)
+
+
+func dig_trench(peer: int, inv, at: Vector3, held_slot: int, yaw_deg: int) -> int:
+	if not ground_height.is_valid() or not _structures.has(TRENCH_KIND) or not at.is_finite():
+		return 0
+
+	var hoe: int = _hoe_ready(peer, inv, at, held_slot)
+
+	if hoe < 0:
+		return 0
+
+	var spot: Vector3 = Vector3(snappedf(at.x, BED_SNAP_M), 0.0, snappedf(at.z, BED_SNAP_M))
+	var ground: float = _edited_height(spot.x, spot.z, edits_near.call(spot, 4.0) if edits_near.is_valid() else [])
+
+	if is_nan(ground):
+		return 0
+
+	spot.y = ground + 0.02
+
+	if water_depth_at.is_valid() and float(water_depth_at.call(Vector3(spot.x, ground, spot.z))) > 0.05:
+		_say(peer, "You cannot dig a trench under water.")
+		return 0
+
+	var here_chunk: Vector2i = _chunk_of(spot)
+	var of_kind: int = 0
+
+	for id in _items:
+		var other: Dictionary = _items[id]
+
+		if not other.has("struct"):
+			continue
+
+		var kind: String = str(other["struct"]["kind"])
+
+		if _is_plot_kind(kind) and _beds_clash([spot], other):
+			_say(peer, "That is a garden bed: dig the trench beside it.")
+			return 0
+
+		if kind == TRENCH_KIND:
+			if _chunk_of(other["pos"]) == here_chunk:
+				of_kind += 1
+
+			if other["pos"].distance_to(spot) < TRENCH_CLEAR_M:
+				_say(peer, "A trench is dug there already.")
+				return 0
+		elif other["pos"].distance_to(spot) < TRENCH_CLEAR_M and not bool(_structures.get(kind, {}).get("walkover", false)):
+			_say(peer, "Something stands there.")
+			return 0
+
+	if of_kind >= int(_structures[TRENCH_KIND].get("cap_per_chunk", 60)):
+		_say(peer, "This ground has trenches enough.")
+		return 0
+
+	_wear_slot(peer, inv, hoe, "dig")
+	var id: int = _next_id
+	_items[id] = {"number": table.number_of(TRENCH_KIND), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": TRENCH_KIND, "yaw": float(posmod(yaw_deg, 360))}}
+	_zone_add(id)
+	_next_id += 1
+	_trench_beds[id] = _beds_by_trench(spot, _plot_ids())
+	_water_add(id)
+	_dirty = true
+	return id
+
+
+# The ids of every standing bed and garden plot (not a blueprint site).
+func _plot_ids() -> Array:
+	var out: Array = []
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") and not it["struct"].has("site") and _is_plot_kind(str(it["struct"].get("kind", ""))):
+			out.append(id)
+
+	return out
+
+
+# Of `plots`, the beds a trench at `spot` waters: within irrigates_m across the ground and no more than irrigate_rise_m above it.
+func _beds_by_trench(spot: Vector3, plots: Array) -> Array:
+	var def: Dictionary = _structures.get(TRENCH_KIND, {})
+	var reach: float = float(def.get("irrigates_m", 30.0))
+	var rise: float = float(def.get("irrigate_rise_m", 0.5))
+	var out: Array = []
+
+	for id in plots:
+		var pos: Vector3 = _items[id]["pos"]
+
+		if Vector2(pos.x - spot.x, pos.z - spot.z).length() <= reach and pos.y - spot.y <= rise:
+			out.append(id)
+
+	return out
 
 
 # Till Garden Grid - 20m Edge Blend and Till Soil 2m (BugsList_Current.md entries 5 and 6, Dave 18 Nov 2026). One click sends the grid (centre `at`,
