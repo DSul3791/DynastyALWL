@@ -2912,7 +2912,8 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 
 	if hit:
 		# The number floats where the blow struck the animal (Dave 19 Nov 2026: "I couldnt tell it was doing damage"), else in front of the eye.
-		var at: Vector3 = (answer as Dictionary).get("at", eye + direction.normalized() * minf(reach, 1.5)) if answer is Dictionary else eye + direction.normalized() * minf(reach, 1.5)
+		var ahead: Vector3 = eye + direction.normalized() * minf(reach, 1.5)
+		var at: Vector3 = (answer as Dictionary).get("at", ahead) if answer is Dictionary else ahead
 		hit_number(peer, at + Vector3(0.0, 0.3, 0.0), damage)
 		_wear_slot(peer, inv, slot, "strike")
 	else:
