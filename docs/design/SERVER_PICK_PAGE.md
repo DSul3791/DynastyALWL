@@ -86,7 +86,7 @@ Dave: "servers need the ability to also have a password. so once you pick your s
 - Wrong: the popup stays, the box empties, and it says "Wrong password. 2 tries left." then "1 try left."
 - Third wrong: the popup closes and a message says **"You got it wrong 3 times. Check your Caps Lock, and take a minute to recompose."** with OK, which goes back to the server page with that server still chosen. The player may try again from there.
 - Cancel goes back to the server page at any time.
-- Continue on a locked server asks for the password the same way (unless it is remembered; Dave's choice 3).
+- Continue on a locked server asks for the password the same way (unless it is remembered, choice 3).
 
 **Server side**
 - Optional setting: no password means an open server, exactly as today. The setting lives in the server's store (`<store>/server.json`, beside the name and message) and can also be given to the Docker container as an environment variable, so it never has to sit in a file inside the image. The exact setting name is agreed with the Docker/server work before it is built.
@@ -138,10 +138,10 @@ Each is one reviewed PR to dev with the selector's tests on the exact head.
 
 ## For Dave: the choices left to him
 
-Settled by Dave (19 Nov): passwords with a popup, 3 tries, then the caps-lock message and back to this page; Play opens this page; official first, then every added server; down servers stay, in red; name, ping and status on each row; Add new server and Join server buttons; double-click joins.
+Settled by Dave (19 Nov): the game remembers a correct password (choice 3); passwords with a popup, 3 tries, then the caps-lock message and back to this page; Play opens this page; official first, then every added server; down servers stay, in red; name, ping and status on each row; Add new server and Join server buttons; double-click joins.
 
 1. **Continue.** Pick: straight into the last server as the character last played there, with Cancel on the joining screen, and back to this page with the reason on the row if it cannot join. Other ways: Continue opens this page with the last server chosen (one more click), or opens the Characters page for the last server.
 2. **Player names before joining.** Pick: the Players column shows the count only, and hovering a row lists who is on (the server owner can turn names off in `server.json`). Other way: count only, never names.
-3. **Remember a password.** Pick: a "Remember on this computer" tick in the popup, on by default. What is remembered is the salted hash, never the typed password, kept in `servers.json`; Remove forgets it, and if the server's password changes the popup simply asks again. Someone who copied that file could join that one server, but never learns the password, so it is useless anywhere else. Other way: always ask.
+3. **Remember a password.** SETTLED (Dave 19 Nov, "yes it should"): a "Remember on this computer" tick in the popup, on by default. What is remembered is the salted hash, never the typed password, kept in `servers.json`; Remove forgets it, and if the server's password changes the popup simply asks again. Someone who copied that file could join that one server, but never learns the password, so it is useless anywhere else. Other way: always ask.
 
 Assumed meanwhile (provisional, can change): the official server's name and crest come from the release setting; New Game is renamed Play because it now leads to this page; the server's short message (set by its owner) shows when a row is hovered.
