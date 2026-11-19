@@ -29,6 +29,6 @@ fi
 # Only BuildKit reads Dockerfile.dockerignore; the old builder would send everything, Dave's admin keys included.
 export DOCKER_BUILDKIT=1
 docker build -f deploy/server/Dockerfile --build-arg COMMIT="$COMMIT" -t "dynasty-server:$TAG" -t dynasty-server:latest .
-docker run --rm --entrypoint sh "dynasty-server:$TAG" -c '! [ -e /game/data/admin.json ] && ! [ -e /game/assets/animals ]' \
+MSYS_NO_PATHCONV=1 docker run --rm --entrypoint sh "dynasty-server:$TAG" -c '! [ -e /game/data/admin.json ] && ! [ -e /game/assets/animals ]' \
 	|| { echo "build_image: the image holds data/admin.json or assets/animals; removing it" >&2; docker image rm "dynasty-server:$TAG" dynasty-server:latest; exit 1; }
 echo "build_image: dynasty-server:$TAG (also :latest)"

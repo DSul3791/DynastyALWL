@@ -11,7 +11,7 @@ Server/client split plan step C4 (`/mnt/project-files/server-client-split/PLAN.m
 - `run_server.sh` is the container's first process. `docker stop` sends it TERM; it writes `stop.now`, and the server saves and closes with exit 0 (plan A4, PR #1274). Compose allows 90 s for that.
 - Everything the server writes lives in the `/data` volume: `/data/store` (ground edits, characters, chests, `admin.json`, `logs/`, `server_run.json`) and Godot's user folder under `/data/home`. A new image keeps the volume, so the world carries on.
 - The world (the nine baked tiles of `worlds/base_world`) is inside the image.
-- Health check: healthy once `/data/store/server_run.json` exists (the server is listening).
+- Health check: healthy once `/data/store/server_run.json` says `running` (the server is listening).
 
 ## Build (on the machine with Docker)
 
