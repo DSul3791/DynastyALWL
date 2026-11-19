@@ -6,7 +6,8 @@ extends RefCounted
 
 const STAGE_NAMES := ["seedling", "young", "growing", "ripe"]
 const RIPE := 3
-const EMPTY_BED_PROMPT := "A tilled bed: hold the hoe, right click and choose Plant to sow it"
+const EMPTY_BED_PROMPT := "hold the hoe, right click and choose Plant to sow it"
+const PlotWater := preload("res://src/shared/plot_water.gd")
 
 
 # The crop a seed item sows (crops.json "seed"), "" when the item is not a crop seed.
@@ -24,10 +25,13 @@ static func crop_of_seed(crops: Dictionary, seed_id: String) -> String:
 # The decision for one bed: {"act": "harvest" | "water" | "none", "prompt": the E line, "b": the pack slot the request carries (the container for a water, else 0)}.
 # inventory_view._bed_interaction sends ACT_HARVEST / ACT_WATER_BED with the bed id as `a` and this `b`; "none" sends nothing and shows the prompt as a notice.
 # crop_id/stage: the bed's crop ("" for an empty bed); water_slot: the held container that holds water, the one E uses to drink and fill (-1 when none).
+# moist: the bed's soil moisture percent from its row (server_items.crop_row_extra "moist", -1 when the row has none); moist_cfg: crops.json "moisture".
 # E never sows (Dave play test 19 Nov 2026: seeds went in without the hoe in hand): sowing is the hoe's Plant grid only (ACT_PLANT_GRID), so an empty bed only says how.
-static func bed_action(crops: Dictionary, crop_id: String, stage: int, water_slot: int) -> Dictionary:
+static func bed_action(crops: Dictionary, crop_id: String, stage: int, water_slot: int, moist: int = -1, moist_cfg: Dictionary = {}) -> Dictionary:
+	var soil: String = soil_words(moist, moist_cfg)
+
 	if crop_id == "":
-		return {"act": "none", "prompt": EMPTY_BED_PROMPT, "b": 0}
+		return {"act": "none", "prompt": "A tilled bed%s: %s" % [" (%s)" % soil if soil != "" else "", EMPTY_BED_PROMPT], "b": 0}
 
 	var def: Dictionary = crops.get(crop_id, {})
 	var name: String = str(def.get("name", crop_id)).to_lower()
@@ -38,9 +42,19 @@ static func bed_action(crops: Dictionary, crop_id: String, stage: int, water_slo
 
 	# PROVISIONAL (GOALS-REPAIR A-7): to water, hold a filled freshwater container and tap E on the growing crop; the server draws from that slot (REPAIR_DECISIONS.md section 4).
 	if water_slot >= 0:
-		return {"act": "water", "prompt": "Press E to water the %s (%s)" % [name, STAGE_NAMES[clampi(stage, 0, RIPE)]], "b": water_slot}
+		return {"act": "water", "prompt": "Press E to water the %s (%s%s)" % [name, STAGE_NAMES[clampi(stage, 0, RIPE)], ", " + soil if soil != "" else ""], "b": water_slot}
 
-	return {"act": "none", "prompt": "%s, %s: hold a filled bucket or waterskin and press E to water it" % [name.capitalize(), STAGE_NAMES[clampi(stage, 0, RIPE)]], "b": 0}
+	return {"act": "none", "prompt": "%s, %s%s: hold a filled bucket or waterskin and press E to water it" % [name.capitalize(), STAGE_NAMES[clampi(stage, 0, RIPE)], ", " + soil if soil != "" else ""], "b": 0}
+
+
+# The soil's moisture as the look-at line says it (Dave 19 Nov 2026: "if it needs water it should show its moisture content"): "soil 45% damp",
+# "soil 15% dry, needs water"; "" when the row carries no moisture.
+static func soil_words(moist: int, moist_cfg: Dictionary) -> String:
+	if moist < 0:
+		return ""
+
+	var word: String = PlotWater.word(moist_cfg, float(moist))
+	return "soil %d%% %s" % [moist, "dry, needs water" if word == "dry" else word]
 
 
 # The hoe's Garden mode (Dave 14 Nov 2026: "gardening should also be another option on the right click of the Hoe ... make garden plots or plant seeds, plants, shrubs";

@@ -22,6 +22,7 @@ const CoverScript := preload("res://src/shared/cover.gd")
 const CaveClimate := preload("res://src/shared/cave_climate.gd")
 const DrinkRules := preload("res://src/shared/drink_rules.gd")
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")   # durability, sharpening, craftsmanship and Tempered (catalog Phase 2c)
+const MeleeRules := preload("res://src/shared/melee_rules.gd")   # anything in hand is a weapon (data/items/melee.json, Dave 19 Nov 2026)
 const BogIron := preload("res://src/shared/bog_iron.gd")   # bog iron under fens and marshes (digging.json bog_iron)
 const SwimRules := preload("res://src/shared/swim.gd")
 const StructureLookScript := preload("res://src/shared/structure_look.gd")
@@ -80,7 +81,6 @@ const RESPAWN_PLACE_M := 6.0
 const RESPAWN_CHANCE := 0.5              # per rotted-away stump, rolled once from the seed and the spot
 const FLORA_CHUNK_M := 256.0
 const PROCESS_REACH_M := 4.0
-const JAB_REACH_M := 3.0
 const STRIKE_COOLDOWN_MS := 600
 const CARCASS_REACH_M := 3.0
 const CARCASS_LIFE_S := 7200.0          # 2 game days of real time
@@ -234,6 +234,7 @@ var _save_in: float = SAVE_EVERY_S
 var _dirty: bool = false
 var _drops: Dictionary = {}
 var _batch_cfg: Dictionary = {}       # data/items/pickup_batch.json
+var _melee_cfg: Dictionary = {}       # data/items/melee.json: the blow of an item with no damage of its own
 var _cooking: Dictionary = {}
 var _structures: Dictionary = {}    # structures.json: kind -> definition
 var _struct_gap_m: float = 2.5
@@ -429,6 +430,8 @@ var _grade_points: Dictionary = {}   # peer -> [A, B] ground points of the hoe g
 var _last_mine: Dictionary = {}     # peer -> msec
 var _last_hit: Dictionary = {}      # peer -> msec
 var _last_process: Dictionary = {}  # peer -> msec
+var _stumps_to_check: Array = []   # stumps loaded from tree_states.json, each looked at once for ground dug out from under them, STUMP_LOAD_CHECKS a slow tick (_rot)
+const STUMP_LOAD_CHECKS := 25
 var _falls: Dictionary = {}         # stump id -> {shared: the pieces' fall record (hinge, yaw, seconds left), pieces: [world ids], hinge, along, length, radius, small, peer}: a tree coming down (_fell_record, _land_fall); not saved
 var _chops: Dictionary = {}         # "cx,cz,id" -> {hits, msec}
 var _rot_in: float = 60.0
@@ -543,6 +546,7 @@ func setup(item_table, store_dir: String) -> void:
 	_cooking = cooking if typeof(cooking) == TYPE_DICTIONARY else {}
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(DROPS_PATH))
 	_drops = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+	_melee_cfg = MeleeRules.load_config()
 	var batch_parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(PICKUP_BATCH_PATH)) if FileAccess.file_exists(PICKUP_BATCH_PATH) else null
 	_batch_cfg = batch_parsed if typeof(batch_parsed) == TYPE_DICTIONARY else {}
 	var flora_table: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/flora.json"))
@@ -2879,15 +2883,18 @@ func hit_number(peer: int, at: Vector3, amount: float) -> void:
 		send_hit_number.call(peer, at, maxi(1, int(round(amount))))
 
 
-# One jab with a weapon (items.json "damage"): hits the animal in front within its reach_m (else JAB_REACH_M) through the animal hook, at most
-# once per its recover_ms (else STRIKE_COOLDOWN_MS).
+# One blow at an animal with the item in hand (Dave 19 Nov 2026: "any thing in your hand should be able to be used as a weapon"): hits the animal in
+# front within reach through the animal hook, at most once per recover_ms (else STRIKE_COOLDOWN_MS). A weapon with items.json "damage" (a spear, a
+# sword) strikes for that and its reach_m (else MeleeRules.WEAPON_REACH_M, 3 m); any other item for its row in data/items/melee.json (an axe by its class and tier,
+# food or a stone weakly; PROVISIONAL MELEE-1). The item is the slot the client names as in hand, checked first (Dave 13 Nov 2026); a broken one
+# does nothing, and logs on the shoulder leave no hand free.
 func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
-	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0 or not _peer_pos.has(peer) or direction.length() < 0.1 or not hit_animal.is_valid():
+	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0 or _hands_full(inv) or not _peer_pos.has(peer) or direction.length() < 0.1 or not hit_animal.is_valid():
 		return
 
 	var entry: Dictionary = table.entry(table.id_of(inv.numbers[slot]))
 
-	if str(entry.get("kind", "")) != "weapon" or _is_broken(inv, slot) or float(entry.get("damage", 0.0)) <= 0.0:
+	if _is_broken(inv, slot):
 		return
 
 	var now: int = Time.get_ticks_msec()
@@ -2897,8 +2904,9 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 
 	_last_strike[peer] = now
 	var eye: Vector3 = _peer_pos[peer] + Vector3(0.0, 1.4, 0.0)
-	var damage: float = float(weapon_blow(entry, inv.inst[slot])["damage"])   # a +2 weapon strikes two harder (master s2.9 item 4)
-	var reach: float = float(entry.get("reach_m", JAB_REACH_M))   # a pike reaches further than a sword
+	var melee: Dictionary = MeleeRules.blow(entry, _melee_cfg)
+	var damage: float = float(weapon_blow(entry, inv.inst[slot])["damage"]) if float(entry.get("damage", 0.0)) > 0.0 else float(melee["damage"])   # a +2 weapon strikes two harder (master s2.9 item 4)
+	var reach: float = float(melee["reach_m"])   # a pike reaches further than a sword; a knife less than an axe
 	var hit: bool = bool(hit_animal.call(peer, eye, direction, reach, damage))
 
 	if hit:
@@ -3787,6 +3795,7 @@ func _dig(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		_goal_event(peer, "dug_under")
 
 	_fell_undermined(peer, at)
+	_break_undermined_stumps(at)
 	settle_loose_near(at, DIG_RADIUS_M * reach + DIG_DEPTH_M)
 	_dirty = true
 
@@ -4490,8 +4499,9 @@ func _road_section_height(a: Vector3, b: Vector3, t: float) -> float:
 	return total / float(count) if count > 0 else lerpf(a.y, b.y, t)
 
 
-# A stump on the road is broken up where it stands: what the last axe blow on it gives (drops.json stump, _stump_final_rows) is left on the ground
-# beside it, and it is gone. A world drop (no player's luck, nobody's gathering).
+# A stump is broken up where it stands (on a road, or with its ground dug away: _break_undermined_stumps, _land_fall, the load check in _rot): what
+# the last axe blow on it gives (drops.json stump, _stump_final_rows) is left on the ground beside it, and it is gone. A world drop (no player's luck,
+# nobody's gathering).
 func _break_stump(id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
@@ -4816,7 +4826,36 @@ func _fell_undermined(peer: int, at: Vector3) -> void:
 		if share >= limit:
 			continue
 
-		_fell(chunk, int(found[1]), info, Vector2(info["position"].x - at.x, info["position"].z - at.z))
+		var stump_id: int = _fell(chunk, int(found[1]), info, Vector2(info["position"].x - at.x, info["position"].z - at.z))
+
+		if _falls.has(stump_id):
+			_falls[stump_id]["undermined"] = true   # a dug-out tree leaves no stump (Dave 19 Nov 2026): it breaks up when the tree lands (_land_fall), whatever ground its own smaller disc keeps
+
+
+# A stump whose ground is dug away breaks into what chopping it gives, and the pieces fall to the ground (Dave 19 Nov 2026: "the stump can just break
+# into its components and fall"; before, it hung in the air where no axe could reach it). True when the share of ground left in the disc under it
+# (dig_fell stump_support_r_per_radius x its radius + stump_support_r_base wide, stump_depth_m deep) is under stump_fall_below.
+func _stump_undermined(it: Dictionary) -> bool:
+	var cfg: Dictionary = _drops.get("dig_fell", {})
+
+	if cfg.is_empty() or not dig_support.is_valid() or not it.has("tree") or int(it["tree"]["state"]) != 4:
+		return false
+
+	var radius: float = float(cfg.get("stump_support_r_per_radius", 2.0)) * float(it["tree"]["radius"]) + float(cfg.get("stump_support_r_base", 0.5))
+	return float(dig_support.call(it["pos"], radius, float(cfg.get("stump_depth_m", 0.6)))) < float(cfg.get("stump_fall_below", 0.35))
+
+
+# After a dig: the stumps near it (the sync grid's cells round the hole, not the world) whose ground is now gone break up (_stump_undermined).
+# A stump still "fresh" belongs to a tree coming down: it is looked at when it lands.
+func _break_undermined_stumps(at: Vector3) -> void:
+	var reach: float = float(_drops.get("dig_fell", {}).get("search_m", 4.0))
+
+	for id in _ids_near(at, reach):
+		if not _items.has(id) or not _items[id].has("tree") or _items[id]["tree"].has("fresh"):
+			continue
+
+		if Vector2(_items[id]["pos"].x - at.x, _items[id]["pos"].z - at.z).length() <= reach and _stump_undermined(_items[id]):
+			_break_stump(int(id))
 
 
 # What a dig brings up (data/items/digging.json): shovelfuls by the surface material at the hole, through luck, counted by weight.
@@ -5371,7 +5410,7 @@ func _station_site(peer: int, def: Dictionary, spot: Vector3, yaw_deg: int) -> V
 			if base.is_empty() or not bool(base.get("foundation", false)):
 				continue
 
-			if absf(spot.x - row["pos"].x) > float(base.get("footprint_x", 4.0)) * 0.5 or absf(spot.z - row["pos"].z) > float(base.get("footprint_z", 4.0)) * 0.5:
+			if not PlacementRules.holds(base, row, spot):   # its footprint at its turn (a foundation may face any way)
 				continue
 
 			var under: float = float(ground_height.call(row["pos"].x, row["pos"].z)) if ground_height.is_valid() else row["pos"].y
@@ -6509,8 +6548,11 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 
 				var crop_extra: Dictionary = crop_row_extra(it) if it.has("struct") else {}
 
-				if not crop_extra.is_empty():
+				if crop_extra.has("crop"):
 					signature += 61 * (2 + int(crop_extra["stage"])) + 7 * (str(crop_extra["crop"]).hash() % 997) + 13 * (str(crop_extra.get("cells", "")).hash() % 991)   # a crop sown, grown a stage or gone (harvested, frost), in any square metre of a plot, is sent again
+
+				if crop_extra.has("moist"):
+					signature += 433 * (1 + int(crop_extra["moist"]))   # a bed's soil wetter or drier by a step is sent again (the look-at line shows it)
 
 				if it.has("struct") and bool(_serve_kinds().get(str(it["struct"]["kind"]), false)) and it["struct"].has("uid") and _chests.has(int(it["struct"]["uid"])):
 					signature += 7919 * int(_chests[int(it["struct"]["uid"])].counts[0]) + 3 * int(_chests[int(it["struct"]["uid"])].numbers[0])   # a portion eaten or a board set out is sent again
@@ -8108,6 +8150,9 @@ func _land_fall(stump_id: int, fall: Dictionary) -> void:
 		_items[id]["pos"] += along * clear
 		_wake_log(id)
 
+	if bool(fall.get("undermined", false)) or (_items.has(stump_id) and _stump_undermined(_items[stump_id])):
+		_break_stump(stump_id)   # dug out from under: no stump is left hanging over the hole
+
 
 # Where on segment a0-a1 (0 at a0 .. 1 at a1) the point p is nearest.
 static func _seg_t(a0: Vector2, a1: Vector2, p: Vector2) -> float:
@@ -8522,6 +8567,15 @@ func _repair_text(costs: Array) -> String:
 
 # Stumps rot away after 168 game days (the game clock only runs while the server does).
 func _rot(delta: float) -> void:
+	# Stumps loaded from a save are looked at once, STUMP_LOAD_CHECKS a slow tick (each is a dig_support look at the edits near it): one left over a
+	# dug hole breaks up (_stump_undermined).
+	if not _stumps_to_check.is_empty() and dig_support.is_valid():
+		for id in _stumps_to_check.slice(0, STUMP_LOAD_CHECKS):
+			if _items.has(id) and _stump_undermined(_items[id]):
+				_break_stump(int(id))
+
+		_stumps_to_check = _stumps_to_check.slice(STUMP_LOAD_CHECKS)
+
 	_rot_in -= delta
 
 	if _rot_in > 0.0 or not game_seconds.is_valid():
@@ -8582,6 +8636,7 @@ func _load_trees() -> void:
 		tree.erase("fresh")   # it landed long ago
 		tree.erase("fall_left")
 		_items[_next_id] = {"number": 0, "count": 1, "pos": Vector3(row["pos"][0], row["pos"][1], row["pos"][2]), "left": 1.0e9, "tree": tree}
+		_stumps_to_check.append(_next_id)
 		_next_id += 1
 
 
@@ -11061,14 +11116,15 @@ func register_roofs() -> void:
 func _stands_on(base: Dictionary, def: Dictionary) -> bool:
 	var half_x: float = float(def.get("footprint_x", 4.0)) * 0.5 + 0.1
 	var half_z: float = float(def.get("footprint_z", 4.0)) * 0.5 + 0.1
+	var row: Dictionary = {"pos": base["pos"], "yaw": float(base["struct"].get("yaw", 0.0))}
 
 	for other in _items.values():
 		if other == base or not other.has("struct") or not bool(_structures.get(str(other["struct"]["kind"]), {}).get("piece", false)):
 			continue
 
-		var d: Vector3 = other["pos"] - base["pos"]
+		var local: Vector2 = PlacementRules.local_of(row, other["pos"])   # along the foundation's own sides, at its turn
 
-		if d.y > 0.1 and absf(d.x) <= half_x and absf(d.z) <= half_z:
+		if other["pos"].y - base["pos"].y > 0.1 and absf(local.x) <= half_x and absf(local.y) <= half_z:
 			return true
 
 	return false
@@ -12202,7 +12258,7 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int, targe
 
 
 # One put from pack slot `a` into container `id` (its inventory `chest`), up to `count`: the container's own rules (take-only, what it takes,
-# its max_kg). The caller has already checked reach and access (_chest_of, or a storage view's _view_boxes). Returns how many went in.
+# its slots; a vehicle's payload). The caller has already checked reach and access (_chest_of, or a storage view's _view_boxes). Returns how many went in.
 # `target`: the store slot the stack was dragged onto (-1: none). Only a smelter reads it: Coal or Charcoal dragged onto an Advanced smelter's
 # input goes in as steel carbon (server_smelter.part_for).
 func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = -1) -> int:
@@ -12232,7 +12288,6 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 	var held_wear: int = inv.wear[a]
 	var held_inst: Dictionary = inv.inst_of(a)
 	var amount: int = mini(count, inv.counts[a])
-	var max_kg: float = float(_structures.get(kind, {}).get("max_kg", 0.0))
 	var smelter: bool = id >= 0 and _smelters.is_smelter(_structures.get(kind, {}))
 
 	if smelter:   # a Smelter's hopper holds smelt.hopper units of fuel and its input smelt.input units of ore (master s2.7)
@@ -12262,15 +12317,16 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 	if id < 0:
 		amount = mini(amount, BagRules.room(table, _bag_number(peer, id), chest))   # a quiver holds its ammo_capacity of arrows
 
-	# A container takes only so many kilograms (structures.json max_kg): put what fits, keep the rest. A bag weighs with what it holds.
-	if max_kg > 0.0 and not _carry_cfg.is_empty():
+	# A storage container has no weight limit, only its slots (Dave 19 Nov 2026: "chests ... shouldn't" have one). Only a vehicle's store, or a crate
+	# riding on one, stays within the vehicle's payload (its structures.json max_kg, server_carts.room_kg): put what fits, keep the rest. A bag weighs with what it holds.
+	var cart_room: float = _carts.room_kg(id) if id >= 0 else INF
+
+	if cart_room < INF and not _carry_cfg.is_empty():
 		var each: float = maxf(CarryRules.weight_of(table.id_of(number), _carry_cfg) + CarryRules.bag_kg(held_inst, table, _carry_cfg), 0.001)
-		var room: float = max_kg - CarryRules.carried_kg(chest, table, _carry_cfg)
-		var cart_room: float = _carts.room_kg(id) if id >= 0 else INF   # a cart, or a crate riding on one, also stays within the cart's payload
-		amount = clampi(int(floor(minf(room, cart_room) / each + 0.0001)), 0, amount)
+		amount = clampi(int(floor(cart_room / each + 0.0001)), 0, amount)
 
 		if amount == 0:
-			_say(peer, "It is too heavy for the chest" if cart_room > maxf(room, 0.0) else "The %s cannot carry more." % _carts.noun_for(id))
+			_say(peer, "The %s cannot carry more." % _carts.noun_for(id))
 			_reject(peer, 2)
 
 	var left: int = 0
@@ -16529,7 +16585,7 @@ func take_nest(peer: int, inv) -> bool:
 # where the crop needs one) and seeds back, and the bed is empty soil again. The crop records live beside the beds in crops.json (keyed by the bed's position, _bed_key). The client side
 # (hoe till and Plant modes, E on a bed to water or harvest, the stage looks) is in inventory_view.gd, farm_rules.gd and crop_look.gd; a bed's world row carries its crop and stage.
 const TILLED_STATE := 47
-var _crops: Dictionary = {}              # _bed_key (the bed's position) -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool, "poured": game day water was poured, "poured_ml": mL poured that day (a bucket a day, water_bed)}; the bed's moisture is in _plot_water
+var _crops: Dictionary = {}              # _bed_key (the bed's position) -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool}; the bed's moisture is in _plot_water
 var _crops_cfg: Dictionary = {}
 var _crops_loaded: bool = false
 var _moisture_cfg: Dictionary = {}       # crops.json "moisture" (plot_water.gd)
@@ -16537,6 +16593,8 @@ var _crops_file_extra: Dictionary = {}   # crops.json "worm": {"item", "chance"}
 var _plot_water: Dictionary = {}         # _bed_key -> [moisture percent, game second it was worked out at]; saved in crops.json "plots"
 var _plots_at_s: float = -1.0e18         # game second of the last _plots_tick pass
 const PLOT_STEP_S := 3600.0              # plots are looked at once a game hour (150 real seconds)
+const WET_THROUGH_PCT := 99.0            # a bed this wet takes no more poured water
+const MOIST_STEP_PCT := 5                # the moisture a bed's world row carries, in these steps: a row is sent again only when it moves a step
 const PlotWater := preload("res://src/shared/plot_water.gd")
 
 
@@ -16987,11 +17045,11 @@ func _water_tanks_save() -> Dictionary:
 	return out
 
 
-# Litres a garden plot takes for 1 percent of moisture: its store over its area (25 mm on 2 x 2 m: 1 L).
+# Litres a bed or garden plot takes for 1 percent of moisture: its store over its area (25 mm on a 1 m bed: 0.25 L; on 2 x 2 m: 1 L).
 func _plot_litres_per_pct(kind: String) -> float:
 	var def: Dictionary = _structures.get(kind, {})
 	_crop_table()
-	return maxf(float(_moisture_cfg.get("store_mm", 25.0)) * float(def.get("footprint_x", 1.0)) * float(def.get("footprint_z", 1.0)) / 100.0, 0.01)
+	return PlotWater.litres_per_pct(_moisture_cfg, float(def.get("footprint_x", 1.0)) * float(def.get("footprint_z", 1.0)))
 
 
 # Pieces whose structure is gone leave; then, when anything changed or the next event is due, the water that flowed into plots since the last solve
@@ -17964,7 +18022,7 @@ func _season_refusal(seed_id: String) -> String:
 
 # The crop record of a seed just sown (the seed already taken).
 func _sow_cell(peer: int, bed: Dictionary, key: String, crop_id: String) -> void:
-	_crops[key] = {"crop": crop_id, "sown": _game_day(), "age": 0.0, "wet": 0, "day": _game_day(), "compost": false, "poured": -1}
+	_crops[key] = {"crop": crop_id, "sown": _game_day(), "age": 0.0, "wet": 0, "day": _game_day(), "compost": false}
 
 	if key != _bed_key(bed["pos"]):
 		_crops[key]["plot"] = _bed_key(bed["pos"])   # one square metre of a plot: its moisture is the plot's
@@ -17972,10 +18030,11 @@ func _sow_cell(peer: int, bed: Dictionary, key: String, crop_id: String) -> void
 	_goal_event(peer, "seed_sown")   # ADD-05
 
 
-# Water from the pack's containers on the bed (GOALS-REPAIR GA-04, A-3): one bucket (crops.json moisture pour_ml, 8 L) is pour_pct, so a pour adds pour_pct
-# by the share of a bucket poured, and a bed takes up to a bucket a game day (several small pours add up). The water comes first from the container in
-# hand (`held`, the pack slot the client names, -1 for none: when named it must hold a filled container, else the pour is refused), then from the pack's
-# other containers, so the pour is the full bucket whenever the pack holds that much. Every refusal says why (a notice) and takes nothing.
+# Water from the pack's containers on the bed (GOALS-REPAIR GA-04, A-3; garden moisture, Dave 19 Nov 2026): each pour is up to a bucket (crops.json
+# moisture pour_ml, 8 L) and never more than the soil has room for; its litres become moisture over the bed's store (PlotWater.pour, the same litres as
+# piped water: a 1 m bed's 8 L bucket is 32 percent, a 2 x 2 plot's 8). There is no daily limit: a soil wet through takes no more. The water comes
+# first from the container in hand (`held`, the pack slot the client names, -1 for none: when named it must hold a filled container, else the pour is
+# refused), then from the pack's other containers. Every refusal says why (a notice) and takes nothing.
 func water_bed(peer: int, inv, bed_id: int, held: int = -1) -> bool:
 	var bed: Dictionary = _bed_at(bed_id)
 
@@ -17986,9 +18045,7 @@ func water_bed(peer: int, inv, bed_id: int, held: int = -1) -> bool:
 		_say(peer, "Too far from the bed to water it.")
 		return false
 
-	var crop: Dictionary = _crops.get(_cell_key(bed, Vector3.ZERO, "crop"), {})   # a plot is watered whole: every crop in it keeps the day's tally (one harvested takes no tally with it)
-
-	if crop.is_empty():
+	if _cell_key(bed, Vector3.ZERO, "crop") == "":
 		_say(peer, "Nothing is growing there to water.")
 		return false
 
@@ -17996,21 +18053,18 @@ func water_bed(peer: int, inv, bed_id: int, held: int = -1) -> bool:
 		_say(peer, "That holds no water.")
 		return false
 
-	var bucket_ml: int = maxi(int(_moisture_cfg.get("pour_ml", 8000)), 1)
-	var today: int = _game_day()
-	var growing: Array = _bed_cells(bed).map(func(cell): return _crops.get(_bed_key(cell), {})).filter(func(c): return not c.is_empty())
-	var done_ml: int = 0
+	var pct: float = plot_moisture(bed["pos"])
+	var per_pct: float = _plot_litres_per_pct(str(bed["struct"]["kind"]))
 
-	for c in growing:
-		if int(c["poured"]) == today:
-			done_ml = maxi(done_ml, int(c.get("poured_ml", bucket_ml)))
+	if pct >= WET_THROUGH_PCT:
+		_say(peer, "The soil is wet through already.")
+		return false
 
-	var ml: int = mini(bucket_ml - done_ml, inv.liquid_ml())
+	var room_ml: int = int(ceil((100.0 - pct) * per_pct * 1000.0))
+	var ml: int = mini(mini(maxi(int(_moisture_cfg.get("pour_ml", 8000)), 1), room_ml), inv.liquid_ml())
 
 	if ml <= 0:
-		if done_ml >= bucket_ml:
-			_say(peer, "The bed has had its water today.")
-		elif inv.count_of(table.number_of("sea_water")) > 0:
+		if inv.count_of(table.number_of("sea_water")) > 0:
 			_say(peer, "Salt water would kill the crop. You need fresh water in a container.")
 		else:
 			_say(peer, "You have no water to pour.")
@@ -18018,13 +18072,8 @@ func water_bed(peer: int, inv, bed_id: int, held: int = -1) -> bool:
 		return false
 
 	inv.drain_liquid(ml, held)
-
-	for c in growing:
-		c["poured"] = today
-		c["poured_ml"] = done_ml + ml
-
-	var key: String = _bed_key(bed["pos"])
-	_plot_water[key] = [PlotWater.pour(_moisture_cfg, plot_moisture(bed["pos"]), float(ml) / float(bucket_ml)), float(game_seconds.call()) if game_seconds.is_valid() else 0.0]
+	_plot_water[_bed_key(bed["pos"])] = [PlotWater.pour(pct, float(ml) / 1000.0, per_pct), float(game_seconds.call()) if game_seconds.is_valid() else 0.0]
+	_water_dirty = _water_dirty or not _water_kind.is_empty()   # a piped plot's room changed
 	_dirty = true
 	return true
 
@@ -18053,18 +18102,21 @@ func compost_bed(peer: int, inv, bed_id: int) -> bool:
 	return true
 
 
-# A bed's world-row extra: {"crop": crop id, "stage": 0 to 3} for a bed with a crop on it, {} for an empty bed or any other piece (no protocol bump: PROTOCOL.md, row extras).
+# A bed's world-row extra: {"moist": its soil moisture percent in MOIST_STEP_PCT steps} for every bed (garden moisture, Dave 19 Nov 2026), with
+# "crop": crop id and "stage": 0 to 3 when a crop grows on it; {} for any other piece (no protocol bump: PROTOCOL.md, row extras).
 # A plot of several square metres adds "cells": [[crop id or "", stage or -1]] in _bed_cells order, and its "crop" and "stage" name what E does next: the first ripe
 # crop, else "" when a square metre is still empty (E sows it), else its first crop.
 func crop_row_extra(it: Dictionary) -> Dictionary:
-	if not _is_plot_kind(str(it["struct"].get("kind", ""))):
+	if not _is_plot_kind(str(it["struct"].get("kind", ""))) or it["struct"].has("site"):
 		return {}
 
+	var pct: float = plot_moisture(it["pos"])
+	var moist: int = 100 if pct >= WET_THROUGH_PCT else floori(pct / float(MOIST_STEP_PCT)) * MOIST_STEP_PCT   # rounded down: "25" is a wet day, "100" takes no more water
 	var cells: Array = _bed_cells(it)
 
 	if cells.size() == 1:
 		var crop: Dictionary = _crops.get(_bed_key(it["pos"]), {})
-		return {} if crop.is_empty() else {"crop": str(crop["crop"]), "stage": crop_stage(crop)}
+		return {"moist": moist} if crop.is_empty() else {"crop": str(crop["crop"]), "stage": crop_stage(crop), "moist": moist}
 
 	var rows: Array = []
 	var ripe: Array = []
@@ -18083,10 +18135,10 @@ func crop_row_extra(it: Dictionary) -> Dictionary:
 			first = rows[rows.size() - 1]
 
 	if first.is_empty():
-		return {}
+		return {"moist": moist}
 
 	var shown: Array = ripe if not ripe.is_empty() else (["", 0] if empty else first)
-	return {"crop": shown[0], "stage": shown[1], "cells": rows}
+	return {"crop": shown[0], "stage": shown[1], "cells": rows, "moist": moist}
 
 
 # The stage of a crop 0 seedling .. 3 ripe; a crop short of water stays at 2.
@@ -18102,7 +18154,7 @@ func crop_stage(crop: Dictionary) -> int:
 
 
 # Looks at the clock once per game day: a bed holding wet_min_pct of moisture (plot_water.gd: rain fills it, a pour adds to it, the weather dries it)
-# makes it a wet day; winter pauses growth (turnip excepted) and kills a seedling.
+# makes it a wet day, and a dry day grows the crop only dry_growth of a day; winter pauses growth (turnip excepted) and kills a seedling.
 func _crops_tick() -> void:
 	_plots_tick()
 	_fish_traps_tick()
@@ -18128,9 +18180,10 @@ func _crops_tick() -> void:
 
 				continue
 
-			crop["age"] = float(crop["age"]) + (1.2 if bool(crop["compost"]) else 1.0)
+			var wet: bool = PlotWater.is_wet(_moisture_cfg, float((_plot_water.get(str(crop.get("plot", key)), [float(_moisture_cfg.get("start_pct", 50.0))]) as Array)[0]))   # a plot's square metre: the plot's moisture
+			crop["age"] = float(crop["age"]) + (1.2 if bool(crop["compost"]) else 1.0) * PlotWater.day_growth(_moisture_cfg, wet)   # a dry day grows it dry_growth of a day
 
-			if PlotWater.is_wet(_moisture_cfg, float((_plot_water.get(str(crop.get("plot", key)), [float(_moisture_cfg.get("start_pct", 50.0))]) as Array)[0])):   # a plot's square metre: the plot's moisture
+			if wet:
 				crop["wet"] = int(crop["wet"]) + 1
 
 			_dirty = true
@@ -20435,7 +20488,7 @@ func _bulk_take_all(peer: int, inv, id: int, box) -> int:
 
 
 # Store all: every pack stack that is not a favourite and not the log on the shoulder, into the open container (the rules of one put:
-# a fire takes only wood and food, a take-only container nothing, a heavy one up to its max_kg). Returns the stacks moved.
+# a fire takes only wood and food, a take-only container nothing, a vehicle up to its payload). Returns the stacks moved.
 func _bulk_store_all(peer: int, inv, id: int, _box) -> int:
 	var it: Dictionary = _items.get(id, {})
 	var def: Dictionary = _structures.get(str(it.get("struct", {}).get("kind", "")), {})
@@ -20452,7 +20505,7 @@ func _bulk_store_all(peer: int, inv, id: int, _box) -> int:
 			continue
 
 		if _box_room(id, number, inv.counts[slot]) == 0:
-			continue   # full by weight for this item: a lighter one may still go in, and the refusal is not said once per stack
+			continue   # no room for this item (a vehicle's payload, a bin, kiln or smelter): another may still go in, and the refusal is not said once per stack
 
 		var had: int = inv.counts[slot]
 		_chest_action(peer, inv, Net.ACT_CHEST_PUT, slot, id, had)
@@ -20463,13 +20516,13 @@ func _bulk_store_all(peer: int, inv, id: int, _box) -> int:
 	return moved
 
 
-# How many of `amount` a storage container still takes by weight (structures.json max_kg); all of it when it has no weight limit.
+# How many of `amount` a storage container still takes: what it takes, a kiln's, smelter's or bin's room, and a vehicle's payload (a vehicle's
+# store or a crate riding on one); storage itself has no weight limit (Dave 19 Nov 2026).
 func _box_room(sid: int, number: int, amount: int) -> int:
 	if not _box_takes(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), number):
 		return 0   # what the container does not take (structures.json takes): a sealed batch never goes into a Stone bin
 
 	var box = _chests.get(int(_items.get(sid, {}).get("struct", {}).get("uid", -1)))
-	var max_kg: float = float(_structures.get(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), {}).get("max_kg", 0.0))
 	amount = _kiln_room(sid, box, number, amount)
 	var sdef: Dictionary = _structures.get(str(_items.get(sid, {}).get("struct", {}).get("kind", "")), {})
 
@@ -20479,11 +20532,13 @@ func _box_room(sid: int, number: int, amount: int) -> int:
 	if BinRules.is_bin(sdef) and box != null:
 		amount = BinRules.room(sdef, box, number, amount)
 
-	if max_kg <= 0.0 or _carry_cfg.is_empty() or box == null:
+	var cart_room: float = _carts.room_kg(sid)
+
+	if cart_room == INF or _carry_cfg.is_empty() or box == null:
 		return amount
 
 	var each: float = maxf(CarryRules.weight_of(table.id_of(number), _carry_cfg), 0.001)
-	return clampi(int(floor(minf(max_kg - CarryRules.carried_kg(box, table, _carry_cfg), _carts.room_kg(sid)) / each + 0.0001)), 0, amount)
+	return clampi(int(floor(cart_room / each + 0.0001)), 0, amount)
 
 
 # Stack to nearby: each pack stack (not a favourite, not the shoulder log) goes into the player's own storage chests within
@@ -21261,7 +21316,7 @@ func _made_age(made: int, entry: Array) -> int:
 
 
 # Where a sealed batch may go (master s3.14 bulk): the pack, then the player's own storage within the crafting reach, nearest first, each up to its
-# free space for `number` at age 0 (carry weight or max_kg, and a slot to put it in). [[inventory, world id or -1 for the pack, room], ...].
+# free space for `number` at age 0 (carry weight or a vehicle's payload, and a slot to put it in). [[inventory, world id or -1 for the pack, room], ...].
 func _batch_spots(peer: int, number: int) -> Array:
 	var out: Array = []
 	var inv = inventory_of(peer)

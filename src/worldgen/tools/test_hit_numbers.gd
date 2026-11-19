@@ -9,6 +9,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const DisplayScript := preload("res://src/client/display_settings.gd")
 const HitNumbers := preload("res://src/client/hit_numbers.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const MeleeRules := preload("res://src/shared/melee_rules.gd")
 
 var failures: int = 0
 
@@ -52,6 +53,26 @@ func _init() -> void:
 	items._last_strike.clear()
 	items.action(1, Net.ACT_STRIKE, slot, 0, 0, Vector3(0.0, 0.0, 1.0))
 	check(sent.size() == 1, "a miss sends no number")
+
+	# Anything in hand is a weapon (Dave 19 Nov 2026 play test: an axe did nothing to a pig): a tool or food strikes for its data/items/melee.json row.
+	lands[0] = true
+	var melee: Dictionary = MeleeRules.load_config()
+	var struck: Array = []
+	items.hit_animal = func(_peer, _origin, _aim, reach, amount) -> bool:
+		struck.append([reach, amount])
+		return true
+
+	for id in ["stone_axe", "steel_axe", "berries"]:
+		items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of(id), 0, 1, Vector3.ZERO)
+		items._last_strike.clear()
+		items.action(1, Net.ACT_STRIKE, items.inventory_of(1).numbers.find(items.table.number_of(id)), 0, 0, Vector3(0.0, 0.0, 1.0))
+
+	var axe_row: Dictionary = melee["tool"]["tool_axe"]
+	check(struck.size() == 3 and is_equal_approx(float(struck[0][1]), float(axe_row["damage"])) and is_equal_approx(float(struck[1][1]), float(axe_row["damage"]) + 3.0 * float(melee["tier_step"])),
+			"a Stone axe strikes an animal for its melee damage and a Steel axe three tiers harder (%s)" % str(struck))
+	check(struck.size() == 3 and is_equal_approx(float(struck[2][1]), float(melee["other"]["damage"])) and float(struck[2][0]) < float(struck[0][0]), "berries in hand strike weakly and at a shorter reach (%s)" % str(struck))
+	check(float(MeleeRules.blow(items.table.entry("spear"), melee)["reach_m"]) == 3.0 and float(MeleeRules.blow(items.table.entry("spear"), melee)["damage"]) == 0.0, "a spear keeps its own damage and 3 m reach")
+	items.hit_animal = func(_peer, _origin, _aim, _reach, _amount) -> bool: return lands[0]
 
 	# A tree or a boulder shows its share of 100 a blow; tiny shares still show 1.
 	sent.clear()

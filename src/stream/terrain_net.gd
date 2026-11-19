@@ -220,7 +220,7 @@ const ACT_NEW_PLAYER := 45   # admin only: this character starts over as a brand
 const ACT_SHOWROOM := 44     # a = 0 fill the showroom, 1 clear it and fill again (admin only), at = the spawn point the rows in data/items/showroom.json are laid out from: real world items
 const ACT_CHEST_CLOSE := 34  # the player closed the container window: the server stops pushing its contents
 const ACT_LITTER := 33     # at = a dead branch lying on the forest floor within reach: one stick into the pack (the client hides that branch)
-const ACT_STRIKE := 32     # a = slot of a weapon, at = aim direction: one jab at an animal in front (the server checks reach, pace and the weapon)
+const ACT_STRIKE := 32     # a = the held slot (any item: Dave 19 Nov 2026, anything in hand is a weapon), at = aim direction: one blow at an animal in front (the server checks reach, pace and the item)
 const ACT_CLEAR_DROPS := 38  # a = radius in metres (admin only): removes the loose dropped items within it of the player; no protocol change, just a new kind
 const ACT_ADMIN_MODE := 39   # a = 1 on, 0 off (admin only): the Admin mode switch, off at every login (Dave 11 Nov 2026); while on, an admin crafts anything free (no protocol change)
 const ACT_RESET_EDITS := 40  # admin only: delete every saved dig and fill (collapse rubble too) and reload the baked terrain for everyone

@@ -26,7 +26,7 @@ func _init() -> void:
 
 	# An empty bed: E never sows (Dave play test 19 Nov 2026: seeds went in without the hoe in hand); it says the hoe's Plant grid sows, and sends nothing, whatever is in hand.
 	var plan: Dictionary = FarmRules.bed_action(crops, "", -1, -1)
-	check(plan["act"] == "none" and plan["prompt"] == FarmRules.EMPTY_BED_PROMPT and str(plan["prompt"]).contains("hoe") and str(plan["prompt"]).contains("Plant"), "an empty bed sends nothing and points to the hoe's Plant (%s)" % str(plan["prompt"]))
+	check(plan["act"] == "none" and plan["prompt"] == "A tilled bed: " + FarmRules.EMPTY_BED_PROMPT and str(plan["prompt"]).contains("hoe") and str(plan["prompt"]).contains("Plant"), "an empty bed sends nothing and points to the hoe's Plant (%s)" % str(plan["prompt"]))
 	plan = FarmRules.bed_action(crops, "", -1, 4)
 	check(plan["act"] == "none", "an empty bed with water in hand still sends nothing")
 
@@ -36,6 +36,16 @@ func _init() -> void:
 		check(plan["act"] == "water" and plan["b"] == 4 and plan["prompt"] == "Press E to water the flax (%s)" % FarmRules.STAGE_NAMES[stage], "flax at stage %d with a filled container in slot 4: water it, b = 4" % stage)
 		plan = FarmRules.bed_action(crops, "flax", stage, -1)
 		check(plan["act"] == "none" and str(plan["prompt"]).begins_with("Flax, %s" % FarmRules.STAGE_NAMES[stage]), "flax at stage %d with no water in hand: says its stage, sends nothing" % stage)
+
+	# The soil's moisture in the line (garden moisture, Dave 19 Nov 2026: "if it needs water it should show its moisture content"), from the row's "moist".
+	var moist_cfg: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/crops.json"))["moisture"]
+	plan = FarmRules.bed_action(crops, "chamomile", 0, -1, 15, moist_cfg)
+	check(plan["act"] == "none" and plan["prompt"] == "Chamomile, seedling, soil 15% dry, needs water: hold a filled bucket or waterskin and press E to water it", "a dry seedling says its soil is dry and needs water (%s)" % plan["prompt"])
+	plan = FarmRules.bed_action(crops, "chamomile", 1, 4, 45, moist_cfg)
+	check(plan["act"] == "water" and plan["prompt"] == "Press E to water the chamomile (young, soil 45% damp)", "with water in hand it says the soil too (%s)" % plan["prompt"])
+	plan = FarmRules.bed_action(crops, "", -1, -1, 80, moist_cfg)
+	check(plan["act"] == "none" and plan["prompt"] == "A tilled bed (soil 80% wet): hold the hoe, right click and choose Plant to sow it", "an empty bed says its soil (%s)" % plan["prompt"])
+	check(FarmRules.soil_words(-1, moist_cfg) == "", "a row without moisture says nothing of the soil")
 
 	# Ripe: harvest (b unused), and say a sickle gives the full yield only where the crop needs one.
 	plan = FarmRules.bed_action(crops, "flax", 3, 4)

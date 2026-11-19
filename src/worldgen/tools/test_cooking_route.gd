@@ -10,7 +10,7 @@ extends SceneTree
 #   4. the Fireplace cooking crane cooks a stew only while its fireplace burns;
 #   5. Sauerkraut sealed as one batch at a built Preserving jar #830: Maturing (not eaten, not an ingredient), then Ready and eaten; stale
 #      cabbage is refused; batches sealed at different times never merge until both are Ready; the age survives save and load;
-#   6. batch room: a pack at its carry limit sends the batch to the player's nearby chest; a batch is capped to the room there, refused with none, waits when the
+#   6. batch room: a pack at its carry limit sends the batch to the player's nearby chest; a chest has no weight limit, so the batch is refused only when no slot is free, waits when the
 #      room fills before it is done, and never lands on the ground; Maturing stacks in a chest or on the ground are no craft stock; Hob will not
 #      buy one and an NPC order does not count or take one;
 #   7. Smoked meat at a built Smoker, Dried mushrooms at a built Drying rack (outside the mushrooms group).
@@ -384,51 +384,26 @@ func _init() -> void:
 		if not items._items[wid].has("struct") and int(items._items[wid].get("number", 0)) == kraut_n:
 			items._items.erase(wid)
 
-	# The room caps the batch: clay fills the chest by weight until five Sauerkraut still fit, so two crafts of the five asked are sealed.
-	var filler: int = num("clay")   # 0.1 kg a piece: fills the chest by weight in small steps
-
-	for k in range(2000):
-		if items._box_room(chest, kraut_n, 99) < 6:
-			break
-
-		box.add(filler, 1)
-
-	var room_crafts: int = floori(float(items._box_room(chest, kraut_n, 99)) / float(per))
-	items.drop_in_world(cabbage, cab_need * batch, jar_at + Vector3(0.5, 0.0, 0.5))
-	items.drop_in_world(num("sea_salt"), salt_need * batch, jar_at + Vector3(-0.5, 0.0, 0.5))
-	craft("cook_sauerkraut", batch, int(recipe("cook_sauerkraut")["craft_s"]) + 3)
-	check(room_crafts > 0 and room_crafts < batch and box.count_of(kraut_n) == room_crafts * per and loose("cabbage") == cab_need * (batch - room_crafts) and loose("sauerkraut") == 0 and told("Room for only"), "6d. room for %d crafts: %d sealed into the chest, the rest of the cabbage untouched, nothing on the ground" % [room_crafts, box.count_of(kraut_n)])
-
-	# No room at all: refused, nothing taken.
-	for k in range(2000):
-		if items._box_room(chest, kraut_n, 99) <= 0:
-			break
-
-		box.add(filler, 1)
-
-	var kraut_before: int = box.count_of(kraut_n)
+	# No room at all (every slot of the chest holds something else): refused, nothing taken.
+	_fill_slots(box)
+	items.drop_in_world(cabbage, cab_need, jar_at + Vector3(0.5, 0.0, 0.5))
+	items.drop_in_world(num("sea_salt"), salt_need, jar_at + Vector3(-0.5, 0.0, 0.5))
 	craft("cook_sauerkraut", 1, int(recipe("cook_sauerkraut")["craft_s"]) + 3)
-	check(box.count_of(kraut_n) == kraut_before and loose("cabbage") == cab_need * (batch - room_crafts) and loose("sauerkraut") == 0 and told("No room"), "6e. pack and chest full: the batch is refused and nothing is taken")
+	check(box.count_of(kraut_n) == 0 and loose("cabbage") == cab_need and loose("sauerkraut") == 0 and told("No room"), "6e. pack and chest full: the batch is refused and nothing is taken")
 
 	# Room that fills while the batch is sealed: the finished batch waits, its ingredients held, until there is room again.
-	box.remove(kraut_n, box.count_of(kraut_n))
+	_unfill_slots(box)
 	items._last_queue_act.clear()
 	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number("cook_sauerkraut"), 0, 1, CraftHand.at(items, 1, recipe_number("cook_sauerkraut")))
 	var queued: bool = not items.craft_queue_of(1).is_empty()
-
-	for k in range(2000):
-		if items._box_room(chest, kraut_n, 99) <= 0:
-			break
-
-		box.add(filler, 1)
-
+	_fill_slots(box)
 	items._station_said.clear()   # the wait is said at most every 8 s; this run is faster than that
 
 	for s in range(int(recipe("cook_sauerkraut")["craft_s"]) + 3):
 		items.tick(1.0)
 
 	check(queued and not items.craft_queue_of(1).is_empty() and box.count_of(kraut_n) == 0 and loose("sauerkraut") == 0 and told("waits"), "6f. the room filled meanwhile: the batch waits, not on the ground")
-	box.remove(filler, box.count_of(filler))
+	_unfill_slots(box)
 
 	for s in range(3):
 		items.tick(1.0)
@@ -474,3 +449,21 @@ func _init() -> void:
 	print("cooking route: %d failures" % failures)
 	items._finish_writer()
 	quit(1 if failures > 0 else 0)
+
+
+# Every free slot of a store holds one of something else (item numbers from 1000, above every ingredient here), so no new stack fits.
+func _fill_slots(box) -> void:
+	var n: int = 1000
+
+	for i in box.slot_count:
+		if box.numbers[i] == 0:
+			box.numbers[i] = n
+			box.counts[i] = 1
+			box.wear[i] = 0
+			n += 1
+
+
+func _unfill_slots(box) -> void:
+	for i in box.slot_count:
+		if box.numbers[i] >= 1000:
+			box.clear_slot(i)
