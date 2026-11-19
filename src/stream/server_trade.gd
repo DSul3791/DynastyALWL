@@ -6,6 +6,7 @@ extends RefCounted
 # prices every deal itself.
 
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")
+const Attributes := preload("res://src/shared/attributes.gd")
 const TALK_RANGE_M := 4.5
 const PURSE_EMPTY_SAY := "I've bought all I can for now. Come back in a little while."   # Dave's words, playtest 12 Nov 2026 (TEST-003)
 
@@ -196,8 +197,8 @@ func multipliers(peer: int, npc_id: String) -> Dictionary:
 		if str(ranks[i]["name"]) == word:
 			rank_index = i
 
-	var charisma: float = float(items.attributes_of(peer).get("charisma", 0.0))
-	var shift: float = float(rank_index) * float(c.get("rep_step", 0.04)) + charisma * float(c.get("charisma_step", 0.01)) + float(items.luck_of(peer)) * float(c.get("luck_strength", 0.04)) * float(c.get("luck_share", 0.25))
+	var charisma: float = Attributes.offset(float(items.attributes_of(peer).get("charisma", Attributes.NEUTRAL)))   # attributes are 0 to 100, 50 average: the steps are per 5 points
+	var shift: float = float(rank_index) * float(c.get("rep_step", 0.04)) + charisma * float(c.get("charisma_step", 0.01)) + Attributes.offset(items.luck_of(peer)) * float(c.get("luck_strength", 0.04)) * float(c.get("luck_share", 0.25))
 	var sell: float = maxf(float(c.get("sell_markup", 1.3)) - shift, float(c.get("min_sell", 1.05)))
 	var buy: float = minf(float(c.get("buy_discount", 0.55)) + shift, float(c.get("max_buy", 0.9)))
 	return {"pay": sell, "get": buy, "shift": shift}

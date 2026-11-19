@@ -61,8 +61,8 @@ func _init() -> void:
 		all_one = all_one and Web.working(cfg, id, none) == 1.0 and absf(Web.factor(cfg, id, Web.working(cfg, id, none), {}) - 1.0) < 0.0001
 
 	check(all_one, "every skill reads 1 with factor 1.0 for a new average character")
-	var strong: Dictionary = {"strength": 10.0, "fitness": 10.0}
-	var weak: Dictionary = {"strength": -10.0, "fitness": -10.0}
+	var strong: Dictionary = {"strength": 100.0, "fitness": 100.0}   # attributes are 0 to 100, 50 average (Dave 19 Nov 2026)
+	var weak: Dictionary = {"strength": 0.0, "fitness": 0.0}
 	check(Web.factor(cfg, "woodcutting", 1.0, strong) > 1.15 and Web.factor(cfg, "woodcutting", 1.0, strong) <= 1.21, "a strong character is up to 20 percent better before any practice")
 	check(Web.factor(cfg, "woodcutting", 1.0, weak) >= 0.8 and Web.factor(cfg, "woodcutting", 1.0, weak) < 1.0, "a weak one is worse, never below min_factor")
 
@@ -164,11 +164,11 @@ func _init() -> void:
 	var clock: Array = [day0]
 	var items = make(dir, clock)
 	items.peer_connected_hello(1, "skill-key-0001")
-	items.set_fitness(1, 0)   # an average adult (0); new characters start fitter (fitness.json default), which nudges fitness-weighted skills
+	items.set_fitness(1, 50)   # an average adult (50); on the game server a new player rolls fitness 40 to 60, which nudges fitness-weighted skills
 	check(items.skill_factor(1, "fell_tree") == 1.0, "a new character of average fitness fells at factor 1.0")
 	check(sent.size() >= 1 and sent[0][2].is_empty(), "the client is told at hello (no rows yet)")
-	items.set_attribute(1, "strength", 8)
-	check(items.skill_factor(1, "fell_tree") > 1.0, "strength 8 makes woodcutting faster before any practice")
+	items.set_attribute(1, "strength", 90)
+	check(items.skill_factor(1, "fell_tree") > 1.0, "strength 90 makes woodcutting faster before any practice")
 	var practice_t0: int = Time.get_ticks_msec()
 	var gained: float = items.practice(1, "fell_tree", 1.0)
 	check(gained > 0.0, "a verified success practises")
@@ -196,7 +196,7 @@ func _init() -> void:
 	var again = make(dir, clock)
 	again.peer_connected_hello(1, "skill-key-0001")
 	check(int(again._characters["skill-key-0001"]["skills"]["woodcutting"]["t"]) == 1, "training reloads")
-	check(int(again._characters["skill-key-0001"]["strength"]) == 8, "the strength attribute reloads")
+	check(int(again._characters["skill-key-0001"]["strength"]) == 90, "the strength attribute reloads")
 	check(not FileAccess.file_exists(dir + "/characters.json.v1.bak"), "a current save needs no migration backup")
 
 	# An older save (protocol 37 records, no skills_v): backed up once, migrated on load, dry run changes nothing.
@@ -218,7 +218,7 @@ func _init() -> void:
 	raw["players"]["skill-key-0001"].erase("skills")
 	raw["players"]["skill-key-0001"].erase("strength")
 	raw["players"]["skill-key-0001"].erase("skills_v")
-	raw["players"]["skill-key-0001"]["fitness"] = 0   # average adult, so only the missing skills are read
+	raw["players"]["skill-key-0001"]["fitness"] = 50   # average adult, so only the missing skills are read
 	out = FileAccess.open(dir + "/characters.json", FileAccess.WRITE)
 	out.store_string(JSON.stringify(raw))
 	out.close()
@@ -229,7 +229,7 @@ func _init() -> void:
 	# A skilled crafter wears tools slower: factor 2 charges half a point per use, carried in fractions (no dice).
 	var care = make(dir + "_care", clock)
 	care.peer_connected_hello(1, "skill-key-0002")
-	care.set_fitness(1, 0)   # an average adult (0): new characters start at fitness 5 (fitness.json default, provisional FIT-1), which nudges fitness-weighted factors (tool care, jumping, crafting)
+	care.set_fitness(1, 50)   # an average adult (50): on the game server a new player rolls fitness 40 to 60 (attributes.json), and fitness nudges fitness-weighted factors (tool care, jumping, crafting)
 	var axe_n: int = care.table.number_of("stone_axe")
 	care.action(1, Net.ACT_ADMIN_GIVE, axe_n, 0, 1, Vector3.ZERO)
 	var inv = care.inventory_of(1)

@@ -409,6 +409,7 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.send_vitals = func(peer, hunger, health, weight, thirst, luck, fitness): net.vitals.rpc_id(peer, hunger, health, weight, thirst, luck, fitness)
 	items.send_training = func(peer, percent): net.training.rpc_id(peer, percent)
+	items.roll_new_characters = true   # a new player character rolls its attributes (data/items/attributes.json)
 	items.send_food = func(peer, rows): net.food_effects.rpc_id(peer, rows)
 	items.send_food_ask = func(peer, slot, number, groups): net.food_ask.rpc_id(peer, slot, number, groups)
 	items.ore_near = func(pos, reach, names, depth_m):   # the ore of the baked tile a boulder at the spot is an outcrop of (TileTerrainData.ore_at), "" when none
