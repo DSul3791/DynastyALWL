@@ -96,7 +96,7 @@ func _init() -> void:
 	# Dig it with the hoe, as the client sends it: the held hoe slot, the way the player faces, the point aimed at.
 	items.peer_connected_hello(1, "irrigator0001")
 	items.report_position(1, Vector3(98.5, 10.0, 101.0))
-	items.inventory_of(1).add(items.table.number_of("wooden_hoe" if items.table.has_id("wooden_hoe") else "stone_hoe"), 1)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("wooden_hoe" if items.table.has_id("wooden_hoe") else "stone_hoe"), 0, 1, Vector3.ZERO)   # onto the hotbar, as test_farming gives
 	var hoe: int = HeldTool.slot_of(items, "hoe")
 	items.action(1, Net.ACT_DIG_TRENCH, -1, 0, 0, Vector3(98.6, 10.0, 100.0))
 	check(items._items.keys().filter(func(k): return items._items[k].has("struct") and str(items._items[k]["struct"]["kind"]) == "irrigation_trench").is_empty(), "no hoe in hand: no trench")

@@ -2,7 +2,7 @@ extends SceneTree
 # Headless check of the hoe's right-click list (src/client/held_item.gd, BugsList_Current.md entry 4; Dave's play test 19 Nov 2026: the list began at
 # the middle of the screen, ran off the right edge with every action's explanation on its line, and lay over the hotbar and its caption).
 # At every text size (display_settings.gd TEXT_SCALES) the plate is inside the window, above the caption, the rows
-# are the six short names in Dave's order with only the highlighted one marked, and the explanation shown is the highlighted action's. A long plant
+# are the short names in Dave's order (Irrigation Trench added last, 19 Nov 2026) with only the highlighted one marked, and the explanation shown is the highlighted action's. A long plant
 # list shows a window of rows that keeps the highlighted row on the plate.
 
 const HeldItem := preload("res://src/client/held_item.gd")
@@ -126,7 +126,7 @@ func run() -> void:
 			for n in names.size():
 				expected.append("%d. %s" % [n + 1, names[n]])
 
-			_check(texts == expected, "%s: the rows are the six short names in order: %s" % [tag, str(texts)])
+			_check(texts == expected, "%s: the rows are the short names in order: %s" % [tag, str(texts)])
 			var marked: Array = rows.filter(func(label: Label) -> bool: return label.get_theme_stylebox("normal") is StyleBoxFlat)
 			_check(marked.size() == 1 and marked[0].text == "3. Till Garden Grid - 20m Edge Blend", "%s: only the current action is marked" % tag)
 			_check(held._hoe_menu_help.text.begins_with("Till Garden Grid - 20m Edge Blend: one left click"), "%s: the explanation is the marked action's" % tag)

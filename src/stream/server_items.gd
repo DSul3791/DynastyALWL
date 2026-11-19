@@ -16753,10 +16753,13 @@ func _plots_tick() -> void:
 	_trench_beds.clear()   # beds tilled or gone since: each trench's list is worked out again (one pass over the beds for all of them)
 	var plots: Array = []
 
+	var plots_read: bool = false
+
 	for id in _water_kind:
-		if str(_water_kind[id]) == TRENCH_KIND:
-			if plots.is_empty():
+		if str(_water_kind[id]) == TRENCH_KIND and _items.has(id):   # a trench taken away since the last water tick is pruned there
+			if not plots_read:
 				plots = _plot_ids()
+				plots_read = true
 
 			_trench_beds[id] = _beds_by_trench(_items[id]["pos"], plots)
 
@@ -17507,7 +17510,7 @@ func _till_cell(peer: int, inv, hoe: int, at: Vector3, yaw_deg: int, quiet: bool
 		if kind == "tilled_bed":
 			if _chunk_of(other["pos"]) == here_chunk:
 				of_kind += 1
-		elif other["pos"].distance_to(cell) < 1.0 and not bool(_structures.get(kind, {}).get("walkover", false)):
+		elif other["pos"].distance_to(cell) < 1.0 and (kind == TRENCH_KIND or not bool(_structures.get(kind, {}).get("walkover", false))):   # a trench is walked over but not tilled
 			if not quiet:
 				_say(peer, "Something stands there.")
 
