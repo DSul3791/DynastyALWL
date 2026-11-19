@@ -249,6 +249,23 @@ Dave, 19 Nov 2026: "if you click on foot in a hotbar or hold down the hotbar key
 
 **Acceptance:** put berries in a hotbar slot with an axe in hand. Tap the berries' key: one bite, and the axe stays in hand. Hold the key: bites keep coming until you let go or the berries are gone. With the inventory open, click the berries' box for one bite, or hold it to keep eating. Dragging the berries off the hotbar eats nothing.
 
+## 53. Chests refuse items when they are not full
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test on 19 Nov 2026. Fixed by PR #1281, merged to dev at 16cee6e4 (head 691c3893) after independent review. Lane A (Dave's PC) on the exact head: 272 of 273 selected tests passed, with all chest, crate, cart and cooking tests passing; the one failure was an unrelated sickle swing-pace timing check (test_swath) that passed when run alone. Fix not yet played.
+
+Dave, 19 Nov 2026: "chests must have a weight limit which they shouldn't because they are not full but I cant put anything in them."
+
+**Cause:** every storage container had a weight cap in its data (`data/items/structures.json` `max_kg`: Woven chest 40 kg, Plank chest 150 kg and so on, placeholders since the first chest), and the server refused a put past it even with free slots. It was not a recent change and not the player's own carry check.
+
+**Required outcome:** a chest takes items until its slots are full, whatever they weigh. No storage container has a weight limit (chests, crates, shelves, barrels, cupboards, racks, the cellar and the rest). Only a handcart, sled or wagon keeps its payload, which also limits a crate riding on one. The validator refuses a weight limit on anything but a vehicle.
+
+**Acceptance:** fill a Woven chest with stone, logs and other heavy things: it takes them until every slot holds something, and only then refuses.
+
+Assumed on Dave's behalf (provisional):
+
+- CH-1: the ruling covers every storage container, not only those named chest; vehicles keep their payload.
+- CH-2: this supersedes the 18 Nov ruling that the Large wooden chest holds more weight than the Ornate chest; the Large wooden chest now differs by its larger footprint and its slots (42 against 48).
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
