@@ -116,8 +116,6 @@ func add(id: int, piece: Dictionary) -> String:
 
 		_unfile(id)
 		pieces.erase(id)
-		_down[id] = []
-		_up[id] = []
 
 	var why: String = check(piece)
 	pieces[id] = piece
@@ -411,6 +409,8 @@ func _collect(start: int, seen: Dictionary) -> void:
 
 # --- Solving ---
 
+var _short_order_warned_ms: int = -100000
+
 # Brings the tanks to `now_s`, then works every rate out again: surfaces down from the sources, what each piece can take up from the plots and tanks
 # (so water is only sent where it can go: a channel to a full plot carries nothing and a cistern does not drain into it), then the flows down.
 func solve(now_s: float) -> void:
@@ -422,6 +422,11 @@ func solve(now_s: float) -> void:
 
 	_solved_s = now_s
 	var order: Array = _order()
+
+	if order.size() < pieces.size() and Time.get_ticks_msec() - _short_order_warned_ms > 60000:   # a link bug: some pieces are left out of this solve
+		_short_order_warned_ms = Time.get_ticks_msec()
+		push_warning("water network: %d of %d pieces could not be ordered (a loop or a stale link); they carry nothing" % [pieces.size() - order.size(), pieces.size()])
+
 	var surface: Dictionary = {}    # id -> the water surface feeding it (closed pipes)
 	var arriving: Dictionary = {}
 	var incoming: Dictionary = {}   # id -> worst quality arriving
