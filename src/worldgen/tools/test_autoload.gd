@@ -40,6 +40,7 @@ func make_server():
 	s.send_carry = func(_p, _id): pass
 	s.send_chest = func(_p, _id, _b): pass
 	s.send_chest_info = func(_p, _id, _k, _m): pass
+	s.send_chest_lock = func(_p, _id, _l, _mi, _mo, _w, _a): pass
 	s.send_autoload_info = func(p, id, number): info[p] = [id, number]
 	s.send_craft_stock = func(_p, _n, _c): pass
 	s.send_bulk_done = func(_p, _k, _s, _c, _i): pass
@@ -112,7 +113,7 @@ func _init() -> void:
 	stone = items.table.number_of("stone")
 	clay = items.table.number_of("clay")
 	check(stone > 0 and clay > 0 and Net.ACT_AUTOLOAD == 84 and Net.PROTOCOL_VERSION >= 139, "protocol 139: ACT_AUTOLOAD 84, the test items are in the table")
-	check(StoreRules.autoloads(items._structures["small_wagon"]) and StoreRules.autoloads(items._structures["wooden_barrel"]) and StoreRules.autoloads(items._structures["wooden_crate"]) and not StoreRules.autoloads(items._structures["kiln"]) and not StoreRules.autoloads(items._structures["smelter"]) and not StoreRules.autoloads(items._structures["remains"]) and not StoreRules.autoloads(items._structures["serving_platter"]), "carts, barrels and crates autoload; a kiln, smelter, remains and platter do not")
+	check(StoreRules.autoloads(items._structures["small_wagon"]) and StoreRules.autoloads(items._structures["wooden_barrel"]) and StoreRules.autoloads(items._structures["wooden_crate"]) and not StoreRules.autoloads(items._structures["kiln"]) and not StoreRules.autoloads(items._structures["smelter"]) and not StoreRules.autoloads(items._structures["remains"]) and not StoreRules.autoloads(items._structures["serving_platter"]) and not StoreRules.autoloads(items._structures["fish_trap_set"]), "carts, barrels and crates autoload; a kiln, smelter, remains, platter and fish trap do not")
 
 	# 1. A Small wagon: stone nearest first up to its payload, a pile taken in part, the pile past 30 m left alone.
 	reset()
@@ -175,6 +176,20 @@ func _init() -> void:
 	var after: int = pile(clay, 12, 4.0, 4.0)
 	items._autoload_tick(ItemsScript.AUTOLOAD_EVERY_S)
 	check(int(items._items[keeper]["struct"].get("autoload", 0)) == 0 and ground_count(after) == 12 and info.get(1, []) == [keeper, 0], "unticked: it stops and the next round leaves the clay on the ground")
+
+	# 5. A locked crate: a stranger beside it without the code gets nothing; its owner loads it. A number that is no item does nothing.
+	reset()
+	var crate: int = items.dev_place("wooden_crate@1,0,0")
+	items._items[crate]["struct"]["owner"] = str(items._peer_key[1])
+	items.action(1, Net.ACT_CHEST_LOCK, crate, ItemsScript.LOCK_SET, 42, Vector3.ZERO)
+	var locked_pile: int = pile(clay, 15, 4.0, 0.0)
+	items.report_position(2, Vector3(0.0, 10.0, 1.0))
+	press(2, crate, clay, true)
+	check(items._items[crate]["struct"].has("lock") and box(crate).count_of(clay) == 0 and ground_count(locked_pile) == 15 and not items._items[crate]["struct"].has("autoload"), "a stranger cannot autoload a locked crate or set its standing autoload")
+	press(1, crate, 999999, true)
+	check(not items._items[crate]["struct"].has("autoload") and ground_count(locked_pile) == 15, "an item number that is no item does nothing")
+	press(1, crate, clay)
+	check(box(crate).count_of(clay) == 15 and not items._items.has(locked_pile), "its owner loads it")
 
 	print("autoload: %s" % ("all passed" if failures == 0 else "%d FAILED" % failures))
 	quit(1 if failures > 0 else 0)

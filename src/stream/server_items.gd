@@ -21441,8 +21441,8 @@ func _box_room(sid: int, number: int, amount: int) -> int:
 # limit"; "maybe just have autoload with a check box beside it to make it continuously autoload every 10 minutes or something") ---
 # ACT_AUTOLOAD a = the container, b = the item (0 stops its standing autoload), count = 1 also keeps it loading that item every AUTOLOAD_EVERY_S.
 # One request, all on the server: the ground piles of that item within AUTOLOAD_M of the container go in nearest first, each pile in part when
-# only part fits, under the container's own rules (what it takes, its slots, a vehicle's payload: _box_room); which containers: StoreRules.autoloads. Provisional AL-1..AL-4
-# (coordinator for Dave, 19 Nov 2026): the range is measured from the container, one item per standing autoload, instant, anyone who may open it.
+# only part fits, under the container's own rules (what it takes, its slots, a vehicle's payload: _box_room); which containers: StoreRules.autoloads.
+# Provisional choices AL-1 to AL-5: docs/design/AUTOLOAD.md.
 const AUTOLOAD_M := 30.0
 const AUTOLOAD_EVERY_S := 600.0       # the standing autoload's round, real seconds (Dave: "every 10 minutes or something")
 const AUTOLOAD_PRESS_MS := 250        # a player's presses are answered at most this often (each is one scan of the ground near the container)
@@ -21480,13 +21480,16 @@ func _autoload(peer: int, id: int, number: int, keep: bool) -> void:
 		_send_autoload_info(peer, id)
 		return
 
-	if keep:
+	if table.id_of(number) == "":
+		return   # not an item
+
+	if keep and _box_takes(str(it["struct"]["kind"]), number):
 		it["struct"]["autoload"] = number   # saved with the container (world_items.json row index 22)
 	elif int(it["struct"].get("autoload", 0)) != number:
 		it["struct"].erase("autoload")   # a one-off load of another item ends the standing one; the same item keeps it
 
-	_dirty = true
 	var loaded: Array = _autoload_into(id, box, number)
+	_dirty = true
 	var noun: String = table.sentence_name(int(it["number"]))
 	var what: String = table.sentence_name(number)
 
@@ -21528,16 +21531,20 @@ func _autoload_into(id: int, box, number: int) -> Array:
 	box.usable = _store_usable(str(it["struct"]["kind"]), box)
 	var loaded: int = 0
 	var left_near: int = 0
+	var cart_kg: float = _carts.room_kg(id) if not _carry_cfg.is_empty() else INF   # a vehicle's payload left, worked out once (riders_of looks at every record)
+	var full: bool = false
 
 	for pile in piles:
 		var g: Dictionary = _items[pile[1]]
-		var want: int = _box_room(id, number, int(g["count"]))
+		var each: float = maxf(CarryRules.weight_of(table.id_of(number), _carry_cfg) + (CarryRules.bag_kg(g["inst"], table, _carry_cfg) if g.has("inst") else 0.0), 0.001) if cart_kg < INF else 0.0
+		var want: int = 0
 
-		if want > 0 and g.has("inst") and _carts.room_kg(id) < INF and not _carry_cfg.is_empty():   # a bag weighs with what it holds
-			var each: float = maxf(CarryRules.weight_of(table.id_of(number), _carry_cfg) + CarryRules.bag_kg(g["inst"], table, _carry_cfg), 0.001)
-			want = mini(want, int(floor(_carts.room_kg(id) / each + 0.0001)))
+		if not full:   # a vehicle's store or a crate riding on one stops at the payload (a bag weighs with what it holds); a bin at its room
+			want = _box_room(id, number, int(g["count"])) if cart_kg == INF else clampi(int(floor(cart_kg / each + 0.0001)), 0, int(g["count"]))
 
 		var put: int = want - box.add(number, want, int(g.get("wear", 0)), g.get("inst", {})) if want > 0 else 0
+		cart_kg = maxf(cart_kg - float(put) * each, 0.0) if cart_kg < INF else INF
+		full = full or put < int(g["count"])   # this pile did not all fit: the next ones will not either
 		left_near += int(g["count"]) - put
 		loaded += put
 		_take_from(int(pile[1]), put)
