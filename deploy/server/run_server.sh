@@ -24,6 +24,7 @@ esac
 
 mkdir -p "$store" || exit 2
 rm -f "$store/stop.now"   # left by a run that was killed; removed here, not by the server, so a stop during its start-up still counts
+rm -f "$store/server_run.json"   # also left by a killed run; the container's health check reads it as "listening"
 ask_stop() {
   echo "run_server: stop signal; asking the server to save and close" >&2
   : > "$store/stop.now"

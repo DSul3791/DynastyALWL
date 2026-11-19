@@ -250,11 +250,11 @@ func refresh() -> void:
 		_rep_box.add_child(_label("%s: %s" % [_items.rep_names[i], _items.rank_word(int(_items.rep_points[i]))], BODY_PX - 4))
 
 	var rows: Array = [
-		["Luck", "%+d" % int(_items.luck) if int(_items.luck) != 0 else "0", "Fixed when the character was made; nudges every roll of chance."],
-		["Fitness", "%+d" % int(_items.fitness) if int(_items.fitness) != 0 else "0", "How slowly exertion builds when you run, climb or haul. Hard work makes you fitter; long idleness slowly loses it."],
+		["Luck", "%d%%" % int(_items.luck), "Fixed when the character was made; nudges every roll of chance. 50% is average."],
+		["Fitness", "%d%%" % int(_items.fitness), "How slowly exertion builds when you run, climb or haul. Hard work makes you fitter; long idleness slowly loses it. 50% is an average adult."],
 		["Today's training", "%d%% of a point" % int(_items.training_today), "The hard work you have done today (walking, running, chopping, hauling). At midnight it turns into fitness."],
-		["Strength", "%+d" % int(_items.strength) if int(_items.strength) != 0 else "0", "Helps woodcutting, mining, digging and jumping."],
-		["Memory", "%+d" % int(_items.memory) if int(_items.memory) != 0 else "0", "Helps foraging and crafting, and recognising things you inspect."],
+		["Strength", "%d%%" % int(_items.strength), "Helps woodcutting, mining, digging and jumping."],
+		["Memory", "%d%%" % int(_items.memory), "Helps foraging and crafting, and recognising things you inspect."],
 		["Health status", "well" if int(_items.sick_hours) <= 0 else "ill, %d h" % int(_items.sick_hours), "Rotten food ruins your health for about a day: vomiting and diarrhoea keep you working hard. Sleep or medicine shortens it."],
 		["Body weight", "%.1f kg" % float(_items.weight_kg), ""],
 		["Can carry", "%.0f kg" % float(_items.carry_limit_kg()), ""],

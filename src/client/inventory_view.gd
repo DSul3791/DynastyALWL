@@ -189,9 +189,9 @@ var hurt_event: Callable               # (health lost int) when a vitals update 
 var _vitals_seen: bool = false          # the first vitals after joining sets health; it is not a hurt
 const HURT_MIN := 4                     # a smaller drop is a slow drain (hunger, cold, bleeding), not a blow
 var hunger: int = 100                  # stomach, percent
-var fitness: int = 0                  # the character's fitness, -10 to 10: how slowly exertion rises (character screen)
+var fitness: int = 50                 # the character's fitness, 0 to 100 (50 average): how slowly exertion rises (character screen)
 var training_today: int = 0           # today's training, percent of a fitness point (character screen; turns into fitness at game midnight)
-var luck: int = 0                     # the character's luck, -10 to 10, fixed (character screen)
+var luck: int = 50                    # the character's luck, 0 to 100 (50 neutral), fixed (character screen)
 var thirst: int = 100                  # body water, percent (100 = full; 0 = parched)
 var health: int = 100
 var breath_ds: int = -1                 # air left under water in tenths of a second; -1 = head above the surface (the oxygen symbol hides)
@@ -219,8 +219,8 @@ var sit_on_seat: Callable = Callable()       # (seat position, yaw degrees, stru
 const SINK_M := 0.35                        # most the remains sink into the ground by day 7 (death.json sink_m)
 const DEATH_FADE_S := 4.0                   # black, then waking, after a death (death.json respawn_delay_s)
 var _death_msec: int = 0                    # when the last death arrived, 0 when none is being shown
-var strength: int = 0                       # attributes the server sends with the skills (protocol 37)
-var memory: int = 0
+var strength: int = 50                      # attributes the server sends with the skills (protocol 37), 0 to 100, 50 average
+var memory: int = 50
 var bow_arrow: int = 0                     # the arrow item the bow is loaded with (dragged onto the bow on the hotbar, Dave 10 Nov 2026); 0 = the first one in the pack
 var _skill_order: Array = []                # data/items/skills.json "skills" names, in the order the skill rows number them
 var skill_rows: Array = []                  # [[skill index, working level, rusty], ...] in skills.json order
@@ -5352,8 +5352,8 @@ func _on_died(cause: String, _spawn: Vector3) -> void:
 
 
 func _on_skills(attributes: PackedInt32Array, rows: Array) -> void:
-	strength = attributes[0] if attributes.size() > 0 else 0
-	memory = attributes[1] if attributes.size() > 1 else 0
+	strength = attributes[0] if attributes.size() > 0 else 50
+	memory = attributes[1] if attributes.size() > 1 else 50
 	var rose: bool = not skill_rows.is_empty() and skill_rose(skill_rows, rows)
 	skill_rows = rows
 	_update_trail_mult()

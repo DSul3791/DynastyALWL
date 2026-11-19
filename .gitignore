@@ -57,3 +57,6 @@ crash_reports/telemetry_client.log
 
 # The release build stamp, written by tools/build_stamp.py just before an export (step A1); never committed
 build_stamp.json
+
+# A ready engine binary for the server image (deploy/server/engine/README.txt)
+deploy/server/engine/godot
