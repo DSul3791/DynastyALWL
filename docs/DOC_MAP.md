@@ -83,6 +83,7 @@ Separate references for distinct topics. Dated implementation notes preserve cod
 | Movement and action feel | [Feel tuning](FEEL_TUNING.md) | Parameter locator and recorded 2 Nov settings; current values are in the named code. |
 | Comfort and Rested | [Comfort](COMFORT_DESIGN.md) | Comfort/Rested behavior, tuning, open questions and integration reference; recipes route to the master catalog. No blanket approval or runtime certification. |
 | Wildlife coverage | [Animal specification](../ANIMAL_SPEC.md) | 30–31 Oct data audit/species proposals and 8 Nov alarm-group design; not a current species census or passing test certificate. |
+| Animal reactions to players | [Animal reactions](design/ANIMAL_REACTIONS.md) | Provisional 19 Nov 2026 reaction table (notice / flee / safe per species) and the sense changes RX-1 to RX-3, for Dave's review; values live in data/animals/animals.json. |
 
 ## Further design areas — routing review pending
 
