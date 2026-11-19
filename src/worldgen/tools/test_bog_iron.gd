@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Bog iron (Sonny, water_flow_rules section 11, src/shared/bog_iron.gd): deposits only under fen, marsh, swamp and bog samples, about 4% of a fen
-# and twice that at its dry edge, the same every time; a shovel dig gives 1 to 2 Iron ore until the deposit is empty, one ore comes back every 3
+# and twice that at its dry edge, the same every time; a shovel dig gives 1 to 2 Bog iron ore until the deposit is empty, one ore comes back every 3
 # game days up to its size, the first find is said once, the state survives a save; main's tile 3,4 holds the expected number near the spawn.
 #   godot --headless --path . --script res://src/worldgen/tools/test_bog_iron.gd
 
@@ -81,7 +81,7 @@ func _init() -> void:
 	var edge: float = float(a[2]) / float(a[3])
 	check(absf(inside - 0.04) <= 0.01, "a fen holds a deposit on about 4%% of its inside samples (%.2f%% of %d)" % [100.0 * inside, a[1]])
 	check(absf(edge - 0.08) <= 0.01, "and on about 8%% of its edge samples (%.2f%% of %d)" % [100.0 * edge, a[3]])
-	check(bool(a[4]) and int(a[5]) == 7, "deposit sizes are 6 to 12 Iron ore, all seven seen, and the edge flag is right")
+	check(bool(a[4]) and int(a[5]) == 7, "deposit sizes are 6 to 12 Bog iron ore, all seven seen, and the edge flag is right")
 	check(_shares(fen[0], fen[1], cfg) == a, "the same map gives the same deposits")
 	var marsh: Array = _blocks(MARSH)
 	var m: Array = _shares(marsh[0], marsh[1], cfg)
@@ -159,7 +159,7 @@ func _init() -> void:
 		total += int(got[0])
 		per_dig_ok = per_dig_ok and int(got[0]) >= 1 and int(got[0]) <= 2
 
-	check(per_dig_ok and total == 7, "digs give 1 to 2 Iron ore each until the deposit's 7 are gone (%d in %d digs)" % [total, digs])
+	check(per_dig_ok and total == 7, "digs give 1 to 2 Bog iron ore each until the deposit's 7 are gone (%d in %d digs)" % [total, digs])
 	check(soil_ok, "the peat still comes up as soil")
 	check(int(_dig_once(items, 6.0)[0]) == 0, "an empty deposit gives nothing")
 	clock[0] += 3.0 * day

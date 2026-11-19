@@ -68,3 +68,6 @@ Item 807 `mortar_pestle` keeps its number and recipe 377 (2 Stone, crafted by ha
 
 ## Irrigation trench (Dave 19 Nov 2026, thread "Add garden soil moisture and irrigation"; docs/design/GARDEN_MOISTURE.md)
 Dave named it ("into an irrigation trench"). New: item 1507 `irrigation_trench` (items.json next_number was 1507, now 1508; gathered.json follows), structure state 457 `irrigation_trench` (dug with the hoe, no kit). Protocol 135 (coordinator), action ACT_DIG_TRENCH 83. No recipes or blueprints. Next free: item 1508, structure state 458.
+
+## Bog iron ore (Dave 19 Nov 2026, thread "Show bog iron deposits"; PR #1316)
+Dave: "it should be its own lumpy redbrown rock as Bog Iron ore. then it takes two to smelt into an ingot." New: item 1511 `bog_iron_ore` (1508-1510 are held by the pipes PR #1306; items.json and gathered.json next_number 1512). Smelting jobs `bog_iron` and `bog_steel` (structures.json, named, no numbers). No recipes, blueprints, states, actions or protocol.

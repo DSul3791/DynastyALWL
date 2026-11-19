@@ -61,7 +61,7 @@ Nothing of mine is half-merged. No art PR is open. The two pieces below are writ
      - A small bright flame core: a narrow candle in the wooden lantern, a wider oil flame in the iron one.
      - A 0.6 m `HandLight`, so the fist holding the bail isn't grey-dark in first person.
    - Check: one first-person shot at −55° on the beach (52752, 67792) at 22:00, with `--give wooden_lantern --lit`.
-2. **`_show_bog` hookup**, which draws the bog patch in the world. `art/parked/bog_show.patch` (copy in `/mnt/project-files/kathleen/parked/`) applies cleanly to main bd3146aa now that #997 is in.
+2. **`_show_bog` hookup**, which draws the bog patch in the world (merged 19 Nov 2026, PR #1316; the parked patch is deleted). `art/parked/bog_show.patch` (copy in `/mnt/project-files/kathleen/parked/`) applies cleanly to main bd3146aa now that #997 is in.
    - `_note_bog` calls `_show_bog(id)`.
    - State: "wet" if wet, "dug" if left < total, else "dry". The patch is rebuilt only when the state changes.
    - Yaw comes from a hash of the key, and the stain drapes over the ground through `_ground_below`, with NAN treated as 0.

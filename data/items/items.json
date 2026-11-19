@@ -3458,7 +3458,7 @@
 			"description": "A lumpy red-brown rock dug from wet peat. Two smelt to one iron ingot in an Improved or Advanced smelter.",
 			"kind": "material",
 			"stack": 20,
-			"look_alikes": ["Iron ore"],
+			"look_alikes": [],
 			"value": 3,
 			"note": "Dave 19 Nov 2026: \"it should be its own lumpy redbrown rock as Bog Iron ore. then it takes two to smelt into an ingot.\" Dug from bog iron deposits (digging.json bog_iron); smelted by structures.json smelting.jobs.bog_iron. Number 1511: 1508-1510 are held by the pipes PR #1306."
 		},
