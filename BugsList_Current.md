@@ -8,7 +8,7 @@ This list records the problems Dave found in his play tests and the intended pla
 
 The hoe should make preparing land predictable and convenient. The player can level a building site, prepare a garden in one deliberate action, or plant an orderly patch using available supplies. Terrain changes must respect buildings and obstacles. Mining should visibly use up a rock rather than provide an endless supply.
 
-The six existing entry numbers are retained for tracking. Detailed behaviour has one home below; cross-references replace repeated instructions.
+The existing entry numbers are retained for tracking. Detailed behaviour has one home below; cross-references replace repeated instructions.
 
 ## 1. Level terrain without lifting the player or creating free fill
 
@@ -152,33 +152,33 @@ Assumed on Dave's behalf (provisional):
 
 ## 8-49. Problems Dave found in play, 12-18 Nov 2026
 
-Recorded 19 Nov from Dave's own messages. Each of his lists of answers and problems was the result of a play session, so every row below is a feature he played. "Fix in dev" is the change made after his report; "Fix not yet played" means no message from him about the fixed version yet. Where a row says *inferred*, his words imply it rather than say it. Dates are UTC. Nothing here has been confirmed fixed in play, so nothing moves to BugsList_Fixed.md yet.
+Recorded 19 Nov from Dave's own messages. Each of his lists of answers and problems was the result of a play session, so each row comes from a message of his, nearly all of them reports from play (rows 15 and 24 were questions). "Fix in dev" is the change made after his report; "Fix not yet played" means no message from him about the fixed version yet. Where a row says *inferred*, his words imply it rather than say it. Dates are UTC. Nothing here has been confirmed fixed in play, so nothing moves to BugsList_Fixed.md yet.
 
 | # | What Dave found in play (date) | Fix in dev | Play status |
 |---|---|---|---|
-| 8 | Merchant silently stopped buying; Hob's talk window too low "now that we have a hotbar" (12-13 Nov) | #1062, #1080 | Fix not yet played. *Inferred:* he played the hotbar slots (#1057) and reported no hotbar fault. |
+| 8 | Merchant silently stopped buying; Hob's talk window too low "now that we have a hotbar" (12-13 Nov) | #1062, #1080 | Fix not yet played |
 | 9 | Admin Reset World removed things the server placed, like dens (12 Nov, *inferred* from play) | #1051 | Fix not yet played |
 | 10 | Started at spawn after quitting, campfire gone (13 Nov) | #1160 (start where you quit) | Fix not yet played |
 | 11 | Goals should show counts like "Gather plant fiber 0/50" (14 Nov) | #1138 | Fix not yet played |
 | 12 | Inventory pauses a few seconds when opened (14 Nov) | #1139 | Fix not yet played |
 | 13 | Coins change denomination away from a vendor (14 Nov) | #1140 | Fix not yet played |
-| 14 | Fog-like haze under a bright blue sky (14 Nov) | Fog #1137, #1142, #1143, #1146, #1158 | Fix not yet played |
+| 14 | Fog-like haze under a bright blue sky (14 Nov) | Fog PRs #1137, #1142, #1143, #1146, #1158 | Fix not yet played |
 | 15 | Planting pause: Dave asked whether planting a bush or sapling could avoid rebuilding the whole square (15 Nov; unclear whether he hit the pause in play) | #1166 | Fix not yet played |
-| 16 | Felled trees fell whole with a yellow line instead of in logs (16 Nov) | #1177 | Fix played 16 Nov (*inferred*: he then walked through the fallen logs and reported only their rolling, entry 17) |
-| 17 | Logs flipped into the terrain instead of rolling (16 Nov); after that fix, logs rolled in stops and starts (17 Nov) | #1188, then #1238 | #1188 played 17 Nov (stops and starts); #1238 not yet played |
-| 18 | Hammer right-click list too long to find anything (16 Nov) | #1181 build screen | Played 16 Nov (*inferred*); he asked that "search should look in every group" (unclear whether he saw it fail; the screen searches every group while text is typed) |
-| 19 | Forest rain "sounds nice" apart from a puddle bloop (16 Nov) | #1184 | Rain on trees confirmed; bloop fix not yet played |
+| 16 | Felled trees fell whole with a yellow line instead of in logs (16 Nov) | #1177 | Fix played (*inferred*: on 16 Nov he then walked through the fallen logs and reported only their rolling, entry 17) |
+| 17 | Logs flipped into the terrain instead of rolling (16 Nov); after that fix, logs rolled in stops and starts (17 Nov) | #1188, then #1238 | Fix played: #1188 on 17 Nov (stops and starts); #1238 fix not yet played |
+| 18 | Hammer right-click list too long to find anything (16 Nov) | #1181 build screen | Unclear: the old long list was played; right after #1181 merged he asked that "search should look in every group" (it already does while text is typed), so it is not known whether he had tried the new screen |
+| 19 | Forest rain "sounds nice" apart from a puddle bloop (16 Nov) | #1184 | He said the rain on the trees "sounds nice"; bloop fix not yet played |
 | 20 | Torch recipe had been changed; doused torch should not exist (16 Nov) | #1187, #1198 | Fix not yet played |
 | 21 | Could not drop items, "too much on the ground" (16 Nov) | #1199 | Fix not yet played |
 | 22 | Copper rocks not found; tin and limestone found (16-17 Nov) | Copper and tin rocks #1202, #1203, #1206, #1209, then #1227 | He liked the new rock pictures (17 Nov, "I like them"); #1227 not yet played |
 | 23 | Smelter: fuel slot wording, fire showing before lit, prompts (17 Nov) | #1205 | Fix not yet played |
-| 24 | Asked whether campfires leave charcoal yet (17 Nov; a question, not a play fault) | #1204, #1207 | Fix not yet played. He placed the Primitive kiln (entry 37) |
-| 25 | Stations listed every recipe; Primitive smithy had a separate chest (17 Nov) | #1208, #1212, #1219, #1220 | Played 17-18 Nov (*inferred*: his later reports, entries 31 and 46, are about the new station windows) |
+| 24 | Asked whether campfires leave charcoal yet (17 Nov; a question, not a play fault) | #1204, #1207 | Fix not yet played. He placed a Primitive kiln on 17 Nov (entry 37, his words) |
+| 25 | Stations listed every recipe; Primitive smithy had a separate chest (17 Nov) | #1208, #1212, #1219, #1220 | Fix played (*inferred*, 17-18 Nov: his later reports, entries 31 and 46, are about the new station windows) |
 | 26 | Did not know how to use the saw on a log (17 Nov) | #1211 (saw opens the Carpenter's tab) | Fix not yet played |
 | 27 | Saw held stabbed through the hand (17 Nov) | #1213 | He said "it looks great" to the close pictures (17 Nov); in game not yet played |
-| 28 | Survey a Path stopped at longer distances (17 Nov); after the fix, road building ran slow then fast (18 Nov) | #1214, then #1232 | #1214 played 18 Nov (worked, uneven pace); #1232 not yet played |
+| 28 | Survey a Path stopped at longer distances (17 Nov); after the fix, road building ran slow then fast (18 Nov) | #1214, then #1232 | Fix played: #1214 on 18 Nov (worked, uneven pace); #1232 fix not yet played |
 | 29 | Blueprints stayed green when blocked; nothing could be placed on a foundation (17 Nov) | #1216 | Fix not yet played |
-| 30 | Edda and Hob still in the old place, no fire, after pulling dev (17 Nov) | #1222, #1223 | #1222 played 17 Nov (did not appear); #1223 not yet played |
+| 30 | Edda and Hob still in the old place, no fire, after pulling dev (17 Nov) | #1222, #1223 | Fix played: #1222 on 17 Nov (did not appear); #1223 fix not yet played |
 | 31 | Inventory highlights wrong at a campfire (fiddleheads) (17 Nov) | #1237 | Fix not yet played |
 | 32 | Couldn't make a shovel near the water; craft countdown hangs at zero (17 Nov) | #1242 | Fix not yet played |
 | 33 | Primitive smithy blueprint already burning; needs a stone anvil (17 Nov) | #1240 | Fix not yet played |
@@ -186,7 +186,7 @@ Recorded 19 Nov from Dave's own messages. Each of his lists of answers and probl
 | 35 | Goal list asked for a Hoe without the stations first (17 Nov) | #1244 | Fix not yet played |
 | 36 | Mortar and pestle made a hammer-like tool (17 Nov) | #1245 | Fix not yet played |
 | 37 | Primitive kiln asked for more than its recipe (17 Nov) | #1246 (blueprints take supplies only from hammer hits) | Fix not yet played |
-| 38 | Holding E to eat: played the first version, wanted 3x faster and no sound (17 Nov) | #1225, then #1226 | #1225 played 17 Nov; #1226 not yet played |
+| 38 | Holding E to eat: played the first version, wanted 3x faster and no sound (17 Nov) | #1225, then #1226 | Fix played: #1225 on 17 Nov; #1226 fix not yet played |
 | 39 | Characters start feeble, fitness zero (17 Nov) | #1235 | Fix not yet played |
 | 40 | Chests show a craft window; sizes should follow slots (18 Nov) | #1229, #1231 | Fix not yet played |
 | 41 | Torch light feels too dim (18 Nov) | #1230 | Fix not yet played |
@@ -195,11 +195,11 @@ Recorded 19 Nov from Dave's own messages. Each of his lists of answers and probl
 | 44 | "Make a bed" goal not completed by the straw bed; bed has no use and does not look flat (18 Nov) | #1241, #1243 | Fix not yet played |
 | 45 | Terrain unloaded for many minutes by the stream, then levelled (18 Nov) | #1248 | Fix not yet played |
 | 46 | Craft button should be Craft 1 / Craft x (17 Nov, *inferred* from using the Craft button of #1056) | #1228 | Fix not yet played |
-| 47 | Crafting ran on past the quantity; click should only select (12 Nov) | #1056 | Played (*inferred*, entry 46) |
+| 47 | Crafting ran on past the quantity; click should only select (12 Nov) | #1056 | Unclear (two-step inference: he used a Craft button and asked for it to be split, entry 46) |
 | 48 | Felling, carrying and processing of the 15 Nov wood system | #1148-#1153 | Partly played: felling (entry 16), logs (17), saw (26); chopping block, sawbuck, carving station, bows and benches unclear |
-| 49 | Shovel name (16 Nov rename request) | #1182 | Played 17 Nov (*inferred*: he crafted a "shovel", entry 32) |
+| 49 | Shovel name (16 Nov rename request) | #1182 | Unclear: on 17 Nov he wrote of making a "shovel" (entry 32), but that was his own word for it |
 
-Delivered with no play evidence yet (not problems, just not yet played): door system (13 Nov), plumbing and wells, backpack tiers #1171, cooking stations #1218, no spawning near builds #1215, tool tiers #1247 #1267, chisel tiers #1272, dig water #1268, the 18 Nov audit fixes, and the server and client split pieces.
+Delivered with no play evidence yet (not yet played): door system (13 Nov), plumbing and wells, backpack tiers #1171, cooking stations #1218, no spawning near builds #1215, tool tiers #1247 #1267, chisel tiers #1272, dig water #1268, the 18 Nov audit fixes, and the server and client split pieces.
 
 ## Rewrite interpretation
 
