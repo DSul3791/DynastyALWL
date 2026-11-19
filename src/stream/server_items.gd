@@ -429,7 +429,8 @@ var _grade_points: Dictionary = {}   # peer -> [A, B] ground points of the hoe g
 var _last_mine: Dictionary = {}     # peer -> msec
 var _last_hit: Dictionary = {}      # peer -> msec
 var _last_process: Dictionary = {}  # peer -> msec
-var _stumps_to_check: Array = []   # stumps loaded from tree_states.json, looked at once on the first rot pass for ground dug out from under them (_rot)
+var _stumps_to_check: Array = []   # stumps loaded from tree_states.json, each looked at once for ground dug out from under them, STUMP_LOAD_CHECKS a slow tick (_rot)
+const STUMP_LOAD_CHECKS := 25
 var _falls: Dictionary = {}         # stump id -> {shared: the pieces' fall record (hinge, yaw, seconds left), pieces: [world ids], hinge, along, length, radius, small, peer}: a tree coming down (_fell_record, _land_fall); not saved
 var _chops: Dictionary = {}         # "cx,cz,id" -> {hits, msec}
 var _rot_in: float = 60.0
@@ -4494,8 +4495,9 @@ func _road_section_height(a: Vector3, b: Vector3, t: float) -> float:
 	return total / float(count) if count > 0 else lerpf(a.y, b.y, t)
 
 
-# A stump on the road is broken up where it stands: what the last axe blow on it gives (drops.json stump, _stump_final_rows) is left on the ground
-# beside it, and it is gone. A world drop (no player's luck, nobody's gathering).
+# A stump is broken up where it stands (on a road, or with its ground dug away: _break_undermined_stumps, _land_fall, the load check in _rot): what
+# the last axe blow on it gives (drops.json stump, _stump_final_rows) is left on the ground beside it, and it is gone. A world drop (no player's luck,
+# nobody's gathering).
 func _break_stump(id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
@@ -4823,7 +4825,7 @@ func _fell_undermined(peer: int, at: Vector3) -> void:
 		var stump_id: int = _fell(chunk, int(found[1]), info, Vector2(info["position"].x - at.x, info["position"].z - at.z))
 
 		if _falls.has(stump_id):
-			_falls[stump_id]["undermined"] = true   # its ground is gone: the stump breaks up when the tree lands (_land_fall)
+			_falls[stump_id]["undermined"] = true   # a dug-out tree leaves no stump (Dave 19 Nov 2026): it breaks up when the tree lands (_land_fall), whatever ground its own smaller disc keeps
 
 
 # A stump whose ground is dug away breaks into what chopping it gives, and the pieces fall to the ground (Dave 19 Nov 2026: "the stump can just break
@@ -8558,6 +8560,15 @@ func _repair_text(costs: Array) -> String:
 
 # Stumps rot away after 168 game days (the game clock only runs while the server does).
 func _rot(delta: float) -> void:
+	# Stumps loaded from a save are looked at once, STUMP_LOAD_CHECKS a slow tick (each is a dig_support look at the edits near it): one left over a
+	# dug hole breaks up (_stump_undermined).
+	if not _stumps_to_check.is_empty() and dig_support.is_valid():
+		for id in _stumps_to_check.slice(0, STUMP_LOAD_CHECKS):
+			if _items.has(id) and _stump_undermined(_items[id]):
+				_break_stump(int(id))
+
+		_stumps_to_check = _stumps_to_check.slice(STUMP_LOAD_CHECKS)
+
 	_rot_in -= delta
 
 	if _rot_in > 0.0 or not game_seconds.is_valid():
@@ -8567,13 +8578,6 @@ func _rot(delta: float) -> void:
 	var now_s: float = float(game_seconds.call())
 	rot_scanned = 0
 	rot_removed = 0
-
-	if not _stumps_to_check.is_empty() and dig_support.is_valid():   # stumps loaded from a save, once: one left over a dug hole breaks up
-		for id in _stumps_to_check:
-			if _items.has(id) and _stump_undermined(_items[id]):
-				_break_stump(int(id))
-
-		_stumps_to_check.clear()
 
 	for id in _items.keys():
 		if _items.has(id) and _items[id].has("tree"):

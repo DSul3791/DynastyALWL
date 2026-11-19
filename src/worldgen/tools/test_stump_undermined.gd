@@ -63,19 +63,11 @@ func _init() -> void:
 	check(_grown_at_floor(w, before) > 0, "the stump broke into its pieces and they came down to the bottom of the hole, not left in the air")
 
 	# 2. A stump of a tree chopped down normally stays while its ground holds, and breaks once the ground under it is dug away.
-	standing[7] = true
-	share[0] = 1.0
-
-	for n in range(30):
-		if not standing.has(7):
-			break
-
-		w._last_hit.clear()
-		w.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(w))
-
-	w._fall_tick(5.0)
+	_fell_on_solid(w, standing, share)
 	stump = _stump(w)
 	check(stump != 0, "an axe-felled tree on solid ground leaves its stump")
+	w._sync_world_items()   # the stump is filed in the sync grid: the dig looks only at the grid's cells round the hole (_ids_near)
+	check(not w._sync_grid.is_empty(), "the world sync filed its grid")
 	share[0] = 0.6
 	_dig(w)
 	check(w._items.has(stump), "a dig beside it that leaves most of its ground keeps the stump")
@@ -85,18 +77,16 @@ func _init() -> void:
 	check(not w._items.has(stump), "digging the ground from under the stump breaks it")
 	check(_grown_at_floor(w, before) > 0, "its pieces fall to the ground below")
 
+	# 2b. A stump made since the last sync (not in the grid yet) is found too.
+	_fell_on_solid(w, standing, share)
+	stump = _stump(w)
+	check(stump != 0 and stump >= w._sync_grid_next, "a new stump stands, made since the grid was filed")
+	share[0] = 0.1
+	_dig(w)
+	check(not w._items.has(stump), "a stump made since the last sync breaks when its ground is dug away")
+
 	# 3. A stump saved over a hole breaks on the first rot pass after loading; one on solid ground stays.
-	standing[7] = true
-	share[0] = 1.0
-
-	for n in range(30):
-		if not standing.has(7):
-			break
-
-		w._last_hit.clear()
-		w.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(w))
-
-	w._fall_tick(5.0)
+	_fell_on_solid(w, standing, share)
 	check(_stump(w) != 0, "a third stump stands for the save")
 	w.save()
 	var solid: Array = [1.0]
@@ -110,6 +100,21 @@ func _init() -> void:
 	check(_stump(r2) == 0, "a loaded stump with its ground dug away breaks on the first rot pass")
 	print("stump undermined tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+# Tree 7 stands again and is felled with the axe on solid ground; it lands and leaves its stump.
+func _fell_on_solid(w, standing: Dictionary, share: Array) -> void:
+	standing[7] = true
+	share[0] = 1.0
+
+	for n in range(30):
+		if not standing.has(7):
+			break
+
+		w._last_hit.clear()
+		w.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(w))
+
+	w._fall_tick(5.0)
 
 
 func _dig(w) -> void:

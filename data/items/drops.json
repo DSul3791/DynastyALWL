@@ -623,7 +623,7 @@
 		"support_r_base": 1.0,
 		"depth_m": 1.0,
 		"search_m": 4.0,
-		"stump_note": "A stump dug out from under breaks into what chopping it gives and the pieces fall to the ground (Dave 19 Nov 2026: 'the stump can just break into its components and fall'). An undermined tree's stump always breaks when the tree lands; any other stump within search_m of a dig breaks when the share of ground left in the disc under it (stump_support_r_per_radius x its radius + stump_support_r_base wide, stump_depth_m deep) is under stump_fall_below. Stumps loaded from a save are checked once. Values provisional (Dave to tune after play).",
+		"stump_note": "A stump dug out from under breaks into what chopping it gives and the pieces fall to the ground (Dave 19 Nov 2026: 'the stump can just break into its components and fall'). An undermined tree's stump always breaks when the tree lands; any other stump within search_m of a dig breaks when the share of ground left in the disc under it (stump_support_r_per_radius x its radius + stump_support_r_base wide, stump_depth_m deep) is under stump_fall_below. Stumps loaded from a save are checked once, 25 a slow tick. Values provisional (Dave to tune after play).",
 		"stump_support_r_per_radius": 2.0,
 		"stump_support_r_base": 0.5,
 		"stump_depth_m": 0.6,
