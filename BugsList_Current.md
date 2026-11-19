@@ -205,7 +205,7 @@ Recorded 19 Nov from Dave's own messages. Each of his lists of answers and probl
 
 ## 50. Level gives no soil back when it cuts ground
 
-**Status: Implemented - awaiting player verification.** PR #1286, merged to dev e5272847 (head 607a6dde). Independently reviewed. Automated checks: Lane B (David4) 201 of 201 on the exact head, test_server_items included (a refused cut gives no soil; a cutting stroke gives soil back). Found in Dave's play test 19 Nov 2026. Fix not yet played.
+**Status: Implemented - awaiting player verification.** PR #1286, merged to dev e5272847 (head 607a6dde). The code was independently reviewed. Automated checks: Lane B (David4) 201 of 201 on the exact head, test_server_items included (a refused cut gives no soil; a cutting stroke gives soil back). Found in Dave's play test 19 Nov 2026. Fix not yet played.
 
 Dave, 19 Nov 2026: "when using the hoe in this playtest it takes soil to bring up the level but its not giving me soil back when it cuts down the level. if I am leveling and it has to cut down the soil it should give me back the soil its removing."
 
@@ -213,7 +213,7 @@ Dave, 19 Nov 2026: "when using the hoe in this playtest it takes soil to bring u
 
 **Required outcome:** when Level cuts high ground down, the player gets that soil back, at the same rate a fill of the same depth costs, so levelling neither creates nor destroys soil. Pathen, the two tilling modes (entry 6) and the survey road level to the ground's own average and move no soil either way; the shovel already gives soil when it digs and uses it when it fills.
 
-**Acceptance:** Level a slope with a high side. Cutting the high side adds Soil to the pack (or at the feet when the pack is full), and that Soil fills the low side.
+**Acceptance:** Level a slope with a high side. Cutting the high side adds Soil to the pack (or at the feet when the pack is full), and that Soil fills the low side on the strokes that follow.
 
 Delivered with no play evidence yet (not yet played): door system (13 Nov), plumbing and wells, backpack tiers #1171, cooking stations #1218, no spawning near builds #1215, tool tiers #1247 #1267, chisel tiers #1272, dig water #1268, the 18 Nov audit fixes, and the server and client split pieces.
 
