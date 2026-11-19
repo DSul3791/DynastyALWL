@@ -1095,7 +1095,7 @@ func _probe_structure_for(id: int) -> Dictionary:
 
 	var station_def: Dictionary = _structure_by_state(state)
 
-	if _is_bed_def(station_def):   # a tilled bed or garden plot (FARMING_SPEC.md steps 3 to 5): E sows, waters or harvests; a plot, which has a kit, still comes down with hold E
+	if _is_bed_def(station_def):   # a tilled bed or garden plot (FARMING_SPEC.md steps 3 to 5): E waters or harvests; a plot, which has a kit, still comes down with hold E
 		return _bed_interaction(id, station_def, take_down)
 
 	if str(station_def.get("use", "")) == "storage_view":   # a Storage sign or Warehouse desk (catalog phase 9): E shows what the containers round it hold
