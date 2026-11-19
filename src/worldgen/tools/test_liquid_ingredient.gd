@@ -1,7 +1,7 @@
 extends SceneTree
 
 # GOALS-REPAIR WP-R1A commit B (recovery GA-04): a recipe's `water` ingredient is filled by the fresh water in real containers, through the real server.
-#   PROVISIONAL (GOALS-REPAIR A-1): one water ingredient = 500 mL (the water item's unit_ml). PROVISIONAL (A-3): a bed takes up to 8000 mL a game day (crops.json pour_ml).
+#   PROVISIONAL (GOALS-REPAIR A-1): one water ingredient = 500 mL (the water item's unit_ml). PROVISIONAL (A-3, GM-2): a pour is up to 8000 mL (crops.json pour_ml), no more than the soil has room for.
 #   - the water of several part-filled containers is pooled; containers keep their identity, empty ones stay;
 #   - too little water leaves every container untouched; salt water and sea_water never count (a fill at salt water is refused);
 #   - a cancelled craft pours its water back into containers and never mints the stackable item (even with no container left: it spills);

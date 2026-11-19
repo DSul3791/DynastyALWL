@@ -18088,7 +18088,8 @@ func crop_row_extra(it: Dictionary) -> Dictionary:
 	if not _is_plot_kind(str(it["struct"].get("kind", ""))) or it["struct"].has("site"):
 		return {}
 
-	var moist: int = roundi(plot_moisture(it["pos"]) / float(MOIST_STEP_PCT)) * MOIST_STEP_PCT
+	var pct: float = plot_moisture(it["pos"])
+	var moist: int = 100 if pct >= WET_THROUGH_PCT else floori(pct / float(MOIST_STEP_PCT)) * MOIST_STEP_PCT   # rounded down: "25" is a wet day, "100" takes no more water
 	var cells: Array = _bed_cells(it)
 
 	if cells.size() == 1:

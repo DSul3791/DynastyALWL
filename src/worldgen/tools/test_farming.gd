@@ -121,7 +121,8 @@ func _moisture_checks(bed: int) -> void:
 	check(items.plot_moisture(items._items[bed]["pos"]) < 25.0 and int(items._crops[key]["wet"]) == wet_before, "a dry day dries the bed below wet: the day is not wet (%.1f)" % items.plot_moisture(items._items[bed]["pos"]))
 	check(absf(float(items._crops[key]["age"]) - age_before - 0.5) < 0.01, "and the crop grew half a day (%.2f)" % (float(items._crops[key]["age"]) - age_before))
 	var extra: Dictionary = items.crop_row_extra(items._items[bed])
-	check(int(extra.get("moist", -1)) % 5 == 0 and absf(float(extra.get("moist", -1)) - items.plot_moisture(items._items[bed]["pos"])) <= 2.5, "the bed's row carries its moisture in 5 percent steps (%s)" % str(extra))
+	var shown: float = items.plot_moisture(items._items[bed]["pos"]) - float(extra.get("moist", -100))
+	check(int(extra.get("moist", -1)) % 5 == 0 and shown >= 0.0 and shown < 5.0, "the bed's row carries its moisture rounded down to 5 percent steps (%s)" % str(extra))
 	rain[0] = 0.8
 	days(1)
 	check(items.plot_moisture(items._items[bed]["pos"]) == 100.0 and int(items._crops[key]["wet"]) == wet_before + 1, "a rainy day fills it and counts")
@@ -801,8 +802,8 @@ func _init() -> void:
 	items.inventory_of(1).wear[slot_of("bucket")] = 8000   # a filled bucket (the fill and the pour scaling: test_liquid_ingredient)
 	give("barley_seeds", 1)
 	items.sow(1, items.inventory_of(1), bed, slot_of("barley_seeds"))
-	items._plot_water[key] = [5.0, clock[0]]   # a dry bed
-	check(items.water_bed(1, items.inventory_of(1), bed) and absf(items.plot_moisture(items._items[bed]["pos"]) - 37.0) < 0.01, "a bucket of water pours on the dry bed")
+	items._plot_water[key] = [20.0, clock[0]]   # a dry bed
+	check(items.water_bed(1, items.inventory_of(1), bed) and absf(items.plot_moisture(items._items[bed]["pos"]) - 52.0) < 0.01, "a bucket of water pours on the dry bed")
 	days(1)
 	check(int(items._crops[key]["wet"]) == 1, "water poured makes the next game day wet")
 
