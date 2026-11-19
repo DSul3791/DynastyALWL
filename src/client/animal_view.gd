@@ -302,6 +302,31 @@ static func near_blood(at: Vector3, points: PackedVector3Array) -> bool:
 	return false
 
 
+# A blow landed on animal `id` (animal_hit, protocol 96; Dave 19 Nov 2026: he could not tell a spear was hurting a bear): the body squashes and
+# springs back in a fifth of a second, so a hit is seen. FLINCH is the squash (PROVISIONAL HIT-2).
+const FLINCH := Vector3(1.08, 0.88, 1.08)
+const FLINCH_S := 0.2
+
+
+func flinch(id: int) -> void:
+	if not _bodies.has(id) or not is_instance_valid(_bodies[id]["node"]):
+		return
+
+	var node: Node3D = _bodies[id]["node"]
+
+	if not node.has_meta("rest_scale"):
+		node.set_meta("rest_scale", node.scale)   # the species' own size (a lynx is drawn 1.4 times): a second hit mid-flinch springs back to it
+
+	var rest: Vector3 = node.get_meta("rest_scale")
+
+	if not node.is_inside_tree():
+		return
+
+	var tween: Tween = node.create_tween()
+	tween.tween_property(node, "scale", rest * FLINCH, FLINCH_S * 0.3).set_ease(Tween.EASE_OUT)
+	tween.tween_property(node, "scale", rest, FLINCH_S * 0.7).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+
+
 # A hit the server reported (hit_number, protocol 85) at `at`: kept a moment so a body that then leaves the rows reads as killed.
 func note_hit(at: Vector3) -> void:
 	var now: int = Time.get_ticks_msec()
