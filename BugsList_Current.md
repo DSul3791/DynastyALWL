@@ -266,6 +266,62 @@ Assumed on Dave's behalf (provisional):
 - CH-1: the ruling covers every storage container, not only those named chest; vehicles keep their payload.
 - CH-2: this supersedes the 18 Nov ruling that the Large wooden chest holds more weight than the Ornate chest; the Large wooden chest now differs by its larger footprint and its slots (42 against 48).
 
+## 54. Stumps hang in the air after digging out a tree
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test on 19 Nov 2026. Fixed by PR #1294, merged to dev at 4bd5b878 (head ae18b8a5) after independent review. Lane B (David4) on the exact head: 252 of 252 selected tests passed, including the new test_stump_undermined; validate_items 0 errors; join smoke clean. Fix not yet played.
+
+Dave, 19 Nov 2026: "when I dig under trees with a shovel and remove all the dirt the trees fall but the stumps get stuck in the air and cant be broken or chopped up. they should just break and fall to the gorund." Then: "I was thinking the stump can just break into its components and fall".
+
+**Cause:** a tree brought down by digging always left its stump at the old ground height, and nothing looked at a stump's ground again (loose things settle after a dig; stumps were skipped). A stump has no collision for the axe, so over a hole the swing went through it to the bottom of the hole and never named the stump.
+
+**Required outcome:** a stump whose ground is dug away breaks into what chopping it gives (firewood, kindling, sticks by stump size, the existing stump drops) and the pieces fall to the ground below. A dug-out tree leaves no stump. Stumps already hanging over holes in a saved world break on their own soon after the server starts. Only the stumps near the dig are looked at.
+
+**Acceptance:** dig all the dirt from under a tree: it falls, its stump breaks, and firewood, kindling and sticks lie in the hole. Dig the ground from under an old stump: the same. Load a world with a floating stump: it is gone within a minute or so, its pieces on the ground.
+
+Checked, not changed: standing trees already fall when dug under; loose items and logs already settle. Boulders do not move when dug under either; not reported, left as they are.
+
+Assumed on Dave's behalf (provisional):
+
+- SU-1: a stump other than a dug-out tree's breaks when less than 35 % of the ground is left in a disc under it whose radius is twice the stump radius plus 0.5 m, 0.6 m deep (drops.json dig_fell stump_*).
+- SU-2: the pieces are world drops (no player's luck), as when a road clears a stump.
+- SU-3: stumps loaded from a save are checked 25 at a time each slow tick.
+
+## 55. An axe does no damage to an animal
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test on 19 Nov 2026. Fixed by PR #1285, merged to dev at 2ccc6bbf (head 7097aa2c) after independent review. Lane B (David4) on the exact head: 420 of 420 tests passed, including test_hit_numbers; validate_items 0 errors; join smoke clean. Fix not yet played.
+
+Dave, 19 Nov 2026: "I just tried to hit a pig with an axe and it is doing no damage." Then: "also any thing in your hand should be able to be used as a weapon."
+
+**Cause:** only a spear's left click ever sent an attack. An axe or pick swing at an animal went down the ground, tree and rock path, and every other tool, and every weapon that is not a spear (swords, maces, pikes, shields), only showed a hint. The server also refused a blow from anything that was not a weapon with damage. It was not caused by the 18 Nov tool-tier or audit work. Spears (jab and throw) and bows were not affected: Dave's spear killing a bear on 18 Nov is play evidence that spear damage works.
+
+**Required outcome:** a left click with anything in hand at an animal in reach hurts it. An axe or pick hits it at the impact of its normal swing. A weapon keeps its own damage and reach. A spear still jabs and a bow still shoots. Placing a piece, the hoe's list and the build screen keep their clicks. A broken item, or logs on the shoulder, strike nothing.
+
+**Acceptance:** swing a Stone axe at a boar (the game's pig; there is no pig animal): it takes damage and dies in about six blows. Do the same with a pickaxe, a hammer, a sword and a knife: each hurts it. Swing an axe at a tree with no animal near: it chops as before.
+
+Assumed on Dave's behalf (provisional):
+
+- MELEE-1: the damage of an item with none of its own (`data/items/melee.json`): axe 7, pick 6, hammer 5, knife 4, shovel 4, scythe 4, hoe 3, sickle 3, saw 2, chisel 2, any other tool 2, a weapon with no damage (a shield; a sling shoots instead) 3, anything else 1. Tools and such weapons gain 1 for each tier above Stone and Copper: Stone axe 7, Bronze 8, Iron 9, Steel 10. Reach 2.5 m, and 1.8 m for a knife, sickle, saw, chisel or anything else. Picked against animal health (rabbit 5, deer 20, wolf 30, boar 40, bear 120) and the Stone spear's 8.
+
+## 56. Hits on an animal are hard to see or hear
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test on 19 Nov 2026 (the bear he killed with a spear on 18 Nov). Fixed by PR #1295, merged to dev at 4d37e7c2 (head e7332402) after independent review. Lane B (David4) on the exact head: 270 of 270 selected tests passed, including test_hit_numbers, test_slot_sounds and test_hunt_feedback; validate_items 0 errors; join smoke clean. Fix not yet played.
+
+Dave, 19 Nov 2026: "yesterday I hit a bear with a spear and it killed it but I couldnt tell it was doing damage. there need to be damage numbers or better hit sounds. or both"
+
+**Cause:** damage numbers already existed (on by default, Esc > Settings > Gameplay) but floated 1.5 m in front of the eye, small, for under a second. The flesh thud played for every number, tree and rock blows too, so it did not mean "you hit the animal", and the animal itself showed nothing.
+
+**Required outcome:** both. Every blow in hand that lands on an animal shows its damage as a large number at the wound that pops in, holds and floats up. It thuds with the flesh sound at the wound, which every player near can hear. The animal flinches. A miss is only the swing or the jab. Tree and rock blows no longer thud as flesh.
+
+**Acceptance:** jab a deer with a spear and hit a boar with an axe: each hit shows a number on the animal, thuds and makes the body jolt. Swing at the air: no number, no thud. An arrow or a thrown spear also thuds and makes the body jolt; its number shows at the animal's feet, as before.
+
+Not done: a boar or pig makes no pain call when hit, since there is no boar or pig sound. Bears, wolves, deer, rabbits, foxes and moose already call when a hit makes them flee or charge. A hit always does at least 1 damage, so there is no zero-damage hit to tell apart.
+
+Assumed on Dave's behalf (provisional):
+
+- HIT-1: the number is 96 px (was 64), pops in 1.35 times larger and settles in 0.12 s, holds 0.5 s and is gone at 1.4 s (was 0.9 s), 0.3 m above the wound. Same gold colour as before.
+- HIT-2: the flinch squashes the body to 1.08 wide and 0.88 tall and springs back in 0.2 s.
+- HIT-3: the flesh thud is the same loudness for every hit (the hit message carries no damage).
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.

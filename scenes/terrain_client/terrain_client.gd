@@ -859,11 +859,8 @@ func _ready() -> void:
 	net.died_received.connect(_on_died)
 	net.final_death_received.connect(_on_final_death)
 	net.hit_number_received.connect(func(at: Vector3, amount: int) -> void:
-		if sound != null:
-			sound.spear.hit("flesh", at, SoundStageScript.SpearScript.hit_strength(amount))   # the hit lands: a jab, a thrown spear or an arrow in an animal (the numbers setting does not mute it)
-
 		if display.damage_numbers:
-			HitNumbersScript.spawn(self, at, amount))
+			HitNumbersScript.spawn(self, at, amount))   # the flesh thud comes with animal_hit below: a tree or boulder blow sends a number too and is not flesh
 	net.start_at_received.connect(_on_start_at)
 	net.admin_status_received.connect(_on_admin_status)
 	net.step_to_received.connect(_on_step_to)
@@ -1447,6 +1444,13 @@ func _welcome_body(info: Dictionary) -> void:
 			weather_look.puddles.animal_step(kind, at, sound._ground_under(at))      # a foot in a puddle splashes (puddles.gd)
 	)
 	net.hit_number_received.connect(func(at: Vector3, _amount: int) -> void: animal_view.note_hit(at))
+	# A blow that lands on an animal (any player's, within 60 m; Dave 19 Nov 2026: "there need to be damage numbers or better hit sounds. or both"):
+	# the flesh thud where it struck, and the body flinches. A miss is only the swing or the jab, so a hit is heard and seen.
+	net.animal_hit_point_received.connect(func(id: int, _zone: int, at: Vector3) -> void:
+		if sound != null:
+			sound.spear.hit("flesh", at, 1.0)
+
+		animal_view.flinch(id))
 	animal_view.fell.connect(func(_kind: String, at: Vector3, small: bool) -> void:
 		sound.slots.play("animal_fall", at, body.global_position, 0.4 if small else 1.0))      # the body drops where it was killed (a small one softly)
 
@@ -1605,6 +1609,8 @@ func _welcome_body(info: Dictionary) -> void:
 	items.held_slot_now = func(): return held.held_slot if held.holding else -1
 	items.pick_hand = func(key: int): held.press_slot(key)
 	items.held_key_now = func(): return held.held_key if held.holding else -1
+	items.crop_model = func(crop: String, share: float, spots: Array): return flora.crop_model(crop, share, spots) if flora != null else null   # a garden crop wears its wild plant's model (Dave play test 19 Nov 2026)
+	items.crop_models_ready = func(): return flora == null or flora.models_ready()
 	hotbar_strip = HotbarStripScript.new()
 	hotbar_strip.setup(items, layer, held)
 	items.hotbar_strip = hotbar_strip

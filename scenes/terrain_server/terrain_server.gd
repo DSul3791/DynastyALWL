@@ -739,17 +739,17 @@ func _ready() -> void:
 	items.animal_lure = func(id, point): return animals.lure_to(id, point)
 	items.trail_strength = func(x, z): return trails.strength_at(x, z)
 	@warning_ignore("confusable_local_declaration")
-	items.hit_animal = func(peer, origin, dir, reach, amount) -> bool:
+	items.hit_animal = func(peer, origin, dir, reach, amount) -> Dictionary:
 		var target: int = animals.target_along(origin, dir, reach)
 
 		if target == 0:
-			return false
+			return {}
 
 		var point: Vector3 = animals.jab_point(target, origin, dir, reach)
 		var zone: int = animals.hit_zone(target, point)
+		animals.report_hit(target, zone, point)   # before the damage: a killing blow still reaches the players near (the flesh sound and the flinch)
 		animals.damage(target, amount, peer, "spear")
-		animals.report_hit(target, zone, point)
-		return true
+		return {"at": point}
 	dialogue = DialogueScript.new()
 	dialogue.items = items
 	dialogue.npcs = npcs

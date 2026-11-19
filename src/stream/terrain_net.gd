@@ -199,7 +199,7 @@ const ACT_PUSH_LOG := 81   # a = the log's world id, b = 1000 when sprinting + h
 const ACT_TILL_GARDEN := 80   # a = the held pack slot, b = the grid's turn in degrees, c = check * 10000000 + mode * 10000 + width * 100 + length in beds (mode 0 the garden grid, 1 the 2 m soil patch; check: only answer), at = the grid's centre: level and till a garden (124, 129)
 const ACT_PLANT_GRID := 82   # a = the held pack slot (the hoe), b = the item to plant, c = check * 10000000 + yaw * 10000 + width * 100 + length, at = the grid's centre: plant every usable point from the crafting stock (129)
 const ACT_DIG_TRENCH := 83   # a = the held pack slot (the hoe), b = the way the player faces in whole degrees, at = the ground point: dig one 2 m irrigation trench piece there, turned that way (135)
-const ACT_SOW := 51        # a = the bed's world id, b = the pack slot of the seed (step 3)
+# 51 was ACT_SOW (E on a bed sowed a seed from the pack), retired 19 Nov 2026 (Dave play test: seeds went in without the hoe in hand); sowing is ACT_PLANT_GRID only. A server ignores an unknown kind, so no protocol bump.
 const ACT_HARVEST := 52    # a = the bed's world id: E on a ripe crop (step 5)
 const ACT_WATER_BED := 53  # a = the bed's world id, b = the pack slot of the filled water container in hand (-1 none; refused if it holds no water): pours up to 8000 mL from the pack's containers on it, that container first (GOALS-REPAIR GA-04, A-3)
 const ACT_HOE_PATH := 36     # a = the held pack slot (the hoe in hand from 117), at = the ground point under the crosshair: one hoe stroke treads a metre of path (clears grass, no height change)

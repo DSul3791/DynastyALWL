@@ -1,10 +1,15 @@
 extends RefCounted
 
 # The look of a crop on a tilled bed or garden plot, stage 0 (seedling) to 3 (ripe).
-# PLACEHOLDER ART (GOALS-REPAIR WP-R1B): a small grid of plain boxes ("tufts"), scaled and coloured by stage and crop group, as FARMING_SPEC.md step 6 allows as the interim
-# ("a green tuft scaled by stage"). It is not Kathleen's crop models (4 stages x each crop) and has not been looked at in the game; replace `build` when they land.
+# A crop that grows wild too (flora.json has a plant of the same name: chamomile, yarrow, nettle ... 70 of the 84 crops) wears that wild plant's own model, as the
+# wild ones draw it (FloraView.crop_model, passed in as `plant_model`), smaller while young (Dave play test 19 Nov 2026: the seedlings were green boxes though
+# "they have a model in the game"). PLACEHOLDER ART for the rest (the field crops and vegetables with no wild plant: wheat, barley, oats, rye, carrot, potato,
+# turnip, cabbage, onion, peas, beet, radish, lettuce, parsnip), and for any crop while the flora models are still being built at the join: a small grid of plain
+# boxes ("tufts"), scaled and coloured by stage and crop group, as FARMING_SPEC.md step 6 allows as the interim ("a green tuft scaled by stage"). Kathleen's crop
+# models (4 stages x each crop) replace both when they land.
 
 const HEIGHT_M := [0.08, 0.2, 0.38, 0.55]           # stage -> tuft height
+const MODEL_SHARE := [0.35, 0.6, 0.85, 1.0]         # PROVISIONAL CL-1: stage -> share of the wild plant's usual height (a seedling a third, ripe full size)
 const GRAINS := ["wheat", "barley", "oats", "rye", "flax"]   # tall and golden (flax tan) when ripe
 const RIPE_COLOUR := {"flax": Color(0.74, 0.66, 0.44)}
 const GRAIN_RIPE := Color(0.82, 0.68, 0.25)
@@ -15,23 +20,37 @@ static var _materials: Dictionary = {}              # "crop:stage" -> StandardMa
 static var _meshes: Dictionary = {}                 # "grain:stage" or "leaf:stage" -> the one BoxMesh every tuft of that look shares
 
 
-# `side_m`: the bed's footprint (1 for a tilled bed, 2 for a garden plot); a tuft every half metre.
-static func build(crop_id: String, stage: int, side_m: float) -> Node3D:
+# `side_m`: the bed's footprint (1 for a tilled bed, 2 for a garden plot); a plant every half metre. `plant_model`: (crop id, share of height, spots) -> Node3D,
+# or null for none (FloraView.crop_model); unset (tests, no flora) gives the placeholder. The root's meta "placeholder" says which it got.
+static func build(crop_id: String, stage: int, side_m: float, plant_model: Callable = Callable()) -> Node3D:
 	var root: Node3D = Node3D.new()
 	var s: int = clampi(stage, 0, HEIGHT_M.size() - 1)
-	var grain: bool = crop_id in GRAINS
-	var high: float = _mesh(s, grain).size.y
 	var per_side: int = maxi(int(round(side_m * 2.0)), 1)
+	var spots: Array = []
 
 	for ix in range(per_side):
 		for iz in range(per_side):
-			var tuft: MeshInstance3D = MeshInstance3D.new()
-			tuft.mesh = _mesh(s, grain)
-			tuft.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF   # placeholder tufts: no shadow cost per bed
-			tuft.material_override = _material(crop_id, s, grain)
-			tuft.position = Vector3((float(ix) + 0.5) / float(per_side) * side_m - side_m * 0.5, high * 0.5, (float(iz) + 0.5) / float(per_side) * side_m - side_m * 0.5)
-			root.add_child(tuft)
+			spots.append(Vector3((float(ix) + 0.5) / float(per_side) * side_m - side_m * 0.5, 0.0, (float(iz) + 0.5) / float(per_side) * side_m - side_m * 0.5))
 
+	var model: Variant = plant_model.call(crop_id, float(MODEL_SHARE[s]), spots) if plant_model.is_valid() else null
+
+	if model is Node3D:
+		root.add_child(model)
+		root.set_meta("placeholder", false)
+		return root
+
+	var grain: bool = crop_id in GRAINS
+	var high: float = _mesh(s, grain).size.y
+
+	for spot in spots:
+		var tuft: MeshInstance3D = MeshInstance3D.new()
+		tuft.mesh = _mesh(s, grain)
+		tuft.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF   # placeholder tufts: no shadow cost per bed
+		tuft.material_override = _material(crop_id, s, grain)
+		tuft.position = spot + Vector3(0.0, high * 0.5, 0.0)
+		root.add_child(tuft)
+
+	root.set_meta("placeholder", true)
 	return root
 
 

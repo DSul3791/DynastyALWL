@@ -278,7 +278,7 @@ var _energy_cfg: Dictionary = {}    # data/items/energy.json
 var _death_cfg: Dictionary = {}     # data/items/death.json
 var hit_animal_path: Callable        # (peer, from, to, damage) -> {"at": position} or {}: the first animal an arrow passes through is hurt (set by the server)
 var animal_alarm: Callable           # (point, radius): a loud noise (a shot) startles animals near it (set by the server)
-var hit_animal: Callable            # (peer, origin, direction, reach, damage) -> bool: set by the server, hits the animal in front
+var hit_animal: Callable            # (peer, origin, direction, reach, damage) -> {"at": the point struck} or {} (tests may answer a bool): set by the server, hits the animal in front
 var _last_strike: Dictionary = {}
 var _carcass_cfg: Dictionary = {}   # data/items/carcass.json
 var _sick_cfg: Dictionary = {}      # data/items/sickness.json
@@ -1275,8 +1275,6 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		dig_trench(peer, inv, at, a, b)   # a: the held pack slot (the hoe), b: the way the player faces, whole degrees (protocol 135)
 	elif kind == Net.ACT_TILL:
 		till(peer, inv, at, a, b)   # b: the hoe grid's turn in whole degrees (0: the bed snaps to the world's metre cells)
-	elif kind == Net.ACT_SOW:
-		sow(peer, inv, a, b, at)   # at: the point aimed at on a plot of several square metres (Vector3.ZERO: the first empty one)
 	elif kind == Net.ACT_HARVEST:
 		harvest(peer, inv, a, at)
 	elif kind == Net.ACT_WATER_BED:
@@ -2911,10 +2909,14 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 	var melee: Dictionary = MeleeRules.blow(entry, _melee_cfg)
 	var damage: float = float(weapon_blow(entry, inv.inst[slot])["damage"]) if float(entry.get("damage", 0.0)) > 0.0 else float(melee["damage"])   # a +2 weapon strikes two harder (master s2.9 item 4)
 	var reach: float = float(melee["reach_m"])   # a pike reaches further than a sword; a knife less than an axe
-	var hit: bool = bool(hit_animal.call(peer, eye, direction, reach, damage))
+	var answer: Variant = hit_animal.call(peer, eye, direction, reach, damage)   # {"at": where it struck} from the server (or true from older hooks), {} or false for a miss
+	var hit: bool = not (answer as Dictionary).is_empty() if answer is Dictionary else bool(answer)
 
 	if hit:
-		hit_number(peer, eye + direction.normalized() * minf(reach, 1.5), damage)
+		# The number floats where the blow struck the animal (Dave 19 Nov 2026: "I couldnt tell it was doing damage"), else in front of the eye.
+		var ahead: Vector3 = eye + direction.normalized() * minf(reach, 1.5)
+		var at: Vector3 = (answer as Dictionary).get("at", ahead) if answer is Dictionary else ahead
+		hit_number(peer, at + Vector3(0.0, 0.3, 0.0), damage)
 		_wear_slot(peer, inv, slot, "strike")
 	else:
 		_note_work(peer, str(entry.get("tool_class", "")))   # a jab at nothing tires as much as one that lands (BUG-001)
@@ -16587,7 +16589,7 @@ func take_nest(peer: int, inv) -> bool:
 # crop (data/items/crops.json); a game day that ends with the bed's moisture at wet_min_pct or more (plot_water.gd: rain and pours fill it, the weather dries it) counts as watered; a crop is ripe when it is old enough (grow_days) AND has had enough wet days (water_per_day x grow_days); winter
 # pauses growth (turnip excepted) and frost kills a seedling; compost speeds one crop cycle by 20 percent; E on a ripe crop gives its yields (half without the sickle
 # where the crop needs one) and seeds back, and the bed is empty soil again. The crop records live beside the beds in crops.json (keyed by the bed's position, _bed_key). The client side
-# (hoe till mode, E on a bed to sow, water or harvest, the placeholder stage looks) is in inventory_view.gd, farm_rules.gd and crop_look.gd; a bed's world row carries its crop and stage.
+# (hoe till and Plant modes, E on a bed to water or harvest, the stage looks) is in inventory_view.gd, farm_rules.gd and crop_look.gd; a bed's world row carries its crop and stage.
 const TILLED_STATE := 47
 var _crops: Dictionary = {}              # _bed_key (the bed's position) -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool}; the bed's moisture is in _plot_water
 var _crops_cfg: Dictionary = {}
@@ -16640,7 +16642,7 @@ func _bed_cells(it: Dictionary) -> Array:
 
 
 # Which square metre of a bed a request is for: the one nearest `at` when the client names a point (not Vector3.ZERO), else the first that `wants`
-# ("empty": no crop; "ripe": a crop at stage 3; "crop": any crop). -> the crop key, "" when none fits.
+# ("ripe": a crop at stage 3; "crop": any crop). -> the crop key, "" when none fits.
 func _cell_key(it: Dictionary, at: Vector3, wants: String) -> String:
 	var cells: Array = _bed_cells(it)
 
@@ -16656,7 +16658,7 @@ func _cell_key(it: Dictionary, at: Vector3, wants: String) -> String:
 	for cell in cells:
 		var crop: Dictionary = _crops.get(_bed_key(cell), {})
 
-		if (wants == "empty" and crop.is_empty()) or (wants == "ripe" and not crop.is_empty() and crop_stage(crop) >= 3) or (wants == "crop" and not crop.is_empty()):
+		if (wants == "ripe" and not crop.is_empty() and crop_stage(crop) >= 3) or (wants == "crop" and not crop.is_empty()):
 			return _bed_key(cell)
 
 	return ""
@@ -18156,34 +18158,6 @@ func _tree_seed_items() -> Dictionary:
 	return out
 
 
-# A seed from the pack slot goes into the bed: right season, empty bed, the seed is used up.
-func sow(peer: int, inv, bed_id: int, slot: int, at: Vector3 = Vector3.ZERO) -> bool:
-	var bed: Dictionary = _bed_at(bed_id)
-
-	if bed.is_empty() or not _peer_pos.has(peer):
-		return false
-
-	if _peer_pos[peer].distance_to(bed["pos"]) > DIG_REACH_M:
-		_say(peer, "Too far from the bed to sow it.")
-		return false
-
-	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0:
-		_say(peer, "There are no seeds in that slot to sow.")
-		return false
-
-	var key: String = _cell_key(bed, at, "empty")
-	var seed_id: String = table.id_of(inv.numbers[slot])
-	var why: String = _sow_refusal(key, seed_id)
-
-	if why != "":
-		_say(peer, why if why != "season" else "%s Hold the seeds you want to sow." % _season_refusal(seed_id))   # the client sows the seed in hand, else the first seed in the pack (A-6)
-		return false
-
-	inv.remove(inv.numbers[slot], 1)
-	_sow_cell(peer, bed, key, FarmRules.crop_of_seed(_crop_table(), seed_id))
-	return true
-
-
 # Why a seed cannot go into a bed's square metre `key` now ("" when it can; "season" when it is out of season, _season_refusal words it).
 func _sow_refusal(key: String, seed_id: String) -> String:
 	if key == "" or _crops.has(key):
@@ -18289,7 +18263,7 @@ func compost_bed(peer: int, inv, bed_id: int) -> bool:
 # A bed's world-row extra: {"moist": its soil moisture percent in MOIST_STEP_PCT steps} for every bed (garden moisture, Dave 19 Nov 2026), with
 # "crop": crop id and "stage": 0 to 3 when a crop grows on it; {} for any other piece (no protocol bump: PROTOCOL.md, row extras).
 # A plot of several square metres adds "cells": [[crop id or "", stage or -1]] in _bed_cells order, and its "crop" and "stage" name what E does next: the first ripe
-# crop, else "" when a square metre is still empty (E sows it), else its first crop.
+# crop, else its first crop (a square metre still empty does not hide the others from E's watering: only the hoe's Plant grid sows, 19 Nov 2026).
 func crop_row_extra(it: Dictionary) -> Dictionary:
 	if not _is_plot_kind(str(it["struct"].get("kind", ""))) or it["struct"].has("site"):
 		return {}
@@ -18304,13 +18278,11 @@ func crop_row_extra(it: Dictionary) -> Dictionary:
 
 	var rows: Array = []
 	var ripe: Array = []
-	var empty: bool = false
 	var first: Array = []
 
 	for cell in cells:
 		var crop: Dictionary = _crops.get(_bed_key(cell), {})
 		rows.append(["", -1] if crop.is_empty() else [str(crop["crop"]), crop_stage(crop)])
-		empty = empty or crop.is_empty()
 
 		if not crop.is_empty() and ripe.is_empty() and crop_stage(crop) >= 3:
 			ripe = rows[rows.size() - 1]
@@ -18321,7 +18293,7 @@ func crop_row_extra(it: Dictionary) -> Dictionary:
 	if first.is_empty():
 		return {"moist": moist}
 
-	var shown: Array = ripe if not ripe.is_empty() else (["", 0] if empty else first)
+	var shown: Array = ripe if not ripe.is_empty() else first
 	return {"crop": shown[0], "stage": shown[1], "cells": rows, "moist": moist}
 
 
