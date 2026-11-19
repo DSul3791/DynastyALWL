@@ -2195,7 +2195,7 @@
 			"kind": "placeable",
 			"description": "Stones and sticks for a fire. Set it down, put wood on it, then press E to light it.",
 			"how_to_get": [
-				"Craft: 6 Stick, 3 Stone"
+				"Craft: 6 Stick, 6 Stone"
 			],
 			"used_for": [
 				"Placed on the ground as a laid fire. Press E with plant fibre, kindling, tinder, birch bark or tinder fungus in your pack to light it, then put wood in with F. Cooks, warms, lights."
@@ -3152,7 +3152,7 @@
 			"kind": "placeable",
 			"description": "Lashed sticks and a flat top. Set it down and it counts as a workbench, for better tools.",
 			"how_to_get": [
-				"Build with a hammer (press R): 16 Stick, 6 Twine, 4 Stone"
+				"Build with a hammer (press R): 16 Stick, 6 Twine, 8 Stone"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3346,7 +3346,7 @@
 			"kind": "placeable",
 			"description": "A clay and rough stone dome forge under a log roof, ready to raise.",
 			"how_to_get": [
-				"Build with a hammer (press R): 24 Stone, 10 Clay, 2 Hide"
+				"Build with a hammer (press R): 48 Stone, 10 Clay, 2 Hide"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -3364,7 +3364,7 @@
 			"kind": "placeable",
 			"description": "A brick forge with a stepped hood and iron straps, ready to raise. Hot enough for iron.",
 			"how_to_get": [
-				"Build with a hammer (press R): 20 Brick, 10 Stone, 4 Clay mortar"
+				"Build with a hammer (press R): 20 Brick, 20 Stone, 4 Clay mortar"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4068,7 +4068,7 @@
 			"kind": "placeable",
 			"description": "A stone and clay slab, four metres square. Walls and ceilings snap onto it.",
 			"how_to_get": [
-				"Build with a hammer (press R): 8 Stone, 2 Clay"
+				"Build with a hammer (press R): 16 Stone, 2 Clay"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4158,8 +4158,8 @@
 			"kind": "material",
 			"description": "A squared block of stone, 40 by 20 by 20 cm. Heavy, and laid in courses with mortar.",
 			"how_to_get": [
-				"Craft at a workbench: 8 Stone",
-				"Craft at a stonecutters bench: 6 Stone (keep Bronze - Chisel)"
+				"Craft at a workbench: 16 Stone",
+				"Craft at a stonecutters bench: 12 Stone (keep Bronze - Chisel)"
 			],
 			"used_for": [
 				"Planned masonry: stone walls and floors with mortar (no blueprint uses it yet).",
@@ -4377,7 +4377,7 @@
 			"kind": "material",
 			"description": "A rounded stone, dressed to lay in a wall or a floor.",
 			"how_to_get": [
-				"Craft at a workbench: 3 Stone"
+				"Craft at a workbench: 6 Stone"
 			],
 			"used_for": [
 				"Planned: a cobble floor and path.",
@@ -4409,7 +4409,7 @@
 			"kind": "material",
 			"description": "A thin flat slab of stone for a roof.",
 			"how_to_get": [
-				"Craft at a workbench: 2 Stone"
+				"Craft at a workbench: 4 Stone"
 			],
 			"used_for": [
 				"Planned: a stone roof.",
@@ -4592,7 +4592,7 @@
 			"kind": "placeable",
 			"description": "A heap of 45 stones. Set it down to store rock; pick it up to carry it.",
 			"how_to_get": [
-				"Craft: 45 Stone"
+				"Craft: 90 Stone"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4691,7 +4691,7 @@
 			"kind": "placeable",
 			"description": "Stones and clay built into a low hearth with a spit. Cooks better than an open fire.",
 			"how_to_get": [
-				"Build with a hammer (press R): 10 Brick, 6 Clay, 4 Stone"
+				"Build with a hammer (press R): 10 Brick, 6 Clay, 8 Stone"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4823,7 +4823,7 @@
 			"kind": "placeable",
 			"description": "A brick oven, built with a hammer next to a clay hearth.",
 			"how_to_get": [
-				"Build with a hammer (press R): 24 Brick, 10 Clay, 8 Stone"
+				"Build with a hammer (press R): 24 Brick, 10 Clay, 16 Stone"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -5602,7 +5602,7 @@
 			"kind": "structure",
 			"description": "Two heavy millstones set on a stone base, turned by a handle. Grinds grain to flour.",
 			"how_to_get": [
-				"Build with a hammer (press R): 2 Stone, 1 Stick"
+				"Build with a hammer (press R): 4 Stone, 1 Stick"
 			],
 			"used_for": [
 				"Grinds Flour, Barley flour, Oat flour, Rye flour, Wild grain flour and Bonemeal"
@@ -7738,7 +7738,7 @@
 			"kind": "placeable",
 			"description": "Log sills on stone footings, four metres square. Walls and ceilings snap onto it.",
 			"how_to_get": [
-				"Build with a hammer (press R): 10 Log, 6 Stone, 2 Twine"
+				"Build with a hammer (press R): 10 Log, 12 Stone, 2 Twine"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -7756,7 +7756,7 @@
 			"kind": "placeable",
 			"description": "A brick plinth, four metres square. Walls and ceilings snap onto it.",
 			"how_to_get": [
-				"Build with a hammer (press R): 16 Brick, 4 Clay mortar, 4 Stone"
+				"Build with a hammer (press R): 16 Brick, 4 Clay mortar, 8 Stone"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9845,7 +9845,7 @@
 			"kind": "structure",
 			"description": "A small kiln of stone and clay. Fires bricks and lime, and burns any wood to charcoal: a log gives a hundred, a firewood ten.",
 			"how_to_get": [
-				"Build with a hammer (press R): 20 Stone, 10 Clay"
+				"Build with a hammer (press R): 40 Stone, 10 Clay"
 			],
 			"used_for": [
 				"Holds two logs' worth of wood: logs, wooden blocks, firewood, sticks, driftwood or kindling (kindling burns but gives no charcoal)"
@@ -9857,7 +9857,7 @@
 			"kind": "structure",
 			"description": "A bigger kiln of stone and clay bound with iron. Holds four logs' worth of wood to burn to charcoal.",
 			"how_to_get": [
-				"Build with a hammer (press R): 30 Stone, 15 Clay, 4 Iron ingot"
+				"Build with a hammer (press R): 60 Stone, 15 Clay, 4 Iron ingot"
 			],
 			"used_for": [
 				"Fires bricks and lime, and burns any wood to charcoal like the Primitive kiln"
@@ -9869,7 +9869,7 @@
 			"kind": "structure",
 			"description": "A great kiln of stone and clay bound with iron and steel. Holds six logs' worth of wood to burn to charcoal.",
 			"how_to_get": [
-				"Build with a hammer (press R): 40 Stone, 20 Clay, 6 Iron ingot, 4 Steel ingot"
+				"Build with a hammer (press R): 80 Stone, 20 Clay, 6 Iron ingot, 4 Steel ingot"
 			],
 			"used_for": [
 				"Fires bricks and lime, and burns any wood to charcoal like the Primitive kiln"
@@ -9881,7 +9881,7 @@
 			"kind": "structure",
 			"description": "A brick barbecue with an iron grate over the coals. Grills skewers, sausages and joints.",
 			"how_to_get": [
-				"Build with a hammer (press R): 12 Brick, 4 Stone, 2 Iron ingot"
+				"Build with a hammer (press R): 12 Brick, 8 Stone, 2 Iron ingot"
 			],
 			"used_for": [
 				"Cooks Meat skewer, Mushroom skewer, Sausage and Rosemary joint"
@@ -9905,7 +9905,7 @@
 			"kind": "structure",
 			"description": "A flat iron griddle on iron legs over an open fire. Fries eggs, cakes and fritters and bakes flatbread.",
 			"how_to_get": [
-				"Build with a hammer (press R): 3 Iron ingot, 4 Stone"
+				"Build with a hammer (press R): 3 Iron ingot, 8 Stone"
 			],
 			"used_for": [
 				"Cooks Crab cakes, Egg and nettle fry, Herb omelette, Banana fritter, Meatballs, Flatbread, Rye flatbread, Garlic bread, Oat cakes and Chestnut cakes"
@@ -9953,7 +9953,7 @@
 			"kind": "placeable",
 			"description": "A stone and clay smoke chamber over a slow fire. Smokes fish to keep for weeks.",
 			"how_to_get": [
-				"Build with a hammer (press R): 16 Stone, 6 Clay"
+				"Build with a hammer (press R): 32 Stone, 6 Clay"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9971,7 +9971,7 @@
 			"kind": "placeable",
 			"description": "A stone press on a log frame. Squeezes linseed and walnuts for lamp oil.",
 			"how_to_get": [
-				"Build with a hammer (press R): 12 Stone, 4 Log"
+				"Build with a hammer (press R): 24 Stone, 4 Log"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -10115,7 +10115,7 @@
 			"kind": "placeable",
 			"description": "A clay chimney furnace fed with charcoal. Smelts iron ore to an ingot, slowly, before a brick forge.",
 			"how_to_get": [
-				"Build with a hammer (press R): 24 Clay, 10 Stone, 2 Clay mortar"
+				"Build with a hammer (press R): 24 Clay, 20 Stone, 2 Clay mortar"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -10703,7 +10703,7 @@
 			"kind": "placeable",
 			"description": "A poured concrete slab on a stone footing, four metres square. Walls and ceilings snap onto it.",
 			"how_to_get": [
-				"Build with a hammer (press R): 14 Concrete, 4 Stone"
+				"Build with a hammer (press R): 14 Concrete, 8 Stone"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -12536,7 +12536,7 @@
 			"kind": "material",
 			"description": "Lime powder, sand and stone mixed wet. Sets hard as rock in a mould or a wall.",
 			"how_to_get": [
-				"Craft at a mixer: 1 Lime powder, 2 Sand, 3 Stone, 1 Water"
+				"Craft at a mixer: 1 Lime powder, 2 Sand, 6 Stone, 1 Water"
 			],
 			"used_for": [
 				"Used in Engineered - Ceiling",
