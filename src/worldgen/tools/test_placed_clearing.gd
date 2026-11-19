@@ -76,6 +76,27 @@ func _init() -> void:
 	grass.set_bare(patches)
 	check(grass._bare_at(100.0, 300.0) and grass._bare_at(139.3, 300.2) and grass._bare_at(120.5, 300.0), "every patch of a 40 patch path is bare, near and far")
 	check(not grass._bare_at(120.0, 301.5) and not grass._bare_at(97.5, 300.0), "grass well beside the path and past its end stays")
+	# Dave 19 Nov 2026: grass came back onto paths in patches. A ground point beside a path scattered its clump of cards onto it, so every card
+	# is tested where it stands, in the cells a path or clearing reaches.
+	var on_path: Dictionary = grass._cell_clears(Vector2i(20, 50), 0.5)
+	check(not on_path.is_empty() and bool(on_path["bare"]), "a cell the path crosses is tested card by card")
+	var at_piece: Dictionary = grass._cell_clears(Vector2i(16, 33), 0.5)
+	check(not at_piece.is_empty() and (at_piece["spots"] as Array).size() == 1, "a cell a placed piece's clearing reaches is tested card by card, against that piece")
+	check(grass._cell_clears(Vector2i(-40, -40), 2.85).is_empty(), "a cell no path or clearing reaches is not")
+	# Cell (24, 50) starts at x 144, 5 m past the path's last patch (139, 300).
+	check(grass._cell_clears(Vector2i(24, 50), 0.5).is_empty(), "a cell 5 m past the path's end is not tested")
+	# A cell beside the path whose cards land past its low edge (the farthest band scatters 2.85 m): 1.3 m past the edge is reached.
+	grass.set_bare([Vector3(118.7, 0.0, 303.0)])
+	check(grass._cell_clears(Vector2i(20, 50), 0.0).is_empty(), "without the far cards' reach that patch is missed (the bug)")
+	check(bool(grass._cell_clears(Vector2i(20, 50), 2.85).get("bare", false)), "a patch beyond a cell's low edge is reached by its far cards")
+	check(grass._cell_clears(Vector2i(16, 34), 0.0).is_empty() and not grass._cell_clears(Vector2i(16, 34), 2.85).is_empty(), "a clearing just past a cell's edge is reached only by the far cards")
+	grass.set_bare(patches)
+	check(grass._kept_off(120.0, 300.2, on_path) and grass._kept_off(100.5, 200.0, at_piece), "a card on a path patch or in a clearing is kept off")
+	check(not grass._kept_off(120.0, 302.0, on_path) and not grass._kept_off(100.0, 205.0, at_piece), "a card beside them stands")
+	grass.set_bare([], [Vector3(300.0, 0.0, 300.0)])
+	var road: Dictionary = grass._cell_clears(Vector2i(50, 50), 0.5)
+	check(grass._kept_off(302.5, 300.0, road) and not grass._kept_off(304.0, 300.0, road), "a road patch keeps cards off 3 m round it, not 4 m")
+	grass.set_bare(patches)
 	grass.set_bare([])
 	check(not grass._bare_at(100.0, 300.0), "a path taken away leaves no bare spot")
 
