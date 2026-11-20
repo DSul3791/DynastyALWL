@@ -346,6 +346,28 @@ static func mesh_for(item_id: String) -> Mesh:
 	return made
 
 
+# The model looks' files (looks.json "model": Dave's handsaws), read ahead at the join so the first time one is taken in hand does not read the
+# .glb and its textures on the main thread (20 Nov 2026: a saw's first build read 56 ms and 248 ms on Dave's PC, 9 to 11 ms with the files read).
+# In a window they load on a loader thread; headless (tests, the dummy renderer, whose stores are not thread safe: test_worker_resources) on the
+# main thread here, as DynastyBody.warm does. _model_mesh's load() then finds them in the resource cache.
+static var _models_here: Dictionary = {}   # model path -> its PackedScene, read here (headless) and held so the cache keeps it
+
+
+static func warm_models() -> void:
+	entry("")   # loads looks.json
+
+	for id in _table.keys() + ART_OVERRIDES.keys():
+		var path: String = str(entry(str(id)).get("model", ""))
+
+		if path == "" or _models_here.has(path) or not ResourceLoader.exists(path):
+			continue
+
+		if DisplayServer.get_name() == "headless":
+			_models_here[path] = load(path)
+		elif ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+			ResourceLoader.load_threaded_request(path, "", true)
+
+
 # A look from one of Dave's own meshes (looks.json "model": a .glb holding one mesh, used as it is): turned by "model_turn" (where the file's x, y and z axes
 # go, so it lies on the axes of its procedural "shape", which held_item.gd turns and grips by), centred, and scaled to "model_length_m" along x. Its own
 # materials and textures are kept. Null while the file is missing or not imported yet: the procedural shape stands in.
