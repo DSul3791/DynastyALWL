@@ -795,6 +795,20 @@ Not done: their spots, lines, voices (no clips rendered yet), clip picks and Gri
 
 Not yet played. Characters saved before the move keep their saved positions; only new or dead characters come back at the new spawn.
 
+## 91. Character creator: the body turns only when dragged, and the view zooms to the part being changed
+
+**Status: Implemented - awaiting player verification.** Dave's request, 20 Nov 2026 (project thread "Add zoom and drag to character creator"): "I want to be able to zoom in on our character during character creation. when adjusting each part of the body it should just zoom to that part. I dont want the body to spin around like it does either unless I use the mouse to move it. I should me able to click on the image and drag it to turn it. I want it to only turn right to left. do not let it rotate up or down."
+
+**Required outcome:** the creator's body stands still; a click and drag on the picture turns it left or right only; changing a part of the body brings the view in to that part; the player can zoom in on the character.
+
+**As built (PR #1382, reviewed head 7645e481, dev c8294e49):** the auto-spin is deleted. A left drag turns the body about its upright axis only. Clicking or tabbing onto a slider eases the camera to its part (face sliders, Neck and Hair Length: head; Chest, Bust, Shoulders: chest; Belly, Torso, Arms: upper body; Hips, Legs, Hands, Feet: their own). Height, Build and Muscle show the whole body. Opening Head and face or Hair zooms to the head; any other section, or closing them all, shows the whole body. The mouse wheel zooms toward the height under the pointer and back out to the whole body. The camera eases there in about half a second. Part heights come from the drawn bones, so they follow the sliders and work for Body 1 and Body 2. Controls: CONTROLS.md "Character creator".
+
+**Evidence:** independent review PASS WITH NITS on 7645e481. GitHub CI green; merge_check all clear. Lane B on 7645e481: selector 26 fast PASS / 0 FAIL including the new test_creator_preview, warnings 381 with 0 new, 0 script errors. A lane run of test_creator_preview on the merged dev (with Body 2) and a window look on Lane A are follow-ups.
+
+**Acceptance:** open the creator. The body does not turn by itself. Drag on it left and right and it turns; drag up and down and nothing happens. Click the Nose slider: the view glides in to the face. Click Feet: it glides down to the feet. Scroll the wheel to zoom; scroll out or close the sections to see the whole body again. Same with Body 2.
+
+Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
