@@ -195,3 +195,23 @@ past it; a click on the next connection point lays the whole run, taking the pip
 
 Filling a bucket straight from a tap (put a barrel or trough under it); water climbing into a barrel through its bottom; a run that bends
 (lay two runs); pipes over 30 m in one go (lay another from its end); freezing.
+
+## 10. Gravity and rain water, no pumps (Dave, 20 Nov 2026): RULING, proposal awaiting his answer
+
+Dave, project chat 20 Nov 2026 22:04Z: "In my world we are still medievalish and using buckets in wells and dont have pump technology yet. the best
+we be using gravity to move water from a barrel in a river to another barrel lower through copper pipes and then being able to use pipes to
+distribute water from that barrel. the other idea would be to use barrels to collect rain water and through copper pipes distribute water to taps
+and drip heads. we could also plumb into advanced cooking stations so they could draw water from the rain water and pipe system. does that make
+sense. ultimately we would end up with people building and pumbing rain water systems."
+
+The ruling: water moves by gravity only, from wells by bucket, from a barrel in a river, or from rain barrels, through pipes to lower barrels, taps,
+drip heads and (later) cooking stations. No pump technology for now.
+
+Against dev (41415196), proposal put to Dave, nothing changed until he answers:
+
+- Already works as he describes (section 9): rain fills a barrel in the open; linked barrels level out and a lower barrel fills first; a barrel's
+  bottom feeds copper or wooden pipes to Copper - Taps and Copper - Drip heads; a pipe end over a barrel, trough, plot or trench pours in.
+- Missing: a barrel stood in a river or stream does not take water from it (a river intake); no cooking station draws piped water.
+- Pumps in the catalog: the Iron - Hand pump and the Deep-well pump (both locked, never buildable), the Raised cistern (locked; only a force pump
+  fills it) and the Wooden - Hand pump (live, buildable since plumbing PR 1). Proposed: retire the three locked pieces; the Wooden - Hand pump is
+  Dave's call (it is a pump, but it is in play now).
