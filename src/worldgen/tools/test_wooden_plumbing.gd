@@ -213,6 +213,7 @@ func _init() -> void:
 	var kept = items
 	items = make("user://test_pump_clear")
 	put("wooden_hand_pump", Vector3(50.0, 10.0, 50.0))
+	items._dirty = true   # put() writes _items straight, and a pump has no water block to mark the save (save() writes nothing when clean)
 	items.save()
 	items = open_dir("user://test_pump_clear")
 	check(items._area_dirty.has(ItemsScript.area_key_of(50.0, 50.0)), "the cleared pump's area is marked for the first save")
