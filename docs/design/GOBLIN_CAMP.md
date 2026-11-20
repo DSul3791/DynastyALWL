@@ -79,7 +79,7 @@ What Dave asked on 20 Nov 2026:
 - The client tells the server when the item in hand changes: one message per change, at most twice a second. The server keeps it per player.
 - That replaces "a weapon on the hotbar" (GOBLIN-4) with "a weapon in hand", as Dave asked.
 - **No weapon in hand:** the goblins are nervous but approachable, as now. They keep their distance by standing, watch, and go on with their chores once you are past them.
-- **Weapon in hand within 10 m:** every goblin stops its chore, turns to face you with the spear forward (the defensive clip: Skritch's Combat_Stance, Rukz's Alert), and makes an angry chitter every 2-4 s.
+- **Weapon in hand within 10 m:** each goblin within 10 m stops its chore (backing off first if you are inside its keep distance) and squares up facing you with the spear forward (the defensive clip: Skritch's Combat_Stance, Rukz's Alert), and makes an angry chitter every 2-4 s.
   - The chitter is a new short creature sound, made by a script like the other generated animal calls.
   - They relax and go back to work as soon as the weapon is put away or you step back past 10 m.
 - **Attacked:**
@@ -100,7 +100,7 @@ What Dave asked on 20 Nov 2026:
 - **GOBLIN-10:** chores are for show only. The firewood, fibre and game are not real items and change nothing in the world or in Skritch's shop.
 - **GOBLIN-11:** the props are one Crude chest, one Drying rack, one Tanning rack and two Log benches, none of them usable by players.
 - **GOBLIN-12:** an attack costs 3 standing with the clan (about one rank), and the clan refuses that character trade and talk for 1 game day instead of 3.
-- **GOBLIN-13:** the weapon test is "a weapon in hand", for melee weapons and bows. A torch, axe or other tool in hand does not count.
+- **GOBLIN-13:** the weapon test is "a weapon in hand", for any item of kind weapon (melee, bows, slings). A torch, axe or other tool in hand does not count.
 - **GOBLIN-14:** the hunter is out of sight 2 to 4 real minutes per hunt, and only one goblin hunts at a time.
 - **GOBLIN-15:** they come back about 30 s after the attacker is more than 30 m away.
 
