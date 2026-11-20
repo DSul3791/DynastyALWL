@@ -16,7 +16,7 @@ Status: PROVISIONAL throughout. Every number below is a first guess for Dave to 
 - The 21 catalog water pieces (structures states 166-187, blueprints 128-149) carry an older draft of the data ("ports", "open" meaning an open
   channel) that the engine does not read: no inlet or outlet (nothing links), no "windlass"/"pump"/"ground_water" (E does nothing), "open": false
   on pipes (the engine reads that as a shut gate), no "litres_max" on tanks. All 21 blueprints are `known: false, locked: true`.
-- There is no wooden pipe, no iron pipe tee, and no E toggle for the Sluice or the Tap.
+- There is no wooden pipe, no pipe tee, and no E toggle for the Sluice.
 
 So the work is: wire the catalog pieces to the engine, add the missing pieces, and unlock each piece only once it works.
 
@@ -42,10 +42,8 @@ cisterns: hold litres; drink or fill a container at them with E) or straight int
    would make sense. We should remove clay plumbing altogether."): Clay pipe (730), Clay - Pipe (740), Clay - Pipe elbow (742) and
    Clay - Pipe tee (744) are retired with their numbers kept, blueprints 141-143 retired, structure states 179-181 retired (rows kept for their numbers, no look or water block), the Clay pipe
    recipe (352) retired; a saved Clay pipe loads as Clay. Closed pipe is the Wooden - Pipe (PR 2) until iron.
-4. **FUTURE, deferred (Dave, 14 Nov 2026: "finish up what you're working on, but put the rest aside under future"). Not built.**
-   **Iron plumbing, gated on the Master smithy.** A new material, Iron pipe section, forged only at the Master smithy (learned there by
-   discovery); Iron - Pipe / Pipe elbow / new Pipe tee, Tap (E toggle), Iron - Hand pump and Deep-well pump cost it. Unlocked once the
-   recipe exists, so the gate is the Master smithy itself.
+4. **Iron plumbing: dropped** (Dave, 19 Nov 2026: iron would rust; section 7). Pipes are wood or copper, and taps and drip heads are copper only
+   (section 9). The Iron - Hand pump and the Deep-well pump stay locked as they are.
 
 ## 4. Wells (PR 1), PROVISIONAL values and why
 
@@ -104,7 +102,7 @@ surface that high over its inlet). The cisterns' "overflow" is not modelled: a f
 
 ## 7. Iron plumbing: SUPERSEDED (Dave, 19 Nov 2026)
 
-The deferred iron plan (Iron pipe section, Iron - Pipe / elbow / tee, the iron Tap) is dropped. Dave, 19 Nov 2026 15:06Z: "There's really no need
+The deferred iron plan (Iron pipe section, Iron - Pipe / elbow / tee, and an iron tap) is dropped: taps and drip heads are copper only (Dave, 20 Nov 2026). Dave, 19 Nov 2026 15:06Z: "There's really no need
 to go into iron cause iron would rust and steel would do the same thing so there's no point in having iron or steel [...] copper would be the best".
 Section 9 replaces it. The old design stays in git history (and the unmerged bundle `plumbing/plumbing-stack.bundle`); nothing of it is built. The
 Iron - Hand pump, the Deep-well pump and the Raised cistern were not part of that ruling and stay as they are (locked).

@@ -1826,9 +1826,9 @@ Already retired (186; numbers never reused): 20 `lean_to_kit` Lean-to; 22 `chest
 | 740 | `clay_pipe_run` | Clay - Pipe |  |  | RETIRE | **Retired 14 Nov 2026 (Dave: "I don't think clay plumbing would make sense. We should remove clay plumbing altogether.").** Never buildable before (its blueprint was locked). |
 | 742 | `clay_pipe_elbow` | Clay - Pipe elbow |  |  | RETIRE | **Retired 14 Nov 2026 (Dave: "I don't think clay plumbing would make sense. We should remove clay plumbing altogether.").** Never buildable before (its blueprint was locked). |
 | 744 | `clay_pipe_tee` | Clay - Pipe tee |  |  | RETIRE | **Retired 14 Nov 2026 (Dave: "I don't think clay plumbing would make sense. We should remove clay plumbing altogether.").** Never buildable before (its blueprint was locked). |
-| 746 | `iron_pipe` | Iron - Pipe |  |  | KEEP | A closed iron pipe, two metres long. A force pump can push water up it. |
-| 748 | `iron_pipe_elbow` | Iron - Pipe elbow |  |  | KEEP | An iron pipe that turns a quarter circle. |
-| 750 | `iron_tap` | Tap |  |  | KEEP | A shut-off tap for a pipe's end. E opens or shuts it. |
+| 746 | `iron_pipe` | Iron - Pipe |  |  | RETIRE | **Retired 19 Nov 2026 (Dave: no iron or steel pipe, "iron would rust"; copper replaces it, PLUMBING_DESIGN s9).** Never buildable. |
+| 748 | `iron_pipe_elbow` | Iron - Pipe elbow |  |  | RETIRE | **Retired 19 Nov 2026 (Dave: no iron or steel pipe, "iron would rust"; copper replaces it, PLUMBING_DESIGN s9).** Never buildable. |
+| 750 | `iron_tap` | Tap |  |  | RETIRE | **Retired 19 Nov 2026 (Dave: no iron or steel pipe, "iron would rust"; copper replaces it, PLUMBING_DESIGN s9).** Never buildable. Taps are copper only: Copper tap (1509). |
 | 752 | `iron_deep_well_pump` | Deep-well pump |  |  | KEEP | A force pump for a stone well. Lifts from deep and pushes water up an iron pipe. |
 | 754 | `stone_cistern` | Cistern |  |  | UPDATE | A stone tank that holds two thousand litres, with an overflow at the rim. **Plumbing PR 3 (14 Nov 2026): live in the water network, unlocked (docs/design/PLUMBING_DESIGN.md). PROVISIONAL.** |
 | 756 | `stone_raised_cistern` | Raised cistern |  |  | UPDATE | A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity. **Plumbing PR 3 (14 Nov 2026): live in the water network, locked until the Deep-well pump of PR 4 can fill it (docs/design/PLUMBING_DESIGN.md). PROVISIONAL.** |
