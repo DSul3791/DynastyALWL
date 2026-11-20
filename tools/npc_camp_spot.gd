@@ -7,7 +7,8 @@ extends SceneTree
 # the nearest one tall enough to shelter (Cover.SHELTER_MIN_HEIGHT_M) the camp spots data/npcs/camp.json wants: the fire `inside` metres inside the
 # crown circle on the front side (toward the viewer looking along `bearing`, compass degrees, 0 north -z, 90 east +x), Hob `side` metres to the
 # viewer's left and Edda to the right, each `fwd` metres toward the fire, turned to face it; with the trees and shrubs near each spot.
-#   godot --headless --path . --script res://tools/npc_camp_spot.gd -- [--x=53283 --z=68083 --bearing=214 --inside=1.0 --side=2.0 --fwd=1.0]
+#   godot --headless --path . --script res://tools/npc_camp_spot.gd -- [--x=53283 --z=68083 --bearing=214 --inside=1.0 --side=2.0 --fwd=1.0 --reach=12]
+# --reach: how far from the point to look for the tree (m); the 40 nearest trees and shrubs are listed.
 
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings.gd")
@@ -19,7 +20,7 @@ const CoverScript := preload("res://src/shared/cover.gd")
 
 func _init() -> void:
 	var world: String = "res://worlds/base_world"
-	var args: Dictionary = {"x": 53283.0, "z": 68083.0, "bearing": 214.0, "inside": 1.0, "side": 2.0, "fwd": 1.0}
+	var args: Dictionary = {"x": 53283.0, "z": 68083.0, "bearing": 214.0, "inside": 1.0, "side": 2.0, "fwd": 1.0, "reach": 12.0}
 
 	for argument in OS.get_cmdline_user_args():
 		for key in args:
@@ -36,10 +37,11 @@ func _init() -> void:
 	var placer = PlacerScript.new()
 	placer.setup(generator, tables, rules)
 	var at: Vector2 = Vector2(float(args["x"]), float(args["z"]))
+	var reach: float = float(args["reach"])   # how far from the point to look for trees and shrubs (m)
 	var index = CoverScript.Index.new()
 	var flora: Array = []   # [species row, Vector3 foot, height]
-	var lo: Vector2i = placer.chunk_of(at.x - 40.0, at.y - 40.0)
-	var hi: Vector2i = placer.chunk_of(at.x + 40.0, at.y + 40.0)
+	var lo: Vector2i = placer.chunk_of(at.x - reach - 40.0, at.y - reach - 40.0)
+	var hi: Vector2i = placer.chunk_of(at.x + reach + 40.0, at.y + reach + 40.0)
 
 	for ci in range(lo.x, hi.x + 1):
 		for cj in range(lo.y, hi.y + 1):
@@ -55,25 +57,31 @@ func _init() -> void:
 					flora.append([row, made["positions"][n], float(made["heights"][n])])
 
 	flora.sort_custom(func(a, b): return Vector2(a[1].x, a[1].z).distance_to(at) < Vector2(b[1].x, b[1].z).distance_to(at))
-	print("trees and shrubs within 12 m of %.1f, %.1f, nearest first:" % [at.x, at.y])
+	print("trees and shrubs within %.0f m of %.1f, %.1f, nearest first (40 at most):" % [reach, at.x, at.y])
+	var shown: int = 0
 	var tree: Array = []
 
 	for f in flora:
 		var d: float = Vector2(f[1].x, f[1].z).distance_to(at)
 
-		if d > 12.0:
+		if d > reach:
 			break
 
 		var row: Dictionary = f[0]
 		var crown_r: float = CoverScript.crown_radius(float(row["crown"]), float(row["height_ref"]), float(f[2])) if int(row["kind"]) == PlacerScript.KIND_TREE else 0.0
 		var shelters: bool = int(row["kind"]) == PlacerScript.KIND_TREE and float(f[2]) >= CoverScript.SHELTER_MIN_HEIGHT_M
-		print("  %-16s %-5s foot %.2f, %.2f, %.2f  %.1f m away  height %.1f m  trunk_m %.2f  shelter circle %.2f m%s%s" % [str(row["name"]), PlacerScript.KINDS[int(row["kind"])], f[1].x, f[1].y, f[1].z, d, float(f[2]), float(row.get("trunk", 0.0)), crown_r, "" if shelters else "  (no shelter)", "  deciduous (bare in winter)" if CoverScript.is_deciduous(str(row["name"])) else ""])
+		if shown < 40:
+			print("  %-16s %-5s foot %.2f, %.2f, %.2f  %.1f m away  height %.1f m  trunk_m %.2f  shelter circle %.2f m%s%s" % [str(row["name"]), PlacerScript.KINDS[int(row["kind"])], f[1].x, f[1].y, f[1].z, d, float(f[2]), float(row.get("trunk", 0.0)), crown_r, "" if shelters else "  (no shelter)", "  deciduous (bare in winter)" if CoverScript.is_deciduous(str(row["name"])) else ""])
+			shown += 1
 
 		if tree.is_empty() and shelters:
 			tree = [row, f[1], f[2], crown_r]
 
+		if not tree.is_empty() and shown >= 40:
+			break
+
 	if tree.is_empty():
-		print("no sheltering tree within 12 m")
+		print("no sheltering tree within %.0f m" % reach)
 		quit(1)
 		return
 
