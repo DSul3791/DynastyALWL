@@ -53,6 +53,17 @@ for k, v in ({} if already else spec.get("row", {})).items():
         row[k].update(v)
     else:
         row[k] = v
+# Reaction distances live in one table (reactions.notice_flee_safe_m, Dave 19 Nov 2026): the new species starts from its copy's row, and
+# alert_m / spook_m / safe_m given in the spec's row go there, not into the species row.
+table = a["reactions"]["notice_flee_safe_m"]
+if kind not in table:
+    distances = list(table[spec["copy"]])
+    for i, k in enumerate(("alert_m", "spook_m", "safe_m")):
+        if k in row:
+            distances[i] = float(row.pop(k))
+    table[kind] = distances
+for k in ("alert_m", "spook_m", "safe_m"):
+    row.pop(k, None)
 sp[kind] = row
 save(A, a)
 

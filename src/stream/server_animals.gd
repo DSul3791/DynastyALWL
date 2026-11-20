@@ -125,6 +125,24 @@ func crosses_wall(x0: float, z0: float, x1: float, z1: float) -> bool:
 func setup() -> void:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/animals.json"))
 	cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+
+	# Every species' reaction distances live in one table (animals.json reactions, Dave 19 Nov 2026); the rows read them as alert_m, spook_m, safe_m.
+	var reactions: Dictionary = cfg.get("reactions", {}).get("notice_flee_safe_m", {})
+
+	for sp in reactions:
+		var row: Variant = reactions[sp]
+
+		if not (row is Array) or (row as Array).size() != 3:
+			push_error("animals.json reactions.notice_flee_safe_m.%s: not [notice_m, flee_m, safe_m]" % sp)
+		elif cfg.get("species", {}).has(sp):
+			cfg["species"][sp]["alert_m"] = float(row[0])
+			cfg["species"][sp]["spook_m"] = float(row[1])
+			cfg["species"][sp]["safe_m"] = float(row[2])
+
+	for sp in cfg.get("species", {}):
+		if not reactions.has(sp):
+			push_error("animals.json reactions.notice_flee_safe_m: no row for %s (it would never notice a player)" % sp)
+
 	rng.randomize()   # luck-exempt: world wildlife placement, no player outcome
 	wolves = WolvesScript.new()
 	wolves.host = self
@@ -1922,6 +1940,13 @@ func _sample_noise(players: Array, delta: float) -> void:
 
 		vel.append(moved)
 
+		# A running player is seen and heard from farther off (run_ms, run_x; Dave 19 Nov 2026: animals did not react to him running past); walking is 3.2 m/s.
+		# Two samples running, so two position updates landing in one sample never make a walk count as a run.
+		var before: float = (_player_vel[pi] as Vector2).length() if pi < _player_vel.size() else 0.0
+
+		if minf(moved.length(), before) >= float(sen.get("run_ms", 5.0)):
+			noise *= float(sen.get("run_x", 1.5))
+
 		if players.size() == _noise_from.size() and undergrowth.is_valid():
 			var p: Vector3 = players[pi]
 			var speed: float = moved.length()
@@ -1933,7 +1958,7 @@ func _sample_noise(players: Array, delta: float) -> void:
 				if pi < stances.size() and int(stances[pi]) == 1:
 					extra *= float(sen.get("brush_crouch_share", 0.5))
 
-				noise = 1.0 + extra / (skill * skill)
+				noise *= 1.0 + extra / (skill * skill)
 
 		fresh.append(noise)
 
@@ -1974,7 +1999,9 @@ func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance:
 
 	if _wind_s > 0.0 and d > 0.01:
 		var to_animal: Vector2 = Vector2(a["pos"].x - p.x, a["pos"].z - p.z) / d
-		f *= maxf(1.0 + float(sen.get("scent_gain", 0.5)) * _wind_s * to_animal.dot(_wind_dir), 0.5)   # times the bed's, never in place of it
+		var along: float = _wind_s * to_animal.dot(_wind_dir)   # 1 straight downwind of the player in a full wind, -1 straight upwind
+		# Downwind it smells the player from farther off; upwind it loses only the scent, not its eyes and ears, so it shrinks less (scent_loss, Dave 19 Nov 2026).
+		f *= maxf(1.0 + float(sen.get("scent_gain", 0.5)) * along if along >= 0.0 else 1.0 + float(sen.get("scent_loss", 0.25)) * along, 0.5)   # times the bed's, never in place of it
 
 	if stance == 1:
 		f *= float(sen.get("crouch_factor", 0.6))
