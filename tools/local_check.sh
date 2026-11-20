@@ -27,7 +27,9 @@ if godot --headless --path . --script res://tools/check_addons.gd 2>&1 | grep -q
 # Parse check: the big client scripts must load (a name clash in builds 750-753 left the client black).
 for S in scenes/terrain_client/terrain_client.gd src/flora/flora_view.gd scenes/terrain_server/terrain_server.gd; do
 	[ -f "$S" ] || continue
-	if godot --headless --path . --check-only --script "res://$S" 2>&1 | grep -qiE "parse error|SCRIPT ERROR"; then fail "script does not parse: $S"; else pass "parses: $S"; fi
+	R=$(timeout 300 godot --headless --path . --check-only --script "res://$S" 2>&1); RC=$?
+	if [ $RC -eq 124 ] || [ $RC -eq 126 ] || [ $RC -eq 127 ]; then fail "parse check did not run (exit $RC): $S"   # timed out, or no godot: not a pass
+	elif echo "$R" | grep -qiE "parse error|SCRIPT ERROR"; then fail "script does not parse: $S"; else pass "parses: $S"; fi
 done
 
 OUT=$(godot --headless --path . --script res://src/worldgen/tools/validate_items.gd 2>&1 | tail -1)

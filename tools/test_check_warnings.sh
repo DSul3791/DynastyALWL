@@ -78,5 +78,5 @@ else
 	[ -n "$REQUIRE_GODOT" ] && check 1 "REQUIRE_GODOT is set but no godot was found"
 fi
 
-echo "check_warnings gate: $([ $FAILS -eq 0 ] && echo "all passed" || echo "$FAILS FAILED")"
+echo "check_warnings gate: $([ $FAILS -eq 0 ] && echo "all passed" || echo "$FAILS FAILED")$([ -z "$REAL_GODOT" ] && echo " (real godot cases NOT RUN)")"
 exit $([ $FAILS -eq 0 ] && echo 0 || echo 1)

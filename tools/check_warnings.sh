@@ -65,6 +65,7 @@ esac
 
 # A script that does not parse fails the check whatever the mode (its warnings were never counted).
 PARSE=$(grep "^PARSE FAIL " "$RAW" | sed 's/^PARSE FAIL //' | sort -u)
+grep -q "^parse failures: " "$RAW" && [ -z "$PARSE" ] && PARSE="(the run counted parse failures but named none)"
 
 if [ -n "$PARSE" ]; then
 	echo "$PARSE" | sed 's/^/check_warnings: FAIL, script does not parse: /' >&2
