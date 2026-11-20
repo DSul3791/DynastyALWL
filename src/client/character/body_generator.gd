@@ -1195,7 +1195,17 @@ static func decode(code: String) -> Dictionary:
 		at += 3
 
 	g["hair_style"] = clampi(int(bytes[at]), 0, HAIR_STYLES.size() - 1) if version >= 4 else 0
-	g["hair_model"] = _clean_hair_id(bytes.slice(hair_at + 1, hair_at + 1 + hair_len).get_string_from_ascii()) if version >= 5 else ""
+	g["hair_model"] = ""
+
+	if version >= 5:
+		var id_bytes: PackedByteArray = bytes.slice(hair_at + 1, hair_at + 1 + hair_len)
+		var plain: bool = true
+
+		for b in id_bytes:
+			plain = plain and b > 0 and b < 128      # no NUL or high bytes before the text is made
+
+		g["hair_model"] = _clean_hair_id(id_bytes.get_string_from_ascii()) if plain else ""
+
 	g["lips"] = (g["skin"] as Color).lerp(Color(0.7, 0.25, 0.25), 0.5)
 	return g
 

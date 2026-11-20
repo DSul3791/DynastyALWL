@@ -36,7 +36,6 @@ static func glb(id: String) -> String:
 	return str(MODELS.get(id, MODELS[DEFAULT])["glb"])
 
 
-
 # This body's hair fit as a model-space transform (the identity for body_1).
 static func hair_fit(id: String) -> Transform3D:
 	var fit: Dictionary = MODELS.get(id, MODELS[DEFAULT]).get("hair_fit", {})

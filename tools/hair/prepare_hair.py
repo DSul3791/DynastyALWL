@@ -300,7 +300,9 @@ def write_glb(path, pos, nor, uv, tris, pngs):
     images = [{"name": n, "mimeType": "image/png", "bufferView": add(pngs[n])} for n in names]
     doc = {
         "asset": {"version": "2.0", "generator": "Dynasty tools/hair/prepare_hair.py"},
-        "scene": 0, "scenes": [{"nodes": [0]}], "nodes": [{"name": "Hair", "mesh": 0}],
+        "scene": 0, "scenes": [{"nodes": [0]}],
+        "nodes": [{"name": "Hair", "children": [1]}, {"name": "HairMesh", "mesh": 0}],       # an empty root over the mesh, so the mesh is never the scene root
+
         "meshes": [{"name": "Hair", "primitives": [{"attributes": {"POSITION": 0, "NORMAL": 1, "TEXCOORD_0": 2}, "indices": 3, "material": 0}]}],
         "materials": [{"name": "Hair", "doubleSided": False, "normalTexture": {"index": 0},
                        "pbrMetallicRoughness": {"baseColorTexture": {"index": 1}, "metallicRoughnessTexture": {"index": 2}}}],
