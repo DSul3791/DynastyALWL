@@ -53,6 +53,20 @@ func tribes() -> Dictionary:
 	return cfg.get("tribes", {})
 
 
+# Where each tribe's camp stands (its fire, else its cave mouth), for the bandit sites kept off a tribe's ground (server_bandits.gd).
+func camp_spots() -> Array:
+	var out: Array = []
+
+	for tribe in tribes():
+		var camp: Dictionary = (tribes()[tribe] as Dictionary).get("camp", {})
+		var at: Dictionary = camp.get("fire", camp.get("mouth", {}))
+
+		if not at.is_empty():
+			out.append(Vector2(float(at.get("x", 0.0)), float(at.get("z", 0.0))))
+
+	return out
+
+
 # The tribe an NPC belongs to, "" for a townsperson.
 func tribe_of(npc_id: String) -> String:
 	return str(_member.get(npc_id, {}).get("tribe", ""))

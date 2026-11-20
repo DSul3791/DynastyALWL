@@ -5996,7 +5996,7 @@ func _expire_items(spent: float) -> void:
 # the end of that stage).
 func _fire_extra(it: Dictionary) -> Dictionary:
 	if it["fire"].has("camp"):
-		return {"camp": 1}   # Edda and Hob's fire: the client offers nothing on it and shows no burn time (PROTOCOL.md, world-item rows)
+		return {"camp": 2 if typeof(it["fire"]["camp"]) == TYPE_STRING else 1}   # a camp fire (1 Edda and Hob's or a goblin tribe's, 2 a bandit camp's): the client offers nothing on it and shows no burn time (PROTOCOL.md, world-item rows)
 
 	var extra: Dictionary = {"burn": snappedf(float(it["fire"]["burn_left"]), 0.1)}
 	var state: int = int(it["fire"]["state"])
@@ -6396,7 +6396,7 @@ func _camp_fire_tick() -> void:
 	for k in fires.size():
 		var laid: Dictionary = _items.get(int(_camp_fire_ids.get(k, 0)), {}).get("fire", {})
 
-		if laid.has("camp") and int(laid["camp"]) == k:   # this fire still stands (its id may be reused after a world reset, even by another camp fire)
+		if typeof(laid.get("camp")) == TYPE_INT and int(laid["camp"]) == k:   # this fire still stands (its id may be reused after a world reset, even by another camp fire)
 			continue
 
 		var spot: Vector2 = Vector2(float(fires[k]["x"]), float(fires[k]["z"]))
@@ -6423,10 +6423,53 @@ func _camp_refuses(peer: int, it: Dictionary) -> bool:
 	if not it.get("fire", {}).has("camp"):
 		return false
 
+	if typeof(it["fire"]["camp"]) == TYPE_STRING:
+		_say(peer, "That is the bandits' fire. It is not yours to tend.")   # a bandit camp's fire: "camp" holds its site key
+		return true
+
 	var fires: Array = NpcCamp.fires()
 	var k: int = int(it["fire"]["camp"])
 	var owner: String = str(fires[k]["owner"]) if k >= 0 and k < fires.size() else "Edda and Hob's"
 	_say(peer, "That is %s fire. It is not yours to tend." % owner)
+	return true
+
+
+# A bandit camp (server_bandits.gd stage 2, docs/design/BANDIT_CAMPS.md): its fire burns like Edda and Hob's (never saved, no wood, nobody tends
+# it; "camp" holds the site's key) and its Lean-tos (open sides `yaw`) are transient pieces marked "bandit", never saved or taken down, laid
+# again at every start from the site's row, and again over old_ids (what is left of its last laying) when a piece is gone. Returns the world ids laid.
+func lay_bandit_camp(key: String, fire: Vector3, lean_tos: Array, old_ids: Array = []) -> Array:
+	for id in old_ids:
+		var old: Dictionary = _items.get(int(id), {})
+
+		if str(old.get("struct", {}).get("bandit", "")) == key or str(old.get("fire", {}).get("camp", "")) == key:
+			_items.erase(int(id))   # what is left of this camp's last laying (a world reset takes the fire, keeps transient Lean-tos): laid whole again
+
+	var ids: Array = []
+	var state: int = int(((_cooking.get("fire_tiers", {}) as Dictionary).get(NpcCamp.fire_wood(), {}) as Dictionary).get("state", FIRE_STATE_BONFIRE))
+	_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": fire, "left": 1.0e9,
+		"fire": {"state": state, "burn_left": 1.0e9, "camp": key, "covered": true, "recheck": COVER_RECHECK_S}}
+	_zone_add(_next_id)
+	ids.append(_next_id)
+	_next_id += 1
+	var def: Dictionary = _structures.get("lean_to", {})
+
+	for row in lean_tos:
+		var entry: Dictionary = {"number": table.number_of(str(def.get("item", "lean_to"))), "count": 1, "pos": row[0], "left": 1.0e9, "struct": {"kind": "lean_to", "yaw": float(row[1]), "transient": true, "bandit": key}}
+		_items[_next_id] = entry
+		_grid_add(_next_id, entry)
+		ids.append(_next_id)
+		_next_id += 1
+
+	_lit_valid = false
+	return ids
+
+
+# True while every piece of a laid bandit camp still stands (a world reset takes its fire: the camp is laid again).
+func bandit_camp_there(ids: Array) -> bool:
+	for id in ids:
+		if not _items.has(id) or not (_items[id].has("fire") or bool(_items[id].get("struct", {}).has("bandit"))):
+			return false
+
 	return true
 
 
@@ -11443,6 +11486,10 @@ func _take_down(peer: int, inv, id: int) -> void:
 
 	if it["struct"].has("site"):
 		_take_down_site(peer, inv, id)
+		return
+
+	if it["struct"].has("bandit"):
+		_say(peer, "That belongs to the bandits' camp.")
 		return
 
 	if str(def.get("hand_laid", "")) != "":

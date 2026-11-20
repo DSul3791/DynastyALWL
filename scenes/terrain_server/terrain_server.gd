@@ -765,7 +765,11 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	animals.big_game.hurt_player = func(peer, amount, lethal, cause): return items.hurt_player(peer, amount, lethal, cause, 10.0)
 	@warning_ignore("confusable_local_declaration")
-	animals.died = func(sp, pos, peer): items.make_carcass(sp, pos, peer)
+	animals.died = func(sp, pos, peer):
+		if sp == "bandit" or sp == "horse":
+			bandits.fallen(sp, pos)   # a camp's bandit leaves its site's row and drops its gear; a camp horse is one fewer (docs/design/BANDIT_CAMPS.md)
+
+		items.make_carcass(sp, pos, peer)
 	@warning_ignore("confusable_local_declaration")
 	animals.send_hit = func(peer, id, zone, at): net.animal_hit.rpc_id(peer, id, zone, at)
 	items.hit_animal_path = func(shooter, from, to, amount) -> Dictionary:
@@ -851,8 +855,24 @@ func _ready() -> void:
 	bandits.ground_ready = func(x, z): return generator.tile_cached(x, z)   # the hourly check never reads a tile from disk (1.8 to 4 s)
 	bandits.in_water = npcs.blocked
 	bandits.building_near = func(site_at, reach_m): return items.building_near(site_at, reach_m)
+	bandits.tribe_camps = tribes.camp_spots   # no bandit site on a goblin tribe's ground
+	bandits.cave_mouths_at = func(mouth_x, mouth_z):   # the cave, den and mine mouths of a loaded tile (mines load as caves); null while unloaded
+		if not generator.tile_cached(mouth_x, mouth_z):
+			return null
+
+		var mouths: Array = []
+
+		for row in generator.get_tile(generator.tile_of(mouth_x, mouth_z)).cave_mouths:
+			mouths.append(Vector2((row[0] as Vector3).x, (row[0] as Vector3).z))
+
+		return mouths
 	bandits.road_distance = func(site_at, reach_m): return items.road_distance(site_at, reach_m)
 	bandits.setup(store_dir)
+	bandits.animals = animals
+	animals.bandit_camps = bandits
+	bandits.lay_camp = func(camp_key, camp_fire, camp_lean_tos, camp_old): return items.lay_bandit_camp(camp_key, camp_fire, camp_lean_tos, camp_old)
+	bandits.laid_still = func(camp_ids): return items.bandit_camp_there(camp_ids)
+	bandits.drop_gear = func(gear_key, gear_at): items.drop_world_made(items.table.number_of(gear_key), 1, gear_at)
 	items.road_trip = func(mover, mover_at, trip_kind): bandits.note(mover, mover_at, trip_kind)
 
 	for site_line in bandits.report():
@@ -3040,6 +3060,7 @@ func _process(delta: float) -> void:
 	_events.mark("trails")
 	trails.tick(delta)
 	bandits.tick()
+	bandits.camp_tick(delta, items.peer_positions())
 	map_knowledge.tick(delta)   # the save interval only
 	_events.mark("send npcs")
 	_send_npcs(delta)

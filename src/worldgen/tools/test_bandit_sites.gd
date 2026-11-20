@@ -12,6 +12,10 @@ extends SceneTree
 const BanditsScript := preload("res://src/stream/server_bandits.gd")
 const ItemScript := preload("res://src/stream/server_items.gd")
 const CartsScript := preload("res://src/stream/server_carts.gd")
+const AnimalsScript := preload("res://src/stream/server_animals.gd")
+const TribesScript := preload("res://src/stream/server_tribes.gd")
+const ItemTableScript := preload("res://src/shared/item_table.gd")
+const Net := preload("res://src/stream/terrain_net.gd")
 
 var failures: int = 0
 var clock: Array = [0.0]
@@ -29,6 +33,9 @@ func _init() -> void:
 	_waking()
 	_saved()
 	_server_hooks()
+	_camp_levels()
+	_camp_life()
+	_camp_items()
 	print("bandit sites: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 
@@ -107,7 +114,13 @@ func _points() -> void:
 	check(absf(b.points_at(stretch, 0.0) - float(w["road"])) < 0.001, "walking inside one stretch counts once (%.2f)" % b.points_at(stretch, 0.0))
 	b.note(1, Vector3(150.0, 0.0, 10.0), "road")
 	b.note(1, Vector3(50.0, 0.0, 10.0), "road")
-	check(absf(b.points_at(stretch, 0.0) - 2.0 * float(w["road"])) < 0.001, "coming back into a stretch counts again")
+	check(absf(b.points_at(stretch, 0.0) - float(w["road"])) < 0.001, "pacing one stretch boundary counts once")
+
+	for step in range(2, BanditsScript.RECENT_STRETCHES + 1):
+		b.note(1, Vector3(float(step) * 100.0 + 50.0, 0.0, 10.0), "road")
+
+	b.note(1, Vector3(50.0, 0.0, 10.0), "road")
+	check(absf(b.points_at(stretch, 0.0) - 2.0 * float(w["road"])) < 0.001, "coming back into a stretch after a walk counts again")
 	b.note(2, Vector3(50.0, 0.0, 10.0), "path")
 	b.note(3, Vector3(50.0, 0.0, 10.0), "cart")
 	check(absf(b.points_at(stretch, 0.0) - (2.0 * float(w["road"]) + float(w["path"]) + float(w["cart"]))) < 0.001, "a hand path and a loaded cart count their own weights")
@@ -181,6 +194,34 @@ func _waking() -> void:
 	fresh.road_distance = func(_at, _r): return 200.0
 	fresh.building_near = func(_at, _r): return true
 	check(fresh.refusal(cell, spot, clock[0]) == "buildings near", "none near a building")
+	fresh.building_near = func(_at, _r): return false
+
+	# A goblin tribe's ground (server_tribes.gd camp_spots): no bandit site within tribe_clear_m of a tribe camp.
+	var clear_m: float = float(fresh.cfg["tribe_clear_m"])
+	fresh.tribe_camps = func(): return [spot + Vector2(clear_m - 10.0, 0.0)]
+	check(fresh.refusal(cell, spot, clock[0]) == "goblin camp near", "none near a goblin tribe's camp")
+	fresh.tribe_camps = func(): return [spot + Vector2(clear_m + 10.0, 0.0)]
+	check(fresh.refusal(cell, spot, clock[0]) == "", "a goblin camp further off is no bar (%s)" % fresh.refusal(cell, spot, clock[0]))
+
+	# A cave, den or mine mouth (the tile's cave_mouths, mines among them): none within cave_clear_m of one; an unloaded tile is not read.
+	var cave_m: float = float(fresh.cfg["cave_clear_m"])
+	fresh.cave_mouths_at = func(_x, _z): return [spot + Vector2(0.0, cave_m - 10.0)]
+	check(fresh.refusal(cell, spot, clock[0]) == "cave near", "none by a cave or mine mouth")
+	fresh.cave_mouths_at = func(_x, _z): return [spot + Vector2(0.0, cave_m + 10.0)]
+	check(fresh.refusal(cell, spot, clock[0]) == "", "a mouth further off is no bar")
+	fresh.cave_mouths_at = func(mouth_x, _z):
+		if mouth_x > spot.x:
+			return null
+
+		return []
+	check(fresh.refusal(cell, spot, clock[0]) == "unloaded", "a neighbouring tile not loaded is waited for, not read")
+	fresh.cave_mouths_at = Callable()
+	var tribes: TribesScript = TribesScript.new()
+	tribes.setup()
+	var camps: Array = tribes.camp_spots()
+	check(camps.size() == tribes.tribes().size() and camps.size() > 0, "every goblin tribe camp is listed (%d)" % camps.size())
+	var fire: Dictionary = (tribes.tribes()["ragtooth"] as Dictionary)["camp"]["fire"]
+	check(camps.has(Vector2(float(fire["x"]), float(fire["z"]))), "the Ragtooth camp is listed at its fire")
 
 	# Ground not loaded: no tile is read, the candidate is tried again at the next check and wakes once it is.
 	var later: BanditsScript = _sites()
@@ -243,3 +284,156 @@ func _server_hooks() -> void:
 	items._on_path_cache.clear()
 	items._note_road_trip(10, Vector3(1.0, 0.0, 0.0))
 	check(seen == [[7, "road"], [8, "path"], [9, ""], [10, "road"], [10, "cart"]], "a player counts road, hand path, off every path, an empty cart as road and a loaded cart as cart (%s)" % str(seen))
+
+
+# Stage 2: a camp's bandits by its distance band from the town (Dave: near the town "mostly level 1 with maybe 1 guy at level 2").
+func _camp_levels() -> void:
+	var b: BanditsScript = _sites()
+	b.town = Vector2(0.0, 0.0)
+	var bands: Array = b.cfg["camp"]["bands"]
+	var ups: int = 0
+
+	for n in 200:
+		var cell: Vector2i = Vector2i(n, 3)
+		var levels: Array = b.camp_levels(cell, Vector2(1000.0, 0.0))
+		check(levels == b.camp_levels(cell, Vector2(1000.0, 0.0)), "a camp's levels are the same every time")
+		check(levels.size() >= int(bands[0]["bandits"][0]) and levels.size() <= int(bands[0]["bandits"][1]), "a camp near the town has its band's count (%s)" % str(levels))
+		check(levels.slice(1).all(func(l): return int(l) == 1), "near the town the rest are level 1 (%s)" % str(levels))
+		ups += 1 if int(levels[0]) == 2 else 0
+
+	check(ups > 20 and ups < 80, "about a quarter have one at level 2 (%d of 200)" % ups)
+	var far: Array = b.camp_levels(Vector2i(5, 3), Vector2(20000.0, 0.0))
+	var last: Dictionary = bands[bands.size() - 1]
+	check(far.size() >= int(last["bandits"][0]) and far.size() <= int(last["bandits"][1]) and far.all(func(l): return int(l) >= int(last["level"][0])), "a far camp is bigger and stronger (%s)" % str(far))
+	check(b.gear_of(1)[0] == "wooden_club" and b.gear_of(5)[0] == "iron_sword", "gear follows the level")
+
+
+# Stage 2: a woken site is laid (fire, Lean-tos), its bandits sit round the fire and its horses stand tethered while a player is near;
+# a fallen bandit leaves the site's row and drops its gear.
+func _camp_life() -> void:
+	clock[0] = 300000.0
+	var b: BanditsScript = _sites()
+	var animals = AnimalsScript.new()
+	animals.ground_height = func(_x, _z): return 50.0
+	animals.blocked = func(_x, _z): return false
+	animals.player_positions = func(): return []
+	animals.setup()
+	animals.traits = false
+	b.animals = animals
+	animals.bandit_camps = b
+	var cell: Vector2i = _cell_with_site(b, 60)
+	var spot: Vector2 = b.candidate(cell)
+	b.sites[cell] = {"x": spot.x, "z": spot.y, "woke": clock[0], "points": 40.0, "levels": [2, 1, 1], "horses": 2}
+	var laid: Array = []
+	var dropped: Array = []
+	b.lay_camp = func(camp_key, camp_fire, camp_lean_tos, _camp_old):
+		laid.append([camp_key, camp_fire, camp_lean_tos])
+		return [100 + laid.size()]
+	b.laid_still = func(_ids): return true
+	b.drop_gear = func(gear_key, gear_at): dropped.append([gear_key, gear_at])
+	var plan: Dictionary = b.layout(cell)
+	check(plan == b.layout(cell), "a camp's layout is the same every time")
+	check(plan["seats"].size() == 3 and plan["lean_tos"].size() == 2, "three bandits get three seats and two Lean-tos")
+
+	for seat in plan["seats"]:
+		check(absf((seat as Vector2).distance_to(spot) - float(b.cfg["camp"]["sit_m"])) < 0.01, "a seat is on the ring round the fire")
+
+	b.camp_tick(1.0, [])
+	check(laid.size() == 1 and laid[0][0] == "%d,%d" % [cell.x, cell.y] and (laid[0][1] as Vector3).is_equal_approx(Vector3(spot.x, 50.0, spot.y)), "an awake site lays its fire on the ground")
+	check(animals.animals.is_empty(), "nobody is made while no player is near")
+	b.camp_tick(1.0, [Vector3(spot.x + 100.0, 50.0, spot.y)])
+	check(laid.size() == 1, "a laid camp is not laid again")
+	var bandits: Array = animals.animals.values().filter(func(a): return a["sp"] == "bandit")
+	var horses: Array = animals.animals.values().filter(func(a): return a["sp"] == "horse")
+	check(bandits.size() == 3 and horses.size() == 2, "a player near: three bandits and two horses (%d, %d)" % [bandits.size(), horses.size()])
+	check(bandits.filter(func(a): return int(a["level"]) == 2).size() == 1, "the bandits carry the camp's levels")
+	check(horses.all(func(a): return int(a["state"]) == BanditsScript.TETHERED), "the horses stand tethered")
+	b.camp_tick(1.0, [Vector3(spot.x + 100.0, 50.0, spot.y)])
+	check(animals.animals.size() == 5, "made once while they live")
+
+	for a in bandits:
+		a["pos"] += Vector3(3.0, 0.0, 0.0)   # wandered off its seat
+
+	for n in 40:
+		for a in bandits + horses:
+			b.step(a, 0.25)
+
+	check(bandits.all(func(a): return (a["pos"] as Vector3).distance_to(a["seat"]) <= 0.5), "a bandit walks back to its seat")
+	check(bandits.filter(func(a): return int(a["state"]) == AnimalsScript.ALERT).size() == 1, "one keeps watch")
+	check(bandits.filter(func(a): return int(a["state"]) == BanditsScript.SIT or int(a["state"]) == BanditsScript.LIE).size() == 2, "the rest sit (or lie at night) by the fire")
+	var watcher: Dictionary = bandits.filter(func(a): return bool(a["lookout"]))[0]
+	var fire: Vector3 = watcher["camp_fire"]
+	check(absf(wrapf(float(watcher["heading"]) - atan2(fire.z - watcher["pos"].z, fire.x - watcher["pos"].x), -PI, PI)) < 0.01, "they face the fire")
+
+	# Badly hurt: it runs from whoever hurt it, inside flee_m.
+	var hurt: Dictionary = bandits.filter(func(a): return not bool(a["lookout"]))[0]
+	hurt["hp_max"] = float(hurt["hp"])
+	hurt["hp"] = float(hurt["hp"]) * 0.1
+	hurt["wound"] = true
+	hurt["hurt_by"] = 5
+	animals.big_game.player_info = func(): return [{"peer": 5, "pos": Vector3(spot.x + 10.0, 50.0, spot.y)}]
+	var was: Vector3 = hurt["pos"]
+	b.step(hurt, 0.25)
+	check(int(hurt["state"]) == AnimalsScript.FLEE and (hurt["pos"] as Vector3).distance_to(was) > 0.5, "a badly hurt bandit runs")
+
+	# One falls: it leaves the row (the camp is smaller when it is made again) and drops its gear.
+	var level: int = int(hurt["level"])
+	b.camp_tick(1.0, [Vector3(spot.x + 100.0, 50.0, spot.y)])   # the members' spots are read
+	hurt["pos"] += Vector3(6.0, 0.0, 0.0)   # it ran on before it fell, past where it was last read
+	animals.animals.erase(int(hurt["id"]))   # the animal code erases the dead one before its died hook
+	check(b.fallen("bandit", hurt["pos"]) == cell, "a fallen bandit is its camp's, though it ran on after its spot was last read")
+	check(b.sites[cell]["levels"].size() == 2 and dropped.size() == b.gear_of(level).size() and dropped[0][0] == b.gear_of(level)[0], "it leaves the row and drops its gear (%s)" % str(dropped))
+	check(b.fallen("bandit", Vector3(spot.x + 500.0, 50.0, spot.y)) == Vector2i(2147483647, 0), "a bandit far from any camp member is no camp's")
+	check(b.fallen("horse", horses[0]["pos"]) == cell and int(b.sites[cell]["horses"]) == 1, "a camp horse that dies leaves the row")
+	check(b.layout(cell)["seats"].size() == 2, "the smaller camp has fewer seats")
+
+
+# Stage 2, the world side (server_items.gd): the camp's fire and Lean-tos are laid, refuse a player, are never saved, and a camp laid again
+# over what a world reset left leaves no doubles. Edda and Hob's camp fire is laid beside it as before.
+func _camp_items() -> void:
+	var dir: String = "user://test_bandit_camp_items"
+	DirAccess.make_dir_recursive_absolute(dir)
+
+	for file in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir + "/" + file)
+
+	var said: Array = []
+	var items: ItemScript = ItemScript.new()
+	items.send_full = func(_p, _b): pass
+	items.send_slots = func(_p, _b): pass
+	items.send_world_items = func(_p, _a, _r): pass
+	items.send_notice = func(_p, text): said.append(str(text))
+	items.ground_height = func(_x, _z): return 10.0
+	items.setup(ItemTableScript.load_default(), dir)
+	items._goals_loaded = true
+	items.peer_connected_hello(1, "bandit-test-key1")
+	var at: Vector3 = Vector3(9000.0, 10.0, 9000.0)
+	var ids: Array = items.lay_bandit_camp("4,5", at, [[at + Vector3(5.0, 0.0, 0.0), 180], [at + Vector3(0.0, 0.0, 5.0), 270]])
+	check(ids.size() == 3 and items.bandit_camp_there(ids), "a camp lays its fire and two Lean-tos")
+	var fire_id: int = int(ids[0])
+	var lean_id: int = int(ids[1])
+	check(items._fire_extra(items._items[fire_id]) == {"camp": 2}, "clients see it as a bandit camp fire")
+	check(ItemScript._not_in_area(items._items[fire_id]) and ItemScript._not_in_area(items._items[lean_id]), "neither the fire nor a Lean-to is saved")
+	items.report_position(1, at + Vector3(1.5, 0.0, 0.0))
+	said.clear()
+	items.action(1, Net.ACT_FUEL, fire_id, 0, 0, Vector3.ZERO)
+	check(said.any(func(t): return str(t).contains("bandits")), "a use of the fire is refused (%s)" % str(said))
+	items.report_position(1, at + Vector3(5.0, 0.0, 1.5))
+	said.clear()
+	items._take_down(1, null, lean_id)
+	check(items._items.has(lean_id) and said.has("That belongs to the bandits' camp."), "a Lean-to is not taken down (%s)" % str(said))
+	items.camp_fire_on = true
+	items._camp_fire_tick()
+	check(items._items.has(int(items._camp_fire_ids.get(0, 0))) and items._items.has(fire_id), "Edda and Hob's fire is laid beside a bandit camp's")
+
+	# A world reset takes the fire and keeps the Lean-tos: the camp is laid whole again, with no doubles.
+	items._items.erase(fire_id)
+	check(not items.bandit_camp_there(ids), "a camp missing its fire is not there")
+	var again: Array = items.lay_bandit_camp("4,5", at, [[at + Vector3(5.0, 0.0, 0.0), 180], [at + Vector3(0.0, 0.0, 5.0), 270]], ids)
+	var lean_tos: int = 0
+
+	for id in items._items:
+		if str(items._items[id].get("struct", {}).get("bandit", "")) == "4,5":
+			lean_tos += 1
+
+	check(items.bandit_camp_there(again) and lean_tos == 2, "laid again over what was left: one fire, two Lean-tos (%d)" % lean_tos)
