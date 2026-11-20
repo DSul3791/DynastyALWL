@@ -2,14 +2,14 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://caalc1d0v027s"
+uid="uid://c3ki6hd4cljs2"
 path.s3tc="res://.godot/imported/Hair_ShortCurly_texture_0.png-a562930964653eaf9d048503b6f0592d.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "2cd2d7ba452f9da8ad063527df389c45"
+"md5": "d3858b2bbc9c28e37b291461636ebead"
 }
 
 [deps]

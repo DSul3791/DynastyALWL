@@ -26,13 +26,10 @@ def skull_box(path):
     return skull.min(0), skull.max(0), crown
 
 
-def main():
-    parser = argparse.ArgumentParser()
-    parser.add_argument("body")
-    parser.add_argument("--male", default="assets/character/Humanoid/Dynasty_Base_Male.glb")
-    args = parser.parse_args()
-    m_lo, m_hi, m_crown = skull_box(args.male)
-    b_lo, b_hi, b_crown = skull_box(args.body)
+def fit(male_path, body_path):
+    """scale, offset: Body 1 model space -> this body's, by the skull boxes."""
+    m_lo, m_hi, m_crown = skull_box(male_path)
+    b_lo, b_hi, b_crown = skull_box(body_path)
     sx = (b_hi[0] - b_lo[0]) / (m_hi[0] - m_lo[0])
     sz = (b_hi[2] - b_lo[2]) / (m_hi[2] - m_lo[2])
     scale = np.array([sx, 0.5 * (sx + sz), sz])
@@ -41,6 +38,15 @@ def main():
         b_crown - scale[1] * m_crown,
         0.5 * (b_lo[2] + b_hi[2]) - scale[2] * 0.5 * (m_lo[2] + m_hi[2]),
     ])
+    return scale, offset
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("body")
+    parser.add_argument("--male", default="assets/character/Humanoid/Dynasty_Base_Male.glb")
+    args = parser.parse_args()
+    scale, offset = fit(args.male, args.body)
     print('"hair_fit": {"scale": Vector3(%.4f, %.4f, %.4f), "offset": Vector3(%.4f, %.4f, %.4f)}' % (*scale, *offset))
 
 

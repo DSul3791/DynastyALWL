@@ -2,14 +2,14 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://hv86wvhhtt63"
+uid="uid://kq1qv3wedaam"
 path.s3tc="res://.godot/imported/Hair_SlickedBack_texture_0.png-9f45188ae57fb1440e4be64d40df8cc3.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "0f8b84281faa10ab1d105c9b1b84ad14"
+"md5": "01d9f1f200a4554ab76749510db887fe"
 }
 
 [deps]

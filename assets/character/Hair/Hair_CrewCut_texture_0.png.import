@@ -2,14 +2,14 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bui7mlq70qyw5"
+uid="uid://ciajbg14bucop"
 path.s3tc="res://.godot/imported/Hair_CrewCut_texture_0.png-f2daee7a3da340a0777a3b30454150b6.s3tc.ctex"
 metadata={
 "imported_formats": ["s3tc_bptc"],
 "vram_texture": true
 }
 generator_parameters={
-"md5": "6a5fd6d9a3bf113cceb7384b0743fe64"
+"md5": "bf7287ba6ed9258e8b97c822c1120ebc"
 }
 
 [deps]

@@ -4,11 +4,12 @@
 Meshy's hair files hold a whole bald mannequin head with the hair on it, normalised to a box about 1.9 units tall. This keeps only the hair and
 fits it to Dynasty_Base_Male.glb's head in model space (metres, +Y up, facing +Z), so the game hangs it on the head bone with no other numbers:
 
-1. The head is cut out by colour: the mannequin is pale grey and the hair is dark, so every triangle with a pale corner or middle is dropped.
+1. The head is cut out by colour: the mannequin is pale grey and the hair is dark, so the colour texture gets an alpha channel (clear where pale)
+   cut by the material (alpha scissor), and triangles wholly pale are dropped.
    Where the hair has bald gaps, Body 1's own scalp is copied a little outward as a cap in the hair's colour.
 2. A box fit (width and depth of the skull above the ears, and the crown) moves the hair onto Body 1's head and keeps its shape; any part that
-   would then sit inside Body 1's head is pushed straight out from the head's centre to CLEARANCE_M above the skin. Nothing stays below the
-   nape (NAPE_Y), where Meshy paints the mannequin's neck dark too.
+   would then sit inside Body 1's head is pushed straight out from the head's centre to CLEARANCE_M above the skin. Nothing hangs below the
+   nape (NAPE_Y), where Meshy paints the mannequin's neck dark too: the hair ends there in an even line.
 3. The three textures are scaled to 2048 (Dave ordered 2K, Meshy made 4K; the 4K originals stay in his Downloads) and the material is made
    one-sided (docs/design/CHARACTER_MESHES.md: one-sided faces; the hair is a closed shell over the scalp, so its back faces never show).
 
@@ -26,12 +27,15 @@ import sys
 import numpy as np
 from PIL import Image
 
-PALE = 130.0             # a triangle with any of its corners or its middle this pale (mean RGB) is the mannequin's skin (its grey is about 165 to 190, the hair 30 to 65)
+OPAQUE_BELOW = 95.0      # paint darker than this (mean RGB) is hair, fully opaque; the mannequin's grey is about 165 to 190, the hair 30 to 65
+CLEAR_FROM = 135.0       # paint this pale or paler is the mannequin's skin, fully clear; the alpha ramps between, and the material cuts at half
 CLEARANCE_M = 0.004      # hair sits at least this far out from Body 1's scalp
 CAP_CLEARANCE_M = 0.002  # the cap (2b) sits this far out from the skin, under the hair
 HOLE_BINS = 3            # bald gaps up to about this many direction bins (3.75 degrees each) across are filled by the dark cap
+NAPE_REACH_M = 0.012     # how far below NAPE_Y a triangle may reach and still be kept (lifted to the line)
 NAPE_Y = 1.505           # Body 1 model space: nothing of the hair below this (the chin is at 1.495, the nape about the same)
 TEXTURE_SIZE = 2048
+HEAD_REACH_M = 0.16      # another body's head and neck: its points this close to the head's centre line, seen from above
 HEAD_FROM_Y = 1.45       # Body 1's head and neck vertices start here (model space, metres); the shoulders are below
 SKULL_FROM_Y = 1.61      # Body 1's skull above the ears (FITTING_NOTE.md: 0.145 wide, 0.191 deep from about y 1.61 up)
 CENTRE_DROP = 0.10       # the radial centre sits this far under the crown, at about ear height
@@ -75,15 +79,21 @@ class Glb:
         return np.concatenate([self.accessor(p["attributes"]["POSITION"]).astype(float) for m in self.j["meshes"] for p in m["primitives"]])
 
 
-def surface_samples(points, tris, count, rng):
-    """Points spread over the triangles by area, so a coarse mesh still fills every direction bin."""
+def surface_samples(points, tris, count, rng, uvs=None):
+    """Points spread over the triangles by area, so a coarse mesh still fills every direction bin. With uvs, also each point's texture coordinate."""
     a, b, c = points[tris[:, 0]], points[tris[:, 1]], points[tris[:, 2]]
     area = np.linalg.norm(np.cross(b - a, c - a), axis=1)
     pick = rng.choice(len(tris), size=count, p=area / area.sum())
     u, v = rng.random(count), rng.random(count)
     flip = u + v > 1.0
     u[flip], v[flip] = 1.0 - u[flip], 1.0 - v[flip]
-    return a[pick] + (b[pick] - a[pick]) * u[:, None] + (c[pick] - a[pick]) * v[:, None]
+    at = a[pick] + (b[pick] - a[pick]) * u[:, None] + (c[pick] - a[pick]) * v[:, None]
+
+    if uvs is None:
+        return at
+
+    ua, ub, uc = uvs[tris[pick, 0]], uvs[tris[pick, 1]], uvs[tris[pick, 2]]
+    return at, ua + (ub - ua) * u[:, None] + (uc - ua) * v[:, None]
 
 
 def grow(mask, steps):
@@ -162,6 +172,8 @@ def main():
     parser.add_argument("source")
     parser.add_argument("out")
     parser.add_argument("--male", default="assets/character/Humanoid/Dynasty_Base_Male.glb")
+    parser.add_argument("--also", nargs="*", default=["assets/character/Humanoid/Playercharacter_Female_01.glb"],
+                        help="other body models (body_models.gd); the hair clears their heads too, carried by their hair_fit (body_fit.py)")
     args = parser.parse_args()
     rng = np.random.default_rng(7)
 
@@ -184,7 +196,9 @@ def main():
         "normal": src.image(src.j["textures"][material["normalTexture"]["index"]]["source"]),
     }
 
-    # 1. Cut the mannequin out by colour: a triangle is skin when the colour under any of its three corners or its middle is pale.
+    # 1. Cut the mannequin out by colour. The colour texture gets an alpha channel, opaque where the paint is dark (hair) and clear where it is pale
+    # (the mannequin's skin), with a short ramp between; the material cuts at half (alpha scissor), so the hairline follows the paint pixel by pixel.
+    # A triangle that is pale under all of its corners and its middle is dropped; one at the hairline stays and the alpha cuts it.
     colour = np.asarray(images["texture_0"].convert("RGB").resize((1024, 1024), Image.BILINEAR)).astype(float)
 
     def shade(at):
@@ -193,7 +207,8 @@ def main():
         return colour[y, x].mean(-1)
 
     tri_uv = uv[tris]
-    pale = np.concatenate([shade(tri_uv), shade(tri_uv.mean(1))[:, None]], 1).max(1) >= PALE
+    tri_shades = np.concatenate([shade(tri_uv), shade(tri_uv.mean(1))[:, None]], 1)
+    pale = tri_shades.min(1) >= OPAQUE_BELOW + 0.5 * (CLEAR_FROM - OPAQUE_BELOW)       # every sample past the alpha cut
     hair = tris[~pale]
 
     # 2a. Box fit: the mannequin's scalp box onto Body 1's skull box (width, depth, crown). Height takes the mean of the two side scales.
@@ -217,7 +232,22 @@ def main():
     ])
     boxed = pos * scale + shift
     centre = np.array([0.5 * (skull[:, 0].min() + skull[:, 0].max()), crown - CENTRE_DROP, 0.5 * (skull[:, 2].min() + skull[:, 2].max())])
-    b_grid = radius_grid(body_samples, centre, keep_max=True)
+    # The other bodies' heads, carried into Body 1's space by their own fit (body_fit.py, the same numbers as their hair_fit), so the hair clears
+    # every head, not only Body 1's (Body 2's neck stands further back: without this her nape showed through the hair, PC pictures 20 Nov 2026).
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from body_fit import fit  # noqa: E402
+
+    every_head = [body_samples]
+
+    for other in args.also:
+        o_scale, o_offset = fit(args.male, other)
+        o_points, _, o_tris, _ = male_head(other, rng)
+        o_points = (o_points - o_offset) / o_scale
+        o_samples = surface_samples(o_points, o_tris, 300000, rng)
+        near = np.linalg.norm((o_samples - centre)[:, [0, 2]], axis=1) < HEAD_REACH_M      # the head and neck, not arms held out (Body 2 rests in a T)
+        every_head.append(o_samples[near])
+
+    all_grid = radius_grid(np.concatenate(every_head), centre, keep_max=True)
 
     def direction(points):
         offsets = points - centre
@@ -228,22 +258,27 @@ def main():
     # 2b. The cap: Meshy's hair has bald gaps (between curls, thin patches) where the mannequin's pale scalp showed through. Under the hair and in
     # those gaps Body 1's own scalp is copied CAP_CLEARANCE_M out and drawn in the hair's colour. "Under the hair" is the directions from the head's
     # centre that hold hair, closed by HOLE_BINS (grown, then shrunk back), so gaps fill but the hairline does not move.
-    has_hair = np.isfinite(radius_grid(surface_samples(boxed, hair, 200000, rng), centre, keep_max=True, fill=False))
-    inside = shrink(grow(has_hair, HOLE_BINS), HOLE_BINS)
+    hair_points, hair_point_uv = surface_samples(boxed, hair, 200000, rng, uv)
+    shown = shade(hair_point_uv) < OPAQUE_BELOW + 0.5 * (CLEAR_FROM - OPAQUE_BELOW)      # only hair the alpha cut keeps
+    has_hair = np.isfinite(radius_grid(hair_points[shown], centre, keep_max=True, fill=False))
+    inside = shrink(shrink(grow(has_hair, HOLE_BINS), HOLE_BINS), 1)      # one bin in from the hairline, so the cap never shows past the hair
     _, _, v_row, v_col = direction(body_points)
     cap = body_tris[inside[v_row, v_col][body_tris].all(1)]
     cap_used = np.unique(cap)
     cap_dirs, cap_r, _, _ = direction(body_points[cap_used])
-    hair_shade = shade(uv[hair].mean(1))
-    hair_uv = uv[hair[np.argsort(hair_shade)[len(hair_shade) // 2]]].mean(0).astype(np.float32)     # the middle of the hair triangle of median shade
+    dark = hair[tri_shades[~pale].max(1) < OPAQUE_BELOW]
+    dark_shade = shade(uv[dark].mean(1))
+    hair_uv = uv[dark[np.argsort(dark_shade)[len(dark_shade) // 2]]].mean(0).astype(np.float32)     # the middle of the fully opaque hair triangle of median shade
 
     # 2c. Push out: the box-fitted hair keeps its shape; any part that would sit inside Body 1's head is pushed out along the line from the head's
     # centre to CLEARANCE_M above the skin, so it stays over the cap.
     used = np.unique(hair)
     dirs, r, row, col = direction(boxed[used])
-    hair_pos = centre + dirs * np.maximum(r, b_grid[row, col] + CLEARANCE_M)[:, None]
+    hair_pos = centre + dirs * np.maximum(r, all_grid[row, col] + CLEARANCE_M)[:, None]
     normals = nor / scale       # normals follow the box fit (the inverse transpose of a scale); the push is left out
     normals /= np.linalg.norm(normals, axis=1, keepdims=True)
+    _, _, cap_row, cap_col = direction(body_points[cap_used])
+    cap_r = np.maximum(cap_r, all_grid[cap_row, cap_col])        # over every head, but no further out than it must be
     out_pos = np.concatenate([hair_pos, centre + cap_dirs * (cap_r + CAP_CLEARANCE_M)[:, None]]).astype(np.float32)
     out_nor = np.concatenate([normals[used], body_normals[cap_used]]).astype(np.float32)
     out_uv = np.concatenate([uv[used], np.repeat(hair_uv[None], len(cap_used), 0)]).astype(np.float32)
@@ -253,8 +288,11 @@ def main():
     cap_remap[cap_used] = len(used) + np.arange(len(cap_used))
     out_tris = np.concatenate([remap[hair], cap_remap[cap]])
 
-    # 3. The nape: Meshy paints the mannequin's neck dark too. Nothing below NAPE_Y stays, so the hair never hangs into the neck when the head turns.
-    out_tris = out_tris[(out_pos[out_tris][:, :, 1] >= NAPE_Y).all(1)]
+    # 3. The nape: Meshy paints the mannequin's neck dark too. Nothing hangs below NAPE_Y, so the hair never reaches into the neck when the head turns:
+    # a triangle reaching more than NAPE_REACH_M below it goes, and the corners of the ones just across it are lifted to it, so the hair ends in an even
+    # line rather than a ragged one (a longer reach would fold far-hanging strands up into flaps).
+    out_tris = out_tris[(out_pos[out_tris][:, :, 1] >= NAPE_Y - NAPE_REACH_M).all(1)]
+    out_pos[:, 1] = np.maximum(out_pos[:, 1], NAPE_Y)
     keep = np.unique(out_tris)
     squeeze = np.full(len(out_pos), -1, np.int64)
     squeeze[keep] = np.arange(len(keep))
@@ -264,6 +302,13 @@ def main():
     pngs = {}
     for key, img in images.items():
         small = img.convert("RGB").resize((TEXTURE_SIZE, TEXTURE_SIZE), Image.LANCZOS)
+
+        if key == "texture_0":
+            lum = np.asarray(small).astype(float).mean(-1)
+            alpha = np.clip((CLEAR_FROM - lum) / (CLEAR_FROM - OPAQUE_BELOW), 0.0, 1.0)
+            small = small.convert("RGBA")
+            small.putalpha(Image.fromarray((alpha * 255.0 + 0.5).astype(np.uint8)))
+
         buf = io.BytesIO()
         small.save(buf, "PNG", optimize=True)
         pngs[key] = buf.getvalue()
@@ -304,7 +349,7 @@ def write_glb(path, pos, nor, uv, tris, pngs):
         "nodes": [{"name": "Hair", "children": [1]}, {"name": "HairMesh", "mesh": 0}],       # an empty root over the mesh, so the mesh is never the scene root
 
         "meshes": [{"name": "Hair", "primitives": [{"attributes": {"POSITION": 0, "NORMAL": 1, "TEXCOORD_0": 2}, "indices": 3, "material": 0}]}],
-        "materials": [{"name": "Hair", "doubleSided": False, "normalTexture": {"index": 0},
+        "materials": [{"name": "Hair", "doubleSided": False, "alphaMode": "MASK", "alphaCutoff": 0.5, "normalTexture": {"index": 0},
                        "pbrMetallicRoughness": {"baseColorTexture": {"index": 1}, "metallicRoughnessTexture": {"index": 2}}}],
         "textures": [{"source": i, "sampler": 0} for i in range(3)],
         "samplers": [{"magFilter": 9729, "minFilter": 9987}],
@@ -426,13 +471,14 @@ def res_path(path):
 
 
 def uid_for(res):
-    """A Godot resource uid (ResourceUID::id_to_text: base 35, a-z then 0-8), taken from the path so a rerun writes the same one."""
+    """A Godot resource uid (ResourceUID::id_to_text: base 34, a-y then 0-8; a "z" is rewritten by Godot, seen on the PC lane 20 Nov 2026),
+    taken from the path so a rerun writes the same one."""
     n = int.from_bytes(hashlib.sha256(res.encode()).digest()[:8], "little") & 0x7FFFFFFFFFFFFFFF
     text = ""
     while True:
-        c = n % 35
-        text = (chr(ord("a") + c) if c < 26 else chr(ord("0") + c - 26)) + text
-        n //= 35
+        c = n % 34
+        text = (chr(ord("a") + c) if c < 25 else chr(ord("0") + c - 25)) + text
+        n //= 34
         if n == 0:
             return "uid://" + text
 
@@ -444,7 +490,7 @@ def write_imports(glb_path, pngs):
         with open(png, "wb") as f:
             f.write(data)
         res = res_path(png)
-        pixels = Image.open(io.BytesIO(data)).convert("RGB").tobytes()
+        pixels = Image.open(io.BytesIO(data)).tobytes()      # the decoded pixels as Godot reads them (RGB, or RGBA for the colour with its alpha)
         with open(png + ".import", "w", newline="\n") as f:
             f.write(TEXTURE_IMPORT.format(uid=uid_for(res), name=os.path.basename(png), path_md5=hashlib.md5(res.encode()).hexdigest(),
                                           pixels_md5=hashlib.md5(pixels).hexdigest(), res=res, normal_map=1 if key == "normal" else 0))
