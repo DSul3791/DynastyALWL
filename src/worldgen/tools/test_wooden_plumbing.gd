@@ -195,7 +195,8 @@ func _init() -> void:
 	check(not items._water_kind.has(old_pump), "a placed retired pump joins no water network")
 	items._clear_retired_pieces()
 	var lumber_n: int = items.table.number_of("lumber")
-	check(not items._items.has(old_pump) and items._ground_count(lumber_n, Vector3(110.0, 10.0, 110.0), 2.0) == 6 and items._ground_count(items.table.number_of("nails"), Vector3(110.0, 10.0, 110.0), 2.0) == 20, "a loaded pump is gone, its materials on the ground where it stood (lumber %d)" % items._ground_count(lumber_n, Vector3(110.0, 10.0, 110.0), 2.0))
+	var nails_n: int = items._refund_number(items.table.number_of("nails"))   # nails are a group: what comes back is its first member (ItemTable.spend_order)
+	check(not items._items.has(old_pump) and items._ground_count(lumber_n, Vector3(110.0, 10.0, 110.0), 2.0) == 6 and items._ground_count(nails_n, Vector3(110.0, 10.0, 110.0), 2.0) == 20, "a loaded pump is gone, its materials on the ground where it stood (lumber %d, nails %d)" % [items._ground_count(lumber_n, Vector3(110.0, 10.0, 110.0), 2.0), items._ground_count(nails_n, Vector3(110.0, 10.0, 110.0), 2.0)])
 	var piles_last: bool = true
 
 	for gid in items._items:

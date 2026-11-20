@@ -251,7 +251,7 @@ var _structures: Dictionary = {}    # structures.json: kind -> definition
 var _struct_gap_m: float = 2.5
 var _blueprints: Dictionary = {}    # blueprints.json: number -> row (with its "id"), placed from the hammer instead of a kit item
 var _blueprint_of_kit: Dictionary = {}   # kit item id -> blueprint number (a piece takes down into its materials, not a kit)
-var _retired_blueprint_of_kit: Dictionary = {}   # kit item id -> a retired take_down_refund blueprint row: such a piece in a saved world is cleared at load (PLUMBING_DESIGN s10)
+var _retired_blueprint_of_kit: Dictionary = {}   # kit item id -> a retired clear_at_load blueprint row: such a piece in a saved world is cleared at load (PLUMBING_DESIGN s10)
 var _structures_cfg: Dictionary = {}   # the whole structures.json, for the shared placement rules
 var _fire_gap_m: float = FIRE_MIN_GAP_M
 var _fires_per_chunk: int = FIRES_PER_CHUNK
@@ -7329,7 +7329,7 @@ const CLEARED_LIFETIME_S := 1.0e9   # over _expire_items' never-expires mark: wh
 
 # A retired piece still standing in a loaded world (the pumps; Dave 20 Nov 2026: "the wooden hand pumps should be gone too") is taken away and leaves
 # its materials on the ground where it stood: a built one its whole blueprint cost, a site what had been put into it. Only blueprints marked
-# take_down_refund are in _retired_blueprint_of_kit, so no other retired piece is touched.
+# clear_at_load are in _retired_blueprint_of_kit, so no other retired piece is touched.
 func _clear_retired_pieces() -> void:
 	for id in _items.keys():
 		var it: Dictionary = _items[id]
@@ -10765,7 +10765,7 @@ func _load_blueprints() -> void:
 		var row: Dictionary = parsed["blueprints"][id].duplicate()
 
 		if bool(row.get("retired", false)):   # kept in the file for its number only
-			if bool(row.get("take_down_refund", false)):   # a retired piece still standing in a saved world is cleared at load and leaves its materials (the pumps, s10)
+			if bool(row.get("clear_at_load", false)):   # a retired piece still standing in a saved world is cleared at load and leaves its materials (the pumps, s10)
 				_retired_blueprint_of_kit[str(_structures.get(str(row["structure"]), {}).get("kit", ""))] = row
 
 			continue
