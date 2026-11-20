@@ -45,6 +45,7 @@ const LookTable := preload("res://src/client/look_table.gd")
 const ItemCam := preload("res://src/debug/item_cam.gd")
 const AvatarDriver := preload("res://src/client/character/avatar_driver.gd")
 const StanceScript := preload("res://src/client/stance.gd")
+const NpcCamp := preload("res://src/shared/npc_camp.gd")
 
 var client = null
 var shots: Array = []
@@ -77,6 +78,8 @@ var _busy: bool = false
 var costs: bool = false
 var admin_text: bool = false
 var no_grass: bool = false
+var no_plants: bool = false        # subject shots (--shot-pieces, --shot-showroom, held items): the plant layer (trees, reeds, bushes) is hidden, so a reed bed cannot hide the subject (Lane A 20 Nov 2026 at the new spawn)
+var spawn_facing: bool = false     # --shot-spawn-facing: the shot faces the way a character set down there faces (npc_camp.gd face_fire_yaw), not its yaw
 var bow_pose: String = ""        # --shot-bow=STATE[:DRAW]
 var item_mode: bool = false        # --shot-item (see the header)
 var item_at: Vector2 = Vector2(INF, INF)
@@ -221,6 +224,9 @@ func setup(owner_client, args: Array) -> void:
 			side_deg = -90.0
 		elif argument == "--shot-ready=held":
 			ready_held = true
+			no_plants = true
+		elif argument == "--shot-spawn-facing":
+			spawn_facing = true
 		elif argument.begins_with("--shot-angles="):
 			for part in argument.trim_prefix("--shot-angles=").split(";", false):
 				var bits: PackedStringArray = part.split(":", false)
@@ -252,11 +258,13 @@ func setup(owner_client, args: Array) -> void:
 		elif argument.begins_with("--shot-showroom="):
 			showroom_rows = argument.trim_prefix("--shot-showroom=").split(",", false)
 			no_grass = true
+			no_plants = true
 		elif argument.begins_with("--shot-pieces-yaw="):
 			pieces_yaw_deg = float(argument.trim_prefix("--shot-pieces-yaw="))
 		elif argument.begins_with("--shot-pieces="):
 			piece_names = argument.trim_prefix("--shot-pieces=").split(",", false)
 			no_grass = true
+			no_plants = true
 
 			if views.is_empty():
 				views = [{"name": "wide", "dist": 9.0, "pitch": -8.0, "above": 1.5}, {"name": "close", "dist": 4.0, "pitch": -10.0, "above": 1.2}]
@@ -372,6 +380,10 @@ func _process(delta: float) -> void:
 
 		if no_grass and client.grass != null and client.grass.enabled:
 			client.grass.set_radius(0.0)      # the grass view draws nothing (a quality change may turn it back on)
+
+		if no_plants and client.flora != null and client.flora.visible and not _busy:
+			client.flora.visible = false
+			print("shot runner: plants hidden for %s (the subject is the picture)" % shots[_index]["name"])
 
 		# No arms in the pictures, except a first-person bow shot: the bow is held in both hands of the arms (held_item.gd _pose_bow), and with the arms off it went
 		# to the hidden body's hand and the pictures showed no bow (Dino, 10 Nov 2026).
@@ -507,17 +519,17 @@ func _process(delta: float) -> void:
 	if not _started:
 		var start_ground: float = _surface_y if not is_nan(_surface_y) else ground_here
 
-		# Asked again until it answers; after SURFACE_WAIT_MS the client's own reading is used, which only exists near where the body stands (the spawn).
+		# Asked again until it answers. The client's own reading is not used meanwhile: at a join it can come from coarse blocks (Lane A 20 Nov 2026,
+		# --give at the spawn: 63.0 against the real 4.0, a 146 s landing). Only after SURFACE_GIVE_UP_MS without an answer, and then loudly.
 		if shot_pos.y >= 0.0 and is_nan(_surface_y):
 			if now - _surface_asked_msec >= SURFACE_ASK_MS:
 				_surface_asked_msec = now
 				client.net.request_surface.rpc_id(1, shot_pos.x, shot_pos.z)
 
-			if now - _ground_wait_msec < SURFACE_WAIT_MS or (is_nan(start_ground) and now - _ground_wait_msec < 300000):
+			if now - _ground_wait_msec < SURFACE_GIVE_UP_MS:
 				return
 
-			if is_nan(start_ground):
-				print("shot runner: FAILED %s: no ground height at %.0f,%.0f in 300 s (the server never answered); its height is taken as absolute" % [shots[_index]["name"], shot_pos.x, shot_pos.z])
+			print("shot runner: FAILED %s: the server gave no ground height at %.0f,%.0f in %.0f s; using %s" % [shots[_index]["name"], shot_pos.x, shot_pos.z, float(SURFACE_GIVE_UP_MS) * 0.001, "the client's own reading" if not is_nan(start_ground) else "the shot's height as absolute"])
 
 		_started = true
 		_placed_ground = start_ground if shot_pos.y >= 0.0 else NAN
@@ -527,7 +539,7 @@ func _process(delta: float) -> void:
 		client.body.velocity = Vector3.ZERO
 		_placed_msec = now
 		_moved_msec = now
-		print("shot runner: %s starts at y %.1f (ground %s, %s); waiting for the ground under it" % [shots[_index]["name"], start_y, "?" if is_nan(_placed_ground) else "%.1f" % _placed_ground, "the server's" if not is_nan(_surface_y) else "the client's own reading"])
+		print("shot runner: %s starts at y %.1f (ground %s, %s); waiting for the ground under it" % [shots[_index]["name"], start_y, "?" if is_nan(_placed_ground) else "%.1f" % _placed_ground, "the server's" if not is_nan(_surface_y) else "no server answer"])
 		return
 
 	# Held at the start until the ground under it has collision (up to 120 s), then the body goes to the shot's height.
@@ -2009,7 +2021,7 @@ func _ground(x: float, z: float, from_y: float = 1500.0) -> float:
 const GUARD_ABOVE_M := 1.0
 const START_ABOVE_M := 1.0      # a shot starts this high over the ground at its spot while the ground there loads (Dave 20 Nov 2026)
 const SURFACE_ASK_MS := 2000    # the ground height is asked of the server again this often until it answers
-const SURFACE_WAIT_MS := 20000  # after this long without an answer the client's own ground reading is used (it reads only near the body)
+const SURFACE_GIVE_UP_MS := 300000  # no server answer this long: FAILED line, then the client's own reading (or the height as absolute)
 const RECHECK_M := 1.0   # a shot's ground reading that moves more than this after the settle places the shot again
 const RECHECK_SURFACE_M := 2.5   # the same against the server's exact height: the voxel reading is a whole cell at floor(x,z), so on a slope it is off by over 1 m without any change
 const RECHECK_MAX := 4   # at most this many re-placements per shot: the reading can step down more than once as finer blocks load (383, 343, 335)
@@ -2059,7 +2071,7 @@ func _measure_frames(delta: float) -> void:
 		var p99: float = sorted[int(float(sorted.size()) * 0.99)]
 		var verdict: String = "FAIL" if (p95 >= 33.0 or over_100 > 0) else ("WARN p99 over 50 ms" if p99 > 50.0 else "OK")
 		var spot: Vector3 = client.body.global_position
-		var spot_ground: float = _ground(spot.x, spot.z)
+		var spot_ground: float = _placed_ground if not is_nan(_placed_ground) else _ground(spot.x, spot.z)   # the ground the shot stands on (the server's height)
 		print("shot runner: frametime build %s quality %s spot %.0f,%.0f y %.1f (%s m above the ground) frames %d avg %.1f p95 %.1f p99 %.1f max %.1f ms over50 %d over100 %d [%s] machine: %s, %s, window %dx%d, vsync off" % [
 			build_label, client.QUALITY_NAMES[client.quality], spot.x, spot.z, spot.y, "?" if is_nan(spot_ground) else "%.1f" % (spot.y - spot_ground), sorted.size(), total / float(sorted.size()), p95, p99, sorted[sorted.size() - 1], over_50, over_100, verdict,
 			RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name(), get_window().size.x, get_window().size.y])
@@ -2111,7 +2123,7 @@ func _next(now: int) -> void:
 	if not client.net.surface_received.is_connected(_on_surface):
 		client.net.surface_received.connect(_on_surface)
 
-	client.body.rotation = Vector3(0.0, deg_to_rad(float(shot["yaw"])), 0.0)
+	client.body.rotation = Vector3(0.0, NpcCamp.face_fire_yaw(Vector2(shot["pos"].x, shot["pos"].z)) if spawn_facing else deg_to_rad(float(shot["yaw"])), 0.0)
 	client.pitch = deg_to_rad(float(shot["pitch"]))
 	client.camera.rotation.x = client.pitch
 	client.third_person = false
