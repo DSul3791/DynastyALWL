@@ -48,6 +48,7 @@ func _init() -> void:
 	_tying_strike()
 	_surrender_kept()
 	_claimed_horses()
+	_toll_switch()
 	print("bandit sites: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 
@@ -952,3 +953,112 @@ func _claimed_horses() -> void:
 	clock[0] += float(b.cfg["clearing"]["dissolve_game_days"]) * BanditsScript.GAME_DAY_S + float(b.cfg["check_s"])
 	b.tick()
 	check(not b.sites.has(cell) and animals.animals.values().filter(func(h): return h["sp"] == "horse" and h.has("companion_id")).size() == 2, "the camp dissolves; the claimed horses stay")
+
+
+# Stage 4, the toll: with robbery.enabled false (the default) nothing is asked or taken; on, a player by the camp's road is met, asked once a
+# game day, and pays or is charged.
+func _toll_switch() -> void:
+	clock[0] = 1200000.0
+	var b: BanditsScript = _sites()
+	check(not b.robbery_on(), "the stage 4 switch ships off")
+	var animals = AnimalsScript.new()
+	animals.ground_height = func(_x, _z): return 50.0
+	animals.blocked = func(_x, _z): return false
+	animals.player_positions = func(): return []
+	animals.setup()
+	animals.traits = false
+	b.animals = animals
+	animals.bandit_camps = b
+	var cell: Vector2i = _cell_with_site(b, 240)
+	var spot: Vector2 = b.candidate(cell)
+	b.sites[cell] = {"x": spot.x, "z": spot.y, "woke": clock[0], "points": 40.0, "levels": [1, 2], "horses": 0, "road": [spot.x + 40.0, spot.y]}
+	b.lay_camp = func(_camp_key, _camp_fire, _camp_lean_tos, _camp_old, _camp_tracks, _camp_tracks_at): return [700]
+	b.laid_still = func(_ids): return true
+	var asked: Array = []
+	var said: Array = []
+	var taken: Array = []
+	var purse: Array = [100]
+	b.ask = func(peer, talk_id, _name, text, choices): asked.append([peer, talk_id, text, choices])
+	b.tell = func(_peer, text): said.append(str(text))
+	b.key_of = func(peer): return "walker" if int(peer) == 3 else ""
+	b.take_coins = func(payer, want):
+		if purse[0] < want:
+			return false
+		purse[0] -= want
+		taken.append([payer, want])
+		return true
+	var road: Vector3 = Vector3(spot.x + 40.0, 50.0, spot.y)
+	var players: Array = [{"peer": 3, "pos": road}]
+	animals.big_game.player_info = func(): return players
+	var walk: Callable = func(seconds: int) -> void:
+		for n in seconds:
+			b.camp_tick(1.0, [road])
+
+			for a in animals.animals.values():
+				for q in 4:
+					b.step(a, 0.25)
+
+	walk.call(60)
+	var bandits: Array = animals.animals.values().filter(func(m): return m["sp"] == "bandit")
+	check(bandits.size() == 2, "the camp's bandits are there")
+	check(asked.is_empty() and taken.is_empty() and bandits.all(func(m): return not m.has("toll_peer")), "switched off: no toll is asked and nothing is taken")
+	check(b.toll_answer(3, "bandit:%d" % int(bandits[0]["id"]), 0) and taken.is_empty(), "switched off: a pay answer takes nothing")
+	check(not b.toll_answer(3, "edda", 0), "an NPC's talk is not a toll")
+
+	# Switched on: met on the road, asked once, pays.
+	b.cfg["robbery"]["enabled"] = true
+	walk.call(30)
+	var copper: int = int(b.cfg["toll"]["copper_per_level"]) * 2
+	check(asked.size() == 1 and int(asked[0][0]) == 3 and str(asked[0][1]).begins_with("bandit:") and (asked[0][3] as Array).size() == 2, "on: the player is asked once (%s)" % str(asked))
+	var met: Array = bandits.filter(func(m): return m.has("toll_peer"))
+	check(not met.is_empty() and met.all(func(m): return Vector2(m["pos"].x - road.x, m["pos"].z - road.z).length() <= float(b.cfg["toll"]["stop_m"]) + 1.0), "the bandits walk up and stop short of him")
+	check(b.toll_answer(3, str(asked[0][1]), 0) and taken == [[3, copper]] and said.any(func(t): return str(t).contains("You pay")), "paying takes the toll by the top level (%s)" % str(taken))
+	check(bandits.all(func(m): return not m.has("toll_peer")) and (asked.back()[2] as String) == "", "paid: they go back and the window closes")
+	walk.call(30)
+	check(asked.size() == 2, "not asked again that game day")
+
+	# The next day: refused, they charge; with no coins, the same.
+	clock[0] += BanditsScript.GAME_DAY_S
+	walk.call(30)
+	check(asked.size() == 3, "asked again the next game day")
+	b.toll_answer(3, str(asked[2][1]), 1)
+	check(taken.size() == 1 and bandits.any(func(m): return animals.big_game.handles(m)), "refused: nothing is taken and they come at him")
+
+	for m in bandits:
+		m["state"] = AnimalsScript.GRAZE
+		m["cool"] = 0.0
+
+	clock[0] += BanditsScript.GAME_DAY_S
+	purse[0] = 1
+	walk.call(30)
+	b.toll_answer(3, str(asked.back()[1]), 0)
+	check(taken.size() == 1 and said.any(func(t): return str(t).contains("cannot pay")), "without the coins it is a refusal")
+
+	# No answer within answer_s.
+	for m in bandits:
+		m["state"] = AnimalsScript.GRAZE
+		m["cool"] = 0.0
+
+	clock[0] += BanditsScript.GAME_DAY_S
+	said.clear()
+	walk.call(30 + int(b.cfg["toll"]["answer_s"]) + 2)
+	check(said.any(func(t): return str(t).contains("do not pay")) and taken.size() == 1, "no answer in answer_s: refused (%s)" % str(said))
+
+	# A bandit on the toll killed while the window is open: it closes, and a late answer takes nothing.
+	for m in bandits:
+		m["state"] = AnimalsScript.GRAZE
+		m["cool"] = 0.0
+
+	clock[0] += BanditsScript.GAME_DAY_S
+	walk.call(30)
+	var open_at: int = asked.size()
+	check(str(asked.back()[2]) != "", "asked once more")
+	var late: String = str(asked.back()[1])
+	check(b.toll_answer(3, late, -1) and taken.size() == 1 and asked.size() == open_at, "a talk start is no answer")
+
+	for m in bandits.filter(func(w): return w.has("toll_peer")):
+		animals.animals.erase(int(m["id"]))
+
+	walk.call(2)
+	check(asked.size() == open_at + 1 and str(asked.back()[2]) == "", "the toll's bandits gone: his window closes")
+	check(b.toll_answer(3, late, 0) and taken.size() == 1, "a late answer takes nothing")
