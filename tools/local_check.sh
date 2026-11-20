@@ -14,7 +14,10 @@ pass() { echo "PASS  $1"; }
 fail() { echo "FAIL  $1"; FAIL=1; }
 
 if [ "$1" = "--update-baseline" ]; then
-	bash tools/check_warnings.sh | grep -v "^scripts checked" > "$BASE"
+	NEWBASE=$(mktemp)
+	bash tools/check_warnings.sh > "$NEWBASE"; WRC=$?
+	if [ $WRC -ne 0 ]; then echo "baseline NOT written: the warning check failed (exit $WRC)"; rm -f "$NEWBASE"; exit 1; fi
+	grep -v "^scripts checked" "$NEWBASE" > "$BASE"; rm -f "$NEWBASE"
 	echo "baseline written: $(awk '{s+=$1} END{print s}' "$BASE") warnings in $(wc -l < "$BASE") files"
 	exit 0
 fi
@@ -53,10 +56,16 @@ if [ "$CLASS" = "BAKE" ] || [ -n "$ISLAND_GATE" ]; then
 	if [ $ICRC -eq 0 ]; then pass "island checks: $(echo "$IC" | tail -1)"; elif [ -n "$ISLAND_GATE" ]; then fail "island checks: $(echo "$IC" | tail -1)"; else echo "NOTE  island checks: $(echo "$IC" | tail -1) (not blocking; ISLAND_GATE=1 blocks)"; fi
 fi
 
+# The warning check must finish and every script must parse; a run that stopped early prints nothing and is not a pass.
 CUR=$(mktemp)
-bash tools/check_warnings.sh | grep -v "^scripts checked" > "$CUR"
-NEW=$(awk 'NR==FNR{b[$2]=$1; next} {if ($1 > b[$2]+0) printf "  %s: %d now, %d in baseline\n", $2, $1, b[$2]+0}' "$BASE" "$CUR")
-if [ -z "$NEW" ]; then pass "no new warnings against baseline ($(awk '{s+=$1} END{print s+0}' "$CUR") total)"; else fail "new warnings:"; echo "$NEW"; fi
+bash tools/check_warnings.sh > "$CUR"; WRC=$?
+if [ $WRC -ne 0 ]; then
+	fail "warning check did not pass (exit $WRC: 2 did not finish, 3 a script does not parse; reasons above)"
+else
+	grep -v "^scripts checked" "$CUR" > "$CUR.n"; mv "$CUR.n" "$CUR"
+	NEW=$(awk 'NR==FNR{b[$2]=$1; next} {if ($1 > b[$2]+0) printf "  %s: %d now, %d in baseline\n", $2, $1, b[$2]+0}' "$BASE" "$CUR")
+	if [ -z "$NEW" ]; then pass "no new warnings against baseline ($(awk '{s+=$1} END{print s+0}' "$CUR") total)"; else fail "new warnings:"; echo "$NEW"; fi
+fi
 rm -f "$CUR"
 
 for t in "$@"; do
