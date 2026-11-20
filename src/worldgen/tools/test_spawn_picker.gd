@@ -8,6 +8,7 @@ extends SceneTree
 
 const PickerScript := preload("res://src/worldgen/tile/spawn_picker.gd")
 const SpawnPointScript := preload("res://src/shared/spawn_point.gd")
+const NpcCampScript := preload("res://src/shared/npc_camp.gd")
 
 const N := 160
 const S := 8.0
@@ -87,6 +88,13 @@ func _init() -> void:
 	SpawnPointScript.set_current(SpawnPointScript.from_starter({"spawn_picked": [53400.0, 31.0, 68000.0]}))
 	check(SpawnPointScript.current() == Vector2(53400.0, 68000.0), "a picked spawn is the spawn (the town does not move with it, 9 Nov 2026)")
 	SpawnPointScript.set_current(SpawnPointScript.OVERRIDE)
+
+	# Facing at the spawn (Dave 20 Nov 2026: face Edda and Hob's campfire on arrival): the body's forward (-z turned by yaw) points at the fire.
+	var fire: Vector2 = NpcCampScript.fire_spot()
+	var yaw: float = NpcCampScript.face_fire_yaw(SpawnPointScript.OVERRIDE)
+	var forward: Vector2 = Vector2(-sin(yaw), -cos(yaw))
+	check(fire.is_finite() and forward.dot((fire - SpawnPointScript.OVERRIDE).normalized()) > 0.999, "a character at the spawn faces the camp fire (yaw %.2f)" % yaw)
+	check(NpcCampScript.face_fire_yaw(fire + Vector2(500.0, 0.0)) == 0.0, "far from the camp the facing stays north (yaw 0)")
 
 	print("test_spawn_picker: ", "PASS" if failures == 0 else "%d FAILURES" % failures)
 	quit(1 if failures > 0 else 0)
