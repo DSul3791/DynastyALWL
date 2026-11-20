@@ -66,10 +66,10 @@ A camp's bandits are fixed by the seed: their count and levels by distance band 
 
 ### Known limits (stage 2)
 
-- No toll, robbery, bounty, horse claiming, dissolving or dormancy yet (stages 3 and 4).
+- No toll, robbery or horse claiming yet (stage 4 and 5b); bounty, dissolving and dormancy came with stage 5.
 - A camp horse cannot be ridden or led away yet; it is tied and never bolts.
 - The camp has no stash chest until stage 4.
-- A site whose bandits and horses are all gone stays awake and its empty camp is laid at every start until stage 3 dissolves it.
+- A site whose bandits are all gone is cleared and dissolves (stage 5).
 - A camp is made only when none of its members is in the world: one bandit gone off on its own (past 300 m of every player) is made again with the others.
 - Bandits have no footstep sounds yet.
 
@@ -99,3 +99,36 @@ At each step the road near the site must still hold half the points that woke it
 - Signs use the nearest surveyed road patch; a site whose road was taken up shows the pit without prints.
 - The lookout watches only while a player is within 200 m of the camp or his post (like the camp's people); he walks back at walking pace and stays by the pit.
 - Rain, snow and night do not change the prints.
+
+## Stage 5: clearing a camp (`server_bandits.gd` clearing, `data/npcs/bandits.json` clearing; no protocol change)
+
+Built before stage 4 (the coordinator, 20 Nov 2026, provisional on Dave's behalf): it takes nothing from a player. Dave, 19 Nov 2026: "once all the badits are apprehended or killed ... in a couple days the camp just dissolves back into the ground. once a camp is used it will become dormant".
+
+- **Giving up.** A camp bandit hit below 15% of his health gives up: he sits where he is, throws down his weapon and stops fighting back or running. He can still be killed (then he drops only his clothes).
+- **Tying.** Strike him with Rope or Twine in hand (left click, the same blow as any strike): he is tied and one Rope or Twine is used. A notice says so; there is no new key or prompt.
+- **Leading.** A tied bandit follows the player who tied him, keeping about 2 m behind (walking, trotting when left behind). Led more than 30 m ahead of him, or after a game hour from giving up or being tied, he slips free and walks back to his camp, still badly hurt (one more blow and he gives up again). A bandit who gave up and is not tied gets up after a game hour too.
+- **Bounty.** Led within 5 m of a guard (Edda, the only role guard today) he is handed over: he leaves his camp for good and the player gets 10 copper for each of his levels.
+- **Cleared.** When a camp's last bandit is killed or handed over, the camp is cleared. 2 game days later it dissolves: the fire, Lean-tos and horses go. The site then stays dormant for 10 game days, however busy the road, before it may wake again like any candidate.
+- Claiming the horses is stage 5b; until then they stay tethered until the camp dissolves.
+- A site whose only bandit out was the lookout, killed or handed over with no others left, is cleared and dissolves without ever becoming a camp.
+- A bandit who threw down his weapon is remembered with the camp (saved), so one made again after a despawn has no second weapon to drop.
+
+### For Dave (provisional, adjust after play)
+
+| # | Choice | Value |
+|---|---|---|
+| BANDIT-21 | Giving up | below 15% health: sits, drops his weapon, no fighting back |
+| BANDIT-22 | Tying | a strike with Rope or Twine in hand; one is used |
+| BANDIT-23 | Leading | follows 2 m behind; slips free past 30 m |
+| BANDIT-24 | Escaping | a game hour after giving up or being tied |
+| BANDIT-25 | Bounty | from Edda (role guard) within 5 m: 10 copper a level |
+| BANDIT-26 | Dissolving | 2 game days after the last bandit is gone |
+| BANDIT-27 | Quiet time | dormant 10 game days after dissolving |
+
+### Known limits (stage 5)
+
+- No "Press E" prompt for tying: the strike with Rope or Twine in hand does it, told by a notice when he gives up.
+- The guard must be placed (Edda out at her camp); a dormant guard far from every player takes no one.
+- No patrols yet: the quiet time is a fixed 10 game days, not "while patrols pass" (patrols come with the starter town).
+- The surrender pose is the bandit's sitting pose; a tied bandit shows no rope.
+- A bandit who escapes walks back at walking pace and sits again; his health does not come back.

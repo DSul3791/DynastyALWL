@@ -857,6 +857,17 @@ func _ready() -> void:
 	bandits.clear_camp = func(camp_key, camp_ids): items.clear_bandit_camp(camp_key, camp_ids)   # a site gone back to sleep takes its pit and tracks away
 	bandits.laid_still = func(camp_ids): return items.bandit_camp_there(camp_ids)
 	bandits.drop_gear = func(gear_key, gear_at): items.drop_world_made(items.table.number_of(gear_key), 1, gear_at)
+	bandits.tell = func(bandit_peer, bandit_text): items._say(bandit_peer, bandit_text)
+	bandits.pay_bounty = func(bandit_peer, bandit_copper): items.add_coins(bandit_peer, bandit_copper, "trade")   # the guard pays for a tied bandit (stage 5)
+	bandits.guards_at = func():
+		var guard_spots: Array = []
+
+		for npc_id in npcs.npcs:
+			if str(npcs.npcs[npc_id]["role"]) == "guard" and bool(npcs.npcs[npc_id]["placed"]):
+				guard_spots.append(npcs.npcs[npc_id]["pos"])
+
+		return guard_spots
+	items.bind_animal = func(bandit_peer, bind_from, bind_dir, bind_reach): return bandits.bind(animals.target_along(bind_from, bind_dir, bind_reach), bandit_peer)   # Rope or Twine on a bandit who gave up ties him
 	items.road_trip = func(mover, mover_at, trip_kind): bandits.note(mover, mover_at, trip_kind)
 
 	for site_line in bandits.report():
