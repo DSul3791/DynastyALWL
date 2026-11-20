@@ -58,6 +58,7 @@ var _dirty: Dictionary = {}      # stretches that gained points since the last c
 var _retry: Dictionary = {}      # candidate cells whose ground was not loaded at the last check: tried again at the next
 var _checked_at: float = -INF
 var dormant: Dictionary = {}     # Vector2i cell -> game seconds until a cleared site may wake again (stage 5, saved)
+var stash_left: Dictionary = {}  # Vector2i cell -> stolen pieces that could not be laid (an id gone from the catalog): kept and saved, never destroyed
 var _laid: Dictionary = {}       # site cell -> world ids of its camp pieces this run
 var _laid_stage: Dictionary = {}  # site cell -> the stage its laid pieces show (signs or the camp)
 var _members: Dictionary = {}    # site cell -> {animal id: {"level", "pos", "horse", "armed"}} made this run
@@ -301,6 +302,8 @@ func _advance(now: float) -> bool:
 			continue   # a stash to lay by the fire waits until that ground can be read without a stall; the row stays until then
 
 		if site.has("cleared_at"):
+			_drop_stash(cell)   # a stash left when the camp was cleared far from its fire drops once that ground is ready
+
 			if now - float(site["cleared_at"]) >= float(_clearing().get("dissolve_game_days", 2.0)) * GAME_DAY_S:
 				_take_away(cell)   # the camp dissolves: its pieces and horses go
 				_drop_stash(cell)   # never lost: anything still held drops at the fire before the row goes
@@ -404,7 +407,12 @@ func save() -> void:
 		for cell in dormant:
 			quiet["%d,%d" % [cell.x, cell.y]] = dormant[cell]
 
-		file.store_string(JSON.stringify({"version": 1, "stretches": rows, "sites": awake, "dormant": quiet}))
+		var left_over: Dictionary = {}
+
+		for cell in stash_left:
+			left_over["%d,%d" % [cell.x, cell.y]] = stash_left[cell]
+
+		file.store_string(JSON.stringify({"version": 1, "stretches": rows, "sites": awake, "dormant": quiet, "stash_left": left_over}))
 		file.close()
 
 
@@ -412,6 +420,7 @@ func load_file() -> void:
 	stretches.clear()
 	sites.clear()
 	dormant.clear()
+	stash_left.clear()
 
 	if _path == "" or not FileAccess.file_exists(_path):
 		return
@@ -467,6 +476,12 @@ func load_file() -> void:
 
 		if key.x != 2147483647:
 			dormant[key] = float(parsed["dormant"][name])
+
+	for name in parsed.get("stash_left", {}):
+		var key: Vector2i = _key_of(str(name))
+
+		if key.x != 2147483647 and typeof(parsed["stash_left"][name]) == TYPE_ARRAY:
+			stash_left[key] = parsed["stash_left"][name]   # stolen pieces that could not be laid: kept
 
 
 func _key_of(name: String) -> Vector2i:
@@ -881,10 +896,10 @@ func _drop_stash(cell: Vector2i) -> void:
 
 	var laid: int = (sites[cell]["stash"] as Array).size() - kept.size()
 
-	if kept.is_empty():
-		sites[cell].erase("stash")
-	else:
-		sites[cell]["stash"] = kept
+	sites[cell].erase("stash")
+
+	if not kept.is_empty():
+		stash_left[cell] = (stash_left.get(cell, []) as Array) + kept   # kept apart, so the camp's row can still end
 
 	if laid > 0 and flush_world.is_valid():
 		flush_world.call()   # the laid items are written before the stash that held them
@@ -1170,7 +1185,8 @@ func _member_gone(cell: Vector2i, id: int, pos: Vector3, drop: bool) -> void:
 
 		if (site["levels"] as Array).is_empty() and not site.has("cleared_at"):
 			site["cleared_at"] = _now()   # every bandit killed or taken: the camp dissolves dissolve_game_days from now
-			_drop_stash(cell)   # stage 4b: what they stole lies by the fire
+			if _ready_at(layout(cell)["fire"]):
+				_drop_stash(cell)   # stage 4b: what they stole lies by the fire (else within the hour, _advance)
 			print("BANDIT site %d,%d cleared" % [cell.x, cell.y])
 
 	save()
