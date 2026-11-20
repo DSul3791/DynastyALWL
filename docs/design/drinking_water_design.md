@@ -7,7 +7,7 @@
 
 ## 1. What happens today (read from the code on main, 8 Nov, not tested)
 
-- **The drink:** E at the water's edge (`ACT_DRINK`) gives one mouthful, `thirst.drink_ml` 300 ml. Drinks are paced 0.9 s apart, and the water must be within `reach_m` 3 m of the feet, and no more than 2.5 m below them (`DrinkRules.REACH_DROP_M`, PROVISIONAL: the coordinator's ruling of 20 Nov 2026 on Dave's report of a drink prompt about 10 m above a river). The drop counts for the water's level, a record brook's bed and a ground spring head, on the server and in the client's prompt. A container in hand fills by `fill_ml` 500 instead.
+- **The drink:** E at the water's edge (`ACT_DRINK`) gives one mouthful, `thirst.drink_ml` 300 ml. Drinks are paced 0.9 s apart, and the water must be within `reach_m` 3 m of the feet, and no more than 2.5 m below them (`DrinkRules.REACH_DROP_M`, PROVISIONAL: the coordinator's ruling of 20 Nov 2026 on Dave's report of a drink prompt about 10 m above a river). The drop counts for the water's level, a record brook's bed and a ground spring head, on the server and in the client's prompt, and for a whetstone's water too (`_water_at_hand`); planting banks, flint, fishing and ice read any water as before. PR #1351, BugsList_Current.md entry 78. A container in hand fills by `fill_ml` 500 instead.
 - **What counts as water:** the terrain server's `water_near` says yes at:
   - a cave stream;
   - a cell the live water sim has wet;
