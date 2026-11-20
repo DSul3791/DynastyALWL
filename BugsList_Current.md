@@ -617,6 +617,18 @@ Not done (parts 3 to 5): no warnings, signs or lookout warning before the camp; 
 
 Assumed on Dave's behalf (provisional, docs/design/BANDIT_CAMPS.md): BANDIT-8 to BANDIT-16: bands by distance from the town (under 3 km 1-2 at level 1, a quarter with one at level 2; 3-5 km 2-3 at levels 1-3; 5-8 km 2-4 at 3-6; beyond 3-5 at 5-10); Lean-tos 5 m from the fire; two horses 9 m behind; bandits appear within 200 m; gear by level (club and hide clothes, then bronze spear and hood, then iron sword and fur cloak); a bandit runs under 30% health, up to 40 m; health 40 scaled by level; 1.5 km from goblin camps; 150 m from cave, den and mine mouths.
 
+## 76. Tunnels under the island hit sea water
+
+**Status: Implemented - awaiting player verification.** Dave's report, 20 Nov 2026 (thread "Remove water under the island"). PR #1346, merged to dev at 57adfeea (head 4083a437) after independent review (2 rounds; the first found that a cave pool below sea level showed a dry view while the player swam, fixed; final PASS on the exact head). Lane A (Dave's PC) on the exact head: 152 of 152 selected tests passed (149 fast, 3 timing), 0 script errors, test_fog_ground among them; warnings 381 equal to dev, zero new; look names clean; no shader errors in any log. Client only: no protocol, terrain version, world or save change. Not yet played. The sea surface no longer drawn under the island is not yet seen on screen.
+
+Dave, 20 Nov 2026: "I was digging a tunnel and at one point I got so deep I hit water and that is going to be problematic. I image that at the ocean but not under the island. is there away to remove the water under an island?"
+
+**Required outcome:** below sea level is sea only where the generated ground round the point is sea bed (the lowest baked ground within 64 m is at or under 0.5 m). Under the island a tunnel dug below sea level is dry: no underwater view, no swimming, no sea surface drawn across it, no sea-water prompt, ordinary footsteps and no swim sounds. Lakes, rivers and spring cave pools stay water wherever they are, and the open sea, beaches and the sea's edge work as before. Digging never makes a sea. The server already read the generated ground for breath, so the two sides now agree.
+
+**Acceptance:** dig a tunnel down from inland ground until it is well below sea level: the view stays clear, you walk with normal footsteps, no oxygen symbol, and no sheet of sea across the tunnel where it passes sea level. Swim in the sea and walk a beach: as before. Dive in a spring cave pool: under water as before.
+
+Not done: within about 64 m of the shore a tunnel below sea level still counts as sea (the old rule), and an inlet narrower than about 32 m far from other sea could read as land. There is no real flooding: a tunnel dug out to the sea under the waterline does not fill. Near sea level the client now asks for the coarse ground window even when no fog is drawn (one ask per 1 km moved); server load not measured.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
