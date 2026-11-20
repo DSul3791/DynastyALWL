@@ -61,6 +61,7 @@ static func plan(data, ore_list: Array, cave_mouths: Array, start: Vector2) -> A
 				bodies.append(ore)
 
 	var near_start: bool = inner.grow(EDGE_MARGIN_M).has_point(start)
+	var kept: Array = cave_mouths + camp_points()   # a goblin camp is kept clear like a cave mouth, whether or not its cave is in this list
 	bodies.sort_custom(func(p, q): return _order(p, start, near_start) < _order(q, start, near_start))
 	var mines: Array = []
 	var targets: Array = []
@@ -74,7 +75,7 @@ static func plan(data, ore_list: Array, cave_mouths: Array, start: Vector2) -> A
 		if targets.any(func(o): return (o as Vector2).distance_to(t) < MIN_SPACING_M):
 			continue
 
-		var portal: Dictionary = find_portal(data, ore, inner, cave_mouths, start)
+		var portal: Dictionary = find_portal(data, ore, inner, kept, start)
 
 		if portal.is_empty():
 			continue
@@ -91,6 +92,25 @@ static func start_point() -> Vector2:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/camp.json")) if FileAccess.file_exists("res://data/npcs/camp.json") else null
 	var tree: Dictionary = parsed.get("tree", {}) if parsed is Dictionary else {}
 	return Vector2(float(tree["x"]), float(tree["z"])) if tree.has("x") and tree.has("z") else Vector2(INF, INF)
+
+
+# The goblin tribes' camps (data/creatures/goblin_tribes.json): each camp's cave mouth and fire, kept CAVE_CLEAR_M from a mine's mouth.
+static func camp_points() -> Array:
+	var path: String = "res://data/creatures/goblin_tribes.json"
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+	var points: Array = []
+
+	if parsed is Dictionary:
+		for tribe in (parsed.get("tribes", {}) as Dictionary).values():
+			var camp: Dictionary = tribe.get("camp", {}) if tribe is Dictionary else {}
+
+			for spot in ["mouth", "fire"]:
+				var at: Variant = camp.get(spot)
+
+				if at is Dictionary and at.has("x") and at.has("z"):
+					points.append(Vector2(float(at["x"]), float(at["z"])))
+
+	return points
 
 
 # A body's place in the search: its distance from the start on a starter tile, else its id hash.
@@ -166,18 +186,21 @@ static func find_portal(data, ore: Dictionary, inner: Rect2, cave_mouths: Array,
 	return {}
 
 
-# Rock over the roof (COVER_M) every 4 m from the end of the open cut to the far end, and no water over it.
+# Rock over the roof (COVER_M) every 4 m from the end of the open cut, and at the far end, and no water over it.
 static func _covered(data, mouth: Vector2, inward: Vector2, length: float, floor_y: float, cut: float) -> bool:
 	var d: float = cut
 
-	while d <= length:
+	while true:   # every 4 m, and the far end itself
 		var p: Vector2 = mouth + inward * d
 		var h: float = data.height_at(p.x, p.y)
 
 		if is_nan(h) or h - (floor_y + RISE * d + ADIT_H) < COVER_M or int(data.water_class[data.nearest(p.x, p.y)]) != 0:
 			return false
 
-		d += 4.0
+		if d >= length:
+			return true
+
+		d = minf(d + 4.0, length)
 
 	return true
 
@@ -303,11 +326,11 @@ static func build(data, ore: Dictionary, portal: Dictionary, index: int) -> Dict
 		nodes.append([centre.x, floor_y + 0.5 * tall, centre.y, 2.0 * radius, tall])
 		chambers.append({"node": nodes.size() - 1, "radius_m": radius, "height_m": tall, "features": ["stope"]})
 
-		for k in (2 if tall >= PROP_ROOM_M else 0):   # a 3 m prop needs the room's height
+		for _k in (2 if tall >= PROP_ROOM_M else 0):   # a 3 m prop needs the room's height
 			var post: Vector2 = centre + Vector2.from_angle(rng.randf_range(0.0, TAU)) * radius * 0.55
 			timbers.append([post.x, floor_y + dish(0.55, tall), post.y, TIMBER_POST, rng.randf_range(0.0, TAU)])
 
-		for k in rng.randi_range(2, 4):
+		for _k in rng.randi_range(2, 4):
 			var out: float = rng.randf_range(0.1, 0.5)
 			var piece: Vector2 = centre + Vector2.from_angle(rng.randf_range(0.0, TAU)) * radius * out
 			extra.append([piece.x, floor_y + dish(out, tall), piece.y, 2.0, float(ore_item)])

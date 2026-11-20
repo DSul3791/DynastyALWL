@@ -2,7 +2,7 @@ extends Node3D
 
 # Cave dressing (Dave 4 Nov 2026: bone piles at cave entrances and far ends, animal and human; stalagmites and stalactites in big caves). The bake puts
 # them in each spring cave (Sonny); the server sends a tile's lists with its cave dens and the client draws them here, one MultiMesh per look per tile.
-#   bones:      per entry x, y, z (the pile's floor point), kind (0 animal, 1 human, 2 goblin litter, 3 goblin fire, 4 den droppings, 5 den bedding), yaw (radians)
+#   bones:      per entry x, y, z (the pile's floor point), kind (0 animal, 1 human, 2 goblin litter, 3 goblin fire, 4 den droppings, 5 den bedding, 6 mine timber set, 7 mine prop, 8 fallen set), yaw (radians)
 # Mine timbers (Dave 19 Nov 2026, "abandoned mines that already have bracing", protocol 142): a timber set across an adit (yaw is the way the adit
 # runs), a prop in a stope, a fallen set. Looks only (CD-6); old grey-brown wood with dark rot at the feet.
 # Den signs (Dave 19 Nov 2026, protocol 141): a cave a bear, wolf or fox dens in shows droppings a few metres inside the mouth and a trampled bed at the den.
