@@ -22,6 +22,7 @@ var host                        # ServerAnimals
 var player_info: Callable       # () -> Array of {peer, pos, ...} (the same list the wolves read)
 var hurt_player: Callable       # (peer, amount, lethal, cause) -> "hurt" / "maimed" / "dead"
 var notice: Callable            # (peer, text)
+var struck: Callable            # (animal, peer, hurt result) after a charge lands (bandit camps stage 4b; it changes nothing about the blow)
 
 
 func handles(a: Dictionary) -> bool:
@@ -184,7 +185,10 @@ func step(a: Dictionary, dt: float) -> void:
 
 				if Vector2(p.x - a["pos"].x, p.z - a["pos"].z).length() <= float(def.get("hit_m", 2.2)) and absf(p.y - a["pos"].y) < 2.5 and hurt_player.is_valid():
 					a["hit"] = true
-					hurt_player.call(int(info["peer"]), float(def.get("damage", 25.0)) * host.level_x(a, "damage"), false, str(a["sp"]))   # a higher-level animal hits harder
+					var landed: String = str(hurt_player.call(int(info["peer"]), float(def.get("damage", 25.0)) * host.level_x(a, "damage"), false, str(a["sp"])))   # a higher-level animal hits harder
+
+					if struck.is_valid():
+						struck.call(a, int(info["peer"]), landed)
 					break
 
 		if bool(a["hit"]) or float(a["ran"]) >= float(def.get("charge_m", 24.0)) or not r["moved"]:
