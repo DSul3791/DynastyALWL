@@ -1853,7 +1853,7 @@ func _welcome_body(info: Dictionary) -> void:
 	])
 	Probe.stop("welcome: welcome line printed", tq_print)
 	var tq_join: int = Probe.start()
-	_join_log("JOIN: at the welcome: player y %s, viewer y %s" % ["?" if body == null else "%.1f" % body.global_position.y, _viewer_y_text()])
+	_join_log("JOIN: at the welcome: player y %s, viewer y %s; %s" % ["?" if body == null else "%.1f" % body.global_position.y, _viewer_y_text(), Probe.pipelines_text()])
 	Probe.stop("welcome: join line logged", tq_join)
 	_after_welcome = []   # the next frames are timed too (_note_after_welcome)
 
@@ -2484,7 +2484,7 @@ func _water_ahead() -> bool:
 func _arrive_on_ground() -> void:
 	if connected_msec > 0 and not _ground_logged:
 		_ground_logged = true
-		_join_log("JOIN: ground ready after %d retries, test drops %d, player %s, viewer y %s" % [_ground_watchdog.tries, stream.drops_made if stream != null else 0, str(body.global_position), _viewer_y_text()])
+		_join_log("JOIN: ground ready after %d retries, test drops %d, player %s, viewer y %s; %s" % [_ground_watchdog.tries, stream.drops_made if stream != null else 0, str(body.global_position), _viewer_y_text(), Probe.pipelines_text()])
 
 	var ground: float = _ground_below(body.global_position)
 	var water: Dictionary = _water_here()
