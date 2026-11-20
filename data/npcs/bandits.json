@@ -1,0 +1,18 @@
+{
+	"note": "Bandit camp sites, stage 1 (Dave 19 Nov 2026, project chat: sites fixed by the seed, woken by road traffic, a few km apart, none near the start; plan /mnt/project-files/bandit-camps/PLAN.md, docs/design/BANDIT_CAMPS.md). Stage 1 only finds sites and wakes them; nothing is put in the world yet. All numbers are first tries (BANDIT-1..9), tune after play.",
+	"cell_m": 1000.0,
+	"share": 0.5,
+	"stretch_m": 100.0,
+	"weights": {"road": 1.0, "path": 0.5, "cart": 3.0},
+	"half_life_days": 3.0,
+	"near_road_m": 500.0,
+	"wake_points": 30.0,
+	"road_off_m": [100.0, 300.0],
+	"spacing_m": 3000.0,
+	"start_clear_m": 1500.0,
+	"building_clear_m": 150.0,
+	"slope_max_deg": 15.0,
+	"slope_step_m": 5.0,
+	"check_s": 3600.0,
+	"drop_points": 0.05
+}
