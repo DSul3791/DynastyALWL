@@ -812,9 +812,9 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	trade.send_shop = func(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired, stock, supply_milli, purse): net.shop.rpc_id(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired, stock, supply_milli, purse)
 	dialogue.trade = trade
-	@warning_ignore("confusable_local_declaration")
 	trade.refuse = tribes.refuse   # a goblin tribe member may refuse: angry, hidden, a weapon on show, rushed
 	trade.dealt = tribes.note_deal   # a deal with a member earns standing with its tribe
+	@warning_ignore("confusable_local_declaration")
 	net.trade_requested.connect(func(peer, npc_id, kind, a, count):
 		var said: String = trade.deal(peer, npc_id, kind, a, count)
 

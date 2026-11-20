@@ -290,9 +290,9 @@ func harm(peer: int, npc_id: String) -> void:
 	var was_angry: bool = angry(tribe, key)
 	var row: Dictionary = _row(tribe, key)
 	row["angry_until"] = _now() + float(attitude(tribe).get("anger_game_days", 3.0)) * DAY_S
-	save()
 
-	if not was_angry:
+	if not was_angry:   # written once when the anger starts; a refreshed end (more blows) is kept in memory (no file write per arrow)
+		save()
 		var name: String = str(npcs.npcs.get(npc_id, {}).get("name", npc_id)) if npcs != null else npc_id
 		items._say(peer, "%s shrieks and dodges. %s will not deal with you for a while." % [name, _upper_first(str(tribes()[tribe].get("name", "the goblins")))])
 

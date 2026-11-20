@@ -95,16 +95,16 @@ const YOUNG_SCALE := 0.5     # how big the young are drawn
 const FEATHERED := [6, 9, 11, 13]     # flock birds, songbirds, grouse, gulls: they take the feather coat while they build
 
 
+# A goblin tribe member's body (npc_view.gd, data/creatures/goblin_tribes.json, Dave 19 Nov 2026): the goblin model's look `variant` (0 Skritch,
+# 1 Rukz), with its own steady height roll from `look_seed`, drawn and clipped exactly as a wild goblin; null when the model file is not there.
+func make_goblin(variant: int, look_seed: int) -> Node3D:
+	var looks: int = maxi((_model_rows().get("goblin", {}).get("variants", []) as Array).size(), 1)
+	return _make_model(GOBLIN_SPECIES, posmod(variant, looks) + looks * posmod(look_seed, 4096))
+
+
 # young: a young animal. When its species' model row has a young_model, that model is drawn at its own size (the calf beside
 # the cow, Dave 7 Nov 2026); the node then carries the "young_model" meta and must not be shrunk. Otherwise the adult is drawn
 # and the caller shrinks it to YOUNG_SCALE as before.
-# A goblin tribe member's body (npc_view.gd, data/creatures/goblin_tribes.json, Dave 19 Nov 2026): the goblin model's look `variant` (0 Skritch,
-# 1 Rukz), with its own steady height roll from `seed`, drawn and clipped exactly as a wild goblin; null when the model file is not there.
-func make_goblin(variant: int, seed: int) -> Node3D:
-	var looks: int = maxi((_model_rows().get("goblin", {}).get("variants", []) as Array).size(), 1)
-	return _make_model(GOBLIN_SPECIES, posmod(variant, looks) + looks * posmod(seed, 4096))
-
-
 func _make_for_species(number: int, id: int, young: bool = false) -> Node3D:
 	_coat = "feather" if FEATHERED.has(number) else "fur"
 	var node: Node3D = _make_species_body(number, id, young)

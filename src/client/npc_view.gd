@@ -30,7 +30,7 @@ const QUARTER_M := 70.0
 var roster: Dictionary = {}      # id -> {name, role, outfit}
 var _outfits: Dictionary = {}    # outfit name -> item ids worn on top of the ragdoll (data/npcs/outfits.json)
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state}
-var goblin_maker: Callable       # (variant, seed) -> Node3D or null: a goblin tribe member's body (AnimalView.make_goblin), set by the client
+var goblin_maker: Callable       # (variant, look_seed) -> Node3D or null: a goblin tribe member's body (AnimalView.make_goblin), set by the client
 
 
 func _exit_tree() -> void:
