@@ -1,25 +1,26 @@
 # Goblins
 
-Goblins made by Dave in Meshy on 7 Nov 2026: **Skritch Ragtooth** and **Rukz the Scavenger**.
+Goblins made by Dave in Meshy on 7 Nov 2026: **Skritch Ragtooth** and **Rukz the Scavenger**. A third, **Vrixa Thornfang**, came on 20 Nov 2026; for now she is a named goblin at the Ragtooth camp only (Dave, 20 Nov 2026: "for now she will be a named goblin at the Ragtooth camp. they are friendly goblins but nervous."), and wild goblins keep the first two looks.
 
 ## Models
 
-| | Skritch Ragtooth | Rukz the Scavenger |
-|---|---|---|
-| File | `Goblin_Skritch_Ragtooth.glb` | `Goblin_Rukz_The_Scavenger.glb` |
-| Size | 38.3 MB | 43.0 MB |
-| Real height | about 1.06 m | about 1.10 m |
-| Triangles | 41k | 41k |
-| Skeleton | 24-bone Mixamo-style | 24-bone Mixamo-style |
-| Clips | 19 | 20 |
-| Textures | 21 MB colour + 10 MB metallic-roughness | 23 MB colour + 10 MB metallic-roughness |
-| Target path | `assets/creatures/goblin_skritch/` | `assets/creatures/goblin_rukz/` |
+| | Skritch Ragtooth | Rukz the Scavenger | Vrixa Thornfang |
+|---|---|---|---|
+| File | `Goblin_Skritch_Ragtooth.glb` | `Goblin_Rukz_The_Scavenger.glb` | `Goblin_Vrixa_Thornfang.glb` |
+| Size | 38.3 MB | 43.0 MB | 56.0 MB |
+| Real height | about 1.06 m | about 1.10 m | not measured |
+| Triangles | 41k | 41k | 68k |
+| Skeleton | 24-bone Mixamo-style | 24-bone Mixamo-style | the same 24 bones |
+| Clips | 19 | 20 | 19 |
+| Textures | 21 MB colour + 10 MB metallic-roughness | 23 MB colour + 10 MB metallic-roughness | 18 MB colour + 9 MB metallic-roughness + 17 MB normal map (all 4096x4096) |
+| Target path | `assets/creatures/goblin_skritch/` | `assets/creatures/goblin_rukz/` | `assets/creatures/goblin_vrixa/` |
 
 - Both .glb files are committed at full size (under GitHub's 100 MB file limit; about 81 MB added to the repo in total, so every clone carries it). Dave made them himself, so committing is allowed.
 - **Textures are NOT shrunk** (Dave, 7 Nov 2026). The full-size originals are the ultra tier and stay as they are. Textures get smaller only as part of LOD, on lower graphics settings (import mipmaps / mipmap bias / Godot's own downgrading), never by replacing the source files.
 - Skritch clips: Alert, BeHit_FlyUp, Block1, Cautious_Crouch_Walk_Forward, Collect_Object, Combat_Stance, Dead, Idle_02, Knock_Down, Right_Hand_Sword_Slash, Roll_Dodge, Running, Sit_Cross_Legged_on_Floor, Sleep_Normally, Sneaky_Walk, Stand_Dodge, Stand_and_Drink, Thrust_Slash, Walking.
 - Rukz clips: Running, Walking, Alert, Attack, Cautious_Crouch_Walk_Forward, Collect_Object, Dead, Hit_Reaction, Idle_02, Idle_5, Roll_Dodge, Sit_Cross_Legged_on_Floor, Sleep_Normally, Sneaky_Walk, Stand_Dodge, Stand_and_Drink, Sword_Judgment, Sword_Parry, Thrust_Slash, falling_down.
-- The two models share a skeleton but not clip names, so code must map clips by role (idle, walk, run, attack, hit, dead) per model, not by name.
+- Vrixa clips: Running, Walking, Agree_Gesture, Carry_Heavy_Object_Walk, Collect_Object, Dead, Formal_Bow, Heavy_Hammer_Swing, Hit_Reaction, Idle_3, Male_Bend_Over_Pick_Up, Push_Forward_and_Stop, Roll_Dodge, Sit_to_Stand_Transition_F, Squat_Stance, Swim_Forward, Swim_Idle, Talk_Passionately, falling_down. Her .glb is 56 MB, over GitHub's 50 MB warning size but under its 100 MB limit.
+- The models share a skeleton but not clip names, so code must map clips by role (idle, walk, run, attack, hit, dead) per model, not by name.
 - Not yet tried in Godot (check facing direction, clip loops, texture look).
 - Every character and creature mesh follows the [mesh checklist](design/CHARACTER_MESHES.md) (Dave, 20 Nov 2026): shadows On, not Double-Sided; textures VRAM Compressed.
 
@@ -48,7 +49,7 @@ Goblins made by Dave in Meshy on 7 Nov 2026: **Skritch Ragtooth** and **Rukz the
 - Fits the temperament system (skittish, with a threat range that makes them fight) and the animal levels rule (level set by distance from town, not placement). See `docs/knowledge/animal-behaviour.md`.
 
 ## Built so far (first step, 7 Nov 2026; not yet run in Godot)
-- **Species 16, "goblin"** (15 is the donkey) in `data/animals/animals.json`, drawn from `data/animals/models.json` (row goblin, two `variants`: Skritch and Rukz, picked by animal id, clips mapped by role per model).
+- **Species 16, "goblin"** (15 is the donkey) in `data/animals/animals.json`, drawn from `data/animals/models.json` (row goblin, `variants`: Skritch and Rukz, picked by animal id, clips mapped by role per model; a third variant, Vrixa, is marked `"wild": false` and drawn only for a tribe member through `animal_view.gd make_goblin`).
 - **Height:** the client sizes each goblin by its mesh height to `height_m` 1.1 plus a bell-shaped roll (mean of three even rolls) of up to `height_variation_m` 0.5 either way, seeded from the animal id. One rule, no per-goblin scales.
 - **Spawning (`server_animals.gd` `_top_up_lair`):** a group of 2 to 5 at a spring cave mouth near a player, in the tile the player stands in; one group per mouth; never at a mouth with a bear within 120 m. Made at any hour.
 - **Day and night:** by day they bed down at the mouth (the existing rest rule from their `active` row), at night they range up to 70 m round it. They keep out of fire, torch and lamp light (the existing keep-off rule), stop and watch a player they notice from 60 m (alert), run at 30 m, and fight if cornered or threatened at the den (the bear's defend code, small numbers).

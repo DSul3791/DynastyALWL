@@ -108,7 +108,7 @@
 				"walk": "Walking",
 				"run": "Running"
 			},
-			"note": "Goblins (Dave 7 Nov 2026, docs/GOBLINS.md). Sized by mesh height: height_m plus a bell-shaped roll of up to height_variation_m, per animal id. variants are laid over this row, one per goblin by id: Skritch Ragtooth and Rukz the Scavenger, whose clip names differ. The .glb files are committed (made by Dave in Meshy, not the bought pack). Facing (yaw_deg 180, as the bear) is to be checked on the PC.",
+			"note": "Goblins (Dave 7 Nov 2026, docs/GOBLINS.md). Sized by mesh height: height_m plus a bell-shaped roll of up to height_variation_m, per animal id. variants are laid over this row, one per goblin by id: Skritch Ragtooth and Rukz the Scavenger, whose clip names differ; a variant with wild: false (Vrixa Thornfang) is drawn only for a tribe member (animal_view.gd make_goblin). The .glb files are committed (made by Dave in Meshy, not the bought pack). Facing (yaw_deg 180, as the bear) is to be checked on the PC.",
 			"variants": [
 				{
 					"scene": "res://assets/creatures/goblin_skritch/Goblin_Skritch_Ragtooth.glb",
@@ -134,6 +134,22 @@
 						"10": "Alert",
 						"11": "Running",
 						"12": "Idle_02",
+						"walk": "Walking",
+						"run": "Running"
+					}
+				},
+				{
+					"note": "Vrixa Thornfang (Dave 20 Nov 2026): a named Ragtooth camp goblin only (goblin_tribes.json body 2), so wild: false keeps her off wild goblins. Same 24-bone mixamorig skeleton as the other two; her file has no Idle_02, Alert or Combat_Stance, so her idle is Idle_3. PROVISIONAL clip picks, not yet seen on screen.",
+					"wild": false,
+					"scene": "res://assets/creatures/goblin_vrixa/Goblin_Vrixa_Thornfang.glb",
+					"clips": {
+						"0": "Idle_3",
+						"1": "Walking",
+						"2": "Running",
+						"3": "Idle_3",
+						"10": "Squat_Stance",
+						"11": "Running",
+						"12": "Idle_3",
 						"walk": "Walking",
 						"run": "Running"
 					}
