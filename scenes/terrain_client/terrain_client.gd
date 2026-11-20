@@ -82,6 +82,7 @@ const DialogueViewScript := preload("res://src/client/dialogue_view.gd")
 const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
+const DrinkRules := preload("res://src/shared/drink_rules.gd")
 const ClimateScript := preload("res://src/shared/climate.gd")
 const DayCycleScript := preload("res://src/client/day_cycle.gd")
 const IceScript := preload("res://src/shared/ice.gd")
@@ -2411,7 +2412,7 @@ func _update_spring_heads(delta: float) -> void:
 
 
 # "Spring" within DRINK_REACH_M of a ground spring head, "Brook" when one of the five points the server reads (the feet and DRINK_REACH_M each
-# way, nearest sample: DrinkRules.tile_rows) is a record brook cell, else "".
+# way, nearest sample: DrinkRules.tile_rows) is a record brook cell that runs now (DrinkRules.brook_shows), else "".
 func _record_drink_here() -> String:
 	if body == null or _drink_chunks.is_empty():
 		return ""
@@ -2428,10 +2429,14 @@ func _record_drink_here() -> String:
 				if Vector2(springs[n] - here.x, springs[n + 1] - here.z).length() <= DRINK_REACH_M:
 					return "Spring"
 
+	var season: String = WeatherScript.season_at(game_clock.seconds, here.z, float(world.get("tile_size_m", 15360)), int(world.get("equator_row", 0)))   # the server's season_at
+	var raining: bool = float(weather.get("rain", 0.0)) > 0.05   # the server's "raining" (_drink_source_ok)
+
 	for offset in [Vector2.ZERO, Vector2(DRINK_REACH_M, 0.0), Vector2(-DRINK_REACH_M, 0.0), Vector2(0.0, DRINK_REACH_M), Vector2(0.0, -DRINK_REACH_M)]:
 		var key: Vector2i = Vector2i(roundi((here.x + offset.x) / _drink_cell_m), roundi((here.z + offset.y) / _drink_cell_m))
 
-		if _drink_cells.has(key):
+		# Only a bed the rule says runs now: a dry gully offered a drink the server always refused (Dave 19 Nov 2026: "press e to drink" on a dry hillside).
+		if _drink_cells.has(key) and DrinkRules.brook_shows(int(_drink_cells[key]) - 1, season, raining):
 			return "Brook"
 
 	return ""
