@@ -692,6 +692,12 @@ func _ready() -> void:
 	animals.lair_mouths = func(x, z):   # the mouths of the inland caves with a goblin den (TileTerrainData.goblin_den_nodes) in the tile the player stands in (already loaded, so no wait); goblin groups come out of them
 		var lair_tile = generator.get_tile(generator.tile_of(x, z))
 		return PackedVector2Array() if lair_tile.placeholder else lair_tile.goblin_den_mouths
+	animals.cave_den_mouths = func(x, z, sp):   # the mouths of the caves a species dens in (TileTerrainData.animal_den_species) in the tile there, if it is loaded (a wolf cell may reach a tile nobody stands on: no wait); bears, wolves and foxes are made at them
+		if not generator.tile_cached(x, z):
+			return PackedVector2Array()
+
+		var den_tile = generator.get_tile(generator.tile_of(x, z))
+		return PackedVector2Array() if den_tile.placeholder else den_tile.animal_den_mouths.get(sp, PackedVector2Array())
 	animals.lair_path = func(x, z):   # the cave floor path from a goblin den's mouth (x, z) to the den (tile goblin_den_paths); empty when none is known
 		var path_tile = generator.get_tile(generator.tile_of(x, z))
 
@@ -850,6 +856,16 @@ func _ready() -> void:
 	bandits.in_water = npcs.blocked
 	bandits.building_near = func(site_at, reach_m): return items.building_near(site_at, reach_m)
 	bandits.tribe_camps = tribes.camp_spots   # no bandit site on a goblin tribe's ground
+	bandits.cave_mouths_at = func(mouth_x, mouth_z):   # the cave, den and mine mouths of a loaded tile (mines load as caves); null while unloaded
+		if not generator.tile_cached(mouth_x, mouth_z):
+			return null
+
+		var mouths: Array = []
+
+		for row in generator.get_tile(generator.tile_of(mouth_x, mouth_z)).cave_mouths:
+			mouths.append(Vector2((row[0] as Vector3).x, (row[0] as Vector3).z))
+
+		return mouths
 	bandits.road_distance = func(site_at, reach_m): return items.road_distance(site_at, reach_m)
 	bandits.setup(store_dir)
 	bandits.animals = animals

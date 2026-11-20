@@ -225,7 +225,7 @@ func step_checks() -> void:
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items.report_position(2, Vector3(0.0, 10.0, 40.0))
 	check(not items.station_near(1, "workbench") and items.serving_station(1, "workbench", 1, CraftStock.CRAFT_REACH_M) == bench, "8 m: not at the bench, but it is within the crafting reach")
-	items.inventory_of(1).add(stone, 3)
+	items.inventory_of(1).add(stone, 6)
 	stepped.clear()
 	items._last_queue_act.clear()
 	items.action(1, Net.ACT_CRAFT_QUEUE, cobble, 0, 1, CraftHand.at(items, 1, cobble))
@@ -239,7 +239,7 @@ func step_checks() -> void:
 	items._craft_queues[items._peer_key[1]]["entries"].clear()
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items.report_position(2, front)
-	items.inventory_of(1).add(stone, 3)
+	items.inventory_of(1).add(stone, 6)
 	stepped.clear()
 	items._last_queue_act.clear()
 	items.action(1, Net.ACT_CRAFT_QUEUE, cobble, 0, 1, CraftHand.at(items, 1, cobble))
@@ -255,7 +255,7 @@ func step_checks() -> void:
 	check(stepped.is_empty() and items._peer_pos[1].distance_to(Vector3(0.0, 10.0, 0.0)) < 0.01, "without the stone nobody is moved")
 
 	# Beyond 12 m: no move, the old answer.
-	items.inventory_of(1).add(stone, 3)
+	items.inventory_of(1).add(stone, 6)
 	items.report_position(1, Vector3(-10.0, 10.0, 0.0))
 	said.clear()
 	stepped.clear()

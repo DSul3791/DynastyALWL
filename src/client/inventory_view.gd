@@ -3384,8 +3384,10 @@ func _refresh_pile(id: int) -> void:
 	if box == null or int(entry.get("state", 0)) != 0:
 		return
 
+	var unit_kg: float = CarryRules.weight_of(item_id, _carry_cfg) if not _carry_cfg.is_empty() else 0.0
+
 	if PileLookScript.is_pile(table.entry(item_id), int(entry["count"])):
-		box.mesh = PileLookScript.mesh_for(item_id, table.entry(item_id), int(entry["count"]), id)
+		box.mesh = PileLookScript.mesh_for(item_id, table.entry(item_id), int(entry["count"]), id, unit_kg)
 		box.scale = Vector3.ONE
 		box.rotation = Vector3.ZERO
 		entry["pile"] = true
@@ -3584,6 +3586,8 @@ func _show_boulder(id: int, row: Array) -> void:
 
 	if _boulders.has(id):
 		_boulders[id]["left"] = left
+		_boulders[id]["node"].position = row[3]   # a boulder dug under comes down (server settle_loose_near)
+		_boulders[id]["pos"] = row[3]
 		_size_boulder(_boulders[id])
 		return
 

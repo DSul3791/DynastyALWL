@@ -222,6 +222,41 @@ func _init() -> void:
 	check(items.world_item_count() == 1, "a pile outlives the loose 20 minutes")
 	items.tick(ItemsScript.PILE_LIFETIME_S + 1.0)
 	check(items.world_item_count() == 0, "and goes after its 2 hours")
+	# Cone piles (Dave 19 Nov 2026, boulders PLAN.md 5b): a big pile takes in what lands beside it, however wide it grew, but stops at a building.
+	items.drop_in_world(stone, 20000, pile_at)
+	var cone_r: float = items._cone_radius_of(stone, 20000)
+	check(cone_r > 1.5 and cone_r < 2.0, "20,000 stones of 0.5 kg make a solid cone about 1.75 m in radius (%f)" % cone_r)
+	items._sync_world_items()   # the grid files the pile in its 100 m cell (x 2000 up); its foot at x 1998 lies in the next cell down
+	items.drop_in_world(stone, 10, pile_at - Vector3(cone_r + 0.5, 0.0, 0.0))
+	check(items.world_item_count() == 1 and int(items._items[items._items.keys()[0]]["count"]) == 20010, "a drop at the foot of a big pile joins it, across a grid cell's edge (the wide-pile list)")
+	var pile_stop_id: int = items._next_id   # a real id: the server finds what may stop a pile through its sync grid, which files ids below _next_id
+	items._next_id += 1
+	items._items[pile_stop_id] = {"number": items.table.number_of("storage_chest") if items.table.number_of("storage_chest") > 0 else 1, "count": 1, "pos": pile_at + Vector3(-(cone_r + 0.3), 0.0, 0.0), "left": 1.0e9, "struct": {"kind": "chest", "yaw": 0.0}}
+	if items._structures.has("chest"):
+		items.drop_in_world(stone, 200000, pile_at + Vector3(0.5, 0.0, 0.0))
+		var beside: Array = items._items.keys().filter(func(k): return int(items._items[k]["count"]) == 200000)
+		check(items.world_item_count() == 3 and int(items._items[items._items.keys()[0]]["count"]) == 20010 and beside.size() == 1 and items._items[beside[0]]["pos"].x > pile_at.x + cone_r, "a pile that would grow into a building stops; the rest starts a new pile beside it, away from the building")
+		items.drop_in_world(stone, 10, pile_at + Vector3(0.5, 0.0, 0.0))
+		check(items.world_item_count() == 3 and int(items._items[beside[0]]["count"]) == 200010, "and the next drop there joins the pile beside, not a third cone on the first")
+	items._items.erase(pile_stop_id)
+	items.clear_dropped(Vector3.ZERO, 1.0e7)
+	# A floor under a pile or a roof over it does not stop it (gate review, PR #1322): only what stands in the pile's own height range does.
+	if items._structures.has("foundation_section"):
+		items.drop_in_world(stone, 1000, pile_at)
+		var floor_pile: int = items._items.keys()[0]
+		var floor_y: float = float(items._items[floor_pile]["pos"].y)
+		var floor_def: Dictionary = items._structures["foundation_section"]
+		var floor_top: float = float(floor_def.get("top_m", 0.3))
+		var floor_id: int = items._next_id   # real ids, so the grid lookup sees them (see the chest above)
+		var roof_id: int = items._next_id + 1
+		items._next_id += 2
+		items._items[floor_id] = {"number": 1, "count": 1, "pos": Vector3(pile_at.x, floor_y - floor_top, pile_at.z), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 0.0}}
+		items._items[roof_id] = {"number": 1, "count": 1, "pos": Vector3(pile_at.x, floor_y + 3.0, pile_at.z), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 0.0}}
+		items.drop_in_world(stone, 1000, pile_at + Vector3(0.2, 0.0, 0.0))
+		check(items.world_item_count() == 3 and int(items._items[floor_pile]["count"]) == 2000, "a pile on a floor and under a roof stays one pile (%d items)" % items.world_item_count())
+		items._items.erase(floor_id)
+		items._items.erase(roof_id)
+		items.clear_dropped(Vector3.ZERO, 1.0e7)
 	items.drop_in_world(stone, ItemsScript.PILE_CAP + 50, pile_at)
 	check(items.world_item_count() == 2, "over the cap a second pile starts")
 	var pile_id: int = -1
@@ -1599,11 +1634,11 @@ func _init() -> void:
 	var chest_stone_slot: int = ch.inventory_of(1).numbers.find(stones_n)
 	ch.action(1, Net.ACT_CHEST_PUT, chest_stone_slot, chest_id, 6, Vector3.ZERO)
 	check(ch.inventory_of(1).count_of(stones_n) == 4 and ch._chests[1].count_of(stones_n) == 6, "putting stones in moves them")
-	ch._chests[1].add(stones_n, 14)   # 20 kg of stone in the woven chest: a 22 kg oak log still goes in (Dave 19 Nov 2026: storage has no weight limit, only slots)
+	ch._chests[1].add(stones_n, 14)   # 20 stones (10 kg) in the woven chest: a 22 kg oak log still goes in (Dave 19 Nov 2026: storage has no weight limit, only slots)
 	var oak_n: int = ch.table.number_of("log_oak")
 	ch.give(1, oak_n, 1)
 	ch.action(1, Net.ACT_CHEST_PUT, -1, chest_id, 1, Vector3.ZERO)
-	check(ch.shoulder_of(1) == "" and ch._chests[1].count_of(oak_n) == 1, "a 22 kg oak log goes into a woven chest already holding 20 kg of stone (shoulder %s)" % ch.shoulder_of(1))
+	check(ch.shoulder_of(1) == "" and ch._chests[1].count_of(oak_n) == 1, "a 22 kg oak log goes into a woven chest already holding 20 stones (shoulder %s)" % ch.shoulder_of(1))
 	ch._chests[1].remove(oak_n, 1)
 	ch._chests[1].remove(stones_n, 14)
 	var chest_log: int = ch.table.number_of("log_willow")
@@ -1982,7 +2017,7 @@ func _init() -> void:
 	th2.peer_connected_hello(1, "thirstkey0001")
 	check(float(th2.vitals_of(1)["wet"]) == float(th.vitals_of(1)["wet"]), "thirst survives a restart")
 
-	# Carrying weight: stones weigh 1 kg; a 75 kg player carries 52.5 kg at most and up to 80 percent of that (42 kg) with no hindrance.
+	# Carrying weight: stones weigh 0.5 kg (Dave 19 Nov 2026); a 75 kg player carries 52.5 kg at most and up to 80 percent of that (42 kg) with no hindrance.
 	var cwd: String = "user://test_server_items_carry"
 	DirAccess.make_dir_recursive_absolute(cwd)
 
@@ -1993,10 +2028,10 @@ func _init() -> void:
 	cw.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	cw.peer_connected_hello(1, "carrykey0001")
 	cw.report_position(1, Vector3(0.0, 10.0, 0.0))
-	cw.give(1, cw.table.number_of("stone"), 20)
-	check(absf(cw.carried_kg_of(1) - 20.0) < 0.01, "twenty stones weigh 20 kg (%.1f)" % cw.carried_kg_of(1))
-	cw.give(1, cw.table.number_of("stone"), 100)
-	check(cw.carried_kg_of(1) <= 52.01 and cw.carried_kg_of(1) > 50.0, "give stops at the hard cap, %.1f kg" % cw.carried_kg_of(1))
+	cw.give(1, cw.table.number_of("stone"), 40)
+	check(absf(cw.carried_kg_of(1) - 20.0) < 0.01, "forty stones weigh 20 kg (%.1f)" % cw.carried_kg_of(1))
+	cw.give(1, cw.table.number_of("stone"), 200)
+	check(cw.carried_kg_of(1) <= 52.51 and cw.carried_kg_of(1) > 50.0, "give stops at the hard cap, %.1f kg" % cw.carried_kg_of(1))
 	var CarryScript = load("res://src/shared/carry_rules.gd")
 	var ccfg: Dictionary = CarryScript.load_config()
 	check(CarryScript.speed_factor(20.0, 75.0, ccfg) == 1.0 and absf(CarryScript.speed_factor(52.5, 75.0, ccfg) - 0.25) < 0.001, "no slowdown when comfortable, 25 percent speed at the cap")
@@ -2017,9 +2052,10 @@ func _init() -> void:
 			inv_c.numbers[slot] = 0
 			inv_c.counts[slot] = 0
 
-		var whole: int = int(floor(load))
+		var stone_kg: float = CarryScript.weight_of("stone", ccfg)
+		var whole: int = int(floor(load / stone_kg))
 		inv_c.add(cw.table.number_of("stone"), whole)
-		inv_c.add(cw.table.number_of("stick"), int(round((load - float(whole)) / CarryScript.weight_of("stick", ccfg))))
+		inv_c.add(cw.table.number_of("stick"), int(round((load - float(whole) * stone_kg) / CarryScript.weight_of("stick", ccfg))))
 		cw._moving[1] = 1.0
 		cw._exertion[1] = 0.0
 		var speed: float = CarryScript.speed_factor(cw.carried_kg_of(1), 75.0, ccfg)
@@ -2124,7 +2160,7 @@ func _init() -> void:
 		sa._vitals_tick(0.25)
 
 	check(float(sa.strain_of(1)["s"]) < 0.01, "sitting rests strain to 0 (%.2f)" % float(sa.strain_of(1)["s"]))
-	sa.give(1, sa.table.number_of("stone"), 52)
+	sa.give(1, sa.table.number_of("stone"), 104)   # 52 kg, the carry limit, of 0.5 kg stones (Dave 19 Nov 2026)
 	sa._strain[1] = {"s": 0.9, "state": 1, "t": 0.0}
 	sa.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
 
@@ -3151,11 +3187,18 @@ func _init() -> void:
 	bo.report_position(1, Vector3(5.0, 11.5, 5.0))
 	bo.vitals_of(1)["weight"] = 5000.0   # a big body: the carry limit stays out of the stone counts below
 	var big: int = bo._boulder_stones(1.0)
-	check(big >= 330 and big <= 410, "a 1 m radius boulder makes about 370 stones at 0.85 height, 2600 kg/m3, 0.04 coming away as stones (BugsList entry 3, RK-1) (%d)" % big)
-	check(bo._boulder_stones(0.3) >= 8 and bo._boulder_stones(0.3) <= 12 and bo._boulder_stones(1.2) >= 600 and bo._boulder_stones(1.2) <= 680, "stones go with the rock's volume: a 0.3 m one about 10, a 1.2 m one about 640 (%d, %d)" % [bo._boulder_stones(0.3), bo._boulder_stones(1.2)])
+	check(big >= 12800 and big <= 13100, "a 1 m radius boulder makes about 12,960 stones at 0.85 height, 2600 kg/m3, 0.7 coming away as 0.5 kg stones (Dave 19 Nov 2026, boulders PLAN.md 3) (%d)" % big)
+	check(bo._boulder_stones(0.3) >= 340 and bo._boulder_stones(0.3) <= 360 and bo._boulder_stones(1.2) >= 22200 and bo._boulder_stones(1.2) <= 22600, "stones go with the rock's volume: a 0.3 m one about 350, a 1.2 m one about 22,400 (%d, %d)" % [bo._boulder_stones(0.3), bo._boulder_stones(1.2)])
+	check(is_equal_approx(bo._boulder_per_kg(), 1.4), "1.4 stones of 0.5 kg per kg of rock (%f)" % bo._boulder_per_kg())
+	bo._load_boulders_left({"boulders": {"77": 10}})
+	check(int(bo._boulder_left[77]) == 350, "a worked boulder in an older save (0.04 stones per kg) is scaled once to today's count: 10 left is 350 (%d)" % int(bo._boulder_left[77]))
+	bo._load_boulders_left({"boulders": {"78": 10}, "boulder_per_kg": 1.4})
+	check(int(bo._boulder_left[78]) == 10, "a save at today's rate loads as it is")
+	bo._boulder_left.erase(77)
+	bo._boulder_left.erase(78)
 	bo._boulder_cfg["luck_extra"] = 0.0   # the exact-count checks below; luck's extra stone has its own check
 	bo._boulder_cfg["flint"] = {}   # flint has its own test (test_flint); these checks count plain stones
-	var small_total: int = bo._boulder_stones(0.6)   # about 80: enough for the blow counts below
+	var small_total: int = bo._boulder_stones(0.6)   # about 2,800: enough for the blow counts below
 	bo._items[900001] = {"number": 0, "count": small_total, "pos": Vector3(5.0, 11.5, 6.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 7, "boulder": {"radius": 0.6, "yaw": 0.0, "total": small_total}}
 	bo._last_hit.clear()
 	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)
@@ -3230,6 +3273,42 @@ func _init() -> void:
 
 	check(extras[0] > extras[1] and extras[1] >= 0, "luck nudges the double stones: luck 100 got %d extra, luck 0 got %d in 400 blows" % [extras[0], extras[1]])
 	bo._boulder_cfg["luck_extra"] = 0.0
+	# A full pack is never refused (Dave 19 Nov 2026, boulders PLAN.md 5): the stones go into one pile behind the miner, away from the rock,
+	# the same pile however the miner moves round it.
+	bo.action(1, Net.ACT_ADMIN_GIVE, bo.table.number_of("iron_pickaxe"), 0, 1, Vector3.ZERO)
+	var full_pick: int = bo.inventory_of(1).numbers.find(bo.table.number_of("iron_pickaxe"))
+	bo.vitals_of(1)["weight"] = 1.0   # a tiny body: nothing more fits in the pack
+	bo._items[900003] = {"number": 0, "count": 500, "pos": Vector3(5.0, 11.5, 6.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 10, "boulder": {"radius": 1.0, "yaw": 0.0, "total": 500}}
+	var full_rejects: int = bo_rejects.size()
+
+	for n in range(6):
+		bo._last_hit.clear()
+		bo.report_position(1, Vector3(5.0 + 0.3 * float(n % 2), 11.5, 5.0))   # stepping about a little
+		bo.action(1, Net.ACT_HIT, 900003, Net.HIT_BOULDER, full_pick + 1, Vector3.ZERO)
+
+	var behind_piles: Array = []
+
+	for k in bo._items:
+		if int(bo._items[k]["number"]) == stone_id and not bo._items[k].has("scatter"):
+			behind_piles.append(bo._items[k])
+
+	check(bo_rejects.size() == full_rejects and int(bo._items[900003]["count"]) == 500 - 18, "a full pack is not refused: 6 blows of an iron pick still take 18 stones (%d left)" % int(bo._items[900003]["count"]))
+	check(behind_piles.size() == 1 and int(behind_piles[0]["count"]) == 18 and behind_piles[0]["pos"].z < 5.0, "and they lie in one pile behind the miner, away from the rock (%s)" % str(behind_piles))
+	bo._items.erase(900003)
+	bo.clear_dropped(Vector3.ZERO, 1.0e7)
+	bo.vitals_of(1)["weight"] = 5000.0
+	bo.inventory_of(1).numbers[full_pick] = 0
+	# A boulder dug under comes down into the hole (Dave 19 Nov 2026, boulders PLAN.md stage 1), and a cave boulder is left alone.
+	var dug_y: Array = [11.5]
+	bo.floor_below = func(_p: Vector3) -> float: return dug_y[0]
+	bo._items[900004] = {"number": 0, "count": 50, "pos": Vector3(30.0, 11.5, 30.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 11, "boulder": {"radius": 0.6, "yaw": 0.0, "total": 50}}
+	bo._items[900005] = {"number": 0, "count": 50, "pos": Vector3(30.0, 11.5, 31.0), "left": 1.0e9, "scatter": bo.CAVE_KEY | 1, "boulder": {"radius": 0.6, "yaw": 0.0, "total": 50}}
+	dug_y[0] = 10.0
+	bo.settle_loose_near(Vector3(30.0, 11.0, 30.0), 1.0)
+	check(is_equal_approx(bo._items[900004]["pos"].y, 10.0) and is_equal_approx(bo._items[900005]["pos"].y, 11.5), "a boulder dug under settles into the hole; a cave boulder stays")
+	bo._items.erase(900004)
+	bo._items.erase(900005)
+	bo.floor_below = Callable()
 	# Layout: on a slope the cells hold boulders, the same ones every time, none on flat ground.
 	var laid: Array = []
 

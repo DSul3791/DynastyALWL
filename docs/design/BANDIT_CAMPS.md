@@ -62,6 +62,7 @@ A camp's bandits are fixed by the seed: their count and levels by distance band 
 | BANDIT-13 | Running | under 30% health a bandit runs, up to 40 m from its seat |
 | BANDIT-14 | Health | 40 at level 1, scaled by the island level's health per level |
 | BANDIT-15 | Goblin ground | no site within 1.5 km of a goblin tribe camp |
+| BANDIT-16 | Caves and mines | no site within 150 m of a cave, animal den or abandoned mine mouth (as mines keep from caves and goblin camps) |
 
 ### Known limits (stage 2)
 

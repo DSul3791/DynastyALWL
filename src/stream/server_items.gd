@@ -9,6 +9,7 @@ extends RefCounted
 # Until accounts exist an inventory is filed under the key the client made for itself.
 
 const FlameRules := preload("res://src/shared/flame_rules.gd")
+const MineSites := preload("res://src/worldgen/runtime/mine_sites.gd")   # what an abandoned mine left behind (cave scatter kind 2)
 const WaterFlowScript := preload("res://src/stream/water_flow.gd")
 const ShoreRules := preload("res://src/shared/shore_rules.gd")
 const SnowWalk := preload("res://src/shared/snow_walk.gd")   # walking on snow and snowshoes (Part C plan 7)
@@ -39,7 +40,7 @@ const SHOWROOM_PATH := "res://data/items/showroom.json"
 const MERGE_M := 1.0                     # a stackable drop landing this close to the same kind on the ground joins it (Dave 2026-10-23, rock piles)
 const PILE_MIN := 6                      # a ground item holding this many is a pile (the client draws it from the count)
 const PILE_HANDFUL := 25                 # one E on a pile takes this many when the item has no "pile" row in items.json (Dave 18 Nov 2026: 5 -> 25, provisional PU-1)
-const PILE_CAP := 100000                 # most one ground item holds; more starts a second pile beside it
+const PILE_CAP := 9007199254740992       # 2^53, most one ground item holds (Dave 19 Nov 2026, boulders PLAN.md 5b: "there shouldnt be a limit to the pile size ... make the max whatever the datatype can hold"): the largest count world_items.json saves exactly (JSON numbers are doubles); more starts a second pile beside it
 const PILE_LIFETIME_S := 7200.0          # a pile lives this long after the last add or take (loose items keep WORLD_ITEM_LIFETIME_S)
 const WORLD_ITEM_LIFETIME_S := 1200.0    # real seconds until a dropped item despawns
 const CHUNK_M := 256.0
@@ -94,6 +95,7 @@ const GatherRules := preload("res://src/shared/gather_rules.gd")
 const SkillRules := preload("res://src/shared/skill_rules.gd")
 const SkillWeb := preload("res://src/shared/skill_web.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
+const PileRules := preload("res://src/shared/pile_rules.gd")   # cone piles: size from the count (boulders PLAN.md 5b)
 const NpcCamp := preload("res://src/shared/npc_camp.gd")   # Edda and Hob's camp: its fire, its tree and the ground kept clear round it (data/npcs/camp.json)
 const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
@@ -228,6 +230,9 @@ var _items: Dictionary = {}         # id int -> {number, count, pos Vector3, lef
 var _next_id: int = 1
 var _known: Dictionary = {}         # peer -> {id: true} world items the peer was told about
 var _far_fire_spots: Array = []     # [pos Vector3, fire tier 1..3] of every lit campfire at the last world sync (far_fires_near)
+var _wide_piles: Dictionary = {}    # id -> true: cone piles wider than WIDE_PILE_M, which a drop can join from beyond the sync grid's near cells (PR #1322)
+var _wide_piles_built: bool = false # false until the first drop files the piles a load or reset brought in
+const WIDE_PILE_M := 0.5            # a cone pile wider than this (about 480 stones) is kept in _wide_piles; a smaller one is found by its grid cell
 var _sync_grid: Dictionary = {}     # the last world sync's NEAR_M grid, cell -> [world ids] (at most SYNC_EVERY_S old); the hammer list's stock polls read it
 var _sync_grid_next: int = 0        # _next_id when that grid was filed: ids from here on came since and are not in it
 var _stock_sig: Dictionary = {}     # peer -> hash of the last craft stock sent (a hammer poll that would send the same is skipped)
@@ -347,6 +352,7 @@ var _asleep: Dictionary = {}        # peer -> true while asleep (a lying player 
 var _dig_cfg: Dictionary = {}       # data/items/digging.json
 var _boulder_cfg: Dictionary = {}    # data/items/boulders.json
 var _boulder_left: Dictionary = {}   # boulder key -> rough stones still in it (absent = untouched), saved in world_items.json
+var _boulder_drops: Dictionary = {}  # [peer, boulder key] -> where that miner's overflow lands (_boulder_drop_spot; not saved)
 var _bog_left: Dictionary = {}       # bog iron deposit key "gi,gj" -> [ore left, game seconds it is counted to] (absent = untouched, full), saved in world_items.json "bog_iron"
 const BOULDER_KEY := 1 << 50
 const BOULDER_TRIES_MAX := 16          # a cell's boulder keys: the low four bits
@@ -741,6 +747,10 @@ func peer_left(peer: int) -> void:
 	_level_hold.erase(peer)
 	_garden_ready_ms.erase(peer)
 	_hoe_check_ms.erase(peer)
+	for key in _boulder_drops.keys():
+		if int(key[0]) == peer:
+			_boulder_drops.erase(key)   # a miner who leaves: the next one starts their own pile
+
 	_stock_sig.erase(peer)
 	_stock_poll_ms.erase(peer)
 	_zone_sent.erase(peer)
@@ -1075,6 +1085,68 @@ func take(peer: int, number: int, count: int) -> bool:
 	return true
 
 
+# The base radius of a cone pile of `count` of item `number` (items.json pile "shape": "cone", PileRules), 0 for every other item.
+func _cone_radius_of(number: int, count: int) -> float:
+	var pile: Dictionary = table.entry(table.id_of(number)).get("pile", {})
+
+	if not PileRules.is_cone(pile) or _carry_cfg.is_empty():
+		return 0.0
+
+	return PileRules.cone_radius(count, CarryRules.weight_of(table.id_of(number), _carry_cfg), float(pile["density_kg_m3"]))
+
+
+const PILE_BLOCK_REACH_M := 30.0   # the widest thing that can stop a pile reaches this far past its own centre (a big building's half or a 5 m boulder)
+
+
+# True when a cone pile of `radius` round `centre` would reach into a building or solid object (Dave 19 Nov 2026, PLAN.md 5b: "if it hits a
+# building or solid object it has to stop ... it cant go into a building through the wall"): a placed structure's footprint, a boulder or a
+# fire. Trees and bushes are not checked (the pile is shaped round them), nor road and path patches or garden plots ("roads shouldnt effect
+# them at all"). `self_id` is the pile itself.
+func _pile_blocked(centre: Vector3, radius: float, self_id: int) -> bool:
+	for id in _ids_near(centre, radius + PILE_BLOCK_REACH_M):   # the sync grid's cells, not every record (gate review PR #1322: the cost per dropped stone)
+		if id == self_id or not _items.has(id):
+			continue
+
+		var it: Dictionary = _items[id]
+		var flat: Vector2 = Vector2(it["pos"].x - centre.x, it["pos"].z - centre.z)
+
+		if it.has("boulder"):
+			var info: Dictionary = it["boulder"]
+
+			if flat.length() >= radius + float(info["radius"]):
+				continue   # beyond the rock's whole size: no need to work out what is left of it
+
+			var size_now: float = float(info["radius"]) * pow(float(it["count"]) / float(maxi(int(info["total"]), 1)), 1.0 / 3.0)
+
+			if flat.length() < radius + size_now:
+				return true
+		elif it.has("fire"):
+			if flat.length() < radius + 0.5:
+				return true
+		elif it.has("struct"):
+			var kind: String = str(it["struct"].get("kind", ""))
+			var def: Dictionary = _structures.get(kind, {})
+
+			if def.is_empty() or kind == "path_patch" or bool(it["struct"].get("road", false)) or PlacementRules.is_plot(def) or is_pipe_kind(kind):
+				continue   # a pipe run goes through anything (PLUMBING_DESIGN s9), so a pile lies over it
+
+			# Only what stands in the pile's own height range stops it (gate review, PR #1322): a foundation or floor it lies on, or a roof or
+			# upper floor over it, does not, so a pile in a house or on a stone yard's floor stays one pile.
+			var room: Array = PlacementRules._box(def, it["pos"], float(it["struct"].get("yaw", 0.0)))
+
+			if float(room[4]) <= centre.y + 0.1 or float(room[3]) >= centre.y + PileRules.cone_height(radius):
+				continue
+
+			var half: Vector2 = room[1]
+			var local: Vector2 = PlacementRules.local_of({"pos": it["pos"], "yaw": float(it["struct"].get("yaw", 0.0))}, centre)
+			var nearest: Vector2 = Vector2(clampf(local.x, -half.x, half.x), clampf(local.y, -half.y, half.y))
+
+			if local.distance_to(nearest) < radius:
+				return true
+
+	return false
+
+
 # Puts a stack on the ground. Always lays it (Dave 16 Nov 2026: "there should be no limit" on what lies on the ground); false only for no item or no count. `lifetime_s` above 0 keeps it at least that many real seconds (a felled tree's logs last as its trunk did).
 # `rot_y` (radians, NAN for none) turns a new loose item about the vertical: a felled tree's logs lie along its trunk.
 # `girth` (NAN for none) scales a split log's thickness to the trunk it came from (Dave 2 Nov 2026: a skinny tree gave big logs); LOG_MESH_RADIUS_M is 1.
@@ -1088,8 +1160,31 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	position = _settled(position)
 
 	# Same kind within MERGE_M joins the item already lying there (stackables without wear or instance data only), so a heap grows as one ground item.
-	if item_wear == 0 and item_inst.is_empty() and table.stack_of(number) > 1:
-		for id in _items.keys():
+	# A pile stopped by a building or solid object moves the rest beside it, on the side away from the pile's centre where it fell, and looks
+	# again there (PLAN.md 5b PL-1, gate review PR #1322), so the next drop joins that pile instead of stacking a second cone on the first.
+	var tries: int = 4 if item_wear == 0 and item_inst.is_empty() and table.stack_of(number) > 1 else 0
+
+	if tries > 0 and not _wide_piles_built:
+		_wide_piles_built = true
+
+		for id in _items:
+			if not _items[id].has("struct") and not _items[id].has("boulder") and not _items[id].has("scatter") and _cone_radius_of(int(_items[id]["number"]), int(_items[id]["count"])) > WIDE_PILE_M:
+				_wide_piles[id] = true
+
+	while tries > 0:
+		tries -= 1
+		var stopped: Dictionary = {}
+		# Only the records near the drop and the few wide cone piles can take it (gate review PR #1322: not a walk of every record per stone).
+		# shortcut: the sync grid is up to SYNC_EVERY_S old; ids laid since are added whole, but a record moved since is looked for where it was.
+		var nearby: Array = _ids_near(position, MERGE_M + WIDE_PILE_M)
+
+		for wide in _wide_piles.keys():
+			if _items.has(wide):
+				nearby.append(wide)
+			else:
+				_wide_piles.erase(wide)
+
+		for id in nearby:
 			if not _items.has(id):
 				continue
 
@@ -1104,10 +1199,21 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 			if near.has("world") != _laying_world:
 				continue   # a server pile and a player's pile never merge: the world reset keeps the one and takes the other
 
-			if Vector2(near["pos"].x - position.x, near["pos"].z - position.z).length() <= MERGE_M and absf(near["pos"].y - position.y) <= 2.0:
+			var reach: float = MERGE_M + _cone_radius_of(number, int(near["count"]))   # a cone pile takes in what lands on or beside it, however big it grew
+
+			if Vector2(near["pos"].x - position.x, near["pos"].z - position.z).length() <= reach and absf(near["pos"].y - position.y) <= 2.0 + PileRules.cone_height(reach - MERGE_M):
 				var room: int = PILE_CAP - int(near["count"])
 				var added: int = mini(count, room)
+
+				if _cone_radius_of(number, int(near["count"]) + added) > 0.0 and _pile_blocked(near["pos"], _cone_radius_of(number, int(near["count"]) + added), id):
+					stopped = near   # Dave 19 Nov 2026 (PLAN.md 5b): a building or solid object stops a pile; the rest starts a new pile beside it (PROVISIONAL PL-1)
+					continue
+
 				near["count"] = int(near["count"]) + added
+
+				if _cone_radius_of(number, int(near["count"])) > WIDE_PILE_M:
+					_wide_piles[id] = true
+
 				near["left"] = maxf(PILE_LIFETIME_S if int(near["count"]) >= PILE_MIN else WORLD_ITEM_LIFETIME_S, lifetime_s)
 				_tick_ageing(id)   # a kept pile can start ageing here
 
@@ -1122,8 +1228,22 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 
 				break   # the rest (over the cap) falls through and starts a second pile
 
+		if stopped.is_empty():
+			break
+
+		var away: Vector2 = Vector2(position.x - stopped["pos"].x, position.z - stopped["pos"].z)
+
+		if away.length() < 0.01:
+			away = Vector2(1.0, 0.0)
+
+		away = away.normalized() * (_cone_radius_of(number, int(stopped["count"])) + MERGE_M)
+		position = _settled(Vector3(stopped["pos"].x + away.x, position.y, stopped["pos"].z + away.y))
+
 	var first: int = mini(count, PILE_CAP)
 	_items[_next_id] = {"number": number, "count": first, "pos": position, "left": maxf(PILE_LIFETIME_S if first >= PILE_MIN else WORLD_ITEM_LIFETIME_S, lifetime_s), "wear": item_wear}
+
+	if _wide_piles_built and _cone_radius_of(number, first) > WIDE_PILE_M:
+		_wide_piles[_next_id] = true
 
 	if not is_nan(rot_y):
 		_items[_next_id]["rot_y"] = rot_y
@@ -1747,7 +1867,7 @@ func _item_job() -> Dictionary:
 	_note_save_part("world item copy", t0)
 	_save_gen += 1
 	return {"dir": _dir, "items": copy, "areas": areas, "all": _area_ids.keys(), "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(), "gen": _save_gen, "sums": _area_sums, "exact": exact, "failed_out": _save_failed,
-		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "bog_iron": _bog_left.duplicate(true), "layout": FloraLayout.VERSION, "no_kits": true}}
+		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "bog_iron": _bog_left.duplicate(true), "layout": FloraLayout.VERSION, "no_kits": true}}
 
 
 func _save_item_files(job: Dictionary) -> void:
@@ -2806,6 +2926,8 @@ func reset_world() -> int:
 	_lit_valid = false
 	_bed_cache.clear()
 	_sync_grid = {}
+	_wide_piles.clear()
+	_wide_piles_built = false
 
 	for peer in _chest_viewer.keys():
 		if int(_chest_viewer[peer]) >= 0:
@@ -2858,6 +2980,21 @@ func _settled(position: Vector3) -> Vector3:
 func settle_loose_near(centre: Vector3, radius: float) -> void:
 	for id in _items:
 		var it: Dictionary = _items[id]
+
+		if it.has("boulder") and (int(it["scatter"]) & CAVE_KEY) == 0:
+			var info: Dictionary = it["boulder"]
+			var size_now: float = float(info["radius"]) * pow(float(it["count"]) / float(maxi(int(info["total"]), 1)), 1.0 / 3.0)
+
+			# A boulder dug under comes down into the hole (Dave 19 Nov 2026, boulders PLAN.md stage 1: boulders floated when dug under):
+			# it rests on what is left under its middle, like a loose item. Nothing is saved: laid out again it is settled on the saved digs the same way.
+			if Vector2(it["pos"].x - centre.x, it["pos"].z - centre.z).length() <= radius + size_now + 0.5:
+				var rest: Vector3 = _settled(it["pos"])
+
+				if rest != it["pos"]:
+					it["pos"] = rest
+					_dirty = true
+
+			continue
 
 		if it.has("scatter") or it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder"):
 			continue
@@ -6815,6 +6952,8 @@ func _load_inventories() -> void:
 
 
 func _load_world_items() -> void:
+	_wide_piles.clear()
+	_wide_piles_built = false   # the first drop after the load files the loaded cone piles
 	var parsed: Variant = _read_json_version("world_items.json", VERSION, 1)
 
 	if parsed == null:
@@ -6877,8 +7016,7 @@ func _load_world_items() -> void:
 	for key in parsed.get("taken", []):
 		_taken[int(key)] = true
 
-	for key in parsed.get("boulders", {}):
-		_boulder_left[int(key)] = int(parsed["boulders"][key])
+	_load_boulders_left(parsed)
 
 	for key in parsed.get("bog_iron", {}):
 		var bog_row: Variant = parsed["bog_iron"][key]
@@ -7418,6 +7556,24 @@ func _cell_part(part: String, since_usec: int) -> int:
 # cell like loose stones, from the cell's own "boulders" stream (_layout_rng), only where the ground rises or at a
 # water bank; what is left of a worked boulder is kept in _boulder_left. The row carries its radius and the stones it started
 # with; the item's count is the stones left.
+# The stones left in worked boulders from a saved world (`parsed`: its "boulders" and "boulder_per_kg"). They were counted at the save's own
+# stones per kg of rock; a save without boulder_per_kg counted 0.04 stones of 1 kg per kg (before Dave's 19 Nov 2026 0.5 kg stones with 30%
+# lost). They are scaled to today's count once, so a half-mined rock stays half mined; layout still caps them at the rock's total.
+func _load_boulders_left(parsed: Dictionary) -> void:
+	var per_kg_then: float = float(parsed.get("boulder_per_kg", 0.04))
+	var scale_left: float = _boulder_per_kg() / per_kg_then if per_kg_then > 0.0 else 1.0
+
+	for key in parsed.get("boulders", {}):
+		_boulder_left[int(key)] = int(round(float(parsed["boulders"][key]) * scale_left))
+
+
+# Stones a boulder gives per kg of its rock: boulders.json yield (the share that comes away, Dave 19 Nov 2026: 0.7, the rest dust and bits) over one
+# stone's weight (weights.json, 0.5 kg). The save keeps it with what is left in worked boulders (load scales a save made at another rate).
+func _boulder_per_kg() -> float:
+	var stone_kg: float = maxf(CarryRules.weight_of("stone", _carry_cfg) if not _carry_cfg.is_empty() else 1.0, 0.05)
+	return float(_boulder_cfg.get("yield", 0.5)) / stone_kg
+
+
 func _boulder_stones(radius: float) -> int:
 	var cfg: Dictionary = _boulder_cfg
 	var volume: float = 4.0 / 3.0 * PI * radius * radius * radius * float(cfg.get("height_ratio", 0.85))
@@ -7467,7 +7623,7 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
 		if left <= 0:
 			continue
 
-		_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": row}
+		_items[_next_id] = {"number": 0, "count": left, "pos": _settled(spot), "left": 1.0e9, "scatter": key, "boulder": row}   # on the saved digs: a boulder dug under stays down
 		_next_id += 1
 
 
@@ -7598,7 +7754,7 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 
 		var row: Dictionary = {"radius": radius, "yaw": yaw, "total": total}
 		_set_boulder_ore(row, ore, key)
-		_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": row}
+		_items[_next_id] = {"number": 0, "count": left, "pos": _settled(spot), "left": 1.0e9, "scatter": key, "boulder": row}   # on the saved digs: a boulder dug under stays down
 		_next_id += 1
 
 
@@ -7666,7 +7822,7 @@ func _boulder_tool(inv, slot: int) -> Array:
 
 # One blow on a boulder (ACT_HIT with the boulder marker; `held_slot` is the pack slot in hand). The held tool wears once a blow (drops.json
 # tool_wear "rock": an axe 5, a pick 1) and takes its stones per blow (boulders.json tools: a better pick more, an axe half; a fraction carries
-# over in the boulder's "progress") into the pack, as many as can be carried (none: refused, too heavy). The boulder shrinks and is gone with
+# over in the boulder's "progress") into the pack, and what does not fit into one pile behind the miner (_boulder_drop_spot). The boulder shrinks and is gone with
 # its last stone. Its stones are fixed by its size, so a better tool empties it in fewer blows and wears less doing it (TEST-013).
 func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 	var it: Dictionary = _items.get(id, {})
@@ -7699,14 +7855,8 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 	var pieces: int = mini(int(floor(progress + 0.001)), int(it["count"]))
 	var stone: int = table.number_of("stone")
 
-	if pieces > 0:
-		pieces = mini(pieces, _fit(peer, inv, stone, pieces))
-
-		if pieces == 0:
-			_say(peer, "Too heavy to carry any more")
-			_reject(peer, 2)
-			return
-
+	# Dave 19 Nov 2026 (boulders PLAN.md 5): never refused for weight. What fits goes in the pack; the rest drops behind the miner, away from
+	# the rock, at one spot kept for this miner and this rock so the job makes one pile (_overflow_spot: "just drop it right behind them").
 	var held: Dictionary = table.entry(table.id_of(inv.numbers[int(tool[0])]))   # read before the wear: a stone tool that breaks on this blow leaves its slot empty
 	_last_hit[peer] = now
 	_wear_slot(peer, inv, int(tool[0]), "rock")
@@ -7737,6 +7887,7 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 		flint_p = float(flint_cfg.get("near_water_chance", flint_p))
 
 	var taken: int = 0
+	var stone_kg: float = maxf(CarryRules.weight_of("stone", _carry_cfg) if not _carry_cfg.is_empty() else 1.0, 0.05)
 
 	for n in range(pieces):
 		var left: int = int(it["count"]) - taken
@@ -7756,9 +7907,15 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 		if info.has("ore") and not ore_cfg.is_empty() and a_pick and material_ok:
 			var rock_piece: bool = (ore_cfg.get("rocks", {}) as Dictionary).has(str(info["ore"])) and not (ore_cfg.get("items", {}) as Dictionary).has(str(info["ore"]))
 			var share: float = float(ore_cfg.get("rock_piece_share", 0.5)) if rock_piece else float(info.get("grade", ore_cfg.get("piece_share", 0.5)))   # a copper rock's own grade
+			var piece_id: String = str((ore_cfg.get("rocks", {}) as Dictionary).get(str(info["ore"]), "")) if rock_piece else str((ore_cfg.get("items", {}) as Dictionary).get(str(info["ore"]), ""))
+			# Ore by weight (boulders PLAN.md 3c, answered for Dave 19 Nov 2026, PROVISIONAL): the share is of the rock's weight, and an ore piece
+			# takes its own weight out of the rock in stones (a 1.5 kg ore piece is 3 stones of 0.5 kg), so a 30% copper rock gives about 30% of its
+			# kg as ore, not 35 times more pieces than before the 0.5 kg stones. A piece costs c stones (its weight in stones, at least 1), and the
+			# chance p per piece meets p c / (p c + 1 - p) = share, the share of the rock taken out as ore; at c = 1 (salt, coal) p is the share.
+			var ore_cost: int = _ore_cost(piece_id, stone_kg)
+			var chance: float = clampf(share, 0.0, 1.0) / maxf(float(ore_cost) * (1.0 - clampf(share, 0.0, 1.0)) + clampf(share, 0.0, 1.0), 0.0001)
 
-			if fate(peer, "boulder_ore", share):
-				var piece_id: String = str((ore_cfg.get("rocks", {}) as Dictionary).get(str(info["ore"]), "")) if rock_piece else str((ore_cfg.get("items", {}) as Dictionary).get(str(info["ore"]), ""))
+			if left >= ore_cost and fate(peer, "boulder_ore", chance):
 				ore_item = table.number_of(piece_id)
 
 				if ore_item > 0 and not rock_piece:
@@ -7766,13 +7923,13 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 
 		# Flint (F-02): now and then the piece that comes away is a flint nodule (more near water). A nodule or an ore is one piece, never a double.
 		if ore_item > 0:
-			_take_in(peer, inv, ore_item, 1)
-			out = 1
+			_take_in(peer, inv, ore_item, 1, 0, _overflow_spot(peer, inv, ore_item, 1, it, size_now, 1.5))   # ore and flint make their own piles beside the stone one
+			out = _ore_cost(table.id_of(ore_item), stone_kg)   # the rock gives up the ore's own weight in stones
 		elif flint_n > 0 and flint_p > 0.0 and fate(peer, "boulder_flint", flint_p):
-			_take_in(peer, inv, flint_n, 1)
+			_take_in(peer, inv, flint_n, 1, 0, _overflow_spot(peer, inv, flint_n, 1, it, size_now, -1.5))
 			out = 1
 		else:
-			_take_in(peer, inv, stone, out)   # a double past the carry limit: the second lies at the player's feet
+			_take_in(peer, inv, stone, out, 0, _overflow_spot(peer, inv, stone, out, it, size_now, 0.0))   # past the carry limit the stones lie in the pile behind the miner
 
 		taken += out
 
@@ -7782,7 +7939,49 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 	_dirty = true
 
 	if int(it["count"]) <= 0:
+		_boulder_drops.erase([peer, it["scatter"]])
 		_items.erase(id)
+
+
+# How many stones of rock one ore piece `id` takes out of a boulder: its own weight in stones of `stone_kg`, at least one (ore by weight, PLAN.md 3c).
+func _ore_cost(id: String, stone_kg: float) -> int:
+	if id == "" or _carry_cfg.is_empty():
+		return 1
+
+	return maxi(int(round(CarryRules.weight_of(id, _carry_cfg) / stone_kg)), 1)
+
+
+# Where a miner's stones land when the pack is full (boulders PLAN.md 5): 1 m behind the miner on the line from the rock, fixed the first
+# time for this miner and this rock (not kept in the save), so walking round the rock does not start a new pile at every blow.
+func _boulder_drop_spot(peer: int, it: Dictionary, size_now: float) -> Vector3:
+	var key: Array = [peer, it["scatter"]]
+
+	if _boulder_drops.has(key):
+		return _boulder_drops[key]
+
+	var flat: Vector2 = Vector2(_peer_pos[peer].x - it["pos"].x, _peer_pos[peer].z - it["pos"].z)
+	var away: Vector2 = flat.normalized() if flat.length() > 0.01 else Vector2(1.0, 0.0)
+	var reach: float = maxf(flat.length(), size_now) + 1.0
+	var spot: Vector3 = Vector3(it["pos"].x + away.x * reach, _peer_pos[peer].y, it["pos"].z + away.y * reach)
+	_boulder_drops[key] = spot
+	return spot
+
+
+# Where `count` of `number` that do not fit in the pack land (_boulder_drop_spot, `side` metres across for ore and flint), or INF (the feet,
+# unused) when they all fit, so no spot is kept for a miner whose pack never overflows.
+func _overflow_spot(peer: int, inv, number: int, count: int, it: Dictionary, size_now: float, side: float) -> Vector3:
+	if _fit(peer, inv, number, count) >= count:
+		return Vector3.INF
+
+	var spot: Vector3 = _boulder_drop_spot(peer, it, size_now)
+	return _beside(spot, it["pos"], side) if side != 0.0 else spot
+
+
+# `spot` moved `side` metres across the line from `from` (to the miner's right for a positive side).
+func _beside(spot: Vector3, from: Vector3, side: float) -> Vector3:
+	var along: Vector2 = Vector2(spot.x - from.x, spot.z - from.z)
+	along = along.normalized() if along.length() > 0.01 else Vector2(1.0, 0.0)
+	return Vector3(spot.x - along.y * side, spot.y, spot.z + along.x * side)
 
 
 # Caves are riddled with rocks and stones (Dave 4 Nov 2026): the loose stones and boulders the baked caves under this cell hold
@@ -7811,6 +8010,17 @@ func _lay_out_cave_items(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void
 
 			if left > 0:
 				_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": cave_row}
+				_next_id += 1
+
+			continue
+
+		if int(spots[n * 5 + 3]) == 2:   # left behind in an abandoned mine (Dave 19 Nov 2026): a worn tool, a bucket, ore; laid like the stones, saved once taken
+			var left_id: String = str(MineSites.LEFTOVERS[clampi(int(spots[n * 5 + 4]), 0, MineSites.LEFTOVERS.size() - 1)])
+			var left_number: int = table.number_of(left_id)
+
+			if left_number > 0:
+				var spent: int = int(float(table.entry(left_id).get("durability", 0)) * MineSites.OLD_WEAR)
+				_items[_next_id] = {"number": left_number, "count": 1, "pos": spot, "left": 1.0e9, "scatter": key, "wear": spent}
 				_next_id += 1
 
 			continue
@@ -11408,7 +11618,7 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 		# A rock pile gives back all the stones it was made of (what does not fit in the pack lies on the ground).
 		var was_src: String = _gain_source
 		_gain_source = SRC_RETURN
-		give(peer, table.number_of("stone"), int(def.get("stones", 45)))
+		give(peer, table.number_of("stone"), int(def.get("stones", 90)))
 		_gain_source = was_src
 		_items.erase(id)
 		_dirty = true
@@ -19942,8 +20152,8 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 			return _hint_count(st, "made:stone_axe") >= 1
 		"tree_down":
 			return _hint_count(st, "event:tree_felled") >= 1
-		"6_sticks_3_stones":
-			return inv.count_of(table.number_of("stick")) >= 6 and inv.count_of(table.number_of("stone")) >= 3
+		"6_sticks_6_stones":
+			return inv.count_of(table.number_of("stick")) >= 6 and inv.count_of(table.number_of("stone")) >= 6
 		"kit_made":
 			return _hint_count(st, "made:campfire_kit") >= 1
 		"fire_placed":

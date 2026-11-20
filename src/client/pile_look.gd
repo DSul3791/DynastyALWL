@@ -10,10 +10,12 @@ const ROW_RISE_M := 0.22            # height of one row
 const ROW_SPREAD_M := 0.17          # footprint radius per row
 const ROCK_R_M := 0.27
 
-# What each kind looks like comes from its items.json "pile" row: {"shape": "pyramid" | "mound", "handful", "color", "rock" (rock size scale), "squash",
+# What each kind looks like comes from its items.json "pile" row: {"shape": "pyramid" | "mound" | "cone" (with "density_kg_m3": a solid cone, _cone_mesh), "handful", "color", "rock" (rock size scale), "squash",
 # optional "tight" (scales footprint and row rise with the lump size, default 1.0) and "jitter" (lump size spread, default 0.2)}.
 # Soil and clay (Dave 2026-10-24): lumps half the size of one dirt clump, packed tight so neighbours overlap.
 
+const PileRules := preload("res://src/shared/pile_rules.gd")
+const CONE_SEGMENTS := 18        # the solid core of a cone pile
 static var _cache: Dictionary = {}
 static var _material: StandardMaterial3D
 
@@ -24,7 +26,8 @@ static func is_pile(entry: Dictionary, count: int) -> bool:
 
 
 # The mesh for `count` of `item_id`; `seed_id` (the world item id) decides rock sizes and tilt. Cached by (kind, count, seed).
-static func mesh_for(item_id: String, entry: Dictionary, count: int, seed_id: int) -> Mesh:
+# `unit_kg` is one piece's weight (weights.json), which sizes a "cone" pile (PileRules); other shapes ignore it.
+static func mesh_for(item_id: String, entry: Dictionary, count: int, seed_id: int, unit_kg: float = 0.0) -> Mesh:
 	var key: String = "%s|%d|%d" % [item_id, count, seed_id]
 
 	if _cache.has(key):
@@ -39,6 +42,11 @@ static func mesh_for(item_id: String, entry: Dictionary, count: int, seed_id: in
 		var wood: Mesh = _logs_mesh(kind, count, seed_id)
 		_cache[key] = wood
 		return wood
+
+	if PileRules.is_cone(kind) and unit_kg > 0.0:
+		var cone: Mesh = _cone_mesh(kind, count, seed_id, unit_kg)
+		_cache[key] = cone
+		return cone
 
 	var tint: Array = kind["color"]
 	var base_color: Color = Color(float(tint[0]), float(tint[1]), float(tint[2]))
@@ -123,6 +131,95 @@ static func mesh_for(item_id: String, entry: Dictionary, count: int, seed_id: in
 
 	mesh.surface_set_material(0, _material)
 	_cache[key] = mesh
+	return mesh
+
+
+# --- Cone piles (Dave 19 Nov 2026, boulders PLAN.md 5b: a solid cone with no air, more stones add layers on the outside) ---
+# One mesh whatever the count: a solid core cone sized by the stones' own volume (PileRules) with up to MAX_DRAWN rocks laid over its skin,
+# each big enough that together they cover it. Nothing new is sent: the client sizes it from the count, as before. Not visually checked.
+static func _cone_mesh(kind: Dictionary, count: int, seed_id: int, unit_kg: float) -> Mesh:
+	var tint: Array = kind["color"]
+	var base_color: Color = Color(float(tint[0]), float(tint[1]), float(tint[2]))
+	var jitter: float = float(kind.get("jitter", 0.2))
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = seed_id * 2654435761 + 91
+	var radius: float = maxf(PileRules.cone_radius(count, unit_kg, float(kind["density_kg_m3"])), PileRules.MIN_DRAWN_R_M)
+	var height: float = PileRules.cone_height(radius)
+	var verts: PackedVector3Array = PackedVector3Array()
+	var normals: PackedVector3Array = PackedVector3Array()
+	var colors: PackedColorArray = PackedColorArray()
+	var indices: PackedInt32Array = PackedInt32Array()
+	var slope_n: Vector2 = Vector2(height, radius).normalized()   # (outward, up) of the cone's side
+
+	# The core: a cone a little inside the rocks, its apex and one ring per segment, darker so gaps between the rocks read as shadow.
+	var core_r: float = radius * 0.9
+	var core_h: float = height * 0.9
+	var core_color: Color = base_color * 0.7
+	core_color.a = 1.0
+
+	for i in range(CONE_SEGMENTS):
+		var a0: float = TAU * float(i) / float(CONE_SEGMENTS)
+		var a1: float = TAU * float(i + 1) / float(CONE_SEGMENTS)
+		var first: int = verts.size()
+		var mid: float = (a0 + a1) * 0.5
+		verts.append(Vector3(0.0, core_h, 0.0))   # clockwise seen from outside (Godot's front face)
+		verts.append(Vector3(cos(a0) * core_r, 0.0, sin(a0) * core_r))
+		verts.append(Vector3(cos(a1) * core_r, 0.0, sin(a1) * core_r))
+		normals.append(Vector3(cos(mid) * slope_n.x, slope_n.y, sin(mid) * slope_n.x))
+		normals.append(Vector3(cos(a0) * slope_n.x, slope_n.y, sin(a0) * slope_n.x))
+		normals.append(Vector3(cos(a1) * slope_n.x, slope_n.y, sin(a1) * slope_n.x))
+		colors.append_array(PackedColorArray([core_color, core_color, core_color]))
+
+		indices.append_array(PackedInt32Array([first, first + 1, first + 2]))
+
+	# The skin: rocks spread evenly over the side (golden angle round, area-even down the slant), sized to cover it.
+	var shown: int = mini(count, MAX_DRAWN)
+	var side_area: float = PI * radius * sqrt(radius * radius + height * height)
+	var size_base: float = clampf(sqrt(side_area / float(maxi(shown, 1))) * 0.6, 0.02, ROCK_R_M * float(kind.get("rock", 1.0)))
+	var base: SphereMesh = SphereMesh.new()
+	base.radial_segments = 7
+	base.rings = 4
+	var arrays: Array = base.get_mesh_arrays()
+	var source: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var source_n: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+
+	for i in range(shown):
+		var angle: float = float(i) * 2.39996 + rng.randf() * 0.4
+		var t: float = sqrt((float(i) + 0.5) / float(shown))   # 0 at the apex, 1 at the foot
+		var r: float = radius * t
+		var size: float = size_base * rng.randf_range(1.0 - jitter, 1.0 + jitter)
+		var out: Vector3 = Vector3(cos(angle) * slope_n.x, slope_n.y, sin(angle) * slope_n.x)
+		var at: Vector3 = Vector3(cos(angle) * r, height * (1.0 - t), sin(angle) * r) - out * size * 0.3
+		at.y = maxf(at.y, size * 0.4)
+		var tilt: Basis = Basis.from_euler(Vector3(rng.randf() * TAU, rng.randf() * TAU, rng.randf() * TAU))
+		var squash: Basis = tilt * Basis.from_scale(Vector3(size * rng.randf_range(1.0, 1.3), size * 0.8, size * rng.randf_range(1.0, 1.3)))
+		var shade: float = rng.randf_range(0.85, 1.12)
+		var color: Color = Color(minf(base_color.r * shade, 1.0), minf(base_color.g * shade, 1.0), minf(base_color.b * shade, 1.0))
+		var first: int = verts.size()
+
+		for v in range(source.size()):
+			verts.append(at + squash * source[v])
+			normals.append((tilt * source_n[v]).normalized())
+			colors.append(color)
+
+		for index in arrays[Mesh.ARRAY_INDEX]:
+			indices.append(first + int(index))
+
+	var out_arrays: Array = []
+	out_arrays.resize(Mesh.ARRAY_MAX)
+	out_arrays[Mesh.ARRAY_VERTEX] = verts
+	out_arrays[Mesh.ARRAY_NORMAL] = normals
+	out_arrays[Mesh.ARRAY_COLOR] = colors
+	out_arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh: ArrayMesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, out_arrays)
+
+	if _material == null:
+		_material = StandardMaterial3D.new()
+		_material.vertex_color_use_as_albedo = true
+		_material.roughness = 1.0
+
+	mesh.surface_set_material(0, _material)
 	return mesh
 
 

@@ -202,6 +202,20 @@ func _waking() -> void:
 	check(fresh.refusal(cell, spot, clock[0]) == "goblin camp near", "none near a goblin tribe's camp")
 	fresh.tribe_camps = func(): return [spot + Vector2(clear_m + 10.0, 0.0)]
 	check(fresh.refusal(cell, spot, clock[0]) == "", "a goblin camp further off is no bar (%s)" % fresh.refusal(cell, spot, clock[0]))
+
+	# A cave, den or mine mouth (the tile's cave_mouths, mines among them): none within cave_clear_m of one; an unloaded tile is not read.
+	var cave_m: float = float(fresh.cfg["cave_clear_m"])
+	fresh.cave_mouths_at = func(_x, _z): return [spot + Vector2(0.0, cave_m - 10.0)]
+	check(fresh.refusal(cell, spot, clock[0]) == "cave near", "none by a cave or mine mouth")
+	fresh.cave_mouths_at = func(_x, _z): return [spot + Vector2(0.0, cave_m + 10.0)]
+	check(fresh.refusal(cell, spot, clock[0]) == "", "a mouth further off is no bar")
+	fresh.cave_mouths_at = func(mouth_x, _z):
+		if mouth_x > spot.x:
+			return null
+
+		return []
+	check(fresh.refusal(cell, spot, clock[0]) == "unloaded", "a neighbouring tile not loaded is waited for, not read")
+	fresh.cave_mouths_at = Callable()
 	var tribes: TribesScript = TribesScript.new()
 	tribes.setup()
 	var camps: Array = tribes.camp_spots()

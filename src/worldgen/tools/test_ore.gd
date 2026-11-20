@@ -85,7 +85,7 @@ func _init() -> void:
 	outcrop(a, "copper")
 	blows(a, 30)
 	check(count(a, "copper_ore") > 0 and count(a, "copper_ore") + count(a, "stone") > 0 and count(a, "stone") == 0 or count(a, "copper_ore") >= 8, "a pick on a copper outcrop gives copper ore (%d ore, %d stone)" % [count(a, "copper_ore"), count(a, "stone")])
-	check(int(a._items[900001]["count"]) == 5000 - count(a, "copper_ore") - count(a, "stone"), "every piece comes out of the boulder")
+	check(int(a._items[900001]["count"]) == 5000 - 3 * count(a, "copper_ore") - count(a, "stone"), "every piece comes out of the boulder, an ore piece by its weight (1.5 kg = 3 stones of 0.5 kg, boulders PLAN.md 3c)")
 
 	var h = make("test_ore_half", "stone_pickaxe")
 	h._boulder_cfg["ore"]["piece_share"] = 0.5

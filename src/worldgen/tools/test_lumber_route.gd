@@ -2,7 +2,7 @@ extends SceneTree
 
 # The lumber route. Mission 001 phases 2a and 2b (master s2.3, s2.7) replaced the stone-wedge route described next (kept as history): Planks and
 # Hardwood boards now start at the Iron - Saw or the Sawmill. Old route (guide finding F-05, FLINT_ORE_SPEC.md; Tyler 31 Oct 2026):
-# stone wedge (2 stones, 1 stick, by hand) -> workbench kit (20 sticks, 6 twine, 4 stones, by hand) -> place the workbench -> a log at the workbench with the wedge in the pack
+# stone wedge (2 stones, 1 stick, by hand) -> workbench kit (20 sticks, 6 twine, 4 stones then, by hand) -> place the workbench -> a log at the workbench with the wedge in the pack
 # gives 2 lumber ("Hand-split planks", recipe lumber_wedge); rough planks are retired (recipe audit, 10 Nov 2026), so the workbench makes none. Before the ingredient groups (F-16) the log
 # step could never be filled. The wedge is kept (not used up). Without the workbench near, nothing is made; without the wedge, no lumber from the wedge recipe.
 #   godot --headless --path . --script res://src/worldgen/tools/test_lumber_route.gd

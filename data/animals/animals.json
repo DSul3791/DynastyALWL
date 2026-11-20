@@ -18,6 +18,8 @@
 	"spawn_min_m": 150.0,
 	"spawn_max_m": 250.0,
 	"never_within_m": 60.0,
+	"cave_den_claim_m": 40.0,
+	"cave_den_claim_note": "Dave 19 Nov 2026 (bears, wolves and foxes may den in caves; provisional, docs/design/CAVE_DENS_AND_MINES.md): a cave den mouth is taken while an animal of its species, or that animal's den, is within this many metres of it (server_animals.cave_den_spot).",
 	"spawn_every_s": 2.0,
 	"per_player_cap": 30,
 	"spyglass": {"note": "The admin spyglass (Ctrl+Shift+L, docs/design/spyglass_design.md): while an admin looks through it the animals within send_radius_m are sent, nearest cap (the client draws as many). 300 m is despawn_m: every animal kept round a player.", "send_radius_m": 300.0, "cap": 60},

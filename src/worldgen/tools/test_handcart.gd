@@ -375,7 +375,7 @@ func _init() -> void:
 	cart_act(1, Carts.OP_GRAB, cart)
 	walk(1, c_pos + Vector3(0.0, 0.0, -12.0), 2.0)   # 10 m/s: faster than the cart's pace
 	check(pulling(1) == 0 and str(said.get(1, "")) == "You lose hold of the handcart.", "a puller running ahead of the cart's pace loses the handle")
-	box(cart).add(stone, 60)   # 60 of the 120 kg payload (TREE_WOOD_TOOLS_DESIGN.md W-15)
+	box(cart).add(stone, 120)   # 60 of the 120 kg payload (TREE_WOOD_TOOLS_DESIGN.md W-15), in 0.5 kg stones
 	items.report_position(1, items._items[cart]["pos"] + Vector3(0.0, 0.0, -1.7))
 	cart_act(1, Carts.OP_GRAB, cart)
 	check(pulling(1) == cart and int(pulls[1][1]) < pace_loaded_free, "a heavier load slows the cart (%.1f against %.1f m/s)" % [float(pulls[1][1]) / 10.0, float(pace_loaded_free) / 10.0])
@@ -435,7 +435,7 @@ func _init() -> void:
 
 	# --- 10. Payload: a crate too heavy for the cart stays down ---
 	var heavy: int = items.dev_place("warehouse_crate@%f,%f" % [parked.x + 2.0, parked.z])
-	box(heavy).add(stone, 200)
+	box(heavy).add(stone, 400)   # 200 kg of 0.5 kg stones (Dave 19 Nov 2026), past the 120 kg payload
 	items.report_position(1, parked + Vector3(1.0, 0.0, 0.0))
 	cart_act(1, Carts.OP_LOAD, heavy)
 	check(not items._items[heavy]["struct"].has("on"), "a crate that would take the cart past its payload stays on the ground")

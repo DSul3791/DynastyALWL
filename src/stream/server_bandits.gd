@@ -22,6 +22,7 @@ var ground_height: Callable    # (x, z) -> metres, or NAN
 var ground_ready: Callable     # (x, z) -> bool: the ground there can be read now without a tile read stalling the server (unset: always)
 var in_water: Callable         # (x, z) -> bool
 var building_near: Callable    # (Vector3, r) -> bool: a placed building (SurveyLine.is_building) within r
+var cave_mouths_at: Callable   # (x, z) -> Array of Vector2: every cave, den and mine mouth on the tile there, or null while that tile is not loaded
 var tribe_camps: Callable      # () -> Array of Vector2: every goblin tribe camp (server_tribes.gd camp_spots); no bandit site within tribe_clear_m of one
 var road_distance: Callable    # (Vector3, r) -> metres to the nearest road patch within r, or INF
 var lay_camp: Callable         # (key, fire Vector3, lean_to spots Array of [Vector3, yaw degrees], old ids to clear) -> Array of world ids laid
@@ -158,6 +159,19 @@ func refusal(cell: Vector2i, spot: Vector2, now: float) -> String:
 		for d in [Vector2.ZERO] + around:
 			if not bool(ground_ready.call(spot.x + d.x, spot.y + d.y)):
 				return "unloaded"
+
+	var mouth_clear: float = float(cfg.get("cave_clear_m", 150.0))
+
+	if cave_mouths_at.is_valid():
+		for d in [Vector2.ZERO, Vector2(mouth_clear, mouth_clear), Vector2(-mouth_clear, mouth_clear), Vector2(mouth_clear, -mouth_clear), Vector2(-mouth_clear, -mouth_clear)]:
+			var mouths: Variant = cave_mouths_at.call(spot.x + d.x, spot.y + d.y)   # the tiles round the spot (a corner may be the next tile's)
+
+			if mouths == null:
+				return "unloaded"
+
+			for mouth in mouths:
+				if spot.distance_to(mouth) < mouth_clear:
+					return "cave near"   # a cave, an animal's den or an abandoned mine keeps its mouth (as the goblin camp and the mines do)
 
 	var h: float = float(ground_height.call(spot.x, spot.y)) if ground_height.is_valid() else NAN
 

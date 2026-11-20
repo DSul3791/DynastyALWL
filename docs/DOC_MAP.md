@@ -45,7 +45,7 @@ These retain the existing topic routes, with design sources separated from imple
 | Goblin trading camp | [The Ragtooth camp](design/GOBLIN_CAMP.md) | Three wary goblins at a cave mouth by a river who talk and trade; tribes with attitudes in data; provisional GOBLIN-1..GOBLIN-8. | Relevant task record |
 | Garden moisture and irrigation | [Garden moisture](design/GARDEN_MOISTURE.md) | Soil moisture shown on beds, rain and hand watering, dry days slow crops; pipe water onto plots and the hoe's irrigation trench; provisional GM-1..GM-8. | This design's assumptions section |
 | Survey a path | [Survey a path: the survey line](design/SURVEY_ROAD.md) | Hoe survey roads at any distance, the green/red aim line, trees felled and stumps broken on the road, grass cleared 2 m each side; provisional SV-1..SV-9. | Relevant task record |
-| Bandit camps | [Bandit camps](design/BANDIT_CAMPS.md) | Seed-fixed bandit sites woken by road traffic (stage 1) and the camp laid on them: fire, Lean-tos, tethered horses, bandits levelled by distance (stage 2); provisional BANDIT-1..BANDIT-15. | Relevant task record |
+| Bandit camps | [Bandit camps](design/BANDIT_CAMPS.md) | Seed-fixed bandit sites woken by road traffic (stage 1) and the camp laid on them: fire, Lean-tos, tethered horses, bandits levelled by distance (stage 2); provisional BANDIT-1..BANDIT-16. | Relevant task record |
 | Ore veins and mines | [Ore veins and mines](design/ORE_VEIN_MINING.md) | Midgame vein mining from the existing geology; Dave's 17 Nov answers in s9; build waits for his go; provisional OV-1..OV-15. | Relevant task record |
 | Storage and fuel supply | [Storage and warehousing](design/STORAGE_WAREHOUSING_DESIGN.md) | Bins, storage movement, permissions and fuel supply. | Goals/progression repair below |
 | Food | [Preparation, preservation and serving](design/FOOD_PREPARATION_PRESERVATION_SERVING.md) | Food categories, stations and workflows. | Goals/progression repair below |
@@ -94,6 +94,7 @@ These sources remain available. Their inclusion preserves discoverability; it do
 | Area | References to review |
 |---|---|
 | Goblins | [Goblins](GOBLINS.md) |
+| Caves, cave dens and abandoned mines | [Cave dens and mines](design/CAVE_DENS_AND_MINES.md) (Dave 19 Nov 2026; provisional answers given for him) |
 | Generation and natural watersheds | [Generator vision](../GENERATOR_VISION.md), [Dave's watersheds](water/Dynasty_How_Natural_Watersheds_Work.md), [watershed build design](water/watershed_rebuild_design.md) |
 | Outdoor audio | [Sound outdoors](design/sound_outdoors_design.md) |
 | Other future systems awaiting topic review | [Remaining mixed ideas](../DESIGN_IDEAS.md) |

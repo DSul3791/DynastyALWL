@@ -49,7 +49,7 @@
 		{
 			"id": "smoker",
 			"title": "Build a smoker",
-			"hint": "Hold your hammer, press R and pick Smoker: 16 stones and 6 clay. Fish are smoked in it.",
+			"hint": "Hold your hammer, press R and pick Smoker: 32 stones and 6 clay. Fish are smoked in it.",
 			"after": [
 				"hammer"
 			],

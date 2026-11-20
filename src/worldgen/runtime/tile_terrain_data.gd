@@ -18,6 +18,7 @@ const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const WaterStore := preload("res://src/water/water_store.gd")
 const WaterRecordScript := preload("res://src/worldgen/record/water_record.gd")
 const CaveClimate := preload("res://src/shared/cave_climate.gd")
+const MineSites := preload("res://src/worldgen/runtime/mine_sites.gd")
 const ORE_PIPE := 2
 const ORE_FIRST_LAYER := 5   # ore codes (_load_ores): lens 0, halo 1, pipe 2, vein 3, placer 4 are compact bodies; layer 5 and scatter 6 cover a province
 const WetMeters := 0.12   # water drawn from this depth (the water simulation's WET_M)
@@ -28,6 +29,14 @@ const GOBLIN_DEN_PERCENT := 60      # share of caves with a dry den spot that ho
 const GOBLIN_DEN_CAVES := ["spring_cave", "karst", "lava_tube"]   # inland caves with passages; never sea caves (the tide floods them) or rock shelters (no passage)
 const GOBLIN_LITTER_PILES := 5      # litter piles round a goblin den's fire
 const GOBLIN_LITTER_RING_M := 1.6   # how far from the fire
+# Animal dens in caves (Dave 19 Nov 2026, "natural caves will become dens for animals or creatures"; answered for him by the coordinator the same day,
+# provisional CD-1..CD-3 in docs/design/CAVE_DENS_AND_MINES.md: bears, wolves and foxes may den in caves). A cave without a goblin den holds an animal
+# den in ANIMAL_DEN_PERCENT of them, picked by the cave's id; the animal follows the cave's size.
+const ANIMAL_DEN_PERCENT := 70
+const ANIMAL_DEN_BY_SIZE := {"large": "bear", "medium": "wolf", "small": "fox"}   # a lava tube counts as large
+const ANIMAL_DEN_RESERVED := ["3,4#8013"]   # the cave proposed for the goblin trading camp (thread "Build a goblin trading camp"), held free of animals
+const DEN_SIGN_DROPPINGS := 4.0     # cave_bones kinds of the den signs (protocol 141): droppings by the mouth, bedding at the den
+const DEN_SIGN_BEDDING := 5.0
 
 var tile: Vector2i = Vector2i.ZERO
 var samples: int = 0
@@ -95,16 +104,18 @@ var spring_mouths: PackedVector2Array = PackedVector2Array()   # world x, z of e
 var goblin_dens: PackedVector3Array = PackedVector3Array()          # the floor point of each goblin den (Dave 7 Nov 2026): a dry side branch of a spring cave, or a dry dead end of a karst cave or lava tube, picked by GOBLIN_DEN_PERCENT of the cave's id
 var goblin_den_paths: Array = []   # per goblin den (parallel to goblin_dens): PackedVector3Array of floor points along the cave skeleton from the mouth node to the den node, the way its goblins walk in and out (docs/design/goblin_den_life_design.md)
 var goblin_den_mouths: PackedVector2Array = PackedVector2Array()   # world x, z of the mouth of each cave that has a goblin den: where its goblin group comes out (server_animals lair_mouths)
+var mines: Array = []                  # the tile's abandoned mines (MineSites.plan), in the baked caves' form; carved, scattered and dressed with them
+var animal_den_mouths: Dictionary = {}   # species ("bear", "wolf", "fox") -> PackedVector2Array of the world x, z of each cave mouth it dens in (animal_den_species); server_animals cave_den_mouths
 var cave_dens: PackedVector3Array = PackedVector3Array()   # every cave den: its node's floor point (world m), for den sounds (Sound thread #211)
 # Cave dressing (Dave 4 Nov 2026; bake: tile_sites._dress_cave; drawn by Kathreen's client view). Flat lists:
-var cave_bones: PackedFloat32Array = PackedFloat32Array()        # 5 floats each: x, y, z, kind (0 animal, 1 human), yaw
+var cave_bones: PackedFloat32Array = PackedFloat32Array()        # 5 floats each: x, y, z, kind (0 animal, 1 human, 2 goblin litter, 3 goblin fire, 4 den droppings, 5 den bedding, 6 mine timber set, 7 mine post, 8 fallen set), yaw
 var cave_formations: PackedFloat32Array = PackedFloat32Array()   # 6 floats each: x, y, z, kind (0 stalagmite, 1 stalactite), height_m, radius_m (a stalactite's y is its root on the roof)
 # Loose stones and boulders on cave floors (Dave 4 Nov 2026: "they should be riddled with rocks and collectable stones"): 5 floats each, x, y (the floor),
-# z, kind (0 stone, 1 boulder), boulder radius m. Laid out by the server's item scatter (server_items._lay_out_cave_items) through cave_scatter_in.
+# z, kind (0 stone, 1 boulder, 2 a mine's leftover item), boulder radius m (kind 2: the item's index in MineSites.LEFTOVERS). Laid out by the server's item scatter (server_items._lay_out_cave_items) through cave_scatter_in.
 var cave_scatter: PackedFloat32Array = PackedFloat32Array()
 var _cave_scatter_cells: Dictionary = {}   # Vector2i scatter cell -> PackedInt32Array of entry numbers, built for _cave_scatter_cell_m
 var _cave_scatter_cell_m: float = 0.0
-var _cave_sources: Array = []           # the tile's baked caves, kept so the scatter is worked out only when the server first asks (the client never does)
+var _cave_sources: Array = []           # the tile's baked caves and its mines, kept so the scatter is worked out only when the server first asks (the client never does)
 var _cave_scatter_built: bool = false
 const CAVE_STONE_EVERY_M := 2.5     # one loose stone per this many metres of passage
 const CAVE_BOULDER_EVERY_M := 9.0   # one boulder per this many metres of passage
@@ -179,7 +190,17 @@ func load_file(path: String, tile_coord: Vector2i, tile_size_m: float, rules: Di
 	_load_provinces(lists["provinces"], rules, rock_ids)
 	_load_bodies(lists["features"], rules)
 	_load_ores(lists["ore_bodies"], resource_ids, rock_ids)
-	_load_caves(lists["sites"].get("caves", []))
+	# The tile's abandoned mines (Dave 19 Nov 2026), worked out from its ore bodies and heights here, never baked, after the baked caves.
+	var baked: Array = lists["sites"].get("caves", [])
+	var mouths: Array = []
+
+	for cave in baked:
+		for entrance in cave.get("entrances", []):
+			var mouth_node: Array = cave["nodes"][int(entrance)]
+			mouths.append(Vector2(float(mouth_node[0]), float(mouth_node[2])))
+
+	mines = MineSites.plan(self, lists["ore_bodies"], mouths, MineSites.start_point())
+	_load_caves(baked + mines)
 	_load_springs(lists["sites"].get("springs", []))
 	_carve_beds(rules.get("runtime_terrain", {}).get("sim_water", {}))
 	_load_sim_water(path)
@@ -987,6 +1008,74 @@ static func goblin_den_nodes(list: Array) -> Array:
 	return nodes
 
 
+# The animal that dens in a cave without goblins ("" for none): ANIMAL_DEN_PERCENT of the inland caves with passages, picked by the cave's id (a hash
+# apart from the goblins' so the two shares do not line up), the animal by the cave's size. The server, the client's dressing and island_checks agree.
+static func animal_den_species(cave: Dictionary) -> String:
+	var kind: String = str(cave.get("cave_kind", ""))
+	var id: String = str(cave.get("id", ""))
+
+	if not GOBLIN_DEN_CAVES.has(kind) or (cave.get("nodes", []) as Array).size() < 2 or ANIMAL_DEN_RESERVED.has(id) or absi(hash(id + "/animal_den")) % 100 >= ANIMAL_DEN_PERCENT:
+		return ""
+
+	return str(ANIMAL_DEN_BY_SIZE.get("large" if kind == "lava_tube" else str(cave.get("size", "small")), ""))
+
+
+# The node an animal beds down at: the cave's last dry den spot, else its den nearest the entrance, else the second node in; -1 when there is none.
+static func animal_den_node(cave: Dictionary) -> int:
+	var dry: int = dry_den_node(cave)
+
+	if dry >= 0:
+		return dry
+
+	for den in cave.get("dens", []):
+		if str(den.get("where", "")) == "near_entrance":
+			return int(den["node"])
+
+	return 1 if (cave.get("nodes", []) as Array).size() > 1 else -1
+
+
+# A cave's animal den (Dave 19 Nov 2026): its mouth goes in animal_den_mouths for the server, and the signs a player reads from outside go in
+# cave_bones: droppings a few metres in from the mouth, to the side of any stream, old bones there too for a bear or a wolf (they bring kills home),
+# and a trampled bed of leaves, grass and fur at the den spot.
+func _add_animal_den(cave: Dictionary, mouth_node: int) -> void:
+	var sp: String = animal_den_species(cave)
+
+	if sp == "":
+		return
+
+	var nodes: Array = cave["nodes"]
+	var mouth: Array = nodes[mouth_node]
+
+	var listed: PackedVector2Array = animal_den_mouths.get(sp, PackedVector2Array())
+	listed.append(Vector2(float(mouth[0]), float(mouth[2])))
+	animal_den_mouths[sp] = listed   # a packed array is copied on read, so it goes back in
+	var inner: Array = mouth
+
+	for segment in cave["segments"]:
+		if int(segment[0]) == mouth_node or int(segment[1]) == mouth_node:
+			inner = nodes[int(segment[1]) if int(segment[0]) == mouth_node else int(segment[0])]
+			break
+
+	var a: Vector3 = Vector3(float(mouth[0]), float(mouth[1]) - 0.5 * float(mouth[4]), float(mouth[2]))
+	var b: Vector3 = Vector3(float(inner[0]), float(inner[1]) - 0.5 * float(inner[4]), float(inner[2]))
+	var along: Vector3 = Vector3(b.x - a.x, 0.0, b.z - a.z)
+	along = along.normalized() if along.length() > 0.01 else Vector3.FORWARD
+	var side: Vector3 = Vector3(-along.z, 0.0, along.x) * 0.35 * minf(float(mouth[3]), float(inner[3]))   # off the stream's ribbon (0.3 of the width each side)
+	var spot: Vector3 = a.lerp(b, 0.6) + side
+	var yaw: float = fposmod(float(absi(hash(str(cave.get("id", ""))))) * 0.001, TAU)
+	cave_bones.append_array(PackedFloat32Array([spot.x, spot.y, spot.z, DEN_SIGN_DROPPINGS, yaw]))
+
+	if sp != "fox":
+		var bones_at: Vector3 = a.lerp(b, 0.8) - side
+		cave_bones.append_array(PackedFloat32Array([bones_at.x, bones_at.y, bones_at.z, 0.0, yaw + 2.1]))
+
+	var den: int = animal_den_node(cave)
+
+	if den >= 0:
+		var dn: Array = nodes[den]
+		cave_bones.append_array(PackedFloat32Array([float(dn[0]), float(dn[1]) - 0.5 * float(dn[4]), float(dn[2]), DEN_SIGN_BEDDING, yaw + 1.3]))
+
+
 # The tile's ground springs ({pos [x, y, z], m3_s, cover}, tile_sites._make_record_springs), in the file's order: the order gives each spring's
 # cover its item numbers (flora_placer SPRING_BASE), so it never changes. A tile baked by the rules has none.
 func _load_springs(list: Array) -> void:
@@ -1033,6 +1122,7 @@ func _load_caves(list: Array) -> void:
 	goblin_dens = PackedVector3Array()
 	goblin_den_mouths = PackedVector2Array()
 	goblin_den_paths = []
+	animal_den_mouths = {}
 	cave_bones = PackedFloat32Array()
 	cave_formations = PackedFloat32Array()
 	cave_scatter = PackedFloat32Array()
@@ -1049,6 +1139,9 @@ func _load_caves(list: Array) -> void:
 		for bone in cave.get("bones", []):
 			var at: Array = bone["pos"]
 			cave_bones.append_array(PackedFloat32Array([float(at[0]), float(at[1]), float(at[2]), 1.0 if str(bone["kind"]) == "human" else 0.0, float(bone.get("yaw", 0.0))]))
+
+		for row in cave.get("timbers", []):   # a mine's timber sets, props and fallen sets (cave_bones kinds 6 to 8)
+			cave_bones.append_array(PackedFloat32Array(row))
 
 		for form in cave.get("formations", []):
 			var at: Array = form["pos"]
@@ -1102,6 +1195,9 @@ func _load_caves(list: Array) -> void:
 			for k in GOBLIN_LITTER_PILES:
 				var turn: float = TAU * float(k) / float(GOBLIN_LITTER_PILES) + 0.7
 				cave_bones.append_array(PackedFloat32Array([goblin_spot.x + cos(turn) * GOBLIN_LITTER_RING_M, goblin_spot.y, goblin_spot.z + sin(turn) * GOBLIN_LITTER_RING_M, 2.0, fposmod(turn * 2.3, TAU)]))
+		elif not nodes.is_empty():
+			_add_animal_den(cave, mouth_node)
+
 		var capsules: Array = []
 		var chambers: Array = []
 		var low: Vector3 = Vector3(INF, INF, INF)
@@ -1208,6 +1304,9 @@ func _scatter_cave(cave: Dictionary) -> void:
 				continue
 
 			_add_cave_floor_spot(centre, Vector2(cos(angle), sin(angle)), d / r, r, rh, 1 if boulder else 0, radius)
+
+	for row in cave.get("extra", []):   # a mine's spoil heap, fallen-set rubble and leftovers, placed by MineSites
+		cave_scatter.append_array(PackedFloat32Array(row))
 
 
 # A floor spot `side` (a share of the half width rw, either sign) out from `centre` along `side_dir` on a section rw wide and rh tall.

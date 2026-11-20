@@ -105,25 +105,25 @@ func _init() -> void:
 	items.set_attribute(1, "charisma", 50)
 	items.add_rep(1, "hob", -30)
 	var stone: int = items.table.number_of("stone")
-	items.give_to(1, "stone", 60)
+	items.give_to(1, "stone", 120)
 	var slot_s: int = items.inventory_of(1).numbers.find(stone)
 	var purse0: int = items.coins_of(1)
 	trade.deal(1, "hob", 1, slot_s, 1)
 	var first: int = items.coins_of(1) - purse0
-	check(first == 0 and items.count_for(1, "stone") == 60, "a single stone pays nothing and is kept (a thirtieth of a copper, sold in lots of 30)")
-	trade.deal(1, "hob", 1, slot_s, 29)
-	check(items.coins_of(1) == purse0 and items.count_for(1, "stone") == 60, "twenty-nine stones are less than a lot: no copper, all kept")
-	var seven_msg: String = trade.deal(1, "hob", 1, slot_s, 37)
+	check(first == 0 and items.count_for(1, "stone") == 120, "a single stone pays nothing and is kept (a sixtieth of a copper, sold in lots of 60: 0.5 kg stones, Dave 19 Nov 2026)")
+	trade.deal(1, "hob", 1, slot_s, 59)
+	check(items.coins_of(1) == purse0 and items.count_for(1, "stone") == 120, "fifty-nine stones are less than a lot: no copper, all kept")
+	var seven_msg: String = trade.deal(1, "hob", 1, slot_s, 67)
 	first = items.coins_of(1) - purse0
-	check(seven_msg.contains("7 left") and seven_msg.contains("30 at a time"), "the sold message says seven stones were left and the lot size (%s)" % seven_msg)
-	check(first == 1 and items.count_for(1, "stone") == 30, "thirty-seven stones: one lot of 30 pays 1 copper, the seven odd stones are kept (%d)" % first)
+	check(seven_msg.contains("7 left") and seven_msg.contains("60 at a time"), "the sold message says seven stones were left and the lot size (%s)" % seven_msg)
+	check(first == 1 and items.count_for(1, "stone") == 60, "sixty-seven stones: one lot of 60 pays 1 copper, the seven odd stones are kept (%d)" % first)
 	var purse1: int = items.coins_of(1)
-	trade.deal(1, "hob", 1, slot_s, 30)
+	trade.deal(1, "hob", 1, slot_s, 60)
 	var rest: int = items.coins_of(1) - purse1
-	check(first >= 1 and rest == 1, "selling thirty more stones pays one copper, a thirtieth of a copper each (%d for 30)" % rest)
+	check(first >= 1 and rest == 1, "selling sixty more stones pays one copper, a sixtieth of a copper each (%d for 60)" % rest)
 	check(trade.demand("hob", "stone") <= 0.5, "and the trader is tired of stones (%.2f)" % trade.demand("hob", "stone"))
-	clock[0] += 900.0
-	check(trade.demand("hob", "stone") > 0.9, "fifteen minutes later the demand has come back (%.2f)" % trade.demand("hob", "stone"))
+	clock[0] += 1800.0   # demand comes back 4 pieces a minute (coins.json demand); the 120 stones sold are 60 kg of 0.5 kg stones (Dave 19 Nov 2026), twice the pieces the 60 kg was before
+	check(trade.demand("hob", "stone") > 0.9, "thirty minutes later the demand has come back (%.2f)" % trade.demand("hob", "stone"))
 
 	# Worthless and rotten things are not bought; damaged tools pay less.
 	check(trade.price_to_get(0, 0.55) == 0 and trade.price_to_get(20, 0.55, 0.5) == 5 and trade.price_to_get(1, 0.55) == 1, "worthless pays nothing, half-worn pays half, a copper item pays at least 1")

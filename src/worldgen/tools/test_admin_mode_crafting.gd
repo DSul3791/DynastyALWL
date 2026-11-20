@@ -13,7 +13,7 @@ const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the han
 
 const KEY := "adminmodekey01"
 const TWINE := 1            # 3 plant fibre, by hand, known
-const CUT_STONE_BLOCK := 127   # 8 stone at a workbench, known
+const CUT_STONE_BLOCK := 127   # 16 stone (0.5 kg, Dave 19 Nov 2026) at a workbench, known
 const FISH_TRAP := 390      # 10 sticks + 4 twine, not known and locked: never learned
 
 var failures: int = 0
@@ -111,14 +111,14 @@ func _init() -> void:
 	check(have("twine") == 5, "5 twine in all (%d)" % have("twine"))
 
 	# --- Normal mode: stations ---
-	items.inventory_of(1).add(n("stone"), 8)
+	items.inventory_of(1).add(n("stone"), 16)
 	said.clear()
 	queue(CUT_STONE_BLOCK, 1)
-	check(items.craft_queue_of(1).is_empty() and have("stone") == 8 and heard("nearby"), "cut stone with no workbench near is refused and the stone stays (%s)" % str(said))
+	check(items.craft_queue_of(1).is_empty() and have("stone") == 16 and heard("nearby"), "cut stone with no workbench near is refused and the stone stays (%s)" % str(said))
 	var bench: int = items.dev_place("workbench@1,0,0")
 	check(bench != 0 and items.station_near(1, "workbench"), "a workbench stands beside the player")
 	queue(CUT_STONE_BLOCK, 1)
-	check(items.craft_queue_of(1) == [[CUT_STONE_BLOCK, 1]] and have("stone") == 0, "at the bench the craft is queued and takes the 8 stone")
+	check(items.craft_queue_of(1) == [[CUT_STONE_BLOCK, 1]] and have("stone") == 0, "at the bench the craft is queued and takes the 16 stone")
 	run_ticks(60.0)
 	check(have("cut_stone_block") == 1, "the cut stone block is made at the bench")
 
@@ -153,10 +153,10 @@ func _init() -> void:
 	check(have("cut_stone_block") == 3 and have("fish_trap") == 1, "and neither is made")
 	queue(FISH_TRAP, 1)
 	check(items.craft_queue_of(1).is_empty() and have("stick") == 10, "the unknown recipe is refused again")
-	items.inventory_of(1).add(n("stone"), 8)
+	items.inventory_of(1).add(n("stone"), 16)
 	said.clear()
 	queue(CUT_STONE_BLOCK, 1)
-	check(items.craft_queue_of(1).is_empty() and have("stone") == 8 and heard("nearby"), "the station recipe is refused again away from the bench, the stone kept")
+	check(items.craft_queue_of(1).is_empty() and have("stone") == 16 and heard("nearby"), "the station recipe is refused again away from the bench, the stone kept")
 
 	# --- A new session starts off again, and a free craft left in the queue is not made ---
 	admin_mode(true)
