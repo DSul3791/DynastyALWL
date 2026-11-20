@@ -308,7 +308,7 @@ func _drop_tile(bank_m: float) -> Object:
 func _reach_drop() -> void:
 	var half: float = DrinkRules.BODY_HALF_M
 	var mean_c: Callable = func(_h: float) -> float: return 10.0
-	# Standing on the bank top 4 m from the river's middle (x 20 next to x 24), the feet at the bank top, water 20 - 0.8 j.
+	# Standing on the bank top (x 20, where the nearest sample is already the river's, x 24), the feet at the bank top, water 20 - 0.8 j.
 	for bank in [0.3, 1.0, 2.0, 2.4]:
 		var tile = _drop_tile(bank)
 		var feet: float = 20.0 - 0.8 * 3.0 + bank
@@ -333,6 +333,43 @@ func _reach_drop() -> void:
 	# A brook's bed (a record channel sample) counts by its height the same way, and so does a ground spring head.
 	check(DrinkRules.too_far_below(7.4, 10.9) and not DrinkRules.too_far_below(7.6, 10.9), "the drop is measured from the feet (0.9 m under the body's middle), 2.5 m down")
 	check(DrinkRules.ground_spring_rows([[Vector3(0.0, 5.0, 0.0), 0.002, "bushes"]], Vector3(1.0, 5.0 + 10.0 + half, 0.0), 3.0, func(_h): return 10.0).is_empty(), "a spring head 10 m down a cliff is out of reach")
+
+	# A record brook (drink sections on the channel samples) at the foot of the cliff: its bed's height decides, as the water's level does.
+	var gorge = _drop_tile(10.0)
+	var regime: PackedFloat32Array = PackedFloat32Array()
+	var width: PackedFloat32Array = PackedFloat32Array()
+	var below: PackedFloat32Array = PackedFloat32Array()
+	var none: PackedFloat32Array = PackedFloat32Array()
+
+	for k in range(49):
+		regime.append(1.0 if k % 7 == 3 else 0.0)
+		width.append(0.6 if k % 7 == 3 else 0.0)
+		below.append(NAN)
+		none.append(0.0)
+
+	gorge.load_drink_sections(WaterRecordScript.encode_drink({"regime": regime, "width_m": width, "below_spring_m": below, "spring_q": none, "spring_y": none}))
+	var gorge_levels: PackedFloat32Array = PackedFloat32Array()
+	gorge_levels.resize(49)
+	gorge_levels.fill(NAN)
+	gorge.set_sim(gorge_levels, PackedFloat32Array())   # a brook too narrow for the settled water: only its bed (heights) is there
+	var sheet: PackedFloat32Array = gorge.water_surface
+	sheet.fill(NAN)
+	gorge.water_surface = sheet
+	check(DrinkRules.tile_rows(gorge, above, 3.0, mean_c).is_empty(), "a record brook 10 m down the cliff gives no row")
+	var by_brook: Array = DrinkRules.tile_rows(gorge, Vector3(23.0, 20.0 - 2.4 - 1.0 + half, 24.0), 3.0, mean_c)
+	check(by_brook.any(func(row): return str(row["kind"]) == "brook"), "standing in the brook's bed it gives a brook row (%s)" % str(by_brook))
+
+	# The sea (class 1, no surface above it) is at 0 m: a salt row from a beach 1 m up, none from a cliff 8 m up.
+	var coast = _drop_tile(1.0)
+	var classes: PackedByteArray = coast.water_class
+	classes.fill(1)
+	coast.water_class = classes
+	coast.set_sim(PackedFloat32Array(), PackedFloat32Array())
+	var calm: PackedFloat32Array = coast.water_surface
+	calm.fill(NAN)
+	coast.water_surface = calm
+	check(DrinkRules.tile_rows(coast, Vector3(20.0, 1.0 + half, 24.0), 3.0, mean_c).any(func(row): return str(row["kind"]) == "salt"), "on a beach 1 m above the sea: a salt row")
+	check(DrinkRules.tile_rows(coast, Vector3(20.0, 8.0 + half, 24.0), 3.0, mean_c).is_empty(), "on a cliff 8 m above the sea: no row")
 
 	# The server refuses there too: _drink_water with the real water test on the cliff tile.
 	var dir: String = "user://test_drinking_water_drop"

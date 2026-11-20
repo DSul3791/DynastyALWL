@@ -12,9 +12,10 @@ extends RefCounted
 
 const ORDER := ["spring", "river", "lake", "brook", "puddle"]   # cleanest first (Sonny's physical order); salt is never picked
 const RHO_C := 4.19e6   # J/m3K, water
-# Water within reach must also lie within reach downward (Dave 19 Nov 2026: "press e to drink" on a hillside about 10 m above a river; the
-# coordinator's ruling 20 Nov, provisional for Dave): its level, or a brook's bed, no more than REACH_DROP_M below the feet. A position a client
-# reports is its body's middle, BODY_HALF_M above the feet (terrain_client _make_player: a 1.8 m capsule).
+# Water within reach must also lie within reach downward (Dave 19 Nov 2026, a drink prompt on a hillside above a river, "about 10 meters above
+# the water"; REACH_DROP_M is the coordinator's ruling of 20 Nov, provisional for Dave): its level, a brook's bed or a spring head no more than
+# REACH_DROP_M below the feet. A position a client reports is its body's middle, BODY_HALF_M above the feet (terrain_client _make_player: a 1.8 m
+# capsule; stance.gd keeps the feet there in every stance).
 const REACH_DROP_M := 2.5
 const BODY_HALF_M := 0.9
 
@@ -41,7 +42,8 @@ static func ground_spring_rows(springs: Array, pos: Vector3, reach: float, mean_
 # year mean there (the caller's climate zone). At the same five points as water_near: a spring cave's stream is spring water; the record's
 # ground springs are spring rows (step 2a); ocean and estuary cells are salt; a sample on a record channel (the tile's drink sections) is a
 # brook by regime, which runs or lies dry by the season (runs) whatever the sim shows (step 2b); otherwise wet lake and river cells are lakes
-# and rivers, and any other cell the live sim has wet is a puddle. No ice field: server_items puts its own ice rule (_on_ice) on each row.
+# and rivers, and any other cell the live sim has wet is a puddle. A point whose water (the sea at 0 m), or bed, lies more than REACH_DROP_M below
+# the feet gives no row. No ice field: server_items puts its own ice rule (_on_ice) on each row.
 static func tile_rows(tile_data, pos: Vector3, reach: float, mean_c: Callable) -> Array:
 	var rows: Array = []
 
