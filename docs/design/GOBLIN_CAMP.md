@@ -1,6 +1,6 @@
 # The Ragtooth goblin camp
 
-**Status: DAVE-REQUESTED (19 Nov 2026). The camp is in dev (#1325); camp life (stage 2, 20 Nov 2026) is in dev too (#1354, 95bb7530). Neither played nor seen on screen yet.** Values marked PROVISIONAL were answered on Dave's behalf by the coordinator while he was away (standing rule, 14 Nov 2026) and wait for his review below.
+**Status: DAVE-REQUESTED (19 Nov 2026). The camp is in dev (#1325); camp life (stage 2, 20 Nov 2026) is in dev too (#1354, 95bb7530), and so is the camp stock, the light version (#1369, 0d6415cc). None of it played nor seen on screen yet.** Values marked PROVISIONAL were answered on Dave's behalf by the coordinator while he was away (standing rule, 14 Nov 2026) and wait for his review below.
 
 ## What Dave asked (19 Nov 2026)
 - "we also already have goblins in our game so we should build them a goblin camp somewhere near the river or in a cave. I want the goblins to be apprehensive but willing to communicate and trade/buy and sell. in the future the game will have various goblin tribes/camps etc that are friendly, not friendly, indifferent etc."
@@ -111,7 +111,7 @@ What Dave asked on 20 Nov 2026:
 
 **State of B and C (20 Nov 2026).** Built on the branch under protocol 146. Not played or seen on screen yet.
 - `server_tribes.gd` `chore_plan` runs each goblin's round from the camp's `chores` data; `server_npcs.gd` `_step_chore`, `_move` and `_turn_to` walk it with eased speed (accel_mps2 1.5) and a turn limit (turn_dps 160).
-- The chores are show only, a provisional first cut (GOBLIN-10): Dave described real gathering, and nothing is gathered, carried or added yet.
+- The chores are show only, a provisional first cut (GOBLIN-10): Dave described real gathering; nothing is gathered or carried, and the camp's stock fills on its own clock instead (the light version, below).
 - The hand: `held_item.gd` `_report_held` sends `terrain_net.gd` `held_item`; `server_items.gd` `report_held` and `held_number` keep it, checked against the pack. This replaces GOBLIN-4's hotbar test.
 - Guard: `avoid` answers guard for a weapon in hand within spook_m; the client turns the spear forward and plays the new goblin chitter and hiss (`creature_sounds.gd`, made by `assets/audio/make_creatures.py`).
 - Attacked: wary anger is now 1 game day and costs attack_rep (3) standing once per anger; hidden goblins wait calm_s (30 s) after the attacker has gone, then walk out.
@@ -121,7 +121,7 @@ What Dave asked on 20 Nov 2026:
 
 **Order.** A, B and C go together in PR #1354 (protocol 146), ahead of the goblins PR (#1345) that added Vrixa and Grikka; their chore rounds come from data (`default_jobs`, or a `chores` list in their members row). A BugsList entry follows in a docs PR.
 
-## Camp stock, the light version (20 Nov 2026; built on the branch, not played)
+## Camp stock, the light version (20 Nov 2026; in dev, #1369 0d6415cc, not played)
 
 Dave, 20 Nov 2026: "Build the light version of the goblin camp." It was offered to him as the goblins keep their chores for show, while the camp chest and racks slowly fill to a small capped stock on a timer, with nothing taken from the world. Trading for that stock at good standing was mentioned as a later step. It is not built.
 

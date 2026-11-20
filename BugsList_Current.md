@@ -685,7 +685,7 @@ Dave, 20 Nov 2026: "they should all keep themselves busy in the area around the 
 
 **Acceptance:** at the camp, watch for a few minutes: the goblins walk up the ledge, gather, come back to the fire and chest, and one goes into the cave and returns later; nobody slides, lunges or spins. Try to open or use the chest or racks, or take any prop down: refused. Walk up empty-handed: they watch and keep their distance; talk to Skritch and trade. Take a spear in hand within 10 m: they square up facing you, spears forward, with angry calls; put it away and they go back to work. Strike one: the goblins near you run into the cave, the standing drops, they refuse you; walk more than 30 m away and they come back out after about half a minute.
 
-Not done: the chores are show only (nothing gathered, carried, stored or cooked; the fire never runs low; the chest is empty and shut). The server trusts the client's word on which item is in hand (it checks only that the pack holds it). The benches can still be sat on by the client like any bench. Spear angle, props on the slope and the guard clips are unchecked on screen. Vrixa and Grikka (goblins PR) join the chores by data when they land.
+Not done: the chores are show only (nothing gathered, carried, stored or cooked; the fire never runs low; the chest is shut; since entry 86 its stock is told in words). The server trusts the client's word on which item is in hand (it checks only that the pack holds it). The benches can still be sat on by the client like any bench. Spear angle, props on the slope and the guard clips are unchecked on screen. Vrixa and Grikka (goblins PR) join the chores by data when they land.
 
 Assumed on Dave's behalf (provisional, docs/design/GOBLIN_CAMP.md): GOBLIN-9 "friendly but nervous" is the existing wary row; GOBLIN-10 chores are show only (a first cut: Dave described real gathering); GOBLIN-11 the five props from the catalog, none usable; GOBLIN-12 an attack costs 3 standing once per anger and 1 game day of anger (was 3 days); GOBLIN-13 "a weapon in hand" means any item of kind weapon (melee, bows, slings), not tools or torches; GOBLIN-14 a hunt is 2 to 4 real minutes out of sight, one at a time; GOBLIN-15 they come back about 30 s after the attacker leaves.
 
@@ -746,6 +746,20 @@ Assumed on Dave's behalf (provisional, docs/design/BANDIT_CAMPS.md): BANDIT-34 a
 **Required outcome:** a script that does not parse fails the warning check quickly and by name, on Windows and Linux; a check that did not finish is never reported as a pass.
 
 **Acceptance:** `REQUIRE_GODOT=1 bash tools/test_check_warnings.sh` passes on both lanes; nothing to see in play.
+
+## 86. Goblin camp, the light version: the chest and racks fill to a small stock
+
+**Status: Implemented - awaiting player verification.** Dave's choice, 20 Nov 2026 (thread "Build a goblin trading camp"; the camp is entry 71, camp life entry 80). PR #1369, merged to dev at 0d6415cc (head 00193ed4) after independent review (3 rounds; the first asked for the stock to start filling when the server first runs rather than at the first look, and for wording; the third re-read it after the Vrixa and Grikka merge; final PASS on the exact head). Lane A (Dave's PC, clean clone) on the exact head: 265 of 265 selected tests passed (255 fast, 8 timing, 2 slow), 0 script errors, test_goblin_camp among them; warnings 381, zero new. Camp cost measured there with five goblins (whole NPC tick): 0.181 ms per 10 Hz tick at chores, 0.275 ms with a weapon carrier by the fire; test_npcs 65 NPCs 0.714 ms against 1 ms. No protocol or item change; tribes_state.json gains a stock_from key (same version, old files load). Not yet played.
+
+Dave, 20 Nov 2026: "Build the light version of the goblin camp." (Offered to him as: the goblins keep their chores for show while the camp chest and racks slowly fill to a small capped stock on a timer, with nothing taken from the world.)
+
+**Required outcome:** at the Ragtooth camp the Crude chest holds Firewood and Plant fibre, the Drying rack Raw meat and the Tanning rack Hide, all existing items. Each game day brings 6 Firewood, 4 Plant fibre, 2 Raw meat and 1 Hide, up to 20, 12, 4 and 3, so the camp is full in about 3 to 4 game days; it fills from the server's first run whether or not anyone is near, and a restart keeps it. Nothing is taken from the world and the stock never spoils or burns. Nobody can take it: opening the chest or using a rack is refused, and the refusal says what the piece holds, for example "That belongs to the Ragtooth camp. In it: 20 firewood and 12 plant fibre." An empty piece says "It is empty for now." A bench holds nothing. Design: docs/design/GOBLIN_CAMP.md "Camp stock, the light version".
+
+**Acceptance:** on a fresh server, go to the camp at once and try the chest: it says it is empty or nearly so. A few game days later try the chest, the drying rack and the tanning rack: each says what it holds, up to the caps, and nothing can be taken out.
+
+Not done: the stock is told only in words, nothing is drawn on the racks or by the fire; it cannot be traded for or taken (no theft rule yet); the chores still carry nothing real.
+
+Assumed on Dave's behalf (provisional, docs/design/GOBLIN_CAMP.md): GOBLIN-16 the amounts and caps, filling from the server's first run; GOBLIN-17 nobody can take the stock, no theft rule yet; GOBLIN-18 the stock is shown in words only.
 
 ## 87. The first look build cost check failed now and then on Lane A (test_look_build_cost flake)
 
