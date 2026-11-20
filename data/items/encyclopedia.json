@@ -9217,7 +9217,8 @@
 			"description": "An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"wooden_hand_pump": {
 			"name": "Wooden - Hand pump",
@@ -9225,7 +9226,8 @@
 			"description": "An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"iron_hand_pump_kit": {
 			"name": "Iron - Hand pump",

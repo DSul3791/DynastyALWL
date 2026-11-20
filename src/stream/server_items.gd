@@ -10717,8 +10717,10 @@ func _load_blueprints() -> void:
 	for id in parsed.get("blueprints", {}):
 		var row: Dictionary = parsed["blueprints"][id].duplicate()
 
-		if bool(row.get("retired", false)):   # kept in the file for its number, and for the take-down of a piece still standing (a retired pump, s10)
-			_retired_blueprint_of_kit[str(_structures.get(str(row["structure"]), {}).get("kit", ""))] = row
+		if bool(row.get("retired", false)):   # kept in the file for its number only
+			if bool(row.get("take_down_refund", false)):   # a retired piece still standing gives its materials back (the pumps, PLUMBING_DESIGN s10)
+				_retired_blueprint_of_kit[str(_structures.get(str(row["structure"]), {}).get("kit", ""))] = row
+
 			continue
 
 		row["id"] = id
@@ -17755,7 +17757,7 @@ func _water_resolve(now_s: float) -> void:
 	_water_next_s = _water.next_event_s()
 
 
-# --- Wells and pumps (6b part 2; Sonny's water rules sections 1 to 3) ---
+# --- Wells (6b part 2; Sonny's water rules sections 1 to 3; no pumps since Dave 20 Nov 2026) ---
 # A source whose water block has "ground_water" (a well) lifts from the nearest fresh water within WELL_REACH_M: its depth is its ground minus that
 # water's surface, and it may not go where there is none or deeper than its max_depth_m. E on one starts working it and E again stops: a windlass
 # ("windlass": true) gives windlass_lpm with its bucket's draw_l (there are no pumps: Dave 20 Nov 2026, PLUMBING_DESIGN s10),
@@ -17786,14 +17788,14 @@ func _ground_water_refusal(piece: Dictionary, spot: Vector3) -> String:
 	if is_nan(depth):
 		return "There is no fresh water within %d m to reach down to." % int(WELL_REACH_M)
 
-	if depth > _lift_limit_m(piece, spot):
+	if depth > _lift_limit_m(piece):
 		return "The water lies %d m down here, too deep for this." % int(round(depth))
 
 	return ""
 
 
 # How deep a well reaches (Sonny's water rules, section 1): its max_depth_m (25 m when it has none).
-static func _lift_limit_m(piece: Dictionary, _spot: Vector3) -> float:
+static func _lift_limit_m(piece: Dictionary) -> float:
 	return float(piece.get("max_depth_m", 25.0))
 
 

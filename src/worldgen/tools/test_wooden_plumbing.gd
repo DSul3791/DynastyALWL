@@ -181,6 +181,7 @@ func _init() -> void:
 	items._water_tick(0.0)
 	check(not items._water_kind.has(pump) and near(items._water.pieces[a]["inlet"], Vector3(99.0, 10.23, 100.0)), "with the pump gone the channel turns back")
 
+	check(not items._retired_blueprint_of_kit.has("rough_bed_kit") and items._retired_blueprint_of_kit.size() == 3, "only the pumps' retired blueprints refund a take-down (a rough bed still comes back as its bed)")
 	# A Wooden - Hand pump already standing in a world does nothing and takes down with the hammer for its materials (6 lumber, 20 nails, 2 twine, 1 hide).
 	var old_pump: int = put("wooden_hand_pump", Vector3(100.0, 10.0, 101.0))
 	check(not items._water_kind.has(old_pump), "a placed retired pump joins no water network")

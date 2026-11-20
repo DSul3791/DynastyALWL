@@ -135,8 +135,8 @@ func _init() -> void:
 		check(is_equal_approx(tile.fresh_water_y(Vector3(0.0, 20.0, 0.0), 200.0), 5.0), "water class %d counts for a well" % id)
 
 	# Sonny section 1: a windlass keeps its reach at any height (there are no suction pumps: Dave 20 Nov 2026, PLUMBING_DESIGN s10).
-	check(is_equal_approx(ItemsScript._lift_limit_m(items._structures["test_well"]["water"], Vector3(0.0, 2000.0, 0.0)), 7.0), "a 7 m well 2,000 m up still reaches 7 m")
-	check(is_equal_approx(ItemsScript._lift_limit_m({"max_depth_m": 25.0}, Vector3(0.0, 2000.0, 0.0)), 25.0), "a windlass 2,000 m up still reaches 25 m")
+	check(is_equal_approx(ItemsScript._lift_limit_m(items._structures["test_well"]["water"]), 7.0), "a 7 m well 2,000 m up still reaches 7 m")
+	check(is_equal_approx(ItemsScript._lift_limit_m({"max_depth_m": 25.0}), 25.0), "a windlass 2,000 m up still reaches 25 m")
 
 	# Wells (6b part 2): they reach down to the nearest fresh water within 200 m, no deeper than their max_depth_m.
 	items.fresh_water_y = func(pos, _reach): return NAN if pos.x > 500.0 else (1.0 if pos.z > 400.0 else 6.0)
