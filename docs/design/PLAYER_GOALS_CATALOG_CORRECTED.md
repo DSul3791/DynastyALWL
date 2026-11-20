@@ -98,9 +98,9 @@ The check is reproducible: `python3 docs/ai-team/missions/GOALS-REPAIR/goal_rewa
 9. `build:wool_rug`: Wool - Rug
 10. `build:iron_deep_well_pump`: Deep-well pump
 11. `build:iron_hand_pump`: Iron - Hand pump
-12. `build:iron_pipe`: Iron - Pipe
-13. `build:iron_pipe_elbow`: Iron - Pipe elbow
-14. `build:iron_tap`: Tap
+12. ~~`build:iron_pipe`: Iron - Pipe~~ (retired 19 Nov 2026: no iron plumbing; taps are copper only)
+13. ~~`build:iron_pipe_elbow`: Iron - Pipe elbow~~ (retired 19 Nov 2026: no iron plumbing; taps are copper only)
+14. ~~`build:iron_tap`: Tap~~ (retired 19 Nov 2026: no iron plumbing; taps are copper only)
 15. `build:wooden_cold_frame`: Cold frame
 16. `build:wooden_compost_bin`: Compost bin
 17. `build:stone_raised_cistern`: Raised cistern

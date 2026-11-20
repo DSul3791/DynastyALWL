@@ -1,7 +1,7 @@
 extends Control
 
 # PROTOTYPE (Sonny, 2026-10-30), plan 14 of CHARACTER_DESIGN_VISION.md Part 8: the character creator screen. Sliders for the 18 body and face values, colours for skin and hair,
-# a lock on every value, a dice for everything and one per section, undo and redo, archetype presets, a share code box and a turntable preview of the generated body.
+# a lock on every value, a dice for everything and one per section, undo and redo, archetype presets, a share code box and a preview of the body that turns only when dragged and zooms to the part being changed.
 # Not connected to the game, the server or any account: it only edits a genome and shows the body. The rules live in src/client/character/creator_logic.gd.
 #   godot --path . res://scenes/creator_proto/creator_proto.tscn        (a window opens)
 
@@ -18,6 +18,29 @@ const SELECT_SCENE := "res://scenes/character_select/character_select.tscn"
 const PREVIEW_VOXEL := 0.05
 const REBUILD_DELAY_S := 0.35
 const REBUILD_DELAY_DYNASTY_S := 0.03     # reshaping Dave's body is a few bone scales, not a rebuild
+# The preview (Dave 20 Nov 2026): "I dont want the body to spin around ... unless I use the mouse to move it", "only turn right to left", and "when adjusting each part of the body it
+# should just zoom to that part". A view is a height on the body and how tall a slice of it fills the picture; the camera eases there (his motion ruling: fluid and smooth).
+const TURN_DEG_PER_PX := 0.5
+const VIEW_EASE := 6.0           # per second: about half a second to settle
+const WHEEL_STEP := 0.8          # each wheel notch in shows this much of the slice before
+const VIEW_MIN_TALL_M := 0.35
+const VIEW_LOW_M := 0.1          # the wheel keeps the middle of the view between the feet and the top of the head
+const VIEW_HIGH_M := 1.85
+const FULL_VIEW := {"y": 0.95, "tall": 2.9}     # the whole body standing on its patch of ground (the view the page always had)
+# A part: the bones it centres on (as drawn, so it follows the sliders and either body), metres up from them, the slice it shows, and a height for a body without bones.
+const PARTS := {
+	"head": {"bones": ["Head"], "up": 0.08, "tall": 0.55, "y": 1.65},
+	"chest": {"bones": ["Spine2"], "up": 0.0, "tall": 0.8, "y": 1.3},
+	"torso": {"bones": ["Spine1"], "up": 0.0, "tall": 1.15, "y": 1.15},
+	"hips": {"bones": ["Hips"], "up": 0.0, "tall": 0.9, "y": 0.95},
+	"legs": {"bones": ["LeftLeg", "RightLeg"], "up": 0.0, "tall": 1.3, "y": 0.5},
+	"hands": {"bones": ["LeftHand", "RightHand"], "up": -0.06, "tall": 0.6, "y": 0.8},
+	"feet": {"bones": ["LeftFoot", "RightFoot"], "up": 0.08, "tall": 0.5, "y": 0.15},
+}
+# Slider -> part. Height, build and muscle change the whole body, so they show all of it.
+const SLIDER_PART := {"head": "head", "jaw": "head", "nose": "head", "brow": "head", "ears": "head", "neck": "head", "hair_length": "head", "chest": "chest", "bust": "chest",
+	"shoulders": "chest", "belly": "torso", "torso": "torso", "arms": "torso", "hips": "hips", "legs": "legs", "hands": "hands", "feet": "feet"}
+const SECTION_PART := {"Head and face": "head", "Hair": "head"}     # opening one of these zooms there; any other section shows the whole body
 
 var logic: RefCounted = Logic.new()
 var _sliders: Dictionary = {}       # slider name -> HSlider
@@ -45,7 +68,13 @@ var _turn: float = 180.0      # 180 faces the camera (the select page uses the s
 var _rebuild_in: float = -1.0
 var _updating: bool = false
 var _dragging: bool = false
-var turntable: bool = true
+var _holder: SubViewportContainer
+var _cam: Camera3D
+var _part: String = ""          # the part the view follows; "" = the whole body or a wheel view
+var _aim: Dictionary = FULL_VIEW.duplicate()     # where the view is going: {y, tall}
+var _view: Dictionary = FULL_VIEW.duplicate()    # where it is now
+var _drawn_y: Dictionary = {}   # bone name -> height as last drawn (skeleton_updated)
+var _watched: Node3D
 
 
 func _ready() -> void:
@@ -64,9 +93,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _process(delta: float) -> void:
-	if turntable and _body != null:
-		_turn += delta * 25.0
-		_body.rotation_degrees.y = _turn
+	_ease_view(delta)
 
 	if _rebuild_in >= 0.0:
 		_rebuild_in -= delta
@@ -122,7 +149,10 @@ func _build_ui() -> void:
 	holder.stretch = true
 	holder.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	holder.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	holder.mouse_default_cursor_shape = Control.CURSOR_DRAG
+	holder.gui_input.connect(_preview_input)
 	split.add_child(holder)
+	_holder = holder
 	_preview = SubViewport.new()
 	_preview.own_world_3d = true
 	_preview.size = Vector2i(900, 800)
@@ -220,7 +250,7 @@ func _build_about(body: VBoxContainer) -> void:
 		_body_pick.add_item(BodyModels.label(id))
 
 	_body_pick.select(models.find(_body_model))
-	_body_pick.item_selected.connect(func(index: int) -> void: _body_model = str(models[index]))
+	_body_pick.item_selected.connect(func(index: int) -> void: _pick_body(str(models[index])))
 	body_row.add_child(_body_pick)
 	var frame_row: HBoxContainer = HBoxContainer.new()
 	body.add_child(frame_row)
@@ -244,7 +274,7 @@ func _build_about(body: VBoxContainer) -> void:
 	note.text = "The frame only sets a starting shape and clothes. Every slider and colour can still be changed."
 
 	if _use_dynasty():      # Dave's body (3 Nov 2026): say plainly what it does not show yet, so a slider that does nothing does not read as a bug
-		note.text += "\nThis body is still being finished: height, limbs, build, muscle, belly, hips, chest, jaw, nose, brow, ears and skin colour show now; hair is coming."
+		note.text += "\nThis body is still being finished: height, limbs, build, muscle, belly, hips, chest, bust, jaw, nose, brow, ears and skin colour show now; hair is coming."
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.add_theme_color_override("font_color", Color(0.75, 0.8, 0.7))
 	body.add_child(note)
@@ -338,6 +368,8 @@ func _open_section(title: String) -> void:
 		(_sections[key]["body"] as Control).visible = shown
 		(_sections[key]["head"] as Button).text = ("-  " if shown else "+  ") + String(key)
 
+	look_at_part(str(SECTION_PART.get(title, "")))     # closing every section shows the whole body again
+
 
 func _build_presets(body: VBoxContainer) -> void:
 	var presets: HBoxContainer = HBoxContainer.new()
@@ -381,7 +413,9 @@ func _build_sliders(body: VBoxContainer, section: String) -> void:
 		slider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		slider.drag_started.connect(func() -> void:
 			_dragging = true
+			look_at_part(str(SLIDER_PART.get(key, "")))
 			logic.begin_edit())
+		slider.focus_entered.connect(func() -> void: look_at_part(str(SLIDER_PART.get(key, ""))))     # a click or Tab onto it
 		slider.drag_ended.connect(func(_changed_value: bool) -> void: _dragging = false)
 		slider.value_changed.connect(func(v: float) -> void: _slider_moved(key, v))
 		row.add_child(slider)
@@ -474,10 +508,124 @@ func _build_code(body: VBoxContainer) -> void:
 
 func _build_preview_world() -> void:
 	Style.add_preview_world(_preview)       # warm sky, sun and fill, a patch of ground (page_style.gd)
-	var cam: Camera3D = Camera3D.new()
-	cam.fov = 30.0
-	_preview.add_child(cam)
-	cam.look_at_from_position(Vector3(0.0, 1.0, 5.4), Vector3(0.0, 0.95, 0.0))
+	_cam = Camera3D.new()
+	_cam.fov = 30.0
+	_preview.add_child(_cam)
+	_place_camera()
+
+
+# ---------------------------------------------------------------- preview view
+
+# Left drag on the picture turns the body about its upright axis only; the wheel zooms toward the point under the pointer and back out to the whole body.
+func _preview_input(event: InputEvent) -> void:
+	var motion: InputEventMouseMotion = event as InputEventMouseMotion
+
+	if motion != null and (motion.button_mask & MOUSE_BUTTON_MASK_LEFT) != 0:
+		turn_preview(motion.relative.x)
+		_holder.accept_event()
+		return
+
+	var button: InputEventMouseButton = event as InputEventMouseButton
+
+	if button == null or not button.pressed:
+		return
+
+	if button.button_index == MOUSE_BUTTON_WHEEL_UP or button.button_index == MOUSE_BUTTON_WHEEL_DOWN:
+		zoom_preview(button.button_index == MOUSE_BUTTON_WHEEL_UP, button.position.y / maxf(1.0, _holder.size.y))
+		_holder.accept_event()
+	elif button.button_index == MOUSE_BUTTON_LEFT:
+		_holder.accept_event()
+
+
+func turn_preview(dx_px: float) -> void:
+	_turn = fposmod(_turn + dx_px * TURN_DEG_PER_PX, 360.0)
+
+	if _body != null:
+		_body.rotation_degrees.y = _turn
+
+
+# `part` is a key of PARTS; anything else is the whole body.
+func look_at_part(part: String) -> void:
+	_part = part if PARTS.has(part) else ""
+
+	if _part == "":
+		_aim = FULL_VIEW.duplicate()
+
+
+# `at` is the pointer's height on the picture, 0 at the top and 1 at the bottom. In: the point under the pointer stays put while the slice shrinks. Out: back toward the whole body,
+# reaching it at the widest step.
+func zoom_preview(zoom_in: bool, at: float) -> void:
+	var y: float = float(_aim["y"])
+	var tall: float = float(_aim["tall"])
+	var full_y: float = float(FULL_VIEW["y"])
+	var full_tall: float = float(FULL_VIEW["tall"])
+	_part = ""
+
+	if zoom_in:
+		var under: float = y + (0.5 - clampf(at, 0.0, 1.0)) * tall
+		var fewer: float = maxf(VIEW_MIN_TALL_M, tall * WHEEL_STEP)
+		_aim = {"y": clampf(under + (y - under) * fewer / tall, VIEW_LOW_M, VIEW_HIGH_M), "tall": fewer}     # never off the body into the sky or the ground
+		return
+
+	var more: float = minf(full_tall, tall / WHEEL_STEP)
+	var left: float = (full_tall - more) / (full_tall - tall) if full_tall - tall > 0.001 else 0.0
+	_aim = {"y": full_y + (y - full_y) * left, "tall": more}
+
+
+func _ease_view(delta: float) -> void:
+	_watch_body()
+
+	if _part != "":
+		var part: Dictionary = PARTS[_part]
+		var sum: float = 0.0
+		var n: int = 0
+
+		for bone in part["bones"]:
+			if _drawn_y.has(bone):
+				sum += float(_drawn_y[bone])
+				n += 1
+
+		_aim = {"y": (sum / n if n > 0 else float(part["y"])) + float(part["up"]), "tall": float(part["tall"])}
+
+	var k: float = 1.0 - exp(-VIEW_EASE * delta)
+	_view = {"y": lerpf(float(_view["y"]), float(_aim["y"]), k), "tall": lerpf(float(_view["tall"]), float(_aim["tall"]), k)}
+	_place_camera()
+
+
+# The camera stands back just far enough for the slice to fill the picture height, a little above its middle (5.4 m back and 1 m up for the whole body, as before).
+func _place_camera() -> void:
+	if _cam == null:
+		return
+
+	var y: float = float(_view["y"])
+	var back: float = float(_view["tall"]) / (2.0 * tan(deg_to_rad(_cam.fov) * 0.5))
+	_cam.look_at_from_position(Vector3(0.0, y + back * 0.0093, back), Vector3(0.0, y, 0.0))
+
+
+# Bone heights are read when the skeleton has drawn them: the slider shapes are applied only during its update (see test_dynasty_body_2.gd). A new body (another model, or the
+# generated one) is watched from the frame it appears; a body without a skeleton uses the heights in PARTS.
+func _watch_body() -> void:
+	if _body == _watched:
+		return
+
+	_watched = _body
+	_drawn_y.clear()
+	var skeleton: Skeleton3D = _body.get("skeleton") as Skeleton3D if _body != null else null
+
+	if skeleton != null:
+		skeleton.skeleton_updated.connect(_read_bones.bind(skeleton))
+
+
+func _read_bones(skeleton: Skeleton3D) -> void:
+	if not is_instance_valid(_watched) or not _watched.is_ancestor_of(skeleton):     # an old body still drawing before it is freed
+		return
+
+	for part in PARTS.values():
+		for bone in part["bones"]:
+			var index: int = skeleton.find_bone(DynastyBody.P + str(bone))
+
+			if index >= 0:
+				_drawn_y[bone] = (skeleton.global_transform * skeleton.get_bone_global_pose(index)).origin.y
 
 
 # ---------------------------------------------------------------- reactions
@@ -544,15 +692,21 @@ func _use_dynasty() -> bool:
 	return DynastyBody.available()
 
 
+# The Body pick: the preview changes to that model at once, keeping the sliders.
+func _pick_body(id: String) -> void:
+	_body_model = id
+	_rebuild_body()
+
+
 func _rebuild_body() -> void:
 	var t0: int = Time.get_ticks_usec()
 
 	if _use_dynasty():
-		if _body == null or not _body.has_method("set_proportions"):
+		if _body == null or not _body.has_method("set_proportions") or str(_body.get("model")) != (_body_model if DynastyBody.available(_body_model) else BodyModels.DEFAULT):
 			if _body != null:
 				_body.queue_free()
 
-			_body = DynastyBody.new()
+			_body = DynastyBody.new(_body_model)      # the picked body model (body_models.gd), so the preview shows the body the character will wear
 			_preview.add_child(_body)
 			_body.rotation_degrees.y = _turn
 			_body.play("idle", 1.0, 0.0)

@@ -2587,9 +2587,6 @@
 				"Used in Wall lantern",
 				"Used in Iron - Hand pump",
 				"Used in Deep-well pump",
-				"Used in Iron - Pipe",
-				"Used in Iron - Pipe elbow",
-				"Used in Tap",
 				"Used in Iron - Chisel",
 				"Used in Anvil",
 				"Used in Ornate - Chest",
@@ -4443,7 +4440,6 @@
 				"Used in Iron - Gate",
 				"Used in Iron - Hand pump",
 				"Used in Deep-well pump",
-				"Used in Tap",
 				"Used in Ornate - Chest",
 				"Used in Cupboard",
 				"Used in Fortified - Gate",
@@ -9587,12 +9583,10 @@
 			"name": "Iron - Pipe",
 			"kind": "placeable",
 			"description": "A closed iron pipe, two metres long. A force pump can push water up it.",
-			"how_to_get": [
-				"Build with a hammer (press R): 2 Iron ingot"
-			],
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"iron_pipe": {
 			"name": "Iron - Pipe",
@@ -9607,12 +9601,10 @@
 			"name": "Iron - Pipe elbow",
 			"kind": "placeable",
 			"description": "An iron pipe that turns a quarter circle.",
-			"how_to_get": [
-				"Build with a hammer (press R): 2 Iron ingot"
-			],
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"iron_pipe_elbow": {
 			"name": "Iron - Pipe elbow",
@@ -9627,12 +9619,10 @@
 			"name": "Tap",
 			"kind": "placeable",
 			"description": "A shut-off tap for a pipe's end. E opens or shuts it.",
-			"how_to_get": [
-				"Build with a hammer (press R): 1 Iron ingot, 1 Hinges"
-			],
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"iron_tap": {
 			"name": "Tap",
@@ -12679,7 +12669,6 @@
 				"Used in Iron - Gate",
 				"Used in Iron - Hand pump",
 				"Used in Deep-well pump",
-				"Used in Tap",
 				"Used in Ornate - Chest",
 				"Used in Cupboard",
 				"Used in Fortified - Gate",
