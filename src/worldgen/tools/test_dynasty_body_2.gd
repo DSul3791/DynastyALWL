@@ -165,6 +165,7 @@ func _init() -> void:
 	_check(bust >= 0 and absf(her.body_mesh.get_blend_shape_value(bust) - 1.0) < 0.01, "Bust +1: the bust shape is at its fullest on her")
 	var none: Dictionary = Generator.make_genome()
 	_check(absf(Body.Shapes.shape_weight(none, "bust")) < 0.001 and absf(Body.Shapes.shape_weight(full, "bust") - 1.0) < 0.001, "the bust's -1 (none) weighs 0, +1 weighs 1")
+	_check(absf(Body.Shapes.shape_weight({"bust": float(Generator.FRAMES["neutral"]["bust"])}, "bust")) < 0.001 and is_equal_approx(Body.Shapes.BUST_FROM, float(Generator.FRAMES["neutral"]["bust"])), "the Even frame's bust leaves her as modelled (the mound starts at the Even frame's value)")
 
 	if bust >= 0:
 		var shaped_mesh: ArrayMesh = her.body_mesh.mesh as ArrayMesh

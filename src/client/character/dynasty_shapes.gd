@@ -12,7 +12,8 @@ extends RefCounted
 #   chest  widens the rib cage and brings the chest forward,
 #   bust   raises a breast on each side of the chest front (Dave 20 Nov 2026: "yes we need a bust slider"): a round mound centred a little under the Spine2 joint
 #          and out to each side, pushed forward and a little down. The bust slider from -1 ("none", every old genome) up to -0.6 (the Even frame, which every new
-#          character starts with) leaves the body as modelled, so no existing or new character changes until the slider is moved up; +1 is the fullest (shape_weight),
+#          character starts with) leaves the body as modelled, so a new character and one at the Even or Broad frame change only when the slider is moved up (a saved
+#          character already set above -0.6, such as the Curved frame's 0.3, now shows its bust); +1 is the fullest (shape_weight). The generated body shows its bump from about -0.95.
 # and on the face (found from the head's own vertices: the nose tip is the head vertex furthest forward near the middle; Kathreen 3 Nov 2026, the creator's face sliders):
 #   jaw    widens the lower face and brings the chin forward,
 #   nose   makes the nose bigger and longer (push forward, grow round its tip),

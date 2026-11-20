@@ -114,7 +114,7 @@ func _init() -> void:
 	var shared: Material = plain_body.body_mesh.get_active_material(0)
 	_check(shared is BaseMaterial3D and (shared as BaseMaterial3D).albedo_color.r > 0.95, "the other body keeps Dave's paint")
 
-	# Width sliders (dynasty_shapes.gd): a genome with widths puts the shaped mesh on, with five blend shapes that really move vertices, weighted by the slider.
+	# Width sliders (dynasty_shapes.gd): a genome with widths puts the shaped mesh on, with ten blend shapes that really move vertices, weighted by the slider.
 	var wide: Dictionary = Generator.make_genome()
 	wide["build"] = 1.0
 	wide["belly"] = -0.5
