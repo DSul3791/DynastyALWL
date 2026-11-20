@@ -825,9 +825,11 @@ Not yet played.
 
 **Status: Implemented - awaiting player verification.** Dave play test 20 Nov 2026 at the new starter spawn: "these tests keep loading in looking away from edda and hob. what are they looking for". Asked whether a new player should be turned to face the campfire on arrival, he answered "yes please".
 
+**Required outcome:** a new character's first view shows the campfire with Edda and Hob beside it.
+
 **Cause:** the client made the character's body with yaw 0, which looks north, and nothing turned it. Edda and Hob's fire is due west of the spawn, about 8 m away, so they were off to the player's left and out of view.
 
-**As built (PR #1385, reviewed head cde1a9a3, dev 84ffbca4):** the client turns the body toward the camp fire (src/shared/npc_camp.gd face_fire_yaw, within 60 m of the fire) whenever it sets a character down at the starter spawn: on first arrival, after a death that brings the character back to the spawn (cave-in deaths too), and on Admin "Go to spawn". A respawn at a shelter or bed keeps the facing it had. A returning character who resumes where they left off is moved there as before. Facing is a client-side look only: no protocol, save, TERRAIN_VERSION or starter cache change, and the camp and spawn positions are unchanged.
+**As built (PR #1385, reviewed head cde1a9a3, dev 84ffbca4):** the client turns the body toward the camp fire (src/shared/npc_camp.gd face_fire_yaw, within 60 m of the fire) whenever it sets a character down at the starter spawn: on first arrival, after a death that brings the character back to the spawn (cave-in deaths too), and on Admin "Go to spawn". A respawn at a shelter or bed keeps the facing it had. A returning character who resumes where they left off is moved there as before, and now arrives facing west (the bearing from the spawn to the fire) instead of north. Facing is a client-side look only: no protocol, save, TERRAIN_VERSION or starter cache change, and the camp and spawn positions are unchanged.
 
 **Evidence:**
 - Independent review PASS on cde1a9a3.
