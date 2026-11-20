@@ -630,6 +630,9 @@ func _toll() -> Dictionary:
 
 # Once a second: a player by a camp's road is met and asked a toll; an asked toll unanswered too long, or walked away from, is refused.
 func _toll_tick() -> void:
+	if sites.is_empty() and _tolls.is_empty():
+		return   # no camp, no toll: the player list (an inventory scan) is not read
+
 	var infos: Array = animals.big_game.player_info.call() if animals != null and animals.big_game.player_info.is_valid() else []
 	var t: Dictionary = _toll()
 	var today: int = int(floor(_now() / GAME_DAY_S))
@@ -640,20 +643,27 @@ func _toll_tick() -> void:
 		var site_gone: bool = not sites.has(pending["cell"])
 
 		if site_gone or at == Vector3.INF or _toll_walkers(pending).is_empty():
-			_end_toll(int(asked_peer), false)
+			_end_toll(int(asked_peer), bool(pending["asked"]) and at != Vector3.INF)   # his window closes if it was open (a bandit killed or fighting)
 			continue
 
 		var fire: Vector2 = layout(pending["cell"])["fire"]
 
 		if Vector2(at.x, at.z).distance_to(fire) > float(t.get("leash_m", 400.0)):
-			_end_toll(int(asked_peer), false)   # never past the leash: they give up on him
+			_end_toll(int(asked_peer), bool(pending["asked"]))   # never past the leash: they give up on him
 			continue
 
+		pending["left_s"] = float(pending["left_s"]) - 1.0
+
 		if not bool(pending["asked"]):
+			if float(pending["left_s"]) <= 0.0:
+				_end_toll(int(asked_peer), false)   # they could not reach him in answer_s: they go back
+				continue
+
 			for a in _toll_walkers(pending):
 				if Vector2(a["pos"].x - at.x, a["pos"].z - at.z).length() <= float(t.get("stop_m", 4.0)) + 1.0:
 					pending["asked"] = true
 					pending["at"] = at
+					pending["left_s"] = float(t.get("answer_s", 30.0))
 					var text: String = "Bandits block your way. \"%d copper to pass.\"" % int(pending["copper"])
 
 					if ask.is_valid():
@@ -662,8 +672,6 @@ func _toll_tick() -> void:
 					break
 
 			continue
-
-		pending["left_s"] = float(pending["left_s"]) - 1.0
 
 		if float(pending["left_s"]) <= 0.0 or Vector2(at.x - pending["at"].x, at.z - pending["at"].z).length() > float(t.get("refuse_walk_m", 20.0)):
 			_refuse(int(asked_peer), "You do not pay.")
@@ -724,7 +732,7 @@ func _toll_walkers(pending: Dictionary) -> Array:
 	var out: Array = []
 
 	for id in pending["ids"]:
-		if animals.animals.has(id) and not animals.animals[id].has("gave_up") and int(animals.animals[id].get("toll_peer", -1)) >= 0:
+		if animals.animals.has(id) and not animals.animals[id].has("gave_up") and int(animals.animals[id].get("toll_peer", -1)) >= 0 and not animals.big_game.handles(animals.animals[id]):
 			out.append(animals.animals[id])
 
 	return out
@@ -735,8 +743,8 @@ func toll_answer(peer: int, talk_id: String, choice: int) -> bool:
 	if not talk_id.begins_with("bandit:"):
 		return false
 
-	if not robbery_on() or not _tolls.has(peer) or not bool(_tolls[peer]["asked"]):
-		return true
+	if not robbery_on() or choice < 0 or not _tolls.has(peer) or not bool(_tolls[peer]["asked"]):
+		return true   # off, a talk start, or no toll asked: nothing happens
 
 	var copper: int = int(_tolls[peer]["copper"])
 
@@ -925,7 +933,7 @@ func step(a: Dictionary, dt: float) -> bool:
 		a["state"] = animals.ALERT   # far enough off: it stands and watches
 		return true
 
-	if a.has("toll_peer"):   # stage 4: on a toll, he walks up to the player and stops stop_m off, facing him
+	if a.has("toll_peer") and robbery_on():   # stage 4: on a toll, he walks up to the player and stops stop_m off, facing him
 		var to: Vector3 = _info_pos(animals.big_game.player_info.call() if animals.big_game.player_info.is_valid() else [], int(a["toll_peer"]))
 
 		if to != Vector3.INF:

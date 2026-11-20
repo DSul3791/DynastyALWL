@@ -1043,3 +1043,22 @@ func _toll_switch() -> void:
 	said.clear()
 	walk.call(30 + int(b.cfg["toll"]["answer_s"]) + 2)
 	check(said.any(func(t): return str(t).contains("do not pay")) and taken.size() == 1, "no answer in answer_s: refused (%s)" % str(said))
+
+	# A bandit on the toll killed while the window is open: it closes, and a late answer takes nothing.
+	for m in bandits:
+		m["state"] = AnimalsScript.GRAZE
+		m["cool"] = 0.0
+
+	clock[0] += BanditsScript.GAME_DAY_S
+	walk.call(30)
+	var open_at: int = asked.size()
+	check(str(asked.back()[2]) != "", "asked once more")
+	var late: String = str(asked.back()[1])
+	check(b.toll_answer(3, late, -1) and taken.size() == 1 and asked.size() == open_at, "a talk start is no answer")
+
+	for m in bandits.filter(func(w): return w.has("toll_peer")):
+		animals.animals.erase(int(m["id"]))
+
+	walk.call(2)
+	check(asked.size() == open_at + 1 and str(asked.back()[2]) == "", "the toll's bandits gone: his window closes")
+	check(b.toll_answer(3, late, 0) and taken.size() == 1, "a late answer takes nothing")
