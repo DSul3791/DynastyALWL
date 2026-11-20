@@ -31,7 +31,7 @@ Picture: `art/playthrough/03_raw_materials.jpg` shows the spawn meadow (the NPC 
 * **Stones** (item `stone`; no stack cap, weight is the limit: a slot holds up to 65,535, only tools, kits, containers, clothing and shoulder logs are single) lie loose, mostly on slopes, next to rocks and along the water's edge. There is only one kind of loose rock item: `stone` (the "hand stone"). **Flint** lies along the water's edge now (F-02 fixed: drops.json bank, about 6 percent of bank stones), and no ore you can reach with bare hands.
 * **Boulders** (big grey rocks) are not pickable. An axe (or pick) breaks them: **3 axe blows give 1 stone** (boulders.json). A blow on bare rock with the axe also gives a stone.
 
-How many do you need for the whole first hour? About 12 sticks, 4 stones to start (axe 1 stone + 1 stick; fire 6 sticks + 3 stones; knife 2 stones + 1 stick), then more.
+How many do you need for the whole first hour? About 12 sticks, 19 stones to start (axe 1 stone + 1 stick; fire 6 sticks + 16 stones; knife 2 stones + 1 stick), then more.
 
 Pictures: `03_raw_materials.jpg` (stone, stick, plant fibre, twine, thatch, leaves, bark, kindling, firewood lying on the ground, in that order left to right).
 
@@ -94,7 +94,7 @@ Walk to the biggest tree you can find (oaks, beeches, tall pines), stand under t
 
 ## Step 08. Campfire: kit, place, light
 
-1. Recipe **Campfire** (#4): **6 sticks + 3 stones -> campfire kit** (8 s).
+1. Recipe **Campfire** (#4): **6 sticks + 16 stones -> campfire kit** (8 s).
 2. Hold the kit and left click. The ring on the ground is **yellow on open ground** (rain puts the fire out) and **green under a tree crown** (the fire survives rain). Fires need 2 m of space from other fires and ground no steeper than 0.6 m rise.
 3. The kit is placed already laid with a stick in its store (add more wood with F). **Press E at the fire to light it**: it uses **one tinder item** from the pack: `plant_fibre` first, or `birch_bark`, `tinder`, `tinder_fungus`. (F-03 fixed: birch bark, tinder and tinder fungus can all be had; checked 3 Nov.) In rain on open ground it will not light; in a drizzle there is a chance it fails and the fibre is lost.
 4. Feed it (changed 2 Nov, fire store, main eb3b69b): press **F** at the fire to open its store (30 slots, stacks without limit) and put sticks, firewood and logs in; the wood in the store is what burns, closing it works out the burn time and tier, burned wood leaves it, an empty store means the fire goes out. **E** on a burning fire puts it out (wood kept); **hold E** on a fire that is not burning picks it up as a kit. The 1 Nov rule "tap E adds fuel" is gone. **Burn times are real time: stick 2 min, firewood 20 min, log 3 h.** The fire is a **tier** by its wood: sticks = small, 3+ firewood = medium, 3+ logs = large; light radius 3.5 / 7 / 20 m (the large fire is at least 4 times a torch in output, 13 Nov 2026), each step brighter and warmer, and it steps down as the big wood runs out. Several logs go on one fire. A pot is refused on a fire with logs, and logs are refused under a pot. The refusal message says why (full, no wood to put on). The fire label shows the tier and burn time.

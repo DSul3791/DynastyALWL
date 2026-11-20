@@ -148,11 +148,11 @@ func _init() -> void:
 	print("first hour: after felling %d leaves, %d sticks on the ground" % [leaves, sticks])
 	note("felling the tree")
 
-	# 4. A campfire: craft the kit (6 sticks, 6 stones of 0.5 kg), place it (laid, not lit), light it with tinder from the pack.
+	# 4. A campfire: craft the kit (6 sticks, 16 stones: Dave 20 Nov 2026), place it (laid, not lit), light it with tinder from the pack.
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	queue(4, 1)
 	pass_time(10.0, 0.2)
-	check(count("campfire_kit") == 1, "the campfire kit is made (6 sticks, 6 stones)")
+	check(count("campfire_kit") == 1, "the campfire kit is made (6 sticks, 16 stones)")
 	items.place_item(1, items.table.number_of("campfire_kit"), Vector3(2.0, 10.0, 0.0), 0)
 	var lit: int = 0
 

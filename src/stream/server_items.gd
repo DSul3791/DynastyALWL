@@ -20149,8 +20149,8 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 			return _hint_count(st, "made:stone_axe") >= 1
 		"tree_down":
 			return _hint_count(st, "event:tree_felled") >= 1
-		"6_sticks_6_stones":
-			return inv.count_of(table.number_of("stick")) >= 6 and inv.count_of(table.number_of("stone")) >= 6
+		"6_sticks_16_stones":
+			return inv.count_of(table.number_of("stick")) >= 6 and inv.count_of(table.number_of("stone")) >= 16
 		"kit_made":
 			return _hint_count(st, "made:campfire_kit") >= 1
 		"fire_placed":
