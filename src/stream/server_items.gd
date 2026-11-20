@@ -292,6 +292,8 @@ var _death_cfg: Dictionary = {}     # data/items/death.json
 var hit_animal_path: Callable        # (peer, from, to, damage) -> {"at": position} or {}: the first animal an arrow passes through is hurt (set by the server)
 var animal_alarm: Callable           # (point, radius): a loud noise (a shot) startles animals near it (set by the server)
 var hit_animal: Callable            # (peer, origin, direction, reach, damage) -> {"at": the point struck} or {} (tests may answer a bool): set by the server, hits the animal in front
+var bind_animal: Callable           # (peer, origin, direction, reach) -> bool: a strike with Rope or Twine in hand ties the bandit in front who gave up (BANDIT_CAMPS.md stage 5); true uses one
+const BIND_ITEMS := ["rope", "twine"]
 var _last_strike: Dictionary = {}
 var _carcass_cfg: Dictionary = {}   # data/items/carcass.json
 var _sick_cfg: Dictionary = {}      # data/items/sickness.json
@@ -3058,6 +3060,14 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 
 	_last_strike[peer] = now
 	var eye: Vector3 = _peer_pos[peer] + Vector3(0.0, 1.4, 0.0)
+
+	if BIND_ITEMS.has(table.id_of(inv.numbers[slot])) and bind_animal.is_valid() and bool(bind_animal.call(peer, eye, direction, 2.5)):
+		var before: Array = _snapshot(inv)
+		inv.take_from_slot(slot, 1)   # the rope or twine stays on the bandit
+		_send_changes(peer, inv, before)
+		_dirty = true
+		return
+
 	var melee: Dictionary = MeleeRules.blow(entry, _melee_cfg)
 	var damage: float = float(weapon_blow(entry, inv.inst[slot])["damage"]) if float(entry.get("damage", 0.0)) > 0.0 else float(melee["damage"])   # a +2 weapon strikes two harder (master s2.9 item 4)
 	var reach: float = float(melee["reach_m"])   # a pike reaches further than a sword; a knife less than an axe

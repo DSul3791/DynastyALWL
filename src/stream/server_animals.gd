@@ -594,6 +594,9 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 	a["last_drop"] = a["pos"]
 	_drop_blood(a)
 
+	if bandit_camps != null and a.has("camp") and bandit_camps.hurt(a, source_peer):
+		return false   # a camp bandit beaten down gives up (BANDIT_CAMPS.md stage 5): he neither fights back nor runs
+
 	# Hurting a young one brings its mother at the hunter, if the hunter is near enough for her to reach.
 	if a.has("mother") and animals.has(a["mother"]):
 		var m: Dictionary = animals[a["mother"]]
