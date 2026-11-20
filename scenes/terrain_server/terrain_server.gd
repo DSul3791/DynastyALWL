@@ -849,10 +849,12 @@ func _ready() -> void:
 
 		return mouths
 	bandits.road_distance = func(site_at, reach_m): return items.road_distance(site_at, reach_m)
+	bandits.road_point = func(site_at, reach_m): return items.road_point(site_at, reach_m)
 	bandits.setup(store_dir)
 	bandits.animals = animals
 	animals.bandit_camps = bandits
-	bandits.lay_camp = func(camp_key, camp_fire, camp_lean_tos, camp_old): return items.lay_bandit_camp(camp_key, camp_fire, camp_lean_tos, camp_old)
+	bandits.lay_camp = func(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at): return items.lay_bandit_camp(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at)
+	bandits.clear_camp = func(camp_key, camp_ids): items.clear_bandit_camp(camp_key, camp_ids)   # a site gone back to sleep takes its pit and tracks away
 	bandits.laid_still = func(camp_ids): return items.bandit_camp_there(camp_ids)
 	bandits.drop_gear = func(gear_key, gear_at): items.drop_world_made(items.table.number_of(gear_key), 1, gear_at)
 	items.road_trip = func(mover, mover_at, trip_kind): bandits.note(mover, mover_at, trip_kind)
