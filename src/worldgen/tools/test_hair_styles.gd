@@ -43,8 +43,16 @@ func _measure(body: Node3D) -> Dictionary:
 			return
 
 		var head: Transform3D = s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_Head"))
-		# The hair rides on the head bone: its box is the mesh's box carried by the bone's drawn pose and the hair's own place under it.
-		out["box"] = (head * (body.hair.get_child(0) as Node3D).transform * mesh.transform) * mesh.get_aabb()
+		# The hair rides on the head bone: its box is that of its corners carried by the bone's drawn pose and the hair's own place under it. (Carrying the
+		# mesh's own box instead turns it with the head and swells it: the PC lane read a long style's top 6 cm high that way, 20 Nov 2026.)
+		var xf: Transform3D = head * (body.hair.get_child(0) as Node3D).transform * mesh.transform
+		var corners: PackedVector3Array = mesh.mesh.get_faces()
+		var box: AABB = AABB(xf * corners[0], Vector3.ZERO)
+
+		for corner in corners:
+			box = box.expand(xf * corner)
+
+		out["box"] = box
 		out["top"] = (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_HeadTop_End"))).origin
 		out["head"] = head.origin
 		done[0] = true
