@@ -9,7 +9,8 @@ extends Node3D
 # shoulder does not raise the arm, the lie clip is the nearest of Dave's, the first-person arms stay the ragdoll arms.
 
 const BodyModels := preload("res://src/client/character/body_models.gd")
-# shortcut: every character wears the first body model; when a second mesh is listed in body_models.gd, load the active character's "glb" and "parts_glb" here instead.
+# Each body wears the model its character picked (body_models.gd; NPCs wear the default). GLB is the default model's file, which NPCs and the clip-borrowing models need.
+# shortcut: every model's first-person arms are the default model's parts (ARMS_GLB); a model with its own "parts_glb" would need dynasty_arms.gd to load it.
 const GLB := BodyModels.DEFAULT_GLB
 const ARMS_GLB := BodyModels.DEFAULT_PARTS_GLB   # dynasty_arms.gd PARTS_GLB, warmed with the body
 const P := "mixamorig_"
@@ -69,10 +70,12 @@ const CLIP_MAP := {
 	"wake_up": ["Wake_Up_and_Look_Up", 0.0, -1.0, false, 1.0],
 }
 
-static var _scene: PackedScene
-static var _checked: int = -1                  # -1 not tried yet, 0 the glb cannot be used, 1 it can
+static var _scenes: Dictionary = {}            # model id -> its PackedScene, once available() found it usable
+static var _checked: Dictionary = {}           # model id -> false (the glb cannot be used) or true; missing: not tried yet
 static var force_unavailable: bool = false     # tests: pretend the glb is not imported
-static var _library: AnimationLibrary          # the game's names and Dave's own names, built once and shared
+static var _libraries: Dictionary = {}         # model id -> AnimationLibrary of the game's names and the file's own names, built once per run and shared by that model's bodies
+
+var model: String = BodyModels.DEFAULT        # body_models.gd id this body wears
 
 var arms_only: bool = false
 var genome: Dictionary = {}
@@ -98,8 +101,15 @@ var _mount_rest: Dictionary = {}              # Marker3D -> its transform before
 # Headless (the lane's smokes and tests) loads them on the main thread instead: the headless renderer's mesh, material and texture stores are not thread
 # safe in Godot 4.7.2 (servers/rendering/dummy/storage: RID_Owner without THREAD_SAFE; the GLES3 and Vulkan stores are), and the loader threads making
 # meshes while the main thread made its own broke the store ("Attempting to initialize the wrong RID", "m" is null, signal 11; David4 smokes, 14 Nov 2026).
-static func warm() -> void:
-	for path in [GLB, ARMS_GLB]:
+# `models`: more body model ids to warm, the player's own (my_character.gd body_model()); the default model is always warmed (NPCs wear it, and other models borrow its clips).
+static func warm(models: Array = []) -> void:
+	var paths: Array = [GLB, ARMS_GLB]
+
+	for id in models:
+		if not paths.has(BodyModels.glb(str(id))):
+			paths.append(BodyModels.glb(str(id)))
+
+	for path in paths:
 		if not ResourceLoader.exists(path):
 			continue
 
@@ -142,15 +152,16 @@ static func load_warm(path: String) -> Resource:
 	return load(path)
 
 
-static func available() -> bool:
-	if force_unavailable:
+static func available(model_id: String = BodyModels.DEFAULT) -> bool:
+	if force_unavailable or not BodyModels.has(model_id):
 		return false
 
-	if _checked < 0:
-		_checked = 0
+	if not _checked.has(model_id):
+		_checked[model_id] = false
+		var path: String = BodyModels.glb(model_id)
 
-		if ResourceLoader.exists(GLB):
-			var packed: PackedScene = load_warm(GLB) as PackedScene
+		if ResourceLoader.exists(path):
+			var packed: PackedScene = load_warm(path) as PackedScene
 
 			if packed != null:
 				var probe: Node = packed.instantiate()
@@ -158,32 +169,30 @@ static func available() -> bool:
 				probe.free()
 
 				if ok:
-					_scene = packed
-					_checked = 1
+					_scenes[model_id] = packed
+					_checked[model_id] = true
 
-		if _checked == 0:
-			print("dynasty body: %s is not imported or has no skeleton, mesh or animations: using the previous body this run (run godot --import once)" % GLB)
+		if not _checked[model_id]:
+			print("dynasty body: %s is not imported or has no skeleton, mesh or animations: %s this run (run godot --import once)" % [path, "using the previous body" if model_id == BodyModels.DEFAULT else "wearing the default body instead"])
 
-	return _checked == 1
+	return bool(_checked[model_id])
 
 
-func _init() -> void:
+# `model_id`: the body model to wear (body_models.gd); one that is unknown or not imported wears the default.
+func _init(model_id: String = BodyModels.DEFAULT) -> void:
 	name = "DynastyBody"
+	model = model_id if available(model_id) else BodyModels.DEFAULT
 
-	if not available():
+	if not available(model):
 		_make_empty()
 		return
-
-	if _scene == null:
-		_scene = load_warm(GLB) as PackedScene
-
 
 	# Dave's rig faces +Z; the game faces -Z.
 	_model = Node3D.new()
 	_model.name = "Model"
 	_model.rotation.y = PI
 	add_child(_model)
-	var inst: Node = _scene.instantiate()
+	var inst: Node = (_scenes[model] as PackedScene).instantiate()
 	_model.add_child(inst)
 	skeleton = inst.find_children("*", "Skeleton3D", true, false)[0]
 	body_mesh = inst.find_children("*", "MeshInstance3D", true, false)[0]
@@ -305,38 +314,56 @@ func _rest_origin(bone: String) -> Vector3:
 	return skeleton.get_bone_global_rest(index).origin if index >= 0 else Vector3.ZERO
 
 
-# The game's names and Dave's own names, shared by every body. Hips travel is taken out of every clip (the game moves the body), see _clip.
+# The game's names and the file's own names, shared by every body of this model. Hips travel is taken out of every clip (the game moves the body), see _clip.
+# A model with "clips_from" (body_models.gd) also gets every clip of that model its own file lacks, carried over to its rig (_borrow_clips).
 func _build_animations() -> void:
-	if _library == null:
-		_library = AnimationLibrary.new()
-		var own: AnimationLibrary = animation_player.get_animation_library(animation_player.get_animation_library_list()[0])
+	if not _libraries.has(model):
+		var t0: int = Time.get_ticks_msec()
+		var library: AnimationLibrary = AnimationLibrary.new()
+		var own_library: AnimationLibrary = animation_player.get_animation_library(animation_player.get_animation_library_list()[0])
+		var own: Dictionary = {}       # clip name -> its source Animation, on this rig
 
-		for clip in own.get_animation_list():
-			_library.add_animation(clip, _clip(own.get_animation(clip), 0.0, -1.0, true, 1.0))
+		for clip in own_library.get_animation_list():
+			own[String(clip)] = own_library.get_animation(clip)
+
+		var source: String = str(BodyModels.row(model).get("clips_from", ""))
+
+		if source != "" and source != model and available(source):
+			_borrow_clips(own, _scenes[source], str(BodyModels.row(model).get("match_clip", "")), skeleton)
+
+		for clip in own:
+			library.add_animation(clip, _clip(own[clip], 0.0, -1.0, true, 1.0))
 
 		for game_name in CLIP_MAP:
 			var row: Array = CLIP_MAP[game_name]
-			var made: Animation = _clip(own.get_animation(str(row[0])), float(row[1]), float(row[2]), bool(row[3]), float(row[4]), row[5] if row.size() > 5 else [])
+
+			if not own.has(str(row[0])):
+				continue        # a model whose file lacks the clip and borrows none: the game's name is left out, play() skips it
+
+			var made: Animation = _clip(own[str(row[0])], float(row[1]), float(row[2]), bool(row[3]), float(row[4]), row[5] if row.size() > 5 else [])
 
 			if game_name == "sit":
 				_hold_first(made)
-				_ground_sit(made, own.get_animation("Idle"), skeleton)
+				_ground_sit(made, own.get("Idle", made), skeleton)
 			elif game_name == "sit_chair":
 				_hold_first(made)
 
-			_library.add_animation(game_name, made)
+			library.add_animation(game_name, made)
 
 			# Carrying a torch in the left hand (Dave's infographic, 6 Nov 2026): the same gait with the left arm held up in the carry pose; the legs, the body and the
 			# right arm keep the clip, so the right arm still swings opposite the legs.
 			if game_name in TORCH_CARRY_CLIPS:
 				var carry: Animation = made.duplicate(true)
 				_torch_carry(carry, skeleton)
-				_library.add_animation(game_name + "_torch", carry)
+				library.add_animation(game_name + "_torch", carry)
+
+		_libraries[model] = library
+		print("dynasty body: %s clips for %s made in %d ms" % [library.get_animation_list().size(), model, Time.get_ticks_msec() - t0])
 
 	for library_name in animation_player.get_animation_library_list():
 		animation_player.remove_animation_library(library_name)
 
-	animation_player.add_animation_library("", _library)
+	animation_player.add_animation_library("", _libraries[model])
 	animation_player.play("idle")
 
 
@@ -408,6 +435,146 @@ static func _clip(src: Animation, from: float, to: float, loop: bool, retime: fl
 				out.scale_track_insert_key(track, when, src.scale_track_interpolate(t, float(kt)))
 
 	return out
+
+
+# Carries the clips of `from_scene` (another body model) over to this rig `skel`, for every clip `own` lacks; `own` (clip name -> Animation) gets them. Dave 20 Nov 2026: the
+# female body's file holds 4 clips, the default body's 98. Both rigs are the same 24 Mixamo bones, but each bone's own axes differ (her upper arms are turned about 70 degrees
+# round the bone against his), so a key cannot be copied as it is. Posed by `match_clip` (a clip both files hold: the same motion fitted to each rig) at its first key, each
+# bone's whole turn in the skeleton differs by one fixed turn, fix = his^-1 * hers; a carried key is fix[parent]^-1 * his key * fix[bone], which poses her bone the way his
+# clip poses his. Checked offline on both files (20 Nov 2026): his Walking carried over matches her own Walking within 1 degree on the spine, arms and head at every key,
+# within 3.5 degrees on the legs. The hips' position is scaled by her hips over his in match_clip; every other bone keeps her own lengths (their position tracks are left out).
+static func _borrow_clips(own: Dictionary, from_scene: PackedScene, match_clip: String, skel: Skeleton3D) -> void:
+	var probe: Node = from_scene.instantiate()
+	var their_skel: Skeleton3D = probe.find_children("*", "Skeleton3D", true, false)[0]
+	var player: AnimationPlayer = probe.find_children("*", "AnimationPlayer", true, false)[0]
+	var theirs: AnimationLibrary = player.get_animation_library(player.get_animation_library_list()[0])
+
+	if not own.has(match_clip) or not theirs.has_animation(match_clip):
+		print("dynasty body: no clip %s in both files, so no clips are borrowed" % match_clip)
+		probe.free()
+		return
+
+	var mine_match: Animation = own[match_clip]
+	var their_match: Animation = theirs.get_animation(match_clip)
+	var fix: Dictionary = rig_fix(their_skel, their_match, skel, mine_match)
+	var hips_scale: float = hips_scale_of(their_match, mine_match)
+	var prefix: String = String(mine_match.track_get_path(0)).get_slice(":", 0)
+
+	for clip in theirs.get_animation_list():
+		if not own.has(String(clip)):
+			own[String(clip)] = carry_clip(theirs.get_animation(clip), fix, hips_scale, prefix, their_skel, skel)
+
+	probe.free()
+
+
+# bone name -> the fixed turn from their rig's bone to this rig's (his^-1 * hers), read from the same clip posed on each rig at its first key.
+static func rig_fix(their_skel: Skeleton3D, their_match: Animation, skel: Skeleton3D, mine_match: Animation) -> Dictionary:
+	var their_turns: Dictionary = _pose_turns(their_skel, their_match)
+	var my_turns: Dictionary = _pose_turns(skel, mine_match)
+	var fix: Dictionary = {}
+
+	for bone in my_turns:
+		if their_turns.has(bone):
+			fix[bone] = ((their_turns[bone] as Quaternion).inverse() * (my_turns[bone] as Quaternion)).normalized()
+
+	return fix
+
+
+# Each bone's whole turn in the skeleton at the clip's first key (a bone the clip does not move keeps its rest turn): bone name -> Quaternion.
+static func _pose_turns(skel: Skeleton3D, anim: Animation) -> Dictionary:
+	var local: Dictionary = {}
+
+	for i in range(skel.get_bone_count()):
+		local[i] = skel.get_bone_rest(i).basis.get_rotation_quaternion()
+
+	for t in range(anim.get_track_count()):
+		var i: int = skel.find_bone(String(anim.track_get_path(t)).get_slice(":", 1))
+
+		if anim.track_get_type(t) == Animation.TYPE_ROTATION_3D and i >= 0 and anim.track_get_key_count(t) > 0:
+			local[i] = anim.track_get_key_value(t, 0)
+
+	var turns: Dictionary = {}
+
+	for i in range(skel.get_bone_count()):
+		var turn: Quaternion = local[i]
+		var up: int = skel.get_bone_parent(i)
+
+		while up >= 0:
+			turn = (local[up] as Quaternion) * turn
+			up = skel.get_bone_parent(up)
+
+		turns[skel.get_bone_name(i)] = turn
+
+	return turns
+
+
+# Her hips height over his across the matching clip (1.0 when either has no hips position track).
+static func hips_scale_of(theirs: Animation, mine: Animation) -> float:
+	var a: int = theirs.find_track(NodePath(String(theirs.track_get_path(0)).get_slice(":", 0) + ":" + P + "Hips"), Animation.TYPE_POSITION_3D)
+	var b: int = mine.find_track(NodePath(String(mine.track_get_path(0)).get_slice(":", 0) + ":" + P + "Hips"), Animation.TYPE_POSITION_3D)
+
+	if a < 0 or b < 0:
+		return 1.0
+
+	var sum: float = 0.0
+
+	for n in range(10):
+		var at: float = minf(theirs.length, mine.length) * float(n) / 10.0
+		sum += mine.position_track_interpolate(b, at).y / maxf(theirs.position_track_interpolate(a, at).y, 0.01)
+
+	return sum / 10.0
+
+
+static func carry_clip(src: Animation, fix: Dictionary, hips_scale: float, prefix: String, their_skel: Skeleton3D, skel: Skeleton3D) -> Animation:
+	var out: Animation = Animation.new()
+	out.length = src.length
+	out.loop_mode = src.loop_mode
+	var turned: Dictionary = {}
+
+	for t in range(src.get_track_count()):
+		var bone: String = String(src.track_get_path(t)).get_slice(":", 1)
+		var type: int = src.track_get_type(t)
+
+		if not fix.has(bone) or not (type == Animation.TYPE_ROTATION_3D or (type == Animation.TYPE_POSITION_3D and bone == P + "Hips")):
+			continue
+
+		var track: int = out.add_track(type)
+		out.track_set_path(track, NodePath(prefix + ":" + bone))
+		out.track_set_interpolation_type(track, src.track_get_interpolation_type(t))
+
+		for k in range(src.track_get_key_count(t)):
+			var when: float = src.track_get_key_time(t, k)
+
+			if type == Animation.TYPE_POSITION_3D:
+				out.position_track_insert_key(track, when, (src.track_get_key_value(t, k) as Vector3) * hips_scale)
+			else:
+				out.rotation_track_insert_key(track, when, _carry_turn(src.track_get_key_value(t, k), bone, fix, skel))
+
+		if type == Animation.TYPE_ROTATION_3D:
+			turned[bone] = true
+
+	# A bone his clip does not move (the importer drops a track that never changes) stands as his rest pose does, not as her rest pose (her rest is a T pose, his an A pose).
+	for bone in fix:
+		var theirs_at: int = their_skel.find_bone(bone)
+
+		if turned.has(bone) or theirs_at < 0:
+			continue
+
+		var track: int = out.add_track(Animation.TYPE_ROTATION_3D)
+		out.track_set_path(track, NodePath(prefix + ":" + bone))
+		out.rotation_track_insert_key(track, 0.0, _carry_turn(their_skel.get_bone_rest(theirs_at).basis.get_rotation_quaternion(), bone, fix, skel))
+
+	return out
+
+
+static func _carry_turn(his: Quaternion, bone: String, fix: Dictionary, skel: Skeleton3D) -> Quaternion:
+	var up: int = skel.get_bone_parent(skel.find_bone(bone))
+	var parent_fix: Quaternion = Quaternion.IDENTITY
+
+	if up >= 0 and fix.has(skel.get_bone_name(up)):
+		parent_fix = fix[skel.get_bone_name(up)]
+
+	return (parent_fix.inverse() * his * (fix[bone] as Quaternion)).normalized()
 
 
 # Turns the chair clip into sitting cross-legged on the ground (Dave QA BUG-020: X sat him as if on a chair). Dave's set has no floor-sit clip, so the chair pose is changed in place:
