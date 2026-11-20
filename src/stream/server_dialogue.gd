@@ -19,6 +19,7 @@ var router
 var trade                    # ServerTrade: {"open_shop": true} opens the NPC's shop
 var hour_now: Callable
 var send_say: Callable      # (peer, npc_id, name, text, voice_id, choices PackedStringArray, ends bool)
+var refuse: Callable        # (peer, npc id, strict) -> "" or what a goblin tribe member says instead of talking (server_tribes.gd refuse; may be invalid)
 
 var _dir: String = ""
 var _flags: Dictionary = {}     # player key -> npc id -> flag -> true
@@ -72,6 +73,13 @@ func talk(peer: int, npc_id: String, choice: int) -> void:
 		return
 
 	_last_msec[peer] = now
+	var no: String = str(refuse.call(peer, npc_id, true)) if refuse.is_valid() else ""
+
+	if no != "":   # a goblin tribe member that will not talk now (angry, hidden, a weapon on show, rushed): it says why, and the talk ends
+		_sessions.erase(peer)
+		_say(peer, npc, no, str(npc["voice"]), [], true)
+		return
+
 	var points: int = items.rep_points(peer, npc_id)
 	var ctx: Dictionary = {"flags": flags_of(key, npc_id), "rep": points, "rank": items.rank_of(points), "rank_reached": func(rank: String) -> bool: return items.rank_reached(points, rank), "hour": float(hour_now.call()) if hour_now.is_valid() else 12.0,
 		"has_item": func(id: String, n: int) -> bool: return items.count_fill_for(peer, id) >= n, "recent": _recent.get("%s|%s" % [key, npc_id], []), "rest_key": npc_id,

@@ -838,7 +838,7 @@ static func _chunk(p: Vector3) -> Vector2i:
 
 
 # "" when the spot is free, else why not: "close" (too near a fire or a structure), "overlap" (through a wall or another piece), "bed" (on another bed's or
-# plot's square metre), "crowded" (the chunk's cap), "camp" (by Edda and Hob's camp), or a door's, pot's or point piece's own reason.
+# plot's square metre), "crowded" (the chunk's cap), "camp" (by Edda and Hob's camp), "tribe_camp" (by a goblin tribe's camp fire), or a door's, pot's or point piece's own reason.
 # A rough bed may lie inside a lean-to (any shelter structure): its middle within the shelter's half_x by half_z box, turned by the shelter's yaw (server_items.gd _inside_shelter
 # uses the same box). The row's yaw is in degrees when the client's world rows carry one.
 static func bed_in_shelter(cfg: Dictionary, def: Dictionary, row: Dictionary, spot: Vector3) -> bool:
@@ -1029,8 +1029,10 @@ static func blocked(cfg: Dictionary, kit_id: String, spot: Vector3, rows: Array,
 	var def: Dictionary = structure_of_kit(cfg, kit_id)
 	var same: int = 0
 
-	if NpcCamp.within_keep(spot):
-		return "camp"   # the server says the same (server_items._place)
+	var camp_why: String = NpcCamp.keep_reason(spot)
+
+	if camp_why != "":
+		return camp_why   # "camp" or "tribe_camp": the server says the same (server_items._place)
 
 	if str(def.get("piece_kind", "")) == ROOF_HIP_KIND:   # a roof corner's point is the shape at `spot` (the ghost's own, by the exact-middle rule)
 		var hip: Array = roof_hip_pick(cfg, def, spot, 0, rows)
@@ -1145,6 +1147,8 @@ static func reason_text(state: String, opening: String = "") -> String:   # open
 			return "too many of these here already"
 		"camp":
 			return "that is Edda and Hob's camp: build away from their oak"
+		"tribe_camp":
+			return "that is a goblin camp: build away from their fire"
 		"steep":
 			return "the ground is too steep here"
 		"float":

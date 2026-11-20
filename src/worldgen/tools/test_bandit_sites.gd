@@ -13,6 +13,7 @@ const BanditsScript := preload("res://src/stream/server_bandits.gd")
 const ItemScript := preload("res://src/stream/server_items.gd")
 const CartsScript := preload("res://src/stream/server_carts.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
+const TribesScript := preload("res://src/stream/server_tribes.gd")
 
 var failures: int = 0
 var clock: Array = [0.0]
@@ -190,6 +191,20 @@ func _waking() -> void:
 	fresh.road_distance = func(_at, _r): return 200.0
 	fresh.building_near = func(_at, _r): return true
 	check(fresh.refusal(cell, spot, clock[0]) == "buildings near", "none near a building")
+	fresh.building_near = func(_at, _r): return false
+
+	# A goblin tribe's ground (server_tribes.gd camp_spots): no bandit site within tribe_clear_m of a tribe camp.
+	var clear_m: float = float(fresh.cfg["tribe_clear_m"])
+	fresh.tribe_camps = func(): return [spot + Vector2(clear_m - 10.0, 0.0)]
+	check(fresh.refusal(cell, spot, clock[0]) == "goblin camp near", "none near a goblin tribe's camp")
+	fresh.tribe_camps = func(): return [spot + Vector2(clear_m + 10.0, 0.0)]
+	check(fresh.refusal(cell, spot, clock[0]) == "", "a goblin camp further off is no bar (%s)" % fresh.refusal(cell, spot, clock[0]))
+	var tribes: TribesScript = TribesScript.new()
+	tribes.setup()
+	var camps: Array = tribes.camp_spots()
+	check(camps.size() == tribes.tribes().size() and camps.size() > 0, "every goblin tribe camp is listed (%d)" % camps.size())
+	var fire: Dictionary = (tribes.tribes()["ragtooth"] as Dictionary)["camp"]["fire"]
+	check(camps.has(Vector2(float(fire["x"]), float(fire["z"]))), "the Ragtooth camp is listed at its fire")
 
 	# Ground not loaded: no tile is read, the candidate is tried again at the next check and wakes once it is.
 	var later: BanditsScript = _sites()

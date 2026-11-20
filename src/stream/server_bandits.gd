@@ -22,6 +22,7 @@ var ground_height: Callable    # (x, z) -> metres, or NAN
 var ground_ready: Callable     # (x, z) -> bool: the ground there can be read now without a tile read stalling the server (unset: always)
 var in_water: Callable         # (x, z) -> bool
 var building_near: Callable    # (Vector3, r) -> bool: a placed building (SurveyLine.is_building) within r
+var tribe_camps: Callable      # () -> Array of Vector2: every goblin tribe camp (server_tribes.gd camp_spots); no bandit site within tribe_clear_m of one
 var road_distance: Callable    # (Vector3, r) -> metres to the nearest road patch within r, or INF
 var lay_camp: Callable         # (key, fire Vector3, lean_to spots Array of [Vector3, yaw degrees]) -> Array of world ids laid
 var laid_still: Callable       # (Array of world ids) -> bool: every piece is still there
@@ -141,6 +142,10 @@ func refusal(cell: Vector2i, spot: Vector2, now: float) -> String:
 	for other in sites.values():
 		if spot.distance_to(Vector2(float(other["x"]), float(other["z"]))) < float(cfg.get("spacing_m", 3000.0)):
 			return "another camp near"
+
+	for camp in (tribe_camps.call() if tribe_camps.is_valid() else []):
+		if spot.distance_to(camp) < float(cfg.get("tribe_clear_m", 1500.0)):
+			return "goblin camp near"   # a goblin tribe's ground is its own (the goblin camp thread, 20 Nov 2026)
 
 	if points_near(spot, now) < float(cfg.get("wake_points", 30.0)):
 		return "quiet road"

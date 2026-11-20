@@ -1,5 +1,5 @@
 {
-	"note": "Bandit camp sites, stage 1 (Dave 19 Nov 2026, project chat: sites fixed by the seed, woken by road traffic, a few km apart, none near the start; plan /mnt/project-files/bandit-camps/PLAN.md, docs/design/BANDIT_CAMPS.md). Stage 1 finds sites and wakes them; stage 2 lays the camp (camp below). All numbers are first tries (BANDIT-1..14), tune after play.",
+	"note": "Bandit camp sites, stage 1 (Dave 19 Nov 2026, project chat: sites fixed by the seed, woken by road traffic, a few km apart, none near the start; plan /mnt/project-files/bandit-camps/PLAN.md, docs/design/BANDIT_CAMPS.md). Stage 1 finds sites and wakes them; stage 2 lays the camp (camp below). All numbers are first tries (BANDIT-1..15), tune after play.",
 	"cell_m": 1000.0,
 	"share": 0.5,
 	"stretch_m": 100.0,
@@ -18,6 +18,7 @@
 	"spacing_m": 3000.0,
 	"start_clear_m": 1500.0,
 	"building_clear_m": 150.0,
+	"tribe_clear_m": 1500.0,
 	"slope_max_deg": 15.0,
 	"slope_step_m": 5.0,
 	"check_s": 3600.0,

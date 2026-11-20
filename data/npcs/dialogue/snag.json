@@ -1,0 +1,20 @@
+{
+	"npc": "snag",
+	"note": "Snag, fire-keeper of the Ragtooth goblins (data/creatures/goblin_tribes.json, Dave 19 Nov 2026). Sends a player to Skritch, the trader. See hob.json for the format. PROVISIONAL lines (GOBLIN-6, docs/design/GOBLIN_CAMP.md).",
+	"barks": {
+		"greeting": ["Snag is busy. Go see Skritch.", "Not Snag. Skritch trades.", "Mm. Fire is warm. Go away."],
+		"farewell": ["Go.", "Hm.", "Go quiet."],
+		"idle": ["Sniff. Rain coming.", "Wolves on the hill last night."],
+		"complaint": ["Belly hurts. Go away.", "Not now.", "Head pounds.", "Sick. Go see Skritch.", "Bad mushroom. Ugh.", "Too tired. Go.", "Tooth hurts.", "No talk today."],
+		"cooldown": ["Wait.", "Slow."],
+		"info": ["Skritch trades. Not me.", "The cave is Ragtooth cave."]
+	},
+	"roots": [{"node": "post"}],
+	"nodes": {
+		"post": {
+			"text": "$greeting",
+			"choices": [{"text": "Goodbye.", "goto": "bye"}]
+		},
+		"bye": {"text": "$farewell", "end": true}
+	}
+}

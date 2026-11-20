@@ -61,6 +61,7 @@ A camp's bandits are fixed by the seed: their count and levels by distance band 
 | BANDIT-12 | Gear | level 1+ wooden club and hide clothes; 3+ bronze spear and hood; 5+ iron sword and fur cloak |
 | BANDIT-13 | Running | under 30% health a bandit runs, up to 40 m from its seat |
 | BANDIT-14 | Health | 40 at level 1, scaled by the island level's health per level |
+| BANDIT-15 | Goblin ground | no site within 1.5 km of a goblin tribe camp |
 
 ### Known limits (stage 2)
 

@@ -89,11 +89,19 @@ void fragment() {
 # New species numbers (Sal's data/animals/spawn_plan.json proposal: boar 8, songbirds 9, frog 10, grouse 11, seal 12, seabird 13). The small ones hop
 # on the generic Rig path like the rabbit; the boar is a four-legged body and animates like the deer. A species number with no model is not drawn.
 const SMALL_SPECIES := [9, 10, 11, 13]
+const GOBLIN_SPECIES := 16   # KIND_OF_SPECIES: the goblin
 const YOUNG_NUM := 100       # a young animal's species number + 100 (server_animals.gd)
 const YOUNG_SCALE := 0.5     # how big the young are drawn
 
 
 const FEATHERED := [6, 9, 11, 13]     # flock birds, songbirds, grouse, gulls: they take the feather coat while they build
+
+
+# A goblin tribe member's body (npc_view.gd, data/creatures/goblin_tribes.json, Dave 19 Nov 2026): the goblin model's look `variant` (0 Skritch,
+# 1 Rukz), with its own steady height roll from `look_seed`, drawn and clipped exactly as a wild goblin; null when the model file is not there.
+func make_goblin(variant: int, look_seed: int) -> Node3D:
+	var looks: int = maxi((_model_rows().get("goblin", {}).get("variants", []) as Array).size(), 1)
+	return _make_model(GOBLIN_SPECIES, posmod(variant, looks) + looks * posmod(look_seed, 4096))
 
 
 # young: a young animal. When its species' model row has a young_model, that model is drawn at its own size (the calf beside

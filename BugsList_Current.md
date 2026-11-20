@@ -475,6 +475,34 @@ Not done: the new item icons need a Godot icon pass. A tap or drip head reaches 
 
 Assumed on Dave's behalf (provisional): PV-1 to PV-10 in docs/design/PLUMBING_DESIGN.md (piece lengths, 30 m longest run, rain into a barrel 1 L a minute, tap fills at 30 L a minute, drip head draws 2 L a minute, a barrel snaps onto a pipe end or joint within 0.6 m, an end laid over a trough or trench still pours into it).
 
+## 66. Animals jump about when they move (part 2 of 3 of the animal fixes)
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test on 19 Nov 2026. Fixed by PR #1324, merged to dev at b7d8e95b (head 70e9a9c5) after independent review (PASS on the exact head after one round of fixes). Lane A (Dave's PC) on the exact head: 50 of 50 selected tests passed, 0 script errors, including test_animal_motion_buffer; parse ok; warnings 407 equal to dev. Not yet played; the smoothness has not been seen on screen.
+
+Dave, 19 Nov 2026: "they are teleporting when they move or whenever I move ... we need to fix the animals to make their movement smooth".
+
+**Cause:** the server moves animals smoothly. A diagnostic run on Lane B (David4) measured at most 1.6 m between sends and no pop-in or pop-out. The client chased each new position as it arrived, about four times a second. The body lunged after every send and slowed before the next, and its walk clip flicked between walk, run and stand.
+
+**Required outcome:** each animal is drawn a little in the past, on the line between the positions it was sent, at a steady speed (src/client/motion_buffer.gd). A late or lost send is bridged for up to 0.3 s. An animal that stood still walks off instead of sliding, and a jump over 25 m (out of a burrow) is drawn at once.
+
+**Acceptance:** stand near a grazing herd, then walk and run past it: animals walk, trot and run without jumps or stutters, and their legs match their speed.
+
+Not changed: NPCs (still their own chase), animal attacks.
+
+## 67. Animals do not react to a player nearby (part 3 of 3 of the animal fixes)
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test on 19 Nov 2026. Fixed by PR #1330, merged to dev at e4f7dc2d (head 3d6ae837) after independent review (PASS on an earlier head; follow-up delta PASS on the exact head). Lane A (Dave's PC) on the exact head: 63 of 63 selected tests passed (62 fast + 1 timing), 0 script errors, including test_animal_reactions; parse ok; warnings 407 equal to dev; validate_items 0 errors. Not yet played.
+
+Dave, 19 Nov 2026: "they are not reacting most of the time to a player nearby ... they also need to react accordingly from reasonable distances."
+
+**Cause:** the sense factors multiply each other down. Being upwind cut sight and hearing by half as well as scent, and trees cut more. A deer noticed a walking player in woods from upwind at about 11 m. Neutral animals ignore players by Dave's 6 Nov rule; that is unchanged.
+
+**Required outcome:** every species' notice, flee and safe distances are in one table (animals.json reactions.notice_flee_safe_m); flock birds notice at their flock's own distance. Deer notice at 60 m, bolt at 35 m and stop at 70 m; elk 70/40/80. Upwind now cuts the whole sense factor only to 0.75 at full wind (was 0.5). A running player (5 m/s or more) is seen and heard 1.5 times farther.
+
+**Acceptance:** walk toward a deer in the open on a calm day: it looks up at about 60 m and runs at about 35 m. Walk toward one from upwind in woods: it notices you much farther off than the old 11 m. Run at one: it bolts sooner than when you walk.
+
+Assumed on Dave's behalf (provisional, in docs/design/ANIMAL_REACTIONS.md): RX-1 the deer and elk distances, RX-2 the upwind cut 0.25, RX-3 running 5 m/s and 1.5 times. Animal attacks doing nothing to him is fine for now (Dave); the attack path does call server_items.hurt_player, and why it does nothing in play was not looked into (docs/design/ANIMAL_REACTIONS.md).
+
 ## 68. Server pick page: the page, the password box and Back to servers (part 2 of 2)
 
 **Status: Implemented - awaiting player verification.** Dave's request and design approval, 19 Nov 2026 (docs/design/SERVER_PICK_PAGE.md; part 1 is entry 62). Part 2 is PR #1321, merged to dev at 0fdc302e (head 159d4b54) after independent review (PASS on a6ebf2be with nits, the should-fix ones fixed; delta PASS on e2f3a82d and on 159d4b54). Lane B (David4) on the exact head: 28 of 28 selected tests passed, including test_server_pick, test_server_list, test_join_address, test_title_page and test_build_stamp; join_remote_smoke and join_password_smoke ok; check_warnings 407, the same as dev; validate_items 0 errors. Not yet played; nobody has seen the page on screen.
@@ -504,6 +532,20 @@ Dave, 19 Nov 2026: "yes bring in the red dirt stains make sure they are obvious 
 Not done: a stain under deeper standing water may be hidden by the water surface. The stain glows faintly at night. An odd Bog iron ore left in a smelter waits without a message. Frame cost not measured.
 
 Assumed on Dave's behalf (provisional): BI-2, Bog iron ore still makes steel at the Advanced smelter, two Bog iron ore and the carbon to one Steel ingot (the coordinator confirmed it for him while he was away).
+
+## 70. Autoload: a container loads an item from the ground, once or every 10 minutes
+
+**Status: Implemented - awaiting player verification.** Dave's request, 19 Nov 2026 (thread "Add autoload for carts and containers"). PR #1329, merged to dev at 5dca8ca1 (head ee19903a) after independent review (PASS; earlier rounds made a vehicle's payload worked out once per press, left fish traps out, refused unknown items and fixed the list's pick). Lane B (David4) on the exact head: 430 of 430 selected tests passed (421 fast, 9 timing), 0 script errors, test_autoload among them; warnings 407 equal to dev; join smoke clean. Not yet played. The Autoload list, the Every 10 min box and a barrel holding water refusing goods are not yet seen on screen.
+
+Dave, 19 Nov 2026: "it would be cool if we had an autoload button on carts and wagons or barrels and such where you could push the button and it could show you everything on the ground around you within say 30 meters in a list where you could choose an item and it would just pick up as much of it as it can until it fills the capacity or the weight limit onto the card or into the barrel." "this could work on crates and boxes too." "maybe just have autoload with a check box beside it to make it continuously autoload every 10 minutes or something"
+
+**Required outcome:** the container window of a chest, crate, barrel, shelf, rack, bin, Handcart, Small log sled or Small wagon has an Autoload button and an Every 10 min box. Autoload lists what lies on the ground within 30 m of the container that it takes, with the total and the nearest distance. A pick loads as much as fits, nearest piles first, part of a big pile when only part fits: slots for storage (no weight limit), the payload for the vehicles. Ticked, it loads that item again every 10 minutes, kept after a restart; unticked it stops. Fires, kilns, smelters, stations, platters, fish traps and remains have no Autoload. Design: docs/design/AUTOLOAD.md.
+
+**Acceptance:** drop a pile of stone 10 to 20 m from a Small wagon, open the wagon and press Autoload: the stone is listed with its count; pick it and the wagon fills to its payload, the rest stays on the ground. Tick Every 10 min on a chest, pick clay, drop more clay nearby: within 10 minutes it is in the chest. A barrel holding water loads nothing.
+
+Not done: what Autoload gathers does not count toward goals. Once one pile does not fit, farther piles are not tried in that press. Frame cost not measured.
+
+Assumed on Dave's behalf (provisional, docs/design/AUTOLOAD.md): AL-1 the 30 m is measured from the container; AL-2 one item per standing autoload, a one-off load of another item ends it; AL-3 instant; AL-4 anyone who may open the container may use it, and the standing autoload also picks up other players' drops in range; AL-5 no goal credit.
 
 ## Rewrite interpretation
 
