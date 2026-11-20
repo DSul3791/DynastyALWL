@@ -12,6 +12,12 @@ extends RefCounted
 
 const ORDER := ["spring", "river", "lake", "brook", "puddle"]   # cleanest first (Sonny's physical order); salt is never picked
 const RHO_C := 4.19e6   # J/m3K, water
+# Water within reach must also lie within reach downward (Dave 19 Nov 2026, a drink prompt on a hillside above a river, "about 10 meters above
+# the water"; REACH_DROP_M is the coordinator's ruling of 20 Nov, provisional for Dave): its level, a brook's bed or a spring head no more than
+# REACH_DROP_M below the feet. A position a client reports is its body's middle, BODY_HALF_M above the feet (terrain_client _make_player: a 1.8 m
+# capsule; stance.gd keeps the feet there in every stance).
+const REACH_DROP_M := 2.5
+const BODY_HALF_M := 0.9
 
 
 # Spring rows from a tile's ground springs (TileTerrainData.ground_springs: [Vector3 head, m3_s, cover, dry_m3_s], the record's spring heads baked
@@ -25,7 +31,7 @@ static func ground_spring_rows(springs: Array, pos: Vector3, reach: float, mean_
 	for spring in springs:
 		var head: Vector3 = spring[0]
 
-		if Vector2(head.x - pos.x, head.z - pos.z).length() <= reach:
+		if Vector2(head.x - pos.x, head.z - pos.z).length() <= reach and not too_far_below(head.y, pos.y):
 			rows.append({"kind": "spring", "dry_m3_s": float(spring[3] if spring.size() > 3 else spring[1]), "temp_c": float(mean_c.call(head))})
 
 	return rows
@@ -36,7 +42,8 @@ static func ground_spring_rows(springs: Array, pos: Vector3, reach: float, mean_
 # year mean there (the caller's climate zone). At the same five points as water_near: a spring cave's stream is spring water; the record's
 # ground springs are spring rows (step 2a); ocean and estuary cells are salt; a sample on a record channel (the tile's drink sections) is a
 # brook by regime, which runs or lies dry by the season (runs) whatever the sim shows (step 2b); otherwise wet lake and river cells are lakes
-# and rivers, and any other cell the live sim has wet is a puddle. No ice field: server_items puts its own ice rule (_on_ice) on each row.
+# and rivers, and any other cell the live sim has wet is a puddle. A point whose water (the sea at 0 m), or bed, lies more than REACH_DROP_M below
+# the feet gives no row. No ice field: server_items puts its own ice rule (_on_ice) on each row.
 static func tile_rows(tile_data, pos: Vector3, reach: float, mean_c: Callable) -> Array:
 	var rows: Array = []
 
@@ -55,6 +62,9 @@ static func tile_rows(tile_data, pos: Vector3, reach: float, mean_c: Callable) -
 		var k: int = tile_data.nearest(pos.x + offset.x, pos.z + offset.y)
 		var cls: int = int(tile_data.water_class[k])
 
+		if too_far_below(_sample_level(tile_data, sim, k), pos.y):
+			continue   # the water, or the brook's bed, lies down a bank or cliff out of reach
+
 		if cls == 1 or cls == 5:
 			rows.append({"kind": "salt"})   # ocean, estuary (data/tables/water_classes.json)
 			continue
@@ -71,6 +81,50 @@ static func tile_rows(tile_data, pos: Vector3, reach: float, mean_c: Callable) -
 			rows.append({"kind": "lake" if cls == 2 else ("river" if cls == 3 else "puddle")})
 
 	return rows
+
+
+# Whether water lies within reach of pos on one baked tile (terrain_server items.water_near and drink_water_near): a spring cave's stream, or at
+# five points (pos and reach each way, nearest sample) a cell the live sim has wet (the baked water class and surface on a tile with no sim yet).
+# With body_drop (a player drinking or filling, pos the body's middle) the water must also lie no more than REACH_DROP_M below the feet; the
+# other water tests (a bank for planting, flint washing, fishing, ice) read any water there, as before.
+static func water_near(tile_data, pos: Vector3, reach: float, body_drop: bool) -> bool:
+	if tile_data.placeholder:
+		return false
+
+	# Spring cave streams run under the ground the water map knows (Dave 3 Nov 2026): drink and fill there too.
+	if not tile_data.cave_streams.is_empty() and tile_data.near_cave_water(pos, reach):
+		return true
+
+	var sim: PackedFloat32Array = tile_data.sim_snapshot()
+
+	for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
+		var k: int = tile_data.nearest(pos.x + offset.x, pos.z + offset.y)
+		var level: float = sim[k] if not sim.is_empty() else (tile_data.water_surface[k] if tile_data.water_class[k] > 1 else NAN)
+
+		if not is_nan(level) and not (body_drop and too_far_below(level, pos.y)):
+			return true
+
+	return false
+
+
+# True when a water level (or a brook's bed) at height y lies more than REACH_DROP_M below the feet of a body whose middle is at body_y.
+static func too_far_below(y: float, body_y: float) -> bool:
+	return y < body_y - BODY_HALF_M - REACH_DROP_M
+
+
+# The height tile_rows measures the drop to at sample k: the live sim's level where it has water, else the baked surface, else the ground (a brook's
+# bed, a dry cell). The sea is at 0 m.
+static func _sample_level(tile_data, sim: PackedFloat32Array, k: int) -> float:
+	if not sim.is_empty() and not is_nan(sim[k]):
+		return sim[k]
+
+	if not tile_data.water_surface.is_empty() and not is_nan(tile_data.water_surface[k]):
+		return tile_data.water_surface[k]
+
+	if int(tile_data.water_class[k]) == 1 or int(tile_data.water_class[k]) == 5:
+		return 0.0   # ocean, estuary: sea level (water_surface is NAN where no water stands above it)
+
+	return tile_data.heights[k] if not tile_data.heights.is_empty() else -INF
 
 
 # The record's drink points in one flora chunk, for the client's E-to-drink prompt where the settled water shows nothing

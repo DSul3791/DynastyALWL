@@ -2430,17 +2430,25 @@ func _record_drink_here() -> String:
 			var springs: PackedFloat32Array = _drink_chunks.get(home + Vector2i(dx, dz), [[], PackedFloat32Array()])[1]
 
 			for n in range(0, springs.size() - 1, 2):
-				if Vector2(springs[n] - here.x, springs[n + 1] - here.z).length() <= DRINK_REACH_M:
+				if Vector2(springs[n] - here.x, springs[n + 1] - here.z).length() <= DRINK_REACH_M and _bed_in_reach(springs[n], springs[n + 1]):
 					return "Spring"
 
 	for offset in [Vector2.ZERO, Vector2(DRINK_REACH_M, 0.0), Vector2(-DRINK_REACH_M, 0.0), Vector2(0.0, DRINK_REACH_M), Vector2(0.0, -DRINK_REACH_M)]:
 		var key: Vector2i = Vector2i(roundi((here.x + offset.x) / _drink_cell_m), roundi((here.z + offset.y) / _drink_cell_m))
 
 		# Only a bed the rule says runs now: a dry gully offered a drink the server always refused (Dave 19 Nov 2026: "press e to drink" on a dry hillside).
-		if _drink_cells.has(key) and DrinkRules.brook_shows(int(_drink_cells[key]) - 1, _drink_season, _drink_raining):
+		if _drink_cells.has(key) and DrinkRules.brook_shows(int(_drink_cells[key]) - 1, _drink_season, _drink_raining) and _bed_in_reach(float(key.x) * _drink_cell_m, float(key.y) * _drink_cell_m):
 			return "Brook"
 
 	return ""
+
+
+# The ground at a record drink point (a brook cell's sample point, a spring head) is not down a bank out of reach, as the server measures it
+# (DrinkRules.too_far_below on the sample's height or the head's). The ray starts well above the player, so water uphill is found too; no ground
+# read yet is no.
+func _bed_in_reach(x: float, z: float) -> bool:
+	var bed: float = _ground_below(Vector3(x, body.global_position.y + 40.0, z))
+	return not is_nan(bed) and not DrinkRules.too_far_below(bed, body.global_position.y)
 
 
 func _water_ahead() -> bool:
@@ -2452,7 +2460,16 @@ func _water_ahead() -> bool:
 		var spot: Vector3 = body.global_position + forward * step
 		var surface: float = flora.water_surface_at(spot.x, spot.z)
 
-		if not is_nan(surface) and WaterVolume.depth(surface, _ground_below(spot)) >= WaterVolume.DRINK_DEPTH_M:   # shallow reed water too (BUG-015)
+		# Water down a bank out of reach is none, as the server's test (DrinkRules.too_far_below).
+		if is_nan(surface) or DrinkRules.too_far_below(surface, body.global_position.y):
+			continue
+
+		var ground: float = _ground_below(spot)
+
+		if is_nan(ground):
+			continue   # no ground read yet (its collision not built) is no answer: depth() would take the whole surface height for the depth
+
+		if WaterVolume.depth(surface, ground) >= WaterVolume.DRINK_DEPTH_M:   # shallow reed water too (BUG-015)
 			return true
 
 	return false
