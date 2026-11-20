@@ -588,7 +588,7 @@ func _process(delta: float) -> void:
 	if not _ground_steady and not _land_failed and not force_land_fail and not is_nan(_placed_ground):
 		var settled: float = _ground(shot_pos.x, shot_pos.z)
 
-		if not is_nan(settled) and absf(settled - _placed_ground) > RECHECK_M and _ground_rechecks < RECHECK_MAX:
+		if not is_nan(settled) and absf(settled - _placed_ground) > (RECHECK_M if is_nan(_surface_y) else RECHECK_SURFACE_M) and _ground_rechecks < RECHECK_MAX:
 			_ground_rechecks += 1
 			print("shot runner: ground under %s moved from %.1f to %.1f after the settle; placing it again (%d of at most %d)" % [shots[_index]["name"], _placed_ground, settled, _ground_rechecks, RECHECK_MAX])
 			_placed_ground = settled
@@ -2011,6 +2011,7 @@ const START_ABOVE_M := 1.0      # a shot starts this high over the ground at its
 const SURFACE_ASK_MS := 2000    # the ground height is asked of the server again this often until it answers
 const SURFACE_WAIT_MS := 20000  # after this long without an answer the client's own ground reading is used (it reads only near the body)
 const RECHECK_M := 1.0   # a shot's ground reading that moves more than this after the settle places the shot again
+const RECHECK_SURFACE_M := 2.5   # the same against the server's exact height: the voxel reading is a whole cell at floor(x,z), so on a slope it is off by over 1 m without any change
 const RECHECK_MAX := 4   # at most this many re-placements per shot: the reading can step down more than once as finer blocks load (383, 343, 335)
 
 
