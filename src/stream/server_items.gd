@@ -229,6 +229,9 @@ var _items: Dictionary = {}         # id int -> {number, count, pos Vector3, lef
 var _next_id: int = 1
 var _known: Dictionary = {}         # peer -> {id: true} world items the peer was told about
 var _far_fire_spots: Array = []     # [pos Vector3, fire tier 1..3] of every lit campfire at the last world sync (far_fires_near)
+var _wide_piles: Dictionary = {}    # id -> true: cone piles wider than MERGE_M, which a drop can join from beyond the sync grid's near cells (PR #1322)
+var _wide_piles_built: bool = false # false until the first drop files the piles a load or reset brought in
+const WIDE_PILE_M := 0.5            # a cone pile wider than this (about 480 stones) is kept in _wide_piles; a smaller one is found by its grid cell
 var _sync_grid: Dictionary = {}     # the last world sync's NEAR_M grid, cell -> [world ids] (at most SYNC_EVERY_S old); the hammer list's stock polls read it
 var _sync_grid_next: int = 0        # _next_id when that grid was filed: ids from here on came since and are not in it
 var _stock_sig: Dictionary = {}     # peer -> hash of the last craft stock sent (a hammer poll that would send the same is skipped)
@@ -1095,9 +1098,12 @@ func _cone_radius_of(number: int, count: int) -> float:
 # building or solid object it has to stop ... it cant go into a building through the wall"): a placed structure's footprint, a boulder or a
 # fire. Trees and bushes are not checked (the pile is shaped round them), nor road and path patches or garden plots ("roads shouldnt effect
 # them at all"). `self_id` is the pile itself.
+const PILE_BLOCK_REACH_M := 30.0   # the widest thing that can stop a pile reaches this far past its own centre (a big building's half or a 5 m boulder)
+
+
 func _pile_blocked(centre: Vector3, radius: float, self_id: int) -> bool:
-	for id in _items:
-		if id == self_id:
+	for id in _ids_near(centre, radius + PILE_BLOCK_REACH_M):   # the sync grid's cells, not every record (gate review PR #1322: the cost per dropped stone)
+		if id == self_id or not _items.has(id):
 			continue
 
 		var it: Dictionary = _items[id]
@@ -1105,6 +1111,10 @@ func _pile_blocked(centre: Vector3, radius: float, self_id: int) -> bool:
 
 		if it.has("boulder"):
 			var info: Dictionary = it["boulder"]
+
+			if flat.length() >= radius + float(info["radius"]):
+				continue   # beyond the rock's whole size: no need to work out what is left of it
+
 			var size_now: float = float(info["radius"]) * pow(float(it["count"]) / float(maxi(int(info["total"]), 1)), 1.0 / 3.0)
 
 			if flat.length() < radius + size_now:
@@ -1116,8 +1126,8 @@ func _pile_blocked(centre: Vector3, radius: float, self_id: int) -> bool:
 			var kind: String = str(it["struct"].get("kind", ""))
 			var def: Dictionary = _structures.get(kind, {})
 
-			if def.is_empty() or kind == "path_patch" or bool(it["struct"].get("road", false)) or PlacementRules.is_plot(def):
-				continue
+			if def.is_empty() or kind == "path_patch" or bool(it["struct"].get("road", false)) or PlacementRules.is_plot(def) or is_pipe_kind(kind):
+				continue   # a pipe run goes through anything (PLUMBING_DESIGN s9), so a pile lies over it
 
 			# Only what stands in the pile's own height range stops it (gate review, PR #1322): a foundation or floor it lies on, or a roof or
 			# upper floor over it, does not, so a pile in a house or on a stone yard's floor stays one pile.
@@ -1153,11 +1163,27 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	# again there (PLAN.md 5b PL-1, gate review PR #1322), so the next drop joins that pile instead of stacking a second cone on the first.
 	var tries: int = 4 if item_wear == 0 and item_inst.is_empty() and table.stack_of(number) > 1 else 0
 
+	if tries > 0 and not _wide_piles_built:
+		_wide_piles_built = true
+
+		for id in _items:
+			if not _items[id].has("struct") and not _items[id].has("boulder") and not _items[id].has("scatter") and _cone_radius_of(int(_items[id]["number"]), int(_items[id]["count"])) > WIDE_PILE_M:
+				_wide_piles[id] = true
+
 	while tries > 0:
 		tries -= 1
 		var stopped: Dictionary = {}
+		# Only the records near the drop and the few wide cone piles can take it (gate review PR #1322: not a walk of every record per stone).
+		# shortcut: the sync grid is up to SYNC_EVERY_S old; ids laid since are added whole, but a record moved since is looked for where it was.
+		var nearby: Array = _ids_near(position, MERGE_M + WIDE_PILE_M)
 
-		for id in _items.keys():
+		for wide in _wide_piles.keys():
+			if _items.has(wide):
+				nearby.append(wide)
+			else:
+				_wide_piles.erase(wide)
+
+		for id in nearby:
 			if not _items.has(id):
 				continue
 
@@ -1183,6 +1209,10 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 					continue
 
 				near["count"] = int(near["count"]) + added
+
+				if _cone_radius_of(number, int(near["count"])) > WIDE_PILE_M:
+					_wide_piles[id] = true
+
 				near["left"] = maxf(PILE_LIFETIME_S if int(near["count"]) >= PILE_MIN else WORLD_ITEM_LIFETIME_S, lifetime_s)
 				_tick_ageing(id)   # a kept pile can start ageing here
 
@@ -1210,6 +1240,9 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 
 	var first: int = mini(count, PILE_CAP)
 	_items[_next_id] = {"number": number, "count": first, "pos": position, "left": maxf(PILE_LIFETIME_S if first >= PILE_MIN else WORLD_ITEM_LIFETIME_S, lifetime_s), "wear": item_wear}
+
+	if _wide_piles_built and _cone_radius_of(number, first) > WIDE_PILE_M:
+		_wide_piles[_next_id] = true
 
 	if not is_nan(rot_y):
 		_items[_next_id]["rot_y"] = rot_y
@@ -2892,6 +2925,8 @@ func reset_world() -> int:
 	_lit_valid = false
 	_bed_cache.clear()
 	_sync_grid = {}
+	_wide_piles.clear()
+	_wide_piles_built = false
 
 	for peer in _chest_viewer.keys():
 		if int(_chest_viewer[peer]) >= 0:
@@ -6861,6 +6896,8 @@ func _load_inventories() -> void:
 
 
 func _load_world_items() -> void:
+	_wide_piles.clear()
+	_wide_piles_built = false   # the first drop after the load files the loaded cone piles
 	var parsed: Variant = _read_json_version("world_items.json", VERSION, 1)
 
 	if parsed == null:

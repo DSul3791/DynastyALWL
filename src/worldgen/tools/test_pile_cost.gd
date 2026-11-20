@@ -45,8 +45,10 @@ func _init() -> void:
 	rng.seed = 11
 
 	for k in range(OTHER_RECORDS):   # other loose records about the base, none of them stone, so none is a pile to join
-		items.drop_in_world(stick, 1, BASE + Vector3(rng.randf_range(-400.0, 400.0), 0.0, rng.randf_range(-400.0, 400.0)))
+		items._items[items._next_id] = {"number": stick, "count": 1, "pos": BASE + Vector3(rng.randf_range(-400.0, 400.0), 0.0, rng.randf_range(-400.0, 400.0)), "left": 1.0e9, "wear": 0}
+		items._next_id += 1
 
+	items._sync_world_items()   # the world sync files the records in its grid, as a running server does every few seconds
 	items.drop_in_world(stone, 20000, BASE)
 	var foot: Vector3 = BASE + Vector3(items._cone_radius_of(stone, 20000) + 0.4, 0.0, 0.0)
 	var start: int = Time.get_ticks_usec()

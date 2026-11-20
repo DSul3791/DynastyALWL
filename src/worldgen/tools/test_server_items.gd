@@ -226,16 +226,19 @@ func _init() -> void:
 	items.drop_in_world(stone, 20000, pile_at)
 	var cone_r: float = items._cone_radius_of(stone, 20000)
 	check(cone_r > 1.5 and cone_r < 2.0, "20,000 stones of 0.5 kg make a solid cone about 1.75 m in radius (%f)" % cone_r)
-	items.drop_in_world(stone, 10, pile_at + Vector3(cone_r + 0.5, 0.0, 0.0))
-	check(items.world_item_count() == 1 and int(items._items[items._items.keys()[0]]["count"]) == 20010, "a drop at the foot of a big pile joins it")
-	items._items[880001] = {"number": items.table.number_of("storage_chest") if items.table.number_of("storage_chest") > 0 else 1, "count": 1, "pos": pile_at + Vector3(-(cone_r + 0.3), 0.0, 0.0), "left": 1.0e9, "struct": {"kind": "chest", "yaw": 0.0}}
+	items._sync_world_items()   # the grid files the pile in its 100 m cell (x 2000 up); its foot at x 1998 lies in the next cell down
+	items.drop_in_world(stone, 10, pile_at - Vector3(cone_r + 0.5, 0.0, 0.0))
+	check(items.world_item_count() == 1 and int(items._items[items._items.keys()[0]]["count"]) == 20010, "a drop at the foot of a big pile joins it, across a grid cell's edge (the wide-pile list)")
+	var chest_id: int = items._next_id   # a real id: the server finds what may stop a pile through its sync grid, which files ids below _next_id
+	items._next_id += 1
+	items._items[chest_id] = {"number": items.table.number_of("storage_chest") if items.table.number_of("storage_chest") > 0 else 1, "count": 1, "pos": pile_at + Vector3(-(cone_r + 0.3), 0.0, 0.0), "left": 1.0e9, "struct": {"kind": "chest", "yaw": 0.0}}
 	if items._structures.has("chest"):
 		items.drop_in_world(stone, 200000, pile_at + Vector3(0.5, 0.0, 0.0))
 		var beside: Array = items._items.keys().filter(func(k): return int(items._items[k]["count"]) == 200000)
 		check(items.world_item_count() == 3 and int(items._items[items._items.keys()[0]]["count"]) == 20010 and beside.size() == 1 and items._items[beside[0]]["pos"].x > pile_at.x + cone_r, "a pile that would grow into a building stops; the rest starts a new pile beside it, away from the building")
 		items.drop_in_world(stone, 10, pile_at + Vector3(0.5, 0.0, 0.0))
 		check(items.world_item_count() == 3 and int(items._items[beside[0]]["count"]) == 200010, "and the next drop there joins the pile beside, not a third cone on the first")
-	items._items.erase(880001)
+	items._items.erase(chest_id)
 	items.clear_dropped(Vector3.ZERO, 1.0e7)
 	# A floor under a pile or a roof over it does not stop it (gate review, PR #1322): only what stands in the pile's own height range does.
 	if items._structures.has("foundation_section"):
@@ -244,12 +247,15 @@ func _init() -> void:
 		var floor_y: float = float(items._items[on_floor]["pos"].y)
 		var floor_def: Dictionary = items._structures["foundation_section"]
 		var floor_top: float = float(floor_def.get("top_m", 0.3))
-		items._items[880002] = {"number": 1, "count": 1, "pos": Vector3(pile_at.x, floor_y - floor_top, pile_at.z), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 0.0}}
-		items._items[880003] = {"number": 1, "count": 1, "pos": Vector3(pile_at.x, floor_y + 3.0, pile_at.z), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 0.0}}
+		var floor_id: int = items._next_id   # real ids, so the grid lookup sees them (see the chest above)
+		var roof_id: int = items._next_id + 1
+		items._next_id += 2
+		items._items[floor_id] = {"number": 1, "count": 1, "pos": Vector3(pile_at.x, floor_y - floor_top, pile_at.z), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 0.0}}
+		items._items[roof_id] = {"number": 1, "count": 1, "pos": Vector3(pile_at.x, floor_y + 3.0, pile_at.z), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 0.0}}
 		items.drop_in_world(stone, 1000, pile_at + Vector3(0.2, 0.0, 0.0))
 		check(items.world_item_count() == 3 and int(items._items[on_floor]["count"]) == 2000, "a pile on a floor and under a roof stays one pile (%d items)" % items.world_item_count())
-		items._items.erase(880002)
-		items._items.erase(880003)
+		items._items.erase(floor_id)
+		items._items.erase(roof_id)
 		items.clear_dropped(Vector3.ZERO, 1.0e7)
 	items.drop_in_world(stone, ItemsScript.PILE_CAP + 50, pile_at)
 	check(items.world_item_count() == 2, "over the cap a second pile starts")
