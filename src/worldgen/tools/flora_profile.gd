@@ -265,7 +265,7 @@ func _sections(data) -> void:
 	print("SECTION groves_scan ms=%d fruit_trees=%d" % [Time.get_ticks_msec() - t0, fruit])
 
 	# 4. The young-conifer window round the spawn (7 x 7 full).
-	var spawn_xz: Vector2 = load("res://src/shared/spawn_point.gd").OVERRIDE
+	var spawn_xz: Vector2 = Vector2(53296.0, 68080.0)   # the old spawn (x 53296, z 68080), kept as a fixed sample area of the starter tile when the spawn moved to the starter town (20 Nov 2026)
 	var spawn_chunk: Vector2i = placer.chunk_of(spawn_xz.x, spawn_xz.y)
 	var near: Array = []
 
@@ -283,7 +283,7 @@ func _sections(data) -> void:
 func _functions() -> void:
 	var placer = Timed.new()
 	placer.setup(generator, tables, rules)
-	var spawn_xz: Vector2 = load("res://src/shared/spawn_point.gd").OVERRIDE
+	var spawn_xz: Vector2 = Vector2(53296.0, 68080.0)   # the old spawn (x 53296, z 68080), kept as a fixed sample area of the starter tile when the spawn moved to the starter town (20 Nov 2026)
 	var spawn_chunk: Vector2i = placer.chunk_of(spawn_xz.x, spawn_xz.y)
 	var t0: int = Time.get_ticks_msec()
 

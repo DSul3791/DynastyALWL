@@ -9,7 +9,7 @@ const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const StoreScript := preload("res://src/stream/server_block_store.gd")
-const SpawnPoint := preload("res://src/shared/spawn_point.gd")
+const SAMPLE_AT := Vector2(53296.0, 68080.0)   # the old spawn (x 53296, z 68080), kept as a fixed sample area of the starter tile when the spawn moved to the starter town (20 Nov 2026)
 const Grid := preload("res://src/sullivan_water/freshwater/water_grid_2d.gd")
 const Adapter := preload("res://src/sullivan_water/freshwater/terrain_adapter.gd")
 const Coordinator := preload("res://src/sullivan_water/freshwater/terrain_water_edit_coordinator.gd")
@@ -44,7 +44,7 @@ func _init() -> void:
 	_check(problem == "", "server store opens (%s)" % problem)
 
 	var source = Source.new(store)
-	var corner: Vector2 = Vector2(SpawnPoint.OVERRIDE.x, SpawnPoint.OVERRIDE.y) - Vector2(SIZE, SIZE) * CELL * 0.5
+	var corner: Vector2 = SAMPLE_AT - Vector2(SIZE, SIZE) * CELL * 0.5
 	var adapter = Adapter.new(source, corner, CELL)
 	adapter.scan_step_m = 0.5   # guide 24.2: min(voxel 1 m, cell / 4)
 	var grid = Grid.new(SIZE, SIZE, CELL)

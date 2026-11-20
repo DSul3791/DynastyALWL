@@ -1146,7 +1146,7 @@ static func reason_text(state: String, opening: String = "") -> String:   # open
 		"crowded":
 			return "too many of these here already"
 		"camp":
-			return "that is Edda and Hob's camp: build away from their oak"
+			return "that is Edda and Hob's camp: build away from their tree"
 		"tribe_camp":
 			return "that is a goblin camp: build away from their fire"
 		"steep":

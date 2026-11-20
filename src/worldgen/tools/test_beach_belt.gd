@@ -9,7 +9,7 @@ const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
-const SpawnPointScript := preload("res://src/shared/spawn_point.gd")
+const SAMPLE_AT := Vector2(53296.0, 68080.0)   # the old spawn (x 53296, z 68080), kept as a fixed sample area of the starter tile when the spawn moved to the starter town (20 Nov 2026)
 
 var failures: int = 0
 
@@ -40,7 +40,7 @@ func _init() -> void:
 	generator.setup(settings, rules, tables, world + "/tiles")
 	var placer = PlacerScript.new()
 	placer.setup(generator, tables, rules)
-	var at: Vector2 = SpawnPointScript.OVERRIDE
+	var at: Vector2 = SAMPLE_AT
 	var bad_grass: int = 0
 	var bad_belt: int = 0
 	var belt_palms: int = 0

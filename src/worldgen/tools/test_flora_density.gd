@@ -309,7 +309,7 @@ func _init() -> void:
 	# Young conifers come in nurseries or beside a grown tree, never one by one in the middle of a meadow (Dave 2026-10-31).
 	var young: Array = []
 	var grown: Array = []
-	var spawn_xz: Vector2 = load("res://src/shared/spawn_point.gd").OVERRIDE   # only a fixed sample area of the starter tile
+	var spawn_xz: Vector2 = Vector2(53296.0, 68080.0)   # only a fixed sample area of the starter tile: the old spawn (x 53296, z 68080), kept as a fixed sample area of the starter tile when the spawn moved to the starter town (20 Nov 2026)
 	var spawn_chunk: Vector2i = placer.chunk_of(spawn_xz.x, spawn_xz.y)
 
 	for dz in range(-3, 4):
