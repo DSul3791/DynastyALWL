@@ -1426,6 +1426,7 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.name = "Sound"
 	root.add_child(sound)
 	sound.ground_below = _ground_below
+	sound.under_land = _under_land   # no sea under the island: a deep tunnel has dry steps (Dave 20 Nov 2026)
 	sound.floor_under = _floor_under
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
@@ -7252,14 +7253,16 @@ func _update_underwater() -> void:
 	# view turned blue with nothing drawn. The highest wet corner of an 8 m square (water_level_at)
 	# is the top of the film, tens of m above the eye. Now the blended surface at the eye's own
 	# spot, and the water there must be deeper than a film.
-	var surface: float = flora.water_surface_at(eye.x, eye.z) if eye.y >= 0.0 else NAN
+	# Under the island (_under_land, Dave 20 Nov 2026) below 0 m is no sea, so a lake's or cave pool's water there is read too.
+	var land: bool = _under_land(eye)
+	var surface: float = flora.water_surface_at(eye.x, eye.z) if eye.y >= 0.0 or land else NAN
 
 	# Dino's cave retake 5 Nov 2026 (x 52107 z 70264): 2.6 m over the cave mouth's floor the view was under water. The water grid's level there is
 	# the film on the hillside over the cave roof, 1 m above the eye, and the ray down from the eye found the cave floor 3.7 m under that level.
 	if not is_nan(surface) and eye.y < surface and _rock_over(eye, surface):
 		surface = NAN
 
-	if eye.y >= 0.0 and (is_nan(surface) or surface < eye.y - 3.0) and _cave_streams != null:
+	if (eye.y >= 0.0 or land) and (is_nan(surface) or surface < eye.y - 3.0) and _cave_streams != null:
 		var pool: float = _cave_streams.pool_surface_at(eye)   # a spring cave's deep pool (BUG-008)
 
 		if not is_nan(pool):
@@ -7268,7 +7271,6 @@ func _update_underwater() -> void:
 	# The sea's surface at the eye is the swell's (M5): a crest over the eye is under water, but only where the ground is under the sea.
 	# Under the island (_under_land) there is no sea below 0 m: a deep tunnel is dry (Dave 20 Nov 2026).
 	var sea_y: float = _sea_height_at(eye)
-	var land: bool = _under_land(eye)
 	var under: bool = not land and eye.y < minf(sea_y, 0.0)
 
 	if not under and not land and eye.y < sea_y:

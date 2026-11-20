@@ -67,7 +67,7 @@ func _initialize() -> void:
 		for i in range(n):
 			coast[j * n + i] = -10.0 if i < 32 else 20.0
 
-	var island = FogGround.new()
+	var island: FogGround = FogGround.new()
 	island.grid = FogGround.build_grid(coast, fresh, n, origin)
 	var shore_x: float = origin.x + 32.0 * FogGround.CELL_M
 	_check(island.under_land(shore_x + 300.0, z_mid), "300 m inland: under the island, no sea below 0 m")
