@@ -1,5 +1,5 @@
 {
-	"note": "Bandit camp sites, stage 1 (Dave 19 Nov 2026, project chat: sites fixed by the seed, woken by road traffic, a few km apart, none near the start; plan /mnt/project-files/bandit-camps/PLAN.md, docs/design/BANDIT_CAMPS.md). Stage 1 finds sites and wakes them; stage 2 lays the camp (camp below). All numbers are first tries (BANDIT-1..16), tune after play.",
+	"note": "Bandit camp sites, stage 1 (Dave 19 Nov 2026, project chat: sites fixed by the seed, woken by road traffic, a few km apart, none near the start; plan /mnt/project-files/bandit-camps/PLAN.md, docs/design/BANDIT_CAMPS.md). Stage 1 finds sites and wakes them; stage 2 lays the camp (camp below). All numbers are first tries (BANDIT-1..20), tune after play.",
 	"cell_m": 1000.0,
 	"share": 0.5,
 	"stretch_m": 100.0,
@@ -24,6 +24,17 @@
 	"slope_step_m": 5.0,
 	"check_s": 3600.0,
 	"drop_points": 0.05,
+	"warnings": {
+		"note": "Stage 3 (docs/design/BANDIT_CAMPS.md, BANDIT-17..20): a woken site is first signs (a cold fire pit, boot prints from the road), then one bandit watching the road from lookout_m off it who walks back to camp when a player comes within lookout_leave_m, then the camp; each stage lasts stage_game_days and needs the road at sleep_share of wake_points or the site sleeps again. Prints: track_step_m apart, track_gap_m either side of the line, for track_m off the road, at most track_max.",
+		"stage_game_days": 2.0,
+		"sleep_share": 0.5,
+		"lookout_m": 60.0,
+		"lookout_leave_m": 40.0,
+		"track_m": 25.0,
+		"track_step_m": 0.8,
+		"track_gap_m": 0.12,
+		"track_max": 32
+	},
 	"camp": {
 		"note": "Stage 2 (Dave 19 Nov 2026: a campfire, a couple of tamed horses with saddles, a tent or two (a Lean-to for now: he agreed the default), 1 to 5 bandits levelled for the area). The camp is laid again from the site row at every start and never saved in the world (bandit_sites.json is its record). Bandits are made while a player is within spawn_m and fight back only when hit (stage 4 adds the toll).",
 		"bands": [

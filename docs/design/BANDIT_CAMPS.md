@@ -72,3 +72,29 @@ A camp's bandits are fixed by the seed: their count and levels by distance band 
 - A site whose bandits and horses are all gone stays awake and its empty camp is laid at every start until stage 3 dissolves it.
 - A camp is made only when none of its members is in the world: one bandit gone off on its own (past 300 m of every player) is made again with the others.
 - Bandits have no footstep sounds yet.
+
+## Stage 3: the warnings (`server_bandits.gd` warnings, `data/npcs/bandits.json` warnings, protocol 144)
+
+A site that wakes does not show its camp at once (Dave agreed the plan's warning stages, 19 Nov 2026):
+
+1. **Signs**: a cold fire pit at the site (a campfire in its cold ash state, marked with the site's key, never saved, nobody can use it) and boot prints leading off the nearest road toward it (the client draws them from the pit's row).
+2. **Lookout**, after 2 game days if the road is still busy: one bandit (the camp's first level) stands 60 m off the road on the line to the camp, watching the road. When a player comes within 40 m he walks back to the pit, so following him finds the camp.
+3. **The camp** (stage 2), after 2 game days more.
+
+At each step the road near the site must still hold half the points that woke it; if it does not, the pit and its prints are taken away, the lookout goes, and the site sleeps (it can wake again later like any candidate). A site woken before stage 3 is already a camp. Nothing in stage 3 hurts or robs anyone.
+
+### For Dave (provisional, adjust after play)
+
+| # | Choice | Value |
+|---|---|---|
+| BANDIT-17 | Signs | a cold fire pit and boot prints: pairs 0.8 m apart for 25 m off the road (at most 32 prints) |
+| BANDIT-18 | Stage length | 2 game days for signs, 2 more for the lookout, then the camp |
+| BANDIT-19 | Lookout | 60 m off the road, walks back to camp when a player is within 40 m |
+| BANDIT-20 | Going back to sleep | road below half the wake points (15) before the camp |
+
+### Known limits (stage 3)
+
+- The Tracking skill does not read the prints yet (they are only seen); there is no "tracks" look-at line.
+- Signs use the nearest surveyed road patch; a site whose road was taken up shows the pit without prints.
+- The lookout watches only while a player is within 200 m of the camp or his post (like the camp's people); he walks back at walking pace and stays by the pit.
+- Rain, snow and night do not change the prints.

@@ -6,6 +6,8 @@ extends SceneTree
 # - a candidate wakes once a game hour when the road near it is busy, and is refused when quiet, in the start area, near another camp, on
 #   steep or wet ground, too near or far from a road, or near a building; the busiest wakes first and the spacing keeps the next one asleep;
 # - awake sites and trip points are saved and read back;
+# - stage 3, the warnings: a woken site shows a cold pit and boot prints, then a lookout who walks back to camp, then the camp; a quiet
+#   road puts it back to sleep;
 # - the server's hooks: road distance and buildings near read the world items, a player on a road, a hand path or off every path counts so.
 #   godot --headless --path . --script res://src/worldgen/tools/test_bandit_sites.gd
 
@@ -16,6 +18,7 @@ const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const TribesScript := preload("res://src/stream/server_tribes.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const TrackLookScript := preload("res://src/client/track_look.gd")
 
 var failures: int = 0
 var clock: Array = [0.0]
@@ -36,6 +39,8 @@ func _init() -> void:
 	_camp_levels()
 	_camp_life()
 	_camp_items()
+	_warnings_stages()
+	_warning_items()
 	print("bandit sites: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 
@@ -326,7 +331,7 @@ func _camp_life() -> void:
 	b.sites[cell] = {"x": spot.x, "z": spot.y, "woke": clock[0], "points": 40.0, "levels": [2, 1, 1], "horses": 2}
 	var laid: Array = []
 	var dropped: Array = []
-	b.lay_camp = func(camp_key, camp_fire, camp_lean_tos, _camp_old):
+	b.lay_camp = func(camp_key, camp_fire, camp_lean_tos, _camp_old, _camp_tracks):
 		laid.append([camp_key, camp_fire, camp_lean_tos])
 		return [100 + laid.size()]
 	b.laid_still = func(_ids): return true
@@ -437,3 +442,193 @@ func _camp_items() -> void:
 			lean_tos += 1
 
 	check(items.bandit_camp_there(again) and lean_tos == 2, "laid again over what was left: one fire, two Lean-tos (%d)" % lean_tos)
+
+
+# Stage 3, the warnings: a woken site shows signs (a cold pit and boot prints from the road), then a lookout off the road who walks back to
+# camp when a player comes near, then the camp; a road gone quiet before the camp puts the site back to sleep.
+func _warnings_stages() -> void:
+	clock[0] = 600000.0
+	var b: BanditsScript = _sites()
+	var animals = AnimalsScript.new()
+	animals.ground_height = func(_x, _z): return 50.0
+	animals.blocked = func(_x, _z): return false
+	animals.player_positions = func(): return []
+	animals.setup()
+	animals.traits = false
+	b.animals = animals
+	animals.bandit_camps = b
+	var players: Array = []
+	animals.big_game.player_info = func(): return players
+	var row: Dictionary = b.cfg["warnings"]
+	var days: float = float(row["stage_game_days"]) * BanditsScript.GAME_DAY_S
+	var cell: Vector2i = _cell_with_site(b, 90)
+	var spot: Vector2 = b.candidate(cell)
+	var road_at: Vector3 = Vector3(spot.x + 200.0, 0.0, spot.y)
+	b.road_point = func(_at, _r): return road_at
+	var laid: Array = []
+	var cleared: Array = []
+	b.lay_camp = func(camp_key, _camp_fire, camp_lean_tos, camp_old, camp_tracks):
+		laid.append([camp_key, camp_lean_tos, camp_old, camp_tracks])
+		return [300 + laid.size()]
+	b.laid_still = func(_ids): return true
+	b.clear_camp = func(camp_key, camp_ids): cleared.append([camp_key, camp_ids])
+	var need: float = float(b.cfg["wake_points"])
+	_traffic(b, spot, need + 1.0)
+	clock[0] += float(b.cfg["check_s"])
+	check(b.tick() == [cell] and int(b.sites[cell]["stage"]) == BanditsScript.SIGNS, "a site wakes showing signs only")
+
+	# Signs: the pit's boot prints lead from the road toward it.
+	var plan: Dictionary = b.layout(cell)
+	var fire: Vector2 = plan["fire"]
+	var road: Vector2 = Vector2(road_at.x, road_at.z)
+	check((plan["road"] as Vector2).is_equal_approx(road), "the road point is found once and kept (%s)" % str(plan.get("road")))
+	check(absf((plan["post"] as Vector2).distance_to(road) - float(row["lookout_m"])) < 0.01 and absf((plan["post"] as Vector2).distance_to(fire) + float(row["lookout_m"]) - road.distance_to(fire)) < 0.01, "the lookout post is lookout_m off the road toward the camp")
+	var tracks: Array = b.tracks_of(plan, 50.0)
+	var count: int = mini(int(float(row["track_m"]) / float(row["track_step_m"])), int(row["track_max"]))
+	check(tracks.size() == count and tracks.size() <= int(row["track_max"]), "the prints are track_m long and at most track_max (%d)" % tracks.size())
+	var first: Vector2 = fire + Vector2(float(tracks[0][0]), float(tracks[0][2]))
+	var last: Vector2 = fire + Vector2(float(tracks[count - 1][0]), float(tracks[count - 1][2]))
+	check(first.distance_to(road) < 1.2 and last.distance_to(road) > float(row["track_m"]) - 1.0 and last.distance_to(fire) < first.distance_to(fire), "they leave the road and run toward the pit")
+	var line: Vector2 = road.direction_to(fire)
+	var sides: Array = tracks.map(func(t): return snappedf(line.cross(fire + Vector2(float(t[0]), float(t[2])) - road), 0.01))
+	check(absf(float(sides[0]) + float(sides[1])) < 0.02 and absf(absf(float(sides[0])) - float(row["track_gap_m"])) < 0.02, "left and right of the line in turn (%s)" % str(sides.slice(0, 2)))
+	check(tracks.all(func(t): return (t as Array).size() == 4 and float(t[1]) == 0.0), "each print is [dx, dy, dz, yaw] at the ground (%s)" % str(tracks[0]))
+	b.ground_ready = func(_x, _z): return false
+	check(b.tracks_of(plan, 50.0).is_empty(), "no prints while the ground under them is not loaded")
+	b.ground_ready = Callable()
+
+	var near: Array = [Vector3(fire.x + 50.0, 50.0, fire.y)]
+	b.camp_tick(1.0, near)
+	check(laid.size() == 1 and (laid[0][1] as Array).is_empty() and (laid[0][3] as Array).size() == count, "the signs lay a pit with its prints and no Lean-tos")
+	check(animals.animals.is_empty(), "nobody is at the site while it shows signs")
+	clock[0] += days - 1.0
+	_traffic(b, spot, need + 1.0)
+	b.tick()
+	check(int(b.sites[cell]["stage"]) == BanditsScript.SIGNS, "signs last stage_game_days")
+
+	# The lookout: one bandit at his post facing the road, who walks back to camp when a player comes near.
+	clock[0] += float(b.cfg["check_s"]) + 1.0
+	b.tick()
+	check(int(b.sites[cell]["stage"]) == BanditsScript.LOOKOUT, "a busy road brings a lookout")
+	b.camp_tick(1.0, [Vector3(spot.x + 500.0, 50.0, spot.y)])
+	check(animals.animals.is_empty(), "no lookout while nobody is near the camp or his post")
+	b.camp_tick(1.0, near)
+	var post: Vector2 = b.layout(cell)["post"]
+	var guards: Array = animals.animals.values().filter(func(a): return a["sp"] == "bandit")
+	check(laid.size() == 1 and guards.size() == 1 and animals.animals.size() == 1, "one bandit and no horses, the pit not laid again (%d)" % animals.animals.size())
+	var guard: Dictionary = guards[0]
+	check(Vector2(guard["pos"].x, guard["pos"].z).distance_to(post) < 0.01, "he stands at his post")
+
+	for n in 4:
+		b.step(guard, 0.25)
+
+	check(Vector2(guard["pos"].x, guard["pos"].z).distance_to(post) < 0.5 and int(guard["state"]) == AnimalsScript.ALERT, "he stays, watching")
+	check(absf(wrapf(float(guard["heading"]) - atan2(road.y - guard["pos"].z, road.x - guard["pos"].x), -PI, PI)) < 0.01, "he faces the road")
+	players.append({"peer": 3, "pos": Vector3(post.x + float(row["lookout_leave_m"]) + 5.0, 50.0, post.y)})
+	b.step(guard, 0.25)
+	check(not bool(guard.get("going_back", false)), "a player beyond lookout_leave_m is not seen")
+	players[0]["pos"] = Vector3(post.x + 5.0, 50.0, post.y)
+	var was: float = Vector2(guard["pos"].x, guard["pos"].z).distance_to(fire)
+
+	for n in 2:
+		b.step(guard, 0.25)
+
+	var gone: float = Vector2(guard["pos"].x, guard["pos"].z).distance_to(fire)
+	check(bool(guard.get("going_back", false)) and gone < was and was - gone < float(b.cfg["camp"].get("walk_mps", 1.3)) * 0.5 + 0.01, "a player near: he walks (not runs) toward the camp")
+
+	for n in 600:
+		b.step(guard, 0.25)
+
+	check((guard["pos"] as Vector3).distance_to(guard["seat"]) <= 0.5, "he walks all the way back to the camp")
+
+	# The camp: the lookout goes, the pit is laid again as the camp, the people come.
+	clock[0] += days
+	_traffic(b, spot, need + 1.0)
+	b.tick()
+	check(int(b.sites[cell]["stage"]) == BanditsScript.CAMP and animals.animals.is_empty(), "a busy road brings the camp and the lookout goes")
+	b.camp_tick(1.0, near)
+	check(laid.size() == 2 and (laid[1][1] as Array).size() == (b.layout(cell)["lean_tos"] as Array).size() and (laid[1][1] as Array).size() > 0 and (laid[1][3] as Array).is_empty() and laid[1][2] == [301], "the camp is laid over the pit, with its Lean-tos")
+	check(animals.animals.size() == b.sites[cell]["levels"].size() + int(b.sites[cell]["horses"]), "the whole camp is there (%d)" % animals.animals.size())
+	clock[0] += days * 10.0
+	b.tick()
+	check(b.sites.has(cell) and int(b.sites[cell]["stage"]) == BanditsScript.CAMP, "a camp stays, however quiet the road")
+
+	# A quiet road before the camp: the site sleeps, its pit and people go, and it can wake again.
+	var quiet: BanditsScript = _sites()
+	quiet.animals = animals
+	quiet.clear_camp = func(camp_key, camp_ids): cleared.append([camp_key, camp_ids])
+	var q_cell: Vector2i = _cell_with_site(quiet, 120)
+	var q_spot: Vector2 = quiet.candidate(q_cell)
+	_traffic(quiet, q_spot, need + 1.0)
+	clock[0] += float(quiet.cfg["check_s"])
+	check(quiet.tick() == [q_cell], "another site wakes")
+	quiet.sites[q_cell]["stage"] = BanditsScript.LOOKOUT
+	quiet._laid[q_cell] = [77]
+	quiet._laid_stage[q_cell] = BanditsScript.SIGNS
+	var lookout_id: int = animals.spawn("bandit", q_spot.x, q_spot.y)
+	quiet._members[q_cell] = {lookout_id: {"level": 1, "pos": Vector3(q_spot.x, 50.0, q_spot.y), "horse": false}}
+	cleared.clear()
+	clock[0] += days * 4.0
+	quiet.tick()
+	check(not quiet.sites.has(q_cell) and cleared == [["%d,%d" % [q_cell.x, q_cell.y], [77]]] and not animals.animals.has(lookout_id), "a quiet road puts the site to sleep, its pit and lookout gone (%s)" % str(cleared))
+	check(quiet.refusal(q_cell, q_spot, clock[0]) == "quiet road", "it sleeps like any candidate (%s)" % quiet.refusal(q_cell, q_spot, clock[0]))
+	_traffic(quiet, q_spot, need + 1.0)
+	clock[0] += float(quiet.cfg["check_s"])
+	check(quiet.tick() == [q_cell] and int(quiet.sites[q_cell]["stage"]) == BanditsScript.SIGNS, "and wakes again, with signs first")
+
+	# A site saved before the warnings (no stage) is read back as a camp.
+	var dir: String = "user://test_bandit_warnings"
+	DirAccess.make_dir_recursive_absolute(dir)
+
+	for file in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir + "/" + file)
+
+	var old: FileAccess = FileAccess.open(dir + "/bandit_sites.json", FileAccess.WRITE)
+	old.store_string(JSON.stringify({"version": 1, "stretches": {}, "sites": {"%d,%d" % [q_cell.x, q_cell.y]: {"x": q_spot.x, "z": q_spot.y, "woke": 5.0, "points": 40.0}}}))
+	old.close()
+	var read: BanditsScript = _sites(dir)
+	check(read.sites.has(q_cell) and int(read.sites[q_cell]["stage"]) == BanditsScript.CAMP, "an older saved site is already a camp")
+
+
+# Stage 3, the world side: the signs' pit is a cold fire pit carrying its prints to the client (a short list), and only a camp's pieces are
+# taken away when it sleeps.
+func _warning_items() -> void:
+	var dir: String = "user://test_bandit_warning_items"
+	DirAccess.make_dir_recursive_absolute(dir)
+
+	for file in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir + "/" + file)
+
+	var items: ItemScript = ItemScript.new()
+	items.send_full = func(_p, _b): pass
+	items.send_slots = func(_p, _b): pass
+	items.send_world_items = func(_p, _a, _r): pass
+	items.send_notice = func(_p, _text): pass
+	items.ground_height = func(_x, _z): return 10.0
+	items.setup(ItemTableScript.load_default(), dir)
+	items._goals_loaded = true
+	var at: Vector3 = Vector3(9000.0, 10.0, 9000.0)
+	var prints: Array = []
+
+	for n in 40:
+		prints.append([0.1 * n, 0.0, 1.0, 90.0])
+
+	var ids: Array = items.lay_bandit_camp("6,6", at, [], [], prints)
+	var pit: Dictionary = items._items[int(ids[0])]["fire"]
+	check(ids.size() == 1 and int(pit["state"]) == ItemScript.FIRE_STATE_COLD and float(pit["burn_left"]) == 0.0, "the signs are one cold fire pit")
+	var extra: Dictionary = items._fire_extra(items._items[int(ids[0])])
+	check(int(extra["camp"]) == 2 and (extra["tracks"] as Array).size() == ItemScript.BANDIT_TRACKS_MAX and extra["tracks"][0] == prints[0], "its row carries at most BANDIT_TRACKS_MAX prints")
+	check(ItemScript._not_in_area(items._items[int(ids[0])]), "the pit is not saved")
+	var camp: Array = items.lay_bandit_camp("6,6", at, [[at + Vector3(5.0, 0.0, 0.0), 180]], ids)
+	check(not items._items.has(int(ids[0])) and camp.size() == 2 and not items._fire_extra(items._items[int(camp[0])]).has("tracks"), "the camp is laid over the pit, lit, without prints")
+	items._items[999] = {"number": 1, "count": 1, "pos": at, "left": 1.0e9, "struct": {"kind": "foundation", "yaw": 0.0}}
+	items.clear_bandit_camp("6,7", camp)
+	check(items._items.has(int(camp[0])), "another camp's key takes nothing")
+	items.clear_bandit_camp("6,6", camp + [999])
+	check(not items._items.has(int(camp[0])) and not items._items.has(int(camp[1])) and items._items.has(999), "only the camp's own pieces are taken away")
+
+	# The client draws the prints under the pit, one mesh for them all.
+	var look: Node3D = TrackLookScript.make(prints.slice(0, 3))
+	var mmi: MultiMeshInstance3D = look as MultiMeshInstance3D
+	check(mmi != null and mmi.multimesh.instance_count == 3 and mmi.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "the client draws each print once")
+	look.free()

@@ -46,6 +46,7 @@ const CoverScript := preload("res://src/shared/cover.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const FarmRules := preload("res://src/shared/farm_rules.gd")   # what E does on a tilled bed or garden plot (WP-R1B)
 const CropLook := preload("res://src/client/crop_look.gd")   # the stage looks of a bed's crop
+const TrackLook := preload("res://src/client/track_look.gd")   # boot prints to a bandit camp's pit
 const KEY_FILE := "user://player_key.txt"
 const STUCK_ARROW_BACK_M := 0.22         # an arrow stuck in a tree: its middle this far (model metres) back from the hit along its flight, the point just in the bark
 const BASIC_DROP_SCALE := 1.8           # loose items with a stage-one look (basic_look.gd) are drawn this much bigger so they show in the grass
@@ -3237,6 +3238,9 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			var fire_extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
 			node = BuildingLook.coals_fire(float(fire_extra.get("glow", 1.0))) if state == StructureLook.FIRE_COALS else _make_fire(_lit_state(state), state == 9, _fire_tier(state))
 			node.position = row[3]
+
+			if fire_extra.get("tracks") is Array:
+				node.add_child(TrackLook.make(fire_extra["tracks"]))   # a bandit camp's cold pit: the boot prints from the road (docs/design/BANDIT_CAMPS.md stage 3)
 			light = node.get_node_or_null("Light")
 
 		if light == null:
