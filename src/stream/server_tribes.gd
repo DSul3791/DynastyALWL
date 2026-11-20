@@ -43,6 +43,7 @@ var _hunter: Dictionary = {}        # tribe -> the member out on a hunt now ("" 
 var _t: float = 0.0
 var _players: Array = []            # players.call() as of the last tick: read once a tick, not once per member (avoid)
 var _path: String = ""
+var _stock_started: bool = false
 var _stock_from: Dictionary = {}    # tribe -> game seconds its camp stock began filling (saved)
 
 
@@ -134,6 +135,12 @@ func armed(peer: int) -> bool:
 # Keeps each player's ground speed (from the positions they report), for "runs at them". Called with the server's real delta.
 func tick(delta: float) -> void:
 	_t += delta
+
+	if not _stock_started:
+		_stock_started = true
+
+		for tribe in tribes():
+			stock(str(tribe))   # each camp's stock starts filling when the server first runs, not when a player first looks
 
 	if not players.is_valid():
 		return

@@ -97,7 +97,7 @@ What Dave asked on 20 Nov 2026:
 
 **Choices made for Dave (PROVISIONAL):**
 - **GOBLIN-9:** "Friendly but nervous" is the existing wary row: the same keep distances, trade on.
-- **GOBLIN-10:** chores are for show only. The firewood, fibre and game are not real items and change nothing in the world or in Skritch's shop.
+- **GOBLIN-10:** chores are for show only. What the goblins carry is not a real item and changes nothing in the world or in Skritch's shop. The camp's stock (the light version, below) fills on its own clock.
 - **GOBLIN-11:** the props are one Crude chest, one Drying rack, one Tanning rack and two Log benches, none of them usable by players.
 - **GOBLIN-12:** an attack costs 3 standing with the clan (about one rank), and the clan refuses that character trade and talk for 1 game day instead of 3.
 - **GOBLIN-13:** the weapon test is "a weapon in hand", for any item of kind weapon (melee, bows, slings). A torch, axe or other tool in hand does not count.
@@ -129,6 +129,6 @@ Dave, 20 Nov 2026: "Build the light version of the goblin camp." It was offered 
 - **Not taken from the world:** no plants, sticks or game are used up. The meat does not spoil and the fire never burns the wood.
 
 **Choices made for Dave (PROVISIONAL):**
-- **GOBLIN-16:** the amounts and caps above, filling on the game clock whether or not anyone is near.
+- **GOBLIN-16:** the amounts and caps above, filling on the game clock from the server's first run, whether or not anyone is near.
 - **GOBLIN-17:** nobody can take the stock. The chest does not open and the racks refuse every use, so there is no theft yet. If Dave wants it takeable, a theft rule is needed first, for example taking counts as an attack (GOBLIN-12).
 - **GOBLIN-18:** the stock is shown only in words. Hides and meat are not drawn on the racks or wood beside the fire, which would need new client drawing.
