@@ -154,7 +154,8 @@
 						"11": "Running",
 						"12": "Idle_3",
 						"walk": "Walking",
-						"run": "Running"
+						"run": "Running",
+						"work": "Collect_Object"
 					}
 				},
 				{
@@ -170,7 +171,8 @@
 						"11": "Running",
 						"12": "Idle_9",
 						"walk": "Walking",
-						"run": "Running"
+						"run": "Running",
+						"work": "Collect_Object"
 					}
 				}
 			]

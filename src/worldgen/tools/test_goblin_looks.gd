@@ -3,7 +3,7 @@ extends SceneTree
 # The goblin looks (data/animals/models.json goblin variants, src/client/animal_view.gd; Dave 20 Nov 2026: Vrixa Thornfang is a named Ragtooth
 # camp goblin, and so is Grikka Ragtooth; wild goblins keep the two looks). Checks, on the real models and data:
 # - the goblin row has four looks, Skritch, Rukz, Vrixa and Grikka, and only the last two are marked wild: false;
-# - every clip name a look's row names is a clip in that look's own file;
+# - every clip name a look's row names (the work and guard clips too) is a clip in that look's own file, and each has the spear's hand bone;
 # - make_goblin draws each look by its body number, and a wild goblin is never drawn as Vrixa or Grikka;
 # - every Ragtooth member's body is a look that exists, Vrixa's and Grikka's are their own;
 # - no goblin mesh casts its shadow double-sided (docs/design/CHARACTER_MESHES.md).
@@ -56,6 +56,16 @@ func _init() -> void:
 			for role in (looks[k]["clips"] as Dictionary):
 				var clip: String = str(looks[k]["clips"][role])
 				check(view._clip_full(players[0], row, clip) != "", "%s has its %s clip %s" % [SCENES[k].get_file(), role, clip])
+
+		# The camp goblins' spear rides the right-hand bone (npc_view.gd _goblin_spear, protocol 146).
+		var skels: Array = body.find_children("*", "Skeleton3D", true, false)
+		var hand: bool = false
+
+		if not skels.is_empty():
+			for i in (skels[0] as Skeleton3D).get_bone_count():
+				hand = hand or (skels[0] as Skeleton3D).get_bone_name(i).ends_with("RightHand")
+
+		check(hand, "%s has a right-hand bone for the spear" % SCENES[k].get_file())
 
 		for m in body.find_children("*", "MeshInstance3D", true, false):
 			check((m as MeshInstance3D).cast_shadow != GeometryInstance3D.SHADOW_CASTING_SETTING_DOUBLE_SIDED, "%s casts a one-sided shadow" % SCENES[k].get_file())
