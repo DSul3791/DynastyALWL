@@ -491,6 +491,20 @@ Assumed on Dave's behalf (provisional, also in the design doc):
 - SP-4: rows show the player count only, not who is online.
 - SP-5: "Remember on this computer" in the password box is ticked by default.
 
+## 69. Bog iron: stains you can find, Bog iron ore, iron rocks marked
+
+**Status: Implemented - awaiting player verification.** Dave's request, 19 Nov 2026 (thread "Show bog iron deposits"). PR #1316, merged to dev at 54d66fe3 (head f0dde8b1) after independent review (PASS on f0dde8b1; earlier rounds fixed gathered.json next_number and the stain's triangle count). Lane A (Dave's PC) on the exact head: 311 of 311 selected tests passed (307 fast + 4 timing), 0 script errors, including test_bog_look, test_bog_rows, test_bog_iron, test_iron_saw_route, test_mission001_walkthrough, test_copper_rocks and test_look_table; validate_items 0 errors, warnings 407 equal to dev. Not yet played. The stain, the Bog iron ore lump and the iron rocks are not yet seen on screen (picture checks skipped while Dave was away).
+
+Dave, 19 Nov 2026: "yes bring in the red dirt stains make sure they are obvious and visible for characters to find." "it should be its own lumpy redbrown rock as Bog Iron ore. then it takes two to smelt into an ingot." "bolders that have iron in them should have red brown lines all over them like the limestone and the copper but it should also have red brown streaks down the sides" (with a reference photo of iron-stained slabs, used for colour only).
+
+**Required outcome:** every bog iron deposit shows a bright rust-orange stain about 5 to 6 m across, with no grass or small plants on it, seen from 50 m (was 30 m), still readable at dusk and in rain; dry, wet (orange water and an oily film) and dug (shovel cuts) looks. Digging one with any shovel gives Bog iron ore (item 1511), a knobbly red-brown lump with its own icon, not Iron ore. Two Bog iron ore smelt to one Iron ingot at the Improved smelter (bellows worked) or the Advanced smelter; rock Iron ore stays one to one. Iron boulders are rust orange with red-brown blotches, thin dark lines all over and rust streaks down the sides. Deposit sizes and amounts per dig are unchanged.
+
+**Acceptance:** walk through a fen or marsh: rust-orange stains stand out from 50 m and grass does not hide them. Dig one: Bog iron ore comes up. Put 4 Bog iron ore and fuel in an Improved smelter and work the bellows: 2 Iron ingots. Find an iron boulder near hills: it is clearly rust-coloured with lines and streaks.
+
+Not done: a stain under deeper standing water may be hidden by the water surface. The stain glows faintly at night. An odd Bog iron ore left in a smelter waits without a message. Frame cost not measured.
+
+Assumed on Dave's behalf (provisional): BI-2, Bog iron ore still makes steel at the Advanced smelter, two Bog iron ore and the carbon to one Steel ingot (the coordinator confirmed it for him while he was away).
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
