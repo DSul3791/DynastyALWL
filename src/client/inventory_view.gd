@@ -123,6 +123,7 @@ var chest_inv                          # contents of the open chest (Inventory),
 var chest_id: int = 0
 var chest_keep_out: bool = false        # the open container is ticked "keep out" (protocol 98 chest_info): crafting and blueprint sites leave it alone
 var chest_may_keep_out: bool = false    # and this player owns it, so the tick may be changed (set_keep_out)
+var chest_autoload: int = 0             # the open container's standing autoload item, 0 none (protocol 139 autoload_info)
 var reach_stock: Dictionary = {}        # item number -> count a craft may use besides the pack: loose stacks within 12 m and own containers within 12 m (craft_stock)
 var _stock_sign: int = 0                # the pack as it was when the stock was last asked for; a changed pack asks again while the window is open
 var _chest_panel: Control
@@ -306,6 +307,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.notice_received.connect(func(...args): _timed("_on_notice", _on_notice, args))
 	net.chest_received.connect(_on_chest)
 	net.chest_info_received.connect(_on_chest_info)
+	net.autoload_info_received.connect(_on_autoload_info)
 	net.chest_lock_received.connect(_storage_ui.on_lock)
 	net.storage_view_received.connect(_storage_ui.on_view)
 	net.food_effects_received.connect(_food_ui.on_effects)
@@ -3968,6 +3970,55 @@ func _on_chest_info(id: int, keep_out: bool, may_set: bool) -> void:
 func set_keep_out(on: bool) -> void:
 	if chest_mode and chest_may_keep_out and net != null:
 		net.inventory_action.rpc_id(1, Net.ACT_CHEST_KEEP_OUT, chest_id, 1 if on else 0, 0, Vector3.ZERO)
+
+
+func _on_autoload_info(id: int, number: int) -> void:
+	if id != chest_id:
+		return
+
+	chest_autoload = number
+
+	if chest_mode:
+		_container_part.refresh()
+
+
+# Autoload (protocol 139): what lies loose on the ground within AUTOLOAD_M of the open container that it takes, from the items this client was
+# sent (every item within 100 m of the player): [[item number, total count, nearest metres], ...], nearest first. The server checks it all again.
+const AUTOLOAD_M := 30.0   # server_items.gd AUTOLOAD_M
+
+
+func autoload_choices(takes: Callable) -> Array:
+	if not chest_mode or not _world.has(chest_id):
+		return []
+
+	var here: Vector3 = _world[chest_id]["pos"]
+	var found: Dictionary = {}   # number -> [number, total, nearest]
+
+	for id in _world:
+		var w: Dictionary = _world[id]
+
+		if int(w["state"]) != 0 or int(w["number"]) <= 0 or id == chest_id:
+			continue
+
+		var d: float = here.distance_to(w["pos"])
+
+		if d > AUTOLOAD_M or not bool(takes.call(int(w["number"]))):
+			continue
+
+		var row: Array = found.get(int(w["number"]), [int(w["number"]), 0, d])
+		row[1] = int(row[1]) + int(w["count"])
+		row[2] = minf(float(row[2]), d)
+		found[int(w["number"])] = row
+
+	var out: Array = found.values()
+	out.sort_custom(func(a, b): return float(a[2]) < float(b[2]))
+	return out
+
+
+# Loads the open container with `number` from the ground round it; `keep`: and keep loading it every 10 minutes. 0 stops the standing autoload.
+func autoload(number: int, keep: bool) -> void:
+	if chest_mode and chest_id >= 0 and net != null:
+		net.inventory_action.rpc_id(1, Net.ACT_AUTOLOAD, chest_id, number, 1 if keep else 0, Vector3.ZERO)
 
 
 # Bulk buttons and favourites (docs/design/INVENTORY_CRAFTING_REPORT.md step 3; the server does the work and answers with bulk_done). Kinds as
