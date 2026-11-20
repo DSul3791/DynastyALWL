@@ -19,6 +19,7 @@ const RockLook := preload("res://src/client/rock_look.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
 const BasicLook := preload("res://src/client/basic_look.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")   # DOOR_TAKEN_M: a doorway frame and its door share one spot
+const PipeRules := preload("res://src/shared/pipe_rules.gd")   # a laid pipe run is reached and aimed at along its whole length
 
 # The client side of items: the inventory panel (I), things lying on the ground (E picks up
 # the nearest within reach) and the player key. The server owns all of it; this only shows
@@ -1084,6 +1085,12 @@ func _probe_structure_for(id: int) -> Dictionary:
 	if str(store_def.get("station", "")) != "" and (int(store_def.get("out_slots", 0)) > 0 or bool(store_def.get("one_store", false))):   # a station with a store (master s2.5): E opens the store, F crafts
 		return {"prompt": "Press E to open the %s%s, F to use it%s (hold E to take it down)" % [table.sentence_name(_world[id]["number"]), _fill_note(id), wheel_note(id)], "tap": func(): _ask_open(id), "hold": take_down}
 
+	if str(_structure_by_state(state).get("use", "")) == "tap":   # a Copper - Tap (Dave 19 Nov 2026): E drinks, F opens its slots where water containers fill
+		return {"prompt": "Press E to take a drink, F to fill water containers (hold E to take it down)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
+
+	if _is_chest(state) and int(_world[id].get("water_l", 0)) >= 1:   # a barrel holding water (PLUMBING_DESIGN s9, PV-6): water or goods, never both
+		return {"prompt": "Press E to drink, or to fill what you hold (%d L in it; hold E to take it down)" % int(_world[id]["water_l"]), "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_DRINK, held_container_slot(), 0, 0, Vector3.ZERO), "hold": take_down}
+
 	if _is_chest(state):
 		return {"prompt": "Press E to open (hold E to take it down)", "tap": func(): _ask_open(id), "hold": take_down}
 
@@ -1652,10 +1659,22 @@ func _nearest_struct(skip_fires: bool = false) -> int:
 		if (skip_fires and int(_world[id]["state"]) in StructureLook.CAMPFIRE_STATES) or _world[id].get("camp", false):
 			continue   # Edda and Hob's fire is never offered
 
-		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(_world[id]["pos"]) <= 3.0:
+		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(reach_pos(id, here)) <= 3.0:
 			ids.append(id)
 
 	return _aimed_or_nearest(_unframed(ids), here)
+
+
+# Where a world piece is reached from `here`: a laid pipe run's nearest point (PLUMBING_DESIGN s9: a 30 m run is taken down from anywhere along it),
+# otherwise its spot.
+func reach_pos(id: int, here: Vector3) -> Vector3:
+	var row: Dictionary = _world[id]
+
+	if not row.has("len"):
+		return row["pos"]
+
+	var e: Array = PipeRules.ends(row["pos"], float(row.get("yaw", 0.0)), float(row.get("pitch", 0.0)), float(row["len"]))
+	return PipeRules.closest_on(e[0], e[1], here)
 
 
 # A doorway frame with a door in it shares the door's spot: the door is the one E works (the frame is taken down after the door).
@@ -1683,10 +1702,11 @@ func _aimed_or_nearest(ids: Array, here: Vector3) -> int:
 	var best_cos: float = -2.0
 
 	for id in ids:
-		var d: float = here.distance_to(_world[id]["pos"])
+		var at: Vector3 = reach_pos(id, here)
+		var d: float = here.distance_to(at)
 
-		if view_direction.is_valid() and aimed_at(_world[id]["pos"]):
-			var aim_cos: float = aim_cos_of(_world[id]["pos"])
+		if view_direction.is_valid() and aimed_at(at):
+			var aim_cos: float = aim_cos_of(at)
 
 			if aim_cos > best_cos:
 				best_cos = aim_cos
@@ -3067,10 +3087,15 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			if _world[id]["state"] == state and state >= 5 and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("yaw"):
 				_world[id]["on"] = bool(row[5].get("on", false))   # a crate lifted onto a cart or set down
 
-				if (row[3] as Vector3).distance_to(_world[id]["pos"]) > 0.05:
+				if (row[3] as Vector3).distance_to(_world[id]["pos"]) > 0.05 and not (row[5] as Dictionary).has("len"):   # a pipe run that moved was split: drawn again below
 					_glide(id, row[3], float(row[5]["yaw"]))   # a cart or a crate on it moved (the world sync after items_moved, or instead of a lost one)
 
-			if _world[id]["state"] == state:
+			if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("water_l"):
+				_world[id]["water_l"] = int(row[5]["water_l"])
+
+			var pipe_moved: bool = row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("len") and (absf(float(row[5]["len"]) - float(_world[id].get("len", 0.0))) > 0.001 or (row[3] as Vector3).distance_to(_world[id]["pos"]) > 0.001)   # a run split by a junction: drawn again
+
+			if _world[id]["state"] == state and not pipe_moved:
 				if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("burn"):
 					_world[id]["burn"] = float(row[5]["burn"])
 					_world[id]["burn_at"] = Time.get_ticks_msec()
@@ -3106,6 +3131,9 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			prof["model"] = int(prof.get("model", 0)) + Time.get_ticks_usec() - t_c
 			node.position = row[3] - Vector3(0.0, SINK_M * float(row[5].get("age", 0.0)), 0.0) if (state == 11 or state == 12) and row.size() > 5 else row[3]
 			node.rotation.y = yaw
+
+			if row.size() > 5 and (row[5] as Dictionary).has("pitch"):
+				node.rotation.z = deg_to_rad(float(row[5]["pitch"]))   # a pipe run tilts along its own axis (PipeRules.axis_of: Y then Z, Godot's YXZ order)
 			_root.add_child(node)
 			var roof_key: int = -1
 			var site_extra: Variant = (row[5] as Dictionary).get("site") if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else null
@@ -3135,6 +3163,13 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 					(fixture_light as SpotLight3D).spot_range = light_m
 
 			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": fixture_light, "roof": roof_key, "yaw": rad_to_deg(yaw), "on": row.size() > 5 and bool((row[5] as Dictionary).get("on", false))}
+
+			if row.size() > 5 and (row[5] as Dictionary).has("len"):
+				_world[id]["len"] = float(row[5]["len"])   # a pipe run (PLUMBING_DESIGN s9): its ends are PipeRules.ends(pos, yaw, pitch, len)
+				_world[id]["pitch"] = float(row[5].get("pitch", 0.0))
+
+			if row.size() > 5 and (row[5] as Dictionary).has("water_l"):
+				_world[id]["water_l"] = int(row[5]["water_l"])   # a barrel's water: E drinks from it instead of opening it
 
 			if site_extra != null:
 				_world[id]["site"] = site_extra
@@ -4585,7 +4620,7 @@ func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
 
 	var sized: float = float(_structure_by_state(state).get("look_scale", 1.0))
 
-	var model: Node3D = _model_for_look(look, state, extra)
+	var model: Node3D = PieceLook.pipe_run(str(LookTable.LOOKS[look]["args"][0]), float(extra["len"])) if extra.has("len") and LookTable.LOOKS.has(look) else _model_for_look(look, state, extra)   # a pipe run at its own length (PLUMBING_DESIGN s9)
 
 	if model == null:
 		return null

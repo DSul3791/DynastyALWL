@@ -906,8 +906,8 @@ static func stands_on_floor(def: Dictionary) -> bool:
 		return false
 
 	for key in FLOOR_SKIP:
-		if def.has(key):
-			return false
+		if def.has(key) and not (key == "water" and str((def["water"] as Dictionary).get("role", "")) == "tank" and def.has("slots")):
+			return false   # a barrel (a store that is also a water tank, PLUMBING_DESIGN s9) still stands on a floor indoors
 
 	return true
 
