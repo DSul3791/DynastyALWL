@@ -6299,8 +6299,14 @@ func _camp_refuses(peer: int, it: Dictionary) -> bool:
 
 # A bandit camp (server_bandits.gd stage 2, docs/design/BANDIT_CAMPS.md): its fire burns like Edda and Hob's (never saved, no wood, nobody tends
 # it; "camp" holds the site's key) and its Lean-tos (open sides `yaw`) are transient pieces marked "bandit", never saved or taken down, laid
-# again at every start from the site's row. Returns the world ids laid.
-func lay_bandit_camp(key: String, fire: Vector3, lean_tos: Array) -> Array:
+# again at every start from the site's row, and again over old_ids (what is left of its last laying) when a piece is gone. Returns the world ids laid.
+func lay_bandit_camp(key: String, fire: Vector3, lean_tos: Array, old_ids: Array = []) -> Array:
+	for id in old_ids:
+		var old: Dictionary = _items.get(int(id), {})
+
+		if str(old.get("struct", {}).get("bandit", "")) == key or str(old.get("fire", {}).get("camp", "")) == key:
+			_items.erase(int(id))   # what is left of this camp's last laying (a world reset takes the fire, keeps transient Lean-tos): laid whole again
+
 	var ids: Array = []
 	var state: int = int(((_cooking.get("fire_tiers", {}) as Dictionary).get(NpcCamp.fire_wood(), {}) as Dictionary).get("state", FIRE_STATE_BONFIRE))
 	_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": fire, "left": 1.0e9,
@@ -6321,7 +6327,7 @@ func lay_bandit_camp(key: String, fire: Vector3, lean_tos: Array) -> Array:
 	return ids
 
 
-# True while every piece of a laid bandit camp still stands (a world reset clears them: the camp is laid again).
+# True while every piece of a laid bandit camp still stands (a world reset takes its fire: the camp is laid again).
 func bandit_camp_there(ids: Array) -> bool:
 	for id in ids:
 		if not _items.has(id) or not (_items[id].has("fire") or bool(_items[id].get("struct", {}).has("bandit"))):

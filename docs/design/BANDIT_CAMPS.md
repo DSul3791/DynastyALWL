@@ -68,3 +68,6 @@ A camp's bandits are fixed by the seed: their count and levels by distance band 
 - No toll, robbery, bounty, horse claiming, dissolving or dormancy yet (stages 3 and 4).
 - A camp horse cannot be ridden or led away yet; it is tied and never bolts.
 - The camp has no stash chest until stage 4.
+- A site whose bandits and horses are all gone stays awake and its empty camp is laid at every start until stage 3 dissolves it.
+- A camp is made only when none of its members is in the world: one bandit gone off on its own (past 300 m of every player) is made again with the others.
+- Bandits have no footstep sounds yet.

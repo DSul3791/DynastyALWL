@@ -24,7 +24,7 @@ var in_water: Callable         # (x, z) -> bool
 var building_near: Callable    # (Vector3, r) -> bool: a placed building (SurveyLine.is_building) within r
 var tribe_camps: Callable      # () -> Array of Vector2: every goblin tribe camp (server_tribes.gd camp_spots); no bandit site within tribe_clear_m of one
 var road_distance: Callable    # (Vector3, r) -> metres to the nearest road patch within r, or INF
-var lay_camp: Callable         # (key, fire Vector3, lean_to spots Array of [Vector3, yaw degrees]) -> Array of world ids laid
+var lay_camp: Callable         # (key, fire Vector3, lean_to spots Array of [Vector3, yaw degrees], old ids to clear) -> Array of world ids laid
 var laid_still: Callable       # (Array of world ids) -> bool: every piece is still there
 var drop_gear: Callable        # (item key, Vector3) -> void: a fallen bandit's weapon or clothes on the ground
 var animals = null             # ServerAnimals: bandits and horses are animals (spawn, walk_step, the big game charge)
@@ -150,9 +150,9 @@ func refusal(cell: Vector2i, spot: Vector2, now: float) -> String:
 	if points_near(spot, now) < float(cfg.get("wake_points", 30.0)):
 		return "quiet road"
 
-	var step: float = float(cfg.get("slope_step_m", 5.0))
+	var slope_step: float = float(cfg.get("slope_step_m", 5.0))
 
-	var around: Array = [Vector2(step, 0.0), Vector2(-step, 0.0), Vector2(0.0, step), Vector2(0.0, -step)]
+	var around: Array = [Vector2(slope_step, 0.0), Vector2(-slope_step, 0.0), Vector2(0.0, slope_step), Vector2(0.0, -slope_step)]
 
 	if ground_ready.is_valid():
 		for d in [Vector2.ZERO] + around:
@@ -164,7 +164,7 @@ func refusal(cell: Vector2i, spot: Vector2, now: float) -> String:
 	if is_nan(h) or (in_water.is_valid() and bool(in_water.call(spot.x, spot.y))):
 		return "water"
 
-	var most: float = tan(deg_to_rad(float(cfg.get("slope_max_deg", 15.0)))) * step
+	var most: float = tan(deg_to_rad(float(cfg.get("slope_max_deg", 15.0)))) * slope_step
 
 	for d in around:
 		var other_h: float = float(ground_height.call(spot.x + d.x, spot.y + d.y))
@@ -321,6 +321,7 @@ func _key_of(name: String) -> Vector2i:
 const TETHERED := 22   # wire state: a horse tethered at a bandit camp, standing saddled (the client shows its saddle)
 const SIT := 23        # wire state: a bandit sitting by the fire
 const LIE := 24        # wire state: a bandit asleep by the fire at night
+const FALLEN_REACH_M := 30.0   # how far a just-killed member may be from its last read spot
 
 
 func _camp() -> Dictionary:
@@ -419,11 +420,14 @@ func _lay(cell: Vector2i, plan: Dictionary) -> void:
 	if _laid.has(cell) and laid_still.is_valid() and bool(laid_still.call(_laid[cell])):
 		return
 
-	_laid.erase(cell)
 	var fire: Vector2 = plan["fire"]
 
-	if not lay_camp.is_valid() or not ground_height.is_valid() or (ground_ready.is_valid() and not bool(ground_ready.call(fire.x, fire.y))):
+	if not lay_camp.is_valid() or not ground_height.is_valid() or not _ready_at(fire):
 		return   # never read a tile on the main thread: the next second tries again
+
+	for row in plan["lean_tos"]:
+		if not _ready_at(row[0]):
+			return
 
 	var y: float = float(ground_height.call(fire.x, fire.y))
 
@@ -439,10 +443,15 @@ func _lay(cell: Vector2i, plan: Dictionary) -> void:
 		if not is_nan(h):
 			lean_tos.append([Vector3(at.x, h, at.y), int(row[1])])
 
-	var ids: Array = lay_camp.call("%d,%d" % [cell.x, cell.y], Vector3(fire.x, y, fire.y), lean_tos)
+	var ids: Array = lay_camp.call("%d,%d" % [cell.x, cell.y], Vector3(fire.x, y, fire.y), lean_tos, _laid.get(cell, []))
+	_laid.erase(cell)
 
 	if not ids.is_empty():
 		_laid[cell] = ids
+
+
+func _ready_at(at: Vector2) -> bool:
+	return not ground_ready.is_valid() or bool(ground_ready.call(at.x, at.y))
 
 
 # Make the site's living bandits on their seats and its horses at the tether.
@@ -546,17 +555,24 @@ func _walk(a: Dictionary, to: Vector3, speed: float, dt: float, arrive_m: float,
 func fallen(species: String, pos: Vector3) -> Vector2i:
 	var best: Vector2i = Vector2i(2147483647, 0)
 	var best_id: int = 0
-	var best_d: float = 3.0
+	var best_d: float = FALLEN_REACH_M   # a member erased this tick may have charged or fled since its spot was last read (once a second)
 
-	for cell in _members:
-		for id in _members[cell]:
-			var m: Dictionary = _members[cell][id]
-			var d: float = (m["pos"] as Vector3).distance_to(pos)
+	for pass_no in 2:
+		for cell in _members:
+			for id in _members[cell]:
+				var m: Dictionary = _members[cell][id]
+				var d: float = (m["pos"] as Vector3).distance_to(pos)
+				var just_gone: bool = animals != null and not animals.animals.has(id)   # the animal code erased the dead one before telling us
 
-			if d < best_d and bool(m["horse"]) == (species == "horse"):
-				best_d = d
-				best = cell
-				best_id = id
+				if (just_gone or pass_no == 1) and d < best_d and bool(m["horse"]) == (species == "horse"):
+					best_d = d
+					best = cell
+					best_id = id
+
+		if best_id != 0:
+			break
+
+		best_d = 3.0   # no member just gone (a test, or none was ours): the nearest within 3 m of its last known spot
 
 	if best_id == 0:
 		return best

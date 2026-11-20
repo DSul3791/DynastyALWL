@@ -14,6 +14,8 @@ const ItemScript := preload("res://src/stream/server_items.gd")
 const CartsScript := preload("res://src/stream/server_carts.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const TribesScript := preload("res://src/stream/server_tribes.gd")
+const ItemTableScript := preload("res://src/shared/item_table.gd")
+const Net := preload("res://src/stream/terrain_net.gd")
 
 var failures: int = 0
 var clock: Array = [0.0]
@@ -33,6 +35,7 @@ func _init() -> void:
 	_server_hooks()
 	_camp_levels()
 	_camp_life()
+	_camp_items()
 	print("bandit sites: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 
@@ -309,11 +312,11 @@ func _camp_life() -> void:
 	b.sites[cell] = {"x": spot.x, "z": spot.y, "woke": clock[0], "points": 40.0, "levels": [2, 1, 1], "horses": 2}
 	var laid: Array = []
 	var dropped: Array = []
-	b.lay_camp = func(key, fire, lean_tos):
-		laid.append([key, fire, lean_tos])
+	b.lay_camp = func(camp_key, camp_fire, camp_lean_tos, _camp_old):
+		laid.append([camp_key, camp_fire, camp_lean_tos])
 		return [100 + laid.size()]
 	b.laid_still = func(_ids): return true
-	b.drop_gear = func(key, at): dropped.append([key, at])
+	b.drop_gear = func(gear_key, gear_at): dropped.append([gear_key, gear_at])
 	var plan: Dictionary = b.layout(cell)
 	check(plan == b.layout(cell), "a camp's layout is the same every time")
 	check(plan["seats"].size() == 3 and plan["lean_tos"].size() == 2, "three bandits get three seats and two Lean-tos")
@@ -361,9 +364,62 @@ func _camp_life() -> void:
 
 	# One falls: it leaves the row (the camp is smaller when it is made again) and drops its gear.
 	var level: int = int(hurt["level"])
-	b.camp_tick(1.0, [Vector3(spot.x + 100.0, 50.0, spot.y)])   # the members' spots catch up
-	check(b.fallen("bandit", hurt["pos"]) == cell, "a fallen bandit is its camp's")
+	b.camp_tick(1.0, [Vector3(spot.x + 100.0, 50.0, spot.y)])   # the members' spots are read
+	hurt["pos"] += Vector3(6.0, 0.0, 0.0)   # it ran on before it fell, past where it was last read
+	animals.animals.erase(int(hurt["id"]))   # the animal code erases the dead one before its died hook
+	check(b.fallen("bandit", hurt["pos"]) == cell, "a fallen bandit is its camp's, though it ran on after its spot was last read")
 	check(b.sites[cell]["levels"].size() == 2 and dropped.size() == b.gear_of(level).size() and dropped[0][0] == b.gear_of(level)[0], "it leaves the row and drops its gear (%s)" % str(dropped))
 	check(b.fallen("bandit", Vector3(spot.x + 500.0, 50.0, spot.y)) == Vector2i(2147483647, 0), "a bandit far from any camp member is no camp's")
 	check(b.fallen("horse", horses[0]["pos"]) == cell and int(b.sites[cell]["horses"]) == 1, "a camp horse that dies leaves the row")
 	check(b.layout(cell)["seats"].size() == 2, "the smaller camp has fewer seats")
+
+
+# Stage 2, the world side (server_items.gd): the camp's fire and Lean-tos are laid, refuse a player, are never saved, and a camp laid again
+# over what a world reset left leaves no doubles. Edda and Hob's camp fire is laid beside it as before.
+func _camp_items() -> void:
+	var dir: String = "user://test_bandit_camp_items"
+	DirAccess.make_dir_recursive_absolute(dir)
+
+	for file in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir + "/" + file)
+
+	var said: Array = []
+	var items: ItemScript = ItemScript.new()
+	items.send_full = func(_p, _b): pass
+	items.send_slots = func(_p, _b): pass
+	items.send_world_items = func(_p, _a, _r): pass
+	items.send_notice = func(_p, text): said.append(str(text))
+	items.ground_height = func(_x, _z): return 10.0
+	items.setup(ItemTableScript.load_default(), dir)
+	items._goals_loaded = true
+	items.peer_connected_hello(1, "bandit-test-key1")
+	var at: Vector3 = Vector3(9000.0, 10.0, 9000.0)
+	var ids: Array = items.lay_bandit_camp("4,5", at, [[at + Vector3(5.0, 0.0, 0.0), 180], [at + Vector3(0.0, 0.0, 5.0), 270]])
+	check(ids.size() == 3 and items.bandit_camp_there(ids), "a camp lays its fire and two Lean-tos")
+	var fire_id: int = int(ids[0])
+	var lean_id: int = int(ids[1])
+	check(items._fire_extra(items._items[fire_id]) == {"camp": 2}, "clients see it as a bandit camp fire")
+	check(ItemScript._not_in_area(items._items[fire_id]) and ItemScript._not_in_area(items._items[lean_id]), "neither the fire nor a Lean-to is saved")
+	items.report_position(1, at + Vector3(1.5, 0.0, 0.0))
+	said.clear()
+	items.action(1, Net.ACT_FUEL, fire_id, 0, 0, Vector3.ZERO)
+	check(said.any(func(t): return str(t).contains("bandits")), "a use of the fire is refused (%s)" % str(said))
+	items.report_position(1, at + Vector3(5.0, 0.0, 1.5))
+	said.clear()
+	items._take_down(1, null, lean_id)
+	check(items._items.has(lean_id) and said.has("That belongs to the bandits' camp."), "a Lean-to is not taken down (%s)" % str(said))
+	items.camp_fire_on = true
+	items._camp_fire_tick()
+	check(items._items.has(int(items._camp_fire_ids.get(0, 0))) and items._items.has(fire_id), "Edda and Hob's fire is laid beside a bandit camp's")
+
+	# A world reset takes the fire and keeps the Lean-tos: the camp is laid whole again, with no doubles.
+	items._items.erase(fire_id)
+	check(not items.bandit_camp_there(ids), "a camp missing its fire is not there")
+	var again: Array = items.lay_bandit_camp("4,5", at, [[at + Vector3(5.0, 0.0, 0.0), 180], [at + Vector3(0.0, 0.0, 5.0), 270]], ids)
+	var lean_tos: int = 0
+
+	for id in items._items:
+		if str(items._items[id].get("struct", {}).get("bandit", "")) == "4,5":
+			lean_tos += 1
+
+	check(items.bandit_camp_there(again) and lean_tos == 2, "laid again over what was left: one fire, two Lean-tos (%d)" % lean_tos)

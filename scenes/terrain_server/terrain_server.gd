@@ -854,7 +854,7 @@ func _ready() -> void:
 	bandits.setup(store_dir)
 	bandits.animals = animals
 	animals.bandit_camps = bandits
-	bandits.lay_camp = func(camp_key, camp_fire, camp_lean_tos): return items.lay_bandit_camp(camp_key, camp_fire, camp_lean_tos)
+	bandits.lay_camp = func(camp_key, camp_fire, camp_lean_tos, camp_old): return items.lay_bandit_camp(camp_key, camp_fire, camp_lean_tos, camp_old)
 	bandits.laid_still = func(camp_ids): return items.bandit_camp_there(camp_ids)
 	bandits.drop_gear = func(gear_key, gear_at): items.drop_world_made(items.table.number_of(gear_key), 1, gear_at)
 	items.road_trip = func(mover, mover_at, trip_kind): bandits.note(mover, mover_at, trip_kind)
