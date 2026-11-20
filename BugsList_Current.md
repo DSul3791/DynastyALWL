@@ -844,6 +844,28 @@ Not yet played.
 
 Not yet played.
 
+## 96. Picture rig character started high in the air, so the ground loaded slowly before it dropped to the spot
+
+**Reported:** Dave, 20 Nov 2026, after watching the rig run on his PC: "the character is spawning way up in the air which causes ground loading to go slower and they eventually load in drop to the ground and then quit." Required outcome: "they should start 1m above ground then face whatever it is they need to photograph and take the images."
+
+**Cause:** the shot runner (src/debug/shot_runner.gd) held the body at 400 m above each spot until the ground there loaded, and only then put it at the shot height. --frametime started counting 10 s after joining, wherever the body was at that moment.
+
+**As built (PR #1384, reviewed head 07a92b06, dev 51352924):**
+- The runner asks the server for the ground height at the spot. It starts the body 1 m above that height, held so it cannot fall through ground that has not loaded. Once the ground under it has collision, the body moves to the shot height. The 400 m hold is deleted.
+- Subject shots (--pieces, --look, --showroom and held items) also hide the plants, so a reed bed cannot block the subject.
+- A plain spawn view faces the camp fire, the way a new character does.
+- --frametime measures standing at the spot after landing, and look_rig.sh prints the frametime line itself.
+
+This changes debug tooling only. There is no game, protocol, save or terrain change.
+
+**Evidence:**
+- Independent review PASS on 07a92b06.
+- Lane B: 26 PASS / 0 FAIL, and warnings stay at 381.
+- Lane A, windowed, 5 runs, all exit 0. Every start was about 1 m over the server ground (y 5.7 over 4.7), and every landing was 1.7 m over it. The camp fire, pieces, saw and showroom were visible.
+- Remaining issues found by these runs, outside the rig: the spawn frame time had 4 frames over 100 ms (max 138.5 ms); two showroom pictures miss their items on the sandy slope at the new spawn (the framing was already like that before this change); and reeds stand in front of a new player's first view.
+
+Not a game change; nothing to play.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
