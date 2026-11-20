@@ -13,7 +13,9 @@ fits it to Dynasty_Base_Male.glb's head in model space (metres, +Y up, facing +Z
 3. The three textures are scaled to 2048 (Dave ordered 2K, Meshy made 4K; the 4K originals stay in his Downloads) and the material is made
    one-sided (docs/design/CHARACTER_MESHES.md: one-sided faces; the hair is a closed shell over the scalp, so its back faces never show).
 
-Usage: python3 -I tools/hair/prepare_hair.py SOURCE.glb OUT.glb [--male assets/character/Humanoid/Dynasty_Base_Male.glb]
+Usage: python3 -I tools/hair/prepare_hair.py SOURCE.glb OUT.glb [--male assets/character/Humanoid/Dynasty_Base_Male.glb] [--nape-back Y]
+The committed styles: Hair_CrewCut and Hair_SlickedBack with no options; Hair_ShortCurly with --nape-back 1.555 (its sparse low strands at the
+back of the neck hung in shards, PC pictures 20 Nov 2026; Dave chose to tidy them).
 Needs numpy and Pillow. Writes OUT.glb, its .import, its three textures as OUT_<texture>.png with their .import files (VRAM Compressed), and prints the fit.
 """
 import argparse
@@ -176,6 +178,8 @@ def main():
     parser.add_argument("--male", default="assets/character/Humanoid/Dynasty_Base_Male.glb")
     parser.add_argument("--also", nargs="*", default=["assets/character/Humanoid/Playercharacter_Female_01.glb"],
                         help="other body models (body_models.gd); the hair clears their heads too, carried by their hair_fit (body_fit.py)")
+    parser.add_argument("--nape-back", type=float, default=NAPE_Y,
+                        help="Body 1 model space: the nape line straight behind the head, easing down to NAPE_Y at the sides (a short style's sparse low strands go)")
     args = parser.parse_args()
     rng = np.random.default_rng(7)
 
@@ -261,7 +265,14 @@ def main():
     # those gaps Body 1's own scalp is copied CAP_CLEARANCE_M out and drawn in the hair's colour. "Under the hair" is the directions from the head's
     # centre that hold hair, closed by HOLE_BINS (grown, then shrunk back), so gaps fill but the hairline does not move.
     hair_points, hair_point_uv = surface_samples(boxed, hair, 200000, rng, uv)
+    def nape_line(points):
+        """The nape line under each point: NAPE_Y at the face and sides, rising to --nape-back straight behind the head."""
+        flat = points[:, [0, 2]] - centre[[0, 2]]
+        behind = np.clip(-flat[:, 1] / np.maximum(np.linalg.norm(flat, axis=1), 1e-9), 0.0, 1.0)
+        return NAPE_Y + (args.nape_back - NAPE_Y) * np.sqrt(behind)       # full height across the back, easing in near the ears
+
     shown = shade(hair_point_uv) < OPAQUE_BELOW + 0.5 * (CLEAR_FROM - OPAQUE_BELOW)      # only hair the alpha cut keeps
+    shown &= hair_points[:, 1] >= nape_line(hair_points)       # and not below the nape line (step 3)
     has_hair = np.isfinite(radius_grid(hair_points[shown], centre, keep_max=True, fill=False))
     inside = shrink(shrink(grow(has_hair, HOLE_BINS), HOLE_BINS), 1)      # one bin in from the hairline, so the cap never shows past the hair
     _, _, v_row, v_col = direction(body_points)
@@ -304,8 +315,9 @@ def main():
     # 3. The nape: Meshy paints the mannequin's neck dark too. Nothing hangs below NAPE_Y, so the hair never reaches into the neck when the head turns:
     # a triangle reaching more than NAPE_REACH_M below it goes, and the corners of the ones just across it are lifted to it, so the hair ends in an even
     # line rather than a ragged one (a longer reach would fold far-hanging strands up into flaps).
-    out_tris = out_tris[(out_pos[out_tris][:, :, 1] >= NAPE_Y - NAPE_REACH_M).all(1)]
-    out_pos[:, 1] = np.maximum(out_pos[:, 1], NAPE_Y)
+    line = nape_line(out_pos)
+    out_tris = out_tris[(out_pos[out_tris][:, :, 1] >= line[out_tris] - NAPE_REACH_M).all(1)]
+    out_pos[:, 1] = np.maximum(out_pos[:, 1], line)
     keep = np.unique(out_tris)
     squeeze = np.full(len(out_pos), -1, np.int64)
     squeeze[keep] = np.arange(len(keep))
