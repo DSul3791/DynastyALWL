@@ -26,7 +26,7 @@ Answered for him (coordinator, 19 Nov 2026, provisional): the cave 2.8 km east o
 - **Talk and trade.** Skritch has "Show me what you have" (opens the shop), "What do you want from me?", "Who are the Ragtooth?" and "Do you trust me yet?". Rukz and Snag send you to Skritch.
   - He sells mushrooms, dried mushrooms, berries, dried berries, flint, bone, claw, claw necklace, gut, copper ore, tin ore, sling stones, bone arrows and herb salve.
   - He buys food, materials, tools, medicine and clothing (`shops.json` skritch). His purse is 120 copper and refills 40 a game day.
-- **Attacked.** A melee blow or an arrow at a goblin hurts nobody. The tribe turns on that character for 1 game day and the character loses 3 standing with the clan (camp life, stage C). While that character is within 25 m the goblins run into the cave mouth and are not drawn; they come out about 30 s after the character has gone. They refuse that character talk and trade ("You hit us. Go away. No talk, no trade."), and other players see the camp empty while that character is near. Saved in `tribes_state.json` in the server store.
+- **Attacked.** A melee blow or an arrow at a goblin hurts nobody. The tribe turns on that character for 1 game day and the character loses 3 standing with the clan (camp life, stage C). The goblins within 25 m of that character run into the cave mouth and are not drawn; they come out about 30 s after the character is more than 30 m away. They refuse that character talk and trade ("You hit us. Go away. No talk, no trade."), and other players see the camp empty while that character is near. Saved in `tribes_state.json` in the server store.
 - **The camp fire.** It is a large fire laid by the server like Edda and Hob's. It never goes out and is never saved. Every use is refused: "That is the Ragtooth goblins' fire." It also keeps wild spawns away. Nothing can be put down within 8 m of it: "That is a goblin camp: build away from their fire." The client names it "The Ragtooth goblins' campfire". `npc_camp.gd` now lists every camp fire (Edda and Hob's first), and the server keeps each one lit.
 - **No new items or recipes.** The roster's outfit field carries "goblin:<variant>". The fire row's {"camp": 1} is unchanged. Camp life adds protocol 146 (held_item, row states WORK and GUARD); PROTOCOL.md records it.
 
@@ -84,9 +84,9 @@ What Dave asked on 20 Nov 2026:
   - They relax and go back to work as soon as the weapon is put away or you step back past 10 m.
 - **Attacked:**
   - Nobody is hurt.
-  - Every goblin runs into the cave mouth.
+  - Every goblin within 25 m runs into the cave mouth (one at a far chore point or out hunting carries on).
   - You lose standing with the Ragtooth Clan.
-  - They stay out of sight while you are within 25 m.
+  - They stay out of sight while you are within 30 m.
   - When you leave, they come back out of the mouth after about 30 s, walking, and return to their chores.
 
 **Smooth motion (all stages).**
@@ -102,7 +102,7 @@ What Dave asked on 20 Nov 2026:
 - **GOBLIN-12:** an attack costs 3 standing with the clan (about one rank), and the clan refuses that character trade and talk for 1 game day instead of 3.
 - **GOBLIN-13:** the weapon test is "a weapon in hand", for melee weapons and bows. A torch, axe or other tool in hand does not count.
 - **GOBLIN-14:** the hunter is out of sight 2 to 4 real minutes per hunt, and only one goblin hunts at a time.
-- **GOBLIN-15:** they come back about 30 s after the attacker is 25 m away.
+- **GOBLIN-15:** they come back about 30 s after the attacker is more than 30 m away.
 
 **State of A (20 Nov 2026).** Built in PR #1354, not played or seen on screen yet. The props are laid by `server_items.gd` `_tribe_props_tick`. They are refused by `_tribe_piece_refuses`, which covers take-down, use and sit, lock and repair. They have no store and serve no crafting. The spear is drawn by `npc_view.gd` `_goblin_spear` and `_hold_spear`. Goblins are drawn through `motion_buffer.gd`. Things to check on the PC: which way the spear points in the hand, and the props on the slope.
 
