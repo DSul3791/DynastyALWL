@@ -117,3 +117,18 @@ What Dave asked on 20 Nov 2026:
 - Covered by `test_goblin_camp.gd` `_tile` (every chore point), `_npcs` and `_chores` (which prints the camp's tick cost).
 
 **Order.** A, B and C go together in PR #1354 (protocol 146), ahead of the goblins PR that adds Vrixa and Grikka; their chore rounds follow from data (`default_jobs`, or a `chores` list in their members row). A BugsList entry follows in a docs PR.
+
+## Camp stock, the light version (20 Nov 2026; built on the branch, not played)
+
+Dave, 20 Nov 2026: "Build the light version of the goblin camp." It was offered to him as the goblins keep their chores for show, while the camp chest and racks slowly fill to a small capped stock on a timer, with nothing taken from the world. Trading for that stock at good standing was mentioned as a later step. It is not built.
+
+- **What fills:** the Crude chest holds Firewood and Plant fibre, the Drying rack Raw meat, and the Tanning rack Hide. All are existing catalog items (`goblin_tribes.json` camp `stock`).
+- **How fast:** per game day, 6 Firewood, 4 Plant fibre, 1 Hide and 2 Raw meat. The caps are 20, 12, 3 and 4, so the camp is full in about 3 to 4 game days.
+- **How it shows:** opening the chest, or using a rack, is refused as before, and the refusal says what the piece holds. Example: "That belongs to the Ragtooth camp. In it: 20 firewood and 12 plant fibre." A bench holds nothing. Nothing is drawn on the racks yet.
+- **Cost:** none per tick. The stock is worked out from the game clock when a player tries a piece (`server_tribes.gd` `stock`, `stock_line`). The fill start is saved in `tribes_state.json` (`stock_from`), so a restart keeps it.
+- **Not taken from the world:** no plants, sticks or game are used up. The meat does not spoil and the fire never burns the wood.
+
+**Choices made for Dave (PROVISIONAL):**
+- **GOBLIN-16:** the amounts and caps above, filling on the game clock whether or not anyone is near.
+- **GOBLIN-17:** nobody can take the stock. The chest does not open and the racks refuse every use, so there is no theft yet. If Dave wants it takeable, a theft rule is needed first, for example taking counts as an attack (GOBLIN-12).
+- **GOBLIN-18:** the stock is shown only in words. Hides and meat are not drawn on the racks or wood beside the fire, which would need new client drawing.

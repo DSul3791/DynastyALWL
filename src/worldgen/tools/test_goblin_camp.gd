@@ -560,7 +560,7 @@ func _props(items, said: Array, cfg: Dictionary) -> void:
 		check(bool(it.get("struct", {}).get("transient", false)) and ItemsScript._not_in_area(it), "the %s is transient, never saved" % str(it.get("struct", {}).get("kind", "?")))
 		items.report_position(1, it.get("pos", Vector3.ZERO) + Vector3(1.0, 0.0, 0.0))
 
-		for act in [Net.ACT_USE_STRUCT, Net.ACT_CHEST_LOCK, Net.ACT_REPAIR_STRUCT]:
+		for act in [Net.ACT_USE_STRUCT, Net.ACT_CHEST_OPEN, Net.ACT_CHEST_LOCK, Net.ACT_REPAIR_STRUCT]:
 			said.clear()
 			items.action(1, act, i, 0, 1, Vector3.ZERO)
 			check(said.any(func(t): return str(t).contains("Ragtooth camp")), "action %d on the %s is refused (%s)" % [act, str(it["struct"]["kind"]), str(said)])
@@ -573,4 +573,41 @@ func _props(items, said: Array, cfg: Dictionary) -> void:
 
 		if str(it["struct"]["kind"]).ends_with("_rack"):
 			check(items.serving_station(1, str(it["struct"]["kind"]), 1) < 0, "nobody crafts at the camp's %s" % str(it["struct"]["kind"]))
+
+	# The light version (Dave 20 Nov 2026): the chest and racks fill on the game clock to a capped stock of catalog items, and say so when used.
+	var stock: Dictionary = camp.get("stock", {})
+
+	for id in (stock.get("per_game_day", {}) as Dictionary):
+		check(items.table.number_of(str(id)) != 0 and int((stock.get("cap", {}) as Dictionary).get(id, 0)) > 0, "the camp stock's %s is a catalog item with a cap" % id)
+
+	var clock: Array = [5000.0]
+	var tribes = TribesScript.new()
+	tribes.items = items
+	tribes.game_seconds = func(): return clock[0]
+	tribes.setup("")
+	items.tribe_stock_line = tribes.stock_line
+	check(tribes.stock("ragtooth").values().all(func(n): return int(n) == 0), "the stock starts empty (%s)" % str(tribes.stock("ragtooth")))
+	check(tribes.stock_line("ragtooth", "crude_chest") == "It is empty for now.", "an empty chest says so (%s)" % tribes.stock_line("ragtooth", "crude_chest"))
+	clock[0] += TribesScript.DAY_S
+	var day: Dictionary = tribes.stock("ragtooth")
+	check(int(day.get("firewood", 0)) == int(stock["per_game_day"]["firewood"]) and int(day.get("raw_meat", 0)) == int(stock["per_game_day"]["raw_meat"]), "a game day brings per_game_day of each (%s)" % str(day))
+	clock[0] += 100.0 * TribesScript.DAY_S
+	var full: Dictionary = tribes.stock("ragtooth")
+	check((stock.get("cap", {}) as Dictionary).keys().all(func(id): return int(full.get(id, -1)) == int(stock["cap"][id])), "and it stops at its cap (%s)" % str(full))
+	var chest_line: String = tribes.stock_line("ragtooth", "crude_chest")
+	check(chest_line.begins_with("In it: ") and chest_line.contains("%d firewood" % int(stock["cap"]["firewood"])) and chest_line.contains(" and "), "the chest names what it holds (%s)" % chest_line)
+	check(tribes.stock_line("ragtooth", "log_bench") == "", "a bench holds nothing")
+
+	for i in laid:
+		if str(items._items[i]["struct"]["kind"]) == "crude_chest":
+			said.clear()
+			items.action(1, Net.ACT_CHEST_OPEN, i, 0, 1, Vector3.ZERO)
+			check(said.size() == 1 and str(said[0]).contains("Ragtooth camp") and str(said[0]).contains(chest_line), "opening the camp chest is refused, with what is in it (%s)" % str(said))
+			check(items._chest_of(1, i) == null, "and still nothing can be taken out")
+		elif str(items._items[i]["struct"]["kind"]) == "tanning_rack":
+			said.clear()
+			items.action(1, Net.ACT_USE_STRUCT, i, 0, 1, Vector3.ZERO)
+			check(said.size() == 1 and str(said[0]).contains("hide"), "the tanning rack says what is stretched on it (%s)" % str(said))
+
+	items.tribe_stock_line = Callable()
 

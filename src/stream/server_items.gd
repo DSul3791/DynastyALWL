@@ -1332,6 +1332,9 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_HIT:
 		_hit(peer, inv, a, Vector2i(b, count), int(at.x) - 1)   # a tree blow's at.x is the held pack slot + 1 (protocol 115)
 	elif kind == Net.ACT_CHEST_OPEN or kind == Net.ACT_CHEST_PUT or kind == Net.ACT_CHEST_TAKE:
+		if kind == Net.ACT_CHEST_OPEN and a >= 0 and _tribe_piece_refuses(peer, a):
+			return   # a goblin camp's chest: not opened, but it says what is in it
+
 		_chest_action(peer, inv, kind, a, b, count, int(at.x) - 1 if kind == Net.ACT_CHEST_PUT else -1)   # a put's at.x: the store slot it was dragged onto + 1 (protocol 121)
 	elif kind == Net.ACT_USE_STRUCT:
 		if _tribe_piece_refuses(peer, a):
@@ -6531,7 +6534,9 @@ func _tribe_piece_refuses(peer: int, id: int) -> bool:
 	if not _items.get(id, {}).get("struct", {}).has("tribe"):
 		return false
 
-	_say(peer, "That belongs to %s." % NpcCamp.camp_name_of(str(_items[id]["struct"]["tribe"])))
+	var tribe: String = str(_items[id]["struct"]["tribe"])
+	var holds: String = str(tribe_stock_line.call(tribe, str(_items[id]["struct"].get("kind", "")))) if tribe_stock_line.is_valid() else ""
+	_say(peer, ("That belongs to %s." % NpcCamp.camp_name_of(tribe)) + (" " + holds if holds != "" else ""))
 	return true
 
 
@@ -14191,6 +14196,7 @@ func rep_points(peer: int, npc_id: String) -> int:
 	return maxi(int(rows.get(_rep_id(npc_id), 0)), 0)
 
 
+var tribe_stock_line: Callable   # (tribe, piece kind) -> what a goblin camp's piece holds (server_tribes.gd stock_line); set by the server
 var rep_key: Callable   # (npc id) -> the key its standing is kept under: a goblin tribe's for its members (server_tribes.gd rep_id), else the id; set by the server
 
 

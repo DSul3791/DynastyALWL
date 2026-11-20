@@ -17,7 +17,11 @@ extends RefCounted
 #   that character has gone. Members cannot be hurt (Dave's side, answered for him 19 Nov 2026; "they will run away if the player attacks and
 #   it will hurt the players reputation with the Ragtooth Clan", Dave 20 Nov 2026).
 # - A completed deal earns trade_rep standing, at most once a game day per character (note_deal).
-# Saved in tribes_state.json in the server store: anger and the last day a deal earned standing, per tribe and character key.
+# - Camp stock (stock, the light version, Dave 20 Nov 2026: "Build the light version of the goblin camp"): the camp's chest and racks fill on
+#   the game clock to a small capped stock of catalog items (camp.stock: per_game_day, cap), worked out when asked, never ticked. Nothing is
+#   taken from the world and nobody can take it (the pieces refuse every use, ServerItems._tribe_piece_refuses, which names what they hold).
+# Saved in tribes_state.json in the server store: anger and the last day a deal earned standing, per tribe and character key, and the game time
+# each camp's stock started filling.
 
 const PATH := "res://data/creatures/goblin_tribes.json"
 const FILE := "tribes_state.json"
@@ -39,6 +43,7 @@ var _hunter: Dictionary = {}        # tribe -> the member out on a hunt now ("" 
 var _t: float = 0.0
 var _players: Array = []            # players.call() as of the last tick: read once a tick, not once per member (avoid)
 var _path: String = ""
+var _stock_from: Dictionary = {}    # tribe -> game seconds its camp stock began filling (saved)
 
 
 func setup(store_dir: String = "") -> void:
@@ -56,6 +61,7 @@ func setup(store_dir: String = "") -> void:
 	if _path != "" and FileAccess.file_exists(_path):
 		var saved: Variant = JSON.parse_string(FileAccess.get_file_as_string(_path))
 		_state = saved.get("tribes", {}) if typeof(saved) == TYPE_DICTIONARY and int(saved.get("version", 0)) == 1 else {}
+		_stock_from = saved.get("stock_from", {}) if typeof(saved) == TYPE_DICTIONARY and int(saved.get("version", 0)) == 1 else {}
 
 
 func tribes() -> Dictionary:
@@ -558,6 +564,52 @@ func member_on_segment(from: Vector3, to: Vector3) -> String:
 	return ""
 
 
+# The camp's stock now, item id -> count: per_game_day of each item since it began filling, up to its cap (camp.stock). The first ask starts
+# the clock (and saves it); a game clock behind the start (a new world) starts it again.
+func stock(tribe: String) -> Dictionary:
+	var data: Dictionary = (tribes().get(tribe, {}) as Dictionary).get("camp", {}).get("stock", {})
+	var out: Dictionary = {}
+
+	if data.is_empty() or not game_seconds.is_valid():
+		return out
+
+	var now: float = float(game_seconds.call())
+
+	if not _stock_from.has(tribe) or float(_stock_from[tribe]) > now:
+		_stock_from[tribe] = now
+		save()
+
+	var days: float = (now - float(_stock_from[tribe])) / DAY_S
+	var caps: Dictionary = data.get("cap", {})
+
+	for id in (data.get("per_game_day", {}) as Dictionary):
+		out[str(id)] = mini(int(caps.get(id, 0)), int(floor(float(data["per_game_day"][id]) * days)))
+
+	return out
+
+
+# What one of the camp's pieces holds, for its refusal line ("In it: 12 Firewood and 8 Plant fibre."), "" for nothing (camp.stock.on: piece kind
+# -> [the line's opening, item ids]).
+func stock_line(tribe: String, kind: String) -> String:
+	var on: Array = ((tribes().get(tribe, {}) as Dictionary).get("camp", {}).get("stock", {}).get("on", {}) as Dictionary).get(kind, [])
+
+	if on.size() < 2:
+		return ""
+
+	var have: Dictionary = stock(tribe)
+	var parts: PackedStringArray = []
+
+	for id in on[1]:
+		if int(have.get(str(id), 0)) > 0:
+			parts.append("%d %s" % [int(have[str(id)]), items.table.sentence_name(items.table.number_of(str(id))) if items != null else str(id)])
+
+	if parts.is_empty():
+		return "It is empty for now."
+
+	var list: String = parts[0] if parts.size() == 1 else ", ".join(parts.slice(0, parts.size() - 1)) + " and " + parts[parts.size() - 1]
+	return "%s: %s." % [str(on[0]), list]
+
+
 func save() -> void:
 	if _path == "":
 		return
@@ -565,5 +617,5 @@ func save() -> void:
 	var file: FileAccess = FileAccess.open(_path, FileAccess.WRITE)
 
 	if file != null:
-		file.store_string(JSON.stringify({"version": 1, "tribes": _state}))
+		file.store_string(JSON.stringify({"version": 1, "tribes": _state, "stock_from": _stock_from}))
 		file.close()
