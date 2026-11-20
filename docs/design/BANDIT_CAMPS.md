@@ -153,3 +153,31 @@ Dave, 19 Nov 2026: horses are claimed and brought to town. The coordinator (20 N
 - No riding, no saddle shown while it follows (the client shows the tethered horse only), no hitching or stabling in town; it can only follow.
 - No way to let a claimed horse go yet.
 - Names come from a short first-try list (Bay, Ash, Clover...).
+
+## Stage 4a: the toll (`server_bandits.gd` toll, `data/npcs/bandits.json` robbery and toll; no protocol change) - SWITCHED OFF
+
+Dave's agreed default (19 Nov 2026): toll first, then attack. Built behind `robbery.enabled` (false): with it off no toll is asked, no one is charged for refusing and nothing is taken from a player. Turning it on is Dave's decision alone (the coordinator, 20 Nov 2026).
+
+With the switch on:
+
+- A player within 60 m of the road point by a camp (where its boot prints left the road), once a game day, is met by up to two of its bandits (not one who gave up, the lookout at his post, one fighting or hurt). They walk up and stop 4 m off, facing him.
+- The NPC talk window opens: "Bandits block your way. "N copper to pass."" with Pay and Refuse. N is 5 copper by the camp's top level.
+- Pay: the coins leave his purse and the bandits walk back to the fire.
+- Refuse, no coins, no answer in 30 s or walking 20 m on: the bandits come at him with the ordinary big game charge (harmless: health stops at the floor, as every attack today).
+- They never follow past 400 m from their fire.
+
+### For Dave (provisional, adjust after play)
+
+| # | Choice | Value |
+|---|---|---|
+| BANDIT-30 | Toll | 5 copper a level of the camp's strongest bandit, once a game day per character |
+| BANDIT-31 | Who comes | up to 2 bandits, within 60 m of the camp's road point, stopping 4 m off |
+| BANDIT-32 | Refusing | Refuse, no coins, 30 s without an answer or 20 m walked on: they charge |
+| BANDIT-33 | Leash | 400 m from their fire |
+
+### Known limits (stage 4a)
+
+- Off until Dave turns it on: none of it can be seen in play yet.
+- Robbery (coins and two stacks taken at the floor into a locked stash chest, unattended carts robbed at night) is stage 4b, not built.
+- The once-a-day memory is not saved: a server restart may ask again the same day.
+- The talk window holds the player while it is open; walking on counts only once it is closed.

@@ -24,6 +24,20 @@
 	"slope_step_m": 5.0,
 	"check_s": 3600.0,
 	"drop_points": 0.05,
+	"robbery": {
+		"note": "Stage 4 (docs/design/BANDIT_CAMPS.md, BANDIT-30..35) switch: enabled false means bandits ask no toll, charge no one for refusing and take nothing from a player. Turning it on is Dave's decision alone.",
+		"enabled": false
+	},
+	"toll": {
+		"note": "Stage 4: a player within watch_m of the road point by an awake camp, once a game day, is met by up to walkers bandits who stop stop_m off and ask copper_per_level copper by the camp's top level (Pay / Refuse). No answer in answer_s, walking refuse_walk_m on, refusing or not having the coins: they charge (the existing big game charge). They never follow past leash_m from their fire.",
+		"watch_m": 60.0,
+		"walkers": 2,
+		"stop_m": 4.0,
+		"copper_per_level": 5,
+		"answer_s": 30.0,
+		"refuse_walk_m": 20.0,
+		"leash_m": 400.0
+	},
 	"clearing": {
 		"note": "Stage 5 (docs/design/BANDIT_CAMPS.md, BANDIT-21..27): a bandit beaten under surrender_share of his health gives up and drops his weapon; a strike with Rope or Twine in hand ties him; he follows within follow_m, slips free past lead_slack_m or after escape_game_hours; led within guard_m of a guard he is handed over for bounty_copper_per_level a level. With no bandit left the camp dissolves after dissolve_game_days and the site stays dormant quiet_game_days.",
 		"surrender_share": 0.15,
