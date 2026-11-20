@@ -475,6 +475,34 @@ Not done: the new item icons need a Godot icon pass. A tap or drip head reaches 
 
 Assumed on Dave's behalf (provisional): PV-1 to PV-10 in docs/design/PLUMBING_DESIGN.md (piece lengths, 30 m longest run, rain into a barrel 1 L a minute, tap fills at 30 L a minute, drip head draws 2 L a minute, a barrel snaps onto a pipe end or joint within 0.6 m, an end laid over a trough or trench still pours into it).
 
+## 66. Animals jump about when they move (part 2 of 3 of the animal fixes)
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test on 19 Nov 2026. Fixed by PR #1324, merged to dev at b7d8e95b (head 70e9a9c5) after independent review (PASS on the exact head after one round of fixes). Lane A (Dave's PC) on the exact head: 50 of 50 selected tests passed, 0 script errors, including test_animal_motion_buffer; parse ok; warnings 407 equal to dev. Not yet played; the smoothness has not been seen on screen.
+
+Dave, 19 Nov 2026: "they are teleporting when they move or whenever I move ... we need to fix the animals to make their movement smooth".
+
+**Cause:** the server moves animals smoothly. A diagnostic run on Lane B (David4) measured at most 1.6 m between sends and no pop-in or pop-out. The client chased each new position as it arrived, about four times a second. The body lunged after every send and slowed before the next, and its walk clip flicked between walk, run and stand.
+
+**Required outcome:** each animal is drawn a little in the past, on the line between the positions it was sent, at a steady speed (src/client/motion_buffer.gd). A late or lost send is bridged for up to 0.3 s. An animal that stood still walks off instead of sliding, and a jump over 25 m (out of a burrow) is drawn at once.
+
+**Acceptance:** stand near a grazing herd, then walk and run past it: animals walk, trot and run without jumps or stutters, and their legs match their speed.
+
+Not changed: NPCs (still their own chase), animal attacks.
+
+## 67. Animals do not react to a player nearby (part 3 of 3 of the animal fixes)
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test on 19 Nov 2026. Fixed by PR #1330, merged to dev at e4f7dc2d (head 3d6ae837) after independent review (PASS on an earlier head; follow-up delta PASS on the exact head). Lane A (Dave's PC) on the exact head: 63 of 63 selected tests passed (62 fast + 1 timing), 0 script errors, including test_animal_reactions; parse ok; warnings 407 equal to dev; validate_items 0 errors. Not yet played.
+
+Dave, 19 Nov 2026: "they are not reacting most of the time to a player nearby ... they also need to react accordingly from reasonable distances."
+
+**Cause:** the sense factors multiply each other down. Being upwind cut sight and hearing by half as well as scent, and trees cut more. A deer noticed a walking player in woods from upwind at about 11 m. Neutral animals ignore players by Dave's 6 Nov rule; that is unchanged.
+
+**Required outcome:** every species' notice, flee and safe distances are in one table (animals.json reactions.notice_flee_safe_m); flock birds notice at their flock's own distance. Deer notice at 60 m, bolt at 35 m and stop at 70 m; elk 70/40/80. Upwind now cuts the whole sense factor only to 0.75 at full wind (was 0.5). A running player (5 m/s or more) is seen and heard 1.5 times farther.
+
+**Acceptance:** walk toward a deer in the open on a calm day: it looks up at about 60 m and runs at about 35 m. Walk toward one from upwind in woods: it notices you much farther off than the old 11 m. Run at one: it bolts sooner than when you walk.
+
+Assumed on Dave's behalf (provisional, in docs/design/ANIMAL_REACTIONS.md): RX-1 the deer and elk distances, RX-2 the upwind cut 0.25, RX-3 running 5 m/s and 1.5 times. Animal attacks doing nothing to him is fine for now (Dave); the attack path does call server_items.hurt_player, and why it does nothing in play was not looked into (docs/design/ANIMAL_REACTIONS.md).
+
 ## 68. Server pick page: the page, the password box and Back to servers (part 2 of 2)
 
 **Status: Implemented - awaiting player verification.** Dave's request and design approval, 19 Nov 2026 (docs/design/SERVER_PICK_PAGE.md; part 1 is entry 62). Part 2 is PR #1321, merged to dev at 0fdc302e (head 159d4b54) after independent review (PASS on a6ebf2be with nits, the should-fix ones fixed; delta PASS on e2f3a82d and on 159d4b54). Lane B (David4) on the exact head: 28 of 28 selected tests passed, including test_server_pick, test_server_list, test_join_address, test_title_page and test_build_stamp; join_remote_smoke and join_password_smoke ok; check_warnings 407, the same as dev; validate_items 0 errors. Not yet played; nobody has seen the page on screen.
