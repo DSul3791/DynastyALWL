@@ -70,11 +70,11 @@ ITEMS = {
     # B6: water
     "primitive_well": ("primitive_well", STATION_VIEW), "stone_well": ("stone_well", STATION_VIEW), "advanced_well": ("advanced_well", STATION_VIEW), "wooden_hand_pump": ("wooden_hand_pump", STATION_VIEW), "iron_hand_pump": ("iron_hand_pump", STATION_VIEW),
     "log_trough": ("log_trough", STATION_VIEW), "wooden_trough": ("wooden_trough", STATION_VIEW), "stone_trough": ("stone_trough", STATION_VIEW),
-    "wooden_pipe": ("wooden_pipe", STATION_VIEW), "wooden_pipe_elbow": ("wooden_pipe_elbow", STATION_VIEW), "wooden_pipe_tee": ("wooden_pipe_tee", STATION_VIEW), "wooden_channel": ("wooden_channel", STATION_VIEW), "wooden_channel_corner": ("wooden_channel_corner", STATION_VIEW),
+    "wooden_pipe": ("wooden_pipe", STATION_VIEW), "wooden_channel": ("wooden_channel", STATION_VIEW), "wooden_channel_corner": ("wooden_channel_corner", STATION_VIEW),
     "wooden_channel_tee": ("wooden_channel_tee", STATION_VIEW), "wooden_sluice": ("wooden_sluice", STATION_VIEW),
     "stone_channel": ("stone_channel", STATION_VIEW), "stone_channel_corner": ("stone_channel_corner", STATION_VIEW),
-    "stone_channel_tee": ("stone_channel_tee", STATION_VIEW), "iron_pipe": ("iron_pipe", STATION_VIEW),
-    "iron_pipe_elbow": ("iron_pipe_elbow", STATION_VIEW), "iron_tap": ("iron_tap", STATION_VIEW), "iron_deep_well_pump": ("iron_deep_well_pump", STATION_VIEW),
+    "stone_channel_tee": ("stone_channel_tee", STATION_VIEW),
+    "copper_pipe": ("copper_pipe", STATION_VIEW), "copper_tap": ("copper_tap", STATION_VIEW), "copper_drip_head": ("copper_drip_head", STATION_VIEW), "iron_deep_well_pump": ("iron_deep_well_pump", STATION_VIEW),
     "stone_cistern": ("stone_cistern", STATION_VIEW), "stone_raised_cistern": ("stone_raised_cistern", STATION_VIEW),
     # Item system C2: stations
     "kiln": ("kiln", STATION_VIEW), "tanning_rack": ("tanning_rack", STATION_VIEW), "drying_rack": ("drying_rack", STATION_VIEW),
