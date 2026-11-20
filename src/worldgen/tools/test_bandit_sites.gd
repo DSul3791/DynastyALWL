@@ -981,11 +981,11 @@ func _toll_switch() -> void:
 	b.ask = func(peer, talk_id, _name, text, choices): asked.append([peer, talk_id, text, choices])
 	b.tell = func(_peer, text): said.append(str(text))
 	b.key_of = func(peer): return "walker" if int(peer) == 3 else ""
-	b.take_coins = func(peer, copper):
-		if purse[0] < copper:
+	b.take_coins = func(payer, want):
+		if purse[0] < want:
 			return false
-		purse[0] -= copper
-		taken.append([peer, copper])
+		purse[0] -= want
+		taken.append([payer, want])
 		return true
 	var road: Vector3 = Vector3(spot.x + 40.0, 50.0, spot.y)
 	var players: Array = [{"peer": 3, "pos": road}]
