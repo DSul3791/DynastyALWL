@@ -231,7 +231,11 @@ func _init() -> void:
 		box_ok = box_ok and mesh.get_surface_count() == 1 and box.size.x > 0.6 and box.size.x < 1.3 and box.size.y < box.size.x and box.size.y > 0.3
 
 	check(box_ok and OreRockLook.mesh_for(0.0) != OreRockLook.mesh_for(1.0), "the copper rock meshes are lumpy rocks about 1 m across, and differ")
-	check(OreRockLook.has_look("copper") and OreRockLook.has_look("tin") and not OreRockLook.has_look("iron"), "copper and tin rocks have their own looks, iron keeps the outcrop one")
+	check(OreRockLook.has_look("copper") and OreRockLook.has_look("tin") and OreRockLook.has_look("iron") and not OreRockLook.has_look("coal"), "copper, tin and iron rocks have their own looks (iron: Dave 19 Nov 2026), coal keeps the outcrop one")
+	var iron_src: String = str(OreRockLook.FRAGMENT["iron"])
+	check(iron_src.find("drip") >= 0 and iron_src.find("world_normal.y") >= 0 and iron_src.find("line_col") >= 0, "iron rocks carry lines all over and rust streaks down their steep sides")
+	var view_src: String = FileAccess.get_file_as_string("res://src/client/inventory_view.gd")
+	check(view_src.find("\t\"iron\": [Color(") < 0, "the old outcrop tint for iron is gone (decision 61)")
 
 	# 6. Tin (Dave 17 Nov 2026): only by water and near a tin body; boulders where the valley climbs steeply, pebbles by hand where it is flat.
 	# A river along x 2000..2040 (shallow), a tin body for x under 2600 (none beyond), flat ground to z 640, then a valley side climbing 1 in 1.

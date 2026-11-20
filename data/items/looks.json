@@ -2297,6 +2297,11 @@
    "color": "#8a8a8a",
    "size": 1.0
   },
+  "bog_iron_ore": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
   "coal": {
    "shape": "chunk",
    "color": "#8a8a8a",
@@ -3885,6 +3890,10 @@
    "color": "#8a6a3a",
    "size": 1.0
   },
+  "wooden_pipe": {"shape": "rod", "color": "#7a5a36", "size": 1.4},
+  "copper_pipe": {"shape": "rod", "color": "#b87333", "size": 1.2},
+  "copper_tap": {"shape": "kit", "color": "#b87333", "size": 0.6},
+  "copper_drip_head": {"shape": "kit", "color": "#b87333", "size": 0.5},
   "iron_pipe_kit": {
    "shape": "kit",
    "color": "#8a6a3a",

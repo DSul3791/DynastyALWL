@@ -3348,10 +3348,6 @@ static func _conduit_run(root: Node3D, kind: String, x0: float, x1: float) -> vo
 			for s in [-1.0, 1.0]:
 				_box(root, Vector3(length, 0.18, 0.12), Vector3(mid, 0.21, s * 0.19), _stone)
 			_box(root, Vector3(length, 0.01, 0.26), Vector3(mid, 0.125, 0.0), _tone_mat(Color(0.3, 0.29, 0.27)))
-		"log":
-			_cyl(root, 0.13, length, Vector3(mid, 0.13, 0.0), _log, 8).rotation = Vector3(0.0, 0.0, PI * 0.5)
-		_:
-			_cyl(root, 0.06, length, Vector3(mid, 0.1, 0.0), _iron_mat(), 8).rotation = Vector3(0.0, 0.0, PI * 0.5)
 
 
 # The supports and joints at a conduit's port or joint at `at` (a trestle, a collar or a saddle), turned `yaw` about Y.
@@ -3366,20 +3362,15 @@ static func _conduit_joint(root: Node3D, kind: String, at: Vector3, yaw: float) 
 			for s in [-1.0, 1.0]:
 				_box_rot(holder, Vector3(0.04, 0.22, 0.04), Vector3(0.0, 0.115, s * 0.14), Vector3(s * 0.25, 0.0, 0.0), _frame)   # a trestle leg, its foot on the ground
 			_box(holder, Vector3(0.06, 0.04, 0.38), Vector3(0.0, 0.18, 0.0), _frame)
-		"log":
-			_cyl(holder, 0.145, 0.06, Vector3(0.0, 0.13, 0.0), _frame, 8).rotation = Vector3(0.0, 0.0, PI * 0.5)   # the twine lashing round a joint (no bore disc: the tee stays under the 300-triangle cap)
-		"iron":
-			_cyl(holder, 0.075, 0.04, Vector3(0.0, 0.1, 0.0), _iron_mat(), 8).rotation = Vector3(0.0, 0.0, PI * 0.5)
-			_box(holder, Vector3(0.06, 0.04, 0.16), Vector3(0.0, 0.02, 0.0), _iron_mat())
 
 
-# A conduit piece (B6). `kind` "wood" (channel), "stone" (channel), "iron" (pipe) or "log" (bored log pipe); `shape` "straight" (ports -X, +X), "corner" (-X, +Z) or
+# A conduit piece (B6). `kind` "wood" (channel) or "stone" (channel) (pipes are laid runs: pipe_run); `shape` "straight" (ports -X, +X), "corner" (-X, +Z) or
 # "tee" (-X, +X, +Z). Solid along the runs (low: you step over a pipe, not a flume on trestles).
 static func conduit(kind: String = "wood", shape: String = "straight") -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
-	var high: float = {"wood": 0.3, "stone": 0.3, "iron": 0.2, "log": 0.26}.get(kind, 0.3)
-	var width: float = {"wood": 0.4, "stone": 0.5, "iron": 0.2, "log": 0.26}.get(kind, 0.3)
+	var high: float = 0.3
+	var width: float = {"wood": 0.4, "stone": 0.5}.get(kind, 0.3)
 
 	if shape == "straight":
 		_conduit_run(root, kind, -1.0, 1.0)
@@ -3420,23 +3411,68 @@ static func sluice(open: bool = false) -> Node3D:
 	return root
 
 
-# An iron tap (B6b), 0.3 x 0.3 x 0.4: a valve body on a short riser at a pipe end, a cross handle on top and a spout curving down toward +Z.
-static func iron_tap() -> Node3D:
+# A pipe run laid from the hand (PLUMBING_DESIGN s9, Dave 19 Nov 2026): one straight pipe `length` metres along +X, centred on the origin (its axis is
+# the run's own line; the row's pitch and yaw turn it). Wood is a bored log 15 cm (6 in) across with a darker bore at each end; copper a 6 cm tube.
+# No collision: a pipe goes through anything and never blocks a walker (the client picks one by its line, PipeRules.ray_nearest).
+static func pipe_run(kind: String = "wood", length: float = 2.0) -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
-	_cyl(root, 0.06, 0.2, Vector3(0.0, 0.1, 0.0), _iron_mat(), 8)
-	_cyl(root, 0.08, 0.1, Vector3(0.0, 0.25, 0.0), _iron_mat(), 8)
-	_cyl(root, 0.012, 0.08, Vector3(0.0, 0.34, 0.0), _iron_mat(), 6)
-	_box(root, Vector3(0.18, 0.02, 0.02), Vector3(0.0, 0.38, 0.0), _iron_mat())
-	_box(root, Vector3(0.02, 0.02, 0.18), Vector3(0.0, 0.38, 0.0), _iron_mat())
-	_cyl(root, 0.025, 0.12, Vector3(0.0, 0.25, 0.09), _iron_mat(), 6).rotation = Vector3(PI * 0.5, 0.0, 0.0)
-	_cyl(root, 0.025, 0.06, Vector3(0.0, 0.22, 0.15), _iron_mat(), 6)
-	_solid(root, Vector3(0.16, 0.3, 0.16), Vector3(0.0, 0.15, 0.0))
+	var length_m: float = maxf(length, 0.05)
+
+	if kind == "copper":
+		_cyl(root, 0.03, length_m, Vector3.ZERO, _copper_mat(), 10).rotation = Vector3(0.0, 0.0, PI * 0.5)
+		return root
+
+	_cyl(root, 0.075, length_m, Vector3.ZERO, _log, 10).rotation = Vector3(0.0, 0.0, PI * 0.5)
+
+	for s in [-1.0, 1.0]:
+		_cyl(root, 0.03, 0.01, Vector3(s * length_m * 0.5, 0.0, 0.0), _tone_mat(Color(0.12, 0.09, 0.06)), 8).rotation = Vector3(0.0, 0.0, PI * 0.5)   # the bore
+
+	return root
+
+
+static var _copper: StandardMaterial3D
+
+
+static func _copper_mat() -> StandardMaterial3D:
+	if _copper == null:
+		_copper = StandardMaterial3D.new()
+		_copper.albedo_color = Color(0.72, 0.45, 0.2)
+		_copper.metallic = 0.8
+		_copper.roughness = 0.35
+
+	return _copper
+
+
+# A Copper - Tap (PLUMBING_DESIGN s9), about 0.15 m: fitted on a pipe's open end at the origin, a valve body hanging under it, a cross handle on top
+# and a spout pointing down to 0.12 m below the pipe end.
+static func copper_tap() -> Node3D:
+	var root: Node3D = Node3D.new()
+	_cyl(root, 0.035, 0.08, Vector3(0.0, -0.04, 0.0), _copper_mat(), 8)
+	_cyl(root, 0.01, 0.05, Vector3(0.0, 0.025, 0.0), _copper_mat(), 6)
+	var handle: Node3D = Node3D.new()
+	handle.position = Vector3(0.0, 0.055, 0.0)
+	root.add_child(handle)
+	_box(handle, Vector3(0.09, 0.012, 0.012), Vector3.ZERO, _copper_mat())
+	_box(handle, Vector3(0.012, 0.012, 0.09), Vector3.ZERO, _copper_mat())
+	_cyl(root, 0.012, 0.05, Vector3(0.0, -0.1, 0.0), _copper_mat(), 6)
+	return root
+
+
+# A Copper - Drip head (PLUMBING_DESIGN s9): a small copper cap on a pipe's open end, pierced round its rim.
+static func drip_head() -> Node3D:
+	var root: Node3D = Node3D.new()
+	_cyl(root, 0.04, 0.05, Vector3(0.0, -0.025, 0.0), _copper_mat(), 10, 0.025)
+
+	for n in 6:
+		var a: float = TAU * float(n) / 6.0
+		_cyl(root, 0.006, 0.01, Vector3(cos(a) * 0.033, -0.04, sin(a) * 0.033), _tone_mat(Color(0.1, 0.08, 0.06)), 4)
+
 	return root
 
 
 # The deep-well force pump (B6b), 0.8 x 0.8 x 1.6, on a well's coping: an iron base plate, a tall iron barrel, an air chamber dome beside it, a long two-man
-# lever across the top (X) on a pivot post and an outlet stub for the iron pipe toward +Z.
+# lever across the top (X) on a pivot post and an outlet stub for a pipe toward +Z.
 static func deep_well_pump() -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
@@ -4525,67 +4561,89 @@ static func bin_wall_m(side: float) -> float:
 
 
 # --- Bog iron (water_flow_rules s11.3, Kathleen 10 Nov 2026; ships with Sonny's bog iron, #996). A deposit's 8 m sample shows a ground
-# stain of rust-orange mud, darker and redder at its heart and fading out at a ragged edge, with rust-brown lumps of ore half sunk in the core. "wet":
-# a skin of standing water over the core carries the iron-bacteria film, a dull oily sheen broken into flat plates. "dug": shovel cuts into the core,
-# black peat in each, a dug-out lump beside each. The stain lies 1 to 2 cm above the ground so it reads from about 30 m; nothing is solid. Under 300
-# triangles in every state (the lumps are low five-sided domes). `ground` (x, z) -> the ground's height there above the patch's own origin, both in
-# the patch's frame: every rim point, lump and cut is lifted onto it, so the stain drapes over a gentle rise instead of sinking into it (#996 checks
-# no slope). Unset: flat ground.
+# stain of rust-orange ochre, redder at its heart and fading out at a ragged edge, with red-brown lumps of ore half sunk in the core. "wet":
+# standing water over the core, tinted orange by the ochre, carrying the iron-bacteria film, a dull oily sheen broken into flat plates. "dug": shovel
+# cuts into the core, black peat in each, a dug-out lump beside each. Nothing is solid.
+# Dave 19 Nov 2026 ("make sure they are obvious and visible for characters to find"): a bright ochre against dark peat and mud, 3 m across its
+# rust, lifted 2 to 4 cm and draped on a middle ring so the ground does not swallow it, a faint glow of its own so it still reads at dusk and
+# in rain, and the grass and small plants cleared off it (terrain_client _sync_cleared). Under the 300 triangle piece budget in every state.
+# `ground` (x, z) -> the ground's height there above the patch's own origin, both in the patch's frame: every ring point, lump and cut is
+# lifted onto it, so the stain drapes over a gentle rise instead of sinking into it. Unset: flat ground.
 static func _on_ground(ground: Callable, p: Vector3) -> Vector3:
 	return p + Vector3(0.0, float(ground.call(p.x, p.z)), 0.0) if ground.is_valid() else p
 
 
+# A ragged flat disc on the ground: a middle ring at 0.55 of the rim, so it follows the ground between its centre and its rim.
 static func _blob(root: Node3D, radius: float, y: float, seed_value: int, material: StandardMaterial3D, sides: int = 18, ground: Callable = Callable()) -> void:
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = seed_value
 	var st: SurfaceTool = SurfaceTool.new()
 	st.begin(Mesh.PRIMITIVE_TRIANGLES)
 	var rim: Array = []
+	var mid: Array = []
 
 	for k in sides:
 		var a: float = TAU * float(k) / float(sides)
 		var r: float = radius * rng.randf_range(0.72, 1.08)
 		rim.append(_on_ground(ground, Vector3(cos(a) * r, y, sin(a) * r)))
+		mid.append(_on_ground(ground, Vector3(cos(a) * r * 0.55, y, sin(a) * r * 0.55)))
 
 	var middle: Vector3 = _on_ground(ground, Vector3(0.0, y, 0.0))
 
 	for k in sides:
-		_tri_out(st, middle, rim[k], rim[(k + 1) % sides], Vector3.UP)
+		var n: int = (k + 1) % sides
+		_tri_out(st, middle, mid[k], mid[n], Vector3.UP)
+		_tri_out(st, mid[k], rim[k], rim[n], Vector3.UP)
+		_tri_out(st, mid[k], rim[n], mid[n], Vector3.UP)
 
 	_mesh_of(root, st, material)
 
 
+# The stain's ochre: matte, with a faint glow of its own colour so it is not lost at dusk or under rain clouds.
+static func _ochre_mat(c: Color) -> StandardMaterial3D:
+	var key: String = "ochre_" + c.to_html()
+
+	if not _flat_mats.has(key):
+		var m: StandardMaterial3D = StandardMaterial3D.new()
+		m.albedo_color = c
+		m.roughness = 1.0
+		m.emission_enabled = true
+		m.emission = c
+		m.emission_energy_multiplier = 0.15
+		_flat_mats[key] = m
+
+	return _flat_mats[key]
+
+
 static func bog_iron_patch(state: String = "dry", ground: Callable = Callable()) -> Node3D:
 	var root: Node3D = Node3D.new()
-	var rust: StandardMaterial3D = _tone_mat(Color(0.52, 0.3, 0.15))
-	var core: StandardMaterial3D = _tone_mat(Color(0.44, 0.21, 0.1))
-	var ore: StandardMaterial3D = _tone_mat(Color(0.26, 0.13, 0.07))
-	_blob(root, 3.9, 0.008, 811, _tone_mat(Color(0.42, 0.32, 0.21)), 18, ground)     # the faint outer stain, nearly the peat's own colour
-	_blob(root, 3.2, 0.012, 812, rust, 18, ground)
-	_blob(root, 1.9, 0.016, 813, core, 18, ground)
+	var ore: StandardMaterial3D = _tone_mat(Color(0.4, 0.15, 0.07))
+	_blob(root, 3.0, 0.02, 811, _ochre_mat(Color(0.58, 0.31, 0.12)), 12, ground)     # the outer stain, orange-brown
+	_blob(root, 2.3, 0.03, 812, _ochre_mat(Color(0.78, 0.38, 0.1)), 12, ground)      # bright rust-orange ochre
+	_blob(root, 1.3, 0.04, 813, _ochre_mat(Color(0.62, 0.22, 0.07)), 12, ground)     # the red heart
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = 814
 
-	for k in 7:
+	for k in 6:
 		var a: float = rng.randf_range(0.0, TAU)
-		var r: float = rng.randf_range(0.2, 1.6)
-		_dome(root, rng.randf_range(0.11, 0.18), _on_ground(ground, Vector3(cos(a) * r, 0.01, sin(a) * r)), Vector3(1.3, 0.6, 1.0), ore, 5, 1)
+		var r: float = rng.randf_range(0.2, 1.7)
+		_dome(root, rng.randf_range(0.18, 0.28), _on_ground(ground, Vector3(cos(a) * r, 0.03, sin(a) * r)), Vector3(1.3, 0.6, 1.0), ore, 5, 1)
 
 	if state == "wet":
-		_blob(root, 1.5, 0.03, 815, _still_water(), 14, ground)
-		var film: Array = [_tone_mat(Color(0.3, 0.32, 0.38)), _tone_mat(Color(0.27, 0.33, 0.31)), _tone_mat(Color(0.36, 0.33, 0.28))]
+		_blob(root, 1.5, 0.05, 815, _tone_mat(Color(0.36, 0.2, 0.09)), 10, ground)   # the orange-tinted water over the core
+		var film: Array = [_tone_mat(Color(0.42, 0.44, 0.5)), _tone_mat(Color(0.36, 0.45, 0.4)), _tone_mat(Color(0.5, 0.44, 0.34))]
 
-		for k in 6:
+		for k in 3:
 			var a: float = rng.randf_range(0.0, TAU)
 			var r: float = rng.randf_range(0.1, 1.0)
-			_box_rot(root, Vector3(rng.randf_range(0.25, 0.5), 0.004, rng.randf_range(0.2, 0.4)), _on_ground(ground, Vector3(cos(a) * r, 0.034, sin(a) * r)), Vector3(0.0, rng.randf_range(0.0, PI), 0.0), film[k % 3])
+			_box_rot(root, Vector3(rng.randf_range(0.3, 0.55), 0.004, rng.randf_range(0.2, 0.4)), _on_ground(ground, Vector3(cos(a) * r, 0.054, sin(a) * r)), Vector3(0.0, rng.randf_range(0.0, PI), 0.0), film[k % 3])
 	elif state == "dug":
 		var peat: StandardMaterial3D = _tone_mat(Color(0.14, 0.1, 0.07))
 
-		for at in [Vector3(-0.5, 0.0, 0.3), Vector3(0.45, 0.0, -0.2), Vector3(0.1, 0.0, 0.8)]:
+		for at in [Vector3(-0.5, 0.0, 0.3), Vector3(0.45, 0.0, -0.2)]:
 			var cut: Vector3 = _on_ground(ground, at)
-			_box_rot(root, Vector3(0.5, 0.02, 0.32), cut + Vector3(0.0, 0.012, 0.0), Vector3(0.0, rng.randf_range(-0.5, 0.5), 0.0), peat)   # the shovel cut, black peat
-			_dome(root, 0.13, cut + Vector3(0.38, 0.01, 0.0), Vector3(1.2, 0.7, 1.0), ore, 5, 1)                                              # the lump it turned up
+			_box_rot(root, Vector3(0.5, 0.02, 0.32), cut + Vector3(0.0, 0.042, 0.0), Vector3(0.0, rng.randf_range(-0.5, 0.5), 0.0), peat)   # the shovel cut, black peat
+			_dome(root, 0.16, cut + Vector3(0.38, 0.04, 0.0), Vector3(1.2, 0.7, 1.0), ore, 5, 1)                                              # the lump it turned up
 
 	return root
 

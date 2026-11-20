@@ -16,7 +16,8 @@ from PIL import Image
 LEATHER = ((30, 16, 9), (94, 52, 28), (172, 110, 66))   # shadow, middle, light: tanned leather (Leather - Jerkin's warm brown, a little deeper)
 QUALITY_PACK = ((24, 12, 6), (78, 42, 22), (150, 92, 54))   # the backpack tiers (Dave 15 Nov 2026): Quality a deeper, darker leather
 ADVANCED_PACK = ((18, 14, 12), (66, 50, 40), (132, 112, 96))   # Advanced: dark leather with a cool steel cast from its frame
-LAMP_OIL = ((36, 22, 6), (150, 112, 40), (236, 204, 128))   # lamp oil (B4): the oil bottle in a deeper amber, as basic_look draws it (#9a7a32)
+LAMP_OIL = ((36, 22, 6), (150, 112, 40), (236, 204, 128))
+BOG_IRON = ((40, 14, 6), (122, 58, 28), (196, 112, 52))   # Bog iron ore (Dave 19 Nov 2026): the Iron ore lumps in red-brown and rust   # lamp oil (B4): the oil bottle in a deeper amber, as basic_look draws it (#9a7a32)
 
 RECOLOURS = {
 	"leather_trousers": ("hide_trousers", LEATHER),
@@ -27,6 +28,7 @@ RECOLOURS = {
 	"advanced_backpack": ("simple_backpack", ADVANCED_PACK),
 	"leather_quiver": ("quiver", LEATHER),
 	"lamp_oil": ("oil", LAMP_OIL),
+	"bog_iron_ore": ("iron_ore", BOG_IRON),
 }
 NAMES = tuple(RECOLOURS)
 

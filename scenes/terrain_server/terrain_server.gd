@@ -55,6 +55,7 @@ const EditedGroundScript := preload("res://src/stream/edited_ground.gd")
 const CoarseGroundScript := preload("res://src/stream/server_coarse_ground.gd")
 const FogGroundScript := preload("res://src/shared/fog_ground.gd")
 const TrailsScript := preload("res://src/stream/server_trails.gd")
+const BanditsScript := preload("res://src/stream/server_bandits.gd")
 const MapScript := preload("res://src/stream/server_map.gd")
 const MapCodec := preload("res://src/shared/map_codec.gd")
 const IdentityScript := preload("res://src/stream/identity_provider.gd")
@@ -109,6 +110,7 @@ var generator
 var store
 var flora
 var trails                             # ServerTrails: worn game trails the animals leave
+var bandits                            # ServerBandits: bandit camp sites woken by road traffic (docs/design/BANDIT_CAMPS.md)
 var map_knowledge                      # ServerMap: what each character has surveyed for its charcoal Map (protocol 120)
 var animals                            # ServerAnimals: wildlife around the players (rabbits)
 var edited_ground                      # EditedGround: the ground with its digs and fills, for the animals
@@ -535,6 +537,7 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.send_chest = func(peer, id, bytes): net.chest_contents.rpc_id(peer, id, bytes)
 	items.send_chest_info = func(peer, id, keep_out, may_set): net.chest_info.rpc_id(peer, id, keep_out, may_set)
+	items.send_autoload_info = func(peer, id, number): net.autoload_info.rpc_id(peer, id, number)
 	items.send_chest_lock = func(peer, id, locked, mine, may_open, wait_s, allowed): net.chest_lock.rpc_id(peer, id, locked, mine, may_open, wait_s, allowed)
 	items.send_storage_view = func(peer, id, numbers, counts, containers): net.storage_view.rpc_id(peer, id, numbers, counts, containers)
 	items.send_craft_stock = func(peer, numbers, counts): net.craft_stock.rpc_id(peer, numbers, counts)
@@ -800,6 +803,22 @@ func _ready() -> void:
 
 	spawn = _spawn_point(world_dir)
 	animals.town = npcs.town_point()   # the island level and the stray dogs centre on the starter town's markers, never on the spawn (no_spawn_placement_design.md 3)
+	bandits = BanditsScript.new()
+	bandits.world_seed = items.world_seed
+	bandits.town = animals.town
+	bandits.spawn = Vector2(spawn.x, spawn.z)
+	bandits.game_seconds = func(): return game_clock.seconds
+	bandits.ground_height = func(x, z): return generator.surface_height(x, z)
+	bandits.ground_ready = func(x, z): return generator.tile_cached(x, z)   # the hourly check never reads a tile from disk (1.8 to 4 s)
+	bandits.in_water = npcs.blocked
+	bandits.building_near = func(site_at, reach_m): return items.building_near(site_at, reach_m)
+	bandits.road_distance = func(site_at, reach_m): return items.road_distance(site_at, reach_m)
+	bandits.setup(store_dir)
+	items.road_trip = func(mover, mover_at, trip_kind): bandits.note(mover, mover_at, trip_kind)
+
+	for site_line in bandits.report():
+		print(site_line)
+
 	items.respawn_point = spawn
 	_world_dir = world_dir
 	_start_water()
@@ -912,6 +931,8 @@ func _ready() -> void:
 	net.dump_requested.connect(_on_dump_requested)
 	@warning_ignore("confusable_local_declaration")
 	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at): items.action(peer, kind, a, b, count, at))
+	@warning_ignore("confusable_local_declaration")
+	net.pipe_lay_requested.connect(func(peer, slot, from, to): items.pipe_lay(peer, slot, from, to))
 	_report_at_msec = Time.get_ticks_msec() + 10000
 
 	for n in range(_max_running):
@@ -1256,6 +1277,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_fine_named.erase(peer_id)
 	_animal_sent.erase(peer_id)
 	trails.forget_peer(peer_id)
+	bandits.forget(peer_id)
 
 	if map_knowledge != null:
 		map_knowledge.forget_peer(peer_id)
@@ -2977,6 +2999,7 @@ func _process(delta: float) -> void:
 	coarse_ground.tick()
 	_events.mark("trails")
 	trails.tick(delta)
+	bandits.tick()
 	map_knowledge.tick(delta)   # the save interval only
 	_events.mark("send npcs")
 	_send_npcs(delta)
@@ -3478,6 +3501,9 @@ func _exit_tree() -> void:
 
 	if trails != null:
 		trails.save()
+
+	if bandits != null:
+		bandits.save()
 
 	if map_knowledge != null:
 		map_knowledge.save()
