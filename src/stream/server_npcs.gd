@@ -348,6 +348,9 @@ func _step_wary(npc: Dictionary, w: Dictionary, dt: float) -> bool:
 	npc["look"] = w.get("look", Vector3.INF)
 	var goal: Vector3 = w.get("hide", w.get("goal", Vector3.INF))
 
+	if goal != Vector3.INF or bool(w.get("guard", false)) or bool(w.get("hold", false)):
+		(npc.get("chore", {}) as Dictionary).erase("by")   # held up by a player: the chore walk's give-up clock starts again afterwards
+
 	if goal == Vector3.INF:
 		if bool(npc.get("hidden", false)):   # nobody angry near any more: after calm_s it comes out of the mouth where it went in, and walks back to its round
 			if not npc.has("out_at"):

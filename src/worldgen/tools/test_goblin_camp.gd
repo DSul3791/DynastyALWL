@@ -435,6 +435,31 @@ func _chores() -> void:
 	tribes._member["snag"]["chores"] = snag_jobs
 	check(str(fresh.get("chore", {}).get("job", "")) in defaults, "and starts on it (%s)" % str(fresh.get("chore", {})))
 
+	# Boxed in (nothing it may step on): it gives up the walk after twice the walk time plus 10 s and does the chore where it stands, no freeze.
+	npcs.blocked = func(_x, _z): return true
+	var stuck: Dictionary = npcs.npcs["snag"]
+	stuck.erase("chore")
+	var stuck_at: Vector3 = stuck["pos"]
+	var gave_up: bool = false
+
+	for k in 4000:
+		tribes.tick(0.1)
+		npcs.tick(0.1)
+
+		if int(stuck["state"]) == NpcsScript.WORK:
+			gave_up = true
+			break
+
+	npcs.blocked = Callable()
+	check(gave_up and stuck["pos"].distance_to(stuck_at) < 0.5, "a boxed-in member still gets to its chore, where it stands (state %d)" % int(stuck["state"]))
+
+	# Nervous at work: someone inside watch_m (past its keep distance) is watched, chore or not.
+	player[0] = stuck["pos"] + Vector3(0.0, 0.0, 12.0)
+	run_for(tribes, npcs, 1.5)
+	var eyes: Vector2 = Vector2(cos(float(stuck["heading"])), sin(float(stuck["heading"])))
+	check(int(stuck["state"]) == NpcsScript.WALK or eyes.dot(Vector2(player[0].x - stuck["pos"].x, player[0].z - stuck["pos"].z).normalized()) > 0.9, "a member at its chore turns to watch a character 12 m off")
+	player[0] = fire + Vector3(18.0, 0.0, 45.0)
+
 	# What the camp costs a tick, for the NPC budget (test_npcs: 60 townsfolk under 1 ms): chores alone, then with a weapon carrier in sight.
 	var t0: int = Time.get_ticks_usec()
 
@@ -457,6 +482,12 @@ func _chores() -> void:
 	var armed_ms: float = float(Time.get_ticks_usec() - t0) / 600.0 / 1000.0
 	print("goblin camp cost: %d members, %.3f ms per 10 Hz tick at their chores, %.3f ms with a weapon carrier by the fire (whole ServerNpcs tick, townsfolk included)" % [ids.size(), calm_ms, armed_ms])
 	check(ids.any(func(id): return int(npcs.npcs[id]["state"]) == NpcsScript.GUARD), "with a spear in hand by the fire, the members stand guard")
+
+
+func run_for(tribes, npcs, seconds: float) -> void:
+	for k in int(seconds * 10.0):
+		tribes.tick(0.1)
+		npcs.tick(0.1)
 
 
 func data_att() -> Dictionary:

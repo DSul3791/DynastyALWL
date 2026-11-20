@@ -1,6 +1,6 @@
 # The Ragtooth goblin camp
 
-**Status: DAVE-REQUESTED (19 Nov 2026), built on branch `claude/project-thread-m8edia`; not played, not seen on screen.** Values marked PROVISIONAL were answered on Dave's behalf by the coordinator while he was away (standing rule, 14 Nov 2026) and wait for his review below.
+**Status: DAVE-REQUESTED (19 Nov 2026). The camp is in dev (#1325); camp life (stage 2, 20 Nov 2026) is PR #1354. Neither played nor seen on screen yet.** Values marked PROVISIONAL were answered on Dave's behalf by the coordinator while he was away (standing rule, 14 Nov 2026) and wait for his review below.
 
 ## What Dave asked (19 Nov 2026)
 - "we also already have goblins in our game so we should build them a goblin camp somewhere near the river or in a cave. I want the goblins to be apprehensive but willing to communicate and trade/buy and sell. in the future the game will have various goblin tribes/camps etc that are friendly, not friendly, indifferent etc."
@@ -45,7 +45,7 @@ Answered for him (coordinator, 19 Nov 2026, provisional): the cave 2.8 km east o
 - The goblins stand on the hill's ground. Nothing checks yet that no tree or rock stands on a spot (`test_goblin_camp` checks slope and water on the baked tile only).
 - The other attitudes (friendly, indifferent, unfriendly, hostile) are data rows with no tribe using them. A hostile tribe that fights is not built: like animal attacks, it would be harmless for now.
 
-## Camp life, stage 2 (plan, 20 Nov 2026; not built yet)
+## Camp life, stage 2 (20 Nov 2026; built in PR #1354, not played)
 What Dave asked on 20 Nov 2026:
 - "for now she will be a named goblin at the Ragtooth camp. they are friendly goblins but nervous."
 - "they should all keep themselves busy in the area around the camp, either gathering firewood and putting in the fire or gathering supplies around the area like plant fiber to make twine or hunting for meat, hide etc. they should have a small chest of some sort, probably a few drying racks or tanning racks, a campfire maybe some wooden benches around the fire. they should carry spears for weapons. If a character approaches them with no weapon in hand they will be aprihensive but approachable. if the player has a weapon they will take up defensive positions with thier spears and make angry sounds. they will run away if the player attacks and it will hurt the players reputation with the Ragtooth Clan. If the player leaves they will eventually come back to their camp."
@@ -104,7 +104,7 @@ What Dave asked on 20 Nov 2026:
 - **GOBLIN-14:** the hunter is out of sight 2 to 4 real minutes per hunt, and only one goblin hunts at a time.
 - **GOBLIN-15:** they come back about 30 s after the attacker is 25 m away.
 
-**State (20 Nov 2026).** Stage A is built on the branch and has not been played or seen on screen yet. The props are laid by `server_items.gd` `_tribe_props_tick`. They are refused by `_tribe_piece_refuses`, which covers take-down, use and sit, lock and repair. They have no store and serve no crafting. The spear is drawn by `npc_view.gd` `_goblin_spear` and `_hold_spear`. Goblins are drawn through `motion_buffer.gd`. Things to check on the PC: which way the spear points in the hand, and the props on the slope.
+**State of A (20 Nov 2026).** Built in PR #1354, not played or seen on screen yet. The props are laid by `server_items.gd` `_tribe_props_tick`. They are refused by `_tribe_piece_refuses`, which covers take-down, use and sit, lock and repair. They have no store and serve no crafting. The spear is drawn by `npc_view.gd` `_goblin_spear` and `_hold_spear`. Goblins are drawn through `motion_buffer.gd`. Things to check on the PC: which way the spear points in the hand, and the props on the slope.
 
 **State of B and C (20 Nov 2026).** Built on the branch under protocol 146. Not played or seen on screen yet.
 - `server_tribes.gd` `chore_plan` runs each goblin's round from the camp's `chores` data; `server_npcs.gd` `_step_chore`, `_move` and `_turn_to` walk it with eased speed (accel_mps2 1.5) and a turn limit (turn_dps 160).
@@ -116,4 +116,4 @@ What Dave asked on 20 Nov 2026:
 - Known limits: the server trusts the client's word on which item is in hand (it checks only that the pack holds it), and the camp benches can still be sat on by the client like any bench.
 - Covered by `test_goblin_camp.gd` `_tile` (every chore point), `_npcs` and `_chores` (which prints the camp's tick cost).
 
-**Order.** Stage A first, on this branch. Then dev is merged in once Vrixa lands. Then B and C go together under one protocol number. Each stage gets an independent review, runs on a lane and has a BugsList entry in a docs follow-up.
+**Order.** A, B and C go together in PR #1354 (protocol 146), ahead of the goblins PR that adds Vrixa and Grikka; their chore rounds follow from data (`default_jobs`, or a `chores` list in their members row). A BugsList entry follows in a docs PR.
