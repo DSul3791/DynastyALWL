@@ -767,6 +767,20 @@ Assumed on Dave's behalf (provisional, docs/design/BANDIT_CAMPS.md): BANDIT-34 a
 
 Not done: their spots, lines, voices (no clips rendered yet), clip picks and Grikka being Skritch's kin are PROVISIONAL (GOBLIN-2, GOBLIN-6 in docs/design/GOBLIN_CAMP.md). Whether to clear the glTF double-sided flag on the goblin meshes waits until they are seen on screen. VRAM for the four goblin looks (all textures 4096x4096; about 210 MB with mipmaps if all four are on screen, an estimate from texture sizes) is not measured at the Low tier.
 
+## 89. Starter town on the Site A plain: Edda and Hob's camp, the town and the spawn moved there
+
+**Status: Implemented - awaiting player verification.** Dave's request, 20 Nov 2026 (project thread "Place the starter town and move the camp"): he set the town centre with the grand-city circle as a guide, then picked the Site A plain on the east side of the starter island, town centre x 58160 z 71360 (decision card, 4:37 AM; research /mnt/project-files/starter-town/SITES.md), and asked to "place Hob and Edda right in the circle center under the nearest tree with a campfire just like they are now. then move character spawn down next to them."
+
+**Required outcome:** Edda and Hob's camp stands under the tree nearest the town centre, laid out as before, and a new character appears beside them.
+
+**As built (PR #1372, reviewed head 0aa77e05, dev 2ad6e58c):** the camp tree is a summer apple 5.3 m from the centre (foot 58157.07, 71364.44; 7.0 m tall). The fire is on its east side, toward the sea, with Hob standing south of it and Edda sitting north, both facing the fire. The town markers (beds, chairs, posts, table, square, shelters) moved with the camp. The spawn is at x 58167.0 z 71364.4, 10 m east of the tree. TERRAIN_VERSION 78: tile 3,4's abandoned mines take the new camp as the start area. The starter ground cache was rebuilt around the new spawn. The camp refusal now reads "build away from their tree". Details: docs/design/NPC_CAMP.md "Moved to the starter town"; CAMP-7 is provisional (the apple is smaller than the oak, so the fire is 2.0 m from the trunk and Hob and Edda about 2.2 m from it; unlike the oak, the apple shelters all year).
+
+**Evidence:** independent review PASS on 0aa77e05. Lane B on 0aa77e05: selector 317 fast + 9 timing = 326 PASS / 0 FAIL, slow 2/2, warnings 381 with 0 new, join smoke "spawn (58167.0, 6.74, 71364.4)" with ground ready at +12.8 s.
+
+**Acceptance:** start a new character. You appear on the flat plain a few metres from a burning fire under an apple tree, with Hob and Edda at the fire, the sea to the east and a river nearby. Talk and trade work as before. Nothing can be built within 8 m of the tree, and the tree cannot be felled.
+
+Not yet played. Characters saved before the move keep their saved positions; only new or dead characters come back at the new spawn.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
