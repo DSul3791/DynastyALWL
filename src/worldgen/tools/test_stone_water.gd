@@ -46,6 +46,7 @@ func put(kind: String, pos: Vector3, yaw: float = 0.0) -> int:
 	var id: int = items._next_id
 	items._items[id] = {"number": items.table.number_of(str(items._structures[kind]["item"])), "count": 1, "pos": pos, "left": 1.0e9, "struct": {"kind": kind, "yaw": yaw}}
 	items._next_id += 1
+	items._pipe_from_legacy(items._items[id])   # a Wooden - Pipe set down this way is an old 2 m hammer piece, as a save from before laid runs loads (PLUMBING_DESIGN s9)
 	items._water_add(id)
 	return id
 

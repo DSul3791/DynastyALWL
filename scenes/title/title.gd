@@ -3,7 +3,8 @@ extends Control
 # The title page (Kathreen 5 Nov 2026; Dave's approved front-page paintings, art/Art_Direction.md "Reference Paintings"). It opens before character select, once per
 # launch and again whenever Esc on the character pages comes back to it. The painted page itself (the story painting, the next one each time, and its four drawn
 # buttons) is title_art.gd, shared with the Esc menu in game. Continue is dimmed and does nothing until this machine has a character.
-#   New Game: the character creator. Continue: the character select page. Settings: window, VSync and the keys (the rest stays in the Esc menu in game). Exit: quits.
+#   New Game: the character creator (a client-only build: Play, the server pick page). Continue: the character select page (a client-only
+#   build: straight into the last server as its last character, continue_last). Settings: window, VSync and the keys (the rest stays in the Esc menu in game). Exit: quits.
 #   godot --path . res://scenes/title/title.tscn
 
 const Store := preload("res://src/client/character/character_store.gd")
@@ -15,6 +16,9 @@ const GitStamp := preload("res://src/debug/git_stamp.gd")
 
 const CREATOR_SCENE := "res://scenes/creator_proto/creator_proto.tscn"
 const SELECT_SCENE := "res://scenes/character_select/character_select.tscn"
+const SERVERS_SCENE := "res://scenes/server_pick/server_pick.tscn"
+const JoinAddress := preload("res://src/client/join_address.gd")
+const ServerList := preload("res://src/client/server_list.gd")
 
 var painting: int = -1                    # index into TitleArt.PAINTINGS; tests set it before the page is added
 var art: Control                          # the painted page (title_art.gd)
@@ -73,16 +77,42 @@ func refresh() -> void:
 	art.set_enabled("continue", Store.count() > 0)
 
 
+# Continue in a client-only build (provisional, Dave's choice 1 in docs/design/SERVER_PICK_PAGE.md): straight into the server played last, as
+# the character last played there, with Cancel on the joining screen. With no such server or character, the server pick page instead.
+# Returns true when it goes straight in.
+func continue_last() -> bool:
+	var order: Array = ServerList.sorted(ServerList.load_rows())
+	var last: Dictionary = order[0] if not order.is_empty() else {}
+	var character: String = str(last.get("last_character", ""))
+
+	if int(last.get("last_played", 0)) <= 0 or character == "" or Store.get_character(character).is_empty():
+		get_tree().change_scene_to_file(SERVERS_SCENE)
+		return false
+
+	JoinAddress.save(str(last["address"]))
+	Store.set_active(character)
+	Engine.set_meta("server_picked", str(last["address"]))
+	Engine.set_meta("continue_join", true)
+	Engine.set_meta("creator_done", true)
+	get_tree().change_scene_to_file("res://scenes/launcher.tscn")
+	return true
+
+
 # What each drawn button does. Returns false when it does nothing (Continue with no character).
 func press(action: String) -> bool:
 	match action:
 		"new_game":
-			get_tree().change_scene_to_file(CREATOR_SCENE)
+			# A client-only build (the testers' game): the painted New Game is Play, which opens the server pick page first
+			# (docs/design/SERVER_PICK_PAGE.md); the character page follows the server.
+			get_tree().change_scene_to_file(SERVERS_SCENE if JoinAddress.client_only() else CREATOR_SCENE)
 		"continue":
 			if not art.is_enabled("continue"):
 				return false
 
-			get_tree().change_scene_to_file(SELECT_SCENE)
+			if JoinAddress.client_only():
+				continue_last()
+			else:
+				get_tree().change_scene_to_file(SELECT_SCENE)
 		"settings":
 			_settings.open()
 		"exit":

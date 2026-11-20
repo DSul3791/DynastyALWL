@@ -12,7 +12,6 @@ extends RefCounted
 # who runs away during the warning (faster than run_trigger_mps away from it) skips the rest of it, and that charge is never a bluff; nor is a mother's for
 # her young. A row without these keys behaves as before: one warning, every charge real.
 
-const Steering := preload("res://src/shared/steering.gd")
 
 const WARN := 10
 const CHARGE := 11
@@ -154,7 +153,7 @@ func step(a: Dictionary, dt: float) -> void:
 			ground_for = func(x: float, z: float) -> float: return host.swim_height(species, x, z)
 			blocked_for = Callable()
 
-		var r: Dictionary = Steering.step(a["pos"], goal, speed, dt, ground_for, blocked_for, 0.05, float(a["dir"]), host.crossing)
+		var r: Dictionary = host.walk_step(a["pos"], goal, speed, dt, ground_for, blocked_for, 0.05, float(a["dir"]), host.crossing)
 		a["heading"] = float(a["dir"])
 
 		if r["moved"]:

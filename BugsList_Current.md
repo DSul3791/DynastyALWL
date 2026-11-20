@@ -355,7 +355,7 @@ Dave, 19 Nov 2026: "now the text does mention watering it which should be a poss
 
 **Acceptance:** a bed's prompt shows e.g. "soil 15% dry, needs water", and the figure rises after rain and after a bucket pour. With a well or pump uphill and a channel ending over a Medium plot or over a trench dug with the hoe, working the pump raises the moisture of the plot, or of the beds round the trench.
 
-Not done: irrigation taps (the catalog Tap is iron, behind the Master smithy, on Dave's future list; a wooden tap would be a new item, Dave's call). A trench cannot be filled in or picked up yet. A pipe joint in the middle of a run that sits over a plot or trench also pours into it. A plot's room can be one solve out of date, so it may take a little more water than it has room for.
+Irrigation taps: the Copper - Tap and Copper - Drip head came with the pipe rework (entry 65). A trench cannot be filled in or picked up yet. A pipe joint in the middle of a run that sits over a plot or trench also pours into it. A plot's room can be one solve out of date, so it may take a little more water than it has room for.
 
 Assumed on Dave's behalf (provisional):
 
@@ -413,6 +413,97 @@ Dave, 19 Nov 2026: "often grass is regrowing into the paths in patches can you c
 **Acceptance:** walk a long trodden path and a surveyed road, near and looking far down them: no grass tufts or leaves on them; grass stands right beside them as before.
 
 Not changed: shore reeds and pebbles at a water's edge, and wild small plants (a separate system). A wide grass blade beside a path can still lean over its edge by up to about 0.4 m.
+
+## 62. Server pick page: passwords and server status (part 1 of 2)
+
+**Status: Part 1 implemented - awaiting player verification (part 2 is entry 68).** Dave's request and design approval, 19 Nov 2026 (docs/design/SERVER_PICK_PAGE.md). Part 1 is PR #1312, merged to dev at ed566c9b (head 0fa7a0db) after independent review (4 rounds, final PASS on the exact head). Lane A (Dave's PC) on the exact head: 426 of 426 selected tests passed (417 fast + 9 timing), including test_server_auth and test_server_list; join_remote_smoke and join_password_smoke ok (right password welcomed, wrong refused). Protocol 137. Nobody has played it or seen it on screen; part 2 (the page itself and the password box) is next.
+
+Dave, 19 Nov 2026: "servers need the ability to also have a password. so once you pick your server and try to connect we will have a popup that asks for the password. you get 3 tries if you get it wrong. then you get a message that says. you got it wrong 3 times. check your caps lock, and take a minute to recompose. then it should set you back at the pick a server page." And on remembering it: "yes it should."
+
+**Required outcome:** a server can have a password, checked by the server and never sent over the network; the server keeps only a salted hash once it has started (a password typed into server.json is replaced at start; DYNASTY_SERVER_PASSWORD lives in the container's settings); 3 tries per join; the server pick page can see each server's name, players and padlock before joining.
+
+**Acceptance (after part 2):** set a password in the server's server.json (or DYNASTY_SERVER_PASSWORD for Docker); the row shows a padlock; Join asks for it; the right one gets in and is remembered; three wrong ones show the Caps Lock message and go back to the server page.
+
+Assumed on Dave's behalf (provisional):
+
+- SP-1: 5 wrong passwords from one address within a minute refuse that address for a minute.
+- SP-2: a client waits 15 s for the server's first handshake word, then 180 s while the player types.
+
+## 63. Animals float when the ground is dug from under them (part 1 of 3 of the animal fixes)
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test on 19 Nov 2026. Fixed by PR #1317, merged to dev at 845b33d0 (head 13258218) after independent review (3 rounds, final PASS on the exact head). Lane A (Dave's PC) on the exact head: 78 of 78 selected tests passed (75 fast + 2 timing + 1 slow), including test_animals_dug_ground; parse check ok. Fix not yet played.
+
+Dave, 19 Nov 2026: "the animals are not moving naturally they are floating in the air if I dig the dirt out under them."
+
+**Cause:** the server placed animals on the generated ground only, never on the digs and fills, and an animal standing still never read the ground again. A hole's steep rim was also a wall to animal walking, so none entered a hole and one dropped in could not leave.
+
+**Required outcome:** an animal stands on the ground as it is now; one dug out from under drops to the new ground, one on a fill stands on it; animals walk into and out of shallow dug holes; natural slopes are unchanged.
+
+**Acceptance:** dig out the ground under a standing animal: it drops into the hole at once; fill under one: it stands on the fill; animals walk over dug ground on its surface, not in the air.
+
+Not changed: boulders (planned separately), NPCs (still on the generated ground), animal attacks.
+
+Assumed on Dave's behalf (provisional):
+
+- GS-1: an animal jumps down at most 2 m and scrambles up at most 1 m in one step where a dig or fill touches its spot; deeper holes stay pits.
+
+## 64. Bandit camps: sites woken by road traffic (part 1 of 5)
+
+**Status: Part 1 implemented - awaiting parts 2 to 5 and player verification.** Dave's request and plan approval, 19 Nov 2026 (docs/design/BANDIT_CAMPS.md). Part 1 is PR #1319, merged to dev at 68aad2dd (head e99987a4) after independent review (2 rounds, final PASS on the exact head). Lane B (David4) on the exact head: 204 of 204 selected tests passed (201 fast + 3 timing), including test_bandit_sites; parse check ok, warnings unchanged; join smoke ok. Nothing appears in the game yet: part 2 (the camp itself) is next.
+
+Dave, 19 Nov 2026: "We also need to introduce bandit camp spawn areas. I'm thinking these should be predetermined by the seed like plants and trees but they only activate if someone builds a road within 500m of a spawn point. then it will also check to make sure there are no other bandit camps spawn activated within a few kms." Then: "it should be an actual camp though. so in a good spot place a campfire maybe a couple of tamed horses with saddles and a tent or two and from 1 to 5 bandits." And: "I agree with all 5 bandit ideas."
+
+**Required outcome:** bandit camp sites are fixed by the world seed and wake only when a road near them gets busy, with no camp near the starter town, the spawn, buildings or another camp; later parts place the camp, its warnings, the toll and robbery, and the clearing.
+
+**Acceptance (after part 2):** walk or pull a loaded cart up and down a surveyed road far from town for a while: a camp appears 100 to 300 m off the road; none appears near town, near buildings, or within 3 km of another camp.
+
+Assumed on Dave's behalf (provisional):
+
+- BANDIT-1 to BANDIT-7 (docs/design/BANDIT_CAMPS.md): one chance of a site per 1 km square; trip points per 100 m stretch (road 1, hand path 0.5, loaded cart 3), halving every 3 game days; 30 points within 500 m wake a site; sites sit 100 to 300 m off a road on gentle dry ground, 1.5 km from town and spawn, 150 m from buildings, 3 km from another camp; checked once a game hour.
+
+## 65. Pipes, taps and barrels: laid from the hand, copper tier, drip head and tap
+
+**Status: Implemented - awaiting player verification.** Dave's request, 19 Nov 2026 (voice notes 15:06-15:11Z and rulings at 20:09Z, 20:11Z, 20:26Z, 20:31Z and 21:56Z; design docs/design/PLUMBING_DESIGN.md s9). PR #1306, merged to dev at 893ba95e (head 90398db8) after independent review (several rounds, final PASS on the exact head). Lane A (Dave's PC) on the exact head: 427 of 427 selected tests passed (418 fast + 9 timing), 0 script errors, including test_pipe_runs, test_water_network and test_wooden_plumbing; parse 20 of 20, warnings 407 equal to dev, validate_items 0 errors. Lane B (David4) passed 427 of 427 on the head before (8e2dca0e). Not yet played. The pipe, tap, drip head and barrel looks are not yet seen on screen (the picture checks were skipped while Dave was away).
+
+Dave, 19 Nov 2026: two pipe tiers only, wood (the starter, thick, wears) and copper (the best, 1 copper makes about 3 m); no stone, iron or steel pipe. Pipes are laid click to click from glowing points and ignore collision; barrels linked by pipe share their water. "where ever there is a drip head it will irrigate the soil for 10m in all directions ... as long as that drip head is connected with pipes to a water source that contains any water." "copper taps are objects you can interact with to take a drink like Press E to take a drink or they have a small inventory like 3 spaces if you Press F ... if you put a water container in there it will fill with water". "pipes without taps or drips do not leak any water ... I can place a drip head or tap or barrel anywhere on the pipe where they join. remember pipes are segments and each section has a connection point". "the barrel should have a connection point near the bottom in the center of the barrel so when you put it on the pipe it should snap the middle of the bottom of the barrel to the end of the pipe".
+
+**Required outcome:** with a pipe in hand, laid pipes glow blue and connection points show rings; the first click starts a run, a line shows green or red, the second click lays it from the pack (it may end on the ground). A pipe end with nothing on it loses no water. A tap, drip head or barrel goes on any pipe end or joint. A tap gives a drink with E and fills water containers in its 3 slots (F); a drip head keeps every bed within 10 m fully watered; both only while their pipes reach a barrel or other tank holding water. Linked barrels level their water.
+
+**Acceptance:** fill a barrel, lay copper pipe from its bottom across a garden to the ground, fit a drip head on a joint: beds within 10 m show full moisture while the barrel has water. Fit a tap on the end: E drinks, a Waterskin in its slots fills, and the barrel's water falls. Set a second barrel on a joint: the two barrels level.
+
+Not done: the new item icons need a Godot icon pass. A tap or drip head reaches water through its pipes whatever the height (PV-4). A junction in a network already at its 256-piece cap can leave one half unlinked.
+
+Assumed on Dave's behalf (provisional): PV-1 to PV-10 in docs/design/PLUMBING_DESIGN.md (piece lengths, 30 m longest run, rain into a barrel 1 L a minute, tap fills at 30 L a minute, drip head draws 2 L a minute, a barrel snaps onto a pipe end or joint within 0.6 m, an end laid over a trough or trench still pours into it).
+
+## 68. Server pick page: the page, the password box and Back to servers (part 2 of 2)
+
+**Status: Implemented - awaiting player verification.** Dave's request and design approval, 19 Nov 2026 (docs/design/SERVER_PICK_PAGE.md; part 1 is entry 62). Part 2 is PR #1321, merged to dev at 0fdc302e (head 159d4b54) after independent review (PASS on a6ebf2be with nits, the should-fix ones fixed; delta PASS on e2f3a82d and on 159d4b54). Lane B (David4) on the exact head: 28 of 28 selected tests passed, including test_server_pick, test_server_list, test_join_address, test_title_page and test_build_stamp; join_remote_smoke and join_password_smoke ok; check_warnings 407, the same as dev; validate_items 0 errors. Not yet played; nobody has seen the page on screen.
+
+Dave, 19 Nov 2026: "if you select play it needs to take you to our server selection page where the top choice is the offical server then all your previously directly connected servers. those servers should show up on the list even if they don't ping just incase they are down for some reason. they could be listed in red. working servers would look normal white or grey text. they should all show server name, ping, status. or something like that and at the bottom of the page could be a button just say add new server, join server(which would join the picked server) you could also join a server by double clicking it on the list."
+
+**Required outcome:** in the testers' client, Play opens the server pick page: the official server on top, then every server added before (last played first); a server that does not answer stays listed in red; each row shows name, players, ping, status and last played; Add new server and Join server buttons, and double-click joins. Join asks for a password when the server has one (3 tries, then the Caps Lock message and back to this page) and remembers it. Joining shows Cancel, and a failed join offers Back to servers. The old one-box join page is deleted (REMOVALS.md).
+
+**Acceptance:** start the client-only build, press Play: the page lists the official server and your saved ones; add an IP and a name such as hannibalshouse.duckdns.org; a server that is off shows red; double-click a working one to reach the character page; a password server asks once and is remembered next time; three wrong tries show the message and return to the page.
+
+Assumed on Dave's behalf (provisional, also in the design doc):
+
+- SP-3: Continue (when there is a last server and character) goes straight in, with Cancel on the joining screen; with neither it opens the server page. Dave asked this as a question, not yet answered.
+- SP-4: rows show the player count only, not who is online.
+- SP-5: "Remember on this computer" in the password box is ticked by default.
+
+## 69. Bog iron: stains you can find, Bog iron ore, iron rocks marked
+
+**Status: Implemented - awaiting player verification.** Dave's request, 19 Nov 2026 (thread "Show bog iron deposits"). PR #1316, merged to dev at 54d66fe3 (head f0dde8b1) after independent review (PASS on f0dde8b1; earlier rounds fixed gathered.json next_number and the stain's triangle count). Lane A (Dave's PC) on the exact head: 311 of 311 selected tests passed (307 fast + 4 timing), 0 script errors, including test_bog_look, test_bog_rows, test_bog_iron, test_iron_saw_route, test_mission001_walkthrough, test_copper_rocks and test_look_table; validate_items 0 errors, warnings 407 equal to dev. Not yet played. The stain, the Bog iron ore lump and the iron rocks are not yet seen on screen (picture checks skipped while Dave was away).
+
+Dave, 19 Nov 2026: "yes bring in the red dirt stains make sure they are obvious and visible for characters to find." "it should be its own lumpy redbrown rock as Bog Iron ore. then it takes two to smelt into an ingot." "bolders that have iron in them should have red brown lines all over them like the limestone and the copper but it should also have red brown streaks down the sides" (with a reference photo of iron-stained slabs, used for colour only).
+
+**Required outcome:** every bog iron deposit shows a bright rust-orange stain about 5 to 6 m across, with no grass or small plants on it, seen from 50 m (was 30 m), still readable at dusk and in rain; dry, wet (orange water and an oily film) and dug (shovel cuts) looks. Digging one with any shovel gives Bog iron ore (item 1511), a knobbly red-brown lump with its own icon, not Iron ore. Two Bog iron ore smelt to one Iron ingot at the Improved smelter (bellows worked) or the Advanced smelter; rock Iron ore stays one to one. Iron boulders are rust orange with red-brown blotches, thin dark lines all over and rust streaks down the sides. Deposit sizes and amounts per dig are unchanged.
+
+**Acceptance:** walk through a fen or marsh: rust-orange stains stand out from 50 m and grass does not hide them. Dig one: Bog iron ore comes up. Put 4 Bog iron ore and fuel in an Improved smelter and work the bellows: 2 Iron ingots. Find an iron boulder near hills: it is clearly rust-coloured with lines and streaks.
+
+Not done: a stain under deeper standing water may be hidden by the water surface. The stain glows faintly at night. An odd Bog iron ore left in a smelter waits without a message. Frame cost not measured.
+
+Assumed on Dave's behalf (provisional): BI-2, Bog iron ore still makes steel at the Advanced smelter, two Bog iron ore and the carbon to one Steel ingot (the coordinator confirmed it for him while he was away).
 
 ## Rewrite interpretation
 

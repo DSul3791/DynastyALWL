@@ -3,7 +3,6 @@ extends Node
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const PlayServer := preload("res://src/shared/play_server.gd")
 const JoinAddress := preload("res://src/client/join_address.gd")
-const JoinPage := preload("res://src/client/join_page.gd")
 const RUN_NOTE := "user://server_run.json"
 const STOP_NOTE := "user://server_stop.json"   # asks the server Play started to close (terrain_server._stop_if_asked)
 const STOP_WAIT_MSEC := 60000                   # how long Play waits for that server to save and let go of the port
@@ -30,6 +29,10 @@ func _launch_role(role: String) -> void:
 			)
 
 		"play":
+			if JoinAddress.client_only() and not AppConfig.has_flag("test") and AppConfig.get_command_line_value("server", "") == "":
+				_client_pages()
+				return
+
 			# The title page (scenes/title, Dave's paintings) opens first, once per launch: New Game goes to the creator, Continue to the character select page.
 			# After that (back here after a death) the character select page is the first page; it sends a player with no characters to the creator, and
 			# both come back here with creator_done set once a character is chosen.
@@ -41,7 +44,7 @@ func _launch_role(role: String) -> void:
 				else:
 					get_tree().change_scene_to_file("res://scenes/character_select/character_select.tscn")
 			elif JoinAddress.client_only():
-				_join_only()
+				get_tree().change_scene_to_file("res://scenes/terrain_client/terrain_client.tscn")   # --test or --server=: straight in, never a server of its own
 			else:
 				_host_and_play()
 
@@ -54,14 +57,22 @@ func _launch_role(role: String) -> void:
 			push_error("Unknown launcher role: " + role)
 
 
-# "play" in a client-only build (the testers' download): never a server of its own. The join page asks for the address once per
-# launch; --server=, --test or a join already made this launch (back here after a death) go straight to the game.
-func _join_only() -> void:
-	if Engine.has_meta("join_done") or AppConfig.get_command_line_value("server", "") != "" or AppConfig.has_flag("test"):
-		get_tree().change_scene_to_file("res://scenes/terrain_client/terrain_client.tscn")
-		return
+# "play" in a client-only build (the testers' download; docs/design/SERVER_PICK_PAGE.md): never a server of its own. The pages, in order:
+# title (once per launch), the server pick page, the character page (or the creator when there is none), then the game. Back here after a
+# death, the server is still chosen and the dead character is gone, so the character page comes next. --to-servers (Back to servers from the joining screen,
+# which starts the game again) skips the title.
+func _client_pages() -> void:
+	if AppConfig.has_flag("to-servers") and not Engine.has_meta("title_done"):
+		Engine.set_meta("title_done", true)
 
-	add_child(JoinPage.new())
+	if not Engine.has_meta("title_done"):
+		get_tree().change_scene_to_file("res://scenes/title/title.tscn")
+	elif not Engine.has_meta("server_picked"):
+		get_tree().change_scene_to_file("res://scenes/server_pick/server_pick.tscn")
+	elif not Engine.has_meta("creator_done"):
+		get_tree().change_scene_to_file("res://scenes/character_select/character_select.tscn")
+	else:
+		get_tree().change_scene_to_file("res://scenes/terrain_client/terrain_client.tscn")
 
 
 # "play": starts a terrain server for this world in the background (no

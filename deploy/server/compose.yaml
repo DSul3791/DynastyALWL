@@ -14,6 +14,8 @@ services:
       - "24601:24601/tcp"   # ground blocks (port + 1)
     volumes:
       - dynasty-data:/data  # the world's store, characters, admin.json and logs: kept across restarts and new images
+    environment:
+      DYNASTY_SERVER_PASSWORD: ${DYNASTY_SERVER_PASSWORD:-}   # optional join password (SERVER.md step 5); empty = the store's server.json decides
     stop_grace_period: 90s  # docker stop sends TERM, run_server.sh asks the server to save; past this docker kills it unsaved
 
 volumes:

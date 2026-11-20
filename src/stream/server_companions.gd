@@ -9,7 +9,6 @@ extends RefCounted
 # (the wolf: an orphaned pup at its den, wolf_packs_and_pups_design.md 5, fed the same way; it follows as a young companion and grows up
 # over grow_days; keep_off_torch keeps it out of its owner's torch light too).
 
-const Steering := preload("res://src/shared/steering.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 
 const DAY_S := 86400.0
@@ -338,7 +337,7 @@ func _eat_from(a: Dictionary, key: String, giver: Vector3, r: float, dt: float) 
 		if giver != Vector3.INF and Vector2(giver.x - food.x, giver.z - food.z).length() < gap:
 			continue   # it waits until the giver has backed off
 
-		var s: Dictionary = Steering.step(a["pos"], food, float(host.species_def(a["sp"]).get("walk_mps", 1.3)) * 1.5, dt, host.ground_height, host.blocked, 0.6, a["heading"], host.crossing)
+		var s: Dictionary = host.walk_step(a["pos"], food, float(host.species_def(a["sp"]).get("walk_mps", 1.3)) * 1.5, dt, host.ground_height, host.blocked, 0.6, a["heading"], host.crossing)
 
 		if s["moved"]:
 			a["pos"] = s["pos"]
@@ -384,7 +383,7 @@ func _step_stray(a: Dictionary, dt: float) -> void:
 
 	if d < keep_m:
 		var away: Vector2 = Vector2(a["pos"].x - p_pos.x, a["pos"].z - p_pos.z).normalized()
-		var s: Dictionary = Steering.step(a["pos"], a["pos"] + Vector3(away.x, 0.0, away.y) * (keep_m + 3.0 - d), walk * 2.0, dt, host.ground_height, host.blocked, 0.4, a["heading"], host.crossing)
+		var s: Dictionary = host.walk_step(a["pos"], a["pos"] + Vector3(away.x, 0.0, away.y) * (keep_m + 3.0 - d), walk * 2.0, dt, host.ground_height, host.blocked, 0.4, a["heading"], host.crossing)
 
 		if s["moved"]:
 			a["pos"] = s["pos"]
@@ -394,7 +393,7 @@ func _step_stray(a: Dictionary, dt: float) -> void:
 		return
 
 	if still and d <= WATCH_M and d > keep_m + 1.0:
-		var s: Dictionary = Steering.step(a["pos"], p_pos, walk * 0.6, dt, host.ground_height, host.blocked, keep_m, a["heading"], host.crossing)
+		var s: Dictionary = host.walk_step(a["pos"], p_pos, walk * 0.6, dt, host.ground_height, host.blocked, keep_m, a["heading"], host.crossing)
 
 		if s["moved"]:
 			a["pos"] = s["pos"]
@@ -492,7 +491,7 @@ func _step_companion(a: Dictionary, dt: float) -> void:
 
 	var running: bool = d >= 10.0
 	var speed: float = float(def.get("flee_mps", 10.0)) * 0.8 if running else float(def.get("walk_mps", 1.3)) * 1.5
-	var s: Dictionary = Steering.step(a["pos"], goal, speed, dt, host.ground_height, host.blocked, 0.5, a["heading"], host.crossing)
+	var s: Dictionary = host.walk_step(a["pos"], goal, speed, dt, host.ground_height, host.blocked, 0.5, a["heading"], host.crossing)
 
 	if s["moved"]:
 		a["pos"] = s["pos"]
