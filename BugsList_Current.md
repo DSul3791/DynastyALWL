@@ -569,9 +569,9 @@ Dave, 19 Nov 2026: "we need to start adding stuff into the world for players to 
 
 **Required outcome:** most inland caves with passages that hold no goblins are an animal's den, by the cave's size: a large cave or lava tube a bear's, a medium one a wolf pack's, a small one a fox's. A few metres in from the mouth, off the stream, lie droppings (and old bones at a bear or wolf den); a trampled bed of leaves, grass and fur lies at the den spot deeper in. A bear or fox appears at an empty den's mouth near a player, never with a player beside it and only on ground it lives on; a wolf pack whose range holds a wolf cave keeps its den there. The goblin camp cave (3,4#8013) holds no animal. Design: docs/design/CAVE_DENS_AND_MINES.md (stage 1).
 
-**Acceptance:** walk into a spring cave with a side branch that has no goblins: droppings near the mouth and a bed deeper in. At a large cave, a bear appears at the mouth when you come within about 250 m (not closer than 60 m) and goes back to it. The goblin camp cave has no den signs.
+**Acceptance:** walk into a spring cave with a side branch that has no goblins: droppings near the mouth and a bed deeper in (about 7 caves in 10 hold a den; try another if one has none). At a large cave, a bear appears at the mouth when you come within about 250 m (not closer than 60 m) and goes back to it. The goblin camp cave has no den signs.
 
-Not done: the animal can appear at the mouth from 60 m, closer than the usual 150 m for other spawns (watch for pop-in). Dry caves stay off, so dens are only in the spring caves and lava tubes that exist.
+Not done: the animal can appear at its cave mouth with a player as close as 60 m (watch for pop-in at a mouth in view). Dry caves stay off, so dens are only in the spring caves and lava tubes that exist.
 
 Assumed on Dave's behalf (provisional, docs/design/CAVE_DENS_AND_MINES.md): CD-1 bears, wolves and foxes; CD-2 dry natural caves stay off; CD-3 70 % of such caves hold a den, the animal by cave size; CD-4 the goblin camp cave kept free.
 
