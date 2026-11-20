@@ -38,10 +38,10 @@ cisterns: hold litres; drink or fill a container at them with E) or straight int
 2. **Wooden plumbing.** Wooden - Channel / corner / tee, Sluice (E opens and shuts it, doors' toggle-twin pattern), Wooden - Trough,
    Wooden - Hand pump, and new Wooden - Pipe / Pipe elbow / Pipe tee (bored logs: the first closed pipe). Unlocked.
 3. **Stone channels, cisterns** (the same data conversion). Unlocked, except the Raised cistern: only a force pump fills it, so it
-   stays locked until iron plumbing brings the Deep-well pump. **Clay plumbing is retired** (Dave, 14 Nov 2026: "I don't think clay plumbing
+   is retired with the pumps (Dave, 20 Nov 2026, section 10). **Clay plumbing is retired** (Dave, 14 Nov 2026: "I don't think clay plumbing
    would make sense. We should remove clay plumbing altogether."): Clay pipe (730), Clay - Pipe (740), Clay - Pipe elbow (742) and
    Clay - Pipe tee (744) are retired with their numbers kept, blueprints 141-143 retired, structure states 179-181 retired (rows kept for their numbers, no look or water block), the Clay pipe
-   recipe (352) retired; a saved Clay pipe loads as Clay. Closed pipe is the Wooden - Pipe (PR 2) until iron.
+   recipe (352) retired; a saved Clay pipe loads as Clay. Closed pipe is the Wooden - Pipe (PR 2), and copper since section 9.
 4. **Iron plumbing: dropped** (Dave, 19 Nov 2026: iron would rust; section 7). Pipes are wood or copper, and taps and drip heads are copper only
    (section 9). The Iron - Hand pump and the Deep-well pump stay locked as they are.
 
@@ -95,7 +95,7 @@ How it fits together:
 | ~~Clay - Pipe / elbow / tee~~ | retired 14 Nov 2026 (Dave: remove clay plumbing altogether); a closed run uses the Wooden - Pipe | - |
 | Stone - Trough | tank 200 L, rim 0.58 m, base outlet like the wooden trough | unchanged |
 | Cistern | tank 2,000 L; catches over its 1 m rim from up to 1.2 m across and 2 m above; base outlet at +Z; its water stands 0.5 m over the outlet (`head_m`), so a level log pipe from it runs at about half cap | unchanged |
-| Raised cistern (locked until iron plumbing, FUTURE) | tank 2,000 L on a 2 m plinth; outlet at its foot with the tank 2.5 m over it (a level pipe runs full); fills only through its riser at the foot (-Z) from a pipe whose water surface reaches its top (`lift_m` 2.85: a force pump, iron plumbing, FUTURE), never from a hand pump | unchanged |
+| Raised cistern (retired, Dave 20 Nov 2026: no pumps; section 10) | tank 2,000 L on a 2 m plinth; outlet at its foot with the tank 2.5 m over it (a level pipe runs full); fills only through its riser at the foot (-Z) from a pipe whose water surface reaches its top (`lift_m` 2.85: a force pump, iron plumbing, FUTURE), never from a hand pump | unchanged |
 
 Engine additions (water_network.gd): a tank's `head_m` (its water over its base outlet) and `lift_m` (a riser-fed tank takes water only from a
 surface that high over its inlet). The cisterns' "overflow" is not modelled: a full tank backs up, as the engine already does.
@@ -119,7 +119,7 @@ Every value below is PROVISIONAL (coordinator ruling: build costs and numbers ma
 - P-6 New Wooden - Pipe / elbow / tee: closed bored logs, 60 L/min under head; 1 Log + 1 Twine (tee 2 Log + 1 Twine) (s5).
 - P-7 Wooden - Hand pump 0.8 L/s at 40 W (48 L/min at 4 m) (s5).
 - P-8 Stone channels 300 L/min; Stone - Trough 200 L (s6). (Clay pipes retired by Dave, not assumed.)
-- P-9 Cistern 2,000 L, 0.5 m head; Raised cistern 2,000 L, 2.5 m head, filled only by a force pump, so locked until iron plumbing (s6).
+- P-9 Cistern 2,000 L, 0.5 m head; Raised cistern 2,000 L, 2.5 m head, filled only by a force pump, so retired with the pumps (Dave, 20 Nov 2026, s10).
 - P-10 A saved Clay pipe loads as Clay (renames.json): nothing else uses it, and its recipe took 3 Clay for 2 (s3).
 - (19 Nov 2026, s9) PV-1 Wooden - Pipe: 1 Log + 1 Twine by hand, knife kept; 2 m a piece, 60 L/min; wears to 0.25 in 56 game days, flow x condition.
 - PV-2 Copper - Pipe: 1 Copper ingot at the Primitive smithy for 3 m; 180 L/min; never wears.
@@ -196,7 +196,7 @@ past it; a click on the next connection point lays the whole run, taking the pip
 Filling a bucket straight from a tap (put a barrel or trough under it); water climbing into a barrel through its bottom; a run that bends
 (lay two runs); pipes over 30 m in one go (lay another from its end); freezing.
 
-## 10. Gravity and rain water, no pumps (Dave, 20 Nov 2026): RULING
+## 10. Gravity and rain water, no pumps (Dave's direction, 20 Nov 2026)
 
 Dave, project chat 20 Nov 2026 22:04Z: "In my world we are still medievalish and using buckets in wells and dont have pump technology yet. the best
 we be using gravity to move water from a barrel in a river to another barrel lower through copper pipes and then being able to use pipes to
@@ -205,7 +205,7 @@ and drip heads. we could also plumb into advanced cooking stations so they could
 sense. ultimately we would end up with people building and pumbing rain water systems."
 
 The ruling: water moves by gravity only, from wells by bucket, from a barrel in a river, or from rain barrels, through pipes to lower barrels, taps,
-drip heads and (later) cooking stations. No pump technology for now.
+drip heads and possibly advanced cooking stations. No pump technology for now. He asked whether it makes sense; the proposal below answers it.
 
 Against dev (41415196), the proposal put to Dave:
 
@@ -213,7 +213,7 @@ Against dev (41415196), the proposal put to Dave:
   bottom feeds copper or wooden pipes to Copper - Taps and Copper - Drip heads; a pipe end over a barrel, trough, plot or trench pours in.
 - Missing: a barrel stood in a river or stream does not take water from it (a river intake); no cooking station draws piped water.
 - Pumps in the catalog: the Iron - Hand pump and the Deep-well pump (both locked, never buildable), the Raised cistern (locked; only a force pump
-  fills it) and the Wooden - Hand pump (live, buildable since plumbing PR 1).
+  fills it) and the Wooden - Hand pump (live now).
 - **Decided (Dave, 20 Nov 2026 22:06Z, "Retire all pumps"):** the Iron - Hand pump, the Deep-well pump, the Raised cistern and the Wooden - Hand pump
   are retired (numbers kept; a separate PR). Water comes from wells by bucket, from rivers and from rain.
 - Next, asked and not yet answered: a barrel in a river or stream fills from it, then advanced cooking stations draw piped water.
