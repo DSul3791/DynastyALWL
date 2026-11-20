@@ -603,7 +603,9 @@ func _ready() -> void:
 
 		return rows
 	tribes.setup(store_dir)
-	npcs.wary = tribes.avoid   # goblin tribe members keep off, watch, and hide from a player who struck one
+	npcs.wary = tribes.avoid   # goblin tribe members keep off, watch, stand guard at a weapon in hand, and hide from a player who struck one
+	npcs.chores = tribes.chore_plan   # and keep busy round their camp (camp life, Dave 20 Nov 2026)
+	net.held_reported.connect(items.report_held)   # the item in each player's hand (protocol 146), for "a weapon in hand"
 	items.rep_key = tribes.rep_id   # a tribe's members share one standing
 	animals = AnimalsScript.new()
 	edited_ground = EditedGroundScript.new()

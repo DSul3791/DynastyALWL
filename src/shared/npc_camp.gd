@@ -57,6 +57,10 @@ static func keep_reason(spot: Vector3) -> String:
 		if Vector2(spot.x, spot.z).distance_to(Vector2(float(fire["x"]), float(fire["z"]))) <= float(camp.get("keep_m", 0.0)):
 			return "tribe_camp"
 
+		for prop in camp.get("props", []):   # the camp's chest, racks and benches keep their own ground clear too (camp life stage A, Dave 20 Nov 2026)
+			if Vector2(spot.x, spot.z).distance_to(Vector2(float(prop["x"]), float(prop["z"]))) <= float(camp.get("prop_keep_m", 0.0)):
+				return "tribe_camp"
+
 	return ""
 
 
@@ -75,7 +79,9 @@ static func tribe_camps() -> Array:
 			var camp: Dictionary = (rows[tribe] as Dictionary).get("camp", {})
 
 			if (camp.get("fire", {}) as Dictionary).has("x"):
-				_tribe_camps.append(camp)
+				var row: Dictionary = camp.duplicate()
+				row["tribe"] = str(tribe)
+				_tribe_camps.append(row)
 
 	return _tribe_camps
 
@@ -107,3 +113,25 @@ static func owner_near(at: Vector3) -> String:
 			best = str(fire["owner"])
 
 	return best
+
+
+# Every piece a goblin tribe's camp has round its fire (goblin_tribes.json camp "props": Dave 20 Nov 2026, "a small chest of some sort, probably a
+# few drying racks or tanning racks ... maybe some wooden benches around the fire"), in a steady order: [{"tribe", "kind", "x", "z", "yaw"}].
+# The server lays them as transient pieces of that tribe (server_items.gd _tribe_props_tick); nobody takes, opens, uses or repairs them.
+static func props() -> Array:
+	var out: Array = []
+
+	for camp in tribe_camps():
+		for prop in camp.get("props", []):
+			out.append({"tribe": str(camp["tribe"]), "kind": str(prop["kind"]), "x": float(prop["x"]), "z": float(prop["z"]), "yaw": float(prop.get("yaw", 0.0))})
+
+	return out
+
+
+# A tribe's camp by name ("the Ragtooth camp"), for the line that turns a player away from its pieces.
+static func camp_name_of(tribe: String) -> String:
+	for camp in tribe_camps():
+		if str(camp["tribe"]) == tribe:
+			return str(camp.get("name", "the goblins' camp"))
+
+	return "the goblins' camp"

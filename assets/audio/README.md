@@ -144,7 +144,7 @@ Frogs: normal in clear, 1.6x in drizzle, 1.2x in rain, silent in storms, snow an
 `ui_sounds.gd`, made by `make_ui.py` into `assets/audio/ui/`; recordings in `recorded/ui/` win. Names: `ui_click_N` (menu buttons), `ui_on_N` and `ui_off_N` (inspection toggle), `ui_quality_N` (quality tier change). Quiet on purpose (about 20 dB under full scale), on their own Interface bus.
 
 ## Creature calls (build 132)
-`creature_sounds.gd`, made by `make_creatures.py` into `assets/audio/creatures/`; recordings in `recorded/creatures/` win. Names (each with `_N` variants): `deer_grunt`, `deer_snort`, `rabbit_thump`, `rabbit_squeak`, `fox_bark`, `fox_scream`, `wolf_howl`, `wolf_growl`, `bear_growl`, `bear_roar`. Birds use the ambient set (`bird_*`, `crow_alarm`). All of it is placeholder synthesis; real recordings matter most for the wolf howl and the bear (see SOUND_PACK.md).
+`creature_sounds.gd`, made by `make_creatures.py` into `assets/audio/creatures/`; recordings in `recorded/creatures/` win. Names (each with `_N` variants): `deer_grunt`, `deer_snort`, `rabbit_thump`, `rabbit_squeak`, `fox_bark`, `fox_scream`, `wolf_howl`, `wolf_growl`, `bear_growl`, `bear_roar`, `goblin_chitter`, `goblin_hiss` (camp goblins facing a weapon). Birds use the ambient set (`bird_*`, `crow_alarm`). All of it is placeholder synthesis; real recordings matter most for the wolf howl and the bear (see SOUND_PACK.md).
 
 ## Gear sounds (build 138)
 `gear_sounds.gd`, made by `make_gear.py` into `assets/audio/gear/`; recordings in `recorded/gear/` win. Names (`_N` variants): `gear_cloth`, `gear_leather`, `gear_chain`, `gear_plate`, `gear_hobnail`, `gear_iron`. They play on top of each footstep for whatever the player wears (hooks only until equipment exists).

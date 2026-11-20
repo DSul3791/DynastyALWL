@@ -425,6 +425,27 @@ func held_number() -> int:
 	return 0 if is_offhand(number) else number
 
 
+# Tells the server what is in the hand when it changes (protocol 146 held_item, Dave 20 Nov 2026: goblins react to "a weapon in hand"), at most
+# every HELD_REPORT_S; the server checks it against the pack.
+const HELD_REPORT_S := 0.5
+var _held_sent: int = -1
+var _held_wait: float = 0.0
+
+
+func _report_held(delta: float) -> void:
+	_held_wait -= delta
+
+	if not (_net is Node) or _held_wait > 0.0 or not _net.is_inside_tree() or _net.multiplayer.get_unique_id() == 1:
+		return   # no server to tell (offline, a headless check, or this is the server)
+
+	var number: int = held_number()
+
+	if number != _held_sent:
+		_held_sent = number
+		_held_wait = HELD_REPORT_S
+		_net.held_item.rpc_id(1, number)
+
+
 func held_id() -> String:
 	return _inv.table.id_of(held_number())
 
@@ -1478,6 +1499,7 @@ func _process(delta: float) -> void:
 
 func _process_body(delta: float) -> void:
 	_hang_net()
+	_report_held(delta)
 
 	_update_bow(delta)
 
