@@ -1,6 +1,6 @@
 # The Ragtooth goblin camp
 
-**Status: DAVE-REQUESTED (19 Nov 2026). The camp is in dev (#1325); camp life (stage 2, 20 Nov 2026) is PR #1354. Neither played nor seen on screen yet.** Values marked PROVISIONAL were answered on Dave's behalf by the coordinator while he was away (standing rule, 14 Nov 2026) and wait for his review below.
+**Status: DAVE-REQUESTED (19 Nov 2026). The camp is in dev (#1325); camp life (stage 2, 20 Nov 2026) is in dev too (#1354, 95bb7530). Neither played nor seen on screen yet.** Values marked PROVISIONAL were answered on Dave's behalf by the coordinator while he was away (standing rule, 14 Nov 2026) and wait for his review below.
 
 ## What Dave asked (19 Nov 2026)
 - "we also already have goblins in our game so we should build them a goblin camp somewhere near the river or in a cave. I want the goblins to be apprehensive but willing to communicate and trade/buy and sell. in the future the game will have various goblin tribes/camps etc that are friendly, not friendly, indifferent etc."
@@ -26,7 +26,7 @@ Answered for him (coordinator, 19 Nov 2026, provisional): the cave 2.8 km east o
 - **Talk and trade.** Skritch has "Show me what you have" (opens the shop), "What do you want from me?", "Who are the Ragtooth?" and "Do you trust me yet?". Rukz and Snag send you to Skritch.
   - He sells mushrooms, dried mushrooms, berries, dried berries, flint, bone, claw, claw necklace, gut, copper ore, tin ore, sling stones, bone arrows and herb salve.
   - He buys food, materials, tools, medicine and clothing (`shops.json` skritch). His purse is 120 copper and refills 40 a game day.
-- **Attacked.** A melee blow or an arrow at a goblin hurts nobody. The tribe turns on that character for 1 game day and the character loses 3 standing with the clan (camp life, stage C). While that character is within 25 m the goblins run into the cave mouth and are not drawn; they come out about 30 s after the character has gone. They refuse that character talk and trade ("You hit us. Go away. No talk, no trade."), and other players see the camp empty while that character is near. Saved in `tribes_state.json` in the server store.
+- **Attacked.** A melee blow or an arrow at a goblin hurts nobody. The tribe turns on that character for 1 game day and the character loses 3 standing with the clan (camp life, stage C). The goblins within 25 m of that character run into the cave mouth and are not drawn; they come out about 30 s after the character is more than 30 m away. They refuse that character talk and trade ("You hit us. Go away. No talk, no trade."), and other players see the camp empty while that character is near. Saved in `tribes_state.json` in the server store.
 - **The camp fire.** It is a large fire laid by the server like Edda and Hob's. It never goes out and is never saved. Every use is refused: "That is the Ragtooth goblins' fire." It also keeps wild spawns away. Nothing can be put down within 8 m of it: "That is a goblin camp: build away from their fire." The client names it "The Ragtooth goblins' campfire". `npc_camp.gd` now lists every camp fire (Edda and Hob's first), and the server keeps each one lit.
 - **No new items or recipes.** The roster's outfit field carries "goblin:<variant>". The fire row's {"camp": 1} is unchanged. Camp life adds protocol 146 (held_item, row states WORK and GUARD); PROTOCOL.md records it.
 
@@ -45,7 +45,7 @@ Answered for him (coordinator, 19 Nov 2026, provisional): the cave 2.8 km east o
 - The goblins stand on the hill's ground. Nothing checks yet that no tree or rock stands on a spot (`test_goblin_camp` checks slope and water on the baked tile only).
 - The other attitudes (friendly, indifferent, unfriendly, hostile) are data rows with no tribe using them. A hostile tribe that fights is not built: like animal attacks, it would be harmless for now.
 
-## Camp life, stage 2 (20 Nov 2026; built in PR #1354, not played)
+## Camp life, stage 2 (20 Nov 2026; in dev, #1354 95bb7530, not played)
 What Dave asked on 20 Nov 2026:
 - "for now she will be a named goblin at the Ragtooth camp. they are friendly goblins but nervous."
 - "they should all keep themselves busy in the area around the camp, either gathering firewood and putting in the fire or gathering supplies around the area like plant fiber to make twine or hunting for meat, hide etc. they should have a small chest of some sort, probably a few drying racks or tanning racks, a campfire maybe some wooden benches around the fire. they should carry spears for weapons. If a character approaches them with no weapon in hand they will be aprihensive but approachable. if the player has a weapon they will take up defensive positions with thier spears and make angry sounds. they will run away if the player attacks and it will hurt the players reputation with the Ragtooth Clan. If the player leaves they will eventually come back to their camp."
@@ -79,14 +79,14 @@ What Dave asked on 20 Nov 2026:
 - The client tells the server when the item in hand changes: one message per change, at most twice a second. The server keeps it per player.
 - That replaces "a weapon on the hotbar" (GOBLIN-4) with "a weapon in hand", as Dave asked.
 - **No weapon in hand:** the goblins are nervous but approachable, as now. They keep their distance by standing, watch, and go on with their chores once you are past them.
-- **Weapon in hand within 10 m:** every goblin stops its chore, turns to face you with the spear forward (the defensive clip: Skritch's Combat_Stance, Rukz's Alert), and makes an angry chitter every 2-4 s.
+- **Weapon in hand within 10 m:** each goblin within 10 m stops its chore (backing off first if you are inside its keep distance) and squares up facing you with the spear forward (the defensive clip: Skritch's Combat_Stance, Rukz's Alert), and makes an angry chitter every 2-4 s.
   - The chitter is a new short creature sound, made by a script like the other generated animal calls.
   - They relax and go back to work as soon as the weapon is put away or you step back past 10 m.
 - **Attacked:**
   - Nobody is hurt.
-  - Every goblin runs into the cave mouth.
+  - Every goblin within 25 m runs into the cave mouth (one at a far chore point or out hunting carries on).
   - You lose standing with the Ragtooth Clan.
-  - They stay out of sight while you are within 25 m.
+  - They stay out of sight while you are within 30 m.
   - When you leave, they come back out of the mouth after about 30 s, walking, and return to their chores.
 
 **Smooth motion (all stages).**
@@ -100,9 +100,9 @@ What Dave asked on 20 Nov 2026:
 - **GOBLIN-10:** chores are for show only. The firewood, fibre and game are not real items and change nothing in the world or in Skritch's shop.
 - **GOBLIN-11:** the props are one Crude chest, one Drying rack, one Tanning rack and two Log benches, none of them usable by players.
 - **GOBLIN-12:** an attack costs 3 standing with the clan (about one rank), and the clan refuses that character trade and talk for 1 game day instead of 3.
-- **GOBLIN-13:** the weapon test is "a weapon in hand", for melee weapons and bows. A torch, axe or other tool in hand does not count.
+- **GOBLIN-13:** the weapon test is "a weapon in hand", for any item of kind weapon (melee, bows, slings). A torch, axe or other tool in hand does not count.
 - **GOBLIN-14:** the hunter is out of sight 2 to 4 real minutes per hunt, and only one goblin hunts at a time.
-- **GOBLIN-15:** they come back about 30 s after the attacker is 25 m away.
+- **GOBLIN-15:** they come back about 30 s after the attacker is more than 30 m away.
 
 **State of A (20 Nov 2026).** Built in PR #1354, not played or seen on screen yet. The props are laid by `server_items.gd` `_tribe_props_tick`. They are refused by `_tribe_piece_refuses`, which covers take-down, use and sit, lock and repair. They have no store and serve no crafting. The spear is drawn by `npc_view.gd` `_goblin_spear` and `_hold_spear`. Goblins are drawn through `motion_buffer.gd`. Things to check on the PC: which way the spear points in the hand, and the props on the slope.
 
