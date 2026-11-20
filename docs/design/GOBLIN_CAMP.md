@@ -44,3 +44,64 @@ Answered for him (coordinator, 19 Nov 2026, provisional): the cave 2.8 km east o
 - No picture yet. The camp has not been seen in game or played.
 - The goblins stand on the hill's ground. Nothing checks yet that no tree or rock stands on a spot (`test_goblin_camp` checks slope and water on the baked tile only).
 - The other attitudes (friendly, indifferent, unfriendly, hostile) are data rows with no tribe using them. A hostile tribe that fights is not built: like animal attacks, it would be harmless for now.
+
+## Camp life, stage 2 (plan, 20 Nov 2026; not built yet)
+What Dave asked on 20 Nov 2026:
+- "for now she will be a named goblin at the Ragtooth camp. they are friendly goblins but nervous."
+- "they should all keep themselves busy in the area around the camp, either gathering firewood and putting in the fire or gathering supplies around the area like plant fiber to make twine or hunting for meat, hide etc. they should have a small chest of some sort, probably a few drying racks or tanning racks, a campfire maybe some wooden benches around the fire. they should carry spears for weapons. If a character approaches them with no weapon in hand they will be aprihensive but approachable. if the player has a weapon they will take up defensive positions with thier spears and make angry sounds. they will run away if the player attacks and it will hurt the players reputation with the Ragtooth Clan. If the player leaves they will eventually come back to their camp."
+- "remember to keep their motions fluid and smooth. Aim for natural."
+
+"She" is Vrixa Thornfang, whom another thread is adding as a Ragtooth goblin. The chores include her once she is in dev.
+
+**The ground.** On the baked tile, the camp's bench is a narrow ledge, one 8 m cell wide (z about 68380 to 68388). It climbs east from the mouth at 18-20 degrees for about 60 m. Everything around it is 30 degrees or steeper. So the props stand along the ledge, and the chores walk up and down it.
+
+**Stage A: the camp and the spears.** No protocol change.
+- The props are existing catalog pieces, laid by the server the way the bandit camp lays its Lean-tos:
+  - one Crude chest (914)
+  - one Drying rack (775)
+  - one Tanning rack (773)
+  - two Log benches (629), one each side of the fire
+- Props are transient pieces marked with the tribe. They are never saved, laid again at every start, and every take-down, open or use is refused: "That belongs to the Ragtooth camp."
+- The camp keep (8 m) grows to cover the props.
+- Each goblin holds a Wooden spear (item 10's look) in its right hand, fixed to the hand bone so it moves with every clip.
+
+**Stage B: chores.** This needs one protocol number for two new row states.
+- Each goblin runs its own loop of jobs from data (`goblin_tribes.json` chores):
+  - **Firewood:** walk up the ledge to a wood spot, gather (the gathering clip, 6-10 s), carry it back, and kneel at the fire for 3 s.
+  - **Fibre:** walk to a plant spot, gather, and take it to the chest.
+  - **Hunt:** one goblin at a time, never the trader. It walks up and off the east end of the ledge, is out of sight for 3-6 game minutes, comes back the same way, and works at the tanning or drying rack.
+  - **Rest:** stand or sit by the fire for a while.
+- Skritch keeps to the fire and the chest so a trader is always near.
+- **Cheap for the server:** the spots are fixed points in the data, checked on the baked tile by the test. Nothing scans the world. A chore is one timer and one steering step toward a known point, run only while a player is within the NPCs' active radius (200 m), at their existing tick rates (10 Hz near, 3 Hz mid, 0.5 Hz far). A dormant camp is not run. Nothing is taken from or added to the world, and the fire never runs low.
+- New row states: WORK (the gathering clip) and GUARD (stage C). Old clients cannot read these, hence the protocol bump.
+
+**Stage C: a weapon in hand, defence, running away, coming back.** This uses the same protocol number as stage B.
+- The client tells the server when the item in hand changes: one message per change, at most twice a second. The server keeps it per player.
+- That replaces "a weapon on the hotbar" (GOBLIN-4) with "a weapon in hand", as Dave asked.
+- **No weapon in hand:** the goblins are nervous but approachable, as now. They keep their distance by standing, watch, and go on with their chores once you are past them.
+- **Weapon in hand within 10 m:** every goblin stops its chore, turns to face you with the spear forward (the defensive clip: Skritch's Combat_Stance, Rukz's Alert), and makes an angry chitter every 2-4 s.
+  - The chitter is a new short creature sound, made by a script like the other generated animal calls.
+  - They relax and go back to work a few seconds after the weapon is put away or you leave.
+- **Attacked:**
+  - Nobody is hurt.
+  - Every goblin runs into the cave mouth.
+  - You lose standing with the Ragtooth Clan.
+  - They stay out of sight while you are within 25 m.
+  - When you leave, they come back out of the mouth after about 30 s, walking, and return to their chores.
+
+**Smooth motion (all stages).**
+- The goblins are drawn through the same in-between buffer the animals use since animals part 2 (`src/client/motion_buffer.gd`), not the old chase-the-last-point glide. So walking, backing off, fleeing and returning come out at a steady speed with no lunges.
+- The server eases speed changes (it speeds up and slows down over about half a second) and turns at a limited rate, so no goblin spins on the spot.
+- Clips cross-fade over 0.3 s, and the walk clip's speed follows the measured pace.
+- The spear stays in the hand through every blend.
+
+**Choices made for Dave (PROVISIONAL):**
+- **GOBLIN-9:** "Friendly but nervous" is the existing wary row: the same keep distances, trade on.
+- **GOBLIN-10:** chores are for show only. The firewood, fibre and game are not real items and change nothing in the world or in Skritch's shop.
+- **GOBLIN-11:** the props are one Crude chest, one Drying rack, one Tanning rack and two Log benches, none of them usable by players.
+- **GOBLIN-12:** an attack costs 3 standing with the clan (about one rank), and the clan refuses that character trade and talk for 1 game day instead of 3.
+- **GOBLIN-13:** the weapon test is "a weapon in hand", for melee weapons and bows. A torch, axe or other tool in hand does not count.
+- **GOBLIN-14:** the hunter is out of sight 3-6 game minutes per hunt, and only one goblin hunts at a time.
+- **GOBLIN-15:** they come back about 30 s after the attacker is 25 m away.
+
+**Order.** Stage A first, on this branch. Then dev is merged in once Vrixa lands. Then B and C go together under one protocol number. Each stage gets an independent review, runs on a lane and has a BugsList entry in a docs follow-up.
