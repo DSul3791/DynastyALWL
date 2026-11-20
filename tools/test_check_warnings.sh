@@ -50,6 +50,10 @@ check $([ $RC -eq 3 ] && grep -q "script does not parse: tools/creature_check.gd
 run --changed
 check $([ $RC -eq 3 ]; echo $?) "--changed also exits 3 on a parse failure (exit $RC)"
 
+stub 'echo "scripts checked: 1, warnings: 0"; echo "parse failures: 1"; exit 1'
+run
+check $([ $RC -eq 3 ] && grep -q "named none" "$ERR"; echo $?) "a counted parse failure with no name still exits 3 (exit $RC)"
+
 # 4. A clean run: exit 0 with the summary and the counts; a crash on quit after the summary still counts.
 stub 'echo "WARN src/a.gd:3: UNUSED_VARIABLE x"; echo "WARN src/a.gd:9: SHADOWED y"; echo "scripts checked: 2, warnings: 2"; exit 0'
 run
@@ -63,6 +67,11 @@ stub 'case "$*" in *check_addons*) echo ADDON_OK;; *validate_items*) echo "valid
 LC=$(PATH="$STUB:$PATH" CHECK_WARNINGS_TIMEOUT=20 GODOT_EXE="$STUB/godot" bash tools/local_check.sh 2>&1)
 LRC=$?
 check $([ $LRC -ne 0 ] && echo "$LC" | grep -q "FAIL  warning check did not pass (exit 2" && echo "$LC" | grep -q "LOCAL CHECK: FAIL"; echo $?) "local_check fails when the warning check does not finish (exit $LRC)"
+
+stub 'case "$*" in *--check-only*) exit 127;; *check_addons*) echo ADDON_OK;; *validate_items*) echo "validate: 0 errors";; *check_warnings*) echo "scripts checked: 1, warnings: 0";; esac'
+LC=$(PATH="$STUB:$PATH" CHECK_WARNINGS_TIMEOUT=20 GODOT_EXE="$STUB/godot" bash tools/local_check.sh 2>&1)
+LRC=$?
+check $([ $LRC -ne 0 ] && echo "$LC" | grep -q "FAIL  parse check did not run (exit 127)"; echo $?) "local_check fails when the parse check could not start godot (exit $LRC)"
 
 # 6. The real engine on a script that does not parse, in a temp folder: no debugger wait, named, exit 3.
 if [ -n "$REAL_GODOT" ]; then
