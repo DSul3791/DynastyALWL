@@ -13,9 +13,15 @@ const STAND := 0
 const WALK := 1
 const SIT := 2
 const SLEEP := 3
+const WORK := 4                          # protocol 146: a goblin tribe member at a chore (its "work" clip: gathering, feeding the fire)
+const GUARD := 5                         # protocol 146: standing its ground at a weapon in hand, spear forward (its guard clip, models.json "10")
+const SPEAR_GUARD_DEG := 15.0            # the spear's angle above level in the guard stance
+const CHITTER_S := [2.0, 4.0]            # seconds between a guarding goblin's angry calls
+const HISS_GAP_S := 9.0                   # at most one squaring-up hiss per goblin this often
 const SEAT_TOP_M := 0.45                 # the chair's seat top above its feet (building_look.gd chair: slats at 0.43, 0.045 thick)
 const SEAT_HIPS_ABOVE_M := 0.07          # the hips joint over the seat top, as the player sits (terrain_client.gd, #517)
 const SEAT_LIFT_MAX_M := 0.6             # never move the body more than this to meet the seat
+const MotionBuffer := preload("res://src/client/motion_buffer.gd")   # goblins are drawn between sent points, as the animals are (Dave 20 Nov 2026: "keep their motions fluid and smooth")
 const GeneratedBodyScript := preload("res://src/client/character/generated_body.gd")
 const BodyGenerator := preload("res://src/client/character/body_generator.gd")
 const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
@@ -23,6 +29,10 @@ const VARIANTS := 8                  # with --generated-body: this many body typ
 const BuildingLook := preload("res://src/client/building_look.gd")
 const WornSync := preload("res://src/client/worn_sync.gd")
 const OUTFITS_PATH := "res://data/npcs/outfits.json"
+const HeldItem := preload("res://src/client/held_item.gd")   # look_tool_node: the Wooden spear a camp goblin carries (Dave 20 Nov 2026)
+const GOBLIN_SPEAR := "wooden_spear"
+const SPEAR_STAFF_DEG := 90.0     # a goblin at rest or at work holds its spear upright, butt down, like a staff
+const SPEAR_HOLD_M := 0.3         # the hand holds it this far below the spear's middle (toward the butt)
 const FULL_M := 15.0
 const HALF_M := 40.0
 const QUARTER_M := 70.0
@@ -30,7 +40,10 @@ const QUARTER_M := 70.0
 var roster: Dictionary = {}      # id -> {name, role, outfit}
 var _outfits: Dictionary = {}    # outfit name -> item ids worn on top of the ragdoll (data/npcs/outfits.json)
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state}
+signal goblin_called(at: Vector3, mood: String)   # a camp goblin's angry call (creature_sounds.gd "goblin"): chitter on guard, hiss as it starts
 var goblin_maker: Callable       # (variant, look_seed) -> Node3D or null: a goblin tribe member's body (AnimalView.make_goblin), set by the client
+var _gap: float = 0.25           # recent seconds between rows, for MotionBuffer
+var _rows_at: float = -1.0       # when the last rows came
 
 
 func _exit_tree() -> void:
@@ -58,6 +71,12 @@ func on_roster(rows: Array) -> void:
 
 func on_rows(rows: Array) -> void:
 	var seen: Dictionary = {}
+	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
+
+	if _rows_at >= 0.0:
+		_gap = lerpf(_gap, clampf(now_s - _rows_at, 0.05, 0.5), 0.2)
+
+	_rows_at = now_s
 
 	for row in rows:
 		var id: String = str(row[0])
@@ -70,11 +89,12 @@ func on_rows(rows: Array) -> void:
 			var node: Node3D = _make_body(id)
 			node.position = row[1]
 			add_child(node)
-			_bodies[id] = {"node": node, "target": row[1], "heading": float(row[2]), "state": int(row[3])}
+			_bodies[id] = {"node": node, "target": row[1], "heading": float(row[2]), "state": int(row[3]), "samples": []}
 
 		_bodies[id]["target"] = row[1]
 		_bodies[id]["heading"] = float(row[2])
 		_bodies[id]["state"] = int(row[3])
+		MotionBuffer.push(_bodies[id]["samples"], row[1], float(row[2]), now_s, _gap)
 
 	for id in _bodies.keys():
 		if not seen.has(id):
@@ -185,12 +205,14 @@ func _process_body(delta: float) -> void:
 			body["owed"] = 0.0
 
 
-# A goblin tribe member (outfit "goblin:<variant>"): it glides and turns like the others and plays its model's idle, walk or run clip by the
-# measured speed (data/animals/models.json goblin clips "0", "walk", "run"); the clips run on the model's own player, as a wild goblin's do.
+# A goblin tribe member (outfit "goblin:<variant>"): drawn a little in the past on the line between its sent points (MotionBuffer, as the
+# animals since animals part 2), so it walks at a steady speed with no lunge after each send; its turn is eased, and it plays its model's idle,
+# walk or run clip by the measured speed (data/animals/models.json goblin clips "0", "walk", "run"), cross-faded, on the model's own player.
 func _process_goblin(node: Node3D, body: Dictionary, delta: float) -> void:
 	var before: Vector3 = node.position
-	node.position = node.position.lerp(body["target"], clampf(delta * 6.0, 0.0, 1.0))
-	node.rotation.y = lerp_angle(node.rotation.y, -float(body["heading"]) - PI * 0.5, clampf(delta * 8.0, 0.0, 1.0))
+	var drawn: Array = MotionBuffer.at(body["samples"], float(Time.get_ticks_usec()) / 1.0e6 - MotionBuffer.delay_s(_gap)) if not (body["samples"] as Array).is_empty() else [body["target"], body["heading"]]
+	node.position = drawn[0]
+	node.rotation.y = lerp_angle(node.rotation.y, -float(drawn[1]) - PI * 0.5, clampf(delta * 8.0, 0.0, 1.0))
 	var pace: float = lerpf(float(body.get("pace", 0.0)), Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), clampf(delta * 5.0, 0.0, 1.0))
 	body["pace"] = pace
 	var model: Node3D = node.get_node_or_null("Goblin")
@@ -201,13 +223,67 @@ func _process_goblin(node: Node3D, body: Dictionary, delta: float) -> void:
 
 	var roles: Dictionary = player.get_meta("roles", {})
 	var role: String = "run" if pace > 2.2 else ("walk" if pace > 0.4 else "0")
+	var state: int = int(body["state"])
+
+	if role == "0" and state == WORK and roles.has("work"):
+		role = "work"   # at a chore: gathering, kneeling at the fire, at the chest or a rack
+	elif role == "0" and state == GUARD and roles.has("10"):
+		role = "10"     # its guard stance (Skritch's Combat_Stance, Rukz's Alert)
+
+	node.set_meta("spear_deg", SPEAR_GUARD_DEG if state == GUARD else SPEAR_STAFF_DEG)
+	_chitter(node, body, state, delta)
 	var clip: String = str(roles.get(role, roles.get("0", "")))
 
 	if clip != "" and player.current_animation != clip:
-		player.play(clip, 0.25)
+		player.play(clip, 0.3)
 
 	var ref: float = float(player.get_animation(clip).get_meta("travel_mps", 0.0)) if clip != "" and player.has_animation(clip) and role != "0" else 0.0
 	player.speed_scale = clampf(pace / ref, 0.5, 2.0) if ref > 0.0 else 1.0
+	_hold_spear(node, delta)
+
+
+# A guarding goblin calls angrily every CHITTER_S (a hiss as it first squares up), through the creature voices (rate limited there).
+func _chitter(node: Node3D, body: Dictionary, state: int, delta: float) -> void:
+	if state != GUARD:
+		body["chitter"] = -1.0
+		return
+
+	var wait: float = float(body.get("chitter", -1.0))
+
+	if wait < 0.0:
+		var now: float = Time.get_ticks_msec() / 1000.0
+
+		if now - float(body.get("hissed", -INF)) >= HISS_GAP_S:   # one hiss as it squares up, not one per flicker at the edge of spook_m
+			body["hissed"] = now
+			goblin_called.emit(node.global_position, "threat")
+
+		wait = randf_range(CHITTER_S[0], CHITTER_S[1])
+
+	wait -= delta
+
+	if wait <= 0.0:
+		goblin_called.emit(node.global_position, "alert")
+		wait = randf_range(CHITTER_S[0], CHITTER_S[1])
+
+	body["chitter"] = wait
+
+
+# The spear rides the right hand (its bone moves it with every clip) but keeps its own steady angle from the body's facing, as the player's spear
+# does (held_item.gd _aim_spear): upright like a staff, eased toward `spear_deg` (a later guard stance points it ahead), so no clip twists it into
+# the fist. Its size follows the goblin's.
+func _hold_spear(node: Node3D, delta: float) -> void:
+	var spear: Node3D = node.get_meta("spear", null) as Node3D
+
+	if spear == null or not spear.is_inside_tree():
+		return
+
+	var want: float = float(node.get_meta("spear_deg", SPEAR_STAFF_DEG))
+	var deg: float = lerpf(float(node.get_meta("spear_now", want)), want, clampf(delta * 4.0, 0.0, 1.0))
+	node.set_meta("spear_now", deg)
+	var size: float = (node.get_node("Goblin") as Node3D).global_basis.get_scale().y
+	var turn: Basis = node.global_basis.orthonormalized() * Basis(Vector3.RIGHT, deg_to_rad(deg))   # the spear's point (-Z) turned up from the body's front
+	var hand: Vector3 = (spear.get_parent() as Node3D).global_position
+	spear.global_transform = Transform3D(turn.scaled(Vector3.ONE * size), hand + turn * Vector3(0.0, 0.0, -SPEAR_HOLD_M * size))
 
 
 # The sitting clip: on the chair (the clip the player sits on a seat with) when the body has it, else the ground sit.
@@ -320,6 +396,10 @@ func _make_goblin(id: String, outfit: String, title: String) -> Node3D:
 	root.set_meta("goblin", true)
 	model.name = "Goblin"
 	root.add_child(model)
+	var spear: Node3D = _goblin_spear(model)
+
+	if spear != null:
+		root.set_meta("spear", spear)
 	var label: Label3D = Label3D.new()
 	label.text = title
 	label.font_size = 48
@@ -331,3 +411,32 @@ func _make_goblin(id: String, outfit: String, title: String) -> Node3D:
 	label.outline_size = 8
 	root.add_child(label)
 	return root
+
+
+# A camp goblin's Wooden spear (Dave 20 Nov 2026: "they should carry spears for weapons"), the same look as the player's, on a bone attachment of
+# the model's right hand (Mixamo "RightHand"); null when the model has no such bone or the spear has no look. _hold_spear angles it every frame.
+static func _goblin_spear(model: Node3D) -> Node3D:
+	var skeletons: Array = model.find_children("*", "Skeleton3D", true, false)
+
+	if skeletons.is_empty():
+		return null
+
+	var skel: Skeleton3D = skeletons[0] as Skeleton3D
+	var bone: String = ""
+
+	for i in skel.get_bone_count():
+		if skel.get_bone_name(i).ends_with("RightHand"):
+			bone = skel.get_bone_name(i)
+			break
+
+	if bone == "" or not HeldItem.BasicLook.has_look(GOBLIN_SPEAR):
+		return null
+
+	var mount: BoneAttachment3D = BoneAttachment3D.new()
+	mount.name = "SpearHand"
+	mount.bone_name = bone
+	skel.add_child(mount)
+	var spear: Node3D = HeldItem.look_tool_node(GOBLIN_SPEAR)
+	spear.name = "Spear"
+	mount.add_child(spear)
+	return spear

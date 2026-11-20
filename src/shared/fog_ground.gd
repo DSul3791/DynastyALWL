@@ -157,6 +157,17 @@ func water_level(x: float, z: float) -> float:
 	return sample(grid, "low", x, z, 0.0)
 
 
+# Under the island, not the sea (Dave 20 Nov 2026: a tunnel dug deep under the island hit water): the baked ground here, its lowest within
+# 64 m ("low"), is above sea level by LAND_ABOVE_M. Then below 0 m is dry rock or a dug space, not sea. The coarse map is the generated ground,
+# so digging never makes a sea. False where nothing is known (no grid yet, off the window): the old rule, all below 0 m is sea.
+const LAND_ABOVE_M := 0.5
+const SEA_ASK_BELOW_M := 40.0       # the client asks for the window without drawn fog too while the eye is this low (the sea check needs it)
+
+
+func under_land(x: float, z: float) -> bool:
+	return sample(grid, "low", x, z, 0.0) > LAND_ABOVE_M
+
+
 # --- pure, on any thread ---
 
 # Reads the window [origin, origin + WINDOW_M] from the tiles it overlaps: {"origin", "n", "floor", "view", "near", "low"}; {} when no tile is there.

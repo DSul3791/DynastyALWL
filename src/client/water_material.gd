@@ -43,6 +43,11 @@ uniform float sea_clock = 0.0;       // 1: the client folds the time into sea_ph
 uniform float sea_lift_from_m = 80.0;    // the swell's heights lift the sea plane out to here, then fade to flat by sea_lift_to_m (the far mesh is coarse)
 uniform float sea_lift_to_m = 240.0;
 uniform float sea = 0.0;             // 1 on the sea plane (terrain_client.gd): swell, depth colours from the beach out, surf foam at the shore, a darker line at the horizon
+uniform sampler2D land_low : filter_linear, repeat_disable;   // with sea: the baked ground round the camera (fog_ground.gd "low"); terrain_client.gd _mask_sea_under_land
+uniform vec2 land_origin = vec2(0.0);
+uniform float land_size_m = 1.0;
+uniform float land_above_m = 0.5;
+uniform float land_on = 0.0;         // 1: the sea plane is not drawn where land_low is above land_above_m (under the island: a deep tunnel is dry, Dave 20 Nov 2026)
 uniform float debug_flow = 0.0;      // Ctrl+Shift+F8: colour the water by what the shader thinks it is (red running, blue still, green foam)
 uniform float refraction = 1.0;      // 0 (Low quality): see-through by blending; 1: the bottom bends under the ripples
 // The water writes its own fog (FOG), with the same sums as Godot's environment fog, fed every frame by weather_look.gd
@@ -224,6 +229,14 @@ vec2 sea_slope(vec2 p, float time, float dist) {
 }
 
 void fragment() {
+	if (sea > 0.5 && land_on > 0.5) {
+		vec2 land_uv = (world_pos.xz - land_origin) / land_size_m;
+
+		if (land_uv.x > 0.0 && land_uv.y > 0.0 && land_uv.x < 1.0 && land_uv.y < 1.0 && texture(land_low, land_uv).r > land_above_m) {
+			discard;
+		}
+	}
+
 	// Inside the live window the liquid sheet takes over across a wide, wandering band, not at a straight line one cell in (BUG-006).
 	float grid_share = 1.0;
 

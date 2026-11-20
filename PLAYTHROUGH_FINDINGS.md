@@ -28,7 +28,7 @@ Status: PASS (exists, looks right, works) | LOOKS WRONG | MISSING ITEM | MECHANI
 | 07 | Branches, leaves, logs, firewood, kindling | axe | trunk blows (3 branch blows, 3 blows per log) | | PASS mechanic; item looks PASS: leaves (green), kindling (bundle), firewood (brown logs), bark (layered slab) all readable in `03_raw_materials.jpg` |
 | 08 | Chop a stump | axe | stump | | NOT SHOWN, in progress (Kathleen, commit a641581d) |
 | 09 | Shelter under a big tree | a grown tree (size >= 0.8) | trees in the woods | standing under crown | PASS in code (cover.gd, only grown trees); NOT SHOWN. Note: every tree in the spawn-meadow pictures is a young conifer, so **no cover exists on the spawn meadow itself** (walk to the woods) |
-| 10 | Campfire kit | 6 sticks, 3 stones | hand recipe #4 | kit item | PASS mechanic (probe); kit look NOT SHOWN (see F-09: kit rows would not frame) |
+| 10 | Campfire kit | 6 sticks, 16 stones (Dave 20 Nov 2026; was 3) | hand recipe #4 | kit item | PASS mechanic (probe); kit look NOT SHOWN (see F-09: kit rows would not frame) |
 | 10b | Place the fire | kit | click on ground | laid fire | MECHANIC PASS; `10_campfire_placed.jpg` shows only the green placement ring on pale ground, not the fire. LOOKS in progress (campfire look) |
 | 10c | Light with plant fibre | 1 plant fibre | | | PASS (probe: lit = true) |
 | 10d | Light with birch bark, tinder, tinder fungus | | | | MECHANIC PASS (probe: lit = true for each) but **MISSING ITEM**: nothing in the game gives these (F-03). Amadou and twine do not light (correct per data) |

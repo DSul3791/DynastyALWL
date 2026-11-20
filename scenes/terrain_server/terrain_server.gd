@@ -451,28 +451,8 @@ func _ready() -> void:
 				best = near
 
 		return best.y
-	items.water_near = func(pos, reach):
-		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
-
-		if tile_data.placeholder:
-			return false
-
-		# Spring cave streams run under the ground the water map knows (Dave 3 Nov 2026): drink and fill there too.
-		if not tile_data.cave_streams.is_empty() and tile_data.near_cave_water(pos, reach):
-			return true
-
-		for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
-			var k: int = tile_data.nearest(pos.x + offset.x, pos.z + offset.y)
-
-			var sim: PackedFloat32Array = tile_data.sim_snapshot()
-
-			if not sim.is_empty():
-				if not is_nan(sim[k]):
-					return true
-			elif tile_data.water_class[k] > 1 and not is_nan(tile_data.water_surface[k]):
-				return true
-
-		return false
+	items.water_near = func(pos, reach): return DrinkRulesScript.water_near(generator.get_tile(generator.tile_of(pos.x, pos.z)), pos, reach, false)
+	items.drink_water_near = func(pos, reach): return DrinkRulesScript.water_near(generator.get_tile(generator.tile_of(pos.x, pos.z)), pos, reach, true)   # and not down a bank (DrinkRules.REACH_DROP_M)
 	# The drink's source rows for vitals.json thirst.sources, from the baked tile (DrinkRules.tile_rows), with the year mean of this climate zone.
 	items.water_source = func(pos, reach) -> Array:
 		var group = settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m))))
@@ -623,7 +603,9 @@ func _ready() -> void:
 
 		return rows
 	tribes.setup(store_dir)
-	npcs.wary = tribes.avoid   # goblin tribe members keep off, watch, and hide from a player who struck one
+	npcs.wary = tribes.avoid   # goblin tribe members keep off, watch, stand guard at a weapon in hand, and hide from a player who struck one
+	npcs.chores = tribes.chore_plan   # and keep busy round their camp (camp life, Dave 20 Nov 2026)
+	net.held_reported.connect(items.report_held)   # the item in each player's hand (protocol 146), for "a weapon in hand"
 	items.rep_key = tribes.rep_id   # a tribe's members share one standing
 	animals = AnimalsScript.new()
 	edited_ground = EditedGroundScript.new()
@@ -867,12 +849,27 @@ func _ready() -> void:
 
 		return mouths
 	bandits.road_distance = func(site_at, reach_m): return items.road_distance(site_at, reach_m)
+	bandits.road_point = func(site_at, reach_m): return items.road_point(site_at, reach_m)
 	bandits.setup(store_dir)
 	bandits.animals = animals
 	animals.bandit_camps = bandits
-	bandits.lay_camp = func(camp_key, camp_fire, camp_lean_tos, camp_old): return items.lay_bandit_camp(camp_key, camp_fire, camp_lean_tos, camp_old)
+	bandits.lay_camp = func(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at): return items.lay_bandit_camp(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at)
+	bandits.clear_camp = func(camp_key, camp_ids): items.clear_bandit_camp(camp_key, camp_ids)   # a site gone back to sleep takes its pit and tracks away
 	bandits.laid_still = func(camp_ids): return items.bandit_camp_there(camp_ids)
 	bandits.drop_gear = func(gear_key, gear_at): items.drop_world_made(items.table.number_of(gear_key), 1, gear_at)
+	bandits.tell = func(bandit_peer, bandit_text): items._say(bandit_peer, bandit_text)
+	bandits.pay_bounty = func(bandit_peer, bandit_copper): items.add_coins(bandit_peer, bandit_copper, "trade")   # the guard pays for a tied bandit (stage 5)
+	bandits.guards_at = func():
+		var guard_spots: Array = []
+
+		for npc_id in npcs.npcs:
+			if str(npcs.npcs[npc_id]["role"]) == "guard" and bool(npcs.npcs[npc_id]["placed"]):
+				guard_spots.append(npcs.npcs[npc_id]["pos"])
+
+		return guard_spots
+	items.bind_animal = func(bandit_peer, bind_from, bind_dir, bind_reach):   # Rope or Twine: ties a bandit who gave up, or claims a cleared camp's horse (5b)
+		var bind_target: int = animals.target_along(bind_from, bind_dir, bind_reach)
+		return bandits.bind(bind_target, bandit_peer) or bandits.claim_horse(bind_target, bandit_peer)
 	items.road_trip = func(mover, mover_at, trip_kind): bandits.note(mover, mover_at, trip_kind)
 
 	for site_line in bandits.report():

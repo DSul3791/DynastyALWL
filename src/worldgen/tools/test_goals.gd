@@ -196,7 +196,7 @@ func _init() -> void:
 	check((live["hammer"].get("made_item_any", []) as Array).has("stone_hammer") and not (live["hammer"].get("made_item_any", []) as Array).has("wooden_hammer") and str(live["hoe"].get("made_item", "")) == "wooden_hoe" and not JSON.stringify(live).contains("wooden_hammer_soft"), "the hammer goal counts a made Stone - Hammer (the Wooden one retired 18 Nov 2026) and the hoe goal a Wooden - Hoe; no wooden_hammer_soft item is named")
 
 	# Axe, then fell a tree.
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone"), 0, 9, Vector3.ZERO)   # axe 1 and campfire 6 (0.5 kg stones, Dave 19 Nov 2026), 2 to spare as before
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone"), 0, 19, Vector3.ZERO)   # axe 1 and campfire 16 (Dave 20 Nov 2026: "campfire 16 stones"), 2 to spare as before
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 20, Vector3.ZERO)
 	craft("twine", 3)
 	craft("stone_axe", 1)

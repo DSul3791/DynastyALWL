@@ -810,6 +810,11 @@ func _process_body(delta: float) -> void:
 	night_colour = 1.0 - grey
 	environment.adjustment_saturation = lerpf(SATURATION_CLEAR, SATURATION_STORM, _dark) * night_colour
 
+	# Low down the sea check needs the ground window whatever the fog (fog_ground.gd under_land), under water too, so a dry tunnel
+	# read as sea before the window came clears once it comes.
+	if _summits_set and eye.y < FogGroundScript.SEA_ASK_BELOW_M:
+		fog_ground.update(eye)
+
 	if not _client.underwater:
 		var ground_wet: float = puddles.wet_mean      # the ground's own wetness, which dries in game hours (rain_look_design.md 3.4)
 

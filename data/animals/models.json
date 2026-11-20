@@ -106,7 +106,8 @@
 				"11": "Running",
 				"12": "Idle_02",
 				"walk": "Walking",
-				"run": "Running"
+				"run": "Running",
+				"work": "Collect_Object"
 			},
 			"note": "Goblins (Dave 7 Nov 2026, docs/GOBLINS.md). Sized by mesh height: height_m plus a bell-shaped roll of up to height_variation_m, per animal id. variants are laid over this row, one per goblin by id: Skritch Ragtooth and Rukz the Scavenger, whose clip names differ; a variant with wild: false (Vrixa Thornfang, Grikka Ragtooth) is drawn only for a tribe member (animal_view.gd make_goblin). The .glb files are committed (made by Dave in Meshy, not the bought pack). Facing (yaw_deg 180, as the bear) is to be checked on the PC.",
 			"variants": [
@@ -121,7 +122,8 @@
 						"11": "Running",
 						"12": "Idle_02",
 						"walk": "Walking",
-						"run": "Running"
+						"run": "Running",
+						"work": "Collect_Object"
 					}
 				},
 				{
@@ -135,7 +137,8 @@
 						"11": "Running",
 						"12": "Idle_02",
 						"walk": "Walking",
-						"run": "Running"
+						"run": "Running",
+						"work": "Collect_Object"
 					}
 				},
 				{

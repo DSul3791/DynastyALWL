@@ -207,6 +207,7 @@ var flame                               # FlameSounds: the torch or lantern in t
 var breath                              # BreathSounds: the heartbeat (always heard, the Daggorath pulse loaded at setup), exertion and the faint (set_exertion, stand-in follows the body)
 var trees                               # TreeSounds: felling (watch the world rows, fall(), chips())
 var fire                                # FireSounds: campfire loops by size, lit, put out, rain sizzle (set_fires)
+var under_land: Callable = Callable()    # terrain_client sets this: true under the island, where below 0 m is no sea (unset: all below 0 m is sea)
 var ground_below: Callable = Callable()   # terrain_client sets this: ground height under a point (NAN when not loaded)
 var itemfx                              # ItemSounds: inventory cues (watch(items) every frame)
 var inner                               # InnerVoiceSounds: the character's thoughts in the headset (speak(line_id, kind))
@@ -962,6 +963,11 @@ func set_floor(sound_name: String) -> void:
 	floor_surface = sound_name if FLOOR_SURFACES.has(sound_name) else ""
 
 
+# Below 0 m at p is the sea, not a dry tunnel under the island (under_land).
+func sea_below(p: Vector3) -> bool:
+	return not (under_land.is_valid() and bool(under_land.call(p)))
+
+
 # One footfall at gait 0 walk, 1 jog, 2 run; `boost_db` makes it louder (landings).
 # `foot` is "left" or "right" (recorded sets have one of each).
 func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: String = "left") -> void:
@@ -969,7 +975,7 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 	var feet: Vector3 = body.global_position - Vector3(0.0, FEET_M, 0.0)
 	var water_here: float = _flora.water_surface_at(feet.x, feet.z)
 
-	if feet.y < 0.0 and (is_nan(water_here) or water_here < 0.0):
+	if feet.y < 0.0 and (is_nan(water_here) or water_here < 0.0) and sea_below(feet):
 		water_here = 0.0                                              # the sea
 
 	var depth: float = water_here - feet.y if not is_nan(water_here) else -1.0

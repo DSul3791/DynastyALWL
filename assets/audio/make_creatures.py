@@ -2,7 +2,8 @@
 
 Run: python3 assets/audio/make_creatures.py   (needs numpy and ffmpeg)
 Writes assets/audio/creatures/<kind>_<call>_N (2 variants each): deer_grunt, deer_snort,
-rabbit_thump, rabbit_squeak, fox_bark, fox_scream, wolf_howl, wolf_growl, bear_growl, bear_roar.
+rabbit_thump, rabbit_squeak, fox_bark, fox_scream, wolf_howl, wolf_growl, bear_growl, bear_roar,
+goblin_chitter, goblin_hiss. Names after the command write only those (python3 assets/audio/make_creatures.py goblin_chitter goblin_hiss).
 They are tone and noise sketches, good enough to test placement, distance and timing. Recordings
 go in assets/audio/recorded/creatures/ under the same names; the game prefers them.
 """
@@ -264,23 +265,57 @@ def duck_quack(rng):
     return finish(out[:int(0.7 * SR)], 0.7)
 
 
+def goblin_chitter(rng):
+    """A goblin's angry chatter (Dave 20 Nov 2026: at a weapon in hand they "make angry sounds"): a quick run of rasped, nasal yaps."""
+    out = np.zeros(int(1.4 * SR))
+    at = 0.02
+
+    for _ in range(rng.integers(4, 7)):
+        d = rng.uniform(0.05, 0.09)
+        y = voiced(rng, d, rng.uniform(520, 700), rng.uniform(380, 480), [(1300, 1.0), (2600, 0.8), (3900, 0.3)], rough=0.35, breath=0.12)
+        y *= env(len(y), 0.004, d * 0.4)
+        add(out, y / (np.max(np.abs(y)) + 1e-9) * rng.uniform(0.7, 1.0), at)
+        at += d + rng.uniform(0.04, 0.09)
+
+    return finish(out[:int((at + 0.08) * SR)], 0.7, 0.02)
+
+
+def goblin_hiss(rng):
+    """A goblin's warning hiss with a throaty snarl under it."""
+    d = rng.uniform(0.6, 0.9)
+    n = int(d * SR)
+    t = np.arange(n) / SR
+    h = noise(rng, n, lambda fr: band(fr, rng.uniform(3800, 4600), 0.7)) * np.minimum(t / 0.06, 1.0) * np.minimum((d - t) / 0.25, 1.0)
+    g = voiced(rng, d, rng.uniform(210, 260), rng.uniform(170, 200), [(700, 1.0), (1600, 0.6)], rough=0.5, breath=0.2)
+    g *= (0.6 + 0.4 * np.sin(2 * np.pi * 24 * t)) * np.minimum(t / 0.1, 1.0) * np.minimum((d - t) / 0.3, 1.0)
+    return finish(h / (np.max(np.abs(h)) + 1e-9) + 0.6 * g / (np.max(np.abs(g)) + 1e-9), 0.7, 0.05)
+
+
 SOUNDS = {
     "deer_grunt": deer_grunt, "deer_snort": deer_snort, "rabbit_thump": rabbit_thump, "rabbit_squeak": rabbit_squeak,
     "fox_bark": fox_bark, "fox_scream": fox_scream, "wolf_howl": wolf_howl, "wolf_growl": wolf_growl,
     "bear_growl": bear_growl, "bear_roar": bear_roar,
     "moose_grunt": moose_grunt, "moose_snort": moose_snort, "moose_bellow": moose_bellow, "horse_snort": horse_snort,
     "horse_whinny": horse_whinny, "duck_quack": duck_quack,
+    "goblin_chitter": goblin_chitter, "goblin_hiss": goblin_hiss,
 }
 
 
 def main():
     rng = np.random.default_rng(20261024)
+    only = sys.argv[1:]   # names to write (the rest stay as they are), e.g. goblin_chitter goblin_hiss
+
+    if only:
+        rng = np.random.default_rng(20261120)
 
     for name, make in SOUNDS.items():
+        if only and name not in only:
+            continue
+
         for v in range(VARIANTS):
             write_ogg("%s_%d" % (name, v), make(rng))
 
-    print("Wrote %d creature sounds to %s" % (len(SOUNDS) * VARIANTS, OUT))
+    print("Wrote %d creature sounds to %s" % ((len(only) if only else len(SOUNDS)) * VARIANTS, OUT))
 
 
 if __name__ == "__main__":

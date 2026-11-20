@@ -66,9 +66,90 @@ A camp's bandits are fixed by the seed: their count and levels by distance band 
 
 ### Known limits (stage 2)
 
-- No toll, robbery, bounty, horse claiming, dissolving or dormancy yet (stages 3 and 4).
+- No toll, robbery or horse claiming yet (stage 4 and 5b); bounty, dissolving and dormancy came with stage 5.
 - A camp horse cannot be ridden or led away yet; it is tied and never bolts.
 - The camp has no stash chest until stage 4.
-- A site whose bandits and horses are all gone stays awake and its empty camp is laid at every start until stage 3 dissolves it.
+- A site whose bandits are all gone is cleared and dissolves (stage 5).
 - A camp is made only when none of its members is in the world: one bandit gone off on its own (past 300 m of every player) is made again with the others.
 - Bandits have no footstep sounds yet.
+
+## Stage 3: the warnings (`server_bandits.gd` warnings, `data/npcs/bandits.json` warnings, protocol 144)
+
+A site that wakes does not show its camp at once (Dave agreed the plan's warning stages, 19 Nov 2026):
+
+1. **Signs**: a cold fire pit at the site (a campfire in its cold ash state, marked with the site's key, never saved, nobody can use it) and boot prints leading off the nearest road toward it. The prints hang on a mark at the road point (a cold fire item flagged `marks`, same site key, never saved, not a building, no pit drawn, "Boot prints" when inspected), because world rows reach a player only within 100 m and the pit stands 100 to 300 m off the road.
+2. **Lookout**, after 2 game days if the road is still busy: one bandit (the camp's first level) stands 60 m off the road on the line to the camp, watching the road. When a player comes within 40 m he walks back to the pit, so following him finds the camp.
+3. **The camp** (stage 2), after 2 game days more.
+
+At each step the road near the site must still hold half the points that woke it; if it does not, the pit and its prints are taken away, the lookout goes, and the site sleeps (it can wake again later like any candidate). A site woken before stage 3 is already a camp. Nothing in stage 3 hurts or robs anyone.
+
+### For Dave (provisional, adjust after play)
+
+| # | Choice | Value |
+|---|---|---|
+| BANDIT-17 | Signs | a cold fire pit and boot prints: pairs 0.8 m apart for 25 m off the road (at most 32 prints) |
+| BANDIT-18 | Stage length | 2 game days for signs, 2 more for the lookout, then the camp |
+| BANDIT-19 | Lookout | 60 m off the road, walks back to camp when a player is within 40 m |
+| BANDIT-20 | Going back to sleep | road below half the wake points (15) before the camp |
+
+### Known limits (stage 3)
+
+- The Tracking skill does not read the prints yet (they are only seen); there is no "tracks" look-at line.
+- A killed lookout leaves the post empty until the camp (a restart keeps it so). A pot cannot hang on the prints; one hung on the pit stays as it does on Edda and Hob's fire.
+- Signs use the nearest surveyed road patch; a site whose road was taken up shows the pit without prints.
+- The lookout watches only while a player is within 200 m of the camp or his post (like the camp's people); he walks back at walking pace and stays by the pit.
+- Rain, snow and night do not change the prints.
+
+## Stage 5: clearing a camp (`server_bandits.gd` clearing, `data/npcs/bandits.json` clearing; no protocol change)
+
+Built before stage 4 (the coordinator, 20 Nov 2026, provisional on Dave's behalf): it takes nothing from a player. Dave, 19 Nov 2026: "once all the badits are apprehended or killed ... in a couple days the camp just dissolves back into the ground. once a camp is used it will become dormant".
+
+- **Giving up.** A camp bandit hit below 15% of his health gives up: he sits where he is, throws down his weapon and stops fighting back or running. He can still be killed (then he drops only his clothes).
+- **Tying.** Strike him with Rope or Twine in hand (left click, the same blow as any strike): he is tied and one Rope or Twine is used. A notice says so; there is no new key or prompt.
+- **Leading.** A tied bandit follows the player who tied him, keeping about 2 m behind (walking, trotting when left behind). Led more than 30 m ahead of him, or after a game hour from giving up or being tied, he slips free and walks back to his camp, still badly hurt (one more blow and he gives up again). A bandit who gave up and is not tied gets up after a game hour too.
+- **Bounty.** Led within 5 m of a guard (Edda, the only role guard today) he is handed over: he leaves his camp for good and the player gets 10 copper for each of his levels.
+- **Cleared.** When a camp's last bandit is killed or handed over, the camp is cleared. 2 game days later it dissolves: the fire, Lean-tos and horses go. The site then stays dormant for 10 game days, however busy the road, before it may wake again like any candidate.
+- Claiming the horses is stage 5b (below); a horse nobody claims stays tethered until the camp dissolves.
+- A site whose only bandit out was the lookout, killed or handed over with no others left, is cleared and dissolves without ever becoming a camp.
+- A bandit who threw down his weapon is remembered with the camp (saved), so one made again after a despawn has no second weapon to drop.
+
+### For Dave (provisional, adjust after play)
+
+| # | Choice | Value |
+|---|---|---|
+| BANDIT-21 | Giving up | below 15% health: sits, drops his weapon, no fighting back |
+| BANDIT-22 | Tying | a strike with Rope or Twine in hand; one is used |
+| BANDIT-23 | Leading | follows 2 m behind; slips free past 30 m |
+| BANDIT-24 | Escaping | a game hour after giving up or being tied |
+| BANDIT-25 | Bounty | from Edda (role guard) within 5 m: 10 copper a level |
+| BANDIT-26 | Dissolving | 2 game days after the last bandit is gone |
+| BANDIT-27 | Quiet time | dormant 10 game days after dissolving |
+
+### Known limits (stage 5)
+
+- No "Press E" prompt for tying: the strike with Rope or Twine in hand does it, told by a notice when he gives up.
+- The guard must be placed (Edda out at her camp); a dormant guard far from every player takes no one.
+- No patrols yet: the quiet time is a fixed 10 game days, not "while patrols pass" (patrols come with the starter town).
+- The surrender pose is the bandit's sitting pose; a tied bandit shows no rope.
+- A bandit who escapes walks back at walking pace and sits again; his health does not come back.
+
+## Stage 5b: claiming the horses (`server_bandits.gd` claim_horse, `server_companions.gd` claim, `animals.json` horse companion; no protocol change)
+
+Dave, 19 Nov 2026: horses are claimed and brought to town. The coordinator (20 Nov 2026, provisional on Dave's behalf): build it as 5b with a new companion source.
+
+- Once a camp has no bandit left (killed or handed over), a strike at one of its horses with Rope or Twine in hand puts a lead on it; one Rope or Twine is used. While any bandit of the camp is left, the strike is an ordinary blow.
+- The horse leaves the camp's row and becomes that player's companion (a new source "claimed": only a camp horse, never a stray). It follows about 4 m behind, saved with the dogs and wolves in companions.json, goes with its owner when they leave the game and is made again beside them on return. The camp dissolving does not take it.
+- It needs no feeding: its bond stays full and it never warns. Both horses of a camp can be claimed, by one player or two; each stands a step apart from its owner's other companions.
+
+### For Dave (provisional, adjust after play)
+
+| # | Choice | Value |
+|---|---|---|
+| BANDIT-28 | Claiming | a strike with Rope or Twine at a horse of a camp with no bandit left; one is used |
+| BANDIT-29 | A claimed horse | follows 4 m behind; no feeding, never leaves its owner |
+
+### Known limits (stage 5b)
+
+- No riding, no saddle shown while it follows (the client shows the tethered horse only), no hitching or stabling in town; it can only follow.
+- No way to let a claimed horse go yet.
+- Names come from a short first-try list (Bay, Ash, Clover...).

@@ -122,6 +122,8 @@ const FIRE_STATE_SURVIVAL := 40         # lit fire states by tier (1 stays the c
 const FIRE_STATE_BONFIRE := 41
 const FIRE_STATE_COALS := StructureLookScript.FIRE_COALS   # 76: after the flames, coals glowing (cooking.json coals; docs/design/fire_coals_design.md)...
 const FIRE_STATE_ASH := StructureLookScript.FIRE_ASH       # 77: ...then warm ash, then cold ash (8)
+const FIRE_STATE_COLD := 8                                   # cold ash (a bandit camp's pit before the camp, BANDIT_CAMPS.md stage 3)
+const BANDIT_TRACKS_MAX := 32                                # boot prints sent with one mark at most (a short list in its world row)
 const FIRE_OUT_S := 300.0                # a burnt-out or rained-out fire stays this long
 const FIRE_MIN_GAP_M := 2.0               # fallbacks: structures.json "campfire" decides
 const FIRES_PER_CHUNK := 8
@@ -196,6 +198,7 @@ var ore_near: Callable           # (position, reach in metres, ore names wanted,
 var bog_deposit_at: Callable     # (x, z, digging.json bog_iron) -> BogIron.deposit_at on the baked tile there ({} when none); set by the server scene (unset: no bog iron)
 var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
+var drink_water_near: Callable   # (a player's position, reach) -> as water_near, and the water no more than DrinkRules.REACH_DROP_M below the feet (unset: water_near)
 var water_source: Callable       # (position, reach in metres) -> Array of DrinkRules rows within reach (springs, brooks, lakes, salt); vitals.json thirst.sources (docs/design/drinking_water_design.md)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var send_chest_info: Callable   # (peer, world id, keep_out, may_set): the open container's "keep out" tick and whether this player may change it (protocol 98)
@@ -289,6 +292,8 @@ var _death_cfg: Dictionary = {}     # data/items/death.json
 var hit_animal_path: Callable        # (peer, from, to, damage) -> {"at": position} or {}: the first animal an arrow passes through is hurt (set by the server)
 var animal_alarm: Callable           # (point, radius): a loud noise (a shot) startles animals near it (set by the server)
 var hit_animal: Callable            # (peer, origin, direction, reach, damage) -> {"at": the point struck} or {} (tests may answer a bool): set by the server, hits the animal in front
+var bind_animal: Callable           # (peer, origin, direction, reach) -> bool: a strike with Rope or Twine in hand ties the bandit in front who gave up (BANDIT_CAMPS.md stage 5); true uses one
+const BIND_ITEMS := ["rope", "twine"]
 var _last_strike: Dictionary = {}
 var _carcass_cfg: Dictionary = {}   # data/items/carcass.json
 var _sick_cfg: Dictionary = {}      # data/items/sickness.json
@@ -738,6 +743,7 @@ func note_spots_on_close() -> void:
 
 
 func peer_left(peer: int) -> void:
+	_held.erase(peer)
 	_carts.peer_left(peer)   # a cart being pulled parks where it is
 	var key_left: String = str(_peer_key.get(peer, ""))
 
@@ -828,6 +834,30 @@ func peer_left(peer: int) -> void:
 	_body_sent.erase(peer)
 	_moving.erase(peer)
 	_last_process.erase(peer)
+
+
+# The item number the player says is in its hand (protocol 146 held_item), kept per peer for the goblin camps (server_tribes.gd armed).
+var _held: Dictionary = {}   # peer -> item number
+
+
+func report_held(peer: int, number: int) -> void:
+	_held[peer] = maxi(number, 0)
+
+
+# The item in this player's hand, 0 for none: what the client last said, and only while the pack still holds one (a claim of an item the
+# player does not have counts as empty hands).
+func held_number(peer: int) -> int:
+	var number: int = int(_held.get(peer, 0))
+	var inv = inventory_of(peer)
+
+	if number == 0 or inv == null:
+		return 0
+
+	for slot in range(inv.slot_count):
+		if inv.numbers[slot] == number:
+			return number
+
+	return 0
 
 
 func report_position(peer: int, position: Vector3) -> void:
@@ -1304,6 +1334,9 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_CHEST_OPEN or kind == Net.ACT_CHEST_PUT or kind == Net.ACT_CHEST_TAKE:
 		_chest_action(peer, inv, kind, a, b, count, int(at.x) - 1 if kind == Net.ACT_CHEST_PUT else -1)   # a put's at.x: the store slot it was dragged onto + 1 (protocol 121)
 	elif kind == Net.ACT_USE_STRUCT:
+		if _tribe_piece_refuses(peer, a):
+			return
+
 		_use_struct(peer, inv, a, b, count - 1)   # count: the held pack slot + 1, for the chopping block's axe (protocol 117)
 	elif kind == Net.ACT_EAT:
 		var fed_before: float = float(vitals_of(peer).get("fed", 0.0))
@@ -1368,6 +1401,9 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_CHEST_KEEP_OUT:
 		_set_keep_out(peer, a, b == 1)
 	elif kind == Net.ACT_CHEST_LOCK:
+		if _tribe_piece_refuses(peer, a):
+			return
+
 		_lock_action(peer, inv, a, b, count)
 	elif kind == Net.ACT_VIEW_OPEN:
 		_view_open(peer, a)
@@ -1421,6 +1457,9 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_PLACE:
 		_place(peer, inv, a, at, count, b)
 	elif kind == Net.ACT_REPAIR_STRUCT:
+		if _tribe_piece_refuses(peer, a):
+			return
+
 		_repair_struct(peer, inv, a, b - 1)   # b: the held pack slot + 1 (protocol 117)
 	elif kind == Net.ACT_PLACE_BLUEPRINT:
 		_place(peer, inv, -1, at, count, b, _blueprints.get(a, {}))
@@ -1623,6 +1662,7 @@ func tick(delta: float) -> void:
 		_smelters.tick_all(spent)
 		_dev_pending_tick(spent)
 		_camp_fire_tick()
+		_tribe_props_tick()
 		_slow_mark("lights-dev", t0)
 		_comfort_tick(spent)
 		_slow_mark("comfort", t0)
@@ -3055,6 +3095,14 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 
 	_last_strike[peer] = now
 	var eye: Vector3 = _peer_pos[peer] + Vector3(0.0, 1.4, 0.0)
+
+	if BIND_ITEMS.has(table.id_of(inv.numbers[slot])) and bind_animal.is_valid() and bool(bind_animal.call(peer, eye, direction, 2.5)):
+		var before: Array = _snapshot(inv)
+		inv.take_from_slot(slot, 1)   # the rope or twine stays on the bandit
+		_send_changes(peer, inv, before)
+		_dirty = true
+		return
+
 	var melee: Dictionary = MeleeRules.blow(entry, _melee_cfg)
 	var damage: float = float(weapon_blow(entry, inv.inst[slot])["damage"]) if float(entry.get("damage", 0.0)) > 0.0 else float(melee["damage"])   # a +2 weapon strikes two harder (master s2.9 item 4)
 	var reach: float = float(melee["reach_m"])   # a pike reaches further than a sword; a knife less than an axe
@@ -5996,6 +6044,9 @@ func _expire_items(spent: float) -> void:
 # the end of that stage).
 func _fire_extra(it: Dictionary) -> Dictionary:
 	if it["fire"].has("camp"):
+		if it["fire"].has("tracks"):
+			return {"camp": 2, "marks": true, "tracks": it["fire"]["tracks"]}   # a bandit camp's boot prints leading off the road (a mark, no pit drawn)
+
 		return {"camp": 2 if typeof(it["fire"]["camp"]) == TYPE_STRING else 1}   # a camp fire (1 Edda and Hob's or a goblin tribe's, 2 a bandit camp's): the client offers nothing on it and shows no burn time (PROTOCOL.md, world-item rows)
 
 	var extra: Dictionary = {"burn": snappedf(float(it["fire"]["burn_left"]), 0.1)}
@@ -6434,23 +6485,78 @@ func _camp_refuses(peer: int, it: Dictionary) -> bool:
 	return true
 
 
+# The goblin tribes' camp pieces (NpcCamp.props(): a chest, racks and benches round their fire, Dave 20 Nov 2026), laid like the camp fires: transient
+# pieces marked with the tribe, never saved, laid again at every start and again whenever one is gone. Nothing in them: no store, so nobody loots
+# the chest; _tribe_piece_refuses turns away every take-down, use, repair and lock, and serving_station skips them.
+var _tribe_prop_ids: Dictionary = {}   # index in NpcCamp.props() -> world id of that piece
+
+
+func _tribe_props_tick() -> void:
+	if not camp_fire_on or not ground_height.is_valid():
+		return
+
+	var props: Array = NpcCamp.props()
+
+	for k in props.size():
+		var laid: Dictionary = _items.get(int(_tribe_prop_ids.get(k, 0)), {}).get("struct", {})
+
+		if str(laid.get("tribe", "")) == str(props[k]["tribe"]) and int(laid.get("prop", -1)) == k:
+			continue
+
+		var def: Dictionary = _structures.get(str(props[k]["kind"]), {})
+
+		if def.is_empty():
+			continue
+
+		var spot: Vector2 = Vector2(float(props[k]["x"]), float(props[k]["z"]))
+
+		if ground_ready.is_valid() and not bool(ground_ready.call(spot.x, spot.y)):
+			continue   # its ground is still being read in the background: never read a tile on the main thread here
+
+		var y: float = float(ground_height.call(spot.x, spot.y))
+
+		if is_nan(y):
+			continue
+
+		var entry: Dictionary = {"number": table.number_of(str(def.get("item", props[k]["kind"]))), "count": 1, "pos": Vector3(spot.x, y, spot.y), "left": 1.0e9,
+			"struct": {"kind": str(props[k]["kind"]), "yaw": float(props[k]["yaw"]), "transient": true, "tribe": str(props[k]["tribe"]), "prop": k}}
+		_items[_next_id] = entry
+		_grid_add(_next_id, entry)
+		_tribe_prop_ids[k] = _next_id
+		_next_id += 1
+
+
+# True (after telling the player) when world item `id` is a goblin tribe's camp piece: it belongs to the camp, not to anyone who walks up.
+func _tribe_piece_refuses(peer: int, id: int) -> bool:
+	if not _items.get(id, {}).get("struct", {}).has("tribe"):
+		return false
+
+	_say(peer, "That belongs to %s." % NpcCamp.camp_name_of(str(_items[id]["struct"]["tribe"])))
+	return true
+
+
 # A bandit camp (server_bandits.gd stage 2, docs/design/BANDIT_CAMPS.md): its fire burns like Edda and Hob's (never saved, no wood, nobody tends
 # it; "camp" holds the site's key) and its Lean-tos (open sides `yaw`) are transient pieces marked "bandit", never saved or taken down, laid
 # again at every start from the site's row, and again over old_ids (what is left of its last laying) when a piece is gone. Returns the world ids laid.
-func lay_bandit_camp(key: String, fire: Vector3, lean_tos: Array, old_ids: Array = []) -> Array:
-	for id in old_ids:
-		var old: Dictionary = _items.get(int(id), {})
-
-		if str(old.get("struct", {}).get("bandit", "")) == key or str(old.get("fire", {}).get("camp", "")) == key:
-			_items.erase(int(id))   # what is left of this camp's last laying (a world reset takes the fire, keeps transient Lean-tos): laid whole again
-
+func lay_bandit_camp(key: String, fire: Vector3, lean_tos: Array, old_ids: Array = [], tracks: Array = [], tracks_at: Vector3 = Vector3.INF) -> Array:
+	clear_bandit_camp(key, old_ids)   # what is left of this camp's last laying (a world reset takes the fire, keeps transient Lean-tos): laid whole again
 	var ids: Array = []
 	var state: int = int(((_cooking.get("fire_tiers", {}) as Dictionary).get(NpcCamp.fire_wood(), {}) as Dictionary).get("state", FIRE_STATE_BONFIRE))
+	var pit: bool = not tracks.is_empty() or lean_tos.is_empty()   # the warnings (stage 3): a cold fire pit with boot tracks from the road, no Lean-tos
 	_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": fire, "left": 1.0e9,
-		"fire": {"state": state, "burn_left": 1.0e9, "camp": key, "covered": true, "recheck": COVER_RECHECK_S}}
+		"fire": {"state": FIRE_STATE_COLD if pit else state, "burn_left": 0.0 if pit else 1.0e9, "camp": key, "covered": true, "recheck": COVER_RECHECK_S}}
+
 	_zone_add(_next_id)
 	ids.append(_next_id)
 	_next_id += 1
+
+	if not tracks.is_empty() and tracks_at.x != INF:   # the prints hang on a mark at the road (a pit 100 to 300 m off it is not sent to travellers)
+		_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": tracks_at, "left": 1.0e9,
+			"fire": {"state": FIRE_STATE_COLD, "burn_left": 0.0, "camp": key, "marks": true, "tracks": tracks.slice(0, BANDIT_TRACKS_MAX), "covered": true, "recheck": COVER_RECHECK_S}}
+		_zone_add(_next_id)
+		ids.append(_next_id)
+		_next_id += 1
+
 	var def: Dictionary = _structures.get("lean_to", {})
 
 	for row in lean_tos:
@@ -6462,6 +6568,16 @@ func lay_bandit_camp(key: String, fire: Vector3, lean_tos: Array, old_ids: Array
 
 	_lit_valid = false
 	return ids
+
+
+# Takes away what is laid of a bandit camp (only pieces still marked with its key: an id reused since is left alone).
+func clear_bandit_camp(key: String, ids: Array) -> void:
+	for id in ids:
+		var old: Dictionary = _items.get(int(id), {})
+
+		if str(old.get("struct", {}).get("bandit", "")) == key or str(old.get("fire", {}).get("camp", "")) == key:
+			_items.erase(int(id))
+			_lit_valid = false
 
 
 # True while every piece of a laid bandit camp still stands (a world reset takes its fire: the camp is laid again).
@@ -8685,11 +8801,11 @@ func _repair(peer: int, inv, slot: int) -> void:
 		return
 
 	# The tool's own slot must not be spent as material.
-	var held_number: int = inv.numbers[slot]
+	var tool_number: int = inv.numbers[slot]
 
 	for cost in costs:
 		var number: int = table.number_of(str(cost[0]))
-		var have: int = inv.count_of(number) - (inv.counts[slot] if number == held_number else 0)
+		var have: int = inv.count_of(number) - (inv.counts[slot] if number == tool_number else 0)
 
 		if number == 0 or have < int(cost[1]):
 			_say(peer, "Repair needs %s." % _repair_text(costs))
@@ -8777,7 +8893,15 @@ func _water_at_hand(peer: int, inv) -> bool:
 	var thirst: Dictionary = _vitals_cfg.get("thirst", {})
 	var reach: float = float(thirst.get("reach_m", 3.0))
 	var pos: Vector3 = _peer_pos[peer]
-	return _tank_near(pos, reach) >= 0 or (water_near.is_valid() and bool(water_near.call(pos, reach))) or _record_water_near(peer, thirst)
+	return _tank_near(pos, reach) >= 0 or _drink_water_near(pos, reach) or _record_water_near(peer, thirst)
+
+
+# Water a player at pos can drink or fill from: within reach, and not down a bank or cliff (drink_water_near; water_near where the scene sets none).
+func _drink_water_near(pos: Vector3, reach: float) -> bool:
+	if drink_water_near.is_valid():
+		return bool(drink_water_near.call(pos, reach))
+
+	return water_near.is_valid() and bool(water_near.call(pos, reach))
 
 
 # Every slow tick: each job's work goes on (seat_speed times faster sitting on a seat at a whetstone); a finished tool gets its sharpness back and
@@ -9820,7 +9944,7 @@ func _is_pot(it: Dictionary) -> bool:
 # The fire a pot at this spot hangs over, or -1.
 func _fire_under_pot(pos: Vector3) -> int:
 	for id in _items:
-		if _items[id].has("fire") and (_items[id]["pos"] as Vector3).distance_to(pos) <= POT_ON_FIRE_M:
+		if _items[id].has("fire") and not _items[id]["fire"].has("marks") and (_items[id]["pos"] as Vector3).distance_to(pos) <= POT_ON_FIRE_M:
 			return id
 
 	return -1
@@ -10826,8 +10950,8 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 	for id in _items:
 		var other: Dictionary = _items[id]
 
-		if not other.has("struct") and not other.has("fire"):
-			continue
+		if not other.has("struct") and not other.has("fire") or other.get("fire", {}).has("marks"):
+			continue   # a bandit camp's boot prints stand in nobody's way
 
 		var row: Dictionary = {"pos": other["pos"], "state": int(other["fire"]["state"]) if other.has("fire") else int(_structures.get(str(other["struct"]["kind"]), {}).get("state", -1)), "yaw": float(other["struct"].get("yaw", 0.0)) if other.has("struct") else 0.0}
 
@@ -11395,7 +11519,7 @@ var _spawn_zones = SpawnZonesScript.new()
 func _zone_add(id: int) -> void:
 	var entry: Dictionary = _items[id]
 
-	if SpawnZonesScript.counts(entry) and _carts.vehicle_of(entry).is_empty():   # a cart or barrow goes where it is pulled: not a build
+	if SpawnZonesScript.counts(entry) and _carts.vehicle_of(entry).is_empty() and not entry.get("fire", {}).has("marks"):   # a bandit camp's boot prints are no build   # a cart or barrow goes where it is pulled: not a build
 		_spawn_zones.add(id, entry["pos"].x, entry["pos"].z)
 
 
@@ -11488,6 +11612,9 @@ func _take_down(peer: int, inv, id: int) -> void:
 
 	if it["struct"].has("bandit"):
 		_say(peer, "That belongs to the bandits' camp.")
+		return
+
+	if _tribe_piece_refuses(peer, id):
 		return
 
 	if str(def.get("hand_laid", "")) != "":
@@ -14283,21 +14410,32 @@ func _note_road_trip(peer: int, position: Vector3) -> void:
 
 # Metres from a spot to the nearest surveyed road patch within r, or INF (a bandit site stands off a road).
 func road_distance(at: Vector3, r: float) -> float:
+	var near: Vector3 = road_point(at, r)
+	return Vector2(near.x - at.x, near.z - at.z).length() if near.x != INF else INF
+
+
+# The nearest surveyed road patch's position within r of `at`, or Vector3.INF (where a bandit camp's tracks leave the road).
+func road_point(at: Vector3, r: float) -> Vector3:
 	var best: float = INF
+	var best_at: Vector3 = Vector3.INF
 
 	for id in _ids_near(at, r):
 		if _items.has(id) and _items[id].has("struct") and str(_items[id]["struct"]["kind"]) == "path_patch" and bool(_items[id]["struct"].get("road", false)):
-			best = minf(best, Vector2(_items[id]["pos"].x - at.x, _items[id]["pos"].z - at.z).length())
+			var d: float = Vector2(_items[id]["pos"].x - at.x, _items[id]["pos"].z - at.z).length()
 
-	return best if best <= r else INF
+			if d < best:
+				best = d
+				best_at = _items[id]["pos"]
+
+	return best_at if best <= r else Vector3.INF
 
 
 # True when a placed building (SurveyLine.is_building: not a path, bed, remains or carcass; a campfire counts, as on the survey line) stands
 # within r of a spot.
 func building_near(at: Vector3, r: float) -> bool:
 	for id in _ids_near(at, r):
-		if not _items.has(id) or not (_items[id].has("struct") or _items[id].has("fire")):
-			continue
+		if not _items.has(id) or not (_items[id].has("struct") or _items[id].has("fire")) or _items[id].get("fire", {}).has("marks"):
+			continue   # a bandit camp's boot prints are not a building
 
 		var kind: String = str(_items[id]["struct"]["kind"]) if _items[id].has("struct") else ""
 
@@ -15853,7 +15991,7 @@ func serving_station(peer: int, station: String, level: int = 1, far_m: float = 
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if not it.has("struct") or it["struct"].has("site"):   # a blueprint site is not built yet: it serves as nothing (docs/BLUEPRINT_SITES.md)
+		if not it.has("struct") or it["struct"].has("site") or it["struct"].has("tribe"):   # a blueprint site is not built yet: it serves as nothing (docs/BLUEPRINT_SITES.md); a goblin camp's rack is theirs
 			continue
 
 		var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
@@ -20149,8 +20287,8 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 			return _hint_count(st, "made:stone_axe") >= 1
 		"tree_down":
 			return _hint_count(st, "event:tree_felled") >= 1
-		"6_sticks_6_stones":
-			return inv.count_of(table.number_of("stick")) >= 6 and inv.count_of(table.number_of("stone")) >= 6
+		"6_sticks_16_stones":
+			return inv.count_of(table.number_of("stick")) >= 6 and inv.count_of(table.number_of("stone")) >= 16
 		"kit_made":
 			return _hint_count(st, "made:campfire_kit") >= 1
 		"fire_placed":
@@ -23648,7 +23786,7 @@ func _drink_water(peer: int, slot: int = -1, inv = null) -> void:
 		_drink_from_tank(peer, slot, inv, tank, v, thirst, now)
 		return
 
-	var shown: bool = water_near.is_valid() and bool(water_near.call(_peer_pos[peer], float(thirst.get("reach_m", 3.0))))
+	var shown: bool = _drink_water_near(_peer_pos[peer], float(thirst.get("reach_m", 3.0)))
 
 	# The record's water counts too where the settled water does not show it (docs/design/drink_prompt_design.md (a)): a ground spring head, a narrow
 	# brook. The rule below then says whether it runs (_drink_source_ok: "The bed is dry", frozen, salt).

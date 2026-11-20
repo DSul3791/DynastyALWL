@@ -10,6 +10,13 @@ extends RefCounted
 # its bandits (animal species "bandit", levelled by the distance from the town) are made while a player is within spawn_m. They sit or
 # stand round the fire, fight back when hit (the big game charge, never lethal) and run when badly hurt; one killed drops its weapon and
 # clothes and is gone for good from the site's row. The horses stay at the tether.
+# Stage 3, the warnings (warnings in bandits.json): a site wakes as signs only, a cold fire pit with boot tracks from the road toward it; after
+# stage_game_days, if the road is still busy, one bandit keeps a lookout post off the road and walks back to camp when a player comes near;
+# after stage_game_days more the camp itself is laid. Traffic below sleep_share of wake_points before the camp puts the site back to sleep.
+# Stage 5, clearing a camp (clearing in bandits.json): a bandit beaten under surrender_share of his health gives up (sits, drops his weapon); a
+# strike with Rope or Twine in hand ties him and he follows that player; led within guard_m of a guard (Edda) he is handed over for a bounty
+# by level; left a game hour, or led past lead_slack_m, he slips free. A camp with no bandit left is cleared: dissolve_game_days later its
+# pieces and horses go and the site stays dormant for quiet_game_days. Nothing here hurts or robs a player.
 
 const GAME_DAY_S := 86400.0   # game seconds in a game day (the clock runs 24:1)
 
@@ -25,20 +32,28 @@ var building_near: Callable    # (Vector3, r) -> bool: a placed building (Survey
 var cave_mouths_at: Callable   # (x, z) -> Array of Vector2: every cave, den and mine mouth on the tile there, or null while that tile is not loaded
 var tribe_camps: Callable      # () -> Array of Vector2: every goblin tribe camp (server_tribes.gd camp_spots); no bandit site within tribe_clear_m of one
 var road_distance: Callable    # (Vector3, r) -> metres to the nearest road patch within r, or INF
-var lay_camp: Callable         # (key, fire Vector3, lean_to spots Array of [Vector3, yaw degrees], old ids to clear) -> Array of world ids laid
+var road_point: Callable       # (Vector3, r) -> the nearest road patch's position within r, or Vector3.INF (where the tracks leave the road)
+var clear_camp: Callable       # (key, Array of world ids) -> void: what is laid of a camp taken away (a site gone back to sleep, or signs replaced)
+var lay_camp: Callable         # (key, fire Vector3, lean_to spots Array of [Vector3, yaw degrees], old ids to clear, tracks, tracks_at) -> Array of world
+                               # ids laid (tracks not empty: a cold fire pit and a mark at tracks_at, the road, carrying those boot prints, [dx, dy, dz, yaw] from it)
 var laid_still: Callable       # (Array of world ids) -> bool: every piece is still there
 var drop_gear: Callable        # (item key, Vector3) -> void: a fallen bandit's weapon or clothes on the ground
+var guards_at: Callable        # () -> Array of Vector3: where the guards (role guard: Edda) stand; a tied bandit led within guard_m of one is handed over
+var pay_bounty: Callable       # (peer, copper) -> void: the bounty for a bandit handed over
+var tell: Callable             # (peer, text) -> void: a notice to one player
 var animals = null             # ServerAnimals: bandits and horses are animals (spawn, walk_step, the big game charge)
 
 var stretches: Dictionary = {}   # Vector2i stretch -> [points, game seconds when last set]
-var sites: Dictionary = {}       # Vector2i cell -> {"x", "z", "woke": game seconds, "points"}
+var sites: Dictionary = {}       # Vector2i cell -> {"x", "z", "woke": game seconds, "points", "levels", "horses", "stage" (1 signs, 2 lookout, 3 camp), "staged": game seconds}
 var _last: Dictionary = {}       # mover key -> the last RECENT_STRETCHES stretches it entered, newest last (pacing one boundary counts once)
 const RECENT_STRETCHES := 4
 var _dirty: Dictionary = {}      # stretches that gained points since the last check
 var _retry: Dictionary = {}      # candidate cells whose ground was not loaded at the last check: tried again at the next
 var _checked_at: float = -INF
+var dormant: Dictionary = {}     # Vector2i cell -> game seconds until a cleared site may wake again (stage 5, saved)
 var _laid: Dictionary = {}       # site cell -> world ids of its camp pieces this run
-var _members: Dictionary = {}    # site cell -> {animal id: {"level", "pos", "horse"}} made this run
+var _laid_stage: Dictionary = {}  # site cell -> the stage its laid pieces show (signs or the camp)
+var _members: Dictionary = {}    # site cell -> {animal id: {"level", "pos", "horse", "armed"}} made this run
 var _camp_acc: float = 0.0
 var _path: String = ""
 
@@ -135,6 +150,9 @@ func refusal(cell: Vector2i, spot: Vector2, now: float) -> String:
 	if sites.has(cell):
 		return "awake"
 
+	if float(dormant.get(cell, -INF)) > now:
+		return "dormant"   # cleared (stage 5): quiet for quiet_game_days
+
 	var clear: float = float(cfg.get("start_clear_m", 1500.0))
 
 	if (town.x != INF and spot.distance_to(town) < clear) or (spawn.x != INF and spot.distance_to(spawn) < clear):
@@ -203,10 +221,18 @@ func refusal(cell: Vector2i, spot: Vector2, now: float) -> String:
 func tick() -> Array:
 	var now: float = _now()
 
-	if now - _checked_at < float(cfg.get("check_s", 3600.0)) or (_dirty.is_empty() and _retry.is_empty()):
+	if now - _checked_at < float(cfg.get("check_s", 3600.0)):
 		return []
 
 	_checked_at = now
+	var moved: bool = _advance(now)   # awake sites move on through the warnings (or sleep again) whatever the road did this hour
+
+	if _dirty.is_empty() and _retry.is_empty():
+		if moved:
+			save()
+
+		return []
+
 	var reach: float = float(cfg.get("near_road_m", 500.0))
 	var size: float = float(cfg.get("cell_m", 1000.0))
 	var stretch_m: float = float(cfg.get("stretch_m", 100.0))
@@ -239,22 +265,95 @@ func tick() -> Array:
 			_retry[row[1]] = true
 
 		if why == "":
-			sites[row[1]] = {"x": row[2].x, "z": row[2].y, "woke": now, "points": row[0], "levels": camp_levels(row[1], row[2]), "horses": int(_camp().get("horses", 2))}
+			sites[row[1]] = {"x": row[2].x, "z": row[2].y, "woke": now, "points": row[0], "levels": camp_levels(row[1], row[2]), "horses": int(_camp().get("horses", 2)), "stage": SIGNS, "staged": now}
 			woke.append(row[1])
 			print("BANDIT site woke at %.0f, %.0f (%.1f trip points)" % [row[2].x, row[2].y, float(row[0])])
 
 	_drop_faded(now)
 
-	if not woke.is_empty():
+	if not woke.is_empty() or moved:
 		save()
 
 	return woke
+
+
+# The warnings (stage 3): a site past stage_game_days at its stage moves on while its road keeps at least sleep_share of wake_points, and goes
+# back to sleep (what is laid taken away, its lookout gone) when it does not. The camp itself (CAMP) stays. True when any site changed.
+func _advance(now: float) -> bool:
+	var row: Dictionary = _warnings()
+	var due: float = float(row.get("stage_game_days", 2.0)) * GAME_DAY_S
+	var keep: float = float(cfg.get("wake_points", 30.0)) * float(row.get("sleep_share", 0.5))
+	var changed: bool = false
+
+	for cell in sites.keys():
+		var site: Dictionary = sites[cell]
+
+		if site.has("cleared_at"):
+			if now - float(site["cleared_at"]) >= float(_clearing().get("dissolve_game_days", 2.0)) * GAME_DAY_S:
+				_take_away(cell)   # the camp dissolves: its pieces and horses go
+				sites.erase(cell)
+				dormant[cell] = now + float(_clearing().get("quiet_game_days", 10.0)) * GAME_DAY_S
+				changed = true
+				print("BANDIT site %d,%d dissolved (cleared)" % [cell.x, cell.y])
+
+			continue
+
+		if int(site.get("stage", CAMP)) >= CAMP or now - float(site.get("staged", 0.0)) < due:
+			continue
+
+		changed = true
+
+		if points_near(Vector2(float(site["x"]), float(site["z"])), now) < keep:
+			_take_away(cell)
+			sites.erase(cell)
+			print("BANDIT site %d,%d went back to sleep (the road went quiet)" % [cell.x, cell.y])
+			continue
+
+		site["stage"] = int(site["stage"]) + 1
+		site["staged"] = now
+		_send_off(cell)   # the next stage's people are made fresh (the lookout goes, the camp comes)
+
+	return changed
+
+
+func _warnings() -> Dictionary:
+	return cfg.get("warnings", {})
+
+
+func _clearing() -> Dictionary:
+	return cfg.get("clearing", {})
+
+
+# What a site has laid is taken away and its people go (a site gone back to sleep).
+func _take_away(cell: Vector2i) -> void:
+	if _laid.has(cell) and clear_camp.is_valid():
+		clear_camp.call("%d,%d" % [cell.x, cell.y], _laid[cell])
+
+	_laid.erase(cell)
+	_laid_stage.erase(cell)
+	_send_off(cell)
+
+
+# A site's living members leave the world (the animal code forgets them like any animal gone).
+func _send_off(cell: Vector2i) -> void:
+	for id in _members.get(cell, {}):
+		if animals != null and animals.animals.has(id):
+			if animals.trails != null:
+				animals.trails.forget(id)
+
+			animals.animals.erase(id)
+
+	_members.erase(cell)
 
 
 func _drop_faded(now: float) -> void:
 	for stretch in stretches.keys():
 		if points_at(stretch, now) < float(cfg.get("drop_points", 0.05)):
 			stretches.erase(stretch)
+
+	for cell in dormant.keys():
+		if float(dormant[cell]) <= now:
+			dormant.erase(cell)   # its quiet time is over: it is a candidate like any other
 
 
 # One line per awake site, for the server log (stage 1 has no admin window).
@@ -279,18 +378,26 @@ func save() -> void:
 		rows["%d,%d" % [stretch.x, stretch.y]] = stretches[stretch]
 
 	for cell in sites:
-		awake["%d,%d" % [cell.x, cell.y]] = sites[cell]
+		var row: Dictionary = sites[cell].duplicate()
+		row.erase("road")   # found again from the world once a run
+		awake["%d,%d" % [cell.x, cell.y]] = row
 
 	var file: FileAccess = FileAccess.open(_path, FileAccess.WRITE)
 
 	if file != null:
-		file.store_string(JSON.stringify({"version": 1, "stretches": rows, "sites": awake}))
+		var quiet: Dictionary = {}
+
+		for cell in dormant:
+			quiet["%d,%d" % [cell.x, cell.y]] = dormant[cell]
+
+		file.store_string(JSON.stringify({"version": 1, "stretches": rows, "sites": awake, "dormant": quiet}))
 		file.close()
 
 
 func load_file() -> void:
 	stretches.clear()
 	sites.clear()
+	dormant.clear()
 
 	if _path == "" or not FileAccess.file_exists(_path):
 		return
@@ -318,7 +425,25 @@ func load_file() -> void:
 			for level in row.get("levels", camp_levels(key, spot)):   # a stage 1 site (no levels yet) gets its camp now
 				levels.append(int(level))
 
-			sites[key] = {"x": spot.x, "z": spot.y, "woke": float(row.get("woke", 0.0)), "points": float(row.get("points", 0.0)), "levels": levels, "horses": int(row.get("horses", int(_camp().get("horses", 2))))}
+			sites[key] = {"x": spot.x, "z": spot.y, "woke": float(row.get("woke", 0.0)), "points": float(row.get("points", 0.0)), "levels": levels, "horses": int(row.get("horses", int(_camp().get("horses", 2)))),
+				"stage": clampi(int(row.get("stage", CAMP)), SIGNS, CAMP), "staged": float(row.get("staged", row.get("woke", 0.0))), "lookout_down": bool(row.get("lookout_down", false))}   # a site woken before the warnings is already a camp
+
+			if row.has("cleared_at"):
+				sites[key]["cleared_at"] = float(row["cleared_at"])   # stage 5: every bandit gone, the camp dissolves in a while
+
+			if typeof(row.get("disarmed")) == TYPE_ARRAY:
+				var disarmed: Array = []
+
+				for level in row["disarmed"]:
+					disarmed.append(int(level))
+
+				sites[key]["disarmed"] = disarmed   # stage 5: bandits who threw down their weapons
+
+	for name in parsed.get("dormant", {}):
+		var key: Vector2i = _key_of(str(name))
+
+		if key.x != 2147483647:
+			dormant[key] = float(parsed["dormant"][name])
 
 
 func _key_of(name: String) -> Vector2i:
@@ -336,6 +461,9 @@ const TETHERED := 22   # wire state: a horse tethered at a bandit camp, standing
 const SIT := 23        # wire state: a bandit sitting by the fire
 const LIE := 24        # wire state: a bandit asleep by the fire at night
 const FALLEN_REACH_M := 30.0   # how far a just-killed member may be from its last read spot
+const SIGNS := 1                # a site's stages (stage 3, the warnings): a cold fire pit and boot tracks,
+const LOOKOUT := 2              # one bandit watching the road,
+const CAMP := 3                 # the camp itself
 
 
 func _camp() -> Dictionary:
@@ -394,6 +522,54 @@ func layout(cell: Vector2i) -> Dictionary:
 	for n in seats:
 		out["seats"].append(fire + Vector2.from_angle(deg_to_rad(turn + 360.0 * (float(n) + 0.5) / float(seats))) * float(row.get("sit_m", 2.2)))
 
+	out["stage"] = int(site.get("stage", CAMP))
+
+	if not site.has("road") and road_point.is_valid():   # where the road passes nearest, found once (the tracks leave it, the lookout watches it)
+		var near: Vector3 = road_point.call(Vector3(fire.x, 0.0, fire.y), float(cfg.get("road_off_m", [100.0, 300.0])[1]) + 50.0)
+		site["road"] = [near.x, near.z] if near.x != INF else []
+
+	var road: Array = site.get("road", [])
+
+	if not road.is_empty():
+		var from: Vector2 = Vector2(float(road[0]), float(road[1]))
+		out["road"] = from
+		out["post"] = from + from.direction_to(fire) * float(_warnings().get("lookout_m", 60.0))
+
+	return out
+
+
+# The boot prints from the road toward the pit (signs): pairs track_step_m apart, left and right of the line, for track_m off the road, at
+# most track_max; each [dx, dy, dz, yaw degrees] from the road point (plan "road") on the ground (the ground under every print must be loaded;
+# the road point is within NEAR_M of anyone on the road, so they are sent the prints). Empty without a road.
+func tracks_of(plan: Dictionary) -> Array:
+	if not plan.has("road") or not ground_height.is_valid():
+		return []
+
+	var row: Dictionary = _warnings()
+	var fire: Vector2 = plan["fire"]
+	var from: Vector2 = plan["road"]
+	var way: Vector2 = from.direction_to(fire)
+	var side: Vector2 = Vector2(-way.y, way.x) * float(row.get("track_gap_m", 0.12))
+	var step_m: float = float(row.get("track_step_m", 0.8))
+	var count: int = mini(int(float(row.get("track_m", 25.0)) / step_m), int(row.get("track_max", 32)))
+	var yaw: float = snappedf(rad_to_deg(atan2(way.x, way.y)), 1.0)
+	if not _ready_at(from):
+		return []   # never read a tile on the main thread: the road point may lie on another tile than the pit
+
+	var base: float = float(ground_height.call(from.x, from.y))
+	var out: Array = []
+
+	for n in count:
+		var at: Vector2 = from + way * (1.0 + step_m * float(n)) + (side if n % 2 == 0 else -side)
+
+		if not _ready_at(at):
+			return []
+
+		var h: float = float(ground_height.call(at.x, at.y))
+
+		if not is_nan(h):
+			out.append([snappedf(at.x - from.x, 0.01), snappedf(h - base, 0.01), snappedf(at.y - from.y, 0.01), yaw])
+
 	return out
 
 
@@ -423,15 +599,22 @@ func camp_tick(delta: float, players: Array) -> void:
 		_members[cell] = members
 		var near: bool = false
 
-		for p in players:
-			near = near or Vector2((p as Vector3).x, (p as Vector3).z).distance_to(fire) <= reach
+		var post: Vector2 = plan.get("post", fire)
 
-		if near and members.is_empty() and _laid.has(cell) and animals != null:
+		for p in players:
+			var at: Vector2 = Vector2((p as Vector3).x, (p as Vector3).z)
+			near = near or at.distance_to(fire) <= reach or at.distance_to(post) <= reach   # a lookout's post is nearer the road than the camp
+
+		var shown: int = CAMP if int(plan["stage"]) >= CAMP else SIGNS   # the camp's people come only once the camp itself is laid over the pit
+
+		if near and members.is_empty() and _laid.has(cell) and int(_laid_stage.get(cell, CAMP)) == shown and animals != null and int(plan["stage"]) >= LOOKOUT and not (int(plan["stage"]) == LOOKOUT and bool(sites[cell].get("lookout_down", false))):
 			_people(cell, plan)
 
 
 func _lay(cell: Vector2i, plan: Dictionary) -> void:
-	if _laid.has(cell) and laid_still.is_valid() and bool(laid_still.call(_laid[cell])):
+	var camp: bool = int(plan["stage"]) >= CAMP   # signs and the lookout show only the cold pit and its tracks
+
+	if _laid.has(cell) and _laid_stage.get(cell, CAMP) == (CAMP if camp else SIGNS) and laid_still.is_valid() and bool(laid_still.call(_laid[cell])):
 		return
 
 	var fire: Vector2 = plan["fire"]
@@ -449,19 +632,33 @@ func _lay(cell: Vector2i, plan: Dictionary) -> void:
 		return
 
 	var lean_tos: Array = []
+	var tracks: Array = []
 
-	for row in plan["lean_tos"]:
-		var at: Vector2 = row[0]
-		var h: float = float(ground_height.call(at.x, at.y))
+	if camp:
+		for row in plan["lean_tos"]:
+			var at: Vector2 = row[0]
+			var h: float = float(ground_height.call(at.x, at.y))
 
-		if not is_nan(h):
-			lean_tos.append([Vector3(at.x, h, at.y), int(row[1])])
+			if not is_nan(h):
+				lean_tos.append([Vector3(at.x, h, at.y), int(row[1])])
+	else:
+		tracks = tracks_of(plan)
 
-	var ids: Array = lay_camp.call("%d,%d" % [cell.x, cell.y], Vector3(fire.x, y, fire.y), lean_tos, _laid.get(cell, []))
+		if plan.has("road") and tracks.is_empty():
+			return   # the ground under a print is not loaded yet: the next second tries again
+
+	var tracks_at: Vector3 = Vector3.INF
+
+	if not tracks.is_empty():
+		var from: Vector2 = plan["road"]
+		tracks_at = Vector3(from.x, float(ground_height.call(from.x, from.y)), from.y)   # the prints hang on a mark at the road, where travellers pass
+
+	var ids: Array = lay_camp.call("%d,%d" % [cell.x, cell.y], Vector3(fire.x, y, fire.y), lean_tos, _laid.get(cell, []), tracks, tracks_at)
 	_laid.erase(cell)
 
 	if not ids.is_empty():
 		_laid[cell] = ids
+		_laid_stage[cell] = CAMP if camp else SIGNS
 
 
 func _ready_at(at: Vector2) -> bool:
@@ -475,8 +672,11 @@ func _people(cell: Vector2i, plan: Dictionary) -> void:
 	var fire: Vector2 = plan["fire"]
 	var health: float = float(animals.species_def("bandit").get("health", 40.0))
 
-	for n in site["levels"].size():
-		var seat: Vector2 = plan["seats"][n]
+	var lookout: bool = int(plan["stage"]) == LOOKOUT   # before the camp only one bandit is out, watching the road from his post
+	var unarmed: Array = (site.get("disarmed", []) as Array).duplicate()   # levels whose bandit threw his weapon down (stage 5): made again without one
+
+	for n in (mini(site["levels"].size(), 1) if lookout else site["levels"].size()):
+		var seat: Vector2 = plan.get("post", plan["seats"][n]) if lookout else plan["seats"][n]
 		var id: int = animals.spawn("bandit", seat.x, seat.y)
 
 		if id == 0:
@@ -489,7 +689,23 @@ func _people(cell: Vector2i, plan: Dictionary) -> void:
 		a["seat"] = a["pos"]
 		a["camp_fire"] = Vector3(fire.x, a["pos"].y, fire.y)
 		a["lookout"] = n == 0   # one keeps watch standing; the rest sit by the fire
-		members[id] = {"level": a["level"], "pos": a["pos"], "horse": false}
+		var armed: bool = not unarmed.has(int(a["level"]))
+
+		if not armed:
+			unarmed.erase(int(a["level"]))
+
+		members[id] = {"level": a["level"], "pos": a["pos"], "horse": false, "armed": armed}
+
+		if lookout:
+			var fire_seat: Vector2 = plan["seats"][0]
+			a["post"] = a["pos"]
+			a["seat"] = Vector3(fire_seat.x, a["pos"].y, fire_seat.y)   # where he goes back to when a player comes near
+			var road: Vector2 = plan.get("road", fire)
+			a["road"] = Vector3(road.x, a["pos"].y, road.y)
+
+	if lookout:
+		_members[cell] = members
+		return
 
 	for n in int(site.get("horses", 0)):
 		var tether: Vector2 = plan["tether"] + Vector2(2.0 * float(n), 0.0)
@@ -502,7 +718,7 @@ func _people(cell: Vector2i, plan: Dictionary) -> void:
 		a["camp"] = cell
 		a["seat"] = a["pos"]
 		a["state"] = TETHERED
-		members[id] = {"level": 0, "pos": a["pos"], "horse": true}
+		members[id] = {"level": 0, "pos": a["pos"], "horse": true, "armed": false}
 
 	_members[cell] = members
 
@@ -517,6 +733,10 @@ func step(a: Dictionary, dt: float) -> bool:
 
 	if str(a["sp"]) == "horse":
 		_walk(a, seat, float(row.get("walk_mps", 1.3)), dt, float(row.get("tether_m", 1.5)), TETHERED)   # tied: it never bolts
+		return true
+
+	if a.has("gave_up"):
+		_captive(a, dt)   # stage 5: he gave up, and may be tied and led
 		return true
 
 	if bool(a.get("wound", false)) and float(a["hp"]) < float(a.get("hp_max", a["hp"])) * float(row.get("flee_share", 0.3)):
@@ -535,6 +755,17 @@ func step(a: Dictionary, dt: float) -> bool:
 		a["state"] = animals.ALERT   # far enough off: it stands and watches
 		return true
 
+	if a.has("post") and not bool(a.get("going_back", false)):   # the lookout (stage 3): watching the road from his post
+		if _player_within(a["pos"], float(_warnings().get("lookout_leave_m", 40.0))):
+			a["going_back"] = true   # a player came near: he walks off toward the camp, so following him finds it
+		else:
+			if _walk(a, a["post"], float(row.get("walk_mps", 1.3)), dt, 0.4, animals.HOP):
+				var road: Vector3 = a["road"]
+				a["heading"] = atan2(road.z - a["pos"].z, road.x - a["pos"].x)
+				a["state"] = animals.ALERT
+
+			return true
+
 	if _walk(a, seat, float(row.get("walk_mps", 1.3)), dt, 0.4, animals.HOP):
 		var fire: Vector3 = a["camp_fire"]
 		a["heading"] = atan2(fire.z - a["pos"].z, fire.x - a["pos"].x)
@@ -542,6 +773,18 @@ func step(a: Dictionary, dt: float) -> bool:
 		a["state"] = animals.ALERT if bool(a.get("lookout", false)) else (LIE if night else SIT)
 
 	return true
+
+
+# True when any player stands within reach_m of `at` (the same player list the wolves and the big game read).
+func _player_within(at: Vector3, reach_m: float) -> bool:
+	if not animals.big_game.player_info.is_valid():
+		return false
+
+	for info in animals.big_game.player_info.call():
+		if Vector2((info["pos"] as Vector3).x - at.x, (info["pos"] as Vector3).z - at.z).length() <= reach_m:
+			return true
+
+	return false
 
 
 # Walk toward `to` (shown as `moving`) until within arrive_m; true once there. A walker that cannot move stays where it is.
@@ -571,40 +814,201 @@ func fallen(species: String, pos: Vector3) -> Vector2i:
 	var best_id: int = 0
 	var best_d: float = FALLEN_REACH_M   # a member erased this tick may have charged or fled since its spot was last read (once a second)
 
-	for pass_no in 2:
-		for cell in _members:
-			for id in _members[cell]:
-				var m: Dictionary = _members[cell][id]
-				var d: float = (m["pos"] as Vector3).distance_to(pos)
-				var just_gone: bool = animals != null and not animals.animals.has(id)   # the animal code erased the dead one before telling us
+	for cell in _members:
+		for id in _members[cell]:
+			var m: Dictionary = _members[cell][id]
+			var d: float = (m["pos"] as Vector3).distance_to(pos)
+			var just_gone: bool = animals == null or not animals.animals.has(id)   # the animal code erased the dead one before telling us
 
-				if (just_gone or pass_no == 1) and d < best_d and bool(m["horse"]) == (species == "horse"):
-					best_d = d
-					best = cell
-					best_id = id
-
-		if best_id != 0:
-			break
-
-		best_d = 3.0   # no member just gone (a test, or none was ours): the nearest within 3 m of its last known spot
+			# Only a member just gone: an animal that was none of ours (a claimed horse, a wild one) never takes a living member's place.
+			if just_gone and d < best_d and bool(m["horse"]) == (species == "horse"):
+				best_d = d
+				best = cell
+				best_id = id
 
 	if best_id == 0:
 		return best
 
-	var gone: Dictionary = _members[best][best_id]
-	_members[best].erase(best_id)
+	_member_gone(best, best_id, pos, true)
+	return best
+
+
+# A member leaves its site's row for good (killed, or handed over to a guard): a horse one horse fewer, a bandit his level out of the camp;
+# drop: his gear on the ground (not the weapon he dropped when he gave up). The last bandit gone clears the camp (stage 5).
+func _member_gone(cell: Vector2i, id: int, pos: Vector3, drop: bool) -> void:
+	var gone: Dictionary = _members[cell][id]
+	_members[cell].erase(id)
+	var site: Dictionary = sites[cell]
 
 	if bool(gone["horse"]):
-		sites[best]["horses"] = maxi(int(sites[best]["horses"]) - 1, 0)
+		site["horses"] = maxi(int(site["horses"]) - 1, 0)
 	else:
-		sites[best]["levels"].erase(int(gone["level"]))
+		site["levels"].erase(int(gone["level"]))
 
-		if drop_gear.is_valid():
-			for key in gear_of(int(gone["level"])):
+		if not bool(gone.get("armed", true)) and site.has("disarmed"):
+			(site["disarmed"] as Array).erase(int(gone["level"]))
+
+		if int(site.get("stage", CAMP)) == LOOKOUT:
+			site["lookout_down"] = true   # a killed lookout is not replaced by the next bandit: the post stays empty until the camp
+
+		if drop and drop_gear.is_valid():
+			var gear: Array = gear_of(int(gone["level"]))
+
+			for key in (gear if bool(gone.get("armed", true)) else gear.slice(1)):
 				drop_gear.call(key, pos)
 
+		if (site["levels"] as Array).is_empty() and not site.has("cleared_at"):
+			site["cleared_at"] = _now()   # every bandit killed or taken: the camp dissolves dissolve_game_days from now
+			print("BANDIT site %d,%d cleared" % [cell.x, cell.y])
+
 	save()
-	return best
+
+
+# A camp bandit hurt (server_animals.damage, before he fights back or runs): under surrender_share of his health he gives up, sits and drops
+# his weapon. True while he has given up (the blow is taken, nothing more: killing him stays possible).
+func hurt(a: Dictionary, peer: int) -> bool:
+	if str(a["sp"]) != "bandit":
+		return false
+
+	if a.has("gave_up"):
+		return true
+
+	if float(a["hp"]) >= float(a.get("hp_max", a["hp"])) * float(_clearing().get("surrender_share", 0.15)):
+		return false
+
+	a["gave_up"] = _now()
+	a["state"] = SIT
+	var cell: Vector2i = a["camp"]
+	var member: Dictionary = _members.get(cell, {}).get(int(a["id"]), {})
+
+	if bool(member.get("armed", false)):
+		member["armed"] = false
+
+		if sites.has(cell):
+			var disarmed: Array = sites[cell].get("disarmed", [])
+			disarmed.append(int(a.get("level", 1)))
+			sites[cell]["disarmed"] = disarmed   # kept with the row: a bandit made again after a despawn has no weapon to drop twice
+			save()
+
+		if drop_gear.is_valid() and not gear_of(int(a.get("level", 1))).is_empty():
+			drop_gear.call(gear_of(int(a.get("level", 1)))[0], a["pos"])   # he throws down his weapon
+
+	_tell(peer, "The bandit gives up. Strike him with rope or twine in hand to tie him.")
+	return true
+
+
+# A strike with Rope or Twine in hand at a camp bandit who gave up (server_items._strike): he is tied and follows that player. True when tied.
+func bind(id: int, peer: int) -> bool:
+	if animals == null or not animals.animals.has(id):
+		return false
+
+	var a: Dictionary = animals.animals[id]
+
+	if not a.has("camp") or not a.has("gave_up") or a.has("bound_by"):
+		return false
+
+	a["bound_by"] = peer
+	a["gave_up"] = _now()   # the escape clock starts again from the tying
+	_tell(peer, "You tie the bandit. Lead him to a guard for the bounty.")
+	return true
+
+
+# Stage 5b: Rope or Twine struck at a camp horse once its camp has no bandit left puts a lead on it: it leaves the camp's row and is that
+# player's companion (server_companions.gd claim, source "claimed"). True when claimed (the rope is used).
+func claim_horse(id: int, peer: int) -> bool:
+	if animals == null or animals.companions == null or not animals.animals.has(id):
+		return false
+
+	var a: Dictionary = animals.animals[id]
+
+	if str(a["sp"]) != "horse" or not a.has("camp") or not sites.has(a["camp"]) or not (sites[a["camp"]]["levels"] as Array).is_empty():
+		return false   # not a camp horse, or a bandit of its camp is still about
+
+	var cell: Vector2i = a["camp"]
+
+	if not _members.has(cell) or not _members[cell].has(id) or not animals.companions.claim(a, peer):
+		return false
+
+	_member_gone(cell, id, a["pos"], false)
+	a.erase("camp")
+	a.erase("seat")
+	a["state"] = animals.GRAZE
+	_tell(peer, "You put a lead on the horse. It is yours now and follows you.")
+	return true
+
+
+# A bandit who gave up: sitting where he gave up, or tied and following his captor; a guard within guard_m takes him for the bounty. Left
+# escape_game_hours, or led past lead_slack_m, he slips free and goes back to camp (still badly hurt: one more blow and he gives up again).
+func _captive(a: Dictionary, dt: float) -> void:
+	var c: Dictionary = _clearing()
+	var peer: int = int(a.get("bound_by", -1))
+
+	if _now() - float(a["gave_up"]) >= float(c.get("escape_game_hours", 1.0)) * 3600.0:
+		_set_free(a, peer, "The bandit slipped his bonds and got away.")
+		return
+
+	if peer < 0:
+		a["state"] = SIT
+		return
+
+	var leader: Vector3 = Vector3.INF
+
+	for info in (animals.big_game.player_info.call() if animals.big_game.player_info.is_valid() else []):
+		if int(info["peer"]) == peer:
+			leader = info["pos"]
+
+	var apart: float = Vector2(leader.x - a["pos"].x, leader.z - a["pos"].z).length() if leader.x != INF else INF
+
+	if apart > float(c.get("lead_slack_m", 30.0)):
+		_set_free(a, peer if leader.x != INF else -1, "The bandit pulled free while you were too far ahead.")   # a captor who left is told nothing
+		return
+
+	for guard in (guards_at.call() if guards_at.is_valid() else []):
+		if Vector2((guard as Vector3).x - a["pos"].x, (guard as Vector3).z - a["pos"].z).length() <= float(c.get("guard_m", 5.0)):
+			_hand_over(a, peer)
+			return
+
+	var follow: float = float(c.get("follow_m", 2.0))
+
+	if apart > follow:   # he keeps up: walking, or trotting when left behind
+		_walk(a, leader, float(_camp().get("run_mps" if apart > follow * 3.0 else "walk_mps", 1.3)), dt, follow, animals.HOP)
+	else:
+		a["heading"] = atan2(leader.z - a["pos"].z, leader.x - a["pos"].x)
+		a["state"] = animals.ALERT
+
+
+func _set_free(a: Dictionary, peer: int, why: String) -> void:
+	a.erase("gave_up")
+	a.erase("bound_by")
+	a.erase("wound")   # he walks back to his seat (badly hurt still)
+
+	if peer >= 0:
+		_tell(peer, why)
+
+
+# A tied bandit handed to a guard: he leaves the camp's row for good and his captor gets bounty_copper_per_level for each of his levels.
+func _hand_over(a: Dictionary, peer: int) -> void:
+	var id: int = int(a["id"])
+	var cell: Vector2i = a["camp"]
+	var copper: int = int(_clearing().get("bounty_copper_per_level", 10)) * maxi(int(a.get("level", 1)), 1)
+
+	if animals.trails != null:
+		animals.trails.forget(id)
+
+	animals.animals.erase(id)
+
+	if sites.has(cell) and _members.has(cell) and _members[cell].has(id):
+		_member_gone(cell, id, a["pos"], false)
+
+	if pay_bounty.is_valid():
+		pay_bounty.call(peer, copper)
+
+	_tell(peer, "The guard takes the bandit away. Bounty: %d copper." % copper)
+
+
+func _tell(peer: int, text: String) -> void:
+	if peer >= 0 and tell.is_valid():
+		tell.call(peer, text)
 
 
 # What a bandit of a level carries (camp gear): the highest row its level reaches.

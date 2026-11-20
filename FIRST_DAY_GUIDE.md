@@ -9,7 +9,7 @@ What a new player does, in order, with what it costs after the pacing pass. Ever
 | 3 | Twist twine | 3 fibre each (2 s) | 2 s | "Press I, pick Twine..." |
 | 4 | Make a Stone axe | 1 stone, 1 stick, 2 twine | 10 s | goal: make an axe |
 | 5 | Fell a tree; about 2 s after it lands it breaks into logs, sticks, leaves and bark (3 Nov) | by species while `felling.size_scaled` is off: about birch 5, pine 8, beech 9, oak 12 blows | - | goal: fell a tree |
-| 6 | Make and place a Campfire | 6 sticks, 3 stones | 8 s | goal: light a fire |
+| 6 | Make and place a Campfire | 6 sticks, 16 stones | 8 s | goal: light a fire |
 | 7 | Put wood in with F, light it with E and plant fibre; raw meat in the store (F) cooks (3 Nov) | 1 fibre | - | goal: light a fire, then eat something wild |
 | 8 | Make a wooden hammer: strike a big hardwood log with the axe for a large wooden block, split it into 4 small blocks (I), then hammer = 1 small block, 1 stick, 1 twine | 1 stick, 1 twine | 4 s + 5 s | goal: make a wooden hammer |
 | 9 | Hold the hammer, right click (or R), pick Lean-to and place it (no kits since #292, Dave 4 Nov) | 30 sticks, 200 leaves, 10 twine from the pack | - | goal: build a shelter |

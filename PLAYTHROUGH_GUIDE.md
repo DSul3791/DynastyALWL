@@ -31,7 +31,7 @@ Picture: `art/playthrough/03_raw_materials.jpg` shows the spawn meadow (the NPC 
 * **Stones** (item `stone`; no stack cap, weight is the limit: a slot holds up to 65,535, only tools, kits, containers, clothing and shoulder logs are single) lie loose, mostly on slopes, next to rocks and along the water's edge. There is only one kind of loose rock item: `stone` (the "hand stone"). **Flint** lies along the water's edge now (F-02 fixed: drops.json bank, about 6 percent of bank stones), and no ore you can reach with bare hands.
 * **Boulders** (big grey rocks) are not pickable. An axe (or pick) breaks them: **3 axe blows give 1 stone** (boulders.json). A blow on bare rock with the axe also gives a stone.
 
-How many do you need for the whole first hour? About 12 sticks, 4 stones to start (axe 1 stone + 1 stick; fire 6 sticks + 3 stones; knife 2 stones + 1 stick), then more.
+How many do you need for the whole first hour? About 12 sticks, 19 stones to start (axe 1 stone + 1 stick; fire 6 sticks + 16 stones; knife 2 stones + 1 stick), then more.
 
 Pictures: `03_raw_materials.jpg` (stone, stick, plant fibre, twine, thatch, leaves, bark, kindling, firewood lying on the ground, in that order left to right).
 
@@ -94,11 +94,11 @@ Walk to the biggest tree you can find (oaks, beeches, tall pines), stand under t
 
 ## Step 08. Campfire: kit, place, light
 
-1. Recipe **Campfire** (#4): **6 sticks + 3 stones -> campfire kit** (8 s).
+1. Recipe **Campfire** (#4): **6 sticks + 16 stones -> campfire kit** (8 s).
 2. Hold the kit and left click. The ring on the ground is **yellow on open ground** (rain puts the fire out) and **green under a tree crown** (the fire survives rain). Fires need 2 m of space from other fires and ground no steeper than 0.6 m rise.
 3. The kit is placed already laid with a stick in its store (add more wood with F). **Press E at the fire to light it**: it uses **one tinder item** from the pack: `plant_fibre` first, or `birch_bark`, `tinder`, `tinder_fungus`. (F-03 fixed: birch bark, tinder and tinder fungus can all be had; checked 3 Nov.) In rain on open ground it will not light; in a drizzle there is a chance it fails and the fibre is lost.
 4. Feed it (changed 2 Nov, fire store, main eb3b69b): press **F** at the fire to open its store (30 slots, stacks without limit) and put sticks, firewood and logs in; the wood in the store is what burns, closing it works out the burn time and tier, burned wood leaves it, an empty store means the fire goes out. **E** on a burning fire puts it out (wood kept); **hold E** on a fire that is not burning picks it up as a kit. The 1 Nov rule "tap E adds fuel" is gone. **Burn times are real time: stick 2 min, firewood 20 min, log 3 h.** The fire is a **tier** by its wood: sticks = small, 3+ firewood = medium, 3+ logs = large; light radius 3.5 / 7 / 20 m (the large fire is at least 4 times a torch in output, 13 Nov 2026), each step brighter and warmer, and it steps down as the big wood runs out. Several logs go on one fire. A pot is refused on a fire with logs, and logs are refused under a pot. The refusal message says why (full, no wood to put on). The fire label shows the tier and burn time.
-   **A fire you leave goes away (server_items.gd FIRE_OUT_S and FIRE_LAID_S, checked 3 Nov):** a fire that burns out (its store empty) is removed **5 real minutes** later, and a laid fire that is never lit after 30 minutes. The kit's 6 sticks and 3 stones go with it, and so does anything left in its store. Adding wood with F inside those 5 minutes saves it. One stick burns only 2 minutes, so before you go off for the lean-to's 30 sticks, put in a few firewood (20 min each) or a log (3 h). A burning fire never goes away.
+   **A fire you leave goes away (server_items.gd FIRE_OUT_S and FIRE_LAID_S, checked 3 Nov):** a fire that burns out (its store empty) is removed **5 real minutes** later, and a laid fire that is never lit after 30 minutes. The kit's 6 sticks and 16 stones go with it, and so does anything left in its store. Adding wood with F inside those 5 minutes saves it. One stick burns only 2 minutes, so before you go off for the lean-to's 30 sticks, put in a few firewood (20 min each) or a log (3 h). A burning fire never goes away.
 5. Raw food put in the fire's store (F) cooks while the fire burns; there is no hold-E roasting any more (2 Nov). The campfire still cooks only meat, fish and shellfish.
 
 **Keeping warm (the Temperature bar, #113; checked against warmth.json and cooking.json fire_tiers, 3 Nov):** a lit fire adds heat by its tier: **stick fire +10 C within 2.5 m, firewood fire +20 C within 4 m, log fire +40 C within 5 m**. So a stick fire only helps if you stand right at it. A roof does **not** warm you; it cuts the wind to 30 percent and keeps rain off, which makes the cold bite less. A bed takes 10 percent off the cold. Below 40 percent you shiver and stop healing; below 20 percent the cold costs health. The first cold-night answer is a firewood fire beside the lean-to.
@@ -134,7 +134,7 @@ Recipe **Rough bed** (#162, known; the one bed still made in the inventory, Dave
 
 ## Step 12. Workbench and thatch house pieces
 
-* **Camp bench** (hammer blueprint #33): **16 sticks + 6 twine + 4 stones**. Or the **log workbench** (another blueprint): 4 logs, 6 twine, 6 sticks. A recipe needing "workbench" works only near it (reach + 1 m).
+* **Camp bench** (hammer blueprint #33): **16 sticks + 6 twine + 8 stones**. Or the **log workbench** (another blueprint): 4 logs, 6 twine, 6 sticks. A recipe needing "workbench" works only near it (reach + 1 m).
 * Thatch pieces (hammer blueprints, built near a workbench): **thatch floor** 4 twine + 20 thatch; **wall** 8 twine + 50 thatch + 15 sticks; **roof** 6 twine + 40 thatch + 12 sticks; **doorway** 6 twine + 25 thatch + 12 sticks. 50 thatch is five tall-grass patches.
 * Wood walls, floors and roofs (hammer blueprints) need **lumber**: a saw mill, a hand saw, or a stone wedge at the workbench (`lumber_wedge`); F-05 fixed.
 
@@ -171,12 +171,12 @@ Left click jabs the spear; hold right click to aim a throw, left click throws. H
 
 ## Quick order of play (the whole thing in one list)
 
-1. Hold E around you: 6 sticks, 4 stones, then 20 plant fibre from nettles or tall grass.
+1. Hold E around you: 6 sticks, 17 or more stones (1 for the axe, 16 for the fire), then 20 plant fibre from nettles or tall grass.
 2. Craft 2 twine, then the stone axe; put it on the hotbar.
 3. Fell a small or medium tree (10-22 blows); work the trunk: sticks, leaves, logs; split blocks.
-4. Craft the campfire kit (the one kit left), place it under a big tree, light it with a plant fibre.
+4. Craft the campfire kit (6 sticks, 16 stones; the one kit left), place it under a big tree, light it with a plant fibre.
 5. Cook meat or fish in the fire store, eat berries raw, drink at the water.
 6. Split a large wooden block into small ones and make the wooden hammer (1 small block, 1 stick, 1 twine); right click it and build the Lean-to (30 sticks, 200 leaves, 10 twine) by the fire.
 7. Gather 10 thatch + 4 sticks, craft the rough bed, place it under the lean-to.
-8. Camp bench with the hammer (16 sticks, 6 twine, 4 stones) -> stone hammer, bow, thatch pieces.
+8. Camp bench with the hammer (16 sticks, 6 twine, 8 stones) -> stone hammer, bow, thatch pieces.
 9. Spear (stick, then 2 twine) for hunting; knife (2 stones, stick) for carcasses.
