@@ -5999,7 +5999,7 @@ func _expire_items(spent: float) -> void:
 func _fire_extra(it: Dictionary) -> Dictionary:
 	if it["fire"].has("camp"):
 		if it["fire"].has("tracks"):
-			return {"camp": 2, "tracks": it["fire"]["tracks"]}   # a bandit camp's cold pit and the boot prints leading to it from the road
+			return {"camp": 2, "marks": true, "tracks": it["fire"]["tracks"]}   # a bandit camp's boot prints leading off the road (a mark, no pit drawn)
 
 		return {"camp": 2 if typeof(it["fire"]["camp"]) == TYPE_STRING else 1}   # a camp fire (1 Edda and Hob's or a goblin tribe's, 2 a bandit camp's): the client offers nothing on it and shows no burn time (PROTOCOL.md, world-item rows)
 
@@ -6442,7 +6442,7 @@ func _camp_refuses(peer: int, it: Dictionary) -> bool:
 # A bandit camp (server_bandits.gd stage 2, docs/design/BANDIT_CAMPS.md): its fire burns like Edda and Hob's (never saved, no wood, nobody tends
 # it; "camp" holds the site's key) and its Lean-tos (open sides `yaw`) are transient pieces marked "bandit", never saved or taken down, laid
 # again at every start from the site's row, and again over old_ids (what is left of its last laying) when a piece is gone. Returns the world ids laid.
-func lay_bandit_camp(key: String, fire: Vector3, lean_tos: Array, old_ids: Array = [], tracks: Array = []) -> Array:
+func lay_bandit_camp(key: String, fire: Vector3, lean_tos: Array, old_ids: Array = [], tracks: Array = [], tracks_at: Vector3 = Vector3.INF) -> Array:
 	clear_bandit_camp(key, old_ids)   # what is left of this camp's last laying (a world reset takes the fire, keeps transient Lean-tos): laid whole again
 	var ids: Array = []
 	var state: int = int(((_cooking.get("fire_tiers", {}) as Dictionary).get(NpcCamp.fire_wood(), {}) as Dictionary).get("state", FIRE_STATE_BONFIRE))
@@ -6450,11 +6450,17 @@ func lay_bandit_camp(key: String, fire: Vector3, lean_tos: Array, old_ids: Array
 	_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": fire, "left": 1.0e9,
 		"fire": {"state": FIRE_STATE_COLD if pit else state, "burn_left": 0.0 if pit else 1.0e9, "camp": key, "covered": true, "recheck": COVER_RECHECK_S}}
 
-	if not tracks.is_empty():
-		_items[_next_id]["fire"]["tracks"] = tracks.slice(0, BANDIT_TRACKS_MAX)   # [dx, dy, dz, yaw] from the pit, drawn by the client (never saved: the pit is not)
 	_zone_add(_next_id)
 	ids.append(_next_id)
 	_next_id += 1
+
+	if not tracks.is_empty() and tracks_at.x != INF:   # the prints hang on a mark at the road (a pit 100 to 300 m off it is not sent to travellers)
+		_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": tracks_at, "left": 1.0e9,
+			"fire": {"state": FIRE_STATE_COLD, "burn_left": 0.0, "camp": key, "marks": true, "tracks": tracks.slice(0, BANDIT_TRACKS_MAX), "covered": true, "recheck": COVER_RECHECK_S}}
+		_zone_add(_next_id)
+		ids.append(_next_id)
+		_next_id += 1
+
 	var def: Dictionary = _structures.get("lean_to", {})
 
 	for row in lean_tos:
@@ -9834,7 +9840,7 @@ func _is_pot(it: Dictionary) -> bool:
 # The fire a pot at this spot hangs over, or -1.
 func _fire_under_pot(pos: Vector3) -> int:
 	for id in _items:
-		if _items[id].has("fire") and (_items[id]["pos"] as Vector3).distance_to(pos) <= POT_ON_FIRE_M:
+		if _items[id].has("fire") and not _items[id]["fire"].has("marks") and (_items[id]["pos"] as Vector3).distance_to(pos) <= POT_ON_FIRE_M:
 			return id
 
 	return -1
@@ -14321,8 +14327,8 @@ func road_point(at: Vector3, r: float) -> Vector3:
 # within r of a spot.
 func building_near(at: Vector3, r: float) -> bool:
 	for id in _ids_near(at, r):
-		if not _items.has(id) or not (_items[id].has("struct") or _items[id].has("fire")):
-			continue
+		if not _items.has(id) or not (_items[id].has("struct") or _items[id].has("fire")) or _items[id].get("fire", {}).has("marks"):
+			continue   # a bandit camp's boot prints are not a building
 
 		var kind: String = str(_items[id]["struct"]["kind"]) if _items[id].has("struct") else ""
 

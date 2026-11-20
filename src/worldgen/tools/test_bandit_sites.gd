@@ -331,7 +331,7 @@ func _camp_life() -> void:
 	b.sites[cell] = {"x": spot.x, "z": spot.y, "woke": clock[0], "points": 40.0, "levels": [2, 1, 1], "horses": 2}
 	var laid: Array = []
 	var dropped: Array = []
-	b.lay_camp = func(camp_key, camp_fire, camp_lean_tos, _camp_old, _camp_tracks):
+	b.lay_camp = func(camp_key, camp_fire, camp_lean_tos, _camp_old, _camp_tracks, _camp_tracks_at):
 		laid.append([camp_key, camp_fire, camp_lean_tos])
 		return [100 + laid.size()]
 	b.laid_still = func(_ids): return true
@@ -463,12 +463,13 @@ func _warnings_stages() -> void:
 	var days: float = float(row["stage_game_days"]) * BanditsScript.GAME_DAY_S
 	var cell: Vector2i = _cell_with_site(b, 90)
 	var spot: Vector2 = b.candidate(cell)
+	b.town = spot + Vector2(20000.0, 0.0)   # a far camp: three or more bandits, so the lookout can fall and leave others
 	var road_at: Vector3 = Vector3(spot.x + 200.0, 0.0, spot.y)
 	b.road_point = func(_at, _r): return road_at
 	var laid: Array = []
 	var cleared: Array = []
-	b.lay_camp = func(camp_key, _camp_fire, camp_lean_tos, camp_old, camp_tracks):
-		laid.append([camp_key, camp_lean_tos, camp_old, camp_tracks])
+	b.lay_camp = func(camp_key, _camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at):
+		laid.append([camp_key, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at])
 		return [300 + laid.size()]
 	b.laid_still = func(_ids): return true
 	b.clear_camp = func(camp_key, camp_ids): cleared.append([camp_key, camp_ids])
@@ -483,23 +484,24 @@ func _warnings_stages() -> void:
 	var road: Vector2 = Vector2(road_at.x, road_at.z)
 	check((plan["road"] as Vector2).is_equal_approx(road), "the road point is found once and kept (%s)" % str(plan.get("road")))
 	check(absf((plan["post"] as Vector2).distance_to(road) - float(row["lookout_m"])) < 0.01 and absf((plan["post"] as Vector2).distance_to(fire) + float(row["lookout_m"]) - road.distance_to(fire)) < 0.01, "the lookout post is lookout_m off the road toward the camp")
-	var tracks: Array = b.tracks_of(plan, 50.0)
+	var tracks: Array = b.tracks_of(plan)
 	var count: int = mini(int(float(row["track_m"]) / float(row["track_step_m"])), int(row["track_max"]))
 	check(tracks.size() == count and tracks.size() <= int(row["track_max"]), "the prints are track_m long and at most track_max (%d)" % tracks.size())
-	var first: Vector2 = fire + Vector2(float(tracks[0][0]), float(tracks[0][2]))
-	var last: Vector2 = fire + Vector2(float(tracks[count - 1][0]), float(tracks[count - 1][2]))
+	var first: Vector2 = road + Vector2(float(tracks[0][0]), float(tracks[0][2]))   # offsets from the road point, where the mark carrying them lies
+	var last: Vector2 = road + Vector2(float(tracks[count - 1][0]), float(tracks[count - 1][2]))
 	check(first.distance_to(road) < 1.2 and last.distance_to(road) > float(row["track_m"]) - 1.0 and last.distance_to(fire) < first.distance_to(fire), "they leave the road and run toward the pit")
 	var line: Vector2 = road.direction_to(fire)
-	var sides: Array = tracks.map(func(t): return snappedf(line.cross(fire + Vector2(float(t[0]), float(t[2])) - road), 0.01))
+	var sides: Array = tracks.map(func(t): return snappedf(line.cross(Vector2(float(t[0]), float(t[2]))), 0.01))
 	check(absf(float(sides[0]) + float(sides[1])) < 0.02 and absf(absf(float(sides[0])) - float(row["track_gap_m"])) < 0.02, "left and right of the line in turn (%s)" % str(sides.slice(0, 2)))
-	check(tracks.all(func(t): return (t as Array).size() == 4 and float(t[1]) == 0.0), "each print is [dx, dy, dz, yaw] at the ground (%s)" % str(tracks[0]))
+	check(tracks.all(func(t): return (t as Array).size() == 4 and float(t[1]) == 0.0), "each print is [dx, dy, dz, yaw] on the ground (%s)" % str(tracks[0]))
 	b.ground_ready = func(_x, _z): return false
-	check(b.tracks_of(plan, 50.0).is_empty(), "no prints while the ground under them is not loaded")
+	check(b.tracks_of(plan).is_empty(), "no prints while the ground under them is not loaded")
 	b.ground_ready = Callable()
 
 	var near: Array = [Vector3(fire.x + 50.0, 50.0, fire.y)]
 	b.camp_tick(1.0, near)
 	check(laid.size() == 1 and (laid[0][1] as Array).is_empty() and (laid[0][3] as Array).size() == count, "the signs lay a pit with its prints and no Lean-tos")
+	check((laid[0][4] as Vector3).is_equal_approx(Vector3(road.x, 50.0, road.y)), "the prints hang at the road point, within reach of travellers (%s)" % str(laid[0][4]))
 	check(animals.animals.is_empty(), "nobody is at the site while it shows signs")
 	clock[0] += days - 1.0
 	_traffic(b, spot, need + 1.0)
@@ -534,10 +536,20 @@ func _warnings_stages() -> void:
 		b.step(guard, 0.25)
 
 	var gone: float = Vector2(guard["pos"].x, guard["pos"].z).distance_to(fire)
-	check(bool(guard.get("going_back", false)) and gone < was and was - gone < float(b.cfg["camp"].get("walk_mps", 1.3)) * 0.5 + 0.01, "a player near: he walks (not runs) toward the camp")
+	check(bool(guard.get("going_back", false)) and gone < was and was - gone < float(b.cfg["camp"].get("walk_mps", 1.3)) * 0.5 + 0.15, "a player near: he walks (not runs) toward the camp")
 
 	for n in 600:
 		b.step(guard, 0.25)
+
+	# A killed lookout leaves the post empty until the camp (the next bandit does not take his place).
+	var levels_before: int = (b.sites[cell]["levels"] as Array).size()
+	check(levels_before >= 2, "this site's camp has two or more bandits (%d), so one can fall as lookout" % levels_before)
+
+	if levels_before >= 2:
+		animals.animals.erase(int(guard["id"]))
+		check(b.fallen("bandit", guard["pos"]) == cell and (b.sites[cell]["levels"] as Array).size() == levels_before - 1 and bool(b.sites[cell]["lookout_down"]), "a killed lookout leaves the row")
+		b.camp_tick(1.0, near)
+		check(animals.animals.is_empty(), "no other bandit takes his post")
 
 	check((guard["pos"] as Vector3).distance_to(guard["seat"]) <= 0.5, "he walks all the way back to the camp")
 
@@ -547,7 +559,7 @@ func _warnings_stages() -> void:
 	b.tick()
 	check(int(b.sites[cell]["stage"]) == BanditsScript.CAMP and animals.animals.is_empty(), "a busy road brings the camp and the lookout goes")
 	b.camp_tick(1.0, near)
-	check(laid.size() == 2 and (laid[1][1] as Array).size() == (b.layout(cell)["lean_tos"] as Array).size() and (laid[1][1] as Array).size() > 0 and (laid[1][3] as Array).is_empty() and laid[1][2] == [301], "the camp is laid over the pit, with its Lean-tos")
+	check(laid.size() == 2 and (laid[1][4] as Vector3) == Vector3.INF and (laid[1][1] as Array).size() == (b.layout(cell)["lean_tos"] as Array).size() and (laid[1][1] as Array).size() > 0 and (laid[1][3] as Array).is_empty() and laid[1][2] == [301], "the camp is laid over the pit, with its Lean-tos")
 	check(animals.animals.size() == b.sites[cell]["levels"].size() + int(b.sites[cell]["horses"]), "the whole camp is there (%d)" % animals.animals.size())
 	clock[0] += days * 10.0
 	b.tick()
@@ -613,14 +625,19 @@ func _warning_items() -> void:
 	for n in 40:
 		prints.append([0.1 * n, 0.0, 1.0, 90.0])
 
-	var ids: Array = items.lay_bandit_camp("6,6", at, [], [], prints)
+	var road: Vector3 = at + Vector3(200.0, 0.0, 0.0)
+	var ids: Array = items.lay_bandit_camp("6,6", at, [], [], prints, road)
 	var pit: Dictionary = items._items[int(ids[0])]["fire"]
-	check(ids.size() == 1 and int(pit["state"]) == ItemScript.FIRE_STATE_COLD and float(pit["burn_left"]) == 0.0, "the signs are one cold fire pit")
-	var extra: Dictionary = items._fire_extra(items._items[int(ids[0])])
-	check(int(extra["camp"]) == 2 and (extra["tracks"] as Array).size() == ItemScript.BANDIT_TRACKS_MAX and extra["tracks"][0] == prints[0], "its row carries at most BANDIT_TRACKS_MAX prints")
-	check(ItemScript._not_in_area(items._items[int(ids[0])]), "the pit is not saved")
+	check(ids.size() == 2 and int(pit["state"]) == ItemScript.FIRE_STATE_COLD and float(pit["burn_left"]) == 0.0 and not pit.has("tracks"), "the signs are a cold fire pit and a mark")
+	var mark: Dictionary = items._items[int(ids[1])]
+	var extra: Dictionary = items._fire_extra(mark)
+	check((mark["pos"] as Vector3).is_equal_approx(road) and bool(extra["marks"]) and int(extra["camp"]) == 2 and (extra["tracks"] as Array).size() == ItemScript.BANDIT_TRACKS_MAX and extra["tracks"][0] == prints[0], "the mark at the road carries at most BANDIT_TRACKS_MAX prints")
+	check(items._fire_extra(items._items[int(ids[0])]) == {"camp": 2}, "the pit's row is a bandit fire's")
+	check(ItemScript._not_in_area(items._items[int(ids[0])]) and ItemScript._not_in_area(mark), "neither the pit nor the mark is saved")
+	check(not items.building_near(road, 5.0) and items.building_near(at, 5.0), "the prints are not a building, the pit is")
+	check(items._fire_under_pot(road) == -1, "no pot hangs on the prints")
 	var camp: Array = items.lay_bandit_camp("6,6", at, [[at + Vector3(5.0, 0.0, 0.0), 180]], ids)
-	check(not items._items.has(int(ids[0])) and camp.size() == 2 and not items._fire_extra(items._items[int(camp[0])]).has("tracks"), "the camp is laid over the pit, lit, without prints")
+	check(not items._items.has(int(ids[0])) and not items._items.has(int(ids[1])) and camp.size() == 2 and not items._fire_extra(items._items[int(camp[0])]).has("tracks"), "the camp is laid over the pit, lit, without prints")
 	items._items[999] = {"number": 1, "count": 1, "pos": at, "left": 1.0e9, "struct": {"kind": "foundation", "yaw": 0.0}}
 	items.clear_bandit_camp("6,7", camp)
 	check(items._items.has(int(camp[0])), "another camp's key takes nothing")

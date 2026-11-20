@@ -77,7 +77,7 @@ A camp's bandits are fixed by the seed: their count and levels by distance band 
 
 A site that wakes does not show its camp at once (Dave agreed the plan's warning stages, 19 Nov 2026):
 
-1. **Signs**: a cold fire pit at the site (a campfire in its cold ash state, marked with the site's key, never saved, nobody can use it) and boot prints leading off the nearest road toward it (the client draws them from the pit's row).
+1. **Signs**: a cold fire pit at the site (a campfire in its cold ash state, marked with the site's key, never saved, nobody can use it) and boot prints leading off the nearest road toward it. The prints hang on a mark at the road point (a cold fire item flagged `marks`, same site key, never saved, not a building, no pit drawn, "Boot prints" when inspected), because world rows reach a player only within 100 m and the pit stands 100 to 300 m off the road.
 2. **Lookout**, after 2 game days if the road is still busy: one bandit (the camp's first level) stands 60 m off the road on the line to the camp, watching the road. When a player comes within 40 m he walks back to the pit, so following him finds the camp.
 3. **The camp** (stage 2), after 2 game days more.
 
@@ -95,6 +95,7 @@ At each step the road near the site must still hold half the points that woke it
 ### Known limits (stage 3)
 
 - The Tracking skill does not read the prints yet (they are only seen); there is no "tracks" look-at line.
+- A killed lookout leaves the post empty until the camp (a restart keeps it so). A pot cannot hang on the prints; one hung on the pit stays as it does on Edda and Hob's fire.
 - Signs use the nearest surveyed road patch; a site whose road was taken up shows the pit without prints.
 - The lookout watches only while a player is within 200 m of the camp or his post (like the camp's people); he walks back at walking pace and stays by the pit.
 - Rain, snow and night do not change the prints.

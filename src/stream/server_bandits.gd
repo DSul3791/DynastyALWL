@@ -30,8 +30,8 @@ var tribe_camps: Callable      # () -> Array of Vector2: every goblin tribe camp
 var road_distance: Callable    # (Vector3, r) -> metres to the nearest road patch within r, or INF
 var road_point: Callable       # (Vector3, r) -> the nearest road patch's position within r, or Vector3.INF (where the tracks leave the road)
 var clear_camp: Callable       # (key, Array of world ids) -> void: what is laid of a camp taken away (a site gone back to sleep, or signs replaced)
-var lay_camp: Callable         # (key, fire Vector3, lean_to spots Array of [Vector3, yaw degrees], old ids to clear, tracks) -> Array of world ids laid
-                               # (tracks not empty: a cold fire pit with those boot prints, [dx, dy, dz, yaw] from the pit, instead of a lit fire)
+var lay_camp: Callable         # (key, fire Vector3, lean_to spots Array of [Vector3, yaw degrees], old ids to clear, tracks, tracks_at) -> Array of world
+                               # ids laid (tracks not empty: a cold fire pit and a mark at tracks_at, the road, carrying those boot prints, [dx, dy, dz, yaw] from it)
 var laid_still: Callable       # (Array of world ids) -> bool: every piece is still there
 var drop_gear: Callable        # (item key, Vector3) -> void: a fallen bandit's weapon or clothes on the ground
 var animals = null             # ServerAnimals: bandits and horses are animals (spawn, walk_step, the big game charge)
@@ -349,7 +349,9 @@ func save() -> void:
 		rows["%d,%d" % [stretch.x, stretch.y]] = stretches[stretch]
 
 	for cell in sites:
-		awake["%d,%d" % [cell.x, cell.y]] = sites[cell]
+		var row: Dictionary = sites[cell].duplicate()
+		row.erase("road")   # found again from the world once a run
+		awake["%d,%d" % [cell.x, cell.y]] = row
 
 	var file: FileAccess = FileAccess.open(_path, FileAccess.WRITE)
 
@@ -389,7 +391,7 @@ func load_file() -> void:
 				levels.append(int(level))
 
 			sites[key] = {"x": spot.x, "z": spot.y, "woke": float(row.get("woke", 0.0)), "points": float(row.get("points", 0.0)), "levels": levels, "horses": int(row.get("horses", int(_camp().get("horses", 2)))),
-				"stage": clampi(int(row.get("stage", CAMP)), SIGNS, CAMP), "staged": float(row.get("staged", row.get("woke", 0.0)))}   # a site woken before the warnings is already a camp
+				"stage": clampi(int(row.get("stage", CAMP)), SIGNS, CAMP), "staged": float(row.get("staged", row.get("woke", 0.0))), "lookout_down": bool(row.get("lookout_down", false))}   # a site woken before the warnings is already a camp
 
 
 func _key_of(name: String) -> Vector2i:
@@ -485,8 +487,9 @@ func layout(cell: Vector2i) -> Dictionary:
 
 
 # The boot prints from the road toward the pit (signs): pairs track_step_m apart, left and right of the line, for track_m off the road, at
-# most track_max; each [dx, dy, dz, yaw degrees] from the pit at height y (the ground under every print must be loaded). Empty without a road.
-func tracks_of(plan: Dictionary, y: float) -> Array:
+# most track_max; each [dx, dy, dz, yaw degrees] from the road point (plan "road") on the ground (the ground under every print must be loaded;
+# the road point is within NEAR_M of anyone on the road, so they are sent the prints). Empty without a road.
+func tracks_of(plan: Dictionary) -> Array:
 	if not plan.has("road") or not ground_height.is_valid():
 		return []
 
@@ -498,18 +501,19 @@ func tracks_of(plan: Dictionary, y: float) -> Array:
 	var step_m: float = float(row.get("track_step_m", 0.8))
 	var count: int = mini(int(float(row.get("track_m", 25.0)) / step_m), int(row.get("track_max", 32)))
 	var yaw: float = snappedf(rad_to_deg(atan2(way.x, way.y)), 1.0)
+	var base: float = float(ground_height.call(from.x, from.y))
 	var out: Array = []
 
 	for n in count:
 		var at: Vector2 = from + way * (1.0 + step_m * float(n)) + (side if n % 2 == 0 else -side)
 
-		if not _ready_at(at):
+		if not _ready_at(at) or not _ready_at(from):
 			return []
 
 		var h: float = float(ground_height.call(at.x, at.y))
 
 		if not is_nan(h):
-			out.append([snappedf(at.x - fire.x, 0.01), snappedf(h - y, 0.01), snappedf(at.y - fire.y, 0.01), yaw])
+			out.append([snappedf(at.x - from.x, 0.01), snappedf(h - base, 0.01), snappedf(at.y - from.y, 0.01), yaw])
 
 	return out
 
@@ -546,7 +550,9 @@ func camp_tick(delta: float, players: Array) -> void:
 			var at: Vector2 = Vector2((p as Vector3).x, (p as Vector3).z)
 			near = near or at.distance_to(fire) <= reach or at.distance_to(post) <= reach   # a lookout's post is nearer the road than the camp
 
-		if near and members.is_empty() and _laid.has(cell) and animals != null and int(plan["stage"]) >= LOOKOUT:
+		var shown: int = CAMP if int(plan["stage"]) >= CAMP else SIGNS   # the camp's people come only once the camp itself is laid over the pit
+
+		if near and members.is_empty() and _laid.has(cell) and int(_laid_stage.get(cell, CAMP)) == shown and animals != null and int(plan["stage"]) >= LOOKOUT and not (int(plan["stage"]) == LOOKOUT and bool(sites[cell].get("lookout_down", false))):
 			_people(cell, plan)
 
 
@@ -581,12 +587,18 @@ func _lay(cell: Vector2i, plan: Dictionary) -> void:
 			if not is_nan(h):
 				lean_tos.append([Vector3(at.x, h, at.y), int(row[1])])
 	else:
-		tracks = tracks_of(plan, y)
+		tracks = tracks_of(plan)
 
 		if plan.has("road") and tracks.is_empty():
 			return   # the ground under a print is not loaded yet: the next second tries again
 
-	var ids: Array = lay_camp.call("%d,%d" % [cell.x, cell.y], Vector3(fire.x, y, fire.y), lean_tos, _laid.get(cell, []), tracks)
+	var tracks_at: Vector3 = Vector3.INF
+
+	if not tracks.is_empty():
+		var from: Vector2 = plan["road"]
+		tracks_at = Vector3(from.x, float(ground_height.call(from.x, from.y)), from.y)   # the prints hang on a mark at the road, where travellers pass
+
+	var ids: Array = lay_camp.call("%d,%d" % [cell.x, cell.y], Vector3(fire.x, y, fire.y), lean_tos, _laid.get(cell, []), tracks, tracks_at)
 	_laid.erase(cell)
 
 	if not ids.is_empty():
@@ -764,6 +776,9 @@ func fallen(species: String, pos: Vector3) -> Vector2i:
 		sites[best]["horses"] = maxi(int(sites[best]["horses"]) - 1, 0)
 	else:
 		sites[best]["levels"].erase(int(gone["level"]))
+
+		if int(sites[best].get("stage", CAMP)) == LOOKOUT:
+			sites[best]["lookout_down"] = true   # a killed lookout is not replaced by the next bandit: the post stays empty until the camp
 
 		if drop_gear.is_valid():
 			for key in gear_of(int(gone["level"])):
