@@ -22,11 +22,21 @@ var _stop: bool = false
 func start(name: String, folder: String = "res://crash_reports") -> void:
 	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(folder))
 	_path = folder + "/" + name
+	_keep_previous(_path)
 	_file = FileAccess.open(_path, FileAccess.WRITE)
 
 	if _file == null:
 		_path = "user://" + name
+		_keep_previous(_path)
 		_file = FileAccess.open(_path, FileAccess.WRITE)
+
+
+# The last run's file stays as <name>.prev.log, so a run after a bad one does not wipe its evidence (Lane A, 20 Nov 2026).
+static func _keep_previous(path: String) -> void:
+	if FileAccess.file_exists(path):
+		var prev: String = path.get_basename() + ".prev." + path.get_extension()
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(prev))
+		DirAccess.rename_absolute(ProjectSettings.globalize_path(path), ProjectSettings.globalize_path(prev))
 
 
 func event(text: String) -> void:
