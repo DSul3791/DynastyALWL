@@ -54,7 +54,7 @@ What Dave asked on 20 Nov 2026:
 - "they should all keep themselves busy in the area around the camp, either gathering firewood and putting in the fire or gathering supplies around the area like plant fiber to make twine or hunting for meat, hide etc. they should have a small chest of some sort, probably a few drying racks or tanning racks, a campfire maybe some wooden benches around the fire. they should carry spears for weapons. If a character approaches them with no weapon in hand they will be aprihensive but approachable. if the player has a weapon they will take up defensive positions with thier spears and make angry sounds. they will run away if the player attacks and it will hurt the players reputation with the Ragtooth Clan. If the player leaves they will eventually come back to their camp."
 - "remember to keep their motions fluid and smooth. Aim for natural."
 
-"She" is Vrixa Thornfang, whom another thread is adding as a Ragtooth goblin. The chores include her once she is in dev.
+"She" is Vrixa Thornfang, a Ragtooth goblin (PR #1345, with Grikka Ragtooth). Both take the default round, firewood and fibre.
 
 **The ground.** On the baked tile, the camp's bench is a narrow ledge, one 8 m cell wide (z about 68380 to 68388). It climbs east from the mouth at 18-20 degrees for about 60 m. Everything around it is 30 degrees or steeper. So the props stand along the ledge, and the chores walk up and down it.
 
@@ -82,7 +82,7 @@ What Dave asked on 20 Nov 2026:
 - The client tells the server when the item in hand changes: one message per change, at most twice a second. The server keeps it per player.
 - That replaces "a weapon on the hotbar" (GOBLIN-4) with "a weapon in hand", as Dave asked.
 - **No weapon in hand:** the goblins are nervous but approachable, as now. They keep their distance by standing, watch, and go on with their chores once you are past them.
-- **Weapon in hand within 10 m:** each goblin within 10 m stops its chore (backing off first if you are inside its keep distance) and squares up facing you with the spear forward (the defensive clip: Skritch's Combat_Stance, Rukz's Alert), and makes an angry chitter every 2-4 s.
+- **Weapon in hand within 10 m:** each goblin within 10 m stops its chore (backing off first if you are inside its keep distance) and squares up facing you with the spear forward (the defensive clip: Skritch's Combat_Stance, Rukz's Alert, Vrixa's and Grikka's Squat_Stance, the last two PROVISIONAL and not yet seen on screen), and makes an angry chitter every 2-4 s.
   - The chitter is a new short creature sound, made by a script like the other generated animal calls.
   - They relax and go back to work as soon as the weapon is put away or you step back past 10 m.
 - **Attacked:**
@@ -119,4 +119,4 @@ What Dave asked on 20 Nov 2026:
 - Known limits: the server trusts the client's word on which item is in hand (it checks only that the pack holds it), and the camp benches can still be sat on by the client like any bench.
 - Covered by `test_goblin_camp.gd` `_tile` (every chore point), `_npcs` and `_chores` (which prints the camp's tick cost).
 
-**Order.** A, B and C go together in PR #1354 (protocol 146), ahead of the goblins PR that adds Vrixa and Grikka; their chore rounds follow from data (`default_jobs`, or a `chores` list in their members row). A BugsList entry follows in a docs PR.
+**Order.** A, B and C go together in PR #1354 (protocol 146), ahead of the goblins PR (#1345) that added Vrixa and Grikka; their chore rounds come from data (`default_jobs`, or a `chores` list in their members row). A BugsList entry follows in a docs PR.
