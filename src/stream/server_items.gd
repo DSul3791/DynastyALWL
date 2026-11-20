@@ -196,6 +196,7 @@ var ore_near: Callable           # (position, reach in metres, ore names wanted,
 var bog_deposit_at: Callable     # (x, z, digging.json bog_iron) -> BogIron.deposit_at on the baked tile there ({} when none); set by the server scene (unset: no bog iron)
 var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
+var drink_water_near: Callable   # (a player's position, reach) -> as water_near, and the water no more than DrinkRules.REACH_DROP_M below the feet (unset: water_near)
 var water_source: Callable       # (position, reach in metres) -> Array of DrinkRules rows within reach (springs, brooks, lakes, salt); vitals.json thirst.sources (docs/design/drinking_water_design.md)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var send_chest_info: Callable   # (peer, world id, keep_out, may_set): the open container's "keep out" tick and whether this player may change it (protocol 98)
@@ -8777,7 +8778,15 @@ func _water_at_hand(peer: int, inv) -> bool:
 	var thirst: Dictionary = _vitals_cfg.get("thirst", {})
 	var reach: float = float(thirst.get("reach_m", 3.0))
 	var pos: Vector3 = _peer_pos[peer]
-	return _tank_near(pos, reach) >= 0 or (water_near.is_valid() and bool(water_near.call(pos, reach))) or _record_water_near(peer, thirst)
+	return _tank_near(pos, reach) >= 0 or _drink_water_near(pos, reach) or _record_water_near(peer, thirst)
+
+
+# Water a player at pos can drink or fill from: within reach, and not down a bank or cliff (drink_water_near; water_near where the scene sets none).
+func _drink_water_near(pos: Vector3, reach: float) -> bool:
+	if drink_water_near.is_valid():
+		return bool(drink_water_near.call(pos, reach))
+
+	return water_near.is_valid() and bool(water_near.call(pos, reach))
 
 
 # Every slow tick: each job's work goes on (seat_speed times faster sitting on a seat at a whetstone); a finished tool gets its sharpness back and
@@ -23648,7 +23657,7 @@ func _drink_water(peer: int, slot: int = -1, inv = null) -> void:
 		_drink_from_tank(peer, slot, inv, tank, v, thirst, now)
 		return
 
-	var shown: bool = water_near.is_valid() and bool(water_near.call(_peer_pos[peer], float(thirst.get("reach_m", 3.0))))
+	var shown: bool = _drink_water_near(_peer_pos[peer], float(thirst.get("reach_m", 3.0)))
 
 	# The record's water counts too where the settled water does not show it (docs/design/drink_prompt_design.md (a)): a ground spring head, a narrow
 	# brook. The rule below then says whether it runs (_drink_source_ok: "The bed is dry", frozen, salt).

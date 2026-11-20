@@ -2437,10 +2437,17 @@ func _record_drink_here() -> String:
 		var key: Vector2i = Vector2i(roundi((here.x + offset.x) / _drink_cell_m), roundi((here.z + offset.y) / _drink_cell_m))
 
 		# Only a bed the rule says runs now: a dry gully offered a drink the server always refused (Dave 19 Nov 2026: "press e to drink" on a dry hillside).
-		if _drink_cells.has(key) and DrinkRules.brook_shows(int(_drink_cells[key]) - 1, _drink_season, _drink_raining):
+		if _drink_cells.has(key) and DrinkRules.brook_shows(int(_drink_cells[key]) - 1, _drink_season, _drink_raining) and _brook_bed_in_reach(key):
 			return "Brook"
 
 	return ""
+
+
+# A record brook cell's bed (the ground at the cell's sample point) is not down a bank out of reach, as the server's tile_rows measures it
+# (DrinkRules.too_far_below on the sample's height). The ray starts well above the player, so a brook uphill is found too; no ground read yet is no.
+func _brook_bed_in_reach(key: Vector2i) -> bool:
+	var bed: float = _ground_below(Vector3(float(key.x) * _drink_cell_m, body.global_position.y + 40.0, float(key.y) * _drink_cell_m))
+	return not is_nan(bed) and not DrinkRules.too_far_below(bed, body.global_position.y)
 
 
 func _water_ahead() -> bool:
@@ -2452,7 +2459,16 @@ func _water_ahead() -> bool:
 		var spot: Vector3 = body.global_position + forward * step
 		var surface: float = flora.water_surface_at(spot.x, spot.z)
 
-		if not is_nan(surface) and WaterVolume.depth(surface, _ground_below(spot)) >= WaterVolume.DRINK_DEPTH_M:   # shallow reed water too (BUG-015)
+		# Water down a bank out of reach is none, as the server's test (DrinkRules.too_far_below).
+		if is_nan(surface) or DrinkRules.too_far_below(surface, body.global_position.y):
+			continue
+
+		var ground: float = _ground_below(spot)
+
+		if is_nan(ground):
+			continue   # no ground read yet (its collision not built) is no answer: depth() would take the whole surface height for the depth
+
+		if WaterVolume.depth(surface, ground) >= WaterVolume.DRINK_DEPTH_M:   # shallow reed water too (BUG-015)
 			return true
 
 	return false

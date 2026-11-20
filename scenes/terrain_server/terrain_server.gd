@@ -451,28 +451,8 @@ func _ready() -> void:
 				best = near
 
 		return best.y
-	items.water_near = func(pos, reach):
-		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
-
-		if tile_data.placeholder:
-			return false
-
-		# Spring cave streams run under the ground the water map knows (Dave 3 Nov 2026): drink and fill there too.
-		if not tile_data.cave_streams.is_empty() and tile_data.near_cave_water(pos, reach):
-			return true
-
-		for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
-			var k: int = tile_data.nearest(pos.x + offset.x, pos.z + offset.y)
-
-			var sim: PackedFloat32Array = tile_data.sim_snapshot()
-
-			if not sim.is_empty():
-				if not is_nan(sim[k]):
-					return true
-			elif tile_data.water_class[k] > 1 and not is_nan(tile_data.water_surface[k]):
-				return true
-
-		return false
+	items.water_near = func(pos, reach): return DrinkRulesScript.water_near(generator.get_tile(generator.tile_of(pos.x, pos.z)), pos, reach, false)
+	items.drink_water_near = func(pos, reach): return DrinkRulesScript.water_near(generator.get_tile(generator.tile_of(pos.x, pos.z)), pos, reach, true)   # and not down a bank (DrinkRules.REACH_DROP_M)
 	# The drink's source rows for vitals.json thirst.sources, from the baked tile (DrinkRules.tile_rows), with the year mean of this climate zone.
 	items.water_source = func(pos, reach) -> Array:
 		var group = settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m))))

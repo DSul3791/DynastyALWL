@@ -35,6 +35,7 @@ func _init() -> void:
 	_rules()
 	_tile_rows()
 	_server()
+	_reach_drop()
 	print("drinking water: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 
@@ -263,3 +264,102 @@ func _drinks(items, v: Dictionary) -> bool:
 	items._last_drink.clear()
 	items.action(1, Net.ACT_DRINK, -1, 0, 0, Vector3.ZERO)
 	return float(v["wet"]) > 500.0
+
+
+# A 7 x 7 stub tile, 8 m samples from (0, 0), a river down column 3 (x 24) running toward +z on a 10% slope (0.8 m a sample), its bed 1 m under
+# the water, the ground rising away from it. Water counts within reach only while its level is no more than DrinkRules.REACH_DROP_M below the
+# feet (Dave 19 Nov 2026: "press e to drink" on a hillside about 10 m above a river): ordinary and steep banks still drink, a cliff top does not.
+func _drop_tile(bank_m: float) -> Object:
+	var n: int = 7
+	var heights: PackedFloat32Array = PackedFloat32Array()
+	var classes: PackedByteArray = PackedByteArray()
+	var surface: PackedFloat32Array = PackedFloat32Array()
+	var levels: PackedFloat32Array = PackedFloat32Array()
+	heights.resize(n * n)
+	classes.resize(n * n)
+	surface.resize(n * n)
+	levels.resize(n * n)
+
+	for j in range(n):
+		for i in range(n):
+			var k: int = j * n + i
+			var water: float = 20.0 - 0.8 * float(j)
+			surface[k] = NAN
+			levels[k] = NAN
+
+			if i == 3:
+				heights[k] = water - 1.0
+				classes[k] = 3
+				surface[k] = water
+				levels[k] = water
+			else:
+				heights[k] = water + bank_m + 2.0 * float(absi(i - 3) - 1)   # the bank top beside the river, rising 2 m a sample beyond
+
+	var tile = TileTerrainDataScript.new()
+	tile.samples = n
+	tile.spacing_m = 8.0
+	tile.heights = heights
+	tile.water_class = classes
+	tile.water_surface = surface
+	tile.set_sim(levels, PackedFloat32Array())
+	return tile
+
+
+func _reach_drop() -> void:
+	var half: float = DrinkRules.BODY_HALF_M
+	var mean_c: Callable = func(_h: float) -> float: return 10.0
+	# Standing on the bank top 4 m from the river's middle (x 20 next to x 24), the feet at the bank top, water 20 - 0.8 j.
+	for bank in [0.3, 1.0, 2.0, 2.4]:
+		var tile = _drop_tile(bank)
+		var feet: float = 20.0 - 0.8 * 3.0 + bank
+		var at: Vector3 = Vector3(20.0, feet + half, 24.0)
+		check(DrinkRules.water_near(tile, at, 3.0, true), "a bank %.1f m above the water: the river is within reach" % bank)
+		var rows: Array = DrinkRules.tile_rows(tile, at, 3.0, mean_c)
+		check(rows.any(func(row): return str(row["kind"]) == "river"), "a bank %.1f m above the water: a river row (%s)" % [bank, str(rows)])
+
+	# On the sloping river, at the water's edge, both the sample upstream (0.8 m higher) and downstream (0.8 m lower) count.
+	var edge = _drop_tile(0.5)
+	for j in [2, 3, 4]:
+		var feet_j: float = 20.0 - 0.8 * float(j) + 0.5
+		check(DrinkRules.water_near(edge, Vector3(21.0, feet_j + half, 8.0 * float(j) + 3.0), 3.0, true), "the sloping river's edge at sample row %d drinks" % j)
+
+	# Dave's hillside: the same river with its sample in reach but 10 m down, and a cliff 3 m higher than the highest bank that drinks.
+	var cliff = _drop_tile(10.0)
+	var above: Vector3 = Vector3(20.0, 20.0 - 2.4 + 10.0 + half, 24.0)
+	check(not DrinkRules.water_near(cliff, above, 3.0, true) and DrinkRules.water_near(cliff, above, 3.0, false), "10 m above the river, its sample in reach: no water within reach for a drink, though water lies there for the other tests")
+	check(DrinkRules.tile_rows(cliff, above, 3.0, mean_c).is_empty(), "10 m above the river: no source rows either")
+	check(not DrinkRules.water_near(_drop_tile(3.0), Vector3(20.0, 20.0 - 2.4 + 3.0 + half, 24.0), 3.0, true), "3 m above the water: out of reach")
+
+	# A brook's bed (a record channel sample) counts by its height the same way, and so does a ground spring head.
+	check(DrinkRules.too_far_below(7.4, 10.9) and not DrinkRules.too_far_below(7.6, 10.9), "the drop is measured from the feet (0.9 m under the body's middle), 2.5 m down")
+	check(DrinkRules.ground_spring_rows([[Vector3(0.0, 5.0, 0.0), 0.002, "bushes"]], Vector3(1.0, 5.0 + 10.0 + half, 0.0), 3.0, func(_h): return 10.0).is_empty(), "a spring head 10 m down a cliff is out of reach")
+
+	# The server refuses there too: _drink_water with the real water test on the cliff tile.
+	var dir: String = "user://test_drinking_water_drop"
+	DirAccess.make_dir_recursive_absolute(dir)
+
+	for file in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir + "/" + file)
+
+	var items = ItemsScript.new()
+	items.send_full = func(_p, _b): pass
+	items.send_slots = func(_p, _b): pass
+	items.send_world_items = func(_p, _a, _r): pass
+	items.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	items.send_notice = func(_p, _t): pass
+	items.ground_height = func(_x, _z): return 0.0
+	var tile_now: Array = [cliff]
+	items.water_near = func(pos, reach): return DrinkRules.water_near(tile_now[0], pos, reach, false)
+	items.drink_water_near = func(pos, reach): return DrinkRules.water_near(tile_now[0], pos, reach, true)
+	items.water_source = func(pos, reach): return DrinkRules.tile_rows(tile_now[0], pos, reach, mean_c)
+	items.weather_now = func(): return {"temp_c": 12.0, "rain": 0.0}
+	items.season_now = func(): return "autumn"
+	items.game_seconds = func(): return 1000.0
+	items.setup(ItemTableScript.load_default(), dir)
+	items.peer_connected_hello(1, "drinkdrop0001")
+	var v: Dictionary = items.vitals_of(1)
+	items.report_position(1, above)
+	check(not _drinks(items, v), "the server refuses a drink 10 m above the river")
+	tile_now[0] = _drop_tile(1.0)
+	items.report_position(1, Vector3(20.0, 20.0 - 2.4 + 1.0 + half, 24.0))
+	check(_drinks(items, v), "and gives one on a 1 m bank")
