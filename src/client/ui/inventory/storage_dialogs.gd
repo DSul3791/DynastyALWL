@@ -101,7 +101,7 @@ func _show_lock(id: int) -> void:
 
 
 func wait_left_s() -> int:
-	var gone: int = int((Time.get_ticks_msec() - int(lock_state.get("at_msec", 0))) / 1000)
+	var gone: int = int(float(Time.get_ticks_msec() - int(lock_state.get("at_msec", 0))) / 1000.0)
 	return maxi(int(lock_state.get("wait_s", 0)) - gone, 0)
 
 

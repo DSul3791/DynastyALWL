@@ -181,8 +181,8 @@ func _server_checks() -> void:
 		check(_standing(items, id).is_empty() and p[5].all(func(c): return _have_back(items, str(c[0])) == int(c[1])), "%s: taken down, every material comes back" % id)
 		items.report_position(1, Vector3(x, 10.0, 300.0))
 		items.action(1, Net.ACT_PLACE_BLUEPRINT, int(p[2]), 0, 0, spot)
-		var again: bool = HeldTool.hit_site(items, HeldTool.site_of(items, id))
-		check(again and _standing(items, id).size() == 1, "%s: placed and hammered again from the refund" % id)
+		var rebuilt: bool = HeldTool.hit_site(items, HeldTool.site_of(items, id))
+		check(rebuilt and _standing(items, id).size() == 1, "%s: placed and hammered again from the refund" % id)
 		x += 10.0
 
 	# The Engineered gate: E opens and shuts it.

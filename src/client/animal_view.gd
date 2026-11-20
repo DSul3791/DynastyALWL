@@ -12,6 +12,8 @@ const MODELS_PATH := "res://data/animals/models.json"
 const BoneOffsetsScript := preload("res://src/client/bone_offsets.gd")
 const BreathLook := preload("res://src/client/breath_look.gd")   # head_bone_of: where an animal breathes from in the cold
 const MotionBuffer := preload("res://src/client/motion_buffer.gd")   # drawn between sent points, a little behind (Dave 19 Nov 2026)
+const BanditLook := preload("res://src/client/bandit_look.gd")   # camp bandits (species 52) are drawn as the human ragdoll (docs/design/BANDIT_CAMPS.md)
+const TETHERED := 22   # a horse tethered at a bandit camp: its saddle is shown (server_bandits.gd)
 const GRAZE := 0
 const HOP := 1
 const FLEE := 2
@@ -24,7 +26,7 @@ signal fell(kind: String, at: Vector3, small: bool)            # an animal went 
 
 # Species numbers 8 to 13 were missing, so their voices and footsteps never fired (Kathreen, 2 Nov 2026). The sound side (creature_sounds.gd KINDS, the `<kind>_step` slots in
 # data/sound/batch1_slots.json) skips a kind it has no clip for, so these stay silent until Jason adds the clips; the names here are the ones to use.
-const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear", 15: "donkey", 16: "goblin", 17: "lynx", 18: "black_bear", 19: "elk", 20: "bighorn", 21: "mountain_goat", 22: "beaver", 23: "chamois", 24: "mink", 25: "raccoon", 26: "rat", 27: "crow", 28: "pheasant", 29: "goose", 30: "cow", 31: "goat", 32: "chicken", 33: "cat", 34: "dog", 35: "buffalo", 36: "puma", 37: "pronghorn", 38: "warthog", 39: "hyena", 40: "wildebeest", 41: "lion", 42: "leopard", 43: "rhino", 44: "elephant", 45: "camel", 46: "guineafowl", 47: "honey_badger", 48: "kangaroo", 49: "mammoth", 50: "tiger", 51: "alligator"}
+const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear", 15: "donkey", 16: "goblin", 17: "lynx", 18: "black_bear", 19: "elk", 20: "bighorn", 21: "mountain_goat", 22: "beaver", 23: "chamois", 24: "mink", 25: "raccoon", 26: "rat", 27: "crow", 28: "pheasant", 29: "goose", 30: "cow", 31: "goat", 32: "chicken", 33: "cat", 34: "dog", 35: "buffalo", 36: "puma", 37: "pronghorn", 38: "warthog", 39: "hyena", 40: "wildebeest", 41: "lion", 42: "leopard", 43: "rhino", 44: "elephant", 45: "camel", 46: "guineafowl", 47: "honey_badger", 48: "kangaroo", 49: "mammoth", 50: "tiger", 51: "alligator", 52: "bandit"}
 const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit near it fell from that hit
 const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
@@ -121,6 +123,9 @@ func _make_species_body(number: int, id: int, young: bool = false) -> Node3D:
 
 		if flock != null:
 			return flock
+
+	if number == 52:
+		return BanditLook.make(id)
 
 	var model: Node3D = _make_model(number, id, young)
 
@@ -577,6 +582,12 @@ func _process_body(delta: float) -> void:
 		var drawn: Array = MotionBuffer.at(b["samples"], drawn_at)
 		node.position = drawn[0]
 		node.rotation.y = lerp_angle(node.rotation.y, -float(drawn[1]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
+		if node.has_meta("bandit"):
+			BanditLook.animate(node, state, Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001))
+			continue
+
+		if state == TETHERED and not node.has_meta("saddled"):
+			_show_hidden(node)   # a camp horse wears its saddle
 		if bool(b.get("model", false)):
 			var model_speed: float = Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001)
 			if node.has_meta("flock_birds"):
@@ -922,6 +933,7 @@ func _model_materials(meshes: Array, row: Dictionary) -> void:
 						gone.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 						gone.albedo_color = Color(1.0, 1.0, 1.0, 0.0)
 						mi.set_surface_override_material(surface, gone)
+						mi.set_meta("hidden_surfaces", (mi.get_meta("hidden_surfaces", []) as Array) + [surface])
 						_model_note(str(row.get("scene", "")).get_file(), "surface %d of %s [%s] hidden" % [surface, str(mi.name), name_text.strip_edges()])
 						break
 
@@ -2436,3 +2448,12 @@ func _make_moose(id: int) -> Node3D:
 # a stag's branched antlers on every second one (by id).
 func _make_deer(id: int = 0) -> Node3D:
 	return _make_quad({"leg_h": 0.62, "rb": 0.22, "len": 1.05, "neck": 0.42, "head": 0.32, "snout": 1.1, "pale_belly": false, "coat": Color(0.52, 0.38, 0.24), "dark": Color(0.32, 0.23, 0.15), "pale": Color(0.9, 0.85, 0.77), "rump": true, "tines": id % 2 == 0, "socks": false})
+
+
+# Puts back the surfaces a hide entry cut away (a tethered camp horse's saddle, docs/design/BANDIT_CAMPS.md), once per body.
+func _show_hidden(node: Node3D) -> void:
+	node.set_meta("saddled", true)
+
+	for mi in node.find_children("*", "MeshInstance3D", true, false):
+		for surface in (mi.get_meta("hidden_surfaces", []) as Array):
+			(mi as MeshInstance3D).set_surface_override_material(int(surface), null)

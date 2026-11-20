@@ -175,12 +175,12 @@ func _links(from_piece: Dictionary, to_piece: Dictionary) -> bool:
 	var b: Vector3 = to_piece["inlet"]
 	var sealed: bool = bool(from_piece.get("closed", false)) and bool(to_piece.get("closed", false))
 
-	var ends: Array = [from_piece["outlet"]]
+	var mouths: Array = [from_piece["outlet"]]
 
 	if from_piece.has("outlets"):
-		ends.append_array(from_piece["outlets"])
+		mouths.append_array(from_piece["outlets"])
 
-	for a in ends:
+	for a in mouths:
 		if sealed:
 			if Vector2(a.x - b.x, a.z - b.z).length() <= PORT_JOIN_M and absf(a.y - b.y) <= PORT_JOIN_M:
 				return true
