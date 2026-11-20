@@ -918,6 +918,30 @@ func bind(id: int, peer: int) -> bool:
 	return true
 
 
+# Stage 5b: Rope or Twine struck at a camp horse once its camp has no bandit left puts a lead on it: it leaves the camp's row and is that
+# player's companion (server_companions.gd claim, source "claimed"). True when claimed (the rope is used).
+func claim_horse(id: int, peer: int) -> bool:
+	if animals == null or animals.companions == null or not animals.animals.has(id):
+		return false
+
+	var a: Dictionary = animals.animals[id]
+
+	if str(a["sp"]) != "horse" or not a.has("camp") or not sites.has(a["camp"]) or not (sites[a["camp"]]["levels"] as Array).is_empty():
+		return false   # not a camp horse, or a bandit of its camp is still about
+
+	var cell: Vector2i = a["camp"]
+
+	if not _members.has(cell) or not _members[cell].has(id) or not animals.companions.claim(a, peer):
+		return false
+
+	_member_gone(cell, id, a["pos"], false)
+	a.erase("camp")
+	a.erase("seat")
+	a["state"] = animals.GRAZE
+	_tell(peer, "You put a lead on the horse. It is yours now and follows you.")
+	return true
+
+
 # A bandit who gave up: sitting where he gave up, or tied and following his captor; a guard within guard_m takes him for the bounty. Left
 # escape_game_hours, or led past lead_slack_m, he slips free and goes back to camp (still badly hurt: one more blow and he gives up again).
 func _captive(a: Dictionary, dt: float) -> void:

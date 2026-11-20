@@ -462,6 +462,17 @@
 			}
 		},
 		"horse": {
+			"companion": {
+				"note": "Only a bandit camp's horse, claimed by a player after its camp has no bandit left (docs/design/BANDIT_CAMPS.md stage 5b): a strike with Rope or Twine in hand puts a lead on it and it is that player's companion (companions.json). No feeding: the bond stays full and never warns. Never a stray (source claimed).",
+				"source": "claimed",
+				"names": ["Bay", "Ash", "Clover", "Dusk", "Flint", "Hazel", "Rowan", "Sorrel", "Thistle", "Willow"],
+				"food": [],
+				"bond_start": 1.0,
+				"bond_per_day": 0.0,
+				"bond_hungry": 0.0,
+				"follow_m": 4.0,
+				"warn_bond": 2.0
+			},
 			"group_spacing_m": 3.5,
 			"number": 7,
 			"weather": "stock",

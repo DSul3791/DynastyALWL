@@ -191,8 +191,20 @@ func _make_stray(sp: String, c: Dictionary, p: Dictionary) -> void:
 			return
 
 
+# Where a companion stands when it is made or catches up: 2.8 m behind-left of its owner, and each further live companion of the same owner
+# a step round from the last, so two claimed horses never stand in one spot.
+func _beside(r: Dictionary) -> Vector3:
+	var n: int = 0
+
+	for rid in live.keys():
+		if rid != str(r["id"]) and str(records.get(rid, {}).get("owner_key", "")) == str(r["owner_key"]) and int(rid) < int(r["id"]):
+			n += 1
+
+	return Vector3(-2.0, 0.0, -2.0).rotated(Vector3.UP, 0.9 * n)
+
+
 func _make_live(r: Dictionary, owner: Dictionary) -> void:
-	var at: Vector3 = owner["pos"] + Vector3(-2.0, 0.0, -2.0)
+	var at: Vector3 = owner["pos"] + _beside(r)
 	var id: int = host.spawn(str(r["species"]), at.x, at.z)
 
 	if id == 0:
@@ -409,6 +421,23 @@ func _step_stray(a: Dictionary, dt: float) -> void:
 	a["state"] = host.GRAZE
 
 
+# A bandit camp's horse claimed (server_bandits.claim_horse, BANDIT_CAMPS.md stage 5b): it is `peer`'s companion at once. True when claimed.
+func claim(a: Dictionary, peer: int) -> bool:
+	var c: Dictionary = _cfg(str(a["sp"]))
+
+	if str(c.get("source", "")) != "claimed" or handles(a) or not peer_key.is_valid():
+		return false
+
+	var key: String = str(peer_key.call(peer))
+
+	if key == "":
+		return false
+
+	_adopt(a, key, c)
+	_dirty = true
+	return true
+
+
 func _adopt(a: Dictionary, key: String, c: Dictionary) -> void:
 	var names: Array = c.get("names", ["Dog"])
 	var rid: String = str(next_id)
@@ -461,7 +490,7 @@ func _step_companion(a: Dictionary, dt: float) -> void:
 		return
 
 	if d > CATCH_UP_M:
-		a["pos"] = Vector3(o.x - 2.0, o.y, o.z - 2.0)   # its owner travelled fast: it is with them again
+		a["pos"] = o + _beside(r)   # its owner travelled fast: it is with them again
 		return
 
 	var follow_m: float = float(c.get("follow_m", 3.0))
