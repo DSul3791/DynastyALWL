@@ -328,7 +328,6 @@ func _draw_over() -> void:
 		_over.draw_rect(Rect2(pad, s.y - pad - h, s.x - pad * 2.0, h), ArtKit.OUTLINE)
 		_over.draw_rect(Rect2(pad, s.y - pad - h, (s.x - pad * 2.0) * wear, h), ArtKit.wear_colour(wear))
 
-	var cinzel: Font = DynastyTheme.heading_font()
 	var garamond: Font = DynastyTheme.text_font()
 
 	if icon == null and caption != "" and garamond != null:

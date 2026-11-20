@@ -546,7 +546,7 @@ func _garden_till_checks() -> void:
 	# and tilled, and its edge blends back to the slope no steeper than GARDEN_BLEND_GRADE. Aimed a little off the metre cells: an unturned garden's beds snap to them.
 	var made_edits: Array = []
 	var verdicts: Array = []
-	items.send_hoe_verdict = func(_p, kind, code, at, state, why, cells): verdicts.append([kind, code, at, state, why, cells])
+	items.send_hoe_verdict = func(_p, kind, code, at, state, why, marks): verdicts.append([kind, code, at, state, why, marks])
 	items.ground_height = func(x, _z): return 10.0 + 0.3 * (x - 40.5)
 	items.edits_near = func(_p, _r): return made_edits.duplicate()
 	items.dig_ground = func(c, r): made_edits.append([0, c, r]); return true
