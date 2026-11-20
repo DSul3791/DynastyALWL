@@ -8,6 +8,8 @@ extends RefCounted
 
 const KIND_HELLO := 0
 const KIND_REQUEST := 1
+const KIND_STATUS := 2                   # (server pick page) a line that opens with [u32 4][u32 2] instead of a hello gets one status frame
+                                         # [u32 size][u32 2][JSON utf-8] and is closed: name, message, build, protocol, players, max_players, locked
 const MAX_FRAME := 1 << 20
 
 var on_request: Callable                 # (peer_id, keys, urgent) on the line's thread
@@ -21,6 +23,15 @@ var _mutex: Mutex = Mutex.new()
 var _stopping: bool = false
 var _pending: Array = []                 # [tcp, inbox, since msec] before their hello
 var _lines: Dictionary = {}              # peer id -> {"tcp", "inbox", "mutex"}
+var _status: PackedByteArray = PackedByteArray()   # the status reply's JSON, set on the main thread (set_status)
+
+
+# The server's status for the server pick page; the line's thread answers with the latest one.
+func set_status(info: Dictionary) -> void:
+	var bytes: PackedByteArray = JSON.stringify(info).to_utf8_buffer()
+	_mutex.lock()
+	_status = bytes
+	_mutex.unlock()
 
 
 # Returns the port, or 0 when it cannot listen.
@@ -140,6 +151,10 @@ func _read_hello(item: Array) -> int:
 	if available > 0:
 		item[1].append_array(tcp.get_data(available)[1])
 
+	if item[1].size() >= 8 and item[1].decode_u32(0) == 4 and item[1].decode_u32(4) == KIND_STATUS:
+		_answer_status(tcp)
+		return -1
+
 	if item[1].size() < 12:
 		return 0
 
@@ -150,6 +165,18 @@ func _read_hello(item: Array) -> int:
 
 	item[1] = item[1].slice(12)
 	return peer_id
+
+
+func _answer_status(tcp: StreamPeerTCP) -> void:
+	_mutex.lock()
+	var body: PackedByteArray = _status
+	_mutex.unlock()
+	var frame: PackedByteArray = PackedByteArray()
+	frame.resize(8)
+	frame.encode_u32(0, 4 + body.size())
+	frame.encode_u32(4, KIND_STATUS)
+	frame.append_array(body)
+	tcp.put_data(frame)
 
 
 func _read_requests(peer_id: int, line: Dictionary) -> void:

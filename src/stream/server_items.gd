@@ -370,7 +370,8 @@ var _training_sent: Dictionary = {}  # peer -> today's training percent last sen
 var _exertion: Dictionary = {}      # peer -> smoothed 0..1 from movement
 var _motion: Dictionary = {}        # peer -> [last position, msec]
 var _path_cfg: Dictionary = {}      # data/path_speed.json: range_m and exertion_factor for moving on or near a path
-var _on_path_cache: Dictionary = {} # peer -> [msec checked, bool]: whether a path patch lies within range_m (looked up at most once a second)
+var _on_path_cache: Dictionary = {} # peer -> [msec checked, bool, bool]: whether a path patch, and a road patch, lies within range_m (looked up at most once a second)
+var road_trip: Callable              # (peer, position, kind "road" / "path" / "cart", or "" off every path) -> void: bandit site traffic (server_bandits.gd), set by the server scene
 var _work_level: Dictionary = {}    # peer -> effort of the last tool work (data/items/exertion.json tool_effort)
 var _work_until: Dictionary = {}    # peer -> msec until which tool work counts as effort
 var _last_eat: Dictionary = {}      # peer -> msec
@@ -824,6 +825,7 @@ func report_position(peer: int, position: Vector3) -> void:
 		_peer_pos[peer] = position
 		_note_motion(peer, position)
 		_carts.follow(peer)   # the cart this player pulls comes after them (nothing for anyone else)
+		_note_road_trip(peer, position)
 		var now: int = Time.get_ticks_msec()
 		_note_zone(peer, position)
 
@@ -6597,7 +6599,7 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 						(added[added.size() - 1][5] as Dictionary)["road"] = true   # a surveyed road's patch (the client keeps the grass off 2 m either side)
 
 					if it.has("struct") and it["struct"].has("len"):
-						(added[added.size() - 1][5] as Dictionary)["pitch"] = float(it["struct"]["pitch"])   # a pipe run laid from the hand: its tilt and length (protocol 136)
+						(added[added.size() - 1][5] as Dictionary)["pitch"] = float(it["struct"]["pitch"])   # a pipe run laid from the hand: its tilt and length (protocol 138)
 						(added[added.size() - 1][5] as Dictionary)["len"] = float(it["struct"]["len"])
 
 					if it.has("struct") and _water.pieces.get(id, {}).has("level_port"):
@@ -13971,6 +13973,7 @@ func _on_path(peer: int, position: Vector3) -> bool:
 
 	var reach: float = float(_path_cfg.get("range_m", 3.0))
 	var found: bool = false
+	var road: bool = false
 
 	for id in _ids_near(position, reach):
 		if not _items.has(id):
@@ -13980,10 +13983,53 @@ func _on_path(peer: int, position: Vector3) -> bool:
 
 		if other.has("struct") and str(other["struct"]["kind"]) == "path_patch" and Vector2(other["pos"].x - position.x, other["pos"].z - position.z).length() <= reach:
 			found = true
-			break
+			road = bool(other["struct"].get("road", false))
 
-	_on_path_cache[peer] = [now, found]
+			if road:
+				break
+
+	_on_path_cache[peer] = [now, found, road]
 	return found
+
+
+# Bandit site traffic (docs/design/BANDIT_CAMPS.md): a player on a surveyed road counts "road", on a hand path "path", pulling a loaded cart
+# along either "cart"; off every path "" (the mover is forgotten). Reuses the once-a-second path look-up above.
+func _note_road_trip(peer: int, position: Vector3) -> void:
+	if not road_trip.is_valid():
+		return
+
+	if not _on_path(peer, position):
+		road_trip.call(peer, position, "")
+		return
+
+	var pulling: bool = _carts.puller_of.has(peer) and float(_carts.pulls.get(int(_carts.puller_of[peer]), {}).get("share", 0.0)) > 0.0   # the load share the cart's last move worked out: no item scan per report
+	road_trip.call(peer, position, "cart" if pulling else ("road" if bool(_on_path_cache[peer][2]) else "path"))
+
+
+# Metres from a spot to the nearest surveyed road patch within r, or INF (a bandit site stands off a road).
+func road_distance(at: Vector3, r: float) -> float:
+	var best: float = INF
+
+	for id in _ids_near(at, r):
+		if _items.has(id) and _items[id].has("struct") and str(_items[id]["struct"]["kind"]) == "path_patch" and bool(_items[id]["struct"].get("road", false)):
+			best = minf(best, Vector2(_items[id]["pos"].x - at.x, _items[id]["pos"].z - at.z).length())
+
+	return best if best <= r else INF
+
+
+# True when a placed building (SurveyLine.is_building: not a path, bed, remains or carcass; a campfire counts, as on the survey line) stands
+# within r of a spot.
+func building_near(at: Vector3, r: float) -> bool:
+	for id in _ids_near(at, r):
+		if not _items.has(id) or not (_items[id].has("struct") or _items[id].has("fire")):
+			continue
+
+		var kind: String = str(_items[id]["struct"]["kind"]) if _items[id].has("struct") else ""
+
+		if (kind == "" or SurveyLine.is_building(kind, _structures.get(kind, {}))) and Vector2(_items[id]["pos"].x - at.x, _items[id]["pos"].z - at.z).length() <= r:
+			return true
+
+	return false
 
 
 # Effort (0 to 1) for a ground speed: straight lines through exertion.json effort_by_speed ([speed m/s, effort] pairs).
@@ -17820,7 +17866,7 @@ func _new_pipe(kind: String, pose: Dictionary, paid: int, born: float) -> int:
 	return id
 
 
-# pipe_lay (protocol 136): the held pack slot holds a pipe (lay a run from `from` to `to`) or a tap or drip head (fit it on the open pipe end at `to`).
+# pipe_lay (protocol 138): the held pack slot holds a pipe (lay a run from `from` to `to`) or a tap or drip head (fit it on the open pipe end at `to`).
 # Every refusal says why.
 const PIPE_LAY_PACE_MS := 150   # one pipe_lay a player at most this often (each one looks over the water pieces)
 var _pipe_lay_msec: Dictionary = {}   # peer -> msec of the last pipe_lay
@@ -17958,7 +18004,7 @@ func _pipe_fit(peer: int, inv, slot: int, kind: String, at: Vector3) -> void:
 
 # Hold E on a laid run, a tap or a drip head: it comes back to the pack (a run as the pieces it took). A run with a tap or drip head on its end
 # keeps it until that comes off.
-func _take_down_laid(peer: int, inv, id: int, it: Dictionary, def: Dictionary) -> void:
+func _take_down_laid(peer: int, _inv, id: int, it: Dictionary, def: Dictionary) -> void:
 	if str(def.get("hand_laid", "")) == "pipe":
 		for end in pipe_ends(it):
 			for other in _water_kind:
@@ -18121,13 +18167,13 @@ func _taps_fill(now_s: float) -> void:
 		var used: int = 0
 
 		for s in want:
-			var take: int = mini(_container_cap(box.numbers[s]) - box.wear[s], budget - used)
+			var add_ml: int = mini(_container_cap(box.numbers[s]) - box.wear[s], budget - used)
 
-			if take <= 0:
+			if add_ml <= 0:
 				break
 
-			box.wear[s] += take
-			used += take
+			box.wear[s] += add_ml
+			used += add_ml
 
 		if used > 0:
 			_water.set_litres(tank, float(held_ml - used) / 1000.0)

@@ -400,6 +400,67 @@ Assumed on Dave's behalf (provisional):
 - ATTR-3: existing characters are converted (50 + 5 x old), not re-rolled; attributes they never had read 50.
 - ATTR-4: the band weights 5/20/50/20/5 (data/items/attributes.json).
 
+## 61. Grass grows back onto paths in patches
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test on 19 Nov 2026. Fixed by PR #1313, merged to dev at 7f80e652 (head e33a3a8c) after independent review. Lane A (Dave's PC) on the exact head: 52 of 52 selected tests passed (51 fast + test_flora_density), including test_placed_clearing; parse check ok. Fix not yet played.
+
+Dave, 19 Nov 2026: "often grass is regrowing into the paths in patches can you check to see why that is happening. it should not be happening."
+
+**Cause:** the grass checked "is this a path or a cleared spot" only at a few ground points per 6 m cell. Each point then scattered its clump of blades up to half the point spacing away (about 0.6 m near, up to 2.85 m far off). A point just beside a path dropped its clump onto it; a trodden path is only 0.6 m wide. Forest litter had the same flaw.
+
+**Required outcome:** no grass blade or litter leaf stands on a trodden path, a surveyed road's 3 m strip, or a placed piece's clearing, near or far.
+
+**Acceptance:** walk a long trodden path and a surveyed road, near and looking far down them: no grass tufts or leaves on them; grass stands right beside them as before.
+
+Not changed: shore reeds and pebbles at a water's edge, and wild small plants (a separate system). A wide grass blade beside a path can still lean over its edge by up to about 0.4 m.
+
+## 62. Server pick page: passwords and server status (part 1 of 2)
+
+**Status: Part 1 implemented - awaiting part 2 and player verification.** Dave's request and design approval, 19 Nov 2026 (docs/design/SERVER_PICK_PAGE.md). Part 1 is PR #1312, merged to dev at ed566c9b (head 0fa7a0db) after independent review (4 rounds, final PASS on the exact head). Lane A (Dave's PC) on the exact head: 426 of 426 selected tests passed (417 fast + 9 timing), including test_server_auth and test_server_list; join_remote_smoke and join_password_smoke ok (right password welcomed, wrong refused). Protocol 137. Nobody has played it or seen it on screen; part 2 (the page itself and the password box) is next.
+
+Dave, 19 Nov 2026: "servers need the ability to also have a password. so once you pick your server and try to connect we will have a popup that asks for the password. you get 3 tries if you get it wrong. then you get a message that says. you got it wrong 3 times. check your caps lock, and take a minute to recompose. then it should set you back at the pick a server page." And on remembering it: "yes it should."
+
+**Required outcome:** a server can have a password, checked by the server and never sent over the network; the server keeps only a salted hash once it has started (a password typed into server.json is replaced at start; DYNASTY_SERVER_PASSWORD lives in the container's settings); 3 tries per join; the server pick page can see each server's name, players and padlock before joining.
+
+**Acceptance (after part 2):** set a password in the server's server.json (or DYNASTY_SERVER_PASSWORD for Docker); the row shows a padlock; Join asks for it; the right one gets in and is remembered; three wrong ones show the Caps Lock message and go back to the server page.
+
+Assumed on Dave's behalf (provisional):
+
+- SP-1: 5 wrong passwords from one address within a minute refuse that address for a minute.
+- SP-2: a client waits 15 s for the server's first handshake word, then 180 s while the player types.
+
+## 63. Animals float when the ground is dug from under them (part 1 of 3 of the animal fixes)
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test on 19 Nov 2026. Fixed by PR #1317, merged to dev at 845b33d0 (head 13258218) after independent review (3 rounds, final PASS on the exact head). Lane A (Dave's PC) on the exact head: 78 of 78 selected tests passed (75 fast + 2 timing + 1 slow), including test_animals_dug_ground; parse check ok. Fix not yet played.
+
+Dave, 19 Nov 2026: "the animals are not moving naturally they are floating in the air if I dig the dirt out under them."
+
+**Cause:** the server placed animals on the generated ground only, never on the digs and fills, and an animal standing still never read the ground again. A hole's steep rim was also a wall to animal walking, so none entered a hole and one dropped in could not leave.
+
+**Required outcome:** an animal stands on the ground as it is now; one dug out from under drops to the new ground, one on a fill stands on it; animals walk into and out of shallow dug holes; natural slopes are unchanged.
+
+**Acceptance:** dig out the ground under a standing animal: it drops into the hole at once; fill under one: it stands on the fill; animals walk over dug ground on its surface, not in the air.
+
+Not changed: boulders (planned separately), NPCs (still on the generated ground), animal attacks.
+
+Assumed on Dave's behalf (provisional):
+
+- GS-1: an animal jumps down at most 2 m and scrambles up at most 1 m in one step where a dig or fill touches its spot; deeper holes stay pits.
+
+## 64. Bandit camps: sites woken by road traffic (part 1 of 5)
+
+**Status: Part 1 implemented - awaiting parts 2 to 5 and player verification.** Dave's request and plan approval, 19 Nov 2026 (docs/design/BANDIT_CAMPS.md). Part 1 is PR #1319, merged to dev at 68aad2dd (head e99987a4) after independent review (2 rounds, final PASS on the exact head). Lane B (David4) on the exact head: 204 of 204 selected tests passed (201 fast + 3 timing), including test_bandit_sites; parse check ok, warnings unchanged; join smoke ok. Nothing appears in the game yet: part 2 (the camp itself) is next.
+
+Dave, 19 Nov 2026: "We also need to introduce bandit camp spawn areas. I'm thinking these should be predetermined by the seed like plants and trees but they only activate if someone builds a road within 500m of a spawn point. then it will also check to make sure there are no other bandit camps spawn activated within a few kms." Then: "it should be an actual camp though. so in a good spot place a campfire maybe a couple of tamed horses with saddles and a tent or two and from 1 to 5 bandits." And: "I agree with all 5 bandit ideas."
+
+**Required outcome:** bandit camp sites are fixed by the world seed and wake only when a road near them gets busy, with no camp near the starter town, the spawn, buildings or another camp; later parts place the camp, its warnings, the toll and robbery, and the clearing.
+
+**Acceptance (after part 2):** walk or pull a loaded cart up and down a surveyed road far from town for a while: a camp appears 100 to 300 m off the road; none appears near town, near buildings, or within 3 km of another camp.
+
+Assumed on Dave's behalf (provisional):
+
+- BANDIT-1 to BANDIT-7 (docs/design/BANDIT_CAMPS.md): one chance of a site per 1 km square; trip points per 100 m stretch (road 1, hand path 0.5, loaded cart 3), halving every 3 game days; 30 points within 500 m wake a site; sites sit 100 to 300 m off a road on gentle dry ground, 1.5 km from town and spawn, 150 m from buildings, 3 km from another camp; checked once a game hour.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
