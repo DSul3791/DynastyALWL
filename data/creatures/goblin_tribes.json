@@ -22,7 +22,16 @@
 				"fire_owner": "the Ragtooth goblins'",
 				"mouth": {"x": 56064.0, "z": 68384.0},
 				"fire": {"x": 56074.0, "z": 68383.0, "wood": "log"},
-				"keep_m": 8.0
+				"keep_m": 8.0,
+				"props_note": "Camp life stage A (Dave 20 Nov 2026: \"they should have a small chest of some sort, probably a few drying racks or tanning racks, a campfire maybe some wooden benches around the fire\"): existing catalog pieces (structures.json kinds) laid by the server as transient pieces of the tribe, along the ledge east of the mouth (one 8 m cell wide, 18-20 degrees, read from the baked tile 20 Nov 2026; test_goblin_camp checks each spot). Nobody takes them down, opens, loots, uses, sits on, repairs or crafts at them. prop_keep_m: nothing is put down this near a prop. PROVISIONAL (GOBLIN-11).",
+				"prop_keep_m": 2.5,
+				"props": [
+					{"kind": "crude_chest", "x": 56069.5, "z": 68386.5, "yaw": 90},
+					{"kind": "log_bench", "x": 56074.0, "z": 68386.6, "yaw": 0},
+					{"kind": "log_bench", "x": 56078.5, "z": 68384.5, "yaw": 90},
+					{"kind": "drying_rack", "x": 56083.0, "z": 68385.0, "yaw": 0},
+					{"kind": "tanning_rack", "x": 56087.5, "z": 68384.0, "yaw": 0}
+				]
 			},
 			"members": [
 				{"id": "skritch", "name": "Skritch", "role": "goblin_trader", "voice": "skritch", "body": 0, "trader": true, "spot": {"x": 56070.0, "z": 68381.0, "yaw": 180}},

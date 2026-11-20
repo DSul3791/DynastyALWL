@@ -134,6 +134,9 @@ func _tile() -> void:
 	for m in tribe["members"]:
 		spots.append([str(m["id"]), Vector2(float(m["spot"]["x"]), float(m["spot"]["z"]))])
 
+	for prop in camp.get("props", []):
+		spots.append(["the %s" % str(prop["kind"]), Vector2(float(prop["x"]), float(prop["z"]))])
+
 	for s in spots:
 		var c: Vector2i = cell.call(s[1])
 		var dx: float = (heights[c.y * n + c.x + 1] - heights[c.y * n + c.x - 1]) / (2.0 * spacing)
@@ -342,4 +345,52 @@ func _server() -> void:
 	var cfg: Dictionary = PlacementRules.load_config()
 	check(PlacementRules.blocked(cfg, "campfire_kit", Vector3(at.x + 2.0, 10.0, at.y), []) == "tribe_camp", "the ghost is red by the goblin camp")
 	check(PlacementRules.reason_text("tribe_camp").contains("goblin camp"), "and says why")
-	check(PlacementRules.blocked(cfg, "campfire_kit", Vector3(at.x + float(camp["keep_m"]) + 5.0, 10.0, at.y), []) == "", "and is free past keep_m")
+	check(PlacementRules.blocked(cfg, "campfire_kit", Vector3(at.x - float(camp["keep_m"]) - 5.0, 10.0, at.y), []) == "", "and is free past keep_m (the props stand east)")
+	_props(items, said, cfg)
+
+
+# The camp's chest, racks and benches (camp life stage A, Dave 20 Nov 2026): laid once, never saved, and nobody takes, opens, loots, uses,
+# sits on, locks, repairs or crafts at them.
+func _props(items, said: Array, cfg: Dictionary) -> void:
+	var rows: Array = camp.get("props", [])
+	var kinds: Dictionary = {}
+
+	for prop in rows:
+		kinds[str(prop["kind"])] = true
+		check(items._structures.has(str(prop["kind"])), "the %s is an existing structure kind" % str(prop["kind"]))
+
+	check(kinds.has("crude_chest") and kinds.has("log_bench") and (kinds.has("drying_rack") or kinds.has("tanning_rack")), "a chest, benches and a rack (%s)" % str(kinds.keys()))
+	items._tribe_props_tick()
+	var laid: Array = []
+
+	for prop in NpcCamp.props():
+		if str(prop["tribe"]) != "ragtooth":
+			continue
+
+		var k: int = NpcCamp.props().find(prop)
+		laid.append(int(items._tribe_prop_ids.get(k, 0)))
+
+	check(laid.size() == rows.size() and laid.all(func(i): return items._items.has(i)), "every prop is laid (%s)" % str(laid))
+	var count: int = items._items.size()
+	items._tribe_props_tick()
+	check(items._items.size() == count, "a second tick lays nothing more")
+
+	for i in laid:
+		var it: Dictionary = items._items.get(i, {})
+		check(bool(it.get("struct", {}).get("transient", false)) and ItemsScript._not_in_area(it), "the %s is transient, never saved" % str(it.get("struct", {}).get("kind", "?")))
+		items.report_position(1, it.get("pos", Vector3.ZERO) + Vector3(1.0, 0.0, 0.0))
+
+		for act in [Net.ACT_USE_STRUCT, Net.ACT_CHEST_LOCK, Net.ACT_REPAIR_STRUCT]:
+			said.clear()
+			items.action(1, act, i, 0, 1, Vector3.ZERO)
+			check(said.any(func(t): return str(t).contains("Ragtooth camp")), "action %d on the %s is refused (%s)" % [act, str(it["struct"]["kind"]), str(said)])
+
+		said.clear()
+		items._take_down(1, items._inventories[items._peer_key[1]], i)
+		check(items._items.has(i) and said.any(func(t): return str(t).contains("Ragtooth camp")), "the %s cannot be taken down" % str(it["struct"]["kind"]))
+		check(items._chest_of(1, i) == null, "the %s has no store to open or loot" % str(it["struct"]["kind"]))
+		check(PlacementRules.blocked(cfg, "campfire_kit", it["pos"] + Vector3(1.0, 0.0, 0.0), []) == "tribe_camp", "nothing is put down by the %s" % str(it["struct"]["kind"]))
+
+		if str(it["struct"]["kind"]).ends_with("_rack"):
+			check(items.serving_station(1, str(it["struct"]["kind"]), 1) < 0, "nobody crafts at the camp's %s" % str(it["struct"]["kind"]))
+

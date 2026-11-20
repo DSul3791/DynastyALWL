@@ -1304,6 +1304,9 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_CHEST_OPEN or kind == Net.ACT_CHEST_PUT or kind == Net.ACT_CHEST_TAKE:
 		_chest_action(peer, inv, kind, a, b, count, int(at.x) - 1 if kind == Net.ACT_CHEST_PUT else -1)   # a put's at.x: the store slot it was dragged onto + 1 (protocol 121)
 	elif kind == Net.ACT_USE_STRUCT:
+		if _tribe_piece_refuses(peer, a):
+			return
+
 		_use_struct(peer, inv, a, b, count - 1)   # count: the held pack slot + 1, for the chopping block's axe (protocol 117)
 	elif kind == Net.ACT_EAT:
 		var fed_before: float = float(vitals_of(peer).get("fed", 0.0))
@@ -1368,6 +1371,9 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_CHEST_KEEP_OUT:
 		_set_keep_out(peer, a, b == 1)
 	elif kind == Net.ACT_CHEST_LOCK:
+		if _tribe_piece_refuses(peer, a):
+			return
+
 		_lock_action(peer, inv, a, b, count)
 	elif kind == Net.ACT_VIEW_OPEN:
 		_view_open(peer, a)
@@ -1421,6 +1427,9 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_PLACE:
 		_place(peer, inv, a, at, count, b)
 	elif kind == Net.ACT_REPAIR_STRUCT:
+		if _tribe_piece_refuses(peer, a):
+			return
+
 		_repair_struct(peer, inv, a, b - 1)   # b: the held pack slot + 1 (protocol 117)
 	elif kind == Net.ACT_PLACE_BLUEPRINT:
 		_place(peer, inv, -1, at, count, b, _blueprints.get(a, {}))
@@ -1623,6 +1632,7 @@ func tick(delta: float) -> void:
 		_smelters.tick_all(spent)
 		_dev_pending_tick(spent)
 		_camp_fire_tick()
+		_tribe_props_tick()
 		_slow_mark("lights-dev", t0)
 		_comfort_tick(spent)
 		_slow_mark("comfort", t0)
@@ -6431,6 +6441,56 @@ func _camp_refuses(peer: int, it: Dictionary) -> bool:
 	var k: int = int(it["fire"]["camp"])
 	var owner: String = str(fires[k]["owner"]) if k >= 0 and k < fires.size() else "Edda and Hob's"
 	_say(peer, "That is %s fire. It is not yours to tend." % owner)
+	return true
+
+
+# The goblin tribes' camp pieces (NpcCamp.props(): a chest, racks and benches round their fire, Dave 20 Nov 2026), laid like the camp fires: transient
+# pieces marked with the tribe, never saved, laid again at every start and again whenever one is gone. Nothing in them: no store, so nobody loots
+# the chest; _tribe_piece_refuses turns away every take-down, use, repair and lock, and serving_station skips them.
+var _tribe_prop_ids: Dictionary = {}   # index in NpcCamp.props() -> world id of that piece
+
+
+func _tribe_props_tick() -> void:
+	if not camp_fire_on or not ground_height.is_valid():
+		return
+
+	var props: Array = NpcCamp.props()
+
+	for k in props.size():
+		var laid: Dictionary = _items.get(int(_tribe_prop_ids.get(k, 0)), {}).get("struct", {})
+
+		if str(laid.get("tribe", "")) == str(props[k]["tribe"]) and int(laid.get("prop", -1)) == k:
+			continue
+
+		var def: Dictionary = _structures.get(str(props[k]["kind"]), {})
+
+		if def.is_empty():
+			continue
+
+		var spot: Vector2 = Vector2(float(props[k]["x"]), float(props[k]["z"]))
+
+		if ground_ready.is_valid() and not bool(ground_ready.call(spot.x, spot.y)):
+			continue   # its ground is still being read in the background: never read a tile on the main thread here
+
+		var y: float = float(ground_height.call(spot.x, spot.y))
+
+		if is_nan(y):
+			continue
+
+		var entry: Dictionary = {"number": table.number_of(str(def.get("item", props[k]["kind"]))), "count": 1, "pos": Vector3(spot.x, y, spot.y), "left": 1.0e9,
+			"struct": {"kind": str(props[k]["kind"]), "yaw": float(props[k]["yaw"]), "transient": true, "tribe": str(props[k]["tribe"]), "prop": k}}
+		_items[_next_id] = entry
+		_grid_add(_next_id, entry)
+		_tribe_prop_ids[k] = _next_id
+		_next_id += 1
+
+
+# True (after telling the player) when world item `id` is a goblin tribe's camp piece: it belongs to the camp, not to anyone who walks up.
+func _tribe_piece_refuses(peer: int, id: int) -> bool:
+	if not _items.get(id, {}).get("struct", {}).has("tribe"):
+		return false
+
+	_say(peer, "That belongs to %s." % NpcCamp.camp_name_of(str(_items[id]["struct"]["tribe"])))
 	return true
 
 
@@ -11492,6 +11552,9 @@ func _take_down(peer: int, inv, id: int) -> void:
 		_say(peer, "That belongs to the bandits' camp.")
 		return
 
+	if _tribe_piece_refuses(peer, id):
+		return
+
 	if str(def.get("hand_laid", "")) != "":
 		_take_down_laid(peer, inv, id, it, def)   # a pipe run, tap or drip head laid from the hand (PLUMBING_DESIGN s9)
 		return
@@ -15856,7 +15919,7 @@ func serving_station(peer: int, station: String, level: int = 1, far_m: float = 
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if not it.has("struct") or it["struct"].has("site"):   # a blueprint site is not built yet: it serves as nothing (docs/BLUEPRINT_SITES.md)
+		if not it.has("struct") or it["struct"].has("site") or it["struct"].has("tribe"):   # a blueprint site is not built yet: it serves as nothing (docs/BLUEPRINT_SITES.md); a goblin camp's rack is theirs
 			continue
 
 		var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})

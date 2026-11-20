@@ -104,4 +104,6 @@ What Dave asked on 20 Nov 2026:
 - **GOBLIN-14:** the hunter is out of sight 3-6 game minutes per hunt, and only one goblin hunts at a time.
 - **GOBLIN-15:** they come back about 30 s after the attacker is 25 m away.
 
+**State (20 Nov 2026).** Stage A is built on the branch and has not been played or seen on screen yet. The props are laid by `server_items.gd` `_tribe_props_tick`. They are refused by `_tribe_piece_refuses`, which covers take-down, use and sit, lock and repair. They have no store and serve no crafting. The spear is drawn by `npc_view.gd` `_goblin_spear` and `_hold_spear`. Goblins are drawn through `motion_buffer.gd`. Things to check on the PC: which way the spear points in the hand, and the props on the slope.
+
 **Order.** Stage A first, on this branch. Then dev is merged in once Vrixa lands. Then B and C go together under one protocol number. Each stage gets an independent review, runs on a lane and has a BugsList entry in a docs follow-up.
