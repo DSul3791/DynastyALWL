@@ -370,7 +370,8 @@ var _training_sent: Dictionary = {}  # peer -> today's training percent last sen
 var _exertion: Dictionary = {}      # peer -> smoothed 0..1 from movement
 var _motion: Dictionary = {}        # peer -> [last position, msec]
 var _path_cfg: Dictionary = {}      # data/path_speed.json: range_m and exertion_factor for moving on or near a path
-var _on_path_cache: Dictionary = {} # peer -> [msec checked, bool]: whether a path patch lies within range_m (looked up at most once a second)
+var _on_path_cache: Dictionary = {} # peer -> [msec checked, bool, bool]: whether a path patch, and a road patch, lies within range_m (looked up at most once a second)
+var road_trip: Callable              # (peer, position, kind "road" / "path" / "cart", or "" off every path) -> void: bandit site traffic (server_bandits.gd), set by the server scene
 var _work_level: Dictionary = {}    # peer -> effort of the last tool work (data/items/exertion.json tool_effort)
 var _work_until: Dictionary = {}    # peer -> msec until which tool work counts as effort
 var _last_eat: Dictionary = {}      # peer -> msec
@@ -824,6 +825,7 @@ func report_position(peer: int, position: Vector3) -> void:
 		_peer_pos[peer] = position
 		_note_motion(peer, position)
 		_carts.follow(peer)   # the cart this player pulls comes after them (nothing for anyone else)
+		_note_road_trip(peer, position)
 		var now: int = Time.get_ticks_msec()
 		_note_zone(peer, position)
 
@@ -2102,7 +2104,7 @@ static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dicti
 		return
 
 	if it.has("struct"):
-		items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[0]), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0)), 1 if bool(it["struct"].get("road", false)) else 0])
+		items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[0]), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0)), 1 if bool(it["struct"].get("road", false)) else 0, JSON.stringify({"pitch": snappedf(float(it["struct"]["pitch"]), 0.001), "len": snappedf(float(it["struct"]["len"]), 0.001), "paid": int(it["struct"].get("paid", 1))}) if it["struct"].has("len") else ""])
 		return
 
 	var at: Vector3 = it["pos"]
@@ -6548,6 +6550,7 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 
 				if it.has("struct"):
 					signature += 7919 * int(round(it["pos"].x * 4.0)) + 104729 * int(round(it["pos"].z * 4.0)) + (3 if it["struct"].has("on") else 0)   # a cart or crate that moved, or a crate lifted or set down, is sent again
+					signature += 211 * int(round(float(it["struct"].get("len", 0.0)) * 20.0)) + 409 * int(floor(_barrel_water_l(id) / 5.0))   # a pipe run split shorter, a barrel's water by 5 L
 
 				var bin_def: Dictionary = _structures.get(str(it["struct"]["kind"]), {}) if it.has("struct") else {}
 				var bin_box = _chests.get(int(it["struct"].get("uid", -1))) if BinRules.is_bin(bin_def) and it["struct"].has("uid") else null
@@ -6591,6 +6594,13 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 
 					if it.has("struct") and bool(it["struct"].get("road", false)):
 						(added[added.size() - 1][5] as Dictionary)["road"] = true   # a surveyed road's patch (the client keeps the grass off 2 m either side)
+
+					if it.has("struct") and it["struct"].has("len"):
+						(added[added.size() - 1][5] as Dictionary)["pitch"] = float(it["struct"]["pitch"])   # a pipe run laid from the hand: its tilt and length (protocol 138)
+						(added[added.size() - 1][5] as Dictionary)["len"] = float(it["struct"]["len"])
+
+					if it.has("struct") and _water.pieces.get(id, {}).has("level_port"):
+						(added[added.size() - 1][5] as Dictionary)["water_l"] = int(floor(_barrel_water_l(id)))   # a barrel's water (E drinks from it instead of opening it)
 
 					if it.has("struct") and it["struct"].has("on"):
 						(added[added.size() - 1][5] as Dictionary)["on"] = true   # a crate riding on a cart (the client offers to set it down)
@@ -6876,6 +6886,16 @@ func _load_world_items() -> void:
 
 			if row.size() > 20 and int(row[20]) == 1:
 				entry["struct"]["road"] = true   # a surveyed road's patch: the grass is kept off 2 m either side of it
+
+			if row.size() > 21 and typeof(row[21]) == TYPE_STRING and str(row[21]) != "":
+				var laid: Variant = JSON.parse_string(str(row[21]))   # a pipe run laid from the hand (PLUMBING_DESIGN s9): its tilt, length and the pieces it took
+
+				if typeof(laid) == TYPE_DICTIONARY:
+					entry["struct"]["pitch"] = float((laid as Dictionary).get("pitch", 0.0))
+					entry["struct"]["len"] = clampf(float((laid as Dictionary).get("len", LEGACY_PIPE_M)), PipeRules.MIN_RUN_M, PipeRules.MAX_RUN_M)
+					entry["struct"]["paid"] = maxi(int((laid as Dictionary).get("paid", 1)), 0)   # a half left by a junction may hold none
+
+			_pipe_from_legacy(entry)
 
 			if row.size() > 15 and str(row[15]) != "":
 				var saved_site: Variant = JSON.parse_string(str(row[15]))
@@ -9511,6 +9531,9 @@ func _fire_restate(fire: Dictionary) -> int:
 
 # A structure kind as it is called now (old saves keep their old name: the tripod pot is the campfire pot).
 func _kind_now(kind: String) -> String:
+	if _structures.has(kind) and _structures[kind].has("becomes"):
+		return str(_structures[kind]["becomes"])   # a retired piece whose save loads as another (a Wooden - Pipe elbow or tee: a 2 m pipe run)
+
 	if _structures.has(kind):
 		return kind
 
@@ -10511,6 +10534,8 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 				_say(peer, "The fire is too big for a pot. Let the logs burn down first.")
 				return
 
+	spot = _tank_spot_on_pipe(str(def.get("kind", "")), spot, yaw_deg)   # a barrel set down by a pipe's end or joint sits on it (Dave 19 Nov 2026 20:31Z)
+
 	if str(def.get("attach_to", "")) == "table":   # a Serving Platter goes on a table top (master s3.15), one to a spot
 		spot = PlacementRules.table_spot(_structures_cfg, def, spot, _surface_rows(def))
 
@@ -10609,7 +10634,9 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 		return   # a site counts as built, holds nothing up and shelters nobody until _finish_site
 
 	_after_built(peer, entry, def)
-	_water_add(_next_id - 1)
+	var placed: int = _next_id - 1   # before a split: the split's new half takes the next id
+	_tank_split_pipe(placed)
+	_water_add(placed)
 	_dirty = true
 
 
@@ -10697,7 +10724,7 @@ func _repair_struct(peer: int, inv, id: int, held_slot: int) -> void:   # held_s
 	if it.is_empty() or not it.has("struct") or not _peer_pos.has(peer):
 		return
 
-	if _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
+	if _peer_pos[peer].distance_to(_reach_point(it, _peer_pos[peer])) > Interact.server_reach_m():
 		_say(peer, "Too far to repair that.")
 		return
 
@@ -10714,6 +10741,10 @@ func _repair_struct(peer: int, inv, id: int, held_slot: int) -> void:   # held_s
 	var def: Dictionary = _structures.get(kind, {})
 	var piece_name: String = kind.replace("_", " ")
 	var blueprint: Dictionary = _blueprints.get(int(_blueprint_of_kit.get(str(def.get("kit", "")), 0)), {})
+
+	if def.has("cost_each"):   # a pipe run laid from the hand (PLUMBING_DESIGN s9): its pieces' own cost, times the pieces it took
+		blueprint = {"cost": (def["cost_each"] as Array).map(func(c): return [c[0], int(c[1]) * maxi(int(it["struct"].get("paid", 1)), 1)])}
+		piece_name = table.in_sentence(str(table.entry(str(def.get("item", kind))).get("name", piece_name)))
 
 	# A smithy also wears with use (server_smithy.gd, master s2.2 item 9): its condition is the lower of the two, and one repair mends both.
 	var smithy: bool = _smithies.durability(def) > 0.0
@@ -10778,6 +10809,10 @@ func _repair_struct(peer: int, inv, id: int, held_slot: int) -> void:   # held_s
 			inv.remove_fill(number, left, [], true)
 
 	it["struct"]["born"] = _now_game_s()
+
+	if bool(def.get("wear_slows", false)) and _water.pieces.has(id):
+		_water_relink_at.append_array(WaterNetwork.ends(_water.pieces[id]))   # a mended wooden pipe carries its full flow again
+
 	_smithies.repaired(id)
 	_dirty = true
 	_say(peer, "Repaired the %s (was %d percent)." % [piece_name, int(round(cond * 100.0))])
@@ -11035,6 +11070,7 @@ func _finish_site(peer: int, id: int) -> void:
 	_grid_add(id, it)
 	_add_roof(it)
 	_after_built(peer, it, def)
+	_tank_split_pipe(id)
 	_water_add(id)
 	_dirty = true
 
@@ -11166,7 +11202,7 @@ func _holds_station(base: Dictionary, def: Dictionary) -> bool:
 func _take_down(peer: int, inv, id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
-	if it.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(it["pos"]) > Interact.server_reach_m():
+	if it.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(_reach_point(it, _peer_pos[peer])) > Interact.server_reach_m():
 		return
 
 	_kiln_lit_by.erase(id)   # a kiln taken down forgets who lit it (ADD-18)
@@ -11179,6 +11215,10 @@ func _take_down(peer: int, inv, id: int) -> void:
 
 	if it["struct"].has("site"):
 		_take_down_site(peer, inv, id)
+		return
+
+	if str(def.get("hand_laid", "")) != "":
+		_take_down_laid(peer, inv, id, it, def)   # a pipe run, tap or drip head laid from the hand (PLUMBING_DESIGN s9)
 		return
 
 	if def.is_empty() or str(def.get("kit", "")) == "":
@@ -11273,6 +11313,10 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 
 	if str(def.get("use", "")) == "water_gate":
 		_toggle_water_gate(peer, id, def)
+		return
+
+	if str(def.get("use", "")) == "tap":   # a Copper - Tap (Dave 19 Nov 2026): E takes a drink while its pipes reach water
+		_drink_at_tap(peer, inv, id)
 		return
 
 	if str(def.get("use", "")) == "door":
@@ -12291,6 +12335,11 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 		_reject(peer, 3)
 		return 0
 
+	if _barrel_water_l(id) >= BARREL_DRY_L:   # a barrel holds water or goods, never both (PLUMBING_DESIGN s9, PV-6)
+		_say(peer, "It holds water. Drink or draw it off first.")
+		_reject(peer, 3)
+		return 0
+
 	var bag_no: String = _bag_refusal(peer, id, number) if id < 0 else ""   # a worn bag (container -1 - worn position): no bag in a bag, and its bag_takes
 
 	if bag_no != "":
@@ -12390,7 +12439,8 @@ func _box_take(peer: int, inv, chest, a: int, count: int, weighed: bool = false)
 # Whether a container kind takes an item (structures.json "takes_kinds": items.json kinds, "takes": item ids or ingredient groups, any member).
 # A kind with neither takes anything (master s3.13: a log rack takes logs, a wardrobe clothes).
 func _box_takes(kind: String, number: int) -> bool:
-	return StoreRules.takes(_structures.get(kind, {}), number, table)
+	var def: Dictionary = _structures.get(kind, {})
+	return StoreRules.takes(def, number, table) and (str(def.get("use", "")) != "tap" or _container_cap(number) > 0)   # a tap takes water containers only
 
 
 func _save_chests() -> void:
@@ -13916,6 +13966,7 @@ func _on_path(peer: int, position: Vector3) -> bool:
 
 	var reach: float = float(_path_cfg.get("range_m", 3.0))
 	var found: bool = false
+	var road: bool = false
 
 	for id in _ids_near(position, reach):
 		if not _items.has(id):
@@ -13925,10 +13976,53 @@ func _on_path(peer: int, position: Vector3) -> bool:
 
 		if other.has("struct") and str(other["struct"]["kind"]) == "path_patch" and Vector2(other["pos"].x - position.x, other["pos"].z - position.z).length() <= reach:
 			found = true
-			break
+			road = bool(other["struct"].get("road", false))
 
-	_on_path_cache[peer] = [now, found]
+			if road:
+				break
+
+	_on_path_cache[peer] = [now, found, road]
 	return found
+
+
+# Bandit site traffic (docs/design/BANDIT_CAMPS.md): a player on a surveyed road counts "road", on a hand path "path", pulling a loaded cart
+# along either "cart"; off every path "" (the mover is forgotten). Reuses the once-a-second path look-up above.
+func _note_road_trip(peer: int, position: Vector3) -> void:
+	if not road_trip.is_valid():
+		return
+
+	if not _on_path(peer, position):
+		road_trip.call(peer, position, "")
+		return
+
+	var pulling: bool = _carts.puller_of.has(peer) and float(_carts.pulls.get(int(_carts.puller_of[peer]), {}).get("share", 0.0)) > 0.0   # the load share the cart's last move worked out: no item scan per report
+	road_trip.call(peer, position, "cart" if pulling else ("road" if bool(_on_path_cache[peer][2]) else "path"))
+
+
+# Metres from a spot to the nearest surveyed road patch within r, or INF (a bandit site stands off a road).
+func road_distance(at: Vector3, r: float) -> float:
+	var best: float = INF
+
+	for id in _ids_near(at, r):
+		if _items.has(id) and _items[id].has("struct") and str(_items[id]["struct"]["kind"]) == "path_patch" and bool(_items[id]["struct"].get("road", false)):
+			best = minf(best, Vector2(_items[id]["pos"].x - at.x, _items[id]["pos"].z - at.z).length())
+
+	return best if best <= r else INF
+
+
+# True when a placed building (SurveyLine.is_building: not a path, bed, remains or carcass; a campfire counts, as on the survey line) stands
+# within r of a spot.
+func building_near(at: Vector3, r: float) -> bool:
+	for id in _ids_near(at, r):
+		if not _items.has(id) or not (_items[id].has("struct") or _items[id].has("fire")):
+			continue
+
+		var kind: String = str(_items[id]["struct"]["kind"]) if _items[id].has("struct") else ""
+
+		if (kind == "" or SurveyLine.is_building(kind, _structures.get(kind, {}))) and Vector2(_items[id]["pos"].x - at.x, _items[id]["pos"].z - at.z).length() <= r:
+			return true
+
+	return false
 
 
 # Effort (0 to 1) for a ground speed: straight lines through exertion.json effort_by_speed ([speed m/s, effort] pairs).
@@ -16765,12 +16859,12 @@ func _plots_tick() -> void:
 	var plots_read: bool = false
 
 	for id in _water_kind:
-		if str(_water_kind[id]) == TRENCH_KIND and _items.has(id):   # a trench taken away since the last water tick is pruned there
+		if _irrigates(str(_water_kind[id])) and _items.has(id):   # a trench or drip head taken away since the last water tick is pruned there
 			if not plots_read:
 				plots = _plot_ids()
 				plots_read = true
 
-			_trench_beds[id] = _beds_by_trench(_items[id]["pos"], plots)
+			_trench_beds[id] = _beds_by_trench(_items[id]["pos"], plots, str(_water_kind[id]))
 
 	_water_dirty = _water_dirty or not _water_kind.is_empty()   # the weather moved the plots' moisture: their room changed
 
@@ -16801,8 +16895,10 @@ func _water_now_s() -> float:
 	return _now_game_s() / GameClockScript.RATIO
 
 
-# The network piece a structure of `def` makes standing at `pos` turned `yaw_deg`, or {} when it carries no water.
-func water_piece(def: Dictionary, pos: Vector3, yaw_deg: float) -> Dictionary:
+# The network piece a structure of `def` makes standing at `pos` turned `yaw_deg`, or {} when it carries no water. A pipe run laid from the hand
+# (structures.json hand_laid "pipe", PLUMBING_DESIGN s9) takes its two ports from its struct row `st` (pitch, len: PipeRules.ends); a worn wooden pipe
+# ("wear_slows") carries `cond` (its condition) of its flow.
+func water_piece(def: Dictionary, pos: Vector3, yaw_deg: float, st: Dictionary = {}, cond: float = 1.0) -> Dictionary:
 	var block: Variant = def.get("water", {})
 
 	if typeof(block) != TYPE_DICTIONARY or (block as Dictionary).is_empty():
@@ -16822,8 +16918,16 @@ func water_piece(def: Dictionary, pos: Vector3, yaw_deg: float) -> Dictionary:
 				ends.append(pos + Vector3(float(port[0]), float(port[1]), float(port[2])).rotated(Vector3.UP, deg_to_rad(yaw_deg)))
 
 			piece[key] = ends
+		elif key == "level_port" and typeof(value) == TYPE_ARRAY and (value as Array).size() == 3:
+			piece[key] = pos + Vector3(float(value[0]), float(value[1]), float(value[2])).rotated(Vector3.UP, deg_to_rad(yaw_deg))
 		elif key != "note":
 			piece[key] = value
+
+	if str(def.get("hand_laid", "")) == "pipe":
+		piece["ports"] = PipeRules.ends(pos, yaw_deg, float(st.get("pitch", 0.0)), float(st.get("len", LEGACY_PIPE_M)))
+
+		if bool(def.get("wear_slows", false)):
+			piece["cap_lpm"] = float(piece.get("cap_lpm", 0.0)) * clampf(cond, 0.0, 1.0)
 
 	return piece if not piece.has("ports") else _with_inlet(piece, 0)
 
@@ -16912,7 +17016,7 @@ func _water_relink_runs(runs: Array) -> void:
 		var waiting: Array = []
 
 		for id in order:
-			var piece: Dictionary = water_piece(_structures.get(str(_water_kind[id]), {}), _items[id]["pos"], float(_items[id]["struct"].get("yaw", 0.0)))
+			var piece: Dictionary = water_piece(_structures.get(str(_water_kind[id]), {}), _items[id]["pos"], float(_items[id]["struct"].get("yaw", 0.0)), _items[id]["struct"], _flow_cond(id))
 
 			if piece.has("ports"):
 				waiting.append([id, piece])
@@ -16942,6 +17046,7 @@ func _water_relink_runs(runs: Array) -> void:
 			_water.pieces[id]["rate_lpm"] = rates[id]
 
 	_water_dirty = true
+	_level_groups_dirty = true
 
 	if _water_at_s >= 0.0:
 		_water_resolve(now_s)   # the new network's rates start now, so the next solve credits plots from this second
@@ -16960,6 +17065,7 @@ func _water_prune() -> void:
 			_water_depth.erase(id)
 			_well_store.erase(id)
 			_water_dirty = true
+			_level_groups_dirty = true
 
 
 # Why a water piece may not go here ("" when it may): more than WATER_SOURCES_PER_CHUNK sources in the chunk, a loop, or a network past 256 pieces.
@@ -17007,13 +17113,17 @@ func _water_add(id: int) -> void:
 		return
 
 	var kind: String = str(it["struct"]["kind"])
-	var piece: Dictionary = water_piece(_structures.get(kind, {}), it["pos"], float(it["struct"].get("yaw", 0.0)))
+	var piece: Dictionary = water_piece(_structures.get(kind, {}), it["pos"], float(it["struct"].get("yaw", 0.0)), it["struct"], _flow_cond(id))
 
 	if piece.is_empty():
 		return
 
 	_water.add(id, piece)
 	_water_kind[id] = kind
+	_level_groups_dirty = true
+
+	if _irrigates(kind) and not _trench_beds.has(id):
+		_trench_beds[id] = _beds_by_trench(it["pos"], _plot_ids(), kind)   # a drip head (or a trench at load) knows its beds at once
 
 	if not _water_loading:
 		_water_relink_at.append_array(WaterNetwork.ends(piece))
@@ -17083,6 +17193,19 @@ func _plot_litres_per_pct(kind: String) -> float:
 # full; returns the litres its beds still have room for (the trench's room_l: 0 when every bed is full or it waters none).
 func _trench_resolve(id: int, now_s: float) -> float:
 	var beds: Array = (_trench_beds.get(id, []) as Array).filter(func(b): return _items.has(b))
+
+	if bool(_structures.get(str(_water_kind.get(id, "")), {}).get("keeps_wet", false)):   # a drip head (Dave 19 Nov 2026): any water through it keeps its circle's beds fully watered
+		if _water_at_s >= 0.0 and _water.inflow_lpm(id) > 0.0 and now_s > _water_at_s:
+			for bed in beds:
+				var pos: Vector3 = _items[bed]["pos"]
+				var row: Array = _plot_water.get(_bed_key(pos), [])
+
+				if plot_moisture(pos) < 99.99:
+					_plot_water[_bed_key(pos)] = [100.0, float(row[1]) if row.size() >= 2 else _now_game_s()]   # its weather clock goes on as it was
+					_dirty = true
+
+		return 1.0 if not beds.is_empty() else 0.0   # it draws its trickle while water reaches it and there is a bed in its circle to keep wet
+
 	var rooms: Array = []
 	var total: float = 0.0
 
@@ -17122,6 +17245,8 @@ func _water_tick(spent: float = 0.0) -> void:
 		_water_relink()
 
 	_pump_tick(spent)
+	_barrels_tick()
+	_pipe_wear_tick()
 	var now_s: float = _water_now_s()
 
 	if not _water_dirty and now_s < _water_next_s:
@@ -17140,7 +17265,7 @@ func _water_resolve(now_s: float) -> void:
 		if str(piece.get("role", "")) != "consumer":
 			continue
 
-		if str(_water_kind[id]) == TRENCH_KIND:
+		if _irrigates(str(_water_kind[id])):
 			piece["room_l"] = _trench_resolve(id, now_s)
 			continue
 
@@ -17466,6 +17591,647 @@ func _drink_from_tank(peer: int, slot: int, inv, tank: int, v: Dictionary, thirs
 	_dirty = true
 
 
+# --- Pipes laid from the hand, taps, drip heads and barrels (docs/design/PLUMBING_DESIGN.md s9, Dave 19 Nov 2026; values PROVISIONAL PV-1..PV-8) ---
+# A pipe in hand lays one straight run per click pair (pipe_lay): from a connection point (a barrel's bottom centre, a trough's or cistern's outlet,
+# a well's or pump's spout, or anywhere along a laid pipe) to another one or to the open air, at any angle and through anything. Its struct row keeps
+# pitch, len and paid (the pack pieces it took, given back when it comes down). A run started or ended in the middle of a pipe splits that pipe there
+# (a junction: the network shares the water at the meeting ends). A tap or drip head in hand is fitted on a pipe's open end. Barrels are tanks too:
+# rain in the open (_barrels_tick) and levelling of barrels linked at their bottoms (WaterNetwork.level_groups, level_litres).
+const PipeRules := preload("res://src/shared/pipe_rules.gd")
+const LEGACY_PIPE_M := 2.0           # a Wooden - Pipe saved before laid runs (a hammer piece, 2 m, its axis 0.13 m up)
+const LEGACY_PIPE_UP_M := 0.13
+const BARREL_DRY_L := 0.5            # a barrel holding less counts as dry (it takes goods again)
+const BARREL_RAIN_LPM_M2 := 4.0      # PV-6: full rain into an open top, L/min a square metre (1 L a minute on a barrel's 0.25 m2: about 10 mm a game hour)
+const BARREL_TICK_S := 3.0           # PV-7: rain and levelling are looked at this often (real seconds)
+const LEVEL_SLACK_L := 0.5           # linked barrels this close to level are left alone
+const PIPE_WEAR_REFRESH_S := 600.0   # a worn wooden pipe's flow is worked out again this often (real seconds)
+var _barrel_next_s: float = 0.0
+var _pipe_wear_next_s: float = 0.0
+var _level_groups: Array = []        # the linked barrel sets (ids), worked out again when a piece comes or goes
+var _level_groups_dirty: bool = true
+
+
+func is_pipe_kind(kind: String) -> bool:
+	return str(_structures.get(kind, {}).get("hand_laid", "")) == "pipe"
+
+
+# A laid run's two ends.
+func pipe_ends(it: Dictionary) -> Array:
+	return PipeRules.ends(it["pos"], float(it["struct"].get("yaw", 0.0)), float(it["struct"].get("pitch", 0.0)), float(it["struct"].get("len", LEGACY_PIPE_M)))
+
+
+# Where a player in reach of `it` acts on it: the nearest point of a laid run, else the piece's spot.
+func _reach_point(it: Dictionary, from: Vector3) -> Vector3:
+	if it.has("struct") and is_pipe_kind(str(it["struct"]["kind"])):
+		var e: Array = pipe_ends(it)
+		return PipeRules.closest_on(e[0], e[1], from)
+
+	return it["pos"]
+
+
+# A wooden pipe's condition (a worn one leaks: it carries that share of its flow); 1.0 for anything else.
+func _flow_cond(id: int) -> float:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or not it.has("struct") or not bool(_structures.get(str(it["struct"]["kind"]), {}).get("wear_slows", false)):
+		return 1.0
+
+	return piece_condition(id)
+
+
+# A pipe saved before laid runs (hand_laid rows without len) becomes a 2 m run on the old piece's axis; called at load.
+func _pipe_from_legacy(entry: Dictionary) -> void:
+	if not is_pipe_kind(str(entry["struct"]["kind"])) or entry["struct"].has("len"):
+		return
+
+	entry["pos"] = (entry["pos"] as Vector3) + Vector3(0.0, LEGACY_PIPE_UP_M, 0.0)
+	entry["struct"]["len"] = LEGACY_PIPE_M
+	entry["struct"]["pitch"] = 0.0
+	entry["struct"]["paid"] = 1
+
+
+# The connection points a water piece offers a pipe start (not a pipe: those take a start anywhere along them): a tank's base outlet and bottom
+# point, a source's spout.
+static func _offered_points(piece: Dictionary) -> Array:
+	var out: Array = []
+
+	match str(piece.get("role", "")):
+		"tank":
+			for key in ["outlet", "level_port"]:
+				if piece.has(key):
+					out.append(piece[key])
+		"source":
+			if piece.has("outlet"):
+				out.append(piece["outlet"])
+
+	return out
+
+
+# The connection point at `at` (within PipeRules.SNAP_M): {"id", "at", "pipe": true when it is on a laid run}, or {}. A piece's own point beats a
+# pipe's body; on a pipe, a point this near an end is that end.
+func _pipe_point(at: Vector3) -> Dictionary:
+	var best: Dictionary = {}
+	var best_d: float = PipeRules.SNAP_M
+
+	for id in _water_kind:
+		var it: Dictionary = _items.get(id, {})
+
+		if it.is_empty() or not it.has("struct") or it["struct"].has("site"):
+			continue
+
+		if is_pipe_kind(str(_water_kind[id])):
+			var e: Array = pipe_ends(it)
+			var on: Vector3 = PipeRules.closest_on(e[0], e[1], at)
+
+			for end in e:
+				if on.distance_to(end) <= PipeRules.SNAP_M:
+					on = end
+
+			var d: float = on.distance_to(at) + 0.05   # a piece's own point wins a tie
+			if d < best_d:
+				best_d = d
+				best = {"id": id, "at": on, "pipe": true}
+
+			continue
+
+		for point in _offered_points(_water.pieces.get(id, {})):
+			var d: float = (point as Vector3).distance_to(at)
+
+			if d < best_d:
+				best_d = d
+				best = {"id": id, "at": point, "pipe": false}
+
+	return best
+
+
+# Where a tap, drip head or barrel goes on the laid pipes near `at` (within `reach` across, `rise` up or down; Dave 19 Nov 2026 20:31Z): a run's end or
+# one of its joints (PipeRules.joints) that no fitting or tank point already takes, the nearest: {"id", "at", "yaw", "joint": true when along the run}, or {}.
+func _pipe_fit_point(at: Vector3, reach: float = PipeRules.SNAP_M, rise: float = PipeRules.SNAP_M) -> Dictionary:
+	var best: Dictionary = {}
+	var best_d: float = INF
+
+	for id in _water_kind:
+		if not is_pipe_kind(str(_water_kind[id])) or not _items.has(id) or _items[id]["struct"].has("site"):
+			continue
+
+		var e: Array = pipe_ends(_items[id])
+		var joints: Array = PipeRules.joints(e[0], e[1], _pipe_piece_len(str(_water_kind[id])))
+
+		for k in e.size() + joints.size():
+			var point: Vector3 = e[k] if k < e.size() else joints[k - e.size()]
+			var d: float = Vector2(point.x - at.x, point.z - at.z).length()
+
+			if d > reach or absf(point.y - at.y) > rise or d >= best_d or _point_taken(point):
+				continue
+
+			best_d = d
+			best = {"id": id, "at": point, "yaw": float(_items[id]["struct"].get("yaw", 0.0)), "joint": k >= e.size()}
+
+	return best
+
+
+# A barrel (a tank with a level_port, its bottom point) set down with that point within TANK_SNAP_M across and TANK_SNAP_RISE_M up or down of a free
+# pipe end or joint is moved the little way onto it, so pipes laid first can take a barrel anywhere they join (PLUMBING_DESIGN s9, PV-9).
+const TANK_SNAP_M := 0.6
+const TANK_SNAP_RISE_M := 0.25   # at most this up or down: the ground checks passed this near
+
+
+func _tank_port(kind: String) -> Variant:
+	var water: Variant = _structures.get(kind, {}).get("water", {})
+
+	if typeof(water) != TYPE_DICTIONARY or str((water as Dictionary).get("role", "")) != "tank" or typeof(water.get("level_port")) != TYPE_ARRAY:
+		return null
+
+	var v: Array = water["level_port"]
+	return Vector3(float(v[0]), float(v[1]), float(v[2]))
+
+
+func _tank_spot_on_pipe(kind: String, spot: Vector3, yaw_deg: int) -> Vector3:
+	var port: Variant = _tank_port(kind)
+
+	if port == null:
+		return spot
+
+	var offset: Vector3 = (port as Vector3).rotated(Vector3.UP, deg_to_rad(float(yaw_deg)))
+	var on: Dictionary = _pipe_fit_point(spot + offset, TANK_SNAP_M, TANK_SNAP_RISE_M)
+	if on.is_empty():
+		return spot
+
+	return (on["at"] as Vector3) - offset   # Dave 19 Nov 2026 21:56Z: the middle of its bottom lands exactly on the pipe's end or joint
+
+
+# A barrel just standing whose bottom point lies on a run's joint: the run is split there, so the barrel joins both halves.
+func _tank_split_pipe(id: int) -> void:
+	var port: Variant = _tank_port(str(_items[id]["struct"]["kind"]))
+
+	if port == null:
+		return
+
+	var at: Vector3 = (_items[id]["pos"] as Vector3) + (port as Vector3).rotated(Vector3.UP, deg_to_rad(float(_items[id]["struct"].get("yaw", 0.0))))
+	var on: Dictionary = _pipe_fit_point(at, WaterNetwork.PORT_JOIN_M, WaterNetwork.PORT_JOIN_M)
+
+	if not on.is_empty() and bool(on["joint"]):
+		_pipe_split(int(on["id"]), on["at"])
+
+
+# The length of pipe one pack piece of a run's kind covers (items.json pipe_m: Wooden - Pipe 2 m, Copper - Pipe 3 m).
+func _pipe_piece_len(kind: String) -> float:
+	return float(table.entry(str(_structures.get(kind, {}).get("item", kind))).get("pipe_m", 0.0))
+
+
+# Whether a fitting or a tank's or source's own connection point sits at `point` (a run's end there is not free for another).
+func _point_taken(point: Vector3) -> bool:
+	for other in _water_kind:
+		if not _water.pieces.has(other) or is_pipe_kind(str(_water_kind[other])):
+			continue
+
+		var piece: Dictionary = _water.pieces[other]
+		var spots: Array = _offered_points(piece)
+
+		if str(_structures.get(str(_water_kind[other]), {}).get("hand_laid", "")) == "fitting" and piece.has("inlet"):
+			spots.append(piece["inlet"])
+
+		for spot in spots:
+			if (spot as Vector3).distance_to(point) <= WaterNetwork.PORT_JOIN_M:
+				return true
+
+	return false
+
+
+# Splits the laid run `id` at `at` (a point along it, not at an end) into two runs meeting there; the pack pieces it took are shared by length
+# (none made or lost). Returns the new run's id, or -1 when `at` is at an end.
+func _pipe_split(id: int, at: Vector3) -> int:
+	var it: Dictionary = _items[id]
+	var e: Array = pipe_ends(it)
+
+	if at.distance_to(e[0]) < PipeRules.MIN_RUN_M or at.distance_to(e[1]) < PipeRules.MIN_RUN_M:
+		return -1
+
+	var paid: int = maxi(int(it["struct"].get("paid", 1)), 0)
+	var first_paid: int = clampi(int(round(float(paid) * at.distance_to(e[0]) / maxf(float(it["struct"].get("len", LEGACY_PIPE_M)), 0.01))), 0, paid)
+	var first: Dictionary = PipeRules.pose(e[0], at)
+	var second: Dictionary = PipeRules.pose(at, e[1])
+	it["pos"] = first["pos"]
+	it["struct"]["yaw"] = first["yaw"]
+	it["struct"]["pitch"] = first["pitch"]
+	it["struct"]["len"] = first["len"]
+	it["struct"]["paid"] = first_paid
+	# shortcut: pipe_lay's network-size check counts the new run, not this twin; a network at its MAX_PIECES could leave the twin standing alone (dry).
+	var twin: int = _new_pipe(str(it["struct"]["kind"]), second, paid - first_paid, it["struct"].get("born", _now_game_s()))
+	_water_relink_at.append_array(e)
+	_water_relink_at.append(at)
+	_water.remove(id)   # its piece is made again from its new ends
+	_water_kind.erase(id)
+	_water_add(id)
+	return twin
+
+
+# A refused run takes back the splits made for it: each twin goes and its pipe is whole again (last split first).
+func _pipe_unsplit(undo: Array) -> void:
+	for n in range(undo.size() - 1, -1, -1):
+		var row: Array = undo[n]
+		var id: int = int(row[0])
+		var twin: int = int(row[2])
+
+		if _items.has(twin):
+			_water_relink_at.append_array(pipe_ends(_items[twin]))
+			_water.remove(twin)
+			_water_kind.erase(twin)
+			_items.erase(twin)
+
+		if _items.has(id):
+			_items[id]["struct"] = (row[1][0] as Dictionary).duplicate()
+			_items[id]["pos"] = row[1][1]
+			_water.remove(id)
+			_water_kind.erase(id)
+			_water_add(id)
+
+	_dirty = true
+
+
+func _new_pipe(kind: String, pose: Dictionary, paid: int, born: float) -> int:
+	var id: int = _next_id
+	_next_id += 1
+	_items[id] = {"number": table.number_of(str(_structures[kind].get("item", kind))), "count": 1, "pos": pose["pos"], "left": 1.0e9, "struct": {"kind": kind, "yaw": float(pose["yaw"]), "pitch": float(pose["pitch"]), "len": float(pose["len"]), "paid": paid, "born": born}}
+	_grid_add(id, _items[id])
+	_water_add(id)
+	_dirty = true
+	return id
+
+
+# pipe_lay (protocol 138): the held pack slot holds a pipe (lay a run from `from` to `to`) or a tap or drip head (fit it on the open pipe end at `to`).
+# Every refusal says why.
+const PIPE_LAY_PACE_MS := 150   # one pipe_lay a player at most this often (each one looks over the water pieces)
+var _pipe_lay_msec: Dictionary = {}   # peer -> msec of the last pipe_lay
+
+
+func pipe_lay(peer: int, slot: int, from: Vector3, to: Vector3) -> void:
+	var inv = inventory_of(peer)
+
+	if inv == null or not _peer_pos.has(peer) or slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0 or not from.is_finite() or not to.is_finite():
+		return
+
+	var now_ms: int = Time.get_ticks_msec()
+
+	if now_ms - int(_pipe_lay_msec.get(peer, -100000)) < PIPE_LAY_PACE_MS:
+		return
+
+	_pipe_lay_msec[peer] = now_ms
+	var held: String = table.id_of(int(inv.numbers[slot]))
+	var entry: Dictionary = table.entry(held)
+
+	if _peer_pos[peer].distance_to(to) > PLACE_REACH_M or _peer_pos[peer].distance_to(from) > PLACE_REACH_M + PipeRules.MAX_RUN_M:   # the first click was in reach when made; the player walks the run
+		_say(peer, "Too far to reach there.")
+		return
+
+	if entry.has("fitting"):
+		_pipe_fit(peer, inv, slot, str(entry["fitting"]), to)
+		return
+
+	var piece_m: float = float(entry.get("pipe_m", 0.0))
+
+	if piece_m <= 0.0 or not is_pipe_kind(held):
+		_say(peer, "Hold a pipe to lay one.")
+		return
+
+	var start: Dictionary = _pipe_point(from)
+
+	if start.is_empty():
+		_say(peer, "Start a pipe at a barrel, a trough or cistern outlet, a pump or well spout, or a laid pipe.")
+		return
+
+	var finish: Dictionary = _pipe_point(to)
+	var a: Vector3 = start["at"]
+	var b: Vector3 = finish.get("at", to)
+
+	if not finish.is_empty() and int(finish["id"]) == int(start["id"]):
+		_say(peer, "Both ends are on the same pipe." if bool(start["pipe"]) else "Both ends are on the same piece.")
+		return
+
+	var length: float = a.distance_to(b)
+
+	if length < PipeRules.MIN_RUN_M:
+		_say(peer, "That pipe would be too short.")
+		return
+
+	if length > PipeRules.MAX_RUN_M + 0.01:
+		_say(peer, "A run is at most %d m. Lay another from its end." % int(PipeRules.MAX_RUN_M))
+		return
+
+	var need: int = PipeRules.pieces_for(length, piece_m)
+	var have: int = inv.count_of(int(inv.numbers[slot]))
+
+	if have < need:
+		_say(peer, "That run needs %d %s; you carry %d." % [need, table.sentence_name(int(inv.numbers[slot])), have])
+		return
+
+	var of_kind: int = 0
+
+	for id in _water_kind:
+		if str(_water_kind[id]) == held and _items.has(id) and _chunk_of(_items[id]["pos"]) == _chunk_of((a + b) * 0.5):
+			of_kind += 1
+
+	if of_kind >= int(_structures[held].get("cap_per_chunk", 400)):
+		_say(peer, "Too many of these lie here already.")
+		return
+
+	# Into the middle of a laid run: it splits there first, so three ends meet. A run refused below puts the split pipe back as it was.
+	var undo: Array = []   # [split id, its struct and pos before, the twin]
+
+	for point in [start, finish]:
+		if not point.is_empty() and bool(point["pipe"]) and _items.has(int(point["id"])):
+			var was: Array = [(_items[int(point["id"])]["struct"] as Dictionary).duplicate(), _items[int(point["id"])]["pos"]]
+			var twin: int = _pipe_split(int(point["id"]), point["at"])
+
+			if twin >= 0:
+				undo.append([int(point["id"]), was, twin])
+
+	var pose: Dictionary = PipeRules.pose(a, b)
+	var trial: Dictionary = water_piece(_structures[held], pose["pos"], float(pose["yaw"]), pose)
+	var turned: Dictionary = _fed_turn(trial)
+	var why: String = _water.check(turned if not turned.is_empty() else trial)
+
+	if why != "":
+		_pipe_unsplit(undo)
+		_say(peer, "This would make a loop." if why == "loop" else "This water network cannot grow any bigger.")
+		return
+
+	var number: int = int(inv.numbers[slot])
+	var before: Array = _snapshot(inv)
+	inv.remove(number, need)
+	_send_changes(peer, inv, before)
+	_new_pipe(held, pose, need, _now_game_s())
+	_say(peer, "You lay %.1f m of %s (%d used)." % [length, table.sentence_name(number), need])
+
+
+func _pipe_fit(peer: int, inv, slot: int, kind: String, at: Vector3) -> void:
+	if not _structures.has(kind):
+		return
+
+	var end: Dictionary = _pipe_fit_point(at)
+
+	if end.is_empty():
+		_say(peer, "Fit it on a pipe's end or a joint (a glowing ring).")
+		return
+
+	if bool(end["joint"]):
+		_pipe_split(int(end["id"]), end["at"])   # the run becomes two meeting at the joint, the fitting on both
+
+	var number: int = int(inv.numbers[slot])
+	var before: Array = _snapshot(inv)
+	inv.take_from_slot(slot, 1)
+	_send_changes(peer, inv, before)
+	var id: int = _next_id
+	_next_id += 1
+	_items[id] = {"number": number, "count": 1, "pos": end["at"], "left": 1.0e9, "struct": {"kind": kind, "yaw": float(end["yaw"])}}
+
+	if int(_structures[kind].get("slots", 0)) > 0:   # a tap's few slots, where water containers fill
+		_items[id]["struct"]["uid"] = _next_uid
+		_chests[_next_uid] = _new_store(kind)
+		_next_uid += 1
+
+	_grid_add(id, _items[id])
+	_water_add(id)
+	_dirty = true
+
+
+# Hold E on a laid run, a tap or a drip head: it comes back to the pack (a run as the pieces it took). A run with a tap or drip head on its end
+# keeps it until that comes off.
+func _take_down_laid(peer: int, _inv, id: int, it: Dictionary, def: Dictionary) -> void:
+	if str(def.get("hand_laid", "")) == "pipe":
+		for end in pipe_ends(it):
+			for other in _water_kind:
+				if other != id and _items.has(other) and str(_structures.get(str(_water_kind[other]), {}).get("hand_laid", "")) == "fitting" and (_items[other]["pos"] as Vector3).distance_to(end) <= WaterNetwork.PORT_JOIN_M:
+					_say(peer, "Take the %s off first." % table.sentence_name(int(_items[other]["number"])))
+					return
+
+	if not _struct_empty(id):
+		_say(peer, "Empty it first.")   # a tap with containers in its slots
+		return
+
+	var count: int = maxi(int(it["struct"].get("paid", 1)), 0) if str(def.get("hand_laid", "")) == "pipe" else 1   # exactly what it took: a junction's half may hold none
+	_chests.erase(int(it["struct"].get("uid", 0)))
+	_items.erase(id)
+	_dirty = true
+
+	if count <= 0:
+		return
+
+	var was_src: String = _gain_source
+	_gain_source = SRC_RETURN
+	give(peer, int(it["number"]), count)
+	_gain_source = was_src
+
+
+# Litres of water in a barrel (a tank that is also a store), 0 for anything else.
+func _barrel_water_l(id: int) -> float:
+	if not _water_kind.has(id) or not _water.pieces.get(id, {}).has("level_port"):
+		return 0.0
+
+	return _water.litres(id, _water_now_s())
+
+
+func _barrel_has_goods(id: int) -> bool:
+	var uid: int = int(_items.get(id, {}).get("struct", {}).get("uid", 0))
+	return _chests.has(uid) and not _chests[uid].is_empty()
+
+
+# Every BARREL_TICK_S: a barrel holding goods takes no water (its size 0); one in the open catches the rain (none under a roof or a tree); then
+# linked barrels are levelled.
+func _barrels_tick() -> void:
+	var now_s: float = _water_now_s()
+
+	if now_s < _barrel_next_s:
+		return
+
+	_barrel_next_s = now_s + BARREL_TICK_S
+	var rain: float = float(rain_now.call()) if rain_now.is_valid() else 0.0
+
+	for id in _water_kind:
+		var piece: Dictionary = _water.pieces.get(id, {})
+
+		if not piece.has("level_port") or not _items.has(id):
+			continue
+
+		var block: Dictionary = _structures.get(str(_water_kind[id]), {}).get("water", {})
+		var goods: bool = _barrel_has_goods(id)
+		var top: float = 0.0 if goods else float(block.get("litres_max", 0.0))
+
+		if absf(float(piece.get("litres_max", 0.0)) - top) > 0.001:
+			piece["litres_max"] = top
+			_water_dirty = true
+
+		var lpm: float = 0.0
+
+		if rain > 0.05 and not goods and not (cover_at.is_valid() and float(cover_at.call((_items[id]["pos"] as Vector3) + Vector3(0.0, 1.0, 0.0))) >= 0.5):
+			lpm = snappedf(rain * BARREL_RAIN_LPM_M2 * float(block.get("rain_m2", 0.0)), 0.01)
+
+		if absf(float(piece.get("rain_lpm", 0.0)) - lpm) > 0.001:
+			piece["rain_lpm"] = lpm
+			_water_dirty = true
+
+	_taps_fill(now_s)
+	_level_barrels(now_s)
+
+
+# The tank a tap's pipes reach that holds water (walking up the network from the tap), -1 for none. A tap only lets water out to a drink or a container.
+func _tap_supply(id: int) -> int:
+	var now_s: float = _water_now_s()
+	var seen: Dictionary = {id: true}
+	var stack: Array = [id]
+
+	while not stack.is_empty():
+		var at: int = stack.pop_back()
+
+		for u in _water._up.get(at, []):
+			if seen.has(u) or not _water.pieces.has(u):
+				continue
+
+			seen[u] = true
+
+			if not bool(_water.pieces[u].get("open", true)):
+				continue   # a shut sluice lets nothing through to the tap
+
+			if str(_water.pieces[u].get("role", "")) == "tank" and _water.litres(u, now_s) >= 0.01:
+				return int(u)
+
+			stack.append(u)
+
+	return -1
+
+
+# E at a Copper - Tap: a mouthful from the tank its pipes reach, as at the tank itself (_drink_from_tank, paced the same way).
+func _drink_at_tap(peer: int, inv, id: int) -> void:
+	var v: Dictionary = vitals_of(peer)
+
+	if v.is_empty() or not _water_kind.has(id):
+		return
+
+	var thirst: Dictionary = _vitals_cfg.get("thirst", {})
+	var now: int = Time.get_ticks_msec()
+
+	if now - int(_last_drink.get(peer, -100000)) < int(thirst.get("drink_pace_ms", 900)):
+		return
+
+	var tank: int = _tap_supply(id)
+
+	if tank < 0:
+		_say(peer, "No water comes from the tap.")
+		return
+
+	_drink_from_tank(peer, -1, inv, tank, v, thirst, now)
+
+
+# Every BARREL_TICK_S: the water containers in each tap's slots fill from the tank its pipes reach, up to the tap's fill_lpm between them (Dave 19 Nov 2026).
+func _taps_fill(now_s: float) -> void:
+	var resolved: bool = false
+
+	for id in _water_kind:
+		var def: Dictionary = _structures.get(str(_water_kind[id]), {})
+
+		if str(def.get("use", "")) != "tap" or not _items.has(id):
+			continue
+
+		var box = _chests.get(int(_items[id]["struct"].get("uid", 0)))
+
+		if box == null or box.is_empty():
+			continue
+
+		var want: Array = []
+
+		for s in box.slot_count:
+			if box.numbers[s] != 0 and _container_cap(box.numbers[s]) > box.wear[s]:
+				want.append(s)
+
+		if want.is_empty():
+			continue
+
+		var tank: int = _tap_supply(id)
+
+		if tank < 0:
+			continue
+
+		if not resolved:
+			_water_resolve(now_s)   # the tanks are brought to now before water is taken from them
+			resolved = true
+
+		var held_ml: int = int(floor(_water.litres(tank, now_s) * 1000.0))
+		var budget: int = mini(int(float(def.get("fill_lpm", 30.0)) * BARREL_TICK_S / 60.0 * 1000.0), held_ml)
+		var used: int = 0
+
+		for s in want:
+			var add_ml: int = mini(_container_cap(box.numbers[s]) - box.wear[s], budget - used)
+
+			if add_ml <= 0:
+				break
+
+			box.wear[s] += add_ml
+			used += add_ml
+
+		if used > 0:
+			_water.set_litres(tank, float(held_ml - used) / 1000.0)
+			_water_dirty = true
+			_dirty = true
+			_push_box(id, box)
+
+
+# Linked barrels share their water to one surface (PV-7). Only a set that is off level by more than LEVEL_SLACK_L is touched: the tanks are brought
+# to now, their litres set, and the network solved again on this tick.
+func _level_barrels(now_s: float) -> void:
+	if _level_groups_dirty:
+		_level_groups = _water.level_groups()
+		_level_groups_dirty = false
+
+	var plans: Array = []
+
+	for group in _level_groups:
+		var rows: Array = []
+		var held: Array = []
+		var total: float = 0.0
+
+		for id in group:
+			if not _water.pieces.has(id) or not _items.has(id):
+				_level_groups_dirty = true
+				return
+
+			var piece: Dictionary = _water.pieces[id]
+			rows.append([(_items[id]["pos"] as Vector3).y, float(piece.get("level_h_m", 0.85)), float(piece.get("litres_max", 0.0))])
+			held.append(_water.litres(id, now_s))
+			total += float(held[held.size() - 1])
+
+		var want: Array = WaterNetwork.level_litres(rows, total)
+
+		for n in want.size():
+			if absf(float(want[n]) - float(held[n])) > LEVEL_SLACK_L:
+				plans.append([group, want])
+				break
+
+	if plans.is_empty():
+		return
+
+	_water_resolve(now_s)
+
+	for plan in plans:
+		for n in (plan[0] as Array).size():
+			_water.set_litres(int(plan[0][n]), float(plan[1][n]))
+
+	_water_dirty = true
+
+
+# A worn wooden pipe leaks more as it wears: every PIPE_WEAR_REFRESH_S the runs holding one are made again from their condition now.
+func _pipe_wear_tick() -> void:
+	var now_s: float = _water_now_s()
+
+	if now_s < _pipe_wear_next_s:
+		return
+
+	_pipe_wear_next_s = now_s + PIPE_WEAR_REFRESH_S
+
+	for id in _water_kind:
+		if bool(_structures.get(str(_water_kind[id]), {}).get("wear_slows", false)) and _water.pieces.has(id) and absf(float(_water.pieces[id].get("cap_lpm", 0.0)) - float(_structures[str(_water_kind[id])]["water"].get("cap_lpm", 0.0)) * _flow_cond(id)) > 0.5:
+			_water_relink_at.append_array(WaterNetwork.ends(_water.pieces[id]))
+
+
 # One hoe stroke tills a metre: a tilled bed where the player points (reach and hoe like the hoe path).
 # `yaw_deg` (Dave 14 Nov 2026, the hoe grid turns "so you can line up your gardens"): 0 snaps the bed to the world's metre cell as before; any other turn
 # lays the metre bed where the grid point is (to BED_SNAP_M), turned that far.
@@ -17614,6 +18380,11 @@ func dig_trench(peer: int, inv, at: Vector3, held_slot: int, yaw_deg: int) -> in
 	return id
 
 
+# Whether a structure kind waters the beds round it (the irrigation trench, a Copper - Drip head: structures.json irrigates_m).
+func _irrigates(kind: String) -> bool:
+	return _structures.get(kind, {}).has("irrigates_m")
+
+
 # The ids of every standing bed and garden plot (not a blueprint site).
 func _plot_ids() -> Array:
 	var out: Array = []
@@ -17627,9 +18398,9 @@ func _plot_ids() -> Array:
 	return out
 
 
-# Of `plots`, the beds a trench at `spot` waters: within irrigates_m across the ground and no more than irrigate_rise_m above it.
-func _beds_by_trench(spot: Vector3, plots: Array) -> Array:
-	var def: Dictionary = _structures.get(TRENCH_KIND, {})
+# Of `plots`, the beds a trench (or a drip head, `kind`) at `spot` waters: within irrigates_m across the ground and no more than irrigate_rise_m above it.
+func _beds_by_trench(spot: Vector3, plots: Array, kind: String = TRENCH_KIND) -> Array:
+	var def: Dictionary = _structures.get(kind, {})
 	var reach: float = float(def.get("irrigates_m", 30.0))
 	var rise: float = float(def.get("irrigate_rise_m", 0.5))
 	var out: Array = []

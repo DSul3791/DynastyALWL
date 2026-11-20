@@ -12,6 +12,8 @@
 		"iron_doorway": "doorway_section",
 		"steel_doorway": "fortified_doorway",
 		"clay_pipe": "clay",
+		"wooden_pipe_elbow": "wooden_pipe",
+		"wooden_pipe_tee": "wooden_pipe",
 		"thatch_garden_plot": "wooden_garden_plot",
 		"stone_garden_plot": "wooden_garden_plot",
 		"brick_garden_plot": "wooden_garden_plot",

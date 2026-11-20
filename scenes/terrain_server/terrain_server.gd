@@ -51,9 +51,11 @@ const SwimScript := preload("res://src/shared/swim.gd")
 const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
+const EditedGroundScript := preload("res://src/stream/edited_ground.gd")
 const CoarseGroundScript := preload("res://src/stream/server_coarse_ground.gd")
 const FogGroundScript := preload("res://src/shared/fog_ground.gd")
 const TrailsScript := preload("res://src/stream/server_trails.gd")
+const BanditsScript := preload("res://src/stream/server_bandits.gd")
 const MapScript := preload("res://src/stream/server_map.gd")
 const MapCodec := preload("res://src/shared/map_codec.gd")
 const IdentityScript := preload("res://src/stream/identity_provider.gd")
@@ -108,8 +110,10 @@ var generator
 var store
 var flora
 var trails                             # ServerTrails: worn game trails the animals leave
+var bandits                            # ServerBandits: bandit camp sites woken by road traffic (docs/design/BANDIT_CAMPS.md)
 var map_knowledge                      # ServerMap: what each character has surveyed for its charcoal Map (protocol 120)
 var animals                            # ServerAnimals: wildlife around the players (rabbits)
+var edited_ground                      # EditedGround: the ground with its digs and fills, for the animals
 var coarse_ground = CoarseGroundScript.new()   # summits and valley-fog cells for the clients, from the tiles (protocol 132)
 var _animal_sent: Dictionary = {}
 var _send_round: int = 0
@@ -605,7 +609,11 @@ func _ready() -> void:
 	npcs.rain_now = func(): return float(weather.get("rain", 0.0))
 	npcs.setup(store_dir)
 	animals = AnimalsScript.new()
-	animals.ground_height = npcs.ground_height
+	edited_ground = EditedGroundScript.new()
+	edited_ground.ops = store.ops
+	edited_ground.surface = func(x, z): return generator.surface_height(x, z)
+	animals.ground_height = edited_ground.height   # the ground with every dig and fill (edited_ground.gd): animals walk on and drop to it
+	animals.ground_edited = edited_ground.is_edited
 	animals.blocked = npcs.blocked
 	animals.walls = func(x0, z0, x1, z1, margin): return items.structure_blocks_step(x0, z0, x1, z1, margin)
 	animals.water_level = func(x, z):
@@ -794,6 +802,22 @@ func _ready() -> void:
 
 	spawn = _spawn_point(world_dir)
 	animals.town = npcs.town_point()   # the island level and the stray dogs centre on the starter town's markers, never on the spawn (no_spawn_placement_design.md 3)
+	bandits = BanditsScript.new()
+	bandits.world_seed = items.world_seed
+	bandits.town = animals.town
+	bandits.spawn = Vector2(spawn.x, spawn.z)
+	bandits.game_seconds = func(): return game_clock.seconds
+	bandits.ground_height = func(x, z): return generator.surface_height(x, z)
+	bandits.ground_ready = func(x, z): return generator.tile_cached(x, z)   # the hourly check never reads a tile from disk (1.8 to 4 s)
+	bandits.in_water = npcs.blocked
+	bandits.building_near = func(site_at, reach_m): return items.building_near(site_at, reach_m)
+	bandits.road_distance = func(site_at, reach_m): return items.road_distance(site_at, reach_m)
+	bandits.setup(store_dir)
+	items.road_trip = func(mover, mover_at, trip_kind): bandits.note(mover, mover_at, trip_kind)
+
+	for site_line in bandits.report():
+		print(site_line)
+
 	items.respawn_point = spawn
 	_world_dir = world_dir
 	_start_water()
@@ -906,6 +930,8 @@ func _ready() -> void:
 	net.dump_requested.connect(_on_dump_requested)
 	@warning_ignore("confusable_local_declaration")
 	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at): items.action(peer, kind, a, b, count, at))
+	@warning_ignore("confusable_local_declaration")
+	net.pipe_lay_requested.connect(func(peer, slot, from, to): items.pipe_lay(peer, slot, from, to))
 	_report_at_msec = Time.get_ticks_msec() + 10000
 
 	for n in range(_max_running):
@@ -1250,6 +1276,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_fine_named.erase(peer_id)
 	_animal_sent.erase(peer_id)
 	trails.forget_peer(peer_id)
+	bandits.forget(peer_id)
 
 	if map_knowledge != null:
 		map_knowledge.forget_peer(peer_id)
@@ -2468,6 +2495,8 @@ func _reset_terrain_edits() -> void:
 		return
 
 	store.clear_generated()
+	edited_ground.forget()
+	animals.ground_changed(Vector3.ZERO, INF)   # every animal back onto the generated ground
 	flora.clear_memory()
 	generator.forget_tiles()
 	WaterGridScript.forget_ground()
@@ -2647,6 +2676,7 @@ func _dig_ground(center: Vector3, radius: float) -> bool:
 		_tell_tile_changed(tile)
 
 	tunnels.mark_edit(center, radius)
+	_ground_moved(center, radius)
 	var t2: int = Time.get_ticks_usec()
 
 	if water_live != null:
@@ -2776,6 +2806,15 @@ func _send_buried() -> void:
 		net.flora_cut.rpc(cut[0], cut[1])
 
 
+# The animals' ground changed round a dig or fill: its cells are read again and the animals standing there come to rest on it.
+func _ground_moved(center: Vector3, radius: float) -> void:
+	if edited_ground != null:
+		edited_ground.changed(center, radius)
+
+	if animals != null:
+		animals.ground_changed(center, radius)
+
+
 # A shovel fill: the sphere of ground is saved in the edit log (store.fill_sphere), the water thread raises its ground
 # there, and everyone is told. Returns false when nothing changed (the block holds its edit limit).
 func _fill_ground(center: Vector3, radius: float, material: int) -> bool:
@@ -2795,6 +2834,7 @@ func _fill_ground(center: Vector3, radius: float, material: int) -> bool:
 
 	if not tiles.is_empty():
 		tunnels.mark_edit(center, radius)
+		_ground_moved(center, radius)
 		_bury_plants(center, radius)
 
 		if water_live != null:
@@ -2958,6 +2998,7 @@ func _process(delta: float) -> void:
 	coarse_ground.tick()
 	_events.mark("trails")
 	trails.tick(delta)
+	bandits.tick()
 	map_knowledge.tick(delta)   # the save interval only
 	_events.mark("send npcs")
 	_send_npcs(delta)
@@ -3459,6 +3500,9 @@ func _exit_tree() -> void:
 
 	if trails != null:
 		trails.save()
+
+	if bandits != null:
+		bandits.save()
 
 	if map_knowledge != null:
 		map_knowledge.save()
