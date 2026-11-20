@@ -846,12 +846,14 @@ Not yet played.
 
 ## 96. Picture rig character started high in the air, so the ground loaded slowly before it dropped to the spot
 
-**Reported:** Dave, 20 Nov 2026, after watching the rig run on his PC: "the character is spawning way up in the air which causes ground loading to go slower and they eventually load in drop to the ground and then quit." Required outcome: "they should start 1m above ground then face whatever it is they need to photograph and take the images."
+**Status: Implemented - debug tooling only; verified on Lane A, nothing for a player to check.** Dave, 20 Nov 2026, after watching the rig run on his PC: "the character is spawning way up in the air which causes ground loading to go slower and they eventually load in drop to the ground and then quit."
+
+**Required outcome:** "they should start 1m above ground then face whatever it is they need to photograph and take the images."
 
 **Cause:** the shot runner (src/debug/shot_runner.gd) held the body at 400 m above each spot until the ground there loaded, and only then put it at the shot height. --frametime started counting 10 s after joining, wherever the body was at that moment.
 
 **As built (PR #1384, reviewed head 07a92b06, dev 51352924):**
-- The runner asks the server for the ground height at the spot. It starts the body 1 m above that height, held so it cannot fall through ground that has not loaded. Once the ground under it has collision, the body moves to the shot height. The 400 m hold is deleted.
+- The runner asks the server for the ground height at the spot. It starts the body 1 m above that height (aerial shots over 40 m and absolute-height shots start at their own height), held so it cannot fall through ground that has not loaded. Once the ground under it has collision, the body moves to the shot height. The 400 m hold is deleted.
 - Subject shots (--pieces, --look, --showroom and held items) also hide the plants, so a reed bed cannot block the subject.
 - A plain spawn view faces the camp fire, the way a new character does.
 - --frametime measures standing at the spot after landing, and look_rig.sh prints the frametime line itself.
@@ -863,6 +865,8 @@ This changes debug tooling only. There is no game, protocol, save or terrain cha
 - Lane B: 26 PASS / 0 FAIL, and warnings stay at 381.
 - Lane A, windowed, 5 runs, all exit 0. Every start was about 1 m over the server ground (y 5.7 over 4.7), and every landing was 1.7 m over it. The camp fire, pieces, saw and showroom were visible.
 - Remaining issues found by these runs, outside the rig: the spawn frame time had 4 frames over 100 ms (max 138.5 ms); two showroom pictures miss their items on the sandy slope at the new spawn (the framing was already like that before this change); and reeds stand in front of a new player's first view.
+
+**Acceptance:** run tools/look_rig.sh at the spawn. The log shows "starts at y" about 1 m over the ground, then "landed", and the picture shows its subject. A --frametime run prints its frametime line from the script.
 
 Not a game change; nothing to play.
 
