@@ -122,12 +122,12 @@ func _init() -> void:
 	root.add_child(wide_body)
 	wide_body.set_proportions(wide)
 	var shaped: Mesh = wide_body.body_mesh.mesh
-	_check(shaped is ArrayMesh and (shaped as ArrayMesh).get_blend_shape_count() == 9, "widths: shaped mesh with 9 blend shapes (5 body, 4 face)")
+	_check(shaped is ArrayMesh and (shaped as ArrayMesh).get_blend_shape_count() == 10, "widths: shaped mesh with 10 blend shapes (6 body with the bust, 4 face)")
 
 	# The shapes hold whole positions, which only NORMALIZED reads right: RELATIVE adds them to the base, so build 0.5 drew a body half again as big (4 Nov).
 	_check(shaped is ArrayMesh and (shaped as ArrayMesh).blend_shape_mode == Mesh.BLEND_SHAPE_MODE_NORMALIZED, "widths: blend shapes hold whole positions (normalized mode)")
 
-	if shaped is ArrayMesh and (shaped as ArrayMesh).get_blend_shape_count() == 9:
+	if shaped is ArrayMesh and (shaped as ArrayMesh).get_blend_shape_count() == 10:
 		var base: PackedVector3Array = (shaped as ArrayMesh).surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
 		var blends: Array = (shaped as ArrayMesh).surface_get_blend_shape_arrays(0)
 		var aabb: AABB = AABB(base[0], Vector3.ZERO)
@@ -135,14 +135,14 @@ func _init() -> void:
 		for p in base:
 			aabb = aabb.expand(p)
 
-		for n in range(9):
+		for n in range(10):
 			var moved: float = 0.0
 			var shape: PackedVector3Array = blends[n][Mesh.ARRAY_VERTEX]
 
 			for v in range(0, base.size(), 7):
 				moved = maxf(moved, shape[v].distance_to(base[v]))
 
-			_check(moved > aabb.size.length() * (0.005 if n < 5 else 0.002) and moved < aabb.size.length() * 0.2, "widths: shape %d moves vertices a sensible amount (%.4f of %.4f)" % [n, moved, aabb.size.length()])
+			_check(moved > aabb.size.length() * (0.005 if n < 6 else 0.002) and moved < aabb.size.length() * 0.2, "widths: shape %d moves vertices a sensible amount (%.4f of %.4f)" % [n, moved, aabb.size.length()])
 
 		var bi: int = wide_body.body_mesh.find_blend_shape_by_name("build")
 		_check(absf(wide_body.body_mesh.get_blend_shape_value(bi) - 1.0) < 0.001, "widths: build weight 1")

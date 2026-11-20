@@ -10,6 +10,9 @@ extends RefCounted
 #   belly  pushes the front of the lower trunk forward and a little out, round the navel,
 #   hips   widens the pelvis and the tops of the thighs sideways,
 #   chest  widens the rib cage and brings the chest forward,
+#   bust   raises a breast on each side of the chest front (Dave 20 Nov 2026: "yes we need a bust slider"): a round mound centred a little under the Spine2 joint
+#          and out to each side, pushed forward and a little down. The bust slider from -1 ("none", every old genome) up to -0.6 (the Even frame, which every new
+#          character starts with) leaves the body as modelled, so no existing or new character changes until the slider is moved up; +1 is the fullest (shape_weight),
 # and on the face (found from the head's own vertices: the nose tip is the head vertex furthest forward near the middle; Kathreen 3 Nov 2026, the creator's face sliders):
 #   jaw    widens the lower face and brings the chin forward,
 #   nose   makes the nose bigger and longer (push forward, grow round its tip),
@@ -18,7 +21,13 @@ extends RefCounted
 # Sizes are fractions of the body's height in mesh units, so they hold whatever unit Dave exported in.
 
 const P := "mixamorig_"
-const NAMES := ["build", "muscle", "belly", "hips", "chest", "jaw", "nose", "brow", "ears"]
+const NAMES := ["build", "muscle", "belly", "hips", "chest", "bust", "jaw", "nose", "brow", "ears"]
+const BUST_FROM := -0.6          # the bust slider value where the mound starts: body_generator.gd FRAMES "neutral" (shown as Even), the frame a new character starts with
+# The bust mound, as fractions of the body's height: each centre this far out to the side and down from the Spine2 joint, this wide, pushed this far forward at +1.
+const BUST_OUT := 0.055
+const BUST_DOWN := 0.06
+const BUST_RADIUS := 0.07
+const BUST_FORWARD := 0.05
 const SHAPED_KEY := "dynasty_shapes"
 
 static var _cache: Dictionary = {}       # source mesh rid -> shaped ArrayMesh (or null when it could not be made)
@@ -31,6 +40,14 @@ static var _job: int = -1                # the prewarm task on the worker pool, 
 # builds the mesh (_finish). The worker touches no node, resource or server: instancing the scene or loading the glb there hung the game headless (4 Nov).
 # dynasty_body.gd starts it with the first body and waits for it when a body is freed, so no task outlives the program.
 static var _pending: Dictionary = {}     # the prewarm's data while the worker computes it, and its source mesh
+
+
+# The blend shape weight of slider `key` in genome `g`: the slider value (-1..1), except the bust (-1 means none): 0 up to BUST_FROM, then up to 1 at +1.
+static func shape_weight(g: Dictionary, key: String) -> float:
+	if key == "bust":
+		return clampf((float(g.get(key, -1.0)) - BUST_FROM) / (1.0 - BUST_FROM), 0.0, 1.0)
+
+	return clampf(float(g.get(key, 0.0)), -1.0, 1.0)
 
 
 static func prewarm(mesh: Mesh, skin: Skin, skeleton: Skeleton3D) -> void:
@@ -184,6 +201,7 @@ static func _compute(data: Dictionary) -> void:
 		var s_belly: PackedVector3Array = verts.duplicate()
 		var s_hips: PackedVector3Array = verts.duplicate()
 		var s_chest: PackedVector3Array = verts.duplicate()
+		var s_bust: PackedVector3Array = verts.duplicate()
 		var head_verts: PackedInt32Array = PackedInt32Array()
 
 		if per > 0 and weights.size() == bones.size():
@@ -236,11 +254,19 @@ static func _compute(data: Dictionary) -> void:
 				var near_chest: float = exp(-pow(c_rel.dot(up) / (height * 0.1), 2.0))
 				var chest_part: bool = bone == "Spine1" or bone == "Spine2" or bone.ends_with("Shoulder")
 				s_chest[v] = p + ((lateral * c_rel.dot(lateral) * 0.14 + front * maxf(c_rel.dot(front), 0.0) * 0.25) * near_chest if chest_part else Vector3.ZERO)
+				# bust: a round mound on each side of the chest front, the trunk's own front only (not the arms, not the back)
+				if bone == "Spine" or bone == "Spine1" or bone == "Spine2":
+					var side: float = signf(c_rel.dot(lateral)) if absf(c_rel.dot(lateral)) > 0.0001 else 1.0
+					var centre: Vector3 = lateral * side * BUST_OUT * height - up * BUST_DOWN * height
+					var across: Vector3 = c_rel - front * c_rel.dot(front) - centre       # in the plane across the chest
+					var mound: float = 1.0 - smoothstep(0.0, BUST_RADIUS * height, across.length())
+					var on_front: float = smoothstep(0.0, 0.03 * height, c_rel.dot(front))
+					s_bust[v] = p + (front * BUST_FORWARD * height - up * 0.012 * height + lateral * side * 0.008 * height) * mound * mound * on_front
 
 		var face: Array = _face(verts, head_verts, head_of, up, lateral, front)     # [jaw, nose, brow, ears]
 		var blend_arrays: Array = []
 
-		for shape in [s_build, s_muscle, s_belly, s_hips, s_chest, face[0], face[1], face[2], face[3]]:
+		for shape in [s_build, s_muscle, s_belly, s_hips, s_chest, s_bust, face[0], face[1], face[2], face[3]]:
 			var one: Array = []
 			one.resize(Mesh.ARRAY_MAX)
 			one[Mesh.ARRAY_VERTEX] = shape

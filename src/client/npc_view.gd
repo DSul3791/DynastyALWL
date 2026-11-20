@@ -324,7 +324,9 @@ func _worn_of(outfit: String) -> Array:
 # the width and face blend shapes is shared by every Dynasty body; each NPC only sets its own weights and bone lengths. When the glb is not
 # imported the NPCs wear the generated body (a few shared body types).
 static func genome_of(id: String) -> Dictionary:
-	return BodyGenerator.genome_from_seed(id.hash())
+	var g: Dictionary = BodyGenerator.genome_from_seed(id.hash())
+	g["bust"] = BodyGenerator.BUST_NONE      # NPCs wear Body 1 (dynasty_body.gd); the bust slider drawn at random would give every man a bust now that it shows (20 Nov 2026)
+	return g
 
 
 func _make_rig(id: String) -> Node3D:

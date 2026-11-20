@@ -947,7 +947,7 @@ func _set_widths(g: Dictionary) -> void:
 	var any: bool = false
 
 	for key in Shapes.NAMES:
-		if absf(float(g.get(key, 0.0))) > 0.001:
+		if absf(Shapes.shape_weight(g, key)) > 0.001:
 			any = true
 
 	if not any and not body_mesh.mesh.has_meta(Shapes.SHAPED_KEY):
@@ -972,7 +972,7 @@ func _set_widths(g: Dictionary) -> void:
 		var i: int = body_mesh.find_blend_shape_by_name(key)      # MeshInstance3D has the lookup; ArrayMesh does not
 
 		if i >= 0:
-			body_mesh.set_blend_shape_value(i, clampf(float(g.get(key, 0.0)), -1.0, 1.0))
+			body_mesh.set_blend_shape_value(i, Shapes.shape_weight(g, key))
 
 
 # Skin colour (Kathreen 3 Nov 2026): Dave's texture has the skin and the loincloth painted in one map, in the same warm hue (the loincloth only darker), so the creator's skin colour

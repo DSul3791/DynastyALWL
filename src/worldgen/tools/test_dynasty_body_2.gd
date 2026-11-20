@@ -157,6 +157,29 @@ func _init() -> void:
 	var build: int = her.body_mesh.find_blend_shape_by_name("build")
 	_check(build >= 0 and absf(her.body_mesh.get_blend_shape_value(build) - 0.8) < 0.01, "Build 0.8: her mesh carries the width shapes")
 	_check(her.body_mesh.mesh.has_meta(Body.Shapes.SHAPED_KEY), "her body wears the shaped copy of her own mesh")
+	# The bust slider (Dave 20 Nov 2026: "yes we need a bust slider"): -1 ("none") leaves her as modelled, +1 is the fullest, and the shape raises the chest front.
+	var full: Dictionary = Generator.make_genome()
+	full["bust"] = 1.0
+	her.set_proportions(full)
+	var bust: int = her.body_mesh.find_blend_shape_by_name("bust")
+	_check(bust >= 0 and absf(her.body_mesh.get_blend_shape_value(bust) - 1.0) < 0.01, "Bust +1: the bust shape is at its fullest on her")
+	var none: Dictionary = Generator.make_genome()
+	_check(absf(Body.Shapes.shape_weight(none, "bust")) < 0.001 and absf(Body.Shapes.shape_weight(full, "bust") - 1.0) < 0.001, "the bust's -1 (none) weighs 0, +1 weighs 1")
+
+	if bust >= 0:
+		var shaped_mesh: ArrayMesh = her.body_mesh.mesh as ArrayMesh
+		var base: PackedVector3Array = shaped_mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+		var raised: PackedVector3Array = (shaped_mesh.surface_get_blend_shape_arrays(0)[bust] as Array)[Mesh.ARRAY_VERTEX]
+		var most: float = 0.0
+		var high: float = 0.0
+
+		for v in range(base.size()):
+			if raised[v].z - base[v].z > most:
+				most = raised[v].z - base[v].z
+				high = base[v].y
+
+		_check(most > 0.03 and most < 0.12, "Bust +1: the chest front comes forward %.3f m" % most)
+		_check(high > 1.1 and high < 1.45, "Bust +1: at chest height (%.2f m)" % high)
 
 	print("dynasty body 2 tests: %d failures" % _fails)
 	her.free()
