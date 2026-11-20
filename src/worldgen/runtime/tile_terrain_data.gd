@@ -18,6 +18,7 @@ const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const WaterStore := preload("res://src/water/water_store.gd")
 const WaterRecordScript := preload("res://src/worldgen/record/water_record.gd")
 const CaveClimate := preload("res://src/shared/cave_climate.gd")
+const MineSites := preload("res://src/worldgen/runtime/mine_sites.gd")
 const ORE_PIPE := 2
 const ORE_FIRST_LAYER := 5   # ore codes (_load_ores): lens 0, halo 1, pipe 2, vein 3, placer 4 are compact bodies; layer 5 and scatter 6 cover a province
 const WetMeters := 0.12   # water drawn from this depth (the water simulation's WET_M)
@@ -103,13 +104,14 @@ var spring_mouths: PackedVector2Array = PackedVector2Array()   # world x, z of e
 var goblin_dens: PackedVector3Array = PackedVector3Array()          # the floor point of each goblin den (Dave 7 Nov 2026): a dry side branch of a spring cave, or a dry dead end of a karst cave or lava tube, picked by GOBLIN_DEN_PERCENT of the cave's id
 var goblin_den_paths: Array = []   # per goblin den (parallel to goblin_dens): PackedVector3Array of floor points along the cave skeleton from the mouth node to the den node, the way its goblins walk in and out (docs/design/goblin_den_life_design.md)
 var goblin_den_mouths: PackedVector2Array = PackedVector2Array()   # world x, z of the mouth of each cave that has a goblin den: where its goblin group comes out (server_animals lair_mouths)
+var mines: Array = []                  # the tile's abandoned mines (MineSites.plan), in the baked caves' form; carved, scattered and dressed with them
 var animal_den_mouths: Dictionary = {}   # species ("bear", "wolf", "fox") -> PackedVector2Array of the world x, z of each cave mouth it dens in (animal_den_species); server_animals cave_den_mouths
 var cave_dens: PackedVector3Array = PackedVector3Array()   # every cave den: its node's floor point (world m), for den sounds (Sound thread #211)
 # Cave dressing (Dave 4 Nov 2026; bake: tile_sites._dress_cave; drawn by Kathreen's client view). Flat lists:
-var cave_bones: PackedFloat32Array = PackedFloat32Array()        # 5 floats each: x, y, z, kind (0 animal, 1 human, 2 goblin litter, 3 goblin fire, 4 den droppings, 5 den bedding), yaw
+var cave_bones: PackedFloat32Array = PackedFloat32Array()        # 5 floats each: x, y, z, kind (0 animal, 1 human, 2 goblin litter, 3 goblin fire, 4 den droppings, 5 den bedding, 6 mine timber set, 7 mine post, 8 fallen set), yaw
 var cave_formations: PackedFloat32Array = PackedFloat32Array()   # 6 floats each: x, y, z, kind (0 stalagmite, 1 stalactite), height_m, radius_m (a stalactite's y is its root on the roof)
 # Loose stones and boulders on cave floors (Dave 4 Nov 2026: "they should be riddled with rocks and collectable stones"): 5 floats each, x, y (the floor),
-# z, kind (0 stone, 1 boulder), boulder radius m. Laid out by the server's item scatter (server_items._lay_out_cave_items) through cave_scatter_in.
+# z, kind (0 stone, 1 boulder, 2 a mine's leftover item), boulder radius m (kind 2: the item's index in MineSites.LEFTOVERS). Laid out by the server's item scatter (server_items._lay_out_cave_items) through cave_scatter_in.
 var cave_scatter: PackedFloat32Array = PackedFloat32Array()
 var _cave_scatter_cells: Dictionary = {}   # Vector2i scatter cell -> PackedInt32Array of entry numbers, built for _cave_scatter_cell_m
 var _cave_scatter_cell_m: float = 0.0
@@ -188,7 +190,17 @@ func load_file(path: String, tile_coord: Vector2i, tile_size_m: float, rules: Di
 	_load_provinces(lists["provinces"], rules, rock_ids)
 	_load_bodies(lists["features"], rules)
 	_load_ores(lists["ore_bodies"], resource_ids, rock_ids)
-	_load_caves(lists["sites"].get("caves", []))
+	# The tile's abandoned mines (Dave 19 Nov 2026), worked out from its ore bodies and heights here, never baked, after the baked caves.
+	var baked: Array = lists["sites"].get("caves", [])
+	var mouths: Array = []
+
+	for cave in baked:
+		for entrance in cave.get("entrances", []):
+			var mouth_node: Array = cave["nodes"][int(entrance)]
+			mouths.append(Vector2(float(mouth_node[0]), float(mouth_node[2])))
+
+	mines = MineSites.plan(self, lists["ore_bodies"], mouths, MineSites.start_point())
+	_load_caves(baked + mines)
 	_load_springs(lists["sites"].get("springs", []))
 	_carve_beds(rules.get("runtime_terrain", {}).get("sim_water", {}))
 	_load_sim_water(path)
@@ -1128,6 +1140,9 @@ func _load_caves(list: Array) -> void:
 			var at: Array = bone["pos"]
 			cave_bones.append_array(PackedFloat32Array([float(at[0]), float(at[1]), float(at[2]), 1.0 if str(bone["kind"]) == "human" else 0.0, float(bone.get("yaw", 0.0))]))
 
+		for row in cave.get("timbers", []):   # a mine's timber sets, props and fallen sets (cave_bones kinds 6 to 8)
+			cave_bones.append_array(PackedFloat32Array(row))
+
 		for form in cave.get("formations", []):
 			var at: Array = form["pos"]
 			cave_formations.append_array(PackedFloat32Array([float(at[0]), float(at[1]), float(at[2]), 1.0 if str(form["kind"]) == "stalactite" else 0.0, float(form["height_m"]), float(form["radius_m"])]))
@@ -1289,6 +1304,9 @@ func _scatter_cave(cave: Dictionary) -> void:
 				continue
 
 			_add_cave_floor_spot(centre, Vector2(cos(angle), sin(angle)), d / r, r, rh, 1 if boulder else 0, radius)
+
+	for row in cave.get("extra", []):   # a mine's spoil heap, fallen-set rubble and leftovers, placed by MineSites
+		cave_scatter.append_array(PackedFloat32Array(row))
 
 
 # A floor spot `side` (a share of the half width rw, either sign) out from `centre` along `side_dir` on a section rw wide and rh tall.

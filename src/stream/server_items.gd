@@ -9,6 +9,7 @@ extends RefCounted
 # Until accounts exist an inventory is filed under the key the client made for itself.
 
 const FlameRules := preload("res://src/shared/flame_rules.gd")
+const MineSites := preload("res://src/worldgen/runtime/mine_sites.gd")   # what an abandoned mine left behind (cave scatter kind 2)
 const WaterFlowScript := preload("res://src/stream/water_flow.gd")
 const ShoreRules := preload("res://src/shared/shore_rules.gd")
 const SnowWalk := preload("res://src/shared/snow_walk.gd")   # walking on snow and snowshoes (Part C plan 7)
@@ -7768,6 +7769,17 @@ func _lay_out_cave_items(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void
 
 			if left > 0:
 				_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": cave_row}
+				_next_id += 1
+
+			continue
+
+		if int(spots[n * 5 + 3]) == 2:   # left behind in an abandoned mine (Dave 19 Nov 2026): a worn tool, a bucket, ore; laid like the stones, saved once taken
+			var left_id: String = str(MineSites.LEFTOVERS[clampi(int(spots[n * 5 + 4]), 0, MineSites.LEFTOVERS.size() - 1)])
+			var left_number: int = table.number_of(left_id)
+
+			if left_number > 0:
+				var spent: int = int(float(table.entry(left_id).get("durability", 0)) * MineSites.OLD_WEAR)
+				_items[_next_id] = {"number": left_number, "count": 1, "pos": spot, "left": 1.0e9, "scatter": key, "wear": spent}
 				_next_id += 1
 
 			continue

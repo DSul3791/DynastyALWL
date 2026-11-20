@@ -55,6 +55,26 @@ func _run() -> void:
 		var box: AABB = Dressing.look_mesh(look).get_aabb()
 		check(box.size.y < 0.2 and box.size.x < 1.8 and box.position.y > -0.08, "%s lies flat on the floor (%s)" % [look, str(box)])
 
+	# Abandoned mines (protocol 142): kinds 6 to 8 are a timber set, a stope prop and a fallen set. A set fits inside the adit's 1.8 m by 2.4 m
+	# ellipse (mine_sites.gd ADIT_W, ADIT_H): its top corners stay in it, and it stands about 2.1 m tall.
+	d.set_tile(Vector2i(1, 4), PackedFloat32Array([1.0, 5.0, 1.0, 6.0, 0.0, 2.0, 5.0, 2.0, 7.0, 1.0, 3.0, 5.0, 3.0, 8.0, 2.0]), PackedFloat32Array())
+	var mine_rows: Dictionary = d.tile_node(Vector2i(1, 4)).get_meta("rows")
+	check(["mine_set", "mine_post", "mine_fallen"].all(func(look): return (mine_rows[look] as Array).size() == 1), "kinds 6, 7 and 8 are a timber set, a prop and a fallen set")
+	var mine_set: AABB = Dressing.look_mesh("mine_set").get_aabb()
+	var outside: int = 0
+	var set_mesh: ArrayMesh = Dressing.look_mesh("mine_set")
+
+	for surface in set_mesh.get_surface_count():
+		for v in set_mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX]:
+			if v.y > 1.2 and Vector2(v.x / 0.9, (v.y - 1.2) / 1.2).length_squared() > 1.0:
+				outside += 1
+
+	check(outside == 0 and absf(mine_set.end.y - 2.1) < 0.1 and mine_set.size.z < 0.8, "a timber set fits inside the adit's roof (%d corners out, %s)" % [outside, str(mine_set)])
+	var prop: AABB = Dressing.look_mesh("mine_post").get_aabb()
+	check(prop.size.y > 2.8 and prop.size.y < 3.2 and prop.position.y > -0.05, "a stope prop stands about 3 m (%s)" % str(prop))
+	var fallen: AABB = Dressing.look_mesh("mine_fallen").get_aabb()
+	check(fallen.end.y < 1.95 and fallen.position.y > -0.1, "a fallen set has no cap up at the roof (%s)" % str(fallen))
+
 	var up: AABB = Dressing.look_mesh("stalagmite").get_aabb()
 	var down: AABB = Dressing.look_mesh("stalactite").get_aabb()
 	check(up.position.y > -0.1 and absf(up.end.y - 1.0) < 0.12, "a stalagmite stands from y 0 to about 1 (%s)" % str(up))
