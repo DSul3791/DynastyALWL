@@ -102,7 +102,7 @@ surface that high over its inlet). The cisterns' "overflow" is not modelled: a f
 
 ## 7. Iron plumbing: SUPERSEDED (Dave, 19 Nov 2026)
 
-The deferred iron plan (Iron pipe section, Iron - Pipe / elbow / tee, and an iron tap) is dropped: taps and drip heads are copper only (Dave, 20 Nov 2026). Dave, 19 Nov 2026 15:06Z: "There's really no need
+The deferred iron plan (Iron pipe section, Iron - Pipe / elbow / tee, and an iron tap) is dropped: taps and drip heads are copper only (Dave, 19 Nov 2026, restated 20 Nov). Dave, 19 Nov 2026 15:06Z: "There's really no need
 to go into iron cause iron would rust and steel would do the same thing so there's no point in having iron or steel [...] copper would be the best".
 Section 9 replaces it. The old design stays in git history (and the unmerged bundle `plumbing/plumbing-stack.bundle`); nothing of it is built. The
 Iron - Hand pump, the Deep-well pump and the Raised cistern were not part of that ruling and stay as they are (locked).
