@@ -114,6 +114,22 @@ func _rules() -> void:
 	check(str(DrinkRules.pick(CFG, [{"kind": "puddle"}, {"kind": "lake"}, spring], ctx("autumn", 1.0, 8.0)).get("kind", "")) == "spring", "the cleanest source within reach wins")
 	check(DrinkRules.pick(CFG, [], ctx("summer", 1.0, 15.0)).is_empty(), "no rows, no answer")
 
+	# The client's "Brook — Press E to drink" (brook_shows, Dave 19 Nov 2026: the prompt on a dry hillside): only on a bed that runs now, never on a
+	# dry gully, and never where the server's rule (pick) would answer "The bed is dry".
+	check(DrinkRules.brook_shows(1, "summer", false), "a perennial brook offers a drink in a dry August")
+	check(DrinkRules.brook_shows(2, "autumn", false), "an intermittent brook offers a drink out of summer")
+	check(not DrinkRules.brook_shows(2, "summer", false), "a dry intermittent bed in August offers no drink")
+	check(DrinkRules.brook_shows(2, "summer", true), "an intermittent brook in summer rain offers a drink")
+	check(not DrinkRules.brook_shows(3, "autumn", false), "a dry ephemeral gully offers no drink")
+	check(DrinkRules.brook_shows(3, "autumn", true), "an ephemeral gully in the rain offers a drink")
+
+	for regime in [1, 2, 3]:
+		for season_name in ["spring", "summer", "autumn", "winter"]:
+			for raining in [false, true]:
+				if DrinkRules.brook_shows(regime, season_name, raining):
+					var row: Dictionary = {"kind": "brook", "regime": regime}
+					check(not DrinkRules.pick(CFG, [row], ctx(season_name, 0.0 if raining else INF, 10.0, raining)).has("refused"), "brook prompt regime %d %s rain %s: the server gives the drink" % [regime, season_name, str(raining)])
+
 
 # Step 2b on a 3 x 3 stub tile: the drink sections (water_record.gd encode_drink) read back as brook rows (TileTerrainData.drink_row), and
 # the rows behave by regime: a perennial brook runs in a dry August, an intermittent one with no spring is a dry bed.

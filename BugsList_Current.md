@@ -617,6 +617,34 @@ Not done (parts 3 to 5): no warnings, signs or lookout warning before the camp; 
 
 Assumed on Dave's behalf (provisional, docs/design/BANDIT_CAMPS.md): BANDIT-8 to BANDIT-16: bands by distance from the town (under 3 km 1-2 at level 1, a quarter with one at level 2; 3-5 km 2-3 at levels 1-3; 5-8 km 2-4 at 3-6; beyond 3-5 at 5-10); Lean-tos 5 m from the fire; two horses 9 m behind; bandits appear within 200 m; gear by level (club and hide clothes, then bronze spear and hood, then iron sword and fur cloak); a bandit runs under 30% health, up to 40 m; health 40 scaled by level; 1.5 km from goblin camps; 150 m from cave, den and mine mouths.
 
+## 76. Tunnels under the island hit sea water
+
+**Status: Implemented - awaiting player verification.** Dave's report, 20 Nov 2026 (thread "Remove water under the island"). PR #1346, merged to dev at 57adfeea (head 4083a437) after independent review (2 rounds; the first found that a cave pool below sea level showed a dry view while the player swam, fixed; final PASS on the exact head). Lane A (Dave's PC) on the exact head: 152 of 152 selected tests passed (149 fast, 3 timing), 0 script errors, test_fog_ground among them; warnings 381 equal to dev, zero new; look names clean; no shader errors in any log. Client only: no protocol, terrain version, world or save change. Not yet played. The sea surface no longer drawn under the island is not yet seen on screen.
+
+Dave, 20 Nov 2026: "I was digging a tunnel and at one point I got so deep I hit water and that is going to be problematic. I image that at the ocean but not under the island. is there away to remove the water under an island?"
+
+**Required outcome:** below sea level is sea only where the generated ground round the point is sea bed (the lowest baked ground within 64 m is at or under 0.5 m). Under the island a tunnel dug below sea level is dry: no underwater view, no swimming, no sea surface drawn across it, no sea-water prompt, ordinary footsteps and no swim sounds. Lakes, rivers and spring cave pools stay water wherever they are, and the open sea, beaches and the sea's edge work as before. Digging never makes a sea. The server already read the generated ground for breath, so the two sides now agree.
+
+**Acceptance:** dig a tunnel down from inland ground until it is well below sea level: the view stays clear, you walk with normal footsteps, no oxygen symbol, and no sheet of sea across the tunnel where it passes sea level. Swim in the sea and walk a beach: as before. Dive in a spring cave pool: under water as before.
+
+Not done: within about 64 m of the shore a tunnel below sea level still counts as sea (the old rule), and an inlet narrower than about 32 m far from other sea could read as land. There is no real flooding: a tunnel dug out to the sea under the waterline does not fill. Near sea level the client now asks for the coarse ground window even when no fog is drawn (one ask per 1 km moved); server load not measured.
+
+## 78. "Press E to drink" on a hillside far from the water (part 1 of 2)
+
+**Status: Part 1 implemented - awaiting player verification.** Dave's report, 19 Nov 2026 (thread "Fix drink prompt far from water"). Part 1 is PR #1348, merged to dev at 83bd2145 (head 63106f85) after independent review (2 rounds; the first found the client read rain from its own sky while the server reads one weather over the starter row, fixed; final PASS on the exact head). Lane A (Dave's PC) on the exact head: 214 of 214 selected tests passed (210 fast, 4 timing), 0 script errors, test_drinking_water among them; warnings 381, zero new. Client only: no protocol, item or save change. Not yet played. Dave has not yet said which prompt he saw ("Press E to drink", "Brook — Press E to drink" or "Spring — Press E to drink"), so part 1 may not be his case. Part 2, the height check below, follows as its own PR.
+
+Dave, 19 Nov 2026: "I can see the river below and Im on the hillside maybe 100 meters away and about 10 meters above the water but when I look at the ground sometimes it says press e to drink." And: "I have also noticed our action range seems pretty long so that might be us looking right through the terrain then seeing the water below."
+
+**What was found:** three things offer E to drink, and none follows the look ray, so none sees water far away; they show "when looking at the ground" only because anything aimed at (a tree, an item) takes the prompt first. Water at the feet or up to 2 m ahead needs real water standing there, so it cannot fire 100 m from the river. A drink from a water container in hand shows the plain "Press E to drink" anywhere. The record's stream beds ("Brook — Press E to drink") showed on every channel cell within about 3 to 8 m, dry gullies included, where pressing E then said "The bed is dry"; hillsides above a river are crossed by such gullies. Looking through the terrain cannot cause it: the look ray stops at the first solid thing it hits, and its "Water — Press E to drink" also needs water at the feet. Every "Press E to ..." line shows only while the / inspect key is on. With it on, the crosshair name ("Water", "Rock") reads up to 30 m; picking up and gathering need you within 2 m and aimed within about 25 degrees (E reaches 2.5 m); drinking reads 3 m round the feet.
+
+**Required outcome:** a dry stream bed (an ephemeral gully out of rain, an intermittent brook in a dry summer) shows no drink prompt, since pressing E there gives none; a running one does, as does water you can see.
+
+**Acceptance:** with the / inspect key on and nothing in hand, walk across a hillside above a river, away from visible water, springs and running brooks: dry gullies show no drink prompt. Stand by a river or pond: the prompt shows and E drinks, as before.
+
+Not done: a ground spring whose flow fails in a dry summer still shows "Spring — Press E to drink" there (the server answers "The bed is dry"; the client is not sent the spring's dry flow). In the hours after rain an intermittent or ephemeral bed still drinks on E without showing the prompt (the client does not know when it last rained). A running brook too narrow to draw is a drink with no water shown. Part 2 (water no more than 2.5 m below the feet) is not in this part.
+
+Assumed on Dave's behalf (provisional): part 2's 2.5 m drop (the coordinator's ruling, 20 Nov 2026).
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
