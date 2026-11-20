@@ -561,6 +561,20 @@ Not done: no voice clips; torches are not refused in trade; nothing checks that 
 
 Assumed on Dave's behalf (provisional, docs/design/GOBLIN_CAMP.md): GOBLIN-1 the cave 2.8 km east; GOBLIN-2 three goblins, Ragtooth and Skritch names; GOBLIN-3 the keep distances; GOBLIN-4 any weapon on the hotbar counts; GOBLIN-5 coins in Hob's window, stock and purse 120; GOBLIN-6 Skritch's speech; GOBLIN-7 unkillable, 3 game days of anger; GOBLIN-8 +1 standing a game day.
 
+## 73. Cave dens: bears, wolves and foxes live in caves
+
+**Status: Implemented - awaiting player verification.** Dave's request, 19 Nov 2026 (thread "Plan caves and abandoned mines"). PR #1320, merged to dev at 5873c8e5 (head 0b22542d) after independent review (PASS; earlier rounds checked the den mouth against the species' own ground, made a bear ranging out still hold its den, kept the claim distance in data and noted goblins next to bear caves). Lane A (Dave's PC) on the exact head: 437 of 437 selected tests passed (426 fast, 9 timing, 2 slow including test_worldgen and test_bake_from_record), 0 script errors, test_cave_animal_dens and test_cave_dressing among them; warnings equal to dev. Not yet played. The den signs and an animal at its cave are not yet seen on screen.
+
+Dave, 19 Nov 2026: "we need to start adding stuff into the world for players to discover like natural caves or abandoned mines that already have bracing." "more than likely natural caves will become dens for animals or creatures."
+
+**Required outcome:** most inland caves with passages that hold no goblins are an animal's den, by the cave's size: a large cave or lava tube a bear's, a medium one a wolf pack's, a small one a fox's. A few metres in from the mouth, off the stream, lie droppings (and old bones at a bear or wolf den); a trampled bed of leaves, grass and fur lies at the den spot deeper in. A bear or fox appears at an empty den's mouth near a player, never with a player beside it and only on ground it lives on; a wolf pack whose range holds a wolf cave keeps its den there. The goblin camp cave (3,4#8013) holds no animal. Design: docs/design/CAVE_DENS_AND_MINES.md (stage 1).
+
+**Acceptance:** walk into a spring cave with a side branch that has no goblins: droppings near the mouth and a bed deeper in (about 7 caves in 10 hold a den; try another if one has none). At a large cave, a bear appears at the mouth when you come within about 250 m (not closer than 60 m) and goes back to it. The goblin camp cave has no den signs.
+
+Not done: the animal can appear at its cave mouth with a player as close as 60 m (watch for pop-in at a mouth in view). Dry caves stay off, so dens are only in the spring caves and lava tubes that exist.
+
+Assumed on Dave's behalf (provisional, docs/design/CAVE_DENS_AND_MINES.md): CD-1 bears, wolves and foxes; CD-2 dry natural caves stay off; CD-3 70 % of such caves hold a den, the animal by cave size; CD-4 the goblin camp cave kept free.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
