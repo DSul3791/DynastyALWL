@@ -35,6 +35,35 @@ Status: stage 1 of 5 (sites and traffic) on branch `claude/project-thread-2c1rn3
 - Trip points since the last save are lost in a crash (saved at each wake and at shutdown).
 - A candidate whose ground tile is not loaded is not read (no tile read stalls the server); it is tried again at the next check.
 - Water means deeper than 0.7 m (the NPC walking test): a shallow pond counts as dry.
-- Walking back and forth over one stretch boundary counts each crossing; harmless in stage 1, to be limited per mover before stage 2 puts camps in the world.
+- A mover's last four stretches do not count again, so pacing one boundary counts once; a walk out and back counts.
 - The pinch-point preference (ford, forest stretch, pass) is not built: the busiest candidate that passes the rules wakes.
 - Patrols, wagoneers and the used-site dormancy come with later stages; no patrol or wagoneer NPC exists yet.
+
+## Stage 2: the camp itself (`server_bandits.gd` camp part, `data/npcs/bandits.json` camp, protocol 143)
+
+An awake site is laid on the ground from its row at every server start and never saved in the world (the site row is its record):
+
+- a campfire at the site, lit and refusing a player's use ("That is the bandits' fire. It is not yours to tend.");
+- one Lean-to for 1 or 2 bandits, two for 3 to 5, open to the fire (Dave agreed a Lean-to for now, no new Tent item); they cannot be taken down;
+- the horses (two) tethered 9 m behind the fire, shown saddled (wire state 22);
+- the bandits, made while a player is within 200 m, sitting round the fire (state 23), lying at night (24), one standing lookout.
+
+A camp's bandits are fixed by the seed: their count and levels by distance band from the starter town (from the spawn while there is no town). Near the town 1 or 2 bandits at level 1, a quarter of camps with one at level 2; further out more and stronger. Bandits are animal species 52 (`bandit`) and fight back through the big game warn and charge when hit, harmless to life as all attacks are for now. A badly hurt bandit runs from whoever hurt it. A fallen bandit leaves its site's row for good and drops its weapon and clothes; a camp horse that dies leaves the row too. The client draws bandits with the human ragdoll in the `bandit` outfit.
+
+### For Dave (provisional, adjust after play)
+
+| # | Choice | Value |
+|---|---|---|
+| BANDIT-8 | Bandits by distance from the town | under 3 km 1-2 at level 1 (a quarter with one at level 2); 3-5 km 2-3 at levels 1-3; 5-8 km 2-4 at 3-6; beyond 3-5 at 5-10 |
+| BANDIT-9 | Lean-tos | one for 1-2 bandits, two for more, 5 m from the fire |
+| BANDIT-10 | Horses | two, tethered 9 m behind the fire |
+| BANDIT-11 | When they appear | a player within 200 m; gone with the animals past 300 m, made again on return |
+| BANDIT-12 | Gear | level 1+ wooden club and hide clothes; 3+ bronze spear and hood; 5+ iron sword and fur cloak |
+| BANDIT-13 | Running | under 30% health a bandit runs, up to 40 m from its seat |
+| BANDIT-14 | Health | 40 at level 1, scaled by the island level's health per level |
+
+### Known limits (stage 2)
+
+- No toll, robbery, bounty, horse claiming, dissolving or dormancy yet (stages 3 and 4).
+- A camp horse cannot be ridden or led away yet; it is tied and never bolts.
+- The camp has no stash chest until stage 4.

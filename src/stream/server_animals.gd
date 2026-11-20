@@ -74,6 +74,7 @@ var lair_guarded: Callable            # (x, z, radius) -> bool: true when a burn
 var _lair_state: Dictionary = {}   # mouth "x,z" -> {"made": a group has been made here, "empty_since": seconds when it was found empty, -1 while a group is there}
 var lair_path: Callable              # (mouth x, z) -> PackedVector3Array: the cave floor path from that den mouth to the den (tile goblin_den_paths), empty when none
 var berry_bushes: Callable           # (Vector3, radius) -> PackedVector3Array: standing berry plants near a point, from flora chunks already made (goblins forage at them)
+var bandit_camps = null              # server_bandits.gd: camp bandits and tethered horses take their own step (docs/design/BANDIT_CAMPS.md stage 2)
 var goblins = null                   # den life (server_goblins.gd): species with a "den_life" row sleep in the cave by day, watch fires and forage at night
 var flight = null                    # single birds in flight (server_flight.gd, bird_flight_server_design.md): species with a "flight" row fly when they bolt
 var companions = null                # companions (server_companions.gd): the stray a player befriends with food, then their dog (Dave 8 Nov 2026, decisions 5 and 6)
@@ -898,7 +899,7 @@ func tick(delta: float) -> void:
 
 		# A companion stays with its owner (server_companions), and the animal an admin watches through the spyglass keeps living: never
 		# frozen, never sent off for the hour.
-		var kept: bool = a.has("companion_id") or watched.has(id)
+		var kept: bool = a.has("companion_id") or watched.has(id) or a.has("camp")   # a bandit camp's people and horses keep the camp's hours
 
 		# An animal whose hours are over (a songbird at night, a boar at noon: its activity chance is at most off_hours_chance) leaves once no player is close to it.
 		if not kept and near_d > float(cfg.get("off_hours_despawn_m", 80.0)) and hour_now.is_valid() and activity_chance(species_def(str(a["sp"]))) <= float(cfg.get("off_hours_chance", 0.05)):
@@ -1040,6 +1041,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		if big_game.handles(a):
 			big_game.step(a, dt)
 			return
+
+	if bandit_camps != null and a.has("camp") and bandit_camps.step(a, dt):
+		return
 
 	if bleed(a, dt):
 		return
