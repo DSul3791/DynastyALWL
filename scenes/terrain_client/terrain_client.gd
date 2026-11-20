@@ -38,6 +38,7 @@ extends Node
 
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
+const NpcCampScript := preload("res://src/shared/npc_camp.gd")   # facing at the spawn (face_fire_yaw)
 const SlotSoundsScript := preload("res://src/client/slot_sounds.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
@@ -1373,6 +1374,9 @@ func _welcome_body(info: Dictionary) -> void:
 	root.add_child(terrain)
 	var tp0: int = Probe.start()
 	_make_player(root, test_start if test_start.is_finite() else info["spawn"] + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0))
+
+	if not test_start.is_finite():
+		_face_from_spawn(Vector3(info["spawn"]))
 	Probe.stop("welcome: player", tp0)
 	flora = FloraViewScript.new()
 	flora.name = "Flora"
@@ -2565,8 +2569,22 @@ func go_to_spawn() -> void:
 
 	body.global_position = Vector3(world["spawn"]) + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0)
 	body.velocity = Vector3.ZERO
+	_face_from_spawn(Vector3(world["spawn"]))
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
+
+
+# Back from a death: at the starter spawn (not a shelter or bed the server chose) face the camp fire again; elsewhere keep the facing.
+func _face_if_starter_spawn(spawn_point: Vector3) -> void:
+	if world.has("spawn") and Vector2(spawn_point.x, spawn_point.z).distance_to(Vector2(Vector3(world["spawn"]).x, Vector3(world["spawn"]).z)) < 1.0:
+		_face_from_spawn(spawn_point)
+
+
+# Set down at the starter spawn (first arrival, a death that sends the character back there, Go to spawn): face Edda and Hob's camp fire
+# (npc_camp.gd face_fire_yaw; Dave 20 Nov 2026). A returning character is then moved to where they left (_on_start_at) and keeps this facing.
+func _face_from_spawn(spawn_at: Vector3) -> void:
+	if body != null:
+		body.rotation.y = NpcCampScript.face_fire_yaw(Vector2(spawn_at.x, spawn_at.z))
 
 
 var death_screen                      # the real-death screen (src/client/death_screen.gd), made when the server sends final_death
@@ -2599,6 +2617,7 @@ func _on_died(cause: String, spawn_point: Vector3) -> void:
 
 	body.global_position = spawn_point + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0)
 	body.velocity = Vector3.ZERO
+	_face_if_starter_spawn(spawn_point)
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
 	_respawn_gasp()
@@ -2646,6 +2665,7 @@ func finish_cavein_death(spawn_point: Vector3) -> void:
 
 	body.global_position = spawn_point + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0)
 	body.velocity = Vector3.ZERO
+	_face_if_starter_spawn(spawn_point)
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
 	_respawn_gasp()
