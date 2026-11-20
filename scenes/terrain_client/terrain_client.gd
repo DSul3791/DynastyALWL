@@ -92,6 +92,7 @@ const SnowWalkScript := preload("res://src/shared/snow_walk.gd")   # walking on 
 const OceanIceScript := preload("res://src/client/ocean_ice.gd")
 const ShoreProps := preload("res://src/client/shore_props.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
+const FogGroundScript := preload("res://src/shared/fog_ground.gd")
 const ICE_POND_DEPTH_M := 3.0           # a typical pond's depth for its freezing speed
 const CoverScript := preload("res://src/shared/cover.gd")
 const StanceScript := preload("res://src/client/stance.gd")
@@ -2287,7 +2288,7 @@ func _shore_prompt() -> String:
 
 	var sea: bool = false
 
-	for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
+	for offset in ([] if _under_land(here) else [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]):   # a tunnel under the island is no shore
 		var g: float = _ground_below(here + Vector3(offset.x, 0.0, offset.y))
 
 		if not is_nan(g) and g < 0.0:
@@ -4137,8 +4138,40 @@ func _make_environment(root: Node3D) -> void:
 # 64-bit floats (ocean_waves.gd), so the shader's swell and _sea_height_at() are the same water at the same moment.
 func _follow_sea() -> void:
 	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
+	_mask_sea_under_land()
 	var origin: Vector2 = OceanWaves.origin_for(Vector2(body.global_position.x, body.global_position.z))
 	OceanWaves.apply(sea.material_override as ShaderMaterial, origin, _sea_clock())
+
+
+# Under the island, not the sea (Dave 20 Nov 2026: a tunnel dug below sea level hit water): the baked ground round p is above sea level
+# (fog_ground.gd under_land, a lookup in the window the server already sends). False until that window has come: the old rule.
+func _under_land(p: Vector3) -> bool:
+	return weather_look != null and weather_look.fog_ground.under_land(p.x, p.z)
+
+
+# The sea plane is not drawn under the island, so a tunnel below 0 m shows no sheet of sea across it: the window's ground ("low", the
+# lowest within 64 m) goes to the sea shader as a small texture (water_material.gd land_low), made again only when a new window comes.
+var _sea_land_grid: Dictionary = {}
+
+
+func _mask_sea_under_land() -> void:
+	if weather_look == null or is_same(weather_look.fog_ground.grid, _sea_land_grid):
+		return
+
+	_sea_land_grid = weather_look.fog_ground.grid
+	var material: ShaderMaterial = sea.material_override as ShaderMaterial
+
+	if _sea_land_grid.is_empty():
+		material.set_shader_parameter("land_on", 0.0)
+		return
+
+	var n: int = int(_sea_land_grid["n"])
+	var low: PackedFloat32Array = _sea_land_grid["low"]
+	material.set_shader_parameter("land_low", ImageTexture.create_from_image(Image.create_from_data(n, n, false, Image.FORMAT_RF, low.to_byte_array())))
+	material.set_shader_parameter("land_origin", _sea_land_grid["origin"])
+	material.set_shader_parameter("land_size_m", float(n) * FogGroundScript.CELL_M)
+	material.set_shader_parameter("land_above_m", FogGroundScript.LAND_ABOVE_M)
+	material.set_shader_parameter("land_on", 1.0)
 
 
 # The sea clock (s): this client's own (M5 second step; a shared server clock comes with the boats, M7).
@@ -5347,7 +5380,10 @@ func _water_here() -> Dictionary:
 		if not is_nan(pool):
 			surface = pool
 
-	if is_nan(surface) and here.y > 2.0:
+	# Under the island the sea is not there (_under_land): only a lake, river or cave pool counts.
+	var land: bool = _under_land(here)
+
+	if is_nan(surface) and (here.y > 2.0 or land):
 		return {}
 
 	# The bed under a swimmer or wader hardly changes from frame to frame: one ray down per 0.25 m moved or 150 ms, not one per frame.
@@ -5362,6 +5398,9 @@ func _water_here() -> Dictionary:
 		_water_ground = ground
 		_water_ground_msec = now
 		_water_ground_at = Vector2(here.x, here.z)
+
+	if land:
+		return {"surface": surface, "ground": ground}
 
 	return SwimScript.water_at(here.y, surface, ground, _sea_height_at(here))   # a swimmer in the sea rides the swell (M5)
 
@@ -7227,10 +7266,12 @@ func _update_underwater() -> void:
 			surface = pool
 
 	# The sea's surface at the eye is the swell's (M5): a crest over the eye is under water, but only where the ground is under the sea.
+	# Under the island (_under_land) there is no sea below 0 m: a deep tunnel is dry (Dave 20 Nov 2026).
 	var sea_y: float = _sea_height_at(eye)
-	var under: bool = eye.y < minf(sea_y, 0.0)
+	var land: bool = _under_land(eye)
+	var under: bool = not land and eye.y < minf(sea_y, 0.0)
 
-	if not under and eye.y < sea_y:
+	if not under and not land and eye.y < sea_y:
 		var bed: float = _ground_below(eye)
 		under = is_nan(bed) or bed < 0.0   # no ground found: open deep sea
 

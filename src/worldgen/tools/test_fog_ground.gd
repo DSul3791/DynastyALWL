@@ -59,6 +59,22 @@ func _initialize() -> void:
 	var sea: PackedFloat32Array = heights.duplicate()
 	sea[0] = -40.0
 	_check(FogGround.sample(FogGround.build_grid(sea, fresh, n, origin), "floor", origin.x + 16.0, origin.y + 16.0, -1.0) >= 0.0, "by the sea the floor is sea level, not the sea bed")
+	# Under the island, not the sea (Dave 20 Nov 2026, a tunnel dug below sea level hit water): west half sea bed at -10 m, east half land at 20 m.
+	var coast: PackedFloat32Array = PackedFloat32Array()
+	coast.resize(n * n)
+
+	for j in range(n):
+		for i in range(n):
+			coast[j * n + i] = -10.0 if i < 32 else 20.0
+
+	var island = FogGround.new()
+	island.grid = FogGround.build_grid(coast, fresh, n, origin)
+	var shore_x: float = origin.x + 32.0 * FogGround.CELL_M
+	_check(island.under_land(shore_x + 300.0, z_mid), "300 m inland: under the island, no sea below 0 m")
+	_check(not island.under_land(shore_x - 300.0, z_mid), "300 m out: the sea")
+	_check(not island.under_land(shore_x + 30.0, z_mid), "30 m inland: still the sea's (within 64 m of the sea bed)")
+	_check(not island.under_land(origin.x - 500.0, z_mid), "off the window: the old rule, sea")
+	_check(not FogGround.new().under_land(shore_x + 300.0, z_mid), "no window yet: the old rule, sea")
 	# The real tiles, if this checkout has them: the read finds ground.
 	var real: Dictionary = FogGround.read_window("res://worlds/base_world/tiles", 15360.0, Vector2(53296.0 - 2048.0, 68080.0 - 2048.0))
 
