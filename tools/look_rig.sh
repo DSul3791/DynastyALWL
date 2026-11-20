@@ -14,7 +14,7 @@
 #   --ground-close ID[:N]  the same pile (default 1) seen close: camera 0.35 m above the ground 0.9 m from it, looking 45 degrees down, ground in view (held shots at 1.5 m hide the item behind the body). Numbers are flags: --close-height M --close-dist M --close-pitch DEG; --agl/--drop-dist/--look-down after it override. Example: tools/look_rig.sh --ground-close rose_petals:3 --name petals_ground
 #   --flora-scale N  draw the --flora row N times its size (diagnosis: is a small plant only hard to see?)
 #   --cam-above M  with --flora: the camera stands M metres above the ground at the plant row (e.g. --cam-above 0.5 --dist 3 --pitch -10); default keeps --agl
-#   --frametime S [--quality 0-3]  after a 10 s warm-up measures frame times for S seconds (quality 0 = Low) and prints one "shot runner: frametime" line: build, quality, spot, avg, p95, p99, max, frames over 50/100 ms, verdict (FAIL = p95 >= 33 ms or any frame over 100 ms; WARN = p99 over 50 ms), machine (GPU, driver, window). VSync off, fixed hour and weather, flora and water on. For a borderline number run it 3 times and take the median
+#   --frametime S [--quality 0-3]  once the body has landed at the shot (--at, default the spawn, --agl over the real ground) measures frame times for S seconds (quality 0 = Low); the picture is taken after it. The rig prints one "shot runner: frametime" line (no line = FAIL, exit 6): build, quality, spot (x,z, y and m above the ground), avg, p95, p99, max, frames over 50/100 ms, verdict (FAIL = p95 >= 33 ms or any frame over 100 ms; WARN = p99 over 50 ms), machine (GPU, driver, window). VSync off, fixed hour and weather, flora and water on. For a borderline number run it 3 times and take the median
 #   --views "name:dist:pitch:above;..."  extra pictures of the same scene in ONE start: camera dist m south of the subject (flora row middle, else 4 m ahead), pitch deg, above = camera m above the ground; frames <name>_<view>.png, one "shot runner: view" line each (e.g. --views "wide:8:-8:1.5;close:3:-10:0.5")
 #   --summer  draw the --flora row in the species' own green instead of the game's autumn tint
 #   --give ID:N --drop  give N of an item, then drop all N 2.2 m ahead (a real drop: stone:20 makes a pile)
@@ -38,6 +38,7 @@
 #   Every run ends with "rig: N picture(s) in T s"; no picture saved is a FAIL (exit 4).
 #   --server-arg ARG  pass one extra argument to the throwaway server (repeat), e.g. --server-arg --water2 (Dynasty water)
 #   --client-arg ARG  pass one extra argument to the client (repeat the option), e.g. --client-arg --generated-body
+#   Every shot starts 1 m above the real ground at its spot (the server's ground height there), held until the ground under it loads, then goes to --agl (Dave 20 Nov 2026: never from high in the air).
 # Runs a throwaway server (own store, --open-admin) and a windowed client with its own APPDATA, so Dave's saves, hotbar and
 # display settings are never read or written. PNGs go to --out (default E:/Software/godotDev/DynastyALWL_Evidence/shots).
 # Close Dave's game first only if the PC is short of RAM; the rig runs beside it. Needs Git bash and GODOT_EXE (default below).
@@ -147,7 +148,7 @@ else
   HOME="$RIG/home" XDG_DATA_HOME="$RIG/data" VK_ICD_FILENAMES="$ICD" xvfb-run -a -s "-screen 0 1280x720x24" "$GFX" --path . --rendering-driver vulkan --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" > "$RIG/client.log" 2>&1
 fi
 echo "rig: client window open $((SECONDS - CSTART)) s"
-grep -E "shot runner: (saved|timing|FAILED|--wait cap|--settle cap)|JOIN: ground ready|ERROR|SCRIPT" "$RIG/client.log" | head -14 | cut -c1-200
+grep -E "shot runner: (saved|timing|FAILED|--wait cap|--settle cap|.* starts at y|landed)|JOIN: ground ready|ERROR|SCRIPT" "$RIG/client.log" | head -14 | cut -c1-200
 SAVED=$(grep -cE "shot runner: (saved |view .* saved |lapse .* saved|chop phase .* saved)" "$RIG/client.log")   # every picture the runner saves says so on one line
 ls -la "$OUT/$NAME.png" 2>/dev/null | awk '{print $5, $9}'
 # Shaders compile only in a windowed client, never in a headless gate, so this run is where a broken shader shows (#416: a '#'
@@ -159,6 +160,11 @@ if [ "$SHADERR" -gt 0 ]; then
 fi
 echo "shader errors: 0"
 echo "rig: $SAVED picture(s) in $SECONDS s"
+case "$ADMIN" in *--shot-frametime=*)
+  FT=$(grep -m1 "shot runner: frametime" "$RIG/client.log")   # printed in full here: the temp folder (and its client.log) is deleted on exit without --keep
+  if [ -z "$FT" ]; then echo "FAIL: --frametime gave no frametime line (client log tail below)"; tail -15 "$RIG/client.log" | cut -c1-200; exit 6; fi
+  echo "$FT";;
+esac
 if [ "$SAVED" -eq 0 ]; then
   echo "FAIL: no picture was saved (client log tail below)"; tail -15 "$RIG/client.log" | cut -c1-200
   exit 4

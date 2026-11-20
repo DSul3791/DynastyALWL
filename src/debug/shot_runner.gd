@@ -6,8 +6,8 @@ extends Node
 #
 #   --shots="name:x,agl,z,yaw_deg,pitch_deg,hour[,weather];name2:..."   (weather: clear, storm, rain, snow, mist, seafog; live or any other name keeps the world's weather; empty fields are dropped)
 #   an 8th number (m/s) shows the third-person body walking at that speed, seen from the side (e.g. 4 = walk, 8 = run)
-#   agl is metres above the ground at x,z (a NEGATIVE y is an absolute height in metres instead): the runner first goes to 400 m above sea level there, waits until the
-#   ground under it has loaded, then drops to the ground height plus agl
+#   agl is metres above the ground at x,z (a NEGATIVE y is an absolute height in metres instead): the runner asks the server where the ground is there, starts the
+#   body 1 m above it (held, so unloaded ground cannot be fallen through), waits until the ground under it has collision, then goes to the ground height plus agl
 #   --shot-dir=DIR      where the PNGs go (default user://shots)
 #   --shot-wait=S       seconds after connecting before the first shot (default 60)
 #   --shot-settle=S     seconds per shot for streaming after the move (default 25)
@@ -33,7 +33,7 @@ extends Node
 #   --shot-nograss      hide the grass; --shot-right puts the third-person camera on the body's right (look rig)
 #   --shot-ready=held   a held-item picture (look rig --give/--item): no fixed waits. The first shot starts once the ground under the player is in
 #                       (--shot-wait is only the most it waits); the item is given as soon as the pack arrives and held as soon as it is in
-#                       it; a spot whose ground already reads is not flown to 400 m first; the settle ends once the voxel engine has no work left and the
+#                       it; the settle ends once the voxel engine has no work left and the
 #                       item is drawn in the hand (--shot-settle is only the most it waits). One "shot runner: timing" line per picture says where the time went.
 #   --shot-angles="name:deg:dist;..."  with a third-person shot: one picture per entry, all in one start, the camera deg round the body from its front
 #                       (0 front, 90 its left, -90 its right, 180 behind) dist m away (under 2 m it aims at the held item); frames <name>_<angle>.png
@@ -56,7 +56,10 @@ var _index: int = -1
 var bow_drawing: bool = false   # --shot-draw
 var bow_sway: bool = false      # --shot-sway
 var shot_lit: bool = false      # --shot-lit
-var _placed: bool = false
+var _started: bool = false         # the body stands at the shot's start, START_ABOVE_M over the ground (aerial and absolute shots: at their own height)
+var _surface_y: float = NAN        # the server's ground height at the shot's x,z (protocol 45), NAN until it answers
+var _surface_asked_msec: int = 0
+var _placed: bool = false           # the body is at the shot's own height (the ground under the start had collision)
 var _anchor_told_msec: int = 0        # when the kit-placing shot told the server where the player really is
 var _landed: bool = false          # the camera stands where the shot wants it (checked once per spot); the settle time runs from here
 var _land_failed: bool = false
@@ -337,7 +340,7 @@ func _process(delta: float) -> void:
 	if stance_index >= 0 and client.shot_stance != stance_index:
 		client.shot_stance = stance_index   # the runner flies the body, which stands it up, so the avatar clip is forced instead
 
-	# A --test-respawn / --test-go-to-spawn run moves the player itself: the runner's own placing (400 m, then the shot height) would fight it (David3: standing at y 400).
+	# A --test-respawn / --test-go-to-spawn run moves the player itself: the runner's own placing (to the shot's spot and height) would fight it (David3: standing at y 400).
 	if client._spawn_test != "":
 		return
 
@@ -494,22 +497,40 @@ func _process(delta: float) -> void:
 	var shot_pos: Vector3 = shots[_index]["pos"]
 	_side_view(float(shots[_index]["walk"]))
 
-	# A join still waiting for collision under the player (a slow stream: Mike's log, 46+ s) is waited for, up to 120 s after the welcome, before any shot is placed.
 	# An aerial shot (more than 40 m above the ground) is taken from a flier: it does not wait for collision, only for the nearby blocks to draw (the settle time) (Dave 25 Oct).
 	var ground_here: float = _ground(shot_pos.x, shot_pos.z)
 	var aerial: bool = (shot_pos.y > 40.0) or (shot_pos.y < 0.0 and not is_nan(ground_here) and -shot_pos.y - ground_here > 40.0)
 
-	# The client stops updating waiting_for_ground once the body flies (every shot flies from _next on), so a join that was still waiting when the first
-	# shot started kept this gate shut until the 120 s mark: every look rig shot spent about 90 s here (Lane A timing, 17 Nov 2026). A flying body is
-	# asked directly: is there collision anywhere below it.
-	if not aerial and not _on_ground() and client.connected_msec > 0 and now - client.connected_msec < 120000:
+	# Dave 20 Nov 2026: a shot starts 1 m above the real ground at its spot, never high in the air (from the old 400 m start the ground loaded slowly, then
+	# the body dropped). The server says where the ground is (protocol 45, the generator's surface; the client's own reading if it does not answer); the
+	# body is held there (flying: no gravity, so ground that has not loaded cannot be fallen through) and the client builds the ground under it first.
+	if not _started:
+		if shot_pos.y >= 0.0 and is_nan(_surface_y) and now - _ground_wait_msec < SURFACE_WAIT_MS:
+			if now - _surface_asked_msec >= SURFACE_ASK_MS:
+				_surface_asked_msec = now
+				client.net.request_surface.rpc_id(1, shot_pos.x, shot_pos.z)
+
+			return
+
+		var start_ground: float = _surface_y if not is_nan(_surface_y) else ground_here
+
+		if shot_pos.y >= 0.0 and is_nan(start_ground) and now - _ground_wait_msec < 300000:
+			return
+
+		_started = true
+		_placed_ground = start_ground if shot_pos.y >= 0.0 else NAN
+		_want_y = -shot_pos.y if shot_pos.y < 0.0 else (shot_pos.y if is_nan(start_ground) else start_ground + shot_pos.y)
+		var start_y: float = _want_y if (aerial or is_nan(_placed_ground)) else _placed_ground + START_ABOVE_M
+		client.body.global_position = Vector3(shot_pos.x, start_y, shot_pos.z)
+		client.body.velocity = Vector3.ZERO
+		_placed_msec = now
+		_moved_msec = now
+		print("shot runner: %s starts at y %.1f (ground %s, %s); waiting for the ground under it" % [shots[_index]["name"], start_y, "?" if is_nan(_placed_ground) else "%.1f" % _placed_ground, "the server's" if not is_nan(_surface_y) else "the client's own reading"])
 		return
 
+	# Held at the start until the ground under it has collision (up to 120 s), then the body goes to the shot's height.
 	if not _placed:
-		var ground: float = _ground(shot_pos.x, shot_pos.z)
-
-		if is_nan(ground) and now - _ground_wait_msec < 300000:
-			client.body.global_position = Vector3(shot_pos.x, 400.0, shot_pos.z)
+		if not aerial and not _on_ground() and now - _placed_msec < 120000:
 			return
 
 		_placed = true
@@ -517,8 +538,6 @@ func _process(delta: float) -> void:
 		_land_failed = false
 		_placed_msec = now
 		_moved_msec = now
-		_want_y = -shot_pos.y if shot_pos.y < 0.0 else (shot_pos.y if is_nan(ground) else ground + shot_pos.y)
-		_placed_ground = ground if shot_pos.y >= 0.0 else NAN
 		client.body.global_position = Vector3(shot_pos.x, _want_y, shot_pos.z)
 		_want_y += 50.0 if force_land_fail else 0.0
 		return
@@ -544,6 +563,10 @@ func _process(delta: float) -> void:
 			print("shot runner: landed %s at y %.1f (wanted %.1f) after %.1f s" % [shots[_index]["name"], at.y, _want_y, float(now - _placed_msec) * 0.001])
 			print("shot runner: flags give=%s drop=%s place=%s light=%s ground_test=%s" % [give_item, drop_it, place_it, light_it, ground_test])
 
+		return
+
+	# --shot-frametime measures from here, standing at the shot (_measure_frames); the picture waits until its line is printed.
+	if frametime_s > 0.0 and _frame_state < 2:
 		return
 
 	if now - _moved_msec < int(settle_s * 1000.0) and not (ready_held and _settled(now)):
@@ -1982,6 +2005,9 @@ func _ground(x: float, z: float, from_y: float = 1500.0) -> float:
 
 
 const GUARD_ABOVE_M := 1.0
+const START_ABOVE_M := 1.0      # a shot starts this high over the ground at its spot while the ground there loads (Dave 20 Nov 2026)
+const SURFACE_ASK_MS := 2000    # the ground height is asked of the server again this often until it answers
+const SURFACE_WAIT_MS := 20000  # after this long without an answer the client's own ground reading is used
 const RECHECK_M := 1.0   # a shot's ground reading that moves more than this after the settle places the shot again
 const RECHECK_MAX := 4   # at most this many re-placements per shot: the reading can step down more than once as finer blocks load (383, 343, 335)
 
@@ -1993,13 +2019,14 @@ func _solid_at(p: Vector3) -> bool:
 	return float(tool.get_voxel_f(Vector3i(floori(p.x), floori(p.y), floori(p.z)))) < 0.0
 
 
-# --shot-frametime: set the quality, wait 10 s after connecting (the first frames build the world), then collect every frame time for frametime_s seconds
-# and print the average, the 95th percentile and the worst frame in ms (the always-playable check: Low should stay under 33 ms).
+# --shot-frametime: once the first shot has landed at its height (where a player stands, not while the ground loads under a start in the air), set the
+# quality, then collect every frame time for frametime_s seconds and print the average, the 95th percentile and the worst frame in ms, and where it stood
+# (the always-playable check: Low should stay under 33 ms).
 func _measure_frames(delta: float) -> void:
 	var now: int = Time.get_ticks_msec()
 
 	if _frame_state == 0:
-		if now - client.connected_msec < 10000:
+		if _index < 0 or _index >= shots.size() or not _landed:
 			return
 
 		if quality_set >= 0 and client.quality != quality_set:
@@ -2029,9 +2056,15 @@ func _measure_frames(delta: float) -> void:
 		var p99: float = sorted[int(float(sorted.size()) * 0.99)]
 		var verdict: String = "FAIL" if (p95 >= 33.0 or over_100 > 0) else ("WARN p99 over 50 ms" if p99 > 50.0 else "OK")
 		var spot: Vector3 = client.body.global_position
-		print("shot runner: frametime build %s quality %s spot %.0f,%.0f frames %d avg %.1f p95 %.1f p99 %.1f max %.1f ms over50 %d over100 %d [%s] machine: %s, %s, window %dx%d, vsync off" % [
-			build_label, client.QUALITY_NAMES[client.quality], spot.x, spot.z, sorted.size(), total / float(sorted.size()), p95, p99, sorted[sorted.size() - 1], over_50, over_100, verdict,
+		var spot_ground: float = _ground(spot.x, spot.z)
+		print("shot runner: frametime build %s quality %s spot %.0f,%.0f y %.1f (%s m above the ground) frames %d avg %.1f p95 %.1f p99 %.1f max %.1f ms over50 %d over100 %d [%s] machine: %s, %s, window %dx%d, vsync off" % [
+			build_label, client.QUALITY_NAMES[client.quality], spot.x, spot.z, spot.y, "?" if is_nan(spot_ground) else "%.1f" % (spot.y - spot_ground), sorted.size(), total / float(sorted.size()), p95, p99, sorted[sorted.size() - 1], over_50, over_100, verdict,
 			RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name(), get_window().size.x, get_window().size.y])
+
+
+func _on_surface(x: float, z: float, y: float) -> void:
+	if _index >= 0 and _index < shots.size() and absf(x - float(shots[_index]["pos"].x)) < 0.01 and absf(z - float(shots[_index]["pos"].z)) < 0.01:
+		_surface_y = y
 
 
 func _next(now: int) -> void:
@@ -2057,6 +2090,9 @@ func _next(now: int) -> void:
 	# Likewise the grass: the client builds it round the body only while walking, so no rig picture ever had a blade of grass (Dino's lush_before/after
 	# 9 Nov 2026, grass on at 120 m). It is built round the flying body as round a walking one; --shot-nograss still hides it (radius 0).
 	client.grass_while_flying = true
+	_started = false
+	_surface_y = NAN
+	_surface_asked_msec = 0
 	_placed = false
 	_landed = false
 	_land_failed = false
@@ -2068,8 +2104,10 @@ func _next(now: int) -> void:
 	_angle_i = 0
 	_angle_msec = 0
 	_idle_since_msec = 0
-	var known: float = _ground(shot["pos"].x, shot["pos"].z) if ready_held else NAN
-	client.body.global_position = Vector3(shot["pos"].x, 400.0 if is_nan(known) else known + 2.0, shot["pos"].z)   # a spot whose ground is already in is not left for 400 m (its blocks would stream again)
+	# The body stays where it is until the server says where the ground is at the shot's spot (_process), then starts 1 m above it.
+	if not client.net.surface_received.is_connected(_on_surface):
+		client.net.surface_received.connect(_on_surface)
+
 	client.body.rotation = Vector3(0.0, deg_to_rad(float(shot["yaw"])), 0.0)
 	client.pitch = deg_to_rad(float(shot["pitch"]))
 	client.camera.rotation.x = client.pitch
