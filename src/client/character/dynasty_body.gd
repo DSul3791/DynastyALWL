@@ -621,6 +621,9 @@ static func _ground_feet(out: Animation, src: Animation, their_skel: Skeleton3D,
 		var at: float = src.length * float(n) / 5.0
 		higher += (foot_low(skel, out, at) - foot_low(their_skel, src, at)) / 5.0
 
+	if not is_finite(higher):
+		return      # a rig without feet: nothing to stand on
+
 	for k in range(out.track_get_key_count(hips)):
 		out.track_set_key_value(hips, k, (out.track_get_key_value(hips, k) as Vector3) - Vector3(0.0, higher, 0.0))
 

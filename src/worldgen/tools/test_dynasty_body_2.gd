@@ -109,6 +109,9 @@ func _init() -> void:
 	_check(head.y > 1.5 and head.y < 1.85, "idle: she stands about 1.7 m tall (%.2f m)" % head.y)
 	var foot: float = minf(_at(her, "mixamorig_LeftToeBase").y, _at(her, "mixamorig_RightToeBase").y)
 	_check(foot > -0.08 and foot < 0.12, "idle: her feet are on the ground (toes at %.2f m)" % foot)
+	await _pose(him, "idle", 0.5)
+	var his_foot: float = minf(_at(him, "mixamorig_LeftToeBase").y, _at(him, "mixamorig_RightToeBase").y)
+	_check(absf(foot - his_foot) < 0.03, "idle: her toes stand where body_1's do (%.2f m, his %.2f m)" % [foot, his_foot])
 
 	await _pose(her, "lie", 0.5)
 	_check(_at(her, "mixamorig_Hips").y < 0.3, "lie: her hips are low")
@@ -150,7 +153,7 @@ func _init() -> void:
 
 	_check(_at(her, "mixamorig_Hips").y > plain_hips + 0.03, "Legs +1: her hips are lifted (%.2f m from %.2f)" % [_at(her, "mixamorig_Hips").y, plain_hips])
 	var long_foot: float = minf(_at(her, "mixamorig_LeftToeBase").y, _at(her, "mixamorig_RightToeBase").y)
-	_check(long_foot > -0.08 and long_foot < 0.12, "Legs +1: her feet stay on the ground (toes at %.2f m)" % long_foot)
+	_check(absf(long_foot - foot) < 0.04, "Legs +1: her feet stay on the ground (toes at %.2f m, %.2f m before)" % [long_foot, foot])
 	var build: int = her.body_mesh.find_blend_shape_by_name("build")
 	_check(build >= 0 and absf(her.body_mesh.get_blend_shape_value(build) - 0.8) < 0.01, "Build 0.8: her mesh carries the width shapes")
 	_check(her.body_mesh.mesh.has_meta(Body.Shapes.SHAPED_KEY), "her body wears the shaped copy of her own mesh")
