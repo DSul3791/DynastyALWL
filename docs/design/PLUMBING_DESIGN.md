@@ -22,7 +22,7 @@ So the work is: wire the catalog pieces to the engine, add the missing pieces, a
 
 ## 2. How water flows
 
-source (well, hand pump, deep-well pump) -> conduits (channels: open, downhill only; pipes: closed, carry under head) -> tanks (troughs,
+source (a well; no pumps since 20 Nov 2026, s10) -> conduits (channels: open, downhill only; pipes: closed, carry under head) -> tanks (troughs,
 cisterns: hold litres; drink or fill a container at them with E) or straight into the worker's containers when nothing is linked below.
 
 - Wells are the source end. Each well has a daily yield: it holds at most one day's water and fills again at its yield over a game day
@@ -36,7 +36,7 @@ cisterns: hold litres; drink or fill a container at them with E) or straight int
 1. **Wells** (this PR). Primitive - Well (new), Improved - Well (the existing `stone_well`, id and number kept, renamed from "Well"; its cost is
    already stones, clay mortar and planks), Advanced - Well (new). Daily yield store, saved with the tanks in `crops.json`. Unlocked.
 2. **Wooden plumbing.** Wooden - Channel / corner / tee, Sluice (E opens and shuts it, doors' toggle-twin pattern), Wooden - Trough,
-   Wooden - Hand pump, and new Wooden - Pipe / Pipe elbow / Pipe tee (bored logs: the first closed pipe). Unlocked.
+   Wooden - Hand pump (retired 20 Nov 2026, s10), and new Wooden - Pipe / Pipe elbow / Pipe tee (bored logs: the first closed pipe). Unlocked.
 3. **Stone channels, cisterns** (the same data conversion). Unlocked, except the Raised cistern: only a force pump fills it, so it
    stays locked; Dave, 20 Nov 2026: cisterns are big tanks, not pumps (section 10). **Clay plumbing is retired** (Dave, 14 Nov 2026: "I don't think clay plumbing
    would make sense. We should remove clay plumbing altogether."): Clay pipe (730), Clay - Pipe (740), Clay - Pipe elbow (742) and
@@ -71,7 +71,7 @@ Goals: `build:stone_well` (Build Well) keeps its id; its title follows the renam
 
 | Piece | Water block | Cost |
 |---|---|---|
-| Wooden - Hand pump (unlocked) | suction source, 7 m (less 1 m per 1,000 m up), 0.8 L/s at 40 W: 48 L/min at 4 m; spout 0.7 m up, 0.27 m to +Z | unchanged |
+| Wooden - Hand pump (retired 20 Nov 2026, s10; was unlocked) | suction source, 7 m (less 1 m per 1,000 m up), 0.8 L/s at 40 W: 48 L/min at 4 m; spout 0.7 m up, 0.27 m to +Z | unchanged |
 | Wooden - Channel / corner / tee (unlocked) | open, 120 L/min, ends 0.23 m up, 1 cm built-in fall per piece (full flow on a level run); catches a spout up to 0.4 m across and 1 m above | unchanged |
 | Sluice (unlocked) | a channel with a gate; built shut, E opens and shuts it (open twin `wooden_sluice_open`, state 422) | unchanged |
 | Wooden - Trough (unlocked) | tank 100 L; catches water over its rim (0.48 m) from up to 1 m across and 1.5 m above; a bung at its base (0.15 m up at +X) feeds a pipe | unchanged |
@@ -84,7 +84,7 @@ How it fits together:
   a channel's end pours into a channel or trough below it.
 - **Log pipes** are closed: they carry water under head from a trough's or cistern's base outlet, downhill, with no siphons. A trough on higher
   ground gives a small head (12 cm gives 12 % of 60 L/min); a cistern (PR 3) gives more.
-- What a player does: build a well or hand pump, lay channels from its spout downhill to a trough, open the sluices, and work the pump (E).
+- What a player does: build a well, lay channels from its spout downhill to a trough, open the sluices, and work the well (E). (The hand pump was retired 20 Nov 2026, s10.)
   Drink or fill a container at the trough (E). Lay log pipes from a trough's base downhill to another trough.
 
 ## 6. Stone channels and cisterns (PR 3), PROVISIONAL values
@@ -118,7 +118,7 @@ Every value below is PROVISIONAL (coordinator ruling: build costs and numbers ma
 - P-4 Improved - Well is the existing `stone_well` renamed (coordinator-approved), cost unchanged; windlass bucket 10 L (s4).
 - P-5 Wooden channels 120 L/min with a built-in 1 cm fall a piece; Wooden - Trough 100 L with a base outlet; Sluice built shut, E toggles (s5).
 - P-6 New Wooden - Pipe / elbow / tee: closed bored logs, 60 L/min under head; 1 Log + 1 Twine (tee 2 Log + 1 Twine) (s5).
-- P-7 Wooden - Hand pump 0.8 L/s at 40 W (48 L/min at 4 m) (s5).
+- P-7 Wooden - Hand pump 0.8 L/s at 40 W (48 L/min at 4 m) (s5). Retired 20 Nov 2026 (s10).
 - P-8 Stone channels 300 L/min; Stone - Trough 200 L (s6). (Clay pipes retired by Dave, not assumed.)
 - P-9 Cistern 2,000 L, 0.5 m head; Raised cistern 2,000 L, 2.5 m head, filled only by a force pump, so locked (Dave, 20 Nov 2026: a big tank, not a pump, s10).
 - P-10 A saved Clay pipe loads as Clay (renames.json): nothing else uses it, and its recipe took 3 Clay for 2 (s3).
@@ -147,7 +147,7 @@ past it; a click on the next connection point lays the whole run, taking the pip
 ### 9.1 How it works
 
 - **One model for every run.** Pipe is a pack item. With it in hand, the connection points show: the bottom centre of every barrel (a glowing
-  ring), the base outlet of every trough and cistern, the spout of every well and pump, and every laid pipe along its whole length (lit bright
+  ring), the base outlet of every trough and cistern, the spout of every well, and every laid pipe along its whole length (lit bright
   blue). Left click on one starts a run there. A line runs from that point to where you aim, at any angle and through anything (walls, ground,
   other pieces); it is green while the pack holds enough pipe for its length and you are in reach, red otherwise. The second left click lays it:
   on another connection point the run ends there; anywhere else it ends in the open at the aimed point (where a tap or drip head goes, or over
@@ -216,7 +216,7 @@ Against dev (41415196), the proposal put to Dave:
 - Pumps in the catalog: the Iron - Hand pump and the Deep-well pump (both locked, never buildable), the Raised cistern (locked; only a force pump
   fills it) and the Wooden - Hand pump (live now). Proposed: retire all four (narrowed by Dave, below).
 - **Decided (Dave, 20 Nov 2026 22:06Z, "Retire all pumps"):** the Iron - Hand pump, the Deep-well pump and the Wooden - Hand pump are retired
-  (numbers kept; a separate PR). Water comes from rain and from wells by bucket (a river barrel is the open question below).
+  (numbers kept; retired in the data by the pump PR: a placed one stands, does nothing and takes down with the hammer for its materials). Water comes from rain and from wells by bucket (a river barrel is the open question below).
 - **Cisterns stay (Dave, 20 Nov 2026 22:06Z):** "the cistern can be copper lined and the frame can be made of wood and iron nails etc. cisterns are
   not pumps"; 22:07Z "they are just big tanks". Proposed for a later PR (our reading, for Dave to confirm): the Raised cistern becomes a big tank
   that behaves like a bigger barrel in the pipe system, copper lined on a wooden frame with iron nails, filled by gravity (a pipe from a higher

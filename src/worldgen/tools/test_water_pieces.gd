@@ -45,7 +45,7 @@ func make(dir: String):
 	it._structures["test_channel"] = {"kit": "test_channel_kit", "item": "test_channel", "state": 9908, "piece": true, "footprint_x": 2.0, "footprint_z": 0.3, "cap_per_chunk": 200, "water": {"role": "conduit", "inlet": [-1.0, 0.3, 0.0], "outlet": [1.0, 0.29, 0.0], "cap_lpm": 120.0, "closed": false}}
 	it._structures["test_level_channel"] = {"kit": "test_level_kit", "item": "test_level_channel", "state": 9909, "piece": true, "footprint_x": 2.0, "footprint_z": 0.3, "cap_per_chunk": 200, "water": {"role": "conduit", "inlet": [-1.0, 0.3, 0.0], "outlet": [1.0, 0.3, 0.0], "cap_lpm": 120.0, "closed": false}}
 	it._structures["test_plot"] = {"kit": "test_plot_kit", "item": "test_plot", "state": 9910, "plot": true, "footprint_x": 2.0, "footprint_z": 2.0, "cap_per_chunk": 50, "water": {"role": "consumer", "inlet": [0.0, 0.2, 0.0]}}
-	it._structures["test_pump"] = {"kit": "test_pump_kit", "item": "test_pump", "state": 9912, "footprint_x": 1.0, "footprint_z": 1.0, "cap_per_chunk": 50, "use_reach_m": 3.0, "water": {"role": "source", "outlet": [0.0, 1.0, 0.0], "cap_lpm": 48.0, "ground_water": true, "max_depth_m": 7.0, "suction": true, "pump": {"cap_lps": 0.8, "watts": 40.0}, "effort": 0.7, "quality": "clean"}}
+	it._structures["test_well"] = {"kit": "test_well_kit", "item": "test_well", "state": 9912, "footprint_x": 1.0, "footprint_z": 1.0, "cap_per_chunk": 50, "use_reach_m": 3.0, "water": {"role": "source", "outlet": [0.0, 1.0, 0.0], "cap_lpm": 48.0, "ground_water": true, "max_depth_m": 7.0, "windlass": true, "draw_l": 8, "effort": 0.7, "quality": "clean"}}
 	it._structures["test_trough"] = {"kit": "test_trough_kit", "item": "test_trough", "state": 9911, "footprint_x": 1.0, "footprint_z": 1.0, "cap_per_chunk": 50, "water": {"role": "tank", "inlet": [0.0, 0.4, 0.0], "litres_max": 100.0}}
 	return it
 
@@ -134,17 +134,17 @@ func _init() -> void:
 		tile.water_class = PackedByteArray([0, 0, 0, 0, id, 0, 0, 0, 1])
 		check(is_equal_approx(tile.fresh_water_y(Vector3(0.0, 20.0, 0.0), 200.0), 5.0), "water class %d counts for a well" % id)
 
-	# Sonny section 1: a suction pump's 7 m falls 1 m for every 1,000 m of height; a windlass or deep pump (no suction) keeps its reach.
-	check(is_equal_approx(ItemsScript._lift_limit_m(items._structures["test_pump"]["water"], Vector3(0.0, 2000.0, 0.0)), 5.0), "a hand pump 2,000 m up lifts 5 m")
+	# Sonny section 1: a windlass keeps its reach at any height (there are no suction pumps: Dave 20 Nov 2026, PLUMBING_DESIGN s10).
+	check(is_equal_approx(ItemsScript._lift_limit_m(items._structures["test_well"]["water"], Vector3(0.0, 2000.0, 0.0)), 7.0), "a 7 m well 2,000 m up still reaches 7 m")
 	check(is_equal_approx(ItemsScript._lift_limit_m({"max_depth_m": 25.0}, Vector3(0.0, 2000.0, 0.0)), 25.0), "a windlass 2,000 m up still reaches 25 m")
 
-	# Wells and pumps (6b part 2): they reach down to the nearest fresh water within 200 m, no deeper than their max_depth_m.
+	# Wells (6b part 2): they reach down to the nearest fresh water within 200 m, no deeper than their max_depth_m.
 	items.fresh_water_y = func(pos, _reach): return NAN if pos.x > 500.0 else (1.0 if pos.z > 400.0 else 6.0)
-	var pump_def: Dictionary = items._structures["test_pump"]
-	check(items._water_refusal(pump_def, Vector3(600.0, 10.0, 300.0), 0) == "There is no fresh water within 200 m to reach down to.", "a pump with no fresh water within 200 m is refused")
+	var pump_def: Dictionary = items._structures["test_well"]
+	check(items._water_refusal(pump_def, Vector3(600.0, 10.0, 300.0), 0) == "There is no fresh water within 200 m to reach down to.", "a well with no fresh water within 200 m is refused")
 	check(items._water_refusal(pump_def, Vector3(300.0, 10.0, 450.0), 0) == "The water lies 9 m down here, too deep for this.", "and one over water 9 m down, past its 7 m (%s)" % items._water_refusal(pump_def, Vector3(300.0, 10.0, 450.0), 0))
 	check(items._water_refusal(pump_def, Vector3(300.0, 10.0, 300.0), 0) == "", "4 m down it may go")
-	var pump: int = put("test_pump", Vector3(300.0, 10.0, 300.0), 0.0)
+	var pump: int = put("test_well", Vector3(300.0, 10.0, 300.0), 0.0)
 
 	# E works it, the water pours into the worker's bucket (nothing is linked below it), and the work is exertion.
 	items.peer_connected_hello(1, "pumper000001")
@@ -153,12 +153,12 @@ func _init() -> void:
 	var inv = items.inventory_of(1)
 	var bucket: int = inv.numbers.find(items.table.number_of("bucket"))
 	items._use_struct(1, inv, pump)
-	check(int(items._pumping.get(1, 0)) == pump and is_equal_approx(float(items._water.pieces[pump]["rate_lpm"]), Network.pump_lpm(0.8, 40.0, 4.0)), "E starts the pump at its rate over 4 m (%.1f L/min)" % float(items._water.pieces[pump].get("rate_lpm", 0.0)))
+	check(int(items._pumping.get(1, 0)) == pump and is_equal_approx(float(items._water.pieces[pump]["rate_lpm"]), Network.windlass_lpm(4.0, 8.0)), "E starts the well's windlass at its rate over 4 m (%.1f L/min)" % float(items._water.pieces[pump].get("rate_lpm", 0.0)))
 	items._water_tick(10.0)
 	check(bucket >= 0 and int(inv.wear[bucket]) == 8000, "10 s at 48 L/min fill the 8 L bucket (%d ml)" % (int(inv.wear[bucket]) if bucket >= 0 else -1))
-	check(items.effort_of(1) >= 0.7, "pumping is work (%.2f)" % items.effort_of(1))
+	check(items.effort_of(1) >= 0.7, "drawing water is work (%.2f)" % items.effort_of(1))
 	items._water_tick(1.0)
-	check(not items._pumping.has(1), "with nothing left to fill, the pump stops")
+	check(not items._pumping.has(1), "with nothing left to fill, the windlass stops")
 	inv.wear[bucket] = 0
 	items._use_struct(1, inv, pump)
 	items._use_struct(1, inv, pump)

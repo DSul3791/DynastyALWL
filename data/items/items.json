@@ -7639,13 +7639,14 @@
 			},
 			"wooden_hand_pump": {
 				"number": 715,
+				"retired": true,
 				"name": "Wooden - Hand pump",
 				"description": "An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 167. Live in the water network since plumbing PR 2 (unlocked)."
+				"note": "Retired 20 Nov 2026 (Dave: no pump technology, water moves by gravity and rain; PLUMBING_DESIGN s10)."
 			},
 			"iron_hand_pump_kit": {
 				"number": 716,
@@ -7660,13 +7661,14 @@
 			},
 			"iron_hand_pump": {
 				"number": 717,
+				"retired": true,
 				"name": "Iron - Hand pump",
 				"description": "A cast-iron pitcher pump. Hold E to pump water into a bucket or trough.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 168. Locked until Steve's water_network module lands."
+				"note": "Retired 20 Nov 2026 (Dave: no pump technology, water moves by gravity and rain; PLUMBING_DESIGN s10)."
 			},
 			"log_trough_kit": {
 				"number": 718,
@@ -8067,13 +8069,14 @@
 			},
 			"iron_deep_well_pump": {
 				"number": 752,
+				"retired": true,
 				"name": "Deep-well pump",
 				"description": "A force pump for a stone well. Lifts from deep and pushes water up an iron pipe.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 185. Locked until Steve's water_network module lands."
+				"note": "Retired 20 Nov 2026 (Dave: no pump technology, water moves by gravity and rain; PLUMBING_DESIGN s10)."
 			},
 			"stone_cistern_kit": {
 				"number": 753,

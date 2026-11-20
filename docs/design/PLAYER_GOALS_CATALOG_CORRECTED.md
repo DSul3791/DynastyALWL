@@ -96,8 +96,8 @@ The check is reproducible: `python3 docs/ai-team/missions/GOALS-REPAIR/goal_rewa
 7. `build:stone_channel_tee`: Stone - Channel tee
 8. `build:stone_trough`: Stone - Trough
 9. `build:wool_rug`: Wool - Rug
-10. `build:iron_deep_well_pump`: Deep-well pump
-11. `build:iron_hand_pump`: Iron - Hand pump
+10. ~~`build:iron_deep_well_pump`: Deep-well pump~~ (retired 20 Nov 2026: no pumps)
+11. ~~`build:iron_hand_pump`: Iron - Hand pump~~ (retired 20 Nov 2026: no pumps)
 12. ~~`build:iron_pipe`: Iron - Pipe~~ (retired 19 Nov 2026: no iron plumbing; taps are copper only)
 13. ~~`build:iron_pipe_elbow`: Iron - Pipe elbow~~ (retired 19 Nov 2026: no iron plumbing; taps are copper only)
 14. ~~`build:iron_tap`: Tap~~ (retired 19 Nov 2026: no iron plumbing; taps are copper only)
@@ -108,7 +108,7 @@ The check is reproducible: `python3 docs/ai-team/missions/GOALS-REPAIR/goal_rewa
 19. `build:wooden_channel`: Wooden - Channel
 20. `build:wooden_channel_corner`: Wooden - Channel corner
 21. `build:wooden_channel_tee`: Wooden - Channel tee
-22. `build:wooden_hand_pump`: Wooden - Hand pump
+22. ~~`build:wooden_hand_pump`: Wooden - Hand pump~~ (retired 20 Nov 2026: no pumps)
 23. `build:wooden_trough`: Wooden - Trough
 24. `build:stone_well`: Improved - Well. Unlocked by PR #1120 (P-5); its goal is live-ready (FIX, title renamed, P-6)
 

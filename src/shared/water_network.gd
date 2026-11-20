@@ -8,8 +8,8 @@ extends RefCounted
 #   role       "source" | "conduit" | "tank" | "consumer"
 #   inlet      Vector3 (conduit, tank: at the rim; consumer)      outlet  Vector3 (source: the spout; conduit; tank: at its base)
 #   cap_lpm    most it passes, litres a minute (conduit, source)  closed  true for a pipe (or a riser-fed tank), false for open
-#   open       false for a shut sluice or tap                     rate_lpm  a source's output now (pump_lpm, windlass_lpm, rain x area)
-#   quality    a source's water: "clean" or "river"                push_m  a force pump's push above its spout (the deep-well pump: 10)
+#   open       false for a shut sluice or tap                     rate_lpm  a source's output now (windlass_lpm, rain x area)
+#   quality    a source's water: "clean" or "river"
 #   litres_max a tank's size                                      tap_lpm  most a tank lets into a consumer straight below it (30)
 #   room_l     a consumer's litres to full (the server sets it from plot moisture; 0 = full, a closed branch)
 #   outlets    more outlets besides `outlet` (a tee's second branch; plumbing PR 2): each feeds like the outlet; the cap and fall use `outlet`
@@ -28,7 +28,7 @@ extends RefCounted
 #     so water never climbs between pieces; pipe to pipe joints are sealed and the head rule covers them (up to PORT_JOIN_M of height).
 #   - Direction is fixed by the ports; a piece that would close a loop, or make a network of more than MAX_PIECES, joins nothing (check()).
 #   - Open channel: no flow if the outlet is above the inlet; full cap from 0.5 % fall, half from 0.1 %, a level run trickles 5 L/min.
-#   - Closed pipe: the feeding surface comes down the pass (a force pump's spout + push_m, a hand pump's spout, a tank's base outlet + head_m, fixed so rates
+#   - Closed pipe: the feeding surface comes down the pass (a source's spout, a tank's base outlet + head_m, fixed so rates
 #     hold between events); a pipe whose inlet is above it passes nothing (no siphons), and its head (surface - outlet) gives full cap from 1 m, in
 #     proportion under that. Each 2 m pipe piece checks its own inlet, so the route is checked every 2 m.
 #   - Each piece takes at most what it and the pieces below it can carry, so water is only sent where it can go (a shut piece, a full consumer, a
@@ -71,11 +71,6 @@ var _reach_m: float = PORT_JOIN_M         # the widest catch_m of any piece that
 
 
 # --- Rates from effort (Sonny section 1 and 2) ---
-
-# A pump's output, litres a minute: power over lift, capped by the pump: 60 x min(cap, P / (9.81 x H)), H = depth to the table + 1 m to the spout.
-static func pump_lpm(cap_lps: float, watts: float, depth_m: float) -> float:
-	return 60.0 * minf(cap_lps, watts / (9.81 * maxf(depth_m + 1.0, 0.1)))
-
 
 # A well's windlass: one draw of the held container's `draw_l` (a bucket holds 8) each (4 + 1.5 x depth) seconds, as litres a minute.
 static func windlass_lpm(depth_m: float, draw_l: float) -> float:
@@ -518,14 +513,14 @@ func _share(id: int, amount: float, take: Dictionary, arriving: Dictionary, inco
 	return amount - left
 
 
-# The surface a piece passes to closed pipes below it: a source's spout (+ a force pump's push), a tank's base outlet (fixed, so rates hold between
+# The surface a piece passes to closed pipes below it: a source's spout, a tank's base outlet (fixed, so rates hold between
 # events), else the surface feeding it.
 func _feed_y(id: int, fed: float) -> float:
 	var piece: Dictionary = pieces[id]
 
 	match str(piece.get("role", "")):
 		"source":
-			return (piece["outlet"] as Vector3).y + float(piece.get("push_m", 0.0))
+			return (piece["outlet"] as Vector3).y
 		"tank":
 			return (piece["outlet"] as Vector3).y + float(piece.get("head_m", 0.0)) if piece.has("outlet") else -BIG
 
