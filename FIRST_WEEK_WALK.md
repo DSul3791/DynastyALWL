@@ -3,7 +3,7 @@
 **Read this first:** this is a paper walk from the data, not a server simulation. I did not run the server probe for it (the machine is loaded and nobody has timed real gathering). The one unmeasured input is the gathering rate, so I show three rates and every number below depends on them. A game day is one real hour, so "day 7" is seven real hours of play.
 
 ## Inputs taken from the data
-- Starter kit (axe, fire, shelter, bed, bench, spear, knife, bow): about 88 pickups (30 sticks, 6 stones, 36 fibre, 10 thatch, 6 leaves) and about 250 s of crafting (after the pacing pass).
+- Starter kit (axe, fire, shelter, bed, bench, spear, knife, bow): about 110 pickups (30 sticks, 28 stones, 36 fibre, 10 thatch, 6 leaves) and about 250 s of crafting (after the pacing pass).
 - Felling one tree: about 10 to 30 blows, say 30 s; three logs on the shoulder.
 - First forge (Basic Forge): 24 stone, 10 clay, 2 hide, needs a workbench of level 2 nearby (a workbench plus a tool rack within 5 m). About 36 pickups, plus a tool rack (4 sticks + twine) and a hammer.
 - Ore: boulders near an ore body give ore (pick needed, 60 percent of those boulders, half the pieces); smelting at a forge (level 1): copper 2 ore, tin 2, iron 3 ore each ingot.

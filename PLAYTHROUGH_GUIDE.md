@@ -174,9 +174,9 @@ Left click jabs the spear; hold right click to aim a throw, left click throws. H
 1. Hold E around you: 6 sticks, 4 stones, then 20 plant fibre from nettles or tall grass.
 2. Craft 2 twine, then the stone axe; put it on the hotbar.
 3. Fell a small or medium tree (10-22 blows); work the trunk: sticks, leaves, logs; split blocks.
-4. Craft the campfire kit (the one kit left), place it under a big tree, light it with a plant fibre.
+4. Craft the campfire kit (6 sticks, 16 stones; the one kit left), place it under a big tree, light it with a plant fibre.
 5. Cook meat or fish in the fire store, eat berries raw, drink at the water.
 6. Split a large wooden block into small ones and make the wooden hammer (1 small block, 1 stick, 1 twine); right click it and build the Lean-to (30 sticks, 200 leaves, 10 twine) by the fire.
 7. Gather 10 thatch + 4 sticks, craft the rough bed, place it under the lean-to.
-8. Camp bench with the hammer (16 sticks, 6 twine, 4 stones) -> stone hammer, bow, thatch pieces.
+8. Camp bench with the hammer (16 sticks, 6 twine, 8 stones) -> stone hammer, bow, thatch pieces.
 9. Spear (stick, then 2 twine) for hunting; knife (2 stones, stick) for carcasses.
