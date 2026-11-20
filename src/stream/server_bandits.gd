@@ -16,7 +16,8 @@ extends RefCounted
 # Stage 5, clearing a camp (clearing in bandits.json): a bandit beaten under surrender_share of his health gives up (sits, drops his weapon); a
 # strike with Rope or Twine in hand ties him and he follows that player; led within guard_m of a guard (Edda) he is handed over for a bounty
 # by level; left a game hour, or led past lead_slack_m, he slips free. A camp with no bandit left is cleared: dissolve_game_days later its
-# pieces and horses go and the site stays dormant for quiet_game_days. Nothing here hurts or robs a player.
+# pieces and horses go and the site stays dormant for quiet_game_days. Nothing here hurts or robs a player while robbery.enabled is false
+# (stage 4, the toll: off by default, Dave's decision alone).
 
 const GAME_DAY_S := 86400.0   # game seconds in a game day (the clock runs 24:1)
 
@@ -637,6 +638,10 @@ func _toll_tick() -> void:
 	var t: Dictionary = _toll()
 	var today: int = int(floor(_now() / GAME_DAY_S))
 
+	for key in _tolled.keys():
+		if int(_tolled[key]) < today:
+			_tolled.erase(key)   # yesterday's tolls are forgotten
+
 	for asked_peer in _tolls.keys():
 		var pending: Dictionary = _tolls[asked_peer]
 		var at: Vector3 = _info_pos(infos, int(asked_peer))
@@ -646,6 +651,7 @@ func _toll_tick() -> void:
 			_end_toll(int(asked_peer), bool(pending["asked"]) and at != Vector3.INF)   # his window closes if it was open (a bandit killed or fighting)
 			continue
 
+		pending["now"] = at   # where the walkers head (read here once a second, not by each walker each step)
 		var fire: Vector2 = layout(pending["cell"])["fire"]
 
 		if Vector2(at.x, at.z).distance_to(fire) > float(t.get("leash_m", 400.0)):
@@ -716,7 +722,13 @@ func _toll_tick() -> void:
 				animals.animals[id]["toll_peer"] = peer
 
 			_tolled[key] = today
-			_tolls[peer] = {"cell": cell, "ids": ids, "asked": false, "at": info["pos"], "left_s": float(t.get("answer_s", 30.0)), "copper": int(t.get("copper_per_level", 5)) * int((site["levels"] as Array).max())}
+			var far: float = 0.0
+
+			for id in ids:
+				far = maxf(far, Vector2(animals.animals[id]["pos"].x - info["pos"].x, animals.animals[id]["pos"].z - info["pos"].z).length())
+
+			var reach_s: float = far / maxf(float(_camp().get("run_mps", 4.5)), 0.5) + float(t.get("answer_s", 30.0))   # time to reach him, however far the road
+			_tolls[peer] = {"cell": cell, "ids": ids, "asked": false, "at": info["pos"], "now": info["pos"], "left_s": reach_s, "copper": int(t.get("copper_per_level", 5)) * int((site["levels"] as Array).max())}
 
 
 func _info_pos(infos: Array, peer: int) -> Vector3:
@@ -745,6 +757,10 @@ func toll_answer(peer: int, talk_id: String, choice: int) -> bool:
 
 	if not robbery_on() or choice < 0 or not _tolls.has(peer) or not bool(_tolls[peer]["asked"]):
 		return true   # off, a talk start, or no toll asked: nothing happens
+
+	if _toll_walkers(_tolls[peer]).is_empty():
+		_end_toll(peer, true)   # its bandits were killed, gave up or are fighting since the last look: there is no toll to pay
+		return true
 
 	var copper: int = int(_tolls[peer]["copper"])
 
@@ -934,7 +950,7 @@ func step(a: Dictionary, dt: float) -> bool:
 		return true
 
 	if a.has("toll_peer") and robbery_on():   # stage 4: on a toll, he walks up to the player and stops stop_m off, facing him
-		var to: Vector3 = _info_pos(animals.big_game.player_info.call() if animals.big_game.player_info.is_valid() else [], int(a["toll_peer"]))
+		var to: Vector3 = _tolls[int(a["toll_peer"])]["now"] if _tolls.has(int(a["toll_peer"])) else Vector3.INF
 
 		if to != Vector3.INF:
 			var off: Vector2 = Vector2(a["pos"].x - to.x, a["pos"].z - to.z)
