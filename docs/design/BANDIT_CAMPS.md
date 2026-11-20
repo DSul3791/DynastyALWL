@@ -181,3 +181,30 @@ With the switch on:
 - Robbery (coins and two stacks taken at the floor into a locked stash chest, unattended carts robbed at night) is stage 4b, not built.
 - The once-a-day memory is not saved: a server restart may ask again the same day.
 - The talk window holds the player while it is open; walking on counts only once it is closed.
+
+## Stage 4b: robbery (`server_bandits.gd` struck and stash, `server_items.gd` rob_stacks, `server_big_game.gd` struck hook; no protocol change) - SWITCHED OFF
+
+Behind the same `robbery.enabled` (false). The coordinator, 20 Nov 2026, provisional on Dave's behalf: a smaller first cut, the stash saved with the camp instead of a chest, carts left out.
+
+With the switch on:
+
+- Only a bandit sent on a player's refused toll robs, and only when his charge leaves that player at the floor ("badly hurt"): he takes the 2 most valuable stacks of the pack (value x count), whole, with their wear and make. Never the item in hand, never a bag holding things, never coins (the purse). Any other blow, or a blow on another player, takes nothing; one charge robs once.
+- What is taken goes into the camp's stash, saved at once with the camp's row. The player is told: "Clear their camp to get it back."
+- The stash is never destroyed: when the camp is cleared it lies by the fire as ordinary items; a camp that dissolves or goes back to sleep drops it there too before its row goes.
+- Switched off, the big game's struck hook changes nothing about a blow.
+
+### For Dave (provisional, adjust after play)
+
+| # | Choice | Value |
+|---|---|---|
+| BANDIT-34 | Robbery | at the floor after a refused toll: the 2 most valuable stacks, not the item in hand, a full bag or coins |
+| BANDIT-35 | Stash | saved with the camp; dropped by the fire when it is cleared, dissolves or sleeps |
+
+### Known limits (stage 4b)
+
+- Off until Dave turns it on.
+- No stash chest and no lock: the stash is not seen at the camp until it drops.
+- Unattended carts are not robbed (not built).
+- No quest items exist in the catalog yet, so none are excluded by name.
+- A dropped stash never ages away (like a bag holding things); a piece whose item no longer exists stays in the stash rather than being lost. A camp ending far from every player waits to drop its stash until that ground can be read.
+- Every stack of the item in hand is kept, not only the held slot.

@@ -1,5 +1,7 @@
 extends RefCounted
 
+const ItemsScript := preload("res://src/stream/server_items.gd")   # _write_file: whole-file writes
+
 # Bandit camp sites, stage 1 (Dave 19 Nov 2026; docs/design/BANDIT_CAMPS.md, data/npcs/bandits.json). Candidate sites are fixed by the world
 # seed, one chance per cell_m square (a hash, like the wolf homes): nothing is stored for a sleeping site. Players and pulled carts moving
 # along roads and paths add trip points to the stretch_m stretch they enter; points halve every half_life_days game days. Once a game hour
@@ -45,6 +47,9 @@ var tell: Callable             # (peer, text) -> void: a notice to one player
 var ask: Callable              # (peer, talk id, name, text, choices Array) -> void: a talk window with choices (the NPC talk window; text "" closes it)
 var take_coins: Callable       # (peer, copper) -> bool: coins leave the player's purse (stage 4 toll, only while robbery.enabled)
 var key_of: Callable           # (peer) -> character key, "" for none
+var rob_player: Callable       # (peer, stacks) -> Array of {"id", "count", "wear", "inst"} taken from his pack (stage 4b, only while robbery.enabled)
+var drop_stash: Callable       # (item id, count, wear, inst, Vector3) -> bool: a stolen stack lies on the ground again (never ageing away); false: not laid
+var flush_world: Callable      # () -> void: the packs and world items written now (a robbery or a dropped stash is never lost to a crash)
 var animals = null             # ServerAnimals: bandits and horses are animals (spawn, walk_step, the big game charge)
 
 var stretches: Dictionary = {}   # Vector2i stretch -> [points, game seconds when last set]
@@ -55,11 +60,12 @@ var _dirty: Dictionary = {}      # stretches that gained points since the last c
 var _retry: Dictionary = {}      # candidate cells whose ground was not loaded at the last check: tried again at the next
 var _checked_at: float = -INF
 var dormant: Dictionary = {}     # Vector2i cell -> game seconds until a cleared site may wake again (stage 5, saved)
+var stash_left: Dictionary = {}  # Vector2i cell -> stolen pieces that could not be laid (an id gone from the catalog): kept and saved, never destroyed
 var _laid: Dictionary = {}       # site cell -> world ids of its camp pieces this run
 var _laid_stage: Dictionary = {}  # site cell -> the stage its laid pieces show (signs or the camp)
 var _members: Dictionary = {}    # site cell -> {animal id: {"level", "pos", "horse", "armed"}} made this run
 var _camp_acc: float = 0.0
-var _tolls: Dictionary = {}      # peer -> {"cell", "ids", "asked", "at", "left_s", "copper"}: a toll being asked (stage 4, while robbery.enabled)
+var _tolls: Dictionary = {}      # peer -> {"cell", "ids", "asked", "at" (where asked), "now" (where he is), "left_s", "copper"}: a toll being asked (stage 4, while robbery.enabled)
 var _tolled: Dictionary = {}     # character key -> game day it was last asked a toll (paid or refused): once a game day
 var _path: String = ""
 
@@ -294,9 +300,15 @@ func _advance(now: float) -> bool:
 	for cell in sites.keys():
 		var site: Dictionary = sites[cell]
 
+		if site.has("stash") and not _ready_at(layout(cell)["fire"]):
+			continue   # a stash to lay by the fire waits until that ground can be read without a stall; the row stays until then
+
 		if site.has("cleared_at"):
+			_drop_stash(cell)   # a stash left when the camp was cleared far from its fire drops once that ground is ready
+
 			if now - float(site["cleared_at"]) >= float(_clearing().get("dissolve_game_days", 2.0)) * GAME_DAY_S:
 				_take_away(cell)   # the camp dissolves: its pieces and horses go
+				_drop_stash(cell)   # never lost: anything still held drops at the fire before the row goes
 				sites.erase(cell)
 				dormant[cell] = now + float(_clearing().get("quiet_game_days", 10.0)) * GAME_DAY_S
 				changed = true
@@ -311,6 +323,7 @@ func _advance(now: float) -> bool:
 
 		if points_near(Vector2(float(site["x"]), float(site["z"])), now) < keep:
 			_take_away(cell)
+			_drop_stash(cell)
 			sites.erase(cell)
 			print("BANDIT site %d,%d went back to sleep (the road went quiet)" % [cell.x, cell.y])
 			continue
@@ -388,22 +401,25 @@ func save() -> void:
 		row.erase("road")   # found again from the world once a run
 		awake["%d,%d" % [cell.x, cell.y]] = row
 
-	var file: FileAccess = FileAccess.open(_path, FileAccess.WRITE)
+	var quiet: Dictionary = {}
 
-	if file != null:
-		var quiet: Dictionary = {}
+	for cell in dormant:
+		quiet["%d,%d" % [cell.x, cell.y]] = dormant[cell]
 
-		for cell in dormant:
-			quiet["%d,%d" % [cell.x, cell.y]] = dormant[cell]
+	var left_over: Dictionary = {}
 
-		file.store_string(JSON.stringify({"version": 1, "stretches": rows, "sites": awake, "dormant": quiet}))
-		file.close()
+	for cell in stash_left:
+		left_over["%d,%d" % [cell.x, cell.y]] = stash_left[cell]
+
+	# Written whole to a .tmp and moved over the old file (server_items.gd _write_file): a crash mid-write never tears it, so a stash survives.
+	ItemsScript._write_file(_path, JSON.stringify({"version": 1, "stretches": rows, "sites": awake, "dormant": quiet, "stash_left": left_over}))
 
 
 func load_file() -> void:
 	stretches.clear()
 	sites.clear()
 	dormant.clear()
+	stash_left.clear()
 
 	if _path == "" or not FileAccess.file_exists(_path):
 		return
@@ -437,6 +453,15 @@ func load_file() -> void:
 			if row.has("cleared_at"):
 				sites[key]["cleared_at"] = float(row["cleared_at"])   # stage 5: every bandit gone, the camp dissolves in a while
 
+			if typeof(row.get("stash")) == TYPE_ARRAY:
+				var stash: Array = []
+
+				for piece in row["stash"]:
+					if typeof(piece) == TYPE_DICTIONARY and str(piece.get("id", "")) != "" and int(piece.get("count", 0)) > 0:
+						stash.append({"id": str(piece["id"]), "count": int(piece["count"]), "wear": int(piece.get("wear", 0)), "inst": piece.get("inst", {}) if typeof(piece.get("inst")) == TYPE_DICTIONARY else {}})
+
+				sites[key]["stash"] = stash   # stage 4b: what the camp's bandits took from players
+
 			if typeof(row.get("disarmed")) == TYPE_ARRAY:
 				var disarmed: Array = []
 
@@ -450,6 +475,12 @@ func load_file() -> void:
 
 		if key.x != 2147483647:
 			dormant[key] = float(parsed["dormant"][name])
+
+	for name in parsed.get("stash_left", {}):
+		var key: Vector2i = _key_of(str(name))
+
+		if key.x != 2147483647 and typeof(parsed["stash_left"][name]) == TYPE_ARRAY:
+			stash_left[key] = parsed["stash_left"][name]   # stolen pieces that could not be laid: kept
 
 
 func _key_of(name: String) -> Vector2i:
@@ -617,7 +648,7 @@ func camp_tick(delta: float, players: Array) -> void:
 			_people(cell, plan)
 
 	if robbery_on():
-		_toll_tick()
+		_toll_tick(players)
 
 
 # Stage 4 (toll and robbery) is on only with bandits.json robbery.enabled true: Dave's decision alone. Off, nothing below runs.
@@ -630,9 +661,9 @@ func _toll() -> Dictionary:
 
 
 # Once a second: a player by a camp's road is met and asked a toll; an asked toll unanswered too long, or walked away from, is refused.
-func _toll_tick() -> void:
-	if sites.is_empty() and _tolls.is_empty():
-		return   # no camp, no toll: the player list (an inventory scan) is not read
+func _toll_tick(near: Array) -> void:
+	if _tolls.is_empty() and not _by_a_road(near):
+		return   # no toll open and nobody by a camp's road: the player list (an inventory scan per player) is not read
 
 	var infos: Array = animals.big_game.player_info.call() if animals != null and animals.big_game.player_info.is_valid() else []
 	var t: Dictionary = _toll()
@@ -692,12 +723,13 @@ func _toll_tick() -> void:
 
 		for info in infos:
 			var peer: int = int(info["peer"])
+
+			if _tolls.has(peer) or Vector2((info["pos"] as Vector3).x, (info["pos"] as Vector3).z).distance_to(road) > float(t.get("watch_m", 60.0)):
+				continue   # the cheap test first: the character key only for a player by the road
+
 			var key: String = str(key_of.call(peer)) if key_of.is_valid() else ""
 
-			if key == "" or _tolls.has(peer) or int(_tolled.get(key, -1)) == today:
-				continue
-
-			if Vector2((info["pos"] as Vector3).x, (info["pos"] as Vector3).z).distance_to(road) > float(t.get("watch_m", 60.0)):
+			if key == "" or int(_tolled.get(key, -1)) == today:
 				continue
 
 			var ids: Array = []
@@ -737,6 +769,23 @@ func _info_pos(infos: Array, peer: int) -> Vector3:
 			return info["pos"]
 
 	return Vector3.INF
+
+
+# True when any of these spots (camp_tick's player positions) is within watch_m of an awake camp's road point.
+func _by_a_road(near: Array) -> bool:
+	var watch: float = float(_toll().get("watch_m", 60.0))
+
+	for cell in sites:
+		var site: Dictionary = sites[cell]
+
+		if int(site.get("stage", CAMP)) < CAMP or (site.get("road", []) as Array).is_empty() or (site["levels"] as Array).is_empty():
+			continue
+
+		for spot in near:
+			if Vector2((spot as Vector3).x - float(site["road"][0]), (spot as Vector3).z - float(site["road"][1])).length() <= watch:
+				return true
+
+	return false
 
 
 # The bandits still on a toll: alive, not given up, not fighting.
@@ -789,7 +838,73 @@ func _refuse(peer: int, why: String) -> void:
 	_tell(peer, why + " The bandits come at you.")
 
 	for a in walkers:
-		animals.big_game.warn(a, at, 0.8, true)
+		if animals.big_game.warn(a, at, 0.8, true):
+			a["robbing"] = peer   # stage 4b: if this charge leaves him at the floor, they rob him
+
+
+# Stage 4b (the big game's struck hook, after a charge lands): a bandit sent on this player's refused toll, whose blow left him at the floor
+# ("maimed"), takes rob_stacks of his stacks into the camp's stash and the band leaves him. Off, or any other blow: nothing.
+func struck(a: Dictionary, peer: int, result: String) -> void:
+	if not a.has("robbing"):
+		return
+
+	var mine: bool = int(a["robbing"]) == peer
+	a.erase("robbing")   # one charge only
+
+	if not robbery_on() or not mine or result != "maimed" or not a.has("camp") or not sites.has(a["camp"]) or not rob_player.is_valid():
+		return
+
+	var site: Dictionary = sites[a["camp"]]
+	var taken: Array = rob_player.call(peer, int(cfg.get("robbery", {}).get("rob_stacks", 2)))
+
+	for cell in sites:
+		for id in _members.get(cell, {}):
+			if animals.animals.has(id):
+				animals.animals[id].erase("robbing")   # the others of that charge stop too
+
+	if taken.is_empty():
+		_tell(peer, "The bandits search you and find nothing worth taking.")
+		return
+
+	var stash: Array = site.get("stash", [])
+
+	for piece in taken:
+		stash.append({"id": str(piece["id"]), "count": int(piece["count"]), "wear": int(piece.get("wear", 0)), "inst": piece.get("inst", {})})
+
+	site["stash"] = stash
+	save()   # at once, before his pack is next written: a crash between can only leave them twice, never lose them
+	_tell(peer, "The bandits take %s and leave you. Clear their camp to get it back." % ", ".join(taken.map(func(got): return "%d %s" % [int(got["count"]), str(got["id"])])))
+
+
+# A camp's stash on the ground by its fire (cleared, dissolved or gone back to sleep): nothing a player lost is destroyed.
+func _drop_stash(cell: Vector2i) -> void:
+	if not sites.has(cell) or not sites[cell].has("stash"):
+		return
+
+	if (sites[cell]["stash"] as Array).is_empty():
+		sites[cell].erase("stash")   # nothing in it (a stash whose every piece was unreadable at load)
+		return
+
+	var fire: Vector2 = layout(cell)["fire"]
+	var y: float = float(ground_height.call(fire.x, fire.y)) if ground_height.is_valid() else 0.0
+	var at: Vector3 = Vector3(fire.x + 1.5, (50.0 if is_nan(y) else y) + 0.1, fire.y)
+	var kept: Array = []
+
+	for piece in sites[cell]["stash"]:
+		if not drop_stash.is_valid() or not bool(drop_stash.call(str(piece["id"]), int(piece["count"]), int(piece["wear"]), piece["inst"], at)):
+			kept.append(piece)   # not laid (an id no longer in the catalog): kept, never thrown away
+
+	var laid: int = (sites[cell]["stash"] as Array).size() - kept.size()
+
+	sites[cell].erase("stash")
+
+	if not kept.is_empty():
+		stash_left[cell] = (stash_left.get(cell, []) as Array) + kept   # kept apart, so the camp's row can still end
+
+	if laid > 0 and flush_world.is_valid():
+		flush_world.call()   # the laid items are written before the stash that held them
+
+	save()
 
 
 func _end_toll(peer: int, close: bool) -> void:
@@ -921,6 +1036,9 @@ func _people(cell: Vector2i, plan: Dictionary) -> void:
 func step(a: Dictionary, dt: float) -> bool:
 	if not a.has("camp") or not sites.has(a["camp"]):
 		return false
+
+	if a.has("robbing") and not animals.big_game.handles(a):
+		a.erase("robbing")   # his charge is over (missed, bluffed or calmed): a later fight robs no one
 
 	var row: Dictionary = _camp()
 	var seat: Vector3 = a["seat"]
@@ -1067,6 +1185,8 @@ func _member_gone(cell: Vector2i, id: int, pos: Vector3, drop: bool) -> void:
 
 		if (site["levels"] as Array).is_empty() and not site.has("cleared_at"):
 			site["cleared_at"] = _now()   # every bandit killed or taken: the camp dissolves dissolve_game_days from now
+			if _ready_at(layout(cell)["fire"]):
+				_drop_stash(cell)   # stage 4b: what they stole lies by the fire (else within the hour, _advance)
 			print("BANDIT site %d,%d cleared" % [cell.x, cell.y])
 
 	save()

@@ -26,7 +26,8 @@
 	"drop_points": 0.05,
 	"robbery": {
 		"note": "Stage 4 (docs/design/BANDIT_CAMPS.md, BANDIT-30..35) switch: enabled false means bandits ask no toll, charge no one for refusing and take nothing from a player. Turning it on is Dave's decision alone.",
-		"enabled": false
+		"enabled": false,
+		"rob_stacks": 2
 	},
 	"toll": {
 		"note": "Stage 4: a player within watch_m of the road point by an awake camp, once a game day, is met by up to walkers bandits who stop stop_m off and ask copper_per_level copper by the camp's top level (Pay / Refuse). No answer in answer_s, walking refuse_walk_m on, refusing or not having the coins: they charge (the existing big game charge). They never follow past leash_m from their fire.",

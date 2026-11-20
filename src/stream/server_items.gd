@@ -13954,6 +13954,41 @@ func count_for(peer: int, id: String, ready_only: bool = false) -> int:
 	return inv.count_of(table.number_of(id), false, ready_only) if inv != null and table.number_of(id) > 0 else 0
 
 
+# Bandit camps stage 4b (only while bandits.json robbery.enabled; docs/design/BANDIT_CAMPS.md): the `stacks` most valuable stacks of the pack
+# (value x count) are taken whole, keeping wear and instance data, for the camp's stash. Never the item in hand, never a bag holding things,
+# never coins (they live in the purse). Returns [{"id", "count", "wear", "inst"}].
+func rob_stacks(peer: int, stacks: int) -> Array:
+	var inv = inventory_of(peer)
+
+	if inv == null or stacks <= 0:
+		return []
+
+	var held: int = int(_held.get(peer, 0))
+	var rows: Array = []
+
+	for i in inv.slot_count:
+		var number: int = inv.numbers[i]
+
+		if number == 0 or number == held or not (inv.inst_of(i).get("bag", []) as Array).is_empty():
+			continue
+
+		rows.append([int(table.entry(table.id_of(number)).get("value", 0)) * int(inv.counts[i]), i])
+
+	rows.sort_custom(func(x, y): return int(x[0]) > int(y[0]) or (int(x[0]) == int(y[0]) and int(x[1]) < int(y[1])))
+	var out: Array = []
+	var before: Array = _snapshot(inv)
+
+	for row in rows.slice(0, stacks):
+		var gone: Dictionary = inv.take_from_slot(int(row[1]), inv.counts[int(row[1])])
+		out.append({"id": table.id_of(int(gone["number"])), "count": int(gone["count"]), "wear": int(gone.get("wear", 0)), "inst": gone.get("inst", {})})
+
+	if not out.is_empty():
+		_send_changes(peer, inv, before)
+		_dirty = true   # the pack is saved without them (the stash is saved by the camp)
+
+	return out
+
+
 func give_to(peer: int, id: String, count: int) -> void:
 	if id.begins_with("coin_"):
 		_add_coin(peer, id, count, SRC_REWARD)

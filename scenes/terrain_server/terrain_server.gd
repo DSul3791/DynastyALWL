@@ -861,6 +861,10 @@ func _ready() -> void:
 	bandits.ask = func(bandit_peer, talk_id, talk_name, talk_text, talk_choices): net.npc_say.rpc_id(bandit_peer, talk_id, talk_name, talk_text, "", PackedStringArray(talk_choices), false)   # stage 4 toll: the NPC talk window (only while robbery.enabled)
 	bandits.take_coins = func(bandit_peer, bandit_copper): return items.take_coins(bandit_peer, bandit_copper)
 	bandits.key_of = func(bandit_peer): return items.key_of(bandit_peer)
+	bandits.rob_player = func(bandit_peer, bandit_stacks): return items.rob_stacks(bandit_peer, bandit_stacks)   # stage 4b, only while robbery.enabled
+	bandits.drop_stash = func(stash_id, stash_count, stash_wear, stash_inst, stash_at): return items.drop_in_world(items.table.number_of(stash_id), stash_count, stash_at, stash_wear, 2.0e8, NAN, NAN, "", stash_inst)   # a lifetime over 1e8 never ages away
+	bandits.flush_world = func(): items.save()
+	animals.big_game.struck = func(struck_animal, struck_peer, struck_result): bandits.struck(struck_animal, struck_peer, struck_result)   # a landed charge (it changes nothing about the blow)
 	bandits.pay_bounty = func(bandit_peer, bandit_copper): items.add_coins(bandit_peer, bandit_copper, "trade")   # the guard pays for a tied bandit (stage 5)
 	bandits.guards_at = func():
 		var guard_spots: Array = []
