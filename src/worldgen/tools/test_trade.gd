@@ -122,8 +122,8 @@ func _init() -> void:
 	var rest: int = items.coins_of(1) - purse1
 	check(first >= 1 and rest == 1, "selling sixty more stones pays one copper, a sixtieth of a copper each (%d for 60)" % rest)
 	check(trade.demand("hob", "stone") <= 0.5, "and the trader is tired of stones (%.2f)" % trade.demand("hob", "stone"))
-	clock[0] += 900.0
-	check(trade.demand("hob", "stone") > 0.9, "fifteen minutes later the demand has come back (%.2f)" % trade.demand("hob", "stone"))
+	clock[0] += 1800.0   # demand comes back 4 pieces a minute (coins.json demand); the 120 stones sold are 60 kg of 0.5 kg stones (Dave 19 Nov 2026), twice the pieces the 60 kg was before
+	check(trade.demand("hob", "stone") > 0.9, "thirty minutes later the demand has come back (%.2f)" % trade.demand("hob", "stone"))
 
 	# Worthless and rotten things are not bought; damaged tools pay less.
 	check(trade.price_to_get(0, 0.55) == 0 and trade.price_to_get(20, 0.55, 0.5) == 5 and trade.price_to_get(1, 0.55) == 1, "worthless pays nothing, half-worn pays half, a copper item pays at least 1")

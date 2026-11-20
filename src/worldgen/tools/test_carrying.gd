@@ -203,7 +203,7 @@ func _init() -> void:
 	check(full == {stone: 15, berries: 12, axe: 1} and inv.count_of(stone) == 0 and inv.count_of(berries) == 0 and inv.count_of(axe) == 0, "the worn pack holds what was put in and the pack gave it up (%s)" % str(full))
 	var rows: Array = items.worn_slots_of(1)[place(items, "shoulder:base")][3]["bag"]
 	check(rows.any(func(r: Array) -> bool: return int(r[0]) == axe and r.size() > 4 and r[4] == {"craft": 1}), "an item in the bag keeps its own instance data")
-	check(absf(items.carried_kg_of(1) - kg_before) < 0.0001 and items.carried_kg_of(1) >= 15.0, "carrying weight counts what the worn bag holds (%.2f kg before, %.2f after)" % [kg_before, items.carried_kg_of(1)])
+	check(absf(items.carried_kg_of(1) - kg_before) < 0.0001 and items.carried_kg_of(1) >= 7.5, "carrying weight counts what the worn bag holds (15 stones of 0.5 kg at least, Dave 19 Nov 2026) (%.2f kg before, %.2f after)" % [kg_before, items.carried_kg_of(1)])
 	var bag_inv = InventoryScript.new(table)
 	check(bag_inv.from_bytes(chest_sent[2]) and bag_inv.count_of(stone) == 15, "chest_contents carries the bag's slots as inventory bytes")
 
@@ -306,7 +306,7 @@ func _init() -> void:
 	var slot2: int = inv2.numbers.find(n.call("fibre_shoulder_bag"))
 	check(slot2 >= 0 and rows_count(inv2.inst_of(slot2).get("bag", [])) == full and chest.count_of(n.call("fibre_shoulder_bag")) == 0, "the second player takes it out full")
 	check(everywhere(items, stone) == stones_all and everywhere(items, berries) == berries_all and everywhere(items, n.call("fibre_shoulder_bag")) == 1, "nothing lost or duplicated by the hand-over through the chest")
-	check(items.carried_kg_of(2) >= 15.0, "its contents weigh on the second player (%.2f kg)" % items.carried_kg_of(2))
+	check(items.carried_kg_of(2) >= 7.5, "its contents (15 stones of 0.5 kg and more) weigh on the second player (%.2f kg)" % items.carried_kg_of(2))
 
 	# 9. Spoilage continues inside a bag, worn, on the ground and in a chest.
 	var berry_age: Callable = func(rows_in: Array) -> int:

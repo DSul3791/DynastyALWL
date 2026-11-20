@@ -2160,7 +2160,7 @@ func _init() -> void:
 		sa._vitals_tick(0.25)
 
 	check(float(sa.strain_of(1)["s"]) < 0.01, "sitting rests strain to 0 (%.2f)" % float(sa.strain_of(1)["s"]))
-	sa.give(1, sa.table.number_of("stone"), 52)
+	sa.give(1, sa.table.number_of("stone"), 104)   # 52 kg, the carry limit, of 0.5 kg stones (Dave 19 Nov 2026)
 	sa._strain[1] = {"s": 0.9, "state": 1, "t": 0.0}
 	sa.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
 
