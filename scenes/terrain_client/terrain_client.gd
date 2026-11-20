@@ -42,6 +42,9 @@ const SlotSoundsScript := preload("res://src/client/slot_sounds.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
 const JoinAddress := preload("res://src/client/join_address.gd")
+const ServerAuthScript := preload("res://src/shared/server_auth.gd")
+const ServerListScript := preload("res://src/client/server_list.gd")
+const PasswordBoxScript := preload("res://src/client/password_box.gd")
 const OceanWaves := preload("res://src/sullivan_water/ocean/ocean_waves.gd")
 const OceanMesh := preload("res://src/sullivan_water/ocean/ocean_mesh.gd")
 const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
@@ -541,6 +544,10 @@ var _flora_done_msec: int = 0
 var _host: String = "127.0.0.1"
 var _port: int = 24600
 var _wait_until_msec: int = 0
+var _auth = null                          # the join handshake (server_auth.gd): an open server passes at once, one with a password asks
+var _password_arg: String = ""            # --password= (tests, bots): typed for the player once
+var _password_box = null                  # the password popup (password_box.gd), made when a server first asks
+var _remember_password: bool = false      # the player ticked "Remember on this computer" for the password now being tried
 var _remote: bool = false                 # a client-only build joining someone's server: no local Play server to restart (join_address.gd)
 
 
@@ -886,11 +893,19 @@ func _ready() -> void:
 		_link_up_msec = Time.get_ticks_msec()
 		NetSettings.apply((multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(1)))
 	multiplayer.connection_failed.connect(_on_connection_failed)
+	multiplayer.peer_authentication_failed.connect(_on_auth_failed)
 	started_msec = Time.get_ticks_msec()
 
 	if DisplayServer.get_name() != "headless":
 		_connect_window = ConnectWindowScript.new()
+
+		if _remote:
+			_connect_window.on_back = _back_to_servers   # server pick page: Cancel while joining, Back to servers on a failure
+
 		_connect_window.setup(self)
+
+		if _remote and Engine.has_meta("continue_join"):
+			_connect_window.set_heading("Joining %s as %s" % [_server_label(), str(CharacterStoreScript.active().get("name", "your character"))])
 
 	_connect()
 
@@ -957,7 +972,7 @@ func _update_connect_window() -> void:
 
 func _connect() -> void:
 	if _remote and _host == "":
-		_cannot_reach("This game has no server address yet. Start it again and type the server's address on the join page.")
+		_cannot_reach("This game has no server address yet. Start it again and choose a server on the server pick page.")
 		return
 
 	var peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
@@ -973,6 +988,7 @@ func _connect() -> void:
 		_cannot_reach("The game cannot open a connection to %s:%d (%s). If that is a name, check its spelling and this computer's internet connection." % [_host, _port, error_string(error)])
 		return
 
+	_attach_auth()
 	multiplayer.multiplayer_peer = peer
 	print("Terrain client: connecting to %s:%d" % [_host, _port])
 	GroundMaterialScript.start_early(quality)   # the ground photos are sized on a worker while the welcome is on its way
@@ -1067,6 +1083,9 @@ static func waits_for_server(role: String) -> bool:
 
 # While a --wait is running, a server not up yet is tried again.
 func _on_connection_failed() -> void:
+	if _join_refused != "":
+		return   # refused at the password or the build: the window already says why, and a retry would only ask again
+
 	if Time.get_ticks_msec() < _wait_until_msec:
 		multiplayer.multiplayer_peer = null
 		get_tree().create_timer(1.0).timeout.connect(_connect)
@@ -1079,13 +1098,13 @@ func _on_connection_failed() -> void:
 		return
 
 	if _remote:
-		_cannot_reach("No server answered at %s:%d. Check the address (it is remembered on the join page), that the server is running, and this computer's internet connection." % [_host, _port])
+		_cannot_reach("No server answered at %s:%d. Check the address on the server pick page, that the server is running, and this computer's internet connection." % [_host, _port])
 		return
 
 	_finish(1)
 
 
-# The server cannot be reached before joining: a window says why, with Quit (the next start shows the join page with the address);
+# The server cannot be reached before joining: a window says why, with Back to servers and Quit;
 # a headless run quits with code 1 as before.
 func _cannot_reach(text: String) -> void:
 	_telemetry.event("JOIN: cannot reach the server: %s" % text)
@@ -1097,8 +1116,130 @@ func _cannot_reach(text: String) -> void:
 	_connect_window.fail("Cannot reach the server", text, func(): _finish(1))
 
 
+# Every server runs the join handshake (server_auth.gd); it must be attached before the connection opens. A server with a password asks for it:
+# --password= answers once (tests); a player gets the password popup (password_box.gd): 3 tries (Dave 19 Nov 2026), then "You got it wrong
+# 3 times..." and back to the server pick page. A password the player chose to remember is tried first (only its salted hash is kept).
+func _attach_auth() -> void:
+	if _auth != null:
+		_auth.new_connection()
+		return
+
+	_password_arg = AppConfig.get_command_line_value("password", "")
+	_auth = ServerAuthScript.new()
+	_auth.remembered = func(salt_hex: String) -> String:
+		var rows: Array = ServerListScript.load_rows()
+		var index: int = ServerListScript.find(rows, "%s:%d" % [_host, _port])
+		var saved: Dictionary = rows[index].get("password", {}) if index >= 0 and rows[index].get("password") is Dictionary else {}
+		return str(saved.get("hash", "")) if str(saved.get("salt", "")) == salt_hex else ""
+	_auth.password_needed.connect(_on_password_needed)
+	_auth.accepted.connect(func(salt_hex: String, hash_hex: String) -> void:
+		var rows: Array = ServerListScript.load_rows()
+		var index: int = ServerListScript.find(rows, "%s:%d" % [_host, _port])
+
+		if index >= 0 and _remember_password:
+			rows[index]["password"] = {"salt": salt_hex, "hash": hash_hex}
+			ServerListScript.save_rows(rows))
+	_auth.refused.connect(func(reason: String) -> void:
+		var words: String = "You got it wrong 3 times. Check your Caps Lock, and take a minute to recompose."
+
+		if reason == "busy":
+			words = "Too many wrong passwords from this computer. Wait a minute and try again."
+
+		if _password_box != null:
+			_join_refused = words
+			_password_box.fail("Wrong password" if reason != "busy" else "Wait a minute", words)
+		else:
+			_on_join_refused(words, "Wrong password" if reason != "busy" else "Wait a minute"))
+	_auth.attach_client(multiplayer as SceneMultiplayer)
+
+
+func _on_password_needed(tries_left: int, wrong: bool) -> void:
+	_telemetry.event("JOIN: the server asks for a password (%d tries left%s)" % [tries_left, ", the last one was wrong" if wrong else ""])
+
+	if _auth.remembered_was_wrong:
+		_forget_password()
+
+	if _password_arg != "" and not wrong:
+		_auth.submit(_password_arg)
+		return
+
+	if _connect_window == null or not _remote:
+		_on_join_refused("The password was wrong." if wrong else "The server at %s:%d has a password: start the game with --password=." % [_host, _port], "Wrong password" if wrong else "Password needed")
+		return
+
+	if _password_box == null:
+		_password_box = PasswordBoxScript.new()
+		_password_box.on_ok = func(typed: String, keep: bool) -> void:
+			_remember_password = keep
+			_auth.submit(typed)
+		_password_box.on_cancel = _back_to_servers
+		_password_box.setup(self)
+
+	_password_box.ask(_server_label(), tries_left, wrong and not _auth.remembered_was_wrong, _auth.remembered_was_wrong)
+
+
+func _forget_password() -> void:
+	var rows: Array = ServerListScript.load_rows()
+	var index: int = ServerListScript.find(rows, "%s:%d" % [_host, _port])
+
+	if index >= 0 and rows[index].has("password"):
+		rows[index].erase("password")
+		ServerListScript.save_rows(rows)
+
+
+# The server's name as the player knows it on the server pick page, else its address.
+func _server_label() -> String:
+	var rows: Array = ServerListScript.load_rows()
+	var index: int = ServerListScript.find(rows, "%s:%d" % [_host, _port])
+	return ServerListScript.shown_name(rows[index]) if index >= 0 else "%s:%d" % [_host, _port]
+
+
+# Back to the server pick page: the game starts again on that page (the cleanest way out of a half-made join; nothing is saved here).
+func _back_to_servers() -> void:
+	_telemetry.event("JOIN: back to the server pick page")
+	var user_args: Array = []
+
+	for argument in OS.get_cmdline_user_args():
+		if argument not in ["--to-servers", "--test"] and not argument.begins_with("--password=") and not argument.begins_with("--server="):   # else the launcher rejoins
+			user_args.append(argument)
+
+	OS.set_restart_on_exit(true, OS.get_cmdline_args() + PackedStringArray(["--"]) + PackedStringArray(user_args + ["--to-servers"]))
+	_finish(0)
+
+
+# A remote server welcomed this game: remember when, and as which character, for Continue and the server pick page's Last played.
+func _note_played() -> void:
+	var rows: Array = ServerListScript.load_rows()
+	var index: int = ServerListScript.find(rows, "%s:%d" % [_host, _port])
+
+	if index < 0:
+		var added: Dictionary = ServerListScript.add(rows, "%s:%d" % [_host, _port])
+
+		if added.has("error"):
+			return
+
+		index = int(added["index"])
+
+	ServerListScript.mark_played(rows, str(rows[index]["address"]), CharacterStoreScript.active_id())
+	ServerListScript.save_rows(rows)
+
+
+# The join handshake ended without getting in (server_auth.gd). A server that never said a word there does not speak this game's join: it is
+# an older or newer build. Otherwise the server dropped the join (a refusal already says why), or it went away: as a failed connection.
+func _on_auth_failed(_peer: int) -> void:
+	if _join_refused != "":
+		return
+
+	if _auth != null and not _auth.heard:
+		_on_join_refused("The server at %s:%d answered but does not speak this game's way of joining: it runs an older or newer build of the game. Update the game, or ask whoever runs the server to update it." % [_host, _port], "Different version")
+		return
+
+	_on_connection_failed()
+
+
 # The server runs another build (step A1): its reason stays on the join window until the player quits. The server drops this client next.
-func _on_join_refused(text: String) -> void:
+# Also a password the server would not take (title says which).
+func _on_join_refused(text: String, title: String = "Update required") -> void:
 	if _join_refused != "":
 		return   # already showing (the welcome's check came first)
 
@@ -1107,7 +1248,7 @@ func _on_join_refused(text: String) -> void:
 	_telemetry.event("JOIN: refused by the server: " + _join_refused.replace("\n", " "))
 
 	if _connect_window != null:
-		_connect_window.fail("Update required", _join_refused, func(): _finish(1))
+		_connect_window.fail(title, _join_refused, func(): _finish(1))
 	elif DisplayServer.get_name() != "headless":
 		_show_lost_notice(_join_refused.replace("\n", " "))
 	else:
@@ -1121,6 +1262,9 @@ func _on_welcome(info: Dictionary) -> void:
 
 
 func _welcome_body(info: Dictionary) -> void:
+	if _remote:
+		_note_played()
+
 	if int(info.get("protocol", 0)) != NetScript.PROTOCOL_VERSION:
 		push_error("Terrain client: server speaks protocol %s, this client %d" % [str(info.get("protocol")), NetScript.PROTOCOL_VERSION])
 
@@ -2061,6 +2205,11 @@ func _sync_cleared() -> void:
 	for mound in _burrow_spots:      # rabbit burrow mounds are 0.13 m high: no grass stands through them (same bare patch as a path)
 		paths.append(mound)
 		key = key ^ hash(Vector2(mound.x, mound.z))
+
+	for bog_id in items.bogs:      # a bog iron stain (Dave 19 Nov 2026: obvious to find): no grass or small plant stands on it
+		var bog_at: Vector3 = items.bogs[bog_id]["pos"]
+		spots.append(Vector3(snappedf(bog_at.x, 0.01), bog_at.y, snappedf(bog_at.z, 0.01)))
+		key = key ^ hash(Vector2(bog_at.x, bog_at.z)) ^ int(bog_id)
 
 	for boulder_id in items._boulders:
 		var boulder: Dictionary = items._boulders[boulder_id]

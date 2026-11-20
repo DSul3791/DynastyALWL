@@ -19,6 +19,7 @@ const RockLook := preload("res://src/client/rock_look.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
 const BasicLook := preload("res://src/client/basic_look.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")   # DOOR_TAKEN_M: a doorway frame and its door share one spot
+const PipeRules := preload("res://src/shared/pipe_rules.gd")   # a laid pipe run is reached and aimed at along its whole length
 
 # The client side of items: the inventory panel (I), things lying on the ground (E picks up
 # the nearest within reach) and the player key. The server owns all of it; this only shows
@@ -122,6 +123,7 @@ var chest_inv                          # contents of the open chest (Inventory),
 var chest_id: int = 0
 var chest_keep_out: bool = false        # the open container is ticked "keep out" (protocol 98 chest_info): crafting and blueprint sites leave it alone
 var chest_may_keep_out: bool = false    # and this player owns it, so the tick may be changed (set_keep_out)
+var chest_autoload: int = 0             # the open container's standing autoload item, 0 none (protocol 139 autoload_info)
 var reach_stock: Dictionary = {}        # item number -> count a craft may use besides the pack: loose stacks within 12 m and own containers within 12 m (craft_stock)
 var _stock_sign: int = 0                # the pack as it was when the stock was last asked for; a changed pack asks again while the window is open
 var _chest_panel: Control
@@ -138,10 +140,9 @@ const OreRockLook := preload("res://src/client/ore_rock_look.gd")
 # Outcrop boulders (Kathleen, 10 Nov 2026; Dave could not tell an ore boulder from a plain one). The server sends a boulder's "ore" (boulders.json ore:
 # an ore body within reach, or the boulder's own limestone, chalk or marble); the client draws it in the same granite-and-moss shader with the stone tinted
 # toward the ore's rock and mineral streaks through it, and the streaks keep the moss off. Subtle on purpose: read from about 10 m, not a neon tell.
-# Copper and tin are not here: they are their own rocks (OreRockLook, Dave's photos 16 and 17 Nov 2026).
+# Copper, tin and iron are not here: they are their own rocks (OreRockLook, Dave's photos and words 16, 17 and 19 Nov 2026).
 # ore: [stone tint, tint share, streak colour, streak width (0..0.5 of the band), flat (0 steep veins, 1 flat seams), halo share, fleck share]
 const OUTCROP_LOOK := {
-	"iron": [Color(0.36, 0.27, 0.21), 0.45, Color(0.4, 0.2, 0.09), 0.1, 0.0, 0.5, 0.03],           # rust
 	"coal": [Color(0.21, 0.21, 0.21), 0.45, Color(0.05, 0.05, 0.05), 0.2, 1.0, 0.15, 0.0],         # flat black seams
 	"salt": [Color(0.42, 0.4, 0.37), 0.4, Color(0.8, 0.78, 0.72), 0.16, 1.0, 0.2, 0.05],           # pale crusted beds
 	"limestone": [Color(0.58, 0.55, 0.47), 0.7, Color(0.66, 0.63, 0.56), 0.04, 0.6, 0.0, 0.05],     # pale cream bedding
@@ -306,6 +307,7 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	net.notice_received.connect(func(...args): _timed("_on_notice", _on_notice, args))
 	net.chest_received.connect(_on_chest)
 	net.chest_info_received.connect(_on_chest_info)
+	net.autoload_info_received.connect(_on_autoload_info)
 	net.chest_lock_received.connect(_storage_ui.on_lock)
 	net.storage_view_received.connect(_storage_ui.on_view)
 	net.food_effects_received.connect(_food_ui.on_effects)
@@ -1084,6 +1086,12 @@ func _probe_structure_for(id: int) -> Dictionary:
 	if str(store_def.get("station", "")) != "" and (int(store_def.get("out_slots", 0)) > 0 or bool(store_def.get("one_store", false))):   # a station with a store (master s2.5): E opens the store, F crafts
 		return {"prompt": "Press E to open the %s%s, F to use it%s (hold E to take it down)" % [table.sentence_name(_world[id]["number"]), _fill_note(id), wheel_note(id)], "tap": func(): _ask_open(id), "hold": take_down}
 
+	if str(_structure_by_state(state).get("use", "")) == "tap":   # a Copper - Tap (Dave 19 Nov 2026): E drinks, F opens its slots where water containers fill
+		return {"prompt": "Press E to take a drink, F to fill water containers (hold E to take it down)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
+
+	if _is_chest(state) and int(_world[id].get("water_l", 0)) >= 1:   # a barrel holding water (PLUMBING_DESIGN s9, PV-6): water or goods, never both
+		return {"prompt": "Press E to drink, or to fill what you hold (%d L in it; hold E to take it down)" % int(_world[id]["water_l"]), "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_DRINK, held_container_slot(), 0, 0, Vector3.ZERO), "hold": take_down}
+
 	if _is_chest(state):
 		return {"prompt": "Press E to open (hold E to take it down)", "tap": func(): _ask_open(id), "hold": take_down}
 
@@ -1652,10 +1660,22 @@ func _nearest_struct(skip_fires: bool = false) -> int:
 		if (skip_fires and int(_world[id]["state"]) in StructureLook.CAMPFIRE_STATES) or _world[id].get("camp", false):
 			continue   # Edda and Hob's fire is never offered
 
-		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(_world[id]["pos"]) <= 3.0:
+		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(reach_pos(id, here)) <= 3.0:
 			ids.append(id)
 
 	return _aimed_or_nearest(_unframed(ids), here)
+
+
+# Where a world piece is reached from `here`: a laid pipe run's nearest point (PLUMBING_DESIGN s9: a 30 m run is taken down from anywhere along it),
+# otherwise its spot.
+func reach_pos(id: int, here: Vector3) -> Vector3:
+	var row: Dictionary = _world[id]
+
+	if not row.has("len"):
+		return row["pos"]
+
+	var e: Array = PipeRules.ends(row["pos"], float(row.get("yaw", 0.0)), float(row.get("pitch", 0.0)), float(row["len"]))
+	return PipeRules.closest_on(e[0], e[1], here)
 
 
 # A doorway frame with a door in it shares the door's spot: the door is the one E works (the frame is taken down after the door).
@@ -1683,10 +1703,11 @@ func _aimed_or_nearest(ids: Array, here: Vector3) -> int:
 	var best_cos: float = -2.0
 
 	for id in ids:
-		var d: float = here.distance_to(_world[id]["pos"])
+		var at: Vector3 = reach_pos(id, here)
+		var d: float = here.distance_to(at)
 
-		if view_direction.is_valid() and aimed_at(_world[id]["pos"]):
-			var aim_cos: float = aim_cos_of(_world[id]["pos"])
+		if view_direction.is_valid() and aimed_at(at):
+			var aim_cos: float = aim_cos_of(at)
 
 			if aim_cos > best_cos:
 				best_cos = aim_cos
@@ -3067,10 +3088,15 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			if _world[id]["state"] == state and state >= 5 and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("yaw"):
 				_world[id]["on"] = bool(row[5].get("on", false))   # a crate lifted onto a cart or set down
 
-				if (row[3] as Vector3).distance_to(_world[id]["pos"]) > 0.05:
+				if (row[3] as Vector3).distance_to(_world[id]["pos"]) > 0.05 and not (row[5] as Dictionary).has("len"):   # a pipe run that moved was split: drawn again below
 					_glide(id, row[3], float(row[5]["yaw"]))   # a cart or a crate on it moved (the world sync after items_moved, or instead of a lost one)
 
-			if _world[id]["state"] == state:
+			if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("water_l"):
+				_world[id]["water_l"] = int(row[5]["water_l"])
+
+			var pipe_moved: bool = row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("len") and (absf(float(row[5]["len"]) - float(_world[id].get("len", 0.0))) > 0.001 or (row[3] as Vector3).distance_to(_world[id]["pos"]) > 0.001)   # a run split by a junction: drawn again
+
+			if _world[id]["state"] == state and not pipe_moved:
 				if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("burn"):
 					_world[id]["burn"] = float(row[5]["burn"])
 					_world[id]["burn_at"] = Time.get_ticks_msec()
@@ -3106,6 +3132,9 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			prof["model"] = int(prof.get("model", 0)) + Time.get_ticks_usec() - t_c
 			node.position = row[3] - Vector3(0.0, SINK_M * float(row[5].get("age", 0.0)), 0.0) if (state == 11 or state == 12) and row.size() > 5 else row[3]
 			node.rotation.y = yaw
+
+			if row.size() > 5 and (row[5] as Dictionary).has("pitch"):
+				node.rotation.z = deg_to_rad(float(row[5]["pitch"]))   # a pipe run tilts along its own axis (PipeRules.axis_of: Y then Z, Godot's YXZ order)
 			_root.add_child(node)
 			var roof_key: int = -1
 			var site_extra: Variant = (row[5] as Dictionary).get("site") if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else null
@@ -3135,6 +3164,13 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 					(fixture_light as SpotLight3D).spot_range = light_m
 
 			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": fixture_light, "roof": roof_key, "yaw": rad_to_deg(yaw), "on": row.size() > 5 and bool((row[5] as Dictionary).get("on", false))}
+
+			if row.size() > 5 and (row[5] as Dictionary).has("len"):
+				_world[id]["len"] = float(row[5]["len"])   # a pipe run (PLUMBING_DESIGN s9): its ends are PipeRules.ends(pos, yaw, pitch, len)
+				_world[id]["pitch"] = float(row[5].get("pitch", 0.0))
+
+			if row.size() > 5 and (row[5] as Dictionary).has("water_l"):
+				_world[id]["water_l"] = int(row[5]["water_l"])   # a barrel's water: E drinks from it instead of opening it
 
 			if site_extra != null:
 				_world[id]["site"] = site_extra
@@ -3453,7 +3489,7 @@ var _bin_materials: Dictionary = {}   # item number -> the placeholder surface m
 
 func _bin_material(number: int) -> StandardMaterial3D:
 	if not _bin_materials.has(number):
-		var colours: Dictionary = {"stone": Color(0.5, 0.5, 0.48), "cobblestone": Color(0.45, 0.44, 0.42), "gravel": Color(0.56, 0.54, 0.5), "flint": Color(0.3, 0.3, 0.32), "clay": Color(0.62, 0.36, 0.25), "sand": Color(0.85, 0.75, 0.5), "soil": Color(0.35, 0.25, 0.15), "charcoal": Color(0.08, 0.08, 0.08), "coal": Color(0.1, 0.1, 0.11), "copper_ore": Color(0.42, 0.55, 0.4), "tin_ore": Color(0.6, 0.6, 0.62), "iron_ore": Color(0.5, 0.28, 0.18)}
+		var colours: Dictionary = {"stone": Color(0.5, 0.5, 0.48), "cobblestone": Color(0.45, 0.44, 0.42), "gravel": Color(0.56, 0.54, 0.5), "flint": Color(0.3, 0.3, 0.32), "clay": Color(0.62, 0.36, 0.25), "sand": Color(0.85, 0.75, 0.5), "soil": Color(0.35, 0.25, 0.15), "charcoal": Color(0.08, 0.08, 0.08), "coal": Color(0.1, 0.1, 0.11), "copper_ore": Color(0.42, 0.55, 0.4), "tin_ore": Color(0.6, 0.6, 0.62), "iron_ore": Color(0.5, 0.28, 0.18), "bog_iron_ore": Color(0.48, 0.22, 0.1)}
 		var m: StandardMaterial3D = StandardMaterial3D.new()
 		m.albedo_color = colours.get(table.id_of(number) if number > 0 else "", Color(0.5, 0.45, 0.4))
 		m.roughness = 1.0
@@ -3489,7 +3525,7 @@ func placement_rows() -> Array:
 
 # Removes a world row's node and, for a lean-to, its roof in the cover index.
 # A bog iron deposit the server says is in sight (Sonny's water rules section 11): its spot, the ore left and its full size, and whether it lies under
-# standing water. Kept, not drawn yet: Kathleen's look (_show_bog) builds on this entry and puts its node in "node".
+# standing water. Drawn by _show_bog; terrain_client keeps the grass off it.
 func _note_bog(id: int, row: Array) -> void:
 	var extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
 	var entry: Dictionary = bogs.get(id, {})
@@ -3499,6 +3535,42 @@ func _note_bog(id: int, row: Array) -> void:
 	entry["wet"] = bool(extra.get("wet", false))
 	entry["key"] = str(extra.get("key", ""))
 	bogs[id] = entry
+	_show_bog(id)
+
+
+# A bog iron deposit's ground stain (PieceLook.bog_iron_patch): "wet" under standing water, "dug" once ore has been taken (until it grows back to
+# full), else "dry". Rebuilt only when the state changes; no collision; turned by the key's hash so neighbours differ.
+func _show_bog(id: int) -> void:
+	var entry: Dictionary = bogs.get(id, {})
+
+	if entry.is_empty() or _root == null:
+		return
+
+	var state: String = "wet" if bool(entry["wet"]) else ("dug" if int(entry["left"]) < int(entry["total"]) else "dry")
+
+	if entry.get("node") is Node3D and str(entry.get("state", "")) == state:
+		(entry["node"] as Node3D).position = entry["pos"]
+		return
+
+	if entry.get("node") is Node3D:
+		(entry["node"] as Node3D).queue_free()
+
+	var at: Vector3 = entry["pos"]
+	var yaw: float = float(absi(hash(str(entry["key"]))) % 360) * PI / 180.0
+	var ground: Callable = Callable()
+
+	if _ground_below.is_valid():   # drape the stain over the ground: the patch's frame turned by yaw, from its origin
+		ground = func(x: float, z: float) -> float:
+			var spot: Vector3 = at + Vector3(x, 0.0, z).rotated(Vector3.UP, yaw)
+			var y: float = float(_ground_below.call(spot))
+			return 0.0 if is_nan(y) else y - at.y
+
+	var node: Node3D = PieceLook.bog_iron_patch(state, ground)
+	node.position = at
+	node.rotation.y = yaw
+	_root.add_child(node)
+	entry["node"] = node
+	entry["state"] = state
 
 
 # Boulders (Dave 2026-10-21): server-owned lumps of rock a pick breaks into stones. Drawn with Art's boulder mesh scaled to the
@@ -3541,7 +3613,7 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 	shape.shape = SphereShape3D.new()
 	body.add_child(shape)
 	var lump: MeshInstance3D = MeshInstance3D.new()
-	var ore_rock: bool = OreRockLook.has_look(str(extra.get("ore", "")))   # copper and tin: Dave's photos
+	var ore_rock: bool = OreRockLook.has_look(str(extra.get("ore", "")))   # copper, tin and iron: Dave's photos
 	lump.mesh = OreRockLook.mesh_for(float(extra.get("yaw", 0.0))) if ore_rock else _boulder_mesh
 	lump.material_override = OreRockLook.material(str(extra.get("ore", ""))) if ore_rock else _boulder_material(str(extra.get("ore", "")))
 	lump.material_overlay = _crack_material()
@@ -3898,6 +3970,55 @@ func _on_chest_info(id: int, keep_out: bool, may_set: bool) -> void:
 func set_keep_out(on: bool) -> void:
 	if chest_mode and chest_may_keep_out and net != null:
 		net.inventory_action.rpc_id(1, Net.ACT_CHEST_KEEP_OUT, chest_id, 1 if on else 0, 0, Vector3.ZERO)
+
+
+func _on_autoload_info(id: int, number: int) -> void:
+	if id != chest_id:
+		return
+
+	chest_autoload = number
+
+	if chest_mode:
+		_container_part.refresh()
+
+
+# Autoload (protocol 139): what lies loose on the ground within AUTOLOAD_M of the open container that it takes, from the items this client was
+# sent (every item within 100 m of the player): [[item number, total count, nearest metres], ...], nearest first. The server checks it all again.
+const AUTOLOAD_M := 30.0   # server_items.gd AUTOLOAD_M
+
+
+func autoload_choices(takes: Callable) -> Array:
+	if not chest_mode or not _world.has(chest_id):
+		return []
+
+	var here: Vector3 = _world[chest_id]["pos"]
+	var found: Dictionary = {}   # number -> [number, total, nearest]
+
+	for id in _world:
+		var w: Dictionary = _world[id]
+
+		if int(w["state"]) != 0 or int(w["number"]) <= 0 or id == chest_id:
+			continue
+
+		var d: float = here.distance_to(w["pos"])
+
+		if d > AUTOLOAD_M or not bool(takes.call(int(w["number"]))):
+			continue
+
+		var row: Array = found.get(int(w["number"]), [int(w["number"]), 0, d])
+		row[1] = int(row[1]) + int(w["count"])
+		row[2] = minf(float(row[2]), d)
+		found[int(w["number"])] = row
+
+	var out: Array = found.values()
+	out.sort_custom(func(a, b): return float(a[2]) < float(b[2]))
+	return out
+
+
+# Loads the open container with `number` from the ground round it; `keep`: and keep loading it every 10 minutes. 0 stops the standing autoload.
+func autoload(number: int, keep: bool) -> void:
+	if chest_mode and chest_id >= 0 and net != null:
+		net.inventory_action.rpc_id(1, Net.ACT_AUTOLOAD, chest_id, number, 1 if keep else 0, Vector3.ZERO)
 
 
 # Bulk buttons and favourites (docs/design/INVENTORY_CRAFTING_REPORT.md step 3; the server does the work and answers with bulk_done). Kinds as
@@ -4585,7 +4706,7 @@ func _model_for_state(state: int, extra: Dictionary = {}) -> Node3D:
 
 	var sized: float = float(_structure_by_state(state).get("look_scale", 1.0))
 
-	var model: Node3D = _model_for_look(look, state, extra)
+	var model: Node3D = PieceLook.pipe_run(str(LookTable.LOOKS[look]["args"][0]), float(extra["len"])) if extra.has("len") and LookTable.LOOKS.has(look) else _model_for_look(look, state, extra)   # a pipe run at its own length (PLUMBING_DESIGN s9)
 
 	if model == null:
 		return null

@@ -51,9 +51,11 @@ const SwimScript := preload("res://src/shared/swim.gd")
 const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
+const EditedGroundScript := preload("res://src/stream/edited_ground.gd")
 const CoarseGroundScript := preload("res://src/stream/server_coarse_ground.gd")
 const FogGroundScript := preload("res://src/shared/fog_ground.gd")
 const TrailsScript := preload("res://src/stream/server_trails.gd")
+const BanditsScript := preload("res://src/stream/server_bandits.gd")
 const MapScript := preload("res://src/stream/server_map.gd")
 const MapCodec := preload("res://src/shared/map_codec.gd")
 const IdentityScript := preload("res://src/stream/identity_provider.gd")
@@ -74,11 +76,14 @@ const FloraStoreScript := preload("res://src/stream/server_flora.gd")
 const WaterHub2Script := preload("res://src/water2/water_hub2.gd")   # Dynasty water (Sonny, 31 Oct 2026): the only water since 9 Nov 2026 (the old hub and --water-old are deleted)
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const BlockLinkScript := preload("res://src/stream/block_link_server.gd")
+const ServerAuthScript := preload("res://src/shared/server_auth.gd")
+const ServerSettingsScript := preload("res://src/stream/server_settings.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const TunnelWatchScript := preload("res://src/stream/tunnel_watch.gd")
 
 const MAX_BATCH_BYTES := 192 * 1024
+const MAX_PLAYERS := 32                 # ENet's peer limit; the server pick page shows "2 / 32"
 const MAX_QUEUE_PER_PEER := 20000
 const KEY_BURST := 8000                # block keys one peer may ask for at once; it refills KEY_REFILL_PER_S a second (one peer flooding must not fill the queue)
 const KEY_REFILL_PER_S := 4000.0
@@ -98,13 +103,17 @@ const IDLE_RADIUS_BLOCKS := 12         # circle around each player, in blocks of
 const IDLE_MAX_DONE := 400000          # remembered built blocks (skips re-checking the store)
 
 var _commit: String = GitStamp.short_commit()   # read once at start (Dave 17 Nov 2026): a server left running after a pull must name the code it runs, not the checkout now on disk, or the client's out-of-date check is fooled
+var _server_settings = ServerSettingsScript.new()
+var _auth = ServerAuthScript.new()
 var _stamped_build: int = BuildStamp.stamped_build()   # read once at start, like the commit: 0 = an editor run, which lets every build in (step A1)
 var generator
 var store
 var flora
 var trails                             # ServerTrails: worn game trails the animals leave
+var bandits                            # ServerBandits: bandit camp sites woken by road traffic (docs/design/BANDIT_CAMPS.md)
 var map_knowledge                      # ServerMap: what each character has surveyed for its charcoal Map (protocol 120)
 var animals                            # ServerAnimals: wildlife around the players (rabbits)
+var edited_ground                      # EditedGround: the ground with its digs and fills, for the animals
 var coarse_ground = CoarseGroundScript.new()   # summits and valley-fog cells for the clients, from the tiles (protocol 132)
 var _animal_sent: Dictionary = {}
 var _send_round: int = 0
@@ -294,6 +303,14 @@ func _ready() -> void:
 		store_dir = "user://server_store/%s" % settings.world_name.validate_filename()
 
 	_store_path = store_dir
+	_server_settings.load_from(store_dir)   # name, message and password for the server pick page (store's server.json; DYNASTY_SERVER_PASSWORD)
+
+	if _server_settings.problem != "":
+		push_error("Terrain server: " + _server_settings.problem)   # never open a password server to everyone by a typo in server.json
+		get_tree().quit(1)
+		return
+
+	print("server: name \"%s\"; %s" % [_server_settings.server_name, _server_settings.note])
 	_load_game_clock()
 	var problem: String = store.setup(generator, store_dir)
 
@@ -520,6 +537,7 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.send_chest = func(peer, id, bytes): net.chest_contents.rpc_id(peer, id, bytes)
 	items.send_chest_info = func(peer, id, keep_out, may_set): net.chest_info.rpc_id(peer, id, keep_out, may_set)
+	items.send_autoload_info = func(peer, id, number): net.autoload_info.rpc_id(peer, id, number)
 	items.send_chest_lock = func(peer, id, locked, mine, may_open, wait_s, allowed): net.chest_lock.rpc_id(peer, id, locked, mine, may_open, wait_s, allowed)
 	items.send_storage_view = func(peer, id, numbers, counts, containers): net.storage_view.rpc_id(peer, id, numbers, counts, containers)
 	items.send_craft_stock = func(peer, numbers, counts): net.craft_stock.rpc_id(peer, numbers, counts)
@@ -592,7 +610,11 @@ func _ready() -> void:
 	npcs.rain_now = func(): return float(weather.get("rain", 0.0))
 	npcs.setup(store_dir)
 	animals = AnimalsScript.new()
-	animals.ground_height = npcs.ground_height
+	edited_ground = EditedGroundScript.new()
+	edited_ground.ops = store.ops
+	edited_ground.surface = func(x, z): return generator.surface_height(x, z)
+	animals.ground_height = edited_ground.height   # the ground with every dig and fill (edited_ground.gd): animals walk on and drop to it
+	animals.ground_edited = edited_ground.is_edited
 	animals.blocked = npcs.blocked
 	animals.walls = func(x0, z0, x1, z1, margin): return items.structure_blocks_step(x0, z0, x1, z1, margin)
 	animals.water_level = func(x, z):
@@ -787,12 +809,28 @@ func _ready() -> void:
 
 	spawn = _spawn_point(world_dir)
 	animals.town = npcs.town_point()   # the island level and the stray dogs centre on the starter town's markers, never on the spawn (no_spawn_placement_design.md 3)
+	bandits = BanditsScript.new()
+	bandits.world_seed = items.world_seed
+	bandits.town = animals.town
+	bandits.spawn = Vector2(spawn.x, spawn.z)
+	bandits.game_seconds = func(): return game_clock.seconds
+	bandits.ground_height = func(x, z): return generator.surface_height(x, z)
+	bandits.ground_ready = func(x, z): return generator.tile_cached(x, z)   # the hourly check never reads a tile from disk (1.8 to 4 s)
+	bandits.in_water = npcs.blocked
+	bandits.building_near = func(site_at, reach_m): return items.building_near(site_at, reach_m)
+	bandits.road_distance = func(site_at, reach_m): return items.road_distance(site_at, reach_m)
+	bandits.setup(store_dir)
+	items.road_trip = func(mover, mover_at, trip_kind): bandits.note(mover, mover_at, trip_kind)
+
+	for site_line in bandits.report():
+		print(site_line)
+
 	items.respawn_point = spawn
 	_world_dir = world_dir
 	_start_water()
 
 	var server_peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
-	var error: int = server_peer.create_server(port, 32)
+	var error: int = server_peer.create_server(port, MAX_PLAYERS)
 
 	if error != OK:
 		push_error("Terrain server: cannot listen on port %d (%s)" % [port, error_string(error)])
@@ -802,6 +840,13 @@ func _ready() -> void:
 		return
 
 	multiplayer.multiplayer_peer = server_peer
+	# Every client passes the join handshake before it counts as connected: an open server lets it straight through, a server with a password
+	# checks it first (server_auth.gd). Until then the client gets no welcome and none of its calls are heard.
+	_auth.password_hash = _server_settings.password_hash
+	_auth.salt = _server_settings.salt
+	_auth.address_of = func(peer: int) -> String: return server_peer.get_peer(peer).get_remote_address() if server_peer.get_peer(peer) != null else "?"
+	_auth.log_event = func(text: String) -> void: _events.event(text)
+	_auth.attach_server(multiplayer as SceneMultiplayer)
 	_events.start("telemetry_server_%d.log" % port, _log_dir())
 	_events.start_watchdog()
 	_events.event("server listening on port %d after %d ms of start-up, %s, ram %d MB, commit %s" % [port, Time.get_ticks_msec(), OS.get_name(), int(OS.get_static_memory_usage() / 1048576.0), _commit])
@@ -818,6 +863,7 @@ func _ready() -> void:
 	_link.on_request = _on_blocks_requested
 	_link.is_peer = _is_connected_peer
 	_link_port = _link.start(port + 1)
+	_publish_status()
 
 	if _link_port == 0:
 		print("Terrain server: no block line (port %d is taken); blocks go over the game connection" % (port + 1))
@@ -891,6 +937,8 @@ func _ready() -> void:
 	net.dump_requested.connect(_on_dump_requested)
 	@warning_ignore("confusable_local_declaration")
 	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at): items.action(peer, kind, a, b, count, at))
+	@warning_ignore("confusable_local_declaration")
+	net.pipe_lay_requested.connect(func(peer, slot, from, to): items.pipe_lay(peer, slot, from, to))
 	_report_at_msec = Time.get_ticks_msec() + 10000
 
 	for n in range(_max_running):
@@ -1029,6 +1077,7 @@ func _on_peer_connected(peer_id: int) -> void:
 	_connected_peers[peer_id] = true
 	_queue_mutex.unlock()
 	print("Client %d connected" % peer_id)
+	_publish_status()
 	_events.event("peer %d connected" % peer_id)
 	net.welcome.rpc_id(peer_id, {
 		"protocol": NetScript.PROTOCOL_VERSION,
@@ -1050,6 +1099,23 @@ func _on_peer_connected(peer_id: int) -> void:
 		"game_seconds": game_clock.seconds,
 		"zones": settings.zones.map(func(zone): return [str(zone["group"]), int(zone["max_abs_row"])]),
 		"equator_row": settings.equator_tile_row,
+	})
+
+
+# What the server pick page shows before a player joins (block line STATUS, docs/design/SERVER_PICK_PAGE.md). Sent again when a player comes or goes.
+func _publish_status() -> void:
+	if _link == null:
+		return
+
+	_link.set_status({
+		"name": _server_settings.server_name,
+		"message": _server_settings.message,
+		"build": _stamped_build if _stamped_build > 0 else BuildInfo.NUMBER,
+		"stamped": _stamped_build > 0,
+		"protocol": NetScript.PROTOCOL_VERSION,
+		"players": _peers.size(),
+		"max_players": MAX_PLAYERS,
+		"locked": _server_settings.locked(),
 	})
 
 
@@ -1203,6 +1269,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	])
 	_events.event("peer %d left after %d blocks (last stats: %s)" % [peer_id, int(info.get("blocks", 0)), str(info.get("last_stats", "none"))])
 	_peers.erase(peer_id)
+	_publish_status()
 	limits.forget(peer_id)
 	_warm_home.erase(peer_id)
 	_water_answered_msec.erase(peer_id)
@@ -1216,6 +1283,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_fine_named.erase(peer_id)
 	_animal_sent.erase(peer_id)
 	trails.forget_peer(peer_id)
+	bandits.forget(peer_id)
 
 	if map_knowledge != null:
 		map_knowledge.forget_peer(peer_id)
@@ -2434,6 +2502,8 @@ func _reset_terrain_edits() -> void:
 		return
 
 	store.clear_generated()
+	edited_ground.forget()
+	animals.ground_changed(Vector3.ZERO, INF)   # every animal back onto the generated ground
 	flora.clear_memory()
 	generator.forget_tiles()
 	WaterGridScript.forget_ground()
@@ -2613,6 +2683,7 @@ func _dig_ground(center: Vector3, radius: float) -> bool:
 		_tell_tile_changed(tile)
 
 	tunnels.mark_edit(center, radius)
+	_ground_moved(center, radius)
 	var t2: int = Time.get_ticks_usec()
 
 	if water_live != null:
@@ -2742,6 +2813,15 @@ func _send_buried() -> void:
 		net.flora_cut.rpc(cut[0], cut[1])
 
 
+# The animals' ground changed round a dig or fill: its cells are read again and the animals standing there come to rest on it.
+func _ground_moved(center: Vector3, radius: float) -> void:
+	if edited_ground != null:
+		edited_ground.changed(center, radius)
+
+	if animals != null:
+		animals.ground_changed(center, radius)
+
+
 # A shovel fill: the sphere of ground is saved in the edit log (store.fill_sphere), the water thread raises its ground
 # there, and everyone is told. Returns false when nothing changed (the block holds its edit limit).
 func _fill_ground(center: Vector3, radius: float, material: int) -> bool:
@@ -2761,6 +2841,7 @@ func _fill_ground(center: Vector3, radius: float, material: int) -> bool:
 
 	if not tiles.is_empty():
 		tunnels.mark_edit(center, radius)
+		_ground_moved(center, radius)
 		_bury_plants(center, radius)
 
 		if water_live != null:
@@ -2924,6 +3005,7 @@ func _process(delta: float) -> void:
 	coarse_ground.tick()
 	_events.mark("trails")
 	trails.tick(delta)
+	bandits.tick()
 	map_knowledge.tick(delta)   # the save interval only
 	_events.mark("send npcs")
 	_send_npcs(delta)
@@ -3425,6 +3507,9 @@ func _exit_tree() -> void:
 
 	if trails != null:
 		trails.save()
+
+	if bandits != null:
+		bandits.save()
 
 	if map_knowledge != null:
 		map_knowledge.save()

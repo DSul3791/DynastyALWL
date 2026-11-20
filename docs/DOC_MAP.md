@@ -35,13 +35,16 @@ These retain the existing topic routes, with design sources separated from imple
 | Construction | [Buildables](design/buildables_plan.md) | Pieces, frames, roof shapes and placement behavior; item definitions remain in the catalog. | Door records below |
 | Backpacks | [Backpack design](design/BACKPACKS.md) | Backpack design and carrying rules; values and decision status stay in the source. | Relevant task record |
 | Character attributes | [Attributes 0 to 100](design/ATTRIBUTES.md) | Every attribute 0 to 100 like a percent, 50 average; the bell-shaped creation roll (player fitness 40 to 60); old saves converted; provisional ATTR-1, ATTR-3, ATTR-4. | This design's For Dave section |
+| Autoload | [Autoload](design/AUTOLOAD.md) | A container loads an item from the ground within 30 m, once or every 10 minutes; provisional AL-1 to AL-5. | This design's For Dave section |
 | No spawning near builds | [No-spawn zones](design/NO_SPAWN_ZONES.md) | Nothing wild spawns or regrows within 20 m of what players put down; grass cleared close round it. | This design's For Dave section |
+| Server pick page (client) | [Server pick page](design/SERVER_PICK_PAGE.md) | Approved by Dave 19 Nov: official server, saved servers with live status and padlock, passwords (3 tries), plain failure words. | This design's For Dave section |
 | Torches and Tree sap | [Torches and Tree sap](design/TORCH_TREE_SAP.md) | Simple and Improved torch recipes, where Tree sap comes from; provisional values TS-1..TS-7. | Relevant task record |
 | Smelters | [Smelters light like a campfire](design/SMELTER_LIGHTING.md) | E lights and puts out every smelter tier, fire shown only while lit; provisional choices SL-1..SL-8. | Relevant task record |
 | Craft finish and countdown | [A craft ends with its product or a reason](design/CRAFT_FINISH.md) | Kept items count from the ground and nearby containers at both ends of a craft; the countdown is the finish; provisional CF-1..CF-2. | This design's For Dave section |
 | Edda and Hob's camp | [Camp under the oak](design/NPC_CAMP.md) | Hob and Edda under the oak by the spawn with a large campfire nobody can use; provisional CAMP-1..CAMP-6. | Relevant task record |
 | Garden moisture and irrigation | [Garden moisture](design/GARDEN_MOISTURE.md) | Soil moisture shown on beds, rain and hand watering, dry days slow crops; pipe water onto plots and the hoe's irrigation trench; provisional GM-1..GM-8. | This design's assumptions section |
 | Survey a path | [Survey a path: the survey line](design/SURVEY_ROAD.md) | Hoe survey roads at any distance, the green/red aim line, trees felled and stumps broken on the road, grass cleared 2 m each side; provisional SV-1..SV-9. | Relevant task record |
+| Bandit camps | [Bandit camps](design/BANDIT_CAMPS.md) | Seed-fixed bandit sites woken by road traffic; stage 1 (sites and trip points) only; provisional BANDIT-1..BANDIT-7. | Relevant task record |
 | Ore veins and mines | [Ore veins and mines](design/ORE_VEIN_MINING.md) | Midgame vein mining from the existing geology; Dave's 17 Nov answers in s9; build waits for his go; provisional OV-1..OV-15. | Relevant task record |
 | Storage and fuel supply | [Storage and warehousing](design/STORAGE_WAREHOUSING_DESIGN.md) | Bins, storage movement, permissions and fuel supply. | Goals/progression repair below |
 | Food | [Preparation, preservation and serving](design/FOOD_PREPARATION_PRESERVATION_SERVING.md) | Food categories, stations and workflows. | Goals/progression repair below |
@@ -81,6 +84,7 @@ Separate references for distinct topics. Dated implementation notes preserve cod
 | Movement and action feel | [Feel tuning](FEEL_TUNING.md) | Parameter locator and recorded 2 Nov settings; current values are in the named code. |
 | Comfort and Rested | [Comfort](COMFORT_DESIGN.md) | Comfort/Rested behavior, tuning, open questions and integration reference; recipes route to the master catalog. No blanket approval or runtime certification. |
 | Wildlife coverage | [Animal specification](../ANIMAL_SPEC.md) | 30–31 Oct data audit/species proposals and 8 Nov alarm-group design; not a current species census or passing test certificate. |
+| Animal reactions to players | [Animal reactions](design/ANIMAL_REACTIONS.md) | Provisional 19 Nov 2026 reaction table (notice / flee / safe per species) and the sense changes RX-1 to RX-3, for Dave's review; values live in data/animals/animals.json. |
 
 ## Further design areas — routing review pending
 

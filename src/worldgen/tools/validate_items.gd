@@ -969,10 +969,9 @@ func _init() -> void:
 	for kind in structures:
 		var def: Dictionary = structures[kind]
 
-		if not bool(def.get("take_only", false)):   # remains have no kit: nobody takes them down
+		if not bool(def.get("take_only", false)) and not def.has("hand_laid"):   # remains have no kit (nobody takes them down); pipes and fittings are laid from the hand (PLUMBING_DESIGN s9)
 			if String(def.get("kit", "")) != "" or not bool(def.get("walkover", false)):
 				want_item.call(String(def.get("kit", "")), "structures.json %s kit" % kind)
-
 
 		want_item.call(String(def.get("item", "")), "structures.json %s item" % kind)
 

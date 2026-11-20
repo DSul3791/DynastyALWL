@@ -3,7 +3,7 @@ extends Node3D
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
 
 # Animals on the client (protocol 48): a simple rabbit until Art makes a real one (brown body, head, two ears, white
-# tail). The server sends rows about four times a second; the view glides to each, faces the way it goes and hops while moving
+# tail). The server sends rows about four times a second; the view draws each between the sent points (motion_buffer.gd), faces the way it goes and hops while moving
 # (higher and quicker when it bolts). At most MAX_DRAWN are drawn, the nearest ones (the server already sends only 30 within 120 m).
 
 const MAX_DRAWN := 30
@@ -11,6 +11,7 @@ const SPYGLASS_DRAWN := 60      # while an admin looks through the spyglass the 
 const MODELS_PATH := "res://data/animals/models.json"
 const BoneOffsetsScript := preload("res://src/client/bone_offsets.gd")
 const BreathLook := preload("res://src/client/breath_look.gd")   # head_bone_of: where an animal breathes from in the cold
+const MotionBuffer := preload("res://src/client/motion_buffer.gd")   # drawn between sent points, a little behind (Dave 19 Nov 2026)
 const GRAZE := 0
 const HOP := 1
 const FLEE := 2
@@ -32,7 +33,9 @@ const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
 const WARN_POP := 16                          # the threat ladder's jaw-pop rung (server_big_game.gd); drawn as the warning (10) unless the model maps a clip "16"
 const AIR_STATES := [15]                      # a flock in the air (takes off, flies): its own clip, never walk or run
 
-var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, phase}
+var _bodies: Dictionary = {}     # id -> {node, target Vector3 (newest sent), samples (MotionBuffer), heading, state, phase}
+var _rows_at: float = -1.0       # seconds the last rows came (Time ticks)
+var _gap: float = 0.25           # recent seconds between rows, for MotionBuffer
 var max_drawn: int = MAX_DRAWN   # SPYGLASS_DRAWN while the admin spyglass is up (terrain_client.gd)
 var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
 var _model_notes: Dictionary = {}  # log lines already printed by _model_note
@@ -369,6 +372,12 @@ func aim_rows(from: Vector3, range_m: float) -> Array:
 
 func on_rows(rows: Array) -> void:
 	var seen: Dictionary = {}
+	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
+
+	if _rows_at >= 0.0:
+		_gap = lerpf(_gap, clampf(now_s - _rows_at, 0.05, 0.5), 0.2)
+
+	_rows_at = now_s
 
 	for row in rows:
 		var id: int = int(row[0])
@@ -397,13 +406,15 @@ func on_rows(rows: Array) -> void:
 				node.scale = Vector3.ONE * YOUNG_SCALE
 
 			add_child(node)
-			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13, "id": int(id)}
+			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13, "id": int(id), "samples": []}
 
 		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
 
 		_bodies[id]["target"] = row[2]
 		_bodies[id]["heading"] = float(row[3])
+
+		MotionBuffer.push(_bodies[id]["samples"], row[2], float(row[3]), now_s, _gap)
 		_bodies[id]["state"] = int(row[4])
 
 	var now: int = Time.get_ticks_msec()
@@ -543,6 +554,7 @@ func _process(delta: float) -> void:
 
 func _process_body(delta: float) -> void:
 	_t += delta
+	var drawn_at: float = float(Time.get_ticks_usec()) / 1.0e6 - MotionBuffer.delay_s(_gap)
 
 	for id in _bodies:
 		var b: Dictionary = _bodies[id]
@@ -553,8 +565,9 @@ func _process_body(delta: float) -> void:
 			state = 10
 
 		var before: Vector3 = node.position
-		node.position = node.position.lerp(b["target"], clampf(delta * (10.0 if state == FLEE or state == 11 or state == 14 or state == 15 else 5.0), 0.0, 1.0))
-		node.rotation.y = lerp_angle(node.rotation.y, -float(b["heading"]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
+		var drawn: Array = MotionBuffer.at(b["samples"], drawn_at)
+		node.position = drawn[0]
+		node.rotation.y = lerp_angle(node.rotation.y, -float(drawn[1]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
 		if bool(b.get("model", false)):
 			var model_speed: float = Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001)
 			if node.has_meta("flock_birds"):

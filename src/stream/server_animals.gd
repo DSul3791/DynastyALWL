@@ -33,6 +33,7 @@ var cfg: Dictionary = {}
 var animals: Dictionary = {}       # id int -> {id, sp, num, pos Vector3, heading, state, target Vector3, timer, acc, home}
 var watched: Dictionary = {}       # id int -> true: watched by an admin through the spyglass (set by the server scene each send pass), kept living
 var ground_height: Callable        # (x, z) -> height
+var ground_edited: Callable        # (x, z) -> bool: a dig or fill touches the ground there (edited_ground.gd); unset: none
 var springs_near: Callable         # (Vector3, reach m) -> PackedVector3Array: the ground springs (heads) within reach, from the tiles (unset: none)
 var blocked: Callable              # (x, z) -> bool (deep water)
 var ice_cover_at: Callable         # (Vector3) -> Ice.cover there (0 open .. 1 a 20 cm sheet; 0.5, 10 cm, bears a person); set by the server scene
@@ -126,6 +127,24 @@ func crosses_wall(x0: float, z0: float, x1: float, z1: float) -> bool:
 func setup() -> void:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/animals.json"))
 	cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+
+	# Every species' reaction distances live in one table (animals.json reactions, Dave 19 Nov 2026); the rows read them as alert_m, spook_m, safe_m.
+	var reactions: Dictionary = cfg.get("reactions", {}).get("notice_flee_safe_m", {})
+
+	for sp in reactions:
+		var row: Variant = reactions[sp]
+
+		if not (row is Array) or (row as Array).size() != 3:
+			push_error("animals.json reactions.notice_flee_safe_m.%s: not [notice_m, flee_m, safe_m]" % sp)
+		elif cfg.get("species", {}).has(sp):
+			cfg["species"][sp]["alert_m"] = float(row[0])
+			cfg["species"][sp]["spook_m"] = float(row[1])
+			cfg["species"][sp]["safe_m"] = float(row[2])
+
+	for sp in cfg.get("species", {}):
+		if not reactions.has(sp):
+			push_error("animals.json reactions.notice_flee_safe_m: no row for %s (it would never notice a player)" % sp)
+
 	rng.randomize()   # luck-exempt: world wildlife placement, no player outcome
 	wolves = WolvesScript.new()
 	wolves.host = self
@@ -323,7 +342,7 @@ func _step_young(a: Dictionary, dt: float) -> void:
 		ground_for = func(x: float, z: float) -> float: return swim_height(def, x, z)
 		blocked_for = Callable()
 
-	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
+	var r: Dictionary = walk_step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
 
 	if r["moved"]:
 		a["pos"] = r["pos"]
@@ -696,6 +715,45 @@ func alarm_near(point: Vector3, radius: float) -> void:
 			continue
 
 		_bolt(a, point, species_def(str(a["sp"])))
+
+
+# One walking step of any animal of this module (Steering.step, the same arguments). Where a dig or fill touches the walker's spot or the half metre ahead, a
+# hole's steep rim is a jump down of at most ground_step.drop_m or a scramble up of at most climb_m (data/animals/animals.json, provisional GS-1),
+# so no animal is caught in a hole; natural ground keeps Steering's slope rule.
+func walk_step(pos: Vector3, target: Vector3, speed: float, dt: float, ground: Callable, blocked_at: Callable, arrive_m: float = 0.4, heading: float = 0.0, cross: Callable = Callable()) -> Dictionary:
+	var ahead: Vector2 = Vector2(target.x - pos.x, target.z - pos.z).limit_length(0.5)   # the next half metre: the step itself, never the far goal
+
+	if ground_edited.is_valid() and (bool(ground_edited.call(pos.x, pos.z)) or bool(ground_edited.call(pos.x + ahead.x, pos.z + ahead.y))):
+		var gs: Dictionary = cfg.get("ground_step", {})
+		return Steering.step(pos, target, speed, dt, ground, blocked_at, arrive_m, heading, cross, float(gs.get("climb_m", 1.0)), float(gs.get("drop_m", 2.0)))
+
+	return Steering.step(pos, target, speed, dt, ground, blocked_at, arrive_m, heading, cross)
+
+
+# A dig or fill changed the ground round `centre` (terrain_server _dig_ground / _fill_ground): every animal standing there comes to rest on
+# the ground as it is now, so one dug out from under drops and one buried under a fill climbs onto it (Dave 19 Nov 2026 play test). Animals in
+# the air, on a perch, in a burrow, in a cave or on water keep their height. Cost: one pass over the animals and a ground read for each one there.
+func ground_changed(centre: Vector3, radius: float) -> void:
+	if not ground_height.is_valid():
+		return
+
+	for id in animals:
+		var a: Dictionary = animals[id]
+		var p: Vector3 = a["pos"]
+
+		if Vector2(p.x - centre.x, p.z - centre.z).length() > radius + 1.0:
+			continue
+
+		if a["state"] == HIDDEN or a.has("fly") or bool(a.get("perched", false)) or bool(a.get("in_cave", false)):
+			continue
+
+		if in_water(species_def(str(a["sp"])), p):
+			continue   # on or in water (a swimmer, a flock resting on a lake, an animal on ice): the water holds it, not the bed
+
+		var y: float = float(ground_height.call(p.x, p.z))
+
+		if not is_nan(y) and absf(y - p.y) > 0.05:
+			a["pos"] = Vector3(p.x, y, p.z)
 
 
 # The animals a snare can reach: [{id, sp, pos}] within radius of the point (flat distance), burrowed ones left out.
@@ -1185,7 +1243,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		if in_water(def, a["pos"]):
 			speed = float(def["water"].get("swim_mps", speed)) * (1.0 if a["state"] == FLEE else 0.4)      # cruising slowly, bolting at full speed
 
-	var r: Dictionary = Steering.step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
+	var r: Dictionary = walk_step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
 
 	if r["moved"]:
 		a["pos"] = r["pos"]
@@ -1947,6 +2005,13 @@ func _sample_noise(players: Array, delta: float) -> void:
 
 		vel.append(moved)
 
+		# A running player is seen and heard from farther off (run_ms, run_x; Dave 19 Nov 2026: animals did not react to him running past); walking is 3.2 m/s.
+		# Two samples running, so two position updates landing in one sample never make a walk count as a run.
+		var before: float = (_player_vel[pi] as Vector2).length() if pi < _player_vel.size() else 0.0
+
+		if minf(moved.length(), before) >= float(sen.get("run_ms", 5.0)):
+			noise *= float(sen.get("run_x", 1.5))
+
 		if players.size() == _noise_from.size() and undergrowth.is_valid():
 			var p: Vector3 = players[pi]
 			var speed: float = moved.length()
@@ -1958,7 +2023,7 @@ func _sample_noise(players: Array, delta: float) -> void:
 				if pi < stances.size() and int(stances[pi]) == 1:
 					extra *= float(sen.get("brush_crouch_share", 0.5))
 
-				noise = 1.0 + extra / (skill * skill)
+				noise *= 1.0 + extra / (skill * skill)
 
 		fresh.append(noise)
 
@@ -1999,7 +2064,9 @@ func _sense_factor(a: Dictionary, def: Dictionary, p: Vector3, d: float, stance:
 
 	if _wind_s > 0.0 and d > 0.01:
 		var to_animal: Vector2 = Vector2(a["pos"].x - p.x, a["pos"].z - p.z) / d
-		f *= maxf(1.0 + float(sen.get("scent_gain", 0.5)) * _wind_s * to_animal.dot(_wind_dir), 0.5)   # times the bed's, never in place of it
+		var along: float = _wind_s * to_animal.dot(_wind_dir)   # 1 straight downwind of the player in a full wind, -1 straight upwind
+		# Downwind it smells the player from farther off; upwind it loses only the scent, not its eyes and ears, so it shrinks less (scent_loss, Dave 19 Nov 2026).
+		f *= maxf(1.0 + float(sen.get("scent_gain", 0.5)) * along if along >= 0.0 else 1.0 + float(sen.get("scent_loss", 0.25)) * along, 0.5)   # times the bed's, never in place of it
 
 	if stance == 1:
 		f *= float(sen.get("crouch_factor", 0.6))

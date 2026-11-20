@@ -10,10 +10,13 @@ const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
 const NetSettings := preload("res://src/shared/net_settings.gd")
 const BuildStamp := preload("res://src/shared/build_stamp.gd")
+const ServerAuthScript := preload("res://src/shared/server_auth.gd")
 const BLOCK_M := 16.0
 
 var _net
 var _host: String = "127.0.0.1"
+var _auth = null
+var _password: String = ""
 var _port: int = 24600
 var _name: String = "bot"
 var _seconds: float = 60.0
@@ -50,6 +53,8 @@ func _ready() -> void:
 			_name = argument.trim_prefix("--name=")
 		elif argument.begins_with("--seconds="):
 			_seconds = float(argument.trim_prefix("--seconds="))
+		elif argument.begins_with("--password="):
+			_password = argument.trim_prefix("--password=")
 		elif argument.begins_with("--dig-every="):
 			_dig_every = float(argument.trim_prefix("--dig-every="))
 
@@ -59,6 +64,21 @@ func _ready() -> void:
 	_net.blocks_received.connect(_on_blocks)
 	_net.pulse_received.connect(_on_pulse)
 	var peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
+	# Every server runs the join handshake (server_auth.gd); --password= answers a server that has one, once.
+	_auth = ServerAuthScript.new()
+	_auth.password_needed.connect(func(_left: int, wrong: bool) -> void:
+		if wrong or _password == "":
+			print("BOT %s: the server wants a password%s" % [_name, " (wrong)" if wrong else ""])
+			_finish()
+		else:
+			_auth.submit(_password))
+	_auth.refused.connect(func(reason: String) -> void:
+		print("BOT %s: password refused (%s)" % [_name, reason])
+		_finish())
+	_auth.attach_client(multiplayer as SceneMultiplayer)
+	multiplayer.peer_authentication_failed.connect(func(_peer: int) -> void:
+		print("BOT %s: the join handshake failed (%s)" % [_name, "dropped" if _auth.heard else "the server never answered it: another build?"])
+		_finish())
 
 	if peer.create_client(_host, _port) != OK:
 		print("BOT %s: cannot connect" % _name)

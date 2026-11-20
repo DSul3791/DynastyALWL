@@ -1,7 +1,7 @@
 extends RefCounted
 
 # Where a client-only build (the testers' download) joins: it never starts a server of its own (server/client split, plan step A2,
-# /mnt/project-files/server-client-split/PLAN.md). The address comes from what the player last typed in the join page
+# /mnt/project-files/server-client-split/PLAN.md). The address comes from the server last chosen on the server pick page
 # (user://join_address.cfg), else from client_config.json shipped beside the game (or inside it), else nothing yet.
 # A normal editor or PC run is not client-only and keeps Play's own local server (launcher.gd _host_and_play).
 #   client_config.json: {"server": "play.example.org:24600"}

@@ -911,7 +911,7 @@ func is_holdable(number: int) -> bool:
 	var entry: Dictionary = _inv.table.entry(_inv.table.id_of(number))
 	# Food of ANY item kind can be held and eaten: the check is on THIS item (it used the currently held slot, so crab apples, a "material", could not be taken in hand
 	# unless something edible was already held: Dave, 31 Oct 2026).
-	return str(entry.get("kind", "")) in ["tool", "weapon", "placeable", "container"] or _inv.is_edible_item(number)
+	return str(entry.get("kind", "")) in ["tool", "weapon", "placeable", "container"] or _inv.is_edible_item(number) or entry.has("pipe_m") or entry.has("fitting")   # a pipe, tap or drip head is laid from the hand
 
 
 # Food and small things with a stage-one look (data/items/looks.json) are carried in the palm, drawn as they lie on the ground.
@@ -1162,10 +1162,13 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 	# A left click at an animal in reach strikes it with whatever is in hand (Dave 19 Nov 2026). The axe and pick strike at the impact of their
 	# swing (_strike); a spear jabs and a bow shoots as before; placing a piece or a blueprint, the hoe's list and the build screen keep their click.
-	if button == MOUSE_BUTTON_LEFT and pressed and not _is_axe() and not _is_spear() and not _is_bow() and not _blueprinting() and not _is_placeable() and not _hoe_menu_open and not blueprints.is_open and _animal_in_reach():
+	if button == MOUSE_BUTTON_LEFT and pressed and not _is_axe() and not _is_spear() and not _is_bow() and not _blueprinting() and not _is_placeable() and not _pipe_hand() and not _hoe_menu_open and not blueprints.is_open and _animal_in_reach():
 		_arm_play("use", 0.6)
 		_melee_strike()
 		return true
+
+	if _pipe_hand():
+		return _pipe_click(button, pressed)
 
 	if holding and _hammer_tier() > 0 and (blueprints.mode == "save" or blueprints.mode == "repair"):
 		if button == MOUSE_BUTTON_LEFT and pressed:
@@ -1486,6 +1489,7 @@ func _process_body(delta: float) -> void:
 	_plan_step()
 	_garden_preview()
 	_survey_line()
+	_pipe_mode()
 	_hoe_repeat(delta)
 
 	if _sound != null:
@@ -3154,6 +3158,9 @@ func _caption() -> String:
 	if tool_class == "shovel":
 		return "%s (right click switches)" % ("Raise" if raise_mode else "Dig")
 
+	if _pipe_hand():
+		return _pipe_caption()
+
 	if tool_class == "hoe":
 		return "%s (right click: choose what it does)" % _hoe_mode_name()
 
@@ -4247,3 +4254,363 @@ func run_test() -> void:
 
 func inv_slots() -> int:
 	return _inv.inventory.slot_count
+
+
+# --- Laying pipe from the hand (docs/design/PLUMBING_DESIGN.md s9, Dave 19 Nov 2026; values PROVISIONAL PV-3) ---
+# With a pipe in hand every laid pipe near by glows bright blue and every point a pipe can start from shows a glowing ring: a barrel's bottom centre, a
+# trough's or cistern's outlet, a well's or pump's spout. The aim takes the nearest ring, or the nearest point along a blue pipe (a dot slides along it
+# as you look). The first left click starts a run there; a line then follows the aim, green while the pipe in the pack covers it (in reach, at most
+# 30 m), red when it does not. The second click lays the run (pipe_lay, protocol 138): to a ring or a pipe, or ending in the open air ahead. Right click,
+# or putting the pipe away, drops the start. With a tap or drip head in hand the open pipe ends show as rings and a click fits it on the one aimed at.
+# The server checks it all again (server_items.pipe_lay). Client side only: nobody else sees the rings, the blue or the line.
+const PipeRules := preload("res://src/shared/pipe_rules.gd")
+const PIPE_SEE_M := 40.0          # rings and blue pipes are shown this near the player (looked for twice a second)
+const PIPE_AIM_M := 8.0           # the aim takes a ring or a pipe at most this far from the eye
+const PIPE_PICK_M := 0.4          # and passing at most this near it
+const PIPE_FREE_M := 6.0          # nothing taken: a run ends on the ground or what the aim hits first within this (the server's PLACE_REACH_M), else this far along the aim (Dave 19 Nov 2026 20:31Z: lay the far end on the ground)
+const PIPE_SCAN_MSEC := 500
+const PIPE_RING_R_M := 0.14
+var pipe_start: Vector3 = Vector3.INF     # the run's first point, INF until the first click (tests read these)
+var pipe_aim: Vector3 = Vector3.INF       # the point a click sets now
+var pipe_aim_kind: String = ""            # what it is on: "ring", "pipe", "air" or ""
+var pipe_line_red: bool = false
+var _pipe_rings_at: Array = []            # the points shown as rings: [[point, world id]]
+var _pipe_runs_near: Array = []           # the laid runs near by: [[end a, end b, world id]]
+var _pipe_scan_next: int = 0
+var _pipe_lit: Dictionary = {}            # world id -> the pipe's node, given the blue overlay
+var _pipe_ring_nodes: Array = []          # MeshInstance3D rings, reused
+var _pipe_dot: MeshInstance3D = null
+var _pipe_line: MeshInstance3D = null
+var _pipe_mat: Dictionary = {}            # "blue", "ring", "green", "red", "dot"
+var _pipe_shown: bool = false             # the rings and blue are up (put away once when the pipe leaves the hand)
+
+
+func _pipe_piece_m() -> float:
+	return float(_inv.table.entry(held_id()).get("pipe_m", 0.0)) if held_number() != 0 else 0.0
+
+
+func _pipe_fitting() -> String:
+	return str(_inv.table.entry(held_id()).get("fitting", "")) if held_number() != 0 else ""
+
+
+func _pipe_hand() -> bool:
+	return _inv != null and holding and (_pipe_piece_m() > 0.0 or _pipe_fitting() != "")
+
+
+func _pipe_caption() -> String:
+	if _pipe_fitting() != "":
+		return "Left click a pipe's end or joint (a glowing ring) to fit it"
+
+	if not pipe_start.is_finite():
+		return "Left click a glowing ring or a blue pipe to start a pipe"
+
+	if pipe_line_red:
+		return "Red: too far, or not enough pipe in your pack (right click: start again)"
+
+	var length: float = pipe_start.distance_to(pipe_aim) if pipe_aim.is_finite() else 0.0
+	return "%.1f m, %d pipe (left click: lay it; right click: start again)" % [length, PipeRules.pieces_for(length, _pipe_piece_m())]
+
+
+func _pipe_click(button: int, pressed: bool) -> bool:
+	if not pressed:
+		return button == MOUSE_BUTTON_LEFT or button == MOUSE_BUTTON_RIGHT
+
+	if button == MOUSE_BUTTON_RIGHT:
+		if pipe_start.is_finite():
+			pipe_start = Vector3.INF
+			_inv._on_notice("Pipe start cleared")
+
+		return true
+
+	if button != MOUSE_BUTTON_LEFT:
+		return false
+
+	if _pipe_fitting() != "":
+		if pipe_aim_kind != "ring":
+			_inv._on_notice("Aim at a pipe's end or joint (a glowing ring)")
+		else:
+			_arm_play("use", 0.6)
+			_net.pipe_lay.rpc_id(1, held_slot, pipe_aim, pipe_aim)
+
+		return true
+
+	if not pipe_start.is_finite():
+		if pipe_aim_kind != "ring" and pipe_aim_kind != "pipe":
+			_inv._on_notice("Start a pipe at a glowing ring or a blue pipe")
+		else:
+			pipe_start = pipe_aim
+
+		return true
+
+	if pipe_line_red or not pipe_aim.is_finite():
+		_inv._on_notice("Too far, or not enough pipe in your pack")
+		return true
+
+	_arm_play("use", 0.6)
+	_net.pipe_lay.rpc_id(1, held_slot, pipe_start, pipe_aim)
+	pipe_start = Vector3.INF
+	return true
+
+
+# Every frame: the rings and blue pipes (looked for again twice a second), the aimed point and dot, and the line from the start.
+func _pipe_mode() -> void:
+	if _inv == null or _camera == null:
+		return
+
+	if not _pipe_hand():
+		if _pipe_shown:
+			_pipe_off()
+
+		return
+
+	_pipe_shown = true
+	var now: int = Time.get_ticks_msec()
+
+	if now >= _pipe_scan_next:
+		_pipe_scan_next = now + PIPE_SCAN_MSEC
+		_pipe_scan()
+
+	var eye: Vector3 = _camera.global_position
+	var dir: Vector3 = -_camera.global_transform.basis.z
+	var best_d: float = PIPE_PICK_M
+	pipe_aim = Vector3.INF
+	pipe_aim_kind = ""
+
+	for ring in _pipe_rings_at:
+		var near: Array = PipeRules.ray_nearest(eye, dir, ring[0], ring[0])
+
+		if float(near[2]) <= PIPE_AIM_M and float(near[1]) - 0.05 < best_d:   # a ring wins a tie with the pipe it sits on
+			best_d = float(near[1]) - 0.05
+			pipe_aim = ring[0]
+			pipe_aim_kind = "ring"
+
+	if _pipe_fitting() == "":
+		for run in _pipe_runs_near:
+			var near: Array = PipeRules.ray_nearest(eye, dir, run[0], run[1])
+
+			if float(near[2]) <= PIPE_AIM_M and float(near[1]) < best_d:
+				best_d = float(near[1])
+				pipe_aim = near[0]
+				pipe_aim_kind = "pipe"
+
+				for end in [run[0], run[1]]:
+					if pipe_aim.distance_to(end) <= PipeRules.SNAP_M:
+						pipe_aim = end   # this near an end is that end (the server's rule)
+
+	if pipe_aim_kind == "" and pipe_start.is_finite():
+		var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(eye, eye + dir * PIPE_FREE_M))
+		pipe_aim = hit["position"] if not hit.is_empty() else eye + dir * PIPE_FREE_M
+		pipe_aim_kind = "air"
+
+	_pipe_show_dot()
+	_pipe_show_line()
+
+
+# The rings and runs within PIPE_SEE_M (InventoryView's world rows): runs get the blue overlay; a pipe in hand rings every start point, a fitting in
+# hand rings the open run ends.
+func _pipe_scan() -> void:
+	var here: Vector3 = _camera.global_position
+	var fitting: bool = _pipe_fitting() != ""
+	var rings: Array = []
+	var runs: Array = []
+	var ends_taken: Array = []   # the points something else sits on (a tap, a drip head, a ring): a run end there is not open
+	var seen: Dictionary = {}
+
+	for id in _inv._world:
+		var row: Dictionary = _inv._world[id]
+
+		if int(row.get("state", 0)) < 5 or row.get("site") != null or (row["pos"] as Vector3).distance_to(here) > PIPE_SEE_M + 15.0:   # a run's middle is at most 15 m from its ends
+			continue
+
+		var def: Dictionary = _inv._structure_by_state(int(row["state"]))
+		var water: Variant = def.get("water", {})
+
+		if typeof(water) != TYPE_DICTIONARY or (water as Dictionary).is_empty():
+			continue
+
+		var yaw: float = deg_to_rad(float(row.get("yaw", 0.0)))
+
+		if str(def.get("hand_laid", "")) == "pipe" and row.has("len"):
+			var e: Array = PipeRules.ends(row["pos"], float(row.get("yaw", 0.0)), float(row.get("pitch", 0.0)), float(row["len"]))
+			runs.append([e[0], e[1], id, float(_inv.table.entry(str(def.get("item", ""))).get("pipe_m", 0.0))])
+			seen[id] = true
+			continue
+
+		if str(def.get("hand_laid", "")) == "fitting":
+			ends_taken.append(row["pos"])
+			continue
+
+		var keys: Array = ["outlet", "level_port"] if str(water.get("role", "")) == "tank" else (["outlet"] if str(water.get("role", "")) == "source" else [])
+
+		for key in keys:
+			if typeof(water.get(key)) == TYPE_ARRAY and (water[key] as Array).size() == 3:
+				var v: Array = water[key]
+				var point: Vector3 = (row["pos"] as Vector3) + Vector3(float(v[0]), float(v[1]), float(v[2])).rotated(Vector3.UP, yaw)
+				ends_taken.append(point)
+
+				if not fitting and point.distance_to(here) <= PIPE_SEE_M and (rings.is_empty() or rings[rings.size() - 1][1] != id or (rings[rings.size() - 1][0] as Vector3).distance_to(point) > 0.05):   # a barrel's outlet and bottom point are one ring
+					rings.append([point, id])
+
+	if fitting:   # each run's ends and joints (Dave 19 Nov 2026 20:31Z: each segment has a connection point) that no fitting or water point takes
+		for run in runs:
+			for point in [run[0], run[1]] + PipeRules.joints(run[0], run[1], float(run[3])):
+				var free: bool = (point as Vector3).distance_to(here) <= PIPE_SEE_M
+
+				for taken in ends_taken:
+					free = free and (point as Vector3).distance_to(taken) > PipeRules.SNAP_M
+
+				for ring in rings:
+					free = free and (point as Vector3).distance_to(ring[0]) > 0.05   # two runs' ends at one joint are one ring
+
+				if free:
+					rings.append([point, run[2]])
+
+	_pipe_rings_at = rings
+	_pipe_runs_near = runs
+
+	for id in _pipe_lit.keys():
+		if not seen.has(id) or not _inv._world.has(id) or not is_instance_valid(_pipe_lit[id]) or _inv._world[id]["node"] != _pipe_lit[id]:   # gone, or drawn again (a run split)
+			_pipe_glow(_pipe_lit[id], false)
+			_pipe_lit.erase(id)
+
+	for id in seen:
+		if not _pipe_lit.has(id):
+			_pipe_lit[id] = _inv._world[id]["node"]
+			_pipe_glow(_pipe_lit[id], true)
+
+	_pipe_show_rings()
+
+
+func _pipe_glow(node: Variant, on: bool) -> void:
+	if not is_instance_valid(node):
+		return
+
+	var stack: Array = [node]
+
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+
+		if n is GeometryInstance3D:
+			(n as GeometryInstance3D).material_overlay = _pipe_material("blue") if on else null
+
+		stack.append_array(n.get_children())
+
+
+func _pipe_material(which: String) -> StandardMaterial3D:
+	if not _pipe_mat.has(which):
+		var colours: Dictionary = {"blue": Color(0.2, 0.55, 1.0, 0.55), "ring": Color(0.35, 0.85, 1.0), "dot": Color(1.0, 1.0, 1.0), "green": Color(0.2, 1.0, 0.25), "red": Color(1.0, 0.15, 0.1)}
+		var mat: StandardMaterial3D = StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.albedo_color = colours[which]
+		mat.emission_enabled = true
+		mat.emission = colours[which]
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+		if which == "blue":
+			mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			mat.grow = true
+			mat.grow_amount = 0.01
+		else:
+			mat.no_depth_test = true   # a ring, the dot and the line show through walls and the barrel itself
+			mat.render_priority = 1
+
+		_pipe_mat[which] = mat
+
+	return _pipe_mat[which]
+
+
+func _pipe_show_rings() -> void:
+	while _pipe_ring_nodes.size() < _pipe_rings_at.size():
+		var ring: MeshInstance3D = MeshInstance3D.new()
+		var torus: TorusMesh = TorusMesh.new()
+		torus.inner_radius = PIPE_RING_R_M - 0.025
+		torus.outer_radius = PIPE_RING_R_M
+		ring.mesh = torus
+		ring.material_override = _pipe_material("ring")
+		ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_root.add_child(ring)
+		_pipe_ring_nodes.append(ring)
+
+	for n in _pipe_ring_nodes.size():
+		var ring: MeshInstance3D = _pipe_ring_nodes[n]
+		ring.visible = n < _pipe_rings_at.size()
+
+		if ring.visible:
+			ring.global_position = _pipe_rings_at[n][0]
+
+
+func _pipe_show_dot() -> void:
+	if _pipe_dot == null:
+		_pipe_dot = MeshInstance3D.new()
+		var ball: SphereMesh = SphereMesh.new()
+		ball.radius = 0.05
+		ball.height = 0.1
+		_pipe_dot.mesh = ball
+		_pipe_dot.material_override = _pipe_material("dot")
+		_pipe_dot.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_root.add_child(_pipe_dot)
+
+	_pipe_dot.visible = pipe_aim_kind == "ring" or pipe_aim_kind == "pipe"
+
+	if _pipe_dot.visible:
+		_pipe_dot.global_position = pipe_aim
+
+
+func _pipe_show_line() -> void:
+	var on: bool = pipe_start.is_finite() and pipe_aim.is_finite() and pipe_start.distance_to(pipe_aim) > 0.01
+
+	if not on:
+		pipe_line_red = false
+
+		if _pipe_line != null:
+			_pipe_line.visible = false
+
+		return
+
+	if _pipe_line == null:
+		_pipe_line = MeshInstance3D.new()
+		var rod: CylinderMesh = CylinderMesh.new()
+		rod.top_radius = 0.025
+		rod.bottom_radius = 0.025
+		rod.height = 1.0
+		rod.radial_segments = 6
+		rod.rings = 1
+		_pipe_line.mesh = rod
+		_pipe_line.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_root.add_child(_pipe_line)
+
+	var length: float = pipe_start.distance_to(pipe_aim)
+	var feet: Vector3 = _inv._player_position.call() if _inv._player_position.is_valid() else _camera.global_position
+	var have: int = _inv.inventory.count_of(held_number())
+	pipe_line_red = length > PipeRules.MAX_RUN_M or length < PipeRules.MIN_RUN_M or feet.distance_to(pipe_aim) > PLACE_REACH_M or have < PipeRules.pieces_for(length, _pipe_piece_m())
+	_pipe_line.material_override = _pipe_material("red" if pipe_line_red else "green")
+	var up: Vector3 = (pipe_aim - pipe_start) / length   # the rod's own +Y runs from the start to the aim
+	var side: Vector3 = up.cross(Vector3.UP) if absf(up.y) < 0.99 else up.cross(Vector3.RIGHT)
+	side = side.normalized()
+	var back: Vector3 = side.cross(up).normalized()
+	_pipe_line.global_transform = Transform3D(Basis(side, up * length, back), (pipe_start + pipe_aim) * 0.5)
+	_pipe_line.visible = true
+
+
+# The pipe is put away: the start is dropped and the rings, dot, line and blue go.
+func _pipe_off() -> void:
+	_pipe_shown = false
+	_pipe_scan_next = 0
+	pipe_start = Vector3.INF
+	pipe_aim = Vector3.INF
+	pipe_aim_kind = ""
+	pipe_line_red = false
+
+	for id in _pipe_lit:
+		_pipe_glow(_pipe_lit[id], false)
+
+	_pipe_lit.clear()
+	_pipe_rings_at = []
+	_pipe_runs_near = []
+	_pipe_show_rings()
+
+	if _pipe_dot != null:
+		_pipe_dot.visible = false
+
+	if _pipe_line != null:
+		_pipe_line.visible = false
