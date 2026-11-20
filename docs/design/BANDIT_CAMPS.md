@@ -208,3 +208,16 @@ With the switch on:
 - No quest items exist in the catalog yet, so none are excluded by name.
 - A dropped stash never ages away (like a bag holding things); a piece whose item no longer exists stays in the stash rather than being lost. A camp ending far from every player waits to drop its stash until that ground can be read.
 - Every stack of the item in hand is kept, not only the held slot.
+
+## Before robbery.enabled is turned on
+
+The switch is Dave's (the coordinator, 20 Nov 2026). Stages 4a and 4b ship off; these must be true first, each built, reviewed and lane-tested like any change:
+
+1. **Saving cannot lose a robbery.** `save()` returns the camp file's write result, and a failed write puts the taken stacks back in the player's pack. `load_file` falls back to the previous good file (as server_items.gd does with `.prev`) instead of starting empty.
+2. **The stash drop is cheap enough.** `flush_world` (a full, synchronous `items.save()`) is measured on a big world on Dave's PC, or replaced by a save of just the laid items.
+3. **Kept pieces can be got back.** `stash_left` (pieces whose item left the catalog) has a recovery path, at least an admin listing.
+4. **What is taken is right.** Value-0 stacks are skipped; the held slot, not every stack of the held item, is kept; quest items are excluded once the catalog has them.
+5. **The stash chest (the plan's stage 4 step 3):** a camp chest holding the stash, locked while a bandit lives, if Dave wants it seen before it drops; it needs a new world structure and lock rules.
+6. **Carts (the plan's step 4):** unattended carts within 150 m of a camp robbed at night into the stash, if Dave wants it.
+7. **The toll's once-a-day memory** is saved, so a restart does not ask again the same day.
+8. **Dave plays it** with the switch on in a test world and agrees the numbers BANDIT-30..35.
