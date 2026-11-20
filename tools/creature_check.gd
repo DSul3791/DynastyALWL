@@ -52,7 +52,7 @@ func _init() -> void:
 	var report: PackedStringArray = PackedStringArray()
 
 	for kind in kinds:
-		var lines: PackedStringArray = await _check(kind, int(number_of.get(kind, -1)), out, px, list_clips, look_id, young)
+		var lines: PackedStringArray = await _check(kind, int(number_of.get(kind, -1)), out, px, list_clips, look_id, young, every_look)
 		report.append_array(lines)
 		report.append("")
 
@@ -64,7 +64,7 @@ func _init() -> void:
 	quit()
 
 
-func _check(kind: String, number: int, out: String, px: int, list_clips: bool = false, look_id: int = 0, young: bool = false) -> PackedStringArray:
+func _check(kind: String, number: int, out: String, px: int, list_clips: bool = false, look_id: int = 0, young: bool = false, every_look: bool = false) -> PackedStringArray:
 	var lines: PackedStringArray = PackedStringArray(["== %s (species %d)" % [kind, number]])
 
 	if number < 0:
