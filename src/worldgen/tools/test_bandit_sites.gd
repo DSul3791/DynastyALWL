@@ -8,6 +8,8 @@ extends SceneTree
 # - awake sites and trip points are saved and read back;
 # - stage 3, the warnings: a woken site shows a cold pit and boot prints, then a lookout who walks back to camp, then the camp; a quiet
 #   road puts it back to sleep;
+# - stage 5, clearing: a beaten bandit gives up, is tied with Rope or Twine, led to a guard for a bounty or slips free; the last one gone
+#   clears the camp, which dissolves and stays dormant;
 # - the server's hooks: road distance and buildings near read the world items, a player on a road, a hand path or off every path counts so.
 #   godot --headless --path . --script res://src/worldgen/tools/test_bandit_sites.gd
 
@@ -41,6 +43,8 @@ func _init() -> void:
 	_camp_items()
 	_warnings_stages()
 	_warning_items()
+	_clearing_camp()
+	_tying_strike()
 	print("bandit sites: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 
@@ -650,3 +654,164 @@ func _warning_items() -> void:
 	var mmi: MultiMeshInstance3D = look as MultiMeshInstance3D
 	check(mmi != null and mmi.multimesh.instance_count == 3 and mmi.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "the client draws each print once")
 	look.free()
+
+
+# Stage 5, clearing a camp: a bandit beaten under surrender_share gives up and drops his weapon, is tied, follows, slips free past the slack or
+# after a game hour, and is handed to a guard for a bounty by level; the last bandit gone clears the camp, which dissolves and stays dormant.
+func _clearing_camp() -> void:
+	var dir: String = "user://test_bandit_clearing"
+	DirAccess.make_dir_recursive_absolute(dir)
+
+	for file in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir + "/" + file)
+
+	clock[0] = 900000.0
+	var b: BanditsScript = _sites(dir)
+	var animals = AnimalsScript.new()
+	animals.ground_height = func(_x, _z): return 50.0
+	animals.blocked = func(_x, _z): return false
+	animals.player_positions = func(): return []
+	animals.setup()
+	animals.traits = false
+	b.animals = animals
+	animals.bandit_camps = b
+	var players: Array = []
+	animals.big_game.player_info = func(): return players
+	var c: Dictionary = b.cfg["clearing"]
+	var cell: Vector2i = _cell_with_site(b, 150)
+	var spot: Vector2 = b.candidate(cell)
+	b.sites[cell] = {"x": spot.x, "z": spot.y, "woke": clock[0], "points": 40.0, "levels": [1, 2], "horses": 2}
+	var dropped: Array = []
+	var said: Array = []
+	var paid: Array = []
+	var cleared: Array = []
+	b.lay_camp = func(_camp_key, _camp_fire, _camp_lean_tos, _camp_old, _camp_tracks, _camp_tracks_at): return [400]
+	b.laid_still = func(_ids): return true
+	b.clear_camp = func(camp_key, camp_ids): cleared.append([camp_key, camp_ids])
+	b.drop_gear = func(gear_key, _gear_at): dropped.append(gear_key)
+	b.tell = func(_peer, text): said.append(str(text))
+	b.pay_bounty = func(peer, copper): paid.append([peer, copper])
+	var guard: Vector3 = Vector3(spot.x + 60.0, 50.0, spot.y)
+	b.guards_at = func(): return [guard]
+	var near: Array = [Vector3(spot.x + 20.0, 50.0, spot.y)]
+	b.camp_tick(1.0, near)
+	var bandits: Array = animals.animals.values().filter(func(a): return a["sp"] == "bandit")
+	check(bandits.size() == 2, "the camp's two bandits are there (%d)" % bandits.size())
+	var low: Dictionary = bandits.filter(func(a): return int(a["level"]) == 1)[0]
+	var high: Dictionary = bandits.filter(func(a): return int(a["level"]) == 2)[0]
+	var low_id: int = int(low["id"])
+
+	# Giving up: not at half health, at under surrender_share.
+	animals.damage(low_id, float(low["hp"]) * 0.5, 7)
+	check(not low.has("gave_up") and dropped.is_empty(), "a bandit at half health fights on")
+	animals.damage(low_id, float(low["hp_max"]) * (0.5 - float(c["surrender_share"]) + 0.05), 7)
+	check(low.has("gave_up") and int(low["state"]) == BanditsScript.SIT, "under surrender_share he gives up and sits")
+	check(dropped == [b.gear_of(1)[0]], "he throws down his weapon, only it (%s)" % str(dropped))
+	check(said.any(func(t): return str(t).contains("gives up")), "the player is told how to tie him")
+	var sat: Vector3 = low["pos"]
+
+	for n in 8:
+		b.step(low, 0.25)
+
+	animals.damage(low_id, 0.5, 7)
+	check(low.has("gave_up") and int(low["state"]) == BanditsScript.SIT and (low["pos"] as Vector3).distance_to(sat) < 0.01, "he stays sitting, a blow more and he does not fight back")
+
+	# Tying and leading.
+	check(not b.bind(int(high["id"]), 7), "a bandit still fighting cannot be tied")
+	check(b.bind(low_id, 7) and not b.bind(low_id, 8), "one who gave up is tied, once")
+	players.append({"peer": 7, "pos": low["pos"] + Vector3(10.0, 0.0, 0.0)})
+
+	for n in 80:
+		b.step(low, 0.25)
+
+	var lead: float = Vector2(players[0]["pos"].x - low["pos"].x, players[0]["pos"].z - low["pos"].z).length()
+	check(lead <= float(c["follow_m"]) + 0.5 and lead >= float(c["follow_m"]) - 0.5, "he follows his captor and stops behind him (%.2f m)" % lead)
+	players[0]["pos"] = low["pos"] + Vector3(float(c["lead_slack_m"]) + 5.0, 0.0, 0.0)
+	said.clear()
+	b.step(low, 0.25)
+	check(not low.has("gave_up") and not low.has("bound_by") and said.any(func(t): return str(t).contains("pulled free")), "led past lead_slack_m he pulls free (%s)" % str(said))
+	b.step(low, 0.25)
+	check(int(low["state"]) == AnimalsScript.HOP, "and walks back to his camp")
+	animals.damage(low_id, 0.5, 7)
+	check(low.has("gave_up") and dropped.size() == 1, "badly hurt still: one more blow and he gives up again, with no second weapon")
+
+	# Escaping after a game hour.
+	b.bind(low_id, 7)
+	players[0]["pos"] = low["pos"] + Vector3(1.0, 0.0, 0.0)
+	clock[0] += float(c["escape_game_hours"]) * 3600.0 - 10.0
+	b.step(low, 0.25)
+	check(low.has("bound_by"), "tied for under a game hour he stays")
+	said.clear()
+	clock[0] += 20.0
+	b.step(low, 0.25)
+	check(not low.has("bound_by") and said.any(func(t): return str(t).contains("got away")), "after a game hour he slips his bonds")
+
+	# The bounty: led to the guard.
+	animals.damage(low_id, 0.5, 7)
+	b.bind(low_id, 7)
+	low["pos"] = guard + Vector3(float(c["guard_m"]) - 1.0, 0.0, 0.0)
+	players[0]["pos"] = guard + Vector3(float(c["guard_m"]) - 2.0, 0.0, 0.0)
+	b.step(low, 0.25)
+	check(not animals.animals.has(low_id) and paid == [[7, int(c["bounty_copper_per_level"])]], "by the guard he is taken and his captor paid by level (%s)" % str(paid))
+	check(b.sites[cell]["levels"] == [2] and not b.sites[cell].has("cleared_at"), "he leaves his camp's row; the camp is not cleared while one is left")
+
+	# The last one killed: the camp is cleared, dissolves dissolve_game_days later and stays dormant quiet_game_days.
+	var high_pos: Vector3 = high["pos"]
+	animals.damage(int(high["id"]), float(high["hp"]) * 10.0, 7)
+	check(not animals.animals.has(int(high["id"])), "the last bandit is killed")
+	dropped.clear()
+	check(b.fallen("bandit", high_pos) == cell and dropped == b.gear_of(2), "an armed bandit killed drops all his gear (%s)" % str(dropped))
+	check(b.sites[cell].has("cleared_at") and (b.sites[cell]["levels"] as Array).is_empty(), "no bandit left: the camp is cleared")
+	var read: BanditsScript = _sites(dir)
+	check(read.sites.has(cell) and read.sites[cell].has("cleared_at"), "a cleared camp is saved so")
+	var cleared_at: float = float(b.sites[cell]["cleared_at"])
+	var days: float = float(c["dissolve_game_days"]) * BanditsScript.GAME_DAY_S
+	clock[0] = cleared_at + days - 10.0
+	b.tick()
+	check(b.sites.has(cell), "it stands until dissolve_game_days")
+	clock[0] = cleared_at + days + float(b.cfg["check_s"])
+	b.tick()
+	var horses_left: int = animals.animals.values().filter(func(a): return a["sp"] == "horse").size()
+	check(not b.sites.has(cell) and cleared == [["%d,%d" % [cell.x, cell.y], [400]]] and horses_left == 0, "then it dissolves: pieces and horses gone (%s, %d horses)" % [str(cleared), horses_left])
+	_traffic(b, spot, float(b.cfg["wake_points"]) + 1.0)
+	check(b.refusal(cell, spot, clock[0]) == "dormant", "a dissolved site stays dormant, however busy the road")
+	check(_sites(dir).dormant.has(cell), "the quiet time is saved")
+	clock[0] += float(c["quiet_game_days"]) * BanditsScript.GAME_DAY_S
+	_traffic(b, spot, float(b.cfg["wake_points"]) + 1.0)
+	check(b.refusal(cell, spot, clock[0]) == "", "after quiet_game_days it may wake again (%s)" % b.refusal(cell, spot, clock[0]))
+
+
+# Stage 5, the world side: a strike with Rope or Twine in hand ties a bandit who gave up (one is used, no blow lands); any other item strikes.
+func _tying_strike() -> void:
+	var dir: String = "user://test_bandit_tying"
+	DirAccess.make_dir_recursive_absolute(dir)
+
+	for file in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir + "/" + file)
+
+	var items: ItemScript = ItemScript.new()
+	items.send_full = func(_p, _b): pass
+	items.send_slots = func(_p, _b): pass
+	items.send_world_items = func(_p, _a, _r): pass
+	items.send_notice = func(_p, _text): pass
+	items.ground_height = func(_x, _z): return 10.0
+	items.setup(ItemTableScript.load_default(), dir)
+	items._goals_loaded = true
+	items.peer_connected_hello(1, "bandit-test-key2")
+	items.report_position(1, Vector3(100.0, 10.0, 100.0))
+	var struck: Array = []
+	var tie: Array = [true]
+	items.hit_animal = func(_peer, _origin, _dir, _reach, _amount):
+		struck.append(1)
+		return {}
+	items.bind_animal = func(_peer, _origin, _dir, _reach): return tie[0]
+	var inv = items.inventory_of(1)
+	var rope: int = items.table.number_of("rope")
+	inv.add(rope, 2)
+	var slot: int = inv.numbers.find(rope)
+	items._strike(1, inv, slot, Vector3(1.0, 0.0, 0.0))
+	check(inv.count_of(rope) == 1 and struck.is_empty(), "a rope strike at a bandit who gave up ties him: one rope used, no blow")
+	tie[0] = false
+	items._last_strike.clear()
+	items._strike(1, inv, slot, Vector3(1.0, 0.0, 0.0))
+	check(inv.count_of(rope) == 1 and struck.size() == 1, "at anything else the rope strikes as any item")

@@ -1,5 +1,5 @@
 {
-	"note": "Bandit camp sites, stage 1 (Dave 19 Nov 2026, project chat: sites fixed by the seed, woken by road traffic, a few km apart, none near the start; plan /mnt/project-files/bandit-camps/PLAN.md, docs/design/BANDIT_CAMPS.md). Stage 1 finds sites and wakes them; stage 2 lays the camp (camp below). All numbers are first tries (BANDIT-1..20), tune after play.",
+	"note": "Bandit camp sites, stage 1 (Dave 19 Nov 2026, project chat: sites fixed by the seed, woken by road traffic, a few km apart, none near the start; plan /mnt/project-files/bandit-camps/PLAN.md, docs/design/BANDIT_CAMPS.md). Stage 1 finds sites and wakes them; stage 2 lays the camp (camp below). All numbers are first tries (BANDIT-1..27), tune after play.",
 	"cell_m": 1000.0,
 	"share": 0.5,
 	"stretch_m": 100.0,
@@ -24,6 +24,17 @@
 	"slope_step_m": 5.0,
 	"check_s": 3600.0,
 	"drop_points": 0.05,
+	"clearing": {
+		"note": "Stage 5 (docs/design/BANDIT_CAMPS.md, BANDIT-21..27): a bandit beaten under surrender_share of his health gives up and drops his weapon; a strike with Rope or Twine in hand ties him; he follows within follow_m, slips free past lead_slack_m or after escape_game_hours; led within guard_m of a guard he is handed over for bounty_copper_per_level a level. With no bandit left the camp dissolves after dissolve_game_days and the site stays dormant quiet_game_days.",
+		"surrender_share": 0.15,
+		"follow_m": 2.0,
+		"lead_slack_m": 30.0,
+		"escape_game_hours": 1.0,
+		"guard_m": 5.0,
+		"bounty_copper_per_level": 10,
+		"dissolve_game_days": 2.0,
+		"quiet_game_days": 10.0
+	},
 	"warnings": {
 		"note": "Stage 3 (docs/design/BANDIT_CAMPS.md, BANDIT-17..20): a woken site is first signs (a cold fire pit, boot prints from the road), then one bandit watching the road from lookout_m off it who walks back to camp when a player comes within lookout_leave_m, then the camp; each stage lasts stage_game_days and needs the road at sleep_share of wake_points or the site sleeps again. Prints: track_step_m apart, track_gap_m either side of the line, for track_m off the road, at most track_max.",
 		"stage_game_days": 2.0,
