@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Wooden plumbing (plumbing PR 2, docs/design/PLUMBING_DESIGN.md s5; Dave 14 Nov 2026 06:30Z "pipes were originally made from wood"; values PROVISIONAL):
-# the real structures.json rows of the Wooden - Hand pump, Wooden - Channel / corner / tee, Sluice, Wooden - Trough and the Wooden - Pipe (set down as
+# the real structures.json rows of the Wooden - Channel / corner / tee, Sluice, Wooden - Trough and the Wooden - Pipe (set down as
 # an old 2 m hammer piece loads; pipes laid from the hand are test_pipe_runs.gd) join the water network. A channel or pipe turns so its inlet is the end the water comes from, whatever order it was built in; a spout pours into
 # a channel or trough below it; a shut sluice stops the flow and E opens it; a trough drains down a log pipe into a lower trough under head.
 #   godot --headless --path . --script res://src/worldgen/tools/test_wooden_plumbing.gd
@@ -31,6 +31,11 @@ func make(dir: String):
 	for file in DirAccess.get_files_at(dir):
 		DirAccess.remove_absolute(dir + "/" + file)
 
+	return open_dir(dir)
+
+
+# The server on a world folder as it is (a restart).
+func open_dir(dir: String):
 	var it = ItemsScript.new()
 	it.send_full = func(_p, _b): pass
 	it.send_slots = func(_p, _b): pass
@@ -63,11 +68,16 @@ func _init() -> void:
 
 	# Data: the wooden pieces are built with the hammer from the start. The log pipes are laid from the hand since 19 Nov 2026 (PLUMBING_DESIGN s9): their
 	# hammer blueprints are retired and the elbow and tee load as plain pipe (a laid run turns any way, so they are not needed).
-	for id in ["wooden_hand_pump", "wooden_trough", "wooden_channel", "wooden_channel_corner", "wooden_channel_tee", "wooden_sluice"]:
+	for id in ["wooden_trough", "wooden_channel", "wooden_channel_corner", "wooden_channel_tee", "wooden_sluice"]:
 		check(bp.has(id) and bool(bp[id].get("known", false)) and not bool(bp[id].get("locked", false)), "blueprint %s is known and unlocked" % id)
 
 	for id in ["wooden_pipe", "wooden_pipe_elbow", "wooden_pipe_tee"]:
 		check(bool(bp[id].get("retired", false)) and not bool(bp[id].get("known", true)), "blueprint %s is retired: pipe is laid from the hand" % id)
+
+	# The pumps are retired (Dave 20 Nov 2026: no pump technology, water moves by gravity and rain; PLUMBING_DESIGN s10): their rows stay for their
+	# numbers, nothing builds them, and a placed one joins no water network.
+	for id in ["wooden_hand_pump", "iron_hand_pump", "iron_deep_well_pump"]:
+		check(bool(bp[id].get("retired", false)) and not items._blueprints.has(int(bp[id]["number"])) and bool(items._structures[id].get("retired", false)) and not items._structures[id].has("water"), "%s is retired: no blueprint, no water" % id)
 
 	check(str(items._structures["wooden_pipe_elbow"].get("becomes", "")) == "wooden_pipe" and str(items._structures["wooden_pipe_tee"].get("becomes", "")) == "wooden_pipe" and not items._structures["wooden_pipe_tee"].has("water"), "a saved elbow or tee becomes a Wooden - Pipe")
 	check(bool(items._structures["wooden_pipe"]["water"]["closed"]) and not bool(items._structures["wooden_channel"]["water"]["closed"]), "a log pipe is closed, a flume open")
@@ -76,11 +86,13 @@ func _init() -> void:
 	var tee: Dictionary = items.water_piece(items._structures["wooden_channel_tee"], Vector3(0.0, 10.0, 0.0), 0.0)
 	check(near(tee["inlet"], Vector3(-1.0, 10.23, 0.0)) and near(tee["outlet"], Vector3(1.0, 10.22, 0.0)) and (tee.get("outlets", []) as Array).size() == 1 and near(tee["outlets"][0], Vector3(0.0, 10.22, 1.0)), "a tee runs in at -X and out at +X and +Z, 1 cm lower (%s)" % str(tee))
 
-	# A hand pump's spout pours into the +X end of a channel below it: the channel turns to run from +X to -X. Built channel first, pump after.
+	# A well's spout (a stand-in with the old hand pump's spout; there are no pumps since Dave 20 Nov 2026) pours into the +X end of a channel below
+	# it: the channel turns to run from +X to -X. Built channel first, well after.
+	items._structures["test_well"] = {"kit": "test_well_kit", "item": "wooden_trough", "state": 9913, "footprint_x": 0.5, "footprint_z": 0.5, "cap_per_chunk": 60, "use_reach_m": 3.0, "water": {"role": "source", "ground_water": true, "windlass": true, "draw_l": 8, "max_depth_m": 7, "effort": 0.7, "outlet": [0.0, 0.7, 0.27], "cap_lpm": 48, "quality": "clean"}}
 	var a: int = put("wooden_channel", Vector3(100.0, 10.0, 100.0))
 	check(near(items._water.pieces[a]["inlet"], Vector3(99.0, 10.23, 100.0)), "a channel alone runs from its first end")
-	var pump: int = put("wooden_hand_pump", Vector3(101.0, 10.0, 99.73))
-	check(items._water.downstream(pump).has(a) and near(items._water.pieces[a]["inlet"], Vector3(101.0, 10.23, 100.0)), "with the pump's spout over its +X end it turns round: the pump feeds it (%s)" % str(items._water.pieces[a]["inlet"]))
+	var pump: int = put("test_well", Vector3(101.0, 10.0, 99.73))
+	check(items._water.downstream(pump).has(a) and near(items._water.pieces[a]["inlet"], Vector3(101.0, 10.23, 100.0)), "with the well's spout over its +X end it turns round: the well feeds it (%s)" % str(items._water.pieces[a]["inlet"]))
 
 	# The sluice next along takes the channel's water; shut as built, it passes none.
 	var sluice: int = put("wooden_sluice", Vector3(98.0, 10.0, 100.0))
@@ -88,22 +100,22 @@ func _init() -> void:
 	var trough: int = put("wooden_trough", Vector3(96.2, 9.6, 100.0), 180.0)
 	check(items._water.downstream(sluice).has(trough), "the sluice's outlet over the trough's rim feeds it")
 
-	# Work the pump: 48 L a minute at 4 m down; the shut sluice holds it all back.
+	# Work the well: 48 L a minute at 4 m down (an 8 L draw each 10 s); the shut sluice holds it all back.
 	items.peer_connected_hello(1, "plumber00001")
 	items.report_position(1, Vector3(99.8, 10.0, 99.5))
 	var inv = items.inventory_of(1)
 	items._use_struct(1, inv, pump)
-	check(int(items._pumping.get(1, 0)) == pump, "E works the hand pump")
+	check(int(items._pumping.get(1, 0)) == pump, "E works the well")
 	items._water_tick(0.0)
 	check(items._water.inflow_lpm(trough) == 0.0, "the shut sluice passes nothing")
 
-	# E opens the sluice: the trough fills at the pump's rate.
+	# E opens the sluice: the trough fills at the well's rate.
 	items._last_use.erase(1)
 	items._use_struct(1, inv, sluice)
 	check(str(items._items[sluice]["struct"]["kind"]) == "wooden_sluice_open" and bool(items._water.pieces[sluice]["open"]) and items._water_kind[sluice] == "wooden_sluice_open", "E opens the sluice: it becomes its open twin")
 	check(said.has("You open the sluice."), "and says so (%s)" % str(said))
 	items._water_tick(0.0)
-	check(is_equal_approx(items._water.inflow_lpm(trough), Network.pump_lpm(0.8, 40.0, 4.0)), "the trough fills at the pump's %.1f L/min (%.1f)" % [Network.pump_lpm(0.8, 40.0, 4.0), items._water.inflow_lpm(trough)])
+	check(is_equal_approx(items._water.inflow_lpm(trough), Network.windlass_lpm(4.0, 8.0)), "the trough fills at the well's %.1f L/min (%.1f)" % [Network.windlass_lpm(4.0, 8.0), items._water.inflow_lpm(trough)])
 	items._last_use.erase(1)
 	items._use_struct(1, inv, sluice)
 	items._water_tick(0.0)
@@ -173,6 +185,44 @@ func _init() -> void:
 	items._items.erase(pump)
 	items._water_tick(0.0)
 	check(not items._water_kind.has(pump) and near(items._water.pieces[a]["inlet"], Vector3(99.0, 10.23, 100.0)), "with the pump gone the channel turns back")
+
+	check(not items._retired_blueprint_of_kit.has("rough_bed_kit") and items._retired_blueprint_of_kit.size() == 3, "only the pumps' retired blueprints are cleared at load (a rough bed still takes down as its bed)")
+	# A Wooden - Hand pump already standing in a saved world (Dave 20 Nov 2026: "the wooden hand pumps should be gone too") is cleared when the world
+	# loads and leaves its materials where it stood (6 lumber, 20 nails, 2 twine, 1 hide); a site leaves what had been put into it.
+	var old_pump: int = put("wooden_hand_pump", Vector3(110.0, 10.0, 110.0))
+	var old_site: int = put("wooden_hand_pump", Vector3(120.0, 10.0, 120.0))
+	items._items[old_site]["struct"]["site"] = {"bp": 129, "have": {"lumber": 2}}
+	check(not items._water_kind.has(old_pump), "a placed retired pump joins no water network")
+	items._clear_retired_pieces()
+	var lumber_n: int = items.table.number_of("lumber")
+	var nails_n: int = items._refund_number(items.table.number_of("nails"))   # nails are a group: what comes back is its first member (ItemTable.spend_order)
+	check(not items._items.has(old_pump) and items._ground_count(lumber_n, Vector3(110.0, 10.0, 110.0), 2.0) == 6 and items._ground_count(nails_n, Vector3(110.0, 10.0, 110.0), 2.0) == 20, "a loaded pump is gone, its materials on the ground where it stood (lumber %d, nails %d)" % [items._ground_count(lumber_n, Vector3(110.0, 10.0, 110.0), 2.0), items._ground_count(nails_n, Vector3(110.0, 10.0, 110.0), 2.0)])
+	var piles_last: bool = true
+
+	for gid in items._items:
+		var g: Dictionary = items._items[gid]
+
+		if not g.has("struct") and int(g.get("number", 0)) == lumber_n and (g["pos"] as Vector3).distance_to(Vector3(110.0, 10.0, 110.0)) < 2.0:
+			piles_last = piles_last and float(g["left"]) > 1.0e8
+
+	check(piles_last, "what a cleared pump leaves never despawns")
+	check(not items._items.has(old_site) and items._ground_count(lumber_n, Vector3(120.0, 10.0, 120.0), 2.0) == 2, "a pump site is gone and leaves what was put in (lumber %d)" % items._ground_count(lumber_n, Vector3(120.0, 10.0, 120.0), 2.0))
+
+	# The round trip: a pump saved in a world is gone once the world loads, its materials lie where it stood, and the next save no longer holds it
+	# (loaded again, nothing is given twice).
+	var kept = items
+	items = make("user://test_pump_clear")
+	put("wooden_hand_pump", Vector3(50.0, 10.0, 50.0))
+	items._dirty = true   # put() writes _items straight, and a pump has no water block to mark the save (save() writes nothing when clean)
+	items.save()
+	items = open_dir("user://test_pump_clear")
+	check(items._area_dirty.has(ItemsScript.area_key_of(50.0, 50.0)), "the cleared pump's area is marked for the first save")
+	var pumps_left: Array = items._items.values().filter(func(g): return g.has("struct") and str(g["struct"]["kind"]) == "wooden_hand_pump")
+	check(pumps_left.is_empty() and items._ground_count(lumber_n, Vector3(50.0, 10.0, 50.0), 2.0) == 6, "after a restart the saved pump is gone and its 6 lumber lie there (%d)" % items._ground_count(lumber_n, Vector3(50.0, 10.0, 50.0), 2.0))
+	items.save()
+	items = open_dir("user://test_pump_clear")
+	check(items._ground_count(lumber_n, Vector3(50.0, 10.0, 50.0), 2.0) == 6, "saved and loaded again: the pump stays gone and nothing is given twice (%d)" % items._ground_count(lumber_n, Vector3(50.0, 10.0, 50.0), 2.0))
+	items = kept
 
 	print("wooden plumbing: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

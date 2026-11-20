@@ -27,17 +27,15 @@ func _pipe(from: Vector3, to: Vector3, cap: float = 240.0) -> Dictionary:
 
 func _init() -> void:
 	# Rates from effort (Sonny 1 and 2).
-	check(is_equal_approx(Network.pump_lpm(0.8, 40.0, 2.0), 48.0), "a wooden hand pump over a 2 m table gives its 0.8 L/s cap: 48 L/min")
-	check(absf(Network.pump_lpm(0.8, 40.0, 6.0) - 60.0 * 40.0 / (9.81 * 7.0)) < 0.01, "at 6 m the lift limits it (%.1f L/min)" % Network.pump_lpm(0.8, 40.0, 6.0))
 	check(absf(Network.windlass_lpm(12.0, 8.0) - 480.0 / 22.0) < 0.01, "a 12 m well's windlass draws a full 8 L bucket each 22 s")
 
-	# A hand pump into a channel falling 0.5 percent onto a plot.
+	# A source of 48 L/min into a channel falling 0.5 percent onto a plot.
 	var net = Network.new()
 	net.add(1, {"role": "source", "outlet": Vector3(0, 1.0, 0), "rate_lpm": 48.0, "cap_lpm": 48.0, "quality": "clean"})
 	check(net.add(2, _channel(Vector3(0, 1.0, 0), Vector3(2, 0.99, 0))) == "", "a channel under the spout joins")
 	net.add(3, {"role": "consumer", "inlet": Vector3(2, 0.98, 0), "room_l": 24.0})
 	net.solve(0.0)
-	check(is_equal_approx(net.inflow_lpm(3), 48.0) and net.quality(3) == "clean", "the plot gets the pump's 48 L/min of clean water (%.1f)" % net.inflow_lpm(3))
+	check(is_equal_approx(net.inflow_lpm(3), 48.0) and net.quality(3) == "clean", "the plot gets the source's 48 L/min of clean water (%.1f)" % net.inflow_lpm(3))
 	check(is_equal_approx(net.next_event_s(), 30.0), "and is full in 30 s, the next event (%.1f)" % net.next_event_s())
 	net.pieces[3]["room_l"] = 0.0
 	net.solve(30.0)
@@ -65,21 +63,18 @@ func _init() -> void:
 	check(loop.check(_channel(Vector3(2, 1.0, 2), Vector3(0, 1.0, 0))) == "loop", "a piece closing a loop is refused")
 	check(loop.add(3, _channel(Vector3(2, 1.0, 2), Vector3(0, 1.0, 0))) == "loop" and loop.downstream(2).is_empty() and loop.downstream(3).is_empty(), "and joins nothing")
 
-	# Closed pipes: a force pump's push gives head; with no push a pipe above the spout is dry (no siphon); head under 1 m gives part of the cap.
+	# Closed pipes: water never climbs (no pumps, Dave 20 Nov 2026): a pipe above the spout is dry (no siphon); head under 1 m gives part of the cap.
 	var pipes = Network.new()
-	pipes.add(1, {"role": "source", "outlet": Vector3(0, 1.0, 0), "rate_lpm": 60.0, "cap_lpm": 60.0, "closed": true, "push_m": 10.0})
+	pipes.add(1, {"role": "source", "outlet": Vector3(0, 1.0, 0), "rate_lpm": 60.0, "cap_lpm": 60.0, "closed": true})
 	pipes.add(2, _pipe(Vector3(0, 1.0, 0), Vector3(2, 1.25, 0)))
 	pipes.add(3, {"role": "consumer", "inlet": Vector3(2, 1.25, 0), "room_l": 1000.0})
-	pipes.solve(0.0)
-	check(is_equal_approx(pipes.inflow_lpm(3), 60.0), "a deep-well force pump pushes its 1 L/s up an iron pipe (%.1f)" % pipes.inflow_lpm(3))
-	pipes.pieces[1]["push_m"] = 0.0
 	pipes.pieces[2]["inlet"] = Vector3(0, 1.2, 0)
 	pipes.solve(1.0)
 	check(pipes.inflow_lpm(3) == 0.0, "without a push, a pipe whose inlet is above the spout stays dry (no siphon)")
 	pipes.pieces[2]["inlet"] = Vector3(0, 1.0, 0)
 	pipes.pieces[2]["outlet"] = Vector3(2, 0.5, 0)
 	pipes.pieces[3]["inlet"] = Vector3(2, 0.5, 0)
-	pipes.pieces[2]["cap_lpm"] = 100.0   # a narrow pipe, so its half cap is under the pump's 60 L/min
+	pipes.pieces[2]["cap_lpm"] = 100.0   # a narrow pipe, so its half cap is under the source's 60 L/min
 	pipes.solve(2.0)
 	check(is_equal_approx(pipes.inflow_lpm(3), 50.0), "0.5 m of head below the spout gives half the cap: 50 of a 100 L/min pipe (%.1f)" % pipes.inflow_lpm(3))
 
@@ -118,7 +113,7 @@ func _init() -> void:
 	tanks.solve(0.0)
 	check(is_equal_approx(tanks.litres(2, 50.0), 50.0) and is_equal_approx(tanks.next_event_s(), 100.0), "a trough under a 60 L/min spout holds 50 L after 50 s and is full at 100 s")
 	tanks.solve(100.0)
-	check(is_equal_approx(tanks.litres(2, 100.0), 100.0) and tanks.outflow_lpm(1) == 0.0, "full, with no outlet, it backs the pump up")
+	check(is_equal_approx(tanks.litres(2, 100.0), 100.0) and tanks.outflow_lpm(1) == 0.0, "full, with no outlet, it backs the source up")
 	var cistern = Network.new()
 	cistern.still_after_s = 1000.0
 	cistern.add(1, {"role": "tank", "inlet": Vector3(0, 2.0, 0), "outlet": Vector3(0, 0.5, 0), "litres_max": 500.0})
