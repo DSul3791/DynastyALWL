@@ -505,6 +505,20 @@ Not done: a stain under deeper standing water may be hidden by the water surface
 
 Assumed on Dave's behalf (provisional): BI-2, Bog iron ore still makes steel at the Advanced smelter, two Bog iron ore and the carbon to one Steel ingot (the coordinator confirmed it for him while he was away).
 
+## 70. Autoload: a container loads an item from the ground, once or every 10 minutes
+
+**Status: Implemented - awaiting player verification.** Dave's request, 19 Nov 2026 (thread "Add autoload for carts and containers"). PR #1329, merged to dev at 5dca8ca1 (head ee19903a) after independent review (PASS; earlier rounds made a vehicle's payload worked out once per press, left fish traps out, refused unknown items and fixed the list's pick). Lane B (David4) on the exact head: 430 of 430 selected tests passed (421 fast, 9 timing), 0 script errors, test_autoload among them; warnings 407 equal to dev; join smoke clean. Not yet played. The Autoload list, the Every 10 min box and a barrel holding water refusing goods are not yet seen on screen.
+
+Dave, 19 Nov 2026: "it would be cool if we had an autoload button on carts and wagons or barrels and such where you could push the button and it could show you everything on the ground around you within say 30 meters in a list where you could choose an item and it would just pick up as much of it as it can until it fills the capacity or the weight limit onto the card or into the barrel." "this could work on crates and boxes too." "maybe just have autoload with a check box beside it to make it continuously autoload every 10 minutes or something"
+
+**Required outcome:** the container window of a chest, crate, barrel, shelf, rack, bin, Handcart, Small log sled or Small wagon has an Autoload button and an Every 10 min box. Autoload lists what lies on the ground within 30 m of the container that it takes, with the total and the nearest distance. A pick loads as much as fits, nearest piles first, part of a big pile when only part fits: slots for storage (no weight limit), the payload for the vehicles. Ticked, it loads that item again every 10 minutes, kept after a restart; unticked it stops. Fires, kilns, smelters, stations, platters, fish traps and remains have no Autoload. Design: docs/design/AUTOLOAD.md.
+
+**Acceptance:** drop a pile of stone 10 to 20 m from a Small wagon, open the wagon and press Autoload: the stone is listed with its count; pick it and the wagon fills to its payload, the rest stays on the ground. Tick Every 10 min on a chest, pick clay, drop more clay nearby: within 10 minutes it is in the chest. A barrel holding water loads nothing.
+
+Not done: what Autoload gathers does not count toward goals. Once one pile does not fit, farther piles are not tried in that press. Frame cost not measured.
+
+Assumed on Dave's behalf (provisional, docs/design/AUTOLOAD.md): AL-1 the 30 m is measured from the container; AL-2 one item per standing autoload, a one-off load of another item ends it; AL-3 instant; AL-4 anyone who may open the container may use it, and the standing autoload also picks up other players' drops in range; AL-5 no goal credit.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
