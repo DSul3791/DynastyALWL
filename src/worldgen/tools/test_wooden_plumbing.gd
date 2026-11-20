@@ -214,6 +214,7 @@ func _init() -> void:
 	put("wooden_hand_pump", Vector3(50.0, 10.0, 50.0))
 	items.save()
 	items = open_dir("user://test_pump_clear")
+	check(items._area_dirty.has(ItemsScript.area_key_of(50.0, 50.0)), "the cleared pump's area is marked for the first save")
 	var pumps_left: Array = items._items.values().filter(func(g): return g.has("struct") and str(g["struct"]["kind"]) == "wooden_hand_pump")
 	check(pumps_left.is_empty() and items._ground_count(lumber_n, Vector3(50.0, 10.0, 50.0), 2.0) == 6, "after a restart the saved pump is gone and its 6 lumber lie there (%d)" % items._ground_count(lumber_n, Vector3(50.0, 10.0, 50.0), 2.0))
 	items.save()

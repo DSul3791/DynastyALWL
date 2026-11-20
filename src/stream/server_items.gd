@@ -7325,10 +7325,11 @@ func _load_world_items() -> void:
 	_refresh_pots()   # a pot hangs over whatever fire shares its spot: nothing about it is saved
 
 
+const CLEARED_LIFETIME_S := 1.0e9   # over _expire_items' never-expires mark: what a cleared piece leaves never despawns (PROVISIONAL, PLUMBING_DESIGN s10 PV-11)
+
 # A retired piece still standing in a loaded world (the pumps; Dave 20 Nov 2026: "the wooden hand pumps should be gone too") is taken away and leaves
 # its materials on the ground where it stood: a built one its whole blueprint cost, a site what had been put into it. Only blueprints marked
 # take_down_refund are in _retired_blueprint_of_kit, so no other retired piece is touched.
-const CLEARED_LIFETIME_S := 1.0e9   # over _expire_items' never-expires mark: what a cleared piece leaves never despawns (PROVISIONAL, PLUMBING_DESIGN s10 PV-11)
 func _clear_retired_pieces() -> void:
 	for id in _items.keys():
 		var it: Dictionary = _items[id]
