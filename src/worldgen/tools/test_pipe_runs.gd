@@ -492,6 +492,42 @@ func _init() -> void:
 	items._water_tick(0.0)
 	net_ok("short steep run")
 
+	# --- The Raised cistern (Dave 20 Nov 2026: "they are just big tanks"): its foot point takes a pipe; linked to a barrel it levels by water surface,
+	# its floor 2.05 m up, so the barrel fills first and water never climbs into the cistern; rain falls into its open top.
+	var cis: int = put("stone_raised_cistern", Vector3(500.0, 10.0, 500.0))
+	var cis_foot: Vector3 = Vector3(500.0, 10.15, 501.05)
+	var low: int = barrel(500.0, 504.0)
+	items.give(1, n("copper_pipe"), 2)
+	items.report_position(1, Vector3(500.0, 10.0, 502.5))
+	lay(slot_of("copper_pipe"), cis_foot, Vector3(500.0, 10.05, 504.0))
+	var cis_linked: bool = false
+
+	for group in items._water.level_groups():
+		cis_linked = cis_linked or ((group as Array).has(cis) and (group as Array).has(low))
+
+	check(run_between(cis_foot, Vector3(500.0, 10.05, 504.0)) != 0 and cis_linked, "a pipe from the raised cistern's foot to a barrel links them")
+	items._water.set_litres(cis, 300.0)
+	items._water.set_litres(low, 0.0)
+	level_now()
+	check(absf(litres(low) - 200.0) < 0.6 and absf(litres(cis) - 100.0) < 0.6, "its water runs down and fills the barrel first (barrel %.1f, cistern %.1f)" % [litres(low), litres(cis)])
+	items._water.set_litres(cis, 0.0)
+	items._water.set_litres(low, 150.0)
+	level_now()
+	check(absf(litres(low) - 150.0) < 0.6 and litres(cis) < 0.01, "a barrel's water never climbs into it (barrel %.1f, cistern %.1f)" % [litres(low), litres(cis)])
+	raining[0] = 1.0
+	level_now()
+	check(absf(float(items._water.pieces[cis].get("rain_lpm", 0.0)) - 12.8) < 0.01, "full rain puts 12.8 L a minute into its open top (3.2 m2; %.2f)" % float(items._water.pieces[cis].get("rain_lpm", 0.0)))
+	var asked_at: Array = []
+	items.cover_at = func(at: Vector3) -> float:
+		asked_at.append(at)
+		return 1.0
+	level_now()
+	check(float(items._water.pieces[cis].get("rain_lpm", 0.0)) == 0.0 and asked_at.any(func(at): return absf((at as Vector3).y - 13.05) < 0.01), "and none under a roof, asked over its rim 3 m up")
+	items.cover_at = func(_p): return covered[0]
+	raining[0] = 0.0
+	level_now()
+	net_ok("raised cistern")
+
 	print("pipe runs: %d failures" % failures)
 	items._finish_writer()
 	quit(1 if failures > 0 else 0)

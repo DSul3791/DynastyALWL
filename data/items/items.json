@@ -8103,7 +8103,7 @@
 				"number": 755,
 				"retired": true,
 				"name": "Raised cistern",
-				"description": "A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity.",
+				"description": "A big copper-lined tank on a tall wooden frame. Rain and pipes from higher up fill it, and it feeds pipes below it by gravity.",
 				"kind": "placeable",
 				"stack": 1,
 				"unstackable": true,
@@ -8113,12 +8113,12 @@
 			"stone_raised_cistern": {
 				"number": 756,
 				"name": "Raised cistern",
-				"description": "A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity.",
+				"description": "A big copper-lined tank on a tall wooden frame. Rain and pipes from higher up fill it, and it feeds pipes below it by gravity.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 187. In the water network since plumbing PR 3, locked until the Deep-well pump of plumbing PR 4 can fill it."
+				"note": "Water piece: row state 187. A big tank on a wooden frame since 20 Nov 2026 (Dave: cisterns are not pumps, they are just big tanks; PLUMBING_DESIGN s10); unlocked."
 			},
 			"horn": {
 				"number": 757,
