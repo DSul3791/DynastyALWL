@@ -216,9 +216,13 @@ Against dev (41415196), the proposal put to Dave:
 - Pumps in the catalog: the Iron - Hand pump and the Deep-well pump (both locked, never buildable), the Raised cistern (locked; only a force pump
   fills it) and the Wooden - Hand pump (live now). Proposed: retire all four (narrowed by Dave, below).
 - **Decided (Dave, 20 Nov 2026 22:06Z, "Retire all pumps"):** the Iron - Hand pump, the Deep-well pump and the Wooden - Hand pump are retired
-  (numbers kept; retired in the data by the pump PR: a placed one stands, does nothing and takes down with the hammer for its materials). Water comes from rain and from wells by bucket (a river barrel is the open question below).
+  (numbers kept; retired in the data by the pump PR). Dave, 20 Nov 2026 22:42Z: "the wooden hand pumps should be gone too. I did not approve
+  ever having those. they were an ai accident." A pump standing in a saved world is cleared when the world loads and leaves its materials on the
+  ground where it stood (a site leaves what had been put into it). Water comes from rain, from wells by bucket and from river barrels (below).
 - **Cisterns stay (Dave, 20 Nov 2026 22:06Z):** "the cistern can be copper lined and the frame can be made of wood and iron nails etc. cisterns are
   not pumps"; 22:07Z "they are just big tanks". Proposed for a later PR (our reading, for Dave to confirm): the Raised cistern becomes a big tank
   that behaves like a bigger barrel in the pipe system, copper lined on a wooden frame with iron nails, filled by gravity (a pipe from a higher
   barrel) or by rain and feeding pipes from its bottom, with no riser or force pump; cost and size provisional.
-- Next, asked and not yet answered: a barrel in a river or stream fills from it, then advanced cooking stations draw piped water.
+- **Next (Dave, 20 Nov 2026 22:42Z):** "yes make the cistern, the river barrel is just a barrel that sits in a river and fills up with river water
+  gradually. it will have a fill speed that is pretty fast and it can have copper pipes attached. the pipes need to run down hill because they are
+  gravity fed." Order: the cistern as a big tank, then the river barrel; advanced cooking stations drawing piped water later.

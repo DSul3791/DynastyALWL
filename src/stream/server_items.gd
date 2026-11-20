@@ -251,7 +251,7 @@ var _structures: Dictionary = {}    # structures.json: kind -> definition
 var _struct_gap_m: float = 2.5
 var _blueprints: Dictionary = {}    # blueprints.json: number -> row (with its "id"), placed from the hammer instead of a kit item
 var _blueprint_of_kit: Dictionary = {}   # kit item id -> blueprint number (a piece takes down into its materials, not a kit)
-var _retired_blueprint_of_kit: Dictionary = {}   # kit item id -> a retired blueprint row, for taking down a retired piece still standing (PLUMBING_DESIGN s10)
+var _retired_blueprint_of_kit: Dictionary = {}   # kit item id -> a retired take_down_refund blueprint row: such a piece in a saved world is cleared at load (PLUMBING_DESIGN s10)
 var _structures_cfg: Dictionary = {}   # the whole structures.json, for the shared placement rules
 var _fire_gap_m: float = FIRE_MIN_GAP_M
 var _fires_per_chunk: int = FIRES_PER_CHUNK
@@ -7321,7 +7321,41 @@ func _load_world_items() -> void:
 		_zone_add(_next_id)   # a saved fire still blocks spawning round it
 		_next_id += 1
 
+	_clear_retired_pieces()
 	_refresh_pots()   # a pot hangs over whatever fire shares its spot: nothing about it is saved
+
+
+# A retired piece still standing in a loaded world (the pumps; Dave 20 Nov 2026: "the wooden hand pumps should be gone too") is taken away and leaves
+# its materials on the ground where it stood: a built one its whole blueprint cost, a site what had been put into it. Only blueprints marked
+# take_down_refund are in _retired_blueprint_of_kit, so no other retired piece is touched.
+func _clear_retired_pieces() -> void:
+	for id in _items.keys():
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct"):
+			continue
+
+		var row: Dictionary = _retired_blueprint_of_kit.get(str(_structures.get(str(it["struct"]["kind"]), {}).get("kit", "")), {})
+
+		if row.is_empty():
+			continue
+
+		var give_back: Dictionary = {}
+
+		if it["struct"].has("site"):
+			for item_id in (it["struct"]["site"] as Dictionary).get("have", {}):
+				give_back[str(item_id)] = int(it["struct"]["site"]["have"][item_id])
+		else:
+			for need in row["cost"]:
+				give_back[str(need[0])] = int(need[1])
+
+		var at: Vector3 = it["pos"]
+		_items.erase(id)
+		_load_row_of.erase(id)
+		_dirty = true
+
+		for item_id in give_back:
+			drop_in_world(_refund_number(table.number_of(str(item_id))), int(give_back[item_id]), at)
 
 
 # An area file of the gen the header names. A save that wrote the area but not the header (a crash between) left the gen before in .prev.
@@ -10718,7 +10752,7 @@ func _load_blueprints() -> void:
 		var row: Dictionary = parsed["blueprints"][id].duplicate()
 
 		if bool(row.get("retired", false)):   # kept in the file for its number only
-			if bool(row.get("take_down_refund", false)):   # a retired piece still standing gives its materials back (the pumps, PLUMBING_DESIGN s10)
+			if bool(row.get("take_down_refund", false)):   # a retired piece still standing in a saved world is cleared at load and leaves its materials (the pumps, s10)
 				_retired_blueprint_of_kit[str(_structures.get(str(row["structure"]), {}).get("kit", ""))] = row
 
 			continue
@@ -11667,9 +11701,6 @@ func _take_down(peer: int, inv, id: int) -> void:
 
 	if _blueprint_of_kit.has(str(def["kit"])):   # a blueprint piece gives its materials back, all of them
 		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], true):
-			return
-	elif _retired_blueprint_of_kit.has(str(def["kit"])):   # a retired piece still standing (a pump, Dave 20 Nov 2026) gives its materials back too
-		if not _refund_blueprint(peer, inv, _retired_blueprint_of_kit[str(def["kit"])], true):
 			return
 	elif inv.add(table.number_of(str(def["kit"])), 1, int(it.get("wear", 0))) > 0:
 		return      # a placed torch comes back as its torch, unmarked: lit in the hand when it is pulled out again (only a pack at MAX_SLOTS refuses)

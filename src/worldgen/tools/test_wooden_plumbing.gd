@@ -182,13 +182,16 @@ func _init() -> void:
 	check(not items._water_kind.has(pump) and near(items._water.pieces[a]["inlet"], Vector3(99.0, 10.23, 100.0)), "with the pump gone the channel turns back")
 
 	check(not items._retired_blueprint_of_kit.has("rough_bed_kit") and items._retired_blueprint_of_kit.size() == 3, "only the pumps' retired blueprints refund a take-down (a rough bed still comes back as its bed)")
-	# A Wooden - Hand pump already standing in a world does nothing and takes down with the hammer for its materials (6 lumber, 20 nails, 2 twine, 1 hide).
-	var old_pump: int = put("wooden_hand_pump", Vector3(100.0, 10.0, 101.0))
+	# A Wooden - Hand pump already standing in a saved world (Dave 20 Nov 2026: "the wooden hand pumps should be gone too") is cleared when the world
+	# loads and leaves its materials where it stood (6 lumber, 20 nails, 2 twine, 1 hide); a site leaves what had been put into it.
+	var old_pump: int = put("wooden_hand_pump", Vector3(110.0, 10.0, 110.0))
+	var old_site: int = put("wooden_hand_pump", Vector3(120.0, 10.0, 120.0))
+	items._items[old_site]["struct"]["site"] = {"bp": 129, "have": {"lumber": 2}}
 	check(not items._water_kind.has(old_pump), "a placed retired pump joins no water network")
-	var lumber_before: int = inv.count_of(items.table.number_of("lumber"))
-	var nails_before: int = inv.count_of(items.table.number_of("nails"))
-	items._take_down(1, inv, old_pump)
-	check(not items._items.has(old_pump) and inv.count_of(items.table.number_of("lumber")) == lumber_before + 6 and inv.count_of(items.table.number_of("nails")) == nails_before + 20, "taking it down gives its materials back (lumber %d, nails %d)" % [inv.count_of(items.table.number_of("lumber")) - lumber_before, inv.count_of(items.table.number_of("nails")) - nails_before])
+	items._clear_retired_pieces()
+	var lumber_n: int = items.table.number_of("lumber")
+	check(not items._items.has(old_pump) and items._ground_count(lumber_n, Vector3(110.0, 10.0, 110.0), 2.0) == 6 and items._ground_count(items.table.number_of("nails"), Vector3(110.0, 10.0, 110.0), 2.0) == 20, "a loaded pump is gone, its materials on the ground where it stood (lumber %d)" % items._ground_count(lumber_n, Vector3(110.0, 10.0, 110.0), 2.0))
+	check(not items._items.has(old_site) and items._ground_count(lumber_n, Vector3(120.0, 10.0, 120.0), 2.0) == 2, "a pump site is gone and leaves what was put in (lumber %d)" % items._ground_count(lumber_n, Vector3(120.0, 10.0, 120.0), 2.0))
 
 	print("wooden plumbing: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
