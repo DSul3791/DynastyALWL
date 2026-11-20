@@ -6,7 +6,7 @@ fits it to Dynasty_Base_Male.glb's head in model space (metres, +Y up, facing +Z
 
 1. The head is cut out by colour: the mannequin is pale grey and the hair is dark, so the colour texture gets an alpha channel (clear where pale)
    cut by the material (alpha scissor), and triangles wholly pale are dropped.
-   Where the hair has bald gaps, Body 1's own scalp is copied a little outward as a cap in the hair's colour.
+   Where the hair has bald gaps, Body 1's own scalp is copied a little outward as a cap in a dark hair shade, kept above the hair's lowest edge.
 2. A box fit (width and depth of the skull above the ears, and the crown) moves the hair onto Body 1's head and keeps its shape; any part that
    would then sit inside Body 1's head is pushed straight out from the head's centre to CLEARANCE_M above the skin. Nothing hangs below the
    nape (NAPE_Y), where Meshy paints the mannequin's neck dark too: the hair ends there in an even line.
@@ -31,6 +31,8 @@ OPAQUE_BELOW = 95.0      # paint darker than this (mean RGB) is hair, fully opaq
 CLEAR_FROM = 135.0       # paint this pale or paler is the mannequin's skin, fully clear; the alpha ramps between, and the material cuts at half
 CLEARANCE_M = 0.004      # hair sits at least this far out from Body 1's scalp
 CAP_CLEARANCE_M = 0.002  # the cap (2b) sits this far out from the skin, under the hair
+CAP_HEM_M = 0.015        # the cap stops this far above the hair's lowest edge in each direction round the head, so it never shows under the hair
+HEM_PERCENTILE = 2       # see CAP_HEM_M
 HOLE_BINS = 3            # bald gaps up to about this many direction bins (3.75 degrees each) across are filled by the dark cap
 NAPE_REACH_M = 0.012     # how far below NAPE_Y a triangle may reach and still be kept (lifted to the line)
 NAPE_Y = 1.505           # Body 1 model space: nothing of the hair below this (the chin is at 1.495, the nape about the same)
@@ -263,12 +265,23 @@ def main():
     has_hair = np.isfinite(radius_grid(hair_points[shown], centre, keep_max=True, fill=False))
     inside = shrink(shrink(grow(has_hair, HOLE_BINS), HOLE_BINS), 1)      # one bin in from the hairline, so the cap never shows past the hair
     _, _, v_row, v_col = direction(body_points)
-    cap = body_tris[inside[v_row, v_col][body_tris].all(1)]
+    # The hem: in each direction round the head (column of bins), where the hair the alpha cut keeps thins out at the bottom (HEM_PERCENTILE of its
+    # heights, so a few stray low strands do not count), taking the higher of each column's neighbours. The cap stays CAP_HEM_M above it: the PC
+    # pictures of 20 Nov 2026 showed the flat cap hanging below the hair at the nape and above the ear.
+    _, _, _, s_col = direction(hair_points[shown])
+    hem = np.full(2 * BINS, np.inf)
+
+    for c in np.unique(s_col):
+        hem[c] = np.percentile(hair_points[shown][s_col == c, 1], HEM_PERCENTILE)
+
+    hem = np.maximum(hem, np.maximum(np.roll(hem, 1), np.roll(hem, -1)))
+    above_hem = body_points[:, 1] >= hem[v_col] + CAP_HEM_M
+    cap = body_tris[(inside[v_row, v_col] & above_hem)[body_tris].all(1)]
     cap_used = np.unique(cap)
     cap_dirs, cap_r, _, _ = direction(body_points[cap_used])
     dark = hair[tri_shades[~pale].max(1) < OPAQUE_BELOW]
     dark_shade = shade(uv[dark].mean(1))
-    hair_uv = uv[dark[np.argsort(dark_shade)[len(dark_shade) // 2]]].mean(0).astype(np.float32)     # the middle of the fully opaque hair triangle of median shade
+    hair_uv = uv[dark[np.argsort(dark_shade)[len(dark_shade) // 4]]].mean(0).astype(np.float32)     # a darker than middle opaque hair texel: the cap reads as the shade between strands
 
     # 2c. Push out: the box-fitted hair keeps its shape; any part that would sit inside Body 1's head is pushed out along the line from the head's
     # centre to CLEARANCE_M above the skin, so it stays over the cap.
