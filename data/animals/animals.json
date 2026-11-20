@@ -471,7 +471,8 @@
 				"bond_per_day": 0.0,
 				"bond_hungry": 0.0,
 				"follow_m": 4.0,
-				"warn_bond": 2.0
+				"warn_bond": 2.0,
+				"lies_down": false
 			},
 			"group_spacing_m": 3.5,
 			"number": 7,

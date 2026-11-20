@@ -396,6 +396,8 @@ func _camp_life() -> void:
 	check(b.fallen("bandit", hurt["pos"]) == cell, "a fallen bandit is its camp's, though it ran on after its spot was last read")
 	check(b.sites[cell]["levels"].size() == 2 and dropped.size() == b.gear_of(level).size() and dropped[0][0] == b.gear_of(level)[0], "it leaves the row and drops its gear (%s)" % str(dropped))
 	check(b.fallen("bandit", Vector3(spot.x + 500.0, 50.0, spot.y)) == Vector2i(2147483647, 0), "a bandit far from any camp member is no camp's")
+	check(b.fallen("horse", horses[0]["pos"]) == Vector2i(2147483647, 0) and int(b.sites[cell]["horses"]) == 2, "a horse that is not gone is no camp's that died")
+	animals.animals.erase(int(horses[0]["id"]))
 	check(b.fallen("horse", horses[0]["pos"]) == cell and int(b.sites[cell]["horses"]) == 1, "a camp horse that dies leaves the row")
 	check(b.layout(cell)["seats"].size() == 2, "the smaller camp has fewer seats")
 
@@ -914,6 +916,7 @@ func _claimed_horses() -> void:
 	var led: Dictionary = animals.animals[first]
 	check(led.has("companion_id") and not led.has("camp") and int(b.sites[cell]["horses"]) == 1, "it is a companion and leaves the camp's row")
 	check(not b.claim_horse(first, 4), "a claimed horse is not claimed twice")
+	check(b.fallen("horse", animals.animals[second]["pos"]) == Vector2i(2147483647, 0) and int(b.sites[cell]["horses"]) == 1, "a claimed horse that dies by the tether is no camp's")
 	check(b.claim_horse(second, 4), "the second horse can be claimed too")
 	b.save()
 	animals.companions.save()
@@ -926,6 +929,11 @@ func _claimed_horses() -> void:
 
 	var gap: float = Vector2(players[0]["pos"].x - led["pos"].x, players[0]["pos"].z - led["pos"].z).length()
 	check(gap <= 4.0 + 1.5, "it follows its owner (%.2f m)" % gap)
+
+	for n in 40:
+		animals.companions.step(led, 0.25)
+
+	check(int(led["state"]) == AnimalsScript.GRAZE, "at heel it stands grazing, it does not lie down like a dog (%d)" % int(led["state"]))
 	var c2 = CompanionsScript.new()
 	c2.store_dir = dir
 	c2.load_records()

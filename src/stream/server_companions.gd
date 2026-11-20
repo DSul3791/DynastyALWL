@@ -191,14 +191,16 @@ func _make_stray(sp: String, c: Dictionary, p: Dictionary) -> void:
 			return
 
 
-# Where a companion stands when it is made or catches up: 2.8 m behind-left of its owner, and each further live companion of the same owner
-# a step round from the last, so two claimed horses never stand in one spot.
+# Where a companion stands when it is made or catches up: 2.8 m behind-left of its owner (its first companion, as before), and each further
+# living companion of the same owner a step round from the last, so two claimed horses never stand in one spot.
 func _beside(r: Dictionary) -> Vector3:
 	var n: int = 0
 
-	for rid in live.keys():
-		if rid != str(r["id"]) and str(records.get(rid, {}).get("owner_key", "")) == str(r["owner_key"]) and int(rid) < int(r["id"]):
-			n += 1
+	for rid in records:
+		var other: Dictionary = records[rid]
+
+		if int(rid) < int(r["id"]) and str(other["owner_key"]) == str(r["owner_key"]) and not bool(other.get("dead", false)):
+			n += 1   # by record, not by which was made first, so the spots stay the same however they are made again
 
 	return Vector3(-2.0, 0.0, -2.0).rotated(Vector3.UP, 0.9 * n)
 
@@ -434,7 +436,7 @@ func claim(a: Dictionary, peer: int) -> bool:
 		return false
 
 	_adopt(a, key, c)
-	_dirty = true
+	save()   # at once, as the camp's row it leaves is (server_bandits._member_gone): a crash between them cannot lose the horse
 	return true
 
 
@@ -497,7 +499,7 @@ func _step_companion(a: Dictionary, dt: float) -> void:
 
 	if d <= follow_m + 1.0:
 		a["idle_s"] = float(a.get("idle_s", 0.0)) + dt
-		a["state"] = LIE if float(a["idle_s"]) >= LIE_AFTER_S else host.GRAZE   # at heel a while, it lies down
+		a["state"] = LIE if bool(c.get("lies_down", true)) and float(a["idle_s"]) >= LIE_AFTER_S else host.GRAZE   # at heel a while, it lies down (not a horse)
 		return
 
 	a["idle_s"] = 0.0

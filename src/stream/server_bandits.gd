@@ -814,22 +814,17 @@ func fallen(species: String, pos: Vector3) -> Vector2i:
 	var best_id: int = 0
 	var best_d: float = FALLEN_REACH_M   # a member erased this tick may have charged or fled since its spot was last read (once a second)
 
-	for pass_no in 2:
-		for cell in _members:
-			for id in _members[cell]:
-				var m: Dictionary = _members[cell][id]
-				var d: float = (m["pos"] as Vector3).distance_to(pos)
-				var just_gone: bool = animals != null and not animals.animals.has(id)   # the animal code erased the dead one before telling us
+	for cell in _members:
+		for id in _members[cell]:
+			var m: Dictionary = _members[cell][id]
+			var d: float = (m["pos"] as Vector3).distance_to(pos)
+			var just_gone: bool = animals == null or not animals.animals.has(id)   # the animal code erased the dead one before telling us
 
-				if (just_gone or pass_no == 1) and d < best_d and bool(m["horse"]) == (species == "horse"):
-					best_d = d
-					best = cell
-					best_id = id
-
-		if best_id != 0:
-			break
-
-		best_d = 3.0   # no member just gone (a test, or none was ours): the nearest within 3 m of its last known spot
+			# Only a member just gone: an animal that was none of ours (a claimed horse, a wild one) never takes a living member's place.
+			if just_gone and d < best_d and bool(m["horse"]) == (species == "horse"):
+				best_d = d
+				best = cell
+				best_id = id
 
 	if best_id == 0:
 		return best
