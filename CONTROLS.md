@@ -140,7 +140,7 @@ The one-window screen is the only inventory window; the old window and its `--ol
 | Control | Action |
 |---|---|
 | Left click and drag on the body picture | Turns the body left or right (Dave 20 Nov 2026). It never tips up or down, and it no longer spins by itself |
-| Wheel (mouse) on the body picture | Zooms in toward the part under the pointer, smoothly; scrolling out goes back to the whole body |
+| Wheel (mouse) on the body picture | Zooms in toward the height under the pointer (never off the top of the head or below the feet), smoothly; scrolling out goes back to the whole body |
 | Click or Tab onto a slider | The picture eases in to that part: the face sliders, Neck and Hair Length to the head; Chest, Bust and Shoulders to the chest; Belly, Torso and Arms to the upper body; Hips, Legs, Hands and Feet to theirs. Height, Build and Muscle show the whole body. Opening Head and face or Hair zooms to the head; opening any other section, or closing them all, shows the whole body |
 
 ## Planned / not decided

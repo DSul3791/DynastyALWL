@@ -24,6 +24,8 @@ const TURN_DEG_PER_PX := 0.5
 const VIEW_EASE := 6.0           # per second: about half a second to settle
 const WHEEL_STEP := 0.8          # each wheel notch in shows this much of the slice before
 const VIEW_MIN_TALL_M := 0.35
+const VIEW_LOW_M := 0.1          # the wheel keeps the middle of the view between the feet and the top of the head
+const VIEW_HIGH_M := 1.85
 const FULL_VIEW := {"y": 0.95, "tall": 2.9}     # the whole body standing on its patch of ground (the view the page always had)
 # A part: the bones it centres on (as drawn, so it follows the sliders and either body), metres up from them, the slice it shows, and a height for a body without bones.
 const PARTS := {
@@ -562,7 +564,7 @@ func zoom_preview(zoom_in: bool, at: float) -> void:
 	if zoom_in:
 		var under: float = y + (0.5 - clampf(at, 0.0, 1.0)) * tall
 		var fewer: float = maxf(VIEW_MIN_TALL_M, tall * WHEEL_STEP)
-		_aim = {"y": under + (y - under) * fewer / tall, "tall": fewer}
+		_aim = {"y": clampf(under + (y - under) * fewer / tall, VIEW_LOW_M, VIEW_HIGH_M), "tall": fewer}     # never off the body into the sky or the ground
 		return
 
 	var more: float = minf(full_tall, tall / WHEEL_STEP)

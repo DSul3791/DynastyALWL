@@ -71,6 +71,13 @@ func _run() -> void:
 
 	if DynastyBody.available():
 		_check(screen._drawn_y.has("Head"), "the head height is read from the drawn bones")
+		# The heights are the drawn ones, slider shapes included: a taller body moves the head view up.
+		screen.logic.set_slider("height", 1.0)
+		screen._rebuild_body()
+		await _settle(screen)
+		_check(float(screen._view["y"]) > head_y + 0.03, "Height +1 raises the head view (%.2f to %.2f m)" % [head_y, float(screen._view["y"])])
+		screen.logic.set_slider("height", 0.0)
+		screen._rebuild_body()
 
 	(screen._sliders["feet"] as HSlider).focus_entered.emit()
 	await _settle(screen)
@@ -92,7 +99,9 @@ func _run() -> void:
 	_check(float(screen._aim["y"]) > float(screen.FULL_VIEW["y"]), "wheel in near the top moves toward the head")
 
 	for _i in range(30):
-		screen.zoom_preview(true, 0.5)
+		screen.zoom_preview(true, 0.0)
+
+	_check(float(screen._aim["y"]) <= screen.VIEW_HIGH_M, "zooming in at the very top stays on the body (%.2f m)" % float(screen._aim["y"]))
 
 	_check(is_equal_approx(float(screen._aim["tall"]), screen.VIEW_MIN_TALL_M), "zooming in stops at the closest view")
 
