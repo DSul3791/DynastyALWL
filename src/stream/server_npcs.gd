@@ -380,6 +380,8 @@ func _step_wary(npc: Dictionary, w: Dictionary, dt: float) -> bool:
 	if bool(npc.get("hidden", false)):
 		return true   # in the cave: it stays out of sight until the angry character goes
 
+	(npc.get("chore", {}) as Dictionary).erase("here")   # pushed off its rest spot: it walks back to it when left alone
+
 	var r: Dictionary = _move(npc, goal, flee_mps if w.has("hide") else back_off_mps, dt, Vector3.INF if w.has("hide") else npc["look"])   # backing off it keeps its eyes on the player
 
 	if w.has("hide") and (r["arrived"] or Vector2(npc["pos"].x - goal.x, npc["pos"].z - goal.z).length() <= 1.0):
@@ -404,7 +406,8 @@ func _step_chore(npc: Dictionary, plan: Dictionary, dt: float) -> void:
 
 	_halt(npc, dt)
 	npc["state"] = WORK if bool(plan.get("work", false)) else STAND
-	_turn_to(npc, plan.get("face", npc.get("look", Vector3.INF)), dt)
+	var look: Vector3 = npc.get("look", Vector3.INF)
+	_turn_to(npc, look if look != Vector3.INF else plan.get("face", Vector3.INF), dt)   # nervous: anyone inside watch_m is watched, even over a chore
 
 
 # One eased step toward `goal` at up to `top` m/s: the speed rises and falls by accel_mps2 (and slows into the stop), the heading turns at

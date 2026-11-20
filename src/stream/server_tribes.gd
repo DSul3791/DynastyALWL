@@ -209,9 +209,13 @@ func avoid(npc: Dictionary) -> Dictionary:
 	var angry_near: bool = false
 	var armed_p: Vector3 = Vector3.INF
 	var armed_d: float = float(att.get("spook_m", 10.0))
+	var far: float = maxf(maxf(float(att.get("watch_m", 20.0)), armed_d), float(att.get("angry_keep_m", 25.0)) + HIDE_EXTRA_M) + float(att.get("armed_keep_m", 4.0)) + CALM_EXTRA_M
 
 	for p in _players:
 		var d: float = Vector2(p["pos"].x - pos.x, p["pos"].z - pos.z).length()
+
+		if d > far:
+			continue   # past everything a member reacts to: no standing lookup for the far players
 		var keep: float = keep_from(id, p)
 
 		if angry(tribe, str(p.get("key", ""))) and d <= keep + (HIDE_EXTRA_M if bool(npc.get("hidden", false)) else 0.0):
@@ -240,6 +244,9 @@ func avoid(npc: Dictionary) -> Dictionary:
 		var goal: Vector2 = Vector2(pos.x, pos.z) + away * (worst_by + 0.5)
 		var spot: Vector3 = npc.get("anchor", _member[id]["spot"])   # where its chore holds it (its own spot at rest)
 		var leash: float = float(cfg.get("leash_m", 8.0))
+
+		if _flat_d(pos, spot) > leash:
+			spot = pos   # met on its way somewhere: it backs off from where it is, never on toward its goal past the player
 		goal = Vector2(spot.x, spot.z) + (goal - Vector2(spot.x, spot.z)).limit_length(leash)
 
 		if goal.distance_to(Vector2(pos.x, pos.z)) > 0.3:
@@ -286,8 +293,10 @@ func chore_plan(npc: Dictionary, now: float) -> Dictionary:
 		"rest":
 			npc["anchor"] = spot
 
-			if _flat_d(npc["pos"], spot) > 0.6:
+			if not bool(c.get("here", false)) and not _reached(npc, c, spot, now, walk):
 				return {"goal": spot, "mps": walk}
+
+			c["here"] = true
 
 			if now < float(c["until"]) or jobs.is_empty():
 				return {"face": _point(data, tribe, "fire", id, 0)}
@@ -312,12 +321,13 @@ func chore_plan(npc: Dictionary, now: float) -> Dictionary:
 
 			c["job"] = pick
 			c["phase"] = "out"
+			c.erase("here")
 			c["goal"] = _point(data, tribe, str(data["jobs"][pick].get("out", "fire")), id, int(c["n"]))
 			return {"goal": c["goal"], "mps": walk}
 		"out":
 			npc["anchor"] = c["goal"]
 
-			if _flat_d(npc["pos"], c["goal"]) > 0.6:
+			if not _reached(npc, c, c["goal"], now, walk):
 				return {"goal": c["goal"], "mps": walk}
 
 			if str(job.get("out", "")) == "mouth":
@@ -345,7 +355,7 @@ func chore_plan(npc: Dictionary, now: float) -> Dictionary:
 		"back":
 			npc["anchor"] = c["goal"]
 
-			if _flat_d(npc["pos"], c["goal"]) > 0.6:
+			if not _reached(npc, c, c["goal"], now, walk):
 				return {"goal": c["goal"], "mps": walk}
 
 			c["phase"] = "drop"
@@ -376,6 +386,23 @@ func _hunting(tribe: String, id: String) -> bool:
 
 	var c: Dictionary = npcs.npcs.get(other, {}).get("chore", {}) if npcs != null else {}
 	return str(c.get("job", "")) == "hunt" and str(c.get("phase", "rest")) != "rest"
+
+
+# True once the member is at `goal`, or has walked toward it for twice the time it should take plus 10 s (steered round something it cannot
+# pass, a build on the ledge, a wet patch): then it does its chore where it stands rather than freeze, and a hunter still frees the hunt.
+func _reached(npc: Dictionary, c: Dictionary, goal: Vector3, now: float, walk: float) -> bool:
+	if _flat_d(npc["pos"], goal) <= 0.6:
+		c.erase("by")
+		return true
+
+	if not c.has("by"):
+		c["by"] = now + _flat_d(npc["pos"], goal) / maxf(walk, 0.1) * 2.0 + 10.0
+
+	if now < float(c["by"]):
+		return false
+
+	c.erase("by")
+	return true
 
 
 func _to_back(c: Dictionary, data: Dictionary, tribe: String, id: String, job: Dictionary) -> void:

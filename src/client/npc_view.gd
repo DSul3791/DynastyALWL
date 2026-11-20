@@ -17,6 +17,7 @@ const WORK := 4                          # protocol 146: a goblin tribe member a
 const GUARD := 5                         # protocol 146: standing its ground at a weapon in hand, spear forward (its guard clip, models.json "10")
 const SPEAR_GUARD_DEG := 15.0            # the spear's angle above level in the guard stance
 const CHITTER_S := [2.0, 4.0]            # seconds between a guarding goblin's angry calls
+const HISS_GAP_S := 9.0                   # at most one squaring-up hiss per goblin this often
 const SEAT_TOP_M := 0.45                 # the chair's seat top above its feet (building_look.gd chair: slats at 0.43, 0.045 thick)
 const SEAT_HIPS_ABOVE_M := 0.07          # the hips joint over the seat top, as the player sits (terrain_client.gd, #517)
 const SEAT_LIFT_MAX_M := 0.6             # never move the body more than this to meet the seat
@@ -250,7 +251,12 @@ func _chitter(node: Node3D, body: Dictionary, state: int, delta: float) -> void:
 	var wait: float = float(body.get("chitter", -1.0))
 
 	if wait < 0.0:
-		goblin_called.emit(node.global_position, "threat")
+		var now: float = Time.get_ticks_msec() / 1000.0
+
+		if now - float(body.get("hissed", -INF)) >= HISS_GAP_S:   # one hiss as it squares up, not one per flicker at the edge of spook_m
+			body["hissed"] = now
+			goblin_called.emit(node.global_position, "threat")
+
 		wait = randf_range(CHITTER_S[0], CHITTER_S[1])
 
 	wait -= delta

@@ -138,6 +138,13 @@ func _tile() -> void:
 	for prop in camp.get("props", []):
 		spots.append(["the %s" % str(prop["kind"]), Vector2(float(prop["x"]), float(prop["z"]))])
 
+	var points: Dictionary = (camp.get("chores", {}) as Dictionary).get("points", {})
+
+	for kind in points:
+		if not str(kind).ends_with("_face"):   # a _face point is only looked at
+			for row in points[kind]:
+				spots.append(["the %s chore point %s" % [kind, str(row)], Vector2(float(row[0]), float(row[1]))])
+
 	for s in spots:
 		var c: Vector2i = cell.call(s[1])
 		var dx: float = (heights[c.y * n + c.x + 1] - heights[c.y * n + c.x - 1]) / (2.0 * spacing)
@@ -339,7 +346,7 @@ func _chores() -> void:
 	var items = _items("user://test_goblin_camp_chores", said)
 	items.peer_connected_hello(1, "goblin-test-key3")
 	var fire: Vector3 = Vector3(float(camp["fire"]["x"]), 10.0, float(camp["fire"]["z"]))
-	var player: Array = [fire + Vector3(-40.0, 0.0, 0.0)]
+	var player: Array = [fire + Vector3(18.0, 0.0, 45.0)]   # down the slope, past watch_m from the ledge but every chore point inside near_m (npcs.json 60 m), so all step at 10 Hz
 	var npcs = NpcsScript.new()
 	npcs.hour_now = func(): return 12.0
 	npcs.ground_height = func(_x, _z): return 10.0
