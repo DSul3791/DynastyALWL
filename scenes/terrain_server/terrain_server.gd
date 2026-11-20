@@ -50,6 +50,7 @@ const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.g
 const SwimScript := preload("res://src/shared/swim.gd")
 const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
+const TribesScript := preload("res://src/stream/server_tribes.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const EditedGroundScript := preload("res://src/stream/edited_ground.gd")
 const CoarseGroundScript := preload("res://src/stream/server_coarse_ground.gd")
@@ -120,6 +121,7 @@ var _send_round: int = 0
 var identity = IdentityScript.new()      # who a peer is (src/stream/identity_provider.gd): the swap point for real logins
 var items                              # ServerItems: inventories and world items
 var npcs                               # ServerNpcs: classic NPCs (protocol 45)
+var tribes                             # ServerTribes: goblin tribes (data/creatures/goblin_tribes.json): standing, keeping off, anger
 var admin                              # ServerAdmin: who may place markers and NPCs
 var dialogue                           # ServerDialogue: talking to NPCs
 var trade                              # ServerTrade: shops (coins)
@@ -609,6 +611,20 @@ func _ready() -> void:
 	npcs.player_positions = func(): return items.peer_positions()
 	npcs.rain_now = func(): return float(weather.get("rain", 0.0))
 	npcs.setup(store_dir)
+	tribes = TribesScript.new()
+	tribes.items = items
+	tribes.npcs = npcs
+	tribes.game_seconds = func(): return game_clock.seconds
+	tribes.players = func() -> Array:
+		var rows: Array = []
+
+		for peer in items._peer_pos:
+			rows.append({"peer": peer, "key": items.key_of(peer), "pos": items._peer_pos[peer]})
+
+		return rows
+	tribes.setup(store_dir)
+	npcs.wary = tribes.avoid   # goblin tribe members keep off, watch, and hide from a player who struck one
+	items.rep_key = tribes.rep_id   # a tribe's members share one standing
 	animals = AnimalsScript.new()
 	edited_ground = EditedGroundScript.new()
 	edited_ground.ops = store.ops
@@ -747,6 +763,11 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	animals.send_hit = func(peer, id, zone, at): net.animal_hit.rpc_id(peer, id, zone, at)
 	items.hit_animal_path = func(shooter, from, to, amount) -> Dictionary:
+		var member: String = tribes.member_on_segment(from, to)
+
+		if member != "":   # a goblin tribe member cannot be hurt (Dave's side, 19 Nov 2026): the tribe turns on the archer and the arrow flies on
+			tribes.harm(shooter, member)
+
 		var found: Dictionary = animals.target_on_segment(from, to, 0.6, 0.5)
 
 		if found.is_empty():
@@ -763,7 +784,14 @@ func _ready() -> void:
 	items.trail_strength = func(x, z): return trails.strength_at(x, z)
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> Dictionary:
+		var member: String = tribes.member_along(origin, dir, reach)
 		var target: int = animals.target_along(origin, dir, reach)
+		var member_d: float = Vector2(npcs.npcs[member]["pos"].x - origin.x, npcs.npcs[member]["pos"].z - origin.z).length() if member != "" else INF
+		var animal_d: float = Vector2(animals.animals[target]["pos"].x - origin.x, animals.animals[target]["pos"].z - origin.z).length() if target != 0 else INF
+
+		if member != "" and member_d <= animal_d:   # a blow at a goblin tribe member (the nearer one) hurts nobody: the tribe turns on that player (server_tribes.gd harm)
+			tribes.harm(peer, member)
+			return {}
 
 		if target == 0:
 			return {}
@@ -784,17 +812,22 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	trade.send_shop = func(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired, stock, supply_milli, purse): net.shop.rpc_id(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired, stock, supply_milli, purse)
 	dialogue.trade = trade
+	trade.refuse = tribes.refuse   # a goblin tribe member may refuse: angry, hidden, a weapon on show, rushed
+	trade.dealt = tribes.note_deal   # a deal with a member earns standing with its tribe
 	@warning_ignore("confusable_local_declaration")
 	net.trade_requested.connect(func(peer, npc_id, kind, a, count):
 		var said: String = trade.deal(peer, npc_id, kind, a, count)
 
 		if said != "":
 			items._say(peer, said)
-			trade.open(peer, npc_id))   # the window is sent again with the new demand
-	items.npc_name = func(id): return str(npcs.npcs.get(id, {}).get("name", id))
+
+			if tribes.refuse(peer, npc_id, false) == "":   # a refused deal (an angry tribe) has said why once: no window again
+				trade.open(peer, npc_id))   # the window is sent again with the new demand
+	items.npc_name = func(id): return tribes.name_of_rep(id) if tribes.name_of_rep(id) != "" else str(npcs.npcs.get(id, {}).get("name", id))   # a tribe's standing is named for the tribe
 	dialogue.hour_now = func(): return game_clock.hour()
 	@warning_ignore("confusable_local_declaration")
 	dialogue.send_say = func(peer, id, npc_name, text, voice, choices, ends): net.npc_say.rpc_id(peer, id, npc_name, text, voice, choices, ends)
+	dialogue.refuse = tribes.refuse
 	dialogue.setup(store_dir)
 
 	for arg in OS.get_cmdline_user_args():
@@ -2993,6 +3026,7 @@ func _process(delta: float) -> void:
 	_send_buried()
 	_events.mark("npcs")
 	npcs.unwell = dialogue.router.is_unwell()
+	tribes.tick(delta)
 	npcs.tick(delta)
 	_events.mark("animals")
 	animals.tick(delta)

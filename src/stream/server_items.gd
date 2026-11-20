@@ -5287,7 +5287,7 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		return
 
 	if NpcCamp.within_keep(at):
-		_say(peer, PlacementRules.reason_text("camp").left(1).to_upper() + PlacementRules.reason_text("camp").substr(1) + ".")   # the ghost's own rule (PlacementRules.blocked)
+		_say(peer, PlacementRules.reason_text(NpcCamp.keep_reason(at)).left(1).to_upper() + PlacementRules.reason_text(NpcCamp.keep_reason(at)).substr(1) + ".")   # the ghost's own rule (PlacementRules.blocked)
 		return
 
 	var on_grid: Array = PlacementRules.snap(_structures_cfg, kit_id, at, yaw_deg, _foundation_rows(), clampi(lift_steps, 0, 1))   # lift_steps is also a roof panel's rise (0) or fall (1) from where it rests
@@ -6245,39 +6245,51 @@ func _fire_catch_s(fire: Dictionary) -> float:
 
 # Edda and Hob's camp fire (Dave 17 Nov 2026, data/npcs/camp.json): a large fire that is laid at every start (it is never saved) as soon as the
 # ground under it is known, and laid again if anything clears it (an admin world reset). It holds no wood and burns as it is (_fires skips it).
-var _camp_fire_id: int = 0
+var _camp_fire_ids: Dictionary = {}   # index in NpcCamp.fires() -> world id of that camp fire
 var camp_fire_on: bool = false   # set by the server scene; unit tests that never ask for it see no camp fire in their world
 
 
+# Every camp fire (NpcCamp.fires(): Edda and Hob's, then each goblin tribe's camp, Dave 19 Nov 2026) is laid once its ground is known.
 func _camp_fire_tick() -> void:
-	if not camp_fire_on or (_items.get(_camp_fire_id, {}).get("fire", {}) as Dictionary).has("camp") or not ground_height.is_valid():   # the id itself may be reused after a world reset
+	if not camp_fire_on or not ground_height.is_valid():
 		return
 
-	var spot: Vector2 = NpcCamp.fire_spot()
+	var fires: Array = NpcCamp.fires()
 
-	if spot.x == INF or (ground_ready.is_valid() and not bool(ground_ready.call(spot.x, spot.y))):
-		return   # no camp, or its ground is still being read in the background: never read a tile on the main thread here
+	for k in fires.size():
+		var laid: Dictionary = _items.get(int(_camp_fire_ids.get(k, 0)), {}).get("fire", {})
 
-	var y: float = float(ground_height.call(spot.x, spot.y))
+		if laid.has("camp") and int(laid["camp"]) == k:   # this fire still stands (its id may be reused after a world reset, even by another camp fire)
+			continue
 
-	if is_nan(y):
-		return   # the ground there is not made yet: the next slow tick tries again
+		var spot: Vector2 = Vector2(float(fires[k]["x"]), float(fires[k]["z"]))
 
-	var state: int = int(((_cooking.get("fire_tiers", {}) as Dictionary).get(NpcCamp.fire_wood(), {}) as Dictionary).get("state", FIRE_STATE_BONFIRE))
-	_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": Vector3(spot.x, y, spot.y), "left": 1.0e9,
-		"fire": {"state": state, "burn_left": 1.0e9, "camp": true, "covered": true, "recheck": COVER_RECHECK_S}}
-	_camp_fire_id = _next_id
-	_lit_valid = false
-	_zone_add(_next_id)   # nothing wild spawns round it (no_spawn_m), as round any fire
-	_next_id += 1
+		if ground_ready.is_valid() and not bool(ground_ready.call(spot.x, spot.y)):
+			continue   # its ground is still being read in the background: never read a tile on the main thread here
+
+		var y: float = float(ground_height.call(spot.x, spot.y))
+
+		if is_nan(y):
+			continue   # the ground there is not made yet: the next slow tick tries again
+
+		var state: int = int(((_cooking.get("fire_tiers", {}) as Dictionary).get(str(fires[k]["wood"]), {}) as Dictionary).get("state", FIRE_STATE_BONFIRE))
+		_items[_next_id] = {"number": table.number_of("campfire_kit"), "count": 1, "pos": Vector3(spot.x, y, spot.y), "left": 1.0e9,
+			"fire": {"state": state, "burn_left": 1.0e9, "camp": k, "covered": true, "recheck": COVER_RECHECK_S}}
+		_camp_fire_ids[k] = _next_id
+		_lit_valid = false
+		_zone_add(_next_id)   # nothing wild spawns round it (no_spawn_m), as round any fire
+		_next_id += 1
 
 
-# True (after telling the player) when `it` is Edda and Hob's fire: nobody feeds, lights, puts out, cooks on, opens or picks it up.
+# True (after telling the player) when `it` is a camp fire (Edda and Hob's, or a goblin tribe's): nobody feeds, lights, puts out, cooks on, opens or picks it up.
 func _camp_refuses(peer: int, it: Dictionary) -> bool:
 	if not it.get("fire", {}).has("camp"):
 		return false
 
-	_say(peer, "That is Edda and Hob's fire. It is not yours to tend.")
+	var fires: Array = NpcCamp.fires()
+	var k: int = int(it["fire"]["camp"])
+	var owner: String = str(fires[k]["owner"]) if k >= 0 and k < fires.size() else "Edda and Hob's"
+	_say(peer, "That is %s fire. It is not yours to tend." % owner)
 	return true
 
 
@@ -10140,7 +10152,7 @@ func _place_torch(peer: int, inv, slot: int, on_wall: bool, yaw_deg: int, at: Ve
 		return
 
 	if NpcCamp.within_keep(at):
-		_say(peer, PlacementRules.reason_text("camp").left(1).to_upper() + PlacementRules.reason_text("camp").substr(1) + ".")
+		_say(peer, PlacementRules.reason_text(NpcCamp.keep_reason(at)).left(1).to_upper() + PlacementRules.reason_text(NpcCamp.keep_reason(at)).substr(1) + ".")
 		return
 
 	if water_depth_at.is_valid() and float(water_depth_at.call(at)) > 0.05:
@@ -13760,7 +13772,14 @@ func sync_purse(peer: int) -> void:
 
 func rep_points(peer: int, npc_id: String) -> int:
 	var rows: Dictionary = _characters.get(_peer_key.get(peer, ""), {}).get("rep", {})
-	return maxi(int(rows.get(npc_id, 0)), 0)
+	return maxi(int(rows.get(_rep_id(npc_id), 0)), 0)
+
+
+var rep_key: Callable   # (npc id) -> the key its standing is kept under: a goblin tribe's for its members (server_tribes.gd rep_id), else the id; set by the server
+
+
+func _rep_id(npc_id: String) -> String:
+	return str(rep_key.call(npc_id)) if rep_key.is_valid() else npc_id
 
 
 # The rank word for a score: the highest rank whose `at` is not above it.
@@ -13803,11 +13822,13 @@ func add_rep(peer: int, npc_id: String, points: int) -> void:
 
 	var before: int = rep_points(peer, npc_id)
 	var after: int = clampi(before + points, 0, int(_rep_cfg.get("max_points", 30)))
-	_characters[key]["rep"][npc_id] = after
+	_characters[key]["rep"][_rep_id(npc_id)] = after
 	_dirty = true
 	sync_reputation(peer)
 
-	if rank_of(after) != rank_of(before):
+	if rank_of(after) != rank_of(before) and _rep_id(npc_id) != npc_id:   # a goblin tribe member: the standing is the tribe's
+		_say(peer, "You are now a %s of %s." % [rank_of(after).to_lower(), npc_name.call(_rep_id(npc_id)) if npc_name.is_valid() else _rep_id(npc_id)])
+	elif rank_of(after) != rank_of(before):
 		_say(peer, "You are now a %s of that person: %s." % [rank_of(after).to_lower(), npc_name.call(npc_id) if npc_name.is_valid() else npc_id])
 
 

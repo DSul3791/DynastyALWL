@@ -1,0 +1,69 @@
+{
+	"npc": "skritch",
+	"note": "Skritch, trader of the Ragtooth goblins (data/creatures/goblin_tribes.json; Dave 19 Nov 2026: \"apprehensive but willing to communicate and trade/buy and sell\"). Wary at first, warmer as the tribe's standing rises (rank conditions read the tribe's standing). See hob.json for the format. PROVISIONAL lines (GOBLIN-6, docs/design/GOBLIN_CAMP.md).",
+	"barks": {
+		"greeting": ["Hm. Big-folk. Stay there.", "You again. Slow, slow.", "Skritch sees you. Speak."],
+		"greeting_known": ["Ah. The coin-one comes back.", "You. Good. Come, but slow."],
+		"greeting_friend": ["Friend-of-Ragtooth! Come, sit by fire.", "Hah! Skritch knew you come back."],
+		"farewell": ["Go. Mind the dark.", "Go quiet. Come back with coin.", "Hm. Go."],
+		"idle": ["Skritch counts. Do not watch Skritch count.", "River cold today.", "Big-folk walk loud."],
+		"complaint": ["Skritch belly hurts. Bad mushroom.", "Not now. Head pounds like drum.", "Skritch is sick. Come back later.", "Ugh. Too much smoke in the cave.", "Bad night. Skritch sleeps soon.", "Tooth aches. Talk short.", "Skritch feels green. Greener.", "No haggle today. Skritch is ill."],
+		"cooldown": ["Slow! Skritch thinks.", "Wait. One thing at a time."],
+		"info": ["Mushrooms grow in the dark. We pick them.", "The river is ours. The cave is ours.", "Ragtooth trade fair. Mostly."]
+	},
+	"roots": [
+		{"if": {"flag": "met"}, "node": "again"},
+		{"node": "first"}
+	],
+	"nodes": {
+		"first": {
+			"text": ["Stop there, big-folk. Skritch of the Ragtooth. You trade, or you go?"],
+			"effects": [{"set_flag": "met"}],
+			"choices": [
+				{"text": "I want to trade.", "goto": "wares"},
+				{"text": "Who are the Ragtooth?", "goto": "tribe"},
+				{"text": "Goodbye.", "goto": "bye"}
+			]
+		},
+		"again": {
+			"text": "$greeting",
+			"choices": [
+				{"text": "Show me what you have.", "goto": "wares"},
+				{"text": "What do you want from me?", "goto": "wants"},
+				{"text": "Who are the Ragtooth?", "goto": "tribe"},
+				{"text": "Do you trust me yet?", "goto": "trust"},
+				{"text": "Goodbye.", "goto": "bye"}
+			]
+		},
+		"wares": {
+			"text": ["Look. No grabbing. Coin first.", "Mushrooms, flint, bone. Good things. Look."],
+			"effects": [{"open_shop": true}],
+			"choices": [
+				{"text": "Anything else?", "goto": "again"},
+				{"text": "Goodbye.", "goto": "bye"}
+			]
+		},
+		"wants": {
+			"text": ["Cooked meat. Salt. Good iron knives. Skritch pays.", "Food that is already cooked. Hides. Rope. Bring those."],
+			"choices": [
+				{"text": "Anything else?", "goto": "again"},
+				{"text": "Goodbye.", "goto": "bye"}
+			]
+		},
+		"tribe": {
+			"text": ["Ragtooth live in this cave, by the river. Many winters.", "We keep to the dark. Big-folk keep to the light. Good."],
+			"choices": [
+				{"text": "Anything else?", "goto": "again"},
+				{"text": "Goodbye.", "goto": "bye"}
+			]
+		},
+		"trust": {
+			"text": ["Trust? Hah. Trade more. Then maybe.", "Skritch watches you. Trade fair, Skritch lets you closer."],
+			"choices": [
+				{"text": "Anything else?", "goto": "again"},
+				{"text": "Goodbye.", "goto": "bye"}
+			]
+		},
+		"bye": {"text": "$farewell", "end": true}
+	}
+}

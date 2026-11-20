@@ -15,6 +15,8 @@ var npcs                        # ServerNpcs
 var send_shop: Callable         # (peer, npc id, title, stock ids, buy_milli, sell_milli, buys kinds, demand ids, demand_milli, stock counts, supply_milli, trader purse)
 var game_seconds: Callable      # () -> game clock seconds (restocking runs on game days); unset: the real clock x 24
 var now: Callable               # () -> seconds; tests set it
+var refuse: Callable            # (peer, npc id, strict) -> "" or what a goblin tribe member says instead of trading (server_tribes.gd refuse; may be invalid)
+var dealt: Callable             # (peer, npc id) after a completed purchase or sale (server_tribes.gd note_deal: standing with the tribe; may be invalid)
 var _shops: Dictionary = {}
 var _sold: Dictionary = {}      # "npc|item" -> [sales (float), time] the trader's weariness of that item
 var _state: Dictionary = {}     # npc id -> {"stock": {item id: float on the shelf}, "purse": float copper, "t": game seconds of the last refresh}
@@ -240,6 +242,12 @@ func open(peer: int, npc_id: String) -> bool:
 	if not has_shop(npc_id) or not _near(peer, npc_id) or not send_shop.is_valid():
 		return false
 
+	var no: String = str(refuse.call(peer, npc_id, true)) if refuse.is_valid() else ""
+
+	if no != "":
+		items._say(peer, no)
+		return false
+
 	items.redenominate(peer)   # at a trader the purse becomes the fewest coins (Dave, 14 Nov 2026); sent again after each deal
 
 	var m: Dictionary = multipliers(peer, npc_id)
@@ -294,6 +302,11 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	if not _near(peer, npc_id):   # out of talk range with the window still open: say so rather than nothing (TEST-003). Usually the player's distance: Hob is held at his post by npcs.json test_hold unless the NPC AI is down (unwell: he sits)
 		return "You are too far from %s to trade. Close this window and go closer." % str(npcs.npcs.get(npc_id, {}).get("name", "the trader"))
 
+	var no: String = str(refuse.call(peer, npc_id, false)) if refuse.is_valid() else ""
+
+	if no != "":
+		return no   # a goblin tribe turned on this player, or the trader went into its cave, with the window still open
+
 	count = clampi(count, 1, 999)
 	var inv = items.inventory_of(peer)
 
@@ -341,6 +354,9 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 		items.give(peer, number, count)
 		items._gain_source = items.SRC_PICKUP
 		items._goal_event(peer, "bought")   # ADD-19: a purchase from a trader's shelf
+
+		if dealt.is_valid():
+			dealt.call(peer, npc_id)
 		return "Bought %d %s for %s." % [count, items.table.sentence_name(number), items._coin_words(each * count)]
 
 	if a < 0 or a >= inv.slot_count or inv.numbers[a] == 0:
@@ -442,6 +458,9 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	items._dirty = true
 	items.add_coins(peer, total, "trade")
 	items._goal_event(peer, "sold")   # the starter goal "Sell to Hob"
+
+	if dealt.is_valid():
+		dealt.call(peer, npc_id)
 	var lot_note: String = " %d left, he buys %ss %d at a time." % [left_over, items.table.sentence_name(number2), lot] if left_over > 0 else ""
 	return "Sold %d %s for %s.%s" % [count, items.table.sentence_name(number2), items._coin_words(total), lot_note]
 

@@ -1,0 +1,34 @@
+{
+	"note": "Goblin tribes and their camps (Dave 19 Nov 2026: \"build them a goblin camp somewhere near the river or in a cave. I want the goblins to be apprehensive but willing to communicate and trade/buy and sell. in the future the game will have various goblin tribes/camps etc that are friendly, not friendly, indifferent etc.\"; \"the goblin camp could be a cave somewhere near a river\"). Read by src/stream/server_tribes.gd (behaviour, standing, anger) and src/stream/server_npcs.gd (the members and their spots). A tribe names its attitude; every number of an attitude is in its row below, so a friendly, unfriendly or hostile tribe later is a new tribes row, not new code. Standing is kept per tribe (rep_key, the same reputation as Hob's: data/npcs/reputation.json ranks), so every goblin and every camp of a tribe knows a character the same. keep_m: how far a member stays from a character of that rank (the trader lets them closer: trader_keep_m); spook_m: inside this a character who runs (faster than rush_mps) or carries a weapon on the hotbar makes them back off by armed_keep_m more; leash_m: how far from its spot a member backs off before it holds its ground; watch_m: inside this they turn to watch. trades: false refuses all trade (an unfriendly or hostile tribe). anger_game_days: a character who strikes a member is refused and kept off at angry_keep_m that long (Dave's side, 19 Nov 2026, answered for him: unkillable for now; the tribe turns on that player and stops trading with them for a few days). trade_rep: standing a completed deal earns, at most once a game day (trade_rep_every_game_days). ALL NUMBERS AND NAMES PROVISIONAL (GOBLIN-1..GOBLIN-8 in docs/design/GOBLIN_CAMP.md).",
+	"attitudes": {
+		"friendly": {"trades": true, "watch_m": 15.0, "keep_m": {"Stranger": 2.0, "Known": 1.5, "Friend": 1.0, "Trusted": 1.0}, "trader_keep_m": {"Stranger": 1.5, "Known": 1.0, "Friend": 1.0, "Trusted": 1.0}, "spook_m": 4.0, "rush_mps": 4.5, "armed_keep_m": 0.0, "angry_keep_m": 10.0, "anger_game_days": 1.0, "trade_rep": 1},
+		"wary": {"trades": true, "watch_m": 20.0, "keep_m": {"Stranger": 6.0, "Known": 4.0, "Friend": 3.0, "Trusted": 2.0}, "trader_keep_m": {"Stranger": 2.5, "Known": 2.0, "Friend": 1.5, "Trusted": 1.2}, "spook_m": 10.0, "rush_mps": 3.0, "armed_keep_m": 4.0, "angry_keep_m": 25.0, "anger_game_days": 3.0, "trade_rep": 1},
+		"indifferent": {"trades": true, "watch_m": 0.0, "keep_m": {"Stranger": 2.5, "Known": 2.0, "Friend": 1.5, "Trusted": 1.5}, "trader_keep_m": {"Stranger": 2.0, "Known": 1.5, "Friend": 1.5, "Trusted": 1.5}, "spook_m": 3.0, "rush_mps": 5.0, "armed_keep_m": 1.0, "angry_keep_m": 25.0, "anger_game_days": 3.0, "trade_rep": 0},
+		"unfriendly": {"trades": false, "watch_m": 30.0, "keep_m": {"Stranger": 10.0, "Known": 8.0, "Friend": 6.0, "Trusted": 4.0}, "trader_keep_m": {"Stranger": 10.0, "Known": 8.0, "Friend": 6.0, "Trusted": 4.0}, "spook_m": 15.0, "rush_mps": 3.0, "armed_keep_m": 6.0, "angry_keep_m": 30.0, "anger_game_days": 7.0, "trade_rep": 0},
+		"hostile": {"trades": false, "watch_m": 40.0, "keep_m": {"Stranger": 15.0, "Known": 15.0, "Friend": 15.0, "Trusted": 15.0}, "trader_keep_m": {"Stranger": 15.0, "Known": 15.0, "Friend": 15.0, "Trusted": 15.0}, "spook_m": 20.0, "rush_mps": 3.0, "armed_keep_m": 6.0, "angry_keep_m": 30.0, "anger_game_days": 30.0, "trade_rep": 0}
+	},
+	"trade_rep_every_game_days": 1.0,
+	"leash_m": 8.0,
+	"back_off_mps": 2.4,
+	"tribes": {
+		"ragtooth": {
+			"name": "the Ragtooth goblins",
+			"attitude": "wary",
+			"rep_key": "tribe_ragtooth",
+			"camp": {
+				"note": "At the mouth of spring cave 3,4#8013, about 2.8 km east of Edda and Hob's camp; its river runs 50 m west of the mouth (read from the baked tile 3_4 on 19 Nov 2026: mouth x 56064 z 68384, ground about 71 m, a bench of 13-20 degrees runs east of the mouth along the hill). The fire and the members stand on that bench 6-16 m east of the mouth, clear of the opening (the hill's ground is not cut there), the trader facing west, the way a player comes up from the river. The tunnels inside stay as they are (the caves plan). mouth: where members go out of sight when an angry character comes near. keep_m: nothing is put down this near the fire.",
+				"cave": "3,4#8013",
+				"name": "the Ragtooth camp",
+				"fire_owner": "the Ragtooth goblins'",
+				"mouth": {"x": 56064.0, "z": 68384.0},
+				"fire": {"x": 56074.0, "z": 68383.0, "wood": "log"},
+				"keep_m": 8.0
+			},
+			"members": [
+				{"id": "skritch", "name": "Skritch", "role": "goblin_trader", "voice": "skritch", "body": 0, "trader": true, "spot": {"x": 56070.0, "z": 68381.0, "yaw": 180}},
+				{"id": "rukz", "name": "Rukz", "role": "goblin_lookout", "voice": "rukz", "body": 1, "spot": {"x": 56080.0, "z": 68386.0, "yaw": 185}},
+				{"id": "snag", "name": "Snag", "role": "goblin", "voice": "rukz", "body": 0, "spot": {"x": 56077.0, "z": 68381.0, "yaw": 146}}
+			]
+		}
+	}
+}

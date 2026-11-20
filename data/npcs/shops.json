@@ -112,5 +112,18 @@
 			"hardwood_board": {"lot": 2, "lot_value": 1, "per_day": 30},
 			"rough_plank": {"lot": 3, "lot_value": 1, "per_day": 30}
 		}
+	},
+	"skritch": {
+		"note": "Skritch of the Ragtooth goblins (data/creatures/goblin_tribes.json, Dave 19 Nov 2026: goblins \"willing to communicate and trade/buy and sell\"; trade in coins with the same window as Hob, answered for him 19 Nov 2026). What a goblin camp by a cave and a river has to hand: forage, cave stone, bones and what they make of them. Prices move with standing with the tribe (the whole tribe shares it). PROVISIONAL stock and limits (GOBLIN-5, docs/design/GOBLIN_CAMP.md).",
+		"title": "Skritch's trade pile",
+		"stock": ["mushrooms", "dried_mushrooms", "berries", "dried_berries", "flint", "bone", "claw", "claw_necklace", "gut", "copper_ore", "tin_ore", "sling_stone", "bone_arrow", "herb_salve"],
+		"buys": ["food", "material", "tool", "medicine", "clothing"],
+		"stock_rules": {
+			"mushrooms": [20, 10], "dried_mushrooms": [6, 3], "berries": [20, 10], "dried_berries": [8, 4], "flint": [12, 6], "bone": [12, 6],
+			"claw": [3, 1], "claw_necklace": [1, 1], "gut": [6, 3], "copper_ore": [8, 4], "tin_ore": [6, 3], "sling_stone": [20, 10],
+			"bone_arrow": [10, 5], "herb_salve": [3, 1]
+		},
+		"purse_cap": 120,
+		"purse_regen_per_day": 40
 	}
 }

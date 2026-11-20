@@ -61,8 +61,9 @@ func _init() -> void:
 		DirAccess.remove_absolute(dir + "/" + file)
 
 	var npcs = make(dir)
-	check(npcs.npcs.size() == 2 and npcs.markers.size() >= 6, "the data loads: two NPCs and the markers")
-	check(npcs.roster().size() == 2, "the roster lists both")
+	var town: Array = npcs.npcs.keys().filter(func(id): return str(npcs.npcs[id].get("tribe", "")) == "")   # the goblin tribes' members are test_goblin_camp's
+	check(town.size() == 2 and npcs.markers.size() >= 6, "the data loads: two townspeople and the markers (%s)" % str(town))
+	check(npcs.roster().filter(func(row): return not str(row[3]).begins_with("goblin:")).size() == 2, "the roster lists both")
 
 	# A player arrives at night: the shopkeeper is in bed, the guard is at his post, both placed by the schedule.
 	run(npcs, 0.2)
