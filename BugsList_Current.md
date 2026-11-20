@@ -739,6 +739,14 @@ Assumed on Dave's behalf (provisional, docs/design/BANDIT_CAMPS.md): BANDIT-34 a
 
 **Acceptance:** test_npcs passes on Lane A run alone; nothing to see in play.
 
+## 85. The warning check passed when a script did not parse (merge gate hole)
+
+**Status: Fixed in dev - nothing to play (test tools only).** Not found in play: the coordinator, 20 Nov 2026, from Lane A (Dave's PC). A PR head had a parse error in tools/creature_check.gd. tools/check_warnings.gd runs under --debug, so Godot 4.7.2 stopped it at the local debugger's "debug>" prompt; it never printed its "scripts checked" line and hung to the 600 s timeout, and tools/check_warnings.sh still exited 0 with empty output, so tools/local_check.sh passed ("0 total"). Fix: PR #1365, merged to dev at d0aae1d3 (head 4f27e26d) after independent review (PASS on fb946102; delta PASS on 8a57768a and 4f27e26d). check_warnings.sh passes --ignore-error-breaks (no wait at the prompt), exits 2 when the check did not finish (no godot, timed out, no "scripts checked" line) and 3 when a script does not parse, named on stderr; check_warnings.gd names each script that loads invalid; local_check.sh fails on any of these, and its three-script parse check fails when godot cannot start or times out; --update-baseline refuses to write from a failed run. New self-test tools/test_check_warnings.sh (stub cases and a real-engine case on a broken script in a temp folder). tools/warning_baseline.txt is unchanged. Lane B (David4) on the exact head: the self-test all ok including both real-engine cases; check_warnings exit 0, 381 warnings; local_check PASS; 11 of 11 selected tests passed. Lane A on the exact head: the self-test exit 0 in 23 s; check_warnings exit 0 in 76 s; with the creature_check.gd parse error put back in the lane clone, exit 3 after 77 s, "script does not parse: tools/creature_check.gd", no hang (then discarded); local_check PASS; 11 of 11 selected tests passed.
+
+**Required outcome:** a script that does not parse fails the warning check quickly and by name, on Windows and Linux; a check that did not finish is never reported as a pass.
+
+**Acceptance:** `REQUIRE_GODOT=1 bash tools/test_check_warnings.sh` passes on both lanes; nothing to see in play.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
