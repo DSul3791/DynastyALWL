@@ -31,6 +31,11 @@ func make(dir: String):
 	for file in DirAccess.get_files_at(dir):
 		DirAccess.remove_absolute(dir + "/" + file)
 
+	return open_dir(dir)
+
+
+# The server on a world folder as it is (a restart).
+func open_dir(dir: String):
 	var it = ItemsScript.new()
 	it.send_full = func(_p, _b): pass
 	it.send_slots = func(_p, _b): pass
@@ -181,7 +186,7 @@ func _init() -> void:
 	items._water_tick(0.0)
 	check(not items._water_kind.has(pump) and near(items._water.pieces[a]["inlet"], Vector3(99.0, 10.23, 100.0)), "with the pump gone the channel turns back")
 
-	check(not items._retired_blueprint_of_kit.has("rough_bed_kit") and items._retired_blueprint_of_kit.size() == 3, "only the pumps' retired blueprints refund a take-down (a rough bed still comes back as its bed)")
+	check(not items._retired_blueprint_of_kit.has("rough_bed_kit") and items._retired_blueprint_of_kit.size() == 3, "only the pumps' retired blueprints are cleared at load (a rough bed still takes down as its bed)")
 	# A Wooden - Hand pump already standing in a saved world (Dave 20 Nov 2026: "the wooden hand pumps should be gone too") is cleared when the world
 	# loads and leaves its materials where it stood (6 lumber, 20 nails, 2 twine, 1 hide); a site leaves what had been put into it.
 	var old_pump: int = put("wooden_hand_pump", Vector3(110.0, 10.0, 110.0))
@@ -191,7 +196,30 @@ func _init() -> void:
 	items._clear_retired_pieces()
 	var lumber_n: int = items.table.number_of("lumber")
 	check(not items._items.has(old_pump) and items._ground_count(lumber_n, Vector3(110.0, 10.0, 110.0), 2.0) == 6 and items._ground_count(items.table.number_of("nails"), Vector3(110.0, 10.0, 110.0), 2.0) == 20, "a loaded pump is gone, its materials on the ground where it stood (lumber %d)" % items._ground_count(lumber_n, Vector3(110.0, 10.0, 110.0), 2.0))
+	var piles_last: bool = true
+
+	for gid in items._items:
+		var g: Dictionary = items._items[gid]
+
+		if not g.has("struct") and int(g.get("number", 0)) == lumber_n and (g["pos"] as Vector3).distance_to(Vector3(110.0, 10.0, 110.0)) < 2.0:
+			piles_last = piles_last and float(g["left"]) > 1.0e8
+
+	check(piles_last, "what a cleared pump leaves never despawns")
 	check(not items._items.has(old_site) and items._ground_count(lumber_n, Vector3(120.0, 10.0, 120.0), 2.0) == 2, "a pump site is gone and leaves what was put in (lumber %d)" % items._ground_count(lumber_n, Vector3(120.0, 10.0, 120.0), 2.0))
+
+	# The round trip: a pump saved in a world is gone once the world loads, its materials lie where it stood, and the next save no longer holds it
+	# (loaded again, nothing is given twice).
+	var kept = items
+	items = make("user://test_pump_clear")
+	put("wooden_hand_pump", Vector3(50.0, 10.0, 50.0))
+	items.save()
+	items = open_dir("user://test_pump_clear")
+	var pumps_left: Array = items._items.values().filter(func(g): return g.has("struct") and str(g["struct"]["kind"]) == "wooden_hand_pump")
+	check(pumps_left.is_empty() and items._ground_count(lumber_n, Vector3(50.0, 10.0, 50.0), 2.0) == 6, "after a restart the saved pump is gone and its 6 lumber lie there (%d)" % items._ground_count(lumber_n, Vector3(50.0, 10.0, 50.0), 2.0))
+	items.save()
+	items = open_dir("user://test_pump_clear")
+	check(items._ground_count(lumber_n, Vector3(50.0, 10.0, 50.0), 2.0) == 6, "saved and loaded again: the pump stays gone and nothing is given twice (%d)" % items._ground_count(lumber_n, Vector3(50.0, 10.0, 50.0), 2.0))
+	items = kept
 
 	print("wooden plumbing: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

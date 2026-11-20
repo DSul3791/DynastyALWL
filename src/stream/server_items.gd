@@ -7328,6 +7328,7 @@ func _load_world_items() -> void:
 # A retired piece still standing in a loaded world (the pumps; Dave 20 Nov 2026: "the wooden hand pumps should be gone too") is taken away and leaves
 # its materials on the ground where it stood: a built one its whole blueprint cost, a site what had been put into it. Only blueprints marked
 # take_down_refund are in _retired_blueprint_of_kit, so no other retired piece is touched.
+const CLEARED_LIFETIME_S := 1.0e9   # over _expire_items' never-expires mark: what a cleared piece leaves never despawns (PROVISIONAL, PLUMBING_DESIGN s10 PV-11)
 func _clear_retired_pieces() -> void:
 	for id in _items.keys():
 		var it: Dictionary = _items[id]
@@ -7350,12 +7351,23 @@ func _clear_retired_pieces() -> void:
 				give_back[str(need[0])] = int(need[1])
 
 		var at: Vector3 = it["pos"]
+		_area_recovered[area_key_of(at.x, at.z)] = true   # its area file is written again at the first save: the piece gone, its materials there
+
+		if _load_row_of.has(id) and int(_load_row_of[id]) < _load_row_area.size():
+			_area_recovered[str(_load_row_area[int(_load_row_of[id])])] = true   # and the file its row came from, if another
+
 		_items.erase(id)
 		_load_row_of.erase(id)
 		_dirty = true
 
 		for item_id in give_back:
-			drop_in_world(_refund_number(table.number_of(str(item_id))), int(give_back[item_id]), at)
+			var number: int = _refund_number(table.number_of(str(item_id)))
+
+			if number <= 0:
+				push_error("cleared %s: no item %s to give back" % [str(it["struct"]["kind"]), str(item_id)])
+				continue
+
+			drop_in_world(number, int(give_back[item_id]), at, 0, CLEARED_LIFETIME_S)   # it waits for its owner, however long they are away
 
 
 # An area file of the gen the header names. A save that wrote the area but not the header (a crash between) left the gen before in .prev.

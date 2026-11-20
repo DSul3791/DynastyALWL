@@ -132,6 +132,7 @@ Every value below is PROVISIONAL (coordinator ruling: build costs and numbers ma
 - PV-8 A barrel's bottom point feeds pipes out but takes no water in (it fills from above or by rain).
 - PV-9 (Dave 19 Nov 20:31Z) A pipe is a row of segments, one per pack piece (Wooden 2 m, Copper 3 m) counted from the end it was laid from; each joint between them is a connection point. A tap or drip head fits on any end or joint not already taken, and a barrel set down with its bottom point within 0.6 m across (0.25 m up or down) of one moves so the middle of its bottom lands exactly on it (Dave 21:56Z); pipes and fittings keep no building gap (they lie through anything); a joint splits the run in two there (pieces shared, none made). A run's second click may be on the ground (or anything) within 6 m. Assumed: a junction made with the sliding start point measures its new half's joints from that point.
 - PV-10 (Dave 19 Nov 20:31Z, "pipes without taps or drips do not leak any water") A pipe end with nothing on it is capped: no water leaves it. Assumed: an end laid right over a trough, trench or barrel top still pours into it, as before, because that water is caught, not lost (the irrigation trench is fed this way).
+- PV-11 (Dave 20 Nov 22:42Z, "the wooden hand pumps should be gone too") A pump standing in a saved world is cleared at load; its materials are dropped where it stood and never despawn, so an owner who is away for days still finds them.
 
 ## 9. Pipes, taps and barrels (Dave, 19 Nov 2026), PROVISIONAL values
 
@@ -218,7 +219,7 @@ Against dev (41415196), the proposal put to Dave:
 - **Decided (Dave, 20 Nov 2026 22:06Z, "Retire all pumps"):** the Iron - Hand pump, the Deep-well pump and the Wooden - Hand pump are retired
   (numbers kept; retired in the data by the pump PR). Dave, 20 Nov 2026 22:42Z: "the wooden hand pumps should be gone too. I did not approve
   ever having those. they were an ai accident." A pump standing in a saved world is cleared when the world loads and leaves its materials on the
-  ground where it stood (a site leaves what had been put into it). Water comes from rain, from wells by bucket and from river barrels (below).
+  ground where it stood (a site leaves what had been put into it); those piles never despawn (PV-11, provisional). Water comes from rain, from wells by bucket and from river barrels (below).
 - **Cisterns stay (Dave, 20 Nov 2026 22:06Z):** "the cistern can be copper lined and the frame can be made of wood and iron nails etc. cisterns are
   not pumps"; 22:07Z "they are just big tanks". Proposed for a later PR (our reading, for Dave to confirm): the Raised cistern becomes a big tank
   that behaves like a bigger barrel in the pipe system, copper lined on a wooden frame with iron nails, filled by gravity (a pipe from a higher
