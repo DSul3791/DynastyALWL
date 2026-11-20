@@ -21,7 +21,7 @@ The senses shrink those distances by multiplying factors together.
 - deer: 50 / 30 / 60 became 60 / 35 / 70
 - elk: 55 / 35 / 70 became 70 / 40 / 80
 
-Every other species keeps its old numbers. `tools/add_species.py` writes a new species' row into the table. These are the author's judgement, not a sourced figure: deer-sized prey should notice and run well before a player reaches them, while small animals sit tight until the player is close. Predators and livestock are governed by their temperament and `defend` rows, as before.
+Every other species keeps its old numbers. Flock species (ducks, seabirds) notice at their flock's own `flock.alert_m`, which stays in the flock block; their table row sets only flee and safe distances. `tools/add_species.py` writes a new species' row into the table. These are the author's judgement, not a sourced figure: deer-sized prey should notice and run well before a player reaches them, while small animals sit tight until the player is close. Predators and livestock are governed by their temperament and `defend` rows, as before.
 
 **RX-2: the upwind cut is smaller.** `senses.scent_loss` is 0.25, where the old cut was 0.5. Upwind, an animal loses only the scent. In a full wind the factor is therefore 0.75, not 0.5. The downwind gain (`scent_gain` 0.5) is unchanged.
 

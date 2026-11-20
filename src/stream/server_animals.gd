@@ -139,6 +139,10 @@ func setup() -> void:
 			cfg["species"][sp]["spook_m"] = float(row[1])
 			cfg["species"][sp]["safe_m"] = float(row[2])
 
+	for sp in cfg.get("species", {}):
+		if not reactions.has(sp):
+			push_error("animals.json reactions.notice_flee_safe_m: no row for %s (it would never notice a player)" % sp)
+
 	rng.randomize()   # luck-exempt: world wildlife placement, no player outcome
 	wolves = WolvesScript.new()
 	wolves.host = self
