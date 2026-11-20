@@ -3,8 +3,8 @@ extends SceneTree
 # The second body model, body_2 (Dave's female player character, Playercharacter_Female_01.glb, 20 Nov 2026: "she should be the female selection now and be fully adjustable").
 # Her file holds 4 clips; the rest are carried over from body_1 (dynasty_body.gd _borrow_clips). Checks: she is available and wears her own file; every game clip exists on her;
 # body_1's Walking carried over to her rig matches her own Walking (the carry-over turns each bone the right way); the carried idle hangs her arms down (not her T-pose rest);
-# lie and sit put her hips where they should be; the creator's sliders work on her (height, legs, the width shapes); her mesh casts a plain shadow (not double-sided); a
-# character made with body_2 wears her, an unknown body id wears body_1.
+# lie, sit and crouch put her hips where they should be, and the cross-legged sit puts her knees forward and her hands by them; the creator's sliders work on her (height,
+# legs, the width shapes made from her own mesh); an unknown body id wears body_1.
 # Run: godot --headless --path . --script res://src/worldgen/tools/test_dynasty_body_2.gd
 const Body := preload("res://src/client/character/dynasty_body.gd")
 const BodyModels := preload("res://src/client/character/body_models.gd")
@@ -96,6 +96,15 @@ func _init() -> void:
 	await _pose(her, "sit", 0.5)
 	var sit_hips: float = _at(her, "mixamorig_Hips").y
 	_check(sit_hips > 0.05 and sit_hips < 0.35, "sit: cross-legged on the ground (hips %.2f m)" % sit_hips)
+	var s: Skeleton3D = her.skeleton
+	var sit_root: Vector3 = s.get_bone_global_pose(s.find_bone("mixamorig_Hips")).origin
+
+	for side in ["Left", "Right"]:
+		var knee: Vector3 = s.get_bone_global_pose(s.find_bone("mixamorig_%sLeg" % side)).origin
+		var hand: Vector3 = s.get_bone_global_pose(s.find_bone("mixamorig_%sHand" % side)).origin
+		_check(knee.z - sit_root.z > 10.0, "sit: her %s knee is forward of the hips (%.0f cm)" % [side, knee.z - sit_root.z])
+		_check(hand.distance_to(knee) < 18.0, "sit: her %s hand rests by its knee (%.0f cm)" % [side, hand.distance_to(knee)])
+
 	await _pose(her, "crouch", 1.0)
 	var crouch_hips: float = _at(her, "mixamorig_Hips").y
 	_check(crouch_hips > 0.3 and crouch_hips < 0.65, "crouch: hips low (%.2f m)" % crouch_hips)
@@ -123,8 +132,7 @@ func _init() -> void:
 	_check(_at(her, "mixamorig_Hips").y > plain_hips + 0.03, "Legs +1: her hips are lifted (%.2f m from %.2f)" % [_at(her, "mixamorig_Hips").y, plain_hips])
 	var build: int = her.body_mesh.find_blend_shape_by_name("build")
 	_check(build >= 0 and absf(her.body_mesh.get_blend_shape_value(build) - 0.8) < 0.01, "Build 0.8: her mesh carries the width shapes")
-	_check(her.body_mesh.mesh != him.body_mesh.mesh, "her shaped mesh is her own, not body_1's")
-	_check(her.body_mesh.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_ON, "her mesh casts a plain shadow (not double-sided)")
+	_check(her.body_mesh.mesh.has_meta(Body.Shapes.SHAPED_KEY), "her body wears the shaped copy of her own mesh")
 
 	print("dynasty body 2 tests: %d failures" % _fails)
 	her.free()

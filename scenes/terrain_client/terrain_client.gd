@@ -555,8 +555,9 @@ var _remote: bool = false                 # a client-only build joining someone'
 
 
 func _ready() -> void:
-	_avatar_glb = DynastyBodyScript.BodyModels.glb(MyCharacter.body_model())
-	DynastyBodyScript.warm([MyCharacter.body_model()])   # the body and arm files (and the player's own body model) load on loader threads now, not on the main thread at the welcome (a 3 s freeze)
+	var my_model: String = MyCharacter.body_model()
+	_avatar_glb = DynastyBodyScript.BodyModels.glb(my_model)
+	DynastyBodyScript.warm([my_model])   # the body and arm files (and the player's own body model) load on loader threads now, not on the main thread at the welcome (a 3 s freeze)
 
 	# Ground loading threads (Dave 2026-10-21, settling after a fast fly-over took 61 s): each ground block a worker asks for
 	# waits for the server's answer, so with the engine's default pool (half the cores: 2 on a 4 core machine) only two

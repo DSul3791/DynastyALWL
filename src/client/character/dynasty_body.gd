@@ -458,7 +458,7 @@ static func _borrow_clips(own: Dictionary, from_scene: PackedScene, match_clip: 
 	var their_match: Animation = theirs.get_animation(match_clip)
 	var fix: Dictionary = rig_fix(their_skel, their_match, skel, mine_match)
 	var hips_scale: float = hips_scale_of(their_match, mine_match)
-	var prefix: String = String(mine_match.track_get_path(0)).get_slice(":", 0)
+	var prefix: String = _skeleton_path(mine_match)
 
 	for clip in theirs.get_animation_list():
 		if not own.has(String(clip)):
@@ -508,10 +508,21 @@ static func _pose_turns(skel: Skeleton3D, anim: Animation) -> Dictionary:
 	return turns
 
 
+# The skeleton's node path in a clip's bone tracks (the part before ":"), read from its hips track; "" when it has none.
+static func _skeleton_path(anim: Animation) -> String:
+	for t in range(anim.get_track_count()):
+		var path: String = String(anim.track_get_path(t))
+
+		if path.ends_with(":" + P + "Hips"):
+			return path.get_slice(":", 0)
+
+	return ""
+
+
 # Her hips height over his across the matching clip (1.0 when either has no hips position track).
 static func hips_scale_of(theirs: Animation, mine: Animation) -> float:
-	var a: int = theirs.find_track(NodePath(String(theirs.track_get_path(0)).get_slice(":", 0) + ":" + P + "Hips"), Animation.TYPE_POSITION_3D)
-	var b: int = mine.find_track(NodePath(String(mine.track_get_path(0)).get_slice(":", 0) + ":" + P + "Hips"), Animation.TYPE_POSITION_3D)
+	var a: int = theirs.find_track(NodePath(_skeleton_path(theirs) + ":" + P + "Hips"), Animation.TYPE_POSITION_3D)
+	var b: int = mine.find_track(NodePath(_skeleton_path(mine) + ":" + P + "Hips"), Animation.TYPE_POSITION_3D)
 
 	if a < 0 or b < 0:
 		return 1.0
@@ -541,6 +552,8 @@ static func carry_clip(src: Animation, fix: Dictionary, hips_scale: float, prefi
 		var track: int = out.add_track(type)
 		out.track_set_path(track, NodePath(prefix + ":" + bone))
 		out.track_set_interpolation_type(track, src.track_get_interpolation_type(t))
+		var before: Quaternion = _parent_fix(bone, fix, skel).inverse()       # worked out once per track: the keys only multiply
+		var after: Quaternion = fix[bone]
 
 		for k in range(src.track_get_key_count(t)):
 			var when: float = src.track_get_key_time(t, k)
@@ -548,7 +561,7 @@ static func carry_clip(src: Animation, fix: Dictionary, hips_scale: float, prefi
 			if type == Animation.TYPE_POSITION_3D:
 				out.position_track_insert_key(track, when, (src.track_get_key_value(t, k) as Vector3) * hips_scale)
 			else:
-				out.rotation_track_insert_key(track, when, _carry_turn(src.track_get_key_value(t, k), bone, fix, skel))
+				out.rotation_track_insert_key(track, when, (before * (src.track_get_key_value(t, k) as Quaternion) * after).normalized())
 
 		if type == Animation.TYPE_ROTATION_3D:
 			turned[bone] = true
@@ -562,19 +575,20 @@ static func carry_clip(src: Animation, fix: Dictionary, hips_scale: float, prefi
 
 		var track: int = out.add_track(Animation.TYPE_ROTATION_3D)
 		out.track_set_path(track, NodePath(prefix + ":" + bone))
-		out.rotation_track_insert_key(track, 0.0, _carry_turn(their_skel.get_bone_rest(theirs_at).basis.get_rotation_quaternion(), bone, fix, skel))
+		var rest_turn: Quaternion = their_skel.get_bone_rest(theirs_at).basis.get_rotation_quaternion()
+		out.rotation_track_insert_key(track, 0.0, (_parent_fix(bone, fix, skel).inverse() * rest_turn * (fix[bone] as Quaternion)).normalized())
 
 	return out
 
 
-static func _carry_turn(his: Quaternion, bone: String, fix: Dictionary, skel: Skeleton3D) -> Quaternion:
+# The fixed turn of the bone's parent (identity for the root).
+static func _parent_fix(bone: String, fix: Dictionary, skel: Skeleton3D) -> Quaternion:
 	var up: int = skel.get_bone_parent(skel.find_bone(bone))
-	var parent_fix: Quaternion = Quaternion.IDENTITY
 
 	if up >= 0 and fix.has(skel.get_bone_name(up)):
-		parent_fix = fix[skel.get_bone_name(up)]
+		return fix[skel.get_bone_name(up)]
 
-	return (parent_fix.inverse() * his * (fix[bone] as Quaternion)).normalized()
+	return Quaternion.IDENTITY
 
 
 # Turns the chair clip into sitting cross-legged on the ground (Dave QA BUG-020: X sat him as if on a chair). Dave's set has no floor-sit clip, so the chair pose is changed in place:
