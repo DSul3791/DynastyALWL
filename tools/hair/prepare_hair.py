@@ -34,6 +34,8 @@ CLEAR_FROM = 135.0       # paint this pale or paler is the mannequin's skin, ful
 CLEARANCE_M = 0.004      # hair sits at least this far out from Body 1's scalp
 CAP_CLEARANCE_M = 0.002  # the cap (2b) sits this far out from the skin, under the hair
 CAP_HEM_M = 0.015        # the cap stops this far above the hair's lowest edge in each direction round the head, so it never shows under the hair
+CAP_NAPE_M = 0.004       # where the nape line is raised, the cap stops this far above it
+CAP_NAPE_SPAN = 0.8      # ... across the back only: where the line is at least this share of the way up (about 50 degrees either side of straight behind)
 HEM_PERCENTILE = 2       # see CAP_HEM_M
 HOLE_BINS = 3            # bald gaps up to about this many direction bins (3.75 degrees each) across are filled by the dark cap
 NAPE_REACH_M = 0.012     # how far below NAPE_Y a triangle may reach and still be kept (lifted to the line)
@@ -286,7 +288,13 @@ def main():
         hem[c] = np.percentile(hair_points[shown][s_col == c, 1], HEM_PERCENTILE)
 
     hem = np.maximum(hem, np.maximum(np.roll(hem, 1), np.roll(hem, -1)))
-    above_hem = body_points[:, 1] >= hem[v_col] + CAP_HEM_M
+    # Across the back, where --nape-back raised the nape line, the hair ends in an even edge on it (step 3), so the cap runs down to just above that edge: Short
+    # curly's thin curls behind the ear showed a hole through to the skin when the cap stopped at the hem (PC pictures of 3e5ae3ef, 20 Nov 2026).
+    floor = hem[v_col] + CAP_HEM_M
+    raised = nape_line(body_points)
+    across_back = raised >= NAPE_Y + CAP_NAPE_SPAN * (args.nape_back - NAPE_Y) + 1e-6      # the back of the neck, not round the ears
+    floor = np.where(across_back, np.minimum(floor, raised + CAP_NAPE_M), floor)
+    above_hem = body_points[:, 1] >= floor
     cap = body_tris[(inside[v_row, v_col] & above_hem)[body_tris].all(1)]
     cap_used = np.unique(cap)
     cap_dirs, cap_r, _, _ = direction(body_points[cap_used])
