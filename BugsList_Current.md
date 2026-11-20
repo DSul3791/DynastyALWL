@@ -731,6 +731,14 @@ Not done: no stash chest (the stash is not seen until it drops); unattended cart
 
 Assumed on Dave's behalf (provisional, docs/design/BANDIT_CAMPS.md): BANDIT-34 at the floor after a refused toll, the 2 most valuable stacks, not the item in hand, a full bag or coins; BANDIT-35 the stash saved with the camp, dropped by the fire when it is cleared, dissolves or sleeps.
 
+## 84. Sixty NPCs cost over 1 ms a server tick (test_npcs timing check red on dev)
+
+**Status: Fixed in dev - nothing to play (no behaviour change).** Not found in play: the coordinator, 20 Nov 2026, from Lane A (Dave's PC). test_npcs "60 NPCs cost under 1 ms a tick", run alone, read 1.019 and 1.022 ms on dev 8b83b176, 1.036 and 1.031 on 95bb7530, and 1.036 and 1.039 on 00d407d5 (limit 1.00, load scale 1.00); it passed on David4 and would block the full pass before main. Cause: the goblin camp (entry 71) added three tribe NPCs and their three own markers; about 56 of the test's NPCs find no free chair every 10 Hz step and each such claim scanned every marker, and each dormant tribe NPC worked out its anchor twice per player every tick. Fix: PR #1364, merged to dev at 763b8531 (head 0471044d) after independent review (PASS, no findings to fix): a claim reads only the markers of its kind (same order, so the same choice), and a dormant NPC's anchor and the tick's settings are read once a tick. The test and its limit are unchanged. Lane A on the exact head: test_npcs alone passed twice at 0.678 and 0.677 ms (same step count as dev), test_goblin_camp 0.113 ms at chores (dev 0.127); import 0 errors; 37 of 37 selected tests passed (35 fast, 2 timing), 0 script errors; warnings 381, identical to dev per file.
+
+**Required outcome:** the server's NPC tick stays within its 1 ms budget for 60 NPCs on Dave's PC, with every NPC doing exactly what it did before.
+
+**Acceptance:** test_npcs passes on Lane A run alone; nothing to see in play.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
