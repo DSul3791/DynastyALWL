@@ -259,7 +259,7 @@ func _init() -> void:
 	lock(1, secret, ItemsScript.LOCK_SET, 1)   # the owner stands 3.2 m from it
 	check(items._items[secret]["struct"].has("lock"), "the owner locks the chest holding flint")
 	var desk: int = place("warehouse_desk@0,0,2", 1)
-	var sign: int = place("storage_sign@4,0,1", 2)
+	var sign_id: int = place("storage_sign@4,0,1", 2)
 	var far_crate: int = place("wooden_crate@10,0,0", 2)   # within both the sign's 8 m and the desk's 16 m
 	box(far_crate).add(stick, 2)
 	act(2, Net.ACT_VIEW_OPEN, desk)
@@ -269,8 +269,8 @@ func _init() -> void:
 	act(1, Net.ACT_VIEW_OPEN, desk)
 	check(int(views[1][1].get(flint, 0)) == 6 and int(views[1][1].get(stone, 0)) == 4 + 5, "the owner sees the flint in their locked chest and the stones in their crate")
 	items.report_position(2, Vector3(4.0, 10.0, 2.0))
-	act(2, Net.ACT_VIEW_OPEN, sign)
-	check(int(views[2][0]) == sign and views[2][1].is_empty() and int(views[2][2]) == 0, "the sign shows nothing the desk covers (one context a container: the desk first)")
+	act(2, Net.ACT_VIEW_OPEN, sign_id)
+	check(int(views[2][0]) == sign_id and views[2][1].is_empty() and int(views[2][2]) == 0, "the sign shows nothing the desk covers (one context a container: the desk first)")
 	items.report_position(2, Vector3(0.0, 10.0, 2.5))
 
 	# 9. Withdraw and deposit through the desk obey the locks and keep the totals.
