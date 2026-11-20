@@ -7,7 +7,7 @@ extends SceneTree
 # the nearest one tall enough to shelter (Cover.SHELTER_MIN_HEIGHT_M) the camp spots data/npcs/camp.json wants: the fire `inside` metres inside the
 # crown circle on the front side (toward the viewer looking along `bearing`, compass degrees, 0 north -z, 90 east +x), Hob `side` metres to the
 # viewer's left and Edda to the right, each `fwd` metres toward the fire, turned to face it; with the trees and shrubs near each spot.
-#   godot --headless --path . --script res://tools/npc_camp_spot.gd -- [--x=53283 --z=68083 --bearing=214 --inside=1.0 --side=2.0 --fwd=1.0 --reach=12]
+#   godot --headless --path . --script res://tools/npc_camp_spot.gd -- [--x=58160 --z=71360 --bearing=270 --inside=1.0 --side=2.0 --fwd=1.0 --reach=12]
 # --reach: how far from the point to look for the tree (m); the 40 nearest trees and shrubs are listed.
 
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
@@ -20,7 +20,7 @@ const CoverScript := preload("res://src/shared/cover.gd")
 
 func _init() -> void:
 	var world: String = "res://worlds/base_world"
-	var args: Dictionary = {"x": 53283.0, "z": 68083.0, "bearing": 214.0, "inside": 1.0, "side": 2.0, "fwd": 1.0, "reach": 12.0}
+	var args: Dictionary = {"x": 58160.0, "z": 71360.0, "bearing": 270.0, "inside": 1.0, "side": 2.0, "fwd": 1.0, "reach": 12.0}
 
 	for argument in OS.get_cmdline_user_args():
 		for key in args:

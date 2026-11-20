@@ -21,7 +21,7 @@
 			"attitude": "wary",
 			"rep_key": "tribe_ragtooth",
 			"camp": {
-				"note": "At the mouth of spring cave 3,4#8013, about 2.8 km east of Edda and Hob's camp; its river runs 50 m west of the mouth (read from the baked tile 3_4 on 19 Nov 2026: mouth x 56064 z 68384, ground about 71 m, a bench of 13-20 degrees runs east of the mouth along the hill). The fire and the members stand on that bench 6-16 m east of the mouth, clear of the opening (the hill's ground is not cut there), the trader facing west, the way a player comes up from the river. The tunnels inside stay as they are (the caves plan). mouth: where members go out of sight when an angry character comes near. keep_m: nothing is put down this near the fire.",
+				"note": "At the mouth of spring cave 3,4#8013, about 2.8 km east of Edda and Hob's first camp (their camp moved to the starter town on 20 Nov 2026 and is now about 3.6 km south-east of this cave); its river runs 50 m west of the mouth (read from the baked tile 3_4 on 19 Nov 2026: mouth x 56064 z 68384, ground about 71 m, a bench of 13-20 degrees runs east of the mouth along the hill). The fire and the members stand on that bench 6-16 m east of the mouth, clear of the opening (the hill's ground is not cut there), the trader facing west, the way a player comes up from the river. The tunnels inside stay as they are (the caves plan). mouth: where members go out of sight when an angry character comes near. keep_m: nothing is put down this near the fire.",
 				"cave": "3,4#8013",
 				"name": "the Ragtooth camp",
 				"fire_owner": "the Ragtooth goblins'",
