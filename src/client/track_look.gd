@@ -19,11 +19,11 @@ static func make(tracks: Array) -> Node3D:
 	var multi: MultiMesh = MultiMesh.new()
 	multi.transform_format = MultiMesh.TRANSFORM_3D
 	multi.mesh = box
-	var prints: Array = tracks.filter(func(row): return row is Array and (row as Array).size() == 4)
-	multi.instance_count = prints.size()
+	var print_marks: Array = tracks.filter(func(row): return row is Array and (row as Array).size() == 4)
+	multi.instance_count = print_marks.size()
 
-	for n in prints.size():
-		var row: Array = prints[n]
+	for n in print_marks.size():
+		var row: Array = print_marks[n]
 		var basis: Basis = Basis(Vector3.UP, deg_to_rad(float(row[3])))
 		multi.set_instance_transform(n, Transform3D(basis, Vector3(float(row[0]), float(row[1]) + LIFT_M, float(row[2]))))
 

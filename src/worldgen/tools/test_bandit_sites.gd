@@ -621,24 +621,24 @@ func _warning_items() -> void:
 	items.setup(ItemTableScript.load_default(), dir)
 	items._goals_loaded = true
 	var at: Vector3 = Vector3(9000.0, 10.0, 9000.0)
-	var prints: Array = []
+	var print_marks: Array = []
 
 	for n in 40:
-		prints.append([0.1 * n, 0.0, 1.0, 90.0])
+		print_marks.append([0.1 * n, 0.0, 1.0, 90.0])
 
 	var road: Vector3 = at + Vector3(200.0, 0.0, 0.0)
-	var ids: Array = items.lay_bandit_camp("6,6", at, [], [], prints, road)
+	var ids: Array = items.lay_bandit_camp("6,6", at, [], [], print_marks, road)
 	var pit: Dictionary = items._items[int(ids[0])]["fire"]
 	check(ids.size() == 2 and int(pit["state"]) == ItemScript.FIRE_STATE_COLD and float(pit["burn_left"]) == 0.0 and not pit.has("tracks"), "the signs are a cold fire pit and a mark")
 	var mark: Dictionary = items._items[int(ids[1])]
 	var extra: Dictionary = items._fire_extra(mark)
-	check((mark["pos"] as Vector3).is_equal_approx(road) and bool(extra["marks"]) and int(extra["camp"]) == 2 and (extra["tracks"] as Array).size() == ItemScript.BANDIT_TRACKS_MAX and extra["tracks"][0] == prints[0], "the mark at the road carries at most BANDIT_TRACKS_MAX prints")
+	check((mark["pos"] as Vector3).is_equal_approx(road) and bool(extra["marks"]) and int(extra["camp"]) == 2 and (extra["tracks"] as Array).size() == ItemScript.BANDIT_TRACKS_MAX and extra["tracks"][0] == print_marks[0], "the mark at the road carries at most BANDIT_TRACKS_MAX prints")
 	check(items._fire_extra(items._items[int(ids[0])]) == {"camp": 2}, "the pit's row is a bandit fire's")
 	check(ItemScript._not_in_area(items._items[int(ids[0])]) and ItemScript._not_in_area(mark), "neither the pit nor the mark is saved")
 	check(not items.building_near(road, 5.0) and items.building_near(at, 5.0), "the prints are not a building, the pit is")
 	check(items._fire_under_pot(road) == -1, "no pot hangs on the prints")
 	var camp: Array = items.lay_bandit_camp("6,6", at, [[at + Vector3(5.0, 0.0, 0.0), 180]], ids)
-	check(not items._items.has(int(ids[0])) and not items._items.has(int(ids[1])) and camp.size() == 2 and not items._fire_extra(items._items[int(camp[0])]).has("tracks"), "the camp is laid over the pit, lit, without prints")
+	check(not items._items.has(int(ids[0])) and not items._items.has(int(ids[1])) and camp.size() == 2 and not items._fire_extra(items._items[int(camp[0])]).has("tracks"), "the camp is laid over the pit, lit, without print_marks")
 	items._items[999] = {"number": 1, "count": 1, "pos": at, "left": 1.0e9, "struct": {"kind": "foundation", "yaw": 0.0}}
 	items.clear_bandit_camp("6,7", camp)
 	check(items._items.has(int(camp[0])), "another camp's key takes nothing")
@@ -646,7 +646,7 @@ func _warning_items() -> void:
 	check(not items._items.has(int(camp[0])) and not items._items.has(int(camp[1])) and items._items.has(999), "only the camp's own pieces are taken away")
 
 	# The client draws the prints under the pit, one mesh for them all.
-	var look: Node3D = TrackLookScript.make(prints.slice(0, 3))
+	var look: Node3D = TrackLookScript.make(print_marks.slice(0, 3))
 	var mmi: MultiMeshInstance3D = look as MultiMeshInstance3D
 	check(mmi != null and mmi.multimesh.instance_count == 3 and mmi.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_OFF, "the client draws each print once")
 	look.free()
