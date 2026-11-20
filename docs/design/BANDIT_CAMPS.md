@@ -1,6 +1,6 @@
 # Bandit camps
 
-Status: stage 1 of 5 (sites and traffic) on branch `claude/project-thread-2c1rn3`; stages 2 to 5 not built. Full plan: Library `bandit-camps/PLAN.md`.
+Status: stages 1 to 5, 5b, 4a and 4b are in dev and not yet played; the toll and robbery (stage 4) are switched off (`robbery.enabled` false) until Dave turns them on. Full plan: Library `bandit-camps/PLAN.md`.
 
 ## What Dave asked for (19 Nov 2026, project chat)
 
