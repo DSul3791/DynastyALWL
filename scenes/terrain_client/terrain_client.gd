@@ -550,11 +550,14 @@ var _auth = null                          # the join handshake (server_auth.gd):
 var _password_arg: String = ""            # --password= (tests, bots): typed for the player once
 var _password_box = null                  # the password popup (password_box.gd), made when a server first asks
 var _remember_password: bool = false      # the player ticked "Remember on this computer" for the password now being tried
+var _avatar_glb: String = ""              # the player's own body model file (my_character.gd body_model), warmed in _ready
 var _remote: bool = false                 # a client-only build joining someone's server: no local Play server to restart (join_address.gd)
 
 
 func _ready() -> void:
-	DynastyBodyScript.warm()   # the body and arm files load on loader threads now, not on the main thread at the welcome (a 3 s freeze)
+	var my_model: String = MyCharacter.body_model()
+	_avatar_glb = DynastyBodyScript.BodyModels.glb(my_model)
+	DynastyBodyScript.warm([my_model])   # the body and arm files (and the player's own body model) load on loader threads now, not on the main thread at the welcome (a 3 s freeze)
 
 	# Ground loading threads (Dave 2026-10-21, settling after a fast fly-over took 61 s): each ground block a worker asks for
 	# waits for the server's answer, so with the engine's default pool (half the cores: 2 on a 4 core machine) only two
@@ -4347,7 +4350,7 @@ func _update_view(delta: float) -> void:
 	if _avatar == null:
 		# Dave's PC log 4 Nov 2026: the first call waited for the body file still loading on a loader thread ("update view" 404 ms at the join).
 		# The body is made once the file is in; until then (a second or two, while the ground loads) there is no third-person body to draw.
-		if ResourceLoader.load_threaded_get_status(DynastyBodyScript.GLB) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+		if ResourceLoader.load_threaded_get_status(DynastyBodyScript.GLB) == ResourceLoader.THREAD_LOAD_IN_PROGRESS or ResourceLoader.load_threaded_get_status(_avatar_glb) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
 			return
 
 		_avatar = _make_avatar()

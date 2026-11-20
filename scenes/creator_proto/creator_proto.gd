@@ -220,7 +220,7 @@ func _build_about(body: VBoxContainer) -> void:
 		_body_pick.add_item(BodyModels.label(id))
 
 	_body_pick.select(models.find(_body_model))
-	_body_pick.item_selected.connect(func(index: int) -> void: _body_model = str(models[index]))
+	_body_pick.item_selected.connect(func(index: int) -> void: _pick_body(str(models[index])))
 	body_row.add_child(_body_pick)
 	var frame_row: HBoxContainer = HBoxContainer.new()
 	body.add_child(frame_row)
@@ -244,7 +244,7 @@ func _build_about(body: VBoxContainer) -> void:
 	note.text = "The frame only sets a starting shape and clothes. Every slider and colour can still be changed."
 
 	if _use_dynasty():      # Dave's body (3 Nov 2026): say plainly what it does not show yet, so a slider that does nothing does not read as a bug
-		note.text += "\nThis body is still being finished: height, limbs, build, muscle, belly, hips, chest, jaw, nose, brow, ears and skin colour show now; hair is coming."
+		note.text += "\nThis body is still being finished: height, limbs, build, muscle, belly, hips, chest, bust, jaw, nose, brow, ears and skin colour show now; hair is coming."
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.add_theme_color_override("font_color", Color(0.75, 0.8, 0.7))
 	body.add_child(note)
@@ -544,15 +544,21 @@ func _use_dynasty() -> bool:
 	return DynastyBody.available()
 
 
+# The Body pick: the preview changes to that model at once, keeping the sliders.
+func _pick_body(id: String) -> void:
+	_body_model = id
+	_rebuild_body()
+
+
 func _rebuild_body() -> void:
 	var t0: int = Time.get_ticks_usec()
 
 	if _use_dynasty():
-		if _body == null or not _body.has_method("set_proportions"):
+		if _body == null or not _body.has_method("set_proportions") or str(_body.get("model")) != (_body_model if DynastyBody.available(_body_model) else BodyModels.DEFAULT):
 			if _body != null:
 				_body.queue_free()
 
-			_body = DynastyBody.new()
+			_body = DynastyBody.new(_body_model)      # the picked body model (body_models.gd), so the preview shows the body the character will wear
 			_preview.add_child(_body)
 			_body.rotation_degrees.y = _turn
 			_body.play("idle", 1.0, 0.0)

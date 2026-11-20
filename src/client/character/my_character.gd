@@ -7,6 +7,7 @@ const Store := preload("res://src/client/character/character_store.gd")
 const Generator := preload("res://src/client/character/body_generator.gd")
 const GeneratedBodyScript := preload("res://src/client/character/generated_body.gd")
 const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
+const BodyModels := preload("res://src/client/character/body_models.gd")
 const LEGACY_PATH := "user://my_character.code"       # the single saved code of the first creator; still worn when no character has been made yet
 
 
@@ -15,7 +16,7 @@ const LEGACY_PATH := "user://my_character.code"       # the single saved code of
 # (a fresh checkout before `godot --import`) falls back to the generated body, so there is always a body with an AnimationPlayer.
 static func make_avatar() -> Node3D:
 	if DynastyBodyScript.available():
-		var body: Node3D = DynastyBodyScript.new()
+		var body: Node3D = DynastyBodyScript.new(body_model())      # the character's own body model (body_models.gd); the default when it is not imported
 		body.set_proportions(genome())      # the creator's sliders shape Dave's body too (dynasty_proportions.gd)
 		return body
 
@@ -31,3 +32,8 @@ static func genome() -> Dictionary:
 
 	var legacy: String = FileAccess.get_file_as_string(LEGACY_PATH).strip_edges() if FileAccess.file_exists(LEGACY_PATH) else ""
 	return Generator.decode(legacy) if legacy != "" else {}
+
+
+# The active character's body model id (body_models.gd), or the default when there is no character.
+static func body_model() -> String:
+	return str(Store.active().get("body", BodyModels.DEFAULT))
