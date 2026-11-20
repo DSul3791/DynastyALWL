@@ -14,6 +14,7 @@ const WORK := 4                 # protocol 146: a goblin tribe member at a chore
 const GUARD := 5                # protocol 146: a goblin tribe member standing its ground, spear forward, at a player with a weapon in hand
 const TRIBES_PATH := "res://data/creatures/goblin_tribes.json"   # goblin tribe members (server_tribes.gd): NPCs at their own camp spots
 const OWN := "own"              # a tribe member's one package and marker kind: it stands at its own spot all day (data/creatures/goblin_tribes.json)
+const OWN_PACKAGE := {"marker": OWN, "state": "stand"}
 
 var hour_now: Callable          # () -> hour of the game day, 0..24
 var ground_height: Callable     # (x, z) -> height
@@ -32,6 +33,7 @@ var cfg: Dictionary = {}
 static var test_hold_off: bool = false   # unit tests read the real day schedules
 var unwell: bool = false         # set by the dialogue router while the AI is down: everybody rests in a chair by day, in bed by night
 var markers: Dictionary = {}    # id -> {kind, pos Vector3, slots, yaw, users Array of npc ids}
+var _of_kind: Dictionary = {}   # kind -> the ids of that kind's markers, in the order of `markers` (so _claim reads only its kind)
 var npcs: Dictionary = {}       # id -> runtime record
 var _dir: String = ""
 var _t: float = 0.0
@@ -97,6 +99,15 @@ func _add_marker(row: Dictionary) -> void:
 		return
 
 	markers[id] = {"kind": str(row.get("kind", "")), "x": float(row.get("x", 0.0)), "z": float(row.get("z", 0.0)), "slots": maxi(int(row.get("slots", 1)), 1), "yaw": float(row.get("yaw", 0.0)), "users": [], "npc": str(row.get("npc", ""))}
+	_of_kind.clear()   # markers are only ever added (setup, admin): rebuilt whole, so a re-added id keeps its place in `markers`
+
+	for mid in markers:
+		var kind: String = markers[mid]["kind"]
+
+		if not _of_kind.has(kind):
+			_of_kind[kind] = []
+
+		_of_kind[kind].append(mid)
 
 
 func _add_npc(row: Dictionary, home: Vector3) -> void:
@@ -152,10 +163,10 @@ func _claim(npc: Dictionary, kind: String) -> String:
 	var best: String = ""
 	var best_d: float = INF
 
-	for id in markers:
+	for id in _of_kind.get(kind, []):   # only this kind's markers, in the order of `markers` (the nearest-first tie-break is unchanged)
 		var m: Dictionary = markers[id]
 
-		if m["kind"] != kind or m["users"].size() >= int(m["slots"]) or (m["npc"] != "" and m["npc"] != npc["id"]):
+		if m["users"].size() >= int(m["slots"]) or (m["npc"] != "" and m["npc"] != npc["id"]):
 			continue
 
 		var d: float = -1.0 if m["npc"] == npc["id"] else Vector2(m["x"] - from.x, m["z"] - from.z).length()
@@ -211,7 +222,7 @@ func package_of(npc: Dictionary, hour: float) -> String:
 
 # A package by name (data/npcs/npcs.json packages); OWN is a tribe member's own spot.
 func _package(name: String) -> Dictionary:
-	return {"marker": OWN, "state": "stand"} if name == OWN else cfg.get("packages", {}).get(name, {})
+	return OWN_PACKAGE if name == OWN else cfg.get("packages", {}).get(name, {})
 
 
 # Run the NPCs a little: dormant ones (no player within active_radius_m) are not touched; the rest tick at their rate.
@@ -220,13 +231,19 @@ func tick(delta: float) -> void:
 	var hour: float = float(hour_now.call()) if hour_now.is_valid() else 12.0
 	var players: Array = player_positions.call() if player_positions.is_valid() else []
 	var active_r: float = float(cfg.get("active_radius_m", 200.0))
+	var near_m: float = float(cfg.get("near_m", 60.0))
+	var mid_m: float = float(cfg.get("mid_m", 120.0))
+	var hz_near: float = float(cfg.get("hz_near", 10.0))
+	var hz_mid: float = float(cfg.get("hz_mid", 3.0))
+	var hz_far: float = float(cfg.get("hz_far", 0.5))
 
 	for id in npcs:
 		var npc: Dictionary = npcs[id]
+		var at: Vector3 = npc["pos"] if npc["placed"] or players.is_empty() else _anchor(npc)   # once a tick, not once per player and axis
 		var near_d: float = INF
 
 		for p in players:
-			near_d = minf(near_d, Vector2(p.x - npc["pos"].x, p.z - npc["pos"].z).length() if npc["placed"] else Vector2(p.x - _anchor(npc).x, p.z - _anchor(npc).z).length())
+			near_d = minf(near_d, Vector2(p.x - at.x, p.z - at.z).length())
 
 		if near_d > active_r:
 			npc["dormant"] = true
@@ -236,7 +253,7 @@ func tick(delta: float) -> void:
 			_activate(npc, hour)
 			npc["dormant"] = false
 
-		var hz: float = float(cfg.get("hz_near", 10.0)) if near_d <= float(cfg.get("near_m", 60.0)) else (float(cfg.get("hz_mid", 3.0)) if near_d <= float(cfg.get("mid_m", 120.0)) else float(cfg.get("hz_far", 0.5)))
+		var hz: float = hz_near if near_d <= near_m else (hz_mid if near_d <= mid_m else hz_far)
 		npc["acc"] += delta
 
 		if npc["acc"] < 1.0 / hz:
@@ -303,10 +320,12 @@ func _step(npc: Dictionary, hour: float, dt: float) -> void:
 	if pkg.is_empty():
 		return
 
-	if str(npc.get("tribe", "")) != "" and not bool(npc.get("away", false)) and wary.is_valid() and _step_wary(npc, wary.call(npc), dt):   # out hunting, it is not there to see anyone
+	var tribe: bool = str(npc.get("tribe", "")) != ""
+
+	if tribe and not bool(npc.get("away", false)) and wary.is_valid() and _step_wary(npc, wary.call(npc), dt):   # out hunting, it is not there to see anyone
 		return
 
-	if str(npc.get("tribe", "")) != "" and chores.is_valid():
+	if tribe and chores.is_valid():
 		_step_chore(npc, chores.call(npc, _t), dt)
 		return
 
