@@ -355,7 +355,7 @@ Dave, 19 Nov 2026: "now the text does mention watering it which should be a poss
 
 **Acceptance:** a bed's prompt shows e.g. "soil 15% dry, needs water", and the figure rises after rain and after a bucket pour. With a well or pump uphill and a channel ending over a Medium plot or over a trench dug with the hoe, working the pump raises the moisture of the plot, or of the beds round the trench.
 
-Not done: irrigation taps (the catalog Tap is iron, behind the Master smithy, on Dave's future list; a wooden tap would be a new item, Dave's call). A trench cannot be filled in or picked up yet. A pipe joint in the middle of a run that sits over a plot or trench also pours into it. A plot's room can be one solve out of date, so it may take a little more water than it has room for.
+Irrigation taps: the Copper - Tap and Copper - Drip head came with the pipe rework (entry 65). A trench cannot be filled in or picked up yet. A pipe joint in the middle of a run that sits over a plot or trench also pours into it. A plot's room can be one solve out of date, so it may take a little more water than it has room for.
 
 Assumed on Dave's behalf (provisional):
 
@@ -460,6 +460,20 @@ Dave, 19 Nov 2026: "We also need to introduce bandit camp spawn areas. I'm think
 Assumed on Dave's behalf (provisional):
 
 - BANDIT-1 to BANDIT-7 (docs/design/BANDIT_CAMPS.md): one chance of a site per 1 km square; trip points per 100 m stretch (road 1, hand path 0.5, loaded cart 3), halving every 3 game days; 30 points within 500 m wake a site; sites sit 100 to 300 m off a road on gentle dry ground, 1.5 km from town and spawn, 150 m from buildings, 3 km from another camp; checked once a game hour.
+
+## 65. Pipes, taps and barrels: laid from the hand, copper tier, drip head and tap
+
+**Status: Implemented - awaiting player verification.** Dave's request, 19 Nov 2026 (voice notes 15:06-15:11Z and rulings at 20:09Z, 20:11Z, 20:26Z, 20:31Z and 21:56Z; design docs/design/PLUMBING_DESIGN.md s9). PR #1306, merged to dev at 893ba95e (head 90398db8) after independent review (several rounds, final PASS on the exact head). Lane A (Dave's PC) on the exact head: 427 of 427 selected tests passed (418 fast + 9 timing), 0 script errors, including test_pipe_runs, test_water_network and test_wooden_plumbing; parse 20 of 20, warnings 407 equal to dev, validate_items 0 errors. Lane B (David4) passed 427 of 427 on the head before (8e2dca0e). Not yet played. The pipe, tap, drip head and barrel looks are not yet seen on screen (the picture checks were skipped while Dave was away).
+
+Dave, 19 Nov 2026: two pipe tiers only, wood (the starter, thick, wears) and copper (the best, 1 copper makes about 3 m); no stone, iron or steel pipe. Pipes are laid click to click from glowing points and ignore collision; barrels linked by pipe share their water. "where ever there is a drip head it will irrigate the soil for 10m in all directions ... as long as that drip head is connected with pipes to a water source that contains any water." "copper taps are objects you can interact with to take a drink like Press E to take a drink or they have a small inventory like 3 spaces if you Press F ... if you put a water container in there it will fill with water". "pipes without taps or drips do not leak any water ... I can place a drip head or tap or barrel anywhere on the pipe where they join. remember pipes are segments and each section has a connection point". "the barrel should have a connection point near the bottom in the center of the barrel so when you put it on the pipe it should snap the middle of the bottom of the barrel to the end of the pipe".
+
+**Required outcome:** with a pipe in hand, laid pipes glow blue and connection points show rings; the first click starts a run, a line shows green or red, the second click lays it from the pack (it may end on the ground). A pipe end with nothing on it loses no water. A tap, drip head or barrel goes on any pipe end or joint. A tap gives a drink with E and fills water containers in its 3 slots (F); a drip head keeps every bed within 10 m fully watered; both only while their pipes reach a barrel or other tank holding water. Linked barrels level their water.
+
+**Acceptance:** fill a barrel, lay copper pipe from its bottom across a garden to the ground, fit a drip head on a joint: beds within 10 m show full moisture while the barrel has water. Fit a tap on the end: E drinks, a Waterskin in its slots fills, and the barrel's water falls. Set a second barrel on a joint: the two barrels level.
+
+Not done: the new item icons need a Godot icon pass. A tap or drip head reaches water through its pipes whatever the height (PV-4). A junction in a network already at its 256-piece cap can leave one half unlinked.
+
+Assumed on Dave's behalf (provisional): PV-1 to PV-10 in docs/design/PLUMBING_DESIGN.md (piece lengths, 30 m longest run, rain into a barrel 1 L a minute, tap fills at 30 L a minute, drip head draws 2 L a minute, a barrel snaps onto a pipe end or joint within 0.6 m, an end laid over a trough or trench still pours into it).
 
 ## Rewrite interpretation
 
