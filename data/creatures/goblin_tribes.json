@@ -28,7 +28,8 @@
 				{"id": "skritch", "name": "Skritch", "role": "goblin_trader", "voice": "skritch", "body": 0, "trader": true, "spot": {"x": 56070.0, "z": 68381.0, "yaw": 180}},
 				{"id": "rukz", "name": "Rukz", "role": "goblin_lookout", "voice": "rukz", "body": 1, "spot": {"x": 56080.0, "z": 68386.0, "yaw": 185}},
 				{"id": "snag", "name": "Snag", "role": "goblin", "voice": "rukz", "body": 0, "spot": {"x": 56077.0, "z": 68381.0, "yaw": 146}},
-				{"id": "vrixa", "name": "Vrixa", "role": "goblin", "voice": "vrixa", "body": 2, "spot": {"x": 56072.0, "z": 68386.0, "yaw": 304}}
+				{"id": "vrixa", "name": "Vrixa", "role": "goblin", "voice": "vrixa", "body": 2, "spot": {"x": 56072.0, "z": 68386.0, "yaw": 304}},
+				{"id": "grikka", "name": "Grikka", "role": "goblin", "voice": "grikka", "body": 3, "spot": {"x": 56075.0, "z": 68387.0, "yaw": 256}}
 			]
 		}
 	}

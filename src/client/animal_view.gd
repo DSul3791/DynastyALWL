@@ -98,7 +98,7 @@ const FEATHERED := [6, 9, 11, 13]     # flock birds, songbirds, grouse, gulls: t
 
 
 # A goblin tribe member's body (npc_view.gd, data/creatures/goblin_tribes.json, Dave 19 Nov 2026): the goblin model's look `variant` (0 Skritch,
-# 1 Rukz, 2 Vrixa), with its own steady height roll from `look_seed`, drawn and clipped exactly as a wild goblin; null when the model file is not
+# 1 Rukz, 2 Vrixa, 3 Grikka), with its own steady height roll from `look_seed`, drawn and clipped exactly as a wild goblin; null when the model file is not
 # there. Every look is open here, also those marked "wild": false that wild goblins never get.
 func make_goblin(variant: int, look_seed: int) -> Node3D:
 	var looks: int = maxi((_model_rows().get("goblin", {}).get("variants", []) as Array).size(), 1)
@@ -642,8 +642,8 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 	# Several looks for one species (goblins, Dave 7 Nov 2026: Skritch and Rukz): the row's "variants" are laid over it, one picked by the
 	# animal's id, so every goblin keeps its look. A row with height_m is sized by its mesh height, not its longest side, and each animal
 	# gets its own height: height_m plus a bell-shaped roll of up to height_variation_m either way (the mean of three even rolls), seeded
-	# from its id so it is the same on every client and every time it comes into view. A look marked "wild": false (Vrixa, Dave 20 Nov 2026: a
-	# named Ragtooth goblin) is only drawn for a tribe member (every_look, make_goblin), never picked for a wild animal.
+	# from its id so it is the same on every client and every time it comes into view. A look marked "wild": false (Vrixa and Grikka, Dave 20 Nov 2026:
+	# named Ragtooth goblins) is only drawn for a tribe member (every_look, make_goblin), never picked for a wild animal.
 	if row.has("variants") and not (row["variants"] as Array).is_empty():
 		var looks: Array = row["variants"]
 

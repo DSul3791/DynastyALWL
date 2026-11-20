@@ -10,6 +10,7 @@ extends SceneTree
 #   godot --path . --script res://tools/creature_check.gd -- --kinds=bear,deer --out=E:/Software/godotDev/creature_check [--px=360] [--clips]
 # --young builds the young animal (its young_model when the row has one).
 # --id=N builds the animal with that id (a species with variants picks its look by id: --id=1 is the second look).
+# --every_look also counts the looks marked "wild": false (a goblin tribe member's, as make_goblin does): --every_look --id=2 is Vrixa, --id=3 Grikka.
 # --clips also lists every clip in the file (with its length), to pick the clip for each role in a new model row.
 
 const AnimalView := preload("res://src/client/animal_view.gd")
@@ -24,6 +25,7 @@ func _init() -> void:
 	var list_clips: bool = false
 	var look_id: int = 0
 	var young: bool = false
+	var every_look: bool = false
 
 	for a in OS.get_cmdline_user_args():
 		if a.begins_with("--kinds="):
@@ -34,6 +36,8 @@ func _init() -> void:
 			look_id = int(a.trim_prefix("--id="))
 		elif a == "--young":
 			young = true
+		elif a == "--every_look":
+			every_look = true
 		elif a == "--clips":
 			list_clips = true
 		elif a.begins_with("--px="):
@@ -79,7 +83,7 @@ func _check(kind: String, number: int, out: String, px: int, list_clips: bool = 
 		return lines
 
 	lines.append("file %s: %s" % [str(row.get("scene", "")), "found" if ResourceLoader.exists(str(row.get("scene", ""))) else "MISSING (run tools/install_animal_models.py, then import)"])
-	var probe: Node3D = view._make_model(number, look_id, young)
+	var probe: Node3D = view._make_model(number, look_id, young, every_look)
 
 	if probe == null:
 		lines.append("FAIL not drawn from the model: the code body is drawn")
@@ -123,7 +127,7 @@ func _check(kind: String, number: int, out: String, px: int, list_clips: bool = 
 
 	for c in cols:
 		var role: String = wanted[c]
-		var model: Node3D = view._make_model(number, look_id, young)
+		var model: Node3D = view._make_model(number, look_id, young, every_look)
 		var cx: float = (float(c) - float(cols - 1) * 0.5) * cell
 		model.position = Vector3(cx, 0.0, 0.0)
 		model.rotation.y = -PI * 0.5      # faces -Z in the game: turned to face the left of the picture
