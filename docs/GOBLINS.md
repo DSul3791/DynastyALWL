@@ -21,6 +21,7 @@ Goblins made by Dave in Meshy on 7 Nov 2026: **Skritch Ragtooth** and **Rukz the
 - Rukz clips: Running, Walking, Alert, Attack, Cautious_Crouch_Walk_Forward, Collect_Object, Dead, Hit_Reaction, Idle_02, Idle_5, Roll_Dodge, Sit_Cross_Legged_on_Floor, Sleep_Normally, Sneaky_Walk, Stand_Dodge, Stand_and_Drink, Sword_Judgment, Sword_Parry, Thrust_Slash, falling_down.
 - The two models share a skeleton but not clip names, so code must map clips by role (idle, walk, run, attack, hit, dead) per model, not by name.
 - Not yet tried in Godot (check facing direction, clip loops, texture look).
+- Every character and creature mesh follows the [mesh checklist](design/CHARACTER_MESHES.md) (Dave, 20 Nov 2026): shadows On, not Double-Sided; textures VRAM Compressed.
 
 ## Quality tiers (Dave, 7 Nov 2026)
 - The goblins are the **ultra-quality** models (about 40k triangles). Every goblin is made once at this quality.
