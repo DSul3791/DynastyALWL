@@ -1,3 +1,16 @@
+[remap]
+
+importer="scene"
+importer_version=1
+type="PackedScene"
+uid="uid://dayuxjpxi7x6d"
+path="res://.godot/imported/Goblin_Grikka_Ragtooth.glb-b823321ca9b5049007132bb561384ef2.scn"
+
+[deps]
+
+source_file="res://assets/creatures/goblin_grikka/Goblin_Grikka_Ragtooth.glb"
+dest_files=["res://.godot/imported/Goblin_Grikka_Ragtooth.glb-b823321ca9b5049007132bb561384ef2.scn"]
+
 [params]
 
 nodes/root_type=""

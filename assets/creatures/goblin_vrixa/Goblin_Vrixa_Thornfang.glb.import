@@ -1,3 +1,16 @@
+[remap]
+
+importer="scene"
+importer_version=1
+type="PackedScene"
+uid="uid://cv3op20gbcm13"
+path="res://.godot/imported/Goblin_Vrixa_Thornfang.glb-78dfc2fa758765b26c5472d0ebaec387.scn"
+
+[deps]
+
+source_file="res://assets/creatures/goblin_vrixa/Goblin_Vrixa_Thornfang.glb"
+dest_files=["res://.godot/imported/Goblin_Vrixa_Thornfang.glb-78dfc2fa758765b26c5472d0ebaec387.scn"]
+
 [params]
 
 nodes/root_type=""
