@@ -37,6 +37,7 @@ var _state: Dictionary = {}         # tribe -> character key -> {"angry_until", 
 var _seen: Dictionary = {}          # peer -> [last position, real seconds then, speed m/s]
 var _hunter: Dictionary = {}        # tribe -> the member out on a hunt now ("" or missing: nobody), so one hunts at a time
 var _t: float = 0.0
+var _players: Array = []            # players.call() as of the last tick: read once a tick, not once per member (avoid)
 var _path: String = ""
 
 
@@ -132,8 +133,9 @@ func tick(delta: float) -> void:
 		return
 
 	var here: Dictionary = {}
+	_players = players.call()
 
-	for p in players.call():
+	for p in _players:
 		var peer: int = int(p["peer"])
 		var at: Vector3 = p["pos"]
 		here[peer] = true
@@ -208,7 +210,7 @@ func avoid(npc: Dictionary) -> Dictionary:
 	var armed_p: Vector3 = Vector3.INF
 	var armed_d: float = float(att.get("spook_m", 10.0))
 
-	for p in players.call():
+	for p in _players:
 		var d: float = Vector2(p["pos"].x - pos.x, p["pos"].z - pos.z).length()
 		var keep: float = keep_from(id, p)
 
@@ -269,7 +271,7 @@ func chore_plan(npc: Dictionary, now: float) -> Dictionary:
 
 	var tribe: String = tribe_of(id)
 	var data: Dictionary = (tribes()[tribe] as Dictionary).get("camp", {}).get("chores", {})
-	var jobs: Array = _member[id]["chores"]
+	var jobs: Array = _member[id]["chores"] if not (_member[id]["chores"] as Array).is_empty() else data.get("default_jobs", [])   # a member with no list of its own takes the camp's
 	var spot: Vector3 = _member[id]["spot"]
 	var walk: float = float(data.get("walk_mps", 1.1))
 	var c: Dictionary = npc.get("chore", {})

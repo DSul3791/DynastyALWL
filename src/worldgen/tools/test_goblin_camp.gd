@@ -418,6 +418,38 @@ func _chores() -> void:
 	check(trader_far <= float(tribes.cfg.get("leash_m", 8.0)) + 1.0, "the trader stays by the fire (%.1f m at most)" % trader_far)
 	check(fastest <= top + 0.05, "nobody moves faster than its pace allows (%.2f m/s)" % fastest)
 	check(sharpest <= deg_to_rad(float(tribes.cfg.get("turn_dps", 160.0))) + 0.01, "nobody spins: turns at most turn_dps (%.0f deg/s)" % rad_to_deg(sharpest))
+	var defaults: Array = chores.get("default_jobs", [])
+	check(not defaults.is_empty() and defaults.all(func(j): return (chores.get("jobs", {}) as Dictionary).has(j) and str(j) != "hunt"), "a member with no chores list of its own takes the camp's default round (%s)" % str(defaults))
+	var snag_jobs: Array = tribes._member["snag"]["chores"]
+	tribes._member["snag"]["chores"] = []
+	var fresh: Dictionary = {"id": "snag", "pos": tribes._member["snag"]["spot"], "heading": 0.0}
+	tribes.chore_plan(fresh, 0.0)
+	tribes.chore_plan(fresh, 1000.0)
+	tribes._member["snag"]["chores"] = snag_jobs
+	check(str(fresh.get("chore", {}).get("job", "")) in defaults, "and starts on it (%s)" % str(fresh.get("chore", {})))
+
+	# What the camp costs a tick, for the NPC budget (test_npcs: 60 townsfolk under 1 ms): chores alone, then with a weapon carrier in sight.
+	var t0: int = Time.get_ticks_usec()
+
+	for k in 600:
+		tribes.tick(0.1)
+		npcs.tick(0.1)
+
+	var calm_ms: float = float(Time.get_ticks_usec() - t0) / 600.0 / 1000.0
+	var spear_n: int = items.table.number_of("spear")
+	items.inventory_of(1).add(spear_n, 1)
+	items.report_held(1, spear_n)
+	player[0] = fire + Vector3(-6.0, 0.0, 0.0)
+	items.report_position(1, player[0])
+	t0 = Time.get_ticks_usec()
+
+	for k in 600:
+		tribes.tick(0.1)
+		npcs.tick(0.1)
+
+	var armed_ms: float = float(Time.get_ticks_usec() - t0) / 600.0 / 1000.0
+	print("goblin camp cost: %d members, %.3f ms per 10 Hz tick at their chores, %.3f ms with a weapon carrier by the fire (whole ServerNpcs tick, townsfolk included)" % [ids.size(), calm_ms, armed_ms])
+	check(ids.any(func(id): return int(npcs.npcs[id]["state"]) == NpcsScript.GUARD), "with a spear in hand by the fire, the members stand guard")
 
 
 func data_att() -> Dictionary:
