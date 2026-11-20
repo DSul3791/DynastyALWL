@@ -9,7 +9,7 @@ extends Node3D
 # shoulder does not raise the arm, the lie clip is the nearest of Dave's, the first-person arms stay the ragdoll arms.
 
 const BodyModels := preload("res://src/client/character/body_models.gd")
-# Each body wears the model its character picked (body_models.gd; NPCs wear the default). GLB is the default model's file, which NPCs and the clip-borrowing models need.
+# Each body wears the model its character picked (body_models.gd; NPCs wear the default). GLB is the default model's file, which NPCs need.
 # shortcut: every model's first-person arms are the default model's parts (ARMS_GLB); a model with its own "parts_glb" would need dynasty_arms.gd to load it.
 const GLB := BodyModels.DEFAULT_GLB
 const ARMS_GLB := BodyModels.DEFAULT_PARTS_GLB   # dynasty_arms.gd PARTS_GLB, warmed with the body
@@ -101,7 +101,7 @@ var _mount_rest: Dictionary = {}              # Marker3D -> its transform before
 # Headless (the lane's smokes and tests) loads them on the main thread instead: the headless renderer's mesh, material and texture stores are not thread
 # safe in Godot 4.7.2 (servers/rendering/dummy/storage: RID_Owner without THREAD_SAFE; the GLES3 and Vulkan stores are), and the loader threads making
 # meshes while the main thread made its own broke the store ("Attempting to initialize the wrong RID", "m" is null, signal 11; David4 smokes, 14 Nov 2026).
-# `models`: more body model ids to warm, the player's own (my_character.gd body_model()); the default model is always warmed (NPCs wear it, and other models borrow its clips).
+# `models`: more body model ids to warm, the player's own (my_character.gd body_model()); the default model is always warmed (NPCs wear it).
 static func warm(models: Array = []) -> void:
 	var paths: Array = [GLB, ARMS_GLB]
 
@@ -315,7 +315,6 @@ func _rest_origin(bone: String) -> Vector3:
 
 
 # The game's names and the file's own names, shared by every body of this model. Hips travel is taken out of every clip (the game moves the body), see _clip.
-# A model with "clips_from" (body_models.gd) also gets every clip of that model its own file lacks, carried over to its rig (_borrow_clips).
 func _build_animations() -> void:
 	if not _libraries.has(model):
 		var t0: int = Time.get_ticks_msec()
@@ -326,11 +325,6 @@ func _build_animations() -> void:
 		for clip in own_library.get_animation_list():
 			own[String(clip)] = own_library.get_animation(clip)
 
-		var source: String = str(BodyModels.row(model).get("clips_from", ""))
-
-		if source != "" and source != model and available(source):
-			_borrow_clips(own, _scenes[source], str(BodyModels.row(model).get("match_clip", "")), skeleton)
-
 		for clip in own:
 			library.add_animation(clip, _clip(own[clip], 0.0, -1.0, true, 1.0))
 
@@ -338,7 +332,7 @@ func _build_animations() -> void:
 			var row: Array = CLIP_MAP[game_name]
 
 			if not own.has(str(row[0])):
-				continue        # a model whose file lacks the clip and borrows none: the game's name is left out, play() skips it
+				continue        # a model whose file lacks the clip: the game's name is left out, play() skips it
 
 			var made: Animation = _clip(own[str(row[0])], float(row[1]), float(row[2]), bool(row[3]), float(row[4]), row[5] if row.size() > 5 else [])
 
@@ -435,207 +429,6 @@ static func _clip(src: Animation, from: float, to: float, loop: bool, retime: fl
 				out.scale_track_insert_key(track, when, src.scale_track_interpolate(t, float(kt)))
 
 	return out
-
-
-# Carries the clips of `from_scene` (another body model) over to this rig `skel`, for every clip `own` lacks; `own` (clip name -> Animation) gets them. Dave 20 Nov 2026: the
-# female body's file holds 4 clips, the default body's 98. Both rigs are the same 24 Mixamo bones, but each bone's own axes differ (her upper arms are turned about 70 degrees
-# round the bone against his), so a key cannot be copied as it is. Posed by `match_clip` (a clip both files hold: the same motion fitted to each rig) at its first key, each
-# bone's whole turn in the skeleton differs by one fixed turn, fix = his^-1 * hers; a carried key is fix[parent]^-1 * his key * fix[bone], which poses her bone the way his
-# clip poses his. Checked offline on both files (20 Nov 2026): his Walking carried over matches her own Walking within 1 degree on the spine, arms and head at every key,
-# within 3.5 degrees on the legs. Her hips' height is set per clip so her feet stand where his do (_ground_feet); every other bone keeps her own lengths (their position tracks are left out).
-static func _borrow_clips(own: Dictionary, from_scene: PackedScene, match_clip: String, skel: Skeleton3D) -> void:
-	var probe: Node = from_scene.instantiate()
-	var their_skel: Skeleton3D = probe.find_children("*", "Skeleton3D", true, false)[0]
-	var player: AnimationPlayer = probe.find_children("*", "AnimationPlayer", true, false)[0]
-	var theirs: AnimationLibrary = player.get_animation_library(player.get_animation_library_list()[0])
-
-	if not own.has(match_clip) or not theirs.has_animation(match_clip):
-		print("dynasty body: no clip %s in both files, so no clips are borrowed" % match_clip)
-		probe.free()
-		return
-
-	var mine_match: Animation = own[match_clip]
-	var their_match: Animation = theirs.get_animation(match_clip)
-	var fix: Dictionary = rig_fix(their_skel, their_match, skel, mine_match)
-	var prefix: String = _skeleton_path(mine_match)
-
-	for clip in theirs.get_animation_list():
-		if not own.has(String(clip)):
-			own[String(clip)] = carry_clip(theirs.get_animation(clip), fix, prefix, their_skel, skel)
-
-	probe.free()
-
-
-# bone name -> the fixed turn from their rig's bone to this rig's (his^-1 * hers), read from the same clip posed on each rig at its first key.
-static func rig_fix(their_skel: Skeleton3D, their_match: Animation, skel: Skeleton3D, mine_match: Animation) -> Dictionary:
-	var their_turns: Dictionary = _pose_turns(their_skel, their_match)
-	var my_turns: Dictionary = _pose_turns(skel, mine_match)
-	var fix: Dictionary = {}
-
-	for bone in my_turns:
-		if their_turns.has(bone):
-			fix[bone] = ((their_turns[bone] as Quaternion).inverse() * (my_turns[bone] as Quaternion)).normalized()
-
-	return fix
-
-
-# Each bone's whole turn in the skeleton at the clip's first key (a bone the clip does not move keeps its rest turn): bone name -> Quaternion.
-static func _pose_turns(skel: Skeleton3D, anim: Animation) -> Dictionary:
-	var local: Dictionary = {}
-
-	for i in range(skel.get_bone_count()):
-		local[i] = skel.get_bone_rest(i).basis.get_rotation_quaternion()
-
-	for t in range(anim.get_track_count()):
-		var i: int = skel.find_bone(String(anim.track_get_path(t)).get_slice(":", 1))
-
-		if anim.track_get_type(t) == Animation.TYPE_ROTATION_3D and i >= 0 and anim.track_get_key_count(t) > 0:
-			local[i] = anim.track_get_key_value(t, 0)
-
-	var turns: Dictionary = {}
-
-	for i in range(skel.get_bone_count()):
-		var turn: Quaternion = local[i]
-		var up: int = skel.get_bone_parent(i)
-
-		while up >= 0:
-			turn = (local[up] as Quaternion) * turn
-			up = skel.get_bone_parent(up)
-
-		turns[skel.get_bone_name(i)] = turn
-
-	return turns
-
-
-# The skeleton's node path in a clip's bone tracks (the part before ":"), read from its hips track; "" when it has none.
-static func _skeleton_path(anim: Animation) -> String:
-	for t in range(anim.get_track_count()):
-		var path: String = String(anim.track_get_path(t))
-
-		if path.ends_with(":" + P + "Hips"):
-			return path.get_slice(":", 0)
-
-	return ""
-
-
-# The lowest of the feet and toes (skeleton space, centimetres) when `anim` poses `skel` at time `at`: the clip's turns and hips position, the rig's own bone lengths.
-static func foot_low(skel: Skeleton3D, anim: Animation, at: float) -> float:
-	var prefix: String = _skeleton_path(anim)
-	var locals: Array = []          # bone index -> its Transform3D under its parent at `at`
-
-	for i in range(skel.get_bone_count()):
-		var local: Transform3D = skel.get_bone_rest(i)
-		local.basis = local.basis.orthonormalized()
-		var path: NodePath = NodePath(prefix + ":" + skel.get_bone_name(i))
-		var turn: int = anim.find_track(path, Animation.TYPE_ROTATION_3D)
-
-		if turn >= 0:
-			local.basis = Basis(anim.rotation_track_interpolate(turn, at))
-
-		if skel.get_bone_name(i) == P + "Hips":
-			var move: int = anim.find_track(path, Animation.TYPE_POSITION_3D)
-
-			if move >= 0:
-				local.origin = anim.position_track_interpolate(move, at)
-
-		locals.append(local)
-
-	var low: float = INF
-
-	for i in range(skel.get_bone_count()):
-		var bone_name: String = skel.get_bone_name(i)
-
-		if not (bone_name.ends_with("Foot") or bone_name.ends_with("ToeBase")):
-			continue
-
-		var place: Transform3D = locals[i]
-		var up: int = skel.get_bone_parent(i)
-
-		while up >= 0:
-			place = (locals[up] as Transform3D) * place
-			up = skel.get_bone_parent(up)
-
-		low = minf(low, place.origin.y)
-
-	return low
-
-
-# His clip `src` on this rig. The hips' height is set per clip so that her feet stand where his do (Lane A, 20 Nov 2026: a hips height scaled from Walking left her toes
-# 0.13 m up in the idle): his clip is posed on both rigs at five times and her hips are lowered by how much higher her lowest foot is than his (5 cm standing, about 1 cm
-# crouched, 0 sitting on a chair, worked out offline on both files).
-static func carry_clip(src: Animation, fix: Dictionary, prefix: String, their_skel: Skeleton3D, skel: Skeleton3D) -> Animation:
-	var out: Animation = Animation.new()
-	out.length = src.length
-	out.loop_mode = src.loop_mode
-	var turned: Dictionary = {}
-
-	for t in range(src.get_track_count()):
-		var bone: String = String(src.track_get_path(t)).get_slice(":", 1)
-		var type: int = src.track_get_type(t)
-
-		if not fix.has(bone) or not (type == Animation.TYPE_ROTATION_3D or (type == Animation.TYPE_POSITION_3D and bone == P + "Hips")):
-			continue
-
-		var track: int = out.add_track(type)
-		out.track_set_path(track, NodePath(prefix + ":" + bone))
-		out.track_set_interpolation_type(track, src.track_get_interpolation_type(t))
-		var before: Quaternion = _parent_fix(bone, fix, skel).inverse()       # worked out once per track: the keys only multiply
-		var after: Quaternion = fix[bone]
-
-		for k in range(src.track_get_key_count(t)):
-			var when: float = src.track_get_key_time(t, k)
-
-			if type == Animation.TYPE_POSITION_3D:
-				out.position_track_insert_key(track, when, src.track_get_key_value(t, k))
-			else:
-				out.rotation_track_insert_key(track, when, (before * (src.track_get_key_value(t, k) as Quaternion) * after).normalized())
-
-		if type == Animation.TYPE_ROTATION_3D:
-			turned[bone] = true
-
-	# A bone his clip does not move (the importer drops a track that never changes) stands as his rest pose does, not as her rest pose (her rest is a T pose, his an A pose).
-	for bone in fix:
-		var theirs_at: int = their_skel.find_bone(bone)
-
-		if turned.has(bone) or theirs_at < 0:
-			continue
-
-		var track: int = out.add_track(Animation.TYPE_ROTATION_3D)
-		out.track_set_path(track, NodePath(prefix + ":" + bone))
-		var rest_turn: Quaternion = their_skel.get_bone_rest(theirs_at).basis.get_rotation_quaternion()
-		out.rotation_track_insert_key(track, 0.0, (_parent_fix(bone, fix, skel).inverse() * rest_turn * (fix[bone] as Quaternion)).normalized())
-
-	_ground_feet(out, src, their_skel, skel)
-	return out
-
-
-static func _ground_feet(out: Animation, src: Animation, their_skel: Skeleton3D, skel: Skeleton3D) -> void:
-	var hips: int = out.find_track(NodePath(_skeleton_path(out) + ":" + P + "Hips"), Animation.TYPE_POSITION_3D)
-
-	if hips < 0:
-		return
-
-	var higher: float = 0.0
-
-	for n in range(5):
-		var at: float = src.length * float(n) / 5.0
-		higher += (foot_low(skel, out, at) - foot_low(their_skel, src, at)) / 5.0
-
-	if not is_finite(higher):
-		return      # a rig without feet: nothing to stand on
-
-	for k in range(out.track_get_key_count(hips)):
-		out.track_set_key_value(hips, k, (out.track_get_key_value(hips, k) as Vector3) - Vector3(0.0, higher, 0.0))
-
-
-# The fixed turn of the bone's parent (identity for the root).
-static func _parent_fix(bone: String, fix: Dictionary, skel: Skeleton3D) -> Quaternion:
-	var up: int = skel.get_bone_parent(skel.find_bone(bone))
-
-	if up >= 0 and fix.has(skel.get_bone_name(up)):
-		return fix[skel.get_bone_name(up)]
-
-	return Quaternion.IDENTITY
 
 
 # Turns the chair clip into sitting cross-legged on the ground (Dave QA BUG-020: X sat him as if on a chair). Dave's set has no floor-sit clip, so the chair pose is changed in place:

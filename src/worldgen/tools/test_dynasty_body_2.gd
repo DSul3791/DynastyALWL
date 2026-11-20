@@ -1,15 +1,14 @@
 extends SceneTree
 
 # The second body model, body_2 (Dave's female player character, Playercharacter_Female_01.glb, 20 Nov 2026: "she should be the female selection now and be fully adjustable").
-# Her file holds 4 clips; the rest are carried over from body_1 (dynasty_body.gd _borrow_clips). Checks: she is available and wears her own file; every game clip exists on her;
-# body_1's Walking carried over to her rig matches her own Walking (the carry-over turns each bone the right way); the carried idle hangs her arms down (not her T-pose rest);
+# Her file (Dave's 99-action v2, 20 Nov 2026) holds her own 4 clips and body_1's set retargeted to her rig. Checks: she is available and wears her own file; every game clip
+# exists on her and comes from her own file; the idle hangs her arms down (not her T-pose rest) with her toes where body_1's are;
 # lie, sit and crouch put her hips where they should be, and the cross-legged sit puts her knees forward and her hands by them; the creator's sliders work on her (height,
 # legs, the width shapes made from her own mesh); an unknown body id wears body_1.
 # Run: godot --headless --path . --script res://src/worldgen/tools/test_dynasty_body_2.gd
 const Body := preload("res://src/client/character/dynasty_body.gd")
 const BodyModels := preload("res://src/client/character/body_models.gd")
 const Generator := preload("res://src/client/character/body_generator.gd")
-const ARM_BONES := ["mixamorig_Spine2", "mixamorig_LeftShoulder", "mixamorig_LeftArm", "mixamorig_LeftForeArm", "mixamorig_RightArm", "mixamorig_RightForeArm", "mixamorig_Head"]
 
 var _fails: int = 0
 
@@ -69,36 +68,17 @@ func _init() -> void:
 	for clip in ["idle_torch", "walk_torch", "Alert", "All_Night_Dance", "Formal_Bow"]:
 		_check(her.animation_player.has_animation(clip), "body_2 has " + clip)
 
-	# The carry-over, checked on the one clip both files hold: his Walking carried to her rig against her own Walking, key by key.
+	# Her own file holds every clip the game plays (Dave's 99-action file, 20 Nov 2026: her own 4 and body_1's set retargeted to her rig), so none is missing on her.
 	var her_file: Node = (load(BodyModels.glb("body_2")) as PackedScene).instantiate()
-	var his_file: Node = (load(BodyModels.glb("body_1")) as PackedScene).instantiate()
-	var her_skel: Skeleton3D = her_file.find_children("*", "Skeleton3D", true, false)[0]
-	var his_skel: Skeleton3D = his_file.find_children("*", "Skeleton3D", true, false)[0]
 	var her_player: AnimationPlayer = her_file.find_children("*", "AnimationPlayer", true, false)[0]
-	var his_player: AnimationPlayer = his_file.find_children("*", "AnimationPlayer", true, false)[0]
-	var her_walk: Animation = her_player.get_animation("Walking")
-	var his_walk: Animation = his_player.get_animation("Walking")
-	var fix: Dictionary = Body.rig_fix(his_skel, his_walk, her_skel, her_walk)
-	var prefix: String = String(her_walk.track_get_path(0)).get_slice(":", 0)
-	var carried: Animation = Body.carry_clip(his_walk, fix, prefix, his_skel, her_skel)
-	var worst: float = 0.0
 
-	for bone in ARM_BONES:
-		var mine: int = her_walk.find_track(NodePath(prefix + ":" + bone), Animation.TYPE_ROTATION_3D)
-		var got: int = carried.find_track(NodePath(prefix + ":" + bone), Animation.TYPE_ROTATION_3D)
+	for clip in Body.CLIP_MAP:
+		var source: String = str(Body.CLIP_MAP[clip][0])
+		_check(her_player.has_animation(source), "her file holds %s (the game's %s)" % [source, clip])
 
-		if mine < 0 or got < 0:
-			continue
-
-		for n in range(8):
-			var t: float = her_walk.length * float(n) / 8.0
-			worst = maxf(worst, rad_to_deg(her_walk.rotation_track_interpolate(mine, t).angle_to(carried.rotation_track_interpolate(got, t))))
-
-	_check(worst < 3.0, "body_1's Walking carried to body_2 matches her own Walking on the spine, arms and head (worst %.1f degrees)" % worst)
 	her_file.free()
-	his_file.free()
 
-	# The carried idle: arms hang at the sides, not out in her T-pose rest.
+	# The idle: arms hang at the sides, not out in her T-pose rest.
 	await _pose(her, "idle", 0.5)
 	var hand_l: Vector3 = _at(her, "mixamorig_LeftHand")
 	var hand_r: Vector3 = _at(her, "mixamorig_RightHand")
