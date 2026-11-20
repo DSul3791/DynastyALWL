@@ -20,9 +20,27 @@ func _check(ok: bool, what: String) -> void:
 		print("FAIL ", what)
 
 
+# A bone's place as drawn. A SkeletonModifier3D (the sliders, dynasty_proportions.gd) changes the poses only while the skeleton updates and Godot puts the clip's pose back
+# after, so the places are read in skeleton_updated (as test_dynasty_proportions.gd does) and looked up here; before the first update, the plain pose.
 func _at(body: Node3D, bone: String) -> Vector3:
+	var drawn: Dictionary = body.get_meta("drawn", {})
+
+	if drawn.has(bone):
+		return drawn[bone]
+
 	var s: Skeleton3D = body.skeleton
 	return (s.global_transform * s.get_bone_global_pose(s.find_bone(bone))).origin
+
+
+func _watch(body: Node3D) -> void:
+	var s: Skeleton3D = body.skeleton
+	s.skeleton_updated.connect(func() -> void:
+		var drawn: Dictionary = {}
+
+		for i in range(s.get_bone_count()):
+			drawn[s.get_bone_name(i)] = (s.global_transform * s.get_bone_global_pose(i)).origin
+
+		body.set_meta("drawn", drawn))
 
 
 func _pose(body: Node3D, clip: String, at: float) -> void:
@@ -36,6 +54,7 @@ func _init() -> void:
 	_check(Body.available("body_2"), "body_2 is imported and usable")
 	var her: Node3D = Body.new("body_2")
 	root.add_child(her)
+	_watch(her)
 	_check(her.model == "body_2", "body_2 wears her own model (got %s)" % her.model)
 	var him: Node3D = Body.new()
 	root.add_child(him)
@@ -61,7 +80,7 @@ func _init() -> void:
 	var his_walk: Animation = his_player.get_animation("Walking")
 	var fix: Dictionary = Body.rig_fix(his_skel, his_walk, her_skel, her_walk)
 	var prefix: String = String(her_walk.track_get_path(0)).get_slice(":", 0)
-	var carried: Animation = Body.carry_clip(his_walk, fix, Body.hips_scale_of(his_walk, her_walk), prefix, his_skel, her_skel)
+	var carried: Animation = Body.carry_clip(his_walk, fix, prefix, his_skel, her_skel)
 	var worst: float = 0.0
 
 	for bone in ARM_BONES:
@@ -130,6 +149,8 @@ func _init() -> void:
 		await process_frame
 
 	_check(_at(her, "mixamorig_Hips").y > plain_hips + 0.03, "Legs +1: her hips are lifted (%.2f m from %.2f)" % [_at(her, "mixamorig_Hips").y, plain_hips])
+	var long_foot: float = minf(_at(her, "mixamorig_LeftToeBase").y, _at(her, "mixamorig_RightToeBase").y)
+	_check(long_foot > -0.08 and long_foot < 0.12, "Legs +1: her feet stay on the ground (toes at %.2f m)" % long_foot)
 	var build: int = her.body_mesh.find_blend_shape_by_name("build")
 	_check(build >= 0 and absf(her.body_mesh.get_blend_shape_value(build) - 0.8) < 0.01, "Build 0.8: her mesh carries the width shapes")
 	_check(her.body_mesh.mesh.has_meta(Body.Shapes.SHAPED_KEY), "her body wears the shaped copy of her own mesh")

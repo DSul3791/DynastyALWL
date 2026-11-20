@@ -442,7 +442,7 @@ static func _clip(src: Animation, from: float, to: float, loop: bool, retime: fl
 # round the bone against his), so a key cannot be copied as it is. Posed by `match_clip` (a clip both files hold: the same motion fitted to each rig) at its first key, each
 # bone's whole turn in the skeleton differs by one fixed turn, fix = his^-1 * hers; a carried key is fix[parent]^-1 * his key * fix[bone], which poses her bone the way his
 # clip poses his. Checked offline on both files (20 Nov 2026): his Walking carried over matches her own Walking within 1 degree on the spine, arms and head at every key,
-# within 3.5 degrees on the legs. The hips' position is scaled by her hips over his in match_clip; every other bone keeps her own lengths (their position tracks are left out).
+# within 3.5 degrees on the legs. Her hips' height is set per clip so her feet stand where his do (_ground_feet); every other bone keeps her own lengths (their position tracks are left out).
 static func _borrow_clips(own: Dictionary, from_scene: PackedScene, match_clip: String, skel: Skeleton3D) -> void:
 	var probe: Node = from_scene.instantiate()
 	var their_skel: Skeleton3D = probe.find_children("*", "Skeleton3D", true, false)[0]
@@ -457,12 +457,11 @@ static func _borrow_clips(own: Dictionary, from_scene: PackedScene, match_clip: 
 	var mine_match: Animation = own[match_clip]
 	var their_match: Animation = theirs.get_animation(match_clip)
 	var fix: Dictionary = rig_fix(their_skel, their_match, skel, mine_match)
-	var hips_scale: float = hips_scale_of(their_match, mine_match)
 	var prefix: String = _skeleton_path(mine_match)
 
 	for clip in theirs.get_animation_list():
 		if not own.has(String(clip)):
-			own[String(clip)] = carry_clip(theirs.get_animation(clip), fix, hips_scale, prefix, their_skel, skel)
+			own[String(clip)] = carry_clip(theirs.get_animation(clip), fix, prefix, their_skel, skel)
 
 	probe.free()
 
@@ -519,24 +518,52 @@ static func _skeleton_path(anim: Animation) -> String:
 	return ""
 
 
-# Her hips height over his across the matching clip (1.0 when either has no hips position track).
-static func hips_scale_of(theirs: Animation, mine: Animation) -> float:
-	var a: int = theirs.find_track(NodePath(_skeleton_path(theirs) + ":" + P + "Hips"), Animation.TYPE_POSITION_3D)
-	var b: int = mine.find_track(NodePath(_skeleton_path(mine) + ":" + P + "Hips"), Animation.TYPE_POSITION_3D)
+# The lowest of the feet and toes (skeleton space, centimetres) when `anim` poses `skel` at time `at`: the clip's turns and hips position, the rig's own bone lengths.
+static func foot_low(skel: Skeleton3D, anim: Animation, at: float) -> float:
+	var prefix: String = _skeleton_path(anim)
+	var locals: Array = []          # bone index -> its Transform3D under its parent at `at`
 
-	if a < 0 or b < 0:
-		return 1.0
+	for i in range(skel.get_bone_count()):
+		var local: Transform3D = skel.get_bone_rest(i)
+		local.basis = local.basis.orthonormalized()
+		var path: NodePath = NodePath(prefix + ":" + skel.get_bone_name(i))
+		var turn: int = anim.find_track(path, Animation.TYPE_ROTATION_3D)
 
-	var sum: float = 0.0
+		if turn >= 0:
+			local.basis = Basis(anim.rotation_track_interpolate(turn, at))
 
-	for n in range(10):
-		var at: float = minf(theirs.length, mine.length) * float(n) / 10.0
-		sum += mine.position_track_interpolate(b, at).y / maxf(theirs.position_track_interpolate(a, at).y, 0.01)
+		if skel.get_bone_name(i) == P + "Hips":
+			var move: int = anim.find_track(path, Animation.TYPE_POSITION_3D)
 
-	return sum / 10.0
+			if move >= 0:
+				local.origin = anim.position_track_interpolate(move, at)
+
+		locals.append(local)
+
+	var low: float = INF
+
+	for i in range(skel.get_bone_count()):
+		var bone_name: String = skel.get_bone_name(i)
+
+		if not (bone_name.ends_with("Foot") or bone_name.ends_with("ToeBase")):
+			continue
+
+		var place: Transform3D = locals[i]
+		var up: int = skel.get_bone_parent(i)
+
+		while up >= 0:
+			place = (locals[up] as Transform3D) * place
+			up = skel.get_bone_parent(up)
+
+		low = minf(low, place.origin.y)
+
+	return low
 
 
-static func carry_clip(src: Animation, fix: Dictionary, hips_scale: float, prefix: String, their_skel: Skeleton3D, skel: Skeleton3D) -> Animation:
+# His clip `src` on this rig. The hips' height is set per clip so that her feet stand where his do (Lane A, 20 Nov 2026: a hips height scaled from Walking left her toes
+# 0.13 m up in the idle): his clip is posed on both rigs at five times and her hips are lowered by how much higher her lowest foot is than his (5 cm standing, about 1 cm
+# crouched, 0 sitting on a chair, worked out offline on both files).
+static func carry_clip(src: Animation, fix: Dictionary, prefix: String, their_skel: Skeleton3D, skel: Skeleton3D) -> Animation:
 	var out: Animation = Animation.new()
 	out.length = src.length
 	out.loop_mode = src.loop_mode
@@ -559,7 +586,7 @@ static func carry_clip(src: Animation, fix: Dictionary, hips_scale: float, prefi
 			var when: float = src.track_get_key_time(t, k)
 
 			if type == Animation.TYPE_POSITION_3D:
-				out.position_track_insert_key(track, when, (src.track_get_key_value(t, k) as Vector3) * hips_scale)
+				out.position_track_insert_key(track, when, src.track_get_key_value(t, k))
 			else:
 				out.rotation_track_insert_key(track, when, (before * (src.track_get_key_value(t, k) as Quaternion) * after).normalized())
 
@@ -578,7 +605,24 @@ static func carry_clip(src: Animation, fix: Dictionary, hips_scale: float, prefi
 		var rest_turn: Quaternion = their_skel.get_bone_rest(theirs_at).basis.get_rotation_quaternion()
 		out.rotation_track_insert_key(track, 0.0, (_parent_fix(bone, fix, skel).inverse() * rest_turn * (fix[bone] as Quaternion)).normalized())
 
+	_ground_feet(out, src, their_skel, skel)
 	return out
+
+
+static func _ground_feet(out: Animation, src: Animation, their_skel: Skeleton3D, skel: Skeleton3D) -> void:
+	var hips: int = out.find_track(NodePath(_skeleton_path(out) + ":" + P + "Hips"), Animation.TYPE_POSITION_3D)
+
+	if hips < 0:
+		return
+
+	var higher: float = 0.0
+
+	for n in range(5):
+		var at: float = src.length * float(n) / 5.0
+		higher += (foot_low(skel, out, at) - foot_low(their_skel, src, at)) / 5.0
+
+	for k in range(out.track_get_key_count(hips)):
+		out.track_set_key_value(hips, k, (out.track_get_key_value(hips, k) as Vector3) - Vector3(0.0, higher, 0.0))
 
 
 # The fixed turn of the bone's parent (identity for the root).
