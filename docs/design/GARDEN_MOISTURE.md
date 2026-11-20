@@ -61,8 +61,8 @@ drain down a pipe) and the beds round the trench get wetter.
   items are used and it wears the hoe like tilling. It catches a channel's or pipe's end or a spout within 1.2 m of its middle and up to 1.5 m above. Its
   water is shared among every tilled bed and garden plot within 30 m that is no more than 0.5 m above it, each by the room its soil has, so the driest
   bed takes most; once they are all full the trench takes nothing. Refused under water, on a bed, and within 1 m of another trench or anything standing.
-- **Taps.** Not built. The catalog's Tap is iron and belongs to the iron plumbing behind the Master smithy, which is on Dave's future list. An open
-  pipe end already pours, and the Sluice already shuts a channel. A wooden tap would be a new item: Dave's call.
+- **Taps.** Not built in this stage. Since then (PR #1306, PLUMBING_DESIGN s9) Dave ruled that taps and irrigation drip heads are copper only, with no
+  iron (it would rust): the Copper tap and the Copper drip head are the pieces for a garden. An open pipe end also pours, and the Sluice shuts a channel.
 - **Cost.** A trench's list of beds is worked out when it is dug and again in the hourly plots pass (one pass over the beds for every trench), never
   per frame; its water is shared out only when the network is solved (a change, or the next fill or empty event).
 - **Look.** PLACEHOLDER: the tilled-soil furrows laid 2 m long and darkened; no water surface is drawn. It cannot be filled in or picked up yet, like a
@@ -80,5 +80,5 @@ drain down a pipe) and the beds round the trench get wetter.
 - GM-6 Irrigation trench (new item 1507, structure state 457, no recipe): dug with the hoe, 2 m by 0.5 m, catches water within 1.2 m and 1.5 m above.
 - GM-7 A trench waters every bed and plot within 30 m of it (any direction) no more than 0.5 m above it, shared by each soil's room.
 - GM-8 The hoe's list gains Irrigation Trench as its last row (after Survey a Path); Dave's order of the other six is unchanged.
-- Not built, Dave's call: an irrigation tap (the Tap is iron, behind the Master smithy, on the future list); filling in a trench.
+- Not built, Dave's call: filling in a trench. (Taps and drip heads are copper only, Dave 19 Nov 2026; built in PR #1306.)
 - Unchanged and still provisional: a 25 mm soil store, 1.25 to 4 mm a day of evaporation from 5 to 25 C, start at 50 percent, wet day from 25.
