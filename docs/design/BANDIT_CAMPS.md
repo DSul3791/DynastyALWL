@@ -66,10 +66,10 @@ A camp's bandits are fixed by the seed: their count and levels by distance band 
 
 ### Known limits (stage 2)
 
-- No toll, robbery, bounty, horse claiming, dissolving or dormancy yet (stages 3 and 4).
+- No toll, robbery or horse claiming yet (stage 4 and 5b); bounty, dissolving and dormancy came with stage 5.
 - A camp horse cannot be ridden or led away yet; it is tied and never bolts.
 - The camp has no stash chest until stage 4.
-- A site whose bandits and horses are all gone stays awake and its empty camp is laid at every start until stage 3 dissolves it.
+- A site whose bandits are all gone is cleared and dissolves (stage 5).
 - A camp is made only when none of its members is in the world: one bandit gone off on its own (past 300 m of every player) is made again with the others.
 - Bandits have no footstep sounds yet.
 
@@ -110,6 +110,8 @@ Built before stage 4 (the coordinator, 20 Nov 2026, provisional on Dave's behalf
 - **Bounty.** Led within 5 m of a guard (Edda, the only role guard today) he is handed over: he leaves his camp for good and the player gets 10 copper for each of his levels.
 - **Cleared.** When a camp's last bandit is killed or handed over, the camp is cleared. 2 game days later it dissolves: the fire, Lean-tos and horses go. The site then stays dormant for 10 game days, however busy the road, before it may wake again like any candidate.
 - Claiming the horses is stage 5b; until then they stay tethered until the camp dissolves.
+- A site whose only bandit out was the lookout, killed or handed over with no others left, is cleared and dissolves without ever becoming a camp.
+- A bandit who threw down his weapon is remembered with the camp (saved), so one made again after a despawn has no second weapon to drop.
 
 ### For Dave (provisional, adjust after play)
 

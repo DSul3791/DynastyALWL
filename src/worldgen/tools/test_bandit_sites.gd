@@ -45,6 +45,7 @@ func _init() -> void:
 	_warning_items()
 	_clearing_camp()
 	_tying_strike()
+	_surrender_kept()
 	print("bandit sites: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 
@@ -815,3 +816,47 @@ func _tying_strike() -> void:
 	items._last_strike.clear()
 	items._strike(1, inv, slot, Vector3(1.0, 0.0, 0.0))
 	check(inv.count_of(rope) == 1 and struck.size() == 1, "at anything else the rope strikes as any item")
+
+
+# Stage 5: a bandit who gave up mid-warning stops at once; one who threw down his weapon is remembered with the camp (saved), so the bandit
+# made again after a despawn drops no second weapon, and a kill then drops only his clothes.
+func _surrender_kept() -> void:
+	clock[0] = 950000.0
+	var b: BanditsScript = _sites()
+	var animals = AnimalsScript.new()
+	animals.ground_height = func(_x, _z): return 50.0
+	animals.blocked = func(_x, _z): return false
+	animals.player_positions = func(): return []
+	animals.setup()
+	animals.traits = false
+	b.animals = animals
+	animals.bandit_camps = b
+	var players: Array = []
+	animals.big_game.player_info = func(): return players
+	var cell: Vector2i = _cell_with_site(b, 180)
+	var spot: Vector2 = b.candidate(cell)
+	b.sites[cell] = {"x": spot.x, "z": spot.y, "woke": clock[0], "points": 40.0, "levels": [1], "horses": 0}
+	var dropped: Array = []
+	b.lay_camp = func(_camp_key, _camp_fire, _camp_lean_tos, _camp_old, _camp_tracks, _camp_tracks_at): return [500]
+	b.laid_still = func(_ids): return true
+	b.drop_gear = func(gear_key, _gear_at): dropped.append(gear_key)
+	var near: Array = [Vector3(spot.x + 20.0, 50.0, spot.y)]
+	b.camp_tick(1.0, near)
+	var one: Dictionary = animals.animals.values()[0]
+	players.append({"peer": 9, "pos": one["pos"] + Vector3(2.0, 0.0, 0.0)})
+	animals.big_game.warn(one, players[0]["pos"], -1.0, true)
+	check(animals.big_game.handles(one), "he is warning the player off")
+	animals.damage(int(one["id"]), float(one["hp"]) * 0.9, 9)
+	check(one.has("gave_up") and int(one["state"]) == BanditsScript.SIT and not animals.big_game.handles(one), "beaten down mid-warning he gives up at once, no charge")
+	check(dropped.size() == 1 and b.sites[cell]["disarmed"] == [1], "his weapon is down and the camp remembers it")
+
+	# He goes with the animals (no player near) and is made again on return: no weapon to drop a second time.
+	animals.animals.clear()
+	b.camp_tick(1.0, near)
+	var again: Dictionary = animals.animals.values()[0]
+	animals.damage(int(again["id"]), float(again["hp"]) * 0.9, 9)
+	check(again.has("gave_up") and dropped.size() == 1, "made again, he gives up with no second weapon (%s)" % str(dropped))
+	var at: Vector3 = again["pos"]
+	animals.damage(int(again["id"]), float(again["hp"]) * 10.0, 9)
+	dropped.clear()
+	check(b.fallen("bandit", at) == cell and dropped == b.gear_of(1).slice(1) and (b.sites[cell]["disarmed"] as Array).is_empty(), "killed, he drops only his clothes (%s)" % str(dropped))

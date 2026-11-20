@@ -351,6 +351,10 @@ func _drop_faded(now: float) -> void:
 		if points_at(stretch, now) < float(cfg.get("drop_points", 0.05)):
 			stretches.erase(stretch)
 
+	for cell in dormant.keys():
+		if float(dormant[cell]) <= now:
+			dormant.erase(cell)   # its quiet time is over: it is a candidate like any other
+
 
 # One line per awake site, for the server log (stage 1 has no admin window).
 func report() -> Array:
@@ -426,6 +430,14 @@ func load_file() -> void:
 
 			if row.has("cleared_at"):
 				sites[key]["cleared_at"] = float(row["cleared_at"])   # stage 5: every bandit gone, the camp dissolves in a while
+
+			if typeof(row.get("disarmed")) == TYPE_ARRAY:
+				var disarmed: Array = []
+
+				for level in row["disarmed"]:
+					disarmed.append(int(level))
+
+				sites[key]["disarmed"] = disarmed   # stage 5: bandits who threw down their weapons
 
 	for name in parsed.get("dormant", {}):
 		var key: Vector2i = _key_of(str(name))
@@ -661,6 +673,7 @@ func _people(cell: Vector2i, plan: Dictionary) -> void:
 	var health: float = float(animals.species_def("bandit").get("health", 40.0))
 
 	var lookout: bool = int(plan["stage"]) == LOOKOUT   # before the camp only one bandit is out, watching the road from his post
+	var unarmed: Array = (site.get("disarmed", []) as Array).duplicate()   # levels whose bandit threw his weapon down (stage 5): made again without one
 
 	for n in (mini(site["levels"].size(), 1) if lookout else site["levels"].size()):
 		var seat: Vector2 = plan.get("post", plan["seats"][n]) if lookout else plan["seats"][n]
@@ -676,7 +689,12 @@ func _people(cell: Vector2i, plan: Dictionary) -> void:
 		a["seat"] = a["pos"]
 		a["camp_fire"] = Vector3(fire.x, a["pos"].y, fire.y)
 		a["lookout"] = n == 0   # one keeps watch standing; the rest sit by the fire
-		members[id] = {"level": a["level"], "pos": a["pos"], "horse": false, "armed": true}
+		var armed: bool = not unarmed.has(int(a["level"]))
+
+		if not armed:
+			unarmed.erase(int(a["level"]))
+
+		members[id] = {"level": a["level"], "pos": a["pos"], "horse": false, "armed": armed}
 
 		if lookout:
 			var fire_seat: Vector2 = plan["seats"][0]
@@ -832,6 +850,9 @@ func _member_gone(cell: Vector2i, id: int, pos: Vector3, drop: bool) -> void:
 	else:
 		site["levels"].erase(int(gone["level"]))
 
+		if not bool(gone.get("armed", true)) and site.has("disarmed"):
+			(site["disarmed"] as Array).erase(int(gone["level"]))
+
 		if int(site.get("stage", CAMP)) == LOOKOUT:
 			site["lookout_down"] = true   # a killed lookout is not replaced by the next bandit: the post stays empty until the camp
 
@@ -867,6 +888,12 @@ func hurt(a: Dictionary, peer: int) -> bool:
 
 	if bool(member.get("armed", false)):
 		member["armed"] = false
+
+		if sites.has(cell):
+			var disarmed: Array = sites[cell].get("disarmed", [])
+			disarmed.append(int(a.get("level", 1)))
+			sites[cell]["disarmed"] = disarmed   # kept with the row: a bandit made again after a despawn has no weapon to drop twice
+			save()
 
 		if drop_gear.is_valid() and not gear_of(int(a.get("level", 1))).is_empty():
 			drop_gear.call(gear_of(int(a.get("level", 1)))[0], a["pos"])   # he throws down his weapon
@@ -914,7 +941,7 @@ func _captive(a: Dictionary, dt: float) -> void:
 	var apart: float = Vector2(leader.x - a["pos"].x, leader.z - a["pos"].z).length() if leader.x != INF else INF
 
 	if apart > float(c.get("lead_slack_m", 30.0)):
-		_set_free(a, peer, "The bandit pulled free while you were too far ahead.")
+		_set_free(a, peer if leader.x != INF else -1, "The bandit pulled free while you were too far ahead.")   # a captor who left is told nothing
 		return
 
 	for guard in (guards_at.call() if guards_at.is_valid() else []):
