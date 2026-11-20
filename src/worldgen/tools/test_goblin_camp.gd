@@ -55,6 +55,7 @@ func _init() -> void:
 	_data()
 	_tile()
 	_npcs()
+	_chores()
 	_server()
 	print("goblin camp: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
@@ -234,21 +235,36 @@ func _npcs() -> void:
 
 	check(Vector2(npc_s["pos"].x - spot.x, npc_s["pos"].z - spot.z).length() <= float(tribes.cfg["leash_m"]) + 0.01, "pushed, it stops at its leash (%.2f m from its spot)" % Vector2(npc_s["pos"].x - spot.x, npc_s["pos"].z - spot.z).length())
 
-	# A weapon on the hotbar: it keeps further off and will not talk.
+	# A weapon in hand (protocol 146 held_item): it keeps further off, stands guard, and will not talk. One only carried in the pack is nothing.
 	player[0] = spot + Vector3(-30.0, 0.0, 0.0)
 	run.call(20.0)
 	var inv = items.inventory_of(1)
-	var bag_from: int = inv.bag_from
-	inv.bag_from = 0   # onto the hotbar, as server_items gives in hand
-	inv.add(items.table.number_of("spear"), 1)
-	inv.bag_from = bag_from
-	check(tribes.armed(1), "a spear on the hotbar counts as a weapon carried")
+	var spear_n: int = items.table.number_of("spear")
+	items.report_held(1, spear_n)
+	check(not tribes.armed(1), "a spear the player does not have is not in hand")
+	inv.add(spear_n, 1)
+	check(tribes.armed(1) and items.held_number(1) == spear_n, "once the pack holds it, the spear in hand counts")
+	items.report_held(1, 0)
+	check(not tribes.armed(1), "a spear only carried in the pack is not a weapon in hand")
+	items.report_held(1, spear_n)
+	check(tribes.armed(1), "a spear in hand is a weapon in hand")
+	check(not tribes.avoid(npc_s).has("guard"), "at 30 m nobody stands guard yet (%s)" % str(tribes.avoid(npc_s)))
+	player[0] = npc_s["pos"] + Vector3(-float(att["spook_m"]) + 1.0, 0.0, 0.0)
+	items.report_position(1, player[0])
+	run.call(4.0)
+	check(int(npc_s["state"]) == NpcsScript.GUARD and bool(tribes.avoid(npc_s).get("guard", false)), "a weapon in hand within spook_m: it stands guard (state %d, %s)" % [int(npc_s["state"]), str(tribes.avoid(npc_s))])
+	var face: Vector2 = Vector2(cos(float(npc_s["heading"])), sin(float(npc_s["heading"])))
+	check(face.dot(Vector2(player[0].x - npc_s["pos"].x, player[0].z - npc_s["pos"].z).normalized()) > 0.8, "facing the armed player")
+	player[0] = spot + Vector3(-30.0, 0.0, 0.0)
+	items.report_position(1, player[0])
+	run.call(10.0)
 	var near_p: Dictionary = {"peer": 1, "key": "goblin-test-key1", "pos": spot + Vector3(-5.0, 0.0, 0.0)}
 	check(tribes.keep_from("skritch", near_p) >= keep + float(att["armed_keep_m"]) - 0.01, "a weapon carrier is kept further off")
 	check(tribes.refuse(1, "skritch") != "", "and is refused talk (%s)" % tribes.refuse(1, "skritch"))
 	check(tribes.refuse(1, "skritch", false) == "", "a deal already open goes on")
-	inv.remove(items.table.number_of("spear"), 1)
+	inv.remove(spear_n, 1)
 	check(not tribes.armed(1), "the spear is gone")
+	items.report_held(1, 0)
 
 	# Standing is the tribe's.
 	check(tribes.rep_id("skritch") == tribes.rep_id("rukz") and tribes.rep_id("hob") == "hob", "one standing for the tribe, Hob keeps his own")
@@ -268,8 +284,12 @@ func _npcs() -> void:
 	check(tribes.member_along(origin, Vector3(1.0, 0.0, 0.0), 3.0) == "skritch", "a blow at Skritch finds Skritch")
 	check(tribes.member_on_segment(origin, origin + Vector3(5.0, -0.4, 0.0)) == "skritch", "so does an arrow through it")
 	said.clear()
+	var standing: int = items.rep_points(1, "skritch")
 	tribes.harm(1, "skritch")
-	check(tribes.angry("ragtooth", "goblin-test-key1") and said.size() == 1, "the tribe turns on the striker, and says so (%s)" % str(said))
+	check(tribes.angry("ragtooth", "goblin-test-key1") and said.size() >= 1 and str(said[0]).contains("runs"), "the tribe turns on the striker, and says so (%s)" % str(said))
+	check(items.rep_points(1, "rukz") == maxi(standing - int(att["attack_rep"]), 0), "the strike costs attack_rep standing with the clan (%d to %d)" % [standing, items.rep_points(1, "rukz")])
+	tribes.harm(1, "snag")
+	check(items.rep_points(1, "rukz") == maxi(standing - int(att["attack_rep"]), 0), "more blows while angry cost nothing more")
 	check(tribes.refuse(1, "rukz") != "" and tribes.refuse(1, "skritch", false) != "", "every member refuses them talk and trade")
 	player[0] = npc_s["pos"] + Vector3(-6.0, 0.0, 0.0)
 	run.call(30.0)
@@ -278,8 +298,10 @@ func _npcs() -> void:
 	check(npcs.rows_near(player[0]).all(func(row): return str(row[0]) != "skritch"), "and is not seen")
 	check(tribes.member_along(player[0], (mouth - player[0]).normalized(), 10.0) == "", "nobody in the cave can be struck")
 	player[0] = mouth + Vector3(-80.0, 0.0, 0.0)
-	run.call(30.0)
-	check(not bool(npc_s.get("hidden", false)), "it comes out when they go")
+	run.call(float(tribes.cfg.get("calm_s", 30.0)) * 0.5)
+	check(bool(npc_s.get("hidden", false)), "it waits in the cave a while after they go")
+	run.call(float(tribes.cfg.get("calm_s", 30.0)) + 5.0)
+	check(not bool(npc_s.get("hidden", false)), "then comes out")
 	clock[0] += float(att["anger_game_days"]) * TribesScript.DAY_S + 1.0
 	check(not tribes.angry("ragtooth", "goblin-test-key1") and tribes.refuse(1, "skritch") == "", "after anger_game_days they deal again")
 
@@ -308,6 +330,94 @@ func _npcs() -> void:
 	talk.refuse = tribes.refuse
 	talk.talk(1, "skritch", -1)
 	check(lines.size() == 1 and bool(lines[0][1]) and str(lines[0][0]).contains("No talk"), "the talk ends at once with why (%s)" % str(lines))
+
+
+# Camp life (Dave 20 Nov 2026): every member keeps busy on its round of chores between the camp's fixed points, one hunts at a time through
+# the cave mouth, the trader stays by the fire, and every move is eased (speed and turn rate bounded).
+func _chores() -> void:
+	var said: Array = []
+	var items = _items("user://test_goblin_camp_chores", said)
+	items.peer_connected_hello(1, "goblin-test-key3")
+	var fire: Vector3 = Vector3(float(camp["fire"]["x"]), 10.0, float(camp["fire"]["z"]))
+	var player: Array = [fire + Vector3(-40.0, 0.0, 0.0)]
+	var npcs = NpcsScript.new()
+	npcs.hour_now = func(): return 12.0
+	npcs.ground_height = func(_x, _z): return 10.0
+	npcs.player_positions = func(): return player
+	npcs.setup("")
+	var tribes = TribesScript.new()
+	tribes.items = items
+	tribes.npcs = npcs
+	tribes.game_seconds = func(): return 0.0
+	tribes.players = func() -> Array: return [{"peer": 1, "key": "goblin-test-key3", "pos": player[0]}]
+	tribes.setup("")
+	npcs.wary = tribes.avoid
+	npcs.chores = tribes.chore_plan
+	items.report_position(1, player[0])
+	var chores: Dictionary = camp.get("chores", {})
+	var points: Array = []
+
+	for kind in ["wood", "fibre"]:
+		for row in (chores.get("points", {}) as Dictionary).get(kind, []):
+			points.append(Vector3(float(row[0]), 10.0, float(row[1])))
+
+	check(not points.is_empty(), "the camp has wood and fibre points")
+	var ids: Array = []
+
+	for m in tribe["members"]:
+		ids.append(str(m["id"]))
+		check(not (m.get("chores", []) as Array).is_empty(), "%s has chores" % m["id"])
+
+	var worked: Dictionary = {}
+	var went_out: Dictionary = {}
+	var away_seen: Dictionary = {}
+	var most_away: int = 0
+	var trader_far: float = 0.0
+	var fastest: float = 0.0
+	var sharpest: float = 0.0
+	var last: Dictionary = {}
+	var top: float = maxf(float(chores.get("walk_mps", 1.1)), maxf(float(tribes.cfg.get("back_off_mps", 2.4)), float(tribes.cfg.get("flee_mps", 4.0))))
+
+	for step in 9000:   # 15 minutes at 10 Hz
+		tribes.tick(0.1)
+		npcs.tick(0.1)
+		var away_now: int = 0
+
+		for id in ids:
+			var npc: Dictionary = npcs.npcs[id]
+
+			if last.has(id) and not bool(npc.get("away", false)) and not bool(last[id][2]):
+				fastest = maxf(fastest, Vector2(npc["pos"].x - last[id][0].x, npc["pos"].z - last[id][0].z).length() / 0.1)
+				sharpest = maxf(sharpest, absf(angle_difference(float(last[id][1]), float(npc["heading"]))) / 0.1)
+
+			last[id] = [npc["pos"], npc["heading"], bool(npc.get("away", false))]
+
+			if int(npc["state"]) == NpcsScript.WORK:
+				worked[id] = true
+
+			for q in points:
+				if Vector2(npc["pos"].x - q.x, npc["pos"].z - q.z).length() < 1.0:
+					went_out[id] = true
+
+			if bool(npc.get("away", false)):
+				away_now += 1
+				away_seen[id] = true
+				check(npcs.rows_near(player[0]).all(func(row): return str(row[0]) != id), "%s is not seen while away hunting" % id)
+
+			if id == "skritch":
+				trader_far = maxf(trader_far, Vector2(npc["pos"].x - fire.x, npc["pos"].z - fire.z).length())
+
+		most_away = maxi(most_away, away_now)
+
+	for id in ids:
+		check(worked.has(id), "%s does a chore (WORK) in 15 minutes" % id)
+
+	check(went_out.has("rukz") and went_out.has("snag"), "the gatherers walk out to the wood and fibre points (%s)" % str(went_out.keys()))
+	check(away_seen.has("rukz"), "a hunter goes out through the cave (%s)" % str(away_seen.keys()))
+	check(most_away <= 1, "one hunts at a time (%d)" % most_away)
+	check(trader_far <= float(tribes.cfg.get("leash_m", 8.0)) + 1.0, "the trader stays by the fire (%.1f m at most)" % trader_far)
+	check(fastest <= top + 0.05, "nobody moves faster than its pace allows (%.2f m/s)" % fastest)
+	check(sharpest <= deg_to_rad(float(tribes.cfg.get("turn_dps", 160.0))) + 0.01, "nobody spins: turns at most turn_dps (%.0f deg/s)" % rad_to_deg(sharpest))
 
 
 func data_att() -> Dictionary:

@@ -13,6 +13,10 @@ const STAND := 0
 const WALK := 1
 const SIT := 2
 const SLEEP := 3
+const WORK := 4                          # protocol 146: a goblin tribe member at a chore (its "work" clip: gathering, feeding the fire)
+const GUARD := 5                         # protocol 146: standing its ground at a weapon in hand, spear forward (its guard clip, models.json "10")
+const SPEAR_GUARD_DEG := 15.0            # the spear's angle above level in the guard stance
+const CHITTER_S := [2.0, 4.0]            # seconds between a guarding goblin's angry calls
 const SEAT_TOP_M := 0.45                 # the chair's seat top above its feet (building_look.gd chair: slats at 0.43, 0.045 thick)
 const SEAT_HIPS_ABOVE_M := 0.07          # the hips joint over the seat top, as the player sits (terrain_client.gd, #517)
 const SEAT_LIFT_MAX_M := 0.6             # never move the body more than this to meet the seat
@@ -35,6 +39,7 @@ const QUARTER_M := 70.0
 var roster: Dictionary = {}      # id -> {name, role, outfit}
 var _outfits: Dictionary = {}    # outfit name -> item ids worn on top of the ragdoll (data/npcs/outfits.json)
 var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state}
+signal goblin_called(at: Vector3, mood: String)   # a camp goblin's angry call (creature_sounds.gd "goblin"): chitter on guard, hiss as it starts
 var goblin_maker: Callable       # (variant, look_seed) -> Node3D or null: a goblin tribe member's body (AnimalView.make_goblin), set by the client
 var _gap: float = 0.25           # recent seconds between rows, for MotionBuffer
 var _rows_at: float = -1.0       # when the last rows came
@@ -217,6 +222,15 @@ func _process_goblin(node: Node3D, body: Dictionary, delta: float) -> void:
 
 	var roles: Dictionary = player.get_meta("roles", {})
 	var role: String = "run" if pace > 2.2 else ("walk" if pace > 0.4 else "0")
+	var state: int = int(body["state"])
+
+	if role == "0" and state == WORK and roles.has("work"):
+		role = "work"   # at a chore: gathering, kneeling at the fire, at the chest or a rack
+	elif role == "0" and state == GUARD and roles.has("10"):
+		role = "10"     # its guard stance (Skritch's Combat_Stance, Rukz's Alert)
+
+	node.set_meta("spear_deg", SPEAR_GUARD_DEG if state == GUARD else SPEAR_STAFF_DEG)
+	_chitter(node, body, state, delta)
 	var clip: String = str(roles.get(role, roles.get("0", "")))
 
 	if clip != "" and player.current_animation != clip:
@@ -225,6 +239,27 @@ func _process_goblin(node: Node3D, body: Dictionary, delta: float) -> void:
 	var ref: float = float(player.get_animation(clip).get_meta("travel_mps", 0.0)) if clip != "" and player.has_animation(clip) and role != "0" else 0.0
 	player.speed_scale = clampf(pace / ref, 0.5, 2.0) if ref > 0.0 else 1.0
 	_hold_spear(node, delta)
+
+
+# A guarding goblin calls angrily every CHITTER_S (a hiss as it first squares up), through the creature voices (rate limited there).
+func _chitter(node: Node3D, body: Dictionary, state: int, delta: float) -> void:
+	if state != GUARD:
+		body["chitter"] = -1.0
+		return
+
+	var wait: float = float(body.get("chitter", -1.0))
+
+	if wait < 0.0:
+		goblin_called.emit(node.global_position, "threat")
+		wait = randf_range(CHITTER_S[0], CHITTER_S[1])
+
+	wait -= delta
+
+	if wait <= 0.0:
+		goblin_called.emit(node.global_position, "alert")
+		wait = randf_range(CHITTER_S[0], CHITTER_S[1])
+
+	body["chitter"] = wait
 
 
 # The spear rides the right hand (its bone moves it with every clip) but keeps its own steady angle from the body's facing, as the player's spear

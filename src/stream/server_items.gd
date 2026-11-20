@@ -738,6 +738,7 @@ func note_spots_on_close() -> void:
 
 
 func peer_left(peer: int) -> void:
+	_held.erase(peer)
 	_carts.peer_left(peer)   # a cart being pulled parks where it is
 	var key_left: String = str(_peer_key.get(peer, ""))
 
@@ -828,6 +829,30 @@ func peer_left(peer: int) -> void:
 	_body_sent.erase(peer)
 	_moving.erase(peer)
 	_last_process.erase(peer)
+
+
+# The item number the player says is in its hand (protocol 146 held_item), kept per peer for the goblin camps (server_tribes.gd armed).
+var _held: Dictionary = {}   # peer -> item number
+
+
+func report_held(peer: int, number: int) -> void:
+	_held[peer] = maxi(number, 0)
+
+
+# The item in this player's hand, 0 for none: what the client last said, and only while the pack still holds one (a claim of an item the
+# player does not have counts as empty hands).
+func held_number(peer: int) -> int:
+	var number: int = int(_held.get(peer, 0))
+	var inv = inventory_of(peer)
+
+	if number == 0 or inv == null:
+		return 0
+
+	for slot in range(inv.slot_count):
+		if inv.numbers[slot] == number:
+			return number
+
+	return 0
 
 
 func report_position(peer: int, position: Vector3) -> void:

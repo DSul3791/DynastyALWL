@@ -69,7 +69,7 @@ What Dave asked on 20 Nov 2026:
 - Each goblin runs its own loop of jobs from data (`goblin_tribes.json` chores):
   - **Firewood:** walk up the ledge to a wood spot, gather (the gathering clip, 6-10 s), carry it back, and kneel at the fire for 3 s.
   - **Fibre:** walk to a plant spot, gather, and take it to the chest.
-  - **Hunt:** one goblin at a time, never the trader. It walks up and off the east end of the ledge, is out of sight for 3-6 game minutes, comes back the same way, and works at the tanning or drying rack.
+  - **Hunt:** one goblin at a time, never the trader. It walks into the cave mouth, is out of sight for 2 to 4 real minutes, comes back out of the mouth, and works at the racks.
   - **Rest:** stand or sit by the fire for a while.
 - Skritch keeps to the fire and the chest so a trader is always near.
 - **Cheap for the server:** the spots are fixed points in the data, checked on the baked tile by the test. Nothing scans the world. A chore is one timer and one steering step toward a known point, run only while a player is within the NPCs' active radius (200 m), at their existing tick rates (10 Hz near, 3 Hz mid, 0.5 Hz far). A dormant camp is not run. Nothing is taken from or added to the world, and the fire never runs low.
@@ -81,7 +81,7 @@ What Dave asked on 20 Nov 2026:
 - **No weapon in hand:** the goblins are nervous but approachable, as now. They keep their distance by standing, watch, and go on with their chores once you are past them.
 - **Weapon in hand within 10 m:** every goblin stops its chore, turns to face you with the spear forward (the defensive clip: Skritch's Combat_Stance, Rukz's Alert), and makes an angry chitter every 2-4 s.
   - The chitter is a new short creature sound, made by a script like the other generated animal calls.
-  - They relax and go back to work a few seconds after the weapon is put away or you leave.
+  - They relax and go back to work as soon as the weapon is put away or you step back past 10 m.
 - **Attacked:**
   - Nobody is hurt.
   - Every goblin runs into the cave mouth.
@@ -101,9 +101,17 @@ What Dave asked on 20 Nov 2026:
 - **GOBLIN-11:** the props are one Crude chest, one Drying rack, one Tanning rack and two Log benches, none of them usable by players.
 - **GOBLIN-12:** an attack costs 3 standing with the clan (about one rank), and the clan refuses that character trade and talk for 1 game day instead of 3.
 - **GOBLIN-13:** the weapon test is "a weapon in hand", for melee weapons and bows. A torch, axe or other tool in hand does not count.
-- **GOBLIN-14:** the hunter is out of sight 3-6 game minutes per hunt, and only one goblin hunts at a time.
+- **GOBLIN-14:** the hunter is out of sight 2 to 4 real minutes per hunt, and only one goblin hunts at a time.
 - **GOBLIN-15:** they come back about 30 s after the attacker is 25 m away.
 
 **State (20 Nov 2026).** Stage A is built on the branch and has not been played or seen on screen yet. The props are laid by `server_items.gd` `_tribe_props_tick`. They are refused by `_tribe_piece_refuses`, which covers take-down, use and sit, lock and repair. They have no store and serve no crafting. The spear is drawn by `npc_view.gd` `_goblin_spear` and `_hold_spear`. Goblins are drawn through `motion_buffer.gd`. Things to check on the PC: which way the spear points in the hand, and the props on the slope.
+
+**State of B and C (20 Nov 2026).** Built on the branch under protocol 146. Not played or seen on screen yet.
+- `server_tribes.gd` `chore_plan` runs each goblin's round from the camp's `chores` data; `server_npcs.gd` `_step_chore`, `_move` and `_turn_to` walk it with eased speed (accel_mps2 1.5) and a turn limit (turn_dps 160).
+- The chores are show only, a provisional first cut (GOBLIN-10): Dave described real gathering, and nothing is gathered, carried or added yet.
+- The hand: `held_item.gd` `_report_held` sends `terrain_net.gd` `held_item`; `server_items.gd` `report_held` and `held_number` keep it, checked against the pack. This replaces GOBLIN-4's hotbar test.
+- Guard: `avoid` answers guard for a weapon in hand within spook_m; the client turns the spear forward and plays the new goblin chitter and hiss (`creature_sounds.gd`, made by `assets/audio/make_creatures.py`).
+- Attacked: wary anger is now 1 game day and costs attack_rep (3) standing once per anger; hidden goblins wait calm_s (30 s) after the attacker has gone, then walk out.
+- Covered by `test_goblin_camp.gd` `_npcs` and `_chores`.
 
 **Order.** Stage A first, on this branch. Then dev is merged in once Vrixa lands. Then B and C go together under one protocol number. Each stage gets an independent review, runs on a lane and has a BugsList entry in a docs follow-up.

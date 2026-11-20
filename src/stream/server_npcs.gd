@@ -10,6 +10,8 @@ const STAND := 0
 const WALK := 1
 const SIT := 2
 const SLEEP := 3
+const WORK := 4                 # protocol 146: a goblin tribe member at a chore (gathering, feeding the fire, at the chest or a rack)
+const GUARD := 5                # protocol 146: a goblin tribe member standing its ground, spear forward, at a player with a weapon in hand
 const TRIBES_PATH := "res://data/creatures/goblin_tribes.json"   # goblin tribe members (server_tribes.gd): NPCs at their own camp spots
 const OWN := "own"              # a tribe member's one package and marker kind: it stands at its own spot all day (data/creatures/goblin_tribes.json)
 
@@ -20,6 +22,11 @@ var player_positions: Callable  # () -> Array of Vector3
 var rain_now: Callable          # () -> rain strength 0..1 over the world (may be invalid: no rain)
 var wary: Callable              # (npc record) -> ServerTribes.avoid's answer for a tribe member: back off, hide, hold or watch (may be invalid)
 var back_off_mps: float = 2.4   # how fast a tribe member backs away (goblin_tribes.json back_off_mps)
+var chores: Callable            # (npc record, now seconds) -> ServerTribes.chore_plan's answer: where a tribe member goes or what it does (may be invalid)
+var flee_mps: float = 4.0       # how fast a tribe member runs for the cave mouth from a character who struck one (goblin_tribes.json flee_mps)
+var calm_s: float = 30.0        # how long members wait in the mouth after the angry character has gone before they come out (calm_s)
+var accel_mps2: float = 1.5     # how quickly a tribe member speeds up and slows down (accel_mps2): no stop or start in one step
+var turn_dps: float = 160.0     # the fastest a tribe member turns, degrees a second (turn_dps): no spin on the spot
 
 var cfg: Dictionary = {}
 static var test_hold_off: bool = false   # unit tests read the real day schedules
@@ -108,6 +115,10 @@ func _add_npc(row: Dictionary, home: Vector3) -> void:
 # takes) and the goblin look ("goblin:<variant>" as its outfit: npc_view.gd draws data/animals/models.json goblin variant <variant>).
 func _add_tribes(data: Dictionary) -> void:
 	back_off_mps = float(data.get("back_off_mps", back_off_mps))
+	flee_mps = float(data.get("flee_mps", flee_mps))
+	calm_s = float(data.get("calm_s", calm_s))
+	accel_mps2 = float(data.get("accel_mps2", accel_mps2))
+	turn_dps = float(data.get("turn_dps", turn_dps))
 
 	for tribe in data.get("tribes", {}):
 		for row in (data["tribes"][tribe] as Dictionary).get("members", []):
@@ -268,6 +279,9 @@ func _activate(npc: Dictionary, hour: float) -> void:
 		npc["pos"] = Vector3(spot.x, float(ground_height.call(spot.x, spot.z)) if ground_height.is_valid() else spot.y, spot.z)
 
 	npc["placed"] = true
+	npc.erase("chore")   # a tribe member woken by a player comes in at its own spot and starts its round afresh
+	npc["away"] = false
+	npc["speed"] = 0.0
 
 
 func _state_code(name: String) -> int:
@@ -289,7 +303,11 @@ func _step(npc: Dictionary, hour: float, dt: float) -> void:
 	if pkg.is_empty():
 		return
 
-	if str(npc.get("tribe", "")) != "" and wary.is_valid() and _step_wary(npc, wary.call(npc), dt):
+	if str(npc.get("tribe", "")) != "" and not bool(npc.get("away", false)) and wary.is_valid() and _step_wary(npc, wary.call(npc), dt):   # out hunting, it is not there to see anyone
+		return
+
+	if str(npc.get("tribe", "")) != "" and chores.is_valid():
+		_step_chore(npc, chores.call(npc, _t), dt)
 		return
 
 	var id: String = _claim(npc, str(pkg.get("marker", "")))
@@ -322,40 +340,100 @@ func _step(npc: Dictionary, hour: float, dt: float) -> void:
 			npc["stuck"] = 0
 
 
-# A tribe member near players (ServerTribes.avoid): true when that decided this step. It goes into the cave mouth and out of sight from an angry
-# character, backs off from one too near, or holds still watching one just outside its keep distance; otherwise the schedule walk goes on,
-# and it watches anyone inside watch_m from its spot.
+# A tribe member near players (ServerTribes.avoid): true when that decided this step. From a character who struck one it runs into the cave
+# mouth and out of sight, and comes out calm_s after that character has gone; from one too near it backs off, eyes on them; at a weapon in hand
+# it stands its ground facing them (GUARD); just outside its keep distance it holds still watching. Otherwise its chores go on (false), and it
+# watches anyone inside watch_m. Every move is eased (_move).
 func _step_wary(npc: Dictionary, w: Dictionary, dt: float) -> bool:
 	npc["look"] = w.get("look", Vector3.INF)
 	var goal: Vector3 = w.get("hide", w.get("goal", Vector3.INF))
 
 	if goal == Vector3.INF:
-		if bool(npc.get("hidden", false)):   # nobody angry near any more: it comes out of the mouth where it went in
+		if bool(npc.get("hidden", false)):   # nobody angry near any more: after calm_s it comes out of the mouth where it went in, and walks back to its round
+			if not npc.has("out_at"):
+				npc["out_at"] = _t + calm_s
+
+			if _t < float(npc["out_at"]):
+				return true
+
 			npc["hidden"] = false
+			npc.erase("out_at")
+			npc.erase("chore")
+			npc["speed"] = 0.0
+
+		if bool(w.get("guard", false)):
+			_halt(npc, dt)
+			npc["state"] = GUARD
+			_turn_to(npc, npc["look"], dt)
+			return true
 
 		if bool(w.get("hold", false)):
+			_halt(npc, dt)
 			npc["state"] = STAND
-			_watch(npc, npc["look"])
+			_turn_to(npc, npc["look"], dt)
 			return true
 
 		return false
 
+	npc.erase("out_at")
+
 	if bool(npc.get("hidden", false)):
 		return true   # in the cave: it stays out of sight until the angry character goes
 
-	var r: Dictionary = Steering.step(npc["pos"], goal, back_off_mps, dt, ground_height, blocked, float(cfg.get("arrive_m", 0.4)), npc["heading"])
+	var r: Dictionary = _move(npc, goal, flee_mps if w.has("hide") else back_off_mps, dt, Vector3.INF if w.has("hide") else npc["look"])   # backing off it keeps its eyes on the player
+
+	if w.has("hide") and (r["arrived"] or Vector2(npc["pos"].x - goal.x, npc["pos"].z - goal.z).length() <= 1.0):
+		npc["hidden"] = true
+		npc["away"] = false
+
+	return true
+
+
+# A tribe member's round (ServerTribes.chore_plan): walk to a point, gather or tend there (WORK), rest at its spot, or be away hunting (not sent).
+func _step_chore(npc: Dictionary, plan: Dictionary, dt: float) -> void:
+	npc["away"] = bool(plan.get("away", false))
+
+	if npc["away"]:
+		npc["speed"] = 0.0
+		npc["state"] = STAND
+		return
+
+	if plan.has("goal"):
+		_move(npc, plan["goal"], float(plan.get("mps", 1.1)), dt, Vector3.INF)
+		return
+
+	_halt(npc, dt)
+	npc["state"] = WORK if bool(plan.get("work", false)) else STAND
+	_turn_to(npc, plan.get("face", npc.get("look", Vector3.INF)), dt)
+
+
+# One eased step toward `goal` at up to `top` m/s: the speed rises and falls by accel_mps2 (and slows into the stop), the heading turns at
+# most turn_dps toward the way it walks, or toward `look` (backing off, it keeps facing the player). Steering.step's answer.
+func _move(npc: Dictionary, goal: Vector3, top: float, dt: float, look: Vector3) -> Dictionary:
+	var left: float = Vector2(goal.x - npc["pos"].x, goal.z - npc["pos"].z).length()
+	var speed: float = move_toward(float(npc.get("speed", 0.0)), minf(top, left * 1.5 + 0.3), accel_mps2 * dt)
+	npc["speed"] = speed
+	var r: Dictionary = Steering.step(npc["pos"], goal, maxf(speed, 0.1), dt, ground_height, blocked, float(cfg.get("arrive_m", 0.4)), npc["heading"])
 
 	if r["moved"]:
 		npc["pos"] = r["pos"]
 		npc["state"] = WALK
-		npc["heading"] = r["heading"] if w.has("hide") else _facing(npc["pos"], npc["look"], r["heading"])   # backing off it keeps its eyes on the player
+		_turn_to(npc, look, dt, r["heading"])
 	else:
+		npc["speed"] = 0.0
 		npc["state"] = STAND
 
-	if w.has("hide") and (r["arrived"] or Vector2(npc["pos"].x - goal.x, npc["pos"].z - goal.z).length() <= 1.0):
-		npc["hidden"] = true
+	return r
 
-	return true
+
+func _halt(npc: Dictionary, dt: float) -> void:
+	npc["speed"] = move_toward(float(npc.get("speed", 0.0)), 0.0, accel_mps2 * dt * 2.0)
+
+
+# Turns the heading at most turn_dps toward `look` (or toward `fallback` when there is nothing to look at).
+func _turn_to(npc: Dictionary, look: Vector3, dt: float, fallback: float = NAN) -> void:
+	var want: float = _facing(npc["pos"], look, npc["heading"] if is_nan(fallback) else fallback)
+	npc["heading"] = rotate_toward(float(npc["heading"]), want, deg_to_rad(turn_dps) * dt)
 
 
 func _watch(npc: Dictionary, look: Vector3) -> void:
@@ -387,7 +465,7 @@ func rows_near(point: Vector3) -> Array:
 	for id in npcs:
 		var npc: Dictionary = npcs[id]
 
-		if npc["dormant"] or not npc["placed"] or bool(npc.get("hidden", false)):
+		if npc["dormant"] or not npc["placed"] or bool(npc.get("hidden", false)) or bool(npc.get("away", false)):
 			continue
 
 		if Vector2(npc["pos"].x - point.x, npc["pos"].z - point.z).length() <= radius:
