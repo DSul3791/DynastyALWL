@@ -58,8 +58,8 @@
 		},
 		{
 			"id": "kit",
-			"trigger": "6_sticks_6_stones",
-			"text": "Craft a Campfire kit: 6 sticks and 6 stones."
+			"trigger": "6_sticks_16_stones",
+			"text": "Craft a Campfire kit: 6 sticks and 16 stones."
 		},
 		{
 			"id": "place_fire",

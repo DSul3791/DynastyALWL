@@ -82,7 +82,7 @@
 		{
 			"id": "fire",
 			"title": "Light a fire",
-			"hint": "Make a Campfire (6 sticks, 6 stones) and place it. Put sticks on it with F, then press E near it to light it.",
+			"hint": "Make a Campfire (6 sticks, 16 stones) and place it. Put sticks on it with F, then press E near it to light it.",
 			"after": [
 				"fell"
 			],
