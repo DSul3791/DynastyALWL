@@ -3,7 +3,7 @@ extends SceneTree
 # Item looks (src/client/basic_look.gd) are built in GDScript part by part. Lag check (3 Nov 2026): every look is timed once; a look is built once per
 # run and shared, so taking a tool or food in hand again costs nothing. Prints the five slowest looks.
 # The model looks' files are read first, as the client does at the join (BasicLook.warm_models, 20 Nov 2026: reading a handsaw's .glb inside its
-# first build read 56 ms and 248 ms on Dave's PC, 9 to 11 ms with the files read), and that read is timed on its own. It runs in the serial lane.
+# first build read 56 ms and 248 ms on Dave's PC, 9 to 11 ms on later runs), and that read is timed on its own. It runs in the serial lane.
 #   godot --headless --path . --script res://src/worldgen/tools/test_look_build_cost.gd
 
 const BasicLook := preload("res://src/client/basic_look.gd")

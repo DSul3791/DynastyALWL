@@ -347,7 +347,7 @@ static func mesh_for(item_id: String) -> Mesh:
 
 
 # The model looks' files (looks.json "model": Dave's handsaws), read ahead at the join so the first time one is taken in hand does not read the
-# .glb and its textures on the main thread (20 Nov 2026: a saw's first build read 56 ms and 248 ms on Dave's PC, 9 to 11 ms with the files read).
+# .glb and its textures on the main thread (20 Nov 2026: a saw's first build read 56 ms and 248 ms on Dave's PC, 9 to 11 ms on later runs).
 # In a window they load on a loader thread; headless (tests, the dummy renderer, whose stores are not thread safe: test_worker_resources) on the
 # main thread here, as DynastyBody.warm does. _model_mesh's load() then finds them in the resource cache.
 static var _models_here: Dictionary = {}   # model path -> its PackedScene, read here (headless) and held so the cache keeps it
