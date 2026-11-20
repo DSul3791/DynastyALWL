@@ -11,11 +11,14 @@ Answered for him (coordinator, 19 Nov 2026, provisional): the cave 2.8 km east o
 
 ## As built
 - **Data.** `data/creatures/goblin_tribes.json` holds every tribe, its attitude and every number. An attitude row (friendly, wary, indifferent, unfriendly, hostile) holds the keep distances, the trading switch and the anger length, so a later tribe is a new row, not new code. The first tribe, the Ragtooth goblins, is **wary**.
-- **The camp.** It sits at the mouth of spring cave 3,4#8013, about 2.8 km east of Edda and Hob's camp. Its river runs 50 m west of the mouth, and the cave is where that river's spring comes out. The fire and the three goblins stand on the 13-20 degree bench just east of the mouth, 6-16 m from the opening, facing west toward the river. All of this was read from the baked tile on 19 Nov; `test_goblin_camp` checks it again on the tile. The cave holds no wild goblin band (the den pick `TileTerrainData.goblin_den_node`), and the deep tunnels are untouched.
+- **The camp.** It sits at the mouth of spring cave 3,4#8013, about 2.8 km east of Edda and Hob's camp. Its river runs 50 m west of the mouth, and the cave is where that river's spring comes out. The fire and the five goblins stand on the 13-20 degree bench just east of the mouth, 6-16 m from the opening, facing west toward the river. All of this was read from the baked tile on 19 Nov; `test_goblin_camp` checks it again on the tile. The cave holds no wild goblin band (the den pick `TileTerrainData.goblin_den_node`), and the deep tunnels are untouched.
 - **The goblins.** They are NPCs (`server_npcs.gd`), not animals, so the talk and trade of Hob's shop work on them unchanged. They don't use the animal movement code at all.
   - Skritch is the trader, drawn with the Skritch look.
   - Rukz is the lookout, drawn with the Rukz look.
   - Snag is the fire-keeper, drawn with the Skritch look.
+  - Vrixa Thornfang (Dave, 20 Nov 2026: "for now she will be a named goblin at the Ragtooth camp. they are friendly goblins but nervous.") rests east of the fire between the bench and the drying rack, drawn with her own look (body 2). Her spot and role are PROVISIONAL (GOBLIN-2).
+  - Grikka Ragtooth (Dave, 20 Nov 2026: "this is Grikka Ragtooth please add her to the game") rests just east of Vrixa, drawn with her own look (body 3). That she is Skritch's kin is read from her name, PROVISIONAL like her spot.
+  - Vrixa and Grikka gather firewood and fibre (the camp's default round, written in their rows). They carry spears like the others.
   - Each one stands at its own spot at rest, and goes about its chores between rests (camp life, below).
   - The client draws them with the wild goblin's model and clips (`npc_view.gd` asks `animal_view.make_goblin`), and their names show above their heads.
 - **Apprehensive** (`server_tribes.gd avoid`):
@@ -23,7 +26,7 @@ Answered for him (coordinator, 19 Nov 2026, provisional): the cave 2.8 km east o
   - Come closer than that and it backs away from you while still facing you, but never more than 8 m from its spot. Just outside the distance it holds still and watches. It turns to watch anyone within 20 m.
   - Inside 10 m, running (faster than 3 m/s) or holding a weapon in hand makes them keep 4 m further away, and a weapon in hand makes them stand guard (camp life, stage C). The trader won't start a talk or a trade then: "No blades near the camp. Put it away." / "Slow! Slow, big-folk."
 - **Warming up.** Standing is kept for the whole tribe (`rep_key` tribe_ragtooth): what you earn with one goblin counts with all of them. A completed purchase or sale earns 1 standing, at most once a game day. Better standing brings them closer and lowers prices through Hob's own trade rule (rank steps in `coins.json` trade). The dialogue's rank barks also change: Skritch greets a Friend warmly.
-- **Talk and trade.** Skritch has "Show me what you have" (opens the shop), "What do you want from me?", "Who are the Ragtooth?" and "Do you trust me yet?". Rukz and Snag send you to Skritch.
+- **Talk and trade.** Skritch has "Show me what you have" (opens the shop), "What do you want from me?", "Who are the Ragtooth?" and "Do you trust me yet?". Rukz, Snag, Vrixa and Grikka send you to Skritch.
   - He sells mushrooms, dried mushrooms, berries, dried berries, flint, bone, claw, claw necklace, gut, copper ore, tin ore, sling stones, bone arrows and herb salve.
   - He buys food, materials, tools, medicine and clothing (`shops.json` skritch). His purse is 120 copper and refills 40 a game day.
 - **Attacked.** A melee blow or an arrow at a goblin hurts nobody. The tribe turns on that character for 1 game day and the character loses 3 standing with the clan (camp life, stage C). The goblins within 25 m of that character run into the cave mouth and are not drawn; they come out about 30 s after the character is more than 30 m away. They refuse that character talk and trade ("You hit us. Go away. No talk, no trade."), and other players see the camp empty while that character is near. Saved in `tribes_state.json` in the server store.
@@ -32,11 +35,11 @@ Answered for him (coordinator, 19 Nov 2026, provisional): the cave 2.8 km east o
 
 ## For Dave (PROVISIONAL, change any of these)
 - **GOBLIN-1 Where.** The cave 2.8 km east, at its mouth. Getting up from the river is steep (30 degrees or more), so the easy way in is along the bench from the east.
-- **GOBLIN-2 Who.** Three goblins (Skritch the trader, Rukz the lookout, Snag at the fire) and the tribe name Ragtooth. They stand day and night. They do not sleep or sit yet, because the goblin sit clip lies too flat.
+- **GOBLIN-2 Who.** Five goblins (Skritch the trader, Rukz the lookout, Snag, Vrixa and Grikka at the fire) and the tribe name Ragtooth. Vrixa and Grikka joined as extra goblins rather than taking Snag's or Rukz's post, so nothing else changed; their rest spots (Vrixa x 56081, z 68382; Grikka x 56084, z 68381; both on the ledge east of the fire, clear of the props, facing the fire) are checked against the baked tile by `test_goblin_camp`. They do not sleep or sit yet, because the goblin sit clip lies too flat.
 - **GOBLIN-3 Keep distances.** 6 / 4 / 3 / 2 m by rank, the trader 2.5 / 2 / 1.5 / 1.2 m. Running or a weapon within 10 m adds 4 m. They back off up to 8 m from their spot.
 - **GOBLIN-4 What counts as a weapon.** Replaced by GOBLIN-13 (a weapon in hand).
 - **GOBLIN-5 Trade.** Coins, Hob's window, the stock and buy list above, purse 120 copper. Torches are not refused yet (the shop rules have no per-item refusal).
-- **GOBLIN-6 Lines.** Skritch's speech style ("Slow, big-folk", no articles) and every line in `data/npcs/dialogue/skritch.json`, `rukz.json` and `snag.json`. Their voices are listed in `voices.json` but no voice clips are rendered yet (tools/gen_npc_voice.py), so they are silent for now.
+- **GOBLIN-6 Lines.** Skritch's speech style ("Slow, big-folk", no articles) and every line in `data/npcs/dialogue/skritch.json`, `rukz.json`, `snag.json`, `vrixa.json` and `grikka.json`. Vrixa and Grikka have their own voice rows (`vrixa` Kokoro af_nicole, `grikka` af_sky). No voice clips are rendered yet (tools/gen_npc_voice.py), so they are silent for now.
 - **GOBLIN-7 Attacked.** They can't be hurt. Replaced by GOBLIN-12 and GOBLIN-15 (1 game day of anger, 3 standing lost, out about 30 s after the attacker leaves). Other players see the camp empty meanwhile.
 - **GOBLIN-8 Warming up.** +1 standing per game day of trading. Known comes at 2, Friend at 5 and Trusted at 10 (`reputation.json`).
 
@@ -51,7 +54,7 @@ What Dave asked on 20 Nov 2026:
 - "they should all keep themselves busy in the area around the camp, either gathering firewood and putting in the fire or gathering supplies around the area like plant fiber to make twine or hunting for meat, hide etc. they should have a small chest of some sort, probably a few drying racks or tanning racks, a campfire maybe some wooden benches around the fire. they should carry spears for weapons. If a character approaches them with no weapon in hand they will be aprihensive but approachable. if the player has a weapon they will take up defensive positions with thier spears and make angry sounds. they will run away if the player attacks and it will hurt the players reputation with the Ragtooth Clan. If the player leaves they will eventually come back to their camp."
 - "remember to keep their motions fluid and smooth. Aim for natural."
 
-"She" is Vrixa Thornfang, whom another thread is adding as a Ragtooth goblin. The chores include her once she is in dev.
+"She" is Vrixa Thornfang, a Ragtooth goblin (PR #1345, with Grikka Ragtooth). Both take the default round, firewood and fibre.
 
 **The ground.** On the baked tile, the camp's bench is a narrow ledge, one 8 m cell wide (z about 68380 to 68388). It climbs east from the mouth at 18-20 degrees for about 60 m. Everything around it is 30 degrees or steeper. So the props stand along the ledge, and the chores walk up and down it.
 
@@ -79,7 +82,7 @@ What Dave asked on 20 Nov 2026:
 - The client tells the server when the item in hand changes: one message per change, at most twice a second. The server keeps it per player.
 - That replaces "a weapon on the hotbar" (GOBLIN-4) with "a weapon in hand", as Dave asked.
 - **No weapon in hand:** the goblins are nervous but approachable, as now. They keep their distance by standing, watch, and go on with their chores once you are past them.
-- **Weapon in hand within 10 m:** each goblin within 10 m stops its chore (backing off first if you are inside its keep distance) and squares up facing you with the spear forward (the defensive clip: Skritch's Combat_Stance, Rukz's Alert), and makes an angry chitter every 2-4 s.
+- **Weapon in hand within 10 m:** each goblin within 10 m stops its chore (backing off first if you are inside its keep distance) and squares up facing you with the spear forward (the defensive clip: Skritch's Combat_Stance, Rukz's Alert, Vrixa's and Grikka's Squat_Stance, the last two PROVISIONAL and not yet seen on screen), and makes an angry chitter every 2-4 s.
   - The chitter is a new short creature sound, made by a script like the other generated animal calls.
   - They relax and go back to work as soon as the weapon is put away or you step back past 10 m.
 - **Attacked:**
@@ -116,4 +119,4 @@ What Dave asked on 20 Nov 2026:
 - Known limits: the server trusts the client's word on which item is in hand (it checks only that the pack holds it), and the camp benches can still be sat on by the client like any bench.
 - Covered by `test_goblin_camp.gd` `_tile` (every chore point), `_npcs` and `_chores` (which prints the camp's tick cost).
 
-**Order.** A, B and C go together in PR #1354 (protocol 146), ahead of the goblins PR that adds Vrixa and Grikka; their chore rounds follow from data (`default_jobs`, or a `chores` list in their members row). A BugsList entry follows in a docs PR.
+**Order.** A, B and C go together in PR #1354 (protocol 146), ahead of the goblins PR (#1345) that added Vrixa and Grikka; their chore rounds come from data (`default_jobs`, or a `chores` list in their members row). A BugsList entry follows in a docs PR.

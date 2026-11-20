@@ -1,0 +1,20 @@
+{
+	"npc": "vrixa",
+	"note": "Vrixa Thornfang of the Ragtooth goblins (data/creatures/goblin_tribes.json, Dave 20 Nov 2026: \"for now she will be a named goblin at the Ragtooth camp. they are friendly goblins but nervous.\"). She sits by the fire with Snag and sends a player to Skritch, the trader. See hob.json for the format. PROVISIONAL lines (GOBLIN-6, docs/design/GOBLIN_CAMP.md).",
+	"barks": {
+		"greeting": ["Eep! Big-folk. Stay there. Not so close.", "Vrixa sees you. Vrixa is not scared. Little scared.", "You are quiet one? Good. Quiet is good."],
+		"farewell": ["Go slow.", "Bye-bye, big-folk.", "Mm. Go quiet."],
+		"idle": ["Fire crackle. Vrixa likes.", "Shh. Something in the trees."],
+		"complaint": ["Not now. Vrixa is busy.", "Belly hurts.", "Too tired. Go.", "No talk today.", "Go see Skritch.", "Head pounds.", "Bad mushroom. Ugh.", "Tooth hurts."],
+		"cooldown": ["Wait.", "Slow, slow."],
+		"info": ["Skritch trades. Vrixa only watches.", "The cave is Ragtooth cave."]
+	},
+	"roots": [{"node": "post"}],
+	"nodes": {
+		"post": {
+			"text": "$greeting",
+			"choices": [{"text": "Goodbye.", "goto": "bye"}]
+		},
+		"bye": {"text": "$farewell", "end": true}
+	}
+}
