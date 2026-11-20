@@ -2,6 +2,9 @@ extends SceneTree
 
 # Item looks (src/client/basic_look.gd) are built in GDScript part by part. Lag check (3 Nov 2026): every look is timed once; a look is built once per
 # run and shared, so taking a tool or food in hand again costs nothing. Prints the five slowest looks.
+# The model looks' files are read first, as the client does at the join (BasicLook.warm_models, 20 Nov 2026: the handsaws' first builds took 56 ms
+# and 248 ms on Dave's PC and 9 to 11 ms on later runs, most likely the .glb read inside the build; not measured apart). That read is timed and
+# printed on its own (no bar). It runs in the serial lane.
 #   godot --headless --path . --script res://src/worldgen/tools/test_look_build_cost.gd
 
 const BasicLook := preload("res://src/client/basic_look.gd")
@@ -19,7 +22,18 @@ func check(ok: bool, what: String) -> void:
 
 
 func _init() -> void:
-	BasicLook.entry("")   # loads looks.json
+	var t_read: int = Time.get_ticks_usec()
+	BasicLook.warm_models()   # loads looks.json too
+	print("model look files read ahead in %.1f ms (%d files)" % [float(Time.get_ticks_usec() - t_read) / 1000.0, BasicLook._models_here.size()])
+	var model_files: Dictionary = {}
+
+	for id in BasicLook._table.keys() + BasicLook.ART_OVERRIDES.keys():
+		var path: String = str(BasicLook.entry(str(id)).get("model", ""))
+
+		if path != "" and ResourceLoader.exists(path):
+			model_files[path] = true
+
+	check(BasicLook._models_here.size() == model_files.size(), "every model look's file is read ahead (%d of %d)" % [BasicLook._models_here.size(), model_files.size()])
 	var ids: Array = BasicLook._table.keys() + BasicLook.ART_OVERRIDES.keys()
 	var times: Array = []
 	var worst_again: float = 0.0
