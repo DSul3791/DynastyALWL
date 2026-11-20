@@ -1,5 +1,7 @@
 extends RefCounted
 
+const ItemsScript := preload("res://src/stream/server_items.gd")   # _write_file: whole-file writes
+
 # Bandit camp sites, stage 1 (Dave 19 Nov 2026; docs/design/BANDIT_CAMPS.md, data/npcs/bandits.json). Candidate sites are fixed by the world
 # seed, one chance per cell_m square (a hash, like the wolf homes): nothing is stored for a sleeping site. Players and pulled carts moving
 # along roads and paths add trip points to the stretch_m stretch they enter; points halve every half_life_days game days. Once a game hour
@@ -399,21 +401,18 @@ func save() -> void:
 		row.erase("road")   # found again from the world once a run
 		awake["%d,%d" % [cell.x, cell.y]] = row
 
-	var file: FileAccess = FileAccess.open(_path, FileAccess.WRITE)
+	var quiet: Dictionary = {}
 
-	if file != null:
-		var quiet: Dictionary = {}
+	for cell in dormant:
+		quiet["%d,%d" % [cell.x, cell.y]] = dormant[cell]
 
-		for cell in dormant:
-			quiet["%d,%d" % [cell.x, cell.y]] = dormant[cell]
+	var left_over: Dictionary = {}
 
-		var left_over: Dictionary = {}
+	for cell in stash_left:
+		left_over["%d,%d" % [cell.x, cell.y]] = stash_left[cell]
 
-		for cell in stash_left:
-			left_over["%d,%d" % [cell.x, cell.y]] = stash_left[cell]
-
-		file.store_string(JSON.stringify({"version": 1, "stretches": rows, "sites": awake, "dormant": quiet, "stash_left": left_over}))
-		file.close()
+	# Written whole to a .tmp and moved over the old file (server_items.gd _write_file): a crash mid-write never tears it, so a stash survives.
+	ItemsScript._write_file(_path, JSON.stringify({"version": 1, "stretches": rows, "sites": awake, "dormant": quiet, "stash_left": left_over}))
 
 
 func load_file() -> void:
@@ -873,16 +872,17 @@ func struck(a: Dictionary, peer: int, result: String) -> void:
 		stash.append({"id": str(piece["id"]), "count": int(piece["count"]), "wear": int(piece.get("wear", 0)), "inst": piece.get("inst", {})})
 
 	site["stash"] = stash
-	save()   # at once: a player's things are never lost
-
-	if flush_world.is_valid():
-		flush_world.call()   # and his pack without them, so a restart cannot give them twice
+	save()   # at once, before his pack is next written: a crash between can only leave them twice, never lose them
 	_tell(peer, "The bandits take %s and leave you. Clear their camp to get it back." % ", ".join(taken.map(func(got): return "%d %s" % [int(got["count"]), str(got["id"])])))
 
 
 # A camp's stash on the ground by its fire (cleared, dissolved or gone back to sleep): nothing a player lost is destroyed.
 func _drop_stash(cell: Vector2i) -> void:
-	if not sites.has(cell) or (sites[cell].get("stash", []) as Array).is_empty():
+	if not sites.has(cell) or not sites[cell].has("stash"):
+		return
+
+	if (sites[cell]["stash"] as Array).is_empty():
+		sites[cell].erase("stash")   # nothing in it (a stash whose every piece was unreadable at load)
 		return
 
 	var fire: Vector2 = layout(cell)["fire"]

@@ -1162,7 +1162,7 @@ func _robbery() -> void:
 	robbers[0]["robbing"] = 6
 	b.struck(robbers[0], 6, "maimed")
 	check(robbed == [[6, int(b.cfg["robbery"]["rob_stacks"])]] and (b.sites[cell]["stash"] as Array).size() == 2 and bandits.all(func(m): return not m.has("robbing")), "at the floor they take rob_stacks into the stash and stop")
-	check(said.any(func(t): return str(t).contains("Clear their camp")) and flushes[0] == 1, "he is told how to get it back, and his pack is written at once")
+	check(said.any(func(t): return str(t).contains("Clear their camp")) , "he is told how to get it back")
 	var reread: BanditsScript = _sites(dir)
 	check(reread.sites.has(cell) and (reread.sites[cell]["stash"] as Array).size() == 2 and int(reread.sites[cell]["stash"][0]["wear"]) == 7 and int(reread.sites[cell]["stash"][0]["inst"]["plus"]) == 1, "the stash is saved at once, wear and make kept")
 
@@ -1173,7 +1173,7 @@ func _robbery() -> void:
 		b.fallen("bandit", at)
 
 	check(b.sites[cell].has("cleared_at") and dropped.size() == 2 and str(dropped[0][0]) == "iron_axe" and int(dropped[0][2]) == 7 and not b.sites[cell].has("stash"), "the camp cleared: the stash lies by the fire (%s)" % str(dropped))
-	check(flushes[0] >= 2, "the pack is written after the robbery and the laid items before the stash goes (%d)" % flushes[0])
+	check(flushes[0] >= 1, "the laid items are written before the stash goes (%d)" % flushes[0])
 	b.sites[cell]["stash"] = [{"id": "lost_kind", "count": 1, "wear": 0, "inst": {}}, {"id": "bread", "count": 1, "wear": 0, "inst": {}}]
 	b._drop_stash(cell)
 	check(not b.sites[cell].has("stash") and (b.stash_left[cell] as Array).size() == 1 and str(b.stash_left[cell][0]["id"]) == "lost_kind", "a piece that cannot be laid is kept apart, never thrown away")
