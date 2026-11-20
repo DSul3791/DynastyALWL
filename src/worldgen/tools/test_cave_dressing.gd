@@ -46,6 +46,15 @@ func _run() -> void:
 		var box: AABB = Dressing.look_mesh(look).get_aabb()
 		check(box.size.y < 0.45 and box.size.x < 1.3 and box.size.z < 1.3 and box.position.y > -0.05, "%s lies on the floor, low and about 1 m across (%s)" % [look, str(box)])
 
+	# Den signs (protocol 141): droppings and a bed, each its own look, low on the floor.
+	d.set_tile(Vector2i(2, 4), PackedFloat32Array([1.0, 5.0, 1.0, 4.0, 0.0, 2.0, 5.0, 2.0, 5.0, 1.0]), PackedFloat32Array())
+	var den_rows: Dictionary = d.tile_node(Vector2i(2, 4)).get_meta("rows")
+	check((den_rows["den_droppings"] as Array).size() == 1 and (den_rows["den_bedding"] as Array).size() == 1, "kinds 4 and 5 are droppings and a bed")
+
+	for look in ["den_droppings", "den_bedding"]:
+		var box: AABB = Dressing.look_mesh(look).get_aabb()
+		check(box.size.y < 0.2 and box.size.x < 1.8 and box.position.y > -0.08, "%s lies flat on the floor (%s)" % [look, str(box)])
+
 	var up: AABB = Dressing.look_mesh("stalagmite").get_aabb()
 	var down: AABB = Dressing.look_mesh("stalactite").get_aabb()
 	check(up.position.y > -0.1 and absf(up.end.y - 1.0) < 0.12, "a stalagmite stands from y 0 to about 1 (%s)" % str(up))

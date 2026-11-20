@@ -77,6 +77,8 @@ var berry_bushes: Callable           # (Vector3, radius) -> PackedVector3Array: 
 var goblins = null                   # den life (server_goblins.gd): species with a "den_life" row sleep in the cave by day, watch fires and forage at night
 var flight = null                    # single birds in flight (server_flight.gd, bird_flight_server_design.md): species with a "flight" row fly when they bolt
 var companions = null                # companions (server_companions.gd): the stray a player befriends with food, then their dog (Dave 8 Nov 2026, decisions 5 and 6)
+const CAVE_DEN_SPECIES := ["bear", "fox"]   # made at their cave dens by the top-up (TileTerrainData.ANIMAL_DEN_BY_SIZE); wolf packs take theirs in server_wolves
+var cave_den_mouths: Callable         # (x, z, sp) -> PackedVector2Array: the mouths (world x, z) of the caves that species dens in, in the tile there (TileTerrainData.animal_den_mouths; bears, wolves, foxes, Dave 19 Nov 2026)
 var lair_mouths: Callable             # (x, z) -> PackedVector2Array: the cave mouths (world x, z) of the tile there; species with a "lair" row spawn their groups at them (goblins, Dave 7 Nov 2026)
 var season_now: Callable           # () -> "spring", "summer", "autumn" or "winter" (GameClock.season()); species rows may list "seasons" {name: {threat_x, spook_x}}
 var traits: bool = true            # temperaments and young (Dave 6 Nov 2026); seeded tests that predate them turn this off, so every animal is born "defensive" with no young
@@ -1453,6 +1455,13 @@ func _top_up(players: Array, only: int) -> void:
 			if rng.randf() > activity_chance(def):   # luck-exempt: night animals rarely turn up by day and the other way round
 				continue
 
+			# A cave den near the player comes first (Dave 19 Nov 2026): the animal is made at the mouth, its den.
+			var den_mouth: Vector2 = cave_den_spot(sp, def, p, players) if CAVE_DEN_SPECIES.has(sp) else Vector2(INF, INF)
+
+			if den_mouth.x != INF:
+				spawn(sp, den_mouth.x, den_mouth.y)   # a species with a "den" row (the bear) takes its spawn spot, the mouth, as its den
+				continue
+
 			# A few candidate spots; the first the species can live on wins, a forest animal takes a spot under trees if one turns up.
 			var x: float = 0.0
 			var z: float = 0.0
@@ -1529,6 +1538,62 @@ func _top_up(players: Array, only: int) -> void:
 				if id != 0:
 					animals[id]["herd"] = hid
 					_herds[hid].append(id)
+
+
+# The mouth of a cave the species dens in where a new one may be made now (Vector2(INF, INF) for none): within spawn_max_m of the player and no
+# nearer than never_within_m to any player, its den empty (no animal of the species within cave_den_claim_m of the mouth), and the mouth not
+# blocked, walled off or in a no-spawn zone. The first such mouth in the tile's order wins, so the choice does not hang on the roll.
+func cave_den_spot(sp: String, def: Dictionary, p: Vector3, players: Array) -> Vector2:
+	if not cave_den_mouths.is_valid():
+		return Vector2(INF, INF)
+
+	var reach: float = float(cfg.get("spawn_max_m", 250.0))
+	var never: float = float(cfg.get("never_within_m", 60.0))
+	var claim: float = float(cfg.get("cave_den_claim_m", 40.0))
+
+	for mouth in cave_den_mouths.call(p.x, p.z, sp):
+		var m: Vector2 = mouth
+
+		if Vector2(p.x - m.x, p.z - m.y).length() > reach:
+			continue
+
+		var taken: bool = false
+
+		for q in players:
+			taken = taken or Vector2(q.x - m.x, q.z - m.y).length() < never
+
+		for id in animals:
+			var other: Dictionary = animals[id]
+
+			if other["sp"] != sp:
+				continue
+
+			var home: Vector3 = other.get("den", other["pos"])   # a bear ranging out from its den still holds it
+			taken = taken or Vector2(other["pos"].x - m.x, other["pos"].z - m.y).length() <= claim or Vector2(home.x - m.x, home.z - m.y).length() <= claim
+
+		if taken or no_spawn_at(m.x, m.y) or (blocked.is_valid() and bool(blocked.call(m.x, m.y))) or crosses_wall(m.x, m.y, m.x, m.y):
+			continue
+
+		if biome_weight(def, m.x, m.y) <= 0.0 or _habitat_score(def, m.x, m.y, p.y) < 0.0:
+			continue   # the mouth must be ground the species lives on (a bear's forest by fresh water), as any spawn spot
+
+		return m
+
+	return Vector2(INF, INF)
+
+
+# The first mouth of a cave the species dens in inside a world rectangle (a wolf pack's 2 km cell), Vector2(INF, INF) for none. The cell may cross a
+# tile edge, so the tiles under its middle and corners are asked.
+func cave_den_in(cell: Rect2, sp: String) -> Vector2:
+	if not cave_den_mouths.is_valid():
+		return Vector2(INF, INF)
+
+	for at in [cell.get_center(), cell.position, cell.position + Vector2(cell.size.x, 0.0), cell.position + Vector2(0.0, cell.size.y), cell.end]:
+		for mouth in cave_den_mouths.call(at.x, at.y, sp):
+			if cell.has_point(mouth):
+				return mouth
+
+	return Vector2(INF, INF)
 
 
 # Lair species (goblins, Dave 7 Nov 2026): a group of lair.group[0]..group[1] lives at a cave mouth near a player, beside a river (caves are
