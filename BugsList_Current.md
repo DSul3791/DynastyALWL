@@ -629,6 +629,20 @@ Dave, 20 Nov 2026: "I was digging a tunnel and at one point I got so deep I hit 
 
 Not done: within about 64 m of the shore a tunnel below sea level still counts as sea (the old rule), and an inlet narrower than about 32 m far from other sea could read as land. There is no real flooding: a tunnel dug out to the sea under the waterline does not fill. Near sea level the client now asks for the coarse ground window even when no fog is drawn (one ask per 1 km moved); server load not measured.
 
+## 78. "Press E to drink" on a hillside far from the water
+
+**Status: Part 1 implemented - awaiting player verification.** Dave's report, 19 Nov 2026 (thread "Fix drink prompt far from water"). Part 1 is PR #1348, merged to dev at 83bd2145 (head 63106f85) after independent review (2 rounds; the first found the client read rain from its own sky while the server reads one weather over the starter row, fixed; final PASS on the exact head). Lane A (Dave's PC) on the exact head: 214 of 214 selected tests passed (210 fast, 4 timing), 0 script errors, test_drinking_water among them; warnings 381, zero new. Client only: no protocol, item or save change. Not yet played. Dave has not yet said which prompt he saw ("Press E to drink", "Brook — Press E to drink" or "Spring — Press E to drink"), so part 1 may not be his case. Part 2, the height check below, follows as its own PR.
+
+Dave, 19 Nov 2026: "I can see the river below and Im on the hillside maybe 100 meters away and about 10 meters above the water but when I look at the ground sometimes it says press e to drink." And: "I have also noticed our action range seems pretty long so that might be us looking right through the terrain then seeing the water below."
+
+**What was found:** three things offer E to drink, and none of them reads the look; they show "when looking at the ground" only because anything aimed at (a tree, an item) takes the prompt first. Water at the feet or up to 2 m ahead needs real water standing there, so it cannot fire 100 m from the river. A drink from a water container in hand shows the plain "Press E to drink" anywhere. The record's stream beds ("Brook — Press E to drink") showed on every channel cell within about 3 to 7 m, dry gullies included, where pressing E then said "The bed is dry"; hillsides above a river are crossed by such gullies. The crosshair name ("Water", "Rock") reads up to 30 m; picking up and gathering need you within 2 m and aimed within about 25 degrees (E reaches 2.5 m); drinking reads 3 m round the feet.
+
+**Required outcome:** "Press E to drink" shows only where pressing E gives a drink. A dry stream bed (an ephemeral gully out of rain, an intermittent brook in a dry summer) shows no drink prompt; a running one does, as does water you can see.
+
+**Acceptance:** walk across a hillside above a river away from any visible water, empty-handed: no drink prompt. Stand by a river or pond: the prompt shows and E drinks, as before.
+
+Not done: a ground spring whose flow fails in a dry summer still shows "Spring — Press E to drink" there (the server answers "The bed is dry"; the client is not sent the spring's dry flow). In the hours after rain an intermittent or ephemeral bed still drinks on E without showing the prompt (the client does not know when it last rained). A running brook too narrow to draw is a drink with no water shown. Part 2 (water no more than 2.5 m below the feet, PROVISIONAL, the coordinator's ruling of 20 Nov 2026) is not in this part.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.

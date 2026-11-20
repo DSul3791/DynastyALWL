@@ -31,7 +31,7 @@ The rule's refusals still work wherever water shows, for example "The bed is dry
     - Run-length coded, it is a few hundred bytes for a chunk with a stream and nothing for a dry one.
   - **Client:** `_water_ahead` is also true within 2 m of a drink point. The prompt reads "Press E to drink" as today.
   - **Server:** `_drink_water` passes when `water_near` is true or `DrinkRules.tile_rows` gives any non-salt row. The rule then decides as today: drink, "The bed is dry", "frozen" or "salt".
-  - The prompt shows on a dry bed too. The server's "The bed is dry" is the answer there, the same as on a visible dry bed today.
+  - ~~The prompt shows on a dry bed too.~~ Changed 19 Nov 2026 (BugsList_Current.md entry 78, PR #1348, Dave's report of a drink prompt on a hillside): the "Brook" prompt shows only where the rule says the bed runs now (`DrinkRules.brook_shows`: the season at the player and rain now, as the server reads them). The server's "The bed is dry" still answers E on a dry bed.
 - **(b) Make the water visible.**
   - A small pool, about 1 m across, at each ground spring head, under the bushes.
   - A thin ribbon on brook samples that runs by season.
