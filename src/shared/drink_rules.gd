@@ -149,6 +149,14 @@ static func pick(cfg: Dictionary, rows: Array, ctx: Dictionary) -> Dictionary:
 	return {"refused": "dry"} if dry else {}
 
 
+# Whether the client offers "Brook — Press E to drink" on a record brook cell of this regime: only where runs() says it runs whatever the rain
+# memory, since the client knows the season and whether it rains now but not when it last rained. So a dry gully offers no drink that the server
+# would answer "The bed is dry" (Dave 19 Nov 2026: "press e to drink" on a dry hillside); in the hours after rain an intermittent or ephemeral bed
+# still drinks on E without the prompt.
+static func brook_shows(regime: int, season: String, raining: bool) -> bool:
+	return runs({}, {"kind": "brook", "regime": regime}, {"season": season, "raining": raining, "rain_h_ago": 0.0 if raining else INF})
+
+
 # Whether the water there runs now. A spring runs while its drought flow is above 0. A brook by regime: 1 always; 2 except in a dry summer
 # (no rain for rain_memory_h); 3 only in rain or within flash_memory_h of it. In a dry summer a brook row runs only where its baseflow lasts.
 static func runs(cfg: Dictionary, row: Dictionary, ctx: Dictionary) -> bool:
