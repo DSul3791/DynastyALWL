@@ -1,6 +1,6 @@
 # Bandit camps
 
-Status: stage 1 of 5 (sites and traffic) on branch `claude/project-thread-2c1rn3`; stages 2 to 5 not built. Full plan: Library `bandit-camps/PLAN.md`.
+Status: stages 1 to 3, 5, 5b, 4a and 4b are in dev and not yet played; the toll and robbery (stage 4) are switched off (`robbery.enabled` false) until Dave turns them on. Full plan: Library `bandit-camps/PLAN.md`.
 
 ## What Dave asked for (19 Nov 2026, project chat)
 
@@ -153,3 +153,71 @@ Dave, 19 Nov 2026: horses are claimed and brought to town. The coordinator (20 N
 - No riding, no saddle shown while it follows (the client shows the tethered horse only), no hitching or stabling in town; it can only follow.
 - No way to let a claimed horse go yet.
 - Names come from a short first-try list (Bay, Ash, Clover...).
+
+## Stage 4a: the toll (`server_bandits.gd` toll, `data/npcs/bandits.json` robbery and toll; no protocol change) - SWITCHED OFF
+
+Dave's agreed default (19 Nov 2026): toll first, then attack. Built behind `robbery.enabled` (false): with it off no toll is asked, no one is charged for refusing and nothing is taken from a player. Turning it on is Dave's decision alone (the coordinator, 20 Nov 2026).
+
+With the switch on:
+
+- A player within 60 m of the road point by a camp (where its boot prints left the road), once a game day, is met by up to two of its bandits (not one who gave up, the lookout at his post, one fighting or hurt). They walk up and stop 4 m off, facing him.
+- The NPC talk window opens: "Bandits block your way. "N copper to pass."" with Pay and Refuse. N is 5 copper by the camp's top level.
+- Pay: the coins leave his purse and the bandits walk back to the fire.
+- Refuse, no coins, no answer in 30 s or walking 20 m on: the bandits come at him with the ordinary big game charge (harmless: health stops at the floor, as every attack today).
+- They never follow past 400 m from their fire.
+
+### For Dave (provisional, adjust after play)
+
+| # | Choice | Value |
+|---|---|---|
+| BANDIT-30 | Toll | 5 copper a level of the camp's strongest bandit, once a game day per character |
+| BANDIT-31 | Who comes | up to 2 bandits, within 60 m of the camp's road point, stopping 4 m off |
+| BANDIT-32 | Refusing | Refuse, no coins, 30 s without an answer or 20 m walked on: they charge |
+| BANDIT-33 | Leash | 400 m from their fire |
+
+### Known limits (stage 4a)
+
+- Off until Dave turns it on: none of it can be seen in play yet.
+- Robbery is stage 4b (below), also switched off: two stacks into a saved stash, no coins, no chest, no carts.
+- The once-a-day memory is not saved: a server restart may ask again the same day.
+- The talk window holds the player while it is open; walking on counts only once it is closed.
+
+## Stage 4b: robbery (`server_bandits.gd` struck and stash, `server_items.gd` rob_stacks, `server_big_game.gd` struck hook; no protocol change) - SWITCHED OFF
+
+Behind the same `robbery.enabled` (false). The coordinator, 20 Nov 2026, provisional on Dave's behalf: a smaller first cut, the stash saved with the camp instead of a chest, carts left out.
+
+With the switch on:
+
+- Only a bandit sent on a player's refused toll robs, and only when his charge leaves that player at the floor ("badly hurt"): he takes the 2 most valuable stacks of the pack (value x count), whole, with their wear and make. Never the item in hand, never a bag holding things, never coins (the purse). Any other blow, or a blow on another player, takes nothing; one charge robs once.
+- What is taken goes into the camp's stash, saved at once with the camp's row. The player is told: "Clear their camp to get it back."
+- The stash is never destroyed: when the camp is cleared it lies by the fire as ordinary items; a camp that dissolves or goes back to sleep drops it there too before its row goes.
+- Switched off, the big game's struck hook changes nothing about a blow.
+
+### For Dave (provisional, adjust after play)
+
+| # | Choice | Value |
+|---|---|---|
+| BANDIT-34 | Robbery | at the floor after a refused toll: the 2 most valuable stacks, not the item in hand, a full bag or coins |
+| BANDIT-35 | Stash | saved with the camp; dropped by the fire when it is cleared, dissolves or sleeps |
+
+### Known limits (stage 4b)
+
+- Off until Dave turns it on.
+- No stash chest and no lock: the stash is not seen at the camp until it drops.
+- Unattended carts are not robbed (not built).
+- No quest items exist in the catalog yet, so none are excluded by name.
+- A dropped stash never ages away (like a bag holding things); a piece whose item no longer exists stays in the stash rather than being lost. A camp ending far from every player waits to drop its stash until that ground can be read.
+- Every stack of the item in hand is kept, not only the held slot.
+
+## Before robbery.enabled is turned on
+
+The switch is Dave's (the coordinator, 20 Nov 2026). Stages 4a and 4b ship off; these must be true first, each built, reviewed and lane-tested like any change:
+
+1. **Saving cannot lose a robbery.** `save()` returns the camp file's write result, and a failed write puts the taken stacks back in the player's pack. `load_file` falls back to the previous good file (as server_items.gd does with `.prev`) instead of starting empty.
+2. **The stash drop is cheap enough.** `flush_world` (a full, synchronous `items.save()`) is measured on a big world on Dave's PC, or replaced by a save of just the laid items.
+3. **Kept pieces can be got back.** `stash_left` (pieces whose item left the catalog) has a recovery path, at least an admin listing; `load_file` keeps rather than drops a stash piece it cannot read.
+4. **What is taken is right.** Value-0 stacks are skipped; the held slot, not every stack of the held item, is kept; quest items are excluded once the catalog has them.
+5. **The stash chest (the plan's stage 4 step 3):** a camp chest holding the stash, locked while a bandit lives, if Dave wants it seen before it drops; it needs a new world structure and lock rules.
+6. **Carts (the plan's step 4):** unattended carts within 150 m of a camp robbed at night into the stash, if Dave wants it.
+7. **The toll's once-a-day memory** is saved, so a restart does not ask again the same day.
+8. **Dave plays it** with the switch on in a test world and agrees the numbers BANDIT-30..35.

@@ -14,7 +14,10 @@ pass() { echo "PASS  $1"; }
 fail() { echo "FAIL  $1"; FAIL=1; }
 
 if [ "$1" = "--update-baseline" ]; then
-	bash tools/check_warnings.sh | grep -v "^scripts checked" > "$BASE"
+	NEWBASE=$(mktemp)
+	bash tools/check_warnings.sh > "$NEWBASE"; WRC=$?
+	if [ $WRC -ne 0 ]; then echo "baseline NOT written: the warning check failed (exit $WRC)"; rm -f "$NEWBASE"; exit 1; fi
+	grep -v "^scripts checked" "$NEWBASE" > "$BASE"; rm -f "$NEWBASE"
 	echo "baseline written: $(awk '{s+=$1} END{print s}' "$BASE") warnings in $(wc -l < "$BASE") files"
 	exit 0
 fi
@@ -24,7 +27,9 @@ if godot --headless --path . --script res://tools/check_addons.gd 2>&1 | grep -q
 # Parse check: the big client scripts must load (a name clash in builds 750-753 left the client black).
 for S in scenes/terrain_client/terrain_client.gd src/flora/flora_view.gd scenes/terrain_server/terrain_server.gd; do
 	[ -f "$S" ] || continue
-	if godot --headless --path . --check-only --script "res://$S" 2>&1 | grep -qiE "parse error|SCRIPT ERROR"; then fail "script does not parse: $S"; else pass "parses: $S"; fi
+	R=$(timeout 300 godot --headless --path . --check-only --script "res://$S" 2>&1); RC=$?
+	if [ $RC -eq 124 ] || [ $RC -eq 126 ] || [ $RC -eq 127 ]; then fail "parse check did not run (exit $RC): $S"   # timed out, or no godot: not a pass
+	elif echo "$R" | grep -qiE "parse error|SCRIPT ERROR"; then fail "script does not parse: $S"; else pass "parses: $S"; fi
 done
 
 OUT=$(godot --headless --path . --script res://src/worldgen/tools/validate_items.gd 2>&1 | tail -1)
@@ -53,10 +58,16 @@ if [ "$CLASS" = "BAKE" ] || [ -n "$ISLAND_GATE" ]; then
 	if [ $ICRC -eq 0 ]; then pass "island checks: $(echo "$IC" | tail -1)"; elif [ -n "$ISLAND_GATE" ]; then fail "island checks: $(echo "$IC" | tail -1)"; else echo "NOTE  island checks: $(echo "$IC" | tail -1) (not blocking; ISLAND_GATE=1 blocks)"; fi
 fi
 
+# The warning check must finish and every script must parse; a run that stopped early prints nothing and is not a pass.
 CUR=$(mktemp)
-bash tools/check_warnings.sh | grep -v "^scripts checked" > "$CUR"
-NEW=$(awk 'NR==FNR{b[$2]=$1; next} {if ($1 > b[$2]+0) printf "  %s: %d now, %d in baseline\n", $2, $1, b[$2]+0}' "$BASE" "$CUR")
-if [ -z "$NEW" ]; then pass "no new warnings against baseline ($(awk '{s+=$1} END{print s+0}' "$CUR") total)"; else fail "new warnings:"; echo "$NEW"; fi
+bash tools/check_warnings.sh > "$CUR"; WRC=$?
+if [ $WRC -ne 0 ]; then
+	fail "warning check did not pass (exit $WRC: 2 did not finish, 3 a script does not parse; reasons above)"
+else
+	grep -v "^scripts checked" "$CUR" > "$CUR.n"; mv "$CUR.n" "$CUR"
+	NEW=$(awk 'NR==FNR{b[$2]=$1; next} {if ($1 > b[$2]+0) printf "  %s: %d now, %d in baseline\n", $2, $1, b[$2]+0}' "$BASE" "$CUR")
+	if [ -z "$NEW" ]; then pass "no new warnings against baseline ($(awk '{s+=$1} END{print s+0}' "$CUR") total)"; else fail "new warnings:"; echo "$NEW"; fi
+fi
 rm -f "$CUR"
 
 for t in "$@"; do
