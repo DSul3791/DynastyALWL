@@ -43,7 +43,7 @@ What a new player finds at the spawn ([historical probe_spawn_output.txt](https:
 
 ## Minute 12 to 18: fire
 
-11. Trigger: 6 sticks and 3 stones. Line: "Make a Campfire kit: 6 sticks, 3 stones." (recipe 4, 8 s; the campfire is the one kit left after #292). Check: campfire kit in the pack.
+11. Trigger: 6 sticks and 16 stones. Line: "Craft a Campfire kit: 6 sticks and 16 stones." (recipe 4, 8 s; the campfire is the one kit left after #292). Check: campfire kit in the pack.
 12. Trigger: kit made. Line: "Hold the kit and click where the ring shows. Yellow: open ground, rain puts the fire out. Green: under a tree's crown, the fire survives rain. Stand under a big tree and the ring turns green." Check: a fire placed.
 13. Trigger: fire placed, unlit. Line: "A laid fire is not lit yet. Stand close and press E: you spend one plant fibre as tinder." (tinder: plant fibre, birch bark, tinder, tinder fungus; open fires will not light in rain.) Check: fire burning.
 14. Trigger: fire lit. Line: "Stay close to keep warm: a stick fire warms you within 2.5 m, a firewood fire within 4 m. Feed it with F (the fire store; closing it lays the wood on the fire): a stick burns 2 real minutes, firewood 20 minutes, a log 3 hours (3+ firewood makes a bigger fire, 3+ logs the biggest)." Check: one fuel added. Note for the tutorial writer: a burnt-out fire is removed 5 real minutes later (kit lost), and step 16 sends the player off for 16 sticks, so step 14 should say "Put in firewood or a log before you leave: a fire that burns out is gone 5 minutes later."

@@ -65,7 +65,7 @@ Verified by running (headless server probes, headless real-client self-tests; **
 - 20 bench (now 16 sticks, 6 twine, 4 stones, 60 s): no automated check at all.
 - Self-tests arrival, gather, plantpick, chop, fire, leanto, spear, placed, walk run without script errors but print no PASS/FAIL line, so they prove "no crash" only.
 - New in data since d05e86b3: hints plant_food_pot and pot_first_dish (step 15 now has an in-game hint for the pot, still no tutorial step); stump chop destroys the stump and gives firewood, kindling, sticks by stump size (drops.json; test_stump_chop.gd exists, not run by me).
-- Recipe numbers re-checked in data: campfire 6 sticks + 3 stones 8 s; lean-to 32 sticks, 8 leaves, 4 twine 25 s; rough bed 8 bedding (or 8 straw) + 4 sticks + 2 twine 10 s, or 10 thatch + 4 sticks + 2 twine 25 s; Camp bench 16 sticks, 6 twine, 4 stones 60 s; wooden spear 1 stick 6 s (stone kept); stone spear = wooden spear + 2 twine 10 s; stone knife 2 stones + 1 stick 8 s; stone axe 10 s; twine 3 fibre 2 s. Checklist step 14 had the spear recipe wrong: fixed.
+- Recipe numbers re-checked in data: campfire 6 sticks + 16 stones 8 s; lean-to 32 sticks, 8 leaves, 4 twine 25 s; rough bed 8 bedding (or 8 straw) + 4 sticks + 2 twine 10 s, or 10 thatch + 4 sticks + 2 twine 25 s; Camp bench 16 sticks, 6 twine, 4 stones 60 s; wooden spear 1 stick 6 s (stone kept); stone spear = wooden spear + 2 twine 10 s; stone knife 2 stones + 1 stick 8 s; stone axe 10 s; twine 3 fibre 2 s. Checklist step 14 had the spear recipe wrong: fixed.
 - Still open: chest self-test (Tyler, inventory_view.gd:4562), flora_view.gd:2270 cast error (flora session), creator preview back view, no pot/hearth tutorial step.
 
 | # | step | status | evidence and what is not covered |
@@ -80,7 +80,7 @@ Verified by running (headless server probes, headless real-client self-tests; **
 | 8 | hotbar, hold the axe | CLIENT | quickkeys self-test ran; held pose F-10 still MANUAL |
 | 9 | fell a tree | WORKS, CLIENT | bot and chop self-test; aiming and the swing not driven |
 | 10 | work the trunk, logs on the shoulder | WORKS | probe_logs (rough planks from the shoulder log); felled-trunk look was flat black this morning, bark fix commit 993aafab not re-photographed |
-| 11 | campfire kit (6 sticks, 3 stones, **8 s**) | WORKS | bot; tutorial time fixed (was 3 s) |
+| 11 | campfire kit (6 sticks, 16 stones, **8 s**) | WORKS | bot; tutorial time fixed (was 3 s) |
 | 12 | place the fire | WORKS | probe 6 (re-run on the 14:40 head): places at the spawn and the other flat spots; the only refusal seen is the steep slope, with its message. The silent refusals (beyond 6 m, wet beach, fire gap, per-chunk cap) were not re-tested after Tyler's changes |
 | 13 | light it (fibre, bark) | WORKS | probe 6: state 40 with both |
 | 14 | feed it, warmth | WORKS, CLIENT (rules changed 2 Nov: wood goes in with F, E puts a burning fire out; not re-run) | fire self-test ran; warmth numbers from data; test_fire_store added by Steve |

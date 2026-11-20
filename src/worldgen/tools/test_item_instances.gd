@@ -240,7 +240,7 @@ func _init() -> void:
 	var worn: Array = items.worn_slots_of(1)
 	check(int(worn[body][0]) == tunic and int(worn[body][2]) == 9 and worn[body][3] == {"craft": 1} and inv.count_of(tunic) == 0, "worn, the tunic is the slot [number, 1, wear, inst] (%s)" % str(worn[body]))
 	check(worn_sent.size() == 2 and InventoryScript.inst_from_bytes(worn_sent[1], 0).get(body, {}) == {"craft": 1}, "the worn message carries its data")
-	check(items._worn_entry(tunic) == [tunic, 1, 0, {}] and items._worn_entry(0) == [0, 0, 0, {}], "an old bare worn number reads as [n, 1, 0, {}]")
+	check(ItemsScript._worn_entry(tunic) == [tunic, 1, 0, {}] and ItemsScript._worn_entry(0) == [0, 0, 0, {}], "an old bare worn number reads as [n, 1, 0, {}]")
 	items.action(1, Net.ACT_UNWEAR, body, 0, 0, Vector3.ZERO)
 	var off: int = slot_with(inv, tunic, {"craft": 1})
 	check(off >= 0 and inv.wear[off] == 9 and int(items.worn_of(1)[body]) == 0, "taken off, it comes back with its data and wear")
@@ -364,7 +364,7 @@ func _init() -> void:
 			inv.clear_slot(slot)
 
 	var young: int = 2
-	var old_age: int = life / 2
+	var old_age: int = int(life / 2.0)
 	var free_slots: Array = []
 
 	for slot in inv.slot_count:

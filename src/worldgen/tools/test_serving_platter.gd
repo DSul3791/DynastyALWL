@@ -116,7 +116,7 @@ func _init() -> void:
 	# 1. The data.
 	for b in BOARDS:
 		var r: Dictionary = recipe(b)
-		var portions: int = int(r.get("gives", ["", 0])[1])
+		var board_portions: int = int(r.get("gives", ["", 0])[1])
 		var kcal: int = 0
 		var shortest: int = 1 << 30
 		var cooked: bool = true
@@ -128,7 +128,7 @@ func _init() -> void:
 			cooked = cooked and not FoodEffects.profile(id, fx).is_empty()   # a dish with an effect profile: cooked or prepared, never raw
 
 		check(not bool(items.table.entry(b).get("future", false)) and str(r.get("station", "")) == "food_preparation_table" and cooked, "1a. %s is live, made at the Food preparation table from cooked foods" % b)
-		check(portions == r["needs"].reduce(func(s, n): return s + int(n[1]), 0) and VitalsRules.food_value(b, vit) * portions <= kcal and items.table.shelf_units(num(b)) == shortest, "1b. %s: %d portions, %d kcal each from the %d of its dishes, the shortest shelf life of them" % [b, portions, VitalsRules.food_value(b, vit), kcal])
+		check(board_portions == r["needs"].reduce(func(s, n): return s + int(n[1]), 0) and VitalsRules.food_value(b, vit) * board_portions <= kcal and items.table.shelf_units(num(b)) == shortest, "1b. %s: %d portions, %d kcal each from the %d of its dishes, the shortest shelf life of them" % [b, board_portions, VitalsRules.food_value(b, vit), kcal])
 		var prof: Dictionary = FoodEffects.profile(b, fx)
 		var want: String = {"dessert_platter": "dessert", "harvest_platter": "fruit_veg"}.get(b, "main")
 		check(int(prof.get("tier", 0)) == 3 and str(prof.get("group", "")) == want, "1c. %s is one tier 3 %s food" % [b, want])
@@ -208,14 +208,14 @@ func _init() -> void:
 	var eaten: int = 0
 	var food_was: Array = [0.0, 0.0]
 
-	for k in made / 2:
+	for k in int(made / 2.0):
 		var peer: int = 1 + k % 2
 		var before: int = on_plate(platter)
 		use(peer, platter)
 		food_was[peer - 1] = float(items.vitals_of(peer)["fed"])
 		eaten += before - on_plate(platter)
 
-	check(eaten == made / 2 and on_plate(platter) == made - eaten and food_was[0] > 0.0 and food_was[1] > 0.0, "4g. two players eat half (%d portions), each portion fed someone" % eaten)
+	check(eaten == int(made / 2.0) and on_plate(platter) == made - eaten and food_was[0] > 0.0 and food_was[1] > 0.0, "4g. two players eat half (%d portions), each portion fed someone" % eaten)
 	check(FoodEffects.live(items._food_of(2), clock[0]).has("main"), "4h. a portion from the platter is a Main meal for the second player too")
 	items._characters[KEYS[1]]["food"] = {"bread": {"id": "flatbread", "t": 1, "until": clock[0] + 9999.0}, "fruit_veg": {"id": "roast_roots", "t": 1, "until": clock[0] + 9999.0}, "dessert": {"id": "berry_compote", "t": 1, "until": clock[0] + 9999.0}}
 	asks.clear()
@@ -271,7 +271,7 @@ func _init() -> void:
 		if int(r[0]) == platter:
 			row = r
 
-	check(not row.is_empty() and (int(row[5].get("board", 0)) == board_n and int(row[5].get("portions", 0)) == left), "5b. its world row tells clients the board and the portions left (%s)" % str(row.slice(4) if not row.is_empty() else "not sent here"))
+	check(not row.is_empty() and (int(row[5].get("board", 0)) == board_n and int(row[5].get("portions", 0)) == left), "5b. its world row tells clients the board and the portions left (%s)" % (str(row.slice(4)) if not row.is_empty() else "not sent here"))
 	var platters_before: int = have(1, "serving_platter")
 	items.action(1, Net.ACT_PICKUP, platter, 0, 0, Vector3.ZERO)
 	var back: int = items.inventory_of(1).numbers.find(board_n)

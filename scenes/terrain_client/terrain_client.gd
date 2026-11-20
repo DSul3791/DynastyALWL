@@ -82,6 +82,7 @@ const DialogueViewScript := preload("res://src/client/dialogue_view.gd")
 const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
+const DrinkRules := preload("res://src/shared/drink_rules.gd")
 const ClimateScript := preload("res://src/shared/climate.gd")
 const DayCycleScript := preload("res://src/client/day_cycle.gd")
 const IceScript := preload("res://src/shared/ice.gd")
@@ -92,6 +93,7 @@ const SnowWalkScript := preload("res://src/shared/snow_walk.gd")   # walking on 
 const OceanIceScript := preload("res://src/client/ocean_ice.gd")
 const ShoreProps := preload("res://src/client/shore_props.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
+const FogGroundScript := preload("res://src/shared/fog_ground.gd")
 const ICE_POND_DEPTH_M := 3.0           # a typical pond's depth for its freezing speed
 const CoverScript := preload("res://src/shared/cover.gd")
 const StanceScript := preload("res://src/client/stance.gd")
@@ -1425,6 +1427,7 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.name = "Sound"
 	root.add_child(sound)
 	sound.ground_below = _ground_below
+	sound.under_land = _under_land   # no sea under the island: a deep tunnel has dry steps (Dave 20 Nov 2026)
 	sound.floor_under = _floor_under
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
@@ -2288,7 +2291,7 @@ func _shore_prompt() -> String:
 
 	var sea: bool = false
 
-	for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
+	for offset in ([] if _under_land(here) else [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]):   # a tunnel under the island is no shore
 		var g: float = _ground_below(here + Vector3(offset.x, 0.0, offset.y))
 
 		if not is_nan(g) and g < 0.0:
@@ -2320,6 +2323,8 @@ const DRINK_REACH_M := 3.0   # vitals.json thirst.reach_m, the server's reach fo
 var _drink_chunks: Dictionary = {}   # chunk -> [cell keys (Array of Vector2i), springs PackedFloat32Array x, z], oldest first
 var _drink_cells: Dictionary = {}    # Vector2i world sample (cell_m grid) -> 1 + the brook's regime
 var _drink_cell_m: float = 8.0
+var _drink_season: String = ""      # the season and rain the server's drink rule reads (DrinkRules.brook_shows), set each second in _update_weather
+var _drink_raining: bool = false
 var _drink_heads: Dictionary = {}    # Vector2i cell (cell_m grid) -> PackedFloat32Array x, z of the spring heads in it, for the lush grass (_brook_spots)
 var _spring_heads = null   # SpringHeads: the damp patch, runnel and pebbles at each spring head of the drink points, made on the first that has any
 
@@ -2412,7 +2417,7 @@ func _update_spring_heads(delta: float) -> void:
 
 
 # "Spring" within DRINK_REACH_M of a ground spring head, "Brook" when one of the five points the server reads (the feet and DRINK_REACH_M each
-# way, nearest sample: DrinkRules.tile_rows) is a record brook cell, else "".
+# way, nearest sample: DrinkRules.tile_rows) is a record brook cell that runs now (DrinkRules.brook_shows), else "".
 func _record_drink_here() -> String:
 	if body == null or _drink_chunks.is_empty():
 		return ""
@@ -2426,16 +2431,25 @@ func _record_drink_here() -> String:
 			var springs: PackedFloat32Array = _drink_chunks.get(home + Vector2i(dx, dz), [[], PackedFloat32Array()])[1]
 
 			for n in range(0, springs.size() - 1, 2):
-				if Vector2(springs[n] - here.x, springs[n + 1] - here.z).length() <= DRINK_REACH_M:
+				if Vector2(springs[n] - here.x, springs[n + 1] - here.z).length() <= DRINK_REACH_M and _bed_in_reach(springs[n], springs[n + 1]):
 					return "Spring"
 
 	for offset in [Vector2.ZERO, Vector2(DRINK_REACH_M, 0.0), Vector2(-DRINK_REACH_M, 0.0), Vector2(0.0, DRINK_REACH_M), Vector2(0.0, -DRINK_REACH_M)]:
 		var key: Vector2i = Vector2i(roundi((here.x + offset.x) / _drink_cell_m), roundi((here.z + offset.y) / _drink_cell_m))
 
-		if _drink_cells.has(key):
+		# Only a bed the rule says runs now: a dry gully offered a drink the server always refused (Dave 19 Nov 2026: "press e to drink" on a dry hillside).
+		if _drink_cells.has(key) and DrinkRules.brook_shows(int(_drink_cells[key]) - 1, _drink_season, _drink_raining) and _bed_in_reach(float(key.x) * _drink_cell_m, float(key.y) * _drink_cell_m):
 			return "Brook"
 
 	return ""
+
+
+# The ground at a record drink point (a brook cell's sample point, a spring head) is not down a bank out of reach, as the server measures it
+# (DrinkRules.too_far_below on the sample's height or the head's). The ray starts well above the player, so water uphill is found too; no ground
+# read yet is no.
+func _bed_in_reach(x: float, z: float) -> bool:
+	var bed: float = _ground_below(Vector3(x, body.global_position.y + 40.0, z))
+	return not is_nan(bed) and not DrinkRules.too_far_below(bed, body.global_position.y)
 
 
 func _water_ahead() -> bool:
@@ -2447,7 +2461,16 @@ func _water_ahead() -> bool:
 		var spot: Vector3 = body.global_position + forward * step
 		var surface: float = flora.water_surface_at(spot.x, spot.z)
 
-		if not is_nan(surface) and WaterVolume.depth(surface, _ground_below(spot)) >= WaterVolume.DRINK_DEPTH_M:   # shallow reed water too (BUG-015)
+		# Water down a bank out of reach is none, as the server's test (DrinkRules.too_far_below).
+		if is_nan(surface) or DrinkRules.too_far_below(surface, body.global_position.y):
+			continue
+
+		var ground: float = _ground_below(spot)
+
+		if is_nan(ground):
+			continue   # no ground read yet (its collision not built) is no answer: depth() would take the whole surface height for the depth
+
+		if WaterVolume.depth(surface, ground) >= WaterVolume.DRINK_DEPTH_M:   # shallow reed water too (BUG-015)
 			return true
 
 	return false
@@ -2783,6 +2806,11 @@ func _update_weather() -> void:
 	DayCycleScript.sky_row_latitude = ClimateScript.latitude_of_row(row, int(world.get("equator_row", 0)))   # this row's sky
 	under_cover = CoverScript.at(_anchor, flora.cover) if flora != null else 0.0
 	weather = WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, group, _anchor.y, 0.0, row, int(world.get("equator_row", 0)))
+	# The drink rule's season and rain as the server reads them (_drink_source_ok): the season at the player's row (season_at), and the rain of the
+	# server's one weather, over the starter row at sea level (terrain_server._update_weather), not this player's own sky.
+	var starter: int = WeatherScript.STARTER_ROW
+	_drink_season = WeatherScript.season_at(game_clock.seconds, _anchor.z, tile_m, int(world.get("equator_row", 0)))
+	_drink_raining = float(WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, WeatherScript.zone_group(world.get("zones", []), int(world.get("equator_row", 0)), starter), 0.0, 0.0, starter, int(world.get("equator_row", 0)))["rain"]) > 0.05
 	world_wind_dir = float(weather["wind_dir"])
 	weather = wind_onto(weather)
 
@@ -4138,8 +4166,40 @@ func _make_environment(root: Node3D) -> void:
 # 64-bit floats (ocean_waves.gd), so the shader's swell and _sea_height_at() are the same water at the same moment.
 func _follow_sea() -> void:
 	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
+	_mask_sea_under_land()
 	var origin: Vector2 = OceanWaves.origin_for(Vector2(body.global_position.x, body.global_position.z))
 	OceanWaves.apply(sea.material_override as ShaderMaterial, origin, _sea_clock())
+
+
+# Under the island, not the sea (Dave 20 Nov 2026: a tunnel dug below sea level hit water): the baked ground round p is above sea level
+# (fog_ground.gd under_land, a lookup in the window the server already sends). False until that window has come: the old rule.
+func _under_land(p: Vector3) -> bool:
+	return weather_look != null and weather_look.fog_ground.under_land(p.x, p.z)
+
+
+# The sea plane is not drawn under the island, so a tunnel below 0 m shows no sheet of sea across it: the window's ground ("low", the
+# lowest within 64 m) goes to the sea shader as a small texture (water_material.gd land_low), made again only when a new window comes.
+var _sea_land_grid: Dictionary = {}
+
+
+func _mask_sea_under_land() -> void:
+	if weather_look == null or is_same(weather_look.fog_ground.grid, _sea_land_grid):
+		return
+
+	_sea_land_grid = weather_look.fog_ground.grid
+	var material: ShaderMaterial = sea.material_override as ShaderMaterial
+
+	if _sea_land_grid.is_empty():
+		material.set_shader_parameter("land_on", 0.0)
+		return
+
+	var n: int = int(_sea_land_grid["n"])
+	var low: PackedFloat32Array = _sea_land_grid["low"]
+	material.set_shader_parameter("land_low", ImageTexture.create_from_image(Image.create_from_data(n, n, false, Image.FORMAT_RF, low.to_byte_array())))
+	material.set_shader_parameter("land_origin", _sea_land_grid["origin"])
+	material.set_shader_parameter("land_size_m", float(n) * FogGroundScript.CELL_M)
+	material.set_shader_parameter("land_above_m", FogGroundScript.LAND_ABOVE_M)
+	material.set_shader_parameter("land_on", 1.0)
 
 
 # The sea clock (s): this client's own (M5 second step; a shared server clock comes with the boats, M7).
@@ -5348,7 +5408,10 @@ func _water_here() -> Dictionary:
 		if not is_nan(pool):
 			surface = pool
 
-	if is_nan(surface) and here.y > 2.0:
+	# Under the island the sea is not there (_under_land): only a lake, river or cave pool counts.
+	var land: bool = _under_land(here)
+
+	if is_nan(surface) and (here.y > 2.0 or land):
 		return {}
 
 	# The bed under a swimmer or wader hardly changes from frame to frame: one ray down per 0.25 m moved or 150 ms, not one per frame.
@@ -5363,6 +5426,9 @@ func _water_here() -> Dictionary:
 		_water_ground = ground
 		_water_ground_msec = now
 		_water_ground_at = Vector2(here.x, here.z)
+
+	if land:
+		return {"surface": surface, "ground": ground}
 
 	return SwimScript.water_at(here.y, surface, ground, _sea_height_at(here))   # a swimmer in the sea rides the swell (M5)
 
@@ -7214,24 +7280,27 @@ func _update_underwater() -> void:
 	# view turned blue with nothing drawn. The highest wet corner of an 8 m square (water_level_at)
 	# is the top of the film, tens of m above the eye. Now the blended surface at the eye's own
 	# spot, and the water there must be deeper than a film.
-	var surface: float = flora.water_surface_at(eye.x, eye.z) if eye.y >= 0.0 else NAN
+	# Under the island (_under_land, Dave 20 Nov 2026) below 0 m is no sea, so a lake's or cave pool's water there is read too.
+	var land: bool = _under_land(eye)
+	var surface: float = flora.water_surface_at(eye.x, eye.z) if eye.y >= 0.0 or land else NAN
 
 	# Dino's cave retake 5 Nov 2026 (x 52107 z 70264): 2.6 m over the cave mouth's floor the view was under water. The water grid's level there is
 	# the film on the hillside over the cave roof, 1 m above the eye, and the ray down from the eye found the cave floor 3.7 m under that level.
 	if not is_nan(surface) and eye.y < surface and _rock_over(eye, surface):
 		surface = NAN
 
-	if eye.y >= 0.0 and (is_nan(surface) or surface < eye.y - 3.0) and _cave_streams != null:
+	if (eye.y >= 0.0 or land) and (is_nan(surface) or surface < eye.y - 3.0) and _cave_streams != null:
 		var pool: float = _cave_streams.pool_surface_at(eye)   # a spring cave's deep pool (BUG-008)
 
 		if not is_nan(pool):
 			surface = pool
 
 	# The sea's surface at the eye is the swell's (M5): a crest over the eye is under water, but only where the ground is under the sea.
+	# Under the island (_under_land) there is no sea below 0 m: a deep tunnel is dry (Dave 20 Nov 2026).
 	var sea_y: float = _sea_height_at(eye)
-	var under: bool = eye.y < minf(sea_y, 0.0)
+	var under: bool = not land and eye.y < minf(sea_y, 0.0)
 
-	if not under and eye.y < sea_y:
+	if not under and not land and eye.y < sea_y:
 		var bed: float = _ground_below(eye)
 		under = is_nan(bed) or bed < 0.0   # no ground found: open deep sea
 

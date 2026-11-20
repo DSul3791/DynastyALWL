@@ -78,7 +78,7 @@
 			"stack": 1,
 			"unstackable": true,
 			"look_alikes": [],
-			"value": 8
+			"value": 9
 		},
 		"wooden_spear": {"number": 10, "name": "Wooden - Spear", "description": "A sharpened stick. Jab with it or throw it.", "kind": "weapon", "weapon_class": "spear", "tier": 1, "stack": 1, "unstackable": true, "damage": 6.0, "throw_damage": 5.0, "durability": 300, "look_alikes": [], "repair": [["stick", 1]], "value": 5, "damage_mode": "piercing"},
 		"stone_knife": {

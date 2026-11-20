@@ -85,8 +85,8 @@ func update(delta: float, body: CharacterBody3D, flying: bool, underwater: bool)
 	var feet: Vector3 = body.global_position - Vector3(0.0, SoundStage.FEET_M, 0.0)
 	var level: float = _stage.water_level_at(feet)
 
-	if feet.y < 0.0 and (is_nan(level) or level < 0.0):
-		level = 0.0                                              # the sea
+	if feet.y < 0.0 and (is_nan(level) or level < 0.0) and _stage.sea_below(feet):
+		level = 0.0                                              # the sea, not a dry tunnel under the island
 
 	var immersion: float = level - feet.y if not is_nan(level) else -1.0
 

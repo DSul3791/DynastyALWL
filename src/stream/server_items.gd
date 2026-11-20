@@ -196,6 +196,7 @@ var ore_near: Callable           # (position, reach in metres, ore names wanted,
 var bog_deposit_at: Callable     # (x, z, digging.json bog_iron) -> BogIron.deposit_at on the baked tile there ({} when none); set by the server scene (unset: no bog iron)
 var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
+var drink_water_near: Callable   # (a player's position, reach) -> as water_near, and the water no more than DrinkRules.REACH_DROP_M below the feet (unset: water_near)
 var water_source: Callable       # (position, reach in metres) -> Array of DrinkRules rows within reach (springs, brooks, lakes, salt); vitals.json thirst.sources (docs/design/drinking_water_design.md)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var send_chest_info: Callable   # (peer, world id, keep_out, may_set): the open container's "keep out" tick and whether this player may change it (protocol 98)
@@ -4987,7 +4988,7 @@ func take_fill_item(peer: int, name: String) -> int:
 
 # Dig under trees (job 85, drops.json "dig_fell"): every standing tree near the new hole whose support is now thin enough falls
 # away from the hole, already in its logs (_fell_record).
-func _fell_undermined(peer: int, at: Vector3) -> void:
+func _fell_undermined(_peer: int, at: Vector3) -> void:
 	var cfg: Dictionary = _drops.get("dig_fell", {})
 
 	if cfg.is_empty() or not trees_near.is_valid() or not dig_support.is_valid() or not tree_info.is_valid() or not cut_tree.is_valid():
@@ -8862,7 +8863,15 @@ func _water_at_hand(peer: int, inv) -> bool:
 	var thirst: Dictionary = _vitals_cfg.get("thirst", {})
 	var reach: float = float(thirst.get("reach_m", 3.0))
 	var pos: Vector3 = _peer_pos[peer]
-	return _tank_near(pos, reach) >= 0 or (water_near.is_valid() and bool(water_near.call(pos, reach))) or _record_water_near(peer, thirst)
+	return _tank_near(pos, reach) >= 0 or _drink_water_near(pos, reach) or _record_water_near(peer, thirst)
+
+
+# Water a player at pos can drink or fill from: within reach, and not down a bank or cliff (drink_water_near; water_near where the scene sets none).
+func _drink_water_near(pos: Vector3, reach: float) -> bool:
+	if drink_water_near.is_valid():
+		return bool(drink_water_near.call(pos, reach))
+
+	return water_near.is_valid() and bool(water_near.call(pos, reach))
 
 
 # Every slow tick: each job's work goes on (seat_speed times faster sitting on a seat at a whetstone); a finished tool gets its sharpness back and
@@ -9403,8 +9412,6 @@ func _maybe_sapling(stump: Dictionary, planted_at: float = -1.0) -> void:
 		return
 
 	var tree: Dictionary = stump["tree"]
-	var chunk: Vector2i = Vector2i(int(tree["chunk"][0]), int(tree["chunk"][1]))
-
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash(Vector3i(int(stump["pos"].x), int(stump["pos"].z), world_seed))
 
@@ -11206,14 +11213,14 @@ func _ground_take(number: int, want: int, at: Vector3, radius: float) -> int:
 			break
 
 		var g: Dictionary = _items[gid]
-		var take: int = mini(int(g["count"]), want - taken)
+		var took: int = mini(int(g["count"]), want - taken)
 
-		if take >= int(g["count"]):
+		if took >= int(g["count"]):
 			_items.erase(gid)
 		else:
-			g["count"] = int(g["count"]) - take
+			g["count"] = int(g["count"]) - took
 
-		taken += take
+		taken += took
 
 	return taken
 
@@ -12512,7 +12519,7 @@ func _sync_fire_from_box(peer: int, id: int) -> void:
 		var size: String = ["small", "medium", "large"][_fire_tier_of_state(int(fire["state"]) if fire_is_lit(int(fire["state"])) else _fire_best_state(fire)) - 1]
 
 		if peer > 0:   # 0: a station drew fuel from it by itself (fuel_taken), nobody to tell
-			_say(peer, "Wood on the fire: %d:%02d:%02d of burn time, a %s fire." % [secs / 3600, (secs / 60) % 60, secs % 60, size])
+			_say(peer, "Wood on the fire: %d:%02d:%02d of burn time, a %s fire." % [floori(secs / 3600.0), floori(secs / 60.0) % 60, secs % 60, size])
 
 	_dirty = true
 
@@ -12523,7 +12530,7 @@ func _fire_takes(item_id: String) -> bool:
 
 
 # Once every couple of seconds: wood in the store feeds a fire that is nearly out (or loads a cold one), and raw food on a lit fire cooks, one item per box_cook_s.
-func _tend_fire(id: int, it: Dictionary, fire: Dictionary, delta: float) -> void:
+func _tend_fire(id: int, _it: Dictionary, fire: Dictionary, delta: float) -> void:
 	if not fire.has("uid") or not _chests.has(int(fire["uid"])):
 		return
 
@@ -12534,7 +12541,6 @@ func _tend_fire(id: int, it: Dictionary, fire: Dictionary, delta: float) -> void
 
 	fire["tend"] = 2.0
 	var box = _chests[int(fire["uid"])]
-	var state: int = int(fire["state"])
 
 	if not fire_is_lit(int(fire["state"])):
 		return
@@ -19155,8 +19161,8 @@ func plant_grid(peer: int, inv, held_slot: int, number: int, code: int, at: Vect
 		_hoe_check_ms[peer] = now
 
 	code = code % 10000000
-	var reply := func(state: int, why: String, cells: PackedByteArray) -> void:
-		_hoe_verdict(peer, Net.ACT_PLANT_GRID, code, at, state, why, cells)
+	var reply := func(state: int, why: String, marks: PackedByteArray) -> void:
+		_hoe_verdict(peer, Net.ACT_PLANT_GRID, code, at, state, why, marks)
 
 		if not check and why != "":
 			_say(peer, why)
@@ -19389,7 +19395,7 @@ func water_bed(peer: int, inv, bed_id: int, held: int = -1) -> bool:
 
 # Compost on the bed: +20 percent growth for this crop. When the "fertiliser" ingredient group exists (Jamie, Part C: compost or bonemeal),
 # any of its members does; the pack's has/remove follow the group.
-func compost_bed(peer: int, inv, bed_id: int) -> bool:
+func compost_bed(_peer: int, inv, bed_id: int) -> bool:
 	var bed: Dictionary = _bed_at(bed_id)
 	var crop: Dictionary = {}
 
@@ -20240,8 +20246,8 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 			return _hint_count(st, "made:stone_axe") >= 1
 		"tree_down":
 			return _hint_count(st, "event:tree_felled") >= 1
-		"6_sticks_6_stones":
-			return inv.count_of(table.number_of("stick")) >= 6 and inv.count_of(table.number_of("stone")) >= 6
+		"6_sticks_16_stones":
+			return inv.count_of(table.number_of("stick")) >= 6 and inv.count_of(table.number_of("stone")) >= 16
 		"kit_made":
 			return _hint_count(st, "made:campfire_kit") >= 1
 		"fire_placed":
@@ -20892,24 +20898,23 @@ func _pull_nearby_logs(peer: int, inv, want: int, group_id: String = "log") -> i
 		return 0
 
 	var moved: int = 0
-	var key: String = str(_peer_key.get(peer, ""))
 
 	for row in _ground_logs_near(peer, group_id):
 		if moved >= want:
 			break
 
 		var it: Dictionary = _items.get(int(row[0]), {})
-		var take: int = mini(int(row[1]), want - moved)
+		var took: int = mini(int(row[1]), want - moved)
 
-		if it.is_empty() or inv.add(int(it["number"]), take, 0, it.get("inst", {})) > 0:
+		if it.is_empty() or inv.add(int(it["number"]), took, 0, it.get("inst", {})) > 0:
 			continue
 
-		if int(it["count"]) > take:
-			it["count"] = int(it["count"]) - take
+		if int(it["count"]) > took:
+			it["count"] = int(it["count"]) - took
 		else:
 			_items.erase(int(row[0]))
 
-		moved += take
+		moved += took
 
 	if moved > 0:
 		_dirty = true
@@ -22364,15 +22369,15 @@ func _queue_with_parts(peer: int, inv, queue: Dictionary, recipe_number: int, co
 			chain = maxi(chain, int(entry[4]) + 1)
 
 	for step in steps:
-		var take: Array = (step["take"] as Array).duplicate(true)
+		var needs: Array = (step["take"] as Array).duplicate(true)
 		var held: Array = []
 
-		for need in take:
+		for need in needs:
 			held.append([])
 			_stock_take(inv, int(need[0]), int(need[1]) * int(step["count"]), stock, held[held.size() - 1])
 
-		_hold_insts(take, held)
-		entries.append([int(step["recipe"]), int(step["count"]), take, (step["deferred"] as Array).duplicate(true), chain])
+		_hold_insts(needs, held)
+		entries.append([int(step["recipe"]), int(step["count"]), needs, (step["deferred"] as Array).duplicate(true), chain])
 
 	_dirty = true
 	_sync_craft_queue(peer)
@@ -23740,7 +23745,7 @@ func _drink_water(peer: int, slot: int = -1, inv = null) -> void:
 		_drink_from_tank(peer, slot, inv, tank, v, thirst, now)
 		return
 
-	var shown: bool = water_near.is_valid() and bool(water_near.call(_peer_pos[peer], float(thirst.get("reach_m", 3.0))))
+	var shown: bool = _drink_water_near(_peer_pos[peer], float(thirst.get("reach_m", 3.0)))
 
 	# The record's water counts too where the settled water does not show it (docs/design/drink_prompt_design.md (a)): a ground spring head, a narrow
 	# brook. The rule below then says whether it runs (_drink_source_ok: "The bed is dry", frozen, salt).
