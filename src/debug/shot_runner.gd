@@ -133,7 +133,7 @@ var animal_role: String = "0"     # --shot-animal-role=R: the row plays that rol
 var _animals_t: int = 0
 var flora_names: PackedStringArray = PackedStringArray()    # --shot-flora=raspberry,bramble: one plant of each in a row with name tags
 var _flora_t: int = 0
-var frametime_s: float = 0.0             # --shot-frametime=SECONDS: after a 10 s warm-up, measure frame times this long and print one "shot runner: frametime" line
+var frametime_s: float = 0.0             # --shot-frametime=SECONDS: once the first shot has landed, measure frame times this long and print one "shot runner: frametime" line
 var quality_set: int = -1                # --shot-quality=0..3 (0 = Low): set before the measurement
 var _frame_times: PackedFloat32Array = PackedFloat32Array()
 var _frame_state: int = 0                # 0 waiting, 1 measuring, 2 printed
@@ -505,17 +505,19 @@ func _process(delta: float) -> void:
 	# the body dropped). The server says where the ground is (protocol 45, the generator's surface; the client's own reading if it does not answer); the
 	# body is held there (flying: no gravity, so ground that has not loaded cannot be fallen through) and the client builds the ground under it first.
 	if not _started:
-		if shot_pos.y >= 0.0 and is_nan(_surface_y) and now - _ground_wait_msec < SURFACE_WAIT_MS:
+		var start_ground: float = _surface_y if not is_nan(_surface_y) else ground_here
+
+		# Asked again until it answers; after SURFACE_WAIT_MS the client's own reading is used, which only exists near where the body stands (the spawn).
+		if shot_pos.y >= 0.0 and is_nan(_surface_y):
 			if now - _surface_asked_msec >= SURFACE_ASK_MS:
 				_surface_asked_msec = now
 				client.net.request_surface.rpc_id(1, shot_pos.x, shot_pos.z)
 
-			return
+			if now - _ground_wait_msec < SURFACE_WAIT_MS or (is_nan(start_ground) and now - _ground_wait_msec < 300000):
+				return
 
-		var start_ground: float = _surface_y if not is_nan(_surface_y) else ground_here
-
-		if shot_pos.y >= 0.0 and is_nan(start_ground) and now - _ground_wait_msec < 300000:
-			return
+			if is_nan(start_ground):
+				print("shot runner: FAILED %s: no ground height at %.0f,%.0f in 300 s (the server never answered); its height is taken as absolute" % [shots[_index]["name"], shot_pos.x, shot_pos.z])
 
 		_started = true
 		_placed_ground = start_ground if shot_pos.y >= 0.0 else NAN
@@ -2007,7 +2009,7 @@ func _ground(x: float, z: float, from_y: float = 1500.0) -> float:
 const GUARD_ABOVE_M := 1.0
 const START_ABOVE_M := 1.0      # a shot starts this high over the ground at its spot while the ground there loads (Dave 20 Nov 2026)
 const SURFACE_ASK_MS := 2000    # the ground height is asked of the server again this often until it answers
-const SURFACE_WAIT_MS := 20000  # after this long without an answer the client's own ground reading is used
+const SURFACE_WAIT_MS := 20000  # after this long without an answer the client's own ground reading is used (it reads only near the body)
 const RECHECK_M := 1.0   # a shot's ground reading that moves more than this after the settle places the shot again
 const RECHECK_MAX := 4   # at most this many re-placements per shot: the reading can step down more than once as finer blocks load (383, 343, 335)
 

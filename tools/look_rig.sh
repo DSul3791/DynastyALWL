@@ -38,7 +38,7 @@
 #   Every run ends with "rig: N picture(s) in T s"; no picture saved is a FAIL (exit 4).
 #   --server-arg ARG  pass one extra argument to the throwaway server (repeat), e.g. --server-arg --water2 (Dynasty water)
 #   --client-arg ARG  pass one extra argument to the client (repeat the option), e.g. --client-arg --generated-body
-#   Every shot starts 1 m above the real ground at its spot (the server's ground height there), held until the ground under it loads, then goes to --agl (Dave 20 Nov 2026: never from high in the air).
+#   Every shot (but aerial, over 40 m, and absolute-height ones, which start at their own height) starts 1 m above the real ground at its spot (the server's ground height there), held until the ground under it loads, then goes to --agl (Dave 20 Nov 2026: never from high in the air).
 # Runs a throwaway server (own store, --open-admin) and a windowed client with its own APPDATA, so Dave's saves, hotbar and
 # display settings are never read or written. PNGs go to --out (default E:/Software/godotDev/DynastyALWL_Evidence/shots).
 # Close Dave's game first only if the PC is short of RAM; the rig runs beside it. Needs Git bash and GODOT_EXE (default below).
