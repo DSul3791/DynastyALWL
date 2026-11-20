@@ -3630,7 +3630,7 @@ static func carving_station() -> Node3D:
 	return root
 
 
-# The Smoker, 1.2 x 1.2 (16 Stone, 6 Clay): a small stone smokehouse, a clay-sealed slab roof with a short flue, a plank door at the front and the low
+# The Smoker, 1.2 x 1.2 (32 Stone, 6 Clay): a small stone smokehouse, a clay-sealed slab roof with a short flue, a plank door at the front and the low
 # firebox mouth under it, smoke-blackened round its edges.
 static func smoker() -> Node3D:
 	_tier_materials()
@@ -3754,7 +3754,7 @@ static func mortar_pestle() -> Node3D:
 	return root
 
 
-# The Oil press, 1.2 x 1.2 (12 Stone, 4 Log): a round stone basin with a press stone in it, a heavy log beam pivoting on a post at the back and weighted
+# The Oil press, 1.2 x 1.2 (24 Stone, 4 Log): a round stone basin with a press stone in it, a heavy log beam pivoting on a post at the back and weighted
 # with a stone at its far end, and a spout at the front over a small pot.
 static func oil_press() -> Node3D:
 	_tier_materials()

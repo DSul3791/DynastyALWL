@@ -240,13 +240,13 @@ func _init() -> void:
 	inv.add(leather, 1)
 	put_on(items, leather)
 	inv.add(axe, 40)     # unstackable: 40 slots, 40 kg
-	inv.add(stone, 25)   # 25 kg more: 65 kg, over the plain 52.5 and under 52.5 + 15 = 67.5 (a worn backpack's own weight is not counted)
+	inv.add(stone, 50)   # 25 kg more (50 stones of 0.5 kg, Dave 19 Nov 2026): 65 kg, over the plain 52.5 and under 52.5 + 15 = 67.5 (a worn backpack's own weight is not counted)
 	var axes: int = total(items, axe)
 	var stones: int = total(items, stone)
 	var packs: int = total(items, leather)
 	var worn_state: Array = measure(items)
 	var kg_worn: float = items.carried_kg_of(1)
-	check(axes == 40 and stones == 25 and packs == 1 and worn_state[0] > 30 and kg_worn > bare[2] and kg_worn < worn_state[2], "near capacity worn: %d slots, %.1f kg carried, between the plain limit %.1f and the backpack's %.1f" % [worn_state[0], kg_worn, bare[2], worn_state[2]])
+	check(axes == 40 and stones == 50 and packs == 1 and worn_state[0] > 30 and kg_worn > bare[2] and kg_worn < worn_state[2], "near capacity worn: %d slots, %.1f kg carried, between the plain limit %.1f and the backpack's %.1f" % [worn_state[0], kg_worn, bare[2], worn_state[2]])
 	var room: int = items._fit(1, inv, stone, 50)
 	check(room > 0 and room < 50 and room == int((worn_state[2] - kg_worn) / CarryRules.weight_of("stone", cfg)), "the server's room for more is what is left under the backpack's limit (%d stone)" % room)
 	notices.clear()
@@ -255,7 +255,7 @@ func _init() -> void:
 	items._carry_notice(1)
 	var after: Array = measure(items)
 	print("INFO near capacity unworn: slots %d, usable %d, limit %.2f kg, comfortable %.2f kg, carried %.2f kg" % [after[0], after[1], after[2], after[3], items.carried_kg_of(1)])
-	check(total(items, axe) == axes and total(items, stone) == stones and total(items, leather) == packs and inv.count_of(leather) == 1 and items.worn_of(1)[back_place(items)] == 0, "taking the backpack off near capacity loses and doubles nothing (40 axes, 25 stones, 1 backpack, now in the pack)")
+	check(total(items, axe) == axes and total(items, stone) == stones and total(items, leather) == packs and inv.count_of(leather) == 1 and items.worn_of(1)[back_place(items)] == 0, "taking the backpack off near capacity loses and doubles nothing (40 axes, 50 stones, 1 backpack, now in the pack)")
 	var occupied: int = 0
 
 	for slot in inv.slot_count:

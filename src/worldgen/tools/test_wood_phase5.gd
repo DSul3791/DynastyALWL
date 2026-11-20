@@ -326,9 +326,9 @@ func cargo_checks() -> void:
 	put(wagon, "log_oak", 1)
 	check(in_box(wagon, "lumber") == 2 and in_box(wagon, "log_oak") == 1, "the wagon takes anything: Planks and a log")
 	empty(wagon)
-	box(wagon).add(n("stone"), 300)
+	box(wagon).add(n("stone"), 600)   # 300 kg of 0.5 kg stones (Dave 19 Nov 2026)
 	put(wagon, "stone", 1)
-	check(in_box(wagon, "stone") == 300 and items.inventory_of(1).count_of(n("stone")) == 1 and items._carts.room_kg(wagon) < 0.01 and str(said.get(1, "")) == "The wagon cannot carry more.", "300 kg of stone fill the wagon; one more stays in the pack, and the wagon says so (%s)" % str(said.get(1, "")))
+	check(in_box(wagon, "stone") == 600 and items.inventory_of(1).count_of(n("stone")) == 1 and items._carts.room_kg(wagon) < 0.01 and str(said.get(1, "")) == "The wagon cannot carry more.", "300 kg of stone fill the wagon; one more stays in the pack, and the wagon says so (%s)" % str(said.get(1, "")))
 	clear_pack()
 
 
@@ -356,7 +356,7 @@ func crate_checks() -> void:
 	said.erase(1)
 	act(Net.ACT_PICKUP, items._carts.riders_of(wagon)[0])
 	check(str(said.get(1, "")) == "Set it down off the wagon first.", "a crate on the wagon must be set down before it is taken apart (%s)" % str(said.get(1, "")))
-	box(wagon).add(n("stone"), 230)   # 70 kg of crates and 230 kg of stone: the wagon is full, the crate on it is not
+	box(wagon).add(n("stone"), 460)   # 70 kg of crates and 230 kg of stone (460 of 0.5 kg): the wagon is full, the crate on it is not
 	put(items._carts.riders_of(wagon)[0], "stone", 1)
 	check(str(said.get(1, "")) == "The wagon cannot carry more." and items.inventory_of(1).count_of(n("stone")) == 1, "a crate riding on the full wagon refuses more with the wagon's message (%s)" % str(said.get(1, "")))
 
@@ -366,20 +366,20 @@ func old_save_checks() -> void:
 	clear_pack()
 	items.report_position(1, Vector3(198.5, 10.0, 30.0))
 	var cart: int = place("handcart", 200.0, 30.0)
-	box(cart).add(n("stone"), 150)
+	box(cart).add(n("stone"), 300)   # 150 kg of 0.5 kg stones
 	put(cart, "stone", 1)
-	check(in_box(cart, "stone") == 150 and items.inventory_of(1).count_of(n("stone")) == 1 and items._carts.room_kg(cart) == 0.0 and str(said.get(1, "")) == "The handcart cannot carry more.", "a Handcart holding 150 kg refuses a put and says so (%s)" % str(said.get(1, "")))
+	check(in_box(cart, "stone") == 300 and items.inventory_of(1).count_of(n("stone")) == 1 and items._carts.room_kg(cart) == 0.0 and str(said.get(1, "")) == "The handcart cannot carry more.", "a Handcart holding 150 kg refuses a put and says so (%s)" % str(said.get(1, "")))
 	act(Net.ACT_CHEST_TAKE, box(cart).numbers.find(n("stone")), cart, 1)
-	check(in_box(cart, "stone") == 149 and items.inventory_of(1).count_of(n("stone")) == 2, "but a take still works")
+	check(in_box(cart, "stone") == 299 and items.inventory_of(1).count_of(n("stone")) == 2, "but a take still works")
 	check(pace_on(cart, "loam") > 0, "grabbing it gives a pace above 0 (%.1f m/s)" % [float(int(pulls.get(1, [0, 0])[1])) / 10.0])
 	items._carts.release(1, "")
 	clear_pack()
 	said.erase(1)
 	act(Net.ACT_PICKUP, cart)
-	check(items._items.has(cart) and in_box(cart, "stone") == 149 and str(said.get(1, "")).begins_with("Empty the handcart first"), "taking it down with a load the player cannot carry does nothing, as before (%s)" % str(said.get(1, "")))
-	box(cart).remove(n("stone"), 129)
+	check(items._items.has(cart) and in_box(cart, "stone") == 299 and str(said.get(1, "")).begins_with("Empty the handcart first"), "taking it down with a load the player cannot carry does nothing, as before (%s)" % str(said.get(1, "")))
+	box(cart).remove(n("stone"), 259)
 	act(Net.ACT_PICKUP, cart)
-	check(not items._items.has(cart) and items.inventory_of(1).count_of(n("stone")) == 20 and items.inventory_of(1).count_of(n("axle")) == 1, "with 20 kg left it comes apart: the cargo and every part are in the pack")
+	check(not items._items.has(cart) and items.inventory_of(1).count_of(n("stone")) == 40 and items.inventory_of(1).count_of(n("axle")) == 1, "with 20 kg left it comes apart: the cargo and every part are in the pack")
 	clear_pack()
 
 

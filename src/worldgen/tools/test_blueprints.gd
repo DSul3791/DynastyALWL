@@ -301,7 +301,7 @@ func _init() -> void:
 	_give(1, "stone_hammer", 1)
 	_give(1, "brick", 24)
 	_give(1, "clay", 10)
-	_give(1, "stone", 8)
+	_give(1, "stone", 16)   # hearth 8 + oven 16 stone of 0.5 kg (Dave 19 Nov 2026), half for each
 	items.report_position(1, Vector3(230.0, 10.0, 230.0))
 	var oven_bp: Dictionary = live["oven"]
 	var hearth_bp: Dictionary = live["clay_hearth"]
@@ -313,7 +313,7 @@ func _init() -> void:
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(hearth_bp["number"]), 0, 0, Vector3(230.0, 10.0, 233.0))
 	check(_ids_standing("clay_hearth").size() == 1 and items._items[_ids_standing("clay_hearth")[0]]["struct"].has("site") and _have(1, "brick") == 24 and not items.station_near(1, "campfire"), "placed, the hearth is a site: it takes nothing and cooks nothing")
 	HeldTool.hit_site(items, HeldTool.site_of(items, "clay_hearth"))
-	check(_ids_standing("clay_hearth").size() == 1 and _have(1, "brick") == 14 and _have(1, "clay") == 4 and _have(1, "stone") == 4, "a hammer hit and the hearth stands for 10 brick, 6 clay, 4 stone")
+	check(_ids_standing("clay_hearth").size() == 1 and _have(1, "brick") == 14 and _have(1, "clay") == 4 and _have(1, "stone") == 8, "a hammer hit and the hearth stands for 10 brick, 6 clay, 8 stone")
 	check(items.station_near(1, "clay_hearth", 2) and items.station_near(1, "campfire") and not items.station_near(1, "oven", 3), "a hearth cooks what a campfire cooks, not oven dishes")
 	var dish_nums: Dictionary = {}
 
@@ -332,10 +332,10 @@ func _init() -> void:
 	items.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
 	_give(1, "brick", 10)
 	_give(1, "clay", 6)
-	_give(1, "stone", 4)
+	_give(1, "stone", 8)
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(oven_bp["number"]), 0, 0, Vector3(234.0, 10.0, 230.0))
 	HeldTool.hit_site(items, HeldTool.site_of(items, "oven"))   # placing sets down a site; the hammer hit fills it
-	check(_ids_standing("oven").size() == 1 and _have(1, "brick") == 0 and _have(1, "clay") == 0 and _have(1, "stone") == 0, "with a hearth near the oven is placed and hammered up for 24 brick, 10 clay, 8 stone")
+	check(_ids_standing("oven").size() == 1 and _have(1, "brick") == 0 and _have(1, "clay") == 0 and _have(1, "stone") == 0, "with a hearth near the oven is placed and hammered up for 24 brick, 10 clay, 16 stone")
 	check(items.station_near(1, "oven", 3) and items.station_near(1, "clay_hearth", 2) and items.station_near(1, "campfire"), "an oven cooks what a hearth and a campfire cook")
 	items._last_queue_act.clear()
 	items.action(1, Net.ACT_CRAFT_QUEUE, int(dish_nums["cook_honey_loaf"]), 0, 1, CraftHand.at(items, 1, int(dish_nums["cook_honey_loaf"])))
