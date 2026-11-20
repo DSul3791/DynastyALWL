@@ -78,7 +78,6 @@ func _run() -> void:
 	root.size = Vector2i(1920, 1080)
 	var screen: Control = Creator.instantiate()
 	root.add_child(screen)
-	screen.turntable = false
 	await _frames(10)
 	screen.set_frame("feminine")
 	screen._name_field.text = "Wren Ash"

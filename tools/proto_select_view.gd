@@ -49,7 +49,6 @@ func _run() -> void:
 	# 0 characters: the page hands over to the creator; "Save and play" asks for a name.
 	var creator: Control = Creator.instantiate()
 	root.add_child(creator)
-	creator.turntable = false
 	await _frames(10)
 	creator._body.rotation_degrees.y = 180.0
 	creator._ask_name()
