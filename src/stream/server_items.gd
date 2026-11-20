@@ -1094,13 +1094,13 @@ func _cone_radius_of(number: int, count: int) -> float:
 	return PileRules.cone_radius(count, CarryRules.weight_of(table.id_of(number), _carry_cfg), float(pile["density_kg_m3"]))
 
 
+const PILE_BLOCK_REACH_M := 30.0   # the widest thing that can stop a pile reaches this far past its own centre (a big building's half or a 5 m boulder)
+
+
 # True when a cone pile of `radius` round `centre` would reach into a building or solid object (Dave 19 Nov 2026, PLAN.md 5b: "if it hits a
 # building or solid object it has to stop ... it cant go into a building through the wall"): a placed structure's footprint, a boulder or a
 # fire. Trees and bushes are not checked (the pile is shaped round them), nor road and path patches or garden plots ("roads shouldnt effect
 # them at all"). `self_id` is the pile itself.
-const PILE_BLOCK_REACH_M := 30.0   # the widest thing that can stop a pile reaches this far past its own centre (a big building's half or a 5 m boulder)
-
-
 func _pile_blocked(centre: Vector3, radius: float, self_id: int) -> bool:
 	for id in _ids_near(centre, radius + PILE_BLOCK_REACH_M):   # the sync grid's cells, not every record (gate review PR #1322: the cost per dropped stone)
 		if id == self_id or not _items.has(id):

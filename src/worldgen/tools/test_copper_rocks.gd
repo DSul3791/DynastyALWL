@@ -219,6 +219,8 @@ func _init() -> void:
 	print("mined: grade 0.2 gave %d ore of %d pieces, grade 0.6 gave %d of %d" % [got[0][0], got[0][1], got[1][0], got[1][1]])
 	check(got[0][1] > 100 and got[1][1] > 100 and got[1][0] > got[0][0] * 2, "a richer rock gives more copper (%d against %d)" % [got[1][0], got[0][0]])
 	# Ore by weight (boulders PLAN.md 3c, 19 Nov 2026): a 1.5 kg ore piece takes 3 stones of 0.5 kg out of the rock, so the grade is the share of the rock's weight.
+	# At grade 0.2 a piece is ore about 1 roll in 13 (p = g / (3 (1 - g) + g)), so 200 rolls give about 15 +- 4 ore; the bound sits at about 3 sd
+	# so the unseeded luck roll does not fail it 1 run in 50 (gate review PR #1322).
 	var rate_low: float = float(got[0][0] * 3) / float(maxi(got[0][1] + got[0][0] * 2, 1))
 	check(rate_low > 0.06 and rate_low < 0.4, "a grade 0.2 rock gives about a fifth of its weight as copper (%.2f)" % rate_low)
 
