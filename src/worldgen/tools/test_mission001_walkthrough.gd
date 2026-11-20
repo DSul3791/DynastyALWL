@@ -348,21 +348,21 @@ func feed(place: String, firewood: int) -> void:
 		items.action(1, Net.ACT_LIGHT, fire, 0, 0, Vector3.ZERO)
 
 
-# Bog iron dug with the shovel along the bog until the pack holds `ore_n` Iron ore (or the bog runs out).
+# Bog iron dug with the shovel along the bog until the pack holds `ore_n` Bog iron ore (or the bog runs out).
 func dig_ore(ore_n: int) -> void:
 	var dry: int = 0
 
 	for k in range(ore_n * 20):
-		if have("iron_ore") >= ore_n or bog_cell > 40:
+		if have("bog_iron_ore") >= ore_n or bog_cell > 40:
 			break
 
 		var spot: Vector3 = BOG + Vector3(10.0 * float(bog_cell) + 5.0, 0.0, 0.0)
 		go(spot)
-		var before: int = have("iron_ore")
+		var before: int = have("bog_iron_ore")
 		items._last_dig.clear()
 		items.action(1, Net.ACT_DIG, HeldTool.slot_of(items, "shovel"), 0, 0, spot + Vector3(1.0, 0.0, 0.0))
 		items.inventory_of(1).remove(n("soil"), have("soil"))   # the peat and soil dug with it are left in the bog
-		dry = dry + 1 if have("iron_ore") == before else 0
+		dry = dry + 1 if have("bog_iron_ore") == before else 0
 
 		if dry >= 3:   # this deposit is dug out: on along the bog to the next
 			bog_cell += 1
@@ -370,10 +370,10 @@ func dig_ore(ore_n: int) -> void:
 
 
 # Iron made the wilderness way (step 2's route): bog ore dug with the shovel at the forge yard, charcoal at its campfire, smelted by the Improved
-# smelter while the player works its bellows (master s2.7 items 3 and 4: 1 Iron ore makes 1 Iron ingot), a hopper and an input load at a time.
+# smelter while the player works its bellows (Dave 19 Nov 2026: 2 Bog iron ore make 1 Iron ingot), a hopper and an input load at a time.
 func make_iron(wanted: int) -> bool:
 	go(FORGE)
-	var ore_n: int = maxi(wanted - have("iron_ingot"), 0)
+	var ore_n: int = 2 * maxi(wanted - have("iron_ingot"), 0)
 
 	if ore_n == 0:
 		return true
@@ -385,42 +385,43 @@ func make_iron(wanted: int) -> bool:
 	make_charcoal(int(ceil(per_ore * float(ore_n))))
 	var load_n: int = mini(int(smelt["input"]), int(floor(float(smelt["hopper"]) / maxf(per_ore, 0.01))))
 
-	while have("iron_ore") > 0 and smelter >= 0:
-		var ore: int = mini(have("iron_ore"), load_n)
-		var ore_before: int = have("iron_ore")
+	while have("bog_iron_ore") > 1 and smelter >= 0:
+		var ore: int = mini(have("bog_iron_ore"), load_n)
+		ore -= ore % 2   # whole ingots: two ore each
+		var ore_before: int = have("bog_iron_ore")
 		var fuel: int = mini(have("charcoal"), int(ceil(per_ore * float(ore))))
 		items.action(1, Net.ACT_CHEST_OPEN, smelter, 0, 0, Vector3.ZERO)
 		items.action(1, Net.ACT_CHEST_PUT, slot_of("charcoal"), smelter, fuel, Vector3.ZERO)
-		items.action(1, Net.ACT_CHEST_PUT, slot_of("iron_ore"), smelter, ore, Vector3.ZERO)
+		items.action(1, Net.ACT_CHEST_PUT, slot_of("bog_iron_ore"), smelter, ore, Vector3.ZERO)
 		items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
 		go((items._items[smelter]["pos"] as Vector3) + Vector3(-1.5, 0.0, 0.0))   # beside it: E reaches 3 m (use_reach_m)
 		items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E: light it (it smelts only while lit, Dave 17 Nov 2026)
 		items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E at the lit smelter: work the bellows
-		run(float(smelt["ingot_s"]) / float(smelt["bellows_speed"]) * float(ore) + 5.0)   # it goes out with its last fuel, which stops the bellows
+		run(float(smelt["ingot_s"]) / float(smelt["bellows_speed"]) * float(ore) / 2.0 + 5.0)   # it goes out with its last fuel, which stops the bellows
 		items.action(1, Net.ACT_CHEST_OPEN, smelter, 0, 0, Vector3.ZERO)
 		items.action(1, Net.ACT_BULK, ItemsScript.BULK_TAKE_ALL, 0, 0, Vector3.ZERO)
 		items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
 
-		if have("iron_ore") >= ore_before:   # nothing smelted: stop rather than loop
+		if have("bog_iron_ore") >= ore_before:   # nothing smelted: stop rather than loop
 			break
 
 	go(FORGE)
 
 	if have("iron_ingot") < wanted:
-		print("     make_iron short: ore %d of %d, charcoal %d; pack %s" % [have("iron_ore"), ore_n, have("charcoal"), pack_str()])
+		print("     make_iron short: ore %d of %d, charcoal %d; pack %s" % [have("bog_iron_ore"), ore_n, have("charcoal"), pack_str()])
 
 	return have("iron_ingot") >= wanted
 
 
-# Steel at the Advanced smelter (GOALS-REPAIR R4; master s2.7 items 7 and 8, plan P3): bog iron dug as for iron; Charcoal into its hopper by a
-# plain put, and Charcoal dragged onto an input slot as carbon (protocol 121), with the Iron ore. It runs only while the wind turns its windmill:
+# Steel at the Advanced smelter (GOALS-REPAIR R4; master s2.7 items 7 and 8, plan P3): bog iron dug as for iron, two Bog iron ore a Steel ingot
+# (smelting.jobs.bog_steel); Charcoal into its hopper by a plain put, and Charcoal dragged onto an input slot as carbon (protocol 121), with the ore. It runs only while the wind turns its windmill:
 # a calm first (nothing moves), then a working wind. The weather is put back afterwards.
 func make_steel(furnace: int, wanted: int) -> bool:
 	var def: Dictionary = items._structures["large_forge"]
 	var smelting: Dictionary = items._structures_cfg["smelting"]
 	var carbon: int = int(smelting["jobs"]["steel"].get("carbon", 0)) * wanted
-	var fuel: int = int(ceil(float(smelting.get("fuel_per_ore", 1)) * float(wanted)))
-	dig_ore(have("iron_ore") + wanted)
+	var fuel: int = int(ceil(float(smelting.get("fuel_per_ore", 1)) * float(2 * wanted)))
+	dig_ore(have("bog_iron_ore") + 2 * wanted)
 	make_charcoal(have("charcoal") + fuel + carbon + 4)   # and a few to fire the Advanced smithy
 	var at: Vector3 = (furnace_pos(furnace)) + Vector3(-2.0, 0.0, 0.0)
 	go(at)
@@ -428,13 +429,13 @@ func make_steel(furnace: int, wanted: int) -> bool:
 	items.weather_now = func(): return {"wind": Weather.wind_of_mps(float(smelting["wind_min_mps"]) * 0.5)}
 	items.action(1, Net.ACT_CHEST_OPEN, furnace, 0, 0, Vector3.ZERO)
 	items.action(1, Net.ACT_CHEST_PUT, slot_of("charcoal"), furnace, fuel, Vector3.ZERO)
-	items.action(1, Net.ACT_CHEST_PUT, slot_of("iron_ore"), furnace, wanted, Vector3.ZERO)
+	items.action(1, Net.ACT_CHEST_PUT, slot_of("bog_iron_ore"), furnace, 2 * wanted, Vector3.ZERO)
 	items.action(1, Net.ACT_CHEST_PUT, slot_of("charcoal"), furnace, carbon, Vector3(float(int(def["smelt"]["hopper_slots"]) + 1), 0.0, 0.0))   # dragged onto the first input slot
 	items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
 	items.action(1, Net.ACT_USE_STRUCT, furnace, 0, 0, Vector3.ZERO)   # E: light it (it smelts only while lit, Dave 17 Nov 2026)
 	var box = box_of(furnace)
 	run(float(def["smelt"]["ingot_s"]) * 2.0)
-	check(box.count_of(n("steel_ingot")) == 0 and box.count_of(n("iron_ore")) == wanted, "3w. in a calm the Advanced smelter's windmill stands: no steel, the ore kept")
+	check(box.count_of(n("steel_ingot")) == 0 and box.count_of(n("bog_iron_ore")) == 2 * wanted, "3w. in a calm the Advanced smelter's windmill stands: no steel, the ore kept")
 	items.weather_now = func(): return {"wind": Weather.wind_of_mps(float(smelting["wind_min_mps"]) * 1.5)}
 	run(float(def["smelt"]["ingot_s"]) / float(def["smelt"]["speed"]) * ceilf(float(wanted) / float(def["smelt"]["lanes"])) + 3.0)
 	items.weather_now = weather_was

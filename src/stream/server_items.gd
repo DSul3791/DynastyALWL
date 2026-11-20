@@ -1264,6 +1264,8 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 			inv.set_fav(a, b == 1)
 	elif kind == Net.ACT_BULK:
 		_bulk(peer, inv, a, b)
+	elif kind == Net.ACT_AUTOLOAD:
+		_autoload(peer, a, b, count == 1)
 	elif kind == Net.ACT_LITTER:
 		_pick_litter(peer, inv, at)
 	elif kind == Net.ACT_DIG:
@@ -1521,6 +1523,7 @@ func tick(delta: float) -> void:
 		_wood_tick(spent)
 		_slow_mark("spoil", t0)
 		_traps.tick(spent)
+		_autoload_tick(spent)
 		_slow_mark("learn-fish-remains-spoil-traps", t0)
 
 		_expire_items(spent)
@@ -2104,7 +2107,7 @@ static func _world_item_row(it: Dictionary, id, kinds: Dictionary, tilt_y: Dicti
 		return
 
 	if it.has("struct"):
-		items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[0]), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0)), 1 if bool(it["struct"].get("road", false)) else 0, JSON.stringify({"pitch": snappedf(float(it["struct"]["pitch"]), 0.001), "len": snappedf(float(it["struct"]["len"]), 0.001), "paid": int(it["struct"].get("paid", 1))}) if it["struct"].has("len") else ""])
+		items.append([int(it["number"]), 1, it["pos"].x, it["pos"].y, it["pos"].z, 1.0e9, int((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[0]), float(it["struct"]["yaw"]), int(it.get("wear", 0)), str(it["struct"]["kind"]), int(it["struct"].get("uid", 0)), str(it["struct"].get("owner", "")), float(it["struct"].get("born", it["struct"].get("seq", 0.0))), bool(it["struct"].get("cave", false)), int(it["struct"].get("coins", 0)), JSON.stringify(it["struct"]["site"]) if it["struct"].has("site") else "", 1 if bool(it["struct"].get("keep_out", false)) else 0, JSON.stringify(it["struct"]["lock"]) if it["struct"].has("lock") else "", int(it["struct"].get("on", 0)), int(it["struct"].get("spot", 0)), 1 if bool(it["struct"].get("road", false)) else 0, JSON.stringify({"pitch": snappedf(float(it["struct"]["pitch"]), 0.001), "len": snappedf(float(it["struct"]["len"]), 0.001), "paid": int(it["struct"].get("paid", 1))}) if it["struct"].has("len") else "", int(it["struct"].get("autoload", 0))])
 		return
 
 	var at: Vector3 = it["pos"]
@@ -6919,6 +6922,9 @@ func _load_world_items() -> void:
 
 			if row.size() > 20 and int(row[20]) == 1:
 				entry["struct"]["road"] = true   # a surveyed road's patch: the grass is kept off 2 m either side of it
+
+			if row.size() > 22 and int(row[22]) > 0 and entry["struct"].has("uid"):
+				entry["struct"]["autoload"] = int(table.current_number(int(row[22])))   # the container's standing autoload item (protocol 139)
 
 			if row.size() > 21 and typeof(row[21]) == TYPE_STRING and str(row[21]) != "":
 				var laid: Variant = JSON.parse_string(str(row[21]))   # a pipe run laid from the hand (PLUMBING_DESIGN s9): its tilt, length and the pieces it took
@@ -12344,6 +12350,7 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int, targe
 
 	if kind == Net.ACT_CHEST_OPEN:
 		_send_chest_info(peer, id)   # after the contents, so the client knows which container it is about
+		_send_autoload_info(peer, id)
 		_send_lock_info(peer, id)   # a lockable container: its lock as this player sees it (the owner's lock controls)
 		_say_cold_store(peer, id)
 
@@ -21510,6 +21517,148 @@ func _box_room(sid: int, number: int, amount: int) -> int:
 
 	var each: float = maxf(CarryRules.weight_of(table.id_of(number), _carry_cfg), 0.001)
 	return clampi(int(floor(cart_room / each + 0.0001)), 0, amount)
+
+
+# --- Autoload (Dave 19 Nov 2026: "an autoload button on carts and wagons or barrels and such ... everything on the ground around you within say
+# 30 meters in a list where you could choose an item and it would just pick up as much of it as it can until it fills the capacity or the weight
+# limit"; "maybe just have autoload with a check box beside it to make it continuously autoload every 10 minutes or something") ---
+# ACT_AUTOLOAD a = the container, b = the item (0 stops its standing autoload), count = 1 also keeps it loading that item every AUTOLOAD_EVERY_S.
+# One request, all on the server: the ground piles of that item within AUTOLOAD_M of the container go in nearest first, each pile in part when
+# only part fits, under the container's own rules (what it takes, its slots, a vehicle's payload: _box_room); which containers: StoreRules.autoloads.
+# Provisional choices AL-1 to AL-5: docs/design/AUTOLOAD.md.
+const AUTOLOAD_M := 30.0
+const AUTOLOAD_EVERY_S := 600.0       # the standing autoload's round, real seconds (Dave: "every 10 minutes or something")
+const AUTOLOAD_PRESS_MS := 250        # a player's presses are answered at most this often (each is one scan of the ground near the container)
+var _autoload_in: float = AUTOLOAD_EVERY_S
+var _autoload_pressed: Dictionary = {}   # peer -> Time.get_ticks_msec() of their last answered press
+var send_autoload_info: Callable         # (peer, world id, item number or 0): the open container's standing autoload (protocol 139)
+
+
+# Whether a world record is a container Autoload fills.
+func _autoloads(it: Dictionary) -> bool:
+	return _is_storage(it) and StoreRules.autoloads(_structures.get(str(it["struct"]["kind"]), {}))
+
+
+# A loose ground record Autoload may take: not a placed thing, a tree, a boulder, a fire, the showroom, an arrow in a tree or a piece still falling.
+func _autoload_takes_from(it: Dictionary) -> bool:
+	return not (it.has("showroom") or it.has("tilt") or it.has("fall")) and (_is_loose(it) or (it.has("scatter") and int(it.get("number", 0)) > 0))
+
+
+func _autoload(peer: int, id: int, number: int, keep: bool) -> void:
+	var now_ms: int = Time.get_ticks_msec()
+
+	if now_ms - int(_autoload_pressed.get(peer, -AUTOLOAD_PRESS_MS)) < AUTOLOAD_PRESS_MS:
+		return
+
+	_autoload_pressed[peer] = now_ms
+	var it: Dictionary = _items.get(id, {})
+	var box = _chest_of(peer, id)   # reach and access, as opening it
+
+	if box == null or not _autoloads(it):
+		return
+
+	if number <= 0:
+		it["struct"].erase("autoload")
+		_dirty = true
+		_send_autoload_info(peer, id)
+		return
+
+	if table.id_of(number) == "":
+		return   # not an item
+
+	if keep and _box_takes(str(it["struct"]["kind"]), number):
+		it["struct"]["autoload"] = number   # saved with the container (world_items.json row index 22)
+	elif int(it["struct"].get("autoload", 0)) != number:
+		it["struct"].erase("autoload")   # a one-off load of another item ends the standing one; the same item keeps it
+
+	var loaded: Array = _autoload_into(id, box, number)
+	_dirty = true
+	var noun: String = table.sentence_name(int(it["number"]))
+	var what: String = table.sentence_name(number)
+
+	if not _box_takes(str(it["struct"]["kind"]), number):
+		_say(peer, "The %s does not take %s." % [noun, what])
+	elif _barrel_water_l(id) >= BARREL_DRY_L:
+		_say(peer, "It holds water. Drink or draw it off first.")
+	elif int(loaded[0]) > 0:
+		_say(peer, "Loaded %d %s into the %s.%s" % [int(loaded[0]), what, noun, (" %d more lies nearby." % int(loaded[1])) if int(loaded[1]) > 0 else ""])
+	elif int(loaded[1]) > 0:
+		_say(peer, "The %s is full." % noun)
+	else:
+		_say(peer, "No %s lies within %d m of the %s." % [what, int(AUTOLOAD_M), noun])
+
+	_push_box(id, box)
+	_send_autoload_info(peer, id)
+
+
+# Fills container `id` (its store `box`) with `number` from the ground piles within AUTOLOAD_M, nearest first, as much as it takes.
+# Returns [how many went in, how many of it are still on the ground in range].
+func _autoload_into(id: int, box, number: int) -> Array:
+	var it: Dictionary = _items[id]
+	var here: Vector3 = it["pos"]
+	var piles: Array = []
+
+	if not _box_takes(str(it["struct"]["kind"]), number) or _barrel_water_l(id) >= BARREL_DRY_L:   # a barrel holds water or goods, never both
+		return [0, 0]
+
+	for gid in _ids_near(here, AUTOLOAD_M):   # the last world sync's cells round it, not every record in the world
+		var g: Dictionary = _items.get(gid, {})
+
+		if not g.is_empty() and int(g.get("number", 0)) == number and _autoload_takes_from(g):
+			var d: float = (g["pos"] as Vector3).distance_to(here)
+
+			if d <= AUTOLOAD_M:
+				piles.append([d, gid])
+
+	piles.sort_custom(func(p, q): return float(p[0]) < float(q[0]))
+	box.usable = _store_usable(str(it["struct"]["kind"]), box)
+	var loaded: int = 0
+	var left_near: int = 0
+	var cart_kg: float = _carts.room_kg(id) if not _carry_cfg.is_empty() else INF   # a vehicle's payload left, worked out once (riders_of looks at every record)
+	var full: bool = false
+
+	for pile in piles:
+		var g: Dictionary = _items[pile[1]]
+		var each: float = maxf(CarryRules.weight_of(table.id_of(number), _carry_cfg) + (CarryRules.bag_kg(g["inst"], table, _carry_cfg) if g.has("inst") else 0.0), 0.001) if cart_kg < INF else 0.0
+		var want: int = 0
+
+		if not full:   # a vehicle's store or a crate riding on one stops at the payload (a bag weighs with what it holds); a bin at its room
+			want = _box_room(id, number, int(g["count"])) if cart_kg == INF else clampi(int(floor(cart_kg / each + 0.0001)), 0, int(g["count"]))
+
+		var put: int = want - box.add(number, want, int(g.get("wear", 0)), g.get("inst", {})) if want > 0 else 0
+		cart_kg = maxf(cart_kg - float(put) * each, 0.0) if cart_kg < INF else INF
+		full = full or put < int(g["count"])   # this pile did not all fit: the next ones will not either
+		left_near += int(g["count"]) - put
+		loaded += put
+		_take_from(int(pile[1]), put)
+
+	return [loaded, left_near]
+
+
+func _send_autoload_info(peer: int, id: int) -> void:
+	if send_autoload_info.is_valid():
+		send_autoload_info.call(peer, id, int(_items.get(id, {}).get("struct", {}).get("autoload", 0)) if _autoloads(_items.get(id, {})) else 0)
+
+
+# Every AUTOLOAD_EVERY_S: each container with a standing autoload takes its item from the ground round it, as a press would. One look over the
+# records for the few that have one; a full container takes nothing and keeps its setting.
+func _autoload_tick(spent: float) -> void:
+	_autoload_in -= spent
+
+	if _autoload_in > 0.0:
+		return
+
+	_autoload_in = AUTOLOAD_EVERY_S
+
+	for id in _items.keys():
+		var it: Dictionary = _items.get(id, {})
+
+		if it.has("struct") and int(it["struct"].get("autoload", 0)) > 0 and _autoloads(it):
+			var box = _chests[int(it["struct"]["uid"])]
+
+			if int(_autoload_into(id, box, int(it["struct"]["autoload"]))[0]) > 0:
+				_dirty = true
+				_push_box(id, box)
 
 
 # Stack to nearby: each pack stack (not a favourite, not the shoulder log) goes into the player's own storage chests within

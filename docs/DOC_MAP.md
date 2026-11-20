@@ -35,6 +35,7 @@ These retain the existing topic routes, with design sources separated from imple
 | Construction | [Buildables](design/buildables_plan.md) | Pieces, frames, roof shapes and placement behavior; item definitions remain in the catalog. | Door records below |
 | Backpacks | [Backpack design](design/BACKPACKS.md) | Backpack design and carrying rules; values and decision status stay in the source. | Relevant task record |
 | Character attributes | [Attributes 0 to 100](design/ATTRIBUTES.md) | Every attribute 0 to 100 like a percent, 50 average; the bell-shaped creation roll (player fitness 40 to 60); old saves converted; provisional ATTR-1, ATTR-3, ATTR-4. | This design's For Dave section |
+| Autoload | [Autoload](design/AUTOLOAD.md) | A container loads an item from the ground within 30 m, once or every 10 minutes; provisional AL-1 to AL-5. | This design's For Dave section |
 | No spawning near builds | [No-spawn zones](design/NO_SPAWN_ZONES.md) | Nothing wild spawns or regrows within 20 m of what players put down; grass cleared close round it. | This design's For Dave section |
 | Server pick page (client) | [Server pick page](design/SERVER_PICK_PAGE.md) | Approved by Dave 19 Nov: official server, saved servers with live status and padlock, passwords (3 tries), plain failure words. | This design's For Dave section |
 | Torches and Tree sap | [Torches and Tree sap](design/TORCH_TREE_SAP.md) | Simple and Improved torch recipes, where Tree sap comes from; provisional values TS-1..TS-7. | Relevant task record |
@@ -83,6 +84,7 @@ Separate references for distinct topics. Dated implementation notes preserve cod
 | Movement and action feel | [Feel tuning](FEEL_TUNING.md) | Parameter locator and recorded 2 Nov settings; current values are in the named code. |
 | Comfort and Rested | [Comfort](COMFORT_DESIGN.md) | Comfort/Rested behavior, tuning, open questions and integration reference; recipes route to the master catalog. No blanket approval or runtime certification. |
 | Wildlife coverage | [Animal specification](../ANIMAL_SPEC.md) | 30–31 Oct data audit/species proposals and 8 Nov alarm-group design; not a current species census or passing test certificate. |
+| Animal reactions to players | [Animal reactions](design/ANIMAL_REACTIONS.md) | Provisional 19 Nov 2026 reaction table (notice / flee / safe per species) and the sense changes RX-1 to RX-3, for Dave's review; values live in data/animals/animals.json. |
 
 ## Further design areas — routing review pending
 

@@ -440,7 +440,7 @@ What shipped since section 54, what is practice now, and where the rest lives. H
 
 **Shipped looks (10 to 11 Nov, all on main).**
 - Building tiers: pitched roofs per tier with hip corners and ceilings (#973), the Fortified set (#989), footing without a ledge (#1017). The as-built table is `art/BUILDING_TIERS_LOOKS.md`.
-- Ground resources: bog iron deposit patch, dry, wet and dug (#1012; drawn in the world once the `_show_bog` hookup lands); outcrop boulders tinted and veined per ore (#1015), with little moss so the host rock shows (#1019).
+- Ground resources: bog iron deposit patch, dry, wet and dug (#1012), drawn in the world since 19 Nov 2026 as a bright rust-orange ochre stain with the grass kept off it (Dave: "obvious and visible for characters to find"); outcrop boulders tinted and veined per ore (#1015), with little moss so the host rock shows (#1019); copper, tin and iron rocks have their own looks (`src/client/ore_rock_look.gd`; iron: rust orange with red-brown lines all over and rust streaks down the sides, Dave 19 Nov 2026).
 - Lanterns: dark-lantern icons (#990). The carried lanterns themselves are Jamie's #977; their lit pane is a flat amber box (see next work in the handoff).
 
 **Conventions that are current practice** (under the master, decision 82; section 54 was *[Proposed]*. These describe what the code does today. They are not bans: change one with a reason, and say so in the PR. Imported models are allowed: "built in code" is how we have worked, not a limit, and Dave's forge glbs and the bought animals are imported.)
