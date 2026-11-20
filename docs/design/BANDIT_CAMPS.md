@@ -206,3 +206,5 @@ With the switch on:
 - No stash chest and no lock: the stash is not seen at the camp until it drops.
 - Unattended carts are not robbed (not built).
 - No quest items exist in the catalog yet, so none are excluded by name.
+- A dropped stash never ages away (like a bag holding things); a piece whose item no longer exists stays in the stash rather than being lost. A camp ending far from every player waits to drop its stash until that ground can be read.
+- Every stack of the item in hand is kept, not only the held slot.

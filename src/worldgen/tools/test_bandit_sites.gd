@@ -1104,7 +1104,9 @@ func _robbery() -> void:
 	b.rob_player = func(victim, stacks):
 		robbed.append([victim, stacks])
 		return [{"id": "iron_axe", "count": 1, "wear": 7, "inst": {"plus": 1}}, {"id": "bread", "count": 4, "wear": 0, "inst": {}}]
-	b.drop_stash = func(stash_id, stash_count, stash_wear, stash_inst, stash_at): dropped.append([stash_id, stash_count, stash_wear, stash_inst, stash_at])
+	b.drop_stash = func(stash_id, stash_count, stash_wear, stash_inst, stash_at):
+		dropped.append([stash_id, stash_count, stash_wear, stash_inst, stash_at])
+		return stash_id != "lost_kind"   # an id no longer in the catalog is not laid
 	var road: Vector3 = Vector3(spot.x + 40.0, 50.0, spot.y)
 	var players: Array = [{"peer": 6, "pos": road}]
 	animals.big_game.player_info = func():
@@ -1147,6 +1149,12 @@ func _robbery() -> void:
 	b.struck(robbers[0], 7, "maimed")
 	check(robbed.is_empty(), "a blow on another player robs nobody")
 	robbers[0]["robbing"] = 6
+	var calm_state: int = int(robbers[0]["state"])
+	robbers[0]["state"] = AnimalsScript.GRAZE
+	b.step(robbers[0], 0.25)
+	check(not robbers[0].has("robbing"), "a charge that is over (missed or calmed) leaves no mark to rob later")
+	robbers[0]["state"] = calm_state
+	robbers[0]["robbing"] = 6
 	b.struck(robbers[0], 6, "hurt")
 	check(robbed.is_empty() and not robbers[0].has("robbing"), "a blow that does not floor him robs nothing, and that charge is spent")
 	robbers[0]["robbing"] = 6
@@ -1163,9 +1171,14 @@ func _robbery() -> void:
 		b.fallen("bandit", at)
 
 	check(b.sites[cell].has("cleared_at") and dropped.size() == 2 and str(dropped[0][0]) == "iron_axe" and int(dropped[0][2]) == 7 and not b.sites[cell].has("stash"), "the camp cleared: the stash lies by the fire (%s)" % str(dropped))
+	b.sites[cell]["stash"] = [{"id": "lost_kind", "count": 1, "wear": 0, "inst": {}}, {"id": "bread", "count": 1, "wear": 0, "inst": {}}]
+	b._drop_stash(cell)
+	check((b.sites[cell]["stash"] as Array).size() == 1 and str(b.sites[cell]["stash"][0]["id"]) == "lost_kind", "a piece that cannot be laid stays in the stash, never thrown away")
+	b.sites[cell].erase("stash")
 
 	# A camp that ends without being cleared (a site going back to sleep) drops its stash too, and a reloaded stash drops the same.
 	var other: Vector2i = _cell_with_site(b, 300)
+	check(other != cell, "a second site")
 	var there: Vector2 = b.candidate(other)
 	b.sites[other] = {"x": there.x, "z": there.y, "woke": clock[0], "points": 0.0, "levels": [1], "horses": 0, "stage": BanditsScript.LOOKOUT, "staged": clock[0] - 10.0 * BanditsScript.GAME_DAY_S,
 		"stash": [{"id": "bread", "count": 2, "wear": 0, "inst": {}}]}
@@ -1173,7 +1186,9 @@ func _robbery() -> void:
 	var later: BanditsScript = _sites(dir)
 	var later_dropped: Array = []
 	later.clear_camp = func(_camp_key, _camp_ids): pass
-	later.drop_stash = func(stash_id, stash_count, _stash_wear, _stash_inst, _stash_at): later_dropped.append([stash_id, stash_count])
+	later.drop_stash = func(stash_id, stash_count, _stash_wear, _stash_inst, _stash_at):
+		later_dropped.append([stash_id, stash_count])
+		return true
 	clock[0] += float(later.cfg["check_s"]) + 1.0
 	later.tick()
 	check(not later.sites.has(other) and later_dropped == [["bread", 2]], "a site gone back to sleep with a stash drops it (%s)" % str(later_dropped))
@@ -1181,6 +1196,7 @@ func _robbery() -> void:
 	# The toll's other ends: walking on, the leash, leaving, an unreachable player, one who gave up.
 	b.cfg["robbery"]["enabled"] = true
 	var spare: Vector2i = _cell_with_site(b, 330)
+	check(spare != cell and spare != other, "a third site")
 	var spare_spot: Vector2 = b.candidate(spare)
 	var spare_road: Vector3 = Vector3(spare_spot.x + 40.0, 50.0, spare_spot.y)
 	b.sites[spare] = {"x": spare_spot.x, "z": spare_spot.y, "woke": clock[0], "points": 40.0, "levels": [1, 1], "horses": 0, "road": [spare_road.x, spare_road.z]}
@@ -1234,6 +1250,10 @@ func _robbery() -> void:
 		m.erase("gave_up")
 
 	clock[0] += BanditsScript.GAME_DAY_S
+
+	for m in animals.animals.values():
+		m["pos"] = m["seat"]   # back at the fire, about 40 m off, before the way is blocked
+
 	walls[0] = true
 	var before_wall: int = asked.size()
 	walk.call(5)

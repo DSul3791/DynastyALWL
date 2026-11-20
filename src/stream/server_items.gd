@@ -13984,6 +13984,7 @@ func rob_stacks(peer: int, stacks: int) -> Array:
 
 	if not out.is_empty():
 		_send_changes(peer, inv, before)
+		_dirty = true   # the pack is saved without them (the stash is saved by the camp)
 
 	return out
 

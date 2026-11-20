@@ -46,7 +46,8 @@ var ask: Callable              # (peer, talk id, name, text, choices Array) -> v
 var take_coins: Callable       # (peer, copper) -> bool: coins leave the player's purse (stage 4 toll, only while robbery.enabled)
 var key_of: Callable           # (peer) -> character key, "" for none
 var rob_player: Callable       # (peer, stacks) -> Array of {"id", "count", "wear", "inst"} taken from his pack (stage 4b, only while robbery.enabled)
-var drop_stash: Callable       # (item id, count, wear, inst, Vector3) -> void: a stolen stack lies on the ground again
+var drop_stash: Callable       # (item id, count, wear, inst, Vector3) -> bool: a stolen stack lies on the ground again (never ageing away); false: not laid
+var flush_world: Callable      # () -> void: the packs and world items written now (a robbery or a dropped stash is never lost to a crash)
 var animals = null             # ServerAnimals: bandits and horses are animals (spawn, walk_step, the big game charge)
 
 var stretches: Dictionary = {}   # Vector2i stretch -> [points, game seconds when last set]
@@ -295,6 +296,9 @@ func _advance(now: float) -> bool:
 
 	for cell in sites.keys():
 		var site: Dictionary = sites[cell]
+
+		if site.has("stash") and not _ready_at(layout(cell)["fire"]):
+			continue   # a stash to lay by the fire waits until that ground can be read without a stall; the row stays until then
 
 		if site.has("cleared_at"):
 			if now - float(site["cleared_at"]) >= float(_clearing().get("dissolve_game_days", 2.0)) * GAME_DAY_S:
@@ -855,6 +859,9 @@ func struck(a: Dictionary, peer: int, result: String) -> void:
 
 	site["stash"] = stash
 	save()   # at once: a player's things are never lost
+
+	if flush_world.is_valid():
+		flush_world.call()   # and his pack without them, so a restart cannot give them twice
 	_tell(peer, "The bandits take %s and leave you. Clear their camp to get it back." % ", ".join(taken.map(func(got): return "%d %s" % [int(got["count"]), str(got["id"])])))
 
 
@@ -865,13 +872,23 @@ func _drop_stash(cell: Vector2i) -> void:
 
 	var fire: Vector2 = layout(cell)["fire"]
 	var y: float = float(ground_height.call(fire.x, fire.y)) if ground_height.is_valid() else 0.0
-	var at: Vector3 = Vector3(fire.x + 1.5, (0.0 if is_nan(y) else y) + 0.1, fire.y)
+	var at: Vector3 = Vector3(fire.x + 1.5, (50.0 if is_nan(y) else y) + 0.1, fire.y)
+	var kept: Array = []
 
 	for piece in sites[cell]["stash"]:
-		if drop_stash.is_valid():
-			drop_stash.call(str(piece["id"]), int(piece["count"]), int(piece["wear"]), piece["inst"], at)
+		if not drop_stash.is_valid() or not bool(drop_stash.call(str(piece["id"]), int(piece["count"]), int(piece["wear"]), piece["inst"], at)):
+			kept.append(piece)   # not laid (an id no longer in the catalog): kept, never thrown away
 
-	sites[cell].erase("stash")
+	var laid: int = (sites[cell]["stash"] as Array).size() - kept.size()
+
+	if kept.is_empty():
+		sites[cell].erase("stash")
+	else:
+		sites[cell]["stash"] = kept
+
+	if laid > 0 and flush_world.is_valid():
+		flush_world.call()   # the laid items are written before the stash that held them
+
 	save()
 
 
@@ -1004,6 +1021,9 @@ func _people(cell: Vector2i, plan: Dictionary) -> void:
 func step(a: Dictionary, dt: float) -> bool:
 	if not a.has("camp") or not sites.has(a["camp"]):
 		return false
+
+	if a.has("robbing") and not animals.big_game.handles(a):
+		a.erase("robbing")   # his charge is over (missed, bluffed or calmed): a later fight robs no one
 
 	var row: Dictionary = _camp()
 	var seat: Vector3 = a["seat"]
