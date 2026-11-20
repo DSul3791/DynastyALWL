@@ -5060,6 +5060,7 @@ func _start_loose_prewarm() -> void:
 		_pickup_group(group)
 
 	_warm_queue = _loose_prewarm_numbers()
+	BasicLook.warm_models()   # the handsaw models' files, on a loader thread
 	_warm_usec = Time.get_ticks_usec() - t0
 	_warm_frames = 0
 	PieceLook.prewarm()
@@ -5085,6 +5086,7 @@ func _prewarm_loose_meshes() -> void:
 	for group in PICKUP_FILES:
 		_pickup_group(group)
 
+	BasicLook.warm_models()   # the handsaw models' files, read before anyone takes one in hand
 	var t_pick: int = Time.get_ticks_usec()
 
 	for id in table.ids():

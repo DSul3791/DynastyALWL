@@ -276,7 +276,7 @@ func _npcs() -> void:
 	# Standing is the tribe's.
 	check(tribes.rep_id("skritch") == tribes.rep_id("rukz") and tribes.rep_id("hob") == "hob", "one standing for the tribe, Hob keeps his own")
 	items.add_rep(1, "skritch", 5)
-	check(items.rep_points(1, "rukz") == 5 and items.rank_of(items.rep_points(1, "snag")) == "Friend", "standing earned with Skritch counts with Rukz and Snag")
+	check(items.rep_points(1, "rukz") == 5 and items.rank_of(items.rep_points(1, "snag")) == "Friend" and items.rep_points(1, "vrixa") == 5 and items.rep_points(1, "grikka") == 5, "standing earned with Skritch counts with Rukz, Snag, Vrixa and Grikka")
 	check(tribes.keep_from("skritch", near_p) <= float(att["trader_keep_m"]["Friend"]) + 0.01, "a friend of the tribe may come closer")
 	check(tribes.name_of_rep(tribes.rep_id("skritch")) == str(tribe["name"]), "the standing is named for the tribe")
 	tribes.note_deal(1, "skritch")
@@ -297,7 +297,7 @@ func _npcs() -> void:
 	check(items.rep_points(1, "rukz") == maxi(standing - int(att["attack_rep"]), 0), "the strike costs attack_rep standing with the clan (%d to %d)" % [standing, items.rep_points(1, "rukz")])
 	tribes.harm(1, "snag")
 	check(items.rep_points(1, "rukz") == maxi(standing - int(att["attack_rep"]), 0), "more blows while angry cost nothing more")
-	check(tribes.refuse(1, "rukz") != "" and tribes.refuse(1, "skritch", false) != "", "every member refuses them talk and trade")
+	check(tribes.refuse(1, "rukz") != "" and tribes.refuse(1, "vrixa") != "" and tribes.refuse(1, "grikka") != "" and tribes.refuse(1, "skritch", false) != "", "every member refuses them talk and trade")
 	player[0] = npc_s["pos"] + Vector3(-6.0, 0.0, 0.0)
 	run.call(30.0)
 	var mouth: Vector3 = Vector3(float(camp["mouth"]["x"]), 10.0, float(camp["mouth"]["z"]))

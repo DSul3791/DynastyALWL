@@ -747,6 +747,14 @@ Assumed on Dave's behalf (provisional, docs/design/BANDIT_CAMPS.md): BANDIT-34 a
 
 **Acceptance:** `REQUIRE_GODOT=1 bash tools/test_check_warnings.sh` passes on both lanes; nothing to see in play.
 
+## 87. The first look build cost check failed now and then on Lane A (test_look_build_cost flake)
+
+**Status: Fixed in dev - nothing to play (no behaviour change you can see).** Not found in play: the coordinator, 20 Nov 2026, from Lane A (Dave's PC), where test_look_build_cost failed now and then and passed on a rerun, which tonight's gate does not accept. Cause, most likely (not measured apart): the saws are model looks, and the first build of each read its .glb file cold inside the timed build, 56 ms and 248 ms on Dave's PC against the 40 ms limit, 9 to 11 ms on later runs. Fix: PR #1371, merged to dev at c081b92a (head 3389f369) after independent review: BasicLook.warm_models() reads every model look's file ahead when the inventory looks are prewarmed at join (on the loader thread in a window, on the main thread headless), so the first build should no longer wait on the disk. The test reads them ahead the same way, checks that every model look's file was read ahead, and keeps the 40 ms limit; it now runs alone in the serial lane (tools/test_lanes.json). Lane B (David4) on the exact head: local_check PASS, 381 warnings zero new, 120 of 120 selected tests passed, 0 script errors, join smoke clean; test_look_build_cost alone 3 of 3 PASS, files read ahead in 19.6, 19.3 and 20.5 ms (3 files), slowest look plant_fibre 5.5 ms. Lane A (Dave's PC) on the exact head: test_look_build_cost alone 3 of 3 PASS, files read ahead in 31.2, 31.4 and 29.7 ms (3 files, every model look's file read ahead), slowest look plant_fibre 6.9, 7.2 and 6.9 ms, no saw among the slowest.
+
+**Required outcome:** the first build of every item look stays under 40 ms on Dave's PC, with the cost of reading model files paid once at join, not in the middle of play.
+
+**Acceptance:** test_look_build_cost passes alone on Lane A every time; nothing to see in play. In a window the read ahead runs on the loader thread, not yet seen on screen.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.

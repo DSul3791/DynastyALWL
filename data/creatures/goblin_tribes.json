@@ -69,7 +69,9 @@
 			"members": [
 				{"id": "skritch", "name": "Skritch", "role": "goblin_trader", "voice": "skritch", "body": 0, "trader": true, "spot": {"x": 56070.0, "z": 68381.0, "yaw": 180}, "chores": ["tend"]},
 				{"id": "rukz", "name": "Rukz", "role": "goblin_lookout", "voice": "rukz", "body": 1, "spot": {"x": 56080.0, "z": 68386.0, "yaw": 185}, "chores": ["firewood", "hunt", "fibre"]},
-				{"id": "snag", "name": "Snag", "role": "goblin", "voice": "rukz", "body": 0, "spot": {"x": 56077.0, "z": 68381.0, "yaw": 146}, "chores": ["firewood", "fibre"]}
+				{"id": "snag", "name": "Snag", "role": "goblin", "voice": "rukz", "body": 0, "spot": {"x": 56077.0, "z": 68381.0, "yaw": 146}, "chores": ["firewood", "fibre"]},
+				{"id": "vrixa", "name": "Vrixa", "role": "goblin", "voice": "vrixa", "body": 2, "spot": {"x": 56081.0, "z": 68382.0, "yaw": 172}, "chores": ["firewood", "fibre"]},
+				{"id": "grikka", "name": "Grikka", "role": "goblin", "voice": "grikka", "body": 3, "spot": {"x": 56084.0, "z": 68381.0, "yaw": 169}, "chores": ["firewood", "fibre"]}
 			]
 		}
 	}

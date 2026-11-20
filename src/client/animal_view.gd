@@ -98,10 +98,11 @@ const FEATHERED := [6, 9, 11, 13]     # flock birds, songbirds, grouse, gulls: t
 
 
 # A goblin tribe member's body (npc_view.gd, data/creatures/goblin_tribes.json, Dave 19 Nov 2026): the goblin model's look `variant` (0 Skritch,
-# 1 Rukz), with its own steady height roll from `look_seed`, drawn and clipped exactly as a wild goblin; null when the model file is not there.
+# 1 Rukz, 2 Vrixa, 3 Grikka), with its own steady height roll from `look_seed`, drawn and clipped exactly as a wild goblin; null when the model file is not
+# there. Every look is open here, also those marked "wild": false that wild goblins never get.
 func make_goblin(variant: int, look_seed: int) -> Node3D:
 	var looks: int = maxi((_model_rows().get("goblin", {}).get("variants", []) as Array).size(), 1)
-	return _make_model(GOBLIN_SPECIES, posmod(variant, looks) + looks * posmod(look_seed, 4096))
+	return _make_model(GOBLIN_SPECIES, posmod(variant, looks) + looks * posmod(look_seed, 4096), false, true)
 
 
 # young: a young animal. When its species' model row has a young_model, that model is drawn at its own size (the calf beside
@@ -634,16 +635,22 @@ func _model_rows() -> Dictionary:
 	return _models
 
 
-func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
+func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool = false) -> Node3D:
 	var kind: String = str(KIND_OF_SPECIES.get(number, ""))
 	var row: Dictionary = _model_rows().get(kind, {})
 
 	# Several looks for one species (goblins, Dave 7 Nov 2026: Skritch and Rukz): the row's "variants" are laid over it, one picked by the
 	# animal's id, so every goblin keeps its look. A row with height_m is sized by its mesh height, not its longest side, and each animal
 	# gets its own height: height_m plus a bell-shaped roll of up to height_variation_m either way (the mean of three even rolls), seeded
-	# from its id so it is the same on every client and every time it comes into view.
+	# from its id so it is the same on every client and every time it comes into view. A look marked "wild": false (Vrixa and Grikka, Dave 20 Nov 2026:
+	# named Ragtooth goblins) is only drawn for a tribe member (every_look, make_goblin), never picked for a wild animal.
 	if row.has("variants") and not (row["variants"] as Array).is_empty():
 		var looks: Array = row["variants"]
+
+		if not every_look:
+			var wild: Array = looks.filter(func(look: Variant) -> bool: return bool((look as Dictionary).get("wild", true)))
+			looks = wild if not wild.is_empty() else looks
+
 		row = row.duplicate()
 		row.merge(looks[id % looks.size()], true)
 

@@ -160,3 +160,8 @@ Preservation/reader receipts: independent review PASS on exact tree `09c98947328
 | path (under proposed_removals/) | who | date | why | replaced by |
 |---|---|---|---|---|
 | src/worldgen/tools/test_gather_clip.gd, src/worldgen/tools/test_gather_clip.gd.uid.removed | Claude, commit cd69d5f5 (copy added by the main-readiness PR) | 18 Nov | it tested only the first-person gather clip, which was deleted with the pickup animations | none |
+
+## Trees fall already in logs, 16 Nov 2026 (Dave 16 Nov 2026; commit 6303ef01)
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| tools/trunk_view.gd, tools/trunk_view.gd.uid.removed | Claude, commit 6303ef01 (row added by the main-readiness PR) | 16 Nov | pictures tool for the hand-cut trunk, which was removed when trees started falling already in logs | none |

@@ -46,6 +46,20 @@
 			"lang": "en-us",
 			"speed": 1.1,
 			"pitch": 1.2
+		},
+		"vrixa": {
+			"note": "Vrixa Thornfang of the Ragtooth (data/creatures/goblin_tribes.json, Dave 20 Nov 2026): a she-goblin, quick and nervous. PROVISIONAL; no clips rendered yet (tools/gen_npc_voice.py on Dave's PC).",
+			"voice": "af_nicole",
+			"lang": "en-us",
+			"speed": 1.2,
+			"pitch": 1.3
+		},
+		"grikka": {
+			"note": "Grikka Ragtooth (data/creatures/goblin_tribes.json, Dave 20 Nov 2026): a she-goblin, Skritch's kin, warmer and slower than Vrixa. PROVISIONAL; no clips rendered yet (tools/gen_npc_voice.py on Dave's PC).",
+			"voice": "af_sky",
+			"lang": "en-us",
+			"speed": 1.1,
+			"pitch": 1.25
 		}
 	},
 	"model": "k2",
