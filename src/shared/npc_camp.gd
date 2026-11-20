@@ -46,7 +46,7 @@ static func within_keep(spot: Vector3) -> bool:
 	return keep_reason(spot) != ""
 
 
-# Why nothing is put down here (PlacementRules.reason_text): "camp" round Edda and Hob's oak, "tribe_camp" round a goblin tribe's camp fire, "" when free.
+# Why nothing is put down here (PlacementRules.reason_text): "camp" round Edda and Hob's camp tree, "tribe_camp" round a goblin tribe's camp fire, "" when free.
 static func keep_reason(spot: Vector3) -> String:
 	if Vector2(spot.x, spot.z).distance_to(tree_spot()) <= float(cfg().get("keep_m", 0.0)):
 		return "camp"

@@ -2505,7 +2505,7 @@ func _go_to_npc() -> void:
 
 	if near.is_empty():
 		if items != null:
-			items.show_notice("No NPC drawn (roster %d, drawn %d). You are at x %.0f z %.0f; Hob stands at x 53304 z 68431." % [_npc_view.roster.size(), _npc_view.drawn_count(), body.global_position.x, body.global_position.z])
+			items.show_notice("No NPC drawn (roster %d, drawn %d). You are at x %.0f z %.0f." % [_npc_view.roster.size(), _npc_view.drawn_count(), body.global_position.x, body.global_position.z])
 
 		return
 

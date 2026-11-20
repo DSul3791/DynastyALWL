@@ -11,7 +11,7 @@ const Steering := preload("res://src/shared/steering.gd")
 
 var failures: int = 0
 var hour: float = 3.5
-var players: Array = [Vector3(53306.0, 10.0, 68084.0)]
+var players: Array = [Vector3(58176.0, 10.0, 71364.0)]   # by the starter town (moved with Edda and Hob's camp, 20 Nov 2026)
 var wall: Array = []   # [x, z, radius] circles nothing may enter
 
 
@@ -111,7 +111,7 @@ func _init() -> void:
 	hour = 12.5
 	run(far, 2.0)
 	check(far.ticks_run == 0 and far.rows_near(Vector3(0.0, 10.0, 0.0)).is_empty(), "no player within 200 m: nothing is simulated or sent")
-	players = [Vector3(53306.0, 10.0, 68084.0)]
+	players = [Vector3(58176.0, 10.0, 71364.0)]
 	run(far, 0.2)
 	check(far.npcs["hob"]["placed"] and int(far.npcs["hob"]["state"]) == far.SIT, "a player arrives at 12:30 and Hob is already in his chair")
 
@@ -166,7 +166,7 @@ func _init() -> void:
 	# Cost: 60 NPCs, all near and walking.
 	var big = make(dir)
 	for n in 58:
-		big._add_npc({"id": "n%d" % n, "name": "N", "schedule": rep("work", 12) + rep("sit", 12)}, Vector3(53300.0 + float(n % 10), 0.0, 68074.0 + float(n / 10)))
+		big._add_npc({"id": "n%d" % n, "name": "N", "schedule": rep("work", 12) + rep("sit", 12)}, Vector3(58170.0 + float(n % 10), 0.0, 71354.0 + float(n / 10)))
 
 	hour = 11.5
 	run(big, 1.0)

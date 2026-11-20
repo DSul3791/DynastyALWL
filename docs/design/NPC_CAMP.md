@@ -2,6 +2,15 @@
 
 **Status: DAVE-REQUESTED (17 Nov 2026), built on branch `claude/project-thread-a519fm`; not played.** Values marked PROVISIONAL are assumptions made on Dave's behalf (standing rule, 14 Nov 2026) and wait for his review below.
 
+## Moved to the starter town (20 Nov 2026)
+**Status: DAVE-REQUESTED (20 Nov 2026); not played.** Dave picked the Site A plain on the east side of the starter island for the starter town (town centre x 58160 z 71360; research in /mnt/project-files/starter-town/SITES.md) and said: "place Hob and Edda right in the circle center under the nearest tree with a campfire just like they are now. then move character spawn down next to them."
+- **The tree.** The nearest tree to the centre is a summer apple 5.3 m off: foot x 58157.07 z 71364.44, 7.0 m tall, rain shelter circle 2.98 m (`tools/npc_camp_spot.gd --x=58160 --z=71360 --bearing=270 --reach=150` on Lane B at b0b9494a). It replaces the oak in `data/npcs/camp.json`; everything the camp does (the fire, the hold, the 8 m keep, the tree that never comes down) is unchanged.
+- **The layout.** As before, built with the same tool: the fire 1.0 m inside the shelter line in front of the tree, Hob on the viewer's left and Edda on the right, 2 m to the side and 1 m toward the fire, both facing it. "In front" is the east side, toward the sea and the harbour (bearing 270, seen from the east), so Hob stands on the south side and Edda sits on the north side. **CAMP-7 (PROVISIONAL):** the apple is smaller than the oak, so the fire is 2.0 m from the trunk and Hob and Edda about 2.2 m from the fire (4.3 m at the oak). The apple is not a bare-in-winter species (Cover.DECIDUOUS), so unlike the oak it shelters all year; CAMP-3 applied to the oak.
+- **The town markers** (beds, chairs, posts, table, square, shelters) moved with the camp, keeping their place relative to the camp tree, plus 3 m further from it so no marker's flora clearing (6 m, thinning over 5 m more) reaches the apple. They set the town point (`server_npcs.gd town_point`: the island level, the stray dogs, the bandit levels and their 1,500 m keep-out).
+- **The spawn** (`src/shared/spawn_point.gd` OVERRIDE) is x 58167.0 z 71364.4, 10 m east of the tree, in front of the fire and just outside its 8 m keep. The server still steps it off any trunk at start.
+- **The mines.** The abandoned mines take the camp tree as the start area (mouths 400 m off, tile 3,4's bodies nearest first), so tile 3,4's mines change: TERRAIN_VERSION 78, and the starter ground cache is rebuilt for it.
+- Tests that only used the old spawn as a fixed sample of the starter tile (flora density and cost, beach belt, ground read) keep the old spot, x 53296 z 68080.
+
 ## What Dave asked (17 Nov 2026)
 This request supersedes the earlier ruling "Hob does not move" for where Hob stands; both still stay put at the new spot.
 - "We should move EDDA and Hob under the nearest big tree and give them a large campfire that players cannot access and its just inside the shelter line of the tree so the rain doesnt effect it."

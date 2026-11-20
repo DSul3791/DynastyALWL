@@ -1,83 +1,83 @@
 {
-	"note": "World markers NPCs walk to (step A placeholders near the spawn; moved 6 Nov 2026 by (-20, -396) m with the spawn (#473), moved 31 Oct 2026 by (-11, +45) m from the old spot at x 53301 z 68427 onto the level spawn pad, where no tree or shrub stands within 4 m of any marker (tools/npc_clear_spot.gd); a marker must not stand in a flora collider; the admin tool moves them). npc: only that NPC takes the marker, and takes it before any other of its kind; clear false: no flora clearing round it (Edda and Hob's camp under the oak Dave picked, data/npcs/camp.json; tools/npc_camp_spot.gd checked no tree or shrub stands within 1.5 m, 17 Nov 2026). kind: bed, chair, post. slots: how many NPCs may use it at once (two NPCs never share a chair). yaw in degrees is the way the NPC faces there.",
+	"note": "World markers NPCs walk to (the starter town, moved 20 Nov 2026 with Edda and Hob's camp to the Site A plain (Dave: town centre x 58160 z 71360; /mnt/project-files/starter-town/SITES.md): every town marker kept its place relative to the camp tree, shifted 3 m further from it so no marker clearing reaches the apple tree; before that: step A placeholders near the spawn; moved 6 Nov 2026 by (-20, -396) m with the spawn (#473), moved 31 Oct 2026 by (-11, +45) m from the old spot at x 53301 z 68427 onto the level spawn pad, where no tree or shrub stands within 4 m of any marker (tools/npc_clear_spot.gd); a marker must not stand in a flora collider; the admin tool moves them). npc: only that NPC takes the marker, and takes it before any other of its kind; clear false: no flora clearing round it (Edda and Hob's camp under its tree, data/npcs/camp.json; tools/npc_camp_spot.gd checked no tree or shrub stands within 1.5 m, 17 Nov 2026). kind: bed, chair, post. slots: how many NPCs may use it at once (two NPCs never share a chair). yaw in degrees is the way the NPC faces there.",
 	"markers": [
 		{
 			"id": "bed_1",
 			"kind": "bed",
-			"x": 53265.0,
-			"z": 68071.0,
+			"x": 58135.4,
+			"z": 71351.53,
 			"slots": 1,
 			"yaw": 45
 		},
 		{
 			"id": "bed_2",
 			"kind": "bed",
-			"x": 53275.0,
-			"z": 68071.0,
+			"x": 58145.4,
+			"z": 71351.53,
 			"slots": 1,
 			"yaw": 135
 		},
 		{
 			"id": "chair_1",
 			"kind": "chair",
-			"x": 53267.0,
-			"z": 68073.0,
+			"x": 58137.4,
+			"z": 71353.53,
 			"slots": 1,
 			"yaw": 45
 		},
 		{
 			"id": "chair_2",
 			"kind": "chair",
-			"x": 53273.0,
-			"z": 68073.0,
+			"x": 58143.4,
+			"z": 71353.53,
 			"slots": 1,
 			"yaw": 135
 		},
 		{
 			"id": "post_1",
 			"kind": "post",
-			"x": 53273.0,
-			"z": 68080.0,
+			"x": 58143.4,
+			"z": 71360.53,
 			"slots": 1,
 			"yaw": -127
 		},
 		{
 			"id": "post_2",
 			"kind": "post",
-			"x": 53267.0,
-			"z": 68080.0,
+			"x": 58137.4,
+			"z": 71360.53,
 			"slots": 1,
 			"yaw": -53
 		},
 		{
 			"id": "table_1",
 			"kind": "table",
-			"x": 53270.0,
-			"z": 68069.0,
+			"x": 58140.4,
+			"z": 71349.53,
 			"slots": 2,
 			"yaw": 0
 		},
 		{
 			"id": "square_1",
 			"kind": "square",
-			"x": 53270.0,
-			"z": 68082.0,
+			"x": 58140.4,
+			"z": 71362.53,
 			"slots": 3,
 			"yaw": 0
 		},
 		{
 			"id": "shelter_1",
 			"kind": "shelter",
-			"x": 53265.0,
-			"z": 68077.0,
+			"x": 58135.4,
+			"z": 71357.53,
 			"slots": 2,
 			"yaw": 0
 		},
 		{
 			"id": "shelter_2",
 			"kind": "shelter",
-			"x": 53275.0,
-			"z": 68077.0,
+			"x": 58145.4,
+			"z": 71357.53,
 			"slots": 2,
 			"yaw": 180
 		},
@@ -86,20 +86,20 @@
 			"kind": "post",
 			"npc": "hob",
 			"clear": false,
-			"x": 53286.21,
-			"z": 68082.82,
+			"x": 58158.07,
+			"z": 71366.44,
 			"slots": 1,
-			"yaw": -83
+			"yaw": -64
 		},
 		{
 			"id": "camp_edda",
 			"kind": "chair",
 			"npc": "edda",
 			"clear": false,
-			"x": 53282.9,
-			"z": 68080.59,
+			"x": 58158.07,
+			"z": 71362.44,
 			"slots": 1,
-			"yaw": -29
+			"yaw": 64
 		}
 	]
 }

@@ -4771,7 +4771,7 @@ func _road_fell(seg: Dictionary, t: float) -> void:
 		if side.dot(at - a) < 0.0 or (absf(side.dot(at - a)) < 0.01 and int(found[1]) % 2 == 0):
 			side = -side
 
-		if NpcCamp.is_camp_tree(info.get("position", Vector3.INF)) or not bool(cut_tree.call(found[0], int(found[1]))):   # the camp oak never comes down
+		if NpcCamp.is_camp_tree(info.get("position", Vector3.INF)) or not bool(cut_tree.call(found[0], int(found[1]))):   # the camp tree never comes down
 			continue
 
 		_road_drop(info, side, side.dot(at - a))
@@ -8337,7 +8337,7 @@ func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void
 # Cuts a standing tree and brings it down in its logs beside its stump (the last axe blow and a dug-out tree both end here). `away` is the
 # direction it falls in.
 func _fell(chunk: Vector2i, tree_id: int, info: Dictionary, away: Vector2) -> int:   # the stump's world id, -1 when the tree was not cut
-	if NpcCamp.is_camp_tree(info.get("position", Vector3.INF)) or not bool(cut_tree.call(chunk, tree_id)):   # the oak over Edda and Hob's camp never comes down (undermined, on a road)
+	if NpcCamp.is_camp_tree(info.get("position", Vector3.INF)) or not bool(cut_tree.call(chunk, tree_id)):   # the tree over Edda and Hob's camp never comes down (undermined, on a road)
 		return -1
 
 	return _fell_record(chunk, info, away)

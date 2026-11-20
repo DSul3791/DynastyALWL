@@ -1,11 +1,11 @@
 extends SceneTree
 
-# Edda and Hob's camp under the oak (Dave 17 Nov 2026; data/npcs/camp.json, src/shared/npc_camp.gd). Checks, on the real code and data:
+# Edda and Hob's camp under its tree (Dave 17 Nov 2026, moved to the starter town 20 Nov 2026; data/npcs/camp.json, src/shared/npc_camp.gd). Checks, on the real code and data:
 # - the flora placer still stands a sheltering tree at the camp tree's foot, the fire spot is under its rain shelter (Cover index, as the server
 #   fills it) and the two NPC spots are clear of trees and shrubs (the camp markers clear no wood);
 # - Hob takes his own post and Edda her own chair there, facing the fire, and the town's middle does not move;
 # - the server lays the large camp fire, keeps it lit in rain, never saves it, lays it again when it goes, and refuses every use of it;
-# - a world saved before the camp (admin markers and NPC homes at the old town, a saved fire) loads with Hob and Edda at the oak and the camp fire laid;
+# - a world saved before the camp (admin markers and NPC homes at the old town, a saved fire) loads with Hob and Edda at the camp tree and the camp fire laid;
 # - nothing is put down within keep_m of the tree (the ghost and the server), and the server's tree hit refuses the camp tree.
 #   godot --headless --path . --script res://src/worldgen/tools/test_npc_camp.gd
 
@@ -52,7 +52,7 @@ func _init() -> void:
 	quit(1 if failures > 0 else 0)
 
 
-# The real placer: the oak stands where camp.json says, shelters the fire, and the camp spots stand clear.
+# The real placer: the camp tree stands where camp.json says, shelters the fire, and the camp spots stand clear.
 func _flora(tree: Vector2, fire: Vector2, own: Dictionary) -> void:
 	var world: String = "res://worlds/base_world"
 	var errors: Array = []
@@ -66,7 +66,7 @@ func _flora(tree: Vector2, fire: Vector2, own: Dictionary) -> void:
 	placer.setup(generator, tables, rules)
 	var index = CoverScript.Index.new()
 	var blockers: Array = []   # [Vector2 foot, name]
-	var oak: Array = []
+	var camp_tree: Array = []
 	var lo: Vector2i = placer.chunk_of(tree.x - 20.0, tree.y - 20.0)
 	var hi: Vector2i = placer.chunk_of(tree.x + 20.0, tree.y + 20.0)
 
@@ -87,15 +87,15 @@ func _flora(tree: Vector2, fire: Vector2, own: Dictionary) -> void:
 				blockers.append([Vector2(p.x, p.z), str(row["name"])])
 
 				if int(row["kind"]) == PlacerScript.KIND_TREE and NpcCamp.is_camp_tree(p):
-					oak = [str(row["name"]), p, float(made["heights"][n])]
+					camp_tree = [str(row["name"]), p, float(made["heights"][n])]
 
-	check(not oak.is_empty(), "a placer tree stands at the camp tree's foot %s" % str(tree))
+	check(not camp_tree.is_empty(), "a placer tree stands at the camp tree's foot %s" % str(tree))
 
-	if oak.is_empty():
+	if camp_tree.is_empty():
 		return
 
-	check(float(oak[2]) >= CoverScript.SHELTER_MIN_HEIGHT_M, "the camp tree (%s, %.1f m) is tall enough to shelter" % [oak[0], float(oak[2])])
-	check(index.covers(Vector3(fire.x, float(oak[1].y) + 0.3, fire.y)), "the fire spot is inside the camp tree's rain shelter")
+	check(float(camp_tree[2]) >= CoverScript.SHELTER_MIN_HEIGHT_M, "the camp tree (%s, %.1f m) is tall enough to shelter" % [camp_tree[0], float(camp_tree[2])])
+	check(index.covers(Vector3(fire.x, float(camp_tree[1].y) + 0.3, fire.y)), "the fire spot is inside the camp tree's rain shelter")
 	var inside: float = float(NpcCamp.cfg()["fire"].get("inside_m", 1.0))
 	var shelter_m: float = float(NpcCamp.cfg()["tree"].get("shelter_m", 0.0))
 	check(absf(fire.distance_to(tree) - (shelter_m - inside)) < 0.1, "the fire is %.1f m inside the shelter line (%.2f m from the trunk)" % [inside, fire.distance_to(tree)])
@@ -106,7 +106,7 @@ func _flora(tree: Vector2, fire: Vector2, own: Dictionary) -> void:
 		for b in blockers:
 			check((b[0] as Vector2).distance_to(at) >= 1.5, "%s's spot is 1.5 m clear of the %s at %s" % [id, b[1], str(b[0])])
 
-	print("camp tree: %s at %.2f, %.2f, %.1f m tall" % [oak[0], oak[1].x, oak[1].z, float(oak[2])])
+	print("camp tree: %s at %.2f, %.2f, %.1f m tall" % [camp_tree[0], camp_tree[1].x, camp_tree[1].z, float(camp_tree[2])])
 
 
 # Hob takes his post and Edda her chair at the camp, turned to the fire; the town's middle is the old markers' middle.
@@ -115,7 +115,7 @@ func _npcs(fire: Vector2, own: Dictionary) -> void:
 	NpcsScript.test_hold_off = false   # the shipped hold: Hob at work, Edda sitting, all day
 	npcs.hour_now = func(): return 12.0
 	npcs.ground_height = func(_x, _z): return 10.0
-	npcs.rain_now = func(): return 1.0   # rain does not send them off: they are under the oak
+	npcs.rain_now = func(): return 1.0   # rain does not send them off: they are under the camp tree
 	npcs.player_positions = func(): return [Vector3(fire.x, 10.0, fire.y)]
 	npcs.setup("")
 	npcs.tick(0.2)
@@ -241,7 +241,7 @@ func _server(tree: Vector2, fire: Vector2) -> void:
 
 
 # A world saved before the camp (Dave 17 Nov 2026: "I just pulled dev and restarted my game but edda and hob are in the same place"): its NPC admin file
-# (extra posts and chairs, Hob and Edda given homes at the old town) and its world items (a fire of its own) load, and Hob and Edda still go to the oak
+# (extra posts and chairs, Hob and Edda given homes at the old town) and its world items (a fire of its own) load, and Hob and Edda still go to the camp tree
 # and the camp fire is laid beside the saved one. NPC spots are never saved: each start puts them where markers.json says.
 func _old_world(fire: Vector2, own: Dictionary) -> void:
 	var dir: String = "user://test_npc_camp_old"
@@ -264,7 +264,7 @@ func _old_world(fire: Vector2, own: Dictionary) -> void:
 
 	for id in ["hob", "edda"]:
 		var spot: Vector2 = Vector2(float(own[id]["x"]), float(own[id]["z"]))
-		check(Vector2(npcs.npcs[id]["pos"].x, npcs.npcs[id]["pos"].z).distance_to(spot) < 0.01, "an old world: %s is at the oak, not the old town (%s)" % [id, str(npcs.npcs[id]["pos"])])
+		check(Vector2(npcs.npcs[id]["pos"].x, npcs.npcs[id]["pos"].z).distance_to(spot) < 0.01, "an old world: %s is at the camp tree, not the old town (%s)" % [id, str(npcs.npcs[id]["pos"])])
 
 	# The world items of an old save: a server with no camp saves a fire of its own; a new server loads it and lays the camp fire too.
 	var before = _items_in(dir)

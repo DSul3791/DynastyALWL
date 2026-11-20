@@ -8,7 +8,7 @@ extends RefCounted
 
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 
-const OVERRIDE := Vector2(53296.0, 68080.0)   # moved 6 Nov 2026 (Sonny, #473) from x 53316 z 68476: with the rivers on the valley floor that spot was no longer 2 m over the water; Dave: move the spawn, do not adjust heights
+const OVERRIDE := Vector2(58167.0, 71364.4)   # moved 20 Nov 2026 to the starter town (Dave: "move character spawn down next to them"): 10 m east of Edda and Hob's camp tree, in front of their fire and just outside its 8 m keep (data/npcs/camp.json); before that x 53296 z 68080, moved 6 Nov 2026 (Sonny, #473) from x 53316 z 68476: with the rivers on the valley floor that spot was no longer 2 m over the water; Dave: move the spawn, do not adjust heights
 const STARTER_TILE := "tile_3_4.tile"
 
 static var _current: Vector2 = OVERRIDE

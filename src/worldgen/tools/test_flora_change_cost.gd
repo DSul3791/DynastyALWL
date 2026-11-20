@@ -41,7 +41,7 @@ func _init() -> void:
 	generator.setup(settings, rules, tables, world + "/tiles")
 	var placer = PlacerScript.new()
 	placer.setup(generator, tables, rules)
-	var spawn_xz: Vector2 = load("res://src/shared/spawn_point.gd").OVERRIDE
+	var spawn_xz: Vector2 = Vector2(53296.0, 68080.0)   # the old spawn (x 53296, z 68080), kept as a fixed sample area of the starter tile when the spawn moved to the starter town (20 Nov 2026)
 	var chunk: Vector2i = placer.normalize(placer.chunk_of(spawn_xz.x, spawn_xz.y))
 	var tree_species: int = -1
 
