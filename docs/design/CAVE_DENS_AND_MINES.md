@@ -23,12 +23,26 @@
 - **Not changed:** the bake, tile files and saves; the goblins' share and their floor rule; the ordinary habitat spawning.
 - **Test:** `src/worldgen/tools/test_cave_animal_dens.gd`, plus the den looks in `test_cave_dressing.gd`.
 
-## Stage 2: abandoned mines (next)
-These are to be built after stage 1 merges, following `caves-mines/PLAN.md` sections 0 and 3:
-- an adit 2.0 to 2.2 m high and 1.2 to 1.5 m wide, rising 1 % inward toward an ore body that exists;
-- drifts and stopes along the ore body;
-- an air shaft on large mines;
-- timber sets at the mouth and in soft ground;
-- a spoil heap, a few ore rocks and old tools.
-
-Mines are carved from the seed when a tile loads, with one terrain version step. There is no world wipe, and player digs are kept.
+## Stage 2: abandoned mines (built)
+- **Where (CD-5):** `src/worldgen/runtime/mine_sites.gd` works out up to 2 to 4 mines per tile (the number from the tile's seed) when the tile loads, from its baked copper, tin and iron ore bodies (lens and halo shapes; a halo's adit drives for a point 0.6 of the way out on its ring) and its heights. A tile with no such ore under a fitting hillside gets fewer, or none. Nothing is baked and the tile files do not change. On a starter tile the ore body nearest the start area is tried first, so the nearest mine is as close to the spawn as the ore allows (outside the 400 m kept clear); "about 1 km" is not forced. Two mines' ore bodies are at least 400 m apart. A mouth is at least 150 m from any cave mouth and from each goblin camp's mouth and fire (`data/creatures/goblin_tribes.json`), and 400 m from the start area (Edda and Hob's camp), and the whole mine stays 300 m inside its tile.
+- **The mouth:** on a dry hillside of 10 to 35 degrees whose ground rises toward the ore, at the level where the adit's climb meets the ore body. Past an open cut of 6 to 20 m (longer on gentler ground) the hill stands at least 2 m over the roof all the way in, with no water above. Drifts and stopes are held to the same rule: a drift stops where the hill would fall to less than 2 m over it or water lies above, and a stope that would break out is not cut. The first drift runs the way the hill rises.
+- **The shape (from `caves-mines/PLAN.md` section 0):**
+  - The adit is 1.8 m wide and 2.4 m tall. Agricola's is 1.15 m by 2.3 m; it is widened so the 1 m voxels never close it. It rises 1 in 100 inward, so water drains out of the mouth. It runs 20 m to about 330 m.
+  - Sizes go by adit length: small up to 80 m (up to one drift and one stope), medium up to 160 m (up to two drifts and two stopes), large beyond that (up to two drifts, three or four stopes, and an air shaft), as far as the rock allows.
+  - Drifts run 10 to 60 m along the ore body. Stopes are rooms 5 to 8 m across and up to 3.8 m tall, off the drifts or the adit's end, where the ore was taken out.
+  - A large mine's air shaft rises from its first drift and has fallen in 3 m under the surface. A hollow on the hill marks it.
+- **Timbers (CD-6, looks only):**
+  - Sets of two posts, a cap and boards stand across the adit every 2.7 m from the mouth in: 6 m of it in a small mine, 10 m in a medium one and 15 m in a large one. Beyond that the adit is bare rock.
+  - The deepest set of a medium (half of them) or large mine has fallen, with rubble beside it.
+  - Each stope 3.6 m or taller has two props. A stope is as tall as the rock over it allows (2.4 to 3.8 m); one with less than 2 m of rock over its roof is not cut.
+  - These are `cave_bones` kinds 6, 7 and 8, protocol 142, drawn by `cave_dressing.gd`. They have no collision and cannot be taken.
+- **Left behind:**
+  - A worn copper pickaxe lies at the far end, with three quarters of its life used up (copper, not bronze, so a mine never hands out a tier the player has not smelted).
+  - A bucket, a rope or a burnt-out lantern may lie beside it.
+  - Two to four pieces of the body's ore lie in each stope.
+  - A spoil heap of about 30 stones and boulders is fanned out downhill of the mouth.
+  - All of these are cave scatter rows (kind 2 for an item). The server lays them out like cave stones, and each is saved only once a player takes it. They are existing catalog items; nothing is added to the catalog.
+- **Carving:** mines go through the caves' own carving, floor scatter, shelter and cave-air counts and flora clearing. TERRAIN_VERSION 77 drops the server's generated block cache once, and the shipped starter ground (`worlds/base_world/starter_cache`) is rebuilt for it with `tools/rebuild_starter_cache.sh`. Player digs in `digs.dat` replay on top. There is no wipe and no save change.
+- **Risk:** a mine is carved into ground that players may already have built on. Only the start area is kept clear (400 m). A build that stands over a new adit can end up over a hollow. Past its open cut a mine is narrow (1.8 m) and at least 2 m under the surface, so this is unlikely, but it is not checked. The open cut itself is a trench up to 20 m long at the mouth, cleared of flora like a cave entrance. A mine's mouth is kept 150 m from cave mouths, but a long adit is not checked against a cave's inner passages.
+- **Not changed:** the bake, ore bodies (mining an ore body still works as before), goblin and animal dens (a mine holds neither), bell pits (CD-7).
+- **Test:** `src/worldgen/tools/test_mine_sites.gd`, plus the timber looks in `test_cave_dressing.gd`.

@@ -2,7 +2,9 @@ extends Node3D
 
 # Cave dressing (Dave 4 Nov 2026: bone piles at cave entrances and far ends, animal and human; stalagmites and stalactites in big caves). The bake puts
 # them in each spring cave (Sonny); the server sends a tile's lists with its cave dens and the client draws them here, one MultiMesh per look per tile.
-#   bones:      per entry x, y, z (the pile's floor point), kind (0 animal, 1 human, 2 goblin litter, 3 goblin fire, 4 den droppings, 5 den bedding), yaw (radians)
+#   bones:      per entry x, y, z (the pile's floor point), kind (0 animal, 1 human, 2 goblin litter, 3 goblin fire, 4 den droppings, 5 den bedding, 6 mine timber set, 7 mine prop, 8 fallen set), yaw (radians)
+# Mine timbers (Dave 19 Nov 2026, "abandoned mines that already have bracing", protocol 142): a timber set across an adit (yaw is the way the adit
+# runs), a prop in a stope, a fallen set. Looks only (CD-6); old grey-brown wood with dark rot at the feet.
 # Den signs (Dave 19 Nov 2026, protocol 141): a cave a bear, wolf or fox dens in shows droppings a few metres inside the mouth and a trampled bed at the den.
 #   formations: per entry x, y, z, kind (0 stalagmite: the point is its foot on the floor; 1 stalactite: its root on the roof, hanging down), height m, radius m
 # A stalagmite 0.25 m or more in radius is solid (a cylinder collider on the ground layer), so a player walks round it; stalactites hang out of reach.
@@ -66,12 +68,12 @@ func set_tile(tile: Vector2i, bones: PackedFloat32Array, formations: PackedFloat
 
 	var holder: Node3D = Node3D.new()
 	holder.name = "Tile_%d_%d" % [tile.x, tile.y]
-	var rows: Dictionary = {"bones_animal": [], "bones_human": [], "goblin_litter": [], "goblin_fire": [], "goblin_flame": [], "den_droppings": [], "den_bedding": [], "stalagmite": [], "stalactite": []}
+	var rows: Dictionary = {"bones_animal": [], "bones_human": [], "goblin_litter": [], "goblin_fire": [], "goblin_flame": [], "den_droppings": [], "den_bedding": [], "mine_set": [], "mine_post": [], "mine_fallen": [], "stalagmite": [], "stalactite": []}
 
 	for n in range(0, bones.size() - BONE_FIELDS + 1, BONE_FIELDS):
 		var spin: Basis = Basis(Vector3.UP, bones[n + 4])
-		var kind: int = int(bones[n + 3])      # 0 animal bones, 1 human bones, 2 goblin den litter, 3 goblin den fire (Dave 7 Nov 2026), 4 den droppings, 5 den bedding (Dave 19 Nov 2026)
-		rows[["bones_animal", "bones_human", "goblin_litter", "goblin_fire", "den_droppings", "den_bedding"][clampi(kind, 0, 5)]].append(Transform3D(spin, Vector3(bones[n], bones[n + 1], bones[n + 2])))
+		var kind: int = int(bones[n + 3])      # 0 animal bones, 1 human bones, 2 goblin den litter, 3 goblin den fire (Dave 7 Nov 2026), 4 den droppings, 5 den bedding (Dave 19 Nov 2026), 6 mine timber set, 7 mine post, 8 fallen set (protocol 142)
+		rows[["bones_animal", "bones_human", "goblin_litter", "goblin_fire", "den_droppings", "den_bedding", "mine_set", "mine_post", "mine_fallen"][clampi(kind, 0, 8)]].append(Transform3D(spin, Vector3(bones[n], bones[n + 1], bones[n + 2])))
 
 	for n in range(0, formations.size() - FORMATION_FIELDS + 1, FORMATION_FIELDS):
 		var at: Vector3 = Vector3(formations[n], formations[n + 1], formations[n + 2])
@@ -181,6 +183,12 @@ static func look_mesh(look: String) -> ArrayMesh:
 			_den_droppings(parts)
 		"den_bedding":
 			_den_bedding(parts)
+		"mine_set":
+			_mine_set(parts, false)
+		"mine_fallen":
+			_mine_set(parts, true)
+		"mine_post":
+			_mine_post(parts)
 		"stalagmite":
 			_formation(parts, false)
 		"stalactite":
@@ -306,6 +314,41 @@ static func _goblin_litter(parts: Array) -> void:
 	for k in 7:
 		var a: float = TAU * float(k) * 0.618034
 		BasicLook._box_rot(parts, Vector3(0.38, 0.012, 0.05), Vector3(cos(a) * 0.22, 0.01 + 0.004 * float(k), sin(a) * 0.22), Vector3(0.0, a * 1.7, 0.0), BasicLook._tone(straw, k, 0.12))
+
+
+const OLD_WOOD := Color(0.42, 0.34, 0.25)
+
+
+# A timber set as medieval miners stood them (Agricola V): two posts leaning in a little, a cap across their tops, boards laid over the cap against
+# the roof. It sits across the adit (1.8 m wide, 2.4 m tall, mine_sites.gd): local x across, z along, its foot at y 0. The adit is carved as an
+# ellipse that tall and wide, so the set stays inside it: posts 1 m apart, the cap and its boards about 2 m up. Fallen: one post still up,
+# the cap down at one end, the other post on the floor.
+static func _mine_set(parts: Array, fallen: bool) -> void:
+	var rot: Color = OLD_WOOD.darkened(0.45)
+
+	for side in [-1.0, 1.0]:
+		if fallen and side > 0.0:
+			BasicLook._box_rot(parts, Vector3(0.18, 0.16, 1.9), Vector3(0.35, 0.09, 0.35), Vector3(0.0, 0.25, 0.0), BasicLook._tone(OLD_WOOD, 3, 0.1))
+			continue
+
+		BasicLook._box_rot(parts, Vector3(0.18, 1.9, 0.18), Vector3(side * 0.5, 0.95, 0.0), Vector3(0.0, 0.0, side * 0.04), BasicLook._tone(OLD_WOOD, int(side > 0.0), 0.1))
+		BasicLook._box(parts, Vector3(0.2, 0.25, 0.2), Vector3(side * 0.52, 0.12, 0.0), rot)   # rotted foot
+
+	if fallen:
+		BasicLook._box_rot(parts, Vector3(1.2, 0.18, 0.2), Vector3(-0.05, 1.0, 0.0), Vector3(0.0, 0.0, -1.1), BasicLook._tone(OLD_WOOD, 5, 0.1))
+		return
+
+	BasicLook._box(parts, Vector3(1.2, 0.2, 0.22), Vector3(0.0, 1.95, 0.0), BasicLook._tone(OLD_WOOD, 2, 0.1))   # the cap
+
+	for k in 3:
+		BasicLook._box(parts, Vector3(0.9, 0.04, 0.22), Vector3(0.0, 2.07, -0.28 + 0.28 * float(k)), BasicLook._tone(OLD_WOOD.darkened(0.1), k, 0.15))   # lagging boards
+
+
+# A prop holding up a stope's roof: a post 3 m tall with a short head board on it.
+static func _mine_post(parts: Array) -> void:
+	BasicLook._box_rot(parts, Vector3(0.2, 2.9, 0.2), Vector3(0.0, 1.45, 0.0), Vector3(0.04, 0.0, 0.03), BasicLook._tone(OLD_WOOD, 1, 0.1))
+	BasicLook._box(parts, Vector3(0.7, 0.12, 0.25), Vector3(0.0, 2.96, 0.0), BasicLook._tone(OLD_WOOD, 4, 0.1))
+	BasicLook._box(parts, Vector3(0.24, 0.25, 0.24), Vector3(0.0, 0.12, 0.0), OLD_WOOD.darkened(0.45))
 
 
 # Droppings by a den's mouth: a scatter of dark, twisted scat with grey hair in it (an animal that eats meat lives here), about 0.5 m across.
