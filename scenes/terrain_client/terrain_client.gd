@@ -2206,6 +2206,11 @@ func _sync_cleared() -> void:
 		paths.append(mound)
 		key = key ^ hash(Vector2(mound.x, mound.z))
 
+	for bog_id in items.bogs:      # a bog iron stain (Dave 19 Nov 2026: obvious to find): no grass or small plant stands on it
+		var bog_at: Vector3 = items.bogs[bog_id]["pos"]
+		spots.append(Vector3(snappedf(bog_at.x, 0.01), bog_at.y, snappedf(bog_at.z, 0.01)))
+		key = key ^ hash(Vector2(bog_at.x, bog_at.z)) ^ int(bog_id)
+
 	for boulder_id in items._boulders:
 		var boulder: Dictionary = items._boulders[boulder_id]
 		var rock_r: float = float(boulder.get("now", boulder.get("radius", 0.5)))

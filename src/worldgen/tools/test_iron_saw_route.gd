@@ -177,9 +177,12 @@ func _init() -> void:
 	var saw_iron: int = need_of("hand_saw", "iron_ingot")
 	var anvil_iron: int = need_of("iron_anvil_part", "iron_ingot")
 	var job: Dictionary = items._structures_cfg.get("smelting", {}).get("jobs", {}).get("iron", {})
-	var ore_n: int = saw_iron + anvil_iron   # 1 Iron ore makes 1 Iron ingot (master s2.7 item 3)
-	var fuel_n: int = int(ceil(float(items._structures_cfg["smelting"].get("fuel_per_ore", 1)) * float(ore_n))) + 4   # and a few to fire the Smithy
+	var bog_job: Dictionary = items._structures_cfg.get("smelting", {}).get("jobs", {}).get("bog_iron", {})
+	var ore_n: int = saw_iron + anvil_iron   # iron ingots the route needs
+	var bog_n: int = 2 * ore_n               # 2 Bog iron ore make 1 Iron ingot (Dave 19 Nov 2026)
+	var fuel_n: int = int(ceil(float(items._structures_cfg["smelting"].get("fuel_per_ore", 1)) * float(bog_n))) + 4   # and a few to fire the Smithy
 	check(rows_text(job.get("in", [])) == "iron_ore 1" and rows_text([job.get("out", ["", 0])]) == "iron_ingot 1" and bool(job.get("bellows", false)), "the iron job: 1 Iron ore to 1 Iron ingot, only with the bellows worked")
+	check(rows_text(bog_job.get("in", [])) == "bog_iron_ore 2" and rows_text([bog_job.get("out", ["", 0])]) == "iron_ingot 1" and bool(bog_job.get("bellows", false)), "the bog iron job: 2 Bog iron ore to 1 Iron ingot, only with the bellows worked")
 	# The pre-saw stations take only what the wilderness gives and the route makes (master s4 item 10): no Planks, no nails, no bought metal.
 	for st in ["smelter", "stone_forge", "improved_smelter", "blacksmithy"]:
 		var ids: Array = blueprint_of(st).get("cost", []).map(func(c): return str(c[0]))
@@ -191,14 +194,14 @@ func _init() -> void:
 	items.give(1, items.table.number_of("wooden_shovel"), 1)
 
 	for n in range(200):
-		if have("iron_ore") >= ore_n:
+		if have("bog_iron_ore") >= bog_n:
 			break
 
 		items._last_dig.clear()
 		items.action(1, Net.ACT_DIG, HeldTool.slot_of(items, "shovel"), 0, 0, HERE + Vector3(1.0, 0.0, 0.0))
 		items.inventory_of(1).remove(items.table.number_of("soil"), have("soil"))
 
-	check(have("iron_ore") >= ore_n, "1. a wooden shovel digs %d bog iron ore out of wet ground (%d)" % [ore_n, have("iron_ore")])
+	check(have("bog_iron_ore") >= bog_n and have("iron_ore") == 0, "1. a wooden shovel digs %d Bog iron ore (not Iron ore) out of wet ground (%d)" % [bog_n, have("bog_iron_ore")])
 
 	# 2. Charcoal left in a lit campfire as its firewood burns.
 	var fire_id: int = items._next_id
@@ -214,13 +217,13 @@ func _init() -> void:
 	var primitive: int = build("smelter", PRIMITIVE_AT)
 	check(primitive >= 0, "3a. a Primitive smelter stands, built from %s" % str(blueprint_of("smelter").get("cost", [])))
 	items.report_position(1, PRIMITIVE_AT + Vector3(1.5, 0.0, 0.0))
-	check(put_in(primitive, "iron_ore", 1) == 0, "3b. the Primitive smelter takes no iron ore (master s2.7 item 1)")
+	check(put_in(primitive, "bog_iron_ore", 1) == 0, "3b. the Primitive smelter takes no bog iron ore (master s2.7 item 1)")
 	items.report_position(1, HERE)
 	var smelter: int = build("improved_smelter", SMELTER_AT)
 	check(smelter >= 0, "3c. an Improved smelter stands, built from %s" % str(blueprint_of("improved_smelter").get("cost", [])))
-	var charcoal_in: int = put_in(smelter, "charcoal", ore_n)
-	var ore_in: int = put_in(smelter, "iron_ore", ore_n)
-	check(charcoal_in == ore_n and ore_in == ore_n, "3d. its hopper takes %d Charcoal and its input %d Iron ore" % [charcoal_in, ore_in])
+	var charcoal_in: int = put_in(smelter, "charcoal", bog_n)
+	var ore_in: int = put_in(smelter, "bog_iron_ore", bog_n)
+	check(charcoal_in == bog_n and ore_in == bog_n, "3d. its hopper takes %d Charcoal and its input %d Bog iron ore" % [charcoal_in, ore_in])
 	var unmanned_s: float = float(items._structures["improved_smelter"]["smelt"]["ingot_s"]) * 3.0
 	items.report_position(1, (items._items[smelter]["pos"] as Vector3) + Vector3(-1.5, 0.0, 0.0))   # beside it: E reaches 3 m (use_reach_m)
 	items.action(1, Net.ACT_USE_STRUCT, smelter, 0, 0, Vector3.ZERO)   # E: light it (it smelts only while lit, Dave 17 Nov 2026)
@@ -242,7 +245,7 @@ func _init() -> void:
 
 	take_all(smelter)
 	items.report_position(1, HERE)
-	check(have("iron_ingot") >= ore_n and not items._smelters.bellows_worked(smelter) and not bool(items._items[smelter]["struct"].get("lit", false)), "3f. working the bellows it smelts bog iron into %d Iron ingots in its rack, about %.2f s each (%d); its last fuel burnt, it goes out and the bellows stop" % [ore_n, manned_s, have("iron_ingot")])
+	check(have("iron_ingot") >= ore_n and not items._smelters.bellows_worked(smelter) and not bool(items._items[smelter]["struct"].get("lit", false)), "3f. working the bellows it smelts bog iron two to one into %d Iron ingots in its rack, about %.2f s each (%d); its last fuel burnt, it goes out and the bellows stop" % [ore_n, manned_s, have("iron_ingot")])
 	check(int(items._goal_state_of(1).get("goal_counts", {}).get("event:bellows_iron", 0)) == bellows_before + 1, "3g. working the bellows through an iron smelt counts the goal event bellows_iron once for the worker, not once an ingot (%d ingots)" % ore_n)
 
 	# 4. The Improved smithy from stones, clay, logs and bronze (given: the bronze route is test_bronze_path); it must burn to craft.

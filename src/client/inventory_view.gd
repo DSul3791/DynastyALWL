@@ -139,10 +139,9 @@ const OreRockLook := preload("res://src/client/ore_rock_look.gd")
 # Outcrop boulders (Kathleen, 10 Nov 2026; Dave could not tell an ore boulder from a plain one). The server sends a boulder's "ore" (boulders.json ore:
 # an ore body within reach, or the boulder's own limestone, chalk or marble); the client draws it in the same granite-and-moss shader with the stone tinted
 # toward the ore's rock and mineral streaks through it, and the streaks keep the moss off. Subtle on purpose: read from about 10 m, not a neon tell.
-# Copper and tin are not here: they are their own rocks (OreRockLook, Dave's photos 16 and 17 Nov 2026).
+# Copper, tin and iron are not here: they are their own rocks (OreRockLook, Dave's photos and words 16, 17 and 19 Nov 2026).
 # ore: [stone tint, tint share, streak colour, streak width (0..0.5 of the band), flat (0 steep veins, 1 flat seams), halo share, fleck share]
 const OUTCROP_LOOK := {
-	"iron": [Color(0.36, 0.27, 0.21), 0.45, Color(0.4, 0.2, 0.09), 0.1, 0.0, 0.5, 0.03],           # rust
 	"coal": [Color(0.21, 0.21, 0.21), 0.45, Color(0.05, 0.05, 0.05), 0.2, 1.0, 0.15, 0.0],         # flat black seams
 	"salt": [Color(0.42, 0.4, 0.37), 0.4, Color(0.8, 0.78, 0.72), 0.16, 1.0, 0.2, 0.05],           # pale crusted beds
 	"limestone": [Color(0.58, 0.55, 0.47), 0.7, Color(0.66, 0.63, 0.56), 0.04, 0.6, 0.0, 0.05],     # pale cream bedding
@@ -3488,7 +3487,7 @@ var _bin_materials: Dictionary = {}   # item number -> the placeholder surface m
 
 func _bin_material(number: int) -> StandardMaterial3D:
 	if not _bin_materials.has(number):
-		var colours: Dictionary = {"stone": Color(0.5, 0.5, 0.48), "cobblestone": Color(0.45, 0.44, 0.42), "gravel": Color(0.56, 0.54, 0.5), "flint": Color(0.3, 0.3, 0.32), "clay": Color(0.62, 0.36, 0.25), "sand": Color(0.85, 0.75, 0.5), "soil": Color(0.35, 0.25, 0.15), "charcoal": Color(0.08, 0.08, 0.08), "coal": Color(0.1, 0.1, 0.11), "copper_ore": Color(0.42, 0.55, 0.4), "tin_ore": Color(0.6, 0.6, 0.62), "iron_ore": Color(0.5, 0.28, 0.18)}
+		var colours: Dictionary = {"stone": Color(0.5, 0.5, 0.48), "cobblestone": Color(0.45, 0.44, 0.42), "gravel": Color(0.56, 0.54, 0.5), "flint": Color(0.3, 0.3, 0.32), "clay": Color(0.62, 0.36, 0.25), "sand": Color(0.85, 0.75, 0.5), "soil": Color(0.35, 0.25, 0.15), "charcoal": Color(0.08, 0.08, 0.08), "coal": Color(0.1, 0.1, 0.11), "copper_ore": Color(0.42, 0.55, 0.4), "tin_ore": Color(0.6, 0.6, 0.62), "iron_ore": Color(0.5, 0.28, 0.18), "bog_iron_ore": Color(0.48, 0.22, 0.1)}
 		var m: StandardMaterial3D = StandardMaterial3D.new()
 		m.albedo_color = colours.get(table.id_of(number) if number > 0 else "", Color(0.5, 0.45, 0.4))
 		m.roughness = 1.0
@@ -3524,7 +3523,7 @@ func placement_rows() -> Array:
 
 # Removes a world row's node and, for a lean-to, its roof in the cover index.
 # A bog iron deposit the server says is in sight (Sonny's water rules section 11): its spot, the ore left and its full size, and whether it lies under
-# standing water. Kept, not drawn yet: Kathleen's look (_show_bog) builds on this entry and puts its node in "node".
+# standing water. Drawn by _show_bog; terrain_client keeps the grass off it.
 func _note_bog(id: int, row: Array) -> void:
 	var extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
 	var entry: Dictionary = bogs.get(id, {})
@@ -3534,6 +3533,42 @@ func _note_bog(id: int, row: Array) -> void:
 	entry["wet"] = bool(extra.get("wet", false))
 	entry["key"] = str(extra.get("key", ""))
 	bogs[id] = entry
+	_show_bog(id)
+
+
+# A bog iron deposit's ground stain (PieceLook.bog_iron_patch): "wet" under standing water, "dug" once ore has been taken (until it grows back to
+# full), else "dry". Rebuilt only when the state changes; no collision; turned by the key's hash so neighbours differ.
+func _show_bog(id: int) -> void:
+	var entry: Dictionary = bogs.get(id, {})
+
+	if entry.is_empty() or _root == null:
+		return
+
+	var state: String = "wet" if bool(entry["wet"]) else ("dug" if int(entry["left"]) < int(entry["total"]) else "dry")
+
+	if entry.get("node") is Node3D and str(entry.get("state", "")) == state:
+		(entry["node"] as Node3D).position = entry["pos"]
+		return
+
+	if entry.get("node") is Node3D:
+		(entry["node"] as Node3D).queue_free()
+
+	var at: Vector3 = entry["pos"]
+	var yaw: float = float(absi(hash(str(entry["key"]))) % 360) * PI / 180.0
+	var ground: Callable = Callable()
+
+	if _ground_below.is_valid():   # drape the stain over the ground: the patch's frame turned by yaw, from its origin
+		ground = func(x: float, z: float) -> float:
+			var spot: Vector3 = at + Vector3(x, 0.0, z).rotated(Vector3.UP, yaw)
+			var y: float = float(_ground_below.call(spot))
+			return 0.0 if is_nan(y) else y - at.y
+
+	var node: Node3D = PieceLook.bog_iron_patch(state, ground)
+	node.position = at
+	node.rotation.y = yaw
+	_root.add_child(node)
+	entry["node"] = node
+	entry["state"] = state
 
 
 # Boulders (Dave 2026-10-21): server-owned lumps of rock a pick breaks into stones. Drawn with Art's boulder mesh scaled to the
@@ -3576,7 +3611,7 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 	shape.shape = SphereShape3D.new()
 	body.add_child(shape)
 	var lump: MeshInstance3D = MeshInstance3D.new()
-	var ore_rock: bool = OreRockLook.has_look(str(extra.get("ore", "")))   # copper and tin: Dave's photos
+	var ore_rock: bool = OreRockLook.has_look(str(extra.get("ore", "")))   # copper, tin and iron: Dave's photos
 	lump.mesh = OreRockLook.mesh_for(float(extra.get("yaw", 0.0))) if ore_rock else _boulder_mesh
 	lump.material_override = OreRockLook.material(str(extra.get("ore", ""))) if ore_rock else _boulder_material(str(extra.get("ore", "")))
 	lump.material_overlay = _crack_material()
