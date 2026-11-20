@@ -8791,11 +8791,11 @@ func _repair(peer: int, inv, slot: int) -> void:
 		return
 
 	# The tool's own slot must not be spent as material.
-	var held_number: int = inv.numbers[slot]
+	var tool_number: int = inv.numbers[slot]
 
 	for cost in costs:
 		var number: int = table.number_of(str(cost[0]))
-		var have: int = inv.count_of(number) - (inv.counts[slot] if number == held_number else 0)
+		var have: int = inv.count_of(number) - (inv.counts[slot] if number == tool_number else 0)
 
 		if number == 0 or have < int(cost[1]):
 			_say(peer, "Repair needs %s." % _repair_text(costs))
