@@ -123,7 +123,7 @@ const FIRE_STATE_BONFIRE := 41
 const FIRE_STATE_COALS := StructureLookScript.FIRE_COALS   # 76: after the flames, coals glowing (cooking.json coals; docs/design/fire_coals_design.md)...
 const FIRE_STATE_ASH := StructureLookScript.FIRE_ASH       # 77: ...then warm ash, then cold ash (8)
 const FIRE_STATE_COLD := 8                                   # cold ash (a bandit camp's pit before the camp, BANDIT_CAMPS.md stage 3)
-const BANDIT_TRACKS_MAX := 32                                # boot prints sent with one pit at most (a short list in its world row)
+const BANDIT_TRACKS_MAX := 32                                # boot prints sent with one mark at most (a short list in its world row)
 const FIRE_OUT_S := 300.0                # a burnt-out or rained-out fire stays this long
 const FIRE_MIN_GAP_M := 2.0               # fallbacks: structures.json "campfire" decides
 const FIRES_PER_CHUNK := 8
@@ -10846,8 +10846,8 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 	for id in _items:
 		var other: Dictionary = _items[id]
 
-		if not other.has("struct") and not other.has("fire"):
-			continue
+		if not other.has("struct") and not other.has("fire") or other.get("fire", {}).has("marks"):
+			continue   # a bandit camp's boot prints stand in nobody's way
 
 		var row: Dictionary = {"pos": other["pos"], "state": int(other["fire"]["state"]) if other.has("fire") else int(_structures.get(str(other["struct"]["kind"]), {}).get("state", -1)), "yaw": float(other["struct"].get("yaw", 0.0)) if other.has("struct") else 0.0}
 
@@ -11415,7 +11415,7 @@ var _spawn_zones = SpawnZonesScript.new()
 func _zone_add(id: int) -> void:
 	var entry: Dictionary = _items[id]
 
-	if SpawnZonesScript.counts(entry) and _carts.vehicle_of(entry).is_empty():   # a cart or barrow goes where it is pulled: not a build
+	if SpawnZonesScript.counts(entry) and _carts.vehicle_of(entry).is_empty() and not entry.get("fire", {}).has("marks"):   # a bandit camp's boot prints are no build   # a cart or barrow goes where it is pulled: not a build
 		_spawn_zones.add(id, entry["pos"].x, entry["pos"].z)
 
 

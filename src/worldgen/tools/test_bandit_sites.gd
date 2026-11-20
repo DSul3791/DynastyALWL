@@ -546,6 +546,7 @@ func _warnings_stages() -> void:
 	check(levels_before >= 2, "this site's camp has two or more bandits (%d), so one can fall as lookout" % levels_before)
 
 	if levels_before >= 2:
+		b.camp_tick(1.0, near)   # the members' spots are read (he walked 140 m since)
 		animals.animals.erase(int(guard["id"]))
 		check(b.fallen("bandit", guard["pos"]) == cell and (b.sites[cell]["levels"] as Array).size() == levels_before - 1 and bool(b.sites[cell]["lookout_down"]), "a killed lookout leaves the row")
 		b.camp_tick(1.0, near)

@@ -3236,6 +3236,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 				node.quaternion = aim.basis.get_rotation_quaternion()
 		else:
 			var fire_extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
+
 			if bool(fire_extra.get("marks", false)):
 				node = Node3D.new()   # a bandit camp's boot prints leading off the road, no pit (docs/design/BANDIT_CAMPS.md stage 3)
 			else:

@@ -1,8 +1,8 @@
 extends RefCounted
 
 # Boot tracks leading from a road to a bandit camp's cold fire pit (docs/design/BANDIT_CAMPS.md stage 3, the signs): one dark, flat print
-# per [dx, dy, dz, yaw degrees] of the pit's world row (server_items.lay_bandit_camp), drawn as one MultiMesh under the pit's node, so a
-# client that joins sees them with the pit and they go with it.
+# per [dx, dy, dz, yaw degrees] of the mark's world row at the road (server_items.lay_bandit_camp), drawn as one MultiMesh under the mark's
+# node, so a client that joins near the road sees them with the mark and they go with it.
 
 const PRINT_SIZE := Vector3(0.11, 0.015, 0.28)   # a boot sole pressed into the ground
 const PRINT_COLOR := Color(0.22, 0.17, 0.12)

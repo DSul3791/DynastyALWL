@@ -501,13 +501,16 @@ func tracks_of(plan: Dictionary) -> Array:
 	var step_m: float = float(row.get("track_step_m", 0.8))
 	var count: int = mini(int(float(row.get("track_m", 25.0)) / step_m), int(row.get("track_max", 32)))
 	var yaw: float = snappedf(rad_to_deg(atan2(way.x, way.y)), 1.0)
+	if not _ready_at(from):
+		return []   # never read a tile on the main thread: the road point may lie on another tile than the pit
+
 	var base: float = float(ground_height.call(from.x, from.y))
 	var out: Array = []
 
 	for n in count:
 		var at: Vector2 = from + way * (1.0 + step_m * float(n)) + (side if n % 2 == 0 else -side)
 
-		if not _ready_at(at) or not _ready_at(from):
+		if not _ready_at(at):
 			return []
 
 		var h: float = float(ground_height.call(at.x, at.y))
