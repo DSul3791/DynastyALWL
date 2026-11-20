@@ -131,8 +131,8 @@ func select(address: String) -> void:
 
 
 # Adds a typed server (Add new server). Returns "" when added, else the reason in plain words (nothing saved).
-func add_server(text: String, name: String = "") -> String:
-	var result: Dictionary = ServerList.add(rows, text, name)
+func add_server(text: String, shown: String = "") -> String:
+	var result: Dictionary = ServerList.add(rows, text, shown)
 
 	if result.has("error"):
 		return str(result["error"])
@@ -174,13 +174,13 @@ func undo_remove() -> void:
 	select(address)
 
 
-func rename_selected(name: String) -> void:
+func rename_selected(shown: String) -> void:
 	var index: int = ServerList.find(rows, selected)
 
 	if index < 0 or bool(rows[index].get("official", false)):
 		return
 
-	ServerList.rename(rows, selected, name)
+	ServerList.rename(rows, selected, shown)
 	ServerList.save_rows(rows)
 	refresh_list()
 
@@ -332,7 +332,7 @@ func _make_row(row: Dictionary) -> PanelContainer:
 
 
 # One piece of a row: from column start x to the next column (so a long name is cut, never drawn under the next column).
-func _cell(parent: Control, x: float, y: float, text: String, size: int, colour: Color) -> void:
+func _cell(parent: Control, x: float, y: float, text: String, font_size: int, colour: Color) -> void:
 	var right: float = 1.0
 
 	for column in COLUMNS:
@@ -343,12 +343,12 @@ func _cell(parent: Control, x: float, y: float, text: String, size: int, colour:
 	var label: Label = Label.new()
 	label.text = text
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	label.add_theme_font_size_override("font_size", size)
+	label.add_theme_font_size_override("font_size", font_size)
 	label.add_theme_color_override("font_color", colour)
 	label.anchor_left = x
 	label.anchor_right = right
 	label.offset_top = y
-	label.offset_bottom = y + size * 1.5
+	label.offset_bottom = y + font_size * 1.5
 	label.clip_text = true
 	parent.add_child(label)
 
@@ -367,9 +367,9 @@ static func when_text(unix: int) -> String:
 	if days < 14:
 		return "%d days ago" % days
 	if days < 60:
-		return "%d weeks ago" % (days / 7)
+		return "%d weeks ago" % floori(days / 7.0)
 
-	return "%d months ago" % (days / 30)
+	return "%d months ago" % floori(days / 30.0)
 
 
 func _build_ui() -> void:
