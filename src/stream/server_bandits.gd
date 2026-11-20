@@ -814,22 +814,17 @@ func fallen(species: String, pos: Vector3) -> Vector2i:
 	var best_id: int = 0
 	var best_d: float = FALLEN_REACH_M   # a member erased this tick may have charged or fled since its spot was last read (once a second)
 
-	for pass_no in 2:
-		for cell in _members:
-			for id in _members[cell]:
-				var m: Dictionary = _members[cell][id]
-				var d: float = (m["pos"] as Vector3).distance_to(pos)
-				var just_gone: bool = animals != null and not animals.animals.has(id)   # the animal code erased the dead one before telling us
+	for cell in _members:
+		for id in _members[cell]:
+			var m: Dictionary = _members[cell][id]
+			var d: float = (m["pos"] as Vector3).distance_to(pos)
+			var just_gone: bool = animals == null or not animals.animals.has(id)   # the animal code erased the dead one before telling us
 
-				if (just_gone or pass_no == 1) and d < best_d and bool(m["horse"]) == (species == "horse"):
-					best_d = d
-					best = cell
-					best_id = id
-
-		if best_id != 0:
-			break
-
-		best_d = 3.0   # no member just gone (a test, or none was ours): the nearest within 3 m of its last known spot
+			# Only a member just gone: an animal that was none of ours (a claimed horse, a wild one) never takes a living member's place.
+			if just_gone and d < best_d and bool(m["horse"]) == (species == "horse"):
+				best_d = d
+				best = cell
+				best_id = id
 
 	if best_id == 0:
 		return best
@@ -915,6 +910,30 @@ func bind(id: int, peer: int) -> bool:
 	a["bound_by"] = peer
 	a["gave_up"] = _now()   # the escape clock starts again from the tying
 	_tell(peer, "You tie the bandit. Lead him to a guard for the bounty.")
+	return true
+
+
+# Stage 5b: Rope or Twine struck at a camp horse once its camp has no bandit left puts a lead on it: it leaves the camp's row and is that
+# player's companion (server_companions.gd claim, source "claimed"). True when claimed (the rope is used).
+func claim_horse(id: int, peer: int) -> bool:
+	if animals == null or animals.companions == null or not animals.animals.has(id):
+		return false
+
+	var a: Dictionary = animals.animals[id]
+
+	if str(a["sp"]) != "horse" or not a.has("camp") or not sites.has(a["camp"]) or not (sites[a["camp"]]["levels"] as Array).is_empty():
+		return false   # not a camp horse, or a bandit of its camp is still about
+
+	var cell: Vector2i = a["camp"]
+
+	if not _members.has(cell) or not _members[cell].has(id) or not animals.companions.claim(a, peer):
+		return false
+
+	_member_gone(cell, id, a["pos"], false)
+	a.erase("camp")
+	a.erase("seat")
+	a["state"] = animals.GRAZE
+	_tell(peer, "You put a lead on the horse. It is yours now and follows you.")
 	return true
 
 

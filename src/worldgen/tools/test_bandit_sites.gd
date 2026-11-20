@@ -17,6 +17,7 @@ const BanditsScript := preload("res://src/stream/server_bandits.gd")
 const ItemScript := preload("res://src/stream/server_items.gd")
 const CartsScript := preload("res://src/stream/server_carts.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
+const CompanionsScript := preload("res://src/stream/server_companions.gd")
 const TribesScript := preload("res://src/stream/server_tribes.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -46,6 +47,7 @@ func _init() -> void:
 	_clearing_camp()
 	_tying_strike()
 	_surrender_kept()
+	_claimed_horses()
 	print("bandit sites: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
 
@@ -394,6 +396,8 @@ func _camp_life() -> void:
 	check(b.fallen("bandit", hurt["pos"]) == cell, "a fallen bandit is its camp's, though it ran on after its spot was last read")
 	check(b.sites[cell]["levels"].size() == 2 and dropped.size() == b.gear_of(level).size() and dropped[0][0] == b.gear_of(level)[0], "it leaves the row and drops its gear (%s)" % str(dropped))
 	check(b.fallen("bandit", Vector3(spot.x + 500.0, 50.0, spot.y)) == Vector2i(2147483647, 0), "a bandit far from any camp member is no camp's")
+	check(b.fallen("horse", horses[0]["pos"]) == Vector2i(2147483647, 0) and int(b.sites[cell]["horses"]) == 2, "a horse that is not gone is no camp's that died")
+	animals.animals.erase(int(horses[0]["id"]))
 	check(b.fallen("horse", horses[0]["pos"]) == cell and int(b.sites[cell]["horses"]) == 1, "a camp horse that dies leaves the row")
 	check(b.layout(cell)["seats"].size() == 2, "the smaller camp has fewer seats")
 
@@ -860,3 +864,91 @@ func _surrender_kept() -> void:
 	animals.damage(int(again["id"]), float(again["hp"]) * 10.0, 9)
 	dropped.clear()
 	check(b.fallen("bandit", at) == cell and dropped == b.gear_of(1).slice(1) and (b.sites[cell]["disarmed"] as Array).is_empty(), "killed, he drops only his clothes (%s)" % str(dropped))
+
+
+# Stage 5b: a camp horse is claimed with Rope or Twine only once its camp has no bandit left; it is then that player's companion (saved in
+# companions.json, made again beside them on return), no longer in the camp's row, so the camp's dissolving does not take it.
+func _claimed_horses() -> void:
+	var dir: String = "user://test_bandit_horses"
+	DirAccess.make_dir_recursive_absolute(dir)
+
+	for file in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir + "/" + file)
+
+	clock[0] = 990000.0
+	var b: BanditsScript = _sites(dir)
+	var animals = AnimalsScript.new()
+	animals.ground_height = func(_x, _z): return 50.0
+	animals.blocked = func(_x, _z): return false
+	animals.player_positions = func(): return []
+	animals.setup()
+	animals.traits = false
+	b.animals = animals
+	animals.bandit_camps = b
+	var players: Array = []
+	animals.big_game.player_info = func(): return players
+	animals.companions.peer_key = func(peer): return "rider" if int(peer) == 4 else ""
+	animals.companions.game_seconds = func(): return clock[0]
+	animals.companions.store_dir = dir
+	var said: Array = []
+	var cell: Vector2i = _cell_with_site(b, 210)
+	var spot: Vector2 = b.candidate(cell)
+	b.sites[cell] = {"x": spot.x, "z": spot.y, "woke": clock[0], "points": 40.0, "levels": [1], "horses": 2}
+	b.lay_camp = func(_camp_key, _camp_fire, _camp_lean_tos, _camp_old, _camp_tracks, _camp_tracks_at): return [600]
+	b.laid_still = func(_ids): return true
+	b.clear_camp = func(_camp_key, _camp_ids): pass
+	b.drop_gear = func(_gear_key, _gear_at): pass
+	b.tell = func(_peer, text): said.append(str(text))
+	var near: Array = [Vector3(spot.x + 20.0, 50.0, spot.y)]
+	b.camp_tick(1.0, near)
+	var horses: Array = animals.animals.values().filter(func(h): return h["sp"] == "horse")
+	var man: Dictionary = animals.animals.values().filter(func(m): return m["sp"] == "bandit")[0]
+	check(horses.size() == 2, "the camp has its two horses")
+	var first: int = int(horses[0]["id"])
+	var second: int = int(horses[1]["id"])
+	check(not b.claim_horse(first, 4), "a horse is not claimed while a bandit of its camp is left")
+	check(not b.claim_horse(int(man["id"]), 4), "a bandit is not a horse to claim")
+	animals.damage(int(man["id"]), float(man["hp"]) * 10.0, 4)
+	b.fallen("bandit", man["pos"])
+	check((b.sites[cell]["levels"] as Array).is_empty(), "the last bandit killed: the camp is empty")
+	check(not b.claim_horse(first, 5), "a player with no character cannot claim one")
+	check(b.claim_horse(first, 4) and said.any(func(t): return str(t).contains("lead on the horse")), "an empty camp's horse is claimed")
+	var led: Dictionary = animals.animals[first]
+	check(led.has("companion_id") and not led.has("camp") and int(b.sites[cell]["horses"]) == 1, "it is a companion and leaves the camp's row")
+	check(not b.claim_horse(first, 4), "a claimed horse is not claimed twice")
+	check(b.fallen("horse", animals.animals[second]["pos"]) == Vector2i(2147483647, 0) and int(b.sites[cell]["horses"]) == 1, "a claimed horse that dies by the tether is no camp's")
+	check(b.claim_horse(second, 4), "the second horse can be claimed too")
+	b.save()
+	animals.companions.save()
+
+	# It follows its owner, never warns or goes hungry, and is saved.
+	players.append({"peer": 4, "pos": led["pos"] + Vector3(15.0, 0.0, 0.0)})
+
+	for n in 60:
+		animals.companions.step(led, 0.25)
+
+	var gap: float = Vector2(players[0]["pos"].x - led["pos"].x, players[0]["pos"].z - led["pos"].z).length()
+	check(gap <= 4.0 + 1.5, "it follows its owner (%.2f m)" % gap)
+
+	for n in 40:
+		animals.companions.step(led, 0.25)
+
+	check(int(led["state"]) == AnimalsScript.GRAZE, "at heel it stands grazing, it does not lie down like a dog (%d)" % int(led["state"]))
+	var c2 = CompanionsScript.new()
+	c2.store_dir = dir
+	c2.load_records()
+	var mine: Array = c2.records.values().filter(func(r): return r["owner_key"] == "rider" and r["species"] == "horse")
+	check(mine.size() == 2 and mine.all(func(r): return float(r["bond"]) == 1.0), "both claimed horses are saved to their owner, bond full")
+
+	# Its owner leaves and returns: the horses are made again beside them, not in one spot; the camp dissolving does not take them.
+	players.clear()
+	clock[0] += BanditsScript.GAME_DAY_S
+	animals.companions.tick(CompanionsScript.LOOK_EVERY_S + 1.0)
+	check(not animals.animals.has(first) and not animals.animals.has(second), "its owner gone, the horses go with them")
+	players.append({"peer": 4, "pos": Vector3(spot.x + 300.0, 50.0, spot.y)})
+	animals.companions.tick(CompanionsScript.LOOK_EVERY_S + 1.0)
+	var back: Array = animals.animals.values().filter(func(h): return h["sp"] == "horse" and h.has("companion_id"))
+	check(back.size() == 2 and (back[0]["pos"] as Vector3).distance_to(back[1]["pos"]) > 1.0, "on return both are made again beside the owner, apart")
+	clock[0] += float(b.cfg["clearing"]["dissolve_game_days"]) * BanditsScript.GAME_DAY_S + float(b.cfg["check_s"])
+	b.tick()
+	check(not b.sites.has(cell) and animals.animals.values().filter(func(h): return h["sp"] == "horse" and h.has("companion_id")).size() == 2, "the camp dissolves; the claimed horses stay")

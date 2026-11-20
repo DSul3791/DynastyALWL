@@ -191,8 +191,22 @@ func _make_stray(sp: String, c: Dictionary, p: Dictionary) -> void:
 			return
 
 
+# Where a companion stands when it is made or catches up: 2.8 m behind-left of its owner (its first companion, as before), and each further
+# living companion of the same owner a step round from the last, so two claimed horses never stand in one spot.
+func _beside(r: Dictionary) -> Vector3:
+	var n: int = 0
+
+	for rid in records:
+		var other: Dictionary = records[rid]
+
+		if int(rid) < int(r["id"]) and str(other["owner_key"]) == str(r["owner_key"]) and not bool(other.get("dead", false)):
+			n += 1   # by record, not by which was made first, so the spots stay the same however they are made again
+
+	return Vector3(-2.0, 0.0, -2.0).rotated(Vector3.UP, 0.9 * n)
+
+
 func _make_live(r: Dictionary, owner: Dictionary) -> void:
-	var at: Vector3 = owner["pos"] + Vector3(-2.0, 0.0, -2.0)
+	var at: Vector3 = owner["pos"] + _beside(r)
 	var id: int = host.spawn(str(r["species"]), at.x, at.z)
 
 	if id == 0:
@@ -409,6 +423,23 @@ func _step_stray(a: Dictionary, dt: float) -> void:
 	a["state"] = host.GRAZE
 
 
+# A bandit camp's horse claimed (server_bandits.claim_horse, BANDIT_CAMPS.md stage 5b): it is `peer`'s companion at once. True when claimed.
+func claim(a: Dictionary, peer: int) -> bool:
+	var c: Dictionary = _cfg(str(a["sp"]))
+
+	if str(c.get("source", "")) != "claimed" or handles(a) or not peer_key.is_valid():
+		return false
+
+	var key: String = str(peer_key.call(peer))
+
+	if key == "":
+		return false
+
+	_adopt(a, key, c)
+	save()   # at once, as the camp's row it leaves is (server_bandits._member_gone): a crash between them cannot lose the horse
+	return true
+
+
 func _adopt(a: Dictionary, key: String, c: Dictionary) -> void:
 	var names: Array = c.get("names", ["Dog"])
 	var rid: String = str(next_id)
@@ -461,14 +492,14 @@ func _step_companion(a: Dictionary, dt: float) -> void:
 		return
 
 	if d > CATCH_UP_M:
-		a["pos"] = Vector3(o.x - 2.0, o.y, o.z - 2.0)   # its owner travelled fast: it is with them again
+		a["pos"] = o + _beside(r)   # its owner travelled fast: it is with them again
 		return
 
 	var follow_m: float = float(c.get("follow_m", 3.0))
 
 	if d <= follow_m + 1.0:
 		a["idle_s"] = float(a.get("idle_s", 0.0)) + dt
-		a["state"] = LIE if float(a["idle_s"]) >= LIE_AFTER_S else host.GRAZE   # at heel a while, it lies down
+		a["state"] = LIE if bool(c.get("lies_down", true)) and float(a["idle_s"]) >= LIE_AFTER_S else host.GRAZE   # at heel a while, it lies down (not a horse)
 		return
 
 	a["idle_s"] = 0.0

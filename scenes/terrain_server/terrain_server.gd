@@ -865,7 +865,9 @@ func _ready() -> void:
 				guard_spots.append(npcs.npcs[npc_id]["pos"])
 
 		return guard_spots
-	items.bind_animal = func(bandit_peer, bind_from, bind_dir, bind_reach): return bandits.bind(animals.target_along(bind_from, bind_dir, bind_reach), bandit_peer)   # Rope or Twine on a bandit who gave up ties him
+	items.bind_animal = func(bandit_peer, bind_from, bind_dir, bind_reach):   # Rope or Twine: ties a bandit who gave up, or claims a cleared camp's horse (5b)
+		var bind_target: int = animals.target_along(bind_from, bind_dir, bind_reach)
+		return bandits.bind(bind_target, bandit_peer) or bandits.claim_horse(bind_target, bandit_peer)
 	items.road_trip = func(mover, mover_at, trip_kind): bandits.note(mover, mover_at, trip_kind)
 
 	for site_line in bandits.report():

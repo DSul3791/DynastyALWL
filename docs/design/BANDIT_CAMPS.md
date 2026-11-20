@@ -109,7 +109,7 @@ Built before stage 4 (the coordinator, 20 Nov 2026, provisional on Dave's behalf
 - **Leading.** A tied bandit follows the player who tied him, keeping about 2 m behind (walking, trotting when left behind). Led more than 30 m ahead of him, or after a game hour from giving up or being tied, he slips free and walks back to his camp, still badly hurt (one more blow and he gives up again). A bandit who gave up and is not tied gets up after a game hour too.
 - **Bounty.** Led within 5 m of a guard (Edda, the only role guard today) he is handed over: he leaves his camp for good and the player gets 10 copper for each of his levels.
 - **Cleared.** When a camp's last bandit is killed or handed over, the camp is cleared. 2 game days later it dissolves: the fire, Lean-tos and horses go. The site then stays dormant for 10 game days, however busy the road, before it may wake again like any candidate.
-- Claiming the horses is stage 5b; until then they stay tethered until the camp dissolves.
+- Claiming the horses is stage 5b (below); a horse nobody claims stays tethered until the camp dissolves.
 - A site whose only bandit out was the lookout, killed or handed over with no others left, is cleared and dissolves without ever becoming a camp.
 - A bandit who threw down his weapon is remembered with the camp (saved), so one made again after a despawn has no second weapon to drop.
 
@@ -132,3 +132,24 @@ Built before stage 4 (the coordinator, 20 Nov 2026, provisional on Dave's behalf
 - No patrols yet: the quiet time is a fixed 10 game days, not "while patrols pass" (patrols come with the starter town).
 - The surrender pose is the bandit's sitting pose; a tied bandit shows no rope.
 - A bandit who escapes walks back at walking pace and sits again; his health does not come back.
+
+## Stage 5b: claiming the horses (`server_bandits.gd` claim_horse, `server_companions.gd` claim, `animals.json` horse companion; no protocol change)
+
+Dave, 19 Nov 2026: horses are claimed and brought to town. The coordinator (20 Nov 2026, provisional on Dave's behalf): build it as 5b with a new companion source.
+
+- Once a camp has no bandit left (killed or handed over), a strike at one of its horses with Rope or Twine in hand puts a lead on it; one Rope or Twine is used. While any bandit of the camp is left, the strike is an ordinary blow.
+- The horse leaves the camp's row and becomes that player's companion (a new source "claimed": only a camp horse, never a stray). It follows about 4 m behind, saved with the dogs and wolves in companions.json, goes with its owner when they leave the game and is made again beside them on return. The camp dissolving does not take it.
+- It needs no feeding: its bond stays full and it never warns. Both horses of a camp can be claimed, by one player or two; each stands a step apart from its owner's other companions.
+
+### For Dave (provisional, adjust after play)
+
+| # | Choice | Value |
+|---|---|---|
+| BANDIT-28 | Claiming | a strike with Rope or Twine at a horse of a camp with no bandit left; one is used |
+| BANDIT-29 | A claimed horse | follows 4 m behind; no feeding, never leaves its owner |
+
+### Known limits (stage 5b)
+
+- No riding, no saddle shown while it follows (the client shows the tethered horse only), no hitching or stabling in town; it can only follow.
+- No way to let a claimed horse go yet.
+- Names come from a short first-try list (Bay, Ash, Clover...).
