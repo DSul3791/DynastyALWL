@@ -795,6 +795,18 @@ Not done: their spots, lines, voices (no clips rendered yet), clip picks and Gri
 
 Not yet played. Characters saved before the move keep their saved positions; only new or dead characters come back at the new spawn.
 
+## 90. Body 2: Dave's female player character in the creator, fully adjustable, with a bust slider
+
+**Status: Implemented - awaiting player verification.** Dave's request, 20 Nov 2026 (project thread for the female character): "add this female character to our character creation choices. import it. it has 96 animations. she should be the female selection now and be fully adjustable.", then "yes we need a bust slider", then for his third file "I tried to fix her. try this one". PR #1380, merged to dev at 9f3cabe3 (head 97b44ecb), after independent review on every head (no findings on 97b44ecb) and green CI.
+
+**Required outcome:** the creator's Body pick offers "Body 2", Dave's female character (Playercharacter_Female_01.glb, his 99-action v2 file: her own 4 clips and Body 1's set retargeted to her rig). She moves with the game's walk, run, crouch, sit, lie and swing animations, and every creator slider that works on Body 1 works on her: height, legs, arms and the other bone lengths, the width and face shapes, skin colour and the new Bust slider. The Bust slider works on both bodies: it does nothing up to the Even frame's -0.6 and is fullest at +1; NPCs have none. Each character keeps its own body; NPCs wear Body 1.
+
+**Evidence:** Lane B (David4) on 97b44ecb: true first import in a fresh clone, exit 0, with no change to any female file; selector 144 fast + 3 timing = 147 PASS / 0 FAIL, 0 script errors; validate_items 0 errors; warnings 381 with 0 new; join smoke clean (STALL 0, WATCHDOG 0); "136 clips for body_2 made in 144 ms". Lane A (Dave's PC) on the earlier 4fdbbee1 (runtime carry-over version, since replaced): 147 of 147. Offline checks on the file: mesh, skin and textures match his first file; retargeted turns within about 5 to 10 degrees of Body 1's clips turned onto her rig; idle toes within 1 cm of Body 1's.
+
+**Acceptance:** make a new character, pick Body 2 and move every slider, Bust included (hair length is drawn on neither body): she changes smoothly and stays standing on the ground. Play her: walk, run, crouch, sit, sleep and swing a tool look natural, with arms at her sides at rest. A saved Body 1 character still looks as before (a saved bust above -0.6 now shows).
+
+Not done: her first-person arms are still Body 1's; the walk and run retimes were measured on Body 1, so her feet may slide a little; the grip and the shoulder log offset were fitted to Body 1; her sleep pose lies about 8 cm lower than Body 1's; her own Walking and Running stand up to 11 cm higher on the toe joints than Body 1's clips; hair length is drawn on neither body; the label "Body 2" (BM-1) is provisional. Not yet played; nothing seen on screen.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
