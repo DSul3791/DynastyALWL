@@ -1231,17 +1231,45 @@ The Fine - Chest (36 slots) is in the iron tier and is otherwise unchanged. Stee
 
 Not yet played; not yet seen in a picture.
 
+## 112. The knife makes a Wicker basket, not the two knife chests
+
+**Status: Implemented - awaiting player verification.** Dave, during his play test on 21 Nov 2026, of the Wicker - Chest (18 slots) and the Crude - Chest (24 slots), both knife builds: "get ride of both of those. the knife can make a wicker basket that could have 6 slots." When asked about chests already placed: "there are none".
+
+**What was found:** the knife listed two chests next to the hammer's chest per nail tier (entry 111).
+
+**Required outcome:** no knife chest. The knife builds a Wicker basket with 6 slots (one row). A saved world that holds one of the old chests still loads.
+
+**As built (PR #1421, reviewed head 6b97ba23, merged to dev at aae56232):**
+- The knife's store is the existing Basket, renamed **Wicker basket**: 8 Stick, 4 Twine, 6 slots, item 785, blueprint 157. No new numbers. It takes the Wicker - Chest's storage comfort point.
+- The Crude - Chest is retired (blueprint 186, item 914).
+- The Wicker - Chest (blueprint 26) is hidden and locked, so no player lists or builds it. It is not retired, because about a dozen server tests place it as their plain container. Taken down, it gives back its sticks and twine.
+- A saved Crude - Chest or Wicker - Chest still loads with its contents. Nothing clears them at load.
+- The Ragtooth goblin camp's chest prop is now a Small chest.
+- The chest ladder is now Crate 10, Small 24, Rustic 30, Fine 36, Large wooden 42, Ornate 48.
+- Design: docs/design/CHEST_TIERS.md.
+
+**Evidence:**
+- Independent review first found 3 must-fixes on c96b974c (a parse error, retired-kit test placements, a validate_items collision). It passed on dcda0248 and again on 6b97ba23.
+- Lane B on dcda0248: 2 fails (test_cooking_route still built the hidden chest; the walkthrough read the basket's slots before opening it), fixed in 6b97ba23.
+- Lane B on 6b97ba23: 320 pass / 0 fail (fast 309, timing 9, slow 2). validate_items 0 errors, look names 340, warnings 381 = baseline. Join smoke 26 s, client --chest self-test (now the Wicker basket) exit 0.
+- test_save_compat loads a saved Crude - Chest and Wicker - Chest with their contents.
+
+**Acceptance:** the knife's list shows the Wicker basket and no chest. With a knife, 8 Sticks and 4 Twine, a Wicker basket goes up and holds 6 stacks. No build list, knife or hammer, shows a Wicker - Chest or Crude - Chest; the hammer's chests are the Small, Rustic, Fine, Large wooden and Ornate.
+
+Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
 
 ## Assumed on Dave's behalf (provisional values, for review)
 
-- CT-1 (entry 111): the copper chest is the Small chest, 24 slots. Chest slots go in six-slot rows, so 27 would leave half a row. That makes it the same size as the Crude - Chest. The Small chest is built with a hammer from copper nails and needs no twine. Its lid lifts off, because there are no copper hinges.
+- CT-1 (entry 111): the copper chest is the Small chest, 24 slots. Chest slots go in six-slot rows, so 27 would leave half a row. That made it the same size as the Crude - Chest, retired since (entry 112). The Small chest is built with a hammer from copper nails and needs no twine. Its lid lifts off, because there are no copper hinges.
 - CT-2 (entry 111): Dave's "superior" chest is the existing Ornate - Chest, since Ornate is the top furniture grade. It keeps its Iron hinges, because there are no steel hinges.
 - CT-3 (entry 111): the Fine - Chest is in the iron tier, so it takes Iron nails or better and Iron hinges. Nothing else about it changed.
 - CT-4 (entry 111): Steel nails are 1 Steel ingot to 100 at the brick forge, level 3, value 2.
 - CT-5 (entry 111): only the chests are tiered. The other buildings that use nails (about 40) take bronze nails or better.
+- CT-6 (entry 112): the knife's store is the existing Basket renamed Wicker basket, keeping its cost (8 Stick, 4 Twine) and 6 slots. The Wicker - Chest is hidden and locked rather than retired, because the server tests use it as their plain container. The goblin camp's chest prop is a Small chest (Dave 20 Nov 2026: "a small chest of some sort").
 - OP-1 (entry 107): ore pile looks, chosen by Claude. Copper ore: malachite green, 30% red-brown, lumps 0.3, 3,900 kg/m3. Tin ore: dark red-brown, 40% near-black, lumps 0.15, a little shiny, 6,900 kg/m3. Iron ore: grey-brown, 35% rust, lumps 0.3, 4,800 kg/m3. Bog iron ore: red-brown, 35% ochre, lumps 0.4, 3,600 kg/m3. The densities are the real minerals' and set how wide a cone a count makes.
 - LV-1: one held Level action lasts while strokes come within 1.5 s and the feet move less than 0.6 m; its target height is kept for that long.
 - LV-2: Level leaves the ground within 1.2 m of the feet untouched.
