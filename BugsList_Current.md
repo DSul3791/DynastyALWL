@@ -1133,6 +1133,24 @@ Not yet played. Not done: drinking (from water or from what you hold) and the se
 
 Not yet played.
 
+## 106. Rocks crack and shrink from the first blow
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "I just used a pick on a rock until it finally broke and I noticed the system is designed for it to keep its normal size until the last few hits then it shrinks. it should crack and start to shrink right from the first hit. it should shrink right along with however many stones or ore it has left and crack accordingly". Then: "fix immediately".
+
+**What was found:** a worked rock's radius was the cube root of the share of stones left, so it kept 79% of its width with half its stones gone and 97% after a tenth. The cracks were drawn as the share gone, so a big rock showed none for its first blows.
+
+**Required outcome:** every rock a pick or hammer works (stone boulders, copper and tin rocks, iron and limestone outcrops, cave boulders) shrinks in step with the stones or ore it has left and cracks from the first blow, more as it is used up. Motion stays smooth, and the server and the player's view agree.
+
+**As built (PR #1412, reviewed head a23944bf, merged to dev at bf9c2f45):** one rule, src/shared/boulder_wear.gd, sizes a rock for the server (reach, blocking, settle, survey, log physics) and the client (look and solid shape). The radius falls in a straight line from full to a fifth at the last stone. Cracks start at 0.2 after the first blow and rise to full. Each blow eases the look to its new size over 0.15 s. No new network traffic.
+
+**Evidence:**
+- Independent review PASS on e2ea13d4 and on a23944bf.
+- Lane B on a23944bf: 237 PASS / 0 FAIL (233 fast + 4 timing), test_boulder_wear and test_fell_autosplit among them. Warnings stay at 381. Join smoke clean.
+
+**Acceptance:** hit a boulder once with a pick: fine cracks show at once. Keep going: it grows smaller and more cracked at a steady rate until it breaks. A small copper rock visibly shrinks on every blow.
+
+Not yet played. On a big boulder (thousands of stones) one blow shrinks it by under a millimetre, so there the cracks show first and the shrink shows as it is used up. The boulders.json note still says "cube root"; it is fixed with the next data change.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
@@ -1155,5 +1173,6 @@ Dave requested this rewrite around the intended experience rather than a literal
 - HE-2 (entry 52): a click on a food box bites when the button comes up, or after 0.2 s held, so dragging food elsewhere eats nothing. Holding still on the box longer than that before dragging eats one bite.
 - HE-3 (entry 52): water containers on the hotbar still go in hand (they are needed to fill and pour). Drink from them as before.
 - OR-1..OR-6 (entry 105): one placement rule for copper and tin by river, height, land scatter and own ore body; values in docs/design/COPPER_ROCKS.md.
+- BW-1..BW-3 (entry 106): a rock at its last stone is a fifth of its full radius; cracks are 0.2 after the first blow, rising to 1.0; each blow eases the look over 0.15 s.
 - ET-1 (entry 104): an item the reticle is on is reached to 3 m, as fires and stations are (it was 2.5 m; the server allows 3.5 m).
 - Crops need tilled soil (Plant does not till); scatter stone, flint and ores count as small rocks to pick up; wild shrubs are not checked for duplicates.
