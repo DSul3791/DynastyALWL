@@ -2170,7 +2170,7 @@ func _init() -> void:
 	var floor_level: float = float(sa.strain_of(1)["s"])
 	check(floor_level > 0.4 and floor_level < 0.6, "standing with a pack at the limit rests only to about half (%.2f)" % floor_level)
 	# Fitness XP (fitness.json train, Dave 4 Nov): effort above 0.1 gives 1 + 2 x effort XP per 10 s into the day's bucket, which turns into points
-	# at game midnight (200 XP a point on the 0 to 100 scale, the old 1,000 per 5 points; the same at every level); only true rest (under 0.02 for 10 minutes) takes it back, never below the base.
+	# at game midnight (200 XP a point on the 0 to 100 scale, the old 1,000 per 5 points; the same at every level); only true rest (under 0.02 for 10 minutes) takes it back, below the base too (Dave 21 Nov 2026), never under 0.
 	var clk: Array = [100.0]   # game seconds, day 0
 	var fit_gs: Callable = func(): return clk[0]
 	var midnight: Callable = func(x): clk[0] += 86400.0; x._train_fitness(1, 0.0, 0.0)
@@ -2273,10 +2273,19 @@ func _init() -> void:
 	tr._train_fitness(1, 1.0, 1800.0 * 3.0)
 	midnight.call(tr)
 	check(tr.fitness_of(1) > 60, "an hour and a half of running earns points")
-	tr._train_fitness(1, 0.0, 43200.0 * 12.0)
-	check(tr.fitness_of(1) == 60, "full rest takes points back, slowly")
+	var earned: int = tr.fitness_of(1) - 60
+	tr._train_fitness(1, 0.0, 600.0 + 8640.0 * float(earned + 5))
+	check(tr.fitness_of(1) < 60 and tr.fitness_of(1) >= 54, "full rest takes points back, slowly, and below the creation value (Dave 21 Nov) (%d)" % tr.fitness_of(1))
 	tr._train_fitness(1, 0.0, 1.0e7)
-	check(tr.fitness_of(1) == 60, "and never below the creation value")
+	check(tr.fitness_of(1) == 0, "but never below 0 (%d)" % tr.fitness_of(1))
+	tr._train_fitness(1, 1.0, 1800.0)
+	midnight.call(tr)
+	check(tr.fitness_of(1) > 0, "a character idled to 0 trains back up")
+	tr.set_fitness(1, 60)
+	var rm_at: Callable = func(v): tr.set_fitness(1, v); return tr.fitness_rise_mult(1)
+	check(absf(rm_at.call(50) - 1.0) < 1.0e-6 and absf(rm_at.call(75) - 0.75) < 1.0e-6 and absf(rm_at.call(100) - 0.5) < 1.0e-6, "exertion rises at 100% at fitness 50, 75% at 75, 50% at 100 (Dave 21 Nov)")
+	check(absf(rm_at.call(0) - exp(0.5)) < 1.0e-6 and absf(rm_at.call(40) - exp(0.1)) < 1.0e-6, "under 50 the curve is kept: about 165% at 0, 110% at 40")
+	tr.set_fitness(1, 60)
 	# Saved: the training survives a restart (characters.json).
 	tr._train_fitness(1, 1.0, 6700.0)
 	midnight.call(tr)
