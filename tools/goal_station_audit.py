@@ -67,7 +67,7 @@ class Chain:
         if not self.recipes.get(item) and not self.groups.get(item):
             roads.append(frozenset())   # nothing makes it: gathered, mined, hunted or bought
         roads = [x for x in roads if x is not None]
-        best = min(roads, key=lambda x: (len(x), sorted(x))) if roads else None
+        best = min(roads, key=lambda x: (len(x), sum(lv for _, lv in x), sorted(x))) if roads else None   # fewest stations, then the lowest levels (bronze nails at the forge beat iron nails at the brick forge)
         if len(seen) == 1:
             self._memo[item] = best
         return best

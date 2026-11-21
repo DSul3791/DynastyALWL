@@ -1,5 +1,5 @@
 {
-	"_about": "PROPOSAL (Sal, 2026-10-31), read by nothing yet. Starter goals for the first island, taken from TUTORIAL_FIRST_30_MIN.md (the guide's text is the source of truth for hint wording). Format for a coder: `goals` is an ordered list; each goal has `id`, `title`, `hint` (plain text shown in the goal list), `after` (goal ids that must be done first; empty = available at start), `check` (one of: {event, count, what?} fired by the server when the thing happens, {have_item, count} true while the pack holds that many, {made_item, count} counted when a craft finishes, {got_item, count} counted when the player gathers it first-hand (not trades, rewards, refunds or admin gives), {have_item_any, count}), and `stage` (the progression stage; the goal pays that stage's copper from data/items/goal_rewards.json, coins only). A goal completes once and is saved per character (characters.json `goals_done`). Events to emit in server_items.gd: drink, tree_felled, fire_lit, ate_food, placed(what), carcass_worked.",
+	"_about": "Sal, 2026-10-31; read by the server (server_items.gd _goals_data) and shown in the Journal. Starter goals for the first island, taken from TUTORIAL_FIRST_30_MIN.md (the guide's text is the source of truth for hint wording). Format for a coder: `goals` is an ordered list; each goal has `id`, `title`, `hint` (plain text shown in the goal list), `after` (goal ids that must be done first; empty = available at start), `check` (one of: {event, count, what?} fired by the server when the thing happens, {have_item, count} true while the pack holds that many, {made_item, count} counted when a craft finishes, {got_item, count} counted when the player gathers it first-hand (not trades, rewards, refunds or admin gives), {have_item_any, count}), and `stage` (the progression stage; the goal pays that stage's copper from data/items/goal_rewards.json, coins only). A goal completes once and is saved per character (characters.json `goals_done`). Events to emit in server_items.gd: drink, tree_felled, fire_lit, ate_food, placed(what), carcass_worked. The metal path (charcoal through steel_tool, appended 21 Nov 2026, coordinator decision D-GOAL-1 under Dave's rule of 21 Nov) leads from the stone camp to copper, tin and bronze, iron, then steel; its ore hints follow the ore layout and are reworded when that layout changes.",
 	"goals": [
 		{
 			"id": "drink",
@@ -169,7 +169,7 @@
 		{
 			"id": "workbench",
 			"title": "Build a Workbench",
-			"hint": "Hold your hammer, press R and pick Workbench: 16 sticks, 6 twine and 8 stones. It unlocks better tools.",
+			"hint": "Hold your hammer, press R and pick Workbench: 16 sticks, 6 twine and 8 stones. At it you make cobblestones, stone blocks, wooden pins, the flint scraper and more.",
 			"after": [
 				"hammer"
 			],
@@ -209,7 +209,7 @@
 		{
 			"id": "fish",
 			"title": "Catch a fish",
-			"hint": "Make a fishing rod (2 sticks, 2 twine) or a fishing net and fish at the pond.",
+			"hint": "Make a fishing rod (2 sticks, 2 twine and a hook carved from a bone) or a fishing net (3 rope, 4 stones) and fish at the water.",
 			"after": [
 				"twine"
 			],
@@ -244,6 +244,300 @@
 				"count": 1
 			},
 			"stage": "start"
+		},
+		{
+			"id": "charcoal",
+			"title": "Save some charcoal",
+			"hint": "Burn firewood or logs on your campfire: the wood leaves charcoal in the fire. Take it out and keep it. Smelters and smithies burn charcoal or coal.",
+			"after": [
+				"fire"
+			],
+			"check": {
+				"have_item": "charcoal",
+				"count": 4
+			},
+			"stage": "start"
+		},
+		{
+			"id": "copper_ore",
+			"title": "Find copper ore",
+			"hint": "Copper ore is rock coated green or blue-green. Follow a river or stream upstream: copper rocks lie along the water and get bigger toward the hills. Pick small pieces up with E; break bigger rocks with the Stone - Hammer.",
+			"after": [
+				"hammer"
+			],
+			"check": {
+				"got_item": "copper_ore",
+				"count": 4
+			},
+			"stage": "copper_bronze"
+		},
+		{
+			"id": "smelter",
+			"title": "Build a Primitive smelter",
+			"hint": "Hold your hammer, press R and pick Primitive smelter: 24 clay and 20 stones. Dig clay with a shovel where the ground is clay or under wet lowland soil.",
+			"after": [
+				"copper_ore"
+			],
+			"check": {
+				"event": "placed",
+				"what": "smelter",
+				"count": 1
+			},
+			"stage": "start"
+		},
+		{
+			"id": "copper_ingot",
+			"title": "Smelt copper",
+			"hint": "Put copper ore in the Primitive smelter and charcoal or coal in its fuel slot (F), then press E to light it. Each copper ore gives a Copper ingot.",
+			"after": [
+				"smelter",
+				"charcoal"
+			],
+			"check": {
+				"made_item": "copper_ingot",
+				"count": 3
+			},
+			"stage": "copper_bronze"
+		},
+		{
+			"id": "smithy",
+			"title": "Build a Primitive smithy",
+			"hint": "Hold your hammer, press R and pick Primitive smithy: 24 stones, 10 clay and 2 logs. Keep charcoal or coal in its fuel slot; copper and bronze tools are made at it.",
+			"after": [
+				"copper_ingot"
+			],
+			"check": {
+				"event": "placed",
+				"what": "stone_forge",
+				"count": 1
+			},
+			"stage": "copper_bronze"
+		},
+		{
+			"id": "copper_tool",
+			"title": "Make a copper tool",
+			"hint": "At the Primitive smithy make a Copper - Pickaxe (3 copper ingots, 2 sticks) or another copper tool. Copper tools work faster and last longer than stone.",
+			"after": [
+				"smithy"
+			],
+			"check": {
+				"made_item_any": [
+					"copper_pickaxe",
+					"copper_axe",
+					"copper_hammer",
+					"copper_knife",
+					"copper_saw",
+					"copper_shovel",
+					"copper_hoe",
+					"copper_sickle",
+					"copper_scythe",
+					"copper_chisel"
+				],
+				"count": 1
+			},
+			"stage": "copper_bronze"
+		},
+		{
+			"id": "tin_ore",
+			"title": "Find tin ore",
+			"hint": "Tin ore is a dark, very heavy rock. It lies along rivers like copper, scarcer than copper and more of it upstream toward the hills. Break it like copper ore.",
+			"after": [
+				"copper_ingot"
+			],
+			"check": {
+				"got_item": "tin_ore",
+				"count": 2
+			},
+			"stage": "copper_bronze"
+		},
+		{
+			"id": "bronze_ingot",
+			"title": "Smelt bronze",
+			"hint": "Put copper ore and tin ore in the Primitive smelter together: each copper ore with a tin ore makes two Bronze ingots.",
+			"after": [
+				"tin_ore"
+			],
+			"check": {
+				"made_item": "bronze_ingot",
+				"count": 4
+			},
+			"stage": "copper_bronze"
+		},
+		{
+			"id": "bronze_tool",
+			"title": "Make a bronze tool",
+			"hint": "At the Primitive smithy make a Bronze - Pickaxe (3 bronze ingots, 2 sticks) or another bronze tool. A bronze pick can break iron rock.",
+			"after": [
+				"bronze_ingot",
+				"smithy"
+			],
+			"check": {
+				"made_item_any": [
+					"bronze_pickaxe",
+					"bronze_axe",
+					"bronze_hammer",
+					"bronze_knife",
+					"bronze_saw",
+					"bronze_shovel",
+					"bronze_hoe",
+					"bronze_sickle",
+					"bronze_scythe",
+					"bronze_chisel"
+				],
+				"count": 1
+			},
+			"stage": "copper_bronze"
+		},
+		{
+			"id": "improved_smelter",
+			"title": "Build an Improved smelter",
+			"hint": "At the Primitive smithy make Bronze nails and Bronze hinges, then hold your hammer, press R and pick Improved smelter: 24 clay, 32 stones, 2 logs, 3 hides, 2 bronze hinges and 20 bronze nails. Its bellows let it smelt iron.",
+			"after": [
+				"bronze_ingot",
+				"smithy"
+			],
+			"check": {
+				"event": "placed",
+				"what": "improved_smelter",
+				"count": 1
+			},
+			"stage": "copper_bronze"
+		},
+		{
+			"id": "iron_ore",
+			"title": "Find iron ore",
+			"hint": "Iron is common. Dig rust-red bog iron with a shovel in wet fen and marsh ground, or break iron rock with a bronze or better pick.",
+			"after": [
+				"bronze_tool"
+			],
+			"check": {
+				"have_item_any": [
+					"iron_ore",
+					"bog_iron_ore"
+				],
+				"count": 2
+			},
+			"stage": "iron"
+		},
+		{
+			"id": "iron_ingot",
+			"title": "Smelt iron",
+			"hint": "Put iron ore and fuel in the Improved smelter, light it with E, then press E again to work its bellows: iron only smelts while someone works them. Two bog iron ore make 1 Iron ingot.",
+			"after": [
+				"iron_ore",
+				"improved_smelter"
+			],
+			"check": {
+				"made_item": "iron_ingot",
+				"count": 2
+			},
+			"stage": "iron"
+		},
+		{
+			"id": "improved_smithy",
+			"title": "Build an Improved smithy",
+			"hint": "Hold your hammer, press R and pick Improved smithy: 32 stones, 10 clay, 4 logs, 6 bronze ingots, 20 bronze nails and 2 bronze hinges. Iron tools are made at it.",
+			"after": [
+				"bronze_ingot",
+				"improved_smelter"
+			],
+			"check": {
+				"event": "placed",
+				"what": "blacksmithy",
+				"count": 1
+			},
+			"stage": "iron"
+		},
+		{
+			"id": "iron_tool",
+			"title": "Make an iron tool",
+			"hint": "At the Improved smithy make an Iron - Pickaxe (3 iron ingots, 2 sticks) or another iron tool.",
+			"after": [
+				"iron_ingot",
+				"improved_smithy"
+			],
+			"check": {
+				"made_item_any": [
+					"iron_pickaxe",
+					"iron_axe",
+					"iron_hammer",
+					"iron_knife",
+					"hand_saw",
+					"iron_shovel",
+					"iron_hoe",
+					"iron_sickle",
+					"scythe",
+					"iron_chisel"
+				],
+				"count": 1
+			},
+			"stage": "iron"
+		},
+		{
+			"id": "advanced_smelter",
+			"title": "Build an Advanced smelter",
+			"hint": "Hold your hammer, press R and pick Advanced smelter: 40 bricks, 40 stones, 8 mortar and 6 iron ingots. Its windmill drives its bellows, and it makes steel.",
+			"after": [
+				"iron_ingot"
+			],
+			"check": {
+				"event": "placed",
+				"what": "large_forge",
+				"count": 1
+			},
+			"stage": "steel"
+		},
+		{
+			"id": "steel_ingot",
+			"title": "Make steel",
+			"hint": "Put iron ore in the Advanced smelter with 1 coal or charcoal on each ore in its input as carbon, fuel in its hopper, and light it while the wind blows.",
+			"after": [
+				"advanced_smelter"
+			],
+			"check": {
+				"made_item": "steel_ingot",
+				"count": 2
+			},
+			"stage": "steel"
+		},
+		{
+			"id": "advanced_smithy",
+			"title": "Build an Advanced smithy",
+			"hint": "Make an Iron anvil at the Improved smithy (5 iron ingots, 1 log), then hold your hammer, press R and pick Advanced smithy. Steel tools are made at it.",
+			"after": [
+				"iron_tool"
+			],
+			"check": {
+				"event": "placed",
+				"what": "advanced_smithy",
+				"count": 1
+			},
+			"stage": "steel"
+		},
+		{
+			"id": "steel_tool",
+			"title": "Make a steel tool",
+			"hint": "At the Advanced smithy make a Steel - Pickaxe (3 steel ingots, 2 sticks) or another steel tool.",
+			"after": [
+				"steel_ingot",
+				"advanced_smithy"
+			],
+			"check": {
+				"made_item_any": [
+					"steel_pickaxe",
+					"steel_axe",
+					"steel_hammer",
+					"steel_knife",
+					"steel_saw",
+					"steel_shovel",
+					"steel_hoe",
+					"steel_sickle",
+					"steel_scythe",
+					"steel_chisel"
+				],
+				"count": 1
+			},
+			"stage": "steel"
 		}
 	]
 }

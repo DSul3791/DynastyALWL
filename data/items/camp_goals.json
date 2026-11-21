@@ -1,5 +1,5 @@
 {
-	"_about": "PROPOSAL (Sal, 2026-10-31), read by nothing yet. Camp-life and winter quests, same shape as data/items/starter_goals.json (see its _about for check kinds) with two additions: `needs_code` (true when a check kind or item chain does not exist yet: sea salt, new events worn_warmth, talked, moved_lit_night) and `after` may name goals from starter_goals.json. They teach the winter chain: render fat, smoke fish, dry berries, salt meat, keep a store, dress for the cold. The campfire pot, smoker and drying rack each have a build goal ahead of their first use (tools/goal_station_audit.py checks it); jerky and salted fish need sea salt (WATER_GATHER_SPEC.md).",
+	"_about": "Sal, 2026-10-31; read by the server (server_items.gd _goals_data) and shown in the Journal. Camp-life and winter quests, same shape as data/items/starter_goals.json (see its _about for check kinds) with two additions: `needs_code` (true when a check kind or item chain does not exist yet: sea salt, new events worn_warmth, talked, moved_lit_night) and `after` may name goals from starter_goals.json. They teach the winter chain: render fat, smoke fish, dry berries, salt meat, keep a store, dress for the cold. The campfire pot, smoker and drying rack each have a build goal ahead of their first use (tools/goal_station_audit.py checks it); jerky and salted fish need sea salt (WATER_GATHER_SPEC.md).",
 	"goals": [
 		{
 			"id": "torch_night",
@@ -80,7 +80,7 @@
 		{
 			"id": "drying_rack",
 			"title": "Build a drying rack",
-			"hint": "Hold your hammer, press R and pick Drying rack: 8 sticks and 4 twine, with a knife in your pack. Berries and jerky dry on it.",
+			"hint": "Hold your knife, press R and pick Drying rack: 8 sticks and 4 twine. Berries and jerky dry on it.",
 			"after": [
 				"hammer",
 				"knife"
@@ -122,7 +122,7 @@
 				"count": 2
 			},
 			"stage": "start",
-			"needs_code": true
+			"needs_code": false
 		},
 		{
 			"id": "salted_fish",
@@ -137,7 +137,7 @@
 				"count": 1
 			},
 			"stage": "start",
-			"needs_code": true
+			"needs_code": false
 		},
 		{
 			"id": "winter_store",
@@ -177,7 +177,7 @@
 		{
 			"id": "story",
 			"title": "Hear a story at the fire",
-			"hint": "Sit by the fire at night with Edda or Hob and listen.",
+			"hint": "Talk with Edda at the camp in the evening, between 7 and 11 at night.",
 			"after": [
 				"fire"
 			],
@@ -190,7 +190,7 @@
 				]
 			},
 			"stage": "start",
-			"needs_code": true
+			"needs_code": false
 		},
 		{
 			"id": "night_walk",
@@ -204,7 +204,7 @@
 				"metres": 100
 			},
 			"stage": "start",
-			"needs_code": true
+			"needs_code": false
 		}
 	]
 }

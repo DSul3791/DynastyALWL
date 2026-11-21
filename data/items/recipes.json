@@ -5224,7 +5224,9 @@
 				1
 			],
 			"craft_s": 20.0,
-			"known": true
+			"known": false,
+			"locked": true,
+			"note_locked": "Milk has no source yet (items.json milk is future: no tame animal gives it); locked until one does, so the recipe is not offered with an ingredient nobody can get."
 		},
 		"cheese": {
 			"number": 280,
@@ -5245,7 +5247,9 @@
 				1
 			],
 			"craft_s": 30.0,
-			"known": true,
+			"known": false,
+			"locked": true,
+			"note_locked": "Milk has no source yet (items.json milk is future: no tame animal gives it); locked until one does, so the recipe is not offered with an ingredient nobody can get.",
 			"station": "campfire_pot"
 		},
 		"cook_dried_apples": {
