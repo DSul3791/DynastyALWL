@@ -256,9 +256,7 @@ const LOOKS := {
 	"fortified_floor": {"builder": "tier_floor", "args": ["concrete"]},
 	"fortified_stairs": {"builder": "tier_stairs", "args": ["concrete"]},
 	"fortified_fence": {"builder": "fence", "args": ["brick"]},
-	"bog_iron_patch": {"builder": "bog_iron_patch", "args": ["dry"]},   # a bog iron deposit's ground stain (#996; drawn by inventory_view, not placed)
-	"bog_iron_patch_wet": {"builder": "bog_iron_patch", "args": ["wet"]},
-	"bog_iron_patch_dug": {"builder": "bog_iron_patch", "args": ["dug"]},
+	"bog_iron_lumps": {"builder": "bog_iron_lumps", "args": [4]},   # a bog iron patch's ore lumps (drawn by inventory_view, not placed; the rust is the ground's colour)
 	"mixer": {"builder": "mixer", "args": []},
 	"chicken_coop": {"builder": "chicken_coop", "args": []},
 	"fodder_trough": {"builder": "fodder_trough", "args": []},

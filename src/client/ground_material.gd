@@ -50,6 +50,9 @@ uniform float wet_streak = 0.0;         // run-off streaks on steep rock, kept a
 uniform vec2 wet_wind = vec2(1.0, 0.0); // where the wind blows toward (x, z): faces looking into it wet first
 uniform float splash_rain = 0.0;        // (rain_look_design.md 3.2): how hard it rains on open ground now; 0 skips the splash flecks
 uniform vec3 caustics = vec3(0.0);      // under water (underwater_look.gd): surface height, strength 0..1 (0 off), how deep the lines reach
+uniform vec4 bog_spot[16];               // bog iron patches near the camera (set_bogs): centre x, z, radius, strength 0..1 (the share of its ore left)
+uniform float bog_floor[16];            // the height each patch's ground was generated at: ground dug below it shows no rust
+uniform int bog_count = 0;              // how many of them are set; 0 skips the rust
 varying vec3 world_pos;
 varying vec3 world_normal;
 varying vec4 material_indices;
@@ -363,6 +366,34 @@ void fragment() {
 		float speck = smoothstep(0.7, 0.76, vnoise(world_pos * 3.2 + 21.0));
 		color *= 1.0 + rock_floor * ((grit - 0.5) * 0.18);
 		color = mix(color, mix(vec3(0.30, 0.29, 0.27), vec3(0.48, 0.46, 0.42), vnoise(world_pos * 12.0)), speck * rock_floor * 0.6);
+	}
+
+	// Bog iron (Dave 21 Nov 2026: "it should be the actual color of the ground so change the grounds color and when I dig it the color goes away
+	// as I get the ore"): the ground of a patch is rust, an uneven soft-edged blotch strongest at its heart, with a faint rusty tinge out to five
+	// radii so the patches of a field show between them. All of it scales with the ore left, so no colour means no ore; ground dug more than
+	// a quarter metre below the patch's generated level shows its own plain peat (a silted hole comes back up and the rust with it).
+	if (bog_count > 0) {
+		float rust = 0.0;
+		for (int b = 0; b < 16; b++) {
+			if (b >= bog_count) {
+				break;
+			}
+			vec4 spot = bog_spot[b];
+			float r = max(spot.z, 0.5);
+			float d = distance(world_pos.xz, spot.xy);
+			if (spot.w > 0.0 && d < r * 5.0) {
+				float wobble = vnoise(vec3(world_pos.x * 0.6, float(b) * 3.7, world_pos.z * 0.6));
+				float core = 1.0 - smoothstep(0.25 * r, r * (0.7 + 0.55 * wobble), d);
+				float halo = 0.22 * (1.0 - smoothstep(r, r * 5.0, d + 2.0 * (wobble - 0.5)));
+				float kept = d < r * 1.3 ? smoothstep(bog_floor[b] - 0.45, bog_floor[b] - 0.25, world_pos.y) : 1.0;
+				rust = max(rust, max(core, halo) * spot.w * kept);
+			}
+		}
+		if (rust > 0.001) {
+			rust *= 0.7 + 0.6 * vnoise(world_pos * 2.3 + vec3(41.0));
+			vec3 ochre = mix(vec3(0.30, 0.10, 0.025), vec3(0.44, 0.20, 0.04), vnoise(world_pos * 0.9 + vec3(13.0)));
+			color = mix(color, ochre, clamp(rust, 0.0, 0.92));
+		}
 	}
 
 	// Cloud shadows (Tyler, 2026-10-21): the cloud layer's own noise shape, projected along the sun ray from the
@@ -742,6 +773,37 @@ static func set_falls(material: ShaderMaterial, falls: Array, at: Vector3) -> vo
 
 	material.set_shader_parameter("fall_zone", zones)
 	material.set_shader_parameter("fall_height", heights)
+
+
+# Feeds the bog iron patches nearest `at` (inventory_view.bogs: "pos", "left", "total", "r") to the ground shader's rust, at most 16.
+static func set_bogs(material: ShaderMaterial, bogs: Dictionary, at: Vector3) -> void:
+	if material == null:
+		return
+
+	var near: Array = []
+
+	for id in bogs:
+		var bog: Dictionary = bogs[id]
+		var pos: Vector3 = bog["pos"]
+		near.append([Vector2(pos.x - at.x, pos.z - at.z).length(), bog])
+
+	near.sort_custom(func(a, b): return a[0] < b[0])
+	var spots: PackedVector4Array = PackedVector4Array()
+	var floors: PackedFloat32Array = PackedFloat32Array()
+
+	for n in range(16):
+		if n < near.size():
+			var bog: Dictionary = near[n][1]
+			var pos: Vector3 = bog["pos"]
+			spots.append(Vector4(pos.x, pos.z, float(bog.get("r", 3.0)), clampf(float(bog["left"]) / maxf(float(bog["total"]), 1.0), 0.0, 1.0)))
+			floors.append(pos.y)
+		else:
+			spots.append(Vector4(0.0, 0.0, 0.0, 0.0))
+			floors.append(0.0)
+
+	material.set_shader_parameter("bog_spot", spots)
+	material.set_shader_parameter("bog_floor", floors)
+	material.set_shader_parameter("bog_count", mini(near.size(), 16))
 
 
 # Tells the ground shader where the grass cards end (the far field of the meadow starts to show there).

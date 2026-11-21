@@ -162,7 +162,7 @@ func _init() -> void:
 	items.skill_level = func(_p, _s): return 1.0
 	items.dig_ground = func(_centre, _radius): return null
 	items.ground_material = func(_x, _z): return "peat"
-	items.bog_deposit_at = func(_x, _z, _cfg_in): return {"key": "1,1", "size": 60, "edge": true}
+	items.bog_field = func(fx, fz, _cfg_in): return [{"key": "1,1", "x": 0.0, "z": 0.0, "size": 60, "r": 50.0}] if fx == 0 and fz == 0 else []   # one big patch round the yard
 	items.peer_connected_hello(1, "ironsaw00001")
 	items.report_position(1, HERE)
 	items.vitals_of(1)["weight"] = 5000.0   # the ore and stone are heavy; carrying is not under test

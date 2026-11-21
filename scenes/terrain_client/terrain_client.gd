@@ -3369,12 +3369,19 @@ func _on_flora_cut(chunk: Vector2i, id: int) -> void:
 	print("Terrain client: flora item %d in chunk %s was cut" % [id, str(chunk)])
 
 
+var _bogs_rev: int = -1      # the inventory_view.bogs_rev last handed to the ground shader (set_bogs)
+
+
 # Asks for flora chunks coming into view and forgets ones far behind. Far chunks
 # are asked for with their trees only, near ones in full (owner, 2026-10-19).
 func _update_flora() -> void:
 	var p: Vector3 = _anchor
 	var falls: Array = flora.fall_list()
 	GroundMaterialScript.set_falls(terrain.material as ShaderMaterial, falls, p)
+
+	if items != null and items.bogs_rev != _bogs_rev:   # the bog iron rust (only when a patch came, went or changed)
+		_bogs_rev = items.bogs_rev
+		GroundMaterialScript.set_bogs(terrain.material as ShaderMaterial, items.bogs, p)
 
 	if fall_mist != null:
 		fall_mist.update(falls, p)

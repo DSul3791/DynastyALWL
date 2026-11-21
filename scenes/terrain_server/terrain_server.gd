@@ -435,8 +435,11 @@ func _ready() -> void:
 		return generator.get_tile(generator.tile_of(pos.x, pos.z)).ore_at(pos, reach, names, depth_m)
 	items.rock_near = func(pos):   # the bedrock rock under a boulder (TileTerrainData.bedrock_name_at): limestone, chalk and marble give limestone pieces
 		return generator.get_tile(generator.tile_of(pos.x, pos.z)).bedrock_name_at(pos)
-	items.bog_deposit_at = func(x, z, cfg):   # bog iron under the baked tile's fens and marshes (BogIron.deposit_at; digging.json bog_iron)
-		return BogIronScript.deposit_at(generator.get_tile(generator.tile_of(x, z)), x, z, cfg)
+	items.bog_field = func(fx, fz, cfg):   # the bog iron patches of a field square on the baked tile holding it (BogIron.field; digging.json bog_iron)
+		var m: float = float(cfg.get("field_m", 512.0))
+		return BogIronScript.field(generator.get_tile(generator.tile_of((float(fx) + 0.5) * m, (float(fz) + 0.5) * m)), fx, fz, cfg)
+	items.bog_wet_at = func(x, z, cfg):   # fen, marsh, swamp or bog ground, where a dug hole silts back in (BogIron.wet_at)
+		return BogIronScript.wet_at(generator.get_tile(generator.tile_of(x, z)), x, z, cfg)
 	items.fresh_water_y = func(pos, reach):   # wells and pumps (TileTerrainData.fresh_water_near): the nearest over every tile the reach touches
 		var best: Vector2 = Vector2(INF, NAN)
 		var coords: Dictionary = {}
