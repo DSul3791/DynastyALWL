@@ -10,14 +10,19 @@ const ROW_RISE_M := 0.22            # height of one row
 const ROW_SPREAD_M := 0.17          # footprint radius per row
 const ROCK_R_M := 0.27
 
-# What each kind looks like comes from its items.json "pile" row: {"shape": "pyramid" | "mound" | "cone" (with "density_kg_m3": a solid cone, _cone_mesh), "handful", "color", "rock" (rock size scale), "squash",
+# What each kind looks like comes from its items.json "pile" row ("logs": _logs_mesh, "boards": _boards_mesh; the others below): {"shape": "pyramid" | "mound" | "cone" (with "density_kg_m3": a solid cone, _cone_mesh), "handful", "color", "rock" (rock size scale), "squash",
 # optional "tight" (scales footprint and row rise with the lump size, default 1.0) and "jitter" (lump size spread, default 0.2)}.
+# A cone row may also set "color2" with "mix" (that share of its pieces take the second colour: ore over its host rock, rust on iron),
+# "lumps" (0 smooth stones to about 0.4: each piece is one of LUMP_SHAPES knobbly shapes, built once) and "rough" (material roughness, default 1.0).
 # Soil and clay (Dave 2026-10-24): lumps half the size of one dirt clump, packed tight so neighbours overlap.
 
 const PileRules := preload("res://src/shared/pile_rules.gd")
 const CONE_SEGMENTS := 18        # the solid core of a cone pile
+const LUMP_SHAPES := 4           # knobbly piece shapes per "lumps" amount; each piece of a lumpy cone is one of them, turned and scaled as stones are
 static var _cache: Dictionary = {}
 static var _material: StandardMaterial3D
+static var _rough_materials: Dictionary = {}   # roughness -> material, for cone rows with their own "rough"
+static var _lump_cache: Dictionary = {}        # "lumps" amount -> Array of LUMP_SHAPES [verts, normals, indices]
 
 
 # A pile row may set its own "min" (firewood: 2, so every split piece beside the chopping block shows; bug 3, Dave 1 Nov 2026).
@@ -42,6 +47,11 @@ static func mesh_for(item_id: String, entry: Dictionary, count: int, seed_id: in
 		var wood: Mesh = _logs_mesh(kind, count, seed_id)
 		_cache[key] = wood
 		return wood
+
+	if str(kind.get("shape", "")) == "boards":
+		var sawn: Mesh = _boards_mesh(kind, count, seed_id)
+		_cache[key] = sawn
+		return sawn
 
 	if PileRules.is_cone(kind) and unit_kg > 0.0:
 		var cone: Mesh = _cone_mesh(kind, count, seed_id, unit_kg)
@@ -136,10 +146,14 @@ static func mesh_for(item_id: String, entry: Dictionary, count: int, seed_id: in
 
 # --- Cone piles (Dave 19 Nov 2026, boulders PLAN.md 5b: a solid cone with no air, more stones add layers on the outside) ---
 # One mesh whatever the count: a solid core cone sized by the stones' own volume (PileRules) with up to MAX_DRAWN rocks laid over its skin,
-# each big enough that together they cover it. Nothing new is sent: the client sizes it from the count, as before. Not visually checked.
+# each big enough that together they cover it. Nothing new is sent: the client sizes it from the count, as before. Ores use it too, with their own
+# colours and lumpy pieces (Dave 21 Nov 2026: "ore piles should stackup like stone piles do just with different colors and lumps").
 static func _cone_mesh(kind: Dictionary, count: int, seed_id: int, unit_kg: float) -> Mesh:
 	var tint: Array = kind["color"]
 	var base_color: Color = Color(float(tint[0]), float(tint[1]), float(tint[2]))
+	var tint2: Array = kind.get("color2", tint)
+	var second_color: Color = Color(float(tint2[0]), float(tint2[1]), float(tint2[2]))
+	var mix: float = float(kind.get("mix", 0.0))
 	var jitter: float = float(kind.get("jitter", 0.2))
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = seed_id * 2654435761 + 91
@@ -176,12 +190,7 @@ static func _cone_mesh(kind: Dictionary, count: int, seed_id: int, unit_kg: floa
 	var shown: int = mini(count, MAX_DRAWN)
 	var side_area: float = PI * radius * sqrt(radius * radius + height * height)
 	var size_base: float = clampf(sqrt(side_area / float(maxi(shown, 1))) * 0.6, 0.02, ROCK_R_M * float(kind.get("rock", 1.0)))
-	var base: SphereMesh = SphereMesh.new()
-	base.radial_segments = 7
-	base.rings = 4
-	var arrays: Array = base.get_mesh_arrays()
-	var source: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
-	var source_n: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+	var shapes: Array = _lump_shapes(float(kind.get("lumps", 0.0)))
 
 	for i in range(shown):
 		var angle: float = float(i) * 2.39996 + rng.randf() * 0.4
@@ -194,7 +203,11 @@ static func _cone_mesh(kind: Dictionary, count: int, seed_id: int, unit_kg: floa
 		var tilt: Basis = Basis.from_euler(Vector3(rng.randf() * TAU, rng.randf() * TAU, rng.randf() * TAU))
 		var squash: Basis = tilt * Basis.from_scale(Vector3(size * rng.randf_range(1.0, 1.3), size * 0.8, size * rng.randf_range(1.0, 1.3)))
 		var shade: float = rng.randf_range(0.85, 1.12)
-		var color: Color = Color(minf(base_color.r * shade, 1.0), minf(base_color.g * shade, 1.0), minf(base_color.b * shade, 1.0))
+		var piece_color: Color = second_color if mix > 0.0 and rng.randf() < mix else base_color   # no extra draws for stone, so its piles look as before
+		var color: Color = Color(minf(piece_color.r * shade, 1.0), minf(piece_color.g * shade, 1.0), minf(piece_color.b * shade, 1.0))
+		var shape: Array = shapes[rng.randi() % shapes.size()] if shapes.size() > 1 else shapes[0]
+		var source: PackedVector3Array = shape[0]
+		var source_n: PackedVector3Array = shape[1]
 		var first: int = verts.size()
 
 		for v in range(source.size()):
@@ -202,7 +215,7 @@ static func _cone_mesh(kind: Dictionary, count: int, seed_id: int, unit_kg: floa
 			normals.append((tilt * source_n[v]).normalized())
 			colors.append(color)
 
-		for index in arrays[Mesh.ARRAY_INDEX]:
+		for index in shape[2]:
 			indices.append(first + int(index))
 
 	var out_arrays: Array = []
@@ -213,14 +226,93 @@ static func _cone_mesh(kind: Dictionary, count: int, seed_id: int, unit_kg: floa
 	out_arrays[Mesh.ARRAY_INDEX] = indices
 	var mesh: ArrayMesh = ArrayMesh.new()
 	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, out_arrays)
-
-	if _material == null:
-		_material = StandardMaterial3D.new()
-		_material.vertex_color_use_as_albedo = true
-		_material.roughness = 1.0
-
-	mesh.surface_set_material(0, _material)
+	mesh.surface_set_material(0, _cone_material(float(kind.get("rough", 1.0))))
 	return mesh
+
+
+static func _cone_material(rough: float) -> StandardMaterial3D:
+	if rough >= 1.0:
+		if _material == null:
+			_material = StandardMaterial3D.new()
+			_material.vertex_color_use_as_albedo = true
+			_material.roughness = 1.0
+
+		return _material
+
+	if not _rough_materials.has(rough):
+		var m: StandardMaterial3D = StandardMaterial3D.new()
+		m.vertex_color_use_as_albedo = true
+		m.roughness = rough
+		_rough_materials[rough] = m
+
+	return _rough_materials[rough]
+
+
+# The piece shapes of a cone pile: the 7 x 4 sphere stones have always used (lumps 0, one shape), or LUMP_SHAPES knobbly ones with each point
+# pushed in or out by a few low waves over the sphere. The push depends only on the point, so the sphere's seam points stay joined; normals
+# are rebuilt from the faces and shared across the seam. Built once per amount, so a lumpy pile costs the same per piece as a stone one.
+static func _lump_shapes(lumps: float) -> Array:
+	if _lump_cache.has(lumps):
+		return _lump_cache[lumps]
+
+	var base: SphereMesh = SphereMesh.new()
+	base.radial_segments = 7
+	base.rings = 4
+	var arrays: Array = base.get_mesh_arrays()
+	var sphere_v: PackedVector3Array = arrays[Mesh.ARRAY_VERTEX]
+	var sphere_n: PackedVector3Array = arrays[Mesh.ARRAY_NORMAL]
+	var sphere_i: PackedInt32Array = arrays[Mesh.ARRAY_INDEX]
+	var shapes: Array = []
+
+	if lumps <= 0.0:
+		shapes.append([sphere_v, sphere_n, sphere_i])
+		_lump_cache[lumps] = shapes
+		return shapes
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 7741
+
+	for k in range(LUMP_SHAPES):
+		var waves: Array = []
+
+		for w in range(3):
+			waves.append([Vector3(rng.randf_range(-1.0, 1.0), rng.randf_range(-1.0, 1.0), rng.randf_range(-1.0, 1.0)).normalized() * rng.randf_range(2.0, 4.0), rng.randf() * TAU])
+
+		var moved: PackedVector3Array = PackedVector3Array()
+
+		for p in sphere_v:
+			var push: float = 0.0
+
+			for wave in waves:
+				push += sin((wave[0] as Vector3).dot(p * 2.0) + float(wave[1]))
+
+			moved.append(p * (1.0 + lumps * push / 3.0))
+
+		var by_point: Dictionary = {}   # rounded point -> summed face normal, so the seam's twin points share one normal
+
+		for t in range(0, sphere_i.size(), 3):
+			var a: Vector3 = moved[sphere_i[t]]
+			var face: Vector3 = (moved[sphere_i[t + 1]] - a).cross(moved[sphere_i[t + 2]] - a)
+
+			for c in range(3):
+				var at_key: Vector3i = Vector3i((moved[sphere_i[t + c]] * 1000.0).round())
+				by_point[at_key] = by_point.get(at_key, Vector3.ZERO) + face
+
+		var moved_n: PackedVector3Array = PackedVector3Array()
+
+		for v in range(moved.size()):
+			var sum: Vector3 = by_point.get(Vector3i((moved[v] * 1000.0).round()), Vector3.ZERO)
+			var n: Vector3 = sum.normalized() if sum.length_squared() > 0.0 else sphere_n[v]
+
+			if n.dot(sphere_n[v]) < 0.0:
+				n = -n   # the faces' winding is the mesh's own; keep every normal pointing out
+
+			moved_n.append(n)
+
+		shapes.append([moved, moved_n, sphere_i])
+
+	_lump_cache[lumps] = shapes
+	return shapes
 
 
 # --- Split firewood and wooden blocks (Dave 2 Nov 2026: they looked like little brown balls) ---
@@ -336,3 +428,79 @@ static func _add_piece(verts: PackedVector3Array, normals: PackedVector3Array, c
 
 		for i in range(steps):
 			indices.append_array([centre, centre + 1 + i, centre + 2 + i])
+
+
+# --- Sawn boards (Dave 21 Nov 2026: "dropped hardwood boards ... should look like 8ft long boards") ---
+# A neat lumber stack: boards lie flat side by side, BOARD_ROW to a layer, each layer on the one below, ends a little staggered; past
+# BOARD_LAYERS layers a new stack starts beside it. From items.json "pile": {"shape": "boards", "color", "len", "width", "thick"}.
+# Each board is one box of 12 triangles with pale cut ends.
+const BOARD_ROW := 4
+const BOARD_LAYERS := 10
+const BOARD_PALE := Color(0.86, 0.74, 0.56)
+const BOARD_FLOOR := -0.12   # the bottom board on the drawn ground: loose items are set 0.12 m over it (InventoryView._snap_loose)
+
+
+static func _boards_mesh(kind: Dictionary, count: int, seed_id: int) -> Mesh:
+	var tint: Array = kind["color"]
+	var wood: Color = Color(float(tint[0]), float(tint[1]), float(tint[2]))
+	var length: float = float(kind["len"])
+	var width: float = float(kind["width"])
+	var thick: float = float(kind["thick"])
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = seed_id * 2654435761 + 23
+	var verts: PackedVector3Array = PackedVector3Array()
+	var normals: PackedVector3Array = PackedVector3Array()
+	var colors: PackedColorArray = PackedColorArray()
+	var indices: PackedInt32Array = PackedInt32Array()
+	var per_stack: int = BOARD_ROW * BOARD_LAYERS
+
+	for n in range(mini(count, MAX_DRAWN)):
+		var stack: int = floori(float(n) / float(per_stack))
+		var layer: int = floori(float(n % per_stack) / float(BOARD_ROW))
+		var row: int = n % BOARD_ROW
+		var z: float = float(stack) * (float(BOARD_ROW) * width + 0.15) + (float(row) - float(BOARD_ROW - 1) * 0.5) * (width + 0.006)
+		var at: Vector3 = Vector3(rng.randf_range(-0.06, 0.06), BOARD_FLOOR + (float(layer) + 0.5) * thick, z)
+		var tone: float = rng.randf_range(0.88, 1.1)
+		_add_board(verts, normals, colors, indices, at, rng.randf_range(-0.012, 0.012), Vector3(length, thick, width), Color(minf(wood.r * tone, 1.0), minf(wood.g * tone, 1.0), minf(wood.b * tone, 1.0)))
+
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_COLOR] = colors
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh: ArrayMesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+
+	if _logs_material == null:
+		_logs_material = StandardMaterial3D.new()
+		_logs_material.vertex_color_use_as_albedo = true
+		_logs_material.roughness = 1.0
+		_logs_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	mesh.surface_set_material(0, _logs_material)
+	return mesh
+
+
+# One board centred on `at`, its length along x turned by `yaw`: six faces, the two ends pale.
+static func _add_board(verts: PackedVector3Array, normals: PackedVector3Array, colors: PackedColorArray, indices: PackedInt32Array, at: Vector3, yaw: float, dims: Vector3, wood: Color) -> void:
+	var turn: Basis = Basis(Vector3.UP, yaw)
+	var h: Vector3 = dims * 0.5
+
+	for axis in 3:
+		for side in [-1.0, 1.0]:
+			var normal: Vector3 = Vector3.ZERO
+			normal[axis] = side
+			var u: Vector3 = Vector3.ZERO
+			var v: Vector3 = Vector3.ZERO
+			u[(axis + 1) % 3] = h[(axis + 1) % 3]
+			v[(axis + 2) % 3] = h[(axis + 2) % 3]
+			var centre: Vector3 = normal * h[axis]
+			var first: int = verts.size()
+
+			for corner in [-u - v, u - v, u + v, -u + v]:
+				verts.append(at + turn * (centre + corner))
+				normals.append(turn * normal)
+				colors.append(BOARD_PALE if axis == 0 else wood)
+
+			indices.append_array([first, first + 1, first + 2, first, first + 2, first + 3] if side > 0.0 else [first, first + 2, first + 1, first, first + 3, first + 2])

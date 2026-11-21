@@ -1968,7 +1968,7 @@
 				"Used in Wooden - Arrow (fibre)",
 				"Used in Drying rack",
 				"Used in Sign",
-				"Used in Basket",
+				"Used in Wicker basket",
 				"Used in Steel - Chisel",
 				"Used in Meat skewer",
 				"Used in Fishing spear",
@@ -2089,7 +2089,6 @@
 				"Used in Wooden - Channel",
 				"Used in Wooden - Channel corner",
 				"Used in Wooden - Channel tee",
-				"Used in Wooden - Hand pump",
 				"Used in Wooden - Trough",
 				"Used in Bone - Club",
 				"Used in Straw - Hat",
@@ -2100,7 +2099,7 @@
 				"Used in Hide - Sack",
 				"Used in Tusk mount",
 				"Used in Weapon rack",
-				"Used in Basket",
+				"Used in Wicker basket",
 				"Used in Bedroll",
 				"Used in Sling",
 				"Used in Snowshoes",
@@ -2380,11 +2379,10 @@
 			"name": "Wicker - Chest",
 			"kind": "placeable",
 			"description": "Woven sticks and twine. A chest to store things in.",
-			"how_to_get": [
-				"Build with a hammer (press R): 10 Stick, 4 Twine"
-			],
+			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"chest": {
 			"name": "Wicker - Chest",
@@ -2392,7 +2390,8 @@
 			"description": "A woven chest for storing things.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"chopping_block": {
 			"name": "Chopping block",
@@ -2466,7 +2465,6 @@
 				"Used in Wooden - Channel",
 				"Used in Wooden - Channel corner",
 				"Used in Wooden - Channel tee",
-				"Used in Wooden - Hand pump",
 				"Used in Wooden - Trough",
 				"Used in Armour stand",
 				"Used in Sign",
@@ -2542,7 +2540,7 @@
 			"kind": "placeable",
 			"description": "Boards and twine for a stronger storage chest, ready to set down.",
 			"how_to_get": [
-				"Build with a hammer (press R): 8 Plank, 2 Twine, 2 Hinges"
+				"Build with a hammer (press R): 8 Plank, 2 Twine, 2 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2563,7 +2561,7 @@
 				"Smelted by an Improved smelter from Iron ore, one ingot an ore, while its bellows are worked"
 			],
 			"used_for": [
-				"Used in Hinges",
+				"Used in Iron hinges",
 				"Used in Iron - Helm",
 				"Used in Iron - Hoe",
 				"Used in Iron - Mace",
@@ -2585,11 +2583,6 @@
 				"Used in Iron - Lantern",
 				"Used in Torch stand",
 				"Used in Wall lantern",
-				"Used in Iron - Hand pump",
-				"Used in Deep-well pump",
-				"Used in Iron - Pipe",
-				"Used in Iron - Pipe elbow",
-				"Used in Tap",
 				"Used in Iron - Chisel",
 				"Used in Anvil",
 				"Used in Ornate - Chest",
@@ -2793,9 +2786,6 @@
 				"Used in Hide glue",
 				"Used in Rustic - Chair",
 				"Used in Fine - Chair",
-				"Used in Iron - Hand pump",
-				"Used in Wooden - Hand pump",
-				"Used in Deep-well pump",
 				"Used in Hide - Sack",
 				"Used in Bedroll",
 				"Used in Sling",
@@ -4224,7 +4214,6 @@
 				"Used in Root cellar",
 				"Used in Cistern",
 				"Used in Mixer",
-				"Used in Raised cistern",
 				"Used in Sturdy - Ceiling",
 				"Used in Sturdy - Doorway",
 				"Used in Sturdy - Pillar",
@@ -4343,9 +4332,9 @@
 			"status": "retired"
 		},
 		"nails": {
-			"name": "Nails",
+			"name": "Iron nails",
 			"kind": "material",
-			"description": "Small iron nails. Fix boards in builds; bronze ones do the same job.",
+			"description": "Small iron nails. They fix boards in builds that take iron nails or a lesser metal.",
 			"how_to_get": [
 				"Craft at a brick forge: 1 Iron ingot"
 			],
@@ -4362,13 +4351,12 @@
 				"Used in Fine - Table",
 				"Used in Iron - Doorway",
 				"Used in Iron - Railing",
-				"Used in Wooden - Hand pump",
-				"Used in Deep-well pump",
 				"Used in Ornate - Chest",
 				"Used in Barrel",
 				"Used in Crate",
 				"Used in Cupboard",
-				"Used in Quality - Backpack"
+				"Used in Quality - Backpack",
+				"Used in Raised cistern"
 			],
 			"obtainable_now": true
 		},
@@ -4393,7 +4381,6 @@
 				"Used in Stonecutter's bench",
 				"Used in Cistern",
 				"Used in Mixer",
-				"Used in Raised cistern",
 				"Used in Sturdy - Fence",
 				"Used in Sturdy - Gate",
 				"Used in Sturdy - Pillar",
@@ -4433,7 +4420,7 @@
 			"obtainable_now": true
 		},
 		"hinges": {
-			"name": "Hinges",
+			"name": "Iron hinges",
 			"kind": "material",
 			"description": "A pair of iron hinges for a door, a gate or a lid.",
 			"how_to_get": [
@@ -4441,9 +4428,6 @@
 			],
 			"used_for": [
 				"Used in Iron - Gate",
-				"Used in Iron - Hand pump",
-				"Used in Deep-well pump",
-				"Used in Tap",
 				"Used in Ornate - Chest",
 				"Used in Cupboard",
 				"Used in Fortified - Gate",
@@ -4542,7 +4526,7 @@
 			"kind": "material",
 			"description": "A wooden wheel with paddles. It turns where running water pushes it.",
 			"how_to_get": [
-				"Craft at a workbench: 20 Plank, 80 Nails, 4 Tar"
+				"Craft at a workbench: 20 Plank, 80 Bronze nails or better, 4 Tar"
 			],
 			"used_for": [
 				"Used to build Sawmill"
@@ -4554,7 +4538,7 @@
 			"kind": "placeable",
 			"description": "A saw frame on a tall foundation, driven by a water wheel in running water.",
 			"how_to_get": [
-				"Build with a hammer (press R): 40 Plank, 100 Nails, 1 Saw blade, 1 Water wheel"
+				"Build with a hammer (press R): 40 Plank, 100 Bronze nails or better, 1 Saw blade, 1 Water wheel"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4572,7 +4556,7 @@
 			"kind": "placeable",
 			"description": "A heavy table with vices and clamps for fine woodwork. Set it down in a workshop.",
 			"how_to_get": [
-				"Build with a hammer (press R): 12 Plank, 60 Nails"
+				"Build with a hammer (press R): 12 Plank, 60 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -5002,7 +4986,8 @@
 				"Used in Bronze ingot",
 				"Used in Copper - Pipe",
 				"Used in Copper - Tap",
-				"Used in Copper - Drip head"
+				"Used in Copper - Drip head",
+				"Used in Raised cistern"
 			],
 			"obtainable_now": true
 		},
@@ -7989,7 +7974,7 @@
 			"kind": "placeable",
 			"description": "A plank gate with a Z brace. Opens like a door.",
 			"how_to_get": [
-				"Build with a hammer (press R): 3 Plank, 1 Twine, 1 Hinges"
+				"Build with a hammer (press R): 3 Plank, 1 Twine, 1 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8061,7 +8046,7 @@
 			"kind": "placeable",
 			"description": "A palisade section that swings open like a door.",
 			"how_to_get": [
-				"Build with a hammer (press R): 8 Log, 3 Twine, 2 Hinges"
+				"Build with a hammer (press R): 8 Log, 3 Twine, 2 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8097,7 +8082,7 @@
 			"kind": "placeable",
 			"description": "A timber gate between stone piers. Opens like a door.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Cobblestone, 3 Plank, 2 Hinges"
+				"Build with a hammer (press R): 6 Cobblestone, 3 Plank, 2 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8133,7 +8118,7 @@
 			"kind": "placeable",
 			"description": "A timber gate between brick piers. Opens like a door.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Brick, 2 Clay mortar, 3 Plank, 2 Hinges"
+				"Build with a hammer (press R): 6 Brick, 2 Clay mortar, 3 Plank, 2 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8151,7 +8136,7 @@
 			"kind": "placeable",
 			"description": "Iron railings on a brick plinth, two metres long.",
 			"how_to_get": [
-				"Build with a hammer (press R): 3 Iron ingot, 6 Nails"
+				"Build with a hammer (press R): 3 Iron ingot, 6 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8169,7 +8154,7 @@
 			"kind": "placeable",
 			"description": "A wrought iron gate. Opens like a door.",
 			"how_to_get": [
-				"Build with a hammer (press R): 4 Iron ingot, 2 Hinges"
+				"Build with a hammer (press R): 4 Iron ingot, 2 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8439,7 +8424,7 @@
 			"kind": "placeable",
 			"description": "A timber bench bound with iron. Seats two or three.",
 			"how_to_get": [
-				"Build with a hammer (press R): 4 Plank, 1 Iron ingot, 12 Nails"
+				"Build with a hammer (press R): 4 Plank, 1 Iron ingot, 12 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8457,7 +8442,7 @@
 			"kind": "placeable",
 			"description": "An iron-bound chair with a hide seat.",
 			"how_to_get": [
-				"Build with a hammer (press R): 4 Plank, 1 Iron ingot, 12 Nails, 1 Hide"
+				"Build with a hammer (press R): 4 Plank, 1 Iron ingot, 12 Bronze nails or better, 1 Hide"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8475,7 +8460,7 @@
 			"kind": "placeable",
 			"description": "A plank table bound with iron.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Plank, 1 Iron ingot, 20 Nails"
+				"Build with a hammer (press R): 6 Plank, 1 Iron ingot, 20 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8529,7 +8514,7 @@
 			"kind": "placeable",
 			"description": "A tall plank cupboard with doors. Holds 16 stacks.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Plank, 12 Nails, 2 Hinges"
+				"Build with a hammer (press R): 6 Plank, 12 Bronze nails or better, 2 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8547,7 +8532,7 @@
 			"kind": "placeable",
 			"description": "A hooped plank barrel. Holds 8 stacks.",
 			"how_to_get": [
-				"Build with a hammer (press R): 4 Plank, 2 Twine, 8 Nails"
+				"Build with a hammer (press R): 4 Plank, 2 Twine, 8 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8637,7 +8622,7 @@
 			"kind": "placeable",
 			"description": "An iron railing along a ceiling or foundation edge. Stops falls.",
 			"how_to_get": [
-				"Build with a hammer (press R): 2 Iron ingot, 4 Nails"
+				"Build with a hammer (press R): 2 Iron ingot, 4 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9007,7 +8992,7 @@
 			"kind": "placeable",
 			"description": "A plank-edged bed of soil, two metres square, nailed at the corners. Sow and tend it like a tilled bed.",
 			"how_to_get": [
-				"Build with a hammer (press R): 3 Plank, 8 Nails"
+				"Build with a hammer (press R): 3 Plank, 8 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9025,7 +9010,7 @@
 			"kind": "structure",
 			"description": "A plank-edged bed of soil, one metre square, nailed at the corners. Sow and tend it like a tilled bed.",
 			"how_to_get": [
-				"Build with a hammer (press R): 2 Plank, 8 Nails"
+				"Build with a hammer (press R): 2 Plank, 8 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9035,7 +9020,7 @@
 			"kind": "structure",
 			"description": "A plank-edged bed of soil, three metres square, nailed at the corners. Sow and tend it like a tilled bed.",
 			"how_to_get": [
-				"Build with a hammer (press R): 4 Plank, 8 Nails"
+				"Build with a hammer (press R): 4 Plank, 8 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9230,11 +9215,10 @@
 			"name": "Wooden - Hand pump",
 			"kind": "placeable",
 			"description": "An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough.",
-			"how_to_get": [
-				"Build with a hammer (press R): 6 Plank, 20 Nails, 2 Twine, 1 Hide"
-			],
+			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"wooden_hand_pump": {
 			"name": "Wooden - Hand pump",
@@ -9242,18 +9226,17 @@
 			"description": "An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"iron_hand_pump_kit": {
 			"name": "Iron - Hand pump",
 			"kind": "placeable",
 			"description": "A cast-iron pitcher pump. Hold E to pump water into a bucket or trough.",
-			"how_to_get": [
-				"Build with a hammer (press R): 6 Iron ingot, 1 Hide, 1 Hinges"
-			],
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"iron_hand_pump": {
 			"name": "Iron - Hand pump",
@@ -9262,7 +9245,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"log_trough_kit": {
 			"name": "Log trough",
@@ -9361,7 +9344,7 @@
 			"kind": "placeable",
 			"description": "A flume with a gate. E opens or shuts it.",
 			"how_to_get": [
-				"Build with a hammer (press R): 2 Plank, 1 Hinges"
+				"Build with a hammer (press R): 2 Plank, 1 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9379,7 +9362,7 @@
 			"kind": "material",
 			"description": "A bored log, six inches across and two metres long. Laid from the hand; it rots faster than copper.",
 			"how_to_get": [
-				"Craft by hand: 1 Log, 1 Twine (keep Stone - Knife)"
+				"Craft at a wood carving station: 1 Log (keep Stone - Knife)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9587,12 +9570,10 @@
 			"name": "Iron - Pipe",
 			"kind": "placeable",
 			"description": "A closed iron pipe, two metres long. A force pump can push water up it.",
-			"how_to_get": [
-				"Build with a hammer (press R): 2 Iron ingot"
-			],
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"iron_pipe": {
 			"name": "Iron - Pipe",
@@ -9607,12 +9588,10 @@
 			"name": "Iron - Pipe elbow",
 			"kind": "placeable",
 			"description": "An iron pipe that turns a quarter circle.",
-			"how_to_get": [
-				"Build with a hammer (press R): 2 Iron ingot"
-			],
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"iron_pipe_elbow": {
 			"name": "Iron - Pipe elbow",
@@ -9627,12 +9606,10 @@
 			"name": "Tap",
 			"kind": "placeable",
 			"description": "A shut-off tap for a pipe's end. E opens or shuts it.",
-			"how_to_get": [
-				"Build with a hammer (press R): 1 Iron ingot, 1 Hinges"
-			],
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"iron_tap": {
 			"name": "Tap",
@@ -9647,12 +9624,10 @@
 			"name": "Deep-well pump",
 			"kind": "placeable",
 			"description": "A force pump for a stone well. Lifts from deep and pushes water up an iron pipe.",
-			"how_to_get": [
-				"Build with a hammer (press R): 8 Iron ingot, 2 Hide, 2 Hinges, 12 Nails"
-			],
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"iron_deep_well_pump": {
 			"name": "Deep-well pump",
@@ -9661,7 +9636,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"stone_cistern_kit": {
 			"name": "Cistern",
@@ -9681,25 +9656,23 @@
 			"used_for": [],
 			"obtainable_now": true
 		},
-		"stone_raised_cistern_kit": {
+		"raised_cistern_kit": {
 			"name": "Raised cistern",
 			"kind": "placeable",
-			"description": "A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity.",
+			"description": "A big copper-lined tank on a wooden frame. Rain and pipes from above fill it; it feeds pipes below.",
 			"how_to_get": [
-				"Build with a hammer (press R): 28 Cobblestone, 8 Clay mortar, 6 Plank"
+				"Build with a hammer (press R): 16 Plank, 20 Hardwood board, 30 Copper ingot, 40 Bronze nails or better"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
-		"stone_raised_cistern": {
+		"raised_cistern": {
 			"name": "Raised cistern",
 			"kind": "structure",
-			"description": "A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity.",
+			"description": "A big copper-lined tank on a wooden frame. Rain and pipes from above fill it; it feeds pipes below.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"sewing_needle": {
 			"name": "Bone - Needle",
@@ -10068,7 +10041,7 @@
 			"obtainable_now": true
 		},
 		"wicker_basket_kit": {
-			"name": "Basket",
+			"name": "Wicker basket",
 			"kind": "placeable",
 			"description": "A woven basket of sticks and twine. A first store for a camp.",
 			"how_to_get": [
@@ -10078,7 +10051,7 @@
 			"obtainable_now": true
 		},
 		"wicker_basket": {
-			"name": "Basket",
+			"name": "Wicker basket",
 			"kind": "structure",
 			"description": "A woven basket of sticks and twine. A first store for a camp.",
 			"how_to_get": [],
@@ -10696,7 +10669,7 @@
 			"kind": "placeable",
 			"description": "A braced plank crate with a nailed lid. Holds 10 stacks.",
 			"how_to_get": [
-				"Build with a hammer (press R): 5 Plank, 8 Nails"
+				"Build with a hammer (press R): 5 Plank, 8 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -10714,7 +10687,7 @@
 			"kind": "placeable",
 			"description": "A plank chest plated and strapped in iron. Holds 30 stacks, more than a wooden chest.",
 			"how_to_get": [
-				"Build with a hammer (press R): 8 Plank, 3 Iron ingot, 16 Nails, 2 Hinges"
+				"Build with a hammer (press R): 8 Plank, 3 Iron ingot, 16 Bronze nails or better, 2 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -12303,6 +12276,45 @@
 			],
 			"obtainable_now": true
 		},
+		"cattail_seed": {
+			"name": "Cattail seed",
+			"kind": "material",
+			"description": "Seeds from a cattail's brown head. Sow them with the hoe in a tilled bed or a planter and a cattail grows.",
+			"how_to_get": [
+				"From a wild cattail picked late in its season (fens)",
+				"From a ripe cattail in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a cattail"
+			],
+			"obtainable_now": true
+		},
+		"tussock_sedge_seed": {
+			"name": "Tussock sedge seed",
+			"kind": "material",
+			"description": "Seeds from a tussock sedge. Sow them with the hoe in a tilled bed or a planter and a tussock sedge grows.",
+			"how_to_get": [
+				"From a wild tussock sedge picked late in its season (fens and swamps)",
+				"From a ripe tussock sedge in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a tussock sedge"
+			],
+			"obtainable_now": true
+		},
+		"moss_hummock_seed": {
+			"name": "Bog moss spores",
+			"kind": "material",
+			"description": "Spores from a bog moss hummock. Sow them with the hoe in a tilled bed or a planter and bog moss grows.",
+			"how_to_get": [
+				"From a wild bog moss hummock picked in summer (bogs)",
+				"From a ripe bog moss hummock in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a bog moss hummock"
+			],
+			"obtainable_now": true
+		},
 		"sea_holly_seed": {
 			"name": "Sea holly seed",
 			"kind": "material",
@@ -12457,7 +12469,7 @@
 			"kind": "placeable",
 			"description": "A heavy plank gate strapped with iron, hung between concrete posts.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Concrete, 7 Iron band, 5 Plank, 2 Hinges"
+				"Build with a hammer (press R): 6 Concrete, 7 Iron band, 5 Plank, 2 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -12658,8 +12670,6 @@
 				"Used in Fine - Table",
 				"Used in Iron - Doorway",
 				"Used in Iron - Railing",
-				"Used in Wooden - Hand pump",
-				"Used in Deep-well pump",
 				"Used in Ornate - Chest",
 				"Used in Barrel",
 				"Used in Crate",
@@ -12677,9 +12687,6 @@
 			],
 			"used_for": [
 				"Used in Iron - Gate",
-				"Used in Iron - Hand pump",
-				"Used in Deep-well pump",
-				"Used in Tap",
 				"Used in Ornate - Chest",
 				"Used in Cupboard",
 				"Used in Fortified - Gate",

@@ -184,5 +184,79 @@ func _init() -> void:
 	view.view_direction = Callable()
 	check(view._nearest_fire() == 3, "a small fire (state 40) is found like any other")
 
+	# Dave 21 Nov 2026: "Im looking straight at something I want to pick up and i press e but it puts out the fire or lights the smelter or picks up
+	# something else. it should always effect whatever is closest to my reticle first." The prompt and E are the same thing, the one nearest the reticle.
+	view.view_direction = func(): return facing[0]
+	view._world.clear()
+	view.sweep_reset()
+	var stone: int = table.number_of("stone") if table.has_id("stone") else stick
+	var aim_at: Callable = func(p: Vector3): facing[0] = (p - eye).normalized()
+
+	# 1. An item beside a lit campfire, with another item nearer the feet but off to the side: E takes the item looked at, not the fire, not the nearer item.
+	view._world[10] = {"node": null, "number": 8, "count": 1, "pos": Vector3(1.2, 0.0, 0.35), "state": 1, "light": null}   # a burning campfire, just beside the line of sight
+	view._world[11] = {"node": null, "number": stick, "count": 1, "pos": Vector3(1.4, 0.0, 0.0), "state": 0, "light": null}   # the stick looked at
+	view._world[12] = {"node": null, "number": stone, "count": 1, "pos": Vector3(0.1, 0.0, -0.7), "state": 0, "light": null}   # nearer, off to the side
+	aim_at.call(Vector3(1.4, 0.0, 0.0))
+	check(view.in_aim(view.aim_point(10, Vector3.ZERO)), "the setup: the fire is in the aim cone too, so it competes")
+	found = view.current_interaction()
+	check(str(found.get("kind", "")) == "pickup" and int(found.get("id", 0)) == 11, "item beside a lit fire: the item looked at wins (%s %s)" % [str(found.get("kind", "")), str(found.get("id", ""))])
+	calls.clear()
+	found["tap"].call()
+	check(calls == [[Net.ACT_PICKUP, 11]], "item beside a lit fire: E picks it up and does not put the fire out (%s)" % str(calls))
+	aim_at.call(view.aim_point(10, Vector3.ZERO))
+	found = view.current_interaction()
+	check(str(found.get("kind", "")) == "fire" and str(found.get("prompt", "")) == view._fire_prompt(1), "looking at the fire itself: the fire's action and its prompt (%s)" % str(found.get("prompt", "")))
+
+	# 2. An item a little farther than a smelter beside it (2.6 m, past the 2 m prompt reach and 2.5 m pick reach): the item looked at still wins.
+	view._world.clear()
+	view.sweep_reset()
+	view._world[20] = {"node": null, "number": table.number_of("smelter") if table.has_id("smelter") else 8, "count": 1, "pos": Vector3(2.1, 0.0, 0.5), "state": 240, "light": null}   # cold smelter
+	view._world[21] = {"node": null, "number": stick, "count": 1, "pos": Vector3(2.6, 0.0, 0.0), "state": 0, "light": null}
+	aim_at.call(Vector3(2.6, 0.0, 0.0))
+	check(view.in_aim(view.aim_point(20, Vector3.ZERO)), "the setup: the smelter is in the aim cone too")
+	found = view.current_interaction()
+	check(str(found.get("kind", "")) == "pickup" and int(found.get("id", 0)) == 21, "item beside a smelter: the item looked at wins (%s)" % str(found.get("prompt", "")))
+	calls.clear()
+	found["tap"].call()
+	check(calls == [[Net.ACT_PICKUP, 21]], "item beside a smelter: E picks it up and does not light the smelter (%s)" % str(calls))
+	aim_at.call(view.aim_point(20, Vector3.ZERO))
+	found = view.current_interaction()
+	check(str(found.get("kind", "")) == "structure" and str(found.get("prompt", "")) == "Press E to light", "looking at the smelter: \"Press E to light\" (%s)" % str(found.get("prompt", "")))
+
+	# 3. Two items close together: the one the reticle is on, though the other is nearer the player; turning to the other takes that one.
+	view._world.clear()
+	view.sweep_reset()
+	view._world[30] = {"node": null, "number": stick, "count": 1, "pos": Vector3(1.0, 0.0, 0.15), "state": 0, "light": null}
+	view._world[31] = {"node": null, "number": stone, "count": 1, "pos": Vector3(1.3, 0.0, -0.15), "state": 0, "light": null}
+	aim_at.call(Vector3(1.3, 0.0, -0.15))
+	found = view.current_interaction()
+	check(int(found.get("id", 0)) == 31, "two items close together: the one looked at, not the nearer (%s)" % str(found.get("id", "")))
+	check(view.cursor_kind() == "pickup", "the cursor is on it")
+	calls.clear()
+	view._hold_next_msec = 0
+	check(view.hold_e_step() and calls == [[Net.ACT_PICKUP, 31]], "held E takes the one looked at too (%s)" % str(calls))
+	aim_at.call(Vector3(1.0, 0.0, 0.15))
+	check(int(view.current_interaction().get("id", 0)) == 30, "turned to the other, it takes that one")
+	facing[0] = Vector3(0.3, 0.0, 1.0).normalized()   # the reticle on nothing (item 30 in view, far outside the aim cone): the nearest, as before (Dave's case 3)
+	check(int(view.current_interaction().get("id", 0)) == 30 and not bool(view.current_interaction().get("aimed", false)), "the reticle on nothing: the nearest item, unaimed")
+
+	# 4. Two stations side by side: the one the reticle is on, though the other is nearer.
+	view._world.clear()
+	view._world[40] = {"node": null, "number": 8, "count": 1, "pos": Vector3(1.0, 0.0, 0.6), "state": 240, "light": null}
+	view._world[41] = {"node": null, "number": 8, "count": 1, "pos": Vector3(2.0, 0.0, -0.3), "state": 240, "light": null}
+	aim_at.call(view.aim_point(41, Vector3.ZERO))
+	check(view._nearest_struct(true) == 41, "of two stations the one looked at, not the nearer")
+	view._world[40]["state"] = 13   # two workbenches (stations F opens)
+	view._world[41]["state"] = 13
+	check(view._nearest_struct(true) == 41, "of two workbenches E works the one looked at")
+	check(view._container_near() == 41, "F opens the same one E works, not the nearer")
+	facing[0] = Vector3(-1.0, 0.0, 0.0)   # looking away from both: F and E fall back to the nearest
+	check(view._container_near() == 40 and view._nearest_struct(true) == 40, "looking away: the nearest station")
+
+	# reticle_index: the best centred inside the cone; none in the cone is -1.
+	facing[0] = Vector3(1.0, 0.0, 0.0)
+	check(view.reticle_index([Vector3(2.0, 1.6, 0.5), Vector3(2.0, 1.6, 0.1), Vector3(-2.0, 1.6, 0.0)]) == 1, "reticle_index: the best centred point")
+	check(view.reticle_index([Vector3(0.0, 1.6, 2.0)]) == -1, "reticle_index: nothing in the cone")
+
 	print("test_e_priority: ", "FAIL (%d)" % failures if failures > 0 else "ok")
 	quit(1 if failures > 0 else 0)

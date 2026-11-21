@@ -102,7 +102,22 @@ func on_rows(rows: Array) -> void:
 			_bodies.erase(id)
 
 
-# The nearest NPC within reach of a point: {"id", "name"} or {} (for the Press E to talk prompt).
+# Every body within `reach` (flat) of `point`, nearest first, as nearest() gives one: [{"id", "name", "pos"}].
+func within(point: Vector3, reach: float) -> Array:
+	var out: Array = []
+
+	for id in _bodies:
+		var at: Vector3 = _bodies[id]["target"]
+		var d: float = Vector2(at.x - point.x, at.z - point.z).length()
+
+		if d <= reach:
+			out.append({"id": id, "name": str(roster.get(id, {}).get("name", id)), "pos": at, "d": d})
+
+	out.sort_custom(func(x, y): return float(x["d"]) < float(y["d"]))
+	return out
+
+
+# The nearest NPC within reach of a point: {"id", "name", "pos"} or {}.
 func nearest(point: Vector3, reach: float) -> Dictionary:
 	var best: Dictionary = {}
 	var best_d: float = reach
@@ -324,7 +339,9 @@ func _worn_of(outfit: String) -> Array:
 # the width and face blend shapes is shared by every Dynasty body; each NPC only sets its own weights and bone lengths. When the glb is not
 # imported the NPCs wear the generated body (a few shared body types).
 static func genome_of(id: String) -> Dictionary:
-	return BodyGenerator.genome_from_seed(id.hash())
+	var g: Dictionary = BodyGenerator.genome_from_seed(id.hash())
+	g["bust"] = BodyGenerator.BUST_NONE      # NPCs wear Body 1 (dynasty_body.gd); the bust slider drawn at random would give every man a bust now that it shows (20 Nov 2026)
+	return g
 
 
 func _make_rig(id: String) -> Node3D:

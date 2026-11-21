@@ -610,13 +610,14 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 		wolves.on_hit(a)   # a wolf does not bolt: its pack decides
 		return false
 
-	# Wounded big game with the hunter close stands and fights (after a short warning); a distant hunter it runs from.
+	# Wounded big game with the hunter close stands and fights (after a short warning, or at once if it was already warning); a distant
+	# hunter it runs from (server_big_game.provoke).
 	var defend: Dictionary = species_def(a["sp"]).get("defend", {})
 
 	if not defend.is_empty():
 		for info in (big_game.player_info.call() if big_game.player_info.is_valid() else []):
 			if int(info["peer"]) == source_peer and Vector2(info["pos"].x - a["pos"].x, info["pos"].z - a["pos"].z).length() <= float(defend.get("provoked_m", 10.0)):
-				if big_game.warn(a, info["pos"], float(defend.get("provoked_warn_s", 0.8))):
+				if big_game.provoke(a, info["pos"], float(defend.get("provoked_warn_s", 0.8))):
 					return false
 
 	a["state"] = FLEE
@@ -947,7 +948,15 @@ func tick(delta: float) -> void:
 
 		var dt: float = minf(a["acc"], 1.0)
 		a["acc"] = 0.0
+		var was: Vector3 = a["pos"]
 		_step(a, dt, near_d, near_p, seen_d, seen_p)
+
+		if animals.has(id) and a["pos"] != was:
+			a["moved_ms"] = Time.get_ticks_msec()   # when it got here, sent with its row (rows_near) so the client draws it on the server's timeline
+			a["moving"] = true
+		elif bool(a.get("moving", false)):
+			a["moving"] = false
+			a["stood_ms"] = Time.get_ticks_msec()   # the first step it stood still: sent once, so the client stops it there instead of carrying it on
 
 		if trails != null and int(a.get("state", 0)) != HIDDEN and not bool(a.get("in_cave", false)) and not a.has("fly") and not bool(a.get("perched", false)):
 			trails.note(id, str(a["sp"]), a["pos"])
@@ -1894,7 +1903,16 @@ func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1) -> Array:
 		var d: float = Vector2(a["pos"].x - point.x, a["pos"].z - point.z).length()
 
 		if d <= radius and a["state"] != HIDDEN:
-			var row: Array = [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), _wire_state(a)]
+			# Field 5 (protocol 147): the server milliseconds it reached this position: its step's time (tick), or now for a move made
+			# elsewhere (the pack brain, a companion). The client draws each animal on these times, not on when the rows came (Dave 21 Nov
+			# 2026 play test: "animals are still teleporting and not actually running").
+			if a.get("row_pos") != a["pos"]:
+				a["row_pos"] = a["pos"]
+				a["row_ms"] = int(a["moved_ms"]) if int(a.get("moved_ms", -1)) > int(a.get("row_ms", -1)) else Time.get_ticks_msec()
+			elif int(a.get("stood_ms", -1)) > int(a["row_ms"]):
+				a["row_ms"] = int(a["stood_ms"])   # still here at that later moment: the client's last leg has no length, so it stops dead
+
+			var row: Array = [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), _wire_state(a), int(a["row_ms"])]
 
 			if a.has("foe_dog") and int(a["state"]) >= 10 and int(a["state"]) <= 12 and animals.has(int(a["foe_dog"])):
 				row.append(animals[int(a["foe_dog"])]["pos"])

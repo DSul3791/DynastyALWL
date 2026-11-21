@@ -263,15 +263,16 @@ func _check_group_refund() -> void:
 
 
 # A group cost spends its lowest member first, by the ranking the refund gives back (DEVTEST-01: iron Nails were spent before Bronze nails, then a taken-down
-# piece gave Bronze nails back). Real nails group: Bronze nails (material bronze) rank below Nails (iron). Within each source a site gather draws on (the
+# piece gave Bronze nails back). Real bronze_nails group (bronze or better): Bronze nails (material bronze) rank below Iron nails. Within each source a site gather draws on (the
 # pack: Inventory.remove_fill; the ground: _ground_take and _spend_sorted; a chest: its remove_fill) the lowest goes first; the gather order of the sources
 # is the pack, then the ground and the builder's containers nearest first (_gather_site).
 func _check_spend_lowest(spot: Vector3) -> void:
 	var t = items.table
-	var nails_n: int = t.number_of("nails")
-	var bronze_n: int = t.number_of("bronze_nails")
+	var nails_n: int = t.number_of("nails")   # Iron nails
+	var bronze_n: int = t.number_of("bronze_nails")   # the group key every building's nails cost names: bronze or better (Dave 21 Nov 2026)
 	var inv = items.inventory_of(1)
-	check(t.group_members(nails_n).has(bronze_n) and t.spend_order(nails_n)[0] == bronze_n and items._refund_number(nails_n) == bronze_n, "the real nails group ranks Bronze nails lowest, and the refund agrees")
+	check(t.group_members(bronze_n).has(nails_n) and t.spend_order(bronze_n)[0] == bronze_n and items._refund_number(bronze_n) == bronze_n, "the real bronze-or-better nails group ranks Bronze nails lowest, and the refund agrees")
+	check(not t.group_members(nails_n).has(bronze_n) and t.group_members(nails_n).has(t.number_of("steel_nails")), "an iron nails need takes iron or steel, never bronze")
 	items.report_position(1, spot)
 	inv.remove(nails_n, inv.count_of(nails_n))
 	inv.remove(bronze_n, inv.count_of(bronze_n))
@@ -279,33 +280,33 @@ func _check_spend_lowest(spot: Vector3) -> void:
 	# Pack only (plain units, as a site gather takes them): 3 iron and 2 bronze, a take of 4 takes the 2 bronze first, then 2 iron.
 	inv.add(nails_n, 3)
 	inv.add(bronze_n, 2)
-	inv.remove_fill(nails_n, 4, [], true)
+	inv.remove_fill(bronze_n, 4, [], true)
 	check(inv.count_of(bronze_n) == 0 and inv.count_of(nails_n) == 1, "pack: 4 nails take both Bronze nails first, then 2 iron (%d bronze, %d iron left)" % [inv.count_of(bronze_n), inv.count_of(nails_n)])
 	inv.add(bronze_n, 3)
-	inv.remove_fill(nails_n, 2, [], true)
+	inv.remove_fill(bronze_n, 2, [], true)
 	check(inv.count_of(bronze_n) == 1 and inv.count_of(nails_n) == 1, "pack: the lowest alone covers a take of 2 (%d bronze, %d iron left)" % [inv.count_of(bronze_n), inv.count_of(nails_n)])
-	inv.remove_fill(bronze_n, 1, [], true)
-	check(inv.count_of(bronze_n) == 0 and inv.count_of(nails_n) == 1, "an exact-id take (bronze_nails) spends only that item")
 	inv.remove_fill(nails_n, 1, [], true)
-	check(inv.count_of(nails_n) == 0, "the last iron nail is spent when it is all there is")
-	check(not inv.remove_fill(nails_n, 1), "nothing left: a group take is refused with no change")
+	check(inv.count_of(bronze_n) == 1 and inv.count_of(nails_n) == 0, "an iron nails take (nails) spends iron and leaves the bronze")
+	inv.remove_fill(bronze_n, 1, [], true)
+	check(inv.count_of(bronze_n) == 0, "the last bronze nail is spent when it is all there is")
+	check(not inv.remove_fill(bronze_n, 1), "nothing left: a group take is refused with no change")
 	inv.add(bronze_n, 1)
 	inv.add(nails_n, 1)
-	check(not inv.remove_fill(nails_n, 3) and inv.count_of(bronze_n) == 1 and inv.count_of(nails_n) == 1, "a total that is too small refuses and changes nothing")
+	check(not inv.remove_fill(bronze_n, 3) and inv.count_of(bronze_n) == 1 and inv.count_of(nails_n) == 1, "a total that is too small refuses and changes nothing")
 	inv.remove(bronze_n, 1)
 	inv.remove(nails_n, 1)
 
 	# A ground stack nearer than the lowest one: the lowest still goes first (iron 1 m away, bronze 3 m away, a take of 3 takes both bronze and 1 iron).
 	items.drop_in_world(nails_n, 5, spot + Vector3(1.0, 0.0, 0.0))
 	items.drop_in_world(bronze_n, 2, spot + Vector3(3.0, 0.0, 0.0))
-	items._ground_take(nails_n, 3, spot, items.BUILD_STOCK_M)
+	items._ground_take(bronze_n, 3, spot, items.BUILD_STOCK_M)
 	check(_on_ground("bronze_nails") == 0 and _on_ground("nails") == 4, "on the ground the lowest member goes first, not the nearest (%d iron, %d bronze left)" % [_on_ground("nails"), _on_ground("bronze_nails")])
-	check(items._ground_take(nails_n, 9, spot, items.BUILD_STOCK_M) == 4 and _on_ground("nails") == 0, "a take of more than lies there takes what is there")
+	check(items._ground_take(bronze_n, 9, spot, items.BUILD_STOCK_M) == 4 and _on_ground("nails") == 0, "a take of more than lies there takes what is there")
 	items.drop_in_world(nails_n, 3, spot + Vector3(1.0, 0.0, 0.0))
 	items.drop_in_world(bronze_n, 2, spot + Vector3(3.0, 0.0, 0.0))
-	items._ground_take(nails_n, 3, spot, items.BUILD_STOCK_M)
+	items._ground_take(bronze_n, 3, spot, items.BUILD_STOCK_M)
 	check(_on_ground("bronze_nails") == 0 and _on_ground("nails") == 2, "a repair take (_ground_take) spends the lowest first too (%d iron, %d bronze left)" % [_on_ground("nails"), _on_ground("bronze_nails")])
-	items._ground_take(nails_n, 9, spot, items.BUILD_STOCK_M)
+	items._ground_take(bronze_n, 9, spot, items.BUILD_STOCK_M)
 
 	# A chest: 3 iron and 2 bronze, a take of 3 (as a site gather takes from a container).
 	var chest: int = items.dev_place("chest@%s,%s,0" % [str(spot.x + 9.0), str(spot.z)])
@@ -313,7 +314,7 @@ func _check_spend_lowest(spot: Vector3) -> void:
 	var box = items._chests[int(items._items[chest]["struct"]["uid"])]
 	box.add(nails_n, 3)
 	box.add(bronze_n, 2)
-	box.remove_fill(nails_n, 3, [], true)
+	box.remove_fill(bronze_n, 3, [], true)
 	check(box.count_of(bronze_n) == 0 and box.count_of(nails_n) == 2, "a chest: the bronze first, then iron (%d bronze, %d iron left)" % [box.count_of(bronze_n), box.count_of(nails_n)])
 	box.remove(nails_n, box.count_of(nails_n))
 
@@ -331,7 +332,7 @@ func _check_spend_lowest(spot: Vector3) -> void:
 		items.drop_in_world(bronze_n, 6, site_spot + Vector3(8.0, 0.0, 0.0))
 		items.action(1, Net.ACT_REPAIR_STRUCT, site, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)
 		var have: Dictionary = items._site_of(items._items[site])["have"]
-		check(int(have.get("nails", 0)) == 8 and _on_ground("bronze_nails") == 0 and _on_ground("nails") == 4, "a site gather takes the lowest first from the ground (%d iron, %d bronze left; site %s)" % [_on_ground("nails"), _on_ground("bronze_nails"), str(have)])
+		check(int(have.get("bronze_nails", 0)) == 8 and _on_ground("bronze_nails") == 0 and _on_ground("nails") == 4, "a site gather takes the lowest first from the ground (%d iron, %d bronze left; site %s)" % [_on_ground("nails"), _on_ground("bronze_nails"), str(have)])
 
 
 # A site gather draws on the pack, loose stacks and the builder's own containers within site_gather_m (12 m) that are not kept out (CraftStock.owner_ok),

@@ -6,7 +6,7 @@ extends SceneTree
 #      the station type that makes them; edge only on sharpening-eligible metal tools; the Stone - Shovel, Stone - Sickle, Wooden - Hammer, Stone - Hoe and Obsidian - Knife are retired;
 #   2. the groups take the better tool: an Iron - Knife for the Wooden bowl (recipe 20), a Copper - Saw for Wooden blocks (728), a
 #      Steel - Saw for Planks by hand (159), with no stone knife or Iron - Saw in the pack;
-#   3. every new ladder tool is made at its station from live materials: copper and bronze at the Primitive smithy (stone_forge), iron and steel at the lit Smithy;
+#   3. every new ladder tool is made at its station from live materials: copper and bronze at the Primitive smithy (stone_forge), iron and steel at the Smithy, with Charcoal in its fuel slot;
 #   4. any metal hammer builds a blueprint of the top hammer tier, and the wooden and stone hammers do not (decision 73);
 #   5. the Grindstone is built before the first saw and is a station.
 #   godot --headless --path . --script res://src/worldgen/tools/test_tool_ladder.gd
@@ -139,7 +139,12 @@ func place(structure: String, at: Vector3) -> bool:
 
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(bp.get("number", 0)), 0, 0, at)
 	HeldTool.hit_site(items, HeldTool.site_of(items, structure))   # placing only sets down a site; the hammer hit fills it from the pack (Dave 18 Nov 2026)
-	return standing_at(structure, at) >= 0
+	var built: int = standing_at(structure, at)
+
+	if built >= 0 and items._fuel_slot_kind(items._structures.get(structure, {})):   # a smithy works on the Charcoal in its fuel slot (Dave 21 Nov 2026)
+		items._smithy_add(items._structures[structure], items._chests[int(items._items[built]["struct"]["uid"])], n_of("charcoal"), 20)
+
+	return built >= 0
 
 
 func _init() -> void:
@@ -237,12 +242,11 @@ func _init() -> void:
 	empty_pack()
 	hold("stone_hammer")
 	check(place("advanced_smithy", smithy_at + Vector3(2.0, 0.0, 0.0)), "an Advanced smithy stands (iron at brick forge level 2 and steel at 3, GOALS-REPAIR R4)")
-	items.give(1, n_of("charcoal"), 20)   # fires the Smithy
 
 	for id in NEW_TOOLS.filter(func(t): return STATION[str(row(t).get("material", ""))] != "forge"):
 		give_needs(id)
 		craft(id)
-		check(have(id) == 1, "%s is made at the lit Advanced smithy" % id)
+		check(have(id) == 1, "%s is made at the fuelled Advanced smithy" % id)
 
 	# 4. Any bronze or better hammer builds the top hammer tier; the stone and copper ones do not.
 	var top: int = 0
@@ -275,7 +279,7 @@ func _init() -> void:
 	check(place("grindstone", grind_at) and items.station_near(1, "grindstone"), "the Grindstone stands and is a grindstone station")
 
 	# 6. Chisel tiers (Dave 18 Nov 2026): a blueprint's "chisel" is the lowest chisel on the hand bar, a better one serves; a recipe keeps its chisel group, held in hand.
-	var chisel_rows: Dictionary = {"chair": 3, "stone_trough": 4, "iron_chest": 5}   # the Copper row, the Log - Trough, is a retired blueprint; Copper is covered by the bowl
+	var chisel_rows: Dictionary = {"chair": 3, "stone_trough": 4, "iron_chest": 5, "plank_chest": 0}   # the Copper row, the Log - Trough, is a retired blueprint; Copper is covered by the bowl. The Rustic - Chest takes no chisel (Dave 21 Nov 2026: "this shouldnt need a chisel")
 
 	for st in chisel_rows:
 		check(int(blueprint_of(st).get("chisel", 0)) == int(chisel_rows[st]), "%s needs chisel tier %d" % [st, int(chisel_rows[st])])
@@ -284,7 +288,7 @@ func _init() -> void:
 	check(items.table.group_members(n_of("iron_chisel")).has(n_of("steel_chisel")) and not items.table.group_members(n_of("iron_chisel")).has(n_of("bronze_chisel")) and not items.table.group_members(n_of("bronze_chisel")).has(n_of("copper_chisel")), "a better chisel fills a lower group, a lesser one never does")
 	var chisel_spot: int = 0
 
-	for trial in [["chair", "", false], ["chair", "copper_chisel", false], ["chair", "bronze_chisel", true], ["iron_chest", "iron_chisel", false], ["iron_chest", "steel_chisel", true]]:
+	for trial in [["chair", "", false], ["plank_chest", "", true], ["small_chest", "", true], ["chair", "copper_chisel", false], ["chair", "bronze_chisel", true], ["iron_chest", "iron_chisel", false], ["iron_chest", "steel_chisel", true]]:
 		empty_pack()
 		hold("steel_hammer")
 

@@ -69,7 +69,7 @@ func seed_world(items) -> Dictionary:
 	ids["ash"] = items.dev_place("campfire@100,20,0,ash")
 	ids["pot"] = items.dev_place("campfire_pot@20,20,0")
 
-	for kind in ["standing_torch", "wall_torch", "chandelier", "fireplace", "iron_hanging_lantern", "stone_brazier", "kiln", "smelter", "large_forge", "blacksmithy"]:
+	for kind in ["standing_torch", "wall_torch", "chandelier", "fireplace", "iron_hanging_lantern", "stone_brazier", "kiln", "smelter", "large_forge"]:   # a smithy is never lit (Dave 21 Nov 2026: it works on its fuel slot)
 		ids[kind + "_lit"] = items.dev_place("%s@%d,60,0,lit" % [kind, 20 + 20 * ids.size()])
 		ids[kind] = items.dev_place("%s@%d,80,0" % [kind, 20 + 20 * ids.size()])
 

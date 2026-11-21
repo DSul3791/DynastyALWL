@@ -4,6 +4,7 @@ const BuildStamp := preload("res://src/shared/build_stamp.gd")
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
 const CraftStock := preload("res://src/shared/craft_stock.gd")
 const LyingLogs := preload("res://src/shared/lying_logs.gd")
+const BoulderWear := preload("res://src/shared/boulder_wear.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
@@ -131,8 +132,10 @@ var _stock_sign: int = 0                # the pack as it was when the stock was 
 var _chest_panel: Control
 const BOULDER_STATE := 10                 # the world-item row state of a boulder (server_items)
 const BOG_STATE := 229                    # the world-item row state of a bog iron deposit (server_items._bog_rows_near)
-var bogs: Dictionary = {}                 # bog deposit world id -> {"pos", "left", "total", "wet", "key"}: kept apart from _world; Kathleen's _show_bog draws them
-var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now}
+var bogs: Dictionary = {}                 # bog patch world id -> {"pos", "left", "total", "r", "key", "lumps", "node"}: kept apart from _world; _show_bog draws the lumps
+var bogs_rev: int = 0                     # moves on when a patch comes, goes or changes (terrain_client then hands them to the ground shader)
+const BOG_LUMPS := 4                      # ore lumps on a full patch
+var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now, shrink (the running ease, if any)}
 var crown_landed: Callable = Callable()   # (centre Vector3, radius m): a felled crown hit the ground there; the client flattens the grass (Dave 10 Nov 2026)
 var _boulder_mesh: ArrayMesh
 var _boulder_rock: ShaderMaterial
@@ -185,6 +188,7 @@ var _eat_hold_sign: Array = []        # the slot's number, count and wear when t
 var _eat_hold_sent_msec: int = 0
 var gather_event: Callable             # () when the player gathers something by hand (E): the view dips a little (no arm or body clip: Dave 17 Nov 2026)
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
+var bellows_event: Callable            # (where) each stroke of a smelter's worked bellows (sounds)
 var worn_event: Callable               # (changed item ids Array, all worn item ids Array) when what is worn changes; changed is empty for the first list after joining (sounds)
 var skill_up_event: Callable           # () when a skills message shows a skill's level higher than the last one (sounds; not on the first list after joining)
 var hurt_event: Callable               # (health lost int) when a vitals update drops health by HURT_MIN or more (a bite, a fall): sounds
@@ -602,7 +606,8 @@ func register_interactable(interactable_name: String, priority: int, probe: Call
 
 
 # E does what the cursor is on (Dave 1 Nov 2026). A probe may return a "point" (the world spot it acts on). Of the probes that found something, the one
-# whose point is aimed at (aimed_at) and best centred wins, whatever its priority; E then does that one action and nothing else nearby (a chopping block
+# whose point is inside the aim cone (in_aim) and best centred wins, whatever its priority (Dave 21 Nov 2026: "it should always effect whatever is closest
+# to my reticle first"; every probe offers its own best centred thing, not its nearest, see reticle_index); E then does that one action and nothing else nearby (a chopping block
 # in the cursor does not also gather the wood lying around it). Only when the cursor is on nothing with an E action does the priority order decide, which
 # is where the nearby pick-up and gather live. "aimed" is set on a result that won because of the cursor.
 func current_interaction() -> Dictionary:
@@ -622,7 +627,7 @@ func current_interaction() -> Dictionary:
 		if first.is_empty():
 			first = found
 
-		if not found.has("point") or not view_direction.is_valid() or not aimed_at(found["point"]):
+		if not found.has("point") or not view_direction.is_valid() or not in_aim(found["point"]):
 			continue
 
 		var aim_cos: float = aim_cos_of(found["point"])
@@ -636,6 +641,32 @@ func current_interaction() -> Dictionary:
 		return best
 
 	return first
+
+
+# Whether a point lies inside the aim cone round the reticle (interact.json aim_cos, about 25 degrees). Only the angle counts: each probe has already kept
+# to its own reach, so a thing in reach and in the cone takes part whatever its distance (aimed_at, which also needs prompt_reach_m, decides only whether
+# the "Press E" line shows). Unset view direction (tests) counts as in the cone.
+func in_aim(point: Vector3) -> bool:
+	return not view_direction.is_valid() or aim_cos_of(point) >= Interact.aim_cos()
+
+
+# Of some aim points, the index of the one nearest the reticle (best centred inside the aim cone), -1 when none is in the cone or no view direction is
+# known. Every probe chooses its thing with this, so E and the prompt act on what the reticle is on, never on the nearest thing beside it.
+func reticle_index(points: Array) -> int:
+	if not view_direction.is_valid():
+		return -1
+
+	var best: int = -1
+	var best_cos: float = -2.0
+
+	for n in range(points.size()):
+		var aim_cos: float = aim_cos_of(points[n])
+
+		if aim_cos >= Interact.aim_cos() and aim_cos > best_cos:
+			best_cos = aim_cos
+			best = n
+
+	return best
 
 
 # The cosine between the view direction and the line from the eyes to a point.
@@ -723,12 +754,11 @@ func in_view(point: Vector3) -> bool:
 
 
 func _probe_pickup() -> Dictionary:
-	var near: Array = _nearest(true)
+	var id: int = _reticle_item()
 
-	if near[0] == 0:
+	if id == 0:
 		return {}
 
-	var id: int = near[0]
 	return {"kind": "pickup", "id": id, "point": _world[id]["pos"], "prompt": "Press E to gather", "quiet": not aimed_at(_world[id]["pos"]), "tap": func():
 		clear_prompt()
 		var asked_msec: int = Time.get_ticks_msec()
@@ -988,10 +1018,10 @@ func _probe_fire() -> Dictionary:
 
 	if _lit_state(state) and _out_flame_slot() >= 0:
 		# A torch that went out in the pack: E at a burning fire lights it again (Dave, 4 Nov 2026), instead of putting the fire out.
-		return {"kind": "fire", "point": _world[id]["pos"] + Vector3(0.0, 0.3, 0.0), "prompt": "Press E to light your torch", "tap": func():
+		return {"kind": "fire", "point": aim_point(id, _player_position.call()), "prompt": "Press E to light your torch", "tap": func():
 			net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, id, 0, 0, Vector3.ZERO)}
 
-	var found: Dictionary = {"kind": "fire", "point": _world[id]["pos"] + Vector3(0.0, 0.3, 0.0), "prompt": _fire_prompt(state), "tap": func():
+	var found: Dictionary = {"kind": "fire", "point": aim_point(id, _player_position.call()), "prompt": _fire_prompt(state), "tap": func():
 		if state == 9 or state == StructureLook.FIRE_ASH:
 			net.inventory_action.rpc_id(1, Net.ACT_LIGHT, id, 0, 0, Vector3.ZERO)
 		elif _lit_state(state):
@@ -1021,7 +1051,7 @@ func _probe_structure() -> Dictionary:
 
 	if not found.is_empty():
 		found["kind"] = "block" if int(_world[near]["state"]) == 7 else "structure"
-		found["point"] = _world[near]["pos"] + Vector3(0.0, 0.4, 0.0)   # the middle of the thing, where the cursor rests
+		found["point"] = aim_point(near, _player_position.call())   # the middle of the thing, where the cursor rests: the spot _nearest_struct chose it by
 
 	return found
 
@@ -1078,8 +1108,10 @@ func _probe_structure_for(id: int) -> Dictionary:
 		if not bool(_world[id].get("lit", false)):
 			return {"prompt": "Press E to light", "tap": use_tap, "hold": take_down}   # Dave: "it should say Press E to light. thats it."
 
-		if bool(store_def.get("smelt", {}).get("bellows", false)):   # the Improved smelter: E works its bellows, hold E puts it out
-			return {"prompt": "Press E to work the bellows, E again to stop (hold E to put it out)", "tap": use_tap, "hold": func():
+		if bool(store_def.get("smelt", {}).get("bellows", false)):   # the Improved smelter: E works its bellows or leaves them (the row's "bellows"), hold E puts it out
+			var at_bellows: int = int(_world[id].get("bellows", 0))
+			var bellows_line: String = "Press E to stop using the bellows" if at_bellows == 2 else ("Someone else is working the bellows" if at_bellows == 1 else "Press E to work the bellows")   # Dave 21 Nov 2026
+			return {"prompt": bellows_line + " (hold E to put it out)", "tap": use_tap, "hold": func():
 				clear_prompt()
 				net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 1, 0, Vector3.ZERO)}
 
@@ -1132,10 +1164,10 @@ func _probe_structure_for(id: int) -> Dictionary:
 
 		return seat
 
-	# Water pieces (buildables plan section 6): E works a well or pump (E again stops), E at a trough, barrel or cistern drinks, or fills the container in hand.
+	# Water pieces (buildables plan section 6): E works a well (E again stops), E at a trough, barrel or cistern drinks, or fills the container in hand.
 	var water: Variant = station_def.get("water", {})
 
-	if typeof(water) == TYPE_DICTIONARY and str(water.get("role", "")) == "source" and (water.has("pump") or bool(water.get("windlass", false))):
+	if typeof(water) == TYPE_DICTIONARY and str(water.get("role", "")) == "source" and bool(water.get("windlass", false)):
 		return {"prompt": "Press E to work the %s, E again to stop (hold E to take it down)" % table.sentence_name(_world[id]["number"]), "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
 	if str(station_def.get("use", "")) == "water_gate":   # a Sluice or Tap (plumbing PR 2): E opens or shuts it; the open twin has water "open" true
@@ -1428,21 +1460,20 @@ func _fire_prompt(state: int) -> String:
 
 # F (Dave 2026-10-22): opens the container you stand beside, your pack on the left and its contents on the right (T moves the selected stack across).
 # True when a chest, remains, campfire or crafting station lay within reach and it was opened (a station opens the crafting screen).
-# The id of the chest, station, fire or remains within reach of the player (0 when none): what F opens.
+# The id of the chest, station, fire or remains within reach of the player (0 when none): what F opens. Like E, the one nearest the reticle when any is
+# in the aim cone, otherwise the nearest (Dave 21 Nov 2026), so E and F work the same thing of two side by side.
 func _container_near() -> int:
 	var here: Vector3 = _player_position.call()
-	var best: int = 0
-	var best_d: float = 3.0
+	var ids: Array = []
 
 	for id in _world:
 		var state: int = int(_world[id]["state"])
 		var is_station: bool = str(_structure_by_state(state).get("station", "")) != ""
 
-		if (is_station or _is_chest(state) or state == 11 or state == 12 or _lit_state(state) or StructureLook.is_unlit_fire(state)) and not _world[id].get("camp", false) and here.distance_to(_world[id]["pos"]) <= best_d:
-			best_d = here.distance_to(_world[id]["pos"])
-			best = id
+		if (is_station or _is_chest(state) or state == 11 or state == 12 or _lit_state(state) or StructureLook.is_unlit_fire(state)) and not _world[id].get("camp", false) and here.distance_to(_world[id]["pos"]) <= PIECE_REACH_M:
+			ids.append(id)
 
-	return best
+	return _aimed_or_nearest(ids, here)
 
 
 var _last_f_ms: int = -100000
@@ -1662,7 +1693,7 @@ func _nearest_struct(skip_fires: bool = false) -> int:
 		if (skip_fires and int(_world[id]["state"]) in StructureLook.CAMPFIRE_STATES) or _world[id].get("camp", false):
 			continue   # Edda and Hob's fire is never offered
 
-		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(reach_pos(id, here)) <= 3.0:
+		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(reach_pos(id, here)) <= PIECE_REACH_M:
 			ids.append(id)
 
 	return _aimed_or_nearest(_unframed(ids), here)
@@ -1698,28 +1729,55 @@ func _unframed(ids: Array) -> Array:
 	return out
 
 
-# Of some world ids: the best centred one when the cursor is on any of them, otherwise the nearest; 0 for none.
+# Of some world ids: the one nearest the reticle (reticle_index on their aim points) when any is in the aim cone, otherwise the nearest; 0 for none.
 func _aimed_or_nearest(ids: Array, here: Vector3) -> int:
-	var best: int = 0
-	var best_d: float = 1.0e9
-	var best_cos: float = -2.0
+	var points: Array = []
 
 	for id in ids:
-		var at: Vector3 = reach_pos(id, here)
-		var d: float = here.distance_to(at)
+		points.append(aim_point(id, here))
 
-		if view_direction.is_valid() and aimed_at(at):
-			var aim_cos: float = aim_cos_of(at)
+	var aimed: int = reticle_index(points)
 
-			if aim_cos > best_cos:
-				best_cos = aim_cos
-				best = id
+	if aimed >= 0:
+		return ids[aimed]
 
-		elif best_cos < -1.0 and d < best_d:
+	var best: int = 0
+	var best_d: float = 1.0e9
+
+	for id in ids:
+		var d: float = here.distance_to(reach_pos(id, here))
+
+		if d < best_d:
 			best_d = d
 			best = id
 
 	return best
+
+
+# The spot of a fire or placed piece the reticle is judged against, the same one its probe offers the E contest: a fire a little above its pit, any other
+# piece the middle of it (its reach_pos, raised to where the cursor rests).
+func aim_point(id: int, here: Vector3) -> Vector3:
+	return reach_pos(id, here) + Vector3(0.0, 0.3 if int(_world[id]["state"]) in StructureLook.CAMPFIRE_STATES else 0.4, 0.0)
+
+
+# The loose item E acts on: of the items in view, the one nearest the reticle (in the aim cone) out to PIECE_REACH_M, as far as fires and placed pieces are
+# offered, so a fire or station beside it never wins only because the item is a little farther away (the server allows Interact.server_reach_m()).
+# With none in the cone, the nearest within reach_m, as before. 0 for none.
+func _reticle_item() -> int:
+	var here: Vector3 = _player_position.call()
+	var ids: Array = []
+	var points: Array = []
+
+	for id in _world:
+		if _world[id]["state"] == 0 and here.distance_to(_world[id]["pos"]) <= PIECE_REACH_M and in_view(_world[id]["pos"]):
+			ids.append(id)
+			points.append(_world[id]["pos"])
+
+	var aimed: int = reticle_index(points)
+	return ids[aimed] if aimed >= 0 else int(_nearest(true)[0])
+
+
+const PIECE_REACH_M := 3.0   # how far E reaches a fire or placed piece on the client (and an item the reticle is on); the server allows Interact.server_reach_m()
 
 
 # The id of the fire (lit or out) within 3 m that the cursor is on, else the nearest one; 0 when none. Never Edda and Hob's fire: players cannot use it.
@@ -1728,7 +1786,7 @@ func _nearest_fire() -> int:
 	var ids: Array = []
 
 	for id in _world:
-		if _world[id]["state"] in StructureLook.CAMPFIRE_STATES and not _world[id].get("camp", false) and here.distance_to(_world[id]["pos"]) <= 3.0:
+		if _world[id]["state"] in StructureLook.CAMPFIRE_STATES and not _world[id].get("camp", false) and here.distance_to(_world[id]["pos"]) <= PIECE_REACH_M:
 			ids.append(id)
 
 	return _aimed_or_nearest(ids, here)
@@ -2889,10 +2947,26 @@ var _craft_first: bool = false   # the window being asked for is a station's: it
 
 
 # A station store's row (master s2.5): its fill (server_items._store_fill) and, for a Kiln, whether it burns; kept when the row is sent again.
+# A smelter's row also says who works its bellows (server_smelter.bellows_peer: 2 this player, 1 another, absent nobody): while they are
+# worked its fire burns brighter, its smoke puffs and the bellows blow with each stroke, for everyone near (Dave 21 Nov 2026).
 func _note_store(id: int, row: Array) -> void:
 	if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("fill"):
+		var lit_now: bool = bool(row[5].get("lit", false))
+		var redrawn: bool = _world[id].has("lit") and bool(_world[id]["lit"]) != lit_now   # lit or put out: this model goes and the new one takes the bellows
 		_world[id]["fill"] = int(row[5]["fill"])
-		_world[id]["lit"] = bool(row[5].get("lit", false))
+		_world[id]["lit"] = lit_now
+		_world[id]["forge"] = int(row[5].get("forge", -1))   # a smithy's fire: 0 cold, 1 red coals, 2 the flare
+		var at_bellows: int = int(row[5].get("bellows", 0))
+
+		if at_bellows != int(_world[id].get("bellows", 0)) and not redrawn and _world[id].get("node") is Node3D:
+			BuildingLook.show_forge_bellows(_world[id]["node"], at_bellows > 0, _bellows_blew)
+
+		_world[id]["bellows"] = at_bellows
+
+
+func _bellows_blew(at: Vector3) -> void:
+	if bellows_event.is_valid():
+		bellows_event.call(at)
 
 
 # A station store's fill for the look-at line (server_items._store_fill: 0 empty, 1 to 4 quarters), "" for anything else.
@@ -3108,6 +3182,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 				# A Smelter lit or put out is drawn again: its fire and light are set only when its model is built (_forge_fire).
 				var smelter_lit_changed: bool = str(_structure_by_state(state).get("use", "")) == "smelt" and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and bool(row[5].get("lit", false)) != bool(_world[id].get("lit", false))
+				# A smithy that takes fuel, runs out, starts or stops working is drawn again too (its coals, flare and light are set as its model is built).
+				smelter_lit_changed = smelter_lit_changed or (row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and int(row[5].get("forge", -1)) != int(_world[id].get("forge", -1)))
 				_note_platter(id, row, state)
 				_note_store(id, row)
 				_note_crop(id, row)
@@ -3154,6 +3230,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			if row.size() > 5 and bool((row[5] as Dictionary).get("lit", false)) and str(_structure_by_state(state).get("use", "")) == "smelt":
 				fixture_light = node.get_node_or_null("Light")   # a lit Smelter: its forge's own fire light (_forge_fire shows its flames)
+			elif row.size() > 5 and int((row[5] as Dictionary).get("forge", 0)) >= 1:
+				fixture_light = node.get_node_or_null("Light")   # a smithy with fuel: its coals' glow or its flare (BuildingLook.forge_state)
 			elif row.size() > 5 and bool((row[5] as Dictionary).get("lit", false)):
 				var fixture: Node3D = BuildingLook.lit_fixture(StructureLook.look_of(state))
 				node.add_child(fixture)
@@ -3538,53 +3616,66 @@ func placement_rows() -> Array:
 
 
 # Removes a world row's node and, for a lean-to, its roof in the cover index.
-# A bog iron deposit the server says is in sight (Sonny's water rules section 11): its spot, the ore left and its full size, and whether it lies under
-# standing water. Drawn by _show_bog; terrain_client keeps the grass off it.
+# A bog iron patch the server says is in sight (Sonny's water rules section 11): its centre on the ground as generated, the ore left, its full size
+# and its radius. The rust is the ground's own colour (terrain_client hands bogs to ground_material.gd set_bogs, fading with the ore left);
+# _show_bog draws its lumps; terrain_client keeps the grass off it. bogs_rev moves on whenever what the shader needs changes.
 func _note_bog(id: int, row: Array) -> void:
 	var extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
 	var entry: Dictionary = bogs.get(id, {})
+	var was: String = str([entry.get("pos"), entry.get("left"), entry.get("total"), entry.get("r")])
 	entry["pos"] = row[3]
 	entry["left"] = int(row[2])
 	entry["total"] = maxi(int(extra.get("total", row[2])), 1)
-	entry["wet"] = bool(extra.get("wet", false))
+	entry["r"] = float(extra.get("r", 3.0))
 	entry["key"] = str(extra.get("key", ""))
 	bogs[id] = entry
+
+	if was != str([entry["pos"], entry["left"], entry["total"], entry["r"]]):
+		bogs_rev += 1
+
 	_show_bog(id)
 
 
-# A bog iron deposit's ground stain (PieceLook.bog_iron_patch): "wet" under standing water, "dug" once ore has been taken (until it grows back to
-# full), else "dry". Rebuilt only when the state changes; no collision; turned by the key's hash so neighbours differ.
+# A patch's ore lumps (PieceLook.bog_iron_lumps): up to BOG_LUMPS of them, fewer as its ore is dug, none when it is empty. Rebuilt only when
+# that count changes; no collision; turned by the key's hash so neighbours differ.
 func _show_bog(id: int) -> void:
 	var entry: Dictionary = bogs.get(id, {})
 
 	if entry.is_empty() or _root == null:
 		return
 
-	var state: String = "wet" if bool(entry["wet"]) else ("dug" if int(entry["left"]) < int(entry["total"]) else "dry")
+	var count: int = ceili(float(BOG_LUMPS) * float(clampi(int(entry["left"]), 0, int(entry["total"]))) / float(entry["total"]))
 
-	if entry.get("node") is Node3D and str(entry.get("state", "")) == state:
-		(entry["node"] as Node3D).position = entry["pos"]
+	if entry.has("lumps") and int(entry["lumps"]) == count:
+		if entry.get("node") is Node3D:
+			(entry["node"] as Node3D).position = entry["pos"]
+
 		return
 
 	if entry.get("node") is Node3D:
 		(entry["node"] as Node3D).queue_free()
 
+	entry.erase("node")
+	entry["lumps"] = count
+
+	if count <= 0:
+		return
+
 	var at: Vector3 = entry["pos"]
 	var yaw: float = float(absi(hash(str(entry["key"]))) % 360) * PI / 180.0
 	var ground: Callable = Callable()
 
-	if _ground_below.is_valid():   # drape the stain over the ground: the patch's frame turned by yaw, from its origin
+	if _ground_below.is_valid():   # each lump on the ground: the patch's frame turned by yaw, from its origin
 		ground = func(x: float, z: float) -> float:
 			var spot: Vector3 = at + Vector3(x, 0.0, z).rotated(Vector3.UP, yaw)
 			var y: float = float(_ground_below.call(spot))
 			return 0.0 if is_nan(y) else y - at.y
 
-	var node: Node3D = PieceLook.bog_iron_patch(state, ground)
+	var node: Node3D = PieceLook.bog_iron_lumps(count, 0.45 * float(entry["r"]), ground)
 	node.position = at
 	node.rotation.y = yaw
 	_root.add_child(node)
 	entry["node"] = node
-	entry["state"] = state
 
 
 # Boulders (Dave 2026-10-21): server-owned lumps of rock a pick breaks into stones. Drawn with Art's boulder mesh scaled to the
@@ -3666,20 +3757,39 @@ func _boulder_material(ore: String) -> ShaderMaterial:
 	return _outcrop_rock[ore]
 
 
-# Scale to the radius still left (the cube root of the stones left), sunk a fifth into the ground like Art's scenery boulders.
+const SHRINK_EASE_S := 0.15   # how long a blow takes to ease a boulder down to its new size (look only; PROVISIONAL BW-3)
+
+
+# Scale to the radius still left (BoulderWear: in a straight line with the stones left, from the first blow), sunk a fifth into the ground like Art's scenery boulders.
 func _size_boulder(entry: Dictionary) -> void:
 	var box: AABB = (entry["lump"].mesh as Mesh).get_aabb()
-	var radius: float = float(entry["radius"]) * pow(float(entry["left"]) / float(entry["total"]), 1.0 / 3.0)
+	var radius: float = BoulderWear.radius_now(float(entry["radius"]), int(entry["left"]), int(entry["total"]))
 	var unit: float = maxf(maxf(box.size.x, box.size.z) * 0.5, 0.01)
 	var scale: float = radius / unit
+	var was: float = float(entry.get("now", -1.0))
 	entry["now"] = radius
-	entry["lump"].scale = Vector3.ONE * scale
-	entry["lump"].position = Vector3(0.0, -(box.position.y + box.size.y * 0.2) * scale, 0.0)
+	var lump_at: Vector3 = Vector3(0.0, -(box.position.y + box.size.y * 0.2) * scale, 0.0)
+	var lump_node: MeshInstance3D = entry["lump"]
+
+	# A blow eases the rock down to its new size over SHRINK_EASE_S (smooth motion; a small rock loses a big share a blow). The first draw sets it.
+	if was >= 0.0 and is_equal_approx(was, radius) and entry.get("shrink") is Tween and (entry["shrink"] as Tween).is_valid():
+		pass   # same size (a settle or a resend): leave an ease that is still running to finish
+	elif was >= 0.0 and not is_equal_approx(was, radius) and lump_node.is_inside_tree():
+		if entry.get("shrink") is Tween:
+			(entry["shrink"] as Tween).kill()   # a quick second blow starts from where the last ease had got to
+
+		var shrink: Tween = lump_node.create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		shrink.tween_property(lump_node, "scale", Vector3.ONE * scale, SHRINK_EASE_S)
+		shrink.tween_property(lump_node, "position", lump_at, SHRINK_EASE_S)
+		entry["shrink"] = shrink
+	else:
+		lump_node.scale = Vector3.ONE * scale
+		lump_node.position = lump_at
+
 	entry["shape"].shape.radius = radius * 0.85
 	entry["shape"].position = Vector3(0.0, radius * 0.5, 0.0)
-	var lump: GeometryInstance3D = entry["lump"]
-	lump.set_instance_shader_parameter("crack", 1.0 - float(entry["left"]) / float(entry["total"]))   # how much of the rock is gone: more, wider cracks
-	lump.set_instance_shader_parameter("crack_scale", 1.0 / unit)
+	lump_node.set_instance_shader_parameter("crack", BoulderWear.crack(int(entry["left"]), int(entry["total"])))   # cracks from the first blow, more and wider as the rock is used up
+	lump_node.set_instance_shader_parameter("crack_scale", 1.0 / unit)
 
 
 # Cracks over a worked boulder (BugsList entry 3, Dave 18 Nov 2026: a rock must visibly use up as it is mined). Drawn as an overlay on whatever rock
@@ -3850,6 +3960,7 @@ func _forget(id: int) -> void:
 			(bogs[id]["node"] as Node3D).queue_free()
 
 		bogs.erase(id)
+		bogs_rev += 1
 		return
 
 	if not _world.has(id):
@@ -4469,6 +4580,9 @@ func station_use() -> Dictionary:
 		if str(def.get("fuel", "")) != "":
 			fuels.append(str(def["fuel"]))
 
+		if str(def.get("fuel_slot", "")) != "":
+			fuels.append(str(def["fuel_slot"]))   # a smithy's fuel slot (Coal or Charcoal)
+
 	if stations.is_empty() and fuels.is_empty() and not StoreRules.limited(def):
 		return {}
 
@@ -4768,7 +4882,7 @@ func _model_for_look(look: String, state: int, extra: Dictionary) -> Node3D:
 		"stone_forge":
 			return _forge_fire(_make_forge(state), state, extra)
 		"blacksmithy":
-			return _make_smithy()
+			return _forge_fire(_make_smithy(), state, extra)
 		"big_forge":
 			return _forge_fire(_make_big_forge(state), state, extra)
 		"carcass":
@@ -4813,11 +4927,15 @@ func _blue_all(node: Node, blue: Material) -> void:
 		_blue_all(child, blue)
 
 
-# A Smelter's forge model burns only while its row says lit, never cold (Dave 17 Nov 2026). A built smithy that shares the look, which has no
-# lighting yet, keeps its fire; no blueprint burns (_model_for_state).
+# A Smelter's forge model burns only while its row says lit, never cold (Dave 17 Nov 2026). A smithy shows its row's "forge": cold with no fuel,
+# red coals when idle, the flare while a craft is worked (Dave 21 Nov 2026). No blueprint burns (_model_for_state).
 func _forge_fire(model: Node3D, state: int, extra: Dictionary) -> Node3D:
-	if str(_structure_by_state(state).get("use", "")) == "smelt":
+	var def: Dictionary = _structure_by_state(state)
+
+	if str(def.get("use", "")) == "smelt":
 		BuildingLook.show_forge_fire(model, bool(extra.get("lit", false)))
+	elif str(def.get("fuel_slot", "")) != "":
+		BuildingLook.forge_state(model, int(extra.get("forge", 0)))
 
 	return model
 
@@ -5014,7 +5132,7 @@ func _dress_item(node: Node3D, number: int, world_id: int, natural: bool = false
 	node.rotation = Vector3(0.0, rng.randf_range(0.0, TAU), 0.0)
 
 	if BasicLook.has_look(id):
-		node.scale = Vector3.ONE * BASIC_DROP_SCALE      # big enough to find in the tall grass (the natural stones and sticks are 3 times)
+		node.scale = Vector3.ONE * (1.0 if str(BasicLook.entry(id).get("shape", "")) == "board" else BASIC_DROP_SCALE)      # big enough to find in the tall grass (the natural stones and sticks are 3 times); a sawn board is drawn at its real 8 ft
 		node.position.y += 0.04
 		return
 
@@ -6782,10 +6900,11 @@ func run_plant_test(client) -> void:
 	print("Plant test: tried %d, gone %d, still standing %d, skipped (nothing pickable) %d" % [tried, gone, tried - gone, skipped])
 
 
-# The self-tests build with the hammer (or the knife for the Wicker - Chest, a knife row since 15 Nov 2026), as players do since kits left the game (4 Nov 2026): data/items/blueprints.json numbers and costs.
+# The self-tests build with the hammer (or the knife for the Wicker basket, a knife row; the Wicker - Chest it replaced was retired 21 Nov 2026), as players do since kits left the game (4 Nov 2026): data/items/blueprints.json numbers and costs.
 # The hammer or knife goes on a hotbar key by itself when it comes into the pack (inventory step 4).
-const CHEST_BLUEPRINT := 26
-const CHEST_MATERIALS := [["stone_knife", 1], ["stick", 10], ["twine", 4]]
+const CHEST_BLUEPRINT := 157   # the Wicker basket, 6 slots: the knife's store since the Wicker - Chest was retired (Dave 21 Nov 2026)
+const CHEST_STATE := 195   # its row state (structures.json wicker_basket)
+const CHEST_MATERIALS := [["stone_knife", 1], ["stick", 8], ["twine", 4]]
 const LEAN_TO_BLUEPRINT := 25
 const LEAN_TO_MATERIALS := [["stone_hammer", 1], ["stick", 30], ["leaves", 100], ["leaves", 100], ["twine", 10]]
 
@@ -7284,7 +7403,7 @@ func run_chest_test(client) -> void:
 		_finish_early(client)
 		return
 
-	_give_blueprint_kit(CHEST_MATERIALS)   # kits left the game (4 Nov 2026): the chest is built with the knife from its blueprint (a knife row, W-9)
+	_give_blueprint_kit(CHEST_MATERIALS)   # kits left the game (4 Nov 2026): the Wicker basket is built with the knife from its blueprint (a knife row, W-9)
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 10, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 	var id: int = 0
@@ -7306,7 +7425,7 @@ func run_chest_test(client) -> void:
 
 		for wait in 40:
 			for k in _world:
-				if _world[k]["state"] == 6:
+				if _world[k]["state"] == CHEST_STATE:
 					id = k
 
 			if id != 0:

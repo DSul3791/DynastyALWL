@@ -33,9 +33,9 @@ Listed as not built on 2 Nov: real death with heirs and children, new-character 
 Dave: "remove the gender selection in the character creation and remove gender from character. we will simply provide various model meshes people can choose from." The creator's About you section has Name, Body and Frame; gender and pronouns are gone from the record (format version 3), the store, the select page and the inner voice. `src/client/character/body_models.gd` lists the models; adding a row adds a choice.
 
 ### For Dave (assumed on his behalf, provisional)
-- BM-1: the models are named plainly, "Body 1", "Body 2" and so on. Today there is one: Body 1 (Dynasty_Base_Male.glb).
+- BM-1: the models are named plainly, "Body 1", "Body 2" and so on. Body 1 is Dynasty_Base_Male.glb; Body 2 is Dave's female player character, Playercharacter_Female_01.glb (Dave 20 Nov 2026: "add this female character to our character creation choices [...] she should be the female selection now and be fully adjustable"). Her label stays plain under this rule; a one-line change in body_models.gd renames it.
 - BM-2: pronouns went with gender. Nothing in the game used them.
 - BM-3: the three frames keep their saved keys but are shown as Curved, Broad and Even instead of Feminine, Masculine and Neutral. A new character starts Even.
-- BM-4: the inner voice timbre follows the body model (`body_families` in data/items/inner_voice_sets.json; Body 1 speaks with the deeper voices). A model not listed there takes either timbre by character id.
+- BM-4: the inner voice timbre follows the body model (`body_families` in data/items/inner_voice_sets.json; Body 1 speaks with the deeper voices, Body 2 with the lighter ones). A model not listed there takes either timbre by character id.
 - BM-5: an old character file still loads: its gender and pronouns are dropped and it wears Body 1. Nothing touches live saves.
-- Shortcut: every character wears the first model's mesh (dynasty_body.gd). When a second mesh is listed, dynasty_body.gd must load the chosen model's glb.
+- Each character wears its own model (dynasty_body.gd `_init(model_id)`; my_character.gd `body_model`); NPCs wear Body 1. Shortcut: every model's first-person arms are Body 1's parts file (there is no parts file for Body 2 yet).

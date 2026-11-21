@@ -3489,30 +3489,50 @@ static func deep_well_pump() -> Node3D:
 	return root
 
 
-# A stone cistern (B6b), 2.0 x 2.0. `raised` false: a stone tank 1.0 m high, flagstone coping, still water inside, an overflow lip at +X. `raised` true: the
-# same tank on a stone plinth, 3.0 m in all, a plank cover over half the top and an inlet pipe stub down the -Z side.
-static func cistern(raised: bool = false) -> Node3D:
+# A stone cistern (B6b), 2.0 x 2.0: a stone tank 1.0 m high, flagstone coping, still water inside, an overflow lip at +X.
+static func cistern() -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
-	var base: float = 2.0 if raised else 0.0
-
-	if raised:
-		_box(root, Vector3(1.6, 2.0, 1.6), Vector3(0.0, 1.0, 0.0), _stone)
-		_box(root, Vector3(1.8, 0.2, 1.8), Vector3(0.0, 0.1, 0.0), _flag)
-		_box(root, Vector3(1.9, 0.08, 1.9), Vector3(0.0, 1.96, 0.0), _flag)
-		_cyl(root, 0.06, 2.6, Vector3(0.0, 1.3, -0.86), _iron_mat(), 8)
-		_box(root, Vector3(1.8, 0.04, 0.9), Vector3(0.0, base + 1.0, 0.45), _planks)
 
 	for s in [-1.0, 1.0]:
-		_box(root, Vector3(2.0, 0.9, 0.2), Vector3(0.0, base + 0.45, s * 0.9), _stone)
-		_box(root, Vector3(0.2, 0.9, 1.6), Vector3(s * 0.9, base + 0.45, 0.0), _stone)
-		_box(root, Vector3(2.0, 0.08, 0.24), Vector3(0.0, base + 0.94, s * 0.9), _flag)
-		_box(root, Vector3(0.24, 0.08, 1.6), Vector3(s * 0.9, base + 0.94, 0.0), _flag)
+		_box(root, Vector3(2.0, 0.9, 0.2), Vector3(0.0, 0.45, s * 0.9), _stone)
+		_box(root, Vector3(0.2, 0.9, 1.6), Vector3(s * 0.9, 0.45, 0.0), _stone)
+		_box(root, Vector3(2.0, 0.08, 0.24), Vector3(0.0, 0.94, s * 0.9), _flag)
+		_box(root, Vector3(0.24, 0.08, 1.6), Vector3(s * 0.9, 0.94, 0.0), _flag)
 
-	_box(root, Vector3(1.6, 0.1, 1.6), Vector3(0.0, base + 0.05, 0.0), _stone)
-	_box(root, Vector3(1.6, 0.02, 1.6), Vector3(0.0, base + 0.8, 0.0), _still_water())
-	_box(root, Vector3(0.12, 0.06, 0.3), Vector3(0.98, base + 0.9, 0.0), _flag)              # the overflow lip
-	_solid(root, Vector3(2.0, base + 1.0, 2.0), Vector3(0.0, (base + 1.0) * 0.5, 0.0))
+	_box(root, Vector3(1.6, 0.1, 1.6), Vector3(0.0, 0.05, 0.0), _stone)
+	_box(root, Vector3(1.6, 0.02, 1.6), Vector3(0.0, 0.8, 0.0), _still_water())
+	_box(root, Vector3(0.12, 0.06, 0.3), Vector3(0.98, 0.9, 0.0), _flag)              # the overflow lip
+	_solid(root, Vector3(2.0, 1.0, 2.0), Vector3(0.0, 0.5, 0.0))
+	return root
+
+
+# The Raised cistern, 2.0 x 2.0 and 3.0 m high (Dave 20 Nov 2026: "copper lined and the frame can be made of wood and iron nails", "just big tanks"):
+# a timber frame of four posts with a diagonal brace on every face (Dave 21 Nov 2026: front and back too, opposite faces slanting opposite ways)
+# carries a thick plank deck 2 m up; on it an open plank tank 0.95 m deep, banded with iron and lined with copper, still water inside. A copper
+# downpipe runs from the tank floor down the +Z side to the foot, where pipes join. Kept under the 300-triangle cap of a near piece
+# (test_look_table): boxes and one six-sided pipe.
+static func raised_cistern() -> Node3D:
+	_tier_materials()
+	var root: Node3D = Node3D.new()
+
+	for x in [-0.86, 0.86]:
+		for z in [-0.86, 0.86]:
+			_box(root, Vector3(0.16, 2.0, 0.16), Vector3(x, 1.0, z), _frame)            # the posts
+
+	for s in [-1.0, 1.0]:
+		_box_rot(root, Vector3(0.08, 2.3, 0.06), Vector3(s * 0.9, 1.0, 0.0), Vector3(s * 0.82, 0.0, 0.0), _frame)   # the side braces, slanting opposite ways
+		_box_rot(root, Vector3(0.06, 2.3, 0.08), Vector3(0.0, 1.0, s * 0.9), Vector3(0.0, 0.0, -s * 0.82), _frame)  # the front and back braces, likewise
+		_box(root, Vector3(2.0, 0.95, 0.08), Vector3(0.0, 2.525, s * 0.96), _planks)        # the tank's plank walls
+		_box(root, Vector3(0.08, 0.95, 1.84), Vector3(s * 0.96, 2.525, 0.0), _planks)
+		_box(root, Vector3(2.02, 0.06, 0.02), Vector3(0.0, 2.6, s * 1.0), _iron_mat())      # the iron band
+		_box(root, Vector3(0.02, 0.06, 2.02), Vector3(s * 1.0, 2.6, 0.0), _iron_mat())
+
+	_box(root, Vector3(2.0, 0.14, 2.0), Vector3(0.0, 1.98, 0.0), _planks)                  # the deck on the posts
+	_box(root, Vector3(1.84, 0.85, 1.84), Vector3(0.0, 2.475, 0.0), _copper_mat())         # the copper lining, 2.05 to 2.9 m, a hand of plank wall above it
+	_box(root, Vector3(1.7, 0.02, 1.7), Vector3(0.0, 2.905, 0.0), _still_water())          # its water shown full (700 L at 2.9 m), a copper edge round it
+	_cyl(root, 0.035, 2.0, Vector3(0.0, 1.1, 0.98), _copper_mat(), 6)                      # the downpipe to the foot
+	_solid(root, Vector3(2.0, 3.0, 2.0), Vector3(0.0, 1.5, 0.0))
 	return root
 
 
@@ -4560,90 +4580,25 @@ static func bin_wall_m(side: float) -> float:
 	return 0.5 + 0.2 * side
 
 
-# --- Bog iron (water_flow_rules s11.3, Kathleen 10 Nov 2026; ships with Sonny's bog iron, #996). A deposit's 8 m sample shows a ground
-# stain of rust-orange ochre, redder at its heart and fading out at a ragged edge, with red-brown lumps of ore half sunk in the core. "wet":
-# standing water over the core, tinted orange by the ochre, carrying the iron-bacteria film, a dull oily sheen broken into flat plates. "dug": shovel
-# cuts into the core, black peat in each, a dug-out lump beside each. Nothing is solid.
-# Dave 19 Nov 2026 ("make sure they are obvious and visible for characters to find"): a bright ochre against dark peat and mud, 3 m across its
-# rust, lifted 2 to 4 cm and draped on a middle ring so the ground does not swallow it, a faint glow of its own so it still reads at dusk and
-# in rain, and the grass and small plants cleared off it (terrain_client _sync_cleared). Under the 300 triangle piece budget in every state.
-# `ground` (x, z) -> the ground's height there above the patch's own origin, both in the patch's frame: every ring point, lump and cut is
-# lifted onto it, so the stain drapes over a gentle rise instead of sinking into it. Unset: flat ground.
+# --- Bog iron lumps (water_flow_rules s11.3). Dave 21 Nov 2026: "it shouldnt just be a big bullseye. it should be the actual color of the ground
+# so change the grounds color and when I dig it the color goes away as I get the ore." The rust is the ground's own colour (ground_material.gd
+# set_bogs); here only the few red-brown lumps of ore half sunk in it, `count` of them (inventory_view: fewer as the ore is dug, none when it is
+# gone), within `spread` metres of the patch centre. Nothing is solid; a few dozen triangles. `ground` (x, z) -> the ground's height there above
+# the patch's own origin, in the patch's frame: each lump sits on it. Unset: flat ground.
 static func _on_ground(ground: Callable, p: Vector3) -> Vector3:
 	return p + Vector3(0.0, float(ground.call(p.x, p.z)), 0.0) if ground.is_valid() else p
 
 
-# A ragged flat disc on the ground: a middle ring at 0.55 of the rim, so it follows the ground between its centre and its rim.
-static func _blob(root: Node3D, radius: float, y: float, seed_value: int, material: StandardMaterial3D, sides: int = 18, ground: Callable = Callable()) -> void:
-	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
-	rng.seed = seed_value
-	var st: SurfaceTool = SurfaceTool.new()
-	st.begin(Mesh.PRIMITIVE_TRIANGLES)
-	var rim: Array = []
-	var mid: Array = []
-
-	for k in sides:
-		var a: float = TAU * float(k) / float(sides)
-		var r: float = radius * rng.randf_range(0.72, 1.08)
-		rim.append(_on_ground(ground, Vector3(cos(a) * r, y, sin(a) * r)))
-		mid.append(_on_ground(ground, Vector3(cos(a) * r * 0.55, y, sin(a) * r * 0.55)))
-
-	var middle: Vector3 = _on_ground(ground, Vector3(0.0, y, 0.0))
-
-	for k in sides:
-		var n: int = (k + 1) % sides
-		_tri_out(st, middle, mid[k], mid[n], Vector3.UP)
-		_tri_out(st, mid[k], rim[k], rim[n], Vector3.UP)
-		_tri_out(st, mid[k], rim[n], mid[n], Vector3.UP)
-
-	_mesh_of(root, st, material)
-
-
-# The stain's ochre: matte, with a faint glow of its own colour so it is not lost at dusk or under rain clouds.
-static func _ochre_mat(c: Color) -> StandardMaterial3D:
-	var key: String = "ochre_" + c.to_html()
-
-	if not _flat_mats.has(key):
-		var m: StandardMaterial3D = StandardMaterial3D.new()
-		m.albedo_color = c
-		m.roughness = 1.0
-		m.emission_enabled = true
-		m.emission = c
-		m.emission_energy_multiplier = 0.15
-		_flat_mats[key] = m
-
-	return _flat_mats[key]
-
-
-static func bog_iron_patch(state: String = "dry", ground: Callable = Callable()) -> Node3D:
+static func bog_iron_lumps(count: int = 4, spread: float = 1.6, ground: Callable = Callable()) -> Node3D:
 	var root: Node3D = Node3D.new()
 	var ore: StandardMaterial3D = _tone_mat(Color(0.4, 0.15, 0.07))
-	_blob(root, 3.0, 0.02, 811, _ochre_mat(Color(0.58, 0.31, 0.12)), 12, ground)     # the outer stain, orange-brown
-	_blob(root, 2.3, 0.03, 812, _ochre_mat(Color(0.78, 0.38, 0.1)), 12, ground)      # bright rust-orange ochre
-	_blob(root, 1.3, 0.04, 813, _ochre_mat(Color(0.62, 0.22, 0.07)), 12, ground)     # the red heart
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = 814
 
-	for k in 6:
+	for k in count:
 		var a: float = rng.randf_range(0.0, TAU)
-		var r: float = rng.randf_range(0.2, 1.7)
-		_dome(root, rng.randf_range(0.18, 0.28), _on_ground(ground, Vector3(cos(a) * r, 0.03, sin(a) * r)), Vector3(1.3, 0.6, 1.0), ore, 5, 1)
-
-	if state == "wet":
-		_blob(root, 1.5, 0.05, 815, _tone_mat(Color(0.36, 0.2, 0.09)), 10, ground)   # the orange-tinted water over the core
-		var film: Array = [_tone_mat(Color(0.42, 0.44, 0.5)), _tone_mat(Color(0.36, 0.45, 0.4)), _tone_mat(Color(0.5, 0.44, 0.34))]
-
-		for k in 3:
-			var a: float = rng.randf_range(0.0, TAU)
-			var r: float = rng.randf_range(0.1, 1.0)
-			_box_rot(root, Vector3(rng.randf_range(0.3, 0.55), 0.004, rng.randf_range(0.2, 0.4)), _on_ground(ground, Vector3(cos(a) * r, 0.054, sin(a) * r)), Vector3(0.0, rng.randf_range(0.0, PI), 0.0), film[k % 3])
-	elif state == "dug":
-		var peat: StandardMaterial3D = _tone_mat(Color(0.14, 0.1, 0.07))
-
-		for at in [Vector3(-0.5, 0.0, 0.3), Vector3(0.45, 0.0, -0.2)]:
-			var cut: Vector3 = _on_ground(ground, at)
-			_box_rot(root, Vector3(0.5, 0.02, 0.32), cut + Vector3(0.0, 0.042, 0.0), Vector3(0.0, rng.randf_range(-0.5, 0.5), 0.0), peat)   # the shovel cut, black peat
-			_dome(root, 0.16, cut + Vector3(0.38, 0.04, 0.0), Vector3(1.2, 0.7, 1.0), ore, 5, 1)                                              # the lump it turned up
+		var r: float = rng.randf_range(0.15, 1.0) * spread
+		_dome(root, rng.randf_range(0.1, 0.18), _on_ground(ground, Vector3(cos(a) * r, -0.02, sin(a) * r)), Vector3(1.3, 0.6, 1.0), ore, 5, 1)
 
 	return root
 

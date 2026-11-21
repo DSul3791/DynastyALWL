@@ -75,7 +75,7 @@ ITEMS = {
     "stone_channel": ("stone_channel", STATION_VIEW), "stone_channel_corner": ("stone_channel_corner", STATION_VIEW),
     "stone_channel_tee": ("stone_channel_tee", STATION_VIEW),
     "copper_pipe": ("copper_pipe", STATION_VIEW), "copper_tap": ("copper_tap", STATION_VIEW), "copper_drip_head": ("copper_drip_head", STATION_VIEW), "iron_deep_well_pump": ("iron_deep_well_pump", STATION_VIEW),
-    "stone_cistern": ("stone_cistern", STATION_VIEW), "stone_raised_cistern": ("stone_raised_cistern", STATION_VIEW),
+    "stone_cistern": ("stone_cistern", STATION_VIEW), "raised_cistern": ("raised_cistern", STATION_VIEW),
     # Item system C2: stations
     "kiln": ("kiln", STATION_VIEW), "tanning_rack": ("tanning_rack", STATION_VIEW), "drying_rack": ("drying_rack", STATION_VIEW),
     "smoker": ("smoker", STATION_VIEW), "oil_press": ("oil_press", STATION_VIEW),

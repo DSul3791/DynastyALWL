@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1512,
+	"next_number": 1517,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -262,7 +262,7 @@
 			"look_alikes": [],
 			"slots": 18,
 			"material": "wicker",
-			"note": "First chest: woven twine and sticks (no boards without a sawmill). A plank chest (more slots, wood) comes after the saw mill under its own id."
+			"note": "No longer built (Dave 21 Nov 2026: \"get ride of both of those\"): blueprint 26 is hidden and locked and the knife makes the Wicker basket (6 slots) instead. The row stays for any placed one in a saved world and as the tests' plain container."
 		},
 		"chopping_block_kit": {
 			"number": 24,
@@ -291,6 +291,7 @@
 			"name": "Plank",
 			"description": "Boards from a log. Make them at a saw mill or with a saw.",
 			"kind": "material",
+			"pile": {"shape": "boards", "handful": 20, "color": [0.72, 0.55, 0.34], "len": 2.44, "width": 0.2, "thick": 0.025, "min": 2},
 			"stack": 20,
 			"look_alikes": [],
 			"note": "Sawn boards. Placeholder until the saw mill exists (Dave 2026-10-20: logs become lumber at a saw mill).",
@@ -2734,14 +2735,26 @@
 		},
 		"nails": {
 			"number": 228,
-			"name": "Nails",
-			"description": "Small iron nails. Fix boards in builds; bronze ones do the same job.",
+			"name": "Iron nails",
+			"description": "Small iron nails. They fix boards in builds that take iron nails or a lesser metal.",
 			"kind": "material",
 			"material": "iron",
 			"stack": 200,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
+		},
+		"steel_nails": {
+			"number": 1513,
+			"name": "Steel nails",
+			"description": "Small steel nails, the strongest. They fix boards in any build that takes nails.",
+			"kind": "material",
+			"material": "steel",
+			"stack": 200,
+			"look_alikes": [],
+			"value": 2,
+			"sell_lot": 15,
+			"note_provisional": "Dave 21 Nov 2026 (chest per nail tier, steel for the top chest): no steel nails existed. Made like Iron nails (1 Steel ingot to 100 at the brick forge, level 3 as the other steel goods); the value is assumed (CT-4)."
 		},
 		"cobblestone": {
 			"number": 229,
@@ -2772,7 +2785,7 @@
 		},
 		"hinges": {
 			"number": 232,
-			"name": "Hinges",
+			"name": "Iron hinges",
 			"description": "A pair of iron hinges for a door, a gate or a lid.",
 			"kind": "material",
 			"material": "iron",
@@ -3432,7 +3445,8 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 6
+			"value": 6,
+			"pile": {"shape": "cone", "handful": 25, "color": [0.09, 0.42, 0.3], "color2": [0.45, 0.2, 0.13], "mix": 0.3, "rock": 0.6, "squash": 0.75, "jitter": 0.3, "lumps": 0.3, "density_kg_m3": 3900}
 		},
 		"tin_ore": {
 			"number": 302,
@@ -3441,7 +3455,8 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 6
+			"value": 6,
+			"pile": {"shape": "cone", "handful": 25, "color": [0.48, 0.23, 0.13], "color2": [0.2, 0.12, 0.08], "mix": 0.4, "rock": 0.6, "squash": 0.75, "jitter": 0.25, "lumps": 0.15, "rough": 0.35, "density_kg_m3": 6900}
 		},
 		"iron_ore": {
 			"number": 303,
@@ -3450,7 +3465,8 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 5
+			"value": 5,
+			"pile": {"shape": "cone", "handful": 25, "color": [0.37, 0.34, 0.31], "color2": [0.63, 0.29, 0.16], "mix": 0.35, "rock": 0.6, "squash": 0.75, "jitter": 0.3, "lumps": 0.3, "density_kg_m3": 4800}
 		},
 		"bog_iron_ore": {
 			"number": 1511,
@@ -3460,7 +3476,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 3,
-			"note": "Dave 19 Nov 2026: \"it should be its own lumpy redbrown rock as Bog Iron ore. then it takes two to smelt into an ingot.\" Dug from bog iron deposits (digging.json bog_iron); smelted by structures.json smelting.jobs.bog_iron. Number 1511: 1508-1510 are held by the pipes PR #1306."
+			"note": "Dave 19 Nov 2026: \"it should be its own lumpy redbrown rock as Bog Iron ore. then it takes two to smelt into an ingot.\" Dug from bog iron deposits (digging.json bog_iron); smelted by structures.json smelting.jobs.bog_iron. Number 1511: 1508-1510 are held by the pipes PR #1306.",
+			"pile": {"shape": "cone", "handful": 25, "color": [0.48, 0.23, 0.11], "color2": [0.62, 0.4, 0.17], "mix": 0.35, "rock": 0.6, "squash": 0.75, "jitter": 0.35, "lumps": 0.4, "density_kg_m3": 3600}
 		},
 		"coal": {
 			"number": 304,
@@ -7639,13 +7656,14 @@
 			},
 			"wooden_hand_pump": {
 				"number": 715,
+				"retired": true,
 				"name": "Wooden - Hand pump",
 				"description": "An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 167. Live in the water network since plumbing PR 2 (unlocked)."
+				"note": "Retired 20 Nov 2026 (Dave: no pump technology, water moves by gravity and rain; PLUMBING_DESIGN s10)."
 			},
 			"iron_hand_pump_kit": {
 				"number": 716,
@@ -7660,13 +7678,14 @@
 			},
 			"iron_hand_pump": {
 				"number": 717,
+				"retired": true,
 				"name": "Iron - Hand pump",
 				"description": "A cast-iron pitcher pump. Hold E to pump water into a bucket or trough.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 168. Locked until Steve's water_network module lands."
+				"note": "Retired 20 Nov 2026 (Dave: no pump technology, water moves by gravity and rain; PLUMBING_DESIGN s10)."
 			},
 			"log_trough_kit": {
 				"number": 718,
@@ -8067,13 +8086,14 @@
 			},
 			"iron_deep_well_pump": {
 				"number": 752,
+				"retired": true,
 				"name": "Deep-well pump",
 				"description": "A force pump for a stone well. Lifts from deep and pushes water up an iron pipe.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 185. Locked until Steve's water_network module lands."
+				"note": "Retired 20 Nov 2026 (Dave: no pump technology, water moves by gravity and rain; PLUMBING_DESIGN s10)."
 			},
 			"stone_cistern_kit": {
 				"number": 753,
@@ -8096,26 +8116,26 @@
 				"look_alikes": [],
 				"note": "Water piece: row state 186. Live in the water network since plumbing PR 3 (unlocked)."
 			},
-			"stone_raised_cistern_kit": {
+			"raised_cistern_kit": {
 				"number": 755,
 				"retired": true,
 				"name": "Raised cistern",
-				"description": "A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity.",
+				"description": "A big copper-lined tank on a wooden frame. Rain and pipes from above fill it; it feeds pipes below.",
 				"kind": "placeable",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
 				"value": 180
 			},
-			"stone_raised_cistern": {
+			"raised_cistern": {
 				"number": 756,
 				"name": "Raised cistern",
-				"description": "A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity.",
+				"description": "A big copper-lined tank on a wooden frame. Rain and pipes from above fill it; it feeds pipes below.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Water piece: row state 187. In the water network since plumbing PR 3, locked until the Deep-well pump of plumbing PR 4 can fill it."
+				"note": "Water piece: row state 187. A big tank on a wooden frame since 20 Nov 2026 (Dave: cisterns are not pumps, they are just big tanks; PLUMBING_DESIGN s10); unlocked."
 			},
 			"horn": {
 				"number": 757,
@@ -8336,7 +8356,7 @@
 			"wicker_basket_kit": {
 				"number": 784,
 				"retired": true,
-				"name": "Basket",
+				"name": "Wicker basket",
 				"description": "A woven basket of sticks and twine. A first store for a camp.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8346,7 +8366,7 @@
 			},
 			"wicker_basket": {
 				"number": 785,
-				"name": "Basket",
+				"name": "Wicker basket",
 				"description": "A woven basket of sticks and twine. A first store for a camp.",
 				"kind": "structure",
 				"stack": 1,
@@ -9659,6 +9679,7 @@
 				"name": "Hardwood board",
 				"description": "A board sawn from a hardwood log. Finer furniture is built from it.",
 				"kind": "material",
+				"pile": {"shape": "boards", "handful": 20, "color": [0.48, 0.32, 0.19], "len": 2.44, "width": 0.2, "thick": 0.025, "min": 2},
 				"stack": 20,
 				"look_alikes": [],
 				"value": 12
@@ -9681,6 +9702,7 @@
 			},
 			"crude_chest": {
 				"number": 914,
+				"retired": true,
 				"name": "Crude - Chest",
 				"description": "A rough chest of boards pinned together and tied with twine.",
 				"kind": "structure",
@@ -9688,7 +9710,18 @@
 				"slots": 24,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 230."
+				"note": "Retired 21 Nov 2026 (Dave: \"get ride of both of those\"): the knife makes the Wicker basket (6 slots) instead. Placed piece: row state 230, kept so any placed one in a saved world still loads."
+			},
+			"small_chest": {
+				"number": 1512,
+				"name": "Small chest",
+				"description": "A small chest of hardwood boards nailed with copper, with a lift-off lid. Holds 24 stacks.",
+				"kind": "structure",
+				"stack": 1,
+				"slots": 24,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 462. The copper nails chest (Dave 21 Nov 2026); name, slots and cost PROVISIONAL (CT-1)."
 			},
 			"fine_chest": {
 				"number": 915,
@@ -12137,6 +12170,39 @@
 			"value": 1,
 			"sell_lot": 15,
 			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+		},
+		"cattail_seed": {
+			"number": 1514,
+			"name": "Cattail seed",
+			"description": "Seeds from a cattail's brown head. Sow them with the hoe in a tilled bed or a planter and a cattail grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. Wetland plant (Dave 21 Nov 2026). PROVISIONAL."
+		},
+		"tussock_sedge_seed": {
+			"number": 1515,
+			"name": "Tussock sedge seed",
+			"description": "Seeds from a tussock sedge. Sow them with the hoe in a tilled bed or a planter and a tussock sedge grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. Wetland plant (Dave 21 Nov 2026). PROVISIONAL."
+		},
+		"moss_hummock_seed": {
+			"number": 1516,
+			"name": "Bog moss spores",
+			"description": "Spores from a bog moss hummock. Sow them with the hoe in a tilled bed or a planter and bog moss grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. Wetland plant (Dave 21 Nov 2026). PROVISIONAL."
 		},
 		"sea_holly_seed": {
 			"number": 1471,

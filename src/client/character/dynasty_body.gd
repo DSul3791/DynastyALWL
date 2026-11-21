@@ -9,7 +9,8 @@ extends Node3D
 # shoulder does not raise the arm, the lie clip is the nearest of Dave's, the first-person arms stay the ragdoll arms.
 
 const BodyModels := preload("res://src/client/character/body_models.gd")
-# shortcut: every character wears the first body model; when a second mesh is listed in body_models.gd, load the active character's "glb" and "parts_glb" here instead.
+# Each body wears the model its character picked (body_models.gd; NPCs wear the default). GLB is the default model's file, which NPCs need.
+# shortcut: every model's first-person arms are the default model's parts (ARMS_GLB); a model with its own "parts_glb" would need dynasty_arms.gd to load it.
 const GLB := BodyModels.DEFAULT_GLB
 const ARMS_GLB := BodyModels.DEFAULT_PARTS_GLB   # dynasty_arms.gd PARTS_GLB, warmed with the body
 const P := "mixamorig_"
@@ -18,6 +19,7 @@ const WornLook := preload("res://src/client/worn_look.gd")
 const Proportions := preload("res://src/client/character/dynasty_proportions.gd")
 const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
 const Breath := preload("res://src/client/character/dynasty_breath.gd")
+const HairModels := preload("res://src/client/character/hair_models.gd")
 
 # The game's clip name -> [Dave's clip, from s, to s (-1 = the end), loop, retime]. `retime` multiplies the clip's time: the gait clips are in place, so they are slowed or sped until the
 # planted foot moves at the game's natural walk, jog and run speeds (1.4, 3.2, 6.0 m/s, avatar_driver.gd `speed_scale`); tools/dynasty_gait.gd measures the clips' real speeds.
@@ -69,10 +71,12 @@ const CLIP_MAP := {
 	"wake_up": ["Wake_Up_and_Look_Up", 0.0, -1.0, false, 1.0],
 }
 
-static var _scene: PackedScene
-static var _checked: int = -1                  # -1 not tried yet, 0 the glb cannot be used, 1 it can
+static var _scenes: Dictionary = {}            # model id -> its PackedScene, once available() found it usable
+static var _checked: Dictionary = {}           # model id -> false (the glb cannot be used) or true; missing: not tried yet
 static var force_unavailable: bool = false     # tests: pretend the glb is not imported
-static var _library: AnimationLibrary          # the game's names and Dave's own names, built once and shared
+static var _libraries: Dictionary = {}         # model id -> AnimationLibrary of the game's names and the file's own names, built once per run and shared by that model's bodies
+
+var model: String = BodyModels.DEFAULT        # body_models.gd id this body wears
 
 var arms_only: bool = false
 var genome: Dictionary = {}
@@ -82,6 +86,9 @@ var animation_player: AnimationPlayer
 var hand_mount_r: Marker3D
 var hand_mount_l: Marker3D
 var head_mount: Marker3D
+var hair: BoneAttachment3D                    # the worn hair style (hair_models.gd) on the head bone, or null with no hair
+var _hair_id: String = HairModels.NONE
+var _hair_material: BaseMaterial3D
 var _log: MeshInstance3D
 var _log_two: MeshInstance3D   # the second log, beside it
 var _model: Node3D
@@ -98,8 +105,20 @@ var _mount_rest: Dictionary = {}              # Marker3D -> its transform before
 # Headless (the lane's smokes and tests) loads them on the main thread instead: the headless renderer's mesh, material and texture stores are not thread
 # safe in Godot 4.7.2 (servers/rendering/dummy/storage: RID_Owner without THREAD_SAFE; the GLES3 and Vulkan stores are), and the loader threads making
 # meshes while the main thread made its own broke the store ("Attempting to initialize the wrong RID", "m" is null, signal 11; David4 smokes, 14 Nov 2026).
-static func warm() -> void:
-	for path in [GLB, ARMS_GLB]:
+# `models`: more body model ids to warm, the player's own (my_character.gd body_model()); the default model is always warmed (NPCs wear it).
+# `hairs`: hair style ids to warm (hair_models.gd), the player's own; NPCs wear none.
+static func warm(models: Array = [], hairs: Array = []) -> void:
+	var paths: Array = [GLB, ARMS_GLB]
+
+	for id in models:
+		if not paths.has(BodyModels.glb(str(id))):
+			paths.append(BodyModels.glb(str(id)))
+
+	for id in hairs:
+		if HairModels.has(str(id)):
+			paths.append(HairModels.glb(str(id)))
+
+	for path in paths:
 		if not ResourceLoader.exists(path):
 			continue
 
@@ -142,15 +161,16 @@ static func load_warm(path: String) -> Resource:
 	return load(path)
 
 
-static func available() -> bool:
-	if force_unavailable:
+static func available(model_id: String = BodyModels.DEFAULT) -> bool:
+	if force_unavailable or not BodyModels.has(model_id):
 		return false
 
-	if _checked < 0:
-		_checked = 0
+	if not _checked.has(model_id):
+		_checked[model_id] = false
+		var path: String = BodyModels.glb(model_id)
 
-		if ResourceLoader.exists(GLB):
-			var packed: PackedScene = load_warm(GLB) as PackedScene
+		if ResourceLoader.exists(path):
+			var packed: PackedScene = load_warm(path) as PackedScene
 
 			if packed != null:
 				var probe: Node = packed.instantiate()
@@ -158,32 +178,30 @@ static func available() -> bool:
 				probe.free()
 
 				if ok:
-					_scene = packed
-					_checked = 1
+					_scenes[model_id] = packed
+					_checked[model_id] = true
 
-		if _checked == 0:
-			print("dynasty body: %s is not imported or has no skeleton, mesh or animations: using the previous body this run (run godot --import once)" % GLB)
+		if not _checked[model_id]:
+			print("dynasty body: %s is not imported or has no skeleton, mesh or animations: %s this run (run godot --import once)" % [path, "using the previous body" if model_id == BodyModels.DEFAULT else "wearing the default body instead"])
 
-	return _checked == 1
+	return bool(_checked[model_id])
 
 
-func _init() -> void:
+# `model_id`: the body model to wear (body_models.gd); one that is unknown or not imported wears the default.
+func _init(model_id: String = BodyModels.DEFAULT) -> void:
 	name = "DynastyBody"
+	model = model_id if available(model_id) else BodyModels.DEFAULT
 
-	if not available():
+	if not available(model):
 		_make_empty()
 		return
-
-	if _scene == null:
-		_scene = load_warm(GLB) as PackedScene
-
 
 	# Dave's rig faces +Z; the game faces -Z.
 	_model = Node3D.new()
 	_model.name = "Model"
 	_model.rotation.y = PI
 	add_child(_model)
-	var inst: Node = _scene.instantiate()
+	var inst: Node = (_scenes[model] as PackedScene).instantiate()
 	_model.add_child(inst)
 	skeleton = inst.find_children("*", "Skeleton3D", true, false)[0]
 	body_mesh = inst.find_children("*", "MeshInstance3D", true, false)[0]
@@ -305,38 +323,50 @@ func _rest_origin(bone: String) -> Vector3:
 	return skeleton.get_bone_global_rest(index).origin if index >= 0 else Vector3.ZERO
 
 
-# The game's names and Dave's own names, shared by every body. Hips travel is taken out of every clip (the game moves the body), see _clip.
+# The game's names and the file's own names, shared by every body of this model. Hips travel is taken out of every clip (the game moves the body), see _clip.
 func _build_animations() -> void:
-	if _library == null:
-		_library = AnimationLibrary.new()
-		var own: AnimationLibrary = animation_player.get_animation_library(animation_player.get_animation_library_list()[0])
+	if not _libraries.has(model):
+		var t0: int = Time.get_ticks_msec()
+		var library: AnimationLibrary = AnimationLibrary.new()
+		var own_library: AnimationLibrary = animation_player.get_animation_library(animation_player.get_animation_library_list()[0])
+		var own: Dictionary = {}       # clip name -> its source Animation, on this rig
 
-		for clip in own.get_animation_list():
-			_library.add_animation(clip, _clip(own.get_animation(clip), 0.0, -1.0, true, 1.0))
+		for clip in own_library.get_animation_list():
+			own[String(clip)] = own_library.get_animation(clip)
+
+		for clip in own:
+			library.add_animation(clip, _clip(own[clip], 0.0, -1.0, true, 1.0))
 
 		for game_name in CLIP_MAP:
 			var row: Array = CLIP_MAP[game_name]
-			var made: Animation = _clip(own.get_animation(str(row[0])), float(row[1]), float(row[2]), bool(row[3]), float(row[4]), row[5] if row.size() > 5 else [])
+
+			if not own.has(str(row[0])):
+				continue        # a model whose file lacks the clip: the game's name is left out, play() skips it
+
+			var made: Animation = _clip(own[str(row[0])], float(row[1]), float(row[2]), bool(row[3]), float(row[4]), row[5] if row.size() > 5 else [])
 
 			if game_name == "sit":
 				_hold_first(made)
-				_ground_sit(made, own.get_animation("Idle"), skeleton)
+				_ground_sit(made, own.get("Idle", made), skeleton)
 			elif game_name == "sit_chair":
 				_hold_first(made)
 
-			_library.add_animation(game_name, made)
+			library.add_animation(game_name, made)
 
 			# Carrying a torch in the left hand (Dave's infographic, 6 Nov 2026): the same gait with the left arm held up in the carry pose; the legs, the body and the
 			# right arm keep the clip, so the right arm still swings opposite the legs.
 			if game_name in TORCH_CARRY_CLIPS:
 				var carry: Animation = made.duplicate(true)
 				_torch_carry(carry, skeleton)
-				_library.add_animation(game_name + "_torch", carry)
+				library.add_animation(game_name + "_torch", carry)
+
+		_libraries[model] = library
+		print("dynasty body: %s clips for %s made in %d ms" % [library.get_animation_list().size(), model, Time.get_ticks_msec() - t0])
 
 	for library_name in animation_player.get_animation_library_list():
 		animation_player.remove_animation_library(library_name)
 
-	animation_player.add_animation_library("", _library)
+	animation_player.add_animation_library("", _libraries[model])
 	animation_player.play("idle")
 
 
@@ -683,6 +713,7 @@ func set_proportions(g: Dictionary) -> void:
 	proportions.set_genome(g)
 	_set_widths(g)
 	dress(DEFAULT_SKIN, Color.WHITE, Color.WHITE)       # the skin colour of the genome; the other colours are unused on this body
+	_set_hair(g)
 	var height: float = Proportions.factor(g, "height")
 	_model.scale = Vector3.ONE * height
 	var hand: float = height * Proportions.factor(g, "hands")
@@ -719,7 +750,7 @@ func _set_widths(g: Dictionary) -> void:
 	var any: bool = false
 
 	for key in Shapes.NAMES:
-		if absf(float(g.get(key, 0.0))) > 0.001:
+		if absf(Shapes.shape_weight(g, key)) > 0.001:
 			any = true
 
 	if not any and not body_mesh.mesh.has_meta(Shapes.SHAPED_KEY):
@@ -744,7 +775,7 @@ func _set_widths(g: Dictionary) -> void:
 		var i: int = body_mesh.find_blend_shape_by_name(key)      # MeshInstance3D has the lookup; ArrayMesh does not
 
 		if i >= 0:
-			body_mesh.set_blend_shape_value(i, clampf(float(g.get(key, 0.0)), -1.0, 1.0))
+			body_mesh.set_blend_shape_value(i, Shapes.shape_weight(g, key))
 
 
 # Skin colour (Kathreen 3 Nov 2026): Dave's texture has the skin and the loincloth painted in one map, in the same warm hue (the loincloth only darker), so the creator's skin colour
@@ -774,6 +805,54 @@ func dress(_skin_color: Color, _coat: Color, _trousers: Color, _shoes: Color = C
 		body_mesh.set_surface_override_material(0, _skin_material)
 
 	_skin_material.albedo_color = skin_tint(genome["skin"])
+
+
+# Hair (Dave 20 Nov 2026: hair styles in the character creator, any style on any body). The style's glb is in body_1 model space (tools/hair/prepare_hair.py fitted it
+# to body_1's head); this body's hair_fit (body_models.gd) carries it onto its own head. It hangs on the head bone, so it turns and nods with the head and grows with the
+# Head slider (dynasty_proportions.gd scales that bone). The skeleton is in centimetres under a 0.01 scale, hence the 100. The hair colour tints the painted texture the
+# way the skin colour tints the body: the creator's default hair colour leaves it as painted.
+const DEFAULT_HAIR := Color(0.25, 0.16, 0.09)      # body_generator.gd make_genome's default hair, close to the painted hair of the three styles
+const HAIR_TINT_MAX := 3.0                         # the painted hair is dark: a light colour may brighten it this much per channel
+
+
+static func hair_tint(colour: Color) -> Color:
+	return Color(clampf(colour.r / DEFAULT_HAIR.r, 0.05, HAIR_TINT_MAX), clampf(colour.g / DEFAULT_HAIR.g, 0.05, HAIR_TINT_MAX), clampf(colour.b / DEFAULT_HAIR.b, 0.05, HAIR_TINT_MAX))
+
+
+func _set_hair(g: Dictionary) -> void:
+	var id: String = str(g.get("hair_model", HairModels.NONE))
+	id = id if HairModels.has(id) else HairModels.NONE
+
+	if id != _hair_id:
+		_hair_id = id
+		_hair_material = null
+
+		if hair != null:
+			skeleton.remove_child(hair)      # out of the tree now, so the new style's node keeps the plain name
+			hair.queue_free()
+			hair = null
+
+		var packed: PackedScene = load_warm(HairModels.glb(id)) as PackedScene if id != HairModels.NONE and ResourceLoader.exists(HairModels.glb(id)) else null
+
+		if packed != null:
+			hair = BoneAttachment3D.new()
+			hair.name = "Attach_Hair"
+			skeleton.add_child(hair)
+			hair.bone_name = P + "Head"
+			var rest: Transform3D = skeleton.get_bone_global_rest(skeleton.find_bone(P + "Head"))
+			var style: Node3D = packed.instantiate()
+			style.transform = rest.affine_inverse() * Transform3D(Basis.from_scale(Vector3.ONE * 100.0), Vector3.ZERO) * BodyModels.hair_fit(model)
+			hair.add_child(style)
+
+			for mesh in style.find_children("*", "MeshInstance3D", true, false):
+				(mesh as MeshInstance3D).layers |= 1 << 19      # no ground decals, as the body
+
+				if _hair_material == null and (mesh as MeshInstance3D).get_active_material(0) is BaseMaterial3D:
+					_hair_material = (mesh as MeshInstance3D).get_active_material(0).duplicate() as BaseMaterial3D      # each body its own copy, for its own colour
+					(mesh as MeshInstance3D).set_surface_override_material(0, _hair_material)
+
+	if _hair_material != null and g.has("hair"):
+		_hair_material.albedo_color = hair_tint(g["hair"])
 
 
 func set_far(_on: bool) -> void:

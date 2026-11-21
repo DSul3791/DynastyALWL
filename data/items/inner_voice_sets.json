@@ -14,5 +14,5 @@
 		"traits": ["boldness", "wisdom"],
 		"steady_at": 0.5
 	},
-	"body_families": {"body_1": "masculine"}
+	"body_families": {"body_1": "masculine", "body_2": "feminine"}
 }

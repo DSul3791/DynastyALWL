@@ -306,10 +306,18 @@ func _init() -> void:
 			if String(pile.get("shape", "")) == "logs":   # split firewood and wooden blocks: a stack of log pieces (PileLook._logs_mesh)
 				if int(pile.get("handful", 0)) < 1 or tint.size() != 3 or float(pile.get("len", 0.0)) <= 0.0 or float(pile.get("radius", 0.0)) <= 0.0:
 					fail("items.json: '%s' logs pile row needs handful 1 or more, color [r, g, b] (bark), len and radius above 0" % id)
-			elif String(pile.get("shape", "")) == "cone" and float(pile.get("density_kg_m3", 0.0)) <= 0.0:   # a solid cone of the stones' own volume (PileLook._cone_mesh)
-				fail("items.json: '%s' cone pile row needs density_kg_m3 above 0" % id)
-			elif not ["pyramid", "mound", "cone"].has(String(pile.get("shape", ""))) or int(pile.get("handful", 0)) < 1 or tint.size() != 3 or float(pile.get("rock", 0.0)) <= 0.0 or float(pile.get("squash", 0.0)) <= 0.0:
-				fail("items.json: '%s' pile row needs shape pyramid, mound, cone or logs, handful 1 or more, color [r, g, b], rock and squash above 0 (logs: len and radius)" % id)
+			elif String(pile.get("shape", "")) == "boards":   # sawn boards: a lumber stack (PileLook._boards_mesh)
+				if int(pile.get("handful", 0)) < 1 or tint.size() != 3 or float(pile.get("len", 0.0)) <= 0.0 or float(pile.get("width", 0.0)) <= 0.0 or float(pile.get("thick", 0.0)) <= 0.0:
+					fail("items.json: '%s' boards pile row needs handful 1 or more, color [r, g, b], len, width and thick above 0" % id)
+			else:
+				if not ["pyramid", "mound", "cone"].has(String(pile.get("shape", ""))) or int(pile.get("handful", 0)) < 1 or tint.size() != 3 or float(pile.get("rock", 0.0)) <= 0.0 or float(pile.get("squash", 0.0)) <= 0.0:
+					fail("items.json: '%s' pile row needs shape pyramid, mound, cone, logs or boards, handful 1 or more, color [r, g, b], rock and squash above 0 (logs: len and radius)" % id)
+
+				if String(pile.get("shape", "")) == "cone" and float(pile.get("density_kg_m3", 0.0)) <= 0.0:   # a solid cone of the stones' own volume (PileLook._cone_mesh)
+					fail("items.json: '%s' cone pile row needs density_kg_m3 above 0" % id)
+
+			if (pile.has("color2") and (typeof(pile["color2"]) != TYPE_ARRAY or (pile["color2"] as Array).size() != 3)) or float(pile.get("mix", 0.0)) < 0.0 or float(pile.get("mix", 0.0)) > 1.0 or float(pile.get("lumps", 0.0)) < 0.0 or float(pile.get("lumps", 0.0)) > 0.5 or float(pile.get("rough", 1.0)) <= 0.0 or float(pile.get("rough", 1.0)) > 1.0:
+				fail("items.json: '%s' pile row needs color2 [r, g, b], mix 0 to 1, lumps 0 to 0.5 and rough above 0 to 1 when it sets them (PileLook._cone_mesh)" % id)
 
 		# Every core item has a one-line description, a value and (unless it is a placed structure) its own weight.
 		if description == "" or description.length() > 110 or not description.ends_with("."):
@@ -522,8 +530,16 @@ func _init() -> void:
 			want_item.call(String(bog.get("item", "")), "digging.json bog_iron")
 			obtainable[String(bog.get("item", ""))] = true
 
-			if float(bog.get("chance", 0.0)) <= 0.0 or float(bog.get("chance", 0.0)) * float(bog.get("edge_mult", 1.0)) > 1.0:
-				fail("digging.json bog_iron: chance x edge_mult must be above 0 and at most 1")
+			var bog_patches: Array = bog.get("patches", [])
+
+			if float(bog.get("field_chance", 0.0)) <= 0.0 or float(bog.get("field_chance", 0.0)) > 1.0:
+				fail("digging.json bog_iron: field_chance must be above 0 and at most 1")
+
+			if int(bog.get("field_m", 0)) <= 0 or 15360 % int(bog.get("field_m", 1)) != 0:
+				fail("digging.json bog_iron: field_m must divide the 15360 m tile (a field lies in one tile)")
+
+			if bog_patches.size() != 2 or int(bog_patches[0]) < 1 or int(bog_patches[0]) > int(bog_patches[1]):
+				fail("digging.json bog_iron: patches must be [min, max] with 1 <= min <= max")
 
 			for cls in bog.get("classes", {}):
 				if not String(cls) in ["4", "6", "7", "8"]:

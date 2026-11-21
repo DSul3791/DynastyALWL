@@ -21,9 +21,9 @@ const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the han
 const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 
 const NEAR_TRIANGLES := 300
-# The blueprints a knife builds (W-9 and the three new benches and the station), by structure id.
-const KNIFE_ROWS := ["log_seat", "stool", "bench", "crude_chair", "crude_table", "crude_chest", "wooden_shelf", "drying_rack", "tool_rack", "firewood_rack", "log_rack", "tanning_rack",
-	"tailors_table", "food_preparation_table", "chest", "wicker_basket", "log_bench", "log_table", "log_double_bench", "log_backed_bench", "carving_station"]
+# The blueprints a knife builds (W-9 and the three new benches and the station), by structure id. The Wicker - Chest and Crude - Chest left it (Dave 21 Nov 2026: "get ride of both of those"); the Wicker basket is the knife's store.
+const KNIFE_ROWS := ["log_seat", "stool", "bench", "crude_chair", "crude_table", "wooden_shelf", "drying_rack", "tool_rack", "firewood_rack", "log_rack", "tanning_rack",
+	"tailors_table", "food_preparation_table", "wicker_basket", "log_bench", "log_table", "log_double_bench", "log_backed_bench", "carving_station"]
 # The recipes carved at the station (the Shortbow is wooden_bow, the Quarterstaff has no wooden prefix).
 const CARVED := ["wooden_bowl", "serving_platter", "quarterstaff", "wooden_club", "wooden_bow", "wooden_longbow"]
 
@@ -288,8 +288,8 @@ func menus() -> void:
 	var knife_structures: Array = KNIFE_ROWS.map(func(k): return str(bp_rows[k]["name"]))
 	check(knife_list.rows(1).size() == KNIFE_ROWS.size() and knife_names.size() == knife_structures.size() and knife_structures.all(func(s): return knife_names.has(s)), "the knife's list holds exactly its %d rows (%d listed)" % [KNIFE_ROWS.size(), knife_names.size()])
 	check(knife_names.has("Wood carving station") and knife_names.has("Log - Bench") and knife_names.has("Log - Double bench") and knife_names.has("Log - Backed bench") and knife_names.has("Log - Table"), "among them the station, the three benches and the table")
-	var hammer_names: Array = hammer_list.rows(1).map(func(r): return str(r["name"]))   # 217 hammer rows without the three Wooden - Pipe blueprints (Dave 19 Nov 2026, laid from the hand); 220 with the Grill, Cooking pot, Griddle and Hand mill (Dave 17 Nov 2026 cooking stations); 216 with the Improved and Advanced kilns (Dave 17 Nov 2026); 214 since phase 5 added the Small log sled and Small wagon (hammer blueprints, W-14) + 21 knife rows
-	check(not knife_structures.any(func(s): return hammer_names.has(s)) and hammer_names.size() + knife_names.size() == 238, "the hammer's list has none of them (%d hammer rows, %d knife rows)" % [hammer_names.size(), knife_names.size()])
+	var hammer_names: Array = hammer_list.rows(1).map(func(r): return str(r["name"]))   # 218 hammer rows + 19 knife rows (the two knife chests retired, Dave 21 Nov 2026); 218 with the Small chest (Dave 21 Nov 2026, a chest per nail tier); 217 with the Raised cistern (Dave 20 Nov 2026, a big tank); 216 without the Wooden - Hand pump (retired, Dave 20 Nov 2026); 217 without the three Wooden - Pipe blueprints (Dave 19 Nov 2026, laid from the hand); 220 with the Grill, Cooking pot, Griddle and Hand mill (Dave 17 Nov 2026 cooking stations); 216 with the Improved and Advanced kilns (Dave 17 Nov 2026); 214 since phase 5 added the Small log sled and Small wagon (hammer blueprints, W-14) + 21 knife rows
+	check(not knife_structures.any(func(s): return hammer_names.has(s)) and hammer_names.size() + knife_names.size() == 237, "the hammer's list has none of them (%d hammer rows, %d knife rows)" % [hammer_names.size(), knife_names.size()])
 	var first: Dictionary = knife_list.actions()[0]
 	check(knife_list.actions().size() == 1 and str(first["kind"]) == "repair" and str(first["name"]) == "Knife" and knife_list.entries(1).all(func(e): return str(e["kind"]) == "bp") and not knife_list.categories(1).has(knife_list.PLANS_TAB), "the knife's screen has a plain Knife line above the list and no Save or plan lines")
 	check(str(hammer_list.actions()[0]["name"]) == "Hammer/Repair Tool" and str(hammer_list.actions()[1]["kind"]) == "save", "the hammer's screen still has Repair and Save")
@@ -301,9 +301,9 @@ func menus() -> void:
 	check(knife_screen._title.text.begins_with("Knife"), "the knife's screen is titled Knife")
 	hud_layer.free()
 	var station_state: int = int(items._structures["carving_station"]["state"])
-	# An older saved plan holding a knife piece (the Wicker - Chest, blueprint 26) and a hammer piece (the Lean-to, 25): the hammer's cost and placing skip the knife piece.
+	# An older saved plan holding a knife piece (the Wicker basket, blueprint 157) and a hammer piece (the Lean-to, 25): the hammer's cost and placing skip the knife piece.
 	var lean_no: int = int(bp_rows["lean_to"]["number"])
-	var chest_no: int = int(bp_rows["chest"]["number"])
+	var chest_no: int = int(bp_rows["wicker_basket"]["number"])
 	hammer_list.plans.plans.append({"name": "Old camp", "pieces": [{"bp": chest_no, "dx": 0.0, "dy": 0.0, "dz": 0.0, "yaw": 0}, {"bp": lean_no, "dx": 3.0, "dy": 0.0, "dz": 0.0, "yaw": 0}]})
 	var plan: Dictionary = hammer_list.plans.plans[hammer_list.plans.plans.size() - 1]
 	var placed: Array = hammer_list.placements_of(hammer_list.plans.plans.size() - 1, Vector3.ZERO, 0.0)

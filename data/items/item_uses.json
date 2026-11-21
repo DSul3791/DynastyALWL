@@ -16,7 +16,7 @@
 		"cobblestone": "Planned: a cobble floor and path.",
 		"stone_shingle": "Planned: a stone roof.",
 		"tar": "Planned: seals a flat roof and soaks logs against rot. Needs pine tar from a felled pine.",
-		"hinges": "Made at a forge from an iron ingot; the plank chest blueprint uses them (doors planned).",
+		"hinges": "Iron hinges, made at a forge from an iron ingot; the Fine, Large wooden and Ornate chests take them.",
 		"wooden_pin": "Joins wood without iron; the stool and chair blueprints use them (timber frame planned).",
 		"tusk": "A trade good: traders buy it for 20 copper (Dave 4 Nov 2026, items audit).",
 		"claw": "A trade good: traders buy it for 12 copper (Dave 4 Nov 2026, items audit).",

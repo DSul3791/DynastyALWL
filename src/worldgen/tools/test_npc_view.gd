@@ -46,7 +46,7 @@ func _check_bodies(view: Node3D) -> void:
 		for name in Shapes.NAMES:
 			var i: int = mesh.find_blend_shape_by_name(name)
 
-			if i >= 0 and absf(mesh.get_blend_shape_value(i) - clampf(float(g.get(name, 0.0)), -1.0, 1.0)) < 0.001 and absf(float(g.get(name, 0.0))) > 0.001:
+			if i >= 0 and absf(mesh.get_blend_shape_value(i) - Shapes.shape_weight(g, name)) < 0.001 and absf(float(g.get(name, 0.0))) > 0.001:
 				shaped += 1
 
 	check(shaped > 0, "the width and face sliders reach the NPC meshes as blend shape weights (%d)" % shaped)

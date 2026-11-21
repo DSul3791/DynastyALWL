@@ -215,7 +215,7 @@ func _init() -> void:
 		for need in bp.get("cost", []):
 			cost[str(need[0])] = int(need[1])
 
-		check(BinRules.capacity(items._structures[kind]) == int(sizes[kind][0]) and not items._structures[kind].has("max_kg") and cost == {"lumber": int(sizes[kind][1]), "nails": int(sizes[kind][2])} and items.table.name_of(n(kind)) == str(sizes[kind][3]), "1. the %s holds %d of one kind, built from %d Plank and %d Nails" % [sizes[kind][3], sizes[kind][0], sizes[kind][1], sizes[kind][2]])
+		check(BinRules.capacity(items._structures[kind]) == int(sizes[kind][0]) and not items._structures[kind].has("max_kg") and cost == {"lumber": int(sizes[kind][1]), "bronze_nails": int(sizes[kind][2])} and items.table.name_of(n(kind)) == str(sizes[kind][3]), "1. the %s holds %d of one kind, built from %d Plank and %d Nails" % [sizes[kind][3], sizes[kind][0], sizes[kind][1], sizes[kind][2]])
 
 	# 2. Assignment.
 	var bin: int = place("open_storage_bin", BIN_AT)
@@ -371,23 +371,34 @@ func _init() -> void:
 	run(600.0)
 	check(items._items.has(laid), "8l. and it is still there 10 minutes on")
 
-	# 9. A cold smithy fired from a bin (A-28).
+	# 9. A smithy burns only the fuel in its own fuel slot (Dave 21 Nov 2026: "smithys should just take coal in a fuel slot"), never a bin's.
 	clear_world()
 	clear_pack()
 	var smithy: int = place("blacksmithy", HERE + Vector3(0.0, 0.0, 2.5))
-	var fuel_bin: int = place("open_storage_bin", HERE + Vector3(0.0, 0.0, 35.0))
+	var fuel_bin: int = place("open_storage_bin", HERE + Vector3(0.0, 0.0, 10.0))
 	box(fuel_bin).add(n("coal"), 3)
 	items.give(1, n("iron_ingot"), 2)
 	items.give(1, n("stick"), 2)
 	items._last_queue_act.clear()
 	act(Net.ACT_CRAFT_QUEUE, recipe_number("hand_saw"), 0, 1)
 	run(30.0)
-	check(not bool(items._items[smithy]["struct"].get("lit", false)) and held(fuel_bin, "coal") == 3 and box(smithy).count_of(n("hand_saw")) + pack("hand_saw") == 0, "9a. with no fuel in the pack and the only Coal bin 35 m off, the cold smithy is not fired and nothing is made")
-	items._items[fuel_bin]["pos"] = HERE + Vector3(0.0, 0.0, 25.0)
+	check(held(fuel_bin, "coal") == 3 and box(smithy).count_of(n("hand_saw")) + pack("hand_saw") == 0, "9a. with an empty fuel slot and Coal in a bin 10 m off, nothing is made and the bin keeps its Coal")
+	box(smithy).numbers[0] = n("coal")
+	box(smithy).counts[0] = 2
 	items._last_queue_act.clear()
 	act(Net.ACT_CRAFT_QUEUE, recipe_number("hand_saw"), 0, 1)
 	run(30.0)
-	check(bool(items._items[smithy]["struct"].get("lit", false)) and held(fuel_bin, "coal") == 2 and box(smithy).count_of(n("hand_saw")) + pack("hand_saw") == 1, "9b. with the Coal bin 25 m off, the craft fires it with one Coal from the bin and makes the Iron - Saw (%d Coal left)" % held(fuel_bin, "coal"))
+	check(not bool(items._items[smithy]["struct"].get("lit", false)) and box(smithy).counts[0] == 1 and held(fuel_bin, "coal") == 3 and box(smithy).count_of(n("hand_saw")) + pack("hand_saw") == 1, "9b. with 2 Coal in its fuel slot it makes the Iron - Saw, burning one (%d left), never lit" % box(smithy).counts[0])
+	# Its fuel slot stays its fuel slot: a Stone dragged onto it is refused, a Stone put in goes past it, and Sort leaves the Coal in it.
+	items.give(1, n("stone"), 2)
+	items.action(1, Net.ACT_CHEST_OPEN, smithy, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_CHEST_PUT, inv().numbers.find(n("stone")), smithy, 2, Vector3(1.0, 0.0, 0.0))   # at.x = the fuel slot + 1
+	check(box(smithy).count_of(n("stone")) == 0 and pack("stone") == 2, "9c. a Stone dragged onto the fuel slot is refused")
+	items.give(1, n("bronze_ingot"), 1)
+	items.action(1, Net.ACT_CHEST_PUT, inv().numbers.find(n("bronze_ingot")), smithy, 1, Vector3.ZERO)
+	act(Net.ACT_BULK, ItemsScript.BULK_SORT, 1)
+	items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+	check(box(smithy).count_of(n("bronze_ingot")) == 1 and box(smithy).numbers[0] == n("coal"), "9d. a Bronze ingot put in goes past the fuel slot, and Sort by name (Bronze before Coal) keeps the Coal in it")
 
 	print("test_resource_bins: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	items._finish_writer()

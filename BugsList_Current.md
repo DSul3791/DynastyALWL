@@ -513,10 +513,10 @@ Dave, 19 Nov 2026: "if you select play it needs to take you to our server select
 
 **Acceptance:** start the client-only build, press Play: the page lists the official server and your saved ones; add an IP and a name such as hannibalshouse.duckdns.org; a server that is off shows red; double-click a working one to reach the character page; a password server asks once and is remembered next time; three wrong tries show the message and return to the page.
 
-Assumed on Dave's behalf (provisional, also in the design doc):
+Settled by Dave, 21 Nov 2026: "yes continue goes straight in with the last server and character and it remembers the password. yes each row can show server ip, name, player count, ping and status online or not". Continue (when there is a last server and character) goes straight in, with Cancel on the joining screen; with neither it opens the server page. Rows show the player count, not who is online, and under the name the address plus the IP a name points to now: PR #1425, merged to dev at 31dc7fa4 (head e96a76d2) after independent review; Lane A on the exact head: 26 of 26 selected tests passed, including test_server_pick ("a row named by a host name shows the IP it points to"); warnings 381, zero new; join smoke clean. Not yet played.
 
-- SP-3: Continue (when there is a last server and character) goes straight in, with Cancel on the joining screen; with neither it opens the server page. Dave asked this as a question, not yet answered.
-- SP-4: rows show the player count only, not who is online.
+Assumed on Dave's behalf (provisional):
+
 - SP-5: "Remember on this computer" in the password box is ticked by default.
 
 ## 69. Bog iron: stains you can find, Bog iron ore, iron rocks marked
@@ -795,17 +795,894 @@ Not done: their spots, lines, voices (no clips rendered yet), clip picks and Gri
 
 Not yet played. Characters saved before the move keep their saved positions; only new or dead characters come back at the new spawn.
 
+## 90. Body 2: Dave's female player character in the creator, fully adjustable, with a bust slider
+
+**Status: Implemented - awaiting player verification.** Dave's request, 20 Nov 2026 (project thread for the female character): "add this female character to our character creation choices. import it. it has 96 animations. she should be the female selection now and be fully adjustable.", then "yes we need a bust slider", then for his third file "I tried to fix her. try this one". PR #1380, merged to dev at 9f3cabe3 (head 97b44ecb), after independent review on every head (no findings on 97b44ecb) and green CI.
+
+**Required outcome:** the creator's Body pick offers "Body 2", Dave's female character (Playercharacter_Female_01.glb, his 99-action v2 file: her own 4 clips and Body 1's set retargeted to her rig). She moves with the game's walk, run, crouch, sit, lie and swing animations, and every creator slider that works on Body 1 works on her: height, legs, arms and the other bone lengths, the width and face shapes, skin colour and the new Bust slider. The Bust slider works on both bodies: it does nothing up to the Even frame's -0.6 and is fullest at +1; NPCs have none. Each character keeps its own body; NPCs wear Body 1.
+
+**Evidence:** Lane B (David4) on 97b44ecb: true first import in a fresh clone, exit 0, with no change to any female file; selector 144 fast + 3 timing = 147 PASS / 0 FAIL, 0 script errors; validate_items 0 errors; warnings 381 with 0 new; join smoke clean (STALL 0, WATCHDOG 0); "136 clips for body_2 made in 144 ms". Lane A (Dave's PC) on the earlier 4fdbbee1 (runtime carry-over version, since replaced): 147 of 147. Offline checks on the file: mesh, skin and textures match his first file; retargeted turns within about 5 to 10 degrees of Body 1's clips turned onto her rig; idle toes within 1 cm of Body 1's.
+
+**Acceptance:** make a new character, pick Body 2 and move every slider, Bust included (hair length is drawn on neither body): she changes smoothly and stays standing on the ground. Play her: walk, run, crouch, sit, sleep and swing a tool look natural, with arms at her sides at rest. A saved Body 1 character still looks as before (a saved bust above -0.6 now shows).
+
+Not done: her first-person arms are still Body 1's; the walk and run retimes were measured on Body 1, so her feet may slide a little; the grip and the shoulder log offset were fitted to Body 1; her sleep pose lies about 8 cm lower than Body 1's; her own Walking and Running stand up to 11 cm higher on the toe joints than Body 1's clips; hair length is drawn on neither body; the label "Body 2" (BM-1) is provisional. Not yet played; nothing seen on screen.
+
+## 91. Character creator: the body turns only when dragged, and the view zooms to the part being changed
+
+**Status: Implemented - awaiting player verification.** Dave's request, 20 Nov 2026 (project thread "Add zoom and drag to character creator"): "I want to be able to zoom in on our character during character creation. when adjusting each part of the body it should just zoom to that part. I dont want the body to spin around like it does either unless I use the mouse to move it. I should me able to click on the image and drag it to turn it. I want it to only turn right to left. do not let it rotate up or down."
+
+**Required outcome:** the creator's body stands still; a click and drag on the picture turns it left or right only; changing a part of the body brings the view in to that part; the player can zoom in on the character.
+
+**As built (PR #1382, reviewed head 7645e481, dev c8294e49):** the auto-spin is deleted. A left drag turns the body about its upright axis only. Clicking or tabbing onto a slider eases the camera to its part (face sliders, Neck and Hair Length: head; Chest, Bust, Shoulders: chest; Belly, Torso, Arms: upper body; Hips, Legs, Hands, Feet: their own). Height, Build and Muscle show the whole body. Opening Head and face or Hair zooms to the head; any other section, or closing them all, shows the whole body. The mouse wheel zooms toward the height under the pointer and back out to the whole body. The camera eases there in about half a second. Part heights come from the drawn bones, so they follow the sliders and work for Body 1 and Body 2. Controls: CONTROLS.md "Character creator".
+
+**Evidence:** independent review PASS WITH NITS on 7645e481. GitHub CI green; merge_check all clear. Lane B on 7645e481: selector 26 fast PASS / 0 FAIL including the new test_creator_preview, warnings 381 with 0 new, 0 script errors. A lane run of test_creator_preview on the merged dev (with Body 2) and a window look on Lane A are follow-ups.
+
+**Acceptance:** open the creator. The body does not turn by itself. Drag on it left and right and it turns; drag up and down and nothing happens. Click the Nose slider: the view glides in to the face. Click Feet: it glides down to the feet. Scroll the wheel to zoom; scroll out or close the sections to see the whole body again. Same with Body 2.
+
+Not yet played.
+
+## 92. New characters loaded looking away from Edda and Hob
+
+**Status: Implemented - awaiting player verification.** Dave play test 20 Nov 2026 at the new starter spawn: "these tests keep loading in looking away from edda and hob. what are they looking for". Asked whether a new player should be turned to face the campfire on arrival, he answered "yes please".
+
+**Required outcome:** a new character's first view shows the campfire with Edda and Hob beside it.
+
+**Cause:** the client made the character's body with yaw 0, which looks north, and nothing turned it. Edda and Hob's fire is due west of the spawn, about 8 m away, so they were off to the player's left and out of view.
+
+**As built (PR #1385, reviewed head cde1a9a3, dev 84ffbca4):** the client turns the body toward the camp fire (src/shared/npc_camp.gd face_fire_yaw, within 60 m of the fire) whenever it sets a character down at the starter spawn: on first arrival, after a death that brings the character back to the spawn (cave-in deaths too), and on Admin "Go to spawn". A respawn at a shelter or bed keeps the facing it had. A returning character who resumes where they left off is moved there as before, and now arrives facing west (the bearing from the spawn to the fire) instead of north. Facing is a client-side look only: no protocol, save, TERRAIN_VERSION or starter cache change, and the camp and spawn positions are unchanged.
+
+**Evidence:**
+- Independent review PASS on cde1a9a3.
+- Lane B on cde1a9a3: selector 238 fast + 4 timing = 242 PASS / 0 FAIL, warnings 381 with 0 new.
+- Join smoke: spawn (58167.0, 6.74, 71364.4).
+- test_spawn_picker checks that a character at the spawn faces the fire.
+
+**Acceptance:**
+- Start a new character: the first view shows the campfire with Hob and Edda beside it.
+- Die and come back at the spawn: you face the fire again.
+- Esc > Admin > Go to spawn: the same.
+
+Not yet played.
+
+## 93. First start: a clear note that the game is preparing its graphics
+
+**Status: Implemented - awaiting player verification.** On a computer with no saved shaders, the first windowed join freezes for about 25 s right after the server's welcome, and Windows may say "Not responding" (Lane A, 20 Nov 2026; also on main be491ba6). Dave, 21 Nov 2026: "thats not a problem. its expected on the first load" and "we should have a message that is clear that tells people that."
+
+**Required outcome:** on a first start the player sees a plain message explaining the pause, on screen during it.
+
+**Cause of the pause (not changed):** Godot builds the world's shaders after the welcome (DIAG-93: with only the shader cache deleted the 25 s freeze came back; with it kept the freeze was gone). An attempt to spread the building over frames (PR #1393) did not shorten it and was closed unmerged.
+
+**As built (PR #1405, reviewed head 6e5bcce5, dev 58d03b3b):** the Joining window shows, in yellow under its steps: "First start on this computer (or after an update): the game is preparing its graphics. Once the server answers, this can take up to about half a minute. The window may stop moving, or Windows may say "Not responding". Please wait: the game is not stuck. Later starts are much quicker." The note shows until a join with the same Godot version, graphics driver, graphics card and game build has reached the ground (user://graphics_prepared.txt), so it returns after an update. While it is up, the window stays until the player has landed, so it is still on screen through the freeze.
+
+**Evidence:**
+- Independent review PASS on 6e5bcce5.
+- Lane A on 6e5bcce5: selector 29 fast PASS / 0 FAIL, warnings 381, 0 new.
+- Lane A cold windowed join: the note was on screen just before the 23.9 s freeze and the same frame was held through it. The window closed after "JOIN: ground ready" (+67 s), and the mark file was written.
+- Second join: no note; window closed after 4 s.
+- Pictures in the Library: 1405_6e5bcce5_cold_note_before_freeze.png, 1405_6e5bcce5_cold_note_held_after_freeze.png, 1405_6e5bcce5_second_join_no_note.png.
+
+**Known, for later:** during the freeze the held frame still reads "2. Waiting for the server's welcome: 0 s" although the welcome has arrived.
+
+**Acceptance:** on a computer that has never run the game (or after an update), the Joining window shows the yellow note and keeps it up through the pause. The next start shows no note.
+
+Not yet played.
+
+## 94. Hair styles in the character creator: Dave's hair models, one lineup for every body
+
+**Status: Implemented - awaiting player verification.** Dave's request, 20 Nov 2026 (project thread "hair styles"): "I want to create a male and female character and I want to try hair does. If the hair does work on the male, I want to include them for the female also. everyone is allowed to use any hair style and or facial hair on males or females. we won't label them male and female we will just include them all in the lineup on the hair selection page." After the first in-game pictures he chose to have Short curly's back of the neck tidied before dev.
+
+**Required outcome:** the creator's Hair section offers one lineup (No hair, then every style) with no male or female labels, and any body can wear any style. Adding a style is cheap.
+
+**As built (PR #1389, reviewed head 44d3f5cd, merged to dev at 5e51bb9e):**
+- Dave's three Meshy hair models (Crew cut, Short curly, Slicked back) are in assets/character/Hair/. Their textures are reduced from 4K to 2K and VRAM Compressed, with the import settings committed. The meshes are one-sided and Cast Shadow On (docs/design/CHARACTER_MESHES.md).
+- tools/hair/prepare_hair.py makes each one from Dave's file:
+  - It cuts out the mannequin head Meshy included, by colour, using an alpha-scissor hairline.
+  - It fits the hair to Body 1's skull and pushes it clear of every body's head.
+  - It fills bald gaps with a dark cap that stays above the hair's lower edge.
+  - It ends the hair at an even nape line. Short curly's line is higher across the back.
+- tools/hair/body_fit.py gives Body 2 its "hair_fit" row in body_models.gd.
+- A new style = run the tool, plus one row in src/client/character/hair_models.gd.
+- The style is genome key hair_model. Share codes are version 5 and keep the style. Older codes load with no hair.
+- The Hair dice picks from the lineup. The old Hair Length slider is no longer offered.
+
+**Evidence:**
+- Independent review PASS WITH NITS on 44d3f5cd.
+- Lane B on 44d3f5cd: 71 PASS / 0 FAIL, including the new test_hair_styles. The creator, body generator, character store and chest checks had 0 failures. Warnings stay at 381, and the join smoke was clean.
+- Lane A on 44d3f5cd: 24 in-game pictures, each style on both bodies from the front, three-quarter, side and back (/mnt/project-files/hair_44d3f5cd_contact_sheet.png). Fronts and sides fit both bodies.
+- Known leftovers:
+  - Crew cut sits like a cap band above the ears, because Meshy painted it onto the head.
+  - Short curly has a few small dark tabs behind the character's right ear and a faint smooth patch just above its nape edge.
+  - Short curly is about 32,000 triangles; its frame cost is not measured.
+
+**Acceptance:** make a new character with Body 1 and one with Body 2, and try each style and No hair. The hair sits on the head from every side, follows the Head slider, and takes the Hair colour. Copy a share code and load it: the style comes back.
+
+Not done: facial hair (no models yet); deleting the old drawn hair styles in body_generator.gd waits until everything is in main (Dave's cut-off line). Not yet played.
+
+## 95. Pumps retired: water moves by gravity and rain
+
+**Status: Implemented - awaiting player verification.** Dave, 20 Nov 2026 (project chat 22:04Z): "In my world we are still medievalish and using buckets in wells and dont have pump technology yet." He chose "Retire all pumps" on a decision card, then at 22:42Z: "the wooden hand pumps should be gone too. I did not approve ever having those. they were an ai accident."
+
+**Required outcome:** no pump can be built or used. Water comes from wells by bucket, from rain and by gravity through pipes. A pump already standing in a saved world is gone, and its owner gets the materials back.
+
+**As built (PR #1388, reviewed head 11d1672e, dev e4c06e2a):**
+- The Wooden - Hand pump, Iron - Hand pump and Deep-well pump (items 715, 717, 752; blueprints 129, 130, 147) are retired. Their numbers are kept and never reused, and they are gone from the hammer list.
+- A pump standing in a saved world is removed when the world loads. Its whole blueprint cost is left on the ground where it stood; the Wooden hand pump leaves 6 Plank, 20 Nails, 2 Twine and 1 Hide. A pump site that was never finished leaves what had been put into it. Those piles never despawn (PROVISIONAL, PLUMBING_DESIGN PV-11).
+- The pump-only code is deleted: the pump rate, the suction height rule, the force pump's lift and the pump prompt. Wells and their windlass are unchanged.
+- The Raised cistern is not a pump and stays (entry 97).
+
+**Evidence:**
+- Independent review PASS on 11d1672e.
+- Lane B on 11d1672e: 294 PASS / 0 FAIL, warnings 381 with 0 new. This includes "a loaded pump is gone, its materials on the ground where it stood (lumber 6, nails 20)" and the save and reload checks: nothing is given twice, and the piles never despawn.
+- The first Lane B run on c6d83b96 failed 3 tests on old hammer-list counts and a nails count. All three were fixed before merge.
+
+**Acceptance:**
+- Press R with a hammer: no pump is offered.
+- Load a world that had a Wooden hand pump: the pump is gone, and its materials lie where it stood.
+
+Not yet played.
+
+## 96. Picture rig character started high in the air, so the ground loaded slowly before it dropped to the spot
+
+**Status: Implemented - debug tooling only; verified on Lane A, nothing for a player to check.** Dave, 20 Nov 2026, after watching the rig run on his PC: "the character is spawning way up in the air which causes ground loading to go slower and they eventually load in drop to the ground and then quit."
+
+**Required outcome:** "they should start 1m above ground then face whatever it is they need to photograph and take the images."
+
+**Cause:** the shot runner (src/debug/shot_runner.gd) held the body at 400 m above each spot until the ground there loaded, and only then put it at the shot height. --frametime started counting 10 s after joining, wherever the body was at that moment.
+
+**As built (PR #1384, reviewed head 07a92b06, dev 51352924):**
+- The runner asks the server for the ground height at the spot. It starts the body 1 m above that height (aerial shots over 40 m and absolute-height shots start at their own height), held so it cannot fall through ground that has not loaded. Once the ground under it has collision, the body moves to the shot height. The 400 m hold is deleted.
+- Subject shots (--pieces, --look, --showroom and held items) also hide the plants, so a reed bed cannot block the subject.
+- A plain spawn view faces the camp fire, the way a new character does.
+- --frametime measures standing at the spot after landing, and look_rig.sh prints the frametime line itself.
+
+This changes debug tooling only. There is no game, protocol, save or terrain change.
+
+**Evidence:**
+- Independent review PASS on 07a92b06.
+- Lane B: 26 PASS / 0 FAIL, and warnings stay at 381.
+- Lane A, windowed, 5 runs, all exit 0. Every start was about 1 m over the server ground (y 5.7 over 4.7), and every landing was 1.7 m over it. The camp fire, pieces, saw and showroom were visible.
+- Remaining issues found by these runs, outside the rig: the spawn frame time had 4 frames over 100 ms (max 138.5 ms); two showroom pictures miss their items on the sandy slope at the new spawn (the framing was already like that before this change); and reeds stand in front of a new player's first view.
+
+**Acceptance:** run tools/look_rig.sh at the spawn. The log shows "starts at y" about 1 m over the ground, then "landed", and the picture shows its subject. A --frametime run prints its frametime line from the script.
+
+Not a game change; nothing to play.
+
+## 97. The Raised cistern is a big tank: copper lined, on a wooden frame, fed by rain and gravity
+
+**Status: Implemented - awaiting player verification.** Dave, 20 Nov 2026: "the cistern can be copper lined and the frame can be made of wood and iron nails etc. cisterns are not pumps" (22:06Z), "they are just big tanks" (22:07Z), "yes make the cistern" (22:42Z). Before this the Raised cistern was locked, because only a force pump could fill it.
+
+**Required outcome:** anyone can build a Raised cistern. It is a big tank that fills from rain and from water coming down from higher up, and it feeds pipes below it. Water never climbs into it.
+
+**As built (PR #1391, reviewed head 49798654, dev 7ee7ebe7):**
+- It is unlocked in the hammer list. It costs 16 Plank, 20 Hardwood board, 6 Copper ingot and 40 Nails, and needs a Bronze chisel like the Barrel (PROVISIONAL, PLUMBING_DESIGN PV-12).
+- It holds 2,000 L. Its open top is 3 m up and catches rain (12.8 L a real minute at full rain), plus any pipe end or spout over it.
+- Pipes join at its foot. A pipe from there runs as if the water stood 2.5 m over the foot. Linked to barrels, it shares water by water level, so a lower barrel fills first.
+- New look: a timber frame with a plank tank on top, iron banded and copper lined, a copper downpipe and a painted icon. It is 288 triangles, under the 300 cap.
+- The riser rule that only served the force pump is deleted. The stone Cistern is unchanged.
+
+**Evidence:**
+- Independent review PASS WITH NITS on 49798654.
+- Lane B on 49798654: 314 PASS / 0 FAIL, warnings 381 with 0 new, validate_items 0 errors. This includes "a spout 3.5 m up fills the raised cistern", "a spout 2.0 m up cannot fill the raised cistern", "its water runs down and fills the barrel first" and "a raised cistern drives a level log pipe at its full 60 L/min".
+- The first Lane B run on d4512c9b failed on the look's triangle count and two over-long descriptions. Both were fixed before merge.
+- Lane A pictures on 49798654 show the tank on its wooden stand. From the ground it reads more as a wooden crate, because the copper lining is inside. A clearer picture can be taken on dev with the rig fix.
+
+**Acceptance:** build a Raised cistern on a slope below a rain barrel or another water source. Lay a copper pipe from higher up to end over its top: it fills. Lay a pipe from its foot to a lower barrel or tap: water comes out. Leave it out in rain: it fills slowly.
+
+Not checked on screen: setting it down near a free pipe end may pull it onto the pipe, as a barrel does. Not yet played.
+
+## 98. Raised cistern corrections: a brace on every face, 700 L (barrel 60 L), copper lining, and its code name is raised_cistern
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026:
+- 00:44Z: "the raised cistern is clearly made from wood but its labeled stone raised cistern"
+- 00:45Z: "it has a brace on both sides but it needs a brace front and back and preferably they are opposite on another. the braces on the side should have one switched the other way as well."
+- 00:47Z: "a barrel should hold around 60Liters of water and the raised cistern should hold around 700L."
+- 00:49Z: "I want the code to have to correct name also. no half assing it. correct the code name"
+
+**Required outcome:** one diagonal brace on each of the four faces, with opposite faces slanting opposite ways. A barrel holds about 60 L and the Raised cistern about 700 L. The internal name says what it is, with nothing left calling it stone.
+
+**As built:**
+- PR #1396 (head d0c4cb2b, dev 8fab3cfd):
+  - A brace on the front, back and both sides, with opposite faces slanting opposite ways. A deck on the posts replaces the top rails. 264 triangles.
+  - A Wooden barrel holds 60 L (was 200 L). The Raised cistern holds 700 L (was 2,000 L; full line 0.85 m deep). The stone Cistern is unchanged at 2,000 L.
+  - A saved tank holding more than its new size loads full.
+- PR #1397 (head 26b6651f, dev 94c7e028):
+  - The internal id is now `raised_cistern`, kit `raised_cistern_kit` (was `stone_raised_cistern` / `stone_raised_cistern_kit`). This covers data, look, icon, tests, tools and goal docs. Item numbers 755/756, state 187 and blueprint 149 are unchanged.
+  - A placed cistern in an old save loads under the new name through `legacy_kinds`, kept for good. Kits in packs and chests, and learned blueprints, are saved by number and need nothing.
+  - The copper lining now runs up the inside walls to the full line at 2.9 m, and the water is drawn full. Same triangle count. Icon repainted.
+- Entry 97's 2,000 L and 288 triangles are superseded by this entry.
+
+**Evidence:**
+- Independent review: PASS WITH NITS on d0c4cb2b and PASS on 26b6651f.
+- Lane B:
+  - d0c4cb2b: 309 pass / 0 fail. Includes "a barrel saved with 150 L loads with 60 L, a raised cistern saved with 2,000 L with 700 L".
+  - 26b6651f: 319 pass / 0 fail. Includes "a saved stone_raised_cistern loads as the raised_cistern and joins the water network".
+  - Warnings 381 on both runs, the same as the baseline.
+- Lane A eight views on both heads: each face has one brace, and opposite faces slant opposite ways. On 26b6651f the top view reads copper-lined and full, and the rig tag reads "raised_cistern".
+
+**Acceptance:**
+- Walk round a built Raised cistern: each face has one brace, and the back slants the other way from the front.
+- Look in from above: copper inside and water.
+- Fill a barrel: it stops at 60 L.
+- Fill the cistern: it stops at 700 L.
+
+Not yet played.
+
+## 99. Wooden pipe carved at the Wood carving station with a knife, no twine
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026 (01:32Z): "I would imagine the wooden pipe should be made at the wood carving station with a knife. and it shouldnt need twine. that doesnt fit." Before this it was made by hand from 1 Log and 1 Twine.
+
+**Required outcome:** the Wooden - Pipe is made at the Wood carving station from a Log, with a knife, and takes no twine.
+
+**As built (PR #1400, head 29bcfd4b, dev ae93aa0c):**
+- Recipe 746 takes 1 Log at the Wood carving station and keeps a knife, the same pattern as the quarterstaff and the club. It is still known from the start and takes 30 s (PROVISIONAL, kept from before).
+- A laid run's hammer repair share is now 1 Log. Taking a run down still gives back the pipes it took, so runs in old saves are unchanged.
+- The encyclopedia line, PLUMBING_DESIGN (PV-1) and DYNASTY_MASTER_ITEMS are updated. The retired elbow and tee keep their old costs.
+
+**Evidence:**
+- Independent review PASS on 29bcfd4b.
+- Lane A on 29bcfd4b: 288 pass / 0 fail. Warnings 381, the same as the baseline. validate_items 0 errors.
+- The run includes "a Wooden - Pipe is carved from a Log at the Carving station, no twine".
+
+**Acceptance:** stand at a Wood carving station with a knife and a Log. The Wooden - Pipe is in its list and makes one pipe from the Log. Away from the station it is listed greyed "at Carving station" and cannot be made.
+
+Not yet played.
+
+## 100. Hair styles: Dave's Medium bob added to the lineup
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "in the same folder I had the other hair styles there is now a medium hair style you can add and I will be adding more as they finish", and "show me the pictures of the medium hair style on the players when they are ready".
+
+**Required outcome:** the Medium bob appears in the one hair lineup (entry 94) for every body.
+
+**As built (PR #1398, reviewed head f0418a0b, merged to dev at a0ad2c3c):**
+- His Hair_Medium_Bob.glb is hair only, with no mannequin head. tools/hair/prepare_hair.py builds it with the new --nape 1.45, because a jaw-length bob ends lower than the short styles.
+- The hair is now pushed clear of the neck only, not the tops of the shoulders, and the cap leaves out stretched triangles. The first pictures showed the bob's lower corners flaring into flat dark wings.
+- One row in hair_models.gd: "Medium bob".
+- test_hair_styles now centres the hair's crown on the fitted skull, not the whole box on the top bone, and its size bounds allow a jaw-length style.
+
+**Evidence:**
+- Independent review PASS WITH NITS on every head.
+- Lane B on f0418a0b: 70 PASS / 0 FAIL. Warnings stay at 381.
+- Lane A pictures on 596b9fce (/mnt/project-files/hair_596b9fce_medium_bob_sheet.png), shown to Dave.
+- Known leftovers:
+  - two small dark tabs at the lower corners;
+  - a dark diamond on the back of the head and a dark leaf on the crown, where holes in Meshy's hair show the cap;
+  - a few skin slivers low on the back.
+
+**Acceptance:** pick Medium bob on Body 1 and Body 2. It hangs to the jaw with no wings at the shoulders and follows the hair colour.
+
+Not yet played.
+
+## 101. Hair styles: Dave's Medium shag added to the lineup
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "new shag hair in folger".
+
+**Required outcome:** the Medium shag appears in the one hair lineup (entry 94) for every body.
+
+**As built (PR #1401, reviewed head 99d43e1a, merged to dev at ea3e8578):**
+- His Hair_Medium_Shag_Hair.glb is hair only. It is built with prepare_hair.py --nape 1.45 and has 11,199 triangles.
+- One row in hair_models.gd: "Medium shag".
+- test_hair_styles cuts the crown band in the hair's own space, so the idle pose's tilt no longer counts the shag's thick back hair. Its depth bound is 28 cm.
+
+**Evidence:**
+- Independent review PASS on 99d43e1a.
+- Lane B on 99d43e1a: 70 PASS / 0 FAIL. Warnings stay at 381.
+- Lane A pictures on da065805 (/mnt/project-files/hair_da065805_medium_shag_sheet.png), shown to Dave: dense, no holes, ending just above the shoulders.
+- Known leftovers:
+  - a short point flicks out at one lower edge;
+  - spiky shards at one side of the face on Body 1;
+  - one thin stray strand at a temple;
+  - flat glossy shards on the crown.
+
+**Acceptance:** pick Medium shag on Body 1 and Body 2. It sits on the head from every side and follows the hair colour.
+
+Not yet played.
+
+## 102. Raised cistern costs 30 Copper ingot
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026 (02:29Z): "the cistern probably needs something like 30 copper ingots." Before this it cost 6 Copper ingot (entry 97).
+
+**Required outcome:** the Raised cistern takes about 30 Copper ingot to build.
+
+**As built (PR #1404, head ee0adc37, dev 38850ea5):**
+- Blueprint 149 costs 16 Plank, 20 Hardwood board, 30 Copper ingot and 40 Nails. Only the copper changed.
+- Taking it down gives back the full cost, so the refund follows automatically. Any hammer repair is charged as a share of this cost.
+- The encyclopedia line, PLUMBING_DESIGN (PV-12), DYNASTY_MASTER_ITEMS and the goals draft are updated. Entry 97's "6 Copper ingot" is superseded.
+
+**Evidence:**
+- Independent review PASS on ee0adc37.
+- Lane B on ee0adc37: 269 pass / 0 fail, warnings 381 (same as the baseline), validate_items 0 errors.
+- The run includes "the Raised cistern is a big tank anyone can build: copper lined with 30 Copper ingot".
+
+**Acceptance:** open the hammer menu. The Raised cistern lists 30 Copper ingot. Build one, then take it down: 30 Copper ingot come back.
+
+Play note: 30 ingots weigh 51 kg, close to the carry limit. Building also takes materials from nearby boxes and the ground. Not yet played.
+
+## 103. Hair styles: Dave's Medium swept back added to the lineup
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "new medium swept back in hair".
+
+**Required outcome:** the Medium swept back appears in the one hair lineup (entry 94) for every body.
+
+**As built (PR #1406, reviewed head c6c2341e, merged to dev at 9597210c):**
+- His Hair_Medium_Swept_Back.glb is hair only. It is built with tools/hair/prepare_hair.py --nape 1.45, the same as the bob and the shag, and has about 16,900 triangles.
+- One row in hair_models.gd: "Medium swept back". No share code or save change.
+
+**Evidence:**
+- Independent review PASS WITH NITS on c6c2341e. The glb and textures rebuild byte-identical.
+- Lane B on c6c2341e: 70 PASS / 0 FAIL. Warnings stay at 381. Join smoke clean.
+- Offline preview on Body 1 and Body 2 (/mnt/project-files/hair_swept_back_preview.png), shown to Dave.
+- PC pictures wait until his Godot is closed.
+
+**Acceptance:** pick Medium swept back on Body 1 and Body 2. It sits on the head from every side, ends level at the collar and follows the hair colour.
+
+Not yet played.
+
+(Medium curtains was dropped by Dave on 21 Nov, "lets just remove the curtains they are terrible"; it was never built.)
+
+## 104. E acts on what is nearest the reticle
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "Im still having issues where Im looking straight at something I want to pick up and i press e but it puts out the fire or lights the smelter or picks up something else. it should always effect whatever is closest to my reticle first." Then: "that needs fixing right now".
+
+**What was found:** the 1 Nov rule (the thing the cursor is on wins) held only between kinds of thing. The pick-up offered the item nearest the feet, not the one looked at, so a nearer item to the side hid it and a fire or station in view won. The cursor also had to be within the 2 m prompt reach, and items were offered only to 2.5 m while fires and stations reach 3 m.
+
+**Required outcome:** E, its prompt and F act on the one thing nearest the reticle: items, fires, stations, chests, plants and people alike. Only when the reticle is on nothing does E fall back to the old order (the nearest loose item first).
+
+**As built (PR #1409, reviewed head dd9509ff, merged to dev at 6995ae3e):** every kind offers its best centred thing inside the aim cone (about 25 degrees); the best centred of those wins. F opens the same one. An aimed plant that cannot be picked says why, and E does not pick the one beside it. The server acts on the id the client sends, so it acts on the thing shown.
+
+**Evidence:**
+- Independent review PASS on b5841f25 and on dd9509ff.
+- Lane B on dd9509ff: 65 PASS / 0 FAIL, test_e_priority among them (an item beside a lit fire, an item beside a smelter, two items close together, two workbenches side by side). Warnings stay at 381. Join smoke clean.
+
+**Acceptance:** drop a stick beside a lit campfire and look straight at it: E picks it up and the fire keeps burning. Do the same beside a cold smelter: E picks up the item, not "light". Lay two items close together: E takes the one under the reticle. Look at the fire or smelter itself: E works it.
+
+Not yet played. Not done: drinking (from water or from what you hold) and the sea edge have no single spot, so they never win on the reticle; with the reticle on nothing a fire within 3 m still comes ahead of drinking, as before.
+
+## 105. Copper and tin rocks along every river
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "why is it i can find normal stones and copper all around the river but I can't find any tin". Then: "both copper and tin should be placed along or close to rivers being more abundant and bigger near the mountains and smaller and less abundant closer to the ocean but they should both be there. they should even have a small chance of randomly being almost anywhere", "they should also be very abundant if they are right over an ore vein of their type" and "that needs to be fixed now".
+
+**What was found:** tin rocks lay only by water within 80 m of a tin body of the geology, and never on land. Copper lined every river. The new spawn (58167, 71364) is outside every tin body, so its river had copper and no tin.
+
+**Required outcome:** copper and tin follow one rule. Both lie along every river. They are commoner and bigger toward the mountains and rarer and smaller toward the sea, but always present. Either can turn up anywhere, rarely. Both are very abundant over a body of their own ore.
+
+**As built (PR #1411, reviewed head cea2e192, merged to dev at 73b1a4b4):** boulders.json `ore_rocks` holds the one shared rule; copper_rocks and tin_rocks keep only their slot and grade. By a river (shallow water or within 8 m of it) a spot takes a rock 30% of the time at 10 m above the sea or lower, rising to 80% at 300 m or higher. Sizes are cut to half by the sea and reach 0.5 to 2 m across up the valleys. On any dry land the chance is 1% a spot. Within 40 m of its own ore body it is 70% a spot anywhere, with bigger rocks. Both ores get the mountain-foot boulder. No TERRAIN_VERSION, protocol, save or starter cache change: the rocks are laid by the server when a cell loads, so a server restart shows them and no world reset is needed. Provisional values: docs/design/COPPER_ROCKS.md OR-1..OR-6.
+
+**Evidence:**
+- Independent review PASS on fbfbd6ec and on cea2e192.
+- Lane B on cea2e192: 250 PASS / 0 FAIL (245 fast + 5 timing), test_copper_rocks, test_server_items, test_ore and test_flint among them. validate_items had 0 errors. Warnings stay at 381. The join smoke had no crash. The slow-cell lines show copper and tin rocks at 2 to 3 ms a cell.
+- outcrops_near at the spawn, radius 400 m: 22 copper and 70 tin rocks to break. The nearest copper is 83 m away and the nearest tin 137 m.
+
+**Acceptance:** walk the river by the spawn. Copper and tin both lie in the shallows and on the banks, mostly small pieces picked up by hand. Follow a river up toward the mountains: there are more rocks, and bigger ones. Now and then one lies on open land far from water.
+
+Not yet played.
+
+## 106. Rocks crack and shrink from the first blow
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "I just used a pick on a rock until it finally broke and I noticed the system is designed for it to keep its normal size until the last few hits then it shrinks. it should crack and start to shrink right from the first hit. it should shrink right along with however many stones or ore it has left and crack accordingly". Then: "fix immediately".
+
+**What was found:** a worked rock's radius was the cube root of the share of stones left, so it kept 79% of its width with half its stones gone and 97% after a tenth. The cracks were drawn as the share gone, so a big rock showed none for its first blows.
+
+**Required outcome:** every rock a pick or hammer works (stone boulders, copper and tin rocks, iron and limestone outcrops, cave boulders) shrinks in step with the stones or ore it has left and cracks from the first blow, more as it is used up. Motion stays smooth, and the server and the player's view agree.
+
+**As built (PR #1412, reviewed head a23944bf, merged to dev at bf9c2f45):** one rule, src/shared/boulder_wear.gd, sizes a rock for the server (reach, blocking, settle, survey, log physics) and the client (look and solid shape). The radius falls in a straight line from full to a fifth at the last stone. Cracks start at 0.2 after the first blow and rise to full. Each blow eases the look to its new size over 0.15 s. No new network traffic.
+
+**Evidence:**
+- Independent review PASS on e2ea13d4 and on a23944bf.
+- Lane B on a23944bf: 237 PASS / 0 FAIL (233 fast + 4 timing), test_boulder_wear and test_fell_autosplit among them. Warnings stay at 381. Join smoke clean.
+
+**Acceptance:** hit a boulder once with a pick: fine cracks show at once. Keep going: it grows smaller and more cracked at a steady rate until it breaks. A small copper rock visibly shrinks on every blow.
+
+Not yet played. On a big boulder (thousands of stones) one blow shrinks it by under a millimetre, so there the cracks show first and the shrink shows as it is used up. The boulders.json note still said "cube root"; fixed in entry 118.
+
+## 107. Ore piles stack up like stone piles
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "ore piles should stackup like stone piles do just with different colors and lumps." Then: "you can fix that now too".
+
+**What was found:** the server already joined dropped ore into one ground record, but Copper ore, Tin ore, Iron ore and Bog iron ore had no pile row in items.json, so the client drew a heap of any size as a single lump.
+
+**Required outcome:** a heap of any ore grows as a cone the way stone does, each ore in its own colour with lumpy pieces, at no more cost per piece than stone.
+
+**As built (PR #1413, reviewed head ffb8e5e2, merged to dev at c98408c7):** the four ores have cone pile rows, the same system stone uses (src/shared/pile_rules.gd sizing, server merge reach and the building check, PileLook._cone_mesh). The cone row may now set a second colour with a share of pieces (color2, mix), lumps (each piece is one of four knobbly shapes built once) and rough. Stone sets none of them and looks as before. validate_items now checks every non-log pile row's common fields as well as the new keys.
+
+**Evidence:**
+- Independent review PASS on 5951aeec and on ffb8e5e2.
+- Lane B on ffb8e5e2: 270 PASS / 0 FAIL (265 fast + 5 timing). test_pile_cost passes: every ore's drops join one pile, and its mesh has the same number of points as the stone cone and rebuilds within the same budget. validate_items 0 errors, look names 340, warnings 381 = baseline. Join smoke clean.
+
+**Acceptance:** drop 20 or more of each ore: each makes one cone that grows as more land on it. Copper is green with red-brown pieces, Tin is dark red-brown and a little shiny, Iron is grey-brown with rust, and Bog iron is red-brown with ochre and the lumpiest. Stone piles are unchanged.
+
+Not yet played; not yet seen in a picture. The colours, lumps and densities are provisional (OP-1, below).
+
+## 108. The game lags or pauses while running
+
+**Status: Partly fixed - awaiting player verification.** Dave, 21 Nov 2026 (05:26Z): "I find the game lags or pauses a lot when I am running. please try to find what is causing this and fix it."
+
+**Required outcome:** running across the world feels smooth. The cause is found with evidence and fixed, not hidden by raising thresholds.
+
+**What the evidence showed (Lane A frametime runs on diagnostics heads 46be88c1, 42b39933 and 989fc2f1, running north 500 m on d3d12 and Vulkan):**
+- Client frames of 205 to 521 ms were the crash report and telemetry logs. They wrote and flushed their files on the main thread, and cut them by reading and rewriting the whole file. The disk on Dave's PC is slow.
+- Server ticks of hundreds of ms (vitals, fires) were the flora lock. A flora worker held it while walking every item of a 256 m chunk into the shelter index, and every shelter check on the main thread waited for it.
+- Frames of 0.5 to 0.9 s in "flush" and "draw" are the graphics driver building shaders the first time something new comes on screen. The join freezes are the same thing.
+
+**As built:**
+- PR #1437 (reviewed head f770eeb2, dev 33009aa1): log lines are queued and written on a worker (src/shared/line_writer.gd), for the client's breadcrumbs and telemetry and for the server's event log. A report or exit writes out what is still queued first.
+  - Lane A: 33 pass, 0 fail, warnings 381.
+  - Standing frametime: max 146 ms, p99 16.7 ms (before: max 597 ms, p99 29.5 ms).
+- PR #1434 (reviewed head 3f225892, dev 9dfc3030): the chunk's shelter rows are built before the flora lock is taken, so only a quick merge runs under it.
+  - Every main-thread wait over 20 ms, and every worker hold over 20 ms, now prints a "server flora:" line.
+  - Lane B: 291 pass, 0 fail, warnings 381. The join smoke had no slow-tick or lock lines.
+
+**Still open (for after main):**
+- First-sight shader builds on d3d12 (0.5 to 0.9 s): needs a shader warm-up or a renderer choice by Dave.
+- Single physics steps of 44 to 51 ms, and clock and weather at 31 to 37 ms: small regular hitches.
+- The server can pause in cheap code (goals, the world-item scan) when the PC is busy loading new ground tiles. Tuning thread counts would fix it, but that is too risky now.
+- A server save can hold a tick about 1.2 s while it waits for the previous save to finish writing. The wait is now logged.
+- Server calls that read an unloaded ground tile (zone, rock and ground type) still wait for the file. Bog iron is guarded (#1423).
+
+**Acceptance:** run for a minute in open country. There should be no pauses beyond the first sight of new things.
+
+Not yet played.
+
+## 109. Costs say which nails and hinges they take
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "Im trying to make a chest and it says I need nails and I have 100 copper nails but it wont use them. it should tell me what type of nails it wants". Then: "fix this now".
+
+**What was found:** the item shown as "Nails" is iron (1 Iron ingot makes 100 at the brick forge), and "Hinges" are iron too. Every cost that asked for them took iron or bronze, never copper, but the cost line, the build site's "Still needed" and the repair messages all said only "nails" or "hinges".
+
+**Required outcome:** wherever a cost needs nails or hinges, the player sees exactly which items fill it, and no item name is ambiguous beside Copper nails.
+
+**As built (PR #1416, reviewed head d41fddae, merged to dev at e971621d):** Nails are named Iron nails and Hinges are named Iron hinges (items, recipes, encyclopedia). Their costs read "Iron or bronze nails" and "Iron or bronze hinges", and a Copper nails cost reads "Copper, bronze or iron nails", in the hammer list, the site list and the recipe cards. The server's build site, structure repair and item repair sentences use the same labels. Item ids, numbers and saves are unchanged.
+
+**Evidence:**
+- Independent review PASS WITH NOTES on 7202c6a2 and on d41fddae (the one note, a stale "Used in Hinges" line, is fixed in d41fddae).
+- Lane B on d41fddae: 272 PASS / 0 FAIL (267 fast + 5 timing). validate_items 0 errors, look names 340, warnings 381 = baseline. Join smoke clean.
+
+**Acceptance:** open the hammer list with copper nails only: the Rustic - Chest line says it wants iron or bronze nails. Set down a chest site and hit it: "Still needed" names iron or bronze nails.
+
+Not yet played. Dave then asked for a chest for each nail tier (PR #1419), which changes these labels to "... or better".
+
+## 110. The Rustic - Chest needs no chisel
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "now Im trying to make a rustic chest which is in the blueprints on the hammer and it wants me to have a chisel. this shouldnt need a chisel." Then: "fix it please".
+
+**What was found:** the 18 Nov 2026 chisel tiers (TT-3) gave the Rustic - Chest a Bronze chisel, checked on the hand bar beside the hammer.
+
+**Required outcome:** the Rustic - Chest is built with any hammer and its blueprint, with no chisel.
+
+**As built (PR #1416, reviewed head d41fddae, merged to dev at e971621d):** the chisel requirement is removed from the plank_chest blueprint, and the TT-3 record is amended. The Rustic chair and table, Cupboard and Barrel keep their Bronze chisel (TT-3). The Raised cistern's Bronze chisel was a provisional pick (PV-12). The Canopy bed's Steel chisel is also unchanged. All are listed for Dave.
+
+**Evidence:** same review and Lane B run as entry 109. test_tool_ladder: "plank_chest needs chisel tier 0" and "plank_chest with no chisel: builds".
+
+**Acceptance:** with only a hammer and the materials, build a Rustic - Chest: it goes up with no chisel.
+
+Not yet played.
+
+## 111. A chest for each tier of nails
+
+**Status: Implemented - awaiting player verification.** Dave's design during his play test, 21 Nov 2026: "we should have a chest size for each tier of nails. so copper nails can make a smaller chest with an appropriate name, then bronze makes the rustic, iron can make the large, and steel could make the superior. just use the same names we use on all other tiers whatever the convention is." Then: "fix it now".
+
+**What was found:** only iron and bronze nails filled any chest; Copper nails built nothing but the Quality - Backpack, and there were no Steel nails.
+
+**Required outcome:** one chest per nail metal, bigger with each tier, each a hammer blueprint with no chisel at the lower tiers, using the existing naming convention; a better nail always serves for a lesser one.
+
+**As built (PR #1419, reviewed head 250ad249, merged to dev at 53a25ccf):**
+
+| Chest | Nails | Hinges | Slots | Cost |
+|---|---|---|---|---|
+| Small chest (new) | Copper nails or better | none (lift-off lid) | 24 | 4 Hardwood board, 8 Copper nails; any hammer, no chisel |
+| Rustic - Chest | Bronze nails or better | Bronze hinges or better | 30 | 6 Hardwood board, 12 nails, 2 hinges; any hammer, no chisel |
+| Large wooden chest | Iron nails or better | Iron hinges | 42 | 14 Hardwood board, 20 nails, 2 hinges; any hammer, no chisel |
+| Ornate - Chest | Steel nails | Iron hinges | 48 | 10 Hardwood board, 24 nails, 2 hinges, 2 Iron band; Bronze hammer or better, Steel chisel |
+
+The Fine - Chest (36 slots) is in the iron tier and is otherwise unchanged. Steel nails are new: 1 Steel ingot makes 100 at the brick forge, level 3. Every other building and recipe that took nails or hinges now reads "Bronze nails or better" / "Bronze hinges or better", which covers the same metals as before plus steel. Items 1512 (Small chest) and 1513 (Steel nails), recipe 750, blueprint 364, structure state 462. Saves are unchanged. Design and provisional picks: docs/design/CHEST_TIERS.md.
+
+**Evidence:**
+- Independent review PASS WITH NOTES on cd6624c5 (two test fixes first found on f00f7542) and PASS on 250ad249.
+- Lane B on cd6624c5: 318 pass and 1 fail (a stale row count in test_wood_phase4), fixed in 250ad249.
+- Lane B on 250ad249: 319 PASS / 0 FAIL (314 fast + 5 timing). validate_items 0 errors, look names 340, warnings 381 = baseline. Join smoke clean.
+
+**Acceptance:** with 8 Copper nails and 4 Hardwood boards, any hammer builds a Small chest that holds 24. The Rustic - Chest refuses copper nails and takes bronze, iron or steel. The Large wooden chest refuses bronze nails. The Ornate - Chest takes only Steel nails. Taking a chest down gives back the lowest nails that fill its cost.
+
+**Gate fix (PR #1429, reviewed head 06cf88b7, merged to dev at de64880b):** the main gate's delta review found that the Tool cabinet and the Ore and metal rack still listed "nails" and "hinges" in what they take. Since this change those mean iron or steel nails and iron hinges only, so the two containers refused copper and bronze nails and bronze hinges. Both now list every nail and hinge by id. test_storage_locks checks each metal in both containers. Lane B on 06cf88b7: 291 pass / 0 fail, validate_items 0 errors, warnings 381 = baseline.
+
+Not yet played; not yet seen in a picture.
+
+## 112. The knife makes a Wicker basket, not the two knife chests
+
+**Status: Implemented - awaiting player verification.** Dave, during his play test on 21 Nov 2026, of the Wicker - Chest (18 slots) and the Crude - Chest (24 slots), both knife builds: "get ride of both of those. the knife can make a wicker basket that could have 6 slots." When asked about chests already placed: "there are none".
+
+**What was found:** the knife listed two chests next to the hammer's chest per nail tier (entry 111).
+
+**Required outcome:** no knife chest. The knife builds a Wicker basket with 6 slots (one row). A saved world that holds one of the old chests still loads.
+
+**As built (PR #1421, reviewed head 6b97ba23, merged to dev at aae56232):**
+- The knife's store is the existing Basket, renamed **Wicker basket**: 8 Stick, 4 Twine, 6 slots, item 785, blueprint 157. No new numbers. It takes the Wicker - Chest's storage comfort point.
+- The Crude - Chest is retired (blueprint 186, item 914).
+- The Wicker - Chest (blueprint 26) is hidden and locked, so no player lists or builds it. It is not retired, because about a dozen server tests place it as their plain container. Taken down, it gives back its sticks and twine.
+- A saved Crude - Chest or Wicker - Chest still loads with its contents. Nothing clears them at load.
+- The Ragtooth goblin camp's chest prop is now a Small chest.
+- The chest ladder is now Crate 10, Small 24, Rustic 30, Fine 36, Large wooden 42, Ornate 48.
+- Design: docs/design/CHEST_TIERS.md.
+
+**Evidence:**
+- Independent review first found 3 must-fixes on c96b974c (a parse error, retired-kit test placements, a validate_items collision). It passed on dcda0248 and again on 6b97ba23.
+- Lane B on dcda0248: 2 fails (test_cooking_route still built the hidden chest; the walkthrough read the basket's slots before opening it), fixed in 6b97ba23.
+- Lane B on 6b97ba23: 320 pass / 0 fail (fast 309, timing 9, slow 2). validate_items 0 errors, look names 340, warnings 381 = baseline. Join smoke 26 s, client --chest self-test (now the Wicker basket) exit 0.
+- test_save_compat loads a saved Crude - Chest and Wicker - Chest with their contents.
+
+**Acceptance:** the knife's list shows the Wicker basket and no chest. With a knife, 8 Sticks and 4 Twine, a Wicker basket goes up and holds 6 stacks. No build list, knife or hammer, shows a Wicker - Chest or Crude - Chest; the hammer's chests are the Small, Rustic, Fine, Large wooden and Ornate.
+
+Not yet played.
+
+## 113. Fens, bogs and swamps stand out
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026, on wetlands: "they should be readable but lets talk about that. there are reeds everywhere there is a river. how can we make fens, bogs and swamps standout". Shown the plan (dark wet ground, shallow pools, plants of their own, mist and wetland sounds), he said: "make them all. I like it. do that now".
+
+**What was found:** fen and bog ground drew as plain grass, with no reeds, water or sound of its own (Dave's play-test note 17, 20 Nov 2026, in the coordinator's play-test notes). The flora placer kept every plant off fen, bog and swamp cells, so they were bare.
+
+**Required outcome:** each wetland reads from a distance and up close, and none of its plants grows on river banks. Fen is green and wet with cattails. Bog is brown and mossy with white tufts. Swamp is dark, with dead trees and standing water. Marsh keeps its mud, reeds, willow and mint.
+
+**As built (PR #1422, reviewed head 820f1c62, merged to dev at b8a9bc54):**
+- Ground: new draw-only material ids 29 fen, 30 bog and 31 swamp. Digging still gives peat (fen, bog) or mud (swamp). Fen is near-black peat with sedge-green flecks, bog is brown with rust-red and ochre-green moss, and swamp is black mud, all with a wet sheen. TERRAIN_VERSION 79; the starter ground was rebuilt for it.
+- Pools: still brown water lies in the hollows whatever the weather, on flat ground only (about 17% of fen, 10% of bog and 30% of swamp, as test_wetland_signs printed on Lane B at 820f1c62). It freezes and takes snow like puddles. Wading one splashes and slows you to 0.85 of your pace.
+- Plants (flora layout 32): Cattail on fen, 700 a hectare. Tussock sedge on fen (400) and swamp (150). Bog moss hummock on bog (500). Cotton grass on bog (1,000; no longer on the marsh edge). Dead tree with hanging moss in swamp (30). None of them grows on river banks.
+- Seeds: Cattail seed (item 1514), Tussock sedge seed (1515) and Bog moss spores (1516). Each comes from its wild plant late in its season and grows in a garden. The dead tree is scenery.
+- Sound: wetland steps squelch (existing step_mud and wet_squelch). Frogs, crickets and insects call over wetland. No new sound files.
+- Mist: up to 4 low patches near the player, from 1 hour before to 2 hours after sunrise and from 1 hour before to 1.5 hours after sunset. Wind thins it and rain clears it.
+- One-time effects on the first server start: the ground blocks regenerate (a first-load pause), and felled trees and picked plants come back once. Ground edits, structures and their contents are kept. No world wipe.
+
+**Evidence:**
+- Independent review first found 4 bugs on 2253f818: wetland digs gave loam, an invisible log wall at dead trees, no frogs in a fen without open water, and the ground name. It passed on 76e717af, 9a601076 and 820f1c62.
+- Lane B on 76e717af: test_farming failed because the new plants had no seeds; fixed in 9a601076.
+- Lane B on 9a601076: validate_items failed because the Bog moss spores description was too long; fixed in 820f1c62.
+- Lane B on 820f1c62: 376 pass / 0 fail (fast 365, timing 9, slow 2). validate_items 0 errors, look names 340, warnings 381 = baseline. Join smoke time to ground 34 s.
+- test_worldgen: a terrain version bump keeps digs, tile revisions and world_items saves. test_wetland_signs covers the look ids, sounds, pools, pace, plant rows and mist hours.
+
+**Acceptance:** at the fen patches 58408,71560 or 58576,71776 near the spawn (the bog iron answer to Dave, 21 Nov 2026) the ground reads as a dark wet patch from a distance. Close up there are cattails, sedge and still brown pools that splash and slow you. Bogs are brown with moss hummocks and white cotton tufts, and swamps are black with dead trees and standing water. Near dawn and dusk low mist lies over them and frogs call. River banks have none of these plants.
+
+Not yet played; not yet seen in a picture.
+
+## 114. Bog iron is the ground's own colour, in fields
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026, after finding a stain at night: "it gave me 6 bog iron but i actually cant dig the ground? it just makes digging sounds and giving me soil but not digging a hole." Then: "it shouldnt just be a big bullseye. it should be the actual color of the ground so change the grounds color and when I dig it the color goes away as I get the ore. also since its in water we can just assume the water washes the dirt back into the hole over a given period of time. but really if that area is going to have bog iron it should have some all around not just in one spot." On the plan of stained ground, fading as dug, silting holes and fields along the wet edge, he said: "yes make it so." Replaces the stain sheet of entry 69.
+
+**What was found:** the hole was dug, but the flat 6 m stain sheet (entry 69) was laid over the ground only when first drawn, so it covered the hole like a lid. The deposits were single 8 m samples scattered over a fen.
+
+**As built (PR #1423, reviewed head e15c1c10, merged to dev at f2ab4524):**
+- No stain sheet. The ground shader tints the ground rust: an uneven, soft-edged blotch strongest at its heart, with a faint tinge out to five radii so a field's patches show between them. All of it scales with the ore left, so no colour means no ore. Ground dug below the patch's level shows the wetland's own dark ground. A few small ore lumps (up to 4) thin out as the ore is dug and are gone when it is empty.
+- Fields: the world is cut into 512 m squares; about half bear iron. A bearing square with enough wetland gets 3 to 8 patches round a seed on its wet edge, edge samples first, more for a bigger wetland, at least 14 m apart. A patch holds 6 to 12 Bog iron ore and is 2.5 to 4 m across its radius. A dig within that radius gives ore as before (1 to 2 a dig, one back every 3 game days).
+- Holes: a dig on fen, marsh, swamp or bog silts back in one game day later, filled with that wetland's own soil (peat or mud) up to the old surface, never over it. Not while a player stands by it, nor a tunnel more than 1 m under the bog; at most 4 holes a server tick. Waiting holes are saved with the world.
+- The server never reads a tile from disk for bog iron on its main thread (lag work).
+
+**Evidence:** independent review found 2 blockers on 8b38166d (the validator still checked the removed keys; patches could land 12 m apart) and 6 smaller items; fixed and passed on 711ddac2, 4e622b79 and the head merged with the wetland work, e15c1c10. Lane B on 4e622b79: 294 pass / 0 fail. Lane B on e15c1c10: 301 pass / 0 fail, validate_items 0 errors, look names 340, warnings 381 = baseline, join smoke time to ground 33 s. test_bog_iron on the baked tile 3,4: 6 bearing fields, 21 patches and 199 ore within 2.5 km of the spawn, all on wetland.
+
+**Acceptance:** near the spawn's fens a rusty patch shows on the dark wetland ground, with others nearby. Digging it gives Bog iron ore, the hole shows, the rust goes where you dug and fades as the ore runs out, and the lumps go. A game day later the hole has silted in. Three game days later some rust is back.
+
+Not yet played; not yet seen in a picture.
+
+## 115. Working the smelter bellows shows and sounds
+
+**Status: Implemented - awaiting player verification.** Dave, play-testing on 21 Nov 2026: "Im using an improved smelter and it says press e to work the bellows. so I do and it gives me the spiel then it says press e to work the bellows again. when I do it says you leave the bellows. if pressing e the first time puts me on the bellows. the light should get brighter, the smoke should puff and their should be a bellows sound." Then: "and it should then say press e to stop using the bellows".
+
+**What was found:** the server knew who worked the bellows, but the client was never told. The look-at line was always "Press E to work the bellows, E again to stop", so the second press read as a second start. Nothing in the look or the sound changed while the bellows were worked, and the sound pack had no bellows sound.
+
+**Required outcome:** on the bellows, the prompt says "Press E to stop using the bellows". The fire light is brighter, the smoke puffs and a bellows sound plays, and all of it stops when he leaves. Other players near see and hear it. Nothing runs on the server per frame.
+
+**As built (PR #1424, reviewed and tested head 7c15c21a, merged to dev at 9aff47a1):**
+- The smelter's world row carries `bellows`: 2 when this player works them, 1 when another player does (`server_smelter.bellows_peer`). Starting or leaving the bellows sends that smelter's row at once, through a quick sync of it alone.
+- The prompt says "Press E to stop using the bellows" while you work them, "Someone else is working the bellows" while another player does, and "Press E to work the bellows" otherwise. Each adds "(hold E to put it out)". The start notice no longer says "E again to stop".
+- While they are worked, the fire light is 1.8 times as bright. Every 1.4 s the flames leap, a puff of smoke goes up the chimney and the new sound `bellows_blow` plays (`BuildingLook.show_forge_bellows`, a Timer in the model). It stops when the worker leaves, walks away or logs out, or when the smelter goes out.
+- New generated sound: `assets/audio/workshop/bellows_blow_0` and `_1` (make_workshop.py). It has a manifest slot, which asks for a real recording.
+- Covered: the Improved smelter only, the one station with player-worked bellows. The Advanced smelter's bellows run from its windmill. The standalone Bellows are retired.
+
+**Evidence:**
+- Independent review: PASS on 7ae7a0a1 and 7c15c21a. The first pass found a test check that could miss the change, and a full world sync forced on every E press. Both were fixed in 7ae7a0a1.
+- Lane A tests on 7ae7a0a1: 275 pass / 0 fail. On 7c15c21a: 276 pass / 0 fail, script errors 0, warnings 381 = baseline, join smoke ground ready +7.9 s.
+- test_smelters 3b checks the row on leaving and going back: no bellows to both players when left, and 2 to the worker and 1 to the other when back.
+
+**Known limits:**
+- A smelter already being worked when you log in plays its bellows strokes while the world loads. The quiet load (entry 123) covers placed-thing sounds only.
+- The look and the sound have not been seen or heard in game.
+
+**Acceptance:** light an Improved smelter and press E. The prompt turns to "Press E to stop using the bellows", the fire brightens, and the smoke puffs with a bellows sound about every 1.4 s. Press E again: "You leave the bellows", and the light, puffs and sound stop while it stays lit. A second player nearby sees and hears the same.
+
+Not yet played.
+
+## 116. Every smithy takes coal in a fuel slot
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "smithys should just take coal in a fuel slot. same for all smithys. dont need to be lit. they should have red coals when idle and flare really bright while making stuff." Then: "the anvil on the side looks fine". Earlier in the project chat: the Primitive smithy needed no coal while the Improved one needed coal in the inventory; "standardize… a slot for fuel where you put the coal", "both of them should".
+
+**What was found:** the Primitive smithy (stone_forge) and the Blacksmithy had to be lit and burned fuel by the second, whether or not they were making anything. The Advanced smithy and the Master forge took coal straight from the inventory. The built Primitive smithy always showed a burning fire.
+
+**Required outcome:** all four smithies take Coal in a slot of their own, need no lighting, show red coals while they have fuel and nothing to make, and flare bright while making something.
+
+**As built (PR #1428, reviewed and tested head 4530f0dc, merged to dev at bf327172):**
+- Primitive smithy, Blacksmithy, Advanced smithy and Master forge: the first slot of the smithy's store is its fuel slot. It takes Coal or Charcoal only; anything else put there is refused with "Its first slot is its fuel slot: Coal or Charcoal only." Fuel put into the smithy goes to that slot first. Sort leaves it alone.
+- No lighting: a smithy with fuel serves its recipes; one with none does not. Fuel burns only while a craft is being made, one unit per 1800 s of making, and not while a finished craft waits.
+- Looks: no fuel, cold. Fuel and idle, red coals with a soft glow (0.45 energy, 3.5 m). Making something, a bright flare (3.2 energy, 12 m), back to idle 1.5 s after the last craft. The world row carries the state, so other players see it.
+- The station window notes "Fuel (slot 1): Coal or Charcoal, burnt only while it makes something".
+- Design: docs/design/SMELTER_LIGHTING.md, "Smithies: a fuel slot, no lighting" (SF-1 to SF-5). PS-3 and PS-4 are superseded.
+
+**Evidence:**
+- Independent review: PASS on the merged head. The first pass found Sort moving the fuel slot, fuel burning while a finished craft waited, the busy state saved with the smithy, and missing tests. All were fixed before the PASS.
+- Lane A tests on 4530f0dc: 302 pass / 0 fail, warnings 381 = baseline.
+- Tests cover the fuel slot, the refusal, Sort, burning only while making, and the three looks (test_stations, test_resource_bins 9a-9d, test_forge_models, test_mission001_walkthrough and the bronze and iron routes).
+
+**Known limits:**
+- The part-burnt unit (up to 1800 s of making) is not saved; after a server restart the next unit is taken from the slot.
+- The coals and flare have not been seen in game.
+
+**Acceptance:** build a Primitive smithy. Before fuel it is cold and offers no recipes. Put Coal in slot 1: red coals glow. Make something: the fire flares bright and drops back to red coals when done. The same for the Blacksmithy, Advanced smithy and Master forge.
+
+Not yet played.
+
+## 117. Fitness: tiring scale and idling below the start
+
+**Status: Implemented - awaiting player verification.** Dave's rulings during his play test, 21 Nov 2026, after asking what fitness does: "at 100 it should use 50%", "scale in between 50 fitness being 100% and 100 being 50%", and "being Idle can lower it below your start. that was not my rule. remove it." (reading confirmed: "that correct").
+
+**What was found:** exertion rose at exp(-(fitness - 50) / 5 x 0.05) of the average rate, so 61% at fitness 100 and 78% at 75. True rest took fitness back only as far as the starting value.
+
+**Required outcome:** 100% at fitness 50 falling evenly to 50% at 100. Idling may lower fitness below where the character started.
+
+**As built (PR #1426, reviewed head 55f68a66, merged to dev at faf0e33e):**
+
+| Fitness | Exertion rises at |
+|---|---|
+| 0 | 165% (unchanged) |
+| 40 | 110% (unchanged) |
+| 50 | 100% |
+| 75 | 75% |
+| 100 | 50% |
+
+- From 50 up the rise is a straight line to `top_mult` (0.5, data/items/fitness.json). Under 50 the old curve is kept. Both meet at 50 with the same slope, so there is no kink. Recovery is the same for everyone.
+- Idling (effort under 0.02 for over 10 minutes, awake) takes a point per 8,640 s, below the starting value too, down to 0. Sleep still costs nothing. Training still adds at most 50 points above the starting value.
+- Whole points now use floor (as positive training always did), so a character idling at exactly their start loses the first point as soon as the 10-minute grace has passed, then one more per 8,640 s.
+- Saves unchanged; existing characters load as before.
+
+**Evidence:**
+- Independent review: one stale strain-ratio test found on 55007e1f, fixed; PASS on 55f68a66.
+- Lane A on 55f68a66: 251 pass / 0 fail (246 fast, 5 timing); test_slot_sounds failed once on a pace check under load and passed on retry (unrelated). validate_items 0 errors, warnings 381 = baseline, join smoke clean.
+
+**Acceptance:** a fitness 100 character runs about twice as long as a fitness 50 one before winded; 75 about 1.33 times as long. A character left idle for days drops below the fitness they started with and stops at 0.
+
+Not yet played.
+
+## 120. Dune grass is picked for plant fibre
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "Dune grass should be pickable like long grass giving plant fiber". Ordered before main on 21 Nov 2026 ("complete all the bugs and everything I gave you earlier").
+
+**What was found:** dune grass had no hand yield in drops.json, so E gave nothing but its seed, and that only in autumn.
+
+**Required outcome:** dune grass is picked by hand like tall grass and gives plant fibre.
+
+**As built (PR #1430, reviewed and tested head 07edcd2f, merged to dev at 37690c22):** drops.json by_species dune_grass gives 1 to 3 Plant fibre, in the plant's seasons (spring to autumn); its autumn seed still comes with it, and a sickle or scythe swing gets the fibre too.
+
+**Evidence:** independent review PASS on 07edcd2f. Lane A on 07edcd2f: 338 PASS / 0 FAIL (330 fast + 8 timing), validate_items 0 errors, look names 340, warnings 381 = baseline, join smoke clean. test_farming: dune grass is picked for fibre in spring, not in winter.
+
+**Acceptance:** on a beach in summer, E on dune grass gives 1 to 3 Plant fibre; in autumn also Dune grass seed.
+
+Not yet played. The amount is provisional (DG-1, below).
+
+## 121. Every tool has an icon
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "how does the copper pickaxe not have an icon. its the same as the rest of them with a different color".
+
+**What was found:** 22 tools had a look but had never been baked to an icon: the Copper pickaxe and 21 more.
+
+**Required outcome:** the Copper pickaxe has an icon like the other pickaxes in copper colour, and every other tool tier has one too.
+
+**As built (PR #1430, merged to dev at 37690c22):** the Copper pickaxe icon is the Bronze pickaxe icon with its metal recoloured copper (tools/recolour_icons.py METAL_TIERS; the bake's copper pick read as bronze at 32 px). The other 21 were baked on Lane A with tools/icon_bake.gd (dev 0bb4349f, 0 need painting): Copper, Iron and Steel axe and knife; Copper hammer and chisel; Copper and Bronze hoe and shovel; Stone and Steel saw; Copper, Bronze, Iron and Steel sickle; Copper, Bronze and Steel scythe.
+
+**Evidence:** same review and Lane A run as entry 120. The icon sheet is in the project files (icon_sheet_tools.png).
+
+**Acceptance:** every tool in the pack shows a picture, not its name.
+
+Not yet played. Known, for after main: the hoe, shovel, sickle and scythe looks draw every metal the same colour (basic_look.gd ignores the looks.json colour for them), so their tier icons look alike. Weapons without icons still use the grey placeholder look.
+
+## 122. Boards look like 8 ft boards
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "dropped hardwood boards look like tin ore. they should look like 8ft long boards".
+
+**What was found:** Hardwood board still had the grey placeholder lump; Plank drew a small stack of half-metre pieces.
+
+**Required outcome:** a dropped board is one long board lying flat; several stack as boards.
+
+**As built (PR #1430, merged to dev at 37690c22):** a new "board" look, 2.44 m x 20 cm x 2.5 cm with pale cut ends and grain, drawn at its real size on the ground (not enlarged like small items). Two or more lie in a lumber stack (pile shape "boards": 4 side by side a layer, 10 layers a stack, 12 triangles a board). Used by Hardwood board (off the placeholder list; its icon is the Plank icon in oak brown) and Plank. Fine board is retired and unchanged. One E on a stack takes 20.
+
+**Evidence:** same review and Lane A run as entry 120. test_pile_logs: one board is 8 ft, a stack is 12 triangles a board on the ground, the fifth board starts a new layer. Pictures: the first try was hidden in bushes; a retake is pending.
+
+**Acceptance:** drop 1 Hardwood board: one long dark board on the grass. Drop 20: a neat stack, four wide. Plank is the same in a lighter wood.
+
+Not yet played. Sizes are provisional (BD-1, below).
+
+## 123. No building sounds while the world loads
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "when a person logs in and it loads everything around you it makes the sounds of building everything really fast. during this time it shouldn't. it can mute sounds until they land on the ground and everything is loaded."
+
+**What was found:** the place sound plays for every placed thing that appears within 40 m. At login the town arrives in batches after the first look, so each batch sounded as if it were being built.
+
+**Required outcome:** silence for things appearing while the world loads; normal sounds after.
+
+**As built (PR #1430, merged to dev at 37690c22):** PlacedSounds only notes rows while the world loads (terrain_client._world_loading: until joined, on loaded ground, the join window closed, and 3 s after landing or after the window closes). After that, more than 3 things appearing near at once is taken as the world streaming in and is silent too.
+
+**Evidence:** same review and Lane A run as entry 120. New test_placed_quiet: nothing is heard while loading, a late batch of 8 is silent, one chest set down after the load is heard.
+
+**Acceptance:** log in beside the starter town: no building sounds while it appears. Then set down a chest: its sound plays.
+
+Not yet played. Provisional (LQ-1, below). Side effect: a building plan that sets down several pieces at once is silent.
+
+## 124. The bust slider grows round, not pointed
+
+**Status: Implemented - awaiting player verification.** Dave, play-testing the character creator on 21 Nov 2026: "I just noticed when making a new character that is female if you increase the breasts they get pointy they should get big, round and voluptuous."
+
+**What was found:** the bust shape (`dynasty_shapes.gd`) pushed a narrow mound straight forward, up to about 8 cm on her. Most of the push sat within a few centimetres of its centre, so the breast drew as a cone. The shape also kept the base normals, so the light did not follow it.
+
+**Required outcome:** raising the slider gives a full, round, natural shape through the whole range. No cone, no tearing or clipping, and the shading is right. The low end is unchanged, and saved characters keep their value.
+
+**As built (PR #1431, reviewed head fedee321, merged to dev at c5ccbd9e):**
+- Each breast's own front is found on the mesh, and the two sides are mirrored to one pair.
+- The chest round each breast is pushed 60% of the way out onto a rounded shape (an ellipsoid) centred behind that front. It joins softly above and with a fold below, and fades out at the breastbone and at the shape's edge. At +1 the front comes about 5.7 cm forward on her.
+- The last 40% of the chest's own relief is kept. Going all the way made the top's creases meet and crumple through each other in the first in-game pictures (80e0542c).
+- The shape carries its own normals.
+- Shoulder-weighted chest vertices move too. Body 1's pectorals are mostly shoulder weighted, so both bodies round alike.
+- The slider from -1 to -0.6 still does nothing. Genomes and share codes are unchanged, and a saved character keeps its value.
+- New picture tool `tools/bust_shots.gd`: each body at -0.6, 0, 0.5 and 1, front, three-quarter and side.
+
+**Evidence:**
+- Offline, on both glb meshes with a transliteration of the code, the cone was reproduced. In the new shape no fold layers meet, 1 triangle turns over on her and none on Body 1, and 3 cm from the front the surface falls at most 1.5 cm (the cone fell 4.4 cm).
+- Independent review: PASS on 80e0542c, d508e4d3 and fedee321.
+- Lane A pictures on 80e0542c: round, but a crumple under one breast at +1, which d508e4d3 fixed. Lane A pictures on fedee321 (`bust_fedee321_body_*` in the project files): round and full from every side on both bodies, no crumple, -0.6 as modelled.
+- Lane A tests on fedee321: 71 pass / 0 fail (70 fast plus timing test_dynasty_arms_prebuild), script errors 0, warnings 381 = baseline, join smoke ground ready +14.6 s.
+- test_dynasty_body_2 adds a roundness check, a check that the normals turn, and a turned-over-triangle check.
+
+**Known limits:**
+- Her mesh has a few small holes near the nipples and by the armpit in Dave's own model. They stretch a little with the shape but were not visible in the pictures.
+- Body 1 has no check of its own in the tests.
+
+**Acceptance:** in the character creator, with Body 2, moving Bust from the left end up to the right grows the breasts big and round, with no point. At the right end the top's folds stay smooth, and the side view is a round curve. The left fifth of the slider still changes nothing.
+
+Not yet played.
+
+## 118. Big rocks hold far fewer stones, so mining visibly shrinks them
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026, on entry 106: "so far I have mined over 3200 stones from this big rock and it feels accessive. it also hasnt shrunk any that we can see." Then: "work on it now".
+
+**What was found:** shrinking worked (entry 106), but the rock was huge in stones. Since 19 Nov a rock gave 0.7 of its weight as 0.5 kg stones, so one about 1.9 m across held about 11,000 and the biggest (2.4 m) about 22,400. His 3,200 was under a third of it, and its width had come down only about a fifth.
+
+**Required outcome:** a big plain rock holds a sensible number of stones, so it visibly shrinks as it is mined. Copper and tin stay abundant (answered for Dave by the coordinator while he slept: cut plain stone rocks only).
+
+**As built (PR #1427, reviewed head d02fea51, merged to dev at 00239051):** boulders.json yield 0.7 -> 0.047 for plain stone rocks, and for limestone, chalk and marble rocks. The biggest common boulder (2.4 m across) holds about 1,500 stones, and every size keeps the same stones per volume: 2 m about 870, 1.5 m about 370, 1 m about 110, 0.6 m about 23. Rocks with an ore (copper, tin, iron, coal, salt) keep ore_yield 0.7, so their amounts are exactly as before. Rocks already worked in a save keep their share: the save now holds both rates, and a rock saved at other rates is scaled once by its own kind's rate when it is laid out. The boulders.json note no longer says "cube root".
+
+**Evidence:**
+- Independent review PASS on e0d002b3, d8edac53, 05baa8b7 and d02fea51.
+- Lane B on d02fea51: 251 PASS / 0 FAIL (246 fast + 5 timing), test_server_items among them (counts by kind, a 19 Nov save scaled by kind, a waiting rock kept through a save). validate_items had 0 errors. Warnings stay at 381. Join smoke clean.
+- An earlier Lane B run on d8edac53 failed to parse (a test variable name used twice); fixed in 05baa8b7.
+
+**Acceptance:** mine a big grey rock with a pick: it gives at most about 1,500 stones and is plainly smaller well before the end. A copper or tin rock gives as much ore as before.
+
+Not yet played. A big ore rock (an iron outcrop, or copper or tin under the mountains) still holds thousands of stones, so it still shrinks slowly. The rock in Dave's picture may have been one of those; if so, this change does not alter it.
+
+## 125. Animals still teleport instead of running
+
+**Status: Implemented - awaiting player verification.** Dave, play-testing dev def5ca64 on 21 Nov 2026: "animals are still teleporting and not actually running". Entry 66 (PR #1324) had made the client draw animals between the points the server sent.
+
+**What was found:** the client timed each sent point by when its rows arrived. Each animal steps on the server on its own beat, 3 to 10 times a second, while the rows go out four times a second. A client frame hitch held rows back and handed two over at once (the lag thread measured hitches of 100 to 150 ms about once a second). On arrival times a running animal covered two steps in one interval and none in the next, so it jumped, stood, and its run clip flicked to walk. Server tick stalls of 0.4 to 1.2 s (vitals, fires, save; fixed or named in the lag thread's own PRs) also make animals stand and then jump.
+
+**Required outcome:** an animal that runs is drawn running at a steady speed, with its run clip, through frame hitches. A stopped one stops where it stopped.
+
+**As built (PR #1433, reviewed head 68ba7d6f, merged to dev at 1818d9aa; protocol 147):**
+- Each animal row carries the server milliseconds at which its animal reached that position, plus its first still moment after a run. Each batch carries the server clock.
+- The client puts those times on its own clock (`MotionBuffer.clock_off`: the fastest delivery seen, re-anchored only when the server clock goes back 2 s or jumps 10 s). It draws between points by them, 0.4 s behind the newest moment (one gap between rows plus `LEAD_S` 0.15).
+- No extra server work; each row is about 8 bytes bigger.
+- Goblin NPCs use the same buffer with arrival times, so they are now drawn about 0.15 s further behind as well.
+
+**Evidence:**
+- Independent review PASS on b411a13d, then on 617de491 and 9a3b08f4 after review fixes (stopping, re-anchoring), and on 68ba7d6f after merging dev.
+- Lane B (David4) on 68ba7d6f: 448 PASS / 0 FAIL (438 fast + 10 timing), 0 script errors, warnings 381 with 0 new, validate_items 0 errors, join smoke clean.
+- test_animal_motion_buffer: an elephant at 10 m/s, stepped every 0.1 s, through a 150 ms hitch is drawn at 8.5 to 11.5 m/s every frame (a model of the old arrival-time drawing gives 7.5 to 20). A runner that stops stays where it stopped.
+
+**Acceptance:** startle a deer herd or an elephant and watch it run off: steady speed, legs running, no jumps or stops. It stops where it stops, with no slide back.
+
+Provisional: MV-1, the 0.4 s draw delay (docs/design/ANIMAL_REACTIONS.md).
+
+Not yet played.
+
+## 126. Stabbed elephants face the player and never attack
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "I just stabbed two elephants to death with a stone spear while standing under them because they never actually attacked me. they turned to face me but just stood there and died."
+
+**What was found:** a blow from a player within `provoked_m` starts a short warning (0.8 s for the elephant), then the charge. A melee jab lands every 0.6 s. The next jab came during the warning, which refused to restart, so the blow fell through to "run away". On its next step the player was inside `threat_m`, so a fresh warning started, facing the player. Each jab reset it, and it stood facing the player until it died. Every animal with a `defend` row had this, not only the elephant.
+
+**Required outcome:** an attacked big animal fights back or runs, as its temperament says. A huge animal is very dangerous at close range, including to a player standing against it or under it.
+
+**As built (PR #1433, reviewed head 68ba7d6f, merged to dev at 1818d9aa):**
+- `server_big_game.provoke`: one already warning charges at once, pressing home with no bluff; one charging carries on; one recovering or cooling down after a charge warns again (short). The one hurting it becomes its foe in place of a dog.
+- The charge hits a player within `hit_m` of the ground it covered in the step, so a player under it is hit.
+- Elephant and mammoth: `hit_m` 3.0 (was 2.2; the body is about 6 m long), `damage` 40 (was 25). A charge is still not lethal on its own: health stops at 10 and the player is maimed.
+- Passive and friendly animals still run when hurt.
+
+**Evidence:**
+- Independent review as in entry 125.
+- Lane B on 68ba7d6f as in entry 125, including the new test_big_animal_close: elephant, mammoth, rhino, buffalo, moose, elk, bear, black bear and boar, each stabbed every 0.6 s by a player 0 to 3 m from its centre, all hit back within 6 s; a neutral elephant does too; a passive deer runs and never hits.
+
+**Acceptance:** stand under or against an elephant and stab it with a Stone spear: within a second or two it charges and hits, and you are badly hurt. Keep stabbing after it recovers: it charges again. Stab a deer: it runs.
+
+Provisional (accepted for Dave as provisional by the coordinator): AT-1, being hurt overrides the cool-down after a charge; AT-2, the elephant and mammoth reach and damage above (docs/design/ANIMAL_REACTIONS.md).
+
+Not yet played.
+
+## 127. One scatter cell's copper and tin rocks stalled the server for 409 ms
+
+**Status: Implemented - awaiting player verification.** Seen in the slow-cell log on Dave's PC, 21 Nov 2026, while a player ran north: scatter cell (1815, 2229) took 411 ms, and 409 ms of that went to copper and tin rocks. The coordinator asked for the fix on Dave's behalf (his standing order of 21 Nov, 4:39 AM Halifax).
+
+**What was found:** every ground, water and ore read in the boulder and copper/tin layout went through the server's general callables. Each of them looks up the tile with generator.get_tile, which takes the generator's lock. The block and flora workers hold that lock thousands of times a second while a player runs into new ground. The same cell took 3 ms on an idle Lane B, so the 409 ms is the main thread waiting on that lock (not proven by a PC run yet).
+
+**Required outcome:** a few ms a cell, with exactly the same rocks in the same places.
+
+**As built (PR #1436, reviewed head 679faa73, merged to dev at a7acd989):** new src/stream/cell_reads.gd binds the ground, water and ore reads to the cell's tile once a cell (server_items._cell_reads, wired as items.cell_reads in terrain_server.gd). In the boulder and copper/tin layouts, the ground, water, depth and ore reads use these bound reads and never take the generator lock. A probe past the tile edge falls back to the general path, so every answer is unchanged. The slow-cell line now splits the copper and tin time into reads bound, ore bodies, water and settling, so a slow cell on the PC will show where its time went. No TERRAIN_VERSION, protocol, save or starter cache change. Still on the locking path, left for later: the settle step (_settled) for each rock, rock_near for each boulder, bank stones, and stones and sticks. So the few ms a cell under load is not yet proven.
+
+**Evidence:**
+- Independent review PASS on the earlier head and again on 679faa73 after the merge with #1427.
+- Lane B on 679faa73: 215 PASS / 0 FAIL (211 fast + 4 timing). Warnings stay at 381. validate_items had 0 errors. Join smoke clean (welcome 13 s, ground 21 s).
+- test_cell_reads, 162 cells round the spawn and the tin body, including (1815, 2229): the same 710 rows (512 copper or tin) both ways. General reads went from 10,533 to 0, with one tile look a cell. Idle time was 155.7 ms before and 145.2 ms after (about 1 ms a cell either way, since an idle machine has no lock waits). With running water the result was the same: 711 rows matched and 0 general reads.
+- Not yet run: a run north on Dave's PC to see the slow-cell line under load.
+
+**Acceptance:** run north from the spawn on Dave's PC. The slow-cell line stays under 50 ms for copper and tin rocks, and the same rocks lie where they did before.
+
+Not yet played.
+
+## 119. The goblin camp is at the cave nearest the spawn
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "I think we should move the goblins cave much closer to spawn so people might actually find it. it should probably be right in the closest mountain or hill to the spawn point then we can make a path to it for players later." And: "include that before merging to main."
+
+**What was found:** the Ragtooth camp sat at spring cave 3,4#8013, about 3.6 km north-north-west of the spawn. The nearest cave is 3,4#8006, about 1.6 km west-south-west. The nearer hills, about 1.2 km south and north of the spawn, have no cave.
+
+**Required outcome:** the whole camp (cave, five goblins, props, stock, keep zone) at the nearest hill or cave to the spawn, nothing left at the old place, existing worlds loading with the camp at the new place. No path yet.
+
+**As built (PR #1378, reviewed head e5846163, merged to dev at 1acec47b):**
+- data/creatures/goblin_tribes.json: the camp moves to cave 3,4#8006, with its mouth at x 56560 z 71776 and its fire at x 56608 z 71800. The fire, Small chest, two Log benches, Drying rack, Tanning rack and the five goblins stand on a dry bench of 3 to 11 degrees on the brook's south bank. The bench is about 50 m south-east of the mouth. The wood and fibre points are on the slope 25 to 40 m further east. Every spot was read from the baked tile and is checked on it by test_goblin_camp.
+- TileTerrainData.CAMP_CAVES keeps wild goblins and animal dens out of the camp cave. Without it, 8006 would hold a goblin band and a wolf den. 8013 is no longer reserved; by its id it holds neither, and the tile's always-goblins cave stays 3,4#8002.
+- The new mouth is farther from the camp than angry_keep_m. A struck goblin running for the mouth now goes all the way in, and gives up after twice the run time plus 10 s. While in the cave it also counts a striker who waits at its camp spot, so it stays in until that striker goes.
+- Existing worlds: the fire and props are laid by the server and never saved, so after a restart the camp is at the new cave and nothing is left at the old one. Standing, anger and the stock clock carry over per tribe.
+- The test that the camp's stock carries over a server restart (entry 86) went in with it.
+- Provisional: GOBLIN-19 in docs/design/GOBLIN_CAMP.md. A possible follow-up for Dave is a cave carved into the nearer hill about 1.2 km from the spawn; it needs cave carving, a TERRAIN_VERSION and a new starter cache.
+
+**Evidence:**
+- Independent review PASS on d9d5b30b, 948659f8, 6673aad0, d97be1f2 and e5846163.
+- Lane B on 6673aad0: 268 pass / 1 fail. test_goblin_camp failed because Skritch stopped short of the mouth; this was fixed.
+- Lane B on e5846163: 270 pass / 0 fail (260 fast, 8 timing, test_worldgen and test_bake_from_record), test_goblin_camp 0 failures. Warnings stay at 381, validate_items had 0 errors, all 340 looks are drawable, and the join smoke was clean.
+- Tile 3,4's mines are identical before and after the move (a one-off Lane B check, print_tile_mines_3_4.gd in the project files: MINES 2 on both), so the version 79 starter cache stays valid.
+
+**Acceptance:** walk about 1.6 km west and a little south from the spawn to the brook coming out of the hill. The Ragtooth camp is by the cave mouth, with the goblins at their chores. Strike one and they all run into the cave, staying in while you wait at the camp. Nothing is left at the old cave.
+
+Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
 
 ## Assumed on Dave's behalf (provisional values, for review)
 
+- CT-1 (entry 111): the copper chest is the Small chest, 24 slots. Chest slots go in six-slot rows, so 27 would leave half a row. That made it the same size as the Crude - Chest, retired since (entry 112). The Small chest is built with a hammer from copper nails and needs no twine. Its lid lifts off, because there are no copper hinges.
+- CT-2 (entry 111): Dave's "superior" chest is the existing Ornate - Chest, since Ornate is the top furniture grade. It keeps its Iron hinges, because there are no steel hinges.
+- CT-3 (entry 111): the Fine - Chest is in the iron tier, so it takes Iron nails or better and Iron hinges. Nothing else about it changed.
+- CT-4 (entry 111): Steel nails are 1 Steel ingot to 100 at the brick forge, level 3, value 2.
+- CT-5 (entry 111): only the chests are tiered. The other buildings that use nails (about 40) take bronze nails or better.
+- CT-6 (entry 112): the knife's store is the existing Basket renamed Wicker basket, keeping its cost (8 Stick, 4 Twine) and 6 slots. The Wicker - Chest is hidden and locked rather than retired, because the server tests use it as their plain container. The goblin camp's chest prop is a Small chest (Dave 20 Nov 2026: "a small chest of some sort").
+- BW-1..BW-4 (entry 115): chosen by Claude. A stroke of the bellows every 1.4 s. The fire light 1.8 times as bright while worked. The flames leap to 1.35 times their size at each stroke. The bellows sound is generated (a creak, a rush of air through the nozzle and the fire roaring up, about 1.1 s), played at -9 dB.
+- SF-1..SF-5 (entry 116): chosen by Claude. Charcoal counts as coal. One unit lasts 1800 s of making. The fuel slot holds one stack; more fuel is stored in the other slots but not burnt until moved in. Idle glow 0.45 energy over 3.5 m, the flare 3.2 over 12 m. Back to idle 1.5 s after the last craft.
+- BI-3 (entry 114): bog iron fields, chosen by Claude. 512 m squares, half bear iron; at least 12 wetland samples; patches within 64 m of a wet-edge seed, 3 plus one per 25 wetland samples within 64 m of the seed, up to 8, 14 m apart; 6 to 12 ore; radius 2.5 to 4 m by size; edge samples are taken first (their draw scored at a quarter). Rust colour linear 0.30, 0.10, 0.025 to 0.44, 0.20, 0.04.
+- BI-4 (entry 114): a hole dug on wetland silts back in after 1 game day, with the wetland's own soil; no refill under 1 m deep (tunnels) or while a player is near; at most 4 a tick.
+- WL-1 (entry 113): wetland looks, densities and timings chosen by Claude. Colours are as built. Pool levels in the puddle hollows are 0.63 fen, 0.68 bog and 0.56 swamp. Pace in a pool is 0.85. Mist runs from sunrise -1 h to +2 h and from sunset -1 h to +1.5 h. Grass thickness is fen 0.3, bog 0.12 and swamp none. Plant densities are as in entry 113.
+- WL-2 (entry 113): cattail, tussock sedge and bog moss hummock give their own seeds (Dave 14 Nov 2026: "All herbs and plants should produce seeds"). The dead tree is scenery, like old stumps and fallen logs.
+- DG-1 (entry 120): dune grass gives 1 to 3 Plant fibre a pick, tall grass's amount, with no thatch or straw.
+- BD-1 (entry 122): a board is 2.44 m long, 20 cm wide and 2.5 cm thick; a stack is 4 wide and 10 layers high; one E takes 20 (a full stack). Plank is drawn as long boards too. The Copper pickaxe icon is a recolour of the bronze one (entry 121).
+- LQ-1 (entry 123): sounds stay quiet 3 s after landing and after the join window closes; more than 3 things appearing within 40 m at once is silent.
+- OP-1 (entry 107): ore pile looks, chosen by Claude. Copper ore: malachite green, 30% red-brown, lumps 0.3, 3,900 kg/m3. Tin ore: dark red-brown, 40% near-black, lumps 0.15, a little shiny, 6,900 kg/m3. Iron ore: grey-brown, 35% rust, lumps 0.3, 4,800 kg/m3. Bog iron ore: red-brown, 35% ochre, lumps 0.4, 3,600 kg/m3. The densities are the real minerals' and set how wide a cone a count makes.
 - LV-1: one held Level action lasts while strokes come within 1.5 s and the feet move less than 0.6 m; its target height is kept for that long.
 - LV-2: Level leaves the ground within 1.2 m of the feet untouched.
 - LV-3: one Soil fills 0.75 m3.
 - LV-4: Level's cuts give Soil whatever the ground was (sand or clay ground too); Soil the pack cannot hold drops at the player's feet, where the next fill can use it (weight is the real limit; no ground-item cap).
-- RK-1 (superseded by entry 72): boulders gave 0.04 stones per unit of volume; since 19 Nov 2026 a boulder gives its kg x 0.7 in 0.5 kg stones (boulders.json yield 0.7).
+- RK-1 (superseded by entry 72): boulders gave 0.04 stones per unit of volume; since 19 Nov 2026 a boulder gives its kg x 0.7 in 0.5 kg stones (boulders.json yield 0.7); since 21 Nov 2026 plain stone rocks yield 0.047 and ore rocks keep 0.7 (entry 118).
 - TG-1: the garden blend is no steeper than 1 in 2 (about 27 degrees), gentler than the 45-degree limit.
 - TG-2..TG-5: at most 1,500 ground edits for one garden, 8 a step; Till Soil 2m uses 0.9 m spheres; the preview asks the server every 250 ms at most.
 - PG-1: Plant takes seeds from the crafting stock within 12 m.
@@ -816,4 +1693,8 @@ Dave requested this rewrite around the intended experience rather than a literal
 - HE-1 (entry 52): a quick tap of the key or a click eats one bite. Eating from the hotbar never changes the selected slot or what is in hand.
 - HE-2 (entry 52): a click on a food box bites when the button comes up, or after 0.2 s held, so dragging food elsewhere eats nothing. Holding still on the box longer than that before dragging eats one bite.
 - HE-3 (entry 52): water containers on the hotbar still go in hand (they are needed to fill and pour). Drink from them as before.
+- OR-1..OR-6 (entry 105): one placement rule for copper and tin by river, height, land scatter and own ore body; values in docs/design/COPPER_ROCKS.md.
+- BW-1..BW-3 (entry 106): a rock at its last stone is a fifth of its full radius; cracks are 0.2 after the first blow, rising to 1.0; each blow eases the look over 0.15 s.
+- Rock stones (entry 118; called BW-4 in boulders.json, not the bellows BW-4 of entry 115): plain stone, limestone, chalk and marble rocks yield 0.047 of their weight in 0.5 kg stones (the biggest, 2.4 m across, about 1,500); ore rocks keep 0.7. The value was the coordinator's pick for Dave while he slept (Dave gave no number); limestone counts as stone, not ore (Claude's pick).
+- ET-1 (entry 104): an item the reticle is on is reached to 3 m, as fires and stations are (it was 2.5 m; the server allows 3.5 m).
 - Crops need tilled soil (Plant does not till); scatter stone, flint and ores count as small rocks to pick up; wild shrubs are not checked for duplicates.

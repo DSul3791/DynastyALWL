@@ -11,12 +11,12 @@ Answered for him (coordinator, 19 Nov 2026, provisional): the cave 2.8 km east o
 
 ## As built
 - **Data.** `data/creatures/goblin_tribes.json` holds every tribe, its attitude and every number. An attitude row (friendly, wary, indifferent, unfriendly, hostile) holds the keep distances, the trading switch and the anger length, so a later tribe is a new row, not new code. The first tribe, the Ragtooth goblins, is **wary**.
-- **The camp.** It sits at the mouth of spring cave 3,4#8013, about 2.8 km east of Edda and Hob's camp. Its river runs 50 m west of the mouth, and the cave is where that river's spring comes out. The fire and the five goblins stand on the 13-20 degree bench just east of the mouth, 6-16 m from the opening, facing west toward the river. All of this was read from the baked tile on 19 Nov; `test_goblin_camp` checks it again on the tile. The cave holds no wild goblin band (the den pick `TileTerrainData.goblin_den_node`), and the deep tunnels are untouched.
+- **The camp.** Since 21 Nov 2026 it sits by spring cave 3,4#8006, the cave nearest the spawn: about 1.6 km west-south-west of the spawn campfire (GOBLIN-19, below). A brook comes out of the cave mouth (x 56560, z 71776) and runs east. The fire, the props and the five goblins stand on a dry bench of 3 to 11 degrees on the brook's south bank, about 50 m south-east of the mouth (fire x 56608, z 71800). All of this was read from the baked tile on 21 Nov; `test_goblin_camp` checks it again on the tile. The cave holds no wild goblin band and no animal den (`TileTerrainData.CAMP_CAVES`), and the deep tunnels are untouched. Until 21 Nov the camp was at cave 3,4#8013, about 3.6 km north-north-west of the spawn.
 - **The goblins.** They are NPCs (`server_npcs.gd`), not animals, so the talk and trade of Hob's shop work on them unchanged. They don't use the animal movement code at all.
   - Skritch is the trader, drawn with the Skritch look.
   - Rukz is the lookout, drawn with the Rukz look.
   - Snag is the fire-keeper, drawn with the Skritch look.
-  - Vrixa Thornfang (Dave, 20 Nov 2026: "for now she will be a named goblin at the Ragtooth camp. they are friendly goblins but nervous.") rests east of the fire between the bench and the drying rack, drawn with her own look (body 2). Her spot and role are PROVISIONAL (GOBLIN-2).
+  - Vrixa Thornfang (Dave, 20 Nov 2026: "for now she will be a named goblin at the Ragtooth camp. they are friendly goblins but nervous.") rests just east of the fire, by a bench, drawn with her own look (body 2). Her spot and role are PROVISIONAL (GOBLIN-2).
   - Grikka Ragtooth (Dave, 20 Nov 2026: "this is Grikka Ragtooth please add her to the game") rests just east of Vrixa, drawn with her own look (body 3). That she is Skritch's kin is read from her name, PROVISIONAL like her spot.
   - Vrixa and Grikka gather firewood and fibre (the camp's default round, written in their rows). They carry spears like the others.
   - Each one stands at its own spot at rest, and goes about its chores between rests (camp life, below).
@@ -34,8 +34,8 @@ Answered for him (coordinator, 19 Nov 2026, provisional): the cave 2.8 km east o
 - **No new items or recipes.** The roster's outfit field carries "goblin:<variant>". The fire row's {"camp": 1} is unchanged. Camp life adds protocol 146 (held_item, row states WORK and GUARD); PROTOCOL.md records it.
 
 ## For Dave (PROVISIONAL, change any of these)
-- **GOBLIN-1 Where.** The cave 2.8 km east, at its mouth. Getting up from the river is steep (30 degrees or more), so the easy way in is along the bench from the east.
-- **GOBLIN-2 Who.** Five goblins (Skritch the trader, Rukz the lookout, Snag, Vrixa and Grikka at the fire) and the tribe name Ragtooth. Vrixa and Grikka joined as extra goblins rather than taking Snag's or Rukz's post, so nothing else changed; their rest spots (Vrixa x 56081, z 68382; Grikka x 56084, z 68381; both on the ledge east of the fire, clear of the props, facing the fire) are checked against the baked tile by `test_goblin_camp`. They do not sleep or sit yet, because the goblin sit clip lies too flat.
+- **GOBLIN-1 Where.** Replaced by GOBLIN-19 (21 Nov 2026: the cave nearest the spawn). It was the cave 2.8 km east of Edda and Hob's first camp, at its mouth.
+- **GOBLIN-2 Who.** Five goblins (Skritch the trader, Rukz the lookout, Snag, Vrixa and Grikka at the fire) and the tribe name Ragtooth. Vrixa and Grikka joined as extra goblins rather than taking Snag's or Rukz's post, so nothing else changed; their rest spots (Vrixa x 56615, z 71799; Grikka x 56618, z 71798; both on the bench east of the fire, clear of the props, facing the fire) are checked against the baked tile by `test_goblin_camp`. They do not sleep or sit yet, because the goblin sit clip lies too flat.
 - **GOBLIN-3 Keep distances.** 6 / 4 / 3 / 2 m by rank, the trader 2.5 / 2 / 1.5 / 1.2 m. Running or a weapon within 10 m adds 4 m. They back off up to 8 m from their spot.
 - **GOBLIN-4 What counts as a weapon.** Replaced by GOBLIN-13 (a weapon in hand).
 - **GOBLIN-5 Trade.** Coins, Hob's window, the stock and buy list above, purse 120 copper. Torches are not refused yet (the shop rules have no per-item refusal).
@@ -56,11 +56,11 @@ What Dave asked on 20 Nov 2026:
 
 "She" is Vrixa Thornfang, a Ragtooth goblin (PR #1345, with Grikka Ragtooth). Both take the default round, firewood and fibre.
 
-**The ground.** On the baked tile, the camp's bench is a narrow ledge, one 8 m cell wide (z about 68380 to 68388). It climbs east from the mouth at 18-20 degrees for about 60 m. Everything around it is 30 degrees or steeper. So the props stand along the ledge, and the chores walk up and down it.
+**The ground.** At cave 3,4#8006 (since 21 Nov 2026) the camp stands on a bench of 3 to 11 degrees south-east of the mouth, about 20 m across. The wood and fibre points are on the slope 25 to 40 m east of the fire, at 11 to 18 degrees. The hunter walks about 50 m to the mouth, along the brook's shallow edge (only water deeper than 0.7 m blocks a walk). (At the old cave the bench was a narrow 18-20 degree ledge.)
 
 **Stage A: the camp and the spears.** No protocol change.
 - The props are existing catalog pieces, laid by the server the way the bandit camp lays its Lean-tos:
-  - one Crude chest (914)
+  - one Small chest (1512; was the Crude chest 914 until Dave retired the knife chests 21 Nov 2026, "get ride of both of those")
   - one Drying rack (775)
   - one Tanning rack (773)
   - two Log benches (629), one each side of the fire
@@ -70,7 +70,7 @@ What Dave asked on 20 Nov 2026:
 
 **Stage B: chores.** This needs one protocol number for two new row states.
 - Each goblin runs its own loop of jobs from data (`goblin_tribes.json` chores):
-  - **Firewood:** walk up the ledge to a wood spot, gather (the gathering clip, 6-10 s), carry it back, and kneel at the fire for 3 s.
+  - **Firewood:** walk out to a wood spot, gather (the gathering clip, 6-10 s), carry it back, and kneel at the fire for 3 s.
   - **Fibre:** walk to a plant spot, gather, and take it to the chest.
   - **Hunt:** one goblin at a time, never the trader. It walks into the cave mouth, is out of sight for 2 to 4 real minutes, comes back out of the mouth, and works at the racks.
   - **Rest:** stand or sit by the fire for a while.
@@ -101,7 +101,7 @@ What Dave asked on 20 Nov 2026:
 **Choices made for Dave (PROVISIONAL):**
 - **GOBLIN-9:** "Friendly but nervous" is the existing wary row: the same keep distances, trade on.
 - **GOBLIN-10:** chores are for show only. What the goblins carry is not a real item and changes nothing in the world or in Skritch's shop. The camp's stock (the light version, below) fills on its own clock.
-- **GOBLIN-11:** the props are one Crude chest, one Drying rack, one Tanning rack and two Log benches, none of them usable by players.
+- **GOBLIN-11:** the props are one Small chest, one Drying rack, one Tanning rack and two Log benches, none of them usable by players.
 - **GOBLIN-12:** an attack costs 3 standing with the clan (about one rank), and the clan refuses that character trade and talk for 1 game day instead of 3.
 - **GOBLIN-13:** the weapon test is "a weapon in hand", for any item of kind weapon (melee, bows, slings). A torch, axe or other tool in hand does not count.
 - **GOBLIN-14:** the hunter is out of sight 2 to 4 real minutes per hunt, and only one goblin hunts at a time.
@@ -115,7 +115,7 @@ What Dave asked on 20 Nov 2026:
 - The hand: `held_item.gd` `_report_held` sends `terrain_net.gd` `held_item`; `server_items.gd` `report_held` and `held_number` keep it, checked against the pack. This replaces GOBLIN-4's hotbar test.
 - Guard: `avoid` answers guard for a weapon in hand within spook_m; the client turns the spear forward and plays the new goblin chitter and hiss (`creature_sounds.gd`, made by `assets/audio/make_creatures.py`).
 - Attacked: wary anger is now 1 game day and costs attack_rep (3) standing once per anger; hidden goblins wait calm_s (30 s) after the attacker has gone, then walk out.
-- A goblin that cannot reach a chore point (a build on the ledge, say) gives up after twice the walk time plus 10 s and does the chore where it stands. A member with no `chores` list of its own takes the camp's `default_jobs`, so a new named member joins by its members row alone.
+- A goblin that cannot reach a chore point (a build in the way, say) gives up after twice the walk time plus 10 s and does the chore where it stands. A member with no `chores` list of its own takes the camp's `default_jobs`, so a new named member joins by its members row alone.
 - Known limits: the server trusts the client's word on which item is in hand (it checks only that the pack holds it), and the camp benches can still be sat on by the client like any bench.
 - Covered by `test_goblin_camp.gd` `_tile` (every chore point), `_npcs` and `_chores` (which prints the camp's tick cost).
 
@@ -125,7 +125,7 @@ What Dave asked on 20 Nov 2026:
 
 Dave, 20 Nov 2026: "Build the light version of the goblin camp." It was offered to him as the goblins keep their chores for show, while the camp chest and racks slowly fill to a small capped stock on a timer, with nothing taken from the world. Trading for that stock at good standing was mentioned as a later step. It is not built.
 
-- **What fills:** the Crude chest holds Firewood and Plant fibre, the Drying rack Raw meat, and the Tanning rack Hide. All are existing catalog items (`goblin_tribes.json` camp `stock`).
+- **What fills:** the Small chest holds Firewood and Plant fibre, the Drying rack Raw meat, and the Tanning rack Hide. All are existing catalog items (`goblin_tribes.json` camp `stock`).
 - **How fast:** per game day, 6 Firewood, 4 Plant fibre, 1 Hide and 2 Raw meat. The caps are 20, 12, 3 and 4, so the camp is full in about 3 to 4 game days.
 - **How it shows:** opening the chest, or using a rack, is refused as before, and the refusal says what the piece holds. Example: "That belongs to the Ragtooth camp. In it: 20 firewood and 12 plant fibre." A bench holds nothing. Nothing is drawn on the racks yet.
 - **Cost:** none per tick. The stock is worked out from the game clock when a player tries a piece (`server_tribes.gd` `stock`, `stock_line`). The fill start is saved in `tribes_state.json` (`stock_from`), so a restart keeps it.
@@ -135,3 +135,15 @@ Dave, 20 Nov 2026: "Build the light version of the goblin camp." It was offered 
 - **GOBLIN-16:** the amounts and caps above, filling on the game clock from the server's first run, whether or not anyone is near.
 - **GOBLIN-17:** nobody can take the stock. The chest does not open and the racks refuse every use, so there is no theft yet. If Dave wants it takeable, a theft rule is needed first, for example taking counts as an attack (GOBLIN-12).
 - **GOBLIN-18:** the stock is shown only in words. Hides and meat are not drawn on the racks or wood beside the fire, which would need new client drawing.
+
+## Moved near the spawn (21 Nov 2026)
+
+Dave, 21 Nov 2026: "I think we should move the goblins cave much closer to spawn so people might actually find it. it should probably be right in the closest mountain or hill to the spawn point then we can make a path to it for players later." And: "include that before merging to main."
+
+- **Where.** Spring cave 3,4#8006, the nearest cave to the spawn: mouth x 56560, z 71776, ground about 23 m, under ridges of 80 to 99 m to the north-west and south. The camp is about 1.6 km west-south-west of the spawn campfire (1.56 km west, 0.44 km south). The next nearest caves are 2.1 km and 2.8 km off; the old one was 3.6 km.
+- **Why not nearer.** The nearest hills, about 1.2 km south and 1.2 km north of the spawn, have no cave. A camp there needs a new cave cut into the hill (cave carving like the mines, a terrain version bump and a new starter cache). That is a possible follow-up for Dave, not done.
+- **The cave is kept.** By its id, 8006 would hold a wild goblin band and a wolf den. `TileTerrainData.CAMP_CAVES` keeps both out, on the server and every client alike. Cave 8013 is no longer kept; by its id it holds neither a goblin band nor an animal den, and the tile's always-goblins floor (`goblin_den_nodes`) stays on its first spring cave, 3,4#8002, so nothing new appears there.
+- **Running for the mouth.** Here the mouth is about 50 m from the fire, further than angry_keep_m (25 m). A member that starts running for the mouth from a striker now goes all the way in (`ServerTribes.avoid`, the npc's `fleeing` mark), rather than stopping in the open once it is 25 m from them; if it cannot get there in twice the run time plus 10 s it stops running. In the cave it counts a striker near while they are within angry_keep_m plus 5 m of the mouth or of its own spot at the camp, so a striker waiting at the camp keeps it in. It comes out calm_s after that.
+- **No path yet** (Dave: later).
+- **An existing world.** Nothing of the camp is saved at a place: the fire and props are laid by the server and never saved, and the goblins stand at their spots from the data. After a server restart the camp is at the new cave and nothing of it is left at the old one. Standing, anger and the stock clock are kept per tribe, so they carry over. Wild goblins and animals are never saved, so none linger at 8006. Only if a wolf pack denning at 8006 was killed in a world is a row saved for it (its rest or orphans); that row stays. Bandit sites keep 1.5 km off the camp, so the ground they may use moves with it (robbery is off).
+- **GOBLIN-19:** cave 3,4#8006 and the layout above, PROVISIONAL (coordinator for Dave, 21 Nov 2026).

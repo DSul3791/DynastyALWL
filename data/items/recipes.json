@@ -1,6 +1,6 @@
 {
 	"note": "Hand crafts: at most two ingredient kinds, no station, a few seconds (DESIGN_IDEAS 5.3). Numbers are stable ids, never reused. craft_s is the time the client shows; amounts are tunable. 'keeps' lists tools or ingredients that must be in the pack but are not used up (the stone that sharpens a stick). Tiers: wooden, stone, later metal spears. 'known' true means every character knows it from day one. 'identify' lists herb items the crafter must have identified in inspection mode (client check until health and skills exist). station: the recipe is made only near that placed station (structures.json station, reach_m with 1 m grace on the server); station_level (default 1) is the lowest level of the station it needs. 'ready_age' (game hours, Mission 001 phase 6, master s3.14): a sealed batch at the Preserving jar; the whole queued count is made at once at age 0 and is Maturing (not eaten, used, sold or merged with a Ready stack) until its age reaches ready_age; its inputs must be at least half fresh.",
-	"next_number": 750,
+	"next_number": 751,
 	"hand_saw_balance": {
 		"note": "Master s2.3 item 1 (Dave [D1], Mission 001 phase 2a): a softwood or plain log gives 6 Planks and a hardwood log 4 Hardwood boards, at the sawmill and with the hand saw alike; hand sawing is four times slower. recipes.lumber / lumber_by_hand and hardwood_board / hardwood_board_by_hand must match this row (validate_items checks it); change the balance by editing this row and those recipes together.",
 		"sawmill": {"lumber_per_log": 6, "boards_per_log": 4, "craft_s": 6.0},
@@ -3228,7 +3228,7 @@
 		},
 		"nails": {
 			"number": 145,
-			"name": "Nails",
+			"name": "Iron nails",
 			"category": "Materials",
 			"needs": [
 				[
@@ -3244,6 +3244,25 @@
 			"known": true,
 			"station": "brick_forge",
 			"station_level": 2
+		},
+		"steel_nails": {
+			"number": 750,
+			"name": "Steel nails",
+			"category": "Materials",
+			"needs": [
+				[
+					"steel_ingot",
+					1
+				]
+			],
+			"gives": [
+				"steel_nails",
+				100
+			],
+			"craft_s": 10.0,
+			"known": true,
+			"station": "brick_forge",
+			"station_level": 3
 		},
 		"cobblestone": {
 			"number": 146,
@@ -3303,7 +3322,7 @@
 		},
 		"hinges": {
 			"number": 149,
-			"name": "Hinges",
+			"name": "Iron hinges",
 			"category": "Materials",
 			"needs": [
 				[
@@ -3344,7 +3363,7 @@
 			"number": 153,
 			"name": "Water wheel",
 			"category": "Workshops and stations",
-			"needs": [["lumber", 20], ["nails", 80], ["tar", 4]],
+			"needs": [["lumber", 20], ["bronze_nails", 80], ["tar", 4]],
 			"gives": ["water_wheel", 1],
 			"craft_s": 40.0,
 			"known": true,
@@ -8055,7 +8074,7 @@
 		"copper_sickle": {"number": 743, "name": "Copper - Sickle", "category": "Tools", "needs": [["copper_ingot", 1], ["stick", 1]], "gives": ["copper_sickle", 1], "craft_s": 12.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (TOOL-TIERS-2, Dave 18 Nov 2026: \"yes all tools get the same tiers\", sickle, scythe and chisel start at Copper): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
 		"copper_scythe": {"number": 744, "name": "Copper - Scythe", "category": "Tools", "needs": [["copper_ingot", 2], ["stick", 2]], "gives": ["copper_scythe", 1], "craft_s": 12.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (TOOL-TIERS-2, Dave 18 Nov 2026: \"yes all tools get the same tiers\", sickle, scythe and chisel start at Copper): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
 		"copper_chisel": {"number": 745, "name": "Copper - Chisel", "category": "Tools", "needs": [["copper_ingot", 1]], "gives": ["copper_chisel", 1], "craft_s": 20.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (TOOL-TIERS-2, Dave 18 Nov 2026: \"yes all tools get the same tiers\", sickle, scythe and chisel start at Copper): cost and stats follow the neighbouring tiers of this tool; adjust after play."},
-		"wooden_pipe": {"number": 746, "name": "Wooden - Pipe", "category": "Materials", "needs": [["log", 1], ["twine", 1]], "gives": ["wooden_pipe", 1], "craft_s": 30.0, "known": true, "keeps": [["knife", 1]], "note_provisional": "PROVISIONAL (PLUMBING_DESIGN s9 PV-1): the old Wooden - Pipe blueprint cost, now made by hand; the knife bores and trims it."},
+		"wooden_pipe": {"number": 746, "name": "Wooden - Pipe", "category": "Materials", "needs": [["log", 1]], "gives": ["wooden_pipe", 1], "craft_s": 30.0, "known": true, "keeps": [["knife", 1]], "station": "carving_station", "note_provisional": "PROVISIONAL (PLUMBING_DESIGN s9 PV-1): 1 Log bored with a knife at the Carving station, no twine (Dave 21 Nov 2026: \"the wooden pipe should be made at the wood carving station with a knife. and it shouldnt need twine\")."},
 		"copper_pipe": {"number": 747, "name": "Copper - Pipe", "category": "Materials", "needs": [["copper_ingot", 1]], "gives": ["copper_pipe", 1], "craft_s": 10.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (PLUMBING_DESIGN s9 PV-2; Dave 19 Nov 2026: one copper makes about 3 m of pipe): at the Primitive smithy."},
 		"copper_tap": {"number": 748, "name": "Copper - Tap", "category": "Materials", "needs": [["copper_ingot", 1]], "gives": ["copper_tap", 1], "craft_s": 10.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (PLUMBING_DESIGN s9 PV-4): at the Primitive smithy."},
 		"copper_drip_head": {"number": 749, "name": "Copper - Drip head", "category": "Materials", "needs": [["copper_ingot", 1]], "gives": ["copper_drip_head", 1], "craft_s": 10.0, "known": true, "station": "forge", "note_provisional": "PROVISIONAL (PLUMBING_DESIGN s9 PV-5): at the Primitive smithy."}

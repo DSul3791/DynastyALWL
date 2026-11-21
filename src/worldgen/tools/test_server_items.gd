@@ -2139,7 +2139,7 @@ func _init() -> void:
 
 	check(winded[90] > winded[50] and winded[50] > winded[10] and winded[10] > 0.0, "fitter characters are winded later: %s" % str(winded))
 	check(passed_out[90] > passed_out[50] and passed_out[50] > passed_out[10] and passed_out[10] > 0.0, "and black out later: %s" % str(passed_out))
-	check(absf(winded[90] / winded[50] - exp(8.0 * 0.05)) < 0.1, "fitness 90 (8 steps of 5 over average) stretches the time to get winded by about exp(0.4) (%.2f)" % (winded[90] / winded[50]))
+	check(absf(winded[90] / winded[50] - 1.0 / 0.6) < 0.1, "fitness 90 raises exertion at 60%% of average (Dave 21 Nov: 100%% at 50 down to 50%% at 100), so the time to get winded stretches by 1/0.6 (%.2f)" % (winded[90] / winded[50]))
 	check(strains.size() > 0 and strains.size() < 1300, "strain updates are at most one per 4 Hz tick (never more than 4 a second while it changes) (%d sent)" % strains.size())
 	# Stance: sitting drops strain to 0; standing under a heavy pack only to about half; walking off stands you up.
 	var xd: String = "user://test_server_items_stance"
@@ -2170,7 +2170,7 @@ func _init() -> void:
 	var floor_level: float = float(sa.strain_of(1)["s"])
 	check(floor_level > 0.4 and floor_level < 0.6, "standing with a pack at the limit rests only to about half (%.2f)" % floor_level)
 	# Fitness XP (fitness.json train, Dave 4 Nov): effort above 0.1 gives 1 + 2 x effort XP per 10 s into the day's bucket, which turns into points
-	# at game midnight (200 XP a point on the 0 to 100 scale, the old 1,000 per 5 points; the same at every level); only true rest (under 0.02 for 10 minutes) takes it back, never below the base.
+	# at game midnight (200 XP a point on the 0 to 100 scale, the old 1,000 per 5 points; the same at every level); only true rest (under 0.02 for 10 minutes) takes it back, below the base too (Dave 21 Nov 2026), never under 0.
 	var clk: Array = [100.0]   # game seconds, day 0
 	var fit_gs: Callable = func(): return clk[0]
 	var midnight: Callable = func(x): clk[0] += 86400.0; x._train_fitness(1, 0.0, 0.0)
@@ -2273,10 +2273,19 @@ func _init() -> void:
 	tr._train_fitness(1, 1.0, 1800.0 * 3.0)
 	midnight.call(tr)
 	check(tr.fitness_of(1) > 60, "an hour and a half of running earns points")
-	tr._train_fitness(1, 0.0, 43200.0 * 12.0)
-	check(tr.fitness_of(1) == 60, "full rest takes points back, slowly")
+	var earned: int = tr.fitness_of(1) - 60
+	tr._train_fitness(1, 0.0, 600.0 + 8640.0 * float(earned + 5))
+	check(tr.fitness_of(1) < 60 and tr.fitness_of(1) >= 54, "full rest takes points back, slowly, and below the creation value (Dave 21 Nov) (%d)" % tr.fitness_of(1))
 	tr._train_fitness(1, 0.0, 1.0e7)
-	check(tr.fitness_of(1) == 60, "and never below the creation value")
+	check(tr.fitness_of(1) == 0, "but never below 0 (%d)" % tr.fitness_of(1))
+	tr._train_fitness(1, 1.0, 1800.0)
+	midnight.call(tr)
+	check(tr.fitness_of(1) > 0, "a character idled to 0 trains back up")
+	tr.set_fitness(1, 60)
+	var rm_at: Callable = func(v): tr.set_fitness(1, v); return tr.fitness_rise_mult(1)
+	check(absf(rm_at.call(50) - 1.0) < 1.0e-6 and absf(rm_at.call(75) - 0.75) < 1.0e-6 and absf(rm_at.call(100) - 0.5) < 1.0e-6, "exertion rises at 100% at fitness 50, 75% at 75, 50% at 100 (Dave 21 Nov)")
+	check(absf(rm_at.call(0) - exp(0.5)) < 1.0e-6 and absf(rm_at.call(40) - exp(0.1)) < 1.0e-6, "under 50 the curve is kept: about 165% at 0, 110% at 40")
+	tr.set_fitness(1, 60)
 	# Saved: the training survives a restart (characters.json).
 	tr._train_fitness(1, 1.0, 6700.0)
 	midnight.call(tr)
@@ -2971,7 +2980,13 @@ func _init() -> void:
 
 	check(on_bank >= 8, "four cells by a stream get stones along its banks (%d on the bank)" % on_bank)
 	check(in_water == 0, "bank stones are never put in the water")
-	check(sc.world_item_count() - bank_before <= 4 * (6 + int(bank_cfg["stones_max"]) + int(bank_cfg["sticks_max"])), "bank stones stay within the per-cell limit")
+	var ore_rocks: int = 0   # copper and tin rocks by the stream (boulders.json ore_rocks, Dave 21 Nov 2026) are laid with the cell too, but they are not bank stones
+
+	for bid in sc._items:
+		var row: Dictionary = sc._items[bid]
+		ore_rocks += 1 if row.has("scatter") and ((int(row["scatter"]) & sc.ORE_KEY) != 0 or str(row.get("boulder", {}).get("ore", "")) != "") else 0
+
+	check(sc.world_item_count() - bank_before - ore_rocks <= 4 * (6 + int(bank_cfg["stones_max"]) + int(bank_cfg["sticks_max"])), "bank stones stay within the per-cell limit")
 
 	# Driftwood on the banks: a share of the bank spots, a real item that burns.
 	bank_cfg["bank"]["driftwood"] = 1.0
@@ -3187,18 +3202,45 @@ func _init() -> void:
 	bo.report_position(1, Vector3(5.0, 11.5, 5.0))
 	bo.vitals_of(1)["weight"] = 5000.0   # a big body: the carry limit stays out of the stone counts below
 	var big: int = bo._boulder_stones(1.0)
-	check(big >= 12800 and big <= 13100, "a 1 m radius boulder makes about 12,960 stones at 0.85 height, 2600 kg/m3, 0.7 coming away as 0.5 kg stones (Dave 19 Nov 2026, boulders PLAN.md 3) (%d)" % big)
-	check(bo._boulder_stones(0.3) >= 340 and bo._boulder_stones(0.3) <= 360 and bo._boulder_stones(1.2) >= 22200 and bo._boulder_stones(1.2) <= 22600, "stones go with the rock's volume: a 0.3 m one about 350, a 1.2 m one about 22,400 (%d, %d)" % [bo._boulder_stones(0.3), bo._boulder_stones(1.2)])
-	check(is_equal_approx(bo._boulder_per_kg(), 1.4), "1.4 stones of 0.5 kg per kg of rock (%f)" % bo._boulder_per_kg())
+	check(big >= 860 and big <= 880, "a 1 m radius boulder makes about 870 stones at 0.85 height, 2600 kg/m3, 0.047 coming away as 0.5 kg stones (Dave 21 Nov 2026, BugsList 118: 3,200 from one rock was too many) (%d)" % big)
+	check(bo._boulder_stones(0.3) >= 20 and bo._boulder_stones(0.3) <= 26 and bo._boulder_stones(1.2) >= 1450 and bo._boulder_stones(1.2) <= 1550, "stones go with the rock's volume: a 0.3 m one about 23, the biggest (1.2 m) about 1,500 (%d, %d)" % [bo._boulder_stones(0.3), bo._boulder_stones(1.2)])
+	check(is_equal_approx(bo._boulder_per_kg(), 0.094), "0.094 stones of 0.5 kg per kg of plain rock (%f)" % bo._boulder_per_kg())
+	# Ore rocks keep their amounts (Dave 21 Nov 2026: fewer stones from plain rocks only; copper and tin stay abundant).
+	check(is_equal_approx(bo._boulder_per_kg(true), 1.4) and bo._boulder_stones(1.0, true) >= 12800 and bo._boulder_stones(1.0, true) <= 13100, "an ore rock still holds 1.4 stones per kg: about 12,960 at radius 1 (%d)" % bo._boulder_stones(1.0, true))
+	var plain_row: Dictionary = {"radius": 1.0}
+	var ore_row: Dictionary = {"radius": 1.0}
+	bo._set_boulder_ore(plain_row, "", 76)
+	bo._set_boulder_ore(ore_row, "iron", 75)
+	check(int(plain_row["total"]) == bo._boulder_stones(1.0) and int(ore_row["total"]) == bo._boulder_stones(1.0, true), "a laid-out row's total is by its kind (%d plain, %d ore)" % [int(plain_row["total"]), int(ore_row["total"])])
+	# A save from 19 Nov (one rate, 1.4 per kg, for every rock): a plain rock keeps its share, an ore rock its count.
+	bo._load_boulders_left({"boulders": {"76": 10000, "75": 10000}, "boulder_per_kg": 1.4})
+	check(bo._boulder_pending.size() == 2 and not bo._boulder_left.has(76), "saved at another rate: waits until the rock is laid out")
+	check(bo._boulder_left_of(76, plain_row) == 671 and int(bo._boulder_left[76]) == 671 and not bo._boulder_pending.has(76), "a plain rock saved with 10,000 left at 1.4 per kg is 671 now (%d)" % int(bo._boulder_left.get(76, -1)))
+	check(bo._boulder_left_of(75, ore_row) == 10000, "an ore rock saved with 10,000 left keeps 10,000 (%d)" % int(bo._boulder_left.get(75, -1)))
 	bo._load_boulders_left({"boulders": {"77": 10}})
-	check(int(bo._boulder_left[77]) == 350, "a worked boulder in an older save (0.04 stones per kg) is scaled once to today's count: 10 left is 350 (%d)" % int(bo._boulder_left[77]))
-	bo._load_boulders_left({"boulders": {"78": 10}, "boulder_per_kg": 1.4})
-	check(int(bo._boulder_left[78]) == 10, "a save at today's rate loads as it is")
+	check(bo._boulder_left_of(77, plain_row) == int(round(10.0 * bo._boulder_per_kg() / 0.04)), "a worked boulder in an older save (0.04 stones per kg) is scaled once to today's count (%d)" % int(bo._boulder_left[77]))
+	bo._load_boulders_left({"boulders": {"74": 3}, "boulders_then": {"73": [100, 1.4, 1.4]}, "boulder_per_kg": 0.094, "ore_per_kg": 1.4})
+	check(int(bo._boulder_left.get(74, -1)) == 3 and bo._boulder_pending.has(73), "a save at today's rates loads as it is; one not yet laid out keeps its old rates")
+	var lime_row: Dictionary = {"radius": 1.0}
+	bo._set_boulder_ore(lime_row, "limestone", 72)
+	check(int(lime_row["total"]) == bo._boulder_stones(1.0) and str(lime_row.get("ore", "")) == "limestone", "a limestone rock is stone: the plain count (%d)" % int(lime_row["total"]))
+	# A rock still waiting for its layout is saved with its old rates and loads the same way (no share lost across restarts).
+	bo._dirty = true
+	bo.save()
+	var bo_again = make(bld)
+	var waiting_rates: Array = bo_again._boulder_pending.get(73, [])
+	check(waiting_rates.size() == 3 and int(waiting_rates[0]) == 100 and is_equal_approx(float(waiting_rates[1]), 1.4) and is_equal_approx(float(waiting_rates[2]), 1.4) and not bo_again._boulder_left.has(73), "a rock not yet laid out keeps its old rates through a save (%s)" % str(waiting_rates))
+	check(int(bo_again._boulder_left.get(74, -1)) == 3 and bo_again._boulder_left_of(73, plain_row) == int(round(100.0 * 0.094 / 1.4)), "and is scaled when it is laid out (%d)" % int(bo_again._boulder_left.get(73, -1)))
+	bo._boulder_pending.clear()
+	bo._boulder_left.erase(73)
+	bo._boulder_left.erase(74)
+	bo._boulder_left.erase(75)
+	bo._boulder_left.erase(76)
 	bo._boulder_left.erase(77)
 	bo._boulder_left.erase(78)
 	bo._boulder_cfg["luck_extra"] = 0.0   # the exact-count checks below; luck's extra stone has its own check
 	bo._boulder_cfg["flint"] = {}   # flint has its own test (test_flint); these checks count plain stones
-	var small_total: int = bo._boulder_stones(0.6)   # about 2,800: enough for the blow counts below
+	var small_total: int = bo._boulder_stones(0.6)   # about 190: enough for the blow counts below (36 stones)
 	bo._items[900001] = {"number": 0, "count": small_total, "pos": Vector3(5.0, 11.5, 6.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 7, "boulder": {"radius": 0.6, "yaw": 0.0, "total": small_total}}
 	bo._last_hit.clear()
 	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)

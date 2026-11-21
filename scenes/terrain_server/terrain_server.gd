@@ -90,6 +90,7 @@ const KEY_BURST := 8000                # block keys one peer may ask for at once
 const KEY_REFILL_PER_S := 4000.0
 const WeatherScript := preload("res://src/shared/weather.gd")
 const DrinkRulesScript := preload("res://src/shared/drink_rules.gd")
+const CellReadsScript := preload("res://src/stream/cell_reads.gd")   # a scatter cell's ground, water and ore reads bound to its tile (one generator lock a cell)
 const ThunderScript := preload("res://src/shared/thunder.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const WaterFlowScript := preload("res://src/stream/water_flow.gd")
@@ -435,8 +436,19 @@ func _ready() -> void:
 		return generator.get_tile(generator.tile_of(pos.x, pos.z)).ore_at(pos, reach, names, depth_m)
 	items.rock_near = func(pos):   # the bedrock rock under a boulder (TileTerrainData.bedrock_name_at): limestone, chalk and marble give limestone pieces
 		return generator.get_tile(generator.tile_of(pos.x, pos.z)).bedrock_name_at(pos)
-	items.bog_deposit_at = func(x, z, cfg):   # bog iron under the baked tile's fens and marshes (BogIron.deposit_at; digging.json bog_iron)
-		return BogIronScript.deposit_at(generator.get_tile(generator.tile_of(x, z)), x, z, cfg)
+	items.bog_field = func(fx, fz, cfg):   # the bog iron patches of a field square on the baked tile holding it (BogIron.field; digging.json bog_iron)
+		var m: float = float(cfg.get("field_m", 512.0))
+		var cx: float = (float(fx) + 0.5) * m
+		var cz: float = (float(fz) + 0.5) * m
+
+		# Never read a tile on the main thread (a read takes seconds): null = not ready, asked for, and tried again on a later sync.
+		if not generator.tile_cached(cx, cz):
+			generator.prefetch_tile(cx, cz)
+			return null
+
+		return BogIronScript.field(generator.get_tile(generator.tile_of(cx, cz)), fx, fz, cfg)
+	items.bog_silt_at = func(x, z, cfg):   # what a dug hole on fen, marsh, swamp or bog silts back in with, 0 elsewhere (BogIron.silt_material); an unloaded tile counts as dry
+		return BogIronScript.silt_material(generator.get_tile(generator.tile_of(x, z)), x, z, cfg) if generator.tile_cached(x, z) else 0
 	items.fresh_water_y = func(pos, reach):   # wells and pumps (TileTerrainData.fresh_water_near): the nearest over every tile the reach touches
 		var best: Vector2 = Vector2(INF, NAN)
 		var coords: Dictionary = {}
@@ -460,6 +472,7 @@ func _ready() -> void:
 	items.water_depth_at = func(pos: Vector3) -> float:
 		var water: Array = _water_at(pos)
 		return 0.0 if is_nan(water[0]) else maxf(float(water[0]) - float(water[1]), 0.0)
+	items.cell_reads = func(x: float, z: float) -> Dictionary: return CellReadsScript.bound(generator, water_live, x, z)   # the four above, bound to one tile (copper and tin rocks, boulders)
 	var fish_water = FishWaterScript.new(func(x: float, z: float) -> Array:
 		var water: Array = _water_at(Vector3(x, 0.0, z))
 		var baked: int = 0
@@ -554,7 +567,7 @@ func _ready() -> void:
 			return "rock"
 
 		var material: int = generator._surface_material(tile_data, x, z, float(generator.surface_height(x, z)))
-		return "rock" if material >= Layout.MATERIAL_ROCK else str(soil_names.get(material, "loam"))
+		return "rock" if material >= Layout.MATERIAL_ROCK else str(soil_names.get(Layout.soil_of(material), "loam"))   # a wetland look digs as its soil (peat, mud)
 	items.trees_near = _trees_near
 	items.trees_along = _trees_along
 	items.trees_near_cached = _trees_near_cached
@@ -1229,20 +1242,8 @@ func _starter_stamp() -> String:
 # position by src/shared/swim.gd; the client swims by the same rules, the server decides the cost.
 # [water surface (NAN if none), ground height] at a reported position: the sea at 0, or the simulated tile's water.
 func _water_at(position: Vector3) -> Array:
-	var ground: float = generator.surface_height(position.x, position.z)
-	var surface: float = NAN
-
-	if ground <= 0.0:
-		surface = 0.0
-	elif water_live != null:
-		var tile_data = water_live.data_of(generator.tile_of(position.x, position.z))
-
-		var sim: PackedFloat32Array = tile_data.sim_snapshot() if tile_data != null else PackedFloat32Array()
-
-		if not sim.is_empty():
-			surface = sim[tile_data.nearest(position.x, position.z)]
-
-	return [surface, ground]
+	var tile: Vector2i = generator.tile_of(position.x, position.z)
+	return CellReadsScript.water_at(generator, generator.get_tile(tile), water_live.data_of(tile) if water_live != null else null, water_live != null, position)
 
 
 # As _water_at, for a player's reported position: under the hill, a spring cave pool's water counts (BUG-008), its floor taken as the
@@ -2971,7 +2972,7 @@ func _send_npcs(delta: float) -> void:
 		if _animal_sent.get(peer, "") != sig or now_ms - int(_animal_sent_ms.get(peer, 0)) > 2000:
 			_animal_sent[peer] = sig
 			_animal_sent_ms[peer] = now_ms
-			net.animals.rpc_id(peer, beasts)
+			net.animals.rpc_id(peer, beasts, Time.get_ticks_msec())   # with the server clock the row times are on (protocol 147)
 
 		for block in trails.updates_for(peer, at, now_ms):
 			net.trails.rpc_id(peer, block[0], block[1], block[2])

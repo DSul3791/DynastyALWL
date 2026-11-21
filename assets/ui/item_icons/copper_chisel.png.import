@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bwmqbab40gh7x"
-path="res://.godot/imported/stone_raised_cistern.png-0c4c815db80e639e24d8575b0604cbc8.ctex"
+uid="uid://bwghw6sfsb4bw"
+path="res://.godot/imported/copper_chisel.png-2a37cc938b642517afd31805ae2ebeaa.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/item_icons/stone_raised_cistern.png"
-dest_files=["res://.godot/imported/stone_raised_cistern.png-0c4c815db80e639e24d8575b0604cbc8.ctex"]
+source_file="res://assets/ui/item_icons/copper_chisel.png"
+dest_files=["res://.godot/imported/copper_chisel.png-2a37cc938b642517afd31805ae2ebeaa.ctex"]
 
 [params]
 

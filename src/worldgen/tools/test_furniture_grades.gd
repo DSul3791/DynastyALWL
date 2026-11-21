@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Graded furniture (Mission 001 phase 3, master docs/design/DYNASTY_MASTER_ITEMS.md s3.5 and s2.3 items 3-5): Crude, Rustic, Fine, Ornate chests,
+# Graded furniture (Mission 001 phase 3, master docs/design/DYNASTY_MASTER_ITEMS.md s3.5 and s2.3 items 3-5): Rustic, Fine, Ornate chests (the Crude - Chest retired, Dave 21 Nov 2026),
 # chairs and tables, Crude and Fine benches, and the single board pieces are built from Hardwood boards, never Planks (the Crate keeps Planks);
 # each grade costs more boards than the one below and places from its blueprint; chest slots rise by grade; comfort counts each graded
 # family (chair, table, bench) once, at its best grade.
@@ -14,12 +14,12 @@ const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 
 # Blueprint (and structure) ids, lowest grade first.
 const FAMILIES := {
-	"Chest": ["crude_chest", "plank_chest", "fine_chest", "iron_chest"],
+	"Chest": ["plank_chest", "fine_chest", "iron_chest"],   # the Crude - Chest retired with the Wicker - Chest (Dave 21 Nov 2026: "get ride of both of those"); the Small chest is the lowest board chest
 	"Chair": ["crude_chair", "chair", "iron_chair", "ornate_chair"],
 	"Table": ["crude_table", "table", "iron_table", "ornate_table"],
 	"Bench": ["bench", "iron_bench"],
 }
-const GRADES := {"Chest": ["Crude", "Rustic", "Fine", "Ornate"], "Chair": ["Crude", "Rustic", "Fine", "Ornate"], "Table": ["Crude", "Rustic", "Fine", "Ornate"], "Bench": ["Crude", "Fine"]}
+const GRADES := {"Chest": ["Rustic", "Fine", "Ornate"], "Chair": ["Crude", "Rustic", "Fine", "Ornate"], "Table": ["Crude", "Rustic", "Fine", "Ornate"], "Bench": ["Crude", "Fine"]}
 const SINGLES := ["wooden_shelf", "wooden_cupboard", "wooden_barrel", "weapon_rack", "armour_stand", "canopy_bed"]
 
 var failures: int = 0
@@ -40,6 +40,15 @@ func _need(id: String, item: String) -> int:
 			return int(row[1])
 
 	return 0
+
+
+# Nails or hinges of any metal in a cost (Dave 21 Nov 2026: each chest names its lowest nail metal, copper_nails, bronze_nails, nails or steel_nails).
+func _nails(id: String) -> int:
+	return _need(id, "copper_nails") + _need(id, "bronze_nails") + _need(id, "nails") + _need(id, "steel_nails")
+
+
+func _hinges(id: String) -> int:
+	return _need(id, "bronze_hinges") + _need(id, "hinges")
 
 
 func _give(id: String, count: int) -> void:
@@ -94,16 +103,16 @@ func _data_checks() -> void:
 			check(LookTable.has_look(str(items._structures[str(bp["structure"])]["look"])) or str(items._structures[str(bp["structure"])]["look"]) == "chest", "%s: its look is drawable" % id)
 
 			if grade == "Crude":
-				check(_need(id, "nails") == 0 and _need(id, "hinges") == 0 and _need(id, "wooden_pin") > 0, "%s: Crude is pinned, with no nails or hinges" % id)
+				check(_nails(id) == 0 and _hinges(id) == 0 and _need(id, "wooden_pin") > 0, "%s: Crude is pinned, with no nails or hinges" % id)
 			else:
-				check(_need(id, "nails") > 0 and _need(id, "wooden_pin") == 0 and _need(id, "twine") == 0, "%s: %s is nailed" % [id, grade])
+				check(_nails(id) > 0 and _need(id, "wooden_pin") == 0 and _need(id, "twine") == 0, "%s: %s is nailed" % [id, grade])
 
 			if family == "Chest":
-				check((_need(id, "hinges") > 0) == (grade != "Crude"), "%s: hinges on the lid from Rustic up" % id)
+				check((_hinges(id) > 0) == (grade != "Crude"), "%s: hinges on the lid from Rustic up" % id)
 
 			if n > 0:
 				var below: String = ids[n - 1]
-				check(_need(id, "hardwood_board") > _need(below, "hardwood_board") and _need(id, "nails") >= _need(below, "nails"), "%s: more boards and nails than %s" % [id, below])
+				check(_need(id, "hardwood_board") > _need(below, "hardwood_board") and _nails(id) >= _nails(below), "%s: more boards and nails than %s" % [id, below])
 
 	check(_need("iron_chair", "leather") > 0 and _need("ornate_chair", "leather") > _need("iron_chair", "leather") and _need("ornate_chair", "wool_cloth") > 0, "seats: Fine has Leather, Ornate more Leather and a Wool cloth cushion")
 	check(_need("iron_bench", "leather") > 0, "the Fine bench seat has Leather")
@@ -117,11 +126,23 @@ func _data_checks() -> void:
 
 	check(_need("wooden_crate", "lumber") > 0 and _need("wooden_crate", "hardwood_board") == 0, "the Crate is still a Plank packing box")
 
-	# Slots: Crate 10, then six-slot rows by grade (Dave 18 Nov 2026: the lowest chest 3 rows, each tier one more): Crude 24 < Rustic 30 < Fine 36 < Ornate 48.
-	var ladder: Array = ["wooden_crate"] + FAMILIES["Chest"]
+	# Slots: Crate 10, then six-slot rows by grade (Dave 18 Nov 2026: the lowest chest 3 rows, each tier one more): Small 24 < Rustic 30 < Fine 36 < Ornate 48.
+	var ladder: Array = ["wooden_crate", "small_chest"] + FAMILIES["Chest"]
 	var slots: Array = ladder.map(func(k): return int(items._structures[k]["slots"]))
 	check(slots[0] == 10 and slots[1] == 24 and slots[2] == 30 and slots[3] == 36 and slots[4] == 48 and slots[0] < slots[1] and slots[1] < slots[2] and slots[2] < slots[3] and slots[3] < slots[4], "chest slots rise by grade %s" % str(slots))
 	check(ladder.all(func(k): return not items._structures[k].has("max_kg")), "no chest has a weight limit, only its slots (Dave 19 Nov 2026)")
+
+	# A chest for each tier of nails (Dave 21 Nov 2026, "copper nails can make a smaller chest ..., then bronze makes the rustic, iron can make the large,
+	# and steel could make the superior"): each names its lowest metal and a better one serves; no chisel on any of the four.
+	var tiers: Dictionary = {"small_chest": ["copper_nails", ""], "plank_chest": ["bronze_nails", "bronze_hinges"], "large_wooden_chest": ["nails", "hinges"], "iron_chest": ["steel_nails", "hinges"]}
+
+	for id in tiers:
+		check(_need(id, str(tiers[id][0])) > 0 and _nails(id) == _need(id, str(tiers[id][0])), "%s: nailed with %s or better (%s)" % [id, tiers[id][0], str(bps[id]["cost"])])
+		check((str(tiers[id][1]) == "" and _hinges(id) == 0) or _need(id, str(tiers[id][1])) > 0, "%s: hinges %s" % [id, tiers[id][1] if str(tiers[id][1]) != "" else "none (a lift-off lid: there are no copper hinges)"])
+
+	check(not bps["small_chest"].has("chisel") and not bps["plank_chest"].has("chisel") and not bps["large_wooden_chest"].has("chisel") and int(bps["small_chest"].get("hammer", 1)) == 1, "the Small, Rustic and Large wooden chests need no chisel; the Small chest any hammer")
+	check(items.table.name_of(items.table.number_of("small_chest")) == "Small chest" and int(items._structures["small_chest"]["slots"]) == 24 and int(items._structures["small_chest"]["slots"]) < int(items._structures["plank_chest"]["slots"]) and int(items._structures["large_wooden_chest"]["slots"]) > int(items._structures["plank_chest"]["slots"]) and int(items._structures["iron_chest"]["slots"]) > int(items._structures["large_wooden_chest"]["slots"]), "slots step up by nail tier: Small 24 < Rustic 30 < Large 42 < Ornate 48")
+	check(items.table.group_members(items.table.number_of("copper_nails")).has(items.table.number_of("steel_nails")) and items.table.group_members(items.table.number_of("bronze_nails")).has(items.table.number_of("nails")) and not items.table.group_members(items.table.number_of("bronze_nails")).has(items.table.number_of("copper_nails")) and not items.table.group_members(items.table.number_of("nails")).has(items.table.number_of("bronze_nails")) and items.table.group_members(items.table.number_of("steel_nails")).is_empty(), "nails: a better metal fills a lower need, a lesser one never does; steel takes steel only")
 
 
 # Each grade places from its blueprint as a site (Dave 18 Nov 2026: placing takes nothing; only a hammer hit fills it, knife rows too): Planks in place of
@@ -137,10 +158,10 @@ func _place_checks() -> void:
 			x += 5.0
 			items.report_position(1, spot + Vector3(0.0, 0.0, -1.5))
 			_clear()
-			_give("stone_knife" if str(bp.get("tool", "hammer")) == "knife" else "iron_hammer", 1)   # the Crude chest, chair, table and the Bench are knife rows (15 Nov 2026, W-9)
+			_give("stone_knife" if str(bp.get("tool", "hammer")) == "knife" else "iron_hammer", 1)   # the Crude chair, table and the Bench are knife rows (15 Nov 2026, W-9)
 
 			if int(bp.get("chisel", 0)) > 0:
-				_give("steel_chisel", 1)   # Rustic, Fine and Ornate pieces need a chisel on the hand bar (Dave 18 Nov 2026); steel serves every tier
+				_give("steel_chisel", 1)   # Rustic (but the Rustic - Chest, Dave 21 Nov 2026), Fine and Ornate pieces need a chisel on the hand bar (Dave 18 Nov 2026); steel serves every tier
 
 			for row in bp["cost"]:
 				_give("lumber" if str(row[0]) == "hardwood_board" else str(row[0]), int(row[1]))
@@ -201,12 +222,12 @@ func _comfort_checks() -> void:
 	check(level.call() == 1 + pts.call("bench") + pts.call("chair"), "a Crude bench and a Rustic chair both count, as today (%d)" % level.call())
 	items._items.clear()
 
-	for kind in FAMILIES["Chest"]:
+	for kind in FAMILIES["Chest"] + ["small_chest"]:   # the Small chest (copper nails, Dave 21 Nov 2026) is the crude grade of the family
 		add_struct(kind, Vector3(-2.0 - float(items._items.size()), 10.0, 2.0))
 
-	check(level.call() == 2, "four board chest grades count once, 1 point (%d)" % level.call())
-	add_struct("chest", Vector3(-2.0, 10.0, -3.0))
-	check(level.call() == 3, "the Wicker chest still counts beside them, as today (%d)" % level.call())
+	check(level.call() == 2, "three board chest grades and the Small chest count once, 1 point (%d)" % level.call())
+	add_struct("wicker_basket", Vector3(-2.0, 10.0, -3.0))
+	check(level.call() == 3, "the Wicker basket counts beside them, as the Wicker - Chest it replaced did (%d)" % level.call())
 	items._items.clear()
 	var ornate_chair: int = 0
 

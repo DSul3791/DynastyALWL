@@ -199,7 +199,7 @@ func _mouth(tribe: String) -> Vector3:
 
 
 # What a member does about the players near it (server_npcs._step asks every tick it is awake):
-#   {"hide": Vector3}  an angry character is near: go to the cave mouth and out of sight;
+#   {"hide": Vector3}  an angry character is near (or it is already running for the mouth): go to the cave mouth and out of sight;
 #   {"goal": Vector3}  back off to this point (away from the nearest player inside its keep distance, within leash_m of its spot);
 #   {"guard": true, "look": Vector3} a player with a weapon in hand is within spook_m (and not too near): stand its ground facing them;
 #   {"hold": true, "look": Vector3}  a player is just outside its keep distance: stand still and watch;
@@ -212,6 +212,10 @@ func avoid(npc: Dictionary) -> Dictionary:
 		return {}
 
 	var tribe: String = tribe_of(id)
+
+	if bool(npc.get("fleeing", false)) and not bool(npc.get("hidden", false)):
+		return {"hide": _mouth(tribe)}   # once it runs for the mouth it goes all the way in, however far the mouth is from the striker (camp 3,4#8006: about 50 m)
+
 	var att: Dictionary = attitude(tribe)
 	var pos: Vector3 = npc["pos"]
 	var worst: Dictionary = {}
@@ -224,14 +228,21 @@ func avoid(npc: Dictionary) -> Dictionary:
 	var armed_d: float = float(att.get("spook_m", 10.0))
 	var far: float = maxf(maxf(float(att.get("watch_m", 20.0)), armed_d), float(att.get("angry_keep_m", 25.0)) + HIDE_EXTRA_M) + float(att.get("armed_keep_m", 4.0)) + CALM_EXTRA_M
 
+	var spot_at: Vector3 = _member[id]["spot"]
+
 	for p in _players:
 		var d: float = Vector2(p["pos"].x - pos.x, p["pos"].z - pos.z).length()
+		var striker: bool = angry(tribe, str(p.get("key", "")))
+		var striker_d: float = d
 
-		if d > far:
+		if striker and bool(npc.get("hidden", false)):
+			striker_d = minf(d, Vector2(p["pos"].x - spot_at.x, p["pos"].z - spot_at.z).length())   # in the cave it minds its own spot too: a striker waiting at the camp, 50 m from the mouth (3,4#8006), keeps it in
+
+		if striker_d > far:
 			continue   # past everything a member reacts to: no standing lookup for the far players
 		var keep: float = keep_from(id, p)
 
-		if angry(tribe, str(p.get("key", ""))) and d <= keep + (HIDE_EXTRA_M if bool(npc.get("hidden", false)) else 0.0):
+		if striker and striker_d <= keep + (HIDE_EXTRA_M if bool(npc.get("hidden", false)) else 0.0):
 			angry_near = true
 
 		if d < keep and keep - d > worst_by:

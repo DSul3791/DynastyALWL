@@ -119,8 +119,13 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 	_beach_id = int(biome_ids.get("beach", -1))
 	_ocean_id = int(biome_ids.get("ocean", -1))
 
+	var water_biome: Dictionary = {}   # water class id -> the biome id its cells take (water_classes.json "biome": the wetlands are marsh)
+
 	for entry in tables.get_entries("water_classes"):
 		water_ids[str(entry["name"])] = int(entry["id"])
+
+		if biome_ids.has(str(entry.get("biome", ""))):
+			water_biome[int(entry["id"])] = int(biome_ids[str(entry["biome"])])
 
 	_ocean_water = int(water_ids.get("ocean", 1))
 
@@ -144,6 +149,22 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 				per_biome[biome_ids[name]] = value
 				peak = maxf(peak, value)
 
+		# Wetland plants (flora.json per_water; Dave 21 Nov 2026: fen, bog and swamp get plants of their own that never grow on river banks): per
+		# hectare by water class, on those cells only, in place of the biome's number there.
+		var per_water: PackedFloat32Array = PackedFloat32Array()
+		var wet_biomes: Dictionary = {}
+
+		for name in entry.get("per_water", {}):
+			if water_ids.has(name):
+				if per_water.is_empty():
+					per_water.resize(256)
+
+				per_water[int(water_ids[name])] = float(entry["per_water"][name]) * density
+				peak = maxf(peak, per_water[int(water_ids[name])])
+
+				if water_biome.has(int(water_ids[name])):
+					wet_biomes[int(water_biome[int(water_ids[name])])] = true
+
 		if peak <= 0.0:
 			continue
 
@@ -156,7 +177,7 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 
 		var water_mask: int = 0
 
-		for name in entry.get("water", []):
+		for name in entry.get("water", []) + entry.get("per_water", {}).keys():
 			if water_ids.has(name):
 				water_mask |= 1 << int(water_ids[name])
 
@@ -173,6 +194,7 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 			"crown": float(entry["crown_m"]),
 			"trunk": float(entry["trunk_m"]),
 			"per_biome": per_biome,
+			"per_water": per_water,
 			"belt": belt_value,
 			"peak": peak,
 			# One candidate per cell; at least 1 m so cell indices fit 16 bits.
@@ -275,7 +297,7 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 		_by_id[item["id"]] = item
 
 		for b in range(256):
-			if per_biome[b] > 0.0:
+			if per_biome[b] > 0.0 or wet_biomes.has(b):
 				_by_biome[b].append(item)
 
 	for list in _by_biome:
@@ -417,6 +439,7 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 		var count: int = int(ceil(chunk_m / cell))
 		var peak: float = item["peak"]
 		var per_biome: PackedFloat32Array = item["per_biome"]
+		var per_water: PackedFloat32Array = item["per_water"]
 		var woody: bool = item["kind"] != KIND_PLANT
 
 		if item.has("patch"):
@@ -458,6 +481,9 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 				var k: int = data.nearest(x, z)
 				var chance: float = per_biome[data.biome[k]]
 				var in_belt: bool = false
+
+				if not per_water.is_empty() and per_water[data.water_class[k]] > 0.0:
+					chance = per_water[data.water_class[k]]
 
 				# The belt roll comes first: the edge probe (dozens of lookups) runs only for spots the roll keeps.
 				if has_beach and item["belt"] > 0.0 and roll < item["belt"] and data.biome[k] != _beach_id and data.biome[k] != _ocean_id:
