@@ -25,7 +25,9 @@ sleep for hours, cattle lie down to chew the cud. The server already had this as
   the standing idle. The admin spyglass reads 19 as "lying down". The code-built bodies (quad, wolf) fold their legs and put the body down. A companion dog at heel now lies too.
 - Files seen in Dave's game log with lying clips: the deer files (`Lying_Breathing_01`, `Lying_Idle_02`), pronghorn, elephant
   (`Lying_00-IP`, `Lying_01-IP`), dog (`idle_lay_*`). Others are found the same way when their files have one.
-- Protocol 148: client and server must be updated together. Cost: one `resting` test per grazing animal per row sent.
+- Protocol 148: client and server must be updated together. Cost: one `lies_down` test (a few lookups) per grazing animal per row sent.
+- To check on the PC: the lying set follows the weather-scaled active chance, so wind near the small-animal thresholds could flip some
+  rabbits; lying animals draw lower for aim and hit zones; at dusk about half of foraging goblins lie. Change only if it shows.
 
 ## Rabbit groups (HB-4, provisional)
 

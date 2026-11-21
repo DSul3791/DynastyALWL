@@ -40,7 +40,7 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 148  # 148 (21 Nov 2026, Dave: animals "relaxing"): an animal bedded down out of its hours is sent as state 19 (LIE, the companions' lying state) and drawn lying. Client and server must be updated together.
+const PROTOCOL_VERSION := 148  # 148 (21 Nov 2026, Dave: animals "relaxing"): a grazer bedded down (resting, or its share by its active chance) is sent as state 19 (LIE, the companions' lying state) and drawn lying. Client and server must be updated together.
 # 147 (21 Nov 2026, Dave's play test: "animals are still teleporting and not actually running"): animals(rows, server_ms), each row's field 5 the server ms its animal reached that position; the client draws animals on the server's timeline. Client and server must be updated together.
 # 146 (20 Nov 2026, goblin camp life, Dave: the Ragtooth goblins "keep themselves busy", "if the player has a weapon they will take up defensive positions with thier spears"): held_item(number), the item in the player's hand, sent when it changes; npc rows state 4 (WORK: a goblin tribe member at a chore) and 5 (GUARD: standing its ground, spear forward). Client and server must be updated together.
 # 144 (20 Nov 2026, bandit camps stage 3, the warnings, Dave 19 Nov: a woken site shows signs first): a bandit camp's cold fire pit (state 8) and a mark at the road whose world row extra, {"camp": 2, "marks": true, "tracks": [[dx, dy, dz, yaw], ...]} (at most 32), the client draws as boot prints with no pit; the lookout is a camp bandit (species 52) on the existing states. Client and server must be updated together.
