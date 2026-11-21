@@ -19,6 +19,7 @@ const STYLES := {
 	"slicked_back": {"label": "Slicked back", "glb": "res://assets/character/Hair/Hair_SlickedBack.glb"},
 	"medium_bob": {"label": "Medium bob", "glb": "res://assets/character/Hair/Hair_MediumBob.glb"},
 	"medium_shag": {"label": "Medium shag", "glb": "res://assets/character/Hair/Hair_MediumShag.glb"},
+	"medium_swept_back": {"label": "Medium swept back", "glb": "res://assets/character/Hair/Hair_MediumSweptBack.glb"},
 }
 
 
