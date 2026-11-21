@@ -1309,6 +1309,37 @@ Not yet played.
 
 Not yet played; not yet seen in a picture.
 
+## 117. Fitness: tiring scale and idling below the start
+
+**Status: Implemented - awaiting player verification.** Dave's rulings during his play test, 21 Nov 2026, after asking what fitness does: "at 100 it should use 50%", "scale in between 50 fitness being 100% and 100 being 50%", and "being Idle can lower it below your start. that was not my rule. remove it." (reading confirmed: "that correct").
+
+**What was found:** exertion rose at exp(-(fitness - 50) / 5 x 0.05) of the average rate, so 61% at fitness 100 and 78% at 75. True rest took fitness back only as far as the starting value.
+
+**Required outcome:** 100% at fitness 50 falling evenly to 50% at 100. Idling may lower fitness below where the character started.
+
+**As built (PR #1426, reviewed head 55f68a66, merged to dev at faf0e33e):**
+
+| Fitness | Exertion rises at |
+|---|---|
+| 0 | 165% (unchanged) |
+| 40 | 110% (unchanged) |
+| 50 | 100% |
+| 75 | 75% |
+| 100 | 50% |
+
+- From 50 up the rise is a straight line to `top_mult` (0.5, data/items/fitness.json). Under 50 the old curve is kept. Both meet at 50 with the same slope, so there is no kink. Recovery is the same for everyone.
+- Idling (effort under 0.02 for over 10 minutes, awake) takes a point per 8,640 s, below the starting value too, down to 0. Sleep still costs nothing. Training still adds at most 50 points above the starting value.
+- Whole points now use floor (as positive training always did), so a character idling at exactly their start loses the first point as soon as the 10-minute grace has passed, then one more per 8,640 s.
+- Saves unchanged; existing characters load as before.
+
+**Evidence:**
+- Independent review: one stale strain-ratio test found on 55007e1f, fixed; PASS on 55f68a66.
+- Lane A on 55f68a66: 251 pass / 0 fail (246 fast, 5 timing); test_slot_sounds failed once on a pace check under load and passed on retry (unrelated). validate_items 0 errors, warnings 381 = baseline, join smoke clean.
+
+**Acceptance:** a fitness 100 character runs about twice as long as a fitness 50 one before winded; 75 about 1.33 times as long. A character left idle for days drops below the fitness they started with and stops at 0.
+
+Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
