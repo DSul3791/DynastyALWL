@@ -446,8 +446,8 @@ func _ready() -> void:
 			return null
 
 		return BogIronScript.field(generator.get_tile(generator.tile_of(cx, cz)), fx, fz, cfg)
-	items.bog_wet_at = func(x, z, cfg):   # fen, marsh, swamp or bog ground, where a dug hole silts back in (BogIron.wet_at); an unloaded tile counts as dry
-		return generator.tile_cached(x, z) and BogIronScript.wet_at(generator.get_tile(generator.tile_of(x, z)), x, z, cfg)
+	items.bog_silt_at = func(x, z, cfg):   # what a dug hole on fen, marsh, swamp or bog silts back in with, 0 elsewhere (BogIron.silt_material); an unloaded tile counts as dry
+		return BogIronScript.silt_material(generator.get_tile(generator.tile_of(x, z)), x, z, cfg) if generator.tile_cached(x, z) else 0
 	items.fresh_water_y = func(pos, reach):   # wells and pumps (TileTerrainData.fresh_water_near): the nearest over every tile the reach touches
 		var best: Vector2 = Vector2(INF, NAN)
 		var coords: Dictionary = {}

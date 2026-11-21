@@ -20,6 +20,10 @@ extends RefCounted
 # tile size), so a patch belongs to one tile.
 
 const SECONDS_PER_GAME_DAY := 86400.0
+# The soil a silted hole is filled with, by water class: the wetland's own soil (fen and bog peat, swamp and marsh mud; water_classes.json).
+# A fill sets only the soil channel (ground_ops.gd apply_op): the draw material stays the column's generated one (the fen, bog or swamp look,
+# Layout.MATERIAL_FEN ..), so a filled hole looks like the wetland round it and digs as its soil.
+const SILT_MATERIAL := {7: 6, 8: 6, 6: 16, 4: 16}   # fen, bog: peat 6; swamp, marsh: mud 16 (soils.json; Layout.WETLAND_SOIL)
 const EDGE_FIRST := 0.25          # an edge sample's draw is scaled by this: the patches lie mostly along the wet edge, where the seeps come out
 
 
@@ -133,13 +137,14 @@ static func first_sample(origin_m: float, spacing_m: float) -> int:
 	return int(round(origin_m / maxf(spacing_m, 0.001)))
 
 
-# Whether world point (x, z) of a loaded tile lies on a sample of a wetland class that can hold bog iron (cfg "classes"): there a dug hole silts
-# back in (refill_game_days).
-static func wet_at(tile_data, x: float, z: float, cfg: Dictionary) -> bool:
+# The soil a dug hole at world point (x, z) of a loaded tile silts back in with (SILT_MATERIAL), or 0 when the point is not on a
+# wetland class that can hold bog iron (cfg "classes"): only there does a dug hole silt back in (refill_game_days).
+static func silt_material(tile_data, x: float, z: float, cfg: Dictionary) -> int:
 	if tile_data == null or tile_data.placeholder or tile_data.samples <= 0 or tile_data.water_class.size() != tile_data.samples * tile_data.samples:
-		return false
+		return 0
 
-	return float(cfg.get("classes", {}).get(str(tile_data.water_class[tile_data.nearest(x, z)]), 0.0)) > 0.0
+	var cls: int = int(tile_data.water_class[tile_data.nearest(x, z)])
+	return int(SILT_MATERIAL.get(cls, 0)) if float(cfg.get("classes", {}).get(str(cls), 0.0)) > 0.0 else 0
 
 
 # A wetland sample with dry ground (class 0) among its 8 neighbours: where the seeps come out. Neighbours off the map do not count.

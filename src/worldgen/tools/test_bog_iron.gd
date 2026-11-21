@@ -140,7 +140,7 @@ func _init() -> void:
 	var ocean = TileDataScript.new()
 	ocean.make_placeholder(Vector2i(0, 0), 15360.0, -200.0)
 	check(BogIron.field(ocean, 0, 0, cfg).is_empty(), "open ocean holds no bog iron")
-	check(BogIron.wet_at(tile, tile.x0 + 8.0 * 21.0, tile.z0 + 8.0 * 21.0, cfg) and not BogIron.wet_at(tile, tile.x0 + 8.0 * 50.0, tile.z0 + 8.0 * 50.0, cfg), "wet_at is true on the fen and false on the dry ground")
+	check(BogIron.silt_material(tile, tile.x0 + 8.0 * 21.0, tile.z0 + 8.0 * 21.0, cfg) == 6 and BogIron.silt_material(tile, tile.x0 + 8.0 * 50.0, tile.z0 + 8.0 * 50.0, cfg) == 0, "a hole on the fen silts in with peat (6), none on dry ground")
 
 	# 2. Regrowth: one ore every 3 game days, up to the size, the clock moving on by whole steps only.
 	var day: float = 86400.0
@@ -168,7 +168,7 @@ func _init() -> void:
 	items.ground_height = func(_x, _z): return 10.0
 	items.ground_material = func(_x, _z): return "peat"
 	items.bog_field = func(fx, fz, _cfg_in): return [{"key": "11,22", "x": 6.0, "z": 0.0, "size": 7, "r": 3.0}] if fx == 0 and fz == 0 else []
-	items.bog_wet_at = func(x, _z, _cfg_in): return x < 20.0
+	items.bog_silt_at = func(x, _z, _cfg_in): return 6 if x < 20.0 else 0   # fen peat by the patch, dry ground past 20 m
 	items.peer_connected_hello(1, "b0b0b0b0b0b0")
 	items.report_position(1, Vector3(5.0, 10.0, 0.0))
 	items.give(1, items.table.number_of("wooden_shovel"), 1)
@@ -223,16 +223,16 @@ func _init() -> void:
 	var fill: Array = fills[0] if not fills.is_empty() else [Vector3.ZERO, 0.0, -1]
 	var top: float = (fill[0] as Vector3).y + float(fill[1])
 	check(fills.size() == 1 and items._bog_holes.is_empty(), "then it silts back in, once (%d fills)" % fills.size())
-	check(absf(top - 10.0) < 0.01 and float(fill[1]) >= 2.5 and int(fill[2]) == 6, "with peat, a sphere whose top just meets the old surface (top %.2f, r %.2f, material %d)" % [top, float(fill[1]), int(fill[2])])
+	check(absf(top - 10.0) < 0.01 and float(fill[1]) >= 2.5 and int(fill[2]) == 6, "with the fen's own peat, a sphere whose top just meets the old surface (top %.2f, r %.2f, material %d)" % [top, float(fill[1]), int(fill[2])])
 
 	# 5. Save and load: what is left of a patch, its clock, and the waiting holes survive a restart.
 	items._bog_left["11,22"] = [3, 12345.0]
-	items._bog_holes = [[6.0, 10.0, 0.0, 0.9, 777.0]]
+	items._bog_holes = [[6.0, 10.0, 0.0, 0.9, 777.0, 16]]
 	items._dirty = true
 	items.save()
 	var reloaded = _make(dir)
 	check(reloaded._bog_left.get("11,22", []) == [3, 12345.0], "a worked patch is saved and loaded (%s)" % str(reloaded._bog_left.get("11,22", [])))
-	check(reloaded._bog_holes == [[6.0, 10.0, 0.0, 0.9, 777.0]], "a waiting hole is saved and loaded (%s)" % str(reloaded._bog_holes))
+	check(reloaded._bog_holes == [[6.0, 10.0, 0.0, 0.9, 777.0, 16]], "a waiting hole is saved and loaded with its soil (%s)" % str(reloaded._bog_holes))
 	reloaded.peer_connected_hello(1, "b0b0b0b0b0b0")
 	reloaded.game_seconds = func(): return clock[0]
 	reloaded.send_notice = func(_p, text): notices.append(text)

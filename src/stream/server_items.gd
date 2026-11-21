@@ -197,7 +197,7 @@ var _hole_blows: Dictionary = {}  # peer -> [blows, msec of the last]
 var rock_near: Callable          # (position) -> the rocks.json name of the bedrock under a boulder there (TileTerrainData.bedrock_name_at), "" when unknown; set by the server scene (unset: no rock pieces)
 var ore_near: Callable           # (position, reach in metres, ore names wanted, layer depth in metres) -> the ore (data/tables/resources.json) a boulder there is an outcrop of, "" when none; set by the server scene (unset: no ore)
 var bog_field: Callable          # (fx, fz, digging.json bog_iron) -> BogIron.field on the baked tile there ([] when it bears none); set by the server scene (unset: no bog iron)
-var bog_wet_at: Callable         # (x, z, digging.json bog_iron) -> BogIron.wet_at: fen, marsh, swamp or bog ground, where a dug hole silts back in (unset: none does)
+var bog_silt_at: Callable        # (x, z, digging.json bog_iron) -> BogIron.silt_material: what a hole dug on fen, marsh, swamp or bog silts back in with, 0 elsewhere (unset: none does)
 var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var drink_water_near: Callable   # (a player's position, reach) -> as water_near, and the water no more than DrinkRules.REACH_DROP_M below the feet (unset: water_near)
@@ -374,14 +374,14 @@ var _bog_y: Dictionary = {}       # deposit key -> the generated ground height a
 var _bog_fields: Dictionary = {}  # field square "fx,fz" -> its patches (BogIron.field), worked out once a run; cleared past BOG_FIELDS_MAX
 const BOG_FIELDS_MAX := 1024
 # Holes dug in wetland silt back in (Dave 21 Nov 2026: "since its in water we can just assume the water washes the dirt back into the hole over
-# a given period of time"): [x, surface y, z, dug radius, game seconds due], saved in world_items.json "bog_holes". PROVISIONAL BI-4: one game day.
+# a given period of time"): [x, surface y, z, dug radius, game seconds due, soil it silts in with], saved in world_items.json "bog_holes". PROVISIONAL BI-4: one game day.
 var _bog_holes: Array = []
 const BOG_HOLES_MAX := 256        # past this the oldest hole silts in at once
 const BOG_HOLE_JOIN_M := 1.5      # a dig this close to a waiting hole joins it (one fill for the spot, the later due time)
 const BOG_HOLE_DEEP_M := 1.0      # a new hole is noted only when struck within this of the generated surface (not a tunnel under the bog); deeper digs join one
 const BOG_SILT_PER_TICK := 4      # at most this many holes silt in one slow tick (each is a ground edit, a message to everyone and a remesh)
 const BOG_REFILL_R_MIN := 2.5     # the silting fill: a sphere at least this big whose top just meets the old surface over the hole
-const PEAT_SOIL := 6              # data/tables/soils.json "peat": the silted hole is plain peat
+const PEAT_SOIL := 6              # data/tables/soils.json "peat": what a hole saved without its material silts in with
 const CAVE_KEY := 1 << 51       # cave floor stones and boulders: CAVE_KEY | cell x << 28 | cell y << 8 | entry (up to 256 a cell)
 const CAVE_ITEMS_MAX := 256
 const BOULDER_STATE := 10            # world-item row state of a boulder          # boulder keys live apart from the loose stones' keys
@@ -5267,12 +5267,17 @@ func _bog_rows_near(_peer: int, here: Vector3) -> Array:
 	return rows
 
 
-# A dig that changed the ground on fen, marsh, swamp or bog (BogIron.wet_at) is noted to silt back in refill_game_days later (_bog_holes_tick).
+# A dig that changed the ground on fen, marsh, swamp or bog (BogIron.silt_material) is noted to silt back in refill_game_days later (_bog_holes_tick).
 # A dig beside a waiting hole joins it: the larger radius, the later time, the surface it first had.
 func _note_bog_hole(at: Vector3, radius: float) -> void:
 	var cfg: Dictionary = _dig_cfg.get("bog_iron", {})
 
-	if cfg.is_empty() or not bog_wet_at.is_valid() or not fill_ground.is_valid() or not bool(bog_wet_at.call(at.x, at.z, cfg)):
+	if cfg.is_empty() or not bog_silt_at.is_valid() or not fill_ground.is_valid():
+		return
+
+	var material: int = int(bog_silt_at.call(at.x, at.z, cfg))
+
+	if material <= 0:
 		return
 
 	var due: float = (float(game_seconds.call()) if game_seconds.is_valid() else 0.0) + float(cfg.get("refill_game_days", 1.0)) * BogIron.SECONDS_PER_GAME_DAY
@@ -5289,7 +5294,7 @@ func _note_bog_hole(at: Vector3, radius: float) -> void:
 	if not is_nan(surface) and at.y < surface - BOG_HOLE_DEEP_M:
 		return   # a dig in a tunnel or cellar under the wetland: the water does not fill that
 
-	_bog_holes.append([at.x, at.y if is_nan(surface) else surface, at.z, radius, due])
+	_bog_holes.append([at.x, at.y if is_nan(surface) else surface, at.z, radius, due, material])
 
 	if _bog_holes.size() > BOG_HOLES_MAX:
 		_silt_hole(_bog_holes.pop_front())
@@ -5335,14 +5340,14 @@ func _silt_radius(hole: Array) -> float:
 	return maxf(BOG_REFILL_R_MIN, 3.0 * float(hole[3]))
 
 
-# One fill of peat: a sphere whose top just meets the surface the ground had before the dig, so the hole fills to a shallow dip at its rim and
+# One fill of the wetland's own soil (noted with the hole; the draw material stays the generated wetland look): a sphere whose top just meets the surface the ground had before the dig, so the hole fills to a shallow dip at its rim and
 # never heaps above the old ground.
 func _silt_hole(hole: Array) -> void:
 	if not fill_ground.is_valid():
 		return
 
 	var r: float = _silt_radius(hole)
-	fill_ground.call(Vector3(float(hole[0]), float(hole[1]) - r, float(hole[2])), r, PEAT_SOIL)
+	fill_ground.call(Vector3(float(hole[0]), float(hole[1]) - r, float(hole[2])), r, int(hole[5]) if hole.size() >= 6 else PEAT_SOIL)
 	settle_loose_near(Vector3(float(hole[0]), float(hole[1]), float(hole[2])), r)
 
 
@@ -7277,7 +7282,7 @@ func _load_world_items() -> void:
 
 	for hole in parsed.get("bog_holes", []):   # added 21 Nov 2026: an older file has none
 		if typeof(hole) == TYPE_ARRAY and (hole as Array).size() >= 5:
-			_bog_holes.append([float(hole[0]), float(hole[1]), float(hole[2]), float(hole[3]), float(hole[4])])
+			_bog_holes.append([float(hole[0]), float(hole[1]), float(hole[2]), float(hole[3]), float(hole[4]), int(hole[5]) if (hole as Array).size() >= 6 else PEAT_SOIL])
 
 	var had_kits: bool = not bool(parsed.get("no_kits", false))   # a world saved before kits were dropped (Dave 4 Nov 2026) loses its kit items and every placed building once
 
