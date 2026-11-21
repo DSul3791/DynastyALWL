@@ -56,7 +56,7 @@ What Dave asked on 20 Nov 2026:
 
 "She" is Vrixa Thornfang, a Ragtooth goblin (PR #1345, with Grikka Ragtooth). Both take the default round, firewood and fibre.
 
-**The ground.** At cave 3,4#8006 (since 21 Nov 2026) the camp stands on a bench of 3 to 11 degrees south-east of the mouth, about 20 m across. The wood and fibre points are on the slope 25 to 40 m east of the fire, at 11 to 18 degrees. The hunter walks about 50 m to the mouth, across the brook's edge. (At the old cave the bench was a narrow 18-20 degree ledge.)
+**The ground.** At cave 3,4#8006 (since 21 Nov 2026) the camp stands on a bench of 3 to 11 degrees south-east of the mouth, about 20 m across. The wood and fibre points are on the slope 25 to 40 m east of the fire, at 11 to 18 degrees. The hunter walks about 50 m to the mouth, along the brook's shallow edge (only water deeper than 0.7 m blocks a walk). (At the old cave the bench was a narrow 18-20 degree ledge.)
 
 **Stage A: the camp and the spears.** No protocol change.
 - The props are existing catalog pieces, laid by the server the way the bandit camp lays its Lean-tos:
@@ -142,7 +142,7 @@ Dave, 21 Nov 2026: "I think we should move the goblins cave much closer to spawn
 
 - **Where.** Spring cave 3,4#8006, the nearest cave to the spawn: mouth x 56560, z 71776, ground about 23 m, under ridges of 80 to 99 m to the north-west and south. The camp is about 1.6 km west-south-west of the spawn campfire (1.56 km west, 0.44 km south). The next nearest caves are 2.1 km and 2.8 km off; the old one was 3.6 km.
 - **Why not nearer.** The nearest hills, about 1.2 km south and 1.2 km north of the spawn, have no cave. A camp there needs a new cave cut into the hill (cave carving like the mines, a terrain version bump and a new starter cache). That is a possible follow-up for Dave, not done.
-- **The cave is kept.** By its id, 8006 would hold a wild goblin band and a wolf den. `TileTerrainData.CAMP_CAVES` keeps both out, on the server and every client alike. Cave 8013 is no longer kept; by its id it holds neither a goblin band nor an animal den, so nothing new appears there.
+- **The cave is kept.** By its id, 8006 would hold a wild goblin band and a wolf den. `TileTerrainData.CAMP_CAVES` keeps both out, on the server and every client alike. Cave 8013 is no longer kept; by its id it holds neither a goblin band nor an animal den, and the tile's always-goblins floor (`goblin_den_nodes`) stays on its first spring cave, 3,4#8002, so nothing new appears there.
 - **No path yet** (Dave: later).
 - **An existing world.** Nothing of the camp is saved at a place: the fire and props are laid by the server and never saved, and the goblins stand at their spots from the data. After a server restart the camp is at the new cave and nothing of it is left at the old one. Standing, anger and the stock clock are kept per tribe, so they carry over. Wild goblins and animals are never saved, so none linger at 8006. Only if a wolf pack denning at 8006 was killed in a world is a row saved for it (its rest or orphans); that row stays. Bandit sites keep 1.5 km off the camp, so the ground they may use moves with it (robbery is off).
 - **GOBLIN-19:** cave 3,4#8006 and the layout above, PROVISIONAL (coordinator for Dave, 21 Nov 2026).

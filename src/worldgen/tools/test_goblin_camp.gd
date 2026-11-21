@@ -580,7 +580,7 @@ func _server() -> void:
 	var cfg: Dictionary = PlacementRules.load_config()
 	check(PlacementRules.blocked(cfg, "campfire_kit", Vector3(at.x + 2.0, 10.0, at.y), []) == "tribe_camp", "the ghost is red by the goblin camp")
 	check(PlacementRules.reason_text("tribe_camp").contains("goblin camp"), "and says why")
-	check(PlacementRules.blocked(cfg, "campfire_kit", Vector3(at.x - float(camp["keep_m"]) - 5.0, 10.0, at.y), []) == "", "and is free past keep_m (the props stand east)")
+	check(PlacementRules.blocked(cfg, "campfire_kit", Vector3(at.x - float(camp["keep_m"]) - 5.0, 10.0, at.y), []) == "", "and is free past keep_m, clear of the props")
 	_props(items, said, cfg)
 
 
