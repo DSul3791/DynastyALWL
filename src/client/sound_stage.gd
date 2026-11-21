@@ -73,7 +73,7 @@ const FEET_M := 0.9                     # player origin to the soles (capsule ha
 const SOIL_SURFACE := {
 	0: "stone", 1: "sand", 2: "gravel", 3: "dirt", 4: "dirt", 5: "dirt", 6: "mud", 7: "dirt",
 	8: "leaves", 9: "gravel", 10: "dirt", 11: "snow", 12: "stone", 13: "sand", 14: "sand", 15: "sand",
-	16: "mud",
+	16: "mud", 29: "mud", 30: "mud", 31: "mud",   # 29 to 31 the fen, bog and swamp looks (terrain_layout.gd MATERIAL_FEN ...): they squelch
 }
 const SURFACE_DB := {
 	"grass": -15.0, "dirt": -10.0, "sand": -11.0, "gravel": -9.0, "stone": -8.0,
@@ -92,7 +92,8 @@ const ROCK_STEP := {
 const ORE_STEP := {1: ["stone", -3.0, 0.9], 10: ["sand", 0.0, 1.05], 12: ["mud", 0.0, 1.0], 29: ["mud", -2.0, 0.9]}
 const ORE_METAL := [2, 3, 4, 5, 6, 7, 8, 9, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
 # Soils with their own character: [dB, pitch] on top of their surface (data/tables/soils.json).
-const SOIL_TUNE := {3: [-1.0, 0.95], 4: [0.0, 0.97], 12: [2.0, 1.1], 13: [0.0, 1.06], 14: [-3.0, 0.9]}
+const SOIL_TUNE := {3: [-1.0, 0.95], 4: [0.0, 0.97], 12: [2.0, 1.1], 13: [0.0, 1.06], 14: [-3.0, 0.9], 29: [0.0, 0.94], 30: [1.0, 0.9], 31: [1.0, 0.88]}   # bog and swamp a deeper, wetter squelch
+const POOL_PACE := 0.85                 # share of the pace left wading a wetland's ankle-deep pool (Dave 21 Nov 2026: "slow you a little"; provisional)
 const RAIN_SOAK := 0.5                  # ground wetness from which loose dirt and leaves turn to wet mud steps
 const SNOW_COVER := 0.35                # snow on the ground from which steps crunch
 const PUDDLE_WET := 0.6                 # ground wetness from which steps on firm ground splash
@@ -230,6 +231,7 @@ var creatures                           # CreatureSounds: deer, rabbit, fox, wol
 var ui                                  # UiSounds: menu click, toggle and quality cues (play(name))
 var swim                                # SwimSounds: splash, strokes, diving, the hum under water (driven by the body)
 var ice_break_event: String = ""      # "", "skim", "film" or "plunge" for the last footstep (terrain_client reads it)
+var pool_pace: float = 1.0             # share of the pace left: POOL_PACE while the last step landed in a wetland pool (terrain_client reads it)
 var _wading_ice: bool = false          # the last water step was through skim or film (the next film step is no plunge)
 var town                                # TownSounds: fire, hammering, crowd, bell hooks (set_sources, ring_bell)
 var cavewater                          # CaveWaterSounds: the water inside spring caves (stream along the passage, spring pool, more springs = more water)
@@ -972,6 +974,7 @@ func sea_below(p: Vector3) -> bool:
 # `foot` is "left" or "right" (recorded sets have one of each).
 func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: String = "left") -> void:
 	boost_db += stance.step_db()                                  # crouched steps are softer, and the gear with them
+	pool_pace = 1.0
 	var feet: Vector3 = body.global_position - Vector3(0.0, FEET_M, 0.0)
 	var water_here: float = _flora.water_surface_at(feet.x, feet.z)
 
@@ -1012,6 +1015,9 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 		tune = [found[1], found[2]]
 	elif _in_bush(feet):
 		surface = "bushes"
+	elif Layout.is_wetland(soil):
+		surface = "mud"                                          # fen, bog and swamp squelch underfoot, grass or not
+		tune = SOIL_TUNE.get(soil, [0.0, 1.0])
 	elif thick >= GRASS_MIN and soil != 8:
 		surface = "grass_tall" if tall > 0.35 else "grass"
 	else:
@@ -1097,6 +1103,8 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 		splash = depth <= DAMP_M and built == "" and surface != "snow" and puddles.foot_in(feet, soil, body.get_floor_normal().y if body.is_on_floor() else 1.0, gait)
 	elif weather != null and weather.ground_wet >= PUDDLE_WET and surface in PUDDLE_SURFACES and _rng.randf() < weather.ground_wet * 0.7:
 		splash = true
+
+	pool_pace = POOL_PACE if splash and Layout.is_wetland(soil) else 1.0
 
 	if splash:
 		puddles_played += 1
