@@ -17,6 +17,7 @@ Usage: python3 -I tools/hair/prepare_hair.py SOURCE.glb OUT.glb [--male assets/c
 The committed styles: Hair_CrewCut and Hair_SlickedBack with no options; Hair_ShortCurly with --nape-back 1.555 (its sparse low strands at the
 back of the neck hung in shards, PC pictures 20 Nov 2026; Dave chose to tidy them).
 Hair_MediumBob with --nape 1.45 (a bob to the jaw; Meshy made this one as hair only, with no mannequin head, Dave 21 Nov 2026).
+Hair_MediumShag with --nape 1.45 (hair only, Dave 21 Nov 2026).
 Needs numpy and Pillow. Writes OUT.glb, its .import, its three textures as OUT_<texture>.png with their .import files (VRAM Compressed), and prints the fit.
 """
 import argparse

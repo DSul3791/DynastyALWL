@@ -18,6 +18,7 @@ const STYLES := {
 	"short_curly": {"label": "Short curly", "glb": "res://assets/character/Hair/Hair_ShortCurly.glb"},
 	"slicked_back": {"label": "Slicked back", "glb": "res://assets/character/Hair/Hair_SlickedBack.glb"},
 	"medium_bob": {"label": "Medium bob", "glb": "res://assets/character/Hair/Hair_MediumBob.glb"},
+	"medium_shag": {"label": "Medium shag", "glb": "res://assets/character/Hair/Hair_MediumShag.glb"},
 }
 
 
