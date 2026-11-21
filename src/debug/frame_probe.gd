@@ -26,6 +26,11 @@ const HITCH_MS := 100.0                  # a frame this long prints a HITCH line
 static var _hitch_next_msec: int = 0
 static var context: Callable = Callable()   # returns a short text about the game's state (set by the client), printed with every freeze line
 static var _freeze_prints: int = 0
+static var _seen: Dictionary = {}         # key -> true: a mesh or look already shown once this session (first_shown)
+static var _shown: Array = []             # [frame, what]: the things first shown in the last SHOWN_FRAMES frames
+const SHOWN_FRAMES := 3                   # a drawing made in one frame may be drawn (and its shaders built) a frame or two later
+const SHOWN_MAX := 40
+const SHOWN_PRINT := 12
 
 
 static func start() -> int:
@@ -48,6 +53,30 @@ static func stop(name: String, started: int) -> void:
 	_win[name] = int(_win.get(name, 0)) + used
 
 
+# BugsList 108 (D-TODO-1): a mesh or look drawn for the first time this session, named on the FREEZE and HITCH lines of the next few frames, so a
+# first-sight stall (its shaders and textures built in "flush" and "draw") says what came on screen. `key` tells the things apart (a mesh's id).
+static func first_shown(what: String, key: String) -> void:
+	if _seen.has(key):
+		return
+
+	_seen[key] = true
+
+	if _shown.size() < SHOWN_MAX:
+		_shown.append([_frames, what])
+
+
+static func _shown_text() -> String:
+	if _shown.is_empty():
+		return ""
+
+	var names: PackedStringArray = PackedStringArray()
+
+	for row in _shown.slice(0, SHOWN_PRINT):
+		names.append(str(row[1]))
+
+	return "; first shown: %s%s" % [", ".join(names), " and %d more" % (_shown.size() - SHOWN_PRINT) if _shown.size() > SHOWN_PRINT else ""]
+
+
 # Call at the start of each frame with the previous frame's length (seconds).
 static func frame(delta: float) -> void:
 	_frames += 1
@@ -67,12 +96,12 @@ static func frame(delta: float) -> void:
 			if int(_this_frame[name]) > 1000:
 				named.append("%s %.0f" % [name, float(_this_frame[name]) / 1000.0])
 
-		print("FREEZE %.0f ms (frame %d): script %.0f ms, physics %.0f ms, draw calls %d, video mem %d MB, objects %d; timed: %s; %s" % [
+		print("FREEZE %.0f ms (frame %d): script %.0f ms, physics %.0f ms, draw calls %d, video mem %d MB, objects %d; timed: %s; %s%s" % [
 			ms, _frames,
 			Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
 			int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), int(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0),
 			int(Performance.get_monitor(Performance.OBJECT_COUNT)), ", ".join(named) if not named.is_empty() else "nothing",
-			str(context.call()) if context.is_valid() else ""
+			str(context.call()) if context.is_valid() else "", _shown_text()
 		])
 
 	if ms > SLOW_MS and _frames > 30:
@@ -104,9 +133,9 @@ static func frame(delta: float) -> void:
 			for k in range(mini(named.size(), 5)):
 				text.append("%s %.0f" % [named[k][0], named[k][1]])
 
-			print("HITCH %.0f ms: %s; script %.0f ms, physics %.0f ms, draw calls %d" % [ms, ", ".join(text) if not text.is_empty() else "nothing timed",
+			print("HITCH %.0f ms: %s; script %.0f ms, physics %.0f ms, draw calls %d%s" % [ms, ", ".join(text) if not text.is_empty() else "nothing timed",
 				Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
-				int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))])
+				int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), _shown_text()])
 		_slow.append([ms, parts])
 		_slow.sort_custom(func(a, b): return a[0] > b[0])
 
@@ -114,6 +143,9 @@ static func frame(delta: float) -> void:
 			_slow.resize(KEEP_SLOW)
 
 	_this_frame = {}
+
+	if not _shown.is_empty() and int(_shown[0][0]) < _frames - SHOWN_FRAMES + 1:
+		_shown = _shown.filter(func(row: Array) -> bool: return int(row[0]) >= _frames - SHOWN_FRAMES + 1)
 
 
 static func reset() -> void:

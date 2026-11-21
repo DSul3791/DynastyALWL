@@ -3282,6 +3282,9 @@ func _apply_step(job: Dictionary) -> bool:
 	draw.set_meta("tier", int(key[4]))               # for the look rig (0 far, 1 full, 3 mid)
 	draw.set_meta("species", str(_slugs.get(key[0], "")))
 	node.add_child(draw)
+
+	if multimesh.mesh != null:
+		Probe.first_shown("flora %s tier %d" % [str(_slugs.get(key[0], "")), int(key[4])], "m%d" % multimesh.mesh.get_instance_id())   # names a first-sight stall (BugsList 108)
 	instances += 0 if proxy_pass else int(draw_plan[1])
 	return int(job["draw"]) >= draws.size()
 
