@@ -964,7 +964,7 @@
    "shape": "shovel",
    "color": "#6c6f75",
    "size": 0.85,
-   "bits": ["metal"]
+   "bits": ["metal", "iron"]
   },
   "iron_shovel_large": {
    "shape": "shovel",
