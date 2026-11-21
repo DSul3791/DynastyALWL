@@ -1185,7 +1185,7 @@ Not yet played; not yet seen in a picture. The colours, lumps and densities are 
 
 **Acceptance:** open the hammer list with copper nails only: the Rustic - Chest line says it wants iron or bronze nails. Set down a chest site and hit it: "Still needed" names iron or bronze nails.
 
-Not yet played. Dave then asked for a chest per nail tier (entry 111), which changes these labels to "... or better".
+Not yet played. Dave then asked for a chest for each nail tier (PR #1419), which changes these labels to "... or better".
 
 ## 110. The Rustic - Chest needs no chisel
 
