@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Turn one of Dave's baked station models into the game's mesh: the Improved smithy (Dave 21 Nov 2026, "sized so it fits in 3/4 of the
-width of a foundation") and the Primitive kiln (Dave 21 Nov 2026, "sized so its longest side is a minimum 2.74 meters").
+width of a foundation"), the Primitive kiln (Dave 21 Nov 2026, "sized so its longest side is a minimum 2.74 meters") and the
+Primitive smithy (Dave 21 Nov 2026: most things "fit neatly into 3/4 or half of a foundation size").
 
 Each file is one baked mesh (+Y up, the fire opening toward +Z) with three 4096 textures. This:
 
@@ -14,7 +15,8 @@ Each file is one baked mesh (+Y up, the fire opening toward +Z) with three 4096 
 5. Adds empty "Fire" (on the coals) and "Smoke" (the chimney top) nodes, which inventory_view._forge_glb hangs the light, flames and smoke on.
 
 Usage: python3 -I tools/stations/prepare_station_model.py STATION SOURCE.glb OUT.glb --node-modules DIR
-STATION is a key of STATIONS (improved_smithy -> assets/stations/improved_smithy.glb, primitive_kiln -> assets/stations/primitive_kiln.glb).
+STATION is a key of STATIONS (improved_smithy -> assets/stations/improved_smithy.glb, primitive_kiln -> assets/stations/primitive_kiln.glb,
+primitive_smithy -> assets/stations/primitive_smithy.glb).
 DIR is a folder whose node_modules holds meshoptimizer 0.25.0 (npm i meshoptimizer@0.25.0 in it). Needs numpy and Pillow, and node.
 Writes OUT.glb, its .import and its four textures as OUT_<texture>.png with their .import files (VRAM Compressed), as tools/hair/prepare_hair.py.
 """
@@ -47,6 +49,15 @@ STATIONS = {
         "fire": (0.02, -0.07, -0.15),        # the coal bed's middle
         "smoke": (0.0, 0.53, -0.30),         # the chimney's top
         "hot": (1.2, 0.8),
+    },
+    "primitive_smithy": {
+        "node": "Smithy", "material": "PrimitiveSmithy",
+        "fit": (2, 3.0),                     # its length, front to back, the longest side: 3/4 of a 4 m foundation (Dave: 3/4 or half)
+        "target": 15000, "max_error": 0.05,
+        "hearth": ((-0.22, 0.2), (-0.1, 0.2), (-0.66, -0.2)),   # the inside of the forge's mouth: its fire-lit clay and the coal bed
+        "fire": (-0.05, 0.0, -0.42),         # the coal bed's middle
+        "smoke": (-0.007, 0.41, -0.506),     # the chimney's top
+        "hot": (1.5, 0.5),                   # the forge's clay outside is orange too, so only the redder lit paint in the mouth
     },
     "primitive_kiln": {
         "node": "Kiln", "material": "PrimitiveKiln",

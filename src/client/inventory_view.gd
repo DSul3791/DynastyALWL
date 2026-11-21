@@ -4439,6 +4439,29 @@ func _make_improved_smithy() -> Node3D:
 	return model
 
 
+# The Primitive smithy: Dave's model (21 Nov 2026), a clay and field-stone forge at the back, a flat-topped stone anvil in front of its mouth and
+# a rough bench beside it, on a patch of trodden ground, 3 m long front to back and 2.35 m wide (Dave: most things "fit neatly into 3/4 or half
+# of a foundation size"; 3/4 suits it: the anvil stone's top is then at working height, about 0.78 m). Its coals are painted cold, so it
+# keeps the shared coals for the red glow and the flare, shrunk to its mouth; the lit paint inside the mouth glows with them
+# (BuildingLook.forge_state). The basic forge with its stone anvil stands in when the file is missing. PROVISIONAL (PS-5, PS-6).
+const PRIMITIVE_SMITHY_FLAMES := 0.5   # the shared coals' and flames' size in its mouth (about half a metre across)
+
+
+func _make_primitive_smithy(state: int) -> Node3D:
+	var model: Node3D = _forge_glb("primitive_smithy", false)
+
+	if model == null:
+		return _make_forge(state)
+
+	var flames: Node3D = model.get_node_or_null("Flames") as Node3D
+
+	if flames != null:
+		flames.scale = Vector3.ONE * PRIMITIVE_SMITHY_FLAMES
+
+	model.set_meta("coal_glow", _own_glow(model))
+	return model
+
+
 # A station model with painted coals or embers (tools/stations/prepare_station_model.py): its shared coals dropped and its flame tongues
 # shrunk by `tongues` to stand in its own hearth.
 func _painted_fire(model: Node3D, tongues: float) -> void:
@@ -4969,7 +4992,8 @@ func _model_for_look(look: String, state: int, extra: Dictionary) -> Node3D:
 		"log_workbench":
 			return _make_log_bench()
 		"stone_forge":
-			return _forge_fire(_make_forge(state), state, extra)
+			# the Primitive smithy has Dave's own model (21 Nov 2026); the Primitive and Improved smelters keep the basic forge
+			return _forge_fire(_make_primitive_smithy(state) if str(_structure_by_state(state).get("item", "")) == "stone_forge" else _make_forge(state), state, extra)
 		"blacksmithy":
 			# the Improved smithy has Dave's own model (21 Nov 2026); the Advanced smithy keeps the brick forge
 			return _forge_fire(_make_improved_smithy() if str(_structure_by_state(state).get("item", "")) == "blacksmithy" else _make_smithy(), state, extra)
