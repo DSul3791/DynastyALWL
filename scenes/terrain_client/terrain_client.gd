@@ -5661,8 +5661,10 @@ func _note_after_welcome(delta: float) -> void:
 
 
 func _process(delta: float) -> void:
-	Probe.frame(delta)   # first: the frame it closes is then one whole process step, physics and draw, as the engine's monitors count them
 	var tw: int = Probe.start()   # every part of this function is timed in pieces (lag while running, 21 Nov 2026: 0.3 to 1.6 s frames here were untimed)
+	Probe.frame(delta)   # first: the frame it closes is then one whole process step, physics and draw, as the engine's monitors count them
+	Probe.stop("frame probe", tw)   # its HITCH and FREEZE prints included (a print can stall the main thread, server_items #397)
+	tw = Probe.start()
 	FreezeWatchScript.beat()
 	_note_after_welcome(delta)
 	_log_frame(delta)
