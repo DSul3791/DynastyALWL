@@ -9090,7 +9090,7 @@ func _repair_text(costs: Array) -> String:
 	var parts: PackedStringArray = PackedStringArray()
 
 	for cost in costs:
-		parts.append("%d %s" % [int(cost[1]), table.sentence_name(table.number_of(str(cost[0])))])
+		parts.append("%d %s" % [int(cost[1]), _item_name_lower(str(cost[0]))])
 
 	return ", ".join(parts)
 
@@ -11283,7 +11283,7 @@ func _repair_struct(peer: int, inv, id: int, held_slot: int) -> void:   # held_s
 			have += box[1].count_fill(number, true)
 
 		if have < int(need[1]):
-			short.append("%d %s" % [int(need[1]), table.in_sentence(str(table.entry(str(need[0])).get("name", need[0])))])
+			short.append("%d %s" % [int(need[1]), _item_name_lower(str(need[0]))])
 
 	if not short.is_empty():
 		_say(peer, "Repairing the %s (%d percent) needs %s." % [piece_name, int(round(cond * 100.0)), ", ".join(short)])
@@ -11557,8 +11557,10 @@ func _gather_site(peer: int, inv, id: int, hammer: int) -> void:   # hammer: the
 		_say(peer, "Pulled %s. Still needed: %s." % [", ".join(pulled), ", ".join(missing)])
 
 
+# A cost line's name in a sentence: a group reads under its label ("iron or bronze nails"), so the player sees which items fill it.
 func _item_name_lower(item_id: String) -> String:
-	return table.in_sentence(str(table.entry(item_id).get("name", item_id)))
+	var number: int = table.number_of(item_id)
+	return table.cost_sentence(number) if number > 0 else table.in_sentence(item_id)
 
 
 # Every material is in: the site becomes the real piece.

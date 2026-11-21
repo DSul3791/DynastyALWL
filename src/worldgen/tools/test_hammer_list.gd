@@ -45,13 +45,13 @@ func _init() -> void:
 		if str(row["name"]) == "Crate":
 			wall = row
 
-	check(wall.get("kit", "") == "wooden_crate_kit" and str(wall["text"]) == "plank 0/5, nails 0/8", "crate row: kit and have/need text (%s)" % str(wall.get("text", "")))
+	check(wall.get("kit", "") == "wooden_crate_kit" and str(wall["text"]) == "plank 0/5, iron or bronze nails 0/8", "crate row: kit and have/need text (%s)" % str(wall.get("text", "")))
 	pack.add(table.number_of("lumber"), 4)
 	pack.add(table.number_of("nails"), 8)
 	check(not list.rows(1).filter(func(r): return r["name"] == "Crate")[0]["can"], "4 of 5 planks is short")
 	pack.add(table.number_of("lumber"), 1)
 	var wall_now: Dictionary = list.rows(1).filter(func(r): return r["name"] == "Crate")[0]
-	check(bool(wall_now["can"]) and str(wall_now["text"]) == "plank 5/5, nails 8/8", "5 planks (lumber, shown as Plank since the item system renames 10 Nov 2026) and 8 nails cover the crate (%s)" % str(wall_now["text"]))
+	check(bool(wall_now["can"]) and str(wall_now["text"]) == "plank 5/5, iron or bronze nails 8/8", "5 planks (lumber, shown as Plank since the item system renames 10 Nov 2026) and 8 nails cover the crate (%s)" % str(wall_now["text"]))
 	# A group cost counts every member in the pack, as the server does (Inventory.count_fill): oak logs cover a blueprint asking for logs.
 	var log_row: Dictionary = {}
 
@@ -77,7 +77,7 @@ func _init() -> void:
 	list.stock_count = func(number: int) -> int:
 		return pack.count_fill(number) + int(in_chest.get(number, 0))
 	var stocked: Dictionary = list.rows(1).filter(func(r): return r["name"] == "Crate")[0]
-	check(bool(stocked["can"]) and str(stocked["text"]) == "plank 5/5, nails 8/8", "8 nails in a chest in reach cover the crate with none in the pack (%s)" % str(stocked["text"]))
+	check(bool(stocked["can"]) and str(stocked["text"]) == "plank 5/5, iron or bronze nails 8/8", "8 nails in a chest in reach cover the crate with none in the pack (%s)" % str(stocked["text"]))
 	list.stock_count = Callable()
 	pack.add(nails_n, 60)
 
@@ -122,7 +122,7 @@ func _init() -> void:
 	check(visible_rows == found.size(), "typing filters the rows on screen (%d)" % visible_rows)
 	var crate_no: int = int(shown.rows(1).filter(func(r): return r["name"] == "Crate")[0]["number"])
 	shown._hover({"kind": "bp", "number": crate_no})
-	check(shown.detail_text().contains("Plank  5 / 5") and shown.detail_text().contains("Nails"), "pointing at a row shows its materials, have / need (%s)" % shown.detail_text().left(80))
+	check(shown.detail_text().contains("Plank  5 / 5") and shown.detail_text().contains("Iron or bronze nails"), "pointing at a row shows its materials, have / need (%s)" % shown.detail_text().left(80))
 	# Esc empties the search box first, then shuts the screen; a tab click empties the search; right click shuts it (BS-4).
 	var esc: InputEventKey = InputEventKey.new()
 	esc.keycode = KEY_ESCAPE
