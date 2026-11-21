@@ -311,6 +311,8 @@ func _npcs() -> void:
 	check(bool(npc_s.get("hidden", false)) and npc_s["pos"].distance_to(mouth) <= 1.5, "Skritch goes into the cave mouth (%s)" % str(npc_s["pos"]))
 	check(npcs.rows_near(player[0]).all(func(row): return str(row[0]) != "skritch"), "and is not seen")
 	check(tribes.member_along(player[0], (mouth - player[0]).normalized(), 10.0) == "", "nobody in the cave can be struck")
+	run.call(float(tribes.cfg.get("calm_s", 30.0)) + 10.0)
+	check(bool(npc_s.get("hidden", false)), "it stays in while the striker waits at the camp, far from the mouth")
 	player[0] = mouth + Vector3(-80.0, 0.0, 0.0)
 	run.call(float(tribes.cfg.get("calm_s", 30.0)) * 0.5)
 	check(bool(npc_s.get("hidden", false)), "it waits in the cave a while after they go")

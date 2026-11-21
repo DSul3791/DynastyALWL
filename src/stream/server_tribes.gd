@@ -232,15 +232,17 @@ func avoid(npc: Dictionary) -> Dictionary:
 
 	for p in _players:
 		var d: float = Vector2(p["pos"].x - pos.x, p["pos"].z - pos.z).length()
+		var striker: bool = angry(tribe, str(p.get("key", "")))
+		var striker_d: float = d
 
-		if bool(npc.get("hidden", false)):
-			d = minf(d, Vector2(p["pos"].x - spot_at.x, p["pos"].z - spot_at.z).length())   # in the cave it minds its own spot too: a striker waiting at the camp, 50 m from the mouth (3,4#8006), keeps it in
+		if striker and bool(npc.get("hidden", false)):
+			striker_d = minf(d, Vector2(p["pos"].x - spot_at.x, p["pos"].z - spot_at.z).length())   # in the cave it minds its own spot too: a striker waiting at the camp, 50 m from the mouth (3,4#8006), keeps it in
 
-		if d > far:
+		if striker_d > far:
 			continue   # past everything a member reacts to: no standing lookup for the far players
 		var keep: float = keep_from(id, p)
 
-		if angry(tribe, str(p.get("key", ""))) and d <= keep + (HIDE_EXTRA_M if bool(npc.get("hidden", false)) else 0.0):
+		if striker and striker_d <= keep + (HIDE_EXTRA_M if bool(npc.get("hidden", false)) else 0.0):
 			angry_near = true
 
 		if d < keep and keep - d > worst_by:
