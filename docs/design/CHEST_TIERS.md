@@ -24,7 +24,7 @@ Every other building and live recipe that took "nails" or "hinges" (iron or bron
 ## The knife's store (Dave 21 Nov 2026)
 Dave, 21 Nov 2026 06:58Z, of the Wicker - Chest (18 slots) and the Crude - Chest (24 slots), both knife builds: "get ride of both of those. the knife can make a wicker basket that could have 6 slots." Asked about placed ones: "there are none".
 
-- Both blueprints (26 and 186), their items (23 and 914) and structure rows are retired: kept for their numbers, never listed or built. A saved world holding one still loads it with whatever is inside (nothing clears it at load; Dave says there are none). The tests' plain "chest" fixture still places the old row.
+- Neither is listed or built by a player any more. The Crude - Chest (blueprint 186, item 914, state 230) is retired. The Wicker - Chest (blueprint 26, item 23, state 6) is hidden and locked rather than retired, because about a dozen server tests place it as their plain container (place_piece builds free); taken down, it gives back its sticks and twine. A saved world holding either still loads it with whatever is inside (nothing clears it at load; Dave says there are none; test_save_compat checks it).
 - The knife's store is the existing **Wicker basket** (was named Basket; item 785, blueprint 157, state 195): 8 Stick, 4 Twine, a knife, 6 slots (one row). It takes the Wicker - Chest's storage comfort point. No new numbers.
 - The Ragtooth goblin camp's chest prop is now a Small chest (it was a Crude - Chest).
 - The chest ladder is now Crate 10, Small 24, Rustic 30, Fine 36, Large wooden 42, Ornate 48.

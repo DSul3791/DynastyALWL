@@ -254,7 +254,6 @@
 		},
 		"chest": {
 			"number": 23,
-			"retired": true,
 			"name": "Wicker - Chest",
 			"description": "A woven chest for storing things.",
 			"kind": "structure",
@@ -263,7 +262,7 @@
 			"look_alikes": [],
 			"slots": 18,
 			"material": "wicker",
-			"note": "Retired 21 Nov 2026 (Dave: \"get ride of both of those\"): the knife makes the Wicker basket (6 slots) instead. The row stays for its number and for any placed one in a saved world."
+			"note": "No longer built (Dave 21 Nov 2026: \"get ride of both of those\"): blueprint 26 is hidden and locked and the knife makes the Wicker basket (6 slots) instead. The row stays for any placed one in a saved world and as the tests' plain container."
 		},
 		"chopping_block_kit": {
 			"number": 24,

@@ -1968,7 +1968,7 @@
 				"Used in Wooden - Arrow (fibre)",
 				"Used in Drying rack",
 				"Used in Sign",
-				"Used in Basket",
+				"Used in Wicker basket",
 				"Used in Steel - Chisel",
 				"Used in Meat skewer",
 				"Used in Fishing spear",
@@ -2099,7 +2099,7 @@
 				"Used in Hide - Sack",
 				"Used in Tusk mount",
 				"Used in Weapon rack",
-				"Used in Basket",
+				"Used in Wicker basket",
 				"Used in Bedroll",
 				"Used in Sling",
 				"Used in Snowshoes",
@@ -2382,7 +2382,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "retired"
+			"status": "planned"
 		},
 		"chest": {
 			"name": "Wicker - Chest",
@@ -2391,7 +2391,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "retired"
+			"status": "planned"
 		},
 		"chopping_block": {
 			"name": "Chopping block",

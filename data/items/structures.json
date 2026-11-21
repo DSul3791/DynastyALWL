@@ -28,7 +28,7 @@
 			"sound": "leanto",
 			"clears_grass": true
 		},
-		"chest": {"kit": "chest_kit", "item": "chest", "state": 6, "retired": true, "footprint_x": 0.76, "footprint_z": 0.5, "look_scale": 0.81, "cap_per_chunk": 8, "slots": 18, "who": "anyone", "look": "chest", "sound": "chest", "clears_grass": true, "lockable": true},
+		"chest": {"kit": "chest_kit", "item": "chest", "state": 6, "footprint_x": 0.76, "footprint_z": 0.5, "look_scale": 0.81, "cap_per_chunk": 8, "slots": 18, "who": "anyone", "look": "chest", "sound": "chest", "clears_grass": true, "lockable": true},
 		"chopping_block": {"kit": "chopping_block", "item": "chopping_block", "state": 7, "footprint_x": 0.7, "footprint_z": 0.7, "cap_per_chunk": 4, "use": "split_log", "use_pace_ms": 600, "use_reach_m": 3.0, "look": "chopping_block", "sound": "thump", "clears_grass": true, "firewood_per_block": 4, "slots": 4, "out_slots": 6, "station": "chopping_block", "station_level": 1, "reach_m": 3.0, "takes": ["wooden_block"]},
 		"sawbuck": {"kit": "sawbuck", "item": "sawbuck", "state": 442, "blocks_walk": true, "footprint_x": 1.4, "footprint_z": 0.8, "cap_per_chunk": 4, "station": "sawbuck", "station_level": 1, "reach_m": 3.0, "sound": "timber", "clears_grass": true, "look": "sawbuck"},
 		"carving_station": {"kit": "carving_station", "item": "carving_station", "state": 443, "blocks_walk": true, "footprint_x": 1.9, "footprint_z": 1.1, "cap_per_chunk": 4, "station": "carving_station", "station_level": 1, "reach_m": 3.0, "sound": "timber", "clears_grass": true, "look": "carving_station"},
