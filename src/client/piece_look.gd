@@ -3508,9 +3508,10 @@ static func cistern() -> Node3D:
 
 
 # The Raised cistern, 2.0 x 2.0 and 3.0 m high (Dave 20 Nov 2026: "copper lined and the frame can be made of wood and iron nails", "just big tanks"):
-# a timber frame of four posts, top rails and two cross braces carries a plank deck 2 m up; on it an open plank tank 0.95 m deep, banded with
-# iron and lined with copper, still water inside. A copper downpipe runs from the tank floor down the +Z side to the foot, where
-# pipes join. Kept under the 300-triangle cap of a near piece (test_look_table): boxes and one six-sided pipe.
+# a timber frame of four posts with a diagonal brace on every face (Dave 21 Nov 2026: front and back too, opposite faces slanting opposite ways)
+# carries a thick plank deck 2 m up; on it an open plank tank 0.95 m deep, banded with iron and lined with copper, still water inside. A copper
+# downpipe runs from the tank floor down the +Z side to the foot, where pipes join. Kept under the 300-triangle cap of a near piece
+# (test_look_table): boxes and one six-sided pipe.
 static func raised_cistern() -> Node3D:
 	_tier_materials()
 	var root: Node3D = Node3D.new()
@@ -3520,15 +3521,14 @@ static func raised_cistern() -> Node3D:
 			_box(root, Vector3(0.16, 2.0, 0.16), Vector3(x, 1.0, z), _frame)            # the posts
 
 	for s in [-1.0, 1.0]:
-		_box(root, Vector3(1.72, 0.12, 0.08), Vector3(0.0, 1.9, s * 0.86), _frame)      # the top rails
-		_box(root, Vector3(0.08, 0.12, 1.72), Vector3(s * 0.86, 1.9, 0.0), _frame)
-		_box_rot(root, Vector3(0.08, 1.95, 0.06), Vector3(s * 0.9, 1.0, 0.0), Vector3(0.69, 0.0, 0.0), _frame)   # a cross brace each side
+		_box_rot(root, Vector3(0.08, 2.3, 0.06), Vector3(s * 0.9, 1.0, 0.0), Vector3(s * 0.82, 0.0, 0.0), _frame)   # the side braces, slanting opposite ways
+		_box_rot(root, Vector3(0.06, 2.3, 0.08), Vector3(0.0, 1.0, s * 0.9), Vector3(0.0, 0.0, -s * 0.82), _frame)  # the front and back braces, likewise
 		_box(root, Vector3(2.0, 0.95, 0.08), Vector3(0.0, 2.525, s * 0.96), _planks)        # the tank's plank walls
 		_box(root, Vector3(0.08, 0.95, 1.84), Vector3(s * 0.96, 2.525, 0.0), _planks)
 		_box(root, Vector3(2.02, 0.06, 0.02), Vector3(0.0, 2.6, s * 1.0), _iron_mat())      # the iron band
 		_box(root, Vector3(0.02, 0.06, 2.02), Vector3(s * 1.0, 2.6, 0.0), _iron_mat())
 
-	_box(root, Vector3(2.0, 0.08, 2.0), Vector3(0.0, 2.01, 0.0), _planks)                  # the deck
+	_box(root, Vector3(2.0, 0.14, 2.0), Vector3(0.0, 1.98, 0.0), _planks)                  # the deck on the posts
 	_box(root, Vector3(1.84, 0.55, 1.84), Vector3(0.0, 2.325, 0.0), _copper_mat())         # the copper lining, full to 2.6 m
 	_box(root, Vector3(1.7, 0.02, 1.7), Vector3(0.0, 2.605, 0.0), _still_water())          # 2,000 L stand 0.62 m over the floor, a copper edge round it
 	_cyl(root, 0.035, 2.0, Vector3(0.0, 1.1, 0.98), _copper_mat(), 6)                      # the downpipe to the foot
