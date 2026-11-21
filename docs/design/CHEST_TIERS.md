@@ -14,8 +14,8 @@ Earlier rulings this builds on: Dave 15 Nov 2026 (copper, bronze and iron nails 
 | Copper | Small chest (new, item 1512, blueprint 364, state 462) | 4 Hardwood board, 8 Copper nails or better | any hammer, no chisel | 24 |
 | Bronze | Rustic - Chest | 6 Hardwood board, 12 Bronze nails or better, 2 Bronze hinges or better | any hammer, no chisel | 30 |
 | Iron | Large wooden chest | 14 Hardwood board, 20 Iron nails or better, 2 Iron hinges | any hammer, no chisel | 42 |
-| Iron | Fine - Chest (unchanged otherwise) | 8 Hardwood board, 16 Iron nails or better, 2 Iron hinges | iron-tier hammer, Iron chisel | 36 |
-| Steel | Ornate - Chest | 10 Hardwood board, 24 Steel nails, 2 Iron hinges, 2 Iron band | iron-tier hammer, Steel chisel | 48 |
+| Iron | Fine - Chest (unchanged otherwise) | 8 Hardwood board, 16 Iron nails or better, 2 Iron hinges | Bronze hammer or better, Iron chisel | 36 |
+| Steel | Ornate - Chest | 10 Hardwood board, 24 Steel nails, 2 Iron hinges, 2 Iron band | Bronze hammer or better, Steel chisel | 48 |
 
 "Or better": a need names the lowest metal it takes and any better metal serves, as the chisels do (wood_species.json ingredient_groups): copper_nails takes copper, bronze, iron or steel; bronze_nails bronze, iron or steel; nails (Iron nails) iron or steel; steel_nails steel only. bronze_hinges takes bronze or iron; hinges (Iron hinges) iron only. A cost spends its lowest member first and a taken-down piece gives the lowest back (ItemTable.spend_order).
 
