@@ -7029,6 +7029,12 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 				if it.has("struct") and bool(_serve_kinds().get(str(it["struct"]["kind"]), false)) and it["struct"].has("uid") and _chests.has(int(it["struct"]["uid"])):
 					signature += 7919 * int(_chests[int(it["struct"]["uid"])].counts[0]) + 3 * int(_chests[int(it["struct"]["uid"])].numbers[0])   # a portion eaten or a board set out is sent again
 
+				var smithy_look: int = -1   # a smithy's fire: 0 cold, 1 red coals (fuel in it), 2 the flare (a craft worked there)
+
+				if it.has("struct") and not it["struct"].has("site") and _fuel_slot_kind(_structures.get(str(it["struct"]["kind"]), {})):
+					smithy_look = 2 if _busy_ms.has(id) else (1 if _smithy_fuelled(it, _structures[str(it["struct"]["kind"])]) else 0)
+					signature += 547 * (smithy_look + 1)   # a smithy fuelled, emptied, set working or idle is sent again
+
 				var site_view: Array = []
 
 				if it.has("struct") and it["struct"].has("site"):
@@ -7076,6 +7082,9 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 
 						if fill >= 0:
 							(added[added.size() - 1][5] as Dictionary)["fill"] = fill   # a station store: 0 empty, 1 to 4 quarters full
+
+						if smithy_look >= 0:
+							(added[added.size() - 1][5] as Dictionary)["forge"] = smithy_look   # a smithy's fire: 0 cold, 1 red coals, 2 the flare
 
 						if bellows_by >= 0:
 							(added[added.size() - 1][5] as Dictionary)["bellows"] = 2 if bellows_by == peer else 1   # its bellows worked: 2 by this player, 1 by another
@@ -12238,7 +12247,7 @@ func _out_add(id: int, number: int, count: int, item_wear: int = 0, item_inst: D
 
 	if _one_store(str(it["struct"]["kind"])):
 		box.usable = _store_usable(str(it["struct"]["kind"]), box)
-		var spill: int = box.add(number, count, item_wear, item_inst)
+		var spill: int = box.add(number, count, item_wear, item_inst, FUEL_SLOT + 1 if _fuel_slot_kind(_structures.get(str(it["struct"]["kind"]), {})) else 0)   # a product never goes into a smithy's fuel slot
 		_push_box(id, box)
 		_dirty = true
 		return spill
@@ -13010,6 +13019,13 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 			_reject(peer, 3)
 			return 0
 
+	var smithy: bool = id >= 0 and _fuel_slot_kind(_structures.get(kind, {}))
+
+	if smithy and _smithy_slot_refusal(_structures[kind], number, target) != "":   # a smithy's fuel slot holds its fuel only
+		_say(peer, _smithy_slot_refusal(_structures[kind], number, target))
+		_reject(peer, 3)
+		return 0
+
 	if id >= 0 and BinRules.is_bin(_structures.get(kind, {})):   # a resource bin holds one kind, up to its units (master s2.5, R6)
 		amount = BinRules.room(_structures[kind], chest, number, amount)
 
@@ -13044,7 +13060,12 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 	var left: int = 0
 
 	if amount > 0:
-		left = _smelters.put(_structures[kind], chest, number, amount, held_wear, held_inst, target) if smelter else chest.add(number, amount, held_wear, held_inst)
+		if smelter:
+			left = _smelters.put(_structures[kind], chest, number, amount, held_wear, held_inst, target)
+		elif smithy:
+			left = _smithy_add(_structures[kind], chest, number, amount, held_wear, held_inst)
+		else:
+			left = chest.add(number, amount, held_wear, held_inst)
 
 	inv.take_from_slot(a, amount - left)
 	_dirty = true
@@ -16249,21 +16270,19 @@ func _queue_of(peer: int) -> Dictionary:
 
 # Crafting stations (structures.json "station", "station_level", "reach_m"): a placed structure of that station within reach of the
 # player. The server measures the distance with 1 m of grace so lag never fails a craft; the client only displays (Tyler).
-func station_near(peer: int, station: String, level: int = 1, light_it: bool = false) -> bool:
-	return serving_station(peer, station, level, 0.0, light_it) >= 0
+func station_near(peer: int, station: String, level: int = 1) -> bool:
+	return serving_station(peer, station, level) >= 0
 
 
 # The world id of the nearest placed station that serves `station` at `level` and is working (a lit fire; a pot over a lit fire), within its
 # own reach (station_near) or, with `far_m` above it, within far_m (the crafting reach: _step_to_station); -1 when none.
-func serving_station(peer: int, station: String, level: int = 1, far_m: float = 0.0, light_it: bool = false) -> int:
+func serving_station(peer: int, station: String, level: int = 1, far_m: float = 0.0) -> int:
 	if not _peer_pos.has(peer):
 		return -1
 
 	var here: Vector3 = _peer_pos[peer]
 	var best: int = -1
 	var best_d: float = INF
-	var cold: int = -1          # the nearest cold station that the crafter's fuel could fire (used only when no burning one serves)
-	var cold_d: float = INF
 
 	if station == "campfire":   # dishes are cooked at a lit campfire (data/items/dishes.json); a clay hearth or an oven beside you cooks them too ("also" in structures.json)
 		for id in _items:
@@ -16296,41 +16315,15 @@ func serving_station(peer: int, station: String, level: int = 1, far_m: float = 
 			if str(def.get("attach_to", "")) == "fireplace" and not _lit_structure_within(it["pos"], "fireplace", float(def.get("attach_m", 2.5))):
 				continue   # the Fireplace cooking crane (master s3.12) hangs its pot over a fireplace: only while that fireplace burns
 
-			# A station that must be burning to craft (the Smithies and the Master smithy, master s4 item 10): a cold one serves while the crafter
-			# carries its fuel or a fuel source stands near it (A-28), and the craft itself (light_it) fires it. Without fuel the craft waits and nothing is lost.
-			if bool(def.get("craft_needs_lit", false)) and not bool(it["struct"].get("lit", false)):
-				if d < cold_d:
-					cold = int(id)
-					cold_d = d
-
+			# A smithy works only with fuel in its fuel slot (Dave 21 Nov 2026: "smithys should just take coal in a fuel slot ... dont need to be
+			# lit"): without it the craft waits and nothing is lost.
+			if _fuel_slot_kind(def) and not _smithy_fuelled(it, def):
 				continue
 
 			best = int(id)
 			best_d = d
 
-	if best >= 0 or cold < 0:
-		return best
-
-	# No burning station serves: the nearest cold one does while the crafter carries its fuel or a fuel source stands within FUEL_SOURCE_M of it,
-	# and only the craft itself (light_it) fires it.
-	var cold_it: Dictionary = _items[cold]
-	var cold_def: Dictionary = _structures.get(str(cold_it["struct"]["kind"]), {})
-	var fuel_n: int = table.number_of(str(cold_def.get("fuel", "fuel")))
-	var inv_l = inventory_of(peer)
-
-	if fuel_n <= 0 or inv_l == null:
-		return -1
-
-	# PROVISIONAL (GOALS-REPAIR A-28): with none in the pack, one Coal or Charcoal from a fuel source within FUEL_SOURCE_M of the station fires it.
-	var source: Array = [] if inv_l.has_fill(fuel_n, 1) else _fuel_source_one(cold_it["pos"], fuel_n)
-
-	if source.is_empty() and not inv_l.has_fill(fuel_n, 1):
-		return -1
-
-	if light_it:
-		_fire_station(peer, inv_l, cold_it, cold_def, fuel_n, source)
-
-	return cold
+	return best
 
 
 var _step_cfg: Dictionary = {}   # data/items/station_step.json, read on the first step
@@ -16427,8 +16420,8 @@ func station_level_of(it: Dictionary, def: Dictionary, station: String) -> int:
 	return int(def.get("also", {}).get(station, 0))
 
 
-# A station of this kind stands within its reach but is cold and the player has no fuel for it.
-func _cold_station_near(peer: int, station: String) -> bool:
+# A smithy that would serve this station stands within its reach with no fuel in its fuel slot.
+func _unfuelled_smithy_near(peer: int, station: String) -> bool:
 	if not _peer_pos.has(peer):
 		return false
 
@@ -16438,7 +16431,7 @@ func _cold_station_near(peer: int, station: String) -> bool:
 		if it.has("struct") and not it["struct"].has("site"):
 			var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 
-			if bool(def.get("craft_needs_lit", false)) and not bool(it["struct"].get("lit", false)) and station_level_of(it, def, station) > 0 and _peer_pos[peer].distance_to(it["pos"]) <= float(def.get("reach_m", 3.0)) + 1.0:
+			if _fuel_slot_kind(def) and not _smithy_fuelled(it, def) and station_level_of(it, def, station) > 0 and _peer_pos[peer].distance_to(it["pos"]) <= float(def.get("reach_m", 3.0)) + 1.0:
 				return true
 
 	return false
@@ -16461,32 +16454,124 @@ func _broken_station_near(peer: int, station: String, level: int = 1) -> bool:
 	return false
 
 
-# Fires a cold station that burns fuel (craft_needs_lit) with one fuel unit from the pack, or with `source` ([world id, store, slot]:
-# _fuel_source_one, A-28) from that store: lit for fuel_s seconds.
-func _fire_station(peer: int, inv, it: Dictionary, def: Dictionary, fuel_n: int, source: Array = []) -> void:
-	if not source.is_empty():
-		source[1].take_from_slot(int(source[2]), 1)
-		fuel_taken(int(source[0]), source[1])
-	else:
-		var before: Array = _snapshot(inv)
+# --- The smithies' fuel slot (Dave 21 Nov 2026: "smithys should just take coal in a fuel slot. same for all smithys. dont need to be lit. they
+# should have red coals when idle and flare really bright while making stuff") ---
+# A structures.json row with "fuel_slot" (an item or ingredient group: "fuel", Coal or Charcoal) keeps that fuel in the first slot of its one
+# store, which holds nothing else. It burns only while a craft is being worked there: fuel_craft_s seconds of making a unit (PROVISIONAL SF-2),
+# the next unit taken from the slot when the last is spent (struct fuel_left). The world row says "coals" while it has fuel (red coals) and
+# "busy" while a craft is worked (the flare, _busy_ms).
+# shortcut: fuel_left (under one unit's making time) is not saved; a restart starts the next craft on a new unit.
 
-		if not inv.remove_fill(fuel_n, 1):
-			return
+const FUEL_SLOT := 0          # the store slot that is the fuel slot
+const BUSY_HOLD_MS := 1500    # a smithy stays "busy" this long after the last craft tick worked there
 
-		_send_changes(peer, inv, before)
 
-	it["struct"]["lit"] = true
-	it["struct"]["fuel_left"] = float(def.get("fuel_s", 1800.0))
-	_lit_valid = false
-	_dirty = true
-	_say(peer, "You fire the %s." % table.sentence_name(int(it["number"])))
+func _fuel_slot_kind(def: Dictionary) -> bool:
+	return str(def.get("fuel_slot", "")) != ""
+
+
+# Whether `number` is the fuel this smithy burns (the item, or a member of the group, never an instance).
+func _is_smithy_fuel(def: Dictionary, number: int) -> bool:
+	var fuel_n: int = table.number_of(str(def.get("fuel_slot", "")))
+	return number != 0 and fuel_n > 0 and (number == fuel_n or table.group_members(fuel_n).has(number))
+
+
+func _smithy_box(it: Dictionary):
+	return _chests.get(int(it["struct"].get("uid", 0)))
+
+
+func _smithy_fuelled(it: Dictionary, def: Dictionary) -> bool:
+	if float(it["struct"].get("fuel_left", 0.0)) > 0.0:
+		return true
+
+	var box = _smithy_box(it)
+	return box != null and box.slot_count > FUEL_SLOT and _is_smithy_fuel(def, box.numbers[FUEL_SLOT]) and box.counts[FUEL_SLOT] > 0 and box.inst[FUEL_SLOT].is_empty()
+
+
+# Puts `amount` of `number` into a smithy's store: its fuel into the fuel slot first (one stack) and the rest after it, anything else never
+# into the fuel slot. Returns what did not fit (the caller readied box.usable).
+func _smithy_add(def: Dictionary, box, number: int, amount: int, item_wear: int = 0, item_inst: Dictionary = {}) -> int:
+	if item_inst.is_empty() and _is_smithy_fuel(def, number) and box.slot_count > FUEL_SLOT:
+		var stack: int = table.stack_of(number)
+
+		if box.numbers[FUEL_SLOT] == 0:
+			var first: int = mini(amount, stack)
+			box.numbers[FUEL_SLOT] = number
+			box.counts[FUEL_SLOT] = first
+			box.wear[FUEL_SLOT] = item_wear
+			box.fav[FUEL_SLOT] = 0
+			box.inst[FUEL_SLOT] = {}
+			amount -= first
+		elif box.numbers[FUEL_SLOT] == number and box.inst[FUEL_SLOT].is_empty() and box._mergeable(number, box.wear[FUEL_SLOT], item_wear):
+			var more: int = mini(amount, maxi(stack - box.counts[FUEL_SLOT], 0))
+			box.wear[FUEL_SLOT] = box._joined_age(number, box.wear[FUEL_SLOT], box.counts[FUEL_SLOT], item_wear, more)
+			box.counts[FUEL_SLOT] += more
+			amount -= more
+
+	return box.add(number, amount, item_wear, item_inst, FUEL_SLOT + 1) if amount > 0 else 0
+
+
+# The reason a put onto the fuel slot is refused ("" when it is not).
+func _smithy_slot_refusal(def: Dictionary, number: int, target: int) -> String:
+	if target == FUEL_SLOT and not _is_smithy_fuel(def, number):
+		return "Its first slot is its fuel slot: Coal or Charcoal only."
+
+	return ""
+
+
+# A craft tick worked at smithy `id` for `spent` seconds: it burns its fuel, taking the next unit from the fuel slot when the last is spent, and
+# shows busy (the flare). False when it has no fuel left for the tick (the caller checked it had some).
+func _smithy_burn(id: int, spent: float) -> bool:
+	var it: Dictionary = _items.get(id, {})
+	var def: Dictionary = _structures.get(str(it.get("struct", {}).get("kind", "")), {})
+
+	if not _fuel_slot_kind(def):
+		return true
+
+	var left: float = float(it["struct"].get("fuel_left", 0.0)) - spent
+
+	while left <= 0.0:
+		var box = _smithy_box(it)
+
+		if box == null or not _is_smithy_fuel(def, box.numbers[FUEL_SLOT]) or box.counts[FUEL_SLOT] <= 0:
+			it["struct"].erase("fuel_left")
+
+			if _busy_ms.erase(id):
+				_dirty = true   # back to cold: its row goes out again
+
+			return false
+
+		box.take_from_slot(FUEL_SLOT, 1)
+		_push_box(id, box)
+		left += float(def.get("fuel_craft_s", 1800.0))
+
+	it["struct"]["fuel_left"] = left
+
+	if not _busy_ms.has(id):
+		_dirty = true   # the flare: its row goes out again
+
+	_busy_ms[id] = Time.get_ticks_msec()
+	return true
+
+
+var _busy_ms: Dictionary = {}   # smithy world id -> ticks msec of the last craft tick worked there (its flare; never saved)
+
+
+# The smithies no craft worked for BUSY_HOLD_MS go back to their idle coals.
+func _settle_busy() -> void:
+	var now: int = Time.get_ticks_msec()
+
+	for id in _busy_ms.keys():
+		if not _items.has(id) or now - int(_busy_ms[id]) > BUSY_HOLD_MS:
+			_busy_ms.erase(id)
+			_dirty = true   # back to its idle coals: its row goes out again
 
 
 # --- Fuel sources (GOALS-REPAIR R6; A-28, A-30, A-31; master s2.5) ---
 # Stores a station may draw Coal and Charcoal from by itself, within FUEL_SOURCE_M: a resource bin that holds Coal or Charcoal, a Kiln's
 # output rack (its finished charcoal, even while it burns: A-31) and the store of a fire that is not burning (A-30). No owner or lock
 # check (lead ruling): like the Kiln and the Smelters, it is the station's own working. Used by the Smelters' hopper pull
-# (server_smelter.pull_fuel, every 300 s) and by a cold smithy fired with none in the pack (serving_station, A-28).
+# (server_smelter.pull_fuel, every 300 s).
 
 const FUEL_SOURCE_M := 30.0   # PROVISIONAL (GOALS-REPAIR A-28): how far a station reaches for fuel
 
@@ -16528,18 +16613,6 @@ func fuel_sources(at: Vector3, radius: float = FUEL_SOURCE_M, skip: int = -1) ->
 
 	out.sort_custom(func(a, b): return a[4] < b[4] or (a[4] == b[4] and a[0] < b[0]))
 	return out
-
-
-# [world id, store, slot] of the nearest fuel source holding a plain unit of `fuel_n` (an item or a group: Fuel is Coal or Charcoal); [] when none.
-func _fuel_source_one(at: Vector3, fuel_n: int) -> Array:
-	for src in fuel_sources(at):
-		for i in range(int(src[2]), int(src[3])):
-			var n: int = src[1].numbers[i]
-
-			if n != 0 and src[1].inst[i].is_empty() and _smelters.is_fuel(n) and (n == fuel_n or table.group_members(fuel_n).has(n)):
-				return [src[0], src[1], i]
-
-	return []
 
 
 # A fuel source lost some of its store: a fire's burn follows its store, and whoever has it open sees it. PROVISIONAL (GOALS-REPAIR A-34):
@@ -19987,7 +20060,7 @@ func _apply_lit_rows(rows: Array) -> void:
 
 			var lit_def: Dictionary = _structures.get(str(it["struct"].get("kind", "")), {}) if it.has("struct") else {}
 
-			if it.has("struct") and it["pos"].distance_to(spot) <= 0.3 and (str(lit_def.get("use", "")) == "light" or bool(lit_def.get("craft_needs_lit", false))):
+			if it.has("struct") and it["pos"].distance_to(spot) <= 0.3 and str(lit_def.get("use", "")) == "light":
 				it["struct"]["lit"] = true
 				it["struct"]["fuel_left"] = float(row[3])
 				break
@@ -20478,7 +20551,9 @@ func dev_place(spec: String) -> int:
 
 	var row: Dictionary = {"kind": name, "yaw": float(posmod(int(yaw), 360))}
 
-	if lit:
+	if lit and _fuel_slot_kind(def):
+		row["fuel_left"] = 1.0e7   # a smithy is never lit: "lit" gives it fuel for a test's whole run
+	elif lit:
 		row["lit"] = true
 		row["fuel_left"] = light_burn_s(def, 3600.0) * 2.0
 
@@ -22092,7 +22167,8 @@ func _bulk(peer: int, inv, kind: int, sort_key: int) -> void:
 		stacks = _sort_slots(inv, inv.hotbar_slots, inv.slot_count, sort_key, true)
 
 		if open_box != null and _is_storage(_items.get(open_id, {})):
-			stacks += _sort_slots(open_box, 0, open_box.usable, sort_key, false)   # favourites are the pack's only
+			var sort_from: int = FUEL_SLOT + 1 if _fuel_slot_kind(_structures.get(str(_items[open_id]["struct"]["kind"]), {})) else 0   # a smithy's fuel slot stays where it is
+			stacks += _sort_slots(open_box, sort_from, open_box.usable, sort_key, false)   # favourites are the pack's only
 			_push_box(open_id, open_box)
 			touched.append(open_id)
 	else:
@@ -22365,7 +22441,12 @@ func _bulk_stack_nearby(peer: int, inv) -> Array:
 			var put: int = 0
 
 			if amount > 0:
-				put = amount - (_smelters.put(box_def, box[1], number, amount, inv.wear[slot]) if _smelters.is_smelter(box_def) else box[1].add(number, amount, inv.wear[slot]))
+				if _smelters.is_smelter(box_def):
+					put = amount - _smelters.put(box_def, box[1], number, amount, inv.wear[slot])
+				elif _fuel_slot_kind(box_def):
+					put = amount - _smithy_add(box_def, box[1], number, amount, inv.wear[slot])
+				else:
+					put = amount - box[1].add(number, amount, inv.wear[slot])
 
 			if put > 0:
 				inv.take_from_slot(slot, put)
@@ -22509,7 +22590,7 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 		if _broken_station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
 			_say(peer, "Needs repair")   # the exact warning for a worn-out smithy (master s2.2 item 9)
 		else:
-			_say(peer, ("The %s is cold: carry charcoal or coal, or keep some close by in a bin, a kiln or an unlit fire, to fire it" if _cold_station_near(peer, str(recipe["station"])) else "That needs a %s nearby") % _station_name(str(recipe["station"])))
+			_say(peer, ("The %s has no fuel: put Coal or Charcoal in its fuel slot (its first slot)" if _unfuelled_smithy_near(peer, str(recipe["station"])) else "That needs a %s nearby") % _station_name(str(recipe["station"])))
 		return
 
 	for group_id in LOG_GROUP_IDS:   # shoulder and ground logs count (F-16), for any log and for the Softwood and Hardwood logs of the saws
@@ -22871,6 +22952,8 @@ func _restart_head(queue: Dictionary) -> void:
 
 
 func _craft_tick(spent: float) -> void:
+	_settle_busy()   # a smithy nobody works now goes back to its idle coals
+
 	for peer in _peer_key:
 		var queue: Dictionary = _craft_queues.get(_peer_key[peer], {})
 
@@ -22904,7 +22987,9 @@ func _craft_tick(spent: float) -> void:
 			_sync_craft_queue(peer)
 			continue
 
-		if not free_entry and str(recipe.get("station", "")) != "" and not station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1)), true):
+		var at_station: int = serving_station(peer, str(recipe["station"]), int(recipe.get("station_level", 1))) if not free_entry and str(recipe.get("station", "")) != "" else -1
+
+		if not free_entry and str(recipe.get("station", "")) != "" and at_station < 0:
 			if Time.get_ticks_msec() - int(_station_said.get(peer, -100000)) > 8000:
 				_station_said[peer] = Time.get_ticks_msec()
 				if _broken_station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
@@ -22912,8 +22997,8 @@ func _craft_tick(spent: float) -> void:
 				else:
 					var station_name: String = _station_name(str(recipe["station"]))
 					var waiting: int = _variant_of(head)
-					if _cold_station_near(peer, str(recipe["station"])):
-						_say(peer, "The %s is cold: carry charcoal or coal, or keep some close by in a bin, a kiln or an unlit fire, to fire it" % station_name)
+					if _unfuelled_smithy_near(peer, str(recipe["station"])):
+						_say(peer, "The %s has no fuel: put Coal or Charcoal in its fuel slot (its first slot)" % station_name)
 					elif waiting != 0:
 						_say(peer, "Your %s %s waits: go back to the %s" % [SmithingRules.label(waiting), str(recipe.get("name", "craft")), station_name])   # a Tempered or +1/+2 craft names the item it waits for
 					else:
@@ -22933,6 +23018,10 @@ func _craft_tick(spent: float) -> void:
 
 		if head.size() > 3 and not (head[3] as Array).is_empty() and not _start_deferred(peer, head):
 			continue
+
+		# A smithy burns its fuel only while the craft is being made, not while a finished one waits for room (need_s is set on its first tick).
+		if at_station >= 0 and float(queue["elapsed"]) < float(queue.get("need_s", INF)) and not _smithy_burn(at_station, spent):
+			continue   # its last fuel went this tick: the craft waits for more in the fuel slot (said on the next tick)
 
 		queue["elapsed"] = float(queue["elapsed"]) + spent
 

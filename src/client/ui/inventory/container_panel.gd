@@ -418,6 +418,9 @@ func smelter_parts() -> String:
 	var def: Dictionary = view._structure_by_state(int(view._world[view.chest_id].get("state", -1)))
 	var smelt: Dictionary = def.get("smelt", {}) if typeof(def.get("smelt", null)) == TYPE_DICTIONARY else {}
 
+	if str(def.get("fuel_slot", "")) != "":   # a smithy (Dave 21 Nov 2026): its first slot is its fuel slot, burnt only while it makes something
+		return "Fuel (slot 1): Coal or Charcoal, burnt only while it makes something. The rest of its store holds what you put in and what it makes."
+
 	if str(def.get("use", "")) != "smelt" or smelt.is_empty():
 		return ""
 

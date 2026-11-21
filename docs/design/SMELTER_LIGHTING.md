@@ -44,5 +44,21 @@ Dave: "it currently has a fire in the blueprint that is burning before you make 
 For Dave (assumed on his behalf, provisional):
 - PS-1: the anvil is three uneven stone courses narrowing to a dressed flat top about 34 by 29 cm, 0.6 m up.
 - PS-2: it stands to one side of the fire (the model's +x side; not yet seen in a picture), the forge moved 0.25 m the other way; the footprint grows from 0.9 to 1.6 m wide to hold both (1.4 at first; Lane A measured the forge with its anvil at x -0.79 to 0.73, 1.52 m, so 18 Nov 2026 it became 1.6; the look is unchanged).
-- PS-3: a built Primitive smithy still burns all the time (it has no lighting, unlike the smelters). Making it light with E like a smelter is left for his call.
-- PS-4: the built Brick, Advanced and Master smithies also burn all the time; only their blueprints were put out.
+- PS-3, PS-4: superseded by the smithy fuel slot below (Dave 21 Nov 2026).
+
+## Smithies: a fuel slot, no lighting (Dave 21 Nov 2026)
+
+Dave: "smithys should just take coal in a fuel slot. same for all smithys. dont need to be lit. they should have red coals when idle and flare really bright while making stuff." (He had found the Primitive smithy needed no fuel while the Improved one burned charcoal from his pack.) He also confirmed the stone anvil's side: "the anvil on the side looks fine".
+
+- All four smithies (Primitive, Improved, Advanced, Master) have `"fuel_slot": "fuel"` in structures.json. The first slot of the smithy's store is its fuel slot. Coal or Charcoal put in goes there first, anything else never goes there (a drag of anything else onto it is refused), and a product never lands there.
+- A smithy works only with fuel in that slot. It is never lit, and E does nothing new. The old `craft_needs_lit` firing from the pack or from a nearby bin, kiln or unlit fire (A-28 for smithies) is deleted.
+- Fuel burns only while a craft is worked there: one unit gives `fuel_craft_s` seconds of making, and the next unit is taken from the slot when that runs out. An idle smithy burns nothing.
+- The look follows the row's `forge`: 0 cold (no fuel), 1 red coals (fuel in, idle, a dim red glow, no flame or smoke), 2 the flare (a craft worked there: tall flames, smoke and a bright light). `BuildingLook.forge_state`.
+
+For Dave (assumed on his behalf, provisional):
+- SF-1: Charcoal counts as well as Coal, the same "fuel" group the smelters burn.
+- SF-2: one Coal or Charcoal lasts 1800 s (30 minutes) of making, the old firing time.
+- SF-3: the fuel slot holds one stack. More Coal put in is kept in the rest of the store but not burnt until it is moved into the fuel slot.
+- SF-4: idle coals glow at 0.45 energy over 3.5 m; the flare is 3.2 energy over 12 m.
+- SF-5: a smithy goes back to idle coals 1.5 s after the last craft worked there.
+- shortcut: the part-burnt unit (fuel_left) is not saved, so a restart loses under one unit's making time.

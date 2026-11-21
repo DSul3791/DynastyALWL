@@ -2955,6 +2955,7 @@ func _note_store(id: int, row: Array) -> void:
 		var redrawn: bool = _world[id].has("lit") and bool(_world[id]["lit"]) != lit_now   # lit or put out: this model goes and the new one takes the bellows
 		_world[id]["fill"] = int(row[5]["fill"])
 		_world[id]["lit"] = lit_now
+		_world[id]["forge"] = int(row[5].get("forge", -1))   # a smithy's fire: 0 cold, 1 red coals, 2 the flare
 		var at_bellows: int = int(row[5].get("bellows", 0))
 
 		if at_bellows != int(_world[id].get("bellows", 0)) and not redrawn and _world[id].get("node") is Node3D:
@@ -3181,6 +3182,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 				# A Smelter lit or put out is drawn again: its fire and light are set only when its model is built (_forge_fire).
 				var smelter_lit_changed: bool = str(_structure_by_state(state).get("use", "")) == "smelt" and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and bool(row[5].get("lit", false)) != bool(_world[id].get("lit", false))
+				# A smithy that takes fuel, runs out, starts or stops working is drawn again too (its coals, flare and light are set as its model is built).
+				smelter_lit_changed = smelter_lit_changed or (row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and int(row[5].get("forge", -1)) != int(_world[id].get("forge", -1)))
 				_note_platter(id, row, state)
 				_note_store(id, row)
 				_note_crop(id, row)
@@ -3227,6 +3230,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			if row.size() > 5 and bool((row[5] as Dictionary).get("lit", false)) and str(_structure_by_state(state).get("use", "")) == "smelt":
 				fixture_light = node.get_node_or_null("Light")   # a lit Smelter: its forge's own fire light (_forge_fire shows its flames)
+			elif row.size() > 5 and int((row[5] as Dictionary).get("forge", 0)) >= 1:
+				fixture_light = node.get_node_or_null("Light")   # a smithy with fuel: its coals' glow or its flare (BuildingLook.forge_state)
 			elif row.size() > 5 and bool((row[5] as Dictionary).get("lit", false)):
 				var fixture: Node3D = BuildingLook.lit_fixture(StructureLook.look_of(state))
 				node.add_child(fixture)
@@ -4575,6 +4580,9 @@ func station_use() -> Dictionary:
 		if str(def.get("fuel", "")) != "":
 			fuels.append(str(def["fuel"]))
 
+		if str(def.get("fuel_slot", "")) != "":
+			fuels.append(str(def["fuel_slot"]))   # a smithy's fuel slot (Coal or Charcoal)
+
 	if stations.is_empty() and fuels.is_empty() and not StoreRules.limited(def):
 		return {}
 
@@ -4874,7 +4882,7 @@ func _model_for_look(look: String, state: int, extra: Dictionary) -> Node3D:
 		"stone_forge":
 			return _forge_fire(_make_forge(state), state, extra)
 		"blacksmithy":
-			return _make_smithy()
+			return _forge_fire(_make_smithy(), state, extra)
 		"big_forge":
 			return _forge_fire(_make_big_forge(state), state, extra)
 		"carcass":
@@ -4919,11 +4927,15 @@ func _blue_all(node: Node, blue: Material) -> void:
 		_blue_all(child, blue)
 
 
-# A Smelter's forge model burns only while its row says lit, never cold (Dave 17 Nov 2026). A built smithy that shares the look, which has no
-# lighting yet, keeps its fire; no blueprint burns (_model_for_state).
+# A Smelter's forge model burns only while its row says lit, never cold (Dave 17 Nov 2026). A smithy shows its row's "forge": cold with no fuel,
+# red coals when idle, the flare while a craft is worked (Dave 21 Nov 2026). No blueprint burns (_model_for_state).
 func _forge_fire(model: Node3D, state: int, extra: Dictionary) -> Node3D:
-	if str(_structure_by_state(state).get("use", "")) == "smelt":
+	var def: Dictionary = _structure_by_state(state)
+
+	if str(def.get("use", "")) == "smelt":
 		BuildingLook.show_forge_fire(model, bool(extra.get("lit", false)))
+	elif str(def.get("fuel_slot", "")) != "":
+		BuildingLook.forge_state(model, int(extra.get("forge", 0)))
 
 	return model
 

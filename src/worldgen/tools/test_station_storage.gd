@@ -180,7 +180,7 @@ func _init() -> void:
 
 	# --- 1. A crafting station has ONE store that keeps its product and grows (Dave 17 Nov 2026: "in a station that has an inventory there should
 	# only be on inventory not a chest and crafting. it should have unlimited inventory slots starting with 20") ---
-	var forge: int = place("stone_forge@8,-0.5,0", 1)
+	var forge: int = place("stone_forge@8,-0.5,0,lit", 1)
 	check(forge > 0 and bool(def_of(forge).get("one_store", false)) and int(def_of(forge).get("out_slots", 0)) == 0 and items._is_station_store(items._items[forge]), "the Primitive smithy is a station with one store")
 	check(box(forge).slot_count == 20, "its store starts at 20 slots (%d)" % box(forge).slot_count)
 	var bronze: int = n("bronze_ingot")
@@ -260,7 +260,7 @@ func _init() -> void:
 	items.inventory_of(1).remove(n("log"), pack(1, n("log")))   # and the Logs its take-down refunded, out of the Kiln's count (the Charcoal stays: it fires the Smithy)
 
 	# --- 3 and 4. The Smithy draws Iron ingots from the player's own (locked) chest first, then from their own station store ---
-	var smithy: int = place("blacksmithy@5,3.5,0", 1)
+	var smithy: int = place("blacksmithy@5,3.5,0,lit", 1)
 	var chest: int = place("chest@3,-2,0", 1)
 	box(chest).add(ingot, 1)
 	act(1, Net.ACT_CHEST_LOCK, chest, ItemsScript.LOCK_SET, 42)
@@ -562,7 +562,7 @@ func _init() -> void:
 			bronze_only = bronze_only and made_material != "iron" and made_material != "steel" and not items.table.id_of(int(row["gives"][0])).ends_with("_ingot")
 
 	check(bronze_only, "forge-station recipes make no iron, steel or ingots")
-	place("stone_forge@60,60,0", 1)   # away from the other stations
+	place("stone_forge@60,60,0,lit", 1)   # fuelled (Dave 21 Nov 2026: a smithy works on the fuel in its fuel slot), away from the other stations
 	items.report_position(1, Vector3(60.0, 10.0, 58.5))
 	check(items.station_near(1, "forge", 1) and not items.station_near(1, "brick_forge", 1) and not items.station_near(1, "smelter", 1), "a Primitive smithy serves bronze work (forge 1) and neither iron work nor smelting")
 
