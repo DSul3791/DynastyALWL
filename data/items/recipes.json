@@ -3363,7 +3363,7 @@
 			"number": 153,
 			"name": "Water wheel",
 			"category": "Workshops and stations",
-			"needs": [["lumber", 20], ["bronze_nails", 80], ["tar", 4]],
+			"needs": [["lumber", 20], ["nails", 80], ["tar", 4]],
 			"gives": ["water_wheel", 1],
 			"craft_s": 40.0,
 			"known": true,

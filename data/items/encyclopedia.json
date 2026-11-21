@@ -4334,7 +4334,7 @@
 		"nails": {
 			"name": "Iron nails",
 			"kind": "material",
-			"description": "Small iron nails. They fix boards in builds that take iron nails or a lesser metal.",
+			"description": "Small iron nails, strong. For construction and strong boxes: bins, racks, mills, fences and big chests.",
 			"how_to_get": [
 				"Craft at a brick forge: 1 Iron ingot"
 			],
@@ -12656,7 +12656,7 @@
 		"bronze_nails": {
 			"name": "Bronze nails",
 			"kind": "material",
-			"description": "Small bronze nails. Fix boards in builds, the same as iron ones.",
+			"description": "Small bronze nails, stronger than copper. For chests, cabinets, furniture and upholstery.",
 			"how_to_get": [
 				"Craft at a forge: 1 Bronze ingot"
 			],
@@ -13221,7 +13221,7 @@
 		"copper_nails": {
 			"name": "Copper nails",
 			"kind": "material",
-			"description": "Small copper nails. Soft; a Quality - Backpack is sewn and nailed with them.",
+			"description": "Small copper nails, the softest. For copper sheet and light work: crates, garden plots, racks and a Quality - Backpack.",
 			"how_to_get": [
 				"Craft at the Primitive smithy: 1 Copper ingot"
 			],
