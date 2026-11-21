@@ -18,6 +18,7 @@ QUALITY_PACK = ((24, 12, 6), (78, 42, 22), (150, 92, 54))   # the backpack tiers
 ADVANCED_PACK = ((18, 14, 12), (66, 50, 40), (132, 112, 96))   # Advanced: dark leather with a cool steel cast from its frame
 LAMP_OIL = ((36, 22, 6), (150, 112, 40), (236, 204, 128))
 BOG_IRON = ((40, 14, 6), (122, 58, 28), (196, 112, 52))   # Bog iron ore (Dave 19 Nov 2026): the Iron ore lumps in red-brown and rust   # lamp oil (B4): the oil bottle in a deeper amber, as basic_look draws it (#9a7a32)
+METEORITE = ((14, 12, 11), (62, 56, 52), (150, 150, 154))   # Iron chunk (Dave 21 Nov 2026): the Iron ore lumps as dark meteorite iron with bright worn metal
 HARDWOOD = ((34, 18, 8), (110, 70, 40), (184, 136, 92))   # Hardwood board (Dave 21 Nov 2026): the Plank icon in a darker oak brown
 
 RECOLOURS = {
@@ -30,6 +31,7 @@ RECOLOURS = {
 	"leather_quiver": ("quiver", LEATHER),
 	"lamp_oil": ("oil", LAMP_OIL),
 	"bog_iron_ore": ("iron_ore", BOG_IRON),
+	"iron_chunk": ("iron_ore", METEORITE),
 	"hardwood_board": ("lumber", HARDWOOD),
 }
 # A metal tier of a tool that shares its sibling's look (basic_look.gd: the same shape, a different colour) while no bake has drawn it

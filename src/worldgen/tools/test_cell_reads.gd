@@ -84,18 +84,39 @@ func make(generator, settings, calls: Dictionary, bound: bool, hub: FakeHub = nu
 	return items
 
 
-# Every boulder and copper or tin rock the cells lay, as text sorted by key, and the milliseconds the layout took.
+# Every boulder and ore rock the cells lay, as text sorted by key, the milliseconds the layout took, and the ore rocks' costs per cell: the slowest
+# cell's ore rocks in ms, the most ore body looks in one cell, and the meteorites' body looks and ms over all cells.
 func lay(items, cells: Array) -> Array:
 	items._items.clear()
 	var started: int = Time.get_ticks_usec()
+	var worst_ms: float = 0.0
+	var worst_cell: Vector2i = Vector2i.ZERO
+	var most_looks: int = 0
+	var met_looks: int = 0
+	var met_usec: int = 0
 
 	for cell in cells:
 		var reads: Dictionary = items._cell_reads(cell, CELL_M)
 		items._lay_out_boulders(cell, CELL_M, reads)
+		items._ore_usec = PackedInt64Array([0, 0, 0, 0, 0, 0, 0])
+		items._ore_split.clear()
+		var ore_started: int = Time.get_ticks_usec()
 		items._lay_out_ore_rocks(cell, CELL_M, "copper", reads)
 		items._lay_out_ore_rocks(cell, CELL_M, "tin", reads)
+		items._lay_out_ore_rocks(cell, CELL_M, "iron", reads)
+		var looks_before: int = items._ore_usec[5]
+		items._lay_out_ore_rocks(cell, CELL_M, "meteorite", reads)
+		var cell_ms: float = float(Time.get_ticks_usec() - ore_started) / 1000.0
+		met_looks += items._ore_usec[5] - looks_before
+		met_usec += int(items._ore_split.get("meteorite", 0))
+		most_looks = maxi(most_looks, items._ore_usec[5])
+
+		if cell_ms > worst_ms:
+			worst_ms = cell_ms
+			worst_cell = cell
 
 	var ms: float = float(Time.get_ticks_usec() - started) / 1000.0
+	print("ore rocks: slowest cell %s %.1f ms, at most %d ore body looks in a cell; meteorites %d looks, %.1f ms in all" % [str(worst_cell), worst_ms, most_looks, met_looks, float(met_usec) / 1000.0])
 	var rows: Array = []
 
 	for id in items._items:
@@ -104,7 +125,7 @@ func lay(items, cells: Array) -> Array:
 		rows.append([int(it["scatter"]), "%.9f %.9f %.9f" % [it["pos"].x, it["pos"].y, it["pos"].z], int(it["number"]), int(it["count"]), "%.9f" % float(row.get("radius", -1.0)), str(row.get("ore", "")), "%.9f" % float(row.get("grade", -1.0))])
 
 	rows.sort_custom(func(a, b): return int(a[0]) < int(b[0]))
-	return [rows, ms]
+	return [rows, ms, worst_ms, most_looks, met_looks, float(met_usec) / 1000.0]
 
 
 func _init() -> void:
@@ -141,14 +162,20 @@ func _init() -> void:
 	var rocks: int = 0
 
 	for row in before[0]:
-		rocks += 1 if str(row[5]) == "copper" or str(row[5]) == "tin" or int(row[2]) != 0 else 0
+		rocks += 1 if str(row[5]) in ["copper", "tin", "iron", "meteorite"] or int(row[2]) != 0 else 0
 
-	print("cell reads: %d cells, %d rows (%d copper or tin), general reads %d in %.1f ms; bound: %d tile looks, %d general reads in %.1f ms" % [cells.size(), before[0].size(), rocks,
+	print("cell reads: %d cells, %d rows (%d copper, tin or iron), general reads %d in %.1f ms; bound: %d tile looks, %d general reads in %.1f ms" % [cells.size(), before[0].size(), rocks,
 		int(general_calls.get("general", 0)), float(before[1]), int(bound_calls.get("cells", 0)), int(bound_calls.get("general", 0)), float(after[1])])
-	check(before[0].size() > 0 and rocks > 0, "the cells lay boulders and copper or tin rocks (%d rows)" % before[0].size())
+	check(before[0].size() > 0 and rocks > 0, "the cells lay boulders and copper, tin or iron rocks (%d rows)" % before[0].size())
 	check(str(after[0]) == str(before[0]), "the bound reads lay exactly the same rocks: keys, places, sizes, ores and grades")
 	check(int(bound_calls.get("general", 0)) == 0 and int(general_calls.get("general", 0)) > cells.size() * 4, "with the bound reads the layout never takes the general (locking) path (%d general reads before)" % int(general_calls.get("general", 0)))
 	check(int(bound_calls.get("cells", 0)) == cells.size(), "one tile look a cell (%d)" % int(bound_calls.get("cells", 0)))
+	# The ore rocks' cost per cell (Lane B 21 Nov 2026: slow-cell lines of 55 to 60 ms in the ore part near spawn), with the cells round spawn among
+	# them. Body looks are bounded by the rule: one per ore for the cell, then at most one per try for each ore whose body is near; meteorites none.
+	# The time bound is generous (a slow lane machine; about 1 ms a cell is usual) and still catches a stall of the size seen.
+	check(int(after[3]) <= 3 * 8 and int(after[4]) == 0, "ore body looks stay bounded: at most %d in a cell, meteorites %d" % [int(after[3]), int(after[4])])
+	check(minf(float(before[2]), float(after[2])) < 25.0, "no cell's ore rocks take long: the slowest cell of each of two runs (%.1f and %.1f ms); a one-off hiccup of a busy machine shows in one run only" % [float(before[2]), float(after[2])])
+	check(float(after[5]) < float(after[1]) * 0.25, "meteorites are a small share of the layout (%.1f of %.1f ms)" % [float(after[5]), float(after[1])])
 
 	# With running water: the live levels a little over the baked rivers and lakes round both places, dry elsewhere. Both ways read the same
 	# depths, so the same rocks again.

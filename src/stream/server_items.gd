@@ -368,7 +368,7 @@ const BOULDER_KEY := 1 << 50
 const BOULDER_TRIES_MAX := 16          # a cell's boulder keys: the low four bits
 const COPPER_ROCK_FIRST := 8           # boulders take keys 0..7, copper rocks 8..15 (the last the mountain-foot boulder)
 const ORE_ROCK_TRIES := 8              # tries a cell for each ore's rocks (_lay_out_ore_rocks)
-const ORE_KEY := 1 << 52               # copper and tin rocks picked by hand: ORE_KEY | cell x << 28 | cell y << 8 | slot; tin boulders add BOULDER_KEY
+const ORE_KEY := 1 << 52               # copper, tin and iron rocks picked by hand: ORE_KEY | cell x << 28 | cell y << 8 | slot; tin boulders add BOULDER_KEY
 const BOG_STATE := 229            # world-item row state of a bog iron deposit (next free structure state, 10 Nov 2026; no structure may take it)
 const BOG_ID_BASE := 2000000000   # bog deposit world row ids count down from here (int32, far above _next_id), one per deposit key per run
 var _bog_ids: Dictionary = {}     # deposit key "gi,gj" -> its world row id
@@ -483,7 +483,8 @@ var _goals_detail: String = ""        # the last _goals_tick's split (the slow-t
 var _slowest_hint: String = ""
 var _slowest_hint_usec: int = 0
 var _sync_detail: String = ""         # the last _sync_world_items' split (the slow-tick line)
-var _ore_usec: PackedInt64Array = PackedInt64Array([0, 0, 0, 0])   # the last cell's boulders and copper and tin rocks: binding the reads, the ore body looks, the water reads, settling rows (the slow-cell line)
+var _ore_usec: PackedInt64Array = PackedInt64Array([0, 0, 0, 0, 0, 0, 0])   # the last cell's boulders and ore rocks: binding the reads, the ore body looks, the water reads, settling rows, the mountain-foot probes (usec), the number of ore body looks, the spots' ground reads (usec) (the slow-cell line)
+var _ore_split: Dictionary = {}   # the last cell's ore rocks: ore -> usec of its whole layout (the slow-cell line, so no ore's cost hides in the sum)
 var _bank_ground_usec: int = 0       # the last cell's bank stones: time reading the ground and asking for water (the slow-cell line)
 var _bank_water_usec: int = 0
 var _cell_cave_ms: float = 0.0     # the cave floor part of the last cell laid out (for the slow-cell line)
@@ -7858,15 +7859,30 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	_lay_out_bank_stones(cell, cell_m, cfg, kinds.size())
 	part_usec = _cell_part("bank stones", part_usec)
 	_cell_parts[-1] += " (ground %.0f, water %.0f)" % [float(_bank_ground_usec) / 1000.0, float(_bank_water_usec) / 1000.0]
-	_ore_usec = PackedInt64Array([0, 0, 0, 0])
+	_ore_usec = PackedInt64Array([0, 0, 0, 0, 0, 0, 0])
+	_ore_split.clear()
 	var reads: Dictionary = _cell_reads(cell, cell_m)   # one tile look for the boulders and both ores
 	_ore_usec[0] = Time.get_ticks_usec() - part_usec
 	_lay_out_boulders(cell, cell_m, reads)
 	part_usec = _cell_part("boulders", part_usec)
 	_lay_out_ore_rocks(cell, cell_m, "copper", reads)
 	_lay_out_ore_rocks(cell, cell_m, "tin", reads)
-	_cell_part("copper and tin rocks", part_usec)
-	_cell_parts[-1] += " (reads bound %.1f, ore bodies %.1f, water %.1f, settling %.1f)" % [float(_ore_usec[0]) / 1000.0, float(_ore_usec[1]) / 1000.0, float(_ore_usec[2]) / 1000.0, float(_ore_usec[3]) / 1000.0]
+	_lay_out_ore_rocks(cell, cell_m, "iron", reads)
+	_lay_out_ore_rocks(cell, cell_m, "meteorite", reads)
+	_cell_part("copper, tin and iron rocks and meteorites", part_usec)
+	var by_ore: PackedStringArray = PackedStringArray()
+
+	for ore in _ore_split:
+		by_ore.append("%s %.1f" % [ore, float(_ore_split[ore]) / 1000.0])
+
+	var listed: int = _ore_usec[1] + _ore_usec[2] + _ore_usec[3] + _ore_usec[4] + _ore_usec[6]
+	var spent: int = 0
+
+	for ore in _ore_split:
+		spent += int(_ore_split[ore])
+
+	_cell_parts[-1] += " (reads bound %.1f, ore bodies %.1f in %d looks, ground %.1f, water %.1f, settling %.1f, foot %.1f, rest %.1f; %s)" % [float(_ore_usec[0]) / 1000.0, float(_ore_usec[1]) / 1000.0, _ore_usec[5],
+		float(_ore_usec[6]) / 1000.0, float(_ore_usec[2]) / 1000.0, float(_ore_usec[3]) / 1000.0, float(_ore_usec[4]) / 1000.0, float(spent - listed) / 1000.0, ", ".join(by_ore)]
 
 
 # A cell's own random stream for one part of its layout (Sonny, 10 Nov 2026). The loose stones and sticks drew first from one stream, and a stick's spot
@@ -8010,9 +8026,10 @@ func _set_boulder_ore(row: Dictionary, ore_name: String, key: int) -> void:
 
 
 # Whether a boulder row is an ore rock (boulders.json ore items: copper, tin, iron, coal, salt), which keeps ore_yield. A limestone, chalk or marble
-# rock (ore "rocks") is stone of another kind and holds stones at the plain yield like any rock (Dave 21 Nov 2026, BugsList 118).
+# rock (ore "rocks") is stone of another kind and holds stones at the plain yield like any rock (Dave 21 Nov 2026, BugsList 118). So does a
+# meteorite (meteorite_rocks plain_yield, Dave 21 Nov 2026): a lump of metal the size of a small rock, not a big ore rock.
 func _holds_ore(row: Dictionary) -> bool:
-	return row.has("ore") and ((_boulder_cfg.get("ore", {}) as Dictionary).get("items", {}) as Dictionary).has(str(row["ore"]))
+	return row.has("ore") and ((_boulder_cfg.get("ore", {}) as Dictionary).get("items", {}) as Dictionary).has(str(row["ore"])) and not bool((_boulder_cfg.get(str(row["ore"]) + "_rocks", {}) as Dictionary).get("plain_yield", false))
 
 
 func _set_boulder_ore_only(row: Dictionary, ore_name: String, key: int) -> void:
@@ -8023,7 +8040,7 @@ func _set_boulder_ore_only(row: Dictionary, ore_name: String, key: int) -> void:
 	var own: Dictionary = _boulder_cfg.get(ore_name + "_rocks", {})
 
 	if own.is_empty():
-		return   # iron, coal and the rest: an outcrop without a grade or a size range
+		return   # coal, salt and the rest: an outcrop without a grade or a size range
 
 	var shared: Dictionary = _boulder_cfg.get("ore_rocks", {})   # read in place: _ore_rock_cfg copies, and this runs for every ore boulder
 
@@ -8051,8 +8068,15 @@ func _set_boulder_ore_only(row: Dictionary, ore_name: String, key: int) -> void:
 # - the last try a big boulder at a mountain's foot.
 # A share hand_share of the sizes is a loose ore item picked up by hand (ORE_KEY, kept in _taken like any scatter); the rest are boulder
 # rows with the ore, radius_min..radius_max (0.5 to 2 m across, Dave 17 Nov 2026), broken with a hammer or pick. Slots `slot`.. of the cell: copper 8..15 (BOULDER_KEY, after the cell's
-# boulders), tin 16..23 (ORE_KEY | BOULDER_KEY). Nothing depends on where spawn is.
+# boulders), tin 16..23, iron 24..31 and meteorites 32..39 (ORE_KEY | BOULDER_KEY; iron and meteorites since Dave 21 Nov 2026, by their own chances;
+# a meteorite gives Iron chunks, the same everywhere, with no ore body or mountain foot). Nothing depends on where spawn is.
 func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dictionary = {}) -> void:
+	var started: int = Time.get_ticks_usec()
+	_lay_out_ore_rocks_of(cell, cell_m, ore, reads)
+	_ore_split[ore] = int(_ore_split.get(ore, 0)) + Time.get_ticks_usec() - started
+
+
+func _lay_out_ore_rocks_of(cell: Vector2i, cell_m: float, ore: String, reads: Dictionary) -> void:
 	var cfg: Dictionary = _ore_rock_cfg(ore)
 	var item: String = str((_boulder_cfg.get("ore", {}).get("items", {}) as Dictionary).get(ore, ""))
 
@@ -8096,6 +8120,7 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dicti
 			body_p = float(cfg.get("body_chance", 0.0))
 
 		_ore_usec[1] += Time.get_ticks_usec() - look_usec
+		_ore_usec[5] += 1
 
 	var top_p: float = maxf(maxf(land_p, maxf(coast_p, mountain_p)), body_p)
 
@@ -8113,7 +8138,9 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dicti
 		elif attempt >= mini(int(cfg.get("tries", 4)), ORE_ROCK_TRIES - 1) or draw > top_p:
 			continue   # cheap refusals first: most tries end here without reading the ground or the water
 
+		var ground_usec: int = Time.get_ticks_usec()
 		var y: float = float(ground.call(x, z))
+		_ore_usec[6] += Time.get_ticks_usec() - ground_usec
 
 		if is_nan(y) or y < 1.0:
 			continue
@@ -8126,6 +8153,7 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dicti
 			var body_usec: int = Time.get_ticks_usec()
 			over_body = str(body_at.call(spot, body_m, names, layer_m)) == ore   # the spot itself over its own ore
 			_ore_usec[1] += Time.get_ticks_usec() - body_usec
+			_ore_usec[5] += 1
 
 		if not is_foot and not over_body and draw > maxf(land_p, lerpf(coast_p, mountain_p, upland)):
 			continue   # past every chance this high up: no ground water read
@@ -8144,7 +8172,11 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dicti
 			continue   # deep water: nobody would find it
 
 		if is_foot:
-			if depth > 0.0 or not _at_mountain_foot(spot, foot, ground):
+			var foot_usec: int = Time.get_ticks_usec()
+			var at_foot: bool = depth <= 0.0 and _at_mountain_foot(spot, foot, ground)
+			_ore_usec[4] += Time.get_ticks_usec() - foot_usec
+
+			if not at_foot:
 				continue
 		elif by_water_only:
 			# Past the land share: only on a river or lake bed (shallow water) or a dry bank within reach of water.
@@ -8195,7 +8227,7 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dicti
 
 
 # An ore's rock rule: boulders.json ore_rocks (shared by copper and tin, Dave 21 Nov 2026) under the ore's own <ore>_rocks (its slot and
-# grade, and any value it sets itself); {} for an ore without its own block (iron, coal: outcrops only).
+# grade, and any value it sets itself); {} for an ore without its own block (coal, salt: outcrops only).
 func _ore_rock_cfg(ore: String) -> Dictionary:
 	var own: Dictionary = _boulder_cfg.get(ore + "_rocks", {})
 
@@ -9133,19 +9165,20 @@ func _repair(peer: int, inv, slot: int) -> void:
 		_say(peer, "Repairing this needs a %s nearby." % _station_name(bench).to_lower())
 		return
 
-	# The tool's own slot must not be spent as material.
+	# The tool's own slot must not be spent as material. A cost is filled like a recipe's (ingredient groups: an Iron chunk mends what asks
+	# for an Iron ingot, Dave 21 Nov 2026).
 	var tool_number: int = inv.numbers[slot]
 
 	for cost in costs:
 		var number: int = table.number_of(str(cost[0]))
-		var have: int = inv.count_of(number) - (inv.counts[slot] if number == tool_number else 0)
+		var have: int = inv.count_fill(number) - (inv.counts[slot] if inv.fills_of(number).has(tool_number) else 0)
 
 		if number == 0 or have < int(cost[1]):
 			_say(peer, "Repair needs %s." % _repair_text(costs))
 			return
 
 	for cost in costs:
-		inv.remove(table.number_of(str(cost[0])), int(cost[1]))
+		inv.remove_fill(table.number_of(str(cost[0])), int(cost[1]))
 
 	inv.wear[slot] = 0
 	practice(peer, "tool_care")

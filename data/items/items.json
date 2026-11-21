@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1517,
+	"next_number": 1518,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -3467,6 +3467,16 @@
 			"look_alikes": [],
 			"value": 5,
 			"pile": {"shape": "cone", "handful": 25, "color": [0.37, 0.34, 0.31], "color2": [0.63, 0.29, 0.16], "mix": 0.35, "rock": 0.6, "squash": 0.75, "jitter": 0.3, "lumps": 0.3, "density_kg_m3": 4800}
+		},
+		"iron_chunk": {
+			"number": 1517,
+			"name": "Iron chunk",
+			"description": "A heavy lump of meteorite iron and nickel. It works as an Iron ingot.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 30,
+			"note": "Dave 21 Nov 2026: \"they break into iron chunks that count as iron ingots and can be worked or substituted directly for iron ingots. basically iron chunk inherits from iron ingot.\" Broken from meteorites (boulders.json meteorite_rocks) or picked up loose. Fills every need for an Iron ingot (wood_species.json ingredient_groups.iron_ingot): recipes, blueprints, repairs and the craft planner."
 		},
 		"bog_iron_ore": {
 			"number": 1511,
