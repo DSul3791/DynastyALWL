@@ -25,17 +25,22 @@ active hours and resting, mothers with young, seasons (rut, spring hunger), dens
 
 - **HB-1, temperament shares by species** (table below). Some species had the generic small-carnivore mix, so 15% of tigers, lions,
   leopards, pumas and hyenas were "friendly" and walked up to the player. They now follow the research.
-- **HB-2, predators chase a runner.** A predator with a `hunter` row that may attack (defensive, neutral or aggressive) charges a
-  player running away from it at 5 m/s or more inside `hunter.chase_m`. Wildlife agencies advise not to run from big cats and bears,
+- **HB-2, predators chase a runner.** A predator with a `hunter` row that may attack (defensive, neutral or aggressive) charges at
+  once, with no warning and no bluff, at a player running away from it at 5 m/s or more inside `hunter.chase_m`, and runs up to
+  `hunter.run_m` before it gives up (a defending charge runs only `defend.charge_m`). The charge is dodged as any other: step aside.
+  The usual cool-down follows. Wildlife agencies advise not to run from big cats and bears,
   because running "may trigger an instinct to chase" (Panthera) and people who run "are statistically more likely to be attacked"
   (bears). A passive or friendly one never does.
 - **HB-3, aggressive predators hunt.** A `hunter` born aggressive walks in on a player it has noticed (within its notice distance), at
   `hunter.stalk_mps`, until its threat range starts the warning and the charge. This is the rare predatory animal (5% of brown bear
   attacks, most fatal black bear attacks, man-eating big cats). It never walks into a fire's or torch's light, never out of its active
-  hours, and never as a young one. Aggressive animals without a `hunter` row (boar, buffalo, rhino, alligator) stand their ground and
+  hours, never as a young one, and not while it cools down after a charge. Aggressive animals without a `hunter` row (boar, buffalo, rhino, alligator) stand their ground and
   charge from close, as before; they do not stalk.
 
 Cost: one distance test and one dot product per hunter step, only for the seven hunter species near a player.
+
+Hunter values (`chase_m` / `run_m` / `stalk_mps`): brown bear 25 / 50 / 1.3, black bear 15 / 35 / 1.2, puma 20 / 40 / 1.0, lion
+25 / 50 / 1.1, leopard 15 / 35 / 1.0, tiger 25 / 45 / 1.0, hyena 15 / 60 / 1.3 (hyenas run prey down over distance).
 
 ## The table
 
@@ -50,16 +55,16 @@ Cost: one distance test and one dot product per hunter step, only for the seven 
 | Moose | Browses alone; often stands its ground | Ears back, hackles up, lip licking, walks toward you; usually flees if pushed | Charges and kicks (most charges are bluffs); cows with calves and rutting bulls worst (ADF&G) | D .7 N .3, calves, autumn rut |
 | Wolf | Rests and travels in packs | Avoids people; watches from a distance | Pack defends; rare attacks | Pack brain (`server_wolves.gd`), unchanged |
 | Fox | Mouses alone at dusk and night | Watches, slips away; town foxes bolder | Flees; bites if grabbed | **new** P .8 N .15 F .05 |
-| Brown bear | Forages berries, roots, fish; sleeps by day in heat | Usually avoids people; stands up to smell; huffs, jaw-pops | Defensive attack when surprised or with cubs; 5% of attacks predatory (Bombieri 2019) | **new** D .75 N .2 A .05, hunter (chase 25 m) |
-| Black bear | Forages; climbs trees | Usually flees or trees; mock charges | Rarely defends cubs; most fatal attacks were predatory (Herrero) | **new** P .5 D .4 A .1, hunter (chase 15 m) |
+| Brown bear | Forages berries, roots, fish; sleeps by day in heat | Usually avoids people; stands up to smell; huffs, jaw-pops | Defensive attack when surprised or with cubs; 5% of attacks predatory (Bombieri 2019) | **new** D .75 N .2 A .05, hunter |
+| Black bear | Forages; climbs trees | Usually flees or trees; mock charges | Rarely defends cubs; most fatal attacks were predatory (Herrero) | **new** P .5 D .4 A .1, hunter |
 | Wild boar | Roots and wallows in groups, mostly at night | Shy, flees; old males stand and watch | Sows with piglets, wounded or cornered boars charge; mock charges first (Forestry England) | **new** P .3 D .65 A .05 |
 | Warthog | Grazes on its knees by day | Trots off, tail straight up | Sows and cornered boars charge with tusks | **new** P .2 D .75 A .05 |
 | Lynx | Rests in cover by day, hunts at night | Very shy, gone before seen | Bites only if cornered | **new** P .9 N .1 |
-| Puma | Rests by day; ambush hunter | Avoids people; attacks "extremely low" risk; do not run (Panthera) | Fights if cornered; rare stalking attacks | **new** P .6 D .3 A .1, hunter (chase 25 m) |
-| Lion | Rests most of the day in prides | Resting lions stay put; growl, tail flick; do not run (Panthera) | Charges (often a bluff); some prides hunt people | **new** P .3 D .5 A .2, hunter (chase 30 m) |
-| Leopard | Rests in trees by day | Usually long gone; growls, shows teeth if cornered | Very dangerous when wounded or cornered; rare man-eaters | **new** P .6 D .3 A .1, hunter (chase 20 m) |
-| Tiger | Rests by day; ambush from behind | Resting tigers stay put; do not run (Panthera) | Attacks if cornered; man-eaters stalk people | **new** P .4 D .4 A .2, hunter (chase 30 m) |
-| Hyena | Rests by day, forages and scavenges at night | Steers clear by day, bolder at night | Bites when cornered; attacks on sleeping people at night | **new** P .5 D .4 A .1, hunter (chase 20 m), night hours |
+| Puma | Rests by day; ambush hunter | Avoids people; attacks "extremely low" risk; do not run (Panthera) | Fights if cornered; rare stalking attacks | **new** P .6 D .3 A .1, hunter |
+| Lion | Rests most of the day in prides | Resting lions stay put; growl, tail flick; do not run (Panthera) | Charges (often a bluff); some prides hunt people | **new** P .3 D .5 A .2, hunter |
+| Leopard | Rests in trees by day | Usually long gone; growls, shows teeth if cornered | Very dangerous when wounded or cornered; rare man-eaters | **new** P .6 D .3 A .1, hunter |
+| Tiger | Rests by day; ambush from behind | Resting tigers stay put; do not run (Panthera) | Attacks if cornered; man-eaters stalk people | **new** P .4 D .4 A .2, hunter |
+| Hyena | Rests by day, forages and scavenges at night | Steers clear by day, bolder at night | Bites when cornered; attacks on sleeping people at night | **new** P .5 D .4 A .1, hunter, night hours |
 | Honey badger | Digs for food alone | Tries to avoid trouble, but does not flee far | Rushes at the attacker, hackles up, musk (Discover Wildlife) | **new** D .6 N .4 |
 | Cape buffalo | Grazes and wallows in herds | Stares, may move off; herd may charge together | Wounded ones ambush and charge; among the most dangerous game | **new** D .6 N .2 A .2 |
 | Rhino | Grazes or browses, wallows | Poor sight; snorts, charges when surprised | Charges; cows with calves | **new** D .6 N .15 A .25 |

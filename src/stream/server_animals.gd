@@ -1150,18 +1150,20 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			return
 
 	# Hunters (docs/design/ANIMAL_BEHAVIOUR.md; Dave 21 Nov 2026: "Agressive animals should be aggressive"): a predator that may attack
-	# gives chase to a player running away from it inside hunter.chase_m (running "may trigger an instinct to chase", Panthera), and one
-	# born aggressive walks in on a player it has noticed until the threat range above warns and charges. Never into a fire's light, never
-	# out of its hours, never a young one.
-	if def.has("hunter") and def.has("defend") and seen_p != Vector3.INF and a["state"] != FLEE and not a.has("mother") and not resting(def) and _fire_guard(seen_p) == Vector3.INF:
-		if _chases_runner(a, def, seen_p, seen_d) and big_game.warn(a, seen_p, float(def["defend"].get("threat_warn_s", 0.5))):
+	# gives chase to a player running away from it inside hunter.chase_m (running "may trigger an instinct to chase", Panthera): a charge
+	# at once, up to hunter.run_m. One born aggressive walks in on a player it has noticed until the threat range above warns and charges;
+	# it breaks off while it cools down after a charge. Never into a fire's light, never out of its hours.
+	var stalk_mps: float = -1.0
+
+	if def.has("hunter") and def.has("defend") and seen_p != Vector3.INF and a["state"] != FLEE and not resting(def) and _fire_guard(seen_p) == Vector3.INF:
+		if _chases_runner(a, def, seen_p, seen_d) and big_game.chase(a, seen_p, float(def["hunter"].get("run_m", 30.0))):
 			return
 
-		if bool(_temper_row(a).get("stalks", false)) and seen_d <= float(def.get("alert_m", 40.0)) and seen_d > _threat_m(a, def):
+		if bool(_temper_row(a).get("stalks", false)) and float(a.get("cool", 0.0)) <= 0.0 and seen_d <= float(def.get("alert_m", 40.0)) and seen_d > _threat_m(a, def):
 			var gap: Vector3 = Vector3(seen_p.x - a["pos"].x, 0.0, seen_p.z - a["pos"].z)
 			a["target"] = a["pos"] + gap.normalized() * maxf(gap.length() - _threat_m(a, def) * 0.5, 0.0)
 			a["state"] = HOP
-			a["stalking"] = true
+			stalk_mps = float(def["hunter"].get("stalk_mps", 1.0))
 
 	# A protective animal (defending young) does not bolt: it warns a player who comes too close, and only then charges.
 	# With its young modelled (traits on) it runs sooner instead, and fights only for them (above).
@@ -1263,9 +1265,8 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 	var speed: float = float(def.get("walk_mps", 1.5))
 
-	if bool(a.get("stalking", false)):
-		a.erase("stalking")
-		speed = float(def.get("hunter", {}).get("stalk_mps", speed))   # a hunter walking in on a player, low and steady
+	if stalk_mps > 0.0:
+		speed = stalk_mps   # a hunter walking in on a player, low and steady
 
 	if a["state"] == FLEE:
 		# Sprint for burst_s seconds, then trot: an animal cannot outrun a chase for ever.

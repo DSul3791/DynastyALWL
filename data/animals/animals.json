@@ -1006,9 +1006,10 @@
 			},
 			"model": true,
 			"hunter": {
-				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack chases a player running away from it inside chase_m; one born aggressive walks in on a player it has noticed at stalk_mps.",
+				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack charges at once, with no warning, at a player running away from it inside chase_m, and runs up to run_m before it gives up; one born aggressive walks in on a player it has noticed at stalk_mps.",
 				"chase_m": 25.0,
-				"stalk_mps": 1.3
+				"stalk_mps": 1.3,
+				"run_m": 50.0
 			},
 			"temperament": {
 				"defensive": 0.75,
@@ -1415,9 +1416,10 @@
 				"night": 0.05
 			},
 			"hunter": {
-				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack chases a player running away from it inside chase_m; one born aggressive walks in on a player it has noticed at stalk_mps.",
+				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack charges at once, with no warning, at a player running away from it inside chase_m, and runs up to run_m before it gives up; one born aggressive walks in on a player it has noticed at stalk_mps.",
 				"chase_m": 15.0,
-				"stalk_mps": 1.2
+				"stalk_mps": 1.2,
+				"run_m": 35.0
 			},
 			"temperament": {
 				"passive": 0.5,
@@ -2806,9 +2808,10 @@
 				"threat_warn_s": 0.5
 			},
 			"hunter": {
-				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack chases a player running away from it inside chase_m; one born aggressive walks in on a player it has noticed at stalk_mps.",
-				"chase_m": 25.0,
-				"stalk_mps": 1.0
+				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack charges at once, with no warning, at a player running away from it inside chase_m, and runs up to run_m before it gives up; one born aggressive walks in on a player it has noticed at stalk_mps.",
+				"chase_m": 20.0,
+				"stalk_mps": 1.0,
+				"run_m": 40.0
 			},
 			"temperament": {
 				"passive": 0.6,
@@ -3075,9 +3078,10 @@
 				"threat_warn_s": 0.5
 			},
 			"hunter": {
-				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack chases a player running away from it inside chase_m; one born aggressive walks in on a player it has noticed at stalk_mps.",
-				"chase_m": 20.0,
-				"stalk_mps": 1.3
+				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack charges at once, with no warning, at a player running away from it inside chase_m, and runs up to run_m before it gives up; one born aggressive walks in on a player it has noticed at stalk_mps.",
+				"chase_m": 15.0,
+				"stalk_mps": 1.3,
+				"run_m": 60.0
 			},
 			"temperament": {
 				"passive": 0.5,
@@ -3247,9 +3251,10 @@
 				"threat_warn_s": 0.5
 			},
 			"hunter": {
-				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack chases a player running away from it inside chase_m; one born aggressive walks in on a player it has noticed at stalk_mps.",
-				"chase_m": 30.0,
-				"stalk_mps": 1.1
+				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack charges at once, with no warning, at a player running away from it inside chase_m, and runs up to run_m before it gives up; one born aggressive walks in on a player it has noticed at stalk_mps.",
+				"chase_m": 25.0,
+				"stalk_mps": 1.1,
+				"run_m": 50.0
 			},
 			"temperament": {
 				"passive": 0.3,
@@ -3321,9 +3326,10 @@
 				"threat_warn_s": 0.5
 			},
 			"hunter": {
-				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack chases a player running away from it inside chase_m; one born aggressive walks in on a player it has noticed at stalk_mps.",
-				"chase_m": 20.0,
-				"stalk_mps": 1.0
+				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack charges at once, with no warning, at a player running away from it inside chase_m, and runs up to run_m before it gives up; one born aggressive walks in on a player it has noticed at stalk_mps.",
+				"chase_m": 15.0,
+				"stalk_mps": 1.0,
+				"run_m": 35.0
 			},
 			"temperament": {
 				"passive": 0.6,
@@ -4007,9 +4013,10 @@
 				"threat_warn_s": 0.5
 			},
 			"hunter": {
-				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack chases a player running away from it inside chase_m; one born aggressive walks in on a player it has noticed at stalk_mps.",
-				"chase_m": 30.0,
-				"stalk_mps": 1.0
+				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack charges at once, with no warning, at a player running away from it inside chase_m, and runs up to run_m before it gives up; one born aggressive walks in on a player it has noticed at stalk_mps.",
+				"chase_m": 25.0,
+				"stalk_mps": 1.0,
+				"run_m": 45.0
 			},
 			"temperament": {
 				"passive": 0.4,

@@ -90,20 +90,25 @@ func _init() -> void:
 	a = make()
 	players = [player(27.0, 0.0)]
 	id = cat(a, "defensive")
-	a.cfg["species"]["tiger"]["hunter"]["chase_m"] = 40.0
 	states = run(a, id, 4.0)
 	check(not states.has(10) and not states.has(11) and gap(a, id) >= 26.0, "a defensive tiger lets a standing player be (%.1f m, states %s)" % [gap(a, id), str(states.keys())])
 
-	# 3. The same tiger chases a player who runs away from it close by.
-	states = run(a, id, 1.5, 6.0)
-	check(states.has(10) or states.has(11), "and charges one who runs away from it (states %s)" % str(states.keys()))
+	# 3. A defensive tiger charges at once, with no warning, at a player running away from it 18 m off, and catches them.
+	a = make()
+	hurt_log.clear()
+	players = [player(14.0, 0.0)]
+	run(a, -1, 0.6, 6.0)   # the player is already running when the tiger first sees them (two noise samples)
+	id = cat(a, "defensive")
+	states = run(a, id, 4.0, 6.0)
+	check(states.has(11) and not states.has(10), "a defensive tiger charges a runner at once, no warning (states %s)" % str(states.keys()))
+	check(not hurt_log.is_empty(), "and the charge catches a player running at 6 m/s")
 
 	# 4. A passive tiger never chases a runner.
 	a = make()
-	players = [player(27.0, 0.0)]
+	players = [player(14.0, 0.0)]
+	run(a, -1, 0.6, 6.0)
 	id = cat(a, "passive")
-	a.cfg["species"]["tiger"]["hunter"]["chase_m"] = 40.0
-	states = run(a, id, 1.5, 6.0)
+	states = run(a, id, 4.0, 6.0)
 	check(not states.has(10) and not states.has(11), "a passive tiger never chases (states %s)" % str(states.keys()))
 
 	# 5. An aggressive tiger does not walk into a fire's light.
