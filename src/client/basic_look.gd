@@ -51,7 +51,7 @@ const ART_OVERRIDES := {
 	"gambeson": {"shape": "jerkin", "color": "#d8cbb0", "size": 1.0, "bits": ["padded"]},
 	"mail_shirt": {"shape": "jerkin", "color": "#8c9099", "size": 1.0, "bits": ["mail"]},
 	"plate_cuirass": {"shape": "jerkin", "color": "#9aa3ad", "size": 1.0, "bits": ["plate"]},
-	"bronze_sword": {"shape": "sword", "color": "#b5803a", "size": 1.0},
+	"bronze_sword": {"shape": "sword", "color": "#b5803a", "size": 1.0, "bits": ["bronze"]},
 	"apple_early": {"shape": "fruit", "color": "#e0a030", "size": 0.9},
 	"apple_summer": {"shape": "fruit", "color": "#c0402a", "size": 0.95},
 	"apple_autumn": {"shape": "fruit", "color": "#b02a22", "size": 1.0},
@@ -115,14 +115,14 @@ const ART_OVERRIDES := {
 	"lamp_oil": {"shape": "bottle", "color": "#9a7a32", "size": 1.0},
 	"steel_hammer": {"shape": "hammer", "color": "#9aa3ad", "size": 1.0, "bits": ["steel", "forged"]},
 	"bronze_knife": {"shape": "knife", "color": "#b5803a", "size": 1.35, "bits": ["bronze"]},
-	"iron_sword": {"shape": "sword", "color": "#7d8087", "size": 1.0},
-	"steel_sword": {"shape": "sword", "color": "#b6bdc6", "size": 1.0},
-	"bronze_mace": {"shape": "flanged_mace", "color": "#b5803a", "size": 1.0},
-	"iron_mace": {"shape": "flanged_mace", "color": "#6c6f75", "size": 1.0},
-	"steel_mace": {"shape": "flanged_mace", "color": "#9aa3ad", "size": 1.0},
-	"bronze_shield": {"shape": "metal_shield", "color": "#b5803a", "size": 1.0},
-	"iron_shield": {"shape": "metal_shield", "color": "#6c6f75", "size": 1.0},
-	"steel_shield": {"shape": "metal_shield", "color": "#9aa3ad", "size": 1.0},
+	"iron_sword": {"shape": "sword", "color": "#7d8087", "size": 1.0, "bits": ["iron"]},
+	"steel_sword": {"shape": "sword", "color": "#b6bdc6", "size": 1.0, "bits": ["steel"]},
+	"bronze_mace": {"shape": "flanged_mace", "color": "#b5803a", "size": 1.0, "bits": ["bronze"]},
+	"iron_mace": {"shape": "flanged_mace", "color": "#6c6f75", "size": 1.0, "bits": ["iron"]},
+	"steel_mace": {"shape": "flanged_mace", "color": "#9aa3ad", "size": 1.0, "bits": ["steel"]},
+	"bronze_shield": {"shape": "metal_shield", "color": "#b5803a", "size": 1.0, "bits": ["bronze"]},
+	"iron_shield": {"shape": "metal_shield", "color": "#6c6f75", "size": 1.0, "bits": ["iron"]},
+	"steel_shield": {"shape": "metal_shield", "color": "#9aa3ad", "size": 1.0, "bits": ["steel"]},
 	"plank_shield": {"shape": "plank_shield", "color": "#a07a45", "size": 1.0},
 	"campfire_kit": {"shape": "parcel", "color": "#6a4a2a", "size": 1.0, "bits": ["fire"]},
 	"log_wall_kit": {"shape": "parcel", "color": "#5a3c22", "size": 1.0, "bits": ["planks"]},
@@ -604,11 +604,27 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 						_box(parts, Vector3(0.02, 0.036, 0.004), Vector3(0.0, 0.002, -0.14 + 0.025 * float(k)), dark)
 		"sword":
 			# A straight sword lying flat (refs: Bronze Age leaf-bladed swords, Roman gladius, medieval arming sword): a long flat blade with a central fuller groove and a pointed tip, a crossguard, a wrapped grip and a round pommel.
-			_box(parts, Vector3(0.36, 0.008, 0.046), Vector3(0.13, 0.0, 0.0), color)
-			_box_rot(parts, Vector3(0.09, 0.008, 0.026), Vector3(0.375, 0.0, 0.0105), Vector3(0.0, -0.3, 0.0), color)   # the tip: two tilted pieces meeting in a point
-			_box_rot(parts, Vector3(0.09, 0.008, 0.026), Vector3(0.375, 0.0, -0.0105), Vector3(0.0, 0.3, 0.0), color)
-			_box(parts, Vector3(0.34, 0.01, 0.01), Vector3(0.13, 0.001, 0.0), dark)
-			_metal(parts)
+			# A metal tier in bits takes its TIER_METAL colour. bits "curved" (a scimitar, ref: Ottoman kilij and Persian shamshir): the blade sweeps back in six segments to a point;
+			# bits "thin" (a rapier, ref: 16th-century rapier): a narrow blade with a ring guard round the grip.
+			color = tier_metal(bits, color)
+			dark = color.darkened(0.35)
+			var blade_w: float = 0.022 if bits.has("thin") else 0.046
+			if bits.has("curved"):
+				var at: Vector3 = Vector3(-0.045, 0.0, 0.0)
+				for k in range(7):                                                                                   # each segment 7 cm, turning 0.07 rad further back than the last
+					var bend: float = 0.07 * float(k)
+					var along: Vector3 = Vector3(cos(bend), 0.0, -sin(bend))
+					_box_rot(parts, Vector3(0.075, 0.008, blade_w * (1.0 - 0.11 * float(k))), at + along * 0.035, Vector3(0.0, bend, 0.0), color.lightened(0.1) if k == 6 else color)
+					at += along * 0.07
+				_metal(parts)
+			else:
+				_box(parts, Vector3(0.36, 0.008, blade_w), Vector3(0.13, 0.0, 0.0), color)
+				_box_rot(parts, Vector3(0.09, 0.008, blade_w * 0.57), Vector3(0.375, 0.0, blade_w * 0.23), Vector3(0.0, -0.3, 0.0), color)   # the tip: two tilted pieces meeting in a point
+				_box_rot(parts, Vector3(0.09, 0.008, blade_w * 0.57), Vector3(0.375, 0.0, -blade_w * 0.23), Vector3(0.0, 0.3, 0.0), color)
+				_box(parts, Vector3(0.34, 0.01, blade_w * 0.22), Vector3(0.13, 0.001, 0.0), dark)
+				_metal(parts)
+			if bits.has("thin"):
+				_torus(parts, 0.035, 0.004, Vector3(-0.07, 0.0, 0.0), dark)                                      # the ring guard
 			_box(parts, Vector3(0.022, 0.016, 0.14), Vector3(-0.055, 0.0, 0.0), dark)
 
 			for k in 4:
@@ -617,6 +633,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_sph(parts, 0.022, Vector3.ONE, Vector3(-0.21, 0.0, 0.0), dark)
 		"flanged_mace":
 			# A metal mace (refs: Bronze Age flanged maces, medieval flanged mace): a haft with a wrapped grip and a head of six radial flanges round a central core, a spike on the end.
+			color = tier_metal(bits, color)
+			dark = color.darkened(0.35)
 			_cyl_taper(parts, 0.016, 0.02, 0.4, Vector3(-0.05, 0.0, 0.0), Color(0.42, 0.28, 0.14))
 
 			for k in 4:
@@ -631,6 +649,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_metal(parts)
 		"metal_shield":
 			# A round metal shield lying flat (refs: Bronze Age round bronze shields, Iron Age bossed shields): a thin disc with a raised rolled rim, a domed central boss, a ring of rivets and two crossed ribs.
+			color = tier_metal(bits, color)
+			dark = color.darkened(0.35)
 			_cyl(parts, 0.25, 0.012, Vector3(0.0, -0.03, 0.0), Vector3.ZERO, color)
 			_torus(parts, 0.246, 0.012, Vector3(0.0, -0.026, 0.0), color.lightened(0.1))
 			_torus(parts, 0.16, 0.007, Vector3(0.0, -0.022, 0.0), color.darkened(0.12))
@@ -2001,11 +2021,30 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_box_rot(parts, Vector3(0.01, 0.012, 0.01), Vector3(0.6, 0.0, 0.02), Vector3(0.0, 0.6, 0.0), flint_head.darkened(0.25))   # a chipped flake scar on the edge
 				for k in range(6):
 					_cyl(parts, 0.0205, 0.009, Vector3(0.455 + 0.009 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.3 * float(k % 2 * 2 - 1)), Color(0.16, 0.1, 0.05) if k < 4 else Color(0.6, 0.48, 0.28))
+			elif bits.has("staff"):
+				# A quarterstaff (ref: English quarterstaff, about 2 m of hardwood): no head, both ends rounded and bound with an iron ferrule.
+				for end in [-0.45, 0.45]:
+					_cyl(parts, 0.018, 0.03, Vector3(end, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.1, 0.1, 0.11))
+					_metal(parts, 0.6, 0.4)
 			elif metal_head:
-				var iron_head: Color = Color(0.2, 0.19, 0.17)
+				var iron_head: Color = tier_metal(bits, Color(0.2, 0.19, 0.17) * 1.35) / 1.35   # a metal tier's own colour (TIER_METAL); the blade below is drawn 1.35x lighter
 				_cyl_taper(parts, 0.0165, 0.024, 0.1, Vector3(0.5, 0.0, 0.0), iron_head * 0.8)                       # the socket cone
 				_metal(parts, 0.5, 0.5)
-				_plate(parts, 0.545, 0.3, 0.07, 0, 12, iron_head * 1.35, true, true, 0.5, 0.5, Transform3D.IDENTITY, 3)   # a flat leaf blade with a ridge down the middle (the midrib) and a sharp point
+				if bits.has("trident"):
+					# A trident (ref: fishing and retiarius tridents): a crossbar on the socket and three barbed prongs forward.
+					_box(parts, Vector3(0.02, 0.016, 0.12), Vector3(0.56, 0.0, 0.0), iron_head)
+					_metal(parts, 0.5, 0.5)
+					for z in [-0.05, 0.0, 0.05]:
+						_cyl_taper(parts, 0.006, 0.001, 0.16, Vector3(0.65, 0.0, z), iron_head * 1.35)
+						_metal(parts, 0.5, 0.5)
+				else:
+					_plate(parts, 0.545, 0.3, 0.07, 0, 12, iron_head * 1.35, true, true, 0.5, 0.5, Transform3D.IDENTITY, 3)   # a flat leaf blade with a ridge down the middle (the midrib) and a sharp point
+				if bits.has("halberd"):
+					# A halberd (ref: 15th-century Swiss halberd): an axe blade on one side below the point and a hook on the other, on the same socket.
+					_box(parts, Vector3(0.1, 0.008, 0.12), Vector3(0.53, 0.0, 0.075), iron_head * 1.35)
+					_metal(parts, 0.5, 0.5)
+					_box_rot(parts, Vector3(0.07, 0.01, 0.018), Vector3(0.53, 0.0, -0.045), Vector3(0.0, 0.5, 0.0), iron_head * 1.1)
+					_metal(parts, 0.5, 0.5)
 				for k in range(5):                                                                                   # the twine binding below the socket: slanted turns in two tones, a visible wrap
 					_cyl(parts, 0.0245, 0.014, Vector3(0.43 + 0.012 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.35), Color(0.55, 0.4, 0.18) if k % 2 == 0 else Color(0.34, 0.24, 0.1))
 			else:
@@ -2341,6 +2380,11 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_plate(parts, 0.285, 0.1, 0.05, 0, 12, Color(0.3, 0.27, 0.22), true, false, 0.9, 0.0, Transform3D(Basis.IDENTITY, Vector3.ZERO), 4, 1.6)
 				_cyl(parts, 0.0075, 0.012, Vector3(0.285, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.3), Color(0.5, 0.36, 0.16))   # twine lashing under the head
 				_cyl(parts, 0.0075, 0.012, Vector3(0.298, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.3), Color(0.34, 0.24, 0.1))
+			elif has_tier(bits):
+				_cyl(parts, 0.0072, 0.03, Vector3(0.27, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), tier_metal(bits, Color.BLACK) * 0.8)   # a forged socket on the shaft (bronze, iron or steel: TIER_METAL)
+				_metal(parts, 0.5, 0.5)
+				_cone(parts, 0.009, 0.06, Vector3(0.31, 0.0, 0.0), tier_metal(bits, Color.BLACK))                       # a bodkin point
+				_metal(parts, 0.5, 0.5)
 			else:
 				_cone(parts, 0.0056, 0.07, Vector3(0.3, 0.0, 0.0), shaft_wood.darkened(0.35))                         # the sharpened, fire-hardened point
 		"quiver":
@@ -2673,6 +2717,15 @@ static func tier_metal(bits: Array, fallback: Color) -> Color:
 			return Color.html(TIER_METAL[tier]).srgb_to_linear()
 
 	return fallback
+
+
+# Whether `bits` names a metal tier (TIER_METAL).
+static func has_tier(bits: Array) -> bool:
+	for tier in TIER_METAL:
+		if bits.has(tier):
+			return true
+
+	return false
 
 
 # A stone head colour a little darker and warmer than the table grey (hands11 pictures: sunlit grey stone read pale blue-white).
