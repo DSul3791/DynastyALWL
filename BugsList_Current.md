@@ -1594,14 +1594,14 @@ Not yet played.
 - TileTerrainData.CAMP_CAVES keeps wild goblins and animal dens out of the camp cave. Without it, 8006 would hold a goblin band and a wolf den. 8013 is no longer reserved; by its id it holds neither, and the tile's always-goblins cave stays 3,4#8002.
 - The new mouth is farther from the camp than angry_keep_m. A struck goblin running for the mouth now goes all the way in, and gives up after twice the run time plus 10 s. While in the cave it also counts a striker who waits at its camp spot, so it stays in until that striker goes.
 - Existing worlds: the fire and props are laid by the server and never saved, so after a restart the camp is at the new cave and nothing is left at the old one. Standing, anger and the stock clock carry over per tribe.
-- The camp-stock restart test (from entry 86) rode along.
+- The test that the camp's stock carries over a server restart (entry 86) went in with it.
 - Provisional: GOBLIN-19 in docs/design/GOBLIN_CAMP.md. A possible follow-up for Dave is a cave carved into the nearer hill about 1.2 km from the spawn; it needs cave carving, a TERRAIN_VERSION and a new starter cache.
 
 **Evidence:**
 - Independent review PASS on d9d5b30b, 948659f8, 6673aad0, d97be1f2 and e5846163.
 - Lane B on 6673aad0: 268 pass / 1 fail. test_goblin_camp failed because Skritch stopped short of the mouth; this was fixed.
 - Lane B on e5846163: 270 pass / 0 fail (260 fast, 8 timing, test_worldgen and test_bake_from_record), test_goblin_camp 0 failures. Warnings stay at 381, validate_items had 0 errors, all 340 looks are drawable, and the join smoke was clean.
-- Tile 3,4's mines are identical before and after the move (print_tile_mines_3_4.gd, MINES 2), so the version 79 starter cache stays valid.
+- Tile 3,4's mines are identical before and after the move (a one-off Lane B check, print_tile_mines_3_4.gd in the project files: MINES 2 on both), so the version 79 starter cache stays valid.
 
 **Acceptance:** walk about 1.6 km west and a little south from the spawn to the brook coming out of the hill. The Ragtooth camp is by the cave mouth, with the goblins at their chores. Strike one and they all run into the cave, staying in while you wait at the camp. Nothing is left at the old cave.
 
