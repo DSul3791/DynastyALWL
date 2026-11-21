@@ -1355,6 +1355,34 @@ Not yet played; not yet seen in a picture.
 
 Not yet played.
 
+## 116. Every smithy takes coal in a fuel slot
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "smithys should just take coal in a fuel slot. same for all smithys. dont need to be lit. they should have red coals when idle and flare really bright while making stuff." Then: "the anvil on the side looks fine". Earlier in the project chat: the Primitive smithy needed no coal while the Improved one needed coal in the inventory; "standardize… a slot for fuel where you put the coal", "both of them should".
+
+**What was found:** the Primitive smithy (stone_forge) and the Blacksmithy had to be lit and burned fuel by the second, whether or not they were making anything. The Advanced smithy and the Master forge took coal straight from the inventory. The built Primitive smithy always showed a burning fire.
+
+**Required outcome:** all four smithies take Coal in a slot of their own, need no lighting, show red coals while they have fuel and nothing to make, and flare bright while making something.
+
+**As built (PR #1428, reviewed and tested head 4530f0dc, merged to dev at bf327172):**
+- Primitive smithy, Blacksmithy, Advanced smithy and Master forge: the first slot of the smithy's store is its fuel slot. It takes Coal or Charcoal only; anything else put there is refused with "Its first slot is its fuel slot: Coal or Charcoal only." Fuel put into the smithy goes to that slot first. Sort leaves it alone.
+- No lighting: a smithy with fuel serves its recipes; one with none does not. Fuel burns only while a craft is being made, one unit per 1800 s of making, and not while a finished craft waits.
+- Looks: no fuel, cold. Fuel and idle, red coals with a soft glow (0.45 energy, 3.5 m). Making something, a bright flare (3.2 energy, 12 m), back to idle 1.5 s after the last craft. The world row carries the state, so other players see it.
+- The station window notes "Fuel (slot 1): Coal or Charcoal, burnt only while it makes something".
+- Design: docs/design/SMELTER_LIGHTING.md, "Smithies: a fuel slot, no lighting" (SF-1 to SF-5). PS-3 and PS-4 are superseded.
+
+**Evidence:**
+- Independent review: PASS on the merged head. The first pass found Sort moving the fuel slot, fuel burning while a finished craft waited, the busy state saved with the smithy, and missing tests. All were fixed before the PASS.
+- Lane A tests on 4530f0dc: 302 pass / 0 fail, warnings 381 = baseline.
+- Tests cover the fuel slot, the refusal, Sort, burning only while making, and the three looks (test_stations, test_resource_bins 9a-9d, test_forge_models, test_mission001_walkthrough and the bronze and iron routes).
+
+**Known limits:**
+- The part-burnt unit (up to 1800 s of making) is not saved; after a server restart the next unit is taken from the slot.
+- The coals and flare have not been seen in game.
+
+**Acceptance:** build a Primitive smithy. Before fuel it is cold and offers no recipes. Put Coal in slot 1: red coals glow. Make something: the fire flares bright and drops back to red coals when done. The same for the Blacksmithy, Advanced smithy and Master forge.
+
+Not yet played.
+
 ## 117. Fitness: tiring scale and idling below the start
 
 **Status: Implemented - awaiting player verification.** Dave's rulings during his play test, 21 Nov 2026, after asking what fitness does: "at 100 it should use 50%", "scale in between 50 fitness being 100% and 100 being 50%", and "being Idle can lower it below your start. that was not my rule. remove it." (reading confirmed: "that correct").
@@ -1495,6 +1523,7 @@ Dave requested this rewrite around the intended experience rather than a literal
 - CT-5 (entry 111): only the chests are tiered. The other buildings that use nails (about 40) take bronze nails or better.
 - CT-6 (entry 112): the knife's store is the existing Basket renamed Wicker basket, keeping its cost (8 Stick, 4 Twine) and 6 slots. The Wicker - Chest is hidden and locked rather than retired, because the server tests use it as their plain container. The goblin camp's chest prop is a Small chest (Dave 20 Nov 2026: "a small chest of some sort").
 - BW-1..BW-4 (entry 115): chosen by Claude. A stroke of the bellows every 1.4 s. The fire light 1.8 times as bright while worked. The flames leap to 1.35 times their size at each stroke. The bellows sound is generated (a creak, a rush of air through the nozzle and the fire roaring up, about 1.1 s), played at -9 dB.
+- SF-1..SF-5 (entry 116): chosen by Claude. Charcoal counts as coal. One unit lasts 1800 s of making. The fuel slot holds one stack; more fuel is stored in the other slots but not burnt until moved in. Idle glow 0.45 energy over 3.5 m, the flare 3.2 over 12 m. Back to idle 1.5 s after the last craft.
 - BI-3 (entry 114): bog iron fields, chosen by Claude. 512 m squares, half bear iron; at least 12 wetland samples; patches within 64 m of a wet-edge seed, 3 plus one per 25 wetland samples within 64 m of the seed, up to 8, 14 m apart; 6 to 12 ore; radius 2.5 to 4 m by size; edge samples are taken first (their draw scored at a quarter). Rust colour linear 0.30, 0.10, 0.025 to 0.44, 0.20, 0.04.
 - BI-4 (entry 114): a hole dug on wetland silts back in after 1 game day, with the wetland's own soil; no refill under 1 m deep (tunnels) or while a player is near; at most 4 a tick.
 - WL-1 (entry 113): wetland looks, densities and timings chosen by Claude. Colours are as built. Pool levels in the puddle hollows are 0.63 fen, 0.68 bog and 0.56 swamp. Pace in a pool is 0.85. Mist runs from sunrise -1 h to +2 h and from sunset -1 h to +1.5 h. Grass thickness is fen 0.3, bog 0.12 and swamp none. Plant densities are as in entry 113.
