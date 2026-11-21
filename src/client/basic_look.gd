@@ -1708,7 +1708,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# One sawn board lying flat at its real size (BOARD_M; the ground does not enlarge it): pale cut ends with growth-ring arcs and a few
 			# darker grain streaks and a knot along the top face.
 			var half: float = BOARD_M.x * 0.5
-			var low: float = -0.04 + BOARD_M.y * 0.5
+			var low: float = -0.12 + BOARD_M.y * 0.5   # the underside on the drawn ground: loose items are set 0.12 m over it (InventoryView._snap_loose)
 			_box(parts, BOARD_M, Vector3(0.0, low, 0.0), color)
 
 			for end in [-1.0, 1.0]:

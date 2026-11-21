@@ -42,7 +42,7 @@ func _init() -> void:
 			var mesh: Mesh = PileLookScript.mesh_for(id, entry, count, 7)
 			var tris: int = floori(float((mesh.surface_get_arrays(0)[Mesh.ARRAY_INDEX] as PackedInt32Array).size()) / 3.0)
 			var box: AABB = mesh.get_aabb()
-			check(tris == 12 * count and box.size.x > 2.4 and box.size.x < 2.6 and box.position.y > -0.001, "%s: %d boards are %d triangles, 8 ft long, on the ground (%d, %s)" % [id, count, 12 * count, tris, str(box)])
+			check(tris == 12 * count and box.size.x > 2.4 and box.size.x < 2.6 and absf(box.position.y + 0.12) < 0.001, "%s: %d boards are %d triangles, 8 ft long, the bottom one on the drawn ground (%d, %s)" % [id, count, 12 * count, tris, str(box)])
 
 		var four: AABB = PileLookScript.mesh_for(id, entry, 4, 7).get_aabb()
 		var five: AABB = PileLookScript.mesh_for(id, entry, 5, 7).get_aabb()

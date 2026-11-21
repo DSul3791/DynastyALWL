@@ -10,7 +10,7 @@ const ROW_RISE_M := 0.22            # height of one row
 const ROW_SPREAD_M := 0.17          # footprint radius per row
 const ROCK_R_M := 0.27
 
-# What each kind looks like comes from its items.json "pile" row: {"shape": "pyramid" | "mound" | "cone" (with "density_kg_m3": a solid cone, _cone_mesh), "handful", "color", "rock" (rock size scale), "squash",
+# What each kind looks like comes from its items.json "pile" row ("logs": _logs_mesh, "boards": _boards_mesh; the others below): {"shape": "pyramid" | "mound" | "cone" (with "density_kg_m3": a solid cone, _cone_mesh), "handful", "color", "rock" (rock size scale), "squash",
 # optional "tight" (scales footprint and row rise with the lump size, default 1.0) and "jitter" (lump size spread, default 0.2)}.
 # A cone row may also set "color2" with "mix" (that share of its pieces take the second colour: ore over its host rock, rust on iron),
 # "lumps" (0 smooth stones to about 0.4: each piece is one of LUMP_SHAPES knobbly shapes, built once) and "rough" (material roughness, default 1.0).
@@ -437,6 +437,7 @@ static func _add_piece(verts: PackedVector3Array, normals: PackedVector3Array, c
 const BOARD_ROW := 4
 const BOARD_LAYERS := 10
 const BOARD_PALE := Color(0.86, 0.74, 0.56)
+const BOARD_FLOOR := -0.12   # the bottom board on the drawn ground: loose items are set 0.12 m over it (InventoryView._snap_loose)
 
 
 static func _boards_mesh(kind: Dictionary, count: int, seed_id: int) -> Mesh:
@@ -458,7 +459,7 @@ static func _boards_mesh(kind: Dictionary, count: int, seed_id: int) -> Mesh:
 		var layer: int = floori(float(n % per_stack) / float(BOARD_ROW))
 		var row: int = n % BOARD_ROW
 		var z: float = float(stack) * (float(BOARD_ROW) * width + 0.15) + (float(row) - float(BOARD_ROW - 1) * 0.5) * (width + 0.006)
-		var at: Vector3 = Vector3(rng.randf_range(-0.06, 0.06), (float(layer) + 0.5) * thick, z)
+		var at: Vector3 = Vector3(rng.randf_range(-0.06, 0.06), BOARD_FLOOR + (float(layer) + 0.5) * thick, z)
 		var tone: float = rng.randf_range(0.88, 1.1)
 		_add_board(verts, normals, colors, indices, at, rng.randf_range(-0.012, 0.012), Vector3(length, thick, width), Color(minf(wood.r * tone, 1.0), minf(wood.g * tone, 1.0), minf(wood.b * tone, 1.0)))
 
