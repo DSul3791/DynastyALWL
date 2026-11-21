@@ -169,7 +169,7 @@ func _init() -> void:
 		var makers: Array = items.recipes.makers_of(n(id))
 		check(makers.size() == 1 and str(items.recipes.recipe(int(makers[0])).get("station", "")) == "forge", "%s is made at the forge from a Copper ingot" % id)
 
-	check(items.recipes.makers_of(n("wooden_pipe")).size() == 1 and str(items.recipes.recipe(int(items.recipes.makers_of(n("wooden_pipe"))[0])).get("station", "")) == "", "a Wooden - Pipe is made by hand")
+	check(items.recipes.makers_of(n("wooden_pipe")).size() == 1 and str(items.recipes.recipe(int(items.recipes.makers_of(n("wooden_pipe"))[0])).get("station", "")) == "carving_station" and not str(items.recipes.recipe(int(items.recipes.makers_of(n("wooden_pipe"))[0])).get("needs", [])).contains("twine"), "a Wooden - Pipe is carved from a Log at the Carving station, no twine")
 
 	for look in ["wooden_pipe", "copper_pipe", "copper_tap", "copper_drip_head"]:
 		check(LookTable.has_look(look), "look %s is in the look table" % look)
