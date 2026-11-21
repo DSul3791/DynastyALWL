@@ -42,7 +42,7 @@ static func stop(name: String, started: int) -> void:
 	FreezeWatch.note(name)   # the last piece finished, for the freeze watch thread
 
 	if used > 2500 and OS.has_environment("SPIKES"):
-		print("SPIKE %s %.1f ms at %d" % [name, float(used) / 1000.0, Time.get_ticks_msec()])
+		FreezeWatch.printer.line("SPIKE %s %.1f ms at %d" % [name, float(used) / 1000.0, Time.get_ticks_msec()])
 
 	var entry: Array = _totals.get(name, [0, 0, 0])
 	entry[0] += 1
@@ -96,7 +96,7 @@ static func frame(delta: float) -> void:
 			if int(_this_frame[name]) > 1000:
 				named.append("%s %.0f" % [name, float(_this_frame[name]) / 1000.0])
 
-		print("FREEZE %.0f ms (frame %d): script %.0f ms, physics %.0f ms, draw calls %d, video mem %d MB, objects %d; timed: %s; %s%s" % [
+		FreezeWatch.printer.line("FREEZE %.0f ms (frame %d): script %.0f ms, physics %.0f ms, draw calls %d, video mem %d MB, objects %d; timed: %s; %s%s" % [
 			ms, _frames,
 			Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
 			int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), int(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0),
@@ -133,7 +133,7 @@ static func frame(delta: float) -> void:
 			for k in range(mini(named.size(), 5)):
 				text.append("%s %.0f" % [named[k][0], named[k][1]])
 
-			print("HITCH %.0f ms: %s; script %.0f ms, physics %.0f ms, draw calls %d%s" % [ms, ", ".join(text) if not text.is_empty() else "nothing timed",
+			FreezeWatch.printer.line("HITCH %.0f ms: %s; script %.0f ms, physics %.0f ms, draw calls %d%s" % [ms, ", ".join(text) if not text.is_empty() else "nothing timed",
 				Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
 				int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), _shown_text()])
 		_slow.append([ms, parts])
