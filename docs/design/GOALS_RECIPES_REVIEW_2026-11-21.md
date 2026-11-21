@@ -28,19 +28,19 @@ The live list was 31 goals, all stage `start`: the stone camp (water, fibre, twi
 | `tools/goal_station_audit.py` tie-break | It picked iron nails at the brick forge over bronze nails at the forge for "Any nails" and reported a false gap. |
 | `tools/goal_stage_audit.py`, wired into `tools/merge_check.py` | Keeps every goal reachable with its own stage's metals. |
 
-## Questions sent to the coordinator (with recommendations)
+## Questions answered by the coordinator (21 Nov 2026, under Dave's questions rule)
 
-| # | Row | Problem | Recommendation |
+| # | Row | Problem | Decision |
 |---|---|---|---|
-| GR-1 | Sawbuck (bp 352) | 16 Bronze nails put a simple sawing stand, used with the Stone - Saw, at bronze. #1460 kept it bronze. | Wooden pins (pegged), so it is a stone-age piece. |
-| GR-2 | Palisade gate (bp 71) | 2 Bronze hinges on a log gate; the Rustic - Gate (logs) has none, and Rustic doors have wooden pivots by Dave's door table. | No hinges: 8 logs, 3 twine, 1 rope. |
-| GR-3 | Stone - Planter, Trough, Channel, Channel corner, Channel tee | Iron chisel for laid cobblestone and mortar; Sturdy walls of cut blocks need none. | No chisel (D-CHISEL-1 reasoning: laid masonry, not carving). |
-| GR-4 | Steel armour (Cuirass, Half plate, Helm, Gauntlets, Greaves, Sabatons, Plate harness) | Iron rivets; Dave named steel rivets for fortification. | Keep iron rivets (no steel rivet item; the catalog is frozen). |
-| GR-5 | Steel - Striker (recipe 183) | items.json marks it future, yet it is craftable and nothing needs it to light a fire. | Lock it until a use exists. |
+| GR-1 | Sawbuck (bp 352) | 16 Bronze nails put a simple sawing stand, used with the Stone - Saw, at bronze. #1460 kept it bronze. | Wooden pins (pegged), so it is a stone-age piece. Follow-up PR stacked on #1466. |
+| GR-2 | Palisade gate (bp 71) | 2 Bronze hinges on a log gate; the Rustic - Gate (logs) has none, and Rustic doors have wooden pivots by Dave's door table. | No hinges: 8 logs, 3 twine, 1 rope. Follow-up PR stacked on #1466. |
+| GR-3 | Stone - Planter, Trough, Channel, Channel corner, Channel tee | Iron chisel for laid cobblestone and mortar; Sturdy walls of cut blocks need none. | No chisel (laid masonry, not carving). Follow-up PR stacked on #1466, which edits the same test line. |
+| GR-4 | Steel armour (Cuirass, Half plate, Helm, Gauntlets, Greaves, Sabatons, Plate harness) | Iron rivets; Dave named steel rivets for fortification. | Keep iron rivets: historically normal; no steel rivet item exists. |
+| GR-5 | Steel - Striker (recipe 183) | items.json marks it future, yet it is craftable and nothing needs it to light a fire. | Locked in this PR until a use exists. |
 
 ## Depends on the ore layout (final pass)
 
-- Goal hints `copper_ore`, `tin_ore`, `iron_ore` and `iron_ingot` (river iron stones from #1455, Iron chunk from #1457, tin farther inland than copper in the new layout).
+- Goal hints `copper_ore`, `tin_ore` and `iron_ore` are worded for the ore thread's early layout (draft #1469: iron everywhere from the first hour as loose stones, bog iron and rusty outcrops needing a bronze pick; copper inland, first source about 1.4 km by route from spawn; tin from river finds below sources, first source about 2 km by route below the high mountains). Confirm when it lands; the loose iron stones need #1455.
 - Encyclopedia `how_to_get` for Copper ore, Tin ore and Iron ore still say "a boulder over a body with any pick"; copper and tin rocks lie along rivers and are picked by hand or broken with the Stone - Hammer.
 
 ## Checked and left as they are

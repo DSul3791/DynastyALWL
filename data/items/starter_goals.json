@@ -261,7 +261,7 @@
 		{
 			"id": "copper_ore",
 			"title": "Find copper ore",
-			"hint": "Copper ore is rock coated green or blue-green. Follow a river or stream upstream: copper rocks lie along the water and get bigger toward the hills. Pick small pieces up with E; break bigger rocks with the Stone - Hammer.",
+			"hint": "Copper ore is rock coated green or blue-green. Follow a river or stream inland and upstream: copper rocks lie along the water, more and bigger toward the hills. Pick small pieces up with E; break bigger rocks with the Stone - Hammer.",
 			"after": [
 				"hammer"
 			],
@@ -340,7 +340,7 @@
 		{
 			"id": "tin_ore",
 			"title": "Find tin ore",
-			"hint": "Tin ore is a dark, very heavy rock. It lies along rivers like copper, scarcer than copper and more of it upstream toward the hills. Break it like copper ore.",
+			"hint": "Tin ore is a dark, very heavy rock, rarer than copper and farther inland. Look in river beds below the high hills and follow the finds upstream to where they come from. Break it like copper ore.",
 			"after": [
 				"copper_ingot"
 			],
@@ -406,7 +406,7 @@
 		{
 			"id": "iron_ore",
 			"title": "Find iron ore",
-			"hint": "Iron is common. Dig rust-red bog iron with a shovel in wet fen and marsh ground, or break iron rock with a bronze or better pick.",
+			"hint": "Iron is common almost everywhere. Pick up rusty iron stones along rivers, dig rust-red bog iron with a shovel in wet fen and marsh ground, or break rusty iron rock with a bronze or better pick.",
 			"after": [
 				"bronze_tool"
 			],
