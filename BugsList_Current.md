@@ -844,6 +844,37 @@ Not yet played.
 
 Not yet played.
 
+## 94. Hair styles in the character creator: Dave's hair models, one lineup for every body
+
+**Status: Implemented - awaiting player verification.** Dave's request, 20 Nov 2026 (project thread "hair styles"): "I want to create a male and female character and I want to try hair does. If the hair does work on the male, I want to include them for the female also. everyone is allowed to use any hair style and or facial hair on males or females. we won't label them male and female we will just include them all in the lineup on the hair selection page." After the first in-game pictures he chose to have Short curly's back of the neck tidied before dev.
+
+**Required outcome:** the creator's Hair section offers one lineup (No hair, then every style) with no male or female labels, and any body can wear any style. Adding a style is cheap.
+
+**As built (PR #1389, reviewed head 44d3f5cd, merged to dev at 5e51bb9e):**
+- Dave's three Meshy hair models (Crew cut, Short curly, Slicked back) are in assets/character/Hair/. Their textures are reduced from 4K to 2K and VRAM Compressed, with the import settings committed. The meshes are one-sided and Cast Shadow On (docs/design/CHARACTER_MESHES.md).
+- tools/hair/prepare_hair.py makes each one from Dave's file:
+  - It cuts out the mannequin head Meshy included, by colour, using an alpha-scissor hairline.
+  - It fits the hair to Body 1's skull and pushes it clear of every body's head.
+  - It fills bald gaps with a dark cap that stays above the hair's lower edge.
+  - It ends the hair at an even nape line. Short curly's line is higher across the back.
+- tools/hair/body_fit.py gives Body 2 its "hair_fit" row in body_models.gd.
+- A new style = run the tool, plus one row in src/client/character/hair_models.gd.
+- The style is genome key hair_model. Share codes are version 5 and keep the style. Older codes load with no hair.
+- The Hair dice picks from the lineup. The old Hair Length slider is no longer offered.
+
+**Evidence:**
+- Independent review PASS WITH NITS on 44d3f5cd.
+- Lane B on 44d3f5cd: 71 PASS / 0 FAIL, including the new test_hair_styles. The creator, body generator, character store and chest checks had 0 failures. Warnings stay at 381, and the join smoke was clean.
+- Lane A on 44d3f5cd: 24 in-game pictures, each style on both bodies from the front, three-quarter, side and back (/mnt/project-files/hair_44d3f5cd_contact_sheet.png). Fronts and sides fit both bodies.
+- Known leftovers:
+  - Crew cut sits like a cap band above the ears, because Meshy painted it onto the head.
+  - Short curly has a few small dark tabs behind the character's right ear and a faint smooth patch just above its nape edge.
+  - Short curly is about 32,000 triangles; its frame cost is not measured.
+
+**Acceptance:** make a new character with Body 1 and one with Body 2, and try each style and No hair. The hair sits on the head from every side, follows the Head slider, and takes the Hair colour. Copy a share code and load it: the style comes back.
+
+Not done: facial hair (no models yet); deleting the old drawn hair styles in body_generator.gd waits until everything is in main (Dave's cut-off line). Not yet played.
+
 ## 96. Picture rig character started high in the air, so the ground loaded slowly before it dropped to the spot
 
 **Status: Implemented - debug tooling only; verified on Lane A, nothing for a player to check.** Dave, 20 Nov 2026, after watching the rig run on his PC: "the character is spawning way up in the air which causes ground loading to go slower and they eventually load in drop to the ground and then quit."
