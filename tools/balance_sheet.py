@@ -55,7 +55,7 @@ for label, e in (("Resting", 0.0), ("Walking about", walk), ("Hard work all day"
         flags.append("Water at full work lasts %.0f h, under a game day (Dave's rule: at least one day)." % hours)
 L += ["", "Reading: one good drink a day when working normally; hard work needs a drink about every %d game hours." % (th["cap_ml"] / (th["rest_ml_day"] + th["work_ml_day"]) * 24), ""]
 
-mult = lambda f: math.exp(-(f - 50) / 5.0 * fit["strength"])   # fitness 0 to 100, 50 an average adult, strength per 5 points (Dave 19 Nov 2026)
+mult = lambda f: math.exp(-(f - 50) / 5.0 * fit["strength"]) if f <= 50 else 1.0 + (fit.get("top_mult", 0.5) - 1.0) * (f - 50) / 50.0   # server_items.fitness_rise_mult: the curve under 50, a straight line from 100% at 50 to top_mult at 100 (Dave 21 Nov 2026)
 L += ["## Exertion and fitness", "",
       "Walking is sustainable; running is not. From the design notes: an average (fitness 50) character jogging is winded in about 70 s and sprinting in about 35 s. Recovery is not changed by fitness.", "",
       "| Fitness | Exertion rises at | Jog until winded | Sprint until winded |", "|---|---|---|---|"]

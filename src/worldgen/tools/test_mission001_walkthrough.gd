@@ -2,7 +2,7 @@ extends SceneTree
 
 # Mission 001 integrated walkthrough (M001-T19; mission brief s9 "Required in-game outcomes" and s12 items 4-8): ONE world on the real server
 # (server_items.gd and its helpers, the live data), a new character from nothing to a warehouse, checking the resulting game state at each step:
-#   1. early survival: gather by hand, Stone - Axe and Stone - Knife, a Lean-to and a Wicker - Chest from their blueprints, a hunted deer cooked at a
+#   1. early survival: gather by hand, Stone - Axe and Stone - Knife, a Lean-to and a Wicker basket from their blueprints, a hunted deer cooked at a
 #      campfire and eaten, items stored in the chest;
 #   2. wood and metal: bog iron dug with a Wooden shovel, charcoal left in the campfire, the Improved smelter and the Smithy, the Smithy fired, an Iron - Saw, Planks and Hardwood
 #      boards, nothing bought;
@@ -621,9 +621,9 @@ func step1_early_survival() -> void:
 
 	# Gathering by hand: stones, sticks, plant fibre and a large wooden block lie about (the ground scatter, plants and a felled trunk give them;
 	# test_first_hour and test_first_town gather them the same way).
-	var twine_n: int = need_of("stone_axe", "twine") + cost_of("lean_to", "twine") + cost_of("chest", "twine") + need_of("stone_hammer", "twine")
+	var twine_n: int = need_of("stone_axe", "twine") + cost_of("lean_to", "twine") + cost_of("wicker_basket", "twine") + need_of("stone_hammer", "twine")
 	var fibre_n: int = twine_n * need_of("twine", "plant_fibre") + 4
-	var stick_n: int = need_of("stone_axe", "stick") + need_of("stone_knife", "stick") + need_of("stone_hammer", "stick") + cost_of("lean_to", "stick") + cost_of("chest", "stick") + need_of("wooden_shovel", "stick")
+	var stick_n: int = need_of("stone_axe", "stick") + need_of("stone_knife", "stick") + need_of("stone_hammer", "stick") + cost_of("lean_to", "stick") + cost_of("wicker_basket", "stick") + need_of("wooden_shovel", "stick")
 	var stone_n: int = need_of("stone_axe", "stone") + need_of("stone_knife", "stone") + need_of("stone_hammer", "stone") + 1
 
 	for k in range(8):
@@ -643,13 +643,13 @@ func step1_early_survival() -> void:
 	craft("stone_hammer", 1)
 	check(have("stone_hammer") == 1 and inv.on_hotbar(slot_of("stone_hammer")) and inv.on_hotbar(slot_of("stone_knife")), "1e. a Stone - Hammer is made by hand (the Wooden - Hammer is carved at the carving station now); the hammer and the knife sit in the hand bar")
 
-	# The Lean-to and the Wicker - Chest from their blueprints. Leaves: a felled tree gives a few (test_first_hour fells one and counts them); the
+	# The Lean-to and the Wicker basket from their blueprints (the knife's store since the Wicker - Chest was retired, Dave 21 Nov 2026). Leaves: a felled tree gives a few (test_first_hour fells one and counts them); the
 	# rest are swept from many trees, so the remainder is given.
 	items.give(1, n("leaves"), cost_of("lean_to", "leaves"))
 	lean_to = build("lean_to", CAMP + Vector3(-5.0, 0.0, 0.0), "1f")
 	check(lean_to >= 0 and bool(items._structures["lean_to"].get("shelter", false)), "1f. the Lean-to is a shelter")
-	camp_chest = build("chest", CAMP + Vector3(0.0, 0.0, 5.0), "1g")
-	check(camp_chest >= 0 and items.table.entry("chest")["name"] == "Wicker - Chest" and box_of(camp_chest) != null, "1g. the Wicker - Chest stands and has a store")
+	camp_chest = build("wicker_basket", CAMP + Vector3(0.0, 0.0, 5.0), "1g")
+	check(camp_chest >= 0 and items.table.entry("wicker_basket")["name"] == "Wicker basket" and box_of(camp_chest) != null and int(items._structures["wicker_basket"]["slots"]) == 6, "1g. the Wicker basket stands and has a store of 6 slots")
 
 	# A deer hunted (the kill: test_hunt_feedback; the carcass is what it leaves) and dressed with the stone knife.
 	var fire: int = campfire_at("camp", CAMP + Vector3(3.0, 0.0, 0.0))
@@ -675,16 +675,18 @@ func step1_early_survival() -> void:
 	items.action(1, Net.ACT_EAT, slot_of("roast_meat"), 0, 0, Vector3.ZERO)
 	check(have("roast_meat") == 1 and float(items.vitals_of(1)["fed"]) > 500.0, "1j. a Roast meat is eaten and feeds (%.0f kcal in the stomach)" % float(items.vitals_of(1)["fed"]))
 
-	# Stored in the Wicker - Chest: the bones and the spare stones.
+	# Stored in the Wicker basket: the bones and the spare stones.
 	go(CAMP + Vector3(0.0, 0.0, 3.5))
 	var box = box_of(camp_chest)
+	var opened = items._chest_of(1, camp_chest)
+	check(opened != null and int(opened.usable) == 6, "1k. the Wicker basket opens with 6 slots (%d)" % (int(opened.usable) if opened != null else -1))
 	var bones: int = have("bone")
 	var stones: int = have("stone")
 	items.action(1, Net.ACT_CHEST_OPEN, camp_chest, 0, 0, Vector3.ZERO)
 	items.action(1, Net.ACT_CHEST_PUT, slot_of("bone"), camp_chest, bones, Vector3.ZERO)
 	items.action(1, Net.ACT_CHEST_PUT, slot_of("stone"), camp_chest, stones, Vector3.ZERO)
 	items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
-	check(bones > 0 and box.count_of(n("bone")) == bones and box.count_of(n("stone")) == stones and have("bone") == 0 and have("stone") == 0, "1k. %d bones and %d stones are stored in the Wicker - Chest" % [bones, stones])
+	check(bones > 0 and box.count_of(n("bone")) == bones and box.count_of(n("stone")) == stones and have("bone") == 0 and have("stone") == 0, "1k. %d bones and %d stones are stored in the Wicker basket" % [bones, stones])
 
 
 # --- 2. Wood and metal -----------------------------------------------------------------------------------------------------------------
@@ -1198,7 +1200,7 @@ func step5_food_effects() -> void:
 	check(slots_before < 3 and eat_slot("energy_bar"), "5f. a Nut cake is eaten into a free slot")
 	check(items.energy_of(1) > 40.0 and float(items._characters[KEYS[1]].get("train", 0.0)) == train_before, "5g. it gives energy (%.0f) and costs no Fitness (train %.2f -> %.2f)" % [items.energy_of(1), train_before, float(items._characters[KEYS[1]].get("train", 0.0))])
 
-	# The kitchen tools and the spare bricks stay in the kitchen; the food left over goes into the Wicker - Chest at the camp.
+	# The kitchen tools and the spare bricks stay in the kitchen; the food left over goes into the Wicker basket at the camp.
 	leave({"flour": 0, "brick": 0, "wooden_block": 0})
 	go(CAMP + Vector3(0.0, 0.0, 3.5))
 	items.action(1, Net.ACT_CHEST_OPEN, camp_chest, 0, 0, Vector3.ZERO)
@@ -1211,7 +1213,7 @@ func step5_food_effects() -> void:
 			stored += count if box_of(camp_chest).count_of(n(id)) == count else 0
 
 	items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
-	check(stored > 0 and have("sauerkraut") == 0 and box_of(camp_chest).count_of(n("sauerkraut")) > 0, "5h. the food left over (%d pieces, the Sauerkraut among them) is stored in the Wicker - Chest" % stored)
+	check(stored > 0 and have("sauerkraut") == 0 and box_of(camp_chest).count_of(n("sauerkraut")) > 0, "5h. the food left over (%d pieces, the Sauerkraut among them) is stored in the Wicker basket" % stored)
 
 
 # --- 6. Storage and warehousing --------------------------------------------------------------------------------------------------------

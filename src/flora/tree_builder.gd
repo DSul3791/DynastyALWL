@@ -3527,6 +3527,8 @@ const GRASS_LOOKS := {
 	# Thatching grass (Dave 24 Oct): a fuller, taller clump than tall_grass, golden-green with many seed heads, so a patch reads as "pick me" from a distance.
 	# Dune grass (marram, beach pass): stiff blue-grey-green blades in a rounded tuft with pale straw plumes standing just above them.
 	"dune_grass": {"cards": 3, "width": 1.2, "head": "seed", "heads": 5, "head_color": Color(0.82, 0.76, 0.5), "reach": 1.1, "blade_h": 0.9, "blade_base": Color(0.32, 0.42, 0.24), "blade_tip": Color(0.62, 0.7, 0.46), "head_size": 1.1},
+	# Tussock sedge of fen and swamp (Dave 21 Nov 2026): a raised, dense clump of arching dark olive leaves with short brown flower spikes.
+	"tussock_sedge": {"cards": 4, "width": 1.5, "head": "spike", "heads": 4, "head_color": Color(0.26, 0.18, 0.1), "reach": 1.05, "blade_h": 1.0, "blade_base": Color(0.16, 0.2, 0.07), "blade_tip": Color(0.48, 0.52, 0.22)},
 	"thatch_grass": {"cards": 4, "width": 1.8, "head": "seed", "heads": 6, "head_color": Color(0.84, 0.7, 0.34), "reach": 1.3, "blade_h": 0.9, "blade_base": Color(0.16, 0.28, 0.08), "blade_tip": Color(0.82, 0.7, 0.34), "head_size": 1.3},
 }
 
@@ -3622,12 +3624,20 @@ const FALLEN_LOGS := {
 	"fallen_log": {"kind": "log", "bark": Color(0.27, 0.19, 0.12), "moss": Color(0.22, 0.4, 0.14), "hollow": false},
 	"hollow_log": {"kind": "log", "bark": Color(0.25, 0.18, 0.12), "moss": Color(0.24, 0.42, 0.16), "hollow": true},
 	"old_stump": {"kind": "stump", "bark": Color(0.28, 0.2, 0.13), "moss": Color(0.22, 0.4, 0.14), "hollow": false},
+	# Dead tree of the swamp (Dave 21 Nov 2026: "dead grey trees and hanging moss"): a standing grey snag, its top snapped off, a few bare broken
+	# limbs, grey-green moss hanging in strands from them. `h` is its height.
+	"dead_tree": {"kind": "snag", "bark": Color(0.42, 0.4, 0.37), "moss": Color(0.42, 0.47, 0.33), "hollow": false},
 }
 
 
 static func _fallen_log(look: Dictionary, bark: Acc, _leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
 	var colour: Color = look["bark"]
 	var moss: Color = look["moss"]
+
+	if str(look["kind"]) == "snag":
+		_snag(bark, rng, h, colour, moss, far)
+		return
+
 	var radius: float = clampf(maxf(crown * 0.12, h * 0.075), 0.14, 0.45)
 
 	if str(look["kind"]) == "stump":
@@ -3672,6 +3682,36 @@ static func _fallen_log(look: Dictionary, bark: Acc, _leaves: Acc, rng: RandomNu
 		_bead(bark, Vector3(mx, radius + cos(ma) * radius * 0.95 + radius * 0.12 + rise * (mx / h + 0.5), sin(ma) * radius * 0.95), Vector3(size, radius * 0.34, size * 0.55), moss * rng.randf_range(0.8, 1.25))
 
 
+# A standing dead tree (FALLEN_LOGS "snag"): a leaning grey trunk in two pieces, a pale snapped top, bare limbs reaching out and up, and near
+# the eye two strands of hanging moss from each limb. About 160 vertices near, 60 far (test_flora_budget: plants 600 and 150).
+static func _snag(bark: Acc, rng: RandomNumberGenerator, h: float, colour: Color, moss: Color, far: bool) -> void:
+	var r: float = clampf(h * 0.035, 0.12, 0.3)
+	var lean: Vector3 = Vector3(rng.randf_range(-0.08, 0.08), 0.0, rng.randf_range(-0.08, 0.08)) * h
+	var mid: Vector3 = Vector3(0.0, h * 0.5, 0.0) + lean * 0.4
+	var top: Vector3 = Vector3(0.0, h, 0.0) + lean
+	var sides: int = 4 if far else 6
+	_branch(bark, Vector3(0.0, -0.1, 0.0), mid, r * 1.25, r * 0.85, colour, sides)
+	_branch(bark, mid, top, r * 0.85, r * 0.4, colour.lightened(0.05), sides)
+	_bead(bark, top, Vector3(r * 0.45, r * 0.3, r * 0.45), colour.lightened(0.3))      # the snapped, paler top
+
+	for k in range(2 if far else 5):
+		var at: float = rng.randf_range(0.4, 0.92)
+		var from: Vector3 = Vector3(0.0, h * at, 0.0) + lean * at
+		var a: float = rng.randf() * TAU
+		var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+		var reach: float = h * rng.randf_range(0.12, 0.26) * (1.2 - at)
+		var to: Vector3 = from + out * reach + Vector3(0.0, reach * rng.randf_range(0.2, 0.7), 0.0)
+		_branch(bark, from, to, r * 0.4, r * 0.12, colour.darkened(0.05), 3)
+
+		if far:
+			continue
+
+		for m in range(2):   # hanging moss: thin grey-green strands from the outer half of the limb
+			var hang: Vector3 = from.lerp(to, rng.randf_range(0.45, 0.95))
+			var drop: float = rng.randf_range(0.4, 1.2)
+			_branch(bark, hang, hang + Vector3(rng.randf_range(-0.08, 0.08), -drop, rng.randf_range(-0.08, 0.08)), 0.035, 0.01, moss * rng.randf_range(0.85, 1.15), 3)
+
+
 # Kelp (beach pass): a holdfast of short roots and a clump of long, wavy brown-olive ribbons with a few round gas bladders near the tips. `h` is the ribbon length.
 static func _kelp(bark: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
 	for k in range(3 if far else 6):   # the holdfast: short grasping roots on the seabed
@@ -3711,6 +3751,8 @@ const FERN_LOOKS := {
 	"whisperfern": {"kind": "fronds", "fronds": 11, "length": 0.95, "rise": 1.2, "width": 0.14, "tint": Color(0.85, 1.0, 0.9)},
 	"staunchmoss": {"kind": "moss", "domes": 16, "color": Color(0.28, 0.5, 0.2), "stalk": Color(0.55, 0.5, 0.3)},
 	"echo_moss": {"kind": "moss", "domes": 14, "color": Color(0.5, 0.68, 0.72), "stalk": Color(0.8, 0.9, 0.95)},
+	# Bog moss hummock (Dave 21 Nov 2026): a low cushion of sphagnum, rust-red and ochre-green domes in one mound, no spore stalks.
+	"moss_hummock": {"kind": "moss", "domes": 16, "color": Color(0.5, 0.2, 0.1), "color2": Color(0.5, 0.48, 0.18)},
 }
 
 
@@ -3722,9 +3764,10 @@ static func _fern_rosette(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomN
 			var a: float = rng.randf() * TAU
 			var r: float = sqrt(rng.randf()) * crown * 0.9
 			var size: float = maxf(h, 0.04) * rng.randf_range(0.5, 1.0)
-			_bead(bark, Vector3(cos(a) * r, size * 0.3, sin(a) * r), Vector3(size * 0.9, size * 0.6, size * 0.9), color * rng.randf_range(0.85, 1.15))
+			var dome: Color = color.lerp(look["color2"], rng.randf()) if look.has("color2") else color
+			_bead(bark, Vector3(cos(a) * r, size * 0.3, sin(a) * r), Vector3(size * 0.9, size * 0.6, size * 0.9), dome * rng.randf_range(0.85, 1.15))
 
-		if not far:
+		if not far and look.has("stalk"):
 			for k in range(5):
 				var a: float = rng.randf() * TAU
 				var base: Vector3 = Vector3(cos(a), 0.0, sin(a)) * crown * rng.randf_range(0.0, 0.6)
@@ -3770,6 +3813,8 @@ const REED_LOOKS := {
 	"riverbraid": {"stems": 9, "head": "none", "head_color": Color(0.4, 0.62, 0.55), "stem": Color(0.38, 0.6, 0.5), "lean": 0.55},
 	"stormreed": {"stems": 8, "head": "plume", "head_color": Color(0.5, 0.48, 0.62), "stem": Color(0.5, 0.5, 0.55), "lean": 0.1},
 	"tidecrown": {"stems": 6, "head": "crown", "head_color": Color(0.92, 0.95, 0.98), "stem": Color(0.5, 0.65, 0.5), "lean": 0.2},
+	# Cattail of the fen (Dave 21 Nov 2026): stiff upright stems with a fat dark-brown velvet head two thirds up and a thin spike above it.
+	"cattail": {"stems": 9, "head": "cattail", "head_color": Color(0.3, 0.18, 0.09), "stem": Color(0.42, 0.5, 0.24), "lean": 0.06},
 }
 
 
@@ -3793,6 +3838,9 @@ static func _reed_stand(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 			"wisp":
 				for b in range(2 if far else 4):
 					_bead(bark, tip + Vector3(0.0, float(b) * h * 0.04, 0.0) + out * h * 0.02 * float(b), Vector3(h * 0.025, h * 0.04, h * 0.025) * (1.0 - 0.2 * float(b)), color)
+			"cattail":
+				var head_at: Vector3 = base.lerp(tip, 0.78)
+				_bead(bark, head_at, Vector3(h * 0.022, h * 0.075, h * 0.022), color * rng.randf_range(0.85, 1.1))
 			"crown":
 				for b in range(3 if far else 6):
 					var pa: float = TAU * float(b) / 6.0

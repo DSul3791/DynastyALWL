@@ -1968,7 +1968,7 @@
 				"Used in Wooden - Arrow (fibre)",
 				"Used in Drying rack",
 				"Used in Sign",
-				"Used in Basket",
+				"Used in Wicker basket",
 				"Used in Steel - Chisel",
 				"Used in Meat skewer",
 				"Used in Fishing spear",
@@ -2099,7 +2099,7 @@
 				"Used in Hide - Sack",
 				"Used in Tusk mount",
 				"Used in Weapon rack",
-				"Used in Basket",
+				"Used in Wicker basket",
 				"Used in Bedroll",
 				"Used in Sling",
 				"Used in Snowshoes",
@@ -2379,11 +2379,10 @@
 			"name": "Wicker - Chest",
 			"kind": "placeable",
 			"description": "Woven sticks and twine. A chest to store things in.",
-			"how_to_get": [
-				"Build with a hammer (press R): 10 Stick, 4 Twine"
-			],
+			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"chest": {
 			"name": "Wicker - Chest",
@@ -2391,7 +2390,8 @@
 			"description": "A woven chest for storing things.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"chopping_block": {
 			"name": "Chopping block",
@@ -10041,7 +10041,7 @@
 			"obtainable_now": true
 		},
 		"wicker_basket_kit": {
-			"name": "Basket",
+			"name": "Wicker basket",
 			"kind": "placeable",
 			"description": "A woven basket of sticks and twine. A first store for a camp.",
 			"how_to_get": [
@@ -10051,7 +10051,7 @@
 			"obtainable_now": true
 		},
 		"wicker_basket": {
-			"name": "Basket",
+			"name": "Wicker basket",
 			"kind": "structure",
 			"description": "A woven basket of sticks and twine. A first store for a camp.",
 			"how_to_get": [],
@@ -12273,6 +12273,45 @@
 			],
 			"used_for": [
 				"Sown with the hoe (Garden) to grow a dune grass"
+			],
+			"obtainable_now": true
+		},
+		"cattail_seed": {
+			"name": "Cattail seed",
+			"kind": "material",
+			"description": "Seeds from a cattail's brown head. Sow them with the hoe in a tilled bed or a planter and a cattail grows.",
+			"how_to_get": [
+				"From a wild cattail picked late in its season (fens)",
+				"From a ripe cattail in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a cattail"
+			],
+			"obtainable_now": true
+		},
+		"tussock_sedge_seed": {
+			"name": "Tussock sedge seed",
+			"kind": "material",
+			"description": "Seeds from a tussock sedge. Sow them with the hoe in a tilled bed or a planter and a tussock sedge grows.",
+			"how_to_get": [
+				"From a wild tussock sedge picked late in its season (fens and swamps)",
+				"From a ripe tussock sedge in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a tussock sedge"
+			],
+			"obtainable_now": true
+		},
+		"moss_hummock_seed": {
+			"name": "Bog moss spores",
+			"kind": "material",
+			"description": "Spores from a bog moss hummock. Sow them with the hoe in a tilled bed or a planter and bog moss grows.",
+			"how_to_get": [
+				"From a wild bog moss hummock picked in summer (bogs)",
+				"From a ripe bog moss hummock in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a bog moss hummock"
 			],
 			"obtainable_now": true
 		},
