@@ -6794,7 +6794,8 @@
 				"Picked from mango"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"oranges": {
 			"name": "Oranges",
@@ -6804,7 +6805,8 @@
 				"Picked from orange"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"lemons": {
 			"name": "Lemons",
@@ -6814,7 +6816,8 @@
 				"Picked from lemon"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"dried_apples": {
 			"name": "Dried apples",
@@ -11380,7 +11383,8 @@
 			"used_for": [
 				"Planted with the hoe (Garden) to grow a mango"
 			],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"orange_seed": {
 			"name": "Orange seed",
@@ -11392,7 +11396,8 @@
 			"used_for": [
 				"Planted with the hoe (Garden) to grow an orange"
 			],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"lemon_seed": {
 			"name": "Lemon seed",
@@ -11404,7 +11409,8 @@
 			"used_for": [
 				"Planted with the hoe (Garden) to grow a lemon"
 			],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"wild_apple_sweet_seed": {
 			"name": "Wild apple seed",

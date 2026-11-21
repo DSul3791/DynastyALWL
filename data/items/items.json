@@ -4688,7 +4688,9 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 10,
-			"look_alikes": []
+			"look_alikes": [],
+			"retired": true,
+			"note": "Hidden 21 Nov 2026 (coordinator ruling D-TODO-7 for Dave: the island has no mango, orange or lemon trees; fig, olive and pomegranate stay as warm-coast trees). Kept for its number."
 		},
 		"oranges": {
 			"number": 448,
@@ -4697,7 +4699,9 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
-			"look_alikes": []
+			"look_alikes": [],
+			"retired": true,
+			"note": "Hidden 21 Nov 2026 (coordinator ruling D-TODO-7 for Dave: the island has no mango, orange or lemon trees; fig, olive and pomegranate stay as warm-coast trees). Kept for its number."
 		},
 		"lemons": {
 			"number": 449,
@@ -4706,7 +4710,9 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
-			"look_alikes": []
+			"look_alikes": [],
+			"retired": true,
+			"note": "Hidden 21 Nov 2026 (coordinator ruling D-TODO-7 for Dave: the island has no mango, orange or lemon trees; fig, olive and pomegranate stay as warm-coast trees). Kept for its number."
 		},
 		"dried_apples": {
 			"number": 450,
@@ -11410,7 +11416,8 @@
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15,
-			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+			"note": "Hidden 21 Nov 2026 (coordinator ruling D-TODO-7 for Dave: the island has no mango, orange or lemon trees; fig, olive and pomegranate stay as warm-coast trees). Kept for its number. A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\".",
+			"retired": true
 		},
 		"orange_seed": {
 			"number": 1402,
@@ -11421,7 +11428,8 @@
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15,
-			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+			"note": "Hidden 21 Nov 2026 (coordinator ruling D-TODO-7 for Dave: the island has no mango, orange or lemon trees; fig, olive and pomegranate stay as warm-coast trees). Kept for its number. A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\".",
+			"retired": true
 		},
 		"lemon_seed": {
 			"number": 1403,
@@ -11432,7 +11440,8 @@
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15,
-			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+			"note": "Hidden 21 Nov 2026 (coordinator ruling D-TODO-7 for Dave: the island has no mango, orange or lemon trees; fig, olive and pomegranate stay as warm-coast trees). Kept for its number. A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\".",
+			"retired": true
 		},
 		"wild_apple_sweet_seed": {
 			"number": 1404,

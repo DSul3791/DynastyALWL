@@ -20676,7 +20676,7 @@ func _hints_data() -> Array:
 
 
 # Fresh fruit that spoils fast (the "fruit_in_pack" hint): picked from trees, not cooked or dried.
-const HINT_FRUIT := ["wild_apples", "apple_early", "apple_summer", "apple_autumn", "apple_keeping", "apple_cooking", "pear_summer", "pear_autumn", "pear_winter", "sour_cherries", "plums", "damsons", "quince", "medlar", "figs", "pomegranates", "mangoes", "oranges", "lemons"]
+const HINT_FRUIT := ["wild_apples", "apple_early", "apple_summer", "apple_autumn", "apple_keeping", "apple_cooking", "pear_summer", "pear_autumn", "pear_winter", "sour_cherries", "plums", "damsons", "quince", "medlar", "figs", "pomegranates"]
 
 
 func _hint_count(st: Dictionary, key: String) -> int:
