@@ -192,6 +192,18 @@ func _init() -> void:
 				turned += 1
 
 		_check(turned > 100, "Bust +1: %d normals turn with the shape" % turned)
+		# Nothing folds through: the top's creases under the breast once met on the shape and showed through each other (Lane A, 21 Nov 2026). Count the triangles turned over.
+		var idx: PackedInt32Array = shaped_mesh.surface_get_arrays(0)[Mesh.ARRAY_INDEX]
+		var flipped: int = 0
+
+		for t in range(0, idx.size() - 2, 3):
+			var f0: Vector3 = (base[idx[t + 1]] - base[idx[t]]).cross(base[idx[t + 2]] - base[idx[t]])
+			var f1: Vector3 = (raised[idx[t + 1]] - raised[idx[t]]).cross(raised[idx[t + 2]] - raised[idx[t]])
+
+			if f0.dot(f1) < 0.0:
+				flipped += 1
+
+		_check(flipped < 5, "Bust +1: %d triangles turned over" % flipped)
 
 	print("dynasty body 2 tests: %d failures" % _fails)
 	her.free()

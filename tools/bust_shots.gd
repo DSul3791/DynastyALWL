@@ -145,6 +145,7 @@ func _process(_delta: float) -> bool:
 	if _view >= VIEWS.size():
 		if not _next_job():
 			print("bust_shots: done, %d pictures, %d failures" % [_jobs.size() * VIEWS.size() - _fails * VIEWS.size(), _fails])
+			quit(1 if _fails > 0 else 0)
 			return true
 
 		_wait = SETTLE_FRAMES

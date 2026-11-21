@@ -29,16 +29,18 @@ const NAMES := ["build", "muscle", "belly", "hips", "chest", "bust", "jaw", "nos
 const BUST_FROM := -0.6          # the bust slider value where the mound starts: body_generator.gd FRAMES "neutral" (shown as Even), the frame a new character starts with
 # The bust, as fractions of the body's height. Each breast's front is looked for in a strip BUST_OUT out to the side and about BUST_DOWN under the Spine2 joint
 # (its most forward vertex there, the two sides averaged into a mirror pair). The round shape's centre sits BUST_DEPTH behind that front; at +1 the front comes
-# BUST_FORWARD forward and the shape is BUST_WIDE across and BUST_TALL high each way from its centre. It joins the chest within BUST_SOFT_UP above its centre and
+# BUST_FORWARD x (1 - BUST_KEEP) forward and the shape is BUST_WIDE across and BUST_TALL high each way from its centre. It joins the chest within BUST_SOFT_UP above its centre and
 # BUST_SOFT_DOWN below (the fold under the breast). Checked offline on both bodies' meshes (21 Nov 2026): round from the front, the side and three-quarters.
 const BUST_OUT := 0.055
 const BUST_DOWN := 0.06
-const BUST_DEPTH := 0.045
-const BUST_FORWARD := 0.035
+const BUST_DEPTH := 0.07
+const BUST_FORWARD := 0.06
 const BUST_WIDE := 0.046
-const BUST_TALL := 0.044
+const BUST_TALL := 0.05
 const BUST_SOFT_UP := 0.02
 const BUST_SOFT_DOWN := 0.012
+const BUST_KEEP := 0.4         # each vertex goes only 60% of the way onto the shape, so the chest keeps 40% of its own relief: the top's folds and creases keep their order
+                                # (all the way, they met on the shape and showed through one another in Lane A's pictures of 80e0542c, 21 Nov 2026)
 const SHAPED_KEY := "dynasty_shapes"
 
 static var _cache: Dictionary = {}       # source mesh rid -> shaped ArrayMesh (or null when it could not be made)
@@ -341,6 +343,8 @@ static func _bust(verts: PackedVector3Array, normals: PackedVector3Array, indice
 		var push: float = gap if gap > soft else ((gap + soft) * (gap + soft) / (4.0 * soft) if gap > -soft else 0.0)     # a soft join, not a crease
 		var rim: float = sqrt(pow(d.dot(lateral) / rx, 2.0) + pow(d.dot(up) / ry, 2.0))
 		var fade: float = (1.0 - smoothstep(1.0, 1.5, rim)) * smoothstep(0.0, 0.02 * height, absf(across))     # nothing past the shape's edge, nothing at the breastbone
+
+		push *= 1.0 - BUST_KEEP
 
 		if push * fade > 1e-7:
 			out[v] = p + dir * push * fade
