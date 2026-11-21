@@ -875,6 +875,29 @@ Not yet played.
 
 Not done: facial hair (no models yet); deleting the old drawn hair styles in body_generator.gd waits until everything is in main (Dave's cut-off line). Not yet played.
 
+## 95. Pumps retired: water moves by gravity and rain
+
+**Status: Implemented - awaiting player verification.** Dave, 20 Nov 2026 (project chat 22:04Z): "In my world we are still medievalish and using buckets in wells and dont have pump technology yet." He chose "Retire all pumps" on a decision card, then at 22:42Z: "the wooden hand pumps should be gone too. I did not approve ever having those. they were an ai accident."
+
+**Required outcome:** no pump can be built or used. Water comes from wells by bucket, from rain and by gravity through pipes. A pump already standing in a saved world is gone, and its owner gets the materials back.
+
+**As built (PR #1388, reviewed head 11d1672e, dev e4c06e2a):**
+- The Wooden - Hand pump, Iron - Hand pump and Deep-well pump (items 715, 717, 752; blueprints 129, 130, 147) are retired. Their numbers are kept and never reused, and they are gone from the hammer list.
+- A pump standing in a saved world is removed when the world loads. Its whole blueprint cost is left on the ground where it stood; the Wooden hand pump leaves 6 Plank, 20 Nails, 2 Twine and 1 Hide. A pump site that was never finished leaves what had been put into it. Those piles never despawn (PROVISIONAL, PLUMBING_DESIGN PV-11).
+- The pump-only code is deleted: the pump rate, the suction height rule, the force pump's lift and the pump prompt. Wells and their windlass are unchanged.
+- The Raised cistern is not a pump and stays (entry 97).
+
+**Evidence:**
+- Independent review PASS on 11d1672e.
+- Lane B on 11d1672e: 294 PASS / 0 FAIL, warnings 381 with 0 new. This includes "a loaded pump is gone, its materials on the ground where it stood (lumber 6, nails 20)" and the save and reload checks: nothing is given twice, and the piles never despawn.
+- The first Lane B run on c6d83b96 failed 3 tests on old hammer-list counts and a nails count. All three were fixed before merge.
+
+**Acceptance:**
+- Press R with a hammer: no pump is offered.
+- Load a world that had a Wooden hand pump: the pump is gone, and its materials lie where it stood.
+
+Not yet played.
+
 ## 96. Picture rig character started high in the air, so the ground loaded slowly before it dropped to the spot
 
 **Status: Implemented - debug tooling only; verified on Lane A, nothing for a player to check.** Dave, 20 Nov 2026, after watching the rig run on his PC: "the character is spawning way up in the air which causes ground loading to go slower and they eventually load in drop to the ground and then quit."
@@ -900,6 +923,29 @@ This changes debug tooling only. There is no game, protocol, save or terrain cha
 **Acceptance:** run tools/look_rig.sh at the spawn. The log shows "starts at y" about 1 m over the ground, then "landed", and the picture shows its subject. A --frametime run prints its frametime line from the script.
 
 Not a game change; nothing to play.
+
+## 97. The Raised cistern is a big tank: copper lined, on a wooden frame, fed by rain and gravity
+
+**Status: Implemented - awaiting player verification.** Dave, 20 Nov 2026: "the cistern can be copper lined and the frame can be made of wood and iron nails etc. cisterns are not pumps" (22:06Z), "they are just big tanks" (22:07Z), "yes make the cistern" (22:42Z). Before this the Raised cistern was locked, because only a force pump could fill it.
+
+**Required outcome:** anyone can build a Raised cistern. It is a big tank that fills from rain and from water coming down from higher up, and it feeds pipes below it. Water never climbs into it.
+
+**As built (PR #1391, reviewed head 49798654, dev 7ee7ebe7):**
+- It is unlocked in the hammer list. It costs 16 Plank, 20 Hardwood board, 6 Copper ingot and 40 Nails, and needs a Bronze chisel like the Barrel (PROVISIONAL, PLUMBING_DESIGN PV-12).
+- It holds 2,000 L. Its open top is 3 m up and catches rain (12.8 L a real minute at full rain), plus any pipe end or spout over it.
+- Pipes join at its foot. A pipe from there runs as if the water stood 2.5 m over the foot. Linked to barrels, it shares water by water level, so a lower barrel fills first.
+- New look: a timber frame with a plank tank on top, iron banded and copper lined, a copper downpipe and a painted icon. It is 288 triangles, under the 300 cap.
+- The riser rule that only served the force pump is deleted. The stone Cistern is unchanged.
+
+**Evidence:**
+- Independent review PASS WITH NITS on 49798654.
+- Lane B on 49798654: 314 PASS / 0 FAIL, warnings 381 with 0 new, validate_items 0 errors. This includes "a spout 3.5 m up fills the raised cistern", "a spout 2.0 m up cannot fill the raised cistern", "its water runs down and fills the barrel first" and "a raised cistern drives a level log pipe at its full 60 L/min".
+- The first Lane B run on d4512c9b failed on the look's triangle count and two over-long descriptions. Both were fixed before merge.
+- Lane A pictures on 49798654 show the tank on its wooden stand. From the ground it reads more as a wooden crate, because the copper lining is inside. A clearer picture can be taken on dev with the rig fix.
+
+**Acceptance:** build a Raised cistern on a slope below a rain barrel or another water source. Lay a copper pipe from higher up to end over its top: it fills. Lay a pipe from its foot to a lower barrel or tap: water comes out. Leave it out in rain: it fills slowly.
+
+Not checked on screen: setting it down near a free pipe end may pull it onto the pipe, as a barrel does. Not yet played.
 
 ## Rewrite interpretation
 
