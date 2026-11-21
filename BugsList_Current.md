@@ -1096,6 +1096,24 @@ Not yet played.
 
 (Medium curtains was dropped by Dave on 21 Nov, "lets just remove the curtains they are terrible"; it was never built.)
 
+## 104. E acts on what is nearest the reticle
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "Im still having issues where Im looking straight at something I want to pick up and i press e but it puts out the fire or lights the smelter or picks up something else. it should always effect whatever is closest to my reticle first." Then: "that needs fixing right now".
+
+**What was found:** the 1 Nov rule (the thing the cursor is on wins) held only between kinds of thing. The pick-up offered the item nearest the feet, not the one looked at, so a nearer item to the side hid it and a fire or station in view won. The cursor also had to be within the 2 m prompt reach, and items were offered only to 2.5 m while fires and stations reach 3 m.
+
+**Required outcome:** E, its prompt and F act on the one thing nearest the reticle: items, fires, stations, chests, plants and people alike. Only when the reticle is on nothing does E fall back to the old order (the nearest loose item first).
+
+**As built (PR #1409, reviewed head dd9509ff, merged to dev at 6995ae3e):** every kind offers its best centred thing inside the aim cone (about 25 degrees); the best centred of those wins. F opens the same one. An aimed plant that cannot be picked says why, and E does not pick the one beside it. The server acts on the id the client sends, so it acts on the thing shown.
+
+**Evidence:**
+- Independent review PASS on b5841f25 and on dd9509ff.
+- Lane B on dd9509ff: 65 PASS / 0 FAIL, test_e_priority among them (an item beside a lit fire, an item beside a smelter, two items close together, two workbenches side by side). Warnings stay at 381. Join smoke clean.
+
+**Acceptance:** drop a stick beside a lit campfire and look straight at it: E picks it up and the fire keeps burning. Do the same beside a cold smelter: E picks up the item, not "light". Lay two items close together: E takes the one under the reticle. Look at the fire or smelter itself: E works it.
+
+Not yet played. Not done: drinking (from water or from what you hold) and the sea edge have no single spot, so they never win on the reticle; with the reticle on nothing a fire within 3 m still comes ahead of drinking, as before.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
@@ -1117,4 +1135,5 @@ Dave requested this rewrite around the intended experience rather than a literal
 - HE-1 (entry 52): a quick tap of the key or a click eats one bite. Eating from the hotbar never changes the selected slot or what is in hand.
 - HE-2 (entry 52): a click on a food box bites when the button comes up, or after 0.2 s held, so dragging food elsewhere eats nothing. Holding still on the box longer than that before dragging eats one bite.
 - HE-3 (entry 52): water containers on the hotbar still go in hand (they are needed to fill and pour). Drink from them as before.
+- ET-1 (entry 104): an item the reticle is on is reached to 3 m, as fires and stations are (it was 2.5 m; the server allows 3.5 m).
 - Crops need tilled soil (Plant does not till); scatter stone, flint and ores count as small rocks to pick up; wild shrubs are not checked for duplicates.
