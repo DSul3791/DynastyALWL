@@ -77,7 +77,7 @@ func refresh() -> void:
 	art.set_enabled("continue", Store.count() > 0)
 
 
-# Continue in a client-only build (provisional, Dave's choice 1 in docs/design/SERVER_PICK_PAGE.md): straight into the server played last, as
+# Continue in a client-only build (Dave 21 Nov 2026, choice 1 in docs/design/SERVER_PICK_PAGE.md): straight into the server played last, as
 # the character last played there, with Cancel on the joining screen. With no such server or character, the server pick page instead.
 # Returns true when it goes straight in.
 func continue_last() -> bool:

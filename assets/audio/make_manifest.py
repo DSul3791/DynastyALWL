@@ -187,6 +187,7 @@ SLOTS = [
     ("heal_bandage", "cooking", "item_sounds.gd eat(): a bandage applied", "2 recordings of wrapping a cloth bandage, 1 s", 3),
     ("chop_split", "workshop", "workshop_sounds.gd: a log split into firewood at the chopping block (heard when a log is traded for firewood beside a block)", "3 recordings of an axe splitting a log on a block, 0.8 s", 2),
     ("chop_thock", "workshop", "workshop_sounds.gd chop(at, false): an axe stroke on the block that does not split", "3 recordings of an axe biting wood, 0.3 s", 3),
+    ("bellows_blow", "workshop", "workshop_sounds.gd bellows(at): one stroke of a smelter's bellows while a player works them, about every 1.4 s", "2 recordings of a leather forge bellows pushed once, the fire roaring up, 1 s", 2),
     ("plank_drop", "workshop", "workshop_sounds.gd plank_drop(at): a sawn plank landing on its stack (hook until the saw mill exists)", "2 recordings of a plank dropped on a plank stack, 0.5 s", 3),
     ("saw_mill", "workshop", "workshop_sounds.gd set_saws: a running saw mill (hook until it exists, loop)", "A seamless loop of a saw mill running, blade rasp and frame, 10 s or more", 3),
     ("pick_pluck", "harvest", "harvest_sounds.gd: a berry, fruit or nut picked", "3 recordings of plucking a berry or nut from its stalk, 0.3 s", 2),
