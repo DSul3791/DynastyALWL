@@ -5654,6 +5654,7 @@ func _note_after_welcome(delta: float) -> void:
 
 
 func _process(delta: float) -> void:
+	Probe.frame(delta)   # first: the frame it closes is then one whole process step, physics and draw, as the engine's monitors count them
 	FreezeWatchScript.beat()
 	_note_after_welcome(delta)
 	_log_frame(delta)
@@ -5759,7 +5760,6 @@ func _process(delta: float) -> void:
 		_water_label.text = ""
 
 	_frame_ms.append(delta * 1000.0)
-	Probe.frame(delta)
 
 	var tq_arms: int = Probe.start()
 	DynastyArmsScript.prebuild()   # the first-person arms are cut out and skinned on a worker once their file is loaded (2 s on the main thread at the welcome); arms made before that get their meshes here

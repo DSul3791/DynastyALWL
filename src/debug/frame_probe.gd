@@ -141,8 +141,9 @@ static func post_draw() -> void:
 
 
 # The frame just closed, in ms: wall (real time since the frame before), draw, process (the engine's process step: our scripts and engine
-# nodes), timed (the pieces this probe names, part of process), physics (the steps run since, times the last step's length), voxel (the
-# terrain's own main-thread times), other (what is left: input, the engine's own frame work); pipelines = pipeline compilations since.
+# nodes), timed (the pieces this probe names, part of process), physics (see below), voxel (the
+# terrain's own main-thread times, read on slow frames only), other (what is left: input, the engine's own frame work); pipelines = pipeline
+# compilations since. Physics is the steps run times the engine's physics monitor (its longest step), so it is an upper bound.
 static func _split(wall_ms: float) -> Dictionary:
 	var physics_now: int = Engine.get_physics_frames()
 	var steps: int = physics_now - _physics_seen if _physics_seen > 0 else 1
@@ -157,7 +158,7 @@ static func _split(wall_ms: float) -> Dictionary:
 
 	var voxel: float = 0.0
 
-	if terrain != null and is_instance_valid(terrain):
+	if wall_ms > SLOW_MS and terrain != null and is_instance_valid(terrain):   # only for a slow frame: the statistics build a Dictionary
 		var stats: Dictionary = terrain.call("get_statistics")
 
 		for key in stats:

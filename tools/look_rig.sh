@@ -176,8 +176,8 @@ case "$ADMIN" in *--shot-frametime=*)
   echo "$FT"
   # Where the slow frames went (frame_probe.gd split), the client's HITCH and FREEZE lines, and the server's slow ticks in the same minutes.
   grep -E "shot runner: (frametime run|frametime split|slow frame)" "$RIG/client.log" | cut -c1-400
-  echo "client: $(grep -c '^HITCH' "$RIG/client.log") HITCH, $(grep -c '^FREEZE gap' "$RIG/client.log") FREEZE gap lines"
-  grep -E "^(HITCH|FREEZE gap)" "$RIG/client.log" | head -30 | cut -c1-400
+  echo "client: $(grep -c '^HITCH' "$RIG/client.log") HITCH, $(grep -c '^FREEZE [0-9]' "$RIG/client.log") FREEZE, $(grep -c '^FREEZE gap' "$RIG/client.log") FREEZE gap lines"
+  grep -E "^(HITCH|FREEZE)" "$RIG/client.log" | head -30 | cut -c1-400
   echo "server: $(grep -cE 'items tick slow|server slow|tick slow' "$RIG/server.log") slow-tick lines"
   grep -E "items tick slow|server slow|tick slow" "$RIG/server.log" | head -30 | cut -c1-300;;
 esac

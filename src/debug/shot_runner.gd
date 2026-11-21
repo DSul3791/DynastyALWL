@@ -144,6 +144,7 @@ var _frame_start_msec: int = 0
 var build_label: String = ""             # --shot-build=: the commit the numbers belong to (printed in the frametime line)
 var run_line: bool = false               # --shot-run: during --shot-frametime the player runs straight ahead (W and Shift held, as in play) instead of standing
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 var _splits: Array = []                  # every measured frame's split (frame_probe.gd last_split)
 var _split_seen: int = -1
 var _run_from: Vector3 = Vector3.ZERO
