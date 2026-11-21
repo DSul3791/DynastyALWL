@@ -29,7 +29,7 @@ const CREEP_S := 0.0005         # the smallest offset rises this much a batch, s
 static func clock_off(off: float, now_s: float, server_ms: int, last_ms: int = -1) -> float:
 	var seen: float = now_s - float(server_ms) / 1000.0
 
-	if off == INF or seen < off or server_ms < last_ms or seen - off > REANCHOR_S:
+	if off == INF or seen < off or server_ms < last_ms - 2000 or seen - off > REANCHOR_S:   # 2 s back: a restart, not a batch out of order
 		return seen
 
 	return off + CREEP_S
