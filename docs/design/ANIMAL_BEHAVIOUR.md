@@ -98,3 +98,18 @@ Cost: one distance test and one dot product per hunter step, only for the seven 
   (`Lying_Breathing_01`, `idle_lay_*`). Showing them needs a new animal state on the wire (a protocol number), so it is left for a
   later stage.
 - Hippos and polar bears are not in the game.
+
+## Fauna data review (coordinator's list, 21 Nov 2026), checked against the data
+
+- **Ducks have no biomes or habitat row.** They do not need one: a duck is a flock record, and flocks are placed on water
+  (`flock.fresh_only`, `_habitat_score`). No change.
+- **Rabbits spawn singly.** Wild European rabbits live in warrens and feed in loose groups at dawn and dusk, so groups of 2 to 4 would
+  be truer. Not changed here: it alters spawn counts that `test_animals` checks (one rabbit per share), so it goes with its own test
+  change in a later stage.
+- **Only the moose has seasons.** Not so: 16 species have a `seasons` row (deer, moose, both bears, elk, bighorn, mountain goat,
+  chamois, goat, buffalo, pronghorn, wildebeest, rhino, elephant, kangaroo, mammoth). No change.
+- **Low daytime activity** (rabbit 0.5, deer 0.4, boar 0.02). This is how they live: rabbits and deer feed mostly at dawn and dusk,
+  and boar are mostly nocturnal where they are hunted (Forestry England, ScienceInsights). A player at noon should see fewer of them
+  and more at dusk. No change.
+- **spook_m, safe_m, flee_run_m and graze_s untuned in play.** The sources give no distances to use; the 19 Nov table
+  (`ANIMAL_REACTIONS.md`) stays until Dave's play test says otherwise.
