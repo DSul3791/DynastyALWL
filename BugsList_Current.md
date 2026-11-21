@@ -1203,12 +1203,44 @@ Not yet played. Dave then asked for a chest for each nail tier (PR #1419), which
 
 Not yet played.
 
+## 111. A chest for each tier of nails
+
+**Status: Implemented - awaiting player verification.** Dave's design during his play test, 21 Nov 2026: "we should have a chest size for each tier of nails. so copper nails can make a smaller chest with an appropriate name, then bronze makes the rustic, iron can make the large, and steel could make the superior. just use the same names we use on all other tiers whatever the convention is." Then: "fix it now".
+
+**What was found:** only iron and bronze nails filled any chest; Copper nails built nothing but the Quality - Backpack, and there were no Steel nails.
+
+**Required outcome:** one chest per nail metal, bigger with each tier, each a hammer blueprint with no chisel at the lower tiers, using the existing naming convention; a better nail always serves for a lesser one.
+
+**As built (PR #1419, reviewed head 250ad249, merged to dev at 53a25ccf):**
+
+| Chest | Nails | Hinges | Slots | Cost |
+|---|---|---|---|---|
+| Small chest (new) | Copper nails or better | none (lift-off lid) | 24 | 4 Hardwood board, 8 Copper nails; any hammer, no chisel |
+| Rustic - Chest | Bronze nails or better | Bronze hinges or better | 30 | 6 Hardwood board, 12 nails, 2 hinges; any hammer, no chisel |
+| Large wooden chest | Iron nails or better | Iron hinges | 42 | 14 Hardwood board, 20 nails, 2 hinges; any hammer, no chisel |
+| Ornate - Chest | Steel nails | Iron hinges | 48 | 10 Hardwood board, 24 nails, 2 hinges, 2 Iron band; iron-tier hammer, Steel chisel |
+
+The Fine - Chest (36 slots) is in the iron tier and is otherwise unchanged. Steel nails are new: 1 Steel ingot makes 100 at the brick forge, level 3. Every other building and recipe that took nails or hinges now reads "Bronze nails or better" / "Bronze hinges or better", which covers the same metals as before plus steel. Items 1512 (Small chest) and 1513 (Steel nails), recipe 750, blueprint 364, structure state 462. Saves are unchanged. Design and provisional picks: docs/design/CHEST_TIERS.md.
+
+**Evidence:**
+- Independent review PASS WITH NOTES on cd6624c5 (two test fixes first found on f00f7542) and PASS on 250ad249.
+- Lane B on cd6624c5: 318 pass and 1 fail (a stale row count in test_wood_phase4), fixed in 250ad249.
+- Lane B on 250ad249: 319 PASS / 0 FAIL (314 fast + 5 timing). validate_items 0 errors, look names 340, warnings 381 = baseline. Join smoke clean.
+
+**Acceptance:** with 8 Copper nails and 4 Hardwood boards, any hammer builds a Small chest that holds 24. The Rustic - Chest refuses copper nails and takes bronze, iron or steel. The Large wooden chest refuses bronze nails. The Ornate - Chest takes only Steel nails. Taking a chest down gives back the lowest nails that fill its cost.
+
+Not yet played; not yet seen in a picture.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
 
 ## Assumed on Dave's behalf (provisional values, for review)
 
+- CT-1 (entry 111): the copper chest is the Small chest, 24 slots. Chest slots go in six-slot rows, so 27 would leave half a row. That makes it the same size as the Crude - Chest. The Small chest is built with a hammer from copper nails and needs no twine. Its lid lifts off, because there are no copper hinges.
+- CT-2 (entry 111): Dave's "superior" chest is the existing Ornate - Chest, since Ornate is the top furniture grade. It keeps its Iron hinges, because there are no steel hinges.
+- CT-4 (entry 111): Steel nails are 1 Steel ingot to 100 at the brick forge, level 3, value 2.
+- CT-5 (entry 111): only the chests are tiered. The other buildings that use nails (about 40) take bronze nails or better.
 - OP-1 (entry 107): ore pile looks, chosen by Claude. Copper ore: malachite green, 30% red-brown, lumps 0.3, 3,900 kg/m3. Tin ore: dark red-brown, 40% near-black, lumps 0.15, a little shiny, 6,900 kg/m3. Iron ore: grey-brown, 35% rust, lumps 0.3, 4,800 kg/m3. Bog iron ore: red-brown, 35% ochre, lumps 0.4, 3,600 kg/m3. The densities are the real minerals' and set how wide a cone a count makes.
 - LV-1: one held Level action lasts while strokes come within 1.5 s and the feet move less than 0.6 m; its target height is kept for that long.
 - LV-2: Level leaves the ground within 1.2 m of the feet untouched.
