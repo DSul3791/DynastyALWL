@@ -12281,7 +12281,7 @@
 			"kind": "material",
 			"description": "Seeds from a cattail's brown head. Sow them with the hoe in a tilled bed or a planter and a cattail grows.",
 			"how_to_get": [
-				"From a wild cattail picked late in its season (fen, bog or swamp)",
+				"From a wild cattail picked late in its season (fens)",
 				"From a ripe cattail in a garden"
 			],
 			"used_for": [
@@ -12294,7 +12294,7 @@
 			"kind": "material",
 			"description": "Seeds from a tussock sedge. Sow them with the hoe in a tilled bed or a planter and a tussock sedge grows.",
 			"how_to_get": [
-				"From a wild tussock sedge picked late in its season (fen, bog or swamp)",
+				"From a wild tussock sedge picked late in its season (fens and swamps)",
 				"From a ripe tussock sedge in a garden"
 			],
 			"used_for": [
@@ -12305,9 +12305,9 @@
 		"moss_hummock_seed": {
 			"name": "Bog moss spores",
 			"kind": "material",
-			"description": "Spores shaken from a bog moss hummock. Sow them with the hoe in a tilled bed or a planter and a bog moss hummock grows.",
+			"description": "Spores from a bog moss hummock. Sow them with the hoe in a tilled bed or a planter and bog moss grows.",
 			"how_to_get": [
-				"From a wild bog moss hummock picked late in its season (fen, bog or swamp)",
+				"From a wild bog moss hummock picked in summer (bogs)",
 				"From a ripe bog moss hummock in a garden"
 			],
 			"used_for": [

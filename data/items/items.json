@@ -12193,7 +12193,7 @@
 		"moss_hummock_seed": {
 			"number": 1516,
 			"name": "Bog moss spores",
-			"description": "Spores shaken from a bog moss hummock. Sow them with the hoe in a tilled bed or a planter and a bog moss hummock grows.",
+			"description": "Spores from a bog moss hummock. Sow them with the hoe in a tilled bed or a planter and bog moss grows.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
