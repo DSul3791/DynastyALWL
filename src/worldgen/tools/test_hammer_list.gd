@@ -122,7 +122,7 @@ func _init() -> void:
 	check(visible_rows == found.size(), "typing filters the rows on screen (%d)" % visible_rows)
 	var crate_no: int = int(shown.rows(1).filter(func(r): return r["name"] == "Crate")[0]["number"])
 	shown._hover({"kind": "bp", "number": crate_no})
-	check(shown.detail_text().contains("Plank  5 / 5") and shown.detail_text().contains("Bronze nails or better"), "pointing at a row shows its materials, have / need (%s)" % shown.detail_text().left(80))
+	check(shown.detail_text().contains("Plank  5 / 5") and shown.detail_text().contains("Copper nails or better"), "pointing at a row shows its materials, have / need (%s)" % shown.detail_text().left(80))
 	# Esc empties the search box first, then shuts the screen; a tab click empties the search; right click shuts it (BS-4).
 	var esc: InputEventKey = InputEventKey.new()
 	esc.keycode = KEY_ESCAPE

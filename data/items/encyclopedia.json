@@ -4526,7 +4526,7 @@
 			"kind": "material",
 			"description": "A wooden wheel with paddles. It turns where running water pushes it.",
 			"how_to_get": [
-				"Craft at a workbench: 20 Plank, 80 Bronze nails or better, 4 Tar"
+				"Craft at a workbench: 20 Plank, 80 Iron nails or better, 4 Tar"
 			],
 			"used_for": [
 				"Used to build Sawmill"
@@ -4538,7 +4538,7 @@
 			"kind": "placeable",
 			"description": "A saw frame on a tall foundation, driven by a water wheel in running water.",
 			"how_to_get": [
-				"Build with a hammer (press R): 40 Plank, 100 Bronze nails or better, 1 Saw blade, 1 Water wheel"
+				"Build with a hammer (press R): 40 Plank, 100 Iron nails or better, 1 Saw blade, 1 Water wheel"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8082,7 +8082,7 @@
 			"kind": "placeable",
 			"description": "A timber gate between stone piers. Opens like a door.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Cobblestone, 3 Plank, 2 Bronze hinges or better"
+				"Build with a hammer (press R): 6 Cobblestone, 3 Plank, 2 Iron hinges"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8118,7 +8118,7 @@
 			"kind": "placeable",
 			"description": "A timber gate between brick piers. Opens like a door.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Brick, 2 Clay mortar, 3 Plank, 2 Bronze hinges or better"
+				"Build with a hammer (press R): 6 Brick, 2 Clay mortar, 3 Plank, 2 Iron hinges"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8136,7 +8136,7 @@
 			"kind": "placeable",
 			"description": "Iron railings on a brick plinth, two metres long.",
 			"how_to_get": [
-				"Build with a hammer (press R): 3 Iron ingot, 6 Bronze nails or better"
+				"Build with a hammer (press R): 3 Iron ingot, 6 Iron nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8154,7 +8154,7 @@
 			"kind": "placeable",
 			"description": "A wrought iron gate. Opens like a door.",
 			"how_to_get": [
-				"Build with a hammer (press R): 4 Iron ingot, 2 Bronze hinges or better"
+				"Build with a hammer (press R): 4 Iron ingot, 2 Iron hinges"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8622,7 +8622,7 @@
 			"kind": "placeable",
 			"description": "An iron railing along a ceiling or foundation edge. Stops falls.",
 			"how_to_get": [
-				"Build with a hammer (press R): 2 Iron ingot, 4 Bronze nails or better"
+				"Build with a hammer (press R): 2 Iron ingot, 4 Iron nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8992,7 +8992,7 @@
 			"kind": "placeable",
 			"description": "A plank-edged bed of soil, two metres square, nailed at the corners. Sow and tend it like a tilled bed.",
 			"how_to_get": [
-				"Build with a hammer (press R): 3 Plank, 8 Bronze nails or better"
+				"Build with a hammer (press R): 3 Plank, 8 Copper nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9010,7 +9010,7 @@
 			"kind": "structure",
 			"description": "A plank-edged bed of soil, one metre square, nailed at the corners. Sow and tend it like a tilled bed.",
 			"how_to_get": [
-				"Build with a hammer (press R): 2 Plank, 8 Bronze nails or better"
+				"Build with a hammer (press R): 2 Plank, 8 Copper nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9020,7 +9020,7 @@
 			"kind": "structure",
 			"description": "A plank-edged bed of soil, three metres square, nailed at the corners. Sow and tend it like a tilled bed.",
 			"how_to_get": [
-				"Build with a hammer (press R): 4 Plank, 8 Bronze nails or better"
+				"Build with a hammer (press R): 4 Plank, 8 Copper nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9661,7 +9661,7 @@
 			"kind": "placeable",
 			"description": "A big copper-lined tank on a wooden frame. Rain and pipes from above fill it; it feeds pipes below.",
 			"how_to_get": [
-				"Build with a hammer (press R): 16 Plank, 20 Hardwood board, 30 Copper ingot, 40 Bronze nails or better"
+				"Build with a hammer (press R): 16 Plank, 20 Hardwood board, 30 Copper ingot, 40 Copper nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -10669,7 +10669,7 @@
 			"kind": "placeable",
 			"description": "A braced plank crate with a nailed lid. Holds 10 stacks.",
 			"how_to_get": [
-				"Build with a hammer (press R): 5 Plank, 8 Bronze nails or better"
+				"Build with a hammer (press R): 5 Plank, 8 Copper nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -12469,7 +12469,7 @@
 			"kind": "placeable",
 			"description": "A heavy plank gate strapped with iron, hung between concrete posts.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Concrete, 7 Iron band, 5 Plank, 2 Bronze hinges or better"
+				"Build with a hammer (press R): 6 Concrete, 7 Iron band, 5 Plank, 2 Iron hinges, 12 Steel nails"
 			],
 			"used_for": [],
 			"obtainable_now": true

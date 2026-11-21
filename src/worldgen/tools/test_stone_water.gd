@@ -63,7 +63,7 @@ func _init() -> void:
 	for pair in bp["raised_cistern"]["cost"]:
 		raised_cost[str(pair[0])] = int(pair[1])
 
-	check(bool(bp["raised_cistern"].get("known", false)) and not bool(bp["raised_cistern"].get("locked", false)) and int(raised_cost.get("copper_ingot", 0)) == 30 and raised_cost.has("copper_nails") and raised_cost.has("lumber") and not raised_cost.has("cobblestone"), "the Raised cistern is a big tank anyone can build: copper lined with 30 Copper ingot (Dave 21 Nov 2026), a wooden frame, copper nails for the copper lining (Dave 21 Nov 2026: "anything that uses copper cladding should use copper nails") %s" % str(raised_cost))
+	check(bool(bp["raised_cistern"].get("known", false)) and not bool(bp["raised_cistern"].get("locked", false)) and int(raised_cost.get("copper_ingot", 0)) == 30 and raised_cost.has("copper_nails") and raised_cost.has("lumber") and not raised_cost.has("cobblestone"), "the Raised cistern is a big tank anyone can build: copper lined with 30 Copper ingot (Dave 21 Nov 2026), a wooden frame, copper nails for the copper lining (Dave 21 Nov 2026: copper cladding takes copper nails) %s" % str(raised_cost))
 	check(int(items._structures["stone_channel"]["water"]["cap_lpm"]) == 300 and not bool(items._structures["stone_channel"]["water"]["closed"]), "a stone channel is open and carries 300 L/min")
 	for id in ["clay_pipe_run", "clay_pipe_elbow", "clay_pipe_tee"]:
 		check(bp.has(id) and bool(bp[id].get("retired", false)) and bool(items._structures[str(bp[id]["structure"])].get("retired", false)) and not items._structures[str(bp[id]["structure"])].has("water"), "clay plumbing is retired: %s is kept for its numbers only, with no water block" % id)

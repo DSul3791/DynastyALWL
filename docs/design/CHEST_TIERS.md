@@ -19,7 +19,7 @@ Earlier rulings this builds on: Dave 15 Nov 2026 (copper, bronze and iron nails 
 
 "Or better": a need names the lowest metal it takes and any better metal serves, as the chisels do (wood_species.json ingredient_groups): copper_nails takes copper, bronze, iron or steel; bronze_nails bronze, iron or steel; nails (Iron nails) iron or steel; steel_nails steel only. bronze_hinges takes bronze or iron; hinges (Iron hinges) iron only. A cost spends its lowest member first and a taken-down piece gives the lowest back (ItemTable.spend_order).
 
-Every other building and live recipe that took "nails" or "hinges" (iron or bronze) now asks for bronze_nails or bronze_hinges: the same metals as before, plus steel nails. Only the chests are tiered.
+Every other building and live recipe that took "nails" or "hinges" then asked for bronze_nails or bronze_hinges; since Dave's later ruling the same day each one names the metal its use needs (see "Nails for every build").
 
 ## The knife's store (Dave 21 Nov 2026)
 Dave, 21 Nov 2026 06:58Z, of the Wicker - Chest (18 slots) and the Crude - Chest (24 slots), both knife builds: "get ride of both of those. the knife can make a wicker basket that could have 6 slots." Asked about placed ones: "there are none".
