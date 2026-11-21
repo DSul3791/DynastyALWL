@@ -432,7 +432,7 @@ func on_rows(rows: Array, server_ms: int) -> void:
 		_bodies[id]["target"] = row[2]
 		_bodies[id]["heading"] = float(row[3])
 
-		MotionBuffer.push(_bodies[id]["samples"], row[2], float(row[3]), float(row[5]) / 1000.0 + _clock_off, _gap)   # when the server moved it, on this clock
+		MotionBuffer.push_row(_bodies[id], row[2], float(row[3]), int(row[5]), _clock_off, _gap)   # when the server moved it, on this clock; a repeat is skipped
 		_bodies[id]["state"] = int(row[4])
 
 	var now: int = Time.get_ticks_msec()

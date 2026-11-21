@@ -91,6 +91,33 @@ func _init() -> void:
 	MotionBuffer.push(stop, Vector3(2.5, 0, 0), 0.0, 60.45, 0.25)   # stood_ms
 	check(absf((MotionBuffer.at(stop, 60.75)[0] as Vector3).x - 2.5) < 0.001, "a stopped runner stays where it stopped (%.2f)" % (MotionBuffer.at(stop, 60.75)[0] as Vector3).x)
 
+	# Repeated rows the way the client gets them (gate review of PR #1433): batches every 0.25 s whose offset creeps, an animal stepped
+	# every 0.333 s, so most batches repeat its last server ms. Each point is kept once, and the drawn moment never falls before the oldest.
+	var body: Dictionary = {"samples": []}
+	var off3: float = INF
+	var last3: int = -1
+	var behind: int = 0
+
+	for k in range(1, 25):
+		var send3: int = 250 * k
+		var step3: int = int(floor(float(send3) / 333.0)) * 333
+		var at3: float = 70.0 + float(send3) / 1000.0 + 0.03
+		off3 = MotionBuffer.clock_off(off3, at3, send3, last3)
+		last3 = send3
+		MotionBuffer.push_row(body, Vector3(10.0 * float(step3) / 1000.0, 0, 0), 0.0, step3, off3, 0.25)
+
+		if at3 - MotionBuffer.delay_s(0.25) < float(body["samples"][0][2]) and k > 4:
+			behind += 1
+
+	var times3: Array = (body["samples"] as Array).map(func(s3): return float(s3[2]))
+	var unique3: bool = true
+
+	for i in range(1, times3.size()):
+		unique3 = unique3 and float(times3[i]) - float(times3[i - 1]) > 0.2
+
+	check(unique3, "repeated rows are kept once: the kept points are a step apart (%s)" % str(times3))
+	check(behind == 0, "the drawn moment never falls before the oldest kept point (%d batches)" % behind)
+
 	# Dave 21 Nov 2026 ("animals are still teleporting and not actually running"): an elephant running at 10 m/s, stepped every 0.1 s on the
 	# server, its rows sent every 0.25 s, and two batches handed over together after a 150 ms frame hitch. Drawn on the server's step times
 	# it covers the same ground every frame; on arrival times (the old way) it jumped and stood.

@@ -35,6 +35,18 @@ static func clock_off(off: float, now_s: float, server_ms: int, last_ms: int = -
 	return off + CREEP_S
 
 
+# One body's row (protocol 147): `row_ms` the server ms it reached `pos`, `off` the clock offset now (clock_off). The same row_ms as the
+# body's last one is the same point sent again and is skipped: the offset creeps between batches, so on this clock the repeat would land a
+# little later than the point and be kept twice. That stopped a body dead on a late send and pushed real points out of the KEEP, so the
+# drawn moment fell before the oldest one: it froze, then jumped (gate review of PR #1433, 21 Nov 2026).
+static func push_row(body: Dictionary, pos: Vector3, heading: float, row_ms: int, off: float, gap: float) -> void:
+	if int(body.get("row_ms", -1)) == row_ms:
+		return
+
+	body["row_ms"] = row_ms
+	push(body["samples"], pos, heading, float(row_ms) / 1000.0 + off, gap)
+
+
 # A sent point `pos` (heading radians) the server reached at `t` seconds (this computer's clock), rows `gap` seconds apart lately. A point no
 # later than the newest is the same one sent again (rows repeat unchanged; unreliable ones can come out of order) and is dropped.
 static func push(samples: Array, pos: Vector3, heading: float, t: float, gap: float) -> void:
