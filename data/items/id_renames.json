@@ -1,5 +1,5 @@
 {
-	"note": "Item ids renamed in place (old id -> new id). tools/merge_check.py accepts a look missing under an old id only when that new id has a look. No save migration: Dave 16 Nov 2026, \"dont worry about saves\". Add a row only for a rename Dave approved.",
+	"note": "Item ids renamed in place (old id -> new id). tools/merge_check.py accepts a look missing under an old id only when that new id has a look. Item ids need no save migration (saves keep item numbers; Dave 16 Nov 2026, \"dont worry about saves\"); a renamed structure kind maps old saves through legacy_kinds in structures.json. Add a row only for a rename Dave approved.",
 	"renames": {
 		"wooden_spade": "wooden_shovel",
 		"stone_spade": "stone_shovel",
