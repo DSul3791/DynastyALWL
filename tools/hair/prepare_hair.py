@@ -16,6 +16,7 @@ fits it to Dynasty_Base_Male.glb's head in model space (metres, +Y up, facing +Z
 Usage: python3 -I tools/hair/prepare_hair.py SOURCE.glb OUT.glb [--male assets/character/Humanoid/Dynasty_Base_Male.glb] [--nape-back Y]
 The committed styles: Hair_CrewCut and Hair_SlickedBack with no options; Hair_ShortCurly with --nape-back 1.555 (its sparse low strands at the
 back of the neck hung in shards, PC pictures 20 Nov 2026; Dave chose to tidy them).
+Hair_MediumBob with --nape 1.45 (a bob to the jaw; Meshy made this one as hair only, with no mannequin head, Dave 21 Nov 2026).
 Needs numpy and Pillow. Writes OUT.glb, its .import, its three textures as OUT_<texture>.png with their .import files (VRAM Compressed), and prints the fit.
 """
 import argparse
@@ -36,11 +37,15 @@ CAP_CLEARANCE_M = 0.002  # the cap (2b) sits this far out from the skin, under t
 CAP_HEM_M = 0.015        # the cap stops this far above the hair's lowest edge in each direction round the head, so it never shows under the hair
 CAP_NAPE_M = 0.004       # where the nape line is raised, the cap stops this far above it
 CAP_NAPE_SPAN = 0.8      # ... across the back only: where the line is at least this share of the way up (about 50 degrees either side of straight behind)
+CAP_EDGE_MAX_M = 0.03    # the cap leaves out Body 1 triangles with an edge longer than this (the neck's long ones)
+CAP_PUSH_MAX_M = 0.015    # the cap leaves out triangles with a corner pushed further than this to clear another body's head
 HEM_PERCENTILE = 2       # see CAP_HEM_M
 HOLE_BINS = 3            # bald gaps up to about this many direction bins (3.75 degrees each) across are filled by the dark cap
 NAPE_REACH_M = 0.012     # how far below NAPE_Y a triangle may reach and still be kept (lifted to the line)
 NAPE_Y = 1.505           # Body 1 model space: nothing of the hair below this (the chin is at 1.495, the nape about the same)
 TEXTURE_SIZE = 2048
+NECK_TOP_Y = 1.52         # Body 1 model space: below this (the jaw and neck) ...
+NECK_HALF_WIDTH_M = 0.08  # ... only points this close to the middle, side to side, are pushed clear of: the neck (Body 1 about 0.077 m at 1.47), not the shoulders
 HEAD_REACH_M = 0.16      # another body's head and neck: its points this close to the head's centre line, seen from above
 HEAD_FROM_Y = 1.45       # Body 1's head and neck vertices start here (model space, metres); the shoulders are below
 SKULL_FROM_Y = 1.61      # Body 1's skull above the ears (FITTING_NOTE.md: 0.145 wide, 0.191 deep from about y 1.61 up)
@@ -180,9 +185,14 @@ def main():
     parser.add_argument("--male", default="assets/character/Humanoid/Dynasty_Base_Male.glb")
     parser.add_argument("--also", nargs="*", default=["assets/character/Humanoid/Playercharacter_Female_01.glb"],
                         help="other body models (body_models.gd); the hair clears their heads too, carried by their hair_fit (body_fit.py)")
-    parser.add_argument("--nape-back", type=float, default=NAPE_Y,
-                        help="Body 1 model space: the nape line straight behind the head, easing down to NAPE_Y at the sides (a short style's sparse low strands go)")
+    parser.add_argument("--nape", type=float, default=NAPE_Y,
+                        help="Body 1 model space: the nape line at the face and sides (a longer style, such as a bob to the jaw, ends lower)")
+    parser.add_argument("--nape-back", type=float, default=None,
+                        help="Body 1 model space: the nape line straight behind the head, easing down to --nape at the sides (a short style's sparse low strands go)")
     args = parser.parse_args()
+
+    if args.nape_back is None:
+        args.nape_back = args.nape
     rng = np.random.default_rng(7)
 
     src = Glb(args.source)
@@ -255,7 +265,11 @@ def main():
         near = np.linalg.norm((o_samples - centre)[:, [0, 2]], axis=1) < HEAD_REACH_M      # the head and neck, not arms held out (Body 2 rests in a T)
         every_head.append(o_samples[near])
 
-    all_grid = radius_grid(np.concatenate(every_head), centre, keep_max=True)
+    heads = np.concatenate(every_head)
+    # Below the jaw only the neck counts, not the tops of the shoulders: a style that reaches the neck (Medium bob) was pushed out along its
+    # downward rays to the shoulders, so its lower corners flared into wings and the cap into straps (PC pictures of 27f5f5d2, 21 Nov 2026).
+    neck_only = (heads[:, 1] >= NECK_TOP_Y) | (np.abs(heads[:, 0] - centre[0]) < NECK_HALF_WIDTH_M)
+    all_grid = radius_grid(heads[neck_only], centre, keep_max=True)
 
     def direction(points):
         offsets = points - centre
@@ -268,10 +282,10 @@ def main():
     # centre that hold hair, closed by HOLE_BINS (grown, then shrunk back), so gaps fill but the hairline does not move.
     hair_points, hair_point_uv = surface_samples(boxed, hair, 200000, rng, uv)
     def nape_line(points):
-        """The nape line under each point: NAPE_Y at the face and sides, rising to --nape-back straight behind the head."""
+        """The nape line under each point: --nape at the face and sides, rising to --nape-back straight behind the head."""
         flat = points[:, [0, 2]] - centre[[0, 2]]
         behind = np.clip(-flat[:, 1] / np.maximum(np.linalg.norm(flat, axis=1), 1e-9), 0.0, 1.0)
-        return NAPE_Y + (args.nape_back - NAPE_Y) * np.sqrt(behind)       # full height across the back, easing in near the ears
+        return args.nape + (args.nape_back - args.nape) * np.sqrt(behind)       # full height across the back, easing in near the ears
 
     shown = shade(hair_point_uv) < OPAQUE_BELOW + 0.5 * (CLEAR_FROM - OPAQUE_BELOW)      # only hair the alpha cut keeps
     shown &= hair_points[:, 1] >= nape_line(hair_points)       # and not below the nape line (step 3)
@@ -292,10 +306,14 @@ def main():
     # curly's thin curls behind the ear showed a hole through to the skin when the cap stopped at the hem (PC pictures of 3e5ae3ef, 20 Nov 2026).
     floor = hem[v_col] + CAP_HEM_M
     raised = nape_line(body_points)
-    across_back = raised >= NAPE_Y + CAP_NAPE_SPAN * (args.nape_back - NAPE_Y) + 1e-6      # the back of the neck, not round the ears
+    across_back = raised >= args.nape + CAP_NAPE_SPAN * (args.nape_back - args.nape) + 1e-6      # the back of the neck, not round the ears
     floor = np.where(across_back, np.minimum(floor, raised + CAP_NAPE_M), floor)
     above_hem = body_points[:, 1] >= floor
     cap = body_tris[(inside[v_row, v_col] & above_hem)[body_tris].all(1)]
+    # Only the head's own small triangles: Body 1's long neck-to-shoulder triangles, under a style that reaches the neck (Medium bob), were
+    # stretched by the nape lift into flat dark straps over the shoulders (PC pictures of 27f5f5d2, 21 Nov 2026).
+    edges = np.linalg.norm(body_points[cap] - body_points[np.roll(cap, 1, 1)], axis=2).max(1)
+    cap = cap[edges <= CAP_EDGE_MAX_M]
     cap_used = np.unique(cap)
     cap_dirs, cap_r, _, _ = direction(body_points[cap_used])
     dark = hair[tri_shades[~pale].max(1) < OPAQUE_BELOW]
@@ -310,7 +328,13 @@ def main():
     normals = nor / scale       # normals follow the box fit (the inverse transpose of a scale); the push is left out
     normals /= np.linalg.norm(normals, axis=1, keepdims=True)
     _, _, cap_row, cap_col = direction(body_points[cap_used])
-    cap_r = np.maximum(cap_r, all_grid[cap_row, cap_col])        # over every head, but no further out than it must be
+    pushed = np.maximum(cap_r, all_grid[cap_row, cap_col])        # over every head, but no further out than it must be
+    # A cap corner pushed far out is over another body's neck, not Body 1's scalp: its triangles would stretch into a flat spike (Medium bob,
+    # PC pictures of 27f5f5d2), so they go.
+    far = np.zeros(len(body_points), bool)
+    far[cap_used] = pushed - cap_r > CAP_PUSH_MAX_M
+    cap = cap[~far[cap].any(1)]
+    cap_r = pushed
     out_pos = np.concatenate([hair_pos, centre + cap_dirs * (cap_r + CAP_CLEARANCE_M)[:, None]]).astype(np.float32)
     out_nor = np.concatenate([normals[used], body_normals[cap_used]]).astype(np.float32)
     out_uv = np.concatenate([uv[used], np.repeat(hair_uv[None], len(cap_used), 0)]).astype(np.float32)
