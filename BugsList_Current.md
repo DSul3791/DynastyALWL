@@ -1062,7 +1062,7 @@ Not yet played.
 
 **As built (PR #1404, head ee0adc37, dev 38850ea5):**
 - Blueprint 149 costs 16 Plank, 20 Hardwood board, 30 Copper ingot and 40 Nails. Only the copper changed.
-- Taking it down gives back the full cost, and a hammer repair uses the same cost, so both follow automatically.
+- Taking it down gives back the full cost, so the refund follows automatically. Any hammer repair is charged as a share of this cost.
 - The encyclopedia line, PLUMBING_DESIGN (PV-12), DYNASTY_MASTER_ITEMS and the goals draft are updated. Entry 97's "6 Copper ingot" is superseded.
 
 **Evidence:**
