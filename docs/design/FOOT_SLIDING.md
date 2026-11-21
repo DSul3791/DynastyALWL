@@ -17,5 +17,8 @@ The measurement runs once per clip when the model is built (40 samples of the sk
 - **Dino's bear frame pair:** two frames of a walking bear in the live game, a known time apart (for example 0.25 s), from the side. A planted paw must be at the same ground spot in both frames (within a few centimetres) while the body has moved on by `speed × time`. The bear's clips have root motion, so it checks path 1; one in-place animal (fox or deer) checks path 2 the same way.
 - **Regression:** the animal tests are server-only and do not change.
 
+## 21 Nov 2026 follow-up
+See `docs/design/ANIMAL_GAIT.md`: still bones are left out of the measurement, a measurement far off the row speed is not trusted, the rate band is 0.4 to 2.5, and the clip changes with a margin.
+
 ## Not in scope
 Turning on the spot (no clip), and blending walk to run across the speed range: the clip switches at the halfway speed as before.
