@@ -279,7 +279,7 @@ func _init() -> void:
 	check(place("grindstone", grind_at) and items.station_near(1, "grindstone"), "the Grindstone stands and is a grindstone station")
 
 	# 6. Chisel tiers (Dave 18 Nov 2026): a blueprint's "chisel" is the lowest chisel on the hand bar, a better one serves; a recipe keeps its chisel group, held in hand.
-	var chisel_rows: Dictionary = {"wooden_barrel": 3, "stone_trough": 4, "canopy_bed": 4, "iron_chest": 5, "plank_chest": 0, "chair": 0, "table": 0, "wooden_cupboard": 0}   # the Copper row, the Log - Trough, is a retired blueprint; Copper is covered by the bowl. The Rustic - Chest takes no chisel (Dave 21 Nov 2026: "this shouldnt need a chisel"); nor do the Rustic - Chair, Table and Cupboard, the Canopy bed wants Iron (coordinator D-CHISEL-1, 21 Nov 2026)
+	var chisel_rows: Dictionary = {"wooden_barrel": 3, "raised_cistern": 3, "stone_trough": 4, "canopy_bed": 4, "iron_chest": 5, "plank_chest": 0, "chair": 0, "table": 0, "wooden_cupboard": 0}   # the Copper row, the Log - Trough, is a retired blueprint; Copper is covered by the bowl. The Rustic - Chest takes no chisel (Dave 21 Nov 2026: "this shouldnt need a chisel"); nor do the Rustic - Chair, Table and Cupboard; the Canopy bed wants Iron (coordinator D-CHISEL-1, 21 Nov 2026)
 
 	for st in chisel_rows:
 		check(int(blueprint_of(st).get("chisel", 0)) == int(chisel_rows[st]), "%s needs chisel tier %d" % [st, int(chisel_rows[st])])
