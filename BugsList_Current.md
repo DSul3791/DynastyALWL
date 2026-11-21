@@ -1004,6 +1004,56 @@ Not yet played.
 
 Not yet played.
 
+## 100. Hair styles: Dave's Medium bob added to the lineup
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "in the same folder I had the other hair styles there is now a medium hair style you can add and I will be adding more as they finish", and "show me the pictures of the medium hair style on the players when they are ready".
+
+**Required outcome:** the Medium bob appears in the one hair lineup (entry 94) for every body.
+
+**As built (PR #1398, reviewed head f0418a0b, merged to dev at a0ad2c3c):**
+- His Hair_Medium_Bob.glb is hair only, with no mannequin head. tools/hair/prepare_hair.py builds it with the new --nape 1.45, because a jaw-length bob ends lower than the short styles.
+- The hair is now pushed clear of the neck only, not the tops of the shoulders, and the cap leaves out stretched triangles. The first pictures showed the bob's lower corners flaring into flat dark wings.
+- One row in hair_models.gd: "Medium bob".
+- test_hair_styles now centres the hair's crown on the fitted skull, not the whole box on the top bone, and its size bounds allow a jaw-length style.
+
+**Evidence:**
+- Independent review PASS WITH NITS on every head.
+- Lane B on f0418a0b: 70 PASS / 0 FAIL. Warnings stay at 381.
+- Lane A pictures on 596b9fce (/mnt/project-files/hair_596b9fce_medium_bob_sheet.png), shown to Dave.
+- Known leftovers:
+  - two small dark tabs at the lower corners;
+  - a dark diamond on the back of the head and a dark leaf on the crown, where holes in Meshy's hair show the cap;
+  - a few skin slivers low on the back.
+
+**Acceptance:** pick Medium bob on Body 1 and Body 2. It hangs to the jaw with no wings at the shoulders and follows the hair colour.
+
+Not yet played.
+
+## 101. Hair styles: Dave's Medium shag added to the lineup
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "new shag hair in folger".
+
+**Required outcome:** the Medium shag appears in the one hair lineup (entry 94) for every body.
+
+**As built (PR #1401, reviewed head 99d43e1a, merged to dev at ea3e8578):**
+- His Hair_Medium_Shag_Hair.glb is hair only. It is built with prepare_hair.py --nape 1.45 and has 11,199 triangles.
+- One row in hair_models.gd: "Medium shag".
+- test_hair_styles cuts the crown band in the hair's own space, so the idle pose's tilt no longer counts the shag's thick back hair. Its depth bound is 28 cm.
+
+**Evidence:**
+- Independent review PASS on 99d43e1a.
+- Lane B on 99d43e1a: 70 PASS / 0 FAIL. Warnings stay at 381.
+- Lane A pictures on da065805 (/mnt/project-files/hair_da065805_medium_shag_sheet.png), shown to Dave: dense, no holes, ending just above the shoulders.
+- Known leftovers:
+  - a short point flicks out at one lower edge;
+  - spiky shards at one side of the face on Body 1;
+  - one thin stray strand at a temple;
+  - flat glossy shards on the crown.
+
+**Acceptance:** pick Medium shag on Body 1 and Body 2. It sits on the head from every side and follows the hair colour.
+
+Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
