@@ -8,8 +8,8 @@ extends RefCounted
 # the game connection and the block line stay alive). When a sweep of the world finds no new material, the camera sees the world again.
 
 const LAYER := 1 << 19                 # render layer 20: used by nothing else (PieceLook.TERRAIN_DECAL_LAYER is 1 << 18)
-const SLOW_MS := 100                   # after a frame longer than this, one material per frame; otherwise PER_FRAME
-const PER_FRAME := 16
+const PER_FRAME := 16                  # materials shown in a frame after a quick one (under 100 ms)
+const PER_SLOW_FRAME := 4              # after a frame of 100 ms to 1 s; after a longer one, a single material
 const MAX_SWEEPS := 4                  # the world is looked through again while it grows (views, items, plants made after the welcome)
 const MAX_MSEC := 90000                # whatever is left after this is built when it is first drawn, as before
 const MAX_CONTAINER := 4096            # bigger arrays and dictionaries in a script are skipped (block and chunk caches)
@@ -55,7 +55,8 @@ func step() -> void:
 		return
 
 	var now: int = Time.get_ticks_msec()
-	var slow: bool = now - _last_msec > SLOW_MS
+	var frame_ms: int = now - _last_msec
+	var count: int = PER_FRAME if frame_ms < 100 else (PER_SLOW_FRAME if frame_ms < 1000 else 1)
 	_last_msec = now
 
 	for quad in _drawn:
@@ -73,7 +74,7 @@ func step() -> void:
 
 		return
 
-	for k in range(1 if slow else PER_FRAME):
+	for k in range(count):
 		if _queue.is_empty():
 			break
 
