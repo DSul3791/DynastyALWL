@@ -12,6 +12,7 @@ const FlameRules := preload("res://src/shared/flame_rules.gd")
 const MineSites := preload("res://src/worldgen/runtime/mine_sites.gd")   # what an abandoned mine left behind (cave scatter kind 2)
 const WaterFlowScript := preload("res://src/stream/water_flow.gd")
 const ShoreRules := preload("res://src/shared/shore_rules.gd")
+const BoulderWear := preload("res://src/shared/boulder_wear.gd")   # a worked rock's size now (Dave 21 Nov 2026: shrinks from the first blow)
 const SnowWalk := preload("res://src/shared/snow_walk.gd")   # walking on snow and snowshoes (Part C plan 7)
 const FellPose := preload("res://src/flora/fell_pose.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -1147,7 +1148,7 @@ func _pile_blocked(centre: Vector3, radius: float, self_id: int) -> bool:
 			if flat.length() >= radius + float(info["radius"]):
 				continue   # beyond the rock's whole size: no need to work out what is left of it
 
-			var size_now: float = float(info["radius"]) * pow(float(it["count"]) / float(maxi(int(info["total"]), 1)), 1.0 / 3.0)
+			var size_now: float = BoulderWear.radius_now(float(info["radius"]), int(it["count"]), int(info["total"]))
 
 			if flat.length() < radius + size_now:
 				return true
@@ -3027,7 +3028,7 @@ func settle_loose_near(centre: Vector3, radius: float) -> void:
 
 		if it.has("boulder") and (int(it["scatter"]) & CAVE_KEY) == 0:
 			var info: Dictionary = it["boulder"]
-			var size_now: float = float(info["radius"]) * pow(float(it["count"]) / float(maxi(int(info["total"]), 1)), 1.0 / 3.0)
+			var size_now: float = BoulderWear.radius_now(float(info["radius"]), int(it["count"]), int(info["total"]))
 
 			# A boulder dug under comes down into the hole (Dave 19 Nov 2026, boulders PLAN.md stage 1: boulders floated when dug under):
 			# it rests on what is left under its middle, like a loose item. Nothing is saved: laid out again it is settled on the saved digs the same way.
@@ -3660,16 +3661,19 @@ func _log_surround() -> void:
 					keep["i%d" % sid] = true   # on a floor or a deck: in the way, never moved
 					_log_static("i%d" % sid, _log_capsule(_log_r(other)), _log_xf(other), true)
 			elif other.has("boulder") or other.has("tree"):
-				keep["i%d" % sid] = true
+				# A boulder's key carries its stones left: a worked rock that has shrunk (BoulderWear) gets a new, smaller ball and trim_statics drops the old one.
+				var static_key: String = "i%d:%d" % [sid, int(other["count"])] if other.has("boulder") else "i%d" % sid
+				keep[static_key] = true
 
-				if _logs.has_static("i%d" % sid):
+				if _logs.has_static(static_key):
 					continue   # already in the space: no new shape
 
 				if other.has("boulder"):
-					var rock_r: float = float((other["boulder"] as Dictionary).get("radius", 0.5))
+					var rock: Dictionary = other["boulder"]
+					var rock_r: float = BoulderWear.radius_now(float(rock.get("radius", 0.5)), int(other["count"]), int(rock.get("total", 1)))
 					var ball: SphereShape3D = SphereShape3D.new()
 					ball.radius = rock_r
-					_log_static("i%d" % sid, ball, Transform3D(Basis(), other["pos"] + Vector3(0.0, rock_r * 0.4, 0.0)))   # a boulder sits part in the soil
+					_log_static(static_key, ball, Transform3D(Basis(), other["pos"] + Vector3(0.0, rock_r * 0.4, 0.0)))   # a boulder sits part in the soil
 				else:
 					_log_static("i%d" % sid, _log_post(float((other["tree"] as Dictionary).get("radius", 0.3)), STUMP_H_M), Transform3D(Basis(), other["pos"] + Vector3(0.0, STUMP_H_M * 0.5, 0.0)))
 
@@ -8057,7 +8061,7 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 		return
 
 	var info: Dictionary = it["boulder"]
-	var size_now: float = float(info["radius"]) * pow(float(it["count"]) / float(maxi(int(info["total"]), 1)), 1.0 / 3.0)
+	var size_now: float = BoulderWear.radius_now(float(info["radius"]), int(it["count"]), int(info["total"]))
 	var flat: Vector2 = Vector2(_peer_pos[peer].x - it["pos"].x, _peer_pos[peer].z - it["pos"].z)
 
 	if flat.length() > HIT_REACH_M + size_now:
@@ -19178,7 +19182,7 @@ func _till_obstacles(centre: Vector3, reach: float) -> Dictionary:
 
 		if it.has("boulder"):
 			var info: Dictionary = it["boulder"]
-			seen["boulders"].append([flat, float(info["radius"]) * pow(float(it["count"]) / float(maxi(int(info["total"]), 1)), 1.0 / 3.0)])
+			seen["boulders"].append([flat, BoulderWear.radius_now(float(info["radius"]), int(it["count"]), int(info["total"]))])
 		elif it.has("struct"):
 			var kind: String = str(it["struct"]["kind"])
 			var def: Dictionary = _structures.get(kind, {})

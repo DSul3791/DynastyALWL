@@ -4,6 +4,7 @@ const BuildStamp := preload("res://src/shared/build_stamp.gd")
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
 const CraftStock := preload("res://src/shared/craft_stock.gd")
 const LyingLogs := preload("res://src/shared/lying_logs.gd")
+const BoulderWear := preload("res://src/shared/boulder_wear.gd")
 const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const CraftPlanner := preload("res://src/shared/craft_planner.gd")
 const Interact := preload("res://src/shared/interact_rules.gd")
@@ -132,7 +133,7 @@ var _chest_panel: Control
 const BOULDER_STATE := 10                 # the world-item row state of a boulder (server_items)
 const BOG_STATE := 229                    # the world-item row state of a bog iron deposit (server_items._bog_rows_near)
 var bogs: Dictionary = {}                 # bog deposit world id -> {"pos", "left", "total", "wet", "key"}: kept apart from _world; Kathleen's _show_bog draws them
-var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now}
+var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now, shrink (the running ease, if any)}
 var crown_landed: Callable = Callable()   # (centre Vector3, radius m): a felled crown hit the ground there; the client flattens the grass (Dave 10 Nov 2026)
 var _boulder_mesh: ArrayMesh
 var _boulder_rock: ShaderMaterial
@@ -3718,20 +3719,39 @@ func _boulder_material(ore: String) -> ShaderMaterial:
 	return _outcrop_rock[ore]
 
 
-# Scale to the radius still left (the cube root of the stones left), sunk a fifth into the ground like Art's scenery boulders.
+const SHRINK_EASE_S := 0.15   # how long a blow takes to ease a boulder down to its new size (look only; PROVISIONAL BW-3)
+
+
+# Scale to the radius still left (BoulderWear: in a straight line with the stones left, from the first blow), sunk a fifth into the ground like Art's scenery boulders.
 func _size_boulder(entry: Dictionary) -> void:
 	var box: AABB = (entry["lump"].mesh as Mesh).get_aabb()
-	var radius: float = float(entry["radius"]) * pow(float(entry["left"]) / float(entry["total"]), 1.0 / 3.0)
+	var radius: float = BoulderWear.radius_now(float(entry["radius"]), int(entry["left"]), int(entry["total"]))
 	var unit: float = maxf(maxf(box.size.x, box.size.z) * 0.5, 0.01)
 	var scale: float = radius / unit
+	var was: float = float(entry.get("now", -1.0))
 	entry["now"] = radius
-	entry["lump"].scale = Vector3.ONE * scale
-	entry["lump"].position = Vector3(0.0, -(box.position.y + box.size.y * 0.2) * scale, 0.0)
+	var lump_at: Vector3 = Vector3(0.0, -(box.position.y + box.size.y * 0.2) * scale, 0.0)
+	var lump_node: MeshInstance3D = entry["lump"]
+
+	# A blow eases the rock down to its new size over SHRINK_EASE_S (smooth motion; a small rock loses a big share a blow). The first draw sets it.
+	if was >= 0.0 and is_equal_approx(was, radius) and entry.get("shrink") is Tween and (entry["shrink"] as Tween).is_valid():
+		pass   # same size (a settle or a resend): leave an ease that is still running to finish
+	elif was >= 0.0 and not is_equal_approx(was, radius) and lump_node.is_inside_tree():
+		if entry.get("shrink") is Tween:
+			(entry["shrink"] as Tween).kill()   # a quick second blow starts from where the last ease had got to
+
+		var shrink: Tween = lump_node.create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		shrink.tween_property(lump_node, "scale", Vector3.ONE * scale, SHRINK_EASE_S)
+		shrink.tween_property(lump_node, "position", lump_at, SHRINK_EASE_S)
+		entry["shrink"] = shrink
+	else:
+		lump_node.scale = Vector3.ONE * scale
+		lump_node.position = lump_at
+
 	entry["shape"].shape.radius = radius * 0.85
 	entry["shape"].position = Vector3(0.0, radius * 0.5, 0.0)
-	var lump: GeometryInstance3D = entry["lump"]
-	lump.set_instance_shader_parameter("crack", 1.0 - float(entry["left"]) / float(entry["total"]))   # how much of the rock is gone: more, wider cracks
-	lump.set_instance_shader_parameter("crack_scale", 1.0 / unit)
+	lump_node.set_instance_shader_parameter("crack", BoulderWear.crack(int(entry["left"]), int(entry["total"])))   # cracks from the first blow, more and wider as the rock is used up
+	lump_node.set_instance_shader_parameter("crack_scale", 1.0 / unit)
 
 
 # Cracks over a worked boulder (BugsList entry 3, Dave 18 Nov 2026: a rock must visibly use up as it is mined). Drawn as an overlay on whatever rock
