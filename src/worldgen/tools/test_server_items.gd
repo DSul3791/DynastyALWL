@@ -2139,7 +2139,7 @@ func _init() -> void:
 
 	check(winded[90] > winded[50] and winded[50] > winded[10] and winded[10] > 0.0, "fitter characters are winded later: %s" % str(winded))
 	check(passed_out[90] > passed_out[50] and passed_out[50] > passed_out[10] and passed_out[10] > 0.0, "and black out later: %s" % str(passed_out))
-	check(absf(winded[90] / winded[50] - exp(8.0 * 0.05)) < 0.1, "fitness 90 (8 steps of 5 over average) stretches the time to get winded by about exp(0.4) (%.2f)" % (winded[90] / winded[50]))
+	check(absf(winded[90] / winded[50] - 1.0 / 0.6) < 0.1, "fitness 90 raises exertion at 60%% of average (Dave 21 Nov: 100%% at 50 down to 50%% at 100), so the time to get winded stretches by 1/0.6 (%.2f)" % (winded[90] / winded[50]))
 	check(strains.size() > 0 and strains.size() < 1300, "strain updates are at most one per 4 Hz tick (never more than 4 a second while it changes) (%d sent)" % strains.size())
 	# Stance: sitting drops strain to 0; standing under a heavy pack only to about half; walking off stands you up.
 	var xd: String = "user://test_server_items_stance"

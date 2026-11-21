@@ -23707,7 +23707,7 @@ func _fitness_default() -> int:
 
 func fitness_of(peer: int) -> int:
 	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
-	return clampi(int(row.get("fitness", _fitness_default())) + int(float(row.get("train", 0.0))), _fitness_min(), _fitness_max())
+	return clampi(int(row.get("fitness", _fitness_default())) + floori(float(row.get("train", 0.0))), _fitness_min(), _fitness_max())   # floor, so training under the start loses its first point after one point of rest, as above
 
 
 # Fitness trains slowly like a skill (Dave 2 Nov 2026, fitness.json "train"): any physical effort adds to the character's training,
