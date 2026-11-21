@@ -984,6 +984,26 @@ Not checked on screen: setting it down near a free pipe end may pull it onto the
 
 Not yet played.
 
+## 99. Wooden pipe carved at the Wood carving station with a knife, no twine
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026 (01:32Z): "I would imagine the wooden pipe should be made at the wood carving station with a knife. and it shouldnt need twine. that doesnt fit." Before this it was made by hand from 1 Log and 1 Twine.
+
+**Required outcome:** the Wooden - Pipe is made at the Wood carving station from a Log, with a knife, and takes no twine.
+
+**As built (PR #1400, head 29bcfd4b, dev ae93aa0c):**
+- Recipe 746 takes 1 Log at the Wood carving station and keeps a knife, the same pattern as the quarterstaff and the club. It is still known from the start and takes 30 s (PROVISIONAL, kept from before).
+- A laid run's hammer repair share is now 1 Log. Taking a run down still gives back the pipes it took, so runs in old saves are unchanged.
+- The encyclopedia line, PLUMBING_DESIGN (PV-1) and DYNASTY_MASTER_ITEMS are updated. The retired elbow and tee keep their old costs.
+
+**Evidence:**
+- Independent review PASS on 29bcfd4b.
+- Lane A on 29bcfd4b: 288 pass / 0 fail. Warnings 381, the same as the baseline. validate_items 0 errors.
+- The run includes "a Wooden - Pipe is carved from a Log at the Carving station, no twine".
+
+**Acceptance:** stand at a Wood carving station with a knife and a Log. The Wooden - Pipe is in its list and makes one pipe from the Log. Away from the station, the pipe is not in the hand crafting list.
+
+Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
