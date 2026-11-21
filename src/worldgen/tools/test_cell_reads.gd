@@ -177,7 +177,7 @@ func _init() -> void:
 		var names: Dictionary = {ore: ore + "_ore"}
 		var t0: int = Time.get_ticks_usec()
 
-		for n in range(2000):
+		for _n in range(2000):
 			tile_now.ore_at(spot, 45.0, names, 10.0)
 
 		timed[ore] = float(Time.get_ticks_usec() - t0) / 2000.0
