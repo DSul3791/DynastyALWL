@@ -1389,6 +1389,9 @@ func _welcome_body(info: Dictionary) -> void:
 	root.add_child(flora)
 	flora.ground_ready = func(x: float, z: float) -> bool: return stream != null and stream.column_loaded(x, z)
 	_freeze_watch.start()
+	Probe.terrain = terrain   # the slow-frame split (frame_probe.gd) reads the terrain's main-thread times and times each draw
+	RenderingServer.frame_pre_draw.connect(func() -> void: Probe.pre_draw())
+	RenderingServer.frame_post_draw.connect(func() -> void: Probe.post_draw())
 	Probe.context = func() -> String: return "%s; ground blocks waiting %d; at %s" % [flora.load_state() if flora != null else "no flora", stream.pending() if stream != null else -1, str(body.global_position) if body != null else "?"]
 	ocean_ice = OceanIceScript.new()
 	ocean_ice.name = "OceanIce"

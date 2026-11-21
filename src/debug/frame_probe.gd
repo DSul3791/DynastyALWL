@@ -26,6 +26,17 @@ const HITCH_MS := 100.0                  # a frame this long prints a HITCH line
 static var _hitch_next_msec: int = 0
 static var context: Callable = Callable()   # returns a short text about the game's state (set by the client), printed with every freeze line
 static var _freeze_prints: int = 0
+# Where a slow frame's time went (Dave 21 Nov 2026, "lags or pauses a lot when I am running"): the HITCH lines named pieces adding up to a few ms
+# of a 140 ms frame, and the frame length came from delta, which the engine caps near 8 physics steps (about 133 ms). The split below takes
+# the real time between frames and divides it into the last draw (frame_pre_draw to frame_post_draw, where pipeline builds and GPU waits
+# land), the engine's process step (scripts and engine nodes), the physics steps run, the voxel terrain's own main-thread work, and the rest.
+static var terrain: Object = null         # the client's VoxelLodTerrain (its get_statistics() main-thread times), set by the client
+static var last_split: Dictionary = {}    # the split of the frame frame() just closed (the shot runner's run-in-a-line totals read it)
+static var _wall_usec: int = 0
+static var _pre_draw_usec: int = 0
+static var _draw_usec: int = 0
+static var _physics_seen: int = 0
+static var _pipelines_seen: int = 0
 
 
 static func start() -> int:
@@ -54,7 +65,10 @@ static func frame(delta: float) -> void:
 	_win_frames += 1
 	_win_process_ms += Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
 	_win_physics_ms += Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
-	var ms: float = delta * 1000.0
+	var now_usec: int = Time.get_ticks_usec()
+	var ms: float = float(now_usec - _wall_usec) / 1000.0 if _wall_usec > 0 else delta * 1000.0
+	_wall_usec = now_usec
+	last_split = _split(ms)
 
 	# Dave 2 Nov 2026: 4-10 s freezes when trees and grass spawn in. A freeze prints at once (not only in the exit report) with what this frame
 	# timed, the engine's script and physics times, draw calls and video memory, and the game's own state: "nothing measured" with a small
@@ -67,11 +81,11 @@ static func frame(delta: float) -> void:
 			if int(_this_frame[name]) > 1000:
 				named.append("%s %.0f" % [name, float(_this_frame[name]) / 1000.0])
 
-		print("FREEZE %.0f ms (frame %d): script %.0f ms, physics %.0f ms, draw calls %d, video mem %d MB, objects %d; timed: %s; %s" % [
+		print("FREEZE %.0f ms (frame %d): script %.0f ms, physics %.0f ms, draw calls %d, video mem %d MB, objects %d; %s; timed: %s; %s" % [
 			ms, _frames,
 			Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
 			int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), int(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0),
-			int(Performance.get_monitor(Performance.OBJECT_COUNT)), ", ".join(named) if not named.is_empty() else "nothing",
+			int(Performance.get_monitor(Performance.OBJECT_COUNT)), split_text(last_split), ", ".join(named) if not named.is_empty() else "nothing",
 			str(context.call()) if context.is_valid() else ""
 		])
 
@@ -104,9 +118,9 @@ static func frame(delta: float) -> void:
 			for k in range(mini(named.size(), 5)):
 				text.append("%s %.0f" % [named[k][0], named[k][1]])
 
-			print("HITCH %.0f ms: %s; script %.0f ms, physics %.0f ms, draw calls %d" % [ms, ", ".join(text) if not text.is_empty() else "nothing timed",
+			print("HITCH %.0f ms: %s; script %.0f ms, physics %.0f ms, draw calls %d; %s" % [ms, ", ".join(text) if not text.is_empty() else "nothing timed",
 				Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
-				int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))])
+				int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), split_text(last_split)])
 		_slow.append([ms, parts])
 		_slow.sort_custom(func(a, b): return a[0] > b[0])
 
@@ -114,6 +128,71 @@ static func frame(delta: float) -> void:
 			_slow.resize(KEEP_SLOW)
 
 	_this_frame = {}
+
+
+# The client calls these from RenderingServer.frame_pre_draw and frame_post_draw: the draw's CPU time, pipeline builds and GPU waits included.
+static func pre_draw() -> void:
+	_pre_draw_usec = Time.get_ticks_usec()
+
+
+static func post_draw() -> void:
+	if _pre_draw_usec > 0:
+		_draw_usec = Time.get_ticks_usec() - _pre_draw_usec
+
+
+# The frame just closed, in ms: wall (real time since the frame before), draw, process (the engine's process step: our scripts and engine
+# nodes), timed (the pieces this probe names, part of process), physics (the steps run since, times the last step's length), voxel (the
+# terrain's own main-thread times), other (what is left: input, the engine's own frame work); pipelines = pipeline compilations since.
+static func _split(wall_ms: float) -> Dictionary:
+	var physics_now: int = Engine.get_physics_frames()
+	var steps: int = physics_now - _physics_seen if _physics_seen > 0 else 1
+	_physics_seen = physics_now
+	var pipelines_now: int = _pipelines_total()
+	var built: int = pipelines_now - _pipelines_seen if _pipelines_seen > 0 else 0
+	_pipelines_seen = pipelines_now
+	var timed: float = 0.0
+
+	for name in _this_frame:
+		timed += float(_this_frame[name]) / 1000.0
+
+	var voxel: float = 0.0
+
+	if terrain != null and is_instance_valid(terrain):
+		var stats: Dictionary = terrain.call("get_statistics")
+
+		for key in stats:
+			if str(key).begins_with("time_"):
+				voxel += float(stats[key]) / 1000.0
+
+	var process: float = Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+	var physics: float = Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0 * float(steps)
+	var draw: float = float(_draw_usec) / 1000.0
+	return {"wall": wall_ms, "draw": draw, "process": process, "timed": timed, "physics": physics, "steps": steps, "voxel": voxel,
+		"other": maxf(wall_ms - draw - process - physics, 0.0), "pipelines": built, "n": _frames, "usec": Time.get_ticks_usec()}
+
+
+static func split_text(split: Dictionary) -> String:
+	if split.is_empty():
+		return "no split"
+
+	return "split: draw %.0f, process %.0f (timed %.0f, voxel %.0f), physics %.0f in %d steps, other %.0f; %d pipelines built; %s" % [
+		float(split["draw"]), float(split["process"]), float(split["timed"]), float(split["voxel"]), float(split["physics"]), int(split["steps"]),
+		float(split["other"]), int(split["pipelines"]), pipelines_text()]
+
+
+static func _pipelines_total() -> int:
+	return int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_DRAW)) + int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_SPECIALIZATION)) \
+		+ int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_MESH)) + int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_SURFACE)) \
+		+ int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_CANVAS))
+
+
+# The renderer's pipeline compilations since the game started, by what asked for them (Godot's monitors). "draw" ones were built while a
+# frame waited for them; a freeze whose draw count jumps was the graphics driver building shaders (first join on a cold machine, 20 Nov 2026).
+static func pipelines_text() -> String:
+	return "pipelines so far: draw %d, specialization %d, mesh %d, surface %d, canvas %d" % [
+		int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_DRAW)), int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_SPECIALIZATION)),
+		int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_MESH)), int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_SURFACE)),
+		int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_CANVAS))]
 
 
 static func reset() -> void:

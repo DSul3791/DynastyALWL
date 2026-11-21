@@ -142,6 +142,11 @@ var _frame_times: PackedFloat32Array = PackedFloat32Array()
 var _frame_state: int = 0                # 0 waiting, 1 measuring, 2 printed
 var _frame_start_msec: int = 0
 var build_label: String = ""             # --shot-build=: the commit the numbers belong to (printed in the frametime line)
+var run_line: bool = false               # --shot-run: during --shot-frametime the player runs straight ahead (W and Shift held, as in play) instead of standing
+const FrameProbe := preload("res://src/debug/frame_probe.gd")
+var _splits: Array = []                  # every measured frame's split (frame_probe.gd last_split)
+var _split_seen: int = -1
+var _run_from: Vector3 = Vector3.ZERO
 var piece_views: bool = false     # --shot-piece-views: the first named piece gets the four item views (front, side, top, diag) at 3 to 6 m instead of the row pictures
 var _piece_built: bool = false
 var piece_names: PackedStringArray = PackedStringArray()    # --shot-pieces=wall_section,chest: one building piece of each in a row with name tags (structures.json keys)
@@ -237,6 +242,8 @@ func setup(owner_client, args: Array) -> void:
 					print("shot runner: --angles error: %s is not name:deg:dist" % part)
 		elif argument.begins_with("--shot-frametime="):
 			frametime_s = float(argument.trim_prefix("--shot-frametime="))
+		elif argument == "--shot-run":
+			run_line = true
 		elif argument.begins_with("--shot-build="):
 			build_label = argument.trim_prefix("--shot-build=")
 		elif argument.begins_with("--shot-quality="):
@@ -376,7 +383,8 @@ func _process(delta: float) -> void:
 			client.weather["wind_dir"] = client.world_wind_dir
 			client.weather = client.wind_onto(client.weather)
 
-		client.body.velocity = Vector3.ZERO
+		if not _running():
+			client.body.velocity = Vector3.ZERO
 
 		if no_grass and client.grass != null and client.grass.enabled:
 			client.grass.set_radius(0.0)      # the grass view draws nothing (a quality change may turn it back on)
@@ -2051,8 +2059,24 @@ func _measure_frames(delta: float) -> void:
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)   # vsync snaps frame times to 16.7 ms steps
 		_frame_state = 1
 		_frame_start_msec = now
+		_run_from = client.body.global_position
 
-	_frame_times.append(delta * 1000.0)
+		if run_line:
+			client.flying = false   # the shot flew the body to its spot; the run is on foot, so the server sees it move and lays out the ground around it
+
+	if _running():
+		_hold_key("move_forward")
+		_hold_key("run")
+
+	# The real time between frames when the probe has it (delta is capped by the engine near 8 physics steps, about 133 ms).
+	var split: Dictionary = FrameProbe.last_split
+
+	if not split.is_empty() and int(split.get("n", -1)) != _split_seen:
+		_split_seen = int(split["n"])
+		_splits.append(split)
+		_frame_times.append(float(split["wall"]))
+	elif split.is_empty():
+		_frame_times.append(delta * 1000.0)
 
 	if now - _frame_start_msec >= int(frametime_s * 1000.0):
 		_frame_state = 2
@@ -2075,6 +2099,64 @@ func _measure_frames(delta: float) -> void:
 		print("shot runner: frametime build %s quality %s spot %.0f,%.0f y %.1f (%s m above the ground) frames %d avg %.1f p95 %.1f p99 %.1f max %.1f ms over50 %d over100 %d [%s] machine: %s, %s, window %dx%d, vsync off" % [
 			build_label, client.QUALITY_NAMES[client.quality], spot.x, spot.z, spot.y, "?" if is_nan(spot_ground) else "%.1f" % (spot.y - spot_ground), sorted.size(), total / float(sorted.size()), p95, p99, sorted[sorted.size() - 1], over_50, over_100, verdict,
 			RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name(), get_window().size.x, get_window().size.y])
+		_print_split(now)
+
+		if run_line:
+			_release_key("move_forward")
+			_release_key("run")
+
+
+func _running() -> bool:
+	return run_line and _frame_state == 1
+
+
+# A movement key held as in play: KeyBindings.held reads Input.is_key_pressed, and the engine lets every key go when the window loses focus,
+# so it is pressed again whenever it is not down.
+func _hold_key(id: String) -> void:
+	var key: int = int(KeyBindings.binding(id)["key"])
+
+	if key != KEY_NONE and not Input.is_key_pressed(key):
+		var press: InputEventKey = InputEventKey.new()
+		press.keycode = key as Key
+		press.physical_keycode = key as Key
+		press.pressed = true
+		Input.parse_input_event(press)
+
+
+func _release_key(id: String) -> void:
+	var key: int = int(KeyBindings.binding(id)["key"])
+
+	if key != KEY_NONE:
+		var release: InputEventKey = InputEventKey.new()
+		release.keycode = key as Key
+		release.physical_keycode = key as Key
+		release.pressed = false
+		Input.parse_input_event(release)
+
+
+# Where the slow frames' time went (frame_probe.gd split): over every frame above 50 ms the parts summed, then the ten slowest each on one
+# line, so a run says whether the hitches were the draw (pipeline builds, GPU), our scripts, untimed process work, physics or the rest.
+func _print_split(now: int) -> void:
+	var moved: Vector3 = client.body.global_position - _run_from
+	var seconds: float = maxf(float(now - _frame_start_msec) / 1000.0, 0.001)
+	print("shot runner: frametime run %s: %.0f m in %.0f s (%.1f m/s on the ground), from %.0f,%.0f to %.0f,%.0f" % [
+		"in a line" if run_line else "standing", Vector2(moved.x, moved.z).length(), seconds, Vector2(moved.x, moved.z).length() / seconds,
+		_run_from.x, _run_from.z, client.body.global_position.x, client.body.global_position.z])
+	var slow: Array = _splits.filter(func(one: Dictionary) -> bool: return float(one["wall"]) > 50.0)
+	var sums: Dictionary = {}
+
+	for one in slow:
+		for part in ["wall", "draw", "process", "timed", "voxel", "physics", "other", "pipelines"]:
+			sums[part] = float(sums.get(part, 0.0)) + float(one[part])
+
+	print("shot runner: frametime split of %d frames over 50 ms: wall %.0f ms = draw %.0f + process %.0f (timed %.0f, voxel %.0f) + physics %.0f + other %.0f; %d pipelines built in them, %d in all %d frames" % [
+		slow.size(), float(sums.get("wall", 0.0)), float(sums.get("draw", 0.0)), float(sums.get("process", 0.0)), float(sums.get("timed", 0.0)),
+		float(sums.get("voxel", 0.0)), float(sums.get("physics", 0.0)), float(sums.get("other", 0.0)), int(sums.get("pipelines", 0.0)),
+		int(_splits.reduce(func(total: int, one: Dictionary) -> int: return total + int(one["pipelines"]), 0)), _splits.size()])
+	slow.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["wall"]) > float(b["wall"]))
+
+	for one in slow.slice(0, 10):
+		print("shot runner: slow frame %.0f ms at %.1f s: %s" % [float(one["wall"]), (float(one["usec"]) / 1000.0 - float(_frame_start_msec)) / 1000.0, FrameProbe.split_text(one)])
 
 
 func _on_surface(x: float, z: float, y: float) -> void:
