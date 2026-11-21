@@ -122,7 +122,7 @@ Every value below is PROVISIONAL (coordinator ruling: build costs and numbers ma
 - P-8 Stone channels 300 L/min; Stone - Trough 200 L (s6). (Clay pipes retired by Dave, not assumed.)
 - P-9 Cistern 2,000 L, 0.5 m head; Raised cistern 700 L (Dave 21 Nov 2026), 2.5 m head, a big tank filled by rain and from higher up (Dave, 20 Nov 2026, s10; PV-12).
 - P-10 A saved Clay pipe loads as Clay (renames.json): nothing else uses it, and its recipe took 3 Clay for 2 (s3).
-- (19 Nov 2026, s9) PV-1 Wooden - Pipe: 1 Log + 1 Twine by hand, knife kept; 2 m a piece, 60 L/min; wears to 0.25 in 56 game days, flow x condition.
+- (19 Nov 2026, s9) PV-1 Wooden - Pipe: 1 Log at the Carving station, knife kept, no twine (Dave 21 Nov 2026); 2 m a piece, 60 L/min; wears to 0.25 in 56 game days, flow x condition.
 - PV-2 Copper - Pipe: 1 Copper ingot at the Primitive smithy for 3 m; 180 L/min; never wears.
 - PV-3 A run is straight, up to 30 m, paid in whole pieces; the start must be a connection point; within 6 m reach of where you stand at each click.
 - PV-4 Copper - Tap: 1 Copper ingot; only on a pipe's end or joint; its 3 slots fill water containers at up to 30 L a real minute between them (Dave 19 Nov 20:11Z gave E to drink, F with about 3 slots; the fill rate is assumed). Water reaches it from the first tank up its pipes that holds any.
@@ -160,9 +160,9 @@ past it; a click on the next connection point lays the whole run, taking the pip
 - **Junctions anywhere.** A run started in the middle of a laid pipe splits that pipe there (its pieces shared out, none lost or gained), so
   three pipe ends meet and the water splits or joins there as at a tee. That is why the elbows and tees are retired: any angle and any branch is
   a run. Ends that meet are sealed; an end joined to another pipe never spills into what is under the joint.
-- **Wooden - Pipe**: a bored log 15 cm (6 in) across, 2 m a piece, 60 L/min under head, made by hand from 1 Log and 1 Twine with a knife kept
+- **Wooden - Pipe**: a bored log 15 cm (6 in) across, 2 m a piece, 60 L/min under head, carved from 1 Log at the Carving station with a knife kept (Dave 21 Nov 2026: "made at the wood carving station with a knife. and it shouldnt need twine")
   (the old blueprint cost). It wears three times as fast as other wood: down to a quarter in 56 game days (building wear, about 2.3 real days),
-  and a worn pipe leaks, carrying only its condition's share of its flow; a hammer repair (1 Log, 1 Twine share) makes it good again (PV-1).
+  and a worn pipe leaks, carrying only its condition's share of its flow; a hammer repair (1 Log share) makes it good again (PV-1).
 - **Copper - Pipe**: 3 m a piece, 1 Copper ingot at the Primitive smithy, 180 L/min under head, never wears (PV-2).
 - **Copper - Tap** (1 Copper ingot, Primitive smithy; Dave 19 Nov 2026 20:11Z): in hand, left click on a pipe's end or joint fits it there. "Press E
   to take a drink"; F opens its 3 slots, and a water container put there fills. Both work only while its pipes reach a water source that holds
@@ -185,7 +185,7 @@ past it; a click on the next connection point lays the whole run, taking the pip
 
 | Item | What happens |
 |---|---|
-| Wooden - Pipe (1352) | Kept, now a pack item made by hand (recipe 746), laid from the hand; the placed run keeps the `wooden_pipe` kind (state 423) |
+| Wooden - Pipe (1352) | Kept, now a pack item carved at the Carving station (recipe 746), laid from the hand; the placed run keeps the `wooden_pipe` kind (state 423) |
 | Copper - Pipe (1508, new) | Pack item, recipe 747 at the Primitive smithy; laid run state 458 |
 | Copper - Tap (1509, new) | Pack item, recipe 748; fitted state 459 with 3 slots; `copper_tap_open` (state 460) retired before release, loads as the tap |
 | Copper - Drip head (1510, new) | Pack item, recipe 749; fitted state 461 |
