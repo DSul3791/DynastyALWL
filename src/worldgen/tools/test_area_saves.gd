@@ -365,9 +365,11 @@ func _init() -> void:
 	check(ev._dirty and ev._area_dirty.has(ItemsScript.area_key_of(20.0, 20.0)), "an event marks its item's area for the next save at once")
 	check(not ev._event_save_due(), "not inside the gap after the last save")
 	ev._since_save = ItemsScript.EVENT_SAVE_GAP_S
+	var held := Semaphore.new()
 	ev._writer = Thread.new()
-	ev._writer.start(func() -> void: OS.delay_msec(300))   # a write still under way on a slow disk
+	ev._writer.start(func() -> void: held.wait())   # a write still under way on a slow disk, until the check below has looked
 	check(not ev._event_save_due(), "not while the writer is busy: an event save never waits for the disk on the tick")
+	held.post()
 	ev._writer.wait_to_finish()
 	ev._writer = null
 	check(ev._event_save_due(), "due once the gap has passed and the writer is idle")
