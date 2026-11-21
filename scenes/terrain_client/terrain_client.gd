@@ -1703,6 +1703,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.gather_event = func():
 		feel.strike(0.0, 0.3)
 	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
+	items.bellows_event = func(at: Vector3): sound.workshop.bellows(at)
 	items.worn_event = func(changed: Array, ids: Array) -> void:
 		if not test_gear:
 			sound.gear.set_worn(SoundStageScript.GearScript.layers_for(ids))   # what is worn rustles, creaks or clinks on every step (--test-gear keeps its own set)
