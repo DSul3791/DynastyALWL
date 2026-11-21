@@ -18,8 +18,8 @@ Evidence: Dave's own game log (21 Nov 2026), which prints each model's clips and
    between stand, walk and run and restarted its blend each time.
 3. **A model with a walk but no run (or the other way) stood in its idle pose while it moved.**
 
-The drawing of positions (teleporting between sent points) was fixed on 21 Nov by #1433 and #1454 (`src/client/motion_buffer.gd`);
-not yet played.
+The drawing of positions (teleporting between sent points) was fixed on 21 Nov by #1433 and #1454 (`src/client/motion_buffer.gd`).
+Dave has not played those fixes yet.
 
 ## What changed
 
@@ -28,7 +28,10 @@ not yet played.
 - The ground speed is eased over 0.15 s. A standing animal starts walking above 0.45 m/s and a walking one stands below 0.25 m/s.
   The walk to run switch sits 10% either side of half way between the two clip speeds.
 - The playing rate goes from 0.4 to 2.5 times (was 0.5 to 2).
-- A moving animal with only one moving clip plays that one.
+- A moving animal with only one moving clip plays that one. Its feet still slide at the far end: a walk-only model running at 9 m/s
+  plays its walk at the 2.5 cap. Only a real run clip fixes that. A model with no moving clip at all plays its idle clip at rate 1.
+- Trade-off of the easing: after a hard stop from 10 m/s the legs run on for about half a second (0.15 s x ln(10 / 0.25)).
+- A flock's footstep count goes up once a frame, not once for each bird.
 
 ## How to confirm (Lane A)
 

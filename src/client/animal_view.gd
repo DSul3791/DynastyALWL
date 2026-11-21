@@ -599,8 +599,10 @@ func _process_body(delta: float) -> void:
 		if bool(b.get("model", false)):
 			var model_speed: float = spd
 			if node.has_meta("flock_birds"):
-				for bird in node.get_meta("flock_birds"):
-					_animate_model(bird, b, state, model_speed, delta)
+				var birds: Array = node.get_meta("flock_birds")
+
+				for bird in birds:
+					_animate_model(bird, b, state, model_speed, delta, bird == birds[0])      # the flock's gait (footsteps) counts once, not once a bird
 			else:
 				_animate_model(node, b, state, model_speed, delta)
 			_emit_steps(b, node, state, model_speed)
@@ -1623,7 +1625,7 @@ static func drink_looking(id: int, t: float) -> bool:
 
 
 # Plays the clip for the animal's state (a moving animal walks or runs by its real ground speed) and keeps the gait count for footsteps.
-func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
+func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta: float, count_gait: bool = true) -> void:
 	var row: Dictionary = node.get_meta("model_row", {})
 	var clips: Dictionary = row.get("clips", {})
 	var clip: String = str(clips.get(str(state), clips.get("0", "")))
@@ -1638,7 +1640,8 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 		clip = str(clips.get(moving, clip))
 		ref = run_mps if moving == "run" else walk_mps
 
-	b["gait"] = float(b.get("gait", 0.0)) + speed * delta / maxf(float(row.get("stride_m", 1.2)), 0.1)
+	if count_gait:
+		b["gait"] = float(b.get("gait", 0.0)) + speed * delta / maxf(float(row.get("stride_m", 1.2)), 0.1)
 
 	if not node.has_meta("player"):
 		return
@@ -1674,7 +1677,7 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	# A moving animal plays a moving clip: a model with a walk but no run (or the other way) uses the one it has, not its idle pose.
 	clip = AnimalGait.moving_clip(roles, role) if role == "walk" or role == "run" else str(roles.get(role, roles.get("0", "")))
 
-	if (role == "walk" or role == "run") and not roles.has(role):
+	if (role == "walk" or role == "run") and not roles.has(role) and (roles.has("walk") or roles.has("run")):
 		ref = walk_mps if role == "run" else run_mps      # the other moving clip stands in: played by its own speed
 
 	if clip != "" and player.current_animation != clip:
