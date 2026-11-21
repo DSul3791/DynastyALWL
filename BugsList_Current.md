@@ -1114,6 +1114,25 @@ Not yet played.
 
 Not yet played. Not done: drinking (from water or from what you hold) and the sea edge have no single spot, so they never win on the reticle; with the reticle on nothing a fire within 3 m still comes ahead of drinking, as before.
 
+## 105. Copper and tin rocks along every river
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "why is it i can find normal stones and copper all around the river but I can't find any tin". Then: "both copper and tin should be placed along or close to rivers being more abundant and bigger near the mountains and smaller and less abundant closer to the ocean but they should both be there. they should even have a small chance of randomly being almost anywhere", "they should also be very abundant if they are right over an ore vein of their type" and "that needs to be fixed now".
+
+**What was found:** tin rocks lay only by water within 80 m of a tin body of the geology, and never on land. Copper lined every river. The new spawn (58167, 71364) is outside every tin body, so its river had copper and no tin.
+
+**Required outcome:** copper and tin follow one rule. Both lie along every river. They are commoner and bigger toward the mountains and rarer and smaller toward the sea, but always present. Either can turn up anywhere, rarely. Both are very abundant over a body of their own ore.
+
+**As built (PR #1411, reviewed head cea2e192, merged to dev at 73b1a4b4):** boulders.json `ore_rocks` holds the one shared rule; copper_rocks and tin_rocks keep only their slot and grade. By a river (shallow water or within 8 m of it) a spot takes a rock 30% of the time at 10 m above the sea or lower, rising to 80% at 300 m or higher. Sizes are cut to half by the sea and reach 0.5 to 2 m across up the valleys. On any dry land the chance is 1% a spot. Within 40 m of its own ore body it is 70% a spot anywhere, with bigger rocks. Both ores get the mountain-foot boulder. No TERRAIN_VERSION, protocol, save or starter cache change: the rocks are laid by the server when a cell loads, so a server restart shows them and no world reset is needed. Provisional values: docs/design/COPPER_ROCKS.md OR-1..OR-6.
+
+**Evidence:**
+- Independent review PASS on fbfbd6ec and on cea2e192.
+- Lane B on cea2e192: 250 PASS / 0 FAIL (245 fast + 5 timing), test_copper_rocks, test_server_items, test_ore and test_flint among them. validate_items had 0 errors. Warnings stay at 381. The join smoke had no crash. The slow-cell lines show copper and tin rocks at 2 to 3 ms a cell.
+- outcrops_near at the spawn, radius 400 m: 22 copper and 70 tin rocks to break. The nearest copper is 83 m away and the nearest tin 137 m.
+
+**Acceptance:** walk the river by the spawn. Copper and tin both lie in the shallows and on the banks, mostly small pieces picked up by hand. Follow a river up toward the mountains: there are more rocks, and bigger ones. Now and then one lies on open land far from water.
+
+Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
@@ -1135,5 +1154,6 @@ Dave requested this rewrite around the intended experience rather than a literal
 - HE-1 (entry 52): a quick tap of the key or a click eats one bite. Eating from the hotbar never changes the selected slot or what is in hand.
 - HE-2 (entry 52): a click on a food box bites when the button comes up, or after 0.2 s held, so dragging food elsewhere eats nothing. Holding still on the box longer than that before dragging eats one bite.
 - HE-3 (entry 52): water containers on the hotbar still go in hand (they are needed to fill and pour). Drink from them as before.
+- OR-1..OR-6 (entry 105): one placement rule for copper and tin by river, height, land scatter and own ore body; values in docs/design/COPPER_ROCKS.md.
 - ET-1 (entry 104): an item the reticle is on is reached to 3 m, as fires and stations are (it was 2.5 m; the server allows 3.5 m).
 - Crops need tilled soil (Plant does not till); scatter stone, flint and ores count as small rocks to pick up; wild shrubs are not checked for duplicates.
