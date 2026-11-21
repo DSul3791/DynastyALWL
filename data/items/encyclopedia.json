@@ -4334,7 +4334,7 @@
 		"nails": {
 			"name": "Iron nails",
 			"kind": "material",
-			"description": "Small iron nails. Fix boards in builds; bronze ones do the same job.",
+			"description": "Small iron nails. They fix boards in builds that take iron nails or a lesser metal.",
 			"how_to_get": [
 				"Craft at a brick forge: 1 Iron ingot"
 			],

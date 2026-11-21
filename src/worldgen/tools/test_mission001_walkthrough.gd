@@ -275,7 +275,7 @@ func build(structure: String, at: Vector3, what: String) -> int:
 	var before: Dictionary = {}
 
 	for c in bp.get("cost", []):
-		before[str(c[0])] = have(str(c[0]))
+		before[str(c[0])] = items.inventory_of(1).count_fill(n(str(c[0])), true)   # a group cost (Bronze nails or better) counts any member it spends
 
 	if int(bp.get("chisel", 0)) > 0 and have("steel_chisel") == 0:
 		items.give(1, n("steel_chisel"), 1)   # a chisel piece needs a chisel on the hand bar (Dave 18 Nov 2026); given here, the route's smithy comes later
@@ -283,7 +283,7 @@ func build(structure: String, at: Vector3, what: String) -> int:
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(bp.get("number", 0)), 0, 0, at)
 	HeldTool.hit_site(items, HeldTool.site_of(items, structure))   # placing only sets down a site; the hammer hit fills it (Dave 18 Nov 2026)
 	var id: int = standing_at(structure, at)
-	var spent: bool = bp.get("cost", []).all(func(c): return have(str(c[0])) == int(before[str(c[0])]) - int(c[1]))
+	var spent: bool = bp.get("cost", []).all(func(c): return items.inventory_of(1).count_fill(n(str(c[0])), true) == int(before[str(c[0])]) - int(c[1]))
 	check(id >= 0 and spent, "%s: the %s stands, built from its blueprint %s" % [what, structure, str(bp.get("cost", []))])
 
 	if id < 0 or not spent:

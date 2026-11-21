@@ -73,7 +73,7 @@ func _init() -> void:
 	# The list counts what a build draws on, the pack and the craft stock in reach (held_item.gd sets stock_count to InventoryView.stock_fill).
 	pack.remove(table.number_of("nails"), pack.count_of(table.number_of("nails")))
 	var nails_n: int = table.number_of("nails")
-	var in_chest: Dictionary = {nails_n: 8}
+	var in_chest: Dictionary = {table.number_of("bronze_nails"): 8}   # keyed by the cost's own number, the bronze-or-better group key, as stock_fill counts it
 	list.stock_count = func(number: int) -> int:
 		return pack.count_fill(number) + int(in_chest.get(number, 0))
 	var stocked: Dictionary = list.rows(1).filter(func(r): return r["name"] == "Crate")[0]
