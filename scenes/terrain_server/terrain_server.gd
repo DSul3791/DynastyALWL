@@ -897,6 +897,7 @@ func _ready() -> void:
 		print(site_line)
 
 	items.respawn_point = spawn
+	items.start_resources(world_dir + "/tiles", float(settings.tile_size_m), spawn)   # the island resource landscape, built on a worker thread before the first scatter
 	_world_dir = world_dir
 	_start_water()
 

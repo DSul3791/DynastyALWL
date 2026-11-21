@@ -27,6 +27,7 @@ const DrinkRules := preload("res://src/shared/drink_rules.gd")
 const SmithingRules := preload("res://src/shared/smithing_rules.gd")   # durability, sharpening, craftsmanship and Tempered (catalog Phase 2c)
 const MeleeRules := preload("res://src/shared/melee_rules.gd")   # anything in hand is a weapon (data/items/melee.json, Dave 19 Nov 2026)
 const BogIron := preload("res://src/shared/bog_iron.gd")   # bog iron under fens and marshes (digging.json bog_iron)
+const ResourceContextScript := preload("res://src/stream/resource_context.gd")   # the island resource landscape (boulders.json distribution, Dave 21 Nov 2026)
 const SwimRules := preload("res://src/shared/swim.gd")
 const StructureLookScript := preload("res://src/shared/structure_look.gd")
 const SurveyLine := preload("res://src/shared/survey_line.gd")   # the survey line: only a building stops a surveyed road (Dave 17 Nov 2026)
@@ -347,6 +348,9 @@ var _wood_in: float = 0.0           # real seconds since the last wet-wood step 
 var _wood_acc: float = 0.0          # unspent fraction of a drying unit (a tenth of a game hour)
 var _spoil_acc: Dictionary = {}     # place class -> unspent fraction of an age unit
 var respawn_point: Vector3 = Vector3.ZERO   # where a dead character comes back; set by the server scene
+var resource_context: RefCounted = null      # the island resource landscape (src/stream/resource_context.gd), built once a run by start_resources; null: none (tests, no tiles)
+var _resource_task: int = -1                 # its build on a worker thread; scatter waits for it so every cell sees the same landscape
+var _resource_building: RefCounted = null
 var send_died: Callable             # (peer, cause String, respawn point Vector3)
 var send_hit_number: Callable        # (peer, at Vector3, amount int): floating damage text where a hit landed (protocol 85; the client shows it unless turned off in Gameplay)
 var send_final_death: Callable       # (peer, cause String): a death with no respawn (death.json novice_grace); the new-character / heir flow is not built, so nothing sets this yet
@@ -368,6 +372,8 @@ const BOULDER_KEY := 1 << 50
 const BOULDER_TRIES_MAX := 16          # a cell's boulder keys: the low four bits
 const COPPER_ROCK_FIRST := 8           # boulders take keys 0..7, copper rocks 8..15 (the last the mountain-foot boulder)
 const ORE_ROCK_TRIES := 8              # tries a cell for each ore's rocks (_lay_out_ore_rocks)
+const SOURCE_SLOT_FIRST := 64          # a cell's rocks of the sources (deposits) near it: slots 64..255 (_lay_out_sources)
+const ORE_METALS := {"iron": 0, "copper": 1, "tin": 2}   # ResourceContext field and clue index of each ore with an area (meteorites have none)
 const ORE_KEY := 1 << 52               # copper, tin and iron rocks picked by hand: ORE_KEY | cell x << 28 | cell y << 8 | slot; tin boulders add BOULDER_KEY
 const BOG_STATE := 229            # world-item row state of a bog iron deposit (next free structure state, 10 Nov 2026; no structure may take it)
 const BOG_ID_BASE := 2000000000   # bog deposit world row ids count down from here (int32, far above _next_id), one per deposit key per run
@@ -7776,11 +7782,50 @@ func _scatter_around_players() -> void:
 
 
 
+# The island resource landscape (boulders.json distribution, docs/design/RESOURCE_DISTRIBUTION.md): built once from the baked tiles' coarse
+# maps on a worker thread at start (about a second or two; the first scatter waits for it, so no cell is ever laid out without it). Its
+# report (sources near spawn, any assured source) goes to the log.
+func start_resources(tiles_dir: String, tile_size_m: float, spawn: Vector3) -> void:
+	var cfg: Dictionary = _boulder_cfg.get("distribution", {})
+
+	if cfg.is_empty() or _resource_task != -1:
+		return
+
+	_resource_building = ResourceContextScript.new()
+	var building: RefCounted = _resource_building
+	var seed_value: int = world_seed
+	_resource_task = WorkerThreadPool.add_task(func() -> void: building.load_tiles(tiles_dir, tile_size_m, seed_value, cfg, spawn), false, "resource landscape")
+
+
+# False while the landscape is still being built (start_resources); picks it up when done.
+func _resources_ready() -> bool:
+	if _resource_task == -1:
+		return true
+
+	if not WorkerThreadPool.is_task_completed(_resource_task):
+		return false
+
+	WorkerThreadPool.wait_for_task_completion(_resource_task)
+	_resource_task = -1
+
+	if bool(_resource_building.call("ready")):
+		resource_context = _resource_building
+
+	for line in _resource_building.get("report"):
+		_log_off_main(str(line))
+
+	_resource_building = null
+	return true
+
+
 # True when every tile the layout of this cell can read is in memory: the centre, and the four corners pushed out by SCATTER_PAD_M
 # (the bank-stone water probe reaches 24 m, boulder hollows 6 m). Only the centre was checked before, so a cell at a tile edge read the
 # next tile from disk on the main thread: "items tick slow: scatter reached after 479 ms" in Dave's 2 Nov log. Each missing tile is
 # asked for on a worker thread (ground_ready prefetches it) and the cell waits for the next sync.
 func _cell_ground_ready(cell: Vector2i, cell_m: float) -> bool:
+	if not _resources_ready():
+		return false
+
 	if not ground_ready.is_valid():
 		return true
 
@@ -7869,6 +7914,7 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	_lay_out_ore_rocks(cell, cell_m, "tin", reads)
 	_lay_out_ore_rocks(cell, cell_m, "iron", reads)
 	_lay_out_ore_rocks(cell, cell_m, "meteorite", reads)
+	_lay_out_sources(cell, cell_m, reads)
 	_cell_part("copper, tin and iron rocks and meteorites", part_usec)
 	var by_ore: PackedStringArray = PackedStringArray()
 
@@ -8005,6 +8051,14 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float, reads: Dictionary = {}) ->
 		if wet.is_valid() and not bool(wet.call(spot, 0.0)) and bool(wet.call(spot, float(cfg.get("bank_reach_m", 3.0)))):
 			chance = maxf(chance, float(cfg.get("bank_chance", 0.4)))
 
+		# The island landscape (boulders.json distribution boulder_journey_*, Dave 21 Nov 2026): fewer, smaller rounded boulders by the shore,
+		# more, bigger and angular ones toward the headwaters.
+		var journey: float = float(resource_context.call("journey_at", x, z)) if resource_context != null else -1.0
+
+		if journey >= 0.0:
+			var by_journey: Array = (cfg.get("distribution", {}) as Dictionary).get("boulder_journey_chance", [1.0, 1.0])
+			chance *= lerpf(float(by_journey[0]), float(by_journey[1]), journey)
+
 		if draw > chance:
 			continue
 
@@ -8012,6 +8066,11 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float, reads: Dictionary = {}) ->
 		laid += 1
 		var radius: float = lerpf(float(cfg.get("radius_min", 0.3)), float(cfg.get("radius_max", 1.2)), pow(size_draw, float(cfg.get("radius_power", 2.0))))
 		var row: Dictionary = {"radius": radius, "yaw": yaw}
+
+		if journey >= 0.0:
+			var sized: Array = (cfg.get("distribution", {}) as Dictionary).get("boulder_journey_size", [1.0, 1.0])
+			row["radius"] = radius * lerpf(float(sized[0]), float(sized[1]), journey)
+			row["ang"] = _rock_shape(journey, false, key)
 		_set_boulder_ore(row, _boulder_ore(spot, key, reads["ore_near"]), key)   # an outcrop: a pick takes this ore out of it (boulders.json ore); copper and tin resized; sets its total
 		var left: int = _boulder_left_of(key, row)
 
@@ -8155,17 +8214,30 @@ func _lay_out_ore_rocks_of(cell: Vector2i, cell_m: float, ore: String, reads: Di
 		var spot: Vector3 = Vector3(x, y, z)
 		var upland: float = clampf((y - low_m) / span_m, 0.0, 1.0)   # 0 on the coastal plain, 1 under the mountains
 		var over_body: bool = false
+		# The island landscape (boulders.json distribution, Dave 21 Nov 2026): upland is the spot's journey from the shore to the headwaters,
+		# and its own area (paint) scales every chance; by water a river clue of its own sources counts as much as the area, so rounded
+		# finds lead up their own river from a source (and never far from one). Without the landscape (tests, no tiles): height, everywhere.
+		var area: float = 1.0
+		var river_clue: float = 0.0
 
-		if not is_foot and body_p > 0.0 and draw <= body_p:
+		if resource_context != null and ORE_METALS.has(ore):
+			upland = float(resource_context.call("journey_at", x, z))
+			area = float(resource_context.call("field_at", int(ORE_METALS[ore]), x, z))
+			river_clue = float(resource_context.call("clue_at", int(ORE_METALS[ore]), x, z))
+
+		if is_foot and area < 0.5:
+			continue   # no mountain-foot boulder of an ore outside its area
+
+		if not is_foot and body_p > 0.0 and draw <= body_p * area:
 			var body_usec: int = Time.get_ticks_usec()
 			over_body = str(body_at.call(spot, body_m, names, layer_m)) == ore   # the spot itself over its own ore
 			_ore_usec[1] += Time.get_ticks_usec() - body_usec
 			_ore_usec[5] += 1
 
-		if not is_foot and not over_body and draw > maxf(land_p, lerpf(coast_p, mountain_p, upland)):
-			continue   # past every chance this high up: no ground water read
+		if not is_foot and not over_body and draw > maxf(land_p * area, lerpf(coast_p, mountain_p, upland) * maxf(area, river_clue)):
+			continue   # past every chance this far in: no ground water read
 
-		var by_water_only: bool = not is_foot and not over_body and draw > land_p
+		var by_water_only: bool = not is_foot and not over_body and draw > land_p * area
 		var water_usec: int = Time.get_ticks_usec()
 
 		if by_water_only and wet.is_valid() and not bool(wet.call(spot, reach)):
@@ -8200,6 +8272,10 @@ func _lay_out_ore_rocks_of(cell: Vector2i, cell_m: float, ore: String, reads: Di
 			upland = minf(upland + float(cfg.get("body_upland", 0.0)), 1.0)
 
 		var s: float = size_draw * lerpf(size_coast, 1.0, upland)
+
+		if by_water_only and river_clue > area:
+			s *= lerpf(float(cfg.get("clue_size_min", 0.4)), 1.0, river_clue)   # carried from a source: smaller the farther downstream
+
 		var radius: float
 
 		if is_foot:
@@ -8238,6 +8314,10 @@ func _lay_out_ore_rocks_of(cell: Vector2i, cell_m: float, ore: String, reads: Di
 
 		var key: int = (BOULDER_KEY | ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | slot) if slot < BOULDER_TRIES_MAX else (ORE_KEY | BOULDER_KEY | cell_bits | slot)
 		var row: Dictionary = {"radius": radius, "yaw": yaw}
+
+		if resource_context != null and ORE_METALS.has(ore):
+			row["ang"] = _rock_shape(upland, by_water_only or depth > 0.0, key)   # water-worn round by rivers, broken and angular inland
+
 		_set_boulder_ore(row, ore, key)
 
 		if ores_in > 1:
@@ -8256,6 +8336,125 @@ func _lay_out_ore_rocks_of(cell: Vector2i, cell_m: float, ore: String, reads: Di
 		_ore_usec[3] += Time.get_ticks_usec() - settle_usec
 		_items[_next_id] = {"number": 0, "count": left, "pos": rest, "left": 1.0e9, "scatter": key, "boulder": row}
 		_next_id += 1
+
+
+# How broken and angular a rock looks, 0 (water-worn, round) to 1 (fresh, jagged; boulders.json distribution shape_*): the journey with a
+# little of its own jitter from the key, so the change from shore to headwaters is gradual and never uniform; a rock in or by water is
+# worn (shape_worn). Sent in the row ("ang"); the client picks its mesh by it (inventory_view.gd, ore_rock_look.gd).
+func _rock_shape(journey: float, worn: bool, key: int) -> float:
+	var cfg: Dictionary = _boulder_cfg.get("distribution", {})
+	var jitter: float = float(cfg.get("shape_jitter", 0.15)) * (float(hash([key, "shape"]) % 1000) / 999.0 * 2.0 - 1.0)
+	var shape: float = clampf(journey + jitter, 0.0, 1.0)
+	return snappedf(shape * float(cfg.get("shape_worn", 0.45)) if worn else shape, 0.01)
+
+
+# The rocks of the metal sources (resource_context.gd deposits) whose layout reaches this cell (boulders.json distribution source_*;
+# handoff 10 and 11): at the source, angular outcrop boulders of its ore inside its radius (more and bigger for a bigger source, its grade
+# high); below it, broken fragments strewn down the slope (the way downhill from the landscape), smaller the farther they lie, the small
+# ones loose ore to pick up by hand. Every rock of a source is placed from the source's own id, so a rock lies in the same place whichever
+# cell lays it out, and each is laid only by the cell that holds it. Keys: slots SOURCE_SLOT_FIRST.. of the cell, in the order of the
+# sources (stable) and their rocks.
+func _lay_out_sources(cell: Vector2i, cell_m: float, reads: Dictionary) -> void:
+	var cfg: Dictionary = _boulder_cfg.get("distribution", {})
+
+	if resource_context == null or cfg.is_empty():
+		return
+
+	var ground: Callable = reads["ground"]
+	var depth_at: Callable = reads["water_depth_at"]
+	var lo: Vector2 = Vector2(cell) * cell_m
+	var mid: Vector2 = lo + Vector2(cell_m, cell_m) * 0.5
+	var frag_max: float = float(cfg.get("source_fragment_reach_max_m", 120.0))
+	var reach: float = maxf(float(cfg.get("deposit_radius_max_m", 30.0)), frag_max) + cell_m * 0.71
+	var cell_bits: int = ((cell.x & 0xfffff) << 28) | ((cell.y & 0xfffff) << 8)
+	var slot: int = SOURCE_SLOT_FIRST
+	var bed_m: float = float((_ore_rock_cfg("copper") as Dictionary).get("bed_depth_m", 0.8))
+	var deposits: Array = resource_context.get("deposits")
+
+	for n in resource_context.call("deposits_near", mid.x, mid.y, reach):
+		var d: Dictionary = deposits[n]
+		var ore: String = str(d["metal"])
+		var item: String = str((_boulder_cfg.get("ore", {}).get("items", {}) as Dictionary).get(ore, ""))
+		var size: float = float(d["size"])
+		var id: int = int(d["id"])
+		var centre: Vector2 = Vector2(float(d["x"]), float(d["z"]))
+		var down: Vector2 = resource_context.call("downhill_at", centre.x, centre.y)
+
+		if down == Vector2.ZERO:
+			down = Vector2(1.0, 0.0).rotated(ResourceContextScript.unit(id, 7) * TAU)
+
+		var outcrops: int = int(round(lerpf(float(cfg.get("source_outcrops_min", 2)), float(cfg.get("source_outcrops_max", 8)), size)))
+		var fragments: int = int(round(lerpf(float(cfg.get("source_fragments_min", 4)), float(cfg.get("source_fragments_max", 14)), size)))
+		var frag_reach: float = lerpf(float(cfg.get("source_fragment_reach_min_m", 40.0)), frag_max, size)
+
+		for k in range(outcrops + fragments):
+			var outcrop: bool = k < outcrops
+			var u1: float = ResourceContextScript.unit(id, k, 1)
+			var u2: float = ResourceContextScript.unit(id, k, 2)
+			var u3: float = ResourceContextScript.unit(id, k, 3)
+			var at: Vector2
+			var share: float   # how big the piece is, 0..1 of the biggest at this source
+
+			if outcrop:
+				at = centre + Vector2(sqrt(u1) * float(d["radius"]), 0.0).rotated(u2 * TAU)
+				share = 1.0
+			else:
+				var along: float = pow(u1, 0.7) * frag_reach
+				at = centre + down * along + down.orthogonal() * (u2 * 2.0 - 1.0) * along * 0.35
+				share = 1.0 - along / frag_reach
+
+			if at.x < lo.x or at.y < lo.y or at.x >= lo.x + cell_m or at.y >= lo.y + cell_m:
+				continue   # another cell's rock
+
+			var this_slot: int = slot
+			slot += 1
+
+			if this_slot > 255:
+				break
+
+			var y: float = float(ground.call(at.x, at.y))
+
+			if is_nan(y) or y < 1.0:
+				continue
+
+			var spot: Vector3 = Vector3(at.x, y, at.y)
+
+			if depth_at.is_valid() and float(depth_at.call(spot)) > bed_m:
+				continue
+
+			var yaw: float = u3 * 360.0
+			var hand: bool = not outcrop and u3 * share < float(cfg.get("source_hand_share", 0.35))
+
+			if hand:
+				var loose_key: int = ORE_KEY | cell_bits | this_slot
+
+				if not _taken.has(loose_key) and item != "":
+					_items[_next_id] = {"number": table.number_of(item), "count": 1, "pos": spot, "left": 1.0e9, "scatter": loose_key}
+					_next_id += 1
+
+				continue
+
+			var key: int = ORE_KEY | BOULDER_KEY | cell_bits | this_slot
+			var radius: float
+
+			if outcrop:
+				radius = lerpf(float(cfg.get("source_outcrop_radius_min", 0.5)), float(cfg.get("source_outcrop_radius_max", 1.4)), size) * lerpf(0.7, 1.0, u3)
+			else:
+				radius = lerpf(float(cfg.get("source_fragment_radius_min", 0.25)), float(cfg.get("source_fragment_radius_max", 0.6)), share * u3)
+
+			var row: Dictionary = {"radius": radius, "yaw": yaw, "ang": _rock_shape(1.0 if outcrop else 0.7, false, key), "source": id}
+			_set_boulder_ore(row, ore, key)
+			row["radius"] = radius   # a source's rock keeps its own size (not the ore rocks' 0.5 to 2 m clamp)
+			var grades: Array = cfg.get("source_grade", [0.4, 0.8])
+			row["grade"] = snappedf(lerpf(float(grades[0]), float(grades[1]), size) * (1.0 if outcrop else 0.7), 0.01)
+			row["total"] = _boulder_stones(radius, true)
+			var left: int = _boulder_left_of(key, row)
+
+			if left <= 0:
+				continue
+
+			_items[_next_id] = {"number": 0, "count": left, "pos": _settled(spot), "left": 1.0e9, "scatter": key, "boulder": row}
+			_next_id += 1
 
 
 # An ore's rock rule: boulders.json ore_rocks (shared by copper and tin, Dave 21 Nov 2026) under the ore's own <ore>_rocks (its slot and
@@ -8306,6 +8505,10 @@ func _boulder_ore(spot: Vector3, key: int, body_at: Callable) -> String:
 
 	if body_at.is_valid() and float(hash(key) % 1000) < 1000.0 * float(cfg.get("boulder_share", 0.0)):
 		var name: String = str(body_at.call(spot, float(cfg.get("reach_m", 40.0)), cfg.get("items", {}), float(cfg.get("layer_depth_m", 10.0))))
+
+		# A geology body of a metal outside that metal's area shows no outcrop (the island landscape keeps copper and tin inland).
+		if resource_context != null and ORE_METALS.has(name) and float(resource_context.call("field_at", int(ORE_METALS[name]), spot.x, spot.z)) < 0.5:
+			name = ""
 
 		if (cfg.get("items", {}) as Dictionary).has(name):
 			return name

@@ -3721,7 +3721,8 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 	body.add_child(shape)
 	var lump: MeshInstance3D = MeshInstance3D.new()
 	var ore_rock: bool = OreRockLook.has_look(str(extra.get("ore", "")))   # copper, tin and iron: Dave's photos
-	lump.mesh = OreRockLook.mesh_for(float(extra.get("yaw", 0.0))) if ore_rock else _boulder_mesh
+	var ang: float = float(extra.get("ang", -1.0))   # how broken the rock is (the resource landscape, Dave 21 Nov 2026): round by the shore, jagged inland
+	lump.mesh = OreRockLook.mesh_for(float(extra.get("yaw", 0.0)), ang) if ore_rock or OreRockLook.shape_of(ang) == 2 else _boulder_mesh
 	lump.material_override = OreRockLook.material(str(extra.get("ore", ""))) if ore_rock else _boulder_material(str(extra.get("ore", "")))
 	lump.material_overlay = _crack_material()
 	body.add_child(lump)
