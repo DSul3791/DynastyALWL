@@ -1,6 +1,7 @@
 extends SceneTree
 
-# Copper and tin rocks (Dave 16-17 Nov 2026, his photos; one shared rule since 21 Nov 2026; docs/design/COPPER_ROCKS.md). Both ores: a few
+# Copper, tin and iron rocks (Dave 16-17 Nov 2026, his photos; one shared rule since 21 Nov 2026, iron commoner on it since the same day;
+# docs/design/COPPER_ROCKS.md). All three ores: a few
 # anywhere on land, many more on river beds, in shallow water and along shores, none in deep water, more and bigger toward the mountains and
 # fewer and smaller toward the sea (never none), very many over a body of their own ore, and now and then a big boulder at the foot of a
 # mountain. A share of the sizes (hand_share) is loose ore picked up by hand; bigger ones are boulder rows with their own grade (share of their
@@ -207,6 +208,18 @@ func _init() -> void:
 		graded = graded and float(r[3]) >= 0.2 and float(r[3]) <= 0.6
 
 	check(graded, "copper outcrop boulders of the geology carry a grade (%d)" % outcrops.size())
+	# And iron outcrops since iron_rocks (Dave 21 Nov 2026): a grade in iron's range and the 0.5 to 2 m size, in place of piece_share.
+	g._boulder_cfg["iron_rocks"]["chance"] = 0.0
+	g._boulder_cfg["iron_rocks"]["water_chance_coast"] = 0.0
+	g._boulder_cfg["iron_rocks"]["water_chance_mountain"] = 0.0
+	g.ore_near = func(_pos, _reach, _names, _depth): return "iron"
+	var iron_out: Array = lay(g, 6, 1, "iron")
+	var iron_graded: bool = not iron_out.is_empty()
+
+	for r in iron_out:
+		iron_graded = iron_graded and not bool(r[4]) and float(r[3]) >= float(iron_cfg["grade_min"]) - 0.001 and float(r[3]) <= float(iron_cfg["grade_max"]) + 0.001 and float(r[2]) <= float(iron_cfg["radius_max"]) + 0.001 and float(r[2]) >= float(iron_cfg["radius_min"]) - 0.001
+
+	check(iron_graded, "iron outcrop boulders of the geology carry an iron grade and the shared size range (%d)" % iron_out.size())
 
 	# 4. Mining: the copper that comes out follows the rock's grade.
 	var got: Array = []
@@ -277,7 +290,8 @@ func _init() -> void:
 				if float(r[1].x) >= 1990.0 and float(r[1].x) < 2050.0:
 					at_river += 1
 
-				keys_ok = keys_ok and (int(r[0]) & 0xff) >= slot_lo and (int(r[0]) & 0xff) < slot_lo + 8
+				var key_slot: int = (int(r[0]) & 0xff) if (int(r[0]) & rv.ORE_KEY) != 0 else (int(r[0]) & 15)   # copper boulders keep the boulder form: a 4-bit slot
+				keys_ok = keys_ok and key_slot >= slot_lo and key_slot < slot_lo + 8
 
 				if not bool(r[4]):
 					broken += 1
