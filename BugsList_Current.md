@@ -1172,7 +1172,7 @@ Not yet played.
 
 **Acceptance:** hit a boulder once with a pick: fine cracks show at once. Keep going: it grows smaller and more cracked at a steady rate until it breaks. A small copper rock visibly shrinks on every blow.
 
-Not yet played. On a big boulder (thousands of stones) one blow shrinks it by under a millimetre, so there the cracks show first and the shrink shows as it is used up. The boulders.json note still says "cube root"; it is fixed with the next data change.
+Not yet played. On a big boulder (thousands of stones) one blow shrinks it by under a millimetre, so there the cracks show first and the shrink shows as it is used up. The boulders.json note still said "cube root"; fixed in entry 118.
 
 ## 107. Ore piles stack up like stone piles
 
@@ -1585,7 +1585,7 @@ Dave requested this rewrite around the intended experience rather than a literal
 - LV-2: Level leaves the ground within 1.2 m of the feet untouched.
 - LV-3: one Soil fills 0.75 m3.
 - LV-4: Level's cuts give Soil whatever the ground was (sand or clay ground too); Soil the pack cannot hold drops at the player's feet, where the next fill can use it (weight is the real limit; no ground-item cap).
-- RK-1 (superseded by entry 72): boulders gave 0.04 stones per unit of volume; since 19 Nov 2026 a boulder gives its kg x 0.7 in 0.5 kg stones (boulders.json yield 0.7).
+- RK-1 (superseded by entry 72): boulders gave 0.04 stones per unit of volume; since 19 Nov 2026 a boulder gives its kg x 0.7 in 0.5 kg stones (boulders.json yield 0.7); since 21 Nov 2026 plain stone rocks yield 0.047 and ore rocks keep 0.7 (entry 118).
 - TG-1: the garden blend is no steeper than 1 in 2 (about 27 degrees), gentler than the 45-degree limit.
 - TG-2..TG-5: at most 1,500 ground edits for one garden, 8 a step; Till Soil 2m uses 0.9 m spheres; the preview asks the server every 250 ms at most.
 - PG-1: Plant takes seeds from the crafting stock within 12 m.
@@ -1598,6 +1598,6 @@ Dave requested this rewrite around the intended experience rather than a literal
 - HE-3 (entry 52): water containers on the hotbar still go in hand (they are needed to fill and pour). Drink from them as before.
 - OR-1..OR-6 (entry 105): one placement rule for copper and tin by river, height, land scatter and own ore body; values in docs/design/COPPER_ROCKS.md.
 - BW-1..BW-3 (entry 106): a rock at its last stone is a fifth of its full radius; cracks are 0.2 after the first blow, rising to 1.0; each blow eases the look over 0.15 s.
-- Rock stones (entry 118; called BW-4 in boulders.json, not the bellows BW-4 of entry 115): plain stone, limestone, chalk and marble rocks yield 0.047 of their weight in 0.5 kg stones (the biggest, 2.4 m across, about 1,500); ore rocks keep 0.7. Limestone counts as stone, not ore (Claude's pick).
+- Rock stones (entry 118; called BW-4 in boulders.json, not the bellows BW-4 of entry 115): plain stone, limestone, chalk and marble rocks yield 0.047 of their weight in 0.5 kg stones (the biggest, 2.4 m across, about 1,500); ore rocks keep 0.7. The value was the coordinator's pick for Dave while he slept (Dave gave no number); limestone counts as stone, not ore (Claude's pick).
 - ET-1 (entry 104): an item the reticle is on is reached to 3 m, as fires and stations are (it was 2.5 m; the server allows 3.5 m).
 - Crops need tilled soil (Plant does not till); scatter stone, flint and ores count as small rocks to pick up; wild shrubs are not checked for duplicates.
