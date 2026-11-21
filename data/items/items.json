@@ -2734,7 +2734,7 @@
 		},
 		"nails": {
 			"number": 228,
-			"name": "Nails",
+			"name": "Iron nails",
 			"description": "Small iron nails. Fix boards in builds; bronze ones do the same job.",
 			"kind": "material",
 			"material": "iron",
@@ -2772,7 +2772,7 @@
 		},
 		"hinges": {
 			"number": 232,
-			"name": "Hinges",
+			"name": "Iron hinges",
 			"description": "A pair of iron hinges for a door, a gate or a lid.",
 			"kind": "material",
 			"material": "iron",

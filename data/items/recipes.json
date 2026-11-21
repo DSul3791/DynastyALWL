@@ -3228,7 +3228,7 @@
 		},
 		"nails": {
 			"number": 145,
-			"name": "Nails",
+			"name": "Iron nails",
 			"category": "Materials",
 			"needs": [
 				[
@@ -3303,7 +3303,7 @@
 		},
 		"hinges": {
 			"number": 149,
-			"name": "Hinges",
+			"name": "Iron hinges",
 			"category": "Materials",
 			"needs": [
 				[
