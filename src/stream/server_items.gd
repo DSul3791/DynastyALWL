@@ -368,7 +368,7 @@ const BOULDER_KEY := 1 << 50
 const BOULDER_TRIES_MAX := 16          # a cell's boulder keys: the low four bits
 const COPPER_ROCK_FIRST := 8           # boulders take keys 0..7, copper rocks 8..15 (the last the mountain-foot boulder)
 const ORE_ROCK_TRIES := 8              # tries a cell for each ore's rocks (_lay_out_ore_rocks)
-const ORE_KEY := 1 << 52               # copper and tin rocks picked by hand: ORE_KEY | cell x << 28 | cell y << 8 | slot; tin boulders add BOULDER_KEY
+const ORE_KEY := 1 << 52               # copper, tin and iron rocks picked by hand: ORE_KEY | cell x << 28 | cell y << 8 | slot; tin boulders add BOULDER_KEY
 const BOG_STATE := 229            # world-item row state of a bog iron deposit (next free structure state, 10 Nov 2026; no structure may take it)
 const BOG_ID_BASE := 2000000000   # bog deposit world row ids count down from here (int32, far above _next_id), one per deposit key per run
 var _bog_ids: Dictionary = {}     # deposit key "gi,gj" -> its world row id
@@ -7865,7 +7865,8 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	part_usec = _cell_part("boulders", part_usec)
 	_lay_out_ore_rocks(cell, cell_m, "copper", reads)
 	_lay_out_ore_rocks(cell, cell_m, "tin", reads)
-	_cell_part("copper and tin rocks", part_usec)
+	_lay_out_ore_rocks(cell, cell_m, "iron", reads)
+	_cell_part("copper, tin and iron rocks", part_usec)
 	_cell_parts[-1] += " (reads bound %.1f, ore bodies %.1f, water %.1f, settling %.1f)" % [float(_ore_usec[0]) / 1000.0, float(_ore_usec[1]) / 1000.0, float(_ore_usec[2]) / 1000.0, float(_ore_usec[3]) / 1000.0]
 
 
@@ -8023,7 +8024,7 @@ func _set_boulder_ore_only(row: Dictionary, ore_name: String, key: int) -> void:
 	var own: Dictionary = _boulder_cfg.get(ore_name + "_rocks", {})
 
 	if own.is_empty():
-		return   # iron, coal and the rest: an outcrop without a grade or a size range
+		return   # coal, salt and the rest: an outcrop without a grade or a size range
 
 	var shared: Dictionary = _boulder_cfg.get("ore_rocks", {})   # read in place: _ore_rock_cfg copies, and this runs for every ore boulder
 
@@ -8051,7 +8052,7 @@ func _set_boulder_ore_only(row: Dictionary, ore_name: String, key: int) -> void:
 # - the last try a big boulder at a mountain's foot.
 # A share hand_share of the sizes is a loose ore item picked up by hand (ORE_KEY, kept in _taken like any scatter); the rest are boulder
 # rows with the ore, radius_min..radius_max (0.5 to 2 m across, Dave 17 Nov 2026), broken with a hammer or pick. Slots `slot`.. of the cell: copper 8..15 (BOULDER_KEY, after the cell's
-# boulders), tin 16..23 (ORE_KEY | BOULDER_KEY). Nothing depends on where spawn is.
+# boulders), tin 16..23 and iron 24..31 (ORE_KEY | BOULDER_KEY; iron since Dave 21 Nov 2026, commoner by its own chances). Nothing depends on where spawn is.
 func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dictionary = {}) -> void:
 	var cfg: Dictionary = _ore_rock_cfg(ore)
 	var item: String = str((_boulder_cfg.get("ore", {}).get("items", {}) as Dictionary).get(ore, ""))
@@ -8195,7 +8196,7 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dicti
 
 
 # An ore's rock rule: boulders.json ore_rocks (shared by copper and tin, Dave 21 Nov 2026) under the ore's own <ore>_rocks (its slot and
-# grade, and any value it sets itself); {} for an ore without its own block (iron, coal: outcrops only).
+# grade, and any value it sets itself); {} for an ore without its own block (coal, salt: outcrops only).
 func _ore_rock_cfg(ore: String) -> Dictionary:
 	var own: Dictionary = _boulder_cfg.get(ore + "_rocks", {})
 
