@@ -31,7 +31,8 @@ static var _freeze_prints: int = 0
 # physics monitors are each second's maximum, not one frame's, so the split is taken from timestamps the client sets on every frame: the
 # physics steps (SceneTree.physics_frame), the process step (SceneTree.process_frame to the ProbeLast node, processed after every other
 # node), the terrain client's own _process inside it, the flush before the draw, the draw (frame_pre_draw to frame_post_draw), and outside
-# (after the draw until the next physics or process step: the window's events, audio, the engine's own frame work).
+# (after the draw until the next physics or process step: the window's events, audio, the engine's own frame work). The network poll runs
+# before process_frame is sent, so time in incoming messages (blocks in, flora chunk in) shows in physics or outside, not in process.
 static var terrain: Object = null         # the client's VoxelLodTerrain (its get_statistics() main-thread times), set by the client
 static var last_split: Dictionary = {}    # the split of the frame just closed (the shot runner's run-in-a-line totals read it)
 static var _proc_start_usec: int = 0
@@ -162,10 +163,10 @@ static func client_done() -> void:
 # that frame (no draw, an early return) reads 0.
 static func process_start() -> void:
 	var now: int = Time.get_ticks_usec()
-	var start: int = _proc_start_usec
+	var frame_start: int = _proc_start_usec
 	_proc_start_usec = now
 
-	if start == 0:
+	if frame_start == 0:
 		_physics_first_usec = 0
 		_physics_steps = 0
 		return
@@ -180,7 +181,7 @@ static func process_start() -> void:
 		if not str(name).contains(":"):   # "grass: build" is part of "grass": only the top pieces are summed
 			timed += float(_this_frame[name]) / 1000.0
 
-	var wall: float = float(now - start) / 1000.0
+	var wall: float = float(now - frame_start) / 1000.0
 	var voxel: float = 0.0
 
 	if wall > SLOW_MS and terrain != null and is_instance_valid(terrain):   # only for a slow frame: the statistics build a Dictionary
@@ -190,17 +191,17 @@ static func process_start() -> void:
 			if str(key).begins_with("time_"):
 				voxel += float(stats[key]) / 1000.0
 
-	last_split = {"wall": wall, "process": _span(start, _proc_end_usec, start), "client": _span(_client_start_usec, _client_end_usec, start),
-		"flush": _span(_proc_end_usec, _pre_draw_usec, start), "draw": _span(_pre_draw_usec, _post_draw_usec, start), "outside": _span(_post_draw_usec, physics_from, start),
+	last_split = {"wall": wall, "process": _span(frame_start, _proc_end_usec, frame_start), "client": _span(_client_start_usec, _client_end_usec, frame_start),
+		"flush": _span(_proc_end_usec, _pre_draw_usec, frame_start), "draw": _span(_pre_draw_usec, _post_draw_usec, frame_start), "outside": _span(_post_draw_usec, physics_from, frame_start),
 		"physics": float(now - physics_from) / 1000.0, "steps": _physics_steps, "timed": timed, "voxel": voxel, "pipelines": built, "n": _frames,
 		"usec": now}
 	_physics_first_usec = 0
 	_physics_steps = 0
 
 
-# A part of the frame that began at `start`; 0 when either mark is from an older frame.
-static func _span(from_usec: int, to_usec: int, start: int) -> float:
-	return float(to_usec - from_usec) / 1000.0 if from_usec >= start and to_usec > from_usec else 0.0
+# A part of the frame that began at `frame_start`; 0 when either mark is from an older frame.
+static func _span(from_usec: int, to_usec: int, frame_start: int) -> float:
+	return float(to_usec - from_usec) / 1000.0 if from_usec >= frame_start and to_usec > from_usec else 0.0
 
 
 static func split_text(split: Dictionary) -> String:
