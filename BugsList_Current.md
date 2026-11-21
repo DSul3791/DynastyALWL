@@ -1192,6 +1192,36 @@ Not yet played. On a big boulder (thousands of stones) one blow shrinks it by un
 
 Not yet played; not yet seen in a picture. The colours, lumps and densities are provisional (OP-1, below).
 
+## 108. The game lags or pauses while running
+
+**Status: Partly fixed - awaiting player verification.** Dave, 21 Nov 2026 (05:26Z): "I find the game lags or pauses a lot when I am running. please try to find what is causing this and fix it."
+
+**Required outcome:** running across the world feels smooth. The cause is found with evidence and fixed, not hidden by raising thresholds.
+
+**What the evidence showed (Lane A frametime runs on diagnostics heads 46be88c1, 42b39933 and 989fc2f1, running north 500 m on d3d12 and Vulkan):**
+- Client frames of 205 to 521 ms were the crash report and telemetry logs. They wrote and flushed their files on the main thread, and cut them by reading and rewriting the whole file. The disk on Dave's PC is slow.
+- Server ticks of hundreds of ms (vitals, fires) were the flora lock. A flora worker held it while walking every item of a 256 m chunk into the shelter index, and every shelter check on the main thread waited for it.
+- Frames of 0.5 to 0.9 s in "flush" and "draw" are the graphics driver building shaders the first time something new comes on screen. The join freezes are the same thing.
+
+**As built:**
+- PR #1437 (reviewed head f770eeb2, dev 33009aa1): log lines are queued and written on a worker (src/shared/line_writer.gd), for the client's breadcrumbs and telemetry and for the server's event log. A report or exit writes out what is still queued first.
+  - Lane A: 33 pass, 0 fail, warnings 381.
+  - Standing frametime: max 146 ms, p99 16.7 ms (before: max 597 ms, p99 29.5 ms).
+- PR #1434 (reviewed head 3f225892, dev 9dfc3030): the chunk's shelter rows are built before the flora lock is taken, so only a quick merge runs under it.
+  - Every main-thread wait over 20 ms, and every worker hold over 20 ms, now prints a "server flora:" line.
+  - Lane B: 291 pass, 0 fail, warnings 381. The join smoke had no slow-tick or lock lines.
+
+**Still open (for after main):**
+- First-sight shader builds on d3d12 (0.5 to 0.9 s): needs a shader warm-up or a renderer choice by Dave.
+- Single physics steps of 44 to 51 ms, and clock and weather at 31 to 37 ms: small regular hitches.
+- The server can pause in cheap code (goals, the world-item scan) when the PC is busy loading new ground tiles. Tuning thread counts would fix it, but that is too risky now.
+- A server save can hold a tick about 1.2 s while it waits for the previous save to finish writing. The wait is now logged.
+- Server calls that read an unloaded ground tile (zone, rock and ground type) still wait for the file. Bog iron is guarded (#1423).
+
+**Acceptance:** run for a minute in open country. There should be no pauses beyond the first sight of new things.
+
+Not yet played.
+
 ## 109. Costs say which nails and hinges they take
 
 **Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "Im trying to make a chest and it says I need nails and I have 100 copper nails but it wont use them. it should tell me what type of nails it wants". Then: "fix this now".
