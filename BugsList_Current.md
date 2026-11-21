@@ -844,6 +844,29 @@ Not yet played.
 
 Not yet played.
 
+## 93. First start: a clear note that the game is preparing its graphics
+
+**Status: Implemented - awaiting player verification.** On a computer with no saved shaders, the first windowed join freezes for about 25 s right after the server's welcome, and Windows may say "Not responding" (Lane A, 20 Nov 2026; also on main be491ba6). Dave, 21 Nov 2026: "thats not a problem. its expected on the first load" and "we should have a message that is clear that tells people that."
+
+**Required outcome:** on a first start the player sees a plain message explaining the pause, on screen during it.
+
+**Cause of the pause (not changed):** Godot builds the world's shaders after the welcome (DIAG-93: with only the shader cache deleted the 25 s freeze came back; with it kept the freeze was gone). An attempt to spread the building over frames (PR #1393) did not shorten it and was closed unmerged.
+
+**As built (PR #1405, reviewed head 6e5bcce5, dev 58d03b3b):** the Joining window shows, in yellow under its steps: "First start on this computer (or after an update): the game is preparing its graphics. Once the server answers, this can take up to about half a minute. The window may stop moving, or Windows may say "Not responding". Please wait: the game is not stuck. Later starts are much quicker." The note shows until a join with the same Godot version, graphics driver, graphics card and game build has reached the ground (user://graphics_prepared.txt), so it returns after an update. While it is up, the window stays until the player has landed, so it is still on screen through the freeze.
+
+**Evidence:**
+- Independent review PASS on 6e5bcce5.
+- Lane A on 6e5bcce5: selector 29 fast PASS / 0 FAIL, warnings 381, 0 new.
+- Lane A cold windowed join: the note was on screen just before the 23.9 s freeze and the same frame was held through it. The window closed after "JOIN: ground ready" (+67 s), and the mark file was written.
+- Second join: no note; window closed after 4 s.
+- Pictures in the Library: 1405_6e5bcce5_cold_note_before_freeze.png, 1405_6e5bcce5_cold_note_held_after_freeze.png, 1405_6e5bcce5_second_join_no_note.png.
+
+**Known, for later:** during the freeze the held frame still reads "2. Waiting for the server's welcome: 0 s" although the welcome has arrived.
+
+**Acceptance:** on a computer that has never run the game (or after an update), the Joining window shows the yellow note and keeps it up through the pause. The next start shows no note.
+
+Not yet played.
+
 ## 94. Hair styles in the character creator: Dave's hair models, one lineup for every body
 
 **Status: Implemented - awaiting player verification.** Dave's request, 20 Nov 2026 (project thread "hair styles"): "I want to create a male and female character and I want to try hair does. If the hair does work on the male, I want to include them for the female also. everyone is allowed to use any hair style and or facial hair on males or females. we won't label them male and female we will just include them all in the lineup on the hair selection page." After the first in-game pictures he chose to have Short curly's back of the neck tidied before dev.
