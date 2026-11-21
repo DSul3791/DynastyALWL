@@ -23,17 +23,27 @@ static func bound(generator, water_live, x: float, z: float) -> Dictionary:
 	var ground: Callable = func(px: float, pz: float) -> float: return generator.surface_height_on(data, px, pz)
 	var near: Callable = func(pos: Vector3, reach: float) -> bool: return DrinkRulesScript.water_near(tile_for.call(pos.x, pos.z), pos, reach, false)
 	var ore: Callable = func(pos: Vector3, reach: float, names: Dictionary, depth_m: float) -> String: return tile_for.call(pos.x, pos.z).ore_at(pos, reach, names, depth_m)
-	var depth: Callable = func(pos: Vector3) -> float:
+	var depth: Callable = func(pos: Vector3) -> float:   # water_at below, written out: a lambda in a static func calls no other static func of the script
 		var own: Vector2i = generator.tile_of(pos.x, pos.z)
 		var own_water = water_data if own == tile else (water_live.data_of(own) if water_live != null else null)
-		var water: Array = water_at(generator, tile_for.call(pos.x, pos.z), own_water, water_live != null, pos)
-		return 0.0 if is_nan(water[0]) else maxf(float(water[0]) - float(water[1]), 0.0)
+		var ground_y: float = generator.surface_height_on(tile_for.call(pos.x, pos.z), pos.x, pos.z)
+		var surface: float = NAN
+
+		if ground_y <= 0.0:
+			surface = 0.0
+		elif water_live != null:
+			var sim: PackedFloat32Array = own_water.sim_snapshot() if own_water != null else PackedFloat32Array()
+
+			if not sim.is_empty():
+				surface = sim[own_water.nearest(pos.x, pos.z)]
+
+		return 0.0 if is_nan(surface) else maxf(surface - ground_y, 0.0)
 
 	return {"ground": ground, "water_near": near, "water_depth_at": depth, "ore_near": ore}
 
 
 # [water surface or NAN, ground] at a position, on its tile `data` and the running water's tile `water_data` (terrain_server._water_at reads
-# through here): the sea at 0 over ground at or under 0, else the live sim's level, NAN with no sim (or no running water at all, has_live false).
+# through here; bound()'s depth writes the same out): the sea at 0 over ground at or under 0, else the live sim's level, NAN with no sim (or no running water at all, has_live false).
 static func water_at(generator, data, water_data, has_live: bool, position: Vector3) -> Array:
 	var ground: float = generator.surface_height_on(data, position.x, position.z)
 	var surface: float = NAN

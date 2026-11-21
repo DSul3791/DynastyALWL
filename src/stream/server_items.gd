@@ -472,6 +472,7 @@ var _goals_detail: String = ""        # the last _goals_tick's split (the slow-t
 var _slowest_hint: String = ""
 var _slowest_hint_usec: int = 0
 var _sync_detail: String = ""         # the last _sync_world_items' split (the slow-tick line)
+var _ore_usec: PackedInt64Array = PackedInt64Array([0, 0, 0, 0])   # the last cell's boulders and copper and tin rocks: binding the reads, the ore body looks, the water reads, settling rows (the slow-cell line)
 var _bank_ground_usec: int = 0       # the last cell's bank stones: time reading the ground and asking for water (the slow-cell line)
 var _bank_water_usec: int = 0
 var _cell_cave_ms: float = 0.0     # the cave floor part of the last cell laid out (for the slow-cell line)
@@ -7702,12 +7703,15 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	_lay_out_bank_stones(cell, cell_m, cfg, kinds.size())
 	part_usec = _cell_part("bank stones", part_usec)
 	_cell_parts[-1] += " (ground %.0f, water %.0f)" % [float(_bank_ground_usec) / 1000.0, float(_bank_water_usec) / 1000.0]
+	_ore_usec = PackedInt64Array([0, 0, 0, 0])
 	var reads: Dictionary = _cell_reads(cell, cell_m)   # one tile look for the boulders and both ores
+	_ore_usec[0] = Time.get_ticks_usec() - part_usec
 	_lay_out_boulders(cell, cell_m, reads)
 	part_usec = _cell_part("boulders", part_usec)
 	_lay_out_ore_rocks(cell, cell_m, "copper", reads)
 	_lay_out_ore_rocks(cell, cell_m, "tin", reads)
 	_cell_part("copper and tin rocks", part_usec)
+	_cell_parts[-1] += " (reads bound %.1f, ore bodies %.1f, water %.1f, settling %.1f)" % [float(_ore_usec[0]) / 1000.0, float(_ore_usec[1]) / 1000.0, float(_ore_usec[2]) / 1000.0, float(_ore_usec[3]) / 1000.0]
 
 
 # A cell's own random stream for one part of its layout (Sonny, 10 Nov 2026). The loose stones and sticks drew first from one stream, and a stick's spot
@@ -7899,8 +7903,12 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dicti
 		var mid: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
 		var mid_y: float = float(ground.call(mid.x, mid.y))
 
+		var look_usec: int = Time.get_ticks_usec()
+
 		if not is_nan(mid_y) and str(body_at.call(Vector3(mid.x, mid_y, mid.y), body_m + cell_m * 0.71, names, layer_m)) == ore:
 			body_p = float(cfg.get("body_chance", 0.0))
+
+		_ore_usec[1] += Time.get_ticks_usec() - look_usec
 
 	var top_p: float = maxf(maxf(land_p, maxf(coast_p, mountain_p)), body_p)
 
@@ -7928,17 +7936,22 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dicti
 		var over_body: bool = false
 
 		if not is_foot and body_p > 0.0 and draw <= body_p:
+			var body_usec: int = Time.get_ticks_usec()
 			over_body = str(body_at.call(spot, body_m, names, layer_m)) == ore   # the spot itself over its own ore
+			_ore_usec[1] += Time.get_ticks_usec() - body_usec
 
 		if not is_foot and not over_body and draw > maxf(land_p, lerpf(coast_p, mountain_p, upland)):
 			continue   # past every chance this high up: no ground water read
 
 		var by_water_only: bool = not is_foot and not over_body and draw > land_p
+		var water_usec: int = Time.get_ticks_usec()
 
 		if by_water_only and wet.is_valid() and not bool(wet.call(spot, reach)):
+			_ore_usec[2] += Time.get_ticks_usec() - water_usec
 			continue   # no water within reach (most of the land): no depth read, no second probe
 
 		var depth: float = float(depth_at.call(spot)) if depth_at.is_valid() else 0.0
+		_ore_usec[2] += Time.get_ticks_usec() - water_usec
 
 		if depth > bed_m:
 			continue   # deep water: nobody would find it
@@ -7948,7 +7961,9 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dicti
 				continue
 		elif by_water_only:
 			# Past the land share: only on a river or lake bed (shallow water) or a dry bank within reach of water.
+			var bank_usec: int = Time.get_ticks_usec()
 			var bank: bool = depth <= 0.0 and wet.is_valid() and not bool(wet.call(spot, 0.0)) and bool(wet.call(spot, reach))
+			_ore_usec[2] += Time.get_ticks_usec() - bank_usec
 
 			if depth <= 0.0 and not bank:
 				continue
@@ -7986,7 +8001,10 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dicti
 
 		var row: Dictionary = {"radius": radius, "yaw": yaw, "total": total}
 		_set_boulder_ore(row, ore, key)
-		_items[_next_id] = {"number": 0, "count": left, "pos": _settled(spot), "left": 1.0e9, "scatter": key, "boulder": row}   # on the saved digs: a boulder dug under stays down
+		var settle_usec: int = Time.get_ticks_usec()
+		var rest: Vector3 = _settled(spot)   # on the saved digs: a boulder dug under stays down
+		_ore_usec[3] += Time.get_ticks_usec() - settle_usec
+		_items[_next_id] = {"number": 0, "count": left, "pos": rest, "left": 1.0e9, "scatter": key, "boulder": row}
 		_next_id += 1
 
 
