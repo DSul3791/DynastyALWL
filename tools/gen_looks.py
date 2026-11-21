@@ -29,7 +29,7 @@ SPECIAL = {
     "steel_anvil_part": ("chunk", "#8f989f", 1.4),   # PLACEHOLDER until the Steel anvil has a model (GOALS-REPAIR R4)
     "plant_fibre": ("bundle", "#b7ac6a", 0.8), "twine": ("coil", "#b8a46a", 0.8), "rope": ("coil", "#a98f52", 1.0),
     "bark": ("bark", "#5a4330", 1.0), "leaves": ("leaves", "#5a8a3a", 1.0), "seed_bundle": ("pouch" if False else "sack", "#a08a52", 0.6),
-    "tree_roots": ("bundle", "#6a4a2e", 1.0), "firewood": ("bundle", "#8a5e36", 1.6), "lumber": ("planks", "#b98d57", 1.0),
+    "tree_roots": ("bundle", "#6a4a2e", 1.0), "firewood": ("bundle", "#8a5e36", 1.6), "lumber": ("board", "#b98d57", 1.0), "hardwood_board": ("board", "#7a5232", 1.0),
     "iron_ingot": ("ingot", "#6c6f75", 1.0), "steel_ingot": ("ingot", "#9aa3ad", 1.0),
     "soil": ("clump", "#4a3322", 1.0), "clay": ("clump", "#a0603c", 1.0), "sand": ("grit", "#d6c18b", 1.0), "gravel": ("grit", "#8d8a84", 1.0),
     "hide": ("hide", "#8a6a4a", 1.0), "bone": ("bone", "#b3a98f", 1.0), "sinew": ("bundle", "#d0b898", 0.6), "animal_fat": ("chunk", "#f1ead2", 0.8),

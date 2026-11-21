@@ -124,7 +124,7 @@
    "size": 1.6
   },
   "lumber": {
-   "shape": "planks",
+   "shape": "board",
    "color": "#b98d57",
    "size": 1.0
   },
@@ -5035,8 +5035,8 @@
    "size": 1.0
   },
   "hardwood_board": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
+   "shape": "board",
+   "color": "#7a5232",
    "size": 1.0
   },
   "thread": {
