@@ -50,3 +50,14 @@ The live list was 31 goals, all stage `start`: the stone camp (water, fibre, twi
 - Handcart and Small wagon need iron-banded wheels (iron stage); the Small log sled covers the stone age.
 - Building tiers Crude to Engineered need no metal except their doors and gates; Fortified needs iron bands and its doors steel.
 - Chisel rows other than GR-3 follow D-CHISEL-1 (joinery, carving and cooperage keep one).
+
+## Coverage and findings by tier
+
+Every active recipe (427) and every offered blueprint (253) was read once in tier order (the first metal stage that reaches it), then read again for the wrong tool: kept tools, chisel tiers, hammer tiers, station levels, nail and hinge metals.
+
+- **Stone (959 items, 207 pieces reached):** hint errors and the milk recipes above; GR-1 Sawbuck, GR-2 Palisade gate and GR-3 stone water pieces (all late for no reason). Noted, left: the Bucket (lumber and twine, by hand) is cooperage like the Barrel but takes no chisel; kept so wells and water carrying stay early. Wooden pins are made at the workbench with no knife.
+- **Copper (42 items):** copper tools, nails, pipes, taps and drip heads at the Primitive smithy; the Wooden bowl and Serving platter keep a Copper chisel (carving). Nothing wrong. Every axe tier takes a Leather strap, so a copper axe waits for leather; consistent across tiers, left.
+- **Bronze (75 items, 40 pieces):** the nailed and hinged furniture and storage (#1460 sets their metals); the Rustic chair, table and cupboard chisels (D-CHISEL-1, #1466); the Improved smelter and smithy with bronze fittings, which is what gates iron. Nothing else.
+- **Iron (119 items, 69 pieces):** iron tools and weapons at the Improved smithy; Fortified pieces need iron bands and a Bronze hammer; Handcart and Small wagon wheels need iron bands. Iron - Saw and iron weapons sit at brick forge level 1, the other iron tools at level 2; no smithy gives level 1 alone, so this changes nothing for a player. Left.
+- **Steel (51 items, 19 pieces):** steel tools at the Advanced smithy; steel armour keeps iron rivets (GR-4); Steel - Striker locked (GR-5). Nothing else.
+- **Never reached:** only the locked future rows (Bird trap, Fish trap, Wicker - Chest, Compost bin, Cold frame, Wool - Rug, Claw - Necklace, Fish soup, Pickled vegetables, Bonemeal) and now Butter and Cheese.
