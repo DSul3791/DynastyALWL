@@ -909,6 +909,7 @@ func _ready() -> void:
 			_connect_window.on_back = _back_to_servers   # server pick page: Cancel while joining, Back to servers on a failure
 
 		_connect_window.setup(self)
+		_connect_window.show_first_load_note(BUILD)
 
 		if _remote and Engine.has_meta("continue_join"):
 			_connect_window.set_heading("Joining %s as %s" % [_server_label(), str(CharacterStoreScript.active().get("name", "your character"))])
@@ -930,6 +931,9 @@ func _update_connect_window() -> void:
 
 		if (not waiting_for_ground and since >= 3) or since > 120:
 			_telemetry.event("connect window closed after %d s in the world" % since)
+
+			if not waiting_for_ground:
+				ConnectWindowScript.mark_first_load_done(BUILD)
 			_connect_window.close()
 			_connect_window = null
 			return
