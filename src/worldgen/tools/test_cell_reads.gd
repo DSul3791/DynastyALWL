@@ -153,7 +153,9 @@ func _init() -> void:
 
 	# Cold (Lane B 21 Nov 2026, #1457 join smoke: "ore bodies 42.2 in 3 looks ... iron 42.0" in cell 1817, 2228 at 25 s): a fresh generator and
 	# items server, the tile read inside the first cell's reads as on a joining server, and that cell first. The starter tile has no iron body, so
-	# an iron look answers at once (TileTerrainData.ore_names) instead of walking every body of the tile twice: no dearer than a copper or tin look.
+	# an iron look answers at once (TileTerrainData.ore_names) instead of walking every body of the tile twice. That walk is about what a copper or
+	# tin look costs (well under 1 ms), so it cannot by itself be a 42 ms look: that one is a stall of the server's main thread while the join
+	# loads (Lane B samples the load); the test keeps every look's own work small, cold or warm.
 	check(cells.has(Vector2i(1817, 2228)), "the cell slow in the #1457 join smoke is among them")
 	var cold_generator = GeneratorScript.new()
 	cold_generator.setup(settings, rules, tables, WORLD + "/tiles")
@@ -181,7 +183,7 @@ func _init() -> void:
 		timed[ore] = float(Time.get_ticks_usec() - t0) / 2000.0
 
 	print("ore_at at spawn, 2000 looks each: copper %.2f us, tin %.2f us, iron %.2f us" % [float(timed["copper"]), float(timed["tin"]), float(timed["iron"])])
-	check(float(timed["iron"]) < minf(float(timed["copper"]), float(timed["tin"])) + 0.5, "a look for an ore the tile lacks is the cheapest look (iron %.2f us)" % float(timed["iron"]))
+	check(float(timed["iron"]) < 0.25 * minf(float(timed["copper"]), float(timed["tin"])) + 0.5, "a look for an ore the tile lacks answers without walking the bodies: under a quarter of a copper or tin look (iron %.2f us)" % float(timed["iron"]))
 
 	# With running water: the live levels a little over the baked rivers and lakes round both places, dry elsewhere. Both ways read the same
 	# depths, so the same rocks again.
