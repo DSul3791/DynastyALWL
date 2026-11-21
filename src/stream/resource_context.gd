@@ -59,6 +59,7 @@ var pockets: Array = []           # {"id", "find", "x", "z", "depth" m under the
 var dangers: Array = []           # [x, z, radius m] of known dangers (hostile camps, bandit camps) the starting-island routes keep out of; set before building
 var report: PackedStringArray = PackedStringArray()   # what the build found (the server log; the diagnostics tool)
 var build_ms: float = 0.0
+var built: bool = false           # every step of build finished
 
 var _cfg: Dictionary = {}
 var _seed: int = 0
@@ -175,10 +176,11 @@ func build(heights: PackedFloat32Array, classes: PackedByteArray, n_x: int, n_z:
 	_clues()
 	_seams()
 	_pockets()
+	built = true   # last: a build that stopped part-way (a script error on the worker) is never published
 
 
 func ready() -> bool:
-	return nx > 0
+	return built
 
 
 func cell_at(x: float, z: float) -> int:

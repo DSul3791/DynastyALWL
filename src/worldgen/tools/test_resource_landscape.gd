@@ -192,7 +192,6 @@ func _init() -> void:
 	items.setup(ItemTableScript.load_default(), "user://test_resource_landscape")
 	items.resource_context = context
 	var cell: Vector2i = Vector2i(floori(float(tin["x"]) / 32.0), floori(float(tin["z"]) / 32.0))
-	var laid: Array = []
 
 	for dz in range(-5, 6):
 		for dx in range(-5, 6):
@@ -339,6 +338,12 @@ func _stage_two(all_cfg: Dictionary, cfg: Dictionary, spawn: Vector3, plain: Ref
 		seams_ok = seams_ok and float(wet.call("coal_at", float(s["x"]), float(s["z"]))) >= float(wet_cfg["coal"]["seam_min"]) and (s["up"] as Vector2).dot(to_peak) > 0.5 and absf((s["along"] as Vector2).dot(s["up"])) < 0.001
 
 	check(seams_ok, "%d seams, each in coal country, running along the slope with its way in pointing up the hill" % seams.size())
+
+	if seams.is_empty():
+		print("resource landscape: no seam to lay out; the server coal and pocket checks were not run")
+		failures += 1
+		return
+
 	var wet_again: RefCounted = island(wet_cfg, spawn, lake)
 	check(str(wet_again.get("seams")) == str(seams), "the same seams every build")
 
@@ -448,6 +453,7 @@ func _stage_two(all_cfg: Dictionary, cfg: Dictionary, spawn: Vector3, plain: Ref
 	dig.save()
 	var again = server("test_resource_pocket", rich, Vector3(p_at.x + 0.6, surface, p_at.y), "", false)
 	again._items.clear()
+	again._boulder_cfg["distribution"]["pocket_rock"]["grade"][str(pocket["find"])] = 1.0   # every piece its find, so the count is sure (set before the rock is laid)
 	var cell: Vector2i = Vector2i(floori(hole.x / 32.0), floori(hole.z / 32.0))
 	again._lay_out_pockets(cell, 32.0)
 	var rock_id: int = -1
@@ -458,7 +464,6 @@ func _stage_two(all_cfg: Dictionary, cfg: Dictionary, spawn: Vector3, plain: Ref
 
 	check(rock_id >= 0 and str(again._items[rock_id]["boulder"]["ore"]) == str(pocket["find"]) and (again._items[rock_id]["pos"] as Vector3).distance_to(hole) < 0.01, "after a restart the opened pocket's rock lies in the hole")
 	var find_item: int = again.table.number_of(str(finds[str(pocket["find"])]))
-	again._boulder_cfg["distribution"]["pocket_rock"]["grade"][str(pocket["find"])] = 1.0   # every piece its find, so the count is sure
 	again.action(1, Net.ACT_ADMIN_GIVE, again.table.number_of("stone_hammer"), 0, 1, Vector3.ZERO)
 	var hammer_slot: int = 0
 

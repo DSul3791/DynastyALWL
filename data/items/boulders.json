@@ -265,7 +265,7 @@
 			"out_m": 12.0,
 			"outcrop_every_m": 14.0,
 			"outcrop_radius_m": [0.5, 1.0],
-			"outcrop_search_m": 24.0,
+			"outcrop_search_m": 13.0,
 			"outcrop_grade": 0.5,
 			"loose_below": [0, 2],
 			"per_dig": [1, 2],

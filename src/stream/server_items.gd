@@ -7843,6 +7843,21 @@ func _cell_ground_ready(cell: Vector2i, cell_m: float) -> bool:
 	if not ground_ready.is_valid():
 		return true
 
+	# A coal seam's height is the ground at its centre, up to about 150 m off: the cell waits for that tile too, so its outcrops and their keys
+	# never hang on which tiles happened to be loaded (_seam_height).
+	var seams_ready: bool = true
+
+	if resource_context != null:
+		var seams: Array = resource_context.get("seams")
+		var lengths: Array = ((_boulder_cfg.get("distribution", {}) as Dictionary).get("coal", {}) as Dictionary).get("length_m", [60.0, 200.0])
+		var mid: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
+
+		for n in resource_context.call("seams_near", mid.x, mid.y, float(lengths[1]) * 0.5 + SCATTER_PAD_M + cell_m):
+			var seam: Dictionary = seams[n]
+
+			if not _seam_y.has(int(seam["id"])) and not bool(ground_ready.call(float(seam["x"]), float(seam["z"]))):
+				seams_ready = false   # keep asking for the rest, so they load together
+
 	var lo: Vector2 = Vector2(cell) * cell_m - Vector2(SCATTER_PAD_M, SCATTER_PAD_M)
 	var hi: Vector2 = (Vector2(cell) + Vector2.ONE) * cell_m + Vector2(SCATTER_PAD_M, SCATTER_PAD_M)
 	var all_ready: bool = true
@@ -7851,7 +7866,7 @@ func _cell_ground_ready(cell: Vector2i, cell_m: float) -> bool:
 		if not bool(ground_ready.call(p.x, p.y)):
 			all_ready = false   # keep asking for the others too, so they all load together
 
-	return all_ready
+	return all_ready and seams_ready
 
 
 # The spawn boost adds up to the cap but never takes away: a sloped cell already rolling more than the cap keeps its own roll (Dino round 7).
@@ -8381,7 +8396,7 @@ func _lay_out_sources(cell: Vector2i, cell_m: float, reads: Dictionary) -> void:
 	var lo: Vector2 = Vector2(cell) * cell_m
 	var mid: Vector2 = lo + Vector2(cell_m, cell_m) * 0.5
 	var frag_max: float = float(cfg.get("source_fragment_reach_max_m", 120.0))
-	var reach: float = maxf(float(cfg.get("deposit_radius_max_m", 30.0)), frag_max) + cell_m * 0.71
+	var reach: float = maxf(float(cfg.get("deposit_radius_max_m", 30.0)), frag_max * 1.07) + cell_m * 0.71   # a fragment lies up to 1.06 x its reach off (0.35 across)
 	var cell_bits: int = ((cell.x & 0xfffff) << 28) | ((cell.y & 0xfffff) << 8)
 	var slot: int = SOURCE_SLOT_FIRST
 	var bed_m: float = float((_ore_rock_cfg("copper") as Dictionary).get("bed_depth_m", 0.8))
@@ -8584,7 +8599,7 @@ func _lay_out_seams(cell: Vector2i, cell_m: float, reads: Dictionary) -> void:
 	var ground: Callable = reads["ground"]
 	var lo: Vector2 = Vector2(cell) * cell_m
 	var hi: Vector2 = lo + Vector2(cell_m, cell_m)
-	var search: float = minf(float(cfg.get("outcrop_search_m", 24.0)), SCATTER_PAD_M - 4.0)
+	var search: float = minf(float(cfg.get("outcrop_search_m", 13.0)), (SCATTER_PAD_M - 4.0) * 0.5)   # a station is read up to search outside the cell, plus search along the slope: within the pad
 	var every: float = maxf(float(cfg.get("outcrop_every_m", 14.0)), 2.0)
 	var lengths: Array = cfg.get("length_m", [60.0, 200.0])
 	var radii: Array = cfg.get("outcrop_radius_m", [0.5, 1.0])
@@ -8605,7 +8620,7 @@ func _lay_out_seams(cell: Vector2i, cell_m: float, reads: Dictionary) -> void:
 			var p0: Vector2 = centre + along * (float(k) * every - float(seam["length"]) * 0.5)
 
 			if p0.x < lo.x - search or p0.y < lo.y - search or p0.x >= hi.x + search or p0.y >= hi.y + search:
-				continue   # its outcrop cannot fall in this cell (and reading it would leave the cell's loaded ground)
+				continue   # its outcrop cannot fall in this cell (the reads stay within the cell's loaded ground: 2 x search <= SCATTER_PAD_M - 4)
 
 			var y: float = _seam_height(seam)
 			var a: float = -search
@@ -8655,6 +8670,9 @@ func _lay_out_seams(cell: Vector2i, cell_m: float, reads: Dictionary) -> void:
 				var loose_key: int = ORE_KEY | cell_bits | ((key & 0xff) + 1 + q)
 				var drop: Vector2 = at - up * lerpf(2.0, 6.0, ResourceContextScript.unit(int(seam["id"]), k, 13 + q)) + along * (ResourceContextScript.unit(int(seam["id"]), k, 20 + q) - 0.5) * 3.0
 				var dy: float = float(ground.call(drop.x, drop.y))
+
+				if drop.x < lo.x or drop.y < lo.y or drop.x >= hi.x or drop.y >= hi.y:
+					continue   # it would roll into the next cell under this cell's key: left out
 
 				if coal > 0 and not _taken.has(loose_key) and not is_nan(dy) and dy >= 1.0:
 					_items[_next_id] = {"number": coal, "count": 1, "pos": Vector3(drop.x, dy, drop.y), "left": 1.0e9, "scatter": loose_key}
@@ -8742,6 +8760,10 @@ func _place_pocket(id: int, p: Dictionary) -> void:
 	var row: Dictionary = {"radius": lerpf(float(radii[0]), float(radii[1]), u), "yaw": u * 360.0, "ang": 0.8, "ore": str(p["find"]),
 		"grade": float((cfg.get("grade", {}) as Dictionary).get(str(p["find"]), 0.3)), "pocket": id}
 	row["total"] = int(round(lerpf(float(stones[0]), float(stones[1]), ResourceContextScript.unit(id, 2))))
+	if _boulder_pending.has(key):   # saved at other stone rates: a pocket rock's total is a fixed count, not a rate, so it is kept as saved
+		_boulder_left[key] = int(_boulder_pending[key][0])
+		_boulder_pending.erase(key)
+
 	var left: int = mini(int(_boulder_left.get(key, row["total"])), int(row["total"]))
 
 	if left <= 0:
