@@ -305,8 +305,9 @@ func _make_row(row: Dictionary) -> PanelContainer:
 	var locked: bool = status != null and bool(status.info.get("locked", false))
 	_cell(line, 0.0, 2.0, name_text + ("   (password)" if locked else ""), 22, colour if said[1] != "ok" else TEXT)
 	var where: String = address   # Dave 21 Nov 2026: each row shows the server's IP too (a name such as a duckdns one also shows the IP it points to now)
+	var named_ip: bool = status != null and status.ip != "" and status.ip != ServerList.normalise(address).get("host", "")
 
-	if status != null and status.ip != "" and status.ip != ServerList.normalise(address).get("host", ""):
+	if named_ip:
 		where += "  ·  %s" % status.ip
 
 	_cell(line, 0.0, 32.0, ("Official server  ·  " if official else "") + where, 16, SUB if said[1] == "ok" else colour.darkened(0.15))
@@ -323,7 +324,7 @@ func _make_row(row: Dictionary) -> PanelContainer:
 	_cell(line, COLUMNS[4][1], 14.0, when_text(int(row.get("last_played", 0))), 18, SUB if said[1] == "ok" else colour)
 	var tip: String = "%s\n%s" % [name_text, address]
 
-	if status != null and status.ip != "" and status.ip != address:
+	if named_ip:
 		tip += "  (%s)" % status.ip
 
 	if status != null and str(status.info.get("message", "")) != "":

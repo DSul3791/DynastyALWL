@@ -2,7 +2,7 @@ extends SceneTree
 
 # The server pick page (scenes/server_pick; docs/design/SERVER_PICK_PAGE.md): the official server first and not removable, added servers below,
 # a bad address refused in the Add box with nothing saved, Remove with Undo, Rename, and the status column: a server that does not answer stays
-# on the list in red, one that answers shows its players and padlock. Join remembers the pick (and does not leave the page here: go_on off).
+# on the list in red, one that answers shows its players and padlock, and a row named by a host name shows the IP it points to. Join remembers the pick (and does not leave the page here: go_on off).
 # Temp files only, never the player's own list; one local status line on ports 7900-7999.
 #   godot --headless --path . --script res://src/worldgen/tools/test_server_pick.gd
 

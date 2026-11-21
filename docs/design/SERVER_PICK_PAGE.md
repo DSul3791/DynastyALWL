@@ -46,7 +46,7 @@ One list, full width (see the mock-up):
 1. **The official server, always first** (set apart with a gold edge). Its address is a release setting (`client_config.json` `"official"`, written by the release script), never typed by the player, and it cannot be removed. A build with no official address yet does not show the row.
 2. **Every server this player has added, below it**, last played first. A saved server **never leaves the list because it does not answer**.
 
-Columns: **Server name**, **Players** (2 / 32), **Ping** (ms and bars), **Status** in words, **Last played**. The address shows small under the name.
+Columns: **Server name**, **Players** (2 / 32), **Ping** (ms and bars), **Status** in words, **Last played**. The address shows small under the name, with the IP a name points to now.
 
 Colours: a working server is in normal white/grey text. A server that does not answer (offline, name not found) is in **red**, still on the list and still joinable (it may come back). A server that answers but cannot be joined right now (other build, full) is in **amber**, with the reason in the Status column.
 
@@ -108,7 +108,7 @@ Join opens the existing connect window (`connect_window.gd`), which already name
 ## Names, ports and redirects
 
 - The list stores the address **as typed** (the name), never the IP it pointed to. A dynamic-DNS name such as duckdns is looked up fresh every time the page asks for status and every time it joins, so a home server whose IP changes keeps working.
-- The lookup runs in the background (Godot `IP.resolve_hostname_queue_item`), never freezing the page. The resolved IP shows only in the hover note, for helping a friend set up.
+- The lookup runs in the background (Godot `IP.resolve_hostname_queue_item`), never freezing the page. The resolved IP shows under the name on the row (Dave 21 Nov 2026) and in the hover note, for helping a friend set up.
 - Default port 24600 is never shown in the list; `:port` is kept only when the player typed another port. The block line is always port + 1 and is never asked for.
 - The same server typed twice (same name or IP, same port, any case, with or without `:24600`) updates the one row, never a duplicate.
 - `http://`, `https://` and a trailing `/` pasted from a browser are stripped. IPv6 stays refused for now (existing shortcut), with words saying so.
