@@ -343,6 +343,7 @@ func _init() -> void:
 	# with a pick bronze or better"); the Stone Hammer is refused and the rock is left whole (not ground to stone).
 	for tool_id in ["bronze_pickaxe", "stone_hammer"]:
 		var im = make("test_copper_rocks_iron_%s" % tool_id, tool_id)
+		im._boulder_cfg["luck_extra"] = 1.0   # every blow would take a double stone first: the ore piece still takes exactly its own weight
 		im._boulder_cfg["ore"]["boulder_share"] = 0.0
 		im.water_depth_at = func(pos): return 0.5 if pos.x >= 2000.0 and pos.x < 2040.0 else 0.0
 		im.water_near = func(pos, reach): return pos.x + reach >= 2000.0 and pos.x - reach < 2040.0
