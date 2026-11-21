@@ -7912,6 +7912,10 @@ func _load_boulders_left(parsed: Dictionary) -> void:
 # What is left of the rock `key` whose laid-out `row` has its total: a worked rock saved at other rates (_boulder_pending) is scaled once by
 # its own kind's rate, so it keeps the share it had (plain stone and ore rocks have different rates since 21 Nov 2026); untouched = its total.
 func _boulder_left_of(key: int, row: Dictionary) -> int:
+	if _boulder_pending.has(key) and bool(row.get("ore_only", false)):
+		_boulder_left[key] = int(_boulder_pending[key][0])   # a river iron rock's total is whole ores, not its rock's weight: kept as saved
+		_boulder_pending.erase(key)
+
 	if _boulder_pending.has(key):
 		var then: Array = _boulder_pending[key]
 		var ore: bool = _holds_ore(row)
@@ -8206,9 +8210,11 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dicti
 		_set_boulder_ore(row, ore, key)
 
 		if ores_in > 1:
+			row["radius"] = radius   # its own small size, never the shared 0.5 to 2 m clamp
 			row["grade"] = 1.0
 			row["ore_only"] = true
 			row["total"] = ores_in * _ore_cost(item, ore_stone_kg)
+
 		var left: int = _boulder_left_of(key, row)
 
 		if left <= 0:
