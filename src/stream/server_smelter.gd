@@ -225,7 +225,7 @@ func use(peer: int, id: int, it: Dictionary, def: Dictionary, choice: int = 0) -
 
 	if int(_bellows.get(id, -1)) == peer:
 		_bellows.erase(id)
-		host._sync_in = 0.0   # the prompt, the light, smoke and sound change at the next tick, for everyone near, not up to SYNC_EVERY_S later
+		host._sync_world_items([id], [it["pos"]])   # this smelter's row alone, now, to the players near it: the prompt, light, smoke and sound change at once
 		host._say(peer, "You leave the bellows.")
 		return
 
@@ -235,7 +235,7 @@ func use(peer: int, id: int, it: Dictionary, def: Dictionary, choice: int = 0) -
 
 	_bellows[id] = peer
 	_bellows_goal.erase(id)   # a new stint at the bellows
-	host._sync_in = 0.0   # the row's "bellows" goes out at the next tick: the prompt turns to stop, the fire brightens, puffs and blows
+	host._sync_world_items([id], [it["pos"]])   # this smelter's row alone, now: the prompt turns to stop, the fire brightens, puffs and blows
 	host._say(peer, "You work the bellows: it smelts faster and can work iron while you stay at it.")
 
 

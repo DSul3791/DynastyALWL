@@ -2108,8 +2108,9 @@ static func show_forge_bellows(model: Node3D, on: bool, stroke: Callable = Calla
 		model.add_child(timer)
 
 	if model.is_inside_tree():
-		timer.start()
-		_bellows_stroke(model, stroke)   # the first stroke at once: the press is answered straight away
+		if timer.is_stopped():   # worked by one player and then straight on by another: the beat goes on as it was
+			timer.start()
+			_bellows_stroke(model, stroke)   # the first stroke at once: the press is answered straight away
 	else:
 		timer.autostart = true
 
