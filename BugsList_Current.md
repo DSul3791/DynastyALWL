@@ -1309,6 +1309,34 @@ Not yet played.
 
 Not yet played; not yet seen in a picture.
 
+## 115. Working the smelter bellows shows and sounds
+
+**Status: Implemented - awaiting player verification.** Dave, play-testing on 21 Nov 2026: "Im using an improved smelter and it says press e to work the bellows. so I do and it gives me the spiel then it says press e to work the bellows again. when I do it says you leave the bellows. if pressing e the first time puts me on the bellows. the light should get brighter, the smoke should puff and their should be a bellows sound." Then: "and it should then say press e to stop using the bellows".
+
+**What was found:** the server knew who worked the bellows, but the client was never told. The look-at line was always "Press E to work the bellows, E again to stop", so the second press read as a second start. Nothing in the look or the sound changed while the bellows were worked, and the sound pack had no bellows sound.
+
+**Required outcome:** on the bellows, the prompt says "Press E to stop using the bellows". The fire light is brighter, the smoke puffs and a bellows sound plays, and all of it stops when he leaves. Other players near see and hear it. Nothing runs on the server per frame.
+
+**As built (PR #1424, reviewed and tested head 7c15c21a, merged to dev at 9aff47a1):**
+- The smelter's world row carries `bellows`: 2 when this player works them, 1 when another player does (`server_smelter.bellows_peer`). Starting or leaving the bellows sends that smelter's row at once, through a quick sync of it alone.
+- The prompt says "Press E to stop using the bellows" while you work them, "Someone else is working the bellows" while another player does, and "Press E to work the bellows" otherwise. Each adds "(hold E to put it out)". The start notice no longer says "E again to stop".
+- While they are worked, the fire light is 1.8 times as bright. Every 1.4 s the flames leap, a puff of smoke goes up the chimney and the new sound `bellows_blow` plays (`BuildingLook.show_forge_bellows`, a Timer in the model). It stops when the worker leaves, walks away or logs out, or when the smelter goes out.
+- New generated sound: `assets/audio/workshop/bellows_blow_0` and `_1` (make_workshop.py). It has a manifest slot, which asks for a real recording.
+- Covered: the Improved smelter only, the one station with player-worked bellows. The Advanced smelter's bellows run from its windmill. The standalone Bellows are retired.
+
+**Evidence:**
+- Independent review: PASS on 7ae7a0a1 and 7c15c21a. The first pass found a test check that could miss the change, and a full world sync forced on every E press. Both were fixed in 7ae7a0a1.
+- Lane A tests on 7ae7a0a1: 275 pass / 0 fail. On 7c15c21a: 276 pass / 0 fail, script errors 0, warnings 381 = baseline, join smoke ground ready +7.9 s.
+- test_smelters 3b checks the row on leaving and going back: no bellows to both players when left, and 2 to the worker and 1 to the other when back.
+
+**Known limits:**
+- A smelter already being worked when you log in plays its bellows strokes while the world loads. The quiet load (entry 123) covers placed-thing sounds only.
+- The look and the sound have not been seen or heard in game.
+
+**Acceptance:** light an Improved smelter and press E. The prompt turns to "Press E to stop using the bellows", the fire brightens, and the smoke puffs with a bellows sound about every 1.4 s. Press E again: "You leave the bellows", and the light, puffs and sound stop while it stays lit. A second player nearby sees and hears the same.
+
+Not yet played.
+
 ## 117. Fitness: tiring scale and idling below the start
 
 **Status: Implemented - awaiting player verification.** Dave's rulings during his play test, 21 Nov 2026, after asking what fitness does: "at 100 it should use 50%", "scale in between 50 fitness being 100% and 100 being 50%", and "being Idle can lower it below your start. that was not my rule. remove it." (reading confirmed: "that correct").
@@ -1448,6 +1476,7 @@ Dave requested this rewrite around the intended experience rather than a literal
 - CT-4 (entry 111): Steel nails are 1 Steel ingot to 100 at the brick forge, level 3, value 2.
 - CT-5 (entry 111): only the chests are tiered. The other buildings that use nails (about 40) take bronze nails or better.
 - CT-6 (entry 112): the knife's store is the existing Basket renamed Wicker basket, keeping its cost (8 Stick, 4 Twine) and 6 slots. The Wicker - Chest is hidden and locked rather than retired, because the server tests use it as their plain container. The goblin camp's chest prop is a Small chest (Dave 20 Nov 2026: "a small chest of some sort").
+- BW-1..BW-4 (entry 115): chosen by Claude. A stroke of the bellows every 1.4 s. The fire light 1.8 times as bright while worked. The flames leap to 1.35 times their size at each stroke. The bellows sound is generated (a creak, a rush of air through the nozzle and the fire roaring up, about 1.1 s), played at -9 dB.
 - WL-1 (entry 113): wetland looks, densities and timings chosen by Claude. Colours are as built. Pool levels in the puddle hollows are 0.63 fen, 0.68 bog and 0.56 swamp. Pace in a pool is 0.85. Mist runs from sunrise -1 h to +2 h and from sunset -1 h to +1.5 h. Grass thickness is fen 0.3, bog 0.12 and swamp none. Plant densities are as in entry 113.
 - WL-2 (entry 113): cattail, tussock sedge and bog moss hummock give their own seeds (Dave 14 Nov 2026: "All herbs and plants should produce seeds"). The dead tree is scenery, like old stumps and fallen logs.
 - DG-1 (entry 120): dune grass gives 1 to 3 Plant fibre a pick, tall grass's amount, with no thatch or straw.
