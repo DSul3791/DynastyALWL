@@ -1911,6 +1911,7 @@ func _test_streaming(generator, data) -> void:
 	_check(dug.get_voxel_f(inside.x, inside.y, inside.z, TerrainLayout.CHANNEL_SDF) > 0.0,
 		"the dug block is open at the dig")
 	store.flush()
+	store = null   # a restart: the first store lets go of its files (Windows cannot delete a file still open, the bump check below)
 	var reopened = ServerStoreScript.new()
 	reopened.setup(generator, root + "/server")
 	_check(reopened.revision_of(tile) == 2, "tile revisions survive a server restart")
