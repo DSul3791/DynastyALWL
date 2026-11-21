@@ -1281,6 +1281,34 @@ Not yet played; not yet seen in a picture.
 
 Not yet played.
 
+## 113. Fens, bogs and swamps stand out
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026, on wetlands: "they should be readable but lets talk about that. there are reeds everywhere there is a river. how can we make fens, bogs and swamps standout". Shown the plan (dark wet ground, shallow pools, plants of their own, mist and wetland sounds), he said: "make them all. I like it. do that now".
+
+**What was found:** fen and bog ground drew as plain grass, with no reeds, water or sound of its own (Dave's play-test note 17, 20 Nov 2026, in the coordinator's play-test notes). The flora placer kept every plant off fen, bog and swamp cells, so they were bare.
+
+**Required outcome:** each wetland reads from a distance and up close, and none of its plants grows on river banks. Fen is green and wet with cattails. Bog is brown and mossy with white tufts. Swamp is dark, with dead trees and standing water. Marsh keeps its mud, reeds, willow and mint.
+
+**As built (PR #1422, reviewed head 820f1c62, merged to dev at b8a9bc54):**
+- Ground: new draw-only material ids 29 fen, 30 bog and 31 swamp. Digging still gives peat (fen, bog) or mud (swamp). Fen is near-black peat with sedge-green flecks, bog is brown with rust-red and ochre-green moss, and swamp is black mud, all with a wet sheen. TERRAIN_VERSION 79; the starter ground was rebuilt for it.
+- Pools: still brown water lies in the hollows whatever the weather, on flat ground only (about 17% of fen, 10% of bog and 30% of swamp, as test_wetland_signs printed on Lane B at 820f1c62). It freezes and takes snow like puddles. Wading one splashes and slows you to 0.85 of your pace.
+- Plants (flora layout 32): Cattail on fen, 700 a hectare. Tussock sedge on fen (400) and swamp (150). Bog moss hummock on bog (500). Cotton grass on bog (1,000; no longer on the marsh edge). Dead tree with hanging moss in swamp (30). None of them grows on river banks.
+- Seeds: Cattail seed (item 1514), Tussock sedge seed (1515) and Bog moss spores (1516). Each comes from its wild plant late in its season and grows in a garden. The dead tree is scenery.
+- Sound: wetland steps squelch (existing step_mud and wet_squelch). Frogs, crickets and insects call over wetland. No new sound files.
+- Mist: up to 4 low patches near the player, from 1 hour before to 2 hours after sunrise and from 1 hour before to 1.5 hours after sunset. Wind thins it and rain clears it.
+- One-time effects on the first server start: the ground blocks regenerate (a first-load pause), and felled trees and picked plants come back once. Ground edits, structures and their contents are kept. No world wipe.
+
+**Evidence:**
+- Independent review first found 4 bugs on 2253f818: wetland digs gave loam, an invisible log wall at dead trees, no frogs in a fen without open water, and the ground name. It passed on 76e717af, 9a601076 and 820f1c62.
+- Lane B on 76e717af: test_farming failed because the new plants had no seeds; fixed in 9a601076.
+- Lane B on 9a601076: validate_items failed because the Bog moss spores description was too long; fixed in 820f1c62.
+- Lane B on 820f1c62: 376 pass / 0 fail (fast 365, timing 9, slow 2). validate_items 0 errors, look names 340, warnings 381 = baseline. Join smoke time to ground 34 s.
+- test_worldgen: a terrain version bump keeps digs, tile revisions and world_items saves. test_wetland_signs covers the look ids, sounds, pools, pace, plant rows and mist hours.
+
+**Acceptance:** at the fen patches 58408,71560 or 58576,71776 near the spawn (the bog iron answer to Dave, 21 Nov 2026) the ground reads as a dark wet patch from a distance. Close up there are cattails, sedge and still brown pools that splash and slow you. Bogs are brown with moss hummocks and white cotton tufts, and swamps are black with dead trees and standing water. Near dawn and dusk low mist lies over them and frogs call. River banks have none of these plants.
+
+Not yet played; not yet seen in a picture.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
@@ -1293,6 +1321,8 @@ Dave requested this rewrite around the intended experience rather than a literal
 - CT-4 (entry 111): Steel nails are 1 Steel ingot to 100 at the brick forge, level 3, value 2.
 - CT-5 (entry 111): only the chests are tiered. The other buildings that use nails (about 40) take bronze nails or better.
 - CT-6 (entry 112): the knife's store is the existing Basket renamed Wicker basket, keeping its cost (8 Stick, 4 Twine) and 6 slots. The Wicker - Chest is hidden and locked rather than retired, because the server tests use it as their plain container. The goblin camp's chest prop is a Small chest (Dave 20 Nov 2026: "a small chest of some sort").
+- WL-1 (entry 113): wetland looks, densities and timings chosen by Claude. Colours are as built. Pool levels in the puddle hollows are 0.63 fen, 0.68 bog and 0.56 swamp. Pace in a pool is 0.85. Mist runs from sunrise -1 h to +2 h and from sunset -1 h to +1.5 h. Grass thickness is fen 0.3, bog 0.12 and swamp none. Plant densities are as in entry 113.
+- WL-2 (entry 113): cattail, tussock sedge and bog moss hummock give their own seeds (Dave 14 Nov 2026: "All herbs and plants should produce seeds"). The dead tree is scenery, like old stumps and fallen logs.
 - OP-1 (entry 107): ore pile looks, chosen by Claude. Copper ore: malachite green, 30% red-brown, lumps 0.3, 3,900 kg/m3. Tin ore: dark red-brown, 40% near-black, lumps 0.15, a little shiny, 6,900 kg/m3. Iron ore: grey-brown, 35% rust, lumps 0.3, 4,800 kg/m3. Bog iron ore: red-brown, 35% ochre, lumps 0.4, 3,600 kg/m3. The densities are the real minerals' and set how wide a cone a count makes.
 - LV-1: one held Level action lasts while strokes come within 1.5 s and the feet move less than 0.6 m; its target height is kept for that long.
 - LV-2: Level leaves the ground within 1.2 m of the feet untouched.
