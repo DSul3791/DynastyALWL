@@ -281,7 +281,7 @@ const ART_OVERRIDES := {
 	"yeast": {"shape": "pot", "color": "#e6dbc0", "size": 0.5},
 	"copper_ore": {"shape": "malachite", "color": "#176a4e", "size": 1.0},     # a small copper rock picked up by hand (Dave's photo, 16 Nov 2026)
 	"tin_ore": {"shape": "tin_glass", "color": "#7a3a20", "size": 1.0},     # a glassy plum-sized river tin stone (Dave, 17 Nov 2026)
-	"iron_ore": {"shape": "ore", "color": "#5e5650", "size": 1.0, "bits": ["#a04a28"]},
+	"iron_ore": {"shape": "iron_stone", "color": "#6e3a22", "size": 1.0},     # a rounded red-brown river iron stone the size of an Iron ingot (Dave 21 Nov 2026)
 	"iron_chunk": {"shape": "ore", "color": "#2e2c2b", "size": 0.9, "bits": ["#8a8d92", "#6b3a1e"]},   # a dark pitted meteorite lump with bright metal and rust (Dave 21 Nov 2026)
 	"bog_iron_ore": {"shape": "bog_iron", "color": "#7a3a1c", "size": 1.0},     # a lumpy red-brown bog iron rock (Dave 19 Nov 2026)
 	"coal": {"shape": "coal", "color": "#0e0e10", "size": 1.0},
@@ -2507,6 +2507,15 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				var a: float = TAU * float(k) / 8.0 + 0.4
 				_sph(parts, 0.012 + 0.004 * float(k % 3), Vector3(1.0, 0.7, 1.0), Vector3(cos(a) * 0.06, -0.01 + 0.012 * float(k % 3), sin(a) * 0.055), _tone(mineral, k, 0.15))
 			_box_rot(parts, Vector3(0.07, 0.006, 0.012), Vector3(0.0, 0.026, 0.0), Vector3(0.0, 0.6, 0.0), mineral)
+		"iron_stone":
+			# Iron ore (Dave 21 Nov 2026: "river iron rocks should be the same size as a rounded iron ingot"): a water-worn ironstone pebble the size of an
+			# Iron ingot (15 x 6 x 5 cm), a long rounded lump of three overlapping ellipsoids, red-brown with darker hematite patches and rust-orange stains.
+			var stain: Color = Color(0.72, 0.38, 0.14)
+			_sph(parts, 0.04, Vector3(1.9, 0.6, 0.8), Vector3(0.0, -0.04, 0.0), color)
+			_sph(parts, 0.032, Vector3(1.4, 0.62, 0.85), Vector3(0.035, -0.036, 0.004), _tone(color, 2, 0.1))
+			_sph(parts, 0.03, Vector3(1.3, 0.6, 0.8), Vector3(-0.04, -0.037, -0.004), dark)
+			for k in 5:
+				_sph(parts, 0.009 + 0.003 * float(k % 2), Vector3(1.4, 0.4, 1.0), Vector3(-0.05 + 0.025 * float(k), -0.017 + 0.003 * float(k % 2), 0.012 * float(k % 3 - 1)), stain if k % 2 == 0 else dark)
 		"bog_iron":
 			# Bog iron ore (Dave 19 Nov 2026: "its own lumpy redbrown rock"): limonite, a knobbly cluster of small rounded nodules grown together,
 			# red-brown (color) with rust-orange crusts and a few dark, almost black-brown knobs; no pale host rock, unlike the rock Iron ore.

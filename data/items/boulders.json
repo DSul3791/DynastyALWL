@@ -142,13 +142,14 @@
 		"grade_max": 0.45
 	},
 	"iron_rocks": {
-		"note": "Iron rocks (Dave 21 Nov 2026: \"there are reddish brown rocks everywhere normally so iron should be a common thing to find a long river bed as well\"): reddish-brown ironstone laid out by the shared ore_rocks rule like copper and tin, but commoner: chance on dry land, water_chance_coast and water_chance_mountain set here over the shared values. A loose piece picked up by hand is Iron ore; a rock to break still needs a bronze or better pick (ore pick_only). grade_min..grade_max: share of a boulder's pieces that are Iron ore; every iron outcrop boulder of the geology gets a grade and the 0.5 to 2 m size too, in place of ore piece_share. Slots 24..31 of the cell (31 the mountain-foot boulder). PROVISIONAL, docs/design/COPPER_ROCKS.md IR-1.",
+		"note": "River iron stones (Dave 21 Nov 2026: \"there are reddish brown rocks everywhere normally so iron should be a common thing to find a long river bed as well\"; then \"river iron rocks should be the same size as a rounded iron ingot and they are pickable so you gather them by hand\"). Laid out by the shared ore_rocks rule like copper and tin, but commoner (chance on dry land, water_chance_coast and water_chance_mountain set here over the shared values), and every one is a loose Iron ore stone picked up by hand (hand_share 1: no rocks to break, no mountain-foot boulder), over an iron body too. outcrops_unchanged: the geology's iron outcrop boulders keep ore piece_share and their own size, and still need a bronze or better pick. Slots 24..30 of the cell. PROVISIONAL, docs/design/COPPER_ROCKS.md IR-1.",
 		"slot": 24,
-		"grade_min": 0.25,
-		"grade_max": 0.65,
 		"chance": 0.03,
 		"water_chance_coast": 0.4,
-		"water_chance_mountain": 0.9
+		"water_chance_mountain": 0.9,
+		"hand_share": 1.0,
+		"foot": {},
+		"outcrops_unchanged": true
 	},
 	"meteorite_rocks": {
 		"note": "Iron-nickel meteorites (Dave 21 Nov 2026: \"lets have meteors about half as frequent as rocks because they have been falling for millions and billions of years. they break into iron chunks that count as iron ingots\"). Read as half as often as iron rocks on open ground, the same everywhere (they fall from the sky, so no more by rivers or mountains and no ore body): on the shared ore_rocks rule with chance 0.015 a try anywhere (shallow water too), no water chances, no body, no mountain-foot boulder, full size everywhere (size_coast 1). A loose piece picked up by hand is an Iron chunk; a meteorite to break, radius_min..radius_max (40 to 70 cm across), breaks with any pick or the Stone Hammer (no needs_material, not pick_only) and holds stones at the plain boulder yield, not ore_yield (plain_yield: a lump of metal, not a big ore rock), each piece an Iron chunk with chance grade, else stone. Slots 32..39 of the cell. Look: ore_rock_look meteorite. PROVISIONAL, docs/design/COPPER_ROCKS.md MT-1.",
