@@ -298,6 +298,13 @@ func _init() -> void:
 	check(items._box_takes("log_rack", items.table.number_of("log_oak")) and items._box_takes("log_rack", log_n) and not items._box_takes("log_rack", stone), "a log rack takes any log")
 	check(items._box_takes("wardrobe", items.table.number_of("grass_skirt")) and not items._box_takes("wardrobe", stone), "a wardrobe takes clothing, not stone")
 	check(items._box_takes("warehouse_crate", stone) and items._box_takes("large_wooden_chest", flint), "general containers take anything")
+	# Every nail and hinge metal goes into the Tool cabinet and the Ore and metal rack (gate review of #1419: "nails" and "hinges" stopped
+	# covering bronze when the nail tiers came in, Dave 21 Nov 2026).
+	for kind in ["tool_cabinet", "ore_and_metal_rack"]:
+		for id in ["copper_nails", "bronze_nails", "nails", "steel_nails", "bronze_hinges", "hinges"]:
+			check(items.table.number_of(id) > 0 and items._box_takes(kind, items.table.number_of(id)), "the %s takes %s" % [kind, items.table.name_of(items.table.number_of(id))])
+
+		check(not items._box_takes(kind, stone), "the %s takes no stone" % kind)
 
 	# 11. Save and load keep grants and contents; no unit lost or made.
 	items._dirty = true
