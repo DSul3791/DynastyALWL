@@ -52,7 +52,7 @@ func _init() -> void:
 	check(TileTerrainData.animal_den_species(cave(yes, "", "lava_tube")) == "bear", "a lava tube counts as large")
 	check(TileTerrainData.animal_den_species(cave(yes, "small", "rock_shelter")) == "", "never a rock shelter")
 	check(TileTerrainData.animal_den_species(cave(no, "large")) == "", "a cave the share leaves out stays empty")
-	check(TileTerrainData.animal_den_species(cave(TileTerrainData.CAMP_CAVES[0], "small")) == "", "the goblin camp cave is kept free")
+	check(TileTerrainData.animal_den_species(cave(yes, "small", "camp_cave")) == "" and TileTerrainData.goblin_den_node(cave(yes, "small", "camp_cave")) < 0, "never a goblin camp's own cave (CampCaves)")
 
 	var seen: int = 0
 
