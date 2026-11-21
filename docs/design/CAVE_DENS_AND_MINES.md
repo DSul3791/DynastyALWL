@@ -8,7 +8,7 @@
 | CD-1 | Bears, wolves and foxes may den in caves. | PROVISIONAL |
 | CD-2 | Dry natural caves stay off (Dave 7 Nov: "caves only at river starts"). Abandoned mines are the dry underground places. | PROVISIONAL (keeps his 7 Nov rule) |
 | CD-3 | 70 % of the inland caves with passages that hold no goblin den hold an animal den. The animal follows the cave's size: large caves and lava tubes are bears, medium caves wolves, small caves foxes. The pick comes from a hash of the cave's id. | PROVISIONAL (thread's value) |
-| CD-4 | Cave 3,4#8013 is kept free of animals, because it is proposed for the goblin trading camp (separate thread). | PROVISIONAL, pending Dave's OK on the camp |
+| CD-4 | The goblin camp's cave, 3,4#8006 since 21 Nov 2026 (was 3,4#8013), is kept free of animal dens and wild goblins (`TileTerrainData.CAMP_CAVES`; docs/design/GOBLIN_CAMP.md GOBLIN-19). | PROVISIONAL |
 | CD-5 | 2 to 4 abandoned mines per tile, with one about 1 km from the spawn. | PROVISIONAL |
 | CD-6 | A mine's old timbers are looks only. They cannot be pulled down for wood for now. | PROVISIONAL |
 | CD-7 | Bell pits wait for the iron work (bog iron, iron-stained outcrops). | PROVISIONAL |
