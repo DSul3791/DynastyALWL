@@ -565,7 +565,7 @@ func _ready() -> void:
 			return "rock"
 
 		var material: int = generator._surface_material(tile_data, x, z, float(generator.surface_height(x, z)))
-		return "rock" if material >= Layout.MATERIAL_ROCK else str(soil_names.get(material, "loam"))
+		return "rock" if material >= Layout.MATERIAL_ROCK else str(soil_names.get(Layout.soil_of(material), "loam"))   # a wetland look digs as its soil (peat, mud)
 	items.trees_near = _trees_near
 	items.trees_along = _trees_along
 	items.trees_near_cached = _trees_near_cached
