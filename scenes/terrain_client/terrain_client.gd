@@ -89,6 +89,7 @@ const DayCycleScript := preload("res://src/client/day_cycle.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const FrozenWater := preload("res://src/client/frozen_water.gd")   # the liquid sheets' ice look (docs/design/frozen_water_look.md)
 const SpringSteam := preload("res://src/client/spring_steam.gd")   # steam over spring mouths on frosty mornings (Jamie #739)
+const WetlandMist := preload("res://src/client/wetland_mist.gd")   # low mist over fen, bog and swamp at dawn and dusk (Dave 21 Nov 2026)
 const IceFeelScript := preload("res://src/client/ice_feel.gd")     # ice sounds, footing and cold shock by thickness (docs/design/ice_walk_feel.md)
 const SnowWalkScript := preload("res://src/shared/snow_walk.gd")   # walking on snow and snowshoes (Part C plan 7)
 const OceanIceScript := preload("res://src/client/ocean_ice.gd")
@@ -2896,6 +2897,7 @@ var _warmth_cfg_cache: Dictionary = {}
 var _ice_moat_logged: int = -1
 var _spring_mouths: Dictionary = {}       # tile -> PackedVector3Array, where spring cave brooks leave their caves
 var _spring_steam = null                  # SpringSteam, made on the first frosty update with a mouth known
+var _wetland_mist = null                  # WetlandMist, made at the first dawn or dusk it could show
 var _steam_logged: bool = false
 
 
@@ -2936,7 +2938,29 @@ func _update_ice_feel_weather(ice_now: float, group: String, now: int) -> float:
 		sound.ice.hour = WeatherScript.hour_of(game_clock.seconds)
 
 	_update_spring_steam()
+	_update_wetland_mist()
 	return ice_now
+
+
+func _update_wetland_mist() -> void:
+	if sound == null or sound.ambient == null:
+		return
+
+	var hour: float = WeatherScript.hour_of(game_clock.seconds)
+	var sun: Array = sound.ambient._sun()
+	var wind: float = float(weather.get("wind", 0.0))
+	var rain: float = float(weather.get("rain", 0.0))
+
+	if _wetland_mist == null:
+		if WetlandMist.strength_of(hour, float(sun[0]), float(sun[1]), wind, rain) <= 0.02:
+			return
+
+		_wetland_mist = WetlandMist.new()
+		_wetland_mist.name = "WetlandMist"
+		_wetland_mist.setup(quality)
+		add_child(_wetland_mist)
+
+	_wetland_mist.update(body.global_position, hour, float(sun[0]), float(sun[1]), wind, rain, float(weather.get("wind_dir", 0.0)), sound.ground_at)
 
 
 func _update_spring_steam() -> void:
@@ -3680,6 +3704,9 @@ func _apply_quality() -> void:
 	grass.set_shore(QUALITY_SHORE_M[quality], QUALITY_SHORE_AMOUNT[quality])
 	if fall_mist != null:
 		fall_mist.set_quality(quality)
+
+	if _wetland_mist != null:
+		_wetland_mist.set_quality(quality)
 	if fall_growth != null:
 		fall_growth.set_quality(quality)
 
@@ -5309,6 +5336,11 @@ func _move_player(delta: float) -> void:
 				var slow: float = SwimScript.wade_factor(WaterVolume.depth(float(water["surface"]), float(water["ground"])))
 				velocity.x *= slow
 				velocity.z *= slow
+
+			# An ankle-deep wetland pool (the last step splashed in one, sound_stage.gd pool_pace) slows a walker a little.
+			if body.is_on_floor() and sound != null:
+				velocity.x *= sound.pool_pace
+				velocity.z *= sound.pool_pace
 
 			velocity = _ice_feel_velocity(velocity, water, delta)
 

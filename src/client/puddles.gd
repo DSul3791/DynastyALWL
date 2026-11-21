@@ -389,8 +389,8 @@ func water_at(x: float, y: float, z: float, material_id: int, up_y: float, shelt
 	if material_id < 0 or material_id == 16 or y < 1.0 or up_y < 0.951:
 		return 0.0
 
-	var layer: int = 5 if material_id >= Layout.MATERIAL_ROCK or material_id >= GroundMaterial.SOIL_LAYER.size() else int(GroundMaterial.SOIL_LAYER[material_id])
-	var own: int = PEAT if material_id == PEAT_SOIL else layer
+	var layer: int = GroundMaterial.layer_of(material_id)
+	var own: int = PEAT if Layout.soil_of(material_id) == PEAT_SOIL else layer
 	var amount: float = float(level[own]) * _open * float(PRONE[own])
 
 	if layer != 4:
@@ -435,13 +435,30 @@ func _lying() -> float:
 	return float(_client.sound.weather.ground_snow)
 
 
-# The share of water under a point (0 none .. 1 water) as the ground draws it now: 0 when nothing is shown or the water is frozen. The footstep splash and the rain sounds
-# (sound_stage.standing_water; rain puddle layers only where water stands, BUG-004) ask it.
-func water_under(feet: Vector3, material_id: int, up_y: float) -> float:
-	if shown <= 0.001 or ice >= 0.5:
+# The still water of a wetland's hollows at a spot (0 none .. 1 water) on draw material `material_id`, whatever the weather: the ground
+# shader's pool (ground_material.gd pool_level) on flat, unblended ground. 0 off the wetland looks.
+static func pool_at(x: float, z: float, material_id: int, up_y: float) -> float:
+	var kind: int = [Layout.MATERIAL_FEN, Layout.MATERIAL_BOG, Layout.MATERIAL_SWAMP].find(material_id)
+
+	if kind < 0 or up_y < 0.951:
 		return 0.0
 
-	return water_at(feet.x, feet.y, feet.z, material_id, up_y, _shelter_at(feet.x, feet.z), _trail_at(feet.x, feet.z), _lying())
+	var at: float = GroundMaterial.POOL_LEVEL[kind]
+	return smoothstep(at, at + 0.03, hollow(x, z)) * smoothstep(0.951, 0.985, up_y)
+
+
+# The share of water under a point (0 none .. 1 water) as the ground draws it now: 0 when nothing is shown or the water is frozen. The footstep splash and the rain sounds
+# (sound_stage.standing_water; rain puddle layers only where water stands, BUG-004) ask it. A wetland's pools are always there.
+func water_under(feet: Vector3, material_id: int, up_y: float) -> float:
+	if ice >= 0.5:
+		return 0.0
+
+	var pool: float = pool_at(feet.x, feet.z, material_id, up_y) * (1.0 - _lying())
+
+	if shown <= 0.001:
+		return pool
+
+	return maxf(pool, water_at(feet.x, feet.y, feet.z, material_id, up_y, _shelter_at(feet.x, feet.z), _trail_at(feet.x, feet.z), _lying()))
 
 
 # A foot lands at `feet` on voxel material `material_id` (sound_stage.gd footstep): true, with a splash shown, when it is in open
@@ -457,13 +474,18 @@ func foot_in(feet: Vector3, material_id: int, up_y: float, gait: int) -> bool:
 # An animal's foot lands (animal_view.stepped): a splash in a drawn puddle within ANIMAL_M of the camera, bigger for a big animal.
 # The ground's up direction is not known here, so only the material and the hollows decide.
 func animal_step(kind: String, at: Vector3, material_id: int) -> bool:
-	if shown <= 0.001 or ice >= 0.5 or _client == null or _client.camera == null:
+	if ice >= 0.5 or _client == null or _client.camera == null:
 		return false
 
 	if at.distance_to(_client.camera.global_position) > ANIMAL_M:
 		return false
 
-	if water_at(at.x, at.y, at.z, material_id, 1.0, _shelter_at(at.x, at.z), _trail_at(at.x, at.z), _lying()) < SPLASH_IN:
+	var here: float = pool_at(at.x, at.z, material_id, 1.0)
+
+	if shown > 0.001:
+		here = maxf(here, water_at(at.x, at.y, at.z, material_id, 1.0, _shelter_at(at.x, at.z), _trail_at(at.x, at.z), _lying()))
+
+	if here < SPLASH_IN:
 		return false
 
 	splash(at, clampf(float(_sizes.get(kind, 1.0)) / 1.8, 0.4, 2.0))
