@@ -15,7 +15,7 @@ func check(ok: bool, what: String) -> void:
 
 
 func _init() -> void:
-	var total: int = 740   # about a 2 m stone boulder (radius 1.0, boulders.json yield 0.04, 0.5 kg stones)
+	var total: int = 740   # a mid-sized rock; the rule only sees the share left
 
 	# Size: whole at full, a straight line with the share left, SMALLEST_SHARE at the end.
 	check(is_equal_approx(BoulderWear.radius_now(1.0, total, total), 1.0), "a whole rock keeps its full radius")

@@ -3661,16 +3661,19 @@ func _log_surround() -> void:
 					keep["i%d" % sid] = true   # on a floor or a deck: in the way, never moved
 					_log_static("i%d" % sid, _log_capsule(_log_r(other)), _log_xf(other), true)
 			elif other.has("boulder") or other.has("tree"):
-				keep["i%d" % sid] = true
+				# A boulder's key carries its stones left: a worked rock that has shrunk (BoulderWear) gets a new, smaller ball and trim_statics drops the old one.
+				var static_key: String = "i%d:%d" % [sid, int(other["count"])] if other.has("boulder") else "i%d" % sid
+				keep[static_key] = true
 
-				if _logs.has_static("i%d" % sid):
+				if _logs.has_static(static_key):
 					continue   # already in the space: no new shape
 
 				if other.has("boulder"):
-					var rock_r: float = float((other["boulder"] as Dictionary).get("radius", 0.5))
+					var rock: Dictionary = other["boulder"]
+					var rock_r: float = BoulderWear.radius_now(float(rock.get("radius", 0.5)), int(other["count"]), int(rock.get("total", 1)))
 					var ball: SphereShape3D = SphereShape3D.new()
 					ball.radius = rock_r
-					_log_static("i%d" % sid, ball, Transform3D(Basis(), other["pos"] + Vector3(0.0, rock_r * 0.4, 0.0)))   # a boulder sits part in the soil
+					_log_static(static_key, ball, Transform3D(Basis(), other["pos"] + Vector3(0.0, rock_r * 0.4, 0.0)))   # a boulder sits part in the soil
 				else:
 					_log_static("i%d" % sid, _log_post(float((other["tree"] as Dictionary).get("radius", 0.3)), STUMP_H_M), Transform3D(Basis(), other["pos"] + Vector3(0.0, STUMP_H_M * 0.5, 0.0)))
 

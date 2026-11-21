@@ -133,7 +133,7 @@ var _chest_panel: Control
 const BOULDER_STATE := 10                 # the world-item row state of a boulder (server_items)
 const BOG_STATE := 229                    # the world-item row state of a bog iron deposit (server_items._bog_rows_near)
 var bogs: Dictionary = {}                 # bog deposit world id -> {"pos", "left", "total", "wet", "key"}: kept apart from _world; Kathleen's _show_bog draws them
-var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now}
+var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now, shrink (the running ease, if any)}
 var crown_landed: Callable = Callable()   # (centre Vector3, radius m): a felled crown hit the ground there; the client flattens the grass (Dave 10 Nov 2026)
 var _boulder_mesh: ArrayMesh
 var _boulder_rock: ShaderMaterial
@@ -3734,10 +3734,12 @@ func _size_boulder(entry: Dictionary) -> void:
 	var lump_node: MeshInstance3D = entry["lump"]
 
 	# A blow eases the rock down to its new size over SHRINK_EASE_S (smooth motion; a small rock loses a big share a blow). The first draw sets it.
-	if entry.get("shrink") is Tween:
-		(entry["shrink"] as Tween).kill()   # a quick second blow starts from where the last ease had got to
+	if was >= 0.0 and is_equal_approx(was, radius) and entry.get("shrink") is Tween and (entry["shrink"] as Tween).is_valid():
+		pass   # same size (a settle or a resend): leave an ease that is still running to finish
+	elif was >= 0.0 and not is_equal_approx(was, radius) and lump_node.is_inside_tree():
+		if entry.get("shrink") is Tween:
+			(entry["shrink"] as Tween).kill()   # a quick second blow starts from where the last ease had got to
 
-	if was >= 0.0 and not is_equal_approx(was, radius) and lump_node.is_inside_tree():
 		var shrink: Tween = lump_node.create_tween().set_parallel(true).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 		shrink.tween_property(lump_node, "scale", Vector3.ONE * scale, SHRINK_EASE_S)
 		shrink.tween_property(lump_node, "position", lump_at, SHRINK_EASE_S)
