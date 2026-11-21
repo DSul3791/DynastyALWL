@@ -1561,6 +1561,55 @@ Not yet played.
 
 Not yet played. A big ore rock (an iron outcrop, or copper or tin under the mountains) still holds thousands of stones, so it still shrinks slowly. The rock in Dave's picture may have been one of those; if so, this change does not alter it.
 
+## 125. Animals still teleport instead of running
+
+**Status: Implemented - awaiting player verification.** Dave, play-testing dev def5ca64 on 21 Nov 2026: "animals are still teleporting and not actually running". Entry 66 (PR #1324) had made the client draw animals between the points the server sent.
+
+**What was found:** the client timed each sent point by when its rows arrived. Each animal steps on the server on its own beat, 3 to 10 times a second, while the rows go out four times a second. A client frame hitch held rows back and handed two over at once (the lag thread measured hitches of 100 to 150 ms about once a second). On arrival times a running animal covered two steps in one interval and none in the next, so it jumped, stood, and its run clip flicked to walk. Server tick stalls of 0.4 to 1.2 s (vitals, fires, save; fixed or named in the lag thread's own PRs) also make animals stand and then jump.
+
+**Required outcome:** an animal that runs is drawn running at a steady speed, with its run clip, through frame hitches. A stopped one stops where it stopped.
+
+**As built (PR #1433, reviewed head 68ba7d6f, merged to dev at 1818d9aa; protocol 147):**
+- Each animal row carries the server milliseconds at which its animal reached that position, plus its first still moment after a run. Each batch carries the server clock.
+- The client puts those times on its own clock (`MotionBuffer.clock_off`: the fastest delivery seen, re-anchored only when the server clock goes back 2 s or jumps 10 s). It draws between points by them, 0.4 s behind the newest moment (one gap between rows plus `LEAD_S` 0.15).
+- No extra server work; each row is about 8 bytes bigger.
+- Goblin NPCs use the same buffer with arrival times, so they are now drawn about 0.15 s further behind as well.
+
+**Evidence:**
+- Independent review PASS on b411a13d, then on 617de491 and 9a3b08f4 after review fixes (stopping, re-anchoring), and on 68ba7d6f after merging dev.
+- Lane B (David4) on 68ba7d6f: 448 PASS / 0 FAIL (438 fast + 10 timing), 0 script errors, warnings 381 with 0 new, validate_items 0 errors, join smoke clean.
+- test_animal_motion_buffer: an elephant at 10 m/s, stepped every 0.1 s, through a 150 ms hitch is drawn at 8.5 to 11.5 m/s every frame (a model of the old arrival-time drawing gives 7.5 to 20). A runner that stops stays where it stopped.
+
+**Acceptance:** startle a deer herd or an elephant and watch it run off: steady speed, legs running, no jumps or stops. It stops where it stops, with no slide back.
+
+Provisional: MV-1, the 0.4 s draw delay (docs/design/ANIMAL_REACTIONS.md).
+
+Not yet played.
+
+## 126. Stabbed elephants face the player and never attack
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "I just stabbed two elephants to death with a stone spear while standing under them because they never actually attacked me. they turned to face me but just stood there and died."
+
+**What was found:** a blow from a player within `provoked_m` starts a short warning (0.8 s for the elephant), then the charge. A melee jab lands every 0.6 s. The next jab came during the warning, which refused to restart, so the blow fell through to "run away". On its next step the player was inside `threat_m`, so a fresh warning started, facing the player. Each jab reset it, and it stood facing the player until it died. Every animal with a `defend` row had this, not only the elephant.
+
+**Required outcome:** an attacked big animal fights back or runs, as its temperament says. A huge animal is very dangerous at close range, including to a player standing against it or under it.
+
+**As built (PR #1433, reviewed head 68ba7d6f, merged to dev at 1818d9aa):**
+- `server_big_game.provoke`: one already warning charges at once, pressing home with no bluff; one charging carries on; one recovering or cooling down after a charge warns again (short). The one hurting it becomes its foe in place of a dog.
+- The charge hits a player within `hit_m` of the ground it covered in the step, so a player under it is hit.
+- Elephant and mammoth: `hit_m` 3.0 (was 2.2; the body is about 6 m long), `damage` 40 (was 25). A charge is still not lethal on its own: health stops at 10 and the player is maimed.
+- Passive and friendly animals still run when hurt.
+
+**Evidence:**
+- Independent review as in entry 125.
+- Lane B on 68ba7d6f as in entry 125, including the new test_big_animal_close: elephant, mammoth, rhino, buffalo, moose, elk, bear, black bear and boar, each stabbed every 0.6 s by a player 0 to 3 m from its centre, all hit back within 6 s; a neutral elephant does too; a passive deer runs and never hits.
+
+**Acceptance:** stand under or against an elephant and stab it with a Stone spear: within a second or two it charges and hits, and you are badly hurt. Keep stabbing after it recovers: it charges again. Stab a deer: it runs.
+
+Provisional (accepted for Dave as provisional by the coordinator): AT-1, being hurt overrides the cool-down after a charge; AT-2, the elephant and mammoth reach and damage above (docs/design/ANIMAL_REACTIONS.md).
+
+Not yet played.
+
 ## 127. One scatter cell's copper and tin rocks stalled the server for 409 ms
 
 **Status: Implemented - awaiting player verification.** Seen in the slow-cell log on Dave's PC, 21 Nov 2026, while a player ran north: scatter cell (1815, 2229) took 411 ms, and 409 ms of that went to copper and tin rocks. The coordinator asked for the fix on Dave's behalf (his standing order of 21 Nov, 4:39 AM Halifax).
