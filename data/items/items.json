@@ -12356,7 +12356,7 @@
 		"copper_nails": {
 			"number": 1487,
 			"name": "Copper nails",
-			"description": "Small copper nails, the softest. For copper sheet and light work: crates, garden plots, racks and a Quality - Backpack.",
+			"description": "Small copper nails, the softest. For copper sheet and light work: crates, garden plots and racks.",
 			"kind": "material",
 			"material": "copper",
 			"stack": 200,

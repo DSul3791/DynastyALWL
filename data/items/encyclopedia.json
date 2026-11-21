@@ -13221,7 +13221,7 @@
 		"copper_nails": {
 			"name": "Copper nails",
 			"kind": "material",
-			"description": "Small copper nails, the softest. For copper sheet and light work: crates, garden plots, racks and a Quality - Backpack.",
+			"description": "Small copper nails, the softest. For copper sheet and light work: crates, garden plots and racks.",
 			"how_to_get": [
 				"Craft at the Primitive smithy: 1 Copper ingot"
 			],
