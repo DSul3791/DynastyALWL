@@ -1340,6 +1340,70 @@ Not yet played; not yet seen in a picture.
 
 Not yet played.
 
+## 120. Dune grass is picked for plant fibre
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "Dune grass should be pickable like long grass giving plant fiber". Ordered before main on 21 Nov 2026 ("complete all the bugs and everything I gave you earlier").
+
+**What was found:** dune grass had no hand yield in drops.json, so E gave nothing but its seed, and that only in autumn.
+
+**Required outcome:** dune grass is picked by hand like tall grass and gives plant fibre.
+
+**As built (PR #1430, reviewed and tested head 07edcd2f, merged to dev at 37690c22):** drops.json by_species dune_grass gives 1 to 3 Plant fibre, in the plant's seasons (spring to autumn); its autumn seed still comes with it, and a sickle or scythe swing gets the fibre too.
+
+**Evidence:** independent review PASS on 07edcd2f. Lane A on 07edcd2f: 338 PASS / 0 FAIL (330 fast + 8 timing), validate_items 0 errors, look names 340, warnings 381 = baseline, join smoke clean. test_farming: dune grass is picked for fibre in spring, not in winter.
+
+**Acceptance:** on a beach in summer, E on dune grass gives 1 to 3 Plant fibre; in autumn also Dune grass seed.
+
+Not yet played. The amount is provisional (DG-1, below).
+
+## 121. Every tool has an icon
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "how does the copper pickaxe not have an icon. its the same as the rest of them with a different color".
+
+**What was found:** 22 tools had a look but had never been baked to an icon: the Copper pickaxe and 21 more.
+
+**Required outcome:** the Copper pickaxe has an icon like the other pickaxes in copper colour, and every other tool tier has one too.
+
+**As built (PR #1430, merged to dev at 37690c22):** the Copper pickaxe icon is the Bronze pickaxe icon with its metal recoloured copper (tools/recolour_icons.py METAL_TIERS; the bake's copper pick read as bronze at 32 px). The other 21 were baked on Lane A with tools/icon_bake.gd (dev 0bb4349f, 0 need painting): Copper, Iron and Steel axe and knife; Copper hammer and chisel; Copper and Bronze hoe and shovel; Stone and Steel saw; Copper, Bronze, Iron and Steel sickle; Copper, Bronze and Steel scythe.
+
+**Evidence:** same review and Lane A run as entry 120. The icon sheet is in the project files (icon_sheet_tools.png).
+
+**Acceptance:** every tool in the pack shows a picture, not its name.
+
+Not yet played. Known, for after main: the hoe, shovel, sickle and scythe looks draw every metal the same colour (basic_look.gd ignores the looks.json colour for them), so their tier icons look alike. Weapons without icons still use the grey placeholder look.
+
+## 122. Boards look like 8 ft boards
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "dropped hardwood boards look like tin ore. they should look like 8ft long boards".
+
+**What was found:** Hardwood board still had the grey placeholder lump; Plank drew a small stack of half-metre pieces.
+
+**Required outcome:** a dropped board is one long board lying flat; several stack as boards.
+
+**As built (PR #1430, merged to dev at 37690c22):** a new "board" look, 2.44 m x 20 cm x 2.5 cm with pale cut ends and grain, drawn at its real size on the ground (not enlarged like small items). Two or more lie in a lumber stack (pile shape "boards": 4 side by side a layer, 10 layers a stack, 12 triangles a board). Used by Hardwood board (off the placeholder list; its icon is the Plank icon in oak brown) and Plank. Fine board is retired and unchanged. One E on a stack takes 20.
+
+**Evidence:** same review and Lane A run as entry 120. test_pile_logs: one board is 8 ft, a stack is 12 triangles a board on the ground, the fifth board starts a new layer. Pictures: the first try was hidden in bushes; a retake is pending.
+
+**Acceptance:** drop 1 Hardwood board: one long dark board on the grass. Drop 20: a neat stack, four wide. Plank is the same in a lighter wood.
+
+Not yet played. Sizes are provisional (BD-1, below).
+
+## 123. No building sounds while the world loads
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "when a person logs in and it loads everything around you it makes the sounds of building everything really fast. during this time it shouldn't. it can mute sounds until they land on the ground and everything is loaded."
+
+**What was found:** the place sound plays for every placed thing that appears within 40 m. At login the town arrives in batches after the first look, so each batch sounded as if it were being built.
+
+**Required outcome:** silence for things appearing while the world loads; normal sounds after.
+
+**As built (PR #1430, merged to dev at 37690c22):** PlacedSounds only notes rows while the world loads (terrain_client._world_loading: until joined, on loaded ground, the join window closed, and 3 s after landing or after the window closes). After that, more than 3 things appearing near at once is taken as the world streaming in and is silent too.
+
+**Evidence:** same review and Lane A run as entry 120. New test_placed_quiet: nothing is heard while loading, a late batch of 8 is silent, one chest set down after the load is heard.
+
+**Acceptance:** log in beside the starter town: no building sounds while it appears. Then set down a chest: its sound plays.
+
+Not yet played. Provisional (LQ-1, below). Side effect: a building plan that sets down several pieces at once is silent.
+
 ## 124. The bust slider grows round, not pointed
 
 **Status: Implemented - awaiting player verification.** Dave, play-testing the character creator on 21 Nov 2026: "I just noticed when making a new character that is female if you increase the breasts they get pointy they should get big, round and voluptuous."
@@ -1386,6 +1450,9 @@ Dave requested this rewrite around the intended experience rather than a literal
 - CT-6 (entry 112): the knife's store is the existing Basket renamed Wicker basket, keeping its cost (8 Stick, 4 Twine) and 6 slots. The Wicker - Chest is hidden and locked rather than retired, because the server tests use it as their plain container. The goblin camp's chest prop is a Small chest (Dave 20 Nov 2026: "a small chest of some sort").
 - WL-1 (entry 113): wetland looks, densities and timings chosen by Claude. Colours are as built. Pool levels in the puddle hollows are 0.63 fen, 0.68 bog and 0.56 swamp. Pace in a pool is 0.85. Mist runs from sunrise -1 h to +2 h and from sunset -1 h to +1.5 h. Grass thickness is fen 0.3, bog 0.12 and swamp none. Plant densities are as in entry 113.
 - WL-2 (entry 113): cattail, tussock sedge and bog moss hummock give their own seeds (Dave 14 Nov 2026: "All herbs and plants should produce seeds"). The dead tree is scenery, like old stumps and fallen logs.
+- DG-1 (entry 120): dune grass gives 1 to 3 Plant fibre a pick, tall grass's amount, with no thatch or straw.
+- BD-1 (entry 122): a board is 2.44 m long, 20 cm wide and 2.5 cm thick; a stack is 4 wide and 10 layers high; one E takes 20 (a full stack). Plank is drawn as long boards too. The Copper pickaxe icon is a recolour of the bronze one (entry 121).
+- LQ-1 (entry 123): sounds stay quiet 3 s after landing and after the join window closes; more than 3 things appearing within 40 m at once is silent.
 - OP-1 (entry 107): ore pile looks, chosen by Claude. Copper ore: malachite green, 30% red-brown, lumps 0.3, 3,900 kg/m3. Tin ore: dark red-brown, 40% near-black, lumps 0.15, a little shiny, 6,900 kg/m3. Iron ore: grey-brown, 35% rust, lumps 0.3, 4,800 kg/m3. Bog iron ore: red-brown, 35% ochre, lumps 0.4, 3,600 kg/m3. The densities are the real minerals' and set how wide a cone a count makes.
 - LV-1: one held Level action lasts while strokes come within 1.5 s and the feet move less than 0.6 m; its target height is kept for that long.
 - LV-2: Level leaves the ground within 1.2 m of the feet untouched.
