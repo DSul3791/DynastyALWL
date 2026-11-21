@@ -150,7 +150,7 @@ const GOLDEN := {
 	"iron_deep_well_pump": "iron_deep_well_pump",
 	"stone_cistern": "stone_cistern",
 	"raised_cistern": "raised_cistern",
-	"kiln": "kiln",
+	"kiln": "primitive_kiln",      # the Primitive kiln: Dave's own model (21 Nov 2026); the Improved and Advanced kilns keep "kiln"
 	"tanning_rack": "tanning_rack",
 	"drying_rack": "drying_rack",
 	"smoker": "smoker",

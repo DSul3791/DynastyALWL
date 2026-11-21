@@ -65,7 +65,7 @@ For Dave (assumed on his behalf, provisional):
 
 ## The Improved smithy's own model (Dave 21 Nov 2026)
 
-Dave made a new model for the Improved smithy (`blacksmithy`): the forge and chimney, a bellows, the anvil on a stump and a work bench on a flagstone floor. He asked that it be "sized so it fits in 3/4 of the width of a foundation". His file had about 150,000 triangles and three 4096 textures. `tools/stations/prepare_improved_smithy.py` turns it into `assets/stations/improved_smithy.glb`:
+Dave made a new model for the Improved smithy (`blacksmithy`): the forge and chimney, a bellows, the anvil on a stump and a work bench on a flagstone floor. He asked that it be "sized so it fits in 3/4 of the width of a foundation". His file had about 150,000 triangles and three 4096 textures. `tools/stations/prepare_station_model.py improved_smithy` turns it into `assets/stations/improved_smithy.glb`:
 
 - 3.0 m wide (foundations are 4 m), 1.65 m high and 1.92 m deep. The footprint in structures.json matches it.
 - About 37,000 triangles, with every texture seam kept, and Godot makes the distance levels on import. A cut to 15,000 smeared the coals' orange across the stone.

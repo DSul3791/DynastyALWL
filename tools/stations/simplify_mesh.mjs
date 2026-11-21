@@ -1,4 +1,4 @@
-// Cuts a triangle list down with meshoptimizer, keeping texture seams (tools/stations/prepare_improved_smithy.py runs it).
+// Cuts a triangle list down with meshoptimizer, keeping texture seams (tools/stations/prepare_station_model.py runs it).
 // Usage: node simplify_mesh.mjs POS.bin UV.bin IDX.bin OUT_IDX.bin TARGET_TRIANGLES MAX_ERROR
 // POS: float32 xyz per vertex, UV: float32 uv per vertex, IDX/OUT_IDX: uint32 triangle corners. Needs meshoptimizer 0.25.0 (npm i meshoptimizer@0.25.0).
 import {MeshoptSimplifier} from 'meshoptimizer';

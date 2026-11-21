@@ -114,6 +114,62 @@ func _init() -> void:
 	check(advanced.find_child("Smithy", true, false) == null and not advanced.has_meta("coal_glow"), "the Advanced smithy keeps the brick forge")
 	advanced.free()
 
+	# The Primitive kiln (Dave 21 Nov 2026, "sized so its longest side is a minimum 2.74 meters"): his tunnel kiln, 2.74 m long along z with its
+	# mouth at the front (+Z) and its chimney at the back, its footprint the mesh's, one-sided, casting shadows, solid; its painted embers dark
+	# and its flames and smoke out when cold, glowing with them while lit; the Improved and Advanced kilns keep the brick kiln.
+	var kiln: Dictionary = structures["kiln"]
+
+	for lit in [false, true]:
+		var m: Node3D = view._model_for_state(int(kiln["state"]), {"lit": lit})
+		var mesh: MeshInstance3D = m.find_child("Kiln", true, false) as MeshInstance3D
+		check(mesh != null, "the Primitive kiln draws Dave's model (lit %s)" % lit)
+
+		if mesh == null:
+			m.free()
+			continue
+
+		var b: AABB = view._bounds_in(mesh, m)
+		var glow: Array = m.get_meta("coal_glow", [])
+		var light: Node3D = m.get_node_or_null("Light")
+		var plume: Node3D = m.get_node_or_null("ForgeSmoke")
+		var flames: Node3D = m.get_node_or_null("Flames")
+
+		if not lit:
+			check(maxf(b.size.x, b.size.z) >= 2.74 - 0.005 and absf(b.size.z - 2.74) < 0.02 and b.size.x < 1.2 and b.size.y < 1.2, "Primitive kiln: its longest side 2.74 m along z (%.2f x %.2f x %.2f m)" % [b.size.x, b.size.y, b.size.z])
+			check(absf(b.size.x - float(kiln["footprint_x"])) < 0.02 and absf(b.size.z - float(kiln["footprint_z"])) < 0.02, "Primitive kiln: its footprint %.2f x %.2f matches the mesh" % [kiln["footprint_x"], kiln["footprint_z"]])
+			check(absf(b.position.y) < 0.02 and absf(b.position.x + b.size.x * 0.5) < 0.02 and absf(b.position.z + b.size.z * 0.5) < 0.02, "Primitive kiln: on the ground, centred on the pivot")
+			check(light != null and plume != null and light.position.z > 0.5 and plume.position.z < -0.5 and plume.position.y > b.size.y * 0.9, "Primitive kiln: fire in the mouth at the front, smoke at the chimney top at the back")
+			check(flames != null and flames.get_node_or_null("Coals") == null, "Primitive kiln: its own painted embers, not the shared coals")
+			var own: BaseMaterial3D = mesh.mesh.surface_get_material(0) as BaseMaterial3D
+			check(own != null and own.cull_mode == BaseMaterial3D.CULL_BACK and own.emission_enabled, "Primitive kiln: one-sided, with an emission texture")
+			check(mesh.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_ON, "Primitive kiln casts shadows")
+			var solid: CollisionShape3D = null
+
+			for c in m.get_children():
+				if c is StaticBody3D:
+					solid = c.get_child(0)
+
+			check(solid != null and (solid.shape as BoxShape3D).size.z > 2.7, "Primitive kiln is solid along its length")
+
+		var energy: float = (glow[0] as BaseMaterial3D).emission_energy_multiplier if not glow.is_empty() else -1.0
+		check(not glow.is_empty() and is_equal_approx(energy, float((view.get_script() as GDScript).get_script_constant_map()["KILN_EMBERS"]) if lit else 0.0), "Primitive kiln lit %s: embers glow %.2f" % [lit, energy])
+		check(flames != null and flames.visible == lit and plume != null and plume.visible == lit, "Primitive kiln lit %s: flames and smoke %s" % [lit, "shown" if lit else "out"])
+		m.free()
+
+	var ghost: Node3D = view._model_for_state(int(kiln["state"]), {"ghost": true})
+	check(not (ghost.get_meta("coal_glow", []) as Array).is_empty() and is_zero_approx((ghost.get_meta("coal_glow")[0] as BaseMaterial3D).emission_energy_multiplier), "a Primitive kiln's placing ghost is cold")
+	ghost.free()
+	var hot_kiln: Node3D = view._model_for_state(int(kiln["state"]), {"lit": true})
+	var cold_kiln: Node3D = view._model_for_state(int(kiln["state"]), {})
+	check(hot_kiln.get_meta("coal_glow")[0] != cold_kiln.get_meta("coal_glow")[0], "each Primitive kiln has its own embers: one lit does not light another")
+	hot_kiln.free()
+	cold_kiln.free()
+
+	for kind in ["improved_kiln", "advanced_kiln"]:
+		var brick: Node3D = view._model_for_state(int(structures[kind]["state"]), {"lit": true})
+		check(brick.find_child("Kiln", true, false) == null and not brick.has_meta("coal_glow"), "the %s keeps the brick kiln" % kind)
+		brick.free()
+
 	# The Brick - Forge (item system 10 Nov 2026): Dave's medium forge with its cut stone in the brick walls' surface, the iron straps and the
 	# rest as he made them.
 	var smithy: Node3D = view._make_smithy()
