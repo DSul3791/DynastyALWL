@@ -159,6 +159,7 @@ func _init() -> void:
 	var sim: PackedFloat32Array = PackedFloat32Array()
 	sim.resize(tile_data.water_surface.size())
 	sim.fill(NAN)
+	var wet: int = 0
 
 	for cell in cells:
 		for sz in range(5):
@@ -166,9 +167,11 @@ func _init() -> void:
 				var k: int = tile_data.nearest((float(cell.x) + float(sx) * 0.25) * CELL_M, (float(cell.y) + float(sz) * 0.25) * CELL_M)
 
 				if int(tile_data.water_class[k]) > 1 and not is_nan(tile_data.water_surface[k]):
+					wet += 1 if is_nan(sim[k]) else 0
 					sim[k] = float(tile_data.water_surface[k]) + 0.3
 
 	hub.water.sim = sim
+	check(wet > 0, "the setup: running water lies in some of the cells (%d samples)" % wet)
 
 	var live_general: Dictionary = {}
 	var live_bound: Dictionary = {}
