@@ -311,6 +311,9 @@ func _init() -> void:
 			elif not ["pyramid", "mound", "cone"].has(String(pile.get("shape", ""))) or int(pile.get("handful", 0)) < 1 or tint.size() != 3 or float(pile.get("rock", 0.0)) <= 0.0 or float(pile.get("squash", 0.0)) <= 0.0:
 				fail("items.json: '%s' pile row needs shape pyramid, mound, cone or logs, handful 1 or more, color [r, g, b], rock and squash above 0 (logs: len and radius)" % id)
 
+			if (pile.has("color2") and (pile["color2"] as Array).size() != 3) or float(pile.get("mix", 0.0)) < 0.0 or float(pile.get("mix", 0.0)) > 1.0 or float(pile.get("lumps", 0.0)) < 0.0 or float(pile.get("lumps", 0.0)) > 0.5 or float(pile.get("rough", 1.0)) <= 0.0 or float(pile.get("rough", 1.0)) > 1.0:
+				fail("items.json: '%s' pile row needs color2 [r, g, b], mix 0 to 1, lumps 0 to 0.5 and rough above 0 to 1 when it sets them (PileLook._cone_mesh)" % id)
+
 		# Every core item has a one-line description, a value and (unless it is a placed structure) its own weight.
 		if description == "" or description.length() > 110 or not description.ends_with("."):
 			fail("items.json: '%s' needs a one-line description of up to 110 characters ending in a full stop" % id)

@@ -9,6 +9,8 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const PileLookScript := preload("res://src/client/pile_look.gd")
+const PileRules := preload("res://src/shared/pile_rules.gd")
+const CarryRules := preload("res://src/shared/carry_rules.gd")
 
 const OTHER_RECORDS := 6000
 const DROPS := 400
@@ -73,6 +75,44 @@ func _init() -> void:
 	var client_ms: float = float(Time.get_ticks_usec() - start) / 1000.0 / 20.0
 	print("pile_cost: client %.2f ms a mesh rebuild of a 20,000-stone cone" % client_ms)
 	check(client_ms < CLIENT_BUDGET_MS, "a cone mesh rebuild costs the client under %.0f ms (%.2f)" % [CLIENT_BUDGET_MS, client_ms])
+
+	# Ore piles (Dave 21 Nov 2026: "ore piles should stackup like stone piles do just with different colors and lumps"): every ore item is a
+	# cone pile, its drops join one pile, and its mesh has as many points as the stone cone and costs about the same to rebuild (lumpy pieces are
+	# built once, not per pile).
+	var stone_verts: int = PileLookScript.mesh_for("stone", entry, 20000, 5, unit_kg).surface_get_array_len(0)
+	var ores: PackedStringArray = PackedStringArray()
+
+	for id in items.table.ids():
+		var row: Dictionary = items.table.entry(id)
+
+		if id.ends_with("_ore") and str(row.get("kind", "")) == "material" and not bool(row.get("retired", false)):
+			ores.append(id)
+
+	check(ores.size() >= 4, "the item list has the ores (%s)" % ", ".join(ores))
+
+	for id in ores:
+		var ore_entry: Dictionary = items.table.entry(id)
+		var ore: int = items.table.number_of(id)
+		check(PileRules.is_cone(ore_entry.get("pile", {})), "%s has a cone pile row like stone" % id)
+		var ore_base: Vector3 = BASE + Vector3(0.0, 0.0, 60.0 + 20.0 * float(ores.find(id)))
+		items.drop_in_world(ore, 2000, ore_base)
+		var ore_foot: Vector3 = ore_base + Vector3(items._cone_radius_of(ore, 2000) + 0.4, 0.0, 0.0)
+
+		for k in range(50):
+			items.drop_in_world(ore, 1, ore_foot)
+
+		var ore_piles: Array = items._items.keys().filter(func(gid): return int(items._items[gid]["number"]) == ore)
+		check(ore_piles.size() == 1 and int(items._items[ore_piles[0]]["count"]) == 2050, "every %s dropped joined the one pile (%d piles)" % [id, ore_piles.size()])
+		var ore_kg: float = CarryRules.weight_of(id, items._carry_cfg)
+		start = Time.get_ticks_usec()
+
+		for k in range(20):
+			var ore_mesh: Mesh = PileLookScript.mesh_for(id, ore_entry, 20000 + k, 3, ore_kg)
+			check(ore_mesh != null and ore_mesh.surface_get_array_len(0) == stone_verts, "a %s cone of %d has the stone cone's size of mesh" % [id, 20000 + k])
+
+		var ore_ms: float = float(Time.get_ticks_usec() - start) / 1000.0 / 20.0
+		print("pile_cost: client %.2f ms a mesh rebuild of a 20,000-piece %s cone" % [ore_ms, id])
+		check(ore_ms < CLIENT_BUDGET_MS, "a %s cone mesh rebuild costs the client under %.0f ms (%.2f)" % [id, CLIENT_BUDGET_MS, ore_ms])
 
 	print("pile cost tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
