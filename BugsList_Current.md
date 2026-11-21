@@ -821,6 +821,239 @@ Not done: her first-person arms are still Body 1's; the walk and run retimes wer
 
 Not yet played.
 
+## 92. New characters loaded looking away from Edda and Hob
+
+**Status: Implemented - awaiting player verification.** Dave play test 20 Nov 2026 at the new starter spawn: "these tests keep loading in looking away from edda and hob. what are they looking for". Asked whether a new player should be turned to face the campfire on arrival, he answered "yes please".
+
+**Required outcome:** a new character's first view shows the campfire with Edda and Hob beside it.
+
+**Cause:** the client made the character's body with yaw 0, which looks north, and nothing turned it. Edda and Hob's fire is due west of the spawn, about 8 m away, so they were off to the player's left and out of view.
+
+**As built (PR #1385, reviewed head cde1a9a3, dev 84ffbca4):** the client turns the body toward the camp fire (src/shared/npc_camp.gd face_fire_yaw, within 60 m of the fire) whenever it sets a character down at the starter spawn: on first arrival, after a death that brings the character back to the spawn (cave-in deaths too), and on Admin "Go to spawn". A respawn at a shelter or bed keeps the facing it had. A returning character who resumes where they left off is moved there as before, and now arrives facing west (the bearing from the spawn to the fire) instead of north. Facing is a client-side look only: no protocol, save, TERRAIN_VERSION or starter cache change, and the camp and spawn positions are unchanged.
+
+**Evidence:**
+- Independent review PASS on cde1a9a3.
+- Lane B on cde1a9a3: selector 238 fast + 4 timing = 242 PASS / 0 FAIL, warnings 381 with 0 new.
+- Join smoke: spawn (58167.0, 6.74, 71364.4).
+- test_spawn_picker checks that a character at the spawn faces the fire.
+
+**Acceptance:**
+- Start a new character: the first view shows the campfire with Hob and Edda beside it.
+- Die and come back at the spawn: you face the fire again.
+- Esc > Admin > Go to spawn: the same.
+
+Not yet played.
+
+## 94. Hair styles in the character creator: Dave's hair models, one lineup for every body
+
+**Status: Implemented - awaiting player verification.** Dave's request, 20 Nov 2026 (project thread "hair styles"): "I want to create a male and female character and I want to try hair does. If the hair does work on the male, I want to include them for the female also. everyone is allowed to use any hair style and or facial hair on males or females. we won't label them male and female we will just include them all in the lineup on the hair selection page." After the first in-game pictures he chose to have Short curly's back of the neck tidied before dev.
+
+**Required outcome:** the creator's Hair section offers one lineup (No hair, then every style) with no male or female labels, and any body can wear any style. Adding a style is cheap.
+
+**As built (PR #1389, reviewed head 44d3f5cd, merged to dev at 5e51bb9e):**
+- Dave's three Meshy hair models (Crew cut, Short curly, Slicked back) are in assets/character/Hair/. Their textures are reduced from 4K to 2K and VRAM Compressed, with the import settings committed. The meshes are one-sided and Cast Shadow On (docs/design/CHARACTER_MESHES.md).
+- tools/hair/prepare_hair.py makes each one from Dave's file:
+  - It cuts out the mannequin head Meshy included, by colour, using an alpha-scissor hairline.
+  - It fits the hair to Body 1's skull and pushes it clear of every body's head.
+  - It fills bald gaps with a dark cap that stays above the hair's lower edge.
+  - It ends the hair at an even nape line. Short curly's line is higher across the back.
+- tools/hair/body_fit.py gives Body 2 its "hair_fit" row in body_models.gd.
+- A new style = run the tool, plus one row in src/client/character/hair_models.gd.
+- The style is genome key hair_model. Share codes are version 5 and keep the style. Older codes load with no hair.
+- The Hair dice picks from the lineup. The old Hair Length slider is no longer offered.
+
+**Evidence:**
+- Independent review PASS WITH NITS on 44d3f5cd.
+- Lane B on 44d3f5cd: 71 PASS / 0 FAIL, including the new test_hair_styles. The creator, body generator, character store and chest checks had 0 failures. Warnings stay at 381, and the join smoke was clean.
+- Lane A on 44d3f5cd: 24 in-game pictures, each style on both bodies from the front, three-quarter, side and back (/mnt/project-files/hair_44d3f5cd_contact_sheet.png). Fronts and sides fit both bodies.
+- Known leftovers:
+  - Crew cut sits like a cap band above the ears, because Meshy painted it onto the head.
+  - Short curly has a few small dark tabs behind the character's right ear and a faint smooth patch just above its nape edge.
+  - Short curly is about 32,000 triangles; its frame cost is not measured.
+
+**Acceptance:** make a new character with Body 1 and one with Body 2, and try each style and No hair. The hair sits on the head from every side, follows the Head slider, and takes the Hair colour. Copy a share code and load it: the style comes back.
+
+Not done: facial hair (no models yet); deleting the old drawn hair styles in body_generator.gd waits until everything is in main (Dave's cut-off line). Not yet played.
+
+## 95. Pumps retired: water moves by gravity and rain
+
+**Status: Implemented - awaiting player verification.** Dave, 20 Nov 2026 (project chat 22:04Z): "In my world we are still medievalish and using buckets in wells and dont have pump technology yet." He chose "Retire all pumps" on a decision card, then at 22:42Z: "the wooden hand pumps should be gone too. I did not approve ever having those. they were an ai accident."
+
+**Required outcome:** no pump can be built or used. Water comes from wells by bucket, from rain and by gravity through pipes. A pump already standing in a saved world is gone, and its owner gets the materials back.
+
+**As built (PR #1388, reviewed head 11d1672e, dev e4c06e2a):**
+- The Wooden - Hand pump, Iron - Hand pump and Deep-well pump (items 715, 717, 752; blueprints 129, 130, 147) are retired. Their numbers are kept and never reused, and they are gone from the hammer list.
+- A pump standing in a saved world is removed when the world loads. Its whole blueprint cost is left on the ground where it stood; the Wooden hand pump leaves 6 Plank, 20 Nails, 2 Twine and 1 Hide. A pump site that was never finished leaves what had been put into it. Those piles never despawn (PROVISIONAL, PLUMBING_DESIGN PV-11).
+- The pump-only code is deleted: the pump rate, the suction height rule, the force pump's lift and the pump prompt. Wells and their windlass are unchanged.
+- The Raised cistern is not a pump and stays (entry 97).
+
+**Evidence:**
+- Independent review PASS on 11d1672e.
+- Lane B on 11d1672e: 294 PASS / 0 FAIL, warnings 381 with 0 new. This includes "a loaded pump is gone, its materials on the ground where it stood (lumber 6, nails 20)" and the save and reload checks: nothing is given twice, and the piles never despawn.
+- The first Lane B run on c6d83b96 failed 3 tests on old hammer-list counts and a nails count. All three were fixed before merge.
+
+**Acceptance:**
+- Press R with a hammer: no pump is offered.
+- Load a world that had a Wooden hand pump: the pump is gone, and its materials lie where it stood.
+
+Not yet played.
+
+## 96. Picture rig character started high in the air, so the ground loaded slowly before it dropped to the spot
+
+**Status: Implemented - debug tooling only; verified on Lane A, nothing for a player to check.** Dave, 20 Nov 2026, after watching the rig run on his PC: "the character is spawning way up in the air which causes ground loading to go slower and they eventually load in drop to the ground and then quit."
+
+**Required outcome:** "they should start 1m above ground then face whatever it is they need to photograph and take the images."
+
+**Cause:** the shot runner (src/debug/shot_runner.gd) held the body at 400 m above each spot until the ground there loaded, and only then put it at the shot height. --frametime started counting 10 s after joining, wherever the body was at that moment.
+
+**As built (PR #1384, reviewed head 07a92b06, dev 51352924):**
+- The runner asks the server for the ground height at the spot. It starts the body 1 m above that height (aerial shots over 40 m and absolute-height shots start at their own height), held so it cannot fall through ground that has not loaded. Once the ground under it has collision, the body moves to the shot height. The 400 m hold is deleted.
+- Subject shots (--pieces, --look, --showroom and held items) also hide the plants, so a reed bed cannot block the subject.
+- A plain spawn view faces the camp fire, the way a new character does.
+- --frametime measures standing at the spot after landing, and look_rig.sh prints the frametime line itself.
+
+This changes debug tooling only. There is no game, protocol, save or terrain change.
+
+**Evidence:**
+- Independent review PASS on 07a92b06.
+- Lane B: 26 PASS / 0 FAIL, and warnings stay at 381.
+- Lane A, windowed, 5 runs, all exit 0. Every start was about 1 m over the server ground (y 5.7 over 4.7), and every landing was 1.7 m over it. The camp fire, pieces, saw and showroom were visible.
+- Remaining issues found by these runs, outside the rig: the spawn frame time had 4 frames over 100 ms (max 138.5 ms); two showroom pictures miss their items on the sandy slope at the new spawn (the framing was already like that before this change); and reeds stand in front of a new player's first view.
+
+**Acceptance:** run tools/look_rig.sh at the spawn. The log shows "starts at y" about 1 m over the ground, then "landed", and the picture shows its subject. A --frametime run prints its frametime line from the script.
+
+Not a game change; nothing to play.
+
+## 97. The Raised cistern is a big tank: copper lined, on a wooden frame, fed by rain and gravity
+
+**Status: Implemented - awaiting player verification.** Dave, 20 Nov 2026: "the cistern can be copper lined and the frame can be made of wood and iron nails etc. cisterns are not pumps" (22:06Z), "they are just big tanks" (22:07Z), "yes make the cistern" (22:42Z). Before this the Raised cistern was locked, because only a force pump could fill it.
+
+**Required outcome:** anyone can build a Raised cistern. It is a big tank that fills from rain and from water coming down from higher up, and it feeds pipes below it. Water never climbs into it.
+
+**As built (PR #1391, reviewed head 49798654, dev 7ee7ebe7):**
+- It is unlocked in the hammer list. It costs 16 Plank, 20 Hardwood board, 6 Copper ingot and 40 Nails, and needs a Bronze chisel like the Barrel (PROVISIONAL, PLUMBING_DESIGN PV-12).
+- It holds 2,000 L. Its open top is 3 m up and catches rain (12.8 L a real minute at full rain), plus any pipe end or spout over it.
+- Pipes join at its foot. A pipe from there runs as if the water stood 2.5 m over the foot. Linked to barrels, it shares water by water level, so a lower barrel fills first.
+- New look: a timber frame with a plank tank on top, iron banded and copper lined, a copper downpipe and a painted icon. It is 288 triangles, under the 300 cap.
+- The riser rule that only served the force pump is deleted. The stone Cistern is unchanged.
+
+**Evidence:**
+- Independent review PASS WITH NITS on 49798654.
+- Lane B on 49798654: 314 PASS / 0 FAIL, warnings 381 with 0 new, validate_items 0 errors. This includes "a spout 3.5 m up fills the raised cistern", "a spout 2.0 m up cannot fill the raised cistern", "its water runs down and fills the barrel first" and "a raised cistern drives a level log pipe at its full 60 L/min".
+- The first Lane B run on d4512c9b failed on the look's triangle count and two over-long descriptions. Both were fixed before merge.
+- Lane A pictures on 49798654 show the tank on its wooden stand. From the ground it reads more as a wooden crate, because the copper lining is inside. A clearer picture can be taken on dev with the rig fix.
+
+**Acceptance:** build a Raised cistern on a slope below a rain barrel or another water source. Lay a copper pipe from higher up to end over its top: it fills. Lay a pipe from its foot to a lower barrel or tap: water comes out. Leave it out in rain: it fills slowly.
+
+Not checked on screen: setting it down near a free pipe end may pull it onto the pipe, as a barrel does. Not yet played.
+
+## 98. Raised cistern corrections: a brace on every face, 700 L (barrel 60 L), copper lining, and its code name is raised_cistern
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026:
+- 00:44Z: "the raised cistern is clearly made from wood but its labeled stone raised cistern"
+- 00:45Z: "it has a brace on both sides but it needs a brace front and back and preferably they are opposite on another. the braces on the side should have one switched the other way as well."
+- 00:47Z: "a barrel should hold around 60Liters of water and the raised cistern should hold around 700L."
+- 00:49Z: "I want the code to have to correct name also. no half assing it. correct the code name"
+
+**Required outcome:** one diagonal brace on each of the four faces, with opposite faces slanting opposite ways. A barrel holds about 60 L and the Raised cistern about 700 L. The internal name says what it is, with nothing left calling it stone.
+
+**As built:**
+- PR #1396 (head d0c4cb2b, dev 8fab3cfd):
+  - A brace on the front, back and both sides, with opposite faces slanting opposite ways. A deck on the posts replaces the top rails. 264 triangles.
+  - A Wooden barrel holds 60 L (was 200 L). The Raised cistern holds 700 L (was 2,000 L; full line 0.85 m deep). The stone Cistern is unchanged at 2,000 L.
+  - A saved tank holding more than its new size loads full.
+- PR #1397 (head 26b6651f, dev 94c7e028):
+  - The internal id is now `raised_cistern`, kit `raised_cistern_kit` (was `stone_raised_cistern` / `stone_raised_cistern_kit`). This covers data, look, icon, tests, tools and goal docs. Item numbers 755/756, state 187 and blueprint 149 are unchanged.
+  - A placed cistern in an old save loads under the new name through `legacy_kinds`, kept for good. Kits in packs and chests, and learned blueprints, are saved by number and need nothing.
+  - The copper lining now runs up the inside walls to the full line at 2.9 m, and the water is drawn full. Same triangle count. Icon repainted.
+- Entry 97's 2,000 L and 288 triangles are superseded by this entry.
+
+**Evidence:**
+- Independent review: PASS WITH NITS on d0c4cb2b and PASS on 26b6651f.
+- Lane B:
+  - d0c4cb2b: 309 pass / 0 fail. Includes "a barrel saved with 150 L loads with 60 L, a raised cistern saved with 2,000 L with 700 L".
+  - 26b6651f: 319 pass / 0 fail. Includes "a saved stone_raised_cistern loads as the raised_cistern and joins the water network".
+  - Warnings 381 on both runs, the same as the baseline.
+- Lane A eight views on both heads: each face has one brace, and opposite faces slant opposite ways. On 26b6651f the top view reads copper-lined and full, and the rig tag reads "raised_cistern".
+
+**Acceptance:**
+- Walk round a built Raised cistern: each face has one brace, and the back slants the other way from the front.
+- Look in from above: copper inside and water.
+- Fill a barrel: it stops at 60 L.
+- Fill the cistern: it stops at 700 L.
+
+Not yet played.
+
+## 99. Wooden pipe carved at the Wood carving station with a knife, no twine
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026 (01:32Z): "I would imagine the wooden pipe should be made at the wood carving station with a knife. and it shouldnt need twine. that doesnt fit." Before this it was made by hand from 1 Log and 1 Twine.
+
+**Required outcome:** the Wooden - Pipe is made at the Wood carving station from a Log, with a knife, and takes no twine.
+
+**As built (PR #1400, head 29bcfd4b, dev ae93aa0c):**
+- Recipe 746 takes 1 Log at the Wood carving station and keeps a knife, the same pattern as the quarterstaff and the club. It is still known from the start and takes 30 s (PROVISIONAL, kept from before).
+- A laid run's hammer repair share is now 1 Log. Taking a run down still gives back the pipes it took, so runs in old saves are unchanged.
+- The encyclopedia line, PLUMBING_DESIGN (PV-1) and DYNASTY_MASTER_ITEMS are updated. The retired elbow and tee keep their old costs.
+
+**Evidence:**
+- Independent review PASS on 29bcfd4b.
+- Lane A on 29bcfd4b: 288 pass / 0 fail. Warnings 381, the same as the baseline. validate_items 0 errors.
+- The run includes "a Wooden - Pipe is carved from a Log at the Carving station, no twine".
+
+**Acceptance:** stand at a Wood carving station with a knife and a Log. The Wooden - Pipe is in its list and makes one pipe from the Log. Away from the station it is listed greyed "at Carving station" and cannot be made.
+
+Not yet played.
+
+## 100. Hair styles: Dave's Medium bob added to the lineup
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "in the same folder I had the other hair styles there is now a medium hair style you can add and I will be adding more as they finish", and "show me the pictures of the medium hair style on the players when they are ready".
+
+**Required outcome:** the Medium bob appears in the one hair lineup (entry 94) for every body.
+
+**As built (PR #1398, reviewed head f0418a0b, merged to dev at a0ad2c3c):**
+- His Hair_Medium_Bob.glb is hair only, with no mannequin head. tools/hair/prepare_hair.py builds it with the new --nape 1.45, because a jaw-length bob ends lower than the short styles.
+- The hair is now pushed clear of the neck only, not the tops of the shoulders, and the cap leaves out stretched triangles. The first pictures showed the bob's lower corners flaring into flat dark wings.
+- One row in hair_models.gd: "Medium bob".
+- test_hair_styles now centres the hair's crown on the fitted skull, not the whole box on the top bone, and its size bounds allow a jaw-length style.
+
+**Evidence:**
+- Independent review PASS WITH NITS on every head.
+- Lane B on f0418a0b: 70 PASS / 0 FAIL. Warnings stay at 381.
+- Lane A pictures on 596b9fce (/mnt/project-files/hair_596b9fce_medium_bob_sheet.png), shown to Dave.
+- Known leftovers:
+  - two small dark tabs at the lower corners;
+  - a dark diamond on the back of the head and a dark leaf on the crown, where holes in Meshy's hair show the cap;
+  - a few skin slivers low on the back.
+
+**Acceptance:** pick Medium bob on Body 1 and Body 2. It hangs to the jaw with no wings at the shoulders and follows the hair colour.
+
+Not yet played.
+
+## 101. Hair styles: Dave's Medium shag added to the lineup
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "new shag hair in folger".
+
+**Required outcome:** the Medium shag appears in the one hair lineup (entry 94) for every body.
+
+**As built (PR #1401, reviewed head 99d43e1a, merged to dev at ea3e8578):**
+- His Hair_Medium_Shag_Hair.glb is hair only. It is built with prepare_hair.py --nape 1.45 and has 11,199 triangles.
+- One row in hair_models.gd: "Medium shag".
+- test_hair_styles cuts the crown band in the hair's own space, so the idle pose's tilt no longer counts the shag's thick back hair. Its depth bound is 28 cm.
+
+**Evidence:**
+- Independent review PASS on 99d43e1a.
+- Lane B on 99d43e1a: 70 PASS / 0 FAIL. Warnings stay at 381.
+- Lane A pictures on da065805 (/mnt/project-files/hair_da065805_medium_shag_sheet.png), shown to Dave: dense, no holes, ending just above the shoulders.
+- Known leftovers:
+  - a short point flicks out at one lower edge;
+  - spiky shards at one side of the face on Body 1;
+  - one thin stray strand at a temple;
+  - flat glossy shards on the crown.
+
+**Acceptance:** pick Medium shag on Body 1 and Body 2. It sits on the head from every side and follows the hair colour.
+
+Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.

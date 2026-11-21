@@ -14,7 +14,7 @@
 #   --ground-close ID[:N]  the same pile (default 1) seen close: camera 0.35 m above the ground 0.9 m from it, looking 45 degrees down, ground in view (held shots at 1.5 m hide the item behind the body). Numbers are flags: --close-height M --close-dist M --close-pitch DEG; --agl/--drop-dist/--look-down after it override. Example: tools/look_rig.sh --ground-close rose_petals:3 --name petals_ground
 #   --flora-scale N  draw the --flora row N times its size (diagnosis: is a small plant only hard to see?)
 #   --cam-above M  with --flora: the camera stands M metres above the ground at the plant row (e.g. --cam-above 0.5 --dist 3 --pitch -10); default keeps --agl
-#   --frametime S [--quality 0-3]  after a 10 s warm-up measures frame times for S seconds (quality 0 = Low) and prints one "shot runner: frametime" line: build, quality, spot, avg, p95, p99, max, frames over 50/100 ms, verdict (FAIL = p95 >= 33 ms or any frame over 100 ms; WARN = p99 over 50 ms), machine (GPU, driver, window). VSync off, fixed hour and weather, flora and water on. For a borderline number run it 3 times and take the median
+#   --frametime S [--quality 0-3]  once the body has landed at the shot (--at, default the spawn, --agl over the real ground) measures frame times for S seconds (quality 0 = Low); the picture is taken after it. The rig prints one "shot runner: frametime" line (no line = FAIL, exit 6): build, quality, spot (x,z, y and m above the ground), avg, p95, p99, max, frames over 50/100 ms, verdict (FAIL = p95 >= 33 ms or any frame over 100 ms; WARN = p99 over 50 ms), machine (GPU, driver, window). VSync off, fixed hour and weather, flora and water on. For a borderline number run it 3 times and take the median
 #   --views "name:dist:pitch:above;..."  extra pictures of the same scene in ONE start: camera dist m south of the subject (flora row middle, else 4 m ahead), pitch deg, above = camera m above the ground; frames <name>_<view>.png, one "shot runner: view" line each (e.g. --views "wide:8:-8:1.5;close:3:-10:0.5")
 #   --summer  draw the --flora row in the species' own green instead of the game's autumn tint
 #   --give ID:N --drop  give N of an item, then drop all N 2.2 m ahead (a real drop: stone:20 makes a pile)
@@ -24,6 +24,7 @@
 #     "shot runner: state:" line: the expectation, the player, and every loose item within 6 m with its gap above the ground.
 #   --dist M  third-person camera distance (under 2 m aims at the held item: a hand close-up)
 #   --cam    first = the player's own view; left = the character seen from 2.8 m to its left (third person)
+#   --yaw    default: a plain view at the spawn (no --at, held item or scene row) faces the camp fire as a new character does; otherwise 0
 #   --at     world x,z (default the server's own spawn, read from its log, where the starter ground is loaded; --ground piles keep 53301,68427 because
 #            they are seeded before the server starts, so pass --at and --gy together for them); --agl metres above the ground; --yaw 0 faces north (-Z), 90 west, -90 east
 #   --cam right = the character seen from its right (the right hand shows); --nograss hides the grass; --bow STATE[:DRAW] poses a held bow (with --give wooden_bow; first person shows the arms, --cam left the body with the bow at its side); --lit keeps a given torch or lantern burning in the pictures (fuel given, arms on in first person); --keep keeps the temp folder
@@ -38,6 +39,8 @@
 #   Every run ends with "rig: N picture(s) in T s"; no picture saved is a FAIL (exit 4).
 #   --server-arg ARG  pass one extra argument to the throwaway server (repeat), e.g. --server-arg --water2 (Dynasty water)
 #   --client-arg ARG  pass one extra argument to the client (repeat the option), e.g. --client-arg --generated-body
+#   Subject shots (--pieces, --look(s), --showroom, held items) hide the plant layer (trees, reeds, bushes) as well as the grass, so a reed bed cannot hide the subject.
+#   Every shot (but aerial, over 40 m, and absolute-height ones, which start at their own height) starts 1 m above the real ground at its spot (the server's ground height there), held until the ground under it loads, then goes to --agl (Dave 20 Nov 2026: never from high in the air).
 # Runs a throwaway server (own store, --open-admin) and a windowed client with its own APPDATA, so Dave's saves, hotbar and
 # display settings are never read or written. PNGs go to --out (default E:/Software/godotDev/DynastyALWL_Evidence/shots).
 # Close Dave's game first only if the PC is short of RAM; the rig runs beside it. Needs Git bash and GODOT_EXE (default below).
@@ -55,7 +58,7 @@ while [ $# -gt 0 ]; do
   case "$1" in
     --item) ITEM="$2"; HELD=1; shift 2;; --count) COUNT="$2"; shift 2;; --cam) CAM="$2"; CAM_GIVEN=1; shift 2;; --at) AT="$2"; AT_GIVEN=1; shift 2;;
     --angles) ANGLES="$2"; shift 2;; --no-ready) NOREADY=1; shift;;
-    --agl) AGL="$2"; shift 2;; --yaw) YAW="$2"; shift 2;; --pitch) PITCH="$2"; shift 2;; --hour) HOUR="$2"; shift 2;;
+    --agl) AGL="$2"; shift 2;; --yaw) YAW="$2"; YAW_GIVEN=1; shift 2;; --pitch) PITCH="$2"; shift 2;; --hour) HOUR="$2"; shift 2;;
     --weather) WEATHER="$2"; shift 2;; --admin) ADMIN="$ADMIN --shot-admin"; shift;; --flora) ADMIN="$ADMIN --shot-flora=$2"; shift 2;; --pieces) PIECES="$2"; ADMIN="$ADMIN --shot-pieces=$2"; shift 2;; --pieces-yaw) ADMIN="$ADMIN --shot-pieces-yaw=$2"; shift 2;; --look) LOOKS="$2"; ADMIN="$ADMIN --shot-pieces=look:$2 --shot-piece-views"; shift 2;; --looks) LOOKS="$2"; ADMIN="$ADMIN --shot-pieces=look:${2//,/,look:}"; shift 2;; --piece-views) PIECES="$2"; ADMIN="$ADMIN --shot-pieces=$2 --shot-piece-views"; shift 2;; --showroom) ADMIN="$ADMIN --shot-showroom=$2"; shift 2;; --frametime) ADMIN="$ADMIN --shot-frametime=$2 --shot-build=$(git rev-parse --short HEAD 2>/dev/null)"; shift 2;; --quality) ADMIN="$ADMIN --shot-quality=$2"; shift 2;; --views) ADMIN="$ADMIN --shot-views=$2"; shift 2;; --cam-above) ADMIN="$ADMIN --shot-cam-above=$2"; shift 2;; --flora-scale) ADMIN="$ADMIN --shot-flora-scale=$2"; shift 2;; --ground) GROUND="$2"; ADMIN="$ADMIN --shot-ground"; shift 2;; --showroom-cam-height) ADMIN="$ADMIN --shot-showroom-height=$2"; shift 2;; --showroom-look-down) ADMIN="$ADMIN --shot-showroom-look=$2"; shift 2;; --showroom-spread) ADMIN="$ADMIN --shot-showroom-spread"; shift;; --showroom-per) ADMIN="$ADMIN --shot-showroom-per=$2"; shift 2;; --gy) GY="$2"; shift 2;; --ground-close) GROUND="$2"; CLOSE=1; shift 2;; --close-height) CH="$2"; shift 2;; --close-dist) CD="$2"; shift 2;; --close-pitch) CP="$2"; shift 2;; --summer) ADMIN="$ADMIN --shot-summer"; shift;; --drop) ADMIN="$ADMIN --shot-drop"; shift;; --dig) ADMIN="$ADMIN --shot-dig=$2"; shift 2;; --heavy) ADMIN="$ADMIN --shot-heavy"; shift;; --look-down) ADMIN="$ADMIN --shot-lookdown=$2"; shift 2;; --back) ADMIN="$ADMIN --shot-back=$2"; shift 2;; --drop-dist) ADMIN="$ADMIN --shot-drop-dist=$2"; DDIST="$2"; shift 2;; --expect) EXPECT="$2"; shift 2;; --give) ADMIN="$ADMIN --shot-give=$2"; shift 2;; --dist) ADMIN="$ADMIN --shot-dist=$2"; shift 2;; --nograss) ADMIN="$ADMIN --shot-nograss"; shift;; --bow) ADMIN="$ADMIN --shot-bow=$2"; shift 2;; --lit) ADMIN="$ADMIN --shot-lit"; shift;; --keep) KEEP=1; shift;; --keep) KEEP=1; shift;; --name) NAME="$2"; shift 2;; --out) OUT="$2"; shift 2;;
     --walk) WALKSPEED="$2"; shift 2;; --client-arg) XARGS="$XARGS $2"; shift 2;; --server-arg) SARGS="$SARGS $2"; shift 2;;
     --wait) WAIT="$2"; shift 2;; --settle) SETTLE="$2"; shift 2;; *) echo "unknown argument $1"; exit 2;;
@@ -128,6 +131,11 @@ if [ -z "$AT_GIVEN" ] && [ -z "$GROUND" ] && [ -n "$SPAWN" ]; then
 fi
 WALK=-1; [ "$CAM" = "left" ] && WALK=0; [ "$CAM" = "right" ] && { WALK=0; ADMIN="$ADMIN --shot-right"; }
 [ -n "$WALKSPEED" ] && WALK="$WALKSPEED"
+# A plain view at the spawn (no --at, --yaw, held item or scene row; --frametime is fine) faces the way a new character does: Edda and Hob's camp fire.
+if [ -z "$AT_GIVEN" ] && [ -z "$YAW_GIVEN" ] && [ -z "$GROUND" ] && [ -z "$HELD" ]; then
+  case "$ADMIN" in *--shot-flora=*|*--shot-pieces=*|*--shot-showroom=*|*--shot-views=*|*--shot-drop*|*--shot-dig=*|*--shot-ground*) ;;
+    *) ADMIN="$ADMIN --shot-spawn-facing"; echo "rig: facing the way a new character at the spawn faces (the camp fire); pass --yaw to choose";; esac
+fi
 SHOT="$NAME:$X,$AGL,$Z,$YAW,$PITCH,$HOUR,$WEATHER,$WALK"
 [ -n "$ANGLES" ] && ADMIN="$ADMIN --shot-angles=$ANGLES"
 if [ -n "$HELD" ] && [ -z "$SCENE" ] && [ -z "$NOREADY" ]; then ADMIN="$ADMIN --shot-ready=held"; echo "rig: held-item shot: the picture is taken once the scene is ready (--wait $WAIT s, --settle $SETTLE s at most)"; fi
@@ -147,7 +155,7 @@ else
   HOME="$RIG/home" XDG_DATA_HOME="$RIG/data" VK_ICD_FILENAMES="$ICD" xvfb-run -a -s "-screen 0 1280x720x24" "$GFX" --path . --rendering-driver vulkan --resolution 1280x720 res://scenes/terrain_client/terrain_client.tscn -- "${CARGS[@]}" > "$RIG/client.log" 2>&1
 fi
 echo "rig: client window open $((SECONDS - CSTART)) s"
-grep -E "shot runner: (saved|timing|FAILED|--wait cap|--settle cap)|JOIN: ground ready|ERROR|SCRIPT" "$RIG/client.log" | head -14 | cut -c1-200
+grep -E "shot runner: (saved|timing|FAILED|--wait cap|--settle cap|.* starts at y|landed)|JOIN: ground ready|ERROR|SCRIPT" "$RIG/client.log" | head -14 | cut -c1-200
 SAVED=$(grep -cE "shot runner: (saved |view .* saved |lapse .* saved|chop phase .* saved)" "$RIG/client.log")   # every picture the runner saves says so on one line
 ls -la "$OUT/$NAME.png" 2>/dev/null | awk '{print $5, $9}'
 # Shaders compile only in a windowed client, never in a headless gate, so this run is where a broken shader shows (#416: a '#'
@@ -159,6 +167,11 @@ if [ "$SHADERR" -gt 0 ]; then
 fi
 echo "shader errors: 0"
 echo "rig: $SAVED picture(s) in $SECONDS s"
+case "$ADMIN" in *--shot-frametime=*)
+  FT=$(grep -m1 "shot runner: frametime" "$RIG/client.log")   # printed in full here: the temp folder (and its client.log) is deleted on exit without --keep
+  if [ -z "$FT" ]; then echo "FAIL: --frametime gave no frametime line (client log tail below)"; tail -15 "$RIG/client.log" | cut -c1-200; exit 6; fi
+  echo "$FT";;
+esac
 if [ "$SAVED" -eq 0 ]; then
   echo "FAIL: no picture was saved (client log tail below)"; tail -15 "$RIG/client.log" | cut -c1-200
   exit 4

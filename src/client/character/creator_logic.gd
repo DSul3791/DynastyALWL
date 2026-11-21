@@ -8,12 +8,13 @@ extends RefCounted
 # A locked slider is never changed by any dice, and a section dice never touches another section. Every dice press and every edit can be undone.
 
 const Generator := preload("res://src/client/character/body_generator.gd")
+const HairModels := preload("res://src/client/character/hair_models.gd")
 
 const SECTIONS := {
 	"Body": ["height", "build", "muscle", "belly", "chest", "bust", "shoulders", "hips", "torso", "legs", "arms", "neck"],
 	"Head and face": ["head", "jaw", "nose", "brow", "ears"],
 	"Hands and feet": ["hands", "feet"],
-	"Hair": ["hair_length"],
+	"Hair": [],        # the hair style (set_hair_model) and the hair colour; the generated body's Hair Length slider is not offered, the Dynasty bodies do not use it
 }
 const COLOR_SECTIONS := {"Hair": ["hair"], "Skin": ["skin"], "Tunic": ["tunic"], "Trousers": ["trousers"], "Boots": ["boots"]}   # colours have their own dice in the Skin and Hair sections
 const SKINS := [Color(0.93, 0.78, 0.66), Color(0.85, 0.66, 0.52), Color(0.72, 0.52, 0.38), Color(0.55, 0.38, 0.27), Color(0.42, 0.28, 0.2), Color(0.32, 0.21, 0.15)]
@@ -131,12 +132,13 @@ func apply_frame(frame: String) -> void:
 			genome[key] = Generator.FRAMES[frame][key]
 
 
-func set_hair_style(index: int) -> void:
-	if index < 0 or index >= Generator.HAIR_STYLES.size() or index == int(genome.get("hair_style", 0)):
+# The hair style (hair_models.gd id, "" for no hair): one undo step. An id that is not in the lineup is ignored.
+func set_hair_model(id: String) -> void:
+	if not HairModels.lineup().has(id) or id == str(genome.get("hair_model", HairModels.NONE)):
 		return
 
 	_remember()
-	genome["hair_style"] = index
+	genome["hair_model"] = id
 
 
 func _draw() -> float:
@@ -154,9 +156,10 @@ func dice_section(section: String) -> Array:
 				genome[key] = _draw()
 				changed.append(key)
 
-	if section == "Hair" and not locks.has("hair_style"):
-		genome["hair_style"] = _rng.randi() % Generator.HAIR_STYLES.size()
-		changed.append("hair_style")
+	if section == "Hair" and not locks.has("hair_model"):
+		var lineup: Array = HairModels.lineup()
+		genome["hair_model"] = lineup[_rng.randi() % lineup.size()]
+		changed.append("hair_model")
 
 	if COLOR_SECTIONS.has(section):
 		for key in COLOR_SECTIONS[section]:

@@ -2089,7 +2089,6 @@
 				"Used in Wooden - Channel",
 				"Used in Wooden - Channel corner",
 				"Used in Wooden - Channel tee",
-				"Used in Wooden - Hand pump",
 				"Used in Wooden - Trough",
 				"Used in Bone - Club",
 				"Used in Straw - Hat",
@@ -2466,7 +2465,6 @@
 				"Used in Wooden - Channel",
 				"Used in Wooden - Channel corner",
 				"Used in Wooden - Channel tee",
-				"Used in Wooden - Hand pump",
 				"Used in Wooden - Trough",
 				"Used in Armour stand",
 				"Used in Sign",
@@ -2585,8 +2583,6 @@
 				"Used in Iron - Lantern",
 				"Used in Torch stand",
 				"Used in Wall lantern",
-				"Used in Iron - Hand pump",
-				"Used in Deep-well pump",
 				"Used in Iron - Chisel",
 				"Used in Anvil",
 				"Used in Ornate - Chest",
@@ -2790,9 +2786,6 @@
 				"Used in Hide glue",
 				"Used in Rustic - Chair",
 				"Used in Fine - Chair",
-				"Used in Iron - Hand pump",
-				"Used in Wooden - Hand pump",
-				"Used in Deep-well pump",
 				"Used in Hide - Sack",
 				"Used in Bedroll",
 				"Used in Sling",
@@ -4221,7 +4214,6 @@
 				"Used in Root cellar",
 				"Used in Cistern",
 				"Used in Mixer",
-				"Used in Raised cistern",
 				"Used in Sturdy - Ceiling",
 				"Used in Sturdy - Doorway",
 				"Used in Sturdy - Pillar",
@@ -4359,13 +4351,12 @@
 				"Used in Fine - Table",
 				"Used in Iron - Doorway",
 				"Used in Iron - Railing",
-				"Used in Wooden - Hand pump",
-				"Used in Deep-well pump",
 				"Used in Ornate - Chest",
 				"Used in Barrel",
 				"Used in Crate",
 				"Used in Cupboard",
-				"Used in Quality - Backpack"
+				"Used in Quality - Backpack",
+				"Used in Raised cistern"
 			],
 			"obtainable_now": true
 		},
@@ -4390,7 +4381,6 @@
 				"Used in Stonecutter's bench",
 				"Used in Cistern",
 				"Used in Mixer",
-				"Used in Raised cistern",
 				"Used in Sturdy - Fence",
 				"Used in Sturdy - Gate",
 				"Used in Sturdy - Pillar",
@@ -4438,8 +4428,6 @@
 			],
 			"used_for": [
 				"Used in Iron - Gate",
-				"Used in Iron - Hand pump",
-				"Used in Deep-well pump",
 				"Used in Ornate - Chest",
 				"Used in Cupboard",
 				"Used in Fortified - Gate",
@@ -4998,7 +4986,8 @@
 				"Used in Bronze ingot",
 				"Used in Copper - Pipe",
 				"Used in Copper - Tap",
-				"Used in Copper - Drip head"
+				"Used in Copper - Drip head",
+				"Used in Raised cistern"
 			],
 			"obtainable_now": true
 		},
@@ -9226,11 +9215,10 @@
 			"name": "Wooden - Hand pump",
 			"kind": "placeable",
 			"description": "An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough.",
-			"how_to_get": [
-				"Build with a hammer (press R): 6 Plank, 20 Nails, 2 Twine, 1 Hide"
-			],
+			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"wooden_hand_pump": {
 			"name": "Wooden - Hand pump",
@@ -9238,18 +9226,17 @@
 			"description": "An old lever pump on a bored shaft. Hold E to pump water into a bucket or trough.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"iron_hand_pump_kit": {
 			"name": "Iron - Hand pump",
 			"kind": "placeable",
 			"description": "A cast-iron pitcher pump. Hold E to pump water into a bucket or trough.",
-			"how_to_get": [
-				"Build with a hammer (press R): 6 Iron ingot, 1 Hide, 1 Hinges"
-			],
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"iron_hand_pump": {
 			"name": "Iron - Hand pump",
@@ -9258,7 +9245,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"log_trough_kit": {
 			"name": "Log trough",
@@ -9375,7 +9362,7 @@
 			"kind": "material",
 			"description": "A bored log, six inches across and two metres long. Laid from the hand; it rots faster than copper.",
 			"how_to_get": [
-				"Craft by hand: 1 Log, 1 Twine (keep Stone - Knife)"
+				"Craft at a wood carving station: 1 Log (keep Stone - Knife)"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9637,12 +9624,10 @@
 			"name": "Deep-well pump",
 			"kind": "placeable",
 			"description": "A force pump for a stone well. Lifts from deep and pushes water up an iron pipe.",
-			"how_to_get": [
-				"Build with a hammer (press R): 8 Iron ingot, 2 Hide, 2 Hinges, 12 Nails"
-			],
+			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"iron_deep_well_pump": {
 			"name": "Deep-well pump",
@@ -9651,7 +9636,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"stone_cistern_kit": {
 			"name": "Cistern",
@@ -9671,25 +9656,23 @@
 			"used_for": [],
 			"obtainable_now": true
 		},
-		"stone_raised_cistern_kit": {
+		"raised_cistern_kit": {
 			"name": "Raised cistern",
 			"kind": "placeable",
-			"description": "A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity.",
+			"description": "A big copper-lined tank on a wooden frame. Rain and pipes from above fill it; it feeds pipes below.",
 			"how_to_get": [
-				"Build with a hammer (press R): 28 Cobblestone, 8 Clay mortar, 6 Plank"
+				"Build with a hammer (press R): 16 Plank, 20 Hardwood board, 6 Copper ingot, 40 Nails"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
-		"stone_raised_cistern": {
+		"raised_cistern": {
 			"name": "Raised cistern",
 			"kind": "structure",
-			"description": "A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity.",
+			"description": "A big copper-lined tank on a wooden frame. Rain and pipes from above fill it; it feeds pipes below.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"sewing_needle": {
 			"name": "Bone - Needle",
@@ -12648,8 +12631,6 @@
 				"Used in Fine - Table",
 				"Used in Iron - Doorway",
 				"Used in Iron - Railing",
-				"Used in Wooden - Hand pump",
-				"Used in Deep-well pump",
 				"Used in Ornate - Chest",
 				"Used in Barrel",
 				"Used in Crate",
@@ -12667,8 +12648,6 @@
 			],
 			"used_for": [
 				"Used in Iron - Gate",
-				"Used in Iron - Hand pump",
-				"Used in Deep-well pump",
 				"Used in Ornate - Chest",
 				"Used in Cupboard",
 				"Used in Fortified - Gate",

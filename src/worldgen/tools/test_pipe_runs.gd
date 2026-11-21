@@ -169,7 +169,7 @@ func _init() -> void:
 		var makers: Array = items.recipes.makers_of(n(id))
 		check(makers.size() == 1 and str(items.recipes.recipe(int(makers[0])).get("station", "")) == "forge", "%s is made at the forge from a Copper ingot" % id)
 
-	check(items.recipes.makers_of(n("wooden_pipe")).size() == 1 and str(items.recipes.recipe(int(items.recipes.makers_of(n("wooden_pipe"))[0])).get("station", "")) == "", "a Wooden - Pipe is made by hand")
+	check(items.recipes.makers_of(n("wooden_pipe")).size() == 1 and str(items.recipes.recipe(int(items.recipes.makers_of(n("wooden_pipe"))[0])).get("station", "")) == "carving_station" and not str(items.recipes.recipe(int(items.recipes.makers_of(n("wooden_pipe"))[0])).get("needs", [])).contains("twine"), "a Wooden - Pipe is carved from a Log at the Carving station, no twine")
 
 	for look in ["wooden_pipe", "copper_pipe", "copper_tap", "copper_drip_head"]:
 		check(LookTable.has_look(look), "look %s is in the look table" % look)
@@ -200,13 +200,13 @@ func _init() -> void:
 	net_ok("laying")
 
 	# --- Levelling (PV-7) ---
-	items._water.set_litres(a, 100.0)
+	items._water.set_litres(a, 60.0)
 	level_now()
-	check(absf(litres(a) - 50.0) < 0.6 and absf(litres(b) - 50.0) < 0.6 and absf(litres(a) + litres(b) - 100.0) < 0.01, "linked barrels share their water equally: %.2f and %.2f" % [litres(a), litres(b)])
-	var rows: Array = [[10.0, 0.85, 200.0], [10.0, 0.85, 200.0], [10.4, 0.85, 200.0]]
-	var share: Array = Network.level_litres(rows, 300.0)
-	check(absf(float(share[0]) - float(share[1])) < 0.01 and float(share[2]) > 30.0 and float(share[2]) < 45.0 and absf(float(share[0]) + float(share[1]) + float(share[2]) - 300.0) < 0.01, "a barrel standing 0.4 m higher holds less, like water finding one level (%s)" % str(share))
-	check(absf(float(Network.level_litres(rows, 100.0)[2])) < 0.01, "and nothing until the water reaches its foot")
+	check(absf(litres(a) - 30.0) < 0.6 and absf(litres(b) - 30.0) < 0.6 and absf(litres(a) + litres(b) - 60.0) < 0.01, "linked barrels share their water equally: %.2f and %.2f" % [litres(a), litres(b)])
+	var rows: Array = [[10.0, 0.85, 60.0], [10.0, 0.85, 60.0], [10.4, 0.85, 60.0]]
+	var share: Array = Network.level_litres(rows, 90.0)
+	check(absf(float(share[0]) - float(share[1])) < 0.01 and float(share[2]) > 9.0 and float(share[2]) < 13.5 and absf(float(share[0]) + float(share[1]) + float(share[2]) - 90.0) < 0.01, "a barrel standing 0.4 m higher holds less, like water finding one level (%s)" % str(share))
+	check(absf(float(Network.level_litres(rows, 30.0)[2])) < 0.01, "and nothing until the water reaches its foot")
 
 	net_ok("levelling")
 
@@ -226,7 +226,7 @@ func _init() -> void:
 	check(float(items._water.pieces[lone].get("litres_max", -1.0)) == 0.0, "a barrel holding goods holds no water")
 	box.remove(n("stick"), 1)
 	level_now()
-	check(float(items._water.pieces[lone].get("litres_max", 0.0)) == 200.0, "emptied, it holds 200 L again")
+	check(float(items._water.pieces[lone].get("litres_max", 0.0)) == 60.0, "emptied, it holds 60 L again (Dave 21 Nov 2026)")
 
 	net_ok("rain")
 
@@ -250,8 +250,8 @@ func _init() -> void:
 	var tap: int = at_kind("copper_tap", tip)
 	check(tap != 0 and have("copper_tap") == 0 and items._water.downstream(branch).has(tap), "a tap is fitted on the open end and the pipe feeds it")
 	check(items._kind_now("copper_tap_open") == "copper_tap" and not items._structures["copper_tap"].has("toggle"), "the tap is not opened and shut: a saved open one loads as a tap")
-	items._water.set_litres(a, 150.0)
-	items._water.set_litres(b, 150.0)
+	items._water.set_litres(a, 50.0)
+	items._water.set_litres(b, 50.0)
 	items._water_dirty = true
 	items._water_tick(0.0)
 	check(tap != 0 and items._water.inflow_lpm(tap) == 0.0, "it lets no water out on its own")
@@ -326,7 +326,7 @@ func _init() -> void:
 	items._water_dirty = true
 	items._water_tick(0.0)
 	check(items.plot_moisture(Vector3(209.5, 10.0, 200.0)) <= wet_dry + 0.01, "with its barrel empty it waters nothing (%.1f %%)" % items.plot_moisture(Vector3(209.5, 10.0, 200.0)))
-	items._water.set_litres(e, 150.0)
+	items._water.set_litres(e, 60.0)
 	items._water_dirty = true
 	items._water_tick(0.0)
 	clock[0] += 120.0 * GameClockScript.RATIO
@@ -446,13 +446,13 @@ func _init() -> void:
 	check(garden != 0 and int(items._items[garden]["struct"]["paid"]) == 3, "a run from a barrel can end on the ground across the garden (8 m, 3 copper pieces; %s)" % str(said))
 	var joints: Array = PipeRules.joints(g_start, g_end, 3.0)
 	check(joints.size() == 2 and (joints[0] as Vector3).distance_to(g_start.lerp(g_end, 3.0 / 8.0)) < 0.001, "its 3 m segments meet at 2 joints, at 3 m and 6 m (%s)" % str(joints))
-	items._water.set_litres(g, 100.0)
+	items._water.set_litres(g, 50.0)
 	items._water_dirty = true
 	items._water_tick(0.0)
 	clock[0] += 600.0 * GameClockScript.RATIO
 	items._water_dirty = true
 	items._water_tick(0.0)
-	check(absf(litres(g) - 100.0) < 0.01, "its open end on the ground is capped: the barrel loses nothing (%.2f L)" % litres(g))
+	check(absf(litres(g) - 50.0) < 0.01, "its open end on the ground is capped: the barrel loses nothing (%.2f L)" % litres(g))
 	items.give(1, n("copper_drip_head"), 1)
 	lay(slot_of("copper_drip_head"), joints[0], joints[0])
 	var joint_drip: int = at_kind("copper_drip_head", joints[0])
@@ -491,6 +491,50 @@ func _init() -> void:
 	items._water_dirty = true
 	items._water_tick(0.0)
 	net_ok("short steep run")
+
+	# --- The Raised cistern (Dave 20 Nov 2026: "they are just big tanks"): its foot point takes a pipe; linked to a barrel it levels by water surface,
+	# its floor 2.05 m up, so the barrel fills first and water never climbs into the cistern; rain falls into its open top.
+	var cis: int = put("raised_cistern", Vector3(500.0, 10.0, 500.0))
+	var cis_foot: Vector3 = Vector3(500.0, 10.15, 501.05)
+	var low: int = barrel(500.0, 504.0)
+	items.give(1, n("copper_pipe"), 2)
+	items.report_position(1, Vector3(500.0, 10.0, 502.5))
+	lay(slot_of("copper_pipe"), cis_foot, Vector3(500.0, 10.05, 504.0))
+	var cis_linked: bool = false
+
+	for group in items._water.level_groups():
+		cis_linked = cis_linked or ((group as Array).has(cis) and (group as Array).has(low))
+
+	check(run_between(cis_foot, Vector3(500.0, 10.05, 504.0)) != 0 and cis_linked, "a pipe from the raised cistern's foot to a barrel links them")
+	items._water.set_litres(cis, 300.0)
+	items._water.set_litres(low, 0.0)
+	level_now()
+	check(absf(litres(low) - 60.0) < 0.6 and absf(litres(cis) - 240.0) < 0.6, "its water runs down and fills the barrel first (barrel %.1f, cistern %.1f)" % [litres(low), litres(cis)])
+	items._water.set_litres(cis, 0.0)
+	items._water.set_litres(low, 50.0)
+	level_now()
+	check(absf(litres(low) - 50.0) < 0.6 and litres(cis) < 0.01, "a barrel's water never climbs into it (barrel %.1f, cistern %.1f)" % [litres(low), litres(cis)])
+	raining[0] = 1.0
+	level_now()
+	check(absf(float(items._water.pieces[cis].get("rain_lpm", 0.0)) - 12.8) < 0.01, "full rain puts 12.8 L a minute into its open top (3.2 m2; %.2f)" % float(items._water.pieces[cis].get("rain_lpm", 0.0)))
+	var asked_at: Array = []
+	items.cover_at = func(at: Vector3) -> float:
+		asked_at.append(at)
+		return 1.0
+	level_now()
+	check(float(items._water.pieces[cis].get("rain_lpm", 0.0)) == 0.0 and asked_at.any(func(at): return absf((at as Vector3).y - 13.05) < 0.01), "and none under a roof, asked over its rim 3 m up")
+	items.cover_at = func(_p): return covered[0]
+	raining[0] = 0.0
+	level_now()
+	net_ok("raised cistern")
+
+	# A barrel or raised cistern saved holding more than it holds now (Dave 21 Nov 2026: a barrel about 60 L, the raised cistern about 700 L) loads full:
+	# the extra is spilled, never kept over the top.
+	items._water_tanks_saved[items._water_key(Vector3(540.0, 10.0, 540.0))] = 150.0
+	var old_barrel: int = put("wooden_barrel", Vector3(540.0, 10.0, 540.0))
+	items._water_tanks_saved[items._water_key(Vector3(560.0, 10.0, 560.0))] = 2000.0
+	var old_cis: int = put("raised_cistern", Vector3(560.0, 10.0, 560.0))
+	check(absf(litres(old_barrel) - 60.0) < 0.01 and absf(litres(old_cis) - 700.0) < 0.01, "a barrel saved with 150 L loads with 60 L, a raised cistern saved with 2,000 L with 700 L (%.1f, %.1f)" % [litres(old_barrel), litres(old_cis)])
 
 	print("pipe runs: %d failures" % failures)
 	items._finish_writer()

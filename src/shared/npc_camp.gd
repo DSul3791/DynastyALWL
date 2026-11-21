@@ -7,6 +7,7 @@ extends RefCounted
 
 const PATH := "res://data/npcs/camp.json"
 const TRIBES_PATH := "res://data/creatures/goblin_tribes.json"   # the goblin tribes' camps: their fires are camp fires too (Dave 19 Nov 2026)
+const FACE_FIRE_M := 60.0   # a character set down this near the camp fire faces it (face_fire_yaw); the spawn is 8 m off. Judged.
 const TREE_MATCH_M := 0.5   # a standing tree whose foot is this near the camp tree's is the camp tree
 
 static var _cfg: Dictionary = {}
@@ -29,6 +30,19 @@ static func tree_spot() -> Vector2:
 static func fire_spot() -> Vector2:
 	var fire: Dictionary = cfg().get("fire", {})
 	return Vector2(float(fire["x"]), float(fire["z"])) if fire.has("x") else Vector2(INF, INF)
+
+
+# Which way a character set down here faces (body yaw, radians; 0 looks north, -z): toward the camp fire when it is within FACE_FIRE_M, else 0.
+# The client turns a character set down at the starter spawn this way (Dave 20 Nov 2026: new characters loaded "looking away from edda and
+# hob"; he asked that they face the campfire). A look only: nothing is placed from it and the server does not track facing.
+static func face_fire_yaw(at: Vector2) -> float:
+	var fire: Vector2 = fire_spot()
+
+	if not fire.is_finite() or at.distance_to(fire) > FACE_FIRE_M or at.distance_to(fire) < 0.01:
+		return 0.0
+
+	var to_fire: Vector2 = fire - at
+	return atan2(-to_fire.x, -to_fire.y)
 
 
 # The wood class the camp fire burns as (cooking.json fire_tiers: "log" is the large fire).

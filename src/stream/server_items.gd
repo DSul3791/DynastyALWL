@@ -251,6 +251,7 @@ var _structures: Dictionary = {}    # structures.json: kind -> definition
 var _struct_gap_m: float = 2.5
 var _blueprints: Dictionary = {}    # blueprints.json: number -> row (with its "id"), placed from the hammer instead of a kit item
 var _blueprint_of_kit: Dictionary = {}   # kit item id -> blueprint number (a piece takes down into its materials, not a kit)
+var _retired_blueprint_of_kit: Dictionary = {}   # kit item id -> a retired clear_at_load blueprint row: such a piece in a saved world is cleared at load (PLUMBING_DESIGN s10)
 var _structures_cfg: Dictionary = {}   # the whole structures.json, for the shared placement rules
 var _fire_gap_m: float = FIRE_MIN_GAP_M
 var _fires_per_chunk: int = FIRES_PER_CHUNK
@@ -7320,7 +7321,54 @@ func _load_world_items() -> void:
 		_zone_add(_next_id)   # a saved fire still blocks spawning round it
 		_next_id += 1
 
+	_clear_retired_pieces()
 	_refresh_pots()   # a pot hangs over whatever fire shares its spot: nothing about it is saved
+
+
+const CLEARED_LIFETIME_S := 1.0e9   # over _expire_items' never-expires mark: what a cleared piece leaves never despawns (PROVISIONAL, PLUMBING_DESIGN s10 PV-11)
+
+# A retired piece still standing in a loaded world (the pumps; Dave 20 Nov 2026: "the wooden hand pumps should be gone too") is taken away and leaves
+# its materials on the ground where it stood: a built one its whole blueprint cost, a site what had been put into it. Only blueprints marked
+# clear_at_load are in _retired_blueprint_of_kit, so no other retired piece is touched.
+func _clear_retired_pieces() -> void:
+	for id in _items.keys():
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct"):
+			continue
+
+		var row: Dictionary = _retired_blueprint_of_kit.get(str(_structures.get(str(it["struct"]["kind"]), {}).get("kit", "")), {})
+
+		if row.is_empty():
+			continue
+
+		var give_back: Dictionary = {}
+
+		if it["struct"].has("site"):
+			for item_id in (it["struct"]["site"] as Dictionary).get("have", {}):
+				give_back[str(item_id)] = int(it["struct"]["site"]["have"][item_id])
+		else:
+			for need in row["cost"]:
+				give_back[str(need[0])] = int(need[1])
+
+		var at: Vector3 = it["pos"]
+		_area_recovered[area_key_of(at.x, at.z)] = true   # its area file is written again at the first save: the piece gone, its materials there
+
+		if _load_row_of.has(id) and int(_load_row_of[id]) < _load_row_area.size():
+			_area_recovered[str(_load_row_area[int(_load_row_of[id])])] = true   # and the file its row came from, if another
+
+		_items.erase(id)
+		_load_row_of.erase(id)
+		_dirty = true
+
+		for item_id in give_back:
+			var number: int = _refund_number(table.number_of(str(item_id)))
+
+			if number <= 0:
+				push_error("cleared %s: no item %s to give back" % [str(it["struct"]["kind"]), str(item_id)])
+				continue
+
+			drop_in_world(number, int(give_back[item_id]), at, 0, CLEARED_LIFETIME_S)   # it waits for its owner, however long they are away
 
 
 # An area file of the gen the header names. A save that wrote the area but not the header (a crash between) left the gen before in .prev.
@@ -10707,6 +10755,7 @@ func _fire_in_reach(peer: int, id: int) -> Dictionary:
 func _load_blueprints() -> void:
 	_blueprints.clear()
 	_blueprint_of_kit.clear()
+	_retired_blueprint_of_kit.clear()
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(BLUEPRINTS_PATH))
 
 	if typeof(parsed) != TYPE_DICTIONARY:
@@ -10716,6 +10765,9 @@ func _load_blueprints() -> void:
 		var row: Dictionary = parsed["blueprints"][id].duplicate()
 
 		if bool(row.get("retired", false)):   # kept in the file for its number only
+			if bool(row.get("clear_at_load", false)):   # a retired piece still standing in a saved world is cleared at load and leaves its materials (the pumps, s10)
+				_retired_blueprint_of_kit[str(_structures.get(str(row["structure"]), {}).get("kit", ""))] = row
+
 			continue
 
 		row["id"] = id
@@ -17749,10 +17801,10 @@ func _water_resolve(now_s: float) -> void:
 	_water_next_s = _water.next_event_s()
 
 
-# --- Wells and pumps (6b part 2; Sonny's water rules sections 1 to 3) ---
-# A source whose water block has "ground_water" (a well, a hand pump, a deep pump) lifts from the nearest fresh water within WELL_REACH_M: its depth
-# is its ground minus that water's surface, and it may not go where there is none or deeper than its max_depth_m. E on one starts working it and E
-# again stops: a pump ("pump": {cap_lps, watts}) gives WaterNetwork.pump_lpm, a windlass ("windlass": true) windlass_lpm with its bucket's draw_l,
+# --- Wells (6b part 2; Sonny's water rules sections 1 to 3; no pumps since Dave 20 Nov 2026) ---
+# A source whose water block has "ground_water" (a well) lifts from the nearest fresh water within WELL_REACH_M: its depth is its ground minus that
+# water's surface, and it may not go where there is none or deeper than its max_depth_m. E on one starts working it and E again stops: a windlass
+# ("windlass": true) gives windlass_lpm with its bucket's draw_l (there are no pumps: Dave 20 Nov 2026, PLUMBING_DESIGN s10),
 # while the worker stays within its use reach and is not worn out; the work is exertion (the block's effort, 0.7). A source with nothing linked below
 # it pours into the worker's containers instead (the first with room, hotbar first), and stops when they are full.
 const WELL_REACH_M := 200.0
@@ -17780,21 +17832,19 @@ func _ground_water_refusal(piece: Dictionary, spot: Vector3) -> String:
 	if is_nan(depth):
 		return "There is no fresh water within %d m to reach down to." % int(WELL_REACH_M)
 
-	if depth > _lift_limit_m(piece, spot):
+	if depth > _lift_limit_m(piece):
 		return "The water lies %d m down here, too deep for this." % int(round(depth))
 
 	return ""
 
 
-# How deep a well or pump reaches (Sonny's water rules, section 1): its max_depth_m (25 m when it has none: the windlass and the deep pump), and a
-# suction pump ("suction": true, the hand pumps' 7 m) loses 1 m of it for every 1,000 m of height, as the air pressure falls.
-static func _lift_limit_m(piece: Dictionary, spot: Vector3) -> float:
-	var limit: float = float(piece.get("max_depth_m", 25.0))
-	return limit - maxf(spot.y, 0.0) / 1000.0 if bool(piece.get("suction", false)) else limit
+# How deep a well reaches (Sonny's water rules, section 1): its max_depth_m (25 m when it has none).
+static func _lift_limit_m(piece: Dictionary) -> float:
+	return float(piece.get("max_depth_m", 25.0))
 
 
 func _is_pumpable(piece: Dictionary) -> bool:
-	return str(piece.get("role", "")) == "source" and (piece.has("pump") or bool(piece.get("windlass", false)))
+	return str(piece.get("role", "")) == "source" and bool(piece.get("windlass", false))
 
 
 # Litres a minute the worker gets out of a well or pump at its depth.
@@ -17808,10 +17858,6 @@ func _pump_rate(id: int) -> float:
 
 	if is_nan(depth):
 		return 0.0
-
-	if piece.has("pump"):
-		var pump: Dictionary = piece["pump"]
-		return WaterNetwork.pump_lpm(float(pump.get("cap_lps", 0.8)), float(pump.get("watts", 40.0)), depth)
 
 	return WaterNetwork.windlass_lpm(depth, float(piece.get("draw_l", 8.0)))
 
@@ -18497,8 +18543,8 @@ func _barrel_has_goods(id: int) -> bool:
 	return _chests.has(uid) and not _chests[uid].is_empty()
 
 
-# Every BARREL_TICK_S: a barrel holding goods takes no water (its size 0); one in the open catches the rain (none under a roof or a tree); then
-# linked barrels are levelled.
+# Every BARREL_TICK_S: a barrel holding goods takes no water (its size 0); one in the open catches the rain (none under a roof or a tree), as does a
+# raised cistern (every tank with a level_port); then linked tanks are levelled.
 func _barrels_tick() -> void:
 	var now_s: float = _water_now_s()
 
@@ -18524,7 +18570,9 @@ func _barrels_tick() -> void:
 
 		var lpm: float = 0.0
 
-		if rain > 0.05 and not goods and not (cover_at.is_valid() and float(cover_at.call((_items[id]["pos"] as Vector3) + Vector3(0.0, 1.0, 0.0))) >= 0.5):
+		var rim: Vector3 = (_items[id]["pos"] as Vector3) + Vector3(0.0, 1.0 + float(block.get("level_base_m", 0.0)), 0.0)   # over its rim (the raised cistern's 2 m up)
+
+		if rain > 0.05 and not goods and not (cover_at.is_valid() and float(cover_at.call(rim)) >= 0.5):
 			lpm = snappedf(rain * BARREL_RAIN_LPM_M2 * float(block.get("rain_m2", 0.0)), 0.01)
 
 		if absf(float(piece.get("rain_lpm", 0.0)) - lpm) > 0.001:
@@ -18636,7 +18684,7 @@ func _taps_fill(now_s: float) -> void:
 			_push_box(id, box)
 
 
-# Linked barrels share their water to one surface (PV-7). Only a set that is off level by more than LEVEL_SLACK_L is touched: the tanks are brought
+# Linked barrels (and a raised cistern, its floor level_base_m up) share their water to one surface (PV-7). Only a set that is off level by more than LEVEL_SLACK_L is touched: the tanks are brought
 # to now, their litres set, and the network solved again on this tick.
 func _level_barrels(now_s: float) -> void:
 	if _level_groups_dirty:
@@ -18656,7 +18704,7 @@ func _level_barrels(now_s: float) -> void:
 				return
 
 			var piece: Dictionary = _water.pieces[id]
-			rows.append([(_items[id]["pos"] as Vector3).y, float(piece.get("level_h_m", 0.85)), float(piece.get("litres_max", 0.0))])
+			rows.append([(_items[id]["pos"] as Vector3).y + float(piece.get("level_base_m", 0.0)), float(piece.get("level_h_m", 0.85)), float(piece.get("litres_max", 0.0))])
 			held.append(_water.litres(id, now_s))
 			total += float(held[held.size() - 1])
 

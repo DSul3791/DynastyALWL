@@ -19,6 +19,7 @@ const WornLook := preload("res://src/client/worn_look.gd")
 const Proportions := preload("res://src/client/character/dynasty_proportions.gd")
 const Shapes := preload("res://src/client/character/dynasty_shapes.gd")
 const Breath := preload("res://src/client/character/dynasty_breath.gd")
+const HairModels := preload("res://src/client/character/hair_models.gd")
 
 # The game's clip name -> [Dave's clip, from s, to s (-1 = the end), loop, retime]. `retime` multiplies the clip's time: the gait clips are in place, so they are slowed or sped until the
 # planted foot moves at the game's natural walk, jog and run speeds (1.4, 3.2, 6.0 m/s, avatar_driver.gd `speed_scale`); tools/dynasty_gait.gd measures the clips' real speeds.
@@ -85,6 +86,9 @@ var animation_player: AnimationPlayer
 var hand_mount_r: Marker3D
 var hand_mount_l: Marker3D
 var head_mount: Marker3D
+var hair: BoneAttachment3D                    # the worn hair style (hair_models.gd) on the head bone, or null with no hair
+var _hair_id: String = HairModels.NONE
+var _hair_material: BaseMaterial3D
 var _log: MeshInstance3D
 var _log_two: MeshInstance3D   # the second log, beside it
 var _model: Node3D
@@ -102,12 +106,17 @@ var _mount_rest: Dictionary = {}              # Marker3D -> its transform before
 # safe in Godot 4.7.2 (servers/rendering/dummy/storage: RID_Owner without THREAD_SAFE; the GLES3 and Vulkan stores are), and the loader threads making
 # meshes while the main thread made its own broke the store ("Attempting to initialize the wrong RID", "m" is null, signal 11; David4 smokes, 14 Nov 2026).
 # `models`: more body model ids to warm, the player's own (my_character.gd body_model()); the default model is always warmed (NPCs wear it).
-static func warm(models: Array = []) -> void:
+# `hairs`: hair style ids to warm (hair_models.gd), the player's own; NPCs wear none.
+static func warm(models: Array = [], hairs: Array = []) -> void:
 	var paths: Array = [GLB, ARMS_GLB]
 
 	for id in models:
 		if not paths.has(BodyModels.glb(str(id))):
 			paths.append(BodyModels.glb(str(id)))
+
+	for id in hairs:
+		if HairModels.has(str(id)):
+			paths.append(HairModels.glb(str(id)))
 
 	for path in paths:
 		if not ResourceLoader.exists(path):
@@ -704,6 +713,7 @@ func set_proportions(g: Dictionary) -> void:
 	proportions.set_genome(g)
 	_set_widths(g)
 	dress(DEFAULT_SKIN, Color.WHITE, Color.WHITE)       # the skin colour of the genome; the other colours are unused on this body
+	_set_hair(g)
 	var height: float = Proportions.factor(g, "height")
 	_model.scale = Vector3.ONE * height
 	var hand: float = height * Proportions.factor(g, "hands")
@@ -795,6 +805,54 @@ func dress(_skin_color: Color, _coat: Color, _trousers: Color, _shoes: Color = C
 		body_mesh.set_surface_override_material(0, _skin_material)
 
 	_skin_material.albedo_color = skin_tint(genome["skin"])
+
+
+# Hair (Dave 20 Nov 2026: hair styles in the character creator, any style on any body). The style's glb is in body_1 model space (tools/hair/prepare_hair.py fitted it
+# to body_1's head); this body's hair_fit (body_models.gd) carries it onto its own head. It hangs on the head bone, so it turns and nods with the head and grows with the
+# Head slider (dynasty_proportions.gd scales that bone). The skeleton is in centimetres under a 0.01 scale, hence the 100. The hair colour tints the painted texture the
+# way the skin colour tints the body: the creator's default hair colour leaves it as painted.
+const DEFAULT_HAIR := Color(0.25, 0.16, 0.09)      # body_generator.gd make_genome's default hair, close to the painted hair of the three styles
+const HAIR_TINT_MAX := 3.0                         # the painted hair is dark: a light colour may brighten it this much per channel
+
+
+static func hair_tint(colour: Color) -> Color:
+	return Color(clampf(colour.r / DEFAULT_HAIR.r, 0.05, HAIR_TINT_MAX), clampf(colour.g / DEFAULT_HAIR.g, 0.05, HAIR_TINT_MAX), clampf(colour.b / DEFAULT_HAIR.b, 0.05, HAIR_TINT_MAX))
+
+
+func _set_hair(g: Dictionary) -> void:
+	var id: String = str(g.get("hair_model", HairModels.NONE))
+	id = id if HairModels.has(id) else HairModels.NONE
+
+	if id != _hair_id:
+		_hair_id = id
+		_hair_material = null
+
+		if hair != null:
+			skeleton.remove_child(hair)      # out of the tree now, so the new style's node keeps the plain name
+			hair.queue_free()
+			hair = null
+
+		var packed: PackedScene = load_warm(HairModels.glb(id)) as PackedScene if id != HairModels.NONE and ResourceLoader.exists(HairModels.glb(id)) else null
+
+		if packed != null:
+			hair = BoneAttachment3D.new()
+			hair.name = "Attach_Hair"
+			skeleton.add_child(hair)
+			hair.bone_name = P + "Head"
+			var rest: Transform3D = skeleton.get_bone_global_rest(skeleton.find_bone(P + "Head"))
+			var style: Node3D = packed.instantiate()
+			style.transform = rest.affine_inverse() * Transform3D(Basis.from_scale(Vector3.ONE * 100.0), Vector3.ZERO) * BodyModels.hair_fit(model)
+			hair.add_child(style)
+
+			for mesh in style.find_children("*", "MeshInstance3D", true, false):
+				(mesh as MeshInstance3D).layers |= 1 << 19      # no ground decals, as the body
+
+				if _hair_material == null and (mesh as MeshInstance3D).get_active_material(0) is BaseMaterial3D:
+					_hair_material = (mesh as MeshInstance3D).get_active_material(0).duplicate() as BaseMaterial3D      # each body its own copy, for its own colour
+					(mesh as MeshInstance3D).set_surface_override_material(0, _hair_material)
+
+	if _hair_material != null and g.has("hair"):
+		_hair_material.albedo_color = hair_tint(g["hair"])
 
 
 func set_far(_on: bool) -> void:

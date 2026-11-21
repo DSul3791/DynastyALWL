@@ -2,28 +2,32 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://bwmqbab40gh7x"
-path="res://.godot/imported/stone_raised_cistern.png-0c4c815db80e639e24d8575b0604cbc8.ctex"
+uid="uid://cuatn21pm6pwt"
+path.s3tc="res://.godot/imported/Hair_SlickedBack_normal.png-1a6718adc1bf56e200610e2fd9d278c3.s3tc.ctex"
 metadata={
-"vram_texture": false
+"imported_formats": ["s3tc_bptc"],
+"vram_texture": true
+}
+generator_parameters={
+"md5": "c94345f090ba41776f06facc20b607a9"
 }
 
 [deps]
 
-source_file="res://assets/ui/item_icons/stone_raised_cistern.png"
-dest_files=["res://.godot/imported/stone_raised_cistern.png-0c4c815db80e639e24d8575b0604cbc8.ctex"]
+source_file="res://assets/character/Hair/Hair_SlickedBack_normal.png"
+dest_files=["res://.godot/imported/Hair_SlickedBack_normal.png-1a6718adc1bf56e200610e2fd9d278c3.s3tc.ctex"]
 
 [params]
 
-compress/mode=0
+compress/mode=2
 compress/high_quality=false
 compress/lossy_quality=0.7
 compress/uastc_level=0
 compress/rdo_quality_loss=0.0
 compress/hdr_compression=1
-compress/normal_map=0
+compress/normal_map=1
 compress/channel_pack=0
-mipmaps/generate=false
+mipmaps/generate=true
 mipmaps/limit=-1
 roughness/mode=0
 roughness/src_normal=""
@@ -37,4 +41,4 @@ process/normal_map_invert_y=false
 process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
-detect_3d/compress_to=1
+detect_3d/compress_to=0

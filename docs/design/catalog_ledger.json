@@ -11027,7 +11027,7 @@
    "note": "Plumbing PR 3 (14 Nov 2026): water block in the water network format, unlocked. PROVISIONAL. Not run: the Godot tests wait for the test PC."
   },
   {
-   "key": "stone_raised_cistern_kit",
+   "key": "raised_cistern_kit",
    "number": 755,
    "name": "Raised cistern",
    "category": "placeable",
@@ -11041,7 +11041,7 @@
    "note": ""
   },
   {
-   "key": "stone_raised_cistern",
+   "key": "raised_cistern",
    "number": 756,
    "name": "Raised cistern",
    "category": "structure",
@@ -11055,7 +11055,7 @@
     "test_blueprints"
    ],
    "accepted_commit": null,
-   "note": "Plumbing PR 3 (14 Nov 2026): water block in the water network format, locked until the Deep-well pump of PR 4 can fill it. PROVISIONAL. Not run: the Godot tests wait for the test PC."
+   "note": "Plumbing PR 3 (14 Nov 2026): water block in the water network format. Dave 20 Nov 2026: a big tank (copper lined, wooden frame, iron nails), unlocked; no pumps (PLUMBING_DESIGN s10, PV-12). PROVISIONAL."
   },
   {
    "key": "horn",
