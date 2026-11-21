@@ -1561,6 +1561,26 @@ Not yet played.
 
 Not yet played. A big ore rock (an iron outcrop, or copper or tin under the mountains) still holds thousands of stones, so it still shrinks slowly. The rock in Dave's picture may have been one of those; if so, this change does not alter it.
 
+## 127. One scatter cell's copper and tin rocks stalled the server for 409 ms
+
+**Status: Implemented - awaiting player verification.** Seen in the slow-cell log on Dave's PC, 21 Nov 2026, while a player ran north: scatter cell (1815, 2229) took 411 ms, and 409 ms of that went to copper and tin rocks. The coordinator asked for the fix on Dave's behalf (his standing order of 21 Nov, 4:39 AM Halifax).
+
+**What was found:** every ground, water and ore read in the boulder and copper/tin layout went through the server's general callables. Each of them looks up the tile with generator.get_tile, which takes the generator's lock. The block and flora workers hold that lock thousands of times a second while a player runs into new ground. The same cell took 3 ms on an idle Lane B, so the 409 ms is the main thread waiting on that lock (not proven by a PC run yet).
+
+**Required outcome:** a few ms a cell, with exactly the same rocks in the same places.
+
+**As built (PR #1436, reviewed head 679faa73, merged to dev at a7acd989):** new src/stream/cell_reads.gd binds the ground, water and ore reads to the cell's tile once a cell (server_items._cell_reads, wired as items.cell_reads in terrain_server.gd). In the boulder and copper/tin layouts, the ground, water, depth and ore reads use these bound reads and never take the generator lock. A probe past the tile edge falls back to the general path, so every answer is unchanged. The slow-cell line now splits the copper and tin time into reads bound, ore bodies, water and settling, so a slow cell on the PC will show where its time went. No TERRAIN_VERSION, protocol, save or starter cache change. Still on the locking path, left for later: the settle step (_settled) for each rock, rock_near for each boulder, bank stones, and stones and sticks. So the few ms a cell under load is not yet proven.
+
+**Evidence:**
+- Independent review PASS on the earlier head and again on 679faa73 after the merge with #1427.
+- Lane B on 679faa73: 215 PASS / 0 FAIL (211 fast + 4 timing). Warnings stay at 381. validate_items had 0 errors. Join smoke clean (welcome 13 s, ground 21 s).
+- test_cell_reads, 162 cells round the spawn and the tin body, including (1815, 2229): the same 710 rows (512 copper or tin) both ways. General reads went from 10,533 to 0, with one tile look a cell. Idle time was 155.7 ms before and 145.2 ms after (about 1 ms a cell either way, since an idle machine has no lock waits). With running water the result was the same: 711 rows matched and 0 general reads.
+- Not yet run: a run north on Dave's PC to see the slow-cell line under load.
+
+**Acceptance:** run north from the spawn on Dave's PC. The slow-cell line stays under 50 ms for copper and tin rocks, and the same rocks lie where they did before.
+
+Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
