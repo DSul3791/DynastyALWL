@@ -12,6 +12,11 @@ const HairModels := preload("res://src/client/character/hair_models.gd")
 const Generator := preload("res://src/client/character/body_generator.gd")
 const Logic := preload("res://src/client/character/creator_logic.gd")
 
+const CROWN_DROP_M := 0.08
+# The middle of Body 1's skull above the ears in its model space (tools/hair/body_fit.py skull_box of Dynasty_Base_Male.glb), where every hair
+# glb is fitted; on another body it is carried by that body's hair_fit like the hair.
+const SKULL_MID := Vector3(-0.0007, 1.655, 0.0002)
+
 var _fails: int = 0
 
 
@@ -54,7 +59,25 @@ func _measure(body: Node3D) -> Dictionary:
 			box = box.expand(xf * corner)
 
 		out["box"] = box
-		out["top"] = (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_HeadTop_End"))).origin
+		var top_end: Vector3 = (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_HeadTop_End"))).origin
+		out["top"] = top_end
+		# The crown: the hair within CROWN_DROP_M below the top bone, for centring on the skull. A long style's lower hair swings behind the head as
+		# the idle pose tips it, and the top bone's tip stands about 4 cm in front of the skull's middle, so the whole box against that bone is no
+		# measure of where the hair sits (Lane B on 27f5f5d2: Medium bob 0.068 m off).
+		var crown: AABB = AABB()
+		var has_crown: bool = false
+
+		for corner in corners:
+			var at: Vector3 = xf * corner
+
+			if at.y < top_end.y - CROWN_DROP_M:
+				continue
+
+			crown = crown.expand(at) if has_crown else AABB(at, Vector3.ZERO)
+			has_crown = true
+
+		out["crown"] = crown
+		out["skull"] = xf * SKULL_MID
 		out["head"] = head.origin
 		done[0] = true
 	s.skeleton_updated.connect(grab)
@@ -122,10 +145,12 @@ func _init() -> void:
 
 			var box: AABB = m["box"]
 			var top: Vector3 = m["top"]
-			var centre: Vector3 = box.get_center()
 			_check(box.end.y > top.y - 0.03 and box.end.y < top.y + 0.06, "%s %s: the hair's top is at the crown (%.3f m, crown %.3f m)" % [model, id, box.end.y, top.y])
 			_check(box.position.y > m["head"].y - 0.12, "%s %s: nothing hangs far below the head joint (bottom %.3f m, joint %.3f m)" % [model, id, box.position.y, m["head"].y])
-			_check(Vector2(centre.x - top.x, centre.z - top.z).length() < 0.06, "%s %s: the hair is centred over the head (%.3f m off)" % [model, id, Vector2(centre.x - top.x, centre.z - top.z).length()])
+			var crown_mid: Vector3 = (m["crown"] as AABB).get_center()
+			var skull: Vector3 = m["skull"]
+			var off: float = Vector2(crown_mid.x - skull.x, crown_mid.z - skull.z).length()
+			_check(off < 0.03, "%s %s: the hair's crown is centred over the skull (%.3f m off)" % [model, id, off])
 			_check(box.size.x > 0.13 and box.size.x < 0.26 and box.size.z > 0.15 and box.size.z < 0.26, "%s %s: the hair is head sized (%.3f x %.3f m)" % [model, id, box.size.x, box.size.z])
 
 		# The Head slider grows the hair with the head.
