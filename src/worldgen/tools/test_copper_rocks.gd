@@ -88,6 +88,7 @@ func _init() -> void:
 	check(all_cfg.get("tin_rocks", {}).keys().all(func(k): return k in ["note", "slot", "grade_min", "grade_max"]) and all_cfg.get("copper_rocks", {}).keys().all(func(k): return k in ["note", "slot", "grade_min", "grade_max"]), "copper and tin share one placement rule (only slot and grade are their own)")
 	var iron_cfg: Dictionary = all_cfg.get("ore_rocks", {}).duplicate()
 	iron_cfg.merge(all_cfg.get("iron_rocks", {}), true)
+	check(float(iron_cfg.get("hand_share", 0.0)) >= 1.0 and (iron_cfg.get("foot", {"x": 1}) as Dictionary).is_empty() and bool(iron_cfg.get("outcrops_unchanged", false)), "iron rocks are all loose hand stones, with no mountain-foot boulder, and the outcrops are left as they were")
 	check(int(all_cfg.get("iron_rocks", {}).get("slot", 0)) == 24 and float(iron_cfg["chance"]) > float(cfg["chance"]) and float(iron_cfg["water_chance_coast"]) > float(cfg["water_chance_coast"]) and float(iron_cfg["water_chance_mountain"]) > float(cfg["water_chance_mountain"]), "iron rocks share the rule but are commoner than copper everywhere (Dave 21 Nov 2026: \"iron should be a common thing to find a long river bed\"), slots 24..31")
 	var ore_cfg: Dictionary = {"copper": cfg, "tin": all_cfg.get("tin_rocks", {}), "iron": iron_cfg}
 
@@ -208,18 +209,19 @@ func _init() -> void:
 		graded = graded and float(r[3]) >= 0.2 and float(r[3]) <= 0.6
 
 	check(graded, "copper outcrop boulders of the geology carry a grade (%d)" % outcrops.size())
-	# And iron outcrops since iron_rocks (Dave 21 Nov 2026): a grade in iron's range and the 0.5 to 2 m size, in place of piece_share.
+	# Iron outcrops stay as they were (Dave 21 Nov 2026: the river iron stones are small and picked by hand; iron_rocks outcrops_unchanged): no grade,
+	# their own size, mined at ore piece_share.
 	g._boulder_cfg["iron_rocks"]["chance"] = 0.0
 	g._boulder_cfg["iron_rocks"]["water_chance_coast"] = 0.0
 	g._boulder_cfg["iron_rocks"]["water_chance_mountain"] = 0.0
 	g.ore_near = func(_pos, _reach, _names, _depth): return "iron"
 	var iron_out: Array = lay(g, 6, 1, "iron")
-	var iron_graded: bool = not iron_out.is_empty()
+	var iron_plain: bool = not iron_out.is_empty()
 
 	for r in iron_out:
-		iron_graded = iron_graded and not bool(r[4]) and float(r[3]) >= float(iron_cfg["grade_min"]) - 0.001 and float(r[3]) <= float(iron_cfg["grade_max"]) + 0.001 and float(r[2]) <= float(iron_cfg["radius_max"]) + 0.001 and float(r[2]) >= float(iron_cfg["radius_min"]) - 0.001
+		iron_plain = iron_plain and not bool(r[4]) and float(r[3]) < 0.0
 
-	check(iron_graded, "iron outcrop boulders of the geology carry an iron grade and the shared size range (%d)" % iron_out.size())
+	check(iron_plain, "iron outcrop boulders of the geology keep no grade (mined at piece_share), as before (%d)" % iron_out.size())
 
 	# 4. Mining: the copper that comes out follows the rock's grade.
 	var got: Array = []
@@ -282,8 +284,9 @@ func _init() -> void:
 			var radius_sum: float = 0.0
 			var grade_ok: bool = true
 			var slots_ok: bool = true
-			var lo: float = float(ore_cfg[ore]["grade_min"]) - 0.001
-			var hi: float = float(ore_cfg[ore]["grade_max"]) + 0.001
+			var stones_ok: bool = true
+			var lo: float = float(ore_cfg[ore].get("grade_min", 0.0)) - 0.001
+			var hi: float = float(ore_cfg[ore].get("grade_max", 1.0)) + 0.001
 			var slot_lo: int = int(ore_cfg[ore]["slot"])
 
 			for r in lay(rv, 90, 40, ore):
@@ -298,7 +301,10 @@ func _init() -> void:
 					radius_sum += float(r[2])
 					grade_ok = grade_ok and float(r[3]) >= lo and float(r[3]) <= hi
 
-			by_height["%s %d" % [ore, int(ground_m)]] = [at_river, radius_sum / maxf(float(broken), 1.0), broken, grade_ok, slots_ok]
+				if bool(r[4]):
+					stones_ok = stones_ok and (int(r[0]) & rv.BOULDER_KEY) == 0
+
+			by_height["%s %d" % [ore, int(ground_m)]] = [at_river, radius_sum / maxf(float(broken), 1.0), broken, grade_ok, slots_ok, stones_ok]
 
 	print("by the river (count, mean radius of rocks to break, rocks to break): %s" % str(by_height))
 
@@ -307,7 +313,10 @@ func _init() -> void:
 		var hills: Array = by_height["%s 310" % ore]
 		check(int(coast[0]) > 10, "%s lies along a river on the coastal plain too, with no %s body near (%d per 40 cells of river)" % [ore, ore, int(coast[0])])
 		check(int(hills[0]) * 2 > int(coast[0]) * 3, "%s is more abundant by the river under the mountains (%d against %d by the sea)" % [ore, int(hills[0]), int(coast[0])])
-		check(float(hills[1]) > float(coast[1]) + 0.1 and int(hills[2]) > int(coast[2]), "%s rocks are bigger under the mountains (mean radius %.2f against %.2f)" % [ore, float(hills[1]), float(coast[1])])
+		if ore == "iron":   # every river iron stone is picked by hand (Dave 21 Nov 2026: "the same size as a rounded iron ingot ... pickable")
+			check(int(coast[2]) == 0 and int(hills[2]) == 0 and bool(coast[5]) and bool(hills[5]), "every iron stone by the river is a loose Iron ore picked by hand, by the sea and under the mountains (%d and %d to break)" % [int(coast[2]), int(hills[2])])
+		else:
+			check(float(hills[1]) > float(coast[1]) + 0.1 and int(hills[2]) > int(coast[2]), "%s rocks are bigger under the mountains (mean radius %.2f against %.2f)" % [ore, float(hills[1]), float(coast[1])])
 		check(bool(coast[3]) and bool(hills[3]), "every %s rock to break has its grade in range" % ore)
 		check(bool(coast[4]) and bool(hills[4]), "every %s rock and loose piece keeps its own slots" % ore)
 

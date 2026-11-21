@@ -8023,8 +8023,8 @@ func _set_boulder_ore_only(row: Dictionary, ore_name: String, key: int) -> void:
 	row["ore"] = ore_name
 	var own: Dictionary = _boulder_cfg.get(ore_name + "_rocks", {})
 
-	if own.is_empty():
-		return   # coal, salt and the rest: an outcrop without a grade or a size range
+	if own.is_empty() or bool(own.get("outcrops_unchanged", false)):
+		return   # coal, salt and the rest, and iron (its own rule lays only hand stones): an outcrop without a grade or a size range
 
 	var shared: Dictionary = _boulder_cfg.get("ore_rocks", {})   # read in place: _ore_rock_cfg copies, and this runs for every ore boulder
 
@@ -8052,7 +8052,7 @@ func _set_boulder_ore_only(row: Dictionary, ore_name: String, key: int) -> void:
 # - the last try a big boulder at a mountain's foot.
 # A share hand_share of the sizes is a loose ore item picked up by hand (ORE_KEY, kept in _taken like any scatter); the rest are boulder
 # rows with the ore, radius_min..radius_max (0.5 to 2 m across, Dave 17 Nov 2026), broken with a hammer or pick. Slots `slot`.. of the cell: copper 8..15 (BOULDER_KEY, after the cell's
-# boulders), tin 16..23 and iron 24..31 (ORE_KEY | BOULDER_KEY; iron since Dave 21 Nov 2026, commoner by its own chances). Nothing depends on where spawn is.
+# boulders), tin 16..23 (ORE_KEY | BOULDER_KEY) and iron 24..30 (since Dave 21 Nov 2026: commoner by its own chances, and only loose stones picked by hand). Nothing depends on where spawn is.
 func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dictionary = {}) -> void:
 	var cfg: Dictionary = _ore_rock_cfg(ore)
 	var item: String = str((_boulder_cfg.get("ore", {}).get("items", {}) as Dictionary).get(ore, ""))
