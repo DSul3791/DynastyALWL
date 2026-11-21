@@ -215,6 +215,7 @@ func _init() -> void:
 			box(forge).clear_slot(i)
 
 	items._event_save = false   # the first craft's request is spent: only this craft's counts
+	items._finish_writer()   # the first craft's write is done: on a slow disk a busy writer would hold the event save past the loop
 	items._last_queue_act.clear()
 	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number("bronze_nails"), 0, 1, CraftHand.at(items, 1, recipe_number("bronze_nails")))
 	var asked_at: int = -1
