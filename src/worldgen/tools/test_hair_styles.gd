@@ -54,13 +54,7 @@ func _measure(body: Node3D) -> Dictionary:
 		var xf: Transform3D = head * (body.hair.get_child(0) as Node3D).transform * mesh.transform
 		var corners: PackedVector3Array = mesh.mesh.get_faces()
 		var box: AABB = AABB(xf * corners[0], Vector3.ZERO)
-
-		for corner in corners:
-			box = box.expand(xf * corner)
-
-		out["box"] = box
 		var top_end: Vector3 = (s.global_transform * s.get_bone_global_pose(s.find_bone("mixamorig_HeadTop_End"))).origin
-		out["top"] = top_end
 		# The crown: the hair within CROWN_DROP_M below the top bone, for centring on the skull. A long style's lower hair swings behind the head as
 		# the idle pose tips it, and the top bone's tip stands about 4 cm in front of the skull's middle, so the whole box against that bone is no
 		# measure of where the hair sits (Lane B on 27f5f5d2: Medium bob 0.068 m off).
@@ -69,6 +63,7 @@ func _measure(body: Node3D) -> Dictionary:
 
 		for corner in corners:
 			var at: Vector3 = xf * corner
+			box = box.expand(at)
 
 			if at.y < top_end.y - CROWN_DROP_M:
 				continue
@@ -76,6 +71,8 @@ func _measure(body: Node3D) -> Dictionary:
 			crown = crown.expand(at) if has_crown else AABB(at, Vector3.ZERO)
 			has_crown = true
 
+		out["box"] = box
+		out["top"] = top_end
 		out["crown"] = crown
 		out["skull"] = xf * SKULL_MID
 		out["head"] = head.origin
@@ -151,6 +148,9 @@ func _init() -> void:
 			var skull: Vector3 = m["skull"]
 			var off: float = Vector2(crown_mid.x - skull.x, crown_mid.z - skull.z).length()
 			_check(off < 0.03, "%s %s: the hair's crown is centred over the skull (%.3f m off)" % [model, id, off])
+			# And the skull the hair is fitted to sits on this body's head: the top bone's tip stands about 4 cm in front of the skull's middle.
+			var placed: float = Vector2(skull.x - top.x, skull.z - top.z).length()
+			_check(placed < 0.08, "%s %s: the hair sits on this body's head (skull middle %.3f m from the top bone)" % [model, id, placed])
 			_check(box.size.x > 0.13 and box.size.x < 0.26 and box.size.z > 0.15 and box.size.z < 0.26, "%s %s: the hair is head sized (%.3f x %.3f m)" % [model, id, box.size.x, box.size.z])
 
 		# The Head slider grows the hair with the head.
