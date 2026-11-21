@@ -60,10 +60,10 @@ func _init() -> void:
 
 	var raised_cost: Dictionary = {}
 
-	for pair in bp["stone_raised_cistern"]["cost"]:
+	for pair in bp["raised_cistern"]["cost"]:
 		raised_cost[str(pair[0])] = int(pair[1])
 
-	check(bool(bp["stone_raised_cistern"].get("known", false)) and not bool(bp["stone_raised_cistern"].get("locked", false)) and raised_cost.has("copper_ingot") and raised_cost.has("nails") and raised_cost.has("lumber") and not raised_cost.has("cobblestone"), "the Raised cistern is a big tank anyone can build: copper lined, a wooden frame, iron nails (Dave 20 Nov 2026) %s" % str(raised_cost))
+	check(bool(bp["raised_cistern"].get("known", false)) and not bool(bp["raised_cistern"].get("locked", false)) and raised_cost.has("copper_ingot") and raised_cost.has("nails") and raised_cost.has("lumber") and not raised_cost.has("cobblestone"), "the Raised cistern is a big tank anyone can build: copper lined, a wooden frame, iron nails (Dave 20 Nov 2026) %s" % str(raised_cost))
 	check(int(items._structures["stone_channel"]["water"]["cap_lpm"]) == 300 and not bool(items._structures["stone_channel"]["water"]["closed"]), "a stone channel is open and carries 300 L/min")
 	for id in ["clay_pipe_run", "clay_pipe_elbow", "clay_pipe_tee"]:
 		check(bp.has(id) and bool(bp[id].get("retired", false)) and bool(items._structures[str(bp[id]["structure"])].get("retired", false)) and not items._structures[str(bp[id]["structure"])].has("water"), "clay plumbing is retired: %s is kept for its numbers only, with no water block" % id)
@@ -95,7 +95,7 @@ func _init() -> void:
 	check(absf(items._water.inflow_lpm(basin) - 300.0) < 0.01, "the stone trough fills through the channels at their full 300 L/min (%.2f)" % items._water.inflow_lpm(basin))
 
 	# The raised cistern's tank stands 2.5 m over its outlet at its foot (its copper downpipe built in): a level log pipe from it runs full.
-	var raised: int = put("stone_raised_cistern", Vector3(300.0, 10.0, 300.0))
+	var raised: int = put("raised_cistern", Vector3(300.0, 10.0, 300.0))
 	var pipe2: int = put("wooden_pipe", Vector3(300.0, 10.0, 302.05), 90.0)
 	var trough2: int = put("stone_trough", Vector3(300.0, 9.5, 304.0))
 	items._water.set_litres(raised, 500.0)
@@ -108,11 +108,61 @@ func _init() -> void:
 	# Water never climbs (no pumps: Dave 20 Nov 2026, PLUMBING_DESIGN s10): a spout over its open top fills it; one below the top cannot reach it.
 	for spout_y in [13.5, 12.0]:
 		var net = Network.new()
-		var tank: Dictionary = items.water_piece(items._structures["stone_raised_cistern"], Vector3(0.0, 10.0, 0.0), 0.0)
+		var tank: Dictionary = items.water_piece(items._structures["raised_cistern"], Vector3(0.0, 10.0, 0.0), 0.0)
 		net.add(1, {"role": "source", "outlet": Vector3(0.0, spout_y, 0.0), "rate_lpm": 30.0, "cap_lpm": 30.0})
 		net.add(2, tank)
 		net.solve(0.0)
 		check((net.inflow_lpm(2) > 29.9) == (spout_y > 13.0), "a spout %.1f m up %s the raised cistern (%.1f L/min)" % [spout_y - 10.0, "fills" if spout_y > 13.0 else "cannot fill", net.inflow_lpm(2)])
+
+	# Renamed (Dave 21 Nov 2026: "correct the code name"): the Raised cistern's id is raised_cistern, never stone. A world saved with the old id
+	# loads it as the new one (structures.json legacy_kinds), keeps its item number and joins the water network; its water is kept from then on.
+	check(not items._structures.has("stone_raised_cistern") and items.table.number_of("raised_cistern") == 756 and items.table.number_of("raised_cistern_kit") == 755, "the Raised cistern is raised_cistern (756), its kit raised_cistern_kit (755)")
+	var old_dir: String = "user://test_raised_cistern_rename"
+	var old = make(old_dir)
+	old._items[1] = {"number": 756, "count": 1, "pos": Vector3(700.0, 10.0, 700.0), "left": 1.0e9, "struct": {"kind": "stone_raised_cistern", "yaw": 0.0}}
+	old._next_id = 2
+	old._dirty = true
+	old.save()
+	old._finish_writer()
+	var again = ItemsScript.new()
+	again.send_full = func(_p, _b): pass
+	again.send_slots = func(_p, _b): pass
+	again.send_world_items = func(_p, _a, _r): pass
+	again.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	again.send_notice = func(_p, _t): pass
+	again.ground_height = func(_x, _z): return 10.0
+	again.game_seconds = func(): return clock[0]
+	again.setup(ItemTableScript.load_default(), old_dir)
+	var found: int = -1
+
+	for id in again._items:
+		if again._items[id].has("struct") and (again._items[id]["pos"] as Vector3).distance_to(Vector3(700.0, 10.0, 700.0)) < 0.01:
+			found = int(id)
+
+	check(found >= 0 and str(again._items[found]["struct"]["kind"]) == "raised_cistern" and int(again._items[found]["number"]) == 756 and again._water_kind.get(found, "") == "raised_cistern", "a saved stone_raised_cistern loads as the raised_cistern and joins the water network")
+
+	if found >= 0:
+		again._water.set_litres(found, 300.0)
+		again._dirty = true
+		again.save()
+		again._finish_writer()
+		var third = ItemsScript.new()
+		third.send_full = func(_p, _b): pass
+		third.send_slots = func(_p, _b): pass
+		third.send_world_items = func(_p, _a, _r): pass
+		third.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+		third.send_notice = func(_p, _t): pass
+		third.ground_height = func(_x, _z): return 10.0
+		third.game_seconds = func(): return clock[0]
+		third.setup(ItemTableScript.load_default(), old_dir)
+		var kept: float = -1.0
+
+		for id in third._items:
+			if third._items[id].has("struct") and str(third._items[id]["struct"]["kind"]) == "raised_cistern":
+				kept = third._water.litres(int(id), third._water_now_s())
+
+		check(absf(kept - 300.0) < 0.01, "saved again under its new id, it keeps its 300 L (%.1f)" % kept)
+		third._finish_writer()
 
 	print("stone water: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

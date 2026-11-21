@@ -103,7 +103,7 @@ The check is reproducible: `python3 docs/ai-team/missions/GOALS-REPAIR/goal_rewa
 14. ~~`build:iron_tap`: Tap~~ (retired 19 Nov 2026: no iron plumbing; taps are copper only)
 15. `build:wooden_cold_frame`: Cold frame
 16. `build:wooden_compost_bin`: Compost bin
-17. `build:stone_raised_cistern`: Raised cistern
+17. `build:raised_cistern`: Raised cistern
 18. `build:wooden_sluice`: Sluice
 19. `build:wooden_channel`: Wooden - Channel
 20. `build:wooden_channel_corner`: Wooden - Channel corner

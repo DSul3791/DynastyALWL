@@ -3,15 +3,15 @@
 importer="texture"
 type="CompressedTexture2D"
 uid="uid://bwmqbab40gh7x"
-path="res://.godot/imported/stone_raised_cistern.png-0c4c815db80e639e24d8575b0604cbc8.ctex"
+path="res://.godot/imported/raised_cistern.png-4ed0fee126f25fbb1ab045ca05430b37.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/ui/item_icons/stone_raised_cistern.png"
-dest_files=["res://.godot/imported/stone_raised_cistern.png-0c4c815db80e639e24d8575b0604cbc8.ctex"]
+source_file="res://assets/ui/item_icons/raised_cistern.png"
+dest_files=["res://.godot/imported/raised_cistern.png-4ed0fee126f25fbb1ab045ca05430b37.ctex"]
 
 [params]
 

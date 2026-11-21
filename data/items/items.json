@@ -8099,7 +8099,7 @@
 				"look_alikes": [],
 				"note": "Water piece: row state 186. Live in the water network since plumbing PR 3 (unlocked)."
 			},
-			"stone_raised_cistern_kit": {
+			"raised_cistern_kit": {
 				"number": 755,
 				"retired": true,
 				"name": "Raised cistern",
@@ -8110,7 +8110,7 @@
 				"look_alikes": [],
 				"value": 180
 			},
-			"stone_raised_cistern": {
+			"raised_cistern": {
 				"number": 756,
 				"name": "Raised cistern",
 				"description": "A big copper-lined tank on a wooden frame. Rain and pipes from above fill it; it feeds pipes below.",
