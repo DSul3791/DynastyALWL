@@ -136,13 +136,15 @@ class Index:
 
 	# Replaces a chunk's trees. `list` rows: [id, x, z, crown_radius, top_y, bare in winter (optional bool)].
 	func set_chunk(chunk: Vector2i, list: Array) -> void:
-		remove_chunk(chunk)
+		set_packed(chunk, pack(chunk, list))
 
-		if list.is_empty():
-			return
 
+	# A chunk's rows grouped into this index's cells, ready for set_packed. Touches no index, so the server makes it on its worker before the
+	# flora lock (lag while running, 21 Nov 2026); under the lock set_packed only appends whole arrays.
+	static func pack(chunk: Vector2i, list: Array) -> Dictionary:
 		var base: int = _chunk_key(chunk) << 24
 		var cells: Dictionary = {}
+		var count: int = 0
 
 		for row in list:
 			var radius: float = float(row[3])
@@ -154,10 +156,10 @@ class Index:
 			var z: float = float(row[2])
 			var cell: Vector2i = Vector2i(int(floor(x / CELL_M)), int(floor(z / CELL_M)))
 
-			if not _cells.has(cell):
-				_cells[cell] = {"f": PackedFloat32Array(), "k": PackedInt64Array(), "b": PackedByteArray()}
+			if not cells.has(cell):
+				cells[cell] = {"f": PackedFloat32Array(), "k": PackedInt64Array(), "b": PackedByteArray()}
 
-			var entry: Dictionary = _cells[cell]
+			var entry: Dictionary = cells[cell]
 			var f: PackedFloat32Array = entry["f"]
 			f.append(x)
 			f.append(z)
@@ -166,9 +168,38 @@ class Index:
 			entry["f"] = f
 			entry["k"].append(base | (int(row[0]) & 0xFFFFFF))
 			entry["b"].append(1 if row.size() > 5 and bool(row[5]) else 0)
-			cells[cell] = true
-			trees += 1
+			count += 1
 
+		return {"cells": cells, "trees": count}
+
+
+	# Replaces a chunk's trees with what pack made for it (the packed arrays are taken over, not copied).
+	func set_packed(chunk: Vector2i, packed: Dictionary) -> void:
+		remove_chunk(chunk)
+		var cells: Dictionary = packed.get("cells", {})
+
+		if cells.is_empty():
+			return
+
+		for cell in cells:
+			var add: Dictionary = cells[cell]
+
+			if not _cells.has(cell):
+				_cells[cell] = add
+				continue
+
+			var entry: Dictionary = _cells[cell]
+			var f: PackedFloat32Array = entry["f"]
+			var k: PackedInt64Array = entry["k"]
+			var b: PackedByteArray = entry["b"]
+			f.append_array(add["f"])
+			k.append_array(add["k"])
+			b.append_array(add["b"])
+			entry["f"] = f
+			entry["k"] = k
+			entry["b"] = b
+
+		trees += int(packed["trees"])
 		_chunk_cells[chunk] = cells.keys()
 
 

@@ -1799,9 +1799,7 @@ func save() -> void:
 	_write_atomic("crops.json", {"version": 1, "crops": _crops, "plots": _plot_water, "tanks": _water_tanks_save(), "wells": _wells_save()})
 	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows(), "lit": _smelters.lit_rows()})
 	_write_atomic("smithies.json", {"version": 1, "smithies": _smithies.save_rows()})
-	var t_job: int = Time.get_ticks_usec()
 	_save_item_files(_item_job())
-	_note_save_part("world items", t_job)
 
 
 # The files made from the world items (world_items.json, tree_states.json, lights.json, kilns.json) are built from a deep copy taken on the

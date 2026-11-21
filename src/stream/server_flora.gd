@@ -277,7 +277,7 @@ func chunk_bytes(chunk: Vector2i, full: bool = true) -> PackedByteArray:
 				items[field].append_array(extra[field])
 	bytes = PlacerScript.encode(items, placer.chunk_origin(home))
 	var brush: Dictionary = _brush_cells(items) if full else {}
-	var crowns: Array = CoverScript.tree_rows(items, _cover_info)   # before the lock: the main thread's shelter checks wait for it
+	var crowns: Dictionary = CoverScript.Index.pack(home, CoverScript.tree_rows(items, _cover_info))   # before the lock: the main thread's shelter checks wait for it
 	var wait_start: int = Time.get_ticks_usec()
 	_mutex.lock()
 	var held_start: int = Time.get_ticks_usec()
@@ -304,7 +304,7 @@ func chunk_bytes(chunk: Vector2i, full: bool = true) -> PackedByteArray:
 	var held_ms: float = float(Time.get_ticks_usec() - held_start) / 1000.0
 
 	if held_ms > SLOW_LOCK_MS:   # names a chunk that kept the shelter checks waiting
-		print("server flora: chunk %s held the flora lock %.0f ms (%d crowns; waited %.0f ms for it)" % [str(home), held_ms, crowns.size(), float(held_start - wait_start) / 1000.0])
+		print("server flora: chunk %s held the flora lock %.0f ms (%d crowns; waited %.0f ms for it)" % [str(home), held_ms, int(crowns["trees"]), float(held_start - wait_start) / 1000.0])
 
 	return bytes
 
@@ -312,7 +312,7 @@ func chunk_bytes(chunk: Vector2i, full: bool = true) -> PackedByteArray:
 # Whether a chunk's flora is already made (so a question about its cover does not have to place it).
 func chunk_made(chunk: Vector2i) -> bool:
 	var home: Vector2i = placer.normalize(chunk)
-	_mutex.lock()
+	_lock_noting("chunk_made")
 	var yes: bool = _memory.has(Vector3i(home.x, home.y, 1)) or _memory.has(Vector3i(home.x, home.y, 0))
 	_mutex.unlock()
 	return yes
@@ -324,9 +324,9 @@ func _cover_info(species_id: int) -> Array:
 	return [] if item.is_empty() else [int(item["kind"]), float(item["crown"]), float(item["height_ref"]), CoverScript.is_deciduous(str(item.get("name", "")))]
 
 
-# Puts a chunk's tree crowns (Cover.tree_rows, worked out before the lock) in the cover index (called with the mutex held).
-func _fill_cover(home: Vector2i, crowns: Array) -> void:
-	cover.set_chunk(home, crowns)
+# Puts a chunk's tree crowns (Cover.tree_rows and Index.pack, worked out before the lock) in the cover index (called with the mutex held).
+func _fill_cover(home: Vector2i, crowns: Dictionary) -> void:
+	cover.set_packed(home, crowns)
 	_cover_order.erase(home)
 	_cover_order.append(home)
 
@@ -348,16 +348,36 @@ func set_season(season: String) -> void:
 
 # Whether a spot is under a tree's canopy (Cover.at on the server's index).
 func covered(pos: Vector3) -> bool:
-	var wait_start: int = Time.get_ticks_usec()
-	_mutex.lock()
-	var waited_usec: int = Time.get_ticks_usec() - wait_start
+	_lock_noting("covered")
 	var yes: bool = CoverScript.at(pos, cover) > 0.0
 	_mutex.unlock()
-
-	if waited_usec > int(SLOW_LOCK_MS * 1000.0) and OS.get_thread_caller_id() == OS.get_main_thread_id():
-		print("server flora: the main thread waited %.0f ms for the flora lock in a shelter check" % (float(waited_usec) / 1000.0))
-
 	return yes
+
+
+# _mutex.lock() for the checks the server's main thread makes every tick (shelter, undergrowth): a main-thread wait over SLOW_LOCK_MS is
+# added up and printed at most once a second as a "server flora:" line (lag while running, 21 Nov 2026).
+var _main_wait_usec: int = 0
+var _main_waits: int = 0
+var _main_wait_note_msec: int = 0
+
+
+func _lock_noting(what: String) -> void:
+	var wait_start: int = Time.get_ticks_usec()
+	_mutex.lock()
+	var waited: int = Time.get_ticks_usec() - wait_start
+
+	if waited <= int(SLOW_LOCK_MS * 1000.0) or OS.get_thread_caller_id() != OS.get_main_thread_id():
+		return
+
+	_main_wait_usec += waited
+	_main_waits += 1
+	var now: int = Time.get_ticks_msec()
+
+	if now - _main_wait_note_msec >= 1000:
+		print("server flora: the main thread waited %.0f ms for the flora lock in %d checks (last in %s)" % [float(_main_wait_usec) / 1000.0, _main_waits, what])
+		_main_wait_note_msec = now
+		_main_wait_usec = 0
+		_main_waits = 0
 
 
 # True when a point stands in undergrowth: a shrub or a plant of BRUSH_MIN_M or more (fern, tall grass, bramble, hazel) in the same
@@ -368,7 +388,7 @@ func in_undergrowth(pos: Vector3) -> bool:
 	var x: float = placer.generator.wrap_x(pos.x)
 	var z: float = placer.generator.wrap_x(pos.z)
 	var home: Vector2i = placer.normalize(placer.chunk_of(x, z))
-	_mutex.lock()
+	_lock_noting("in_undergrowth")
 	var cells: Variant = _brush.get(home)
 
 	if cells == null and not _brush_pending.has(home):
@@ -416,7 +436,7 @@ func _make_brush(home: Vector2i) -> void:
 
 
 func roofed(pos: Vector3) -> bool:
-	_mutex.lock()
+	_lock_noting("roofed")
 	var yes: bool = cover.roofed(pos)
 	_mutex.unlock()
 	return yes

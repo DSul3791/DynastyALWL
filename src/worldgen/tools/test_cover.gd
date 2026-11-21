@@ -107,6 +107,21 @@ func _init() -> void:
 	check(index.discs_near(705.0, 705.0, 2.0).size() == 1, "and only that one (%d)" % index.discs_near(705.0, 705.0, 2.0).size())
 	index.remove_chunk(Vector2i(8, 7))
 	check(index.trees == 0 and Cover.at(Vector3(708.0, 52.0, 708.0), index) == 0.0, "both gone")
+	# The bare-in-winter flags stay with their own trees when a shared cell is filtered: three trees in one cell, the kept middle one bare.
+	var mixed_info: Callable = func(species_id: int) -> Array: return [0, 10.0, 20.0, species_id == 5]
+	var first: Dictionary = {"ids": PackedInt32Array([(6 << 16) | 21]), "positions": PackedVector3Array([Vector3(805.0, 50.0, 805.0)]), "heights": PackedFloat32Array([20.0]), "yaws": PackedFloat32Array([0.0])}
+	var middle: Dictionary = {"ids": PackedInt32Array([(5 << 16) | 22]), "positions": PackedVector3Array([Vector3(806.0, 50.0, 806.0)]), "heights": PackedFloat32Array([20.0]), "yaws": PackedFloat32Array([0.0])}
+	Cover.add_chunk(index, Vector2i(9, 9), first, mixed_info)
+	Cover.add_chunk(index, Vector2i(10, 9), middle, mixed_info)
+	Cover.add_chunk(index, Vector2i(11, 9), first.duplicate(true), mixed_info)
+	index.remove_chunk(Vector2i(9, 9))
+	index.remove_chunk(Vector2i(11, 9))
+	check(index.trees == 1 and Cover.at(Vector3(806.0, 52.0, 806.0), index) == 1.0, "the middle tree of a shared cell stays (%d)" % index.trees)
+	index.leafless = true
+	check(Cover.at(Vector3(806.0, 52.0, 806.0), index) == 0.0, "and keeps its bare flag: in winter it shelters nothing")
+	index.leafless = false
+	index.remove_chunk(Vector2i(10, 9))
+	check(index.trees == 0, "shared cell empty again (%d)" % index.trees)
 
 	# Roofs: a yawed box spanning several cells and a disc.
 	var roof_index = Cover.Index.new()
