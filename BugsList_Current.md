@@ -1540,6 +1540,25 @@ Not yet played. Provisional (LQ-1, below). Side effect: a building plan that set
 
 Not yet played.
 
+## 118. Big rocks hold far fewer stones, so mining visibly shrinks them
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026, on entry 106: "so far I have mined over 3200 stones from this big rock and it feels accessive. it also hasnt shrunk any that we can see." Then: "work on it now".
+
+**What was found:** shrinking worked (entry 106), but the rock was huge in stones. Since 19 Nov a rock gave 0.7 of its weight as 0.5 kg stones, so one about 1.9 m across held about 11,000 and the biggest (2.4 m) about 22,400. His 3,200 was under a third of it, and its width had come down only about a fifth.
+
+**Required outcome:** a big plain rock holds a sensible number of stones, so it visibly shrinks as it is mined. Copper and tin stay abundant (answered for Dave by the coordinator while he slept: cut plain stone rocks only).
+
+**As built (PR #1427, reviewed head d02fea51, merged to dev at 00239051):** boulders.json yield 0.7 -> 0.047 for plain stone rocks, and for limestone, chalk and marble rocks. The biggest common boulder (2.4 m across) holds about 1,500 stones, and every size keeps the same stones per volume: 2 m about 870, 1.5 m about 370, 1 m about 110, 0.6 m about 23. Rocks with an ore (copper, tin, iron, coal, salt) keep ore_yield 0.7, so their amounts are exactly as before. Rocks already worked in a save keep their share: the save now holds both rates, and a rock saved at other rates is scaled once by its own kind's rate when it is laid out. The boulders.json note no longer says "cube root".
+
+**Evidence:**
+- Independent review PASS on e0d002b3, d8edac53, 05baa8b7 and d02fea51.
+- Lane B on d02fea51: 251 PASS / 0 FAIL (246 fast + 5 timing), test_server_items among them (counts by kind, a 19 Nov save scaled by kind, a waiting rock kept through a save). validate_items had 0 errors. Warnings stay at 381. Join smoke clean.
+- An earlier Lane B run on d8edac53 failed to parse (a test variable name used twice); fixed in 05baa8b7.
+
+**Acceptance:** mine a big grey rock with a pick: it gives at most about 1,500 stones and is plainly smaller well before the end. A copper or tin rock gives as much ore as before.
+
+Not yet played. A big ore rock (an iron outcrop, or copper or tin under the mountains) still holds thousands of stones, so it still shrinks slowly. The rock in Dave's picture may have been one of those; if so, this change does not alter it.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
@@ -1579,5 +1598,6 @@ Dave requested this rewrite around the intended experience rather than a literal
 - HE-3 (entry 52): water containers on the hotbar still go in hand (they are needed to fill and pour). Drink from them as before.
 - OR-1..OR-6 (entry 105): one placement rule for copper and tin by river, height, land scatter and own ore body; values in docs/design/COPPER_ROCKS.md.
 - BW-1..BW-3 (entry 106): a rock at its last stone is a fifth of its full radius; cracks are 0.2 after the first blow, rising to 1.0; each blow eases the look over 0.15 s.
+- Rock stones (entry 118; called BW-4 in boulders.json, not the bellows BW-4 of entry 115): plain stone, limestone, chalk and marble rocks yield 0.047 of their weight in 0.5 kg stones (the biggest, 2.4 m across, about 1,500); ore rocks keep 0.7. Limestone counts as stone, not ore (Claude's pick).
 - ET-1 (entry 104): an item the reticle is on is reached to 3 m, as fires and stations are (it was 2.5 m; the server allows 3.5 m).
 - Crops need tilled soil (Plant does not till); scatter stone, flint and ores count as small rocks to pick up; wild shrubs are not checked for duplicates.
