@@ -513,10 +513,10 @@ Dave, 19 Nov 2026: "if you select play it needs to take you to our server select
 
 **Acceptance:** start the client-only build, press Play: the page lists the official server and your saved ones; add an IP and a name such as hannibalshouse.duckdns.org; a server that is off shows red; double-click a working one to reach the character page; a password server asks once and is remembered next time; three wrong tries show the message and return to the page.
 
-Assumed on Dave's behalf (provisional, also in the design doc):
+Settled by Dave, 21 Nov 2026: "yes continue goes straight in with the last server and character and it remembers the password. yes each row can show server ip, name, player count, ping and status online or not". Continue (when there is a last server and character) goes straight in, with Cancel on the joining screen; with neither it opens the server page. Rows show the player count, not who is online, and under the name the address plus the IP a name points to now: PR #1425, merged to dev at 31dc7fa4 (head e96a76d2) after independent review; Lane A on the exact head: 26 of 26 selected tests passed, including test_server_pick ("a row named by a host name shows the IP it points to"); warnings 381, zero new; join smoke clean. Not yet played.
 
-- SP-3: Continue (when there is a last server and character) goes straight in, with Cancel on the joining screen; with neither it opens the server page. Dave asked this as a question, not yet answered.
-- SP-4: rows show the player count only, not who is online.
+Assumed on Dave's behalf (provisional):
+
 - SP-5: "Remember on this computer" in the password box is ticked by default.
 
 ## 69. Bog iron: stains you can find, Bog iron ore, iron rocks marked
