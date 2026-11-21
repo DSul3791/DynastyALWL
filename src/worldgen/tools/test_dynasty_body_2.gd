@@ -162,7 +162,7 @@ func _init() -> void:
 		_check(most > 0.03 and most < 0.12, "Bust +1: the chest front comes forward %.3f m" % most)
 		_check(high > 1.1 and high < 1.45, "Bust +1: at chest height (%.2f m)" % high)
 		# Round, not pointed (Dave 21 Nov 2026: "if you increase the breasts they get pointy they should get big, round and voluptuous"): 3 cm from the left breast's
-		# front, up, down and to either side, the shaped surface is still within 2.5 cm of it (a sphere of her size drops about 1 to 1.5 cm there; the old cone 4.4 cm).
+		# front, up, down and to either side, the shaped surface is still within 2.5 cm of it (offline on her mesh about 1 to 1.5 cm; the old cone 4.4 cm).
 		var tip: Vector3 = Vector3(0.0, 0.0, -INF)
 
 		for p in raised:

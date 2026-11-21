@@ -11,8 +11,8 @@ extends RefCounted
 #   hips   widens the pelvis and the tops of the thighs sideways,
 #   chest  widens the rib cage and brings the chest forward,
 #   bust   fills each breast out into a full, round shape (Dave 20 Nov 2026: "yes we need a bust slider"; 21 Nov: "if you increase the breasts they get pointy they
-#          should get big, round and voluptuous"): each breast's own front is found on the mesh, and the chest round it is pushed out onto a rounded shape (an
-#          ellipsoid) centred behind that front, straight out from the centre, so the breast grows wide and tall as well as forward. It joins the chest softly above
+#          should get big, round and voluptuous"): each breast's own front is found on the mesh, and the chest round it is pushed 60% of the way out onto a rounded
+#          shape (an ellipsoid) centred behind that front, straight out from the centre, so the breast grows wide and tall as well as forward. It joins the chest softly above
 #          and with a fold below, never at the breastbone, and the shape carries its own normals so the light falls on the round. The bust slider from -1 ("none",
 #          every old genome) up to -0.6 (the Even frame, which every new character starts with) leaves the body as modelled, so a new character and one at the Even
 #          or Broad frame change only when the slider is moved up (a saved character already set above -0.6, such as the Curved frame's 0.3, shows its bust); +1 is

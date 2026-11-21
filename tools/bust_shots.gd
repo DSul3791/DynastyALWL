@@ -5,7 +5,7 @@ extends SceneTree
 # big, round and voluptuous"). No world, no server. Needs a real renderer (a window on the PC).
 #   godot --path . --script res://tools/bust_shots.gd -- --out=E:/somewhere/bust_shots [--values=-0.6,0,0.5,1]
 # Writes <out>/bust_<body>_<value>_<view>.png at the window's size. A picture is taken only once the body wears its shaped mesh at that weight; "bust_shots: FAIL"
-# when a body never does.
+# when a body never does; the exit code is then 1.
 
 const Body := preload("res://src/client/character/dynasty_body.gd")
 const BodyModels := preload("res://src/client/character/body_models.gd")
