@@ -65,4 +65,6 @@ Nothing is regenerated and no world is reset. Two save fields are added to `worl
 - Pictures (Lane A) of a coal seam's outcrops and an opened pocket rock.
 - Lane measurement of the build time (now with seams and pockets) (cloud mirror took 5 s in Python; GDScript expected 1 to 3 s on a worker thread, NOT MEASURED) and of the scatter cost per cell (NOT MEASURED).
 - Pictures (Lane A): rounded, broken and jagged rocks; a source with its outcrops and fragments; a river with clues.
-- Danger information on routes: the check avoids the high mountain ground only; it does not yet read goblin or bandit camps.
+- Handoff 13 checks not automated yet (the starting-island check only proves a source of each metal within a route budget, off steep, high and dangerous ground): copper and tin quantities against the first bronze equipment and building costs; iron visible before iron smelting; the charcoal and coal routes fitting the bellows smelting; the inland reward. To be checked from the lane pictures, resource_map.gd's report and Dave's play; recorded here as gaps, not passes.
+- Adverse seeds, region boundaries and reloads: resource_map.gd takes --seed; no seed other than the base world's has been looked at yet (lane work).
+- A danger ring round spawn itself would refuse every route ("NO reachable ..." in the log, no assured source); no known camp is that close today.

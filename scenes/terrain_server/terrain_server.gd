@@ -3635,6 +3635,9 @@ func _exit_tree() -> void:
 	# The pool tasks nothing else waits for: none may still run while the engine shuts its worker pool down (PoolTasks; main gate 21 Nov).
 	_cover_tasks.finish()
 
+	if items != null:
+		items.finish_resources()   # the island resource landscape's build (start_resources)
+
 	if flora != null:
 		flora.finish_tasks()
 

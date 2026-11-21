@@ -2981,6 +2981,7 @@ func reset_world() -> int:
 	_bog_holes.clear()
 	_pockets_open.clear()
 	_seam_left.clear()
+	_seam_y.clear()
 	_picked.clear()
 	_stripped.clear()
 	_fruit.clear()
@@ -7809,6 +7810,15 @@ func start_resources(tiles_dir: String, tile_size_m: float, spawn: Vector3, dang
 	var building: RefCounted = _resource_building
 	var seed_value: int = world_seed
 	_resource_task = WorkerThreadPool.add_task(func() -> void: building.load_tiles(tiles_dir, tile_size_m, seed_value, cfg, spawn), false, "resource landscape")
+
+
+# Waits for a landscape build still running (terrain_server _exit_tree, with the other pool tasks: none may run while the engine shuts its
+# worker pool down, PoolTasks; main gate 21 Nov 2026), so a server stopped within its first seconds exits cleanly.
+func finish_resources() -> void:
+	if _resource_task != -1:
+		WorkerThreadPool.wait_for_task_completion(_resource_task)
+		_resource_task = -1
+		_resource_building = null
 
 
 # False while the landscape is still being built (start_resources); picks it up when done.

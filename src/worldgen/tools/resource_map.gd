@@ -84,6 +84,12 @@ func _init() -> void:
 		return
 
 	DirAccess.make_dir_recursive_absolute(out_dir)
+
+	if not DirAccess.dir_exists_absolute(out_dir):
+		print("resource_map: cannot write to %s (give --out=DIR)" % out_dir)
+		quit(1)
+		return
+
 	var lines: PackedStringArray = PackedStringArray(["world %s, seed %d, spawn %.0f, %.0f" % [world, seed_value, spawn.x, spawn.z]])
 	lines.append_array(context.get("report"))
 	var per: Dictionary = {}
@@ -98,6 +104,12 @@ func _init() -> void:
 	print("\n".join(lines))
 
 	var view: Rect2i = _view(context, spawn, around)
+
+	if view.size.x <= 0 or view.size.y <= 0:
+		print("resource_map: spawn %.0f, %.0f is off the tiles; drop --around or give --spawn" % [spawn.x, spawn.z])
+		quit(1)
+		return
+
 	var areas: Image = _ground(context, view)
 	var finds: Image = areas.duplicate() as Image
 	_draw_areas(areas, context, view, spawn, dangers, cfg)
