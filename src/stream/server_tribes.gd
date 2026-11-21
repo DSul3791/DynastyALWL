@@ -199,7 +199,7 @@ func _mouth(tribe: String) -> Vector3:
 
 
 # What a member does about the players near it (server_npcs._step asks every tick it is awake):
-#   {"hide": Vector3}  an angry character is near: go to the cave mouth and out of sight;
+#   {"hide": Vector3}  an angry character is near (or it is already running for the mouth): go to the cave mouth and out of sight;
 #   {"goal": Vector3}  back off to this point (away from the nearest player inside its keep distance, within leash_m of its spot);
 #   {"guard": true, "look": Vector3} a player with a weapon in hand is within spook_m (and not too near): stand its ground facing them;
 #   {"hold": true, "look": Vector3}  a player is just outside its keep distance: stand still and watch;
@@ -228,8 +228,13 @@ func avoid(npc: Dictionary) -> Dictionary:
 	var armed_d: float = float(att.get("spook_m", 10.0))
 	var far: float = maxf(maxf(float(att.get("watch_m", 20.0)), armed_d), float(att.get("angry_keep_m", 25.0)) + HIDE_EXTRA_M) + float(att.get("armed_keep_m", 4.0)) + CALM_EXTRA_M
 
+	var spot_at: Vector3 = _member[id]["spot"]
+
 	for p in _players:
 		var d: float = Vector2(p["pos"].x - pos.x, p["pos"].z - pos.z).length()
+
+		if bool(npc.get("hidden", false)):
+			d = minf(d, Vector2(p["pos"].x - spot_at.x, p["pos"].z - spot_at.z).length())   # in the cave it minds its own spot too: a striker waiting at the camp, 50 m from the mouth (3,4#8006), keeps it in
 
 		if d > far:
 			continue   # past everything a member reacts to: no standing lookup for the far players
