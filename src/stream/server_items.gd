@@ -376,11 +376,11 @@ const SOURCE_SLOT_FIRST := 64          # a cell's rocks of the sources (deposits
 const SOURCE_SLOT_LAST := 159
 const SEAM_SLOT_FIRST := 160           # a cell's coal seam outcrops and their loose coal: slots 160..255 (_lay_out_seams)
 const SEAM_SLOT_LAST := 255
-const POCKET_KEY := ORE_KEY | CAVE_KEY | BOULDER_KEY   # an opened pocket's rock: POCKET_KEY | the pocket's id (30 bits); no other key has all three
-var _pockets_open: Dictionary = {}     # pocket id -> [x, y, z] where its rock lies (the dig that opened it), saved in world_items.json "pockets"
-var _seam_y: Dictionary = {}           # seam id -> the generated ground height at its centre: the layer's height (once a run)
 const ORE_METALS := {"iron": 0, "copper": 1, "tin": 2}   # ResourceContext field and clue index of each ore with an area (meteorites have none)
 const ORE_KEY := 1 << 52               # copper, tin and iron rocks picked by hand: ORE_KEY | cell x << 28 | cell y << 8 | slot; tin boulders add BOULDER_KEY
+const POCKET_KEY := (1 << 49) | ORE_KEY | BOULDER_KEY   # an opened pocket's rock: POCKET_KEY | the pocket's id (30 bits); bit 49 is in no other key (cell bits end at 47)
+var _pockets_open: Dictionary = {}     # pocket id -> [x, y, z] where its rock lies (the dig that opened it), saved in world_items.json "pockets"
+var _seam_y: Dictionary = {}           # seam id -> the generated ground height at its centre: the layer's height (once a run)
 const BOG_STATE := 229            # world-item row state of a bog iron deposit (next free structure state, 10 Nov 2026; no structure may take it)
 const BOG_ID_BASE := 2000000000   # bog deposit world row ids count down from here (int32, far above _next_id), one per deposit key per run
 var _bog_ids: Dictionary = {}     # deposit key "gi,gj" -> its world row id
@@ -8472,13 +8472,14 @@ func _ore_item_of(ore: String) -> String:
 	return str((cfg.get("items", {}) as Dictionary).get(ore, (cfg.get("finds", {}) as Dictionary).get(ore, "")))
 
 
-# The height of a coal seam's layer: the generated ground at its centre (ground_height, kept once a run); NAN while unknown.
+# The height of a coal seam's layer: the generated ground at its centre (ground_height, kept once a run); NAN while unknown (its tile not
+# in memory yet: ground_ready asks for it on a worker thread).
 func _seam_height(seam: Dictionary) -> float:
 	var id: int = int(seam["id"])
 
 	if not _seam_y.has(id):
-		if not ground_height.is_valid():
-			return NAN
+		if not ground_height.is_valid() or (ground_ready.is_valid() and not bool(ground_ready.call(float(seam["x"]), float(seam["z"])))):
+			return NAN   # its tile is not in memory: never read one on the main thread (that seam waits for a later look)
 
 		var y: float = float(ground_height.call(float(seam["x"]), float(seam["z"])))
 
