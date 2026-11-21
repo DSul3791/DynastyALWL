@@ -11,7 +11,8 @@ extends SceneTree
 #   3. the Improved smelter: E lights it, E on the lit one works the bellows, hold E (choice 1) puts it out; without anyone at its bellows it works like the Primitive (20 s a copper ingot) and makes no iron; with a player
 #      working them iron goes, ~15.38 s an ingot, into its output rack; a worker who walks away stops them and the iron job keeps its time;
 #      a full rack makes it wait;
-#   3b. two players: one works the bellows, a second is refused; the second takes the ore and fuel out mid-smelt (nothing lost or made,
+#   3b. two players: one works the bellows, a second is refused; the smelter's world row says "bellows" 2 to the worker and 1 to the other
+#      (their prompt, the brighter fire, smoke puffs and sound), and nothing once they leave, sent at once; the second takes the ore and fuel out mid-smelt (nothing lost or made,
 #      the smelt forgotten); the worker logging out stops the bellows, the iron job paused;
 #   4. crafts and building never draw on a smelter's store (its fuel and ore are its own);
 #   5. save and load keep a smelter's banked time and that it is lit; a store saved under the old 4 + 4 slot layout is laid out again with nothing lost or made;
@@ -404,6 +405,17 @@ func _init() -> void:
 	said.clear()
 	act(Net.ACT_USE_STRUCT, imp, 0, 0, 2)
 	check(items._smelters.bellows_worked(imp) and int(items._smelters._bellows.get(imp, -1)) == 1 and said.any(func(t): return "already" in str(t)), "a second player at worked bellows is refused; the first keeps them")
+	var rows: Dictionary = {}   # peer -> the smelter's last world row sent to them
+	items.send_world_items = func(p, a, _r):
+		for r in a:
+			if int(r[0]) == imp:
+				rows[p] = r
+	use(imp)   # the worker leaves the bellows: the smelter's row goes out at once (a quick sync of it alone)
+	check(rows.has(1) and rows.has(2) and not (rows[1][5] as Dictionary).has("bellows") and not (rows[2][5] as Dictionary).has("bellows") and lit(imp), "left, the smelter's row goes out at once to both players without bellows; it stays lit (%s)" % str(rows))
+	rows.clear()
+	use(imp)   # and goes back to them
+	check(rows.has(1) and rows.has(2) and int((rows[1][5] as Dictionary).get("bellows", 0)) == 2 and int((rows[2][5] as Dictionary).get("bellows", 0)) == 1, "back at the bellows, the row goes out at once: 2 to the worker (Press E to stop using the bellows), 1 to the other player (%s)" % str(rows))
+	items.send_world_items = func(_p, _a, _r): pass
 	run(manned_s * 0.5)
 	take_all_as(2, imp)
 	run(1.0)

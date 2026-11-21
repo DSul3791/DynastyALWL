@@ -513,10 +513,10 @@ Dave, 19 Nov 2026: "if you select play it needs to take you to our server select
 
 **Acceptance:** start the client-only build, press Play: the page lists the official server and your saved ones; add an IP and a name such as hannibalshouse.duckdns.org; a server that is off shows red; double-click a working one to reach the character page; a password server asks once and is remembered next time; three wrong tries show the message and return to the page.
 
-Assumed on Dave's behalf (provisional, also in the design doc):
+Settled by Dave, 21 Nov 2026: "yes continue goes straight in with the last server and character and it remembers the password. yes each row can show server ip, name, player count, ping and status online or not". Continue (when there is a last server and character) goes straight in, with Cancel on the joining screen; with neither it opens the server page. Rows show the player count, not who is online, and under the name the address plus the IP a name points to now: PR #1425, merged to dev at 31dc7fa4 (head e96a76d2) after independent review; Lane A on the exact head: 26 of 26 selected tests passed, including test_server_pick ("a row named by a host name shows the IP it points to"); warnings 381, zero new; join smoke clean. Not yet played.
 
-- SP-3: Continue (when there is a last server and character) goes straight in, with Cancel on the joining screen; with neither it opens the server page. Dave asked this as a question, not yet answered.
-- SP-4: rows show the player count only, not who is online.
+Assumed on Dave's behalf (provisional):
+
 - SP-5: "Remember on this computer" in the password box is ticked by default.
 
 ## 69. Bog iron: stains you can find, Bog iron ore, iron rocks marked
@@ -841,6 +841,29 @@ Not yet played.
 - Start a new character: the first view shows the campfire with Hob and Edda beside it.
 - Die and come back at the spawn: you face the fire again.
 - Esc > Admin > Go to spawn: the same.
+
+Not yet played.
+
+## 93. First start: a clear note that the game is preparing its graphics
+
+**Status: Implemented - awaiting player verification.** On a computer with no saved shaders, the first windowed join freezes for about 25 s right after the server's welcome, and Windows may say "Not responding" (Lane A, 20 Nov 2026; also on main be491ba6). Dave, 21 Nov 2026: "thats not a problem. its expected on the first load" and "we should have a message that is clear that tells people that."
+
+**Required outcome:** on a first start the player sees a plain message explaining the pause, on screen during it.
+
+**Cause of the pause (not changed):** Godot builds the world's shaders after the welcome (DIAG-93: with only the shader cache deleted the 25 s freeze came back; with it kept the freeze was gone). An attempt to spread the building over frames (PR #1393) did not shorten it and was closed unmerged.
+
+**As built (PR #1405, reviewed head 6e5bcce5, dev 58d03b3b):** the Joining window shows, in yellow under its steps: "First start on this computer (or after an update): the game is preparing its graphics. Once the server answers, this can take up to about half a minute. The window may stop moving, or Windows may say "Not responding". Please wait: the game is not stuck. Later starts are much quicker." The note shows until a join with the same Godot version, graphics driver, graphics card and game build has reached the ground (user://graphics_prepared.txt), so it returns after an update. While it is up, the window stays until the player has landed, so it is still on screen through the freeze.
+
+**Evidence:**
+- Independent review PASS on 6e5bcce5.
+- Lane A on 6e5bcce5: selector 29 fast PASS / 0 FAIL, warnings 381, 0 new.
+- Lane A cold windowed join: the note was on screen just before the 23.9 s freeze and the same frame was held through it. The window closed after "JOIN: ground ready" (+67 s), and the mark file was written.
+- Second join: no note; window closed after 4 s.
+- Pictures in the Library: 1405_6e5bcce5_cold_note_before_freeze.png, 1405_6e5bcce5_cold_note_held_after_freeze.png, 1405_6e5bcce5_second_join_no_note.png.
+
+**Known, for later:** during the freeze the held frame still reads "2. Waiting for the server's welcome: 0 s" although the welcome has arrived.
+
+**Acceptance:** on a computer that has never run the game (or after an update), the Joining window shows the yellow note and keeps it up through the pause. The next start shows no note.
 
 Not yet played.
 
@@ -1258,6 +1281,189 @@ Not yet played; not yet seen in a picture.
 
 Not yet played.
 
+## 113. Fens, bogs and swamps stand out
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026, on wetlands: "they should be readable but lets talk about that. there are reeds everywhere there is a river. how can we make fens, bogs and swamps standout". Shown the plan (dark wet ground, shallow pools, plants of their own, mist and wetland sounds), he said: "make them all. I like it. do that now".
+
+**What was found:** fen and bog ground drew as plain grass, with no reeds, water or sound of its own (Dave's play-test note 17, 20 Nov 2026, in the coordinator's play-test notes). The flora placer kept every plant off fen, bog and swamp cells, so they were bare.
+
+**Required outcome:** each wetland reads from a distance and up close, and none of its plants grows on river banks. Fen is green and wet with cattails. Bog is brown and mossy with white tufts. Swamp is dark, with dead trees and standing water. Marsh keeps its mud, reeds, willow and mint.
+
+**As built (PR #1422, reviewed head 820f1c62, merged to dev at b8a9bc54):**
+- Ground: new draw-only material ids 29 fen, 30 bog and 31 swamp. Digging still gives peat (fen, bog) or mud (swamp). Fen is near-black peat with sedge-green flecks, bog is brown with rust-red and ochre-green moss, and swamp is black mud, all with a wet sheen. TERRAIN_VERSION 79; the starter ground was rebuilt for it.
+- Pools: still brown water lies in the hollows whatever the weather, on flat ground only (about 17% of fen, 10% of bog and 30% of swamp, as test_wetland_signs printed on Lane B at 820f1c62). It freezes and takes snow like puddles. Wading one splashes and slows you to 0.85 of your pace.
+- Plants (flora layout 32): Cattail on fen, 700 a hectare. Tussock sedge on fen (400) and swamp (150). Bog moss hummock on bog (500). Cotton grass on bog (1,000; no longer on the marsh edge). Dead tree with hanging moss in swamp (30). None of them grows on river banks.
+- Seeds: Cattail seed (item 1514), Tussock sedge seed (1515) and Bog moss spores (1516). Each comes from its wild plant late in its season and grows in a garden. The dead tree is scenery.
+- Sound: wetland steps squelch (existing step_mud and wet_squelch). Frogs, crickets and insects call over wetland. No new sound files.
+- Mist: up to 4 low patches near the player, from 1 hour before to 2 hours after sunrise and from 1 hour before to 1.5 hours after sunset. Wind thins it and rain clears it.
+- One-time effects on the first server start: the ground blocks regenerate (a first-load pause), and felled trees and picked plants come back once. Ground edits, structures and their contents are kept. No world wipe.
+
+**Evidence:**
+- Independent review first found 4 bugs on 2253f818: wetland digs gave loam, an invisible log wall at dead trees, no frogs in a fen without open water, and the ground name. It passed on 76e717af, 9a601076 and 820f1c62.
+- Lane B on 76e717af: test_farming failed because the new plants had no seeds; fixed in 9a601076.
+- Lane B on 9a601076: validate_items failed because the Bog moss spores description was too long; fixed in 820f1c62.
+- Lane B on 820f1c62: 376 pass / 0 fail (fast 365, timing 9, slow 2). validate_items 0 errors, look names 340, warnings 381 = baseline. Join smoke time to ground 34 s.
+- test_worldgen: a terrain version bump keeps digs, tile revisions and world_items saves. test_wetland_signs covers the look ids, sounds, pools, pace, plant rows and mist hours.
+
+**Acceptance:** at the fen patches 58408,71560 or 58576,71776 near the spawn (the bog iron answer to Dave, 21 Nov 2026) the ground reads as a dark wet patch from a distance. Close up there are cattails, sedge and still brown pools that splash and slow you. Bogs are brown with moss hummocks and white cotton tufts, and swamps are black with dead trees and standing water. Near dawn and dusk low mist lies over them and frogs call. River banks have none of these plants.
+
+Not yet played; not yet seen in a picture.
+
+## 115. Working the smelter bellows shows and sounds
+
+**Status: Implemented - awaiting player verification.** Dave, play-testing on 21 Nov 2026: "Im using an improved smelter and it says press e to work the bellows. so I do and it gives me the spiel then it says press e to work the bellows again. when I do it says you leave the bellows. if pressing e the first time puts me on the bellows. the light should get brighter, the smoke should puff and their should be a bellows sound." Then: "and it should then say press e to stop using the bellows".
+
+**What was found:** the server knew who worked the bellows, but the client was never told. The look-at line was always "Press E to work the bellows, E again to stop", so the second press read as a second start. Nothing in the look or the sound changed while the bellows were worked, and the sound pack had no bellows sound.
+
+**Required outcome:** on the bellows, the prompt says "Press E to stop using the bellows". The fire light is brighter, the smoke puffs and a bellows sound plays, and all of it stops when he leaves. Other players near see and hear it. Nothing runs on the server per frame.
+
+**As built (PR #1424, reviewed and tested head 7c15c21a, merged to dev at 9aff47a1):**
+- The smelter's world row carries `bellows`: 2 when this player works them, 1 when another player does (`server_smelter.bellows_peer`). Starting or leaving the bellows sends that smelter's row at once, through a quick sync of it alone.
+- The prompt says "Press E to stop using the bellows" while you work them, "Someone else is working the bellows" while another player does, and "Press E to work the bellows" otherwise. Each adds "(hold E to put it out)". The start notice no longer says "E again to stop".
+- While they are worked, the fire light is 1.8 times as bright. Every 1.4 s the flames leap, a puff of smoke goes up the chimney and the new sound `bellows_blow` plays (`BuildingLook.show_forge_bellows`, a Timer in the model). It stops when the worker leaves, walks away or logs out, or when the smelter goes out.
+- New generated sound: `assets/audio/workshop/bellows_blow_0` and `_1` (make_workshop.py). It has a manifest slot, which asks for a real recording.
+- Covered: the Improved smelter only, the one station with player-worked bellows. The Advanced smelter's bellows run from its windmill. The standalone Bellows are retired.
+
+**Evidence:**
+- Independent review: PASS on 7ae7a0a1 and 7c15c21a. The first pass found a test check that could miss the change, and a full world sync forced on every E press. Both were fixed in 7ae7a0a1.
+- Lane A tests on 7ae7a0a1: 275 pass / 0 fail. On 7c15c21a: 276 pass / 0 fail, script errors 0, warnings 381 = baseline, join smoke ground ready +7.9 s.
+- test_smelters 3b checks the row on leaving and going back: no bellows to both players when left, and 2 to the worker and 1 to the other when back.
+
+**Known limits:**
+- A smelter already being worked when you log in plays its bellows strokes while the world loads. The quiet load (entry 123) covers placed-thing sounds only.
+- The look and the sound have not been seen or heard in game.
+
+**Acceptance:** light an Improved smelter and press E. The prompt turns to "Press E to stop using the bellows", the fire brightens, and the smoke puffs with a bellows sound about every 1.4 s. Press E again: "You leave the bellows", and the light, puffs and sound stop while it stays lit. A second player nearby sees and hears the same.
+
+Not yet played.
+
+## 117. Fitness: tiring scale and idling below the start
+
+**Status: Implemented - awaiting player verification.** Dave's rulings during his play test, 21 Nov 2026, after asking what fitness does: "at 100 it should use 50%", "scale in between 50 fitness being 100% and 100 being 50%", and "being Idle can lower it below your start. that was not my rule. remove it." (reading confirmed: "that correct").
+
+**What was found:** exertion rose at exp(-(fitness - 50) / 5 x 0.05) of the average rate, so 61% at fitness 100 and 78% at 75. True rest took fitness back only as far as the starting value.
+
+**Required outcome:** 100% at fitness 50 falling evenly to 50% at 100. Idling may lower fitness below where the character started.
+
+**As built (PR #1426, reviewed head 55f68a66, merged to dev at faf0e33e):**
+
+| Fitness | Exertion rises at |
+|---|---|
+| 0 | 165% (unchanged) |
+| 40 | 110% (unchanged) |
+| 50 | 100% |
+| 75 | 75% |
+| 100 | 50% |
+
+- From 50 up the rise is a straight line to `top_mult` (0.5, data/items/fitness.json). Under 50 the old curve is kept. Both meet at 50 with the same slope, so there is no kink. Recovery is the same for everyone.
+- Idling (effort under 0.02 for over 10 minutes, awake) takes a point per 8,640 s, below the starting value too, down to 0. Sleep still costs nothing. Training still adds at most 50 points above the starting value.
+- Whole points now use floor (as positive training always did), so a character idling at exactly their start loses the first point as soon as the 10-minute grace has passed, then one more per 8,640 s.
+- Saves unchanged; existing characters load as before.
+
+**Evidence:**
+- Independent review: one stale strain-ratio test found on 55007e1f, fixed; PASS on 55f68a66.
+- Lane A on 55f68a66: 251 pass / 0 fail (246 fast, 5 timing); test_slot_sounds failed once on a pace check under load and passed on retry (unrelated). validate_items 0 errors, warnings 381 = baseline, join smoke clean.
+
+**Acceptance:** a fitness 100 character runs about twice as long as a fitness 50 one before winded; 75 about 1.33 times as long. A character left idle for days drops below the fitness they started with and stops at 0.
+
+Not yet played.
+
+## 120. Dune grass is picked for plant fibre
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "Dune grass should be pickable like long grass giving plant fiber". Ordered before main on 21 Nov 2026 ("complete all the bugs and everything I gave you earlier").
+
+**What was found:** dune grass had no hand yield in drops.json, so E gave nothing but its seed, and that only in autumn.
+
+**Required outcome:** dune grass is picked by hand like tall grass and gives plant fibre.
+
+**As built (PR #1430, reviewed and tested head 07edcd2f, merged to dev at 37690c22):** drops.json by_species dune_grass gives 1 to 3 Plant fibre, in the plant's seasons (spring to autumn); its autumn seed still comes with it, and a sickle or scythe swing gets the fibre too.
+
+**Evidence:** independent review PASS on 07edcd2f. Lane A on 07edcd2f: 338 PASS / 0 FAIL (330 fast + 8 timing), validate_items 0 errors, look names 340, warnings 381 = baseline, join smoke clean. test_farming: dune grass is picked for fibre in spring, not in winter.
+
+**Acceptance:** on a beach in summer, E on dune grass gives 1 to 3 Plant fibre; in autumn also Dune grass seed.
+
+Not yet played. The amount is provisional (DG-1, below).
+
+## 121. Every tool has an icon
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "how does the copper pickaxe not have an icon. its the same as the rest of them with a different color".
+
+**What was found:** 22 tools had a look but had never been baked to an icon: the Copper pickaxe and 21 more.
+
+**Required outcome:** the Copper pickaxe has an icon like the other pickaxes in copper colour, and every other tool tier has one too.
+
+**As built (PR #1430, merged to dev at 37690c22):** the Copper pickaxe icon is the Bronze pickaxe icon with its metal recoloured copper (tools/recolour_icons.py METAL_TIERS; the bake's copper pick read as bronze at 32 px). The other 21 were baked on Lane A with tools/icon_bake.gd (dev 0bb4349f, 0 need painting): Copper, Iron and Steel axe and knife; Copper hammer and chisel; Copper and Bronze hoe and shovel; Stone and Steel saw; Copper, Bronze, Iron and Steel sickle; Copper, Bronze and Steel scythe.
+
+**Evidence:** same review and Lane A run as entry 120. The icon sheet is in the project files (icon_sheet_tools.png).
+
+**Acceptance:** every tool in the pack shows a picture, not its name.
+
+Not yet played. Known, for after main: the hoe, shovel, sickle and scythe looks draw every metal the same colour (basic_look.gd ignores the looks.json colour for them), so their tier icons look alike. Weapons without icons still use the grey placeholder look.
+
+## 122. Boards look like 8 ft boards
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "dropped hardwood boards look like tin ore. they should look like 8ft long boards".
+
+**What was found:** Hardwood board still had the grey placeholder lump; Plank drew a small stack of half-metre pieces.
+
+**Required outcome:** a dropped board is one long board lying flat; several stack as boards.
+
+**As built (PR #1430, merged to dev at 37690c22):** a new "board" look, 2.44 m x 20 cm x 2.5 cm with pale cut ends and grain, drawn at its real size on the ground (not enlarged like small items). Two or more lie in a lumber stack (pile shape "boards": 4 side by side a layer, 10 layers a stack, 12 triangles a board). Used by Hardwood board (off the placeholder list; its icon is the Plank icon in oak brown) and Plank. Fine board is retired and unchanged. One E on a stack takes 20.
+
+**Evidence:** same review and Lane A run as entry 120. test_pile_logs: one board is 8 ft, a stack is 12 triangles a board on the ground, the fifth board starts a new layer. Pictures: the first try was hidden in bushes; a retake is pending.
+
+**Acceptance:** drop 1 Hardwood board: one long dark board on the grass. Drop 20: a neat stack, four wide. Plank is the same in a lighter wood.
+
+Not yet played. Sizes are provisional (BD-1, below).
+
+## 123. No building sounds while the world loads
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "when a person logs in and it loads everything around you it makes the sounds of building everything really fast. during this time it shouldn't. it can mute sounds until they land on the ground and everything is loaded."
+
+**What was found:** the place sound plays for every placed thing that appears within 40 m. At login the town arrives in batches after the first look, so each batch sounded as if it were being built.
+
+**Required outcome:** silence for things appearing while the world loads; normal sounds after.
+
+**As built (PR #1430, merged to dev at 37690c22):** PlacedSounds only notes rows while the world loads (terrain_client._world_loading: until joined, on loaded ground, the join window closed, and 3 s after landing or after the window closes). After that, more than 3 things appearing near at once is taken as the world streaming in and is silent too.
+
+**Evidence:** same review and Lane A run as entry 120. New test_placed_quiet: nothing is heard while loading, a late batch of 8 is silent, one chest set down after the load is heard.
+
+**Acceptance:** log in beside the starter town: no building sounds while it appears. Then set down a chest: its sound plays.
+
+Not yet played. Provisional (LQ-1, below). Side effect: a building plan that sets down several pieces at once is silent.
+
+## 124. The bust slider grows round, not pointed
+
+**Status: Implemented - awaiting player verification.** Dave, play-testing the character creator on 21 Nov 2026: "I just noticed when making a new character that is female if you increase the breasts they get pointy they should get big, round and voluptuous."
+
+**What was found:** the bust shape (`dynasty_shapes.gd`) pushed a narrow mound straight forward, up to about 8 cm on her. Most of the push sat within a few centimetres of its centre, so the breast drew as a cone. The shape also kept the base normals, so the light did not follow it.
+
+**Required outcome:** raising the slider gives a full, round, natural shape through the whole range. No cone, no tearing or clipping, and the shading is right. The low end is unchanged, and saved characters keep their value.
+
+**As built (PR #1431, reviewed head fedee321, merged to dev at c5ccbd9e):**
+- Each breast's own front is found on the mesh, and the two sides are mirrored to one pair.
+- The chest round each breast is pushed 60% of the way out onto a rounded shape (an ellipsoid) centred behind that front. It joins softly above and with a fold below, and fades out at the breastbone and at the shape's edge. At +1 the front comes about 5.7 cm forward on her.
+- The last 40% of the chest's own relief is kept. Going all the way made the top's creases meet and crumple through each other in the first in-game pictures (80e0542c).
+- The shape carries its own normals.
+- Shoulder-weighted chest vertices move too. Body 1's pectorals are mostly shoulder weighted, so both bodies round alike.
+- The slider from -1 to -0.6 still does nothing. Genomes and share codes are unchanged, and a saved character keeps its value.
+- New picture tool `tools/bust_shots.gd`: each body at -0.6, 0, 0.5 and 1, front, three-quarter and side.
+
+**Evidence:**
+- Offline, on both glb meshes with a transliteration of the code, the cone was reproduced. In the new shape no fold layers meet, 1 triangle turns over on her and none on Body 1, and 3 cm from the front the surface falls at most 1.5 cm (the cone fell 4.4 cm).
+- Independent review: PASS on 80e0542c, d508e4d3 and fedee321.
+- Lane A pictures on 80e0542c: round, but a crumple under one breast at +1, which d508e4d3 fixed. Lane A pictures on fedee321 (`bust_fedee321_body_*` in the project files): round and full from every side on both bodies, no crumple, -0.6 as modelled.
+- Lane A tests on fedee321: 71 pass / 0 fail (70 fast plus timing test_dynasty_arms_prebuild), script errors 0, warnings 381 = baseline, join smoke ground ready +14.6 s.
+- test_dynasty_body_2 adds a roundness check, a check that the normals turn, and a turned-over-triangle check.
+
+**Known limits:**
+- Her mesh has a few small holes near the nipples and by the armpit in Dave's own model. They stretch a little with the shape but were not visible in the pictures.
+- Body 1 has no check of its own in the tests.
+
+**Acceptance:** in the character creator, with Body 2, moving Bust from the left end up to the right grows the breasts big and round, with no point. At the right end the top's folds stay smooth, and the side view is a round curve. The left fifth of the slider still changes nothing.
+
+Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
@@ -1270,6 +1476,12 @@ Dave requested this rewrite around the intended experience rather than a literal
 - CT-4 (entry 111): Steel nails are 1 Steel ingot to 100 at the brick forge, level 3, value 2.
 - CT-5 (entry 111): only the chests are tiered. The other buildings that use nails (about 40) take bronze nails or better.
 - CT-6 (entry 112): the knife's store is the existing Basket renamed Wicker basket, keeping its cost (8 Stick, 4 Twine) and 6 slots. The Wicker - Chest is hidden and locked rather than retired, because the server tests use it as their plain container. The goblin camp's chest prop is a Small chest (Dave 20 Nov 2026: "a small chest of some sort").
+- BW-1..BW-4 (entry 115): chosen by Claude. A stroke of the bellows every 1.4 s. The fire light 1.8 times as bright while worked. The flames leap to 1.35 times their size at each stroke. The bellows sound is generated (a creak, a rush of air through the nozzle and the fire roaring up, about 1.1 s), played at -9 dB.
+- WL-1 (entry 113): wetland looks, densities and timings chosen by Claude. Colours are as built. Pool levels in the puddle hollows are 0.63 fen, 0.68 bog and 0.56 swamp. Pace in a pool is 0.85. Mist runs from sunrise -1 h to +2 h and from sunset -1 h to +1.5 h. Grass thickness is fen 0.3, bog 0.12 and swamp none. Plant densities are as in entry 113.
+- WL-2 (entry 113): cattail, tussock sedge and bog moss hummock give their own seeds (Dave 14 Nov 2026: "All herbs and plants should produce seeds"). The dead tree is scenery, like old stumps and fallen logs.
+- DG-1 (entry 120): dune grass gives 1 to 3 Plant fibre a pick, tall grass's amount, with no thatch or straw.
+- BD-1 (entry 122): a board is 2.44 m long, 20 cm wide and 2.5 cm thick; a stack is 4 wide and 10 layers high; one E takes 20 (a full stack). Plank is drawn as long boards too. The Copper pickaxe icon is a recolour of the bronze one (entry 121).
+- LQ-1 (entry 123): sounds stay quiet 3 s after landing and after the join window closes; more than 3 things appearing within 40 m at once is silent.
 - OP-1 (entry 107): ore pile looks, chosen by Claude. Copper ore: malachite green, 30% red-brown, lumps 0.3, 3,900 kg/m3. Tin ore: dark red-brown, 40% near-black, lumps 0.15, a little shiny, 6,900 kg/m3. Iron ore: grey-brown, 35% rust, lumps 0.3, 4,800 kg/m3. Bog iron ore: red-brown, 35% ochre, lumps 0.4, 3,600 kg/m3. The densities are the real minerals' and set how wide a cone a count makes.
 - LV-1: one held Level action lasts while strokes come within 1.5 s and the feet move less than 0.6 m; its target height is kept for that long.
 - LV-2: Level leaves the ground within 1.2 m of the feet untouched.

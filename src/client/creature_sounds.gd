@@ -228,6 +228,9 @@ func _main_zone() -> String:
 	var top: float = -1.0
 
 	for zone in _stage.ambient.weights:
+		if zone == "wetland":
+			continue                                   # wet ground under the open sky, wood or meadow: those still name the animals
+
 		if float(_stage.ambient.weights[zone]) > top:
 			top = float(_stage.ambient.weights[zone])
 			best = str(zone)

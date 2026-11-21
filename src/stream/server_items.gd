@@ -6885,6 +6885,11 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 				if fill >= 0:
 					signature += 23 * (fill + 1)   # a station store that fills or empties by a quarter is sent again (master s2.5 fill levels)
 
+				var bellows_by: int = _smelters.bellows_peer(id) if fill >= 0 else -1
+
+				if bellows_by >= 0:
+					signature += 523 * (2 if bellows_by == peer else 1)   # someone starts or stops working a smelter's bellows: sent again
+
 				var crop_extra: Dictionary = crop_row_extra(it) if it.has("struct") else {}
 
 				if crop_extra.has("crop"):
@@ -6943,6 +6948,9 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 
 						if fill >= 0:
 							(added[added.size() - 1][5] as Dictionary)["fill"] = fill   # a station store: 0 empty, 1 to 4 quarters full
+
+						if bellows_by >= 0:
+							(added[added.size() - 1][5] as Dictionary)["bellows"] = 2 if bellows_by == peer else 1   # its bellows worked: 2 by this player, 1 by another
 
 						if not crop_extra.is_empty():
 							(added[added.size() - 1][5] as Dictionary).merge(crop_extra)   # a bed's crop and stage (FARMING_SPEC.md step 6): the client draws the stage and words its E prompt
@@ -23709,14 +23717,15 @@ func _fitness_default() -> int:
 
 func fitness_of(peer: int) -> int:
 	var row: Dictionary = _characters.get(_peer_key.get(peer, ""), {})
-	return clampi(int(row.get("fitness", _fitness_default())) + int(float(row.get("train", 0.0))), _fitness_min(), _fitness_max())
+	return clampi(int(row.get("fitness", _fitness_default())) + floori(float(row.get("train", 0.0))), _fitness_min(), _fitness_max())   # floor, so training under the start loses its first point after one point of rest, as above
 
 
 # Fitness trains slowly like a skill (Dave 2 Nov 2026, fitness.json "train"): any physical effort adds to the character's training,
 # walking, running and tool work alike (effort_of: speed, tool work, load). Effort under min_effort (standing, strolling)
 # earns nothing; from there the share rises in a straight line to 1 at full effort (running; hard tool work a little above), and one
-# point takes seconds_per_point of full-effort time. Time under min_effort takes training back, a point per decay_s_per_point,
-# never below the creation value. The whole-number change is sent to the client.
+# point takes seconds_per_point of full-effort time. True rest takes training back, a point per decay_s_per_point, and may take
+# fitness below the creation value, down to the bottom of the range (Dave 21 Nov 2026: "being Idle can lower it below your start.
+# that was not my rule. remove it."). The whole-number change is sent to the client.
 var _train_rest: Dictionary = {}     # peer -> seconds continuously at rest (below rest_effort)
 
 
@@ -23764,24 +23773,35 @@ func _train_fitness(peer: int, effort: float, spent: float) -> void:
 
 		if rested > float(cfg.get("rest_grace_s", 600.0)):
 			var step: float = spent / maxf(float(cfg.get("decay_s_per_point", 43200.0)), 1.0)
-			train = maxf(train - step, 0.0) if train > 0.0 else minf(train + step, 0.0)   # back toward the creation value from either side
+			var lowest: float = float(_fitness_min() - int(row.get("fitness", _fitness_default())))   # fitness 0 at the most
+			var rested_train: float = maxf(train - step, minf(lowest, train))
+			row["train"] = rested_train   # saved with the next write; only a whole point lost marks the save dirty (below), not every idle tick
+			train = rested_train
 	else:
 		_train_rest[peer] = 0.0   # a dawdle between the lines neither earns nor costs
 
-	if train != float(row.get("train", 0.0)):   # an idle character at the base changes nothing: do not mark the save dirty every tick (it rewrote all files every 30 s for every online player)
+	if train != float(row.get("train", 0.0)):
 		row["train"] = train
 		_dirty = true
 
 	if fitness_of(peer) != before:
+		_dirty = true
 		_vitals_sent.erase(peer)
 		_sync_vitals(peer, true)
 	else:
 		_sync_training(peer, false)   # a new whole percent of today's training (at most every few ticks), or the midnight reset to 0
 
 
-# The shared multiplier on the exertion rise: below 1 for the fit, above 1 for the unfit.
+# The shared multiplier on the exertion rise: below 1 for the fit, above 1 for the unfit (fitness.json). From 50 up it falls in a straight
+# line to top_mult at 100 (Dave 21 Nov 2026: "scale in between 50 fitness being 100% and 100 being 50%"); under 50 it keeps
+# exp(-(fitness - 50) / 5 x strength), which meets the line at 50 (with strength 0.05 and top_mult 0.5 at the same slope, no kink).
 func fitness_rise_mult(peer: int) -> float:
-	return exp(-Attributes.offset(fitness_of(peer)) * float(_fitness_cfg.get("strength", 0.05)))   # strength is per 5 points (50 is an average adult)
+	var fit: int = fitness_of(peer)
+
+	if fit <= Attributes.NEUTRAL:
+		return exp(-Attributes.offset(fit) * float(_fitness_cfg.get("strength", 0.05)))
+
+	return lerpf(1.0, float(_fitness_cfg.get("top_mult", 0.5)), float(fit - Attributes.NEUTRAL) / float(Attributes.MAX - Attributes.NEUTRAL))
 
 
 # Hook for training (not designed yet): set a character's fitness, clamped, saved with the character, sent to the client.
