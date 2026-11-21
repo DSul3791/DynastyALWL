@@ -2076,6 +2076,7 @@ static func show_forge_fire(model: Node3D, on: bool) -> void:
 # tall tongues, smoke and a bright light). Light reach and brightness are PROVISIONAL SF-4.
 const SMITHY_GLOW := [[0.0, 0.0], [0.45, 3.5], [3.2, 12.0]]   # [energy, range m] by state
 const SMITHY_COLOR := [Color(1.0, 0.3, 0.1), Color(1.0, 0.28, 0.08), Color(1.0, 0.62, 0.28)]
+const SMITHY_COALS := [0.0, 1.0, 3.0]   # a model with painted coals (meta coal_glow, the Improved smithy): their glow by state
 
 
 static func forge_state(model: Node3D, state: int) -> void:
@@ -2090,6 +2091,9 @@ static func forge_state(model: Node3D, state: int) -> void:
 		if tongues != null:
 			tongues.visible = state == 2
 			tongues.scale = Vector3(1.0, 1.6, 1.0)   # the flare stands tall
+
+	for coals in model.get_meta("coal_glow", []):
+		(coals as BaseMaterial3D).emission_energy_multiplier = float(SMITHY_COALS[state])
 
 	var light: OmniLight3D = model.get_node_or_null("Light") as OmniLight3D
 

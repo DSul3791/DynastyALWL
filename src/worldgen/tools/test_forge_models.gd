@@ -20,7 +20,7 @@ func check(ok: bool, what: String) -> void:
 func _init() -> void:
 	var view = load("res://src/client/inventory_view.gd").new()
 	var structures: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/structures.json"))["structures"]
-	var tiers: Dictionary = {"basic": "stone_forge", "medium": "blacksmithy", "large": "large_forge", "master": "master_forge"}
+	var tiers: Dictionary = {"basic": "stone_forge", "medium": "advanced_smithy", "large": "large_forge", "master": "master_forge"}
 
 	for tier in tiers:
 		var m: Node3D = view._forge_glb("forge_" + tier)
@@ -64,6 +64,55 @@ func _init() -> void:
 				solid = c.get_child(0)
 
 		check(solid != null and (solid.shape as BoxShape3D).size.x > 2.0 * k, "%s is solid" % tier)
+
+	# The Improved smithy (Dave 21 Nov 2026): his own model, 3 m wide (3/4 of a 4 m foundation), standing on its floor at the pivot, the fire
+	# opening toward +Z, one-sided, its painted coals glowing by the row's "forge" (cold, red coals, the flare); the Advanced smithy keeps the
+	# brick forge.
+	var improved: Dictionary = structures["blacksmithy"]
+
+	for look in [0, 1, 2]:
+		var m: Node3D = view._model_for_state(int(improved["state"]), {"forge": look})
+		var mesh: MeshInstance3D = m.find_child("Smithy", true, false) as MeshInstance3D
+		check(mesh != null, "the Improved smithy draws Dave's model (forge %d)" % look)
+
+		if mesh == null:
+			m.free()
+			continue
+
+		var b: AABB = view._bounds_in(mesh, m)
+		var glow: Array = m.get_meta("coal_glow", [])
+		var light: Node3D = m.get_node_or_null("Light")
+		var plume: Node3D = m.get_node_or_null("ForgeSmoke")
+
+		if look == 0:
+			check(absf(b.size.x - 3.0) < 0.05 and absf(b.size.x - float(improved["footprint_x"])) < 0.05 and absf(b.size.z - float(improved["footprint_z"])) < 0.05, "Improved smithy: 3 m wide and its footprint %.2f x %.2f matches the mesh %.2f x %.2f" % [improved["footprint_x"], improved["footprint_z"], b.size.x, b.size.z])
+			check(absf(b.position.y) < 0.02 and b.size.y > 1.4 and b.size.y < 2.0, "Improved smithy: its floor on the ground, %.2f m high" % b.size.y)
+			check(absf(b.position.x + b.size.x * 0.5) < 0.02 and absf(b.position.z + b.size.z * 0.5) < 0.02, "Improved smithy: centred on the pivot")
+			check(light != null and plume != null and light.position.z > plume.position.z and plume.position.y > b.size.y * 0.9 and light.position.y < b.size.y * 0.7, "Improved smithy: fire low in front, smoke at the chimney top")
+			check(m.get_node_or_null("Flames/Coals") == null and m.get_node_or_null("Flames/Tongues") != null, "Improved smithy: its own painted coals, the shared flames for the flare")
+			var own: BaseMaterial3D = mesh.mesh.surface_get_material(0) as BaseMaterial3D
+			check(own != null and own.cull_mode == BaseMaterial3D.CULL_BACK and own.emission_enabled, "Improved smithy: one-sided, with an emission texture")
+			check(mesh.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_ON, "Improved smithy casts shadows")
+			var solid: CollisionShape3D = null
+
+			for c in m.get_children():
+				if c is StaticBody3D:
+					solid = c.get_child(0)
+
+			check(solid != null and (solid.shape as BoxShape3D).size.x > 2.9, "Improved smithy is solid")
+
+		var energy: float = (glow[0] as BaseMaterial3D).emission_energy_multiplier if not glow.is_empty() else -1.0
+		check(not glow.is_empty() and is_equal_approx(energy, float(BuildingLook.SMITHY_COALS[look])), "Improved smithy with forge %d: coals glow %.2f" % [look, energy])
+		m.free()
+
+	var other: Node3D = view._model_for_state(int(improved["state"]), {"forge": 2})
+	var another: Node3D = view._model_for_state(int(improved["state"]), {"forge": 0})
+	check(not (other.get_meta("coal_glow") as Array).is_empty() and other.get_meta("coal_glow")[0] != another.get_meta("coal_glow")[0], "each Improved smithy has its own coals: one flaring does not light another")
+	other.free()
+	another.free()
+	var advanced: Node3D = view._model_for_state(int(structures["advanced_smithy"]["state"]), {})
+	check(advanced.find_child("Smithy", true, false) == null and not advanced.has_meta("coal_glow"), "the Advanced smithy keeps the brick forge")
+	advanced.free()
 
 	# The Brick - Forge (item system 10 Nov 2026): Dave's medium forge with its cut stone in the brick walls' surface, the iron straps and the
 	# rest as he made them.

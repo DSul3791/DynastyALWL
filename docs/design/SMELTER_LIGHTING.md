@@ -62,3 +62,18 @@ For Dave (assumed on his behalf, provisional):
 - SF-4: idle coals glow at 0.45 energy over 3.5 m; the flare is 3.2 energy over 12 m.
 - SF-5: a smithy goes back to idle coals 1.5 s after the last craft worked there.
 - shortcut: the part-burnt unit (fuel_left) is not saved, so a restart loses under one unit's making time.
+
+## The Improved smithy's own model (Dave 21 Nov 2026)
+
+Dave made a new model for the Improved smithy (`blacksmithy`): the forge and chimney, a bellows, the anvil on a stump and a work bench on a flagstone floor. He asked that it be "sized so it fits in 3/4 of the width of a foundation". His file had about 150,000 triangles and three 4096 textures. `tools/stations/prepare_improved_smithy.py` turns it into `assets/stations/improved_smithy.glb`:
+
+- 3.0 m wide (foundations are 4 m), 1.65 m high and 1.92 m deep. The footprint in structures.json matches it.
+- About 37,000 triangles, with every texture seam kept, and Godot makes the distance levels on import. A cut to 15,000 smeared the coals' orange across the stone.
+- 2048 textures, VRAM Compressed, one-sided, casting shadows. The import settings are committed.
+- The painted coals are moved from the colour into an emission texture, and dark ash is left where they were. Each smithy gets its own copy of the material. `BuildingLook.forge_state` sets the coals' glow (SF-4 still sets the light): 0 when cold, 1 for red coals and 3 for the flare. The shared flame tongues are drawn at 0.3 of their size so they stand inside the hearth, and the shared coals are left out.
+
+Provisional, chosen by Claude while Dave was away:
+- IS-1: the Advanced smithy, which shared the Improved smithy's look, keeps the brick forge.
+- IS-2: the flagstone floor stays as part of the model.
+- IS-3: the triangle count is about 37,000, not the other forges' 7,000 to 16,000, so that no texture seam is smeared.
+- IS-4: the coal glow values are 0, 1 and 3, and the flare's tongues are drawn at 0.3.

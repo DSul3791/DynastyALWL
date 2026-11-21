@@ -4419,6 +4419,48 @@ func _make_smithy() -> Node3D:
 	return model
 
 
+# The Improved smithy: Dave's model (21 Nov 2026), forge, bellows, anvil on a stump and a bench on a flagstone floor, 3 m wide ("sized so it
+# fits in 3/4 of the width of a foundation"). Its coals are painted in its emission texture, so this drops the shared coals and gives the
+# model its own copy of the material, whose glow BuildingLook.forge_state turns down to cold ash, up to red coals or to the flare. The flare's
+# tongues are shrunk to stand in its hearth. The brick forge stands in when the file is missing.
+const IMPROVED_SMITHY_TONGUES := 0.3   # the flames' size on this model (the shared ones are made for a hearth twice the size)
+
+
+func _make_improved_smithy() -> Node3D:
+	var model: Node3D = _forge_glb("improved_smithy", false)
+
+	if model == null:
+		return _make_smithy()
+
+	var flames: Node3D = model.get_node_or_null("Flames") as Node3D
+
+	if flames != null:
+		flames.scale = Vector3.ONE * IMPROVED_SMITHY_TONGUES
+		var coals: Node = flames.get_node_or_null("Coals")
+
+		if coals != null:
+			coals.free()
+
+	var glow: Array = []
+
+	for child in model.find_children("*", "MeshInstance3D", true, false):
+		var mesh_node: MeshInstance3D = child
+
+		if mesh_node.mesh == null:
+			continue
+
+		for surface in mesh_node.mesh.get_surface_count():
+			var own: BaseMaterial3D = mesh_node.mesh.surface_get_material(surface) as BaseMaterial3D
+
+			if own != null and own.emission_enabled:
+				var copy: BaseMaterial3D = own.duplicate() as BaseMaterial3D
+				mesh_node.set_surface_override_material(surface, copy)
+				glow.append(copy)
+
+	model.set_meta("coal_glow", glow)
+	return model
+
+
 # Large Forge (state 20) and Master Forge (state 21): Dave's models in assets/stations when present, else the Medium Forge scaled
 # up as a stand-in until they arrive.
 func _make_big_forge(state: int) -> Node3D:
@@ -4442,8 +4484,9 @@ const ANVIL_AT_M := 0.45       # where the anvil stands along x, beside the fire
 # opening toward -Y and the middle of the base off the origin, so this stands them up (Y up, which leaves the opening toward +Z, the front
 # of every building here: placed with the camera yaw it faces the player who put it down), puts the
 # centre of the footprint at the pivot and the base on the ground, and takes the flame light and smoke from the Fire and Smoke empties
-# in the file. Returns null when the file is not there yet.
-func _forge_glb(file: String) -> Node3D:
+# in the file. Returns null when the file is not there yet. A model made Y up already (improved_smithy.glb, from
+# tools/stations/prepare_improved_smithy.py) passes z_up false and is not turned.
+func _forge_glb(file: String, z_up: bool = true) -> Node3D:
 	var path: String = "res://assets/stations/%s.glb" % file
 
 	if not ResourceLoader.exists(path):
@@ -4456,7 +4499,7 @@ func _forge_glb(file: String) -> Node3D:
 
 	var model: Node3D = (scene as PackedScene).instantiate() as Node3D
 	var upright: Node3D = Node3D.new()
-	upright.rotation_degrees = Vector3(-90.0, 0.0, 0.0)
+	upright.rotation_degrees = Vector3(-90.0 if z_up else 0.0, 0.0, 0.0)
 	upright.add_child(model)
 	var turned: Node3D = Node3D.new()
 	turned.add_child(upright)
@@ -4882,7 +4925,8 @@ func _model_for_look(look: String, state: int, extra: Dictionary) -> Node3D:
 		"stone_forge":
 			return _forge_fire(_make_forge(state), state, extra)
 		"blacksmithy":
-			return _forge_fire(_make_smithy(), state, extra)
+			# the Improved smithy has Dave's own model (21 Nov 2026); the Advanced smithy keeps the brick forge
+			return _forge_fire(_make_improved_smithy() if str(_structure_by_state(state).get("item", "")) == "blacksmithy" else _make_smithy(), state, extra)
 		"big_forge":
 			return _forge_fire(_make_big_forge(state), state, extra)
 		"carcass":
