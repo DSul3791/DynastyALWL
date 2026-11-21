@@ -117,7 +117,6 @@ func _init() -> void:
 			hand_keys_ok = hand_keys_ok and (int(r[0]) & 0xff) >= 8 and (int(r[0]) & 0xff) < 16 and (int(r[0]) & w.BOULDER_KEY) == 0
 			continue
 
-
 		sizes_ok = sizes_ok and float(r[2]) >= float(cfg["radius_min"]) - 0.001 and float(r[2]) <= float(cfg["radius_max"]) + 0.001
 		grades_ok = grades_ok and float(r[3]) >= float(cfg["grade_min"]) - 0.001 and float(r[3]) <= float(cfg["grade_max"]) + 0.001
 		keys_ok = keys_ok and (int(r[0]) & 15) >= w.COPPER_ROCK_FIRST
@@ -133,7 +132,7 @@ func _init() -> void:
 	check(land > 0 and land_per_cell < 0.2, "a few copper rocks are strewn over dry land (%d, %.3f a cell)" % [land, land_per_cell])
 	check(shore_per_cell > land_per_cell * 5.0, "far more on the river bed and its banks (%.2f per 32 m of river against %.3f a land cell)" % [shore_per_cell, land_per_cell])
 	check(deep == 0, "none in deep water (%d)" % deep)
-	check(sizes_ok and by_hand > big and big > 0 and small > 0, "a share of the sizes lies loose to pick up by hand, bigger ones are rocks to break (%d by hand, %d small rocks, %d big)" % [by_hand, small, big])
+	check(sizes_ok and by_hand * 2 > big and by_hand > 0 and big > 0 and small > 0, "a share of the sizes lies loose to pick up by hand, bigger ones are rocks to break (%d by hand, %d small rocks, %d big)" % [by_hand, small, big])
 	check(hand_keys_ok, "a loose copper rock's key is its own (ORE_KEY, slots 8..15)")
 	check(grades_ok and hi_grade - lo_grade > 0.2, "every rock has its own grade in range (%.2f..%.2f)" % [lo_grade, hi_grade])
 	check(keys_ok, "copper rock keys sit after the cell's boulders (low bits from COPPER_ROCK_FIRST)")

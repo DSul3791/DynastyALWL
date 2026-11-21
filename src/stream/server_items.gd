@@ -7902,6 +7902,11 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 		if not is_foot and not over_body and draw > maxf(land_p, lerpf(coast_p, mountain_p, upland)):
 			continue   # past every chance this high up: no ground water read
 
+		var by_water_only: bool = not is_foot and not over_body and draw > land_p
+
+		if by_water_only and water_near.is_valid() and not bool(water_near.call(spot, reach)):
+			continue   # no water within reach (most of the land): no depth read, no second probe
+
 		var depth: float = float(water_depth_at.call(spot)) if water_depth_at.is_valid() else 0.0
 
 		if depth > bed_m:
@@ -7910,7 +7915,7 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 		if is_foot:
 			if depth > 0.0 or not _at_mountain_foot(spot, foot):
 				continue
-		elif not over_body and draw > land_p:
+		elif by_water_only:
 			# Past the land share: only on a river or lake bed (shallow water) or a dry bank within reach of water.
 			var bank: bool = depth <= 0.0 and water_near.is_valid() and not bool(water_near.call(spot, 0.0)) and bool(water_near.call(spot, reach))
 
