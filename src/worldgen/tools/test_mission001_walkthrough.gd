@@ -636,7 +636,7 @@ func step1_early_survival() -> void:
 	lean_to = build("lean_to", CAMP + Vector3(-5.0, 0.0, 0.0), "1f")
 	check(lean_to >= 0 and bool(items._structures["lean_to"].get("shelter", false)), "1f. the Lean-to is a shelter")
 	camp_chest = build("wicker_basket", CAMP + Vector3(0.0, 0.0, 5.0), "1g")
-	check(camp_chest >= 0 and items.table.entry("wicker_basket")["name"] == "Wicker basket" and box_of(camp_chest) != null and int(box_of(camp_chest).usable) == 6, "1g. the Wicker basket stands and has a store of 6 slots")
+	check(camp_chest >= 0 and items.table.entry("wicker_basket")["name"] == "Wicker basket" and box_of(camp_chest) != null and int(items._structures["wicker_basket"]["slots"]) == 6, "1g. the Wicker basket stands and has a store of 6 slots")
 
 	# A deer hunted (the kill: test_hunt_feedback; the carcass is what it leaves) and dressed with the stone knife.
 	var fire: int = campfire_at("camp", CAMP + Vector3(3.0, 0.0, 0.0))
@@ -665,6 +665,8 @@ func step1_early_survival() -> void:
 	# Stored in the Wicker basket: the bones and the spare stones.
 	go(CAMP + Vector3(0.0, 0.0, 3.5))
 	var box = box_of(camp_chest)
+	var opened = items._chest_of(1, camp_chest)
+	check(opened != null and int(opened.usable) == 6, "1k. the Wicker basket opens with 6 slots (%d)" % (int(opened.usable) if opened != null else -1))
 	var bones: int = have("bone")
 	var stones: int = have("stone")
 	items.action(1, Net.ACT_CHEST_OPEN, camp_chest, 0, 0, Vector3.ZERO)
