@@ -359,6 +359,7 @@ var _asleep: Dictionary = {}        # peer -> true while asleep (a lying player 
 var _dig_cfg: Dictionary = {}       # data/items/digging.json
 var _boulder_cfg: Dictionary = {}    # data/items/boulders.json
 var _boulder_left: Dictionary = {}   # boulder key -> rough stones still in it (absent = untouched), saved in world_items.json
+var _boulder_pending: Dictionary = {}   # boulder key -> [left, plain stones per kg then, ore stones per kg then]: saved at other rates, scaled when the rock is laid out (_boulder_left_of)
 var _boulder_drops: Dictionary = {}  # [peer, boulder key] -> where that miner's overflow lands (_boulder_drop_spot; not saved)
 var _bog_left: Dictionary = {}       # bog iron deposit key "gi,gj" -> [ore left, game seconds it is counted to] (absent = untouched, full), saved in world_items.json "bog_iron"
 const BOULDER_KEY := 1 << 50
@@ -1912,7 +1913,7 @@ func _item_job() -> Dictionary:
 	_note_save_part("world item copy", t0)
 	_save_gen += 1
 	return {"dir": _dir, "items": copy, "areas": areas, "all": _area_ids.keys(), "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(), "gen": _save_gen, "sums": _area_sums, "exact": exact, "failed_out": _save_failed,
-		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "bog_iron": _bog_left.duplicate(true), "layout": FloraLayout.VERSION, "no_kits": true}}
+		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "ore_per_kg": _boulder_per_kg(true), "boulders_then": _boulder_pending.duplicate(true), "bog_iron": _bog_left.duplicate(true), "layout": FloraLayout.VERSION, "no_kits": true}}
 
 
 func _save_item_files(job: Dictionary) -> void:
@@ -2947,6 +2948,7 @@ func reset_world() -> int:
 	_taken.clear()
 	_cells_done.clear()
 	_boulder_left.clear()
+	_boulder_pending.clear()
 	_bog_left.clear()
 	_picked.clear()
 	_stripped.clear()
@@ -7730,28 +7732,50 @@ func _cell_part(part: String, since_usec: int) -> int:
 # water bank; what is left of a worked boulder is kept in _boulder_left. The row carries its radius and the stones it started
 # with; the item's count is the stones left.
 # The stones left in worked boulders from a saved world (`parsed`: its "boulders" and "boulder_per_kg"). They were counted at the save's own
-# stones per kg of rock; a save without boulder_per_kg counted 0.04 stones of 1 kg per kg (before Dave's 19 Nov 2026 0.5 kg stones with 30%
-# lost). They are scaled to today's count once, so a half-mined rock stays half mined; layout still caps them at the rock's total.
+# stones per kg of rock (boulder_per_kg plain, ore_per_kg ore rocks); a save without boulder_per_kg counted 0.04 stones of 1 kg per kg (before Dave's
+# 19 Nov 2026 0.5 kg stones with 30% lost). Saved at other rates they wait in _boulder_pending and are scaled once when the rock is laid out and its
+# kind is known (_boulder_left_of), so a half-mined rock stays half mined; layout still caps them at the rock's total.
 func _load_boulders_left(parsed: Dictionary) -> void:
-	var per_kg_then: float = float(parsed.get("boulder_per_kg", 0.04))
-	var scale_left: float = _boulder_per_kg() / per_kg_then if per_kg_then > 0.0 else 1.0
+	var plain_then: float = float(parsed.get("boulder_per_kg", 0.04))
+	var ore_then: float = float(parsed.get("ore_per_kg", plain_then))   # a save from before 21 Nov 2026 had one rate for every rock
+	var same: bool = is_equal_approx(plain_then, _boulder_per_kg()) and is_equal_approx(ore_then, _boulder_per_kg(true))
 
 	for key in parsed.get("boulders", {}):
-		_boulder_left[int(key)] = int(round(float(parsed["boulders"][key]) * scale_left))
+		if same:
+			_boulder_left[int(key)] = int(parsed["boulders"][key])
+		else:
+			_boulder_pending[int(key)] = [int(parsed["boulders"][key]), plain_then, ore_then]
+
+	for key in parsed.get("boulders_then", {}):
+		var then: Variant = parsed["boulders_then"][key]
+
+		if typeof(then) == TYPE_ARRAY and (then as Array).size() >= 3:
+			_boulder_pending[int(key)] = [int(then[0]), float(then[1]), float(then[2])]
 
 
-# Stones a boulder gives per kg of its rock: boulders.json yield (the share that comes away, Dave 19 Nov 2026: 0.7, the rest dust and bits) over one
-# stone's weight (weights.json, 0.5 kg). The save keeps it with what is left in worked boulders (load scales a save made at another rate).
-func _boulder_per_kg() -> float:
+# What is left of the rock `key` whose laid-out `row` has its total: a worked rock saved at other rates (_boulder_pending) is scaled once by
+# its own kind's rate, so it keeps the share it had (plain stone and ore rocks have different rates since 21 Nov 2026); untouched = its total.
+func _boulder_left_of(key: int, row: Dictionary) -> int:
+	if _boulder_pending.has(key):
+		var then: Array = _boulder_pending[key]
+		var rate_then: float = float(then[2]) if row.has("ore") else float(then[1])
+		_boulder_left[key] = int(round(float(then[0]) * _boulder_per_kg(row.has("ore")) / rate_then)) if rate_then > 0.0 else int(then[0])
+		_boulder_pending.erase(key)
+
+	return mini(int(_boulder_left.get(key, row["total"])), int(row["total"]))
+
+
+# Stones a boulder gives per kg of its rock: boulders.json yield for a plain stone rock, ore_yield for a rock with an ore (Dave 21 Nov 2026,
+# BugsList 118: fewer stones from plain rocks, ore rocks as they were), over one stone's weight (weights.json, 0.5 kg). The save keeps both
+# with what is left in worked boulders (load scales a save made at other rates).
+func _boulder_per_kg(ore: bool = false) -> float:
 	var stone_kg: float = maxf(CarryRules.weight_of("stone", _carry_cfg) if not _carry_cfg.is_empty() else 1.0, 0.05)
-	return float(_boulder_cfg.get("yield", 0.5)) / stone_kg
+	return float(_boulder_cfg.get("ore_yield" if ore else "yield", _boulder_cfg.get("yield", 0.5))) / stone_kg
 
 
-func _boulder_stones(radius: float) -> int:
-	var cfg: Dictionary = _boulder_cfg
-	var volume: float = 4.0 / 3.0 * PI * radius * radius * radius * float(cfg.get("height_ratio", 0.85))
-	var stone_kg: float = maxf(CarryRules.weight_of("stone", _carry_cfg) if not _carry_cfg.is_empty() else 1.0, 0.05)
-	return maxi(int(volume * float(cfg.get("density_kg_m3", 2600)) * float(cfg.get("yield", 0.5)) / stone_kg), 1)
+func _boulder_stones(radius: float, ore: bool = false) -> int:
+	var volume: float = 4.0 / 3.0 * PI * radius * radius * radius * float(_boulder_cfg.get("height_ratio", 0.85))
+	return maxi(int(volume * float(_boulder_cfg.get("density_kg_m3", 2600)) * _boulder_per_kg(ore)), 1)
 
 
 func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
@@ -7789,9 +7813,9 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
 		var key: int = BOULDER_KEY | ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | attempt
 		laid += 1
 		var radius: float = lerpf(float(cfg.get("radius_min", 0.3)), float(cfg.get("radius_max", 1.2)), pow(size_draw, float(cfg.get("radius_power", 2.0))))
-		var row: Dictionary = {"radius": radius, "yaw": yaw, "total": _boulder_stones(radius)}
-		_set_boulder_ore(row, _boulder_ore(spot, key), key)   # an outcrop: a pick takes this ore out of it (boulders.json ore); copper and tin resized
-		var left: int = mini(int(_boulder_left.get(key, row["total"])), int(row["total"]))
+		var row: Dictionary = {"radius": radius, "yaw": yaw}
+		_set_boulder_ore(row, _boulder_ore(spot, key), key)   # an outcrop: a pick takes this ore out of it (boulders.json ore); copper and tin resized; sets its total
+		var left: int = _boulder_left_of(key, row)
 
 		if left <= 0:
 			continue
@@ -7803,6 +7827,11 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
 # A boulder row's ore: none for "", else the ore, and a copper or tin rock also its grade (boulders.json <ore>_rocks grade_min..grade_max, from
 # the key): the share of its pieces that come away as ore, so rocks hold different amounts and a bigger rock more (Dave 16 Nov 2026).
 func _set_boulder_ore(row: Dictionary, ore_name: String, key: int) -> void:
+	_set_boulder_ore_only(row, ore_name, key)
+	row["total"] = _boulder_stones(float(row["radius"]), row.has("ore"))   # an ore rock holds stones at ore_yield, a plain one at yield (BugsList 118)
+
+
+func _set_boulder_ore_only(row: Dictionary, ore_name: String, key: int) -> void:
 	if ore_name == "":
 		return
 
@@ -7825,9 +7854,7 @@ func _set_boulder_ore(row: Dictionary, ore_name: String, key: int) -> void:
 	if r_min != null and r_max != null:
 		var radius: float = clampf(float(row["radius"]), float(r_min), float(r_max))
 
-		if radius != float(row["radius"]):
-			row["radius"] = radius
-			row["total"] = _boulder_stones(radius)
+		row["radius"] = radius
 
 
 # Copper and tin rocks (Dave 16-17 Nov 2026, his photos; one shared rule since his 21 Nov 2026 play test; docs/design/COPPER_ROCKS.md,
@@ -7951,14 +7978,13 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 			continue
 
 		var key: int = (BOULDER_KEY | ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | slot) if slot < BOULDER_TRIES_MAX else (ORE_KEY | BOULDER_KEY | cell_bits | slot)
-		var total: int = _boulder_stones(radius)
-		var left: int = mini(int(_boulder_left.get(key, total)), total)
+		var row: Dictionary = {"radius": radius, "yaw": yaw}
+		_set_boulder_ore(row, ore, key)
+		var left: int = _boulder_left_of(key, row)
 
 		if left <= 0:
 			continue
 
-		var row: Dictionary = {"radius": radius, "yaw": yaw, "total": total}
-		_set_boulder_ore(row, ore, key)
 		_items[_next_id] = {"number": 0, "count": left, "pos": _settled(spot), "left": 1.0e9, "scatter": key, "boulder": row}   # on the saved digs: a boulder dug under stays down
 		_next_id += 1
 
@@ -8222,9 +8248,9 @@ func _lay_out_cave_items(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void
 
 		if int(spots[n * 5 + 3]) == 1 and not _boulder_cfg.is_empty():
 			var radius: float = spots[n * 5 + 4]
-			var cave_row: Dictionary = {"radius": radius, "yaw": float(hash(key) % 360), "total": _boulder_stones(radius)}
-			_set_boulder_ore(cave_row, _boulder_ore(spot, key), key)   # a cave boulder is an outcrop like one on the surface (Kathleen 10 Nov 2026: caves never rolled ore)
-			var left: int = mini(int(_boulder_left.get(key, cave_row["total"])), int(cave_row["total"]))
+			var cave_row: Dictionary = {"radius": radius, "yaw": float(hash(key) % 360)}
+			_set_boulder_ore(cave_row, _boulder_ore(spot, key), key)   # a cave boulder is an outcrop like one on the surface (Kathleen 10 Nov 2026: caves never rolled ore); sets its total
+			var left: int = _boulder_left_of(key, cave_row)
 
 			if left > 0:
 				_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": cave_row}
