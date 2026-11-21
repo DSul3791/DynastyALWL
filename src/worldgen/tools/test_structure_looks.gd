@@ -149,7 +149,7 @@ const GOLDEN := {
 	"stone_channel_tee": "stone_channel_tee",
 	"iron_deep_well_pump": "iron_deep_well_pump",
 	"stone_cistern": "stone_cistern",
-	"stone_raised_cistern": "stone_raised_cistern",
+	"raised_cistern": "raised_cistern",
 	"kiln": "kiln",
 	"tanning_rack": "tanning_rack",
 	"drying_rack": "drying_rack",

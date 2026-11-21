@@ -494,7 +494,7 @@ func _init() -> void:
 
 	# --- The Raised cistern (Dave 20 Nov 2026: "they are just big tanks"): its foot point takes a pipe; linked to a barrel it levels by water surface,
 	# its floor 2.05 m up, so the barrel fills first and water never climbs into the cistern; rain falls into its open top.
-	var cis: int = put("stone_raised_cistern", Vector3(500.0, 10.0, 500.0))
+	var cis: int = put("raised_cistern", Vector3(500.0, 10.0, 500.0))
 	var cis_foot: Vector3 = Vector3(500.0, 10.15, 501.05)
 	var low: int = barrel(500.0, 504.0)
 	items.give(1, n("copper_pipe"), 2)
@@ -533,7 +533,7 @@ func _init() -> void:
 	items._water_tanks_saved[items._water_key(Vector3(540.0, 10.0, 540.0))] = 150.0
 	var old_barrel: int = put("wooden_barrel", Vector3(540.0, 10.0, 540.0))
 	items._water_tanks_saved[items._water_key(Vector3(560.0, 10.0, 560.0))] = 2000.0
-	var old_cis: int = put("stone_raised_cistern", Vector3(560.0, 10.0, 560.0))
+	var old_cis: int = put("raised_cistern", Vector3(560.0, 10.0, 560.0))
 	check(absf(litres(old_barrel) - 60.0) < 0.01 and absf(litres(old_cis) - 700.0) < 0.01, "a barrel saved with 150 L loads with 60 L, a raised cistern saved with 2,000 L with 700 L (%.1f, %.1f)" % [litres(old_barrel), litres(old_cis)])
 
 	print("pipe runs: %d failures" % failures)

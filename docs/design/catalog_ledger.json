@@ -11027,7 +11027,7 @@
    "note": "Plumbing PR 3 (14 Nov 2026): water block in the water network format, unlocked. PROVISIONAL. Not run: the Godot tests wait for the test PC."
   },
   {
-   "key": "stone_raised_cistern_kit",
+   "key": "raised_cistern_kit",
    "number": 755,
    "name": "Raised cistern",
    "category": "placeable",
@@ -11041,7 +11041,7 @@
    "note": ""
   },
   {
-   "key": "stone_raised_cistern",
+   "key": "raised_cistern",
    "number": 756,
    "name": "Raised cistern",
    "category": "structure",

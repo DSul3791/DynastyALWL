@@ -14,7 +14,7 @@ const SIZES := {
 	"thatch_scarecrow": Vector3(1.1, 2.0, 0.6), "wooden_cold_frame": Vector3(1.0, 0.5, 1.0),
 	"stone_well": Vector3(1.6, 1.1, 1.6), "wooden_hand_pump": Vector3(0.5, 1.1, 0.5), "iron_hand_pump": Vector3(0.5, 1.1, 0.5),
 	"log_trough": Vector3(1.6, 0.5, 0.5), "wooden_trough": Vector3(2.0, 0.5, 0.6), "stone_trough": Vector3(2.0, 0.6, 0.7), "wooden_sluice": Vector3(2.0, 0.6, 0.4),
-	"iron_deep_well_pump": Vector3(0.8, 1.6, 0.8), "stone_cistern": Vector3(2.0, 1.0, 2.0), "stone_raised_cistern": Vector3(2.0, 3.0, 2.0),
+	"iron_deep_well_pump": Vector3(0.8, 1.6, 0.8), "stone_cistern": Vector3(2.0, 1.0, 2.0), "raised_cistern": Vector3(2.0, 3.0, 2.0),
 }
 
 const CONDUITS := {

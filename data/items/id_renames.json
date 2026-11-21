@@ -12,6 +12,8 @@
 		"iron_spade_medium": "iron_shovel_medium",
 		"iron_spade_large": "iron_shovel_large",
 		"steel_spade_medium": "steel_shovel_medium",
-		"steel_spade_large": "steel_shovel_large"
+		"steel_spade_large": "steel_shovel_large",
+		"stone_raised_cistern": "raised_cistern",
+		"stone_raised_cistern_kit": "raised_cistern_kit"
 	}
 }

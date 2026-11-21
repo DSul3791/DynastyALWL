@@ -165,3 +165,8 @@ Preservation/reader receipts: independent review PASS on exact tree `09c98947328
 | path (under proposed_removals/) | who | date | why | replaced by |
 |---|---|---|---|---|
 | tools/trunk_view.gd, tools/trunk_view.gd.uid.removed | Claude, commit 6303ef01 (row added by the main-readiness PR) | 16 Nov | pictures tool for the hand-cut trunk, which was removed when trees started falling already in logs | none |
+
+## Raised cistern id renamed, 21 Nov 2026 (Dave 21 Nov 2026: "I want the code to have to correct name also")
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| assets/ui/item_icons/stone_raised_cistern.png | Claude, Raised cistern rename PR | 21 Nov | the Raised cistern's id is raised_cistern (wood and copper, not stone); its icon moved with it | assets/ui/item_icons/raised_cistern.png |
