@@ -1569,13 +1569,15 @@ Not yet played. A big ore rock (an iron outcrop, or copper or tin under the moun
 
 **Required outcome:** a few ms a cell, with exactly the same rocks in the same places.
 
-**As built (PR #1436, reviewed head 679faa73, merged to dev at a7acd989):** new src/stream/cell_reads.gd binds the ground, water and ore reads to the cell's tile once a cell (server_items._cell_reads, wired as items.cell_reads in terrain_server.gd). The boulder and copper/tin layouts use those reads and never take the generator lock. A probe past the tile edge falls back to the general path, so every answer is unchanged. The slow-cell line now splits the copper and tin time into reads bound, ore bodies, water and settling, so a slow cell on the PC will show where its time went. No TERRAIN_VERSION, protocol, save or starter cache change. Left for later: bank stones, stones and sticks, rock_near and the settle step still use the locking path.
+**As built (PR #1436, reviewed head 679faa73, merged to dev at a7acd989):** new src/stream/cell_reads.gd binds the ground, water and ore reads to the cell's tile once a cell (server_items._cell_reads, wired as items.cell_reads in terrain_server.gd). In the boulder and copper/tin layouts, the ground, water, depth and ore reads use these bound reads and never take the generator lock. A probe past the tile edge falls back to the general path, so every answer is unchanged. The slow-cell line now splits the copper and tin time into reads bound, ore bodies, water and settling, so a slow cell on the PC will show where its time went. No TERRAIN_VERSION, protocol, save or starter cache change. Still on the locking path, left for later: the settle step (_settled) for each rock, rock_near for each boulder, bank stones, and stones and sticks. So the few ms a cell under load is not yet proven.
 
 **Evidence:**
 - Independent review PASS on the earlier head and again on 679faa73 after the merge with #1427.
 - Lane B on 679faa73: 215 PASS / 0 FAIL (211 fast + 4 timing). Warnings stay at 381. validate_items had 0 errors. Join smoke clean (welcome 13 s, ground 21 s).
 - test_cell_reads, 162 cells round the spawn and the tin body, including (1815, 2229): the same 710 rows (512 copper or tin) both ways. General reads went from 10,533 to 0, with one tile look a cell. Idle time was 155.7 ms before and 145.2 ms after (about 1 ms a cell either way, since an idle machine has no lock waits). With running water the result was the same: 711 rows matched and 0 general reads.
 - Not yet run: a run north on Dave's PC to see the slow-cell line under load.
+
+**Acceptance:** run north from the spawn on Dave's PC. The slow-cell line stays under 50 ms for copper and tin rocks, and the same rocks lie where they did before. Not yet played.
 
 ## Rewrite interpretation
 
