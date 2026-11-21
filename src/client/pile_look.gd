@@ -48,6 +48,11 @@ static func mesh_for(item_id: String, entry: Dictionary, count: int, seed_id: in
 		_cache[key] = wood
 		return wood
 
+	if str(kind.get("shape", "")) == "boards":
+		var sawn: Mesh = _boards_mesh(kind, count, seed_id)
+		_cache[key] = sawn
+		return sawn
+
 	if PileRules.is_cone(kind) and unit_kg > 0.0:
 		var cone: Mesh = _cone_mesh(kind, count, seed_id, unit_kg)
 		_cache[key] = cone
@@ -423,3 +428,78 @@ static func _add_piece(verts: PackedVector3Array, normals: PackedVector3Array, c
 
 		for i in range(steps):
 			indices.append_array([centre, centre + 1 + i, centre + 2 + i])
+
+
+# --- Sawn boards (Dave 21 Nov 2026: "dropped hardwood boards ... should look like 8ft long boards") ---
+# A neat lumber stack: boards lie flat side by side, BOARD_ROW to a layer, each layer on the one below, ends a little staggered; past
+# BOARD_LAYERS layers a new stack starts beside it. From items.json "pile": {"shape": "boards", "color", "len", "width", "thick"}.
+# Each board is one box of 12 triangles with pale cut ends.
+const BOARD_ROW := 4
+const BOARD_LAYERS := 10
+const BOARD_PALE := Color(0.86, 0.74, 0.56)
+
+
+static func _boards_mesh(kind: Dictionary, count: int, seed_id: int) -> Mesh:
+	var tint: Array = kind["color"]
+	var wood: Color = Color(float(tint[0]), float(tint[1]), float(tint[2]))
+	var length: float = float(kind["len"])
+	var width: float = float(kind["width"])
+	var thick: float = float(kind["thick"])
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = seed_id * 2654435761 + 23
+	var verts: PackedVector3Array = PackedVector3Array()
+	var normals: PackedVector3Array = PackedVector3Array()
+	var colors: PackedColorArray = PackedColorArray()
+	var indices: PackedInt32Array = PackedInt32Array()
+	var per_stack: int = BOARD_ROW * BOARD_LAYERS
+
+	for n in range(mini(count, MAX_DRAWN)):
+		var stack: int = floori(float(n) / float(per_stack))
+		var layer: int = floori(float(n % per_stack) / float(BOARD_ROW))
+		var row: int = n % BOARD_ROW
+		var z: float = float(stack) * (float(BOARD_ROW) * width + 0.15) + (float(row) - float(BOARD_ROW - 1) * 0.5) * (width + 0.006)
+		var at: Vector3 = Vector3(rng.randf_range(-0.06, 0.06), (float(layer) + 0.5) * thick, z)
+		var tone: float = rng.randf_range(0.88, 1.1)
+		_add_board(verts, normals, colors, indices, at, rng.randf_range(-0.012, 0.012), Vector3(length, thick, width), Color(minf(wood.r * tone, 1.0), minf(wood.g * tone, 1.0), minf(wood.b * tone, 1.0)))
+
+	var arrays: Array = []
+	arrays.resize(Mesh.ARRAY_MAX)
+	arrays[Mesh.ARRAY_VERTEX] = verts
+	arrays[Mesh.ARRAY_NORMAL] = normals
+	arrays[Mesh.ARRAY_COLOR] = colors
+	arrays[Mesh.ARRAY_INDEX] = indices
+	var mesh: ArrayMesh = ArrayMesh.new()
+	mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
+
+	if _logs_material == null:
+		_logs_material = StandardMaterial3D.new()
+		_logs_material.vertex_color_use_as_albedo = true
+		_logs_material.roughness = 1.0
+		_logs_material.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+	mesh.surface_set_material(0, _logs_material)
+	return mesh
+
+
+# One board centred on `at`, its length along x turned by `yaw`: six faces, the two ends pale.
+static func _add_board(verts: PackedVector3Array, normals: PackedVector3Array, colors: PackedColorArray, indices: PackedInt32Array, at: Vector3, yaw: float, dims: Vector3, wood: Color) -> void:
+	var turn: Basis = Basis(Vector3.UP, yaw)
+	var h: Vector3 = dims * 0.5
+
+	for axis in 3:
+		for side in [-1.0, 1.0]:
+			var normal: Vector3 = Vector3.ZERO
+			normal[axis] = side
+			var u: Vector3 = Vector3.ZERO
+			var v: Vector3 = Vector3.ZERO
+			u[(axis + 1) % 3] = h[(axis + 1) % 3]
+			v[(axis + 2) % 3] = h[(axis + 2) % 3]
+			var centre: Vector3 = normal * h[axis]
+			var first: int = verts.size()
+
+			for corner in [-u - v, u - v, u + v, -u + v]:
+				verts.append(at + turn * (centre + corner))
+				normals.append(turn * normal)
+				colors.append(BOARD_PALE if axis == 0 else wood)
+
+			indices.append_array([first, first + 1, first + 2, first, first + 2, first + 3] if side > 0.0 else [first, first + 2, first + 1, first, first + 3, first + 2])

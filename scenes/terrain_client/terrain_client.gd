@@ -276,6 +276,8 @@ var _was_waiting: bool = false
 var arrival_protect_until_msec: int = 0   # no fall damage report until then (Dave 2026-10-21: arriving must not hurt)
 const ARRIVAL_HEIGHT_M := 0.5             # the body is set this far above the ground when the ground first appears
 const ARRIVAL_PROTECT_MS := 6000
+const LOAD_QUIET_MS := 3000      # placed-thing sounds stay quiet this long after landing and after the join window closes (_world_loading)
+var _load_quiet_until_msec: int = 0
 const FLY_LAND_PROTECT_MS := 60000   # Dave 2026-10-21: pressing G to land from flying hurts nothing for a minute
 var _tint: ColorRect
 var _aim_msec: int = 0
@@ -932,6 +934,7 @@ func _update_connect_window() -> void:
 			_telemetry.event("connect window closed after %d s in the world" % since)
 			_connect_window.close()
 			_connect_window = null
+			_load_quiet_until_msec = maxi(_load_quiet_until_msec, now + LOAD_QUIET_MS)
 			return
 
 		var silent_server: bool = waiting_for_ground and stream != null and _ground_received() == 0 and stream.pending() == 0 and _ground_watchdog.tries == 0
@@ -2483,6 +2486,13 @@ func _water_ahead() -> bool:
 	return false
 
 
+# The world is still loading round the player (Dave 21 Nov 2026: at login "it makes the sounds of building everything really fast ... it can mute
+# sounds until they land on the ground and everything is loaded"): not yet joined, gliding for ground, the join window still up, or less than
+# LOAD_QUIET_MS since landing or since that window closed. Placed-thing sounds only note the rows meanwhile (PlacedSounds.quiet).
+func _world_loading() -> bool:
+	return connected_msec == 0 or waiting_for_ground or _connect_window != null or Time.get_ticks_msec() < _load_quiet_until_msec
+
+
 # The body glides high above the spawn until the ground under it has collision. When it does, set it down just above the
 # surface and protect it for a few seconds, so arriving is not a fall (Dave 2026-10-21: damage and a faint every landing).
 func _arrive_on_ground() -> void:
@@ -2501,6 +2511,7 @@ func _arrive_on_ground() -> void:
 		body.velocity = Vector3.ZERO
 
 	arrival_protect_until_msec = Time.get_ticks_msec() + ARRIVAL_PROTECT_MS
+	_load_quiet_until_msec = Time.get_ticks_msec() + LOAD_QUIET_MS
 	sound.forget_fall(body)
 
 
@@ -4920,6 +4931,7 @@ func _step_player(delta: float) -> void:
 		if not test_fire and not test_fire_world and not sound.fire.manual_active():
 			sound.fire.sync_world(items._world, _cover_here)
 
+		sound.placed.quiet = _world_loading()
 		sound.placed.watch_world(items._world, body.global_position)
 		sound.placed.watch_open(items._world, body.global_position)
 
@@ -6117,6 +6129,7 @@ func _process(delta: float) -> void:
 		sound.placed.container(false, here)
 		sound.placed.tool_break(here)
 		sound.placed.tool_repair(here)
+		sound.placed.quiet = false   # this check hears the hooks, not the join
 		sound.placed.watch_world({}, here)
 		sound.placed.watch_world({7: {"state": 6, "pos": here}}, here)
 		sound.placed.watch_world({}, here)

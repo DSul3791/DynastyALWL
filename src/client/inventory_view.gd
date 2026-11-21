@@ -5086,7 +5086,7 @@ func _dress_item(node: Node3D, number: int, world_id: int, natural: bool = false
 	node.rotation = Vector3(0.0, rng.randf_range(0.0, TAU), 0.0)
 
 	if BasicLook.has_look(id):
-		node.scale = Vector3.ONE * BASIC_DROP_SCALE      # big enough to find in the tall grass (the natural stones and sticks are 3 times)
+		node.scale = Vector3.ONE * (1.0 if str(BasicLook.entry(id).get("shape", "")) == "board" else BASIC_DROP_SCALE)      # big enough to find in the tall grass (the natural stones and sticks are 3 times); a sawn board is drawn at its real 8 ft
 		node.position.y += 0.04
 		return
 

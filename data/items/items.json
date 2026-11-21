@@ -291,6 +291,7 @@
 			"name": "Plank",
 			"description": "Boards from a log. Make them at a saw mill or with a saw.",
 			"kind": "material",
+			"pile": {"shape": "boards", "handful": 20, "color": [0.72, 0.55, 0.34], "len": 2.44, "width": 0.2, "thick": 0.025, "min": 2},
 			"stack": 20,
 			"look_alikes": [],
 			"note": "Sawn boards. Placeholder until the saw mill exists (Dave 2026-10-20: logs become lumber at a saw mill).",
@@ -9678,6 +9679,7 @@
 				"name": "Hardwood board",
 				"description": "A board sawn from a hardwood log. Finer furniture is built from it.",
 				"kind": "material",
+				"pile": {"shape": "boards", "handful": 20, "color": [0.48, 0.32, 0.19], "len": 2.44, "width": 0.2, "thick": 0.025, "min": 2},
 				"stack": 20,
 				"look_alikes": [],
 				"value": 12
