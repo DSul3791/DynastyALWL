@@ -24,6 +24,7 @@ const MEMORY_CHUNKS := 2048
 const ITEMS_CHUNKS := 160             # chunks of placed items kept by items_of
 const TREES_CHUNKS := 512             # trees-only placed lists kept (_placed; about 30 KB each)
 const COVER_CHUNKS := 1500            # chunks kept in the cover index (oldest dropped first)
+const SLOW_LOCK_MS := 20.0            # a chunk holding the flora lock longer prints a "server flora:" line (the main thread's shelter checks wait for it)
 const BRUSH_CELL_M := 2.0             # in_undergrowth: a shrub or tall plant marks the 2 m cell it stands in
 const BRUSH_MIN_M := 0.5              # only shrubs and plants this tall or taller rustle (ferns, tall grass, bushes; not moss or berries)
 const BRUSH_CHUNKS := 64              # chunks kept in the undergrowth index (oldest dropped first; a dropped one is made again on a worker)
@@ -276,7 +277,10 @@ func chunk_bytes(chunk: Vector2i, full: bool = true) -> PackedByteArray:
 				items[field].append_array(extra[field])
 	bytes = PlacerScript.encode(items, placer.chunk_origin(home))
 	var brush: Dictionary = _brush_cells(items) if full else {}
+	var crowns: Array = CoverScript.tree_rows(items, _cover_info)   # before the lock: the main thread's shelter checks wait for it
+	var wait_start: int = Time.get_ticks_usec()
 	_mutex.lock()
+	var held_start: int = Time.get_ticks_usec()
 
 	# BUG-024 (Dave's QA list, 4 Nov 2026: felled trees came back after streaming): this runs on worker threads, and a tree cut while
 	# the chunk was being made would be kept in the memory copy and sent to every later asker. Removals only grow, so a changed count
@@ -285,7 +289,7 @@ func chunk_bytes(chunk: Vector2i, full: bool = true) -> PackedByteArray:
 		_mutex.unlock()
 		return chunk_bytes(chunk, full)
 
-	_fill_cover(home, items)
+	_fill_cover(home, crowns)
 
 	if full:
 		_keep_brush(home, brush)
@@ -297,6 +301,11 @@ func chunk_bytes(chunk: Vector2i, full: bool = true) -> PackedByteArray:
 		_memory.erase(_memory.keys()[0])
 
 	_mutex.unlock()
+	var held_ms: float = float(Time.get_ticks_usec() - held_start) / 1000.0
+
+	if held_ms > SLOW_LOCK_MS:   # names a chunk that kept the shelter checks waiting
+		print("server flora: chunk %s held the flora lock %.0f ms (%d crowns; waited %.0f ms for it)" % [str(home), held_ms, crowns.size(), float(held_start - wait_start) / 1000.0])
+
 	return bytes
 
 
@@ -309,11 +318,15 @@ func chunk_made(chunk: Vector2i) -> bool:
 	return yes
 
 
-# Puts a chunk's tree crowns in the cover index (called with the mutex held).
-func _fill_cover(home: Vector2i, items: Dictionary) -> void:
-	CoverScript.add_chunk(cover, home, items, func(species_id: int) -> Array:
-		var item: Dictionary = placer.species_by_id(species_id)
-		return [] if item.is_empty() else [int(item["kind"]), float(item["crown"]), float(item["height_ref"]), CoverScript.is_deciduous(str(item.get("name", "")))])
+# A species' row for the cover index (Cover.tree_rows): [kind, crown m, reference height m, deciduous]; empty for an unknown species.
+func _cover_info(species_id: int) -> Array:
+	var item: Dictionary = placer.species_by_id(species_id)
+	return [] if item.is_empty() else [int(item["kind"]), float(item["crown"]), float(item["height_ref"]), CoverScript.is_deciduous(str(item.get("name", "")))]
+
+
+# Puts a chunk's tree crowns (Cover.tree_rows, worked out before the lock) in the cover index (called with the mutex held).
+func _fill_cover(home: Vector2i, crowns: Array) -> void:
+	cover.set_chunk(home, crowns)
 	_cover_order.erase(home)
 	_cover_order.append(home)
 
@@ -335,9 +348,15 @@ func set_season(season: String) -> void:
 
 # Whether a spot is under a tree's canopy (Cover.at on the server's index).
 func covered(pos: Vector3) -> bool:
+	var wait_start: int = Time.get_ticks_usec()
 	_mutex.lock()
+	var waited_usec: int = Time.get_ticks_usec() - wait_start
 	var yes: bool = CoverScript.at(pos, cover) > 0.0
 	_mutex.unlock()
+
+	if waited_usec > int(SLOW_LOCK_MS * 1000.0) and OS.get_thread_caller_id() == OS.get_main_thread_id():
+		print("server flora: the main thread waited %.0f ms for the flora lock in a shelter check" % (float(waited_usec) / 1000.0))
+
 	return yes
 
 

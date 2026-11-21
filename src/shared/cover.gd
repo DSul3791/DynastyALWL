@@ -81,11 +81,18 @@ static func crown_radius(crown_m: float, reference_height_m: float, height_m: fl
 
 
 static func add_chunk(index, chunk: Vector2i, items: Dictionary, info: Callable) -> void:
+	index.set_chunk(chunk, tree_rows(items, info))
+
+
+# The rows add_chunk puts in an index, worked out from the item list alone (no index touched): the server builds them on its worker before
+# it takes the flora lock, so the lock is held only for set_chunk (lag while running, 21 Nov 2026: a 256 m chunk's tens of thousands of items
+# were walked under the lock and the server's main thread waited for it in every shelter check, up to 0.5 s a tick).
+static func tree_rows(items: Dictionary, info: Callable) -> Array:
 	var ids: PackedInt32Array = items["ids"]
 	var heights = items["heights"]
 	var positions = items["positions"]
 	var trees: Array = []
-	var rows: Dictionary = {}     # species id -> info row, asked once per species (this runs on the main thread)
+	var rows: Dictionary = {}     # species id -> info row, asked once per species
 
 	for n in range(ids.size()):
 		var species: int = ids[n] >> 16
@@ -106,7 +113,7 @@ static func add_chunk(index, chunk: Vector2i, items: Dictionary, info: Callable)
 
 		trees.append([ids[n], p.x, p.z, crown_radius(float(row[1]), float(row[2]), height), p.y + height, row.size() > 3 and bool(row[3])])
 
-	index.set_chunk(chunk, trees)
+	return trees
 
 
 class Index:
@@ -170,9 +177,49 @@ class Index:
 		var base: int = _chunk_key(chunk)
 
 		for cell in cells:
-			_filter(cell, func(key: int) -> bool: return (key >> 24) == base)
+			_drop_chunk(cell, base)
 
 		_chunk_cells.erase(chunk)
+
+
+	# remove_chunk for one cell without a Callable per tree (the server runs it under its flora lock for every chunk the index lets go): a
+	# cell holding only this chunk's trees, the usual case, goes whole.
+	func _drop_chunk(cell: Vector2i, base: int) -> void:
+		var entry: Dictionary = _cells.get(cell, {})
+
+		if entry.is_empty():
+			return
+
+		var keys: PackedInt64Array = entry["k"]
+		var others: int = 0
+
+		for key: int in keys:
+			if (key >> 24) != base:
+				others += 1
+
+		if others == 0:
+			trees -= keys.size()
+			_cells.erase(cell)
+			return
+
+		var old_f: PackedFloat32Array = entry["f"]
+		var old_b: PackedByteArray = entry["b"]
+		var f: PackedFloat32Array = PackedFloat32Array()
+		var k: PackedInt64Array = PackedInt64Array()
+		var b: PackedByteArray = PackedByteArray()
+
+		for n in range(keys.size()):
+			if (keys[n] >> 24) == base:
+				trees -= 1
+				continue
+
+			f.append_array(old_f.slice(n * 4, n * 4 + 4))
+			k.append(keys[n])
+			b.append(old_b[n])
+
+		entry["f"] = f
+		entry["k"] = k
+		entry["b"] = b
 
 
 	# Felling: the tree with this item id leaves the index, so the ground opens up.
