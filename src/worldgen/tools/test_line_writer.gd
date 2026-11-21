@@ -61,7 +61,7 @@ func _init() -> void:
 
 	cut.close()
 	var kept: PackedStringArray = _lines_of(path)
-	check(kept.size() >= 30 and kept.size() <= 80, "the file was cut back (%d lines)" % kept.size())
+	check(kept.size() >= 30 and kept.size() <= 79, "the file was cut back (%d lines)" % kept.size())
 	check(kept[kept.size() - 1] == "cut 149", "and keeps the newest line (%s)" % kept[kept.size() - 1])
 
 	# EventLog goes through it: a line is in the file after drain().

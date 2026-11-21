@@ -7619,6 +7619,8 @@ func _exit_tree() -> void:
 	if stream != null:
 		stream.close()
 
+	_telemetry.drain()   # its lines are written on a worker: the EXIT line reaches the file before the process ends
+
 
 # Why a torch cannot be lit right now: "water" (the eye is under water), "rain" (open rain, no tree, rock or roof over you; a cave is cover), or "".
 # Asked at the moment of the key press, so it reads the state of that frame.

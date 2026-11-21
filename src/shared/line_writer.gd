@@ -17,6 +17,7 @@ var _mutex: Mutex = Mutex.new()        # the queue and the task: held only for a
 var _file_mutex: Mutex = Mutex.new()   # the file: one writer at a time (the worker or drain()), the queue taken under it so lines keep their order
 var _task: int = -1
 var _busy: bool = false                # a task is running or about to take the queue
+var _open: bool = false                # a file is open: lines added before open() or after close() are dropped, as before
 
 
 # Starts the file afresh at `file_path` (after writing what an earlier file still had queued). False when it cannot be opened.
@@ -30,23 +31,32 @@ func open(file_path: String, cut_at: int, keep: int) -> bool:
 	_file = FileAccess.open(file_path, FileAccess.WRITE)
 	var opened: bool = _file != null
 	_file_mutex.unlock()
+	_mutex.lock()
+	_open = opened
+	_mutex.unlock()
 	return opened
 
 
 # Queues one line (any thread).
 func add(line: String) -> void:
+	var finished: int = -1
 	_mutex.lock()
+
+	if not _open:
+		_mutex.unlock()
+		return
+
 	_queue.append(line)
 
 	if not _busy:
 		_busy = true
-
-		if _task >= 0:
-			WorkerThreadPool.wait_for_task_completion(_task)   # done already: it cleared _busy as its last step
-
+		finished = _task   # the last task, done already (it cleared _busy as its last step): waited for once, below, outside the lock
 		_task = WorkerThreadPool.add_task(_run, false, "log lines")
 
 	_mutex.unlock()
+
+	if finished >= 0:
+		WorkerThreadPool.wait_for_task_completion(finished)
 
 
 # Writes the queued lines now, on the calling thread.
@@ -56,9 +66,18 @@ func drain() -> void:
 	_file_mutex.unlock()
 
 
-# Writes what is queued and closes the file.
+# Writes what is queued, waits for the last task and closes the file.
 func close() -> void:
+	_mutex.lock()
+	_open = false
+	var last: int = _task
+	_task = -1
+	_mutex.unlock()
 	drain()
+
+	if last >= 0:
+		WorkerThreadPool.wait_for_task_completion(last)   # it finds the queue empty and ends
+
 	_file_mutex.lock()
 
 	if _file != null:
@@ -107,12 +126,12 @@ func _write_batch(lines: PackedStringArray) -> void:
 
 	if _cut_at > 0 and _lines > _cut_at:
 		_file.close()
-		var all: PackedStringArray = FileAccess.get_file_as_string(path).split("\n")
+		var all: PackedStringArray = FileAccess.get_file_as_string(path).split("\n", false)   # no empty last line: exactly `keep` lines stay
 		var kept: PackedStringArray = all.slice(maxi(all.size() - _keep, 0))
 		_file = FileAccess.open(path, FileAccess.WRITE)
 
 		if _file != null:
-			_file.store_string("\n".join(kept))
+			_file.store_string("\n".join(kept) + "\n")
 			_file.flush()
 
 		_lines = kept.size()
