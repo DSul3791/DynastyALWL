@@ -196,7 +196,8 @@ var _holes: Array = []            # ice fishing holes: {pos, owner key, until ga
 var _hole_blows: Dictionary = {}  # peer -> [blows, msec of the last]
 var rock_near: Callable          # (position) -> the rocks.json name of the bedrock under a boulder there (TileTerrainData.bedrock_name_at), "" when unknown; set by the server scene (unset: no rock pieces)
 var ore_near: Callable           # (position, reach in metres, ore names wanted, layer depth in metres) -> the ore (data/tables/resources.json) a boulder there is an outcrop of, "" when none; set by the server scene (unset: no ore)
-var bog_deposit_at: Callable     # (x, z, digging.json bog_iron) -> BogIron.deposit_at on the baked tile there ({} when none); set by the server scene (unset: no bog iron)
+var bog_field: Callable          # (fx, fz, digging.json bog_iron) -> BogIron.field on the baked tile there ([] when it bears none); set by the server scene (unset: no bog iron)
+var bog_silt_at: Callable        # (x, z, digging.json bog_iron) -> BogIron.silt_material: what a hole dug on fen, marsh, swamp or bog silts back in with, 0 elsewhere (unset: none does)
 var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var drink_water_near: Callable   # (a player's position, reach) -> as water_near, and the water no more than DrinkRules.REACH_DROP_M below the feet (unset: water_near)
@@ -369,10 +370,19 @@ const ORE_ROCK_TRIES := 8              # tries a cell for each ore's rocks (_lay
 const ORE_KEY := 1 << 52               # copper and tin rocks picked by hand: ORE_KEY | cell x << 28 | cell y << 8 | slot; tin boulders add BOULDER_KEY
 const BOG_STATE := 229            # world-item row state of a bog iron deposit (next free structure state, 10 Nov 2026; no structure may take it)
 const BOG_ID_BASE := 2000000000   # bog deposit world row ids count down from here (int32, far above _next_id), one per deposit key per run
-const BOG_SAMPLE_M := 8.0         # the baked tile's sample spacing: deposits sit on samples (BogIron), so the scan steps by it
-const BOG_WET_M := 0.05           # a deposit under more standing water than this is drawn wet
 var _bog_ids: Dictionary = {}     # deposit key "gi,gj" -> its world row id
-var _bog_scan: Dictionary = {}    # peer -> {"at": Vector2i sample the scan was made from, "found": [[key, pos, size], ...]}
+var _bog_y: Dictionary = {}       # deposit key -> the generated ground height at its centre (ground_height, once a run)
+var _bog_fields: Dictionary = {}  # field square "fx,fz" -> its patches (BogIron.field), worked out once a run; cleared past BOG_FIELDS_MAX
+const BOG_FIELDS_MAX := 1024
+# Holes dug in wetland silt back in (Dave 21 Nov 2026: "since its in water we can just assume the water washes the dirt back into the hole over
+# a given period of time"): [x, surface y, z, dug radius, game seconds due, soil it silts in with], saved in world_items.json "bog_holes". PROVISIONAL BI-4: one game day.
+var _bog_holes: Array = []
+const BOG_HOLES_MAX := 256        # past this the oldest hole silts in at once
+const BOG_HOLE_JOIN_M := 1.5      # a dig this close to a waiting hole joins it (one fill for the spot, the later due time)
+const BOG_HOLE_DEEP_M := 1.0      # a new hole is noted only when struck within this of the generated surface (not a tunnel under the bog); deeper digs join one
+const BOG_SILT_PER_TICK := 4      # at most this many holes silt in one slow tick (each is a ground edit, a message to everyone and a remesh)
+const BOG_REFILL_R_MIN := 2.5     # the silting fill: a sphere at least this big whose top just meets the old surface over the hole
+const PEAT_SOIL := 6              # data/tables/soils.json "peat": what a hole saved without its material silts in with
 const CAVE_KEY := 1 << 51       # cave floor stones and boulders: CAVE_KEY | cell x << 28 | cell y << 8 | entry (up to 256 a cell)
 const CAVE_ITEMS_MAX := 256
 const BOULDER_STATE := 10            # world-item row state of a boulder          # boulder keys live apart from the loose stones' keys
@@ -804,7 +814,6 @@ func peer_left(peer: int) -> void:
 	_peer_key.erase(peer)
 	_peer_pos.erase(peer)
 	_known.erase(peer)
-	_bog_scan.erase(peer)
 	_last_throw.erase(peer)
 	_last_mine.erase(peer)
 	_last_dig.erase(peer)
@@ -1663,6 +1672,7 @@ func tick(delta: float) -> void:
 		_crops_tick()
 		_garden_jobs_tick()
 		_water_tick(spent)
+		_bog_holes_tick()
 		_slow_mark("crops-water", t0)
 		_lights_tick(spent)
 		_smelters.tick_all(spent)
@@ -1913,7 +1923,7 @@ func _item_job() -> Dictionary:
 	_note_save_part("world item copy", t0)
 	_save_gen += 1
 	return {"dir": _dir, "items": copy, "areas": areas, "all": _area_ids.keys(), "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(), "gen": _save_gen, "sums": _area_sums, "exact": exact, "failed_out": _save_failed,
-		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "ore_per_kg": _boulder_per_kg(true), "boulders_then": _boulder_pending.duplicate(true), "bog_iron": _bog_left.duplicate(true), "layout": FloraLayout.VERSION, "no_kits": true}}
+		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "ore_per_kg": _boulder_per_kg(true), "boulders_then": _boulder_pending.duplicate(true), "bog_iron": _bog_left.duplicate(true), "bog_holes": _bog_holes.duplicate(true), "layout": FloraLayout.VERSION, "no_kits": true}}
 
 
 func _save_item_files(job: Dictionary) -> void:
@@ -2950,6 +2960,7 @@ func reset_world() -> int:
 	_boulder_left.clear()
 	_boulder_pending.clear()
 	_bog_left.clear()
+	_bog_holes.clear()
 	_picked.clear()
 	_stripped.clear()
 	_fruit.clear()
@@ -4002,6 +4013,7 @@ func _dig(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		return
 
 	_give_dig_yield(peer, at, _shovel_tier(inv, shovel), _shovel_pieces(inv, shovel))
+	_note_bog_hole(at, DIG_RADIUS_M * reach)
 
 	# A dig more than 2.5 m under the surface is a tunnel or a cave: the "cave_in" hint (hints.json digging_under_ceiling) warns about roof supports.
 	if ground_height.is_valid() and float(ground_height.call(at.x, at.z)) - at.y > 2.5:
@@ -5124,16 +5136,16 @@ func _give_dig_yield(peer: int, at: Vector3, tier: int = 1, pieces: int = 1) -> 
 			give(peer, found, 1)
 
 
-# Bog iron (digging.json bog_iron, Sonny s11): a dig on a deposit also brings up its ore, on top of the peat or mud. It is per_dig rolled like a
+# Bog iron (digging.json bog_iron, Sonny s11): a dig within a patch's radius (_bog_patch_at) also brings up its ore, on top of the peat or mud. It is per_dig rolled like a
 # soil row, plus the shovel tier's tier_extra, times the shovel size's pieces, never more than is left; the deposit grows back one ore every
 # regrow_game_days (BogIron.regrown, worked out at the dig). The first dig that finds any says first_find once to that character.
 func _dig_bog_iron(peer: int, at: Vector3, tier: int, pieces: int) -> void:
 	var cfg: Dictionary = _dig_cfg.get("bog_iron", {})
 
-	if cfg.is_empty() or not bog_deposit_at.is_valid():
+	if cfg.is_empty() or not bog_field.is_valid():
 		return
 
-	var deposit: Dictionary = bog_deposit_at.call(at.x, at.z, cfg)
+	var deposit: Dictionary = _bog_patch_at(at.x, at.z)
 	var number: int = table.number_of(str(cfg.get("item", "iron_ore")))
 
 	if deposit.is_empty() or number <= 0:
@@ -5166,61 +5178,179 @@ func _dig_bog_iron(peer: int, at: Vector3, tier: int, pieces: int) -> void:
 			_say(peer, str(cfg["first_find"]))
 
 
-# The bog iron deposits a player can see (digging.json bog_iron seen_m), as world rows for the client's look (Kathleen's _show_bog):
-#   [id, 0, ore left, the sample on the ground, BOG_STATE, {"key": "gi,gj", "total": its size, "wet": under standing water}]
-# "left" is the deposit as it has grown back by now (BogIron.regrown, the same sum a dig makes), so a dig or the regrowth sends the row again.
-# The deposits are looked up again only when the player moves onto another sample (a few dozen samples within seen_m).
-func _bog_rows_near(peer: int, here: Vector3) -> Array:
+# The patches of field square (fx, fz), worked out once a run (BogIron.field reads a few thousand samples of the baked tile). bog_field answers
+# null while the square's tile is not in memory (the server never reads a tile on its main thread): nothing is kept, and a later call asks again.
+func _bog_field_of(fx: int, fz: int) -> Array:
+	var key: String = "%d,%d" % [fx, fz]
+
+	if not _bog_fields.has(key):
+		var patches: Variant = bog_field.call(fx, fz, _dig_cfg.get("bog_iron", {}))
+
+		if typeof(patches) != TYPE_ARRAY:
+			return []
+
+		if _bog_fields.size() >= BOG_FIELDS_MAX:
+			_bog_fields.clear()
+
+		_bog_fields[key] = patches
+
+	return _bog_fields[key]
+
+
+# Every patch of the field squares within reach of (x, z): [{"key", "x", "z", "size", "r"}, ...] (unsorted; may hold patches out of reach).
+func _bog_patches_near(x: float, z: float, reach: float) -> Array:
 	var cfg: Dictionary = _dig_cfg.get("bog_iron", {})
+	var out: Array = []
 
-	if cfg.is_empty() or not bog_deposit_at.is_valid():
-		return []
+	if cfg.is_empty() or not bog_field.is_valid():
+		return out
 
-	var seen: float = float(cfg.get("seen_m", 30.0))
-	var at: Vector2i = Vector2i(int(round(here.x / BOG_SAMPLE_M)), int(round(here.z / BOG_SAMPLE_M)))
-	var scan: Dictionary = _bog_scan.get(peer, {})
+	var low: Vector2i = BogIron.field_of(x - reach, z - reach, cfg)
+	var high: Vector2i = BogIron.field_of(x + reach, z + reach, cfg)
 
-	if scan.is_empty() or scan["at"] != at:
-		var found: Array = []
-		var keys: Dictionary = {}
-		var reach: int = ceili(seen / BOG_SAMPLE_M)
+	for fz in range(low.y, high.y + 1):
+		for fx in range(low.x, high.x + 1):
+			out.append_array(_bog_field_of(fx, fz))
 
-		for dj in range(-reach, reach + 1):
-			for di in range(-reach, reach + 1):
-				var x: float = float(at.x + di) * BOG_SAMPLE_M
-				var z: float = float(at.y + dj) * BOG_SAMPLE_M
-				var deposit: Dictionary = bog_deposit_at.call(x, z, cfg)
+	return out
 
-				if deposit.is_empty() or keys.has(str(deposit["key"])):
-					continue
 
-				keys[str(deposit["key"])] = true
-				var y: float = float(ground_height.call(x, z)) if ground_height.is_valid() else here.y
-				found.append([str(deposit["key"]), Vector3(x, here.y if is_nan(y) else y, z), int(deposit["size"])])
+# The patch whose ground point (x, z) lies on (within its radius; the nearest when two touch), or {}.
+func _bog_patch_at(x: float, z: float) -> Dictionary:
+	var radii: Array = _dig_cfg.get("bog_iron", {}).get("radius_m", [2.5, 4.0])
+	var best: Dictionary = {}
+	var best_d: float = INF
 
-		scan = {"at": at, "found": found}
-		_bog_scan[peer] = scan
+	for patch in _bog_patches_near(x, z, float(radii[radii.size() - 1])):
+		var d: float = Vector2(float(patch["x"]) - x, float(patch["z"]) - z).length()
 
+		if d <= float(patch["r"]) and d < best_d:
+			best_d = d
+			best = patch
+
+	return best
+
+
+# The bog iron patches a player can see (digging.json bog_iron seen_m), as world rows for the client's look (inventory_view _note_bog and the
+# ground shader's rust, ground_material.gd set_bogs):
+#   [id, 0, ore left, the patch centre on the generated ground, BOG_STATE, {"key": "gi,gj", "total": its size, "r": its radius in metres}]
+# "left" is the deposit as it has grown back by now (BogIron.regrown, the same sum a dig makes), so a dig or the regrowth sends the row again.
+# The centre's height is the ground as generated, not as dug: the client draws rust only on ground still at that level.
+func _bog_rows_near(_peer: int, here: Vector3) -> Array:
+	var cfg: Dictionary = _dig_cfg.get("bog_iron", {})
 	var rows: Array = []
+
+	if cfg.is_empty() or not bog_field.is_valid():
+		return rows
+
+	var seen: float = float(cfg.get("seen_m", 50.0))
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 
-	for entry in scan["found"]:
-		var spot: Vector3 = entry[1]
+	for patch in _bog_patches_near(here.x, here.z, seen):
+		var x: float = float(patch["x"])
+		var z: float = float(patch["z"])
 
-		if Vector2(spot.x - here.x, spot.z - here.z).length() > seen:
+		if Vector2(x - here.x, z - here.z).length() > seen:
 			continue
 
-		var key: String = str(entry[0])
-		var size: int = int(entry[2])
+		var key: String = str(patch["key"])
+		var size: int = int(patch["size"])
 
 		if not _bog_ids.has(key):
 			_bog_ids[key] = BOG_ID_BASE - _bog_ids.size()
 
+		if not _bog_y.has(key):   # the generated ground at the centre, worked out once a run
+			_bog_y[key] = float(ground_height.call(x, z)) if ground_height.is_valid() else NAN
+
+		var y: float = float(_bog_y[key])
 		var left: int = int(BogIron.regrown(_bog_left.get(key, [size, now_s]), size, now_s, cfg)[0])
-		var wet: bool = water_depth_at.is_valid() and float(water_depth_at.call(spot)) > BOG_WET_M
-		rows.append([int(_bog_ids[key]), 0, left, spot, BOG_STATE, {"key": key, "total": size, "wet": wet}])
+		rows.append([int(_bog_ids[key]), 0, left, Vector3(x, here.y if is_nan(y) else y, z), BOG_STATE, {"key": key, "total": size, "r": snappedf(float(patch["r"]), 0.01)}])
 
 	return rows
+
+
+# A dig that changed the ground on fen, marsh, swamp or bog (BogIron.silt_material) is noted to silt back in refill_game_days later (_bog_holes_tick).
+# A dig beside a waiting hole joins it: the larger radius, the later time, the surface it first had.
+func _note_bog_hole(at: Vector3, radius: float) -> void:
+	var cfg: Dictionary = _dig_cfg.get("bog_iron", {})
+
+	if cfg.is_empty() or not bog_silt_at.is_valid() or not fill_ground.is_valid():
+		return
+
+	var material: int = int(bog_silt_at.call(at.x, at.z, cfg))
+
+	if material <= 0:
+		return
+
+	var due: float = (float(game_seconds.call()) if game_seconds.is_valid() else 0.0) + float(cfg.get("refill_game_days", 1.0)) * BogIron.SECONDS_PER_GAME_DAY
+
+	for hole in _bog_holes:
+		if Vector2(float(hole[0]) - at.x, float(hole[2]) - at.z).length() <= BOG_HOLE_JOIN_M:
+			hole[3] = maxf(float(hole[3]), radius)
+			hole[4] = due
+			_dirty = true
+			return
+
+	var surface: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else NAN
+
+	if not is_nan(surface) and at.y < surface - BOG_HOLE_DEEP_M:
+		return   # a dig in a tunnel or cellar under the wetland: the water does not fill that
+
+	_bog_holes.append([at.x, at.y if is_nan(surface) else surface, at.z, radius, due, material])
+
+	if _bog_holes.size() > BOG_HOLES_MAX:
+		_silt_hole(_bog_holes.pop_front())
+
+	_dirty = true
+
+
+# The slow tick: each hole whose time has come silts back in, unless a player stands in reach of it (then it waits for the next tick).
+func _bog_holes_tick() -> void:
+	if _bog_holes.is_empty() or not game_seconds.is_valid():
+		return
+
+	var now_s: float = float(game_seconds.call())
+	var keep: Array = []
+
+	var silted: int = 0
+
+	for hole in _bog_holes:
+		if silted >= BOG_SILT_PER_TICK or now_s < float(hole[4]) or _someone_near_hole(hole):
+			keep.append(hole)
+		else:
+			_silt_hole(hole)
+			silted += 1
+
+	if keep.size() != _bog_holes.size():
+		_bog_holes = keep
+		_dirty = true
+
+
+func _someone_near_hole(hole: Array) -> bool:
+	var reach: float = _silt_radius(hole) + 1.0
+
+	for peer in _peer_pos:
+		var p: Vector3 = _peer_pos[peer]
+
+		if Vector2(p.x - float(hole[0]), p.z - float(hole[2])).length() <= reach:
+			return true
+
+	return false
+
+
+func _silt_radius(hole: Array) -> float:
+	return maxf(BOG_REFILL_R_MIN, 3.0 * float(hole[3]))
+
+
+# One fill of the wetland's own soil (noted with the hole; the draw material stays the generated wetland look): a sphere whose top just meets the surface the ground had before the dig, so the hole fills to a shallow dip at its rim and
+# never heaps above the old ground.
+func _silt_hole(hole: Array) -> void:
+	if not fill_ground.is_valid():
+		return
+
+	var r: float = _silt_radius(hole)
+	fill_ground.call(Vector3(float(hole[0]), float(hole[1]) - r, float(hole[2])), r, int(hole[5]) if hole.size() >= 6 else PEAT_SOIL)
+	settle_loose_near(Vector3(float(hole[0]), float(hole[1]), float(hole[2])), r)
 
 
 # What filling a hole uses up (digging.json "fill", in that order): takes up to `units` shovelfuls from the pack, returns how many
@@ -6962,7 +7092,7 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 
 		for bog in ([] if quick else _bog_rows_near(peer, here)):
 			near[int(bog[0])] = true
-			var bog_signature: int = int(bog[2]) + 1000 * BOG_STATE + (7 if bool(bog[5]["wet"]) else 0)
+			var bog_signature: int = int(bog[2]) + 1000 * BOG_STATE
 
 			if not known.has(int(bog[0])) or known[int(bog[0])] != bog_signature:
 				added.append(bog)
@@ -7159,6 +7289,10 @@ func _load_world_items() -> void:
 
 		if typeof(bog_row) == TYPE_ARRAY and (bog_row as Array).size() >= 2:
 			_bog_left[str(key)] = [int(bog_row[0]), float(bog_row[1])]
+
+	for hole in parsed.get("bog_holes", []):   # added 21 Nov 2026: an older file has none
+		if typeof(hole) == TYPE_ARRAY and (hole as Array).size() >= 5:
+			_bog_holes.append([float(hole[0]), float(hole[1]), float(hole[2]), float(hole[3]), float(hole[4]), int(hole[5]) if (hole as Array).size() >= 6 else PEAT_SOIL])
 
 	var had_kits: bool = not bool(parsed.get("no_kits", false))   # a world saved before kits were dropped (Dave 4 Nov 2026) loses its kit items and every placed building once
 

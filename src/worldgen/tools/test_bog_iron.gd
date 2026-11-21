@@ -1,8 +1,11 @@
 extends SceneTree
 
-# Bog iron (Sonny, water_flow_rules section 11, src/shared/bog_iron.gd): deposits only under fen, marsh, swamp and bog samples, about 4% of a fen
-# and twice that at its dry edge, the same every time; a shovel dig gives 1 to 2 Bog iron ore until the deposit is empty, one ore comes back every 3
-# game days up to its size, the first find is said once, the state survives a save; main's tile 3,4 holds the expected number near the spawn.
+# Bog iron (Sonny, water_flow_rules section 11, src/shared/bog_iron.gd), as fields (Dave 21 Nov 2026: "if the bog had one spot it probably has a
+# few"): a 512 m field square bears iron or not, about half of them; one that bears and holds enough fen, marsh, swamp or bog gets 3 to 8 patches
+# clustered at its wet edge, more for a bigger wetland, spaced apart, each 6 to 12 ore with a radius by its size; none under any other water; the
+# same every time. A shovel dig within a patch's radius gives 1 to 2 Bog iron ore until it is empty, one ore comes back every 3 game days, the first
+# find is said once, the state survives a save. A hole dug in wetland silts back in a game day later (Dave: "the water washes the dirt back into
+# the hole"), not while someone stands in it, with a fill that never heaps over the old ground. Main's tile 3,4 has fields near the spawn.
 #   godot --headless --path . --script res://src/worldgen/tools/test_bog_iron.gd
 
 const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
@@ -14,9 +17,9 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const FEN := 7
-const MARSH := 4
-const BLOCK := 10      # wetland blocks of BLOCK x BLOCK samples, one dry row and column between them
-const BLOCKS := 30     # BLOCKS x BLOCKS of them: 57,600 inside samples and 32,400 edge samples
+const PER := 64        # samples along a 512 m field square at 8 m
+const FIELDS := 10     # FIELDS x FIELDS field squares on the test map
+const SPAWN := Vector2(58167.0, 71364.0)
 
 var failures: int = 0
 
@@ -33,98 +36,120 @@ func _cfg() -> Dictionary:
 	return parsed.get("bog_iron", {}) if typeof(parsed) == TYPE_DICTIONARY else {}
 
 
-# A side x side map of BLOCK-sized blocks of one class with dry rows between: [map, side].
-func _blocks(cls: int, blocks: int = BLOCKS) -> Array:
-	var period: int = BLOCK + 1
-	var side: int = blocks * period + 1
+# A tile of FIELDS x FIELDS field squares, each with one block of `cls` in its middle: big (20 x 20 samples) on even columns, small (6 x 5) on odd.
+func _tile(cls: int):
+	var side: int = FIELDS * PER + 1
 	var map: PackedByteArray = PackedByteArray()
 	map.resize(side * side)
 
-	for j in range(side):
-		for i in range(side):
-			map[j * side + i] = cls if (i % period != 0 and j % period != 0) else 0
+	for fz in range(FIELDS):
+		for fx in range(FIELDS):
+			var w: int = 20 if fx % 2 == 0 else 6
+			var h: int = 20 if fx % 2 == 0 else 5
 
-	return [map, side]
+			for j in range(fz * PER + 20, fz * PER + 20 + h):
+				for i in range(fx * PER + 20, fx * PER + 20 + w):
+					map[j * side + i] = cls
+
+	var tile = TileDataScript.new()
+	tile.samples = side
+	tile.spacing_m = 8.0
+	tile.x0 = 15360.0 * 3.0
+	tile.z0 = 15360.0 * 4.0
+	tile.water_class = map
+	return tile
 
 
-# [inside deposits, inside samples, edge deposits, edge samples, all sizes in range, sizes seen] over a block map.
-func _shares(map: PackedByteArray, side: int, cfg: Dictionary) -> Array:
-	var counts: Array = [0, 0, 0, 0]
-	var sizes_ok: bool = true
-	var seen: Dictionary = {}
-
-	for j in range(side):
-		for i in range(side):
-			if map[j * side + i] == 0:
-				continue
-
-			var edge: bool = BogIron.is_edge(map, side, i, j)
-			var d: Dictionary = BogIron.deposit_at_sample(map, side, i, j, i + 5000, j + 7000, cfg)
-			counts[3 if edge else 1] += 1
-
-			if not d.is_empty():
-				counts[2 if edge else 0] += 1
-				sizes_ok = sizes_ok and int(d["size"]) >= 6 and int(d["size"]) <= 12 and bool(d["edge"]) == edge
-				seen[int(d["size"])] = true
-
-	return [counts[0], counts[1], counts[2], counts[3], sizes_ok, seen.size()]
+# The class of the sample under world point (x, z) of a tile.
+func _class_at(tile, x: float, z: float) -> int:
+	return int(tile.water_class[tile.nearest(x, z)])
 
 
 func _init() -> void:
 	var cfg: Dictionary = _cfg()
 	check(not cfg.is_empty() and str(cfg.get("item", "")) == "bog_iron_ore", "digging.json has the bog_iron block, digging Bog iron ore (Dave 19 Nov 2026)")
+	check(int(cfg.get("field_m", 0)) == 512 and int(15360.0) % int(cfg.get("field_m", 1)) == 0, "a field square is 512 m and lies inside one tile")
 
-	# 1. Where: only fen, marsh, swamp and bog; about 4% inside a fen and 8% at its dry edge; the same every time.
-	var fen: Array = _blocks(FEN)
-	var a: Array = _shares(fen[0], fen[1], cfg)
-	var inside: float = float(a[0]) / float(a[1])
-	var edge: float = float(a[2]) / float(a[3])
-	check(absf(inside - 0.04) <= 0.01, "a fen holds a deposit on about 4%% of its inside samples (%.2f%% of %d)" % [100.0 * inside, a[1]])
-	check(absf(edge - 0.08) <= 0.01, "and on about 8%% of its edge samples (%.2f%% of %d)" % [100.0 * edge, a[3]])
-	check(bool(a[4]) and int(a[5]) == 7, "deposit sizes are 6 to 12 Bog iron ore, all seven seen, and the edge flag is right")
-	check(_shares(fen[0], fen[1], cfg) == a, "the same map gives the same deposits")
-	var marsh: Array = _blocks(MARSH)
-	var m: Array = _shares(marsh[0], marsh[1], cfg)
-	check(absf(float(m[0]) / float(m[1]) - 0.028) <= 0.008, "a marsh holds 0.7 of a fen's share (%.2f%%)" % (100.0 * float(m[0]) / float(m[1])))
+	# 1. Fields: about half the squares bear; one that bears has 3 to 8 patches on its wetland, spaced, sized, more for the bigger wetland.
+	var tile = _tile(FEN)
+	var base: Vector2i = BogIron.field_of(tile.x0 + 1.0, tile.z0 + 1.0, cfg)
+	var bearing: int = 0
+	var counts_ok: bool = true
+	var on_wet: bool = true
+	var spaced: bool = true
+	var sized: bool = true
+	var big: Array = [0, 0]      # [patches, bearing fields] on the big blocks
+	var small: Array = [0, 0]
+	var edge_patches: int = 0
+	var all_patches: int = 0
+	var sizes: Dictionary = {}
+
+	for fz in range(FIELDS):
+		for fx in range(FIELDS):
+			var patches: Array = BogIron.field(tile, base.x + fx, base.y + fz, cfg)
+
+			if patches.is_empty():
+				continue
+
+			bearing += 1
+			counts_ok = counts_ok and patches.size() >= 3 and patches.size() <= 8
+			var tally: Array = big if fx % 2 == 0 else small
+			tally[0] += patches.size()
+			tally[1] += 1
+
+			for a in range(patches.size()):
+				var p: Dictionary = patches[a]
+				on_wet = on_wet and _class_at(tile, float(p["x"]), float(p["z"])) == FEN
+				sized = sized and int(p["size"]) >= 6 and int(p["size"]) <= 12 and float(p["r"]) >= 2.5 and float(p["r"]) <= 4.0
+				sizes[int(p["size"])] = true
+				var k: int = tile.nearest(float(p["x"]), float(p["z"]))
+				all_patches += 1
+				edge_patches += 1 if BogIron.is_edge(tile.water_class, tile.samples, k % tile.samples, floori(float(k) / float(tile.samples))) else 0
+
+				for b in range(a + 1, patches.size()):
+					spaced = spaced and Vector2(float(p["x"]) - float(patches[b]["x"]), float(p["z"]) - float(patches[b]["z"])).length() >= 14.0
+
+	check(BogIron.field(tile, base.x, base.y, cfg) == BogIron.field(tile, base.x, base.y, cfg) and BogIron.field(tile, base.x + 2, base.y + 3, cfg) == BogIron.field(tile, base.x + 2, base.y + 3, cfg), "the same square gives the same patches every time")
+	var share: float = float(bearing) / float(FIELDS * FIELDS)
+	check(share >= 0.3 and share <= 0.7, "about half the field squares bear iron (%d of %d)" % [bearing, FIELDS * FIELDS])
+	check(counts_ok, "a bearing field has 3 to 8 patches")
+	check(on_wet, "every patch lies on the wetland")
+	check(spaced, "patches are at least 14 m apart")
+	check(sized and sizes.size() >= 5, "patches hold 6 to 12 ore with a 2.5 to 4 m radius (%d sizes seen)" % sizes.size())
+	check(big[1] > 0 and small[1] > 0 and float(big[0]) / float(big[1]) > float(small[0]) / float(small[1]), "a bigger wetland gives a bigger field (%s vs %s)" % [str(big), str(small)])
+	# A 20 x 20 block has 76 edge samples of 400 (19%); the seed is an edge sample and edges are taken first.
+	check(all_patches > 0 and float(edge_patches) / float(all_patches) > 0.3, "the patches lie mostly at the wet edge (%d of %d)" % [edge_patches, all_patches])
 
 	for cls in [0, 1, 2, 3, 5, 9, 10, 11]:
-		var other: Array = _blocks(cls, 6)
-		var none: Array = _shares(other[0], other[1], cfg)
-		check(int(none[0]) + int(none[2]) == 0, "no bog iron under water class %d" % cls)
+		var other = _tile(cls)
+		var any: int = 0
 
-	# 2. A tile: the key is the world sample (the tile's first sample plus its own), the same as the sample rule; open ocean has none.
-	var tile = TileDataScript.new()
-	tile.samples = fen[1]
-	tile.spacing_m = 8.0
-	tile.x0 = 15360.0 * 3.0
-	tile.z0 = 15360.0 * 4.0
-	tile.water_class = fen[0]
-	var found: Dictionary = {}
+		for f in range(FIELDS):
+			any += BogIron.field(other, base.x + f, base.y + f, cfg).size()
 
-	for j in range(1, 60):
-		for i in range(1, 60):
-			var here: Dictionary = BogIron.deposit_at(tile, tile.x0 + 8.0 * float(i) + 1.0, tile.z0 + 8.0 * float(j) - 1.0, cfg)
-			var by_sample: Dictionary = BogIron.deposit_at_sample(fen[0], fen[1], i, j, i + 5760, j + 7680, cfg)
+		check(any == 0, "no bog iron under water class %d" % cls)
 
-			if here != by_sample:
-				found["mismatch"] = [i, j]
+	var tiny = _tile(0)
+	var tiny_side: int = tiny.samples
 
-			if not here.is_empty():
-				found[str(here["key"])] = true
+	for j in range(20, 22):
+		for i in range(20, 25):
+			tiny.water_class[j * tiny_side + i] = FEN
 
-	check(not found.has("mismatch") and found.size() > 0, "deposit_at on a tile is the sample rule on world samples (%d deposits, %s)" % [found.size(), str(found.get("mismatch", "-"))])
+	check(BogIron.field_on_map(tiny.water_class, tiny_side, BogIron.first_sample(tiny.x0, 8.0), BogIron.first_sample(tiny.z0, 8.0), BogIron.first_sample(tiny.x0, 8.0), BogIron.first_sample(tiny.z0, 8.0), PER, 8.0, cfg).is_empty(), "a wetland of 10 samples is too small to hold a field")
 	var ocean = TileDataScript.new()
 	ocean.make_placeholder(Vector2i(0, 0), 15360.0, -200.0)
-	check(BogIron.deposit_at(ocean, 10.0, 10.0, cfg).is_empty(), "open ocean holds no bog iron")
+	check(BogIron.field(ocean, 0, 0, cfg).is_empty(), "open ocean holds no bog iron")
+	check(BogIron.silt_material(tile, tile.x0 + 8.0 * 21.0, tile.z0 + 8.0 * 21.0, cfg) == 6 and BogIron.silt_material(tile, tile.x0 + 8.0 * 50.0, tile.z0 + 8.0 * 50.0, cfg) == 0, "a hole on the fen silts in with peat (6), none on dry ground")
 
-	# 3. Regrowth: one ore every 3 game days, up to the size, the clock moving on by whole steps only.
+	# 2. Regrowth: one ore every 3 game days, up to the size, the clock moving on by whole steps only.
 	var day: float = 86400.0
 	check(BogIron.regrown([2, 0.0], 8, 2.9 * day, cfg) == [2, 0.0], "under 3 game days nothing comes back")
 	check(BogIron.regrown([2, 0.0], 8, 7.0 * day, cfg) == [4, 6.0 * day], "7 game days bring back 2 and keep the odd day")
 	check(BogIron.regrown([2, 0.0], 8, 300.0 * day, cfg) == [8, 300.0 * day], "never more than the size; a full deposit's clock starts again")
 	check(BogIron.regrown([8, 0.0], 8, 50.0 * day, cfg) == [8, 50.0 * day], "a full deposit stays full")
 
-	# 4. The dig on the server: wooden shovel, 1 to 2 ore a dig on top of the peat until empty, then 3 game days for one more.
+	# 3. The dig on the server: wooden shovel, 1 to 2 ore a dig on top of the peat until empty, then 3 game days for one more.
 	var dir: String = "user://test_bog_iron"
 	DirAccess.make_dir_recursive_absolute(dir)
 
@@ -134,12 +159,16 @@ func _init() -> void:
 	var items = _make(dir)
 	var clock: Array = [1000.0 * day]
 	var notices: Array = []
+	var fills: Array = []
 	items.game_seconds = func(): return clock[0]
 	items.skill_level = func(_p, _s): return 1.0
 	items.send_notice = func(_p, text): notices.append(text)
 	items.dig_ground = func(_centre, _radius): return null
+	items.fill_ground = func(centre, radius, material): fills.append([centre, radius, material]); return true
+	items.ground_height = func(_x, _z): return 10.0
 	items.ground_material = func(_x, _z): return "peat"
-	items.bog_deposit_at = func(x, _z, _cfg_in): return {"key": "11,22", "size": 7, "edge": true} if x < 20.0 else {}
+	items.bog_field = func(fx, fz, _cfg_in): return [{"key": "11,22", "x": 6.0, "z": 0.0, "size": 7, "r": 3.0}] if fx == 0 and fz == 0 else []
+	items.bog_silt_at = func(x, _z, _cfg_in): return 6 if x < 20.0 else 0   # fen peat by the patch, dry ground past 20 m
 	items.peer_connected_hello(1, "b0b0b0b0b0b0")
 	items.report_position(1, Vector3(5.0, 10.0, 0.0))
 	items.give(1, items.table.number_of("wooden_shovel"), 1)
@@ -159,9 +188,11 @@ func _init() -> void:
 		total += int(got[0])
 		per_dig_ok = per_dig_ok and int(got[0]) >= 1 and int(got[0]) <= 2
 
-	check(per_dig_ok and total == 7, "digs give 1 to 2 Bog iron ore each until the deposit's 7 are gone (%d in %d digs)" % [total, digs])
+	check(per_dig_ok and total == 7, "digs give 1 to 2 Bog iron ore each until the patch's 7 are gone (%d in %d digs)" % [total, digs])
 	check(soil_ok, "the peat still comes up as soil")
-	check(int(_dig_once(items, 6.0)[0]) == 0, "an empty deposit gives nothing")
+	check(int(_dig_once(items, 6.0)[0]) == 0, "an empty patch gives nothing")
+	check(items._bog_patch_at(8.5, 0.0).get("key", "") == "11,22", "a dig at the patch's edge is on it")
+	check(items._bog_patch_at(9.5, 0.0).is_empty(), "a dig past its radius is not")
 	clock[0] += 3.0 * day
 	check(int(_dig_once(items, 6.0)[0]) == 1, "3 game days later one ore has come back")
 	check(int(_dig_once(items, 6.0)[0]) == 0, "and only one")
@@ -175,45 +206,77 @@ func _init() -> void:
 	var said: int = notices.count(str(cfg.get("first_find", "")))
 	check(said == 1, "the first find is said once (%d times)" % said)
 	items.report_position(1, Vector3(25.0, 10.0, 0.0))
-	check(int(_dig_once(items, 26.0)[0]) == 0, "a dig off the deposit gives no iron")
+	check(int(_dig_once(items, 26.0)[0]) == 0, "a dig off the patch gives no iron")
 
-	# 5. Save and load: what is left of a deposit, and its clock, survive a restart.
+	# 4. Holes in wetland silt back in a game day later; on dry ground they stay.
+	check(items._bog_holes.size() == 1, "all the digs at one wetland spot are one waiting hole, the dry dig none (%d)" % items._bog_holes.size())
+	var hole: Array = items._bog_holes[0] if not items._bog_holes.is_empty() else [0.0, 0.0, 0.0, 0.0, 0.0]
+	check(absf(float(hole[1]) - 10.0) < 0.01 and absf(float(hole[4]) - (clock[0] + day)) < 1.0, "it keeps the old surface (10 m) and is due a game day after the last dig")
+	items._bog_holes_tick()
+	check(fills.is_empty(), "before then nothing is filled")
+	clock[0] += day + 1.0
+	items.report_position(1, Vector3(7.0, 10.0, 0.0))
+	items._bog_holes_tick()
+	check(fills.is_empty() and items._bog_holes.size() == 1, "not while a player stands in it")
+	items.report_position(1, Vector3(25.0, 10.0, 0.0))
+	items._bog_holes_tick()
+	var fill: Array = fills[0] if not fills.is_empty() else [Vector3.ZERO, 0.0, -1]
+	var top: float = (fill[0] as Vector3).y + float(fill[1])
+	check(fills.size() == 1 and items._bog_holes.is_empty(), "then it silts back in, once (%d fills)" % fills.size())
+	check(absf(top - 10.0) < 0.01 and float(fill[1]) >= 2.5 and int(fill[2]) == 6, "with the fen's own peat, a sphere whose top just meets the old surface (top %.2f, r %.2f, material %d)" % [top, float(fill[1]), int(fill[2])])
+
+	# 5. Save and load: what is left of a patch, its clock, and the waiting holes survive a restart.
 	items._bog_left["11,22"] = [3, 12345.0]
+	items._bog_holes = [[6.0, 10.0, 0.0, 0.9, 777.0, 16]]
 	items._dirty = true
 	items.save()
 	var reloaded = _make(dir)
-	check(reloaded._bog_left.get("11,22", []) == [3, 12345.0], "a worked deposit is saved and loaded (%s)" % str(reloaded._bog_left.get("11,22", [])))
+	check(reloaded._bog_left.get("11,22", []) == [3, 12345.0], "a worked patch is saved and loaded (%s)" % str(reloaded._bog_left.get("11,22", [])))
+	check(reloaded._bog_holes == [[6.0, 10.0, 0.0, 0.9, 777.0, 16]], "a waiting hole is saved and loaded with its soil (%s)" % str(reloaded._bog_holes))
 	reloaded.peer_connected_hello(1, "b0b0b0b0b0b0")
 	reloaded.game_seconds = func(): return clock[0]
 	reloaded.send_notice = func(_p, text): notices.append(text)
 	reloaded.dig_ground = func(_centre, _radius): return null
 	reloaded.ground_material = func(_x, _z): return "peat"
-	reloaded.bog_deposit_at = items.bog_deposit_at
+	reloaded.bog_field = items.bog_field
 	reloaded.report_position(1, Vector3(5.0, 10.0, 0.0))
 	reloaded._bog_left["11,22"] = [1, clock[0]]
-	check(int(_dig_once(reloaded, 6.0)[0]) == 1 and notices.count(str(cfg.get("first_find", ""))) == 1, "after a restart the deposit still digs, and the first find is not said again")
+	check(int(_dig_once(reloaded, 6.0)[0]) == 1 and notices.count(str(cfg.get("first_find", ""))) == 1, "after a restart the patch still digs, and the first find is not said again")
 
-	# 6. Main's tile 3,4: deposits within 2 km of the spawn (53296, 68080), expected 226 (Sonny's count on the #868 bake), within 25%.
+	# 6. Main's tile 3,4: the fields within 2.5 km of the spawn (58167, 71364). PROVISIONAL numbers: a handful of fields, tens of patches.
 	var path: String = "res://worlds/base_world/tiles/tile_3_4.tile"
 	var head: Dictionary = TileFileScript.read_header(path) if FileAccess.file_exists(path) else {}
 
 	if not bool(head.get("ok", false)):
 		print("skip main's tile 3,4: not baked here")
 	else:
-		var classes: PackedByteArray = TileFileScript.read_section(path, head["table"], "water_class")["raw"]
-		var side: int = int(round(sqrt(float(classes.size()))))
+		var main = TileDataScript.new()
+		main.water_class = TileFileScript.read_section(path, head["table"], "water_class")["raw"]
+		main.samples = int(round(sqrt(float(main.water_class.size()))))
+		main.spacing_m = 8.0
+		main.x0 = 15360.0 * 3.0
+		main.z0 = 15360.0 * 4.0
+		var low: Vector2i = BogIron.field_of(SPAWN.x - 2500.0, SPAWN.y - 2500.0, cfg)
+		var high: Vector2i = BogIron.field_of(SPAWN.x + 2500.0, SPAWN.y + 2500.0, cfg)
 		var near: int = 0
-		var gi0: int = BogIron.first_sample(15360.0 * 3.0, 8.0)
-		var gj0: int = BogIron.first_sample(15360.0 * 4.0, 8.0)
-		var ci: int = int(round((53296.0 - 15360.0 * 3.0) / 8.0))
-		var cj: int = int(round((68080.0 - 15360.0 * 4.0) / 8.0))
+		var ore: int = 0
+		var fields: int = 0
+		var wet_ok: bool = true
 
-		for j in range(maxi(cj - 250, 0), mini(cj + 251, side)):
-			for i in range(maxi(ci - 250, 0), mini(ci + 251, side)):
-				if (i - ci) * (i - ci) + (j - cj) * (j - cj) <= 250 * 250 and not BogIron.deposit_at_sample(classes, side, i, j, gi0 + i, gj0 + j, cfg).is_empty():
-					near += 1
+		for fz in range(low.y, high.y + 1):
+			for fx in range(low.x, high.x + 1):
+				var patches: Array = BogIron.field(main, fx, fz, cfg)
+				fields += 1 if not patches.is_empty() else 0
 
-		check(near >= 170 and near <= 290, "main's tile 3,4 has %d bog iron deposits within 2 km of the spawn (expected 226)" % near)
+				for p in patches:
+					wet_ok = wet_ok and float(cfg["classes"].get(str(_class_at(main, float(p["x"]), float(p["z"]))), 0.0)) > 0.0
+
+					if Vector2(float(p["x"]), float(p["z"])).distance_to(SPAWN) <= 2500.0:
+						near += 1
+						ore += int(p["size"])
+
+		print("     main tile 3,4 within 2.5 km of the spawn: %d bearing fields, %d patches, %d ore" % [fields, near, ore])
+		check(near >= 3 and near <= 120 and wet_ok, "main's tile 3,4 has %d bog iron patches within 2.5 km of the spawn, all on wetland" % near)
 
 	print("test_bog_iron: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)
