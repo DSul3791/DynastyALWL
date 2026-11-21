@@ -37,11 +37,15 @@ CAP_CLEARANCE_M = 0.002  # the cap (2b) sits this far out from the skin, under t
 CAP_HEM_M = 0.015        # the cap stops this far above the hair's lowest edge in each direction round the head, so it never shows under the hair
 CAP_NAPE_M = 0.004       # where the nape line is raised, the cap stops this far above it
 CAP_NAPE_SPAN = 0.8      # ... across the back only: where the line is at least this share of the way up (about 50 degrees either side of straight behind)
+CAP_EDGE_MAX_M = 0.03    # the cap leaves out Body 1 triangles with an edge longer than this (the neck's long ones)
+CAP_PUSH_MAX_M = 0.015    # the cap leaves out triangles with a corner pushed further than this to clear another body's head
 HEM_PERCENTILE = 2       # see CAP_HEM_M
 HOLE_BINS = 3            # bald gaps up to about this many direction bins (3.75 degrees each) across are filled by the dark cap
 NAPE_REACH_M = 0.012     # how far below NAPE_Y a triangle may reach and still be kept (lifted to the line)
 NAPE_Y = 1.505           # Body 1 model space: nothing of the hair below this (the chin is at 1.495, the nape about the same)
 TEXTURE_SIZE = 2048
+NECK_TOP_Y = 1.52         # Body 1 model space: below this (the jaw and neck) ...
+NECK_HALF_WIDTH_M = 0.08  # ... only points this close to the middle, side to side, are pushed clear of: the neck (Body 1 about 0.077 m at 1.47), not the shoulders
 HEAD_REACH_M = 0.16      # another body's head and neck: its points this close to the head's centre line, seen from above
 HEAD_FROM_Y = 1.45       # Body 1's head and neck vertices start here (model space, metres); the shoulders are below
 SKULL_FROM_Y = 1.61      # Body 1's skull above the ears (FITTING_NOTE.md: 0.145 wide, 0.191 deep from about y 1.61 up)
@@ -261,7 +265,11 @@ def main():
         near = np.linalg.norm((o_samples - centre)[:, [0, 2]], axis=1) < HEAD_REACH_M      # the head and neck, not arms held out (Body 2 rests in a T)
         every_head.append(o_samples[near])
 
-    all_grid = radius_grid(np.concatenate(every_head), centre, keep_max=True)
+    heads = np.concatenate(every_head)
+    # Below the jaw only the neck counts, not the tops of the shoulders: a style that reaches the neck (Medium bob) was pushed out along its
+    # downward rays to the shoulders, so its lower corners flared into wings and the cap into straps (PC pictures of 27f5f5d2, 21 Nov 2026).
+    neck_only = (heads[:, 1] >= NECK_TOP_Y) | (np.abs(heads[:, 0] - centre[0]) < NECK_HALF_WIDTH_M)
+    all_grid = radius_grid(heads[neck_only], centre, keep_max=True)
 
     def direction(points):
         offsets = points - centre
@@ -302,6 +310,10 @@ def main():
     floor = np.where(across_back, np.minimum(floor, raised + CAP_NAPE_M), floor)
     above_hem = body_points[:, 1] >= floor
     cap = body_tris[(inside[v_row, v_col] & above_hem)[body_tris].all(1)]
+    # Only the head's own small triangles: Body 1's long neck-to-shoulder triangles, under a style that reaches the neck (Medium bob), were
+    # stretched by the nape lift into flat dark straps over the shoulders (PC pictures of 27f5f5d2, 21 Nov 2026).
+    edges = np.linalg.norm(body_points[cap] - body_points[np.roll(cap, 1, 1)], axis=2).max(1)
+    cap = cap[edges <= CAP_EDGE_MAX_M]
     cap_used = np.unique(cap)
     cap_dirs, cap_r, _, _ = direction(body_points[cap_used])
     dark = hair[tri_shades[~pale].max(1) < OPAQUE_BELOW]
@@ -316,7 +328,13 @@ def main():
     normals = nor / scale       # normals follow the box fit (the inverse transpose of a scale); the push is left out
     normals /= np.linalg.norm(normals, axis=1, keepdims=True)
     _, _, cap_row, cap_col = direction(body_points[cap_used])
-    cap_r = np.maximum(cap_r, all_grid[cap_row, cap_col])        # over every head, but no further out than it must be
+    pushed = np.maximum(cap_r, all_grid[cap_row, cap_col])        # over every head, but no further out than it must be
+    # A cap corner pushed far out is over another body's neck, not Body 1's scalp: its triangles would stretch into a flat spike (Medium bob,
+    # PC pictures of 27f5f5d2), so they go.
+    far = np.zeros(len(body_points), bool)
+    far[cap_used] = pushed - cap_r > CAP_PUSH_MAX_M
+    cap = cap[~far[cap].any(1)]
+    cap_r = pushed
     out_pos = np.concatenate([hair_pos, centre + cap_dirs * (cap_r + CAP_CLEARANCE_M)[:, None]]).astype(np.float32)
     out_nor = np.concatenate([normals[used], body_normals[cap_used]]).astype(np.float32)
     out_uv = np.concatenate([uv[used], np.repeat(hair_uv[None], len(cap_used), 0)]).astype(np.float32)
