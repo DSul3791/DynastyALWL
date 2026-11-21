@@ -146,7 +146,8 @@
   "iron_pickaxe": {
    "shape": "pick",
    "color": "#6c6f75",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["iron"]
   },
   "steel_pickaxe": {
    "shape": "pick",
@@ -221,7 +222,7 @@
    "shape": "saw",
    "color": "#8a8d93",
    "size": 1.0,
-   "bits": ["metal","steel"],
+   "bits": ["metal", "iron"],
    "model": "res://assets/tools/handsaws/Handsaw_Iron_Optimized.glb",
    "model_turn": [[-1, 0, 0], [0, 0, -1], [0, -1, 0]],
    "model_length_m": 0.75,
@@ -232,7 +233,7 @@
    "shape": "saw",
    "color": "#b87333",
    "size": 1.0,
-   "bits": ["metal"],
+   "bits": ["metal", "copper"],
    "model": "res://assets/tools/handsaws/Handsaw_Copper_Optimized.glb",
    "model_turn": [[-1, 0, 0], [0, 0, -1], [0, -1, 0]],
    "model_length_m": 0.55,
@@ -243,7 +244,7 @@
    "shape": "saw",
    "color": "#a8803c",
    "size": 1.0,
-   "bits": ["metal"],
+   "bits": ["metal", "bronze"],
    "model": "res://assets/tools/handsaws/Handsaw_Bronze_Optimized.glb",
    "model_turn": [[-1, 0, 0], [0, 0, -1], [0, -1, 0]],
    "model_length_m": 0.66,
@@ -259,15 +260,15 @@
    "shape": "shovel",
    "color": "#6c6f75",
    "size": 0.7,
-   "bits": ["metal"]
+   "bits": ["metal", "iron"]
   },
-  "copper_hammer": {"shape": "hammer", "color": "#b87333", "size": 1.0, "bits": ["bronze", "forged"]},
-  "copper_knife": {"shape": "knife", "color": "#b87333", "size": 1.35, "bits": ["metal"]},
+  "copper_hammer": {"shape": "hammer", "color": "#b87333", "size": 1.0, "bits": ["forged", "copper"]},
+  "copper_knife": {"shape": "knife", "color": "#b87333", "size": 1.35, "bits": ["metal", "copper"]},
   "stone_saw": {"shape": "saw", "color": "#7d7a74", "size": 0.8},
-  "copper_hoe": {"shape": "hoe", "color": "#b87333", "size": 1.0, "bits": ["metal"]},
-  "bronze_hoe": {"shape": "hoe", "color": "#b5803a", "size": 1.0, "bits": ["metal"]},
-  "copper_shovel": {"shape": "shovel", "color": "#b87333", "size": 0.7, "bits": ["metal"]},
-  "bronze_shovel": {"shape": "shovel", "color": "#b5803a", "size": 0.7, "bits": ["metal"]},
+  "copper_hoe": {"shape": "hoe", "color": "#b87333", "size": 1.0, "bits": ["metal", "copper"]},
+  "bronze_hoe": {"shape": "hoe", "color": "#b5803a", "size": 1.0, "bits": ["metal", "bronze"]},
+  "copper_shovel": {"shape": "shovel", "color": "#b87333", "size": 0.7, "bits": ["metal", "copper"]},
+  "bronze_shovel": {"shape": "shovel", "color": "#b5803a", "size": 0.7, "bits": ["metal", "bronze"]},
   "steel_shovel": {
    "shape": "shovel",
    "color": "#9aa3ad",
@@ -969,7 +970,7 @@
    "shape": "shovel",
    "color": "#6c6f75",
    "size": 1.0,
-   "bits": ["metal"]
+   "bits": ["metal", "iron"]
   },
   "steel_shovel_medium": {
    "shape": "shovel",
@@ -997,7 +998,7 @@
    "shape": "hoe",
    "color": "#6c6f75",
    "size": 1.0,
-   "bits": ["metal"]
+   "bits": ["metal", "iron"]
   },
   "steel_hoe": {
    "shape": "hoe",
@@ -4070,23 +4071,26 @@
    "color": "#8a6a3a",
    "size": 1.0
   },
-  "copper_sickle": {"shape": "sickle", "color": "#b87333", "size": 1.0, "bits": ["bronze"]},
-  "copper_scythe": {"shape": "scythe", "color": "#b87333", "size": 1.0, "bits": ["bronze"]},
-  "copper_chisel": {"shape": "knife", "color": "#b87333", "size": 1.0},
+  "copper_sickle": {"shape": "sickle", "color": "#b87333", "size": 1.0, "bits": ["copper"]},
+  "copper_scythe": {"shape": "scythe", "color": "#b87333", "size": 1.0, "bits": ["copper"]},
+  "copper_chisel": {"shape": "knife", "color": "#b87333", "size": 1.0, "bits": ["copper"]},
   "bronze_chisel": {
    "shape": "knife",
    "color": "#b0803a",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["bronze"]
   },
   "iron_chisel": {
    "shape": "knife",
    "color": "#8a8a90",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["iron"]
   },
   "steel_chisel": {
    "shape": "knife",
    "color": "#b8c0c8",
-   "size": 1.0
+   "size": 1.0,
+   "bits": ["steel"]
   },
   "carved_stone_block": {
    "shape": "block",
@@ -4777,7 +4781,7 @@
    "shape": "axe",
    "color": "#6c6f75",
    "size": 1.6,
-   "bits": ["metal"]
+   "bits": ["metal", "iron"]
   },
   "steel_axe": {
    "shape": "axe",
@@ -4789,7 +4793,7 @@
    "shape": "knife",
    "color": "#6c6f75",
    "size": 1.35,
-   "bits": ["metal"]
+   "bits": ["metal", "iron"]
   },
   "steel_knife": {
    "shape": "knife",
@@ -4814,7 +4818,7 @@
    "shape": "sickle",
    "color": "#6c6f75",
    "size": 1.0,
-   "bits": ["metal"]
+   "bits": ["metal", "iron"]
   },
   "steel_sickle": {
    "shape": "sickle",

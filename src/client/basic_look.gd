@@ -103,17 +103,17 @@ const ART_OVERRIDES := {
 	"candle": {"shape": "candle", "color": "#d6c493", "size": 1.0},
 	"bronze_pickaxe": {"shape": "pick", "color": "#b5803a", "size": 1.0, "bits": ["bronze"]},
 	"bronze_axe": {"shape": "axe", "color": "#b5803a", "size": 1.6, "bits": ["bronze"]},
-	"copper_pickaxe": {"shape": "pick", "color": "#b87333", "size": 1.0, "bits": ["bronze"]},   # PLACEHOLDER: the bronze pick look in copper
-	"copper_axe": {"shape": "axe", "color": "#b87333", "size": 1.6, "bits": ["bronze"]},   # PLACEHOLDER: the bronze axe look in copper
+	"copper_pickaxe": {"shape": "pick", "color": "#b87333", "size": 1.0, "bits": ["copper"]},   # the pick look in copper (TIER_METAL)
+	"copper_axe": {"shape": "axe", "color": "#b87333", "size": 1.6, "bits": ["copper"]},   # the axe look in copper (TIER_METAL)
 	"bronze_hammer": {"shape": "hammer", "color": "#b5803a", "size": 1.0, "bits": ["bronze", "forged"]},
-	"iron_hammer": {"shape": "hammer", "color": "#6c6f75", "size": 1.0, "bits": ["forged"]},
+	"iron_hammer": {"shape": "hammer", "color": "#6c6f75", "size": 1.0, "bits": ["iron", "forged"]},
 	"wooden_lantern": {"shape": "lantern", "color": "#5a3e22", "size": 1.0},
 	"iron_lantern": {"shape": "lantern", "color": "#3f4045", "size": 1.0, "bits": ["metal"]},
 	"wooden_lantern_dark": {"shape": "lantern", "color": "#5a3e22", "size": 1.0},   # the same lantern gone out (buildables plan B4): water or burned-out fuel
 	"iron_lantern_dark": {"shape": "lantern", "color": "#3f4045", "size": 1.0, "bits": ["metal"]},
 	"horn_pane": {"shape": "pane", "color": "#d6ad6a", "size": 1.0},
 	"lamp_oil": {"shape": "bottle", "color": "#9a7a32", "size": 1.0},
-	"steel_hammer": {"shape": "hammer", "color": "#9aa3ad", "size": 1.0, "bits": ["forged"]},
+	"steel_hammer": {"shape": "hammer", "color": "#9aa3ad", "size": 1.0, "bits": ["steel", "forged"]},
 	"bronze_knife": {"shape": "knife", "color": "#b5803a", "size": 1.35, "bits": ["bronze"]},
 	"iron_sword": {"shape": "sword", "color": "#7d8087", "size": 1.0},
 	"steel_sword": {"shape": "sword", "color": "#b6bdc6", "size": 1.0},
@@ -275,7 +275,7 @@ const ART_OVERRIDES := {
 	"stone_pickaxe": {"shape": "pick", "color": "#7d7a74", "size": 1.0, "bits": ["stone"]},
 	"hide_scraper": {"shape": "scraper", "color": "#4a4238", "size": 1.0},
 	"sickle": {"shape": "sickle", "color": "#8a8d92", "size": 1.0},
-	"scythe": {"shape": "scythe", "color": "#8a8d92", "size": 1.0},
+	"scythe": {"shape": "scythe", "color": "#8a8d92", "size": 1.0, "bits": ["metal", "iron"]},   # Iron - Scythe
 	"steel_striker": {"shape": "striker", "color": "#3a3c40", "size": 1.0},
 	"javelin": {"shape": "shaft", "color": "#b8bcc4", "size": 0.85, "bits": ["metal"]},
 	"yeast": {"shape": "pot", "color": "#e6dbc0", "size": 0.5},
@@ -2015,7 +2015,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# A hafted stone axe (modelled on a real hafted stone felling axe, Dave 2026-10-25: tools to the pickaxe standard): a straight ash haft with weathered grain and a swollen
 			# head end, a knapped stone wedge head lashed into it, thick at the poll and ground to a sharp edge that flares wider than the body, one chipped corner, and
 			# five cross-lashing bands of leather thong either side of the head. Mesh axes: haft along x (grip at -x), head at x = 0.22, edge toward +z.
-			color = color if bits.has("bronze") or bits.has("metal") else _warm_stone(color)                                              # darker and warmer: in sunlight the plain grey read pale blue (a bronze head keeps its own colour)
+			color = tier_metal(bits, color if bits.has("metal") else _warm_stone(color))                           # darker and warmer: in sunlight the plain grey read pale blue (a metal head takes its tier's colour)
 			dark = color.darkened(0.3)
 			light = color.lightened(0.18)
 			var haft_wood: Color = Color(0.3, 0.2, 0.11)
@@ -2037,8 +2037,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			var steel_head: bool = bits.has("steel")
 			var stone_head: bool = bits.has("stone")
 			var iron: Color = Color(0.3, 0.28, 0.25) if stone_head else (Color(0.085, 0.09, 0.1) if steel_head else Color(0.034, 0.036, 0.042))   # metallic charcoal, grey-black gunmetal (steel a lighter charcoal); vertex colours are linear, so these read as sRGB ~(85,88,95) and ~(52,54,59) on screen
-			if bits.has("bronze"):
-				iron = Color(0.5, 0.26, 0.06)                                                                    # bronze: warm brown-gold (linear)
+			iron = tier_metal(bits, iron)                                                                        # a metal tier's own colour (TIER_METAL: copper, bronze, iron, steel)
 
 			var wood: Color = Color(0.3, 0.2, 0.11)
 			var leather: Color = Color(0.3, 0.17, 0.09)
@@ -2089,7 +2088,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			var sheen: float = 0.6 if steel_blade else 0.3
 
 			if metal_blade:
-				blade = Color(0.26, 0.25, 0.225) if steel_blade else Color(0.11, 0.1, 0.082)                  # steel: neutral mid-grey (about sRGB 137); iron: dark charcoal (about 89); linear values
+				blade = tier_metal(bits, Color(0.26, 0.25, 0.225) if steel_blade else Color(0.11, 0.1, 0.082))   # the tier's metal (TIER_METAL); a row with no tier: steel mid-grey, iron dark charcoal (linear)
 			elif absf(color.r - color.b) < 0.1:
 				blade = Color(0.19, 0.16, 0.115)                                                               # stone: matt grey-brown
 			else:
@@ -2138,7 +2137,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 		"saw":
 			# A hand saw (modelled on a real panel saw): an ash pistol grip with a closed finger hole at -x, attached to the blade through a brass plate with three rivets (no gap), a thin
 			# neutral-grey blade plate 50 cm long, 14 cm at the heel tapering to 5 cm at a rounded toe, a thin dark spine along the top (-z) and a row of fine teeth along the cutting edge (+z).
-			var steel_blade: Color = Color(0.3, 0.285, 0.25)
+			var steel_blade: Color = tier_metal(bits, Color(0.3, 0.285, 0.25))                                 # the tier's metal (TIER_METAL)
 			var grip_wood: Color = Color(0.38, 0.25, 0.13)
 			var brass: Color = Color(0.13, 0.115, 0.1)
 			_box(parts, Vector3(0.025, 0.026, 0.13), Vector3(-0.3, 0.0, 0.0), _tone(grip_wood, 1, 0.1))                 # the rear of the grip, the bar the hand closes round
@@ -2171,6 +2170,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				for end in [-0.09, 0.09]:
 					_cyl(parts, 0.053, 0.02, Vector3(0.2, 0.0, end), Vector3(PI * 0.5, 0.0, 0.0), thong.darkened(0.15))
 			elif forged:
+				color = tier_metal(bits, color)                                                                   # the tier's metal (TIER_METAL)
 				_box_rot(parts, Vector3(0.042, 0.042, 0.075), Vector3(0.2, 0.0, 0.0375), Vector3.ZERO, color)          # the body round the eye, to the striking end
 				_metal(parts, 0.45, 0.8)
 				_box_rot(parts, Vector3(0.048, 0.048, 0.012), Vector3(0.2, 0.0, 0.081), Vector3.ZERO, color.lightened(0.18))   # the flared, worn-bright striking face
@@ -2203,7 +2203,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			var rough: float = 0.65
 
 			if metal_blade:
-				blade = Color(0.25, 0.25, 0.25) if bits.has("steel") else Color(0.1, 0.095, 0.088)
+				blade = tier_metal(bits, Color(0.25, 0.25, 0.25) if bits.has("steel") else Color(0.1, 0.095, 0.088))   # the tier's metal (TIER_METAL)
 			elif absf(color.r - color.b) < 0.1:
 				blade = Color(0.22, 0.175, 0.12)                                                               # stone: matt grey, rough, tied on with twine below
 			else:
@@ -2246,10 +2246,9 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			var hide: Color = Color(0.22, 0.13, 0.07)
 			if bits.has("glass"):                                                                                                                     # obsidian: black volcanic glass
 				stone = Color(0.012, 0.012, 0.018)
-			elif bits.has("bronze"):
-				stone = Color(0.5, 0.26, 0.06)                                                                                                          # a bronze blade
 			elif bits.has("metal"):
 				stone = color   # a forged iron or steel blade in its looks.json colour (Mission 001 phase 2c)
+			stone = tier_metal(bits, stone)                                                                                                           # a metal tier's own colour (TIER_METAL; knives and chisels)
 			for k in range(4):
 				_cyl(parts, 0.016, 0.03, Vector3(-0.1 + 0.03 * float(k) + 0.015, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(Color(0.38, 0.25, 0.13), k, 0.04))
 			for k in range(2):
@@ -2465,12 +2464,13 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_cyl(parts, 0.018, 0.045, Vector3(-0.085 + 0.045 * float(k) + 0.02, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(Color(0.4, 0.27, 0.14), k, 0.07))
 			_cyl(parts, 0.02, 0.012, Vector3(-0.1, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.2, 0.12, 0.06))
 			var sc_r: float = 0.11
+			var sickle_blade: Color = tier_metal(bits, Color(0.4, 0.42, 0.45))                                 # the tier's metal (TIER_METAL)
 			for k in range(10):
 				var a0: float = 2.4 * float(k) / 10.0
 				var a1: float = 2.4 * float(k + 1) / 10.0
 				var m0: float = (a0 + a1) * 0.5
 				var pt: Vector3 = Vector3(0.07 + sc_r * sin(m0), 0.0, sc_r - sc_r * cos(m0))
-				_box_rot(parts, Vector3(0.036, 0.004, 0.02 - 0.012 * float(k) / 10.0), pt, Vector3(0.0, -m0, 0.0), Color(0.4, 0.42, 0.45))
+				_box_rot(parts, Vector3(0.036, 0.004, 0.02 - 0.012 * float(k) / 10.0), pt, Vector3(0.0, -m0, 0.0), sickle_blade)
 				if k % 2 == 0 and k > 1:
 					_box_rot(parts, Vector3(0.012, 0.006, 0.01), pt + Vector3(-sin(m0 + 1.57) * 0.0, 0.0, 0.0) + Vector3(-cos(m0) * 0.012, 0.0, -sin(m0) * 0.012), Vector3(0.0, -m0, 0.0), Color(0.75, 0.7, 0.58))
 		"scythe":
@@ -2485,7 +2485,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				var b1: float = 1.25 * float(k + 1) / 14.0
 				var bm: float = (b0 + b1) * 0.5
 				var bp: Vector3 = Vector3(0.57 + 0.5 * sin(bm), 0.0, 0.5 * (1.0 - cos(bm)))
-				_box_rot(parts, Vector3(0.1, 0.005, 0.055 - 0.035 * float(k) / 14.0), bp, Vector3(0.0, -bm, 0.0), Color(0.5, 0.52, 0.56))
+				_box_rot(parts, Vector3(0.1, 0.005, 0.055 - 0.035 * float(k) / 14.0), bp, Vector3(0.0, -bm, 0.0), tier_metal(bits, Color(0.5, 0.52, 0.56)))
 			_metal(parts)
 		"striker":
 			# A steel striker for flint: a flat strip of dark steel bent into a C that fits the fingers, a notch at one end, plain and scuffed.
@@ -2646,6 +2646,23 @@ static func _tone_mul(color: Color, k: int, spread: float) -> Color:
 static func _tone(color: Color, k: int, spread: float) -> Color:
 	var n: float = fposmod(sin(float(k) * 12.9898 + 4.1) * 43758.5453, 1.0) * 2.0 - 1.0
 	return color.lightened(n * spread) if n > 0.0 else color.darkened(-n * spread)
+
+
+# Tool tier colours (D-TODO-4, 21 Nov 2026): every tool made in more than one metal draws its metal in that metal's own colour, on the
+# ground, in the hand and on the baked icon, so the tier reads at a glance. A look row names its tier in bits ("copper", "bronze", "iron",
+# "steel"); the shapes below use tier_metal() for the metal parts instead of their old fixed greys. sRGB here, vertex colours are linear.
+# Copper red-orange (the Copper pickaxe icon's #b87333, BugsList 121), bronze a duller gold-brown, iron dark grey, steel a light cool grey
+# (kept under test_tool_looks' "no blue tint" limit: blue at most 15 percent over red in linear terms).
+const TIER_METAL := {"copper": "#b87333", "bronze": "#b08d57", "iron": "#5e5f62", "steel": "#a4a9ae"}
+
+
+# The linear metal colour of the tier named in `bits`, or `fallback` when the row names no tier.
+static func tier_metal(bits: Array, fallback: Color) -> Color:
+	for tier in TIER_METAL:
+		if bits.has(tier):
+			return Color.html(TIER_METAL[tier]).srgb_to_linear()
+
+	return fallback
 
 
 # A stone head colour a little darker and warmer than the table grey (hands11 pictures: sunlit grey stone read pale blue-white).

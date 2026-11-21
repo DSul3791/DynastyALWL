@@ -160,6 +160,40 @@ func _init() -> void:
 	_check(brightest < 0.4, "stone_knife: matt stone, no pale steel tones (brightest %.2f)" % brightest)
 	_check(str(BasicLook.entry("stone_hammer").get("shape", "")) == "hammer", "stone_hammer is drawn as a hammer, not an axe")
 
+	# Tool tier colours (D-TODO-4, 21 Nov 2026): every tool made in more than one metal names its tier in its look row and draws its metal in
+	# that metal's colour. Tiers of one tool share the haft, so their mean colours differ only by the metal: copper redder than bronze, steel
+	# lighter than iron, and no two tiers alike. Saws are drawn through mesh() because three of them are Dave's models.
+	var families: Dictionary = {"axe": ["copper_axe", "bronze_axe", "iron_axe", "steel_axe"], "pick": ["copper_pickaxe", "bronze_pickaxe", "iron_pickaxe", "steel_pickaxe"],
+		"hammer": ["copper_hammer", "bronze_hammer", "iron_hammer", "steel_hammer"], "knife": ["copper_knife", "bronze_knife", "iron_knife", "steel_knife"],
+		"chisel": ["copper_chisel", "bronze_chisel", "iron_chisel", "steel_chisel"], "hoe": ["copper_hoe", "bronze_hoe", "iron_hoe", "steel_hoe"],
+		"shovel": ["copper_shovel", "bronze_shovel", "iron_shovel", "steel_shovel"], "sickle": ["copper_sickle", "bronze_sickle", "iron_sickle", "steel_sickle"],
+		"scythe": ["copper_scythe", "bronze_scythe", "scythe", "steel_scythe"]}
+	var tiers: Array[String] = ["copper", "bronze", "iron", "steel"]
+
+	for family in families:
+		var means: Array[Color] = []
+
+		for k in range(4):
+			var id: String = str(families[family][k])
+			_check((BasicLook.entry(id).get("bits", []) as Array).has(tiers[k]), "%s names its tier %s in its look row" % [id, tiers[k]])
+			means.append(_mean_colour(BasicLook.mesh_for(id)))
+
+		_check(means[0].r - means[0].g > means[1].r - means[1].g, "%s: copper redder than bronze (%s, %s)" % [family, means[0], means[1]])
+		_check(means[3].get_luminance() > means[2].get_luminance(), "%s: steel lighter than iron (%.3f, %.3f)" % [family, means[3].get_luminance(), means[2].get_luminance()])
+
+		for a in range(4):
+			for b in range(a + 1, 4):
+				var gap: float = absf(means[a].r - means[b].r) + absf(means[a].g - means[b].g) + absf(means[a].b - means[b].b)
+				_check(gap > 0.01, "%s: %s and %s tiers draw different colours (gap %.3f)" % [family, tiers[a], tiers[b], gap])
+
+	var saws: Array[Color] = []
+
+	for tier in tiers:
+		saws.append(_mean_colour(BasicLook.mesh("saw", Color.html("#8a8a90"), 1.0, ["metal", tier])))
+
+	_check(saws[0].r - saws[0].g > saws[1].r - saws[1].g and saws[3].get_luminance() > saws[2].get_luminance(), "saw: copper redder than bronze, steel lighter than iron")
+	_check(str(BasicLook.entry("hand_saw").get("bits", [])) == str(["metal", "iron"]), "hand_saw (Iron - Saw) is the iron tier")
+
 	print("tool looks: %d failures" % failures)
 
 	for id in ["spear", "wooden_spear", "fishing_rod", "wooden_pin"]:                                                  # spears, the fishing rod and the pin
@@ -296,3 +330,16 @@ func _width_near(mesh: Mesh, at: float, within: float = 0.02) -> float:
 				high = maxf(high, v.z)
 
 	return high - low
+
+
+# The mean vertex colour of every surface of a mesh.
+func _mean_colour(mesh: Mesh) -> Color:
+	var sum: Color = Color(0, 0, 0, 0)
+	var count: int = 0
+
+	for surface in mesh.get_surface_count():
+		for c in (mesh.surface_get_arrays(surface)[Mesh.ARRAY_COLOR] as PackedColorArray):
+			sum += c
+			count += 1
+
+	return sum / float(maxi(count, 1))
