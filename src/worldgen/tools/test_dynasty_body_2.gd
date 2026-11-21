@@ -161,6 +161,37 @@ func _init() -> void:
 
 		_check(most > 0.03 and most < 0.12, "Bust +1: the chest front comes forward %.3f m" % most)
 		_check(high > 1.1 and high < 1.45, "Bust +1: at chest height (%.2f m)" % high)
+		# Round, not pointed (Dave 21 Nov 2026: "if you increase the breasts they get pointy they should get big, round and voluptuous"): 3 cm from the left breast's
+		# front, up, down and to either side, the shaped surface is still within 2.5 cm of it (a sphere of her size drops about 1 to 1.5 cm there; the old cone 4.4 cm).
+		var tip: Vector3 = Vector3(0.0, 0.0, -INF)
+
+		for p in raised:
+			if p.x > 0.01 and absf(p.y - 1.3) < 0.2 and p.z > tip.z:
+				tip = p
+
+		var worst: float = 0.0
+
+		for step in [Vector2(0.03, 0.0), Vector2(-0.03, 0.0), Vector2(0.0, 0.03), Vector2(0.0, -0.03)]:
+			var at: Vector2 = Vector2(tip.x, tip.y) + step
+			var front_there: float = -INF
+
+			for p in raised:
+				if p.x > 0.01 and Vector2(p.x, p.y).distance_to(at) < 0.012:
+					front_there = maxf(front_there, p.z)
+
+			worst = maxf(worst, tip.z - front_there)
+
+		_check(worst < 0.025, "Bust +1: round at the front (falls %.3f m within 3 cm of it)" % worst)
+		# The shape carries its own normals, so the light follows the round.
+		var raised_n: PackedVector3Array = (shaped_mesh.surface_get_blend_shape_arrays(0)[bust] as Array)[Mesh.ARRAY_NORMAL]
+		var base_n: PackedVector3Array = shaped_mesh.surface_get_arrays(0)[Mesh.ARRAY_NORMAL]
+		var turned: int = 0
+
+		for v in range(base.size()):
+			if raised_n[v].dot(base_n[v]) < 0.98:
+				turned += 1
+
+		_check(turned > 100, "Bust +1: %d normals turn with the shape" % turned)
 
 	print("dynasty body 2 tests: %d failures" % _fails)
 	her.free()

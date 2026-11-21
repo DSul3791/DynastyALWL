@@ -10,10 +10,13 @@ extends RefCounted
 #   belly  pushes the front of the lower trunk forward and a little out, round the navel,
 #   hips   widens the pelvis and the tops of the thighs sideways,
 #   chest  widens the rib cage and brings the chest forward,
-#   bust   raises a breast on each side of the chest front (Dave 20 Nov 2026: "yes we need a bust slider"): a round mound centred a little under the Spine2 joint
-#          and out to each side, pushed forward and a little down. The bust slider from -1 ("none", every old genome) up to -0.6 (the Even frame, which every new
-#          character starts with) leaves the body as modelled, so a new character and one at the Even or Broad frame change only when the slider is moved up (a saved
-#          character already set above -0.6, such as the Curved frame's 0.3, now shows its bust); +1 is the fullest (shape_weight). The generated body shows its bump from about -0.95.
+#   bust   fills each breast out into a full, round shape (Dave 20 Nov 2026: "yes we need a bust slider"; 21 Nov: "if you increase the breasts they get pointy they
+#          should get big, round and voluptuous"): each breast's own front is found on the mesh, and the chest round it is pushed out onto a rounded shape (an
+#          ellipsoid) centred behind that front, straight out from the centre, so the breast grows wide and tall as well as forward. It joins the chest softly above
+#          and with a fold below, never at the breastbone, and the shape carries its own normals so the light falls on the round. The bust slider from -1 ("none",
+#          every old genome) up to -0.6 (the Even frame, which every new character starts with) leaves the body as modelled, so a new character and one at the Even
+#          or Broad frame change only when the slider is moved up (a saved character already set above -0.6, such as the Curved frame's 0.3, shows its bust); +1 is
+#          the fullest (shape_weight). The generated body shows its bump from about -0.95.
 # and on the face (found from the head's own vertices: the nose tip is the head vertex furthest forward near the middle; Kathreen 3 Nov 2026, the creator's face sliders):
 #   jaw    widens the lower face and brings the chin forward,
 #   nose   makes the nose bigger and longer (push forward, grow round its tip),
@@ -24,11 +27,18 @@ extends RefCounted
 const P := "mixamorig_"
 const NAMES := ["build", "muscle", "belly", "hips", "chest", "bust", "jaw", "nose", "brow", "ears"]
 const BUST_FROM := -0.6          # the bust slider value where the mound starts: body_generator.gd FRAMES "neutral" (shown as Even), the frame a new character starts with
-# The bust mound, as fractions of the body's height: each centre this far out to the side and down from the Spine2 joint, this wide, pushed this far forward at +1.
+# The bust, as fractions of the body's height. Each breast's front is looked for in a strip BUST_OUT out to the side and about BUST_DOWN under the Spine2 joint
+# (its most forward vertex there, the two sides averaged into a mirror pair). The round shape's centre sits BUST_DEPTH behind that front; at +1 the front comes
+# BUST_FORWARD forward and the shape is BUST_WIDE across and BUST_TALL high each way from its centre. It joins the chest within BUST_SOFT_UP above its centre and
+# BUST_SOFT_DOWN below (the fold under the breast). Checked offline on both bodies' meshes (21 Nov 2026): round from the front, the side and three-quarters.
 const BUST_OUT := 0.055
 const BUST_DOWN := 0.06
-const BUST_RADIUS := 0.07
-const BUST_FORWARD := 0.05
+const BUST_DEPTH := 0.045
+const BUST_FORWARD := 0.035
+const BUST_WIDE := 0.046
+const BUST_TALL := 0.044
+const BUST_SOFT_UP := 0.02
+const BUST_SOFT_DOWN := 0.012
 const SHAPED_KEY := "dynasty_shapes"
 
 static var _cache: Dictionary = {}       # source mesh rid -> shaped ArrayMesh (or null when it could not be made)
@@ -202,7 +212,7 @@ static func _compute(data: Dictionary) -> void:
 		var s_belly: PackedVector3Array = verts.duplicate()
 		var s_hips: PackedVector3Array = verts.duplicate()
 		var s_chest: PackedVector3Array = verts.duplicate()
-		var s_bust: PackedVector3Array = verts.duplicate()
+		var bust_verts: PackedInt32Array = PackedInt32Array()
 		var head_verts: PackedInt32Array = PackedInt32Array()
 
 		if per > 0 and weights.size() == bones.size():
@@ -255,29 +265,124 @@ static func _compute(data: Dictionary) -> void:
 				var near_chest: float = exp(-pow(c_rel.dot(up) / (height * 0.1), 2.0))
 				var chest_part: bool = bone == "Spine1" or bone == "Spine2" or bone.ends_with("Shoulder")
 				s_chest[v] = p + ((lateral * c_rel.dot(lateral) * 0.14 + front * maxf(c_rel.dot(front), 0.0) * 0.25) * near_chest if chest_part else Vector3.ZERO)
-				# bust: a round mound on each side of the chest front, the trunk's own front only (not the arms, not the back)
-				if bone == "Spine" or bone == "Spine1" or bone == "Spine2":
-					var side: float = signf(c_rel.dot(lateral)) if absf(c_rel.dot(lateral)) > 0.0001 else 1.0
-					var centre: Vector3 = lateral * side * BUST_OUT * height - up * BUST_DOWN * height
-					var across: Vector3 = c_rel - front * c_rel.dot(front) - centre       # in the plane across the chest
-					var mound: float = 1.0 - smoothstep(0.0, BUST_RADIUS * height, across.length())
-					var on_front: float = smoothstep(0.0, 0.03 * height, c_rel.dot(front))
-					s_bust[v] = p + (front * BUST_FORWARD * height - up * 0.012 * height + lateral * side * 0.008 * height) * mound * mound * on_front
+				# bust: the trunk's and shoulders' front (not the arms, not the back); _bust moves them
+				if (bone.begins_with("Spine") or bone.ends_with("Shoulder")) and c_rel.dot(front) > 0.0:
+					bust_verts.append(v)
 
+		var bust: Array = _bust(verts, arrays[Mesh.ARRAY_NORMAL], arrays[Mesh.ARRAY_INDEX], bust_verts, data)     # [positions, normals]
 		var face: Array = _face(verts, head_verts, head_of, up, lateral, front)     # [jaw, nose, brow, ears]
 		var blend_arrays: Array = []
 
-		for shape in [s_build, s_muscle, s_belly, s_hips, s_chest, s_bust, face[0], face[1], face[2], face[3]]:
+		var shapes: Array = [s_build, s_muscle, s_belly, s_hips, s_chest, bust[0], face[0], face[1], face[2], face[3]]     # the order of NAMES
+
+		for n in range(shapes.size()):
 			var one: Array = []
 			one.resize(Mesh.ARRAY_MAX)
-			one[Mesh.ARRAY_VERTEX] = shape
-			one[Mesh.ARRAY_NORMAL] = arrays[Mesh.ARRAY_NORMAL]
+			one[Mesh.ARRAY_VERTEX] = shapes[n]
+			one[Mesh.ARRAY_NORMAL] = bust[1] if NAMES[n] == "bust" else arrays[Mesh.ARRAY_NORMAL]     # only the bust carries its own normals
 			one[Mesh.ARRAY_TANGENT] = arrays[Mesh.ARRAY_TANGENT]
 			blend_arrays.append(one)
 
 		surface["blend"] = blend_arrays
 		surface["flags"] = Mesh.ARRAY_FLAG_USE_8_BONE_WEIGHTS if per == 8 else 0
 
+
+# The bust shape [positions, normals] (see BUST_* above): the vertices `cand` (the trunk's and shoulders' front) pushed out onto a rounded shape in front of each
+# breast, straight out from its centre, and the normals turned with the surface. Unchanged copies when either breast's front cannot be found.
+static func _bust(verts: PackedVector3Array, normals: PackedVector3Array, indices: Variant, cand: PackedInt32Array, data: Dictionary) -> Array:
+	var out: PackedVector3Array = verts.duplicate()
+	var out_n: PackedVector3Array = normals.duplicate()
+	var up: Vector3 = data["up"]
+	var lateral: Vector3 = data["lateral"]
+	var front: Vector3 = data["front"]
+	var height: float = data["height"]
+	var hips: Vector3 = data["hips"]
+	var chest_c: Vector3 = data["chest_c"]
+	# Each breast's front: the most forward vertex in a strip down the chest on its side.
+	var tip: Dictionary = {}       # side (1.0 left, -1.0 right) -> the vertex position
+
+	for v in cand:
+		var p: Vector3 = verts[v]
+		var side: float = 1.0 if (p - hips).dot(lateral) >= 0.0 else -1.0
+		var q: Vector3 = p - (chest_c + lateral * side * BUST_OUT * height - up * BUST_DOWN * height)
+
+		if absf(q.dot(lateral)) < 0.012 * height and q.dot(up) > -0.01 * height and q.dot(up) < 0.05 * height:
+			if not tip.has(side) or p.dot(front) > (tip[side] as Vector3).dot(front):
+				tip[side] = p
+
+	if tip.size() < 2:
+		return [out, out_n]
+
+	# The two fronts as a mirror pair about the hips, so both breasts grow alike on a mesh that is not quite symmetric.
+	var l: Vector3 = (tip[1.0] as Vector3) - hips
+	var r: Vector3 = (tip[-1.0] as Vector3) - hips
+	var out_side: float = (l.dot(lateral) - r.dot(lateral)) * 0.5
+	var lift: Vector3 = up * (l.dot(up) + r.dot(up)) * 0.5 + front * (l.dot(front) + r.dot(front)) * 0.5
+	var rx: float = BUST_WIDE * height
+	var ry: float = BUST_TALL * height
+	var rz: float = (BUST_DEPTH + BUST_FORWARD) * height
+	var moved: Dictionary = {}
+
+	for v in cand:
+		var p: Vector3 = verts[v]
+		var across: float = (p - hips).dot(lateral)
+		var side: float = 1.0 if across >= 0.0 else -1.0
+		var centre: Vector3 = hips + lateral * side * out_side + lift - front * BUST_DEPTH * height
+		var d: Vector3 = p - centre
+		var dist: float = d.length()
+
+		if dist < 1e-9:
+			continue
+
+		var dir: Vector3 = d / dist
+		var reach: float = 1.0 / sqrt(pow(dir.dot(lateral) / rx, 2.0) + pow(dir.dot(up) / ry, 2.0) + pow(dir.dot(front) / rz, 2.0))     # the shape's surface along dir
+		var soft: float = (BUST_SOFT_UP if d.dot(up) > 0.0 else BUST_SOFT_DOWN) * height
+		var gap: float = reach - dist
+		var push: float = gap if gap > soft else ((gap + soft) * (gap + soft) / (4.0 * soft) if gap > -soft else 0.0)     # a soft join, not a crease
+		var rim: float = sqrt(pow(d.dot(lateral) / rx, 2.0) + pow(d.dot(up) / ry, 2.0))
+		var fade: float = (1.0 - smoothstep(1.0, 1.5, rim)) * smoothstep(0.0, 0.02 * height, absf(across))     # nothing past the shape's edge, nothing at the breastbone
+
+		if push * fade > 1e-7:
+			out[v] = p + dir * push * fade
+			moved[v] = true
+
+	if indices == null or (indices as PackedInt32Array).is_empty() or normals.size() != verts.size():
+		return [out, out_n]
+
+	# The normals: each moved vertex, and its neighbours, turned by as much as the surface round it turned. Vertices at one place (texture seams) share one normal.
+	var idx: PackedInt32Array = indices
+	var before: Dictionary = {}    # welded place -> summed face normal, unshaped
+	var after: Dictionary = {}     # the same, shaped
+	var touched: Dictionary = {}
+
+	for t in range(0, idx.size() - 2, 3):
+		var a: int = idx[t]
+		var b: int = idx[t + 1]
+		var c: int = idx[t + 2]
+
+		if not (moved.has(a) or moved.has(b) or moved.has(c)):
+			continue
+
+		var f0: Vector3 = (verts[b] - verts[a]).cross(verts[c] - verts[a])
+		var f1: Vector3 = (out[b] - out[a]).cross(out[c] - out[a])
+
+		for v in [a, b, c]:
+			var key: Vector3i = Vector3i((verts[v] * 100000.0).round())
+			before[key] = before.get(key, Vector3.ZERO) + f0
+			after[key] = after.get(key, Vector3.ZERO) + f1
+			touched[v] = key
+
+	for v in touched:
+		var n0: Vector3 = (before[touched[v]] as Vector3).normalized()
+		var n1: Vector3 = (after[touched[v]] as Vector3).normalized()
+
+		if n0.dot(normals[v]) < 0.0:        # the face winding runs the other way from the mesh's normals
+			n0 = -n0
+			n1 = -n1
+
+		out_n[v] = (normals[v] + n1 - n0).normalized()
+
+	return [out, out_n]
 
 static func _finish(data: Dictionary) -> ArrayMesh:
 	var out: ArrayMesh = ArrayMesh.new()
