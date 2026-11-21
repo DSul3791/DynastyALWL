@@ -1513,14 +1513,16 @@ func _measure_stride(player: AnimationPlayer, anim: Animation, rig: Node3D) -> f
 	var speeds: Array = []
 	# A bone that stays put over the whole clip (the root at the rig's feet, an IK target) lies on the ground too, at no speed: counted, it
 	# pulled the middle speed down to a fifth (the lynx walk 0.26 m/s; Dave's log, 21 Nov 2026). Only bones that move count: a foot does.
+	var first: PackedVector3Array = frames[0]
 	var swings: PackedByteArray = PackedByteArray()
-	swings.resize((frames[0] as PackedVector3Array).size())
+	swings.resize(first.size())
 
 	for bone in swings.size():
-		var box: Rect2 = Rect2(Vector2((frames[0] as PackedVector3Array)[bone].x, (frames[0] as PackedVector3Array)[bone].z), Vector2.ZERO)
+		var box: Rect2 = Rect2(Vector2(first[bone].x, first[bone].z), Vector2.ZERO)
 
 		for f in frames:
-			box = box.expand(Vector2((f as PackedVector3Array)[bone].x, (f as PackedVector3Array)[bone].z))
+			var at: PackedVector3Array = f
+			box = box.expand(Vector2(at[bone].x, at[bone].z))
 
 		swings[bone] = 1 if box.size.length() >= (high - low) * 0.05 else 0
 
