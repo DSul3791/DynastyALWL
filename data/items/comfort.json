@@ -264,6 +264,7 @@
 			"id": "small_chest",
 			"class": "storage",
 			"points": 1,
+			"grade": "crude",
 			"family": "chest",
 			"needs_lit": false,
 			"status": "placeable",

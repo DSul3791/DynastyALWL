@@ -222,10 +222,10 @@ func _comfort_checks() -> void:
 	check(level.call() == 1 + pts.call("bench") + pts.call("chair"), "a Crude bench and a Rustic chair both count, as today (%d)" % level.call())
 	items._items.clear()
 
-	for kind in FAMILIES["Chest"]:
+	for kind in FAMILIES["Chest"] + ["small_chest"]:   # the Small chest (copper nails, Dave 21 Nov 2026) is the crude grade of the family
 		add_struct(kind, Vector3(-2.0 - float(items._items.size()), 10.0, 2.0))
 
-	check(level.call() == 2, "four board chest grades count once, 1 point (%d)" % level.call())
+	check(level.call() == 2, "four board chest grades and the Small chest count once, 1 point (%d)" % level.call())
 	add_struct("chest", Vector3(-2.0, 10.0, -3.0))
 	check(level.call() == 3, "the Wicker chest still counts beside them, as today (%d)" % level.call())
 	items._items.clear()
