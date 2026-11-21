@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **214 slots: 23 recorded, 181 generated placeholders, 10 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **215 slots: 23 recorded, 182 generated placeholders, 10 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -21,6 +21,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 1 | `wind_gust` | generated | 1 | sound_stage.gd: the swelling gust layer on top of the bed | A leaf-and-grass rustling wind loop with soft swells, seamless |
 | 1 | `wind_low` | generated | 1 | sound_stage.gd: the steady wind bed, louder with height and open ground, softer in trees | A calm open-field wind loop, 20 s or more, seamless, no gusts (low rumble layer) |
 | 2 | `bear_roar` | generated | 2 | creature_sounds.gd: a bear's roar (threat), the danger cue | 2 to 3 bear roars, 1 to 2 s |
+| 2 | `bellows_blow` | generated | 2 | workshop_sounds.gd bellows(at): one stroke of a smelter's bellows while a player works them, about every 1.4 s | 2 recordings of a leather forge bellows pushed once, the fire roaring up, 1 s |
 | 2 | `bird_trill` | generated | 3 | ambient_life.gd: meadow bird, by day | 2 to 3 trilling songs, about 1 s |
 | 2 | `bird_whistle` | generated | 3 | ambient_life.gd: forest bird, by day | 2 to 4 clear songbird whistles, 1 to 2 s |
 | 2 | `breath_gasp` | generated | 3 | breath_sounds.gd: ragged hard breathing at severe exertion | 3 hard gasping breaths of an exhausted runner, 0.7 s |

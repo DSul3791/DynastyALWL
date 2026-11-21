@@ -225,6 +225,7 @@ func use(peer: int, id: int, it: Dictionary, def: Dictionary, choice: int = 0) -
 
 	if int(_bellows.get(id, -1)) == peer:
 		_bellows.erase(id)
+		host._sync_in = 0.0   # the prompt, the light, smoke and sound change at the next tick, for everyone near, not up to SYNC_EVERY_S later
 		host._say(peer, "You leave the bellows.")
 		return
 
@@ -234,7 +235,8 @@ func use(peer: int, id: int, it: Dictionary, def: Dictionary, choice: int = 0) -
 
 	_bellows[id] = peer
 	_bellows_goal.erase(id)   # a new stint at the bellows
-	host._say(peer, "You work the bellows: it smelts faster and can work iron while you stay at it (E again to stop).")
+	host._sync_in = 0.0   # the row's "bellows" goes out at the next tick: the prompt turns to stop, the fire brightens, puffs and blows
+	host._say(peer, "You work the bellows: it smelts faster and can work iron while you stay at it.")
 
 
 func is_lit(it: Dictionary) -> bool:
@@ -272,6 +274,11 @@ func _working(id: int, it: Dictionary, def: Dictionary) -> bool:
 
 func bellows_worked(id: int) -> bool:
 	return _bellows.has(id)
+
+
+# The peer working the station's bellows, -1 for nobody (the world row's "bellows": the client's prompt, brighter fire, smoke puffs and sound).
+func bellows_peer(id: int) -> int:
+	return int(_bellows.get(id, -1))
 
 
 # The world's wind in metres a second (Weather.state "wind", 0..1); 0 with no weather.

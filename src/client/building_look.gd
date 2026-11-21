@@ -2067,6 +2067,87 @@ static func show_forge_fire(model: Node3D, on: bool) -> void:
 		plume.emitting = on
 
 
+# A smelter's bellows worked (inventory_view._note_store, the row's "bellows"; Dave 21 Nov 2026: "the light should get brighter, the smoke should
+# puff and their should be a bellows sound"): its fire light burns brighter for as long as they are worked, and at each stroke the flames leap,
+# a puff of smoke goes up and `stroke` is called with where it is (the bellows sound). A Timer in the model beats the strokes, so nothing runs
+# per frame and nothing on the server; it goes with the model when the smelter is put out or drawn again. Stopped, all of it goes back.
+const BELLOWS_STROKE_S := 1.4   # PROVISIONAL (BW-1, 21 Nov 2026): one push and draw of the bellows
+const BELLOWS_LIGHT := 1.8      # PROVISIONAL (BW-2): the fire light's energy while worked, times its calm energy
+const BELLOWS_FLAME := 1.35     # PROVISIONAL (BW-3): how far the flames leap at a stroke, times their size
+
+
+static func show_forge_bellows(model: Node3D, on: bool, stroke: Callable = Callable()) -> void:
+	var light: Light3D = model.get_node_or_null("Light") as Light3D
+
+	if light != null:   # inventory_view._update_fire_lights flickers it round its base_energy (1.4 when none is set)
+		if on and not light.has_meta("calm_energy"):
+			light.set_meta("calm_energy", float(light.get_meta("base_energy", 1.4)))
+			light.set_meta("base_energy", float(light.get_meta("calm_energy")) * BELLOWS_LIGHT)
+		elif not on and light.has_meta("calm_energy"):
+			light.set_meta("base_energy", float(light.get_meta("calm_energy")))
+			light.remove_meta("calm_energy")
+
+	var timer: Timer = model.get_node_or_null("BellowsStroke") as Timer
+
+	if not on:
+		if timer != null:
+			timer.stop()
+
+		var puff: GPUParticles3D = model.get_node_or_null("BellowsPuff") as GPUParticles3D
+
+		if puff != null:
+			puff.emitting = false
+
+		return
+
+	if timer == null:
+		timer = Timer.new()
+		timer.name = "BellowsStroke"
+		timer.wait_time = BELLOWS_STROKE_S
+		timer.timeout.connect(_bellows_stroke.bind(model, stroke))
+		model.add_child(timer)
+
+	if model.is_inside_tree():
+		timer.start()
+		_bellows_stroke(model, stroke)   # the first stroke at once: the press is answered straight away
+	else:
+		timer.autostart = true
+
+
+static func _bellows_stroke(model: Node3D, stroke: Callable) -> void:
+	var flames: Node3D = model.get_node_or_null("Flames") as Node3D
+
+	if flames != null and flames.visible:
+		if not flames.has_meta("calm_scale"):
+			flames.set_meta("calm_scale", flames.scale)
+
+		var calm: Vector3 = flames.get_meta("calm_scale")
+		flames.scale = calm * BELLOWS_FLAME
+		flames.create_tween().tween_property(flames, "scale", calm, BELLOWS_STROKE_S * 0.8).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+	var plume: GPUParticles3D = model.get_node_or_null("ForgeSmoke") as GPUParticles3D
+
+	if plume != null and plume.visible:
+		var puff: GPUParticles3D = model.get_node_or_null("BellowsPuff") as GPUParticles3D
+
+		if puff == null:   # a short burst of the forge's own smoke from its chimney
+			puff = _smoke_plume()
+			puff.name = "BellowsPuff"
+			puff.amount = 4
+			puff.lifetime = 3.5
+			puff.one_shot = true
+			puff.explosiveness = 0.8
+			puff.speed_scale = 1.6
+			puff.position = plume.position
+			puff.scale = plume.scale
+			model.add_child(puff)
+
+		puff.restart()
+
+	if stroke.is_valid() and model.is_inside_tree():
+		stroke.call(model.global_position)
+
+
 # --------------------------------------------------------------- chair and bed (where the NPCs sit and sleep)
 
 # A log and timber chair, seat 0.42 m high, about 0.5 m square, back 0.95 m, the person facing -Z (the way the sit pose faces).
