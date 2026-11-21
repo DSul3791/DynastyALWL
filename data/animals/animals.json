@@ -53,6 +53,17 @@
 			"zig_deg": 35.0,
 			"zig_leg_m": 8.0,
 			"burrow_m": 40.0,
+			"herd": [
+				2,
+				4
+			],
+			"herd_pull_m": 8.0,
+			"group_spacing_m": 2.0,
+			"alarm_s": [
+				0.1,
+				0.6
+			],
+			"note_herd": "PROVISIONAL HB-4 (21 Nov 2026, docs/design/ANIMAL_RESTING.md): wild rabbits live in warrens and feed in loose groups at dawn and dusk; one that bolts sets the others off (a thump).",
 			"hide_s": [
 				20.0,
 				40.0

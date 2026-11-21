@@ -60,7 +60,10 @@ func _init() -> void:
 	for id in a.animals:
 		count += 1 if a.animals[id]["sp"] == "rabbit" else 0
 
-	check(count == int(a.species_def("rabbit")["target_per_player"]), "the player's share of rabbits appears (%d)" % count)
+	# Rabbits come in loose groups of 2 to 4 (HB-4, docs/design/ANIMAL_RESTING.md): the last group can top the share by up to its size less one.
+	var share: int = int(a.species_def("rabbit")["target_per_player"])
+	var group_max: int = int((a.species_def("rabbit")["herd"] as Array)[1])
+	check(count >= share and count <= share + group_max - 1, "the player's share of rabbits appears, in groups (%d, share %d)" % [count, share])
 	var nearest: float = INF
 
 	for id in a.animals:

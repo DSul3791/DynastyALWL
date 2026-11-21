@@ -26,6 +26,7 @@ const SNEAK := 13               # a thief creeping up on food, 14 running off wi
 const HIDDEN := 5               # in its burrow: never sent, never hunted
 const HIT_ZONES := ["body", "head", "chest", "hip", "leg"]   # animal_hit zone codes, the order of MikeW's animal_view HIT_ZONES (docs/design/hunt_feedback_server.md 3)
 const HUNCH := 20               # wire only: a grazer standing out the rain, still, head low (animals_in_weather_design.md 6; GRAZE on the server)
+const LIE := 19                 # wire only: a grazer bedded down outside its active hours, lying (the companions' LIE; protocol 148, docs/design/ANIMAL_RESTING.md)
 const DRINK := 21               # wire only: a deer or stock animal at its drinking place, head down at the water (animals_at_water_server.md; GRAZE on the server)
 const STAGGER := 4              # a quarter of the animals are looked at each tick
 
@@ -1545,8 +1546,12 @@ func _top_up(players: Array, only: int) -> void:
 			for k in members:
 				var hx: float = x + rng.randf_range(-6.0, 6.0)   # luck-exempt: herd spread
 				var hz: float = z + rng.randf_range(-6.0, 6.0)   # luck-exempt: herd spread
+				var by_player: bool = false
 
-				if no_spawn_at(hx, hz):
+				for q in players:
+					by_player = by_player or Vector2(q.x - hx, q.z - hz).length() < never   # a member spread toward a player is never made inside never_within_m either
+
+				if by_player or no_spawn_at(hx, hz):
 					continue
 
 				var id: int = spawn(sp, hx, hz)
@@ -1938,6 +1943,14 @@ func _wire_state(a: Dictionary) -> int:
 
 	if a["state"] == GRAZE and (bool(a.get("hunch", false)) or bool(a.get("sheltered", false))):
 		return HUNCH
+
+	# Bedded down out of its hours (resting), an animal is drawn lying, not grazing (Dave 21 Nov 2026: "relaxing" first among the
+	# situations; protocol 148). Birds and flocks stay as they are: they perch or float.
+	if a["state"] == GRAZE and not a.has("fly") and not bool(a.get("perched", false)) and not a.has("companion_id"):
+		var def: Dictionary = species_def(str(a["sp"]))
+
+		if not def.has("flock") and not def.has("flight") and resting(def):
+			return LIE
 
 	return int(a["state"])
 
