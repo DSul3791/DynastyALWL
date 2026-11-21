@@ -75,7 +75,7 @@ Goals: `build:stone_well` (Build Well) keeps its id; its title follows the renam
 | Wooden - Channel / corner / tee (unlocked) | open, 120 L/min, ends 0.23 m up, 1 cm built-in fall per piece (full flow on a level run); catches a spout up to 0.4 m across and 1 m above | unchanged |
 | Sluice (unlocked) | a channel with a gate; built shut, E opens and shuts it (open twin `wooden_sluice_open`, state 422) | unchanged |
 | Wooden - Trough (unlocked) | tank 100 L; catches water over its rim (0.48 m) from up to 1 m across and 1.5 m above; a bung at its base (0.15 m up at +X) feeds a pipe | unchanged |
-| Wooden - Pipe / elbow / tee (new, 1352-1354) | a bored log, closed, 60 L/min under head, ends 0.13 m up | 1 Log + 1 Twine (tee 2 Log + 1 Twine) |
+| Wooden - Pipe / elbow / tee (new, 1352-1354) | a bored log, closed, 60 L/min under head, ends 0.13 m up | 1 Log + 1 Twine (tee 2 Log + 1 Twine); the pipe now 1 Log carved at the Wood carving station, no twine (21 Nov 2026, PV-1) |
 
 How it fits together:
 - **Channels and pipes have no fixed direction.** Whichever end the water reaches is the inlet; the server turns every channel and pipe from the
@@ -117,7 +117,7 @@ Every value below is PROVISIONAL (coordinator ruling: build costs and numbers ma
 - P-3 Advanced - Well: 60 Cobblestone, 16 Clay mortar, 12 Plank, 4 Log, 16 Bark shingle, 2 Rope, 2 Bucket; 3.2 m round, hammer 1 (s4).
 - P-4 Improved - Well is the existing `stone_well` renamed (coordinator-approved), cost unchanged; windlass bucket 10 L (s4).
 - P-5 Wooden channels 120 L/min with a built-in 1 cm fall a piece; Wooden - Trough 100 L with a base outlet; Sluice built shut, E toggles (s5).
-- P-6 New Wooden - Pipe / elbow / tee: closed bored logs, 60 L/min under head; 1 Log + 1 Twine (tee 2 Log + 1 Twine) (s5).
+- P-6 New Wooden - Pipe / elbow / tee: closed bored logs, 60 L/min under head; 1 Log + 1 Twine (tee 2 Log + 1 Twine) (s5). The pipe is now 1 Log carved at the Wood carving station, no twine (21 Nov 2026, PV-1).
 - P-7 Wooden - Hand pump 0.8 L/s at 40 W (48 L/min at 4 m) (s5). Retired 20 Nov 2026 (s10).
 - P-8 Stone channels 300 L/min; Stone - Trough 200 L (s6). (Clay pipes retired by Dave, not assumed.)
 - P-9 Cistern 2,000 L, 0.5 m head; Raised cistern 700 L (Dave 21 Nov 2026), 2.5 m head, a big tank filled by rain and from higher up (Dave, 20 Nov 2026, s10; PV-12).

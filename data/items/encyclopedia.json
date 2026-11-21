@@ -9362,7 +9362,7 @@
 			"kind": "material",
 			"description": "A bored log, six inches across and two metres long. Laid from the hand; it rots faster than copper.",
 			"how_to_get": [
-				"Craft by hand: 1 Log, 1 Twine (keep Stone - Knife)"
+				"Craft at a wood carving station: 1 Log (keep Stone - Knife)"
 			],
 			"used_for": [],
 			"obtainable_now": true
