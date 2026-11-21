@@ -1743,7 +1743,7 @@ func _cover_at(point: Vector3) -> float:
 
 			if not flora.chunk_made(chunk) and not _cover_warming.has(chunk):
 				_cover_warming[chunk] = true
-				WorkerThreadPool.add_task(_warm_cover_chunk.bind(chunk))
+				_start_cover_warm(chunk)
 
 	if flora.roofed(point) or _in_cave(point):
 		return 2.0   # under a built roof or in a cave: also shelter from the wind
@@ -1798,9 +1798,17 @@ func _cover_ready(point: Vector3) -> bool:
 
 				if not _cover_warming.has(chunk):
 					_cover_warming[chunk] = true
-					WorkerThreadPool.add_task(_warm_cover_chunk.bind(chunk))
+					_start_cover_warm(chunk)
 
 	return all_made
+
+
+var _cover_tasks = preload("res://src/shared/pool_tasks.gd").new()   # _warm_cover_chunk tasks, waited for in _exit_tree
+
+
+func _start_cover_warm(chunk: Vector2i) -> void:
+	if not _cover_tasks.add(_warm_cover_chunk.bind(chunk), "cover chunk"):
+		_cover_warming.erase(chunk)   # shutting down
 
 
 func _warm_cover_chunk(chunk: Vector2i) -> void:
@@ -3624,12 +3632,22 @@ func _exit_tree() -> void:
 	if water_live != null:
 		water_live.stop()
 
+	# The pool tasks nothing else waits for: none may still run while the engine shuts its worker pool down (PoolTasks; main gate 21 Nov).
+	_cover_tasks.finish()
+
+	if flora != null:
+		flora.finish_tasks()
+
+	if generator != null:
+		generator.finish_tasks()
+
 	if store != null and OS.has_environment("BLOCKTIME"):
 		print(store.timing_report())
 
 	if store != null:
 		store.flush()
 
+	_events.close()   # last: nothing may start a log worker task while the engine shuts down (EventLog.close)
 
 # Known dangers for the island resource landscape's starting-island check (handoff 13: "use existing danger information where available"):
 # the camp of every goblin tribe that will not trade (its attitude's trades false) and every bandit site whose camp stands (stage 3), each
