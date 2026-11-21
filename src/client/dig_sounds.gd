@@ -66,7 +66,7 @@ func sound_for(center: Vector3) -> String:
 
 	var surface: String = str(SoundStage.SOIL_SURFACE.get(soil, "dirt"))
 
-	if soil in [4, 6, 16]:
+	if Layout.soil_of(soil) in [4, 6, 16]:
 		return "dig_clay"                                        # clay, peat and mud stay sticky
 
 	return str(SURFACE_SOUND.get(surface, "dig_soil"))
