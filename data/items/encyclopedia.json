@@ -9659,7 +9659,7 @@
 		"stone_raised_cistern_kit": {
 			"name": "Raised cistern",
 			"kind": "placeable",
-			"description": "A big copper-lined tank on a tall wooden frame. Rain and pipes from higher up fill it, and it feeds pipes below it by gravity.",
+			"description": "A big copper-lined tank on a wooden frame. Rain and pipes from above fill it; it feeds pipes below.",
 			"how_to_get": [
 				"Build with a hammer (press R): 16 Plank, 20 Hardwood board, 6 Copper ingot, 40 Nails"
 			],
@@ -9669,7 +9669,7 @@
 		"stone_raised_cistern": {
 			"name": "Raised cistern",
 			"kind": "structure",
-			"description": "A big copper-lined tank on a tall wooden frame. Rain and pipes from higher up fill it, and it feeds pipes below it by gravity.",
+			"description": "A big copper-lined tank on a wooden frame. Rain and pipes from above fill it; it feeds pipes below.",
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": true

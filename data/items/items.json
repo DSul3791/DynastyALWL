@@ -8103,7 +8103,7 @@
 				"number": 755,
 				"retired": true,
 				"name": "Raised cistern",
-				"description": "A big copper-lined tank on a tall wooden frame. Rain and pipes from higher up fill it, and it feeds pipes below it by gravity.",
+				"description": "A big copper-lined tank on a wooden frame. Rain and pipes from above fill it; it feeds pipes below.",
 				"kind": "placeable",
 				"stack": 1,
 				"unstackable": true,
@@ -8113,7 +8113,7 @@
 			"stone_raised_cistern": {
 				"number": 756,
 				"name": "Raised cistern",
-				"description": "A big copper-lined tank on a tall wooden frame. Rain and pipes from higher up fill it, and it feeds pipes below it by gravity.",
+				"description": "A big copper-lined tank on a wooden frame. Rain and pipes from above fill it; it feeds pipes below.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
