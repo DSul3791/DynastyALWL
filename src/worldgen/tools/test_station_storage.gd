@@ -214,9 +214,19 @@ func _init() -> void:
 		if box(forge).numbers[i] == stone:
 			box(forge).clear_slot(i)
 
-	var event_saves: int = items._event_saves
-	craft(1, "bronze_nails", 1, 60)
-	check(items._event_saves > event_saves, "a finished station craft brings a save forward (D-TODO-2: %d, was %d)" % [items._event_saves, event_saves])
+	items._event_save = false   # the first craft's request is spent: only this craft's counts
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number("bronze_nails"), 0, 1, CraftHand.at(items, 1, recipe_number("bronze_nails")))
+	var asked_at: int = -1
+
+	for s in range(60):
+		items._save_in = 1000.0   # no 30 s save in this window: only an event save can clear the request
+		items.tick(1.0)
+
+		if asked_at < 0 and items.craft_queue_of(1).is_empty():
+			asked_at = s
+
+	check(asked_at >= 0 and not items._event_save and items._since_save < float(60 - asked_at), "a finished station craft brings a save forward (D-TODO-2: done at %d s, last save %.0f s ago)" % [asked_at, items._since_save])
 	check(held(forge, nail) == nails_each * 2, "one more craft: %d Bronze nails in the store" % (nails_each * 2))
 	var fill_row: int = items._store_fill(items._items[forge])
 	check(fill_row >= 1 and fill_row <= 4, "the Primitive smithy's world row carries a fill level (%d)" % fill_row)

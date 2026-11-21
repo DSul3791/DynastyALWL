@@ -782,7 +782,8 @@ func peer_left(peer: int) -> void:
 	_vent_sent.erase(peer)
 	_goal_sent.erase(peer)
 	_note_spot(peer, "deliberate" if _logout_peers.has(peer) else "disconnect")
-	save_soon()   # a dropped line or a closed window: the spot and pack as they left (a deliberate logout saved already, note_logout)
+	if not _logout_peers.has(peer):
+		save_soon()   # a dropped line or a closed window: the spot and pack as they left (a deliberate logout saved already, note_logout)
 	print("Resume spot: peer %d left (%s) at %s%s" % [peer, "deliberate" if _logout_peers.has(peer) else "disconnect", str(_peer_pos.get(peer, "no position")), ", still on the way to the resume spot: kept" if _resume_to.has(peer) else ""])
 	_logout_peers.erase(peer)
 	_admin_mode_on.erase(peer)   # Admin mode never outlives a session: every login starts with it off
@@ -1793,6 +1794,7 @@ func save_soon(ids: Array = []) -> void:
 		if _items.has(id):
 			_save_note(id)
 
+	_dirty = true   # the event changed something saved in the files every save writes (pack, coins, vitals, the character row)
 	_event_save = true
 
 

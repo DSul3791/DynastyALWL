@@ -89,6 +89,7 @@ func _init() -> void:
 	check(on_disk is Dictionary and str(on_disk["players"][KEY]["last"]["left"]) == "deliberate" and absf(float(on_disk["players"][KEY]["last"]["pos"][0]) - quit_at.x) < 0.01, "Quit game writes the spot to disk at once, before the line closes")
 	items.peer_left(3)
 	check(str(items._characters[KEY]["last"].get("left", "")) == "deliberate", "Quit game is a deliberate logout")
+	check(not items._event_save, "a deliberate logout saved at once: leaving asks for no second save")
 	items = restart(items, dir)
 	near(start_of(items, 4), quit_at, "a deliberate quit resumes where they quit after a restart")
 
