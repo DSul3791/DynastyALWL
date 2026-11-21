@@ -1,9 +1,9 @@
 extends SceneTree
 
-# Copper and tin rocks (Dave 16-17 Nov 2026, his photos; docs/design/COPPER_ROCKS.md). Copper: malachite-coated rocks of many sizes, a few
-# anywhere on land, many more on river beds, in shallow water and along shores, none in deep water, and now and then a big copper
-# boulder at the foot of a mountain. Tin: only by water near a tin body, boulders where the valley climbs steeply, pebbles where it is
-# flat. A share of the sizes (hand_share) is loose ore picked up by hand; bigger ones are boulder rows with their own grade (share of their
+# Copper and tin rocks (Dave 16-17 Nov 2026, his photos; one shared rule since 21 Nov 2026; docs/design/COPPER_ROCKS.md). Both ores: a few
+# anywhere on land, many more on river beds, in shallow water and along shores, none in deep water, more and bigger toward the mountains and
+# fewer and smaller toward the sea (never none), very many over a body of their own ore, and now and then a big boulder at the foot of a
+# mountain. A share of the sizes (hand_share) is loose ore picked up by hand; bigger ones are boulder rows with their own grade (share of their
 # pieces that are ore). The layout is the same every time and its keys never land on the cell's boulders. Plus the client mesh.
 #   godot --headless --path . --script res://src/worldgen/tools/test_copper_rocks.gd
 
@@ -78,12 +78,17 @@ func lay(items, cells: int, rows: int, ore: String = "copper") -> Array:
 
 
 func _init() -> void:
-	var cfg: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/boulders.json")).get("copper_rocks", {})
-	check(not cfg.is_empty() and float(cfg.get("water_chance", 0.0)) > float(cfg.get("chance", 1.0)) * 5.0, "boulders.json ships copper rocks, far commoner by water than on dry land")
+	var all_cfg: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/boulders.json"))
+	var cfg: Dictionary = all_cfg.get("ore_rocks", {}).duplicate()
+	cfg.merge(all_cfg.get("copper_rocks", {}), true)
+	check(not cfg.is_empty() and float(cfg.get("water_chance_coast", 0.0)) > float(cfg.get("chance", 1.0)) * 5.0, "boulders.json ships copper and tin rocks, far commoner by water than on dry land even by the sea")
+	check(float(cfg.get("water_chance_mountain", 0.0)) > float(cfg.get("water_chance_coast", 1.0)) and float(cfg.get("size_coast", 1.0)) < 1.0, "more and bigger toward the mountains")
+	check(all_cfg.get("tin_rocks", {}).keys().all(func(k): return k in ["note", "slot", "grade_min", "grade_max"]) and all_cfg.get("copper_rocks", {}).keys().all(func(k): return k in ["note", "slot", "grade_min", "grade_max"]), "copper and tin share one placement rule (only slot and grade are their own)")
 
-	# 1. Land, shore, river bed and deep water. Flat ground at 10 m; a river along x 2000..2040: shallow (0.5 m) from 2000 to 2020, deep (3 m)
-	# from 2020 to 2040; its dry banks are the 10 m beside it.
+	# 1. Land, shore, river bed and deep water. Flat ground at 310 m (under the mountains: full size); a river along x 2000..2040: shallow (0.5 m)
+	# from 2000 to 2020, deep (3 m) from 2020 to 2040; its dry banks are the bank_reach_m beside it.
 	var w = make("test_copper_rocks_lay", "")
+	w.ground_height = func(_x, _z): return 310.0
 	w.water_depth_at = func(pos): return 0.5 if pos.x >= 2000.0 and pos.x < 2020.0 else (3.0 if pos.x >= 2020.0 and pos.x < 2040.0 else 0.0)
 	w.water_near = func(pos, reach): return pos.x + reach >= 2000.0 and pos.x - reach < 2040.0
 	var rocks: Array = lay(w, 80, 40)
@@ -165,9 +170,10 @@ func _init() -> void:
 	# 2. The foot of a mountain: flat to x 1000, then a 1 in 1 slope. With the chance at 1, the big boulders lie only on the flat within
 	# reach_m of the slope, never out on the plain or on the slope itself.
 	var m = make("test_copper_rocks_foot", "")
-	m._boulder_cfg["copper_rocks"]["chance"] = 0.0
-	m._boulder_cfg["copper_rocks"]["water_chance"] = 0.0
-	m._boulder_cfg["copper_rocks"]["foot"]["chance"] = 1.0
+	m._boulder_cfg["ore_rocks"]["chance"] = 0.0
+	m._boulder_cfg["ore_rocks"]["water_chance_coast"] = 0.0
+	m._boulder_cfg["ore_rocks"]["water_chance_mountain"] = 0.0
+	m._boulder_cfg["ore_rocks"]["foot"]["chance"] = 1.0
 	m.ground_height = func(x, _z): return 10.0 + maxf(x - 1000.0, 0.0)
 	var feet: Array = lay(m, 40, 20)
 	var foot_ok: bool = not feet.is_empty()
@@ -180,6 +186,8 @@ func _init() -> void:
 
 	# 3. Geology outcrops: a boulder by a copper body is a copper rock too, with its own grade.
 	var g = make("test_copper_rocks_outcrop", "")
+	g._boulder_cfg["ore_rocks"]["body_reach_m"] = 0.0   # only the slope's own boulders here: the body's ore rocks are part 6
+	g._boulder_cfg["ore_rocks"]["chance"] = 0.0
 	g._boulder_cfg["copper_rocks"] = {}
 	g._boulder_cfg["copper_rocks"]["grade_min"] = 0.2
 	g._boulder_cfg["copper_rocks"]["grade_max"] = 0.6
@@ -239,42 +247,71 @@ func _init() -> void:
 	var view_src: String = FileAccess.get_file_as_string("res://src/client/inventory_view.gd")
 	check(view_src.find("\t\"iron\": [Color(") < 0, "the old outcrop tint for iron is gone (decision 61)")
 
-	# 6. Tin (Dave 17 Nov 2026): only by water and near a tin body; boulders where the valley climbs steeply, pebbles by hand where it is flat.
-	# A river along x 2000..2040 (shallow), a tin body for x under 2600 (none beyond), flat ground to z 640, then a valley side climbing 1 in 1.
-	var tcfg: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/boulders.json")).get("tin_rocks", {})
-	var tn = make("test_copper_rocks_tin", "")
-	tn._boulder_cfg["copper_rocks"] = {}
-	tn._boulder_cfg["ore"]["boulder_share"] = 0.0   # the slope's own boulders are not tin outcrops here: only the river tin is under test
-	tn.water_depth_at = func(pos): return 0.5 if (pos.x >= 2000.0 and pos.x < 2040.0) or (pos.x >= 2700.0 and pos.x < 2740.0) else 0.0
-	tn.water_near = func(pos, reach): return (pos.x + reach >= 2000.0 and pos.x - reach < 2040.0) or (pos.x + reach >= 2700.0 and pos.x - reach < 2740.0)
-	tn.ore_near = func(pos, _reach, names, _depth): return "tin" if pos.x < 2600.0 and names.has("tin") else ""
-	tn.ground_height = func(_x, z): return 10.0 + maxf(z - 640.0, 0.0)
-	var tin: Array = lay(tn, 90, 40, "tin")
-	var tin_land: int = 0
-	var tin_far: int = 0
-	var flat_hand: int = 0
-	var flat_rock: int = 0
-	var steep_big: int = 0
-	var tin_grade_ok: bool = true
+	# 6. One rule for both (Dave 21 Nov 2026): a river along x 2000..2040 (shallow), no ore body near it. On the coastal plain (ground at 10 m)
+	# both copper and tin lie there, fewer and smaller than by the same river under the mountains (ground at 310 m).
+	var tgrade: Dictionary = all_cfg.get("tin_rocks", {})
+	var by_height: Dictionary = {}
 
-	for r in tin:
-		var tx: float = float(r[1].x)
-		var tz: float = float(r[1].z)
-		tin_land += 1 if tx < 1990.0 or (tx > 2050.0 and tx < 2690.0) else 0
-		tin_far += 1 if tx >= 2690.0 else 0
+	for ground_m in [10.0, 310.0]:
+		var rv = make("test_copper_rocks_river_%d" % int(ground_m), "")
+		rv._boulder_cfg["ore"]["boulder_share"] = 0.0   # the plain boulders are not outcrops here
+		rv.water_depth_at = func(pos): return 0.5 if pos.x >= 2000.0 and pos.x < 2040.0 else 0.0
+		rv.water_near = func(pos, reach): return pos.x + reach >= 2000.0 and pos.x - reach < 2040.0
+		rv.ore_near = func(_pos, _reach, _names, _depth): return ""
+		rv.ground_height = func(_x, _z): return ground_m
 
-		if tz < 600.0:   # flat: nothing climbs within relief_reach_m
-			flat_hand += 1 if bool(r[4]) else 0
-			flat_rock += 0 if bool(r[4]) else 1
-		elif tz > 700.0 and not bool(r[4]) and float(r[2]) > 0.4:
-			steep_big += 1
+		for ore in ["copper", "tin"]:
+			var at_river: int = 0
+			var broken: int = 0
+			var radius_sum: float = 0.0
+			var grade_ok: bool = true
+			var lo: float = float((tgrade if ore == "tin" else cfg)["grade_min"]) - 0.001
+			var hi: float = float((tgrade if ore == "tin" else cfg)["grade_max"]) + 0.001
 
-		tin_grade_ok = tin_grade_ok and (bool(r[4]) or (float(r[3]) >= float(tcfg["grade_min"]) - 0.001 and float(r[3]) <= float(tcfg["grade_max"]) + 0.001))
+			for r in lay(rv, 90, 40, ore):
+				if float(r[1].x) >= 1990.0 and float(r[1].x) < 2050.0:
+					at_river += 1
 
-	print("tin: %d in all, %d on dry land, %d by a river with no tin body, flat %d pebbles %d rocks, %d big on the steep side" % [tin.size(), tin_land, tin_far, flat_hand, flat_rock, steep_big])
-	check(not tin.is_empty() and tin_land == 0 and tin_far == 0, "tin lies only by water near a tin body (%d; %d on land, %d far)" % [tin.size(), tin_land, tin_far])
-	check(flat_hand > 0 and flat_rock == 0, "on flat ground far downstream it is pebbles picked up by hand (%d, %d rocks)" % [flat_hand, flat_rock])
-	check(steep_big > 0 and tin_grade_ok, "where the valley climbs steeply it is boulders to break, each with its grade (%d)" % steep_big)
-	check(str(lay(tn, 90, 40, "tin")) == str(tin), "the same cells give the same tin every time")
+				if not bool(r[4]):
+					broken += 1
+					radius_sum += float(r[2])
+					grade_ok = grade_ok and float(r[3]) >= lo and float(r[3]) <= hi
+
+			by_height["%s %d" % [ore, int(ground_m)]] = [at_river, radius_sum / maxf(float(broken), 1.0), broken, grade_ok]
+
+	print("by the river (count, mean radius of rocks to break, rocks to break): %s" % str(by_height))
+
+	for ore in ["copper", "tin"]:
+		var coast: Array = by_height["%s 10" % ore]
+		var hills: Array = by_height["%s 310" % ore]
+		check(int(coast[0]) > 10, "%s lies along a river on the coastal plain too, with no %s body near (%d per 40 cells of river)" % [ore, ore, int(coast[0])])
+		check(int(hills[0]) * 2 > int(coast[0]) * 3, "%s is more abundant by the river under the mountains (%d against %d by the sea)" % [ore, int(hills[0]), int(coast[0])])
+		check(float(hills[1]) > float(coast[1]) + 0.1 and int(hills[2]) > int(coast[2]), "%s rocks are bigger under the mountains (mean radius %.2f against %.2f)" % [ore, float(hills[1]), float(coast[1])])
+		check(bool(coast[3]) and bool(hills[3]), "every %s rock to break has its grade in range" % ore)
+
+	# 7. Over a body of its own ore (x under 1000, tin only), very many tin rocks on dry land far from any water; copper there stays the thin
+	# land scatter.
+	var bd = make("test_copper_rocks_body", "")
+	bd._boulder_cfg["ore"]["boulder_share"] = 0.0
+	bd.water_depth_at = func(_pos): return 0.0
+	bd.water_near = func(_pos, _reach): return false
+	bd.ore_near = func(pos, _reach, names, _depth): return "tin" if pos.x < 1000.0 and names.has("tin") else ""
+	var tin_over: int = 0
+	var tin_off: int = 0
+	var copper_over: int = 0
+
+	for r in lay(bd, 60, 20, "tin"):
+		tin_over += 1 if float(r[1].x) < 960.0 else 0
+		tin_off += 1 if float(r[1].x) > 1060.0 else 0
+
+	for r in lay(bd, 60, 20, "copper"):
+		copper_over += 1 if float(r[1].x) < 960.0 else 0
+
+	var body_cells: float = 30.0 * 20.0
+	print("over a tin body: %d tin (%.2f a cell), %d copper; off it %d tin" % [tin_over, float(tin_over) / body_cells, copper_over, tin_off])
+	check(float(tin_over) / body_cells > 2.0, "very many tin rocks over a tin body (%.2f a cell)" % (float(tin_over) / body_cells))
+	check(float(tin_off) / (28.0 * 20.0) < 0.2 and tin_off > 0, "off it only the thin land scatter, but some (%d)" % tin_off)
+	check(copper_over * 10 < tin_over, "a tin body does not raise copper (%d copper against %d tin)" % [copper_over, tin_over])
+	check(str(lay(bd, 60, 20, "tin")) == str(lay(bd, 60, 20, "tin")), "the same cells give the same tin every time")
 	print("copper rocks: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

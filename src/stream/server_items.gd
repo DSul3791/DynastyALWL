@@ -7803,31 +7803,42 @@ func _set_boulder_ore(row: Dictionary, ore_name: String, key: int) -> void:
 		return
 
 	row["ore"] = ore_name
-	var cfg: Dictionary = _boulder_cfg.get(ore_name + "_rocks", {})
+	var own: Dictionary = _boulder_cfg.get(ore_name + "_rocks", {})
 
-	if cfg.has("grade_min"):
-		row["grade"] = lerpf(float(cfg["grade_min"]), float(cfg.get("grade_max", cfg["grade_min"])), float(hash([key, "grade"]) % 1000) / 999.0)
+	if own.is_empty():
+		return   # iron, coal and the rest: an outcrop without a grade or a size range
+
+	var shared: Dictionary = _boulder_cfg.get("ore_rocks", {})   # read in place: _ore_rock_cfg copies, and this runs for every ore boulder
+
+	if own.has("grade_min"):
+		row["grade"] = lerpf(float(own["grade_min"]), float(own.get("grade_max", own["grade_min"])), float(hash([key, "grade"]) % 1000) / 999.0)
 
 	# Every copper and tin rock to break is radius_min..radius_max (Dave 17 Nov 2026: "the copper should be the same size as the tin and they
 	# can be anywhere from .5m to 2m in size ... for both of them"), the geology's outcrop boulders included.
-	if cfg.has("radius_min") and cfg.has("radius_max"):
-		var radius: float = clampf(float(row["radius"]), float(cfg["radius_min"]), float(cfg["radius_max"]))
+	var r_min: Variant = own.get("radius_min", shared.get("radius_min"))
+	var r_max: Variant = own.get("radius_max", shared.get("radius_max"))
+
+	if r_min != null and r_max != null:
+		var radius: float = clampf(float(row["radius"]), float(r_min), float(r_max))
 
 		if radius != float(row["radius"]):
 			row["radius"] = radius
 			row["total"] = _boulder_stones(radius)
 
 
-# Copper and tin rocks (Dave 16-17 Nov 2026, his photos; docs/design/COPPER_ROCKS.md, boulders.json copper_rocks and tin_rocks). Per cell,
-# from the cell's own stream named after the ore, 8 tries that each take the same five draws whatever happens to them:
-# - copper: a few anywhere on dry land, many in shallow water and on banks, and the last try a big boulder at a mountain's foot;
-# - tin: only in shallow water and on banks within near_body_m of a tin body of the geology (its river placers), sized by the relief
-#   around it: boulders where the valley climbs steeply (near the mountains), pebbles where it is flat (far downstream).
+# Copper and tin rocks (Dave 16-17 Nov 2026, his photos; one shared rule since his 21 Nov 2026 play test; docs/design/COPPER_ROCKS.md,
+# boulders.json ore_rocks, copper_rocks and tin_rocks). Per cell, from the cell's own stream named after the ore, 8 tries that each take the
+# same five draws whatever happens to them; both ores alike:
+# - along every river and lake: shallow water and dry banks, commoner and bigger the higher the ground (toward the mountains), rarer and
+#   smaller near the sea, never none;
+# - a small chance anywhere on dry land;
+# - very many over a body of its own ore (the geology), wherever the spot lies;
+# - the last try a big boulder at a mountain's foot.
 # A share hand_share of the sizes is a loose ore item picked up by hand (ORE_KEY, kept in _taken like any scatter); the rest are boulder
 # rows with the ore, radius_min..radius_max (0.5 to 2 m across, Dave 17 Nov 2026), broken with a hammer or pick. Slots `slot`.. of the cell: copper 8..15 (BOULDER_KEY, after the cell's
 # boulders), tin 16..23 (ORE_KEY | BOULDER_KEY). Nothing depends on where spawn is.
 func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
-	var cfg: Dictionary = _boulder_cfg.get(ore + "_rocks", {})
+	var cfg: Dictionary = _ore_rock_cfg(ore)
 	var item: String = str((_boulder_cfg.get("ore", {}).get("items", {}) as Dictionary).get(ore, ""))
 
 	if cfg.is_empty() or item == "":
@@ -7838,19 +7849,29 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 	var bed_m: float = float(cfg.get("bed_depth_m", 0.8))
 	var foot: Dictionary = cfg.get("foot", {})
 	var slot0: int = int(cfg.get("slot", COPPER_ROCK_FIRST))
-	var body_m: float = float(cfg.get("near_body_m", 0.0))
 	var hand_share: float = float(cfg.get("hand_share", 0.0))
+	var land_p: float = float(cfg.get("chance", 0.0))
+	var coast_p: float = float(cfg.get("water_chance_coast", 0.0))
+	var mountain_p: float = float(cfg.get("water_chance_mountain", coast_p))
+	var low_m: float = float(cfg.get("upland_low_m", 0.0))
+	var span_m: float = maxf(float(cfg.get("upland_high_m", low_m + 1.0)) - low_m, 1.0)
+	var size_coast: float = float(cfg.get("size_coast", 1.0))
+	var body_m: float = float(cfg.get("body_reach_m", 0.0))
+	var body_p: float = 0.0
 	var cell_bits: int = ((cell.x & 0xfffff) << 28) | ((cell.y & 0xfffff) << 8)
 	var names: Dictionary = {ore: item}
 	var layer_m: float = float(_boulder_cfg.get("ore", {}).get("layer_depth_m", 10.0))
 
-	# Tin: one geology look for the whole cell first (any of its spots within near_body_m of a body), so a cell far from tin reads nothing more.
-	if body_m > 0.0:
+	# Its own ore body: one geology look for the whole cell first (any of its spots within body_reach_m of a body), so only a cell by a body
+	# asks again per spot.
+	if body_m > 0.0 and ore_near.is_valid():
 		var mid: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
 		var mid_y: float = float(ground_height.call(mid.x, mid.y))
 
-		if is_nan(mid_y) or not ore_near.is_valid() or str(ore_near.call(Vector3(mid.x, mid_y, mid.y), body_m + cell_m * 0.71, names, layer_m)) != ore:
-			return
+		if not is_nan(mid_y) and str(ore_near.call(Vector3(mid.x, mid_y, mid.y), body_m + cell_m * 0.71, names, layer_m)) == ore:
+			body_p = float(cfg.get("body_chance", 0.0))
+
+	var top_p: float = maxf(maxf(land_p, maxf(coast_p, mountain_p)), body_p)
 
 	for attempt in range(ORE_ROCK_TRIES):
 		var x: float = (float(cell.x) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
@@ -7863,7 +7884,7 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 		if is_foot:
 			if draw > float(foot.get("chance", 0.0)):
 				continue
-		elif attempt >= mini(int(cfg.get("tries", 4)), ORE_ROCK_TRIES - 1) or draw > maxf(float(cfg.get("chance", 0.0)), float(cfg.get("water_chance", 0.0))):
+		elif attempt >= mini(int(cfg.get("tries", 4)), ORE_ROCK_TRIES - 1) or draw > top_p:
 			continue   # cheap refusals first: most tries end here without reading the ground or the water
 
 		var y: float = float(ground_height.call(x, z))
@@ -7872,6 +7893,15 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 			continue
 
 		var spot: Vector3 = Vector3(x, y, z)
+		var upland: float = clampf((y - low_m) / span_m, 0.0, 1.0)   # 0 on the coastal plain, 1 under the mountains
+		var over_body: bool = false
+
+		if not is_foot and body_p > 0.0 and draw <= body_p:
+			over_body = str(ore_near.call(spot, body_m, names, layer_m)) == ore   # the spot itself over its own ore
+
+		if not is_foot and not over_body and draw > maxf(land_p, lerpf(coast_p, mountain_p, upland)):
+			continue   # past every chance this high up: no ground water read
+
 		var depth: float = float(water_depth_at.call(spot)) if water_depth_at.is_valid() else 0.0
 
 		if depth > bed_m:
@@ -7880,23 +7910,20 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 		if is_foot:
 			if depth > 0.0 or not _at_mountain_foot(spot, foot):
 				continue
-		elif draw > float(cfg.get("chance", 0.0)):
+		elif not over_body and draw > land_p:
 			# Past the land share: only on a river or lake bed (shallow water) or a dry bank within reach of water.
 			var bank: bool = depth <= 0.0 and water_near.is_valid() and not bool(water_near.call(spot, 0.0)) and bool(water_near.call(spot, reach))
 
 			if depth <= 0.0 and not bank:
 				continue
 
-		if body_m > 0.0 and str(ore_near.call(spot, body_m, names, layer_m)) != ore:
-			continue   # tin lies only downstream of its own geology
+		# Size: a share s in 0..1, the draw scaled down toward the sea (size_coast) and full under the mountains (over its own body raised by
+		# body_upland). Under hand_share it is a loose piece picked up by hand; above it a rock to break, radius_min..radius_max over the rest.
+		if over_body:
+			upland = minf(upland + float(cfg.get("body_upland", 0.0)), 1.0)
 
-		# Size: a share s in 0..1 (copper: the draw; tin: the relief, steep valley sides near the mountains high, flat ground far downstream
-		# low). Under hand_share it is a loose piece picked up by hand; above it a rock to break, radius_min..radius_max over the rest.
-		var s: float = size_draw
+		var s: float = size_draw * lerpf(size_coast, 1.0, upland)
 		var radius: float
-
-		if cfg.has("relief_full_m") and not is_foot:
-			s = clampf(_relief(spot, float(cfg.get("relief_reach_m", 24.0))) / maxf(float(cfg["relief_full_m"]), 0.1), 0.0, 1.0) * (0.5 + 0.5 * size_draw)
 
 		if is_foot:
 			radius = lerpf(float(foot.get("radius_min", 0.6)), float(foot.get("radius_max", 1.0)), pow(size_draw, float(foot.get("radius_power", 1.0))))
@@ -7925,6 +7952,19 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 		_set_boulder_ore(row, ore, key)
 		_items[_next_id] = {"number": 0, "count": left, "pos": _settled(spot), "left": 1.0e9, "scatter": key, "boulder": row}   # on the saved digs: a boulder dug under stays down
 		_next_id += 1
+
+
+# An ore's rock rule: boulders.json ore_rocks (shared by copper and tin, Dave 21 Nov 2026) under the ore's own <ore>_rocks (its slot and
+# grade, and any value it sets itself); {} for an ore without its own block (iron, coal: outcrops only).
+func _ore_rock_cfg(ore: String) -> Dictionary:
+	var own: Dictionary = _boulder_cfg.get(ore + "_rocks", {})
+
+	if own.is_empty():
+		return {}
+
+	var cfg: Dictionary = (_boulder_cfg.get("ore_rocks", {}) as Dictionary).duplicate()
+	cfg.merge(own, true)
+	return cfg
 
 
 # How far the ground climbs above the spot within reach (at most SCATTER_PAD_M - 4, inside the tiles _cell_ground_ready loaded: a
