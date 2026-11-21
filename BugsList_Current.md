@@ -1329,7 +1329,7 @@ Not yet played; not yet seen in a picture.
 
 - From 50 up the rise is a straight line to `top_mult` (0.5, data/items/fitness.json). Under 50 the old curve is kept. Both meet at 50 with the same slope, so there is no kink. Recovery is the same for everyone.
 - Idling (effort under 0.02 for over 10 minutes, awake) takes a point per 8,640 s, below the starting value too, down to 0. Sleep still costs nothing. Training still adds at most 50 points above the starting value.
-- Whole points now use floor, so the first point below the start goes after one point of rest.
+- Whole points now use floor (as positive training always did), so a character idling at exactly their start loses the first point as soon as the 10-minute grace has passed, then one more per 8,640 s.
 - Saves unchanged; existing characters load as before.
 
 **Evidence:**
