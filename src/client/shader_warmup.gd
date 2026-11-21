@@ -5,18 +5,18 @@ extends RefCounted
 # reported and the server could drop the join (DIAG-93: 166 shader cache misses; with the shader cache kept the freeze was gone).
 # While the join window covers the screen, the drawn camera sees only this warm-up layer, and each frame shows a few of the world's
 # materials on small quads in front of it, so their shaders are built a few at a time while frames keep running (the join window,
-# the game connection and the block line stay alive). The world is looked through again (once a second while the ground is still
-# coming, so the views made when it arrives are found too); once the ground is ready and a sweep finds nothing new, the camera sees the world again.
+# the game connection and the block line stay alive). The world is looked through again once a second, so the views made when the
+# ground arrives are found too; once the player has landed and a sweep finds nothing new, the camera sees the world again.
 
 const LAYER := 1 << 20                 # render layer 21: used by nothing else (PieceLook uses 1 << 18 and 1 << 19)
 const PER_FRAME := 16                  # materials shown in a frame after a quick one (under 100 ms)
 const PER_SLOW_FRAME := 4              # after a frame of 100 ms to 1 s; after a longer one, a single material
-const SWEEP_MSEC := 1000               # while the ground is still coming, the world is looked through again this often
 const MAX_MSEC := 90000                # whatever is left after this is built when it is first drawn, as before
 const MAX_CONTAINER := 4096            # bigger arrays and dictionaries in a script are skipped (block and chunk caches)
 
 var busy: bool = false
-var ground_ready: bool = false         # set by the client: the ground under the player is there (its views are made)
+var ground_ready: bool = false         # set by the client: the player has landed on the ground ("JOIN: ground ready")
+var sweep_msec: int = 1000             # the world is looked through again at most this often (a test sets 0)
 var shown: int = 0                     # materials drawn on the warm-up layer
 
 var _camera: Camera3D
@@ -76,8 +76,8 @@ func step() -> void:
 		return
 
 	if _queue.is_empty():
-		if not ground_ready and now - _swept_msec < SWEEP_MSEC:
-			return
+		if now - _swept_msec < sweep_msec:
+			return   # also after the ground: things made one by one (animals, items) must not cost a tree walk every other frame
 
 		if _sweep() == 0 and ground_ready:
 			finish()

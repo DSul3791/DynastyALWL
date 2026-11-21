@@ -72,6 +72,7 @@ func _init() -> void:
 
 	check(warm.busy and camera.cull_mask == WarmupScript.LAYER, "still warming while the ground is not ready")
 	warm.ground_ready = true
+	warm.sweep_msec = 0
 
 	while warm.busy and frames < 200:
 		warm.step()
@@ -89,6 +90,7 @@ func _init() -> void:
 	warm2.start(camera, roots)
 	warm2.start(camera, roots)   # a second start while busy changes nothing
 	warm2.ground_ready = true
+	warm2.sweep_msec = 0
 	var late: MeshInstance3D = MeshInstance3D.new()
 	late.mesh = BoxMesh.new()
 	late.material_override = StandardMaterial3D.new()
@@ -100,6 +102,7 @@ func _init() -> void:
 		frames += 1
 
 	check(warm2.shown == 5, "a material added during the warm-up is shown by a later sweep (shown %d)" % warm2.shown)
+	check(camera.cull_mask == 0xFFFFF, "the second start kept the camera's own mask (mask %d)" % camera.cull_mask)
 
 	# finish() early (the join window closed) gives the view back at once.
 	var warm3 = WarmupScript.new()
