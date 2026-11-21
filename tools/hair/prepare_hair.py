@@ -16,6 +16,7 @@ fits it to Dynasty_Base_Male.glb's head in model space (metres, +Y up, facing +Z
 Usage: python3 -I tools/hair/prepare_hair.py SOURCE.glb OUT.glb [--male assets/character/Humanoid/Dynasty_Base_Male.glb] [--nape-back Y]
 The committed styles: Hair_CrewCut and Hair_SlickedBack with no options; Hair_ShortCurly with --nape-back 1.555 (its sparse low strands at the
 back of the neck hung in shards, PC pictures 20 Nov 2026; Dave chose to tidy them).
+Hair_MediumBob with --nape 1.45 (a bob to the jaw; Meshy made this one as hair only, with no mannequin head, Dave 21 Nov 2026).
 Needs numpy and Pillow. Writes OUT.glb, its .import, its three textures as OUT_<texture>.png with their .import files (VRAM Compressed), and prints the fit.
 """
 import argparse
@@ -180,9 +181,14 @@ def main():
     parser.add_argument("--male", default="assets/character/Humanoid/Dynasty_Base_Male.glb")
     parser.add_argument("--also", nargs="*", default=["assets/character/Humanoid/Playercharacter_Female_01.glb"],
                         help="other body models (body_models.gd); the hair clears their heads too, carried by their hair_fit (body_fit.py)")
-    parser.add_argument("--nape-back", type=float, default=NAPE_Y,
-                        help="Body 1 model space: the nape line straight behind the head, easing down to NAPE_Y at the sides (a short style's sparse low strands go)")
+    parser.add_argument("--nape", type=float, default=NAPE_Y,
+                        help="Body 1 model space: the nape line at the face and sides (a longer style, such as a bob to the jaw, ends lower)")
+    parser.add_argument("--nape-back", type=float, default=None,
+                        help="Body 1 model space: the nape line straight behind the head, easing down to --nape at the sides (a short style's sparse low strands go)")
     args = parser.parse_args()
+
+    if args.nape_back is None:
+        args.nape_back = args.nape
     rng = np.random.default_rng(7)
 
     src = Glb(args.source)
@@ -268,10 +274,10 @@ def main():
     # centre that hold hair, closed by HOLE_BINS (grown, then shrunk back), so gaps fill but the hairline does not move.
     hair_points, hair_point_uv = surface_samples(boxed, hair, 200000, rng, uv)
     def nape_line(points):
-        """The nape line under each point: NAPE_Y at the face and sides, rising to --nape-back straight behind the head."""
+        """The nape line under each point: --nape at the face and sides, rising to --nape-back straight behind the head."""
         flat = points[:, [0, 2]] - centre[[0, 2]]
         behind = np.clip(-flat[:, 1] / np.maximum(np.linalg.norm(flat, axis=1), 1e-9), 0.0, 1.0)
-        return NAPE_Y + (args.nape_back - NAPE_Y) * np.sqrt(behind)       # full height across the back, easing in near the ears
+        return args.nape + (args.nape_back - args.nape) * np.sqrt(behind)       # full height across the back, easing in near the ears
 
     shown = shade(hair_point_uv) < OPAQUE_BELOW + 0.5 * (CLEAR_FROM - OPAQUE_BELOW)      # only hair the alpha cut keeps
     shown &= hair_points[:, 1] >= nape_line(hair_points)       # and not below the nape line (step 3)
@@ -292,7 +298,7 @@ def main():
     # curly's thin curls behind the ear showed a hole through to the skin when the cap stopped at the hem (PC pictures of 3e5ae3ef, 20 Nov 2026).
     floor = hem[v_col] + CAP_HEM_M
     raised = nape_line(body_points)
-    across_back = raised >= NAPE_Y + CAP_NAPE_SPAN * (args.nape_back - NAPE_Y) + 1e-6      # the back of the neck, not round the ears
+    across_back = raised >= args.nape + CAP_NAPE_SPAN * (args.nape_back - args.nape) + 1e-6      # the back of the neck, not round the ears
     floor = np.where(across_back, np.minimum(floor, raised + CAP_NAPE_M), floor)
     above_hem = body_points[:, 1] >= floor
     cap = body_tris[(inside[v_row, v_col] & above_hem)[body_tris].all(1)]

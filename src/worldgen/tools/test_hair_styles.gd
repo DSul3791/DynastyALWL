@@ -1,6 +1,7 @@
 extends SceneTree
 
 # Hair styles in the character creator (Dave 20 Nov 2026: his Meshy hair models; "everyone is allowed to use any hair style ... we will just include them all in the lineup").
+# (The size bounds allow a jaw-length bob, Medium bob, 21 Nov 2026: up to 26 cm across, ending up to 12 cm below the head joint.)
 # Checks: every style of hair_models.gd is imported as one mesh, one-sided, casting ordinary shadows, with its textures VRAM Compressed (docs/design/CHARACTER_MESHES.md);
 # body_1 and body_2 wear every style on the head bone, sitting on the head (crown, sides and back) in the idle pose; the Head slider grows the hair with the head; changing
 # the style swaps the one hair node and "" takes it off; the hair colour tints it (the default colour leaves it as painted); the creator offers every style and no hair
@@ -123,9 +124,9 @@ func _init() -> void:
 			var top: Vector3 = m["top"]
 			var centre: Vector3 = box.get_center()
 			_check(box.end.y > top.y - 0.03 and box.end.y < top.y + 0.06, "%s %s: the hair's top is at the crown (%.3f m, crown %.3f m)" % [model, id, box.end.y, top.y])
-			_check(box.position.y > m["head"].y - 0.10, "%s %s: nothing hangs far below the head joint (bottom %.3f m, joint %.3f m)" % [model, id, box.position.y, m["head"].y])
+			_check(box.position.y > m["head"].y - 0.12, "%s %s: nothing hangs far below the head joint (bottom %.3f m, joint %.3f m)" % [model, id, box.position.y, m["head"].y])
 			_check(Vector2(centre.x - top.x, centre.z - top.z).length() < 0.06, "%s %s: the hair is centred over the head (%.3f m off)" % [model, id, Vector2(centre.x - top.x, centre.z - top.z).length()])
-			_check(box.size.x > 0.13 and box.size.x < 0.22 and box.size.z > 0.15 and box.size.z < 0.26, "%s %s: the hair is head sized (%.3f x %.3f m)" % [model, id, box.size.x, box.size.z])
+			_check(box.size.x > 0.13 and box.size.x < 0.26 and box.size.z > 0.15 and box.size.z < 0.26, "%s %s: the hair is head sized (%.3f x %.3f m)" % [model, id, box.size.x, box.size.z])
 
 		# The Head slider grows the hair with the head.
 		g["hair_model"] = "crew_cut"
