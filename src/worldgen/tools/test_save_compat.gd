@@ -87,6 +87,16 @@ func _init() -> void:
 	check(items.world_item_count() == 1 and items._chests.has(2) and items._chests[2].count_of(stone) == 12, "era 22: the chest and its contents load")
 	check(items._craft_queues.has("compat-key-aaa01") and items._craft_queues["compat-key-aaa01"]["entries"].size() == 1, "era 22: the crafting queue loads (entry without needs)")
 
+	# The knife chests left the game (Dave 21 Nov 2026: "get ride of both of those"): a saved Crude - Chest (retired, state 230) and a Wicker - Chest
+	# (hidden, state 6) still load with what is in them; nothing clears them.
+	fresh(dir)
+	var crude: int = table.number_of("crude_chest")
+	put(dir, "world_items.json", {"version": 1, "no_kits": true, "next_id": 7, "items": [[crude, 1, 20.0, 10.0, 20.0, 1.0e9, 230, 0.0, 0, "crude_chest", 4],
+		[chest, 1, 23.0, 10.0, 20.0, 1.0e9, 6, 0.0, 0, "chest", 5]], "taken": [], "picked": {}})
+	put(dir, "chests.json", {"version": 1, "next_uid": 6, "chests": {"4": [[stone, 9, 0]], "5": [[stick, 3, 0]]}})
+	items = boot(dir)
+	check(crude > 0 and items.world_item_count() == 2 and items._chests.has(4) and items._chests[4].count_of(stone) == 9 and items._chests.has(5) and items._chests[5].count_of(stick) == 3, "a saved Crude - Chest and Wicker - Chest load with their contents (%d rows)" % items.world_item_count())
+
 	# Era 24 to 37: vitals without thirst, warmth, energy or sickness; characters with luck only, then fitness, then old skill records.
 	fresh(dir)
 	put(dir, "vitals.json", {"version": 1, "players": {"compat-key-aaa01": {"fed": 1200.0, "weight": 70.0, "health": 80.0}}})

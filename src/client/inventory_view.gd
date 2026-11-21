@@ -186,6 +186,7 @@ var _eat_hold_sign: Array = []        # the slot's number, count and wear when t
 var _eat_hold_sent_msec: int = 0
 var gather_event: Callable             # () when the player gathers something by hand (E): the view dips a little (no arm or body clip: Dave 17 Nov 2026)
 var eat_event: Callable                # (item id) when something eaten or applied takes effect (sounds)
+var bellows_event: Callable            # (where) each stroke of a smelter's worked bellows (sounds)
 var worn_event: Callable               # (changed item ids Array, all worn item ids Array) when what is worn changes; changed is empty for the first list after joining (sounds)
 var skill_up_event: Callable           # () when a skills message shows a skill's level higher than the last one (sounds; not on the first list after joining)
 var hurt_event: Callable               # (health lost int) when a vitals update drops health by HURT_MIN or more (a bite, a fall): sounds
@@ -1105,8 +1106,10 @@ func _probe_structure_for(id: int) -> Dictionary:
 		if not bool(_world[id].get("lit", false)):
 			return {"prompt": "Press E to light", "tap": use_tap, "hold": take_down}   # Dave: "it should say Press E to light. thats it."
 
-		if bool(store_def.get("smelt", {}).get("bellows", false)):   # the Improved smelter: E works its bellows, hold E puts it out
-			return {"prompt": "Press E to work the bellows, E again to stop (hold E to put it out)", "tap": use_tap, "hold": func():
+		if bool(store_def.get("smelt", {}).get("bellows", false)):   # the Improved smelter: E works its bellows or leaves them (the row's "bellows"), hold E puts it out
+			var at_bellows: int = int(_world[id].get("bellows", 0))
+			var bellows_line: String = "Press E to stop using the bellows" if at_bellows == 2 else ("Someone else is working the bellows" if at_bellows == 1 else "Press E to work the bellows")   # Dave 21 Nov 2026
+			return {"prompt": bellows_line + " (hold E to put it out)", "tap": use_tap, "hold": func():
 				clear_prompt()
 				net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 1, 0, Vector3.ZERO)}
 
@@ -2942,10 +2945,25 @@ var _craft_first: bool = false   # the window being asked for is a station's: it
 
 
 # A station store's row (master s2.5): its fill (server_items._store_fill) and, for a Kiln, whether it burns; kept when the row is sent again.
+# A smelter's row also says who works its bellows (server_smelter.bellows_peer: 2 this player, 1 another, absent nobody): while they are
+# worked its fire burns brighter, its smoke puffs and the bellows blow with each stroke, for everyone near (Dave 21 Nov 2026).
 func _note_store(id: int, row: Array) -> void:
 	if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("fill"):
+		var lit_now: bool = bool(row[5].get("lit", false))
+		var redrawn: bool = _world[id].has("lit") and bool(_world[id]["lit"]) != lit_now   # lit or put out: this model goes and the new one takes the bellows
 		_world[id]["fill"] = int(row[5]["fill"])
-		_world[id]["lit"] = bool(row[5].get("lit", false))
+		_world[id]["lit"] = lit_now
+		var at_bellows: int = int(row[5].get("bellows", 0))
+
+		if at_bellows != int(_world[id].get("bellows", 0)) and not redrawn and _world[id].get("node") is Node3D:
+			BuildingLook.show_forge_bellows(_world[id]["node"], at_bellows > 0, _bellows_blew)
+
+		_world[id]["bellows"] = at_bellows
+
+
+func _bellows_blew(at: Vector3) -> void:
+	if bellows_event.is_valid():
+		bellows_event.call(at)
 
 
 # A station store's fill for the look-at line (server_items._store_fill: 0 empty, 1 to 4 quarters), "" for anything else.
@@ -5086,7 +5104,7 @@ func _dress_item(node: Node3D, number: int, world_id: int, natural: bool = false
 	node.rotation = Vector3(0.0, rng.randf_range(0.0, TAU), 0.0)
 
 	if BasicLook.has_look(id):
-		node.scale = Vector3.ONE * BASIC_DROP_SCALE      # big enough to find in the tall grass (the natural stones and sticks are 3 times)
+		node.scale = Vector3.ONE * (1.0 if str(BasicLook.entry(id).get("shape", "")) == "board" else BASIC_DROP_SCALE)      # big enough to find in the tall grass (the natural stones and sticks are 3 times); a sawn board is drawn at its real 8 ft
 		node.position.y += 0.04
 		return
 
@@ -6854,10 +6872,11 @@ func run_plant_test(client) -> void:
 	print("Plant test: tried %d, gone %d, still standing %d, skipped (nothing pickable) %d" % [tried, gone, tried - gone, skipped])
 
 
-# The self-tests build with the hammer (or the knife for the Wicker - Chest, a knife row since 15 Nov 2026), as players do since kits left the game (4 Nov 2026): data/items/blueprints.json numbers and costs.
+# The self-tests build with the hammer (or the knife for the Wicker basket, a knife row; the Wicker - Chest it replaced was retired 21 Nov 2026), as players do since kits left the game (4 Nov 2026): data/items/blueprints.json numbers and costs.
 # The hammer or knife goes on a hotbar key by itself when it comes into the pack (inventory step 4).
-const CHEST_BLUEPRINT := 26
-const CHEST_MATERIALS := [["stone_knife", 1], ["stick", 10], ["twine", 4]]
+const CHEST_BLUEPRINT := 157   # the Wicker basket, 6 slots: the knife's store since the Wicker - Chest was retired (Dave 21 Nov 2026)
+const CHEST_STATE := 195   # its row state (structures.json wicker_basket)
+const CHEST_MATERIALS := [["stone_knife", 1], ["stick", 8], ["twine", 4]]
 const LEAN_TO_BLUEPRINT := 25
 const LEAN_TO_MATERIALS := [["stone_hammer", 1], ["stick", 30], ["leaves", 100], ["leaves", 100], ["twine", 10]]
 
@@ -7356,7 +7375,7 @@ func run_chest_test(client) -> void:
 		_finish_early(client)
 		return
 
-	_give_blueprint_kit(CHEST_MATERIALS)   # kits left the game (4 Nov 2026): the chest is built with the knife from its blueprint (a knife row, W-9)
+	_give_blueprint_kit(CHEST_MATERIALS)   # kits left the game (4 Nov 2026): the Wicker basket is built with the knife from its blueprint (a knife row, W-9)
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 10, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 	var id: int = 0
@@ -7378,7 +7397,7 @@ func run_chest_test(client) -> void:
 
 		for wait in 40:
 			for k in _world:
-				if _world[k]["state"] == 6:
+				if _world[k]["state"] == CHEST_STATE:
 					id = k
 
 			if id != 0:

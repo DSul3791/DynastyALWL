@@ -6,6 +6,8 @@ Writes assets/audio/workshop/:
   chop_thock_N   an axe stroke that does not split: a dull hard thock, 0.3 s (3 variants)
   saw_mill       a saw mill running: a reciprocating blade rasp about 2 strokes a second over a low wheel-and-frame rumble, 12 s, seamless loop
   plank_drop_N   a sawn plank dropping on a stack: a flat clap and a short rattle, 0.5 s (2 variants)
+  bellows_blow_N one push of a smelter's leather bellows: a creak of the boards, a breathy rush of air through the nozzle and the fire
+                 roaring up with it, 1.1 s (2 variants; PROVISIONAL BW-4, Dave 21 Nov 2026 asked for a bellows sound and the pack had none)
 Recordings go in assets/audio/recorded/workshop/ under the same names; the game prefers them.
 """
 import os
@@ -103,6 +105,21 @@ def saw_mill(rng, seconds=12, strokes_per_s=2.0):
     return normalize(x * drift(rng, n, 0.05), 0.12)
 
 
+def bellows_blow(rng):
+    n = int(1.1 * SR)
+    t = np.arange(n) / SR
+    push = np.sin(np.pi * np.clip(t / 0.75, 0.0, 1.0)) ** 1.5      # the boards closing: the air swells and dies away in 0.75 s
+    air = shaped_noise(rng, n, lambda f: band(f, rng.uniform(700, 950), 1.1) * highpass(f, 250, 2))
+    air /= np.std(air) + 1e-9
+    roar = shaped_noise(rng, n, lambda f: lowpass(f, 220, 2) * highpass(f, 45, 2))   # the fire drawing up behind the blast, a little later
+    roar /= np.std(roar) + 1e-9
+    roar_env = np.sin(np.pi * np.clip((t - 0.12) / 0.95, 0.0, 1.0)) ** 2
+    out = air * push * 0.55 + roar * roar_env * 0.5
+    add(out, thump(rng, 0.09, rng.uniform(90, 120), 0.02, 700) * 0.35, 0.0)          # the top board pressed down
+    add(out, grain(rng, 0.12, rng.uniform(1400, 2000), 0.6, 0.01, 0.04) * 0.12, 0.02)  # a leather creak
+    return finish(out, 0.7)
+
+
 SOUNDS = {"chop_split": (chop_split, 3), "chop_thock": (chop_thock, 3), "plank_drop": (plank_drop, 2)}
 
 
@@ -116,6 +133,12 @@ def main():
             count += 1
 
     write_ogg("saw_mill", saw_mill(rng))
+    bellows_rng = np.random.default_rng(20261121)   # its own seed, so adding it left every older sound byte for byte as it was
+
+    for v in range(2):
+        write_ogg("bellows_blow_%d" % v, bellows_blow(bellows_rng))
+        count += 1
+
     print("Wrote %d workshop sounds to %s" % (count + 1, OUT))
 
 

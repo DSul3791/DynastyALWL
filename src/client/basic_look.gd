@@ -10,6 +10,7 @@ const LOOKS_PATH := "res://data/items/looks.json"
 const BOW_HALF_M := 0.85       # a self bow: nock to nock about the archer's height, 1.7 m (the "bow" shape; held_item.gd places the hands and the string by these)
 const BOW_BRACE_M := 0.16      # string to the back of the grip, braced
 const BOW_STRING_R := 0.0009   # a real bowstring is about 2 mm thick (Dave 10 Nov 2026: the string was "way too thick")
+const BOARD_M := Vector3(2.44, 0.025, 0.2)   # one sawn board, 8 ft long (Dave 21 Nov 2026: "they should look like 8ft long boards"); drawn at its real size on the ground
 
 static var _table: Dictionary = {}
 static var _loaded: bool = false
@@ -1703,6 +1704,21 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_torus_v(parts, 0.026, 0.006, Vector3(-0.06, 0.002, 0.0), Color(0.72, 0.62, 0.38))
 			for k in 4:
 				_sph(parts, 0.016 + 0.004 * float(k % 2), Vector3(1.2, 0.6, 1.0), Vector3(-0.03 + 0.03 * float(k), -0.008, 0.03 * float(k % 3 - 1)), _tone(soil, k, 0.15), true)
+		"board":
+			# One sawn board lying flat at its real size (BOARD_M; the ground does not enlarge it): pale cut ends with growth-ring arcs and a few
+			# darker grain streaks and a knot along the top face.
+			var half: float = BOARD_M.x * 0.5
+			var low: float = -0.12 + BOARD_M.y * 0.5   # the underside on the drawn ground: loose items are set 0.12 m over it (InventoryView._snap_loose)
+			_box(parts, BOARD_M, Vector3(0.0, low, 0.0), color)
+
+			for end in [-1.0, 1.0]:
+				_box(parts, Vector3(0.004, BOARD_M.y - 0.002, BOARD_M.z - 0.004), Vector3(end * half, low, 0.0), light)
+				_box(parts, Vector3(0.005, 0.004, BOARD_M.z * 0.45), Vector3(end * (half + 0.0015), low - 0.004, 0.02 * end), dark)
+
+			for k in 3:
+				_box(parts, Vector3(0.9 - 0.2 * float(k), 0.003, 0.008), Vector3(-0.5 + 0.55 * float(k), low + BOARD_M.y * 0.5, -0.06 + 0.06 * float(k)), _tone(dark, k, 0.1))
+
+			_box(parts, Vector3(0.03, 0.003, 0.022), Vector3(0.35, low + BOARD_M.y * 0.5, 0.04), dark.darkened(0.25))
 		"planks":
 			# Sawn boards stacked in a neat pile, ends slightly staggered, a pale cut end and darker grain streaks on the top board.
 			for k in 5:

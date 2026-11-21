@@ -213,6 +213,9 @@
 		"tidecrown": {"seasons": ["summer"], "rows": [["tidecrown_seed", 1, 2]]},
 		"thatch_grass": {"seasons": ["summer", "autumn"], "rows": [["thatch_grass_seed", 1, 2]]},
 		"dune_grass": {"seasons": ["autumn"], "rows": [["dune_grass_seed", 1, 2]]},
+		"cattail": {"seasons": ["autumn"], "rows": [["cattail_seed", 1, 2]]},
+		"tussock_sedge": {"seasons": ["autumn"], "rows": [["tussock_sedge_seed", 1, 2]]},
+		"moss_hummock": {"seasons": ["summer"], "rows": [["moss_hummock_seed", 1, 2]]},
 		"sea_holly": {"seasons": ["summer"], "rows": [["sea_holly_seed", 1, 2]]}
 	},
 	"by_species": {
@@ -233,6 +236,7 @@
 			["thatch", 2, 2],
 			["straw", 1, 3]
 		],
+		"dune_grass": [["plant_fibre", 1, 3]],
 		"heather": [["thatch", 4, 4]],
 		"fallen_log": [["stick", 3, 6], ["firewood", 1, 2]],
 		"hollow_log": [["stick", 2, 4], ["firewood", 1, 3]],

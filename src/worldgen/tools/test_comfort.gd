@@ -75,8 +75,8 @@ func _init() -> void:
 	items._items[torch]["struct"]["lit"] = true
 	check(level() == 7, "a lit wall torch adds 1 (7)")
 	add_struct("workbench", Vector3(-4.0, 10.0, 4.0))
-	add_struct("chest", Vector3(4.0, 10.0, 4.0))
-	check(level() == 9, "workbench (1) and chest (1) add 2 (9)")
+	add_struct("wicker_basket", Vector3(4.0, 10.0, 4.0))
+	check(level() == 9, "workbench (1) and Wicker basket (1) add 2 (9)")
 	add_struct("bench", Vector3(40.0, 10.0, 40.0))
 	check(level() == 9, "a bench 56 m away adds nothing")
 	var upstairs: int = add_struct("table", Vector3(0.0, 20.0, 0.0))

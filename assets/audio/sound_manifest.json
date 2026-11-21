@@ -1377,6 +1377,14 @@
    "priority": 3
   },
   {
+   "name": "bellows_blow",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "workshop_sounds.gd bellows(at): one stroke of a smelter's bellows while a player works them, about every 1.4 s",
+   "to_supply": "2 recordings of a leather forge bellows pushed once, the fire roaring up, 1 s",
+   "priority": 2
+  },
+  {
    "name": "plank_drop",
    "state": "generated",
    "variants": 2,

@@ -3,7 +3,7 @@ extends Control
 # The server pick page (docs/design/SERVER_PICK_PAGE.md; Dave approved 19 Nov 2026). Play on the title page opens it in a client-only build:
 # the official server first (release setting, client_config.json "official"), then every server this player has added, last played first.
 # A server that does not answer stays on the list in red; one that answers but cannot be joined now (other build, full) is amber; working ones
-# are white/grey. Each row: name (address under it, padlock when it has a password), players, ping, status, last played. Buttons: Back,
+# are white/grey. Each row: name (address and the IP it points to under it, padlock when it has a password), players, ping, status, last played. Buttons: Back,
 # Refresh, Remove (with Undo), Rename, Add new server, Join server. Double-click or Enter joins. Join goes on to the character page.
 #   godot --path . res://scenes/server_pick/server_pick.tscn -- --client-only
 
@@ -304,7 +304,13 @@ func _make_row(row: Dictionary) -> PanelContainer:
 
 	var locked: bool = status != null and bool(status.info.get("locked", false))
 	_cell(line, 0.0, 2.0, name_text + ("   (password)" if locked else ""), 22, colour if said[1] != "ok" else TEXT)
-	_cell(line, 0.0, 32.0, "Official server" if official else address, 16, SUB if said[1] == "ok" else colour.darkened(0.15))
+	var where: String = address   # Dave 21 Nov 2026: each row shows the server's IP too (a name such as a duckdns one also shows the IP it points to now)
+	var named_ip: bool = status != null and status.ip != "" and status.ip != ServerList.normalise(address).get("host", "")
+
+	if named_ip:
+		where += "  ·  %s" % status.ip
+
+	_cell(line, 0.0, 32.0, ("Official server  ·  " if official else "") + where, 16, SUB if said[1] == "ok" else colour.darkened(0.15))
 	var players: String = "–"
 	var ping: String = "–"
 
@@ -318,7 +324,7 @@ func _make_row(row: Dictionary) -> PanelContainer:
 	_cell(line, COLUMNS[4][1], 14.0, when_text(int(row.get("last_played", 0))), 18, SUB if said[1] == "ok" else colour)
 	var tip: String = "%s\n%s" % [name_text, address]
 
-	if status != null and status.ip != "" and status.ip != address:
+	if named_ip:
 		tip += "  (%s)" % status.ip
 
 	if status != null and str(status.info.get("message", "")) != "":

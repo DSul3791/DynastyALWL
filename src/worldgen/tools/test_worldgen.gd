@@ -1805,7 +1805,7 @@ func _test_ground_material(generator, data, tables) -> void:
 			continue
 
 		if soil > 0:
-			if material == soil and column_same:
+			if (material == soil or TerrainLayout.is_wetland(material)) and column_same:   # fen, bog and swamp draw with their own look ids
 				right += 1
 		else:
 			bare += 1
@@ -1931,6 +1931,40 @@ func _test_streaming(generator, data) -> void:
 	reopened.load_block(replayed, dug_block, 0)
 	_check(reopened.ops.count == 1 and replayed.get_voxel_f(inside.x, inside.y, inside.z, TerrainLayout.CHANNEL_SDF) > 0.0,
 		"a saved dig survives a restart and a re-bake")
+	# A TERRAIN_VERSION bump (79, wetland looks, 21 Nov 2026) throws only the generated ground away: the digs replay, and the world's other
+	# saves beside it in the same folder (placed structures and what they hold: world_items.json and its world_items/ area files) are not touched.
+	reopened.flush()
+	reopened = null
+	var server_dir: String = ProjectSettings.globalize_path(root + "/server")
+	DirAccess.make_dir_recursive_absolute(server_dir + "/world_items")
+	var saved_items: String = "{\"chest\": [\"copper_ingot\", 3]}"
+
+	for probe in ["/world_items.json", "/world_items/area_0_0.json"]:
+		var beside: FileAccess = FileAccess.open(server_dir + probe, FileAccess.WRITE)
+		beside.store_string(saved_items)
+		beside.close()
+	var old_version: FileAccess = FileAccess.open(server_dir + "/terrain_version.txt", FileAccess.WRITE)
+	old_version.store_string("%d %s" % [TerrainLayout.TERRAIN_VERSION - 1, TerrainLayout.tiles_stamp(generator.tiles_dir)])
+	old_version.close()
+	var generation_before: int = int(FileAccess.get_file_as_string(server_dir + "/generated_generation.txt").strip_edges())
+	var bumped = ServerStoreScript.new()
+	_check(bumped.setup(generator, root + "/server") == "", "the server store opens after a terrain version bump")
+	var after_bump: VoxelBuffer = TerrainLayout.make_buffer(16)
+	bumped.load_block(after_bump, dug_block, 0)
+	var old_files: int = 0
+
+	for file in DirAccess.get_files_at(server_dir):
+		if file.begins_with("generated") and file.contains(".sqlite") and not file.begins_with(bumped._generated_name()):
+			old_files += 1
+
+	_check(int(FileAccess.get_file_as_string(server_dir + "/generated_generation.txt").strip_edges()) == generation_before + 1 and old_files == 0,
+		"a terrain version bump starts a new generation of generated ground and deletes the old one")
+	_check(bumped.ops.count == 1 and after_bump.get_voxel_f(inside.x, inside.y, inside.z, TerrainLayout.CHANNEL_SDF) > 0.0 and bumped.revision_of(tile) == 2,
+		"a saved dig and its tile revision survive a terrain version bump")
+	_check(FileAccess.get_file_as_string(server_dir + "/world_items.json") == saved_items and FileAccess.get_file_as_string(server_dir + "/world_items/area_0_0.json") == saved_items,
+		"a terrain version bump leaves the other world saves beside the store alone")
+	bumped.flush()
+	bumped = null
 
 	# The client cache: hits, stale revisions and the size limit.
 	var world: Dictionary = {"tile_size_m": generator.tile_size_m, "min_tile": generator.min_tile, "tiles_per_side": int(round(generator.period_m / generator.tile_size_m))}

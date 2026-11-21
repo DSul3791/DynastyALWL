@@ -4,7 +4,7 @@ extends RefCounted
 #
 # While the game runs it keeps user://breadcrumbs.log: one line per key or mouse button press, menu change, script error or
 # warning (Godot's Logger sees them from every thread) and a state line every 5 seconds (position, quality, fps, memory, video
-# memory, windows open). Each line is flushed at once, so the file survives a crash. A flag file is written at start and removed
+# memory, windows open). Each line is written and flushed by a worker a few ms after it is logged (LineWriter), so the file survives a crash. A flag file is written at start and removed
 # at a clean exit. If the flag is still there at the next start, that run ended unexpectedly: the breadcrumbs and the end of
 # Godot's log of that run (user://logs, the last 10 runs are kept) are bundled into
 #   crash_reports/<date>_build<N>.txt
@@ -12,6 +12,8 @@ extends RefCounted
 # It shows up as a changed file in GitHub Desktop; Dave commits and pushes it and it can be read here.
 #
 # The log of a hard native crash (a backtrace) is in Godot's own log file, which is why the end of that log is included.
+
+const LineWriterScript := preload("res://src/shared/line_writer.gd")
 
 const FLAG := "user://running.flag"
 const NOTICE := "user://report_notice.txt"   # name of a report made by a run that quit by itself, shown at the next start
@@ -24,9 +26,7 @@ const FILE_LINES_MAX := 4000      # the breadcrumb file is cut back to its last 
 
 var last_plain: String = ""       # one plain sentence on what happened to the last run (shown on screen)
 var last_report: String = ""      # file name of the report made at this start ("" when the last run ended cleanly)
-var _file: FileAccess
-var _mutex: Mutex = Mutex.new()
-var _lines_written: int = 0
+var _writer = LineWriterScript.new()   # the breadcrumb file, written on a worker (a flush on the main thread stalled it 200 to 500 ms, 21 Nov 2026)
 var _logger: Logger
 var _next_state_msec: int = 0
 var _build: int = 0
@@ -63,8 +63,7 @@ func start(build: int, commit: String) -> void:
 		file.store_string("build %d (%s), started %s" % [build, commit, Time.get_datetime_string_from_system(true)])
 		file.close()
 
-	_file = FileAccess.open(BREAD, FileAccess.WRITE)
-	_lines_written = 0
+	_writer.open(BREAD, FILE_LINES_MAX, 400)
 	_logger = BreadLogger.new()
 	_logger.owner_report = self
 	OS.add_logger(_logger)
@@ -84,13 +83,7 @@ func mark_clean() -> void:
 		OS.remove_logger(_logger)
 		_logger = null
 
-	_mutex.lock()
-
-	if _file != null:
-		_file.close()
-		_file = null
-
-	_mutex.unlock()
+	_writer.close()
 
 	if FileAccess.file_exists(FLAG):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(FLAG))
@@ -98,15 +91,8 @@ func mark_clean() -> void:
 
 # One line in the breadcrumb file (any thread).
 func event(text: String) -> void:
-	_mutex.lock()
-
-	if _file != null:
-		var t: Dictionary = Time.get_time_dict_from_system()
-		_file.store_line("[%02d:%02d:%02d.%03d] %s" % [t["hour"], t["minute"], t["second"], Time.get_ticks_msec() % 1000, text.replace("\n", " | ")])
-		_file.flush()
-		_lines_written += 1
-
-	_mutex.unlock()
+	var t: Dictionary = Time.get_time_dict_from_system()
+	_writer.add("[%02d:%02d:%02d.%03d] %s" % [t["hour"], t["minute"], t["second"], Time.get_ticks_msec() % 1000, text.replace("\n", " | ")])
 
 
 # Call every frame with a function that makes the state text; writes it every 5 seconds.
@@ -123,9 +109,6 @@ func tick(state: Callable) -> void:
 
 	_next_state_msec = now + 5000
 	event("state " + String(state.call()))
-
-	if _lines_written > FILE_LINES_MAX:
-		_trim()
 
 
 # A thread that watches the main thread: when no frame has run for 3 s it says so once a second with what the engine is doing,
@@ -150,21 +133,6 @@ func _watch() -> void:
 		if silent >= 15000 and not _hang_reported:
 			_hang_reported = true
 			last_report = _write_report("The game is HUNG: the main thread was silent for %d s (a freeze, not a clean quit). The run: %s" % [int(silent / 1000.0), "build %d" % _build], "build %d" % _build, "godot.log")
-
-
-func _trim() -> void:
-	_mutex.lock()
-
-	if _file != null:
-		_file.close()
-		var lines: PackedStringArray = FileAccess.get_file_as_string(BREAD).split("\n")
-		var kept: PackedStringArray = lines.slice(maxi(lines.size() - 400, 0))
-		_file = FileAccess.open(BREAD, FileAccess.WRITE)
-		_file.store_string("\n".join(kept))
-		_file.flush()
-		_lines_written = kept.size()
-
-	_mutex.unlock()
 
 
 static func _machine() -> String:
@@ -242,6 +210,7 @@ func report_now(reason: String) -> void:
 
 
 func _write_report(headline: String, flag: String, log_name: String) -> String:
+	_writer.drain()   # the breadcrumbs still queued are read back below
 	var text: String = "CRASH REPORT: the game ended unexpectedly.\n%s\nThis report made by build %d at %s\n\n" % [headline, _build, Time.get_datetime_string_from_system(true)]
 	var bread: PackedStringArray = FileAccess.get_file_as_string(BREAD).split("\n") if FileAccess.file_exists(BREAD) else PackedStringArray()
 	var errors: PackedStringArray = PackedStringArray()
@@ -262,9 +231,6 @@ func _write_report(headline: String, flag: String, log_name: String) -> String:
 
 	text += "== The server's own events (last 60 lines: peers, stalls, why a client was dropped) ==\n%s\n\n" % "\n".join(server_lines)
 	var log_lines: PackedStringArray = PackedStringArray()
-
-	if _file != null:
-		_file.flush()
 
 	if log_name != "":
 		var all_lines: PackedStringArray = FileAccess.get_file_as_string("user://logs/" + log_name).split("\n")
