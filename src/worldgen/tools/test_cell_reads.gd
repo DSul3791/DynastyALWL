@@ -94,6 +94,8 @@ func lay(items, cells: Array) -> Array:
 	var most_looks: int = 0
 	var met_looks: int = 0
 	var met_usec: int = 0
+	var body_usec: Dictionary = {}    # ore -> usec in its ore body looks over all cells
+	var body_looks: Dictionary = {}   # ore -> its ore body looks over all cells
 
 	for cell in cells:
 		var reads: Dictionary = items._cell_reads(cell, CELL_M)
@@ -101,11 +103,15 @@ func lay(items, cells: Array) -> Array:
 		items._ore_usec = PackedInt64Array([0, 0, 0, 0, 0, 0, 0])
 		items._ore_split.clear()
 		var ore_started: int = Time.get_ticks_usec()
-		items._lay_out_ore_rocks(cell, CELL_M, "copper", reads)
-		items._lay_out_ore_rocks(cell, CELL_M, "tin", reads)
-		items._lay_out_ore_rocks(cell, CELL_M, "iron", reads)
-		var looks_before: int = items._ore_usec[5]
-		items._lay_out_ore_rocks(cell, CELL_M, "meteorite", reads)
+		var looks_before: int = 0
+
+		for ore in ["copper", "tin", "iron", "meteorite"]:
+			var body_before: int = items._ore_usec[1]
+			looks_before = items._ore_usec[5]
+			items._lay_out_ore_rocks(cell, CELL_M, ore, reads)
+			body_usec[ore] = int(body_usec.get(ore, 0)) + items._ore_usec[1] - body_before
+			body_looks[ore] = int(body_looks.get(ore, 0)) + items._ore_usec[5] - looks_before
+
 		var cell_ms: float = float(Time.get_ticks_usec() - ore_started) / 1000.0
 		met_looks += items._ore_usec[5] - looks_before
 		met_usec += int(items._ore_split.get("meteorite", 0))
@@ -125,7 +131,13 @@ func lay(items, cells: Array) -> Array:
 		rows.append([int(it["scatter"]), "%.9f %.9f %.9f" % [it["pos"].x, it["pos"].y, it["pos"].z], int(it["number"]), int(it["count"]), "%.9f" % float(row.get("radius", -1.0)), str(row.get("ore", "")), "%.9f" % float(row.get("grade", -1.0))])
 
 	rows.sort_custom(func(a, b): return int(a[0]) < int(b[0]))
-	return [rows, ms, worst_ms, most_looks, met_looks, float(met_usec) / 1000.0]
+	return [rows, ms, worst_ms, most_looks, met_looks, float(met_usec) / 1000.0, body_usec, body_looks]
+
+
+# The microseconds one ore body look of `ore` took on average in a lay() result, or 0 with no look.
+func per_look(result: Array, ore: String) -> float:
+	var looks: int = int((result[7] as Dictionary).get(ore, 0))
+	return float((result[6] as Dictionary).get(ore, 0)) / float(looks) if looks > 0 else 0.0
 
 
 func _init() -> void:
@@ -194,6 +206,12 @@ func _init() -> void:
 	var tile_now = cold_generator.get_tile(cold_generator.tile_of(spawn.x, spawn.y))
 	check(not tile_now.ore_names.has("iron") and tile_now.ore_names.has("copper") and tile_now.ore_names.has("tin"), "the starter tile has copper and tin bodies and no iron body")
 	check(str(tile_now.ore_at(Vector3(spawn.x, 60.0, spawn.y), 500.0, {"iron": "iron_ore"}, 10.0)) == "", "an iron look there answers no iron")
+	var iron_us: float = per_look(cold, "iron")
+	var other_us: float = maxf(per_look(cold, "copper"), per_look(cold, "tin"))
+	print("ore body looks, cold: copper %.1f us, tin %.1f us, iron %.1f us a look (%d iron looks); warm bound: copper %.1f, tin %.1f, iron %.1f" % [per_look(cold, "copper"),
+		per_look(cold, "tin"), iron_us, int((cold[7] as Dictionary).get("iron", 0)), per_look(after, "copper"), per_look(after, "tin"), per_look(after, "iron")])
+	check(int((cold[7] as Dictionary).get("iron", 0)) > 0 and iron_us <= other_us + 20.0, "an iron body look costs no more than a copper or tin look, cold (%.1f us against %.1f)" % [iron_us, other_us])
+	check(per_look(after, "iron") <= maxf(per_look(after, "copper"), per_look(after, "tin")) + 20.0, "and warm (%.1f us against %.1f)" % [per_look(after, "iron"), maxf(per_look(after, "copper"), per_look(after, "tin"))])
 	var spot: Vector3 = Vector3(spawn.x, float(cold_generator.surface_height(spawn.x, spawn.y)), spawn.y)
 	var timed: Dictionary = {}
 
