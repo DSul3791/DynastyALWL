@@ -483,7 +483,8 @@ var _goals_detail: String = ""        # the last _goals_tick's split (the slow-t
 var _slowest_hint: String = ""
 var _slowest_hint_usec: int = 0
 var _sync_detail: String = ""         # the last _sync_world_items' split (the slow-tick line)
-var _ore_usec: PackedInt64Array = PackedInt64Array([0, 0, 0, 0])   # the last cell's boulders and copper and tin rocks: binding the reads, the ore body looks, the water reads, settling rows (the slow-cell line)
+var _ore_usec: PackedInt64Array = PackedInt64Array([0, 0, 0, 0, 0, 0])   # the last cell's boulders and ore rocks: binding the reads, the ore body looks, the water reads, settling rows, the mountain-foot probes (usec), and the number of ore body looks (the slow-cell line)
+var _ore_split: Dictionary = {}   # the last cell's ore rocks: ore -> usec of its whole layout (the slow-cell line, so no ore's cost hides in the sum)
 var _bank_ground_usec: int = 0       # the last cell's bank stones: time reading the ground and asking for water (the slow-cell line)
 var _bank_water_usec: int = 0
 var _cell_cave_ms: float = 0.0     # the cave floor part of the last cell laid out (for the slow-cell line)
@@ -7858,7 +7859,8 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	_lay_out_bank_stones(cell, cell_m, cfg, kinds.size())
 	part_usec = _cell_part("bank stones", part_usec)
 	_cell_parts[-1] += " (ground %.0f, water %.0f)" % [float(_bank_ground_usec) / 1000.0, float(_bank_water_usec) / 1000.0]
-	_ore_usec = PackedInt64Array([0, 0, 0, 0])
+	_ore_usec = PackedInt64Array([0, 0, 0, 0, 0, 0])
+	_ore_split.clear()
 	var reads: Dictionary = _cell_reads(cell, cell_m)   # one tile look for the boulders and both ores
 	_ore_usec[0] = Time.get_ticks_usec() - part_usec
 	_lay_out_boulders(cell, cell_m, reads)
@@ -7868,7 +7870,19 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	_lay_out_ore_rocks(cell, cell_m, "iron", reads)
 	_lay_out_ore_rocks(cell, cell_m, "meteorite", reads)
 	_cell_part("copper, tin and iron rocks and meteorites", part_usec)
-	_cell_parts[-1] += " (reads bound %.1f, ore bodies %.1f, water %.1f, settling %.1f)" % [float(_ore_usec[0]) / 1000.0, float(_ore_usec[1]) / 1000.0, float(_ore_usec[2]) / 1000.0, float(_ore_usec[3]) / 1000.0]
+	var by_ore: PackedStringArray = PackedStringArray()
+
+	for ore in _ore_split:
+		by_ore.append("%s %.1f" % [ore, float(_ore_split[ore]) / 1000.0])
+
+	var listed: int = _ore_usec[1] + _ore_usec[2] + _ore_usec[3] + _ore_usec[4]
+	var spent: int = 0
+
+	for ore in _ore_split:
+		spent += int(_ore_split[ore])
+
+	_cell_parts[-1] += " (reads bound %.1f, ore bodies %.1f in %d looks, water %.1f, settling %.1f, foot %.1f, rest %.1f; %s)" % [float(_ore_usec[0]) / 1000.0, float(_ore_usec[1]) / 1000.0, _ore_usec[5],
+		float(_ore_usec[2]) / 1000.0, float(_ore_usec[3]) / 1000.0, float(_ore_usec[4]) / 1000.0, float(spent - listed) / 1000.0, ", ".join(by_ore)]
 
 
 # A cell's own random stream for one part of its layout (Sonny, 10 Nov 2026). The loose stones and sticks drew first from one stream, and a stick's spot
@@ -8057,6 +8071,12 @@ func _set_boulder_ore_only(row: Dictionary, ore_name: String, key: int) -> void:
 # boulders), tin 16..23, iron 24..31 and meteorites 32..39 (ORE_KEY | BOULDER_KEY; iron and meteorites since Dave 21 Nov 2026, by their own chances;
 # a meteorite gives Iron chunks, the same everywhere, with no ore body or mountain foot). Nothing depends on where spawn is.
 func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dictionary = {}) -> void:
+	var started: int = Time.get_ticks_usec()
+	_lay_out_ore_rocks_of(cell, cell_m, ore, reads)
+	_ore_split[ore] = int(_ore_split.get(ore, 0)) + Time.get_ticks_usec() - started
+
+
+func _lay_out_ore_rocks_of(cell: Vector2i, cell_m: float, ore: String, reads: Dictionary) -> void:
 	var cfg: Dictionary = _ore_rock_cfg(ore)
 	var item: String = str((_boulder_cfg.get("ore", {}).get("items", {}) as Dictionary).get(ore, ""))
 
@@ -8100,6 +8120,7 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dicti
 			body_p = float(cfg.get("body_chance", 0.0))
 
 		_ore_usec[1] += Time.get_ticks_usec() - look_usec
+		_ore_usec[5] += 1
 
 	var top_p: float = maxf(maxf(land_p, maxf(coast_p, mountain_p)), body_p)
 
@@ -8130,6 +8151,7 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dicti
 			var body_usec: int = Time.get_ticks_usec()
 			over_body = str(body_at.call(spot, body_m, names, layer_m)) == ore   # the spot itself over its own ore
 			_ore_usec[1] += Time.get_ticks_usec() - body_usec
+			_ore_usec[5] += 1
 
 		if not is_foot and not over_body and draw > maxf(land_p, lerpf(coast_p, mountain_p, upland)):
 			continue   # past every chance this high up: no ground water read
@@ -8148,7 +8170,11 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dicti
 			continue   # deep water: nobody would find it
 
 		if is_foot:
-			if depth > 0.0 or not _at_mountain_foot(spot, foot, ground):
+			var foot_usec: int = Time.get_ticks_usec()
+			var at_foot: bool = depth <= 0.0 and _at_mountain_foot(spot, foot, ground)
+			_ore_usec[4] += Time.get_ticks_usec() - foot_usec
+
+			if not at_foot:
 				continue
 		elif by_water_only:
 			# Past the land share: only on a river or lake bed (shallow water) or a dry bank within reach of water.
