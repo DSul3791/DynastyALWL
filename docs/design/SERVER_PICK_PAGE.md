@@ -1,6 +1,6 @@
 # Server pick page (client)
 
-**Status:** APPROVED by Dave, 19 Nov 2026 ("I like the page design so I approve it"). Being built; nobody has played or seen it in the game yet. Choices 1 and 2 (end of this file) were not answered and are built as the picks, provisional, for his review. Revised the same day around Dave's own layout. Mock-up: `SERVER_PICK_PAGE_mockup.png` beside this file (a drawing, not a screenshot).
+**Status:** APPROVED by Dave, 19 Nov 2026 ("I like the page design so I approve it"). Being built; nobody has played or seen it in the game yet. Choices 1 and 2 (end of this file) were settled by Dave on 21 Nov 2026 as built. Revised the same day around Dave's own layout. Mock-up: `SERVER_PICK_PAGE_mockup.png` beside this file (a drawing, not a screenshot).
 
 **Dave's words (19 Nov 2026, project chat):** "setup our client game page where you pick what server you want to connect too. this will take some design because I feel most developers don't give this step the love it deserves. The client can connect to a preset official server or to a direct connect. every direct connect should be saved in a list for quick picking next time. they should be allowed to use ip addresses or redirects like hannibalshouse.duckdns.org"
 
@@ -140,12 +140,11 @@ Each is one reviewed PR to dev with the selector's tests on the exact head.
 
 Settled by Dave (19 Nov): the game remembers a correct password (choice 3); passwords with a popup, 3 tries, then the caps-lock message and back to this page; Play opens this page; official first, then every added server; down servers stay, in red; name, ping and status on each row; Add new server and Join server buttons; double-click joins.
 
-1. **Continue.** Pick: straight into the last server as the character last played there, with Cancel on the joining screen, and back to this page with the reason on the row if it cannot join. Other ways: Continue opens this page with the last server chosen (one more click), or opens the Characters page for the last server.
-2. **Player names before joining.** Pick: the Players column shows the count only, and hovering a row lists who is on. Built for now: the count only, because the server does not yet know the players' character names (characters are kept on each player's computer); names on hover follow when characters move to the server. Other way: count only, never names.
+1. **Continue.** SETTLED (Dave 21 Nov 2026, "yes continue goes straight in with the last server and character and it remembers the password"): straight into the last server as the character last played there, with Cancel on the joining screen, and back to this page with the reason on the row if it cannot join. Other ways: Continue opens this page with the last server chosen (one more click), or opens the Characters page for the last server.
+2. **Player names before joining.** SETTLED (Dave 21 Nov 2026, "yes each row can show server ip, name, player count, ping and status online or not"): the count only, no names. Under the name each row shows its address, and for a name such as a duckdns one also the IP it points to now.
 3. **Remember a password.** SETTLED (Dave 19 Nov, "yes it should"): a "Remember on this computer" tick in the popup, on by default. What is remembered is the salted hash, never the typed password, kept in `servers.json`; Remove forgets it, and if the server's password changes the popup simply asks again. Someone who copied that file could join that one server, but never learns the password, so it is useless anywhere else. Other way: always ask.
 
 Assumed meanwhile (provisional, can change, for Dave's review):
-- Choices 1 and 2 are built as the picks.
 - The painted title button still reads "New Game" (it is part of the painting); in a client-only build it opens this page, i.e. it is Play. Repainting it to say Play is Dave's call.
 - The official server shows as "Dynasty Official"-style only once the release setting (`client_config.json` "official") names an address; there is no crest picture yet, only the gold edge.
 - The server's short message and its IP show when a row is hovered.

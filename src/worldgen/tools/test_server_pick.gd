@@ -93,6 +93,16 @@ func _initialize() -> void:
 	check(ServerList.find(ServerList.load_rows(), "127.0.0.1:%d" % (port + 50)) >= 0, "Undo puts it back")
 	page.select("127.0.0.1:%d" % port)
 	check(page.join_selected() and str(Engine.get_meta("server_picked", "")) == "127.0.0.1:%d" % port and JoinAddress.current() == "127.0.0.1:%d" % port, "Join remembers the server for the game")
+	var named: String = "localhost:%d" % (port + 60)   # a name, not an IP: its row shows the IP it points to (Dave 21 Nov 2026)
+	page.add_server(named)
+	var named_from: int = Time.get_ticks_msec()
+
+	while Time.get_ticks_msec() - named_from < 6000 and not page.statuses[named].done():
+		await process_frame
+
+	await process_frame
+	var texts: Array = page._row_nodes[named].find_children("*", "Label", true, false).map(func(label): return label.text)
+	check(page.statuses[named].ip != "" and texts.any(func(text): return text.contains(named) and text.contains(page.statuses[named].ip)), "a row named by a host name shows the IP it points to")
 	check(page.when_text(0) == "Never" and page.when_text(int(Time.get_unix_time_from_system())) == "Today", "Last played words")
 	page.free()
 	link.stop()
