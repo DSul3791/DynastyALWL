@@ -2869,6 +2869,88 @@
 			],
 			"herb": true
 		},
+		"cattail": {
+			"name": "Cattail",
+			"seed": "cattail_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.6,
+			"soil": "any garden soil",
+			"yields": [],
+			"seeds_back": [
+				"cattail_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild cattail picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"marsh"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer",
+				"autumn"
+			],
+			"herb": true
+		},
+		"tussock_sedge": {
+			"name": "Tussock sedge",
+			"seed": "tussock_sedge_seed",
+			"sow_season": "summer",
+			"grow_days": 12,
+			"water_per_day": 0.6,
+			"soil": "any garden soil",
+			"yields": [],
+			"seeds_back": [
+				"tussock_sedge_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild tussock sedge picked late in its season (1 to 2 seeds)",
+			"biomes": [
+				"marsh"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"summer",
+				"autumn"
+			],
+			"herb": true
+		},
+		"moss_hummock": {
+			"name": "Bog moss hummock",
+			"seed": "moss_hummock_seed",
+			"sow_season": "spring",
+			"grow_days": 12,
+			"water_per_day": 0.6,
+			"soil": "any garden soil",
+			"yields": [],
+			"seeds_back": [
+				"moss_hummock_seed",
+				[
+					1,
+					2
+				]
+			],
+			"seed_source": "a wild bog moss hummock picked in summer (1 to 2 spores)",
+			"biomes": [
+				"marsh"
+			],
+			"tool_to_harvest": "hand",
+			"store": "",
+			"sow_seasons": [
+				"spring",
+				"summer",
+				"autumn"
+			],
+			"herb": true
+		},
 		"sea_holly": {
 			"name": "Sea holly",
 			"seed": "sea_holly_seed",

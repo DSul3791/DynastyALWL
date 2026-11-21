@@ -513,10 +513,10 @@ Dave, 19 Nov 2026: "if you select play it needs to take you to our server select
 
 **Acceptance:** start the client-only build, press Play: the page lists the official server and your saved ones; add an IP and a name such as hannibalshouse.duckdns.org; a server that is off shows red; double-click a working one to reach the character page; a password server asks once and is remembered next time; three wrong tries show the message and return to the page.
 
-Assumed on Dave's behalf (provisional, also in the design doc):
+Settled by Dave, 21 Nov 2026: "yes continue goes straight in with the last server and character and it remembers the password. yes each row can show server ip, name, player count, ping and status online or not". Continue (when there is a last server and character) goes straight in, with Cancel on the joining screen; with neither it opens the server page. Rows show the player count, not who is online, and under the name the address plus the IP a name points to now: PR #1425, merged to dev at 31dc7fa4 (head e96a76d2) after independent review; Lane A on the exact head: 26 of 26 selected tests passed, including test_server_pick ("a row named by a host name shows the IP it points to"); warnings 381, zero new; join smoke clean. Not yet played.
 
-- SP-3: Continue (when there is a last server and character) goes straight in, with Cancel on the joining screen; with neither it opens the server page. Dave asked this as a question, not yet answered.
-- SP-4: rows show the player count only, not who is online.
+Assumed on Dave's behalf (provisional):
+
 - SP-5: "Remember on this computer" in the password box is ticked by default.
 
 ## 69. Bog iron: stains you can find, Bog iron ore, iron rocks marked
@@ -841,6 +841,29 @@ Not yet played.
 - Start a new character: the first view shows the campfire with Hob and Edda beside it.
 - Die and come back at the spawn: you face the fire again.
 - Esc > Admin > Go to spawn: the same.
+
+Not yet played.
+
+## 93. First start: a clear note that the game is preparing its graphics
+
+**Status: Implemented - awaiting player verification.** On a computer with no saved shaders, the first windowed join freezes for about 25 s right after the server's welcome, and Windows may say "Not responding" (Lane A, 20 Nov 2026; also on main be491ba6). Dave, 21 Nov 2026: "thats not a problem. its expected on the first load" and "we should have a message that is clear that tells people that."
+
+**Required outcome:** on a first start the player sees a plain message explaining the pause, on screen during it.
+
+**Cause of the pause (not changed):** Godot builds the world's shaders after the welcome (DIAG-93: with only the shader cache deleted the 25 s freeze came back; with it kept the freeze was gone). An attempt to spread the building over frames (PR #1393) did not shorten it and was closed unmerged.
+
+**As built (PR #1405, reviewed head 6e5bcce5, dev 58d03b3b):** the Joining window shows, in yellow under its steps: "First start on this computer (or after an update): the game is preparing its graphics. Once the server answers, this can take up to about half a minute. The window may stop moving, or Windows may say "Not responding". Please wait: the game is not stuck. Later starts are much quicker." The note shows until a join with the same Godot version, graphics driver, graphics card and game build has reached the ground (user://graphics_prepared.txt), so it returns after an update. While it is up, the window stays until the player has landed, so it is still on screen through the freeze.
+
+**Evidence:**
+- Independent review PASS on 6e5bcce5.
+- Lane A on 6e5bcce5: selector 29 fast PASS / 0 FAIL, warnings 381, 0 new.
+- Lane A cold windowed join: the note was on screen just before the 23.9 s freeze and the same frame was held through it. The window closed after "JOIN: ground ready" (+67 s), and the mark file was written.
+- Second join: no note; window closed after 4 s.
+- Pictures in the Library: 1405_6e5bcce5_cold_note_before_freeze.png, 1405_6e5bcce5_cold_note_held_after_freeze.png, 1405_6e5bcce5_second_join_no_note.png.
+
+**Known, for later:** during the freeze the held frame still reads "2. Waiting for the server's welcome: 0 s" although the welcome has arrived.
+
+**Acceptance:** on a computer that has never run the game (or after an update), the Joining window shows the yellow note and keeps it up through the pause. The next start shows no note.
 
 Not yet played.
 
@@ -1231,17 +1254,138 @@ The Fine - Chest (36 slots) is in the iron tier and is otherwise unchanged. Stee
 
 Not yet played; not yet seen in a picture.
 
+## 112. The knife makes a Wicker basket, not the two knife chests
+
+**Status: Implemented - awaiting player verification.** Dave, during his play test on 21 Nov 2026, of the Wicker - Chest (18 slots) and the Crude - Chest (24 slots), both knife builds: "get ride of both of those. the knife can make a wicker basket that could have 6 slots." When asked about chests already placed: "there are none".
+
+**What was found:** the knife listed two chests next to the hammer's chest per nail tier (entry 111).
+
+**Required outcome:** no knife chest. The knife builds a Wicker basket with 6 slots (one row). A saved world that holds one of the old chests still loads.
+
+**As built (PR #1421, reviewed head 6b97ba23, merged to dev at aae56232):**
+- The knife's store is the existing Basket, renamed **Wicker basket**: 8 Stick, 4 Twine, 6 slots, item 785, blueprint 157. No new numbers. It takes the Wicker - Chest's storage comfort point.
+- The Crude - Chest is retired (blueprint 186, item 914).
+- The Wicker - Chest (blueprint 26) is hidden and locked, so no player lists or builds it. It is not retired, because about a dozen server tests place it as their plain container. Taken down, it gives back its sticks and twine.
+- A saved Crude - Chest or Wicker - Chest still loads with its contents. Nothing clears them at load.
+- The Ragtooth goblin camp's chest prop is now a Small chest.
+- The chest ladder is now Crate 10, Small 24, Rustic 30, Fine 36, Large wooden 42, Ornate 48.
+- Design: docs/design/CHEST_TIERS.md.
+
+**Evidence:**
+- Independent review first found 3 must-fixes on c96b974c (a parse error, retired-kit test placements, a validate_items collision). It passed on dcda0248 and again on 6b97ba23.
+- Lane B on dcda0248: 2 fails (test_cooking_route still built the hidden chest; the walkthrough read the basket's slots before opening it), fixed in 6b97ba23.
+- Lane B on 6b97ba23: 320 pass / 0 fail (fast 309, timing 9, slow 2). validate_items 0 errors, look names 340, warnings 381 = baseline. Join smoke 26 s, client --chest self-test (now the Wicker basket) exit 0.
+- test_save_compat loads a saved Crude - Chest and Wicker - Chest with their contents.
+
+**Acceptance:** the knife's list shows the Wicker basket and no chest. With a knife, 8 Sticks and 4 Twine, a Wicker basket goes up and holds 6 stacks. No build list, knife or hammer, shows a Wicker - Chest or Crude - Chest; the hammer's chests are the Small, Rustic, Fine, Large wooden and Ornate.
+
+Not yet played.
+
+## 113. Fens, bogs and swamps stand out
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026, on wetlands: "they should be readable but lets talk about that. there are reeds everywhere there is a river. how can we make fens, bogs and swamps standout". Shown the plan (dark wet ground, shallow pools, plants of their own, mist and wetland sounds), he said: "make them all. I like it. do that now".
+
+**What was found:** fen and bog ground drew as plain grass, with no reeds, water or sound of its own (Dave's play-test note 17, 20 Nov 2026, in the coordinator's play-test notes). The flora placer kept every plant off fen, bog and swamp cells, so they were bare.
+
+**Required outcome:** each wetland reads from a distance and up close, and none of its plants grows on river banks. Fen is green and wet with cattails. Bog is brown and mossy with white tufts. Swamp is dark, with dead trees and standing water. Marsh keeps its mud, reeds, willow and mint.
+
+**As built (PR #1422, reviewed head 820f1c62, merged to dev at b8a9bc54):**
+- Ground: new draw-only material ids 29 fen, 30 bog and 31 swamp. Digging still gives peat (fen, bog) or mud (swamp). Fen is near-black peat with sedge-green flecks, bog is brown with rust-red and ochre-green moss, and swamp is black mud, all with a wet sheen. TERRAIN_VERSION 79; the starter ground was rebuilt for it.
+- Pools: still brown water lies in the hollows whatever the weather, on flat ground only (about 17% of fen, 10% of bog and 30% of swamp, as test_wetland_signs printed on Lane B at 820f1c62). It freezes and takes snow like puddles. Wading one splashes and slows you to 0.85 of your pace.
+- Plants (flora layout 32): Cattail on fen, 700 a hectare. Tussock sedge on fen (400) and swamp (150). Bog moss hummock on bog (500). Cotton grass on bog (1,000; no longer on the marsh edge). Dead tree with hanging moss in swamp (30). None of them grows on river banks.
+- Seeds: Cattail seed (item 1514), Tussock sedge seed (1515) and Bog moss spores (1516). Each comes from its wild plant late in its season and grows in a garden. The dead tree is scenery.
+- Sound: wetland steps squelch (existing step_mud and wet_squelch). Frogs, crickets and insects call over wetland. No new sound files.
+- Mist: up to 4 low patches near the player, from 1 hour before to 2 hours after sunrise and from 1 hour before to 1.5 hours after sunset. Wind thins it and rain clears it.
+- One-time effects on the first server start: the ground blocks regenerate (a first-load pause), and felled trees and picked plants come back once. Ground edits, structures and their contents are kept. No world wipe.
+
+**Evidence:**
+- Independent review first found 4 bugs on 2253f818: wetland digs gave loam, an invisible log wall at dead trees, no frogs in a fen without open water, and the ground name. It passed on 76e717af, 9a601076 and 820f1c62.
+- Lane B on 76e717af: test_farming failed because the new plants had no seeds; fixed in 9a601076.
+- Lane B on 9a601076: validate_items failed because the Bog moss spores description was too long; fixed in 820f1c62.
+- Lane B on 820f1c62: 376 pass / 0 fail (fast 365, timing 9, slow 2). validate_items 0 errors, look names 340, warnings 381 = baseline. Join smoke time to ground 34 s.
+- test_worldgen: a terrain version bump keeps digs, tile revisions and world_items saves. test_wetland_signs covers the look ids, sounds, pools, pace, plant rows and mist hours.
+
+**Acceptance:** at the fen patches 58408,71560 or 58576,71776 near the spawn (the bog iron answer to Dave, 21 Nov 2026) the ground reads as a dark wet patch from a distance. Close up there are cattails, sedge and still brown pools that splash and slow you. Bogs are brown with moss hummocks and white cotton tufts, and swamps are black with dead trees and standing water. Near dawn and dusk low mist lies over them and frogs call. River banks have none of these plants.
+
+Not yet played; not yet seen in a picture.
+
+## 117. Fitness: tiring scale and idling below the start
+
+**Status: Implemented - awaiting player verification.** Dave's rulings during his play test, 21 Nov 2026, after asking what fitness does: "at 100 it should use 50%", "scale in between 50 fitness being 100% and 100 being 50%", and "being Idle can lower it below your start. that was not my rule. remove it." (reading confirmed: "that correct").
+
+**What was found:** exertion rose at exp(-(fitness - 50) / 5 x 0.05) of the average rate, so 61% at fitness 100 and 78% at 75. True rest took fitness back only as far as the starting value.
+
+**Required outcome:** 100% at fitness 50 falling evenly to 50% at 100. Idling may lower fitness below where the character started.
+
+**As built (PR #1426, reviewed head 55f68a66, merged to dev at faf0e33e):**
+
+| Fitness | Exertion rises at |
+|---|---|
+| 0 | 165% (unchanged) |
+| 40 | 110% (unchanged) |
+| 50 | 100% |
+| 75 | 75% |
+| 100 | 50% |
+
+- From 50 up the rise is a straight line to `top_mult` (0.5, data/items/fitness.json). Under 50 the old curve is kept. Both meet at 50 with the same slope, so there is no kink. Recovery is the same for everyone.
+- Idling (effort under 0.02 for over 10 minutes, awake) takes a point per 8,640 s, below the starting value too, down to 0. Sleep still costs nothing. Training still adds at most 50 points above the starting value.
+- Whole points now use floor (as positive training always did), so a character idling at exactly their start loses the first point as soon as the 10-minute grace has passed, then one more per 8,640 s.
+- Saves unchanged; existing characters load as before.
+
+**Evidence:**
+- Independent review: one stale strain-ratio test found on 55007e1f, fixed; PASS on 55f68a66.
+- Lane A on 55f68a66: 251 pass / 0 fail (246 fast, 5 timing); test_slot_sounds failed once on a pace check under load and passed on retry (unrelated). validate_items 0 errors, warnings 381 = baseline, join smoke clean.
+
+**Acceptance:** a fitness 100 character runs about twice as long as a fitness 50 one before winded; 75 about 1.33 times as long. A character left idle for days drops below the fitness they started with and stops at 0.
+
+Not yet played.
+
+## 124. The bust slider grows round, not pointed
+
+**Status: Implemented - awaiting player verification.** Dave, play-testing the character creator on 21 Nov 2026: "I just noticed when making a new character that is female if you increase the breasts they get pointy they should get big, round and voluptuous."
+
+**What was found:** the bust shape (`dynasty_shapes.gd`) pushed a narrow mound straight forward, up to about 8 cm on her. Most of the push sat within a few centimetres of its centre, so the breast drew as a cone. The shape also kept the base normals, so the light did not follow it.
+
+**Required outcome:** raising the slider gives a full, round, natural shape through the whole range. No cone, no tearing or clipping, and the shading is right. The low end is unchanged, and saved characters keep their value.
+
+**As built (PR #1431, reviewed head fedee321, merged to dev at c5ccbd9e):**
+- Each breast's own front is found on the mesh, and the two sides are mirrored to one pair.
+- The chest round each breast is pushed 60% of the way out onto a rounded shape (an ellipsoid) centred behind that front. It joins softly above and with a fold below, and fades out at the breastbone and at the shape's edge. At +1 the front comes about 5.7 cm forward on her.
+- The last 40% of the chest's own relief is kept. Going all the way made the top's creases meet and crumple through each other in the first in-game pictures (80e0542c).
+- The shape carries its own normals.
+- Shoulder-weighted chest vertices move too. Body 1's pectorals are mostly shoulder weighted, so both bodies round alike.
+- The slider from -1 to -0.6 still does nothing. Genomes and share codes are unchanged, and a saved character keeps its value.
+- New picture tool `tools/bust_shots.gd`: each body at -0.6, 0, 0.5 and 1, front, three-quarter and side.
+
+**Evidence:**
+- Offline, on both glb meshes with a transliteration of the code, the cone was reproduced. In the new shape no fold layers meet, 1 triangle turns over on her and none on Body 1, and 3 cm from the front the surface falls at most 1.5 cm (the cone fell 4.4 cm).
+- Independent review: PASS on 80e0542c, d508e4d3 and fedee321.
+- Lane A pictures on 80e0542c: round, but a crumple under one breast at +1, which d508e4d3 fixed. Lane A pictures on fedee321 (`bust_fedee321_body_*` in the project files): round and full from every side on both bodies, no crumple, -0.6 as modelled.
+- Lane A tests on fedee321: 71 pass / 0 fail (70 fast plus timing test_dynasty_arms_prebuild), script errors 0, warnings 381 = baseline, join smoke ground ready +14.6 s.
+- test_dynasty_body_2 adds a roundness check, a check that the normals turn, and a turned-over-triangle check.
+
+**Known limits:**
+- Her mesh has a few small holes near the nipples and by the armpit in Dave's own model. They stretch a little with the shape but were not visible in the pictures.
+- Body 1 has no check of its own in the tests.
+
+**Acceptance:** in the character creator, with Body 2, moving Bust from the left end up to the right grows the breasts big and round, with no point. At the right end the top's folds stay smooth, and the side view is a round curve. The left fifth of the slider still changes nothing.
+
+Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
 
 ## Assumed on Dave's behalf (provisional values, for review)
 
-- CT-1 (entry 111): the copper chest is the Small chest, 24 slots. Chest slots go in six-slot rows, so 27 would leave half a row. That makes it the same size as the Crude - Chest. The Small chest is built with a hammer from copper nails and needs no twine. Its lid lifts off, because there are no copper hinges.
+- CT-1 (entry 111): the copper chest is the Small chest, 24 slots. Chest slots go in six-slot rows, so 27 would leave half a row. That made it the same size as the Crude - Chest, retired since (entry 112). The Small chest is built with a hammer from copper nails and needs no twine. Its lid lifts off, because there are no copper hinges.
 - CT-2 (entry 111): Dave's "superior" chest is the existing Ornate - Chest, since Ornate is the top furniture grade. It keeps its Iron hinges, because there are no steel hinges.
 - CT-3 (entry 111): the Fine - Chest is in the iron tier, so it takes Iron nails or better and Iron hinges. Nothing else about it changed.
 - CT-4 (entry 111): Steel nails are 1 Steel ingot to 100 at the brick forge, level 3, value 2.
 - CT-5 (entry 111): only the chests are tiered. The other buildings that use nails (about 40) take bronze nails or better.
+- CT-6 (entry 112): the knife's store is the existing Basket renamed Wicker basket, keeping its cost (8 Stick, 4 Twine) and 6 slots. The Wicker - Chest is hidden and locked rather than retired, because the server tests use it as their plain container. The goblin camp's chest prop is a Small chest (Dave 20 Nov 2026: "a small chest of some sort").
+- WL-1 (entry 113): wetland looks, densities and timings chosen by Claude. Colours are as built. Pool levels in the puddle hollows are 0.63 fen, 0.68 bog and 0.56 swamp. Pace in a pool is 0.85. Mist runs from sunrise -1 h to +2 h and from sunset -1 h to +1.5 h. Grass thickness is fen 0.3, bog 0.12 and swamp none. Plant densities are as in entry 113.
+- WL-2 (entry 113): cattail, tussock sedge and bog moss hummock give their own seeds (Dave 14 Nov 2026: "All herbs and plants should produce seeds"). The dead tree is scenery, like old stumps and fallen logs.
 - OP-1 (entry 107): ore pile looks, chosen by Claude. Copper ore: malachite green, 30% red-brown, lumps 0.3, 3,900 kg/m3. Tin ore: dark red-brown, 40% near-black, lumps 0.15, a little shiny, 6,900 kg/m3. Iron ore: grey-brown, 35% rust, lumps 0.3, 4,800 kg/m3. Bog iron ore: red-brown, 35% ochre, lumps 0.4, 3,600 kg/m3. The densities are the real minerals' and set how wide a cone a count makes.
 - LV-1: one held Level action lasts while strokes come within 1.5 s and the feet move less than 0.6 m; its target height is kept for that long.
 - LV-2: Level leaves the ground within 1.2 m of the feet untouched.

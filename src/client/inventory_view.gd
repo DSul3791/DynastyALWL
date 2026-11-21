@@ -6872,10 +6872,11 @@ func run_plant_test(client) -> void:
 	print("Plant test: tried %d, gone %d, still standing %d, skipped (nothing pickable) %d" % [tried, gone, tried - gone, skipped])
 
 
-# The self-tests build with the hammer (or the knife for the Wicker - Chest, a knife row since 15 Nov 2026), as players do since kits left the game (4 Nov 2026): data/items/blueprints.json numbers and costs.
+# The self-tests build with the hammer (or the knife for the Wicker basket, a knife row; the Wicker - Chest it replaced was retired 21 Nov 2026), as players do since kits left the game (4 Nov 2026): data/items/blueprints.json numbers and costs.
 # The hammer or knife goes on a hotbar key by itself when it comes into the pack (inventory step 4).
-const CHEST_BLUEPRINT := 26
-const CHEST_MATERIALS := [["stone_knife", 1], ["stick", 10], ["twine", 4]]
+const CHEST_BLUEPRINT := 157   # the Wicker basket, 6 slots: the knife's store since the Wicker - Chest was retired (Dave 21 Nov 2026)
+const CHEST_STATE := 195   # its row state (structures.json wicker_basket)
+const CHEST_MATERIALS := [["stone_knife", 1], ["stick", 8], ["twine", 4]]
 const LEAN_TO_BLUEPRINT := 25
 const LEAN_TO_MATERIALS := [["stone_hammer", 1], ["stick", 30], ["leaves", 100], ["leaves", 100], ["twine", 10]]
 
@@ -7374,7 +7375,7 @@ func run_chest_test(client) -> void:
 		_finish_early(client)
 		return
 
-	_give_blueprint_kit(CHEST_MATERIALS)   # kits left the game (4 Nov 2026): the chest is built with the knife from its blueprint (a knife row, W-9)
+	_give_blueprint_kit(CHEST_MATERIALS)   # kits left the game (4 Nov 2026): the Wicker basket is built with the knife from its blueprint (a knife row, W-9)
 	net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, table.number_of("stone"), 0, 10, Vector3.ZERO)
 	await get_tree().create_timer(1.0).timeout
 	var id: int = 0
@@ -7396,7 +7397,7 @@ func run_chest_test(client) -> void:
 
 		for wait in 40:
 			for k in _world:
-				if _world[k]["state"] == 6:
+				if _world[k]["state"] == CHEST_STATE:
 					id = k
 
 			if id != 0:

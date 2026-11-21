@@ -161,6 +161,49 @@ func _init() -> void:
 
 		_check(most > 0.03 and most < 0.12, "Bust +1: the chest front comes forward %.3f m" % most)
 		_check(high > 1.1 and high < 1.45, "Bust +1: at chest height (%.2f m)" % high)
+		# Round, not pointed (Dave 21 Nov 2026: "if you increase the breasts they get pointy they should get big, round and voluptuous"): 3 cm from the left breast's
+		# front, up, down and to either side, the shaped surface is still within 2.5 cm of it (offline on her mesh about 1 to 1.5 cm; the old cone 4.4 cm).
+		var tip: Vector3 = Vector3(0.0, 0.0, -INF)
+
+		for p in raised:
+			if p.x > 0.01 and absf(p.y - 1.3) < 0.2 and p.z > tip.z:
+				tip = p
+
+		var worst: float = 0.0
+
+		for step in [Vector2(0.03, 0.0), Vector2(-0.03, 0.0), Vector2(0.0, 0.03), Vector2(0.0, -0.03)]:
+			var at: Vector2 = Vector2(tip.x, tip.y) + step
+			var front_there: float = -INF
+
+			for p in raised:
+				if p.x > 0.01 and Vector2(p.x, p.y).distance_to(at) < 0.012:
+					front_there = maxf(front_there, p.z)
+
+			worst = maxf(worst, tip.z - front_there)
+
+		_check(worst < 0.025, "Bust +1: round at the front (falls %.3f m within 3 cm of it)" % worst)
+		# The shape carries its own normals, so the light follows the round.
+		var raised_n: PackedVector3Array = (shaped_mesh.surface_get_blend_shape_arrays(0)[bust] as Array)[Mesh.ARRAY_NORMAL]
+		var base_n: PackedVector3Array = shaped_mesh.surface_get_arrays(0)[Mesh.ARRAY_NORMAL]
+		var turned: int = 0
+
+		for v in range(base.size()):
+			if raised_n[v].dot(base_n[v]) < 0.98:
+				turned += 1
+
+		_check(turned > 100, "Bust +1: %d normals turn with the shape" % turned)
+		# Nothing folds through: the top's creases under the breast once met on the shape and showed through each other (Lane A, 21 Nov 2026). Count the triangles turned over.
+		var idx: PackedInt32Array = shaped_mesh.surface_get_arrays(0)[Mesh.ARRAY_INDEX]
+		var flipped: int = 0
+
+		for t in range(0, idx.size() - 2, 3):
+			var f0: Vector3 = (base[idx[t + 1]] - base[idx[t]]).cross(base[idx[t + 2]] - base[idx[t]])
+			var f1: Vector3 = (raised[idx[t + 1]] - raised[idx[t]]).cross(raised[idx[t + 2]] - raised[idx[t]])
+
+			if f0.dot(f1) < 0.0:
+				flipped += 1
+
+		_check(flipped < 5, "Bust +1: %d triangles turned over" % flipped)
 
 	print("dynasty body 2 tests: %d failures" % _fails)
 	her.free()
