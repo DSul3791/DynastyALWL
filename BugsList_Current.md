@@ -947,6 +947,43 @@ Not a game change; nothing to play.
 
 Not checked on screen: setting it down near a free pipe end may pull it onto the pipe, as a barrel does. Not yet played.
 
+## 98. Raised cistern corrections: a brace on every face, 700 L (barrel 60 L), copper lining, and its code name is raised_cistern
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026:
+- 00:44Z: "the raised cistern is clearly made from wood but its labeled stone raised cistern"
+- 00:45Z: "it has a brace on both sides but it needs a brace front and back and preferably they are opposite on another. the braces on the side should have one switched the other way as well."
+- 00:47Z: "a barrel should hold around 60Liters of water and the raised cistern should hold around 700L."
+- 00:49Z: "I want the code to have to correct name also. no half assing it. correct the code name"
+
+**Required outcome:** one diagonal brace on each of the four faces, with opposite faces slanting opposite ways. A barrel holds about 60 L and the Raised cistern about 700 L. The internal name says what it is, with nothing left calling it stone.
+
+**As built:**
+- PR #1396 (head d0c4cb2b, dev 8fab3cfd):
+  - A brace on the front, back and both sides, with opposite faces slanting opposite ways. A deck on the posts replaces the top rails. 264 triangles.
+  - A Wooden barrel holds 60 L (was 200 L). The Raised cistern holds 700 L (was 2,000 L; full line 0.85 m deep). The stone Cistern is unchanged at 2,000 L.
+  - A saved tank holding more than its new size loads full.
+- PR #1397 (head 26b6651f, dev 94c7e028):
+  - The internal id is now `raised_cistern`, kit `raised_cistern_kit` (was `stone_raised_cistern` / `stone_raised_cistern_kit`). This covers data, look, icon, tests, tools and goal docs. Item numbers 755/756, state 187 and blueprint 149 are unchanged.
+  - A placed cistern in an old save loads under the new name through `legacy_kinds`, kept for good. Kits in packs and chests, and learned blueprints, are saved by number and need nothing.
+  - The copper lining now runs up the inside walls to the full line at 2.9 m, and the water is drawn full. Same triangle count. Icon repainted.
+- Entry 97's 2,000 L and 288 triangles are superseded by this entry.
+
+**Evidence:**
+- Independent review: PASS WITH NITS on d0c4cb2b and PASS on 26b6651f.
+- Lane B:
+  - d0c4cb2b: 309 pass / 0 fail. Includes "a barrel saved with 150 L loads with 60 L, a raised cistern saved with 2,000 L with 700 L".
+  - 26b6651f: 319 pass / 0 fail. Includes "a saved stone_raised_cistern loads as the raised_cistern and joins the water network".
+  - Warnings 381 on both runs, the same as the baseline.
+- Lane A eight views on both heads: each face has one brace, and opposite faces slant opposite ways. On 26b6651f the top view reads copper-lined and full, and the rig tag reads "raised_cistern".
+
+**Acceptance:**
+- Walk round a built Raised cistern: each face has one brace, and the back slants the other way from the front.
+- Look in from above: copper inside and water.
+- Fill a barrel: it stops at 60 L.
+- Fill the cistern: it stops at 700 L.
+
+Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
