@@ -404,11 +404,15 @@ func _step_wary(npc: Dictionary, w: Dictionary, dt: float) -> bool:
 
 	(npc.get("chore", {}) as Dictionary).erase("here")   # pushed off its rest spot: it walks back to it when left alone
 
+	if w.has("hide"):
+		npc["fleeing"] = true   # ServerTribes.avoid keeps it running until it is in the mouth
+
 	var r: Dictionary = _move(npc, goal, flee_mps if w.has("hide") else back_off_mps, dt, Vector3.INF if w.has("hide") else npc["look"])   # backing off it keeps its eyes on the player
 
 	if w.has("hide") and (r["arrived"] or Vector2(npc["pos"].x - goal.x, npc["pos"].z - goal.z).length() <= 1.0):
 		npc["hidden"] = true
 		npc["away"] = false
+		npc.erase("fleeing")
 
 	return true
 

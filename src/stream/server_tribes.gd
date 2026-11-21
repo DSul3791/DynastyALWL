@@ -212,6 +212,10 @@ func avoid(npc: Dictionary) -> Dictionary:
 		return {}
 
 	var tribe: String = tribe_of(id)
+
+	if bool(npc.get("fleeing", false)) and not bool(npc.get("hidden", false)):
+		return {"hide": _mouth(tribe)}   # once it runs for the mouth it goes all the way in, however far the mouth is from the striker (camp 3,4#8006: about 50 m)
+
 	var att: Dictionary = attitude(tribe)
 	var pos: Vector3 = npc["pos"]
 	var worst: Dictionary = {}
