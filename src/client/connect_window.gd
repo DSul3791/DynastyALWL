@@ -7,7 +7,7 @@ extends RefCounted
 
 # Dave 21 Nov 2026 (BugsList 93): the long pause on a first join is expected ("its expected on the first load"); "we should have a message
 # that is clear that tells people that". On screen from the start, so it is still there while the window is frozen.
-const FIRST_LOAD_NOTE := "First start on this computer (or after an update): the game is preparing its graphics.\nAfter you join, this can take up to about half a minute. The window may stop moving, or Windows may say \"Not responding\".\nPlease wait: the game is not stuck. Later starts are much quicker."
+const FIRST_LOAD_NOTE := "First start on this computer (or after an update): the game is preparing its graphics.\nOnce the server answers, this can take up to about half a minute. The window may stop moving, or Windows may say \"Not responding\".\nPlease wait: the game is not stuck. Later starts are much quicker."
 static var first_load_mark: String = "user://graphics_prepared.txt"   # (a test points it elsewhere) written after a join that reached the ground: this engine, driver, graphics card and build
 
 var layer: CanvasLayer = CanvasLayer.new()
