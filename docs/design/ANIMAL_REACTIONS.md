@@ -87,8 +87,34 @@ Every other species keeps its old numbers. Flock species (ducks, seabirds) notic
 
 ## Left as is
 
-- This work does not change animal attacks. Dave said on 19 Nov that attacks doing nothing is fine for now. The attack path is `server_big_game.gd` and `server_wolves.gd` calling `server_items.hurt_player`, which does apply damage, so why attacks currently do nothing to him was not looked into here.
+- This work (19 Nov) did not change animal attacks. Dave said on 19 Nov that attacks doing nothing was fine for now. The 21 Nov fix below found why a stabbed animal never hit back.
 - Crouching, lying and cover keep their factors, so stalking still works.
+
+## Attacks up close (21 Nov 2026)
+
+Dave, 21 Nov 2026 play test: "I just stabbed two elephants to death with a stone spear while standing under them because they never actually attacked me. they turned to face me but just stood there and died."
+
+**Cause.** A blow from a player within `provoked_m` starts a short warning (`provoked_warn_s`, 0.8 s for the elephant), and then the charge. A melee jab lands every 0.6 s (`STRIKE_COOLDOWN_MS`). The next jab came during the warning. The warning refused to start again, so the blow fell through to "run away" (`FLEE`). On its next step the player was inside `threat_m`, so it started a fresh warning, facing the player. Each jab reset it, so it stood facing the player until it died. Every animal with a `defend` row had this, not only the elephant.
+
+**Change.** A blow on an animal that may attack now goes through `server_big_game.provoke`:
+- one already warning charges at once, pressing home with no bluff;
+- one charging carries on;
+- one standing after a charge, or cooling down from one, warns again (short).
+
+The charge hits a player within `hit_m` of the animal's centre, including one standing under it.
+
+- **AT-1 (provisional):** being hurt overrides the cool-down after a charge, so a hunter who keeps stabbing gets charged again after each recovery.
+- **AT-2 (provisional):** the elephant and the mammoth reach further and hit harder: `hit_m` 3.0 (was 2.2; the body is about 6 m long) and `damage` 40 (was 25). A charge is still not lethal on its own: health stops at 10 and the player is maimed (`hurt_player` floor).
+
+Passive and friendly animals still run when hurt, as before. Their temperament has `attacks` false.
+
+## Drawing animals on the server's timeline (21 Nov 2026)
+
+Dave, 21 Nov 2026: "animals are still teleporting and not actually running".
+
+**Cause.** The 19 Nov fix drew each animal between its sent points by the time the rows arrived. An animal steps on the server 3 to 10 times a second on its own beat, and the rows go out 4 times a second. On arrival times, a running animal therefore covered two steps in one interval and none in the next. A client frame hitch (the lag thread measured 100 to 150 ms about once a second) held rows back and handed two over at once. The animal jumped, stood, and its run clip flicked to walk.
+
+**Change.** This is protocol 147. Each row carries the server milliseconds at which its animal reached that position, and each batch carries the server clock. The client puts those times on its own clock and draws between the points by them (`src/client/motion_buffer.gd`), 0.4 s behind the newest moment (one gap between rows plus `LEAD_S` 0.15, provisional MV-1). There is no extra server work, and each row is about 8 bytes bigger. The test drives an elephant at 10 m/s through a hitch: it is drawn at 8.5 to 11.5 m/s every frame, where arrival times gave 7.5 to 20.
 
 ## For Dave
 

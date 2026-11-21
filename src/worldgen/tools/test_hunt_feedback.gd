@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Hunt feedback, the server half (docs/design/hunt_feedback_server.md; MikeW's HUNT_FEEDBACK.md requests 1 and 2): a deer's row has no health
-# until it is hit, then ends in its health share; a dog foe stays field 6 with the health after it; an arrow through the head line, the rump,
+# until it is hit, then ends in its health share; a dog foe is field 7 (after the server ms, protocol 147) with the health after it; an arrow through the head line, the rump,
 # low through the legs and through the middle gives head, hip, leg and chest; a jab at the chest gives chest; the hit goes to a player 50 m off
 # and not to one 70 m off, also when it kills.
 #   godot --headless --path . --script res://src/worldgen/tools/test_hunt_feedback.gd
@@ -60,13 +60,13 @@ func _init() -> void:
 	# 1. No health on a healthy deer's row; half its health gone, the row ends in 0.5.
 	var a = make()
 	var id: int = deer_at(a)
-	check(row_of(a, id).size() == 5, "a healthy deer's row has five fields (%d)" % row_of(a, id).size())
+	check(row_of(a, id).size() == 6 and typeof(row_of(a, id)[5]) == TYPE_INT, "a healthy deer's row has six fields, the last its server ms (protocol 147) (%d)" % row_of(a, id).size())
 	var hp: float = float(a.animals[id]["hp"])
 	a.damage(id, hp * 0.5, 1, "arrow")
 	var row: Array = row_of(a, id)
-	check(row.size() == 6 and typeof(row[5]) == TYPE_FLOAT and is_equal_approx(float(row[5]), 0.5), "hurt to half, its row ends in 0.5 (%s)" % str(row.slice(5)))
+	check(row.size() == 7 and typeof(row[6]) == TYPE_FLOAT and is_equal_approx(float(row[6]), 0.5), "hurt to half, its row ends in 0.5 (%s)" % str(row.slice(5)))
 
-	# 2. A dog foe and health together: the dog stays field 6 (a Vector3), the health is last (a float).
+	# 2. A dog foe and health together: the dog is field 7 (a Vector3), the health is last (a float).
 	var keep: Array = players
 	players = []   # no player near to draw the bear off the dog
 	var b = make()
@@ -79,7 +79,7 @@ func _init() -> void:
 	bear["hp"] = float(bear["hp"]) * 0.3
 	var brow: Array = row_of(b, int(bear["id"]))
 	players = keep
-	check(int(bear["state"]) == 10 and brow.size() == 7 and typeof(brow[5]) == TYPE_VECTOR3 and is_equal_approx(float(brow[6]), 0.3), "a hurt bear warning at a dog: dog at field 6, health 0.3 last (%s)" % str(brow.slice(4)))
+	check(int(bear["state"]) == 10 and brow.size() == 8 and typeof(brow[6]) == TYPE_VECTOR3 and is_equal_approx(float(brow[7]), 0.3), "a hurt bear warning at a dog: dog at field 7, health 0.3 last (%s)" % str(brow.slice(4)))
 
 	# 3. Zones from the arrow's path, the deer facing +x.
 	var c = make()

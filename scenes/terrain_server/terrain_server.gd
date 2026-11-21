@@ -2972,7 +2972,7 @@ func _send_npcs(delta: float) -> void:
 		if _animal_sent.get(peer, "") != sig or now_ms - int(_animal_sent_ms.get(peer, 0)) > 2000:
 			_animal_sent[peer] = sig
 			_animal_sent_ms[peer] = now_ms
-			net.animals.rpc_id(peer, beasts)
+			net.animals.rpc_id(peer, beasts, Time.get_ticks_msec())   # with the server clock the row times are on (protocol 147)
 
 		for block in trails.updates_for(peer, at, now_ms):
 			net.trails.rpc_id(peer, block[0], block[1], block[2])
