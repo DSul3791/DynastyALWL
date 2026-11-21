@@ -198,7 +198,7 @@ func _init() -> void:
 			direct += int(need[1]) if str(need[0]) == "bronze_ingot" else 0
 
 	var per_player: Dictionary = first_need.get("per_player", {})
-	check(direct > 0 and int(first_need.get("ingots", 0)) > direct and int(per_player.get("copper", 0)) == ceili(float(first_need["ingots"]) / 2.0) and int(per_player.get("tin", 0)) == int(per_player["copper"]) and int(first_need["tin"]) == int(per_player["tin"]) * int(first_need["players"]) and float(supply["ore_per_m3"]) > 1000.0, "the first bronze ore comes from the live tools, stations and bronze job: %d ingots, %s a player, %d players" % [int(first_need.get("ingots", 0)), str(per_player), int(first_need.get("players", 0))])
+	check(direct > 0 and int(first_need.get("ingots", 0)) > direct and int(per_player.get("copper", 0)) == ceili(float(first_need["ingots"]) / 2.0) and int(per_player.get("tin", 0)) == int(per_player["copper"]) and int(first_need["tin"]) == int(per_player["tin"]) * int(first_need["players"]) and float(supply["ore_per_m3"]) > 1000.0 and int(supply["ore_cost"]["tin"]) >= 1, "the first bronze ore comes from the live tools, stations and bronze job: %d ingots, %s a player, %d players" % [int(first_need.get("ingots", 0)), str(per_player), int(first_need.get("players", 0))])
 	var fed: RefCounted = island(cfg, spawn, Vector2.INF, supply)
 	var fed_report: String = "\n".join(fed.get("report"))
 	check(fed_report.contains("tin within") and fed_report.contains("copper within") and not fed_report.contains("SHORT"), "the shipped island holds the first bronze copper and tin for a full server within the budgets")
@@ -208,7 +208,10 @@ func _init() -> void:
 	var count_tin: Callable = func(c: RefCounted, only_assured: bool) -> int:
 		return (c.get("deposits") as Array).filter(func(d): return str(d["metal"]) == "tin" and (bool(d["assured"]) or not only_assured)).size()
 	var hungry_report: String = "\n".join(hungry.get("report"))
-	check(int(count_tin.call(hungry, true)) - int(count_tin.call(fed, true)) == 3 and int(count_tin.call(hungry, false)) == int(count_tin.call(fed, false)) + 3 and hungry_report.contains("tin within") and hungry_report.contains("SHORT") and (hungry.get("deposits") as Array).filter(func(d): return str(d["metal"]) == "copper").size() == (fed.get("deposits") as Array).filter(func(d): return str(d["metal"]) == "copper").size(), "short of tin, the island gets at most three assured tin sources and says SHORT; copper untouched")
+	var lean: Dictionary = cfg.duplicate(true)
+	lean["known_sources"] = {"iron": 1, "copper": 1, "tin": 1}
+	var base: RefCounted = island(lean, spawn)   # no quantity check, one source of each wanted: only the nearest-source assurance
+	check(int(count_tin.call(hungry, true)) - int(count_tin.call(base, true)) == 3 and int(count_tin.call(hungry, false)) == int(count_tin.call(base, false)) + 3 and hungry_report.contains("tin within") and hungry_report.contains("SHORT") and (hungry.get("deposits") as Array).filter(func(d): return str(d["metal"]) == "copper").size() == (fed.get("deposits") as Array).filter(func(d): return str(d["metal"]) == "copper").size(), "short of tin, the island gets at most three assured tin sources and says SHORT; copper untouched")
 	var tin_held: Callable = func(c: RefCounted) -> float:
 		var total: float = 0.0
 		for d in c.get("deposits"):
@@ -220,7 +223,7 @@ func _init() -> void:
 	var known: RefCounted = island(curious, spawn, Vector2.INF, supply)
 	var iron_assured: Callable = func(c: RefCounted) -> int:
 		return (c.get("deposits") as Array).filter(func(d): return str(d["metal"]) == "iron" and bool(d["assured"])).size()
-	check(int(iron_assured.call(known)) == int(iron_assured.call(fed)) + 3 and "\n".join(known.get("report")).contains("(50 wanted)"), "wanting more known iron sources than drawn adds up to three assured ones (several iron locations known before iron smelting)")
+	check(int(iron_assured.call(known)) == int(iron_assured.call(base)) + 3 and "\n".join(known.get("report")).contains("(50 wanted)"), "wanting more known iron sources than drawn adds up to three assured ones (several iron locations known before iron smelting)")
 
 	# 6. The server lays a source out: outcrops and fragments in the right cells, the same every time, angular, its own ore.
 	var items = ItemsScript.new()

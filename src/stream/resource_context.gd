@@ -62,6 +62,7 @@ var pockets: Array = []           # {"id", "find", "x", "z", "depth" m under the
 var dangers: Array = []           # [x, z, radius m] of known dangers (hostile camps, bandit camps) the starting-island routes keep out of; set before building
 var first_bronze: Dictionary = {}   # copper and tin ore the starting island's sources must hold within their route budgets (supply_inputs; set before building)
 var ore_per_m3: float = 0.0       # stones a cubic metre of ore rock holds (the server's boulder rule; supply_inputs); 0 skips the quantity check
+var ore_cost: Dictionary = {}     # metal -> stones one ore piece takes out of a rock (its weight in stones, server_items._ore_cost; supply_inputs)
 var report: PackedStringArray = PackedStringArray()   # what the build found (the server log; the diagnostics tool)
 var build_ms: float = 0.0
 var built: bool = false           # every step of build finished
@@ -199,9 +200,16 @@ static func supply_inputs(boulders: Dictionary) -> Dictionary:
 
 	var kit: Dictionary = (boulders.get("distribution", {}) as Dictionary).get("first_bronze", {})
 	var need: Dictionary = first_bronze_need(kit, read.call("res://data/items/recipes.json", "recipes"), read.call("res://data/items/blueprints.json", "blueprints"), read.call("res://data/items/structures.json", "smelting"))
-	var stone_kg: float = maxf(CarryRules.weight_of("stone", CarryRules.load_config()), 0.05)
+	var carry: Dictionary = CarryRules.load_config()
+	var stone_kg: float = maxf(CarryRules.weight_of("stone", carry), 0.05)
 	var per_m3: float = float(boulders.get("height_ratio", 0.85)) * float(boulders.get("density_kg_m3", 2600)) * float(boulders.get("ore_yield", boulders.get("yield", 0.5))) / stone_kg
-	return {"first_bronze": need, "ore_per_m3": per_m3}
+	var costs: Dictionary = {}   # ore is mined by weight: a piece takes its own weight out of the rock in stones (server_items._ore_cost)
+
+	for metal in METALS:
+		var item: String = str(((boulders.get("ore", {}) as Dictionary).get("items", {}) as Dictionary).get(metal, metal + "_ore"))
+		costs[metal] = maxi(int(round(CarryRules.weight_of(item, carry) / stone_kg)), 1)
+
+	return {"first_bronze": need, "ore_per_m3": per_m3, "ore_cost": costs}
 
 
 # The copper and tin ore one player's first bronze takes (boulders.json distribution first_bronze: the tools, and the stations whose costs
@@ -220,8 +228,8 @@ static func first_bronze_need(kit: Dictionary, recipes: Dictionary, blueprints: 
 		for need in (recipes.get(str(piece), {}) as Dictionary).get("needs", []):
 			wants[str(need[0])] = int(wants.get(str(need[0]), 0)) + int(need[1])
 
-	for build in kit.get("builds", []):
-		for need in (blueprints.get(str(build), {}) as Dictionary).get("cost", []):
+	for bp in kit.get("builds", []):
+		for need in (blueprints.get(str(bp), {}) as Dictionary).get("cost", []):
 			wants[str(need[0])] = int(wants.get(str(need[0]), 0)) + int(need[1])
 
 	var ingots: int = int(wants.get("bronze_ingot", 0))
@@ -251,8 +259,9 @@ static func first_bronze_need(kit: Dictionary, recipes: Dictionary, blueprints: 
 	return {"ingots": ingots, "copper": int(per_player["copper"]) * players, "tin": int(per_player["tin"]) * players, "players": players, "per_player": per_player}
 
 
-# About how much ore a source's outcrops hold (the server lays them out the same way, server_items._lay_out_sources: outcrop count and
-# radius by size and the rock's own roll, stones by volume, ore by the source grade; fragments and loose pieces not counted).
+# About how many ore pieces a source's outcrops hold (the server lays them out the same way, server_items._lay_out_sources: outcrop count
+# and radius by size and the rock's own roll, stones by volume; the grade is the share of the rock's weight that comes out as ore, and a
+# piece takes ore_cost stones of it, server_items._hit_boulder; fragments and loose pieces not counted).
 func source_ore(d: Dictionary) -> float:
 	var size: float = float(d["size"])
 	var id: int = int(d["id"])
@@ -265,7 +274,7 @@ func source_ore(d: Dictionary) -> float:
 		var r: float = lerpf(float(_cfg.get("source_outcrop_radius_min", 0.5)), float(_cfg.get("source_outcrop_radius_max", 1.4)), size) * lerpf(0.7, 1.0, unit(id, k, 3))
 		total += float(maxi(int(4.0 / 3.0 * PI * r * r * r * ore_per_m3), 1)) * grade
 
-	return total
+	return total / float(maxi(int(ore_cost.get(str(d["metal"]), 1)), 1))
 
 
 func cell_at(x: float, z: float) -> int:

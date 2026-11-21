@@ -7816,6 +7816,7 @@ func start_resources(tiles_dir: String, tile_size_m: float, spawn: Vector3, dang
 		var supply: Dictionary = ResourceContextScript.supply_inputs(boulders)   # the first bronze ore from the live recipes (handoff 13; off the main thread)
 		building.set("first_bronze", supply["first_bronze"])
 		building.set("ore_per_m3", float(supply["ore_per_m3"]))
+		building.set("ore_cost", supply["ore_cost"])
 		building.load_tiles(tiles_dir, tile_size_m, seed_value, cfg, spawn)
 
 	_resource_task = WorkerThreadPool.add_task(job, false, "resource landscape")
@@ -8548,7 +8549,7 @@ func _seam_host_ok(spot: Vector3) -> bool:
 			_rock_family[str(row.get("name", ""))] = str(row.get("family", ""))
 
 	var rock: String = str(rock_near.call(spot))
-	return rock == "" or not _rock_family.has(rock) or families.has(_rock_family[rock])
+	return rock == "" or not _rock_family.has(rock) or _rock_family[rock] == "none" or families.has(_rock_family[rock])
 
 
 # The coal seam (ResourceContext seams) whose layer holds the point, or {}: within half its length along it, from out_m outside the
