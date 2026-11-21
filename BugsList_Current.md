@@ -1218,7 +1218,7 @@ Not yet played.
 | Small chest (new) | Copper nails or better | none (lift-off lid) | 24 | 4 Hardwood board, 8 Copper nails; any hammer, no chisel |
 | Rustic - Chest | Bronze nails or better | Bronze hinges or better | 30 | 6 Hardwood board, 12 nails, 2 hinges; any hammer, no chisel |
 | Large wooden chest | Iron nails or better | Iron hinges | 42 | 14 Hardwood board, 20 nails, 2 hinges; any hammer, no chisel |
-| Ornate - Chest | Steel nails | Iron hinges | 48 | 10 Hardwood board, 24 nails, 2 hinges, 2 Iron band; iron-tier hammer, Steel chisel |
+| Ornate - Chest | Steel nails | Iron hinges | 48 | 10 Hardwood board, 24 nails, 2 hinges, 2 Iron band; Bronze hammer or better, Steel chisel |
 
 The Fine - Chest (36 slots) is in the iron tier and is otherwise unchanged. Steel nails are new: 1 Steel ingot makes 100 at the brick forge, level 3. Every other building and recipe that took nails or hinges now reads "Bronze nails or better" / "Bronze hinges or better", which covers the same metals as before plus steel. Items 1512 (Small chest) and 1513 (Steel nails), recipe 750, blueprint 364, structure state 462. Saves are unchanged. Design and provisional picks: docs/design/CHEST_TIERS.md.
 
@@ -1239,6 +1239,7 @@ Dave requested this rewrite around the intended experience rather than a literal
 
 - CT-1 (entry 111): the copper chest is the Small chest, 24 slots. Chest slots go in six-slot rows, so 27 would leave half a row. That makes it the same size as the Crude - Chest. The Small chest is built with a hammer from copper nails and needs no twine. Its lid lifts off, because there are no copper hinges.
 - CT-2 (entry 111): Dave's "superior" chest is the existing Ornate - Chest, since Ornate is the top furniture grade. It keeps its Iron hinges, because there are no steel hinges.
+- CT-3 (entry 111): the Fine - Chest is in the iron tier, so it takes Iron nails or better and Iron hinges. Nothing else about it changed.
 - CT-4 (entry 111): Steel nails are 1 Steel ingot to 100 at the brick forge, level 3, value 2.
 - CT-5 (entry 111): only the chests are tiered. The other buildings that use nails (about 40) take bronze nails or better.
 - OP-1 (entry 107): ore pile looks, chosen by Claude. Copper ore: malachite green, 30% red-brown, lumps 0.3, 3,900 kg/m3. Tin ore: dark red-brown, 40% near-black, lumps 0.15, a little shiny, 6,900 kg/m3. Iron ore: grey-brown, 35% rust, lumps 0.3, 4,800 kg/m3. Bog iron ore: red-brown, 35% ochre, lumps 0.4, 3,600 kg/m3. The densities are the real minerals' and set how wide a cone a count makes.
