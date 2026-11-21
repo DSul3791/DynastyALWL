@@ -56,6 +56,7 @@ var drain: PackedFloat32Array = PackedFloat32Array()
 var deposits: Array = []          # {"metal", "x", "z", "size" 0..1, "radius" m, "id" int, "assured" bool}
 var seams: Array = []             # {"id", "x", "z", "along" Vector2 (the contour), "up" Vector2 (into the hill), "length" m, "thick" m, "into" m, "out" m}
 var pockets: Array = []           # {"id", "find", "x", "z", "depth" m under the generated ground, "r" m, "source" deposit id}
+var dangers: Array = []           # [x, z, radius m] of known dangers (hostile camps, bandit camps) the starting-island routes keep out of; set before building
 var report: PackedStringArray = PackedStringArray()   # what the build found (the server log; the diagnostics tool)
 var build_ms: float = 0.0
 
@@ -811,7 +812,8 @@ func _add_deposit(m: int, x: float, z: float, size: float, radius: float, id: in
 
 
 # The starting island (handoff 13): route costs from spawn over its land (cell length x (1 + slope_cost x slope^2), a river cell adds
-# river_cost_m, ground steeper than max_slope refused, cells over high_share of the island's peak refused: the hardest mountain ground).
+# river_cost_m, ground steeper than max_slope refused, cells over high_share of the island's peak refused: the hardest mountain ground;
+# cells within a known danger's radius refused: existing danger information, so early tin is not only behind an encounter).
 # Per metal, if no source lies within route_budget_m[metal], the reachable land cell of best field (then nearest) becomes an assured source
 # of size assured_size. Each finding goes into `report`.
 func _assure(spawn: Vector3) -> void:
@@ -883,6 +885,7 @@ func _route_costs(start: int, home: int) -> PackedFloat32Array:
 	var max_slope: float = float(_cfg.get("max_slope", 0.7))
 	var river_cost: float = float(_cfg.get("river_cost_m", 150.0))
 	var high: float = _island_peak[home] * float(_cfg.get("high_share", 0.6))
+	var unsafe: PackedByteArray = _danger_cells()
 
 	while not heap.is_empty():
 		var top: Array = _heap_pop(heap)
@@ -903,7 +906,7 @@ func _route_costs(start: int, home: int) -> PackedFloat32Array:
 
 			var o: int = j * nx + i
 
-			if island[o] != home or height[o] > high:
+			if island[o] != home or height[o] > high or unsafe[o] == 1:
 				continue
 
 			var step: float = cell_m * (1.4142 if int(N8X[n]) != 0 and int(N8Z[n]) != 0 else 1.0)
@@ -919,6 +922,28 @@ func _route_costs(start: int, home: int) -> PackedFloat32Array:
 				_heap_push(heap, [next, o])
 
 	return cost
+
+
+# The cells within a danger's radius (dangers), 1; the rest 0. Their count goes into `report`.
+func _danger_cells() -> PackedByteArray:
+	var out: PackedByteArray = PackedByteArray()
+	out.resize(nx * nz)
+	var marked: int = 0
+
+	for d in dangers:
+		var at: Vector2 = Vector2(float(d[0]), float(d[1]))
+		var r: float = float(d[2])
+		var i0: int = floori((at.x - r - origin.x) / cell_m)
+		var j0: int = floori((at.y - r - origin.y) / cell_m)
+
+		for j in range(maxi(j0, 0), mini(j0 + int(ceil(2.0 * r / cell_m)) + 2, nz)):
+			for i in range(maxi(i0, 0), mini(i0 + int(ceil(2.0 * r / cell_m)) + 2, nx)):
+				if out[j * nx + i] == 0 and (origin + Vector2(float(i), float(j)) * cell_m).distance_to(at) <= r:
+					out[j * nx + i] = 1
+					marked += 1
+
+	report.append("resources: %d known dangers keep %d cells off the starting-island routes" % [dangers.size(), marked])
+	return out
 
 
 static func _heap_push(heap: Array, item: Array) -> void:

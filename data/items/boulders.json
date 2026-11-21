@@ -221,6 +221,7 @@
 		"slope_cost": 8.0,
 		"max_slope": 0.7,
 		"river_cost_m": 150.0,
+		"danger_m": 200.0,
 		"high_share": 0.6,
 		"assured_size": 0.5,
 		"transport_m": {
@@ -247,7 +248,7 @@
 		"source_hand_share": 0.35,
 		"source_grade": [0.4, 0.8],
 		"coal": {
-			"note": "Coal districts and seams (handoff: coal on hillsides and near water, as seams to discover and follow). PROVISIONAL RD-9. A district is dry land on a slope (slope_min..slope_full rise per metre on the 64 m grid) within wet_reach_m of a lake, river, marsh, swamp, fen or bog (wet_classes, water_classes.json; streams cut down through coal beds and show them in their banks), where its own noise (wave_m) passes noise_cut. A seam: one candidate per seam_grid_m square, chance seam_chance x district; a coal layer thick_m thick at the ground height of its centre, length_m along the contour, into_m into the hill and out_m out. Where it meets the ground the server lays a dark coal outcrop every outcrop_every_m (radius outcrop_radius_m) with loose coal below; a shovel dig inside the layer gives per_dig coal (plus the shovel tier's extra) as well as the ground's own yield.",
+			"note": "Coal districts and seams (handoff: coal on hillsides and near water, as seams to discover and follow). PROVISIONAL RD-9. A district is dry land on a slope (slope_min..slope_full rise per metre on the 64 m grid) within wet_reach_m of a lake, river, marsh, swamp, fen or bog (wet_classes, water_classes.json; streams cut down through coal beds and show them in their banks), where its own noise (wave_m) passes noise_cut. A seam: one candidate per seam_grid_m square, chance seam_chance x district; a coal layer thick_m thick at the ground height of its centre, length_m along the contour, into_m into the hill and out_m out. Where it meets the ground the server lays a dark coal outcrop every outcrop_every_m (radius outcrop_radius_m) with loose coal below; a shovel dig inside the layer gives per_dig coal (plus the shovel tier's extra) as well as the ground's own yield, until the seam's coal_per_m x its length is dug out (a bounded body; it does not grow back).",
 			"wet_classes": [2, 3, 4, 6, 7, 8],
 			"wet_reach_m": 400.0,
 			"slope_min": 0.08,
@@ -268,6 +269,7 @@
 			"outcrop_grade": 0.5,
 			"loose_below": [0, 2],
 			"per_dig": [1, 2],
+			"coal_per_m": 2.0,
 			"first_find": "A black seam of coal runs through the hillside here. Follow it into the hill."
 		},
 		"pocket_note": "Pockets (handoff: digging occasionally reveals pockets or veins of gems, crystals, gold or silver; coordinator D-ORE-1 21 Nov 2026 under Dave's rule that agents' questions go to the coordinator). PROVISIONAL RD-10. Each row: find (ore.finds), metals (the sources it goes with), journey_min..journey_max (how far inland the source is), chance per roll x (0.5 + the source's size), per_source rolls, place (source: within the source's radius x 1.2; gravel: in the river gravels 1..gravel_cells 64 m cells down its drainage), depth_m under the generated ground, r_m (a dig this close that reaches the depth opens it). An opened pocket shows as a small rock in the hole (pocket_rock: stones and grade by find) to break with a pick or the Stone Hammer. Associations: gold as placer nuggets in river gravels below sources and in quartz veins at inland copper and iron sources; silver with copper; amethyst and agate in quartz cavities; garnet in hard mountain rock (the highest sources); clear quartz (Crystal lens) in cavities.",

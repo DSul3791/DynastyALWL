@@ -897,7 +897,7 @@ func _ready() -> void:
 		print(site_line)
 
 	items.respawn_point = spawn
-	items.start_resources(world_dir + "/tiles", float(settings.tile_size_m), spawn)   # the island resource landscape, built on a worker thread before the first scatter
+	items.start_resources(world_dir + "/tiles", float(settings.tile_size_m), spawn, _resource_dangers())   # the island resource landscape, built on a worker thread before the first scatter
 	_world_dir = world_dir
 	_start_water()
 
@@ -3629,3 +3629,28 @@ func _exit_tree() -> void:
 
 	if store != null:
 		store.flush()
+
+
+# Known dangers for the island resource landscape's starting-island check (handoff 13: "use existing danger information where available"):
+# the camp of every goblin tribe that will not trade (its attitude's trades false) and every bandit site whose camp stands (stage 3), each
+# with boulders.json distribution danger_m round it. Read once at start; nothing new is made for it.
+func _resource_dangers() -> Array:
+	var reach: float = float((items._boulder_cfg.get("distribution", {}) as Dictionary).get("danger_m", 200.0))
+	var out: Array = []
+	var attitudes: Dictionary = tribes.cfg.get("attitudes", {})
+
+	for tribe in tribes.tribes():
+		var attitude: Dictionary = attitudes.get(str((tribes.tribes()[tribe] as Dictionary).get("attitude", "")), {})
+		var camp: Dictionary = (tribes.tribes()[tribe] as Dictionary).get("camp", {})
+		var at: Dictionary = camp.get("fire", camp.get("mouth", {}))
+
+		if not bool(attitude.get("trades", true)) and not at.is_empty():
+			out.append([float(at.get("x", 0.0)), float(at.get("z", 0.0)), reach])
+
+	for cell in bandits.sites:
+		var site: Dictionary = bandits.sites[cell]
+
+		if int(site.get("stage", 0)) >= int(bandits.CAMP):
+			out.append([float(site.get("x", 0.0)), float(site.get("z", 0.0)), reach])
+
+	return out

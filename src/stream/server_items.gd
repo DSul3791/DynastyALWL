@@ -381,6 +381,7 @@ const ORE_KEY := 1 << 52               # copper, tin and iron rocks picked by ha
 const POCKET_KEY := (1 << 49) | ORE_KEY | BOULDER_KEY   # an opened pocket's rock: POCKET_KEY | the pocket's id (30 bits); bit 49 is in no other key (cell bits end at 47)
 var _pockets_open: Dictionary = {}     # pocket id -> [x, y, z] where its rock lies (the dig that opened it), saved in world_items.json "pockets"
 var _seam_y: Dictionary = {}           # seam id -> the generated ground height at its centre: the layer's height (once a run)
+var _seam_left: Dictionary = {}        # seam id -> coal still in a seam someone has dug (absent = untouched: its length x coal_per_m), saved in world_items.json "seams"
 const BOG_STATE := 229            # world-item row state of a bog iron deposit (next free structure state, 10 Nov 2026; no structure may take it)
 const BOG_ID_BASE := 2000000000   # bog deposit world row ids count down from here (int32, far above _next_id), one per deposit key per run
 var _bog_ids: Dictionary = {}     # deposit key "gi,gj" -> its world row id
@@ -1940,7 +1941,7 @@ func _item_job() -> Dictionary:
 	_note_save_part("world item copy", t0)
 	_save_gen += 1
 	return {"dir": _dir, "items": copy, "areas": areas, "all": _area_ids.keys(), "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(), "gen": _save_gen, "sums": _area_sums, "exact": exact, "failed_out": _save_failed,
-		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "ore_per_kg": _boulder_per_kg(true), "boulders_then": _boulder_pending.duplicate(true), "bog_iron": _bog_left.duplicate(true), "bog_holes": _bog_holes.duplicate(true), "pockets": _pockets_saved(), "layout": FloraLayout.VERSION, "no_kits": true}}
+		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "ore_per_kg": _boulder_per_kg(true), "boulders_then": _boulder_pending.duplicate(true), "bog_iron": _bog_left.duplicate(true), "bog_holes": _bog_holes.duplicate(true), "pockets": _pockets_saved(), "seams": _seams_saved(), "layout": FloraLayout.VERSION, "no_kits": true}}
 
 
 func _save_item_files(job: Dictionary) -> void:
@@ -2979,6 +2980,7 @@ func reset_world() -> int:
 	_bog_left.clear()
 	_bog_holes.clear()
 	_pockets_open.clear()
+	_seam_left.clear()
 	_picked.clear()
 	_stripped.clear()
 	_fruit.clear()
@@ -7317,6 +7319,9 @@ func _load_world_items() -> void:
 		if typeof(spot) == TYPE_ARRAY and (spot as Array).size() >= 3:
 			_pockets_open[int(id)] = [float(spot[0]), float(spot[1]), float(spot[2])]
 
+	for id in parsed.get("seams", {}):   # added 21 Nov 2026 (resource distribution): an older file has none
+		_seam_left[int(id)] = int(parsed["seams"][id])
+
 	for hole in parsed.get("bog_holes", []):   # added 21 Nov 2026: an older file has none
 		if typeof(hole) == TYPE_ARRAY and (hole as Array).size() >= 5:
 			_bog_holes.append([float(hole[0]), float(hole[1]), float(hole[2]), float(hole[3]), float(hole[4]), int(hole[5]) if (hole as Array).size() >= 6 else PEAT_SOIL])
@@ -7791,14 +7796,16 @@ func _scatter_around_players() -> void:
 
 # The island resource landscape (boulders.json distribution, docs/design/RESOURCE_DISTRIBUTION.md): built once from the baked tiles' coarse
 # maps on a worker thread at start (about a second or two; the first scatter waits for it, so no cell is ever laid out without it). Its
-# report (sources near spawn, any assured source) goes to the log.
-func start_resources(tiles_dir: String, tile_size_m: float, spawn: Vector3) -> void:
+# report (sources near spawn, any assured source) goes to the log. dangers: [x, z, radius m] the starting-island routes keep out of
+# (terrain_server: unfriendly tribes' camps and bandit camps known at start).
+func start_resources(tiles_dir: String, tile_size_m: float, spawn: Vector3, dangers: Array = []) -> void:
 	var cfg: Dictionary = _boulder_cfg.get("distribution", {})
 
 	if cfg.is_empty() or _resource_task != -1:
 		return
 
 	_resource_building = ResourceContextScript.new()
+	_resource_building.set("dangers", dangers.duplicate(true))
 	var building: RefCounted = _resource_building
 	var seed_value: int = world_seed
 	_resource_task = WorkerThreadPool.add_task(func() -> void: building.load_tiles(tiles_dir, tile_size_m, seed_value, cfg, spawn), false, "resource landscape")
@@ -8520,18 +8527,32 @@ func _seam_at(spot: Vector3) -> Dictionary:
 
 
 # A shovel dig inside a coal seam's layer also brings up coal (distribution coal per_dig, rolled like a soil row with the shovel tier's
-# extra, times the shovel size's pieces). The seam does not run out: it is followed into the hill, and the ground dug is the cost.
-# The first find says first_find once to that character.
+# extra, times the shovel size's pieces), never more than is left: a seam holds its length x coal_per_m (handoff 14: a resource body has a
+# bounded recoverable amount; nothing grows back). The first find says first_find once to that character.
 func _dig_seam_coal(peer: int, at: Vector3, tier: int, pieces: int) -> void:
 	var cfg: Dictionary = (_boulder_cfg.get("distribution", {}) as Dictionary).get("coal", {})
 	var number: int = table.number_of("coal")
 
-	if cfg.is_empty() or number <= 0 or _seam_at(at - Vector3(0.0, DIG_DEPTH_M, 0.0)).is_empty():
+	if cfg.is_empty() or number <= 0:
+		return
+
+	var seam: Dictionary = _seam_at(at - Vector3(0.0, DIG_DEPTH_M, 0.0))
+
+	if seam.is_empty():
+		return
+
+	var id: int = int(seam["id"])
+	var left: int = int(_seam_left.get(id, int(round(float(seam["length"]) * float(cfg.get("coal_per_m", 2.0))))))
+
+	if left <= 0:
 		return
 
 	var per: Array = cfg.get("per_dig", [1, 2])
 	var extra: int = int(_dig_cfg.get("tier_extra", {}).get(str(tier), 0))
-	give(peer, number, maxi(1, int(round(float(roll_amount(peer, _fate_rng, int(per[0]), int(per[1]) + extra)) * skill_factor(peer, "dig")))) * pieces)
+	var amount: int = mini(maxi(1, int(round(float(roll_amount(peer, _fate_rng, int(per[0]), int(per[1]) + extra)) * skill_factor(peer, "dig")))) * pieces, left)
+	give(peer, number, amount)
+	_seam_left[id] = left - amount
+	_dirty = true
 	_say_once(peer, "found_coal_seam", str(cfg.get("first_find", "")))
 
 
@@ -8638,6 +8659,16 @@ func _lay_out_seams(cell: Vector2i, cell_m: float, reads: Dictionary) -> void:
 				if coal > 0 and not _taken.has(loose_key) and not is_nan(dy) and dy >= 1.0:
 					_items[_next_id] = {"number": coal, "count": 1, "pos": Vector3(drop.x, dy, drop.y), "left": 1.0e9, "scatter": loose_key}
 					_next_id += 1
+
+
+# The coal left in dug seams, for the save: {id as text: coal}.
+func _seams_saved() -> Dictionary:
+	var out: Dictionary = {}
+
+	for id in _seam_left:
+		out[str(id)] = int(_seam_left[id])
+
+	return out
 
 
 # The opened pockets, for the save: {id as text: [x, y, z]}.

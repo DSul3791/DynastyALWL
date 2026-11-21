@@ -172,6 +172,16 @@ func _init() -> void:
 	var assured_tin: Array = (assured.get("deposits") as Array).filter(func(d): return str(d["metal"]) == "tin")
 	check(assured_tin.size() == 1 and bool(assured_tin[0]["assured"]) and Vector2(float(assured_tin[0]["x"]) - spawn.x, float(assured_tin[0]["z"]) - spawn.z).length() < 2500.0, "with no tin drawn, an assured tin source is placed within reach of spawn (%s)" % str(assured_tin))
 
+	# 5b. Known dangers (hostile camps, bandit camps) keep the starting-island routes out of their ground.
+	var safe_cost: PackedFloat32Array = context.call("_route_costs", int(context.call("cell_at", spawn.x - 64.0, spawn.z)), int(isl[int(context.call("cell_at", spawn.x - 64.0, spawn.z))]))
+	var risky: RefCounted = ContextScript.new()
+	var camp: Vector2 = Vector2(CENTRE.x + RADIUS * 0.5, CENTRE.y)
+	risky.set("dangers", [[camp.x, camp.y, 300.0]])
+	risky.build(context.get("height").duplicate(), context.get("water").duplicate(), N, N, Vector2.ZERO, CELL, SEED, cfg, spawn)
+	var risky_cost: PackedFloat32Array = risky.call("_route_costs", int(context.call("cell_at", spawn.x - 64.0, spawn.z)), int(isl[int(context.call("cell_at", spawn.x - 64.0, spawn.z))]))
+	var camp_cell: int = int(context.call("cell_at", camp.x, camp.y))
+	check(safe_cost[camp_cell] < INF and risky_cost[camp_cell] == INF and str(risky.get("report")).contains("known dangers"), "a route never crosses a known danger's ground (%.0f m without it)" % safe_cost[camp_cell])
+
 	# 6. The server lays a source out: outcrops and fragments in the right cells, the same every time, angular, its own ore.
 	var items = ItemsScript.new()
 	items.send_full = func(_p, _b): pass
@@ -371,6 +381,17 @@ func _stage_two(all_cfg: Dictionary, cfg: Dictionary, spawn: Vector3, plain: Ref
 	var got: int = coal_server.inventory_of(1).count_of(coal_n)
 	coal_server._dig_seam_coal(1, in_band + Vector3(0.0, 5.0, 0.0), 1, 1)
 	check(got >= 2 and coal_server.inventory_of(1).count_of(coal_n) == got and notices.count(str(wet_cfg["coal"]["first_find"])) == 1, "digging in the seam gives coal (%d from two digs), above it none; the first find is said once" % got)
+
+	var seam_id: int = int(seam["id"])
+	coal_server._seam_left[seam_id] = 1   # nearly dug out: a seam is a bounded body (handoff 14)
+	coal_server._dig_seam_coal(1, in_band, 1, 1)
+	var last: int = coal_server.inventory_of(1).count_of(coal_n) - got
+	coal_server._dig_seam_coal(1, in_band, 1, 1)
+	check(last == 1 and coal_server.inventory_of(1).count_of(coal_n) == got + 1 and int(coal_server._seam_left[seam_id]) == 0, "a seam gives no more than is left in it, then none")
+	coal_server._dirty = true
+	coal_server.save()
+	var coal_again = server("test_resource_coal", wet, Vector3(s_at.x, ground(s_at.x, s_at.y) + 1.0, s_at.y), "", false)
+	check(int(coal_again._seam_left.get(seam_id, -1)) == 0, "what is left in a dug seam is saved with the world")
 
 	# 12. Pockets: most sources have none; with every chance at 1 each table row shows, by its own rules, the same every build.
 	var real_pockets: int = (plain.get("pockets") as Array).size()
