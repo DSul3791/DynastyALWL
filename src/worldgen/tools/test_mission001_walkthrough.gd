@@ -450,6 +450,19 @@ func furnace_pos(id: int) -> Vector3:
 	return items._items[id]["pos"] if items._items.has(id) else FORGE
 
 
+# Puts `count` Charcoal from the pack into a smithy's fuel slot (Dave 21 Nov 2026), burning more at the forge yard first when short.
+func stoke(id: int, count: int) -> void:
+	var back: Vector3 = items._peer_pos[1]
+
+	if have("charcoal") < count:
+		make_charcoal(count)
+		go(back)
+
+	items.action(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_CHEST_PUT, slot_of("charcoal"), id, count, Vector3.ZERO)
+	items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+
+
 func make_charcoal(wanted: int) -> void:
 	go(FORGE)
 
@@ -695,16 +708,19 @@ func step2_wood_and_metal() -> void:
 	check(make_iron(saw_iron), "2c. bog iron dug with the shovel, charcoal burnt at the campfire and smelted at the Improved smelter with its bellows worked: %d Iron ingots (%d needed)" % [have("iron_ingot"), saw_iron])
 
 	# The Improved smithy from stones, clay, logs (gathered: test_iron_saw_route) and bronze for its anvil and fittings (the bronze route,
-	# test_bronze_path), no iron (master s2.7 item 5); cold, it is fired by the craft with charcoal.
+	# test_bronze_path), no iron (master s2.7 item 5); it works on the charcoal put in its fuel slot (Dave 21 Nov 2026).
 	check(cost_of("blacksmithy", "iron_ingot") == 0, "2c'. the Improved smithy needs no iron")
 	give_cost("blacksmithy", ["stone", "clay", "log", "bronze_ingot", "bronze_nails", "bronze_hinges"])
 	smithy = build("blacksmithy", FORGE + Vector3(0.0, 0.0, 3.5), "2d")
 	make_charcoal(4)
 	var charcoal_n: int = have("charcoal")
-	check(smithy >= 0 and not bool(items._items[smithy]["struct"].get("lit", false)), "2e. the new Smithy stands cold")
+	check(smithy >= 0 and not items._smithy_fuelled(items._items[smithy], items._structures["blacksmithy"]), "2e. the new Smithy stands with an empty fuel slot")
+	stoke(smithy, 2)
+	var slot_n: int = items._chests[int(items._items[smithy]["struct"]["uid"])].counts[0]
+	check(slot_n == 2 and have("charcoal") == charcoal_n - 2, "2e'. two Charcoal put in go to its fuel slot")
 	items.give(1, n("stick"), need_of("hand_saw", "stick"))   # sticks lie about (test_first_hour)
 	craft("hand_saw", 1)
-	check(bool(items._items[smithy]["struct"].get("lit", false)) and have("charcoal") < charcoal_n, "2f. the craft fires the Smithy with charcoal from the pack")
+	check(not bool(items._items[smithy]["struct"].get("lit", false)) and items._chests[int(items._items[smithy]["struct"]["uid"])].counts[0] < slot_n, "2f. the craft burns charcoal from the Smithy's fuel slot, never lit")
 	check(have("hand_saw") == 1 and have("saw_blade") == 0, "2g. an Iron - Saw is made at the Smithy (no Saw blade)")
 
 	# Planks from a softwood log and Hardwood boards from a hardwood log (logs felled and worked: test_first_hour, test_lumber_route).
@@ -905,6 +921,9 @@ func step3_construction_and_equipment() -> void:
 	go(adv_at + Vector3(0.0, 0.0, -2.0))
 	var adv_smithy: int = build("advanced_smithy", adv_at, "3u")
 	check(adv_smithy >= 0 and items.table.entry("advanced_smithy")["name"] == "Advanced smithy" and have("iron_anvil_part") == 0, "3u. the Advanced smithy stands, built with the Iron anvil")
+
+	if adv_smithy >= 0:
+		stoke(adv_smithy, 2)
 	go(FORGE + Vector3(-2.0, 0.0, 0.0))
 	feed("forge yard", 6)
 	var brick_crafts: int = crafts_for("brick", cost_of("large_forge", "brick") + cost_of("master_forge", "brick"))
@@ -943,6 +962,9 @@ func step3_construction_and_equipment() -> void:
 	go(master_at + Vector3(-3.5, 0.0, 0.0))
 	var master: int = build("master_forge", master_at, "3x")
 	check(master >= 0 and have("steel_anvil_part") == 0 and items.table.entry("master_forge")["name"] == "Master smithy", "3x. the Master smithy stands, built with the Steel anvil")
+
+	if master >= 0:
+		stoke(master, 2)
 	var tempered: int = SmithingRules.code(true, 0)
 	items.give(1, n("stick"), need_of("steel_knife", "stick"))   # sticks lie about (test_first_hour)
 	check(items.craft_variants(1, recipe("steel_knife")).has(tempered), "3y. beside the Master smithy Tempered is offered for the Steel - Knife, its quencher built in")
@@ -951,7 +973,8 @@ func step3_construction_and_equipment() -> void:
 	var base_d: int = int(items.table.entry("steel_knife")["durability"])
 	check(ks >= 0 and int(inv.inst_of(ks).get("temper", 0)) == 1 and inv.max_durability(ks) > base_d, "3y. a Tempered Steel - Knife from Advanced smelter steel (lasts %d against %d)" % [inv.max_durability(ks) if ks >= 0 else -1, base_d])
 	if master >= 0:
-		items._items[master]["struct"]["lit"] = false   # the Master smithy is let go out (its fuel runs 1800 s): later crafts at the yard are worked at the Improved smithy beside the player
+		items._chests[int(items._items[master]["struct"]["uid"])].clear_slot(0)   # the Master smithy's fuel is taken out: later crafts at the yard are worked at the Improved smithy beside the player
+		items._items[master]["struct"].erase("fuel_left")
 
 	# Building stuff left over stays at the forge yard (the carry limit); the small things go into the Rustic - Chest at depot A.
 	leave({"brick": 0, "mortar": 0, "stone": 0, "log": 0, "stick": 4, "charcoal": 12, "plant_fibre": 0, "clay": 0, "sand": 0})

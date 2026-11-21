@@ -102,10 +102,9 @@ func _init() -> void:
 	var kits: Array = ["log_workbench_kit", "stone_forge_kit", "blacksmithy_kit", "large_forge_kit", "master_forge_kit"]
 	# [workbench, forge, brick_forge]. The Smithy (Brick - Forge) is its own body (item_system.md, forge levels ruled 9 Nov 2026): brick_forge 2 for iron, and a
 	# level-1 forge for bronze (also). The old Blast furnace is the Advanced smelter (GOALS-REPAIR R4): a smelter, no crafting station at all;
-	# the Master smithy a smithy too (brick_forge 3 for steel, forge 1) with its own master_smithy body. The smithies must burn to craft: the
-	# player carries charcoal to fire them.
+	# the Master smithy a smithy too (brick_forge 3 for steel, forge 1) with its own master_smithy body. Every smithy works only with fuel in its
+	# fuel slot (Dave 21 Nov 2026): each gets Charcoal there as it stands.
 	var want: Array = [[2, 0, 0], [0, 1, 0], [0, 1, 2], [0, 0, 0], [0, 1, 3]]
-	tiers.inventory_of(1).add(tiers.table.number_of("charcoal"), 20)
 
 	for n in 5:
 		var kit_number: int = tiers.table.number_of(kits[n])
@@ -113,7 +112,8 @@ func _init() -> void:
 		tiers.report_position(1, spots[n] - Vector3(2.0, 0.0, 0.0))
 		tiers.action(1, Net.ACT_ADMIN_GIVE, kit_number, 0, 1, Vector3.ZERO)
 		tiers.place_item(1, kit_number, spots[n], 0)
-		
+		_fuel_smithies(tiers, 5)
+
 		check(int(want[n][0]) == 0 or tiers.station_near(1, "workbench", int(want[n][0])), "%s gives workbench %d" % [kits[n], int(want[n][0])])
 		check(not tiers.station_near(1, "workbench", int(want[n][0]) + 1), "%s gives no more than %d" % [kits[n], int(want[n][0])])
 		check(tiers.station_near(1, "forge", int(want[n][1])) or int(want[n][1]) == 0, "%s forge %d" % [kits[n], int(want[n][1])])
@@ -125,9 +125,15 @@ func _init() -> void:
 	check(not tiers.station_near(1, "blast_furnace", 1) and not tiers.station_near(1, "smelter", 1) and tiers._smelters.is_smelter(tiers._structures["large_forge"]) and tiers._structures["large_forge"].get("station", "") == "" and not tiers._structures["large_forge"].has("also"), "the old Blast furnace is the Advanced smelter: it smelts by itself and serves no crafting station (GOALS-REPAIR R4)")
 	tiers.report_position(1, spots[4] - Vector3(2.0, 0.0, 0.0))
 	check(tiers.station_near(1, "master_smithy", 1), "the Master smithy is its own body")
-	tiers.inventory_of(1).remove(tiers.table.number_of("charcoal"), tiers.inventory_of(1).count_of(tiers.table.number_of("charcoal")))
 	tiers.report_position(1, spots[2] - Vector3(2.0, 0.0, 0.0))
-	check(not tiers.station_near(1, "brick_forge", 1), "a cold Smithy with no fuel in the pack serves nothing (master s4 item 10: it must burn)")
+	var brick_id: int = tiers.serving_station(1, "brick_forge", 2)
+	var brick_box = tiers._chests[int(tiers._items[brick_id]["struct"]["uid"])]
+	brick_box.clear_slot(0)
+	tiers.inventory_of(1).add(tiers.table.number_of("charcoal"), 20)
+	check(not tiers.station_near(1, "brick_forge", 1), "a Smithy with an empty fuel slot serves nothing, even with Charcoal in the pack (Dave 21 Nov 2026)")
+	_fuel_smithies(tiers, 5)
+	tiers.inventory_of(1).remove(tiers.table.number_of("charcoal"), tiers.inventory_of(1).count_of(tiers.table.number_of("charcoal")))
+	check(tiers.station_near(1, "brick_forge", 2) and not bool(tiers._items[brick_id]["struct"].get("lit", false)), "with Charcoal in its fuel slot it serves, and is never lit")
 
 	var steel: int = 0
 
@@ -140,7 +146,6 @@ func _init() -> void:
 	# Bellows and the Quenching trough beside the Smithy are old add-ons that never change its level. The standalone Bellows no longer speed the
 	# Smithy or save its fuel (GOALS-REPAIR R3; CATALOG_IMPLEMENTATION_PLAN s1: the standalone Smithy Bellows must not return), but a placed one
 	# still stands (old saves).
-	tiers.inventory_of(1).add(tiers.table.number_of("charcoal"), 20)
 	tiers.report_position(1, spots[2] - Vector3(2.0, 0.0, 0.0))
 
 	for addon in [["bellows", Vector3(0.0, 0.0, 3.0)], ["quenching_trough", Vector3(0.0, 0.0, -3.0)]]:
@@ -159,10 +164,20 @@ func _init() -> void:
 	var smithy_id: int = tiers.serving_station(1, "brick_forge", 2)
 	var smithy_def: Dictionary = tiers._structures["blacksmithy"]
 	check(smithy_id >= 0 and not tiers._structures["bellows"].has("craft_speed") and not tiers._structures["bellows"].has("fuel_saving") and is_equal_approx(tiers._wheel_slow(1, {"station": "brick_forge", "station_level": 2}), 1.0), "standalone Bellows no longer make the Smithy faster or save its fuel")
-	var before_fuel: int = tiers.inventory_of(1).count_of(tiers.table.number_of("charcoal"))
-	check(tiers.station_near(1, "brick_forge", 2, true) and bool(tiers._items[smithy_id]["struct"].get("lit", false)), "a craft fires the cold Smithy")
-	check(tiers.inventory_of(1).count_of(tiers.table.number_of("charcoal")) == before_fuel - 1 and is_equal_approx(float(tiers._items[smithy_id]["struct"].get("fuel_left", 0.0)), float(smithy_def["fuel_s"])), "with one charcoal from the pack, burning its plain time, Bellows or not")
-	check(tiers.station_near(1, "brick_forge", 2, true) and tiers.inventory_of(1).count_of(tiers.table.number_of("charcoal")) == before_fuel - 1, "a burning Smithy takes no more fuel")
+	# The fuel burns only while a craft is worked there: one Charcoal from the fuel slot for fuel_craft_s seconds of making (Dave 21 Nov 2026).
+	var box = tiers._chests[int(tiers._items[smithy_id]["struct"]["uid"])]
+	var before_fuel: int = box.counts[0]
+	tiers._items[smithy_id]["struct"].erase("fuel_left")
+	check(tiers._smithy_burn(smithy_id, 1.0) and box.counts[0] == before_fuel - 1 and is_equal_approx(float(tiers._items[smithy_id]["struct"].get("fuel_left", 0.0)), float(smithy_def["fuel_craft_s"]) - 1.0) and bool(tiers._items[smithy_id]["struct"].get("busy", false)), "a craft tick takes one Charcoal from the fuel slot, burns a second of it and sets the smithy working (the flare)")
+	check(tiers._smithy_burn(smithy_id, 1.0) and box.counts[0] == before_fuel - 1, "the next tick burns the same Charcoal")
+	tiers._busy_ms[smithy_id] = Time.get_ticks_msec() - tiers.BUSY_HOLD_MS - 10
+	tiers._settle_busy()
+	check(not bool(tiers._items[smithy_id]["struct"].get("busy", false)) and tiers._smithy_fuelled(tiers._items[smithy_id], smithy_def), "no craft worked there: back to its idle coals, still fuelled")
+	check(tiers._smithy_slot_refusal(smithy_def, tiers.table.number_of("stone"), 0) != "" and tiers._smithy_slot_refusal(smithy_def, tiers.table.number_of("coal"), 0) == "", "its fuel slot takes Coal or Charcoal only")
+	box.clear_slot(0)
+	check(tiers._smithy_add(smithy_def, box, tiers.table.number_of("coal"), 3) == 0 and box.numbers[0] == tiers.table.number_of("coal") and box.counts[0] == 3, "Coal put in goes to the fuel slot")
+	var stone_left: int = tiers._smithy_add(smithy_def, box, tiers.table.number_of("stone"), 2)
+	check(stone_left == 0 and box.numbers[0] == tiers.table.number_of("coal") and box.count_of(tiers.table.number_of("stone")) == 2, "anything else goes past the fuel slot")
 
 	# A placed standalone Bellows (an old save) still loads and takes down into its blueprint's materials, but can no longer be built (GOALS-REPAIR R3).
 	var bellows_id: int = -1
@@ -249,3 +264,16 @@ func _body_checks(tiers) -> void:
 	tiers._next_id += 1
 	check(tiers.station_near(1, "test_brick_forge", 3), "with its anvil it is level 3: steel")
 	check(not tiers.station_near(1, "test_forge", 2), "the anvil does not lift its also level")
+
+
+# Every placed smithy gets `count` Charcoal in its fuel slot (structures.json fuel_slot; Dave 21 Nov 2026).
+func _fuel_smithies(tiers, count: int) -> void:
+	for id in tiers._items:
+		var it: Dictionary = tiers._items[id]
+
+		if it.has("struct") and tiers._fuel_slot_kind(tiers._structures.get(str(it["struct"]["kind"]), {})) and tiers._chests.has(int(it["struct"].get("uid", -1))):
+			var box = tiers._chests[int(it["struct"]["uid"])]
+
+			if box.numbers[0] == 0:
+				box.numbers[0] = tiers.table.number_of("charcoal")
+				box.counts[0] = count

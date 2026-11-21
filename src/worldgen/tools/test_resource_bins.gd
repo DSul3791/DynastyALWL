@@ -371,23 +371,24 @@ func _init() -> void:
 	run(600.0)
 	check(items._items.has(laid), "8l. and it is still there 10 minutes on")
 
-	# 9. A cold smithy fired from a bin (A-28).
+	# 9. A smithy burns only the fuel in its own fuel slot (Dave 21 Nov 2026: "smithys should just take coal in a fuel slot"), never a bin's.
 	clear_world()
 	clear_pack()
 	var smithy: int = place("blacksmithy", HERE + Vector3(0.0, 0.0, 2.5))
-	var fuel_bin: int = place("open_storage_bin", HERE + Vector3(0.0, 0.0, 35.0))
+	var fuel_bin: int = place("open_storage_bin", HERE + Vector3(0.0, 0.0, 10.0))
 	box(fuel_bin).add(n("coal"), 3)
 	items.give(1, n("iron_ingot"), 2)
 	items.give(1, n("stick"), 2)
 	items._last_queue_act.clear()
 	act(Net.ACT_CRAFT_QUEUE, recipe_number("hand_saw"), 0, 1)
 	run(30.0)
-	check(not bool(items._items[smithy]["struct"].get("lit", false)) and held(fuel_bin, "coal") == 3 and box(smithy).count_of(n("hand_saw")) + pack("hand_saw") == 0, "9a. with no fuel in the pack and the only Coal bin 35 m off, the cold smithy is not fired and nothing is made")
-	items._items[fuel_bin]["pos"] = HERE + Vector3(0.0, 0.0, 25.0)
+	check(held(fuel_bin, "coal") == 3 and box(smithy).count_of(n("hand_saw")) + pack("hand_saw") == 0, "9a. with an empty fuel slot and Coal in a bin 10 m off, nothing is made and the bin keeps its Coal")
+	box(smithy).numbers[0] = n("coal")
+	box(smithy).counts[0] = 2
 	items._last_queue_act.clear()
 	act(Net.ACT_CRAFT_QUEUE, recipe_number("hand_saw"), 0, 1)
 	run(30.0)
-	check(bool(items._items[smithy]["struct"].get("lit", false)) and held(fuel_bin, "coal") == 2 and box(smithy).count_of(n("hand_saw")) + pack("hand_saw") == 1, "9b. with the Coal bin 25 m off, the craft fires it with one Coal from the bin and makes the Iron - Saw (%d Coal left)" % held(fuel_bin, "coal"))
+	check(not bool(items._items[smithy]["struct"].get("lit", false)) and box(smithy).counts[0] == 1 and held(fuel_bin, "coal") == 3 and box(smithy).count_of(n("hand_saw")) + pack("hand_saw") == 1, "9b. with 2 Coal in its fuel slot it makes the Iron - Saw, burning one (%d left), never lit" % box(smithy).counts[0])
 
 	print("test_resource_bins: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	items._finish_writer()
