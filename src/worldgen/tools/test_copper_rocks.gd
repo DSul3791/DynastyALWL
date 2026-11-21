@@ -281,7 +281,7 @@ func _init() -> void:
 			var broken: int = 0
 			var radius_sum: float = 0.0
 			var grade_ok: bool = true
-			var keys_ok: bool = true
+			var slots_ok: bool = true
 			var lo: float = float(ore_cfg[ore]["grade_min"]) - 0.001
 			var hi: float = float(ore_cfg[ore]["grade_max"]) + 0.001
 			var slot_lo: int = int(ore_cfg[ore]["slot"])
@@ -291,14 +291,14 @@ func _init() -> void:
 					at_river += 1
 
 				var key_slot: int = (int(r[0]) & 0xff) if (int(r[0]) & rv.ORE_KEY) != 0 else (int(r[0]) & 15)   # copper boulders keep the boulder form: a 4-bit slot
-				keys_ok = keys_ok and key_slot >= slot_lo and key_slot < slot_lo + 8
+				slots_ok = slots_ok and key_slot >= slot_lo and key_slot < slot_lo + 8
 
 				if not bool(r[4]):
 					broken += 1
 					radius_sum += float(r[2])
 					grade_ok = grade_ok and float(r[3]) >= lo and float(r[3]) <= hi
 
-			by_height["%s %d" % [ore, int(ground_m)]] = [at_river, radius_sum / maxf(float(broken), 1.0), broken, grade_ok, keys_ok]
+			by_height["%s %d" % [ore, int(ground_m)]] = [at_river, radius_sum / maxf(float(broken), 1.0), broken, grade_ok, slots_ok]
 
 	print("by the river (count, mean radius of rocks to break, rocks to break): %s" % str(by_height))
 
