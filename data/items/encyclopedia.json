@@ -5080,10 +5080,10 @@
 			"kind": "tool",
 			"description": "A strip of hard steel. Strike flint on it for a shower of sparks.",
 			"how_to_get": [
-				"Craft at a brick forge: 1 Steel ingot"
+				"Not made yet: its recipe is locked until it has a use"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false
 		},
 		"javelin": {
 			"name": "Javelin",

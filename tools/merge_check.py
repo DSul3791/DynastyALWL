@@ -188,9 +188,11 @@ if goal_gaps.returncode != 0:   # every goal comes after the goals that build th
 
 goal_stage = subprocess.run([sys.executable, "tools/goal_stage_audit.py"], capture_output=True, text=True)
 if goal_stage.returncode != 0:   # every goal is reachable with its own stage's metals (Dave 21 Nov 2026: materials "available ... at every stage of the goals")
-    for line in goal_stage.stdout.splitlines():
-        if line.startswith("LATE"):
-            bad("goal stage: " + line)
+    late = [line for line in goal_stage.stdout.splitlines() if line.startswith("LATE")]
+    for line in late:
+        bad("goal stage: " + line)
+    if not late:   # the audit itself failed (a data change it cannot read): never pass silently
+        bad("goal stage audit failed: " + " | ".join(goal_stage.stderr.strip().splitlines()[-3:]))
 
 placeable = subprocess.run([sys.executable, "tools/placeables_check.py"], capture_output=True, text=True)
 if placeable.returncode != 0:   # every placeable item must be placeable (Dave 5 Nov 2026)

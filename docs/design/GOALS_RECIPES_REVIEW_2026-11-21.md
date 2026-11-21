@@ -18,7 +18,7 @@ The live list was 31 goals, all stage `start`: the stone camp (water, fibre, twi
 
 | Change | Why |
 |---|---|
-| 18 metal-path goals appended to `starter_goals.json`: charcoal, copper ore, Primitive smelter, copper ingot, Primitive smithy, copper tool, tin ore, bronze ingot, bronze tool, Improved smelter, iron ore, iron ingot, Improved smithy, iron tool, Advanced smelter, steel ingot, Advanced smithy, steel tool | Coordinator decision D-GOAL-1 (under Dave's 21 Nov rule that the coordinator answers design questions). Each goal is reached at its own stage (goal_stage_audit) and after the goals that build its stations (goal_station_audit). Ore hints say where to look (rivers, upstream, wet ground). |
+| 18 metal-path goals appended to `camp_goals.json`, after the camp and winter goals so the HUD (first two unfinished goals in authored order) still shows the winter chain first: charcoal, copper ore, Primitive smelter, copper ingot, Primitive smithy, copper tool, tin ore, bronze ingot, bronze tool, Improved smelter, iron ore, iron ingot, Improved smithy, iron tool, Advanced smelter, steel ingot, Advanced smithy, steel tool | Coordinator decision D-GOAL-1 (under Dave's 21 Nov rule that the coordinator answers design questions). Each goal is reached at its own stage (goal_stage_audit) and after the goals that build its stations (goal_station_audit). Ore hints say where to look (rivers, upstream, wet ground). |
 | Fish goal hint: the rod needs a bone hook; the net is 3 rope and 4 stones | The recipe has a Hook; the hint left it out, so a player could not make the rod from it. |
 | Drying rack goal hint: "Hold your knife" | The Drying rack is a knife blueprint; the hammer's list does not show it. |
 | Story goal hint: Edda only, in the evening | The check counts Edda alone (`npc: edda`); the hint also named Hob. |
@@ -40,7 +40,7 @@ The live list was 31 goals, all stage `start`: the stone camp (water, fibre, twi
 
 ## Depends on the ore layout (final pass)
 
-- Goal hints `copper_ore`, `tin_ore` and `iron_ore` are worded for the ore thread's early layout (draft #1469: iron everywhere from the first hour as loose stones, bog iron and rusty outcrops needing a bronze pick; copper inland, first source about 1.4 km by route from spawn; tin from river finds below sources, first source about 2 km by route below the high mountains). Confirm when it lands; the loose iron stones need #1455.
+- Goal hints `copper_ore`, `tin_ore` and `iron_ore` are worded for the ore thread's early layout (draft #1469: iron everywhere from the first hour as loose stones, bog iron and rusty outcrops needing a bronze pick; copper inland, first source about 1.4 km by route from spawn; tin from river finds below sources, first source about 2 km by route below the high mountains). For now the iron hint names bog iron only (the only iron on land in dev); the river iron stones (#1455) and rusty outcrops go in at the final pass.
 - Encyclopedia `how_to_get` for Copper ore, Tin ore and Iron ore still say "a boulder over a body with any pick"; copper and tin rocks lie along rivers and are picked by hand or broken with the Stone - Hammer.
 
 ## Checked and left as they are
