@@ -929,10 +929,14 @@ func _update_connect_window() -> void:
 	if connected_msec > 0:
 		var since: int = int(float(now - connected_msec) * 0.001)
 
-		if (not waiting_for_ground and since >= 3) or since > 120:
+		# On a first start the window (and its note) stays until the player has landed ("JOIN: ground ready"): the long pause comes a frame
+		# after the welcome, when waiting_for_ground is still false (Lane A, 21 Nov 2026: the window closed at +5 s, then froze 24 s).
+		var landed: bool = _ground_logged if _connect_window.first_load_note_shown() else not waiting_for_ground
+
+		if (landed and since >= 3) or since > 120:
 			_telemetry.event("connect window closed after %d s in the world" % since)
 
-			if not waiting_for_ground:
+			if _ground_logged:
 				ConnectWindowScript.mark_first_load_done(BUILD)
 			_connect_window.close()
 			_connect_window = null

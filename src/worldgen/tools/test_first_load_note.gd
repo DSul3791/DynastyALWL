@@ -22,12 +22,12 @@ func _init() -> void:
 	var window = ConnectWindowScript.new()
 	window.setup(root)
 	window.show_first_load_note(900)
-	check(window._note.visible, "the note shows on a first start")
+	check(window._note.visible and window.first_load_note_shown(), "the note shows on a first start (and the client keeps the window until landing)")
 	check("half a minute" in window._note.text and "Not responding" in window._note.text and "not stuck" in window._note.text, "the note says how long, what it looks like, and to wait")
 
 	ConnectWindowScript.mark_first_load_done(900)
 	window.show_first_load_note(900)
-	check(not window._note.visible, "no note once a join on this build reached the ground")
+	check(not window._note.visible and not window.first_load_note_shown(), "no note once a join on this build reached the ground")
 
 	window.show_first_load_note(901)
 	check(window._note.visible, "the note shows again after an update (another build)")

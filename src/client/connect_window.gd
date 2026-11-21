@@ -74,6 +74,11 @@ func show_first_load_note(build: int) -> void:
 	_note.visible = not FileAccess.file_exists(first_load_mark) or FileAccess.get_file_as_string(first_load_mark).strip_edges() != first_load_key(build)
 
 
+# True while the first-load note is up: the client then keeps this window until the player has landed, past the pause.
+func first_load_note_shown() -> bool:
+	return _note.visible
+
+
 # After a join that reached the ground: the next start on this computer does not show the note.
 static func mark_first_load_done(build: int) -> void:
 	var file: FileAccess = FileAccess.open(first_load_mark, FileAccess.WRITE)
