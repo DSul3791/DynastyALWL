@@ -226,15 +226,14 @@ func _init() -> void:
 		for cost in repair:
 			inv.add(chunk if str(cost[0]) == "iron_ingot" else mender.table.number_of(str(cost[0])), int(cost[1]))
 
-		var station: String = str(mender.table.entry("iron_pickaxe").get("repair_station", ""))
+		# Its repair station is the brick forge, served by a Blacksmithy (structures.json blacksmithy station_level 2).
+		var forge: int = mender.dev_place("blacksmithy@7,5,0,lit")
+		check(forge > 0, "a lit Blacksmithy beside the player for the repair")
 
-		if station != "":
-			var forge: int = mender.dev_place("%s@7,5,0,lit" % station)
-
-			if forge > 0:
-				mender._items[forge]["struct"]["owner"] = "meteorite01"
-				mender._items[forge]["struct"]["lit"] = true
-				mender._items[forge]["struct"]["fuel_left"] = 1.0e7
+		if forge > 0:
+			mender._items[forge]["struct"]["owner"] = "meteorite01"
+			mender._items[forge]["struct"]["lit"] = true
+			mender._items[forge]["struct"]["fuel_left"] = 1.0e7
 
 		inv.wear[tool_slot] = 50
 		mender._repair(1, inv, tool_slot)
