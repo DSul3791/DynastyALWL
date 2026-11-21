@@ -34,7 +34,7 @@ const GOBLIN_LITTER_RING_M := 1.6   # how far from the fire
 # den in ANIMAL_DEN_PERCENT of them, picked by the cave's id; the animal follows the cave's size.
 const ANIMAL_DEN_PERCENT := 70
 const ANIMAL_DEN_BY_SIZE := {"large": "bear", "medium": "wolf", "small": "fox"}   # a lava tube counts as large
-const ANIMAL_DEN_RESERVED := ["3,4#8013"]   # the cave proposed for the goblin trading camp (thread "Build a goblin trading camp"), held free of animals
+const CAMP_CAVES := ["3,4#8006"]   # the Ragtooth camp's cave (data/creatures/goblin_tribes.json camp.cave; Dave 21 Nov 2026, moved near the spawn): no wild goblin band or animal dens there
 const DEN_SIGN_DROPPINGS := 4.0     # cave_bones kinds of the den signs (protocol 141): droppings by the mouth, bedding at the den
 const DEN_SIGN_BEDDING := 5.0
 
@@ -988,7 +988,7 @@ static func _band_near(ore: Dictionary, top: float, bed: float, depth_m: float) 
 
 # The goblin den node of each cave in one tile's list (parallel to it; -1 for none). A cave's own rule is goblin_den_node; on top of it the tile's
 # first spring cave with a dry spot always holds a den (Sonny 9 Nov 2026, docs/design/cave_dens_after_rebuild_design.md section 5), so a tile with
-# any spring cave that has a dry branch has goblins whatever the id hash says. The server, every client and island_checks all read it from here.
+# any spring cave that has a dry branch has goblins whatever the id hash says (never a camp cave, CAMP_CAVES). The server, every client and island_checks all read it from here.
 static func goblin_den_nodes(list: Array) -> Array:
 	var nodes: Array = []
 	var floor_given: bool = false
@@ -996,7 +996,7 @@ static func goblin_den_nodes(list: Array) -> Array:
 	for cave in list:
 		var node: int = goblin_den_node(cave)
 
-		if not floor_given and str(cave.get("cave_kind", "")) == "spring_cave" and not (cave.get("nodes", []) as Array).is_empty():
+		if not floor_given and str(cave.get("cave_kind", "")) == "spring_cave" and not CAMP_CAVES.has(str(cave.get("id", ""))) and not (cave.get("nodes", []) as Array).is_empty():
 			var dry: int = dry_den_node(cave)
 
 			if dry >= 0:
@@ -1014,7 +1014,7 @@ static func animal_den_species(cave: Dictionary) -> String:
 	var kind: String = str(cave.get("cave_kind", ""))
 	var id: String = str(cave.get("id", ""))
 
-	if not GOBLIN_DEN_CAVES.has(kind) or (cave.get("nodes", []) as Array).size() < 2 or ANIMAL_DEN_RESERVED.has(id) or absi(hash(id + "/animal_den")) % 100 >= ANIMAL_DEN_PERCENT:
+	if not GOBLIN_DEN_CAVES.has(kind) or (cave.get("nodes", []) as Array).size() < 2 or CAMP_CAVES.has(id) or absi(hash(id + "/animal_den")) % 100 >= ANIMAL_DEN_PERCENT:
 		return ""
 
 	return str(ANIMAL_DEN_BY_SIZE.get("large" if kind == "lava_tube" else str(cave.get("size", "small")), ""))
@@ -1091,11 +1091,11 @@ func _load_springs(list: Array) -> void:
 # The node of a cave's goblin den, or -1 for none (Dave 7 Nov 2026): a dry spot deep in an inland cave, in GOBLIN_DEN_PERCENT of them, picked by the
 # cave's id so the server, every client and island_checks agree. A spring cave's den is the end of its last dry side branch, never its stream
 # passage; a karst cave or lava tube's is its last dead end (no stream: all of it is dry). On a tile baked from the water record the spring caves
-# are the only caves with passages (docs/design/cave_dens_after_rebuild_design.md).
+# are the only caves with passages (docs/design/cave_dens_after_rebuild_design.md). A camp cave (CAMP_CAVES) has none.
 static func goblin_den_node(cave: Dictionary) -> int:
 	var kind: String = str(cave.get("cave_kind", ""))
 
-	if not GOBLIN_DEN_CAVES.has(kind) or (cave.get("nodes", []) as Array).is_empty() or absi(hash(str(cave.get("id", "")))) % 100 >= GOBLIN_DEN_PERCENT:
+	if not GOBLIN_DEN_CAVES.has(kind) or (cave.get("nodes", []) as Array).is_empty() or CAMP_CAVES.has(str(cave.get("id", ""))) or absi(hash(str(cave.get("id", "")))) % 100 >= GOBLIN_DEN_PERCENT:
 		return -1
 
 	return dry_den_node(cave)

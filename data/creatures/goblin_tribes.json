@@ -21,29 +21,29 @@
 			"attitude": "wary",
 			"rep_key": "tribe_ragtooth",
 			"camp": {
-				"note": "At the mouth of spring cave 3,4#8013, about 2.8 km east of Edda and Hob's first camp (their camp moved to the starter town on 20 Nov 2026 and is now about 3.6 km south-east of this cave); its river runs 50 m west of the mouth (read from the baked tile 3_4 on 19 Nov 2026: mouth x 56064 z 68384, ground about 71 m, a bench of 13-20 degrees runs east of the mouth along the hill). The fire and the members stand on that bench 6-16 m east of the mouth, clear of the opening (the hill's ground is not cut there), the trader facing west, the way a player comes up from the river. The tunnels inside stay as they are (the caves plan). mouth: where members go out of sight when an angry character comes near. keep_m: nothing is put down this near the fire.",
-				"cave": "3,4#8013",
+				"note": "By spring cave 3,4#8006, the cave nearest the spawn (Dave 21 Nov 2026: \"move the goblins cave much closer to spawn so people might actually find it. it should probably be right in the closest mountain or hill to the spawn point then we can make a path to it for players later\"; moved from cave 3,4#8013 then, provisional GOBLIN-19). About 1.6 km west-south-west of the spawn campfire (1.56 km west, 0.44 km south), where a brook comes out of the hill under ridges of 80 to 99 m; the nearer hills, about 1.2 km south and north, have no cave. Read from the baked tile 3_4 on 21 Nov 2026: mouth x 56560 z 71776, ground about 23 m, the brook runs east from the mouth; the camp stands on a dry bench of 3 to 11 degrees on its south bank, about 50 m south-east of the mouth, the gathering points on the slope 25 to 40 m further east. No path yet (Dave: later). The tunnels inside stay as they are (the caves plan); TileTerrainData.CAMP_CAVES keeps wild goblins and animal dens out of it. mouth: where members go out of sight when an angry character comes near, and where a hunter goes out. keep_m: nothing is put down this near the fire.",
+				"cave": "3,4#8006",
 				"name": "the Ragtooth camp",
 				"fire_owner": "the Ragtooth goblins'",
-				"mouth": {"x": 56064.0, "z": 68384.0},
-				"fire": {"x": 56074.0, "z": 68383.0, "wood": "log"},
+				"mouth": {"x": 56560.0, "z": 71776.0},
+				"fire": {"x": 56608.0, "z": 71800.0, "wood": "log"},
 				"keep_m": 8.0,
-				"props_note": "Camp life stage A (Dave 20 Nov 2026: \"they should have a small chest of some sort, probably a few drying racks or tanning racks, a campfire maybe some wooden benches around the fire\"): existing catalog pieces (structures.json kinds) laid by the server as transient pieces of the tribe, along the ledge east of the mouth (one 8 m cell wide, 18-20 degrees, read from the baked tile 20 Nov 2026; test_goblin_camp checks each spot). Nobody takes them down, opens, loots, uses, sits on, repairs or crafts at them. prop_keep_m: nothing is put down this near a prop. PROVISIONAL (GOBLIN-11).",
+				"props_note": "Camp life stage A (Dave 20 Nov 2026: \"they should have a small chest of some sort, probably a few drying racks or tanning racks, a campfire maybe some wooden benches around the fire\"): existing catalog pieces (structures.json kinds) laid by the server as transient pieces of the tribe, round the fire on the bench south-east of the mouth (read from the baked tile 21 Nov 2026; test_goblin_camp checks each spot). Nobody takes them down, opens, loots, uses, sits on, repairs or crafts at them. prop_keep_m: nothing is put down this near a prop. PROVISIONAL (GOBLIN-11).",
 				"prop_keep_m": 2.5,
 				"chores": {
-					"note": "Camp life stage B (Dave 20 Nov 2026: \"they should all keep themselves busy in the area around the camp, either gathering firewood and putting in the fire or gathering supplies around the area like plant fiber to make twine or hunting for meat, hide etc.\"): server_tribes.gd chore_plan. Each member works through its own chores list: walk out to a point of the job's out kind, gather there (work_s), walk back to the job's back point and work there (drop_s; *_face is what it faces), rest at its own spot (rest_s). A hunt goes out through the cave mouth and is away away_s; one member hunts at a time. Seconds are real seconds. Every point is fixed (on the ledge, checked on the baked tile by test_goblin_camp): nothing is scanned, and nothing is taken from or added to the world (GOBLIN-10, show only). PROVISIONAL (GOBLIN-10, GOBLIN-14). default_jobs: the round of a member with no chores list of its own, so a new named member joins the chores by its members row alone.",
+					"note": "Camp life stage B (Dave 20 Nov 2026: \"they should all keep themselves busy in the area around the camp, either gathering firewood and putting in the fire or gathering supplies around the area like plant fiber to make twine or hunting for meat, hide etc.\"): server_tribes.gd chore_plan. Each member works through its own chores list: walk out to a point of the job's out kind, gather there (work_s), walk back to the job's back point and work there (drop_s; *_face is what it faces), rest at its own spot (rest_s). A hunt goes out through the cave mouth and is away away_s; one member hunts at a time. Seconds are real seconds. Every point is fixed (on the bench and the slope east of it, checked on the baked tile by test_goblin_camp): nothing is scanned, and nothing is taken from or added to the world (GOBLIN-10, show only). PROVISIONAL (GOBLIN-10, GOBLIN-14). default_jobs: the round of a member with no chores list of its own, so a new named member joins the chores by its members row alone.",
 					"walk_mps": 1.1,
 					"rest_s": [15.0, 45.0],
 					"default_jobs": ["firewood", "fibre"],
 					"points": {
-						"wood": [[56096.0, 68384.0], [56104.0, 68385.0], [56112.0, 68384.0]],
-						"fibre": [[56100.0, 68386.0], [56108.0, 68383.0], [56116.0, 68385.0]],
-						"fire": [[56072.4, 68382.6], [56075.6, 68382.4]],
-						"fire_face": [[56074.0, 68383.0]],
-						"chest": [[56070.9, 68385.6]],
-						"chest_face": [[56069.5, 68386.5]],
-						"rack": [[56087.5, 68382.9]],
-						"rack_face": [[56087.5, 68384.0]]
+						"wood": [[56632.5, 71809.0], [56640.5, 71807.5], [56633.0, 71815.5]],
+						"fibre": [[56646.5, 71809.5], [56641.0, 71815.0], [56648.0, 71812.5]],
+						"fire": [[56606.4, 71799.6], [56609.6, 71799.4]],
+						"fire_face": [[56608.0, 71800.0]],
+						"chest": [[56604.9, 71802.6]],
+						"chest_face": [[56603.5, 71803.5]],
+						"rack": [[56607.0, 71795.2]],
+						"rack_face": [[56607.0, 71794.0]]
 					},
 					"jobs": {
 						"firewood": {"out": "wood", "work_s": [6.0, 10.0], "back": "fire", "drop_s": 3.0},
@@ -59,19 +59,19 @@
 					"on": {"small_chest": ["In it", ["firewood", "plant_fibre"]], "drying_rack": ["Drying on it", ["raw_meat"]], "tanning_rack": ["Stretched on it", ["hide"]]}
 				},
 				"props": [
-					{"kind": "small_chest", "x": 56069.5, "z": 68386.5, "yaw": 90},
-					{"kind": "log_bench", "x": 56074.0, "z": 68386.6, "yaw": 0},
-					{"kind": "log_bench", "x": 56078.5, "z": 68384.5, "yaw": 90},
-					{"kind": "drying_rack", "x": 56083.0, "z": 68385.0, "yaw": 0},
-					{"kind": "tanning_rack", "x": 56087.5, "z": 68384.0, "yaw": 0}
+					{"kind": "small_chest", "x": 56603.5, "z": 71803.5, "yaw": 90},
+					{"kind": "log_bench", "x": 56608.0, "z": 71803.6, "yaw": 0},
+					{"kind": "log_bench", "x": 56611.5, "z": 71801.0, "yaw": 90},
+					{"kind": "drying_rack", "x": 56600.0, "z": 71795.0, "yaw": 0},
+					{"kind": "tanning_rack", "x": 56607.0, "z": 71794.0, "yaw": 0}
 				]
 			},
 			"members": [
-				{"id": "skritch", "name": "Skritch", "role": "goblin_trader", "voice": "skritch", "body": 0, "trader": true, "spot": {"x": 56070.0, "z": 68381.0, "yaw": 180}, "chores": ["tend"]},
-				{"id": "rukz", "name": "Rukz", "role": "goblin_lookout", "voice": "rukz", "body": 1, "spot": {"x": 56080.0, "z": 68386.0, "yaw": 185}, "chores": ["firewood", "hunt", "fibre"]},
-				{"id": "snag", "name": "Snag", "role": "goblin", "voice": "rukz", "body": 0, "spot": {"x": 56077.0, "z": 68381.0, "yaw": 146}, "chores": ["firewood", "fibre"]},
-				{"id": "vrixa", "name": "Vrixa", "role": "goblin", "voice": "vrixa", "body": 2, "spot": {"x": 56081.0, "z": 68382.0, "yaw": 172}, "chores": ["firewood", "fibre"]},
-				{"id": "grikka", "name": "Grikka", "role": "goblin", "voice": "grikka", "body": 3, "spot": {"x": 56084.0, "z": 68381.0, "yaw": 169}, "chores": ["firewood", "fibre"]}
+				{"id": "skritch", "name": "Skritch", "role": "goblin_trader", "voice": "skritch", "body": 0, "trader": true, "spot": {"x": 56604.0, "z": 71798.0, "yaw": 180}, "chores": ["tend"]},
+				{"id": "rukz", "name": "Rukz", "role": "goblin_lookout", "voice": "rukz", "body": 1, "spot": {"x": 56614.0, "z": 71803.0, "yaw": 185}, "chores": ["firewood", "hunt", "fibre"]},
+				{"id": "snag", "name": "Snag", "role": "goblin", "voice": "rukz", "body": 0, "spot": {"x": 56611.0, "z": 71798.0, "yaw": 146}, "chores": ["firewood", "fibre"]},
+				{"id": "vrixa", "name": "Vrixa", "role": "goblin", "voice": "vrixa", "body": 2, "spot": {"x": 56615.0, "z": 71799.0, "yaw": 172}, "chores": ["firewood", "fibre"]},
+				{"id": "grikka", "name": "Grikka", "role": "goblin", "voice": "grikka", "body": 3, "spot": {"x": 56618.0, "z": 71798.0, "yaw": 169}, "chores": ["firewood", "fibre"]}
 			]
 		}
 	}

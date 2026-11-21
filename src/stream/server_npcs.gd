@@ -297,6 +297,8 @@ func _activate(npc: Dictionary, hour: float) -> void:
 
 	npc["placed"] = true
 	npc.erase("chore")   # a tribe member woken by a player comes in at its own spot and starts its round afresh
+	npc.erase("fleeing")
+	npc.erase("flee_by")
 	npc["away"] = false
 	npc["speed"] = 0.0
 
@@ -404,11 +406,21 @@ func _step_wary(npc: Dictionary, w: Dictionary, dt: float) -> bool:
 
 	(npc.get("chore", {}) as Dictionary).erase("here")   # pushed off its rest spot: it walks back to it when left alone
 
+	if w.has("hide"):
+		if not bool(npc.get("fleeing", false)):
+			npc["fleeing"] = true   # ServerTribes.avoid keeps it running until it is in the mouth
+			npc["flee_by"] = _t + 2.0 * Vector2(npc["pos"].x - goal.x, npc["pos"].z - goal.z).length() / maxf(flee_mps, 0.1) + 10.0
+		elif _t > float(npc.get("flee_by", INF)):
+			npc.erase("fleeing")   # it cannot get there: it stops running, and runs again only while a striker is near
+			npc.erase("flee_by")
+
 	var r: Dictionary = _move(npc, goal, flee_mps if w.has("hide") else back_off_mps, dt, Vector3.INF if w.has("hide") else npc["look"])   # backing off it keeps its eyes on the player
 
 	if w.has("hide") and (r["arrived"] or Vector2(npc["pos"].x - goal.x, npc["pos"].z - goal.z).length() <= 1.0):
 		npc["hidden"] = true
 		npc["away"] = false
+		npc.erase("fleeing")
+		npc.erase("flee_by")
 
 	return true
 

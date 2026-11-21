@@ -108,7 +108,7 @@ func _init() -> void:
 		check(absf(MineSites.target(halo).distance_to(HILL) - 60.0) < 0.01 and flat(halo_end).distance_to(MineSites.target(halo)) < 40.0, "its adit ends at the ring (%s)" % str(halo_end))
 		check(floor_of(halo_end) >= PEAK - 40.5 and floor_of(halo_end) + MineSites.ADIT_H <= PEAK - 19.0, "inside the halo's depth (floor %.1f)" % floor_of(halo_end))
 	check(MineSites.plan(data, [ore("c", HILL, PEAK - 20.0)], [], HILL + Vector2(150.0, 0.0)).is_empty(), "no mine mouth within 400 m of the start area")
-	check(MineSites.camp_points().any(func(c): return (c as Vector2).is_equal_approx(Vector2(56064.0, 68384.0))), "the Ragtooth camp's mouth is kept clear like a cave mouth")
+	check(MineSites.camp_points().any(func(c): return (c as Vector2).is_equal_approx(Vector2(56560.0, 71776.0))), "the Ragtooth camp's mouth is kept clear like a cave mouth")
 	check(MineSites.plan(data, [ore("edge", Vector2(150.0, 1000.0), 3.0)], [], NONE).is_empty(), "no mine within 300 m of the tile edge")
 
 	if mines.is_empty():

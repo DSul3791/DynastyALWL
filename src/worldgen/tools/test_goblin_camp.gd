@@ -4,7 +4,7 @@ extends SceneTree
 # and sell", later tribes friendly, unfriendly, indifferent; data/creatures/goblin_tribes.json, src/stream/server_tribes.gd). Checks, on the real
 # code and data:
 # - every member has a dialogue file and a voice, the trader a shop of real items, and no member takes a townsperson's id;
-# - the camp is at the mouth of a baked spring cave that holds no wild goblin band, a river runs near it, and every spot is dry, on ground of at
+# - the camp is at the mouth of a baked spring cave that holds no wild goblin band or animal den (TileTerrainData.CAMP_CAVES), a river runs near it, and every spot is dry, on ground of at
 #   most 20 degrees and clear of the cave's opening (the baked tile, as island_checks.gd reads it);
 # - the members stand at their spots; one backs off from a stranger who comes too close (never past its leash), holds still just outside, watches
 #   a player inside watch_m, keeps further from a weapon carrier and lets a friend of the tribe closer;
@@ -56,6 +56,7 @@ func _init() -> void:
 	_tile()
 	_npcs()
 	_chores()
+	_stock_restart()
 	_server()
 	print("goblin camp: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
@@ -101,12 +102,16 @@ func _tile() -> void:
 	var head: Dictionary = TileFileScript.read_header(path)
 	var sites: Dictionary = TileFileScript.read_list(path, head["table"], "sites")["value"]
 	var cave: Dictionary = {}
+	var caves: Array = sites.get("caves", [])
+	var camp_index: int = -1
 
-	for c in sites.get("caves", []):
-		if str(c.get("id", "")) == str(camp["cave"]):
-			cave = c
+	for k in caves.size():
+		if str(caves[k].get("id", "")) == str(camp["cave"]):
+			cave = caves[k]
+			camp_index = k
 
 	check(not cave.is_empty(), "the camp's cave %s is in the tile" % camp["cave"])
+	check(TileTerrainData.CAMP_CAVES.has(str(camp["cave"])), "and kept for the camp (TileTerrainData.CAMP_CAVES)")
 
 	if cave.is_empty():
 		return
@@ -115,6 +120,8 @@ func _tile() -> void:
 	check(Vector2(float(entrance[0]), float(entrance[2])).distance_to(mouth) < 1.5, "the camp's mouth is the cave's entrance (%s)" % str(entrance))
 	check(str(cave.get("cave_kind", "")) == "spring_cave", "the cave is a spring cave, where a river starts")
 	check(TileTerrainData.goblin_den_node(cave) < 0, "no wild goblin band lives in this cave")
+	check(int(TileTerrainData.goblin_den_nodes(caves)[camp_index]) < 0, "nor the tile's first-spring-cave den")
+	check(TileTerrainData.animal_den_species(cave) == "", "and no animal dens in it")
 	var n: int = int(head["header"]["samples"])
 	var spacing: float = float(head["header"]["map_spacing_m"])
 	var heights: PackedFloat32Array = TileFileScript.decode_height(TileFileScript.read_section(path, head["table"], "height")["raw"], TileFileScript.height_step_of(head["header"]))
@@ -304,6 +311,8 @@ func _npcs() -> void:
 	check(bool(npc_s.get("hidden", false)) and npc_s["pos"].distance_to(mouth) <= 1.5, "Skritch goes into the cave mouth (%s)" % str(npc_s["pos"]))
 	check(npcs.rows_near(player[0]).all(func(row): return str(row[0]) != "skritch"), "and is not seen")
 	check(tribes.member_along(player[0], (mouth - player[0]).normalized(), 10.0) == "", "nobody in the cave can be struck")
+	run.call(float(tribes.cfg.get("calm_s", 30.0)) + 10.0)
+	check(bool(npc_s.get("hidden", false)), "it stays in while the striker waits at the camp, far from the mouth")
 	player[0] = mouth + Vector3(-80.0, 0.0, 0.0)
 	run.call(float(tribes.cfg.get("calm_s", 30.0)) * 0.5)
 	check(bool(npc_s.get("hidden", false)), "it waits in the cave a while after they go")
@@ -346,7 +355,7 @@ func _chores() -> void:
 	var items = _items("user://test_goblin_camp_chores", said)
 	items.peer_connected_hello(1, "goblin-test-key3")
 	var fire: Vector3 = Vector3(float(camp["fire"]["x"]), 10.0, float(camp["fire"]["z"]))
-	var player: Array = [fire + Vector3(18.0, 0.0, 45.0)]   # down the slope, past watch_m from the ledge but every chore point inside near_m (npcs.json 60 m), so all step at 10 Hz
+	var player: Array = [fire + Vector3(6.0, 0.0, -29.0)]   # across the brook, past watch_m from the camp but the mouth and every chore point inside near_m (npcs.json 60 m), so all step at 10 Hz
 	var npcs = NpcsScript.new()
 	npcs.hour_now = func(): return 12.0
 	npcs.ground_height = func(_x, _z): return 10.0
@@ -458,7 +467,7 @@ func _chores() -> void:
 	run_for(tribes, npcs, 1.5)
 	var eyes: Vector2 = Vector2(cos(float(stuck["heading"])), sin(float(stuck["heading"])))
 	check(int(stuck["state"]) == NpcsScript.WALK or eyes.dot(Vector2(player[0].x - stuck["pos"].x, player[0].z - stuck["pos"].z).normalized()) > 0.9, "a member at its chore turns to watch a character 12 m off")
-	player[0] = fire + Vector3(18.0, 0.0, 45.0)
+	player[0] = fire + Vector3(6.0, 0.0, -29.0)
 
 	# What the camp costs a tick, for the NPC budget (test_npcs: 60 townsfolk under 1 ms): chores alone, then with a weapon carrier in sight.
 	var t0: int = Time.get_ticks_usec()
@@ -482,6 +491,54 @@ func _chores() -> void:
 	var armed_ms: float = float(Time.get_ticks_usec() - t0) / 600.0 / 1000.0
 	print("goblin camp cost: %d members, %.3f ms per 10 Hz tick at their chores, %.3f ms with a weapon carrier by the fire (whole ServerNpcs tick, townsfolk included)" % [ids.size(), calm_ms, armed_ms])
 	check(ids.any(func(id): return int(npcs.npcs[id]["state"]) == NpcsScript.GUARD), "with a spear in hand by the fire, the members stand guard")
+
+
+# The camp stock across a server restart (gate review of #1369): the fill start saved in tribes_state.json is read back, so after a stop and a
+# start the stock is what the game clock says (no reset to empty, no second fill), the first tick after the start does not move it, and an
+# older state file without stock_from still loads (its stock starts on that run).
+func _stock_restart() -> void:
+	var dir: String = "user://test_goblin_camp_stock"
+	var said: Array = []
+	var items = _items(dir, said)
+	var data: Dictionary = camp.get("stock", {})
+	var fire_day: int = int(data["per_game_day"]["firewood"])
+	var fire_cap: int = int(data["cap"]["firewood"])
+	var clock: Array = [7200.0]
+	var first = TribesScript.new()
+	first.items = items
+	first.game_seconds = func(): return clock[0]
+	first.players = func() -> Array: return []
+	first.setup(dir)
+	first.tick(0.1)   # the server's first tick starts the fill and saves it
+	check(FileAccess.file_exists(dir.path_join(TribesScript.FILE)), "the fill start is written to the tribes state file")
+	clock[0] += 1.5 * TribesScript.DAY_S
+	var before: int = int(first.stock("ragtooth").get("firewood", -1))
+	check(before == int(floor(fire_day * 1.5)), "a game day and a half in, the chest holds %d firewood (%d)" % [int(floor(fire_day * 1.5)), before])
+
+	# Stop and start: a new ServerTribes over the same store and the same game clock.
+	var second = TribesScript.new()
+	second.items = items
+	second.game_seconds = func(): return clock[0]
+	second.players = func() -> Array: return []
+	second.setup(dir)
+	second.tick(0.1)
+	check(int(second.stock("ragtooth").get("firewood", -1)) == before, "after a restart the stock is the same (%d, was %d): no reset, no second fill" % [int(second.stock("ragtooth").get("firewood", -1)), before])
+	clock[0] += TribesScript.DAY_S
+	check(int(second.stock("ragtooth").get("firewood", -1)) == mini(fire_cap, int(floor(fire_day * 2.5))), "and it goes on filling from the first start (%d)" % int(second.stock("ragtooth").get("firewood", -1)))
+
+	# An older state file (camp life, before the light version) has no stock_from: it loads, keeps its anger rows, and the fill starts now.
+	var old: FileAccess = FileAccess.open(dir.path_join(TribesScript.FILE), FileAccess.WRITE)
+	old.store_string(JSON.stringify({"version": 1, "tribes": {"ragtooth": {"goblin-test-key9": {"angry_until": clock[0] + 1000.0}}}}))
+	old.close()
+	var third = TribesScript.new()
+	third.items = items
+	third.game_seconds = func(): return clock[0]
+	third.players = func() -> Array: return []
+	third.setup(dir)
+	check(third.angry("ragtooth", "goblin-test-key9"), "an older state file still loads its anger")
+	third.tick(0.1)
+	check(third.stock("ragtooth").values().all(func(n): return int(n) == 0), "and its stock starts empty on that run (%s)" % str(third.stock("ragtooth")))
+	check(FileAccess.get_file_as_string(dir.path_join(TribesScript.FILE)).contains("stock_from"), "and the fill start is saved into it")
 
 
 func run_for(tribes, npcs, seconds: float) -> void:
@@ -525,7 +582,7 @@ func _server() -> void:
 	var cfg: Dictionary = PlacementRules.load_config()
 	check(PlacementRules.blocked(cfg, "campfire_kit", Vector3(at.x + 2.0, 10.0, at.y), []) == "tribe_camp", "the ghost is red by the goblin camp")
 	check(PlacementRules.reason_text("tribe_camp").contains("goblin camp"), "and says why")
-	check(PlacementRules.blocked(cfg, "campfire_kit", Vector3(at.x - float(camp["keep_m"]) - 5.0, 10.0, at.y), []) == "", "and is free past keep_m (the props stand east)")
+	check(PlacementRules.blocked(cfg, "campfire_kit", Vector3(at.x - float(camp["keep_m"]) - 5.0, 10.0, at.y), []) == "", "and is free past keep_m, clear of the props")
 	_props(items, said, cfg)
 
 
