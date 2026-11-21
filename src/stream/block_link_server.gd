@@ -85,17 +85,10 @@ func send(peer_id: int, key: Vector4i, bytes: PackedByteArray) -> bool:
 	frame.encode_s32(16, key.w)
 	frame.append_array(bytes)
 	line["mutex"].lock()
-	var status: int = line["tcp"].get_status()
-	var sent: int = -1
-
-	if status == StreamPeerTCP.STATUS_CONNECTED:
-		sent = line["tcp"].put_data(frame)
-
+	var ok: bool = line["tcp"].get_status() == StreamPeerTCP.STATUS_CONNECTED and line["tcp"].put_data(frame) == OK
 	line["mutex"].unlock()
-	var ok: bool = sent == OK
 
 	if not ok:
-		print("Terrain server: the block line to peer %d failed sending a block (socket status %d, send result %d); its blocks go over the game connection" % [peer_id, status, sent])
 		drop(peer_id)
 		return false
 
@@ -199,7 +192,6 @@ func _read_requests(peer_id: int, line: Dictionary) -> void:
 	line["mutex"].unlock()
 
 	if not connected:
-		print("Terrain server: the block line to peer %d closed from the client side (socket status %d)" % [peer_id, tcp.get_status()])
 		drop(peer_id)
 		return
 

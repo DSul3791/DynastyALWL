@@ -50,7 +50,6 @@ worlds/*/setup_cache/
 worlds/base_world/plan/*.png
 worlds/base_world/plan/*.png.import
 crash_reports/telemetry_client.log
-crash_reports/telemetry_client.prev.log
 
 # Bought animal models (Dave 6 Nov 2026; decision 83, no vendor name): licensed, never committed to this public repo. They live only on the
 # machines that build the game; data/animals/models.json falls back to the code-built animals when they are missing.

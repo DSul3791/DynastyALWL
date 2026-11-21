@@ -66,16 +66,11 @@ func send_request(keys: PackedInt32Array, urgent: int) -> bool:
 	body.seek(0)
 	body.put_u32(body.get_size() - 4)
 	_mutex.lock()
-	var result: int = -1
-
-	if _state == 1:
-		result = _tcp.put_data(body.data_array)
-
-	var sent: bool = result == OK
+	var sent: bool = _state == 1 and _tcp.put_data(body.data_array) == OK
 
 	if _state == 1 and not sent:
 		_state = 2
-		print("Terrain client: the block line closed sending a request (send result %d, socket status %d, %d ms since it opened); blocks come over the game connection" % [result, _tcp.get_status(), Time.get_ticks_msec() - _started_msec])
+		print("Terrain client: the block line closed; blocks come over the game connection")
 
 	_mutex.unlock()
 	return sent
@@ -108,7 +103,7 @@ func pump() -> void:
 			print("Terrain client: no block line; blocks come over the game connection")
 	elif status != StreamPeerTCP.STATUS_CONNECTED:
 		_state = 2
-		print("Terrain client: the block line closed (socket status %d, %d ms since it opened, %d blocks in); blocks come over the game connection" % [status, Time.get_ticks_msec() - _started_msec, blocks_in])
+		print("Terrain client: the block line closed; blocks come over the game connection")
 	else:
 		var available: int = _tcp.get_available_bytes()
 

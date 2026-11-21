@@ -67,11 +67,11 @@ static func frame(delta: float) -> void:
 			if int(_this_frame[name]) > 1000:
 				named.append("%s %.0f" % [name, float(_this_frame[name]) / 1000.0])
 
-		print("FREEZE %.0f ms (frame %d): script %.0f ms, physics %.0f ms, draw calls %d, video mem %d MB, objects %d; %s; timed: %s; %s" % [
+		print("FREEZE %.0f ms (frame %d): script %.0f ms, physics %.0f ms, draw calls %d, video mem %d MB, objects %d; timed: %s; %s" % [
 			ms, _frames,
 			Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
 			int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), int(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0),
-			int(Performance.get_monitor(Performance.OBJECT_COUNT)), pipelines_text(), ", ".join(named) if not named.is_empty() else "nothing",
+			int(Performance.get_monitor(Performance.OBJECT_COUNT)), ", ".join(named) if not named.is_empty() else "nothing",
 			str(context.call()) if context.is_valid() else ""
 		])
 
@@ -104,9 +104,9 @@ static func frame(delta: float) -> void:
 			for k in range(mini(named.size(), 5)):
 				text.append("%s %.0f" % [named[k][0], named[k][1]])
 
-			print("HITCH %.0f ms: %s; script %.0f ms, physics %.0f ms, draw calls %d; %s" % [ms, ", ".join(text) if not text.is_empty() else "nothing timed",
+			print("HITCH %.0f ms: %s; script %.0f ms, physics %.0f ms, draw calls %d" % [ms, ", ".join(text) if not text.is_empty() else "nothing timed",
 				Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
-				int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), pipelines_text()])
+				int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))])
 		_slow.append([ms, parts])
 		_slow.sort_custom(func(a, b): return a[0] > b[0])
 
@@ -114,15 +114,6 @@ static func frame(delta: float) -> void:
 			_slow.resize(KEEP_SLOW)
 
 	_this_frame = {}
-
-
-# The renderer's pipeline compilations since the game started, by what asked for them (Godot's monitors). "draw" ones were built while a
-# frame waited for them; a freeze whose draw count jumps was the graphics driver building shaders (first join on a cold machine, 20 Nov 2026).
-static func pipelines_text() -> String:
-	return "pipelines built so far: draw %d, specialization %d, mesh %d, surface %d, canvas %d" % [
-		int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_DRAW)), int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_SPECIALIZATION)),
-		int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_MESH)), int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_SURFACE)),
-		int(Performance.get_monitor(Performance.PIPELINE_COMPILATIONS_CANVAS))]
 
 
 static func reset() -> void:
