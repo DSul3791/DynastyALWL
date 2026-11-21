@@ -4214,7 +4214,6 @@
 				"Used in Root cellar",
 				"Used in Cistern",
 				"Used in Mixer",
-				"Used in Raised cistern",
 				"Used in Sturdy - Ceiling",
 				"Used in Sturdy - Doorway",
 				"Used in Sturdy - Pillar",
@@ -4356,7 +4355,8 @@
 				"Used in Barrel",
 				"Used in Crate",
 				"Used in Cupboard",
-				"Used in Quality - Backpack"
+				"Used in Quality - Backpack",
+				"Used in Raised cistern"
 			],
 			"obtainable_now": true
 		},
@@ -4381,7 +4381,6 @@
 				"Used in Stonecutter's bench",
 				"Used in Cistern",
 				"Used in Mixer",
-				"Used in Raised cistern",
 				"Used in Sturdy - Fence",
 				"Used in Sturdy - Gate",
 				"Used in Sturdy - Pillar",
@@ -4987,7 +4986,8 @@
 				"Used in Bronze ingot",
 				"Used in Copper - Pipe",
 				"Used in Copper - Tap",
-				"Used in Copper - Drip head"
+				"Used in Copper - Drip head",
+				"Used in Raised cistern"
 			],
 			"obtainable_now": true
 		},
@@ -9659,22 +9659,20 @@
 		"stone_raised_cistern_kit": {
 			"name": "Raised cistern",
 			"kind": "placeable",
-			"description": "A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity.",
+			"description": "A big copper-lined tank on a wooden frame. Rain and pipes from above fill it; it feeds pipes below.",
 			"how_to_get": [
-				"Build with a hammer (press R): 28 Cobblestone, 8 Clay mortar, 6 Plank"
+				"Build with a hammer (press R): 16 Plank, 20 Hardwood board, 6 Copper ingot, 40 Nails"
 			],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"stone_raised_cistern": {
 			"name": "Raised cistern",
 			"kind": "structure",
-			"description": "A cistern on a tall stone plinth. Fed by a force pump, it feeds a town by gravity.",
+			"description": "A big copper-lined tank on a wooden frame. Rain and pipes from above fill it; it feeds pipes below.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": false,
-			"status": "planned"
+			"obtainable_now": true
 		},
 		"sewing_needle": {
 			"name": "Bone - Needle",

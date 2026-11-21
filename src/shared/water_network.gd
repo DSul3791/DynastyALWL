@@ -7,7 +7,7 @@ extends RefCounted
 # A piece is a Dictionary:
 #   role       "source" | "conduit" | "tank" | "consumer"
 #   inlet      Vector3 (conduit, tank: at the rim; consumer)      outlet  Vector3 (source: the spout; conduit; tank: at its base)
-#   cap_lpm    most it passes, litres a minute (conduit, source)  closed  true for a pipe (or a riser-fed tank), false for open
+#   cap_lpm    most it passes, litres a minute (conduit, source)  closed  true for a pipe, false for open
 #   open       false for a shut sluice or tap                     rate_lpm  a source's output now (windlass_lpm, rain x area)
 #   quality    a source's water: "clean" or "river"
 #   litres_max a tank's size                                      tap_lpm  most a tank lets into a consumer straight below it (30)
@@ -15,13 +15,13 @@ extends RefCounted
 #   outlets    more outlets besides `outlet` (a tee's second branch; plumbing PR 2): each feeds like the outlet; the cap and fall use `outlet`
 #   catch_m    how far across the ground from its inlet an open piece catches a feeder's water (a trough's length, a flume's mouth; default PORT_JOIN_M)
 #   drop_m     how far a feeder's water may fall into an open piece (a spout over a trough; default PORT_JOIN_M)
-#   head_m     a tank's water stands this far over its base outlet (a raised cistern's tank on its plinth, its downpipe built in; plumbing PR 3)
-#   lift_m     a tank fed at its foot through a closed riser takes water only from a surface at least this far over its inlet (the raised cistern)
+#   head_m     a tank's water stands this far over its base outlet (the raised cistern's tank on its frame, its downpipe built in)
 #   rain_lpm   rain falling straight into a tank now, L/min (a barrel in the open; the server sets it from the weather; PLUMBING_DESIGN s9)
 #   cap_lpm    on a consumer: the most it takes (a drip head's 2 L/min); none takes whatever comes
 #   level_port a tank's point at its foot (a barrel's bottom centre) that pipes join to: tanks linked through pipes there level out (level_groups)
 #   spout      a closed piece whose outlet always pours into what is under it (a tap: the pipe end it hangs from never caps it)
-#   level_h_m  how tall the water in such a tank can stand above its spot (for levelling by water surface, level_litres)
+#   level_h_m  how tall the water in such a tank can stand above its floor (for levelling by water surface, level_litres)
+#   level_base_m how far its floor stands over its spot (the raised cistern's tank on its frame; default 0, a barrel's floor is its foot)
 #
 # Rules (Sonny's numbers):
 #   - Links: an outlet feeds an inlet within PORT_JOIN_M across the ground. Into an open piece only when its inlet is at or below the outlet (+2 cm),
@@ -536,9 +536,6 @@ func _take(id: int, surface: Dictionary, take: Dictionary) -> float:
 		"consumer":
 			return float(piece.get("cap_lpm", BIG)) if float(piece.get("room_l", 0.0)) > 0.0 else 0.0
 		"tank":
-			if piece.has("lift_m") and piece.has("inlet") and float(surface[id]) < (piece["inlet"] as Vector3).y + float(piece["lift_m"]):
-				return 0.0   # the water reaching its riser cannot climb to the tank
-
 			if float(_litres.get(id, 0.0)) < float(piece.get("litres_max", 0.0)) - 0.001:
 				return BIG
 		"conduit":

@@ -2,9 +2,9 @@ extends SceneTree
 
 # Stone channels, the Stone - Trough and cisterns (plumbing PR 3, docs/design/PLUMBING_DESIGN.md s6; values PROVISIONAL): the real structures.json rows
 # join the water network. Clay plumbing is retired (Dave 14 Nov 2026: "We should remove clay plumbing altogether"), so a cistern drains down a log pipe
-# (Wooden - Pipe, plumbing PR 2). A cistern's water stands half a metre over its base outlet and drives a level log pipe at about half its cap; the raised cistern's
-# tank stands 2.5 m over its foot outlet (full cap) and fills through its riser only from a surface that reaches its top; there are no pumps (Dave
-# 20 Nov 2026, PLUMBING_DESIGN s10), so it stays locked until it is remade as a big tank.
+# (Wooden - Pipe, plumbing PR 2). A cistern's water stands half a metre over its base outlet and drives a level log pipe at about half its cap; the Raised cistern
+# (a big tank on a wooden frame since Dave 20 Nov 2026, PLUMBING_DESIGN s10) stands 2.5 m over its foot outlet (full cap) and fills only from above
+# its open top: there are no pumps, and water never climbs.
 #   godot --headless --path . --script res://src/worldgen/tools/test_stone_water.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -58,7 +58,12 @@ func _init() -> void:
 	for id in ["stone_trough", "stone_channel", "stone_channel_corner", "stone_channel_tee", "stone_cistern"]:
 		check(bp.has(id) and bool(bp[id].get("known", false)) and not bool(bp[id].get("locked", false)), "blueprint %s is known and unlocked" % id)
 
-	check(bp.has("stone_raised_cistern") and bool(bp["stone_raised_cistern"].get("locked", false)), "the Raised cistern stays locked (no pumps; a big tank, not a pump: Dave 20 Nov 2026)")
+	var raised_cost: Dictionary = {}
+
+	for pair in bp["stone_raised_cistern"]["cost"]:
+		raised_cost[str(pair[0])] = int(pair[1])
+
+	check(bool(bp["stone_raised_cistern"].get("known", false)) and not bool(bp["stone_raised_cistern"].get("locked", false)) and raised_cost.has("copper_ingot") and raised_cost.has("nails") and raised_cost.has("lumber") and not raised_cost.has("cobblestone"), "the Raised cistern is a big tank anyone can build: copper lined, a wooden frame, iron nails (Dave 20 Nov 2026) %s" % str(raised_cost))
 	check(int(items._structures["stone_channel"]["water"]["cap_lpm"]) == 300 and not bool(items._structures["stone_channel"]["water"]["closed"]), "a stone channel is open and carries 300 L/min")
 	for id in ["clay_pipe_run", "clay_pipe_elbow", "clay_pipe_tee"]:
 		check(bp.has(id) and bool(bp[id].get("retired", false)) and bool(items._structures[str(bp[id]["structure"])].get("retired", false)) and not items._structures[str(bp[id]["structure"])].has("water"), "clay plumbing is retired: %s is kept for its numbers only, with no water block" % id)
@@ -89,7 +94,7 @@ func _init() -> void:
 	items._water_tick(0.0)
 	check(absf(items._water.inflow_lpm(basin) - 300.0) < 0.01, "the stone trough fills through the channels at their full 300 L/min (%.2f)" % items._water.inflow_lpm(basin))
 
-	# The raised cistern's tank stands 2.5 m over its outlet: a level log pipe from it runs full.
+	# The raised cistern's tank stands 2.5 m over its outlet at its foot (its copper downpipe built in): a level log pipe from it runs full.
 	var raised: int = put("stone_raised_cistern", Vector3(300.0, 10.0, 300.0))
 	var pipe2: int = put("wooden_pipe", Vector3(300.0, 10.0, 302.05), 90.0)
 	var trough2: int = put("stone_trough", Vector3(300.0, 9.5, 304.0))
@@ -97,14 +102,17 @@ func _init() -> void:
 	items._water_dirty = true
 	items._water_tick(0.0)
 	check(items._water.downstream(raised).has(pipe2) and absf(items._water.inflow_lpm(trough2) - 60.0) < 0.01, "a raised cistern drives a level log pipe at its full 60 L/min (%.2f)" % items._water.inflow_lpm(trough2))
+	var top: Dictionary = items._water.pieces[raised]
+	check(not top.has("lift_m") and not bool(top.get("closed", false)) and absf((top["inlet"] as Vector3).y - 13.0) < 0.001 and float(top.get("level_base_m", 0.0)) > 2.0 and top.has("level_port"), "it is an open tank: no riser, its open top 3 m up, its floor 2.05 m up, pipes join at its foot")
 
-	# Its riser: water never climbs (there are no pumps: Dave 20 Nov 2026, PLUMBING_DESIGN s10): a surface below its top fills nothing (lift_m).
-	var net = Network.new()
-	net.add(1, {"role": "source", "outlet": Vector3(0.0, 1.0, 0.0), "rate_lpm": 60.0, "cap_lpm": 60.0, "closed": true})
-	net.add(2, {"role": "conduit", "inlet": Vector3(0.0, 1.0, 0.0), "outlet": Vector3(2.0, 0.15, 0.0), "cap_lpm": 240.0, "closed": true})
-	net.add(3, {"role": "tank", "closed": true, "inlet": Vector3(2.0, 0.15, 0.0), "lift_m": 2.85, "litres_max": 2000.0})
-	net.solve(0.0)
-	check(net.inflow_lpm(3) == 0.0, "a spout below the riser's top cannot fill the raised cistern (%.1f)" % net.inflow_lpm(3))
+	# Water never climbs (no pumps: Dave 20 Nov 2026, PLUMBING_DESIGN s10): a spout over its open top fills it; one below the top cannot reach it.
+	for spout_y in [13.5, 12.0]:
+		var net = Network.new()
+		var tank: Dictionary = items.water_piece(items._structures["stone_raised_cistern"], Vector3(0.0, 10.0, 0.0), 0.0)
+		net.add(1, {"role": "source", "outlet": Vector3(0.0, spout_y, 0.0), "rate_lpm": 30.0, "cap_lpm": 30.0})
+		net.add(2, tank)
+		net.solve(0.0)
+		check((net.inflow_lpm(2) > 29.9) == (spout_y > 13.0), "a spout %.1f m up %s the raised cistern (%.1f L/min)" % [spout_y - 10.0, "fills" if spout_y > 13.0 else "cannot fill", net.inflow_lpm(2)])
 
 	print("stone water: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

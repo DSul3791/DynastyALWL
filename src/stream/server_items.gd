@@ -18543,8 +18543,8 @@ func _barrel_has_goods(id: int) -> bool:
 	return _chests.has(uid) and not _chests[uid].is_empty()
 
 
-# Every BARREL_TICK_S: a barrel holding goods takes no water (its size 0); one in the open catches the rain (none under a roof or a tree); then
-# linked barrels are levelled.
+# Every BARREL_TICK_S: a barrel holding goods takes no water (its size 0); one in the open catches the rain (none under a roof or a tree), as does a
+# raised cistern (every tank with a level_port); then linked tanks are levelled.
 func _barrels_tick() -> void:
 	var now_s: float = _water_now_s()
 
@@ -18570,7 +18570,9 @@ func _barrels_tick() -> void:
 
 		var lpm: float = 0.0
 
-		if rain > 0.05 and not goods and not (cover_at.is_valid() and float(cover_at.call((_items[id]["pos"] as Vector3) + Vector3(0.0, 1.0, 0.0))) >= 0.5):
+		var rim: Vector3 = (_items[id]["pos"] as Vector3) + Vector3(0.0, 1.0 + float(block.get("level_base_m", 0.0)), 0.0)   # over its rim (the raised cistern's 2 m up)
+
+		if rain > 0.05 and not goods and not (cover_at.is_valid() and float(cover_at.call(rim)) >= 0.5):
 			lpm = snappedf(rain * BARREL_RAIN_LPM_M2 * float(block.get("rain_m2", 0.0)), 0.01)
 
 		if absf(float(piece.get("rain_lpm", 0.0)) - lpm) > 0.001:
@@ -18682,7 +18684,7 @@ func _taps_fill(now_s: float) -> void:
 			_push_box(id, box)
 
 
-# Linked barrels share their water to one surface (PV-7). Only a set that is off level by more than LEVEL_SLACK_L is touched: the tanks are brought
+# Linked barrels (and a raised cistern, its floor level_base_m up) share their water to one surface (PV-7). Only a set that is off level by more than LEVEL_SLACK_L is touched: the tanks are brought
 # to now, their litres set, and the network solved again on this tick.
 func _level_barrels(now_s: float) -> void:
 	if _level_groups_dirty:
@@ -18702,7 +18704,7 @@ func _level_barrels(now_s: float) -> void:
 				return
 
 			var piece: Dictionary = _water.pieces[id]
-			rows.append([(_items[id]["pos"] as Vector3).y, float(piece.get("level_h_m", 0.85)), float(piece.get("litres_max", 0.0))])
+			rows.append([(_items[id]["pos"] as Vector3).y + float(piece.get("level_base_m", 0.0)), float(piece.get("level_h_m", 0.85)), float(piece.get("litres_max", 0.0))])
 			held.append(_water.litres(id, now_s))
 			total += float(held[held.size() - 1])
 

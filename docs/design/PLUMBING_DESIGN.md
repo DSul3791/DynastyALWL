@@ -37,8 +37,8 @@ cisterns: hold litres; drink or fill a container at them with E) or straight int
    already stones, clay mortar and planks), Advanced - Well (new). Daily yield store, saved with the tanks in `crops.json`. Unlocked.
 2. **Wooden plumbing.** Wooden - Channel / corner / tee, Sluice (E opens and shuts it, doors' toggle-twin pattern), Wooden - Trough,
    Wooden - Hand pump (retired 20 Nov 2026, s10), and new Wooden - Pipe / Pipe elbow / Pipe tee (bored logs: the first closed pipe). Unlocked.
-3. **Stone channels, cisterns** (the same data conversion). Unlocked, except the Raised cistern: only a force pump fills it, so it
-   stays locked; Dave, 20 Nov 2026: cisterns are big tanks, not pumps (section 10). **Clay plumbing is retired** (Dave, 14 Nov 2026: "I don't think clay plumbing
+3. **Stone channels, cisterns** (the same data conversion). Unlocked. The Raised cistern was locked (only a force pump filled it) until
+   Dave, 20 Nov 2026, made it a big tank on a wooden frame (section 10). **Clay plumbing is retired** (Dave, 14 Nov 2026: "I don't think clay plumbing
    would make sense. We should remove clay plumbing altogether."): Clay pipe (730), Clay - Pipe (740), Clay - Pipe elbow (742) and
    Clay - Pipe tee (744) are retired with their numbers kept, blueprints 141-143 retired, structure states 179-181 retired (rows kept for their numbers, no look or water block), the Clay pipe
    recipe (352) retired; a saved Clay pipe loads as Clay. Closed pipe is the Wooden - Pipe (PR 2), and copper since section 9.
@@ -95,10 +95,10 @@ How it fits together:
 | ~~Clay - Pipe / elbow / tee~~ | retired 14 Nov 2026 (Dave: remove clay plumbing altogether); a closed run uses the Wooden - Pipe | - |
 | Stone - Trough | tank 200 L, rim 0.58 m, base outlet like the wooden trough | unchanged |
 | Cistern | tank 2,000 L; catches over its 1 m rim from up to 1.2 m across and 2 m above; base outlet at +Z; its water stands 0.5 m over the outlet (`head_m`), so a level log pipe from it runs at about half cap | unchanged |
-| Raised cistern (locked; a big tank, not a pump, Dave 20 Nov 2026, section 10) | tank 2,000 L on a 2 m plinth; outlet at its foot with the tank 2.5 m over it (a level pipe runs full); fills only through its riser at the foot (-Z) from a pipe whose water surface reaches its top (`lift_m` 2.85: a force pump; no pumps now, see section 10), never from a hand pump | unchanged |
+| Raised cistern (a big tank since 20 Nov 2026, section 10) | tank 2,000 L, copper lined, on a 2 m wooden frame; its open top (3 m up) takes rain and a pipe end or spout over it; a copper downpipe to its foot (+Z), where pipes join: a level pipe from it runs full (its water 2.5 m over the foot); linked to barrels it levels by water surface, its floor 2.05 m up | 16 Plank, 20 Hardwood board, 6 Copper ingot, 40 Nails (PV-12) |
 
-Engine additions (water_network.gd): a tank's `head_m` (its water over its base outlet) and `lift_m` (a riser-fed tank takes water only from a
-surface that high over its inlet). The cisterns' "overflow" is not modelled: a full tank backs up, as the engine already does.
+Engine additions (water_network.gd): a tank's `head_m` (its water over its base outlet). The `lift_m` riser rule went with the pumps
+(20 Nov 2026); a tank's `level_base_m` (its floor over its spot) lets the Raised cistern level with barrels. The cisterns' "overflow" is not modelled: a full tank backs up, as the engine already does.
 
 ## 7. Iron plumbing: SUPERSEDED (Dave, 19 Nov 2026)
 
@@ -106,7 +106,7 @@ The deferred iron plan (Iron pipe section, Iron - Pipe / elbow / tee, and an iro
 to go into iron cause iron would rust and steel would do the same thing so there's no point in having iron or steel [...] copper would be the best".
 Section 9 replaces it. The old design stays in git history (and the unmerged bundle `plumbing/plumbing-stack.bundle`); nothing of it is built. The
 Iron - Hand pump, the Deep-well pump and the Raised cistern were not part of that ruling and stayed locked; since then the pumps are retired and the
-Raised cistern is kept as a big tank (Dave, 20 Nov 2026, section 10).
+Raised cistern is a big tank anyone can build (Dave, 20 Nov 2026, section 10).
 
 ## 8. Assumed on Dave's behalf, for his review
 
@@ -120,7 +120,7 @@ Every value below is PROVISIONAL (coordinator ruling: build costs and numbers ma
 - P-6 New Wooden - Pipe / elbow / tee: closed bored logs, 60 L/min under head; 1 Log + 1 Twine (tee 2 Log + 1 Twine) (s5).
 - P-7 Wooden - Hand pump 0.8 L/s at 40 W (48 L/min at 4 m) (s5). Retired 20 Nov 2026 (s10).
 - P-8 Stone channels 300 L/min; Stone - Trough 200 L (s6). (Clay pipes retired by Dave, not assumed.)
-- P-9 Cistern 2,000 L, 0.5 m head; Raised cistern 2,000 L, 2.5 m head, filled only by a force pump, so locked (Dave, 20 Nov 2026: a big tank, not a pump, s10).
+- P-9 Cistern 2,000 L, 0.5 m head; Raised cistern 2,000 L, 2.5 m head, a big tank filled by rain and from higher up (Dave, 20 Nov 2026, s10; PV-12).
 - P-10 A saved Clay pipe loads as Clay (renames.json): nothing else uses it, and its recipe took 3 Clay for 2 (s3).
 - (19 Nov 2026, s9) PV-1 Wooden - Pipe: 1 Log + 1 Twine by hand, knife kept; 2 m a piece, 60 L/min; wears to 0.25 in 56 game days, flow x condition.
 - PV-2 Copper - Pipe: 1 Copper ingot at the Primitive smithy for 3 m; 180 L/min; never wears.
@@ -133,6 +133,7 @@ Every value below is PROVISIONAL (coordinator ruling: build costs and numbers ma
 - PV-9 (Dave 19 Nov 20:31Z) A pipe is a row of segments, one per pack piece (Wooden 2 m, Copper 3 m) counted from the end it was laid from; each joint between them is a connection point. A tap or drip head fits on any end or joint not already taken, and a barrel set down with its bottom point within 0.6 m across (0.25 m up or down) of one moves so the middle of its bottom lands exactly on it (Dave 21:56Z); pipes and fittings keep no building gap (they lie through anything); a joint splits the run in two there (pieces shared, none made). A run's second click may be on the ground (or anything) within 6 m. Assumed: a junction made with the sliding start point measures its new half's joints from that point.
 - PV-10 (Dave 19 Nov 20:31Z, "pipes without taps or drips do not leak any water") A pipe end with nothing on it is capped: no water leaves it. Assumed: an end laid right over a trough, trench or barrel top still pours into it, as before, because that water is caught, not lost (the irrigation trench is fed this way).
 - PV-11 (Dave 20 Nov 22:42Z, "the wooden hand pumps should be gone too") A pump standing in a saved world is cleared at load; its materials are dropped where it stood and never despawn, so an owner who is away for days still finds them.
+- PV-12 (Dave 20 Nov 22:06Z-22:42Z, "copper lined and the frame can be made of wood and iron nails", "they are just big tanks", "yes make the cistern") The Raised cistern: 16 Plank (the frame), 20 Hardwood board (the tank), 6 Copper ingot (the lining), 40 Nails, any hammer and a Bronze chisel (as the Barrel); 2,000 L; its floor 2.05 m up, open top 3 m up taking rain over 3.2 m2 (12.8 L a real minute at full rain) and a pipe end or spout over it; its pipes join at its foot. Assumed: only the Raised cistern changes; the stone Cistern stays as it is.
 
 ## 9. Pipes, taps and barrels (Dave, 19 Nov 2026), PROVISIONAL values
 
@@ -214,16 +215,16 @@ Against dev (41415196), the proposal put to Dave:
 - Already works as he describes (section 9): rain fills a barrel in the open; linked barrels level out and a lower barrel fills first; a barrel's
   bottom feeds copper or wooden pipes to Copper - Taps and Copper - Drip heads; a pipe end over a barrel, trough, plot or trench pours in.
 - Missing: a barrel stood in a river or stream does not take water from it (a river intake); no cooking station draws piped water.
-- Pumps in the catalog: the Iron - Hand pump and the Deep-well pump (both locked, never buildable), the Raised cistern (locked; only a force pump
-  fills it) and the Wooden - Hand pump (live now). Proposed: retire all four (narrowed by Dave, below).
+- Pumps in the catalog were the Iron - Hand pump and the Deep-well pump (both locked, never buildable), the Raised cistern (locked; only a force
+  pump filled it) and the Wooden - Hand pump. Proposed: retire all four (narrowed by Dave, below).
 - **Decided (Dave, 20 Nov 2026 22:06Z, "Retire all pumps"):** the Iron - Hand pump, the Deep-well pump and the Wooden - Hand pump are retired
   (numbers kept; retired in the data by the pump PR). Dave, 20 Nov 2026 22:42Z: "the wooden hand pumps should be gone too. I did not approve
   ever having those. they were an ai accident." A pump standing in a saved world is cleared when the world loads and leaves its materials on the
   ground where it stood (a site leaves what had been put into it); those piles never despawn (PV-11, provisional). Water comes from rain, from wells by bucket and from river barrels (below).
 - **Cisterns stay (Dave, 20 Nov 2026 22:06Z):** "the cistern can be copper lined and the frame can be made of wood and iron nails etc. cisterns are
-  not pumps"; 22:07Z "they are just big tanks". Proposed for a later PR (our reading, for Dave to confirm): the Raised cistern becomes a big tank
-  that behaves like a bigger barrel in the pipe system, copper lined on a wooden frame with iron nails, filled by gravity (a pipe from a higher
-  barrel) or by rain and feeding pipes from its bottom, with no riser or force pump; cost and size provisional.
+  not pumps"; 22:07Z "they are just big tanks". Done: the Raised cistern is a big tank that behaves like a bigger barrel in the pipe system,
+  copper lined on a wooden frame with iron nails, filled by rain or by water from higher up poured over its top, feeding pipes from its foot
+  and levelling with linked barrels, with no riser or force pump. Cost and sizes are provisional (PV-12).
 - **Next (Dave, 20 Nov 2026 22:42Z):** "yes make the cistern, the river barrel is just a barrel that sits in a river and fills up with river water
   gradually. it will have a fill speed that is pretty fast and it can have copper pipes attached. the pipes need to run down hill because they are
   gravity fed." Order: the cistern as a big tank, then the river barrel; advanced cooking stations drawing piped water later.
