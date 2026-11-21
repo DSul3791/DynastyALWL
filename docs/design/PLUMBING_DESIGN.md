@@ -95,7 +95,7 @@ How it fits together:
 | ~~Clay - Pipe / elbow / tee~~ | retired 14 Nov 2026 (Dave: remove clay plumbing altogether); a closed run uses the Wooden - Pipe | - |
 | Stone - Trough | tank 200 L, rim 0.58 m, base outlet like the wooden trough | unchanged |
 | Cistern | tank 2,000 L; catches over its 1 m rim from up to 1.2 m across and 2 m above; base outlet at +Z; its water stands 0.5 m over the outlet (`head_m`), so a level log pipe from it runs at about half cap | unchanged |
-| Raised cistern (a big tank since 20 Nov 2026, section 10) | tank 2,000 L, copper lined, on a 2 m wooden frame; its open top (3 m up) takes rain and a pipe end or spout over it; a copper downpipe to its foot (+Z), where pipes join: a level pipe from it runs full (its water 2.5 m over the foot); linked to barrels it levels by water surface, its floor 2.05 m up | 16 Plank, 20 Hardwood board, 6 Copper ingot, 40 Nails (PV-12) |
+| Raised cistern (a big tank since 20 Nov 2026, section 10) | tank 700 L (Dave 21 Nov 2026), copper lined, on a 2 m wooden frame; its open top (3 m up) takes rain and a pipe end or spout over it; a copper downpipe to its foot (+Z), where pipes join: a level pipe from it runs full (its water 2.5 m over the foot); linked to barrels it levels by water surface, its floor 2.05 m up | 16 Plank, 20 Hardwood board, 6 Copper ingot, 40 Nails (PV-12) |
 
 Engine additions (water_network.gd): a tank's `head_m` (its water over its base outlet). The `lift_m` riser rule went with the pumps
 (20 Nov 2026); a tank's `level_base_m` (its floor over its spot) lets the Raised cistern level with barrels. The cisterns' "overflow" is not modelled: a full tank backs up, as the engine already does.
@@ -120,20 +120,20 @@ Every value below is PROVISIONAL (coordinator ruling: build costs and numbers ma
 - P-6 New Wooden - Pipe / elbow / tee: closed bored logs, 60 L/min under head; 1 Log + 1 Twine (tee 2 Log + 1 Twine) (s5).
 - P-7 Wooden - Hand pump 0.8 L/s at 40 W (48 L/min at 4 m) (s5). Retired 20 Nov 2026 (s10).
 - P-8 Stone channels 300 L/min; Stone - Trough 200 L (s6). (Clay pipes retired by Dave, not assumed.)
-- P-9 Cistern 2,000 L, 0.5 m head; Raised cistern 2,000 L, 2.5 m head, a big tank filled by rain and from higher up (Dave, 20 Nov 2026, s10; PV-12).
+- P-9 Cistern 2,000 L, 0.5 m head; Raised cistern 700 L (Dave 21 Nov 2026), 2.5 m head, a big tank filled by rain and from higher up (Dave, 20 Nov 2026, s10; PV-12).
 - P-10 A saved Clay pipe loads as Clay (renames.json): nothing else uses it, and its recipe took 3 Clay for 2 (s3).
 - (19 Nov 2026, s9) PV-1 Wooden - Pipe: 1 Log + 1 Twine by hand, knife kept; 2 m a piece, 60 L/min; wears to 0.25 in 56 game days, flow x condition.
 - PV-2 Copper - Pipe: 1 Copper ingot at the Primitive smithy for 3 m; 180 L/min; never wears.
 - PV-3 A run is straight, up to 30 m, paid in whole pieces; the start must be a connection point; within 6 m reach of where you stand at each click.
 - PV-4 Copper - Tap: 1 Copper ingot; only on a pipe's end or joint; its 3 slots fill water containers at up to 30 L a real minute between them (Dave 19 Nov 20:11Z gave E to drink, F with about 3 slots; the fill rate is assumed). Water reaches it from the first tank up its pipes that holds any.
 - PV-5 Copper - Drip head: 1 Copper ingot; draws 2 L/min while water reaches it; Dave (19 Nov 20:09Z) set the 10 m circle; assumed: the beds and plots there are kept fully watered, at any height within 10 m.
-- PV-6 Barrel: 200 L; water or goods, never both; rain 1 L a real minute at full rain in the open; a pipe from its foot runs as if its water stood 0.4 m deep (about half full; the network gives a tank one fixed head, as a cistern's 0.5 m).
+- PV-6 Barrel: 60 L (Dave 21 Nov 2026: "a barrel should hold around 60Liters"; was 200 L); water or goods, never both; rain 1 L a real minute at full rain in the open; a pipe from its foot runs as if its water stood 0.4 m deep (about half full; the network gives a tank one fixed head, as a cistern's 0.5 m).
 - PV-7 Linked barrels (by any pipe, copper or wooden) level to one water surface, height respected; levelled at most every 3 real seconds while changing.
 - PV-8 A barrel's bottom point feeds pipes out but takes no water in (it fills from above or by rain).
 - PV-9 (Dave 19 Nov 20:31Z) A pipe is a row of segments, one per pack piece (Wooden 2 m, Copper 3 m) counted from the end it was laid from; each joint between them is a connection point. A tap or drip head fits on any end or joint not already taken, and a barrel set down with its bottom point within 0.6 m across (0.25 m up or down) of one moves so the middle of its bottom lands exactly on it (Dave 21:56Z); pipes and fittings keep no building gap (they lie through anything); a joint splits the run in two there (pieces shared, none made). A run's second click may be on the ground (or anything) within 6 m. Assumed: a junction made with the sliding start point measures its new half's joints from that point.
 - PV-10 (Dave 19 Nov 20:31Z, "pipes without taps or drips do not leak any water") A pipe end with nothing on it is capped: no water leaves it. Assumed: an end laid right over a trough, trench or barrel top still pours into it, as before, because that water is caught, not lost (the irrigation trench is fed this way).
 - PV-11 (Dave 20 Nov 22:42Z, "the wooden hand pumps should be gone too") A pump standing in a saved world is cleared at load; its materials are dropped where it stood and never despawn, so an owner who is away for days still finds them.
-- PV-12 (Dave 20 Nov 22:06Z-22:42Z, "copper lined and the frame can be made of wood and iron nails", "they are just big tanks", "yes make the cistern") The Raised cistern: 16 Plank (the frame), 20 Hardwood board (the tank), 6 Copper ingot (the lining), 40 Nails, any hammer and a Bronze chisel (as the Barrel); 2,000 L; its floor 2.05 m up, open top 3 m up taking rain over 3.2 m2 (12.8 L a real minute at full rain) and a pipe end or spout over it; its pipes join at its foot. Assumed: only the Raised cistern changes; the stone Cistern stays as it is.
+- PV-12 (Dave 20 Nov 22:06Z-22:42Z, "copper lined and the frame can be made of wood and iron nails", "they are just big tanks", "yes make the cistern") The Raised cistern: 16 Plank (the frame), 20 Hardwood board (the tank), 6 Copper ingot (the lining), 40 Nails, any hammer and a Bronze chisel (as the Barrel); 700 L (Dave 21 Nov 2026: "the raised cistern should hold around 700L"; was 2,000 L); its floor 2.05 m up, open top 3 m up taking rain over 3.2 m2 (12.8 L a real minute at full rain) and a pipe end or spout over it; its pipes join at its foot. Assumed: only the Raised cistern changes; the stone Cistern stays as it is.
 
 ## 9. Pipes, taps and barrels (Dave, 19 Nov 2026), PROVISIONAL values
 
@@ -171,7 +171,7 @@ past it; a click on the next connection point lays the whole run, taking the pip
 - **Copper - Drip head** (1 Copper ingot, Primitive smithy; Dave 19 Nov 2026 20:09Z): fitted on a pipe's end or joint the same way. While its pipes
   bring it any water it irrigates the soil in a circle of 10 m radius round it: every tilled bed and garden plot there is kept fully watered.
   It draws 2 L/min while water reaches it (PV-5).
-- **Barrels hold water** (PV-6): 200 L, as well as their 8 slots of goods, but never both at once: a barrel with goods in it takes no water and
+- **Barrels hold water** (PV-6): 60 L (Dave 21 Nov 2026), as well as their 8 slots of goods, but never both at once: a barrel with goods in it takes no water and
   one holding water takes no goods ("It holds water."). Out in the open (not under a roof or tree) a barrel catches rain: 1 L a real minute in
   full rain (its 0.25 m2 top at about 10 mm a game hour), less in lighter rain. A pipe end or open tap over its rim pours in. E at a barrel holding
   water drinks or fills the container in hand; one with no water opens as before.
@@ -189,7 +189,7 @@ past it; a click on the next connection point lays the whole run, taking the pip
 | Copper - Pipe (1508, new) | Pack item, recipe 747 at the Primitive smithy; laid run state 458 |
 | Copper - Tap (1509, new) | Pack item, recipe 748; fitted state 459 with 3 slots; `copper_tap_open` (state 460) retired before release, loads as the tap |
 | Copper - Drip head (1510, new) | Pack item, recipe 749; fitted state 461 |
-| Barrel (649) | Kept; also holds 200 L of water (above) |
+| Barrel (649) | Kept; also holds 60 L of water (above) |
 | Wooden - Pipe elbow (1353), Wooden - Pipe tee (1354) | Retired (any angle and junctions anywhere replace them); a saved one loads as a 2 m Wooden - Pipe |
 | Iron - Pipe (746), Iron - Pipe elbow (748), Tap (750, iron) | Retired (Dave: no iron or steel pipe); they were never buildable |
 | Blueprints 342-344 (wooden pipes), 144-146 (iron pipes and Tap) | Retired: pipes are laid from the hand, not built with the hammer |

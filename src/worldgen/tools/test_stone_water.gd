@@ -98,7 +98,7 @@ func _init() -> void:
 	var raised: int = put("stone_raised_cistern", Vector3(300.0, 10.0, 300.0))
 	var pipe2: int = put("wooden_pipe", Vector3(300.0, 10.0, 302.05), 90.0)
 	var trough2: int = put("stone_trough", Vector3(300.0, 9.5, 304.0))
-	items._water.set_litres(raised, 1000.0)
+	items._water.set_litres(raised, 500.0)
 	items._water_dirty = true
 	items._water_tick(0.0)
 	check(items._water.downstream(raised).has(pipe2) and absf(items._water.inflow_lpm(trough2) - 60.0) < 0.01, "a raised cistern drives a level log pipe at its full 60 L/min (%.2f)" % items._water.inflow_lpm(trough2))
