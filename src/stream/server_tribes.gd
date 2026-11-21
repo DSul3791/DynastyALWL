@@ -214,7 +214,7 @@ func avoid(npc: Dictionary) -> Dictionary:
 	var tribe: String = tribe_of(id)
 
 	if bool(npc.get("fleeing", false)) and not bool(npc.get("hidden", false)):
-		return {"hide": _mouth(tribe)}   # once it runs for the mouth it goes all the way in, however far the mouth is from the striker (camp 3,4#8006: about 50 m)
+		return {"hide": _mouth(tribe)}   # once it runs for the mouth it goes all the way in, however far the mouth is from the striker
 
 	var att: Dictionary = attitude(tribe)
 	var pos: Vector3 = npc["pos"]
@@ -236,7 +236,7 @@ func avoid(npc: Dictionary) -> Dictionary:
 		var striker_d: float = d
 
 		if striker and bool(npc.get("hidden", false)):
-			striker_d = minf(d, Vector2(p["pos"].x - spot_at.x, p["pos"].z - spot_at.z).length())   # in the cave it minds its own spot too: a striker waiting at the camp, 50 m from the mouth (3,4#8006), keeps it in
+			striker_d = minf(d, Vector2(p["pos"].x - spot_at.x, p["pos"].z - spot_at.z).length())   # in the cave it minds its own spot too: a striker waiting at the camp keeps it in, however far the camp is from the mouth
 
 		if striker_d > far:
 			continue   # past everything a member reacts to: no standing lookup for the far players

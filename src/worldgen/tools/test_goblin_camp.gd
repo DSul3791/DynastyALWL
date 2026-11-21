@@ -105,18 +105,15 @@ func _tile() -> void:
 	var spacing: float = float(head["header"]["map_spacing_m"])
 	var heights: PackedFloat32Array = TileFileScript.decode_height(TileFileScript.read_section(path, head["table"], "height")["raw"], TileFileScript.height_step_of(head["header"]))
 	var water: PackedByteArray = TileFileScript.read_section(path, head["table"], "water_class")["raw"]
-	var ground = func(x: float, z: float) -> float:   # bilinear between the four samples round the point
-		var u: float = (x - float(tile.x) * TILE_M) / spacing
-		var v: float = (z - float(tile.y) * TILE_M) / spacing
-		var i0: int = int(floor(u))
-		var j0: int = int(floor(v))
-
-		if i0 < 0 or j0 < 0 or i0 >= n - 1 or j0 >= n - 1:
-			return NAN
-
-		var fu: float = u - float(i0)
-		var fv: float = v - float(j0)
-		return lerpf(lerpf(heights[j0 * n + i0], heights[j0 * n + i0 + 1], fu), lerpf(heights[(j0 + 1) * n + i0], heights[(j0 + 1) * n + i0 + 1], fu), fv)
+	var land = TileTerrainData.new()   # the game's own height_at (Catmull-Rom, river cells straight), as the tile load hands CampCaves
+	land.tile = tile
+	land.x0 = float(tile.x) * TILE_M
+	land.z0 = float(tile.y) * TILE_M
+	land.samples = n
+	land.spacing_m = spacing
+	land.heights = heights
+	land.water_class = water
+	var ground: Callable = land.height_at
 	var dry = func(spot: Vector2) -> bool:
 		var sample: Vector2i = Vector2i(int(round((spot.x - float(tile.x) * TILE_M) / spacing)), int(round((spot.y - float(tile.y) * TILE_M) / spacing)))
 		return water[sample.y * n + sample.x] == 0
@@ -342,6 +339,9 @@ func _npcs() -> void:
 	check(bool(npc_s.get("hidden", false)) and npc_s["pos"].distance_to(mouth) <= 1.5, "Skritch goes into the cave mouth (%s)" % str(npc_s["pos"]))
 	check(npcs.rows_near(player[0]).all(func(row): return str(row[0]) != "skritch"), "and is not seen")
 	check(tribes.member_along(player[0], (mouth - player[0]).normalized(), 10.0) == "", "nobody in the cave can be struck")
+	var skritch_spot: Vector3 = tribes._member["skritch"]["spot"]
+	player[0] = Vector3(skritch_spot.x, 10.0, skritch_spot.z) + Vector3(0.0, 0.0, -22.0)   # near its spot, but past angry_keep_m plus 5 m from the mouth
+	check(Vector2(player[0].x - mouth.x, player[0].z - mouth.z).length() > float(att["angry_keep_m"]) + TribesScript.HIDE_EXTRA_M, "the striker stands out of the mouth's reach")
 	run.call(float(tribes.cfg.get("calm_s", 30.0)) + 10.0)
 	check(bool(npc_s.get("hidden", false)), "it stays in while the striker waits at the camp, far from the mouth")
 	player[0] = mouth + Vector3(-80.0, 0.0, 0.0)

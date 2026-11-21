@@ -17,6 +17,7 @@ const OPEN_CUT_MAX_M := 20.0
 const RISE := 0.01             # 1 m up per 100 m in, so it drains out of the mouth
 const STEP_M := 6.0            # a node every this far along the passage
 const DEFAULT := {"dir_deg": 0.0, "depth_m": 20.0, "width_m": 2.2, "height_m": 2.4, "room_radius_m": 4.0, "room_height_m": 3.0}
+const EDGE_MARGIN_M := 60.0    # the whole cave inside its tile (a neighbour tile does not carve it)
 const PATH := "res://data/creatures/goblin_tribes.json"
 
 
@@ -28,7 +29,7 @@ static func plan(tile: Vector2i, x0: float, z0: float, size_m: float, height: Ca
 	if not parsed is Dictionary:
 		return out
 
-	var rect: Rect2 = Rect2(x0, z0, size_m, size_m)
+	var rect: Rect2 = Rect2(x0 + EDGE_MARGIN_M, z0 + EDGE_MARGIN_M, size_m - 2.0 * EDGE_MARGIN_M, size_m - 2.0 * EDGE_MARGIN_M)
 	var tribes: Dictionary = parsed.get("tribes", {})
 	var ids: Array = tribes.keys()
 	ids.sort()   # the same order everywhere
