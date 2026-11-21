@@ -483,7 +483,7 @@ var _goals_detail: String = ""        # the last _goals_tick's split (the slow-t
 var _slowest_hint: String = ""
 var _slowest_hint_usec: int = 0
 var _sync_detail: String = ""         # the last _sync_world_items' split (the slow-tick line)
-var _ore_usec: PackedInt64Array = PackedInt64Array([0, 0, 0, 0, 0, 0])   # the last cell's boulders and ore rocks: binding the reads, the ore body looks, the water reads, settling rows, the mountain-foot probes (usec), and the number of ore body looks (the slow-cell line)
+var _ore_usec: PackedInt64Array = PackedInt64Array([0, 0, 0, 0, 0, 0, 0])   # the last cell's boulders and ore rocks: binding the reads, the ore body looks, the water reads, settling rows, the mountain-foot probes (usec), the number of ore body looks, the spots' ground reads (usec) (the slow-cell line)
 var _ore_split: Dictionary = {}   # the last cell's ore rocks: ore -> usec of its whole layout (the slow-cell line, so no ore's cost hides in the sum)
 var _bank_ground_usec: int = 0       # the last cell's bank stones: time reading the ground and asking for water (the slow-cell line)
 var _bank_water_usec: int = 0
@@ -7859,7 +7859,7 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	_lay_out_bank_stones(cell, cell_m, cfg, kinds.size())
 	part_usec = _cell_part("bank stones", part_usec)
 	_cell_parts[-1] += " (ground %.0f, water %.0f)" % [float(_bank_ground_usec) / 1000.0, float(_bank_water_usec) / 1000.0]
-	_ore_usec = PackedInt64Array([0, 0, 0, 0, 0, 0])
+	_ore_usec = PackedInt64Array([0, 0, 0, 0, 0, 0, 0])
 	_ore_split.clear()
 	var reads: Dictionary = _cell_reads(cell, cell_m)   # one tile look for the boulders and both ores
 	_ore_usec[0] = Time.get_ticks_usec() - part_usec
@@ -7875,14 +7875,14 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	for ore in _ore_split:
 		by_ore.append("%s %.1f" % [ore, float(_ore_split[ore]) / 1000.0])
 
-	var listed: int = _ore_usec[1] + _ore_usec[2] + _ore_usec[3] + _ore_usec[4]
+	var listed: int = _ore_usec[1] + _ore_usec[2] + _ore_usec[3] + _ore_usec[4] + _ore_usec[6]
 	var spent: int = 0
 
 	for ore in _ore_split:
 		spent += int(_ore_split[ore])
 
-	_cell_parts[-1] += " (reads bound %.1f, ore bodies %.1f in %d looks, water %.1f, settling %.1f, foot %.1f, rest %.1f; %s)" % [float(_ore_usec[0]) / 1000.0, float(_ore_usec[1]) / 1000.0, _ore_usec[5],
-		float(_ore_usec[2]) / 1000.0, float(_ore_usec[3]) / 1000.0, float(_ore_usec[4]) / 1000.0, float(spent - listed) / 1000.0, ", ".join(by_ore)]
+	_cell_parts[-1] += " (reads bound %.1f, ore bodies %.1f in %d looks, ground %.1f, water %.1f, settling %.1f, foot %.1f, rest %.1f; %s)" % [float(_ore_usec[0]) / 1000.0, float(_ore_usec[1]) / 1000.0, _ore_usec[5],
+		float(_ore_usec[6]) / 1000.0, float(_ore_usec[2]) / 1000.0, float(_ore_usec[3]) / 1000.0, float(_ore_usec[4]) / 1000.0, float(spent - listed) / 1000.0, ", ".join(by_ore)]
 
 
 # A cell's own random stream for one part of its layout (Sonny, 10 Nov 2026). The loose stones and sticks drew first from one stream, and a stick's spot
@@ -8138,7 +8138,9 @@ func _lay_out_ore_rocks_of(cell: Vector2i, cell_m: float, ore: String, reads: Di
 		elif attempt >= mini(int(cfg.get("tries", 4)), ORE_ROCK_TRIES - 1) or draw > top_p:
 			continue   # cheap refusals first: most tries end here without reading the ground or the water
 
+		var ground_usec: int = Time.get_ticks_usec()
 		var y: float = float(ground.call(x, z))
+		_ore_usec[6] += Time.get_ticks_usec() - ground_usec
 
 		if is_nan(y) or y < 1.0:
 			continue
