@@ -261,6 +261,15 @@
 			"source": "crude_chest (blueprint 186)"
 		},
 		{
+			"id": "small_chest",
+			"class": "storage",
+			"points": 1,
+			"family": "chest",
+			"needs_lit": false,
+			"status": "placeable",
+			"source": "small_chest (blueprint 364)"
+		},
+		{
 			"id": "fine_chest",
 			"class": "storage",
 			"points": 1,

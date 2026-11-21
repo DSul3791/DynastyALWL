@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1512,
+	"next_number": 1514,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -2735,13 +2735,25 @@
 		"nails": {
 			"number": 228,
 			"name": "Iron nails",
-			"description": "Small iron nails. Fix boards in builds; bronze ones do the same job.",
+			"description": "Small iron nails. They fix boards in builds that take iron nails or a lesser metal.",
 			"kind": "material",
 			"material": "iron",
 			"stack": 200,
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15
+		},
+		"steel_nails": {
+			"number": 1513,
+			"name": "Steel nails",
+			"description": "Small steel nails, the strongest. They fix boards in any build that takes nails.",
+			"kind": "material",
+			"material": "steel",
+			"stack": 200,
+			"look_alikes": [],
+			"value": 2,
+			"sell_lot": 15,
+			"note_provisional": "Dave 21 Nov 2026 (chest per nail tier, steel for the top chest): no steel nails existed. Made like Iron nails (1 Steel ingot to 100 at the brick forge, level 3 as the other steel goods); the value is assumed (CT-4)."
 		},
 		"cobblestone": {
 			"number": 229,
@@ -9692,6 +9704,17 @@
 				"unstackable": true,
 				"look_alikes": [],
 				"note": "Placed piece: row state 230."
+			},
+			"small_chest": {
+				"number": 1512,
+				"name": "Small chest",
+				"description": "A small chest of hardwood boards nailed with copper, with a lift-off lid. Holds 24 stacks.",
+				"kind": "structure",
+				"stack": 1,
+				"slots": 24,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 462. The copper nails chest (Dave 21 Nov 2026); name, slots and cost PROVISIONAL (CT-1)."
 			},
 			"fine_chest": {
 				"number": 915,

@@ -284,7 +284,7 @@ func _init() -> void:
 	check(items.table.group_members(n_of("iron_chisel")).has(n_of("steel_chisel")) and not items.table.group_members(n_of("iron_chisel")).has(n_of("bronze_chisel")) and not items.table.group_members(n_of("bronze_chisel")).has(n_of("copper_chisel")), "a better chisel fills a lower group, a lesser one never does")
 	var chisel_spot: int = 0
 
-	for trial in [["chair", "", false], ["plank_chest", "", true], ["chair", "copper_chisel", false], ["chair", "bronze_chisel", true], ["iron_chest", "iron_chisel", false], ["iron_chest", "steel_chisel", true]]:
+	for trial in [["chair", "", false], ["plank_chest", "", true], ["small_chest", "", true], ["chair", "copper_chisel", false], ["chair", "bronze_chisel", true], ["iron_chest", "iron_chisel", false], ["iron_chest", "steel_chisel", true]]:
 		empty_pack()
 		hold("steel_hammer")
 

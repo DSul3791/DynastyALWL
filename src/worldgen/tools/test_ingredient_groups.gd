@@ -75,8 +75,8 @@ func _init() -> void:
 	var nails = InventoryScript.new(table)
 	nails.add(nails_n, 3)
 	nails.add(bronze_nails, 2)
-	check(table.spend_order(nails_n)[0] == bronze_nails and nails.remove_fill(nails_n, 3) and nails.count_of(bronze_nails) == 0 and nails.count_of(nails_n) == 2, "3 nails take both Bronze nails first, then 1 iron (not the iron first, group order)")
-	check(not nails.remove_fill(nails_n, 3) and nails.count_of(nails_n) == 2, "more than the pack holds changes nothing")
+	check(table.spend_order(bronze_nails)[0] == bronze_nails and nails.remove_fill(bronze_nails, 3) and nails.count_of(bronze_nails) == 0 and nails.count_of(nails_n) == 2, "3 nails take both Bronze nails first, then 1 iron (not the iron first, group order)")
+	check(not nails.remove_fill(bronze_nails, 3) and nails.count_of(nails_n) == 2, "more than the pack holds changes nothing")
 	nails.add(bronze_nails, 1)
 	check(nails.remove(nails_n, 1) and nails.count_of(nails_n) == 1 and nails.count_of(bronze_nails) == 1, "a plain remove stays literal: one item number")
 	var exact = InventoryScript.new(table)
@@ -138,7 +138,7 @@ func _init() -> void:
 	check(not items.recipes.can_make(99950, held) and not items._pack_covers(held, keeper, 1), "and without any log it cannot")
 	items.recipes._by_number.erase(99950)
 	# The same through the real craft queue: a stand-in recipe asks for 4 nails; the pack holds 3 iron and 2 bronze: the 2 bronze go first.
-	items.recipes._by_number[99951] = {"number": 99951, "id": "test_spend_group", "name": "Test spend group", "needs": [[nails_n, 4]], "keeps": [], "gives": [items.table.number_of("stick"), 1], "craft_s": 1.0, "known": true, "station": ""}
+	items.recipes._by_number[99951] = {"number": 99951, "id": "test_spend_group", "name": "Test spend group", "needs": [[bronze_nails, 4]], "keeps": [], "gives": [items.table.number_of("stick"), 1], "craft_s": 1.0, "known": true, "station": ""}
 	pack.add(nails_n, 3)
 	pack.add(bronze_nails, 2)
 	var sticks: int = count("stick")

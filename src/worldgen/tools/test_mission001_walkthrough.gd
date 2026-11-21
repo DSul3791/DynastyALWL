@@ -888,8 +888,8 @@ func step3_construction_and_equipment() -> void:
 	# (the Master smithy's blueprint needs a hammer of tier 3), the Master smithy built with the Steel anvil, and a Tempered Steel - Knife made
 	# there with its own quencher (no trough).
 	var steel_n: int = need_of("steel_knife", "steel_ingot") + need_of("steel_anvil_part", "steel_ingot")
-	var nail_crafts: int = crafts_for("nails", cost_of("advanced_smithy", "nails"))
-	var hinge_crafts: int = crafts_for("hinges", cost_of("advanced_smithy", "hinges"))
+	var nail_crafts: int = crafts_for("nails", cost_of("advanced_smithy", "bronze_nails"))   # iron Nails fill its Bronze nails or better cost
+	var hinge_crafts: int = crafts_for("hinges", cost_of("advanced_smithy", "bronze_hinges"))
 	var iron_more: int = cost_of("large_forge", "iron_ingot") + cost_of("master_forge", "iron_ingot") + need_of("iron_anvil_part", "iron_ingot") + nail_crafts * need_of("nails", "iron_ingot") + hinge_crafts * need_of("hinges", "iron_ingot")
 	check(cost_of("advanced_smithy", "steel_ingot") == 0 and cost_of("large_forge", "steel_ingot") == 0 and cost_of("advanced_smithy", "iron_anvil_part") == 1, "3t. the Advanced smithy and the Advanced smelter cost no steel; the smithy takes the Iron anvil (no cycle)")
 	check(make_iron(have("iron_ingot") + iron_more), "3t. %d more Iron ingots for the Iron anvil, its nails and hinges, the Advanced smelter and the Master smithy" % iron_more)
@@ -899,7 +899,7 @@ func step3_construction_and_equipment() -> void:
 	craft("iron_anvil_part", 1)
 	craft("nails", nail_crafts)
 	craft("hinges", hinge_crafts)
-	check(have("iron_anvil_part") == 1 and have("nails") >= cost_of("advanced_smithy", "nails") and have("hinges") >= cost_of("advanced_smithy", "hinges"), "3t. the Improved smithy forges the Iron anvil, nails and hinges")
+	check(have("iron_anvil_part") == 1 and have("nails") >= cost_of("advanced_smithy", "bronze_nails") and have("hinges") >= cost_of("advanced_smithy", "bronze_hinges"), "3t. the Improved smithy forges the Iron anvil, nails and hinges")
 	give_cost("advanced_smithy", ["stone", "clay"])   # stones lie about, clay dug (test_first_hour)
 	var adv_at: Vector3 = FORGE + Vector3(-3.0, 0.0, 7.5)
 	go(adv_at + Vector3(0.0, 0.0, -2.0))
