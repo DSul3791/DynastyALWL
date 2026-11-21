@@ -2147,13 +2147,13 @@ func _print_split(now: int) -> void:
 	var sums: Dictionary = {}
 
 	for one in slow:
-		for part in ["wall", "draw", "process", "timed", "voxel", "physics", "other", "pipelines"]:
+		for part in ["wall", "process", "client", "timed", "voxel", "flush", "draw", "outside", "physics", "pipelines"]:
 			sums[part] = float(sums.get(part, 0.0)) + float(one[part])
 
-	print("shot runner: frametime split of %d frames over 50 ms: wall %.0f ms = draw %.0f + process %.0f (timed %.0f, voxel %.0f) + physics %.0f + other %.0f; %d pipelines built in them, %d in all %d frames" % [
-		slow.size(), float(sums.get("wall", 0.0)), float(sums.get("draw", 0.0)), float(sums.get("process", 0.0)), float(sums.get("timed", 0.0)),
-		float(sums.get("voxel", 0.0)), float(sums.get("physics", 0.0)), float(sums.get("other", 0.0)), int(sums.get("pipelines", 0.0)),
-		int(_splits.reduce(func(total: int, one: Dictionary) -> int: return total + int(one["pipelines"]), 0)), _splits.size()])
+	print("shot runner: frametime split of %d frames over 50 ms: wall %.0f ms = process %.0f (terrain client %.0f, its timed pieces %.0f, voxel %.0f) + flush %.0f + draw %.0f + outside %.0f + physics %.0f; %d pipelines built in them, %d in all %d frames" % [
+		slow.size(), float(sums.get("wall", 0.0)), float(sums.get("process", 0.0)), float(sums.get("client", 0.0)), float(sums.get("timed", 0.0)),
+		float(sums.get("voxel", 0.0)), float(sums.get("flush", 0.0)), float(sums.get("draw", 0.0)), float(sums.get("outside", 0.0)), float(sums.get("physics", 0.0)),
+		int(sums.get("pipelines", 0.0)), int(_splits.reduce(func(total: int, one: Dictionary) -> int: return total + int(one["pipelines"]), 0)), _splits.size()])
 	slow.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return float(a["wall"]) > float(b["wall"]))
 
 	for one in slow.slice(0, 10):

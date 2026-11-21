@@ -27,15 +27,21 @@ static var _hitch_next_msec: int = 0
 static var context: Callable = Callable()   # returns a short text about the game's state (set by the client), printed with every freeze line
 static var _freeze_prints: int = 0
 # Where a slow frame's time went (Dave 21 Nov 2026, "lags or pauses a lot when I am running"): the HITCH lines named pieces adding up to a few ms
-# of a 140 ms frame, and the frame length came from delta, which the engine caps near 8 physics steps (about 133 ms). The split below takes
-# the real time between frames and divides it into the last draw (frame_pre_draw to frame_post_draw, where pipeline builds and GPU waits
-# land), the engine's process step (scripts and engine nodes), the physics steps run, the voxel terrain's own main-thread work, and the rest.
+# of a 140 ms frame, and the frame length came from delta, which the engine caps near 8 physics steps (about 133 ms). The engine's process and
+# physics monitors are each second's maximum, not one frame's, so the split is taken from timestamps the client sets on every frame: the
+# physics steps (SceneTree.physics_frame), the process step (SceneTree.process_frame to the ProbeLast node, processed after every other
+# node), the terrain client's own _process inside it, the flush before the draw, the draw (frame_pre_draw to frame_post_draw), and outside
+# (after the draw until the next physics or process step: the window's events, audio, the engine's own frame work).
 static var terrain: Object = null         # the client's VoxelLodTerrain (its get_statistics() main-thread times), set by the client
-static var last_split: Dictionary = {}    # the split of the frame frame() just closed (the shot runner's run-in-a-line totals read it)
-static var _wall_usec: int = 0
+static var last_split: Dictionary = {}    # the split of the frame just closed (the shot runner's run-in-a-line totals read it)
+static var _proc_start_usec: int = 0
+static var _proc_end_usec: int = 0
+static var _client_start_usec: int = 0
+static var _client_end_usec: int = 0
 static var _pre_draw_usec: int = 0
-static var _draw_usec: int = 0
-static var _physics_seen: int = 0
+static var _post_draw_usec: int = 0
+static var _physics_first_usec: int = 0
+static var _physics_steps: int = 0
 static var _pipelines_seen: int = 0
 
 
@@ -65,10 +71,8 @@ static func frame(delta: float) -> void:
 	_win_frames += 1
 	_win_process_ms += Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
 	_win_physics_ms += Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
-	var now_usec: int = Time.get_ticks_usec()
-	var ms: float = float(now_usec - _wall_usec) / 1000.0 if _wall_usec > 0 else delta * 1000.0
-	_wall_usec = now_usec
-	last_split = _split(ms)
+	_client_start_usec = Time.get_ticks_usec()
+	var ms: float = float(last_split["wall"]) if not last_split.is_empty() else delta * 1000.0
 
 	# Dave 2 Nov 2026: 4-10 s freezes when trees and grass spawn in. A freeze prints at once (not only in the exit report) with what this frame
 	# timed, the engine's script and physics times, draw calls and video memory, and the game's own state: "nothing measured" with a small
@@ -130,55 +134,82 @@ static func frame(delta: float) -> void:
 	_this_frame = {}
 
 
-# The client calls these from RenderingServer.frame_pre_draw and frame_post_draw: the draw's CPU time, pipeline builds and GPU waits included.
+# The client's frame marks (terrain_client.gd connects them; ProbeLast calls process_end).
 static func pre_draw() -> void:
 	_pre_draw_usec = Time.get_ticks_usec()
 
 
 static func post_draw() -> void:
-	if _pre_draw_usec > 0:
-		_draw_usec = Time.get_ticks_usec() - _pre_draw_usec
+	_post_draw_usec = Time.get_ticks_usec()
 
 
-# The frame just closed, in ms: wall (real time since the frame before), draw, process (the engine's process step: our scripts and engine
-# nodes), timed (the pieces this probe names, part of process), physics (see below), voxel (the
-# terrain's own main-thread times, read on slow frames only), other (what is left: input, the engine's own frame work); pipelines = pipeline
-# compilations since. Physics is the steps run times the engine's physics monitor (its longest step), so it is an upper bound.
-static func _split(wall_ms: float) -> Dictionary:
-	var physics_now: int = Engine.get_physics_frames()
-	var steps: int = physics_now - _physics_seen if _physics_seen > 0 else 1
-	_physics_seen = physics_now
+static func physics_start() -> void:
+	_physics_steps += 1
+
+	if _physics_first_usec == 0:
+		_physics_first_usec = Time.get_ticks_usec()
+
+
+static func process_end() -> void:
+	_proc_end_usec = Time.get_ticks_usec()
+
+
+static func client_done() -> void:
+	_client_end_usec = Time.get_ticks_usec()
+
+
+# The start of a frame's process step closes the frame before: from its process start to now, in ms. A part whose marks did not come in
+# that frame (no draw, an early return) reads 0.
+static func process_start() -> void:
+	var now: int = Time.get_ticks_usec()
+	var start: int = _proc_start_usec
+	_proc_start_usec = now
+
+	if start == 0:
+		_physics_first_usec = 0
+		_physics_steps = 0
+		return
+
+	var physics_from: int = _physics_first_usec if _physics_first_usec > 0 else now
 	var pipelines_now: int = _pipelines_total()
 	var built: int = pipelines_now - _pipelines_seen if _pipelines_seen > 0 else 0
 	_pipelines_seen = pipelines_now
 	var timed: float = 0.0
 
 	for name in _this_frame:
-		timed += float(_this_frame[name]) / 1000.0
+		if not str(name).contains(":"):   # "grass: build" is part of "grass": only the top pieces are summed
+			timed += float(_this_frame[name]) / 1000.0
 
+	var wall: float = float(now - start) / 1000.0
 	var voxel: float = 0.0
 
-	if wall_ms > SLOW_MS and terrain != null and is_instance_valid(terrain):   # only for a slow frame: the statistics build a Dictionary
+	if wall > SLOW_MS and terrain != null and is_instance_valid(terrain):   # only for a slow frame: the statistics build a Dictionary
 		var stats: Dictionary = terrain.call("get_statistics")
 
 		for key in stats:
 			if str(key).begins_with("time_"):
 				voxel += float(stats[key]) / 1000.0
 
-	var process: float = Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
-	var physics: float = Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0 * float(steps)
-	var draw: float = float(_draw_usec) / 1000.0
-	return {"wall": wall_ms, "draw": draw, "process": process, "timed": timed, "physics": physics, "steps": steps, "voxel": voxel,
-		"other": maxf(wall_ms - draw - process - physics, 0.0), "pipelines": built, "n": _frames, "usec": Time.get_ticks_usec()}
+	last_split = {"wall": wall, "process": _span(start, _proc_end_usec, start), "client": _span(_client_start_usec, _client_end_usec, start),
+		"flush": _span(_proc_end_usec, _pre_draw_usec, start), "draw": _span(_pre_draw_usec, _post_draw_usec, start), "outside": _span(_post_draw_usec, physics_from, start),
+		"physics": float(now - physics_from) / 1000.0, "steps": _physics_steps, "timed": timed, "voxel": voxel, "pipelines": built, "n": _frames,
+		"usec": now}
+	_physics_first_usec = 0
+	_physics_steps = 0
+
+
+# A part of the frame that began at `start`; 0 when either mark is from an older frame.
+static func _span(from_usec: int, to_usec: int, start: int) -> float:
+	return float(to_usec - from_usec) / 1000.0 if from_usec >= start and to_usec > from_usec else 0.0
 
 
 static func split_text(split: Dictionary) -> String:
 	if split.is_empty():
 		return "no split"
 
-	return "split: draw %.0f, process %.0f (timed %.0f, voxel %.0f), physics %.0f in %d steps, other %.0f; %d pipelines built; %s" % [
-		float(split["draw"]), float(split["process"]), float(split["timed"]), float(split["voxel"]), float(split["physics"]), int(split["steps"]),
-		float(split["other"]), int(split["pipelines"]), pipelines_text()]
+	return "split: process %.0f (terrain client %.0f, its timed pieces %.0f, voxel %.0f), flush %.0f, draw %.0f, outside %.0f, physics %.0f in %d steps; %d pipelines built; %s" % [
+		float(split["process"]), float(split["client"]), float(split["timed"]), float(split["voxel"]), float(split["flush"]), float(split["draw"]),
+		float(split["outside"]), float(split["physics"]), int(split["steps"]), int(split["pipelines"]), pipelines_text()]
 
 
 static func _pipelines_total() -> int:

@@ -50,6 +50,7 @@ const OceanWaves := preload("res://src/sullivan_water/ocean/ocean_waves.gd")
 const OceanMesh := preload("res://src/sullivan_water/ocean/ocean_mesh.gd")
 const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
+const ProbeLastScript := preload("res://src/debug/probe_last.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const DynastyArmsScript := preload("res://src/client/character/dynasty_arms.gd")
 var _freeze_watch = FreezeWatchScript.new()   # its own thread: names a main-thread stall while it lasts, and tells a whole-game stop apart (Dave 2 Nov 2026)
@@ -1392,6 +1393,12 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.terrain = terrain   # the slow-frame split (frame_probe.gd) reads the terrain's main-thread times and times each draw
 	RenderingServer.frame_pre_draw.connect(func() -> void: Probe.pre_draw())
 	RenderingServer.frame_post_draw.connect(func() -> void: Probe.post_draw())
+	get_tree().physics_frame.connect(func() -> void: Probe.physics_start())
+	get_tree().process_frame.connect(func() -> void: Probe.process_start())
+	var last_marker: Node = ProbeLastScript.new()   # processed after every other node: the end of the frame's process step
+	last_marker.name = "ProbeLast"
+	last_marker.process_priority = 1000000
+	add_child(last_marker)
 	Probe.context = func() -> String: return "%s; ground blocks waiting %d; at %s" % [flora.load_state() if flora != null else "no flora", stream.pending() if stream != null else -1, str(body.global_position) if body != null else "?"]
 	ocean_ice = OceanIceScript.new()
 	ocean_ice.name = "OceanIce"
@@ -6994,6 +7001,7 @@ func _process(delta: float) -> void:
 			var probe: Vector3i = Vector3i((Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0)).round())
 			print("Terrain client: ground value 3 m under the spawn %.2f (above 0 is open)" % terrain.get_voxel_tool().get_voxel_f(probe))
 			_finish(0)
+	Probe.client_done()   # the end of this script's frame, for the slow-frame split
 
 
 # Headless walking check (--walk): lands on the ground, walks east without
