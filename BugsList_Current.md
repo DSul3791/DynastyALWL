@@ -1282,6 +1282,8 @@ The Fine - Chest (36 slots) is in the iron tier and is otherwise unchanged. Stee
 
 **Acceptance:** with 8 Copper nails and 4 Hardwood boards, any hammer builds a Small chest that holds 24. The Rustic - Chest refuses copper nails and takes bronze, iron or steel. The Large wooden chest refuses bronze nails. The Ornate - Chest takes only Steel nails. Taking a chest down gives back the lowest nails that fill its cost.
 
+**Gate fix (PR #1429, reviewed head 06cf88b7, merged to dev at de64880b):** the main gate's delta review found that the Tool cabinet and the Ore and metal rack still listed "nails" and "hinges" in what they take. Since this change those mean iron or steel nails and iron hinges only, so the two containers refused copper and bronze nails and bronze hinges. Both now list every nail and hinge by id. test_storage_locks checks each metal in both containers. Lane B on 06cf88b7: 291 pass / 0 fail, validate_items 0 errors, warnings 381 = baseline.
+
 Not yet played; not yet seen in a picture.
 
 ## 112. The knife makes a Wicker basket, not the two knife chests
