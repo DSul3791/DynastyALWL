@@ -5761,8 +5761,12 @@ func _process(delta: float) -> void:
 		print("Terrain client: ", link_bars.text())
 
 	if crash_report != null:
+		var tc: int = Probe.start()
 		crash_report.tick(_crash_state)
+		Probe.stop("crash report", tc)
+		tc = Probe.start()
 		_telemetry.tick(_telemetry_state, 1000, 500)
+		Probe.stop("telemetry", tc)
 
 	if pickup_feed != null:
 		pickup_feed.update(delta)
@@ -7618,6 +7622,7 @@ func _finish(code: int) -> void:
 	if cache != null:
 		cache.flush()
 
+	_telemetry.drain()   # its lines are written on a worker
 	get_tree().quit(code)
 
 
@@ -7645,6 +7650,8 @@ func _exit_tree() -> void:
 	_drain_incoming()
 	if stream != null:
 		stream.close()
+
+	_telemetry.drain()   # its lines are written on a worker: the EXIT line reaches the file before the process ends
 
 
 # Why a torch cannot be lit right now: "water" (the eye is under water), "rain" (open rain, no tree, rock or roof over you; a cave is cover), or "".
