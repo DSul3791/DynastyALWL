@@ -263,7 +263,7 @@ func _init() -> void:
 	check(row_state(a, d6) == AnimalsScript.HUNCH, "a deer grazing under crowns in the rain is sent hunched (state %d)" % row_state(a, d6))
 	a._read_weather({"wind": 0.1}, 0.1)
 	a._weather_graze(d6, deer, 0.1)
-	check(row_state(a, d6) == AnimalsScript.GRAZE, "once the rain stops it is not (state %d)" % row_state(a, d6))
+	check(row_state(a, d6) in [AnimalsScript.GRAZE, AnimalsScript.LIE], "once the rain stops it is not, grazing or bedded (state %d)" % row_state(a, d6))
 	a._read_weather({"wind": 0.1, "rain": 0.8}, 0.1)
 	var r6: Dictionary = a.animals[a.spawn("rabbit", 60.0, 720.0)]
 	r6["state"] = AnimalsScript.GRAZE
@@ -285,7 +285,7 @@ func _init() -> void:
 	c7["dry_home"] = c7["home"]
 	c7["home"] = c7["pos"]
 	a._weather_graze(c7, cow, 0.1)
-	check(row_state(a, c7) == AnimalsScript.GRAZE, "a cow in the shade at midday is not (state %d)" % row_state(a, c7))
+	check(row_state(a, c7) in [AnimalsScript.GRAZE, AnimalsScript.LIE], "a cow in the shade at midday is not, grazing or lying (state %d)" % row_state(a, c7))
 	hour = 12.0
 	a._read_weather({"wind": 0.0}, 0.1)
 

@@ -1745,10 +1745,24 @@ func activity_chance(def: Dictionary) -> float:
 # an animal beds down where it is: it does not wander, and a player gets closer (rest.spook_share of spook_m) before it wakes and runs.
 # Before a storm (animals_in_weather_design.md 8) feeding animals skip their daytime rest.
 func resting(def: Dictionary) -> bool:
-	if _storm_ahead and _wx_on() and str(def.get("weather", "")) in ["bird", "small", "deer"] and hour_now.is_valid() and period_of(float(hour_now.call())) == "day":
+	if _feeding_before_storm(def):
 		return false
 
 	return def.has("active") and hour_now.is_valid() and activity_chance(def) <= float(cfg.get("rest", {}).get("below", 0.1))
+
+
+func _feeding_before_storm(def: Dictionary) -> bool:
+	return _storm_ahead and _wx_on() and str(def.get("weather", "")) in ["bird", "small", "deer"] and hour_now.is_valid() and period_of(float(hour_now.call())) == "day"
+
+
+# Lying down (docs/design/ANIMAL_RESTING.md, protocol 148): a resting animal lies; otherwise a standing grazer lies when its own fixed
+# draw (from its id) is at or over its active chance now, so a deer herd by day (0.4) is about 60% bedded and 40% feeding, and at dusk
+# (1.0) all are up. No new number: the "active" rows say how much of the time a species is up.
+func lies_down(a: Dictionary, def: Dictionary) -> bool:
+	if not def.has("active") or not hour_now.is_valid() or _feeding_before_storm(def):
+		return false
+
+	return resting(def) or fposmod(float(a["id"]) * 0.6180339, 1.0) >= activity_chance(def)
 
 
 # The weight (0..1+) of the biome at a spot for this species: 1 without a "biomes" row or a lookup, 0 for a biome the row does not list.
@@ -1944,12 +1958,12 @@ func _wire_state(a: Dictionary) -> int:
 	if a["state"] == GRAZE and (bool(a.get("hunch", false)) or bool(a.get("sheltered", false))):
 		return HUNCH
 
-	# Bedded down out of its hours (resting), an animal is drawn lying, not grazing (Dave 21 Nov 2026: "relaxing" first among the
+	# Bedded down (lies_down: out of its hours, or its share of the herd at rest), an animal is drawn lying, not grazing (Dave 21 Nov 2026: "relaxing" first among the
 	# situations; protocol 148). Birds and flocks stay as they are: they perch or float.
 	if a["state"] == GRAZE and not a.has("fly") and not bool(a.get("perched", false)) and not a.has("companion_id"):
 		var def: Dictionary = species_def(str(a["sp"]))
 
-		if not def.has("flock") and not def.has("flight") and resting(def):
+		if not def.has("flock") and not def.has("flight") and lies_down(a, def):
 			return LIE
 
 	return int(a["state"])
@@ -2584,7 +2598,7 @@ func _alarm_herd(a: Dictionary, def: Dictionary) -> void:
 		var span: Array = def.get("alarm_s", [0.2, 0.9])
 
 		for mate_id in _herds.get(a["herd"], []):
-			if mate_id != a["id"] and animals.has(mate_id) and animals[mate_id]["state"] != FLEE and animals[mate_id]["alarm"] < 0.0:
+			if mate_id != a["id"] and animals.has(mate_id) and animals[mate_id]["state"] != FLEE and animals[mate_id]["state"] != HIDDEN and animals[mate_id]["alarm"] < 0.0:
 				animals[mate_id]["alarm"] = rng.randf_range(float(span[0]), float(span[1]))   # luck-exempt: how fast a herd mate reacts
 
 	if def.has("alarm_group"):

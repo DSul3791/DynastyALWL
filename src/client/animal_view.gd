@@ -1005,6 +1005,15 @@ func _clip_full(player: AnimationPlayer, row: Dictionary, clip_name: String) -> 
 const _ROLE_WORDS := {"0": ["idle_breathing", "graz", "idle"], "19": ["lying_breathing", "lying_idle", "lying", "sleep", "lay"], "21": ["drink", "eat", "graz"], "walk": ["walkmedium", "walk"], "run": ["gallop", "runfast", "run", "canter", "trot", "sprint"]}
 
 
+# Lying down or getting up ("Lying_Down", "Lay_Down", "Lying_Get_Up", "Stand_Up") is a change of pose, not lying.
+static func _lie_change(bare: String) -> bool:
+	for w in ["down", "get_up", "getup", "stand", "rise", "_up"]:
+		if bare.contains(w):
+			return true
+
+	return false
+
+
 const LIE_FLAT_SHARE := 0.2   # a lying clip lower than this share of the standing height is a broken one (the bear's legless tube)
 
 
@@ -1033,10 +1042,10 @@ func _role_clip(player: AnimationPlayer, row: Dictionary, role: String, refused:
 				continue
 
 			# The lying role (19, protocol 148) takes a lying clip, numbered variants too (Lying_Idle_02), never a change of pose (Idle_to_Lying).
-			if role == "19" and names_word(cased, str(word)) and not bare.contains("_to_") and not bare.contains("trans") and not bare.contains("wound") and not bare.contains("injur"):
+			if role == "19" and names_word(cased, str(word)) and not bare.contains("_to_") and not bare.contains("trans") and not bare.contains("wound") and not bare.contains("injur") and not _lie_change(bare):
 				return str(full)
 
-			if role != "19" and names_word(cased, str(word)) and not bare.contains("_to_") and not bare.contains("2") and not bare.ends_with("l") and not bare.ends_with("r") and not bare.contains("wound") and not bare.contains("injur") and not bare.contains("lying"):
+			if role != "19" and names_word(cased, str(word)) and not bare.contains("_to_") and not bare.contains("2") and not bare.ends_with("l") and not bare.ends_with("r") and not bare.contains("wound") and not bare.contains("injur") and not bare.contains("lying") and not names_word(cased, "lay") and not names_word(cased, "sleep"):
 				return str(full)
 
 	return ""

@@ -88,6 +88,7 @@ Separate references for distinct topics. Dated implementation notes preserve cod
 | Comfort and Rested | [Comfort](COMFORT_DESIGN.md) | Comfort/Rested behavior, tuning, open questions and integration reference; recipes route to the master catalog. No blanket approval or runtime certification. |
 | Wildlife coverage | [Animal specification](../ANIMAL_SPEC.md) | 30–31 Oct data audit/species proposals and 8 Nov alarm-group design; not a current species census or passing test certificate. |
 | Animal reactions to players | [Animal reactions](design/ANIMAL_REACTIONS.md) | Provisional 19 Nov 2026 reaction table (notice / flee / safe per species) and the sense changes RX-1 to RX-3, for Dave's review; values live in data/animals/animals.json. |
+| Animals lying down, rabbit groups | [Animal resting](design/ANIMAL_RESTING.md) | 21 Nov 2026 (D-ANIM-1, protocol 148): grazers sent lying (state 19) by their active share; rabbits in groups of 2 to 4 (HB-4, provisional). |
 
 ## Further design areas — routing review pending
 

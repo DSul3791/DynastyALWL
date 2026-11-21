@@ -64,6 +64,16 @@ func _init() -> void:
 	var share: int = int(a.species_def("rabbit")["target_per_player"])
 	var group_max: int = int((a.species_def("rabbit")["herd"] as Array)[1])
 	check(count >= share and count <= share + group_max - 1, "the player's share of rabbits appears, in groups (%d, share %d)" % [count, share])
+	var grouped: bool = false
+
+	for id in a.animals:
+		var r: Dictionary = a.animals[id]
+
+		if r["sp"] == "rabbit" and int(r["herd"]) != 0:
+			for mate_id in a._herds.get(r["herd"], []):
+				grouped = grouped or (mate_id != id and a.animals.has(mate_id) and a.animals[mate_id]["pos"].distance_to(r["pos"]) < 20.0)
+
+	check(grouped, "at least one rabbit has a group mate within 20 m")
 	var nearest: float = INF
 
 	for id in a.animals:
