@@ -3212,6 +3212,16 @@ func _init() -> void:
 	check(bo._boulder_left_of(77, plain_row) == int(round(10.0 * bo._boulder_per_kg() / 0.04)), "a worked boulder in an older save (0.04 stones per kg) is scaled once to today's count (%d)" % int(bo._boulder_left[77]))
 	bo._load_boulders_left({"boulders": {"74": 3}, "boulders_then": {"73": [100, 1.4, 1.4]}, "boulder_per_kg": 0.094, "ore_per_kg": 1.4})
 	check(int(bo._boulder_left.get(74, -1)) == 3 and bo._boulder_pending.has(73), "a save at today's rates loads as it is; one not yet laid out keeps its old rates")
+	var lime_row: Dictionary = {"radius": 1.0}
+	bo._set_boulder_ore(lime_row, "limestone", 72)
+	check(int(lime_row["total"]) == bo._boulder_stones(1.0) and str(lime_row.get("ore", "")) == "limestone", "a limestone rock is stone: the plain count (%d)" % int(lime_row["total"]))
+	# A rock still waiting for its layout is saved with its old rates and loads the same way (no share lost across restarts).
+	bo._dirty = true
+	bo.save()
+	var bo_again = make(bld)
+	var kept: Array = bo_again._boulder_pending.get(73, [])
+	check(kept.size() == 3 and int(kept[0]) == 100 and is_equal_approx(float(kept[1]), 1.4) and is_equal_approx(float(kept[2]), 1.4) and not bo_again._boulder_left.has(73), "a rock not yet laid out keeps its old rates through a save (%s)" % str(kept))
+	check(int(bo_again._boulder_left.get(74, -1)) == 3 and bo_again._boulder_left_of(73, plain_row) == int(round(100.0 * 0.094 / 1.4)), "and is scaled when it is laid out (%d)" % int(bo_again._boulder_left.get(73, -1)))
 	bo._boulder_pending.clear()
 	bo._boulder_left.erase(73)
 	bo._boulder_left.erase(74)

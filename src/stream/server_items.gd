@@ -7727,10 +7727,6 @@ func _cell_part(part: String, since_usec: int) -> int:
 	return now
 
 
-# Boulders (Dave 2026-10-21), see data/items/boulders.json: server-owned lumps of rock a pick breaks into stones. Laid out per
-# cell like loose stones, from the cell's own "boulders" stream (_layout_rng), only where the ground rises or at a
-# water bank; what is left of a worked boulder is kept in _boulder_left. The row carries its radius and the stones it started
-# with; the item's count is the stones left.
 # The stones left in worked boulders from a saved world (`parsed`: its "boulders" and "boulder_per_kg"). They were counted at the save's own
 # stones per kg of rock (boulder_per_kg plain, ore_per_kg ore rocks); a save without boulder_per_kg counted 0.04 stones of 1 kg per kg (before Dave's
 # 19 Nov 2026 0.5 kg stones with 30% lost). Saved at other rates they wait in _boulder_pending and are scaled once when the rock is laid out and its
@@ -7758,8 +7754,9 @@ func _load_boulders_left(parsed: Dictionary) -> void:
 func _boulder_left_of(key: int, row: Dictionary) -> int:
 	if _boulder_pending.has(key):
 		var then: Array = _boulder_pending[key]
-		var rate_then: float = float(then[2]) if row.has("ore") else float(then[1])
-		_boulder_left[key] = int(round(float(then[0]) * _boulder_per_kg(row.has("ore")) / rate_then)) if rate_then > 0.0 else int(then[0])
+		var ore: bool = _holds_ore(row)
+		var rate_then: float = float(then[2]) if ore else float(then[1])
+		_boulder_left[key] = int(round(float(then[0]) * _boulder_per_kg(ore) / rate_then)) if rate_then > 0.0 else int(then[0])
 		_boulder_pending.erase(key)
 
 	return mini(int(_boulder_left.get(key, row["total"])), int(row["total"]))
@@ -7778,6 +7775,10 @@ func _boulder_stones(radius: float, ore: bool = false) -> int:
 	return maxi(int(volume * float(_boulder_cfg.get("density_kg_m3", 2600)) * _boulder_per_kg(ore)), 1)
 
 
+# Boulders (Dave 2026-10-21), see data/items/boulders.json: server-owned lumps of rock a pick breaks into stones. Laid out per
+# cell like loose stones, from the cell's own "boulders" stream (_layout_rng), only where the ground rises or at a
+# water bank; what is left of a worked boulder is kept in _boulder_left. The row carries its radius and the stones it started
+# with; the item's count is the stones left.
 func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
 	var cfg: Dictionary = _boulder_cfg
 
@@ -7828,7 +7829,13 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
 # the key): the share of its pieces that come away as ore, so rocks hold different amounts and a bigger rock more (Dave 16 Nov 2026).
 func _set_boulder_ore(row: Dictionary, ore_name: String, key: int) -> void:
 	_set_boulder_ore_only(row, ore_name, key)
-	row["total"] = _boulder_stones(float(row["radius"]), row.has("ore"))   # an ore rock holds stones at ore_yield, a plain one at yield (BugsList 118)
+	row["total"] = _boulder_stones(float(row["radius"]), _holds_ore(row))   # an ore rock holds stones at ore_yield, a plain one at yield (BugsList 118)
+
+
+# Whether a boulder row is an ore rock (boulders.json ore items: copper, tin, iron, coal, salt), which keeps ore_yield. A limestone, chalk or marble
+# rock (ore "rocks") is stone of another kind and holds stones at the plain yield like any rock (Dave 21 Nov 2026, BugsList 118).
+func _holds_ore(row: Dictionary) -> bool:
+	return row.has("ore") and ((_boulder_cfg.get("ore", {}) as Dictionary).get("items", {}) as Dictionary).has(str(row["ore"]))
 
 
 func _set_boulder_ore_only(row: Dictionary, ore_name: String, key: int) -> void:
