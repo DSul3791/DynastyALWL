@@ -3193,18 +3193,21 @@ func _init() -> void:
 	bo.report_position(1, Vector3(5.0, 11.5, 5.0))
 	bo.vitals_of(1)["weight"] = 5000.0   # a big body: the carry limit stays out of the stone counts below
 	var big: int = bo._boulder_stones(1.0)
-	check(big >= 12800 and big <= 13100, "a 1 m radius boulder makes about 12,960 stones at 0.85 height, 2600 kg/m3, 0.7 coming away as 0.5 kg stones (Dave 19 Nov 2026, boulders PLAN.md 3) (%d)" % big)
-	check(bo._boulder_stones(0.3) >= 340 and bo._boulder_stones(0.3) <= 360 and bo._boulder_stones(1.2) >= 22200 and bo._boulder_stones(1.2) <= 22600, "stones go with the rock's volume: a 0.3 m one about 350, a 1.2 m one about 22,400 (%d, %d)" % [bo._boulder_stones(0.3), bo._boulder_stones(1.2)])
-	check(is_equal_approx(bo._boulder_per_kg(), 1.4), "1.4 stones of 0.5 kg per kg of rock (%f)" % bo._boulder_per_kg())
+	check(big >= 860 and big <= 880, "a 1 m radius boulder makes about 870 stones at 0.85 height, 2600 kg/m3, 0.047 coming away as 0.5 kg stones (Dave 21 Nov 2026, BugsList 118: 3,200 from one rock was too many) (%d)" % big)
+	check(bo._boulder_stones(0.3) >= 20 and bo._boulder_stones(0.3) <= 26 and bo._boulder_stones(1.2) >= 1450 and bo._boulder_stones(1.2) <= 1550, "stones go with the rock's volume: a 0.3 m one about 23, the biggest (1.2 m) about 1,500 (%d, %d)" % [bo._boulder_stones(0.3), bo._boulder_stones(1.2)])
+	check(is_equal_approx(bo._boulder_per_kg(), 0.094), "0.094 stones of 0.5 kg per kg of rock (%f)" % bo._boulder_per_kg())
+	bo._load_boulders_left({"boulders": {"76": 10000}, "boulder_per_kg": 1.4})
+	check(int(bo._boulder_left[76]) == 671, "a worked boulder saved at 1.4 stones per kg (19 Nov) keeps its share: 10,000 left is 671 now (%d)" % int(bo._boulder_left[76]))
 	bo._load_boulders_left({"boulders": {"77": 10}})
-	check(int(bo._boulder_left[77]) == 350, "a worked boulder in an older save (0.04 stones per kg) is scaled once to today's count: 10 left is 350 (%d)" % int(bo._boulder_left[77]))
-	bo._load_boulders_left({"boulders": {"78": 10}, "boulder_per_kg": 1.4})
+	check(int(bo._boulder_left[77]) == int(round(10.0 * bo._boulder_per_kg() / 0.04)), "a worked boulder in an older save (0.04 stones per kg) is scaled once to today's count (%d)" % int(bo._boulder_left[77]))
+	bo._load_boulders_left({"boulders": {"78": 10}, "boulder_per_kg": bo._boulder_per_kg()})
 	check(int(bo._boulder_left[78]) == 10, "a save at today's rate loads as it is")
+	bo._boulder_left.erase(76)
 	bo._boulder_left.erase(77)
 	bo._boulder_left.erase(78)
 	bo._boulder_cfg["luck_extra"] = 0.0   # the exact-count checks below; luck's extra stone has its own check
 	bo._boulder_cfg["flint"] = {}   # flint has its own test (test_flint); these checks count plain stones
-	var small_total: int = bo._boulder_stones(0.6)   # about 2,800: enough for the blow counts below
+	var small_total: int = bo._boulder_stones(0.6)   # about 190: enough for the blow counts below (36 stones)
 	bo._items[900001] = {"number": 0, "count": small_total, "pos": Vector3(5.0, 11.5, 6.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 7, "boulder": {"radius": 0.6, "yaw": 0.0, "total": small_total}}
 	bo._last_hit.clear()
 	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)
