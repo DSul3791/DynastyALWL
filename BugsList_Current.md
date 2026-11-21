@@ -1102,7 +1102,7 @@ Not yet played.
 
 **What was found:** the 1 Nov rule (the thing the cursor is on wins) held only between kinds of thing. The pick-up offered the item nearest the feet, not the one looked at, so a nearer item to the side hid it and a fire or station in view won. The cursor also had to be within the 2 m prompt reach, and items were offered only to 2.5 m while fires and stations reach 3 m.
 
-**Required outcome:** E, its prompt and F act on the one thing nearest the reticle: items, fires, stations, chests, plants and people alike. Only when the reticle is on nothing does E take the nearest thing, as before.
+**Required outcome:** E, its prompt and F act on the one thing nearest the reticle: items, fires, stations, chests, plants and people alike. Only when the reticle is on nothing does E fall back to the old order (the nearest loose item first).
 
 **As built (PR #1409, reviewed head dd9509ff, merged to dev at 6995ae3e):** every kind offers its best centred thing inside the aim cone (about 25 degrees); the best centred of those wins. F opens the same one. An aimed plant that cannot be picked says why, and E does not pick the one beside it. The server acts on the id the client sends, so it acts on the thing shown.
 
@@ -1112,7 +1112,7 @@ Not yet played.
 
 **Acceptance:** drop a stick beside a lit campfire and look straight at it: E picks it up and the fire keeps burning. Do the same beside a cold smelter: E picks up the item, not "light". Lay two items close together: E takes the one under the reticle. Look at the fire or smelter itself: E works it.
 
-Not yet played. Not done: drinking and the sea edge have no single spot, so they never win on the reticle; with the reticle on nothing a fire within 3 m still comes first, as before.
+Not yet played. Not done: drinking (from water or from what you hold) and the sea edge have no single spot, so they never win on the reticle; with the reticle on nothing a fire within 3 m still comes ahead of drinking, as before.
 
 ## Rewrite interpretation
 
