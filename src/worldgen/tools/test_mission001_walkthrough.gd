@@ -119,7 +119,14 @@ func make_server():
 	s.skill_level = func(_p, _s): return 1.0
 	s.dig_ground = func(_centre, _radius): return null
 	s.ground_material = func(_x, _z): return "peat"
-	s.bog_deposit_at = func(x, z, _cfg_in): return {"key": "%d,%d" % [floori(x / 10.0), floori(z / 10.0)], "size": 60, "edge": true} if z < BOG.z + 5.0 and z > BOG.z - 5.0 else {}
+	s.bog_field = func(fx, fz, _cfg_in) -> Array:   # one field square along the bog: a patch every 10 m
+		var patches: Array = []
+
+		if fx == 0 and fz == -1:
+			for k in range(42):
+				patches.append({"key": "%d,%d" % [k, -4], "x": BOG.x + 10.0 * float(k) + 5.0, "z": BOG.z, "size": 60, "r": 4.0})
+
+		return patches
 	s.setup(ItemTableScript.load_default(), DIR)
 	s.admin_mode_on = func(_p): return false
 	s._vitals_cfg["eat_pace_ms"] = 0

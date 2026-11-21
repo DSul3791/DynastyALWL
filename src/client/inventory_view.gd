@@ -132,7 +132,9 @@ var _stock_sign: int = 0                # the pack as it was when the stock was 
 var _chest_panel: Control
 const BOULDER_STATE := 10                 # the world-item row state of a boulder (server_items)
 const BOG_STATE := 229                    # the world-item row state of a bog iron deposit (server_items._bog_rows_near)
-var bogs: Dictionary = {}                 # bog deposit world id -> {"pos", "left", "total", "wet", "key"}: kept apart from _world; Kathleen's _show_bog draws them
+var bogs: Dictionary = {}                 # bog patch world id -> {"pos", "left", "total", "r", "key", "lumps", "node"}: kept apart from _world; _show_bog draws the lumps
+var bogs_rev: int = 0                     # moves on when a patch comes, goes or changes (terrain_client then hands them to the ground shader)
+const BOG_LUMPS := 4                      # ore lumps on a full patch
 var _boulders: Dictionary = {}            # boulder world id -> {node, shape, lump, pos, left, total, radius, now, shrink (the running ease, if any)}
 var crown_landed: Callable = Callable()   # (centre Vector3, radius m): a felled crown hit the ground there; the client flattens the grass (Dave 10 Nov 2026)
 var _boulder_mesh: ArrayMesh
@@ -3609,53 +3611,66 @@ func placement_rows() -> Array:
 
 
 # Removes a world row's node and, for a lean-to, its roof in the cover index.
-# A bog iron deposit the server says is in sight (Sonny's water rules section 11): its spot, the ore left and its full size, and whether it lies under
-# standing water. Drawn by _show_bog; terrain_client keeps the grass off it.
+# A bog iron patch the server says is in sight (Sonny's water rules section 11): its centre on the ground as generated, the ore left, its full size
+# and its radius. The rust is the ground's own colour (terrain_client hands bogs to ground_material.gd set_bogs, fading with the ore left);
+# _show_bog draws its lumps; terrain_client keeps the grass off it. bogs_rev moves on whenever what the shader needs changes.
 func _note_bog(id: int, row: Array) -> void:
 	var extra: Dictionary = row[5] if row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY else {}
 	var entry: Dictionary = bogs.get(id, {})
+	var was: String = str([entry.get("pos"), entry.get("left"), entry.get("total"), entry.get("r")])
 	entry["pos"] = row[3]
 	entry["left"] = int(row[2])
 	entry["total"] = maxi(int(extra.get("total", row[2])), 1)
-	entry["wet"] = bool(extra.get("wet", false))
+	entry["r"] = float(extra.get("r", 3.0))
 	entry["key"] = str(extra.get("key", ""))
 	bogs[id] = entry
+
+	if was != str([entry["pos"], entry["left"], entry["total"], entry["r"]]):
+		bogs_rev += 1
+
 	_show_bog(id)
 
 
-# A bog iron deposit's ground stain (PieceLook.bog_iron_patch): "wet" under standing water, "dug" once ore has been taken (until it grows back to
-# full), else "dry". Rebuilt only when the state changes; no collision; turned by the key's hash so neighbours differ.
+# A patch's ore lumps (PieceLook.bog_iron_lumps): up to BOG_LUMPS of them, fewer as its ore is dug, none when it is empty. Rebuilt only when
+# that count changes; no collision; turned by the key's hash so neighbours differ.
 func _show_bog(id: int) -> void:
 	var entry: Dictionary = bogs.get(id, {})
 
 	if entry.is_empty() or _root == null:
 		return
 
-	var state: String = "wet" if bool(entry["wet"]) else ("dug" if int(entry["left"]) < int(entry["total"]) else "dry")
+	var count: int = ceili(float(BOG_LUMPS) * float(clampi(int(entry["left"]), 0, int(entry["total"]))) / float(entry["total"]))
 
-	if entry.get("node") is Node3D and str(entry.get("state", "")) == state:
-		(entry["node"] as Node3D).position = entry["pos"]
+	if entry.has("lumps") and int(entry["lumps"]) == count:
+		if entry.get("node") is Node3D:
+			(entry["node"] as Node3D).position = entry["pos"]
+
 		return
 
 	if entry.get("node") is Node3D:
 		(entry["node"] as Node3D).queue_free()
 
+	entry.erase("node")
+	entry["lumps"] = count
+
+	if count <= 0:
+		return
+
 	var at: Vector3 = entry["pos"]
 	var yaw: float = float(absi(hash(str(entry["key"]))) % 360) * PI / 180.0
 	var ground: Callable = Callable()
 
-	if _ground_below.is_valid():   # drape the stain over the ground: the patch's frame turned by yaw, from its origin
+	if _ground_below.is_valid():   # each lump on the ground: the patch's frame turned by yaw, from its origin
 		ground = func(x: float, z: float) -> float:
 			var spot: Vector3 = at + Vector3(x, 0.0, z).rotated(Vector3.UP, yaw)
 			var y: float = float(_ground_below.call(spot))
 			return 0.0 if is_nan(y) else y - at.y
 
-	var node: Node3D = PieceLook.bog_iron_patch(state, ground)
+	var node: Node3D = PieceLook.bog_iron_lumps(count, 0.45 * float(entry["r"]), ground)
 	node.position = at
 	node.rotation.y = yaw
 	_root.add_child(node)
 	entry["node"] = node
-	entry["state"] = state
 
 
 # Boulders (Dave 2026-10-21): server-owned lumps of rock a pick breaks into stones. Drawn with Art's boulder mesh scaled to the
@@ -3940,6 +3955,7 @@ func _forget(id: int) -> void:
 			(bogs[id]["node"] as Node3D).queue_free()
 
 		bogs.erase(id)
+		bogs_rev += 1
 		return
 
 	if not _world.has(id):

@@ -11,7 +11,7 @@ The tables below are the 30 Oct snapshot. Since then, these assets were added or
 | Tier roofs (Rustic to Fortified, Roof 45 and 65) and hip corners at both slopes | `piece_look.tier_panel`, `piece_look.roof_hip`, `ROOF_SPEC` (#973; GOALS-REPAIR A-35 to A-37) | 2 | sheet `kathleen/roof_ladder_sheet.png`; no world shot yet |
 | Tier ceilings (joisted floors) | `piece_look.tier_floor` (#973) | 2 | sheet only |
 | Fortified wall, doorway, gate, pillar, foundation, wall top | `piece_look` concrete builders, banded (#989, #1017) | 3 | Dino world shots `fortified_world_*`, `fortified_beach_*` (10 Nov), reviewed |
-| Bog iron deposit patch (dry, wet, dug) | `piece_look.bog_iron_patch` (#1012) | 2 | sheet `kathleen/bog_iron_sheet.png`; drawn in the world by `inventory_view._show_bog` (19 Nov 2026, brighter ochre, grass cleared) |
+| Bog iron patch | rust in the ground shader (`ground_material.gd` set_bogs) plus ore lumps `piece_look.bog_iron_lumps` | 2 | Dave 21 Nov 2026: no stain sheet; the ground itself is rust, fading as the ore is dug and gone where dug; lumps drawn by `inventory_view._show_bog`; grass cleared |
 | Outcrop boulders (8 ores and stones) | `inventory_view.OUTCROP_LOOK`, `_boulder_material` (#1015, #1019) | 2 | tin shot 10 Nov (shade, before the moss fix); retake pending |
 | Dark lantern icons | `tools/paint_look_icons.py` (#990) | 2 | icons only |
 | Carried lanterns, wooden and iron (Jamie #977) | `held_item._make_lantern_model` | 3 | Dino beach shots 10 Nov: light passes; flat amber pane, follow-up 28596b75 parked |
@@ -536,7 +536,7 @@ Flag counts: fantasy 38, retired item rows 56, `future` item rows 137, unconfirm
 | Flint | resource flint (industrial) | data/tables/resources.json id 27 | no ore/mineral model or texture found (only an item-table or geology meaning) | 0 | grep of src/client and ground_material.gd found no visual for resources [unconfirmed] |
 | Alum | resource alum (industrial) | data/tables/resources.json id 28 | no ore/mineral model or texture found (only an item-table or geology meaning) | 0 | grep of src/client and ground_material.gd found no visual for resources [unconfirmed] |
 | Bitumen | resource bitumen (industrial) | data/tables/resources.json id 29 | no ore/mineral model or texture found (only an item-table or geology meaning) | 0 | grep of src/client and ground_material.gd found no visual for resources [unconfirmed] |
-| Bog iron | resource bog_iron (metal) | data/tables/resources.json id 30 | item Bog iron ore (19 Nov 2026): `basic_look` shape bog_iron, icon recoloured from Iron ore (`tools/recolour_icons.py`) | 1 | ground stain: `PieceLook.bog_iron_patch` |
+| Bog iron | resource bog_iron (metal) | data/tables/resources.json id 30 | item Bog iron ore (19 Nov 2026): `basic_look` shape bog_iron, icon recoloured from Iron ore (`tools/recolour_icons.py`) | 1 | ground rust: `ground_material.gd` set_bogs, lumps `PieceLook.bog_iron_lumps` |
 | Saltpeter | resource saltpeter (industrial) | data/tables/resources.json id 31 | no ore/mineral model or texture found (only an item-table or geology meaning) | 0 | grep of src/client and ground_material.gd found no visual for resources [unconfirmed] |
 
 ### biomes (placement only) (19)
