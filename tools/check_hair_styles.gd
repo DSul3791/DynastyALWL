@@ -84,7 +84,7 @@ func _initialize() -> void:
 	v3.append(Generator._crc8(v3))
 	var old: Dictionary = Generator.decode(Marshalls.raw_to_base64(v3))
 	_ok(not old.is_empty() and int(old["hair_style"]) == 0 and Generator.HAIR_STYLES[0] == "long_loose", "a version 3 code loads with the first style (long and loose, the old look)")
-	_ok(Generator.CODE_VERSION == 4 and Generator.HAIR_STYLES.size() == 10, "version 4 and ten styles")
+	_ok(Generator.CODE_VERSION == 5 and Generator.HAIR_STYLES.size() == 10, "version 5 and ten styles")
 	print("checked %d cases, %d failures" % [_checked, _fails])
 	quit(1 if _fails > 0 else 0)
 

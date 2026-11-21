@@ -12,6 +12,7 @@ const DynastyBody := preload("res://src/client/character/dynasty_body.gd")
 const Store := preload("res://src/client/character/character_store.gd")
 const Record := preload("res://src/client/character/character_record.gd")
 const BodyModels := preload("res://src/client/character/body_models.gd")
+const HairModels := preload("res://src/client/character/hair_models.gd")
 const Style := preload("res://src/client/character/page_style.gd")
 
 const SELECT_SCENE := "res://scenes/character_select/character_select.tscn"
@@ -38,7 +39,7 @@ const PARTS := {
 	"feet": {"bones": ["LeftFoot", "RightFoot"], "up": 0.08, "tall": 0.5, "y": 0.15},
 }
 # Slider -> part. Height, build and muscle change the whole body, so they show all of it.
-const SLIDER_PART := {"head": "head", "jaw": "head", "nose": "head", "brow": "head", "ears": "head", "neck": "head", "hair_length": "head", "chest": "chest", "bust": "chest",
+const SLIDER_PART := {"head": "head", "jaw": "head", "nose": "head", "brow": "head", "ears": "head", "neck": "head", "chest": "chest", "bust": "chest",
 	"shoulders": "chest", "belly": "torso", "torso": "torso", "arms": "torso", "hips": "hips", "legs": "legs", "hands": "hands", "feet": "feet"}
 const SECTION_PART := {"Head and face": "head", "Hair": "head"}     # opening one of these zooms there; any other section shows the whole body
 
@@ -58,7 +59,7 @@ var _frame: String = Record.DEFAULT_FRAME
 var _name_field: LineEdit
 var _body_pick: OptionButton
 var _frame_buttons: Dictionary = {}
-var _style_pick: OptionButton
+var _hair_buttons: Dictionary = {}      # hair_models.gd id -> its lineup Button
 var _name_dialog: ConfirmationDialog
 var _name_message: Label
 var _name_edit: LineEdit
@@ -274,7 +275,7 @@ func _build_about(body: VBoxContainer) -> void:
 	note.text = "The frame only sets a starting shape and clothes. Every slider and colour can still be changed."
 
 	if _use_dynasty():      # Dave's body (3 Nov 2026): say plainly what it does not show yet, so a slider that does nothing does not read as a bug
-		note.text += "\nThis body is still being finished: height, limbs, build, muscle, belly, hips, chest, bust, jaw, nose, brow, ears and skin colour show now; hair is coming."
+		note.text += "\nThis body is still being finished: height, limbs, build, muscle, belly, hips, chest, bust, jaw, nose, brow, ears, skin colour, hair style and hair colour show now."
 	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	note.add_theme_color_override("font_color", Color(0.75, 0.8, 0.7))
 	body.add_child(note)
@@ -427,32 +428,42 @@ func _build_sliders(body: VBoxContainer, section: String) -> void:
 		row.add_child(_lock_box(key))
 
 
-# The hair style: one of the styles of Generator.HAIR_STYLES, with a lock; the Hair Length slider and the hair colour work with it where it makes sense.
+# The hair style lineup (Dave 20 Nov 2026: every style for every body, no male or female labels, all in one lineup on the hair page): No hair, then every row
+# of hair_models.gd, as buttons, with a lock. The hair colour (Colours) tints the style.
 func _build_hair_style(body: VBoxContainer) -> void:
-	var row: HBoxContainer = HBoxContainer.new()
-	body.add_child(row)
+	var head: HBoxContainer = HBoxContainer.new()
+	body.add_child(head)
 	var label: Label = Label.new()
 	label.text = "Style"
-	label.custom_minimum_size = Vector2(120, 0)
-	row.add_child(label)
-	_style_pick = OptionButton.new()
-	_style_pick.custom_minimum_size = Vector2(0, 44)
-	_style_pick.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head.add_child(label)
+	head.add_child(_lock_box("hair_model"))
+	var grid: GridContainer = GridContainer.new()
+	grid.columns = 2
+	body.add_child(grid)
+	var group: ButtonGroup = ButtonGroup.new()
 
-	for style in Generator.HAIR_STYLES:
-		_style_pick.add_item(Generator.HAIR_STYLE_LABELS[style])
+	for id in HairModels.lineup():
+		var b: Button = Button.new()
+		b.text = HairModels.label(id)
+		b.toggle_mode = true
+		b.button_group = group
+		b.custom_minimum_size = Vector2(0, 44)
+		b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		b.pressed.connect(func() -> void:
+			logic.set_hair_model(id)
+			_changed("Hair style: " + HairModels.label(id)))
+		grid.add_child(b)
+		_hair_buttons[id] = b
 
-	_style_pick.select(int(logic.genome.get("hair_style", 0)))
-	_style_pick.item_selected.connect(func(index: int) -> void:
-		logic.set_hair_style(index)
-		_changed("Hair style: " + Generator.HAIR_STYLE_LABELS[Generator.HAIR_STYLES[index]]))
-	row.add_child(_style_pick)
-	row.add_child(_lock_box("hair_style"))
-	var note: Label = Label.new()
-	note.text = "Hair Length changes long, side part, ponytail, bun, braid and curly; bald, buzz, crop and shaved sides ignore it."
-	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	note.add_theme_color_override("font_color", Color(0.75, 0.8, 0.7))
-	body.add_child(note)
+	_show_hair_model()
+
+
+func _show_hair_model() -> void:
+	var id: String = str(logic.genome.get("hair_model", HairModels.NONE))
+
+	for key in _hair_buttons:
+		(_hair_buttons[key] as Button).set_pressed_no_signal(key == id)
 
 
 func _lock_box(key: String) -> CheckBox:
@@ -666,8 +677,7 @@ func _schedule_rebuild() -> void:
 func _refresh_controls() -> void:
 	_updating = true
 
-	if _style_pick != null:
-		_style_pick.select(int(logic.genome.get("hair_style", 0)))
+	_show_hair_model()
 
 	for key in _sliders:
 		(_sliders[key] as HSlider).value = float(logic.genome[key])
