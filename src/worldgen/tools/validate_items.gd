@@ -527,8 +527,16 @@ func _init() -> void:
 			want_item.call(String(bog.get("item", "")), "digging.json bog_iron")
 			obtainable[String(bog.get("item", ""))] = true
 
-			if float(bog.get("chance", 0.0)) <= 0.0 or float(bog.get("chance", 0.0)) * float(bog.get("edge_mult", 1.0)) > 1.0:
-				fail("digging.json bog_iron: chance x edge_mult must be above 0 and at most 1")
+			var bog_patches: Array = bog.get("patches", [])
+
+			if float(bog.get("field_chance", 0.0)) <= 0.0 or float(bog.get("field_chance", 0.0)) > 1.0:
+				fail("digging.json bog_iron: field_chance must be above 0 and at most 1")
+
+			if int(bog.get("field_m", 0)) <= 0 or 15360 % int(bog.get("field_m", 1)) != 0:
+				fail("digging.json bog_iron: field_m must divide the 15360 m tile (a field lies in one tile)")
+
+			if bog_patches.size() != 2 or int(bog_patches[0]) < 1 or int(bog_patches[0]) > int(bog_patches[1]):
+				fail("digging.json bog_iron: patches must be [min, max] with 1 <= min <= max")
 
 			for cls in bog.get("classes", {}):
 				if not String(cls) in ["4", "6", "7", "8"]:

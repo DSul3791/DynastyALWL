@@ -107,8 +107,10 @@ static func field_on_map(water_class: PackedByteArray, side: int, ti0: int, tj0:
 		if patches.size() >= want:
 			break
 
-		var x: float = float(c[1]) * spacing
-		var z: float = float(c[2]) * spacing
+		var ph: int = hash([c[1], c[2], "bog_size"])
+		# A little off the sample, so the patches do not sit on the 8 m grid (at most a quarter of a sample, still on the wet sample).
+		var x: float = float(c[1]) * spacing + (float((ph >> 8) % 100) / 100.0 - 0.5) * 0.5 * spacing
+		var z: float = float(c[2]) * spacing + (float((ph >> 16) % 100) / 100.0 - 0.5) * 0.5 * spacing
 		var clear: bool = true
 
 		for p in patches:
@@ -119,13 +121,9 @@ static func field_on_map(water_class: PackedByteArray, side: int, ti0: int, tj0:
 		if not clear:
 			continue
 
-		var ph: int = hash([c[1], c[2], "bog_size"])
 		var size: int = low + ph % span
-		# A little off the sample, so the patches do not sit on the 8 m grid (at most a quarter of a sample, still on the wet sample).
-		var jx: float = (float((ph >> 8) % 100) / 100.0 - 0.5) * 0.5 * spacing
-		var jz: float = (float((ph >> 16) % 100) / 100.0 - 0.5) * 0.5 * spacing
 		var share: float = float(size - low) / float(maxi(span - 1, 1))
-		patches.append({"key": "%d,%d" % [c[1], c[2]], "x": x + jx, "z": z + jz, "size": size, "r": lerpf(float(radius_range[0]), float(radius_range[1]), share)})
+		patches.append({"key": "%d,%d" % [c[1], c[2]], "x": x, "z": z, "size": size, "r": lerpf(float(radius_range[0]), float(radius_range[1]), share)})
 
 	return patches
 

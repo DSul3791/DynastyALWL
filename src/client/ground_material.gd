@@ -371,7 +371,7 @@ void fragment() {
 	// Bog iron (Dave 21 Nov 2026: "it should be the actual color of the ground so change the grounds color and when I dig it the color goes away
 	// as I get the ore"): the ground of a patch is rust, an uneven soft-edged blotch strongest at its heart, with a faint rusty tinge out to five
 	// radii so the patches of a field show between them. All of it scales with the ore left, so no colour means no ore; ground dug more than
-	// a quarter metre below the patch's generated level shows its own plain peat (a silted hole comes back up and the rust with it).
+	// a quarter metre below the patch's generated level (more away from its centre, where a gentle slope may fall below it) shows its own plain peat (a silted hole comes back up and the rust with it).
 	if (bog_count > 0) {
 		float rust = 0.0;
 		for (int b = 0; b < 16; b++) {
@@ -385,7 +385,7 @@ void fragment() {
 				float wobble = vnoise(vec3(world_pos.x * 0.6, float(b) * 3.7, world_pos.z * 0.6));
 				float core = 1.0 - smoothstep(0.25 * r, r * (0.7 + 0.55 * wobble), d);
 				float halo = 0.22 * (1.0 - smoothstep(r, r * 5.0, d + 2.0 * (wobble - 0.5)));
-				float kept = d < r * 1.3 ? smoothstep(bog_floor[b] - 0.45, bog_floor[b] - 0.25, world_pos.y) : 1.0;
+				float kept = d < r * 1.3 ? smoothstep(bog_floor[b] - 0.45 - 0.15 * d, bog_floor[b] - 0.25 - 0.15 * d, world_pos.y) : 1.0;
 				rust = max(rust, max(core, halo) * spot.w * kept);
 			}
 		}

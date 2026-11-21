@@ -370,6 +370,7 @@ const ORE_KEY := 1 << 52               # copper and tin rocks picked by hand: OR
 const BOG_STATE := 229            # world-item row state of a bog iron deposit (next free structure state, 10 Nov 2026; no structure may take it)
 const BOG_ID_BASE := 2000000000   # bog deposit world row ids count down from here (int32, far above _next_id), one per deposit key per run
 var _bog_ids: Dictionary = {}     # deposit key "gi,gj" -> its world row id
+var _bog_y: Dictionary = {}       # deposit key -> the generated ground height at its centre (ground_height, once a run)
 var _bog_fields: Dictionary = {}  # field square "fx,fz" -> its patches (BogIron.field), worked out once a run; cleared past BOG_FIELDS_MAX
 const BOG_FIELDS_MAX := 1024
 # Holes dug in wetland silt back in (Dave 21 Nov 2026: "since its in water we can just assume the water washes the dirt back into the hole over
@@ -377,6 +378,8 @@ const BOG_FIELDS_MAX := 1024
 var _bog_holes: Array = []
 const BOG_HOLES_MAX := 256        # past this the oldest hole silts in at once
 const BOG_HOLE_JOIN_M := 1.5      # a dig this close to a waiting hole joins it (one fill for the spot, the later due time)
+const BOG_HOLE_DEEP_M := 1.0      # a new hole is noted only when struck within this of the generated surface (not a tunnel under the bog); deeper digs join one
+const BOG_SILT_PER_TICK := 4      # at most this many holes silt in one slow tick (each is a ground edit, a message to everyone and a remesh)
 const BOG_REFILL_R_MIN := 2.5     # the silting fill: a sphere at least this big whose top just meets the old surface over the hole
 const PEAT_SOIL := 6              # data/tables/soils.json "peat": the silted hole is plain peat
 const CAVE_KEY := 1 << 51       # cave floor stones and boulders: CAVE_KEY | cell x << 28 | cell y << 8 | entry (up to 256 a cell)
@@ -5249,7 +5252,10 @@ func _bog_rows_near(_peer: int, here: Vector3) -> Array:
 		if not _bog_ids.has(key):
 			_bog_ids[key] = BOG_ID_BASE - _bog_ids.size()
 
-		var y: float = float(ground_height.call(x, z)) if ground_height.is_valid() else here.y
+		if not _bog_y.has(key):   # the generated ground at the centre, worked out once a run
+			_bog_y[key] = float(ground_height.call(x, z)) if ground_height.is_valid() else NAN
+
+		var y: float = float(_bog_y[key])
 		var left: int = int(BogIron.regrown(_bog_left.get(key, [size, now_s]), size, now_s, cfg)[0])
 		rows.append([int(_bog_ids[key]), 0, left, Vector3(x, here.y if is_nan(y) else y, z), BOG_STATE, {"key": key, "total": size, "r": snappedf(float(patch["r"]), 0.01)}])
 
@@ -5274,6 +5280,10 @@ func _note_bog_hole(at: Vector3, radius: float) -> void:
 			return
 
 	var surface: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else NAN
+
+	if not is_nan(surface) and at.y < surface - BOG_HOLE_DEEP_M:
+		return   # a dig in a tunnel or cellar under the wetland: the water does not fill that
+
 	_bog_holes.append([at.x, at.y if is_nan(surface) else surface, at.z, radius, due])
 
 	if _bog_holes.size() > BOG_HOLES_MAX:
@@ -5290,11 +5300,14 @@ func _bog_holes_tick() -> void:
 	var now_s: float = float(game_seconds.call())
 	var keep: Array = []
 
+	var silted: int = 0
+
 	for hole in _bog_holes:
-		if now_s < float(hole[4]) or _someone_near_hole(hole):
+		if silted >= BOG_SILT_PER_TICK or now_s < float(hole[4]) or _someone_near_hole(hole):
 			keep.append(hole)
 		else:
 			_silt_hole(hole)
+			silted += 1
 
 	if keep.size() != _bog_holes.size():
 		_bog_holes = keep
