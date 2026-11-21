@@ -1340,6 +1340,38 @@ Not yet played; not yet seen in a picture.
 
 Not yet played.
 
+## 124. The bust slider grows round, not pointed
+
+**Status: Implemented - awaiting player verification.** Dave, play-testing the character creator on 21 Nov 2026: "I just noticed when making a new character that is female if you increase the breasts they get pointy they should get big, round and voluptuous."
+
+**What was found:** the bust shape (`dynasty_shapes.gd`) pushed a narrow mound straight forward, up to about 8 cm on her. Most of the push sat within a few centimetres of its centre, so the breast drew as a cone. The shape also kept the base normals, so the light did not follow it.
+
+**Required outcome:** raising the slider gives a full, round, natural shape through the whole range. No cone, no tearing or clipping, and the shading is right. The low end is unchanged, and saved characters keep their value.
+
+**As built (PR #1431, reviewed head fedee321, merged to dev at c5ccbd9e):**
+- Each breast's own front is found on the mesh, and the two sides are mirrored to one pair.
+- The chest round each breast is pushed 60% of the way out onto a rounded shape (an ellipsoid) centred behind that front. It joins softly above and with a fold below, and fades out at the breastbone and at the shape's edge. At +1 the front comes about 5.7 cm forward on her.
+- The last 40% of the chest's own relief is kept. Going all the way made the top's creases meet and crumple through each other in the first in-game pictures (80e0542c).
+- The shape carries its own normals.
+- Shoulder-weighted chest vertices move too. Body 1's pectorals are mostly shoulder weighted, so both bodies round alike.
+- The slider from -1 to -0.6 still does nothing. Genomes and share codes are unchanged, and a saved character keeps its value.
+- New picture tool `tools/bust_shots.gd`: each body at -0.6, 0, 0.5 and 1, front, three-quarter and side.
+
+**Evidence:**
+- Offline, on both glb meshes with a transliteration of the code, the cone was reproduced. In the new shape no fold layers meet, 1 triangle turns over on her and none on Body 1, and 3 cm from the front the surface falls at most 1.5 cm (the cone fell 4.4 cm).
+- Independent review: PASS on 80e0542c, d508e4d3 and fedee321.
+- Lane A pictures on 80e0542c: round, but a crumple under one breast at +1, which d508e4d3 fixed. Lane A pictures on fedee321 (`bust_fedee321_body_*` in the project files): round and full from every side on both bodies, no crumple, -0.6 as modelled.
+- Lane A tests on fedee321: 71 pass / 0 fail (70 fast plus timing test_dynasty_arms_prebuild), script errors 0, warnings 381 = baseline, join smoke ground ready +14.6 s.
+- test_dynasty_body_2 adds a roundness check, a check that the normals turn, and a turned-over-triangle check.
+
+**Known limits:**
+- Her mesh has a few small holes near the nipples and by the armpit in Dave's own model. They stretch a little with the shape but were not visible in the pictures.
+- Body 1 has no check of its own in the tests.
+
+**Acceptance:** in the character creator, with Body 2, moving Bust from the left end up to the right grows the breasts big and round, with no point. At the right end the top's folds stay smooth, and the side view is a round curve. The left fifth of the slider still changes nothing.
+
+Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
