@@ -3628,3 +3628,5 @@ func _exit_tree() -> void:
 
 	if store != null:
 		store.flush()
+
+	_events.close()   # last: nothing may start a log worker task while the engine shuts down (EventLog.close)
