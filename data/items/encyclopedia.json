@@ -2379,11 +2379,10 @@
 			"name": "Wicker - Chest",
 			"kind": "placeable",
 			"description": "Woven sticks and twine. A chest to store things in.",
-			"how_to_get": [
-				"Build with a hammer (press R): 10 Stick, 4 Twine"
-			],
+			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"chest": {
 			"name": "Wicker - Chest",
@@ -2391,7 +2390,8 @@
 			"description": "A woven chest for storing things.",
 			"how_to_get": [],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"chopping_block": {
 			"name": "Chopping block",
@@ -10041,7 +10041,7 @@
 			"obtainable_now": true
 		},
 		"wicker_basket_kit": {
-			"name": "Basket",
+			"name": "Wicker basket",
 			"kind": "placeable",
 			"description": "A woven basket of sticks and twine. A first store for a camp.",
 			"how_to_get": [
@@ -10051,7 +10051,7 @@
 			"obtainable_now": true
 		},
 		"wicker_basket": {
-			"name": "Basket",
+			"name": "Wicker basket",
 			"kind": "structure",
 			"description": "A woven basket of sticks and twine. A first store for a camp.",
 			"how_to_get": [],

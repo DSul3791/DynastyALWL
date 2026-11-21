@@ -21,8 +21,17 @@ Earlier rulings this builds on: Dave 15 Nov 2026 (copper, bronze and iron nails 
 
 Every other building and live recipe that took "nails" or "hinges" (iron or bronze) now asks for bronze_nails or bronze_hinges: the same metals as before, plus steel nails. Only the chests are tiered.
 
+## The knife's store (Dave 21 Nov 2026)
+Dave, 21 Nov 2026 06:58Z, of the Wicker - Chest (18 slots) and the Crude - Chest (24 slots), both knife builds: "get ride of both of those. the knife can make a wicker basket that could have 6 slots." Asked about placed ones: "there are none".
+
+- Both blueprints (26 and 186), their items (23 and 914) and structure rows are retired: kept for their numbers, never listed or built. A saved world holding one still loads it with whatever is inside (nothing clears it at load; Dave says there are none). The tests' plain "chest" fixture still places the old row.
+- The knife's store is the existing **Wicker basket** (was named Basket; item 785, blueprint 157, state 195): 8 Stick, 4 Twine, a knife, 6 slots (one row). It takes the Wicker - Chest's storage comfort point. No new numbers.
+- The Ragtooth goblin camp's chest prop is now a Small chest (it was a Crude - Chest).
+- The chest ladder is now Crate 10, Small 24, Rustic 30, Fine 36, Large wooden 42, Ornate 48.
+- CT-6 (PROVISIONAL): the basket keeps its existing cost and name "Wicker basket".
+
 ## Provisional picks (for Dave)
-- CT-1: the copper chest is the **Small chest** (the Small / Medium / Large size words the gardening plots and resource bins use, beside the Large wooden chest). 24 slots: 27 would leave half a six-slot row, so it matches the Crude - Chest (a knife build of 4 boards, 8 wooden pins and 2 twine) and holds no more; what it adds is a hammer build with copper nails and no twine. A bigger Small chest, or a smaller Crude one, is for Dave. For comfort it counts as the crude grade of the chest family, so chests still count once. Cost 4 Hardwood board and 8 Copper nails, a lift-off lid with no hinges (there are no copper hinges).
+- CT-1: the copper chest is the **Small chest** (the Small / Medium / Large size words the gardening plots and resource bins use, beside the Large wooden chest). 24 slots: 27 would leave half a six-slot row, so it matched the Crude - Chest (retired since, see above). A bigger Small chest is for Dave. For comfort it counts as the crude grade of the chest family, so chests still count once. Cost 4 Hardwood board and 8 Copper nails, a lift-off lid with no hinges (there are no copper hinges).
 - CT-2: Dave's "superior" chest is the existing **Ornate - Chest**: Ornate is the top furniture grade (Crude, Rustic, Fine, Ornate, [D4]); Superior is one of the seven building tiers. It now takes Steel nails and keeps its Iron hinges and Iron bands (no steel hinges exist). Whether the Large wooden chest or the Ornate chest is the bigger one stays an open question.
 - CT-3: the Fine - Chest sits in the iron tier (Iron nails or better, Iron hinges); nothing else about it changed.
 - CT-4: **Steel nails** (item 1513, recipe 750) are new: 1 Steel ingot makes 100 at the brick forge level 3, as other steel goods; value 2.
