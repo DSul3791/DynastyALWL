@@ -50,6 +50,7 @@ const OceanMesh := preload("res://src/sullivan_water/ocean/ocean_mesh.gd")
 const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
+const ShaderWarmupScript := preload("res://src/client/shader_warmup.gd")
 const DynastyArmsScript := preload("res://src/client/character/dynasty_arms.gd")
 var _freeze_watch = FreezeWatchScript.new()   # its own thread: names a main-thread stall while it lasts, and tells a whole-game stop apart (Dave 2 Nov 2026)
 const CompassScript := preload("res://src/client/admin_compass.gd")
@@ -927,7 +928,8 @@ func _update_connect_window() -> void:
 	if connected_msec > 0:
 		var since: int = int(float(now - connected_msec) * 0.001)
 
-		if (not waiting_for_ground and since >= 3) or since > 120:
+		if (not waiting_for_ground and since >= 3 and not _shader_warmup.busy) or since > 120:
+			_shader_warmup.finish()
 			_telemetry.event("connect window closed after %d s in the world" % since)
 			_connect_window.close()
 			_connect_window = null
@@ -1856,6 +1858,15 @@ func _welcome_body(info: Dictionary) -> void:
 	_join_log("JOIN: at the welcome: player y %s, viewer y %s; %s" % ["?" if body == null else "%.1f" % body.global_position.y, _viewer_y_text(), Probe.pipelines_text()])
 	Probe.stop("welcome: join line logged", tq_join)
 	_after_welcome = []   # the next frames are timed too (_note_after_welcome)
+
+	# Before this frame draws the world: behind the join window the camera shows the world's materials a few at a time instead.
+	# A picture run is left as it was (its shots must see the world as soon as the ground is there).
+	if _connect_window != null and not shot_lock:
+		var tq_warm: int = Probe.start()
+		var warm_roots: Array[Object] = [self]
+		_shader_warmup.start(view_cam, warm_roots)
+		Probe.stop("welcome: shader warm-up sweep", tq_warm)
+		_telemetry.event("JOIN: shader warm-up started")
 
 
 
@@ -3798,6 +3809,7 @@ var _movement: Dictionary = {}        # data/movement.json
 var _telemetry = EventLogScript.new()       # crash_reports/telemetry_client.log: traffic, backlog and frame gaps once a second
 var _join_refused: String = ""            # the server's reason when it refused this build (join_refused, protocol 133)
 var _connect_window = null                # shown until the ground under the player is ready (connect_window.gd)
+var _shader_warmup = ShaderWarmupScript.new()   # the world's shaders are built behind the join window, a few per frame (BugsList 93)
 var _link_up_msec: int = 0                # when ENet reported the connection up (welcome still to come)
 var _pit_shadow_msec: int = 0
 var _in_pit: bool = false
@@ -5687,6 +5699,14 @@ func _process(delta: float) -> void:
 	_update_spring_heads(delta)
 
 	_run_ground_watchdog()
+
+	if _shader_warmup.busy:
+		var tq_warm: int = Probe.start()
+		_shader_warmup.step()
+		Probe.stop("shader warm-up", tq_warm)
+
+		if not _shader_warmup.busy:
+			_telemetry.event("JOIN: shader warm-up done, %d materials, %d s after the welcome" % [_shader_warmup.shown, int(float(Time.get_ticks_msec() - connected_msec) * 0.001)])
 
 	if _connect_window != null:
 		_update_connect_window()
