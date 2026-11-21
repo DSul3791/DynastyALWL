@@ -284,7 +284,7 @@ func _init() -> void:
 	w._fall_tick(ItemsScript.FALL_S)
 	w._roll_tick(0.0)   # the look round the woken logs
 	check(oak_logs.all(func(k): return w._logs.has(k)), "the oak's logs are bodies in the log physics")
-	check(w._logs.has_static("i%d" % boulder_id), "the boulder under one is a rock in their way (%d fixed things)" % w._logs.static_count())
+	check(w._logs.has_static("i%d:%d" % [boulder_id, 1]), "the boulder under one is a rock in their way (%d fixed things)" % w._logs.static_count())
 	w._items.erase(boulder_id)
 
 	# A sapling-sized tree (1.5 m, a small tree) breaks into Firewood, kindling and sticks the same way: at once, falling, no trunk.

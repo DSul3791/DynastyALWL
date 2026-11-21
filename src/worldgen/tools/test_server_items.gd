@@ -2971,7 +2971,13 @@ func _init() -> void:
 
 	check(on_bank >= 8, "four cells by a stream get stones along its banks (%d on the bank)" % on_bank)
 	check(in_water == 0, "bank stones are never put in the water")
-	check(sc.world_item_count() - bank_before <= 4 * (6 + int(bank_cfg["stones_max"]) + int(bank_cfg["sticks_max"])), "bank stones stay within the per-cell limit")
+	var ore_rocks: int = 0   # copper and tin rocks by the stream (boulders.json ore_rocks, Dave 21 Nov 2026) are laid with the cell too, but they are not bank stones
+
+	for bid in sc._items:
+		var row: Dictionary = sc._items[bid]
+		ore_rocks += 1 if row.has("scatter") and ((int(row["scatter"]) & sc.ORE_KEY) != 0 or str(row.get("boulder", {}).get("ore", "")) != "") else 0
+
+	check(sc.world_item_count() - bank_before - ore_rocks <= 4 * (6 + int(bank_cfg["stones_max"]) + int(bank_cfg["sticks_max"])), "bank stones stay within the per-cell limit")
 
 	# Driftwood on the banks: a share of the bank spots, a real item that burns.
 	bank_cfg["bank"]["driftwood"] = 1.0

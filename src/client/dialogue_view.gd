@@ -68,17 +68,24 @@ func setup(net_ref, items_ref, npc_view_ref, layer: CanvasLayer, player_pos: Cal
 	_build(layer)
 
 
+const CHEST := Vector3(0.0, 1.2, 0.0)   # a person is aimed at by the chest, where the reticle rests when you look at them, not by the feet
+
+
 func _probe() -> Dictionary:
 	if items.dialogue_open or not player_position.is_valid():
 		return {}
 
-	var near: Dictionary = npc_view.nearest(player_position.call(), 3.0)
+	# Of the people within 3 m and in view, the one nearest the reticle, else the nearest (Dave 21 Nov 2026: E acts on what the reticle is on first).
+	var seen: Array = npc_view.within(player_position.call(), 3.0).filter(func(n): return items.in_view(n["pos"]))
 
-	if near.is_empty() or not items.in_view(near["pos"]):
+	if seen.is_empty():
 		return {}
 
+	var aimed: int = items.reticle_index(seen.map(func(n): return n["pos"] + CHEST))
+	var near: Dictionary = seen[maxi(aimed, 0)]
+
 	var id: String = str(near["id"])
-	return {"kind": "npc", "point": near["pos"], "prompt": "Press E to talk to %s" % str(near["name"]), "tap": func(): net.npc_talk.rpc_id(1, id, -1)}
+	return {"kind": "npc", "point": near["pos"] + CHEST, "prompt": "Press E to talk to %s" % str(near["name"]), "tap": func(): net.npc_talk.rpc_id(1, id, -1)}
 
 
 func _build(layer: CanvasLayer) -> void:

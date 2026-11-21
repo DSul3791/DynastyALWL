@@ -1054,12 +1054,223 @@ Not yet played.
 
 Not yet played.
 
+## 102. Raised cistern costs 30 Copper ingot
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026 (02:29Z): "the cistern probably needs something like 30 copper ingots." Before this it cost 6 Copper ingot (entry 97).
+
+**Required outcome:** the Raised cistern takes about 30 Copper ingot to build.
+
+**As built (PR #1404, head ee0adc37, dev 38850ea5):**
+- Blueprint 149 costs 16 Plank, 20 Hardwood board, 30 Copper ingot and 40 Nails. Only the copper changed.
+- Taking it down gives back the full cost, so the refund follows automatically. Any hammer repair is charged as a share of this cost.
+- The encyclopedia line, PLUMBING_DESIGN (PV-12), DYNASTY_MASTER_ITEMS and the goals draft are updated. Entry 97's "6 Copper ingot" is superseded.
+
+**Evidence:**
+- Independent review PASS on ee0adc37.
+- Lane B on ee0adc37: 269 pass / 0 fail, warnings 381 (same as the baseline), validate_items 0 errors.
+- The run includes "the Raised cistern is a big tank anyone can build: copper lined with 30 Copper ingot".
+
+**Acceptance:** open the hammer menu. The Raised cistern lists 30 Copper ingot. Build one, then take it down: 30 Copper ingot come back.
+
+Play note: 30 ingots weigh 51 kg, close to the carry limit. Building also takes materials from nearby boxes and the ground. Not yet played.
+
+## 103. Hair styles: Dave's Medium swept back added to the lineup
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "new medium swept back in hair".
+
+**Required outcome:** the Medium swept back appears in the one hair lineup (entry 94) for every body.
+
+**As built (PR #1406, reviewed head c6c2341e, merged to dev at 9597210c):**
+- His Hair_Medium_Swept_Back.glb is hair only. It is built with tools/hair/prepare_hair.py --nape 1.45, the same as the bob and the shag, and has about 16,900 triangles.
+- One row in hair_models.gd: "Medium swept back". No share code or save change.
+
+**Evidence:**
+- Independent review PASS WITH NITS on c6c2341e. The glb and textures rebuild byte-identical.
+- Lane B on c6c2341e: 70 PASS / 0 FAIL. Warnings stay at 381. Join smoke clean.
+- Offline preview on Body 1 and Body 2 (/mnt/project-files/hair_swept_back_preview.png), shown to Dave.
+- PC pictures wait until his Godot is closed.
+
+**Acceptance:** pick Medium swept back on Body 1 and Body 2. It sits on the head from every side, ends level at the collar and follows the hair colour.
+
+Not yet played.
+
+(Medium curtains was dropped by Dave on 21 Nov, "lets just remove the curtains they are terrible"; it was never built.)
+
+## 104. E acts on what is nearest the reticle
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "Im still having issues where Im looking straight at something I want to pick up and i press e but it puts out the fire or lights the smelter or picks up something else. it should always effect whatever is closest to my reticle first." Then: "that needs fixing right now".
+
+**What was found:** the 1 Nov rule (the thing the cursor is on wins) held only between kinds of thing. The pick-up offered the item nearest the feet, not the one looked at, so a nearer item to the side hid it and a fire or station in view won. The cursor also had to be within the 2 m prompt reach, and items were offered only to 2.5 m while fires and stations reach 3 m.
+
+**Required outcome:** E, its prompt and F act on the one thing nearest the reticle: items, fires, stations, chests, plants and people alike. Only when the reticle is on nothing does E fall back to the old order (the nearest loose item first).
+
+**As built (PR #1409, reviewed head dd9509ff, merged to dev at 6995ae3e):** every kind offers its best centred thing inside the aim cone (about 25 degrees); the best centred of those wins. F opens the same one. An aimed plant that cannot be picked says why, and E does not pick the one beside it. The server acts on the id the client sends, so it acts on the thing shown.
+
+**Evidence:**
+- Independent review PASS on b5841f25 and on dd9509ff.
+- Lane B on dd9509ff: 65 PASS / 0 FAIL, test_e_priority among them (an item beside a lit fire, an item beside a smelter, two items close together, two workbenches side by side). Warnings stay at 381. Join smoke clean.
+
+**Acceptance:** drop a stick beside a lit campfire and look straight at it: E picks it up and the fire keeps burning. Do the same beside a cold smelter: E picks up the item, not "light". Lay two items close together: E takes the one under the reticle. Look at the fire or smelter itself: E works it.
+
+Not yet played. Not done: drinking (from water or from what you hold) and the sea edge have no single spot, so they never win on the reticle; with the reticle on nothing a fire within 3 m still comes ahead of drinking, as before.
+
+## 105. Copper and tin rocks along every river
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "why is it i can find normal stones and copper all around the river but I can't find any tin". Then: "both copper and tin should be placed along or close to rivers being more abundant and bigger near the mountains and smaller and less abundant closer to the ocean but they should both be there. they should even have a small chance of randomly being almost anywhere", "they should also be very abundant if they are right over an ore vein of their type" and "that needs to be fixed now".
+
+**What was found:** tin rocks lay only by water within 80 m of a tin body of the geology, and never on land. Copper lined every river. The new spawn (58167, 71364) is outside every tin body, so its river had copper and no tin.
+
+**Required outcome:** copper and tin follow one rule. Both lie along every river. They are commoner and bigger toward the mountains and rarer and smaller toward the sea, but always present. Either can turn up anywhere, rarely. Both are very abundant over a body of their own ore.
+
+**As built (PR #1411, reviewed head cea2e192, merged to dev at 73b1a4b4):** boulders.json `ore_rocks` holds the one shared rule; copper_rocks and tin_rocks keep only their slot and grade. By a river (shallow water or within 8 m of it) a spot takes a rock 30% of the time at 10 m above the sea or lower, rising to 80% at 300 m or higher. Sizes are cut to half by the sea and reach 0.5 to 2 m across up the valleys. On any dry land the chance is 1% a spot. Within 40 m of its own ore body it is 70% a spot anywhere, with bigger rocks. Both ores get the mountain-foot boulder. No TERRAIN_VERSION, protocol, save or starter cache change: the rocks are laid by the server when a cell loads, so a server restart shows them and no world reset is needed. Provisional values: docs/design/COPPER_ROCKS.md OR-1..OR-6.
+
+**Evidence:**
+- Independent review PASS on fbfbd6ec and on cea2e192.
+- Lane B on cea2e192: 250 PASS / 0 FAIL (245 fast + 5 timing), test_copper_rocks, test_server_items, test_ore and test_flint among them. validate_items had 0 errors. Warnings stay at 381. The join smoke had no crash. The slow-cell lines show copper and tin rocks at 2 to 3 ms a cell.
+- outcrops_near at the spawn, radius 400 m: 22 copper and 70 tin rocks to break. The nearest copper is 83 m away and the nearest tin 137 m.
+
+**Acceptance:** walk the river by the spawn. Copper and tin both lie in the shallows and on the banks, mostly small pieces picked up by hand. Follow a river up toward the mountains: there are more rocks, and bigger ones. Now and then one lies on open land far from water.
+
+Not yet played.
+
+## 106. Rocks crack and shrink from the first blow
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "I just used a pick on a rock until it finally broke and I noticed the system is designed for it to keep its normal size until the last few hits then it shrinks. it should crack and start to shrink right from the first hit. it should shrink right along with however many stones or ore it has left and crack accordingly". Then: "fix immediately".
+
+**What was found:** a worked rock's radius was the cube root of the share of stones left, so it kept 79% of its width with half its stones gone and 97% after a tenth. The cracks were drawn as the share gone, so a big rock showed none for its first blows.
+
+**Required outcome:** every rock a pick or hammer works (stone boulders, copper and tin rocks, iron and limestone outcrops, cave boulders) shrinks in step with the stones or ore it has left and cracks from the first blow, more as it is used up. Motion stays smooth, and the server and the player's view agree.
+
+**As built (PR #1412, reviewed head a23944bf, merged to dev at bf9c2f45):** one rule, src/shared/boulder_wear.gd, sizes a rock for the server (reach, blocking, settle, survey, log physics) and the client (look and solid shape). The radius falls in a straight line from full to a fifth at the last stone. Cracks start at 0.2 after the first blow and rise to full. Each blow eases the look to its new size over 0.15 s. No new network traffic.
+
+**Evidence:**
+- Independent review PASS on e2ea13d4 and on a23944bf.
+- Lane B on a23944bf: 237 PASS / 0 FAIL (233 fast + 4 timing), test_boulder_wear and test_fell_autosplit among them. Warnings stay at 381. Join smoke clean.
+
+**Acceptance:** hit a boulder once with a pick: fine cracks show at once. Keep going: it grows smaller and more cracked at a steady rate until it breaks. A small copper rock visibly shrinks on every blow.
+
+Not yet played. On a big boulder (thousands of stones) one blow shrinks it by under a millimetre, so there the cracks show first and the shrink shows as it is used up. The boulders.json note still says "cube root"; it is fixed with the next data change.
+
+## 107. Ore piles stack up like stone piles
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "ore piles should stackup like stone piles do just with different colors and lumps." Then: "you can fix that now too".
+
+**What was found:** the server already joined dropped ore into one ground record, but Copper ore, Tin ore, Iron ore and Bog iron ore had no pile row in items.json, so the client drew a heap of any size as a single lump.
+
+**Required outcome:** a heap of any ore grows as a cone the way stone does, each ore in its own colour with lumpy pieces, at no more cost per piece than stone.
+
+**As built (PR #1413, reviewed head ffb8e5e2, merged to dev at c98408c7):** the four ores have cone pile rows, the same system stone uses (src/shared/pile_rules.gd sizing, server merge reach and the building check, PileLook._cone_mesh). The cone row may now set a second colour with a share of pieces (color2, mix), lumps (each piece is one of four knobbly shapes built once) and rough. Stone sets none of them and looks as before. validate_items now checks every non-log pile row's common fields as well as the new keys.
+
+**Evidence:**
+- Independent review PASS on 5951aeec and on ffb8e5e2.
+- Lane B on ffb8e5e2: 270 PASS / 0 FAIL (265 fast + 5 timing). test_pile_cost passes: every ore's drops join one pile, and its mesh has the same number of points as the stone cone and rebuilds within the same budget. validate_items 0 errors, look names 340, warnings 381 = baseline. Join smoke clean.
+
+**Acceptance:** drop 20 or more of each ore: each makes one cone that grows as more land on it. Copper is green with red-brown pieces, Tin is dark red-brown and a little shiny, Iron is grey-brown with rust, and Bog iron is red-brown with ochre and the lumpiest. Stone piles are unchanged.
+
+Not yet played; not yet seen in a picture. The colours, lumps and densities are provisional (OP-1, below).
+
+## 109. Costs say which nails and hinges they take
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "Im trying to make a chest and it says I need nails and I have 100 copper nails but it wont use them. it should tell me what type of nails it wants". Then: "fix this now".
+
+**What was found:** the item shown as "Nails" is iron (1 Iron ingot makes 100 at the brick forge), and "Hinges" are iron too. Every cost that asked for them took iron or bronze, never copper, but the cost line, the build site's "Still needed" and the repair messages all said only "nails" or "hinges".
+
+**Required outcome:** wherever a cost needs nails or hinges, the player sees exactly which items fill it, and no item name is ambiguous beside Copper nails.
+
+**As built (PR #1416, reviewed head d41fddae, merged to dev at e971621d):** Nails are named Iron nails and Hinges are named Iron hinges (items, recipes, encyclopedia). Their costs read "Iron or bronze nails" and "Iron or bronze hinges", and a Copper nails cost reads "Copper, bronze or iron nails", in the hammer list, the site list and the recipe cards. The server's build site, structure repair and item repair sentences use the same labels. Item ids, numbers and saves are unchanged.
+
+**Evidence:**
+- Independent review PASS WITH NOTES on 7202c6a2 and on d41fddae (the one note, a stale "Used in Hinges" line, is fixed in d41fddae).
+- Lane B on d41fddae: 272 PASS / 0 FAIL (267 fast + 5 timing). validate_items 0 errors, look names 340, warnings 381 = baseline. Join smoke clean.
+
+**Acceptance:** open the hammer list with copper nails only: the Rustic - Chest line says it wants iron or bronze nails. Set down a chest site and hit it: "Still needed" names iron or bronze nails.
+
+Not yet played. Dave then asked for a chest for each nail tier (PR #1419), which changes these labels to "... or better".
+
+## 110. The Rustic - Chest needs no chisel
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "now Im trying to make a rustic chest which is in the blueprints on the hammer and it wants me to have a chisel. this shouldnt need a chisel." Then: "fix it please".
+
+**What was found:** the 18 Nov 2026 chisel tiers (TT-3) gave the Rustic - Chest a Bronze chisel, checked on the hand bar beside the hammer.
+
+**Required outcome:** the Rustic - Chest is built with any hammer and its blueprint, with no chisel.
+
+**As built (PR #1416, reviewed head d41fddae, merged to dev at e971621d):** the chisel requirement is removed from the plank_chest blueprint, and the TT-3 record is amended. The Rustic chair and table, Cupboard and Barrel keep their Bronze chisel (TT-3). The Raised cistern's Bronze chisel was a provisional pick (PV-12). The Canopy bed's Steel chisel is also unchanged. All are listed for Dave.
+
+**Evidence:** same review and Lane B run as entry 109. test_tool_ladder: "plank_chest needs chisel tier 0" and "plank_chest with no chisel: builds".
+
+**Acceptance:** with only a hammer and the materials, build a Rustic - Chest: it goes up with no chisel.
+
+Not yet played.
+
+## 111. A chest for each tier of nails
+
+**Status: Implemented - awaiting player verification.** Dave's design during his play test, 21 Nov 2026: "we should have a chest size for each tier of nails. so copper nails can make a smaller chest with an appropriate name, then bronze makes the rustic, iron can make the large, and steel could make the superior. just use the same names we use on all other tiers whatever the convention is." Then: "fix it now".
+
+**What was found:** only iron and bronze nails filled any chest; Copper nails built nothing but the Quality - Backpack, and there were no Steel nails.
+
+**Required outcome:** one chest per nail metal, bigger with each tier, each a hammer blueprint with no chisel at the lower tiers, using the existing naming convention; a better nail always serves for a lesser one.
+
+**As built (PR #1419, reviewed head 250ad249, merged to dev at 53a25ccf):**
+
+| Chest | Nails | Hinges | Slots | Cost |
+|---|---|---|---|---|
+| Small chest (new) | Copper nails or better | none (lift-off lid) | 24 | 4 Hardwood board, 8 Copper nails; any hammer, no chisel |
+| Rustic - Chest | Bronze nails or better | Bronze hinges or better | 30 | 6 Hardwood board, 12 nails, 2 hinges; any hammer, no chisel |
+| Large wooden chest | Iron nails or better | Iron hinges | 42 | 14 Hardwood board, 20 nails, 2 hinges; any hammer, no chisel |
+| Ornate - Chest | Steel nails | Iron hinges | 48 | 10 Hardwood board, 24 nails, 2 hinges, 2 Iron band; Bronze hammer or better, Steel chisel |
+
+The Fine - Chest (36 slots) is in the iron tier and is otherwise unchanged. Steel nails are new: 1 Steel ingot makes 100 at the brick forge, level 3. Every other building and recipe that took nails or hinges now reads "Bronze nails or better" / "Bronze hinges or better", which covers the same metals as before plus steel. Items 1512 (Small chest) and 1513 (Steel nails), recipe 750, blueprint 364, structure state 462. Saves are unchanged. Design and provisional picks: docs/design/CHEST_TIERS.md.
+
+**Evidence:**
+- Independent review PASS WITH NOTES on cd6624c5 (two test fixes first found on f00f7542) and PASS on 250ad249.
+- Lane B on cd6624c5: 318 pass and 1 fail (a stale row count in test_wood_phase4), fixed in 250ad249.
+- Lane B on 250ad249: 319 PASS / 0 FAIL (314 fast + 5 timing). validate_items 0 errors, look names 340, warnings 381 = baseline. Join smoke clean.
+
+**Acceptance:** with 8 Copper nails and 4 Hardwood boards, any hammer builds a Small chest that holds 24. The Rustic - Chest refuses copper nails and takes bronze, iron or steel. The Large wooden chest refuses bronze nails. The Ornate - Chest takes only Steel nails. Taking a chest down gives back the lowest nails that fill its cost.
+
+Not yet played; not yet seen in a picture.
+
+## 112. The knife makes a Wicker basket, not the two knife chests
+
+**Status: Implemented - awaiting player verification.** Dave, during his play test on 21 Nov 2026, of the Wicker - Chest (18 slots) and the Crude - Chest (24 slots), both knife builds: "get ride of both of those. the knife can make a wicker basket that could have 6 slots." When asked about chests already placed: "there are none".
+
+**What was found:** the knife listed two chests next to the hammer's chest per nail tier (entry 111).
+
+**Required outcome:** no knife chest. The knife builds a Wicker basket with 6 slots (one row). A saved world that holds one of the old chests still loads.
+
+**As built (PR #1421, reviewed head 6b97ba23, merged to dev at aae56232):**
+- The knife's store is the existing Basket, renamed **Wicker basket**: 8 Stick, 4 Twine, 6 slots, item 785, blueprint 157. No new numbers. It takes the Wicker - Chest's storage comfort point.
+- The Crude - Chest is retired (blueprint 186, item 914).
+- The Wicker - Chest (blueprint 26) is hidden and locked, so no player lists or builds it. It is not retired, because about a dozen server tests place it as their plain container. Taken down, it gives back its sticks and twine.
+- A saved Crude - Chest or Wicker - Chest still loads with its contents. Nothing clears them at load.
+- The Ragtooth goblin camp's chest prop is now a Small chest.
+- The chest ladder is now Crate 10, Small 24, Rustic 30, Fine 36, Large wooden 42, Ornate 48.
+- Design: docs/design/CHEST_TIERS.md.
+
+**Evidence:**
+- Independent review first found 3 must-fixes on c96b974c (a parse error, retired-kit test placements, a validate_items collision). It passed on dcda0248 and again on 6b97ba23.
+- Lane B on dcda0248: 2 fails (test_cooking_route still built the hidden chest; the walkthrough read the basket's slots before opening it), fixed in 6b97ba23.
+- Lane B on 6b97ba23: 320 pass / 0 fail (fast 309, timing 9, slow 2). validate_items 0 errors, look names 340, warnings 381 = baseline. Join smoke 26 s, client --chest self-test (now the Wicker basket) exit 0.
+- test_save_compat loads a saved Crude - Chest and Wicker - Chest with their contents.
+
+**Acceptance:** the knife's list shows the Wicker basket and no chest. With a knife, 8 Sticks and 4 Twine, a Wicker basket goes up and holds 6 stacks. No build list, knife or hammer, shows a Wicker - Chest or Crude - Chest; the hammer's chests are the Small, Rustic, Fine, Large wooden and Ornate.
+
+Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
 
 ## Assumed on Dave's behalf (provisional values, for review)
 
+- CT-1 (entry 111): the copper chest is the Small chest, 24 slots. Chest slots go in six-slot rows, so 27 would leave half a row. That made it the same size as the Crude - Chest, retired since (entry 112). The Small chest is built with a hammer from copper nails and needs no twine. Its lid lifts off, because there are no copper hinges.
+- CT-2 (entry 111): Dave's "superior" chest is the existing Ornate - Chest, since Ornate is the top furniture grade. It keeps its Iron hinges, because there are no steel hinges.
+- CT-3 (entry 111): the Fine - Chest is in the iron tier, so it takes Iron nails or better and Iron hinges. Nothing else about it changed.
+- CT-4 (entry 111): Steel nails are 1 Steel ingot to 100 at the brick forge, level 3, value 2.
+- CT-5 (entry 111): only the chests are tiered. The other buildings that use nails (about 40) take bronze nails or better.
+- CT-6 (entry 112): the knife's store is the existing Basket renamed Wicker basket, keeping its cost (8 Stick, 4 Twine) and 6 slots. The Wicker - Chest is hidden and locked rather than retired, because the server tests use it as their plain container. The goblin camp's chest prop is a Small chest (Dave 20 Nov 2026: "a small chest of some sort").
+- OP-1 (entry 107): ore pile looks, chosen by Claude. Copper ore: malachite green, 30% red-brown, lumps 0.3, 3,900 kg/m3. Tin ore: dark red-brown, 40% near-black, lumps 0.15, a little shiny, 6,900 kg/m3. Iron ore: grey-brown, 35% rust, lumps 0.3, 4,800 kg/m3. Bog iron ore: red-brown, 35% ochre, lumps 0.4, 3,600 kg/m3. The densities are the real minerals' and set how wide a cone a count makes.
 - LV-1: one held Level action lasts while strokes come within 1.5 s and the feet move less than 0.6 m; its target height is kept for that long.
 - LV-2: Level leaves the ground within 1.2 m of the feet untouched.
 - LV-3: one Soil fills 0.75 m3.
@@ -1075,4 +1286,7 @@ Dave requested this rewrite around the intended experience rather than a literal
 - HE-1 (entry 52): a quick tap of the key or a click eats one bite. Eating from the hotbar never changes the selected slot or what is in hand.
 - HE-2 (entry 52): a click on a food box bites when the button comes up, or after 0.2 s held, so dragging food elsewhere eats nothing. Holding still on the box longer than that before dragging eats one bite.
 - HE-3 (entry 52): water containers on the hotbar still go in hand (they are needed to fill and pour). Drink from them as before.
+- OR-1..OR-6 (entry 105): one placement rule for copper and tin by river, height, land scatter and own ore body; values in docs/design/COPPER_ROCKS.md.
+- BW-1..BW-3 (entry 106): a rock at its last stone is a fifth of its full radius; cracks are 0.2 after the first blow, rising to 1.0; each blow eases the look over 0.15 s.
+- ET-1 (entry 104): an item the reticle is on is reached to 3 m, as fires and stations are (it was 2.5 m; the server allows 3.5 m).
 - Crops need tilled soil (Plant does not till); scatter stone, flint and ores count as small rocks to pick up; wild shrubs are not checked for duplicates.

@@ -102,7 +102,22 @@ func on_rows(rows: Array) -> void:
 			_bodies.erase(id)
 
 
-# The nearest NPC within reach of a point: {"id", "name"} or {} (for the Press E to talk prompt).
+# Every body within `reach` (flat) of `point`, nearest first, as nearest() gives one: [{"id", "name", "pos"}].
+func within(point: Vector3, reach: float) -> Array:
+	var out: Array = []
+
+	for id in _bodies:
+		var at: Vector3 = _bodies[id]["target"]
+		var d: float = Vector2(at.x - point.x, at.z - point.z).length()
+
+		if d <= reach:
+			out.append({"id": id, "name": str(roster.get(id, {}).get("name", id)), "pos": at, "d": d})
+
+	out.sort_custom(func(x, y): return float(x["d"]) < float(y["d"]))
+	return out
+
+
+# The nearest NPC within reach of a point: {"id", "name", "pos"} or {}.
 func nearest(point: Vector3, reach: float) -> Dictionary:
 	var best: Dictionary = {}
 	var best_d: float = reach

@@ -12,6 +12,7 @@ const FlameRules := preload("res://src/shared/flame_rules.gd")
 const MineSites := preload("res://src/worldgen/runtime/mine_sites.gd")   # what an abandoned mine left behind (cave scatter kind 2)
 const WaterFlowScript := preload("res://src/stream/water_flow.gd")
 const ShoreRules := preload("res://src/shared/shore_rules.gd")
+const BoulderWear := preload("res://src/shared/boulder_wear.gd")   # a worked rock's size now (Dave 21 Nov 2026: shrinks from the first blow)
 const SnowWalk := preload("res://src/shared/snow_walk.gd")   # walking on snow and snowshoes (Part C plan 7)
 const FellPose := preload("res://src/flora/fell_pose.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -1147,7 +1148,7 @@ func _pile_blocked(centre: Vector3, radius: float, self_id: int) -> bool:
 			if flat.length() >= radius + float(info["radius"]):
 				continue   # beyond the rock's whole size: no need to work out what is left of it
 
-			var size_now: float = float(info["radius"]) * pow(float(it["count"]) / float(maxi(int(info["total"]), 1)), 1.0 / 3.0)
+			var size_now: float = BoulderWear.radius_now(float(info["radius"]), int(it["count"]), int(info["total"]))
 
 			if flat.length() < radius + size_now:
 				return true
@@ -3027,7 +3028,7 @@ func settle_loose_near(centre: Vector3, radius: float) -> void:
 
 		if it.has("boulder") and (int(it["scatter"]) & CAVE_KEY) == 0:
 			var info: Dictionary = it["boulder"]
-			var size_now: float = float(info["radius"]) * pow(float(it["count"]) / float(maxi(int(info["total"]), 1)), 1.0 / 3.0)
+			var size_now: float = BoulderWear.radius_now(float(info["radius"]), int(it["count"]), int(info["total"]))
 
 			# A boulder dug under comes down into the hole (Dave 19 Nov 2026, boulders PLAN.md stage 1: boulders floated when dug under):
 			# it rests on what is left under its middle, like a loose item. Nothing is saved: laid out again it is settled on the saved digs the same way.
@@ -3660,16 +3661,19 @@ func _log_surround() -> void:
 					keep["i%d" % sid] = true   # on a floor or a deck: in the way, never moved
 					_log_static("i%d" % sid, _log_capsule(_log_r(other)), _log_xf(other), true)
 			elif other.has("boulder") or other.has("tree"):
-				keep["i%d" % sid] = true
+				# A boulder's key carries its stones left: a worked rock that has shrunk (BoulderWear) gets a new, smaller ball and trim_statics drops the old one.
+				var static_key: String = "i%d:%d" % [sid, int(other["count"])] if other.has("boulder") else "i%d" % sid
+				keep[static_key] = true
 
-				if _logs.has_static("i%d" % sid):
+				if _logs.has_static(static_key):
 					continue   # already in the space: no new shape
 
 				if other.has("boulder"):
-					var rock_r: float = float((other["boulder"] as Dictionary).get("radius", 0.5))
+					var rock: Dictionary = other["boulder"]
+					var rock_r: float = BoulderWear.radius_now(float(rock.get("radius", 0.5)), int(other["count"]), int(rock.get("total", 1)))
 					var ball: SphereShape3D = SphereShape3D.new()
 					ball.radius = rock_r
-					_log_static("i%d" % sid, ball, Transform3D(Basis(), other["pos"] + Vector3(0.0, rock_r * 0.4, 0.0)))   # a boulder sits part in the soil
+					_log_static(static_key, ball, Transform3D(Basis(), other["pos"] + Vector3(0.0, rock_r * 0.4, 0.0)))   # a boulder sits part in the soil
 				else:
 					_log_static("i%d" % sid, _log_post(float((other["tree"] as Dictionary).get("radius", 0.3)), STUMP_H_M), Transform3D(Basis(), other["pos"] + Vector3(0.0, STUMP_H_M * 0.5, 0.0)))
 
@@ -7803,31 +7807,42 @@ func _set_boulder_ore(row: Dictionary, ore_name: String, key: int) -> void:
 		return
 
 	row["ore"] = ore_name
-	var cfg: Dictionary = _boulder_cfg.get(ore_name + "_rocks", {})
+	var own: Dictionary = _boulder_cfg.get(ore_name + "_rocks", {})
 
-	if cfg.has("grade_min"):
-		row["grade"] = lerpf(float(cfg["grade_min"]), float(cfg.get("grade_max", cfg["grade_min"])), float(hash([key, "grade"]) % 1000) / 999.0)
+	if own.is_empty():
+		return   # iron, coal and the rest: an outcrop without a grade or a size range
+
+	var shared: Dictionary = _boulder_cfg.get("ore_rocks", {})   # read in place: _ore_rock_cfg copies, and this runs for every ore boulder
+
+	if own.has("grade_min"):
+		row["grade"] = lerpf(float(own["grade_min"]), float(own.get("grade_max", own["grade_min"])), float(hash([key, "grade"]) % 1000) / 999.0)
 
 	# Every copper and tin rock to break is radius_min..radius_max (Dave 17 Nov 2026: "the copper should be the same size as the tin and they
 	# can be anywhere from .5m to 2m in size ... for both of them"), the geology's outcrop boulders included.
-	if cfg.has("radius_min") and cfg.has("radius_max"):
-		var radius: float = clampf(float(row["radius"]), float(cfg["radius_min"]), float(cfg["radius_max"]))
+	var r_min: Variant = own.get("radius_min", shared.get("radius_min"))
+	var r_max: Variant = own.get("radius_max", shared.get("radius_max"))
+
+	if r_min != null and r_max != null:
+		var radius: float = clampf(float(row["radius"]), float(r_min), float(r_max))
 
 		if radius != float(row["radius"]):
 			row["radius"] = radius
 			row["total"] = _boulder_stones(radius)
 
 
-# Copper and tin rocks (Dave 16-17 Nov 2026, his photos; docs/design/COPPER_ROCKS.md, boulders.json copper_rocks and tin_rocks). Per cell,
-# from the cell's own stream named after the ore, 8 tries that each take the same five draws whatever happens to them:
-# - copper: a few anywhere on dry land, many in shallow water and on banks, and the last try a big boulder at a mountain's foot;
-# - tin: only in shallow water and on banks within near_body_m of a tin body of the geology (its river placers), sized by the relief
-#   around it: boulders where the valley climbs steeply (near the mountains), pebbles where it is flat (far downstream).
+# Copper and tin rocks (Dave 16-17 Nov 2026, his photos; one shared rule since his 21 Nov 2026 play test; docs/design/COPPER_ROCKS.md,
+# boulders.json ore_rocks, copper_rocks and tin_rocks). Per cell, from the cell's own stream named after the ore, 8 tries that each take the
+# same five draws whatever happens to them; both ores alike:
+# - along every river and lake: shallow water and dry banks, commoner and bigger the higher the ground (toward the mountains), rarer and
+#   smaller near the sea, never none;
+# - a small chance anywhere on dry land;
+# - very many over a body of its own ore (the geology), wherever the spot lies;
+# - the last try a big boulder at a mountain's foot.
 # A share hand_share of the sizes is a loose ore item picked up by hand (ORE_KEY, kept in _taken like any scatter); the rest are boulder
 # rows with the ore, radius_min..radius_max (0.5 to 2 m across, Dave 17 Nov 2026), broken with a hammer or pick. Slots `slot`.. of the cell: copper 8..15 (BOULDER_KEY, after the cell's
 # boulders), tin 16..23 (ORE_KEY | BOULDER_KEY). Nothing depends on where spawn is.
 func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
-	var cfg: Dictionary = _boulder_cfg.get(ore + "_rocks", {})
+	var cfg: Dictionary = _ore_rock_cfg(ore)
 	var item: String = str((_boulder_cfg.get("ore", {}).get("items", {}) as Dictionary).get(ore, ""))
 
 	if cfg.is_empty() or item == "":
@@ -7838,19 +7853,29 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 	var bed_m: float = float(cfg.get("bed_depth_m", 0.8))
 	var foot: Dictionary = cfg.get("foot", {})
 	var slot0: int = int(cfg.get("slot", COPPER_ROCK_FIRST))
-	var body_m: float = float(cfg.get("near_body_m", 0.0))
 	var hand_share: float = float(cfg.get("hand_share", 0.0))
+	var land_p: float = float(cfg.get("chance", 0.0))
+	var coast_p: float = float(cfg.get("water_chance_coast", 0.0))
+	var mountain_p: float = float(cfg.get("water_chance_mountain", coast_p))
+	var low_m: float = float(cfg.get("upland_low_m", 0.0))
+	var span_m: float = maxf(float(cfg.get("upland_high_m", low_m + 1.0)) - low_m, 1.0)
+	var size_coast: float = float(cfg.get("size_coast", 1.0))
+	var body_m: float = float(cfg.get("body_reach_m", 0.0))
+	var body_p: float = 0.0
 	var cell_bits: int = ((cell.x & 0xfffff) << 28) | ((cell.y & 0xfffff) << 8)
 	var names: Dictionary = {ore: item}
 	var layer_m: float = float(_boulder_cfg.get("ore", {}).get("layer_depth_m", 10.0))
 
-	# Tin: one geology look for the whole cell first (any of its spots within near_body_m of a body), so a cell far from tin reads nothing more.
-	if body_m > 0.0:
+	# Its own ore body: one geology look for the whole cell first (any of its spots within body_reach_m of a body), so only a cell by a body
+	# asks again per spot.
+	if body_m > 0.0 and ore_near.is_valid():
 		var mid: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
 		var mid_y: float = float(ground_height.call(mid.x, mid.y))
 
-		if is_nan(mid_y) or not ore_near.is_valid() or str(ore_near.call(Vector3(mid.x, mid_y, mid.y), body_m + cell_m * 0.71, names, layer_m)) != ore:
-			return
+		if not is_nan(mid_y) and str(ore_near.call(Vector3(mid.x, mid_y, mid.y), body_m + cell_m * 0.71, names, layer_m)) == ore:
+			body_p = float(cfg.get("body_chance", 0.0))
+
+	var top_p: float = maxf(maxf(land_p, maxf(coast_p, mountain_p)), body_p)
 
 	for attempt in range(ORE_ROCK_TRIES):
 		var x: float = (float(cell.x) + rng.randf()) * cell_m   # luck-exempt: seeded world layout
@@ -7863,7 +7888,7 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 		if is_foot:
 			if draw > float(foot.get("chance", 0.0)):
 				continue
-		elif attempt >= mini(int(cfg.get("tries", 4)), ORE_ROCK_TRIES - 1) or draw > maxf(float(cfg.get("chance", 0.0)), float(cfg.get("water_chance", 0.0))):
+		elif attempt >= mini(int(cfg.get("tries", 4)), ORE_ROCK_TRIES - 1) or draw > top_p:
 			continue   # cheap refusals first: most tries end here without reading the ground or the water
 
 		var y: float = float(ground_height.call(x, z))
@@ -7872,6 +7897,20 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 			continue
 
 		var spot: Vector3 = Vector3(x, y, z)
+		var upland: float = clampf((y - low_m) / span_m, 0.0, 1.0)   # 0 on the coastal plain, 1 under the mountains
+		var over_body: bool = false
+
+		if not is_foot and body_p > 0.0 and draw <= body_p:
+			over_body = str(ore_near.call(spot, body_m, names, layer_m)) == ore   # the spot itself over its own ore
+
+		if not is_foot and not over_body and draw > maxf(land_p, lerpf(coast_p, mountain_p, upland)):
+			continue   # past every chance this high up: no ground water read
+
+		var by_water_only: bool = not is_foot and not over_body and draw > land_p
+
+		if by_water_only and water_near.is_valid() and not bool(water_near.call(spot, reach)):
+			continue   # no water within reach (most of the land): no depth read, no second probe
+
 		var depth: float = float(water_depth_at.call(spot)) if water_depth_at.is_valid() else 0.0
 
 		if depth > bed_m:
@@ -7880,23 +7919,20 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 		if is_foot:
 			if depth > 0.0 or not _at_mountain_foot(spot, foot):
 				continue
-		elif draw > float(cfg.get("chance", 0.0)):
+		elif by_water_only:
 			# Past the land share: only on a river or lake bed (shallow water) or a dry bank within reach of water.
 			var bank: bool = depth <= 0.0 and water_near.is_valid() and not bool(water_near.call(spot, 0.0)) and bool(water_near.call(spot, reach))
 
 			if depth <= 0.0 and not bank:
 				continue
 
-		if body_m > 0.0 and str(ore_near.call(spot, body_m, names, layer_m)) != ore:
-			continue   # tin lies only downstream of its own geology
+		# Size: a share s in 0..1, the draw scaled down toward the sea (size_coast) and full under the mountains (over its own body raised by
+		# body_upland). Under hand_share it is a loose piece picked up by hand; above it a rock to break, radius_min..radius_max over the rest.
+		if over_body:
+			upland = minf(upland + float(cfg.get("body_upland", 0.0)), 1.0)
 
-		# Size: a share s in 0..1 (copper: the draw; tin: the relief, steep valley sides near the mountains high, flat ground far downstream
-		# low). Under hand_share it is a loose piece picked up by hand; above it a rock to break, radius_min..radius_max over the rest.
-		var s: float = size_draw
+		var s: float = size_draw * lerpf(size_coast, 1.0, upland)
 		var radius: float
-
-		if cfg.has("relief_full_m") and not is_foot:
-			s = clampf(_relief(spot, float(cfg.get("relief_reach_m", 24.0))) / maxf(float(cfg["relief_full_m"]), 0.1), 0.0, 1.0) * (0.5 + 0.5 * size_draw)
 
 		if is_foot:
 			radius = lerpf(float(foot.get("radius_min", 0.6)), float(foot.get("radius_max", 1.0)), pow(size_draw, float(foot.get("radius_power", 1.0))))
@@ -7925,6 +7961,19 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 		_set_boulder_ore(row, ore, key)
 		_items[_next_id] = {"number": 0, "count": left, "pos": _settled(spot), "left": 1.0e9, "scatter": key, "boulder": row}   # on the saved digs: a boulder dug under stays down
 		_next_id += 1
+
+
+# An ore's rock rule: boulders.json ore_rocks (shared by copper and tin, Dave 21 Nov 2026) under the ore's own <ore>_rocks (its slot and
+# grade, and any value it sets itself); {} for an ore without its own block (iron, coal: outcrops only).
+func _ore_rock_cfg(ore: String) -> Dictionary:
+	var own: Dictionary = _boulder_cfg.get(ore + "_rocks", {})
+
+	if own.is_empty():
+		return {}
+
+	var cfg: Dictionary = (_boulder_cfg.get("ore_rocks", {}) as Dictionary).duplicate()
+	cfg.merge(own, true)
+	return cfg
 
 
 # How far the ground climbs above the spot within reach (at most SCATTER_PAD_M - 4, inside the tiles _cell_ground_ready loaded: a
@@ -8012,7 +8061,7 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 		return
 
 	var info: Dictionary = it["boulder"]
-	var size_now: float = float(info["radius"]) * pow(float(it["count"]) / float(maxi(int(info["total"]), 1)), 1.0 / 3.0)
+	var size_now: float = BoulderWear.radius_now(float(info["radius"]), int(it["count"]), int(info["total"]))
 	var flat: Vector2 = Vector2(_peer_pos[peer].x - it["pos"].x, _peer_pos[peer].z - it["pos"].z)
 
 	if flat.length() > HIT_REACH_M + size_now:
@@ -9041,7 +9090,7 @@ func _repair_text(costs: Array) -> String:
 	var parts: PackedStringArray = PackedStringArray()
 
 	for cost in costs:
-		parts.append("%d %s" % [int(cost[1]), table.sentence_name(table.number_of(str(cost[0])))])
+		parts.append("%d %s" % [int(cost[1]), _item_name_lower(str(cost[0]))])
 
 	return ", ".join(parts)
 
@@ -11234,7 +11283,7 @@ func _repair_struct(peer: int, inv, id: int, held_slot: int) -> void:   # held_s
 			have += box[1].count_fill(number, true)
 
 		if have < int(need[1]):
-			short.append("%d %s" % [int(need[1]), table.in_sentence(str(table.entry(str(need[0])).get("name", need[0])))])
+			short.append("%d %s" % [int(need[1]), _item_name_lower(str(need[0]))])
 
 	if not short.is_empty():
 		_say(peer, "Repairing the %s (%d percent) needs %s." % [piece_name, int(round(cond * 100.0)), ", ".join(short)])
@@ -11312,7 +11361,7 @@ func _ground_take(number: int, want: int, at: Vector3, radius: float) -> int:
 	return taken
 
 
-# The item numbers that fill an ingredient or a blueprint cost: its group's members (item_table.gd load_groups: "log", "nails", "hinges"), or the number alone.
+# The item numbers that fill an ingredient or a blueprint cost: its group's members (item_table.gd load_groups: "log", "bronze_nails", "bronze_hinges"), or the number alone.
 # Inventory.fills_of is the same rule for a pack or a chest.
 func _fills(number: int) -> PackedInt32Array:
 	var members: PackedInt32Array = table.group_members(number)
@@ -11508,8 +11557,10 @@ func _gather_site(peer: int, inv, id: int, hammer: int) -> void:   # hammer: the
 		_say(peer, "Pulled %s. Still needed: %s." % [", ".join(pulled), ", ".join(missing)])
 
 
+# A cost line's name in a sentence: a group reads under its label ("bronze nails or better"), so the player sees which items fill it.
 func _item_name_lower(item_id: String) -> String:
-	return table.in_sentence(str(table.entry(item_id).get("name", item_id)))
+	var number: int = table.number_of(item_id)
+	return table.cost_sentence(number) if number > 0 else table.in_sentence(item_id)
 
 
 # Every material is in: the site becomes the real piece.
@@ -19133,7 +19184,7 @@ func _till_obstacles(centre: Vector3, reach: float) -> Dictionary:
 
 		if it.has("boulder"):
 			var info: Dictionary = it["boulder"]
-			seen["boulders"].append([flat, float(info["radius"]) * pow(float(it["count"]) / float(maxi(int(info["total"]), 1)), 1.0 / 3.0)])
+			seen["boulders"].append([flat, BoulderWear.radius_now(float(info["radius"]), int(it["count"]), int(info["total"]))])
 		elif it.has("struct"):
 			var kind: String = str(it["struct"]["kind"])
 			var def: Dictionary = _structures.get(kind, {})

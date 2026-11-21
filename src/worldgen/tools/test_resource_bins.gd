@@ -215,7 +215,7 @@ func _init() -> void:
 		for need in bp.get("cost", []):
 			cost[str(need[0])] = int(need[1])
 
-		check(BinRules.capacity(items._structures[kind]) == int(sizes[kind][0]) and not items._structures[kind].has("max_kg") and cost == {"lumber": int(sizes[kind][1]), "nails": int(sizes[kind][2])} and items.table.name_of(n(kind)) == str(sizes[kind][3]), "1. the %s holds %d of one kind, built from %d Plank and %d Nails" % [sizes[kind][3], sizes[kind][0], sizes[kind][1], sizes[kind][2]])
+		check(BinRules.capacity(items._structures[kind]) == int(sizes[kind][0]) and not items._structures[kind].has("max_kg") and cost == {"lumber": int(sizes[kind][1]), "bronze_nails": int(sizes[kind][2])} and items.table.name_of(n(kind)) == str(sizes[kind][3]), "1. the %s holds %d of one kind, built from %d Plank and %d Nails" % [sizes[kind][3], sizes[kind][0], sizes[kind][1], sizes[kind][2]])
 
 	# 2. Assignment.
 	var bin: int = place("open_storage_bin", BIN_AT)
