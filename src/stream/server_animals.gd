@@ -953,6 +953,10 @@ func tick(delta: float) -> void:
 
 		if animals.has(id) and a["pos"] != was:
 			a["moved_ms"] = Time.get_ticks_msec()   # when it got here, sent with its row (rows_near) so the client draws it on the server's timeline
+			a["moving"] = true
+		elif bool(a.get("moving", false)):
+			a["moving"] = false
+			a["stood_ms"] = Time.get_ticks_msec()   # the first step it stood still: sent once, so the client stops it there instead of carrying it on
 
 		if trails != null and int(a.get("state", 0)) != HIDDEN and not bool(a.get("in_cave", false)) and not a.has("fly") and not bool(a.get("perched", false)):
 			trails.note(id, str(a["sp"]), a["pos"])
@@ -1905,6 +1909,8 @@ func rows_near(point: Vector3, radius_m: float = -1.0, cap: int = -1) -> Array:
 			if a.get("row_pos") != a["pos"]:
 				a["row_pos"] = a["pos"]
 				a["row_ms"] = int(a["moved_ms"]) if int(a.get("moved_ms", -1)) > int(a.get("row_ms", -1)) else Time.get_ticks_msec()
+			elif int(a.get("stood_ms", -1)) > int(a["row_ms"]):
+				a["row_ms"] = int(a["stood_ms"])   # still here at that later moment: the client's last leg has no length, so it stops dead
 
 			var row: Array = [id, a["num"], a["pos"], snappedf(a["heading"], 0.01), _wire_state(a), int(a["row_ms"])]
 

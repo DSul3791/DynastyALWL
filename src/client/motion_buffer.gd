@@ -18,16 +18,18 @@ const KEEP := 4                 # points kept per body
 const SNAP_M := 25.0            # farther than this between two sends: the body is put there, not slid there
 const CARRY_S := 0.3            # the longest a body carries on past its newest point
 const LEAD_S := 0.15            # how far behind the rows' newest moment bodies are drawn, beyond one gap between rows (delay_s)
-const REANCHOR_S := 1.0         # a clock offset this much above the smallest is a new server clock (a reconnect): start again from it
+const REANCHOR_S := 10.0        # a clock offset this much above the smallest is a new server clock (a reconnect to another): start again
 const CREEP_S := 0.0005         # the smallest offset rises this much a batch, so one freak fast delivery does not hold it low for ever
 
 
 # Local seconds minus server seconds (`off` so far, INF for none): the smallest seen, the batch that came fastest, so a point's time plus
-# it is never later than its arrival. Rises by CREEP_S a batch; starts again on a server clock that jumped (REANCHOR_S).
-static func clock_off(off: float, now_s: float, server_ms: int) -> float:
+# it is never later than its arrival. Rises by CREEP_S a batch. Starts again when the server clock went backwards (`last_ms`, the batch
+# before: a restarted server) or the offset is REANCHOR_S high (another server); a frame hitch here only makes batches late, which never
+# re-anchors it.
+static func clock_off(off: float, now_s: float, server_ms: int, last_ms: int = -1) -> float:
 	var seen: float = now_s - float(server_ms) / 1000.0
 
-	if off == INF or seen < off or seen - off > REANCHOR_S:
+	if off == INF or seen < off or server_ms < last_ms or seen - off > REANCHOR_S:
 		return seen
 
 	return off + CREEP_S

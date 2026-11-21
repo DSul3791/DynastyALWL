@@ -80,9 +80,12 @@ func provoke(a: Dictionary, at: Vector3, warn_s: float) -> bool:
 
 	var state: int = int(a["state"])
 
+	a.erase("foe_dog")   # the one hurting it is the foe now, not a dog it stood to
+
 	if state == WARN or state == WARN_POP:
 		a["timer"] = 0.0
 		a["no_bluff"] = true   # hurt, it presses home
+		a["heading"] = atan2(at.z - a["pos"].z, at.x - a["pos"].x)
 		return true
 
 	if state == CHARGE:

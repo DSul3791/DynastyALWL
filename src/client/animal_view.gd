@@ -39,6 +39,7 @@ var _bodies: Dictionary = {}     # id -> {node, target Vector3 (newest sent), sa
 var _rows_at: float = -1.0       # seconds the last rows came (Time ticks)
 var _gap: float = 0.25           # recent seconds between rows, for MotionBuffer
 var _clock_off: float = INF      # local seconds minus server seconds, the smallest seen (the fastest delivery): MotionBuffer.clock_off
+var _server_ms: int = -1         # the server clock on the last batch
 var max_drawn: int = MAX_DRAWN   # SPYGLASS_DRAWN while the admin spyglass is up (terrain_client.gd)
 var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
 var _model_notes: Dictionary = {}  # log lines already printed by _model_note
@@ -393,7 +394,8 @@ func on_rows(rows: Array, server_ms: int) -> void:
 		_gap = lerpf(_gap, clampf(now_s - _rows_at, 0.05, 0.5), 0.2)
 
 	_rows_at = now_s
-	_clock_off = MotionBuffer.clock_off(_clock_off, now_s, server_ms)
+	_clock_off = MotionBuffer.clock_off(_clock_off, now_s, server_ms, _server_ms)
+	_server_ms = server_ms
 
 	for row in rows:
 		var id: int = int(row[0])

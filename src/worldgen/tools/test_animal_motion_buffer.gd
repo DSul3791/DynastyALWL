@@ -79,8 +79,17 @@ func _init() -> void:
 	check(absf(off - (95.0 + MotionBuffer.CREEP_S)) < 0.0001, "a slower batch: the offset only creeps (%.4f)" % off)
 	off = MotionBuffer.clock_off(off, 100.45, 5500)   # a faster one
 	check(absf(off - 94.95) < 0.0001, "a faster batch: the offset drops to it (%.4f)" % off)
-	off = MotionBuffer.clock_off(off, 101.0, 10)   # the server restarted: its clock is back near zero
-	check(absf(off - 100.99) < 0.0001, "a server clock that jumped: started again (%.4f)" % off)
+	off = MotionBuffer.clock_off(off, 101.0, 10, 5500)   # the server restarted: its clock is back near zero
+	check(absf(off - 100.99) < 0.0001, "a server clock that went back: started again (%.4f)" % off)
+	var held: float = MotionBuffer.clock_off(off, 103.5, 1010, 10)   # a 1.5 s frame hitch held this batch back
+	check(absf(held - (off + MotionBuffer.CREEP_S)) < 0.0001, "a late batch after a long hitch does not move the offset (%.4f)" % held)
+
+	# A runner that stops: the server sends its first still moment, so the last leg has no length and it is not carried past its stop.
+	var stop: Array = []
+	MotionBuffer.push(stop, Vector3(0, 0, 0), 0.0, 60.0, 0.25)
+	MotionBuffer.push(stop, Vector3(2.5, 0, 0), 0.0, 60.25, 0.25)
+	MotionBuffer.push(stop, Vector3(2.5, 0, 0), 0.0, 60.45, 0.25)   # stood_ms
+	check(absf((MotionBuffer.at(stop, 60.75)[0] as Vector3).x - 2.5) < 0.001, "a stopped runner stays where it stopped (%.2f)" % (MotionBuffer.at(stop, 60.75)[0] as Vector3).x)
 
 	# Dave 21 Nov 2026 ("animals are still teleporting and not actually running"): an elephant running at 10 m/s, stepped every 0.1 s on the
 	# server, its rows sent every 0.25 s, and two batches handed over together after a 150 ms frame hitch. Drawn on the server's step times
