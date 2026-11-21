@@ -4383,8 +4383,9 @@ func _make_log_bench() -> Node3D:
 
 
 # Large: a stone hearth with a hooded chimney, an anvil on a stump, a bellows of leather and wood, and a plank bench alongside.
-# The Primitive smithy (the same model without "use": "smelt") has a rough stone anvil beside its fire (Dave 17 Nov 2026: "a flat topped carved
-# rough stone beside it for hammering on materials"); the forge moves aside so the two sit centred on its footprint (structures.json).
+# Drawn for the Primitive and Improved smelters; also the Primitive smithy's stand-in when its own model (_make_primitive_smithy) is missing,
+# then with a rough stone anvil beside its fire (Dave 17 Nov 2026: "a flat topped carved rough stone beside it for hammering on materials"),
+# the forge moved aside so the two sit centred.
 func _make_forge(state: int) -> Node3D:
 	var model: Node3D = _forge_glb("forge_basic")
 
@@ -4545,7 +4546,7 @@ func _make_big_forge(state: int) -> Node3D:
 
 
 var _forge_sizes: Dictionary = {}
-const FORGE_ASIDE_M := -0.25   # the Primitive smithy's forge moved along x to make room for its stone anvil (provisional PS-2)
+const FORGE_ASIDE_M := -0.25   # the Primitive smithy stand-in's forge moved along x to make room for its stone anvil (PS-2, now the stand-in only)
 const ANVIL_AT_M := 0.45       # where the anvil stands along x, beside the fire
 
 
