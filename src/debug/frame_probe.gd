@@ -176,10 +176,16 @@ static func process_start() -> void:
 	var built: int = pipelines_now - _pipelines_seen if _pipelines_seen > 0 else 0
 	_pipelines_seen = pipelines_now
 	var timed: float = 0.0
+	var biggest: String = ""
+	var biggest_usec: int = 0
 
 	for name in _this_frame:
 		if not str(name).contains(":"):   # "grass: build" is part of "grass": only the top pieces are summed
 			timed += float(_this_frame[name]) / 1000.0
+
+			if int(_this_frame[name]) > biggest_usec:
+				biggest_usec = int(_this_frame[name])
+				biggest = str(name)
 
 	var wall: float = float(now - frame_start) / 1000.0
 	var voxel: float = 0.0
@@ -194,7 +200,7 @@ static func process_start() -> void:
 	last_split = {"wall": wall, "process": _span(frame_start, _proc_end_usec, frame_start), "client": _span(_client_start_usec, _client_end_usec, frame_start),
 		"flush": _span(_proc_end_usec, _pre_draw_usec, frame_start), "draw": _span(_pre_draw_usec, _post_draw_usec, frame_start), "outside": _span(_post_draw_usec, physics_from, frame_start),
 		"physics": float(now - physics_from) / 1000.0, "steps": _physics_steps, "timed": timed, "voxel": voxel, "pipelines": built, "n": _frames,
-		"usec": now}
+		"usec": now, "biggest": "%s %.0f" % [biggest, float(biggest_usec) / 1000.0] if biggest != "" else "none"}
 	_physics_first_usec = 0
 	_physics_steps = 0
 
@@ -208,8 +214,8 @@ static func split_text(split: Dictionary) -> String:
 	if split.is_empty():
 		return "no split"
 
-	return "split: process %.0f (terrain client %.0f, its timed pieces %.0f, voxel %.0f), flush %.0f, draw %.0f, outside %.0f, physics %.0f in %d steps; %d pipelines built; %s" % [
-		float(split["process"]), float(split["client"]), float(split["timed"]), float(split["voxel"]), float(split["flush"]), float(split["draw"]),
+	return "split: process %.0f (terrain client %.0f, its timed pieces %.0f, biggest %s, voxel %.0f), flush %.0f, draw %.0f, outside %.0f, physics %.0f in %d steps; %d pipelines built; %s" % [
+		float(split["process"]), float(split["client"]), float(split["timed"]), str(split.get("biggest", "none")), float(split["voxel"]), float(split["flush"]), float(split["draw"]),
 		float(split["outside"]), float(split["physics"]), int(split["steps"]), int(split["pipelines"]), pipelines_text()]
 
 

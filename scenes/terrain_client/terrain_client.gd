@@ -5662,9 +5662,12 @@ func _note_after_welcome(delta: float) -> void:
 
 func _process(delta: float) -> void:
 	Probe.frame(delta)   # first: the frame it closes is then one whole process step, physics and draw, as the engine's monitors count them
+	var tw: int = Probe.start()   # every part of this function is timed in pieces (lag while running, 21 Nov 2026: 0.3 to 1.6 s frames here were untimed)
 	FreezeWatchScript.beat()
 	_note_after_welcome(delta)
 	_log_frame(delta)
+	Probe.stop("welcome notes", tw)
+	tw = Probe.start()
 	if _water_spam_per_s > 0.0 and flora != null and Time.get_ticks_msec() >= _dig_spam_next_msec and Time.get_ticks_msec() - connected_msec > 8000:
 		_dig_spam_next_msec = Time.get_ticks_msec() + int(1000.0 / _water_spam_per_s)
 		var spam_chunks: PackedInt32Array = PackedInt32Array()
@@ -5714,10 +5717,17 @@ func _process(delta: float) -> void:
 	if _tunnel_test > 0:
 		_tunnel_step()
 
+	Probe.stop("test steps", tw)
+	tw = Probe.start()
 	_update_pit_shadow()
+	Probe.stop("pit shadow", tw)
+	tw = Probe.start()
 	_update_spring_heads(delta)
-
+	Probe.stop("spring heads", tw)
+	tw = Probe.start()
 	_run_ground_watchdog()
+	Probe.stop("ground watchdog", tw)
+	tw = Probe.start()
 
 	if _connect_window != null:
 		_update_connect_window()
@@ -5730,12 +5740,20 @@ func _process(delta: float) -> void:
 		_link_print_msec = Time.get_ticks_msec()
 		print("Terrain client: ", link_bars.text())
 
+	Probe.stop("connect window", tw)
+	tw = Probe.start()
+
 	if crash_report != null:
 		crash_report.tick(_crash_state)
 		_telemetry.tick(_telemetry_state, 1000, 500)
 
+	Probe.stop("crash report", tw)
+	tw = Probe.start()
+
 	if pickup_feed != null:
 		pickup_feed.update(delta)
+
+	Probe.stop("pickup feed", tw)
 
 	var tp: int = Probe.start()
 	_step_player(delta)
@@ -5755,13 +5773,18 @@ func _process(delta: float) -> void:
 	_update_weather()
 	Probe.stop("clock, weather", tp)
 
+	tw = Probe.start()
+
 	if sound_tests.time_at < 0 and sound != null and sound.ambient != null:
 		sound.ambient.set_conditions(game_clock.hour(), game_clock.season())
 
 	if critters != null and body != null and sound != null and sound.ambient != null:
 		critters.update(delta, body.global_position, sound.ambient.weights, game_clock.season(), game_clock.hour(), float(weather.get("rain", 0.0)))
 
+	Probe.stop("critters", tw)
+	tw = Probe.start()
 	_flame_wet(delta)
+	Probe.stop("flame wet", tw)
 
 	if _water_label != null and _water_label.text != "" and Time.get_ticks_msec() > _water_label_until_msec:
 		_water_label.text = ""
@@ -5780,6 +5803,8 @@ func _process(delta: float) -> void:
 
 	if stream == null:
 		return
+
+	tw = Probe.start()
 
 	if test_start.is_finite() and Time.get_ticks_msec() - _test_probe_msec > 10000 and connected_msec > 0:
 		_test_probe_msec = Time.get_ticks_msec()
@@ -5844,18 +5869,24 @@ func _process(delta: float) -> void:
 		_test_clear_done = true
 		_ask_clear_cache()
 
+	Probe.stop("test probes", tw)
 	var ta0: int = Probe.start()
 	_update_anchor(Time.get_ticks_msec(), delta)
 	Probe.stop("anchor", ta0)
 	# Owner (2026-10-19): while a bake runs, ask only for the ground the game is waiting on
 	# right now, not the extra ground around it (it is all thrown away when the bake ends).
 	stream.only_urgent = _bake != null and _bake.running
+	tw = Probe.start()
 	link.pump()
+	Probe.stop("block line", tw)
+	tw = Probe.start()
 	var wanted: Array = [PackedInt32Array(), 0] if _building_paused else stream.take_requests()
 
 	if not wanted[0].is_empty() and not link.send_request(wanted[0], wanted[1]):
 		net.request_blocks.rpc_id(1, wanted[0], wanted[1])
 
+	Probe.stop("block requests", tw)
+	tw = Probe.start()
 	var now: int = Time.get_ticks_msec()
 
 	# Tell the server where we are heading so it makes that ground first.
@@ -5889,6 +5920,7 @@ func _process(delta: float) -> void:
 			_cache_task = WorkerThreadPool.add_task(_cache_upkeep)
 
 	settled_msec = stream.last_load_msec - connected_msec
+	Probe.stop("position, cache upkeep", tw)
 
 	var ti: int = Probe.start()
 	_send_water_request(now)
@@ -5921,6 +5953,8 @@ func _process(delta: float) -> void:
 		_stamp_walkers(now)
 		Probe.stop("grass: stamp", tg_stamp)
 		Probe.stop("grass", tg)
+
+	tw = Probe.start()
 
 	if _bake != null and _bake.running and now >= _bake_check_msec:
 		_bake_check_msec = now + 2000
@@ -6879,6 +6913,9 @@ func _process(delta: float) -> void:
 		var centre: Vector3 = Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0)
 		print("Terrain client: dig check: ground value at the old hole %.2f (above 0 is open), 12 m away %.2f" % [probe_tool.get_voxel_f(Vector3i(centre.round())), probe_tool.get_voxel_f(Vector3i((centre + Vector3(12.0, 0.0, 0.0)).round()))])
 
+	Probe.stop("bake, tests", tw)
+	tw = Probe.start()
+
 	if frames_left > 0 and now >= _report_msec:
 		_report_msec = now + 10000
 		@warning_ignore("integer_division")
@@ -7001,6 +7038,7 @@ func _process(delta: float) -> void:
 			var probe: Vector3i = Vector3i((Vector3(world["spawn"]) + Vector3(0.0, -3.0, 0.0)).round())
 			print("Terrain client: ground value 3 m under the spawn %.2f (above 0 is open)" % terrain.get_voxel_tool().get_voxel_f(probe))
 			_finish(0)
+	Probe.stop("hud", tw)
 	Probe.client_done()   # the end of this script's frame, for the slow-frame split
 
 
