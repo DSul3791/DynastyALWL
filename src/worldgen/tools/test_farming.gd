@@ -456,7 +456,7 @@ func _herb_seed_checks(crops: Dictionary) -> void:
 	for plant in items._flora_by_name:
 		var entry: Dictionary = items._flora_by_name[plant]
 
-		if str(entry.get("kind", "")) != "plant" or bool(entry.get("future", false)) or str(plant).ends_with("_log") or plant == "old_stump" or fungi.has(plant):
+		if str(entry.get("kind", "")) != "plant" or bool(entry.get("future", false)) or str(plant).ends_with("_log") or plant in ["old_stump", "dead_tree"] or fungi.has(plant):   # logs, stumps and dead trees are scenery
 			continue
 
 		var wild: Dictionary = (drops.get("seed_drops", {}) as Dictionary).get(plant, {})

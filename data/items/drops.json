@@ -213,6 +213,9 @@
 		"tidecrown": {"seasons": ["summer"], "rows": [["tidecrown_seed", 1, 2]]},
 		"thatch_grass": {"seasons": ["summer", "autumn"], "rows": [["thatch_grass_seed", 1, 2]]},
 		"dune_grass": {"seasons": ["autumn"], "rows": [["dune_grass_seed", 1, 2]]},
+		"cattail": {"seasons": ["autumn"], "rows": [["cattail_seed", 1, 2]]},
+		"tussock_sedge": {"seasons": ["autumn"], "rows": [["tussock_sedge_seed", 1, 2]]},
+		"moss_hummock": {"seasons": ["summer"], "rows": [["moss_hummock_seed", 1, 2]]},
 		"sea_holly": {"seasons": ["summer"], "rows": [["sea_holly_seed", 1, 2]]}
 	},
 	"by_species": {
