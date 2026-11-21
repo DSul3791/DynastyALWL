@@ -140,6 +140,15 @@
 		"grade_min": 0.15,
 		"grade_max": 0.45
 	},
+	"iron_rocks": {
+		"note": "Iron rocks (Dave 21 Nov 2026: \"there are reddish brown rocks everywhere normally so iron should be a common thing to find a long river bed as well\"): reddish-brown ironstone laid out by the shared ore_rocks rule like copper and tin, but commoner: chance on dry land, water_chance_coast and water_chance_mountain set here over the shared values. A loose piece picked up by hand is Iron ore; a rock to break still needs a bronze or better pick (ore pick_only). grade_min..grade_max: share of a boulder's pieces that are Iron ore; every iron outcrop boulder of the geology gets a grade and the 0.5 to 2 m size too, in place of ore piece_share. Slots 24..31 of the cell (31 the mountain-foot boulder). PROVISIONAL, docs/design/COPPER_ROCKS.md IR-1.",
+		"slot": 24,
+		"grade_min": 0.25,
+		"grade_max": 0.65,
+		"chance": 0.03,
+		"water_chance_coast": 0.4,
+		"water_chance_mountain": 0.9
+	},
 	"flint": {
 		"note": "Flint (guide finding F-02, FLINT_ORE_SPEC.md): each stone that comes off a boulder is a flint nodule instead with this chance, more near water. Bank stones (drops.json ground_scatter.bank.flint) are flint with their own chance. Flint makes the hide scraper, javelin and sickle.",
 		"item": "flint",

@@ -72,9 +72,10 @@
 | OR-4 | "Bigger ... smaller" | size share x 0.5 by the sea, x 1 under the mountains; under 35% of the share a loose piece by hand, above it a rock 0.5 to 2 m across | By the sea mostly hand pieces and rocks under about 85 cm across; 2 m rocks only up the valleys. |
 | OR-5 | "A small chance of randomly being almost anywhere" | 1% a try on any dry land (about 1 of each ore per 14 cells, roughly 2 within 100 m of a player) | Was 2% for copper, none for tin. |
 | OR-6 | "Very abundant right over an ore vein of their type" | within 40 m of its own body: 70% a try anywhere, about 5 a cell, sizes as if 150 m higher | Uses the existing geology bodies (lenses, halos, veins, placers); a tin body does not raise copper or the other way round. |
+| IR-1 | Iron rocks along rivers (Dave 21 Nov: "there are reddish brown rocks everywhere normally so iron should be a common thing to find a long river bed as well") | `iron_rocks` on the shared rule, slots 24..31: 3% a try on dry land, 40% by the sea to 90% under the mountains by water; grade 0.25-0.65; geology iron outcrops get a grade and the 0.5-2 m size too | Commoner than copper and tin everywhere. Loose hand pieces are Iron ore with no tool; rocks to break still need a bronze or better pick (pick_only), so the ore ladder holds. Uses the existing iron rock look; no new item. |
 
 ## Not changed
-- Iron, coal, salt and limestone outcrops keep their look and rules.
+- Coal, salt and limestone outcrops keep their look and rules; iron outcrops keep their look (IR-1 adds their grade and size).
 - The ore check's body depth (noticed in the "Find where copper and tin spawn" lookup) is untouched; that is Dave's call.
 - Item catalog: no additions, renames or removals.
 

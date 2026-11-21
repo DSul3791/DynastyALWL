@@ -94,6 +94,7 @@ func lay(items, cells: Array) -> Array:
 		items._lay_out_boulders(cell, CELL_M, reads)
 		items._lay_out_ore_rocks(cell, CELL_M, "copper", reads)
 		items._lay_out_ore_rocks(cell, CELL_M, "tin", reads)
+		items._lay_out_ore_rocks(cell, CELL_M, "iron", reads)
 
 	var ms: float = float(Time.get_ticks_usec() - started) / 1000.0
 	var rows: Array = []
@@ -141,11 +142,11 @@ func _init() -> void:
 	var rocks: int = 0
 
 	for row in before[0]:
-		rocks += 1 if str(row[5]) == "copper" or str(row[5]) == "tin" or int(row[2]) != 0 else 0
+		rocks += 1 if str(row[5]) in ["copper", "tin", "iron"] or int(row[2]) != 0 else 0
 
-	print("cell reads: %d cells, %d rows (%d copper or tin), general reads %d in %.1f ms; bound: %d tile looks, %d general reads in %.1f ms" % [cells.size(), before[0].size(), rocks,
+	print("cell reads: %d cells, %d rows (%d copper, tin or iron), general reads %d in %.1f ms; bound: %d tile looks, %d general reads in %.1f ms" % [cells.size(), before[0].size(), rocks,
 		int(general_calls.get("general", 0)), float(before[1]), int(bound_calls.get("cells", 0)), int(bound_calls.get("general", 0)), float(after[1])])
-	check(before[0].size() > 0 and rocks > 0, "the cells lay boulders and copper or tin rocks (%d rows)" % before[0].size())
+	check(before[0].size() > 0 and rocks > 0, "the cells lay boulders and copper, tin or iron rocks (%d rows)" % before[0].size())
 	check(str(after[0]) == str(before[0]), "the bound reads lay exactly the same rocks: keys, places, sizes, ores and grades")
 	check(int(bound_calls.get("general", 0)) == 0 and int(general_calls.get("general", 0)) > cells.size() * 4, "with the bound reads the layout never takes the general (locking) path (%d general reads before)" % int(general_calls.get("general", 0)))
 	check(int(bound_calls.get("cells", 0)) == cells.size(), "one tile look a cell (%d)" % int(bound_calls.get("cells", 0)))
