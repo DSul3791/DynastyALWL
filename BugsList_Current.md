@@ -1169,6 +1169,40 @@ Not yet played. On a big boulder (thousands of stones) one blow shrinks it by un
 
 Not yet played; not yet seen in a picture. The colours, lumps and densities are provisional (OP-1, below).
 
+## 109. Costs say which nails and hinges they take
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "Im trying to make a chest and it says I need nails and I have 100 copper nails but it wont use them. it should tell me what type of nails it wants". Then: "fix this now".
+
+**What was found:** the item shown as "Nails" is iron (1 Iron ingot makes 100 at the brick forge), and "Hinges" are iron too. Every cost that asked for them took iron or bronze, never copper, but the cost line, the build site's "Still needed" and the repair messages all said only "nails" or "hinges".
+
+**Required outcome:** wherever a cost needs nails or hinges, the player sees exactly which items fill it, and no item name is ambiguous beside Copper nails.
+
+**As built (PR #1416, reviewed head d41fddae, merged to dev at e971621d):** Nails are named Iron nails and Hinges are named Iron hinges (items, recipes, encyclopedia). Their costs read "Iron or bronze nails" and "Iron or bronze hinges", and a Copper nails cost reads "Copper, bronze or iron nails", in the hammer list, the site list and the recipe cards. The server's build site, structure repair and item repair sentences use the same labels. Item ids, numbers and saves are unchanged.
+
+**Evidence:**
+- Independent review PASS WITH NOTES on 7202c6a2 and on d41fddae (the one note, a stale "Used in Hinges" line, is fixed in d41fddae).
+- Lane B on d41fddae: 272 PASS / 0 FAIL (267 fast + 5 timing). validate_items 0 errors, look names 340, warnings 381 = baseline. Join smoke clean.
+
+**Acceptance:** open the hammer list with copper nails only: the Rustic - Chest line says it wants iron or bronze nails. Set down a chest site and hit it: "Still needed" names iron or bronze nails.
+
+Not yet played. Dave then asked for a chest for each nail tier (PR #1419), which changes these labels to "... or better".
+
+## 110. The Rustic - Chest needs no chisel
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "now Im trying to make a rustic chest which is in the blueprints on the hammer and it wants me to have a chisel. this shouldnt need a chisel." Then: "fix it please".
+
+**What was found:** the 18 Nov 2026 chisel tiers (TT-3) gave the Rustic - Chest a Bronze chisel, checked on the hand bar beside the hammer.
+
+**Required outcome:** the Rustic - Chest is built with any hammer and its blueprint, with no chisel.
+
+**As built (PR #1416, reviewed head d41fddae, merged to dev at e971621d):** the chisel requirement is removed from the plank_chest blueprint, and the TT-3 record is amended. The Rustic chair and table, Cupboard and Barrel keep their Bronze chisel (TT-3). The Raised cistern's Bronze chisel was a provisional pick (PV-12). The Canopy bed's Steel chisel is also unchanged. All are listed for Dave.
+
+**Evidence:** same review and Lane B run as entry 109. test_tool_ladder: "plank_chest needs chisel tier 0" and "plank_chest with no chisel: builds".
+
+**Acceptance:** with only a hammer and the materials, build a Rustic - Chest: it goes up with no chisel.
+
+Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
