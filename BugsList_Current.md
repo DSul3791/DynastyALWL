@@ -1074,6 +1074,28 @@ Not yet played.
 
 Play note: 30 ingots weigh 51 kg, close to the carry limit. Building also takes materials from nearby boxes and the ground. Not yet played.
 
+## 103. Hair styles: Dave's Medium swept back added to the lineup
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "new medium swept back in hair".
+
+**Required outcome:** the Medium swept back appears in the one hair lineup (entry 94) for every body.
+
+**As built (PR #1406, reviewed head c6c2341e, merged to dev at 9597210c):**
+- His Hair_Medium_Swept_Back.glb is hair only. It is built with tools/hair/prepare_hair.py --nape 1.45, the same as the bob and the shag, and has about 16,900 triangles.
+- One row in hair_models.gd: "Medium swept back". No share code or save change.
+
+**Evidence:**
+- Independent review PASS WITH NITS on c6c2341e. The glb and textures rebuild byte-identical.
+- Lane B on c6c2341e: 70 PASS / 0 FAIL. Warnings stay at 381. Join smoke clean.
+- Offline preview on Body 1 and Body 2 (/mnt/project-files/hair_swept_back_preview.png), shown to Dave.
+- PC pictures wait until his Godot is closed.
+
+**Acceptance:** pick Medium swept back on Body 1 and Body 2. It sits on the head from every side, ends level at the collar and follows the hair colour.
+
+Not yet played.
+
+(Medium curtains was dropped by Dave on 21 Nov, "lets just remove the curtains they are terrible"; it was never built.)
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
