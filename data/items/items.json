@@ -262,7 +262,7 @@
 			"look_alikes": [],
 			"slots": 18,
 			"material": "wicker",
-			"note": "First chest: woven twine and sticks (no boards without a sawmill). A plank chest (more slots, wood) comes after the saw mill under its own id."
+			"note": "No longer built (Dave 21 Nov 2026: \"get ride of both of those\"): blueprint 26 is hidden and locked and the knife makes the Wicker basket (6 slots) instead. The row stays for any placed one in a saved world and as the tests' plain container."
 		},
 		"chopping_block_kit": {
 			"number": 24,
@@ -8355,7 +8355,7 @@
 			"wicker_basket_kit": {
 				"number": 784,
 				"retired": true,
-				"name": "Basket",
+				"name": "Wicker basket",
 				"description": "A woven basket of sticks and twine. A first store for a camp.",
 				"kind": "placeable",
 				"stack": 1,
@@ -8365,7 +8365,7 @@
 			},
 			"wicker_basket": {
 				"number": 785,
-				"name": "Basket",
+				"name": "Wicker basket",
 				"description": "A woven basket of sticks and twine. A first store for a camp.",
 				"kind": "structure",
 				"stack": 1,
@@ -9700,6 +9700,7 @@
 			},
 			"crude_chest": {
 				"number": 914,
+				"retired": true,
 				"name": "Crude - Chest",
 				"description": "A rough chest of boards pinned together and tied with twine.",
 				"kind": "structure",
@@ -9707,7 +9708,7 @@
 				"slots": 24,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 230."
+				"note": "Retired 21 Nov 2026 (Dave: \"get ride of both of those\"): the knife makes the Wicker basket (6 slots) instead. Placed piece: row state 230, kept so any placed one in a saved world still loads."
 			},
 			"small_chest": {
 				"number": 1512,
