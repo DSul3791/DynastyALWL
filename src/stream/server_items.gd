@@ -6897,7 +6897,7 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 				var smithy_look: int = -1   # a smithy's fire: 0 cold, 1 red coals (fuel in it), 2 the flare (a craft worked there)
 
 				if it.has("struct") and not it["struct"].has("site") and _fuel_slot_kind(_structures.get(str(it["struct"]["kind"]), {})):
-					smithy_look = 2 if bool(it["struct"].get("busy", false)) else (1 if _smithy_fuelled(it, _structures[str(it["struct"]["kind"])]) else 0)
+					smithy_look = 2 if _busy_ms.has(id) else (1 if _smithy_fuelled(it, _structures[str(it["struct"]["kind"])]) else 0)
 					signature += 547 * (smithy_look + 1)   # a smithy fuelled, emptied, set working or idle is sent again
 
 				var site_view: Array = []
@@ -16317,7 +16317,7 @@ func _broken_station_near(peer: int, station: String, level: int = 1) -> bool:
 # A structures.json row with "fuel_slot" (an item or ingredient group: "fuel", Coal or Charcoal) keeps that fuel in the first slot of its one
 # store, which holds nothing else. It burns only while a craft is being worked there: fuel_craft_s seconds of making a unit (PROVISIONAL SF-2),
 # the next unit taken from the slot when the last is spent (struct fuel_left). The world row says "coals" while it has fuel (red coals) and
-# "busy" while a craft is worked (the flare).
+# "busy" while a craft is worked (the flare, _busy_ms).
 # shortcut: fuel_left (under one unit's making time) is not saved; a restart starts the next craft on a new unit.
 
 const FUEL_SLOT := 0          # the store slot that is the fuel slot
@@ -16393,7 +16393,10 @@ func _smithy_burn(id: int, spent: float) -> bool:
 
 		if box == null or not _is_smithy_fuel(def, box.numbers[FUEL_SLOT]) or box.counts[FUEL_SLOT] <= 0:
 			it["struct"].erase("fuel_left")
-			_set_busy(id, it, false)
+
+			if _busy_ms.erase(id):
+				_dirty = true   # back to cold: its row goes out again
+
 			return false
 
 		box.take_from_slot(FUEL_SLOT, 1)
@@ -16401,25 +16404,15 @@ func _smithy_burn(id: int, spent: float) -> bool:
 		left += float(def.get("fuel_craft_s", 1800.0))
 
 	it["struct"]["fuel_left"] = left
+
+	if not _busy_ms.has(id):
+		_dirty = true   # the flare: its row goes out again
+
 	_busy_ms[id] = Time.get_ticks_msec()
-	_set_busy(id, it, true)
 	return true
 
 
-var _busy_ms: Dictionary = {}   # smithy world id -> ticks msec of the last craft tick worked there
-
-
-func _set_busy(id: int, it: Dictionary, on: bool) -> void:
-	if bool(it["struct"].get("busy", false)) == on:
-		return
-
-	if on:
-		it["struct"]["busy"] = true
-	else:
-		it["struct"].erase("busy")
-		_busy_ms.erase(id)
-
-	_dirty = true
+var _busy_ms: Dictionary = {}   # smithy world id -> ticks msec of the last craft tick worked there (its flare; never saved)
 
 
 # The smithies no craft worked for BUSY_HOLD_MS go back to their idle coals.
@@ -16427,10 +16420,9 @@ func _settle_busy() -> void:
 	var now: int = Time.get_ticks_msec()
 
 	for id in _busy_ms.keys():
-		if not _items.has(id):
+		if not _items.has(id) or now - int(_busy_ms[id]) > BUSY_HOLD_MS:
 			_busy_ms.erase(id)
-		elif now - int(_busy_ms[id]) > BUSY_HOLD_MS:
-			_set_busy(int(id), _items[id], false)
+			_dirty = true   # back to its idle coals: its row goes out again
 
 
 # --- Fuel sources (GOALS-REPAIR R6; A-28, A-30, A-31; master s2.5) ---
@@ -19926,7 +19918,7 @@ func _apply_lit_rows(rows: Array) -> void:
 
 			var lit_def: Dictionary = _structures.get(str(it["struct"].get("kind", "")), {}) if it.has("struct") else {}
 
-			if it.has("struct") and it["pos"].distance_to(spot) <= 0.3 and (str(lit_def.get("use", "")) == "light" or bool(lit_def.get("craft_needs_lit", false))):
+			if it.has("struct") and it["pos"].distance_to(spot) <= 0.3 and str(lit_def.get("use", "")) == "light":
 				it["struct"]["lit"] = true
 				it["struct"]["fuel_left"] = float(row[3])
 				break
@@ -22033,7 +22025,8 @@ func _bulk(peer: int, inv, kind: int, sort_key: int) -> void:
 		stacks = _sort_slots(inv, inv.hotbar_slots, inv.slot_count, sort_key, true)
 
 		if open_box != null and _is_storage(_items.get(open_id, {})):
-			stacks += _sort_slots(open_box, 0, open_box.usable, sort_key, false)   # favourites are the pack's only
+			var sort_from: int = FUEL_SLOT + 1 if _fuel_slot_kind(_structures.get(str(_items[open_id]["struct"]["kind"]), {})) else 0   # a smithy's fuel slot stays where it is
+			stacks += _sort_slots(open_box, sort_from, open_box.usable, sort_key, false)   # favourites are the pack's only
 			_push_box(open_id, open_box)
 			touched.append(open_id)
 	else:
@@ -22884,7 +22877,8 @@ func _craft_tick(spent: float) -> void:
 		if head.size() > 3 and not (head[3] as Array).is_empty() and not _start_deferred(peer, head):
 			continue
 
-		if at_station >= 0 and not _smithy_burn(at_station, spent):
+		# A smithy burns its fuel only while the craft is being made, not while a finished one waits for room (need_s is set on its first tick).
+		if at_station >= 0 and float(queue["elapsed"]) < float(queue.get("need_s", INF)) and not _smithy_burn(at_station, spent):
 			continue   # its last fuel went this tick: the craft waits for more in the fuel slot (said on the next tick)
 
 		queue["elapsed"] = float(queue["elapsed"]) + spent

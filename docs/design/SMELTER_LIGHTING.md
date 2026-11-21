@@ -57,7 +57,7 @@ Dave: "smithys should just take coal in a fuel slot. same for all smithys. dont 
 For Dave (assumed on his behalf, provisional):
 - SF-1: Charcoal counts as well as Coal, the same "fuel" group the smelters burn.
 - SF-2: one Coal or Charcoal lasts 1800 s (30 minutes) of making, the old firing time.
-- SF-3: the fuel slot holds one stack (20). More Coal put in is kept in the rest of the store but not burnt until it is moved into the fuel slot.
+- SF-3: the fuel slot holds one stack. More Coal put in is kept in the rest of the store but not burnt until it is moved into the fuel slot.
 - SF-4: idle coals glow at 0.45 energy over 3.5 m; the flare is 3.2 energy over 12 m.
 - SF-5: a smithy goes back to idle coals 1.5 s after the last craft worked there.
 - shortcut: the part-burnt unit (fuel_left) is not saved, so a restart loses under one unit's making time.

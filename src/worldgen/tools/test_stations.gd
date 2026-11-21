@@ -168,11 +168,11 @@ func _init() -> void:
 	var box = tiers._chests[int(tiers._items[smithy_id]["struct"]["uid"])]
 	var before_fuel: int = box.counts[0]
 	tiers._items[smithy_id]["struct"].erase("fuel_left")
-	check(tiers._smithy_burn(smithy_id, 1.0) and box.counts[0] == before_fuel - 1 and is_equal_approx(float(tiers._items[smithy_id]["struct"].get("fuel_left", 0.0)), float(smithy_def["fuel_craft_s"]) - 1.0) and bool(tiers._items[smithy_id]["struct"].get("busy", false)), "a craft tick takes one Charcoal from the fuel slot, burns a second of it and sets the smithy working (the flare)")
+	check(tiers._smithy_burn(smithy_id, 1.0) and box.counts[0] == before_fuel - 1 and is_equal_approx(float(tiers._items[smithy_id]["struct"].get("fuel_left", 0.0)), float(smithy_def["fuel_craft_s"]) - 1.0) and tiers._busy_ms.has(smithy_id), "a craft tick takes one Charcoal from the fuel slot, burns a second of it and sets the smithy working (the flare)")
 	check(tiers._smithy_burn(smithy_id, 1.0) and box.counts[0] == before_fuel - 1, "the next tick burns the same Charcoal")
 	tiers._busy_ms[smithy_id] = Time.get_ticks_msec() - tiers.BUSY_HOLD_MS - 10
 	tiers._settle_busy()
-	check(not bool(tiers._items[smithy_id]["struct"].get("busy", false)) and tiers._smithy_fuelled(tiers._items[smithy_id], smithy_def), "no craft worked there: back to its idle coals, still fuelled")
+	check(not tiers._busy_ms.has(smithy_id) and tiers._smithy_fuelled(tiers._items[smithy_id], smithy_def), "no craft worked there: back to its idle coals, still fuelled")
 	check(tiers._smithy_slot_refusal(smithy_def, tiers.table.number_of("stone"), 0) != "" and tiers._smithy_slot_refusal(smithy_def, tiers.table.number_of("coal"), 0) == "", "its fuel slot takes Coal or Charcoal only")
 	box.clear_slot(0)
 	check(tiers._smithy_add(smithy_def, box, tiers.table.number_of("coal"), 3) == 0 and box.numbers[0] == tiers.table.number_of("coal") and box.counts[0] == 3, "Coal put in goes to the fuel slot")

@@ -909,7 +909,7 @@ func step3_construction_and_equipment() -> void:
 	var iron_more: int = cost_of("large_forge", "iron_ingot") + cost_of("master_forge", "iron_ingot") + need_of("iron_anvil_part", "iron_ingot") + nail_crafts * need_of("nails", "iron_ingot") + hinge_crafts * need_of("hinges", "iron_ingot")
 	check(cost_of("advanced_smithy", "steel_ingot") == 0 and cost_of("large_forge", "steel_ingot") == 0 and cost_of("advanced_smithy", "iron_anvil_part") == 1, "3t. the Advanced smithy and the Advanced smelter cost no steel; the smithy takes the Iron anvil (no cycle)")
 	check(make_iron(have("iron_ingot") + iron_more), "3t. %d more Iron ingots for the Iron anvil, its nails and hinges, the Advanced smelter and the Master smithy" % iron_more)
-	make_charcoal(have("charcoal") + 4)   # to keep the Improved smithy burning
+	make_charcoal(have("charcoal") + 4)   # for the smithies' fuel slots
 	go(FORGE + Vector3(0.0, 0.0, 1.5))
 	items.give(1, n("log"), need_of("iron_anvil_part", "log") + cost_of("advanced_smithy", "log"))   # logs (test_first_hour)
 	craft("iron_anvil_part", 1)
