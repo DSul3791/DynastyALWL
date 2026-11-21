@@ -5702,7 +5702,9 @@ func _process(delta: float) -> void:
 
 	if _shader_warmup.busy:
 		var tq_warm: int = Probe.start()
-		_shader_warmup.ground_ready = _ground_logged   # the player has landed ("JOIN: ground ready"); waiting_for_ground is false before the first walk step
+		# The player has landed ("JOIN: ground ready"), or (flying, seated, or on ground from the first step, when that line never comes) no
+		# ground has been waited for in 5 s; waiting_for_ground alone is false before the first walk step.
+		_shader_warmup.ground_ready = _ground_logged or (not waiting_for_ground and Time.get_ticks_msec() - connected_msec > 5000)
 		_shader_warmup.step()
 		Probe.stop("shader warm-up", tq_warm)
 
