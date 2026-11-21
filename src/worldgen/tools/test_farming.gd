@@ -493,7 +493,7 @@ func _plot_size_checks(dir: String) -> void:
 		var cost: Array = []
 		for c in bp.get("cost", []):
 			cost.append("%s %d" % [str(c[0]), int(c[1])])
-		check(cost == ["lumber %d" % int(row[2]), "nails 8"] and is_equal_approx(float(def.get("footprint_x", 0.0)), float(row[1])) and bool(def.get("plot", false)), "%s: %d m square, %d planks and 8 nails (%s)" % [str(bp.get("name", row[0])), int(row[1]), int(row[2]), str(bp.get("cost", []))])
+		check(cost == ["lumber %d" % int(row[2]), "bronze_nails 8"] and is_equal_approx(float(def.get("footprint_x", 0.0)), float(row[1])) and bool(def.get("plot", false)), "%s: %d m square, %d planks and 8 nails (%s)" % [str(bp.get("name", row[0])), int(row[1]), int(row[2]), str(bp.get("cost", []))])
 
 	for old in ["thatch_garden_plot", "stone_garden_plot", "brick_garden_plot"]:
 		check(not items._structures.has(old), "the %s tier is gone" % old)

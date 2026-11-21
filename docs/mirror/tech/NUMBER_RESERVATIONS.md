@@ -76,3 +76,6 @@ Pipes follow-up (Dave 19 Nov 2026 20:11Z, the tap is drunk from and fills contai
 
 ## Bog iron ore (Dave 19 Nov 2026, thread "Show bog iron deposits"; PR #1316)
 Dave: "it should be its own lumpy redbrown rock as Bog Iron ore. then it takes two to smelt into an ingot." New: item 1511 `bog_iron_ore` (1508-1510 went to pipes #1306; items.json and gathered.json next_number 1512). Smelting jobs `bog_iron` and `bog_steel` (structures.json, named, no numbers). No recipes, blueprints, states, actions or protocol.
+
+## Chests by nail tier (Dave 21 Nov 2026, "we should have a chest size for each tier of nails"; docs/design/CHEST_TIERS.md)
+Items 1512 `small_chest` and 1513 `steel_nails` (coordinator gave 1512-1515; 1514 and 1515 unused, handed back); items.json and gathered.json next_number 1514. Recipe 750 `steel_nails`. Blueprint 364 `small_chest`. Structure state 462 `small_chest`. Next free: item 1514, recipe 751, blueprint 365, structure state 463.

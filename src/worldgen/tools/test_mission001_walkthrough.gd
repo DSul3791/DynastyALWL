@@ -275,7 +275,7 @@ func build(structure: String, at: Vector3, what: String) -> int:
 	var before: Dictionary = {}
 
 	for c in bp.get("cost", []):
-		before[str(c[0])] = have(str(c[0]))
+		before[str(c[0])] = items.inventory_of(1).count_fill(n(str(c[0])), true)   # a group cost (Bronze nails or better) counts any member it spends
 
 	if int(bp.get("chisel", 0)) > 0 and have("steel_chisel") == 0:
 		items.give(1, n("steel_chisel"), 1)   # a chisel piece needs a chisel on the hand bar (Dave 18 Nov 2026); given here, the route's smithy comes later
@@ -283,7 +283,7 @@ func build(structure: String, at: Vector3, what: String) -> int:
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(bp.get("number", 0)), 0, 0, at)
 	HeldTool.hit_site(items, HeldTool.site_of(items, structure))   # placing only sets down a site; the hammer hit fills it (Dave 18 Nov 2026)
 	var id: int = standing_at(structure, at)
-	var spent: bool = bp.get("cost", []).all(func(c): return have(str(c[0])) == int(before[str(c[0])]) - int(c[1]))
+	var spent: bool = bp.get("cost", []).all(func(c): return items.inventory_of(1).count_fill(n(str(c[0])), true) == int(before[str(c[0])]) - int(c[1]))
 	check(id >= 0 and spent, "%s: the %s stands, built from its blueprint %s" % [what, structure, str(bp.get("cost", []))])
 
 	if id < 0 or not spent:
@@ -888,8 +888,8 @@ func step3_construction_and_equipment() -> void:
 	# (the Master smithy's blueprint needs a hammer of tier 3), the Master smithy built with the Steel anvil, and a Tempered Steel - Knife made
 	# there with its own quencher (no trough).
 	var steel_n: int = need_of("steel_knife", "steel_ingot") + need_of("steel_anvil_part", "steel_ingot")
-	var nail_crafts: int = crafts_for("nails", cost_of("advanced_smithy", "nails"))
-	var hinge_crafts: int = crafts_for("hinges", cost_of("advanced_smithy", "hinges"))
+	var nail_crafts: int = crafts_for("nails", cost_of("advanced_smithy", "bronze_nails"))   # iron Nails fill its Bronze nails or better cost
+	var hinge_crafts: int = crafts_for("hinges", cost_of("advanced_smithy", "bronze_hinges"))
 	var iron_more: int = cost_of("large_forge", "iron_ingot") + cost_of("master_forge", "iron_ingot") + need_of("iron_anvil_part", "iron_ingot") + nail_crafts * need_of("nails", "iron_ingot") + hinge_crafts * need_of("hinges", "iron_ingot")
 	check(cost_of("advanced_smithy", "steel_ingot") == 0 and cost_of("large_forge", "steel_ingot") == 0 and cost_of("advanced_smithy", "iron_anvil_part") == 1, "3t. the Advanced smithy and the Advanced smelter cost no steel; the smithy takes the Iron anvil (no cycle)")
 	check(make_iron(have("iron_ingot") + iron_more), "3t. %d more Iron ingots for the Iron anvil, its nails and hinges, the Advanced smelter and the Master smithy" % iron_more)
@@ -899,7 +899,7 @@ func step3_construction_and_equipment() -> void:
 	craft("iron_anvil_part", 1)
 	craft("nails", nail_crafts)
 	craft("hinges", hinge_crafts)
-	check(have("iron_anvil_part") == 1 and have("nails") >= cost_of("advanced_smithy", "nails") and have("hinges") >= cost_of("advanced_smithy", "hinges"), "3t. the Improved smithy forges the Iron anvil, nails and hinges")
+	check(have("iron_anvil_part") == 1 and have("nails") >= cost_of("advanced_smithy", "bronze_nails") and have("hinges") >= cost_of("advanced_smithy", "bronze_hinges"), "3t. the Improved smithy forges the Iron anvil, nails and hinges")
 	give_cost("advanced_smithy", ["stone", "clay"])   # stones lie about, clay dug (test_first_hour)
 	var adv_at: Vector3 = FORGE + Vector3(-3.0, 0.0, 7.5)
 	go(adv_at + Vector3(0.0, 0.0, -2.0))

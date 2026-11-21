@@ -11361,7 +11361,7 @@ func _ground_take(number: int, want: int, at: Vector3, radius: float) -> int:
 	return taken
 
 
-# The item numbers that fill an ingredient or a blueprint cost: its group's members (item_table.gd load_groups: "log", "nails", "hinges"), or the number alone.
+# The item numbers that fill an ingredient or a blueprint cost: its group's members (item_table.gd load_groups: "log", "bronze_nails", "bronze_hinges"), or the number alone.
 # Inventory.fills_of is the same rule for a pack or a chest.
 func _fills(number: int) -> PackedInt32Array:
 	var members: PackedInt32Array = table.group_members(number)
@@ -11557,7 +11557,7 @@ func _gather_site(peer: int, inv, id: int, hammer: int) -> void:   # hammer: the
 		_say(peer, "Pulled %s. Still needed: %s." % [", ".join(pulled), ", ".join(missing)])
 
 
-# A cost line's name in a sentence: a group reads under its label ("iron or bronze nails"), so the player sees which items fill it.
+# A cost line's name in a sentence: a group reads under its label ("bronze nails or better"), so the player sees which items fill it.
 func _item_name_lower(item_id: String) -> String:
 	var number: int = table.number_of(item_id)
 	return table.cost_sentence(number) if number > 0 else table.in_sentence(item_id)

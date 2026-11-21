@@ -2540,7 +2540,7 @@
 			"kind": "placeable",
 			"description": "Boards and twine for a stronger storage chest, ready to set down.",
 			"how_to_get": [
-				"Build with a hammer (press R): 8 Plank, 2 Twine, 2 Iron or bronze hinges"
+				"Build with a hammer (press R): 8 Plank, 2 Twine, 2 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4334,7 +4334,7 @@
 		"nails": {
 			"name": "Iron nails",
 			"kind": "material",
-			"description": "Small iron nails. Fix boards in builds; bronze ones do the same job.",
+			"description": "Small iron nails. They fix boards in builds that take iron nails or a lesser metal.",
 			"how_to_get": [
 				"Craft at a brick forge: 1 Iron ingot"
 			],
@@ -4526,7 +4526,7 @@
 			"kind": "material",
 			"description": "A wooden wheel with paddles. It turns where running water pushes it.",
 			"how_to_get": [
-				"Craft at a workbench: 20 Plank, 80 Iron or bronze nails, 4 Tar"
+				"Craft at a workbench: 20 Plank, 80 Bronze nails or better, 4 Tar"
 			],
 			"used_for": [
 				"Used to build Sawmill"
@@ -4538,7 +4538,7 @@
 			"kind": "placeable",
 			"description": "A saw frame on a tall foundation, driven by a water wheel in running water.",
 			"how_to_get": [
-				"Build with a hammer (press R): 40 Plank, 100 Iron or bronze nails, 1 Saw blade, 1 Water wheel"
+				"Build with a hammer (press R): 40 Plank, 100 Bronze nails or better, 1 Saw blade, 1 Water wheel"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4556,7 +4556,7 @@
 			"kind": "placeable",
 			"description": "A heavy table with vices and clamps for fine woodwork. Set it down in a workshop.",
 			"how_to_get": [
-				"Build with a hammer (press R): 12 Plank, 60 Iron or bronze nails"
+				"Build with a hammer (press R): 12 Plank, 60 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": false,
@@ -7974,7 +7974,7 @@
 			"kind": "placeable",
 			"description": "A plank gate with a Z brace. Opens like a door.",
 			"how_to_get": [
-				"Build with a hammer (press R): 3 Plank, 1 Twine, 1 Iron or bronze hinges"
+				"Build with a hammer (press R): 3 Plank, 1 Twine, 1 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8046,7 +8046,7 @@
 			"kind": "placeable",
 			"description": "A palisade section that swings open like a door.",
 			"how_to_get": [
-				"Build with a hammer (press R): 8 Log, 3 Twine, 2 Iron or bronze hinges"
+				"Build with a hammer (press R): 8 Log, 3 Twine, 2 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8082,7 +8082,7 @@
 			"kind": "placeable",
 			"description": "A timber gate between stone piers. Opens like a door.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Cobblestone, 3 Plank, 2 Iron or bronze hinges"
+				"Build with a hammer (press R): 6 Cobblestone, 3 Plank, 2 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8118,7 +8118,7 @@
 			"kind": "placeable",
 			"description": "A timber gate between brick piers. Opens like a door.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Brick, 2 Clay mortar, 3 Plank, 2 Iron or bronze hinges"
+				"Build with a hammer (press R): 6 Brick, 2 Clay mortar, 3 Plank, 2 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8136,7 +8136,7 @@
 			"kind": "placeable",
 			"description": "Iron railings on a brick plinth, two metres long.",
 			"how_to_get": [
-				"Build with a hammer (press R): 3 Iron ingot, 6 Iron or bronze nails"
+				"Build with a hammer (press R): 3 Iron ingot, 6 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8154,7 +8154,7 @@
 			"kind": "placeable",
 			"description": "A wrought iron gate. Opens like a door.",
 			"how_to_get": [
-				"Build with a hammer (press R): 4 Iron ingot, 2 Iron or bronze hinges"
+				"Build with a hammer (press R): 4 Iron ingot, 2 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8424,7 +8424,7 @@
 			"kind": "placeable",
 			"description": "A timber bench bound with iron. Seats two or three.",
 			"how_to_get": [
-				"Build with a hammer (press R): 4 Plank, 1 Iron ingot, 12 Iron or bronze nails"
+				"Build with a hammer (press R): 4 Plank, 1 Iron ingot, 12 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8442,7 +8442,7 @@
 			"kind": "placeable",
 			"description": "An iron-bound chair with a hide seat.",
 			"how_to_get": [
-				"Build with a hammer (press R): 4 Plank, 1 Iron ingot, 12 Iron or bronze nails, 1 Hide"
+				"Build with a hammer (press R): 4 Plank, 1 Iron ingot, 12 Bronze nails or better, 1 Hide"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8460,7 +8460,7 @@
 			"kind": "placeable",
 			"description": "A plank table bound with iron.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Plank, 1 Iron ingot, 20 Iron or bronze nails"
+				"Build with a hammer (press R): 6 Plank, 1 Iron ingot, 20 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8514,7 +8514,7 @@
 			"kind": "placeable",
 			"description": "A tall plank cupboard with doors. Holds 16 stacks.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Plank, 12 Iron or bronze nails, 2 Iron or bronze hinges"
+				"Build with a hammer (press R): 6 Plank, 12 Bronze nails or better, 2 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8532,7 +8532,7 @@
 			"kind": "placeable",
 			"description": "A hooped plank barrel. Holds 8 stacks.",
 			"how_to_get": [
-				"Build with a hammer (press R): 4 Plank, 2 Twine, 8 Iron or bronze nails"
+				"Build with a hammer (press R): 4 Plank, 2 Twine, 8 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8622,7 +8622,7 @@
 			"kind": "placeable",
 			"description": "An iron railing along a ceiling or foundation edge. Stops falls.",
 			"how_to_get": [
-				"Build with a hammer (press R): 2 Iron ingot, 4 Iron or bronze nails"
+				"Build with a hammer (press R): 2 Iron ingot, 4 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8992,7 +8992,7 @@
 			"kind": "placeable",
 			"description": "A plank-edged bed of soil, two metres square, nailed at the corners. Sow and tend it like a tilled bed.",
 			"how_to_get": [
-				"Build with a hammer (press R): 3 Plank, 8 Iron or bronze nails"
+				"Build with a hammer (press R): 3 Plank, 8 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9010,7 +9010,7 @@
 			"kind": "structure",
 			"description": "A plank-edged bed of soil, one metre square, nailed at the corners. Sow and tend it like a tilled bed.",
 			"how_to_get": [
-				"Build with a hammer (press R): 2 Plank, 8 Iron or bronze nails"
+				"Build with a hammer (press R): 2 Plank, 8 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9020,7 +9020,7 @@
 			"kind": "structure",
 			"description": "A plank-edged bed of soil, three metres square, nailed at the corners. Sow and tend it like a tilled bed.",
 			"how_to_get": [
-				"Build with a hammer (press R): 4 Plank, 8 Iron or bronze nails"
+				"Build with a hammer (press R): 4 Plank, 8 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9344,7 +9344,7 @@
 			"kind": "placeable",
 			"description": "A flume with a gate. E opens or shuts it.",
 			"how_to_get": [
-				"Build with a hammer (press R): 2 Plank, 1 Iron or bronze hinges"
+				"Build with a hammer (press R): 2 Plank, 1 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9661,7 +9661,7 @@
 			"kind": "placeable",
 			"description": "A big copper-lined tank on a wooden frame. Rain and pipes from above fill it; it feeds pipes below.",
 			"how_to_get": [
-				"Build with a hammer (press R): 16 Plank, 20 Hardwood board, 30 Copper ingot, 40 Iron or bronze nails"
+				"Build with a hammer (press R): 16 Plank, 20 Hardwood board, 30 Copper ingot, 40 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -10669,7 +10669,7 @@
 			"kind": "placeable",
 			"description": "A braced plank crate with a nailed lid. Holds 10 stacks.",
 			"how_to_get": [
-				"Build with a hammer (press R): 5 Plank, 8 Iron or bronze nails"
+				"Build with a hammer (press R): 5 Plank, 8 Bronze nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -10687,7 +10687,7 @@
 			"kind": "placeable",
 			"description": "A plank chest plated and strapped in iron. Holds 30 stacks, more than a wooden chest.",
 			"how_to_get": [
-				"Build with a hammer (press R): 8 Plank, 3 Iron ingot, 16 Iron or bronze nails, 2 Iron or bronze hinges"
+				"Build with a hammer (press R): 8 Plank, 3 Iron ingot, 16 Bronze nails or better, 2 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -12430,7 +12430,7 @@
 			"kind": "placeable",
 			"description": "A heavy plank gate strapped with iron, hung between concrete posts.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Concrete, 7 Iron band, 5 Plank, 2 Iron or bronze hinges"
+				"Build with a hammer (press R): 6 Concrete, 7 Iron band, 5 Plank, 2 Bronze hinges or better"
 			],
 			"used_for": [],
 			"obtainable_now": true

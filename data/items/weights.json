@@ -921,6 +921,7 @@
 		"fine_board": 2.5,
 		"nails": 0.01,
 		"bronze_nails": 0.01,
+		"steel_nails": 0.01,
 		"copper_nails": 0.01,
 		"cobblestone": 2.5,
 		"stone_shingle": 0.8,
