@@ -2037,8 +2037,12 @@ static func add_hooks(model: Node3D, fire_node: Variant, smoke: Variant, fx_scal
 		flames.name = "Flames"
 		flames.position = spot
 		flames.scale = Vector3.ONE * 1.8 * fx_scale
-		flames.add_child(_instance(_coals()))
-		flames.add_child(_instance(_flame_cards()))
+		var coals: MeshInstance3D = _instance(_coals())
+		coals.name = "Coals"
+		flames.add_child(coals)
+		var tongues: MeshInstance3D = _instance(_flame_cards())
+		tongues.name = "Tongues"   # forge_state hides them on a smithy's idle coals
+		flames.add_child(tongues)
 		model.add_child(flames)
 
 	if smoke != null:
@@ -2065,6 +2069,36 @@ static func show_forge_fire(model: Node3D, on: bool) -> void:
 	if plume != null:
 		plume.visible = on
 		plume.emitting = on
+
+
+# A smithy's fire by its world row "forge" (Dave 21 Nov 2026: "they should have red coals when idle and flare really bright while making stuff"):
+# 0 cold (no fuel in its fuel slot), 1 red coals (fuel in, idle: no flame tongues, no smoke, a dim red glow), 2 the flare (a craft worked there:
+# tall tongues, smoke and a bright light). Light reach and brightness are PROVISIONAL SF-4.
+const SMITHY_GLOW := [[0.0, 0.0], [0.45, 3.5], [3.2, 12.0]]   # [energy, range m] by state
+const SMITHY_COLOR := [Color(1.0, 0.3, 0.1), Color(1.0, 0.28, 0.08), Color(1.0, 0.62, 0.28)]
+
+
+static func forge_state(model: Node3D, state: int) -> void:
+	state = clampi(state, 0, 2)
+	show_forge_fire(model, state == 2)
+	var flames: Node3D = model.get_node_or_null("Flames") as Node3D
+
+	if flames != null:
+		flames.visible = state >= 1
+		var tongues: Node3D = flames.get_node_or_null("Tongues") as Node3D
+
+		if tongues != null:
+			tongues.visible = state == 2
+			tongues.scale = Vector3(1.0, 1.6, 1.0)   # the flare stands tall
+
+	var light: OmniLight3D = model.get_node_or_null("Light") as OmniLight3D
+
+	if light != null:
+		light.light_energy = float(SMITHY_GLOW[state][0])
+		light.set_meta("base_energy", light.light_energy)   # the nearest-lights pass flickers it round this
+		light.omni_range = float(SMITHY_GLOW[state][1])
+		light.set_meta("base_range", light.omni_range)   # FireWeather scales the reach from this in fog and snow
+		light.light_color = SMITHY_COLOR[state]
 
 
 # A smelter's bellows worked (inventory_view._note_store, the row's "bellows"; Dave 21 Nov 2026: "the light should get brighter, the smoke should

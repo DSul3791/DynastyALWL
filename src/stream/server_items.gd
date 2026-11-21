@@ -195,8 +195,10 @@ var spring_ice_x: Callable       # (position) -> the ice's share by springs (Jam
 var _holes: Array = []            # ice fishing holes: {pos, owner key, until game seconds}
 var _hole_blows: Dictionary = {}  # peer -> [blows, msec of the last]
 var rock_near: Callable          # (position) -> the rocks.json name of the bedrock under a boulder there (TileTerrainData.bedrock_name_at), "" when unknown; set by the server scene (unset: no rock pieces)
+var cell_reads: Callable         # (x, z) -> {"ground", "water_near", "water_depth_at", "ore_near"}: the four answers above bound to the tile under (x, z) (src/stream/cell_reads.gd); set by the server scene (unset: the general callables)
 var ore_near: Callable           # (position, reach in metres, ore names wanted, layer depth in metres) -> the ore (data/tables/resources.json) a boulder there is an outcrop of, "" when none; set by the server scene (unset: no ore)
-var bog_deposit_at: Callable     # (x, z, digging.json bog_iron) -> BogIron.deposit_at on the baked tile there ({} when none); set by the server scene (unset: no bog iron)
+var bog_field: Callable          # (fx, fz, digging.json bog_iron) -> BogIron.field on the baked tile there ([] when it bears none); set by the server scene (unset: no bog iron)
+var bog_silt_at: Callable        # (x, z, digging.json bog_iron) -> BogIron.silt_material: what a hole dug on fen, marsh, swamp or bog silts back in with, 0 elsewhere (unset: none does)
 var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var drink_water_near: Callable   # (a player's position, reach) -> as water_near, and the water no more than DrinkRules.REACH_DROP_M below the feet (unset: water_near)
@@ -359,6 +361,7 @@ var _asleep: Dictionary = {}        # peer -> true while asleep (a lying player 
 var _dig_cfg: Dictionary = {}       # data/items/digging.json
 var _boulder_cfg: Dictionary = {}    # data/items/boulders.json
 var _boulder_left: Dictionary = {}   # boulder key -> rough stones still in it (absent = untouched), saved in world_items.json
+var _boulder_pending: Dictionary = {}   # boulder key -> [left, plain stones per kg then, ore stones per kg then]: saved at other rates, scaled when the rock is laid out (_boulder_left_of)
 var _boulder_drops: Dictionary = {}  # [peer, boulder key] -> where that miner's overflow lands (_boulder_drop_spot; not saved)
 var _bog_left: Dictionary = {}       # bog iron deposit key "gi,gj" -> [ore left, game seconds it is counted to] (absent = untouched, full), saved in world_items.json "bog_iron"
 const BOULDER_KEY := 1 << 50
@@ -368,10 +371,19 @@ const ORE_ROCK_TRIES := 8              # tries a cell for each ore's rocks (_lay
 const ORE_KEY := 1 << 52               # copper and tin rocks picked by hand: ORE_KEY | cell x << 28 | cell y << 8 | slot; tin boulders add BOULDER_KEY
 const BOG_STATE := 229            # world-item row state of a bog iron deposit (next free structure state, 10 Nov 2026; no structure may take it)
 const BOG_ID_BASE := 2000000000   # bog deposit world row ids count down from here (int32, far above _next_id), one per deposit key per run
-const BOG_SAMPLE_M := 8.0         # the baked tile's sample spacing: deposits sit on samples (BogIron), so the scan steps by it
-const BOG_WET_M := 0.05           # a deposit under more standing water than this is drawn wet
 var _bog_ids: Dictionary = {}     # deposit key "gi,gj" -> its world row id
-var _bog_scan: Dictionary = {}    # peer -> {"at": Vector2i sample the scan was made from, "found": [[key, pos, size], ...]}
+var _bog_y: Dictionary = {}       # deposit key -> the generated ground height at its centre (ground_height, once a run)
+var _bog_fields: Dictionary = {}  # field square "fx,fz" -> its patches (BogIron.field), worked out once a run; cleared past BOG_FIELDS_MAX
+const BOG_FIELDS_MAX := 1024
+# Holes dug in wetland silt back in (Dave 21 Nov 2026: "since its in water we can just assume the water washes the dirt back into the hole over
+# a given period of time"): [x, surface y, z, dug radius, game seconds due, soil it silts in with], saved in world_items.json "bog_holes". PROVISIONAL BI-4: one game day.
+var _bog_holes: Array = []
+const BOG_HOLES_MAX := 256        # past this the oldest hole silts in at once
+const BOG_HOLE_JOIN_M := 1.5      # a dig this close to a waiting hole joins it (one fill for the spot, the later due time)
+const BOG_HOLE_DEEP_M := 1.0      # a new hole is noted only when struck within this of the generated surface (not a tunnel under the bog); deeper digs join one
+const BOG_SILT_PER_TICK := 4      # at most this many holes silt in one slow tick (each is a ground edit, a message to everyone and a remesh)
+const BOG_REFILL_R_MIN := 2.5     # the silting fill: a sphere at least this big whose top just meets the old surface over the hole
+const PEAT_SOIL := 6              # data/tables/soils.json "peat": what a hole saved without its material silts in with
 const CAVE_KEY := 1 << 51       # cave floor stones and boulders: CAVE_KEY | cell x << 28 | cell y << 8 | entry (up to 256 a cell)
 const CAVE_ITEMS_MAX := 256
 const BOULDER_STATE := 10            # world-item row state of a boulder          # boulder keys live apart from the loose stones' keys
@@ -471,6 +483,7 @@ var _goals_detail: String = ""        # the last _goals_tick's split (the slow-t
 var _slowest_hint: String = ""
 var _slowest_hint_usec: int = 0
 var _sync_detail: String = ""         # the last _sync_world_items' split (the slow-tick line)
+var _ore_usec: PackedInt64Array = PackedInt64Array([0, 0, 0, 0])   # the last cell's boulders and copper and tin rocks: binding the reads, the ore body looks, the water reads, settling rows (the slow-cell line)
 var _bank_ground_usec: int = 0       # the last cell's bank stones: time reading the ground and asking for water (the slow-cell line)
 var _bank_water_usec: int = 0
 var _cell_cave_ms: float = 0.0     # the cave floor part of the last cell laid out (for the slow-cell line)
@@ -803,7 +816,6 @@ func peer_left(peer: int) -> void:
 	_peer_key.erase(peer)
 	_peer_pos.erase(peer)
 	_known.erase(peer)
-	_bog_scan.erase(peer)
 	_last_throw.erase(peer)
 	_last_mine.erase(peer)
 	_last_dig.erase(peer)
@@ -1662,6 +1674,7 @@ func tick(delta: float) -> void:
 		_crops_tick()
 		_garden_jobs_tick()
 		_water_tick(spent)
+		_bog_holes_tick()
 		_slow_mark("crops-water", t0)
 		_lights_tick(spent)
 		_smelters.tick_all(spent)
@@ -1775,7 +1788,9 @@ func save() -> void:
 	if _dir == "" or not _dirty:
 		return
 
+	var t_wait: int = Time.get_ticks_usec()
 	_finish_writer()   # an earlier background write finishes first, so files land in order
+	_note_save_part("waiting for the last write", t_wait)   # a save that held the tick 1.2 s on Lane A (21 Nov 2026) names this part if it is the cause
 
 	_dirty = false
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
@@ -1912,7 +1927,7 @@ func _item_job() -> Dictionary:
 	_note_save_part("world item copy", t0)
 	_save_gen += 1
 	return {"dir": _dir, "items": copy, "areas": areas, "all": _area_ids.keys(), "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(), "gen": _save_gen, "sums": _area_sums, "exact": exact, "failed_out": _save_failed,
-		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "bog_iron": _bog_left.duplicate(true), "layout": FloraLayout.VERSION, "no_kits": true}}
+		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "ore_per_kg": _boulder_per_kg(true), "boulders_then": _boulder_pending.duplicate(true), "bog_iron": _bog_left.duplicate(true), "bog_holes": _bog_holes.duplicate(true), "layout": FloraLayout.VERSION, "no_kits": true}}
 
 
 func _save_item_files(job: Dictionary) -> void:
@@ -2947,7 +2962,9 @@ func reset_world() -> int:
 	_taken.clear()
 	_cells_done.clear()
 	_boulder_left.clear()
+	_boulder_pending.clear()
 	_bog_left.clear()
+	_bog_holes.clear()
 	_picked.clear()
 	_stripped.clear()
 	_fruit.clear()
@@ -4000,6 +4017,7 @@ func _dig(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		return
 
 	_give_dig_yield(peer, at, _shovel_tier(inv, shovel), _shovel_pieces(inv, shovel))
+	_note_bog_hole(at, DIG_RADIUS_M * reach)
 
 	# A dig more than 2.5 m under the surface is a tunnel or a cave: the "cave_in" hint (hints.json digging_under_ceiling) warns about roof supports.
 	if ground_height.is_valid() and float(ground_height.call(at.x, at.z)) - at.y > 2.5:
@@ -5122,16 +5140,16 @@ func _give_dig_yield(peer: int, at: Vector3, tier: int = 1, pieces: int = 1) -> 
 			give(peer, found, 1)
 
 
-# Bog iron (digging.json bog_iron, Sonny s11): a dig on a deposit also brings up its ore, on top of the peat or mud. It is per_dig rolled like a
+# Bog iron (digging.json bog_iron, Sonny s11): a dig within a patch's radius (_bog_patch_at) also brings up its ore, on top of the peat or mud. It is per_dig rolled like a
 # soil row, plus the shovel tier's tier_extra, times the shovel size's pieces, never more than is left; the deposit grows back one ore every
 # regrow_game_days (BogIron.regrown, worked out at the dig). The first dig that finds any says first_find once to that character.
 func _dig_bog_iron(peer: int, at: Vector3, tier: int, pieces: int) -> void:
 	var cfg: Dictionary = _dig_cfg.get("bog_iron", {})
 
-	if cfg.is_empty() or not bog_deposit_at.is_valid():
+	if cfg.is_empty() or not bog_field.is_valid():
 		return
 
-	var deposit: Dictionary = bog_deposit_at.call(at.x, at.z, cfg)
+	var deposit: Dictionary = _bog_patch_at(at.x, at.z)
 	var number: int = table.number_of(str(cfg.get("item", "iron_ore")))
 
 	if deposit.is_empty() or number <= 0:
@@ -5164,61 +5182,179 @@ func _dig_bog_iron(peer: int, at: Vector3, tier: int, pieces: int) -> void:
 			_say(peer, str(cfg["first_find"]))
 
 
-# The bog iron deposits a player can see (digging.json bog_iron seen_m), as world rows for the client's look (Kathleen's _show_bog):
-#   [id, 0, ore left, the sample on the ground, BOG_STATE, {"key": "gi,gj", "total": its size, "wet": under standing water}]
-# "left" is the deposit as it has grown back by now (BogIron.regrown, the same sum a dig makes), so a dig or the regrowth sends the row again.
-# The deposits are looked up again only when the player moves onto another sample (a few dozen samples within seen_m).
-func _bog_rows_near(peer: int, here: Vector3) -> Array:
+# The patches of field square (fx, fz), worked out once a run (BogIron.field reads a few thousand samples of the baked tile). bog_field answers
+# null while the square's tile is not in memory (the server never reads a tile on its main thread): nothing is kept, and a later call asks again.
+func _bog_field_of(fx: int, fz: int) -> Array:
+	var key: String = "%d,%d" % [fx, fz]
+
+	if not _bog_fields.has(key):
+		var patches: Variant = bog_field.call(fx, fz, _dig_cfg.get("bog_iron", {}))
+
+		if typeof(patches) != TYPE_ARRAY:
+			return []
+
+		if _bog_fields.size() >= BOG_FIELDS_MAX:
+			_bog_fields.clear()
+
+		_bog_fields[key] = patches
+
+	return _bog_fields[key]
+
+
+# Every patch of the field squares within reach of (x, z): [{"key", "x", "z", "size", "r"}, ...] (unsorted; may hold patches out of reach).
+func _bog_patches_near(x: float, z: float, reach: float) -> Array:
 	var cfg: Dictionary = _dig_cfg.get("bog_iron", {})
+	var out: Array = []
 
-	if cfg.is_empty() or not bog_deposit_at.is_valid():
-		return []
+	if cfg.is_empty() or not bog_field.is_valid():
+		return out
 
-	var seen: float = float(cfg.get("seen_m", 30.0))
-	var at: Vector2i = Vector2i(int(round(here.x / BOG_SAMPLE_M)), int(round(here.z / BOG_SAMPLE_M)))
-	var scan: Dictionary = _bog_scan.get(peer, {})
+	var low: Vector2i = BogIron.field_of(x - reach, z - reach, cfg)
+	var high: Vector2i = BogIron.field_of(x + reach, z + reach, cfg)
 
-	if scan.is_empty() or scan["at"] != at:
-		var found: Array = []
-		var keys: Dictionary = {}
-		var reach: int = ceili(seen / BOG_SAMPLE_M)
+	for fz in range(low.y, high.y + 1):
+		for fx in range(low.x, high.x + 1):
+			out.append_array(_bog_field_of(fx, fz))
 
-		for dj in range(-reach, reach + 1):
-			for di in range(-reach, reach + 1):
-				var x: float = float(at.x + di) * BOG_SAMPLE_M
-				var z: float = float(at.y + dj) * BOG_SAMPLE_M
-				var deposit: Dictionary = bog_deposit_at.call(x, z, cfg)
+	return out
 
-				if deposit.is_empty() or keys.has(str(deposit["key"])):
-					continue
 
-				keys[str(deposit["key"])] = true
-				var y: float = float(ground_height.call(x, z)) if ground_height.is_valid() else here.y
-				found.append([str(deposit["key"]), Vector3(x, here.y if is_nan(y) else y, z), int(deposit["size"])])
+# The patch whose ground point (x, z) lies on (within its radius; the nearest when two touch), or {}.
+func _bog_patch_at(x: float, z: float) -> Dictionary:
+	var radii: Array = _dig_cfg.get("bog_iron", {}).get("radius_m", [2.5, 4.0])
+	var best: Dictionary = {}
+	var best_d: float = INF
 
-		scan = {"at": at, "found": found}
-		_bog_scan[peer] = scan
+	for patch in _bog_patches_near(x, z, float(radii[radii.size() - 1])):
+		var d: float = Vector2(float(patch["x"]) - x, float(patch["z"]) - z).length()
 
+		if d <= float(patch["r"]) and d < best_d:
+			best_d = d
+			best = patch
+
+	return best
+
+
+# The bog iron patches a player can see (digging.json bog_iron seen_m), as world rows for the client's look (inventory_view _note_bog and the
+# ground shader's rust, ground_material.gd set_bogs):
+#   [id, 0, ore left, the patch centre on the generated ground, BOG_STATE, {"key": "gi,gj", "total": its size, "r": its radius in metres}]
+# "left" is the deposit as it has grown back by now (BogIron.regrown, the same sum a dig makes), so a dig or the regrowth sends the row again.
+# The centre's height is the ground as generated, not as dug: the client draws rust only on ground still at that level.
+func _bog_rows_near(_peer: int, here: Vector3) -> Array:
+	var cfg: Dictionary = _dig_cfg.get("bog_iron", {})
 	var rows: Array = []
+
+	if cfg.is_empty() or not bog_field.is_valid():
+		return rows
+
+	var seen: float = float(cfg.get("seen_m", 50.0))
 	var now_s: float = float(game_seconds.call()) if game_seconds.is_valid() else 0.0
 
-	for entry in scan["found"]:
-		var spot: Vector3 = entry[1]
+	for patch in _bog_patches_near(here.x, here.z, seen):
+		var x: float = float(patch["x"])
+		var z: float = float(patch["z"])
 
-		if Vector2(spot.x - here.x, spot.z - here.z).length() > seen:
+		if Vector2(x - here.x, z - here.z).length() > seen:
 			continue
 
-		var key: String = str(entry[0])
-		var size: int = int(entry[2])
+		var key: String = str(patch["key"])
+		var size: int = int(patch["size"])
 
 		if not _bog_ids.has(key):
 			_bog_ids[key] = BOG_ID_BASE - _bog_ids.size()
 
+		if not _bog_y.has(key):   # the generated ground at the centre, worked out once a run
+			_bog_y[key] = float(ground_height.call(x, z)) if ground_height.is_valid() else NAN
+
+		var y: float = float(_bog_y[key])
 		var left: int = int(BogIron.regrown(_bog_left.get(key, [size, now_s]), size, now_s, cfg)[0])
-		var wet: bool = water_depth_at.is_valid() and float(water_depth_at.call(spot)) > BOG_WET_M
-		rows.append([int(_bog_ids[key]), 0, left, spot, BOG_STATE, {"key": key, "total": size, "wet": wet}])
+		rows.append([int(_bog_ids[key]), 0, left, Vector3(x, here.y if is_nan(y) else y, z), BOG_STATE, {"key": key, "total": size, "r": snappedf(float(patch["r"]), 0.01)}])
 
 	return rows
+
+
+# A dig that changed the ground on fen, marsh, swamp or bog (BogIron.silt_material) is noted to silt back in refill_game_days later (_bog_holes_tick).
+# A dig beside a waiting hole joins it: the larger radius, the later time, the surface it first had.
+func _note_bog_hole(at: Vector3, radius: float) -> void:
+	var cfg: Dictionary = _dig_cfg.get("bog_iron", {})
+
+	if cfg.is_empty() or not bog_silt_at.is_valid() or not fill_ground.is_valid():
+		return
+
+	var material: int = int(bog_silt_at.call(at.x, at.z, cfg))
+
+	if material <= 0:
+		return
+
+	var due: float = (float(game_seconds.call()) if game_seconds.is_valid() else 0.0) + float(cfg.get("refill_game_days", 1.0)) * BogIron.SECONDS_PER_GAME_DAY
+
+	for hole in _bog_holes:
+		if Vector2(float(hole[0]) - at.x, float(hole[2]) - at.z).length() <= BOG_HOLE_JOIN_M:
+			hole[3] = maxf(float(hole[3]), radius)
+			hole[4] = due
+			_dirty = true
+			return
+
+	var surface: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else NAN
+
+	if not is_nan(surface) and at.y < surface - BOG_HOLE_DEEP_M:
+		return   # a dig in a tunnel or cellar under the wetland: the water does not fill that
+
+	_bog_holes.append([at.x, at.y if is_nan(surface) else surface, at.z, radius, due, material])
+
+	if _bog_holes.size() > BOG_HOLES_MAX:
+		_silt_hole(_bog_holes.pop_front())
+
+	_dirty = true
+
+
+# The slow tick: each hole whose time has come silts back in, unless a player stands in reach of it (then it waits for the next tick).
+func _bog_holes_tick() -> void:
+	if _bog_holes.is_empty() or not game_seconds.is_valid():
+		return
+
+	var now_s: float = float(game_seconds.call())
+	var keep: Array = []
+
+	var silted: int = 0
+
+	for hole in _bog_holes:
+		if silted >= BOG_SILT_PER_TICK or now_s < float(hole[4]) or _someone_near_hole(hole):
+			keep.append(hole)
+		else:
+			_silt_hole(hole)
+			silted += 1
+
+	if keep.size() != _bog_holes.size():
+		_bog_holes = keep
+		_dirty = true
+
+
+func _someone_near_hole(hole: Array) -> bool:
+	var reach: float = _silt_radius(hole) + 1.0
+
+	for peer in _peer_pos:
+		var p: Vector3 = _peer_pos[peer]
+
+		if Vector2(p.x - float(hole[0]), p.z - float(hole[2])).length() <= reach:
+			return true
+
+	return false
+
+
+func _silt_radius(hole: Array) -> float:
+	return maxf(BOG_REFILL_R_MIN, 3.0 * float(hole[3]))
+
+
+# One fill of the wetland's own soil (noted with the hole; the draw material stays the generated wetland look): a sphere whose top just meets the surface the ground had before the dig, so the hole fills to a shallow dip at its rim and
+# never heaps above the old ground.
+func _silt_hole(hole: Array) -> void:
+	if not fill_ground.is_valid():
+		return
+
+	var r: float = _silt_radius(hole)
+	fill_ground.call(Vector3(float(hole[0]), float(hole[1]) - r, float(hole[2])), r, int(hole[5]) if hole.size() >= 6 else PEAT_SOIL)
+	settle_loose_near(Vector3(float(hole[0]), float(hole[1]), float(hole[2])), r)
 
 
 # What filling a hole uses up (digging.json "fill", in that order): takes up to `units` shovelfuls from the pack, returns how many
@@ -6899,6 +7035,12 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 				if it.has("struct") and bool(_serve_kinds().get(str(it["struct"]["kind"]), false)) and it["struct"].has("uid") and _chests.has(int(it["struct"]["uid"])):
 					signature += 7919 * int(_chests[int(it["struct"]["uid"])].counts[0]) + 3 * int(_chests[int(it["struct"]["uid"])].numbers[0])   # a portion eaten or a board set out is sent again
 
+				var smithy_look: int = -1   # a smithy's fire: 0 cold, 1 red coals (fuel in it), 2 the flare (a craft worked there)
+
+				if it.has("struct") and not it["struct"].has("site") and _fuel_slot_kind(_structures.get(str(it["struct"]["kind"]), {})):
+					smithy_look = 2 if _busy_ms.has(id) else (1 if _smithy_fuelled(it, _structures[str(it["struct"]["kind"])]) else 0)
+					signature += 547 * (smithy_look + 1)   # a smithy fuelled, emptied, set working or idle is sent again
+
 				var site_view: Array = []
 
 				if it.has("struct") and it["struct"].has("site"):
@@ -6947,6 +7089,9 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 						if fill >= 0:
 							(added[added.size() - 1][5] as Dictionary)["fill"] = fill   # a station store: 0 empty, 1 to 4 quarters full
 
+						if smithy_look >= 0:
+							(added[added.size() - 1][5] as Dictionary)["forge"] = smithy_look   # a smithy's fire: 0 cold, 1 red coals, 2 the flare
+
 						if bellows_by >= 0:
 							(added[added.size() - 1][5] as Dictionary)["bellows"] = 2 if bellows_by == peer else 1   # its bellows worked: 2 by this player, 1 by another
 
@@ -6960,7 +7105,7 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 
 		for bog in ([] if quick else _bog_rows_near(peer, here)):
 			near[int(bog[0])] = true
-			var bog_signature: int = int(bog[2]) + 1000 * BOG_STATE + (7 if bool(bog[5]["wet"]) else 0)
+			var bog_signature: int = int(bog[2]) + 1000 * BOG_STATE
 
 			if not known.has(int(bog[0])) or known[int(bog[0])] != bog_signature:
 				added.append(bog)
@@ -7157,6 +7302,10 @@ func _load_world_items() -> void:
 
 		if typeof(bog_row) == TYPE_ARRAY and (bog_row as Array).size() >= 2:
 			_bog_left[str(key)] = [int(bog_row[0]), float(bog_row[1])]
+
+	for hole in parsed.get("bog_holes", []):   # added 21 Nov 2026: an older file has none
+		if typeof(hole) == TYPE_ARRAY and (hole as Array).size() >= 5:
+			_bog_holes.append([float(hole[0]), float(hole[1]), float(hole[2]), float(hole[3]), float(hole[4]), int(hole[5]) if (hole as Array).size() >= 6 else PEAT_SOIL])
 
 	var had_kits: bool = not bool(parsed.get("no_kits", false))   # a world saved before kits were dropped (Dave 4 Nov 2026) loses its kit items and every placed building once
 
@@ -7709,11 +7858,15 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	_lay_out_bank_stones(cell, cell_m, cfg, kinds.size())
 	part_usec = _cell_part("bank stones", part_usec)
 	_cell_parts[-1] += " (ground %.0f, water %.0f)" % [float(_bank_ground_usec) / 1000.0, float(_bank_water_usec) / 1000.0]
-	_lay_out_boulders(cell, cell_m)
+	_ore_usec = PackedInt64Array([0, 0, 0, 0])
+	var reads: Dictionary = _cell_reads(cell, cell_m)   # one tile look for the boulders and both ores
+	_ore_usec[0] = Time.get_ticks_usec() - part_usec
+	_lay_out_boulders(cell, cell_m, reads)
 	part_usec = _cell_part("boulders", part_usec)
-	_lay_out_ore_rocks(cell, cell_m, "copper")
-	_lay_out_ore_rocks(cell, cell_m, "tin")
+	_lay_out_ore_rocks(cell, cell_m, "copper", reads)
+	_lay_out_ore_rocks(cell, cell_m, "tin", reads)
 	_cell_part("copper and tin rocks", part_usec)
+	_cell_parts[-1] += " (reads bound %.1f, ore bodies %.1f, water %.1f, settling %.1f)" % [float(_ore_usec[0]) / 1000.0, float(_ore_usec[1]) / 1000.0, float(_ore_usec[2]) / 1000.0, float(_ore_usec[3]) / 1000.0]
 
 
 # A cell's own random stream for one part of its layout (Sonny, 10 Nov 2026). The loose stones and sticks drew first from one stream, and a stick's spot
@@ -7733,41 +7886,82 @@ func _cell_part(part: String, since_usec: int) -> int:
 	return now
 
 
+# The stones left in worked boulders from a saved world (`parsed`: its "boulders" and "boulder_per_kg"). They were counted at the save's own
+# stones per kg of rock (boulder_per_kg plain, ore_per_kg ore rocks); a save without boulder_per_kg counted 0.04 stones of 1 kg per kg (before Dave's
+# 19 Nov 2026 0.5 kg stones with 30% lost). Saved at other rates they wait in _boulder_pending and are scaled once when the rock is laid out and its
+# kind is known (_boulder_left_of), so a half-mined rock stays half mined; layout still caps them at the rock's total.
+func _load_boulders_left(parsed: Dictionary) -> void:
+	var plain_then: float = float(parsed.get("boulder_per_kg", 0.04))
+	var ore_then: float = float(parsed.get("ore_per_kg", plain_then))   # a save from before 21 Nov 2026 had one rate for every rock
+	var same: bool = is_equal_approx(plain_then, _boulder_per_kg()) and is_equal_approx(ore_then, _boulder_per_kg(true))
+
+	for key in parsed.get("boulders", {}):
+		if same:
+			_boulder_left[int(key)] = int(parsed["boulders"][key])
+		else:
+			_boulder_pending[int(key)] = [int(parsed["boulders"][key]), plain_then, ore_then]
+
+	for key in parsed.get("boulders_then", {}):
+		var then: Variant = parsed["boulders_then"][key]
+
+		if typeof(then) == TYPE_ARRAY and (then as Array).size() >= 3:
+			_boulder_pending[int(key)] = [int(then[0]), float(then[1]), float(then[2])]
+
+
+# What is left of the rock `key` whose laid-out `row` has its total: a worked rock saved at other rates (_boulder_pending) is scaled once by
+# its own kind's rate, so it keeps the share it had (plain stone and ore rocks have different rates since 21 Nov 2026); untouched = its total.
+func _boulder_left_of(key: int, row: Dictionary) -> int:
+	if _boulder_pending.has(key):
+		var then: Array = _boulder_pending[key]
+		var ore: bool = _holds_ore(row)
+		var rate_then: float = float(then[2]) if ore else float(then[1])
+		_boulder_left[key] = int(round(float(then[0]) * _boulder_per_kg(ore) / rate_then)) if rate_then > 0.0 else int(then[0])
+		_boulder_pending.erase(key)
+
+	return mini(int(_boulder_left.get(key, row["total"])), int(row["total"]))
+
+
+# Stones a boulder gives per kg of its rock: boulders.json yield for a plain stone rock, ore_yield for a rock with an ore (Dave 21 Nov 2026,
+# BugsList 118: fewer stones from plain rocks, ore rocks as they were), over one stone's weight (weights.json, 0.5 kg). The save keeps both
+# with what is left in worked boulders (load scales a save made at other rates).
+func _boulder_per_kg(ore: bool = false) -> float:
+	var stone_kg: float = maxf(CarryRules.weight_of("stone", _carry_cfg) if not _carry_cfg.is_empty() else 1.0, 0.05)
+	return float(_boulder_cfg.get("ore_yield" if ore else "yield", _boulder_cfg.get("yield", 0.5))) / stone_kg
+
+
+func _boulder_stones(radius: float, ore: bool = false) -> int:
+	var volume: float = 4.0 / 3.0 * PI * radius * radius * radius * float(_boulder_cfg.get("height_ratio", 0.85))
+	return maxi(int(volume * float(_boulder_cfg.get("density_kg_m3", 2600)) * _boulder_per_kg(ore)), 1)
+
+
 # Boulders (Dave 2026-10-21), see data/items/boulders.json: server-owned lumps of rock a pick breaks into stones. Laid out per
 # cell like loose stones, from the cell's own "boulders" stream (_layout_rng), only where the ground rises or at a
 # water bank; what is left of a worked boulder is kept in _boulder_left. The row carries its radius and the stones it started
 # with; the item's count is the stones left.
-# The stones left in worked boulders from a saved world (`parsed`: its "boulders" and "boulder_per_kg"). They were counted at the save's own
-# stones per kg of rock; a save without boulder_per_kg counted 0.04 stones of 1 kg per kg (before Dave's 19 Nov 2026 0.5 kg stones with 30%
-# lost). They are scaled to today's count once, so a half-mined rock stays half mined; layout still caps them at the rock's total.
-func _load_boulders_left(parsed: Dictionary) -> void:
-	var per_kg_then: float = float(parsed.get("boulder_per_kg", 0.04))
-	var scale_left: float = _boulder_per_kg() / per_kg_then if per_kg_then > 0.0 else 1.0
+# A cell's ground, water and ore reads: the server's cell_reads bound to the cell's tile (one tile look and lock for the whole cell, not one a read;
+# Dave's PC 21 Nov 2026, a cell's copper and tin rocks waited 409 ms on the generator lock while a player ran into new ground), else the general
+# callables. The answers are the same either way (src/stream/cell_reads.gd; test_cell_reads compares the layouts).
+func _cell_reads(cell: Vector2i, cell_m: float) -> Dictionary:
+	var reads: Dictionary = {"ground": ground_height, "water_near": water_near, "water_depth_at": water_depth_at, "ore_near": ore_near}
 
-	for key in parsed.get("boulders", {}):
-		_boulder_left[int(key)] = int(round(float(parsed["boulders"][key]) * scale_left))
+	if cell_reads.is_valid():
+		var mid: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
+		reads.merge(cell_reads.call(mid.x, mid.y), true)
 
-
-# Stones a boulder gives per kg of its rock: boulders.json yield (the share that comes away, Dave 19 Nov 2026: 0.7, the rest dust and bits) over one
-# stone's weight (weights.json, 0.5 kg). The save keeps it with what is left in worked boulders (load scales a save made at another rate).
-func _boulder_per_kg() -> float:
-	var stone_kg: float = maxf(CarryRules.weight_of("stone", _carry_cfg) if not _carry_cfg.is_empty() else 1.0, 0.05)
-	return float(_boulder_cfg.get("yield", 0.5)) / stone_kg
+	return reads
 
 
-func _boulder_stones(radius: float) -> int:
-	var cfg: Dictionary = _boulder_cfg
-	var volume: float = 4.0 / 3.0 * PI * radius * radius * radius * float(cfg.get("height_ratio", 0.85))
-	var stone_kg: float = maxf(CarryRules.weight_of("stone", _carry_cfg) if not _carry_cfg.is_empty() else 1.0, 0.05)
-	return maxi(int(volume * float(cfg.get("density_kg_m3", 2600)) * float(cfg.get("yield", 0.5)) / stone_kg), 1)
-
-
-func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
+func _lay_out_boulders(cell: Vector2i, cell_m: float, reads: Dictionary = {}) -> void:
 	var cfg: Dictionary = _boulder_cfg
 
 	if cfg.is_empty():
 		return
 
+	if reads.is_empty():
+		reads = _cell_reads(cell, cell_m)
+
+	var ground: Callable = reads["ground"]
+	var wet: Callable = reads["water_near"]
 	var rng: RandomNumberGenerator = _layout_rng(cell, "boulders")
 	var laid: int = 0
 
@@ -7779,16 +7973,16 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
 		var draw: float = rng.randf()   # luck-exempt: seeded world layout
 		var size_draw: float = rng.randf()   # luck-exempt: seeded world layout
 		var yaw: float = rng.randf() * 360.0   # luck-exempt: seeded world layout
-		var y: float = float(ground_height.call(x, z))
+		var y: float = float(ground.call(x, z))
 
 		if is_nan(y) or y < 1.0 or laid >= mini(int(cfg.get("max_per_cell", 4)), 15):
 			continue
 
-		var rise: float = (absf(float(ground_height.call(x + 3.0, z)) - y) + absf(float(ground_height.call(x, z + 3.0)) - y)) / 3.0
+		var rise: float = (absf(float(ground.call(x + 3.0, z)) - y) + absf(float(ground.call(x, z + 3.0)) - y)) / 3.0
 		var chance: float = clampf((rise - float(cfg.get("min_slope", 0.1))) * float(cfg.get("slope_chance", 2.0)), 0.0, float(cfg.get("max_chance", 0.5)))
 		var spot: Vector3 = Vector3(x, y, z)
 
-		if water_near.is_valid() and not bool(water_near.call(spot, 0.0)) and bool(water_near.call(spot, float(cfg.get("bank_reach_m", 3.0)))):
+		if wet.is_valid() and not bool(wet.call(spot, 0.0)) and bool(wet.call(spot, float(cfg.get("bank_reach_m", 3.0)))):
 			chance = maxf(chance, float(cfg.get("bank_chance", 0.4)))
 
 		if draw > chance:
@@ -7797,9 +7991,9 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
 		var key: int = BOULDER_KEY | ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | attempt
 		laid += 1
 		var radius: float = lerpf(float(cfg.get("radius_min", 0.3)), float(cfg.get("radius_max", 1.2)), pow(size_draw, float(cfg.get("radius_power", 2.0))))
-		var row: Dictionary = {"radius": radius, "yaw": yaw, "total": _boulder_stones(radius)}
-		_set_boulder_ore(row, _boulder_ore(spot, key), key)   # an outcrop: a pick takes this ore out of it (boulders.json ore); copper and tin resized
-		var left: int = mini(int(_boulder_left.get(key, row["total"])), int(row["total"]))
+		var row: Dictionary = {"radius": radius, "yaw": yaw}
+		_set_boulder_ore(row, _boulder_ore(spot, key, reads["ore_near"]), key)   # an outcrop: a pick takes this ore out of it (boulders.json ore); copper and tin resized; sets its total
+		var left: int = _boulder_left_of(key, row)
 
 		if left <= 0:
 			continue
@@ -7811,6 +8005,17 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
 # A boulder row's ore: none for "", else the ore, and a copper or tin rock also its grade (boulders.json <ore>_rocks grade_min..grade_max, from
 # the key): the share of its pieces that come away as ore, so rocks hold different amounts and a bigger rock more (Dave 16 Nov 2026).
 func _set_boulder_ore(row: Dictionary, ore_name: String, key: int) -> void:
+	_set_boulder_ore_only(row, ore_name, key)
+	row["total"] = _boulder_stones(float(row["radius"]), _holds_ore(row))   # an ore rock holds stones at ore_yield, a plain one at yield (BugsList 118)
+
+
+# Whether a boulder row is an ore rock (boulders.json ore items: copper, tin, iron, coal, salt), which keeps ore_yield. A limestone, chalk or marble
+# rock (ore "rocks") is stone of another kind and holds stones at the plain yield like any rock (Dave 21 Nov 2026, BugsList 118).
+func _holds_ore(row: Dictionary) -> bool:
+	return row.has("ore") and ((_boulder_cfg.get("ore", {}) as Dictionary).get("items", {}) as Dictionary).has(str(row["ore"]))
+
+
+func _set_boulder_ore_only(row: Dictionary, ore_name: String, key: int) -> void:
 	if ore_name == "":
 		return
 
@@ -7833,9 +8038,7 @@ func _set_boulder_ore(row: Dictionary, ore_name: String, key: int) -> void:
 	if r_min != null and r_max != null:
 		var radius: float = clampf(float(row["radius"]), float(r_min), float(r_max))
 
-		if radius != float(row["radius"]):
-			row["radius"] = radius
-			row["total"] = _boulder_stones(radius)
+		row["radius"] = radius
 
 
 # Copper and tin rocks (Dave 16-17 Nov 2026, his photos; one shared rule since his 21 Nov 2026 play test; docs/design/COPPER_ROCKS.md,
@@ -7849,13 +8052,20 @@ func _set_boulder_ore(row: Dictionary, ore_name: String, key: int) -> void:
 # A share hand_share of the sizes is a loose ore item picked up by hand (ORE_KEY, kept in _taken like any scatter); the rest are boulder
 # rows with the ore, radius_min..radius_max (0.5 to 2 m across, Dave 17 Nov 2026), broken with a hammer or pick. Slots `slot`.. of the cell: copper 8..15 (BOULDER_KEY, after the cell's
 # boulders), tin 16..23 (ORE_KEY | BOULDER_KEY). Nothing depends on where spawn is.
-func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
+func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dictionary = {}) -> void:
 	var cfg: Dictionary = _ore_rock_cfg(ore)
 	var item: String = str((_boulder_cfg.get("ore", {}).get("items", {}) as Dictionary).get(ore, ""))
 
 	if cfg.is_empty() or item == "":
 		return
 
+	if reads.is_empty():
+		reads = _cell_reads(cell, cell_m)
+
+	var ground: Callable = reads["ground"]
+	var wet: Callable = reads["water_near"]
+	var depth_at: Callable = reads["water_depth_at"]
+	var body_at: Callable = reads["ore_near"]
 	var rng: RandomNumberGenerator = _layout_rng(cell, ore)
 	var reach: float = float(cfg.get("bank_reach_m", 3.0))
 	var bed_m: float = float(cfg.get("bed_depth_m", 0.8))
@@ -7876,12 +8086,16 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 
 	# Its own ore body: one geology look for the whole cell first (any of its spots within body_reach_m of a body), so only a cell by a body
 	# asks again per spot.
-	if body_m > 0.0 and ore_near.is_valid():
+	if body_m > 0.0 and body_at.is_valid():
 		var mid: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
-		var mid_y: float = float(ground_height.call(mid.x, mid.y))
+		var mid_y: float = float(ground.call(mid.x, mid.y))
 
-		if not is_nan(mid_y) and str(ore_near.call(Vector3(mid.x, mid_y, mid.y), body_m + cell_m * 0.71, names, layer_m)) == ore:
+		var look_usec: int = Time.get_ticks_usec()
+
+		if not is_nan(mid_y) and str(body_at.call(Vector3(mid.x, mid_y, mid.y), body_m + cell_m * 0.71, names, layer_m)) == ore:
 			body_p = float(cfg.get("body_chance", 0.0))
+
+		_ore_usec[1] += Time.get_ticks_usec() - look_usec
 
 	var top_p: float = maxf(maxf(land_p, maxf(coast_p, mountain_p)), body_p)
 
@@ -7899,7 +8113,7 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 		elif attempt >= mini(int(cfg.get("tries", 4)), ORE_ROCK_TRIES - 1) or draw > top_p:
 			continue   # cheap refusals first: most tries end here without reading the ground or the water
 
-		var y: float = float(ground_height.call(x, z))
+		var y: float = float(ground.call(x, z))
 
 		if is_nan(y) or y < 1.0:
 			continue
@@ -7909,27 +8123,34 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 		var over_body: bool = false
 
 		if not is_foot and body_p > 0.0 and draw <= body_p:
-			over_body = str(ore_near.call(spot, body_m, names, layer_m)) == ore   # the spot itself over its own ore
+			var body_usec: int = Time.get_ticks_usec()
+			over_body = str(body_at.call(spot, body_m, names, layer_m)) == ore   # the spot itself over its own ore
+			_ore_usec[1] += Time.get_ticks_usec() - body_usec
 
 		if not is_foot and not over_body and draw > maxf(land_p, lerpf(coast_p, mountain_p, upland)):
 			continue   # past every chance this high up: no ground water read
 
 		var by_water_only: bool = not is_foot and not over_body and draw > land_p
+		var water_usec: int = Time.get_ticks_usec()
 
-		if by_water_only and water_near.is_valid() and not bool(water_near.call(spot, reach)):
+		if by_water_only and wet.is_valid() and not bool(wet.call(spot, reach)):
+			_ore_usec[2] += Time.get_ticks_usec() - water_usec
 			continue   # no water within reach (most of the land): no depth read, no second probe
 
-		var depth: float = float(water_depth_at.call(spot)) if water_depth_at.is_valid() else 0.0
+		var depth: float = float(depth_at.call(spot)) if depth_at.is_valid() else 0.0
+		_ore_usec[2] += Time.get_ticks_usec() - water_usec
 
 		if depth > bed_m:
 			continue   # deep water: nobody would find it
 
 		if is_foot:
-			if depth > 0.0 or not _at_mountain_foot(spot, foot):
+			if depth > 0.0 or not _at_mountain_foot(spot, foot, ground):
 				continue
 		elif by_water_only:
 			# Past the land share: only on a river or lake bed (shallow water) or a dry bank within reach of water.
-			var bank: bool = depth <= 0.0 and water_near.is_valid() and not bool(water_near.call(spot, 0.0)) and bool(water_near.call(spot, reach))
+			var bank_usec: int = Time.get_ticks_usec()
+			var bank: bool = depth <= 0.0 and wet.is_valid() and not bool(wet.call(spot, 0.0)) and bool(wet.call(spot, reach))
+			_ore_usec[2] += Time.get_ticks_usec() - bank_usec
 
 			if depth <= 0.0 and not bank:
 				continue
@@ -7959,15 +8180,17 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 			continue
 
 		var key: int = (BOULDER_KEY | ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | slot) if slot < BOULDER_TRIES_MAX else (ORE_KEY | BOULDER_KEY | cell_bits | slot)
-		var total: int = _boulder_stones(radius)
-		var left: int = mini(int(_boulder_left.get(key, total)), total)
+		var row: Dictionary = {"radius": radius, "yaw": yaw}
+		_set_boulder_ore(row, ore, key)
+		var left: int = _boulder_left_of(key, row)
 
 		if left <= 0:
 			continue
 
-		var row: Dictionary = {"radius": radius, "yaw": yaw, "total": total}
-		_set_boulder_ore(row, ore, key)
-		_items[_next_id] = {"number": 0, "count": left, "pos": _settled(spot), "left": 1.0e9, "scatter": key, "boulder": row}   # on the saved digs: a boulder dug under stays down
+		var settle_usec: int = Time.get_ticks_usec()
+		var rest: Vector3 = _settled(spot)   # on the saved digs: a boulder dug under stays down
+		_ore_usec[3] += Time.get_ticks_usec() - settle_usec
+		_items[_next_id] = {"number": 0, "count": left, "pos": rest, "left": 1.0e9, "scatter": key, "boulder": row}
 		_next_id += 1
 
 
@@ -7986,12 +8209,12 @@ func _ore_rock_cfg(ore: String) -> Dictionary:
 
 # How far the ground climbs above the spot within reach (at most SCATTER_PAD_M - 4, inside the tiles _cell_ground_ready loaded: a
 # farther read loads a tile on the main thread), the highest of the four directions; 0 on flat or falling ground.
-func _relief(spot: Vector3, reach_m: float) -> float:
+func _relief(spot: Vector3, reach_m: float, ground: Callable) -> float:
 	var reach: float = minf(reach_m, SCATTER_PAD_M - 4.0)
 	var best: float = 0.0
 
 	for d in [Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
-		var h: float = float(ground_height.call(spot.x + d.x, spot.z + d.y))
+		var h: float = float(ground.call(spot.x + d.x, spot.z + d.y))
 
 		if not is_nan(h):
 			best = maxf(best, h - spot.y)
@@ -8001,24 +8224,24 @@ func _relief(spot: Vector3, reach_m: float) -> float:
 
 # The foot of a mountain: the spot itself is gentle (rise per metre under max_slope over 3 m) and the ground climbs more than rise_m
 # within reach_m (_relief) in one of the four directions (boulders.json copper_rocks foot).
-func _at_mountain_foot(spot: Vector3, foot: Dictionary) -> bool:
-	var near: float = (absf(float(ground_height.call(spot.x + 3.0, spot.z)) - spot.y) + absf(float(ground_height.call(spot.x, spot.z + 3.0)) - spot.y)) / 3.0
+func _at_mountain_foot(spot: Vector3, foot: Dictionary, ground: Callable) -> bool:
+	var near: float = (absf(float(ground.call(spot.x + 3.0, spot.z)) - spot.y) + absf(float(ground.call(spot.x, spot.z + 3.0)) - spot.y)) / 3.0
 
 	if is_nan(near) or near > float(foot.get("max_slope", 0.3)):
 		return false
 
-	return _relief(spot, float(foot.get("reach_m", 24.0))) > float(foot.get("rise_m", 20.0))
+	return _relief(spot, float(foot.get("reach_m", 24.0)), ground) > float(foot.get("rise_m", 20.0))
 
 
 # The ore a boulder is an outcrop of ("" for a plain boulder): the terrain's ore body within reach of it, for a share of the boulders chosen from the key.
-func _boulder_ore(spot: Vector3, key: int) -> String:
+func _boulder_ore(spot: Vector3, key: int, body_at: Callable) -> String:
 	var cfg: Dictionary = _boulder_cfg.get("ore", {})
 
 	if cfg.is_empty():
 		return ""
 
-	if ore_near.is_valid() and float(hash(key) % 1000) < 1000.0 * float(cfg.get("boulder_share", 0.0)):
-		var name: String = str(ore_near.call(spot, float(cfg.get("reach_m", 40.0)), cfg.get("items", {}), float(cfg.get("layer_depth_m", 10.0))))
+	if body_at.is_valid() and float(hash(key) % 1000) < 1000.0 * float(cfg.get("boulder_share", 0.0)):
+		var name: String = str(body_at.call(spot, float(cfg.get("reach_m", 40.0)), cfg.get("items", {}), float(cfg.get("layer_depth_m", 10.0))))
 
 		if (cfg.get("items", {}) as Dictionary).has(name):
 			return name
@@ -8230,9 +8453,9 @@ func _lay_out_cave_items(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void
 
 		if int(spots[n * 5 + 3]) == 1 and not _boulder_cfg.is_empty():
 			var radius: float = spots[n * 5 + 4]
-			var cave_row: Dictionary = {"radius": radius, "yaw": float(hash(key) % 360), "total": _boulder_stones(radius)}
-			_set_boulder_ore(cave_row, _boulder_ore(spot, key), key)   # a cave boulder is an outcrop like one on the surface (Kathleen 10 Nov 2026: caves never rolled ore)
-			var left: int = mini(int(_boulder_left.get(key, cave_row["total"])), int(cave_row["total"]))
+			var cave_row: Dictionary = {"radius": radius, "yaw": float(hash(key) % 360)}
+			_set_boulder_ore(cave_row, _boulder_ore(spot, key, ore_near), key)   # a cave boulder is an outcrop like one on the surface (Kathleen 10 Nov 2026: caves never rolled ore); sets its total
+			var left: int = _boulder_left_of(key, cave_row)
 
 			if left > 0:
 				_items[_next_id] = {"number": 0, "count": left, "pos": spot, "left": 1.0e9, "scatter": key, "boulder": cave_row}
@@ -12104,7 +12327,7 @@ func _out_add(id: int, number: int, count: int, item_wear: int = 0, item_inst: D
 
 	if _one_store(str(it["struct"]["kind"])):
 		box.usable = _store_usable(str(it["struct"]["kind"]), box)
-		var spill: int = box.add(number, count, item_wear, item_inst)
+		var spill: int = box.add(number, count, item_wear, item_inst, FUEL_SLOT + 1 if _fuel_slot_kind(_structures.get(str(it["struct"]["kind"]), {})) else 0)   # a product never goes into a smithy's fuel slot
 		_push_box(id, box)
 		_dirty = true
 		return spill
@@ -12876,6 +13099,13 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 			_reject(peer, 3)
 			return 0
 
+	var smithy: bool = id >= 0 and _fuel_slot_kind(_structures.get(kind, {}))
+
+	if smithy and _smithy_slot_refusal(_structures[kind], number, target) != "":   # a smithy's fuel slot holds its fuel only
+		_say(peer, _smithy_slot_refusal(_structures[kind], number, target))
+		_reject(peer, 3)
+		return 0
+
 	if id >= 0 and BinRules.is_bin(_structures.get(kind, {})):   # a resource bin holds one kind, up to its units (master s2.5, R6)
 		amount = BinRules.room(_structures[kind], chest, number, amount)
 
@@ -12910,7 +13140,12 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 	var left: int = 0
 
 	if amount > 0:
-		left = _smelters.put(_structures[kind], chest, number, amount, held_wear, held_inst, target) if smelter else chest.add(number, amount, held_wear, held_inst)
+		if smelter:
+			left = _smelters.put(_structures[kind], chest, number, amount, held_wear, held_inst, target)
+		elif smithy:
+			left = _smithy_add(_structures[kind], chest, number, amount, held_wear, held_inst)
+		else:
+			left = chest.add(number, amount, held_wear, held_inst)
 
 	inv.take_from_slot(a, amount - left)
 	_dirty = true
@@ -16115,21 +16350,19 @@ func _queue_of(peer: int) -> Dictionary:
 
 # Crafting stations (structures.json "station", "station_level", "reach_m"): a placed structure of that station within reach of the
 # player. The server measures the distance with 1 m of grace so lag never fails a craft; the client only displays (Tyler).
-func station_near(peer: int, station: String, level: int = 1, light_it: bool = false) -> bool:
-	return serving_station(peer, station, level, 0.0, light_it) >= 0
+func station_near(peer: int, station: String, level: int = 1) -> bool:
+	return serving_station(peer, station, level) >= 0
 
 
 # The world id of the nearest placed station that serves `station` at `level` and is working (a lit fire; a pot over a lit fire), within its
 # own reach (station_near) or, with `far_m` above it, within far_m (the crafting reach: _step_to_station); -1 when none.
-func serving_station(peer: int, station: String, level: int = 1, far_m: float = 0.0, light_it: bool = false) -> int:
+func serving_station(peer: int, station: String, level: int = 1, far_m: float = 0.0) -> int:
 	if not _peer_pos.has(peer):
 		return -1
 
 	var here: Vector3 = _peer_pos[peer]
 	var best: int = -1
 	var best_d: float = INF
-	var cold: int = -1          # the nearest cold station that the crafter's fuel could fire (used only when no burning one serves)
-	var cold_d: float = INF
 
 	if station == "campfire":   # dishes are cooked at a lit campfire (data/items/dishes.json); a clay hearth or an oven beside you cooks them too ("also" in structures.json)
 		for id in _items:
@@ -16162,41 +16395,15 @@ func serving_station(peer: int, station: String, level: int = 1, far_m: float = 
 			if str(def.get("attach_to", "")) == "fireplace" and not _lit_structure_within(it["pos"], "fireplace", float(def.get("attach_m", 2.5))):
 				continue   # the Fireplace cooking crane (master s3.12) hangs its pot over a fireplace: only while that fireplace burns
 
-			# A station that must be burning to craft (the Smithies and the Master smithy, master s4 item 10): a cold one serves while the crafter
-			# carries its fuel or a fuel source stands near it (A-28), and the craft itself (light_it) fires it. Without fuel the craft waits and nothing is lost.
-			if bool(def.get("craft_needs_lit", false)) and not bool(it["struct"].get("lit", false)):
-				if d < cold_d:
-					cold = int(id)
-					cold_d = d
-
+			# A smithy works only with fuel in its fuel slot (Dave 21 Nov 2026: "smithys should just take coal in a fuel slot ... dont need to be
+			# lit"): without it the craft waits and nothing is lost.
+			if _fuel_slot_kind(def) and not _smithy_fuelled(it, def):
 				continue
 
 			best = int(id)
 			best_d = d
 
-	if best >= 0 or cold < 0:
-		return best
-
-	# No burning station serves: the nearest cold one does while the crafter carries its fuel or a fuel source stands within FUEL_SOURCE_M of it,
-	# and only the craft itself (light_it) fires it.
-	var cold_it: Dictionary = _items[cold]
-	var cold_def: Dictionary = _structures.get(str(cold_it["struct"]["kind"]), {})
-	var fuel_n: int = table.number_of(str(cold_def.get("fuel", "fuel")))
-	var inv_l = inventory_of(peer)
-
-	if fuel_n <= 0 or inv_l == null:
-		return -1
-
-	# PROVISIONAL (GOALS-REPAIR A-28): with none in the pack, one Coal or Charcoal from a fuel source within FUEL_SOURCE_M of the station fires it.
-	var source: Array = [] if inv_l.has_fill(fuel_n, 1) else _fuel_source_one(cold_it["pos"], fuel_n)
-
-	if source.is_empty() and not inv_l.has_fill(fuel_n, 1):
-		return -1
-
-	if light_it:
-		_fire_station(peer, inv_l, cold_it, cold_def, fuel_n, source)
-
-	return cold
+	return best
 
 
 var _step_cfg: Dictionary = {}   # data/items/station_step.json, read on the first step
@@ -16293,8 +16500,8 @@ func station_level_of(it: Dictionary, def: Dictionary, station: String) -> int:
 	return int(def.get("also", {}).get(station, 0))
 
 
-# A station of this kind stands within its reach but is cold and the player has no fuel for it.
-func _cold_station_near(peer: int, station: String) -> bool:
+# A smithy that would serve this station stands within its reach with no fuel in its fuel slot.
+func _unfuelled_smithy_near(peer: int, station: String) -> bool:
 	if not _peer_pos.has(peer):
 		return false
 
@@ -16304,7 +16511,7 @@ func _cold_station_near(peer: int, station: String) -> bool:
 		if it.has("struct") and not it["struct"].has("site"):
 			var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
 
-			if bool(def.get("craft_needs_lit", false)) and not bool(it["struct"].get("lit", false)) and station_level_of(it, def, station) > 0 and _peer_pos[peer].distance_to(it["pos"]) <= float(def.get("reach_m", 3.0)) + 1.0:
+			if _fuel_slot_kind(def) and not _smithy_fuelled(it, def) and station_level_of(it, def, station) > 0 and _peer_pos[peer].distance_to(it["pos"]) <= float(def.get("reach_m", 3.0)) + 1.0:
 				return true
 
 	return false
@@ -16327,32 +16534,124 @@ func _broken_station_near(peer: int, station: String, level: int = 1) -> bool:
 	return false
 
 
-# Fires a cold station that burns fuel (craft_needs_lit) with one fuel unit from the pack, or with `source` ([world id, store, slot]:
-# _fuel_source_one, A-28) from that store: lit for fuel_s seconds.
-func _fire_station(peer: int, inv, it: Dictionary, def: Dictionary, fuel_n: int, source: Array = []) -> void:
-	if not source.is_empty():
-		source[1].take_from_slot(int(source[2]), 1)
-		fuel_taken(int(source[0]), source[1])
-	else:
-		var before: Array = _snapshot(inv)
+# --- The smithies' fuel slot (Dave 21 Nov 2026: "smithys should just take coal in a fuel slot. same for all smithys. dont need to be lit. they
+# should have red coals when idle and flare really bright while making stuff") ---
+# A structures.json row with "fuel_slot" (an item or ingredient group: "fuel", Coal or Charcoal) keeps that fuel in the first slot of its one
+# store, which holds nothing else. It burns only while a craft is being worked there: fuel_craft_s seconds of making a unit (PROVISIONAL SF-2),
+# the next unit taken from the slot when the last is spent (struct fuel_left). The world row says "coals" while it has fuel (red coals) and
+# "busy" while a craft is worked (the flare, _busy_ms).
+# shortcut: fuel_left (under one unit's making time) is not saved; a restart starts the next craft on a new unit.
 
-		if not inv.remove_fill(fuel_n, 1):
-			return
+const FUEL_SLOT := 0          # the store slot that is the fuel slot
+const BUSY_HOLD_MS := 1500    # a smithy stays "busy" this long after the last craft tick worked there
 
-		_send_changes(peer, inv, before)
 
-	it["struct"]["lit"] = true
-	it["struct"]["fuel_left"] = float(def.get("fuel_s", 1800.0))
-	_lit_valid = false
-	_dirty = true
-	_say(peer, "You fire the %s." % table.sentence_name(int(it["number"])))
+func _fuel_slot_kind(def: Dictionary) -> bool:
+	return str(def.get("fuel_slot", "")) != ""
+
+
+# Whether `number` is the fuel this smithy burns (the item, or a member of the group, never an instance).
+func _is_smithy_fuel(def: Dictionary, number: int) -> bool:
+	var fuel_n: int = table.number_of(str(def.get("fuel_slot", "")))
+	return number != 0 and fuel_n > 0 and (number == fuel_n or table.group_members(fuel_n).has(number))
+
+
+func _smithy_box(it: Dictionary):
+	return _chests.get(int(it["struct"].get("uid", 0)))
+
+
+func _smithy_fuelled(it: Dictionary, def: Dictionary) -> bool:
+	if float(it["struct"].get("fuel_left", 0.0)) > 0.0:
+		return true
+
+	var box = _smithy_box(it)
+	return box != null and box.slot_count > FUEL_SLOT and _is_smithy_fuel(def, box.numbers[FUEL_SLOT]) and box.counts[FUEL_SLOT] > 0 and box.inst[FUEL_SLOT].is_empty()
+
+
+# Puts `amount` of `number` into a smithy's store: its fuel into the fuel slot first (one stack) and the rest after it, anything else never
+# into the fuel slot. Returns what did not fit (the caller readied box.usable).
+func _smithy_add(def: Dictionary, box, number: int, amount: int, item_wear: int = 0, item_inst: Dictionary = {}) -> int:
+	if item_inst.is_empty() and _is_smithy_fuel(def, number) and box.slot_count > FUEL_SLOT:
+		var stack: int = table.stack_of(number)
+
+		if box.numbers[FUEL_SLOT] == 0:
+			var first: int = mini(amount, stack)
+			box.numbers[FUEL_SLOT] = number
+			box.counts[FUEL_SLOT] = first
+			box.wear[FUEL_SLOT] = item_wear
+			box.fav[FUEL_SLOT] = 0
+			box.inst[FUEL_SLOT] = {}
+			amount -= first
+		elif box.numbers[FUEL_SLOT] == number and box.inst[FUEL_SLOT].is_empty() and box._mergeable(number, box.wear[FUEL_SLOT], item_wear):
+			var more: int = mini(amount, maxi(stack - box.counts[FUEL_SLOT], 0))
+			box.wear[FUEL_SLOT] = box._joined_age(number, box.wear[FUEL_SLOT], box.counts[FUEL_SLOT], item_wear, more)
+			box.counts[FUEL_SLOT] += more
+			amount -= more
+
+	return box.add(number, amount, item_wear, item_inst, FUEL_SLOT + 1) if amount > 0 else 0
+
+
+# The reason a put onto the fuel slot is refused ("" when it is not).
+func _smithy_slot_refusal(def: Dictionary, number: int, target: int) -> String:
+	if target == FUEL_SLOT and not _is_smithy_fuel(def, number):
+		return "Its first slot is its fuel slot: Coal or Charcoal only."
+
+	return ""
+
+
+# A craft tick worked at smithy `id` for `spent` seconds: it burns its fuel, taking the next unit from the fuel slot when the last is spent, and
+# shows busy (the flare). False when it has no fuel left for the tick (the caller checked it had some).
+func _smithy_burn(id: int, spent: float) -> bool:
+	var it: Dictionary = _items.get(id, {})
+	var def: Dictionary = _structures.get(str(it.get("struct", {}).get("kind", "")), {})
+
+	if not _fuel_slot_kind(def):
+		return true
+
+	var left: float = float(it["struct"].get("fuel_left", 0.0)) - spent
+
+	while left <= 0.0:
+		var box = _smithy_box(it)
+
+		if box == null or not _is_smithy_fuel(def, box.numbers[FUEL_SLOT]) or box.counts[FUEL_SLOT] <= 0:
+			it["struct"].erase("fuel_left")
+
+			if _busy_ms.erase(id):
+				_dirty = true   # back to cold: its row goes out again
+
+			return false
+
+		box.take_from_slot(FUEL_SLOT, 1)
+		_push_box(id, box)
+		left += float(def.get("fuel_craft_s", 1800.0))
+
+	it["struct"]["fuel_left"] = left
+
+	if not _busy_ms.has(id):
+		_dirty = true   # the flare: its row goes out again
+
+	_busy_ms[id] = Time.get_ticks_msec()
+	return true
+
+
+var _busy_ms: Dictionary = {}   # smithy world id -> ticks msec of the last craft tick worked there (its flare; never saved)
+
+
+# The smithies no craft worked for BUSY_HOLD_MS go back to their idle coals.
+func _settle_busy() -> void:
+	var now: int = Time.get_ticks_msec()
+
+	for id in _busy_ms.keys():
+		if not _items.has(id) or now - int(_busy_ms[id]) > BUSY_HOLD_MS:
+			_busy_ms.erase(id)
+			_dirty = true   # back to its idle coals: its row goes out again
 
 
 # --- Fuel sources (GOALS-REPAIR R6; A-28, A-30, A-31; master s2.5) ---
 # Stores a station may draw Coal and Charcoal from by itself, within FUEL_SOURCE_M: a resource bin that holds Coal or Charcoal, a Kiln's
 # output rack (its finished charcoal, even while it burns: A-31) and the store of a fire that is not burning (A-30). No owner or lock
 # check (lead ruling): like the Kiln and the Smelters, it is the station's own working. Used by the Smelters' hopper pull
-# (server_smelter.pull_fuel, every 300 s) and by a cold smithy fired with none in the pack (serving_station, A-28).
+# (server_smelter.pull_fuel, every 300 s).
 
 const FUEL_SOURCE_M := 30.0   # PROVISIONAL (GOALS-REPAIR A-28): how far a station reaches for fuel
 
@@ -16394,18 +16693,6 @@ func fuel_sources(at: Vector3, radius: float = FUEL_SOURCE_M, skip: int = -1) ->
 
 	out.sort_custom(func(a, b): return a[4] < b[4] or (a[4] == b[4] and a[0] < b[0]))
 	return out
-
-
-# [world id, store, slot] of the nearest fuel source holding a plain unit of `fuel_n` (an item or a group: Fuel is Coal or Charcoal); [] when none.
-func _fuel_source_one(at: Vector3, fuel_n: int) -> Array:
-	for src in fuel_sources(at):
-		for i in range(int(src[2]), int(src[3])):
-			var n: int = src[1].numbers[i]
-
-			if n != 0 and src[1].inst[i].is_empty() and _smelters.is_fuel(n) and (n == fuel_n or table.group_members(fuel_n).has(n)):
-				return [src[0], src[1], i]
-
-	return []
 
 
 # A fuel source lost some of its store: a fire's burn follows its store, and whoever has it open sees it. PROVISIONAL (GOALS-REPAIR A-34):
@@ -19853,7 +20140,7 @@ func _apply_lit_rows(rows: Array) -> void:
 
 			var lit_def: Dictionary = _structures.get(str(it["struct"].get("kind", "")), {}) if it.has("struct") else {}
 
-			if it.has("struct") and it["pos"].distance_to(spot) <= 0.3 and (str(lit_def.get("use", "")) == "light" or bool(lit_def.get("craft_needs_lit", false))):
+			if it.has("struct") and it["pos"].distance_to(spot) <= 0.3 and str(lit_def.get("use", "")) == "light":
 				it["struct"]["lit"] = true
 				it["struct"]["fuel_left"] = float(row[3])
 				break
@@ -20344,7 +20631,9 @@ func dev_place(spec: String) -> int:
 
 	var row: Dictionary = {"kind": name, "yaw": float(posmod(int(yaw), 360))}
 
-	if lit:
+	if lit and _fuel_slot_kind(def):
+		row["fuel_left"] = 1.0e7   # a smithy is never lit: "lit" gives it fuel for a test's whole run
+	elif lit:
 		row["lit"] = true
 		row["fuel_left"] = light_burn_s(def, 3600.0) * 2.0
 
@@ -21958,7 +22247,8 @@ func _bulk(peer: int, inv, kind: int, sort_key: int) -> void:
 		stacks = _sort_slots(inv, inv.hotbar_slots, inv.slot_count, sort_key, true)
 
 		if open_box != null and _is_storage(_items.get(open_id, {})):
-			stacks += _sort_slots(open_box, 0, open_box.usable, sort_key, false)   # favourites are the pack's only
+			var sort_from: int = FUEL_SLOT + 1 if _fuel_slot_kind(_structures.get(str(_items[open_id]["struct"]["kind"]), {})) else 0   # a smithy's fuel slot stays where it is
+			stacks += _sort_slots(open_box, sort_from, open_box.usable, sort_key, false)   # favourites are the pack's only
 			_push_box(open_id, open_box)
 			touched.append(open_id)
 	else:
@@ -22231,7 +22521,12 @@ func _bulk_stack_nearby(peer: int, inv) -> Array:
 			var put: int = 0
 
 			if amount > 0:
-				put = amount - (_smelters.put(box_def, box[1], number, amount, inv.wear[slot]) if _smelters.is_smelter(box_def) else box[1].add(number, amount, inv.wear[slot]))
+				if _smelters.is_smelter(box_def):
+					put = amount - _smelters.put(box_def, box[1], number, amount, inv.wear[slot])
+				elif _fuel_slot_kind(box_def):
+					put = amount - _smithy_add(box_def, box[1], number, amount, inv.wear[slot])
+				else:
+					put = amount - box[1].add(number, amount, inv.wear[slot])
 
 			if put > 0:
 				inv.take_from_slot(slot, put)
@@ -22375,7 +22670,7 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 		if _broken_station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
 			_say(peer, "Needs repair")   # the exact warning for a worn-out smithy (master s2.2 item 9)
 		else:
-			_say(peer, ("The %s is cold: carry charcoal or coal, or keep some close by in a bin, a kiln or an unlit fire, to fire it" if _cold_station_near(peer, str(recipe["station"])) else "That needs a %s nearby") % _station_name(str(recipe["station"])))
+			_say(peer, ("The %s has no fuel: put Coal or Charcoal in its fuel slot (its first slot)" if _unfuelled_smithy_near(peer, str(recipe["station"])) else "That needs a %s nearby") % _station_name(str(recipe["station"])))
 		return
 
 	for group_id in LOG_GROUP_IDS:   # shoulder and ground logs count (F-16), for any log and for the Softwood and Hardwood logs of the saws
@@ -22737,6 +23032,8 @@ func _restart_head(queue: Dictionary) -> void:
 
 
 func _craft_tick(spent: float) -> void:
+	_settle_busy()   # a smithy nobody works now goes back to its idle coals
+
 	for peer in _peer_key:
 		var queue: Dictionary = _craft_queues.get(_peer_key[peer], {})
 
@@ -22770,7 +23067,9 @@ func _craft_tick(spent: float) -> void:
 			_sync_craft_queue(peer)
 			continue
 
-		if not free_entry and str(recipe.get("station", "")) != "" and not station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1)), true):
+		var at_station: int = serving_station(peer, str(recipe["station"]), int(recipe.get("station_level", 1))) if not free_entry and str(recipe.get("station", "")) != "" else -1
+
+		if not free_entry and str(recipe.get("station", "")) != "" and at_station < 0:
 			if Time.get_ticks_msec() - int(_station_said.get(peer, -100000)) > 8000:
 				_station_said[peer] = Time.get_ticks_msec()
 				if _broken_station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
@@ -22778,8 +23077,8 @@ func _craft_tick(spent: float) -> void:
 				else:
 					var station_name: String = _station_name(str(recipe["station"]))
 					var waiting: int = _variant_of(head)
-					if _cold_station_near(peer, str(recipe["station"])):
-						_say(peer, "The %s is cold: carry charcoal or coal, or keep some close by in a bin, a kiln or an unlit fire, to fire it" % station_name)
+					if _unfuelled_smithy_near(peer, str(recipe["station"])):
+						_say(peer, "The %s has no fuel: put Coal or Charcoal in its fuel slot (its first slot)" % station_name)
 					elif waiting != 0:
 						_say(peer, "Your %s %s waits: go back to the %s" % [SmithingRules.label(waiting), str(recipe.get("name", "craft")), station_name])   # a Tempered or +1/+2 craft names the item it waits for
 					else:
@@ -22799,6 +23098,10 @@ func _craft_tick(spent: float) -> void:
 
 		if head.size() > 3 and not (head[3] as Array).is_empty() and not _start_deferred(peer, head):
 			continue
+
+		# A smithy burns its fuel only while the craft is being made, not while a finished one waits for room (need_s is set on its first tick).
+		if at_station >= 0 and float(queue["elapsed"]) < float(queue.get("need_s", INF)) and not _smithy_burn(at_station, spent):
+			continue   # its last fuel went this tick: the craft waits for more in the fuel slot (said on the next tick)
 
 		queue["elapsed"] = float(queue["elapsed"]) + spent
 

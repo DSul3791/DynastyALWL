@@ -18,6 +18,7 @@ const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
+const CellReadsScript := preload("res://src/stream/cell_reads.gd")
 
 const STORE := "user://outcrops_near"
 
@@ -138,6 +139,7 @@ func _boulders(generator, settings, at: Vector2, radius: float, cover: float) ->
 				return true
 
 		return false
+	items.cell_reads = func(x: float, z: float) -> Dictionary: return CellReadsScript.bound(generator, null, x, z)   # as the server: one tile look a cell (no running water here)
 	items.cave_scatter = func(scatter_cell: Vector2i, size_m: float) -> PackedFloat32Array:
 		var centre: Vector2 = (Vector2(scatter_cell) + Vector2(0.5, 0.5)) * size_m
 		var cave_tile = generator.get_tile(generator.tile_of(centre.x, centre.y))

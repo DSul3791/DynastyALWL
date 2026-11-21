@@ -42,6 +42,9 @@ static func usable(stations: Array, fire: bool, fuel_ids: Array, recipes, table,
 	for id in fuel_ids:
 		_add(out, table.number_of(str(id)), FUEL)
 
+		for member in table.group_members(table.number_of(str(id))):   # a group's members (a smithy's "fuel": Coal and Charcoal)
+			_add(out, member, FUEL)
+
 	if fire:
 		for id in table.ids():
 			if StoreRules.fire_takes(str(id), cooking):
