@@ -1151,12 +1151,31 @@ Not yet played.
 
 Not yet played. On a big boulder (thousands of stones) one blow shrinks it by under a millimetre, so there the cracks show first and the shrink shows as it is used up. The boulders.json note still says "cube root"; it is fixed with the next data change.
 
+## 107. Ore piles stack up like stone piles
+
+**Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "ore piles should stackup like stone piles do just with different colors and lumps." Then: "you can fix that now too".
+
+**What was found:** the server already joined dropped ore into one ground record, but Copper ore, Tin ore, Iron ore and Bog iron ore had no pile row in items.json, so the client drew a heap of any size as a single lump.
+
+**Required outcome:** a heap of any ore grows as a cone the way stone does, each ore in its own colour with lumpy pieces, at no more cost per piece than stone.
+
+**As built (PR #1413, reviewed head ffb8e5e2, merged to dev at c98408c7):** the four ores have cone pile rows, the same system stone uses (src/shared/pile_rules.gd sizing, server merge reach and the building check, PileLook._cone_mesh). The cone row may now set a second colour with a share of pieces (color2, mix), lumps (each piece is one of four knobbly shapes built once) and rough. Stone sets none of them and looks as before. validate_items now checks every non-log pile row's common fields as well as the new keys.
+
+**Evidence:**
+- Independent review PASS on 5951aeec and on ffb8e5e2.
+- Lane B on ffb8e5e2: 270 PASS / 0 FAIL (265 fast + 5 timing). test_pile_cost passes: every ore's drops join one pile, and its mesh has the same number of points as the stone cone and rebuilds within the same budget. validate_items 0 errors, look names 340, warnings 381 = baseline. Join smoke clean.
+
+**Acceptance:** drop 20 or more of each ore: each makes one cone that grows as more land on it. Copper is green with red-brown pieces, Tin is dark red-brown and a little shiny, Iron is grey-brown with rust, and Bog iron is red-brown with ochre and the lumpiest. Stone piles are unchanged.
+
+Not yet played; not yet seen in a picture. The colours, lumps and densities are provisional (OP-1, below).
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
 
 ## Assumed on Dave's behalf (provisional values, for review)
 
+- OP-1 (entry 107): ore pile looks, chosen by Claude. Copper ore: malachite green, 30% red-brown, lumps 0.3, 3,900 kg/m3. Tin ore: dark red-brown, 40% near-black, lumps 0.15, a little shiny, 6,900 kg/m3. Iron ore: grey-brown, 35% rust, lumps 0.3, 4,800 kg/m3. Bog iron ore: red-brown, 35% ochre, lumps 0.4, 3,600 kg/m3. The densities are the real minerals' and set how wide a cone a count makes.
 - LV-1: one held Level action lasts while strokes come within 1.5 s and the feet move less than 0.6 m; its target height is kept for that long.
 - LV-2: Level leaves the ground within 1.2 m of the feet untouched.
 - LV-3: one Soil fills 0.75 m3.
