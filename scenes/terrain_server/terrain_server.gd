@@ -3649,6 +3649,7 @@ func _exit_tree() -> void:
 
 	_events.close()   # last: nothing may start a log worker task while the engine shuts down (EventLog.close)
 
+
 # Known dangers for the island resource landscape's starting-island check (handoff 13: "use existing danger information where available"):
 # the camp of every goblin tribe that will not trade (its attitude's trades false) and every bandit site whose camp stands (stage 3), each
 # with boulders.json distribution danger_m round it. Read once at start; nothing new is made for it.
