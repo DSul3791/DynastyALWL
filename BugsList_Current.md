@@ -1577,7 +1577,9 @@ Not yet played. A big ore rock (an iron outcrop, or copper or tin under the moun
 - test_cell_reads, 162 cells round the spawn and the tin body, including (1815, 2229): the same 710 rows (512 copper or tin) both ways. General reads went from 10,533 to 0, with one tile look a cell. Idle time was 155.7 ms before and 145.2 ms after (about 1 ms a cell either way, since an idle machine has no lock waits). With running water the result was the same: 711 rows matched and 0 general reads.
 - Not yet run: a run north on Dave's PC to see the slow-cell line under load.
 
-**Acceptance:** run north from the spawn on Dave's PC. The slow-cell line stays under 50 ms for copper and tin rocks, and the same rocks lie where they did before. Not yet played.
+**Acceptance:** run north from the spawn on Dave's PC. The slow-cell line stays under 50 ms for copper and tin rocks, and the same rocks lie where they did before.
+
+Not yet played.
 
 ## Rewrite interpretation
 
