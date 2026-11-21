@@ -306,10 +306,15 @@ func _init() -> void:
 			if String(pile.get("shape", "")) == "logs":   # split firewood and wooden blocks: a stack of log pieces (PileLook._logs_mesh)
 				if int(pile.get("handful", 0)) < 1 or tint.size() != 3 or float(pile.get("len", 0.0)) <= 0.0 or float(pile.get("radius", 0.0)) <= 0.0:
 					fail("items.json: '%s' logs pile row needs handful 1 or more, color [r, g, b] (bark), len and radius above 0" % id)
-			elif String(pile.get("shape", "")) == "cone" and float(pile.get("density_kg_m3", 0.0)) <= 0.0:   # a solid cone of the stones' own volume (PileLook._cone_mesh)
-				fail("items.json: '%s' cone pile row needs density_kg_m3 above 0" % id)
-			elif not ["pyramid", "mound", "cone"].has(String(pile.get("shape", ""))) or int(pile.get("handful", 0)) < 1 or tint.size() != 3 or float(pile.get("rock", 0.0)) <= 0.0 or float(pile.get("squash", 0.0)) <= 0.0:
-				fail("items.json: '%s' pile row needs shape pyramid, mound, cone or logs, handful 1 or more, color [r, g, b], rock and squash above 0 (logs: len and radius)" % id)
+			else:
+				if not ["pyramid", "mound", "cone"].has(String(pile.get("shape", ""))) or int(pile.get("handful", 0)) < 1 or tint.size() != 3 or float(pile.get("rock", 0.0)) <= 0.0 or float(pile.get("squash", 0.0)) <= 0.0:
+					fail("items.json: '%s' pile row needs shape pyramid, mound, cone or logs, handful 1 or more, color [r, g, b], rock and squash above 0 (logs: len and radius)" % id)
+
+				if String(pile.get("shape", "")) == "cone" and float(pile.get("density_kg_m3", 0.0)) <= 0.0:   # a solid cone of the stones' own volume (PileLook._cone_mesh)
+					fail("items.json: '%s' cone pile row needs density_kg_m3 above 0" % id)
+
+			if (pile.has("color2") and (typeof(pile["color2"]) != TYPE_ARRAY or (pile["color2"] as Array).size() != 3)) or float(pile.get("mix", 0.0)) < 0.0 or float(pile.get("mix", 0.0)) > 1.0 or float(pile.get("lumps", 0.0)) < 0.0 or float(pile.get("lumps", 0.0)) > 0.5 or float(pile.get("rough", 1.0)) <= 0.0 or float(pile.get("rough", 1.0)) > 1.0:
+				fail("items.json: '%s' pile row needs color2 [r, g, b], mix 0 to 1, lumps 0 to 0.5 and rough above 0 to 1 when it sets them (PileLook._cone_mesh)" % id)
 
 		# Every core item has a one-line description, a value and (unless it is a placed structure) its own weight.
 		if description == "" or description.length() > 110 or not description.ends_with("."):

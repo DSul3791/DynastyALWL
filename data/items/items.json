@@ -3432,7 +3432,8 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 6
+			"value": 6,
+			"pile": {"shape": "cone", "handful": 25, "color": [0.09, 0.42, 0.3], "color2": [0.45, 0.2, 0.13], "mix": 0.3, "rock": 0.6, "squash": 0.75, "jitter": 0.3, "lumps": 0.3, "density_kg_m3": 3900}
 		},
 		"tin_ore": {
 			"number": 302,
@@ -3441,7 +3442,8 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 6
+			"value": 6,
+			"pile": {"shape": "cone", "handful": 25, "color": [0.48, 0.23, 0.13], "color2": [0.2, 0.12, 0.08], "mix": 0.4, "rock": 0.6, "squash": 0.75, "jitter": 0.25, "lumps": 0.15, "rough": 0.35, "density_kg_m3": 6900}
 		},
 		"iron_ore": {
 			"number": 303,
@@ -3450,7 +3452,8 @@
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
-			"value": 5
+			"value": 5,
+			"pile": {"shape": "cone", "handful": 25, "color": [0.37, 0.34, 0.31], "color2": [0.63, 0.29, 0.16], "mix": 0.35, "rock": 0.6, "squash": 0.75, "jitter": 0.3, "lumps": 0.3, "density_kg_m3": 4800}
 		},
 		"bog_iron_ore": {
 			"number": 1511,
@@ -3460,7 +3463,8 @@
 			"stack": 20,
 			"look_alikes": [],
 			"value": 3,
-			"note": "Dave 19 Nov 2026: \"it should be its own lumpy redbrown rock as Bog Iron ore. then it takes two to smelt into an ingot.\" Dug from bog iron deposits (digging.json bog_iron); smelted by structures.json smelting.jobs.bog_iron. Number 1511: 1508-1510 are held by the pipes PR #1306."
+			"note": "Dave 19 Nov 2026: \"it should be its own lumpy redbrown rock as Bog Iron ore. then it takes two to smelt into an ingot.\" Dug from bog iron deposits (digging.json bog_iron); smelted by structures.json smelting.jobs.bog_iron. Number 1511: 1508-1510 are held by the pipes PR #1306.",
+			"pile": {"shape": "cone", "handful": 25, "color": [0.48, 0.23, 0.11], "color2": [0.62, 0.4, 0.17], "mix": 0.35, "rock": 0.6, "squash": 0.75, "jitter": 0.35, "lumps": 0.4, "density_kg_m3": 3600}
 		},
 		"coal": {
 			"number": 304,
