@@ -1677,8 +1677,11 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	# A moving animal plays a moving clip: a model with a walk but no run (or the other way) uses the one it has, not its idle pose.
 	clip = AnimalGait.moving_clip(roles, role) if role == "walk" or role == "run" else str(roles.get(role, roles.get("0", "")))
 
-	if (role == "walk" or role == "run") and not roles.has(role) and (roles.has("walk") or roles.has("run")):
-		ref = walk_mps if role == "run" else run_mps      # the other moving clip stands in: played by its own speed
+	if (role == "walk" or role == "run") and not roles.has(role):
+		if roles.has("walk") or roles.has("run"):
+			ref = walk_mps if role == "run" else run_mps      # the other moving clip stands in: played by its own speed
+		else:
+			ref = 0.0      # no moving clip at all: the idle clip plays at its own rate
 
 	if clip != "" and player.current_animation != clip:
 		player.play(clip, 0.25)
