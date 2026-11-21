@@ -602,7 +602,8 @@ func register_interactable(interactable_name: String, priority: int, probe: Call
 
 
 # E does what the cursor is on (Dave 1 Nov 2026). A probe may return a "point" (the world spot it acts on). Of the probes that found something, the one
-# whose point is aimed at (aimed_at) and best centred wins, whatever its priority; E then does that one action and nothing else nearby (a chopping block
+# whose point is inside the aim cone (in_aim) and best centred wins, whatever its priority (Dave 21 Nov 2026: "it should always effect whatever is closest
+# to my reticle first"; every probe offers its own best centred thing, not its nearest, see reticle_index); E then does that one action and nothing else nearby (a chopping block
 # in the cursor does not also gather the wood lying around it). Only when the cursor is on nothing with an E action does the priority order decide, which
 # is where the nearby pick-up and gather live. "aimed" is set on a result that won because of the cursor.
 func current_interaction() -> Dictionary:
@@ -622,7 +623,7 @@ func current_interaction() -> Dictionary:
 		if first.is_empty():
 			first = found
 
-		if not found.has("point") or not view_direction.is_valid() or not aimed_at(found["point"]):
+		if not found.has("point") or not view_direction.is_valid() or not in_aim(found["point"]):
 			continue
 
 		var aim_cos: float = aim_cos_of(found["point"])
@@ -636,6 +637,32 @@ func current_interaction() -> Dictionary:
 		return best
 
 	return first
+
+
+# Whether a point lies inside the aim cone round the reticle (interact.json aim_cos, about 25 degrees). Only the angle counts: each probe has already kept
+# to its own reach, so a thing in reach and in the cone takes part whatever its distance (aimed_at, which also needs prompt_reach_m, decides only whether
+# the "Press E" line shows). Unset view direction (tests) counts as in the cone.
+func in_aim(point: Vector3) -> bool:
+	return not view_direction.is_valid() or aim_cos_of(point) >= Interact.aim_cos()
+
+
+# Of some aim points, the index of the one nearest the reticle (best centred inside the aim cone), -1 when none is in the cone or no view direction is
+# known. Every probe chooses its thing with this, so E and the prompt act on what the reticle is on, never on the nearest thing beside it.
+func reticle_index(points: Array) -> int:
+	if not view_direction.is_valid():
+		return -1
+
+	var best: int = -1
+	var best_cos: float = -2.0
+
+	for n in range(points.size()):
+		var aim_cos: float = aim_cos_of(points[n])
+
+		if aim_cos >= Interact.aim_cos() and aim_cos > best_cos:
+			best_cos = aim_cos
+			best = n
+
+	return best
 
 
 # The cosine between the view direction and the line from the eyes to a point.
@@ -723,12 +750,11 @@ func in_view(point: Vector3) -> bool:
 
 
 func _probe_pickup() -> Dictionary:
-	var near: Array = _nearest(true)
+	var id: int = _reticle_item()
 
-	if near[0] == 0:
+	if id == 0:
 		return {}
 
-	var id: int = near[0]
 	return {"kind": "pickup", "id": id, "point": _world[id]["pos"], "prompt": "Press E to gather", "quiet": not aimed_at(_world[id]["pos"]), "tap": func():
 		clear_prompt()
 		var asked_msec: int = Time.get_ticks_msec()
@@ -988,10 +1014,10 @@ func _probe_fire() -> Dictionary:
 
 	if _lit_state(state) and _out_flame_slot() >= 0:
 		# A torch that went out in the pack: E at a burning fire lights it again (Dave, 4 Nov 2026), instead of putting the fire out.
-		return {"kind": "fire", "point": _world[id]["pos"] + Vector3(0.0, 0.3, 0.0), "prompt": "Press E to light your torch", "tap": func():
+		return {"kind": "fire", "point": aim_point(id, _player_position.call()), "prompt": "Press E to light your torch", "tap": func():
 			net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, id, 0, 0, Vector3.ZERO)}
 
-	var found: Dictionary = {"kind": "fire", "point": _world[id]["pos"] + Vector3(0.0, 0.3, 0.0), "prompt": _fire_prompt(state), "tap": func():
+	var found: Dictionary = {"kind": "fire", "point": aim_point(id, _player_position.call()), "prompt": _fire_prompt(state), "tap": func():
 		if state == 9 or state == StructureLook.FIRE_ASH:
 			net.inventory_action.rpc_id(1, Net.ACT_LIGHT, id, 0, 0, Vector3.ZERO)
 		elif _lit_state(state):
@@ -1021,7 +1047,7 @@ func _probe_structure() -> Dictionary:
 
 	if not found.is_empty():
 		found["kind"] = "block" if int(_world[near]["state"]) == 7 else "structure"
-		found["point"] = _world[near]["pos"] + Vector3(0.0, 0.4, 0.0)   # the middle of the thing, where the cursor rests
+		found["point"] = aim_point(near, _player_position.call())   # the middle of the thing, where the cursor rests: the spot _nearest_struct chose it by
 
 	return found
 
@@ -1662,7 +1688,7 @@ func _nearest_struct(skip_fires: bool = false) -> int:
 		if (skip_fires and int(_world[id]["state"]) in StructureLook.CAMPFIRE_STATES) or _world[id].get("camp", false):
 			continue   # Edda and Hob's fire is never offered
 
-		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(reach_pos(id, here)) <= 3.0:
+		if _world[id]["state"] >= 5 and _world[id]["state"] != 32 and here.distance_to(reach_pos(id, here)) <= PIECE_REACH_M:
 			ids.append(id)
 
 	return _aimed_or_nearest(_unframed(ids), here)
@@ -1698,28 +1724,55 @@ func _unframed(ids: Array) -> Array:
 	return out
 
 
-# Of some world ids: the best centred one when the cursor is on any of them, otherwise the nearest; 0 for none.
+# Of some world ids: the one nearest the reticle (reticle_index on their aim points) when any is in the aim cone, otherwise the nearest; 0 for none.
 func _aimed_or_nearest(ids: Array, here: Vector3) -> int:
-	var best: int = 0
-	var best_d: float = 1.0e9
-	var best_cos: float = -2.0
+	var points: Array = []
 
 	for id in ids:
-		var at: Vector3 = reach_pos(id, here)
-		var d: float = here.distance_to(at)
+		points.append(aim_point(id, here))
 
-		if view_direction.is_valid() and aimed_at(at):
-			var aim_cos: float = aim_cos_of(at)
+	var aimed: int = reticle_index(points)
 
-			if aim_cos > best_cos:
-				best_cos = aim_cos
-				best = id
+	if aimed >= 0:
+		return ids[aimed]
 
-		elif best_cos < -1.0 and d < best_d:
+	var best: int = 0
+	var best_d: float = 1.0e9
+
+	for id in ids:
+		var d: float = here.distance_to(reach_pos(id, here))
+
+		if d < best_d:
 			best_d = d
 			best = id
 
 	return best
+
+
+# The spot of a fire or placed piece the reticle is judged against, the same one its probe offers the E contest: a fire a little above its pit, any other
+# piece the middle of it (its reach_pos, raised to where the cursor rests).
+func aim_point(id: int, here: Vector3) -> Vector3:
+	return reach_pos(id, here) + Vector3(0.0, 0.3 if int(_world[id]["state"]) in StructureLook.CAMPFIRE_STATES else 0.4, 0.0)
+
+
+# The loose item E acts on: of the items in view, the one nearest the reticle (in the aim cone) out to PIECE_REACH_M, as far as fires and placed pieces are
+# offered, so a fire or station beside it never wins only because the item is a little farther away (the server allows Interact.server_reach_m()).
+# With none in the cone, the nearest within reach_m, as before. 0 for none.
+func _reticle_item() -> int:
+	var here: Vector3 = _player_position.call()
+	var ids: Array = []
+	var points: Array = []
+
+	for id in _world:
+		if _world[id]["state"] == 0 and here.distance_to(_world[id]["pos"]) <= PIECE_REACH_M and in_view(_world[id]["pos"]):
+			ids.append(id)
+			points.append(_world[id]["pos"])
+
+	var aimed: int = reticle_index(points)
+	return ids[aimed] if aimed >= 0 else int(_nearest(true)[0])
+
+
+const PIECE_REACH_M := 3.0   # how far E reaches a fire or placed piece on the client (and an item the reticle is on); the server allows Interact.server_reach_m()
 
 
 # The id of the fire (lit or out) within 3 m that the cursor is on, else the nearest one; 0 when none. Never Edda and Hob's fire: players cannot use it.
@@ -1728,7 +1781,7 @@ func _nearest_fire() -> int:
 	var ids: Array = []
 
 	for id in _world:
-		if _world[id]["state"] in StructureLook.CAMPFIRE_STATES and not _world[id].get("camp", false) and here.distance_to(_world[id]["pos"]) <= 3.0:
+		if _world[id]["state"] in StructureLook.CAMPFIRE_STATES and not _world[id].get("camp", false) and here.distance_to(_world[id]["pos"]) <= PIECE_REACH_M:
 			ids.append(id)
 
 	return _aimed_or_nearest(ids, here)

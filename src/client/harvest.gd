@@ -127,7 +127,7 @@ func _pick_branch(branch: Dictionary) -> void:
 
 # E tapped with nothing on the ground in reach: pick the nearest pickable plant, or say why not.
 func tap() -> void:
-	var found: Array = _candidates(Interact.reach_m(), true)
+	var found: Array = _reticle_first(_candidates(Interact.reach_m(), true))
 
 	for c in found:
 		if c["ok"]:
@@ -213,7 +213,7 @@ func _is_nothing(c: Dictionary) -> bool:
 
 
 func _hint() -> String:
-	var found: Array = _candidates(Interact.reach_m(), true)
+	var found: Array = _reticle_first(_candidates(Interact.reach_m(), true))
 
 	if found.is_empty():
 		var branch: Dictionary = _branch(Interact.reach_m(), true)
@@ -288,6 +288,25 @@ func _prompt_for(c: Dictionary) -> String:
 
 
 # Plants and shrubs within `radius` of the player, nearest first, each with what picking it would do.
+# The plants in reach with the one nearest the reticle (InventoryView.reticle_index on the spot the prompt is judged at, 0.6 m up) moved to the front;
+# the rest stay nearest first. The prompt (_hint) and the tap read the same order, so E picks the plant the reticle is on, not the nearest beside it
+# (Dave 21 Nov 2026).
+func _reticle_first(found: Array) -> Array:
+	var points: Array = []
+
+	for c in found:
+		points.append(c["pos"] + Vector3(0.0, 0.6, 0.0))
+
+	var aimed: int = _items.reticle_index(points)
+
+	if aimed > 0:
+		var looked_at: Dictionary = found[aimed]
+		found.remove_at(aimed)
+		found.push_front(looked_at)
+
+	return found
+
+
 func _candidates(radius: float, view_only: bool = false) -> Array:
 	var here: Vector3 = _client.body.global_position
 	var out: Array = []
