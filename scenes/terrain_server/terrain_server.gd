@@ -436,8 +436,19 @@ func _ready() -> void:
 		return generator.get_tile(generator.tile_of(pos.x, pos.z)).ore_at(pos, reach, names, depth_m)
 	items.rock_near = func(pos):   # the bedrock rock under a boulder (TileTerrainData.bedrock_name_at): limestone, chalk and marble give limestone pieces
 		return generator.get_tile(generator.tile_of(pos.x, pos.z)).bedrock_name_at(pos)
-	items.bog_deposit_at = func(x, z, cfg):   # bog iron under the baked tile's fens and marshes (BogIron.deposit_at; digging.json bog_iron)
-		return BogIronScript.deposit_at(generator.get_tile(generator.tile_of(x, z)), x, z, cfg)
+	items.bog_field = func(fx, fz, cfg):   # the bog iron patches of a field square on the baked tile holding it (BogIron.field; digging.json bog_iron)
+		var m: float = float(cfg.get("field_m", 512.0))
+		var cx: float = (float(fx) + 0.5) * m
+		var cz: float = (float(fz) + 0.5) * m
+
+		# Never read a tile on the main thread (a read takes seconds): null = not ready, asked for, and tried again on a later sync.
+		if not generator.tile_cached(cx, cz):
+			generator.prefetch_tile(cx, cz)
+			return null
+
+		return BogIronScript.field(generator.get_tile(generator.tile_of(cx, cz)), fx, fz, cfg)
+	items.bog_silt_at = func(x, z, cfg):   # what a dug hole on fen, marsh, swamp or bog silts back in with, 0 elsewhere (BogIron.silt_material); an unloaded tile counts as dry
+		return BogIronScript.silt_material(generator.get_tile(generator.tile_of(x, z)), x, z, cfg) if generator.tile_cached(x, z) else 0
 	items.fresh_water_y = func(pos, reach):   # wells and pumps (TileTerrainData.fresh_water_near): the nearest over every tile the reach touches
 		var best: Vector2 = Vector2(INF, NAN)
 		var coords: Dictionary = {}

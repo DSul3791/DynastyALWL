@@ -236,7 +236,7 @@ func _init() -> void:
 	give("stone_hammer", 1)
 	var forge_id: int = build("stone_forge", FORGE_AT)
 	check(forge_id >= 0, "3a. the Primitive smithy stands")
-	check(items.station_near(1, "forge", 1), "3b. it serves as a forge, level 1 (copper and bronze work)")
+	check(items.station_level_of(items._items[forge_id], items._structures["stone_forge"], "forge") == 1 and not items.station_near(1, "forge", 1), "3b. it is a level 1 forge (copper and bronze work), idle until Charcoal is in its fuel slot (Dave 21 Nov 2026)")
 	var smelter_id: int = build("smelter", SMELTER_AT)
 	check(smelter_id >= 0 and int(items._structures["smelter"].get("out_slots", 0)) == 0, "3c. the Primitive smelter stands beside it, with no output rack")
 	check(not items.station_near(1, "smelter", 1), "3d. it is no crafting station: once lit it smelts by itself")
@@ -246,7 +246,7 @@ func _init() -> void:
 	items._items[items._next_id] = {"number": items.table.number_of("campfire_kit"), "count": 1, "pos": FIRE_AT, "left": 1.0e9, "fire": {"state": 1, "burn_left": 1.0e6, "covered": false, "recheck": 5.0}}
 	items._next_id += 1
 	var at_was: Vector3 = items.position_of(1)
-	charcoal_from_fire(fire_id, fuel_n)
+	charcoal_from_fire(fire_id, fuel_n + 1)   # and one for the Primitive smithy's fuel slot
 	items.report_position(1, at_was)
 	check(have("charcoal") >= fuel_n, "4. firewood burning in the campfire leaves %d charcoal, taken from its store (%d needed)" % [have("charcoal"), fuel_n])
 
@@ -276,6 +276,7 @@ func _init() -> void:
 
 	# 6. The Bronze - Pickaxe at the Primitive smithy.
 	give("stick", need_of("bronze_pickaxe", "stick"))
+	check(put_in(forge_id, "charcoal", 1) == 1 and items.station_near(1, "forge", 1), "6a. one Charcoal in its fuel slot and the Primitive smithy serves")
 	craft("bronze_pickaxe", 1, 200)
 	check(have("bronze_pickaxe") == 1, "6. a Bronze - Pickaxe is made at the Primitive smithy")
 	var inv = items.inventory_of(1)

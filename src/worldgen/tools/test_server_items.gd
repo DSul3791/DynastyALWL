@@ -3202,18 +3202,45 @@ func _init() -> void:
 	bo.report_position(1, Vector3(5.0, 11.5, 5.0))
 	bo.vitals_of(1)["weight"] = 5000.0   # a big body: the carry limit stays out of the stone counts below
 	var big: int = bo._boulder_stones(1.0)
-	check(big >= 12800 and big <= 13100, "a 1 m radius boulder makes about 12,960 stones at 0.85 height, 2600 kg/m3, 0.7 coming away as 0.5 kg stones (Dave 19 Nov 2026, boulders PLAN.md 3) (%d)" % big)
-	check(bo._boulder_stones(0.3) >= 340 and bo._boulder_stones(0.3) <= 360 and bo._boulder_stones(1.2) >= 22200 and bo._boulder_stones(1.2) <= 22600, "stones go with the rock's volume: a 0.3 m one about 350, a 1.2 m one about 22,400 (%d, %d)" % [bo._boulder_stones(0.3), bo._boulder_stones(1.2)])
-	check(is_equal_approx(bo._boulder_per_kg(), 1.4), "1.4 stones of 0.5 kg per kg of rock (%f)" % bo._boulder_per_kg())
+	check(big >= 860 and big <= 880, "a 1 m radius boulder makes about 870 stones at 0.85 height, 2600 kg/m3, 0.047 coming away as 0.5 kg stones (Dave 21 Nov 2026, BugsList 118: 3,200 from one rock was too many) (%d)" % big)
+	check(bo._boulder_stones(0.3) >= 20 and bo._boulder_stones(0.3) <= 26 and bo._boulder_stones(1.2) >= 1450 and bo._boulder_stones(1.2) <= 1550, "stones go with the rock's volume: a 0.3 m one about 23, the biggest (1.2 m) about 1,500 (%d, %d)" % [bo._boulder_stones(0.3), bo._boulder_stones(1.2)])
+	check(is_equal_approx(bo._boulder_per_kg(), 0.094), "0.094 stones of 0.5 kg per kg of plain rock (%f)" % bo._boulder_per_kg())
+	# Ore rocks keep their amounts (Dave 21 Nov 2026: fewer stones from plain rocks only; copper and tin stay abundant).
+	check(is_equal_approx(bo._boulder_per_kg(true), 1.4) and bo._boulder_stones(1.0, true) >= 12800 and bo._boulder_stones(1.0, true) <= 13100, "an ore rock still holds 1.4 stones per kg: about 12,960 at radius 1 (%d)" % bo._boulder_stones(1.0, true))
+	var plain_row: Dictionary = {"radius": 1.0}
+	var ore_row: Dictionary = {"radius": 1.0}
+	bo._set_boulder_ore(plain_row, "", 76)
+	bo._set_boulder_ore(ore_row, "iron", 75)
+	check(int(plain_row["total"]) == bo._boulder_stones(1.0) and int(ore_row["total"]) == bo._boulder_stones(1.0, true), "a laid-out row's total is by its kind (%d plain, %d ore)" % [int(plain_row["total"]), int(ore_row["total"])])
+	# A save from 19 Nov (one rate, 1.4 per kg, for every rock): a plain rock keeps its share, an ore rock its count.
+	bo._load_boulders_left({"boulders": {"76": 10000, "75": 10000}, "boulder_per_kg": 1.4})
+	check(bo._boulder_pending.size() == 2 and not bo._boulder_left.has(76), "saved at another rate: waits until the rock is laid out")
+	check(bo._boulder_left_of(76, plain_row) == 671 and int(bo._boulder_left[76]) == 671 and not bo._boulder_pending.has(76), "a plain rock saved with 10,000 left at 1.4 per kg is 671 now (%d)" % int(bo._boulder_left.get(76, -1)))
+	check(bo._boulder_left_of(75, ore_row) == 10000, "an ore rock saved with 10,000 left keeps 10,000 (%d)" % int(bo._boulder_left.get(75, -1)))
 	bo._load_boulders_left({"boulders": {"77": 10}})
-	check(int(bo._boulder_left[77]) == 350, "a worked boulder in an older save (0.04 stones per kg) is scaled once to today's count: 10 left is 350 (%d)" % int(bo._boulder_left[77]))
-	bo._load_boulders_left({"boulders": {"78": 10}, "boulder_per_kg": 1.4})
-	check(int(bo._boulder_left[78]) == 10, "a save at today's rate loads as it is")
+	check(bo._boulder_left_of(77, plain_row) == int(round(10.0 * bo._boulder_per_kg() / 0.04)), "a worked boulder in an older save (0.04 stones per kg) is scaled once to today's count (%d)" % int(bo._boulder_left[77]))
+	bo._load_boulders_left({"boulders": {"74": 3}, "boulders_then": {"73": [100, 1.4, 1.4]}, "boulder_per_kg": 0.094, "ore_per_kg": 1.4})
+	check(int(bo._boulder_left.get(74, -1)) == 3 and bo._boulder_pending.has(73), "a save at today's rates loads as it is; one not yet laid out keeps its old rates")
+	var lime_row: Dictionary = {"radius": 1.0}
+	bo._set_boulder_ore(lime_row, "limestone", 72)
+	check(int(lime_row["total"]) == bo._boulder_stones(1.0) and str(lime_row.get("ore", "")) == "limestone", "a limestone rock is stone: the plain count (%d)" % int(lime_row["total"]))
+	# A rock still waiting for its layout is saved with its old rates and loads the same way (no share lost across restarts).
+	bo._dirty = true
+	bo.save()
+	var bo_again = make(bld)
+	var waiting_rates: Array = bo_again._boulder_pending.get(73, [])
+	check(waiting_rates.size() == 3 and int(waiting_rates[0]) == 100 and is_equal_approx(float(waiting_rates[1]), 1.4) and is_equal_approx(float(waiting_rates[2]), 1.4) and not bo_again._boulder_left.has(73), "a rock not yet laid out keeps its old rates through a save (%s)" % str(waiting_rates))
+	check(int(bo_again._boulder_left.get(74, -1)) == 3 and bo_again._boulder_left_of(73, plain_row) == int(round(100.0 * 0.094 / 1.4)), "and is scaled when it is laid out (%d)" % int(bo_again._boulder_left.get(73, -1)))
+	bo._boulder_pending.clear()
+	bo._boulder_left.erase(73)
+	bo._boulder_left.erase(74)
+	bo._boulder_left.erase(75)
+	bo._boulder_left.erase(76)
 	bo._boulder_left.erase(77)
 	bo._boulder_left.erase(78)
 	bo._boulder_cfg["luck_extra"] = 0.0   # the exact-count checks below; luck's extra stone has its own check
 	bo._boulder_cfg["flint"] = {}   # flint has its own test (test_flint); these checks count plain stones
-	var small_total: int = bo._boulder_stones(0.6)   # about 2,800: enough for the blow counts below
+	var small_total: int = bo._boulder_stones(0.6)   # about 190: enough for the blow counts below (36 stones)
 	bo._items[900001] = {"number": 0, "count": small_total, "pos": Vector3(5.0, 11.5, 6.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 7, "boulder": {"radius": 0.6, "yaw": 0.0, "total": small_total}}
 	bo._last_hit.clear()
 	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)

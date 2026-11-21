@@ -7,7 +7,7 @@ extends SceneTree
 #   3. the Primitive smelter refuses iron ore; an Improved smelter (its bronze fittings come from the bronze route, test_bronze_path) smelts it
 #      by itself only while the player works its bellows (master s2.7 items 1 and 4), into its output rack;
 #   4. an Improved smithy from stones, clay, logs and bronze (its bronze anvil and fittings, from the bronze route, test_bronze_path), no iron
-#      (master s2.7 item 5, GOALS-REPAIR A-15); cold, it makes nothing without fuel; fired with charcoal from the pack;
+#      (master s2.7 item 5, GOALS-REPAIR A-15); it makes nothing with an empty fuel slot; works on charcoal put in it;
 #   5. the Iron - Saw at the burning Improved smithy from iron and wood, no Saw blade;
 #   6. with the saw: a spruce log gives 6 Planks, an oak log 4 Hardwood boards;
 #   7. the Iron anvil (the Advanced smithy's component, A-16) at the Improved smithy; working iron on its bronze anvil wears it faster than
@@ -162,7 +162,7 @@ func _init() -> void:
 	items.skill_level = func(_p, _s): return 1.0
 	items.dig_ground = func(_centre, _radius): return null
 	items.ground_material = func(_x, _z): return "peat"
-	items.bog_deposit_at = func(_x, _z, _cfg_in): return {"key": "1,1", "size": 60, "edge": true}
+	items.bog_field = func(fx, fz, _cfg_in): return [{"key": "1,1", "x": 0.0, "z": 0.0, "size": 60, "r": 50.0}] if fx == 0 and fz == 0 else []   # one big patch round the yard
 	items.peer_connected_hello(1, "ironsaw00001")
 	items.report_position(1, HERE)
 	items.vitals_of(1)["weight"] = 5000.0   # the ore and stone are heavy; carrying is not under test
@@ -266,15 +266,15 @@ func _init() -> void:
 
 	check(smithy_id >= 0 and have("iron_ingot") == iron_before, "4a. the Improved smithy stands, built without iron")
 	var charcoal_n: int = have("charcoal")
-	items.inventory_of(1).remove(items.table.number_of("charcoal"), charcoal_n)
 	items.give(1, items.table.number_of("stick"), need_of("hand_saw", "stick"))
 	craft("hand_saw", 1, 60)
-	check(have("hand_saw") == 0 and have("iron_ingot") == iron_before and not bool(items._items[smithy_id]["struct"].get("lit", false)), "4b. a cold Smithy and no fuel: no saw, nothing taken (%d ingots)" % have("iron_ingot"))
-	items.inventory_of(1).add(items.table.number_of("charcoal"), charcoal_n)
+	check(have("hand_saw") == 0 and have("iron_ingot") == iron_before and have("charcoal") == charcoal_n, "4b. an empty fuel slot: no saw, nothing taken, not even the Charcoal in the pack (%d ingots)" % have("iron_ingot"))
 
-	# 5. The Iron - Saw at the burning Smithy.
+	# 5. The Iron - Saw at the Smithy with Charcoal in its fuel slot (Dave 21 Nov 2026).
+	var fuel_box = items._chests[int(items._items[smithy_id]["struct"]["uid"])]
+	check(put_in(smithy_id, "charcoal", 1) == 1 and fuel_box.numbers[0] == items.table.number_of("charcoal") and fuel_box.counts[0] == 1, "4c. a Charcoal put in goes to its fuel slot")
 	craft("hand_saw", 1, 120)
-	check(bool(items._items[smithy_id]["struct"].get("lit", false)) and have("charcoal") == charcoal_n - 1, "5a. the craft fires the Smithy with one charcoal")
+	check(not bool(items._items[smithy_id]["struct"].get("lit", false)) and fuel_box.counts[0] == 0 and float(items._items[smithy_id]["struct"].get("fuel_left", 0.0)) > 0.0, "5a. the craft burns the Charcoal from the fuel slot, never lit")
 	check(have("hand_saw") == 1 and have("saw_blade") == 0, "5b. the Iron - Saw is made at the Improved smithy from iron and wood, with no Saw blade")
 	var wear_cfg: Dictionary = SmithingRules.cfg().get("station_wear", {})
 	var per_craft: float = float(wear_cfg.get("per_craft", 1.0))

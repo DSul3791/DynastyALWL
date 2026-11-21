@@ -6,6 +6,7 @@ extends SceneTree
 #   godot --headless --path . --script res://src/worldgen/tools/test_forge_models.gd
 
 const PieceLook := preload("res://src/client/piece_look.gd")
+const BuildingLook := preload("res://src/client/building_look.gd")
 
 var failures: int = 0
 
@@ -108,9 +109,23 @@ func _init() -> void:
 		ghost.free()
 
 	var smithy_fire: Node3D = view._model_for_state(int(structures["stone_forge"]["state"]), {})
-	check((smithy_fire.get_node_or_null("Flames") as Node3D) != null and (smithy_fire.get_node_or_null("Flames") as Node3D).visible, "the built Primitive smithy, which shares the model and has no lighting yet, keeps its fire")
 	check(smithy_fire.get_node_or_null("StoneAnvil") != null, "the Primitive smithy has its stone anvil beside the fire (Dave 17 Nov 2026)")
 	smithy_fire.free()
+
+	# Every smithy's fire follows its row's "forge" (Dave 21 Nov 2026): 0 cold, 1 red coals when idle, 2 a bright flare while making.
+	for kind in ["stone_forge", "blacksmithy", "advanced_smithy", "master_forge"]:
+		if not structures.has(kind):
+			continue
+
+		for look in [0, 1, 2]:
+			var m: Node3D = view._model_for_state(int(structures[kind]["state"]), {"forge": look})
+			var fl: Node3D = m.get_node_or_null("Flames") as Node3D
+			var tongues: Node3D = fl.get_node_or_null("Tongues") as Node3D if fl != null else null
+			var plume: GPUParticles3D = m.get_node_or_null("ForgeSmoke") as GPUParticles3D
+			var glow: OmniLight3D = m.get_node_or_null("Light") as OmniLight3D
+			var ok: bool = fl != null and tongues != null and glow != null and fl.visible == (look >= 1) and tongues.visible == (look == 2) and (plume == null or plume.emitting == (look == 2))
+			check(ok and (look == 0 or glow.light_energy > 0.0) and (look < 2 or glow.light_energy > 2.0 * float(BuildingLook.SMITHY_GLOW[1][0])), "%s with forge %d: %s" % [kind, look, ["cold", "red coals", "the flare"][look]])
+			m.free()
 	var smelter_model: Node3D = view._model_for_state(int(structures["smelter"]["state"]), {})
 	check(smelter_model.get_node_or_null("StoneAnvil") == null, "the Primitive smelter, which shares the model, has no anvil")
 	smelter_model.free()

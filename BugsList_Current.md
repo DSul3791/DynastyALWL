@@ -1192,6 +1192,36 @@ Not yet played. On a big boulder (thousands of stones) one blow shrinks it by un
 
 Not yet played; not yet seen in a picture. The colours, lumps and densities are provisional (OP-1, below).
 
+## 108. The game lags or pauses while running
+
+**Status: Partly fixed - awaiting player verification.** Dave, 21 Nov 2026 (05:26Z): "I find the game lags or pauses a lot when I am running. please try to find what is causing this and fix it."
+
+**Required outcome:** running across the world feels smooth. The cause is found with evidence and fixed, not hidden by raising thresholds.
+
+**What the evidence showed (Lane A frametime runs on diagnostics heads 46be88c1, 42b39933 and 989fc2f1, running north 500 m on d3d12 and Vulkan):**
+- Client frames of 205 to 521 ms were the crash report and telemetry logs. They wrote and flushed their files on the main thread, and cut them by reading and rewriting the whole file. The disk on Dave's PC is slow.
+- Server ticks of hundreds of ms (vitals, fires) were the flora lock. A flora worker held it while walking every item of a 256 m chunk into the shelter index, and every shelter check on the main thread waited for it.
+- Frames of 0.5 to 0.9 s in "flush" and "draw" are the graphics driver building shaders the first time something new comes on screen. The join freezes are the same thing.
+
+**As built:**
+- PR #1437 (reviewed head f770eeb2, dev 33009aa1): log lines are queued and written on a worker (src/shared/line_writer.gd), for the client's breadcrumbs and telemetry and for the server's event log. A report or exit writes out what is still queued first.
+  - Lane A: 33 pass, 0 fail, warnings 381.
+  - Standing frametime: max 146 ms, p99 16.7 ms (before: max 597 ms, p99 29.5 ms).
+- PR #1434 (reviewed head 3f225892, dev 9dfc3030): the chunk's shelter rows are built before the flora lock is taken, so only a quick merge runs under it.
+  - Every main-thread wait over 20 ms, and every worker hold over 20 ms, now prints a "server flora:" line.
+  - Lane B: 291 pass, 0 fail, warnings 381. The join smoke had no slow-tick or lock lines.
+
+**Still open (for after main):**
+- First-sight shader builds on d3d12 (0.5 to 0.9 s): needs a shader warm-up or a renderer choice by Dave.
+- Single physics steps of 44 to 51 ms, and clock and weather at 31 to 37 ms: small regular hitches.
+- The server can pause in cheap code (goals, the world-item scan) when the PC is busy loading new ground tiles. Tuning thread counts would fix it, but that is too risky now.
+- A server save can hold a tick about 1.2 s while it waits for the previous save to finish writing. The wait is now logged.
+- Server calls that read an unloaded ground tile (zone, rock and ground type) still wait for the file. Bog iron is guarded (#1423).
+
+**Acceptance:** run for a minute in open country. There should be no pauses beyond the first sight of new things.
+
+Not yet played.
+
 ## 109. Costs say which nails and hinges they take
 
 **Status: Implemented - awaiting player verification.** Found in Dave's play test, 21 Nov 2026: "Im trying to make a chest and it says I need nails and I have 100 copper nails but it wont use them. it should tell me what type of nails it wants". Then: "fix this now".
@@ -1309,6 +1339,24 @@ Not yet played.
 
 Not yet played; not yet seen in a picture.
 
+## 114. Bog iron is the ground's own colour, in fields
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026, after finding a stain at night: "it gave me 6 bog iron but i actually cant dig the ground? it just makes digging sounds and giving me soil but not digging a hole." Then: "it shouldnt just be a big bullseye. it should be the actual color of the ground so change the grounds color and when I dig it the color goes away as I get the ore. also since its in water we can just assume the water washes the dirt back into the hole over a given period of time. but really if that area is going to have bog iron it should have some all around not just in one spot." On the plan of stained ground, fading as dug, silting holes and fields along the wet edge, he said: "yes make it so." Replaces the stain sheet of entry 69.
+
+**What was found:** the hole was dug, but the flat 6 m stain sheet (entry 69) was laid over the ground only when first drawn, so it covered the hole like a lid. The deposits were single 8 m samples scattered over a fen.
+
+**As built (PR #1423, reviewed head e15c1c10, merged to dev at f2ab4524):**
+- No stain sheet. The ground shader tints the ground rust: an uneven, soft-edged blotch strongest at its heart, with a faint tinge out to five radii so a field's patches show between them. All of it scales with the ore left, so no colour means no ore. Ground dug below the patch's level shows the wetland's own dark ground. A few small ore lumps (up to 4) thin out as the ore is dug and are gone when it is empty.
+- Fields: the world is cut into 512 m squares; about half bear iron. A bearing square with enough wetland gets 3 to 8 patches round a seed on its wet edge, edge samples first, more for a bigger wetland, at least 14 m apart. A patch holds 6 to 12 Bog iron ore and is 2.5 to 4 m across its radius. A dig within that radius gives ore as before (1 to 2 a dig, one back every 3 game days).
+- Holes: a dig on fen, marsh, swamp or bog silts back in one game day later, filled with that wetland's own soil (peat or mud) up to the old surface, never over it. Not while a player stands by it, nor a tunnel more than 1 m under the bog; at most 4 holes a server tick. Waiting holes are saved with the world.
+- The server never reads a tile from disk for bog iron on its main thread (lag work).
+
+**Evidence:** independent review found 2 blockers on 8b38166d (the validator still checked the removed keys; patches could land 12 m apart) and 6 smaller items; fixed and passed on 711ddac2, 4e622b79 and the head merged with the wetland work, e15c1c10. Lane B on 4e622b79: 294 pass / 0 fail. Lane B on e15c1c10: 301 pass / 0 fail, validate_items 0 errors, look names 340, warnings 381 = baseline, join smoke time to ground 33 s. test_bog_iron on the baked tile 3,4: 6 bearing fields, 21 patches and 199 ore within 2.5 km of the spawn, all on wetland.
+
+**Acceptance:** near the spawn's fens a rusty patch shows on the dark wetland ground, with others nearby. Digging it gives Bog iron ore, the hole shows, the rust goes where you dug and fades as the ore runs out, and the lumps go. A game day later the hole has silted in. Three game days later some rust is back.
+
+Not yet played; not yet seen in a picture.
+
 ## 115. Working the smelter bellows shows and sounds
 
 **Status: Implemented - awaiting player verification.** Dave, play-testing on 21 Nov 2026: "Im using an improved smelter and it says press e to work the bellows. so I do and it gives me the spiel then it says press e to work the bellows again. when I do it says you leave the bellows. if pressing e the first time puts me on the bellows. the light should get brighter, the smoke should puff and their should be a bellows sound." Then: "and it should then say press e to stop using the bellows".
@@ -1334,6 +1382,34 @@ Not yet played; not yet seen in a picture.
 - The look and the sound have not been seen or heard in game.
 
 **Acceptance:** light an Improved smelter and press E. The prompt turns to "Press E to stop using the bellows", the fire brightens, and the smoke puffs with a bellows sound about every 1.4 s. Press E again: "You leave the bellows", and the light, puffs and sound stop while it stays lit. A second player nearby sees and hears the same.
+
+Not yet played.
+
+## 116. Every smithy takes coal in a fuel slot
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "smithys should just take coal in a fuel slot. same for all smithys. dont need to be lit. they should have red coals when idle and flare really bright while making stuff." Then: "the anvil on the side looks fine". Earlier in the project chat: the Primitive smithy needed no coal while the Improved one needed coal in the inventory; "standardize… a slot for fuel where you put the coal", "both of them should".
+
+**What was found:** the Primitive smithy (stone_forge) and the Blacksmithy had to be lit and burned fuel by the second, whether or not they were making anything. The Advanced smithy and the Master forge took coal straight from the inventory. The built Primitive smithy always showed a burning fire.
+
+**Required outcome:** all four smithies take Coal in a slot of their own, need no lighting, show red coals while they have fuel and nothing to make, and flare bright while making something.
+
+**As built (PR #1428, reviewed and tested head 4530f0dc, merged to dev at bf327172):**
+- Primitive smithy, Blacksmithy, Advanced smithy and Master forge: the first slot of the smithy's store is its fuel slot. It takes Coal or Charcoal only; anything else put there is refused with "Its first slot is its fuel slot: Coal or Charcoal only." Fuel put into the smithy goes to that slot first. Sort leaves it alone.
+- No lighting: a smithy with fuel serves its recipes; one with none does not. Fuel burns only while a craft is being made, one unit per 1800 s of making, and not while a finished craft waits.
+- Looks: no fuel, cold. Fuel and idle, red coals with a soft glow (0.45 energy, 3.5 m). Making something, a bright flare (3.2 energy, 12 m), back to idle 1.5 s after the last craft. The world row carries the state, so other players see it.
+- The station window notes "Fuel (slot 1): Coal or Charcoal, burnt only while it makes something".
+- Design: docs/design/SMELTER_LIGHTING.md, "Smithies: a fuel slot, no lighting" (SF-1 to SF-5). PS-3 and PS-4 are superseded.
+
+**Evidence:**
+- Independent review: PASS on the merged head. The first pass found Sort moving the fuel slot, fuel burning while a finished craft waited, the busy state saved with the smithy, and missing tests. All were fixed before the PASS.
+- Lane A tests on 4530f0dc: 302 pass / 0 fail, warnings 381 = baseline.
+- Tests cover the fuel slot, the refusal, Sort, burning only while making, and the three looks (test_stations, test_resource_bins 9a-9d, test_forge_models, test_mission001_walkthrough and the bronze and iron routes).
+
+**Known limits:**
+- The part-burnt unit (up to 1800 s of making) is not saved; after a server restart the next unit is taken from the slot.
+- The coals and flare have not been seen in game.
+
+**Acceptance:** build a Primitive smithy. Before fuel it is cold and offers no recipes. Put Coal in slot 1: red coals glow. Make something: the fire flares bright and drops back to red coals when done. The same for the Blacksmithy, Advanced smithy and Master forge.
 
 Not yet played.
 
@@ -1477,6 +1553,9 @@ Dave requested this rewrite around the intended experience rather than a literal
 - CT-5 (entry 111): only the chests are tiered. The other buildings that use nails (about 40) take bronze nails or better.
 - CT-6 (entry 112): the knife's store is the existing Basket renamed Wicker basket, keeping its cost (8 Stick, 4 Twine) and 6 slots. The Wicker - Chest is hidden and locked rather than retired, because the server tests use it as their plain container. The goblin camp's chest prop is a Small chest (Dave 20 Nov 2026: "a small chest of some sort").
 - BW-1..BW-4 (entry 115): chosen by Claude. A stroke of the bellows every 1.4 s. The fire light 1.8 times as bright while worked. The flames leap to 1.35 times their size at each stroke. The bellows sound is generated (a creak, a rush of air through the nozzle and the fire roaring up, about 1.1 s), played at -9 dB.
+- SF-1..SF-5 (entry 116): chosen by Claude. Charcoal counts as coal. One unit lasts 1800 s of making. The fuel slot holds one stack; more fuel is stored in the other slots but not burnt until moved in. Idle glow 0.45 energy over 3.5 m, the flare 3.2 over 12 m. Back to idle 1.5 s after the last craft.
+- BI-3 (entry 114): bog iron fields, chosen by Claude. 512 m squares, half bear iron; at least 12 wetland samples; patches within 64 m of a wet-edge seed, 3 plus one per 25 wetland samples within 64 m of the seed, up to 8, 14 m apart; 6 to 12 ore; radius 2.5 to 4 m by size; edge samples are taken first (their draw scored at a quarter). Rust colour linear 0.30, 0.10, 0.025 to 0.44, 0.20, 0.04.
+- BI-4 (entry 114): a hole dug on wetland silts back in after 1 game day, with the wetland's own soil; no refill under 1 m deep (tunnels) or while a player is near; at most 4 a tick.
 - WL-1 (entry 113): wetland looks, densities and timings chosen by Claude. Colours are as built. Pool levels in the puddle hollows are 0.63 fen, 0.68 bog and 0.56 swamp. Pace in a pool is 0.85. Mist runs from sunrise -1 h to +2 h and from sunset -1 h to +1.5 h. Grass thickness is fen 0.3, bog 0.12 and swamp none. Plant densities are as in entry 113.
 - WL-2 (entry 113): cattail, tussock sedge and bog moss hummock give their own seeds (Dave 14 Nov 2026: "All herbs and plants should produce seeds"). The dead tree is scenery, like old stumps and fallen logs.
 - DG-1 (entry 120): dune grass gives 1 to 3 Plant fibre a pick, tall grass's amount, with no thatch or straw.
