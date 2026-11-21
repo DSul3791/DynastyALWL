@@ -5176,16 +5176,21 @@ func _dig_bog_iron(peer: int, at: Vector3, tier: int, pieces: int) -> void:
 			_say(peer, str(cfg["first_find"]))
 
 
-# The patches of field square (fx, fz), worked out once a run (BogIron.field reads a few thousand samples of the baked tile).
+# The patches of field square (fx, fz), worked out once a run (BogIron.field reads a few thousand samples of the baked tile). bog_field answers
+# null while the square's tile is not in memory (the server never reads a tile on its main thread): nothing is kept, and a later call asks again.
 func _bog_field_of(fx: int, fz: int) -> Array:
 	var key: String = "%d,%d" % [fx, fz]
 
 	if not _bog_fields.has(key):
+		var patches: Variant = bog_field.call(fx, fz, _dig_cfg.get("bog_iron", {}))
+
+		if typeof(patches) != TYPE_ARRAY:
+			return []
+
 		if _bog_fields.size() >= BOG_FIELDS_MAX:
 			_bog_fields.clear()
 
-		var patches: Variant = bog_field.call(fx, fz, _dig_cfg.get("bog_iron", {}))
-		_bog_fields[key] = patches if typeof(patches) == TYPE_ARRAY else []
+		_bog_fields[key] = patches
 
 	return _bog_fields[key]
 
