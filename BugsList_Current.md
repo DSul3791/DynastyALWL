@@ -1309,6 +1309,24 @@ Not yet played.
 
 Not yet played; not yet seen in a picture.
 
+## 114. Bog iron is the ground's own colour, in fields
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026, after finding a stain at night: "it gave me 6 bog iron but i actually cant dig the ground? it just makes digging sounds and giving me soil but not digging a hole." Then: "it shouldnt just be a big bullseye. it should be the actual color of the ground so change the grounds color and when I dig it the color goes away as I get the ore. also since its in water we can just assume the water washes the dirt back into the hole over a given period of time. but really if that area is going to have bog iron it should have some all around not just in one spot." On the plan of stained ground, fading as dug, silting holes and fields along the wet edge, he said: "yes make it so." Replaces the stain sheet of entry 69.
+
+**What was found:** the hole was dug, but the flat 6 m stain sheet (entry 69) was laid over the ground only when first drawn, so it covered the hole like a lid. The deposits were single 8 m samples scattered over a fen.
+
+**As built (PR #1423, reviewed head e15c1c10, merged to dev at f2ab4524):**
+- No stain sheet. The ground shader tints the ground rust: an uneven, soft-edged blotch strongest at its heart, with a faint tinge out to five radii so a field's patches show between them. All of it scales with the ore left, so no colour means no ore. Ground dug below the patch's level shows the wetland's own dark ground. A few small ore lumps (up to 4) thin out as the ore is dug and are gone when it is empty.
+- Fields: the world is cut into 512 m squares; about half bear iron. A bearing square with enough wetland gets 3 to 8 patches round a seed on its wet edge, edge samples first, more for a bigger wetland, at least 14 m apart. A patch holds 6 to 12 Bog iron ore and is 2.5 to 4 m across its radius. A dig within that radius gives ore as before (1 to 2 a dig, one back every 3 game days).
+- Holes: a dig on fen, marsh, swamp or bog silts back in one game day later, filled with that wetland's own soil (peat or mud) up to the old surface, never over it. Not while a player stands by it, nor a tunnel more than 1 m under the bog; at most 4 holes a server tick. Waiting holes are saved with the world.
+- The server never reads a tile from disk for bog iron on its main thread (lag work).
+
+**Evidence:** independent review found 2 blockers on 8b38166d (the validator still checked the removed keys; patches could land 12 m apart) and 6 smaller items; fixed and passed on 711ddac2, 4e622b79 and the head merged with the wetland work, e15c1c10. Lane B on 4e622b79: 294 pass / 0 fail. Lane B on e15c1c10: 301 pass / 0 fail, validate_items 0 errors, look names 340, warnings 381 = baseline, join smoke time to ground 33 s. test_bog_iron on the baked tile 3,4: 6 bearing fields, 21 patches and 199 ore within 2.5 km of the spawn, all on wetland.
+
+**Acceptance:** near the spawn's fens a rusty patch shows on the dark wetland ground, with others nearby. Digging it gives Bog iron ore, the hole shows, the rust goes where you dug and fades as the ore runs out, and the lumps go. A game day later the hole has silted in. Three game days later some rust is back.
+
+Not yet played; not yet seen in a picture.
+
 ## 115. Working the smelter bellows shows and sounds
 
 **Status: Implemented - awaiting player verification.** Dave, play-testing on 21 Nov 2026: "Im using an improved smelter and it says press e to work the bellows. so I do and it gives me the spiel then it says press e to work the bellows again. when I do it says you leave the bellows. if pressing e the first time puts me on the bellows. the light should get brighter, the smoke should puff and their should be a bellows sound." Then: "and it should then say press e to stop using the bellows".
@@ -1477,6 +1495,8 @@ Dave requested this rewrite around the intended experience rather than a literal
 - CT-5 (entry 111): only the chests are tiered. The other buildings that use nails (about 40) take bronze nails or better.
 - CT-6 (entry 112): the knife's store is the existing Basket renamed Wicker basket, keeping its cost (8 Stick, 4 Twine) and 6 slots. The Wicker - Chest is hidden and locked rather than retired, because the server tests use it as their plain container. The goblin camp's chest prop is a Small chest (Dave 20 Nov 2026: "a small chest of some sort").
 - BW-1..BW-4 (entry 115): chosen by Claude. A stroke of the bellows every 1.4 s. The fire light 1.8 times as bright while worked. The flames leap to 1.35 times their size at each stroke. The bellows sound is generated (a creak, a rush of air through the nozzle and the fire roaring up, about 1.1 s), played at -9 dB.
+- BI-3 (entry 114): bog iron fields, chosen by Claude. 512 m squares, half bear iron; at least 12 wetland samples; patches within 64 m of a wet-edge seed, 3 plus one per 25 wetland samples within 64 m of the seed, up to 8, 14 m apart; 6 to 12 ore; radius 2.5 to 4 m by size; edge samples are taken first (their draw scored at a quarter). Rust colour linear 0.30, 0.10, 0.025 to 0.44, 0.20, 0.04.
+- BI-4 (entry 114): a hole dug on wetland silts back in after 1 game day, with the wetland's own soil; no refill under 1 m deep (tunnels) or while a player is near; at most 4 a tick.
 - WL-1 (entry 113): wetland looks, densities and timings chosen by Claude. Colours are as built. Pool levels in the puddle hollows are 0.63 fen, 0.68 bog and 0.56 swamp. Pace in a pool is 0.85. Mist runs from sunrise -1 h to +2 h and from sunset -1 h to +1.5 h. Grass thickness is fen 0.3, bog 0.12 and swamp none. Plant densities are as in entry 113.
 - WL-2 (entry 113): cattail, tussock sedge and bog moss hummock give their own seeds (Dave 14 Nov 2026: "All herbs and plants should produce seeds"). The dead tree is scenery, like old stumps and fallen logs.
 - DG-1 (entry 120): dune grass gives 1 to 3 Plant fibre a pick, tall grass's amount, with no thatch or straw.
