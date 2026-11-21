@@ -4500,6 +4500,8 @@ func _make_primitive_kiln(lit: bool) -> Node3D:
 	if light != null:
 		light.light_energy = float(KILN_LIGHT[0])
 		light.omni_range = float(KILN_LIGHT[1])
+		light.set_meta("base_energy", light.light_energy)   # the nearest-lights pass flickers it round this
+		light.set_meta("base_range", light.omni_range)   # FireWeather scales the reach from this in fog and snow
 
 	BuildingLook.show_forge_fire(model, lit)
 	return model

@@ -51,7 +51,7 @@ STATIONS = {
     "primitive_kiln": {
         "node": "Kiln", "material": "PrimitiveKiln",
         "fit": (2, 2.74),                    # its length, the longest side: Dave's minimum, 2.74 m
-        "target": 15000, "max_error": 0.05,
+        "target": 15000, "max_error": 0.05,  # stops at about 20,000
         "hearth": ((-0.24, 0.24), (-0.345, -0.06), (-0.75, 0.95)),   # the charcoal bed along the tunnel's floor
         "fire": (0.0, -0.27, 0.6),           # the embers' middle, inside the mouth
         "smoke": (0.0, 0.34, -0.75),         # the chimney's top, at the back

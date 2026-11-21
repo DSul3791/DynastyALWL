@@ -153,12 +153,15 @@ func _init() -> void:
 
 		var energy: float = (glow[0] as BaseMaterial3D).emission_energy_multiplier if not glow.is_empty() else -1.0
 		check(not glow.is_empty() and is_equal_approx(energy, float((view.get_script() as GDScript).get_script_constant_map()["KILN_EMBERS"]) if lit else 0.0), "Primitive kiln lit %s: embers glow %.2f" % [lit, energy])
+		var kiln_light: Array = (view.get_script() as GDScript).get_script_constant_map()["KILN_LIGHT"]
+		var lamp: OmniLight3D = light as OmniLight3D
+		check(lamp != null and is_equal_approx(lamp.light_energy, float(kiln_light[0])) and is_equal_approx(lamp.omni_range, float(kiln_light[1])) and is_equal_approx(float(lamp.get_meta("base_energy", -1.0)), float(kiln_light[0])) and is_equal_approx(float(lamp.get_meta("base_range", -1.0)), float(kiln_light[1])), "Primitive kiln: its light %s over %s m, kept by the flicker and the weather (base_energy, base_range)" % [kiln_light[0], kiln_light[1]])
 		check(flames != null and flames.visible == lit and plume != null and plume.visible == lit, "Primitive kiln lit %s: flames and smoke %s" % [lit, "shown" if lit else "out"])
 		m.free()
 
-	var ghost: Node3D = view._model_for_state(int(kiln["state"]), {"ghost": true})
-	check(not (ghost.get_meta("coal_glow", []) as Array).is_empty() and is_zero_approx((ghost.get_meta("coal_glow")[0] as BaseMaterial3D).emission_energy_multiplier), "a Primitive kiln's placing ghost is cold")
-	ghost.free()
+	var kiln_ghost: Node3D = view._model_for_state(int(kiln["state"]), {"ghost": true})
+	check(not (kiln_ghost.get_meta("coal_glow", []) as Array).is_empty() and is_zero_approx((kiln_ghost.get_meta("coal_glow")[0] as BaseMaterial3D).emission_energy_multiplier), "a Primitive kiln's placing ghost is cold")
+	kiln_ghost.free()
 	var hot_kiln: Node3D = view._model_for_state(int(kiln["state"]), {"lit": true})
 	var cold_kiln: Node3D = view._model_for_state(int(kiln["state"]), {})
 	check(hot_kiln.get_meta("coal_glow")[0] != cold_kiln.get_meta("coal_glow")[0], "each Primitive kiln has its own embers: one lit does not light another")
