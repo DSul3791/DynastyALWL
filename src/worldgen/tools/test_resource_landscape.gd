@@ -2,13 +2,15 @@ extends SceneTree
 
 # The island resource landscape (docs/handoff/RESOURCE_DISTRIBUTION_ARCHITECTURE.md, Dave 21 Nov 2026; docs/design/RESOURCE_DISTRIBUTION.md):
 # src/stream/resource_context.gd on a made-up island, and the server's scatter reading it (server_items.gd _lay_out_sources, ore rocks,
-# boulders), and the client's rock shapes. No tiles: the island is built from arrays.
+# boulders), and the client's rock shapes; stage 2: coal districts and seams (outcrops, digging coal), pockets a dig opens (saved, broken
+# for their find) and the five new finds. No tiles: the island is built from arrays.
 #   godot --headless --path . --script res://src/worldgen/tools/test_resource_landscape.gd
 
 const ContextScript := preload("res://src/stream/resource_context.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const OreRockLook := preload("res://src/client/ore_rock_look.gd")
+const Net := preload("res://src/stream/terrain_net.gd")
 
 const N := 161            # cells a side (64 m): about 10 km
 const CELL := 64.0
@@ -39,7 +41,8 @@ static func ground(x: float, z: float) -> float:
 	return PEAK * share * share + 2.0 - 60.0 * share * pow(absf(sin(d.angle() * 4.0)), 0.3) * (1.0 - share) + 1.0
 
 
-func island(cfg: Dictionary, spawn: Vector3) -> RefCounted:
+# The island; with a lake (water class 2) of 250 m round `lake` when one is given.
+func island(cfg: Dictionary, spawn: Vector3, lake: Vector2 = Vector2.INF) -> RefCounted:
 	var heights: PackedFloat32Array = PackedFloat32Array()
 	var classes: PackedByteArray = PackedByteArray()
 	heights.resize(N * N)
@@ -50,6 +53,9 @@ func island(cfg: Dictionary, spawn: Vector3) -> RefCounted:
 			var h: float = ground(float(i) * CELL, float(j) * CELL)
 			heights[j * N + i] = h if h > 0.0 else NAN
 			classes[j * N + i] = 0 if h > 0.0 else 1
+
+			if h > 0.0 and lake != Vector2.INF and Vector2(float(i) * CELL, float(j) * CELL).distance_to(lake) < 250.0:
+				classes[j * N + i] = 2
 
 	var context: RefCounted = ContextScript.new()
 	context.build(heights, classes, N, N, Vector2.ZERO, CELL, SEED, cfg, spawn)
@@ -239,5 +245,217 @@ func _init() -> void:
 	var rounded: ArrayMesh = OreRockLook.mesh_for(0.0, 0.05)
 	check(jagged != middle and rounded != middle and jagged.get_aabb().size.x > 0.4 and rounded.get_aabb().size.x > 0.4, "jagged and rounded rocks are their own meshes, about rock sized")
 
+	_stage_two(all_cfg, cfg, spawn, context)
 	print("resource landscape: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+# A server on the made-up island with a character "resource01" at `at` holding `tool_id` ("" none); `context` is its landscape.
+func server(dir_name: String, context: RefCounted, at: Vector3, tool_id: String, clear: bool = true):
+	var dir: String = "user://" + dir_name
+	DirAccess.make_dir_recursive_absolute(dir)
+
+	if clear:
+		for file in DirAccess.get_files_at(dir):
+			DirAccess.remove_absolute(dir + "/" + file)
+
+	var items = ItemsScript.new()
+	items.send_full = func(_p, _b): pass
+	items.send_slots = func(_p, _b): pass
+	items.send_world_items = func(_p, _a, _r): pass
+	items.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	items.send_reject = func(_p, _r): pass
+	items.ground_height = func(x, z): return maxf(ground(x, z), 0.5)
+	items.setup(ItemTableScript.load_default(), dir)
+	items.resource_context = context
+	items._boulder_cfg["luck_extra"] = 0.0
+	items._boulder_cfg["flint"] = {}
+	items.peer_connected_hello(1, "resource01")
+	items.report_position(1, at)
+	items.vitals_of(1)["weight"] = 5000.0
+	items._characters["resource01"]["luck"] = 50
+	items._fate_rng.seed = 1518
+
+	if tool_id != "":
+		items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of(tool_id), 0, 1, Vector3.ZERO)
+
+	return items
+
+
+func _stage_two(all_cfg: Dictionary, cfg: Dictionary, spawn: Vector3, plain: RefCounted) -> void:
+	# 9. The five new finds (coordinator D-ORE-1): items 1518..1522, sell value only, and every pocket find names a real item.
+	var table = ItemTableScript.load_default()
+	var numbers: Array = []
+
+	for id in ["gold_nugget", "silver_ore", "amethyst", "garnet", "agate"]:
+		numbers.append(int(table.entry(id).get("number", 0)))
+
+	check(numbers == [1518, 1519, 1520, 1521, 1522], "Gold nugget, Silver ore, Amethyst, Garnet and Agate are items 1518..1522 (%s)" % str(numbers))
+	var finds: Dictionary = all_cfg["ore"].get("finds", {})
+	var finds_real: bool = not finds.is_empty()
+
+	for row in cfg.get("pockets", []):
+		finds_real = finds_real and table.has_id(str(finds.get(str(row["find"]), "")))
+
+	check(finds_real and float(table.entry("gold_nugget").get("value", 0)) > float(table.entry("silver_ore").get("value", 0)), "every pocket's find is a real item; gold is worth more than silver")
+	check(not (all_cfg["ore"]["items"] as Dictionary).has("gold") and not (all_cfg["ore"]["items"] as Dictionary).has("amethyst"), "the finds are not outcrop ores: the geology's gold and gem bodies do not turn boulders into them")
+
+	# 10. Coal: none without water near; with a lake on the slope, the hillside beside it is coal country and the far side is not.
+	check((plain.get("seams") as Array).is_empty(), "no water near, no coal seams")
+	var wet_cfg: Dictionary = cfg.duplicate(true)
+	wet_cfg["coal"]["noise_cut"] = -1.0   # every slope near water is a district here, so the places can be checked
+	wet_cfg["coal"]["seam_chance"] = 1.0
+	var lake: Vector2 = CENTRE + Vector2(0.0, 2000.0)
+	var wet: RefCounted = island(wet_cfg, spawn, lake)
+	var near_best: float = 0.0
+	var far_best: float = 0.0
+	var in_lake: float = 0.0
+
+	for a in range(0, 360, 15):
+		for r in [300.0, 400.0, 500.0]:
+			var off: Vector2 = Vector2(r, 0.0).rotated(deg_to_rad(float(a)))
+			near_best = maxf(near_best, float(wet.call("coal_at", lake.x + off.x, lake.y + off.y)))
+			far_best = maxf(far_best, float(wet.call("coal_at", CENTRE.x + off.x, CENTRE.y - 2000.0 + off.y)))
+
+		in_lake = maxf(in_lake, float(wet.call("coal_at", lake.x + 60.0 * cos(deg_to_rad(float(a))), lake.y + 60.0 * sin(deg_to_rad(float(a))))))
+
+	check(near_best > 0.2 and far_best == 0.0, "coal on the hillside by the lake (%.2f), none on the same slope far from water (%.2f)" % [near_best, far_best])
+	check(in_lake < 0.05, "no coal in the lake itself (%.2f)" % in_lake)
+	var seams: Array = wet.get("seams")
+	var seams_ok: bool = not seams.is_empty()
+
+	for s in seams:
+		var to_peak: Vector2 = (CENTRE - Vector2(float(s["x"]), float(s["z"]))).normalized()
+		seams_ok = seams_ok and float(wet.call("coal_at", float(s["x"]), float(s["z"]))) >= float(wet_cfg["coal"]["seam_min"]) and (s["up"] as Vector2).dot(to_peak) > 0.5 and absf((s["along"] as Vector2).dot(s["up"])) < 0.001
+
+	check(seams_ok, "%d seams, each in coal country, running along the slope with its way in pointing up the hill" % seams.size())
+	var wet_again: RefCounted = island(wet_cfg, spawn, lake)
+	check(str(wet_again.get("seams")) == str(seams), "the same seams every build")
+
+	# 11. The server: dark coal outcrops where the ground meets the seam, and a shovel in the seam's band digs coal.
+	var seam: Dictionary = seams[0]
+	var s_at: Vector2 = Vector2(float(seam["x"]), float(seam["z"]))
+	var notices: Array = []
+	var coal_server = server("test_resource_coal", wet, Vector3(s_at.x, ground(s_at.x, s_at.y) + 1.0, s_at.y), "")
+	coal_server.send_notice = func(_p, line): notices.append(line)
+	var home: Vector2i = Vector2i(floori(s_at.x / 32.0), floori(s_at.y / 32.0))
+	var y: float = coal_server._seam_height(seam)
+	coal_server._items.clear()
+
+	for dz in range(-6, 7):
+		for dx in range(-6, 7):
+			coal_server._lay_out_seams(home + Vector2i(dx, dz), 32.0, coal_server._cell_reads(home + Vector2i(dx, dz), 32.0))
+
+	var outcrops: int = 0
+	var on_layer: bool = true
+	var slots_ok: bool = true
+	var seen: Dictionary = {}
+
+	for id in coal_server._items:
+		var it: Dictionary = coal_server._items[id]
+		var key: int = int(it["scatter"])
+		slots_ok = slots_ok and (key & 0xff) >= coal_server.SEAM_SLOT_FIRST and not seen.has(key)
+		seen[key] = true
+
+		if it.has("boulder") and int((it["boulder"] as Dictionary).get("seam", 0)) == int(seam["id"]):
+			outcrops += 1
+			on_layer = on_layer and str(it["boulder"]["ore"]) == "coal" and absf(float(it["pos"].y) - y) < 1.0
+
+	check(outcrops >= 2 and on_layer, "seam %d (at %.1f m) shows %d coal outcrops along the line where the ground meets it" % [int(seam["id"]), y, outcrops])
+	check(slots_ok, "seam rocks and loose coal have keys of their own (slots %d..)" % coal_server.SEAM_SLOT_FIRST)
+	var coal_n: int = coal_server.table.number_of("coal")
+	var in_band: Vector3 = Vector3(s_at.x, y + coal_server.DIG_DEPTH_M, s_at.y) + Vector3((seam["up"] as Vector2).x, 0.0, (seam["up"] as Vector2).y) * 20.0
+	check(not coal_server._seam_at(in_band - Vector3(0.0, coal_server.DIG_DEPTH_M, 0.0)).is_empty() and coal_server._seam_at(in_band + Vector3(0.0, 5.0, 0.0)).is_empty(), "20 m into the hill the seam's band holds coal; 5 m above it does not")
+	coal_server._dig_seam_coal(1, in_band, 1, 1)
+	coal_server._dig_seam_coal(1, in_band, 1, 1)
+	var got: int = coal_server.inventory_of(1).count_of(coal_n)
+	coal_server._dig_seam_coal(1, in_band + Vector3(0.0, 5.0, 0.0), 1, 1)
+	check(got >= 2 and coal_server.inventory_of(1).count_of(coal_n) == got and notices.count(str(wet_cfg["coal"]["first_find"])) == 1, "digging in the seam gives coal (%d from two digs), above it none; the first find is said once" % got)
+
+	# 12. Pockets: most sources have none; with every chance at 1 each table row shows, by its own rules, the same every build.
+	var real_pockets: int = (plain.get("pockets") as Array).size()
+	check(real_pockets < (plain.get("deposits") as Array).size(), "most sources have no pocket (%d pockets, %d sources)" % [real_pockets, (plain.get("deposits") as Array).size()])
+	var rich_cfg: Dictionary = cfg.duplicate(true)
+
+	for row in rich_cfg["pockets"]:
+		row["chance"] = 1.0
+
+	var rich: RefCounted = island(rich_cfg, spawn)
+	var pockets: Array = rich.get("pockets")
+	var by_source: Dictionary = {}
+
+	for d in rich.get("deposits"):
+		by_source[int(d["id"])] = d
+
+	var kinds: Dictionary = {}
+	var placed_ok: bool = not pockets.is_empty()
+
+	for p in pockets:
+		kinds[str(p["find"])] = true
+		var src: Dictionary = by_source[int(p["source"])]
+		var gap: float = Vector2(float(p["x"]) - float(src["x"]), float(p["z"]) - float(src["z"])).length()
+		var src_j: float = float(rich.call("journey_at", float(src["x"]), float(src["z"])))
+
+		if str(p["find"]) == "garnet":
+			placed_ok = placed_ok and src_j >= 0.7   # journey_min 0.75 at the source's cell (the bilinear read is a touch lower)
+
+		if str(p["find"]) == "silver":
+			placed_ok = placed_ok and str(src["metal"]) == "copper"
+
+		if gap > float(src["radius"]) * 1.2 + 1.0:
+			placed_ok = placed_ok and str(p["find"]) == "gold"   # only the placer gold lies away from its source, down its river gravels
+
+		placed_ok = placed_ok and (rich.call("pocket", int(p["id"])) as Dictionary) == p
+
+	check(placed_ok and kinds.size() >= 4, "pockets of %s, each by its source's metal and how far inland, gold also down the gravels" % str(kinds.keys()))
+	check(str(island(rich_cfg, spawn).get("pockets")) == str(pockets), "the same pockets every build")
+
+	# 13. A dig that reaches a pocket opens it: its rock lies in the hole, is saved with the world, and breaks into its find.
+	var pocket: Dictionary = pockets[0]
+	var p_at: Vector2 = Vector2(float(pocket["x"]), float(pocket["z"]))
+	var surface: float = maxf(ground(p_at.x, p_at.y), 0.5)
+	var said: Array = []
+	var dig = server("test_resource_pocket", rich, Vector3(p_at.x + 0.6, surface, p_at.y), "stone_hammer")
+	dig.send_notice = func(_p, line): said.append(line)
+	dig._open_pockets(1, Vector3(p_at.x, surface + 2.0, p_at.y), dig.DIG_RADIUS_M)
+	check(dig._pockets_open.is_empty(), "a scrape above the ground does not reach the pocket %.1f m down" % float(pocket["depth"]))
+	var hole: Vector3 = Vector3(p_at.x + 0.3, surface - float(pocket["depth"]) + 1.0, p_at.y)
+	dig._open_pockets(1, hole, dig.DIG_RADIUS_M)
+	var key: int = dig.POCKET_KEY | int(pocket["id"])
+	check(dig._pockets_open.has(int(pocket["id"])) and said.size() == 1, "a dig down to it opens the pocket and says what is there: %s" % str(said))
+	dig._dirty = true
+	dig.save()
+	var again = server("test_resource_pocket", rich, Vector3(p_at.x + 0.6, surface, p_at.y), "", false)
+	again._items.clear()
+	var cell: Vector2i = Vector2i(floori(hole.x / 32.0), floori(hole.z / 32.0))
+	again._lay_out_pockets(cell, 32.0)
+	var rock_id: int = -1
+
+	for id in again._items:
+		if int(again._items[id].get("scatter", -1)) == key:
+			rock_id = id
+
+	check(rock_id >= 0 and str(again._items[rock_id]["boulder"]["ore"]) == str(pocket["find"]) and (again._items[rock_id]["pos"] as Vector3).distance_to(hole) < 0.01, "after a restart the opened pocket's rock lies in the hole")
+	var find_item: int = again.table.number_of(str(finds[str(pocket["find"])]))
+	again._boulder_cfg["distribution"]["pocket_rock"]["grade"][str(pocket["find"])] = 1.0   # every piece its find, so the count is sure
+	again.action(1, Net.ACT_ADMIN_GIVE, again.table.number_of("stone_hammer"), 0, 1, Vector3.ZERO)
+	var hammer_slot: int = 0
+
+	for s in range(again.inventory_of(1).slot_count):
+		if str(again.table.entry(again.table.id_of(again.inventory_of(1).numbers[s])).get("tool_class", "")) == "hammer":
+			hammer_slot = s + 1
+
+	again.report_position(1, again._items[rock_id]["pos"] + Vector3(0.6, 0.0, 0.0))
+
+	for k in range(60):
+		again._last_hit.clear()
+		again.action(1, Net.ACT_HIT, rock_id, Net.HIT_BOULDER, hammer_slot, Vector3.ZERO)
+
+	var found: int = again.inventory_of(1).count_of(find_item)
+	check(found >= 1 and not again._items.has(rock_id), "the pocket rock breaks into %d %s and is gone" % [found, again.table.name_of(find_item)])
+	again._dirty = true
+	again.save()
+	var third = server("test_resource_pocket", rich, Vector3(p_at.x + 0.6, surface, p_at.y), "", false)
+	third._items.clear()
+	third._lay_out_pockets(cell, 32.0)
+	check(third._pockets_open.has(int(pocket["id"])) and third._items.is_empty(), "an emptied pocket stays empty after a restart")

@@ -372,7 +372,13 @@ const BOULDER_KEY := 1 << 50
 const BOULDER_TRIES_MAX := 16          # a cell's boulder keys: the low four bits
 const COPPER_ROCK_FIRST := 8           # boulders take keys 0..7, copper rocks 8..15 (the last the mountain-foot boulder)
 const ORE_ROCK_TRIES := 8              # tries a cell for each ore's rocks (_lay_out_ore_rocks)
-const SOURCE_SLOT_FIRST := 64          # a cell's rocks of the sources (deposits) near it: slots 64..255 (_lay_out_sources)
+const SOURCE_SLOT_FIRST := 64          # a cell's rocks of the sources (deposits) near it: slots 64..159 (_lay_out_sources)
+const SOURCE_SLOT_LAST := 159
+const SEAM_SLOT_FIRST := 160           # a cell's coal seam outcrops and their loose coal: slots 160..255 (_lay_out_seams)
+const SEAM_SLOT_LAST := 255
+const POCKET_KEY := ORE_KEY | CAVE_KEY | BOULDER_KEY   # an opened pocket's rock: POCKET_KEY | the pocket's id (30 bits); no other key has all three
+var _pockets_open: Dictionary = {}     # pocket id -> [x, y, z] where its rock lies (the dig that opened it), saved in world_items.json "pockets"
+var _seam_y: Dictionary = {}           # seam id -> the generated ground height at its centre: the layer's height (once a run)
 const ORE_METALS := {"iron": 0, "copper": 1, "tin": 2}   # ResourceContext field and clue index of each ore with an area (meteorites have none)
 const ORE_KEY := 1 << 52               # copper, tin and iron rocks picked by hand: ORE_KEY | cell x << 28 | cell y << 8 | slot; tin boulders add BOULDER_KEY
 const BOG_STATE := 229            # world-item row state of a bog iron deposit (next free structure state, 10 Nov 2026; no structure may take it)
@@ -1934,7 +1940,7 @@ func _item_job() -> Dictionary:
 	_note_save_part("world item copy", t0)
 	_save_gen += 1
 	return {"dir": _dir, "items": copy, "areas": areas, "all": _area_ids.keys(), "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(), "gen": _save_gen, "sums": _area_sums, "exact": exact, "failed_out": _save_failed,
-		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "ore_per_kg": _boulder_per_kg(true), "boulders_then": _boulder_pending.duplicate(true), "bog_iron": _bog_left.duplicate(true), "bog_holes": _bog_holes.duplicate(true), "layout": FloraLayout.VERSION, "no_kits": true}}
+		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "ore_per_kg": _boulder_per_kg(true), "boulders_then": _boulder_pending.duplicate(true), "bog_iron": _bog_left.duplicate(true), "bog_holes": _bog_holes.duplicate(true), "pockets": _pockets_saved(), "layout": FloraLayout.VERSION, "no_kits": true}}
 
 
 func _save_item_files(job: Dictionary) -> void:
@@ -2972,6 +2978,7 @@ func reset_world() -> int:
 	_boulder_pending.clear()
 	_bog_left.clear()
 	_bog_holes.clear()
+	_pockets_open.clear()
 	_picked.clear()
 	_stripped.clear()
 	_fruit.clear()
@@ -4024,6 +4031,7 @@ func _dig(peer: int, inv, at: Vector3, held_slot: int) -> void:
 		return
 
 	_give_dig_yield(peer, at, _shovel_tier(inv, shovel), _shovel_pieces(inv, shovel))
+	_open_pockets(peer, at, DIG_RADIUS_M * reach)
 	_note_bog_hole(at, DIG_RADIUS_M * reach)
 
 	# A dig more than 2.5 m under the surface is a tunnel or a cave: the "cave_in" hint (hints.json digging_under_ceiling) warns about roof supports.
@@ -5130,6 +5138,7 @@ func _give_dig_yield(peer: int, at: Vector3, tier: int = 1, pieces: int = 1) -> 
 			give(peer, number, maxi(1, int(round(float(amount) * skill_factor(peer, "dig")))) * pieces)
 
 	_dig_bog_iron(peer, at, tier, pieces)
+	_dig_seam_coal(peer, at, tier, pieces)
 	practice(peer, "dig")
 	var under: Array = _dig_cfg.get("under", {}).get(material, [])
 
@@ -5178,15 +5187,7 @@ func _dig_bog_iron(peer: int, at: Vector3, tier: int, pieces: int) -> void:
 	give(peer, number, amount)
 	_bog_left[key] = [left - amount, float(row[1])]
 	_dirty = true
-	var st: Dictionary = _goal_state_of(peer)   # the character's record: the line is said once, kept in hints_seen like a hint
-
-	if not st.is_empty():
-		if typeof(st.get("hints_seen", null)) != TYPE_DICTIONARY:
-			st["hints_seen"] = {}
-
-		if not st["hints_seen"].has("found_bog_iron") and str(cfg.get("first_find", "")) != "":
-			st["hints_seen"]["found_bog_iron"] = Time.get_unix_time_from_system()
-			_say(peer, str(cfg["first_find"]))
+	_say_once(peer, "found_bog_iron", str(cfg.get("first_find", "")))
 
 
 # The patches of field square (fx, fz), worked out once a run (BogIron.field reads a few thousand samples of the baked tile). bog_field answers
@@ -7310,6 +7311,12 @@ func _load_world_items() -> void:
 		if typeof(bog_row) == TYPE_ARRAY and (bog_row as Array).size() >= 2:
 			_bog_left[str(key)] = [int(bog_row[0]), float(bog_row[1])]
 
+	for id in parsed.get("pockets", {}):   # added 21 Nov 2026 (resource distribution stage 2): an older file has none
+		var spot: Variant = parsed["pockets"][id]
+
+		if typeof(spot) == TYPE_ARRAY and (spot as Array).size() >= 3:
+			_pockets_open[int(id)] = [float(spot[0]), float(spot[1]), float(spot[2])]
+
 	for hole in parsed.get("bog_holes", []):   # added 21 Nov 2026: an older file has none
 		if typeof(hole) == TYPE_ARRAY and (hole as Array).size() >= 5:
 			_bog_holes.append([float(hole[0]), float(hole[1]), float(hole[2]), float(hole[3]), float(hole[4]), int(hole[5]) if (hole as Array).size() >= 6 else PEAT_SOIL])
@@ -7915,6 +7922,8 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	_lay_out_ore_rocks(cell, cell_m, "iron", reads)
 	_lay_out_ore_rocks(cell, cell_m, "meteorite", reads)
 	_lay_out_sources(cell, cell_m, reads)
+	_lay_out_seams(cell, cell_m, reads)
+	_lay_out_pockets(cell, cell_m)
 	_cell_part("copper, tin and iron rocks and meteorites", part_usec)
 	var by_ore: PackedStringArray = PackedStringArray()
 
@@ -8409,7 +8418,7 @@ func _lay_out_sources(cell: Vector2i, cell_m: float, reads: Dictionary) -> void:
 			var this_slot: int = slot
 			slot += 1
 
-			if this_slot > 255:
+			if this_slot > SOURCE_SLOT_LAST:
 				break
 
 			var y: float = float(ground.call(at.x, at.y))
@@ -8455,6 +8464,260 @@ func _lay_out_sources(cell: Vector2i, cell_m: float, reads: Dictionary) -> void:
 
 			_items[_next_id] = {"number": 0, "count": left, "pos": _settled(spot), "left": 1.0e9, "scatter": key, "boulder": row}
 			_next_id += 1
+
+
+# The item a rock's ore gives (boulders.json ore items, then ore finds for a pocket's gold, silver and gems), "" when none.
+func _ore_item_of(ore: String) -> String:
+	var cfg: Dictionary = _boulder_cfg.get("ore", {})
+	return str((cfg.get("items", {}) as Dictionary).get(ore, (cfg.get("finds", {}) as Dictionary).get(ore, "")))
+
+
+# The height of a coal seam's layer: the generated ground at its centre (ground_height, kept once a run); NAN while unknown.
+func _seam_height(seam: Dictionary) -> float:
+	var id: int = int(seam["id"])
+
+	if not _seam_y.has(id):
+		if not ground_height.is_valid():
+			return NAN
+
+		var y: float = float(ground_height.call(float(seam["x"]), float(seam["z"])))
+
+		if is_nan(y):
+			return NAN
+
+		_seam_y[id] = y
+
+	return float(_seam_y[id])
+
+
+# The coal seam (ResourceContext seams) whose layer holds the point, or {}: within half its length along it, from out_m outside the
+# hillside to into_m into it, and within half its thickness of its height.
+func _seam_at(spot: Vector3) -> Dictionary:
+	var cfg: Dictionary = (_boulder_cfg.get("distribution", {}) as Dictionary).get("coal", {})
+
+	if resource_context == null or cfg.is_empty():
+		return {}
+
+	var lengths: Array = cfg.get("length_m", [60.0, 200.0])
+	var reach: float = float(lengths[1]) * 0.5 + float(cfg.get("into_m", 80.0))
+	var seams: Array = resource_context.get("seams")
+
+	for n in resource_context.call("seams_near", spot.x, spot.z, reach):
+		var seam: Dictionary = seams[n]
+		var rel: Vector2 = Vector2(spot.x - float(seam["x"]), spot.z - float(seam["z"]))
+		var across: float = rel.dot(seam["up"])
+
+		if absf(rel.dot(seam["along"])) > float(seam["length"]) * 0.5 or across < -float(seam["out"]) or across > float(seam["into"]):
+			continue
+
+		var y: float = _seam_height(seam)
+
+		if not is_nan(y) and absf(spot.y - y) <= float(seam["thick"]) * 0.5:
+			return seam
+
+	return {}
+
+
+# A shovel dig inside a coal seam's layer also brings up coal (distribution coal per_dig, rolled like a soil row with the shovel tier's
+# extra, times the shovel size's pieces). The seam does not run out: it is followed into the hill, and the ground dug is the cost.
+# The first find says first_find once to that character.
+func _dig_seam_coal(peer: int, at: Vector3, tier: int, pieces: int) -> void:
+	var cfg: Dictionary = (_boulder_cfg.get("distribution", {}) as Dictionary).get("coal", {})
+	var number: int = table.number_of("coal")
+
+	if cfg.is_empty() or number <= 0 or _seam_at(at - Vector3(0.0, DIG_DEPTH_M, 0.0)).is_empty():
+		return
+
+	var per: Array = cfg.get("per_dig", [1, 2])
+	var extra: int = int(_dig_cfg.get("tier_extra", {}).get(str(tier), 0))
+	give(peer, number, maxi(1, int(round(float(roll_amount(peer, _fate_rng, int(per[0]), int(per[1]) + extra)) * skill_factor(peer, "dig")))) * pieces)
+	_say_once(peer, "found_coal_seam", str(cfg.get("first_find", "")))
+
+
+# Says `line` to the character once ever (kept in its hints_seen like a hint, under `key`).
+func _say_once(peer: int, key: String, line: String) -> void:
+	var st: Dictionary = _goal_state_of(peer)
+
+	if st.is_empty() or line == "":
+		return
+
+	if typeof(st.get("hints_seen", null)) != TYPE_DICTIONARY:
+		st["hints_seen"] = {}
+
+	if not st["hints_seen"].has(key):
+		st["hints_seen"][key] = Time.get_unix_time_from_system()
+		_say(peer, line)
+
+
+# Coal seam outcrops (distribution coal): along each seam near the cell, every outcrop_every_m, the point up or down the slope (within
+# outcrop_search_m) where the ground meets the layer's height; there a dark coal outcrop boulder (ore coal) and loose_below loose coal a
+# few metres downhill. Only the points inside this cell are laid here. Keys: slots SEAM_SLOT_FIRST.. of the cell, in order of the seams
+# and their points; the loose coal under ORE_KEY, the outcrops under ORE_KEY | BOULDER_KEY, like a source's rocks.
+func _lay_out_seams(cell: Vector2i, cell_m: float, reads: Dictionary) -> void:
+	var cfg: Dictionary = (_boulder_cfg.get("distribution", {}) as Dictionary).get("coal", {})
+
+	if resource_context == null or cfg.is_empty():
+		return
+
+	var ground: Callable = reads["ground"]
+	var lo: Vector2 = Vector2(cell) * cell_m
+	var hi: Vector2 = lo + Vector2(cell_m, cell_m)
+	var search: float = minf(float(cfg.get("outcrop_search_m", 24.0)), SCATTER_PAD_M - 4.0)
+	var every: float = maxf(float(cfg.get("outcrop_every_m", 14.0)), 2.0)
+	var lengths: Array = cfg.get("length_m", [60.0, 200.0])
+	var radii: Array = cfg.get("outcrop_radius_m", [0.5, 1.0])
+	var loose: Array = cfg.get("loose_below", [0, 2])
+	var cell_bits: int = ((cell.x & 0xfffff) << 28) | ((cell.y & 0xfffff) << 8)
+	var slot: int = SEAM_SLOT_FIRST
+	var coal: int = table.number_of("coal")
+	var seams: Array = resource_context.get("seams")
+
+	for n in resource_context.call("seams_near", (lo.x + hi.x) * 0.5, (lo.y + hi.y) * 0.5, float(lengths[1]) * 0.5 + search + cell_m):
+		var seam: Dictionary = seams[n]
+		var along: Vector2 = seam["along"]
+		var up: Vector2 = seam["up"]
+		var centre: Vector2 = Vector2(float(seam["x"]), float(seam["z"]))
+		var stations: int = int(floor(float(seam["length"]) / every))
+
+		for k in range(stations + 1):
+			var p0: Vector2 = centre + along * (float(k) * every - float(seam["length"]) * 0.5)
+
+			if p0.x < lo.x - search or p0.y < lo.y - search or p0.x >= hi.x + search or p0.y >= hi.y + search:
+				continue   # its outcrop cannot fall in this cell (and reading it would leave the cell's loaded ground)
+
+			var y: float = _seam_height(seam)
+			var a: float = -search
+			var b: float = search
+			var fa: float = float(ground.call(p0.x + up.x * a, p0.y + up.y * a)) - y
+			var fb: float = float(ground.call(p0.x + up.x * b, p0.y + up.y * b)) - y
+
+			if is_nan(fa) or is_nan(fb) or fa > 0.0 or fb < 0.0:
+				continue   # the ground does not cross the layer here (a gully, a spur): no outcrop at this point
+
+			for _step in 6:
+				var m: float = (a + b) * 0.5
+				var fm: float = float(ground.call(p0.x + up.x * m, p0.y + up.y * m)) - y
+
+				if is_nan(fm):
+					break
+
+				if fm < 0.0:
+					a = m
+				else:
+					b = m
+
+			var at: Vector2 = p0 + up * ((a + b) * 0.5)
+
+			if at.x < lo.x or at.y < lo.y or at.x >= hi.x or at.y >= hi.y:
+				continue   # another cell's outcrop
+
+			var u: float = ResourceContextScript.unit(int(seam["id"]), k, 11)
+			var key: int = ORE_KEY | BOULDER_KEY | cell_bits | slot
+			var below: int = int(loose[0]) + int(floor(ResourceContextScript.unit(int(seam["id"]), k, 12) * float(int(loose[1]) - int(loose[0]) + 1)))
+			slot += 1 + below
+
+			if slot - 1 > SEAM_SLOT_LAST:
+				return
+
+			var spot: Vector3 = Vector3(at.x, float(ground.call(at.x, at.y)), at.y)
+			var row: Dictionary = {"radius": lerpf(float(radii[0]), float(radii[1]), u), "yaw": u * 360.0, "ang": 0.9, "seam": int(seam["id"])}
+			_set_boulder_ore(row, "coal", key)
+			row["grade"] = float(cfg.get("outcrop_grade", 0.5))
+			var left: int = _boulder_left_of(key, row)
+
+			if left > 0 and not is_nan(spot.y):
+				_items[_next_id] = {"number": 0, "count": left, "pos": _settled(spot), "left": 1.0e9, "scatter": key, "boulder": row}
+				_next_id += 1
+
+			for q in below:
+				var loose_key: int = ORE_KEY | cell_bits | ((key & 0xff) + 1 + q)
+				var drop: Vector2 = at - up * lerpf(2.0, 6.0, ResourceContextScript.unit(int(seam["id"]), k, 13 + q)) + along * (ResourceContextScript.unit(int(seam["id"]), k, 20 + q) - 0.5) * 3.0
+				var dy: float = float(ground.call(drop.x, drop.y))
+
+				if coal > 0 and not _taken.has(loose_key) and not is_nan(dy) and dy >= 1.0:
+					_items[_next_id] = {"number": coal, "count": 1, "pos": Vector3(drop.x, dy, drop.y), "left": 1.0e9, "scatter": loose_key}
+					_next_id += 1
+
+
+# The opened pockets, for the save: {id as text: [x, y, z]}.
+func _pockets_saved() -> Dictionary:
+	var out: Dictionary = {}
+
+	for id in _pockets_open:
+		out[str(id)] = _pockets_open[id]
+
+	return out
+
+
+# A dig opens the pockets (ResourceContext pockets) it reaches: within the pocket's r_m across and its depth under the generated ground
+# (less 0.3 m: the hole's own size). An opened pocket's rock lies in the hole from then on (saved), laid now if its cell is out.
+func _open_pockets(peer: int, at: Vector3, radius: float) -> void:
+	if resource_context == null or not ground_height.is_valid():
+		return
+
+	var rows: Array = resource_context.get("pockets")
+	var bottom: float = at.y - DIG_DEPTH_M - radius
+
+	for n in resource_context.call("pockets_near", at.x, at.z, 3.0):
+		var p: Dictionary = rows[n]
+		var id: int = int(p["id"])
+
+		if _pockets_open.has(id) or Vector2(at.x - float(p["x"]), at.z - float(p["z"])).length() > float(p["r"]):
+			continue
+
+		var surface: float = float(ground_height.call(float(p["x"]), float(p["z"])))
+
+		if is_nan(surface) or surface - bottom < float(p["depth"]) - 0.3:
+			continue
+
+		var spot: Vector3 = _settled(at)
+		_pockets_open[id] = [spot.x, spot.y, spot.z]
+		_dirty = true
+		var cfg: Dictionary = (_boulder_cfg.get("distribution", {}) as Dictionary).get("pocket_rock", {})
+		var item: int = table.number_of(_ore_item_of(str(p["find"])))
+
+		if item > 0:
+			_say(peer, str(cfg.get("say", "You dig into a pocket of %s.")) % table.name_of(item))
+
+		var cell_m: float = float(_drops.get("ground_scatter", {}).get("cell_m", 32.0))
+
+		if _cells_done.has(Vector2i(int(floor(spot.x / cell_m)), int(floor(spot.z / cell_m)))):
+			_place_pocket(id, p)
+
+
+# The opened pockets whose rock lies in this cell.
+func _lay_out_pockets(cell: Vector2i, cell_m: float) -> void:
+	if resource_context == null:
+		return
+
+	for id in _pockets_open:
+		var spot: Array = _pockets_open[id]
+
+		if int(floor(float(spot[0]) / cell_m)) == cell.x and int(floor(float(spot[2]) / cell_m)) == cell.y:
+			var p: Dictionary = resource_context.call("pocket", int(id))
+
+			if not p.is_empty():
+				_place_pocket(int(id), p)
+
+
+# A pocket's rock (distribution pocket_rock): small, its stones and the grade of its find; what is left of it keeps under its key.
+func _place_pocket(id: int, p: Dictionary) -> void:
+	var cfg: Dictionary = (_boulder_cfg.get("distribution", {}) as Dictionary).get("pocket_rock", {})
+	var radii: Array = cfg.get("radius_m", [0.3, 0.45])
+	var stones: Array = cfg.get("stones", [6, 12])
+	var key: int = POCKET_KEY | id
+	var u: float = ResourceContextScript.unit(id, 1)
+	var row: Dictionary = {"radius": lerpf(float(radii[0]), float(radii[1]), u), "yaw": u * 360.0, "ang": 0.8, "ore": str(p["find"]),
+		"grade": float((cfg.get("grade", {}) as Dictionary).get(str(p["find"]), 0.3)), "pocket": id}
+	row["total"] = int(round(lerpf(float(stones[0]), float(stones[1]), ResourceContextScript.unit(id, 2))))
+	var left: int = mini(int(_boulder_left.get(key, row["total"])), int(row["total"]))
+
+	if left <= 0:
+		return
+
+	var spot: Array = _pockets_open[id]
+	_items[_next_id] = {"number": 0, "count": left, "pos": Vector3(float(spot[0]), float(spot[1]), float(spot[2])), "left": 1.0e9, "scatter": key, "boulder": row}
+	_next_id += 1
 
 
 # An ore's rock rule: boulders.json ore_rocks (shared by copper and tin, Dave 21 Nov 2026) under the ore's own <ore>_rocks (its slot and
@@ -8633,9 +8896,9 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 		var ore_item: int = 0
 
 		if info.has("ore") and not ore_cfg.is_empty() and a_pick and material_ok:
-			var rock_piece: bool = (ore_cfg.get("rocks", {}) as Dictionary).has(str(info["ore"])) and not (ore_cfg.get("items", {}) as Dictionary).has(str(info["ore"]))
+			var rock_piece: bool = (ore_cfg.get("rocks", {}) as Dictionary).has(str(info["ore"])) and _ore_item_of(str(info["ore"])) == ""
 			var share: float = float(ore_cfg.get("rock_piece_share", 0.5)) if rock_piece else float(info.get("grade", ore_cfg.get("piece_share", 0.5)))   # a copper rock's own grade
-			var piece_id: String = str((ore_cfg.get("rocks", {}) as Dictionary).get(str(info["ore"]), "")) if rock_piece else str((ore_cfg.get("items", {}) as Dictionary).get(str(info["ore"]), ""))
+			var piece_id: String = str((ore_cfg.get("rocks", {}) as Dictionary).get(str(info["ore"]), "")) if rock_piece else _ore_item_of(str(info["ore"]))
 			# Ore by weight (boulders PLAN.md 3c, answered for Dave 19 Nov 2026, PROVISIONAL): the share is of the rock's weight, and an ore piece
 			# takes its own weight out of the rock in stones (a 1.5 kg ore piece is 3 stones of 0.5 kg), so a 30% copper rock gives about 30% of its
 			# kg as ore, not 35 times more pieces than before the 0.5 kg stones. A piece costs c stones (its weight in stones, at least 1), and the

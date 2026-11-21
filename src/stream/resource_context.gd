@@ -21,7 +21,13 @@ extends RefCounted
 #   candidate in its field becomes an assured source (handoff 13).
 # - clue per metal: rounded river finds below each source, strongest at the source and fading down its own drainage (river cells fade over
 #   transport_m, hillside cells over hillslope_m; a lake ends it), so a find points up its own tributary and never up another.
-# - coal 0..1 (stage 2): hillsides and mountain edges above wet ground.
+# - coal 0..1: coal districts, hillsides and mountain edges with wet ground (lake, marsh, swamp, fen, bog) a short way off, where a noise of
+#   its own says so (not every such slope); rivers count, since streams cut down through coal beds and show them in their banks. Seams: in a district, a coal layer at one height running along the hillside (along the contour)
+#   for 60 to 200 m and back into the hill; the server works out its height from the real ground at its centre, lays dark outcrops where it
+#   shows and gives coal to a shovel that digs inside its band, so a player can follow it into the hill.
+# - pockets: per source, a small chance of each find in the association table (boulders.json distribution pockets: which sources, how far
+#   inland, near the source or down its river gravels, how deep); most sources have none. Deterministic from the source's id; the server
+#   reveals one when a dig reaches it.
 #
 # All values from boulders.json "distribution" (PROVISIONAL, RD-1..).
 
@@ -48,6 +54,8 @@ var coal: PackedFloat32Array = PackedFloat32Array()
 var receiver: PackedInt32Array = PackedInt32Array()
 var drain: PackedFloat32Array = PackedFloat32Array()
 var deposits: Array = []          # {"metal", "x", "z", "size" 0..1, "radius" m, "id" int, "assured" bool}
+var seams: Array = []             # {"id", "x", "z", "along" Vector2 (the contour), "up" Vector2 (into the hill), "length" m, "thick" m, "into" m, "out" m}
+var pockets: Array = []           # {"id", "find", "x", "z", "depth" m under the generated ground, "r" m, "source" deposit id}
 var report: PackedStringArray = PackedStringArray()   # what the build found (the server log; the diagnostics tool)
 var build_ms: float = 0.0
 
@@ -55,6 +63,9 @@ var _cfg: Dictionary = {}
 var _seed: int = 0
 var _bins: Dictionary = {}        # Vector2i (bin_m squares) -> PackedInt32Array of deposit indexes
 var _bin_m: float = 512.0
+var _seam_bins: Dictionary = {}   # the same squares -> seam indexes
+var _pocket_bins: Dictionary = {} # the same squares -> pocket indexes
+var _pocket_of: Dictionary = {}   # pocket id -> index in pockets
 var _island_dmax: PackedFloat32Array = PackedFloat32Array()
 var _island_peak: PackedFloat32Array = PackedFloat32Array()
 
@@ -161,6 +172,8 @@ func build(heights: PackedFloat32Array, classes: PackedByteArray, n_x: int, n_z:
 	_coal()
 	_deposits(spawn)
 	_clues()
+	_seams()
+	_pockets()
 
 
 func ready() -> bool:
@@ -226,20 +239,50 @@ func downhill_at(x: float, z: float) -> Vector2:
 
 # Deposits whose centre lies within `reach` of (x, z): indexes into deposits, in their stable order.
 func deposits_near(x: float, z: float, reach: float) -> PackedInt32Array:
+	return _near(_bins, deposits, x, z, reach)
+
+
+# Seams whose centre lies within `reach` of (x, z) (indexes into seams, in order).
+func seams_near(x: float, z: float, reach: float) -> PackedInt32Array:
+	return _near(_seam_bins, seams, x, z, reach)
+
+
+# Pockets within `reach` of (x, z) (indexes into pockets, in order).
+func pockets_near(x: float, z: float, reach: float) -> PackedInt32Array:
+	return _near(_pocket_bins, pockets, x, z, reach)
+
+
+# The pocket with this id, or {}.
+func pocket(id: int) -> Dictionary:
+	return pockets[int(_pocket_of[id])] if _pocket_of.has(id) else {}
+
+
+func _near(bins: Dictionary, rows: Array, x: float, z: float, reach: float) -> PackedInt32Array:
 	var out: PackedInt32Array = PackedInt32Array()
 	var b0: Vector2i = Vector2i(floori((x - reach) / _bin_m), floori((z - reach) / _bin_m))
 	var b1: Vector2i = Vector2i(floori((x + reach) / _bin_m), floori((z + reach) / _bin_m))
 
 	for bz in range(b0.y, b1.y + 1):
 		for bx in range(b0.x, b1.x + 1):
-			for n in _bins.get(Vector2i(bx, bz), PackedInt32Array()):
-				var d: Dictionary = deposits[n]
+			for n in bins.get(Vector2i(bx, bz), PackedInt32Array()):
+				var d: Dictionary = rows[n]
 
 				if Vector2(float(d["x"]) - x, float(d["z"]) - z).length() <= reach:
 					out.append(n)
 
 	out.sort()
 	return out
+
+
+func _bin_add(bins: Dictionary, x: float, z: float, n: int) -> void:
+	var bin: Vector2i = Vector2i(floori(x / _bin_m), floori(z / _bin_m))
+
+	if not bins.has(bin):
+		bins[bin] = PackedInt32Array()
+
+	var list: PackedInt32Array = bins[bin]
+	list.append(n)
+	bins[bin] = list   # a packed array copies on write: put it back
 
 
 func _bilinear(values: PackedFloat32Array, stride: int, offset: int, x: float, z: float) -> float:
@@ -310,11 +353,26 @@ func _islands() -> void:
 func _distance_to_sea() -> PackedFloat32Array:
 	var d: PackedFloat32Array = PackedFloat32Array()
 	d.resize(nx * nz)
-	var a: float = cell_m
-	var b: float = cell_m * sqrt(2.0)
 
 	for k in range(nx * nz):
 		d[k] = 0.0 if not _land(k) else 1.0e9
+
+	d = _chamfer(d)
+
+	for k in range(nx * nz):
+		var n: int = island[k]
+
+		if n > 0:
+			_island_dmax[n] = maxf(_island_dmax[n], d[k])
+			_island_peak[n] = maxf(_island_peak[n], height[k])
+
+	return d
+
+
+# Two-pass chamfer distance (cell_m straight, cell_m x sqrt 2 diagonal): cells at 0 are the sources, the rest start large. Returns the distances.
+func _chamfer(d: PackedFloat32Array) -> PackedFloat32Array:
+	var a: float = cell_m
+	var b: float = cell_m * sqrt(2.0)
 
 	for j in range(nz):
 		for i in range(nx):
@@ -361,13 +419,6 @@ func _distance_to_sea() -> PackedFloat32Array:
 					v = minf(v, d[k + nx - 1] + b)
 
 			d[k] = v
-
-	for k in range(nx * nz):
-		var n: int = island[k]
-
-		if n > 0:
-			_island_dmax[n] = maxf(_island_dmax[n], d[k])
-			_island_peak[n] = maxf(_island_peak[n], height[k])
 
 	return d
 
@@ -498,12 +549,12 @@ static func _smooth(a: float, b: float, x: float) -> float:
 
 # A metal's warped value noise (0..1) over the grid, worked on a coarse lattice (noise_block_cells) and read bilinearly: the waves are
 # kilometres long, so the 64 m cells need no noise of their own.
-func _noise_grid(purpose: String) -> PackedFloat32Array:
+func _noise_grid(purpose: String, wave_m: float = 0.0) -> PackedFloat32Array:
 	var block: int = maxi(int(_cfg.get("noise_block_cells", 4)), 1)
 	var bx: int = _div(nx + block - 1, block) + 1
 	var bz: int = _div(nz + block - 1, block) + 1
 	var base: int = _hash(_seed, purpose.hash())
-	var wave: float = float(_cfg.get("noise_wave_m", 3200.0))
+	var wave: float = wave_m if wave_m > 0.0 else float(_cfg.get("noise_wave_m", 3200.0))
 	var warp_wave: float = float(_cfg.get("warp_wave_m", 2400.0))
 	var warp: float = float(_cfg.get("warp_m", 1600.0))
 	var coarse: PackedFloat32Array = PackedFloat32Array()
@@ -673,10 +724,44 @@ static func _push(buckets: Dictionary, level: int, k: int) -> void:
 	buckets[level] = list
 
 
-# Coal districts (stage 2): filled by _coal; the stage 1 build leaves them at 0.
+# Coal districts (distribution coal): dry land on a hillside (slope over slope_min, full at slope_full) with water (wet_classes: lake, river,
+# marsh, swamp, fen, bog) within wet_reach_m, where the district noise (wave_m) passes its cut. 0..1 per cell, smooth at the edges.
 func _coal() -> void:
 	coal = PackedFloat32Array()
 	coal.resize(nx * nz)
+	var cfg: Dictionary = _cfg.get("coal", {})
+
+	if cfg.is_empty():
+		return
+
+	var wet: Array = cfg.get("wet_classes", [2, 3, 4, 6, 7, 8])
+	var to_wet: PackedFloat32Array = PackedFloat32Array()
+	to_wet.resize(nx * nz)
+
+	for k in range(nx * nz):
+		to_wet[k] = 0.0 if wet.has(int(water[k])) else 1.0e9
+
+	to_wet = _chamfer(to_wet)
+	var noise: PackedFloat32Array = _noise_grid("coal", float(cfg.get("wave_m", 1600.0)))
+	var cut: float = float(cfg.get("noise_cut", 0.5))
+	var edge: float = float(cfg.get("noise_edge", 0.05))
+	var reach: float = float(cfg.get("wet_reach_m", 400.0))
+	var s0: float = float(cfg.get("slope_min", 0.08))
+	var s1: float = float(cfg.get("slope_full", 0.25))
+
+	for j in range(1, nz - 1):
+		for i in range(1, nx - 1):
+			var k: int = j * nx + i
+
+			if water[k] != 0 or island[k] == 0 or to_wet[k] > reach:
+				continue
+
+			var slope: float = 0.0
+
+			for o in [k - 1, k + 1, k - nx, k + nx]:
+				slope = maxf(slope, absf(height[k] - height[o]) / cell_m)
+
+			coal[k] = _smooth(s0, s1, slope) * (1.0 - _smooth(reach * 0.5, reach, to_wet[k])) * _smooth(cut - edge, cut + edge, noise[k])
 
 
 # Deposits on a world grid of deposit_grid_m: each grid square, per metal, one candidate point (jittered inside the square) that becomes a
@@ -721,16 +806,8 @@ func _deposits(spawn: Vector3) -> void:
 
 
 func _add_deposit(m: int, x: float, z: float, size: float, radius: float, id: int, assured: bool) -> void:
-	var n: int = deposits.size()
 	deposits.append({"metal": METALS[m], "m": m, "x": x, "z": z, "size": size, "radius": radius, "id": id, "assured": assured})
-	var bin: Vector2i = Vector2i(floori(x / _bin_m), floori(z / _bin_m))
-
-	if not _bins.has(bin):
-		_bins[bin] = PackedInt32Array()
-
-	var list: PackedInt32Array = _bins[bin]
-	list.append(n)
-	_bins[bin] = list
+	_bin_add(_bins, x, z, deposits.size() - 1)
 
 
 # The starting island (handoff 13): route costs from spawn over its land (cell length x (1 + slope_cost x slope^2), a river cell adds
@@ -923,3 +1000,117 @@ func _clues() -> void:
 				break
 
 			c = r
+
+
+# Seams (distribution coal): one candidate per seam_grid_m square (jittered), a seam with chance seam_chance x coal there where coal passes
+# seam_min. It runs along the contour (across the slope of the coarse ground), length_m and thick_m by a draw, and reaches into_m into the
+# hill (out_m out of it, where the hillside drops below it). Its height is not here: the server reads the real ground at its centre.
+func _seams() -> void:
+	seams = []
+	_seam_bins = {}
+	var cfg: Dictionary = _cfg.get("coal", {})
+
+	if cfg.is_empty() or coal.is_empty():
+		return
+
+	var grid_m: float = float(cfg.get("seam_grid_m", 256.0))
+	var lengths: Array = cfg.get("length_m", [60.0, 200.0])
+	var thicks: Array = cfg.get("thick_m", [1.2, 2.5])
+	var g0: Vector2i = Vector2i(floori(origin.x / grid_m), floori(origin.y / grid_m))
+	var g1: Vector2i = Vector2i(floori((origin.x + float(nx) * cell_m) / grid_m), floori((origin.y + float(nz) * cell_m) / grid_m))
+	var salt: int = _seed ^ 0xc0a1
+
+	for gz in range(g0.y, g1.y + 1):
+		for gx in range(g0.x, g1.x + 1):
+			var x: float = (float(gx) + 0.1 + 0.8 * unit(salt, gx, gz, 1)) * grid_m
+			var z: float = (float(gz) + 0.1 + 0.8 * unit(salt, gx, gz, 2)) * grid_m
+			var c: float = coal_at(x, z)
+
+			if c < float(cfg.get("seam_min", 0.2)) or unit(salt, gx, gz, 3) >= float(cfg.get("seam_chance", 0.6)) * c:
+				continue
+
+			var up: Vector2 = _uphill(x, z)
+
+			if up == Vector2.ZERO:
+				continue
+
+			var u: float = unit(salt, gx, gz, 4)
+			seams.append({"id": _hash(_hash(gx, gz), 0xc0a1), "x": x, "z": z, "along": up.orthogonal(), "up": up,
+				"length": lerpf(float(lengths[0]), float(lengths[1]), u), "thick": lerpf(float(thicks[0]), float(thicks[1]), unit(salt, gx, gz, 5)),
+				"into": float(cfg.get("into_m", 80.0)), "out": float(cfg.get("out_m", 12.0))})
+			_bin_add(_seam_bins, x, z, seams.size() - 1)
+
+	report.append("resources: %d coal seams" % seams.size())
+
+
+# The way uphill at a point (unit x, z) from the coarse ground's slope round its cell; ZERO on the flat or off the grid.
+func _uphill(x: float, z: float) -> Vector2:
+	var k: int = cell_at(x, z)
+
+	if k < 0 or k % nx == 0 or k % nx == nx - 1 or k < nx or k >= nx * (nz - 1):
+		return Vector2.ZERO
+
+	var g: Vector2 = Vector2(height[k + 1] - height[k - 1], height[k + nx] - height[k - nx])
+	return g.normalized() if g.length() > 0.5 else Vector2.ZERO
+
+
+# Pockets (distribution pockets): for every source, each table row whose metals and journey band it fits rolls per_source times with
+# chance x (0.5 + the source's size); a pocket lies near the source (within its radius x 1.2) or, for place "gravel", in the river gravels
+# 1..gravel_cells cells down its drainage. depth_m under the generated ground; found by a dig within r_m of it.
+func _pockets() -> void:
+	pockets = []
+	_pocket_bins = {}
+	_pocket_of = {}
+	var table: Array = _cfg.get("pockets", [])
+
+	for d in deposits:
+		var id: int = int(d["id"])
+		var c: int = cell_at(float(d["x"]), float(d["z"]))
+		var j: float = journey[c] if c >= 0 else 0.0
+
+		for e in range(table.size()):
+			var row: Dictionary = table[e]
+
+			if not (row.get("metals", []) as Array).has(str(d["metal"])) or j < float(row.get("journey_min", 0.0)) or j > float(row.get("journey_max", 1.0)):
+				continue
+
+			for q in int(row.get("per_source", 1)):
+				var salt: int = _hash(id, 0x90c + e * 16 + q)
+
+				if unit(salt, 1) >= float(row.get("chance", 0.0)) * (0.5 + float(d["size"])):
+					continue
+
+				var at: Vector2 = Vector2(float(d["x"]), float(d["z"])) + Vector2(sqrt(unit(salt, 2)) * float(d["radius"]) * 1.2, 0.0).rotated(unit(salt, 3) * TAU)
+
+				if str(row.get("place", "source")) == "gravel":
+					var cell: int = c
+					var steps: int = 1 + int(unit(salt, 4) * float(row.get("gravel_cells", 6)))
+
+					for _s in steps:
+						if cell < 0 or receiver[cell] < 0 or water[receiver[cell]] == LAKE or not _land(receiver[cell]):
+							break
+
+						cell = receiver[cell]
+
+					if cell < 0 or cell == c:
+						continue
+
+					at = origin + Vector2(float(cell % nx), float(_div(cell, nx))) * cell_m + Vector2(unit(salt, 5) - 0.5, unit(salt, 6) - 0.5) * cell_m * 0.6
+
+				var depths: Array = row.get("depth_m", [0.6, 1.8])
+				var pid: int = salt & 0x3fffffff
+
+				if _pocket_of.has(pid):
+					continue
+
+				_pocket_of[pid] = pockets.size()
+				pockets.append({"id": pid, "find": str(row.get("find", "")), "x": at.x, "z": at.y, "depth": lerpf(float(depths[0]), float(depths[1]), unit(salt, 7)),
+					"r": float(row.get("r_m", 1.5)), "source": id})
+				_bin_add(_pocket_bins, at.x, at.y, pockets.size() - 1)
+
+	var by_find: Dictionary = {}
+
+	for p in pockets:
+		by_find[p["find"]] = int(by_find.get(p["find"], 0)) + 1
+
+	report.append("resources: %d pockets %s" % [pockets.size(), str(by_find)])

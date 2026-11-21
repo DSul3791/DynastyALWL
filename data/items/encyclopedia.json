@@ -5200,6 +5200,66 @@
 			],
 			"obtainable_now": true
 		},
+		"gold_nugget": {
+			"name": "Gold nugget",
+			"kind": "material",
+			"description": "A small, heavy lump of native gold. Worth a great deal to a trader.",
+			"how_to_get": [
+				"Found in a pocket of gravel or a quartz vein while digging below an ore source, then broken out with a pick or the Stone Hammer"
+			],
+			"used_for": [
+				"Sold to traders"
+			],
+			"obtainable_now": true
+		},
+		"silver_ore": {
+			"name": "Silver ore",
+			"kind": "material",
+			"description": "A dull grey lump with bright metallic streaks. Traders pay well for it.",
+			"how_to_get": [
+				"Found in a pocket while digging near a copper source, then broken out with a pick or the Stone Hammer"
+			],
+			"used_for": [
+				"Sold to traders"
+			],
+			"obtainable_now": true
+		},
+		"amethyst": {
+			"name": "Amethyst",
+			"kind": "material",
+			"description": "A cluster of violet quartz crystals from a hollow in the rock.",
+			"how_to_get": [
+				"Found in a crystal hollow while digging near an ore source inland, then broken out with a pick or the Stone Hammer"
+			],
+			"used_for": [
+				"Sold to traders"
+			],
+			"obtainable_now": true
+		},
+		"garnet": {
+			"name": "Garnet",
+			"kind": "material",
+			"description": "A deep red crystal grown in hard mountain rock.",
+			"how_to_get": [
+				"Found in a pocket of hard rock while digging near an ore source high in the mountains, then broken out with a pick or the Stone Hammer"
+			],
+			"used_for": [
+				"Sold to traders"
+			],
+			"obtainable_now": true
+		},
+		"agate": {
+			"name": "Agate",
+			"kind": "material",
+			"description": "A rounded stone that shows fine coloured bands when broken.",
+			"how_to_get": [
+				"Found in a hollow while digging near an ore source, then broken out with a pick or the Stone Hammer"
+			],
+			"used_for": [
+				"Sold to traders"
+			],
+			"obtainable_now": true
+		},
 		"bog_iron_ore": {
 			"name": "Bog iron ore",
 			"kind": "material",
