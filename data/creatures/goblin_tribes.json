@@ -56,10 +56,10 @@
 					"note": "The light version (Dave 20 Nov 2026: \"Build the light version of the goblin camp\"): the camp's chest and racks fill on the game clock to a small capped stock of catalog items while the goblins do their chores for show; nothing is taken from the world, and the stock cannot be taken (every use of the pieces is refused and names what they hold). Worked out when asked (server_tribes.gd stock), never ticked. per_game_day: how many of each come in a game day; cap: the most kept; on: piece kind -> [the line's opening, the items it holds]. ALL NUMBERS PROVISIONAL (GOBLIN-16..18 in docs/design/GOBLIN_CAMP.md).",
 					"per_game_day": {"firewood": 6, "plant_fibre": 4, "hide": 1, "raw_meat": 2},
 					"cap": {"firewood": 20, "plant_fibre": 12, "hide": 3, "raw_meat": 4},
-					"on": {"crude_chest": ["In it", ["firewood", "plant_fibre"]], "drying_rack": ["Drying on it", ["raw_meat"]], "tanning_rack": ["Stretched on it", ["hide"]]}
+					"on": {"small_chest": ["In it", ["firewood", "plant_fibre"]], "drying_rack": ["Drying on it", ["raw_meat"]], "tanning_rack": ["Stretched on it", ["hide"]]}
 				},
 				"props": [
-					{"kind": "crude_chest", "x": 56069.5, "z": 68386.5, "yaw": 90},
+					{"kind": "small_chest", "x": 56069.5, "z": 68386.5, "yaw": 90},
 					{"kind": "log_bench", "x": 56074.0, "z": 68386.6, "yaw": 0},
 					{"kind": "log_bench", "x": 56078.5, "z": 68384.5, "yaw": 90},
 					{"kind": "drying_rack", "x": 56083.0, "z": 68385.0, "yaw": 0},

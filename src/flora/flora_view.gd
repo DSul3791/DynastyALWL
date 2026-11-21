@@ -1203,7 +1203,7 @@ func _setup_entry(entry: Dictionary, deadline_usec: int = 1 << 62) -> bool:
 		"far": far_meshes,
 		"shape": shape,
 		"season_row": {"kind": str(entry["kind"]), "shape": shape, "season": entry.get("season", []), "height_m": entry["height_m"]},
-		"log": str(entry.get("model", "")) == "fallen_log" and str(entry["name"]) != "old_stump",
+		"log": str(entry.get("model", "")) == "fallen_log" and not (str(entry["name"]) in ["old_stump", "dead_tree"]),   # the dead tree stands (tree_builder _snag)
 		"crown_m": float(entry["crown_m"]),
 		"glows": entry.has("glow") or entry.has("leaf_glow"),
 		"tint": _plant_tint(entry, c),

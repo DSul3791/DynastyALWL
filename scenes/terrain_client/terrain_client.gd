@@ -89,6 +89,7 @@ const DayCycleScript := preload("res://src/client/day_cycle.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const FrozenWater := preload("res://src/client/frozen_water.gd")   # the liquid sheets' ice look (docs/design/frozen_water_look.md)
 const SpringSteam := preload("res://src/client/spring_steam.gd")   # steam over spring mouths on frosty mornings (Jamie #739)
+const WetlandMist := preload("res://src/client/wetland_mist.gd")   # low mist over fen, bog and swamp at dawn and dusk (Dave 21 Nov 2026)
 const IceFeelScript := preload("res://src/client/ice_feel.gd")     # ice sounds, footing and cold shock by thickness (docs/design/ice_walk_feel.md)
 const SnowWalkScript := preload("res://src/shared/snow_walk.gd")   # walking on snow and snowshoes (Part C plan 7)
 const OceanIceScript := preload("res://src/client/ocean_ice.gd")
@@ -276,6 +277,8 @@ var _was_waiting: bool = false
 var arrival_protect_until_msec: int = 0   # no fall damage report until then (Dave 2026-10-21: arriving must not hurt)
 const ARRIVAL_HEIGHT_M := 0.5             # the body is set this far above the ground when the ground first appears
 const ARRIVAL_PROTECT_MS := 6000
+const LOAD_QUIET_MS := 3000      # placed-thing sounds stay quiet this long after landing and after the join window closes (_world_loading)
+var _load_quiet_until_msec: int = 0
 const FLY_LAND_PROTECT_MS := 60000   # Dave 2026-10-21: pressing G to land from flying hurts nothing for a minute
 var _tint: ColorRect
 var _aim_msec: int = 0
@@ -909,6 +912,7 @@ func _ready() -> void:
 			_connect_window.on_back = _back_to_servers   # server pick page: Cancel while joining, Back to servers on a failure
 
 		_connect_window.setup(self)
+		_connect_window.show_first_load_note(BUILD)
 
 		if _remote and Engine.has_meta("continue_join"):
 			_connect_window.set_heading("Joining %s as %s" % [_server_label(), str(CharacterStoreScript.active().get("name", "your character"))])
@@ -928,10 +932,19 @@ func _update_connect_window() -> void:
 	if connected_msec > 0:
 		var since: int = int(float(now - connected_msec) * 0.001)
 
-		if (not waiting_for_ground and since >= 3) or since > 120:
+		# On a first start the window (and its note) stays until the player has landed ("JOIN: ground ready"): the long pause comes a frame
+		# after the welcome, when waiting_for_ground is still false (Lane A, 21 Nov 2026: the window closed at +5 s, then froze 24 s).
+		# Ground on the very first walk step (a warm ground cache after an update) never logs "ground ready": then 10 s, past the pause's start.
+		var landed: bool = (_ground_logged or (not waiting_for_ground and since >= 10)) if _connect_window.first_load_note_shown() else not waiting_for_ground
+
+		if (landed and since >= 3) or since > 120:
 			_telemetry.event("connect window closed after %d s in the world" % since)
+
+			if landed:
+				ConnectWindowScript.mark_first_load_done(BUILD)
 			_connect_window.close()
 			_connect_window = null
+			_load_quiet_until_msec = maxi(_load_quiet_until_msec, now + LOAD_QUIET_MS)
 			return
 
 		var silent_server: bool = waiting_for_ground and stream != null and _ground_received() == 0 and stream.pending() == 0 and _ground_watchdog.tries == 0
@@ -1693,6 +1706,7 @@ func _welcome_body(info: Dictionary) -> void:
 	items.gather_event = func():
 		feel.strike(0.0, 0.3)
 	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
+	items.bellows_event = func(at: Vector3): sound.workshop.bellows(at)
 	items.worn_event = func(changed: Array, ids: Array) -> void:
 		if not test_gear:
 			sound.gear.set_worn(SoundStageScript.GearScript.layers_for(ids))   # what is worn rustles, creaks or clinks on every step (--test-gear keeps its own set)
@@ -2483,6 +2497,13 @@ func _water_ahead() -> bool:
 	return false
 
 
+# The world is still loading round the player (Dave 21 Nov 2026: at login "it makes the sounds of building everything really fast ... it can mute
+# sounds until they land on the ground and everything is loaded"): not yet joined, gliding for ground, the join window still up, or less than
+# LOAD_QUIET_MS since landing or since that window closed. Placed-thing sounds only note the rows meanwhile (PlacedSounds.quiet).
+func _world_loading() -> bool:
+	return connected_msec == 0 or waiting_for_ground or _connect_window != null or Time.get_ticks_msec() < _load_quiet_until_msec
+
+
 # The body glides high above the spawn until the ground under it has collision. When it does, set it down just above the
 # surface and protect it for a few seconds, so arriving is not a fall (Dave 2026-10-21: damage and a faint every landing).
 func _arrive_on_ground() -> void:
@@ -2501,6 +2522,7 @@ func _arrive_on_ground() -> void:
 		body.velocity = Vector3.ZERO
 
 	arrival_protect_until_msec = Time.get_ticks_msec() + ARRIVAL_PROTECT_MS
+	_load_quiet_until_msec = Time.get_ticks_msec() + LOAD_QUIET_MS
 	sound.forget_fall(body)
 
 
@@ -2896,6 +2918,7 @@ var _warmth_cfg_cache: Dictionary = {}
 var _ice_moat_logged: int = -1
 var _spring_mouths: Dictionary = {}       # tile -> PackedVector3Array, where spring cave brooks leave their caves
 var _spring_steam = null                  # SpringSteam, made on the first frosty update with a mouth known
+var _wetland_mist = null                  # WetlandMist, made at the first dawn or dusk it could show
 var _steam_logged: bool = false
 
 
@@ -2936,7 +2959,29 @@ func _update_ice_feel_weather(ice_now: float, group: String, now: int) -> float:
 		sound.ice.hour = WeatherScript.hour_of(game_clock.seconds)
 
 	_update_spring_steam()
+	_update_wetland_mist()
 	return ice_now
+
+
+func _update_wetland_mist() -> void:
+	if sound == null or sound.ambient == null:
+		return
+
+	var hour: float = WeatherScript.hour_of(game_clock.seconds)
+	var sun: Array = sound.ambient._sun()
+	var wind: float = float(weather.get("wind", 0.0))
+	var rain: float = float(weather.get("rain", 0.0))
+
+	if _wetland_mist == null:
+		if WetlandMist.strength_of(hour, float(sun[0]), float(sun[1]), wind, rain) <= 0.02:
+			return
+
+		_wetland_mist = WetlandMist.new()
+		_wetland_mist.name = "WetlandMist"
+		_wetland_mist.setup(quality)
+		add_child(_wetland_mist)
+
+	_wetland_mist.update(body.global_position, hour, float(sun[0]), float(sun[1]), wind, rain, float(weather.get("wind_dir", 0.0)), sound.ground_at)
 
 
 func _update_spring_steam() -> void:
@@ -3680,6 +3725,9 @@ func _apply_quality() -> void:
 	grass.set_shore(QUALITY_SHORE_M[quality], QUALITY_SHORE_AMOUNT[quality])
 	if fall_mist != null:
 		fall_mist.set_quality(quality)
+
+	if _wetland_mist != null:
+		_wetland_mist.set_quality(quality)
 	if fall_growth != null:
 		fall_growth.set_quality(quality)
 
@@ -4122,7 +4170,7 @@ func _ground_name(point: Vector3) -> String:
 	var material: int = tool.get_voxel(cell)
 
 	if material < Layout.MATERIAL_ROCK:
-		return _known_from_table("soils", "s", material)
+		return _known_from_table("soils", "s", Layout.soil_of(material))
 
 	tool.channel = Layout.CHANNEL_RESOURCE
 	var resource: int = tool.get_voxel(cell)
@@ -4920,6 +4968,7 @@ func _step_player(delta: float) -> void:
 		if not test_fire and not test_fire_world and not sound.fire.manual_active():
 			sound.fire.sync_world(items._world, _cover_here)
 
+		sound.placed.quiet = _world_loading()
 		sound.placed.watch_world(items._world, body.global_position)
 		sound.placed.watch_open(items._world, body.global_position)
 
@@ -5309,6 +5358,11 @@ func _move_player(delta: float) -> void:
 				var slow: float = SwimScript.wade_factor(WaterVolume.depth(float(water["surface"]), float(water["ground"])))
 				velocity.x *= slow
 				velocity.z *= slow
+
+			# An ankle-deep wetland pool (the last step splashed in one, sound_stage.gd pool_pace) slows a walker a little.
+			if body.is_on_floor() and sound != null:
+				velocity.x *= sound.pool_pace
+				velocity.z *= sound.pool_pace
 
 			velocity = _ice_feel_velocity(velocity, water, delta)
 
@@ -5720,8 +5774,12 @@ func _process(delta: float) -> void:
 		print("Terrain client: ", link_bars.text())
 
 	if crash_report != null:
+		var tc: int = Probe.start()
 		crash_report.tick(_crash_state)
+		Probe.stop("crash report", tc)
+		tc = Probe.start()
 		_telemetry.tick(_telemetry_state, 1000, 500)
+		Probe.stop("telemetry", tc)
 
 	if pickup_feed != null:
 		pickup_feed.update(delta)
@@ -6117,6 +6175,7 @@ func _process(delta: float) -> void:
 		sound.placed.container(false, here)
 		sound.placed.tool_break(here)
 		sound.placed.tool_repair(here)
+		sound.placed.quiet = false   # this check hears the hooks, not the join
 		sound.placed.watch_world({}, here)
 		sound.placed.watch_world({7: {"state": 6, "pos": here}}, here)
 		sound.placed.watch_world({}, here)
@@ -6388,7 +6447,7 @@ func _process(delta: float) -> void:
 	if test_insects and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
 		var amb = sound.ambient
-		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0}
+		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0, "wetland": 0.0}
 		var levels: Array = []
 		sound.weather.rain = 0.0
 		sound.wind_strength = 0.3
@@ -6399,13 +6458,13 @@ func _process(delta: float) -> void:
 			levels.append("%.2f" % sound.insects.target())
 
 		amb.set_conditions(13.0, "summer", "clear")
-		amb.weights = {"forest": 0.0, "meadow": 0.0, "water": 1.0, "highland": 0.0}
+		amb.weights = {"forest": 0.0, "meadow": 0.0, "water": 1.0, "highland": 0.0, "wetland": 0.0}
 		var lake_noon: String = "%.2f" % sound.insects.target()
 		var lake_cricket: bool = amb._water_day()
 		amb.set_conditions(2.0, "summer", "clear")
 		var lake_night: String = "%.2f" % sound.insects.target()
 		amb.set_conditions(13.0, "summer", "clear")
-		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0}
+		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0, "wetland": 0.0}
 		sound.weather.rain = 1.0
 		levels.append("%.2f" % sound.insects.target())
 		sound.weather.rain = 0.0
@@ -6595,7 +6654,7 @@ func _process(delta: float) -> void:
 			voice.play()
 			made.append(voice)
 
-		sound.ambient.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0}
+		sound.ambient.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0, "wetland": 0.0}
 		sound.weather.roofed = 0.0
 		sound.cave.enclosure = 0.0
 		sound.occlusion._scan(body, false)
@@ -6604,7 +6663,7 @@ func _process(delta: float) -> void:
 		for voice in made:
 			open_buses.append(str(voice.bus))
 
-		sound.ambient.weights = {"forest": 1.0, "meadow": 0.0, "water": 0.0, "highland": 0.0}
+		sound.ambient.weights = {"forest": 1.0, "meadow": 0.0, "water": 0.0, "highland": 0.0, "wetland": 0.0}
 		sound.occlusion._scan(body, false)
 		var forest_buses: Array = []
 
@@ -6689,7 +6748,7 @@ func _process(delta: float) -> void:
 	if test_night and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
 		var amb = sound.ambient
-		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0}
+		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0, "wetland": 0.0}
 		sound.weather.rain = 0.0
 		sound.wind_strength = 0.3
 		sound.cave.enclosure = 0.0
@@ -7577,6 +7636,7 @@ func _finish(code: int) -> void:
 	if cache != null:
 		cache.flush()
 
+	_telemetry.drain()   # its lines are written on a worker
 	get_tree().quit(code)
 
 
@@ -7604,6 +7664,8 @@ func _exit_tree() -> void:
 	_drain_incoming()
 	if stream != null:
 		stream.close()
+
+	_telemetry.drain()   # its lines are written on a worker: the EXIT line reaches the file before the process ends
 
 
 # Why a torch cannot be lit right now: "water" (the eye is under water), "rain" (open rain, no tree, rock or roof over you; a cave is cover), or "".

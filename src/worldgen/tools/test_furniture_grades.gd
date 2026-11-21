@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Graded furniture (Mission 001 phase 3, master docs/design/DYNASTY_MASTER_ITEMS.md s3.5 and s2.3 items 3-5): Crude, Rustic, Fine, Ornate chests,
+# Graded furniture (Mission 001 phase 3, master docs/design/DYNASTY_MASTER_ITEMS.md s3.5 and s2.3 items 3-5): Rustic, Fine, Ornate chests (the Crude - Chest retired, Dave 21 Nov 2026),
 # chairs and tables, Crude and Fine benches, and the single board pieces are built from Hardwood boards, never Planks (the Crate keeps Planks);
 # each grade costs more boards than the one below and places from its blueprint; chest slots rise by grade; comfort counts each graded
 # family (chair, table, bench) once, at its best grade.
@@ -14,12 +14,12 @@ const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 
 # Blueprint (and structure) ids, lowest grade first.
 const FAMILIES := {
-	"Chest": ["crude_chest", "plank_chest", "fine_chest", "iron_chest"],
+	"Chest": ["plank_chest", "fine_chest", "iron_chest"],   # the Crude - Chest retired with the Wicker - Chest (Dave 21 Nov 2026: "get ride of both of those"); the Small chest is the lowest board chest
 	"Chair": ["crude_chair", "chair", "iron_chair", "ornate_chair"],
 	"Table": ["crude_table", "table", "iron_table", "ornate_table"],
 	"Bench": ["bench", "iron_bench"],
 }
-const GRADES := {"Chest": ["Crude", "Rustic", "Fine", "Ornate"], "Chair": ["Crude", "Rustic", "Fine", "Ornate"], "Table": ["Crude", "Rustic", "Fine", "Ornate"], "Bench": ["Crude", "Fine"]}
+const GRADES := {"Chest": ["Rustic", "Fine", "Ornate"], "Chair": ["Crude", "Rustic", "Fine", "Ornate"], "Table": ["Crude", "Rustic", "Fine", "Ornate"], "Bench": ["Crude", "Fine"]}
 const SINGLES := ["wooden_shelf", "wooden_cupboard", "wooden_barrel", "weapon_rack", "armour_stand", "canopy_bed"]
 
 var failures: int = 0
@@ -126,8 +126,8 @@ func _data_checks() -> void:
 
 	check(_need("wooden_crate", "lumber") > 0 and _need("wooden_crate", "hardwood_board") == 0, "the Crate is still a Plank packing box")
 
-	# Slots: Crate 10, then six-slot rows by grade (Dave 18 Nov 2026: the lowest chest 3 rows, each tier one more): Crude 24 < Rustic 30 < Fine 36 < Ornate 48.
-	var ladder: Array = ["wooden_crate"] + FAMILIES["Chest"]
+	# Slots: Crate 10, then six-slot rows by grade (Dave 18 Nov 2026: the lowest chest 3 rows, each tier one more): Small 24 < Rustic 30 < Fine 36 < Ornate 48.
+	var ladder: Array = ["wooden_crate", "small_chest"] + FAMILIES["Chest"]
 	var slots: Array = ladder.map(func(k): return int(items._structures[k]["slots"]))
 	check(slots[0] == 10 and slots[1] == 24 and slots[2] == 30 and slots[3] == 36 and slots[4] == 48 and slots[0] < slots[1] and slots[1] < slots[2] and slots[2] < slots[3] and slots[3] < slots[4], "chest slots rise by grade %s" % str(slots))
 	check(ladder.all(func(k): return not items._structures[k].has("max_kg")), "no chest has a weight limit, only its slots (Dave 19 Nov 2026)")
@@ -158,7 +158,7 @@ func _place_checks() -> void:
 			x += 5.0
 			items.report_position(1, spot + Vector3(0.0, 0.0, -1.5))
 			_clear()
-			_give("stone_knife" if str(bp.get("tool", "hammer")) == "knife" else "iron_hammer", 1)   # the Crude chest, chair, table and the Bench are knife rows (15 Nov 2026, W-9)
+			_give("stone_knife" if str(bp.get("tool", "hammer")) == "knife" else "iron_hammer", 1)   # the Crude chair, table and the Bench are knife rows (15 Nov 2026, W-9)
 
 			if int(bp.get("chisel", 0)) > 0:
 				_give("steel_chisel", 1)   # Rustic (but the Rustic - Chest, Dave 21 Nov 2026), Fine and Ornate pieces need a chisel on the hand bar (Dave 18 Nov 2026); steel serves every tier
@@ -225,9 +225,9 @@ func _comfort_checks() -> void:
 	for kind in FAMILIES["Chest"] + ["small_chest"]:   # the Small chest (copper nails, Dave 21 Nov 2026) is the crude grade of the family
 		add_struct(kind, Vector3(-2.0 - float(items._items.size()), 10.0, 2.0))
 
-	check(level.call() == 2, "four board chest grades and the Small chest count once, 1 point (%d)" % level.call())
-	add_struct("chest", Vector3(-2.0, 10.0, -3.0))
-	check(level.call() == 3, "the Wicker chest still counts beside them, as today (%d)" % level.call())
+	check(level.call() == 2, "three board chest grades and the Small chest count once, 1 point (%d)" % level.call())
+	add_struct("wicker_basket", Vector3(-2.0, 10.0, -3.0))
+	check(level.call() == 3, "the Wicker basket counts beside them, as the Wicker - Chest it replaced did (%d)" % level.call())
 	items._items.clear()
 	var ornate_chair: int = 0
 

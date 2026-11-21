@@ -13,6 +13,7 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const TrampleScript := preload("res://src/client/grass_trample.gd")
 const NearWater := preload("res://src/shared/near_water_growth.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")   # "grass: <part>" splits of the client's "grass" (Jason/Steve 5 Nov 2026: #374 found no gain)
+const Puddles := preload("res://src/client/puddles.gd")
 const CELL_M := 6.0
 const PLAYER_CLEAR_M := 1.4              # grass within this of the local player is cut down to PLAYER_KEEP of its height (soft edge) so the feet show in third person
 const PLAYER_KEEP := 0.4               # Dave 2 Nov QA: standing in grass looked like "a weird green carpet" (it was 0.12 of height, in first person too); now gentler and third person only
@@ -49,7 +50,8 @@ const LUSH_STEP_M := 1.0         # the wet spots round a near cell are looked fo
 const SHORT_SOIL_LIFT := 1.9    # short grass: soil thickness times at most this, capped at 1 (0.5 becomes 0.95, 0.3 becomes 0.57)
 
 # Soil ids that carry grass, with how thick (0 to 1).
-const GRASS_SOILS := {3: 0.9, 4: 0.5, 5: 1.0, 6: 0.7, 7: 1.0, 8: 0.6, 9: 0.6}   # 9 stony soil 0.3 -> 0.6 (Dave 9 Nov 2026: a stony hillside still grows grass, only thinner; flora/hillside_cover_note.md)
+const GRASS_SOILS := {3: 0.9, 4: 0.5, 5: 1.0, 6: 0.7, 7: 1.0, 8: 0.6, 9: 0.6, Layout.MATERIAL_FEN: 0.3, Layout.MATERIAL_BOG: 0.12}   # 9 stony soil 0.3 -> 0.6 (Dave 9 Nov 2026: a stony hillside still grows grass, only thinner; flora/hillside_cover_note.md). Fen and bog (Dave 21 Nov 2026: wetlands must stand out, "no clean grass"): thin, sedgy; swamp mud none
+const WET_GRASS_TINT := {Layout.MATERIAL_FEN: Color(0.34, 0.36, 0.16), Layout.MATERIAL_BOG: Color(0.45, 0.32, 0.16)}   # what is left of the grass on fen and bog: olive sedge, rusty-brown
 
 # The three layers, from the ground up. "reach" is the share of the grass
 # radius the layer is drawn to; "per_point" is how many cards per ground sample.
@@ -1914,6 +1916,9 @@ func _build(cell: Vector2i) -> int:
 			if soil < 0:
 				continue
 
+			if Layout.is_wetland(soil) and Puddles.pool_at(x, z, soil, hit["normal"].y) > 0.3:
+				continue                                                                       # no blades in a wetland's standing water
+
 			var short_soil: float = minf(1.0 / float(GRASS_SOILS[soil]), SHORT_SOIL_LIFT)       # the short grass's soil share is lifted to near 1 (see the short layer below)
 			var thick: float = float(GRASS_SOILS[soil]) * _cover_at(x, z, hit["normal"].y)
 			# Owner (2026-10-20): in a closed forest the litter and shade under the trees stop the grass; in
@@ -1930,6 +1935,9 @@ func _build(cell: Vector2i) -> int:
 
 			var base: Color = _soil_color.get(soil, Color(0.3, 0.4, 0.2))
 			var green: Color = Color(0.46, 0.58, 0.28).lerp(base, 0.2)
+
+			if WET_GRASS_TINT.has(soil):
+				green = green.lerp(WET_GRASS_TINT[soil], 0.6)
 			# Patches: yellower where the tint noise is high; tall grass where the patch noise is.
 			var warm: float = clampf(_tint.get_noise_2d(x, z) * 1.4, 0.0, 1.0)
 			green = green.lerp(Color(0.68, 0.64, 0.30), warm * 0.55)

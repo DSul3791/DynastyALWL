@@ -30,6 +30,7 @@ extends Node
 # recordings in assets/audio/recorded/ambient/ win. Names are in EVENTS.
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
+const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const GENERATED_DIR := "res://assets/audio/ambient/"
 const RECORDED_DIR := "res://assets/audio/recorded/ambient/"
 
@@ -42,6 +43,7 @@ const TRUNKS_FOR_FOREST := 28.0        # collider shapes in that radius for a fu
 const WATER_RINGS := [6.0, 16.0, 32.0, 55.0]
 const WATER_FULL_M := 8.0              # water this close counts as full water-edge weight
 const WATER_NONE_M := 55.0
+const WETLAND_CALLS_FROM := 0.3         # frogs call from the wet ground itself where the wetland weight is at least this
 const SEA_TOP_M := 1.5                 # water whose surface is at or under this height is the sea (sea level 0); a forest pond or a river higher up is not
 # Birds live down among the trees (Dave 2026-10-21, flying at y 420 over a forest he heard startled wings): above
 # BIRD_MAX_AGL_M over the ground no take-off, alarm or call is played, and calls fade out over BIRD_FADE_M before it.
@@ -91,15 +93,16 @@ const EVENTS := [
 	{"name": "woodpecker", "zones": {"forest": 1.0}, "every": [40, 100], "dist": [25, 80], "height": [2, 10], "db": -5.0, "day": true, "seasons": {"spring": 1.2, "summer": 0.7, "autumn": 0.6, "winter": 0.5}, "tod": {"dawn": 0.5, "morning": 1.0, "midday": 0.5, "evening": 0.3}},
 	{"name": "owl_hoot", "zones": {"forest": 1.0, "meadow": 0.3}, "every": [30, 70], "dist": [40, 110], "height": [5, 14], "db": -13.0, "night": true, "answer": 0.45, "seasons": {"winter": 1.2, "spring": 1.3, "summer": 0.7, "autumn": 1.0}},
 	{"name": "hawk_screech", "zones": {"highland": 1.0}, "every": [60, 150], "dist": [120, 300], "height": [50, 110], "db": -4.0, "hours": [9, 17], "seasons": {"winter": 0.6}},
-	{"name": "cricket_chirp", "zones": {"meadow": 1.0, "water": 0.4}, "every": [22, 55], "dist": [5, 28], "height": [0, 0], "db": -16.0, "night_rate": 5.0, "dusk": 2.0, "dark_at_water": true, "seasons": {"autumn": 0.9, "summer": 1.0, "spring": 0.3, "winter": 0.0}},
-	{"name": "frog_croak", "zones": {"water": 1.0}, "every": [40, 90], "dist": [6, 24], "height": [0, 0], "db": -18.0, "wet": true, "water": true, "night_rate": 3.0, "dusk": 2.0, "dark_at_water": true, "seasons": {"autumn": 0.3, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
-	{"name": "tree_frog_peep", "zones": {"water": 0.8, "forest": 0.2}, "every": [16, 40], "dist": [4, 28], "height": [0, 3], "db": -14.0, "wet": true, "night_rate": 3.0, "dusk": 2.0, "dark_at_water": true, "seasons": {"autumn": 0.2, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
+	{"name": "cricket_chirp", "zones": {"meadow": 1.0, "water": 0.4, "wetland": 0.6}, "every": [22, 55], "dist": [5, 28], "height": [0, 0], "db": -16.0, "night_rate": 5.0, "dusk": 2.0, "dark_at_water": true, "seasons": {"autumn": 0.9, "summer": 1.0, "spring": 0.3, "winter": 0.0}},
+	{"name": "frog_croak", "zones": {"water": 1.0, "wetland": 1.0}, "every": [40, 90], "dist": [6, 24], "height": [0, 0], "db": -18.0, "wet": true, "water": true, "night_rate": 3.0, "dusk": 2.0, "dark_at_water": true, "seasons": {"autumn": 0.3, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
+	{"name": "tree_frog_peep", "zones": {"water": 0.8, "forest": 0.2, "wetland": 0.8}, "every": [16, 40], "dist": [4, 28], "height": [0, 3], "db": -14.0, "wet": true, "night_rate": 3.0, "dusk": 2.0, "dark_at_water": true, "seasons": {"autumn": 0.2, "summer": 1.0, "spring": 1.0, "winter": 0.0}},
 	{"name": "fish_splash", "zones": {"water": 1.0}, "every": [60, 150], "dist": [6, 22], "height": [0, 0], "db": -10.0, "water": true},
 ]
-const ZONES := ["forest", "meadow", "water", "highland"]
+const ZONES := ["forest", "meadow", "water", "highland", "wetland"]   # wetland: fen, bog or swamp ground round the player (Dave 21 Nov 2026: frogs and insects there)
+const WETLAND_RING_M := [0.0, 6.0, 16.0]   # the ground looked at for the wetland weight: under the feet and on two rings of 8 points
 
 var conditions: Dictionary = {"hour": 14.0, "season": "autumn", "weather": "clear"}
-var weights: Dictionary = {"forest": 0.0, "meadow": 0.0, "water": 0.0, "highland": 0.0}
+var weights: Dictionary = {"forest": 0.0, "meadow": 0.0, "water": 0.0, "highland": 0.0, "wetland": 0.0}
 var sea_weight: float = 0.0              # 0..1 like the water weight, but counting only the sea (surface at SEA_TOP_M or lower): the surf follows this, not ponds or brooks
 var calls_played: Dictionary = {}       # call name -> count (for the headless check)
 var last_call: String = ""
@@ -271,7 +274,7 @@ func _play_answers(step: float) -> void:
 func _scan(body: CharacterBody3D) -> void:
 	var position: Vector3 = body.global_position
 	var feet: Vector3 = position - Vector3(0.0, 0.9, 0.0)
-	var target: Dictionary = {"forest": 0.0, "meadow": 0.0, "water": 0.0, "highland": 0.0}
+	var target: Dictionary = {"forest": 0.0, "meadow": 0.0, "water": 0.0, "highland": 0.0, "wetland": 0.0}
 
 	target["forest"] = clampf(float(_trunks(body)) / TRUNKS_FOR_FOREST, 0.0, 1.0)
 	agl_m = _height_above_ground(body)
@@ -310,10 +313,27 @@ func _scan(body: CharacterBody3D) -> void:
 			nearest_sea = 0.0
 
 	target["water"] = clampf(1.0 - (nearest - WATER_FULL_M) / (WATER_NONE_M - WATER_FULL_M), 0.0, 1.0)
+	target["wetland"] = _wetland_share(feet)
 	sea_weight = lerpf(sea_weight, clampf(1.0 - (nearest_sea - WATER_FULL_M) / (WATER_NONE_M - WATER_FULL_M), 0.0, 1.0), 0.4)
 
 	for zone in ZONES:
 		weights[zone] = lerpf(float(weights[zone]), float(target[zone]), 0.4)
+
+
+# The share of fen, bog and swamp ground (their look ids, terrain_layout.gd) under the feet and round them, 0 to 1. Voxel reads only.
+func _wetland_share(feet: Vector3) -> float:
+	var found: int = 0
+	var looked: int = 0
+
+	for ring in WETLAND_RING_M:
+		for k in range(1 if ring == 0.0 else 8):
+			var angle: float = TAU * float(k) / 8.0
+			looked += 1
+
+			if Layout.is_wetland(_stage.ground_at(feet + Vector3(cos(angle) * ring, 0.0, sin(angle) * ring))):
+				found += 1
+
+	return clampf(float(found) / float(looked) * 1.6, 0.0, 1.0)
 
 
 # Height of the feet above the ground below (the terrain's own ground height); 0 when it is not loaded, so birds are not lost.
@@ -760,16 +780,15 @@ static func near_wet(points: Array, from: Vector3, reach: float) -> Array:
 # direction at the call's distance, on the ground plus the call's height.
 func _place(event: Dictionary, body: CharacterBody3D) -> Vector3:
 	if event.get("water", false):
-		if _wet_points.is_empty():
-			return Vector3(NAN, 0.0, 0.0)
+		var near: Array = near_wet(_wet_points, body.global_position, float(event["dist"][1])) if not _wet_points.is_empty() else []
 
-		var near: Array = near_wet(_wet_points, body.global_position, float(event["dist"][1]))
+		if not near.is_empty():
+			var p: Vector3 = near[_rng.randi_range(0, near.size() - 1)]
+			return p + Vector3(_rng.randf_range(-2.0, 2.0), 0.0, _rng.randf_range(-2.0, 2.0))
 
-		if near.is_empty():
+		if float(weights["wetland"]) < WETLAND_CALLS_FROM or str(event["name"]) == "fish_splash":
 			return Vector3(NAN, 0.0, 0.0)          # the water is too far to be heard (Dave's bug list: plops in a dry forest, BUG-003)
-
-		var p: Vector3 = near[_rng.randi_range(0, near.size() - 1)]
-		return p + Vector3(_rng.randf_range(-2.0, 2.0), 0.0, _rng.randf_range(-2.0, 2.0))
+		# In a fen, bog or swamp a frog calls from the wet ground round the player, open water or not.
 
 	var distance: float = _rng.randf_range(float(event["dist"][0]), float(event["dist"][1]))
 	var angle: float = _rng.randf() * TAU

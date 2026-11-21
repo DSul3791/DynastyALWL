@@ -233,12 +233,12 @@
 			"source": "chandelier_kit"
 		},
 		{
-			"id": "chest",
+			"id": "wicker_basket",
 			"class": "storage",
 			"points": 1,
 			"needs_lit": false,
 			"status": "live",
-			"source": "chest (live)"
+			"source": "wicker_basket (blueprint 157; takes the retired Wicker - Chest's place, Dave 21 Nov 2026)"
 		},
 		{
 			"id": "plank_chest",
@@ -249,16 +249,6 @@
 			"needs_lit": false,
 			"status": "live",
 			"source": "plank_chest (live)"
-		},
-		{
-			"id": "crude_chest",
-			"class": "storage",
-			"points": 1,
-			"grade": "crude",
-			"family": "chest",
-			"needs_lit": false,
-			"status": "placeable",
-			"source": "crude_chest (blueprint 186)"
 		},
 		{
 			"id": "small_chest",
