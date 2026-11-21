@@ -1,6 +1,6 @@
 # Server pick page (client)
 
-**Status:** APPROVED by Dave, 19 Nov 2026 ("I like the page design so I approve it"). Being built; nobody has played or seen it in the game yet. Choices 1 and 2 (end of this file) were not answered and are built as the picks, provisional, for his review. Revised the same day around Dave's own layout. Mock-up: `SERVER_PICK_PAGE_mockup.png` beside this file (a drawing, not a screenshot).
+**Status:** APPROVED by Dave, 19 Nov 2026 ("I like the page design so I approve it"). Being built; nobody has played or seen it in the game yet. Choices 1 and 2 (end of this file) were settled by Dave on 21 Nov 2026 as built. Revised the same day around Dave's own layout. Mock-up: `SERVER_PICK_PAGE_mockup.png` beside this file (a drawing, not a screenshot).
 
 **Dave's words (19 Nov 2026, project chat):** "setup our client game page where you pick what server you want to connect too. this will take some design because I feel most developers don't give this step the love it deserves. The client can connect to a preset official server or to a direct connect. every direct connect should be saved in a list for quick picking next time. they should be allowed to use ip addresses or redirects like hannibalshouse.duckdns.org"
 
@@ -46,7 +46,7 @@ One list, full width (see the mock-up):
 1. **The official server, always first** (set apart with a gold edge). Its address is a release setting (`client_config.json` `"official"`, written by the release script), never typed by the player, and it cannot be removed. A build with no official address yet does not show the row.
 2. **Every server this player has added, below it**, last played first. A saved server **never leaves the list because it does not answer**.
 
-Columns: **Server name**, **Players** (2 / 32), **Ping** (ms and bars), **Status** in words, **Last played**. The address shows small under the name.
+Columns: **Server name**, **Players** (2 / 32), **Ping** (ms and bars), **Status** in words, **Last played**. The address shows small under the name, with the IP a name points to now.
 
 Colours: a working server is in normal white/grey text. A server that does not answer (offline, name not found) is in **red**, still on the list and still joinable (it may come back). A server that answers but cannot be joined right now (other build, full) is in **amber**, with the reason in the Status column.
 
@@ -108,7 +108,7 @@ Join opens the existing connect window (`connect_window.gd`), which already name
 ## Names, ports and redirects
 
 - The list stores the address **as typed** (the name), never the IP it pointed to. A dynamic-DNS name such as duckdns is looked up fresh every time the page asks for status and every time it joins, so a home server whose IP changes keeps working.
-- The lookup runs in the background (Godot `IP.resolve_hostname_queue_item`), never freezing the page. The resolved IP shows only in the hover note, for helping a friend set up.
+- The lookup runs in the background (Godot `IP.resolve_hostname_queue_item`), never freezing the page. The resolved IP shows under the name on the row (Dave 21 Nov 2026) and in the hover note, for helping a friend set up.
 - Default port 24600 is never shown in the list; `:port` is kept only when the player typed another port. The block line is always port + 1 and is never asked for.
 - The same server typed twice (same name or IP, same port, any case, with or without `:24600`) updates the one row, never a duplicate.
 - `http://`, `https://` and a trailing `/` pasted from a browser are stripped. IPv6 stays refused for now (existing shortcut), with words saying so.
@@ -140,12 +140,11 @@ Each is one reviewed PR to dev with the selector's tests on the exact head.
 
 Settled by Dave (19 Nov): the game remembers a correct password (choice 3); passwords with a popup, 3 tries, then the caps-lock message and back to this page; Play opens this page; official first, then every added server; down servers stay, in red; name, ping and status on each row; Add new server and Join server buttons; double-click joins.
 
-1. **Continue.** Pick: straight into the last server as the character last played there, with Cancel on the joining screen, and back to this page with the reason on the row if it cannot join. Other ways: Continue opens this page with the last server chosen (one more click), or opens the Characters page for the last server.
-2. **Player names before joining.** Pick: the Players column shows the count only, and hovering a row lists who is on. Built for now: the count only, because the server does not yet know the players' character names (characters are kept on each player's computer); names on hover follow when characters move to the server. Other way: count only, never names.
+1. **Continue.** SETTLED (Dave 21 Nov 2026, "yes continue goes straight in with the last server and character and it remembers the password"): straight into the last server as the character last played there, with Cancel on the joining screen, and back to this page with the reason on the row if it cannot join. Other ways: Continue opens this page with the last server chosen (one more click), or opens the Characters page for the last server.
+2. **Player names before joining.** SETTLED (Dave 21 Nov 2026, "yes each row can show server ip, name, player count, ping and status online or not"): the count only, no names. Under the name each row shows its address, and for a name such as a duckdns one also the IP it points to now.
 3. **Remember a password.** SETTLED (Dave 19 Nov, "yes it should"): a "Remember on this computer" tick in the popup, on by default. What is remembered is the salted hash, never the typed password, kept in `servers.json`; Remove forgets it, and if the server's password changes the popup simply asks again. Someone who copied that file could join that one server, but never learns the password, so it is useless anywhere else. Other way: always ask.
 
 Assumed meanwhile (provisional, can change, for Dave's review):
-- Choices 1 and 2 are built as the picks.
 - The painted title button still reads "New Game" (it is part of the painting); in a client-only build it opens this page, i.e. it is Play. Repainting it to say Play is Dave's call.
 - The official server shows as "Dynasty Official"-style only once the release setting (`client_config.json` "official") names an address; there is no crest picture yet, only the gold edge.
 - The server's short message and its IP show when a row is hovered.

@@ -49,6 +49,7 @@ uniform float wet_layer[6];             // turf, litter, gravel, mud, sand, rock
 uniform float wet_streak = 0.0;         // run-off streaks on steep rock, kept an hour longer than the face
 uniform vec2 wet_wind = vec2(1.0, 0.0); // where the wind blows toward (x, z): faces looking into it wet first
 uniform float splash_rain = 0.0;        // (rain_look_design.md 3.2): how hard it rains on open ground now; 0 skips the splash flecks
+uniform vec3 pool_level = vec3(0.63, 0.68, 0.56);   // fen, bog, swamp: the hollow depth (puddle_hollow) from which still water stands (POOL_LEVEL)
 uniform vec3 caustics = vec3(0.0);      // under water (underwater_look.gd): surface height, strength 0..1 (0 off), how deep the lines reach
 varying vec3 world_pos;
 varying vec3 world_normal;
@@ -146,17 +147,21 @@ void fragment() {
 	float stone = 0.0;
 	float mud = 0.0;
 	float peat = 0.0;
+	vec3 wet_kind = vec3(0.0);              // fen, bog, swamp (terrain_layout.gd MATERIAL_FEN 29, MATERIAL_BOG 30, MATERIAL_SWAMP 31)
 	for (int n = 0; n < 4; n++) {
 		int index = clamp(int(material_indices[n] + 0.5), 0, 63);
 		color += palette[index] * material_weights[n];
 		stone += (index >= 32 || index == 0) ? material_weights[n] : 0.0;
 		mud += (index == 16) ? material_weights[n] : 0.0;
-		peat += (index == 6) ? material_weights[n] : 0.0;
+		peat += (index == 6 || index == 29 || index == 30) ? material_weights[n] : 0.0;
+		wet_kind += vec3(index == 29 ? 1.0 : 0.0, index == 30 ? 1.0 : 0.0, index == 31 ? 1.0 : 0.0) * material_weights[n];
 	}
 	color /= total;
 	stone /= total;
 	mud /= total;
 	peat /= total;
+	wet_kind /= total;
+	float wetland = wet_kind.x + wet_kind.y + wet_kind.z;
 
 	// The table colors are display (sRGB) values; convert so they read as
 	// intended, then mute them toward natural earth tones.
@@ -261,6 +266,18 @@ void fragment() {
 	}
 	// Broad patches of dry and lush, so wide fields are not one flat color.
 	color *= mix(vec3(1.06, 1.0, 0.86), vec3(0.92, 1.04, 0.94), large);
+
+	// Fen, bog and swamp (Dave 21 Nov 2026: "make fens, bogs and swamps stand out"): dark, wet ground that reads as a dark patch from far off,
+	// each its own: fen near-black peat with sedge-green flecks, bog brown with rust-red and ochre-green moss, swamp black mud. Linear colours.
+	if (wetland > 0.01) {
+		float mottle = vnoise(world_pos * 0.45) * 0.6 + vnoise(world_pos * 1.7 + 3.0) * 0.4;
+		float moss_patch = vnoise(world_pos * 0.08 + 9.0);
+		vec3 fen_c = mix(vec3(0.035, 0.032, 0.016), vec3(0.06, 0.075, 0.022), smoothstep(0.5, 0.78, mottle));
+		vec3 bog_c = mix(vec3(0.05, 0.03, 0.016), mix(vec3(0.15, 0.05, 0.025), vec3(0.11, 0.11, 0.035), moss_patch), smoothstep(0.45, 0.75, mottle));
+		vec3 swamp_c = vec3(0.022, 0.019, 0.014) * (0.85 + 0.3 * mottle);
+		vec3 wet_c = (fen_c * wet_kind.x + bog_c * wet_kind.y + swamp_c * wet_kind.z) / wetland;
+		color = mix(color, wet_c * (1.0 + 0.5 * detail * closeness), min(wetland, 1.0) * (1.0 - rock_mask));
+	}
 
 	// Rock strata on steep faces: bands that wander with the surface.
 	float strata = vnoise(vec3(world_pos.x * 0.03, world_pos.y * 0.4 + large * 3.0, world_pos.z * 0.03));
@@ -448,6 +465,7 @@ void fragment() {
 	// on snow or by the sea. puddles.gd keeps the levels and reads the same hollows under a foot.
 	float puddle = 0.0;
 	float puddle_rim = 0.0;
+	float pool = 0.0;
 	vec2 ripple = vec2(0.0);
 	if (puddle_any > 0.001 && dist < 220.0 && world_normal.y > 0.951) {
 		float trail = smoothstep(trail_draw, trail_draw + 0.35, texture(trail_map, world_pos.xz / 1024.0).r);
@@ -487,9 +505,20 @@ void fragment() {
 			}
 		}
 	}
+	// Still water standing in the wetland's hollows whatever the weather (the rain puddles' hollows; puddles.gd pool_at reads the same):
+	// most in swamp, least in bog. It freezes with the puddles. Flat ground only, drawn out to 600 m so a wetland shines from a hill.
+	if (wetland > 0.01 && dist < 600.0 && world_normal.y > 0.951) {
+		float at = dot(wet_kind, pool_level) / wetland;
+		float hollow = puddle_hollow(world_pos.xz);
+		float share = min(wetland * 2.0, 1.0) * smoothstep(0.951, 0.985, world_normal.y) * (1.0 - lying) * (1.0 - smoothstep(400.0, 600.0, dist));
+		pool = smoothstep(at, at + 0.03, hollow) * share;
+		puddle_rim = max(puddle_rim, smoothstep(at - 0.06, at, hollow) * (1.0 - pool) * share);
+		puddle = max(puddle, pool);
+	}
 	if (puddle + puddle_rim > 0.001) {
 		color *= 1.0 - 0.3 * puddle_rim;                                       // the damp edge
 		vec3 water = color * 0.3 + vec3(0.012, 0.010, 0.007);                    // clear water over mud: dark, the sky does the rest
+		water = mix(water, vec3(0.022, 0.014, 0.006), pool);                    // wetland water is peat-stained brown
 		vec3 ice_look = mix(color * 0.5, vec3(0.6, 0.64, 0.68), 0.55);
 		float crack = 1.0 - smoothstep(0.0, 0.025, abs(puddle_noise((world_pos.xz - puddle_origin) * 3.0) - 0.5));
 		float bubble = smoothstep(0.82, 0.86, puddle_noise((world_pos.xz - puddle_origin) * 9.0 + vec2(3.0)));
@@ -515,6 +544,7 @@ void fragment() {
 	// Photo roughness near the eye, fading to the flat value with distance (it shimmers when far).
 	float base_rough = has_pbr && rough_w > 0.01 ? mix(0.92, clamp(tex_rough / rough_w, 0.35, 1.0), closeness) : 0.92;
 	ROUGHNESS = mix(mix(base_rough, 0.55, mud), wet_rough, max(soak * 0.7 * (1.0 - lying), damp * 0.8));
+	ROUGHNESS = mix(ROUGHNESS, 0.36, min(wetland, 1.0) * (1.0 - rock_mask) * (1.0 - lying));      // wet peat and mud have a sheen
 	ROUGHNESS = mix(ROUGHNESS, 0.18, wet_sand);      // wet sand shines and mirrors the sky
 	ROUGHNESS = mix(ROUGHNESS, 0.3, puddle_rim);
 	ROUGHNESS = mix(ROUGHNESS, mix(0.03, 0.15, puddle_ice), puddle);      // a puddle mirrors the sky; ice a little less
@@ -551,11 +581,16 @@ static func palette(tables) -> PackedVector3Array:
 	for entry in tables.get_entries("rocks"):
 		_put(colors, Layout.MATERIAL_ROCK + int(entry["id"]), entry)
 
+	# The wetland looks start from their soil's colour; the shader paints their surface (fen, bog, swamp block).
+	for look in Layout.WETLAND_SOIL:
+		colors[look] = colors[int(Layout.WETLAND_SOIL[look])] * 0.7
+
 	return colors
 
 
 # Texture layer of each palette entry: soil ids 0 to 16, rocks at MATERIAL_ROCK + id.
 const SOIL_LAYER := [5, 4, 2, 0, 3, 0, 1, 0, 1, 2, 2, 4, 4, 4, 4, 4, 3]
+const POOL_LEVEL := Vector3(0.63, 0.68, 0.56)   # fen, bog, swamp: the shader's pool_level (provisional, judged: about 18, 10 and 32 percent of flat ground under water, test_wetland_signs)
 const LAYER_FILES := ["layer_0_turf", "layer_1_litter", "layer_2_gravel", "layer_3_mud", "layer_4_sand", "layer_5_rock"]
 const LAYER_MEAN := [0.48, 0.46, 0.56, 0.58, 0.50, 0.68]       # average of each texture's R, so detail is centred
 const LAYER_STRENGTH := [0.9, 1.3, 1.1, 0.8, 0.5, 1.1]         # how hard each layer's detail pushes the colour
@@ -572,10 +607,16 @@ static func layers() -> PackedFloat32Array:
 	out.resize(PALETTE_SIZE)
 	out.fill(5.0)
 
-	for n in range(SOIL_LAYER.size()):
-		out[n] = float(SOIL_LAYER[n])
+	for n in range(PALETTE_SIZE):
+		out[n] = float(layer_of(n))
 
 	return out
+
+
+# Texture layer of a draw material: a wetland look takes its soil's layer (peat litter, mud), rock and unknown ids the rock.
+static func layer_of(material: int) -> int:
+	var soil: int = Layout.soil_of(material)
+	return int(SOIL_LAYER[soil]) if soil >= 0 and soil < SOIL_LAYER.size() else 5
 
 
 # True when every photo pack is in the project (then detail_array uses them).
@@ -679,6 +720,7 @@ static func make(tables, quality: int = 2) -> ShaderMaterial:
 	material.shader = shader
 	material.set_shader_parameter("palette", palette(tables))
 	material.set_shader_parameter("layer_of", layers())
+	material.set_shader_parameter("pool_level", POOL_LEVEL)
 	set_layer_params(material)
 	material.set_shader_parameter("ground_detail", detail_array(quality))
 	material.set_shader_parameter("triplanar", quality >= 1)

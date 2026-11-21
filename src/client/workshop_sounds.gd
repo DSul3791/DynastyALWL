@@ -1,10 +1,11 @@
 extends Node
 
-# Chopping block and saw mill sounds (client only): hooks for workshops that do not exist yet. Nothing here
+# Chopping block, saw mill and smelter bellows sounds (client only); the block and mill ones are hooks for workshops that do not exist yet. Nothing here
 # knows how a block or a mill is built; a caller says where they are and when they work.
 #
 #   sound.workshop.chop(at, split)       an axe stroke on the chopping block; split true = the log splits in two
 #   sound.workshop.plank_drop(at)        a sawn plank lands on its stack
+#   sound.workshop.bellows(at)           one stroke of a smelter's worked bellows (BuildingLook.show_forge_bellows beats them)
 #   sound.workshop.set_saws([{"id": 4, "at": Vector3(...), "running": true}, ...])
 #                                        the saw mills near the player, called whenever the list changes (about
 #                                        once a second); a running mill plays its blade-and-frame loop, a mill
@@ -20,7 +21,7 @@ const RECORDED_DIR := "res://assets/audio/recorded/workshop/"
 const REACH_M := 70.0
 const UNIT_SIZE := 6.0
 const SAW_DB := -14.0
-const CHOP_DB := {"chop_split": -6.0, "chop_thock": -8.0, "plank_drop": -10.0}
+const CHOP_DB := {"chop_split": -6.0, "chop_thock": -8.0, "plank_drop": -10.0, "bellows_blow": -9.0}   # bellows_blow PROVISIONAL (BW-4)
 const FADE_DB_PER_SEC := 24.0
 const SCAN_SEC := 0.5
 
@@ -47,6 +48,10 @@ func chop(at: Vector3, split: bool = false) -> bool:
 
 func plank_drop(at: Vector3) -> bool:
 	return _once("plank_drop", at)
+
+
+func bellows(at: Vector3) -> bool:
+	return _once("bellows_blow", at)
 
 
 func set_saws(saws: Array) -> void:

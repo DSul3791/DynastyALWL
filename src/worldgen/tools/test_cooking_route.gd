@@ -356,7 +356,7 @@ func _init() -> void:
 
 	# 6. Batch room: a pack at its carry limit sends the batch to the player's chest within reach; the room caps it; never the ground.
 	inv.remove(num("sauerkraut"), have("sauerkraut"))
-	var chest: int = build("chest", jar_at + Vector3(-2.0, 0.0, 0.0))
+	var chest: int = build("small_chest", jar_at + Vector3(-2.0, 0.0, 0.0))   # a Small chest: the Wicker - Chest is no longer built (Dave 21 Nov 2026)
 	var box = items._chests[int(items._items[chest]["struct"]["uid"])]
 
 	for k in range(2000):   # the pack grows (protocol 116), so only its carry limit leaves no room: pots until one Sauerkraut is too heavy

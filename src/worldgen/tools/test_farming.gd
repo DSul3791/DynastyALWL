@@ -456,7 +456,7 @@ func _herb_seed_checks(crops: Dictionary) -> void:
 	for plant in items._flora_by_name:
 		var entry: Dictionary = items._flora_by_name[plant]
 
-		if str(entry.get("kind", "")) != "plant" or bool(entry.get("future", false)) or str(plant).ends_with("_log") or plant == "old_stump" or fungi.has(plant):
+		if str(entry.get("kind", "")) != "plant" or bool(entry.get("future", false)) or str(plant).ends_with("_log") or plant in ["old_stump", "dead_tree"] or fungi.has(plant):   # logs, stumps and dead trees are scenery
 			continue
 
 		var wild: Dictionary = (drops.get("seed_drops", {}) as Dictionary).get(plant, {})
@@ -473,7 +473,10 @@ func _herb_seed_checks(crops: Dictionary) -> void:
 	var dune: Dictionary = items._flora_by_name.get("dune_grass", {})
 	var no_tool: Callable = func(_t: String) -> bool: return false
 	var any_item: Callable = func(_i: String) -> bool: return true
-	check(bool(Gather.check(dune, "plant", drops, str((drops["seed_drops"]["dune_grass"]["seasons"] as Array)[0]), no_tool, any_item)["ok"]) and not bool(Gather.check(dune, "plant", drops, "winter", no_tool, any_item)["ok"]), "dune grass, which bears nothing else, can be picked for its seed when it has gone to seed, not in winter")
+	var holly: Dictionary = items._flora_by_name.get("sea_holly", {})
+	check(bool(Gather.check(holly, "plant", drops, "summer", no_tool, any_item)["ok"]) and not bool(Gather.check(holly, "plant", drops, "winter", no_tool, any_item)["ok"]), "sea holly, which bears nothing else, can be picked for its seed when it has gone to seed, not in winter")
+	var dune_rows: Array = (drops.get("by_species", {}) as Dictionary).get("dune_grass", [])
+	check(not dune_rows.is_empty() and str(dune_rows[0][0]) == "plant_fibre" and bool(Gather.check(dune, "plant", drops, "spring", no_tool, any_item)["ok"]) and not bool(Gather.check(dune, "plant", drops, "winter", no_tool, any_item)["ok"]), "dune grass is picked by hand like tall grass for plant fibre in its seasons (Dave 21 Nov 2026), not in winter")
 	# One bed or planter to a spot (one crop record each, _bed_key): a second pot on the same spot is refused.
 	items._items[920006] = {"number": items.table.number_of("flower_pot"), "count": 1, "pos": Vector3(2.3, 10.0, 2.3), "left": 1.0e9, "struct": {"kind": "flower_pot", "yaw": 0.0}}
 	notes.clear()
