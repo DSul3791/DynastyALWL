@@ -76,6 +76,9 @@ func _init() -> void:
 	var cfg: Dictionary = (all_cfg as Dictionary).get("distribution", {})
 	var context: RefCounted = ContextScript.new()
 	context.set("dangers", dangers)
+	var supply: Dictionary = ContextScript.supply_inputs(all_cfg as Dictionary)   # the starting island's first bronze check, as the server does it
+	context.set("first_bronze", supply["first_bronze"])
+	context.set("ore_per_m3", float(supply["ore_per_m3"]))
 	context.call("load_tiles", world + "/tiles", float(settings.tile_size_m), seed_value, cfg, spawn)
 
 	if not bool(context.call("ready")):

@@ -224,6 +224,11 @@
 		"danger_m": 200.0,
 		"high_share": 0.6,
 		"assured_size": 0.5,
+		"first_bronze": {"tools": ["bronze_pickaxe", "bronze_axe", "bronze_hammer", "bronze_knife", "bronze_saw", "bronze_shovel", "bronze_chisel"], "builds": ["improved_smelter", "blacksmithy"], "players": 32, "note": "PROVISIONAL RD-13 (handoff 13 bronze progression; stage 4, 21 Nov 2026). The first bronze kit a player makes: the bronze tools that replace the stone and copper ones (the Bronze - Pickaxe also opens iron ore), and the two stations the way to iron requires (Improved smelter: bellows for iron; Improved smithy: the station that works iron), whose bronze ingots, nails and hinges come from the Primitive smithy. resource_context.first_bronze_need reads every amount from recipes.json, blueprints.json and structures.json smelting (today 21 Bronze ingots: 11 Copper ore and 11 Tin ore a player). players: a full server (32, the status page's max) all starting on the one island, so the check holds for the busiest world; weapons and armour not counted (a player's choice, not the way forward)."},
+		"ore_margin": 2.0,
+		"known_sources": {"iron": 3, "copper": 1, "tin": 1},
+		"known_sources_note": "PROVISIONAL RD-14 (handoff 13: players may already know several iron locations before they can process it): the starting island must have this many sources of each metal within its route budget, else assured ones are added (up to three). Iron 3 = several; copper and tin 1 (their quantity is checked by first_bronze). Across seeds 1 to 200 on the shipped tiles (cloud mirror, before this rule) iron had 0 to 9 sources within 3 km by route, fewer than 3 in 38 seeds; this rule adds them.",
+		"ore_margin_note": "PROVISIONAL RD-13: the starting island's sources within their route budgets must hold the first bronze ore this many times over in their outcrops alone (some outcrops lie in water or on ground the server skips; ore goes to other things too). Fragments and loose pieces below a source are extra.",
 		"transport_m": {
 			"iron": 3000.0,
 			"copper": 1800.0,
@@ -249,6 +254,8 @@
 		"source_grade": [0.4, 0.8],
 		"coal": {
 			"note": "Coal districts and seams (handoff: coal on hillsides and near water, as seams to discover and follow). PROVISIONAL RD-9. A district is dry land on a slope (slope_min..slope_full rise per metre on the 64 m grid) within wet_reach_m of a lake, river, marsh, swamp, fen or bog (wet_classes, water_classes.json; streams cut down through coal beds and show them in their banks), where its own noise (wave_m) passes noise_cut. A seam: one candidate per seam_grid_m square, chance seam_chance x district; a coal layer thick_m thick at the ground height of its centre, length_m along the contour, into_m into the hill and out_m out. Where it meets the ground the server lays a dark coal outcrop every outcrop_every_m (radius outcrop_radius_m) with loose coal below; a shovel dig inside the layer gives per_dig coal (plus the shovel tier's extra) as well as the ground's own yield, until the seam's coal_per_m x its length is dug out (a bounded body; it does not grow back).",
+			"host_families": ["sedimentary"],
+			"host_note": "PROVISIONAL RD-15 (handoff: use sedimentary host rock where the world supports it; stage 4, 21 Nov 2026): a seam whose centre lies in igneous or metamorphic layered rock of the baked tile (rocks.json family: granite, basalt, tuff, slate, marble) has no outcrops and no coal; sediment, shale, limestone, coal, sandstone and chalk hold it. Read by the server at the seam's centre and height once its tile is in memory (server_items._seam_host_ok); unknown rock never stops one. How many seams it keeps near spawn is a lane measure (the server log), not a cloud one.",
 			"wet_classes": [2, 3, 4, 6, 7, 8],
 			"wet_reach_m": 400.0,
 			"slope_min": 0.08,

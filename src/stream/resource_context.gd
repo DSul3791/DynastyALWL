@@ -18,7 +18,9 @@ extends RefCounted
 # - deposits: finite sources of each metal, deterministic from a world grid (deposit_grid_m) and the seed, likelier in the metal's field and
 #   farther in; each has a place, a size 0..1, a radius and an id. The starting island is checked: if no source of a metal lies within its
 #   route budget from spawn (walking cost over the grid, steep ground refused, the route kept under the high ground), the best reachable
-#   candidate in its field becomes an assured source (handoff 13).
+#   candidate in its field becomes an assured source (handoff 13). Then the quantity: the ore in the outcrops of the sources within the
+#   budget must cover the first bronze (first_bronze, from the live recipes) times ore_margin, and known_sources of each metal must lie
+#   within it (several iron locations known before iron smelting); else up to three more assured sources.
 # - clue per metal: rounded river finds below each source, strongest at the source and fading down its own drainage (river cells fade over
 #   transport_m, hillside cells over hillslope_m; a lake ends it), so a find points up its own tributary and never up another.
 # - coal 0..1: coal districts, hillsides and mountain edges with wet ground (lake, marsh, swamp, fen, bog) a short way off, where a noise of
@@ -32,6 +34,7 @@ extends RefCounted
 # All values from boulders.json "distribution" (PROVISIONAL, RD-1..).
 
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
+const CarryRules := preload("res://src/shared/carry_rules.gd")
 
 const METALS := ["iron", "copper", "tin"]
 const SEA := 1            # water_classes.json ocean
@@ -57,6 +60,8 @@ var deposits: Array = []          # {"metal", "x", "z", "size" 0..1, "radius" m,
 var seams: Array = []             # {"id", "x", "z", "along" Vector2 (the contour), "up" Vector2 (into the hill), "length" m, "thick" m, "into" m, "out" m}
 var pockets: Array = []           # {"id", "find", "x", "z", "depth" m under the generated ground, "r" m, "source" deposit id}
 var dangers: Array = []           # [x, z, radius m] of known dangers (hostile camps, bandit camps) the starting-island routes keep out of; set before building
+var first_bronze: Dictionary = {}   # copper and tin ore the starting island's sources must hold within their route budgets (supply_inputs; set before building)
+var ore_per_m3: float = 0.0       # stones a cubic metre of ore rock holds (the server's boulder rule; supply_inputs); 0 skips the quantity check
 var report: PackedStringArray = PackedStringArray()   # what the build found (the server log; the diagnostics tool)
 var build_ms: float = 0.0
 var built: bool = false           # every step of build finished
@@ -181,6 +186,86 @@ func build(heights: PackedFloat32Array, classes: PackedByteArray, n_x: int, n_z:
 
 func ready() -> bool:
 	return built
+
+
+# What the starting island's quantity check needs from the live game (handoff 13, "Bronze progression": accessible copper and tin cover
+# the intended first bronze equipment and required construction costs; minimum quantities established from the actual game): read from
+# recipes.json, blueprints.json, structures.json smelting and the boulder rule, so a change of any of them changes the check.
+# Returns {"first_bronze": {"ingots", "copper", "tin", "players", "per_player": {...}}, "ore_per_m3"}.
+static func supply_inputs(boulders: Dictionary) -> Dictionary:
+	var read: Callable = func(path: String, key: String) -> Dictionary:
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+		return parsed.get(key, {}) if typeof(parsed) == TYPE_DICTIONARY else {}
+
+	var kit: Dictionary = (boulders.get("distribution", {}) as Dictionary).get("first_bronze", {})
+	var need: Dictionary = first_bronze_need(kit, read.call("res://data/items/recipes.json", "recipes"), read.call("res://data/items/blueprints.json", "blueprints"), read.call("res://data/items/structures.json", "smelting"))
+	var stone_kg: float = maxf(CarryRules.weight_of("stone", CarryRules.load_config()), 0.05)
+	var per_m3: float = float(boulders.get("height_ratio", 0.85)) * float(boulders.get("density_kg_m3", 2600)) * float(boulders.get("ore_yield", boulders.get("yield", 0.5))) / stone_kg
+	return {"first_bronze": need, "ore_per_m3": per_m3}
+
+
+# The copper and tin ore one player's first bronze takes (boulders.json distribution first_bronze: the tools, and the stations whose costs
+# the way to iron requires), times the players a starting island serves. Every amount from the live recipes and blueprints: a tool's or a
+# station's Bronze ingots, and the bronze fittings (nails, hinges) in whole forge batches at their recipe's own yield; then the smelter's
+# bronze job (its copper and tin ore to its Bronze ingots). {} when the kit or the bronze job is missing.
+static func first_bronze_need(kit: Dictionary, recipes: Dictionary, blueprints: Dictionary, smelting: Dictionary) -> Dictionary:
+	var job: Dictionary = (smelting.get("jobs", {}) as Dictionary).get("bronze", {})
+
+	if kit.is_empty() or job.is_empty():
+		return {}
+
+	var wants: Dictionary = {}   # item -> count, before the fittings are turned into ingots
+
+	for piece in kit.get("tools", []):
+		for need in (recipes.get(str(piece), {}) as Dictionary).get("needs", []):
+			wants[str(need[0])] = int(wants.get(str(need[0]), 0)) + int(need[1])
+
+	for build in kit.get("builds", []):
+		for need in (blueprints.get(str(build), {}) as Dictionary).get("cost", []):
+			wants[str(need[0])] = int(wants.get(str(need[0]), 0)) + int(need[1])
+
+	var ingots: int = int(wants.get("bronze_ingot", 0))
+
+	for item in wants:
+		var recipe: Dictionary = recipes.get(str(item), {})
+		var gives: Array = recipe.get("gives", [])
+
+		if str(item) == "bronze_ingot" or gives.size() < 2 or int(gives[1]) <= 0:
+			continue
+
+		for need in recipe.get("needs", []):
+			if str(need[0]) == "bronze_ingot":   # a bronze fitting: whole batches of its forge recipe
+				ingots += ceili(float(wants[item]) / float(gives[1])) * int(need[1])
+
+	var out: Array = job.get("out", [])
+	var runs: int = ceili(float(ingots) / float(maxi(int(out[1]) if out.size() > 1 else 1, 1)))
+	var per_player: Dictionary = {"copper": 0, "tin": 0}
+
+	for put in job.get("in", []):
+		var metal: String = str(put[0]).trim_suffix("_ore")
+
+		if per_player.has(metal):
+			per_player[metal] = runs * int(put[1])
+
+	var players: int = maxi(int(kit.get("players", 1)), 1)
+	return {"ingots": ingots, "copper": int(per_player["copper"]) * players, "tin": int(per_player["tin"]) * players, "players": players, "per_player": per_player}
+
+
+# About how much ore a source's outcrops hold (the server lays them out the same way, server_items._lay_out_sources: outcrop count and
+# radius by size and the rock's own roll, stones by volume, ore by the source grade; fragments and loose pieces not counted).
+func source_ore(d: Dictionary) -> float:
+	var size: float = float(d["size"])
+	var id: int = int(d["id"])
+	var outcrops: int = int(round(lerpf(float(_cfg.get("source_outcrops_min", 2)), float(_cfg.get("source_outcrops_max", 8)), size)))
+	var grades: Array = _cfg.get("source_grade", [0.4, 0.8])
+	var grade: float = snappedf(lerpf(float(grades[0]), float(grades[1]), size), 0.01)
+	var total: float = 0.0
+
+	for k in range(outcrops):
+		var r: float = lerpf(float(_cfg.get("source_outcrop_radius_min", 0.5)), float(_cfg.get("source_outcrop_radius_max", 1.4)), size) * lerpf(0.7, 1.0, unit(id, k, 3))
+		total += float(maxi(int(4.0 / 3.0 * PI * r * r * r * ore_per_m3), 1)) * grade
+
+	return total
 
 
 func cell_at(x: float, z: float) -> int:
@@ -838,6 +923,8 @@ func _assure(spawn: Vector3) -> void:
 	var cost: PackedFloat32Array = _route_costs(start, home)
 	var budgets: Dictionary = _cfg.get("route_budget_m", {"iron": 3000.0, "copper": 3000.0, "tin": 6000.0})
 
+	var margin: float = float(_cfg.get("ore_margin", 2.0))
+
 	for m in 3:
 		var best_route: float = INF
 
@@ -850,30 +937,76 @@ func _assure(spawn: Vector3) -> void:
 
 		if best_route <= budget:
 			report.append("resources: nearest %s source %.0f m by route from spawn (budget %.0f)" % [METALS[m], best_route, budget])
-			continue
-
-		var pick: int = -1
-		var pick_score: float = -INF
-
-		for k in range(nx * nz):
-			if island[k] != home or cost[k] > budget or water[k] == LAKE or water[k] == RIVER or field[k * 3 + m] < 0.5:
-				continue
-
-			var score: float = field[k * 3 + m] - cost[k] / budget * 0.25   # the best paint, nearer breaking ties
-
-			if score > pick_score:
-				pick_score = score
-				pick = k
-
-		if pick < 0:
+		elif _assure_one(m, cost, home, budget, "nearest drawn one %.0f m" % best_route) < 0:
 			report.append("resources: NO reachable %s ground within %.0f m of spawn (nearest source %.0f m): the starting island fails for %s" % [METALS[m], budget, best_route, METALS[m]])
 			continue
 
-		var x: float = origin.x + float(pick % nx) * cell_m
-		var z: float = origin.y + float(_div(pick, nx)) * cell_m
-		var size: float = float(_cfg.get("assured_size", 0.5))
-		_add_deposit(m, x, z, size, lerpf(float(_cfg.get("deposit_radius_min_m", 8.0)), float(_cfg.get("deposit_radius_max_m", 30.0)), size), _hash(_hash(pick, 0xa55), m), true)
-		report.append("resources: assured %s source at %.0f, %.0f, %.0f m by route from spawn (nearest drawn one %.0f m)" % [METALS[m], x, z, cost[pick], best_route])
+		# Enough of it (handoff 13, bronze progression): the outcrops of the sources within the budget against the first bronze, times
+		# ore_margin (outcrops lost to water or steep ground, ore spent on other things); and known_sources of it within the budget
+		# (iron: "players may already know several iron locations before they can process it"). Short: one more assured source, up to three.
+		var need: float = float(first_bronze.get(METALS[m], 0)) * margin if ore_per_m3 > 0.0 else 0.0
+		var known: int = int((_cfg.get("known_sources", {}) as Dictionary).get(METALS[m], 1))
+
+		if need <= 0.0 and known <= 1:
+			continue
+
+		var held: float = 0.0
+		var count: int = 0
+
+		for d in deposits:
+			var k: int = cell_at(float(d["x"]), float(d["z"]))
+
+			if int(d["m"]) == m and k >= 0 and cost[k] <= budget:
+				held += source_ore(d) if ore_per_m3 > 0.0 else 0.0
+				count += 1
+
+		var added: int = 0
+
+		while (held < need or count < known) and added < 3:
+			var n: int = _assure_one(m, cost, home, budget, "%d of %d sources, about %.0f ore of %.0f wanted" % [count, known, held, need])
+
+			if n < 0:
+				break
+
+			held += source_ore(deposits[n]) if ore_per_m3 > 0.0 else 0.0
+			count += 1
+			added += 1
+
+		var ok: bool = held >= need and count >= known
+		report.append("resources: %s within %.0f m of spawn: %d sources (%d wanted), about %.0f ore in their outcrops; first bronze for %d players takes %d (x%.1f margin): %s" % [METALS[m], budget, count, known, held, int(first_bronze.get("players", 1)), int(first_bronze.get(METALS[m], 0)), margin, "enough" if ok else "SHORT"])
+
+
+# One assured source of metal m: the reachable land cell of best field (then nearest) within the budget that holds no source of it yet.
+# Returns its index in deposits, or -1 when the island has no such ground.
+func _assure_one(m: int, cost: PackedFloat32Array, home: int, budget: float, why: String) -> int:
+	var taken: Dictionary = {}
+
+	for d in deposits:
+		if int(d["m"]) == m:
+			taken[cell_at(float(d["x"]), float(d["z"]))] = true
+
+	var pick: int = -1
+	var pick_score: float = -INF
+
+	for k in range(nx * nz):
+		if island[k] != home or cost[k] > budget or water[k] == LAKE or water[k] == RIVER or field[k * 3 + m] < 0.5 or taken.has(k):
+			continue
+
+		var score: float = field[k * 3 + m] - cost[k] / budget * 0.25   # the best paint, nearer breaking ties
+
+		if score > pick_score:
+			pick_score = score
+			pick = k
+
+	if pick < 0:
+		return -1
+
+	var x: float = origin.x + float(pick % nx) * cell_m
+	var z: float = origin.y + float(_div(pick, nx)) * cell_m
+	var size: float = float(_cfg.get("assured_size", 0.5))
+	_add_deposit(m, x, z, size, lerpf(float(_cfg.get("deposit_radius_min_m", 8.0)), float(_cfg.get("deposit_radius_max_m", 30.0)), size), _hash(_hash(pick, 0xa55), m), true)
+	report.append("resources: assured %s source at %.0f, %.0f, %.0f m by route from spawn (%s)" % [METALS[m], x, z, cost[pick], why])
+	return deposits.size() - 1
 
 
 # Dijkstra over one island from cell `start` (binary heap of [cost, cell]).

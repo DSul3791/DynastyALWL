@@ -39,6 +39,23 @@ The existing geology (tile ore bodies, coal layers, gem lenses) stays as it is: 
 13. **Diagnostics** (handoff 15): `src/worldgen/tools/resource_map.gd` builds the landscape from a world's tiles exactly as the server does and writes `resource_areas.png` (areas, overlaps, sources, assured sources, the ground within the tin route budget of spawn, dangers), `resource_finds.png` (river clues, coal districts, seams, pockets by find) and `resource_report.txt`. Headless, no rendering: `godot --headless --path . --script res://src/worldgen/tools/resource_map.gd -- --out=DIR [--around=6000] [--seed=N] [--spawn=X,Z] [--danger=X,Z,R]`. Adverse seeds: run it with other `--seed` values.
 14. Still to do: a lane measurement of the build time at start and the scatter cost per cell; Lane A pictures in the game; tuning after Dave's play.
 
+## Stage 4: the handoff 13 checks
+
+15. **Enough copper and tin for the first bronze** (RD-13, handoff 13 "accessible copper and tin quantities cover the intended first bronze equipment and required construction costs"; `distribution.first_bronze`, `ore_margin`). The kit: the seven bronze tools (pickaxe, axe, hammer, knife, saw, shovel, chisel) and the two stations the way to iron requires (Improved smelter, Improved smithy). `resource_context.first_bronze_need` reads every amount from `recipes.json`, `blueprints.json` and `structures.json` smelting: today 13 + 6 Bronze ingots, plus 40 nails and 4 hinges in one forge batch each = 21 ingots, so 11 Copper ore and 11 Tin ore a player (1 + 1 ore make 2 ingots). Times 32 players (a full server) and a margin of 2 = 704 of each. The starting-island check counts the ore in the outcrops of every source within the route budget (`source_ore`: the server's own outcrop count, size and grade; fragments and loose pieces not counted) and adds an assured source, up to three, while short. Logged at start: "resources: tin within 6000 m of spawn: N sources (1 wanted), about X ore ...: enough". Finding: quantity is never the limit. One smallest source holds about 440 ore in its outcrops, a mid-size one about 11,000; across seeds 1 to 200 the least copper within budget was about 8,700 and the least tin about 93,000 (cloud mirror). Weapons and armour are not counted.
+16. **Several iron locations before iron smelting** (RD-14, handoff 13; `distribution.known_sources`, iron 3): at least three iron sources within the iron budget (3 km by route), else assured ones are added. Across seeds 1 to 200, 38 seeds had fewer than three and 2 had none (now fixed by this rule). Besides sources, iron shows from the first hour as rust-red river stones, bog iron and rocks over 90% of the island.
+17. **Charcoal and coal fit the bellows smelting** (handoff 13 and the charcoal rule): checked against the live data in `test_resource_landscape` 10b. The coal the seams and coal rocks give is smelter fuel and both smelters take it beside Charcoal. The iron jobs want bellows and the Improved smelter has them. A Primitive kiln (100 Charcoal a log) and the Primitive smelter need no metal, so charcoal never waits on coal. The charcoal route runs through the real server in `test_bronze_path` and `test_iron_saw_route`, and coal in a smelter's hopper in `test_smelters`. Not run end to end: seam coal through a lit Improved smelter into an iron ingot in one test (the pieces are tested apart). Goals (#1468) lead charcoal, then copper and tin, then the Improved smelter and bog iron, which fits.
+18. **Inland reward, measured** (handoff 13; seeds 1 to 200, cloud mirror). By journey third (shore, middle, headwaters):
+    - Sources per km² of land: iron 0.28, 0.45, 0.57; copper 0.29, 0.96, 1.25; tin 0.11, 0.82, 1.29.
+    - Mean ore in a source's outcrops: about 8,000 near the shore, 21,000 in the middle and 50,000 at the headwaters, for every metal.
+    - Plain rocks are larger and commoner inland (RD-8).
+19. **Host rock for coal** (RD-15, handoff "use sedimentary host rock where the world supports it"; `distribution.coal.host_families`): a seam whose centre lies in igneous or metamorphic layered rock of the baked tile (granite, basalt, tuff, slate, marble) has no outcrops and no coal. The server reads `TileTerrainData.bedrock_name_at` at the seam's centre and height once its tile is in memory; unknown rock never stops one. How many seams this keeps near spawn is NOT MEASURED (it needs the tiles' province geology, a lane run).
+20. **Adverse seeds** (seeds 1 to 200 on the shipped tiles, cloud mirror of the code; `/mnt/project-files/resource-distribution/seed_sweep/`). Nearest source by route from spawn, before any assured source:
+    - Tin: 788 to 3,935 m (median 1,639) against its 6 km budget; never needed an assured source; at least 5 tin sources within budget. Worst seed 128.
+    - Copper: 246 to 3,219 m (median 1,272); seed 92 needs an assured one.
+    - Iron: 64 to 4,269 m (median 1,197); seeds 31 and 64 need an assured one.
+    - Area shares are the same every seed (cut at the island's own quantile: iron 90%, copper 60%, tin 40%). The share of ground within the tin budget that lies in the tin area runs 32% to 64% (median 47%).
+    - Not covered by the mirror: dangers and the new rules 15 to 19 (they are in the code and its test).
+
 ## Where each ore is findable by game stage (for the goals thread)
 
 | Stage | Iron | Copper | Tin |
@@ -61,10 +78,10 @@ Nothing is regenerated and no world is reset. Two save fields are added to `worl
 
 ## Not done yet (tracked)
 
-- Coal districts do not read the tile's host rock (sedimentary or not); they follow slope, water and noise only. Pockets do not read the geology's own gold, silver and gem bodies either: they follow the sources.
+- Pockets do not read the geology's own gold, silver and gem bodies: they follow the sources. Coal districts read the host rock only at each seam's centre (item 19).
 - Pictures (Lane A) of a coal seam's outcrops and an opened pocket rock.
 - Lane measurement of the build time (now with seams and pockets) (cloud mirror took 5 s in Python; GDScript expected 1 to 3 s on a worker thread, NOT MEASURED) and of the scatter cost per cell (NOT MEASURED).
 - Pictures (Lane A): rounded, broken and jagged rocks; a source with its outcrops and fragments; a river with clues.
-- Handoff 13 checks not automated yet (the starting-island check only proves a source of each metal within a route budget, off steep, high and dangerous ground): copper and tin quantities against the first bronze equipment and building costs; iron visible before iron smelting; the charcoal and coal routes fitting the bellows smelting; the inland reward. To be checked from the lane pictures, resource_map.gd's report and Dave's play; recorded here as gaps, not passes.
-- Adverse seeds, region boundaries and reloads: resource_map.gd takes --seed; no seed other than the base world's has been looked at yet (lane work).
+- Handoff 13 (stage 4, items 15 to 20): checked in code and its test, and measured in the cloud mirror. Lane runs still to do: the server log lines and resource_map.gd on the real tiles; seam coal through an Improved smelter in one test; how many seams the host rock keeps.
+- Region boundaries and reloads with other seeds: lane work.
 - A danger ring round spawn itself would refuse every route ("NO reachable ..." in the log, no assured source); no known camp is that close today.

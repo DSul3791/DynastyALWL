@@ -115,6 +115,7 @@ const MINE_REGROW_S := 300.0             # ...and one comes back this often (rea
 const PLACE_REACH_M := 6.0
 const STRUCTURES_PATH := "res://data/items/structures.json"
 const BLUEPRINTS_PATH := "res://data/items/blueprints.json"
+const ROCKS_PATH := "res://data/tables/rocks.json"
 const SKILLS_PATH := "res://data/items/skills.json"
 const FIRE_BURN_S := 480.0               # real seconds a fresh campfire burns (4 sticks, cooking.json start_burn_game_s)
 const FIRE_LAID_S := 1800.0             # a laid fire (empty 8, or loaded and unlit 9) waits this long for the player
@@ -380,6 +381,7 @@ const ORE_METALS := {"iron": 0, "copper": 1, "tin": 2}   # ResourceContext field
 const ORE_KEY := 1 << 52               # copper, tin and iron rocks picked by hand: ORE_KEY | cell x << 28 | cell y << 8 | slot; tin boulders add BOULDER_KEY
 const POCKET_KEY := (1 << 49) | ORE_KEY | BOULDER_KEY   # an opened pocket's rock: POCKET_KEY | the pocket's id (30 bits); bit 49 is in no other key (cell bits end at 47)
 var _pockets_open: Dictionary = {}     # pocket id -> [x, y, z] where its rock lies (the dig that opened it), saved in world_items.json "pockets"
+var _rock_family: Dictionary = {}     # rocks.json name -> family (sedimentary, igneous, metamorphic), read once (_seam_host_ok)
 var _seam_y: Dictionary = {}           # seam id -> the generated ground height at its centre: the layer's height (once a run)
 var _seam_left: Dictionary = {}        # seam id -> coal still in a seam someone has dug (absent = untouched: its length x coal_per_m), saved in world_items.json "seams"
 const BOG_STATE := 229            # world-item row state of a bog iron deposit (next free structure state, 10 Nov 2026; no structure may take it)
@@ -7809,7 +7811,14 @@ func start_resources(tiles_dir: String, tile_size_m: float, spawn: Vector3, dang
 	_resource_building.set("dangers", dangers.duplicate(true))
 	var building: RefCounted = _resource_building
 	var seed_value: int = world_seed
-	_resource_task = WorkerThreadPool.add_task(func() -> void: building.load_tiles(tiles_dir, tile_size_m, seed_value, cfg, spawn), false, "resource landscape")
+	var boulders: Dictionary = _boulder_cfg.duplicate(true)
+	var job: Callable = func() -> void:
+		var supply: Dictionary = ResourceContextScript.supply_inputs(boulders)   # the first bronze ore from the live recipes (handoff 13; off the main thread)
+		building.set("first_bronze", supply["first_bronze"])
+		building.set("ore_per_m3", float(supply["ore_per_m3"]))
+		building.load_tiles(tiles_dir, tile_size_m, seed_value, cfg, spawn)
+
+	_resource_task = WorkerThreadPool.add_task(job, false, "resource landscape")
 
 
 # Waits for a landscape build still running (terrain_server _exit_tree, with the other pool tasks: none may run while the engine shuts its
@@ -8518,9 +8527,28 @@ func _seam_height(seam: Dictionary) -> float:
 		if is_nan(y):
 			return NAN
 
-		_seam_y[id] = y
+		_seam_y[id] = y if _seam_host_ok(Vector3(float(seam["x"]), y, float(seam["z"]))) else NAN   # NAN kept: no seam in this rock, every look
 
 	return float(_seam_y[id])
+
+
+# Whether the bedrock at a seam's centre can hold coal (handoff: "use sedimentary host rock where the world supports it"; boulders.json
+# distribution coal host_families, rocks.json family): the baked tile's layered rock there (rock_near: TileTerrainData.bedrock_name_at).
+# Unknown rock (no tile geology, rock_near unset) does not stop a seam.
+func _seam_host_ok(spot: Vector3) -> bool:
+	var families: Array = ((_boulder_cfg.get("distribution", {}) as Dictionary).get("coal", {}) as Dictionary).get("host_families", [])
+
+	if families.is_empty() or not rock_near.is_valid():
+		return true
+
+	if _rock_family.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(ROCKS_PATH))
+
+		for row in (parsed.get("entries", []) if typeof(parsed) == TYPE_DICTIONARY else []):
+			_rock_family[str(row.get("name", ""))] = str(row.get("family", ""))
+
+	var rock: String = str(rock_near.call(spot))
+	return rock == "" or not _rock_family.has(rock) or families.has(_rock_family[rock])
 
 
 # The coal seam (ResourceContext seams) whose layer holds the point, or {}: within half its length along it, from out_m outside the

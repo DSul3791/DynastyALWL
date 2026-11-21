@@ -41,8 +41,8 @@ static func ground(x: float, z: float) -> float:
 	return PEAK * share * share + 2.0 - 60.0 * share * pow(absf(sin(d.angle() * 4.0)), 0.3) * (1.0 - share) + 1.0
 
 
-# The island; with a lake (water class 2) of 250 m round `lake` when one is given.
-func island(cfg: Dictionary, spawn: Vector3, lake: Vector2 = Vector2.INF) -> RefCounted:
+# The island; with a lake (water class 2) of 250 m round `lake` when one is given; `supply` (first_bronze, ore_per_m3) turns the quantity check on.
+func island(cfg: Dictionary, spawn: Vector3, lake: Vector2 = Vector2.INF, supply: Dictionary = {}) -> RefCounted:
 	var heights: PackedFloat32Array = PackedFloat32Array()
 	var classes: PackedByteArray = PackedByteArray()
 	heights.resize(N * N)
@@ -58,6 +58,10 @@ func island(cfg: Dictionary, spawn: Vector3, lake: Vector2 = Vector2.INF) -> Ref
 				classes[j * N + i] = 2
 
 	var context: RefCounted = ContextScript.new()
+
+	for key in supply:
+		context.set(key, supply[key])
+
 	context.build(heights, classes, N, N, Vector2.ZERO, CELL, SEED, cfg, spawn)
 	return context
 
@@ -181,6 +185,42 @@ func _init() -> void:
 	var risky_cost: PackedFloat32Array = risky.call("_route_costs", int(context.call("cell_at", spawn.x - 64.0, spawn.z)), int(isl[int(context.call("cell_at", spawn.x - 64.0, spawn.z))]))
 	var camp_cell: int = int(context.call("cell_at", camp.x, camp.y))
 	check(safe_cost[camp_cell] < INF and risky_cost[camp_cell] == INF and str(risky.get("report")).contains("known dangers"), "a route never crosses a known danger's ground (%.0f m without it)" % safe_cost[camp_cell])
+
+	# 5c. Enough copper and tin for the first bronze (handoff 13, bronze progression): the need is read from the live recipes, blueprints and
+	# smelter; sources within the budgets short of it get assured ones beside them.
+	var supply: Dictionary = ContextScript.supply_inputs(all_cfg)
+	var first_need: Dictionary = supply["first_bronze"]
+	var recipes_live: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/items/recipes.json")) as Dictionary)["recipes"]
+	var direct: int = 0
+
+	for piece in cfg["first_bronze"]["tools"]:
+		for need in recipes_live[piece]["needs"]:
+			direct += int(need[1]) if str(need[0]) == "bronze_ingot" else 0
+
+	var per_player: Dictionary = first_need.get("per_player", {})
+	check(direct > 0 and int(first_need.get("ingots", 0)) > direct and int(per_player.get("copper", 0)) == ceili(float(first_need["ingots"]) / 2.0) and int(per_player.get("tin", 0)) == int(per_player["copper"]) and int(first_need["tin"]) == int(per_player["tin"]) * int(first_need["players"]) and float(supply["ore_per_m3"]) > 1000.0, "the first bronze ore comes from the live tools, stations and bronze job: %d ingots, %s a player, %d players" % [int(first_need.get("ingots", 0)), str(per_player), int(first_need.get("players", 0))])
+	var fed: RefCounted = island(cfg, spawn, Vector2.INF, supply)
+	var fed_report: String = "\n".join(fed.get("report"))
+	check(fed_report.contains("tin within") and fed_report.contains("copper within") and not fed_report.contains("SHORT"), "the shipped island holds the first bronze copper and tin for a full server within the budgets")
+	var hungry_supply: Dictionary = supply.duplicate(true)
+	hungry_supply["first_bronze"]["tin"] = 1000000000
+	var hungry: RefCounted = island(cfg, spawn, Vector2.INF, hungry_supply)
+	var count_tin: Callable = func(c: RefCounted, only_assured: bool) -> int:
+		return (c.get("deposits") as Array).filter(func(d): return str(d["metal"]) == "tin" and (bool(d["assured"]) or not only_assured)).size()
+	var hungry_report: String = "\n".join(hungry.get("report"))
+	check(int(count_tin.call(hungry, true)) - int(count_tin.call(fed, true)) == 3 and int(count_tin.call(hungry, false)) == int(count_tin.call(fed, false)) + 3 and hungry_report.contains("tin within") and hungry_report.contains("SHORT") and (hungry.get("deposits") as Array).filter(func(d): return str(d["metal"]) == "copper").size() == (fed.get("deposits") as Array).filter(func(d): return str(d["metal"]) == "copper").size(), "short of tin, the island gets at most three assured tin sources and says SHORT; copper untouched")
+	var tin_held: Callable = func(c: RefCounted) -> float:
+		var total: float = 0.0
+		for d in c.get("deposits"):
+			total += float(c.call("source_ore", d)) if str(d["metal"]) == "tin" else 0.0
+		return total
+	check(float(tin_held.call(hungry)) > float(tin_held.call(fed)), "each assured tin source adds its ore")
+	var curious: Dictionary = cfg.duplicate(true)
+	curious["known_sources"] = {"iron": 50, "copper": 1, "tin": 1}
+	var known: RefCounted = island(curious, spawn, Vector2.INF, supply)
+	var iron_assured: Callable = func(c: RefCounted) -> int:
+		return (c.get("deposits") as Array).filter(func(d): return str(d["metal"]) == "iron" and bool(d["assured"])).size()
+	check(int(iron_assured.call(known)) == int(iron_assured.call(fed)) + 3 and "\n".join(known.get("report")).contains("(50 wanted)"), "wanting more known iron sources than drawn adds up to three assured ones (several iron locations known before iron smelting)")
 
 	# 6. The server lays a source out: outcrops and fragments in the right cells, the same every time, angular, its own ore.
 	var items = ItemsScript.new()
@@ -347,6 +387,28 @@ func _stage_two(all_cfg: Dictionary, cfg: Dictionary, spawn: Vector3, plain: Ref
 	var wet_again: RefCounted = island(wet_cfg, spawn, lake)
 	check(str(wet_again.get("seams")) == str(seams), "the same seams every build")
 
+	# 10b. The fuels fit the smelting (handoff 13: the charcoal and coal routes fit the bellows smelting): the coal the seams and coal rocks give
+	# and Charcoal are both smelter fuel and both go into the Primitive and Improved smelters; the Improved smelter has the bellows the iron
+	# jobs need; a Primitive kiln (charcoal from logs) and the Primitive smelter take no metal. The charcoal route through the real server
+	# runs in test_bronze_path and test_iron_saw_route; a smelter's coal hopper in test_smelters.
+	var structures: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/structures.json"))
+	var blueprints: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/items/blueprints.json")) as Dictionary)["blueprints"]
+	var smelt: Dictionary = structures["smelting"]
+	var coal_item: String = str(all_cfg["ore"]["items"]["coal"])
+	var fuels: Array = smelt.get("fuel", [])
+	var takes_fuel: Callable = func(kind: String) -> bool:
+		var takes: Array = structures["structures"][kind].get("takes", [])
+		return takes.has(coal_item) and takes.has("charcoal")
+	var improved: Dictionary = structures["structures"]["improved_smelter"]["smelt"]
+	var no_metal: Callable = func(row: String) -> bool:
+		for need in blueprints[row]["cost"]:
+			if str(need[0]).ends_with("_ingot") or str(need[0]).ends_with("_nails") or str(need[0]).ends_with("_hinges"):
+				return false
+		return true
+	check(fuels.has(coal_item) and fuels.has("charcoal") and takes_fuel.call("smelter") and takes_fuel.call("improved_smelter"), "seam coal (%s) and Charcoal are smelter fuel and both smelters take them" % coal_item)
+	check(bool(improved.get("bellows", false)) and (improved["jobs"] as Array).has("iron") and (improved["jobs"] as Array).has("bog_iron") and bool(smelt["jobs"]["iron"].get("bellows", false)) and bool(smelt["jobs"]["bog_iron"].get("bellows", false)), "the iron jobs want bellows and the Improved smelter has them")
+	check(no_metal.call("kiln") and no_metal.call("smelter") and int(structures["kilns"]["yield"].get("log", 0)) > 0, "a Primitive kiln (%d Charcoal a log) and the Primitive smelter take no metal: charcoal never waits on coal" % int(structures["kilns"]["yield"].get("log", 0)))
+
 	# 11. The server: dark coal outcrops where the ground meets the seam, and a shovel in the seam's band digs coal.
 	var seam: Dictionary = seams[0]
 	var s_at: Vector2 = Vector2(float(seam["x"]), float(seam["z"]))
@@ -397,6 +459,30 @@ func _stage_two(all_cfg: Dictionary, cfg: Dictionary, spawn: Vector3, plain: Ref
 	coal_server.save()
 	var coal_again = server("test_resource_coal", wet, Vector3(s_at.x, ground(s_at.x, s_at.y) + 1.0, s_at.y), "", false)
 	check(int(coal_again._seam_left.get(seam_id, -1)) == 0, "what is left in a dug seam is saved with the world")
+
+	# 11b. Host rock (handoff: sedimentary host rock where the world supports it): the same seam in granite has no outcrops and no coal; in
+	# shale it is there; unknown rock does not stop it.
+	var host_counts: Dictionary = {}
+
+	for rock in ["granite", "shale", ""]:
+		var hosted = server("test_resource_host", wet, Vector3(s_at.x, ground(s_at.x, s_at.y) + 1.0, s_at.y), "")
+		var rock_name: String = rock
+		hosted.rock_near = func(_pos): return rock_name
+		hosted._items.clear()
+
+		for dz in range(-6, 7):
+			for dx in range(-6, 7):
+				hosted._lay_out_seams(home + Vector2i(dx, dz), 32.0, hosted._cell_reads(home + Vector2i(dx, dz), 32.0))
+
+		var shown: int = 0
+
+		for id in hosted._items:
+			if hosted._items[id].has("boulder") and int((hosted._items[id]["boulder"] as Dictionary).get("seam", 0)) == seam_id:
+				shown += 1
+
+		host_counts[rock] = [shown, hosted._seam_at(in_band - Vector3(0.0, hosted.DIG_DEPTH_M, 0.0)).is_empty()]
+
+	check(int(host_counts["granite"][0]) == 0 and bool(host_counts["granite"][1]) and int(host_counts["shale"][0]) == outcrops and not bool(host_counts["shale"][1]) and int(host_counts[""][0]) == outcrops, "a seam in granite has no outcrops and no coal; in shale and in unknown rock it is all there (%s)" % str(host_counts))
 
 	# 12. Pockets: most sources have none; with every chance at 1 each table row shows, by its own rules, the same every build.
 	var real_pockets: int = (plain.get("pockets") as Array).size()
