@@ -246,6 +246,12 @@ func _init() -> void:
 	view._world[41] = {"node": null, "number": 8, "count": 1, "pos": Vector3(2.0, 0.0, -0.3), "state": 240, "light": null}
 	aim_at.call(view.aim_point(41, Vector3.ZERO))
 	check(view._nearest_struct(true) == 41, "of two stations the one looked at, not the nearer")
+	view._world[40]["state"] = 13   # two workbenches (stations F opens)
+	view._world[41]["state"] = 13
+	check(view._nearest_struct(true) == 41, "of two workbenches E works the one looked at")
+	check(view._container_near() == 41, "F opens the same one E works, not the nearer")
+	facing[0] = Vector3(-1.0, 0.0, 0.0)   # looking away from both: F and E fall back to the nearest
+	check(view._container_near() == 40 and view._nearest_struct(true) == 40, "looking away: the nearest station")
 
 	# reticle_index: the best centred inside the cone; none in the cone is -1.
 	facing[0] = Vector3(1.0, 0.0, 0.0)

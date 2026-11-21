@@ -1454,21 +1454,20 @@ func _fire_prompt(state: int) -> String:
 
 # F (Dave 2026-10-22): opens the container you stand beside, your pack on the left and its contents on the right (T moves the selected stack across).
 # True when a chest, remains, campfire or crafting station lay within reach and it was opened (a station opens the crafting screen).
-# The id of the chest, station, fire or remains within reach of the player (0 when none): what F opens.
+# The id of the chest, station, fire or remains within reach of the player (0 when none): what F opens. Like E, the one nearest the reticle when any is
+# in the aim cone, otherwise the nearest (Dave 21 Nov 2026), so E and F work the same thing of two side by side.
 func _container_near() -> int:
 	var here: Vector3 = _player_position.call()
-	var best: int = 0
-	var best_d: float = 3.0
+	var ids: Array = []
 
 	for id in _world:
 		var state: int = int(_world[id]["state"])
 		var is_station: bool = str(_structure_by_state(state).get("station", "")) != ""
 
-		if (is_station or _is_chest(state) or state == 11 or state == 12 or _lit_state(state) or StructureLook.is_unlit_fire(state)) and not _world[id].get("camp", false) and here.distance_to(_world[id]["pos"]) <= best_d:
-			best_d = here.distance_to(_world[id]["pos"])
-			best = id
+		if (is_station or _is_chest(state) or state == 11 or state == 12 or _lit_state(state) or StructureLook.is_unlit_fire(state)) and not _world[id].get("camp", false) and here.distance_to(_world[id]["pos"]) <= PIECE_REACH_M:
+			ids.append(id)
 
-	return best
+	return _aimed_or_nearest(ids, here)
 
 
 var _last_f_ms: int = -100000
