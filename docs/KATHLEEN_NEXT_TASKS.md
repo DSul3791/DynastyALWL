@@ -1,5 +1,7 @@
 # Kathleen (art and looks): backlog at handoff, written 1 Nov 2026
 
+> **Not a live to-do list (reviewed 21 Nov 2026).** This was a queue for a role in the 1 Nov team, which no longer exists. Its open items that still matter are in [docs/TODO.md](TODO.md), with what was done or is no longer relevant. Kept as history.
+
 Every row: owner, exact next step, why it is not done. Verification rows wait for PHASE 2 (Godot). Rig and test commands are in `HANDOFF_KATHLEEN.md`. Dave's answers are on the qa branch (`questions/ANSWERS.md`).
 
 ## Ported in PHASE 1 (branch `kathleen-ports`, from the daily 9ca75719)

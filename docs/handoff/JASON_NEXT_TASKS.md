@@ -1,5 +1,7 @@
 # Jason (Champ): backlog after Phase 1 (1 Nov 2026)
 
+> **Not a live to-do list (reviewed 21 Nov 2026).** This was a queue for a role in the 1 Nov team, which no longer exists. Its open items that still matter are in [docs/TODO.md](../TODO.md), with what was done or is no longer relevant. Kept as history.
+
 Each row: owner of the next step, the exact next step, why. Nothing here has been run or heard (no Godot in Phase 1). "Test" means a line in `test_slot_sounds` or a `--sound-log` check.
 
 | # | Task | Owner | Exact next step | Why |
