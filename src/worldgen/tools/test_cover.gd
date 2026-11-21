@@ -94,6 +94,37 @@ func _init() -> void:
 	index.remove_chunk(Vector2i(1, 0))
 	check(index.trees == 0, "index empty again (%d)" % index.trees)
 
+	# Lag while running (21 Nov 2026): the server works the crown rows out before its flora lock and drops a chunk cell by cell without a
+	# Callable per tree. The rows are what add_chunk indexes, and two chunks sharing a 16 m cell keep each other's trees when one goes.
+	check(Cover.tree_rows(items, info).size() == 2, "tree_rows keeps only the trees (%d)" % Cover.tree_rows(items, info).size())
+	var shared: Dictionary = {"ids": PackedInt32Array([(3 << 16) | 11]), "positions": PackedVector3Array([Vector3(705.0, 50.0, 705.0)]), "heights": PackedFloat32Array([20.0]), "yaws": PackedFloat32Array([0.0])}
+	var neighbour: Dictionary = {"ids": PackedInt32Array([(3 << 16) | 12]), "positions": PackedVector3Array([Vector3(708.0, 50.0, 708.0)]), "heights": PackedFloat32Array([20.0]), "yaws": PackedFloat32Array([0.0])}
+	index.set_chunk(Vector2i(7, 7), Cover.tree_rows(shared, info))
+	Cover.add_chunk(index, Vector2i(8, 7), neighbour, info)
+	check(index.trees == 2, "two chunks in one cell (%d)" % index.trees)
+	Cover.add_chunk(index, Vector2i(7, 7), shared, info)
+	check(index.trees == 2 and index.discs_near(705.0, 705.0, 2.0).size() == 2, "a chunk made again replaces its own trees, not adds (%d)" % index.trees)
+	index.remove_chunk(Vector2i(7, 7))
+	check(index.trees == 1 and Cover.at(Vector3(708.0, 52.0, 708.0), index) == 1.0, "dropping one keeps the other's tree in the shared cell")
+	check(index.discs_near(705.0, 705.0, 2.0).size() == 1, "and only that one (%d)" % index.discs_near(705.0, 705.0, 2.0).size())
+	index.remove_chunk(Vector2i(8, 7))
+	check(index.trees == 0 and Cover.at(Vector3(708.0, 52.0, 708.0), index) == 0.0, "both gone")
+	# The bare-in-winter flags stay with their own trees when a shared cell is filtered: three trees in one cell, the kept middle one bare.
+	var mixed_info: Callable = func(species_id: int) -> Array: return [0, 10.0, 20.0, species_id == 5]
+	var first: Dictionary = {"ids": PackedInt32Array([(6 << 16) | 21]), "positions": PackedVector3Array([Vector3(805.0, 50.0, 805.0)]), "heights": PackedFloat32Array([20.0]), "yaws": PackedFloat32Array([0.0])}
+	var middle: Dictionary = {"ids": PackedInt32Array([(5 << 16) | 22]), "positions": PackedVector3Array([Vector3(806.0, 50.0, 806.0)]), "heights": PackedFloat32Array([20.0]), "yaws": PackedFloat32Array([0.0])}
+	Cover.add_chunk(index, Vector2i(9, 9), first, mixed_info)
+	Cover.add_chunk(index, Vector2i(10, 9), middle, mixed_info)
+	Cover.add_chunk(index, Vector2i(11, 9), first.duplicate(true), mixed_info)
+	index.remove_chunk(Vector2i(9, 9))
+	index.remove_chunk(Vector2i(11, 9))
+	check(index.trees == 1 and Cover.at(Vector3(806.0, 52.0, 806.0), index) == 1.0, "the middle tree of a shared cell stays (%d)" % index.trees)
+	index.leafless = true
+	check(Cover.at(Vector3(806.0, 52.0, 806.0), index) == 0.0, "and keeps its bare flag: in winter it shelters nothing")
+	index.leafless = false
+	index.remove_chunk(Vector2i(10, 9))
+	check(index.trees == 0, "shared cell empty again (%d)" % index.trees)
+
 	# Roofs: a yawed box spanning several cells and a disc.
 	var roof_index = Cover.Index.new()
 	var box: int = roof_index.add_roof(Cover.box_roof(Vector2(500.0, 500.0), 20.0, 3.0, PI * 0.5, 10.0, 14.0))
