@@ -5702,6 +5702,7 @@ func _process(delta: float) -> void:
 
 	if _shader_warmup.busy:
 		var tq_warm: int = Probe.start()
+		_shader_warmup.ground_ready = connected_msec > 0 and not waiting_for_ground
 		_shader_warmup.step()
 		Probe.stop("shader warm-up", tq_warm)
 

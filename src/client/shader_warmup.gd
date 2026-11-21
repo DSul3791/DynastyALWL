@@ -5,16 +5,18 @@ extends RefCounted
 # reported and the server could drop the join (DIAG-93: 166 shader cache misses; with the shader cache kept the freeze was gone).
 # While the join window covers the screen, the drawn camera sees only this warm-up layer, and each frame shows a few of the world's
 # materials on small quads in front of it, so their shaders are built a few at a time while frames keep running (the join window,
-# the game connection and the block line stay alive). When a sweep of the world finds no new material, the camera sees the world again.
+# the game connection and the block line stay alive). The world is looked through again (once a second while the ground is still
+# coming, so the views made when it arrives are found too); once the ground is ready and a sweep finds nothing new, the camera sees the world again.
 
-const LAYER := 1 << 19                 # render layer 20: used by nothing else (PieceLook.TERRAIN_DECAL_LAYER is 1 << 18)
+const LAYER := 1 << 20                 # render layer 21: used by nothing else (PieceLook uses 1 << 18 and 1 << 19)
 const PER_FRAME := 16                  # materials shown in a frame after a quick one (under 100 ms)
 const PER_SLOW_FRAME := 4              # after a frame of 100 ms to 1 s; after a longer one, a single material
-const MAX_SWEEPS := 4                  # the world is looked through again while it grows (views, items, plants made after the welcome)
+const SWEEP_MSEC := 1000               # while the ground is still coming, the world is looked through again this often
 const MAX_MSEC := 90000                # whatever is left after this is built when it is first drawn, as before
 const MAX_CONTAINER := 4096            # bigger arrays and dictionaries in a script are skipped (block and chunk caches)
 
 var busy: bool = false
+var ground_ready: bool = false         # set by the client: the ground under the player is there (its views are made)
 var shown: int = 0                     # materials drawn on the warm-up layer
 
 var _camera: Camera3D
@@ -27,12 +29,16 @@ var _visited: Dictionary = {}          # object instance id -> true, this sweep
 var _queue: Array[Material] = []
 var _drawn: Array[Node] = []           # quads drawn last frame, freed this frame
 var _sweeps: int = 0
+var _swept_msec: int = 0
 var _started_msec: int = 0
 var _last_msec: int = 0
 
 
 # Before the first frame that would draw the world: the camera sees only the warm-up layer until finish().
 func start(camera: Camera3D, roots: Array[Object]) -> void:
+	if busy:
+		return   # a second start would keep the warm-up mask as the camera's own
+
 	_camera = camera
 	_roots = roots
 	_mask = camera.cull_mask
@@ -60,7 +66,8 @@ func step() -> void:
 	_last_msec = now
 
 	for quad in _drawn:
-		quad.queue_free()
+		if is_instance_valid(quad):
+			quad.queue_free()
 
 	_drawn.clear()
 
@@ -69,7 +76,10 @@ func step() -> void:
 		return
 
 	if _queue.is_empty():
-		if _sweeps >= MAX_SWEEPS or _sweep() == 0:
+		if not ground_ready and now - _swept_msec < SWEEP_MSEC:
+			return
+
+		if _sweep() == 0 and ground_ready:
 			finish()
 
 		return
@@ -107,6 +117,7 @@ func finish() -> void:
 # Looks through the world for materials not shown yet; returns how many were found.
 func _sweep() -> int:
 	_sweeps += 1
+	_swept_msec = Time.get_ticks_msec()
 	_visited.clear()
 	var before: int = _queue.size()
 

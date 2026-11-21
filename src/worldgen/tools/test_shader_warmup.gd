@@ -50,10 +50,10 @@ func _init() -> void:
 
 	# A script that keeps materials for later, in a dictionary, before anything in the world uses them.
 	var keeper: Node = Node.new()
-	var script: GDScript = GDScript.new()
-	script.source_code = "extends Node\nvar looks: Dictionary = {}\nvar flat: Material\n"
-	script.reload()
-	keeper.set_script(script)
+	var keeper_script: GDScript = GDScript.new()
+	keeper_script.source_code = "extends Node\nvar looks: Dictionary = {}\nvar flat: Material\n"
+	keeper_script.reload()
+	keeper.set_script(keeper_script)
 	keeper.set("looks", {"tree": kept})
 	keeper.set("flat", canvas)
 	world.add_child(keeper)
@@ -66,11 +66,18 @@ func _init() -> void:
 
 	var frames: int = 0
 
+	while frames < 50:
+		warm.step()
+		frames += 1
+
+	check(warm.busy and camera.cull_mask == WarmupScript.LAYER, "still warming while the ground is not ready")
+	warm.ground_ready = true
+
 	while warm.busy and frames < 200:
 		warm.step()
 		frames += 1
 
-	check(not warm.busy, "done within 200 frames")
+	check(not warm.busy, "done within 200 frames once the ground is ready")
 	check(warm.shown == 4, "four 3D materials shown, the canvas one left out (shown %d)" % warm.shown)
 	check(camera.cull_mask == 0xFFFFF, "the camera's own mask is back (mask %d)" % camera.cull_mask)
 
@@ -80,6 +87,8 @@ func _init() -> void:
 	# Materials made after the first sweep are found by a later one.
 	var warm2 = WarmupScript.new()
 	warm2.start(camera, roots)
+	warm2.start(camera, roots)   # a second start while busy changes nothing
+	warm2.ground_ready = true
 	var late: MeshInstance3D = MeshInstance3D.new()
 	late.mesh = BoxMesh.new()
 	late.material_override = StandardMaterial3D.new()
