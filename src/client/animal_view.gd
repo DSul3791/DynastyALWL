@@ -38,6 +38,7 @@ const AIR_STATES := [15]                      # a flock in the air (takes off, f
 var _bodies: Dictionary = {}     # id -> {node, target Vector3 (newest sent), samples (MotionBuffer), heading, state, phase}
 var _rows_at: float = -1.0       # seconds the last rows came (Time ticks)
 var _gap: float = 0.25           # recent seconds between rows, for MotionBuffer
+var _clock_off: float = INF      # local seconds minus server seconds, the smallest seen (the fastest delivery): MotionBuffer.clock_off
 var max_drawn: int = MAX_DRAWN   # SPYGLASS_DRAWN while the admin spyglass is up (terrain_client.gd)
 var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
 var _model_notes: Dictionary = {}  # log lines already printed by _model_note
@@ -384,7 +385,7 @@ func aim_rows(from: Vector3, range_m: float) -> Array:
 	return out
 
 
-func on_rows(rows: Array) -> void:
+func on_rows(rows: Array, server_ms: int) -> void:
 	var seen: Dictionary = {}
 	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
 
@@ -392,6 +393,7 @@ func on_rows(rows: Array) -> void:
 		_gap = lerpf(_gap, clampf(now_s - _rows_at, 0.05, 0.5), 0.2)
 
 	_rows_at = now_s
+	_clock_off = MotionBuffer.clock_off(_clock_off, now_s, server_ms)
 
 	for row in rows:
 		var id: int = int(row[0])
@@ -428,7 +430,7 @@ func on_rows(rows: Array) -> void:
 		_bodies[id]["target"] = row[2]
 		_bodies[id]["heading"] = float(row[3])
 
-		MotionBuffer.push(_bodies[id]["samples"], row[2], float(row[3]), now_s, _gap)
+		MotionBuffer.push(_bodies[id]["samples"], row[2], float(row[3]), float(row[5]) / 1000.0 + _clock_off, _gap)   # when the server moved it, on this clock
 		_bodies[id]["state"] = int(row[4])
 
 	var now: int = Time.get_ticks_msec()
