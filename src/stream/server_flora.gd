@@ -341,7 +341,7 @@ func set_season(season: String) -> void:
 	if bare == cover.leafless:
 		return
 
-	_mutex.lock()
+	_lock_noting("set_season")
 	cover.leafless = bare
 	_mutex.unlock()
 
@@ -359,6 +359,7 @@ func covered(pos: Vector3) -> bool:
 var _main_wait_usec: int = 0
 var _main_waits: int = 0
 var _main_wait_note_msec: int = 0
+var _log_tasks: Array = []          # worker tasks printing log lines (_log_off_main), main thread only
 
 
 func _lock_noting(what: String) -> void:
@@ -374,10 +375,24 @@ func _lock_noting(what: String) -> void:
 	var now: int = Time.get_ticks_msec()
 
 	if now - _main_wait_note_msec >= 1000:
-		print("server flora: the main thread waited %.0f ms for the flora lock in %d checks (last in %s)" % [float(_main_wait_usec) / 1000.0, _main_waits, what])
+		_log_off_main("server flora: the main thread waited %.0f ms for the flora lock in %d checks (last in %s)" % [float(_main_wait_usec) / 1000.0, _main_waits, what])
 		_main_wait_note_msec = now
 		_main_wait_usec = 0
 		_main_waits = 0
+
+
+# Prints a line on a worker: a print on the server's main thread can itself stall it (server_items #397).
+func _log_off_main(line: String) -> void:
+	var still: Array = []
+
+	for task in _log_tasks:
+		if WorkerThreadPool.is_task_completed(task):
+			WorkerThreadPool.wait_for_task_completion(task)
+		else:
+			still.append(task)
+
+	still.append(WorkerThreadPool.add_task(func() -> void: print(line), true, "flora log line"))
+	_log_tasks = still
 
 
 # True when a point stands in undergrowth: a shrub or a plant of BRUSH_MIN_M or more (fern, tall grass, bramble, hazel) in the same
@@ -444,14 +459,14 @@ func roofed(pos: Vector3) -> bool:
 
 # Roofs (lean-tos) live in the same cover index as the tree crowns.
 func add_roof(roof: Array) -> int:
-	_mutex.lock()
+	_lock_noting("add_roof")
 	var key: int = cover.add_roof(roof)
 	_mutex.unlock()
 	return key
 
 
 func remove_roof(key: int) -> void:
-	_mutex.lock()
+	_lock_noting("remove_roof")
 	cover.remove_roof(key)
 	_mutex.unlock()
 
@@ -459,7 +474,7 @@ func remove_roof(key: int) -> void:
 # Forgets one chunk's packed flora (its saplings or trees changed); it is made again when asked for.
 func invalidate(chunk: Vector2i) -> void:
 	var home: Vector2i = placer.normalize(chunk)
-	_mutex.lock()
+	_lock_noting("invalidate")
 	_memory.erase(Vector3i(home.x, home.y, 1))
 	_memory.erase(Vector3i(home.x, home.y, 0))
 	_mutex.unlock()
@@ -468,7 +483,7 @@ func invalidate(chunk: Vector2i) -> void:
 # The admin world reset (server_items.reset_world): every felled tree and removed plant stands again, saved at once. The clients reload their
 # plants with the ground reset that follows.
 func restore_all() -> void:
-	_mutex.lock()
+	_lock_noting("restore_all")
 
 	for chunk in _removed:
 		_dirty_chunks[chunk] = true
@@ -485,7 +500,7 @@ func restore_all() -> void:
 
 # Forgets every made chunk (the tile files changed).
 func clear_memory() -> void:
-	_mutex.lock()
+	_lock_noting("clear_memory")
 	_memory.clear()
 	_water.clear()
 	_mutex.unlock()
@@ -499,7 +514,7 @@ func clear_memory() -> void:
 
 # Forgets the packed water (the simulated water changed, and where is not known).
 func clear_water() -> void:
-	_mutex.lock()
+	_lock_noting("clear_water")
 	_water.clear()
 	_mutex.unlock()
 
@@ -518,7 +533,7 @@ func clear_water_in(areas: Array) -> void:
 			for cz in range(floori(g.position.y / m), floori(g.end.y / m) + 1):
 				homes[placer.normalize(Vector2i(cx, cz))] = true
 
-	_mutex.lock()
+	_lock_noting("clear_water_in")
 
 	for home in homes:
 		_water.erase(home)
@@ -531,7 +546,7 @@ func clear_water_in(areas: Array) -> void:
 # rewritten in full, pretty-printed, every second while anything was cut).
 func save_removed(force: bool = false) -> void:
 	var now: int = Time.get_ticks_msec()
-	_mutex.lock()
+	_lock_noting("save_removed")
 
 	if (_dirty_chunks.is_empty() and _legacy == "") or (not force and now - _removed_saved_msec < 1000):
 		_mutex.unlock()
@@ -571,7 +586,7 @@ func save_removed(force: bool = false) -> void:
 	if not failed.is_empty():
 		# Tried again at the next save; the one-file save is kept until every chunk it held is written.
 		push_error("server flora: %d chunk removal files could not be written in %s" % [failed.size(), _dir])
-		_mutex.lock()
+		_lock_noting("save_removed")
 
 		for chunk in failed:
 			_dirty_chunks[chunk] = true
@@ -590,7 +605,7 @@ func save_removed(force: bool = false) -> void:
 # True when the chunk's packed water is ready (water_bytes then costs nothing).
 func water_ready(chunk: Vector2i) -> bool:
 	var home: Vector2i = placer.normalize(chunk)
-	_mutex.lock()
+	_lock_noting("water_ready")
 	var known: bool = _water.has(home)
 	_mutex.unlock()
 	return known
@@ -599,7 +614,7 @@ func water_ready(chunk: Vector2i) -> bool:
 # A chunk's rivers and lakes for clients (empty when it has none).
 func water_bytes(chunk: Vector2i) -> PackedByteArray:
 	var home: Vector2i = placer.normalize(chunk)
-	_mutex.lock()
+	_lock_noting("water_bytes")
 	var known: bool = _water.has(home)
 	var bytes: PackedByteArray = _water.get(home, PackedByteArray())
 	_mutex.unlock()
@@ -608,7 +623,7 @@ func water_bytes(chunk: Vector2i) -> PackedByteArray:
 		return bytes
 
 	bytes = WaterGridScript.encode(WaterGridScript.chunk_levels(placer.generator, placer.chunk_origin(home), placer.chunk_m))
-	_mutex.lock()
+	_lock_noting("water_bytes")
 	_water[home] = bytes
 
 	while _water.size() > MEMORY_CHUNKS:
@@ -621,14 +636,14 @@ func water_bytes(chunk: Vector2i) -> PackedByteArray:
 # Removes one item. False when the chunk has no such item (or it is gone).
 func cut(chunk: Vector2i, id: int) -> bool:
 	var home: Vector2i = placer.normalize(chunk)
-	_mutex.lock()
+	_lock_noting("cut")
 	var already: bool = _removed.get(home, {}).has(id)
 	_mutex.unlock()
 
 	if already or items_of(home)["ids"].find(id) < 0:
 		return false
 
-	_mutex.lock()
+	_lock_noting("cut")
 
 	if not _removed.has(home):
 		_removed[home] = {}
@@ -644,7 +659,7 @@ func cut(chunk: Vector2i, id: int) -> bool:
 
 
 func removed_in(chunk: Vector2i) -> Array:
-	_mutex.lock()
+	_lock_noting("removed_in")
 	var ids: Array = _removed.get(placer.normalize(chunk), {}).keys()
 	_mutex.unlock()
 	return ids

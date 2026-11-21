@@ -102,6 +102,8 @@ func _init() -> void:
 	index.set_chunk(Vector2i(7, 7), Cover.tree_rows(shared, info))
 	Cover.add_chunk(index, Vector2i(8, 7), neighbour, info)
 	check(index.trees == 2, "two chunks in one cell (%d)" % index.trees)
+	Cover.add_chunk(index, Vector2i(7, 7), shared, info)
+	check(index.trees == 2 and index.discs_near(705.0, 705.0, 2.0).size() == 2, "a chunk made again replaces its own trees, not adds (%d)" % index.trees)
 	index.remove_chunk(Vector2i(7, 7))
 	check(index.trees == 1 and Cover.at(Vector3(708.0, 52.0, 708.0), index) == 1.0, "dropping one keeps the other's tree in the shared cell")
 	check(index.discs_near(705.0, 705.0, 2.0).size() == 1, "and only that one (%d)" % index.discs_near(705.0, 705.0, 2.0).size())
