@@ -282,6 +282,7 @@ const ART_OVERRIDES := {
 	"copper_ore": {"shape": "malachite", "color": "#176a4e", "size": 1.0},     # a small copper rock picked up by hand (Dave's photo, 16 Nov 2026)
 	"tin_ore": {"shape": "tin_glass", "color": "#7a3a20", "size": 1.0},     # a glassy plum-sized river tin stone (Dave, 17 Nov 2026)
 	"iron_ore": {"shape": "ore", "color": "#5e5650", "size": 1.0, "bits": ["#a04a28"]},
+	"iron_chunk": {"shape": "ore", "color": "#2e2c2b", "size": 0.9, "bits": ["#8a8d92", "#6b3a1e"]},   # a dark pitted meteorite lump with bright metal and rust (Dave 21 Nov 2026)
 	"bog_iron_ore": {"shape": "bog_iron", "color": "#7a3a1c", "size": 1.0},     # a lumpy red-brown bog iron rock (Dave 19 Nov 2026)
 	"coal": {"shape": "coal", "color": "#0e0e10", "size": 1.0},
 }

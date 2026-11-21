@@ -7866,7 +7866,8 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	_lay_out_ore_rocks(cell, cell_m, "copper", reads)
 	_lay_out_ore_rocks(cell, cell_m, "tin", reads)
 	_lay_out_ore_rocks(cell, cell_m, "iron", reads)
-	_cell_part("copper, tin and iron rocks", part_usec)
+	_lay_out_ore_rocks(cell, cell_m, "meteorite", reads)
+	_cell_part("copper, tin and iron rocks and meteorites", part_usec)
 	_cell_parts[-1] += " (reads bound %.1f, ore bodies %.1f, water %.1f, settling %.1f)" % [float(_ore_usec[0]) / 1000.0, float(_ore_usec[1]) / 1000.0, float(_ore_usec[2]) / 1000.0, float(_ore_usec[3]) / 1000.0]
 
 
@@ -8011,9 +8012,10 @@ func _set_boulder_ore(row: Dictionary, ore_name: String, key: int) -> void:
 
 
 # Whether a boulder row is an ore rock (boulders.json ore items: copper, tin, iron, coal, salt), which keeps ore_yield. A limestone, chalk or marble
-# rock (ore "rocks") is stone of another kind and holds stones at the plain yield like any rock (Dave 21 Nov 2026, BugsList 118).
+# rock (ore "rocks") is stone of another kind and holds stones at the plain yield like any rock (Dave 21 Nov 2026, BugsList 118). So does a
+# meteorite (meteorite_rocks plain_yield, Dave 21 Nov 2026): a lump of metal the size of a small rock, not a big ore rock.
 func _holds_ore(row: Dictionary) -> bool:
-	return row.has("ore") and ((_boulder_cfg.get("ore", {}) as Dictionary).get("items", {}) as Dictionary).has(str(row["ore"]))
+	return row.has("ore") and ((_boulder_cfg.get("ore", {}) as Dictionary).get("items", {}) as Dictionary).has(str(row["ore"])) and not bool((_boulder_cfg.get(str(row["ore"]) + "_rocks", {}) as Dictionary).get("plain_yield", false))
 
 
 func _set_boulder_ore_only(row: Dictionary, ore_name: String, key: int) -> void:
@@ -8052,7 +8054,8 @@ func _set_boulder_ore_only(row: Dictionary, ore_name: String, key: int) -> void:
 # - the last try a big boulder at a mountain's foot.
 # A share hand_share of the sizes is a loose ore item picked up by hand (ORE_KEY, kept in _taken like any scatter); the rest are boulder
 # rows with the ore, radius_min..radius_max (0.5 to 2 m across, Dave 17 Nov 2026), broken with a hammer or pick. Slots `slot`.. of the cell: copper 8..15 (BOULDER_KEY, after the cell's
-# boulders), tin 16..23 and iron 24..31 (ORE_KEY | BOULDER_KEY; iron since Dave 21 Nov 2026, commoner by its own chances). Nothing depends on where spawn is.
+# boulders), tin 16..23, iron 24..31 and meteorites 32..39 (ORE_KEY | BOULDER_KEY; iron and meteorites since Dave 21 Nov 2026, by their own chances;
+# a meteorite gives Iron chunks, the same everywhere, with no ore body or mountain foot). Nothing depends on where spawn is.
 func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dictionary = {}) -> void:
 	var cfg: Dictionary = _ore_rock_cfg(ore)
 	var item: String = str((_boulder_cfg.get("ore", {}).get("items", {}) as Dictionary).get(ore, ""))
@@ -9134,19 +9137,20 @@ func _repair(peer: int, inv, slot: int) -> void:
 		_say(peer, "Repairing this needs a %s nearby." % _station_name(bench).to_lower())
 		return
 
-	# The tool's own slot must not be spent as material.
+	# The tool's own slot must not be spent as material. A cost is filled like a recipe's (ingredient groups: an Iron chunk mends what asks
+	# for an Iron ingot, Dave 21 Nov 2026).
 	var tool_number: int = inv.numbers[slot]
 
 	for cost in costs:
 		var number: int = table.number_of(str(cost[0]))
-		var have: int = inv.count_of(number) - (inv.counts[slot] if number == tool_number else 0)
+		var have: int = inv.count_fill(number) - (inv.counts[slot] if inv.fills_of(number).has(tool_number) else 0)
 
 		if number == 0 or have < int(cost[1]):
 			_say(peer, "Repair needs %s." % _repair_text(costs))
 			return
 
 	for cost in costs:
-		inv.remove(table.number_of(str(cost[0])), int(cost[1]))
+		inv.remove_fill(table.number_of(str(cost[0])), int(cost[1]))
 
 	inv.wear[slot] = 0
 	practice(peer, "tool_care")

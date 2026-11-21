@@ -95,6 +95,7 @@ func lay(items, cells: Array) -> Array:
 		items._lay_out_ore_rocks(cell, CELL_M, "copper", reads)
 		items._lay_out_ore_rocks(cell, CELL_M, "tin", reads)
 		items._lay_out_ore_rocks(cell, CELL_M, "iron", reads)
+		items._lay_out_ore_rocks(cell, CELL_M, "meteorite", reads)
 
 	var ms: float = float(Time.get_ticks_usec() - started) / 1000.0
 	var rows: Array = []
@@ -142,7 +143,7 @@ func _init() -> void:
 	var rocks: int = 0
 
 	for row in before[0]:
-		rocks += 1 if str(row[5]) in ["copper", "tin", "iron"] or int(row[2]) != 0 else 0
+		rocks += 1 if str(row[5]) in ["copper", "tin", "iron", "meteorite"] or int(row[2]) != 0 else 0
 
 	print("cell reads: %d cells, %d rows (%d copper, tin or iron), general reads %d in %.1f ms; bound: %d tile looks, %d general reads in %.1f ms" % [cells.size(), before[0].size(), rocks,
 		int(general_calls.get("general", 0)), float(before[1]), int(bound_calls.get("cells", 0)), int(bound_calls.get("general", 0)), float(after[1])])
