@@ -1000,7 +1000,7 @@ Not yet played.
 - Lane A on 29bcfd4b: 288 pass / 0 fail. Warnings 381, the same as the baseline. validate_items 0 errors.
 - The run includes "a Wooden - Pipe is carved from a Log at the Carving station, no twine".
 
-**Acceptance:** stand at a Wood carving station with a knife and a Log. The Wooden - Pipe is in its list and makes one pipe from the Log. Away from the station, the pipe is not in the hand crafting list.
+**Acceptance:** stand at a Wood carving station with a knife and a Log. The Wooden - Pipe is in its list and makes one pipe from the Log. Away from the station it is listed greyed "at Carving station" and cannot be made.
 
 Not yet played.
 
