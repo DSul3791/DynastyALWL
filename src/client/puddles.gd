@@ -438,9 +438,9 @@ func _lying() -> float:
 # The still water of a wetland's hollows at a spot (0 none .. 1 water) on draw material `material_id`, whatever the weather: the ground
 # shader's pool (ground_material.gd pool_level) on flat, unblended ground. 0 off the wetland looks.
 static func pool_at(x: float, z: float, material_id: int, up_y: float) -> float:
-	var kind: int = [Layout.MATERIAL_FEN, Layout.MATERIAL_BOG, Layout.MATERIAL_SWAMP].find(material_id)
+	var kind: int = material_id - Layout.MATERIAL_FEN        # fen 0, bog 1, swamp 2 (the look ids are consecutive)
 
-	if kind < 0 or up_y < 0.951:
+	if kind < 0 or kind > 2 or up_y < 0.951:
 		return 0.0
 
 	var at: float = GroundMaterial.POOL_LEVEL[kind]

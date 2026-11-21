@@ -39,6 +39,16 @@ func _init() -> void:
 
 	check(Layout.soil_of(Layout.MATERIAL_FEN) == 6 and Layout.soil_of(Layout.MATERIAL_BOG) == 6 and Layout.soil_of(Layout.MATERIAL_SWAMP) == 16, "fen and bog are peat, swamp is mud")
 	check(Layout.soil_of(3) == 3 and not Layout.is_wetland(6) and not Layout.is_wetland(Layout.MATERIAL_ROCK + 2), "plain soils and rock are their own soil")
+	# The server names the ground under a dig by soils.json (terrain_server.gd items.ground_material, through soil_of): a fen digs as peat,
+	# a swamp as mud; and no soil id may ever reach the look ids.
+	var soil_names: Dictionary = {}
+
+	for row in JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/soils.json")).get("entries", []):
+		soil_names[int(row["id"])] = String(row["name"])
+		check(int(row["id"]) < Layout.MATERIAL_FEN, "soil %s (id %d) sits below the wetland look ids" % [row["name"], int(row["id"])])
+
+	check(String(soil_names.get(Layout.soil_of(Layout.MATERIAL_FEN), "")) == "peat" and String(soil_names.get(Layout.soil_of(Layout.MATERIAL_BOG), "")) == "peat"
+		and String(soil_names.get(Layout.soil_of(Layout.MATERIAL_SWAMP), "")) == "mud", "fen and bog dig as peat, swamp as mud")
 	var layers: PackedFloat32Array = GroundMaterial.layers()
 
 	for n in range(17):

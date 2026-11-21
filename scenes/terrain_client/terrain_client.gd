@@ -4149,7 +4149,7 @@ func _ground_name(point: Vector3) -> String:
 	var material: int = tool.get_voxel(cell)
 
 	if material < Layout.MATERIAL_ROCK:
-		return _known_from_table("soils", "s", material)
+		return _known_from_table("soils", "s", Layout.soil_of(material))
 
 	tool.channel = Layout.CHANNEL_RESOURCE
 	var resource: int = tool.get_voxel(cell)
@@ -6420,7 +6420,7 @@ func _process(delta: float) -> void:
 	if test_insects and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
 		var amb = sound.ambient
-		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0}
+		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0, "wetland": 0.0}
 		var levels: Array = []
 		sound.weather.rain = 0.0
 		sound.wind_strength = 0.3
@@ -6431,13 +6431,13 @@ func _process(delta: float) -> void:
 			levels.append("%.2f" % sound.insects.target())
 
 		amb.set_conditions(13.0, "summer", "clear")
-		amb.weights = {"forest": 0.0, "meadow": 0.0, "water": 1.0, "highland": 0.0}
+		amb.weights = {"forest": 0.0, "meadow": 0.0, "water": 1.0, "highland": 0.0, "wetland": 0.0}
 		var lake_noon: String = "%.2f" % sound.insects.target()
 		var lake_cricket: bool = amb._water_day()
 		amb.set_conditions(2.0, "summer", "clear")
 		var lake_night: String = "%.2f" % sound.insects.target()
 		amb.set_conditions(13.0, "summer", "clear")
-		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0}
+		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0, "wetland": 0.0}
 		sound.weather.rain = 1.0
 		levels.append("%.2f" % sound.insects.target())
 		sound.weather.rain = 0.0
@@ -6627,7 +6627,7 @@ func _process(delta: float) -> void:
 			voice.play()
 			made.append(voice)
 
-		sound.ambient.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0}
+		sound.ambient.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0, "wetland": 0.0}
 		sound.weather.roofed = 0.0
 		sound.cave.enclosure = 0.0
 		sound.occlusion._scan(body, false)
@@ -6636,7 +6636,7 @@ func _process(delta: float) -> void:
 		for voice in made:
 			open_buses.append(str(voice.bus))
 
-		sound.ambient.weights = {"forest": 1.0, "meadow": 0.0, "water": 0.0, "highland": 0.0}
+		sound.ambient.weights = {"forest": 1.0, "meadow": 0.0, "water": 0.0, "highland": 0.0, "wetland": 0.0}
 		sound.occlusion._scan(body, false)
 		var forest_buses: Array = []
 
@@ -6721,7 +6721,7 @@ func _process(delta: float) -> void:
 	if test_night and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
 		var amb = sound.ambient
-		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0}
+		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0, "wetland": 0.0}
 		sound.weather.rain = 0.0
 		sound.wind_strength = 0.3
 		sound.cave.enclosure = 0.0

@@ -780,10 +780,7 @@ static func near_wet(points: Array, from: Vector3, reach: float) -> Array:
 # direction at the call's distance, on the ground plus the call's height.
 func _place(event: Dictionary, body: CharacterBody3D) -> Vector3:
 	if event.get("water", false):
-		if _wet_points.is_empty():
-			return Vector3(NAN, 0.0, 0.0)
-
-		var near: Array = near_wet(_wet_points, body.global_position, float(event["dist"][1]))
+		var near: Array = near_wet(_wet_points, body.global_position, float(event["dist"][1])) if not _wet_points.is_empty() else []
 
 		if not near.is_empty():
 			var p: Vector3 = near[_rng.randi_range(0, near.size() - 1)]

@@ -6,7 +6,7 @@ extends Node3D
 # before sunset to an hour and a half after it, thinned by wind and gone in rain. Drawn with the waterfall mist's soft puff shader
 # (fall_mist.gd): at most PATCHES emitters, one GPU particle draw each, slow flat puffs a metre or so off the ground.
 # Cost: nothing at all outside those hours (no scan, emitters off); in them one grid scan of (2 * SCAN_CELLS + 1)^2 rays per SCAN_MOVE_M
-# walked, plus the particle draws.
+# walked (or every SCAN_EMPTY_MSEC while none was found), plus the particle draws.
 
 const FallMist := preload("res://src/client/fall_mist.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
@@ -15,7 +15,8 @@ const PATCHES := 4
 const PUFFS := [16, 24, 32, 40]        # per patch by quality (F2)
 const SCAN_STEP_M := 16.0              # the grid the wetland is looked for on
 const SCAN_CELLS := 6                  # cells each way from the player (about 100 m)
-const SCAN_MOVE_M := 24.0              # the grid is read again after the player moves this far
+const SCAN_MOVE_M := 24.0              # the grid is read again after the player moves this far ...
+const SCAN_EMPTY_MSEC := 20000         # ... or, when the last read found no wetland (the ground may still have been loading), after this long
 const PATCH_GAP_M := 28.0              # patches stand at least this far apart
 const DAWN := [-1.0, 2.0]              # hours round sunrise of mist (provisional, judged)
 const DUSK := [-1.0, 1.5]              # hours round sunset
@@ -29,6 +30,7 @@ var _quality: int = 1
 var _nodes: Array = []
 var _material: ShaderMaterial = null
 var _scanned_at: Vector3 = Vector3(INF, 0.0, INF)
+var _scanned_msec: int = 0
 
 
 # The share of full mist at `hour` for this day's sunrise and sunset (hours), wind 0..1 and rain 0..1.
@@ -119,8 +121,11 @@ func update(at: Vector3, hour: float, sunrise: float, sunset: float, wind: float
 
 		return
 
-	if Vector2(at.x - _scanned_at.x, at.z - _scanned_at.z).length() >= SCAN_MOVE_M:
+	var now: int = Time.get_ticks_msec()
+
+	if Vector2(at.x - _scanned_at.x, at.z - _scanned_at.z).length() >= SCAN_MOVE_M or (patches.is_empty() and now - _scanned_msec >= SCAN_EMPTY_MSEC):
 		_scanned_at = at
+		_scanned_msec = now
 		patches = pick_patches(_scan(at, ground_look), at)
 
 	var drift: Vector3 = Vector3(cos(heading), 0.0, sin(heading)) * (0.05 + 0.4 * wind)
