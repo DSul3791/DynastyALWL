@@ -3529,8 +3529,8 @@ static func raised_cistern() -> Node3D:
 		_box(root, Vector3(0.02, 0.06, 2.02), Vector3(s * 1.0, 2.6, 0.0), _iron_mat())
 
 	_box(root, Vector3(2.0, 0.14, 2.0), Vector3(0.0, 1.98, 0.0), _planks)                  # the deck on the posts
-	_box(root, Vector3(1.84, 0.55, 1.84), Vector3(0.0, 2.325, 0.0), _copper_mat())         # the copper lining, full to 2.6 m
-	_box(root, Vector3(1.7, 0.02, 1.7), Vector3(0.0, 2.605, 0.0), _still_water())          # its water (700 L when full), a copper edge round it
+	_box(root, Vector3(1.84, 0.85, 1.84), Vector3(0.0, 2.475, 0.0), _copper_mat())         # the copper lining, 2.05 to 2.9 m, a hand of plank wall above it
+	_box(root, Vector3(1.7, 0.02, 1.7), Vector3(0.0, 2.905, 0.0), _still_water())          # its water shown full (700 L at 2.9 m), a copper edge round it
 	_cyl(root, 0.035, 2.0, Vector3(0.0, 1.1, 0.98), _copper_mat(), 6)                      # the downpipe to the foot
 	_solid(root, Vector3(2.0, 3.0, 2.0), Vector3(0.0, 1.5, 0.0))
 	return root
