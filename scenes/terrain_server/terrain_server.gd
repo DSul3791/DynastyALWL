@@ -90,6 +90,7 @@ const KEY_BURST := 8000                # block keys one peer may ask for at once
 const KEY_REFILL_PER_S := 4000.0
 const WeatherScript := preload("res://src/shared/weather.gd")
 const DrinkRulesScript := preload("res://src/shared/drink_rules.gd")
+const CellReadsScript := preload("res://src/stream/cell_reads.gd")   # a scatter cell's ground, water and ore reads bound to its tile (one generator lock a cell)
 const ThunderScript := preload("res://src/shared/thunder.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const WaterFlowScript := preload("res://src/stream/water_flow.gd")
@@ -471,6 +472,7 @@ func _ready() -> void:
 	items.water_depth_at = func(pos: Vector3) -> float:
 		var water: Array = _water_at(pos)
 		return 0.0 if is_nan(water[0]) else maxf(float(water[0]) - float(water[1]), 0.0)
+	items.cell_reads = func(x: float, z: float) -> Dictionary: return CellReadsScript.bound(generator, water_live, x, z)   # the four above, bound to one tile (copper and tin rocks, boulders)
 	var fish_water = FishWaterScript.new(func(x: float, z: float) -> Array:
 		var water: Array = _water_at(Vector3(x, 0.0, z))
 		var baked: int = 0
@@ -1240,20 +1242,8 @@ func _starter_stamp() -> String:
 # position by src/shared/swim.gd; the client swims by the same rules, the server decides the cost.
 # [water surface (NAN if none), ground height] at a reported position: the sea at 0, or the simulated tile's water.
 func _water_at(position: Vector3) -> Array:
-	var ground: float = generator.surface_height(position.x, position.z)
-	var surface: float = NAN
-
-	if ground <= 0.0:
-		surface = 0.0
-	elif water_live != null:
-		var tile_data = water_live.data_of(generator.tile_of(position.x, position.z))
-
-		var sim: PackedFloat32Array = tile_data.sim_snapshot() if tile_data != null else PackedFloat32Array()
-
-		if not sim.is_empty():
-			surface = sim[tile_data.nearest(position.x, position.z)]
-
-	return [surface, ground]
+	var tile: Vector2i = generator.tile_of(position.x, position.z)
+	return CellReadsScript.water_at(generator, generator.get_tile(tile), water_live.data_of(tile) if water_live != null else null, water_live != null, position)
 
 
 # As _water_at, for a player's reported position: under the hill, a spring cave pool's water counts (BUG-008), its floor taken as the
