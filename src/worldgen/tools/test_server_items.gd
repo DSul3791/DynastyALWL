@@ -3219,8 +3219,8 @@ func _init() -> void:
 	bo._dirty = true
 	bo.save()
 	var bo_again = make(bld)
-	var kept: Array = bo_again._boulder_pending.get(73, [])
-	check(kept.size() == 3 and int(kept[0]) == 100 and is_equal_approx(float(kept[1]), 1.4) and is_equal_approx(float(kept[2]), 1.4) and not bo_again._boulder_left.has(73), "a rock not yet laid out keeps its old rates through a save (%s)" % str(kept))
+	var waiting_rates: Array = bo_again._boulder_pending.get(73, [])
+	check(waiting_rates.size() == 3 and int(waiting_rates[0]) == 100 and is_equal_approx(float(waiting_rates[1]), 1.4) and is_equal_approx(float(waiting_rates[2]), 1.4) and not bo_again._boulder_left.has(73), "a rock not yet laid out keeps its old rates through a save (%s)" % str(waiting_rates))
 	check(int(bo_again._boulder_left.get(74, -1)) == 3 and bo_again._boulder_left_of(73, plain_row) == int(round(100.0 * 0.094 / 1.4)), "and is scaled when it is laid out (%d)" % int(bo_again._boulder_left.get(73, -1)))
 	bo._boulder_pending.clear()
 	bo._boulder_left.erase(73)
