@@ -91,32 +91,43 @@ func _init() -> void:
 	MotionBuffer.push(stop, Vector3(2.5, 0, 0), 0.0, 60.45, 0.25)   # stood_ms
 	check(absf((MotionBuffer.at(stop, 60.75)[0] as Vector3).x - 2.5) < 0.001, "a stopped runner stays where it stopped (%.2f)" % (MotionBuffer.at(stop, 60.75)[0] as Vector3).x)
 
-	# Repeated rows the way the client gets them (gate review of PR #1433): batches every 0.25 s whose offset creeps, an animal stepped
-	# every 0.333 s, so most batches repeat its last server ms. Each point is kept once, and the drawn moment never falls before the oldest.
+	# Repeated rows the way the client gets them (gate review of PR #1433): the offset creeps between batches, so the same server ms lands a
+	# little later each time. It is kept once; a repeat with a new heading turns the point in place; an older batch out of order is dropped.
 	var body: Dictionary = {"samples": []}
+	MotionBuffer.push_row(body, Vector3(1, 0, 0), 0.0, 1000, 70.0, 0.25)
+	MotionBuffer.push_row(body, Vector3(1, 0, 0), 0.0, 1000, 70.0005, 0.25)
+	check((body["samples"] as Array).size() == 1, "the same server ms a creep later is kept once (%d points)" % (body["samples"] as Array).size())
+	MotionBuffer.push_row(body, Vector3(1, 0, 0), 1.5, 1000, 70.001, 0.25)
+	check((body["samples"] as Array).size() == 1 and absf(float(MotionBuffer.at(body["samples"], 72.0)[1]) - 1.5) < 0.001, "a repeat with a new heading turns the standing body")
+	MotionBuffer.push_row(body, Vector3(2, 0, 0), 1.5, 1300, 70.001, 0.25)
+	MotionBuffer.push_row(body, Vector3(1.5, 0, 0), 1.5, 1150, 70.001, 0.25)
+	MotionBuffer.push_row(body, Vector3(2, 0, 0), 1.5, 1300, 70.0015, 0.25)
+	check((body["samples"] as Array).size() == 2 and int(body["row_ms"]) == 1300, "an older batch out of order is dropped, and the newest is not taken again after it")
+	var restarted: Dictionary = {"samples": [], "row_ms": 900000}
+	MotionBuffer.push_row(restarted, Vector3(0, 0, 0), 0.0, 40, 100.0, 0.25)
+	check((restarted["samples"] as Array).size() == 1, "a server clock back over 2 s (a restart) is taken")
+
+	# The same through 24 batches with a jittery delivery (so the offset really creeps) and an animal stepped every 0.333 s: one point per step.
+	var run3: Dictionary = {"samples": []}
 	var off3: float = INF
 	var last3: int = -1
-	var behind: int = 0
+	var steps3: Dictionary = {}
+	var kept3: int = 0
 
 	for k in range(1, 25):
 		var send3: int = 250 * k
 		var step3: int = int(floor(float(send3) / 333.0)) * 333
-		var at3: float = 70.0 + float(send3) / 1000.0 + 0.03
+		var at3: float = 70.0 + float(send3) / 1000.0 + 0.03 + 0.01 * float(k % 3)
 		off3 = MotionBuffer.clock_off(off3, at3, send3, last3)
 		last3 = send3
-		MotionBuffer.push_row(body, Vector3(10.0 * float(step3) / 1000.0, 0, 0), 0.0, step3, off3, 0.25)
+		var before3: float = float((run3["samples"] as Array).back()[2]) if not (run3["samples"] as Array).is_empty() else -1.0
+		MotionBuffer.push_row(run3, Vector3(10.0 * float(step3) / 1000.0, 0, 0), 0.0, step3, off3, 0.25)
+		steps3[step3] = true
 
-		if at3 - MotionBuffer.delay_s(0.25) < float(body["samples"][0][2]) and k > 4:
-			behind += 1
+		if float((run3["samples"] as Array).back()[2]) != before3:
+			kept3 += 1
 
-	var times3: Array = (body["samples"] as Array).map(func(s3): return float(s3[2]))
-	var unique3: bool = true
-
-	for i in range(1, times3.size()):
-		unique3 = unique3 and float(times3[i]) - float(times3[i - 1]) > 0.2
-
-	check(unique3, "repeated rows are kept once: the kept points are a step apart (%s)" % str(times3))
-	check(behind == 0, "the drawn moment never falls before the oldest kept point (%d batches)" % behind)
+	check(kept3 == steps3.size(), "with a creeping offset each step is kept once (%d kept, %d steps)" % [kept3, steps3.size()])
 
 	# Dave 21 Nov 2026 ("animals are still teleporting and not actually running"): an elephant running at 10 m/s, stepped every 0.1 s on the
 	# server, its rows sent every 0.25 s, and two batches handed over together after a 150 ms frame hitch. Drawn on the server's step times
