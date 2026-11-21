@@ -158,12 +158,12 @@ func _make_row(one: Dictionary) -> Button:
 	row.pressed.connect(func() -> void:
 		selected_id = str(one["id"])
 		_update_buttons())
-	row.add_child(_make_picture(one["genome"]))
+	row.add_child(_make_picture(one["genome"], str(one.get("body", ""))))
 	row.add_child(_make_labels(one))
 	return row
 
 
-# The name, and under it the gender and pronouns the player chose (plain labels; nothing in the game depends on them).
+# The name, and under it the body model and frame the player chose (plain labels; nothing in the game depends on them).
 func _make_labels(one: Dictionary) -> Control:
 	var margin: MarginContainer = MarginContainer.new()
 	margin.set_anchors_preset(Control.PRESET_FULL_RECT)
@@ -189,7 +189,7 @@ func _make_labels(one: Dictionary) -> Control:
 
 
 # A small picture of the body: a viewport of its own, drawn once. Cheap: a coarse body (7 cm voxels, no fingers) and one frame.
-func _make_picture(genome: Dictionary) -> Control:
+func _make_picture(genome: Dictionary, model_id: String) -> Control:
 	var holder: SubViewportContainer = SubViewportContainer.new()
 	holder.stretch = true
 	holder.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -210,7 +210,7 @@ func _make_picture(genome: Dictionary) -> Control:
 	var body: Node3D
 
 	if DynastyBody.available():
-		body = DynastyBody.new()
+		body = DynastyBody.new(model_id)      # the character's own body model (body_models.gd)
 		body.set_proportions(genome)
 		body.play("idle", 1.0, 0.0)
 	else:

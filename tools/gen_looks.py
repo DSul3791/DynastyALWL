@@ -25,9 +25,11 @@ WOOD = {
     "everember": "#c4683a", "witness_tree": "#7b6a56", "balsam_fir": "#cdb78b", "maple": "#d0a46f",
 }
 SPECIAL = {
+    "iron_anvil_part": ("chunk", "#4a4c50", 1.4),   # PLACEHOLDER until the Iron anvil has a model (GOALS-REPAIR R3)
+    "steel_anvil_part": ("chunk", "#8f989f", 1.4),   # PLACEHOLDER until the Steel anvil has a model (GOALS-REPAIR R4)
     "plant_fibre": ("bundle", "#b7ac6a", 0.8), "twine": ("coil", "#b8a46a", 0.8), "rope": ("coil", "#a98f52", 1.0),
     "bark": ("bark", "#5a4330", 1.0), "leaves": ("leaves", "#5a8a3a", 1.0), "seed_bundle": ("pouch" if False else "sack", "#a08a52", 0.6),
-    "tree_roots": ("bundle", "#6a4a2e", 1.0), "firewood": ("bundle", "#8a5e36", 1.6), "lumber": ("planks", "#b98d57", 1.0),
+    "tree_roots": ("bundle", "#6a4a2e", 1.0), "firewood": ("bundle", "#8a5e36", 1.6), "lumber": ("board", "#b98d57", 1.0), "hardwood_board": ("board", "#7a5232", 1.0),
     "iron_ingot": ("ingot", "#6c6f75", 1.0), "steel_ingot": ("ingot", "#9aa3ad", 1.0),
     "soil": ("clump", "#4a3322", 1.0), "clay": ("clump", "#a0603c", 1.0), "sand": ("grit", "#d6c18b", 1.0), "gravel": ("grit", "#8d8a84", 1.0),
     "hide": ("hide", "#8a6a4a", 1.0), "bone": ("bone", "#b3a98f", 1.0), "sinew": ("bundle", "#d0b898", 0.6), "animal_fat": ("chunk", "#f1ead2", 0.8),
@@ -56,13 +58,13 @@ SPECIAL = {
 }
 TOOLS = {
     "stone_axe": ("axe", "#7d7a74", 1.6), "stone_knife": ("knife", "#8a8680", 1.0), "torch": ("torch", "#e08a2a", 1.0),
-    "wooden_spade": ("spade", "#8a6a3a", 1.0), "stone_spade": ("spade", "#7d7a74", 1.0), "iron_spade": ("spade", "#6c6f75", 1.0),
-    "steel_spade": ("spade", "#9aa3ad", 1.0), "iron_pickaxe": ("pick", "#6c6f75", 1.0), "steel_pickaxe": ("pick", "#9aa3ad", 1.0),
-    # Medium and large spades: the same shape, a longer shaft and a wider blade (size 1.25 and 1.5 of the small one).
-    "wooden_spade_medium": ("spade", "#8a6a3a", 1.25), "wooden_spade_large": ("spade", "#8a6a3a", 1.5),
-    "stone_spade_medium": ("spade", "#7d7a74", 1.25), "stone_spade_large": ("spade", "#7d7a74", 1.5),
-    "iron_spade_medium": ("spade", "#6c6f75", 1.25), "iron_spade_large": ("spade", "#6c6f75", 1.5),
-    "steel_spade_medium": ("spade", "#9aa3ad", 1.25), "steel_spade_large": ("spade", "#9aa3ad", 1.5),
+    "wooden_shovel": ("shovel", "#8a6a3a", 1.0), "stone_shovel": ("shovel", "#7d7a74", 1.0), "iron_shovel": ("shovel", "#6c6f75", 1.0),
+    "steel_shovel": ("shovel", "#9aa3ad", 1.0), "iron_pickaxe": ("pick", "#6c6f75", 1.0), "steel_pickaxe": ("pick", "#9aa3ad", 1.0),
+    # Medium and large shovels: the same shape, a longer shaft and a wider blade (size 1.25 and 1.5 of the small one).
+    "wooden_shovel_medium": ("shovel", "#8a6a3a", 1.25), "wooden_shovel_large": ("shovel", "#8a6a3a", 1.5),
+    "stone_shovel_medium": ("shovel", "#7d7a74", 1.25), "stone_shovel_large": ("shovel", "#7d7a74", 1.5),
+    "iron_shovel_medium": ("shovel", "#6c6f75", 1.25), "iron_shovel_large": ("shovel", "#6c6f75", 1.5),
+    "steel_shovel_medium": ("shovel", "#9aa3ad", 1.25), "steel_shovel_large": ("shovel", "#9aa3ad", 1.5),
     "wooden_hoe": ("hoe", "#8a6a3a", 1.2), "stone_hoe": ("hoe", "#7d7a74", 1.2), "iron_hoe": ("hoe", "#6c6f75", 1.2), "steel_hoe": ("hoe", "#9aa3ad", 1.2),
     "sewing_needle": ("needle", "#c8c8cc", 1.2), "fishing_rod": ("rod", "#9a9a9e", 1.0),
     "wooden_bowl": ("bowl", "#9a6b38", 1.3), "clay_pot": ("pot", "#ff7f11", 1.0), "bucket": ("bucket", "#b88a50", 1.0),
@@ -94,6 +96,9 @@ SPECIAL.update({
     "garlic_meat": ("joint", "#6a3c20", 0.9),
     "feast_roast": ("joint", "#62301a", 1.5),
     "backpack": ("backpack", "#8a6a4a", 1.4),
+    "simple_backpack": ("backpack", "#8a6a4a", 1.4), "improved_backpack": ("backpack", "#6a4024", 1.4),   # the backpack tiers (Dave 15 Nov 2026)
+    "quality_backpack": ("backpack", "#5a3620", 1.4), "advanced_backpack": ("backpack", "#4a3428", 1.4),
+    "copper_nails": ("needle", "#b06a3a", 0.5),
     "wooden_bowl": ("bowl", "#9a6b38", 1.3),
 })
 SPECIAL.update({

@@ -13,6 +13,7 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const TrampleScript := preload("res://src/client/grass_trample.gd")
 const NearWater := preload("res://src/shared/near_water_growth.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")   # "grass: <part>" splits of the client's "grass" (Jason/Steve 5 Nov 2026: #374 found no gain)
+const Puddles := preload("res://src/client/puddles.gd")
 const CELL_M := 6.0
 const PLAYER_CLEAR_M := 1.4              # grass within this of the local player is cut down to PLAYER_KEEP of its height (soft edge) so the feet show in third person
 const PLAYER_KEEP := 0.4               # Dave 2 Nov QA: standing in grass looked like "a weird green carpet" (it was 0.12 of height, in first person too); now gentler and third person only
@@ -49,7 +50,8 @@ const LUSH_STEP_M := 1.0         # the wet spots round a near cell are looked fo
 const SHORT_SOIL_LIFT := 1.9    # short grass: soil thickness times at most this, capped at 1 (0.5 becomes 0.95, 0.3 becomes 0.57)
 
 # Soil ids that carry grass, with how thick (0 to 1).
-const GRASS_SOILS := {3: 0.9, 4: 0.5, 5: 1.0, 6: 0.7, 7: 1.0, 8: 0.6, 9: 0.6}   # 9 stony soil 0.3 -> 0.6 (Dave 9 Nov 2026: a stony hillside still grows grass, only thinner; flora/hillside_cover_note.md)
+const GRASS_SOILS := {3: 0.9, 4: 0.5, 5: 1.0, 6: 0.7, 7: 1.0, 8: 0.6, 9: 0.6, Layout.MATERIAL_FEN: 0.3, Layout.MATERIAL_BOG: 0.12}   # 9 stony soil 0.3 -> 0.6 (Dave 9 Nov 2026: a stony hillside still grows grass, only thinner; flora/hillside_cover_note.md). Fen and bog (Dave 21 Nov 2026: wetlands must stand out, "no clean grass"): thin, sedgy; swamp mud none
+const WET_GRASS_TINT := {Layout.MATERIAL_FEN: Color(0.34, 0.36, 0.16), Layout.MATERIAL_BOG: Color(0.45, 0.32, 0.16)}   # what is left of the grass on fen and bog: olive sedge, rusty-brown
 
 # The three layers, from the ground up. "reach" is the share of the grass
 # radius the layer is drawn to; "per_point" is how many cards per ground sample.
@@ -260,6 +262,9 @@ var bare_spots: Array = []
 const BARE_M := 0.6                     # no blade inside this of a path patch
 const BARE_EDGE_M := 1.1                # thinning out to here, where the drawn brown fades away (it is fully gone by 1.25 m)
 const BARE_BUCKET_M := 2.0
+const ROAD_BARE_M := 3.0                # a surveyed road's patch: no blade inside this (its 1 m half width and 2 m either side, Dave 17 Nov 2026; PROVISIONAL SV-4)
+const ROAD_BARE_EDGE_M := 3.4           # thinning out to here
+var bare_wide: Dictionary = {}           # the bare spots that are a road's (ROAD_BARE_M round them)
 var third_person: bool = false          # set by the client: only then is the grass lowered round the player
 const TRUNK_EDGE_M := 0.45             # how far past the margin the pressed grass rises back
 var trunk_squash: float = 0.2           # a blade under or beside a trunk keeps this share of its height
@@ -321,10 +326,18 @@ var _scan_now: int = 0
 const ROOF_CHECK_M := 14.0                # rock or a roof this close above a cell's ground means it is a cave or a room: no grass or litter there
 const CHECK_PROBES := 5                  # ground hits kept per cell
 const CHECK_TIMES := [1500, 3000, 6000, 12000, 24000, 48000]   # ms after the build (and after each check) that the hits are cast again
+# BUG-006 (BUGLIST-001): grass built on the coarse ground collision (LOD 1 and 2, 2 m and 4 m blocks) beyond the fine ground's reach was only looked at again
+# in the first 94.5 s after its build (CHECK_TIMES are gaps: checks at 1.5, 4.5, 10.5, 22.5, 46.5 and 94.5 s), so a cell that waited longer dropped or rose
+# in one jump when the player came near and a rebuild read the fine ground. A built cell is now also looked at again, on this ladder of gaps, the first
+# time the player comes within FINE_GROUND_M of it. VoxelLodTerrain's lod_distance is not set in terrain_client.gd, so the fine level reaches the module's
+# default (48 m, unverified on the PC); the ring is 56 m, so the checks (1, 4 and 12 s after crossing) land when the cell reaches 48 m at a run (about
+# 1 s), a jog (about 1.5 s) and a walk (4 to 5 s), with the last one catching late blocks. Cost stays under CHECK_CELLS_PER_FRAME / CHECK_USEC.
+const FINE_GROUND_M := 56.0
+const FINE_CHECK_TIMES := [1000, 3000, 8000]
 const CHECK_MOVE_M := 0.35               # a hit this far from its old height means the ground under the cell changed
 const CHECK_CELLS_PER_FRAME := 3
 const CHECK_USEC := 300                    # and at most this long a frame (Steve 5 Nov 2026, PC lag run #402: the check rays were still 0.81 ms a frame, the biggest grass part)
-var _checks: Array = []                  # [cell, due msec, check number]
+var _checks: Array = []                  # [cell, due msec, check number, ladder (CHECK_TIMES or FINE_CHECK_TIMES)]
 # The earliest due time in _checks once a full pass has seen them all (0: not known, look). Steve 5 Nov 2026 (Dave's PC lag run, #401): "grass: check
 # ground" was 56% of the grass time, 1.07 ms every frame, walking the whole list (thousands of cells) to find the few due ones.
 var _checks_due: int = 0
@@ -1115,7 +1128,7 @@ func set_cleared(spots: Array, radius: float, edge: float) -> void:
 	clear_edge_m = edge
 
 	for spot in changed:
-		var reach: float = radius + 1.0
+		var reach: float = radius + SCATTER_M   # a far cell's cards land up to SCATTER_M outside it
 		var cells: Array = []
 
 		for cz in range(int(floor((spot.z - reach) / CELL_M)), int(floor((spot.z + reach) / CELL_M)) + 1):
@@ -1127,8 +1140,9 @@ func set_cleared(spots: Array, radius: float, edge: float) -> void:
 
 # Trodden hoe path patches (Dave 2 Nov 2026: "grass pops up on the path in the distance, and goes again when I walk back"). The shader presses
 # only the eight nearest logs, so a long path lost its far patches. Every patch is now left out of the cells themselves (exact, any number, near
-# or far), and the cells round a patch that was added or taken away are built again.
-func set_bare(spots: Array) -> void:
+# or far), and the cells round a patch that was added or taken away are built again. A surveyed road's patches (`roads`, Dave 17 Nov 2026: the
+# grass gone 2 m either side of the road) keep it off ROAD_BARE_M round each.
+func set_bare(spots: Array, roads: Array = []) -> void:
 	var old: Dictionary = {}
 
 	for spot in bare_spots:
@@ -1136,35 +1150,45 @@ func set_bare(spots: Array) -> void:
 
 	var changed: Array = []
 	var fresh: Dictionary = {}
+	var wide: Dictionary = {}
 
-	for spot in spots:
+	for spot in roads:
+		wide[spot] = true
+
+	for spot in spots + roads:
 		fresh[spot] = true
 
-		if not old.has(spot):
+		if not old.has(spot) or bool(bare_wide.get(spot, false)) != wide.has(spot):
 			changed.append(spot)
 
 	for spot in bare_spots:
 		if not fresh.has(spot):
 			changed.append(spot)
 
-	bare_spots = spots
+	bare_spots = spots + roads
+	bare_wide = wide
 	bare = {}
 
-	for spot in spots:
-		for bz in range(int(floor((spot.z - BARE_EDGE_M) / BARE_BUCKET_M)), int(floor((spot.z + BARE_EDGE_M) / BARE_BUCKET_M)) + 1):
-			for bx in range(int(floor((spot.x - BARE_EDGE_M) / BARE_BUCKET_M)), int(floor((spot.x + BARE_EDGE_M) / BARE_BUCKET_M)) + 1):
+	for spot in bare_spots:
+		var edge: float = ROAD_BARE_EDGE_M if wide.has(spot) else BARE_EDGE_M
+		var entry: Array = [spot, ROAD_BARE_M if wide.has(spot) else BARE_M, edge]
+
+		for bz in range(int(floor((spot.z - edge) / BARE_BUCKET_M)), int(floor((spot.z + edge) / BARE_BUCKET_M)) + 1):
+			for bx in range(int(floor((spot.x - edge) / BARE_BUCKET_M)), int(floor((spot.x + edge) / BARE_BUCKET_M)) + 1):
 				var key: Vector2i = Vector2i(bx, bz)
 
 				if not bare.has(key):
 					bare[key] = []
 
-				bare[key].append(spot)
+				bare[key].append(entry)
 
 	var cells: Dictionary = {}
 
 	for spot in changed:
-		for cz in range(int(floor((spot.z - BARE_EDGE_M - 1.0) / CELL_M)), int(floor((spot.z + BARE_EDGE_M + 1.0) / CELL_M)) + 1):
-			for cx in range(int(floor((spot.x - BARE_EDGE_M - 1.0) / CELL_M)), int(floor((spot.x + BARE_EDGE_M + 1.0) / CELL_M)) + 1):
+		var reach: float = ROAD_BARE_EDGE_M + SCATTER_M   # a far cell's cards land up to SCATTER_M outside it
+
+		for cz in range(int(floor((spot.z - reach) / CELL_M)), int(floor((spot.z + reach) / CELL_M)) + 1):
+			for cx in range(int(floor((spot.x - reach) / CELL_M)), int(floor((spot.x + reach) / CELL_M)) + 1):
 				cells[Vector2i(cx, cz)] = true
 
 	if not cells.is_empty():
@@ -1177,25 +1201,77 @@ func _bare_at(x: float, z: float) -> bool:
 	if list == null:
 		return false
 
-	for spot in list:
+	for entry in list:
+		var spot: Vector3 = entry[0]
 		var d: float = Vector2(x - spot.x, z - spot.z).length()
 
-		if d < BARE_M:
+		if d < float(entry[1]):
 			return true
 
-		if d < BARE_EDGE_M:
-			# The same fixed scatter as _cleared_at: the same spot always gives the same answer, thinning out over the fading brown.
+		if d < float(entry[2]):
+			# The same fixed scatter as _cleared_at: the same spot always gives the same answer, thinning out over the fading edge.
 			var scatter: float = fposmod(sin(floorf(x * 3.0) * 12.9898 + floorf(z * 3.0) * 78.233) * 43758.5453, 1.0)
 
-			if smoothstep(BARE_M, BARE_EDGE_M, d) <= scatter:
+			if smoothstep(float(entry[1]), float(entry[2]), d) <= scatter:
 				return true
 
 	return false
 
 
+# Dave 19 Nov 2026 ("grass is regrowing into the paths in patches"): the path and clearing tests were made only at a cell's ground points, but each
+# point scatters its clump of cards up to half the point spacing away (about 0.6 m near, up to 2.85 m in the farthest band). A point just outside a path
+# dropped its clump onto it, and the 0.6 m bare patch of a trodden path is narrower than that reach. Every grass and litter card is now tested
+# where it stands, in the cells a patch or clearing reaches (_cell_clears).
+
+
+const SCATTER_M := 0.5 * CELL_M * 0.95    # the farthest a card lands from its ground point (one point per cell side, the farthest band)
+
+
+# What a cell's cards must be kept off: {"bare": a path patch may reach them, "spots": the placed pieces whose clearing may}, or {} when
+# nothing reaches. `margin` is how far its cards land outside the cell (half the point spacing, 0.95 of it). Built once per cell, so each
+# card asks only the few spots near it.
+func _cell_clears(cell: Vector2i, margin: float) -> Dictionary:
+	var x0: float = float(cell.x) * CELL_M - margin
+	var z0: float = float(cell.y) * CELL_M - margin
+	var x1: float = float(cell.x + 1) * CELL_M + margin
+	var z1: float = float(cell.y + 1) * CELL_M + margin
+	var near_bare: bool = false
+
+	if not bare.is_empty():
+		# The buckets already hold every patch whose edge reaches them.
+		for bz in range(int(floor(z0 / BARE_BUCKET_M)), int(floor(z1 / BARE_BUCKET_M)) + 1):
+			for bx in range(int(floor(x0 / BARE_BUCKET_M)), int(floor(x1 / BARE_BUCKET_M)) + 1):
+				if bare.has(Vector2i(bx, bz)):
+					near_bare = true
+
+	var spots: Array = []
+
+	for spot in cleared:
+		var nx: float = clampf(spot.x, x0, x1)
+		var nz: float = clampf(spot.z, z0, z1)
+
+		if Vector2(spot.x - nx, spot.z - nz).length() < clear_m:
+			spots.append(spot)
+
+	if not near_bare and spots.is_empty():
+		return {}
+
+	return {"bare": near_bare, "spots": spots}
+
+
+# True when no card may stand at (x, z): on a path patch or inside a placed piece's clearing. `near` is the cell's _cell_clears.
+func _kept_off(x: float, z: float, near: Dictionary) -> bool:
+	return (bool(near["bare"]) and _bare_at(x, z)) or _cleared_in(near["spots"], x, z)
+
+
 # Is (x, z) inside a placed item's circle (with the soft edge decided by a fixed scatter, so the same spot always gives the same answer).
 func _cleared_at(x: float, z: float) -> bool:
-	for spot in cleared:
+	return _cleared_in(cleared, x, z)
+
+
+# The same, for the given placed spots only.
+func _cleared_in(spots: Array, x: float, z: float) -> bool:
+	for spot in spots:
 		var d: float = Vector2(x - spot.x, z - spot.z).length()
 
 		if d >= clear_m:
@@ -1516,6 +1592,11 @@ func _rescan_step() -> void:
 				entry["busy"] = true
 				entry["built"] = true
 				_pending.append(cell)
+			elif entry["built"] and not entry["busy"] and not entry.get("fine", true) and centre.distance_to(Vector2(_center.x, _center.z)) < FINE_GROUND_M:
+				# First time in reach of the fine ground: its probes are cast again soon (BUG-006).
+				entry["fine"] = true
+				_checks.append([cell, _scan_now + int(FINE_CHECK_TIMES[0]), 0, FINE_CHECK_TIMES])
+				_checks_due = mini(_checks_due, _scan_now + int(FINE_CHECK_TIMES[0]))
 
 	if _scan_row <= span:
 		return
@@ -1614,9 +1695,9 @@ func _check_ground(now: int) -> void:
 			_pending.push_front(check[0])
 			_checks.remove_at(n)
 			ground_rebuilds += 1
-		elif int(check[2]) + 1 < CHECK_TIMES.size():
+		elif int(check[2]) + 1 < (check[3] as Array).size():
 			check[2] = int(check[2]) + 1
-			check[1] = now + int(CHECK_TIMES[check[2]])
+			check[1] = now + int((check[3] as Array)[check[2]])
 			next_due = mini(next_due, int(check[1]))
 			n += 1
 		else:
@@ -1642,6 +1723,18 @@ static func ground_moved(space: PhysicsDirectSpaceState3D, x: float, z: float, o
 		return false
 
 	return absf(float((found["position"] as Vector3).y) - old_y) > CHECK_MOVE_M
+
+
+# The height of the ground at (x, z) on the plane through a ground hit `point` with surface normal `normal` (BUG-006). A card is scattered up to half a sample
+# spacing from the hit it was given (0.7 m near, up to 2.9 m in the very far band, where a 6 m cell has one ray), and laid at the hit's height it hung
+# above the slope on one side and sank into it on the other: far hillsides drew as flat terraces that snapped onto the slope as finer cells replaced them.
+# The plane is only a local guide: past a crest or into a gully it points the wrong way, and the caller has refused normals flatter than MIN_SLOPE_Y, so the
+# raw lift could reach 4.9 m. It is limited to LIE_MAX_M: the exact lift on ground up to about 27 degrees (the grass thins from 30) at the 2.85 m reach of a
+# far card, so ordinary hills are not touched, while a sharp ridge or gully errs by a bounded amount instead of several metres.
+const LIE_MAX_M := 1.5
+static func lie_y(point: Vector3, normal: Vector3, x: float, z: float) -> float:
+	var lift: float = -(normal.x * (x - point.x) + normal.z * (z - point.z)) / maxf(normal.y, 0.01)
+	return point.y + clampf(lift, -LIE_MAX_M, LIE_MAX_M)
 
 
 # Rays for one cell; returns how many were cast.
@@ -1756,6 +1849,7 @@ func _build(cell: Vector2i) -> int:
 		break
 
 	var t_points: int = Probe.start()
+	var clear_near: Dictionary = _cell_clears(cell, 0.5 * spacing * 0.95)   # a path patch or placed piece reaches this cell's cards: each is tested where it lands
 	var shore_us: int = 0
 	var litter_us: int = 0
 	var soil_us: int = 0
@@ -1812,7 +1906,7 @@ func _build(cell: Vector2i) -> int:
 
 			if litter_here and under > 0.0 and litter_cards + int(counts[3]) + int(counts[4]) < litter_cap:
 				var t1: int = Time.get_ticks_usec()
-				_put_litter(buffers, counts, rng, point, spacing, under)
+				_put_litter(buffers, counts, rng, point, spacing, under, clear_near)
 				litter_us += Time.get_ticks_usec() - t1
 
 			var t2: int = Time.get_ticks_usec()
@@ -1821,6 +1915,9 @@ func _build(cell: Vector2i) -> int:
 
 			if soil < 0:
 				continue
+
+			if Layout.is_wetland(soil) and Puddles.pool_at(x, z, soil, hit["normal"].y) > 0.3:
+				continue                                                                       # no blades in a wetland's standing water
 
 			var short_soil: float = minf(1.0 / float(GRASS_SOILS[soil]), SHORT_SOIL_LIFT)       # the short grass's soil share is lifted to near 1 (see the short layer below)
 			var thick: float = float(GRASS_SOILS[soil]) * _cover_at(x, z, hit["normal"].y)
@@ -1838,6 +1935,9 @@ func _build(cell: Vector2i) -> int:
 
 			var base: Color = _soil_color.get(soil, Color(0.3, 0.4, 0.2))
 			var green: Color = Color(0.46, 0.58, 0.28).lerp(base, 0.2)
+
+			if WET_GRASS_TINT.has(soil):
+				green = green.lerp(WET_GRASS_TINT[soil], 0.6)
 			# Patches: yellower where the tint noise is high; tall grass where the patch noise is.
 			var warm: float = clampf(_tint.get_noise_2d(x, z) * 1.4, 0.0, 1.0)
 			green = green.lerp(Color(0.68, 0.64, 0.30), warm * 0.55)
@@ -1874,6 +1974,10 @@ func _build(cell: Vector2i) -> int:
 
 					var ox: float = point.x + rng.randf_range(-0.5, 0.5) * spacing * 0.95
 					var oz: float = point.z + rng.randf_range(-0.5, 0.5) * spacing * 0.95
+
+					if not clear_near.is_empty() and _kept_off(ox, oz, clear_near):
+						continue
+
 					var kept: float = _far_share(Vector2(ox - _center.x, oz - _center.z).length(), layer) if layer >= 1 else 1.0
 
 					if kept < 1.0 and rng.randf() > kept:
@@ -1895,7 +1999,7 @@ func _build(cell: Vector2i) -> int:
 					buffer[o + 4] = 0.0
 					buffer[o + 5] = sy
 					buffer[o + 6] = 0.0
-					buffer[o + 7] = point.y - 0.03
+					buffer[o + 7] = lie_y(point, hit["normal"], ox, oz) - 0.03
 					buffer[o + 8] = -sny
 					buffer[o + 9] = 0.0
 					buffer[o + 10] = cy
@@ -1933,7 +2037,8 @@ func _build(cell: Vector2i) -> int:
 			probes.append_array(PackedFloat32Array([hits[n][0], hits[n][1], heights[n]]))
 
 	entry["probes"] = probes
-	_checks.append([cell, Time.get_ticks_msec() + int(CHECK_TIMES[0]), 0])
+	_checks.append([cell, Time.get_ticks_msec() + int(CHECK_TIMES[0]), 0, CHECK_TIMES])
+	entry["fine"] = Vector2(_center.x, _center.z).distance_to((Vector2(cell) + Vector2(0.5, 0.5)) * CELL_M) < FINE_GROUND_M
 	_checks_due = mini(_checks_due, Time.get_ticks_msec() + int(CHECK_TIMES[0]))
 	_free_cell_nodes(entry)      # a rebuilt cell swaps its cards in the same frame
 
@@ -2079,7 +2184,7 @@ func _put_shore(buffers: Array, counts: Array, rng: RandomNumberGenerator, point
 
 
 # One ground sample under a crown: leaf cards and, now and then, a dead branch (layers GRASS_LAYERS on).
-func _put_litter(buffers: Array, counts: Array, rng: RandomNumberGenerator, point: Vector3, spacing: float, under: float) -> void:
+func _put_litter(buffers: Array, counts: Array, rng: RandomNumberGenerator, point: Vector3, spacing: float, under: float, clear_near: Dictionary) -> void:
 	var deep: float = smoothstep(CROWN_LITTER_FROM, CROWN_LITTER_TO, under)
 	var rim: float = smoothstep(0.0, 0.12, under)   # litter thins out to nothing at the drip line, no sharp circle
 
@@ -2092,6 +2197,10 @@ func _put_litter(buffers: Array, counts: Array, rng: RandomNumberGenerator, poin
 		for k in range(count):
 			var ox: float = point.x + rng.randf_range(-0.5, 0.5) * spacing * 0.95
 			var oz: float = point.z + rng.randf_range(-0.5, 0.5) * spacing * 0.95
+
+			if not clear_near.is_empty() and _kept_off(ox, oz, clear_near):
+				continue
+
 			var yaw: float = rng.randf() * TAU
 			var c: float = cos(yaw)
 			var s: float = sin(yaw)

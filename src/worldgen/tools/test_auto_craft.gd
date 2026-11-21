@@ -7,6 +7,7 @@ const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const Planner := preload("res://src/shared/craft_planner.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 var failures: int = 0
 var items
@@ -24,6 +25,9 @@ class FakeRecipes extends RefCounted:
 	func recipe(number: int) -> Dictionary:
 		return rows.get(number, {})
 
+	func makers_of(item: int) -> Array:   # as RecipeTable.makers_of: every recipe that makes the item, in number order
+		return numbers().filter(func(n): return int(rows[n]["gives"][0]) == item)
+
 
 func check(ok: bool, what: String) -> void:
 	if not ok:
@@ -39,6 +43,7 @@ func make(dir: String):
 	made.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	made.ground_height = func(_x, _z): return 10.0
 	made.setup(ItemTableScript.load_default(), dir)
+	made._goals_loaded = true   # no goals here: a goal's own reward (coins) would change the amounts this test checks; test_goals covers goals (protocol 119 lifted the `after` lock)
 	return made
 
 
@@ -52,7 +57,6 @@ func fresh(dir: String):
 	made.peer_connected_hello(1, "autocraftkey1")
 	made.report_position(1, Vector3(100.0, 10.0, 100.0))
 	made.vitals_of(1)["weight"] = 120.0
-	made._admin_mode_off[1] = true
 	return made
 
 
@@ -66,7 +70,7 @@ func give(it, id: String, n: int) -> void:
 
 func queue(it, recipe: int, n: int) -> void:
 	it._last_queue_act.clear()
-	it.action(1, Net.ACT_CRAFT_QUEUE, recipe, 0, n, Vector3.ZERO)
+	it.action(1, Net.ACT_CRAFT_QUEUE, recipe, 0, n, CraftHand.at(it, 1, recipe))
 
 
 func entries(it) -> Array:
@@ -207,7 +211,6 @@ func _init() -> void:
 	var again = make("user://test_auto_craft")
 	again.peer_connected_hello(1, "autocraftkey1")
 	again.report_position(1, Vector3(100.0, 10.0, 100.0))
-	again._admin_mode_off[1] = true
 	var shape_after: Array = entries(again).map(func(e): return [e[0], e[1], e[2], e[3], e[4]])
 	check(shape_after == shape, "the queue is the same after save and load (%s / %s)" % [str(shape), str(shape_after)])
 	check(count(again, "plant_fibre") == 0 and count(again, "stone") == 4, "the taken ingredients are still taken after the load")

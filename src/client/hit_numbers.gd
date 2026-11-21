@@ -4,9 +4,12 @@ extends RefCounted
 # Damage numbers turns it off (display_settings.gd damage_numbers). The server sends hit_number(at, amount) (protocol 86): an animal shows the
 # damage it took, a tree or a boulder its share of 100 per blow.
 
-const RISE_M := 0.9          # how far the number floats up
-const LIFE_S := 0.9          # how long it shows
-const FONT_SIZE := 64
+const RISE_M := 1.0          # how far the number floats up
+const LIFE_S := 1.4          # how long it shows (Dave 19 Nov 2026: he could not tell a spear was hurting a bear; was 0.9 s)
+const HOLD_S := 0.5          # it stays full strength this long before it fades
+const FONT_SIZE := 96        # was 64; PROVISIONAL HIT-1 with LIFE_S and POP
+const POP := 1.35            # it pops in this much larger and settles to its size in POP_S
+const POP_S := 0.12
 const COLOR := Color(1.0, 0.86, 0.35)
 
 
@@ -35,8 +38,10 @@ static func spawn(parent: Node, at: Vector3, amount: int) -> Label3D:
 		var tween: Tween = label.create_tween()
 		tween.set_parallel(true)
 		tween.tween_property(label, "position:y", label.position.y + RISE_M, LIFE_S).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_QUAD)
-		tween.tween_property(label, "modulate:a", 0.0, LIFE_S).set_ease(Tween.EASE_IN)
-		tween.tween_property(label, "outline_modulate:a", 0.0, LIFE_S).set_ease(Tween.EASE_IN)
+		tween.tween_property(label, "modulate:a", 0.0, LIFE_S - HOLD_S).set_delay(HOLD_S).set_ease(Tween.EASE_IN)
+		tween.tween_property(label, "outline_modulate:a", 0.0, LIFE_S - HOLD_S).set_delay(HOLD_S).set_ease(Tween.EASE_IN)
+		label.scale = Vector3.ONE * POP
+		tween.tween_property(label, "scale", Vector3.ONE, POP_S).set_ease(Tween.EASE_OUT)
 		tween.chain().tween_callback(label.queue_free)
 
 	return label

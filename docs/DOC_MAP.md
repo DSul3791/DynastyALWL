@@ -1,247 +1,118 @@
-# Document map (Jamie, 1 Nov 2026; files added 2 to 5 Nov listed by MikeW, 5 Nov)
+# Dynasty — Main Design Index
 
-> **AI team operations (11 Nov 2026):** `CLAUDE.md`, `.claude/agents/`, `.claude/skills/` and `docs/ai-team/` (index: `docs/ai-team/INSTALL_RECORD.md`) are the master copies for how the AI team works.
->
-> **STALE (Jamie, 11 Nov 2026):** the file-by-file list below dates from 1 to 5 Nov and has not been redone for the handoff. For which document is current and which is authoritative per topic, use Morgan's handoff audit `/mnt/project-files/handoffs/DOC_AUDIT_11Nov.md` and `/mnt/project-files/HANDOFF.md`. For items, recipes and buildings: `data/items/*.json` on main, then `docs/design/item_system.md`, `docs/design/progression.md`, `docs/design/buildables_plan.md`, and the shared `buildables/items_current.md`.
+Start here to find a design topic, then read its source and the relevant working record. This index routes readers; it does not repeat designs, grant approval or certify implementation. Approval, proposals, provisional choices and verification status remain in their owning records.
 
-Every markdown file in git outside `docs/archive/`, `.claude/` and `addons/`: **about 328 files** (120 of them the frozen `docs/mirror/`). Owner = who maintains it now (roles from `MODERATOR_QA_LOG.md`). Updated = date of the last commit that touched the file (not always a real content change).
+## Vision and ideas
 
-Verdict words: **keep**, **FIX** (wrong or stale fact), **MERGE** (into the named file, then archive the rest), **ARCHIVE** (to `docs/archive/YYYY-MM/`, with git mv), **review** (overlap seen, owner to decide).
-
-## Groups (not listed file by file)
-| Group | Files | Owner | Updated | Verdict |
-|---|---|---|---|---|
-| `docs/mirror/` (tech 66, items 35, design 17, CONTROLS, README) | 120 | nobody (Technical Director retired) | last copy 22 Oct | keep frozen: cited by `tools/merge_check.py` (skip prefix), `tools/ship.sh` and `next_build.sh` (write `docs/mirror/tech/BUILD_LOG.md`), `balance_sheet.py` (writes `docs/mirror/items/BALANCE.md`), `tool_tiers.py` (reads `docs/mirror/design/TOOL_TIERS.md`), `nightly_backup.py` (cites BACKUP_PLAN.md); its CONTROLS.md is older than the root one. Archive only after those references move |
-| `tech/ACTION_PLANS/` | 4 left (41 archived to `docs/archive/2026-11/tech_ACTION_PLANS/`) | previous Steve/Sal | 24-25 Oct | kept: `Steve_ground_quiet` (cited in `ground_watchdog.gd`), `Steve_hide_traps` (`data/animals/traps.json`), `Steve_bow_shoot` (`data/items/bow.json`), `Sal_hammer_blueprints` (bridge not built). `tools/selftest_gate_tools.sh` uses the folder name only as a fake path |
-| `docs/knowledge/` (index `README.md`, one doc per topic) | 2 (index, water) | Jamie (librarian) | 6 Nov | keep: read the topic doc before coding a system or fixing a bug; add your lesson after (Dave, 6 Nov) |
-| `art/CRITIQUES/` | 43 rounds + `_archive/` | Kathleen | 30-31 Oct | keep; Kathleen archives rounds Dave has judged |
-
-## Documents (individually)
-| Path | Owner | Purpose | Updated | Verdict |
-|---|---|---|---|---|
-| `ANIMAL_PRODUCTS.md` | Sal | Animal product chain (Sal, 2026-10-31) | 10-31 | keep |
-| `ANIMAL_SPEC.md` | Sal | Animal and fauna spec (Sal, 2026-10-30) | 10-31 | keep |
-| `ARCHITECTURE_BUDGET.md` | Tyler | Architecture and performance budget | 10-20 | keep |
-| `ART_ASSET_INVENTORY.md` | Kathleen | Art asset inventory | 10-30 | keep |
-| `ART_DIRECTION.md` | Kathleen | Art direction | 10-30 | keep |
-| `AUDIT_ITEMS.md` | Sal | Item data audit (Sal, 2026-10-31) | 10-31 | keep |
-| `BALANCE_SHEET.md` | Sal | Early-game balance sheet (Sal, 2026-10-31) | 10-31 | keep |
-| `BIG_PICTURE.md` | moderator | Big picture (read this first, every thread; about 2 KB; kept current by the Te | 10-22 | keep (fixed 9c01369a; points to START_HERE) |
-| `BUILD_ORDERS.md` | Sal | Build orders by tier (Sal, 2026-10-31) | 10-31 | keep |
-| `CHARACTER_DESIGN_VISION.md` | Kathreen | Character design vision (Sonny; research and plan, 30 Oct 2026; for Dave to re | 10-31 | keep |
-| `CLOTHING_WARMTH.md` | Sal | Clothing and warmth tiers (Sal, 2026-10-31) | 10-31 | keep |
-| `CODE_MISMATCHES.md` | Sal / Steve | Data against Tyler's new systems: audit (Sal, 2026-10-31) | 10-31 | keep: history; Steve triages open rows (sow_seasons list, boulder needs_material) |
-| `CONTROLS.md` | Steve | Controls | 10-31 | keep (docs/mirror/CONTROLS.md is an older copy) |
-| `CRAFT_PACING.md` | Sal | Crafting time and pacing pass (Sal, 2026-10-31) | 10-31 | keep |
-| `DESIGN_IDEAS.md` | moderator | Design Vision and Ideas | 10-31 | keep; bloat risk (2074 lines): ask Dave about a split by section |
-| `DESIGN_PRINCIPLES.md` | Dave/moderator | Design Principles | 10-17 | keep |
-| `DESIGN_REJECTED.md` | Dave/moderator | Rejected Ideas | 10-15 | keep |
-| `DIGGING_DESIGN.md` | Sonny | Digging the ground with a spade (design note, Ground loading, 2026-10-21) | 10-21 | keep |
-| `ECONOMY_PLAN.md` | Sal | Trade and economy plan (Sal, 2026-10-31) | 10-31 | keep |
-| `FARMING_SPEC.md` | Sal / Steve | Farming code spec for Tyler (Sal, 2026-10-31) | 10-31 | keep: Steve (rules), Sal (data); mostly built |
-| `FAUNA_BY_BIOME.md` | Sal | Fauna by biome (Sal, 2026-10-31; generated from data/animals/fauna_proposal.js | 10-31 | keep |
-| `FAUNA_SPAWN_PLAN.md` | Sal | Fauna spawn data plan (Sal, 2026-10-31) | 10-31 | keep |
-| `FELLING_DESIGN.md` | Steve | Tree felling state: design note (2026-10-20, Items and crafting thread) | 10-20 | keep |
-| `FIRST_DAY_GUIDE.md` | Sal | Your first day: one page for Dave (Sal, 2026-10-31) | 10-31 | keep |
-| `FIRST_HOUR_FOOD.md` | Sal | First-hour food (Sal, 2026-10-31) | 10-31 | keep |
-| `FIRST_WEEK_WALK.md` | Sal | First-week balance walk (Sal, 2026-10-31) | 10-31 | keep |
-| `FISHING_DATA.md` | Sal | Fishing data (Sal, 2026-10-31) | 10-31 | keep |
-| `FLINT_ORE_SPEC.md` | Sal / Steve | Flint, obsidian, ore and coal sources: data decisions and code spec (Sal, 2026 | 10-31 | keep: Steve; flint built, ore/coal unchecked |
-| `FOOD_VARIETY.md` | Sal | Food variety check (Sal, 2026-10-31) | 10-31 | keep |
-| `FRUIT_TREES.md` | Sal | Fruit trees: item and calendar data (Sal, 2026-10-31, for Dave's request) | 10-31 | keep |
-| `FURNITURE_BALANCE.md` | Sal | Comfort furniture: cost against the first week (Sal, 2026-10-31) | 10-31 | keep |
-| `GAP_PLANS.md` | Sal | Three biggest gaps: iron, leather, crops (Sal, 2026-10-31) | 10-31 | keep |
-| `GENERATION_GUIDE.md` | Sonny | Modular Island Generation Guide | 10-14 | keep |
-| `GENERATOR_NOTES.md` | Sonny | Generator notes: how it works, why, and what we measured | 10-30 | keep |
-| `GENERATOR_V2_PLAN.md` | Sonny | New Generator Plan | 10-16 | ARCHIVED in #389 to `docs/archive/2026-11/` |
-| `GENERATOR_VISION.md` | Sonny | Generator vision (Dave, 29 Oct 2026; Claude's review and additions) | 10-29 | keep |
-| `GUIDE_TASKS.md` | Dino | Guide session: self-made task rounds (standing instruction from Dave, via the  | 11-01 | keep; rename to Dino when he next edits |
-| `HANDOFF.md` | moderator | NOW (29 Oct 2026) | 10-29 | keep (banner added 9c01369a; state section is 29 Oct, to trim) |
-| `HINTS_AND_CAMP_EVENTS_SPEC.md` | Sal / Steve | Hints on screen and the camp-goal events: code spec for Tyler (Sal, 2026-10-31 | 10-31 | keep: Steve; built except client goal list |
-| `ITEMS_DESIGN.md` | Sal | Items and inventory: design note (2026-10-20, Items and crafting thread) | 10-24 | keep |
-| `ITEM_ART_REQUESTS.md` | Sal | Item art requests for Kathleen (from Sal, items) | 10-30 | keep |
-| `ITEM_CHANGES_SUMMARY.md` | moderator | Every item change on branch sal-items: one page for Dave (2026-10-30) | 10-31 | keep |
-| `ITEM_COMBAT_TIER_LIST.md` | Sal | Weapon, shield and armour tier list (proposal, names and recipes only; Sal, 20 | 10-30 | keep |
-| `ITEM_DECISION_LOG.md` | moderator | Item decision log (for Dave to review) | 10-31 | keep |
-| `ITEM_FARMING_GAP_CHECK.md` | Sal | Farming crops and tools gap check (Sal, 2026-10-30) | 10-30 | keep |
-| `ITEM_GLOSSARY.md` | moderator | Item name glossary (generated 2026-10-30 from data/items/items.json) | 10-30 | keep |
-| `ITEM_GROUPS_AND_NAMES.md` | moderator | Item groups and names: DynastyALWL | 10-30 | keep |
-| `ITEM_TIER_BALANCE.md` | Sal | Tool and weapon tier balance: proposal (Sal, 2026-10-30) | 10-30 | keep |
-| `LEARN_SYSTEM_SPEC.md` | Sal / Steve | Recipe learning: rule and code spec (Sal, 2026-10-31, fixes F-01) | 10-31 | keep: Steve; built |
-| `LOG_SPECIES_SPEC.md` | Sal / Steve | log_* species chains: code spec for Tyler (Sal, 2026-10-31; guide finding F-11 | 10-31 | keep: Steve; fixed per Sal, build unknown |
-| `MEDICINE_CHAIN.md` | Sal | Medicine, poisons and cures (Sal, 2026-10-31) | 10-31 | keep |
-| `MERGE_WATCH.md` | Tyler | Merge watch | 10-31 | ARCHIVED in #389 to `docs/archive/2026-11/` |
-| `MODERATOR_QA_LOG.md` | moderator | Night of 30-31 Oct 2026 (Dave asleep; moderator in charge) | 11-01 | keep (source of roles; first heading missing) |
-| `MORNING_PLAYTEST_CHECKLIST.md` | Dino | Dave's play-test: one page (daily branch 3494d612, 31 Oct) | 10-31 | keep (head hash removed 9c01369a) |
-| `MORNING_PLAYTEST_CHECKLIST_FULL.md` | Dino | Morning playtest checklist | 10-31 | ARCHIVED 5 Nov to `docs/archive/2026-10/` (31 Oct build; the short checklist, refreshed 3 Nov, is the one truth) |
-| `PHASE7_PLAN.md` | Sonny | Phase 7: natural rivers on, more lakes, one planned re-bake (Sonny, 31 Oct 202 | 10-31 | ARCHIVED in #389 to `docs/archive/2026-11/` |
-| `PLAYTHROUGH_BUDGET.md` | Dino | PLAYTHROUGH_BUDGET: how long each milestone takes a new player | 10-31 | keep (5 Nov): one question each, see the table below; FIRST_WEEK_WALK and CRAFT_PACING stay with Sal. FIX: stale since kits became their own recipes; a rerun of `build_orders.py` stops at the kit and gives 0.1 min for the lean-to, bench and house, so the script needs to expand kit recipes before a rerun (owner now Sal, Dino stopped) |
-| `PLAYTHROUGH_CHAPTERS.md` | Dino | PLAYTHROUGH_CHAPTERS: the guide by tier | 10-31 | keep |
-| `PLAYTHROUGH_FINDINGS.md` | Dino | Playthrough findings: spawn to first shelter, tools and weapons | 11-01 | keep |
-| `PLAYTHROUGH_GUIDE.md` | Dino | Dynasty: your first days, from nothing to a shelter, tools and weapons | 10-31 | keep |
-| `PLAYTHROUGH_PLANS.md` | Dino | Three plans toward functioning item build orders | 10-31 | ARCHIVED 5 Nov to `docs/archive/2026-11/` (build orders: `BUILD_ORDERS.md`; its three test plans were never built, ideas for BACKLOG.md) |
-| `PLAYTHROUGH_STATUS.md` | Dino | PLAYTHROUGH_STATUS (generated by art/playthrough/status_check.py) | 11-01 | keep (generated; do not edit by hand) |
-| `PLAYTHROUGH_STEP_STATUS.md` | Dino | PLAYTHROUGH_STEP_STATUS: the 22 first-hour steps, which work end to end (paper | 11-01 | keep; overlaps PLAYTHROUGH_STATUS (one of them) |
-| `PLAYTHROUGH_WILDLIFE.md` | Dino | PLAYTHROUGH_WILDLIFE: what lives in the game, what a new player can hunt, and  | 10-31 | keep |
-| `PROJECT_ROADMAP.md` | Sonny | World Generation Roadmap | 10-14 | keep |
-| `PROTOCOL.md` | Tyler | Protocol (PROTOCOL_VERSION 56, src/stream/terrain_net.gd) | 10-31 | keep (protocol version 56: verify against code before relying) |
-| `QUALITY_GRADES_SPEC.md` | Sal / Steve | Quality grades: data and rules spec for Tyler (Sal, 2026-10-31) | 10-31 | keep: Steve; nothing built |
-| `README.md` | moderator | Baked Voxel Game — Modular Island Generator | 10-14 | keep (marked old generator) |
-| `RULES.md` | moderator | Rules (one file; replaces TEAM_AND_RULES, HOW_WE_WORK and PROCESS, 29 Oct 2026 | 10-31 | keep (team sentence fixed 9c01369a; ship.sh flow still to check) |
-| `SCALING_PLAN.md` | Steve | Scaling plan: loading and entities (50 players, villages, animals, enemies), 2 Nov | 11-02 | keep |
-| `SEASONALITY_WINTER.md` | Sal | Seasonality and the winter survival chain (Sal, 2026-10-31) | 10-31 | keep |
-| `SMOKE_TEST.md` | Dino | SMOKE_TEST: the daily branch head, run through the real server and client | 10-31 | ARCHIVED in #389 to `docs/archive/2026-11/` |
-| `SOUND_AUDIT.md` | Jason | SOUND_AUDIT: cave-in rumble and rain-like sound in clear weather | 10-31 | keep; owner is Jason now (Dino wrote it) |
-| `TARGETS.md` | Tyler | World-alive targets (proposal by Tyler, 31 Oct 2026) | 10-30 | keep |
-| `TOWN_NPC_SPEC.md` | Sal | First-island town and NPC data spec (Sal, 2026-10-31) | 10-31 | keep |
-| `TUTORIAL_FIRST_30_MIN.md` | Dino | Your first 30 minutes (tutorial script) | 10-31 | keep |
-| `TYLER_GATES_REVIEW.md` | Tyler | Gate cards gates-a to gates-f: Tyler's review (30 Oct 2026) | 10-30 | ARCHIVED in #389 to `docs/archive/2026-11/` |
-| `TYLER_TEST_SYSTEM_REVIEW.md` | Tyler | Test and gate system review (Tyler, 30 Oct 2026) | 10-31 | keep |
-| `WATER_GATHER_SPEC.md` | Sal / Steve | Gather from water and shore: code spec for Tyler (Sal, 2026-10-31; needed for  | 10-31 | keep: Steve (server), Kathleen/Sonny (client edge); server built |
-| `WATER_PLAN.md` | Sonny | Land and water: findings, research and plan (Sonny, 30 Oct 2026) | 10-31 | ARCHIVED in #389 to `docs/archive/2026-11/` |
-| `WORLD_ALIVE_LOG.md` | Tyler | World-alive log | 10-31 | keep (log) |
-| `WORLD_FORMAT_SPEC.md` | Sonny | World Format Specification (draft) | 10-29 | keep |
-| `art/ART_TASKS.md` | Kathleen | Kathleen's art task queue (standing instruction from Dave: finish, make up thr | 11-01 | keep |
-| `art/Art_Direction.md` | Dave / Kathleen | Dave's master art direction, copied unchanged; all art follows it | 11-02 | keep (the master; root `ART_DIRECTION.md` is the older working copy: review) |
-| `art/BUILDING_PLAN.md` | Kathleen | Building plan: pieces, snapping and materials | 10-22 | keep |
-| `art/BUILDING_TIERS_LOOKS.md` | Kathleen | Building tiers: the looks (designs) | 10-23 | keep |
-| `art/BUILDING_TIERS_PLAN.md` | Kathleen | Building tiers plan (revised BUILDING_PLAN point 1) | 10-22 | keep |
-| `art/ITEM_ART_STATUS.md` | Kathleen | Item art status (Kathleen) | 10-31 | keep |
-| `art/WET_TUNNEL_PLAN.md` | Kathleen | Wet tunnels under water: looks and sounds (design) | 10-23 | keep |
-| `art/playthrough/RIG_PLACE.md` | Dino | Placing structures for screenshots (testing only) | 10-31 | keep |
-| `art/playthrough/audit.md` | Dino | Playthrough audit (generated by art/playthrough/audit_playthrough.py) | 11-01 | keep |
-| `art/playthrough/refresh1nov/RESULTS.md` | Tyler | Smoke rerun results on daily 224e78bd (1 Nov evening) | 11-01 | keep: history |
-| `art/playthrough/smoke/notes.md` | Dino | Felling pictures (art/playthrough/world3/fell*.jpg, stump_*.jpg), 07:40 | 10-31 | keep |
-| `assets/audio/CREDITS.md` | Jason | Sound credits | 10-20 | keep |
-| `assets/audio/LOUDNESS.md` | Jason | Loudness table (make with `python3 assets/audio/loudness_report.py --md`) | 10-20 | keep |
-| `assets/audio/README.md` | Jason | Sounds | 10-21 | keep; Jason owns sound now (was Kathleen) |
-| `assets/audio/SOUND_DROP_IN.md` | Jason | Where Dave's animal recordings go (Kathleen, 2026-10-23) | 10-23 | keep (Kathleen is the 23 Oct author; Jason owns) |
-| `assets/audio/SOUND_PACK.md` | Jason | Sound pack manifest | 10-21 | keep |
-| `assets/audio/inner_voice/README.md` | Jason | (no heading) | 10-21 | keep |
-| `assets/character/README.md` | Kathreen | Ragdoll character | 10-21 | keep |
-| `assets/natural_pickups/README.md` | Kathleen | Dynasty — natural pickup props | 10-20 | keep |
-| `data/items/look_wishlist.md` | Sal | Look wishlist for Kathleen (Sal, 2026-10-31) | 10-31 | keep |
-| `design/GATE_BEFORE_AFTER.md` | Tyler | Gate before/after (Tyler, 28 Oct 2026). Plan: GATE_FIX_PLAN.md | 10-28 | keep |
-| `design/TOOL_TIERS.md` | Sal | Tool tiers | 10-25 | keep |
-| `docs/BUG5_TREE_HITS_FINDINGS.md` | Sal | Bug 5 (tree takes over 20 hits): findings from the code, 2 Nov | 11-02 | keep: history |
-| `docs/BUGS_FOUND_IN_PLAY.md` | Tyler | Dave's in-play bug list with the owner triage table | 11-04 | keep (live; `bug-list-2026-11-03-triage.md` in the project folder is the triage) |
-| `docs/COMFORT_DESIGN.md` | Sal | Comfort and the Rested buff (Sal, 2026-10-31) [Proposed] | 10-31 | keep (design/data Sal; rules Steve) |
-| `docs/design/fire_coals_design.md` | Steve | Fire after the flames: coals 2 h real, warm ash 12 h relit with tinder, a large fire on coals through a downpour, wet wood (coordinator decision, Dave may revert; Jamie's fire-outdoors research #668) | 11-08 | keep |
-| `docs/design/still_water_ice.md` | Jamie | Ice on still water: the air's day and night swing (`Weather.air_c`), water that must cool first, a frosty night's ice gone by early afternoon, the sea frozen only in the arctic zone (builds art_water.md ask 3) | 11-08 | keep |
-| `docs/design/one_temperature.md` | Jamie | One temperature: the island climate (`src/shared/climate.gd`, Sonny's climate.json shape, starter 9 °C ±5, day range 8 °C) read by weather, warmth, ice and snow, and what moved | 11-08 | keep |
-| `docs/design/GUIDING_DOCUMENT.md` | Coordinator | The guiding document: what the game is for, the laws, the implementation path, creatures by habitat, interaction cards, the phased plan (Dave, 7 Nov) | 11-07 | keep: sits above DESIGN_IDEAS.md; the coordinator owns it |
-| `docs/design/valley_fog.md` | Jamie | Valley fog: the weather's `mist` and `mist_top_m`, height fog from above, thick fog from inside, numbers and known limits (builds art_weather_light.md section 7, kind 1) | 11-08 | keep |
-| `docs/design/spring_to_river_flow.md` | Sonny | Spring to river: how each spring's stores feed a reach in every twelfth of the year, in a drought and after a storm; what R5 adds to `network.json` (`q_month_m3_s`, `q_base_month_m3_s`, `base_stores`), what the game reads, a worked starter-island example and the checks (builds on the R7 plan section 4.1) | 11-08 | keep |
-| `docs/design/r7_plan.md` | Sonny | R7 plan: the colossal starter peaks kept through every stage (D-10, Jamie's #654 numbers), the order after R5, R6 and the spring store, the ws580i run list with zoom points for Dino, live springs by month, drought and storm (#713), and the acceptance lines it adds | 11-08 | keep |
-| `docs/design/fog_pools_and_sea_fog.md` | Jamie | Fog limits: a cold-air pooling mask spec for the R6 record (fog in basins at any height, for Sonny) and the sea fog rule (sea_fog, sea_fog_land, sea_fog_top_m; the sea plane keeps its own fog layer) | 11-08 | keep |
-| `docs/ui/item_icons.md` | Kathleen | Item icons: where they live (`assets/ui/item_icons/`, the `.import` beside each), the 425 baked and 173 painted (items.json and gathered.json) and which tool makes each, how to repaint or rebake one | 11-09 | keep |
-| `docs/DAY_ONE_NUMBERS.md` | Sal | Day-one survival numbers (burn, stomach, water, sickness) from vitals data, 3 Nov | 11-03 | keep |
-| `docs/DEAD_END_MATERIALS.md` | Sal | Materials made but used by nothing, with proposed uses, 2 Nov | 11-02 | keep: history (status line added 5 Nov: all seven used) |
-| `docs/DYNASTY_WATER_DESIGN.md` | Sonny | Dynasty water: design (Sonny, 31 Oct 2026, branch `dynasty-water`, code in `sr | 10-31 | keep |
-| `docs/DYNASTY_WATER_HISTORY.md` | Sonny | Dynasty water: history for the next team (Sonny, 1 Nov 2026) | 11-01 | keep |
-| `docs/archive/2026-11/DYNASTY_WATER_STATUS.md` | Sonny | Dynasty water: status (Sonny, 31 Oct 2026, branch `dynasty-water`) | 11-05 | ARCHIVED in #384 (one water truth: `docs/DYNASTY_WATER_HISTORY.md`) |
-| `docs/DYNASTY_WATER_TASKS.md` | Sonny | Dynasty water: task list (Sonny, from 1 Nov 2026) | 11-01 | keep |
-| `docs/EARLY_FORAGE_20261103.md` | MikeW | Early-game forage at the starter spawn, 3 Nov | 11-04 | keep |
-| `docs/FAUNA_BEHAVIOUR_AUDIT_20261102.md` | MikeW | Fauna behaviour audit, 2 Nov | 11-02 | keep: history (fixes merged #194-#239, #328) |
-| `docs/FAUNA_MEASUREMENT_20261102.md` | MikeW | Fauna counts measured at the starter spawn, 2 Nov | 11-02 | keep: history |
-| `docs/FEEL_TUNING.md` | Kathleen | First-person feel: every movement, tool and hit number and where it is tuned | 11-04 | keep |
-| `docs/FLORA_HANDOVER.md` | MikeW | Flora system handover (flora session, 2026-10-31) | 10-31 | keep |
-| `docs/FLORA_NEXT_TASKS.md` | MikeW | Flora: next tasks (standing instruction from Dave, 2026-11-01) | 11-01 | keep |
-| `docs/FRUIT_TREES_PLAN.md` | MikeW | Fruit trees with a real fruit store (flora session, 2026-10-31; built: store,  | 10-31 | keep |
-| `docs/ISLAND_FAUNA_20261103.md` | MikeW | Starter island fauna (frogs, ducks, gulls, seals by water), 3 Nov | 11-04 | keep |
-| `docs/ITEMS_HANDOVER.md` | Sal | Items data handover (Sal, 2026-10-31): one page for Dave | 10-31 | keep (now holds \"Needs code\") |
-| `docs/BLUEPRINT_SITES.md` | Sal | Blueprint sites: placing without the materials, E to deposit (Dave 5 Nov 2026) | 11-05 | keep |
-| `docs/PONYTAIL_RULES.md` | AI team | Ponytail engineering method for all code (v5.3.3; record `docs/ai-team/PONYTAIL_INSTALL.md`) | 11-11 | keep (Dave, 11 Nov 2026: whole coding team) |
-| `docs/SEASONS_DATA.md` | MikeW | Season data for the looks (flora session, 2026-10-31) | 10-31 | keep |
-| `docs/SPAWN_BEAUTY_CHECK.md` | MikeW | Spawn-area beauty check (flora session, 2026-10-31) | 10-31 | keep |
-| `docs/TYLER_NEXT_TASKS.md` | Tyler | Tyler's self-assigned tasks (standing instruction from Dave, 1 Nov 2026) | 11-01 | keep (Tyler's one task list) |
-| `docs/archive/2026-11/WATER_HANDOVER.md` | Sonny | Water handover for Dave (Sonny, 31 Oct 2026) | 11-05 | ARCHIVED in #384 (patch plan and cost options kept in `docs/DYNASTY_WATER_HISTORY.md` section 9) |
-| `docs/WILD_CROP_PLANTS_PLAN.md` | Sal | Wild plants for the eight seedless crops (Dave option A), 3 Nov | 11-03 | keep |
-| `docs/handoff/DINO_BUG_CHECKS.md` | Dino | What each bug means for the first-hour guide and how Dave confirms each fix, 2 Nov | 11-02 | keep: history |
-| `docs/handoff/DINO_ROUND1_REPORT.md` | Dino | Round 1 paper review: placement refusals, tutorial numbers against data, 2 Nov | 11-02 | keep: history |
-| `docs/handoff/DINO_ROUND2_REPORT.md` | Dino | Round 2 paper review: hearth cost drift, stale items, kits against looks, 2 Nov | 11-01 | keep: history |
-| `docs/handoff/DINO_ROUND3_PC_COMMANDS.md` | Dino | Round 3: PC commands for the checks, 2 Nov | 11-01 | keep: history |
-| `docs/handoff/DINO_ROUND4_HINTS.md` | Dino | Round 4: in-game hints left behind by the 2 Nov fixes | 11-02 | keep: history |
-| `docs/handoff/DINO_ROUND5_EARLY_GAME.md` | Dino | Round 5: early-game text the player reads, 3 Nov | 11-02 | keep: history |
-| `docs/handoff/DINO_ROUND6_GOALS.md` | Dino | Round 6: starter goals checked against data, 3 Nov (hint triggers table Sal works from) | 11-04 | keep |
-| `docs/handoff/FINDINGS_REPORT.md` | Dino | Guide findings for the moderator (1 Nov 2026, daily d05e86b3 / 27dfe828) | 11-01 | keep |
-| `docs/handoff/HANDOFF_DINO.md` | Dino | Handoff: Dino: Guides and Walkthrough (formerly Guide, first-hour playthrough) | 11-01 | keep |
-| `docs/handoff/HANDOFF_KATHLEEN.md` | Kathleen | Handoff: Kathleen (art and looks), written 2026-11-01 | 11-01 | keep (exe fix done 7936bc74) |
-| `docs/handoff/HANDOFF_MIKEW.md` | MikeW | Handoff: MikeW, flora and fauna plus Grass leftovers (rewritten 5 Nov) | 11-05 | keep |
-| `docs/handoff/HANDOFF_MODERATOR.md` | moderator | Handoff: moderator (written 1 Nov 2026, for Dave's new thread) | 11-01 | keep (roster fixed 75a414e1) |
-| `docs/handoff/HANDOFF_SAL.md` | Sal | Handoff: Sal (items agent), written 1 Nov 2026 | 11-01 | keep |
-| `docs/handoff/HANDOFF_SONNY.md` | Sonny | Handoff: Sonny (character and Dynasty water), 1 Nov 2026 | 11-01 | keep (terrain and water only, fixed) |
-| `docs/handoff/HANDOFF_STEVE.md` | Steve | Handoff: Steve: Systems (written 1 Nov 2026, paper only, no Godot run) | 11-01 | keep |
-| `docs/handoff/HANDOFF_TYLER.md` | Tyler | Handoff: Tyler: Q&A Testing, 1 Nov 2026 | 11-01 | keep |
-| `docs/handoff/SCOPE_DINO.md` | Dino | Scope: Dino: Guides and Walkthrough (formerly Guide, first-hour playthrough),  | 11-01 | keep |
-| `docs/handoff/SCOPE_JAMIE.md` | Jamie | Scope: Jamie: Documentation (1 Nov 2026) | 11-01 | keep |
-| `docs/handoff/SCOPE_KATHLEEN.md` | Kathleen | Scope: Kathleen (art and looks), 2026-11-01 | 11-01 | FIX: no mention of the Kathreen split |
-| `docs/handoff/SCOPE_KATHREEN.md` | Kathreen | Scope: Kathreen (art assistant: character, animal and plant looks), 1 Nov 2026 | 11-01 | keep |
-| `docs/handoff/SCOPE_MIKEW.md` | MikeW | Scope: MikeW: Flora and Fauna Density and Placement (formerly Flora), 1 Nov 20 | 11-01 | keep |
-| `docs/handoff/SCOPE_MODERATOR.md` | moderator | Scope: moderator (1 Nov 2026) | 11-01 | keep (roster fixed 75a414e1) |
-| `docs/handoff/SCOPE_SAL.md` | Sal | Scope: Sal, the items agent (written 1 Nov 2026) | 11-01 | keep |
-| `docs/handoff/SCOPE_SONNY.md` | Sonny | Scope: Sonny (character and Dynasty water), 1 Nov 2026 | 11-01 | keep (terrain and water only, fixed) |
-| `docs/handoff/SCOPE_STEVE.md` | Steve | Scope: Steve: Systems (written 1 Nov 2026, paper only: no Godot run, read-thro | 11-01 | keep |
-| `docs/handoff/SCOPE_TYLER.md` | Tyler | Scope: Tyler: Q&A testing and tooling, 1 Nov 2026 | 11-01 | keep |
-| `items/BLUEPRINT_BUILD_DESIGN.md` | Sal | Blueprint build system (design only; Sal_Crafts, 2026-10-22 22:50; from Dave 2 | 10-22 | keep |
-| `proposed_removals/README.md` | moderator | proposed_removals: nothing is deleted without Dave's approval | 10-25 | keep (RULES.md: nothing deleted) |
-| `proposed_removals/REMOVALS.md` | moderator | Proposed removals (waiting for Dave's approval) | 10-30 | keep |
-| `tech/TEST_BASELINE_PC.md` | Tyler | Test baseline on Dave's PC (Windows, Git bash), per platform (Mike, 25 Oct 202 | 10-30 | keep |
-| `tools/erosion_precarve/README.md` | Tyler | Erosion pre-carve: action plan for Tyler (one plan, one branch) | 10-24 | keep |
-| `worlds/base_world/regions/README.md` | Sonny | Baked regions | 10-11 | keep |
-
-Jason's three, all keep: `SOUND_AUDIT.md` (findings record), `docs/SOUND_MAP.md` (hook audit and sound map), `docs/handoff/SCOPE_JASON.md` (plan). `docs/START_HERE.md`, `docs/DOC_MAP.md` and `docs/handoff/SCOPE_JAMIE.md` were added after the table was built; `docs/handoff/` now holds 21 files.
-
-Added at handoff (1 Nov, all keep): `docs/CLOSING_PLAN.md` (moderator: what each agent finishes; "done" defined), `docs/OLD_BRANCH_REVIEW.md` (moderator: unmerged branches and verdicts), `docs/ECONOMY_FIRST_DAY.md` (Sal: cheap goods and sell lots), `docs/TERRAIN_WATER_BACKLOG.md` (Sonny), `docs/KATHLEEN_NEXT_TASKS.md` (Kathleen), `docs/handoff/HANDOFF_JASON.md` and `JASON_NEXT_TASKS.md` (Jason), `docs/handoff/HANDOFF_KATHREEN.md` (Kathreen), `docs/handoff/SAL_SPECS_FOR_STEVE.md` (Sal to Steve), `docs/handoff/PHASE2_RUNBOOK.md` (Dino: commands and the 14-step walk, run only after RESTART). `art/CRITIQUES/` rounds Dave judged are now in `art/CRITIQUES/_archive/` (Kathleen), 43 folders remain.
-
-Added 1 Nov evening (keep): `docs/CARRY_WEIGHTS.md` (Sal: why picking overloaded Dave, new item weights in `data/items/weights.json`; capacity left unchanged), `docs/DYNASTY_BODY.md` (Kathleen: Dave's body glb, how it is wired, clip table, what is left; flag `--oldbody`), `art/CRITIQUES/dynasty_base_male_2026-11-01/` (body clip stats). `CONTROLS.md` gained K (photo camera) and `/` (inspection mode). `HANDOFF_MODERATOR.md` and `SCOPE_MODERATOR.md` were updated by the moderator.
-
-## Backlogs: where each agent's open work is written (final pass, 1 Nov; plan: `docs/CLOSING_PLAN.md`)
-Done = merged in the daily, or written in the owner's backlog with owner, next step and why not done.
-| Agent | Backlog | State |
+| Topic | Source | Purpose |
 |---|---|---|
-| Sonny | `docs/TERRAIN_WATER_BACKLOG.md`; `docs/handoff/HANDOFF_SONNY.md`; `docs/DYNASTY_WATER_TASKS.md` | exists |
-| Kathleen | `docs/KATHLEEN_NEXT_TASKS.md`; `docs/handoff/HANDOFF_KATHLEEN.md`; `art/ART_TASKS.md` | exists |
-| Kathreen | `docs/handoff/HANDOFF_KATHREEN.md`; `docs/handoff/SCOPE_KATHREEN.md` | exists |
-| Sal | `docs/handoff/HANDOFF_SAL.md` "Next tasks"; `docs/ITEMS_HANDOVER.md` "Needs code"; `docs/handoff/SAL_SPECS_FOR_STEVE.md` (specs handed to Steve) | exists |
-| MikeW | `docs/FLORA_NEXT_TASKS.md`; `docs/handoff/HANDOFF_MIKEW.md` | exists |
-| Steve | `docs/handoff/HANDOFF_STEVE.md` "Exact next steps"; `docs/handoff/SCOPE_STEVE.md` | exists (no separate STEVE_NEXT_TASKS) |
-| Tyler | `docs/TYLER_NEXT_TASKS.md`; `docs/handoff/HANDOFF_TYLER.md` | exists |
-| Dino | `GUIDE_TASKS.md`; `docs/handoff/HANDOFF_DINO.md`; `docs/handoff/PHASE2_RUNBOOK.md` | exists |
-| Jason | `docs/handoff/JASON_NEXT_TASKS.md`; `docs/handoff/HANDOFF_JASON.md`; `docs/SOUND_MAP.md` | exists |
-| Jamie | `docs/handoff/SCOPE_JAMIE.md` | exists |
-| Moderator | `docs/handoff/HANDOFF_MODERATOR.md` "Known open items"; `docs/handoff/PHASE2_RUNBOOK.md` for the Phase 2 order | updated by the moderator; "Final state" section (stuck slots, held branches) added by Jamie |
+| Game vision and future ideas | [DESIGN_IDEAS](../DESIGN_IDEAS.md) | Remaining mixed-status collection; extracted topics retain routes there. Tags alone do not verify approval. |
+| Compact game orientation | [Big picture](../BIG_PICTURE.md) | Vision/principles overview and clearly dated-status historical scope; current operation routes through CLAUDE and the live missions. |
+| Aging and lifespan | [Approved specification](../Design_Ideas_Approved.md#aging-and-lifespan); [proposals](../Design_Ideas_Unapproved.md#aging-and-lifespan) | Values and qualifications recorded once; runtime remains unverified. |
+| Children and family growth | [Approved specification](../Design_Ideas_Approved.md#children-and-family-growth); [proposals](../Design_Ideas_Unapproved.md#children-and-family-growth) | Childhood/teaching and adoption decisions; siblings, adoption eligibility and other open questions remain separate. |
+| Death and rescue | [Approved specification](../Design_Ideas_Approved.md#death-and-rescue); [proposals](../Design_Ideas_Unapproved.md#death-and-rescue) | Downed/rescue, remains, gear protection and wizard retrieval; unresolved expiry and historical implementation evidence stay explicit. |
+| Succession and inheritance | [Approved offer order and final-child fallback](../Design_Ideas_Approved.md#succession-order-and-final-child-fallback); [remaining succession collection](../Design_Ideas_Unapproved.md#succession-and-inheritance) | Dave clarified family grouping and fallback on 16 Nov 2026. Other inheritance, tax, household and check-in records retain their own status. |
+| NPC population and migration | [NPC collection](../Design_Ideas_Unapproved.md#npc-population-and-migration) | Roles, births, scavengers, country folk and displacement; [technical plan](https://github.com/DSul3791/DynastyALWL/blob/b8130aecd2d6325a772c065b9e73959953f3d64a/docs/mirror/items/NPC_DESIGN.md) and [roster](../TOWN_NPC_SPEC.md) retain dated status. |
+| Property and town management | [Property/management collection](../Design_Ideas_Unapproved.md#property-and-town-management) | Planning, permissions, property/reputation, contested claims, remote management, mail and server-town purchases; source-unverified decisions and proposals remain distinct. |
+| Founding and settlement construction | [Founding collection](../Design_Ideas_Unapproved.md#founding-and-building-a-settlement) | Markers/territory, establishment, proposed first-ten list and separately recorded planner order; numeric stage tables and open questions retained. |
+| Outposts and settlement decline | [Outpost/decline collection](../Design_Ideas_Unapproved.md#outposts-and-settlement-decline) | Outpost points/sizes and separate player/server-town decline paths; numeric tables, road/rubble persistence and claim/deletion exceptions retained. |
+| Design principles | [DESIGN_PRINCIPLES](../DESIGN_PRINCIPLES.md) | Values and constraints behind the designs. |
+| Approved design provenance | [Approved records](../Design_Ideas_Approved.md) | Source-backed status records; full specifications remain in owning topic files. Original-source retrieval limits are explicit. |
+| Implementation evidence | [Built records](../Design_Ideas_Built.md) | Implementation commits, checks and remaining gaps; built/tested/player-verified are separate. |
+| Rejected ideas | [DESIGN_REJECTED](../DESIGN_REJECTED.md) | Preserve explicit rejections and their reasons. |
+| Creature and exploration proposals | [GUIDING_DOCUMENT](design/GUIDING_DOCUMENT.md) | Habitat concepts, worked interaction cards and recorded G/D history; dated dependency plan, not family/town design or an operating rulebook. |
+| Visual identity | [Art Direction](../art/Art_Direction.md) | The master aesthetic; specialist designs apply it. |
 
-## Which pacing / playthrough document answers what (overlap review, 1 Nov)
-Read, not merged: each is owned (Sal or Dino) and two are generated, so the fix is one home per question, not a merge.
-| Question | Read | Note |
-|---|---|---|
-| What can be built at each tier, in what order? | `BUILD_ORDERS.md` (Sal, generated from recipes) | `PLAYTHROUGH_PLANS.md` archived 5 Nov (`docs/archive/2026-11/`) |
-| How many minutes does each milestone take? | `PLAYTHROUGH_BUDGET.md` (generated by `art/playthrough/build_orders.py`; edit parameters, not the file) | `FIRST_WEEK_WALK.md` is Sal's separate paper walk of week one; `CRAFT_PACING.md` is the proposal for craft seconds (no recipe changed) |
-| Which first-hour steps work end to end? | `PLAYTHROUGH_STEP_STATUS.md` (Dino, hand-written, being refreshed in Phase 2) | |
-| Which findings (F-numbers) are fixed? | `PLAYTHROUGH_STATUS.md` (generated from `PLAYTHROUGH_FINDINGS.md`; do not edit) | |
-Duplicate removed 1 Nov: `PLAYTHROUGH_PLANS.md` no longer copies the budget table (links to `PLAYTHROUGH_BUDGET.md`).
+## Current topic routes
 
-## Conflicts and gaps found so far (fixes are separate commits)
-1. `godot.windows.editor.x86_64.exe` is the **voxel build**, not "standard" (checked: it contains `VoxelTerrain`, `Godot_v4.7.2-stable_win64*.exe` does not; `tools/godot` defaults to it). The standard exe is `Godot_v4.7.2-stable_win64_console.exe`. Was wrong in `HANDOFF_KATHLEEN.md`, `HANDOFF_MIKEW.md` (fixed).
-2. Rosters: `HANDOFF_MODERATOR.md`, `SCOPE_MODERATOR.md`, `BIG_PICTURE.md`, `RULES.md` ("the team is retired, one session") described an old team (moderator documents, BIG_PICTURE, RULES fixed; `SCOPE_SONNY.md`/`HANDOFF_SONNY.md` still two-lane, asked Sonny).
-3. (Settled 1 Nov by Steve and Sal: Steve owns the rules code of all eight; see Verdict column.) Eight Sal code specs said "for Tyler" (`FARMING_SPEC`, `HINTS_AND_CAMP_EVENTS_SPEC`, `LEARN_SYSTEM_SPEC`, `LOG_SPECIES_SPEC`, `QUALITY_GRADES_SPEC`, `WATER_GATHER_SPEC`, `CODE_MISMATCHES`, `FLINT_ORE_SPEC`); neither `SCOPE_STEVE.md` nor `SCOPE_TYLER.md` names them, so their code had no named owner; Steve is adding them to SCOPE_STEVE.md Sources.
-4. (Settled) Sound moved to Jason; `SOUND_AUDIT.md` carries his owner banner.
-5. Standing-instruction task lists live in five files (`GUIDE_TASKS`, `docs/TYLER_NEXT_TASKS`, `docs/FLORA_NEXT_TASKS`, `docs/DYNASTY_WATER_TASKS`, `art/ART_TASKS`): one per owner is fine (Tyler's three were merged into one; the other two archived).
+These retain the existing topic routes, with design sources separated from implementation records. Use the linked source's scope and status; an index entry does not make every paragraph approved.
 
-## Archiving rule for tools
-`tools/merge_check.py` fails a merge when a `.md` file under `art/`, `assets/`, `design/`, `docs/`, `items/`, `src/`, `scenes/`, `worlds/` or `data/` disappears from its old path unless it is in `proposed_removals/` (it skips `docs/archive/` as a *deleted-from* path only, not as a destination). Root files and `tech/` pass. So archiving a file from `docs/`, `art/` or `design/` needs a `proposed_removals/` pointer or a rule change by Tyler (tools owner): not done yet.
-
-## Dead references (Jamie, 2 Nov 2026; found by scanning backticked `.md` names; re-checked by Kathreen, 5 Nov 2026)
-These named documents are in no tracked path. Owner to restore, repoint or drop the mention (not fixed by Jamie: content is theirs).
-| Mentioned in | Missing | Note | Owner |
+| Topic | Design source | Scope | Working record |
 |---|---|---|---|
-| `ART_ASSET_INVENTORY.md`, `CHARACTER_DESIGN_VISION.md`, `docs/mirror/tech/DECISIONS.md` | `art/MODEL_INVENTORY.md`, `art/MODEL_PLAN.md`, `art/REFERENCE_PHOTOS.md`, `art/GOAL2_RANKING.md` | still not in git; copies are in the project shared folder `/mnt/project-files/art/` (checked 5 Nov) | Kathleen |
-| `ITEM_GROUPS_AND_NAMES.md` | `Items_in_other_games_Analysis.md` | still not in git or the shared folder | Sal |
-| `DYNASTY_WATER_DESIGN.md`, `HANDOFF_SONNY.md` | `docs/WATER_OWN_SYSTEM_PROPOSAL.md` | still not in git or the shared folder | Sonny |
-| `assets/audio/README.md` | `/mnt/project-files/sound/` `SWEEP.md`, `EMITTER_API.md`, `STEP_LEVELS.md` (also `SLOT_AUDIT.md`, `VOICE_AUDIT.md`, `STRUCTURE_EVENTS.md`, `STEP_COVERAGE.md`) | not dead: generated outputs in the project shared folder (present 5 Nov), not in git by design; `/mnt/project-files/tech/SOUND_GAPS.md` has a git copy at `docs/mirror/tech/SOUND_GAPS.md` | Jason |
-| many | `questions/QUESTIONS.md`, `questions/ANSWERS.md` | fine: they live on branch `qa` | none |
+| Item catalog and crafting definitions | [Master items](design/DYNASTY_MASTER_ITEMS.md) | Identities, names, catalog entries and recipe definitions. [Item-system reference](design/item_system.md) supports the catalog. | Goals/progression repair below |
+| Production progression | [Progression](design/progression.md) | The production journey and prerequisites. | Goals/progression repair below |
+| Trees, wood, tools and hauling | [Wood system](design/TREE_WOOD_TOOLS_DESIGN.md) | Felling, processing, tools, carving and transport. | [WOOD-SYSTEM state](ai-team/missions/WOOD-SYSTEM/STATE.md) |
+| Construction | [Buildables](design/buildables_plan.md) | Pieces, frames, roof shapes and placement behavior; item definitions remain in the catalog. | Door records below |
+| Backpacks | [Backpack design](design/BACKPACKS.md) | Backpack design and carrying rules; values and decision status stay in the source. | Relevant task record |
+| Chests by nail tier | [Chest tiers](design/CHEST_TIERS.md) | Which chest each nail metal builds, the "or better" nails and hinges groups, provisional CT-1..CT-5. | Relevant task record |
+| Character attributes | [Attributes 0 to 100](design/ATTRIBUTES.md) | Every attribute 0 to 100 like a percent, 50 average; the bell-shaped creation roll (player fitness 40 to 60); old saves converted; provisional ATTR-1, ATTR-3, ATTR-4. | This design's For Dave section |
+| Autoload | [Autoload](design/AUTOLOAD.md) | A container loads an item from the ground within 30 m, once or every 10 minutes; provisional AL-1 to AL-5. | This design's For Dave section |
+| No spawning near builds | [No-spawn zones](design/NO_SPAWN_ZONES.md) | Nothing wild spawns or regrows within 20 m of what players put down; grass cleared close round it. | This design's For Dave section |
+| Server pick page (client) | [Server pick page](design/SERVER_PICK_PAGE.md) | Approved by Dave 19 Nov: official server, saved servers with live status and padlock, passwords (3 tries), plain failure words. | This design's For Dave section |
+| Torches and Tree sap | [Torches and Tree sap](design/TORCH_TREE_SAP.md) | Simple and Improved torch recipes, where Tree sap comes from; provisional values TS-1..TS-7. | Relevant task record |
+| Smelters | [Smelters light like a campfire](design/SMELTER_LIGHTING.md) | E lights and puts out every smelter tier, fire shown only while lit; provisional choices SL-1..SL-8. | Relevant task record |
+| Craft finish and countdown | [A craft ends with its product or a reason](design/CRAFT_FINISH.md) | Kept items count from the ground and nearby containers at both ends of a craft; the countdown is the finish; provisional CF-1..CF-2. | This design's For Dave section |
+| Edda and Hob's camp | [Camp under the oak](design/NPC_CAMP.md) | Hob and Edda under the oak by the spawn with a large campfire nobody can use; provisional CAMP-1..CAMP-6. | Relevant task record |
+| Goblin trading camp | [The Ragtooth camp](design/GOBLIN_CAMP.md) | Three wary goblins at a cave mouth by a river who talk and trade; tribes with attitudes in data; provisional GOBLIN-1..GOBLIN-8. | Relevant task record |
+| Character and creature meshes | [Mesh checklist](design/CHARACTER_MESHES.md) | Dave's rule (20 Nov 2026) for every character and creature mesh: shadows On, not Double-Sided; textures VRAM Compressed; where the shipped meshes stand. | Relevant task record |
+| Garden moisture and irrigation | [Garden moisture](design/GARDEN_MOISTURE.md) | Soil moisture shown on beds, rain and hand watering, dry days slow crops; pipe water onto plots and the hoe's irrigation trench; provisional GM-1..GM-8. | This design's assumptions section |
+| Survey a path | [Survey a path: the survey line](design/SURVEY_ROAD.md) | Hoe survey roads at any distance, the green/red aim line, trees felled and stumps broken on the road, grass cleared 2 m each side; provisional SV-1..SV-9. | Relevant task record |
+| Bandit camps | [Bandit camps](design/BANDIT_CAMPS.md) | Seed-fixed bandit sites woken by road traffic (stage 1) and the camp laid on them: fire, Lean-tos, tethered horses, bandits levelled by distance (stage 2); warnings: signs, lookout (stage 3); clearing: surrender, tying, bounty, dissolving (stage 5); provisional BANDIT-1..BANDIT-27. | Relevant task record |
+| Ore veins and mines | [Ore veins and mines](design/ORE_VEIN_MINING.md) | Midgame vein mining from the existing geology; Dave's 17 Nov answers in s9; build waits for his go; provisional OV-1..OV-15. | Relevant task record |
+| Storage and fuel supply | [Storage and warehousing](design/STORAGE_WAREHOUSING_DESIGN.md) | Bins, storage movement, permissions and fuel supply. | Goals/progression repair below |
+| Food | [Preparation, preservation and serving](design/FOOD_PREPARATION_PRESERVATION_SERVING.md) | Food categories, stations and workflows. | Goals/progression repair below |
+| Journal and goal presentation | [Journal and Goals UI](design/PLAYER_JOURNAL_GOALS_UI.md) | Journal, HUD, automatic completion and reward presentation. | Goals/progression repair below |
+| Goal catalog review | [Working walkthrough draft](design/PLAYER_GOALS_REWARDS_DRAFT.md), [corrected review catalog](design/PLAYER_GOALS_CATALOG_CORRECTED.md) | Draft authoring and review package. The corrected catalog flags pre-wood rows for regeneration from the walkthrough draft; this is not activation permission. | [Repair decisions](ai-team/missions/GOALS-REPAIR/REPAIR_DECISIONS.md) |
+| Player map | [Cartography](design/PLAYER_CARTOGRAPHY_MAP_DESIGN.md) | Player-discovered mapping and related design ideas. | Goals/progression repair below |
+| Environment, sky and frozen-water appearance | [Environmental design](design/art_weather_light.md) | Main appearance/behavior entry; Dave's fog instruction retains authority. | [Sky math/checks](design/one_sky_design.md), [frozen-water integration/checks](design/frozen_water_look.md) |
+| Fog | [Dave's fog design](design/FOG_DESIGN_DAVE.md) | Approved appearance and occurrence; technical implementation is separate. | Fog records below |
+| Drinking water | [Drinking water](design/drinking_water_design.md) | Supported collection and drinking features; inspect dated subfeature records. | [Step 2b record](design/drinking_water_step2b_design.md) |
+| World-water reference | [Water design](DYNASTY_WATER_DESIGN.md) | Water-system design and dated feature support; broader watershed sources are listed below. | Use the relevant current task record |
+| Save compatibility | [Catalog/save policy](design/CATALOG_SAVE_MIGRATION.md) | Approved compatibility and preservation requirements. | Relevant mission verification record |
+| Admin/debug input | [Keyboard policy](design/ADMIN_KEYBINDINGS_POLICY.md) | Admin/debug bindings; [CONTROLS](../CONTROLS.md) owns the controls reference. | Relevant task record |
+| Who is an admin on a server | [Admin check](design/ADMIN_CHECK.md) | Server-decided admin keys (`--dedicated`), the audit of every admin path; provisional AC-1..AC-4. | This design's assumptions section |
 
-Fixed since 2 Nov: `docs/CHARACTER_SYSTEM.md` is in git (#21), so the mentions in `HANDOFF_STEVE.md`, `SCOPE_STEVE.md` and `SCOPE_TYLER.md` resolve.
+## Working records
 
-Checker for real links: `python3 tools/check_doc_links.py` (0 dead markdown links today).
+Keep these separate from the design: they own assignments, implementation state, assumptions, blockers and evidence. Read status there instead of copying progress into this index.
+
+| Work area | Records | Purpose |
+|---|---|---|
+| Goal authoring | [Working walkthrough draft](design/PLAYER_GOALS_REWARDS_DRAFT.md), [corrected review catalog](design/PLAYER_GOALS_CATALOG_CORRECTED.md) | Current walkthrough authoring/regeneration inputs; use mission decisions for approvals, amounts and activation. |
+| Goals/progression repair | [State](ai-team/missions/GOALS-REPAIR/STATE.md), [decisions](ai-team/missions/GOALS-REPAIR/REPAIR_DECISIONS.md) | Current mission state and scoped decisions/assumptions. |
+| Repair planning | [Integration plan](design/CATALOG_IMPLEMENTATION_PLAN.md), [missing-systems plan](design/PLAYER_PROGRESSION_MISSING_SYSTEMS_REPAIR_PLAN.md) | Repair sequence and dependencies; not new gameplay authorization. |
+| Repair verification | [Verification evidence](design/PLAYER_PROGRESSION_REPAIR_VERIFICATION.md), [F6 checklist](design/PLAYER_PROGRESSION_REPAIR_F6.md) | Actual checks and the player-validation checklist. |
+| Wood implementation | [WOOD-SYSTEM state](ai-team/missions/WOOD-SYSTEM/STATE.md) | Phases, provisional choices, evidence and remaining player checks. |
+| Doors and doorways | [Contract](ai-team/missions/BUGLIST-002/CONTRACT.md), [ledger](ai-team/missions/BUGLIST-002/LEDGER.md), [design correction](buglists/BUGLIST-002.md) | Approved task scope and actual implementation/verification records. |
+| Fog implementation | [Technical plan](design/FOG_PLAN.md), [F6 checklist](design/FOG_F6.md) | Implementation details and appearance checks for the director's fog design. |
+
+## Reviewed character and wildlife references
+
+Separate references for distinct topics. Dated implementation notes preserve code pointers and ideas; they do not establish current behavior or approve proposals.
+
+| Topic | Reference | Scope and status |
+|---|---|---|
+| Character records | [Character system](CHARACTER_SYSTEM.md) | Static 2 Nov create/save/load/delete map, with future heir/account ideas retained; later location design is in [Resume spot](design/RESUME_SPOT.md). |
+| Body and animation | [Dynasty body](DYNASTY_BODY.md) | Body adoption and proportions decisions, consolidated rig/clip reference and remaining appearance ideas; dated evidence is separate from current verification. |
+| Movement and action feel | [Feel tuning](FEEL_TUNING.md) | Parameter locator and recorded 2 Nov settings; current values are in the named code. |
+| Comfort and Rested | [Comfort](COMFORT_DESIGN.md) | Comfort/Rested behavior, tuning, open questions and integration reference; recipes route to the master catalog. No blanket approval or runtime certification. |
+| Wildlife coverage | [Animal specification](../ANIMAL_SPEC.md) | 30–31 Oct data audit/species proposals and 8 Nov alarm-group design; not a current species census or passing test certificate. |
+| Animal reactions to players | [Animal reactions](design/ANIMAL_REACTIONS.md) | Provisional 19 Nov 2026 reaction table (notice / flee / safe per species) and the sense changes RX-1 to RX-3, for Dave's review; values live in data/animals/animals.json. |
+
+## Further design areas — routing review pending
+
+These sources remain available. Their inclusion preserves discoverability; it does not settle conflicting versions or promote proposals. Review them in small topic batches before choosing or consolidating authorities.
+
+| Area | References to review |
+|---|---|
+| Goblins | [Goblins](GOBLINS.md) |
+| Caves, cave dens and abandoned mines | [Cave dens and mines](design/CAVE_DENS_AND_MINES.md) (Dave 19 Nov 2026; provisional answers given for him) |
+| Generation and natural watersheds | [Generator vision](../GENERATOR_VISION.md), [Dave's watersheds](water/Dynasty_How_Natural_Watersheds_Work.md), [watershed build design](water/watershed_rebuild_design.md) |
+| Outdoor audio | [Sound outdoors](design/sound_outdoors_design.md) |
+| Other future systems awaiting topic review | [Remaining mixed ideas](../DESIGN_IDEAS.md) |
+| Supporting research | [Research index](knowledge/README.md) |
+
+## Evidence and historical inputs
+
+| Record | Use |
+|---|---|
+| [Goal audit](design/PLAYER_GOALS_REWARDS_AUDIT.md), [audit CSV](design/PLAYER_GOALS_AUDIT_LEDGER.csv) | Preserved baseline findings, not a current gameplay rulebook or player-verification result. |
+| [Goal decision recovery](design/PLAYER_GOALS_DECISION_RECOVERY_2026-11-13.md) | Audit dispositions and earlier source decisions; consult current mission decisions for later rulings. |
+| [Food/storage audit](design/FOOD_STORAGE_AUDIT_2026-11-12.md) | Dated evidence for its own stage, not an additional design authority. |
+| [Retirement receipts](retirements.json) | Source identities and timestamps for historical material. Deletion is manual, subject to the existing recovery and dependency checks. |
+
+## Technical contracts and operating rules
+
+Technical references: [network protocol](../PROTOCOL.md), [world formats](../WORLD_FORMAT_SPEC.md), [performance budget](../ARCHITECTURE_BUDGET.md).
+
+Operating authority: [Constitution](ai-team/CONSTITUTION.md), [Workflow](ai-team/WORKFLOW.md), [Test gates](ai-team/TEST_GATES.md), [Ponytail engineering method](PONYTAIL_RULES.md). [CLAUDE.md](../CLAUDE.md) remains the agent entry point. These own the process; the design index adds no alternate rules.

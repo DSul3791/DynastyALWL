@@ -7,6 +7,7 @@ extends SceneTree
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 var failures: int = 0
 var said: Array = []
@@ -35,21 +36,21 @@ func _init() -> void:
 	items.setup(ItemTableScript.load_default(), dir)
 	items.peer_connected_hello(1, "station-key-0001")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
-	var spade: int = items.recipes.recipe(0).get("number", 0)
+	var shovel: int = items.recipes.recipe(0).get("number", 0)
 
 	for number in items.recipes.numbers():
-		if str(items.recipes.recipe(number)["id"]) == "stone_spade":
-			spade = number
+		if str(items.recipes.recipe(number)["id"]) == "hide_scraper":
+			shovel = number
 
-	check(str(items.recipes.recipe(spade).get("station", "")) == "workbench", "the stone spade is a camp bench recipe")
-	var stone: int = items.table.number_of("stone")
+	check(str(items.recipes.recipe(shovel).get("station", "")) == "workbench", "the hide scraper is a camp bench recipe (the Stone - Hoe retired 18 Nov 2026)")
+	var flint: int = items.table.number_of("flint")
 	var stick: int = items.table.number_of("stick")
 	var twine: int = items.table.number_of("twine")
-	items.action(1, Net.ACT_ADMIN_GIVE, stone, 0, 4, Vector3.ZERO)
+	items.action(1, Net.ACT_ADMIN_GIVE, flint, 0, 4, Vector3.ZERO)
 	items.action(1, Net.ACT_ADMIN_GIVE, stick, 0, 30, Vector3.ZERO)
 	items.action(1, Net.ACT_ADMIN_GIVE, twine, 0, 8, Vector3.ZERO)
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, spade, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, shovel, 0, 1, CraftHand.at(items, 1, shovel))
 	check(items.craft_queue_of(1).is_empty() and not said.is_empty(), "no bench, no craft (%s)" % str(said))
 	check(not items.station_near(1, "workbench"), "no station near yet")
 
@@ -60,17 +61,15 @@ func _init() -> void:
 	check(not items.station_near(1, "workbench", 2), "a level 2 recipe needs a better bench")
 
 	# Craft near it; step away and the craft waits.
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("wooden_spade"), 0, 1, Vector3.ZERO)
-	items.action(1, Net.ACT_ADMIN_GIVE, stone, 0, 2, Vector3.ZERO)
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, spade, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, shovel, 0, 1, CraftHand.at(items, 1, shovel))
 	check(not items.craft_queue_of(1).is_empty(), "near the bench the craft is queued")
 	items.report_position(1, Vector3(30.0, 10.0, 0.0))
 	items._craft_tick(60.0)
-	check(not items.craft_queue_of(1).is_empty() and items.inventory_of(1).count_of(items.table.number_of("stone_spade")) == 0, "away from the bench the craft waits")
+	check(not items.craft_queue_of(1).is_empty() and items.inventory_of(1).count_of(items.table.number_of("hide_scraper")) == 0, "away from the bench the craft waits")
 	items.report_position(1, Vector3(1.0, 10.0, 0.0))
 	items._craft_tick(60.0)
-	check(items.inventory_of(1).count_of(items.table.number_of("stone_spade")) == 1, "back at the bench it finishes")
+	check(items.inventory_of(1).count_of(items.table.number_of("hide_scraper")) == 1, "back at the bench it finishes")
 
 	# Add-ons raise the bench's level: a tool rack beside it.
 	check(not items.station_near(1, "workbench", 2), "a bare bench is level 1")
@@ -101,9 +100,11 @@ func _init() -> void:
 	tiers.report_position(1, Vector3(0.0, 10.0, 0.0))
 	var spots: Array = [Vector3(3.0, 10.0, 0.0), Vector3(200.0, 10.0, 0.0), Vector3(400.0, 10.0, 0.0), Vector3(600.0, 10.0, 0.0), Vector3(800.0, 10.0, 0.0)]
 	var kits: Array = ["log_workbench_kit", "stone_forge_kit", "blacksmithy_kit", "large_forge_kit", "master_forge_kit"]
-	# [workbench, forge, brick_forge]. The Brick - Forge is its own body (item_system.md, forge levels ruled 9 Nov 2026): brick_forge 2 for iron, and a
-	# level-1 forge for bronze (also). The large and master forges are parked and keep their old forge levels.
-	var want: Array = [[2, 0, 0], [0, 1, 0], [0, 1, 2], [0, 3, 0], [0, 4, 0]]
+	# [workbench, forge, brick_forge]. The Smithy (Brick - Forge) is its own body (item_system.md, forge levels ruled 9 Nov 2026): brick_forge 2 for iron, and a
+	# level-1 forge for bronze (also). The old Blast furnace is the Advanced smelter (GOALS-REPAIR R4): a smelter, no crafting station at all;
+	# the Master smithy a smithy too (brick_forge 3 for steel, forge 1) with its own master_smithy body. Every smithy works only with fuel in its
+	# fuel slot (Dave 21 Nov 2026): each gets Charcoal there as it stands.
+	var want: Array = [[2, 0, 0], [0, 1, 0], [0, 1, 2], [0, 0, 0], [0, 1, 3]]
 
 	for n in 5:
 		var kit_number: int = tiers.table.number_of(kits[n])
@@ -111,7 +112,8 @@ func _init() -> void:
 		tiers.report_position(1, spots[n] - Vector3(2.0, 0.0, 0.0))
 		tiers.action(1, Net.ACT_ADMIN_GIVE, kit_number, 0, 1, Vector3.ZERO)
 		tiers.place_item(1, kit_number, spots[n], 0)
-		
+		_fuel_smithies(tiers, 5)
+
 		check(int(want[n][0]) == 0 or tiers.station_near(1, "workbench", int(want[n][0])), "%s gives workbench %d" % [kits[n], int(want[n][0])])
 		check(not tiers.station_near(1, "workbench", int(want[n][0]) + 1), "%s gives no more than %d" % [kits[n], int(want[n][0])])
 		check(tiers.station_near(1, "forge", int(want[n][1])) or int(want[n][1]) == 0, "%s forge %d" % [kits[n], int(want[n][1])])
@@ -119,33 +121,116 @@ func _init() -> void:
 		check(tiers.station_near(1, "brick_forge", int(want[n][2])) or int(want[n][2]) == 0, "%s brick forge %d" % [kits[n], int(want[n][2])])
 		check(not tiers.station_near(1, "brick_forge", int(want[n][2]) + 1), "%s brick forge capped at %d" % [kits[n], int(want[n][2])])
 
+	tiers.report_position(1, spots[3] - Vector3(2.0, 0.0, 0.0))
+	check(not tiers.station_near(1, "blast_furnace", 1) and not tiers.station_near(1, "smelter", 1) and tiers._smelters.is_smelter(tiers._structures["large_forge"]) and tiers._structures["large_forge"].get("station", "") == "" and not tiers._structures["large_forge"].has("also"), "the old Blast furnace is the Advanced smelter: it smelts by itself and serves no crafting station (GOALS-REPAIR R4)")
+	tiers.report_position(1, spots[4] - Vector3(2.0, 0.0, 0.0))
+	check(tiers.station_near(1, "master_smithy", 1), "the Master smithy is its own body")
+	tiers.report_position(1, spots[2] - Vector3(2.0, 0.0, 0.0))
+	var brick_id: int = tiers.serving_station(1, "brick_forge", 2)
+	var brick_box = tiers._chests[int(tiers._items[brick_id]["struct"]["uid"])]
+	brick_box.clear_slot(0)
+	tiers.inventory_of(1).add(tiers.table.number_of("charcoal"), 20)
+	check(not tiers.station_near(1, "brick_forge", 1), "a Smithy with an empty fuel slot serves nothing, even with Charcoal in the pack (Dave 21 Nov 2026)")
+	_fuel_smithies(tiers, 5)
+	tiers.inventory_of(1).remove(tiers.table.number_of("charcoal"), tiers.inventory_of(1).count_of(tiers.table.number_of("charcoal")))
+	check(tiers.station_near(1, "brick_forge", 2) and not bool(tiers._items[brick_id]["struct"].get("lit", false)), "with Charcoal in its fuel slot it serves, and is never lit")
+
 	var steel: int = 0
 
 	for number in tiers.recipes.numbers():
 		if str(tiers.recipes.recipe(number)["id"]) == "steel_pickaxe":
 			steel = number
 
-	check(str(tiers.recipes.recipe(steel).get("station", "")) == "brick_forge" and int(tiers.recipes.recipe(steel).get("station_level", 1)) == 3, "steel needs the brick forge at level 3 (bronze forge 1, iron brick forge 2, steel brick forge 3)")
+	check(str(tiers.recipes.recipe(steel).get("station", "")) == "brick_forge" and int(tiers.recipes.recipe(steel).get("station_level", 1)) == 3, "steel work is at brick forge level 3: the Advanced and Master smithies (GOALS-REPAIR R4, master s2.7 item 6)")
 
-	# The Anvil beside the brick forge is the steel step: brick forge 2 plus one add-on kind is level 3. Beside a stone forge it adds nothing.
+	# Bellows and the Quenching trough beside the Smithy are old add-ons that never change its level. The standalone Bellows no longer speed the
+	# Smithy or save its fuel (GOALS-REPAIR R3; CATALOG_IMPLEMENTATION_PLAN s1: the standalone Smithy Bellows must not return), but a placed one
+	# still stands (old saves).
 	tiers.report_position(1, spots[2] - Vector3(2.0, 0.0, 0.0))
-	check(not tiers.station_near(1, "brick_forge", 3), "no anvil yet: the brick forge is level 2")
-	var anvil: int = tiers.table.number_of("iron_anvil_kit")
-	tiers.action(1, Net.ACT_ADMIN_GIVE, anvil, 0, 1, Vector3.ZERO)
-	tiers.place_item(1, anvil, spots[2] + Vector3(0.0, 0.0, 3.0), 0)   # outside the 2.5 m structure gap, inside the 5 m add-on reach
-	var anvils: int = 0
+
+	for addon in [["bellows", Vector3(0.0, 0.0, 3.0)], ["quenching_trough", Vector3(0.0, 0.0, -3.0)]]:
+		var addon_n: int = tiers.table.number_of(str(addon[0]))
+		tiers.action(1, Net.ACT_ADMIN_GIVE, addon_n, 0, 1, Vector3.ZERO)
+		tiers.place_item(1, addon_n, spots[2] + addon[1], 0)
+
+	var addons: int = 0
 
 	for id in tiers._items:
-		if tiers._items[id].has("struct") and str(tiers._items[id]["struct"]["kind"]) == "iron_anvil":
-			anvils += 1
+		if tiers._items[id].has("struct") and str(tiers._items[id]["struct"]["kind"]) in ["bellows", "quenching_trough"]:
+			addons += 1
 
-	check(anvils == 1, "the anvil stands beside the brick forge (%d)" % anvils)
-	check(tiers.station_near(1, "brick_forge", 3) and not tiers.station_near(1, "brick_forge", 4), "an anvil beside it makes the brick forge level 3, for steel")
-	check(tiers.station_near(1, "forge", 1) and not tiers.station_near(1, "forge", 2), "and it is still a level 1 forge for bronze, no higher")
-	tiers.report_position(1, spots[1] - Vector3(2.0, 0.0, 0.0))
-	tiers.action(1, Net.ACT_ADMIN_GIVE, anvil, 0, 1, Vector3.ZERO)
-	tiers.place_item(1, anvil, spots[1] + Vector3(0.0, 0.0, 3.0), 0)
-	check(not tiers.station_near(1, "forge", 2) and not tiers.station_near(1, "brick_forge", 1), "an anvil beside a stone forge does nothing: the stone forge never reaches iron")
+	check(addons == 2, "Bellows and a Quenching trough stand beside the Smithy (%d)" % addons)
+	check(tiers.station_near(1, "brick_forge", 2) and not tiers.station_near(1, "brick_forge", 3), "they do not raise the Smithy's level")
+	var smithy_id: int = tiers.serving_station(1, "brick_forge", 2)
+	var smithy_def: Dictionary = tiers._structures["blacksmithy"]
+	check(smithy_id >= 0 and not tiers._structures["bellows"].has("craft_speed") and not tiers._structures["bellows"].has("fuel_saving") and is_equal_approx(tiers._wheel_slow(1, {"station": "brick_forge", "station_level": 2}), 1.0), "standalone Bellows no longer make the Smithy faster or save its fuel")
+	# The fuel burns only while a craft is worked there: one Charcoal from the fuel slot for fuel_craft_s seconds of making (Dave 21 Nov 2026).
+	var box = tiers._chests[int(tiers._items[smithy_id]["struct"]["uid"])]
+	var before_fuel: int = box.counts[0]
+	tiers._items[smithy_id]["struct"].erase("fuel_left")
+	check(tiers._smithy_burn(smithy_id, 1.0) and box.counts[0] == before_fuel - 1 and is_equal_approx(float(tiers._items[smithy_id]["struct"].get("fuel_left", 0.0)), float(smithy_def["fuel_craft_s"]) - 1.0) and tiers._busy_ms.has(smithy_id), "a craft tick takes one Charcoal from the fuel slot, burns a second of it and sets the smithy working (the flare)")
+	check(tiers._smithy_burn(smithy_id, 1.0) and box.counts[0] == before_fuel - 1, "the next tick burns the same Charcoal")
+	tiers._busy_ms[smithy_id] = Time.get_ticks_msec() - tiers.BUSY_HOLD_MS - 10
+	tiers._settle_busy()
+	check(not tiers._busy_ms.has(smithy_id) and tiers._smithy_fuelled(tiers._items[smithy_id], smithy_def), "no craft worked there: back to its idle coals, still fuelled")
+	check(tiers._smithy_slot_refusal(smithy_def, tiers.table.number_of("stone"), 0) != "" and tiers._smithy_slot_refusal(smithy_def, tiers.table.number_of("coal"), 0) == "", "its fuel slot takes Coal or Charcoal only")
+	box.clear_slot(0)
+	check(tiers._smithy_add(smithy_def, box, tiers.table.number_of("coal"), 3) == 0 and box.numbers[0] == tiers.table.number_of("coal") and box.counts[0] == 3, "Coal put in goes to the fuel slot")
+	var stone_left: int = tiers._smithy_add(smithy_def, box, tiers.table.number_of("stone"), 2)
+	check(stone_left == 0 and box.numbers[0] == tiers.table.number_of("coal") and box.count_of(tiers.table.number_of("stone")) == 2, "anything else goes past the fuel slot")
+
+	# A placed standalone Bellows (an old save) still loads and takes down into its blueprint's materials, but can no longer be built (GOALS-REPAIR R3).
+	var bellows_id: int = -1
+
+	for id in tiers._items:
+		if tiers._items[id].has("struct") and str(tiers._items[id]["struct"]["kind"]) == "bellows":
+			bellows_id = int(id)
+
+	tiers.save()
+	tiers._finish_writer()
+	var reload = ItemsScript.new()
+	reload.send_full = func(_p, _b): pass
+	reload.send_slots = func(_p, _b): pass
+	reload.send_world_items = func(_p, _a, _r): pass
+	reload.ground_height = func(_x, _z): return 10.0
+	reload.setup(ItemTableScript.load_default(), dir2)
+	var reloaded: bool = false   # world ids are handed out again on load: found by kind
+
+	for id in reload._items:
+		reloaded = reloaded or (reload._items[id].has("struct") and str(reload._items[id]["struct"]["kind"]) == "bellows")
+
+	check(bellows_id >= 0 and reloaded, "a placed Bellows loads from the save")
+	reload._finish_writer()
+	var bellows_bp: Dictionary = tiers._blueprints.get(203, {})
+	check(not bellows_bp.is_empty() and str(bellows_bp.get("structure", "")) == "bellows" and not tiers._can_blueprint(1, tiers.inventory_of(1), bellows_bp), "the Bellows blueprint is kept for its take-down but cannot be built")
+	var hammer_n: int = tiers.table.number_of("iron_hammer")
+	tiers.action(1, Net.ACT_ADMIN_GIVE, hammer_n, 0, 1, Vector3.ZERO)
+	var bellows_count: int = 0
+
+	for c in bellows_bp.get("cost", []):
+		tiers.give(1, tiers.table.number_of(str(c[0])), int(c[1]))
+
+	tiers.action(1, Net.ACT_PLACE_BLUEPRINT, 203, 0, 0, spots[2] + Vector3(3.0, 0.0, 3.0))
+
+	for id in tiers._items:
+		bellows_count += 1 if tiers._items[id].has("struct") and str(tiers._items[id]["struct"]["kind"]) == "bellows" else 0
+
+	check(bellows_count == 1, "with a hammer and every material in the pack, the Bellows blueprint still builds nothing (%d Bellows)" % bellows_count)
+	var refund: Dictionary = {}
+
+	for c in bellows_bp.get("cost", []):
+		if str(c[0]) != "log":   # a log goes to the shoulder, not the pack
+			refund[str(c[0])] = tiers.inventory_of(1).count_of(tiers.table.number_of(str(c[0])))
+
+	tiers.report_position(1, tiers._items[bellows_id]["pos"] + Vector3(1.0, 0.0, 0.0))
+	tiers._take_down(1, tiers.inventory_of(1), bellows_id)
+	var back: bool = not tiers._items.has(bellows_id)
+
+	for c in bellows_bp.get("cost", []):
+		if refund.has(str(c[0])):
+			back = back and tiers.inventory_of(1).count_of(tiers.table.number_of(str(c[0]))) == int(refund[str(c[0])]) + int(c[1])
+
+	check(back, "taking it down gives back its materials (%s)" % str(bellows_bp.get("cost", [])))
 
 	_body_checks(tiers)
 
@@ -179,3 +264,16 @@ func _body_checks(tiers) -> void:
 	tiers._next_id += 1
 	check(tiers.station_near(1, "test_brick_forge", 3), "with its anvil it is level 3: steel")
 	check(not tiers.station_near(1, "test_forge", 2), "the anvil does not lift its also level")
+
+
+# Every placed smithy gets `count` Charcoal in its fuel slot (structures.json fuel_slot; Dave 21 Nov 2026).
+func _fuel_smithies(tiers, count: int) -> void:
+	for id in tiers._items:
+		var it: Dictionary = tiers._items[id]
+
+		if it.has("struct") and tiers._fuel_slot_kind(tiers._structures.get(str(it["struct"]["kind"]), {})) and tiers._chests.has(int(it["struct"].get("uid", -1))):
+			var box = tiers._chests[int(it["struct"]["uid"])]
+
+			if box.numbers[0] == 0:
+				box.numbers[0] = tiers.table.number_of("charcoal")
+				box.counts[0] = count

@@ -144,7 +144,79 @@
 		"sea_beet": {"seasons": ["summer"], "rows": [["beet_seeds", 1, 3]]},
 		"wild_radish": {"seasons": ["spring", "summer", "autumn"], "rows": [["radish_seeds", 1, 3]]},
 		"prickly_lettuce": {"seasons": ["spring", "summer", "autumn"], "rows": [["lettuce_seeds", 1, 3]]},
-		"flax": {"seasons": ["summer", "autumn"], "rows": [["flax_seeds", 1, 3]]}
+		"flax": {"seasons": ["summer", "autumn"], "rows": [["flax_seeds", 1, 3]]},
+		"fern": {"seasons": ["autumn"], "rows": [["fern_seed", 1, 2]]},
+		"heather": {"seasons": ["autumn"], "rows": [["heather_seed", 1, 2]]},
+		"reeds": {"seasons": ["summer", "autumn"], "rows": [["reeds_seed", 1, 2]]},
+		"nettle": {"seasons": ["summer"], "rows": [["nettle_seed", 1, 2]]},
+		"cotton_grass": {"seasons": ["summer"], "rows": [["cotton_grass_seed", 1, 2]]},
+		"alpine_flowers": {"seasons": ["summer"], "rows": [["alpine_flowers_seed", 1, 2]]},
+		"blueberry": {"seasons": ["summer"], "rows": [["blueberry_seed", 1, 2]]},
+		"lingonberry": {"seasons": ["autumn"], "rows": [["lingonberry_seed", 1, 2]]},
+		"cranberry": {"seasons": ["autumn"], "rows": [["cranberry_seed", 1, 2]]},
+		"cloudberry": {"seasons": ["summer"], "rows": [["cloudberry_seed", 1, 2]]},
+		"wild_strawberry": {"seasons": ["summer"], "rows": [["wild_strawberry_seed", 1, 2]]},
+		"crowberry": {"seasons": ["autumn"], "rows": [["crowberry_seed", 1, 2]]},
+		"wild_garlic": {"seasons": ["spring"], "rows": [["wild_garlic_seed", 1, 2]]},
+		"wild_thyme": {"seasons": ["autumn"], "rows": [["wild_thyme_seed", 1, 2]]},
+		"wild_mint": {"seasons": ["summer"], "rows": [["wild_mint_seed", 1, 2]]},
+		"sorrel": {"seasons": ["summer"], "rows": [["sorrel_seed", 1, 2]]},
+		"dandelion": {"seasons": ["autumn"], "rows": [["dandelion_seed", 1, 2]]},
+		"watercress": {"seasons": ["autumn"], "rows": [["watercress_seed", 1, 2]]},
+		"samphire": {"seasons": ["summer"], "rows": [["samphire_seed", 1, 2]]},
+		"wild_marjoram": {"seasons": ["summer"], "rows": [["wild_marjoram_seed", 1, 2]]},
+		"wild_sage": {"seasons": ["autumn"], "rows": [["wild_sage_seed", 1, 2]]},
+		"lavender": {"seasons": ["summer"], "rows": [["lavender_seed", 1, 2]]},
+		"yarrow": {"seasons": ["summer"], "rows": [["yarrow_seed", 1, 2]]},
+		"plantain": {"seasons": ["autumn"], "rows": [["plantain_seed", 1, 2]]},
+		"chamomile": {"seasons": ["summer"], "rows": [["chamomile_seed", 1, 2]]},
+		"comfrey": {"seasons": ["autumn"], "rows": [["comfrey_seed", 1, 2]]},
+		"st_johns_wort": {"seasons": ["summer"], "rows": [["st_johns_wort_seed", 1, 2]]},
+		"valerian": {"seasons": ["autumn"], "rows": [["valerian_seed", 1, 2]]},
+		"meadowsweet": {"seasons": ["summer"], "rows": [["meadowsweet_seed", 1, 2]]},
+		"feverfew": {"seasons": ["summer"], "rows": [["feverfew_seed", 1, 2]]},
+		"burdock": {"seasons": ["autumn"], "rows": [["burdock_seed", 1, 2]]},
+		"mugwort": {"seasons": ["summer"], "rows": [["mugwort_seed", 1, 2]]},
+		"arnica": {"seasons": ["summer"], "rows": [["arnica_seed", 1, 2]]},
+		"angelica": {"seasons": ["summer"], "rows": [["angelica_seed", 1, 2]]},
+		"aloe": {"seasons": ["summer", "autumn"], "rows": [["aloe_seed", 1, 2]]},
+		"foxglove": {"seasons": ["summer"], "rows": [["foxglove_seed", 1, 2]]},
+		"belladonna": {"seasons": ["autumn"], "rows": [["belladonna_seed", 1, 2]]},
+		"wolfsbane": {"seasons": ["summer"], "rows": [["wolfsbane_seed", 1, 2]]},
+		"henbane": {"seasons": ["summer"], "rows": [["henbane_seeds", 1, 2]]},
+		"owlpetal": {"seasons": ["summer"], "rows": [["owlpetal_seed", 1, 2]]},
+		"staunchmoss": {"seasons": ["summer", "autumn"], "rows": [["staunchmoss_seed", 1, 2]]},
+		"emberroot": {"seasons": ["winter"], "rows": [["emberroot_seed", 1, 2]]},
+		"wispbloom": {"seasons": ["autumn"], "rows": [["wispbloom_seed", 1, 2]]},
+		"hushfern": {"seasons": ["autumn"], "rows": [["hushfern_seed", 1, 2]]},
+		"heartroot": {"seasons": ["autumn"], "rows": [["heartroot_seed", 1, 2]]},
+		"tideglass_weed": {"seasons": ["summer"], "rows": [["tideglass_weed_seed", 1, 2]]},
+		"gloomthistle": {"seasons": ["autumn"], "rows": [["gloomthistle_seed", 1, 2]]},
+		"dewlantern": {"seasons": ["summer"], "rows": [["dewlantern_seed", 1, 2]]},
+		"marrowroot": {"seasons": ["autumn"], "rows": [["marrowroot_seed", 1, 2]]},
+		"riverbraid": {"seasons": ["autumn"], "rows": [["riverbraid_seed", 1, 2]]},
+		"brinebell": {"seasons": ["summer"], "rows": [["brinebell_seed", 1, 2]]},
+		"quenchbell": {"seasons": ["summer"], "rows": [["quenchbell_seed", 1, 2]]},
+		"whisperfern": {"seasons": ["autumn"], "rows": [["whisperfern_seed", 1, 2]]},
+		"duskmallow": {"seasons": ["autumn"], "rows": [["duskmallow_seed", 1, 2]]},
+		"tanglewort": {"seasons": ["summer", "autumn"], "rows": [["tanglewort_seed", 1, 2]]},
+		"stormreed": {"seasons": ["autumn"], "rows": [["stormreed_seed", 1, 2]]},
+		"truthsage": {"seasons": ["summer"], "rows": [["truthsage_seed", 1, 2]]},
+		"echo_moss": {"seasons": ["summer", "autumn"], "rows": [["echo_moss_seed", 1, 2]]},
+		"nightcrown": {"seasons": ["summer"], "rows": [["nightcrown_seed", 1, 2]]},
+		"mournbloom": {"seasons": ["autumn"], "rows": [["mournbloom_seed", 1, 2]]},
+		"pilgrims_cup": {"seasons": ["summer"], "rows": [["pilgrims_cup_seed", 1, 2]]},
+		"frostglass_orchid": {"seasons": ["winter"], "rows": [["frostglass_orchid_seed", 1, 2]]},
+		"sevenyear_lily": {"seasons": ["summer"], "rows": [["sevenyear_lily_seed", 1, 2]]},
+		"stillwater_lotus": {"seasons": ["summer"], "rows": [["stillwater_seeds", 1, 2]]},
+		"gloaming_star": {"seasons": ["summer", "autumn"], "rows": [["gloaming_star_seed", 1, 2]]},
+		"tidecrown": {"seasons": ["summer"], "rows": [["tidecrown_seed", 1, 2]]},
+		"thatch_grass": {"seasons": ["summer", "autumn"], "rows": [["thatch_grass_seed", 1, 2]]},
+		"dune_grass": {"seasons": ["autumn"], "rows": [["dune_grass_seed", 1, 2]]},
+		"cattail": {"seasons": ["autumn"], "rows": [["cattail_seed", 1, 2]]},
+		"tussock_sedge": {"seasons": ["autumn"], "rows": [["tussock_sedge_seed", 1, 2]]},
+		"moss_hummock": {"seasons": ["summer"], "rows": [["moss_hummock_seed", 1, 2]]},
+		"sea_holly": {"seasons": ["summer"], "rows": [["sea_holly_seed", 1, 2]]}
 	},
 	"by_species": {
 		"wild_rose": [],
@@ -164,6 +236,7 @@
 			["thatch", 2, 2],
 			["straw", 1, 3]
 		],
+		"dune_grass": [["plant_fibre", 1, 3]],
 		"heather": [["thatch", 4, 4]],
 		"fallen_log": [["stick", 3, 6], ["firewood", 1, 2]],
 		"hollow_log": [["stick", 2, 4], ["firewood", 1, 3]],
@@ -291,8 +364,43 @@
 			{"rows": [["firewood", 3, 5], ["kindling", 3, 5], ["stick", 2, 3]]}
 		]
 	},
+	"wood_tools": {
+		"note": "The tool in hand on wood (Dave 12 Nov 2026, TEST-013: \"the axe should be the same for wood ... I also would expect the pickaxe to give me more thatch, sticks, kindling from a tree and to take longer to cut it down\"). speed is how much of the work one blow does, by the held tool's class and items.json material: the blows a tree, a stump or a log cut needs are divided by it (a stone axe, 1.0, is the timing everything was tuned with). With an axe the logs, branches and stump yields are the tree's own whatever its material. A pickaxe is the wrong tool (Dave 12 Nov 2026: \"it would take a very very long time for a pickaxe to cut down a tree\"): about a seventh of a stone axe's speed, and it only tears the wood up (Dave 12 Nov 2026: \"using a pickaxe on a tree or a log will give you thatch, and kindling. not sticks or wood. if you break a log with a pickaxe it will just leave a pile of kindling\"): every pick blow on a tree, stump or log gives pick_splinters (kindling and thatch) and nothing else (no branches, sticks, firewood or bark); a log on the ground broken with one (1 / speed blows) leaves a pile of pick_log_kindling.big (a shoulder log) or .small (a small log) kindling on the ground; a stump broken up with a pick gives pick_log_kindling.small kindling. A tree a pick fells comes down in its logs as any felled tree does. Wood cannot dull or wear a pick (Dave 12 Nov 2026: \"a tree cant dull a pickaxe but it just takes much longer to cut\"; tool_wear pick tree, trunk and split 0). pick_log_kindling counts are a first guess for Dave to tune. 14 Nov 2026 (GOALS-REPAIR R2b): copper axe 1.25 and copper pick 0.175, between stone and bronze, PROVISIONAL (GOALS-REPAIR A-14).",
+		"speed": {
+			"axe": {
+				"stone": 1.0,
+				"copper": 1.25,
+				"bronze": 1.5,
+				"iron": 2.0,
+				"steel": 2.5
+			},
+			"pick": {
+				"stone": 0.15,
+				"copper": 0.175,
+				"bronze": 0.2,
+				"iron": 0.25,
+				"steel": 0.3
+			}
+		},
+		"pick_splinters": [
+			[
+				"kindling",
+				1,
+				2
+			],
+			[
+				"thatch",
+				1,
+				1
+			]
+		],
+		"pick_log_kindling": {
+			"small": 5,
+			"big": 10
+		}
+	},
 	"felling": {
-		"note": "Axe timing (balance, 31 Oct, for Dave to tune). The swing now takes swing_s_now seconds, it was swing_s_before, so every blow count was scaled by about swing_s_before / swing_s_now (0.55) to keep the real time per tree. Felling a standing tree: blows = round(tree_base + trunk_radius_m x tree_per_trunk_m) between tree_min and tree_max, divided by the fell skill. Cutting logs off a trunk: trunk.blows_per_log is a fraction (1.6: a log every 1 or 2 blows, 8 ft in about 1.7 s); trunk.branch_blows and small_blows and the stump numbers are scaled the same way. tools/ test_felling_time.gd checks the time per tree stays within 10 percent of the old one (old_* values).",
+		"note": "Axe timing (balance, 31 Oct, for Dave to tune). The swing now takes swing_s_now seconds, it was swing_s_before, so every blow count was scaled by about swing_s_before / swing_s_now (0.55) to keep the real time per tree. Felling a standing tree: blows = round(tree_base + trunk_radius_m x tree_per_trunk_m) between tree_min and tree_max, divided by the fell skill. The stump numbers are scaled the same way. tools/ test_felling_time.gd checks the time per tree stays within 10 percent of the old one (old_* values).",
 		"swing_s_before": 0.55,
 		"swing_s_now": 1.05,
 		"tree_base": 2.0,
@@ -305,11 +413,15 @@
 		"old_tree_per_trunk_m": 30.0,
 		"old_tree_min": 4,
 		"old_tree_max": 40,
-		"old_blows_per_log": 3,
-		"old_branch_blows": 3
+		"crush_note": "Dave 16 Nov 2026: a felled tree's logs \"should have collision so if they fall on anything they cause damage and roll off\". When the tree lands (server_items.gd _land_fall, FALL_S 1.5 s after the last blow) a player within the trunk's radius plus reach_m of its line, and within height_m of it, loses health (a large tree, small_health for a small one; never below 1, like a fall), and the first animal along the line takes animal damage (a small tree 0.3 of it). Each log is then a body in the log physics (rolling), so one that came down on a rock, a stump, a standing tree, a wall or another loose log is pushed off it and rolls away. Buildings have no hit points yet. PROVISIONAL (TREE_WOOD_TOOLS_DESIGN.md W-30), Dave tunes.",
+		"crush": {"reach_m": 0.5, "height_m": 2.5, "health": 40.0, "small_health": 10.0, "animal": 60.0}
 	},
+	"rolling_note": "Loose logs are rigid bodies in the engine's physics (Dave 16 Nov 2026: \"I just want normal physics to work for logs. they should fall and roll like normal logs would\"; TREE_WOOD_TOOLS_DESIGN.md s5 Rolling, W-31; server_items.gd _roll_tick, log_physics.gd). A shoulder log (items.json carry shoulder) or an item in also, dropped, landed from a felled tree, pushed or struck, is a capsule radius_m x girth across and 2 x half_len_m long, its mass its carry weight, on a copy of the ground with the rocks, stumps, trees, walls and logs within half_len_m + look_m of it (looked at every look_s). friction and bounce are the body's own. resist (by the ground's material) is its rolling resistance: the slope a log at rest stays on, and how fast a rolling one slows on flatter ground. A log slower than still_mps for still_s sleeps; one that stops in water deeper than water_m stays at the shore. A log more than rest_m off the ground and not on another log (a floor, a deck, a tunnel) is not moved. send_s: how often the players who see a moving log are told its pose. push: a walker touching a log (ACT_PUSH_LOG) pushes it with walk_n or sprint_n newtons for push_s seconds a message, at the touching point (off the middle it turns too), until it moves faster than walk_mps or sprint_mps; reach_m is how far from the walker the touch may be. PROVISIONAL (W-31), Dave tunes.",
+	"rolling": {"also": ["log"], "radius_m": 0.25, "half_len_m": 1.5, "friction": 0.8, "bounce": 0.1, "look_m": 4.0, "look_s": 0.25, "rest_m": 0.6, "water_m": 0.05, "still_mps": 0.15, "still_s": 0.4, "send_s": 0.1,
+		"push": {"walk_n": 100.0, "sprint_n": 170.0, "push_s": 0.1, "walk_mps": 2.5, "sprint_mps": 4.5, "reach_m": 2.5},
+		"resist": {"default": 0.3, "loam": 0.32, "silt": 0.32, "clay": 0.32, "alluvium": 0.32, "forest_humus": 0.35, "peat": 0.4, "mud": 0.45, "sand": 0.4, "beach_sand": 0.4, "volcanic_ash": 0.3, "stony_soil": 0.22, "gravel": 0.22, "rock": 0.12, "bare_rock": 0.12, "snow": 0.12, "glacial_ice": 0.03}},
 	"trunk": {
-		"note": "Working a felled trunk with the axe, one blow at a time: first the branches and leaves come off, then logs, with some bark and now and then seeds. The trunk is used up when its logs are gone. When the last log is gone the root ball comes up (roots). The seed roll gives the species' own fruit or nut from by_species when it has one, else a seed bundle.",
+		"note": "What a felled tree breaks into the moment it starts to fall (Dave 16 Nov 2026; server_items.gd _fall_pieces): a large tree its whole log_length_m logs (at most max_logs) and, in a heap beside its middle, per log a bark (bark_chance; thatch for thatch_bark species) and seed roll (seed_chance: the species' own fruit or nut from by_species when it has one, else a seed bundle; any further by_species rows, willow withies and Scots pine tar, each roll the same chance on their own, GA-02), its own bark once (bark_species) and the root ball (roots); the branches (branch, rolled branch_blows times) only when it has no crown litter. A small tree (small_tree) breaks into Firewood plus the small rows rolled small_blows times. Every tree's crown litter (crown_scatter) and seeds (felled_seeds) fall in its crown circle.",
 		"branch_blows": 2,
 		"branch": [
 			[
@@ -324,19 +436,24 @@
 			]
 		],
 		"crown_leaves": {"per_m": [5.5, 8.0], "fixed": ["scots_pine", "spruce", "balsam_fir"]},
-		"crown_leaves_note": "Hand cutting a trunk that did not break up by itself (and an old saved trunk) still gives its leaves this way: per_m leaves per metre of tree shared over the branch blows, in place of the branch row's leaves. A bare broadleaf (cover.gd DECIDUOUS) gives none in winter; the species in fixed (the conifers) give none either, sticks only (Dave 10 Nov 2026).",
+		"crown_leaves_note": "A felled tree with no crown litter (a crown circle) gives its leaves this way: per_m leaves per metre of tree shared over the branch blows, in place of the branch row's leaves. A bare broadleaf (cover.gd DECIDUOUS) gives none in winter; the species in fixed (the conifers) give none either, sticks only (Dave 10 Nov 2026).",
 		"crown_scatter": {"sticks_per_m": [1.6, 2.4], "leaves_per_m": [5.5, 8.0], "spots": {"stick": 8, "leaves": 10}, "crown_from": 0.5, "min_radius_m": 1.5},
 		"crown_scatter_note": "Dave 10 Nov 2026: when a tree falls, its upper half lands on a circle the size of its canopy (cover.gd crown_radius), flattens the grass there and drops its sticks and leaves all over that circle, about 30 sticks and 100 leaves for a mid-size tree (15 m), by the tree's height: sticks_per_m and leaves_per_m per metre of tree. Conifers (crown_leaves.fixed) and bare broadleaves in winter drop sticks only. spots: how many little heaps each is spread over. crown_from: the share of the length from the butt where the crown begins (0.5 = the upper half); the circle's centre is the middle of that part. The trunk's own split then gives no branch row (no second lot of sticks and leaves); hand cutting a trunk that did not break up by itself still does.",
-		"leaves_note": "Dave 4 Nov 2026 (QA claude-leanto-cost): a lean-to takes about 200 leaves, so a felled crown gives 25 to 40 a branch blow (two blows: about 65 a tree, three trees for a lean-to) and an axed bush 10 to 20.",
+		"leaves_note": "A lean-to takes 60 leaves (blueprints.json bp 25: 20 sticks, 60 leaves, 6 twine). A felled crown gives 25 to 40 leaves a branch blow and scatters about 100 over its fall circle (crown_scatter), and an axed bush gives 10 to 20; conifers and bare winter broadleaves give none. The first note here (Dave 4 Nov 2026, QA claude-leanto-cost) said 200 leaves; the cost has since fallen to 60.",
 		"bark_chance": 0.55,
+		"bark_species_note": "GA-01 (recovery 13 Nov 2026); PROVISIONAL (GOALS-REPAIR A-2): once per felled oak is an assumption on Dave's behalf, not an approved rule (the amount is the existing harvest_yield, 3, with no scaling): a felled tree of these species gives its harvest_yield row once (oak: tannin_bark 3, no size scaling), in the heap beside its logs as it comes down (Dave 16 Nov 2026). The standing tree is never harvested.",
+		"bark_species": ["oak"],
 		"thatch_bark_note": "Birch and the softwoods give thatch-worthy bark instead of plain bark (Dave 24 Oct): per blow chance and a count range, keyed by tree species.",
 		"thatch_bark": {"birch": {"chance": 0.5, "count": [3, 5]}, "spruce": {"chance": 0.3, "count": [2, 4]}, "balsam_fir": {"chance": 0.3, "count": [2, 4]}, "scots_pine": {"chance": 0.3, "count": [2, 4]}},
+		"felled_seeds": {"count": [1, 5], "by_species": {"oak": "oak_seed", "beech": "beech_seed", "birch": "birch_seeds", "scots_pine": "pine_cones", "spruce": "spruce_cones", "alder": "alder_cones", "willow": "willow_seeds", "coconut_palm": "coconut_palm_seed", "tropical_hardwood": "hardwood_seeds", "acacia": "acacia_pods", "mangrove": "mangrove_propagules", "rowan": "rowan_seed", "wild_apple": "wild_apple_seed", "wild_pear": "wild_pear_seed", "wild_cherry": "wild_cherry_seed", "sweet_chestnut": "sweet_chestnut_seed", "walnut": "walnut_seed", "date_palm": "date_palm_seed", "mirrorbark": "mirrorbark_seed", "wardpine": "wardpine_seed", "hearthwood": "hearthwood_seed", "everember": "everember_seed", "witness_tree": "witness_tree_seed", "balsam_fir": "fir_cones", "maple": "maple_keys", "apple_early": "apple_early_seed", "apple_summer": "apple_summer_seed", "apple_autumn": "apple_autumn_seed", "apple_keeping": "apple_keeping_seed", "apple_cooking": "apple_cooking_seed", "pear_summer": "pear_summer_seed", "pear_autumn": "pear_autumn_seed", "pear_winter": "pear_winter_seed", "sour_cherry": "sour_cherry_seed", "plum": "plum_seed", "damson": "damson_seed", "quince": "quince_seed", "medlar": "medlar_seed", "fig": "fig_seed", "olive": "olive_seed", "pomegranate": "pomegranate_seed", "mango": "mango_seed", "orange": "orange_seed", "lemon": "lemon_seed", "wild_apple_sweet": "wild_apple_sweet_seed"}},
+		"felled_seeds_note": "Dave 14 Nov 2026: \"Trees should drop some seeds when cut down. a random number of seeds between 1 and 5 seeds per tree.\" A felled tree drops count of its by_species seed over its crown circle when it breaks up (credited to the feller, like its logs), or into the hand cutter's pack with the first axe blow on the branches. Every tree has its own seed item, named the tree plus \"seed\" (Dave 14 Nov 2026: all trees follow the same rules); its fruit or nut is food, not a seed. The hoe's Garden list plants any of them in open ground as a sapling that grows like wild regrowth. The fantasy trees drop theirs too. PROVISIONAL.",
 		"seed_chance": 0.28,
-		"blows_per_log": 1.6,
-		"log_length_m": 2.44,
+		"log_length_m": 3.0,
 		"max_logs": 20,
 		"small_blows": 2,
-		"small": [["firewood", 2, 3], ["kindling", 3, 6], ["stick", 3, 6]],
+		"small": [["kindling", 3, 6], ["stick", 3, 6]],
+		"small_tree_note": "A felled tree is SMALL when its trunk is shorter than max_length_m or its drawn butt radius is under min_radius_m (TREE_WOOD_TOOLS_DESIGN.md s1.1, s5; Dave 15 Nov 2026: a small tree breaks directly into Firewood, a large one into logs). It breaks entirely into Firewood, firewood_per_m a metre of trunk rounded, clamped to the firewood range (the largest, 24, is 18 kg at 0.75 kg a piece: carryable with an axe, food and water), plus the kindling and sticks of the small rows, no logs; its seeds and crown litter drop as for any tree. DELEGATED, tunable.",
+		"small_tree": {"max_length_m": 8.0, "min_radius_m": 0.12, "firewood_per_m": 3.0, "firewood": [2, 24]},
 		"roots": [
 			"tree_roots",
 			1,
@@ -445,15 +562,7 @@
 		}
 	},
 	"tool_wear": {
-		"note": "Tool wear tuning (job 74). Each use of a tool adds per_use[tool class][kind of work] to its wear (1 when not listed); the tool breaks at its items.json durability and a repair gives back repair_restores of that durability for the items.json repair materials. Kinds of work: gather (a plant yield that needs the tool), rock (stone from an outcrop), tree (one blow on a standing tree), trunk (one blow on a felled trunk), split (one log at the chopping block), dig (one spade dig of the ground). Read the sheet: /mnt/project-files/items/TOOL_WEAR.md (tools/tool_wear_sheet.py rewrites it from this data).",
-		"repair_restores": 0.5,
-		"hone": {
-			"note": "Whetstone hand repair (Part C plan 4, 10 Nov 2026): R on an edged tool (items.json edge: true) with a whetstone in the pack hones it with no materials, winning back restores of its durability but never past up_to of it. Each hone wears the whetstone like one use (per_use whetstone.hone, 1), and it is kept. Past up_to, or with no whetstone, R takes the tool's repair materials as before.",
-			"item": "whetstone",
-			"restores": 0.25,
-			"up_to": 0.75,
-			"say_hone": "You hone the %s."
-		},
+		"note": "Tool wear tuning (job 74; catalog Phase 2c). Each use of a tool adds per_use[tool class][kind of work] to its wear (1 when not listed, 0 for work that cannot wear that tool; whetstone.sharpen is one tool sharpened); the tool breaks at its current maximum durability (the instance max_d, else items.json durability). A row with no repair is gone when it breaks; any other stays broken until a repair at its repair_station with the items.json repair materials sets its wear back to 0. Sharpness, sharpening and the smithing variants: data/items/smithing.json. Kinds of work: gather (a plant yield that needs the tool), rock (stone from an outcrop), tree (one blow on a standing tree), trunk (one blow on a stump; the kind is named for the old felled trunk), split (one log at the chopping block), dig (one shovel dig of the ground). Read the sheet: /mnt/project-files/items/TOOL_WEAR.md (tools/tool_wear_sheet.py rewrites it from this data).",
 		"per_use": {
 			"axe": {
 				"gather": 1,
@@ -462,17 +571,30 @@
 				"trunk": 1,
 				"split": 1
 			},
+			"pick": {
+				"tree": 0,
+				"trunk": 0,
+				"split": 0
+			},
 			"knife": {
 				"gather": 1
 			},
-			"spade": {
+			"shovel": {
 				"gather": 1,
 				"dig": 1
 			}
 		}
 	},
+	"swath": {
+		"note": "Sickle and scythe (Dave 18 Nov 2026, BugsList_Current.md entry 7: \"the sickle should be faster than picking grass by hand so it can gather everything in a 1.5 circle instantly one swing. the scythe gathers everything in a 3m circle instantly\"; \"its radius\"; \"they only gather grasses or destroy bushes. they do not pickup bushes like a pickaxe. and they do not pick berries. they only pick grasses and grains like tall grass, wheet, barley, they are great for harvesting a garden full of grains\"). One left-click swing with the tool in hand, around the player within radius_m (tool_<tool class>; the key is not the bare class name, which validate_items reads as the retired Stone sickle item): every grass in `grasses` is gathered as E would gather it, its yields times yield[material] (the pickaxe-on-rock pattern: higher tiers give more per swing; PROVISIONAL SW-2); every bush (flora kind shrub) is cut down and gives nothing (PROVISIONAL SW-3: no sticks, leaves or berries); every ripe crop in `crops` on a bed is harvested at the full yield (unripe grain stays, PROVISIONAL SW-4); everything else (berries, herbs, flowers, other crops, trees) is left alone. One swing every swing_ms (the scythe is the heavier tool, exertion.json tool_effort; PROVISIONAL SW-5) and one wear per swing (tool_wear swath). The ground grass in the circle lies down as trodden grass does (the client's look only).",
+		"tool_sickle": {"radius_m": 1.5, "swing_ms": 450},
+		"tool_scythe": {"radius_m": 3.0, "swing_ms": 1100},
+		"yield": {"copper": 1.5, "bronze": 2.0, "iron": 2.5, "steel": 3.0},
+		"grasses": ["tall_grass", "thatch_grass", "dune_grass", "cotton_grass", "reeds", "stormreed"],
+		"crops": ["wheat", "barley", "oats", "rye"]
+	},
 	"tool_rules": {
-		"note": "Natural yields of a picked plant need a tool when their item id ends with one of these words (Dave 2026-10-20: roots and bulbs need a spade, bark, gum, sap and resin a stone knife, wood an axe; berries, leaves, flowers and herbs are by hand). The tool must be in the pack. Fixed drops above (fibre, sticks) are always by hand.",
+		"note": "Natural yields of a picked plant need a tool when their item id ends with one of these words (Dave 2026-10-20: roots and bulbs need a shovel, bark, gum, sap and resin a stone knife, wood an axe; berries, leaves, flowers and herbs are by hand). The tool must be in the pack. Fixed drops above (fibre, sticks) are always by hand.",
 		"suffixes": {
 			"axe": [
 				"wood",
@@ -487,7 +609,7 @@
 				"oil",
 				"tar"
 			],
-			"spade": [
+			"shovel": [
 				"roots",
 				"bulbs",
 				"tubers"
@@ -496,7 +618,7 @@
 		"tool_names": {
 			"axe": "stone axe",
 			"knife": "stone knife",
-			"spade": "spade"
+			"shovel": "shovel"
 		}
 	},
 	"dig_fell": {
@@ -505,6 +627,11 @@
 		"support_r_base": 1.0,
 		"depth_m": 1.0,
 		"search_m": 4.0,
+		"stump_note": "A stump dug out from under breaks into what chopping it gives and the pieces fall to the ground (Dave 19 Nov 2026: 'the stump can just break into its components and fall'). An undermined tree's stump always breaks when the tree lands; any other stump within search_m of a dig breaks when the share of ground left in the disc under it (stump_support_r_per_radius x its radius + stump_support_r_base wide, stump_depth_m deep) is under stump_fall_below. Stumps loaded from a save are checked once, 25 a slow tick. Values provisional (Dave to tune after play).",
+		"stump_support_r_per_radius": 2.0,
+		"stump_support_r_base": 0.5,
+		"stump_depth_m": 0.6,
+		"stump_fall_below": 0.35,
 		"fall_below": {
 			"conifer": 0.45,
 			"default": 0.35,

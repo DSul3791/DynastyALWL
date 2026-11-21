@@ -1,6 +1,11 @@
 extends Node
 
+const GitStamp := preload("res://src/debug/git_stamp.gd")
+const PlayServer := preload("res://src/shared/play_server.gd")
+const JoinAddress := preload("res://src/client/join_address.gd")
 const RUN_NOTE := "user://server_run.json"
+const STOP_NOTE := "user://server_stop.json"   # asks the server Play started to close (terrain_server._stop_if_asked)
+const STOP_WAIT_MSEC := 60000                   # how long Play waits for that server to save and let go of the port
 
 
 func _ready() -> void:
@@ -24,6 +29,10 @@ func _launch_role(role: String) -> void:
 			)
 
 		"play":
+			if JoinAddress.client_only() and not AppConfig.has_flag("test") and AppConfig.get_command_line_value("server", "") == "":
+				_client_pages()
+				return
+
 			# The title page (scenes/title, Dave's paintings) opens first, once per launch: New Game goes to the creator, Continue to the character select page.
 			# After that (back here after a death) the character select page is the first page; it sends a player with no characters to the creator, and
 			# both come back here with creator_done set once a character is chosen.
@@ -34,6 +43,8 @@ func _launch_role(role: String) -> void:
 					get_tree().change_scene_to_file("res://scenes/title/title.tscn")
 				else:
 					get_tree().change_scene_to_file("res://scenes/character_select/character_select.tscn")
+			elif JoinAddress.client_only():
+				get_tree().change_scene_to_file("res://scenes/terrain_client/terrain_client.tscn")   # --test or --server=: straight in, never a server of its own
 			else:
 				_host_and_play()
 
@@ -46,6 +57,24 @@ func _launch_role(role: String) -> void:
 			push_error("Unknown launcher role: " + role)
 
 
+# "play" in a client-only build (the testers' download; docs/design/SERVER_PICK_PAGE.md): never a server of its own. The pages, in order:
+# title (once per launch), the server pick page, the character page (or the creator when there is none), then the game. Back here after a
+# death, the server is still chosen and the dead character is gone, so the character page comes next. --to-servers (Back to servers from the joining screen,
+# which starts the game again) skips the title.
+func _client_pages() -> void:
+	if AppConfig.has_flag("to-servers") and not Engine.has_meta("title_done"):
+		Engine.set_meta("title_done", true)
+
+	if not Engine.has_meta("title_done"):
+		get_tree().change_scene_to_file("res://scenes/title/title.tscn")
+	elif not Engine.has_meta("server_picked"):
+		get_tree().change_scene_to_file("res://scenes/server_pick/server_pick.tscn")
+	elif not Engine.has_meta("creator_done"):
+		get_tree().change_scene_to_file("res://scenes/character_select/character_select.tscn")
+	else:
+		get_tree().change_scene_to_file("res://scenes/terrain_client/terrain_client.tscn")
+
+
 # "play": starts a terrain server for this world in the background (no
 # window; it stops when this game closes) and joins it.
 func _host_and_play() -> void:
@@ -53,6 +82,9 @@ func _host_and_play() -> void:
 
 	if _port_is_taken(port):
 		await _clear_old_server(port)
+
+	if _port_is_taken(port):
+		await _replace_other_build(port)
 
 	if _port_is_taken(port):
 		# A second server on the same UDP port would die at once and leave the player talking to the old one (maybe an older build).
@@ -67,8 +99,9 @@ func _host_and_play() -> void:
 		"res://scenes/terrain_server/terrain_server.tscn",
 		"--",
 		"--quit-when-empty",
-		# The server shares this PC with the game: half the cores (it used all but one, 11 threads on 12 cores, and the game froze for seconds).
-		"--threads=%d" % maxi(OS.get_processor_count() >> 1, 2),
+		# The server shares this PC with the game: half the cores (it used all but one, 11 threads on 12 cores, and the game froze for seconds);
+		# half of the CPUs this process may use when a container limits them (cpu_budget.gd; the same as before on a PC).
+		"--threads=%d" % maxi(load("res://src/shared/cpu_budget.gd").usable() >> 1, 2),
 	])
 
 	var pid: int = OS.create_process(OS.get_executable_path(), arguments)
@@ -83,8 +116,7 @@ func _host_and_play() -> void:
 
 
 # The port is held. Read the note the old server left (server_run.json): one that is closing is waited for (it stops answering
-# blocks while it saves). Nothing is killed: a server from another checkout is named by the join screen (the welcome carries
-# its build id) and the player closes the game and presses Play again.
+# blocks while it saves). Nothing is killed; a running server of other code is asked to close by _replace_other_build.
 func _clear_old_server(port: int) -> void:
 	var note: Dictionary = {}
 
@@ -104,6 +136,44 @@ func _clear_old_server(port: int) -> void:
 		waited += 500
 
 	print("Play: old server on port %d %s after %d ms" % [port, "gone" if not _port_is_taken(port) else "still there", waited])
+
+
+# The port is held by a server Play started earlier from other code (Dave 17 Nov 2026: he pulled dev, pressed Play and joined the
+# server from before the pull, so the camp was not there). Play asks that server to close (STOP_NOTE names its process; only that
+# process obeys, and only a server Play started, "stop": 1 in its note), waits for it to save and let go of the port, then starts
+# one on this code. Nothing is killed: a server that does not close is joined and the join screen says it is out of date.
+func _replace_other_build(port: int) -> void:
+	var note: Dictionary = _read_note(RUN_NOTE)
+	var mine: String = GitStamp.short_commit()
+	var theirs: String = str(note.get("commit", ""))
+
+	if not PlayServer.should_ask_stop(note, port, mine, OS.is_process_running(int(note.get("pid", 0)))):
+		return
+
+	var file: FileAccess = FileAccess.open(STOP_NOTE, FileAccess.WRITE)
+
+	if file == null:
+		return
+
+	file.store_string(JSON.stringify({"pid": int(note["pid"]), "commit": mine}))
+	file.close()
+	print("Play: the server on port %d (process %d) runs commit %s, this game is %s; asking it to save and close" % [port, int(note["pid"]), theirs, mine])
+	var waited: int = 0
+
+	while _port_is_taken(port) and waited < STOP_WAIT_MSEC:
+		if not FileAccess.file_exists(STOP_NOTE) and str(_read_note(RUN_NOTE).get("state", "")) == "running":
+			break   # taken and refused (players are on it): join it, the join screen says it is out of date
+
+		await get_tree().create_timer(0.5).timeout
+		waited += 500
+
+	DirAccess.remove_absolute(STOP_NOTE)   # a request left behind must never close a later server that gets the same process number
+	print("Play: old server on port %d %s after %d ms" % [port, "closed" if not _port_is_taken(port) else "still there", waited])
+
+
+func _read_note(path: String) -> Dictionary:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+	return parsed if parsed is Dictionary else {}
 
 
 # True when something already holds this UDP port (the server's ENet host binds it).

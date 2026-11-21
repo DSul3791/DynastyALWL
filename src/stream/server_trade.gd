@@ -5,13 +5,18 @@ extends RefCounted
 # for every item (a multiple of its value), so the server sends two multipliers and the client prices what it shows; the server
 # prices every deal itself.
 
+const SmithingRules := preload("res://src/shared/smithing_rules.gd")
+const Attributes := preload("res://src/shared/attributes.gd")
 const TALK_RANGE_M := 4.5
+const PURSE_EMPTY_SAY := "I've bought all I can for now. Come back in a little while."   # Dave's words, playtest 12 Nov 2026 (TEST-003)
 
 var items                       # ServerItems
 var npcs                        # ServerNpcs
 var send_shop: Callable         # (peer, npc id, title, stock ids, buy_milli, sell_milli, buys kinds, demand ids, demand_milli, stock counts, supply_milli, trader purse)
 var game_seconds: Callable      # () -> game clock seconds (restocking runs on game days); unset: the real clock x 24
 var now: Callable               # () -> seconds; tests set it
+var refuse: Callable            # (peer, npc id, strict) -> "" or what a goblin tribe member says instead of trading (server_tribes.gd refuse; may be invalid)
+var dealt: Callable             # (peer, npc id) after a completed purchase or sale (server_tribes.gd note_deal: standing with the tribe; may be invalid)
 var _shops: Dictionary = {}
 var _sold: Dictionary = {}      # "npc|item" -> [sales (float), time] the trader's weariness of that item
 var _state: Dictionary = {}     # npc id -> {"stock": {item id: float on the shelf}, "purse": float copper, "t": game seconds of the last refresh}
@@ -124,7 +129,7 @@ func wanted_order(peer: int, npc_id: String) -> String:
 		var number: int = items.table.number_of(str(need[0]))
 		words.append("%d %s" % [int(need[1]), items.table.sentence_name(number)])
 
-		if items.count_for(peer, str(need[0])) < int(need[1]):
+		if items.count_for(peer, str(need[0]), true) < int(need[1]):   # a Maturing stack is not what he asked for (master s3.14)
 			short = true
 
 	var pay: int = int(order.get("pay", 0))
@@ -133,7 +138,7 @@ func wanted_order(peer: int, npc_id: String) -> String:
 		return "Today I want %s. I pay %s." % [" and ".join(words), items._coin_words(pay)]
 
 	for need in order["needs"]:
-		items.take_from(peer, str(need[0]), int(need[1]))
+		items.take_from(peer, str(need[0]), int(need[1]), true)
 
 	items.add_coins(peer, pay, "trade")
 	items.add_rep(peer, npc_id, int(_shops[npc_id]["wanted_orders"].get("rep", 1)))
@@ -194,8 +199,8 @@ func multipliers(peer: int, npc_id: String) -> Dictionary:
 		if str(ranks[i]["name"]) == word:
 			rank_index = i
 
-	var charisma: float = float(items.attributes_of(peer).get("charisma", 0.0))
-	var shift: float = float(rank_index) * float(c.get("rep_step", 0.04)) + charisma * float(c.get("charisma_step", 0.01)) + float(items.luck_of(peer)) * float(c.get("luck_strength", 0.04)) * float(c.get("luck_share", 0.25))
+	var charisma: float = Attributes.offset(float(items.attributes_of(peer).get("charisma", Attributes.NEUTRAL)))   # attributes are 0 to 100, 50 average: the steps are per 5 points
+	var shift: float = float(rank_index) * float(c.get("rep_step", 0.04)) + charisma * float(c.get("charisma_step", 0.01)) + Attributes.offset(items.luck_of(peer)) * float(c.get("luck_strength", 0.04)) * float(c.get("luck_share", 0.25))
 	var sell: float = maxf(float(c.get("sell_markup", 1.3)) - shift, float(c.get("min_sell", 1.05)))
 	var buy: float = minf(float(c.get("buy_discount", 0.55)) + shift, float(c.get("max_buy", 0.9)))
 	return {"pay": sell, "get": buy, "shift": shift}
@@ -236,6 +241,14 @@ func price_to_get(value: int, mult: float, life: float = 1.0) -> int:
 func open(peer: int, npc_id: String) -> bool:
 	if not has_shop(npc_id) or not _near(peer, npc_id) or not send_shop.is_valid():
 		return false
+
+	var no: String = str(refuse.call(peer, npc_id, true)) if refuse.is_valid() else ""
+
+	if no != "":
+		items._say(peer, no)
+		return false
+
+	items.redenominate(peer)   # at a trader the purse becomes the fewest coins (Dave, 14 Nov 2026); sent again after each deal
 
 	var m: Dictionary = multipliers(peer, npc_id)
 	var shop: Dictionary = _shops[npc_id]
@@ -283,8 +296,16 @@ func _near(peer: int, npc_id: String) -> bool:
 
 # kind 0 buy: a = index into the shop's stock list as opened; kind 1 sell: a = pack slot. Returns a short text for the player.
 func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
-	if not has_shop(npc_id) or not _near(peer, npc_id):
+	if not has_shop(npc_id):
 		return ""
+
+	if not _near(peer, npc_id):   # out of talk range with the window still open: say so rather than nothing (TEST-003). Usually the player's distance: Hob is held at his post by npcs.json test_hold unless the NPC AI is down (unwell: he sits)
+		return "You are too far from %s to trade. Close this window and go closer." % str(npcs.npcs.get(npc_id, {}).get("name", "the trader"))
+
+	var no: String = str(refuse.call(peer, npc_id, false)) if refuse.is_valid() else ""
+
+	if no != "":
+		return no   # a goblin tribe turned on this player, or the trader went into its cave, with the window still open
 
 	count = clampi(count, 1, 999)
 	var inv = items.inventory_of(peer)
@@ -332,9 +353,13 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 		items._gain_source = "trade"
 		items.give(peer, number, count)
 		items._gain_source = items.SRC_PICKUP
+		items._goal_event(peer, "bought")   # ADD-19: a purchase from a trader's shelf
+
+		if dealt.is_valid():
+			dealt.call(peer, npc_id)
 		return "Bought %d %s for %s." % [count, items.table.sentence_name(number), items._coin_words(each * count)]
 
-	if a < 0 or a >= inv.SLOTS or inv.numbers[a] == 0:
+	if a < 0 or a >= inv.slot_count or inv.numbers[a] == 0:
 		return ""
 
 	if kind == 2:
@@ -347,8 +372,13 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	if not kinds.has("all") and not kinds.has(str(entry.get("kind", ""))):
 		return "The trader does not buy that."
 
+	if inv.inst_of(a).has("bag"):   # a sale ends the item, so a bag that holds anything is refused, never sold with its contents (master s3.9 rule 3)
+		return "Empty the bag first."
+	if inv.maturing_at(a):   # a sealed batch is sold only once Ready (master s3.14 [D14])
+		return "That is still maturing."
+
 	var life: float = 1.0
-	var durability: int = int(entry.get("durability", 0))
+	var durability: int = inv.max_durability(a)
 
 	if durability > 0:
 		life = clampf(1.0 - float(inv.wear[a]) / float(durability), 0.0, 1.0)
@@ -358,7 +388,7 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 
 	count = mini(count, inv.counts[a])
 	var item_id: String = items.table.id_of(number2)
-	var value: int = int(entry.get("value", 0))
+	var value: int = int(round(float(entry.get("value", 0)) * SmithingRules.value_mult(inv.inst_of(a))))   # craftsmanship raises it (master s2.9 item 3)
 	var lot: int = maxi(int(entry.get("sell_lot", 1)), 1)   # Dave 1 Nov: a stone is a fifth of a copper; sold in lots of sell_lot (5), one price per lot, a single stone pays nothing
 	var brule: Dictionary = _buy_rule(npc_id, item_id)
 
@@ -368,7 +398,7 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 		count = mini(count, buy_room(npc_id, item_id))
 
 		if count <= 0:
-			return "He has all the %s he wants today." % (items.table.sentence_name(number2))
+			return "He has all the %s he wants for now. Come back in a little while." % (items.table.sentence_name(number2))
 
 	var left_over: int = count % lot if lot > 1 else 0
 
@@ -400,8 +430,8 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 
 	paid_for -= paid_for % lot
 
-	if paid_for <= 0:
-		return "He cannot pay for that just now." if till < price_to_get(value, float(m["get"]), life) else "That is worth nothing."
+	if paid_for <= 0:   # his purse is spent (it refills purse_regen_per_day a game day, one real hour)
+		return PURSE_EMPTY_SAY if till < price_to_get(value, float(m["get"]), life) else "That is worth nothing."
 
 	count = paid_for
 	st2["purse"] = float(st2["purse"]) - float(total)
@@ -420,9 +450,7 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	inv.counts[a] -= count
 
 	if inv.counts[a] <= 0:
-		inv.numbers[a] = 0
-		inv.counts[a] = 0
-		inv.wear[a] = 0
+		inv.clear_slot(a)
 
 	items._gain_quiet = true
 	items._send_changes(peer, inv, before)
@@ -430,6 +458,9 @@ func deal(peer: int, npc_id: String, kind: int, a: int, count: int) -> String:
 	items._dirty = true
 	items.add_coins(peer, total, "trade")
 	items._goal_event(peer, "sold")   # the starter goal "Sell to Hob"
+
+	if dealt.is_valid():
+		dealt.call(peer, npc_id)
 	var lot_note: String = " %d left, he buys %ss %d at a time." % [left_over, items.table.sentence_name(number2), lot] if left_over > 0 else ""
 	return "Sold %d %s for %s.%s" % [count, items.table.sentence_name(number2), items._coin_words(total), lot_note]
 
@@ -444,8 +475,9 @@ func _sell_extras(peer: int, npc_id: String, inv) -> String:
 	var buys: Array = _shops[npc_id].get("buys", [])
 	var before_coins: int = items.coins_of(peer)
 	var sold: int = 0
+	var refused: String = ""
 
-	for slot in range(inv.SLOTS):
+	for slot in range(inv.slot_count):
 		if inv.numbers[slot] == 0:
 			continue
 
@@ -459,23 +491,27 @@ func _sell_extras(peer: int, npc_id: String, inv) -> String:
 			continue
 
 		var number_before: int = inv.counts[slot]
+		var said: String = deal(peer, npc_id, 1, slot, 999)
 
-		if deal(peer, npc_id, 1, slot, 999) != "" and (inv.numbers[slot] == 0 or inv.counts[slot] < number_before):
+		if said != "" and (inv.numbers[slot] == 0 or inv.counts[slot] < number_before):
 			sold += 1
+		elif said == PURSE_EMPTY_SAY or said.contains("Come back in a little while"):
+			refused = said
 
-	if sold == 0:
-		return "You have no extra stuff he will buy."
+	if sold == 0:   # a spent purse or a day's limit is said as itself, not as "nothing to sell" (TEST-003)
+		return refused if refused != "" else "You have no extra stuff he will buy."
 
 	return "Sold %d kinds of extra stuff for %s." % [sold, items._coin_words(items.coins_of(peer) - before_coins)]
 
 
-# What a smith asks to mend the tool in a pack slot (0 = nothing to mend).
-func repair_cost(number: int, item_wear: int, pay_mult: float) -> int:
+# What a smith asks to mend the tool in a pack slot (0 = nothing to mend, or a disposable tool: master s2.2 rules 1-3). `most` is its current
+# maximum durability (Inventory.max_durability; 0 = the row's).
+func repair_cost(number: int, item_wear: int, pay_mult: float, most: int = 0) -> int:
 	var entry: Dictionary = items.table.entry(items.table.id_of(number))
-	var durability: int = int(entry.get("durability", 0))
+	var durability: int = most if most > 0 else int(entry.get("durability", 0))
 	var value: int = int(entry.get("value", 0))
 
-	if durability <= 0 or item_wear <= 0 or value <= 0:
+	if durability <= 0 or item_wear <= 0 or value <= 0 or SmithingRules.disposable(entry):
 		return 0
 
 	var used: float = clampf(float(item_wear) / float(durability), 0.0, 1.0)
@@ -486,7 +522,7 @@ func _repair_deal(peer: int, npc_id: String, inv, slot: int, pay_mult: float) ->
 	if not bool(_shops[npc_id].get("repairs", false)):
 		return "He does not mend tools."
 
-	var cost: int = repair_cost(inv.numbers[slot], inv.wear[slot], pay_mult)
+	var cost: int = repair_cost(inv.numbers[slot], inv.wear[slot], pay_mult, inv.max_durability(slot))
 
 	if cost <= 0:
 		return "That needs no mending."

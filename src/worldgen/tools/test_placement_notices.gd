@@ -66,6 +66,7 @@ func _init() -> void:
 	items.send_notice = func(_p, t): said.append(str(t))
 	items.ground_height = func(_x, _z): return ground[0]
 	items.setup(ItemTableScript.load_default(), dir)
+	items._goals_loaded = true   # no goals here: a goal's own coins or line ("Goal done" for a bed) would change what this test checks; test_goals covers goals (protocol 119 lifted the `after` lock)
 	items.peer_connected_hello(1, "placenotice01")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items.vitals_of(1)["weight"] = 2000.0
@@ -83,7 +84,7 @@ func _init() -> void:
 	check(said.has("The ground there is not ready yet. Try again in a moment.") and rows("campfire_kit") == 0, "ground not streamed in: told so (%s)" % str(said))
 	ground[0] = 10.0
 	place("campfire_kit", Vector3(2.0, 14.0, 0.0))
-	check(said.has("You cannot place that there."), "a point 4 m off its ground: told so (%s)" % str(said))
+	check(said.has("You cannot place that there: it is too far above or below the ground."), "a point 4 m off its ground: told so (%s)" % str(said))
 	place("campfire_kit", Vector3(2.0, 10.0, 0.0))
 	check(rows("campfire_kit") == 1 and said.is_empty(), "a good spot places the fire with no complaint")
 	place("campfire_kit", Vector3(2.5, 10.0, 0.5))

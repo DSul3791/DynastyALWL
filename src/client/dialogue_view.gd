@@ -4,6 +4,7 @@ extends Node
 # screen with the NPC's name, their line and the choices (click, or keys 1 to 5). Esc or the last line closes it. The line carries
 # a voice_id for text to voice (Mandy hooks that up through voice_line). Fonts are 20 px on the 1920x1080 canvas (26 on the old 2880x1620 one), readable on a 55 inch 4K.
 
+const SmithingRules := preload("res://src/shared/smithing_rules.gd")
 const FONT_PX := 20
 const MAX_CHOICES := 5
 
@@ -40,6 +41,8 @@ var _sell_all_slots: Array = []             # pack slots the button would sell
 var _sell_all_total: int = 0
 var _shop_purse: RichTextLabel
 var _shop_title_label: Label
+var _talk_reply: Label                      # a server notice while talking (Hob's order of the day): the notice line sits behind the talk window now that it is mid-screen
+var _shop_reply: Label                      # the trader's last answer ("Sold ...", "I've bought all I can ..."): the notice line sits behind this window (TEST-003)
 var _name: Label = null
 var _text: Label = null
 var _choices: VBoxContainer = null
@@ -57,23 +60,32 @@ func setup(net_ref, items_ref, npc_view_ref, layer: CanvasLayer, player_pos: Cal
 	net.shop_received.connect(_on_shop)
 	net.purse_received.connect(func(_c): _refresh_shop())
 	net.inventory_slots_received.connect(func(_b): _refresh_shop())
+	net.inventory_full_received.connect(func(_b): _refresh_shop())   # a sale that shrinks the pack comes as the whole pack (protocol 116)
+	net.notice_received.connect(_on_notice)
 	items.register_interactable("npc", 25, _probe)
 	items.dialogue_key = _key
 	items.dialogue_close = close
 	_build(layer)
 
 
+const CHEST := Vector3(0.0, 1.2, 0.0)   # a person is aimed at by the chest, where the reticle rests when you look at them, not by the feet
+
+
 func _probe() -> Dictionary:
 	if items.dialogue_open or not player_position.is_valid():
 		return {}
 
-	var near: Dictionary = npc_view.nearest(player_position.call(), 3.0)
+	# Of the people within 3 m and in view, the one nearest the reticle, else the nearest (Dave 21 Nov 2026: E acts on what the reticle is on first).
+	var seen: Array = npc_view.within(player_position.call(), 3.0).filter(func(n): return items.in_view(n["pos"]))
 
-	if near.is_empty() or not items.in_view(near["pos"]):
+	if seen.is_empty():
 		return {}
 
+	var aimed: int = items.reticle_index(seen.map(func(n): return n["pos"] + CHEST))
+	var near: Dictionary = seen[maxi(aimed, 0)]
+
 	var id: String = str(near["id"])
-	return {"kind": "npc", "point": near["pos"], "prompt": "Press E to talk to %s" % str(near["name"]), "tap": func(): net.npc_talk.rpc_id(1, id, -1)}
+	return {"kind": "npc", "point": near["pos"] + CHEST, "prompt": "Press E to talk to %s" % str(near["name"]), "tap": func(): net.npc_talk.rpc_id(1, id, -1)}
 
 
 func _build(layer: CanvasLayer) -> void:
@@ -81,8 +93,8 @@ func _build(layer: CanvasLayer) -> void:
 	_panel.visible = false
 	_panel.anchor_left = 0.2
 	_panel.anchor_right = 0.8
-	_panel.anchor_top = 0.62
-	_panel.anchor_bottom = 0.95
+	_panel.anchor_top = 0.3   # the middle of the screen, clear of the hotbar at the bottom (Dave, 13 Nov 2026)
+	_panel.anchor_bottom = 0.7
 	var box: VBoxContainer = VBoxContainer.new()
 	_panel.add_child(box)
 	_name = Label.new()
@@ -94,6 +106,12 @@ func _build(layer: CanvasLayer) -> void:
 	_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_text.custom_minimum_size = Vector2(560, 0)
 	box.add_child(_text)
+	_talk_reply = Label.new()
+	_talk_reply.add_theme_font_size_override("font_size", FONT_PX)
+	_talk_reply.add_theme_color_override("font_color", Color(1.0, 0.9, 0.6))
+	_talk_reply.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_talk_reply.visible = false   # no blank line when there is no notice
+	box.add_child(_talk_reply)
 	_choices = VBoxContainer.new()
 	box.add_child(_choices)
 	var shops: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/shops.json"))
@@ -158,6 +176,8 @@ func _on_say(npc_id: String, npc_name: String, text: String, voice_id: String, c
 
 
 func _choose(index: int) -> void:
+	_talk_reply.visible = false
+	_talk_reply.text = ""   # cleared here, not in _on_say: the server sends a choice's notice before the next line
 	net.npc_talk.rpc_id(1, _npc_id, index)
 
 
@@ -188,6 +208,13 @@ func close() -> void:
 
 	_shop_npc = ""
 	_sell_all_result = []
+
+	if _shop_reply != null:
+		_shop_reply.text = ""
+
+	if _talk_reply != null:
+		_talk_reply.text = ""
+		_talk_reply.visible = false
 
 	if items != null and items.dialogue_open:
 		items.dialogue_open = false
@@ -228,6 +255,11 @@ func _build_shop(layer: CanvasLayer) -> void:
 	close_button.add_theme_font_size_override("font_size", SHOP_PX)
 	close_button.pressed.connect(close)
 	head.add_child(close_button)
+	_shop_reply = Label.new()
+	_shop_reply.add_theme_font_size_override("font_size", SHOP_PX)
+	_shop_reply.add_theme_color_override("font_color", Color(1.0, 0.9, 0.6))
+	_shop_reply.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	box.add_child(_shop_reply)
 	var columns: HBoxContainer = HBoxContainer.new()
 	columns.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	columns.add_theme_constant_override("separation", 20)
@@ -314,7 +346,8 @@ func _price_to_get(slot: int) -> int:
 		return 0
 
 	var life: float = 1.0
-	var durability: int = int(entry.get("durability", 0))
+	var durability: int = items.inventory.max_durability(slot)
+	value = int(round(float(value) * SmithingRules.value_mult(items.inventory.inst_of(slot))))   # craftsmanship raises it, as on the server
 
 	if durability > 0:
 		life = clampf(1.0 - float(items.inventory.wear[slot]) / float(durability), 0.0, 1.0)
@@ -334,11 +367,11 @@ func _repair_cost(slot: int) -> int:
 		return 0
 
 	var entry: Dictionary = items.table.entry(items.table.id_of(number))
-	var durability: int = int(entry.get("durability", 0))
+	var durability: int = items.inventory.max_durability(slot)
 	var value: int = int(entry.get("value", 0))
 	var worn: int = items.inventory.wear[slot]
 
-	if durability <= 0 or worn <= 0 or value <= 0:
+	if durability <= 0 or worn <= 0 or value <= 0 or SmithingRules.disposable(entry):
 		return 0
 
 	return maxi(int(ceil(float(value) * _repair_rate * clampf(float(worn) / float(durability), 0.0, 1.0) * _shop_pay - 0.0001)), 1)
@@ -349,7 +382,7 @@ func _refresh_shop() -> void:
 		return
 
 	_shop_title_label.text = _shop_title
-	var purse_line: Array = ["Purse: ", items.purse_copper, "    "]
+	var purse_line: Array = ["Purse: ", items.purse_coins, "    "]   # coins as held
 
 	if _shop_till >= 0:
 		purse_line.append_array(["His purse: ", _shop_till, "    "])
@@ -391,7 +424,7 @@ func _refresh_shop() -> void:
 			_sell_all_total += each * items.inventory.counts[slot]
 
 		var number2: int = items.inventory.numbers[slot]
-		_shop_row(_shop_sell_box, "%s x%d  -" % [items.table.name_of(number2), items.inventory.counts[slot]], items._tooltip(number2, items.inventory.counts[slot], items.inventory.wear[slot]) + "\nThe trader pays %s each." % items.coin_text(each), slot, 1, true, each, "  each")
+		_shop_row(_shop_sell_box, "%s x%d  -" % [items.table.name_of(number2), items.inventory.counts[slot]], items._tooltip(number2, items.inventory.counts[slot], items.inventory.wear[slot], items.inventory.inst_of(slot)) + "\nThe trader pays %s each." % items.coin_text(each), slot, 1, true, each, "  each")
 
 	if bool(_shop_repairs):
 		for slot in items.inventory.numbers.size():
@@ -399,7 +432,7 @@ func _refresh_shop() -> void:
 
 			if cost > 0:
 				var number3: int = items.inventory.numbers[slot]
-				_shop_row(_shop_sell_box, "Mend %s  -" % items.table.name_of(number3), items._tooltip(number3, 1, items.inventory.wear[slot]) + "\nThe smith mends it as new for %s." % items.coin_text(cost), slot, 2, items.purse_copper >= cost, cost)
+				_shop_row(_shop_sell_box, "Mend %s  -" % items.table.name_of(number3), items._tooltip(number3, 1, items.inventory.wear[slot], items.inventory.inst_of(slot)) + "\nThe smith mends it as new for %s." % items.coin_text(cost), slot, 2, items.purse_copper >= cost, cost)
 
 	_update_sell_all()
 
@@ -408,6 +441,15 @@ func _refresh_shop() -> void:
 		none.text = "Nothing in your pack that this trader will buy."
 		none.add_theme_font_size_override("font_size", SHOP_PX - 4)
 		_shop_sell_box.add_child(none)
+
+
+# While the trade or talk window is open, the server's notices (the trader's answers to each deal) are shown in it.
+func _on_notice(text: String) -> void:
+	if _shop_reply != null and _shop_panel != null and _shop_panel.visible:
+		_shop_reply.text = text
+	elif _talk_reply != null and _panel != null and _panel.visible:
+		_talk_reply.text = text
+		_talk_reply.visible = true
 
 
 func _update_sell_all() -> void:

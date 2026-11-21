@@ -1,6 +1,6 @@
 extends RefCounted
 
-# The on-screen debug details (F3, or Esc > Settings > Debug details; off by default, owner
+# The on-screen debug details (Ctrl+Shift+F3, or Esc > Settings > Debug details; off by default, owner
 # 2026-10-20). Threads add their own diagnostic line without touching terrain_client.gd:
 #
 #   client.debug_hud.add_line("water", func() -> String: return "water: %d cells" % cells)

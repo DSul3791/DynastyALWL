@@ -52,7 +52,7 @@ func _init() -> void:
 	check(view._pack_slot(0) == int(slots[0]) and view._pack_slot(slots.size()) == -1, "button index maps to the real slot; buttons past the list are empty")
 
 	var chest: Array = view._pack_view_slots(false)
-	check(chest.size() == InventoryScript.SLOTS and int(chest[stone_slot]) == stone_slot, "a chest shows every pack slot in place")
+	check(chest.size() == InventoryScript.BASE_SLOTS and int(chest[stone_slot]) == stone_slot, "a chest shows every pack slot in place")
 
 	view._world = {7: {"state": 1, "number": 0}}
 	view.chest_id = 7

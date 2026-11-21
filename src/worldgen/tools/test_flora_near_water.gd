@@ -73,6 +73,9 @@ class FakeGround:
 	func surface_height(x: float, _z: float) -> float:
 		return 9.0 if x > cliff_x else 1.5
 
+	func surface_height_on(_data, x: float, z: float) -> float:
+		return surface_height(x, z)
+
 
 func _init() -> void:
 	check(is_equal_approx(NearWater.growth_near_water(0.0), 1.0) and is_equal_approx(NearWater.growth_near_water(3.0), 0.5), "W 1 at the edge, 0.5 at 3 m")
@@ -141,6 +144,13 @@ func _riparian_checks() -> void:
 	var brooks: Dictionary = {}
 	var wet: Dictionary = placer._wet_samples(tile, Vector2.ZERO, brooks)
 	check(wet.has(Vector2i(9, 4)) and brooks.has(Vector2i(9, 4)) and not brooks.has(Vector2i(5, 4)) and is_equal_approx(float(wet[Vector2i(9, 4)]), 1.5), "a record brook's samples are water at the ground; the river is not a brook")
+	# The brook samples are found row by row with bsearch (drink_samples() is sorted): only those inside the window count. Here the window
+	# is samples 0 to 24 each way (160 m chunk plus the 25.5 m reach, 8 m spacing) on a 40-sample tile.
+	var wide = FakeTile.new(40)
+	wide.brooks = PackedInt32Array([4 * 40 + 24, 4 * 40 + 30, 24 * 40 + 24, 24 * 40 + 25, 30 * 40 + 4])
+	var wide_brooks: Dictionary = {}
+	placer._wet_samples(wide, Vector2.ZERO, wide_brooks)
+	check(wide_brooks.keys() == [Vector2i(24, 4), Vector2i(24, 24)], "only the brook samples inside the window count, in sample order %s" % str(wide_brooks.keys()))
 	var found: Array = []
 	placer._riparian_shrubs(Vector2i.ZERO, Vector2.ZERO, tile, wet, brooks, found)
 	var near: int = 0   # the river's west bank 0 to 6 m from its edge (x 30 to 36)

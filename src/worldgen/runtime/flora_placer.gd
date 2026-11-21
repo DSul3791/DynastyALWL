@@ -119,8 +119,13 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 	_beach_id = int(biome_ids.get("beach", -1))
 	_ocean_id = int(biome_ids.get("ocean", -1))
 
+	var water_biome: Dictionary = {}   # water class id -> the biome id its cells take (water_classes.json "biome": the wetlands are marsh)
+
 	for entry in tables.get_entries("water_classes"):
 		water_ids[str(entry["name"])] = int(entry["id"])
+
+		if biome_ids.has(str(entry.get("biome", ""))):
+			water_biome[int(entry["id"])] = int(biome_ids[str(entry["biome"])])
 
 	_ocean_water = int(water_ids.get("ocean", 1))
 
@@ -144,6 +149,22 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 				per_biome[biome_ids[name]] = value
 				peak = maxf(peak, value)
 
+		# Wetland plants (flora.json per_water; Dave 21 Nov 2026: fen, bog and swamp get plants of their own that never grow on river banks): per
+		# hectare by water class, on those cells only, in place of the biome's number there.
+		var per_water: PackedFloat32Array = PackedFloat32Array()
+		var wet_biomes: Dictionary = {}
+
+		for name in entry.get("per_water", {}):
+			if water_ids.has(name):
+				if per_water.is_empty():
+					per_water.resize(256)
+
+				per_water[int(water_ids[name])] = float(entry["per_water"][name]) * density
+				peak = maxf(peak, per_water[int(water_ids[name])])
+
+				if water_biome.has(int(water_ids[name])):
+					wet_biomes[int(water_biome[int(water_ids[name])])] = true
+
 		if peak <= 0.0:
 			continue
 
@@ -156,7 +177,7 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 
 		var water_mask: int = 0
 
-		for name in entry.get("water", []):
+		for name in entry.get("water", []) + entry.get("per_water", {}).keys():
 			if water_ids.has(name):
 				water_mask |= 1 << int(water_ids[name])
 
@@ -173,6 +194,7 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 			"crown": float(entry["crown_m"]),
 			"trunk": float(entry["trunk_m"]),
 			"per_biome": per_biome,
+			"per_water": per_water,
 			"belt": belt_value,
 			"peak": peak,
 			# One candidate per cell; at least 1 m so cell indices fit 16 bits.
@@ -275,7 +297,7 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 		_by_id[item["id"]] = item
 
 		for b in range(256):
-			if per_biome[b] > 0.0:
+			if per_biome[b] > 0.0 or wet_biomes.has(b):
 				_by_biome[b].append(item)
 
 	for list in _by_biome:
@@ -303,6 +325,9 @@ func _starter_clearings() -> Array:
 
 	if typeof(parsed) == TYPE_DICTIONARY:
 		for marker in (parsed as Dictionary).get("markers", []):
+			if not bool(marker.get("clear", true)):
+				continue   # a spot beside a chosen tree (Edda and Hob's camp, data/npcs/camp.json) keeps the wood round it; tools/npc_camp_spot.gd checks it is clear
+
 			list.append([Vector2(float(marker["x"]), float(marker["z"])), CLEAR_MARKER_M, CLEAR_SOFT_M])
 
 	return list
@@ -345,7 +370,9 @@ func chunk_origin(chunk: Vector2i) -> Vector2:
 # heights and yaws (PackedFloat32Array each). `trees_only` leaves out shrubs
 # and plants for chunks seen only from afar (owner, 2026-10-19: draw the big
 # trees far, the small stuff near). Trees are placed before shrubs and plants
-# and never make room for them, so the trees come out the same either way.
+# and never make room for them, so the trees come out the same either way,
+# except beside a spring with bush cover: those shrubs (_spring_cover, full only)
+# are placed first and keep a tree off 1 m round them.
 func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 	var result: Dictionary = {
 		"ids": PackedInt32Array(), "positions": PackedVector3Array(),
@@ -412,6 +439,7 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 		var count: int = int(ceil(chunk_m / cell))
 		var peak: float = item["peak"]
 		var per_biome: PackedFloat32Array = item["per_biome"]
+		var per_water: PackedFloat32Array = item["per_water"]
 		var woody: bool = item["kind"] != KIND_PLANT
 
 		if item.has("patch"):
@@ -453,6 +481,9 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 				var k: int = data.nearest(x, z)
 				var chance: float = per_biome[data.biome[k]]
 				var in_belt: bool = false
+
+				if not per_water.is_empty() and per_water[data.water_class[k]] > 0.0:
+					chance = per_water[data.water_class[k]]
 
 				# The belt roll comes first: the edge probe (dozens of lookups) runs only for spots the roll keeps.
 				if has_beach and item["belt"] > 0.0 and roll < item["belt"] and data.biome[k] != _beach_id and data.biome[k] != _ocean_id:
@@ -972,7 +1003,7 @@ func _spring_cover(origin: Vector2, data, found: Array) -> void:
 				continue
 
 			var height: float = lerpf(float(item["height_min"]), low_top, rng.randf())
-			found.append([TIER_FIRST, int(item["id"]), SPRING_BASE + index * SPRING_MAX_PLANTS + n, x, generator.surface_height(x, z), z, height, rng.randf() * TAU, float(_cover["spacing_m"])])
+			found.append([TIER_FIRST, int(item["id"]), SPRING_BASE + index * SPRING_MAX_PLANTS + n, x, generator.surface_height_on(data, x, z), z, height, rng.randf() * TAU, float(_cover["spacing_m"])])
 
 
 # Ground slope (rise over run) from the tile's height map, over 4 m.
@@ -981,8 +1012,8 @@ func _slope_at(data, x: float, z: float) -> float:
 
 
 # Slope of the real surface within 1.5 m: small on a ledge or outcrop top even on a steep face.
-func _fine_slope(x: float, z: float) -> float:
-	return Vector2(generator.surface_height(x + 1.5, z) - generator.surface_height(x - 1.5, z), generator.surface_height(x, z + 1.5) - generator.surface_height(x, z - 1.5)).length() / 3.0
+func _fine_slope(data, x: float, z: float) -> float:
+	return Vector2(generator.surface_height_on(data, x + 1.5, z) - generator.surface_height_on(data, x - 1.5, z), generator.surface_height_on(data, x, z + 1.5) - generator.surface_height_on(data, x, z - 1.5)).length() / 3.0
 
 
 # The ground checks every spot must pass; the ground height, or NAN.
@@ -1019,10 +1050,10 @@ func _ground_ok(item: Dictionary, data, k: int, x: float, z: float, in_belt: boo
 
 	if slope > item["max_slope"]:
 		# Only hardy species, only on a flat ledge, and only some of the spots.
-		if not item["ledge"] or rng_pick(x + 17.0, z + 23.0, item["id"]) >= LEDGE_CHANCE or _fine_slope(x, z) > LEDGE_MAX_SLOPE:
+		if not item["ledge"] or rng_pick(x + 17.0, z + 23.0, item["id"]) >= LEDGE_CHANCE or _fine_slope(data, x, z) > LEDGE_MAX_SLOPE:
 			return NAN
 
-	var y: float = generator.surface_height(x, z)
+	var y: float = generator.surface_height_on(data, x, z)
 
 	if y < item["altitude_min"] or y > item["altitude_max"]:
 		return NAN
@@ -1323,13 +1354,22 @@ func _wet_samples(data, origin: Vector2, brooks: Dictionary = {}) -> Dictionary:
 
 	# Record brooks (the drink channel samples: a brook the settled water may not draw, Dave 10 Nov 2026 "all brooks and water ways"): water at the
 	# ground there. A sample already wet keeps its level.
-	for k in data.drink_samples():
-		@warning_ignore("integer_division")
-		var at: Vector2i = Vector2i(k % data.samples, k / data.samples)
+	# drink_samples() is sorted (sample numbers ascending), so each row of the window is one run found by bsearch: looping over every
+	# channel sample of the tile cost about 128 ms a full chunk (David4, 15 Nov 2026, flora_profile.gd), even on chunks with no brook near.
+	var drink: PackedInt32Array = data.drink_samples()
 
-		if at.x >= i0 and at.x <= i1 and at.y >= j0 and at.y <= j1 and not out.has(at) and data.water_class[k] != ocean:
-			out[at] = data.height_at(data.x0 + float(at.x) * sp, data.z0 + float(at.y) * sp)
-			brooks[at] = true
+	for j in range(j0, j1 + 1):
+		var row_end: int = j * data.samples + i1
+		var index: int = drink.bsearch(j * data.samples + i0)
+
+		while index < drink.size() and drink[index] <= row_end:
+			var k: int = drink[index]
+			index += 1
+			var at: Vector2i = Vector2i(k - j * data.samples, j)
+
+			if not out.has(at) and data.water_class[k] != ocean:
+				out[at] = data.height_at(data.x0 + float(at.x) * sp, data.z0 + float(at.y) * sp)
+				brooks[at] = true
 
 	return out
 
@@ -1573,7 +1613,7 @@ func _wetness(data, wet: Dictionary, x: float, z: float, cache: Dictionary) -> f
 	var w: float = 0.0
 
 	if best < INF:
-		w = NearWater.growth_near_water(maxf(best - sp * 0.5, 0.0), generator.surface_height(cx, cz) - level)
+		w = NearWater.growth_near_water(maxf(best - sp * 0.5, 0.0), generator.surface_height_on(data, cx, cz) - level)
 
 	cache[key] = w
 	return w
@@ -1634,13 +1674,13 @@ func _near_river(data, x: float, z: float) -> bool:
 
 
 func _near_water(data, x: float, z: float) -> bool:
+	var sim_here: PackedFloat32Array = data.sim_snapshot()   # once, not per offset: it takes the tile's lock
+
 	for offset in [Vector2.ZERO, Vector2(WATER_MARGIN_M, 0.0), Vector2(-WATER_MARGIN_M, 0.0), Vector2(0.0, WATER_MARGIN_M), Vector2(0.0, -WATER_MARGIN_M)]:
 		var k: int = data.nearest(x + offset.x, z + offset.y)
 
 		if data.water_class[k] > 1 and not is_nan(data.water_surface[k]):
 			return true
-
-		var sim_here: PackedFloat32Array = data.sim_snapshot()
 
 		if not sim_here.is_empty() and not is_nan(sim_here[k]):
 			return true

@@ -99,6 +99,11 @@
 		"bow": {
 			"skill": "hunting",
 			"effect": "yield"
+		},
+		"survey": {
+			"skill": "mapping",
+			"effect": "accuracy",
+			"_provisional": "PROVISIONAL (GOALS-REPAIR A-5): Mapping practice from surveying new ground (WP-MAP; data/map.json cells_per_practice)"
 		}
 	},
 	"skills": {
@@ -475,6 +480,17 @@
 			},
 			"max_factor": 1.5,
 			"order": 1
+		},
+		"mapping": {
+			"name": "Mapping",
+			"parents": {},
+			"traits": {
+				"perception": 0.6,
+				"memory": 0.4
+			},
+			"max_factor": 1.5,
+			"order": 7,
+			"_provisional": "PROVISIONAL (GOALS-REPAIR A-5): the skill is required by PLAYER_CARTOGRAPHY_MAP_DESIGN s1.3; a root of its own (no parent, so nothing but surveying raises it), its traits, max_factor and order are engineering defaults"
 		}
 	},
 	"migration": {

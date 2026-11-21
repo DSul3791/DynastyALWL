@@ -9,7 +9,7 @@ extends "res://src/client/ragdoll_body.gd"
 
 const DynastyBody := preload("res://src/client/character/dynasty_body.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
-const PARTS_GLB := "res://assets/character/Humanoid/Dynasty_Base_Male_Parts_Split.glb"
+const PARTS_GLB := DynastyBody.ARMS_GLB
 const UPPER_LEN := 0.29            # the rig's bone lengths (ragdoll_body.gd BONES): shoulder to elbow, elbow to wrist
 const FORE_LEN := 0.26
 const ELBOW_AT := 0.405            # fractions of the arm's length from the shoulder: the elbow, the wrist
@@ -67,7 +67,7 @@ static func prebuild() -> void:
 			return
 
 		# The file failed to load (not imported): build them as before, which keeps the old tube arms.
-		if _prebuild_task < 0 and ResourceLoader.load_threaded_get_status(PARTS_GLB) != ResourceLoader.THREAD_LOAD_IN_PROGRESS and ResourceLoader.load_threaded_get_status(PARTS_GLB) != ResourceLoader.THREAD_LOAD_LOADED:
+		if _prebuild_task < 0 and DynastyBody.load_status(PARTS_GLB) != ResourceLoader.THREAD_LOAD_IN_PROGRESS and DynastyBody.load_status(PARTS_GLB) != ResourceLoader.THREAD_LOAD_LOADED:
 			var stuck: Array = _waiting
 			_waiting = []
 
@@ -80,14 +80,14 @@ static func prebuild() -> void:
 	if _prebuild_task >= 0 or not _skinned.is_empty() or DynastyBody.force_unavailable or _waiting.is_empty():
 		return
 
-	if ResourceLoader.load_threaded_get_status(PARTS_GLB) != ResourceLoader.THREAD_LOAD_LOADED:
+	if DynastyBody.load_status(PARTS_GLB) != ResourceLoader.THREAD_LOAD_LOADED:
 		return
 
 	# The 4096 x 4096 skin texture (_arm_material) is read on a loader thread too: 0.36 s when the main thread loaded it.
 	if _skin_exists < 0:
 		_skin_exists = 1 if ResourceLoader.exists(SKIN_TEXTURE) else 0     # asked once: exists() reads the .import file each time, every frame while the arms wait
 
-	if _skin_exists == 1:
+	if _skin_exists == 1 and not DynastyBody.headless():     # headless: _arm_material reads it on the main thread (see DynastyBody.warm)
 		var skin_status: int = ResourceLoader.load_threaded_get_status(SKIN_TEXTURE)
 
 		if skin_status == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
@@ -151,7 +151,7 @@ func _init() -> void:
 		_adopt_prebuilt()
 
 	# Not ready yet: the worker is on it, or the file is still loading for it. These arms wait (not drawn) and prebuild() finishes them.
-	var loading: bool = ResourceLoader.load_threaded_get_status(PARTS_GLB) == ResourceLoader.THREAD_LOAD_IN_PROGRESS or (ResourceLoader.load_threaded_get_status(PARTS_GLB) == ResourceLoader.THREAD_LOAD_LOADED and not DynastyBody.force_unavailable)
+	var loading: bool = DynastyBody.load_status(PARTS_GLB) == ResourceLoader.THREAD_LOAD_IN_PROGRESS or (DynastyBody.load_status(PARTS_GLB) == ResourceLoader.THREAD_LOAD_LOADED and not DynastyBody.force_unavailable)
 
 	if _sources.is_empty() and OS.get_thread_caller_id() == OS.get_main_thread_id() and (_prebuild_task >= 0 or loading):
 		body_mesh.visible = false

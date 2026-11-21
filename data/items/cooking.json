@@ -80,7 +80,8 @@
 		"fish_stew": 22,
 		"trail_bread": 0,
 		"hearty_pottage": 30,
-		"feast_roast": 30
+		"feast_roast": 30,
+		"smoked_meat": 6
 	},
 	"fuel_note": "Every large log (log_<species>, carried on the shoulder, a pack item since 1 Nov 2026) burns like a log: 3 real hours. Dave 1 Nov 2026 (replaces the 24 Oct times): a stick burns 2 REAL minutes, a bolt of firewood 20 real minutes, a log 3 real hours (game seconds = real x 24; soft firewood half a firewood, kindling half a stick). Stored fuel is not capped (Dave 2 Nov 2026: the timer is the sum of all fuel). Older note: burn times in GAME seconds (clock is 24:1; a game hour is 2.5 real minutes), Dave 24 Oct: a stick, driftwood piece or bundle of kindling is a small fire's wood (stick 15 game minutes, driftwood 15, kindling 7.5), firewood 1 game hour (soft firewood 30 minutes), a log 2 game hours. A fire placed from a kit is laid with 4 sticks and lit by hand with plant fibre.",
 	"fuel": {
@@ -114,11 +115,7 @@
 		"tinder": 720.0,
 		"log": 259200.0,
 		"firewood": 28800.0,
-		"firewood_soft": 14400.0,
 		"wooden_block": 57600.0,
-		"wooden_block_soft": 28800.0,
-		"wooden_block_large": 86400.0,
-		"wooden_block_soft_large": 43200.0,
 		"driftwood": 2880.0
 	},
 	"fuel_class": {
@@ -152,14 +149,10 @@
 		"tinder": "weak",
 		"driftwood": "weak",
 		"firewood": "firewood",
-		"firewood_soft": "firewood",
 		"wooden_block": "firewood",
-		"wooden_block_soft": "firewood",
-		"wooden_block_large": "firewood",
-		"wooden_block_soft_large": "firewood",
 		"log": "log"
 	},
-	"fire_tiers_note": "A tier needs min_pieces PIECES laid on the fire, a soft firewood counting as much as a hard one (piece_game_s is the shortest piece of the class, only a ceiling by burning time). Dave 1 Nov 2026: medium (3+ firewood) is twice the small fire in light radius, brightness, warmth and protection from wolves; large (3+ logs) is twice the medium again (light_m 3.5/7/14, light_energy 1/2/4 (set to match the client FIRE_LIGHT, docs and CONTROLS on 2 Nov 2026; the server does not read them for fires), heat_c 10/20/40 within heat_radius_m, protect_m 5/10/20 = how far wolves keep from it). The heat reach is not doubled. Dave 24 Oct: one campfire whose size follows its wood. The fire burns its biggest wood first. A tier needs at least min_pieces pieces of that wood; once burning it stays that size until that wood is gone, then drops to the highest tier that still has min_pieces, else the survival fire. Tier 1 survival (sticks, driftwood, kindling), 2 campfire (firewood), 3 bonfire (logs). state is the world-item state of a lit fire of that tier (1 stays the campfire; 40 and 41 are new and only appended). light_m and light_energy size the client light, heat_c and heat_radius_m the warmth.",
+	"fire_tiers_note": "A tier needs min_pieces PIECES laid on the fire, a soft firewood counting as much as a hard one (piece_game_s is the shortest piece of the class, only a ceiling by burning time). Dave 1 Nov 2026: medium (3+ firewood) is twice the small fire in light radius, brightness, warmth and protection from wolves; large (3+ logs) is twice the medium again (heat_c 10/20/40 within heat_radius_m, protect_m 5/10/20 = how far wolves keep from it; light_m 3.5/7 and light_energy 1/2 double, but the large fire's light is 20 m and energy 36 with omni attenuation 1.5 (client FIRE_LIGHT; energy 18 set 13 Nov 2026, raised to 36 on 18 Nov 2026 when the held torch's reach went up 50%, provisional TS-15), set 13 Nov 2026 for BUGLIST-001 BUG-002: Dave's rule is that its output is at least 4 times the held torch's, which the old 14 m / 4 at attenuation 2 did not reach; set to match the client, the server does not read them for fires). The heat reach is not doubled. Dave 24 Oct: one campfire whose size follows its wood. The fire burns its biggest wood first. A tier needs at least min_pieces pieces of that wood; once burning it stays that size until that wood is gone, then drops to the highest tier that still has min_pieces, else the survival fire. Tier 1 survival (sticks, driftwood, kindling), 2 campfire (firewood), 3 bonfire (logs). state is the world-item state of a lit fire of that tier (1 stays the campfire; 40 and 41 are new and only appended). light_m and light_energy size the client light, heat_c and heat_radius_m the warmth.",
 	"fire_tiers": {
 		"weak": {
 			"tier": 1,
@@ -182,8 +175,8 @@
 		"log": {
 			"tier": 3,
 			"state": 41,
-			"light_m": 14.0,
-			"light_energy": 4.0,
+			"light_m": 20.0,
+			"light_energy": 36.0,
 			"heat_c": 40.0,
 			"heat_radius_m": 5.0,
 			"protect_m": 20.0
@@ -220,11 +213,7 @@
 		"log_balsam_fir",
 		"log_maple",
 		"firewood",
-		"firewood_soft",
-		"wooden_block_large",
-		"wooden_block_soft_large",
 		"wooden_block",
-		"wooden_block_soft",
 		"driftwood",
 		"stick",
 		"kindling",
@@ -312,6 +301,12 @@
 			"porcini": 6,
 			"chanterelles": 6
 		}
+	},
+	"charcoal_left": {
+		"note": "Charcoal left by burning wood (Dave 17 Nov 2026: \"I shouldn't have to craft charcoal, it should just automatically get left in the campfire as wood burns\"; \"anything that burns wood should leave behind charcoal\"). Wood of the classes listed (fuel_class firewood and log; sticks, driftwood, kindling and tinder leave none) leaves one Charcoal for each game_s_each game seconds of its burning time: a Firewood 3, a Wooden block 6, a log 27 (part-made lumps carry over, saved with the fire). Clearly less than a kiln for the same wood (Dave 17 Nov 2026, kiln: a log about 100, firewood about 10, a stick about 5, kindling none). A fire puts its charcoal in its own store (fire_slots); what does not fit lands beside it. A light that burns wood (structures.json leaves_charcoal: the Fireplace and the braziers) drops it at its foot. Charcoal is not a campfire fuel (no fuel or fuel_class row), so what a fire leaves is never burned; a cold fire holding charcoal waits keep_s real seconds (a day) for it to be taken, then leaves it on the ground beside it and goes. A half-burnt piece taken back out of a fire takes back the charcoal it had made. PROVISIONAL (docs/design/fire_coals_design.md, For Dave CH-1..CH-6). The Kiln (100 a log) stays the far better source.",
+		"game_s_each": 9600.0,
+		"classes": ["log", "firewood"],
+		"keep_s": 86400.0
 	},
 	"fire_slots": 30,
 	"feed_below_s": 20.0,

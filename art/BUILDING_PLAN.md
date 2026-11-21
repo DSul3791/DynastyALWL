@@ -1,9 +1,9 @@
 # Building plan: pieces, snapping and materials
-Kathleen_ArtisticDirector, 2026-10-22. Art and sound side only. Piece ids, costs and snap data stay with Sal (`structures.json`, `recipes.json`). Status: PROPOSED, questions at the end.
+Kathleen_ArtisticDirector, 2026-10-22. Art and sound side only. Piece ids, costs and snap data stay with Sal (`structures.json`, `recipes.json`). Status: historical art-side planning reference. Current door system and stock dimensions: `docs/design/DYNASTY_MASTER_ITEMS.md` §§3.0, 3.2; `docs/buglists/BUGLIST-002.md`.
 
 ## 1. What we have today (build 652, Sal)
 - One cell grid: **2 m** (`snap_m` 2.0). Foundation 4 x 4 m, 0.3 m thick, with anchors for 8 walls (two 2 m walls per edge), 4 floor cells, 5 roof spots.
-- Pieces: foundation, wall, doorway (shut and open), window wall, floor, roof, timber prop, timber set.
+- Pieces include foundation, wall, **empty doorway frame**, window wall, floor, roof, timber prop and timber set. Doors are separate craftable/installable items. Legacy `door_open` and `door_shut` doorway states are not the current design.
 - Costs now: wall and floor 4 lumber + 1 cordage; roof 5 lumber + 2 cordage + 2 sticks; doorway 3 lumber + 1 cordage; foundation 8 stone + 2 clay. All at a workbench level 1.
 - Look today: `piece_look.gd` makes board and stone textures in code (128 px, no files). Door sounds, place sounds and the foundation thump exist.
 
@@ -18,7 +18,7 @@ Take what works from all three, keep it dead simple (Dave: no micromanagement, g
 1. **One 2 m grid for everything.** Wall 2 m wide x 2.4 m tall. Floor cell 2 x 2 m. Foundation = 2 x 2 cells (what Sal has). Everything snaps to cell edges, no free placing.
 2. **Foundation first, anchors do the rest.** Walls, floors and roofs only go on a foundation or on another piece of the same house. No floating. (Matches Sal's anchors.)
 3. **Ghost shows green or red, and the snap edge glows.** Dragonwilds style. Press R to rotate in 90 degree steps.
-4. **Wall slot takes a variant.** Plain wall, doorway, window wall and later arch/gate all use the same 2 m slot, so a wall can be swapped without rebuilding. Door opens with E (exists).
+4. **Wall openings and separately installed doors.** Plain walls, window walls and empty doorway walls use compatible construction anchors. Door leaves are separately crafted and snapped into matching openings, with their own open/close interaction. Double doorway openings may span two 2 m wall cells; arched doorways have real rounded openings. Follow the current design in `docs/design/DYNASTY_MASTER_ITEMS.md` §3.0.
 5. **Floors double as ceilings** for the storey above (one piece, textured both sides). Roof pieces are sloped halves that meet at a ridge.
 6. **Stairs and ramps** use the same 2 x 2 cell and climb 2.4 m in one cell (a straight stair). A ladder is a cheap tier-1 alternative.
 7. **Ground rule:** foundation top is 0.3 m above its spot, and the body is 2 m thick top to bottom (Dave 4 Nov 2026), so it is solid down into the ground and leaves no gap on hills or when lifted. Foundations beside each other match height; the wheel lifts only a lone one (DESIGN_IDEAS.md 10.1).
@@ -26,7 +26,7 @@ Take what works from all three, keep it dead simple (Dave: no micromanagement, g
 
 ## 4. What a board, a stone block and a brick look like
 Standard reusable looks. All real-sized so a designer can read size from the picture. Colours stay natural (Dave: materials stay natural). Textures stay generated in code, no art files.
-- **Board (lumber):** 20 cm wide x 2 cm thick x any length, rough sawn, visible grain along the length, darker nail-less seams. Colour comes from the tree species (pine pale yellow, oak mid brown). Wall = vertical boards, floor = horizontal, roof = overlapping boards.
+- **Plank (`lumber`):** 6 inches wide × 4 inches thick, **rough surface**; **Hardwood board:** 6 inches wide × 2 inches thick, **smooth, shiny surface**. These are the approved material stock cross-sections, not wall or collision thicknesses; length is not fixed here. Use existing natural wood tones and grain.
 - **Beam:** 15 x 15 cm squared, used for corners, posts and roof ribs. Same species colour, darker.
 - **Stone block:** 40 x 20 x 20 cm, rough-cut face, uneven joints, grey from the local stone (limestone paler, granite speckled, slate dark blue-grey). Laid in staggered courses, thin pale mortar line (clay-brown at tier 1, lime-white later).
 - **Brick:** 22 x 10 x 7 cm, fired clay, red-brown with slight variation per brick, light grey mortar joints 1 cm. Used for chimneys, forges and the nicer house walls.
@@ -42,7 +42,7 @@ Tier numbers: **T1** needed to start playing, **T2** soon after, **T3** later.
 |---|---|---|
 | Foundation (stone skirt) | T1 | exists |
 | Wall, plain | T1 | exists |
-| Doorway + door (open/shut) | T1 | exists |
+| Empty doorway wall; door separately crafted/installed | T1 | separate-door system specified in BUGLIST-002 |
 | Window wall | T1 | exists, add a shutter later |
 | Floor | T1 | exists |
 | Roof (slope) | T1 | exists; ridge and corner roof pieces are T2 |

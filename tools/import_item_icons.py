@@ -33,10 +33,11 @@ from paint_structure_icons import NAMES as STRUCTURE_NAMES   # noqa: E402
 from compose_group_icons import NAMES as GROUP_NAMES   # noqa: E402
 from recolour_icons import NAMES as RECOLOUR_NAMES   # noqa: E402
 from paint_look_icons import NAMES as LOOK_NAMES   # noqa: E402
+from cut_crop_pictures import NAMES as CROP_PICTURE_NAMES   # noqa: E402
 
-# Painted by tools/paint_basic_icons.py, paint_structure_icons.py, paint_item_icons.py and paint_plant_icons.py: a baked file of the same name
+# Painted by tools/paint_basic_icons.py, paint_structure_icons.py, paint_item_icons.py and paint_plant_icons.py (and cut from Dave's pictures by cut_crop_pictures.py): a baked file of the same name
 # never replaces them.
-PAINTED = ("log", "stone") + STRUCTURE_NAMES + ITEM_NAMES + PLANT_NAMES + GROUP_NAMES + RECOLOUR_NAMES + LOOK_NAMES
+PAINTED = ("log", "stone") + STRUCTURE_NAMES + ITEM_NAMES + PLANT_NAMES + GROUP_NAMES + RECOLOUR_NAMES + LOOK_NAMES + CROP_PICTURE_NAMES
 UID_CHARS = "abcdefghijklmnopqrstuvwxy012345678"   # Godot's resource uid alphabet (base 34)
 
 IMPORT = """[remap]

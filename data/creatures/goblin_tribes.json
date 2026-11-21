@@ -1,0 +1,78 @@
+{
+	"note": "Goblin tribes and their camps (Dave 19 Nov 2026: \"build them a goblin camp somewhere near the river or in a cave. I want the goblins to be apprehensive but willing to communicate and trade/buy and sell. in the future the game will have various goblin tribes/camps etc that are friendly, not friendly, indifferent etc.\"; \"the goblin camp could be a cave somewhere near a river\"). Read by src/stream/server_tribes.gd (behaviour, standing, anger) and src/stream/server_npcs.gd (the members and their spots). A tribe names its attitude; every number of an attitude is in its row below, so a friendly, unfriendly or hostile tribe later is a new tribes row, not new code. Standing is kept per tribe (rep_key, the same reputation as Hob's: data/npcs/reputation.json ranks), so every goblin and every camp of a tribe knows a character the same. keep_m: how far a member stays from a character of that rank (the trader lets them closer: trader_keep_m); spook_m: inside this a character who runs (faster than rush_mps) or holds a weapon in hand (protocol 146 held_item, GOBLIN-13) makes them back off by armed_keep_m more and stand guard facing them; leash_m: how far from its spot a member backs off before it holds its ground; watch_m: inside this they turn to watch. trades: false refuses all trade (an unfriendly or hostile tribe). anger_game_days: a character who strikes a member is refused and kept off at angry_keep_m that long (Dave's side, 19 Nov 2026, answered for him: unkillable for now; the tribe turns on that player and stops trading with them for a few days; Dave 20 Nov 2026 \"they will run away if the player attacks and it will hurt the players reputation\": wary anger one game day plus attack_rep standing, GOBLIN-12). trade_rep: standing a completed deal earns, at most once a game day (trade_rep_every_game_days). ALL NUMBERS AND NAMES PROVISIONAL (GOBLIN-1..GOBLIN-15 in docs/design/GOBLIN_CAMP.md).",
+	"attitudes": {
+		"friendly": {"trades": true, "watch_m": 15.0, "keep_m": {"Stranger": 2.0, "Known": 1.5, "Friend": 1.0, "Trusted": 1.0}, "trader_keep_m": {"Stranger": 1.5, "Known": 1.0, "Friend": 1.0, "Trusted": 1.0}, "spook_m": 4.0, "rush_mps": 4.5, "armed_keep_m": 0.0, "angry_keep_m": 10.0, "anger_game_days": 1.0, "trade_rep": 1, "attack_rep": 3},
+		"wary": {"trades": true, "watch_m": 20.0, "keep_m": {"Stranger": 6.0, "Known": 4.0, "Friend": 3.0, "Trusted": 2.0}, "trader_keep_m": {"Stranger": 2.5, "Known": 2.0, "Friend": 1.5, "Trusted": 1.2}, "spook_m": 10.0, "rush_mps": 3.0, "armed_keep_m": 4.0, "angry_keep_m": 25.0, "anger_game_days": 1.0, "trade_rep": 1, "attack_rep": 3},
+		"indifferent": {"trades": true, "watch_m": 0.0, "keep_m": {"Stranger": 2.5, "Known": 2.0, "Friend": 1.5, "Trusted": 1.5}, "trader_keep_m": {"Stranger": 2.0, "Known": 1.5, "Friend": 1.5, "Trusted": 1.5}, "spook_m": 3.0, "rush_mps": 5.0, "armed_keep_m": 1.0, "angry_keep_m": 25.0, "anger_game_days": 3.0, "trade_rep": 0, "attack_rep": 3},
+		"unfriendly": {"trades": false, "watch_m": 30.0, "keep_m": {"Stranger": 10.0, "Known": 8.0, "Friend": 6.0, "Trusted": 4.0}, "trader_keep_m": {"Stranger": 10.0, "Known": 8.0, "Friend": 6.0, "Trusted": 4.0}, "spook_m": 15.0, "rush_mps": 3.0, "armed_keep_m": 6.0, "angry_keep_m": 30.0, "anger_game_days": 7.0, "trade_rep": 0, "attack_rep": 3},
+		"hostile": {"trades": false, "watch_m": 40.0, "keep_m": {"Stranger": 15.0, "Known": 15.0, "Friend": 15.0, "Trusted": 15.0}, "trader_keep_m": {"Stranger": 15.0, "Known": 15.0, "Friend": 15.0, "Trusted": 15.0}, "spook_m": 20.0, "rush_mps": 3.0, "armed_keep_m": 6.0, "angry_keep_m": 30.0, "anger_game_days": 30.0, "trade_rep": 0, "attack_rep": 3}
+	},
+	"trade_rep_every_game_days": 1.0,
+	"leash_m": 8.0,
+	"back_off_mps": 2.4,
+	"flee_mps": 4.0,
+	"calm_s": 30.0,
+	"accel_mps2": 1.5,
+	"turn_dps": 160.0,
+	"motion_note": "Camp life (Dave 20 Nov 2026: \"remember to keep their motions fluid and smooth. Aim for natural.\"): flee_mps, how fast members run for the cave mouth from a character who struck one; calm_s, how long they wait in it after that character has gone (GOBLIN-15); accel_mps2, how quickly a member speeds up and slows down; turn_dps, the fastest it turns. attack_rep (per attitude): standing a strike costs (GOBLIN-12). PROVISIONAL.",
+	"tribes": {
+		"ragtooth": {
+			"name": "the Ragtooth goblins",
+			"attitude": "wary",
+			"rep_key": "tribe_ragtooth",
+			"camp": {
+				"note": "By spring cave 3,4#8006, the cave nearest the spawn (Dave 21 Nov 2026: \"move the goblins cave much closer to spawn so people might actually find it. it should probably be right in the closest mountain or hill to the spawn point then we can make a path to it for players later\"; moved from cave 3,4#8013 then, provisional GOBLIN-19). About 1.6 km west-south-west of the spawn campfire (1.56 km west, 0.44 km south), where a brook comes out of the hill under ridges of 80 to 99 m; the nearer hills, about 1.2 km south and north, have no cave. Read from the baked tile 3_4 on 21 Nov 2026: mouth x 56560 z 71776, ground about 23 m, the brook runs east from the mouth; the camp stands on a dry bench of 3 to 11 degrees on its south bank, about 50 m south-east of the mouth, the gathering points on the slope 25 to 40 m further east. No path yet (Dave: later). The tunnels inside stay as they are (the caves plan); TileTerrainData.CAMP_CAVES keeps wild goblins and animal dens out of it. mouth: where members go out of sight when an angry character comes near, and where a hunter goes out. keep_m: nothing is put down this near the fire.",
+				"cave": "3,4#8006",
+				"name": "the Ragtooth camp",
+				"fire_owner": "the Ragtooth goblins'",
+				"mouth": {"x": 56560.0, "z": 71776.0},
+				"fire": {"x": 56608.0, "z": 71800.0, "wood": "log"},
+				"keep_m": 8.0,
+				"props_note": "Camp life stage A (Dave 20 Nov 2026: \"they should have a small chest of some sort, probably a few drying racks or tanning racks, a campfire maybe some wooden benches around the fire\"): existing catalog pieces (structures.json kinds) laid by the server as transient pieces of the tribe, round the fire on the bench south-east of the mouth (read from the baked tile 21 Nov 2026; test_goblin_camp checks each spot). Nobody takes them down, opens, loots, uses, sits on, repairs or crafts at them. prop_keep_m: nothing is put down this near a prop. PROVISIONAL (GOBLIN-11).",
+				"prop_keep_m": 2.5,
+				"chores": {
+					"note": "Camp life stage B (Dave 20 Nov 2026: \"they should all keep themselves busy in the area around the camp, either gathering firewood and putting in the fire or gathering supplies around the area like plant fiber to make twine or hunting for meat, hide etc.\"): server_tribes.gd chore_plan. Each member works through its own chores list: walk out to a point of the job's out kind, gather there (work_s), walk back to the job's back point and work there (drop_s; *_face is what it faces), rest at its own spot (rest_s). A hunt goes out through the cave mouth and is away away_s; one member hunts at a time. Seconds are real seconds. Every point is fixed (on the bench and the slope east of it, checked on the baked tile by test_goblin_camp): nothing is scanned, and nothing is taken from or added to the world (GOBLIN-10, show only). PROVISIONAL (GOBLIN-10, GOBLIN-14). default_jobs: the round of a member with no chores list of its own, so a new named member joins the chores by its members row alone.",
+					"walk_mps": 1.1,
+					"rest_s": [15.0, 45.0],
+					"default_jobs": ["firewood", "fibre"],
+					"points": {
+						"wood": [[56632.5, 71809.0], [56640.5, 71807.5], [56633.0, 71815.5]],
+						"fibre": [[56646.5, 71809.5], [56641.0, 71815.0], [56648.0, 71812.5]],
+						"fire": [[56606.4, 71799.6], [56609.6, 71799.4]],
+						"fire_face": [[56608.0, 71800.0]],
+						"chest": [[56604.9, 71802.6]],
+						"chest_face": [[56603.5, 71803.5]],
+						"rack": [[56607.0, 71795.2]],
+						"rack_face": [[56607.0, 71794.0]]
+					},
+					"jobs": {
+						"firewood": {"out": "wood", "work_s": [6.0, 10.0], "back": "fire", "drop_s": 3.0},
+						"fibre": {"out": "fibre", "work_s": [8.0, 12.0], "back": "chest", "drop_s": 3.0},
+						"hunt": {"out": "mouth", "away_s": [120.0, 240.0], "back": "rack", "drop_s": 12.0},
+						"tend": {"out": "fire", "work_s": [4.0, 6.0], "back": "chest", "drop_s": 4.0}
+					}
+				},
+				"stock": {
+					"note": "The light version (Dave 20 Nov 2026: \"Build the light version of the goblin camp\"): the camp's chest and racks fill on the game clock to a small capped stock of catalog items while the goblins do their chores for show; nothing is taken from the world, and the stock cannot be taken (every use of the pieces is refused and names what they hold). Worked out when asked (server_tribes.gd stock), never ticked. per_game_day: how many of each come in a game day; cap: the most kept; on: piece kind -> [the line's opening, the items it holds]. ALL NUMBERS PROVISIONAL (GOBLIN-16..18 in docs/design/GOBLIN_CAMP.md).",
+					"per_game_day": {"firewood": 6, "plant_fibre": 4, "hide": 1, "raw_meat": 2},
+					"cap": {"firewood": 20, "plant_fibre": 12, "hide": 3, "raw_meat": 4},
+					"on": {"small_chest": ["In it", ["firewood", "plant_fibre"]], "drying_rack": ["Drying on it", ["raw_meat"]], "tanning_rack": ["Stretched on it", ["hide"]]}
+				},
+				"props": [
+					{"kind": "small_chest", "x": 56603.5, "z": 71803.5, "yaw": 90},
+					{"kind": "log_bench", "x": 56608.0, "z": 71803.6, "yaw": 0},
+					{"kind": "log_bench", "x": 56611.5, "z": 71801.0, "yaw": 90},
+					{"kind": "drying_rack", "x": 56600.0, "z": 71795.0, "yaw": 0},
+					{"kind": "tanning_rack", "x": 56607.0, "z": 71794.0, "yaw": 0}
+				]
+			},
+			"members": [
+				{"id": "skritch", "name": "Skritch", "role": "goblin_trader", "voice": "skritch", "body": 0, "trader": true, "spot": {"x": 56604.0, "z": 71798.0, "yaw": 180}, "chores": ["tend"]},
+				{"id": "rukz", "name": "Rukz", "role": "goblin_lookout", "voice": "rukz", "body": 1, "spot": {"x": 56614.0, "z": 71803.0, "yaw": 185}, "chores": ["firewood", "hunt", "fibre"]},
+				{"id": "snag", "name": "Snag", "role": "goblin", "voice": "rukz", "body": 0, "spot": {"x": 56611.0, "z": 71798.0, "yaw": 146}, "chores": ["firewood", "fibre"]},
+				{"id": "vrixa", "name": "Vrixa", "role": "goblin", "voice": "vrixa", "body": 2, "spot": {"x": 56615.0, "z": 71799.0, "yaw": 172}, "chores": ["firewood", "fibre"]},
+				{"id": "grikka", "name": "Grikka", "role": "goblin", "voice": "grikka", "body": 3, "spot": {"x": 56618.0, "z": 71798.0, "yaw": 169}, "chores": ["firewood", "fibre"]}
+			]
+		}
+	}
+}

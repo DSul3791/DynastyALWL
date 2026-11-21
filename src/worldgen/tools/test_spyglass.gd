@@ -24,7 +24,7 @@ func check(ok: bool, what: String) -> void:
 
 func _init() -> void:
 	var glass = Spyglass.new()
-	check(not glass.active and glass.toggle() and glass.active and is_equal_approx(glass.zoom, Spyglass.START_ZOOM), "Ctrl+L raises it at 4x")
+	check(not glass.active and glass.toggle() and glass.active and is_equal_approx(glass.zoom, Spyglass.START_ZOOM), "Ctrl+Shift+L raises it at 4x")
 	check(absf(glass.fov(75.0) - 21.7) < 0.2, "4x narrows 75 degrees to about 22 (%.1f)" % glass.fov(75.0))
 	check(is_equal_approx(glass.mouse_scale(), 0.25), "the mouse slows by the zoom")
 
@@ -45,7 +45,7 @@ func _init() -> void:
 	check(glass.pick(Vector3(0.0, 0.6, 0.0), Vector3(0.05, 0.0, -1.0), [[7, Vector3(5.0, 0.0, -100.0)]]) == 7, "turn a little and the other one is")
 	check(glass.pick(Vector3(0.0, 0.6, 0.0), Vector3(0.0, 0.0, -1.0), [[7, Vector3(5.0, 0.0, -100.0)]]) == 0, "nothing near the centre: none")
 	check(glass.pick(Vector3(0.0, 0.6, 0.0), Vector3(0.0, 0.0, 1.0), bodies) == 0, "farther than any sent animal: none")
-	check(not glass.toggle() and glass.watched == 0 and glass.info.is_empty(), "Ctrl+L again lowers it and forgets the watched one")
+	check(not glass.toggle() and glass.watched == 0 and glass.info.is_empty(), "Ctrl+Shift+L again lowers it and forgets the watched one")
 
 	var text: String = Spyglass.readout({"name": "Red deer", "level": 4, "hp": 17.6, "hp_max": 24.0, "state": 21, "temper": "defensive", "group": 3}, 182.4)
 	check(text == "Red deer\nLevel 4\nHealth 18 / 24\ndrinking\nTemperament: defensive\nHerd 3\n182 m", "the readout lines (%s)" % text.c_escape())
@@ -127,6 +127,7 @@ func item_checks() -> void:
 	items.ground_height = func(_x, _z): return 0.0
 	items.setup(ItemTableScript.load_default(), dir)
 	items.peer_connected_hello(1, "spy-key-00000001")
+	items.set_fitness(1, 50)   # an average adult (50): on the game server a new player rolls fitness 40 to 60 (attributes.json), and fitness slows tool wear a little (tool_care)
 	items.report_position(1, Vector3.ZERO)
 	var number: int = items.table.number_of("spyglass")
 	check(number != 0 and str(items.table.entry("spyglass").get("tool_class", "")) == "spyglass", "the spyglass item exists")
@@ -147,7 +148,7 @@ func item_checks() -> void:
 	check(items.inventory_of(1).wear[slot] == 2, "a new look wears another use")
 	items.action(1, Net.ACT_SPYGLASS, 0, 0, slot, Vector3.ZERO)
 
-	var other: int = (slot + 1) % items.inventory_of(1).SLOTS
+	var other: int = (slot + 1) % items.inventory_of(1).slot_count
 	items.action(1, Net.ACT_SPYGLASS, 2, 0, other, Vector3.ZERO)
 	check(int(items.spyglass.get(1, 0)) == -1 and not items.spyglass_tier.has(1), "no spyglass in that slot: refused")
 	items.spyglass.erase(1)

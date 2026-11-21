@@ -1805,7 +1805,7 @@ func _test_ground_material(generator, data, tables) -> void:
 			continue
 
 		if soil > 0:
-			if material == soil and column_same:
+			if (material == soil or TerrainLayout.is_wetland(material)) and column_same:   # fen, bog and swamp draw with their own look ids
 				right += 1
 		else:
 			bare += 1
@@ -1898,6 +1898,12 @@ func _test_streaming(generator, data) -> void:
 	var tile: Vector2i = generator.tile_of(x_mid, z_mid)
 	var tiles: Array = store.dig_sphere(center, 4.0)
 	_check(tiles == [tile] and store.revision_of(tile) == 2, "a dig raises its tile's revision")
+	var since_one: Dictionary = store.edits_since(tile, 1)
+	var since_now: Dictionary = store.edits_since(tile, 2)
+	_check(int(since_one["revision"]) == 2 and not bool(since_one["whole"]) and (since_one["spheres"] as PackedFloat32Array).size() == 4
+		and is_equal_approx(float(since_one["spheres"][3]), 3.0) and (since_now["spheres"] as PackedFloat32Array).is_empty() and not bool(since_now["whole"])
+		and bool(store.edits_since(tile, 0)["whole"]) and bool(store.edits_since(tile, 5)["whole"]),
+		"the server lists a tile's edits since a revision (protocol 128), and says whole when it cannot")
 	var dug: VoxelBuffer = TerrainLayout.make_buffer(16)
 	var dug_block: Vector3i = Vector3i((center / 16.0).floor())
 	store.load_block(dug, dug_block, 0)
@@ -1908,12 +1914,57 @@ func _test_streaming(generator, data) -> void:
 	var reopened = ServerStoreScript.new()
 	reopened.setup(generator, root + "/server")
 	_check(reopened.revision_of(tile) == 2, "tile revisions survive a server restart")
+	# Protocol 128: after an admin reset of the ground edits, a copy from before it is dropped whole even when new edits follow.
+	var reset_root: String = root + "/server_reset"
+	var reset_store = ServerStoreScript.new()
+	reset_store.setup(generator, reset_root)
+	reset_store.dig_sphere(center, 2.0)
+	var before_reset: int = reset_store.revision_of(tile)
+	reset_store.reset_edits()
+	reset_store.dig_sphere(center + Vector3(0.0, -6.0, 0.0), 2.0)
+	_check(bool(reset_store.edits_since(tile, before_reset)["whole"]), "a copy from before a ground reset is dropped whole")
+	reset_store.flush()
+	reset_store = null
 	# A re-bake throws the generated ground away; the saved dig replays over the new ground.
 	reopened.clear_generated()
 	var replayed: VoxelBuffer = TerrainLayout.make_buffer(16)
 	reopened.load_block(replayed, dug_block, 0)
 	_check(reopened.ops.count == 1 and replayed.get_voxel_f(inside.x, inside.y, inside.z, TerrainLayout.CHANNEL_SDF) > 0.0,
 		"a saved dig survives a restart and a re-bake")
+	# A TERRAIN_VERSION bump (79, wetland looks, 21 Nov 2026) throws only the generated ground away: the digs replay, and the world's other
+	# saves beside it in the same folder (placed structures and what they hold: world_items.json and its world_items/ area files) are not touched.
+	reopened.flush()
+	reopened = null
+	var server_dir: String = ProjectSettings.globalize_path(root + "/server")
+	DirAccess.make_dir_recursive_absolute(server_dir + "/world_items")
+	var saved_items: String = "{\"chest\": [\"copper_ingot\", 3]}"
+
+	for probe in ["/world_items.json", "/world_items/area_0_0.json"]:
+		var beside: FileAccess = FileAccess.open(server_dir + probe, FileAccess.WRITE)
+		beside.store_string(saved_items)
+		beside.close()
+	var old_version: FileAccess = FileAccess.open(server_dir + "/terrain_version.txt", FileAccess.WRITE)
+	old_version.store_string("%d %s" % [TerrainLayout.TERRAIN_VERSION - 1, TerrainLayout.tiles_stamp(generator.tiles_dir)])
+	old_version.close()
+	var generation_before: int = int(FileAccess.get_file_as_string(server_dir + "/generated_generation.txt").strip_edges())
+	var bumped = ServerStoreScript.new()
+	_check(bumped.setup(generator, root + "/server") == "", "the server store opens after a terrain version bump")
+	var after_bump: VoxelBuffer = TerrainLayout.make_buffer(16)
+	bumped.load_block(after_bump, dug_block, 0)
+	var old_files: int = 0
+
+	for file in DirAccess.get_files_at(server_dir):
+		if file.begins_with("generated") and file.contains(".sqlite") and not file.begins_with(bumped._generated_name()):
+			old_files += 1
+
+	_check(int(FileAccess.get_file_as_string(server_dir + "/generated_generation.txt").strip_edges()) == generation_before + 1 and old_files == 0,
+		"a terrain version bump starts a new generation of generated ground and deletes the old one")
+	_check(bumped.ops.count == 1 and after_bump.get_voxel_f(inside.x, inside.y, inside.z, TerrainLayout.CHANNEL_SDF) > 0.0 and bumped.revision_of(tile) == 2,
+		"a saved dig and its tile revision survive a terrain version bump")
+	_check(FileAccess.get_file_as_string(server_dir + "/world_items.json") == saved_items and FileAccess.get_file_as_string(server_dir + "/world_items/area_0_0.json") == saved_items,
+		"a terrain version bump leaves the other world saves beside the store alone")
+	bumped.flush()
+	bumped = null
 
 	# The client cache: hits, stale revisions and the size limit.
 	var world: Dictionary = {"tile_size_m": generator.tile_size_m, "min_tile": generator.min_tile, "tiles_per_side": int(round(generator.period_m / generator.tile_size_m))}
@@ -1926,8 +1977,35 @@ func _test_streaming(generator, data) -> void:
 	var cached: VoxelBuffer = TerrainLayout.make_buffer(16)
 	_check(cache.load_block(cached, block, 0) and cached.get_voxel(3, 3, 3, TerrainLayout.CHANNEL_ROCK) == original.get_voxel(3, 3, 3, TerrainLayout.CHANNEL_ROCK),
 		"the client cache returns a saved block")
+	# Dave 18 Nov 2026: an edit this session outdates only the blocks round it, not the whole tile.
+	var far_block: Vector3i = block + Vector3i(4, 0, 0)
+	cache.save_block(original, far_block, 0)
+	cache.flush()
+	var edit_at: Vector3 = (Vector3(block) + Vector3(0.5, 0.5, 0.5)) * 16.0
+	var forgotten: Array = cache.forget_area(edit_at, 2.0)
+	_check(forgotten.has(Vector4i(block.x, block.y, block.z, 0)) and not cache.load_block(cached, block, 0) and cache.load_block(cached, far_block, 0),
+		"a ground edit outdates the saved blocks round it and keeps the rest of the tile")
+	cache.save_block(original, block, 0)
+	cache.flush()
+	_check(cache.load_block(cached, block, 0), "the server's new copy of an edited block is saved and read again")
+	# Protocol 128: a newer server revision holds the tile until the edits since come; then only the blocks round them are outdated.
+	cache.flush()
 	cache.set_revision(tile, 2)
-	_check(not cache.load_block(cached, block, 0), "a newer tile revision empties that tile from the client cache")
+	_check(not cache.load_block(cached, far_block, 0) and cache.take_catch_up().size() == 1, "a newer tile revision holds the tile and asks for the edits since")
+	var caught: Array = cache.apply_catch_up(tile, 1, 2, PackedFloat32Array([edit_at.x, edit_at.y, edit_at.z, 2.0]), false)
+	_check(caught.has(Vector4i(block.x, block.y, block.z, 0)) and not cache.load_block(cached, block, 0) and cache.load_block(cached, far_block, 0),
+		"the edits since outdate only their blocks; the rest of the tile is kept")
+	var reopened_cache = ClientCacheScript.new()
+	cache.flush()
+	reopened_cache.setup(root + "/client", world, {"%d,%d" % [tile.x, tile.y]: 2}, 2048)
+	_check(reopened_cache.take_catch_up().is_empty() and not reopened_cache.load_block(cached, block, 0) and reopened_cache.load_block(cached, far_block, 0),
+		"the next join knows the outdated blocks and asks nothing when the tile has not changed")
+	reopened_cache = null   # its database closes before the file is dropped below
+	cache.set_revision(tile, 3)
+	cache.take_catch_up()
+	_check(cache.apply_catch_up(tile, 1, 3, PackedFloat32Array([edit_at.x, edit_at.y, edit_at.z, 2.0]), false).is_empty(), "an answer to another ask (since 1, the copy is at 2) is ignored")
+	cache.apply_catch_up(tile, 2, 3, PackedFloat32Array(), true)
+	_check(not cache.load_block(cached, far_block, 0), "when the server cannot list the edits the tile is emptied")
 	var tile_blocks: int = int(generator.tile_size_m / 16.0)
 
 	for step in [0, 1, 5, 8]:
@@ -2143,6 +2221,49 @@ func _test_flora(generator, data, tables, tile_rules: Dictionary) -> void:
 	var restarted = ServerFloraScript.new()
 	restarted.setup(placer, root)
 	_check(restarted.removed_in(best) == [ids[0]] and not restarted.layout_cleared, "flora removals survive a server restart")
+	_check(FileAccess.file_exists("%s/flora_removed/%d_%d.json" % [root, best.x, best.y]) and not FileAccess.file_exists(root + "/flora_removed.json"), "removals are saved in their chunk's own file (audit finding 6)")
+	# A one-file save from before 18 Nov 2026 loads, is written out per chunk at the next save and kept as .migrated.
+	var legacy_file: FileAccess = FileAccess.open(root + "/flora_removed.json", FileAccess.WRITE)
+	legacy_file.store_string(JSON.stringify({"layout": FloraLayoutScript.VERSION, "%d,%d" % [best.x, best.y]: [ids[0], ids[1]]}))
+	legacy_file.close()
+	var migrated = ServerFloraScript.new()
+	migrated.setup(placer, root)
+	migrated.save_removed(true)
+	var migrated_again = ServerFloraScript.new()
+	migrated_again.setup(placer, root)
+	_check(migrated_again.removed_in(best).size() == 2 and FileAccess.file_exists(root + "/flora_removed.json.migrated") and not FileAccess.file_exists(root + "/flora_removed.json"), "a one-file removals save is written out per chunk and kept as .migrated")
+	DirAccess.remove_absolute(root + "/flora_removed.json.migrated")
+	var chunk_path: String = "%s/flora_removed/%d_%d.json" % [root, best.x, best.y]
+	# An unreadable one-file save does not wipe good chunk files: it is left in place and the folder is read.
+	var broken_file: FileAccess = FileAccess.open(root + "/flora_removed.json", FileAccess.WRITE)
+	broken_file.store_string("{not json")
+	broken_file.close()
+	var past_broken = ServerFloraScript.new()
+	past_broken.setup(placer, root)
+	past_broken.save_removed(true)
+	_check(past_broken.removed_in(best).size() == 2 and FileAccess.file_exists(chunk_path), "an unreadable one-file save leaves the chunk files as they are")
+	DirAccess.remove_absolute(root + "/flora_removed.json")
+	# A chunk file stamped with another layout is cleared and its file goes at the next save.
+	var stale_chunk: FileAccess = FileAccess.open(chunk_path, FileAccess.WRITE)
+	stale_chunk.store_string(JSON.stringify({"layout": FloraLayoutScript.VERSION + 1, "ids": [ids[0]]}))
+	stale_chunk.close()
+	var chunk_moved = ServerFloraScript.new()
+	chunk_moved.setup(placer, root)
+	chunk_moved.save_removed(true)
+	_check(chunk_moved.layout_cleared and chunk_moved.removed_in(best).is_empty() and not FileAccess.file_exists(chunk_path), "a chunk file from another flora layout is cleared and removed")
+	# The admin world reset removes every chunk file and keeps a one-file save as .migrated.
+	chunk_moved.cut(best, ids[0])
+	chunk_moved.save_removed(true)
+	var reset_file: FileAccess = FileAccess.open(root + "/flora_removed.json", FileAccess.WRITE)
+	reset_file.store_string(JSON.stringify({"layout": FloraLayoutScript.VERSION, "%d,%d" % [best.x, best.y]: [ids[1]]}))
+	reset_file.close()
+	var resetting = ServerFloraScript.new()
+	resetting.setup(placer, root)
+	resetting.restore_all()
+	var after_reset = ServerFloraScript.new()
+	after_reset.setup(placer, root)
+	_check(after_reset.removed_in(best).is_empty() and not FileAccess.file_exists(chunk_path) and not FileAccess.file_exists(root + "/flora_removed.json"), "restore_all removes the chunk files and the one-file save")
+	DirAccess.remove_absolute(root + "/flora_removed.json.migrated")
 	# A save made under another flora layout is dropped (patches move plants); a save without a stamp counts as the first layout.
 	var stale: Dictionary = {"layout": FloraLayoutScript.VERSION + 1, "%d,%d" % [best.x, best.y]: [ids[0]]}
 	var stale_file: FileAccess = FileAccess.open(root + "/flora_removed.json", FileAccess.WRITE)

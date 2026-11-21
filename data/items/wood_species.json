@@ -1,19 +1,18 @@
 {
-	"note": "Wood species uses v1 (Dave 2026-10-23, tech/items/TREE_SPECIES_USES_V1.md). class: hardwood burns long and makes fine boards; softwood burns fast and makes plank boards, pillars and beams. burn 1-5 (firewood). hits_to_fell is a reference: the server already derives hits from trunk thickness (thin hardwood fewer, thick softwood more); axe wear per hit is the same for every species. Foundations ignore the rot rules. Species not listed use hardwood defaults.",
-	"class_items": {
-		"hardwood": {"firewood": "firewood", "block": "wooden_block", "block_large": "wooden_block_large"},
-		"softwood": {"firewood": "firewood_soft", "block": "wooden_block_soft", "block_large": "wooden_block_soft_large"}
-	},
+	"note": "Wood species uses v1 (Dave 2026-10-23, tech/items/TREE_SPECIES_USES_V1.md). class: hardwood logs saw into Hardwood boards, softwood and the plain Log into Planks (one Firewood and one Wooden block for every species since Dave 15 Nov 2026, docs/design/TREE_WOOD_TOOLS_DESIGN.md). burn 1-5 (firewood). hits_to_fell is a reference: the server already derives hits from trunk thickness (thin hardwood fewer, thick softwood more); axe wear per hit is the same for every species. Foundations ignore the rot rules. Species not listed use hardwood defaults.",
 	"ingredient_groups": {
-		"note": "An ingredient id that names a group (a recipe asking for plain log) is filled by any member. The crafting code matches members; validate_items checks every group has members and that no recipe needs a plain id with no source. Defined by Sal 2026-10-31 for guide finding F-16; code half in LOG_SPECIES_SPEC.md. nails and hinges (Morgan, 10 Nov 2026): bronze or iron fills every blueprint and recipe that asks for them; iron bands stay iron.",
-		"log": ["log_oak", "log_beech", "log_birch", "log_scots_pine", "log_spruce", "log_alder", "log_willow", "log_coconut_palm", "log_tropical_hardwood", "log_acacia", "log_mangrove", "log_rowan", "log_wild_apple", "log_wild_pear", "log_wild_cherry", "log_sweet_chestnut", "log_walnut", "log_date_palm", "log_mirrorbark", "log_wardpine", "log_hearthwood", "log_everember", "log_witness_tree", "log_balsam_fir", "log_maple"],
-		"wooden_block": ["wooden_block", "wooden_block_soft"],
+		"note": "An ingredient id that names a group (a recipe asking for plain log) is filled by any member. The crafting code matches members; validate_items checks every group has members and that no recipe needs a plain id with no source. Defined by Sal 2026-10-31 for guide finding F-16; code half in LOG_SPECIES_SPEC.md. nails and hinges (Morgan, 10 Nov 2026): bronze or iron fills every blueprint and recipe that asks for them; iron bands stay iron. copper_nails (Dave 15 Nov 2026, the Quality - Backpack takes any nails): a need for Copper nails is filled by copper, bronze or iron nails; Copper nails are not in the nails group, so a building's nails cost and its refund are unchanged. Nails and hinges tiers (Dave 21 Nov 2026, \"we should have a chest size for each tier of nails\"; docs/design/CHEST_TIERS.md): a need names the lowest metal it takes and better ones serve, as the chisels do: copper_nails is copper or better, bronze_nails bronze or better, nails (Iron nails) iron or better, steel_nails steel only; bronze_hinges is bronze or better, hinges (Iron hinges) iron only (there are no copper or steel hinges). Every building and recipe that took iron or bronze nails or hinges now asks for bronze_nails or bronze_hinges, so it takes the same metals as before and steel too; only the chests are tiered. Mission 001 phase 2a (master s2.3, s4 item 3): log_spruce (Softwood log: spruce, Scots pine, the plain Log) makes Planks and log_oak (Hardwood log: the six hardwood species) makes Hardwood boards; the two never substitute [D4]. The retired species logs left the log group.",
+		"log": ["log_oak", "log_beech", "log_birch", "log_scots_pine", "log_spruce", "log_tropical_hardwood", "log_walnut", "log_maple"],
+		"log_spruce": ["log_scots_pine", "log"],
+		"log_oak": ["log_beech", "log_birch", "log_tropical_hardwood", "log_walnut", "log_maple"],
+		"copper_chisel": ["copper_chisel", "bronze_chisel", "iron_chisel", "steel_chisel"],
 		"bronze_chisel": ["bronze_chisel", "iron_chisel", "steel_chisel"],
-		"knife": ["stone_knife", "obsidian_knife", "bronze_knife"],
-		"nails": ["nails", "bronze_nails"],
-		"hinges": ["hinges", "bronze_hinges"],
-		"wooden_block_large": ["wooden_block_large", "wooden_block_soft_large"],
-		"firewood": ["firewood", "firewood_soft"],
+		"iron_chisel": ["iron_chisel", "steel_chisel"],
+		"knife": ["stone_knife", "copper_knife", "bronze_knife", "iron_knife", "steel_knife"], "axe": ["stone_axe", "copper_axe", "bronze_axe", "iron_axe", "steel_axe"], "saw": ["stone_saw", "copper_saw", "bronze_saw", "hand_saw", "steel_saw"],
+		"copper_nails": ["bronze_nails", "nails", "steel_nails"],
+		"bronze_nails": ["nails", "steel_nails"],
+		"nails": ["steel_nails"],
+		"bronze_hinges": ["hinges"],
 		"fish": ["carp", "cod", "eel", "herring", "mackerel", "perch", "pike", "salmon", "smelt", "trout"],
 		"mushrooms": ["porcini", "chanterelles", "morels", "puffball"],
 		"nuts": ["hazelnuts", "chestnuts", "walnuts", "beechnuts"],
@@ -24,10 +23,12 @@
 		"pitch": ["resin", "pine_tar", "animal_fat"],
 		"herbs": ["thyme", "rosemary", "marjoram", "sage", "mint"]
 	},
+	"tree_sap": {"note": "Dave 16 Nov 2026: you get Tree sap whenever you cut down a softwood tree (a species with class softwood below) or process softwood logs (the log_spruce group: Spruce log, Scots pine log, the plain Log) into anything. item is the Tree sap item (id resin, the conifer sap that was named Resin). felled: how many every felled softwood tree gives, small or large, beside the trunk; per_softwood_log: how many each softwood log a finished craft used up gives the crafter. Amounts PROVISIONAL (TORCH-SAP TS-2, TS-3).", "item": "resin", "felled": 2, "per_softwood_log": 1},
 	"key_woods": ["oak", "beech", "maple", "walnut", "birch", "scots_pine", "spruce", "tropical_hardwood"],
-	"retired_to": {"log_": "log", "lumber_": "lumber", "beam_": "lumber"},
+	"group_labels": {"note": "Master s4 item 14: a group cost reads under this label, not its key item's name (item_table.gd cost_name).", "log_spruce": "Softwood log", "log_oak": "Hardwood log", "knife": "Any knife", "axe": "Any axe", "saw": "Any saw", "copper_nails": "Copper nails or better", "bronze_nails": "Bronze nails or better", "nails": "Iron nails or better", "bronze_hinges": "Bronze hinges or better", "copper_chisel": "Copper chisel or better", "bronze_chisel": "Bronze chisel or better", "iron_chisel": "Iron chisel or better"},
+	"retired_to": {"note": "Master s4 item 3. Data only; renames.json is the live mechanism, and Dynasty is a new game (Dave 12 Nov 2026), so no rename rows are needed.", "log_": "log", "lumber_": {"hardwood": "hardwood_board", "softwood": "lumber"}, "beam_": "lumber"},
 	"default": {
-		"class": "hardwood",
+		"class": "softwood",
 		"burn": 4,
 		"board": "fine"
 	},
@@ -115,6 +116,13 @@
 			"board": "none",
 			"best_use": "baskets, twine, light frames",
 			"hits_to_fell": 5
+		},
+		"tropical_hardwood": {
+			"class": "hardwood",
+			"burn": 5,
+			"board": "fine",
+			"best_use": "Hardwood boards (Mission 001 phase 2a: it is in the Hardwood log group, so it chops and burns as hardwood too)",
+			"hits_to_fell": 10
 		},
 		"scots_pine": {
 			"class": "softwood",

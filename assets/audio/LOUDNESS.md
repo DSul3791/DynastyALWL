@@ -127,8 +127,6 @@ Active RMS and peak in dBFS per slot (recorded files win over generated). Steps 
 |---|---|---|---|---|---|
 | cook_sizzle | generated | 2 | -20.5 | -4.6 | +1.1 |
 | drink_gulp | generated | 2 | -17.7 | -4.4 | +3.9 |
-| eat_crunch | generated | 3 | -25.5 | -2.9 | -3.9 |
-| eat_soft | generated | 3 | -22.7 | -4.1 | -1.1 |
 | fire_fuel | generated | 2 | -25.1 | -2.5 | -3.5 |
 | heal_bandage | generated | 2 | -21.6 | -5.3 | +0.0 |
 | heal_poultice | generated | 2 | -21.0 | -4.3 | +0.5 |
@@ -244,9 +242,9 @@ Active RMS and peak in dBFS per slot (recorded files win over generated). Steps 
 | hit_pick_soil | generated | 3 | -20.3 | -1.2 | +0.0 |
 | hit_pick_stone | generated | 3 | -22.2 | -1.5 | -1.9 |
 | hit_pick_wood | generated | 3 | -18.6 | -1.2 | +1.7 |
-| hit_spade_soil | generated | 3 | -21.1 | -1.5 | -0.8 |
-| hit_spade_stone | generated | 3 | -21.7 | -1.5 | -1.4 |
-| hit_spade_wood | generated | 3 | -20.0 | -1.4 | +0.3 |
+| hit_shovel_soil | generated | 3 | -21.1 | -1.5 | -0.8 |
+| hit_shovel_stone | generated | 3 | -21.7 | -1.5 | -1.4 |
+| hit_shovel_wood | generated | 3 | -20.0 | -1.4 | +0.3 |
 
 ## ice (median -19.0 dB)
 
@@ -822,26 +820,26 @@ Active RMS and peak in dBFS per slot (recorded files win over generated). Steps 
 | water_pond | generated | 1 | -15.4 | -3.2 | +0.2 |
 | water_river | generated | 1 | -15.4 | -3.3 | +0.2 |
 
-## weather (median -19.3 dB)
+## weather (median -19.7 dB)
 
 | slot | source | files | RMS dB | peak dB | vs median |
 |---|---|---|---|---|---|
-| rain_drip | generated | 4 | -18.0 | -3.0 | +1.3 |
-| rain_heavy | generated | 1 | -16.5 | -1.2 | +2.8 |
-| rain_leaves | generated | 1 | -18.4 | -1.1 | +0.8 |
-| rain_light | generated | 1 | -16.9 | -0.1 | +2.4 |
-| rain_litter | generated | 1 | -19.0 | -1.2 | +0.3 |
-| rain_mud | generated | 1 | -17.1 | -0.3 | +2.2 |
-| rain_roof | generated | 1 | -19.9 | -1.1 | -0.7 |
-| rain_snow | generated | 1 | -20.0 | -1.5 | -0.7 |
-| rain_stone | generated | 1 | -20.0 | -1.5 | -0.7 |
-| rain_water | generated | 1 | -19.6 | -1.8 | -0.3 |
-| rain_woodroof_heavy | generated | 1 | -19.7 | -1.4 | -0.5 |
-| rain_woodroof_light | generated | 1 | -20.6 | -1.4 | -1.3 |
-| thunder | generated | 3 | -21.0 | -1.3 | -1.7 |
-| thunder_far | generated | 3 | -15.3 | -2.8 | +4.0 |
-| thunder_near | generated | 3 | -22.4 | -1.1 | -3.1 |
-| wind_storm | generated | 1 | -15.3 | -2.9 | +3.9 |
+| rain_drip | generated | 4 | -21.6 | -2.9 | -1.9 |
+| rain_heavy | generated | 1 | -16.5 | -1.2 | +3.1 |
+| rain_leaves | generated | 1 | -18.4 | -1.1 | +1.2 |
+| rain_light | generated | 1 | -16.9 | -0.1 | +2.8 |
+| rain_litter | generated | 1 | -19.0 | -1.2 | +0.7 |
+| rain_mud | generated | 1 | -17.1 | -0.3 | +2.5 |
+| rain_roof | generated | 1 | -19.9 | -1.1 | -0.3 |
+| rain_snow | generated | 1 | -20.0 | -1.5 | -0.4 |
+| rain_stone | generated | 1 | -20.0 | -1.5 | -0.3 |
+| rain_water | generated | 1 | -19.6 | -1.8 | +0.1 |
+| rain_woodroof_heavy | generated | 1 | -19.7 | -1.4 | -0.1 |
+| rain_woodroof_light | generated | 1 | -20.6 | -1.4 | -0.9 |
+| thunder | generated | 3 | -21.0 | -1.3 | -1.3 |
+| thunder_far | generated | 3 | -15.3 | -2.8 | +4.4 |
+| thunder_near | generated | 3 | -22.4 | -1.1 | -2.7 |
+| wind_storm | generated | 1 | -15.3 | -2.9 | +4.3 |
 
 ## wet (median -20.4 dB)
 

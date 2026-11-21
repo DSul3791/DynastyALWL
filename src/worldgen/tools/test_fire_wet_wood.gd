@@ -95,7 +95,7 @@ func _init() -> void:
 	inv.add(stick, 2, 30)
 	var wet_slot: int = -1
 
-	for slot in inv.SLOTS:
+	for slot in inv.slot_count:
 		if inv.numbers[slot] == stick and inv.wear[slot] > 0:
 			wet_slot = slot
 
@@ -175,7 +175,7 @@ func _init() -> void:
 	var pack = f.inventory_of(1)
 	var pack_wet: bool = false
 
-	for slot in pack.SLOTS:
+	for slot in pack.slot_count:
 		pack_wet = pack_wet or (pack.numbers[slot] == stick and pack.wear[slot] > 0)
 
 	check(not pack_wet, "sticks in the pack stay dry in the rain")

@@ -1,0 +1,4 @@
+run_tests: 16 parallel (jobs 3), 0 serial; output in C:/Users/david/AppData/Local/Temp/claude/01b3e68161e49208/3ccfae89-8254-4e50-a5df-cc087f5ec15a/scratchpad/rerun
+slowest: test_server_items 17.4s  test_first_hour 5.7s  test_lumber_route 5.2s  test_admin_mode_crafting 4.8s  test_logs_carry 4.1s  
+wall time 29 s, seconds per test in C:/Users/david/AppData/Local/Temp/claude/01b3e68161e49208/3ccfae89-8254-4e50-a5df-cc087f5ec15a/scratchpad/rerun/seconds.txt
+Test done: 16 pass, 0 fail

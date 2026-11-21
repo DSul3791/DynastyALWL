@@ -4,3 +4,6 @@
 *.sh text eol=lf
 tools/godot text eol=lf
 *.import text eol=lf
+Dockerfile text eol=lf
+*.dockerignore text eol=lf
+*.yaml text eol=lf

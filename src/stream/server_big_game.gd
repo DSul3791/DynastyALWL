@@ -12,7 +12,6 @@ extends RefCounted
 # who runs away during the warning (faster than run_trigger_mps away from it) skips the rest of it, and that charge is never a bluff; nor is a mother's for
 # her young. A row without these keys behaves as before: one warning, every charge real.
 
-const Steering := preload("res://src/shared/steering.gd")
 
 const WARN := 10
 const CHARGE := 11
@@ -23,6 +22,7 @@ var host                        # ServerAnimals
 var player_info: Callable       # () -> Array of {peer, pos, ...} (the same list the wolves read)
 var hurt_player: Callable       # (peer, amount, lethal, cause) -> "hurt" / "maimed" / "dead"
 var notice: Callable            # (peer, text)
+var struck: Callable            # (animal, peer, hurt result) after a charge lands (bandit camps stage 4b; it changes nothing about the blow)
 
 
 func handles(a: Dictionary) -> bool:
@@ -65,13 +65,44 @@ func warn(a: Dictionary, at: Vector3, warn_s: float = -1.0, forced: bool = false
 	if def.is_empty() or float(a.get("cool", 0.0)) > 0.0 or handles(a) or not host.may_attack(a, forced):
 		return false
 
+	_start_warn(a, at, warn_s if warn_s > 0.0 else float(def.get("warn_s", 2.2)), forced)
+	return true
+
+
+# A blow from a player within provoked_m (ServerAnimals.damage; Dave 21 Nov 2026 play test: elephants "turned to face me but just stood there
+# and died"). A warning already under way ends in the charge at once (it has been warned enough); a charge carries on; one standing after a
+# charge, or still cooling down from one, warns again (short). A jab lands every 0.6 s, inside the 0.8 s provoked warning, and each one used
+# to turn the warning into a flight that the next step turned back into a fresh warning: it faced the player until it died. Returns true
+# when the animal fights (the caller leaves it be); false when it may not attack at all (it runs).
+func provoke(a: Dictionary, at: Vector3, warn_s: float) -> bool:
+	if host.species_def(a["sp"]).get("defend", {}).is_empty() or not host.may_attack(a):
+		return false
+
+	var state: int = int(a["state"])
+
+	a.erase("foe_dog")   # the one hurting it is the foe now, not a dog it stood to
+
+	if state == WARN or state == WARN_POP:
+		a["timer"] = 0.0
+		a["no_bluff"] = true   # hurt, it presses home
+		a["heading"] = atan2(at.z - a["pos"].z, at.x - a["pos"].x)
+		return true
+
+	if state == CHARGE:
+		return true
+
+	_start_warn(a, at, warn_s, false)
+	return true
+
+
+func _start_warn(a: Dictionary, at: Vector3, warn_s: float, forced: bool) -> void:
+	var def: Dictionary = host.species_def(a["sp"]).get("defend", {})
 	a["state"] = WARN
-	a["timer"] = warn_s if warn_s > 0.0 else float(def.get("warn_s", 2.2))
+	a["timer"] = warn_s
 	a["huff_s"] = float(a["timer"]) * (1.0 - float(def.get("huff_share", 1.0)))   # the jaw-pop starts when this much warning is left
 	a["heading"] = atan2(at.z - a["pos"].z, at.x - a["pos"].x)
 	a["target"] = a["pos"]
 	a["no_bluff"] = forced   # a mother for her young presses home
-	return true
 
 
 # Whether the charge about to start is a bluff: bluff_share, scaled by the temperament (bluff_x) and at the den (den_bluff_x); never after
@@ -154,8 +185,9 @@ func step(a: Dictionary, dt: float) -> void:
 			ground_for = func(x: float, z: float) -> float: return host.swim_height(species, x, z)
 			blocked_for = Callable()
 
-		var r: Dictionary = Steering.step(a["pos"], goal, speed, dt, ground_for, blocked_for, 0.05, float(a["dir"]), host.crossing)
+		var r: Dictionary = host.walk_step(a["pos"], goal, speed, dt, ground_for, blocked_for, 0.05, float(a["dir"]), host.crossing)
 		a["heading"] = float(a["dir"])
+		var start: Vector3 = a["pos"]   # the charge hits whoever is within hit_m of the ground it covered this step, the start included (a player under it)
 
 		if r["moved"]:
 			a["ran"] = float(a["ran"]) + a["pos"].distance_to(r["pos"])
@@ -175,7 +207,7 @@ func step(a: Dictionary, dt: float) -> void:
 		if not bool(a["hit"]) and near.has("dog") and host.animals.has(int(near["dog"])):
 			var dog_at: Vector3 = host.animals[int(near["dog"])]["pos"]
 
-			if Vector2(dog_at.x - a["pos"].x, dog_at.z - a["pos"].z).length() <= float(def.get("hit_m", 2.2)):
+			if _off_path(dog_at, start, a["pos"]) <= float(def.get("hit_m", 2.2)):
 				a["hit"] = true
 				host.damage(int(near["dog"]), float(def.get("damage", 25.0)) * host.level_x(a, "damage"), -1, "charge")
 
@@ -183,9 +215,12 @@ func step(a: Dictionary, dt: float) -> void:
 			for info in (player_info.call() if player_info.is_valid() else []):
 				var p: Vector3 = info["pos"]
 
-				if Vector2(p.x - a["pos"].x, p.z - a["pos"].z).length() <= float(def.get("hit_m", 2.2)) and absf(p.y - a["pos"].y) < 2.5 and hurt_player.is_valid():
+				if _off_path(p, start, a["pos"]) <= float(def.get("hit_m", 2.2)) and absf(p.y - a["pos"].y) < 2.5 and hurt_player.is_valid():
 					a["hit"] = true
-					hurt_player.call(int(info["peer"]), float(def.get("damage", 25.0)) * host.level_x(a, "damage"), false, str(a["sp"]))   # a higher-level animal hits harder
+					var landed: String = str(hurt_player.call(int(info["peer"]), float(def.get("damage", 25.0)) * host.level_x(a, "damage"), false, str(a["sp"])))   # a higher-level animal hits harder
+
+					if struck.is_valid():
+						struck.call(a, int(info["peer"]), landed)
 					break
 
 		if bool(a["hit"]) or float(a["ran"]) >= float(def.get("charge_m", 24.0)) or not r["moved"]:
@@ -199,6 +234,15 @@ func step(a: Dictionary, dt: float) -> void:
 
 	if a["timer"] <= 0.0:
 		_calm(a, def)
+
+
+# How far a point is, on the ground, from the stretch a charge covered this step (a0 to a1). A step can be longer than hit_m when the
+# server runs slowly, so the end point alone could pass a player by.
+static func _off_path(p: Vector3, a0: Vector3, a1: Vector3) -> float:
+	var seg: Vector2 = Vector2(a1.x - a0.x, a1.z - a0.z)
+	var rel: Vector2 = Vector2(p.x - a0.x, p.z - a0.z)
+	var f: float = clampf(rel.dot(seg) / seg.length_squared(), 0.0, 1.0) if seg.length_squared() > 0.000001 else 0.0
+	return (rel - seg * f).length()
 
 
 func _calm(a: Dictionary, def: Dictionary) -> void:

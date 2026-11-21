@@ -141,16 +141,18 @@ func _init() -> void:
 	var taken: Array = Rules.snap(cfg, "foundation_section_kit", Vector3(53.1, 10.0, 50.3), 0, beside_rows)
 	check(taken[0] != Vector3(54.0, 11.0, 50.0), "a neighbour spot already taken is not offered again (%s)" % str(taken))
 	check(not bool(Rules.snap(cfg, "foundation_section_kit", Vector3(70.0, 10.0, 70.0), 0, beside_rows)[2]), "a foundation far from any other is placed on the ground, the wheel may lift it")
+	_first_foundation_checks(cfg, items)
 
 	var onto: Array = Rules.snap(cfg, "foundation_section_kit", Vector3(50.0, 10.3, 50.0), 0, base_rows)
 	check(bool(onto[2]) and onto[0].x == 50.0 and onto[0].z == 50.0 and onto[0].y > base_rows[0]["pos"].y + 1.9, "aiming at a foundation's middle stacks one on it (BUG-026)")
 	var thatch_base: Array = [{"pos": Vector3(50.0, 10.0, 50.0), "state": int(cfg["structures"]["thatch_floor"]["state"])}]
 	var on_thatch: Array = Rules.snap(cfg, "thatch_wall_kit", Vector3(48.9, 10.0, 47.6), 0, thatch_base)
 	check(bool(on_thatch[2]) and is_equal_approx(on_thatch[0].y, 10.3), "a thatch wall snaps onto the thatch floor top, 0.3 m up like the stone foundation (%s)" % str(on_thatch))
-	check(bool(Rules.snap(cfg, "thatch_roof_kit", Vector3(50.0, 10.0, 50.0), 0, thatch_base)[2]) and bool(Rules.snap(cfg, "thatch_doorway_kit", Vector3(48.9, 10.0, 47.6), 0, thatch_base)[2]), "a thatch roof and doorway snap onto it too")
+	check(bool(Rules.snap(cfg, "thatch_doorway_kit", Vector3(48.9, 10.0, 47.6), 0, thatch_base)[2]), "a thatch doorway snaps onto it too")
+	check(not bool(Rules.snap(cfg, "thatch_roof_kit", Vector3(50.0, 10.0, 50.0), 0, thatch_base)[2]), "a Crude roof panel does not stand on a foundation: it rests on a wall top (test_roof_panels.gd)")
 	check(Rules.snap(cfg, "chest_kit", Vector3(10.4, 10.0, 7.6), 133)[0] == Vector3(10.4, 10.0, 7.6), "a chest keeps its own spot")
 
-	# Joins: a wall continues a wall, turns the corner at its end, stands on a floor edge; floors and roofs meet edge to edge.
+	# Joins: a wall continues a wall, turns the corner at its end, stands on a floor edge; floors meet edge to edge.
 	var wall_rows: Array = [{"pos": Vector3(20.0, 10.0, 20.0), "state": 22, "yaw": 0.0}]
 	var straight: Array = Rules.snap(cfg, "wall_section_kit", Vector3(22.3, 10.0, 20.2), 0, wall_rows)
 	check(is_equal_approx(straight[0].x, 22.0) and is_equal_approx(straight[0].z, 20.0) and int(straight[1]) == 0, "a wall continues a wall end to end (%s)" % str(straight))
@@ -169,8 +171,10 @@ func _init() -> void:
 		items.place_item(1, items.table.number_of("wall_section_kit"), spot, 0)
 	check(items.world_item_count() == walls_before + 4, "four wall sections stand edge to edge, 2 m and 1 m apart (%d placed)" % (items.world_item_count() - walls_before))
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("chest_kit"), 0, 1, Vector3.ZERO)
+	items.place_item(1, items.table.number_of("chest_kit"), Vector3(200.0, 10.0, 202.0), 0)
+	check(items.world_item_count() == walls_before + 4 and Rules.blocked(cfg, "chest_kit", Vector3(200.0, 10.0, 202.0), [{"pos": Vector3(200.0, 10.0, 202.0), "state": 22, "yaw": 0.0}]) == "overlap", "a chest through a wall is refused, and its ghost is red")
 	items.place_item(1, items.table.number_of("chest_kit"), Vector3(200.0, 10.0, 202.5), 0)
-	check(items.world_item_count() == walls_before + 4, "a chest is still kept 2.5 m from a wall")
+	check(items.world_item_count() == walls_before + 5, "a chest between two walls 1 m apart, touching neither, stands (Dave 17 Nov 2026: stations go inside buildings)")
 	# Nothing is built in water (Dave 2026-10-22: floor sections lay on the pond): any corner wet blocks it, on the server too.
 	var pond: Callable = func(x: float, _z: float) -> float: return 1.0 if x > 300.0 else 0.0
 	check(Rules.over_water(cfg, "floor_section_kit", Vector3(301.0, 10.0, 0.0), 0.0, pond) and not Rules.over_water(cfg, "floor_section_kit", Vector3(298.0, 10.0, 0.0), 0.0, pond), "a floor with no wet corner is fine, one wet corner blocks it")
@@ -235,11 +239,11 @@ func _init() -> void:
 	column.append({"pos": Vector3(10.0, 14.0, 10.0), "state": int(fdef["state"]), "yaw": 0.0})
 	column.append({"pos": Vector3(10.0, 16.0, 10.0), "state": int(fdef["state"]), "yaw": 0.0})
 	check(Rules.foundation_stack(fdef, Vector3(10.0, 16.3, 10.0), column).is_empty(), "a column stops at %d layers" % Rules.STACK_MAX_LAYERS)
-	# The wood chain stations: the woodworking table and the sawmill place like other stations.
+	# The wood chain stations: the Carpenter's bench (log workbench) and the sawmill place like other stations (the Woodworking table retired, Mission 001).
 	var before_stations: Vector3 = items._peer_pos[2]
 	items.report_position(2, Vector3(800.0, 10.0, 800.0))
 
-	for station_kit in [["woodworking_table_kit", "woodworking_table", 802.0]]:
+	for station_kit in [["log_workbench_kit", "log_workbench", 802.0]]:
 		items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of(str(station_kit[0])), 0, 1, Vector3.ZERO)
 		items.place_item(2, items.table.number_of(str(station_kit[0])), Vector3(800.0, 10.0, float(station_kit[2])), 0)
 		var station_found: bool = false
@@ -406,7 +410,7 @@ func _init() -> void:
 	var fire_back: Vector3 = items.rest_point_for(2, Vector3(450.0, 10.0, 470.0))
 	check(fire_back.distance_to(items._items[fire_id]["pos"]) < 3.0, "from beside the campfire the campfire is the nearest rest point (%s)" % str(fire_back))
 	items.report_position(2, Vector3(450.0, 10.0, 450.0))
-	# A door: E opens and shuts it (the structure swaps its kind), and taking it down gives the doorway kit back.
+	# A doorway frame has no door of its own (BUGLIST-002): E on it does nothing, and taking it down gives the doorway kit back. The doors are test_doors.gd.
 	items.report_position(2, Vector3(600.0, 10.0, 600.0))
 	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("doorway_section_kit"), 0, 1, Vector3.ZERO)
 	items.place_item(2, items.table.number_of("doorway_section_kit"), Vector3(600.0, 10.0, 602.0), 0)
@@ -416,15 +420,10 @@ func _init() -> void:
 		if items._items[id].has("struct") and items._items[id]["struct"]["kind"] == "doorway_section" and items._items[id]["pos"].distance_to(Vector3(600.0, 10.0, 602.0)) < 1.0:
 			door_id = id
 
-	check(door_id != 0, "a door is placed")
+	check(door_id != 0, "a doorway frame is placed")
 	items.action(2, Net.ACT_USE_STRUCT, door_id, 0, 0, Vector3.ZERO)
-	check(items._items[door_id]["struct"]["kind"] == "door_open" and items._struct_state(items._items[door_id]) == 28, "E opens the door")
-	OS.delay_msec(450)
-	items.action(2, Net.ACT_USE_STRUCT, door_id, 0, 0, Vector3.ZERO)
-	check(items._items[door_id]["struct"]["kind"] == "doorway_section", "E shuts it again")
-	items.action(2, Net.ACT_USE_STRUCT, door_id, 0, 0, Vector3.ZERO)
-	check(items._items[door_id]["struct"]["kind"] == "doorway_section", "the door will not flap faster than its pace")
-	# A rock pile: placed from the item, E gives back all 45 stones.
+	check(items._items[door_id]["struct"]["kind"] == "doorway_section" and items._struct_state(items._items[door_id]) == 26, "E on an empty doorway frame does nothing")
+	# A rock pile: placed from the item, E gives back all 90 stones (0.5 kg each, Dave 19 Nov 2026).
 	items.action(2, Net.ACT_ADMIN_GIVE, items.table.number_of("rock_pile"), 0, 1, Vector3.ZERO)
 	items.place_item(2, items.table.number_of("rock_pile"), Vector3(600.0, 10.0, 606.0), 0)
 	var pile_id: int = 0
@@ -447,7 +446,7 @@ func _init() -> void:
 	var stones_before: int = items.inventory_of(2).count_of(stone_n) + int(on_ground.call())
 	items.action(2, Net.ACT_USE_STRUCT, pile_id, 0, 0, Vector3.ZERO)
 	var stones_after: int = items.inventory_of(2).count_of(stone_n) + int(on_ground.call())
-	check(not items._items.has(pile_id) and stones_after == stones_before + 45, "E on a rock pile gives all 45 stones back, to the pack or the ground (%d to %d)" % [stones_before, stones_after])
+	check(not items._items.has(pile_id) and stones_after == stones_before + 90, "E on a rock pile gives all 90 stones back, to the pack or the ground (%d to %d)" % [stones_before, stones_after])
 	items.report_position(2, Vector3(450.0, 10.0, 450.0))
 	# Bracing supports are spheres of influence (Dave 2026-10-22): a prop holds everything within 5 m, the radius shrinks with its condition, spheres overlap.
 	items.report_position(2, Vector3(700.0, 10.0, 700.0))
@@ -463,6 +462,8 @@ func _init() -> void:
 	check(items.support_strength_at(Vector3(700.0, 10.0, 707.5)) == 1.0, "a second prop beside it extends the held area (overlapping spheres)")
 	var half_s: float = 1000.0 + 30.0 * 86400.0
 	check(items.support_strength_at(Vector3(702.0, 10.0, 702.0), half_s) == 1.0 and items.support_strength_at(Vector3(704.0, 10.0, 702.0), half_s) == 0.0, "at about half health the sphere is about half as wide")
+	items._rebuild_supports(true)
+	check(items._support_ids.size() >= 2 and items.support_strength_at(Vector3(700.0, 10.0, 707.5)) == 1.0 and items.support_strength_at(Vector3(704.9, 10.0, 702.0)) == 1.0, "filed by square (finding 10): a full scan, as at load, finds the props again, across a square's edge too")
 	items.report_position(2, Vector3(450.0, 10.0, 450.0))
 	# A dead branch on the forest floor gives one stick, only within reach.
 	var sticks_had: int = items.inventory_of(2).count_of(items.table.number_of("stick"))
@@ -600,3 +601,61 @@ func _wall_top_checks(cfg: Dictionary) -> void:
 	check(Rules.blocked(with, "test_wall_top_kit", on_wall[0], [wall_row, {"pos": on_wall[0], "state": 9902, "yaw": 0.0}]) == "close", "one wall top to a wall")
 	var away: Array = Rules.snap(with, "test_wall_top_kit", Vector3(310.3, 10.0, 310.2), 0, [wall_row])
 	check(not bool(away[2]), "with no wall near it is placed like any piece (%s)" % str(away))
+
+
+# Dave 19 Nov 2026 play test: "the first foundation should be able to be placed anywhere facing any direction according to which way I am facing". A
+# foundation with nothing to go beside or on keeps the aimed spot and the player's turn (no world grid, no quarter turns); everything that snaps to it then
+# follows its turn: its wall and floor anchors, the next foundation along its sides, one stacked on it, a pillar, a roof panel on a wall top.
+func _first_foundation_checks(cfg: Dictionary, items) -> void:
+	for kit in ["foundation_section_kit", "thatch_floor_kit", "wood_foundation_kit"]:
+		var alone: Array = Rules.snap(cfg, kit, Vector3(70.3, 10.0, 70.7), 37, [])
+		check(alone[0] == Vector3(70.3, 10.0, 70.7) and int(alone[1]) == 37 and not bool(alone[2]), "%s alone: where aimed and turned as the player faces (%s)" % [kit, str(alone)])
+
+	check(int(Rules.snap(cfg, "foundation_section_kit", Vector3(70.0, 10.0, 70.0), -20, [])[1]) == 340, "a turn below zero comes back in 0 to 359")
+	var yaw: float = 30.0
+	var turn: float = deg_to_rad(yaw)
+	var at: Vector3 = Vector3(1200.0, 10.0, 1200.0)   # away from every other piece in this test
+	var base: Array = [{"pos": at, "state": 25, "yaw": yaw}]
+	var corner: Vector3 = at + Vector3(-1.0, 0.0, -2.0).rotated(Vector3.UP, turn)   # the wall anchor [-1, -2, 0] where the turned slab's look draws it
+	var wall: Array = Rules.snap(cfg, "wall_section_kit", corner + Vector3(0.2, 0.0, -0.1), 0, base)
+	check(bool(wall[2]) and Vector2(wall[0].x, wall[0].z).distance_to(Vector2(corner.x, corner.z)) < 0.01 and is_equal_approx(wall[0].y, 10.3) and int(wall[1]) == 30, "a wall on a foundation turned 30 degrees takes the turned anchor and its turn (%s)" % str(wall))
+	var side: Vector3 = at + Vector3(-2.0, 0.0, 1.0).rotated(Vector3.UP, turn)
+	check(int(Rules.snap(cfg, "wall_section_kit", side, 0, base)[1]) == 120, "the side anchor runs along that side: 90 plus the slab's 30")
+	var next_spot: Vector3 = at + Vector3(4.0, 0.0, 0.0).rotated(Vector3.UP, turn)
+	var next_to: Array = Rules.snap(cfg, "foundation_section_kit", next_spot + Vector3(-0.6, 0.0, 0.5), 0, base)
+	check(bool(next_to[2]) and Vector2(next_to[0].x, next_to[0].z).distance_to(Vector2(next_spot.x, next_spot.z)) < 0.01 and int(next_to[1]) == 30, "the next foundation goes edge to edge along the turned side, at its turn (%s)" % str(next_to))
+	var stacked: Array = Rules.snap(cfg, "foundation_section_kit", at + Vector3(0.9, 0.3, 0.9), 0, base)
+	check(bool(stacked[2]) and stacked[0].x == at.x and stacked[0].z == at.z and int(stacked[1]) == 30, "aimed at the turned slab's middle a foundation stacks on it at its turn (%s)" % str(stacked))
+	var out_corner: Vector3 = at + Vector3(1.9, 0.0, 1.9).rotated(Vector3.UP, turn)   # inside the turned square, outside an unturned one's middle band
+	check(not is_nan(Rules.support_top(cfg, out_corner + Vector3(0.0, 0.3, 0.0), base, true)), "a station aimed near a turned slab's corner stands on it")
+	var pillar_at: Vector3 = at + Vector3(2.0, 0.0, 2.0).rotated(Vector3.UP, turn)
+	var pillar: Array = Rules.snap(cfg, "thatch_pillar_kit", pillar_at + Vector3(0.2, 0.3, 0.1), 10, base)
+	check((bool(pillar[2]) and Vector2(pillar[0].x, pillar[0].z).distance_to(Vector2(pillar_at.x, pillar_at.z)) < 0.01 and int(pillar[1]) == 30), "a pillar takes the turned slab's corner (%s)" % str(pillar))
+	# A roof panel on that building's wall top rises across the wall, at the wall's turn (not the camera's quarter turns).
+	var walls: Array = base + [{"pos": wall[0], "state": 22, "yaw": float(wall[1])}]
+	var across: Vector2 = Vector2(sin(turn), cos(turn))   # the wall's across, as roof_connections reads it
+	var top: Vector3 = Vector3(wall[0].x, wall[0].y + Rules.WALL_HEIGHT_M, wall[0].z)
+	var aim: Vector3 = top + Vector3(across.x, 0.5, across.y) * 1.0
+	var panel: Array = Rules.snap(cfg, "thatch_roof_kit", aim, 200, walls)
+	check(bool(panel[2]) and int(panel[1]) == 210, "facing within 45 degrees of the wall's across, a panel rests on it at the wall's turn (%s)" % str(panel))
+	check(not bool(Rules.snap(cfg, "thatch_roof_kit", aim, 120, walls)[2]), "facing along the wall, no panel")
+	# A roof corner on that building: the same two walls and corner as an unturned one, turned 30 degrees about the first wall, gives the same answer turned.
+	var wall_state: int = int(cfg["structures"]["wall_section"]["state"])
+	var hip_def: Dictionary = Rules.structure_of_kit(cfg, "thatch_roof_corner_kit")
+	var pivot: Vector3 = Vector3(300.0, 10.3, 300.0)
+	var square_rows: Array = [{"pos": pivot, "state": wall_state, "yaw": 0.0}, {"pos": pivot + Vector3(-1.0, 0.0, 1.0), "state": wall_state, "yaw": 90.0}]
+	var turned_rows: Array = square_rows.map(func(r): return {"pos": pivot + ((r["pos"] as Vector3) - pivot).rotated(Vector3.UP, turn), "state": wall_state, "yaw": float(r["yaw"]) + yaw})
+	var cursor: Vector3 = Vector3(300.2, 13.0, 300.8)
+	var square_hip: Array = Rules.roof_hip_pick(cfg, hip_def, cursor, 0, square_rows)
+	var turned_hip: Array = Rules.roof_hip_pick(cfg, hip_def, pivot + (cursor - pivot).rotated(Vector3.UP, turn), 0, turned_rows)
+	var want_mid: Vector3 = Vector3.ZERO if square_hip.is_empty() else pivot + ((square_hip[0] as Vector3) - pivot).rotated(Vector3.UP, turn)
+	check(not square_hip.is_empty() and not turned_hip.is_empty() and (turned_hip[0] as Vector3).distance_to(want_mid) < 0.01 and int(turned_hip[1]) == posmod(int(square_hip[1]) + 30, 360) and str(turned_hip[2]) == str(square_hip[2]), "a roof corner on a building turned 30 degrees sits on its turned corner, turned 30 more (%s against %s)" % [str(turned_hip), str(square_hip)])
+	# The server: a piece standing on the turned slab's corner holds the slab up (it cannot be taken out from under it); one beside it does not.
+	var slab_def: Dictionary = cfg["structures"]["foundation_section"]
+	var slab: Dictionary = {"pos": at, "struct": {"kind": "foundation_section", "yaw": yaw}}
+	var post_at: Vector3 = at + Vector3(1.9, 0.3, 1.9).rotated(Vector3.UP, turn)   # inside the turned square; across the ground 2.6 m east of the middle, outside an unturned one
+	items._items[990001] = {"number": items.table.number_of("thatch_pillar"), "count": 1, "pos": post_at, "left": 1.0e9, "struct": {"kind": "thatch_pillar", "yaw": yaw}}
+	check(items._stands_on(slab, slab_def), "a pillar on the turned slab's corner stands on it (the server's own check)")
+	items._items[990001]["pos"] = at + Vector3(2.6, 0.3, -1.5).rotated(Vector3.UP, turn)
+	check(not items._stands_on(slab, slab_def), "a pillar just off the turned slab's side does not")
+	items._items.erase(990001)

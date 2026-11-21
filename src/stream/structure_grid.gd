@@ -3,7 +3,7 @@ extends RefCounted
 # Server-side footprints of the buildings that stop animals and walkers (Dave 3 Nov 2026: animals walked through walls, and a fox could take food
 # from inside a closed hut, because footprints lived only on the client). Each solid piece is an oriented rectangle (centre, half sizes,
 # yaw) kept in a hash of BUCKET_M squares; a query touches the few rectangles of one bucket. A piece is solid when its structures.json
-# row says "blocks_walk": true (walls, windows, heavy stations, shut doors and gates; open doorways and floors are walkable).
+# row says "blocks_walk": true (walls, windows, heavy stations, shut doors and gates, a shut door across its whole frame by its grid_x, jambs included; open doors, empty doorway frames and floors are walkable).
 #
 # The grid keeps ids only. Removal needs no call: a query asks `items` (the server's item dictionary) whether the id is still there and
 # still the same kind, and forgets it if not, so none of the many places that erase an item need to know about the grid.
@@ -35,7 +35,13 @@ func add(id: int, kind: String, x: float, z: float, yaw_deg: float, footprint_x:
 			if not _buckets.has(key):
 				_buckets[key] = []
 
-			(_buckets[key] as Array).append(rect)
+			var list: Array = _buckets[key]
+
+			for n in range(list.size() - 1, -1, -1):
+				if int(list[n]["id"]) == id:
+					list.remove_at(n)   # a door shut again after being open: its earlier rectangle is still here (same id, same kind), keep one
+
+			list.append(rect)
 
 	count += 1
 
@@ -84,6 +90,27 @@ func segment_blocked(x0: float, z0: float, x1: float, z1: float, margin: float, 
 			return true
 
 	return false
+
+
+# The pieces still standing whose bucket lies within `reach` of (x, z): [{id, kind, x, z, hx, hz, cos, sin}] (the rolling logs' walls, server_items._log_surround).
+func rects_near(x: float, z: float, reach: float, items: Dictionary) -> Array:
+	var lo: Vector2i = _bucket(x - reach, z - reach)
+	var hi: Vector2i = _bucket(x + reach, z + reach)
+	var seen: Dictionary = {}
+	var out: Array = []
+
+	for bx in range(lo.x, hi.x + 1):
+		for bz in range(lo.y, hi.y + 1):
+			for rect in _buckets.get(Vector2i(bx, bz), []):
+				var item: Variant = items.get(int(rect["id"]), null)
+
+				if seen.has(int(rect["id"])) or item == null or not (item as Dictionary).has("struct") or str(item["struct"]["kind"]) != str(rect["kind"]):
+					continue   # met in two buckets, or taken down (blocks() forgets it)
+
+				seen[int(rect["id"])] = true
+				out.append(rect)
+
+	return out
 
 
 func _bucket(x: float, z: float) -> Vector2i:

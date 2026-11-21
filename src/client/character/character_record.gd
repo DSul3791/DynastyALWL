@@ -6,38 +6,25 @@ extends RefCounted
 # The same seed always gives the same roll, so a server can recompute a rolled record instead of trusting it (5.8.3).
 
 const Generator := preload("res://src/client/character/body_generator.gd")
+const BodyModels := preload("res://src/client/character/body_models.gd")
 
 const ATTRIBUTES := ["luck", "fitness", "strength", "dexterity", "memory", "wisdom", "courage"]     # Part 9.1: Courage is the proposed new one
 const ATTR_MIN := -10
 const ATTR_MAX := 10
-const FORMAT_VERSION := 2       # 1 had no gender, pronouns or frame; old files load with the plain defaults below
+const FORMAT_VERSION := 3       # 1 had no frame, 2 had a gender and pronouns instead of a body model; old files load with the plain defaults below
 const FEAR_COUNT := 35          # the draft list of 5.8.8
 const NAME_MAX := 24
 
-# Gender, pronouns and frame (decisions of 30 Oct 2026). Gender and pronouns are what the player says about themselves; the creator's Gender step only sets a starting
-# frame and clothing, every slider stays editable, and NO gameplay number depends on any of the three.
-const GENDERS := ["woman", "man", "non_binary", "prefer_not_to_say"]
-const GENDER_LABELS := {"woman": "Woman", "man": "Man", "non_binary": "Non-binary", "prefer_not_to_say": "Prefer not to say"}
-const PRONOUNS := ["she_her", "he_him", "they_them"]
-const PRONOUN_LABELS := {"she_her": "she/her", "he_him": "he/him", "they_them": "they/them"}
+# Body model and frame. The character has no gender (Dave 17 Nov 2026): the player picks a body model (body_models.gd) and a frame, a starting point for the body
+# sliders and clothing. Every slider stays editable and NO gameplay number depends on either.
 const FRAMES := ["feminine", "masculine", "neutral"]
-const FRAME_LABELS := {"feminine": "Feminine", "masculine": "Masculine", "neutral": "Neutral"}
-const DEFAULT_GENDER := "prefer_not_to_say"
-const DEFAULT_PRONOUNS := "they_them"
+const FRAME_LABELS := {"feminine": "Curved", "masculine": "Broad", "neutral": "Even"}     # the keys are the saved values; the labels name builds, not genders (provisional BM-3)
 const DEFAULT_FRAME := "neutral"
 
 
-static func default_pronouns(gender: String) -> String:
-	return "she_her" if gender == "woman" else ("he_him" if gender == "man" else DEFAULT_PRONOUNS)
-
-
-static func default_frame(gender: String) -> String:
-	return "feminine" if gender == "woman" else ("masculine" if gender == "man" else DEFAULT_FRAME)
-
-
-# "Woman, she/her" for showing under a name.
+# "Body 1, Even frame" for showing under a name.
 static func describe(rec: Dictionary) -> String:
-	return "%s, %s" % [GENDER_LABELS.get(str(rec.get("gender", DEFAULT_GENDER)), "Prefer not to say"), PRONOUN_LABELS.get(str(rec.get("pronouns", DEFAULT_PRONOUNS)), "they/them")]
+	return "%s, %s frame" % [BodyModels.label(str(rec.get("body", BodyModels.DEFAULT))), FRAME_LABELS.get(str(rec.get("frame", DEFAULT_FRAME)), "Even")]
 
 
 # Point buy (draft): everything starts at 0; the first three steps up cost 1 each, the next three cost 2 each (so +6 costs 9); going down to -3 gives 1 point back per step.
@@ -67,7 +54,7 @@ static func blank() -> Dictionary:
 	for a in ATTRIBUTES:
 		base[a] = 0
 
-	return {"version": FORMAT_VERSION, "gender": DEFAULT_GENDER, "pronouns": DEFAULT_PRONOUNS, "frame": DEFAULT_FRAME, "name": "", "ancestry": "", "genome_code": "", "background": "", "fear": 1, "method": "points", "roll_seed": 0, "rerolls": 0, "base": base}
+	return {"version": FORMAT_VERSION, "body": BodyModels.DEFAULT, "frame": DEFAULT_FRAME, "name": "", "ancestry": "", "genome_code": "", "background": "", "fear": 1, "method": "points", "roll_seed": 0, "rerolls": 0, "base": base}
 
 
 # What the next step up costs from a value, or -1 when it is at the cap.
@@ -149,15 +136,11 @@ static func validate(rec: Dictionary, ancestries: Array) -> PackedStringArray:
 	if not ancestries.has(str(rec.get("ancestry", ""))):
 		errors.append("unknown ancestry")
 
-	if int(rec.get("version", 1)) >= 2:
-		if not GENDERS.has(str(rec.get("gender", ""))):
-			errors.append("unknown gender")
+	if int(rec.get("version", 1)) >= 3 and not BodyModels.has(str(rec.get("body", ""))):
+		errors.append("unknown body model")
 
-		if not PRONOUNS.has(str(rec.get("pronouns", ""))):
-			errors.append("unknown pronouns")
-
-		if not FRAMES.has(str(rec.get("frame", ""))):
-			errors.append("unknown frame")
+	if int(rec.get("version", 1)) >= 2 and not FRAMES.has(str(rec.get("frame", ""))):
+		errors.append("unknown frame")
 
 	if not BACKGROUNDS.has(str(rec.get("background", ""))):
 		errors.append("unknown background")
@@ -237,10 +220,15 @@ static func from_text(text: String) -> Dictionary:
 
 	rec["version"] = int(rec.get("version", 1))
 
-	# A version 1 file has no gender, pronouns or frame: it loads with the plain defaults and keeps its version until it is saved again.
+	# Older files: version 1 has no frame; versions 1 and 2 have no body model (version 2's gender and pronouns are dropped). They load with the plain defaults and
+	# keep their version until they are saved again. A body model that is no longer listed falls back to the first one, so every character shows a body.
 	if rec["version"] < 2:
-		rec["gender"] = DEFAULT_GENDER
-		rec["pronouns"] = DEFAULT_PRONOUNS
 		rec["frame"] = DEFAULT_FRAME
+
+	rec.erase("gender")
+	rec.erase("pronouns")
+
+	if not BodyModels.has(str(rec.get("body", ""))):
+		rec["body"] = BodyModels.DEFAULT
 
 	return rec

@@ -105,7 +105,7 @@ Colour is never the only signal. A missing ingredient also shows its count in re
 ## 9. Recipes and crafting feedback
 
 - **Craftable recipe row:** a warm gold bar on its left edge, with full-colour icons. **Not craftable:** icons at 70 % desaturation and 60 % opacity, a red missing count, and the "Makes 5 twine first" helper as a small wooden button on the row.
-- **Materials from a chest** (call 1): the ingredient shows a tiny chest mark, like Dragonwilds' "linked" marker. A chest with "keep out" ticked shows a small lock on its name plate.
+- **Materials from a chest** (call 1): the ingredient shows a tiny chest mark, like Dragonwilds' "linked" marker. A chest with "keep out" ticked shows a small lock on its name plate. ("Keep out" only excludes a chest from crafting; the four-digit code lock in s14 is a separate setting and needs a different icon.)
 - **Click to craft:**
   - the recipe icon presses in by 2 px;
   - a gold ring fills round it as the queue works;
@@ -147,3 +147,26 @@ Dino's shots on Dave's PC, each at the small and large text sizes:
 4. hovering a greyed recipe whose wood sits in a nearby chest;
 5. mid-craft with the ring filling;
 6. the hotbar with the window closed.
+
+## 14. Later owner-approved storage/food UI extensions (design only)
+
+**Supersession notice:** This UI art/layout document is dated 8 Nov 2026. Later item decisions and permission rules are recorded in [DYNASTY_MASTER_ITEMS.md](DYNASTY_MASTER_ITEMS.md) §§3.12–3.16 and elaborated in [STORAGE_WAREHOUSING_DESIGN.md](STORAGE_WAREHOUSING_DESIGN.md) and [FOOD_PREPARATION_PRESERVATION_SERVING.md](FOOD_PREPARATION_PRESERVATION_SERVING.md). The master catalog remains the authority for approved and proposed item status.
+
+**Approved storage UI [D13]:**
+- Opening an accessible crate/chest nearby still uses the familiar pack-and-container interface; the player can see and manipulate its own real inventory, with no forced visit to a desk.
+- A Warehouse Desk or Storage Sign is an optional **combined view over multiple local physical containers**. Search, deposit, withdraw, remaining room and per-container location must show **only crates that this interacting player has permission to use**. The UI does not create an extra shared pool or magically move crates.
+- An owner may open/manage their **own locked crates from an in-range Warehouse Desk** without entering a code. A desk owner does **not** gain rights to other players' containers by owning the desk.
+- Crates and chests may have optional **owner-assigned 4-digit codes** (allow `0000`). Unauthorized users can submit the right code for that individual locked container, including through a desk, without making it public. Hide secrets and other players' private contents.
+- After wrong code attempt #1/#2/#3/#4, show lockout countdown **10/20/30/40 seconds**, then +10s per additional consecutive failure; success resets the player's streak for that container. Use the same player+container state in both direct and desk views. The owner bypasses code entry.
+- Moving the *loaded* same crate from one warehouse to cart/wagon to future ship to another warehouse changes the local aggregated view automatically; the old desk immediately loses the moved crate. Future ship **Captain's Table** is a planned view on the same storage system, **not an approved ship item yet**.
+- Use compatible dark-walnut/gold/cream styling from §§1–13; add a clear container breadcrumb, lock status/owner access, filtering and noncolour status indicators. No functional UI change has been implemented.
+
+**Approved food UI [D12]:** Food Preparation Table is a recipe UI for making tangible uncooked/prepared food items, which are then finished at correct cooking stations. Kitchen knives/board/rolling pin are built into the visible table model, not required inventory tools. For simple foods use cooking stations directly.
+
+**Owner-approved boards [D15] and preservation [D14, D17]:** Preservation batches are sealed at the existing Preserving Jar #830 (with any prep at the Food Preparation Table) and show *Maturing*, then *Ready*, on their own; the roster adds Smoked Meat and Dried Mushrooms only. A functional generic reusable Serving Platter presents **the nine OWNER-APPROVED edible boards** on existing dining tables, where real servings disappear as diners eat. Previous lists of 15 or 20 are superseded. Do not invent gameplay JSON or models yet.
+
+**Future food-benefit UI [D16]:** Display **three compact active-food effect slots**, each with the primary food group, food identity, main bonus and separate expiry countdown. Active foods must belong to **different groups** (Main Meals, Breads & Grains, Fruit & Vegetables, Desserts, Beverages, names provisional); food from an occupied group replaces that effect, while eating a fourth distinct group should offer a simple replace-one choice. Explicitly show temporary Fitness/skill XP boosts, no XP bonus from ordinary grain/bread, and any dessert XP downside; overlapping XP modifiers don't compound. Normal hunger and calories are separate from effect slots. **Percentages and durations are Dave's initial playtest values [D17] (master s3.16)**.
+
+**Learned food tips [D17 — approved future content]:** NPC conversations or readable guides may reveal effective role-oriented combinations to a knowledge journal, using actual available foods and effects. No mandatory book gate, class restriction or secret extra buff. Avoid displaying unavailable coffee/mana/spell skill functionality.
+
+This section records **future look/interaction intent only**. No gameplay code, data schema, or merge has been authorized by its presence.

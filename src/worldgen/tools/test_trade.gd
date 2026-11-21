@@ -29,9 +29,10 @@ func _init() -> void:
 	items.send_slots = func(_p, _b): pass
 	items.send_world_items = func(_p, _a, _r): pass
 	items.setup(ItemTableScript.load_default(), dir)
+	items._goals_loaded = true   # no goals here: a goal's own reward (coins) would change the amounts this test checks; test_goals covers goals (protocol 119 lifted the `after` lock)
 	items.peer_connected_hello(1, "tradekey0001")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
-	items._characters["tradekey0001"]["luck"] = 0
+	items._characters["tradekey0001"]["luck"] = 50   # neutral (0 to 100)
 	var npcs := {"npcs": {"hob": {"dormant": false, "placed": true, "pos": Vector3(1.0, 10.0, 0.0)}}}
 	var trade = TradeScript.new()
 	trade.items = items
@@ -53,6 +54,9 @@ func _init() -> void:
 	# Buying and selling with coins.
 	var axe: int = items.table.number_of("stone_axe")
 	items.add_coins(1, 100)
+	check(items.purse_of(1) == {"coin_copper": 100}, "100 copper paid in stays 100 copper coins away from a trader (%s)" % str(items.purse_of(1)))
+	trade.open(1, "hob")
+	check(items.purse_of(1) == {"coin_silver": 1} and items.coins_of(1) == 100, "opening Hob's window changes them into the fewest coins (%s)" % str(items.purse_of(1)))
 	var idx: int = (opened[0][1] as PackedStringArray).find("stone_axe")
 	var said: String = trade.deal(1, "hob", 0, idx, 1)
 	check(items.inventory_of(1).count_of(axe) == 1 and items.coins_of(1) == 100 - 23, "an axe (value 20) costs 23 copper (130 percent, full shelf 85 percent) (%d left, %s)" % [items.coins_of(1), said])
@@ -82,62 +86,62 @@ func _init() -> void:
 	# Reputation, charisma and luck move the prices both ways, never past the floors.
 	var m_rep0: Dictionary = trade.multipliers(1, "hob")
 	items.add_rep(1, "hob", 30)
-	items._characters["tradekey0001"]["luck"] = 10
+	items._characters["tradekey0001"]["luck"] = 100
 	var m_luck: Dictionary = trade.multipliers(1, "hob")
-	items._characters["tradekey0001"]["luck"] = 0
+	items._characters["tradekey0001"]["luck"] = 50   # neutral (0 to 100)
 	check(float(m_luck["pay"]) < float(m_rep0["pay"]), "luck helps")
 	var m_rep: Dictionary = trade.multipliers(1, "hob")
 	check(float(m_rep["pay"]) < 1.3 and float(m_rep["get"]) > 0.55, "a Trusted friend pays less and is paid more (%.2f, %.2f)" % [m_rep["pay"], m_rep["get"]])
-	items.set_attribute(1, "charisma", 10)
+	items.set_attribute(1, "charisma", 100)
 	var m_cha: Dictionary = trade.multipliers(1, "hob")
 	check(float(m_cha["pay"]) < float(m_rep["pay"]) and float(m_cha["get"]) > float(m_rep["get"]), "charisma helps too")
 	check(float(m_cha["pay"]) >= 1.05 and float(m_cha["get"]) <= 0.9, "but never past the floors (%.2f, %.2f)" % [m_cha["pay"], m_cha["get"]])
-	items.set_attribute(1, "charisma", -10)
+	items.set_attribute(1, "charisma", 0)
 	var m_bad: Dictionary = trade.multipliers(1, "hob")
 	check(float(m_bad["pay"]) > float(m_rep["pay"]), "poor charisma costs more")
 
 	# Demand: selling the same thing over and over pays less each time and recovers with time.
-	items._characters["tradekey0001"]["luck"] = 0
-	items.set_attribute(1, "charisma", 0)
+	items._characters["tradekey0001"]["luck"] = 50   # neutral (0 to 100)
+	items.set_attribute(1, "charisma", 50)
 	items.add_rep(1, "hob", -30)
 	var stone: int = items.table.number_of("stone")
-	items.give_to(1, "stone", 60)
+	items.give_to(1, "stone", 120)
 	var slot_s: int = items.inventory_of(1).numbers.find(stone)
 	var purse0: int = items.coins_of(1)
 	trade.deal(1, "hob", 1, slot_s, 1)
 	var first: int = items.coins_of(1) - purse0
-	check(first == 0 and items.count_for(1, "stone") == 60, "a single stone pays nothing and is kept (a thirtieth of a copper, sold in lots of 30)")
-	trade.deal(1, "hob", 1, slot_s, 29)
-	check(items.coins_of(1) == purse0 and items.count_for(1, "stone") == 60, "twenty-nine stones are less than a lot: no copper, all kept")
-	var seven_msg: String = trade.deal(1, "hob", 1, slot_s, 37)
+	check(first == 0 and items.count_for(1, "stone") == 120, "a single stone pays nothing and is kept (a sixtieth of a copper, sold in lots of 60: 0.5 kg stones, Dave 19 Nov 2026)")
+	trade.deal(1, "hob", 1, slot_s, 59)
+	check(items.coins_of(1) == purse0 and items.count_for(1, "stone") == 120, "fifty-nine stones are less than a lot: no copper, all kept")
+	var seven_msg: String = trade.deal(1, "hob", 1, slot_s, 67)
 	first = items.coins_of(1) - purse0
-	check(seven_msg.contains("7 left") and seven_msg.contains("30 at a time"), "the sold message says seven stones were left and the lot size (%s)" % seven_msg)
-	check(first == 1 and items.count_for(1, "stone") == 30, "thirty-seven stones: one lot of 30 pays 1 copper, the seven odd stones are kept (%d)" % first)
+	check(seven_msg.contains("7 left") and seven_msg.contains("60 at a time"), "the sold message says seven stones were left and the lot size (%s)" % seven_msg)
+	check(first == 1 and items.count_for(1, "stone") == 60, "sixty-seven stones: one lot of 60 pays 1 copper, the seven odd stones are kept (%d)" % first)
 	var purse1: int = items.coins_of(1)
-	trade.deal(1, "hob", 1, slot_s, 30)
+	trade.deal(1, "hob", 1, slot_s, 60)
 	var rest: int = items.coins_of(1) - purse1
-	check(first >= 1 and rest == 1, "selling thirty more stones pays one copper, a thirtieth of a copper each (%d for 30)" % rest)
+	check(first >= 1 and rest == 1, "selling sixty more stones pays one copper, a sixtieth of a copper each (%d for 60)" % rest)
 	check(trade.demand("hob", "stone") <= 0.5, "and the trader is tired of stones (%.2f)" % trade.demand("hob", "stone"))
-	clock[0] += 900.0
-	check(trade.demand("hob", "stone") > 0.9, "fifteen minutes later the demand has come back (%.2f)" % trade.demand("hob", "stone"))
+	clock[0] += 1800.0   # demand comes back 4 pieces a minute (coins.json demand); the 120 stones sold are 60 kg of 0.5 kg stones (Dave 19 Nov 2026), twice the pieces the 60 kg was before
+	check(trade.demand("hob", "stone") > 0.9, "thirty minutes later the demand has come back (%.2f)" % trade.demand("hob", "stone"))
 
 	# Worthless and rotten things are not bought; damaged tools pay less.
 	check(trade.price_to_get(0, 0.55) == 0 and trade.price_to_get(20, 0.55, 0.5) == 5 and trade.price_to_get(1, 0.55) == 1, "worthless pays nothing, half-worn pays half, a copper item pays at least 1")
 	# Stock: the shelf is finite, buying lowers it, supply moves the price, game days restock it.
 	items.add_coins(1, 5000)
-	check(trade.stock_of("hob", "stone_axe") == 3 and trade.stock_of("hob", "wooden_spade") == 2, "the axe sold back is on the shelf again (3), 2 spades")
-	var price_full: float = trade.supply("hob", "wooden_spade")
-	trade.deal(1, "hob", 0, (opened[0][1] as PackedStringArray).find("wooden_spade"), 1)
-	check(trade.supply("hob", "wooden_spade") > price_full, "a thinner shelf costs more (%.3f > %.3f)" % [trade.supply("hob", "wooden_spade"), price_full])
-	var said2: String = trade.deal(1, "hob", 0, (opened[0][1] as PackedStringArray).find("wooden_spade"), 5)
-	check(trade.stock_of("hob", "wooden_spade") == 0, "he sells the last one (%s)" % said2)
-	check(trade.deal(1, "hob", 0, (opened[0][1] as PackedStringArray).find("wooden_spade"), 1) == "He has none left.", "and has none left")
+	check(trade.stock_of("hob", "stone_axe") == 3 and trade.stock_of("hob", "wooden_shovel") == 2, "the axe sold back is on the shelf again (3), 2 shovels")
+	var price_full: float = trade.supply("hob", "wooden_shovel")
+	trade.deal(1, "hob", 0, (opened[0][1] as PackedStringArray).find("wooden_shovel"), 1)
+	check(trade.supply("hob", "wooden_shovel") > price_full, "a thinner shelf costs more (%.3f > %.3f)" % [trade.supply("hob", "wooden_shovel"), price_full])
+	var said2: String = trade.deal(1, "hob", 0, (opened[0][1] as PackedStringArray).find("wooden_shovel"), 5)
+	check(trade.stock_of("hob", "wooden_shovel") == 0, "he sells the last one (%s)" % said2)
+	check(trade.deal(1, "hob", 0, (opened[0][1] as PackedStringArray).find("wooden_shovel"), 1) == "He has none left.", "and has none left")
 	gclock[0] += 86400.0 * 1.2
-	check(trade.stock_of("hob", "wooden_spade") == 1, "a game day later one spade is back")
+	check(trade.stock_of("hob", "wooden_shovel") == 1, "a game day later one shovel is back")
 	gclock[0] += 86400.0 * 10.0
-	check(trade.stock_of("hob", "wooden_spade") == 2, "the shelf never passes its maximum")
-	trade.deal(1, "hob", 1, items.inventory_of(1).numbers.find(items.table.number_of("wooden_spade")), 1)
-	check(trade.stock_of("hob", "wooden_spade") == 2, "a spade sold back goes on a full shelf only up to the max")
+	check(trade.stock_of("hob", "wooden_shovel") == 2, "the shelf never passes its maximum")
+	trade.deal(1, "hob", 1, items.inventory_of(1).numbers.find(items.table.number_of("wooden_shovel")), 1)
+	check(trade.stock_of("hob", "wooden_shovel") == 2, "a shovel sold back goes on a full shelf only up to the max")
 
 	# Purse: he can only pay what he has, and it refills by game days.
 	trade._state["hob"]["purse"] = 3.0
@@ -150,11 +154,12 @@ func _init() -> void:
 
 	# Repairs: a smith mends worn tools for coin; iron tools need a forge when mended by hand.
 	var inv_r = items.inventory_of(1)
-	items.give_to(1, "stone_axe", 1)
-	var axe_slot: int = inv_r.numbers.find(items.table.number_of("stone_axe"))
+	items.give_to(1, "bronze_knife", 1)
+	var axe_slot: int = inv_r.numbers.find(items.table.number_of("bronze_knife"))
 	inv_r.wear[axe_slot] = 100
 	var smith_cost: int = trade.repair_cost(inv_r.numbers[axe_slot], 100, 1.0)
-	check(smith_cost >= 1 and smith_cost < 20, "half-worn stone axe: a few coppers to mend (%d)" % smith_cost)
+	check(smith_cost >= 1 and smith_cost < 20, "a worn bronze knife: a few coppers to mend (%d)" % smith_cost)
+	check(items.table.entry("stone_axe").get("repair", []).is_empty() and trade.repair_cost(items.table.number_of("stone_axe"), 100, 1.0) == 0, "a disposable Stone - Axe (no repair, master s2.2 rule 1) is never mended")
 	var coins_r: int = items.coins_of(1)
 	var said4: String = trade.deal(1, "hob", 2, axe_slot, 1)
 	check(inv_r.wear[axe_slot] == 0 and items.coins_of(1) == coins_r - trade.repair_cost(inv_r.numbers[axe_slot], 100, float(trade.multipliers(1, "hob")["pay"])), "Hob mends it as new for coin (%s)" % said4)
@@ -166,6 +171,23 @@ func _init() -> void:
 	inv_r.wear[pick_slot] = 1000
 	items._repair(1, inv_r, pick_slot)
 	check(inv_r.wear[pick_slot] == 1000, "an iron pickaxe cannot be mended by hand without a forge")
+
+	# Playtest 12 Nov 2026 TEST-003: a spent purse says so in Dave's words, refills over game time, and a player out of talk range is told so.
+	items.give_to(1, "stone_axe", 1)
+	var sell_axe: int = inv_r.numbers.find(items.table.number_of("stone_axe"))
+	trade._refresh("hob")["purse"] = 0.0
+	var broke_msg: String = trade.deal(1, "hob", 1, sell_axe, 1)
+	check(broke_msg == trade.PURSE_EMPTY_SAY and inv_r.count_of(items.table.number_of("stone_axe")) >= 1, "a spent purse buys nothing and says to come back later (%s)" % broke_msg)
+	items.give_to(1, "stone", 30)
+	var extras_broke: String = trade.deal(1, "hob", 3, 0, 1)
+	check(extras_broke == trade.PURSE_EMPTY_SAY, "the extra-stuff button also says the purse is spent (%s)" % extras_broke)
+	gclock[0] += 86400.0
+	check(trade.purse_of("hob") == 100, "one game day later (an hour of play) his purse has 100 copper again (%d)" % trade.purse_of("hob"))
+	check(trade.deal(1, "hob", 1, sell_axe, 1).begins_with("Sold"), "and he buys again")
+	npcs["npcs"]["hob"]["pos"] = Vector3(30.0, 10.0, 0.0)
+	var away_msg: String = trade.deal(1, "hob", 1, 0, 1)
+	check(away_msg.begins_with("You are too far from"), "out of talk range the deal says so instead of nothing (%s)" % away_msg)
+	npcs["npcs"]["hob"]["pos"] = Vector3(1.0, 10.0, 0.0)
 
 	# Persistence: shelf and purse survive a restart.
 	trade._state["hob"]["stock"]["stone"] = 7.0

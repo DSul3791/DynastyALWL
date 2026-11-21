@@ -1,5 +1,7 @@
 # First-island town and NPC data spec (Sal, 2026-10-31)
 
+**31 Oct snapshot and proposed roster.** “Exists” and economy figures below are dated observations, not current verification. Proposed names, roles and layout hooks remain proposals. Population design: [NPC collection](Design_Ideas_Unapproved.md#npc-population-and-migration).
+
 Fits data/npcs/*.json (npcs.json, shops.json, markers.json, reputation.json, dialogue/) and ECONOMY_PLAN.md. Spec only; dialogue writing belongs to Mandy and Dave's taste for names.
 
 ## What exists

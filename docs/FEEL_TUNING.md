@@ -1,8 +1,8 @@
 # First-person feel: what is tuned where
 
-One place to find every number that shapes how movement, tools and hits feel. Change a number, restart, look. All of these are untested by a human until Dave has seen them in the window (2 Nov 2026), so expect to tune.
+**Dated tuning reference, 2 Nov 2026.** Values below were recorded without human/windowed validation; inspect named code for current settings. Tuning follows the [engineering method](PONYTAIL_RULES.md) and [test gates](ai-team/TEST_GATES.md).
 
-| Feel | File | Constant or function | Now |
+| Feel | File | Constant or function | Recorded value (2 Nov) |
 |---|---|---|---|
 | Walk bob (eye dip at each footfall) | `scenes/terrain_client/terrain_client.gd` | `BOB_M`, `SWAY_M`, `SWAY_DEG`, `STEP_M` (walk, run) | 5.2 / 6.4 cm |
 | Wider view at speed | same | `FOV_BASE`, `FOV_RUN_EXTRA` | 75, +5 degrees at a run |
@@ -21,9 +21,9 @@ One place to find every number that shapes how movement, tools and hits feel. Ch
 | Arms spacing | `ragdoll_body.gd` | `ARMS_SPREAD` | 1.3 |
 | Arm skin | `src/client/character/dynasty_arms.gd` | `SKIN_TEXTURE` (the file's texture with dark patches painted out) | |
 
-## Turning the camera effects down or off
+## Camera setting recorded in the snapshot
 `user://input_settings.cfg` (the same file as auto pickup) takes `[feel]` `intensity = 0.0` to `1.5`. It scales the walking bob and sway and the landing, blow, hurt, jump, thud and gather kicks. 1.0 is as tuned, 0 is none. There is no menu entry yet. It also scales the run FOV widening and the swimming bob.
 
-## Known open items
+## Validation gaps recorded on 2 Nov
 - Axe hand grip: the hands are rigid (no finger bend), so how they sit on the handle needs a rig shot before the mount (`_build_mounts` in `ragdoll_body.gd`) is moved.
-- All of the above need a windowed look; none has been run in Godot by the author.
+- None had been run in Godot by the author; all needed a windowed look. Current validation status is unverified.

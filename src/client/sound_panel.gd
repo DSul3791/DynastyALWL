@@ -1,7 +1,7 @@
 extends CanvasLayer
 
 # The sound panel (Dave 2 Nov 2026: "a panel where I can turn on and off all current sound being used for the scene, just a list of sounds with sliding
-# toggle switches beside them. Opens when I press like shift f3"). Shift+F3 opens and closes it. It lists every sound playing under the sound stage
+# toggle switches beside them. Opens when I press like shift f3"). Ctrl+Shift+F5 opens and closes it. It lists every sound playing under the sound stage
 # (and the world_sounds group), loudest first, with the module that owns it, its level and its distance, and a switch beside each one: on = heard, off = muted.
 # Turn them off one at a time until the bad sound is gone, and the name that went quiet is the culprit.
 #
@@ -11,6 +11,7 @@ extends CanvasLayer
 # Debug only, nothing is saved.
 
 const SoundNow := preload("res://src/client/sound_now.gd")
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 const MUTE_BUS := "SoundPanelOff"
 const REFRESH_SEC := 0.5
 const ENFORCE_SEC := 0.25
@@ -68,7 +69,7 @@ func _build() -> void:
 	all_off.pressed.connect(unmute_all)
 	bar.add_child(all_off)
 	var hint: Label = Label.new()
-	hint.text = "  Shift+F3 closes. Switch off = muted."
+	hint.text = "  %s closes. Switch off = muted." % KeyBindings.label("sound_panel")
 	bar.add_child(hint)
 	var scroll: ScrollContainer = ScrollContainer.new()
 	scroll.custom_minimum_size = Vector2(380.0, 320.0)

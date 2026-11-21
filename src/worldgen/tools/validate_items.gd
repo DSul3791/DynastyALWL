@@ -2,6 +2,7 @@ extends SceneTree
 
 const SkillWebCheck := preload("res://src/shared/skill_web.gd")
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
+const InventoryCheck := preload("res://src/shared/inventory.gd")
 
 # Item data validator: items.json, gathered.json, recipes.json, drops.json, cooking.json.
 # Checks numbers, unknown ids, orphan core items and recipes that can never be made.
@@ -12,11 +13,12 @@ const DATA := "res://data/items/"
 # Items the code itself hands out (a carcass is made when an animal dies; felling a trunk, the admin give, placing a fire) and so need no drop entry.
 # Names of items and recipes are plain nouns (Dave 2026-10-20): "Basic torch", "Stone axe", never "Carve a ..." or "Make a ...".
 const VERB_FIRST_WORDS := ["make", "carve", "chisel", "bind", "craft", "build", "tie", "knap", "twist", "weave", "split", "place", "roast", "cook", "dig", "cut", "sharpen", "light", "pick", "gather", "get", "use", "create", "forge", "fashion", "shape", "stack", "lay", "set", "form"]
-const CODE_SOURCES := ["stone", "stick", "bark", "leaves", "seed_bundle", "firewood", "driftwood", "sea_water", "torch_doused", "wooden_lantern_dark", "iron_lantern_dark"]   # torch_doused: rain or water puts a lit torch out (#361); a lantern goes dark under water or when its fuel burns out (buildables plan B4)
+const CODE_SOURCES := ["stone", "stick", "bark", "leaves", "seed_bundle", "firewood", "driftwood", "sea_water", "wooden_lantern_dark", "iron_lantern_dark"]   # a lantern goes dark under water or when its fuel burns out (buildables plan B4)
 
 const MAX_INGREDIENTS := 6   # the craft screen lists every ingredient in a scrolling detail area and the server crafts any count (test_server_items); raise further here only
 
 const DAVE_NAMES := ["Roast beast", "Roast meat", "Roast fish", "Roast roots"]   # names Dave chose himself (2026-10-22): they read like a verb and are the real name
+const ADJECTIVE_NAMES := ["Light crossbow", "Light draft harness", "Light cargo cart", "Roast platter"]   # "Light" and "Roast" here are adjectives, not verbs (catalog Draft 18, decision 71 forms)
 
 const RECIPE_CATEGORIES := RecipeFilter.CATEGORIES
 var errors: int = 0
@@ -60,7 +62,7 @@ func _walk(id: String, path: Array, edges: Dictionary, state: Dictionary) -> voi
 	state[id] = 2
 
 
-# Every name in the data must be a plain noun phrase: no leading verb, no article, at most four words, capital first letter.
+# Every name in the data must be a plain noun phrase: no leading verb, no article, at most four words (a tier name's "-" is not a word), capital first letter.
 func _check_name(name: String, where: String) -> void:
 	var words: PackedStringArray = name.strip_edges().split(" ", false)
 
@@ -69,13 +71,13 @@ func _check_name(name: String, where: String) -> void:
 
 	var first: String = words[0].to_lower()
 
-	if name in DAVE_NAMES:
+	if name in DAVE_NAMES or name in ADJECTIVE_NAMES:
 		return
 
 	if first in VERB_FIRST_WORDS or first in ["a", "an", "the"]:
 		fail("%s: name '%s' starts with a verb or an article (names are plain nouns)" % [where, name])
 
-	if words.size() > 4:
+	if words.size() - words.count("-") > 4:   # the "-" of a tier name ("Crude - Double arched door") is not a word (Dave 13 Nov 2026)
 		fail("%s: name '%s' is longer than four words" % [where, name])
 
 	if words[0].substr(0, 1) != words[0].substr(0, 1).to_upper():
@@ -124,6 +126,12 @@ func _init() -> void:
 		if int(file.get("next_number", 0)) <= highest:
 			fail("%s: next_number %s is not above the highest number %d" % [pair[1], file.get("next_number"), highest])
 
+	# items.json and gathered.json share one number space (Mission 001: new catalog rows from 1000 met the gathered materials): each file's
+	# next_number must be above every number in either file, so neither can hand out a number the other uses.
+	for pair in [[items_file, "items.json"], [gathered_file, "gathered.json"]]:
+		if not numbers.is_empty() and int(pair[0].get("next_number", 0)) <= int(numbers.keys().max()):
+			fail("%s: next_number %s is not above the highest number in items.json and gathered.json (%d)" % [pair[1], pair[0].get("next_number"), int(numbers.keys().max())])
+
 	# Every structure has its own world-item state (the client finds the structure of a row by its state): two with the same state made the plank chest (6) shadow the
 	# woven chest, so the chest could not be placed (31 Oct 2026, the chest client self-test).
 	var states_seen: Dictionary = {}
@@ -164,21 +172,13 @@ func _init() -> void:
 			fail("weights.json: stackable gathered item '%s' has no weight (by_id or by_suffix); stacks have no cap now, weight is the limit" % gid)
 
 
-	# Every wood class names a firewood item and a block item that exist (wood_species.json class_items).
+	# One Firewood and one Wooden block for every species since 15 Nov 2026 (TREE_WOOD_TOOLS_DESIGN.md): wood_species.json has no class items.
 	var wood_file: Dictionary = _read("wood_species.json")
+	want_item.call(String(wood_file.get("tree_sap", {}).get("item", "")), "wood_species.json tree_sap.item")   # Tree sap (Dave 16 Nov 2026): a typo would give no sap, silently
 
 	for gid in wood_file.get("ingredient_groups", {}):   # a group (plain "log") is obtainable when a member is (F-16: no server fallback gives the plain item)
 		if String(gid) != "note":
 			obtainable[String(gid)] = true
-
-	for cls in wood_file.get("class_items", {}):
-		for step in ["firewood", "block"]:
-			if not items_file.get("items", {}).has(String(wood_file["class_items"][cls].get(step, ""))):
-				fail("wood_species.json: class %s needs an existing %s item" % [cls, step])
-
-	for sp in wood_file.get("species", {}):
-		if not wood_file.get("class_items", {}).has(String(wood_file["species"][sp].get("class", ""))):
-			fail("wood_species.json: species %s has a class without class_items" % sp)
 
 	# Key woods (Dave 24 Oct): each is a tree with live log, lumber and beam items; no live recipe, drop table or building cost names a retired item.
 	var trees: Dictionary = {}
@@ -201,11 +201,18 @@ func _init() -> void:
 		if not trees.has(str(key_wood)):
 			fail("wood_species.json: key wood %s is not a tree in flora.json" % key_wood)
 
-		for prefix in ["log_", "lumber_", "beam_"]:
-			var key_item: Dictionary = items_file.get("items", {}).get(prefix + str(key_wood), {})
+		# Mission 001 (master s2.3 item 6): species lumber and beams are retired; a key wood keeps its live log, and its class's sawn product
+		# (Plank for softwood, Hardwood board for hardwood) is live.
+		var key_log: Dictionary = items_file.get("items", {}).get("log_" + str(key_wood), {})
 
-			if key_item.is_empty() or bool(key_item.get("retired", false)):
-				fail("wood_species.json: key wood %s needs a live %s%s item" % [key_wood, prefix, key_wood])
+		if key_log.is_empty() or bool(key_log.get("retired", false)):
+			fail("wood_species.json: key wood %s needs a live log_%s item" % [key_wood, key_wood])
+
+		var sawn: String = "hardwood_board" if String(wood_file.get("species", {}).get(String(key_wood), {}).get("class", "")) == "hardwood" else "lumber"
+		var sawn_item: Dictionary = items_file.get("items", {}).get(sawn, {})
+
+		if sawn_item.is_empty() or bool(sawn_item.get("retired", false)) or bool(sawn_item.get("future", false)):
+			fail("wood_species.json: key wood %s needs its live sawn product %s" % [key_wood, sawn])
 
 	var retired_ids: Array = []
 
@@ -240,12 +247,31 @@ func _init() -> void:
 			fail("structures.json names the retired item %s" % ref)
 
 	for kind in structure_defs:
+		if bool(structure_defs[kind].get("retired", false)):   # a retired piece (the Woodworking table, Mission 001) keeps its row for its state number only
+			continue
+
 		var def_no_kit: Dictionary = structure_defs[kind].duplicate(true)
 		def_no_kit.erase("kit")
+		def_no_kit.erase("takes_kinds")   # items.json kinds, not item ids ("medicine" is also a retired item id); checked below
+		def_no_kit.erase("legacy_kinds")   # old structure kinds an old save may hold ("iron_doorway" is also a retired item id); checked below (Dave 13 Nov 2026)
 
 		for ref in JSON.stringify(def_no_kit).split("\""):
 			if retired_ids.has(ref):
 				fail("structures.json %s names the retired item %s" % [kind, ref])
+
+	# legacy_kinds (server_items.gd _kind_now): each old kind is no structure row any more (a live row would win and the mapping would never run)
+	# and is claimed by one row only (or which row a save loads as would depend on file order).
+	var legacy_owner: Dictionary = {}
+
+	for kind in structure_defs:
+		for old in structure_defs[kind].get("legacy_kinds", []):
+			if structure_defs.has(String(old)):
+				fail("structures.json %s: legacy kind %s is still a structure row" % [kind, old])
+
+			if legacy_owner.has(String(old)):
+				fail("structures.json: legacy kind %s is claimed by both %s and %s" % [old, legacy_owner[String(old)], kind])
+
+			legacy_owner[String(old)] = String(kind)
 
 	var no_key: Array = []
 
@@ -256,11 +282,21 @@ func _init() -> void:
 	no_key.sort()
 	print("info: biomes whose trees include no key wood (they give firewood and sticks only): ", ", ".join(no_key))
 
+	# The stations live structures serve (their own station or "also"): a repair_station must be one, or the tool could never be mended.
+	var served: Dictionary = {}
+
+	for kind in structure_defs:
+		if not bool(structure_defs[kind].get("retired", false)):
+			served[String(structure_defs[kind].get("station", ""))] = true
+
+			for also in structure_defs[kind].get("also", {}):
+				served[String(also)] = true
+
 	for id in items_file.get("items", {}):
 		var item: Dictionary = items_file["items"][id]
 		var description: String = String(item.get("description", ""))
 
-		if bool(item.get("offhand", false)) and (not ["tool", "weapon"].has(String(item.get("kind", ""))) or not ["torch", "torch_doused", "lantern", "lantern_dark", "shield"].has(String(item.get("tool_class", "")))):
+		if bool(item.get("offhand", false)) and (not ["tool", "weapon"].has(String(item.get("kind", ""))) or not ["torch", "lantern", "lantern_dark", "shield"].has(String(item.get("tool_class", "")))):
 			fail("items.json: '%s' is marked offhand but is not a tool or weapon of class torch, lantern or shield (the left-hand models)" % id)
 
 		if item.has("pile"):   # bulk items drawn as a pile on the ground (PileLook) and taken by the handful
@@ -270,8 +306,18 @@ func _init() -> void:
 			if String(pile.get("shape", "")) == "logs":   # split firewood and wooden blocks: a stack of log pieces (PileLook._logs_mesh)
 				if int(pile.get("handful", 0)) < 1 or tint.size() != 3 or float(pile.get("len", 0.0)) <= 0.0 or float(pile.get("radius", 0.0)) <= 0.0:
 					fail("items.json: '%s' logs pile row needs handful 1 or more, color [r, g, b] (bark), len and radius above 0" % id)
-			elif not ["pyramid", "mound"].has(String(pile.get("shape", ""))) or int(pile.get("handful", 0)) < 1 or tint.size() != 3 or float(pile.get("rock", 0.0)) <= 0.0 or float(pile.get("squash", 0.0)) <= 0.0:
-				fail("items.json: '%s' pile row needs shape pyramid, mound or logs, handful 1 or more, color [r, g, b], rock and squash above 0 (logs: len and radius)" % id)
+			elif String(pile.get("shape", "")) == "boards":   # sawn boards: a lumber stack (PileLook._boards_mesh)
+				if int(pile.get("handful", 0)) < 1 or tint.size() != 3 or float(pile.get("len", 0.0)) <= 0.0 or float(pile.get("width", 0.0)) <= 0.0 or float(pile.get("thick", 0.0)) <= 0.0:
+					fail("items.json: '%s' boards pile row needs handful 1 or more, color [r, g, b], len, width and thick above 0" % id)
+			else:
+				if not ["pyramid", "mound", "cone"].has(String(pile.get("shape", ""))) or int(pile.get("handful", 0)) < 1 or tint.size() != 3 or float(pile.get("rock", 0.0)) <= 0.0 or float(pile.get("squash", 0.0)) <= 0.0:
+					fail("items.json: '%s' pile row needs shape pyramid, mound, cone, logs or boards, handful 1 or more, color [r, g, b], rock and squash above 0 (logs: len and radius)" % id)
+
+				if String(pile.get("shape", "")) == "cone" and float(pile.get("density_kg_m3", 0.0)) <= 0.0:   # a solid cone of the stones' own volume (PileLook._cone_mesh)
+					fail("items.json: '%s' cone pile row needs density_kg_m3 above 0" % id)
+
+			if (pile.has("color2") and (typeof(pile["color2"]) != TYPE_ARRAY or (pile["color2"] as Array).size() != 3)) or float(pile.get("mix", 0.0)) < 0.0 or float(pile.get("mix", 0.0)) > 1.0 or float(pile.get("lumps", 0.0)) < 0.0 or float(pile.get("lumps", 0.0)) > 0.5 or float(pile.get("rough", 1.0)) <= 0.0 or float(pile.get("rough", 1.0)) > 1.0:
+				fail("items.json: '%s' pile row needs color2 [r, g, b], mix 0 to 1, lumps 0 to 0.5 and rough above 0 to 1 when it sets them (PileLook._cone_mesh)" % id)
 
 		# Every core item has a one-line description, a value and (unless it is a placed structure) its own weight.
 		if description == "" or description.length() > 110 or not description.ends_with("."):
@@ -296,8 +342,23 @@ func _init() -> void:
 		if ["tool", "weapon", "placeable", "structure", "container", "clothing", "gear"].has(String(item.get("kind", ""))) and not bool(item.get("unstackable", false)):
 			fail("items.json: '%s' is a %s and must be \"unstackable\": true" % [id, item.get("kind", "")])
 
-		if item.has("durability") and (int(item["durability"]) < 1 or item.get("repair", []).is_empty()):
-			fail("items.json: '%s' has durability but no repair materials" % id)
+		if item.has("durability") and int(item["durability"]) < 1:
+			fail("items.json: '%s' has a durability below 1" % id)
+
+		# Master s2.2: stone, wooden and primitive gear is disposable (no repair); a metal tool is repaired at the station type that makes it.
+		if String(item.get("kind", "")) == "tool" and ["copper", "bronze", "iron", "steel"].has(String(item.get("material", ""))) and item.has("durability") and not bool(item.get("retired", false)) and (item.get("repair", []).is_empty() or String(item.get("repair_station", "")) == ""):
+			fail("items.json: metal tool '%s' needs repair materials and a repair_station" % id)
+
+		# Catalog Phase 2c code (src/shared/smithing_rules.gd): a row with durability and no repair is disposable, gone when it breaks; any
+		# other is mended at its repair_station; an edge dulls against the row's durability and is sharpened, so it needs a repairable row (s2.2 rule 8).
+		if String(item.get("repair_station", "")) != "" and not served.has(String(item["repair_station"])):
+			fail("items.json: '%s' repair_station '%s' is no live structure's station" % [id, item["repair_station"]])
+
+		if String(item.get("repair_station", "")) != "" and item.get("repair", []).is_empty():
+			fail("items.json: '%s' has a repair_station but no repair materials" % id)
+
+		if bool(item.get("edge", false)) and (int(item.get("durability", 0)) < 1 or item.get("repair", []).is_empty()):
+			fail("items.json: '%s' has an edge but no durability or repair (only repairable tools are sharpened)" % id)
 
 		for row in item.get("repair", []):
 			want_item.call(String(row[0]), "items.json %s repair" % id)
@@ -396,6 +457,21 @@ func _init() -> void:
 		want_item.call(String(row[0]), "drops.json trunk.branch")
 		obtainable[String(row[0])] = true
 
+	var felled_seeds: Dictionary = trunk.get("felled_seeds", {})   # every felled tree drops 1 to 5 of its seed (gardening, Dave 14 Nov 2026)
+
+	for species_name in felled_seeds.get("by_species", {}):
+		if not species.has(species_name):
+			fail("drops.json trunk.felled_seeds.by_species: unknown flora species '%s'" % species_name)
+
+		want_item.call(String(felled_seeds["by_species"][species_name]), "drops.json trunk.felled_seeds.by_species.%s" % species_name)
+		obtainable[String(felled_seeds["by_species"][species_name])] = true
+
+	if not felled_seeds.is_empty():
+		var span: Array = felled_seeds.get("count", [])
+
+		if span.size() != 2 or int(span[0]) < 1 or int(span[1]) < int(span[0]):
+			fail("drops.json trunk.felled_seeds.count must be [low, high] with 1 <= low <= high")
+
 	# Bushes and shrubs (Dave 2 Nov 2026): the axe chops them into axe_gives; the pickaxe digs each shrub species up whole as <species><dig_suffix>.
 	var shrub_work: Dictionary = drops.get("shrub_work", {})
 
@@ -447,15 +523,23 @@ func _init() -> void:
 				if not soil_names.has(String(material)):
 					fail("digging.json finds %s: unknown ground material '%s'" % [find.get("item", ""), material])
 
-		# Bog iron (Sonny s11, src/shared/bog_iron.gd): a spade dig on a deposit under a fen, marsh, swamp or bog sample gives this item.
+		# Bog iron (Sonny s11, src/shared/bog_iron.gd): a shovel dig on a deposit under a fen, marsh, swamp or bog sample gives this item.
 		var bog: Dictionary = digging.get("bog_iron", {})
 
 		if not bog.is_empty():
 			want_item.call(String(bog.get("item", "")), "digging.json bog_iron")
 			obtainable[String(bog.get("item", ""))] = true
 
-			if float(bog.get("chance", 0.0)) <= 0.0 or float(bog.get("chance", 0.0)) * float(bog.get("edge_mult", 1.0)) > 1.0:
-				fail("digging.json bog_iron: chance x edge_mult must be above 0 and at most 1")
+			var bog_patches: Array = bog.get("patches", [])
+
+			if float(bog.get("field_chance", 0.0)) <= 0.0 or float(bog.get("field_chance", 0.0)) > 1.0:
+				fail("digging.json bog_iron: field_chance must be above 0 and at most 1")
+
+			if int(bog.get("field_m", 0)) <= 0 or 15360 % int(bog.get("field_m", 1)) != 0:
+				fail("digging.json bog_iron: field_m must divide the 15360 m tile (a field lies in one tile)")
+
+			if bog_patches.size() != 2 or int(bog_patches[0]) < 1 or int(bog_patches[0]) > int(bog_patches[1]):
+				fail("digging.json bog_iron: patches must be [min, max] with 1 <= min <= max")
 
 			for cls in bog.get("classes", {}):
 				if not String(cls) in ["4", "6", "7", "8"]:
@@ -505,8 +589,48 @@ func _init() -> void:
 	for action in _read("skills.json").get("actions", {}):
 		var def: Dictionary = _read("skills.json")["actions"][action]
 
-		if String(def.get("skill", "")) == "" or not String(def.get("effect", "")) in ["yield", "speed", "toughness", "quiet"]:   # quiet: less noise (stalk, server_animals brush noise)
-			fail("skills.json: action '%s' needs a skill name and an effect of yield, speed, toughness or quiet" % action)
+		if String(def.get("skill", "")) == "" or not String(def.get("effect", "")) in ["yield", "speed", "toughness", "quiet", "accuracy"]:   # quiet: less noise (stalk, server_animals brush noise); accuracy: the Map sketch (survey, server_map.gd)
+			fail("skills.json: action '%s' needs a skill name and an effect of yield, speed, toughness, quiet or accuracy" % action)
+
+	# smithing.json (catalog Phase 2c): its whetstone is an item, and its grindstone, Master smithy and temper stations are served.
+	var smithing: Dictionary = _read("smithing.json")
+
+	if not items_file.get("items", {}).has(String(smithing.get("whetstone", {}).get("item", ""))):
+		fail("smithing.json whetstone.item is not an item")
+
+	for station_ref in [smithing.get("grindstone", {}).get("station", ""), smithing.get("craft", {}).get("station", ""), smithing.get("temper", {}).get("station", "")]:
+		if not served.has(String(station_ref)):
+			fail("smithing.json names the station '%s' that no live structure serves" % station_ref)
+
+	# Smithy wear (GOALS-REPAIR R5): every live smithy's anvil has a durability, and the repair_skip rows are items.
+	var station_wear: Dictionary = smithing.get("station_wear", {})
+
+	for smithy_kind in structure_defs:
+		var anvil: String = String(structure_defs[smithy_kind].get("anvil", "")) if typeof(structure_defs[smithy_kind]) == TYPE_DICTIONARY else ""
+
+		if anvil != "" and float(station_wear.get("durability", {}).get(anvil, 0.0)) <= 0.0:
+			fail("smithing.json station_wear.durability has no durability for the '%s' anvil of '%s'" % [anvil, smithy_kind])
+
+	for skip_id in station_wear.get("repair_skip", []):
+		if not items_file.get("items", {}).has(String(skip_id)) and not gathered_file.get("items", {}).has(String(skip_id)):
+			fail("smithing.json station_wear.repair_skip names '%s', which is not an item" % skip_id)
+
+	# Tempered (s4 item 15): every steel weapon and armour row (a "Steel - " weapon or clothing row, unstackable) is listed in temper.include,
+	# since those rows carry no material; every listed id is an item.
+	var temper_include: Array = smithing.get("temper", {}).get("include", [])
+
+	for include_id in temper_include:
+		if not items_file.get("items", {}).has(String(include_id)):
+			fail("smithing.json temper.include names '%s', which is not an item" % include_id)
+
+	for id in items_file.get("items", {}):
+		var steel_row: Dictionary = items_file["items"][id]
+
+		if String(steel_row.get("name", "")).begins_with("Steel - ") and ["weapon", "clothing"].has(String(steel_row.get("kind", ""))) and bool(steel_row.get("unstackable", false)) and not bool(steel_row.get("retired", false)) and not temper_include.has(id) and String(steel_row.get("material", "")) != "steel":
+			fail("smithing.json temper.include lacks the steel weapon or armour row '%s' (s4 item 15)" % id)
+
+	if (smithing.get("craft", {}).get("materials", []) as Array).size() != 3 or (smithing.get("craft", {}).get("time", []) as Array).size() != 3:
+		fail("smithing.json craft.materials and craft.time need three factors (plain, +1, +2)")
 
 	# Stations: a recipe's station is a placed structure with that station, or one of the stations still to be built.
 	var stations: Dictionary = {"saw_mill": true, "forge": true, "campfire": true}   # a lit campfire is a station for dishes
@@ -518,7 +642,8 @@ func _init() -> void:
 	for recipe_id in recipes_file.get("recipes", {}):
 		var station: String = String(recipes_file["recipes"][recipe_id].get("station", ""))
 
-		if station != "" and not stations.has(station):
+		# A retired recipe is kept only for its number and is never crafted, so its station may be gone (the old smelter recipes).
+		if station != "" and not stations.has(station) and not bool(recipes_file["recipes"][recipe_id].get("retired", false)):
 			fail("recipes.json %s: unknown station '%s'" % [recipe_id, station])
 
 	# Fishing: every catch and bait is an item, and the catches are obtainable (by fishing).
@@ -613,6 +738,14 @@ func _init() -> void:
 	for id in spoilage.get("by_id", {}):
 		want_item.call(String(id), "spoilage.json by_id")
 
+	# A stack's age is a u16 in tenths of a game hour (inventory.gd to_bytes): a shelf life past it never rots (master s3.14 wear cap).
+	var shelf_cap_h: float = 65535.0 * float(spoilage.get("unit_h", 0.1)) / float(spoilage.get("gentle_mult", 1))
+
+	for list in ["by_id", "by_suffix"]:
+		for id in spoilage.get(list, {}):
+			if float(spoilage[list][id]) > shelf_cap_h:
+				fail("spoilage.json %s %s: %s game hours x gentle_mult %s passes the wear cap (at most %.1f)" % [list, id, str(spoilage[list][id]), str(spoilage.get("gentle_mult", 1)), shelf_cap_h])
+
 	for id in cooking.get("fuel", {}):
 		want_item.call(String(id), "cooking.json fuel")
 
@@ -653,6 +786,14 @@ func _init() -> void:
 		for id in r.get("identify", []):
 			want_item.call(String(id), "recipe '%s' identify" % rid)
 
+		# A sealed batch (master s3.14): its output spoils, and only after it is Ready (ready_age game hours, unscaled, under the stretched shelf life).
+		if float(r.get("ready_age", 0.0)) > 0.0:
+			var made_id: String = String(r.get("gives", [""])[0])
+			var shelf_h: float = float(spoilage.get("by_id", {}).get(made_id, 0.0)) * float(spoilage.get("gentle_mult", 1))
+
+			if float(r["ready_age"]) >= shelf_h:
+				fail("recipes.json %s: ready_age %s must be under the shelf life of %s (%.0f game hours)" % [rid, str(r["ready_age"]), made_id, shelf_h])
+
 		for list in ["needs", "keeps"]:
 			for row in r.get(list, []):
 				want_item.call(String(row[0]), "recipe '%s' %s" % [rid, list])
@@ -683,15 +824,50 @@ func _init() -> void:
 		if int(mill_recipe.get("gives", ["", 0])[1]) != int(mill_row.get("lumber_per_log", -1)) or absf(float(mill_recipe.get("craft_s", 0.0)) - float(mill_row.get("craft_s", -1.0))) > 0.001:
 			fail("recipes.json: lumber does not match hand_saw_balance.sawmill")
 
-		if int(saw_row.get("lumber_per_log", 0)) >= int(mill_row.get("lumber_per_log", 0)) or float(saw_row.get("craft_s", 0.0)) <= float(mill_row.get("craft_s", 0.0)):
-			fail("recipes.json: the hand saw must give less and take longer than the sawmill")
+		# Master s2.3 item 1 (Dave [D1]): the hand saw gives what the sawmill gives, much more slowly; Hardwood boards follow the same rule.
+		if int(saw_row.get("lumber_per_log", 0)) != int(mill_row.get("lumber_per_log", 0)) or float(saw_row.get("craft_s", 0.0)) <= float(mill_row.get("craft_s", 0.0)):
+			fail("recipes.json: the hand saw must give what the sawmill gives and take longer")
+
+		for pair in [["hardwood_board", mill_row], ["hardwood_board_by_hand", saw_row]]:
+			var board_recipe: Dictionary = recipes_file["recipes"].get(String(pair[0]), {})
+
+			if board_recipe.is_empty() or int(board_recipe["gives"][1]) != int(pair[1].get("boards_per_log", -1)) or absf(float(board_recipe.get("craft_s", 0.0)) - float(pair[1].get("craft_s", -1.0))) > 0.001:
+				fail("recipes.json: %s does not match hand_saw_balance" % pair[0])
+
+	# No substitution [D4]: Planks come only from softwood logs and Hardwood boards only from hardwood logs, and no group mixes the two.
+	var wood_groups: Dictionary = wood_file.get("ingredient_groups", {})
+	var soft_logs: Array = [String("log_spruce")] + Array(wood_groups.get("log_spruce", []))
+	var hard_logs: Array = [String("log_oak")] + Array(wood_groups.get("log_oak", []))
+
+	for id in soft_logs:
+		if hard_logs.has(id):
+			fail("wood_species.json: %s is both a softwood and a hardwood log" % id)
+
+	# Each log group's species chop and burn as their class (a species with no row takes the default class, softwood).
+	var species_rows: Dictionary = wood_file.get("species", {})
+
+	for pair in [[soft_logs, "softwood"], [hard_logs, "hardwood"]]:
+		for id in pair[0]:
+			var sp: String = String(id).trim_prefix("log_") if String(id) != "log" else ""
+			var cls: String = String(species_rows.get(sp, wood_file.get("default", {})).get("class", ""))
+
+			if cls != String(pair[1]):
+				fail("wood_species.json: %s is in the %s log group but its class is %s" % [id, pair[1], cls])
+
+	for gid in wood_groups:
+		if typeof(wood_groups[gid]) == TYPE_ARRAY:
+			var members: Array = [String(gid)] + Array(wood_groups[gid])
+
+			if members.has("lumber") and members.has("hardwood_board"):
+				fail("wood_species.json: group %s mixes Planks and Hardwood boards" % gid)
 
 	for rid in recipes_file["recipes"]:
 		var wt: String = String(recipes_file["recipes"][rid].get("wears_tool", ""))
 		var wt_ok: bool = wt == ""
 
 		for row in recipes_file["recipes"][rid].get("keeps", []):
-			wt_ok = wt_ok or String(items_file["items"].get(String(row[0]), {}).get("tool_class", "")) == wt
+			for kept in [String(row[0])] + Array(wood_file.get("ingredient_groups", {}).get(String(row[0]), [])):   # a kept group (saw) counts by its members
+				wt_ok = wt_ok or String(items_file["items"].get(kept, {}).get("tool_class", "")) == wt
 
 		if not wt_ok:
 			fail("recipe '%s': wears_tool '%s' is not the tool_class of any kept tool" % [rid, wt])
@@ -701,14 +877,72 @@ func _init() -> void:
 		if bool(items_file["items"][id].get("future", false)) and String(items_file["items"][id].get("kind", "")) in ["material", "food"]:   # future foods (shore foods, crops) count too, so dishes built from them are checked
 			obtainable[String(id)] = true
 
-	# A log struck with an axe falls apart into wooden blocks (structures.json blocks_per_log), so blocks count as a source for recipes.
-	for kind in _read("structures.json").get("structures", {}):
-		if _read("structures.json")["structures"][kind].has("blocks_per_log"):
-			obtainable["wooden_block"] = true
+	# A felled small tree breaks into Firewood (server_items._fall_pieces), and the chopping block (use split_log) splits a Wooden block into it.
+	obtainable["firewood"] = true
 
-			for cls in wood_file.get("class_items", {}):   # softwood logs give softwood blocks, big logs large blocks (wood_species.json class_items)
-				for step in wood_file["class_items"][cls]:
-					obtainable[String(wood_file["class_items"][cls][step])] = true
+	# The Smelters (structures.json "smelting", src/stream/server_smelter.gd): a job a live smelter does gives its ingot when its ore has a
+	# source. Every job, fuel and smelter job name must be real, a smelter's parts must fit its slots, and what it takes must be its fuel or ore.
+	var smelting: Dictionary = _read("structures.json").get("smelting", {})
+
+	for fuel_id in smelting.get("fuel", []):
+		want_item.call(String(fuel_id), "structures.json smelting fuel")
+
+	for job_id in smelting.get("jobs", {}):
+		for row in smelting["jobs"][job_id].get("in", []):
+			want_item.call(String(row[0]), "structures.json smelting job %s" % job_id)
+
+		want_item.call(String(smelting["jobs"][job_id].get("out", [""])[0]), "structures.json smelting job %s" % job_id)
+
+	for kind in _read("structures.json").get("structures", {}):
+		var sdef: Dictionary = _read("structures.json")["structures"][kind]
+
+		if String(sdef.get("use", "")) != "smelt" or bool(sdef.get("retired", false)):
+			continue
+
+		var smelt: Dictionary = sdef.get("smelt", {})
+
+		if int(smelt.get("hopper_slots", 0)) < 1 or int(smelt.get("hopper_slots", 0)) >= int(sdef.get("slots", 0)) or int(smelt.get("hopper", 0)) <= 0 or int(smelt.get("input", 0)) <= 0 or float(smelt.get("ingot_s", 0.0)) <= 0.0:
+			fail("structures.json %s: a smelter needs smelt.hopper_slots (1 to slots - 1), hopper, input and ingot_s above 0" % kind)
+
+		if bool(smelt.get("wind", false)) and float(smelting.get("wind_min_mps", 0.0)) <= 0.0:
+			fail("structures.json %s: a windmill smelter needs smelting.wind_min_mps above 0" % kind)
+
+		if int(smelt.get("lanes", 1)) < 1 or float(smelt.get("speed", 1.0)) <= 0.0:
+			fail("structures.json %s: smelt.lanes must be 1 or more and smelt.speed above 0" % kind)
+
+		if int(sdef.get("out_slots", 0)) > 0 and int(smelt.get("output", 0)) <= 0:
+			fail("structures.json %s: a smelter with an output rack needs smelt.output, the ingots the rack holds, above 0" % kind)
+
+		var smelter_takes: Dictionary = {}
+
+		for fuel_id in smelting.get("fuel", []):
+			smelter_takes[String(fuel_id)] = true
+
+		for job_id in smelt.get("jobs", []):
+			if not smelting.get("jobs", {}).has(String(job_id)):
+				fail("structures.json %s: smelt job '%s' is not in structures.json smelting.jobs" % [kind, job_id])
+				continue
+
+			var job: Dictionary = smelting["jobs"][String(job_id)]
+
+			if bool(job.get("bellows", false)) and not bool(smelt.get("bellows", false)) and not bool(smelt.get("wind", false)):
+				fail("structures.json %s: job '%s' needs air from bellows and the station has neither worked bellows nor a windmill" % [kind, job_id])
+
+			if int(job.get("carbon", 0)) > 0 and not bool(smelt.get("carbon", false)):
+				fail("structures.json %s: job '%s' takes carbon from the input and the station has no carbon input (smelt.carbon)" % [kind, job_id])
+
+			var job_ok: bool = true
+
+			for row in job.get("in", []):
+				smelter_takes[String(row[0])] = true
+				job_ok = job_ok and obtainable.has(String(row[0]))
+
+			if job_ok:
+				obtainable[String(job.get("out", [""])[0])] = true
+
+		for take in sdef.get("takes", []):
+			if not smelter_takes.has(String(take)):
+				fail("structures.json %s: takes '%s', which is neither its fuel nor the ore of one of its jobs" % [kind, take])
 
 	# What a fire cooks (cooking.json cooks_into) is obtainable when the raw item is.
 	for raw_id in cooking.get("cooks_into", {}):
@@ -739,6 +973,11 @@ func _init() -> void:
 				changed = true
 
 	for rid in recipes:
+		# A retired recipe is never crafted (recipe_table.gd skips it), so its ingredients may have no source left
+		# (small_soft_blocks_from_large after the wood rows were unified, wood system phase 2).
+		if bool(recipes[rid].get("retired", false)):
+			continue
+
 		if not obtainable.has(String(recipes[rid].get("gives", [""])[0])):
 			fail("recipe '%s' can never be made (an ingredient has no source)" % rid)
 
@@ -748,33 +987,56 @@ func _init() -> void:
 	for kind in structures:
 		var def: Dictionary = structures[kind]
 
-		if not bool(def.get("take_only", false)):   # remains have no kit: nobody takes them down
+		if not bool(def.get("take_only", false)) and not def.has("hand_laid"):   # remains have no kit (nobody takes them down); pipes and fittings are laid from the hand (PLUMBING_DESIGN s9)
 			if String(def.get("kit", "")) != "" or not bool(def.get("walkover", false)):
 				want_item.call(String(def.get("kit", "")), "structures.json %s kit" % kind)
-
 
 		want_item.call(String(def.get("item", "")), "structures.json %s item" % kind)
 
 		if float(def.get("footprint_x", 0.0)) <= 0.0 or float(def.get("footprint_z", 0.0)) <= 0.0:
 			fail("structures.json %s: footprint_x and footprint_z (the ghost's size in metres) are required" % kind)
 
-		if def.has("slots") and (int(def.get("slots", 0)) < 1 or int(def.get("slots", 0)) > 30):
-			fail("structures.json %s: slots must be 1 to 30" % kind)
+		if def.has("slots") and (int(def.get("slots", 0)) < 1 or int(def.get("slots", 0)) > InventoryCheck.MAX_SLOTS):   # chests go to 48 (Dave 18 Nov 2026: 3 rows of 6, a row more each tier)
+			fail("structures.json %s: slots must be 1 to %d" % [kind, InventoryCheck.MAX_SLOTS])
 
-		if def.has("max_kg") and float(def.get("max_kg", 0.0)) <= 0.0:
-			fail("structures.json %s: max_kg must be above 0" % kind)
+		if def.has("max_kg") and (float(def.get("max_kg", 0.0)) <= 0.0 or not def.has("vehicle")):   # storage is limited by slots only (Dave 19 Nov 2026)
+			fail("structures.json %s: max_kg is a vehicle's payload, above 0; a storage container has no weight limit" % kind)
 
 		if String(def.get("who", "anyone")) != "anyone" and not (bool(def.get("take_only", false)) and String(def.get("who")) == "owner"):   # remains: owner first day
 			fail("structures.json %s: who is '%s' but only \"anyone\" is built (owner and town wait for ownership)" % [kind, def.get("who")])
+
+		# Storage rules (master s3.13, Mission 001 phase 9): a code lock only on a container, what it takes names real items or kinds, a view has a radius.
+		if def.has("lockable") and (typeof(def["lockable"]) != TYPE_BOOL or int(def.get("slots", 0)) <= 0 or bool(def.get("take_only", false))):
+			fail("structures.json %s: lockable must be true or false, and only on a container with slots" % kind)
+
+		for take in def.get("takes", []):   # an item of items.json or gathered.json (Kindling is a gathered item)
+			var take_row: Dictionary = items_file["items"].get(String(take), gathered_file["items"].get(String(take), {}))
+
+			if take_row.is_empty() or bool(take_row.get("retired", false)):
+				fail("structures.json %s: takes '%s', which is not a live item or group" % [kind, take])
+
+		# Resource bins (GOALS-REPAIR R6, src/shared/bin_rules.gd): units of one kind, never weight; slots for layout; a takes list of what it holds.
+		if def.has("bin") and (typeof(def["bin"]) != TYPE_DICTIONARY or int(def["bin"].get("units", 0)) < 1 or int(def["bin"].get("units", 0)) > 65535 or def.has("max_kg") or int(def.get("slots", 0)) < 1 or def.get("takes", []).is_empty()):
+			fail("structures.json %s: a bin needs bin.units 1 to 65535, slots, a takes list and no max_kg" % kind)
+
+		for take_kind in def.get("takes_kinds", []):
+			if not String(take_kind) in ["tool", "weapon", "material", "clothing", "gear", "container", "medicine", "food", "coin", "placeable", "structure"]:
+				fail("structures.json %s: takes_kinds '%s' is not an items.json kind" % [kind, take_kind])
+
+		if String(def.get("use", "")) == "storage_view" and (float(def.get("view_m", 0.0)) <= 0.0 or int(def.get("slots", 0)) > 0):
+			fail("structures.json %s: a storage view needs view_m above 0 and holds nothing itself" % kind)
+
+		# Movable containers (master s3.11 and s3.13, Mission 001 phase 10): a vehicle carries its own cargo store and its pace and limits; cargo is a container.
+		if def.has("vehicle"):
+			var v: Variant = def["vehicle"]
+
+			if typeof(v) != TYPE_DICTIONARY or int(def.get("slots", 0)) <= 0 or float(def.get("max_kg", 0.0)) <= 0.0 or float(v.get("speed_mps", 0.0)) <= 0.0 or float(v.get("hitch_m", 0.0)) <= 0.0 or float(v.get("slope_max", 0.0)) <= 0.0 or typeof(v.get("crate_spots", null)) != TYPE_ARRAY:
+				fail("structures.json %s: a vehicle needs slots, max_kg (its payload), speed_mps, hitch_m, slope_max and crate_spots" % kind)
+
+		if def.has("cargo") and (typeof(def["cargo"]) != TYPE_BOOL or int(def.get("slots", 0)) <= 0 or def.has("vehicle")):
+			fail("structures.json %s: cargo must be true or false, on a container with slots that is not itself a vehicle" % kind)
 		obtainable[String(def.get("item", ""))] = true
 
-		if def.has("blocks_per_log"):   # a log struck with an axe falls apart into wooden blocks
-			obtainable["wooden_block"] = true
-
-		if def.has("blocks_per_log"):   # softwood logs give the softwood block and its firewood (wood_species.json class_items)
-			for cls in wood_file.get("class_items", {}):
-				for step in wood_file["class_items"][cls]:
-					obtainable[String(wood_file["class_items"][cls][step])] = true
 
 	# Recipe graph (job 72): every core item is gatherable, craftable from gatherables, or marked "future": true in items.json;
 	# no cycles; dead ends (obtainable materials nothing uses) are listed so Dave can see what still has no purpose.
@@ -803,6 +1065,20 @@ func _init() -> void:
 	for kind in structures:
 		placed_forms[String(structures[kind].get("item", ""))] = true
 
+	# A retired item that renames.json replaces with a live item needs no source: a save that holds it loads the replacement (item_table.gd load_renames).
+	var renamed_away: Dictionary = {}
+	var renames: Dictionary = _read("renames.json").get("renames", {})
+
+	for old_id in renames:
+		var new_id: String = String(renames[old_id][0]) if typeof(renames[old_id]) == TYPE_ARRAY else String(renames[old_id])   # [new id, count] (the wood merge, item_table.gd rename_count)
+		var old_row: Dictionary = items_file["items"].get(String(old_id), {})
+		var new_row: Dictionary = items_file["items"].get(new_id, {})
+
+		if not bool(old_row.get("retired", false)) or new_row.is_empty() or bool(new_row.get("retired", false)):
+			fail("renames.json %s -> %s: the old row must be retired and the new one a live item" % [old_id, new_id])
+		else:
+			renamed_away[String(old_id)] = true
+
 	for id in items_file.get("items", {}):
 		var entry: Dictionary = items_file["items"][id]
 		var is_future: bool = bool(entry.get("future", false))
@@ -810,7 +1086,8 @@ func _init() -> void:
 		if is_future:
 			future.append(id)
 
-		if not obtainable.has(id) and not String(id).ends_with("_kit") and not is_future:
+		# "legacy": true keeps a live item that is no longer made, for the saves that hold one (the Stone - Pickaxe, TREE_WOOD_TOOLS_DESIGN.md W-12).
+		if not obtainable.has(id) and not String(id).ends_with("_kit") and not is_future and not renamed_away.has(id) and not bool(entry.get("legacy", false)):
 			fail("core item '%s' is not gatherable, not craftable and not marked \"future\": true" % id)
 		elif obtainable.has(id) and is_future:
 			warn("core item '%s' is marked future but can be obtained" % id)
@@ -873,6 +1150,17 @@ func _init() -> void:
 			for row in recipes[rid].get(list, []):
 				used[String(row[0])] = true
 
+				for member in groups.get(String(row[0]), []):   # a group need (plain "nails") is filled by any member, so each member is used (Copper nails)
+					used[String(member)] = true
+
+	# A live, known hammer blueprint's cost uses a material too (the Iron and Steel anvils go only into building the Advanced and Master smithies, GOALS-REPAIR R4/R5).
+	var bp_rows: Dictionary = _read("blueprints.json").get("blueprints", {})
+
+	for bid in bp_rows:
+		if typeof(bp_rows[bid]) == TYPE_DICTIONARY and not bool(bp_rows[bid].get("retired", false)) and bool(bp_rows[bid].get("known", true)):   # a live blueprint the hammer lists (hammer_blueprints.gd: known unless false)
+			for row in bp_rows[bid].get("cost", []):
+				used[String(row[0])] = true
+
 	for id in cooking.get("fuel", {}):
 		used[String(id)] = true
 
@@ -890,6 +1178,18 @@ func _init() -> void:
 	for id in food.get("by_id", {}):
 		used[String(id)] = true
 
+	# Planting is a use (gardening, 14 Nov 2026): a crop seed is sown (crops.json seed), a dug-up bush and a felled tree's seed are planted with the hoe
+	# (server_items._plant_bush), so none of them is a dead end.
+	for crop_id in crops_file.get("crops", {}):
+		used[String(crops_file["crops"][crop_id].get("seed", ""))] = true
+
+	for entry in _read("../tables/flora.json").get("entries", []):
+		if String(entry.get("kind", "")) == "shrub" and shrub_work.has("dig_suffix"):
+			used[String(entry["name"]) + String(shrub_work["dig_suffix"])] = true
+
+	for species_name in felled_seeds.get("by_species", {}):
+		used[String(felled_seeds["by_species"][species_name])] = true
+
 	var dead_core: Array = []
 
 	for id in items_file.get("items", {}):
@@ -899,7 +1199,7 @@ func _init() -> void:
 			dead_core.append(id)
 
 	if not dead_core.is_empty():
-		warn("dead-end materials (obtainable, no recipe, fuel or repair uses them): %s" % ", ".join(dead_core))
+		warn("dead-end materials (obtainable, no recipe, blueprint, fuel or repair uses them): %s" % ", ".join(dead_core))
 
 	var edible_suffixes: Array = []
 
@@ -976,11 +1276,121 @@ func _init() -> void:
 				elif worn_source.find("\t\t\"%s\":" % String(rows[id].get("builder", ""))) < 0:
 					fail("worn.json: '%s' names an unknown builder '%s'" % [id, rows[id].get("builder", "")])
 
+			var body_slots: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/clothing.json"))
+			var slot_names: Array = body_slots.get("slots", []) if typeof(body_slots) == TYPE_DICTIONARY else []
+
 			for id in items_file.get("items", {}):
 				var slot: String = String(items_file["items"][id].get("slot", ""))
 
-				if slot in ["head", "body", "legs", "feet", "hands", "back", "outer", "waist"] and not rows.has(id):
+				if slot in slot_names and not rows.has(id):
 					fail("items.json: '%s' has body slot '%s' but no worn.json row" % [id, slot])
+
+	# Clothing layers (M001-T11, data/items/clothing.json): every item slot is a body slot; every clothing row names a wear_layer of its slot; spans
+	# name other slots that have that layer; every fabric is a warmth.json layers fabric; the worn positions are each a slot's layer, once.
+	var clothing_cfg: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/clothing.json"))
+	var warmth_cfg: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/warmth.json"))
+
+	if typeof(clothing_cfg) != TYPE_DICTIONARY or typeof(warmth_cfg) != TYPE_DICTIONARY:
+		fail("clothing.json or warmth.json is not an object")
+	else:
+		var layers: Dictionary = clothing_cfg.get("layers", {})
+		var places: Array = clothing_cfg.get("worn", [])
+		var fabrics: Dictionary = warmth_cfg.get("layers", {}).get("fabrics", {})
+
+		for slot in clothing_cfg.get("slots", []):
+			for layer in layers.get(slot, []):
+				if places.count("%s:%s" % [slot, layer]) != 1:
+					fail("clothing.json: worn must list %s:%s once" % [slot, layer])
+
+		if places.size() != Dictionary(layers).values().reduce(func(n, list): return n + (list as Array).size(), 0):
+			fail("clothing.json: worn lists a position that is no slot's layer")
+
+		for id in items_file.get("items", {}):
+			var row: Dictionary = items_file["items"][id]
+			var slot: String = String(row.get("slot", ""))
+
+			if slot == "":
+				continue
+
+			if not layers.has(slot):
+				fail("items.json: '%s' has slot '%s', not a clothing.json slot" % [id, slot])
+				continue
+
+			var layer: String = String(row.get("wear_layer", layers[slot][0]))
+
+			if String(row.get("kind", "")) == "clothing" and not row.has("wear_layer"):
+				fail("items.json: clothing '%s' has no wear_layer" % id)
+			elif not (layers[slot] as Array).has(layer):
+				fail("items.json: '%s' wear_layer '%s' is not a layer of %s" % [id, layer, slot])
+
+			for other in row.get("spans", []):
+				if not (layers.get(other, []) as Array).has(layer) or other == slot:
+					fail("items.json: '%s' spans '%s', which has no %s layer" % [id, other, layer])
+
+			if row.has("fabric") and not fabrics.has(String(row["fabric"])):
+				fail("items.json: '%s' fabric '%s' is not a warmth.json layers fabric" % [id, row["fabric"]])
+
+			# Bags (catalog Phase 5, src/shared/bag_rules.gd): their own slots fit an inventory, bag_takes is a known rule, carry_bonus_kg is kilograms on a back piece.
+			if row.has("bag_slots") and (int(row["bag_slots"]) < 1 or int(row["bag_slots"]) > 30 or not String(row.get("bag_takes", "")) in ["any", "small", "small_tool", "consumable", "arrow", "blade"]):
+				fail("items.json: bag '%s' needs bag_slots 1 to 30 and a known bag_takes" % id)
+
+			if row.has("carry_bonus_kg") and (float(row["carry_bonus_kg"]) <= 0.0 or float(row["carry_bonus_kg"]) > 60.0 or slot != "back"):
+				fail("items.json: '%s' carry_bonus_kg must be a number of kilograms above 0 up to 60, on a back piece" % id)
+
+		for hung in clothing_cfg.get("attach", {}):
+			if not places.has(hung) or not places.has(String(clothing_cfg["attach"][hung][0])):
+				fail("clothing.json: attach %s names a position that is not worn" % hung)
+
+		for hung in clothing_cfg.get("belt_hangs", []):
+			if not places.has(hung):
+				fail("clothing.json: belt_hangs %s is not a worn position" % hung)
+	# Armour and damage modes (catalog Phase 4b, data/items/protection.json): every protect names known modes with shares 0..1 and a cover 0..1 on
+	# a worn slot; every live row that does damage (a weapon or its ammunition) names its damage mode; the attack modes and slot shares are sane.
+	var protection: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/protection.json"))
+
+	if typeof(protection) != TYPE_DICTIONARY or (protection.get("modes", []) as Array).is_empty():
+		fail("protection.json is not an object with modes")
+	else:
+		var modes: Array = protection["modes"]
+		var shares: Dictionary = protection.get("slots", {})
+		var share_sum: float = 0.0
+
+		for slot in shares:
+			share_sum += float(shares[slot])
+
+			if typeof(clothing_cfg) == TYPE_DICTIONARY and not (clothing_cfg.get("slots", []) as Array).has(slot):
+				fail("protection.json slots: '%s' is not a clothing.json slot" % slot)
+
+		if absf(share_sum - 1.0) > 0.001:
+			fail("protection.json slots: the shares add up to %.3f, not 1" % share_sum)
+
+		for key in ["layer_keep", "slot_cap", "cap"]:
+			if float(protection.get(key, -1.0)) <= 0.0 or float(protection.get(key, -1.0)) > 1.0:
+				fail("protection.json %s must be above 0 and at most 1" % key)
+
+		for cause in protection.get("attack_modes", {}):
+			if cause != "note" and not modes.has(String(protection["attack_modes"][cause])):
+				fail("protection.json attack_modes.%s: '%s' is not a mode" % [cause, protection["attack_modes"][cause]])
+
+		if not modes.has(String(protection.get("default_mode", ""))):
+			fail("protection.json default_mode is not a mode")
+
+		for id in items_file.get("items", {}):
+			var row: Dictionary = items_file["items"][id]
+
+			if row.has("protect"):
+				if String(row.get("slot", "")) == "" or float(row.get("cover", -1.0)) <= 0.0 or float(row.get("cover", -1.0)) > 1.0:
+					fail("items.json: '%s' has protect but no worn slot or no cover above 0 and at most 1" % id)
+
+				for mode in row["protect"]:
+					if not modes.has(mode) or float(row["protect"][mode]) < 0.0 or float(row["protect"][mode]) > 1.0:
+						fail("items.json: '%s' protect %s is not a mode with a share 0..1" % [id, mode])
+
+			if float(row.get("damage", 0.0)) > 0.0 and not bool(row.get("retired", false)) and not bool(row.get("future", false)) and not modes.has(String(row.get("damage_mode", ""))):
+				fail("items.json: '%s' does damage but has no damage_mode of %s" % [id, str(modes)])
+
+			if float(row.get("pen", 0.0)) < 0.0 or float(row.get("pen", 0.0)) >= 1.0:
+				fail("items.json: '%s' pen must be 0 or more and below 1" % id)
 
 	# data/npcs/outfits.json: every id an NPC outfit names has a worn.json row (worn_sync skips unknown ones, this catches the typo).
 	if FileAccess.file_exists("res://data/npcs/outfits.json") and FileAccess.file_exists("res://data/items/worn.json"):

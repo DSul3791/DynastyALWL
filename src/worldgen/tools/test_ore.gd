@@ -51,7 +51,18 @@ func outcrop(items, ore: String) -> void:
 func blows(items, n: int) -> void:
 	for k in range(n):
 		items._last_hit.clear()
-		items.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, in_hand(items), Vector3.ZERO)
+
+
+# The pack slot + 1 of the one pick, axe or hammer the player was given: the tool in hand (protocol 115).
+func in_hand(items) -> int:
+	var inv = items.inventory_of(1)
+
+	for slot in range(inv.slot_count):
+		if str(items.table.entry(items.table.id_of(inv.numbers[slot])).get("tool_class", "")) in ["pick", "axe", "hammer"]:
+			return slot + 1
+
+	return 0
 
 
 func count(items, id: String) -> int:
@@ -74,7 +85,7 @@ func _init() -> void:
 	outcrop(a, "copper")
 	blows(a, 30)
 	check(count(a, "copper_ore") > 0 and count(a, "copper_ore") + count(a, "stone") > 0 and count(a, "stone") == 0 or count(a, "copper_ore") >= 8, "a pick on a copper outcrop gives copper ore (%d ore, %d stone)" % [count(a, "copper_ore"), count(a, "stone")])
-	check(int(a._items[900001]["count"]) == 5000 - count(a, "copper_ore") - count(a, "stone"), "every piece comes out of the boulder")
+	check(int(a._items[900001]["count"]) == 5000 - 3 * count(a, "copper_ore") - count(a, "stone"), "every piece comes out of the boulder, an ore piece by its weight (1.5 kg = 3 stones of 0.5 kg, boulders PLAN.md 3c)")
 
 	var h = make("test_ore_half", "stone_pickaxe")
 	h._boulder_cfg["ore"]["piece_share"] = 0.5
@@ -98,6 +109,18 @@ func _init() -> void:
 	outcrop(sc, "copper")
 	blows(sc, 30)
 	check(count(sc, "copper_ore") > 0, "a stone pick still takes copper ore (%d)" % count(sc, "copper_ore"))
+
+	# The Stone Hammer (TREE_WOOD_TOOLS_DESIGN.md W-12) takes copper, tin and coal like a stone pick, but iron ore only with a pick.
+	var hc = make("test_ore_stone_hammer_copper", "stone_hammer")
+	hc._boulder_cfg["ore"]["piece_share"] = 1.0
+	outcrop(hc, "copper")
+	blows(hc, 30)
+	check(count(hc, "copper_ore") > 0, "a stone hammer takes copper ore (%d)" % count(hc, "copper_ore"))
+	var hi = make("test_ore_stone_hammer_iron", "stone_hammer")
+	hi._boulder_cfg["ore"]["piece_share"] = 1.0
+	outcrop(hi, "iron")
+	blows(hi, 30)
+	check(count(hi, "iron_ore") == 0 and count(hi, "stone") > 0, "a stone hammer takes no iron ore from an iron outcrop, only stone (%d ore, %d stone)" % [count(hi, "iron_ore"), count(hi, "stone")])
 
 	var x = make("test_ore_axe", "stone_axe")
 	outcrop(x, "iron")

@@ -1,16 +1,17 @@
 extends SceneTree
 
-# Bog iron deposits as world rows for the client's look (Steve 10 Nov 2026, on Sonny's #996): every deposit within seen_m of a player is sent as
-#   [id, 0, ore left, the sample on the ground, BOG_STATE 229, {"key", "total", "wet"}]
-# with "left" as it has grown back by now; a dig sends it again with less, the regrowth with more; walking away takes it off; "wet" only under
-# standing water; no structure state may be 229. A stand-in deposit map (bog_deposit_at) keeps the test off the baked tile.
+# Bog iron patches as world rows for the client's look (Steve 10 Nov 2026, on Sonny's #996; fields and ground rust, Dave 21 Nov 2026): every patch
+# within seen_m of a player is sent as
+#   [id, 0, ore left, the patch centre on the generated ground, BOG_STATE 229, {"key", "total", "r"}]
+# with "left" as it has grown back by now; a dig sends it again with less, the regrowth with more; walking away takes it off; no structure state
+# may be 229. A stand-in field (bog_field) keeps the test off the baked tile.
 #   godot --headless --path . --script res://src/worldgen/tools/test_bog_rows.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 
-const NEAR_SPOT := Vector3(800.0, 10.0, 800.0)       # a sample (100 x 8 m): a dry deposit
-const WET_SPOT := Vector3(816.0, 10.0, 800.0)        # two samples east: under water
+const NEAR_SPOT := Vector3(800.0, 10.0, 800.0)       # a patch on sample (100, 100), in field square (1, 1)
+const WET_SPOT := Vector3(816.0, 10.0, 800.0)        # a second patch two samples east
 const FAR_SPOT := Vector3(800.0, 10.0, 880.0)        # 80 m south: out of sight from the first spot
 
 var failures: int = 0
@@ -69,18 +70,19 @@ func _init() -> void:
 			sent.append([added, removed])
 	items.ground_height = func(_x, _z): return 10.0
 	items.game_seconds = func() -> float: return clock_s
-	items.water_depth_at = func(pos: Vector3) -> float: return 0.3 if pos.distance_to(WET_SPOT) < 1.0 else 0.0
-	items.bog_deposit_at = func(x: float, z: float, _cfg: Dictionary) -> Dictionary:
-		for spot in [NEAR_SPOT, WET_SPOT, FAR_SPOT]:
-			if absf(x - spot.x) < 4.0 and absf(z - spot.z) < 4.0:
-				return {"key": "%d,%d" % [int(round(spot.x / 8.0)), int(round(spot.z / 8.0))], "size": 8, "edge": false}
+	items.bog_field = func(fx: int, fz: int, _cfg: Dictionary) -> Array:
+		var patches: Array = []
 
-		return {}
+		if fx == 1 and fz == 1:
+			for spot in [NEAR_SPOT, WET_SPOT, FAR_SPOT]:
+				patches.append({"key": "%d,%d" % [int(round(spot.x / 8.0)), int(round(spot.z / 8.0))], "x": spot.x, "z": spot.z, "size": 8, "r": 3.0})
+
+		return patches
 	items.setup(ItemTableScript.load_default(), dir)
 	items.peer_connected_hello(1, "bogrows00001")
 	items.vitals_of(1)["weight"] = 500.0
 	var cfg: Dictionary = items._dig_cfg.get("bog_iron", {})
-	check(not cfg.is_empty() and float(cfg.get("seen_m", 0.0)) == 30.0, "digging.json bog_iron sees 30 m")
+	check(not cfg.is_empty() and float(cfg.get("seen_m", 0.0)) == 50.0, "digging.json bog_iron sees 50 m (Dave 19 Nov 2026: easy to find)")
 
 	# State 229 is the deposit's own: no structure may take it.
 	var clash: Array = []
@@ -96,18 +98,18 @@ func _init() -> void:
 	_sync()
 	var rows: Dictionary = _bog_added()
 	var dry_key: String = "100,100"
-	var wet_key: String = "102,100"
-	check(rows.size() == 2 and rows.has(dry_key) and rows.has(wet_key), "the two deposits within 30 m are sent, the one 80 m off is not (%s)" % str(rows.keys()))
+	var east_key: String = "102,100"
+	check(rows.size() == 2 and rows.has(dry_key) and rows.has(east_key), "the two patches within 50 m are sent, the one 80 m off is not (%s)" % str(rows.keys()))
 
-	if not rows.has(dry_key) or not rows.has(wet_key):
+	if not rows.has(dry_key) or not rows.has(east_key):
 		quit(1)
 		return
 
 	var dry: Array = rows[dry_key]
 	check(int(dry[0]) >= items.BOG_ID_BASE - 10 and int(dry[1]) == 0 and int(dry[2]) == 8 and (dry[3] as Vector3).distance_to(NEAR_SPOT) < 0.01, "a row is [id, 0, ore left 8, the sample on the ground] (%s)" % str(dry.slice(0, 4)))
-	check(typeof(dry[5]) == TYPE_DICTIONARY and str(dry[5]["key"]) == dry_key and int(dry[5]["total"]) == 8 and not bool(dry[5]["wet"]), "its extra is {key, total 8, wet false}")
-	check(bool(rows[wet_key][5]["wet"]), "the deposit under standing water is wet")
-	check(int(rows[wet_key][0]) != int(dry[0]), "each deposit has its own id")
+	check(typeof(dry[5]) == TYPE_DICTIONARY and str(dry[5]["key"]) == dry_key and int(dry[5]["total"]) == 8 and is_equal_approx(float(dry[5]["r"]), 3.0) and not dry[5].has("wet"), "its extra is {key, total 8, r 3}")
+	check(is_equal_approx((dry[3] as Vector3).y, 10.0), "its centre is on the generated ground (10 m)")
+	check(int(rows[east_key][0]) != int(dry[0]), "each patch has its own id")
 
 	# Nothing changed: nothing sent again.
 	_sync()

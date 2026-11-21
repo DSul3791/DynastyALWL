@@ -100,7 +100,7 @@
 	"say_early": "You pull in the empty line.",
 	"say_empty": "The fish here have gone quiet for now.",
 	"ice": {
-		"note": "Ice fishing: where the sheet bears a person (cover 0.5, ice.gd) a cast needs a hole. Right click with an axe or pick cuts one: blows_needed blows at blow_gap_s, a hole stays hole_game_h game hours before it refreezes, at most holes_per_player per player (the oldest goes first), and a cast needs a hole within hole_reach_m. Cold water bites slower: ice_mult on the chance. Holes are kept in memory only.",
+		"note": "Ice fishing: where the sheet bears a person (cover 0.5, ice.gd) a cast needs a hole. Right click with an axe or pick cuts one: blows_needed blows at blow_gap_s, a hole stays hole_game_h game hours before it refreezes, at most holes_per_player per player (the oldest goes first), and a cast needs a hole within hole_reach_m. The right click says there is no ice to cut only within no_ice_water_m of water: anywhere else it is not asking for a hole and stays silent. Cold water bites slower: ice_mult on the chance. Holes are kept in memory only.",
 		"blows_needed": 6,
 		"blow_gap_s": 0.8,
 		"hole_game_h": 18.0,
@@ -108,6 +108,7 @@
 		"hole_reach_m": 2.0,
 		"ice_mult": 0.5,
 		"say_hole": "You cut a hole through the ice.",
+		"no_ice_water_m": 6.0,
 		"say_no_ice": "There is no ice to cut here.",
 		"say_need_hole": "Cut a hole in the ice first (right click with an axe).",
 		"say_blow": "Chop..."

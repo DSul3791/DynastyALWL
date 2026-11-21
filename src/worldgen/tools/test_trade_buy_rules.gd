@@ -30,10 +30,11 @@ func _init() -> void:
 	items.send_world_items = func(_p, _a, _r): pass
 	items.ground_height = func(_x, _z): return 10.0
 	items.setup(ItemTableScript.load_default(), dir)
+	items._goals_loaded = true   # no goals here: a goal's own reward (coins) would change the amounts this test checks; test_goals covers goals (protocol 119 lifted the `after` lock)
 	items.peer_connected_hello(1, "buyruleskey01")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
-	items._characters["buyruleskey01"]["luck"] = 0
-	items.set_attribute(1, "charisma", 0)
+	items._characters["buyruleskey01"]["luck"] = 50   # neutral (0 to 100)
+	items.set_attribute(1, "charisma", 50)
 	var trade = TradeScript.new()
 	trade.items = items
 	trade.npcs = {"npcs": {"hob": {"dormant": false, "placed": true, "pos": Vector3(1.0, 10.0, 0.0)}}}
@@ -43,27 +44,27 @@ func _init() -> void:
 	trade.game_seconds = func(): return game[0]
 	trade.send_shop = func(_peer, _npc, _title, _ids, _pay, _got, _buys, _tired_ids, _tired, _stock, _supply, _till): pass
 	check(trade.open(1, "hob"), "Hob's stall opens")
-	var rule: Dictionary = trade._buy_rule("hob", "lumber_spruce")
-	check(int(rule.get("lot", 0)) == 3 and int(rule.get("per_day", 0)) > 0, "spruce boards have a rule: 3 a lot (%s)" % str(rule))
+	var rule: Dictionary = trade._buy_rule("hob", "lumber")
+	check(int(rule.get("lot", 0)) == 3 and int(rule.get("per_day", 0)) > 0, "Planks have a rule: 3 a lot (%s)" % str(rule))
 	var per_day: int = int(rule["per_day"])
-	var board: int = items.table.number_of("lumber_spruce")
+	var board: int = items.table.number_of("lumber")
 
 	# A whole day's limit and more: he takes per_day, pays about per_day / 3 copper.
-	items.give_to(1, "lumber_spruce", per_day + 12)
+	items.give_to(1, "lumber", per_day + 12)
 	var start: int = items.coins_of(1)
 	var said: String = trade.deal(1, "hob", 1, items.inventory_of(1).numbers.find(board), per_day + 12)
 	var paid: int = items.coins_of(1) - start
-	check(items.count_for(1, "lumber_spruce") == 12, "he takes only per_day boards (%d left; %s)" % [items.count_for(1, "lumber_spruce"), said])
+	check(items.count_for(1, "lumber") == 12, "he takes only per_day boards (%d left; %s)" % [items.count_for(1, "lumber"), said])
 	check(paid >= per_day / 3 - 2 and paid <= per_day / 3, "about a copper for three boards (%d copper for %d)" % [paid, per_day])
 
 	# The same day: no more.
 	said = trade.deal(1, "hob", 1, items.inventory_of(1).numbers.find(board), 12)
-	check(items.count_for(1, "lumber_spruce") == 12 and said.find("all the") >= 0, "the same day he wants no more (%s)" % said)
+	check(items.count_for(1, "lumber") == 12 and said.find("all the") >= 0, "the same day he wants no more (%s)" % said)
 
 	# Next game day: he buys again.
 	game[0] += 86400.0
 	said = trade.deal(1, "hob", 1, items.inventory_of(1).numbers.find(board), 12)
-	check(items.count_for(1, "lumber_spruce") == 0, "a day later he buys again (%s)" % said)
+	check(items.count_for(1, "lumber") == 0, "a day later he buys again (%s)" % said)
 
 	# Stones (no rule) still sell in their lots.
 	check(trade._buy_rule("hob", "stone").is_empty(), "stones have no board rule")

@@ -1,6 +1,6 @@
 # Sound pack manifest
 
-Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **217 slots: 23 recorded, 184 generated placeholders, 10 empty.**
+Written by `assets/audio/make_manifest.py` (run it after adding sounds; edit its SLOTS table when a slot is added). **215 slots: 23 recorded, 182 generated placeholders, 10 empty.**
 
 Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.ogg`, `<name>_1.ogg` for variants; WAV works too). The game uses the recording and ignores the generated sound. Priority 1 means a real recording would improve the game the most; 5 means done. Licence and source of every recording go in `README.md` (section on supplied recordings).
 
@@ -21,6 +21,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 1 | `wind_gust` | generated | 1 | sound_stage.gd: the swelling gust layer on top of the bed | A leaf-and-grass rustling wind loop with soft swells, seamless |
 | 1 | `wind_low` | generated | 1 | sound_stage.gd: the steady wind bed, louder with height and open ground, softer in trees | A calm open-field wind loop, 20 s or more, seamless, no gusts (low rumble layer) |
 | 2 | `bear_roar` | generated | 2 | creature_sounds.gd: a bear's roar (threat), the danger cue | 2 to 3 bear roars, 1 to 2 s |
+| 2 | `bellows_blow` | generated | 2 | workshop_sounds.gd bellows(at): one stroke of a smelter's bellows while a player works them, about every 1.4 s | 2 recordings of a leather forge bellows pushed once, the fire roaring up, 1 s |
 | 2 | `bird_trill` | generated | 3 | ambient_life.gd: meadow bird, by day | 2 to 3 trilling songs, about 1 s |
 | 2 | `bird_whistle` | generated | 3 | ambient_life.gd: forest bird, by day | 2 to 4 clear songbird whistles, 1 to 2 s |
 | 2 | `breath_gasp` | generated | 3 | breath_sounds.gd: ragged hard breathing at severe exertion | 3 hard gasping breaths of an exhausted runner, 0.7 s |
@@ -34,7 +35,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 2 | `cook_sizzle` | generated | 2 | fire_sounds.gd cook(): food laid on the embers (heard when a roast appears in the bag at a fire) | 2 to 3 recordings of meat or food sizzling on embers, 3 s |
 | 2 | `craft_done` | generated | 3 | item_sounds.gd: a craft finished | 3 wooden knock and small chime cues |
 | 2 | `dig_rock` | generated | 3 | dig_sounds.gd: breaking rock | 3 pickaxe on rock or rock breaking sounds |
-| 2 | `dig_soil` | generated | 3 | dig_sounds.gd: digging dirt and humus | 3 spade or shovel scoops into earth |
+| 2 | `dig_soil` | generated | 3 | dig_sounds.gd: digging dirt and humus | 3 shovel scoops into earth |
 | 2 | `fire_fuel` | generated | 2 | fire_sounds.gd fuel(): a stick or log laid on a fire (V key) | 2 recordings of wood put on a fire with a flare of crackles, 1 s |
 | 2 | `fire_large` | generated | 1 | fire_sounds.gd: a big fire (loop) | a bonfire loop with roar, crackle and pops, 10 to 15 s |
 | 2 | `fire_light` | generated | 3 | fire_sounds.gd: a fire catches (one-shot) | 3 fire-lighting sounds: strike and soft whoomph, 1 to 2 s |
@@ -112,8 +113,6 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `door_close` | generated | 2 | interior_sounds.gd: a door closes (object) | 2 to 3 wooden door closes with a thud and latch |
 | 3 | `door_open` | generated | 2 | interior_sounds.gd: a door opens (object) | 2 to 3 wooden door opens with latch and hinge creak |
 | 3 | `drink_gulp` | generated | 2 | item_sounds.gd eat("drink"): two swallows | 2 recordings of drinking and swallowing, 1 s |
-| 3 | `eat_crunch` | generated | 3 | item_sounds.gd eat(): a crisp bite and chews (roast, nuts, roots) | 2 to 3 recordings of biting and chewing something crisp, 1 s |
-| 3 | `eat_soft` | generated | 3 | item_sounds.gd eat(): soft chewing (berries, greens) | 2 to 3 recordings of chewing something soft, 1 s |
 | 3 | `flame_lantern` | generated | 1 | flame_sounds.gd: a lantern in the hand (quiet loop) | a lantern flame behind glass, 10 s loop |
 | 3 | `fox_bark` | recorded | 2 | creature_sounds.gd: a fox's bark (idle, alert), a night sound | 2 to 3 red fox barks, 1 to 3 per clip |
 | 3 | `fox_scream` | recorded | 1 | creature_sounds.gd: a vixen's scream (threat), a night sound | 2 to 3 red fox screams, about 1 s |
@@ -129,7 +128,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `heal_poultice` | generated | 2 | item_sounds.gd eat(): a poultice applied (Items eat_event, confirmed by the server) | 2 recordings of pressing a wet leaf pack onto skin, 0.8 s |
 | 3 | `hit_hammer_stone` | generated | 3 | hit_sounds.gd: a hammer blow on stone (chiselling, smithing) | 3 hammer clanks on stone |
 | 3 | `hit_pick_soil` | generated | 3 | hit_sounds.gd: a pickaxe blow on soil | 3 pick strikes into hard earth |
-| 3 | `hit_spade_soil` | generated | 3 | hit_sounds.gd: a spade strike into soil | 3 spade thuds into earth |
+| 3 | `hit_shovel_soil` | generated | 3 | hit_sounds.gd: a shovel strike into soil | 3 shovel thuds into earth |
 | 3 | `item_reject` | generated | 3 | item_sounds.gd: an action was refused (too far, no tool, pack full), a soft double knock | a soft refusal knock, 0.2 s |
 | 3 | `land_hard` | generated | 3 | landing_sounds.gd: landing from 5 m and more, heavy impact, gear rattle and a grunt | 3 hard landings, 0.9 s |
 | 3 | `land_thud` | generated | 3 | landing_sounds.gd: landing from 2.5 to 5 m, body weight and a breath knocked out | 3 landing thuds, 0.5 s |
@@ -173,6 +172,7 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 3 | `town_bell` | generated | 3 | town_sounds.gd: a tower bell tolling the hour or on call (ring_bell) | 2 to 3 bell strikes with a long ring, 4 to 6 s each |
 | 3 | `town_crowd` | generated | 1 | town_sounds.gd: a busy square murmur (loop) | A seamless crowd murmur loop, no clear words |
 | 3 | `tree_leaves` | generated | 3 | tree_sounds.gd: the crown rushing down through the air | 3 branches and leaves rushing as a tree falls, about 1 s |
+| 3 | `ui_goal` | generated | 1 | goal_placard.gd: the Goal Achieved placard's fanfare, once per completed goal | A short triumphal trumpet fanfare, 1 to 2 s, original or properly licensed |
 | 3 | `wing_grain` | recorded | 3 | make_wings.py: single flaps cut from Dave's recording; the take-offs are built from them (not played directly) | have: Dave's recording |
 | 3 | `wolf_growl` | generated | 2 | creature_sounds.gd: a wolf's growl (alert, threat) | 2 to 3 wolf growls and snarls, 1 to 2 s |
 | 3 | `woodpecker` | generated | 3 | ambient_life.gd: forest, by day | 2 to 3 woodpecker drumming runs, about 1 s |
@@ -186,8 +186,8 @@ Drop a recording as `assets/audio/recorded/<folder>/<name>.ogg` (or `<name>_0.og
 | 4 | `hit_axe_stone` | generated | 3 | hit_sounds.gd: an axe blow on stone | 3 axe strikes on rock |
 | 4 | `hit_hammer_soil` | generated | 3 | hit_sounds.gd: a hammer blow on soil (driving stakes) | 3 mallet thumps into earth |
 | 4 | `hit_pick_wood` | generated | 3 | hit_sounds.gd: a pickaxe blow on wood | 3 pick strikes into wood |
-| 4 | `hit_spade_stone` | generated | 3 | hit_sounds.gd: a spade scraping on stone | 3 spade scrapes on stone |
-| 4 | `hit_spade_wood` | generated | 3 | hit_sounds.gd: a spade strike on wood | 3 spade knocks and scrapes on wood |
+| 4 | `hit_shovel_stone` | generated | 3 | hit_sounds.gd: a shovel scraping on stone | 3 shovel scrapes on stone |
+| 4 | `hit_shovel_wood` | generated | 3 | hit_sounds.gd: a shovel strike on wood | 3 shovel knocks and scrapes on wood |
 | 4 | `hotbar_tick` | generated | 3 | item_sounds.gd: a hotbar slot chosen (number keys) | 3 short quiet dry wooden ticks, 0.07 s |
 | 4 | `interior_creak` | generated | 2 | interior_sounds.gd: timbers creaking now and then inside | 2 to 3 wood creaks, 0.5 to 1 s |
 | 4 | `interior_room` | generated | 1 | interior_sounds.gd: the room tone while inside a building (loop) | A quiet indoor room tone loop, seamless |

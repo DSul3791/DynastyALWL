@@ -23,20 +23,56 @@ static func weight_of(item_id: String, cfg: Dictionary) -> float:
 	return float(cfg.get("default_kg", 0.1))
 
 
-# Kilograms an inventory holds.
+# Kilograms an inventory holds, with what each bag in it holds (catalog Phase 5).
 static func carried_kg(inventory, table, cfg: Dictionary) -> float:
 	var total: float = 0.0
 
 	for slot in range(inventory.usable):
 		if inventory.numbers[slot] != 0:
-			var id: String = table.id_of(inventory.numbers[slot])
-			total += weight_of(id, cfg) * float(inventory.counts[slot])
-
-			# A container carries its water in the wear field (millilitres); a litre weighs a kilogram.
-			if int(table.entry(id).get("capacity_ml", 0)) > 0:
-				total += float(inventory.wear[slot]) / 1000.0
+			total += _stack_kg(inventory.numbers[slot], inventory.counts[slot], inventory.wear[slot], table, cfg) + bag_kg(inventory.inst[slot], table, cfg)
 
 	return total
+
+
+static func _stack_kg(number: int, count: int, wear: int, table, cfg: Dictionary) -> float:
+	var id: String = table.id_of(number)
+	var kg: float = weight_of(id, cfg) * float(count)
+
+	# A container carries its water in the wear field (millilitres); a litre weighs a kilogram.
+	if int(table.entry(id).get("capacity_ml", 0)) > 0:
+		kg += float(wear) / 1000.0
+
+	return kg
+
+
+# Kilograms of what a bag holds (its instance data's `bag` rows, src/shared/bag_rules.gd): a bag's load counts in full wherever the bag is, worn or in the pack
+# (a backpack's carry_bonus_kg raises the limit, not the load).
+static func bag_kg(item_inst: Dictionary, table, cfg: Dictionary) -> float:
+	var total: float = 0.0
+
+	for row in item_inst.get("bag", []):
+		if int(row[0]) != 0:
+			total += _stack_kg(int(row[0]), int(row[1]), int(row[2]), table, cfg)
+
+	return total
+
+
+# Extra kilograms the worn pieces let the body carry (items.json carry_bonus_kg: a worn back pack spreads its load, a better one more; one back:base piece is worn at a time), 0 for none.
+# Only the carry limit moves: the comfortable load is free_ratio of it, so both rise together.
+static func carry_bonus_kg(numbers, table) -> float:
+	var total: float = 0.0
+
+	for number in numbers:
+		if int(number) > 0:
+			total += float(table.entry(table.id_of(int(number))).get("carry_bonus_kg", 0.0))
+
+	return total
+
+
+# The body weight the carry limit is worked out from, on the server and the client alike: the real weight plus what the worn pieces' weight
+# spreading adds (cap = ratio x body, so the limit rises by the bonus itself).
+static func carry_body_kg(weight_kg: float, worn_numbers, table, cfg: Dictionary) -> float:
+	return weight_kg + carry_bonus_kg(worn_numbers, table) / maxf(float(cfg.get("carry_kg_per_body_kg", 0.7)), 0.01)
 
 
 # The most a body carries (the server refuses to pick up more).
@@ -103,3 +139,30 @@ static func fit_count(item_id: String, count: int, carried: float, body_kg: floa
 		fits -= 1
 
 	return fits
+
+
+# --- Logs on the shoulder (TREE_WOOD_TOOLS_DESIGN.md s1.2, s5; Dave 15 Nov 2026: a character carries up to two logs) ---
+# A shoulder log is any pack item whose items.json "carry" is "shoulder". weights.json "shoulder_logs_max" is how many one body carries (the server refuses a third,
+# the client shows that many). Server and client count them in their own pack through the same helper.
+const COUNT_WORDS := ["no", "one", "two", "three", "four"]
+
+
+# What a refused extra log is told: "You can carry two logs at most. Put one down first (Q)." for the weights.json limit.
+static func logs_full_say(cfg: Dictionary) -> String:
+	var most: int = shoulder_max(cfg)
+	return "You can carry %s log%s at most. Put one down first (Q)." % [COUNT_WORDS[most] if most < COUNT_WORDS.size() else str(most), "" if most == 1 else "s"]
+
+
+static func shoulder_max(cfg: Dictionary) -> int:
+	return maxi(int(cfg.get("shoulder_logs_max", 2)), 1)
+
+
+# The item ids of the shoulder logs in an inventory, in slot order.
+static func shoulder_logs(inventory, table) -> Array:
+	var out: Array = []
+
+	for slot in range(inventory.slot_count):
+		if inventory.numbers[slot] != 0 and str(table.entry(table.id_of(inventory.numbers[slot])).get("carry", "")) == "shoulder":
+			out.append(table.id_of(inventory.numbers[slot]))
+
+	return out

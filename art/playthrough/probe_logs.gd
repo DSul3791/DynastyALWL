@@ -6,6 +6,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 
 func _init() -> void:
@@ -32,7 +33,7 @@ func _init() -> void:
 	var n: Callable = func(id: String) -> int: return items.table.number_of(id)
 	print("probe3: give 3 x log_oak -> ", items.give(2, n.call("log_oak"), 3), " (shoulder: ", items.shoulder_of(2), ")")
 	print("probe3: pack has log_oak ", items.inventory_of(2).count_of(n.call("log_oak")), " plain log ", items.inventory_of(2).count_of(n.call("log")))
-	items.action(2, Net.ACT_CRAFT_QUEUE, 15, 0, 1, Vector3.ZERO)
+	items.action(2, Net.ACT_CRAFT_QUEUE, 15, 0, 1, CraftHand.at(items, 2, 15))
 
 	for s in range(12):
 		items.tick(1.0)
@@ -40,7 +41,7 @@ func _init() -> void:
 	print("probe3: chopping block crafted from an oak log on the shoulder: ", items.inventory_of(2).count_of(n.call("chopping_block")))
 	items.give(2, n.call("log"), 2)
 	items._last_queue_act.clear()
-	items.action(2, Net.ACT_CRAFT_QUEUE, 15, 0, 1, Vector3.ZERO)
+	items.action(2, Net.ACT_CRAFT_QUEUE, 15, 0, 1, CraftHand.at(items, 2, 15))
 
 	for s in range(12):
 		items.tick(1.0)
@@ -55,7 +56,7 @@ func _init() -> void:
 	items.action(3, Net.ACT_PLACE, items.inventory_of(3).numbers.find(n.call("workbench_kit")), 0, 0, Vector3(52.0, 10.0, 0.0))
 	items.give(3, n.call("log_oak"), 1)
 	print("probe3: round 2: shoulder log ", items.shoulder_of(3), ", pack log_oak ", items.inventory_of(3).count_of(n.call("log_oak")))
-	items.action(3, Net.ACT_CRAFT_QUEUE, 143, 0, 1, Vector3.ZERO)
+	items.action(3, Net.ACT_CRAFT_QUEUE, 143, 0, 1, CraftHand.at(items, 3, 143))
 
 	for s in range(12):
 		items.tick(1.0)
@@ -63,7 +64,7 @@ func _init() -> void:
 	print("probe3: round 2: rough planks from the one log on the shoulder (1 log needed): ", items.inventory_of(3).count_of(n.call("rough_plank")))
 	items.give(3, n.call("log_oak"), 1)
 	items._last_queue_act.clear()
-	items.action(3, Net.ACT_CRAFT_QUEUE, 15, 0, 1, Vector3.ZERO)
+	items.action(3, Net.ACT_CRAFT_QUEUE, 15, 0, 1, CraftHand.at(items, 3, 15))
 
 	for s in range(12):
 		items.tick(1.0)
@@ -72,7 +73,7 @@ func _init() -> void:
 	items.inventory_of(3).add(n.call("log_oak"), 1)
 	items.inventory_of(3).add(n.call("log_birch"), 1)
 	items._last_queue_act.clear()
-	items.action(3, Net.ACT_CRAFT_QUEUE, 15, 0, 1, Vector3.ZERO)
+	items.action(3, Net.ACT_CRAFT_QUEUE, 15, 0, 1, CraftHand.at(items, 3, 15))
 
 	for s in range(12):
 		items.tick(1.0)
@@ -81,7 +82,7 @@ func _init() -> void:
 
 	items.inventory_of(3).add(n.call("log_spruce"), 1)
 	items._last_queue_act.clear()
-	items.action(3, Net.ACT_CRAFT_QUEUE, 143, 0, 1, Vector3.ZERO)
+	items.action(3, Net.ACT_CRAFT_QUEUE, 143, 0, 1, CraftHand.at(items, 3, 143))
 
 	for s in range(12):
 		items.tick(1.0)

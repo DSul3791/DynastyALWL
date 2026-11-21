@@ -38,7 +38,7 @@ static func views(box: AABB, fov_deg: float, ground_y: float, aspect: float = 16
 	if low_piece:
 		specs = [["front", 0.0, 40.0], ["side", 90.0, 40.0], ["top", 0.0, 90.0], ["diag", 45.0, 50.0]]
 
-	# A long tool with a heavy end (spade, hoe, axe): the diag view looks down at 45 degrees from beyond that end, so the blade is the near, large thing.
+	# A long tool with a heavy end (shovel, hoe, axe): the diag view looks down at 45 degrees from beyond that end, so the blade is the near, large thing.
 	if blade_dir.length() > 0.5:
 		specs[3] = ["diag", rad_to_deg(atan2(blade_dir.x, blade_dir.y)), 45.0]
 
@@ -201,7 +201,7 @@ static func heavy_end(faces: PackedVector3Array, box: AABB) -> Vector2:
 static func fit_distance(box: AABB, dir: Vector3, up: Vector3, fov_deg: float, aspect: float, max_fit: float = MAX_FIT_DIST) -> float:
 	var centre: Vector3 = box.get_center()
 	var lo: float = MIN_DIST
-	var hi: float = maxf(max_fit, box.size.length() * 1.5)      # a long tool needs more room than 3 m (a 2.5 m spade seen end-on)
+	var hi: float = maxf(max_fit, box.size.length() * 1.5)      # a long tool needs more room than 3 m (a 2.5 m shovel seen end-on)
 
 	if float(frame_stats(box, centre + dir * lo, -dir, up, fov_deg, aspect)["extent"]) <= FIT_EXTENT:
 		return lo

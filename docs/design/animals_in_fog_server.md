@@ -1,5 +1,7 @@
 # Animals in fog: the server half
 
+> **14 Nov 2026 (Dave's fog instruction, docs/design/FOG_PLAN.md "Animals"):** the fog at a point is now `Weather.fog_shape`, the client's depth fog over the cold-air floor (about 52 m V in full fog, not 220 m), and the strength along the line of sight is the mean of its ends. Sight is the same contrast rule as below, restated as the fog taking 53 % and 78 % (all of a player to about 31 m in full fog, none past about 42 m). `sit_below_m` is now 100 and `deer_v_m` 1400, the same fog strengths as before. The numbers below are the 8 Nov history.
+
 **Owner:** Steve, for `src/stream/server_animals.gd`, `server_wolves.gd` and `server_flight.gd`.
 **Asked by:** MikeW, `docs/design/ANIMAL_FOG.md` (his branch `claude/mikew-eye-placement`), section "Requests to Steve". The client half (eye shine, steam, herd spacing on screen) is his.
 **Research:** Jamie, `docs/knowledge/fog-and-visibility.md` (#716), lessons 1, 4 and 5 and the Animals table.
@@ -9,7 +11,7 @@
 
 ## 1. What happens today (read from the code on the animal stack, 8 Nov; not tested)
 
-- The shared weather carries `mist` (0 to 1, the valley fog's strength) and `mist_top_m` (the top of the layer above sea level). Both come from `weather.gd`, so the server already has them.
+- The shared weather carries `mist` (0 to 1, the valley fog's strength) and `mist_top_m` (the top of the layer above sea level). (14 Nov 2026: now `mist_depth_m`, read by the server as the top above sea level until the third fog PR gives it the cold-air floor; docs/design/FOG_PLAN.md.) Both come from `weather.gd`, so the server already has them.
 - `server_animals._read_weather` keeps `mist` only, and `weather.on` (on) uses it in two flat cuts that ignore distance and height:
   - sight × (1 − `mist_sight` 0.6 × mist);
   - spook and alert distance × (1 − `mist_spook` 0.3 × mist).
@@ -88,7 +90,7 @@ New `test_animals_fog.gd`, with stub weather and ground:
   - a point 20 m above `mist_top_m` gives 3,333 m;
   - mist 1 with rain 1 gives the cap, 167 m.
 - **Sight:** at V 120, the fog share is 1 at 25 m, 0.5 at 45 m and 0 at 70 m.
-- **Sight in full valley fog:** a player 100 m off is sensed at about 200 m; in clear air at 100 m.
+- **Sight in full valley fog:** a player 100 m off is sensed at about 200 m; in clear air at 100 m. (14 Nov 2026: out of sight in the new fog, so 100 / blind_factor, about 285 m.)
 - **No switch:** the test checks that the fog rules are on, with no `on` key (9 Nov 2026).
 - **Wolves:** the ring is 25 m in clear air and in full valley fog, 15 m at V 30, and never under 10 m.
 - **Birds:** a perched crow in full valley fog does not come down after its timer, and in clear air it does.

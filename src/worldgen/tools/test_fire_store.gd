@@ -77,7 +77,7 @@ func _init() -> void:
 	# only wood that has burned leaves the store.
 	var keep_box = f._chests[int(fire["uid"])]
 
-	for keep_slot in range(keep_box.SLOTS):
+	for keep_slot in range(keep_box.slot_count):
 		if keep_box.numbers[keep_slot] != 0:
 			keep_box.take_from_slot(keep_slot, keep_box.counts[keep_slot])
 
@@ -104,7 +104,7 @@ func _init() -> void:
 	# store holds two, and closing it must not drop the bonfire. With the logs gone and three firewood it falls back to the medium fire.
 	var stay_box = f._chests[int(fire["uid"])]
 
-	for stay_slot in range(stay_box.SLOTS):
+	for stay_slot in range(stay_box.slot_count):
 		if stay_box.numbers[stay_slot] != 0:
 			stay_box.take_from_slot(stay_slot, stay_box.counts[stay_slot])
 
@@ -122,7 +122,7 @@ func _init() -> void:
 
 	# Dave 2 Nov 2026, again on the newer build: the third log still vanished. A fire whose burn time had run ahead of its store (an older fire, or one
 	# fed outside the store) had burned log time with no counted log left to take, and that debt took the next log put in. It must stay.
-	for debt_slot in range(keep_box.SLOTS):
+	for debt_slot in range(keep_box.slot_count):
 		if keep_box.numbers[debt_slot] != 0:
 			keep_box.take_from_slot(debt_slot, keep_box.counts[debt_slot])
 
@@ -144,7 +144,7 @@ func _init() -> void:
 	# A fire that burns out leaves no wood in its store: the last piece is ash, not fresh burn time for the next close.
 	var burn_box = f._chests[int(fire["uid"])]
 
-	for burn_slot in range(burn_box.SLOTS):
+	for burn_slot in range(burn_box.slot_count):
 		if burn_box.numbers[burn_slot] != 0:
 			burn_box.take_from_slot(burn_slot, burn_box.counts[burn_slot])
 
@@ -168,7 +168,7 @@ func _init() -> void:
 	f.action(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
 	var box = f._chests[int(fire["uid"])]
 
-	for take_slot in range(box.SLOTS):   # logs come out one at a time onto the shoulder, so empty the store directly
+	for take_slot in range(box.slot_count):   # logs come out one at a time onto the shoulder, so empty the store directly
 		if box.numbers[take_slot] != 0:
 			box.take_from_slot(take_slot, box.counts[take_slot])
 

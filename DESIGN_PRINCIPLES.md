@@ -12,6 +12,8 @@ Status tags are the same as in `DESIGN_IDEAS.md`: [Decided], [Idea], [Proposed],
 - **[Decided]** What this means for design: systems for safety (protection from abuse, ways to leave a bad situation), kindness (rescue, understanding, second chances) and generosity (gifts, charity, adoption, helping struggling dynasties) are core design, not extras. When two rules conflict, the one that keeps people safer wins, then the kinder one.
 - **[Decided]** Examples already in the game: the temple (Section 8.11 of `DESIGN_IDEAS.md`), rescue before death, the safety valve that stops a failing town from falling into a death spiral, and PvE areas where nothing can be hurt.
 
+- **[Decided — existing direction, migrated from `RULES.md` at `dd566834`]** Keep the game a safe place: avoid divisive player-group labels; describe what something is used for rather than who it is for. This preserves the earlier standing instruction, not a new design decision.
+
 ## 2. Do it yourself, or hire it out
 
 - **[Decided]** (2026-10-15) You can do anything in the game yourself, and you never have to. If a player loves cutting down trees, they can cut down trees all day. If they do not want to, they can hire an NPC to cut the trees for them.

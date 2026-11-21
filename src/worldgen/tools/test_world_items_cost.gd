@@ -1,7 +1,7 @@
 extends SceneTree
 
-# Client cost of the world-items list (bug 6): a join list of 282 loose items, then one log cut off a felled trunk
-# (the trunk comes back shorter and a log is added). Pins: the cut stays under 50 ms, and a warm join under 250 ms.
+# Client cost of the world-items list (bug 6): a join list of 282 loose items, then a felled tree arriving: its stump and the logs and crown litter it
+# comes down as, each with its fall (16 Nov 2026). Pins: the tree's rows stay under 50 ms, and a warm join under 250 ms.
 # Run: godot --headless --path . --script res://src/worldgen/tools/test_world_items_cost.gd
 
 const ViewScript := preload("res://src/client/inventory_view.gd")
@@ -37,21 +37,23 @@ func _init() -> void:
 		print("FAIL join with warm meshes took %.0f ms" % join_ms)
 		failures += 1
 
-	var trunk: Dictionary = {"species": "beech", "radius": 0.3, "length": 12.0, "orig_length": 12.0, "yaw": 0.0}
-	view._on_world_items([[5000, 0, 1, Vector3(5.0, 0.0, 5.0), 3, trunk]], PackedInt32Array())
-	var worst: float = 0.0
+	# A felled 18 m beech: the stump (fresh while it falls), six logs end to end along +z, and four litter heaps, all swinging down from the stump.
+	var fall: Array = [5.0, 0.3, 5.0, 0.0, 1.5]
+	var rows: Array = [[5000, 0, 1, Vector3(5.0, 0.0, 5.0), 4, {"species": "beech", "radius": 0.3, "length": 18.0, "yaw": 0.0, "fresh": true, "crown": [5.0, 18.5, 4.0]}]]
 
-	for cut in range(4):
-		var shorter: Dictionary = trunk.duplicate()
-		shorter["length"] = 12.0 - 2.44 * float(cut + 1)
-		t0 = Time.get_ticks_usec()
-		view._on_world_items([[5000, 0, 1, Vector3(5.0, 0.0, 5.0), 3, shorter], [6000 + cut, table.number_of("log_beech"), 1, Vector3(6.0, 0.0, 5.0 + float(cut)), 0]], PackedInt32Array())
-		var ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
-		worst = maxf(worst, ms)
-		print("cut %d: %.1f ms" % [cut + 1, ms])
+	for k in range(6):
+		rows.append([5001 + k, table.number_of("log_beech"), 1, Vector3(5.0, 0.3, 6.5 + 3.0 * float(k)), 0, {"rot_y": -PI * 0.5, "girth": 1.2, "fall": fall}])
 
-	if worst > 50.0:
-		print("FAIL a log cut took %.0f ms on the client" % worst)
+	for k in range(4):
+		rows.append([5010 + k, table.number_of("stick" if k % 2 == 0 else "leaves"), 12, Vector3(4.0 + float(k), 0.0, 17.0), 0, {"fall": fall}])
+
+	t0 = Time.get_ticks_usec()
+	view._on_world_items(rows, PackedInt32Array())
+	var fell_ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
+	print("a felled tree's rows: %.1f ms" % fell_ms)
+
+	if fell_ms > 50.0:
+		print("FAIL a felled tree's rows took %.0f ms on the client" % fell_ms)
 		failures += 1
 
 	view.free()

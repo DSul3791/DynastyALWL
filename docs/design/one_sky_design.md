@@ -1,52 +1,27 @@
-# One sky: the sun and moon by the world grid's row (the starter island about 34° S)
+# Sky mathematics, climate interface and checks
 
-**Owner:** Kathleen. **Status:** design, 8 Nov 2026.
-**Reads:**
-- Sonny's A4 "One sky" (`docs/water/watershed_rebuild_design.md`, R2 branch `sonny-watershed-r2-evolve`);
-- Jamie's one-sky page `docs/knowledge/one-sky.md` (#706);
-- the one-temperature climate record `src/shared/climate.gd` (#620).
-
-The change sits behind one switch, `--one-sky`. It is off until Dave has seen the pictures, because flipping the hemisphere is his to veto. With the switch off, the sky is today's: 52° N, the noon sun in the south.
+[Environmental design](art_weather_light.md) owns the intended sky/light/seasonal appearance. This reference preserves mathematics and check cases from the 8 Nov one-sky work. Dave's grid ruling and later feature-enable decision are recorded in [overnight decisions](OVERNIGHT_DECISIONS_8NOV.md) rows 19/25. The old `--one-sky`/`--moon-phase` flags and 52° N fallback are removed, not a pending veto gate. No new Godot/PC evidence is claimed.
 
 ## 1. What changes
+**Grid:**21×21 tiles, equator `world.json::equator_tile_row`0; north−Z, south+Z. `Climate.latitude_of_row(row,equator_row) = clamp(-(row-equator_row)*DEG_PER_ROW,-90,90)`. Recorded spread 90/10.5=8.57° per row (`world_settings.gd::latitude_for_z`×90). Starter tile(3, 4), row 4 centre 34.3° S, not 57° S. Spawn~33.7° S/cave 8002~36.1° S are position examples; current sky uses tile-row latitude, not an assertion it samples continuous latitude each frame. `terrain_client.gd` refreshes row about once/second and sets `day_cycle.gd::sky_row_latitude`; fallback before fix/server is `Climate.STARTER_ROW`4. Northern row−4 gets the corresponding northern sky.
 
-Today `day_cycle.gd` (`LATITUDE_DEG`) and `weather.gd` (`SUN_LATITUDE_DEG`) both fix the sky at 52° N for every island. Sonny's A4 puts the starter island at **57° S**. Two reasons:
-- its 9 °C ±5 °C climate is that of the Hebrides and Skye;
-- `world_settings.gd` `latitude_for_z` puts the starter rows south of the equator row.
+**Calendar:** day 0 is starter spring equinox. Let p=year phase, s=`Climate.calendar_sign()` (−1 for southern starter), axial tilt ε=23.44°. Sun declination δ=s ε sin(2πp); starter summer p 0.25/day 91, winter p 0.75/day 274. `Climate.local_year_phase(year_phase,row,equator_row)` offsets the opposite hemisphere by half a year for place-based season reads. See §7 for remaining climate scope; a sky formula alone does not prove every temperature reader is row-local.
 
-With `--one-sky`:
+**Sun:** signed latitude φ; hour angle h=15°(hour−12). Local direction before normalization:
 
-- **Latitude comes from the world grid (Dave, 8 Nov).** The world is 21 x 21 tiles and the centre row is the equator (`world.json` `equator_tile_row`, 0). Latitude is never fixed per island:
-  - one function, `Climate.latitude_of_row(row, equator_row)`: tile row in, signed latitude out, `-(row - equator_row) x DEG_PER_ROW`, held to ±90°;
-  - north is -Z, so a row numbered above the equator's lies south and its latitude is negative. The hemisphere follows from the sign;
-  - `DEG_PER_ROW` is a named constant: `world_settings.gd` `latitude_for_z` x 90 (Jamie, 8 Nov), 0 at the equator row's centre and 90° at the poles half the world away, so 90 / 10.5 = **8.57° per row**. The starter (tile 3, 4) is row 4, whose centre is **34.3° S**. The noon sun still stands north and shade still falls south and south-east. Days run about 14.3 h at midsummer and 9.7 h at midwinter (sun centre), noon 79°, 56° and 32° at midsummer, equinox and midwinter;
-  - `terrain_client.gd` works out the player's tile row once a second (as it already does for the weather zone) and hands its latitude to `day_cycle.gd` (`sky_row_latitude`) and to `Weather.state` (the fog's sunrise). Before the first fix, and on the server, the starter row's latitude is used (`Climate.STARTER_ROW`, 4);
-  - so a player on a northern starter (row -4) gets the northern sky at the same latitude;
-  - **seasons by row:** `Climate.local_year_phase(year_phase, row, equator_row)` gives a row's own year phase, half a year on across the equator from the starter's hemisphere, for the server's season reads by place.
-  - The check numbers in section 2 were worked for 57° S. They still test the sun maths (the test pins the latitude to -57 for them), and section 1's 34.3° numbers are the starter's.
-- **The calendar is the starter island's.** Day 0 is its spring equinox. The sun's declination is δ = s × 23.44° × sin(2π × year phase), where s = `Climate.calendar_sign()` is the sign of the starter row's latitude (-1, south). So δ = -23.44° × sin(2π × year phase), so midsummer is phase 0.25 (game day 91) and midwinter 0.75 (day 274). That is the same season order the game has today, so the seasons, the temperature and the flora do not move. Only the sun's path changes.
-- **The sun's position** is the standard one, with the signed latitude φ and the hour angle h = 15° × (hour - 12):
-  - sin(altitude) = sin φ sin δ + cos φ cos δ cos h;
-  - east = -cos δ sin h;
-  - north = sin δ cos φ - cos δ sin φ cos h;
-  - north is -Z.
+- sin(altitude)=sinφ sinδ+cosφ cosδ cosh;
+- east=−cosδ sinh;
+- north=sinδ cosφ−cosδ sinφ cosh;
+- world north is−Z.
 
-  So on the starter island the noon sun stands **due north (-Z)**, sunlit faces look north, and **shadows point south (+Z)**, as Jamie's snow pages need.
-- **The moon** sits 360° × its phase east of the sun *along the ecliptic*, with the 5° tilt of its orbit left out (0 new, 180° full).
-  - Ecliptic longitudes: the sun's is λ☉ = 2π × phase + π (its declination is the sun's δ above), and the moon's is λ☾ = λ☉ + 2π × moon phase.
-  - The moon's declination is 23.44° × sin λ☾.
-  - Its hour angle is the sun's minus the difference in right ascension, where α = atan2(cos ε sin λ, cos λ).
+Southern starter noon sun north/shadows south. Recorded centre-row targets: daylight 14.3 h summer/9.7 h winter (sun centre), noon 79°/56°/32° at summer/equinox/winter. Actual sunrise/set includes the horizon convention below.
 
-  A full moon therefore stands opposite the sun in declination too. It rides high in midwinter and low in midsummer, which the sun's own declination, used by `--moon-phase` (#681), cannot do. The moon's place only matters with `--moon-phase` on; without it, the moonlight stays opposite the sun, as today.
-- **`weather.gd`** `sunrise_hour(day, latitude_deg)` uses the same latitude and declination, so the valley fog still burns off 1 to 3 hours after the real sunrise.
+**Moon:** phase 0=new, 0.5=full; ecliptic offset 2π×moon_phase east of sun, omitting orbital 5° tilt. Southern-calendar example: solar longitude λ☉=2πp+π, lunar λ☾=λ☉+2π×moon_phase. Lunar declination ε sinλ☾; right ascension α=atan 2(cosε sinλ, cosλ); lunar hour angle is sun's minus lunar−solar right ascension. A full moon is opposite in declination, high in winter/low in summer. `day_cycle.gd::moon_on_ecliptic` owns general calendar-sign implementation; the old permanently opposite-sun light is superseded.
 
-This stacks on #681 (moon phase), whose `moon_direction` it extends.
-
-**Open, for whoever owns the climate:** the warmest phase (0.375) is the same for every zone, so a northern row's temperatures still follow the southern calendar while its sun follows its own hemisphere. The sky here is right for each row; the temperature calendar of a northern row is not this change.
+`weather.gd::sunrise_hour(day,latitude_deg)` uses the same latitude/declination as day cycle. Fog timing uses actual sunrise as a tendency under Dave's current fog design, not the old unconditional 1–3 h burnoff.
 
 ## 2. Check numbers (local solar time, sun centre)
-
-Sonny's table, which the formula reproduces with rise and set at -0.833° (the upper limb with refraction):
+**Pinned 57° S fixture, not starter predictions.** Rise/set at−0.833° (upper limb/refraction):
 
 | season (year phase, game day) | sunrise | noon | sunset | midnight sun |
 |---|---|---|---|---|
@@ -54,80 +29,34 @@ Sonny's table, which the formula reproduces with rise and set at -0.833° (the u
 | equinox (0 and 0.5, day 0 and 182) | 05:54, due east | 33.0° | 18:06, due west | -33.0° |
 | midwinter (0.75, day 274) | 08:39, bearing 45° (NE) | 9.6° | 15:21, bearing 315° (NW) | -56.4° |
 
-Jamie's checks (#706):
-- **The midsummer full moon** (day 100, midnight) stands only about 10° high, due north. The midwinter full moon (day 278) stands about 55° high.
-- **Late winter, mid-August in real-world terms (phase 0.9, day 329):** the noon sun is 19.5° high. A 30° slope facing south (+Z) gets no direct sun at noon: the sun is behind the slope's crest.
-- **Midsummer** has nautical twilight all night: the sun is never more than 12° down.
+Retained 57° S checks: full moon day 100 near midnight~10° high north, day 278~55°; phase 0.9/day 329 noon 19.5°, 30° south-facing slope gets no direct noon sun; summer sun stays above−12° overnight. Old 52° N61.4°/14.6° seasonal noon figures are history only; there is no switch-off gameplay path to test.
 
-With the switch off, every number above stays at today's 52° N values: midsummer noon 61.4° due south, midwinter noon 14.6°.
+## 3. Tests
+`src/worldgen/tools/test_one_sky.gd` pins `sky_row_latitude=-57` for the table and separately checks grid rows. Preserve scopes/tolerances:
 
-## 3. Tests (`src/worldgen/tools/test_one_sky.gd`, headless, no world)
+- noon 56.4/33.0/9.6°, ±0.2°, north(z<0); shadow+Z;
+- rise/set table within 3 min, bearings±1.5°; binary horizon crossing−0.833°;
+- summer midnight−9.6°±0.2°;
+- full-moon summer highest 9.6°±0.5° north; winter>50°;
+- equinox first quarter up 18:00, set by 03:30 (original spring~03:10, autumn 21:25);
+- phase 0.9 noon 19.5°±0.5°, south-facing 30° normal dot sun<=0;
+- weather sunrise matches day-cycle horizon crossing within 2 min;
+- grid sign/equator/clamping, opposite-hemisphere seasons and actual starter latitude are separate from 57° S fixtures.
 
-- **Noon:**
-  - 56.4°, 33.0° and 9.6° (±0.2°) at phases 0.25, 0 and 0.75;
-  - the sun's direction has z < 0 (north), so a shadow points to +Z.
-- **Rise and set** (found by halving to -0.833°), all within ±3 minutes, with bearings within ±1.5°:
-  - midsummer 03:04 at 139° and 20:56 at 221°;
-  - equinox 05:54 and 18:06;
-  - midwinter 08:39 at 45° and 15:21 at 315°.
-- **Midsummer midnight:** the sun is at -9.6° (±0.2°).
-- **The moon:**
-  - the midsummer full moon's highest point is 9.6° (±0.5°), in the north;
-  - the midwinter full moon is above 50°;
-  - a first-quarter moon is up at 18:00 at either equinox and has set by 03:30 (about 03:10 in spring, when it rides high, and 21:25 in autumn).
-- **Phase 0.9:** noon 19.5° (±0.5°), and a 30° slope facing +Z gets no direct sun (its normal dotted with the sun direction is at most 0).
-- **Switch off:** midsummer noon is 61.4° due south, as today.
-- **`Weather.sunrise_hour(day, "temperate")`** with the switch on matches the day cycle's own horizon crossing within 2 minutes.
+Current source tests are the runnable checks; this list is not a test result. Follow permitted runner/test gates, with no cloud Godot run.
 
-## 4. Pictures for Dino (Dave's veto)
+## 4. Pictures
+Authorized PC: compare summer/winter noon and sunrise/sunset, summer midnight and low/high full moons, facing north/south. Use actual row latitude for expected times/heights; do not apply 57° S camera targets to 34° S starter. Test days retained:91/274 summer/winter, 100/278 full moons; view from spawn x 53296, z 68080, AGL1.7 m. Fallback if blocked:53326, 68056, AGL4 m. Yaw 0=north, 180=south; yaw−B is compass bearingB. Capture F3/day/seed/row/weather and observed shadows. Rig holds hour; normal settle is sufficient. Set day through the approved persistence/rig procedure rather than changing Dave's live save.
 
-**Days.** Set each day with `mkday N` and `PERSIST_STORE` (`docs/design/KATHLEEN_PICTURE_PLAN.md`). Days used: 91, 274, 100 and 278.
+Original 57° S shot purposes retained: `sky_summer_noon_n`/`_s` (sun vs shadows), `sky_summer_rise`, `sky_summer_midnight`, `sky_winter_noon`/`_set`, `moon_summer_full`/`moon_winter_full`. Exact old camera rows/commands remain in [source history](https://github.com/DSul3791/DynastyALWL/blob/090129ec43942e90a28eb7c4fd0d202df3ee68c3/docs/design/one_sky_design.md); their obsolete enable switches and 52° N off-comparison are not current instructions.
 
-**Switch.** Take every shot twice:
-- switch on: `--client-arg --one-sky` plus `SERVER_ARGS=--one-sky`, and `--client-arg --moon-phase` for the moon shots;
-- switch off: the same command without those (name suffix `_off`).
+## 5. What else follows the hemisphere
+Snow/cirques favour shady south/south-east on the starter (A4 glacial rule 6), not the old northern shade assumption. A future moss/lichen pass should follow actual shade (south+Z here). Signs/stories asserting "sun in the south" must be checked against place, not a switch; the original data scan found none, not a permanent guarantee.
 
-**Place.** The open ground at the spawn, x 53296, z 68080, 1.7 m up. Yaw 0 faces north (-Z), 180 faces south (+Z), and -B faces compass bearing B.
+## 6. Cost and sources
+Original estimate: a few extra trigonometric calls twice/second, no additional light/uniform. This is not measured GPU evidence. Sources: watershed A4 "One sky", [one-sky research](../knowledge/one-sky.md), `src/shared/climate.gd` and original 8 Nov notes. No current personal owner/queue is set here.
 
-| name | day | camera x, agl, z | yaw | pitch | hour | what Dave should see (switch on) |
-|---|---|---|---|---|---|---|
-| sky_summer_noon_n | 91 | 53296, 1.7, 68080 | 0 | 30 | 12 | the sun high in the north, 56° up, the near side of things lit |
-| sky_summer_noon_s | 91 | 53296, 1.7, 68080 | 180 | -15 | 12 | shadows running away from the camera (south), the sun behind it |
-| sky_summer_rise | 91 | 53296, 1.7, 68080 | -136 | 3 | 3.5 | the sun just up in the south-east, gold light, long shadows |
-| sky_summer_midnight | 91 | 53296, 1.7, 68080 | 180 | 5 | 0 | a bright twilight sky to the south, never full night |
-| sky_winter_noon | 274 | 53296, 1.7, 68080 | 0 | 5 | 12 | the sun low in the north, under 10°, long shadows |
-| sky_winter_set | 274 | 53296, 1.7, 68080 | 43 | 3 | 15 | the sun setting in the north-west |
-| moon_summer_full | 100 | 53296, 1.7, 68080 | 0 | 8 | 0 | a full moon low in the north, about 10° up, long moon shadows |
-| moon_winter_full | 278 | 53296, 1.7, 68080 | -18 | 50 | 0 | a full moon high in the north, about 55° up |
+## 7. Temperature by row and the snow bias
+The initial approximate 14.4 °C/−6 °C proposal was refined in overnight decision 21: current fallback starter sea-level mean 14.16 °C, snow_bias_c−5.16 °C (9−14.16), seasonal swing±5 °C, lapse 6.5 °C/km, warmest phase 0.375. `Climate._from_world` can override the mean from `world.json::temperature_by_abs_latitude`; the current implementation does **not** dynamically recompute the snow bias when the curve changes. Keep this limitation explicit rather than promising exact 9 °C biased climate for every record.
 
-Shot strings (`name:x,agl,z,yaw,pitch,hour,weather`):
-
-```
-mkday 91;  PERSIST_STORE=$DAYS/d91  SERVER_ARGS=--one-sky art/playthrough/rig.sh --client-arg --one-sky --name sky_summer_noon_n --at 53296,68080 --agl 1.7 --yaw 0 --pitch 30 --hour 12 --weather clear --more-shots "sky_summer_noon_s:53296,1.7,68080,180,-15,12,clear;sky_summer_rise:53296,1.7,68080,-136,3,3.5,clear;sky_summer_midnight:53296,1.7,68080,180,5,0,clear"
-mkday 274; PERSIST_STORE=$DAYS/d274 SERVER_ARGS=--one-sky art/playthrough/rig.sh --client-arg --one-sky --name sky_winter_noon --at 53296,68080 --agl 1.7 --yaw 0 --pitch 5 --hour 12 --weather clear --more-shots "sky_winter_set:53296,1.7,68080,43,3,15,clear"
-mkday 100; PERSIST_STORE=$DAYS/d100 SERVER_ARGS=--one-sky art/playthrough/rig.sh --client-arg "--one-sky --moon-phase" --name moon_summer_full --at 53296,68080 --agl 1.7 --yaw 0 --pitch 8 --hour 0 --weather clear
-mkday 278; PERSIST_STORE=$DAYS/d278 SERVER_ARGS=--one-sky art/playthrough/rig.sh --client-arg "--one-sky --moon-phase" --name moon_winter_full --at 53296,68080 --agl 1.7 --yaw -18 --pitch 50 --hour 0 --weather clear
-```
-
-Then repeat each line without the switches, with `_off` added to each name.
-
-**Fallback** if the spawn view is blocked by a hill or trees in the north: x 53326, z 68056, 4 m up, the trees camera of #682, with the same yaws and hours.
-
-**Settle.** The rig holds the hour, so the sun stands still. The default settle is fine.
-
-## 5. What else follows the flip (not in this change)
-
-- **Snow.** Late snow and the cirques favour the shady south to south-east faces (Sonny's rule 6 aspect term). The snow layer comes baked from the record, so the art follows by itself.
-- **Moss and lichen.** If an art pass ever puts moss on the shady side of rocks and trunks, it goes on the south (+Z) side here.
-- **Signs and stories.** Any sign or story that says "the sun in the south" needs the switch's answer. None has been found in `data/` so far.
-
-## 6. Cost
-
-A few more trig calls twice a second, the same as today: no new light, no new uniform.
-
-## 7. Temperature by row and the snow bias (decision #717 row 21, 8 Nov; recorded only, no code yet)
-
-- **Real temperature comes from the row's latitude:** `world.json` `temperature_by_abs_latitude` at `latitude_for_z`, so the starter is about **14.4 °C at sea level**, with the lapse of 6.5 °C per km and a season of ±5 °C. That replaces `climate.gd`'s 9 °C (Steve's change).
-- **Snow and ice alone add a per-island `snow_bias_c`** to the island's climate params. The starter's is **-6 °C**, so the epic peaks stay snowy.
-- **Who reads it:** the ice (`Ice.cover`, `Ice.season`), the snow line and whether rain falls as snow read the temperature plus `snow_bias_c`. Everything else reads the plain temperature: the HUD, breath, warmth, fire, cold water and the weather's `temp_c`.
-- The code waits until after Dave's freeze.
+Plain air supplies HUD, breath/steam, warmth, fire, cold water, cave air/springs and weather `temp_c`. Only snow/ice (`Ice.cover`, `Ice.season`, snowline/precipitation phase) add bias. The old "code waits after freeze" instruction is superseded by existing reads. Original open issue retained: northern-place temperature season reads must actually use local phase, not blindly reuse southern warmest-phase timing; nonstarter zone values remain placeholders until proper per-island records. Check each climate consumer before claiming world-wide alignment.

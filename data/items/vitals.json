@@ -39,7 +39,7 @@
 		},
 		"by_suffix": {}
 	},
-	"eat_pace_ms": 800,
+	"eat_pace_ms": 60,
 	"food": {
 		"by_id": {
 			"roast_forage": 400,
@@ -152,7 +152,17 @@
 			"fish_stew": 880,
 			"trail_bread": 950,
 			"hearty_pottage": 1050,
-			"feast_roast": 950
+			"feast_roast": 950,
+			"smoked_meat": 1000,
+			"dried_mushrooms": 200,
+			"seafood_platter": 516,
+			"roast_platter": 537,
+			"mixed_grill_platter": 744,
+			"charcuterie_board": 604,
+			"harvest_platter": 422,
+			"tavern_supper_board": 642,
+			"breakfast_platter": 504,
+			"dessert_platter": 522
 		},
 		"by_suffix": {
 			"berries": 4,
@@ -201,20 +211,16 @@
 	},
 	"energy_aids": {
 		"energy_bar": {
-			"energy": 25,
-			"fitness": 0.25
+			"energy": 12
 		},
 		"herbal_tea": {
-			"energy": 12,
-			"fitness": 0.1
+			"energy": 12
 		},
 		"nettle_tea": {
-			"energy": 8,
-			"fitness": 0.1
+			"energy": 8
 		},
 		"magic_tonic": {
-			"energy": 50,
-			"fitness": 0.5
+			"energy": 50
 		}
 	},
 	"heal": {

@@ -1,0 +1,9 @@
+{
+	"_about": "Goal rewards (Dave 14 Nov 2026: \"all goals only payout coins\"; \"something simple like +5cp for low level stuff and as you progress the amount increases a small simple amount\"). Every goal names its `stage` (starter_goals.json, camp_goals.json) and pays that stage's copper, once per character, coins only. The stage amounts are GOALS-REPAIR A-42 (provisional, chosen under Dave's delegation): retune a stage here in one edit. Stages: start = the starting route, stone and Crude; copper_bronze = Copper, Bronze, Improved; iron = Iron, Refined, Advanced; steel = Steel, Fortified, Master.",
+	"stages": {
+		"start": 5,
+		"copper_bronze": 10,
+		"iron": 15,
+		"steel": 20
+	}
+}

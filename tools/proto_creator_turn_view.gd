@@ -2,7 +2,7 @@ extends SceneTree
 
 # PROTOTYPE (Sonny, 2026-10-30): pictures of the character creator screen and of its preview body from the front, the side and the back. Needs a window.
 #   godot --path . --resolution 1920x1080 --script res://tools/proto_creator_turn_view.gd -- --out=res://art/character_proto/creator2
-# Writes screen_*.png (whole screen, turntable stopped) and head_*.png (a close view of the preview from the angle named).
+# Writes screen_*.png (whole screen; the body turns only when dragged) and head_*.png (a close view of the preview from the angle named).
 
 const Scene := preload("res://scenes/creator_proto/creator_proto.tscn")
 
@@ -29,7 +29,6 @@ func _run() -> void:
 	root.size = Vector2i(1920, 1080)
 	var screen: Control = Scene.instantiate()
 	root.add_child(screen)
-	screen.turntable = false
 	await _frames(10)
 	screen._open_section("Head and face")
 	var angles: Dictionary = {"front": 180.0, "side": 90.0, "back": 0.0, "back_left": 35.0}

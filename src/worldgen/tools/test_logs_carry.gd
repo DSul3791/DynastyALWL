@@ -1,15 +1,15 @@
 extends SceneTree
 
-# Logs as they are really carried (guide finding F-16, second half; moderator decision for Dave, Tyler 31 Oct 2026): a picked-up log rides on the SHOULDER (one at a
-# time, never in the pack) and a cut log lies on the GROUND. A craft or blueprint that needs plain `log` takes the shoulder log, then logs lying within 3 m of the player,
-# then the pack. This test uses the real mechanics (give -> shoulder, drop_in_world -> a log on the ground), not pack.add: a two-log test recipe (a chopping block needed
-# 2 logs until Dave's 10 Nov ruling made it one large wooden block) from one shoulder log and one ground log; rough planks from a shoulder log at a workbench; nothing is taken when the logs do not cover the recipe; a log 6 m away is not used; a blueprint paid with logs
-# on the ground; the player is told "Using nearby logs".
+# Logs as they are really carried (guide finding F-16, second half; moderator decision for Dave, Tyler 31 Oct 2026): a picked-up log rides on the SHOULDER (two at most; each is a pack item) and a cut log lies on the GROUND. A craft that needs plain `log` takes the shoulder log, then logs lying within 3 m of the player,
+# then the pack (a blueprint takes nothing on placement since Dave 18 Nov 2026; its hammer fill is test_wood_phase5). This test uses the real mechanics (give -> shoulder, drop_in_world -> a log on the ground), not pack.add: a two-log test recipe (a chopping block needed
+# 2 logs until Dave's 10 Nov ruling made it one large wooden block) from one shoulder log and one ground log; rough planks from a shoulder log at a workbench; nothing is taken when the logs do not cover the recipe; a log 6 m away is not used; a blueprint's placement takes
+# no logs; the player is told "Using nearby logs".
 #   godot --headless --path . --script res://src/worldgen/tools/test_logs_carry.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 var failures: int = 0
 var items
@@ -47,7 +47,7 @@ func craft(recipe_id: String, n: int) -> void:
 			number = int(k)
 
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, number, 0, n, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, number, 0, n, CraftHand.at(items, 1, number))
 
 	for s in range(150):
 		items.tick(1.0)
@@ -90,7 +90,6 @@ func _init() -> void:
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	items.vitals_of(1)["weight"] = 2000.0
 	items.admin_mode_on = func(_p): return false
-	items._admin_mode_off[1] = true
 	var oak: int = items.table.number_of("log_oak")
 	var birch: int = items.table.number_of("log_birch")
 	# A hand recipe that needs 2 plain logs, as the chopping block did before Dave's 10 Nov ruling (it now takes one large wooden block): the carry rules need a two-log craft.
@@ -136,14 +135,13 @@ func _init() -> void:
 	craft("two_logs_test", 1)
 	check(count("chopping_block") == 1 and ground_logs() == 0, "two logs lying on the ground make the two-log craft")
 
-	# 5. Hand-split planks (1 log, the wedge kept) at a workbench, log on the shoulder (rough planks are retired, recipe audit 10 Nov 2026).
+	# 5. Planks by hand saw from the log on the shoulder (Mission 001: the stone-wedge planks are retired; a spruce log gives 6 Planks).
 	reset()
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("workbench_kit"), 0, 1, Vector3.ZERO)
-	items.place_piece(1, "workbench_kit", Vector3(2.0, 10.0, 0.0))
-	items.inventory_of(1).add(items.table.number_of("stone_wedge"), 1)
-	items.give(1, oak, 1)
-	craft("lumber_wedge", 1)
-	check(count("lumber") == 2 and items.shoulder_of(1) == "", "planks from the shoulder log at the workbench (%d planks)" % count("lumber"))
+	items.give(1, items.table.number_of("hand_saw"), 1)
+	items.give(1, items.table.number_of("log_spruce"), 1)
+	craft("lumber_by_hand", 1)
+	check(count("lumber") == 6 and items.shoulder_of(1) == "", "planks from the shoulder log with the hand saw (%d planks)" % count("lumber"))
+	items.inventory_of(1).remove(items.table.number_of("hand_saw"), 1)
 
 	# 6. A pack log is used when nothing is near (the old behaviour).
 	reset()
@@ -151,16 +149,25 @@ func _init() -> void:
 	craft("two_logs_test", 1)
 	check(count("chopping_block") == 1 and not said.has("Using nearby logs"), "logs in the pack work as before, with no 'nearby' notice")
 
-	# 7. A blueprint paid with logs on the ground (the material check pulls them in).
+	# 7. A blueprint's placement check takes no logs (Dave 18 Nov 2026: blueprints never autocomplete on placement; only a hammer hit fills the site).
+	# The ground logs and the shoulder log stay where they are; filling a site with logs put down beside it is test_wood_phase5 (the hammer cannot
+	# swing while logs are on the shoulder).
 	reset()
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("wooden_hammer"), 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_hammer"), 0, 1, Vector3.ZERO)
 	var row: Dictionary = {"structure": "workbench", "known": true, "hammer": 1, "cost": [["log", 3]]}
 	items.drop_in_world(oak, 2, Vector3(0.5, 10.0, 0.5))
 	items.give(1, birch, 1)
-	var hammer_slot: int = items.inventory_of(1).numbers.find(items.table.number_of("wooden_hammer"))
+	var hammer_slot: int = items.inventory_of(1).numbers.find(items.table.number_of("stone_hammer"))
 	items.inventory_of(1).numbers[0] = items.inventory_of(1).numbers[hammer_slot] if hammer_slot > 0 else items.inventory_of(1).numbers[0]
 	var ok: bool = items._can_blueprint(1, items.inventory_of(1), row)
-	check(ok and items.inventory_of(1).count_fill(items.table.number_of("log")) == 3 and ground_logs() == 0 and items.shoulder_of(1) == "log_birch", "a blueprint costing 3 logs is covered by a shoulder log and two ground logs")
+	check(ok and items.inventory_of(1).count_fill(items.table.number_of("log")) == 1 and ground_logs() == 2 and items.shoulder_of(1) == "log_birch", "a blueprint costing 3 logs can be placed, and placing takes no log: the shoulder log and the two ground logs stay")
+
+	# 8. Mission 001 phase 2a: the saw recipes take a Hardwood log (log_oak group) lying on the ground beside the player, like a plain-log recipe.
+	reset()
+	items.give(1, items.table.number_of("hand_saw"), 1)   # a new tool goes on a hotbar key, where the saw recipes look for it
+	items.drop_in_world(birch, 1, Vector3(0.5, 10.0, 0.5))
+	craft("hardwood_board_by_hand", 1)
+	check(count("hardwood_board") == 4 and ground_logs() == 0, "a birch log on the ground saws into 4 Hardwood boards (%d boards, %d on the ground, %d in the pack)" % [count("hardwood_board"), ground_logs(), count("log_birch")])
 	print("logs carry: %d failures" % failures)
 	items._finish_writer()
 	quit(1 if failures > 0 else 0)

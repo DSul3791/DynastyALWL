@@ -209,7 +209,8 @@ static func _dome() -> ArrayMesh:
 
 # What each worn item is made of, from its id: hide and leather show a soft grain and a little sheen, wool and padded cloth a woven nap, linen a fine weave, fur strands,
 # grass and fibre plaited stems, and bronze, iron and steel are metal. The look follows Art_Direction.md: real stuff, no plastic (Kathreen, 3 Nov 2026).
-const STUFF_PREFIXES := [["hide", "hide"], ["leather", "hide"], ["quiver", "hide"], ["backpack", "hide"], ["wool", "wool"], ["gambeson", "wool"], ["linen", "linen"],
+const STUFF_PREFIXES := [["hide", "hide"], ["leather", "hide"], ["quiver", "hide"], ["simple_backpack", "hide"], ["improved_backpack", "hide"], ["quality_backpack", "hide"],
+	["advanced_backpack", "hide"], ["wool", "wool"], ["gambeson", "wool"], ["linen", "linen"],
 	["fur", "fur"], ["grass", "fibre"], ["fibre", "fibre"], ["bronze", "metal"], ["iron", "metal"], ["steel", "metal"], ["mail", "metal"], ["plate", "metal"]]
 # stuff -> [weave scale (per metre), weave strength, roughness, specular, metallic, woven share]
 const STUFF_LOOKS := {

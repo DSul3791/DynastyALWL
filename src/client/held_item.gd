@@ -1,6 +1,6 @@
 extends Node
 
-# What the player holds (hotbar keys 1 to 9 and 0 choose the item each key points at, wherever it lies in the pack: inventory step 4; the key again puts it away) and how it is used.
+# What the player holds (hotbar keys 1 to 9 and 0 choose the item in pack slots 0 to 9, the hotbar slots; the key again puts it away) and how it is used.
 # Client only; the server decides what happens (throws are server actions).
 #
 # Spear (Dave, 2026-10-20): held and jabbed by default with the normal attack key (left click).
@@ -15,8 +15,11 @@ const Net := preload("res://src/stream/terrain_net.gd")
 const BuildingLook := preload("res://src/client/building_look.gd")
 const FireWeather := preload("res://src/client/fire_weather.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
+const CaveSounds := preload("res://src/client/cave_sounds.gd")   # is_not_rock: what the ghost's ground probe looks through
 const BasicLook := preload("res://src/client/basic_look.gd")
 const FlameRules := preload("res://src/shared/flame_rules.gd")
+const SurveyLine := preload("res://src/shared/survey_line.gd")
+const StructureLookScript := preload("res://src/shared/structure_look.gd")
 const ArmsView := preload("res://src/client/character/arms_view.gd")
 const DynastyArmsScript := preload("res://src/client/character/dynasty_arms.gd")
 
@@ -53,20 +56,23 @@ const SPEAR_GRIP_Z := 0.3
 const THIRD_LEAN_DEG := -17.0    # third person: head forward and 45 degrees down, as in first person (Dave 2026-10-25: first person hung down about 45 degrees but third person pointed up; the tool lies along the fingers there, the hand-mount's +Y is forward, so -17 turns the head forward and a little down; Dave: all held items point only slightly down)
 const HELD_HOE_ROLL_DEG := 60.0       # first person: the hoe is rolled about its haft so the blade shows instead of hiding edge-on
 const THIRD_ROD_PITCH_DEG := 22.0     # third person: a carried fishing rod points forward and up about 30 degrees (it lay horizontal and a little down at the default lean)
-const THIRD_SPADE_PITCH_DEG := -56.0   # third person: a carried spade points its blade down, 40 degrees from vertical in the hand frame (about 30 as seen: review 2026-10-25 said 60 read steeper than 30)
+const THIRD_SHOVEL_PITCH_DEG := -56.0   # third person: a carried shovel points its blade down, 40 degrees from vertical in the hand frame (about 30 as seen: review 2026-10-25 said 60 read steeper than 30)
 const THIRD_HOE_PITCH_DEG := -50.0     # third person: a hoe carried blade-down, haft about 50 degrees below horizontal (review 2026-10-25: it was nearly horizontal)
 const THIRD_SAW_PITCH_DEG := -120.0   # third person: a saw carried by the handle, blade pointing down and back about 30 degrees
 const THIRD_TORCH_RAISE_DEG := 35.0   # third person: a torch in the left hand points forward and 35 degrees up, its flame clear of the body (Dave 5 Nov: it lay along the arm by the hip)
 const THIRD_CHOKE := 0.6         # the hand takes the handle this share of the way from the middle to the end, so less of the tool stands above the hand
+const THIRD_FULL_GRIP := ["saw"]   # held right on the grip point, no choke: a saw's handle is its last third or less, so the choke put the hand on the blade (Dave 17 Nov 2026: "it is stabbed right through his hand")
 # A tool with a stage-one look (data/items/looks.json) is held as the same mesh that lies on the ground (Dave 2026-10-24: the held tools
 # looked like old placeholders). BasicLook tool meshes run handle to head along +X; HELD_LOOK_TURN turns that to the held convention
-# (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a spade facing up.
+# (+Y handle to head, +Z up in hand) with the blade's cutting side down (axe, pick, hoe, knife) or the flat of a shovel facing up.
 const HELD_LOOK_SCALE := 1.0      # real size against the body (Dave QA BUG-012: tools held at 1.4x, spear 1.6x, bow 1.8x looked too big)
 const HELD_SPEAR_SCALE := 1.0
-const BOW_AMMO := ["stone_arrow", "bone_arrow", "wooden_arrow", "fibre_arrow", "fire_arrow"]   # the same as "ammo" in data/items/bow.json (test_slot_sounds checks)
+const BOW_AMMO := ["stone_arrow", "bone_arrow", "wooden_arrow", "fibre_arrow", "fire_arrow", "bronze_arrow", "iron_arrow", "steel_arrow"]   # the same as "ammo" in data/items/bow.json (test_slot_sounds checks)
 const BowAim := preload("res://src/shared/bow_aim.gd")
+const MeleeRules := preload("res://src/shared/melee_rules.gd")   # anything in hand is a weapon (data/items/melee.json, Dave 19 Nov 2026)
 const BowReticle := preload("res://src/client/bow_reticle.gd")
-const HELD_FIXED_SCALE := {"rod": 1.0, "hoe": 1.0, "saw": 1.0, "bow": 1.0, "arrow": 1.0, "quern": 1.0}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
+const SAW_CATEGORY := "Carpenter's"   # the craft tab a left click with a saw opens (Dave 17 Nov 2026: "the carpenters category")
+const HELD_FIXED_SCALE := {"rod": 1.0, "hoe": 1.0, "saw": 1.0, "bow": 1.0, "arrow": 1.0}   # held at ground size, not scaled to the 1 m cap or by 1.4x: the rod's cane and reel were lost, the hoe blade was tiny and the saw nearly 1 m long
 const HELD_LOOK_MAX_M := 1.0      # no held tool longer than this (a big look size or a long hoe is scaled down to it)
 const HELD_GRIP_FROM_END_M := 0.12
 const HELD_LOOK_TURN := {
@@ -81,7 +87,7 @@ const HELD_LOOK_TURN := {
 	"striker": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"hammer": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"hand_net": Basis.IDENTITY,   # the net hangs from the hand instead (_make_hanging_net_model); listed so it goes through the look path
-	"spade": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),
+	"shovel": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),
 	"shaft": Basis(Vector3(0, 0, -1), Vector3(0, 1, 0), Vector3(1, 0, 0)),
 	"rod": Basis(Vector3(0, 1, 0), Vector3(0, 0, 1), Vector3(1, 0, 0)),   # the fishing rod: butt to tip along +y, the reel underneath (-z), so the rod points forward and up in the hand
 	"bow": Basis(Vector3(0, 0, 1), Vector3(1, 0, 0), Vector3(0, 1, 0)),   # the bow stands upright in the hand (limbs up and down, belly forward, string toward the archer)
@@ -92,15 +98,14 @@ const HELD_LOOK_TURN := {
 	"club": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
 	"candle": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),   # a candle is held upright, flame up
 	"sword": Basis(Vector3(0, 1, 0), Vector3(1, 0, 0), Vector3(0, 0, -1)),
-	"quern": Basis(Vector3(1, 0, 0), Vector3(0, 1, 0), Vector3(0, 0, 1)),   # the grinding stones are carried flat in the hand as they lie
 }
 const JAB_REACH := 0.7
 const JAB_S := 0.28
 const THROW_SPEED := 24.0
 const THROW_GRAVITY := 9.8
 
-var held_key: int = 0                     # the hotbar key (0 to 9) in the right hand; keys hold items, not slots (inventory step 4)
-var held_slot: int:                       # the pack slot that key points at (InventoryView.key_slot), -1 for none
+var held_key: int = 0                     # the hotbar key (0 to 9) in the right hand; key k is pack slot k
+var held_slot: int:                       # that key's pack slot (InventoryView.key_slot), -1 when it is empty
 	get:
 		return int(_inv.key_slot(held_key)) if _inv != null else -1
 var holding: bool = true                  # false after the held slot's key is pressed again: hands empty
@@ -109,7 +114,7 @@ var aiming: bool = false
 const LANTERN_BAIL_M := 0.18             # basic_look.gd "lantern": the bail's top is this far above the look's middle; the fist holds the bail, the lantern hangs below
 const TORCH_PLACE_M := 3.0                # how far the crosshair reaches to stick a torch in the ground or on a wall
 var off_key: int = -1                     # the hotbar key carried in the left hand (items with "offhand": true: torch, shield), -1 for none
-var off_slot: int:                        # the pack slot that key points at, -1 for none
+var off_slot: int:                        # that key's pack slot, -1 when it is empty or none
 	get:
 		return int(_inv.key_slot(off_key)) if _inv != null and off_key >= 0 else -1
 var off_holding: bool = false             # false after its key is pressed again: left hand empty
@@ -128,6 +133,7 @@ var _model: Node3D
 var _arms                                 # first-person arms (Ragdoll.new(true)) on the camera; the held tool sits in its right hand
 var _stop_t: float = 0.0                  # hit stop left, seconds
 var _shoulder_log: MeshInstance3D          # the log across the shoulder (set_shoulder)
+var _shoulder_log_two: MeshInstance3D      # the second log beside it
 var _arm_up: float = 0.0                  # 0 arms hang at the body's side, 1 raised to the camera pose (swing, jab, use, aim)
 var water_depth_at: Callable = Callable()   # (x, z) -> metres of standing water there; set by the client scene, unset in tests
 var variant_slot: int = -1               # the pack slot of the wall variant the wheel chose (doorway, window), -1 for the held one
@@ -135,6 +141,7 @@ var lift_steps: int = 0                  # a held foundation stands this many 0.
 var _blueprint_yaw: int = 0               # the turn (degrees) the ghost will be placed at
 var _first_person: bool = true
 var _avatar_rig                          # the full body (ragdoll_body.gd) drawn in third person, or null
+var carrying_log: bool = false             # a large log on the shoulder (terrain_client sets it every frame): the right hand steadies it, so its tool is put away and comes back when the log is laid down (TEST-010)
 var _mounted: bool = false                # the model is in the hand: the arm animations move it, not the offsets below
 var _label: Label
 var _jab_t: float = -1.0
@@ -152,6 +159,7 @@ var _flights: Array = []                  # local visuals of spears this player 
 var _shown_number: int = 0
 var _sound                                # SoundStage (hit sounds)
 var shrub_near: Callable = Callable()   # (from, to) -> [chunk, id] of the bush or shrub the swing line passes through, or []; set by the client scene
+var swath_cut: Callable                 # (held pack slot, tool class) -> radius: one sickle or scythe swing (harvest.gd swath; 0 when nothing was sent)
 var _tree_near: Callable                  # (point) -> [chunk, id] of the tree trunk standing there, or []
 var _swing_t: float = -1.0
 signal struck(side: float, weight: float)   # a tool blow reached its impact frame: the camera jolts (feel_kicks.gd)
@@ -166,12 +174,14 @@ var spyglass_look: Callable = Callable()   # (on, pack slot, tier): the held spy
 var _spyglass_up: bool = false             # right mouse is held on a spyglass in hand
 var _blueprint: Node3D
 var _blueprint_kit: String = ""
+var _ghost_state: int = -1   # the structure state the ghost model shows (a roof corner swaps between its 45 and 65 shapes, A-37)
 var _ghost_material: StandardMaterial3D
 var _blueprint_at: Vector3 = Vector3.ZERO
 var _blueprint_ok: bool = false
 var _ghost_on_base: bool = false           # the ghost is snapped to a base: a piece on a foundation, or a foundation beside another (the wheel does not lift it)
 var _placement: Dictionary = {}              # structures.json: footprints, gaps, caps (shared with the server's rules)
-var blueprint_state: String = ""            # what the ghost shows now: "open", "covered", "close", "crowded" or "steep" (tests read it)
+var blueprint_state: String = ""            # what the ghost shows now: "open", "covered", "far", or a red reason of PlacementRules.reason_text / blocked(): "close", "overlap", "bed", "crowded", "camp", "steep", "float", "water", "shallow", "nofire", "notable", "taken", "nodoorway", "mismatch", "wheel_*" (tests read it)
+var _door_shape: String = ""                # the opening of the doorway a door's ghost is aimed at ("" for any other piece or no doorway): the words of "mismatch" and "taken"
 var _blueprint_shape: Vector2 = Vector2(-1.0, -1.0)
 var _blueprint_next_msec: int = 0
 var blueprints = HammerBlueprints.new()      # the hammer's blueprint list (R with a hammer in hand); the picked one is placed from the pack's materials, no kit item
@@ -185,11 +195,13 @@ const HIT_STOP_S := 0.045
 const HIT_AT := MotionExtra.CHOP_IMPACT_S / MotionExtra.CHOP_LENGTH     # share of the swing where the tool reaches the target (the swing_fp and chop clips' impact key, 0.5 s of 0.95); the thump and the server's hit are this same tick
 const PICK_HIT_AT := MotionExtra.PICK_IMPACT_S / MotionExtra.PICK_LENGTH
 const REACH_M := 3.0
+const MISS_POINT_M := 2.5   # the point a swing at nothing reports (inside the server's MINE_REACH_M from the feet even looking straight up)
 
 
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
 const HammerBlueprints := preload("res://src/client/hammer_blueprints.gd")
 const FlameUp := preload("res://src/client/flame_up.gd")
+const FarmRules := preload("res://src/shared/farm_rules.gd")   # the hoe's plant list and grid (plantables, grid_points, spacing_of)
 
 func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hud_layer: CanvasLayer, ground_below: Callable, sound_stage = null, tree_near: Callable = Callable(), cover_at: Callable = Callable()) -> void:
 	_cover_at = cover_at
@@ -212,6 +224,10 @@ func setup(inventory_view, terrain_net, camera: Camera3D, world_root: Node3D, hu
 		_net.wheel_share_received.connect(_on_wheel_share)
 	if _net != null:
 		_net.road_marker_reached.connect(_on_road_marker_reached)
+		_net.survey_refused_at.connect(_on_survey_refused)
+
+		if _net.has_signal("hoe_verdict_got"):
+			_net.hoe_verdict_got.connect(_on_hoe_verdict)
 	_camera = camera
 	_root = world_root
 	_ground_below = ground_below
@@ -283,14 +299,18 @@ func _arm_play(clip: String, seconds: float) -> void:
 		_arms.play(clip, length / maxf(seconds, 0.05))
 
 
-# The item a hotbar key points at in the pack, 0 when the key is empty or none of its item is in the pack.
+# The item in a hotbar key's slot, 0 when it is empty.
 func _key_number(key: int) -> int:
 	var slot: int = int(_inv.key_slot(clampi(key, 0, HOTBAR_SLOTS - 1)))
 	return _inv.inventory.numbers[slot] if slot >= 0 else 0
 
 
-# A hotbar key (0 to 9): hold what it points at, or put it away when it is the one already held.
+# A hotbar key (0 to 9): hold what is in its slot, or put it away when it is the one already held.
 func press_slot(slot: int) -> void:
+	# Food on the hotbar is eaten, not held (Dave's play test 19 Nov 2026); holding the key keeps eating (InventoryView.eat_from_hotbar).
+	if _inv.edible_slot(int(_inv.key_slot(clampi(slot, 0, HOTBAR_SLOTS - 1)))) and _inv.eat_from_hotbar(clampi(slot, 0, HOTBAR_SLOTS - 1)):
+		return
+
 	# Torch and shield go in the left hand beside whatever the right hand holds (Dave 2026-10-23); the same key again stows it.
 	if is_offhand(_key_number(slot)):
 		slot = clampi(slot, 0, HOTBAR_SLOTS - 1)
@@ -333,8 +353,11 @@ func equip_toggle(slot: int) -> void:
 # a cave without light). The torch is an off-hand item, so press_slot calls this for it too; in rain or water it goes out again by the usual rules.
 func _relight_on_press(slot: int, quiet: bool = false) -> void:
 	var number: int = _key_number(slot)
+	var row: Dictionary = _inv.table.entry(_inv.table.id_of(number)) if number != 0 else {}
+	var relit: String = str(row.get("relit_item", ""))
 
-	var relit: String = str(_inv.table.entry(_inv.table.id_of(number)).get("relit_item", "")) if number != 0 else ""
+	if relit == "" and number != 0 and _slot_out(int(_inv.key_slot(clampi(slot, 0, HOTBAR_SLOTS - 1)))):
+		relit = _inv.table.id_of(number)   # a torch that went out is the same torch (Dave 16 Nov 2026): pulling it out lights it
 
 	if relit == "":
 		return
@@ -355,7 +378,7 @@ func _relight_on_press(slot: int, quiet: bool = false) -> void:
 
 		return
 
-	_net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, 0, int(_inv.key_slot(clampi(slot, 0, HOTBAR_SLOTS - 1))) + 1, 0, Vector3.ZERO)   # the pack slot plus one (0: the first doused torch)   # no fire needed (Dave 6 Nov 2026)
+	_net.inventory_action.rpc_id(1, Net.ACT_RELIGHT, 0, int(_inv.key_slot(clampi(slot, 0, HOTBAR_SLOTS - 1))) + 1, 0, Vector3.ZERO)   # the pack slot plus one (0: the first one that went out)   # no fire needed (Dave 6 Nov 2026)
 
 
 func select(slot: int) -> void:
@@ -395,11 +418,32 @@ func select(slot: int) -> void:
 func held_number() -> int:
 	var slot: int = held_slot
 
-	if not holding or slot < 0:
+	if not holding or slot < 0 or carrying_log:
 		return 0
 
 	var number: int = _inv.inventory.numbers[slot]
 	return 0 if is_offhand(number) else number
+
+
+# Tells the server what is in the hand when it changes (protocol 146 held_item, Dave 20 Nov 2026: goblins react to "a weapon in hand"), at most
+# every HELD_REPORT_S; the server checks it against the pack.
+const HELD_REPORT_S := 0.5
+var _held_sent: int = -1
+var _held_wait: float = 0.0
+
+
+func _report_held(delta: float) -> void:
+	_held_wait -= delta
+
+	if not (_net is Node) or _held_wait > 0.0 or not _net.is_inside_tree() or _net.multiplayer.get_unique_id() == 1:
+		return   # no server to tell (offline, a headless check, or this is the server)
+
+	var number: int = held_number()
+
+	if number != _held_sent:
+		_held_sent = number
+		_held_wait = HELD_REPORT_S
+		_net.held_item.rpc_id(1, number)
 
 
 func held_id() -> String:
@@ -412,9 +456,34 @@ func placing() -> bool:
 	return _blueprint != null
 
 
-# A hammer in hand and a blueprint picked from its list (R): the ghost and the click work like a kit's, but the materials come from the pack.
+# A hammer or knife in hand and a blueprint picked from its list (R or right click): the ghost and the click work like a kit's, but the materials come from the pack.
 func _blueprinting() -> bool:
-	return holding and blueprints.picked > 0 and _hammer_tier() > 0
+	return holding and blueprints.picked > 0 and _build_tier() > 0
+
+
+# The tool in hand that builds blueprints: "hammer", "knife" (Dave 15 Nov 2026: right click with a knife opens the knife's list, TREE_WOOD_TOOLS_DESIGN.md s1.4) or "".
+func _build_tool() -> String:
+	return "hammer" if _hammer_tier() > 0 else ("knife" if _is_knife() else "")
+
+
+# The tier a picked blueprint is built with: the hammer in hand's; a knife builds every row of its list, so 1; 0 when nothing in hand builds.
+func _build_tier() -> int:
+	return _hammer_tier() if _hammer_tier() > 0 else (1 if _is_knife() else 0)
+
+
+# The list follows the tool in hand: another tool's pick and open menu go (the hammer's rows are not the knife's).
+func _sync_build_tool() -> void:
+	var tool: String = _build_tool()
+
+	if tool != "" and tool != blueprints.tool:
+		blueprints.clear()
+		blueprints.category = ""   # the other list has other groups
+		blueprints.tool = tool
+		_plan_queue.clear()
+
+
+func _hoe_in_hand() -> bool:
+	return holding and held_number() != 0 and str(_inv.table.entry(held_id()).get("tool_class", "")) == "hoe"
 
 
 func _hammer_tier() -> int:
@@ -435,7 +504,15 @@ func _repair_here() -> void:
 		return
 
 	_arm_play("use", 0.6)
-	_net.inventory_action.rpc_id(1, Net.ACT_REPAIR_STRUCT, id, 0, 0, Vector3.ZERO)
+	_net.inventory_action.rpc_id(1, Net.ACT_REPAIR_STRUCT, id, held_slot + 1, 0, Vector3.ZERO)   # the hammer in hand (protocol 117)
+
+
+# A boulder within swing reach under the aim (the hammer breaks it, _strike sends the blow like a pick's).
+func _boulder_aimed() -> bool:
+	var from: Vector3 = _camera.global_position
+	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)
+	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
+	return not hit.is_empty() and _inv.boulder_near(hit["position"]) != 0
 
 
 # Save building plan (hammer menu, then left click): keeps the building you aim at, every blueprint piece joined to it, as a plan in the menu.
@@ -457,7 +534,7 @@ func _save_plan_here() -> void:
 	var text: String = "Saved %s: %d pieces. Right click to place it" % [saved["name"], int(saved["pieces"])]
 
 	if int(saved["skipped"]) > 0:
-		text += " (%d pieces made from kits are left out)" % int(saved["skipped"])
+		text += " (%d pieces a hammer does not place are left out)" % int(saved["skipped"])
 
 	_inv._on_notice(text)
 
@@ -473,9 +550,15 @@ var _plan_next_msec: int = 0
 func _start_plan_place() -> void:
 	var plan: Dictionary = blueprints.plans.plans[blueprints.plan_picked]
 	_plan_queue = blueprints.placements_of(blueprints.plan_picked, _blueprint_at, float(_blueprint_yaw))
+	var left_out: int = (plan["pieces"] as Array).size() - _plan_queue.size()   # pieces a knife builds now (an older plan): the hammer cannot place them
 	_plan_next_msec = 0
+
+	if _plan_queue.is_empty():
+		_inv._on_notice("%s holds only pieces a knife builds now. Pick them from the knife's list" % plan["name"])
+		return
+
 	_plan_queue[0]["lift"] = lift_steps
-	_inv._on_notice("Placing %s: %d pieces" % [plan["name"], _plan_queue.size()])
+	_inv._on_notice("Placing %s: %d pieces%s" % [plan["name"], _plan_queue.size(), " (%d left out: a knife builds them now)" % left_out if left_out > 0 else ""])
 
 
 func _plan_step() -> void:
@@ -492,34 +575,13 @@ func _plan_step() -> void:
 	_net.inventory_action.rpc_id(1, Net.ACT_PLACE_BLUEPRINT, int(piece["bp"]), int(piece.get("lift", 0)), int(piece["yaw"]), piece["pos"])
 
 
-# Delete with the hammer menu open removes the highlighted saved plan. Returns true when it was used.
-func delete_plan() -> bool:
-	if not blueprints.is_open:
-		return false
-
-	var gone: String = blueprints.delete_highlighted(_hammer_tier())
-
-	if gone != "":
-		_inv._on_notice("Removed %s" % gone)
-
-	return true
-
-
-# The left and right arrows with the hammer menu open step through the groups of blueprints. Returns true when it was used.
-func step_blueprint_group(forward: bool) -> bool:
-	if not blueprints.is_open:
-		return false
-
-	blueprints.cycle_category(forward, _hammer_tier())
-	return true
-
-
-# Right click (or R) with a hammer in hand opens or shuts its blueprint list.
+# Right click (or R) with a hammer or a knife in hand opens or shuts its blueprint list.
 func toggle_blueprints() -> bool:
-	if _hammer_tier() <= 0:
+	if _build_tier() <= 0:
 		return false
 
-	blueprints.toggle(_hammer_tier())
+	_sync_build_tool()
+	blueprints.toggle(_build_tier())
 	return true
 
 
@@ -545,19 +607,19 @@ func off_id() -> String:
 	return _inv.table.id_of(off_number())
 
 
-# The pack slot of a burning flame in either hand that water or rain can put out (a torch; a lantern later: items.json "doused_item"), or -1.
+# The pack slot of a burning flame in either hand that water or rain can put out (a torch, items.json "goes_out"; a lantern, "doused_item"), or -1.
 func flame_slot() -> int:
 	if _inv == null:
 		return -1
 
 	for spec in [[held_number(), held_slot], [off_number(), off_slot]]:
-		if int(spec[0]) != 0 and str(_inv.table.entry(_inv.table.id_of(int(spec[0]))).get("doused_item", "")) != "":
+		if int(spec[0]) != 0 and FlameRules.can_go_out(_inv.table.entry(_inv.table.id_of(int(spec[0])))) and not _slot_out(int(spec[1])):
 			return int(spec[1])
 
 	return -1
 
 
-# The pack slot of a torch in either hand that can be placed (items.json places_as: burning or doused), or -1.
+# The pack slot of a torch in either hand that can be placed (items.json places_as: burning or out), or -1.
 func _torch_hand_slot() -> int:
 	if _inv == null:
 		return -1
@@ -621,7 +683,7 @@ func _left_number() -> int:
 	if number != 0:
 		return number
 
-	if not _first_person and _avatar_rig != null and holding and (_is_torch() or _is_doused_torch()):
+	if not _first_person and _avatar_rig != null and holding and _is_torch():
 		return held_number()
 
 	return 0
@@ -772,18 +834,25 @@ func has_arrow() -> bool:
 	return arrow_to_shoot() != 0
 
 
-# The arrow the next shot takes, as the server picks it: the one the bow is loaded with while the pack holds it, else the first of BOW_AMMO there; 0 none.
+# The arrow the next shot takes, as the server picks it: from a worn quiver if it holds one the bow takes, else from the pack; in each, the one
+# the bow is loaded with while it is there, else the first of the bow's ammo there; 0 none.
 func arrow_to_shoot() -> int:
+	var quiver: Dictionary = _inv.quiver_counts() if _inv.has_method("quiver_counts") else {}
+	var from_quiver: int = _arrow_in(func(number: int) -> int: return int(quiver.get(number, 0)))
+	return from_quiver if from_quiver != 0 else _arrow_in(func(number: int) -> int: return _inv.inventory.count_of(number))
+
+
+func _arrow_in(count_of: Callable) -> int:
 	var loaded: int = int(_inv.bow_arrow)
 	var ammo: Array = BowAim.ammo_for(_bow_config(), held_id())
 
-	if loaded != 0 and _inv.inventory.count_of(loaded) > 0 and ammo.has(_inv.table.id_of(loaded)):
+	if loaded != 0 and int(count_of.call(loaded)) > 0 and ammo.has(_inv.table.id_of(loaded)):
 		return loaded
 
 	for id in ammo:
 		var number: int = _inv.table.number_of(id)
 
-		if number > 0 and _inv.inventory.count_of(number) > 0:   # 0 = not in the table (0 is also an empty slot)
+		if number > 0 and int(count_of.call(number)) > 0:   # 0 = not in the table (0 is also an empty slot)
 			return number
 
 	return 0
@@ -826,21 +895,34 @@ func _is_torch() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "torch"
 
 
-# A torch that water or rain put out (items.json "relit_item"): drawn as a torch with no flame or light.
-func _is_doused_torch() -> bool:
-	return str(_inv.table.entry(held_id()).get("relit_item", "")) != ""
+# A torch that water or rain put out (its slot marked out, flame_rules.gd is_out): drawn as a torch with no flame or light.
+func _held_torch_out() -> bool:
+	return _is_torch() and _slot_out(held_slot)
+
+
+# Whether the flame in a pack slot is out (a torch marked out, or a dark lantern).
+func _slot_out(slot: int) -> bool:
+	if _inv == null or slot < 0 or slot >= _inv.inventory.numbers.size() or _inv.inventory.numbers[slot] == 0:
+		return false
+
+	return FlameRules.is_out(_inv.table.entry(_inv.table.id_of(_inv.inventory.numbers[slot])), _inv.inventory.inst_of(slot))
+
+
+# The pack slot of what the left hand shows (_left_number): the off hand's, or the main item drawn in the left hand.
+func _left_slot() -> int:
+	return off_slot if off_number() != 0 else held_slot
 
 
 func _is_knife() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) == "knife"
 
 
-# Any other tool or weapon (spade, and every tool added later) is held too: it has a generic model and plays the "use" arm
+# Any other tool or weapon (shovel, and every tool added later) is held too: it has a generic model and plays the "use" arm
 # animation on left click, so nothing silently fails to be held.
 func _is_other_tool() -> bool:
 	var kind: String = str(_inv.table.entry(held_id()).get("kind", ""))
 	var is_arrow: bool = str(BasicLook.entry(held_id()).get("shape", "")) == "arrow"   # arrows are "material" items but are held like a tool, not as a palm-sized look
-	return (kind in ["tool", "weapon", "container"] or is_arrow) and not _is_spear() and not _is_torch() and not _is_doused_torch() and not _is_knife() and not _is_axe()
+	return (kind in ["tool", "weapon", "container"] or is_arrow) and not _is_spear() and not _is_torch() and not _is_knife() and not _is_axe()
 
 
 func is_holdable(number: int) -> bool:
@@ -850,7 +932,7 @@ func is_holdable(number: int) -> bool:
 	var entry: Dictionary = _inv.table.entry(_inv.table.id_of(number))
 	# Food of ANY item kind can be held and eaten: the check is on THIS item (it used the currently held slot, so crab apples, a "material", could not be taken in hand
 	# unless something edible was already held: Dave, 31 Oct 2026).
-	return str(entry.get("kind", "")) in ["tool", "weapon", "placeable", "container"] or _inv.is_edible_item(number)
+	return str(entry.get("kind", "")) in ["tool", "weapon", "placeable", "container"] or _inv.is_edible_item(number) or entry.has("pipe_m") or entry.has("fitting")   # a pipe, tap or drip head is laid from the hand
 
 
 # Food and small things with a stage-one look (data/items/looks.json) are carried in the palm, drawn as they lie on the ground.
@@ -877,14 +959,41 @@ func _make_look_model() -> Node3D:
 	return node
 
 
+# Anything in hand is a weapon (Dave 19 Nov 2026 play test: "I just tried to hit a pig with an axe and it is doing no damage"; "any thing in your
+# hand should be able to be used as a weapon"): true when an animal is drawn in front within the held item's reach (MeleeRules; the server's
+# target_along rule: inside 0.6 m, or within about 35 degrees of the look). A left click then strikes it instead of the item's own use.
+var _melee_cfg: Dictionary = {}
+
+
+func _animal_in_reach() -> bool:
+	if not animal_aim_rows.is_valid() or _camera == null or not holding or held_number() == 0 or _inv.is_broken(held_slot):
+		return false
+
+	if _melee_cfg.is_empty():
+		_melee_cfg = MeleeRules.load_config()
+
+	var reach: float = float(MeleeRules.blow(_inv.table.entry(held_id()), _melee_cfg)["reach_m"])
+	var eye: Vector3 = _camera.global_position
+	var look: Vector3 = -_camera.global_transform.basis.z
+	var flat: Vector2 = Vector2(look.x, look.z).normalized()
+
+	for row in animal_aim_rows.call():
+		var at: Vector3 = row[0]
+		var to: Vector2 = Vector2(at.x - eye.x, at.z - eye.z)
+
+		if to.length() <= reach and (to.length() < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - eye.y) < 3.5:
+			return true
+
+	return false
+
+
+# One blow at the animal in front with whatever is in hand: the server checks the item, the reach and the pace, and answers a hit with hit_number.
+func _melee_strike() -> void:
+	_net.inventory_action.rpc_id(1, Net.ACT_STRIKE, held_slot, 0, 0, -_camera.global_transform.basis.z)
+
+
 func _is_axe() -> bool:
 	return str(_inv.table.entry(held_id()).get("tool_class", "")) in ["axe", "pick"] and not _inv.is_broken(held_slot)
-
-
-# E gathers something by hand: the arm reaches down, takes hold and draws back (its own "gather" clip, ragdoll_body.gd _gather), unless a swing or another action is already playing.
-func play_gather() -> void:
-	if _swing_t < 0.0 and _jab_t < 0.0 and not aiming and _arms != null and _arms.visible and not _arms.is_one_shot_playing():
-		_arm_play("gather" if _arms.animation_player.has_animation("gather") else "use", 0.3)
 
 
 # True while a tool action is going on (a swing, the pause between chained swings, the hit stop): nothing nearby is picked up meanwhile.
@@ -948,15 +1057,26 @@ func work_clip() -> String:
 
 
 
+# Whether `kit` places a sloped roof panel (structures.json piece_kind "roof_panel"): its ghost rests on an edge and the wheel flips rise and fall.
+func _is_roof_panel(kit: String) -> bool:
+	return str(PlacementRules.structure_of_kit(_placement, kit).get("piece_kind", "")) == PlacementRules.ROOF_PANEL_KIND
+
+
+# Whether `kit` places a roof corner (piece_kind "roof_hip", A-37): it rests where two edges meet and the wheel picks its 45 or 65 shape when no panel is beside it.
+func _is_roof_hip(kit: String) -> bool:
+	return str(PlacementRules.structure_of_kit(_placement, kit).get("piece_kind", "")) == PlacementRules.ROOF_HIP_KIND
+
+
 # The mouse wheel while a foundation is held raises or lowers where it will stand, in 0.1 m steps. Returns true when it was used here.
 func wheel(down: bool) -> bool:
 	if _hoe_menu_open:
-		_hoe_menu_index = posmod(_hoe_menu_index + (1 if down else -1), HOE_MODES.size())
+		_hoe_menu_index = posmod(_hoe_menu_index + (1 if down else -1), maxi(1, _hoe_menu_size()))
 		_hoe_menu_refresh()
 		return true
 
-	if blueprints.is_open:
-		blueprints.move(down, _hammer_tier())
+	if _hoe_grid_on():   # the hoe grid: the wheel turns it a little, "so you can line up your gardens" (Dave 14 Nov 2026)
+		garden_yaw = posmod(garden_yaw + (FarmRules.GRID_TURN_DEG if down else -FarmRules.GRID_TURN_DEG), 360)
+		_inv._on_notice("Hoe grid turned to %d degrees" % garden_yaw)
 		return true
 
 	if _blueprinting():
@@ -969,6 +1089,16 @@ func wheel(down: bool) -> bool:
 
 			lift_steps = clampi(lift_steps + (-1 if down else 1), 0, PlacementRules.LIFT_MAX_STEPS)
 			_inv._on_notice("Foundation raised %.1f m off the ground" % (float(lift_steps) * PlacementRules.LIFT_STEP_M))
+			return true
+
+		if str(picked_def.get("piece_kind", "")) == PlacementRules.ROOF_PANEL_KIND:
+			lift_steps = 1 - clampi(lift_steps, 0, 1)   # the wheel flips which end rests on the edge: the low one (the panel rises from it) or the high one (it falls)
+			_inv._on_notice("Roof panel rests on its %s end and %s from the edge" % [("high" if lift_steps == 1 else "low"), ("falls" if lift_steps == 1 else "rises")])
+			return true
+
+		if str(picked_def.get("piece_kind", "")) == PlacementRules.ROOF_HIP_KIND:
+			lift_steps = 1 - clampi(lift_steps, 0, 1)   # the corner's shape where no panel stands beside it yet (a panel beside it decides)
+			_inv._on_notice("Roof corner at %d degrees where no roof panel is beside it (a panel beside it sets the slope)" % (65 if lift_steps == 1 else 45))
 			return true
 
 		return false
@@ -1036,13 +1166,14 @@ func _placing_id() -> String:
 
 # A mouse button while playing. Returns true when it was used here.
 func mouse_button(button: int, pressed: bool) -> bool:
-	if button == MOUSE_BUTTON_RIGHT and pressed and holding and _inv.edible_slot(held_slot):
+	if button == MOUSE_BUTTON_RIGHT and pressed and held_number() != 0 and _inv.edible_slot(held_slot):   # nothing to eat in a hand that steadies a log
 		_inv.eat_slot(held_slot)
 		return true
 
-	# Right click with a hammer opens its menu (or shuts it); left click in the menu picks (Dave 3 Nov 2026). Shift is left to other tools.
-	if button == MOUSE_BUTTON_RIGHT and pressed and holding and _hammer_tier() > 0:
-		blueprints.toggle(_hammer_tier())
+	# Right click with a hammer or a knife opens its build screen (Dave 16 Nov 2026; the knife's list, Dave 15 Nov 2026); the screen takes the clicks
+	# while it is open (hammer_blueprints.gd: a click on a row picks it, right click shuts it). Shift is left to other tools.
+	if button == MOUSE_BUTTON_RIGHT and pressed and holding and _build_tier() > 0:
+		toggle_blueprints()
 		return true
 
 	# Right click with a torch in the left hand and nothing in the right that uses right click: stick the torch in the ground or on a wall (Dave, 4 Nov 2026).
@@ -1050,15 +1181,22 @@ func mouse_button(button: int, pressed: bool) -> bool:
 		_place_torch_here()
 		return true
 
-	if blueprints.is_open:
-		if button == MOUSE_BUTTON_LEFT and pressed:
-			blueprints.choose(_hammer_tier())
+	# A left click at an animal in reach strikes it with whatever is in hand (Dave 19 Nov 2026). The axe and pick strike at the impact of their
+	# swing (_strike); a spear jabs and a bow shoots as before; placing a piece or a blueprint, the hoe's list and the build screen keep their click.
+	if button == MOUSE_BUTTON_LEFT and pressed and not _is_axe() and not _is_spear() and not _is_bow() and not _blueprinting() and not _is_placeable() and not _pipe_hand() and not _hoe_menu_open and not blueprints.is_open and _animal_in_reach():
+		_arm_play("use", 0.6)
+		_melee_strike()
+		return true
 
-		return button == MOUSE_BUTTON_LEFT
+	if _pipe_hand():
+		return _pipe_click(button, pressed)
 
 	if holding and _hammer_tier() > 0 and (blueprints.mode == "save" or blueprints.mode == "repair"):
 		if button == MOUSE_BUTTON_LEFT and pressed:
-			if blueprints.mode == "repair":
+			if blueprints.mode == "repair" and _boulder_aimed():   # Hammer/Repair Tool (Dave 15 Nov 2026): a boulder in reach is struck for stone and ore, never repaired
+				if _swing_t < 0.0:
+					_start_swing()
+			elif blueprints.mode == "repair":
 				_repair_here()
 			else:
 				_save_plan_here()
@@ -1132,8 +1270,8 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 			return true
 
-		# Right click with the spade switches between Dig and Raise mode (Dave 2026-10-22).
-		if button == MOUSE_BUTTON_RIGHT and pressed and str(_inv.table.entry(held_id()).get("tool_class", "")) == "spade":
+		# Right click with the shovel switches between Dig and Raise mode (Dave 2026-10-22).
+		if button == MOUSE_BUTTON_RIGHT and pressed and str(_inv.table.entry(held_id()).get("tool_class", "")) == "shovel":
 			raise_mode = not raise_mode
 			_inv._on_notice("Raise mode: left click adds ground, using soil or stone from your pack" if raise_mode else "Dig mode: left click digs")
 			return true
@@ -1146,10 +1284,10 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 			if _hoe_menu_open:
 				if button == MOUSE_BUTTON_LEFT:
-					hoe_mode = str(HOE_MODES[_hoe_menu_index]["id"])
-					_inv._on_notice("Hoe: %s" % str(HOE_MODES[_hoe_menu_index]["name"]))
+					_hoe_menu_choose()   # closes the list, or goes on to the plant list
+				else:
+					_hoe_menu_back()   # the plant list goes back to the actions; the actions close
 
-				_hoe_menu_close()
 				return true
 
 			if button == MOUSE_BUTTON_RIGHT:
@@ -1157,7 +1295,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 					_arm_play("use", 0.6)
 					_grade_point_here()
 				else:
-					_hoe_menu_open_now()
+					_hoe_menu_open_now("garden" if hoe_mode == "garden" else "modes")   # Plant: right click goes back to choosing the plant (BugsList entry 6)
 
 				return true
 
@@ -1165,10 +1303,25 @@ func mouse_button(button: int, pressed: bool) -> bool:
 			_hoe_apply()
 			return true
 
+		# Left click with a sickle or scythe (Dave 18 Nov 2026, BugsList_Current.md entry 7): one swing gathers the grasses and ripe grain and cuts down the
+		# bushes round the player, within 1.5 m for the sickle and 3 m for the scythe (drops.json swath); the server rules on every plant.
+		if button == MOUSE_BUTTON_LEFT and pressed and str(_inv.table.entry(held_id()).get("tool_class", "")) in ["sickle", "scythe"]:
+			_arm_play("use", 0.6)
+
+			if swath_cut.is_valid():
+				swath_cut.call(held_slot, str(_inv.table.entry(held_id()).get("tool_class", "")))
+
+			return true
+
+		# Left click with a saw (Dave 17 Nov 2026): the crafting screen opens on the Carpenter's tab, what the saw makes; Craft takes the log from near you.
+		if button == MOUSE_BUTTON_LEFT and pressed and str(_inv.table.entry(held_id()).get("tool_class", "")) == "saw":
+			_inv.open_crafting_on(SAW_CATEGORY)
+			return true
+
 		if button == MOUSE_BUTTON_LEFT and pressed:
 			_arm_play("use", 0.6)
 
-			if str(_inv.table.entry(held_id()).get("tool_class", "")) == "spade":
+			if str(_inv.table.entry(held_id()).get("tool_class", "")) == "shovel":
 				if raise_mode:
 					_fill_here()
 				else:
@@ -1189,7 +1342,7 @@ func mouse_button(button: int, pressed: bool) -> bool:
 
 			if carcass != 0:
 				_arm_play("use", 0.6)
-				_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3.ZERO)
+				_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3(float(held_slot + 1), 0.0, 0.0))   # the knife in hand (protocol 117)
 				return true
 
 		return false
@@ -1261,7 +1414,7 @@ func _flight_hit(from: Vector3, to: Vector3) -> Dictionary:
 func _arrow_flight(draw_ms: int, direction: Vector3, arrow: int) -> void:
 	_bow_config()
 	var bow_id: String = held_id()
-	var v: Vector3 = direction * BowAim.bow_speed_max(_bow_cfg, bow_id) * bow_power(draw_ms, _bow_cfg)
+	var v: Vector3 = direction * BowAim.bow_speed_max(_bow_cfg, bow_id) * (1.0 if BowAim.full_power(_bow_cfg, bow_id) else bow_power(draw_ms, _bow_cfg))   # a crossbow leaves at full power
 	var node: Node3D = _make_arrow_model(arrow)
 	_root.add_child(node)
 	node.global_position = _camera.global_position + direction * 0.8
@@ -1346,6 +1499,7 @@ func _process(delta: float) -> void:
 
 func _process_body(delta: float) -> void:
 	_hang_net()
+	_report_held(delta)
 
 	_update_bow(delta)
 
@@ -1355,13 +1509,16 @@ func _process_body(delta: float) -> void:
 	_update_blueprint()
 	_hammer_stock(delta)
 	_plan_step()
+	_garden_preview()
+	_survey_line()
+	_pipe_mode()
 	_hoe_repeat(delta)
 
 	if _sound != null:
-		var flame_kind: String = str(_inv.table.entry(held_id()).get("tool_class", ""))
+		var flame_kind: String = "" if _slot_out(held_slot) else str(_inv.table.entry(held_id()).get("tool_class", ""))   # a torch that went out is silent
 
 		if flame_kind not in ["torch", "lantern"]:
-			flame_kind = _off_class()
+			flame_kind = "" if _slot_out(off_slot) else _off_class()
 
 		var flame: bool = flame_kind in ["torch", "lantern"]
 		var sheltered: bool = flame and _cover_at.is_valid() and bool(_cover_at.call(_camera.global_position))    # the cover lookup only when a flame is held
@@ -1386,6 +1543,7 @@ func _process_body(delta: float) -> void:
 	# "awkwardly shaking").
 	_place_arms(delta)
 	_pose_bow(bow_state(), bow_draw(), delta)
+	_aim_spear()
 
 	if _arms != null and _arms.visible and _arms.current() != "idle" and not _arms.is_one_shot_playing() and not _bow_posing():
 		_arms.play("idle")
@@ -1416,8 +1574,19 @@ func _process_body(delta: float) -> void:
 		_pause_t -= delta
 
 		# Dave 2026-10-21: holding the button keeps chopping, one swing after another (a short pause between, 31 Oct 2026).
-		if _pause_t <= 0.0 and holding and _is_axe() and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+		if _pause_t <= 0.0 and holding and (_is_axe() or (_hammer_tier() > 0 and blueprints.mode == "repair" and not blueprints.is_open and _boulder_aimed())) and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
 			_start_swing()
+
+	# The jab runs on its own clock whatever draws the spear (TEST-004, 12 Nov 2026): it was only advanced in the no-arms branch below, so with
+	# the arms (always) the first jab never ended and every later click was refused.
+	var jab_u: float = -1.0
+
+	if _jab_t >= 0.0:
+		_jab_t += delta
+		jab_u = clampf(_jab_t / JAB_S, 0.0, 1.0)
+
+		if _jab_t >= JAB_S:
+			_jab_t = -1.0
 
 	if _model != null and _is_torch():
 		var flicker: OmniLight3D = _model.get_node_or_null("Light")
@@ -1425,7 +1594,7 @@ func _process_body(delta: float) -> void:
 		if flicker != null:
 			# Own light: one, shadowless. At Low it gives way to a fire light within 8 m, so no more than one lamp lights the same spot.
 			flicker.visible = rig_lit or not held_light_budget.is_valid() or held_light_budget.call() or not _inv.fire_light_near(_camera.global_position, 8.0)
-			flicker.light_energy = 2.0 + 0.4 * sin(float(Time.get_ticks_msec()) * 0.017)
+			flicker.light_energy = FlameRules.TORCH_LIGHT_ENERGY + FlameRules.TORCH_LIGHT_FLICKER * sin(float(Time.get_ticks_msec()) * 0.017)
 
 		if not _mounted:
 			_model.position = _model.position.lerp(REST, clampf(delta * 14.0, 0.0, 1.0))
@@ -1445,13 +1614,8 @@ func _process_body(delta: float) -> void:
 		if _draw_t >= 0.0:
 			offset += Vector3(0.0, 0.0, minf(_draw_t, 1.2) * 0.1)   # the hand comes back as the string is drawn
 
-		if _jab_t >= 0.0:
-			_jab_t += delta
-			var u: float = clampf(_jab_t / JAB_S, 0.0, 1.0)
-			offset += Vector3(0.0, 0.0, -JAB_REACH * sin(u * PI))
-
-			if _jab_t >= JAB_S:
-				_jab_t = -1.0
+		if jab_u >= 0.0:
+			offset += Vector3(0.0, 0.0, -JAB_REACH * sin(jab_u * PI))
 
 		_model.position = _model.position.lerp(offset, clampf(delta * 14.0, 0.0, 1.0))
 		_model.rotation.x = lerpf(_model.rotation.x, deg_to_rad(35.0) if aiming else 0.0, clampf(delta * 14.0, 0.0, 1.0))
@@ -1490,10 +1654,14 @@ func _process_body(delta: float) -> void:
 
 # The large log on the shoulder in first person (Dave 2026-10-21): across the right shoulder, fixed to the body (the way you face), so it
 # shows at the edge of the view and when you look down.
-func set_shoulder(on: bool, length: float, radius: float, color: Color = Color(0.32, 0.23, 0.15)) -> void:
+# `second`: the colour of a second log carried beside it (TREE_WOOD_TOOLS_DESIGN.md s1.2, two logs at most), null for one.
+func set_shoulder(on: bool, length: float, radius: float, color: Color = Color(0.32, 0.23, 0.15), second: Variant = null) -> void:
 	if not on:
 		if _shoulder_log != null:
 			_shoulder_log.visible = false
+
+		if _shoulder_log_two != null:
+			_shoulder_log_two.visible = false
 
 		return
 
@@ -1518,6 +1686,25 @@ func set_shoulder(on: bool, length: float, radius: float, color: Color = Color(0
 	var yaw: Basis = Basis(Vector3.UP, _camera.global_rotation.y)
 	var at: Vector3 = _camera.global_position + yaw * Vector3(SHOULDER_LOG_X, -0.55, -SHOULDER_LOG_FWD)
 	_shoulder_log.global_transform = Transform3D(yaw * Basis(Vector3.RIGHT, PI * 0.5 + 0.05), at)
+
+	if not (second is Color):
+		if _shoulder_log_two != null:
+			_shoulder_log_two.visible = false
+
+		return
+
+	if _shoulder_log_two == null:
+		_shoulder_log_two = MeshInstance3D.new()
+		_shoulder_log_two.mesh = mesh
+		_shoulder_log_two.material_override = StandardMaterial3D.new()
+		_shoulder_log_two.top_level = true
+		_shoulder_log_two.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_camera.add_child(_shoulder_log_two)
+
+	(_shoulder_log_two.material_override as StandardMaterial3D).albedo_color = second
+	_shoulder_log_two.visible = true
+	var beside: Vector3 = _camera.global_position + yaw * Vector3(SHOULDER_LOG_X - radius * 2.2, -0.55, -SHOULDER_LOG_FWD)   # side by side, on the side toward the middle of the view
+	_shoulder_log_two.global_transform = Transform3D(yaw * Basis(Vector3.RIGHT, PI * 0.5 + 0.05), beside)
 
 
 # The arms follow the body at rest and the camera while working: blends the two poses by _arm_up.
@@ -1663,6 +1850,11 @@ func _ghost_clean(node: Node) -> void:
 		_ghost_clean(child)
 
 
+# The red ghost's reason in words; a door's carries the shape of the doorway it is aimed at (_door_shape).
+func _reason() -> String:
+	return PlacementRules.reason_text(blueprint_state, _door_shape)
+
+
 # The placement ghost for a held campfire: a ring on the ground where it would go, yellow in the open
 # and green under a tree's crown (Dave, 2026-10-20: fires under cover survive rain, open ones go out).
 # A left click on a red ghost says why it will not go down (Dave 5 Nov 2026: every placement that fails tells you the reason).
@@ -1673,15 +1865,15 @@ func _say_why_not() -> void:
 		"steep": "The ground is too steep there.",
 		"water": "You cannot build in water.",
 		"nofire": "Lay a small fire first: the pot hangs over it.",
-		"taken": "That fire already has a pot.",
+		"notable": "Set it on a table.",
 		"far": "Too far to place that. Step closer.",
 	}.get(blueprint_state, ""))
 
-	if why == "" and PlacementRules.reason_text(blueprint_state) != "":
-		var reason: String = PlacementRules.reason_text(blueprint_state)
+	if why == "" and _reason() != "":
+		var reason: String = _reason()
 		why = reason.left(1).to_upper() + reason.substr(1) + "."
 
-	if why == "" and _blueprinting() and not blueprints.can_afford(_hammer_tier()):
+	if why == "" and _blueprinting() and not blueprints.can_afford(_build_tier()):
 		why = "You do not have all the materials for that."
 
 	if why == "":
@@ -1704,7 +1896,7 @@ var _hammer_stock_pack: int = 0
 
 
 func _hammer_stock(delta: float) -> void:
-	if not holding or _hammer_tier() <= 0 or not (blueprints.is_open or blueprints.picked > 0) or not _inv.has_method("ask_stock_now"):
+	if not holding or _build_tier() <= 0 or not (blueprints.is_open or blueprints.picked > 0) or not _inv.has_method("ask_stock_now"):
 		_hammer_stock_age = HAMMER_STOCK_S   # the first frame with the list open asks at once
 		_hammer_stock_at = Vector3(INF, INF, INF)
 		return
@@ -1716,7 +1908,7 @@ func _hammer_stock(delta: float) -> void:
 		return
 
 	_hammer_stock_age = 0.0
-	blueprints.refresh(_hammer_tier())   # the counts the last answer brought
+	blueprints.refresh(_build_tier())   # the counts the last answer brought
 	var here: Vector3 = _camera.global_position if _camera != null else Vector3.ZERO
 	var pack: int = hash([_inv.inventory.numbers, _inv.inventory.counts]) if _inv.inventory != null else 0
 	var moved: bool = not _hammer_stock_at.is_finite() or here.distance_to(_hammer_stock_at) >= HAMMER_STOCK_MOVE_M
@@ -1731,8 +1923,10 @@ func _hammer_stock(delta: float) -> void:
 
 
 func _update_blueprint() -> void:
-	if (blueprints.picked > 0 or blueprints.is_open or blueprints.mode != blueprints.DEFAULT_MODE) and _hammer_tier() <= 0:
-		blueprints.clear()   # the hammer is put away: the pick and the list go with it
+	_sync_build_tool()
+
+	if (blueprints.picked > 0 or blueprints.is_open or blueprints.mode != blueprints.DEFAULT_MODE) and _build_tier() <= 0:
+		blueprints.clear()   # the hammer or knife is put away: the pick and the list go with it
 		_plan_queue.clear()
 
 	if not _is_placeable() and not _blueprinting():
@@ -1762,13 +1956,17 @@ func _update_blueprint() -> void:
 			_ghost_material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 			_ghost_material.cull_mode = BaseMaterial3D.CULL_DISABLED
 
+		if _is_roof_panel(_blueprint_kit) or _is_roof_panel(kit) or _is_roof_hip(_blueprint_kit) or _is_roof_hip(kit):
+			lift_steps = 0   # a roof panel's mode (rise or fall) and a foundation's lift share the number: neither carries over to the other piece
+
 		_blueprint_kit = kit
 
 		for child in _blueprint.get_children():
 			child.queue_free()
 
 		var def: Dictionary = PlacementRules.structure_of_kit(_placement, kit)
-		var model: Node3D = _inv.ghost_model(int(def.get("state", 1)))
+		_ghost_state = int(def.get("state", 1))
+		var model: Node3D = _inv.ghost_model(_ghost_state)
 		_ghost_clean(model)
 		_blueprint.add_child(model)
 		_blueprint_shape = footprint
@@ -1782,7 +1980,8 @@ func _update_blueprint() -> void:
 	if hit.is_empty():
 		return
 
-	var on_grid: Array = PlacementRules.snap(_placement, kit, hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.placed_rows() if str(PlacementRules.structure_of_kit(_placement, kit).get("attach_to", "")) == "fire" else _inv.foundation_rows())
+	var attach: String = str(PlacementRules.structure_of_kit(_placement, kit).get("attach_to", ""))
+	var on_grid: Array = PlacementRules.snap(_placement, kit, hit["position"], posmod(int(round(rad_to_deg(_camera.global_rotation.y))), 360), _inv.placement_rows() if attach == "fire" else (_inv.surface_rows(PlacementRules.attach_states(_placement, kit)) if attach == "table" else _inv.foundation_rows()), clampi(lift_steps, 0, 1))
 	_blueprint_at = on_grid[0]
 	_blueprint_yaw = int(on_grid[1])
 
@@ -1792,15 +1991,48 @@ func _update_blueprint() -> void:
 	_blueprint.rotation.y = deg_to_rad(float(_blueprint_yaw)) if PlacementRules.structure_of_kit(_placement, kit).get("piece", false) else _camera.global_rotation.y
 	var on_base: bool = bool(on_grid[2])
 	_ghost_on_base = on_base
-	blueprint_state = PlacementRules.blocked(_placement, kit, _blueprint_at, _inv.placed_rows() + _inv.foundation_rows())   # the building pieces too, as the server sees them
+	blueprint_state = PlacementRules.blocked(_placement, kit, _blueprint_at, _inv.placement_rows(), float(_blueprint_yaw))   # every fire and structure, at the turn it goes down at, as the server checks them
+	_door_shape = str(PlacementRules.doorway_fit(_placement, PlacementRules.structure_of_kit(_placement, kit), _blueprint_at, _inv.foundation_rows())["opening"]) if attach == PlacementRules.DOOR_ATTACH else ""
+
+	if attach == "table" and not on_base:
+		blueprint_state = "notable"   # a Serving Platter only goes on a table top (catalog phase 8)
+
+	if _is_roof_hip(kit):
+		var hip: Array = PlacementRules.roof_hip_pick(_placement, PlacementRules.structure_of_kit(_placement, kit), _blueprint_at, clampi(lift_steps, 0, 1), _inv.foundation_rows()) if on_base else []
+
+		if hip.is_empty():
+			blueprint_state = "nocorner"   # a roof corner only goes where two edges meet at a corner
+		else:
+			var shape_state: int = int(_placement["structures"].get(str(hip[2]), {}).get("state", _ghost_state))
+
+			if shape_state != _ghost_state:   # the panel beside it, or the wheel, picked the other slope: show that shape
+				for child in _blueprint.get_children():
+					child.queue_free()
+
+				_ghost_state = shape_state
+				var shaped: Node3D = _inv.ghost_model(shape_state)
+				_ghost_clean(shaped)
+				_blueprint.add_child(shaped)
+
+	if _is_roof_panel(kit):
+		if not on_base:
+			blueprint_state = "nopanel"   # a roof panel only rests on a wall top, a ceiling edge or another panel's end, never free on the ground
+		elif blueprint_state == "":
+			var panel_at: Vector3 = _blueprint_at
+			var ground_probe: Callable = func(x: float, z: float) -> float: return _terrain_y(x, z, panel_at.y, 14.0)   # the terrain alone, as the server reads it (a 65 panel's low end can hang 10 m up)
+			blueprint_state = "buried" if PlacementRules.roof_panel_buried(_placement, kit, _blueprint_at, _blueprint_yaw, ground_probe) else ""
 
 	if blueprint_state == "" and not on_base:
 		var ground_at: Vector3 = _blueprint_at
-		var probe: Callable = func(x: float, z: float) -> float:
-			var ray: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(Vector3(x, ground_at.y + 3.0, z), Vector3(x, ground_at.y - 3.0, z))
-			var found: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(ray)
-			return float(found["position"].y) if not found.is_empty() else NAN
-		blueprint_state = PlacementRules.steep(_placement, kit, _blueprint_at, _camera.global_rotation.y, probe)
+		var probe: Callable = func(x: float, z: float) -> float: return _terrain_y(x, z, ground_at.y, 6.0)
+		blueprint_state = PlacementRules.steep(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), probe)   # the turn it is placed at, as the server samples it (the camera's turn sampled other corners: BUG-008)
+
+	if blueprint_state == "":
+		var lifted: float = float(lift_steps) * PlacementRules.LIFT_STEP_M if (not on_base and bool(PlacementRules.structure_of_kit(_placement, kit).get("foundation", false))) else 0.0
+		var terrain: float = _terrain_y(_blueprint_at.x, _blueprint_at.z, _blueprint_at.y, 14.0)   # 14 m reaches down past a stack of four foundations
+
+		if not is_nan(terrain):
+			blueprint_state = PlacementRules.off_ground(_placement, kit, _blueprint_at.y - lifted, terrain, on_base and attach != "table", on_grid.size() > 3)   # a platter's base is a table: the server snaps with foundation rows only, so no exemption
 
 	if blueprint_state == "" and not on_base and not PlacementRules.structure_of_kit(_placement, kit).has("needs_running_water") and water_depth_at.is_valid() and PlacementRules.over_water(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), water_depth_at):
 		blueprint_state = "water"
@@ -1820,9 +2052,34 @@ func _update_blueprint() -> void:
 	if (blueprint_state == "open" or blueprint_state == "covered") and _inv._player_position.is_valid() and (_inv._player_position.call() as Vector3).distance_to(_blueprint_at) > PLACE_REACH_M:
 		blueprint_state = "far"
 
-	var blocked: bool = blueprint_state.begins_with("wheel_") or blueprint_state == "close" or blueprint_state == "crowded" or blueprint_state == "steep" or blueprint_state == "water" or blueprint_state == "shallow" or blueprint_state == "nofire" or blueprint_state == "taken" or blueprint_state == "far"
-	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.plan_picked < 0 or blueprints.can_afford(_hammer_tier()))   # a single piece without the materials is set down as a blue blueprint site (Dave 5 Nov 2026); a saved plan still needs them all
+	var blocked: bool = blueprint_state != "open" and blueprint_state != "covered"   # every reason is red, so a new one can never leave a green ghost that will not place
+	_blueprint_ok = _blueprint_ok and not blocked and (not _blueprinting() or blueprints.plan_picked < 0 or blueprints.can_afford(_build_tier()))   # a single piece without the materials is set down as a blue blueprint site (Dave 5 Nov 2026); a saved plan still needs them all
 	_ghost_material.albedo_color = Color(0.9, 0.2, 0.2, 0.5) if blocked else Color(0.3, 0.9, 0.3, 0.5)
+
+
+# The terrain height under (x, z) as the placement rules read it: the first ground below `near_y` + 3 m and no deeper than `depth` m under `near_y`,
+# not what stands on it (a player, a tree or bush, a placed piece), because the server checks the terrain alone. NAN with no ground there (unknown never blocks).
+func _terrain_y(x: float, z: float, near_y: float, depth: float) -> float:
+	var space: PhysicsDirectSpaceState3D = _camera.get_world_3d().direct_space_state
+	var skip: Array[RID] = []
+
+	for i in 6:
+		var ray: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(Vector3(x, near_y + 3.0, z), Vector3(x, near_y - depth, z))
+		ray.exclude = skip
+		var found: Dictionary = space.intersect_ray(ray)
+
+		if found.is_empty():
+			return NAN
+
+		var collider: Object = found.get("collider")
+
+		if collider != null and (collider is CharacterBody3D or CaveSounds.is_not_rock(collider)):
+			skip.append(found["rid"])
+			continue
+
+		return float(found["position"].y)
+
+	return NAN
 
 
 # The sawmill ghost's water wheel (water rules section 10, protocol 105): the server works out what the wheel would give where the ghost stands
@@ -1866,46 +2123,51 @@ func _on_wheel_share(at: Vector3, yaw_deg: int, percent: int, why: String) -> vo
 # The blow lands: what is in reach decides the sound. (Chopping trees and digging stone come with
 # tree-fall and the harvest of ground; for now the axe only swings and sounds.)
 func _strike() -> void:
+	if _animal_in_reach():   # an animal in front takes the blow (Dave 19 Nov 2026: the axe did nothing to a pig)
+		_melee_strike()
+		return
+
 	var from: Vector3 = _camera.global_position
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)
 	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
 
-	if hit.is_empty() or _sound == null:
+	if hit.is_empty():
+		# A swing at nothing is still a swing and tires (BUG-001): tell the server (b = 1: struck nothing, protocol 118), with a point in the air, so it holds the tool's effort as it does for a blow that lands.
+		_net.inventory_action.rpc_id(1, Net.ACT_MINE, held_slot + 1, 1, 0, from - _camera.global_transform.basis.z * MISS_POINT_M)
+		return
+
+	if _sound == null:
 		return
 
 	struck.emit(1.0, 1.2 if _tool_class() == "pick" else 1.0)
 	var tree: Array = _tree_near.call(hit["position"]) if _tree_near.is_valid() else []
-	var trunk_id: int = _inv.felled_trunk_near(hit["position"])
-	var stump_id: int = _inv.stump_near(hit["position"]) if trunk_id == 0 else 0
+	var stump_id: int = _inv.stump_near(hit["position"])
 	var boulder_id: int = _inv.boulder_near(hit["position"])
 	var log_id: int = _inv.loose_log_near(hit["position"])
-	FeelKicks.chips(_root, hit["position"], hit["normal"], log_id != 0 or trunk_id != 0 or stump_id != 0 or not tree.is_empty())
+	FeelKicks.chips(_root, hit["position"], hit["normal"], log_id != 0 or stump_id != 0 or not tree.is_empty())
 	var shrub: Array = shrub_near.call(from, hit["position"]) if shrub_near.is_valid() and tree.is_empty() else []   # an axe chops a bush up, a pickaxe digs it up whole (Dave 2 Nov 2026)
 
 	if log_id != 0:
 		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
-		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, log_id, 0, 0, Vector3.ZERO)
+		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, log_id, 0, 0, Vector3(float(held_slot + 1), 0.0, 0.0))   # wood work: the tool in hand, an axe or (slowly) a pick (protocol 115)
 	elif boulder_id != 0:
 		_sound.hits.hit(_hit_tool(), "stone", hit["position"], 1.0)   # a boulder is stone whatever the ground under it
-		_net.inventory_action.rpc_id(1, Net.ACT_HIT, boulder_id, Net.HIT_BOULDER, 0, Vector3.ZERO)
-	elif trunk_id != 0:
-		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
-		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
+		_net.inventory_action.rpc_id(1, Net.ACT_HIT, boulder_id, Net.HIT_BOULDER, held_slot + 1, Vector3.ZERO)   # the tool in hand does the work (TEST-013)
 	elif stump_id != 0:
 		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
-		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, stump_id, 0, 0, Vector3.ZERO)
+		_net.inventory_action.rpc_id(1, Net.ACT_PROCESS, stump_id, 0, 0, Vector3(float(held_slot + 1), 0.0, 0.0))
 	elif not tree.is_empty():
 		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 1.0)
-		_net.inventory_action.rpc_id(1, Net.ACT_HIT, tree[1], tree[0].x, tree[0].y, Vector3.ZERO)
+		_net.inventory_action.rpc_id(1, Net.ACT_HIT, tree[1], tree[0].x, tree[0].y, Vector3(float(held_slot + 1), 0.0, 0.0))
 	elif not shrub.is_empty():
 		_sound.hits.hit(_hit_tool(), "wood", hit["position"], 0.7)
-		_net.inventory_action.rpc_id(1, Net.ACT_HIT_SHRUB, shrub[1], shrub[0].x, shrub[0].y, Vector3(1.0 if _tool_class() == "pick" else 0.0, 0.0, 0.0))
+		_net.inventory_action.rpc_id(1, Net.ACT_HIT_SHRUB, shrub[1], shrub[0].x, shrub[0].y, Vector3(float(held_slot + 1), 0.0, 0.0))   # the tool in hand: a pick digs it up, an axe chops it (protocol 117)
 	else:
 		_sound.hits.hit_ground(_hit_tool(), hit["position"], 1.0)
-		_net.inventory_action.rpc_id(1, Net.ACT_MINE, 0, 0, 0, hit["position"])
+		_net.inventory_action.rpc_id(1, Net.ACT_MINE, held_slot + 1, 0, 0, hit["position"])   # the pick or axe in hand (protocol 117)
 
 
-# A spade swing at the ground under the crosshair: the server checks the spade and the reach, cuts the hole and tells
+# A shovel swing at the ground under the crosshair: the server checks the shovel and the reach, cuts the hole and tells
 # everyone (the hole, the sound and the vanishing grass happen when it answers; DIGGING_DESIGN.md).
 func _plant_here() -> void:
 	var from: Vector3 = _camera.global_position
@@ -1926,15 +2188,17 @@ func _dig_here() -> void:
 	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
 
 	if hit.is_empty() or hit["collider"].has_meta("species_ids"):
-		_inv._on_notice("Nothing to dig there: aim the spade at the ground within reach")
+		_inv._on_notice("Nothing to dig there: aim the shovel at the ground within reach")
 		return
 
 	_net.inventory_action.rpc_id(1, Net.ACT_DIG, held_slot, 0, 0, hit["position"])
 
 
-# Holding a mouse button with the hoe repeats the stroke every HOE_REPEAT_S (the server paces it at 0.5 s too), so a road is one drag.
+# Holding the left button with the hoe in Level repeats the stroke every HOE_REPEAT_S (the server paces it at 0.5 s too, and keeps the height it started
+# from for the whole hold: BugsList entry 1). Every other action is one click (Pathen: one level spot a click; the grids and the survey: one a click).
 const HOE_REPEAT_S := 0.55
 var _hoe_t: float = 0.0
+var _hoe_menu_t: float = 0.0
 
 
 func _hoe_repeat(delta: float) -> void:
@@ -1943,62 +2207,86 @@ func _hoe_repeat(delta: float) -> void:
 		_hoe_menu_close()
 		return
 
-	if _hoe_menu_open or not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT):
+	if _hoe_menu_open and _hoe_menu_page == "garden":
+		_hoe_menu_t += delta
+
+		if _hoe_menu_t >= 0.5:   # the plant list follows the stock in reach as it changes
+			_hoe_menu_t = 0.0
+			_hoe_menu_refresh()
+
+	if _hoe_menu_open or not Input.is_mouse_button_pressed(MOUSE_BUTTON_LEFT) or hoe_mode != "smooth":
 		_hoe_t = 0.0
 		return
 
 	_hoe_t += delta
 
-	if _hoe_t >= HOE_REPEAT_S and hoe_mode == "survey":
-		_hoe_t = 0.0   # a held click sets one marker, not a line of them
-	elif _hoe_t >= HOE_REPEAT_S:
+	if _hoe_t >= HOE_REPEAT_S:
 		_hoe_t = 0.0
 		_arm_play("use", 0.6)
 		_hoe_apply()
 
 
-# What the hoe's mode does (left click, held). Grade needs points A and B (Shift + right click); Shift + left click grades in any mode.
+# What the hoe does (BugsList_Current.md entry 5, Dave 18 Nov 2026: this order and these names). Right click opens the list; Shift + right click sets a
+# survey marker in any mode.
 const HOE_MODES := [
-	{"id": "path", "name": "Path", "note": "averages the ground about 2 m round and treads a soft brown patch"},
-	{"id": "smooth", "name": "Smooth", "note": "moves dirt from high spots to low ones, no path"},
-	{"id": "till", "name": "Till", "note": "tills a metre of ground into a bed for sowing"},
-	{"id": "survey", "name": "Survey a path", "note": "left click sets a marker; walk on and set the next, the road builds behind you (Shift + right click does the same in any mode)"},
+	{"id": "smooth", "name": "Level", "note": "hold the left button: the ground about 3 m round is cut or filled to the height of your feet (filling uses soil from your pack, the ground near you or your containers)"},
+	{"id": "garden", "name": "Plant", "note": "choose a plant, then one left click fills the green grid as far as your supplies go (Alt + arrow keys: rows and columns; wheel: turn; right click: choose another plant)"},
+	{"id": "till", "name": "Till Garden Grid - 20m Edge Blend", "note": "one left click levels the grid to its average height, tills it into garden soil and blends its edges into the land within 20 m (Alt + arrow keys: size; wheel: turn; red: something is in the way)"},
+	{"id": "soil", "name": "Till Soil 2m", "note": "one left click levels a 2 m patch to its average height and tills it into garden soil (no edge blending)"},
+	{"id": "path", "name": "Pathen", "note": "one left click makes one level spot of path"},
+	{"id": "survey", "name": "Survey a Path", "note": "left click sets a marker; a green line runs from it to where you aim, at any distance (red: a building is in the way); click again and the road builds along it. Click the last marker again to end the survey (Shift + right click does the same in any mode)"},
+	{"id": "trench", "name": "Irrigation Trench", "note": "one left click digs 2 m of trench where you aim, along the way you face; water from a pipe or channel end over it soaks the garden beds within 30 m that are not higher than it"},
 ]
-var hoe_mode: String = "path"
+# The list is a small plate above the hotbar and its caption (BugsList entry 4, Dave's play test 19 Nov 2026: it ran off the right edge and over the
+# hotbar): short names, one to a line, the highlighted one marked; the highlighted one's explanation below them. Sizes are 1920 x 1080 canvas px
+# before the player's text size (_inv.text_px), so the plate grows with the text and is still kept inside the window.
+const HOE_MENU_WIDTH := 600.0      # the plate's width at text size 1.0; never more than the window less HOE_MENU_EDGE each side
+const HOE_MENU_EDGE := 16.0        # kept clear at the window's edges and above the caption
+const HOE_MENU_PX := {"title": 26, "row": 24, "help": 20, "keys": 18}
+const HOE_HELP_BREAKS := TextServer.BREAK_MANDATORY | TextServer.BREAK_WORD_BOUND | TextServer.BREAK_ADAPTIVE   # the explanation's AUTOWRAP_WORD_SMART
+var hoe_mode: String = "smooth"
+var garden_pick: String = ""             # Plant: the item id picked to plant (seeds, a dug-up bush or a tree seed), "" for none (tests read it)
+var _hoe_menu_page: String = "modes"     # "modes" (HOE_MODES) or "garden" (what can be planted: the pack and the stock in reach)
+var _garden_rows: Array = []             # the plant list as shown: [{"id", "kind"}]
 var _hoe_menu_open: bool = false
 var _hoe_menu_index: int = 0
 var _hoe_menu_panel: PanelContainer = null
-var _hoe_menu_label: Label = null
+var _hoe_menu_title: Label = null
+var _hoe_menu_rows: VBoxContainer = null
+var _hoe_menu_help: Label = null
+var _hoe_menu_keys: Label = null
 var _hud_layer: CanvasLayer = null
 
 
 func _hoe_apply() -> void:
 	if hoe_mode == "smooth":
 		_hoe_here(Net.ACT_HOE_SMOOTH)
-	elif hoe_mode == "till":
-		_hoe_here(Net.ACT_TILL)
+	elif hoe_mode == "till" or hoe_mode == "soil":
+		_till_garden_here()   # one garden or patch a click
 	elif hoe_mode == "survey":
 		_grade_point_here()   # one marker a click, never repeated while the button is held
+	elif hoe_mode == "garden":
+		_garden_here()   # one planting a click
+	elif hoe_mode == "trench":
+		_hoe_here(Net.ACT_DIG_TRENCH, _facing_deg())   # one trench piece a click, along the way the player faces
 	else:
 		_hoe_here(Net.ACT_HOE_PATH)
 
 
-func _hoe_menu_open_now() -> void:
+# The way the camera faces as a structure's turn in whole degrees: the piece's length (its x) runs along the view (Godot's rotation about y).
+func _facing_deg() -> int:
+	var ahead: Vector3 = -_camera.global_transform.basis.z
+	return posmod(roundi(rad_to_deg(atan2(-ahead.z, ahead.x))), 360)
+
+
+func _hoe_menu_open_now(page: String = "modes") -> void:
 	if _hud_layer == null:
 		return
 
 	if _hoe_menu_panel == null:
-		_hoe_menu_panel = PanelContainer.new()
-		_hoe_menu_panel.set_anchors_preset(Control.PRESET_CENTER)
-		_hoe_menu_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-		_hoe_menu_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
-		_hoe_menu_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_hoe_menu_label = Label.new()
-		_hoe_menu_label.add_theme_font_size_override("font_size", 26)
-		_hoe_menu_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_hoe_menu_panel.add_child(_hoe_menu_label)
-		_hud_layer.add_child(_hoe_menu_panel)
+		_hoe_menu_build()
 
+	_hoe_menu_page = "modes"
 	_hoe_menu_index = 0
 
 	for n in HOE_MODES.size():
@@ -2007,16 +2295,255 @@ func _hoe_menu_open_now() -> void:
 
 	_hoe_menu_open = true
 	_hoe_menu_panel.visible = true
+
+	if page == "garden":
+		_garden_page()
+	else:
+		_hoe_menu_refresh()
+
+
+# Plant's list (BugsList entry 6): what can be planted from the pack, the loose things near the player and their nearby containers (the crafting stock,
+# asked for again as it opens), with how many of each.
+func _garden_page() -> void:
+	_inv.ask_stock_now()
+	_hoe_menu_page = "garden"
+	_garden_rows = _plantable_rows()
+	_hoe_menu_index = 0
+
+	for n in _garden_rows.size():
+		if str(_garden_rows[n]["id"]) == garden_pick:
+			_hoe_menu_index = n
+
 	_hoe_menu_refresh()
 
 
+func _plantable_rows() -> Array:
+	var ids: Array = []
+
+	for slot in range(_inv.inventory.slot_count):
+		ids.append(_inv.table.id_of(_inv.inventory.numbers[slot]) if _inv.inventory.numbers[slot] != 0 else "")
+
+	for number in _inv.reach_stock:
+		if int(_inv.reach_stock[number]) > 0:
+			ids.append(_inv.table.id_of(int(number)))
+
+	return FarmRules.plantables(_inv.crop_table(), ids, "_bush", _inv.tree_seed_table())
+
+
+func _hoe_menu_build() -> void:
+	_hoe_menu_panel = PanelContainer.new()
+	_hoe_menu_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	# Bottom centre: it grows up and both ways, so a list that comes out taller than worked out still stays above the hotbar.
+	_hoe_menu_panel.anchor_left = 0.5
+	_hoe_menu_panel.anchor_right = 0.5
+	_hoe_menu_panel.anchor_top = 1.0
+	_hoe_menu_panel.anchor_bottom = 1.0
+	_hoe_menu_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_hoe_menu_panel.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	var plate: StyleBox = ArtKit.stylebox_raised(0).duplicate()
+	plate.content_margin_left = 18
+	plate.content_margin_right = 18
+	plate.content_margin_top = 12
+	plate.content_margin_bottom = 12
+	_hoe_menu_panel.add_theme_stylebox_override("panel", plate)
+	var column: VBoxContainer = VBoxContainer.new()
+	column.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	column.add_theme_constant_override("separation", 6)
+	_hoe_menu_panel.add_child(column)
+	_hoe_menu_title = _hoe_menu_text("cinzel_bold", ArtKit.HEADING)
+	column.add_child(_hoe_menu_title)
+	_hoe_menu_rows = VBoxContainer.new()
+	_hoe_menu_rows.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hoe_menu_rows.add_theme_constant_override("separation", 0)
+	column.add_child(_hoe_menu_rows)
+	column.add_child(HSeparator.new())
+	_hoe_menu_help = _hoe_menu_text("garamond", ArtKit.CREAM)
+	_hoe_menu_help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_hoe_menu_help.text_overrun_behavior = TextServer.OVERRUN_NO_TRIMMING
+	_hoe_menu_help.add_theme_constant_override("line_spacing", 0)   # its height is worked out from the font (_hoe_menu_show): no extra gap between lines
+	column.add_child(_hoe_menu_help)
+	_hoe_menu_keys = _hoe_menu_text("garamond", ArtKit.DIM)
+	column.add_child(_hoe_menu_keys)
+	_hud_layer.add_child(_hoe_menu_panel)
+
+
+# One line of the plate: never wider than the plate (a long name ends in "..." instead of pushing the plate out).
+func _hoe_menu_text(face: String, colour: Color) -> Label:
+	var label: Label = Label.new()
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.add_theme_font_override("font", ArtKit.font(face))
+	label.add_theme_color_override("font_color", colour)
+	label.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	label.clip_text = true
+	return label
+
+
 func _hoe_menu_refresh() -> void:
-	var text: String = "What should the hoe do?   (wheel: move, left click: choose, right click: close)\n\n"
+	var title: String = "What should the hoe do?"
+	var keys: String = "Wheel: move    Left click: choose    Right click: close"
+	var rows: Array = []
+	var help: String = ""
 
-	for n in HOE_MODES.size():
-		text += "%s %s: %s\n" % ["->" if n == _hoe_menu_index else "    ", str(HOE_MODES[n]["name"]), str(HOE_MODES[n]["note"])]
+	if _hoe_menu_page == "garden":
+		_garden_rows = _plantable_rows()
+		_hoe_menu_index = clampi(_hoe_menu_index, 0, maxi(_garden_rows.size() - 1, 0))
+		title = "What to plant?"
+		keys = "Wheel: move    Left click: choose    Right click: back"
 
-	_hoe_menu_label.text = text
+		if _garden_rows.is_empty():
+			help = "Nothing to plant: carry seeds, a dug-up bush or a tree's seed, or put them in a container or on the ground near you."
+
+	for n in _hoe_menu_size():
+		rows.append(_hoe_menu_line(n))
+
+	if not rows.is_empty():
+		help = _hoe_menu_note(_hoe_menu_index)
+
+	_hoe_menu_show(title, rows, _hoe_menu_index, help, keys)
+
+
+# Lays the plate out for the window as it is now: its width, the text sizes, how many rows fit (a long plant list shows a window of rows that follows
+# the highlight, with "..." where more are hidden), and its place above the hotbar caption. The height is worked out here, not waited for.
+func _hoe_menu_show(title: String, rows: Array, index: int, help: String, keys: String) -> void:
+	var view: Vector2 = _hud_layer.get_viewport().get_visible_rect().size
+	var px: Dictionary = {}
+
+	for part in HOE_MENU_PX:
+		px[part] = _inv.text_px(int(HOE_MENU_PX[part])) if _inv != null and _inv.has_method("text_px") else int(HOE_MENU_PX[part])
+
+	var grow: float = float(px["row"]) / float(HOE_MENU_PX["row"])
+	var width: float = minf(HOE_MENU_WIDTH * maxf(grow, 1.0), view.x - 2.0 * HOE_MENU_EDGE)
+	var inner: float = width - 36.0   # the plate's side margins
+	var bottom: float = _hoe_menu_bottom(view)
+	var garamond: Font = ArtKit.font("garamond")
+	var row_h: float = garamond.get_height(px["row"])
+	var help_h: float = garamond.get_multiline_string_size(help, HORIZONTAL_ALIGNMENT_LEFT, inner, px["help"], -1, HOE_HELP_BREAKS).y + 2.0 if help != "" else 0.0
+	var fixed: float = 24.0 + 4.0 * 6.0 + 4.0 + ArtKit.font("cinzel_bold").get_height(px["title"]) + help_h + garamond.get_height(px["keys"])
+	var room: int = maxi(3, floori((bottom - HOE_MENU_EDGE - fixed) / row_h))
+	var first: int = 0
+	var count: int = rows.size()
+
+	if count > room:   # a window of rows round the highlight; the end rows say "..." when more are hidden past them
+		@warning_ignore("integer_division")
+		first = clampi(index - room / 2, 0, count - room)
+		count = room
+
+	_hoe_menu_title.text = title
+	_hoe_menu_title.add_theme_font_size_override("font_size", px["title"])
+	_hoe_menu_keys.text = keys
+	_hoe_menu_keys.add_theme_font_size_override("font_size", px["keys"])
+	_hoe_menu_help.text = help
+	_hoe_menu_help.visible = help != ""
+	_hoe_menu_help.add_theme_font_size_override("font_size", px["help"])
+	_hoe_menu_help.custom_minimum_size = Vector2(inner, help_h)
+
+	while _hoe_menu_rows.get_child_count() < count:
+		_hoe_menu_rows.add_child(_hoe_menu_text("garamond", ArtKit.CREAM))
+
+	for n in _hoe_menu_rows.get_child_count():
+		var label: Label = _hoe_menu_rows.get_child(n) as Label
+		var at: int = first + n
+		label.visible = n < count
+
+		if not label.visible:
+			continue
+
+		var on: bool = at == index
+		var more: bool = (n == 0 and first > 0) or (n == count - 1 and at < rows.size() - 1)
+		label.text = "..." if more else str(rows[at])
+		label.add_theme_font_override("font", ArtKit.font("garamond_semibold" if on else "garamond"))
+		label.add_theme_stylebox_override("normal", _hoe_menu_mark(on))
+		label.add_theme_color_override("font_color", ArtKit.GOLD_BRIGHT if on else (ArtKit.DIM if more else ArtKit.CREAM))
+		label.add_theme_font_size_override("font_size", px["row"])
+
+	_hoe_menu_panel.offset_left = -width / 2.0
+	_hoe_menu_panel.offset_right = width / 2.0
+	_hoe_menu_panel.offset_bottom = bottom - view.y
+	_hoe_menu_panel.offset_top = _hoe_menu_panel.offset_bottom - _hoe_menu_panel.get_combined_minimum_size().y
+
+
+# The highlighted row sits on a lit band with a gold bar at its left; the others keep the same margins so no row moves when the highlight does.
+func _hoe_menu_mark(on: bool) -> StyleBox:
+	var box: StyleBox = StyleBoxEmpty.new()
+
+	if on:
+		var band: StyleBoxFlat = StyleBoxFlat.new()
+		band.bg_color = ArtKit.RAISED_LIT
+		band.border_color = ArtKit.GOLD_BRIGHT
+		band.border_width_left = 4
+		band.set_corner_radius_all(3)
+		box = band
+
+	box.content_margin_left = 12
+	box.content_margin_right = 6
+	return box
+
+
+# The plate's lowest point: above the held-item caption, which sits above the hotbar tray (LABEL_ABOVE).
+func _hoe_menu_bottom(view: Vector2) -> float:
+	var caption_h: float = 0.0
+
+	if _label != null and _label.text != "":
+		caption_h = float(_label.text.split("\n").size()) * _label.get_theme_font("font").get_height(20)
+
+	return view.y - LABEL_ABOVE - caption_h - 8.0
+
+
+func _hoe_menu_size() -> int:
+	return _garden_rows.size() if _hoe_menu_page == "garden" else HOE_MODES.size()
+
+
+# A row's short name: the action's name, or the plant's name and how many there are.
+func _hoe_menu_line(n: int) -> String:
+	if _hoe_menu_page != "garden":
+		return "%d. %s" % [n + 1, str(HOE_MODES[n]["name"])]
+
+	var number: int = _inv.table.number_of(str(_garden_rows[n]["id"]))
+	return "%s (%d)" % [_inv.table.name_of(number), _inv.stock_fill(number)]
+
+
+# The highlighted row's explanation, shown under the list.
+func _hoe_menu_note(n: int) -> String:
+	if _hoe_menu_page != "garden":
+		return "%s: %s." % [str(HOE_MODES[n]["name"]), str(HOE_MODES[n]["note"])]
+
+	return "Plant on tilled soil." if str(_garden_rows[n]["kind"]) == "seed" else "Plant in open ground."
+
+
+# Left click in the hoe's list: on the first page it sets the action (Plant goes on to the list of what to plant); on the plant list it picks the plant.
+func _hoe_menu_choose() -> void:
+	if _hoe_menu_page == "garden":
+		if _hoe_menu_index < _garden_rows.size():
+			var row: Dictionary = _garden_rows[_hoe_menu_index]
+			garden_pick = str(row["id"])
+			_inv._on_notice("Hoe: plant %s" % _inv.table.name_of(_inv.table.number_of(garden_pick)).to_lower())
+
+		_hoe_menu_close()
+		return
+
+	hoe_mode = str(HOE_MODES[_hoe_menu_index]["id"])
+
+	if hoe_mode != "garden":
+		_inv._on_notice("Hoe: %s" % str(HOE_MODES[_hoe_menu_index]["name"]))
+		_hoe_menu_close()
+		return
+
+	_garden_page()
+
+
+# Right click in the list: the plant list goes back to the hoe's actions; the actions close.
+func _hoe_menu_back() -> void:
+	if _hoe_menu_page == "garden":
+		_hoe_menu_page = "modes"
+
+		for n in HOE_MODES.size():
+			if str(HOE_MODES[n]["id"]) == hoe_mode:
+				_hoe_menu_index = n
+
+		_hoe_menu_refresh()
+		return
+
+	_hoe_menu_close()
 
 
 func _hoe_menu_close() -> void:
@@ -2029,7 +2556,6 @@ func _hoe_menu_close() -> void:
 # Grade line points: the first click sets A, the next B, the next starts a new line at A. Stakes mark them; the server keeps its own copy.
 var _grade_a: Vector3 = Vector3.ZERO
 var _grade_has_a: bool = false
-var _grade_has_b: bool = false
 var _stakes: Array = []
 
 
@@ -2071,29 +2597,202 @@ func _make_stake() -> Node3D:
 	return stake
 
 
-func _grade_point_here() -> void:
-	var from: Vector3 = _camera.global_position
-	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)
-	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
+# Surveyor mode (Dave 17 Nov 2026): after the first marker every new marker joins the one before it at any distance, straight through trees,
+# stumps and rocks; only a building refuses it (SurveyLine, the line is red). Clicking the last marker again ends the survey; so does putting the hoe away.
+const SURVEY_AIM_M := 150.0       # how far the crosshair can pick out ground for a marker (a ray this long; server_items SURVEY_REACH_M). Not a road limit: markers join at any distance
+const SURVEY_END_M := 1.5         # a click this near the last marker ends the survey
 
-	if hit.is_empty() or hit["collider"].has_meta("species_ids"):
-		_inv._on_notice("Aim the hoe at the ground within reach to set a point")
+
+func _survey_aim() -> Dictionary:
+	var from: Vector3 = _camera.global_position
+	return _camera.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * SURVEY_AIM_M))
+
+
+func _grade_point_here() -> void:
+	var hit: Dictionary = _survey_aim()
+
+	if hit.is_empty():
+		_inv._on_notice("No ground under the crosshair within %d m (as far as the hoe can aim): walk on and set the next marker, the road joins it at any distance" % int(SURVEY_AIM_M))
 		return
 
-	# Surveyor mode: after the first marker every new marker joins to the one before it, and the server builds the road behind the player.
-	# A marker more than 40 m from the last one starts a new road.
-	var chained: bool = _grade_has_a and _grade_a.distance_to(hit["position"]) <= 40.0
+	var at: Vector3 = hit["position"]   # a trunk, a rock or a log under the crosshair: the server takes the ground under that spot
 
+	if _grade_has_a and Vector2(at.x - _grade_a.x, at.z - _grade_a.z).length() < SURVEY_END_M:
+		_survey_end()
+		_inv._on_notice("Survey ended: the next marker starts a new road")
+		return
+
+	if _grade_has_a and survey_blocked(_grade_a, at):
+		_inv._on_notice("A building is in the way: survey the road round it")
+		return
+
+	var chained: bool = _grade_has_a
 	_grade_has_a = true
-	_grade_has_b = chained
-	_net.inventory_action.rpc_id(1, Net.ACT_HOE_GRADE_POINT, held_slot, 1 if chained else 0, 0, hit["position"])
-	_inv._on_notice("Marker set: the road builds behind you. Shift + right click to carry on" if chained else "Marker 1 set: walk on and Shift + right click again, the road builds behind you")
+	_net.inventory_action.rpc_id(1, Net.ACT_HOE_GRADE_POINT, held_slot, 1 if chained else 0, 0, at)
+	_inv._on_notice("Marker set: the road builds along the line. Set the next, or click this marker again to end" if chained else "Marker 1 set: aim where the road goes and set the next marker")
 
-	_grade_a = hit["position"]
+	_grade_a = at
 	var stake: Node3D = _make_stake()
 	_root.add_child(stake)
-	stake.global_position = hit["position"] + Vector3(0.0, 0.5, 0.0)
+	stake.global_position = at + Vector3(0.0, 0.5, 0.0)
 	_stakes.append(stake)
+
+
+func _survey_end() -> void:
+	_grade_has_a = false
+
+
+# True when a building the client knows of (StructureLook.survey_foot) stands in the road's way from a to b: the same question the server asks.
+func survey_blocked(a: Vector3, b: Vector3) -> bool:
+	var a2: Vector2 = Vector2(a.x, a.z)
+	var b2: Vector2 = Vector2(b.x, b.z)
+	var lo: Vector2 = Vector2(minf(a.x, b.x), minf(a.z, b.z))
+	var hi: Vector2 = Vector2(maxf(a.x, b.x), maxf(a.z, b.z))
+
+	for id in _inv._world:
+		var row: Dictionary = _inv._world[id]
+		var state: int = int(row.get("state", 0))
+
+		if state in [0, 2, 4, 10]:
+			continue   # loose things, stumps and rocks: the road goes through them
+
+		var foot: Vector2 = StructureLookScript.survey_foot(state)
+
+		if foot == Vector2.ZERO:
+			continue
+
+		var pos: Vector3 = row["pos"]
+		var reach: float = foot.length() * 0.5 + SurveyLine.HALF_WIDTH_M
+
+		if pos.x < lo.x - reach or pos.x > hi.x + reach or pos.z < lo.y - reach or pos.z > hi.y + reach:
+			continue
+
+		if SurveyLine.crosses(a2, b2, Vector2(pos.x, pos.z), float(row.get("yaw", 0.0)), foot):
+			return true
+
+	return false
+
+
+# The survey line (Dave 17 Nov 2026): while a survey is going, a bright line runs over the ground from the last marker to the spot under the crosshair,
+# green where the road can go, red when a building is in the way. Drawn on top of everything (no depth test) so it shows through grass and trees.
+# Rebuilt ten times a second, only when the aim has moved; the ground under it is found with one ray every SURVEY_LINE_STEP_M (at most
+# SURVEY_LINE_RAYS, further apart on a long line). Client side only: nobody else sees it.
+const SURVEY_LINE_STEP_M := 1.0
+const SURVEY_LINE_RAYS := 160
+const SURVEY_LINE_WIDTH_M := 0.12
+const SURVEY_LINE_LIFT_M := 0.08
+var _survey_mesh: MeshInstance3D = null
+var _survey_green: StandardMaterial3D = null
+var _survey_red: StandardMaterial3D = null
+var _survey_msec: int = 0
+var _survey_to: Vector3 = Vector3.INF
+var survey_line_red: bool = false   # what the line shows now (a test reads it)
+
+
+func _survey_line() -> void:
+	if _inv == null or _camera == null:
+		return
+
+	var on: bool = _grade_has_a and _hoe_in_hand() and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED
+
+	if not on:
+		if not _hoe_in_hand():
+			_survey_end()   # the hoe is put away: the survey is over (the server's road goes on building while a hoe is on the hotbar)
+
+		if _survey_mesh != null:
+			_survey_mesh.visible = false
+
+		_survey_to = Vector3.INF
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now < _survey_msec:
+		return
+
+	_survey_msec = now + 100
+	var hit: Dictionary = _survey_aim()
+
+	if hit.is_empty():
+		if _survey_mesh != null:
+			_survey_mesh.visible = false
+
+		_survey_to = Vector3.INF
+		return
+
+	var to: Vector3 = hit["position"]
+
+	if _survey_mesh != null and _survey_mesh.visible and to.distance_to(_survey_to) < 0.2:
+		return
+
+	_survey_to = to
+
+	if _survey_mesh == null:
+		_survey_mesh = MeshInstance3D.new()
+		_survey_mesh.mesh = ImmediateMesh.new()
+		_survey_mesh.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_survey_green = _survey_material(Color(0.2, 1.0, 0.25))
+		_survey_red = _survey_material(Color(1.0, 0.15, 0.1))
+		_root.add_child(_survey_mesh)
+
+	survey_line_red = survey_blocked(_grade_a, to)
+	var from: Vector3 = _grade_a
+	var flat: float = Vector2(to.x - from.x, to.z - from.z).length()
+	var n: int = clampi(int(ceil(flat / SURVEY_LINE_STEP_M)), 1, SURVEY_LINE_RAYS)
+	var side: Vector3 = Vector3(-(to.z - from.z), 0.0, to.x - from.x).normalized() * (SURVEY_LINE_WIDTH_M * 0.5) if flat > 0.01 else Vector3(SURVEY_LINE_WIDTH_M * 0.5, 0.0, 0.0)
+	var space: PhysicsDirectSpaceState3D = _camera.get_world_3d().direct_space_state
+	var mesh: ImmediateMesh = _survey_mesh.mesh
+	mesh.clear_surfaces()
+	mesh.surface_begin(Mesh.PRIMITIVE_TRIANGLE_STRIP, _survey_red if survey_line_red else _survey_green)
+
+	for k in range(n + 1):
+		var t: float = float(k) / float(n)
+		var p: Vector3 = from.lerp(to, t)
+
+		var down: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(p + Vector3(0.0, 60.0, 0.0), p - Vector3(0.0, 60.0, 0.0))
+
+		for attempt in 3:   # a tree's trunk is looked through (the road goes through it); the top of a rock or a log is not: the line lies over it
+			var ground: Dictionary = space.intersect_ray(down)
+
+			if ground.is_empty():
+				break
+
+			if ground["collider"] != null and ground["collider"].has_meta("species_ids"):
+				var skip: Array[RID] = down.exclude
+				skip.append(ground["rid"])
+				down.exclude = skip
+				continue
+
+			p.y = float(ground["position"].y)
+			break
+
+		p.y += SURVEY_LINE_LIFT_M
+		mesh.surface_add_vertex(p - side)
+		mesh.surface_add_vertex(p + side)
+
+	mesh.surface_end()
+	_survey_mesh.global_transform = Transform3D.IDENTITY
+	_survey_mesh.visible = true
+
+
+func _survey_material(color: Color) -> StandardMaterial3D:
+	var mat: StandardMaterial3D = StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = color
+	mat.no_depth_test = true
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mat.render_priority = 1
+	return mat
+
+
+# The server refused the last marker (a building it knows of that this client does not, or too many waiting): the line goes on from the survey's last kept marker.
+func _on_survey_refused(last: Vector3) -> void:
+	if not _grade_has_a or not _hoe_in_hand():
+		return   # the survey was ended (or the hoe put away) meanwhile
+
+	_grade_a = last
+	_grade_has_a = true
+	_survey_to = Vector3.INF
 
 
 # The server says the road builder has reached (or dropped) a marker: its red flag comes down.
@@ -2107,7 +2806,7 @@ func _on_road_marker_reached(at: Vector3) -> void:
 
 
 # A hoe stroke (path or smooth) at the ground under the crosshair; the server checks the hoe, the reach and the pace.
-func _hoe_here(action: int) -> void:
+func _hoe_here(action: int, b: int = 0) -> void:
 	var from: Vector3 = _camera.global_position
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)
 	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
@@ -2116,22 +2815,305 @@ func _hoe_here(action: int) -> void:
 		_inv._on_notice("Nothing to work there: aim the hoe at the ground within reach")
 		return
 
-	_net.inventory_action.rpc_id(1, action, held_slot, 0, 0, hit["position"])
+	_net.inventory_action.rpc_id(1, action, held_slot, b, 0, hit["position"])
 
-	# The hoe was silent (first-day tool audit, 3 Nov 2026): a soft scrape of the blade on the soil, firmer for tilling. Played when the click is sent, like the
-	# shovel fill (the server may still refuse). It borrows the spade-on-soil clips (no hoe recording yet).
+	# The hoe was silent (first-day tool audit, 3 Nov 2026): a soft scrape of the blade on the soil (a garden till is firmer, _till_garden_here). Played when the click is sent, like the
+	# shovel fill (the server may still refuse). It borrows the shovel-on-soil clips (no hoe recording yet).
 	if _sound != null:
-		_sound.hits.hit("spade", "soil", hit["position"], 0.7 if action == Net.ACT_TILL else 0.4)
+		_sound.hits.hit("shovel", "soil", hit["position"], 0.4)
 
 
-# A spade fill at the ground under the crosshair (right click): the server spends a shovelful and puts the ground back.
+# The hoe grid (Dave 14 Nov 2026; BugsList_Current.md entry 6, 18 Nov 2026): one grid of markers for Plant, Till Garden Grid and Till Soil 2m, garden_w across by
+# garden_d along (Alt + arrow keys, 1 to FarmRules.GRID_MAX_SIDE; Till Soil 2m is always 2 by 2), turned garden_yaw degrees (the wheel). Unturned, a 1 m grid sits on
+# the world's metre cells; aimed at a bed, a seed grid lines up on that bed. The server decides every marker: the preview asks it (a check request, answered by
+# hoe_verdict) whenever the grid changes, and colours the markers by the answer, neon green where the click will work and red where it will not (a tree, a large
+# rock, a building or the ground round it, too steep for the blend; for a plant: no tilled soil for a crop, a bed for a bush). One left click then does the whole
+# grid on the server. Before the first answer the markers are green.
+var garden_w: int = 1
+var garden_d: int = 1
+var garden_yaw: int = 0                  # degrees, the way a structure's yaw turns
+var _garden_centre: Vector2 = Vector2.ZERO   # the last plan's grid centre (the click sends it)
+var _verdict: Dictionary = {}            # the server's last hoe_verdict: {"kind", "code", "at", "state", "why", "cells"}
+var _asked: Array = []                   # the last check sent: [kind, code, at]
+var _asked_msec: int = 0
+const GARDEN_ASK_MSEC := 300             # a changed grid is asked about at most this often (the server answers at most every 250 ms)
+const GARDEN_REASK_MSEC := 1500          # and an unchanged one again this often (the world round it changes)
+const GARDEN_COUNTDOWN_MS := 20000       # Dave: after a garden, 20 s before the next Garden Grid
+var _garden_ready_msec: int = 0
+var _countdown_label: Label = null
+
+
+# What the click would send now for the grid round `aim`: {"kind" (ACT_TILL_GARDEN or ACT_PLANT_GRID), "code", "at", "number" (the plant's item), "points"
+# (in the server's FarmRules.grid_points order), "step"}; {} when Plant has nothing picked or none of it left.
+func _grid_request(aim: Vector3) -> Dictionary:
+	var step: float = 1.0
+	var w: int = garden_w
+	var d: int = garden_d
+	var kind: String = "till"
+	var number: int = 0
+
+	if hoe_mode == "soil":
+		w = 2
+		d = 2
+	elif hoe_mode == "garden":
+		number = _inv.table.number_of(garden_pick) if garden_pick != "" else 0
+		var picked: Array = FarmRules.plantables(_inv.crop_table(), [garden_pick] if number > 0 and _inv.stock_fill(number) > 0 else [], "_bush", _inv.tree_seed_table())
+
+		if picked.is_empty():
+			return {}
+
+		kind = str(picked[0]["kind"])
+		step = FarmRules.spacing_of(kind, _inv.crop_table().get(FarmRules.crop_of_seed(_inv.crop_table(), garden_pick), {}) if kind == "seed" else {})
+
+	var flat_aim: Vector2 = Vector2(aim.x, aim.z)
+	var anchor: Variant = null
+
+	if kind == "seed":
+		var beds: Array = _inv.bed_rows(aim, Vector2(float(w), float(d)).length() * step + 3.0)
+		var under: int = _inv.bed_in(beds, aim)
+
+		for row in beds:
+			if int(row[0]) == under and under != 0:
+				anchor = Vector2(row[1].x, row[1].z)   # line up on the bed aimed at
+
+	if anchor == null and (kind == "seed" or kind == "till") and garden_yaw == 0 and is_equal_approx(step, roundf(step)):
+		anchor = Vector2(floor(aim.x) + 0.5, floor(aim.z) + 0.5)   # unturned: on the world's metre cells, like the beds the server snaps
+
+	_garden_centre = FarmRules.grid_centre(w, d, step, flat_aim, garden_yaw, anchor)
+	var at: Vector3 = Vector3(_garden_centre.x, aim.y, _garden_centre.y)
+
+	if hoe_mode == "garden":
+		return {"kind": Net.ACT_PLANT_GRID, "code": garden_yaw * 10000 + w * 100 + d, "at": at, "number": number, "points": FarmRules.grid_points(w, d, step, _garden_centre, garden_yaw), "step": step}
+
+	return {"kind": Net.ACT_TILL_GARDEN, "code": (10000 if hoe_mode == "soil" else 0) + w * 100 + d, "at": at, "number": 0, "points": FarmRules.grid_points(w, d, 1.0, _garden_centre, garden_yaw), "step": 1.0}
+
+
+func _send_grid(request: Dictionary, check: bool) -> void:
+	var code: int = int(request["code"]) + (10000000 if check else 0)
+
+	if int(request["kind"]) == Net.ACT_PLANT_GRID:
+		_net.inventory_action.rpc_id(1, Net.ACT_PLANT_GRID, held_slot, int(request["number"]), code, request["at"])
+	else:
+		_net.inventory_action.rpc_id(1, Net.ACT_TILL_GARDEN, held_slot, garden_yaw, code, request["at"])
+
+
+# The server's answer for the grid as `request` asks it, {} when it has not answered that one yet.
+func _verdict_for(request: Dictionary) -> Dictionary:
+	if _verdict.is_empty() or int(_verdict["kind"]) != int(request["kind"]) or int(_verdict["code"]) != int(request["code"]):
+		return {}
+
+	var at: Vector3 = _verdict["at"]
+	return _verdict if Vector2(at.x - request["at"].x, at.z - request["at"].z).length() < 0.03 else {}
+
+
+func _on_hoe_verdict(kind: int, code: int, at: Vector3, state: int, why: String, cells: PackedByteArray) -> void:
+	_verdict = {"kind": kind, "code": code, "at": at, "state": state, "why": why, "cells": cells}
+
+	if state == 2 and kind == Net.ACT_TILL_GARDEN and floori(float(code) / 10000.0) == 0:
+		_garden_ready_msec = Time.get_ticks_msec() + GARDEN_COUNTDOWN_MS   # the garden is taken on: the grid gives way to the countdown
+
+
+func garden_countdown_s() -> int:
+	return maxi(ceili(float(_garden_ready_msec - Time.get_ticks_msec()) / 1000.0), 0)
+
+
+# Plant (left click): the whole grid goes to the server, which plants every usable point from the supplies (server_items.plant_grid).
+func _garden_here() -> void:
+	var hit: Dictionary = _ground_under_crosshair()
+
+	if hit.is_empty():
+		_inv._on_notice("Aim the hoe at the ground or a bed within reach to plant")
+		return
+
+	var request: Dictionary = _grid_request(hit["position"])
+
+	if request.is_empty():
+		_inv._on_notice("Nothing to plant: right click and choose what to plant" if garden_pick == "" else "No %s left to plant: right click and choose another plant" % _inv.table.name_of(_inv.table.number_of(garden_pick)).to_lower())
+		return
+
+	_send_grid(request, false)
+	_arm_play("use", 0.6)
+
+
+# Till Garden Grid and Till Soil 2m (left click): the grid goes to the server, which checks the whole area, then levels, blends and tills it (server_items.till_garden).
+func _till_garden_here() -> void:
+	if hoe_mode == "till" and garden_countdown_s() > 0:
+		_inv._on_notice("The next garden grid is ready in %d s" % garden_countdown_s())
+		return
+
+	var hit: Dictionary = _ground_under_crosshair()
+
+	if hit.is_empty():
+		_inv._on_notice("Aim the hoe at the ground within reach to mark out a garden")
+		return
+
+	var request: Dictionary = _grid_request(hit["position"])
+	var known: Dictionary = _verdict_for(request)
+
+	if not known.is_empty() and int(known["state"]) == 0 and str(known["why"]) != "":
+		_inv._on_notice(str(known["why"]))   # the server would refuse it: say why without asking again
+		return
+
+	_send_grid(request, false)
+	_arm_play("use", 0.6)
+
+	if _sound != null:
+		_sound.hits.hit("shovel", "soil", hit["position"], 0.7)
+
+
+# Alt + arrow keys (KeyBindings garden_*): the hoe grid one point wider or narrower (`across`), longer or shorter (`along`). Returns true when it was used here.
+func garden_resize(across: int, along: int) -> bool:
+	if not _hoe_grid_on():
+		return false
+
+	if hoe_mode == "soil":
+		_inv._on_notice("Till Soil 2m is always a 2 m patch")
+		return true
+
+	garden_w = clampi(garden_w + across, 1, FarmRules.GRID_MAX_SIDE)
+	garden_d = clampi(garden_d + along, 1, FarmRules.GRID_MAX_SIDE)
+	_inv._on_notice("Hoe grid: %d by %d" % [garden_w, garden_d])
+	return true
+
+
+# Whether the hoe's grid is out (in hand, a tilling mode, or Plant with something picked, its list shut).
+func _hoe_grid_on() -> bool:
+	return _hoe_in_hand() and not _hoe_menu_open and (hoe_mode == "till" or hoe_mode == "soil" or (hoe_mode == "garden" and garden_pick != ""))
+
+
+# The ground point under the crosshair within reach, {} for none (or a plant's collider).
+func _ground_under_crosshair() -> Dictionary:
+	var from: Vector3 = _camera.global_position
+	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M))
+	return {} if hit.is_empty() or hit["collider"].has_meta("species_ids") else hit
+
+
+# The grid preview: a flat marker on every point of the grid, neon green where the next click will work, red where it will not, faint green where a plant would
+# go but the supplies run out first; after a garden, the countdown in its place. Redrawn ten times a second while a grid is out. PLACEHOLDER look.
+var _garden_marks: Array = []            # MeshInstance3D pool
+var _garden_mark_ok: StandardMaterial3D = null
+var _garden_mark_bad: StandardMaterial3D = null
+var _garden_mark_short: StandardMaterial3D = null
+var _garden_preview_msec: int = 0
+var garden_preview_cells: int = 0        # how many markers show now (tests read it)
+
+
+func _garden_preview() -> void:
+	_show_countdown()
+	var on: bool = _hoe_grid_on() and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and not (hoe_mode == "till" and garden_countdown_s() > 0)
+
+	if not on:
+		if garden_preview_cells > 0:
+			for mark in _garden_marks:
+				mark.visible = false
+
+			garden_preview_cells = 0
+
+		return
+
+	var now: int = Time.get_ticks_msec()
+
+	if now < _garden_preview_msec:
+		return
+
+	_garden_preview_msec = now + 100
+	var hit: Dictionary = _ground_under_crosshair()
+	var request: Dictionary = _grid_request(hit["position"]) if not hit.is_empty() else {}
+	var points: Array = request.get("points", [])
+
+	if not request.is_empty():
+		var key: Array = [int(request["kind"]), int(request["code"]), Vector2(request["at"].x, request["at"].z).snapped(Vector2(0.05, 0.05))]
+
+		if (key != _asked and now - _asked_msec >= GARDEN_ASK_MSEC) or now - _asked_msec >= GARDEN_REASK_MSEC:
+			if hoe_mode == "garden" and key == _asked:
+				_inv.ask_stock_now()   # the supplies in reach change as the player walks: the plant count follows
+
+			_asked = key
+			_asked_msec = now
+			_send_grid(request, true)
+
+	var known: Dictionary = _verdict_for(request) if not request.is_empty() else {}
+
+	if _garden_mark_ok == null:
+		_garden_mark_ok = StandardMaterial3D.new()
+		_garden_mark_ok.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+		_garden_mark_ok.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		_garden_mark_ok.albedo_color = Color(0.25, 1.0, 0.2, 0.6)   # neon green (Dave)
+		_garden_mark_bad = _garden_mark_ok.duplicate()
+		_garden_mark_bad.albedo_color = Color(0.95, 0.2, 0.15, 0.55)
+		_garden_mark_short = _garden_mark_ok.duplicate()
+		_garden_mark_short.albedo_color = Color(0.25, 1.0, 0.2, 0.2)
+
+	var side: float = minf(float(request.get("step", 1.0)), 1.0) * 0.8
+
+	while _garden_marks.size() < points.size():
+		var mark: MeshInstance3D = MeshInstance3D.new()
+		var box: BoxMesh = BoxMesh.new()
+		box.size = Vector3(1.0, 0.04, 1.0)
+		mark.mesh = box
+		mark.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_root.add_child(mark)
+		_garden_marks.append(mark)
+
+	var cells: PackedByteArray = known.get("cells", PackedByteArray())
+
+	for n in _garden_marks.size():
+		var mark: MeshInstance3D = _garden_marks[n]
+		var flat: Vector2 = points[n] if n < points.size() else Vector2.ZERO
+		var y: float = _terrain_y(flat.x, flat.y, hit["position"].y, 3.0) if n < points.size() else NAN
+		mark.visible = n < points.size() and not is_nan(y)
+
+		if not mark.visible:
+			continue
+
+		var on_bed: bool = _inv.bed_id_at(Vector3(flat.x, y, flat.y)) != 0
+		mark.global_position = Vector3(flat.x, y + (0.35 if on_bed else 0.05), flat.y)   # over a bed or plot: above its frame
+		mark.rotation.y = deg_to_rad(float(garden_yaw))   # square with the grid
+		mark.scale = Vector3(side, 1.0, side)
+		var state: int = 1
+
+		if not known.is_empty():
+			state = int(cells[n]) if n < cells.size() else (1 if int(known["state"]) != 0 else 0)
+
+		mark.material_override = _garden_mark_ok if state == 1 else (_garden_mark_short if state == 2 else _garden_mark_bad)
+
+	garden_preview_cells = points.size()
+
+
+# After a Garden Grid (Dave 18 Nov 2026): a 20 s countdown in medium red numbers at the middle of the screen takes the grid's place while the hoe is out in that
+# mode; the next garden waits for it wherever the player goes.
+func _show_countdown() -> void:
+	var left: int = garden_countdown_s()
+	var show: bool = left > 0 and _hoe_in_hand() and hoe_mode == "till" and not _hoe_menu_open and _hud_layer != null
+
+	if show and _countdown_label == null:
+		_countdown_label = Label.new()
+		_countdown_label.set_anchors_preset(Control.PRESET_CENTER)
+		_countdown_label.grow_horizontal = Control.GROW_DIRECTION_BOTH
+		_countdown_label.grow_vertical = Control.GROW_DIRECTION_BOTH
+		_countdown_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		_countdown_label.add_theme_font_size_override("font_size", 44)
+		_countdown_label.add_theme_color_override("font_color", Color(0.9, 0.1, 0.08))
+		_countdown_label.add_theme_color_override("font_outline_color", Color(0.0, 0.0, 0.0, 0.8))
+		_countdown_label.add_theme_constant_override("outline_size", 6)
+		_countdown_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_hud_layer.add_child(_countdown_label)
+
+	if _countdown_label != null:
+		_countdown_label.visible = show
+
+		if show:
+			_countdown_label.text = str(left)
+
+
+# A shovel fill at the ground under the crosshair (right click): the server spends a shovelful and puts the ground back.
 func _fill_here() -> void:
 	var from: Vector3 = _camera.global_position
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - _camera.global_transform.basis.z * REACH_M)
 	var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(query)
 
 	if hit.is_empty() or hit["collider"].has_meta("species_ids"):
-		_inv._on_notice("Nothing to fill there: aim the spade at the ground within reach")
+		_inv._on_notice("Nothing to fill there: aim the shovel at the ground within reach")
 		return
 
 	_net.inventory_action.rpc_id(1, Net.ACT_FILL, held_slot, 0, 0, hit["position"])
@@ -2140,7 +3122,7 @@ func _fill_here() -> void:
 		_sound.placed.shovel_load(false, hit["position"])   # shortcut: always the soil scoop, played when the click is sent (the server may still refuse); revisit when the fill result carries its material
 
 
-var raise_mode: bool = false              # the spade raises ground (Dave 2026-10-22); false digs
+var raise_mode: bool = false              # the shovel raises ground (Dave 2026-10-22); false digs
 
 
 func _other_tool_hint() -> String:
@@ -2150,28 +3132,28 @@ func _other_tool_hint() -> String:
 		"net":
 			return "Stand at the water's edge facing the water and hold the left button for about 20 seconds"
 		"hoe":
-			return "The hoe does what its mode says (left click; now: %s). Right click opens a window to pick: path, smooth, till or survey a path. It uses no items, only its own wear" % hoe_mode
+			return "The hoe does what its mode says (left click; now: %s). Right click opens a window to pick: path, smooth, till a garden, survey a path, plant something (seeds, a dug-up bush or a tree's seed from your pack) or dig an irrigation trench. With a garden grid out, Alt + arrow keys size it and the wheel turns it. Only planting uses items" % _hoe_mode_name()
 		"hammer":
 			return "Right click opens the hammer menu: pick a blueprint, then left click places it"
-		"spade":
-			return "The spade digs roots and bulbs (press E at a plant), digs the ground (left click) or raises it in Raise mode (right click switches; each raise uses soil, sand, gravel, clay or stone from your pack)"
+		"shovel":
+			return "The shovel digs roots and bulbs (press E at a plant), digs the ground (left click) or raises it in Raise mode (right click switches; each raise uses soil, sand, gravel, clay or stone from your pack)"
 
 	return "%s: nothing to use it on yet" % _inv.table.name_of(held_number())
 
 
 # The line over the hotbar. Dave 10 Nov 2026: it does not name what is in hand ("it doesnt need to say wooden bow in hand. or anything"), so it
 # shows only a state the player has to know: the picked blueprint and why it is red, the hammer's mode, why a placement is red, and the
-# spade's or hoe's mode. Empty otherwise.
+# shovel's or hoe's mode. Empty otherwise.
 func _caption() -> String:
 	if held_number() == 0:
 		return ""
 
 	if _blueprinting():
-		var short: bool = not blueprints.can_afford(_hammer_tier())
+		var short: bool = not blueprints.can_afford(_build_tier())
 		var text: String = "%s blueprint" % blueprints.name_of(blueprints.picked) if blueprints.plan_picked < 0 else "%s (%d pieces)" % [blueprints.plans.plans[blueprints.plan_picked]["name"], blueprints.plans.plans[blueprints.plan_picked]["pieces"].size()]
 
-		if PlacementRules.reason_text(blueprint_state) != "":
-			return text + "   (red: %s)" % PlacementRules.reason_text(blueprint_state)
+		if _reason() != "":
+			return text + "   (red: %s)" % _reason()
 
 		if wheel_note != "":
 			text += "   (%s)" % wheel_note
@@ -2179,10 +3161,7 @@ func _caption() -> String:
 		if short and blueprints.plan_picked >= 0:
 			return text + "   (red: not enough materials; right click: the list)"
 
-		if short:
-			return text + "   (left click: set down a blue blueprint, then E on it to deposit materials; right click: the list)"
-
-		return text + "   (left click: build it with the materials in your pack; right click: the list)"
+		return text + "   (left click: set down a blue blueprint, then hit it with a hammer to add the materials; right click: the list)"   # placing never takes materials (Dave 18 Nov 2026)
 
 	if _hammer_tier() > 0 and blueprints.mode == "repair":
 		return "Repair: left click a worn piece to mend it, or a blueprint to fill it from all around you; right click: the menu"
@@ -2190,16 +3169,19 @@ func _caption() -> String:
 	if _hammer_tier() > 0 and blueprints.mode == "save":
 		return "Save building plan: left click a building to keep it; right click: the menu"
 
-	if _is_placeable() and PlacementRules.reason_text(blueprint_state) != "":
-		return "Red: %s" % PlacementRules.reason_text(blueprint_state)
+	if _is_placeable() and _reason() != "":
+		return "Red: %s" % _reason()
 
 	if _is_placeable() and wheel_note != "":
 		return wheel_note
 
 	var tool_class: String = str(_inv.table.entry(held_id()).get("tool_class", "")) if _is_other_tool() else ""
 
-	if tool_class == "spade":
+	if tool_class == "shovel":
 		return "%s (right click switches)" % ("Raise" if raise_mode else "Dig")
+
+	if _pipe_hand():
+		return _pipe_caption()
 
 	if tool_class == "hoe":
 		return "%s (right click: choose what it does)" % _hoe_mode_name()
@@ -2208,21 +3190,30 @@ func _caption() -> String:
 
 
 func _hoe_mode_name() -> String:
+	if hoe_mode == "garden":
+		return "Plant %s, %d by %d, turned %d degrees (Alt + arrows: rows and columns; wheel: turn)" % [_inv.table.name_of(_inv.table.number_of(garden_pick)).to_lower(), garden_w, garden_d, garden_yaw] if garden_pick != "" else "Plant: choose what to plant"
+
+	if hoe_mode == "till":
+		return "Till Garden Grid - 20m Edge Blend, %d by %d, turned %d degrees (Alt + arrows: size; wheel: turn)%s" % [garden_w, garden_d, garden_yaw, "; ready in %d s" % garden_countdown_s() if garden_countdown_s() > 0 else ""]
+
 	for mode in HOE_MODES:
 		if str(mode["id"]) == hoe_mode:
 			return str(mode["name"])
 
-	return "Path"
+	return "Level"
 
 
 func _show_model() -> void:
 	var number: int = held_number() if _inv != null else 0
 
-	if not _is_spear() and not _is_axe() and not _is_torch() and not _is_doused_torch() and not _is_knife() and not _is_other_tool() and not _is_placeable() and not _is_look_item():
+	if not _is_spear() and not _is_axe() and not _is_torch() and not _is_knife() and not _is_other_tool() and not _is_placeable() and not _is_look_item():
 		number = 0
 
 	if number != 0 and _left_number() == number and off_number() == 0:
 		number = 0      # a torch taken as the main item is drawn in the left hand in third person (_left_number)
+
+	if number != 0 and _held_torch_out():
+		number = -number   # the same torch out is drawn again, without its flame
 
 	if number == _shown_number:
 		return
@@ -2234,7 +3225,7 @@ func _show_model() -> void:
 		_model = null
 
 	if number != 0:
-		_model = _make_look_model() if _is_look_item() else _make_kit_model() if _is_placeable() else _make_spear_model() if _is_spear() else (_make_torch_model() if _is_torch() or _is_doused_torch() else (_make_knife_model() if _is_knife() else (_make_other_model() if _is_other_tool() else _make_axe_model())))
+		_model = _make_look_model() if _is_look_item() else _make_kit_model() if _is_placeable() else _make_spear_model() if _is_spear() else (_make_torch_model("", _held_torch_out()) if _is_torch() else (_make_knife_model() if _is_knife() else (_make_other_model() if _is_other_tool() else _make_axe_model())))
 		_mount_model()
 
 
@@ -2264,13 +3255,18 @@ func _mount_model() -> void:
 		return
 
 	_arms.hand_mount_r.add_child(_model)
-	var tilt: Basis = Basis(Vector3.RIGHT, deg_to_rad(TOOL_TILT_DEG if kind in ["spear", "kit"] else TOOL_TILT_SLIGHT_DEG))
+
+	if kind == "spear":
+		_aim_spear()   # placed every frame from the view, not along the fingers
+		return
+
+	var tilt: Basis = Basis(Vector3.RIGHT, deg_to_rad(TOOL_TILT_DEG if kind == "kit" else TOOL_TILT_SLIGHT_DEG))
 	var turn: Basis = Basis.IDENTITY
-	var grip: Vector3 = Vector3(0.0, 0.0, -SPEAR_GRIP_Z)
+	var grip: Vector3
 
 	if kind == "kit":
 		grip = Vector3(0.0, -0.03, -0.14)   # carried in the palm, a little ahead of the hand
-	elif kind != "spear":
+	else:
 		turn = Basis(Vector3.RIGHT, deg_to_rad(-90.0))   # +Y (handle to head) becomes -Z (along the fingers)
 
 		if str(_inv.table.entry(held_id()).get("tool_class", "")) == "hoe":
@@ -2285,16 +3281,33 @@ func _mount_model() -> void:
 	_model.position = tilt * grip / ARMS_SCALE
 
 
+# The share of the grip distance (middle to grip point) the third-person hand takes on a tool of this tool_class.
+static func third_choke(tool_class: String) -> float:
+	return 1.0 if tool_class in THIRD_FULL_GRIP else THIRD_CHOKE
+
+
 # Third person: the hand hangs at the side (mount -Z down the fingers, +Y forward, +Z up), so a tool is turned to stand up and a little forward.
 func _mount_model_third(kind: String) -> void:
 	_avatar_rig.hand_mount_r.add_child(_model)
+
+	if kind == "spear":
+		_aim_spear()
+		return
+
+	third_hold(_model, kind, str(_inv.table.entry(held_id()).get("tool_class", "")))
+
+	if kind != "kit":
+		_third_fist().visible = true
+
+
+# The held model's place in the third-person hand mount (mount -Z down the fingers, +Y forward, +Z up). Static so tools/shot_held.gd poses a
+# held item exactly as the game does.
+static func third_hold(model: Node3D, kind: String, carried: String) -> void:
 	var turn: Basis = Basis(Vector3.RIGHT, deg_to_rad(THIRD_LEAN_DEG))
-	var grip: Vector3 = Vector3(0.0, float(_model.get_meta("grip_y", GRIP_ALONG_Y.get(kind, 0.0))) * THIRD_CHOKE, 0.0)   # the hand sits grip below the model middle, on the handle end (Dave 2026-10-22: it was held by the head)
+	var grip: Vector3 = Vector3(0.0, float(model.get_meta("grip_y", GRIP_ALONG_Y.get(kind, 0.0))) * third_choke(carried), 0.0)   # the hand sits grip below the model middle, on the handle end (Dave 2026-10-22: it was held by the head)
 
-	var carried: String = str(_inv.table.entry(held_id()).get("tool_class", ""))
-
-	if carried == "spade":
-		turn = Basis(Vector3.RIGHT, deg_to_rad(THIRD_SPADE_PITCH_DEG))
+	if carried == "shovel":
+		turn = Basis(Vector3.RIGHT, deg_to_rad(THIRD_SHOVEL_PITCH_DEG))
 	elif carried == "hoe":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(THIRD_HOE_PITCH_DEG))
 	elif carried == "saw":
@@ -2302,17 +3315,53 @@ func _mount_model_third(kind: String) -> void:
 	elif carried == "rod":
 		turn = Basis(Vector3.RIGHT, deg_to_rad(THIRD_ROD_PITCH_DEG))
 
-	if kind == "spear":
-		turn = Basis(Vector3.RIGHT, deg_to_rad(150.0))
-		grip = Vector3(0.0, 0.0, -SPEAR_GRIP_Z)
-	elif kind == "kit":
+	if kind == "kit":
 		turn = Basis.IDENTITY
 		grip = Vector3(0.0, -0.03, -0.14)
 
-	_model.basis = turn
-	_model.position = turn * grip
+	model.basis = turn
+	model.position = turn * grip
 
-	if kind != "kit":
+
+# A spear is held as a spear, not a knife (TEST-004, Dave's playtest 12 Nov 2026): the shaft runs through the fist pointing ahead, the hand
+# SPEAR_GRIP_Z behind the model's middle, whatever the hand bone's own angle (the jab clip is a punch, which turned a spear laid along the
+# fingers into a dagger grip). Third person: the body's facing (the avatar root faces -Z, as the game does), lifted SPEAR_LIFT_DEG. First
+# person: the facing tipped down SPEAR_REST_DOWN_DEG at rest, so the spear hangs below the view with the arms (Dave 21 and 25 Oct: the arms
+# show only when working or looking down), turning to the view as the arms come up to jab or aim (_arm_up). Placed every frame after the arms.
+const SPEAR_LIFT_DEG := 8.0
+const SPEAR_REST_DOWN_DEG := 35.0
+
+
+func _aim_spear() -> void:
+	if _model == null or not _mounted or not _is_spear() or not _model.is_inside_tree():
+		return
+
+	var mount: Node3D = _model.get_parent() as Node3D
+	var lift: Vector3 = Vector3.UP * tan(deg_to_rad(SPEAR_LIFT_DEG))
+	var tip: Vector3
+
+	if _first_person:
+		var rest: Vector3 = Basis(Vector3.UP, _camera.global_rotation.y) * Basis(Vector3.RIGHT, -deg_to_rad(SPEAR_REST_DOWN_DEG)) * Vector3.FORWARD
+		tip = rest.slerp(-_camera.global_transform.basis.z, clampf(_arm_up, 0.0, 1.0))
+	else:
+		var avatar: Node3D = _avatar_rig as Node3D
+
+		if avatar == null:
+			return
+
+		var front: Vector3 = avatar.global_basis * Vector3.FORWARD
+		front.y = 0.0
+
+		if front.length_squared() < 1e-12:
+			return
+
+		tip = (front.normalized() + lift).normalized()
+
+	var z: Vector3 = -tip                                          # the spear's point is its model -Z
+	var x: Vector3 = (Vector3.UP if absf(tip.y) < 0.99 else Vector3.BACK).cross(z).normalized()
+	_model.global_transform = Transform3D(Basis(x, z.cross(x), z), mount.global_position + tip * SPEAR_GRIP_Z)
+
+	if not _first_person:
 		_third_fist().visible = true
 
 
@@ -2329,6 +3378,10 @@ func _third_fist() -> MeshInstance3D:
 
 # The same closed fist on any held model (the left-hand torch too).
 func _third_fist_on(model: Node3D) -> MeshInstance3D:
+	return third_fist_on(model, _third_skin_color())
+
+
+static func third_fist_on(model: Node3D, skin_color: Color) -> MeshInstance3D:
 	var fist: MeshInstance3D = model.get_node_or_null(THIRD_FIST_NAME) as MeshInstance3D
 
 	if fist == null:
@@ -2340,7 +3393,7 @@ func _third_fist_on(model: Node3D) -> MeshInstance3D:
 		ball.radial_segments = 12
 		ball.rings = 6
 		var skin: StandardMaterial3D = StandardMaterial3D.new()
-		skin.albedo_color = _third_skin_color()
+		skin.albedo_color = skin_color
 		skin.roughness = 0.64          # the body's own skin roughness (Dave's glb, the metallic-roughness texture's median)
 		skin.metallic_specular = 0.35
 		ball.material = skin
@@ -2370,16 +3423,17 @@ func _third_skin_color() -> Color:
 func _show_off_model(delta: float) -> void:
 	var number: int = _left_number() if _inv != null else 0
 	blocking = number != 0 and _off_class() == "shield" and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_key_pressed(KEY_B)
+	var shown: int = -number if number != 0 and _slot_out(_left_slot()) else number   # a torch that went out is drawn again, without its flame
 
-	if number != _off_shown:
-		_off_shown = number
+	if shown != _off_shown:
+		_off_shown = shown
 
 		if _off_model != null:
 			_off_model.queue_free()
 			_off_model = null
 
 		if number != 0:
-			_off_model = _make_shield_model() if _off_class() == "shield" else (_make_lantern_model(_left_id()) if _lantern_in_left() else _make_torch_model(_left_id()))
+			_off_model = _make_shield_model() if _off_class() == "shield" else (_make_lantern_model(_left_id()) if _lantern_in_left() else _make_torch_model(_left_id(), _slot_out(_left_slot())))
 			_mount_off_model()
 
 	if _off_model == null:
@@ -2391,7 +3445,7 @@ func _show_off_model(delta: float) -> void:
 	if flicker != null:
 		flicker.visible = rig_lit or not held_light_budget.is_valid() or held_light_budget.call() or not _inv.fire_light_near(_camera.global_position, 8.0)
 		# A lantern's flame is behind horn: it barely flickers.
-		flicker.light_energy = (1.6 + 0.06 * sin(float(Time.get_ticks_msec()) * 0.011)) if lantern else 2.0 + 0.4 * sin(float(Time.get_ticks_msec()) * 0.017)
+		flicker.light_energy = (1.6 + 0.06 * sin(float(Time.get_ticks_msec()) * 0.011)) if lantern else FlameRules.TORCH_LIGHT_ENERGY + FlameRules.TORCH_LIGHT_FLICKER * sin(float(Time.get_ticks_msec()) * 0.017)
 
 	if lantern:
 		_hang_lantern()
@@ -2580,6 +3634,13 @@ func _make_kit_model() -> Node3D:
 		node.add_child(mark)
 		return node
 
+	if id == "mortar_pestle":
+		var bowl: MeshInstance3D = MeshInstance3D.new()   # the stone bowl with its pestle, carried at 70 percent (MORTAR_PESTLE.md MP-1: a placed station, carried like a kit)
+		bowl.mesh = BasicLook.mesh_for(id)
+		bowl.scale = Vector3.ONE * 0.7
+		node.add_child(bowl)
+		return node
+
 	if id == "chopping_block":
 		var model: Node3D = BuildingLook.block()       # the same model as the placed block, carried at 30 percent so it fits the hand
 		model.scale = Vector3.ONE * 0.3
@@ -2650,7 +3711,29 @@ func _make_container_model() -> Node3D:
 	return node
 
 
-# Any other tool: a handle with a flat blade (a spade) or a plain head, until the tool has its own model.
+# How far the hand sits from a held look's origin, toward its handle end (-x): a little in from that end (looks.json grip_from_end_m: on a model's own handle).
+static func look_grip_y(held: Mesh, def: Dictionary, held_scale: float) -> float:
+	return maxf(-held.get_aabb().position.x * held_scale - float(def.get("grip_from_end_m", HELD_GRIP_FROM_END_M)), 0.03)
+
+
+# A held look tool's model: its ground mesh turned and sized for the hand, the grip distance in the "grip_y" meta (see _mount_model). Static so
+# tools/shot_held.gd builds the same model; the bow and the net add their own parts in _make_look_tool_model.
+static func look_tool_node(item_id: String) -> Node3D:
+	var def: Dictionary = BasicLook.entry(item_id)
+	var shape: String = str(def.get("shape", ""))
+	var held: Mesh = BasicLook.mesh_for(item_id)
+	var length: float = held.get_aabb().size.x
+	var held_scale: float = HELD_SPEAR_SCALE if shape == "shaft" else (HELD_FIXED_SCALE[shape] if HELD_FIXED_SCALE.has(shape) else minf(HELD_LOOK_SCALE, HELD_LOOK_MAX_M / maxf(length, 0.01)))
+	var node: Node3D = Node3D.new()
+	var mesh: MeshInstance3D = MeshInstance3D.new()
+	mesh.mesh = held
+	mesh.basis = (HELD_LOOK_TURN[shape] as Basis) * Basis.from_scale(Vector3(1.0, 2.0, 2.0) * held_scale if shape == "arrow" else Vector3.ONE * held_scale)   # an arrow's shaft is drawn twice as thick in hand, or it is a hairline on screen
+	node.add_child(mesh)
+	node.set_meta("grip_y", look_grip_y(held, def, held_scale))
+	return node
+
+
+# Any other tool: a handle with a flat blade (a shovel) or a plain head, until the tool has its own model.
 # The ground mesh of a held tool, turned and sized for the hand, or null when the item has no tool look (it keeps its old model).
 # The grip distance from the model middle goes in the "grip_y" meta (see _mount_model).
 func _make_look_tool_model() -> Node3D:
@@ -2663,15 +3746,8 @@ func _make_look_tool_model() -> Node3D:
 	if shape == "hand_net":
 		return _make_hanging_net_model(def)
 
-	var held: Mesh = BasicLook.mesh_for(held_id())
-	var length: float = held.get_aabb().size.x
-	var held_scale: float = HELD_SPEAR_SCALE if shape == "shaft" else (HELD_FIXED_SCALE[shape] if HELD_FIXED_SCALE.has(shape) else minf(HELD_LOOK_SCALE, HELD_LOOK_MAX_M / maxf(length, 0.01)))
-	var node: Node3D = Node3D.new()
-	var mesh: MeshInstance3D = MeshInstance3D.new()
-	mesh.mesh = held
-	mesh.basis = (HELD_LOOK_TURN[shape] as Basis) * Basis.from_scale(Vector3(1.0, 2.0, 2.0) * held_scale if shape == "arrow" else Vector3.ONE * held_scale)   # an arrow's shaft is drawn twice as thick in hand, or it is a hairline on screen
-	node.add_child(mesh)
-	node.set_meta("grip_y", maxf(-held.get_aabb().position.x * held_scale - HELD_GRIP_FROM_END_M, 0.03))   # the hand sits a little in from the handle end
+	var node: Node3D = look_tool_node(held_id())
+	var mesh: MeshInstance3D = node.get_child(0) as MeshInstance3D
 
 	if shape == "bow":
 		node.set_meta("grip_y", 0.03)   # a bow is held at its middle
@@ -2752,7 +3828,7 @@ func _make_other_model() -> Node3D:
 	var rod: CylinderMesh = CylinderMesh.new()
 	rod.top_radius = 0.02
 	rod.bottom_radius = 0.025
-	rod.height = 0.9 if tool_class == "spade" else 0.6
+	rod.height = 0.9 if tool_class == "shovel" else 0.6
 	var wood: StandardMaterial3D = StandardMaterial3D.new()
 	wood.albedo_color = Color(0.45, 0.3, 0.16)
 	rod.material = wood
@@ -2760,12 +3836,12 @@ func _make_other_model() -> Node3D:
 	node.add_child(handle)
 	var head: MeshInstance3D = MeshInstance3D.new()
 	var block: BoxMesh = BoxMesh.new()
-	block.size = Vector3(0.16, 0.22, 0.025) if tool_class == "spade" else Vector3(0.06, 0.1, 0.1)
+	block.size = Vector3(0.16, 0.22, 0.025) if tool_class == "shovel" else Vector3(0.06, 0.1, 0.1)
 	var metal: StandardMaterial3D = StandardMaterial3D.new()
-	metal.albedo_color = Color(0.5, 0.42, 0.3) if tool_class == "spade" else Color(0.5, 0.5, 0.52)
+	metal.albedo_color = Color(0.5, 0.42, 0.3) if tool_class == "shovel" else Color(0.5, 0.5, 0.52)
 	block.material = metal
 	head.mesh = block
-	head.position = Vector3(0.0, rod.height * 0.5 + (0.0 if tool_class == "spade" else 0.0), 0.0)
+	head.position = Vector3(0.0, rod.height * 0.5 + (0.0 if tool_class == "shovel" else 0.0), 0.0)
 	node.add_child(head)
 	return node
 
@@ -2806,7 +3882,7 @@ func _make_lantern_model(id: String) -> Node3D:
 	light.light_color = Color(1.0, 0.65, 0.3)
 	light.omni_range = float(row.get("light_m", 8.0))
 	light.shadow_enabled = false
-	light.light_volumetric_fog_energy = 0.0
+	light.light_volumetric_fog_energy = 0.0   # FireWeather.register below gives it its halo share in the volumetric fog
 	light.light_cull_mask = 0xFFFFFFFD
 	light.position = body.position
 	lantern.add_child(light)
@@ -2815,8 +3891,8 @@ func _make_lantern_model(id: String) -> Node3D:
 
 
 # A torch in hand: a stick with a glowing head and one warm light (only while it is held).
-func _make_torch_model(id: String = "") -> Node3D:
-	var lit: bool = bool(_inv.table.entry(id if id != "" else held_id()).get("flame", false))   # a doused torch: no flame, no glow, no light
+func _make_torch_model(id: String = "", out: bool = false) -> Node3D:
+	var lit: bool = bool(_inv.table.entry(id if id != "" else held_id()).get("flame", false)) and not out   # a torch that went out: no flame, no glow, no light
 	var torch: Node3D = Node3D.new()
 	var wood: StandardMaterial3D = StandardMaterial3D.new()
 	wood.albedo_color = Color(0.42, 0.3, 0.17)
@@ -2949,9 +4025,10 @@ func _make_torch_model(id: String = "") -> Node3D:
 	var light: OmniLight3D = OmniLight3D.new()
 	light.name = "Light"
 	light.light_color = Color(1.0, 0.65, 0.3)
-	light.omni_range = float(_inv.table.entry(id if id != "" else held_id()).get("light_m", 9.0))
+	light.omni_range = float(_inv.table.entry(id if id != "" else held_id()).get("light_m", 9.0)) * FlameRules.TORCH_REACH_MULT
+	light.omni_attenuation = FlameRules.TORCH_LIGHT_ATTENUATION
 	light.shadow_enabled = false
-	light.light_volumetric_fog_energy = 0.0
+	light.light_volumetric_fog_energy = 0.0   # FireWeather.register below gives it its halo share in the volumetric fog
 	light.light_cull_mask = 0xFFFFFFFD   # the torch's own meshes (layer 2) are not lit by its own lights: they were over-lit orange at arm's length
 	light.position = Vector3(0.0, 0.62, 0.0)
 	torch.add_child(light)
@@ -2959,8 +4036,8 @@ func _make_torch_model(id: String = "") -> Node3D:
 	var hand_light: OmniLight3D = OmniLight3D.new()   # a short warm light low on the stick so the hand holding it is lit by the flame, not black
 	hand_light.name = "HandLight"
 	hand_light.light_color = Color(1.0, 0.6, 0.28)
-	hand_light.omni_range = 1.6
-	hand_light.light_energy = 0.7
+	hand_light.omni_range = FlameRules.TORCH_HAND_RANGE_M
+	hand_light.light_energy = FlameRules.TORCH_HAND_ENERGY
 	hand_light.shadow_enabled = false
 	hand_light.light_volumetric_fog_energy = 0.0   # no glowing ball in the fog around the hand
 	hand_light.light_cull_mask = 0xFFFFFFFD
@@ -3198,4 +4275,364 @@ func run_test() -> void:
 
 
 func inv_slots() -> int:
-	return _inv.inventory.SLOTS
+	return _inv.inventory.slot_count
+
+
+# --- Laying pipe from the hand (docs/design/PLUMBING_DESIGN.md s9, Dave 19 Nov 2026; values PROVISIONAL PV-3) ---
+# With a pipe in hand every laid pipe near by glows bright blue and every point a pipe can start from shows a glowing ring: a barrel's bottom centre, a
+# trough's or cistern's outlet, a well's or pump's spout. The aim takes the nearest ring, or the nearest point along a blue pipe (a dot slides along it
+# as you look). The first left click starts a run there; a line then follows the aim, green while the pipe in the pack covers it (in reach, at most
+# 30 m), red when it does not. The second click lays the run (pipe_lay, protocol 138): to a ring or a pipe, or ending in the open air ahead. Right click,
+# or putting the pipe away, drops the start. With a tap or drip head in hand the open pipe ends show as rings and a click fits it on the one aimed at.
+# The server checks it all again (server_items.pipe_lay). Client side only: nobody else sees the rings, the blue or the line.
+const PipeRules := preload("res://src/shared/pipe_rules.gd")
+const PIPE_SEE_M := 40.0          # rings and blue pipes are shown this near the player (looked for twice a second)
+const PIPE_AIM_M := 8.0           # the aim takes a ring or a pipe at most this far from the eye
+const PIPE_PICK_M := 0.4          # and passing at most this near it
+const PIPE_FREE_M := 6.0          # nothing taken: a run ends on the ground or what the aim hits first within this (the server's PLACE_REACH_M), else this far along the aim (Dave 19 Nov 2026 20:31Z: lay the far end on the ground)
+const PIPE_SCAN_MSEC := 500
+const PIPE_RING_R_M := 0.14
+var pipe_start: Vector3 = Vector3.INF     # the run's first point, INF until the first click (tests read these)
+var pipe_aim: Vector3 = Vector3.INF       # the point a click sets now
+var pipe_aim_kind: String = ""            # what it is on: "ring", "pipe", "air" or ""
+var pipe_line_red: bool = false
+var _pipe_rings_at: Array = []            # the points shown as rings: [[point, world id]]
+var _pipe_runs_near: Array = []           # the laid runs near by: [[end a, end b, world id]]
+var _pipe_scan_next: int = 0
+var _pipe_lit: Dictionary = {}            # world id -> the pipe's node, given the blue overlay
+var _pipe_ring_nodes: Array = []          # MeshInstance3D rings, reused
+var _pipe_dot: MeshInstance3D = null
+var _pipe_line: MeshInstance3D = null
+var _pipe_mat: Dictionary = {}            # "blue", "ring", "green", "red", "dot"
+var _pipe_shown: bool = false             # the rings and blue are up (put away once when the pipe leaves the hand)
+
+
+func _pipe_piece_m() -> float:
+	return float(_inv.table.entry(held_id()).get("pipe_m", 0.0)) if held_number() != 0 else 0.0
+
+
+func _pipe_fitting() -> String:
+	return str(_inv.table.entry(held_id()).get("fitting", "")) if held_number() != 0 else ""
+
+
+func _pipe_hand() -> bool:
+	return _inv != null and holding and (_pipe_piece_m() > 0.0 or _pipe_fitting() != "")
+
+
+func _pipe_caption() -> String:
+	if _pipe_fitting() != "":
+		return "Left click a pipe's end or joint (a glowing ring) to fit it"
+
+	if not pipe_start.is_finite():
+		return "Left click a glowing ring or a blue pipe to start a pipe"
+
+	if pipe_line_red:
+		return "Red: too far, or not enough pipe in your pack (right click: start again)"
+
+	var length: float = pipe_start.distance_to(pipe_aim) if pipe_aim.is_finite() else 0.0
+	return "%.1f m, %d pipe (left click: lay it; right click: start again)" % [length, PipeRules.pieces_for(length, _pipe_piece_m())]
+
+
+func _pipe_click(button: int, pressed: bool) -> bool:
+	if not pressed:
+		return button == MOUSE_BUTTON_LEFT or button == MOUSE_BUTTON_RIGHT
+
+	if button == MOUSE_BUTTON_RIGHT:
+		if pipe_start.is_finite():
+			pipe_start = Vector3.INF
+			_inv._on_notice("Pipe start cleared")
+
+		return true
+
+	if button != MOUSE_BUTTON_LEFT:
+		return false
+
+	if _pipe_fitting() != "":
+		if pipe_aim_kind != "ring":
+			_inv._on_notice("Aim at a pipe's end or joint (a glowing ring)")
+		else:
+			_arm_play("use", 0.6)
+			_net.pipe_lay.rpc_id(1, held_slot, pipe_aim, pipe_aim)
+
+		return true
+
+	if not pipe_start.is_finite():
+		if pipe_aim_kind != "ring" and pipe_aim_kind != "pipe":
+			_inv._on_notice("Start a pipe at a glowing ring or a blue pipe")
+		else:
+			pipe_start = pipe_aim
+
+		return true
+
+	if pipe_line_red or not pipe_aim.is_finite():
+		_inv._on_notice("Too far, or not enough pipe in your pack")
+		return true
+
+	_arm_play("use", 0.6)
+	_net.pipe_lay.rpc_id(1, held_slot, pipe_start, pipe_aim)
+	pipe_start = Vector3.INF
+	return true
+
+
+# Every frame: the rings and blue pipes (looked for again twice a second), the aimed point and dot, and the line from the start.
+func _pipe_mode() -> void:
+	if _inv == null or _camera == null:
+		return
+
+	if not _pipe_hand():
+		if _pipe_shown:
+			_pipe_off()
+
+		return
+
+	_pipe_shown = true
+	var now: int = Time.get_ticks_msec()
+
+	if now >= _pipe_scan_next:
+		_pipe_scan_next = now + PIPE_SCAN_MSEC
+		_pipe_scan()
+
+	var eye: Vector3 = _camera.global_position
+	var dir: Vector3 = -_camera.global_transform.basis.z
+	var best_d: float = PIPE_PICK_M
+	pipe_aim = Vector3.INF
+	pipe_aim_kind = ""
+
+	for ring in _pipe_rings_at:
+		var near: Array = PipeRules.ray_nearest(eye, dir, ring[0], ring[0])
+
+		if float(near[2]) <= PIPE_AIM_M and float(near[1]) - 0.05 < best_d:   # a ring wins a tie with the pipe it sits on
+			best_d = float(near[1]) - 0.05
+			pipe_aim = ring[0]
+			pipe_aim_kind = "ring"
+
+	if _pipe_fitting() == "":
+		for run in _pipe_runs_near:
+			var near: Array = PipeRules.ray_nearest(eye, dir, run[0], run[1])
+
+			if float(near[2]) <= PIPE_AIM_M and float(near[1]) < best_d:
+				best_d = float(near[1])
+				pipe_aim = near[0]
+				pipe_aim_kind = "pipe"
+
+				for end in [run[0], run[1]]:
+					if pipe_aim.distance_to(end) <= PipeRules.SNAP_M:
+						pipe_aim = end   # this near an end is that end (the server's rule)
+
+	if pipe_aim_kind == "" and pipe_start.is_finite():
+		var hit: Dictionary = _camera.get_world_3d().direct_space_state.intersect_ray(PhysicsRayQueryParameters3D.create(eye, eye + dir * PIPE_FREE_M))
+		pipe_aim = hit["position"] if not hit.is_empty() else eye + dir * PIPE_FREE_M
+		pipe_aim_kind = "air"
+
+	_pipe_show_dot()
+	_pipe_show_line()
+
+
+# The rings and runs within PIPE_SEE_M (InventoryView's world rows): runs get the blue overlay; a pipe in hand rings every start point, a fitting in
+# hand rings the open run ends.
+func _pipe_scan() -> void:
+	var here: Vector3 = _camera.global_position
+	var fitting: bool = _pipe_fitting() != ""
+	var rings: Array = []
+	var runs: Array = []
+	var ends_taken: Array = []   # the points something else sits on (a tap, a drip head, a ring): a run end there is not open
+	var seen: Dictionary = {}
+
+	for id in _inv._world:
+		var row: Dictionary = _inv._world[id]
+
+		if int(row.get("state", 0)) < 5 or row.get("site") != null or (row["pos"] as Vector3).distance_to(here) > PIPE_SEE_M + 15.0:   # a run's middle is at most 15 m from its ends
+			continue
+
+		var def: Dictionary = _inv._structure_by_state(int(row["state"]))
+		var water: Variant = def.get("water", {})
+
+		if typeof(water) != TYPE_DICTIONARY or (water as Dictionary).is_empty():
+			continue
+
+		var yaw: float = deg_to_rad(float(row.get("yaw", 0.0)))
+
+		if str(def.get("hand_laid", "")) == "pipe" and row.has("len"):
+			var e: Array = PipeRules.ends(row["pos"], float(row.get("yaw", 0.0)), float(row.get("pitch", 0.0)), float(row["len"]))
+			runs.append([e[0], e[1], id, float(_inv.table.entry(str(def.get("item", ""))).get("pipe_m", 0.0))])
+			seen[id] = true
+			continue
+
+		if str(def.get("hand_laid", "")) == "fitting":
+			ends_taken.append(row["pos"])
+			continue
+
+		var keys: Array = ["outlet", "level_port"] if str(water.get("role", "")) == "tank" else (["outlet"] if str(water.get("role", "")) == "source" else [])
+
+		for key in keys:
+			if typeof(water.get(key)) == TYPE_ARRAY and (water[key] as Array).size() == 3:
+				var v: Array = water[key]
+				var point: Vector3 = (row["pos"] as Vector3) + Vector3(float(v[0]), float(v[1]), float(v[2])).rotated(Vector3.UP, yaw)
+				ends_taken.append(point)
+
+				if not fitting and point.distance_to(here) <= PIPE_SEE_M and (rings.is_empty() or rings[rings.size() - 1][1] != id or (rings[rings.size() - 1][0] as Vector3).distance_to(point) > 0.05):   # a barrel's outlet and bottom point are one ring
+					rings.append([point, id])
+
+	if fitting:   # each run's ends and joints (Dave 19 Nov 2026 20:31Z: each segment has a connection point) that no fitting or water point takes
+		for run in runs:
+			for point in [run[0], run[1]] + PipeRules.joints(run[0], run[1], float(run[3])):
+				var free: bool = (point as Vector3).distance_to(here) <= PIPE_SEE_M
+
+				for taken in ends_taken:
+					free = free and (point as Vector3).distance_to(taken) > PipeRules.SNAP_M
+
+				for ring in rings:
+					free = free and (point as Vector3).distance_to(ring[0]) > 0.05   # two runs' ends at one joint are one ring
+
+				if free:
+					rings.append([point, run[2]])
+
+	_pipe_rings_at = rings
+	_pipe_runs_near = runs
+
+	for id in _pipe_lit.keys():
+		if not seen.has(id) or not _inv._world.has(id) or not is_instance_valid(_pipe_lit[id]) or _inv._world[id]["node"] != _pipe_lit[id]:   # gone, or drawn again (a run split)
+			_pipe_glow(_pipe_lit[id], false)
+			_pipe_lit.erase(id)
+
+	for id in seen:
+		if not _pipe_lit.has(id):
+			_pipe_lit[id] = _inv._world[id]["node"]
+			_pipe_glow(_pipe_lit[id], true)
+
+	_pipe_show_rings()
+
+
+func _pipe_glow(node: Variant, on: bool) -> void:
+	if not is_instance_valid(node):
+		return
+
+	var stack: Array = [node]
+
+	while not stack.is_empty():
+		var n: Node = stack.pop_back()
+
+		if n is GeometryInstance3D:
+			(n as GeometryInstance3D).material_overlay = _pipe_material("blue") if on else null
+
+		stack.append_array(n.get_children())
+
+
+func _pipe_material(which: String) -> StandardMaterial3D:
+	if not _pipe_mat.has(which):
+		var colours: Dictionary = {"blue": Color(0.2, 0.55, 1.0, 0.55), "ring": Color(0.35, 0.85, 1.0), "dot": Color(1.0, 1.0, 1.0), "green": Color(0.2, 1.0, 0.25), "red": Color(1.0, 0.15, 0.1)}
+		var mat: StandardMaterial3D = StandardMaterial3D.new()
+		mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+		mat.albedo_color = colours[which]
+		mat.emission_enabled = true
+		mat.emission = colours[which]
+		mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+
+		if which == "blue":
+			mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+			mat.grow = true
+			mat.grow_amount = 0.01
+		else:
+			mat.no_depth_test = true   # a ring, the dot and the line show through walls and the barrel itself
+			mat.render_priority = 1
+
+		_pipe_mat[which] = mat
+
+	return _pipe_mat[which]
+
+
+func _pipe_show_rings() -> void:
+	while _pipe_ring_nodes.size() < _pipe_rings_at.size():
+		var ring: MeshInstance3D = MeshInstance3D.new()
+		var torus: TorusMesh = TorusMesh.new()
+		torus.inner_radius = PIPE_RING_R_M - 0.025
+		torus.outer_radius = PIPE_RING_R_M
+		ring.mesh = torus
+		ring.material_override = _pipe_material("ring")
+		ring.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_root.add_child(ring)
+		_pipe_ring_nodes.append(ring)
+
+	for n in _pipe_ring_nodes.size():
+		var ring: MeshInstance3D = _pipe_ring_nodes[n]
+		ring.visible = n < _pipe_rings_at.size()
+
+		if ring.visible:
+			ring.global_position = _pipe_rings_at[n][0]
+
+
+func _pipe_show_dot() -> void:
+	if _pipe_dot == null:
+		_pipe_dot = MeshInstance3D.new()
+		var ball: SphereMesh = SphereMesh.new()
+		ball.radius = 0.05
+		ball.height = 0.1
+		_pipe_dot.mesh = ball
+		_pipe_dot.material_override = _pipe_material("dot")
+		_pipe_dot.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_root.add_child(_pipe_dot)
+
+	_pipe_dot.visible = pipe_aim_kind == "ring" or pipe_aim_kind == "pipe"
+
+	if _pipe_dot.visible:
+		_pipe_dot.global_position = pipe_aim
+
+
+func _pipe_show_line() -> void:
+	var on: bool = pipe_start.is_finite() and pipe_aim.is_finite() and pipe_start.distance_to(pipe_aim) > 0.01
+
+	if not on:
+		pipe_line_red = false
+
+		if _pipe_line != null:
+			_pipe_line.visible = false
+
+		return
+
+	if _pipe_line == null:
+		_pipe_line = MeshInstance3D.new()
+		var rod: CylinderMesh = CylinderMesh.new()
+		rod.top_radius = 0.025
+		rod.bottom_radius = 0.025
+		rod.height = 1.0
+		rod.radial_segments = 6
+		rod.rings = 1
+		_pipe_line.mesh = rod
+		_pipe_line.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		_root.add_child(_pipe_line)
+
+	var length: float = pipe_start.distance_to(pipe_aim)
+	var feet: Vector3 = _inv._player_position.call() if _inv._player_position.is_valid() else _camera.global_position
+	var have: int = _inv.inventory.count_of(held_number())
+	pipe_line_red = length > PipeRules.MAX_RUN_M or length < PipeRules.MIN_RUN_M or feet.distance_to(pipe_aim) > PLACE_REACH_M or have < PipeRules.pieces_for(length, _pipe_piece_m())
+	_pipe_line.material_override = _pipe_material("red" if pipe_line_red else "green")
+	var up: Vector3 = (pipe_aim - pipe_start) / length   # the rod's own +Y runs from the start to the aim
+	var side: Vector3 = up.cross(Vector3.UP) if absf(up.y) < 0.99 else up.cross(Vector3.RIGHT)
+	side = side.normalized()
+	var back: Vector3 = side.cross(up).normalized()
+	_pipe_line.global_transform = Transform3D(Basis(side, up * length, back), (pipe_start + pipe_aim) * 0.5)
+	_pipe_line.visible = true
+
+
+# The pipe is put away: the start is dropped and the rings, dot, line and blue go.
+func _pipe_off() -> void:
+	_pipe_shown = false
+	_pipe_scan_next = 0
+	pipe_start = Vector3.INF
+	pipe_aim = Vector3.INF
+	pipe_aim_kind = ""
+	pipe_line_red = false
+
+	for id in _pipe_lit:
+		_pipe_glow(_pipe_lit[id], false)
+
+	_pipe_lit.clear()
+	_pipe_rings_at = []
+	_pipe_runs_near = []
+	_pipe_show_rings()
+
+	if _pipe_dot != null:
+		_pipe_dot.visible = false
+
+	if _pipe_line != null:
+		_pipe_line.visible = false

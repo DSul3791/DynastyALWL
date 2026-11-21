@@ -16,7 +16,7 @@ func _init() -> void:
 		if a.begins_with("--piece="):
 			piece = a.trim_prefix("--piece=")
 		elif a.begins_with("--args="):
-			args = Array(a.trim_prefix("--args=").split(",", false))      # arguments for the builder, e.g. --piece=tier_roof --args=brick
+			args = Array(a.trim_prefix("--args=").split(",", false))      # arguments for the builder, e.g. --piece=tier_panel --args=brick
 		elif a == "--building":
 			from_building = true      # the function is in building_look.gd (lean-to, forges, chest, bed...) and not in piece_look.gd
 

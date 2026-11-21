@@ -5,9 +5,11 @@ extends SceneTree
 # Each step is asserted, and the vitals curve (hunger, thirst, exertion) is printed as "first hour:" lines.
 #   godot --headless --path . --script res://src/worldgen/tools/test_first_hour.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 var failures: int = 0
 var items
@@ -43,7 +45,7 @@ func count(id: String) -> int:
 
 func queue(recipe: int, crafts: int) -> void:
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, recipe, 0, crafts, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe, 0, crafts, CraftHand.at(items, 1, recipe))
 
 
 func pick_up_everything_near() -> int:
@@ -80,7 +82,7 @@ func _init() -> void:
 	items.send_notice = func(_p, _t): pass
 	items.ground_height = func(_x, _z): return 10.0
 	var standing: Dictionary = {7: true}
-	items.tree_info = func(_chunk, id): return {"name": "oak", "position": Vector3(10.0, 10.0, 0.0), "height": 18.0, "trunk": 0.1} if standing.has(id) else {}
+	items.tree_info = func(_chunk, id): return {"name": "oak", "position": Vector3(10.0, 10.0, 0.0), "height": 18.0, "trunk": 0.3} if standing.has(id) else {}
 	items.cut_tree = func(_chunk, id): standing.erase(id); return true
 	var near_water: Array = [false]
 	items.water_near = func(_pos, _reach): return near_water[0]
@@ -118,49 +120,39 @@ func _init() -> void:
 	items.action(1, Net.ACT_MOVE, items.inventory_of(1).numbers.find(items.table.number_of("stone_axe")), 0, 0, Vector3.ZERO)   # the player puts the axe on the hotbar
 	note("crafting the axe")
 
-	# 3. Fell a tree and work the trunk.
+	# 3. Fell a tree: it comes down already in its logs, with its crown's sticks and leaves on the ground (Dave 16 Nov 2026).
 	items.report_position(1, Vector3(8.0, 10.0, 0.0))
 
 	for n in range(30):
 		items._last_hit.clear()
-		items.action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(items))
 
 	check(standing.is_empty(), "the tree falls to the axe")
 	pass_time(60.0, 0.8)
-	var trunk_id: int = 0
+	var logs: int = 0
+	var leaves: int = 0
+	var sticks: int = 0
 
-	for k in items._items:
-		if items._items[k].has("tree") and items._items[k]["tree"]["state"] == 3:
-			trunk_id = k
+	for k in items._items:   # what the tree broke into lies on the ground
+		var it: Dictionary = items._items[k]
 
-	items.report_position(1, Vector3(14.0, 10.0, 0.0))
-	var guard: int = 0
+		if it.has("tree") or it.has("struct") or it.has("scatter"):
+			continue
 
-	while items._items.has(trunk_id) and guard < 200:
-		if int(items._items[trunk_id]["tree"].get("blows", 0)) >= 2:
-			items.report_position(1, items.cut_line_point(trunk_id))   # logs come off the far end: walk along to the cut line
+		var id: String = items.table.id_of(int(it["number"]))
+		logs += int(it["count"]) if id.begins_with("log") else 0
+		leaves += int(it["count"]) if id == "leaves" else 0
+		sticks += int(it["count"]) if id == "stick" else 0
 
-		items._last_process.clear()
-		items.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
-		guard += 1
+	check(logs >= 1 and leaves >= 1, "the tree comes down as logs, with its leaves on the ground (%d logs, %d leaves, %d sticks)" % [logs, leaves, sticks])
+	print("first hour: after felling %d leaves, %d sticks on the ground" % [leaves, sticks])
+	note("felling the tree")
 
-	pass_time(120.0, 0.8)
-	var logs: int = count("log") + (1 if items.shoulder_of(1) != "" else 0)
-
-	for k in items._items:   # the logs now fall to the ground beside the trunk (Dave): count the loose ones too
-		if not items._items[k].has("tree") and not items._items[k].has("struct") and items.table.id_of(int(items._items[k]["number"])).begins_with("log"):
-			logs += 1
-
-	check(logs >= 1 and count("leaves") >= 1, "the trunk gives logs and leaves (%d logs, %d leaves, %d sticks)" % [logs, count("leaves"), count("stick")])
-	print("first hour: after felling %d leaves, %d sticks, %d bark" % [count("leaves"), count("stick"), count("bark")])
-	items.lay_down_shoulder(1)   # the big log is put down before the next job
-	note("felling and working the tree")
-
-	# 4. A campfire: craft the kit (6 sticks, 3 stones), place it (laid, not lit), light it with tinder from the pack.
+	# 4. A campfire: craft the kit (6 sticks, 16 stones: Dave 20 Nov 2026), place it (laid, not lit), light it with tinder from the pack.
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
 	queue(4, 1)
 	pass_time(10.0, 0.2)
-	check(count("campfire_kit") == 1, "the campfire kit is made (6 sticks, 3 stones)")
+	check(count("campfire_kit") == 1, "the campfire kit is made (6 sticks, 16 stones)")
 	items.place_item(1, items.table.number_of("campfire_kit"), Vector3(2.0, 10.0, 0.0), 0)
 	var lit: int = 0
 
@@ -195,8 +187,8 @@ func _init() -> void:
 	check(count("twine") == 8, "fibre is twisted into twine (lean-to 4 + chest 4)")
 	items._vitals_cfg["eat_pace_ms"] = 0
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 100, Vector3.ZERO)   # admin give is capped at 100 a call
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 100, Vector3.ZERO)   # one felled tree gives only 3 to 9 leaves; the lean-to now needs 200 (Dave 4 Nov), which the real player sweeps from many trees
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("twine"), 0, 10, Vector3.ZERO)   # the lean-to needs 10 twine (30 fibre; the 8 twisted above cover the chest and part of it)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("leaves"), 0, 100, Vector3.ZERO)   # the lean-to needs 60 leaves, 20 sticks and 6 twine (blueprints.json bp 25); a felled crown scatters about 100, and test_primitive_route.gd walks that route with no gives
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("twine"), 0, 10, Vector3.ZERO)   # extra twine beyond the 8 twisted above, so the lean-to (6) and the chest (4) are both covered
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stick"), 0, 20, Vector3.ZERO)   # the 36 gathered sticks do not cover the lean-to (32) and the chest (10); the real player sweeps more (31 Oct)
 	queue(13, 1)
 	queue(14, 1)

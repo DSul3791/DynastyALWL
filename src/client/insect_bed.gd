@@ -19,7 +19,7 @@ const RECORDED_DIR := "res://assets/audio/recorded/insects/"
 
 const BED_DB := -24.0                   # at full level
 const SEASON := {"summer": 1.0, "spring": 0.35, "autumn": 0.35, "winter": 0.0}
-const ZONE := {"meadow": 1.0, "water": 0.5, "forest": 0.35, "highland": 0.0}
+const ZONE := {"meadow": 1.0, "water": 0.5, "forest": 0.35, "highland": 0.0, "wetland": 1.0}   # wetland (fen, bog, swamp): the full hum, by day too (Dave 21 Nov 2026)
 const WATER_DAY := 0.0                  # share of the water-edge hum kept by day (Dave: at a lake only leaves, wind, a fish, a bird)
 const NIGHT_SHARE := {"summer": 0.5, "spring": 0.15, "autumn": 0.2, "winter": 0.0}   # warm nights keep a lower, slower chirring
 const NIGHT_PITCH := 0.78

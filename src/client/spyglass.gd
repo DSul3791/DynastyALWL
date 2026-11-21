@@ -1,7 +1,7 @@
 extends RefCounted
 
 # The admin spyglass (Dave 9 Nov 2026: "for now I need an admin spyglass so I can watch animals from distance"; design
-# docs/design/spyglass_design.md). Ctrl+L looks through it: the field of view narrows by the zoom, the mouse slows by the same factor,
+# docs/design/spyglass_design.md). Ctrl+Shift+L looks through it: the field of view narrows by the zoom, the mouse slows by the same factor,
 # the wheel zooms 2x to 40x, and the animal nearest the centre dot is watched: the server keeps it living past the freeze line and
 # sends its name, level, health and doings (animal_info, protocol 102), drawn under the dot. The server sends animals out to
 # despawn_m while an admin looks; a player who is not an admin is refused (animal_info id -1) and the view closes.
@@ -26,7 +26,7 @@ var active: bool = false
 var zoom: float = START_ZOOM
 var watched: int = 0              # the animal id nearest the centre (0 none)
 var info: Dictionary = {}         # the server's last animal_info for `watched`
-var tier: int = 0                 # 0 the admin spyglass (Ctrl+L), else the tier of the held spyglass item
+var tier: int = 0                 # 0 the admin spyglass (Ctrl+Shift+L), else the tier of the held spyglass item
 var tier_cfg: Dictionary = {}     # spyglass.json tiers[tier] while an item is looked through
 var zoom_min: float = MIN_ZOOM
 var zoom_max: float = MAX_ZOOM
@@ -61,7 +61,7 @@ func can_zoom() -> bool:
 	return zoom_max > zoom_min + 0.001
 
 
-# Ctrl+L: into the spyglass or back out. Returns whether it is on.
+# Ctrl+Shift+L: into the spyglass or back out. Returns whether it is on.
 func toggle() -> bool:
 	active = not active
 	watched = 0

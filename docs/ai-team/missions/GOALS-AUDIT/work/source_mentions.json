@@ -1,0 +1,2967 @@
+{
+ "acorn_mash": [
+  "items/cooking.json:/warms/acorn_mash(key)",
+  "items/dishes.json:/dishes/acorn_mash(key)",
+  "items/vitals.json:/food/by_id/acorn_mash(key)"
+ ],
+ "acorns": [
+  "items/cooking.json:/raw_sick/by_suffix/acorns(key)",
+  "items/dishes.json:/dishes/acorn_mash/needs[0][0]",
+  "items/drops.json:/trunk/by_species/oak[0][0]",
+  "items/seasons.json:/fruit_and_nuts/acorns(key)",
+  "items/vitals.json:/food/by_suffix/acorns(key)",
+  "tables/flora.json:/entries[0]/yields[0]"
+ ],
+ "aloe_gel": [
+  "items/seasons.json:/forage/aloe/parts[0]",
+  "items/wild_foods.json:/edible/aloe/parts[0]",
+  "tables/flora.json:/entries[69]/yields[0]"
+ ],
+ "amadou": [
+  "tables/flora.json:/entries[79]/yields[0]"
+ ],
+ "angelica_roots": [
+  "items/drops.json:/harvest_yield/angelica/item",
+  "items/seasons.json:/forage/angelica/parts[0]",
+  "items/wild_foods.json:/edible/angelica/parts[0]",
+  "tables/flora.json:/entries[68]/yields[0]"
+ ],
+ "angelica_stems": [
+  "tables/flora.json:/entries[68]/yields[1]"
+ ],
+ "animal_fat": [
+  "items/carcass.json:/species/boar/parts[4][0]",
+  "items/carcass.json:/species/deer/parts[4][0]",
+  "items/carcass.json:/species/moose/parts[4][0]",
+  "items/carcass.json:/species/beaver/parts[3][0]",
+  "items/carcass.json:/species/badger/parts[3][0]",
+  "items/carcass.json:/species/bear/parts[4][0]",
+  "items/carcass.json:/species/mountain_goat/parts[4][0]",
+  "items/carcass.json:/species/wild_sheep/parts[4][0]",
+  "items/carcass.json:/species/reindeer/parts[4][0]",
+  "items/carcass.json:/species/seal/parts[3][0]",
+  "items/carcass.json:/species/horse/parts[4][0]",
+  "items/carcass.json:/species/donkey/parts[4][0]"
+ ],
+ "antler": [
+  "items/carcass.json:/species/deer/parts[5][0]",
+  "items/carcass.json:/species/moose/parts[5][0]",
+  "items/carcass.json:/species/reindeer/parts[5][0]",
+  "items/carcass.json:/species/elk/parts[5][0]"
+ ],
+ "apple_autumn": [
+  "items/dishes.json:/dishes/dried_apples/needs[0][0]",
+  "items/drops.json:/fruit_tree/apple_autumn(key)",
+  "items/drops.json:/harvest_yield/apple_autumn(key)",
+  "items/drops.json:/harvest_yield/apple_autumn/item",
+  "items/seasons.json:/fruit_and_nuts/apple_autumn(key)",
+  "items/vitals.json:/food/by_id/apple_autumn(key)",
+  "tables/flora.json:/entries[135]/name",
+  "tables/flora.json:/entries[135]/yields[0]"
+ ],
+ "apple_cooking": [
+  "items/dishes.json:/dishes/apple_sauce/needs[0][0]",
+  "items/dishes.json:/dishes/apple_pie/needs[0][0]",
+  "items/drops.json:/fruit_tree/apple_cooking(key)",
+  "items/drops.json:/harvest_yield/apple_cooking(key)",
+  "items/drops.json:/harvest_yield/apple_cooking/item",
+  "items/seasons.json:/fruit_and_nuts/apple_cooking(key)",
+  "items/vitals.json:/food/by_id/apple_cooking(key)",
+  "tables/flora.json:/entries[137]/name",
+  "tables/flora.json:/entries[137]/yields[0]"
+ ],
+ "apple_early": [
+  "items/drops.json:/fruit_tree/apple_early(key)",
+  "items/drops.json:/harvest_yield/apple_early(key)",
+  "items/drops.json:/harvest_yield/apple_early/item",
+  "items/seasons.json:/fruit_and_nuts/apple_early(key)",
+  "items/vitals.json:/food/by_id/apple_early(key)",
+  "tables/flora.json:/entries[133]/name",
+  "tables/flora.json:/entries[133]/yields[0]"
+ ],
+ "apple_keeping": [
+  "items/drops.json:/fruit_tree/apple_keeping(key)",
+  "items/drops.json:/harvest_yield/apple_keeping(key)",
+  "items/drops.json:/harvest_yield/apple_keeping/item",
+  "items/seasons.json:/fruit_and_nuts/apple_keeping(key)",
+  "items/vitals.json:/food/by_id/apple_keeping(key)",
+  "tables/flora.json:/entries[136]/name",
+  "tables/flora.json:/entries[136]/yields[0]"
+ ],
+ "apple_pie": [
+  "items/cooking.json:/warms/apple_pie(key)",
+  "items/dishes.json:/dishes/apple_pie(key)",
+  "items/vitals.json:/food/by_id/apple_pie(key)"
+ ],
+ "apple_sauce": [
+  "items/cooking.json:/warms/apple_sauce(key)",
+  "items/dishes.json:/dishes/apple_sauce(key)",
+  "items/vitals.json:/food/by_id/apple_sauce(key)"
+ ],
+ "apple_summer": [
+  "items/drops.json:/fruit_tree/apple_summer(key)",
+  "items/drops.json:/harvest_yield/apple_summer(key)",
+  "items/drops.json:/harvest_yield/apple_summer/item",
+  "items/seasons.json:/fruit_and_nuts/apple_summer(key)",
+  "items/vitals.json:/food/by_id/apple_summer(key)",
+  "tables/flora.json:/entries[134]/name",
+  "tables/flora.json:/entries[134]/yields[0]"
+ ],
+ "arnica_flowers": [
+  "items/drops.json:/harvest_yield/arnica/item",
+  "items/seasons.json:/forage/arnica/parts[0]",
+  "items/wild_foods.json:/edible/arnica/parts[0]",
+  "tables/flora.json:/entries[67]/yields[0]"
+ ],
+ "axe": [
+  "items/boulders.json:/tools/axe(key)",
+  "items/drops.json:/wood_tools/speed/axe(key)",
+  "items/drops.json:/tool_wear/per_use/axe(key)",
+  "items/drops.json:/tool_rules/suffixes/axe(key)",
+  "items/drops.json:/tool_rules/tool_names/axe(key)",
+  "items/exertion.json:/tool_effort/axe(key)"
+ ],
+ "baked_apples": [
+  "items/cooking.json:/warms/baked_apples(key)",
+  "items/dishes.json:/dishes/baked_apples(key)",
+  "items/vitals.json:/food/by_id/baked_apples(key)"
+ ],
+ "baked_potato": [
+  "items/cooking.json:/warms/baked_potato(key)",
+  "items/dishes.json:/dishes/baked_potato(key)",
+  "items/vitals.json:/food/by_id/baked_potato(key)"
+ ],
+ "banana_fritter": [
+  "items/cooking.json:/warms/banana_fritter(key)",
+  "items/dishes.json:/dishes/banana_fritter(key)",
+  "items/vitals.json:/food/by_id/banana_fritter(key)"
+ ],
+ "banana_fritter_batter": [
+  "items/dishes.json:/dishes/banana_fritter/prepared"
+ ],
+ "banana_leaves": [
+  "tables/flora.json:/entries[80]/yields[1]"
+ ],
+ "bananas": [
+  "items/dishes.json:/dishes/banana_fritter/needs[0][0]",
+  "items/drops.json:/harvest_yield/wild_banana/item",
+  "items/seasons.json:/forage/wild_banana/parts[0]",
+  "items/seasons.json:/fruit_and_nuts/bananas(key)",
+  "items/wild_foods.json:/edible/wild_banana/parts[0]",
+  "tables/flora.json:/entries[80]/yields[0]"
+ ],
+ "bandage": [
+  "items/vitals.json:/heal/bandage(key)"
+ ],
+ "bark": [
+  "items/drops.json:/tool_rules/suffixes/knife[0]",
+  "tables/flora.json:/entries[0]/yields[1]"
+ ],
+ "barley": [
+  "items/crops.json:/crops/barley(key)",
+  "items/crops.json:/crops/barley/yields[0][0]",
+  "items/dishes.json:/dishes/barley_broth/needs[0][0]",
+  "items/seasons.json:/crops/barley(key)"
+ ],
+ "barley_broth": [
+  "items/cooking.json:/warms/barley_broth(key)",
+  "items/dishes.json:/dishes/barley_broth(key)",
+  "items/vitals.json:/food/by_id/barley_broth(key)"
+ ],
+ "barley_seeds": [
+  "items/crops.json:/crops/barley/seed",
+  "items/crops.json:/crops/barley/seeds_back[0]",
+  "items/drops.json:/seed_drops/tall_grass/rows[1][0]"
+ ],
+ "bedding": [
+  "items/seasons.json:/forage/fern/parts[0]",
+  "items/seasons.json:/forage/heather/parts[1]",
+  "items/wild_foods.json:/edible/fern/parts[0]",
+  "items/wild_foods.json:/edible/heather/parts[1]",
+  "tables/flora.json:/entries[18]/yields[0]",
+  "tables/flora.json:/entries[18]/uses[0]",
+  "tables/flora.json:/entries[19]/yields[1]",
+  "tables/flora.json:/entries[19]/uses[1]",
+  "tables/flora.json:/entries[125]/yields[1]",
+  "tables/flora.json:/entries[125]/uses[4]",
+  "tables/flora.json:/entries[127]/uses[2]"
+ ],
+ "bedroll": [
+  "items/sleep.json:/bedroll(key)",
+  "items/sleep.json:/bedroll/item"
+ ],
+ "beechnuts": [
+  "items/drops.json:/trunk/by_species/beech[0][0]",
+  "items/vitals.json:/food/by_suffix/beechnuts(key)",
+  "tables/flora.json:/entries[1]/yields[0]"
+ ],
+ "beet": [
+  "items/crops.json:/crops/beet(key)",
+  "items/crops.json:/crops/beet/yields[0][0]",
+  "items/dishes.json:/dishes/beet_roast/needs[0][0]",
+  "items/drops.json:/harvest_yield/sea_beet/item",
+  "items/seasons.json:/crops/beet(key)",
+  "tables/flora.json:/entries[158]/yields[0]"
+ ],
+ "beet_roast": [
+  "items/cooking.json:/warms/beet_roast(key)",
+  "items/dishes.json:/dishes/beet_roast(key)",
+  "items/vitals.json:/food/by_id/beet_roast(key)"
+ ],
+ "beet_seeds": [
+  "items/crops.json:/crops/beet/seed",
+  "items/crops.json:/crops/beet/seeds_back[0]",
+  "items/drops.json:/seed_drops/sea_beet/rows[0][0]"
+ ],
+ "belladonna_berries": [
+  "items/wild_foods.json:/poisonous/belladonna/parts[0]",
+  "tables/flora.json:/entries[71]/yields[0]"
+ ],
+ "belladonna_leaves": [
+  "items/wild_foods.json:/poisonous/belladonna/parts[1]",
+  "tables/flora.json:/entries[71]/yields[1]"
+ ],
+ "berries": [
+  "items/dishes.json:/dishes/berry_compote/needs[0][0]",
+  "items/dishes.json:/dishes/dried_berries/needs[0][0]",
+  "items/fishing.json:/bait[0]",
+  "items/vitals.json:/food/by_suffix/berries(key)"
+ ],
+ "berry_compote": [
+  "items/cooking.json:/warms/berry_compote(key)",
+  "items/dishes.json:/dishes/berry_compote(key)",
+  "items/vitals.json:/food/by_id/berry_compote(key)"
+ ],
+ "birch_bark": [
+  "items/cooking.json:/tinder_also[1]",
+  "items/drops.json:/trunk/by_species/birch[0][0]",
+  "tables/flora.json:/entries[2]/yields[0]"
+ ],
+ "blackberries": [
+  "items/drops.json:/berry_yield/bramble/item",
+  "items/seasons.json:/forage/bramble/parts[0]",
+  "items/wild_foods.json:/edible/bramble/parts[0]",
+  "tables/flora.json:/entries[12]/yields[0]"
+ ],
+ "blueberries": [
+  "items/drops.json:/berry_yield/blueberry/item",
+  "items/seasons.json:/forage/blueberry/parts[0]",
+  "items/wild_foods.json:/edible/blueberry/parts[0]",
+  "tables/flora.json:/entries[27]/yields[0]"
+ ],
+ "boiled_egg": [
+  "items/cooking.json:/warms/boiled_egg(key)",
+  "items/vitals.json:/food/by_id/boiled_egg(key)"
+ ],
+ "bone": [
+  "items/bow.json:/break_chance/bone(key)",
+  "items/carcass.json:/species/rabbit/parts[2][0]",
+  "items/carcass.json:/species/grouse/parts[2][0]",
+  "items/carcass.json:/species/fox/parts[2][0]",
+  "items/carcass.json:/species/boar/parts[2][0]",
+  "items/carcass.json:/species/deer/parts[2][0]",
+  "items/carcass.json:/species/wolf/parts[2][0]",
+  "items/carcass.json:/species/moose/parts[2][0]",
+  "items/carcass.json:/species/duck/parts[2][0]",
+  "items/carcass.json:/species/hare/parts[2][0]",
+  "items/carcass.json:/species/beaver/parts[2][0]",
+  "items/carcass.json:/species/otter/parts[2][0]"
+ ],
+ "bone_arrow": [
+  "items/bow.json:/ammo[1]"
+ ],
+ "breakfast_platter": [
+  "items/vitals.json:/food/by_id/breakfast_platter(key)"
+ ],
+ "brinebells": [
+  "items/seasons.json:/forage/brinebell/parts[0]",
+  "items/wild_foods.json:/edible/brinebell/parts[0]",
+  "tables/flora.json:/entries[102]/yields[0]"
+ ],
+ "bronze_arrow": [
+  "items/bow.json:/ammo[5]"
+ ],
+ "bucket": [
+  "items/shore_nodes.json:/containers[0]"
+ ],
+ "burdock_roots": [
+  "items/dishes.json:/dishes/roast_roots/needs[0][0]",
+  "items/dishes.json:/dishes/forager_stew/needs[1][0]",
+  "items/drops.json:/harvest_yield/burdock/item",
+  "items/seasons.json:/forage/burdock/parts[0]",
+  "items/wild_foods.json:/edible/burdock/parts[0]",
+  "tables/flora.json:/entries[65]/yields[0]"
+ ],
+ "burrs": [
+  "tables/flora.json:/entries[65]/yields[1]"
+ ],
+ "butter": [
+  "items/vitals.json:/food/by_id/butter(key)"
+ ],
+ "cabbage": [
+  "items/crops.json:/crops/cabbage(key)",
+  "items/crops.json:/crops/cabbage/yields[0][0]",
+  "items/dishes.json:/dishes/cabbage_stew/needs[0][0]",
+  "items/dishes.json:/dishes/sauerkraut/needs[0][0]",
+  "items/drops.json:/harvest_yield/sea_cabbage/item",
+  "items/seasons.json:/crops/cabbage(key)",
+  "tables/flora.json:/entries[155]/yields[0]"
+ ],
+ "cabbage_seeds": [
+  "items/crops.json:/crops/cabbage/seed",
+  "items/crops.json:/crops/cabbage/seeds_back[0]",
+  "items/drops.json:/seed_drops/sea_cabbage/rows[0][0]"
+ ],
+ "cabbage_stew": [
+  "items/cooking.json:/warms/cabbage_stew(key)",
+  "items/dishes.json:/dishes/cabbage_stew(key)",
+  "items/vitals.json:/food/by_id/cabbage_stew(key)"
+ ],
+ "cactus_fry": [
+  "items/cooking.json:/warms/cactus_fry(key)",
+  "items/dishes.json:/dishes/cactus_fry(key)",
+  "items/vitals.json:/food/by_id/cactus_fry(key)"
+ ],
+ "cactus_pads": [
+  "tables/flora.json:/entries[82]/yields[1]"
+ ],
+ "campfire_pot": [
+  "items/dishes.json:/dishes/berry_compote/station",
+  "items/dishes.json:/dishes/nut_paste/station",
+  "items/dishes.json:/dishes/acorn_mash/station",
+  "items/dishes.json:/dishes/hunters_stew/station",
+  "items/dishes.json:/dishes/hunters_stew/also_cook[0]/station",
+  "items/dishes.json:/dishes/forager_stew/station",
+  "items/dishes.json:/dishes/forager_stew/also_cook[0]/station",
+  "items/dishes.json:/dishes/fish_stew/station",
+  "items/dishes.json:/dishes/fish_stew/also_cook[0]/station",
+  "items/dishes.json:/dishes/hearty_pottage/station",
+  "items/dishes.json:/dishes/hearty_pottage/also_cook[0]/station",
+  "items/dishes.json:/dishes/oat_porridge/station"
+ ],
+ "campfire_roasting_spit": [
+  "items/dishes.json:/dishes/roast_joint/also_cook[0]/keeps[0][0]"
+ ],
+ "carp": [
+  "items/cooking.json:/cooks_into/carp(key)",
+  "items/cooking.json:/raw_sick/by_id/carp(key)",
+  "items/fish_schools.json:/species_by_kind/lake[2][0]",
+  "items/fish_schools.json:/species_by_kind/pond[0][0]",
+  "items/fishing.json:/species/pond[0][0]",
+  "items/fishing.json:/species/lake[2][0]",
+  "items/seasons.json:/fish/carp(key)",
+  "items/sickness.json:/infection/odds/carp(key)",
+  "items/vitals.json:/food/by_id/carp(key)"
+ ],
+ "carrot": [
+  "items/crops.json:/crops/carrot(key)",
+  "items/crops.json:/crops/carrot/yields[0][0]",
+  "items/seasons.json:/crops/carrot(key)"
+ ],
+ "carrot_seeds": [
+  "items/crops.json:/crops/carrot/seed",
+  "items/crops.json:/crops/carrot/seeds_back[0]",
+  "items/drops.json:/seed_drops/wild_carrot/rows[0][0]"
+ ],
+ "chamomile_flowers": [
+  "items/drops.json:/harvest_yield/chamomile/item",
+  "items/seasons.json:/forage/chamomile/parts[0]",
+  "items/wild_foods.json:/edible/chamomile/parts[0]",
+  "tables/flora.json:/entries[59]/yields[0]"
+ ],
+ "chamomile_tea": [
+  "items/cooking.json:/warms/chamomile_tea(key)",
+  "items/vitals.json:/medicines/chamomile_tea(key)"
+ ],
+ "chanterelles": [
+  "items/cooking.json:/raw_sick/by_suffix/chanterelles(key)",
+  "items/dishes.json:/dishes/forager_stew/needs[2][0]",
+  "items/drops.json:/harvest_yield/chanterelle/item",
+  "items/seasons.json:/forage/chanterelle/parts[0]",
+  "items/vitals.json:/food/by_suffix/chanterelles(key)",
+  "items/wild_foods.json:/edible/chanterelle/parts[0]",
+  "tables/flora.json:/entries[74]/yields[0]"
+ ],
+ "charcoal": [
+  "items/cooking.json:/fuel/charcoal(key)",
+  "items/cooking.json:/fuel_class/charcoal(key)",
+  "tables/flora.json:/entries[5]/uses[1]",
+  "tables/flora.json:/entries[113]/uses[3]"
+ ],
+ "charcoal_wood": [
+  "tables/flora.json:/entries[5]/yields[0]"
+ ],
+ "charcuterie_board": [
+  "items/vitals.json:/food/by_id/charcuterie_board(key)"
+ ],
+ "cheese": [
+  "items/vitals.json:/food/by_id/cheese(key)"
+ ],
+ "cherries": [
+  "items/drops.json:/harvest_yield/wild_cherry/item",
+  "items/drops.json:/trunk/by_species/wild_cherry[0][0]",
+  "items/seasons.json:/fruit_and_nuts/cherries(key)",
+  "items/vitals.json:/food/by_suffix/cherries(key)",
+  "tables/flora.json:/entries[42]/yields[0]"
+ ],
+ "cherry_wood": [
+  "tables/flora.json:/entries[42]/yields[1]"
+ ],
+ "chestnut_cakes": [
+  "items/cooking.json:/warms/chestnut_cakes(key)",
+  "items/dishes.json:/dishes/chestnut_cakes(key)",
+  "items/vitals.json:/food/by_id/chestnut_cakes(key)"
+ ],
+ "chestnuts": [
+  "items/dishes.json:/dishes/chestnut_cakes/needs[0][0]",
+  "items/drops.json:/harvest_yield/sweet_chestnut/item",
+  "items/drops.json:/trunk/by_species/sweet_chestnut[0][0]",
+  "items/seasons.json:/fruit_and_nuts/chestnuts(key)",
+  "items/vitals.json:/food/by_suffix/chestnuts(key)",
+  "tables/flora.json:/entries[43]/yields[0]"
+ ],
+ "cinderfoot_caps": [
+  "items/wild_foods.json:/poisonous/cinderfoot/parts[0]",
+  "tables/flora.json:/entries[106]/yields[0]"
+ ],
+ "claw": [
+  "items/carcass.json:/species/wolf/parts[4][0]",
+  "items/carcass.json:/species/badger/parts[4][0]",
+  "items/carcass.json:/species/lynx/parts[4][0]",
+  "items/carcass.json:/species/bear/parts[5][0]",
+  "items/carcass.json:/species/eagle/parts[3][0]",
+  "items/carcass.json:/species/owl/parts[2][0]",
+  "items/carcass.json:/species/black_bear/parts[5][0]",
+  "items/carcass.json:/species/puma/parts[4][0]",
+  "items/carcass.json:/species/hyena/parts[4][0]",
+  "items/carcass.json:/species/lion/parts[4][0]",
+  "items/carcass.json:/species/leopard/parts[4][0]",
+  "items/carcass.json:/species/honey_badger/parts[3][0]"
+ ],
+ "clay": [
+  "items/digging.json:/yield/clay(key)",
+  "items/digging.json:/yield/clay[0][0]",
+  "items/digging.json:/under/loam[0]",
+  "items/digging.json:/under/forest_humus[0]",
+  "items/digging.json:/under/silt[0]",
+  "items/digging.json:/under/alluvium[0]",
+  "items/digging.json:/fill[3]",
+  "tables/resources.json:/entries[12]/name",
+  "tables/soils.json:/entries[4]/name",
+  "tables/surficial_deposits.json:/entries[5]/name"
+ ],
+ "clay_griddle": [
+  "items/dishes.json:/dishes/chestnut_cakes/also_cook[0]/keeps[0][0]",
+  "items/dishes.json:/dishes/flatbread/also_cook[0]/keeps[0][0]",
+  "items/dishes.json:/dishes/rye_flatbread/also_cook[0]/keeps[0][0]",
+  "items/dishes.json:/dishes/crab_cakes/keeps[0][0]",
+  "items/dishes.json:/dishes/egg_nettle_fry/keeps[0][0]",
+  "items/dishes.json:/dishes/herb_omelette/keeps[0][0]",
+  "items/dishes.json:/dishes/garlic_bread/also_cook[0]/keeps[0][0]",
+  "items/dishes.json:/dishes/oat_cakes/also_cook[0]/keeps[0][0]",
+  "items/dishes.json:/dishes/banana_fritter/keeps[0][0]"
+ ],
+ "clay_hearth": [
+  "items/dishes.json:/dishes/roast_roots/station",
+  "items/dishes.json:/dishes/baked_apples/station",
+  "items/dishes.json:/dishes/chestnut_cakes/station",
+  "items/dishes.json:/dishes/fruit_leather/station",
+  "items/dishes.json:/dishes/trail_bread/station",
+  "items/dishes.json:/dishes/flatbread/station",
+  "items/dishes.json:/dishes/rye_flatbread/station",
+  "items/dishes.json:/dishes/baked_potato/station",
+  "items/dishes.json:/dishes/beet_roast/station",
+  "items/dishes.json:/dishes/onion_roast/station",
+  "items/dishes.json:/dishes/garlic_bread/station",
+  "items/dishes.json:/dishes/oat_cakes/station"
+ ],
+ "clay_jug": [
+  "items/shore_nodes.json:/containers[1]"
+ ],
+ "cloudberries": [
+  "items/drops.json:/berry_yield/cloudberry/item",
+  "items/seasons.json:/forage/cloudberry/parts[0]",
+  "items/wild_foods.json:/edible/cloudberry/parts[0]",
+  "tables/flora.json:/entries[30]/yields[0]"
+ ],
+ "coal": [
+  "items/boulders.json:/ore/items/coal(key)",
+  "items/boulders.json:/ore/items/coal",
+  "items/boulders.json:/ore/needs_material/coal(key)",
+  "tables/resources.json:/entries[1]/name",
+  "tables/rocks.json:/entries[4]/name"
+ ],
+ "coconuts": [
+  "items/drops.json:/harvest_yield/coconut_palm/item",
+  "items/drops.json:/trunk/by_species/coconut_palm[0][0]",
+  "items/seasons.json:/fruit_and_nuts/coconuts(key)",
+  "items/vitals.json:/food/by_suffix/coconuts(key)",
+  "tables/flora.json:/entries[7]/yields[1]"
+ ],
+ "cod": [
+  "items/cooking.json:/cooks_into/cod(key)",
+  "items/cooking.json:/raw_sick/by_id/cod(key)",
+  "items/fish_schools.json:/species_by_kind/sea_shallow[3][0]",
+  "items/seasons.json:/fish/cod(key)",
+  "items/sickness.json:/infection/odds/cod(key)",
+  "items/vitals.json:/food/by_id/cod(key)"
+ ],
+ "coin_bronze": [
+  "items/coins.json:/ladder[2]/id"
+ ],
+ "coin_copper": [
+  "items/coins.json:/ladder[3]/id"
+ ],
+ "coin_gold": [
+  "items/coins.json:/ladder[0]/id"
+ ],
+ "coin_silver": [
+  "items/coins.json:/ladder[1]/id"
+ ],
+ "comfrey_leaves": [
+  "items/drops.json:/harvest_yield/comfrey/item",
+  "items/drops.json:/by_species/comfrey[0][0]",
+  "items/seasons.json:/forage/comfrey/parts[0]",
+  "items/wild_foods.json:/edible/comfrey/parts[0]",
+  "tables/flora.json:/entries[60]/yields[0]"
+ ],
+ "comfrey_roots": [
+  "tables/flora.json:/entries[60]/yields[1]"
+ ],
+ "copper_ore": [
+  "items/boulders.json:/ore/items/copper"
+ ],
+ "crab_apples": [
+  "items/dishes.json:/dishes/baked_apples/needs[0][0]",
+  "items/dishes.json:/dishes/fruit_leather/needs[0][0]",
+  "items/drops.json:/harvest_yield/wild_apple/item",
+  "items/drops.json:/trunk/by_species/wild_apple[0][0]",
+  "items/seasons.json:/fruit_and_nuts/crab_apples(key)",
+  "items/vitals.json:/food/by_id/crab_apples(key)",
+  "tables/flora.json:/entries[40]/yields[0]"
+ ],
+ "crab_cakes": [
+  "items/cooking.json:/warms/crab_cakes(key)",
+  "items/dishes.json:/dishes/crab_cakes(key)",
+  "items/vitals.json:/food/by_id/crab_cakes(key)"
+ ],
+ "crab_meat": [
+  "items/cooking.json:/cooks_into/crab_meat(key)",
+  "items/cooking.json:/raw_sick/by_id/crab_meat(key)",
+  "items/dishes.json:/dishes/crab_cakes/needs[0][0]",
+  "items/shore_nodes.json:/nodes[2]/item",
+  "items/sickness.json:/infection/odds/crab_meat(key)",
+  "items/vitals.json:/food/by_id/crab_meat(key)"
+ ],
+ "cranberries": [
+  "items/dishes.json:/dishes/fruit_leather/needs[1][0]",
+  "items/drops.json:/berry_yield/cranberry/item",
+  "items/seasons.json:/forage/cranberry/parts[0]",
+  "items/wild_foods.json:/edible/cranberry/parts[0]",
+  "tables/flora.json:/entries[29]/yields[0]"
+ ],
+ "crowberries": [
+  "items/drops.json:/berry_yield/crowberry/item",
+  "items/seasons.json:/forage/crowberry/parts[0]",
+  "items/wild_foods.json:/edible/crowberry/parts[0]",
+  "tables/flora.json:/entries[33]/yields[0]"
+ ],
+ "crystal_lens": [
+  "items/digging.json:/under/gravel[0]",
+  "items/digging.json:/under/rock[0]"
+ ],
+ "damsons": [
+  "items/dishes.json:/dishes/preserved_damsons/needs[0][0]",
+  "items/drops.json:/harvest_yield/damson/item",
+  "items/seasons.json:/fruit_and_nuts/damsons(key)",
+  "items/vitals.json:/food/by_id/damsons(key)",
+  "tables/flora.json:/entries[143]/yields[0]"
+ ],
+ "dandelion_flowers": [
+  "items/seasons.json:/forage/dandelion/parts[0]",
+  "items/wild_foods.json:/edible/dandelion/parts[0]",
+  "tables/flora.json:/entries[49]/yields[0]"
+ ],
+ "dandelion_leaves": [
+  "items/seasons.json:/forage/dandelion/parts[1]",
+  "items/wild_foods.json:/edible/dandelion/parts[1]",
+  "tables/flora.json:/entries[49]/yields[1]"
+ ],
+ "dandelion_roots": [
+  "items/seasons.json:/forage/dandelion/parts[2]",
+  "items/wild_foods.json:/edible/dandelion/parts[2]",
+  "tables/flora.json:/entries[49]/yields[2]"
+ ],
+ "dates": [
+  "items/drops.json:/harvest_yield/date_palm/item",
+  "items/drops.json:/trunk/by_species/date_palm[0][0]",
+  "items/seasons.json:/fruit_and_nuts/dates(key)",
+  "items/vitals.json:/food/by_suffix/dates(key)",
+  "tables/flora.json:/entries[81]/yields[0]"
+ ],
+ "dessert_platter": [
+  "items/vitals.json:/food/by_id/dessert_platter(key)"
+ ],
+ "down": [
+  "items/carcass.json:/species/duck/parts[3][0]",
+  "items/carcass.json:/species/goose/parts[2][0]"
+ ],
+ "drakethorn_berries": [
+  "items/drops.json:/harvest_yield/drakethorn/item",
+  "items/seasons.json:/forage/drakethorn/parts[0]",
+  "items/wild_foods.json:/edible/drakethorn/parts[0]",
+  "tables/flora.json:/entries[88]/yields[0]"
+ ],
+ "dried_apples": [
+  "items/cooking.json:/warms/dried_apples(key)",
+  "items/dishes.json:/dishes/dried_apples(key)",
+  "items/vitals.json:/food/by_id/dried_apples(key)"
+ ],
+ "dried_berries": [
+  "items/cooking.json:/warms/dried_berries(key)",
+  "items/dishes.json:/dishes/dried_berries(key)",
+  "items/vitals.json:/food/by_id/dried_berries(key)"
+ ],
+ "dried_figs": [
+  "items/cooking.json:/warms/dried_figs(key)",
+  "items/dishes.json:/dishes/dried_figs(key)",
+  "items/vitals.json:/food/by_id/dried_figs(key)"
+ ],
+ "dried_mushrooms": [
+  "items/vitals.json:/food/by_id/dried_mushrooms(key)"
+ ],
+ "driftwood": [
+  "items/cooking.json:/fuel/driftwood(key)",
+  "items/cooking.json:/fuel_class/driftwood(key)",
+  "items/cooking.json:/fuel_order[32]",
+  "items/drops.json:/ground_scatter/bank/driftwood(key)"
+ ],
+ "drying_rack": [
+  "items/dishes.json:/dishes/jerky/station",
+  "items/dishes.json:/dishes/dried_berries/station",
+  "items/dishes.json:/dishes/dried_apples/station",
+  "items/dishes.json:/dishes/dried_figs/station"
+ ],
+ "duskmallow_flowers": [
+  "items/seasons.json:/forage/duskmallow/parts[0]",
+  "items/wild_foods.json:/edible/duskmallow/parts[0]",
+  "tables/flora.json:/entries[107]/yields[0]"
+ ],
+ "duskmallow_roots": [
+  "items/seasons.json:/forage/duskmallow/parts[1]",
+  "items/wild_foods.json:/edible/duskmallow/parts[1]",
+  "tables/flora.json:/entries[107]/yields[1]"
+ ],
+ "dye": [
+  "items/seasons.json:/forage/alpine_flowers/parts[1]",
+  "items/wild_foods.json:/edible/alpine_flowers/parts[1]",
+  "tables/flora.json:/entries[5]/uses[2]",
+  "tables/flora.json:/entries[12]/uses[2]",
+  "tables/flora.json:/entries[14]/uses[2]",
+  "tables/flora.json:/entries[19]/uses[2]",
+  "tables/flora.json:/entries[23]/uses[3]",
+  "tables/flora.json:/entries[25]/yields[0]",
+  "tables/flora.json:/entries[25]/uses[1]",
+  "tables/flora.json:/entries[27]/uses[2]",
+  "tables/flora.json:/entries[33]/uses[1]",
+  "tables/flora.json:/entries[34]/uses[5]"
+ ],
+ "echo_moss": [
+  "items/seasons.json:/forage/echo_moss(key)",
+  "items/seasons.json:/forage/echo_moss/parts[0]",
+  "items/wild_foods.json:/edible/echo_moss(key)",
+  "items/wild_foods.json:/edible/echo_moss/parts[0]",
+  "tables/flora.json:/entries[18]/look_alikes[3]",
+  "tables/flora.json:/entries[84]/look_alikes[3]",
+  "tables/flora.json:/entries[91]/look_alikes[3]",
+  "tables/flora.json:/entries[105]/look_alikes[3]",
+  "tables/flora.json:/entries[112]/name",
+  "tables/flora.json:/entries[112]/yields[0]"
+ ],
+ "eel": [
+  "items/cooking.json:/cooks_into/eel(key)",
+  "items/cooking.json:/raw_sick/by_id/eel(key)",
+  "items/fish_schools.json:/species_by_kind/river[2][0]",
+  "items/fish_schools.json:/only_in/eel(key)",
+  "items/seasons.json:/fish/eel(key)",
+  "items/sickness.json:/infection/odds/eel(key)",
+  "items/vitals.json:/food/by_id/eel(key)"
+ ],
+ "egg": [
+  "items/carcass.json:/species/seabird/parts[2][0]",
+  "items/cooking.json:/raw_sick/by_id/egg(key)",
+  "items/dishes.json:/dishes/egg_nettle_fry/needs[0][0]",
+  "items/dishes.json:/dishes/herb_omelette/needs[0][0]",
+  "items/nests.json:/kinds/grouse/item",
+  "items/nests.json:/kinds/songbird/item",
+  "items/shore_nodes.json:/nodes[3]/item",
+  "items/sickness.json:/infection/odds/egg(key)",
+  "items/vitals.json:/food/by_id/egg(key)"
+ ],
+ "egg_nettle_fry": [
+  "items/cooking.json:/warms/egg_nettle_fry(key)",
+  "items/dishes.json:/dishes/egg_nettle_fry(key)",
+  "items/vitals.json:/food/by_id/egg_nettle_fry(key)"
+ ],
+ "elderberries": [
+  "items/drops.json:/berry_yield/elder/item",
+  "items/seasons.json:/forage/elder/parts[0]",
+  "items/wild_foods.json:/edible/elder/parts[0]",
+  "tables/flora.json:/entries[34]/yields[0]"
+ ],
+ "elderflowers": [
+  "tables/flora.json:/entries[34]/yields[1]"
+ ],
+ "emberroots": [
+  "items/seasons.json:/forage/emberroot/parts[0]",
+  "items/wild_foods.json:/edible/emberroot/parts[0]",
+  "tables/flora.json:/entries[85]/yields[0]"
+ ],
+ "energy_bar": [
+  "items/vitals.json:/energy_aids/energy_bar(key)"
+ ],
+ "everember_needles": [
+  "tables/flora.json:/entries[122]/yields[0]"
+ ],
+ "everember_sap": [
+  "tables/flora.json:/entries[122]/yields[2]"
+ ],
+ "everember_wood": [
+  "tables/flora.json:/entries[122]/yields[1]"
+ ],
+ "feast_roast": [
+  "items/cooking.json:/warms/feast_roast(key)",
+  "items/dishes.json:/dishes/feast_roast(key)",
+  "items/vitals.json:/food/by_id/feast_roast(key)"
+ ],
+ "feather": [
+  "items/carcass.json:/species/grouse/parts[1][0]",
+  "items/carcass.json:/species/duck/parts[1][0]",
+  "items/carcass.json:/species/pheasant/parts[1][0]",
+  "items/carcass.json:/species/goose/parts[1][0]",
+  "items/carcass.json:/species/eagle/parts[1][0]",
+  "items/carcass.json:/species/gull/parts[1][0]",
+  "items/carcass.json:/species/seabird/parts[1][0]",
+  "items/carcass.json:/species/raven/parts[1][0]",
+  "items/carcass.json:/species/owl/parts[1][0]",
+  "items/carcass.json:/species/woodpecker/parts[0][0]",
+  "items/carcass.json:/species/songbirds/parts[0][0]",
+  "items/carcass.json:/species/crow/parts[1][0]"
+ ],
+ "feverfew": [
+  "items/drops.json:/harvest_yield/feverfew(key)",
+  "items/drops.json:/harvest_yield/feverfew/item",
+  "items/seasons.json:/forage/feverfew(key)",
+  "items/seasons.json:/forage/feverfew/parts[0]",
+  "items/wild_foods.json:/edible/feverfew(key)",
+  "items/wild_foods.json:/edible/feverfew/parts[0]",
+  "tables/flora.json:/entries[57]/look_alikes[5]",
+  "tables/flora.json:/entries[59]/look_alikes[0]",
+  "tables/flora.json:/entries[64]/name",
+  "tables/flora.json:/entries[64]/yields[0]"
+ ],
+ "fibre": [
+  "tables/flora.json:/entries[21]/uses[0]",
+  "tables/flora.json:/entries[22]/uses[2]",
+  "tables/flora.json:/entries[23]/uses[1]",
+  "tables/flora.json:/entries[80]/uses[2]",
+  "tables/flora.json:/entries[101]/uses[1]",
+  "tables/flora.json:/entries[127]/uses[1]",
+  "tables/flora.json:/entries[128]/uses[0]"
+ ],
+ "fibre_arrow": [
+  "items/bow.json:/ammo[3]"
+ ],
+ "fiddleheads": [
+  "items/cooking.json:/raw_sick/by_id/fiddleheads(key)",
+  "items/seasons.json:/forage/fern/parts[1]",
+  "items/vitals.json:/food/by_id/fiddleheads(key)",
+  "items/wild_foods.json:/edible/fern/parts[1]",
+  "tables/flora.json:/entries[18]/yields[1]"
+ ],
+ "field_mushrooms": [
+  "items/cooking.json:/raw_sick/by_suffix/field_mushrooms(key)",
+  "items/seasons.json:/forage/mushrooms/parts[0]",
+  "items/vitals.json:/food/by_suffix/field_mushrooms(key)",
+  "items/wild_foods.json:/edible/mushrooms/parts[0]",
+  "tables/flora.json:/entries[26]/yields[0]"
+ ],
+ "figs": [
+  "items/dishes.json:/dishes/dried_figs/needs[0][0]",
+  "items/drops.json:/harvest_yield/fig/item",
+  "items/seasons.json:/fruit_and_nuts/figs(key)",
+  "items/vitals.json:/food/by_id/figs(key)",
+  "tables/flora.json:/entries[146]/yields[0]"
+ ],
+ "fine_wood": [
+  "tables/flora.json:/entries[41]/uses[2]",
+  "tables/flora.json:/entries[42]/uses[2]",
+  "tables/flora.json:/entries[44]/uses[3]",
+  "tables/flora.json:/entries[89]/uses[0]",
+  "tables/flora.json:/entries[122]/uses[1]"
+ ],
+ "fire_arrow": [
+  "items/bow.json:/ammo[4]",
+  "items/bow.json:/fire_arrow(key)"
+ ],
+ "firewood": [
+  "items/cooking.json:/fuel/firewood(key)",
+  "items/cooking.json:/fuel_class/firewood(key)",
+  "items/cooking.json:/fuel_class/firewood",
+  "items/cooking.json:/fuel_class/firewood_soft",
+  "items/cooking.json:/fuel_class/wooden_block",
+  "items/cooking.json:/fuel_class/wooden_block_soft",
+  "items/cooking.json:/fuel_class/wooden_block_large",
+  "items/cooking.json:/fuel_class/wooden_block_soft_large",
+  "items/cooking.json:/fuel_class/charcoal",
+  "items/cooking.json:/fire_tiers/firewood(key)",
+  "items/cooking.json:/piece_game_s/firewood(key)",
+  "items/cooking.json:/fuel_order[26]"
+ ],
+ "firewood_soft": [
+  "items/cooking.json:/fuel/firewood_soft(key)",
+  "items/cooking.json:/fuel_class/firewood_soft(key)",
+  "items/cooking.json:/fuel_order[27]"
+ ],
+ "fish": [
+  "items/dishes.json:/dishes/herb_fish/needs[0][0]",
+  "items/dishes.json:/dishes/smoked_fish/needs[0][0]",
+  "items/dishes.json:/dishes/juniper_trout/needs[0][0]",
+  "items/seasons.json:/fish(key)",
+  "items/skills.json:/actions/fish(key)"
+ ],
+ "fish_pie": [
+  "items/cooking.json:/warms/fish_pie(key)",
+  "items/dishes.json:/dishes/fish_pie(key)",
+  "items/vitals.json:/food/by_id/fish_pie(key)"
+ ],
+ "fish_soup": [
+  "items/vitals.json:/food/by_id/fish_soup(key)"
+ ],
+ "fish_stew": [
+  "items/cooking.json:/warms/fish_stew(key)",
+  "items/dishes.json:/dishes/fish_stew(key)",
+  "items/vitals.json:/food/by_id/fish_stew(key)"
+ ],
+ "fishing_bait": [
+  "items/fishing.json:/bait[3]",
+  "items/fishing.json:/trap/bait[0]"
+ ],
+ "flatbread": [
+  "items/cooking.json:/warms/flatbread(key)",
+  "items/dishes.json:/dishes/flatbread(key)",
+  "items/vitals.json:/food/by_id/flatbread(key)"
+ ],
+ "flax": [
+  "items/crops.json:/crops/flax(key)",
+  "items/crops.json:/crops/flax/yields[0][0]",
+  "items/drops.json:/seed_drops/flax(key)",
+  "items/drops.json:/by_species/flax(key)",
+  "items/seasons.json:/forage/flax(key)",
+  "items/seasons.json:/crops/flax(key)",
+  "items/wild_foods.json:/edible/flax(key)",
+  "tables/flora.json:/entries[21]/name",
+  "tables/flora.json:/entries[24]/look_alikes[2]",
+  "tables/flora.json:/entries[58]/look_alikes[2]"
+ ],
+ "flax_seeds": [
+  "items/crops.json:/crops/flax/seed",
+  "items/crops.json:/crops/flax/seeds_back[0]",
+  "items/drops.json:/seed_drops/flax/rows[0][0]"
+ ],
+ "flint": [
+  "items/boulders.json:/flint(key)",
+  "items/boulders.json:/flint/item",
+  "items/bow.json:/break_chance/flint(key)",
+  "items/drops.json:/ground_scatter/bank/flint(key)",
+  "tables/resources.json:/entries[27]/name"
+ ],
+ "flour": [
+  "items/dishes.json:/dishes/hearty_pottage/needs[0][0]",
+  "items/dishes.json:/dishes/flatbread/needs[0][0]",
+  "items/dishes.json:/dishes/honey_loaf/needs[0][0]",
+  "items/dishes.json:/dishes/rye_flatbread/needs[0][0]",
+  "items/dishes.json:/dishes/crab_cakes/needs[1][0]",
+  "items/dishes.json:/dishes/venison_pie/needs[1][0]",
+  "items/dishes.json:/dishes/fish_pie/needs[1][0]",
+  "items/dishes.json:/dishes/garlic_bread/needs[0][0]",
+  "items/dishes.json:/dishes/banana_fritter/needs[1][0]",
+  "items/dishes.json:/dishes/apple_pie/needs[1][0]",
+  "tables/flora.json:/entries[43]/uses[1]",
+  "tables/flora.json:/entries[100]/uses[1]"
+ ],
+ "fly_agaric_caps": [
+  "items/drops.json:/harvest_yield/fly_agaric/item",
+  "items/wild_foods.json:/poisonous/fly_agaric/parts[0]",
+  "tables/flora.json:/entries[77]/yields[0]"
+ ],
+ "fodder": [
+  "items/seasons.json:/forage/gorse/parts[1]",
+  "items/seasons.json:/forage/saltbush/parts[0]",
+  "items/wild_foods.json:/edible/gorse/parts[1]",
+  "items/wild_foods.json:/edible/saltbush/parts[0]",
+  "tables/flora.json:/entries[14]/yields[1]",
+  "tables/flora.json:/entries[14]/uses[1]",
+  "tables/flora.json:/entries[16]/yields[0]",
+  "tables/flora.json:/entries[16]/uses[0]",
+  "tables/flora.json:/entries[22]/uses[1]"
+ ],
+ "food": [
+  "items/coins.json:/trade/sell_extras/kinds[1]",
+  "items/vitals.json:/food(key)",
+  "tables/flora.json:/entries[1]/uses[2]",
+  "tables/flora.json:/entries[7]/uses[0]",
+  "tables/flora.json:/entries[11]/uses[0]",
+  "tables/flora.json:/entries[12]/uses[0]",
+  "tables/flora.json:/entries[16]/uses[2]",
+  "tables/flora.json:/entries[17]/uses[1]",
+  "tables/flora.json:/entries[18]/uses[1]",
+  "tables/flora.json:/entries[23]/uses[0]",
+  "tables/flora.json:/entries[26]/uses[0]",
+  "tables/flora.json:/entries[27]/uses[0]"
+ ],
+ "forager_stew": [
+  "items/cooking.json:/warms/forager_stew(key)",
+  "items/dishes.json:/dishes/forager_stew(key)",
+  "items/vitals.json:/food/by_id/forager_stew(key)"
+ ],
+ "foxglove_leaves": [
+  "items/drops.json:/harvest_yield/foxglove/item",
+  "items/wild_foods.json:/poisonous/foxglove/parts[0]",
+  "tables/flora.json:/entries[70]/yields[0]"
+ ],
+ "frostglass_petals": [
+  "items/seasons.json:/forage/frostglass_orchid/parts[0]",
+  "items/wild_foods.json:/edible/frostglass_orchid/parts[0]",
+  "tables/flora.json:/entries[118]/yields[0]"
+ ],
+ "fruit_juice": [
+  "items/vitals.json:/drink/by_id/fruit_juice(key)",
+  "items/vitals.json:/food/by_id/fruit_juice(key)"
+ ],
+ "fruit_leather": [
+  "items/cooking.json:/warms/fruit_leather(key)",
+  "items/dishes.json:/dishes/fruit_leather(key)",
+  "items/vitals.json:/food/by_id/fruit_leather(key)"
+ ],
+ "fuel": [
+  "items/cooking.json:/fuel(key)",
+  "tables/flora.json:/entries[0]/uses[1]",
+  "tables/flora.json:/entries[1]/uses[1]",
+  "tables/flora.json:/entries[2]/uses[1]",
+  "tables/flora.json:/entries[3]/uses[1]",
+  "tables/flora.json:/entries[4]/uses[1]",
+  "tables/flora.json:/entries[8]/uses[1]",
+  "tables/flora.json:/entries[9]/uses[1]",
+  "tables/flora.json:/entries[113]/uses[0]",
+  "tables/flora.json:/entries[125]/uses[1]",
+  "tables/flora.json:/entries[126]/uses[1]",
+  "tables/resources.json:/entries[1]/category"
+ ],
+ "fur": [
+  "items/carcass.json:/species/fox/parts[4][0]",
+  "items/carcass.json:/species/wolf/parts[5][0]",
+  "items/carcass.json:/species/beaver/parts[4][0]",
+  "items/carcass.json:/species/otter/parts[3][0]",
+  "items/carcass.json:/species/lynx/parts[5][0]",
+  "items/carcass.json:/species/bear/parts[6][0]",
+  "items/carcass.json:/species/reindeer/parts[6][0]",
+  "items/carcass.json:/species/seal/parts[4][0]",
+  "items/carcass.json:/species/pine_marten/parts[3][0]",
+  "items/carcass.json:/species/black_bear/parts[6][0]",
+  "items/carcass.json:/species/mink/parts[3][0]"
+ ],
+ "garlic_bread": [
+  "items/cooking.json:/warms/garlic_bread(key)",
+  "items/dishes.json:/dishes/garlic_bread(key)",
+  "items/vitals.json:/food/by_id/garlic_bread(key)"
+ ],
+ "garlic_meat": [
+  "items/cooking.json:/warms/garlic_meat(key)",
+  "items/dishes.json:/dishes/garlic_meat(key)",
+  "items/vitals.json:/food/by_id/garlic_meat(key)"
+ ],
+ "gloaming_star": [
+  "items/seasons.json:/forage/gloaming_star(key)",
+  "items/seasons.json:/forage/gloaming_star/parts[0]",
+  "items/wild_foods.json:/edible/gloaming_star(key)",
+  "items/wild_foods.json:/edible/gloaming_star/parts[0]",
+  "tables/flora.json:/entries[118]/look_alikes[0]",
+  "tables/flora.json:/entries[119]/look_alikes[0]",
+  "tables/flora.json:/entries[120]/look_alikes[0]",
+  "tables/flora.json:/entries[121]/name",
+  "tables/flora.json:/entries[121]/yields[0]"
+ ],
+ "gloomthistle_down": [
+  "items/seasons.json:/forage/gloomthistle/parts[1]",
+  "items/wild_foods.json:/edible/gloomthistle/parts[1]",
+  "tables/flora.json:/entries[97]/yields[1]"
+ ],
+ "gloomthistle_heads": [
+  "items/seasons.json:/forage/gloomthistle/parts[0]",
+  "items/wild_foods.json:/edible/gloomthistle/parts[0]",
+  "tables/flora.json:/entries[97]/yields[0]"
+ ],
+ "gravel": [
+  "items/digging.json:/yield/gravel(key)",
+  "items/digging.json:/yield/gravel[0][0]",
+  "items/digging.json:/yield/permafrost[0][0]",
+  "items/digging.json:/under/gravel(key)",
+  "items/digging.json:/fill[2]",
+  "tables/soils.json:/entries[2]/name",
+  "tables/surficial_deposits.json:/entries[2]/name",
+  "tables/water_classes.json:/entries[9]/soil"
+ ],
+ "greens": [
+  "items/seasons.json:/forage/nettle/parts[0]",
+  "items/vitals.json:/food/by_suffix/greens(key)"
+ ],
+ "grindstone": [
+  "items/smithing.json:/grindstone(key)",
+  "items/smithing.json:/grindstone/station"
+ ],
+ "gum": [
+  "items/drops.json:/tool_rules/suffixes/knife[1]",
+  "tables/flora.json:/entries[9]/yields[0]",
+  "tables/flora.json:/entries[42]/yields[2]"
+ ],
+ "gut": [
+  "items/carcass.json:/species/boar/parts[6][0]",
+  "items/carcass.json:/species/deer/parts[6][0]",
+  "items/carcass.json:/species/wolf/parts[6][0]",
+  "items/carcass.json:/species/moose/parts[6][0]",
+  "items/carcass.json:/species/beaver/parts[5][0]",
+  "items/carcass.json:/species/lynx/parts[6][0]",
+  "items/carcass.json:/species/bear/parts[7][0]",
+  "items/carcass.json:/species/mountain_goat/parts[6][0]",
+  "items/carcass.json:/species/wild_sheep/parts[7][0]",
+  "items/carcass.json:/species/reindeer/parts[7][0]",
+  "items/carcass.json:/species/seal/parts[5][0]",
+  "items/carcass.json:/species/horse/parts[5][0]"
+ ],
+ "hagwillow_bark": [
+  "items/seasons.json:/forage/hagwillow/parts[0]",
+  "items/wild_foods.json:/edible/hagwillow/parts[0]",
+  "tables/flora.json:/entries[94]/yields[0]"
+ ],
+ "hagwillow_withies": [
+  "items/seasons.json:/forage/hagwillow/parts[1]",
+  "items/wild_foods.json:/edible/hagwillow/parts[1]",
+  "tables/flora.json:/entries[94]/yields[1]"
+ ],
+ "harvest_platter": [
+  "items/vitals.json:/food/by_id/harvest_platter(key)"
+ ],
+ "haws": [
+  "items/drops.json:/harvest_yield/hawthorn/item",
+  "items/seasons.json:/forage/hawthorn/parts[0]",
+  "items/vitals.json:/food/by_suffix/haws(key)",
+  "items/wild_foods.json:/edible/hawthorn/parts[0]",
+  "tables/flora.json:/entries[38]/yields[0]"
+ ],
+ "hawthorn_blossom": [
+  "tables/flora.json:/entries[38]/yields[1]"
+ ],
+ "hazelnut_butter": [
+  "items/cooking.json:/warms/hazelnut_butter(key)",
+  "items/dishes.json:/dishes/hazelnut_butter(key)",
+  "items/vitals.json:/food/by_id/hazelnut_butter(key)"
+ ],
+ "hazelnuts": [
+  "items/dishes.json:/dishes/nut_paste/needs[0][0]",
+  "items/dishes.json:/dishes/trail_bread/needs[1][0]",
+  "items/dishes.json:/dishes/oat_porridge/needs[2][0]",
+  "items/dishes.json:/dishes/hazelnut_butter/needs[0][0]",
+  "items/drops.json:/harvest_yield/hazel/item",
+  "items/seasons.json:/forage/hazel/parts[0]",
+  "items/seasons.json:/fruit_and_nuts/hazelnuts(key)",
+  "items/vitals.json:/food/by_suffix/hazelnuts(key)",
+  "items/wild_foods.json:/edible/hazel/parts[0]",
+  "tables/flora.json:/entries[11]/yields[0]"
+ ],
+ "hearthwood_logs": [
+  "tables/flora.json:/entries[113]/yields[0]"
+ ],
+ "heartroots": [
+  "items/drops.json:/harvest_yield/heartroot/item",
+  "items/seasons.json:/forage/heartroot/parts[0]",
+  "items/wild_foods.json:/edible/heartroot/parts[0]",
+  "tables/flora.json:/entries[95]/yields[0]"
+ ],
+ "hearty_pottage": [
+  "items/cooking.json:/warms/hearty_pottage(key)",
+  "items/dishes.json:/dishes/hearty_pottage(key)",
+  "items/vitals.json:/food/by_id/hearty_pottage(key)"
+ ],
+ "heavy_crossbow": [
+  "items/bow.json:/bows/heavy_crossbow(key)"
+ ],
+ "henbane_leaves": [
+  "items/wild_foods.json:/poisonous/henbane/parts[1]",
+  "tables/flora.json:/entries[73]/yields[1]"
+ ],
+ "henbane_seeds": [
+  "items/wild_foods.json:/poisonous/henbane/parts[0]",
+  "tables/flora.json:/entries[73]/yields[0]"
+ ],
+ "herb_antidote": [
+  "items/vitals.json:/medicines/herb_antidote(key)"
+ ],
+ "herb_fish": [
+  "items/cooking.json:/warms/herb_fish(key)",
+  "items/dishes.json:/dishes/herb_fish(key)",
+  "items/vitals.json:/food/by_id/herb_fish(key)"
+ ],
+ "herb_omelette": [
+  "items/cooking.json:/warms/herb_omelette(key)",
+  "items/dishes.json:/dishes/herb_omelette(key)",
+  "items/vitals.json:/food/by_id/herb_omelette(key)"
+ ],
+ "herb_salve": [
+  "items/vitals.json:/heal/herb_salve(key)"
+ ],
+ "herbal_tea": [
+  "items/cooking.json:/warms/herbal_tea(key)",
+  "items/vitals.json:/energy_aids/herbal_tea(key)"
+ ],
+ "herbs": [
+  "items/dishes.json:/dishes/herb_fish/needs[1][0]",
+  "items/dishes.json:/dishes/hearty_pottage/needs[2][0]",
+  "items/dishes.json:/dishes/feast_roast/needs[1][0]",
+  "items/seasons.json:/forage/alpine_flowers/parts[0]",
+  "items/wild_foods.json:/edible/alpine_flowers/parts[0]"
+ ],
+ "herring": [
+  "items/cooking.json:/cooks_into/herring(key)",
+  "items/cooking.json:/raw_sick/by_id/herring(key)",
+  "items/fish_schools.json:/species_by_kind/sea_shallow[0][0]",
+  "items/fish_schools.json:/only_in/herring(key)",
+  "items/seasons.json:/fish/herring(key)",
+  "items/sickness.json:/infection/odds/herring(key)",
+  "items/vitals.json:/food/by_id/herring(key)"
+ ],
+ "hide": [
+  "items/carcass.json:/species/rabbit/parts[1][0]",
+  "items/carcass.json:/species/fox/parts[1][0]",
+  "items/carcass.json:/species/boar/parts[1][0]",
+  "items/carcass.json:/species/deer/parts[1][0]",
+  "items/carcass.json:/species/wolf/parts[1][0]",
+  "items/carcass.json:/species/moose/parts[1][0]",
+  "items/carcass.json:/species/hare/parts[1][0]",
+  "items/carcass.json:/species/beaver/parts[1][0]",
+  "items/carcass.json:/species/otter/parts[1][0]",
+  "items/carcass.json:/species/badger/parts[1][0]",
+  "items/carcass.json:/species/lynx/parts[1][0]",
+  "items/carcass.json:/species/bear/parts[1][0]"
+ ],
+ "honey_flowers": [
+  "items/seasons.json:/forage/heather/parts[2]",
+  "items/wild_foods.json:/edible/heather/parts[2]",
+  "tables/flora.json:/entries[19]/yields[2]"
+ ],
+ "honey_loaf": [
+  "items/cooking.json:/warms/honey_loaf(key)",
+  "items/dishes.json:/dishes/honey_loaf(key)",
+  "items/vitals.json:/food/by_id/honey_loaf(key)"
+ ],
+ "honeyspindle_nectar": [
+  "items/dishes.json:/dishes/berry_compote/needs[1][0]",
+  "items/dishes.json:/dishes/nut_paste/needs[1][0]",
+  "items/dishes.json:/dishes/baked_apples/needs[1][0]",
+  "items/dishes.json:/dishes/chestnut_cakes/needs[1][0]",
+  "items/dishes.json:/dishes/fruit_leather/needs[2][0]",
+  "items/dishes.json:/dishes/honey_loaf/needs[1][0]",
+  "items/dishes.json:/dishes/apple_sauce/needs[1][0]",
+  "items/dishes.json:/dishes/plum_jam/needs[1][0]",
+  "items/dishes.json:/dishes/stewed_pears/needs[1][0]",
+  "items/dishes.json:/dishes/preserved_damsons/needs[1][0]",
+  "items/dishes.json:/dishes/quince_paste/needs[1][0]",
+  "items/seasons.json:/forage/honeyspindle/parts[0]"
+ ],
+ "honeyspindle_pods": [
+  "items/seasons.json:/forage/honeyspindle/parts[1]",
+  "items/wild_foods.json:/edible/honeyspindle/parts[1]",
+  "tables/flora.json:/entries[99]/yields[1]"
+ ],
+ "horn": [
+  "items/carcass.json:/species/mountain_goat/parts[5][0]",
+  "items/carcass.json:/species/wild_sheep/parts[6][0]",
+  "items/carcass.json:/species/bighorn/parts[6][0]",
+  "items/carcass.json:/species/chamois/parts[5][0]",
+  "items/carcass.json:/species/cow/parts[5][0]",
+  "items/carcass.json:/species/goat/parts[5][0]",
+  "items/carcass.json:/species/buffalo/parts[5][0]",
+  "items/carcass.json:/species/pronghorn/parts[5][0]",
+  "items/carcass.json:/species/wildebeest/parts[5][0]",
+  "items/carcass.json:/species/rhino/parts[5][0]"
+ ],
+ "hunters_stew": [
+  "items/cooking.json:/warms/hunters_stew(key)",
+  "items/dishes.json:/dishes/hunters_stew(key)",
+  "items/vitals.json:/food/by_id/hunters_stew(key)"
+ ],
+ "hushfern_fronds": [
+  "items/wild_foods.json:/poisonous/hushfern/parts[0]",
+  "tables/flora.json:/entries[91]/yields[0]"
+ ],
+ "iron_arrow": [
+  "items/bow.json:/ammo[6]"
+ ],
+ "iron_bolt": [
+  "items/bow.json:/bows/light_crossbow/ammo[1]",
+  "items/bow.json:/bows/heavy_crossbow/ammo[1]"
+ ],
+ "iron_cauldron": [
+  "items/dishes.json:/dishes/hunters_stew/also_cook[0]/keeps[0][0]",
+  "items/dishes.json:/dishes/forager_stew/also_cook[0]/keeps[0][0]",
+  "items/dishes.json:/dishes/fish_stew/also_cook[0]/keeps[0][0]",
+  "items/dishes.json:/dishes/hearty_pottage/also_cook[0]/keeps[0][0]",
+  "items/dishes.json:/dishes/cabbage_stew/also_cook[0]/keeps[0][0]",
+  "items/dishes.json:/dishes/mussel_stew/also_cook[0]/keeps[0][0]",
+  "items/dishes.json:/dishes/seal_stew/also_cook[0]/keeps[0][0]"
+ ],
+ "iron_frying_pan": [
+  "items/dishes.json:/dishes/crab_cakes/also_cook[0]/keeps[0][0]",
+  "items/dishes.json:/dishes/egg_nettle_fry/also_cook[0]/keeps[0][0]",
+  "items/dishes.json:/dishes/herb_omelette/also_cook[0]/keeps[0][0]",
+  "items/dishes.json:/dishes/banana_fritter/also_cook[0]/keeps[0][0]"
+ ],
+ "iron_grill_grate": [
+  "items/dishes.json:/dishes/mushroom_skewer/also_cook[0]/keeps[0][0]",
+  "items/dishes.json:/dishes/meat_skewer/also_cook[0]/keeps[0][0]",
+  "items/dishes.json:/dishes/sausage/also_cook[0]/keeps[0][0]"
+ ],
+ "iron_ore": [
+  "items/boulders.json:/ore/items/iron",
+  "items/digging.json:/bog_iron/item"
+ ],
+ "jerky": [
+  "items/cooking.json:/warms/jerky(key)",
+  "items/dishes.json:/dishes/jerky(key)",
+  "items/vitals.json:/food/by_id/jerky(key)"
+ ],
+ "juniper_berries": [
+  "items/dishes.json:/dishes/juniper_trout/needs[1][0]",
+  "items/drops.json:/berry_yield/juniper/item",
+  "items/seasons.json:/forage/juniper/parts[0]",
+  "items/wild_foods.json:/edible/juniper/parts[0]",
+  "tables/flora.json:/entries[13]/yields[0]"
+ ],
+ "juniper_trout": [
+  "items/cooking.json:/warms/juniper_trout(key)",
+  "items/dishes.json:/dishes/juniper_trout(key)",
+  "items/vitals.json:/food/by_id/juniper_trout(key)"
+ ],
+ "kindling": [
+  "items/cooking.json:/tinder_also[3]",
+  "items/cooking.json:/fuel/kindling(key)",
+  "items/cooking.json:/fuel_class/kindling(key)",
+  "items/cooking.json:/fuel_order[34]",
+  "items/drops.json:/stump/final[1][0]",
+  "items/drops.json:/stump/final_by_radius[0]/rows[1][0]",
+  "items/drops.json:/stump/final_by_radius[1]/rows[1][0]",
+  "items/drops.json:/stump/final_by_radius[2]/rows[1][0]",
+  "items/drops.json:/wood_tools/pick_splinters[0][0]",
+  "items/drops.json:/trunk/small[1][0]",
+  "items/seasons.json:/forage/gorse/parts[0]",
+  "items/seasons.json:/forage/dwarf_birch/parts[0]"
+ ],
+ "knife": [
+  "items/carcass.json:/tool_class",
+  "items/crops.json:/crops/cabbage/tool_to_harvest",
+  "items/drops.json:/tool_wear/per_use/knife(key)",
+  "items/drops.json:/tool_rules/suffixes/knife(key)",
+  "items/drops.json:/tool_rules/tool_names/knife(key)",
+  "items/exertion.json:/tool_effort/knife(key)"
+ ],
+ "ladder": [
+  "items/coins.json:/ladder(key)"
+ ],
+ "lantern_dew": [
+  "items/seasons.json:/forage/dewlantern/parts[0]",
+  "items/wild_foods.json:/edible/dewlantern/parts[0]",
+  "tables/flora.json:/entries[98]/yields[0]"
+ ],
+ "lavender_flowers": [
+  "items/drops.json:/harvest_yield/lavender/item",
+  "items/seasons.json:/forage/lavender/parts[0]",
+  "items/wild_foods.json:/edible/lavender/parts[0]",
+  "tables/flora.json:/entries[56]/yields[0]"
+ ],
+ "leaves": [
+  "items/drops.json:/trunk/branch[1][0]",
+  "items/drops.json:/trunk/crown_scatter/spots/leaves(key)",
+  "items/drops.json:/shrub_work/axe_gives[0][0]",
+  "items/pickup_batch.json:/batch/leaves(key)",
+  "tables/flora.json:/entries[27]/yields[1]",
+  "tables/flora.json:/entries[28]/yields[1]",
+  "tables/flora.json:/entries[31]/yields[1]"
+ ],
+ "lemons": [
+  "items/drops.json:/harvest_yield/lemon/item",
+  "items/seasons.json:/fruit_and_nuts/lemons(key)",
+  "items/vitals.json:/food/by_id/lemons(key)",
+  "tables/flora.json:/entries[151]/yields[0]"
+ ],
+ "lettuce": [
+  "items/crops.json:/crops/lettuce(key)",
+  "items/crops.json:/crops/lettuce/yields[0][0]",
+  "items/drops.json:/harvest_yield/prickly_lettuce/item",
+  "items/seasons.json:/crops/lettuce(key)",
+  "tables/flora.json:/entries[160]/yields[0]"
+ ],
+ "lettuce_seeds": [
+  "items/crops.json:/crops/lettuce/seed",
+  "items/crops.json:/crops/lettuce/seeds_back[0]",
+  "items/drops.json:/seed_drops/prickly_lettuce/rows[0][0]"
+ ],
+ "light_crossbow": [
+  "items/bow.json:/bows/light_crossbow(key)"
+ ],
+ "limestone": [
+  "items/boulders.json:/ore/rocks/limestone(key)",
+  "items/boulders.json:/ore/rocks/limestone",
+  "items/boulders.json:/ore/rocks/chalk",
+  "items/boulders.json:/ore/rocks/marble",
+  "tables/rocks.json:/entries[3]/name"
+ ],
+ "lingonberries": [
+  "items/drops.json:/berry_yield/lingonberry/item",
+  "items/seasons.json:/forage/lingonberry/parts[0]",
+  "items/wild_foods.json:/edible/lingonberry/parts[0]",
+  "tables/flora.json:/entries[28]/yields[0]"
+ ],
+ "linseed": [
+  "items/dishes.json:/dishes/chestnut_cakes/needs[2][0]",
+  "items/dishes.json:/dishes/trail_bread/needs[0][0]",
+  "items/seasons.json:/forage/flax/parts[0]",
+  "items/wild_foods.json:/edible/flax/parts[0]",
+  "tables/flora.json:/entries[21]/yields[0]"
+ ],
+ "log": [
+  "items/cooking.json:/fuel/log(key)",
+  "items/cooking.json:/fuel_class/log_oak",
+  "items/cooking.json:/fuel_class/log_beech",
+  "items/cooking.json:/fuel_class/log_birch",
+  "items/cooking.json:/fuel_class/log_scots_pine",
+  "items/cooking.json:/fuel_class/log_spruce",
+  "items/cooking.json:/fuel_class/log_alder",
+  "items/cooking.json:/fuel_class/log_willow",
+  "items/cooking.json:/fuel_class/log_coconut_palm",
+  "items/cooking.json:/fuel_class/log_tropical_hardwood",
+  "items/cooking.json:/fuel_class/log_acacia",
+  "items/cooking.json:/fuel_class/log_mangrove"
+ ],
+ "log_acacia": [
+  "items/cooking.json:/fuel/log_acacia(key)",
+  "items/cooking.json:/fuel_class/log_acacia(key)",
+  "items/cooking.json:/fuel_order[10]"
+ ],
+ "log_alder": [
+  "items/cooking.json:/fuel/log_alder(key)",
+  "items/cooking.json:/fuel_class/log_alder(key)",
+  "items/cooking.json:/fuel_order[6]"
+ ],
+ "log_balsam_fir": [
+  "items/cooking.json:/fuel/log_balsam_fir(key)",
+  "items/cooking.json:/fuel_class/log_balsam_fir(key)",
+  "items/cooking.json:/fuel_order[24]"
+ ],
+ "log_beech": [
+  "items/cooking.json:/fuel/log_beech(key)",
+  "items/cooking.json:/fuel_class/log_beech(key)",
+  "items/cooking.json:/fuel_order[2]"
+ ],
+ "log_birch": [
+  "items/cooking.json:/fuel/log_birch(key)",
+  "items/cooking.json:/fuel_class/log_birch(key)",
+  "items/cooking.json:/fuel_order[3]"
+ ],
+ "log_coconut_palm": [
+  "items/cooking.json:/fuel/log_coconut_palm(key)",
+  "items/cooking.json:/fuel_class/log_coconut_palm(key)",
+  "items/cooking.json:/fuel_order[8]"
+ ],
+ "log_date_palm": [
+  "items/cooking.json:/fuel/log_date_palm(key)",
+  "items/cooking.json:/fuel_class/log_date_palm(key)",
+  "items/cooking.json:/fuel_order[18]"
+ ],
+ "log_everember": [
+  "items/cooking.json:/fuel/log_everember(key)",
+  "items/cooking.json:/fuel_class/log_everember(key)",
+  "items/cooking.json:/fuel_order[22]"
+ ],
+ "log_hearthwood": [
+  "items/cooking.json:/fuel/log_hearthwood(key)",
+  "items/cooking.json:/fuel_class/log_hearthwood(key)",
+  "items/cooking.json:/fuel_order[21]"
+ ],
+ "log_mangrove": [
+  "items/cooking.json:/fuel/log_mangrove(key)",
+  "items/cooking.json:/fuel_class/log_mangrove(key)",
+  "items/cooking.json:/fuel_order[11]"
+ ],
+ "log_maple": [
+  "items/cooking.json:/fuel/log_maple(key)",
+  "items/cooking.json:/fuel_class/log_maple(key)",
+  "items/cooking.json:/fuel_order[25]"
+ ],
+ "log_mirrorbark": [
+  "items/cooking.json:/fuel/log_mirrorbark(key)",
+  "items/cooking.json:/fuel_class/log_mirrorbark(key)",
+  "items/cooking.json:/fuel_order[19]"
+ ],
+ "log_oak": [
+  "items/cooking.json:/fuel/log_oak(key)",
+  "items/cooking.json:/fuel_class/log_oak(key)",
+  "items/cooking.json:/fuel_order[1]"
+ ],
+ "log_rowan": [
+  "items/cooking.json:/fuel/log_rowan(key)",
+  "items/cooking.json:/fuel_class/log_rowan(key)",
+  "items/cooking.json:/fuel_order[12]"
+ ],
+ "log_scots_pine": [
+  "items/cooking.json:/fuel/log_scots_pine(key)",
+  "items/cooking.json:/fuel_class/log_scots_pine(key)",
+  "items/cooking.json:/fuel_order[4]"
+ ],
+ "log_spruce": [
+  "items/cooking.json:/fuel/log_spruce(key)",
+  "items/cooking.json:/fuel_class/log_spruce(key)",
+  "items/cooking.json:/fuel_order[5]"
+ ],
+ "log_sweet_chestnut": [
+  "items/cooking.json:/fuel/log_sweet_chestnut(key)",
+  "items/cooking.json:/fuel_class/log_sweet_chestnut(key)",
+  "items/cooking.json:/fuel_order[16]"
+ ],
+ "log_tropical_hardwood": [
+  "items/cooking.json:/fuel/log_tropical_hardwood(key)",
+  "items/cooking.json:/fuel_class/log_tropical_hardwood(key)",
+  "items/cooking.json:/fuel_order[9]"
+ ],
+ "log_walnut": [
+  "items/cooking.json:/fuel/log_walnut(key)",
+  "items/cooking.json:/fuel_class/log_walnut(key)",
+  "items/cooking.json:/fuel_order[17]"
+ ],
+ "log_wardpine": [
+  "items/cooking.json:/fuel/log_wardpine(key)",
+  "items/cooking.json:/fuel_class/log_wardpine(key)",
+  "items/cooking.json:/fuel_order[20]"
+ ],
+ "log_wild_apple": [
+  "items/cooking.json:/fuel/log_wild_apple(key)",
+  "items/cooking.json:/fuel_class/log_wild_apple(key)",
+  "items/cooking.json:/fuel_order[13]"
+ ],
+ "log_wild_cherry": [
+  "items/cooking.json:/fuel/log_wild_cherry(key)",
+  "items/cooking.json:/fuel_class/log_wild_cherry(key)",
+  "items/cooking.json:/fuel_order[15]"
+ ],
+ "log_wild_pear": [
+  "items/cooking.json:/fuel/log_wild_pear(key)",
+  "items/cooking.json:/fuel_class/log_wild_pear(key)",
+  "items/cooking.json:/fuel_order[14]"
+ ],
+ "log_willow": [
+  "items/cooking.json:/fuel/log_willow(key)",
+  "items/cooking.json:/fuel_class/log_willow(key)",
+  "items/cooking.json:/fuel_order[7]"
+ ],
+ "log_witness_tree": [
+  "items/cooking.json:/fuel/log_witness_tree(key)",
+  "items/cooking.json:/fuel_class/log_witness_tree(key)",
+  "items/cooking.json:/fuel_order[23]"
+ ],
+ "lumencap_caps": [
+  "items/drops.json:/harvest_yield/lumencap/item",
+  "items/wild_foods.json:/poisonous/lumencap/parts[0]",
+  "tables/flora.json:/entries[93]/yields[0]"
+ ],
+ "mackerel": [
+  "items/cooking.json:/cooks_into/mackerel(key)",
+  "items/cooking.json:/raw_sick/by_id/mackerel(key)",
+  "items/fish_schools.json:/species_by_kind/sea_shallow[1][0]",
+  "items/fish_schools.json:/only_in/mackerel(key)",
+  "items/seasons.json:/fish/mackerel(key)",
+  "items/sickness.json:/infection/odds/mackerel(key)",
+  "items/vitals.json:/food/by_id/mackerel(key)"
+ ],
+ "magic_tonic": [
+  "items/vitals.json:/energy_aids/magic_tonic(key)"
+ ],
+ "mangoes": [
+  "items/drops.json:/harvest_yield/mango/item",
+  "items/seasons.json:/fruit_and_nuts/mangoes(key)",
+  "items/vitals.json:/food/by_id/mangoes(key)",
+  "tables/flora.json:/entries[149]/yields[0]"
+ ],
+ "marjoram": [
+  "items/drops.json:/harvest_yield/wild_marjoram/item",
+  "items/seasons.json:/forage/wild_marjoram/parts[0]",
+  "items/wild_foods.json:/edible/wild_marjoram/parts[0]",
+  "tables/flora.json:/entries[53]/yields[0]"
+ ],
+ "marrowroots": [
+  "items/drops.json:/harvest_yield/marrowroot/item",
+  "items/seasons.json:/forage/marrowroot/parts[0]",
+  "items/wild_foods.json:/edible/marrowroot/parts[0]",
+  "tables/flora.json:/entries[100]/yields[0]"
+ ],
+ "meadowsweet_flowers": [
+  "items/drops.json:/harvest_yield/meadowsweet/item",
+  "items/seasons.json:/forage/meadowsweet/parts[0]",
+  "items/wild_foods.json:/edible/meadowsweet/parts[0]",
+  "tables/flora.json:/entries[63]/yields[0]"
+ ],
+ "meat_skewer": [
+  "items/cooking.json:/warms/meat_skewer(key)",
+  "items/dishes.json:/dishes/meat_skewer(key)",
+  "items/vitals.json:/food/by_id/meat_skewer(key)"
+ ],
+ "meatballs": [
+  "items/vitals.json:/food/by_id/meatballs(key)"
+ ],
+ "medicine": [
+  "items/coins.json:/trade/sell_extras/kinds[2]",
+  "items/vitals.json:/medicines/medicine(key)",
+  "tables/flora.json:/entries[2]/uses[4]",
+  "tables/flora.json:/entries[6]/uses[2]",
+  "tables/flora.json:/entries[13]/uses[1]",
+  "tables/flora.json:/entries[23]/uses[2]",
+  "tables/flora.json:/entries[25]/uses[0]",
+  "tables/flora.json:/entries[27]/uses[3]",
+  "tables/flora.json:/entries[28]/uses[3]",
+  "tables/flora.json:/entries[29]/uses[3]",
+  "tables/flora.json:/entries[32]/uses[4]",
+  "tables/flora.json:/entries[34]/uses[3]"
+ ],
+ "medlar": [
+  "items/drops.json:/fruit_tree/medlar(key)",
+  "items/drops.json:/harvest_yield/medlar(key)",
+  "items/drops.json:/harvest_yield/medlar/item",
+  "items/seasons.json:/fruit_and_nuts/medlar(key)",
+  "items/vitals.json:/food/by_id/medlar(key)",
+  "tables/flora.json:/entries[145]/name",
+  "tables/flora.json:/entries[145]/yields[0]"
+ ],
+ "milk": [
+  "items/vitals.json:/food/by_id/milk(key)"
+ ],
+ "mint": [
+  "items/drops.json:/harvest_yield/wild_mint/item",
+  "items/seasons.json:/forage/wild_mint/parts[0]",
+  "items/wild_foods.json:/edible/wild_mint/parts[0]",
+  "tables/flora.json:/entries[47]/yields[0]"
+ ],
+ "mirrorbark_bark": [
+  "tables/flora.json:/entries[89]/yields[0]"
+ ],
+ "mirrorbark_wood": [
+  "tables/flora.json:/entries[89]/yields[1]"
+ ],
+ "mirrorcap_caps": [
+  "items/wild_foods.json:/poisonous/mirrorcap/parts[0]",
+  "tables/flora.json:/entries[111]/yields[0]"
+ ],
+ "mixed_grill_platter": [
+  "items/vitals.json:/food/by_id/mixed_grill_platter(key)"
+ ],
+ "morels": [
+  "items/cooking.json:/raw_sick/by_suffix/morels(key)",
+  "items/drops.json:/harvest_yield/morel/item",
+  "items/seasons.json:/forage/morel/parts[0]",
+  "items/vitals.json:/food/by_suffix/morels(key)",
+  "items/wild_foods.json:/edible/morel/parts[0]",
+  "tables/flora.json:/entries[76]/yields[0]"
+ ],
+ "mournbloom_petals": [
+  "items/drops.json:/harvest_yield/mournbloom/item",
+  "items/wild_foods.json:/poisonous/mournbloom/parts[0]",
+  "tables/flora.json:/entries[115]/yields[0]"
+ ],
+ "mugwort": [
+  "items/drops.json:/harvest_yield/mugwort(key)",
+  "items/drops.json:/harvest_yield/mugwort/item",
+  "items/seasons.json:/forage/mugwort(key)",
+  "items/seasons.json:/forage/mugwort/parts[0]",
+  "items/wild_foods.json:/edible/mugwort(key)",
+  "items/wild_foods.json:/edible/mugwort/parts[0]",
+  "tables/flora.json:/entries[23]/look_alikes[0]",
+  "tables/flora.json:/entries[60]/look_alikes[4]",
+  "tables/flora.json:/entries[66]/name",
+  "tables/flora.json:/entries[66]/yields[0]",
+  "tables/flora.json:/entries[73]/look_alikes[1]"
+ ],
+ "mushroom_skewer": [
+  "items/cooking.json:/warms/mushroom_skewer(key)",
+  "items/dishes.json:/dishes/mushroom_skewer(key)",
+  "items/vitals.json:/food/by_id/mushroom_skewer(key)"
+ ],
+ "mushrooms": [
+  "items/dishes.json:/dishes/mushroom_skewer/needs[0][0]",
+  "items/seasons.json:/forage/mushrooms(key)",
+  "items/wild_foods.json:/edible/mushrooms(key)",
+  "tables/flora.json:/entries[26]/name",
+  "tables/flora.json:/entries[74]/look_alikes[2]",
+  "tables/flora.json:/entries[75]/look_alikes[2]",
+  "tables/flora.json:/entries[77]/look_alikes[2]"
+ ],
+ "mussel_stew": [
+  "items/cooking.json:/warms/mussel_stew(key)",
+  "items/dishes.json:/dishes/mussel_stew(key)",
+  "items/vitals.json:/food/by_id/mussel_stew(key)"
+ ],
+ "nettle_tea": [
+  "items/cooking.json:/warms/nettle_tea(key)",
+  "items/vitals.json:/energy_aids/nettle_tea(key)"
+ ],
+ "nettles": [
+  "items/dishes.json:/dishes/forager_stew/needs[0][0]",
+  "items/dishes.json:/dishes/egg_nettle_fry/needs[1][0]",
+  "items/drops.json:/by_species/nettle[1][0]",
+  "items/vitals.json:/food/by_id/nettles(key)",
+  "items/wild_foods.json:/edible/nettle/parts[0]"
+ ],
+ "nightcrown_blooms": [
+  "items/drops.json:/harvest_yield/nightcrown/item",
+  "items/seasons.json:/forage/nightcrown/parts[0]",
+  "items/wild_foods.json:/edible/nightcrown/parts[0]",
+  "tables/flora.json:/entries[114]/yields[0]"
+ ],
+ "nut_paste": [
+  "items/cooking.json:/warms/nut_paste(key)",
+  "items/dishes.json:/dishes/nut_paste(key)",
+  "items/vitals.json:/food/by_id/nut_paste(key)"
+ ],
+ "nuts": [
+  "items/vitals.json:/food/by_suffix/nuts(key)"
+ ],
+ "oat_cakes": [
+  "items/cooking.json:/warms/oat_cakes(key)",
+  "items/dishes.json:/dishes/oat_cakes(key)",
+  "items/vitals.json:/food/by_id/oat_cakes(key)"
+ ],
+ "oat_porridge": [
+  "items/cooking.json:/warms/oat_porridge(key)",
+  "items/dishes.json:/dishes/oat_porridge(key)",
+  "items/vitals.json:/food/by_id/oat_porridge(key)"
+ ],
+ "oats": [
+  "items/crops.json:/crops/oats(key)",
+  "items/crops.json:/crops/oats/yields[0][0]",
+  "items/dishes.json:/dishes/oat_porridge/needs[0][0]",
+  "items/dishes.json:/dishes/oat_cakes/needs[0][0]",
+  "items/seasons.json:/crops/oats(key)"
+ ],
+ "oats_seeds": [
+  "items/crops.json:/crops/oats/seed",
+  "items/crops.json:/crops/oats/seeds_back[0]",
+  "items/drops.json:/seed_drops/tall_grass/rows[2][0]"
+ ],
+ "oil": [
+  "items/drops.json:/tool_rules/suffixes/knife[4]",
+  "tables/flora.json:/entries[7]/uses[4]",
+  "tables/flora.json:/entries[21]/uses[3]",
+  "tables/flora.json:/entries[39]/yields[1]",
+  "tables/flora.json:/entries[44]/uses[1]",
+  "tables/flora.json:/entries[55]/uses[1]",
+  "tables/flora.json:/entries[56]/uses[2]",
+  "tables/flora.json:/entries[61]/uses[1]"
+ ],
+ "olives": [
+  "items/drops.json:/harvest_yield/olive/item",
+  "items/seasons.json:/fruit_and_nuts/olives(key)",
+  "items/vitals.json:/food/by_id/olives(key)",
+  "tables/flora.json:/entries[147]/yields[0]"
+ ],
+ "onion": [
+  "items/crops.json:/crops/onion(key)",
+  "items/crops.json:/crops/onion/yields[0][0]",
+  "items/dishes.json:/dishes/pea_soup/needs[1][0]",
+  "items/dishes.json:/dishes/cabbage_stew/needs[2][0]",
+  "items/dishes.json:/dishes/onion_roast/needs[0][0]",
+  "items/dishes.json:/dishes/fish_pie/needs[2][0]",
+  "items/dishes.json:/dishes/cactus_fry/needs[1][0]",
+  "items/drops.json:/harvest_yield/ramsons/item",
+  "items/seasons.json:/crops/onion(key)",
+  "tables/flora.json:/entries[156]/yields[0]"
+ ],
+ "onion_roast": [
+  "items/cooking.json:/warms/onion_roast(key)",
+  "items/dishes.json:/dishes/onion_roast(key)",
+  "items/vitals.json:/food/by_id/onion_roast(key)"
+ ],
+ "onion_seeds": [
+  "items/crops.json:/crops/onion/seed",
+  "items/crops.json:/crops/onion/seeds_back[0]",
+  "items/drops.json:/seed_drops/ramsons/rows[0][0]"
+ ],
+ "oranges": [
+  "items/drops.json:/harvest_yield/orange/item",
+  "items/seasons.json:/fruit_and_nuts/oranges(key)",
+  "items/vitals.json:/food/by_id/oranges(key)",
+  "tables/flora.json:/entries[150]/yields[0]"
+ ],
+ "oven": [
+  "items/dishes.json:/dishes/honey_loaf/station",
+  "items/dishes.json:/dishes/roast_joint/station",
+  "items/dishes.json:/dishes/venison_pie/station",
+  "items/dishes.json:/dishes/fish_pie/station",
+  "items/dishes.json:/dishes/apple_pie/station"
+ ],
+ "owlpetals": [
+  "items/drops.json:/harvest_yield/owlpetal/item",
+  "items/seasons.json:/forage/owlpetal/parts[0]",
+  "items/wild_foods.json:/edible/owlpetal/parts[0]",
+  "tables/flora.json:/entries[83]/yields[0]"
+ ],
+ "palm_fronds": [
+  "tables/flora.json:/entries[7]/yields[2]",
+  "tables/flora.json:/entries[81]/yields[1]"
+ ],
+ "palm_wood": [
+  "tables/flora.json:/entries[7]/yields[0]",
+  "tables/flora.json:/entries[81]/yields[2]"
+ ],
+ "parsnip": [
+  "items/crops.json:/crops/parsnip(key)",
+  "items/crops.json:/crops/parsnip/yields[0][0]",
+  "items/seasons.json:/crops/parsnip(key)"
+ ],
+ "parsnip_seeds": [
+  "items/crops.json:/crops/parsnip/seed",
+  "items/crops.json:/crops/parsnip/seeds_back[0]"
+ ],
+ "pea_soup": [
+  "items/cooking.json:/warms/pea_soup(key)",
+  "items/dishes.json:/dishes/pea_soup(key)",
+  "items/vitals.json:/food/by_id/pea_soup(key)"
+ ],
+ "pear_autumn": [
+  "items/dishes.json:/dishes/stewed_pears/needs[0][0]",
+  "items/drops.json:/fruit_tree/pear_autumn(key)",
+  "items/drops.json:/harvest_yield/pear_autumn(key)",
+  "items/drops.json:/harvest_yield/pear_autumn/item",
+  "items/seasons.json:/fruit_and_nuts/pear_autumn(key)",
+  "items/vitals.json:/food/by_id/pear_autumn(key)",
+  "tables/flora.json:/entries[139]/name",
+  "tables/flora.json:/entries[139]/yields[0]"
+ ],
+ "pear_summer": [
+  "items/drops.json:/fruit_tree/pear_summer(key)",
+  "items/drops.json:/harvest_yield/pear_summer(key)",
+  "items/drops.json:/harvest_yield/pear_summer/item",
+  "items/seasons.json:/fruit_and_nuts/pear_summer(key)",
+  "items/vitals.json:/food/by_id/pear_summer(key)",
+  "tables/flora.json:/entries[138]/name",
+  "tables/flora.json:/entries[138]/yields[0]"
+ ],
+ "pear_winter": [
+  "items/drops.json:/fruit_tree/pear_winter(key)",
+  "items/drops.json:/harvest_yield/pear_winter(key)",
+  "items/drops.json:/harvest_yield/pear_winter/item",
+  "items/seasons.json:/fruit_and_nuts/pear_winter(key)",
+  "items/vitals.json:/food/by_id/pear_winter(key)",
+  "tables/flora.json:/entries[140]/name",
+  "tables/flora.json:/entries[140]/yields[0]"
+ ],
+ "peas": [
+  "items/crops.json:/crops/peas(key)",
+  "items/crops.json:/crops/peas/yields[0][0]",
+  "items/dishes.json:/dishes/pea_soup/needs[0][0]",
+  "items/drops.json:/harvest_yield/wild_vetch/item",
+  "items/seasons.json:/crops/peas(key)",
+  "tables/flora.json:/entries[157]/yields[0]"
+ ],
+ "peas_seeds": [
+  "items/crops.json:/crops/peas/seed",
+  "items/crops.json:/crops/peas/seeds_back[0]",
+  "items/drops.json:/seed_drops/wild_vetch/rows[0][0]"
+ ],
+ "perch": [
+  "items/cooking.json:/cooks_into/perch(key)",
+  "items/cooking.json:/raw_sick/by_id/perch(key)",
+  "items/dishes.json:/dishes/fish_stew/needs[0][0]",
+  "items/fish_schools.json:/species_by_kind/lake[0][0]",
+  "items/fish_schools.json:/species_by_kind/pond[1][0]",
+  "items/fishing.json:/species/stream[1][0]",
+  "items/fishing.json:/species/pond[1][0]",
+  "items/fishing.json:/species/lake[1][0]",
+  "items/seasons.json:/fish/perch(key)",
+  "items/sickness.json:/infection/odds/perch(key)",
+  "items/vitals.json:/food/by_id/perch(key)"
+ ],
+ "pickled_vegetables": [
+  "items/vitals.json:/food/by_id/pickled_vegetables(key)"
+ ],
+ "pike": [
+  "items/cooking.json:/cooks_into/pike(key)",
+  "items/cooking.json:/raw_sick/by_id/pike(key)",
+  "items/fish_schools.json:/species_by_kind/lake[1][0]",
+  "items/fishing.json:/species/lake[0][0]",
+  "items/seasons.json:/fish/pike(key)",
+  "items/sickness.json:/infection/odds/pike(key)",
+  "items/vitals.json:/food/by_id/pike(key)"
+ ],
+ "pilgrims_cup_pitchers": [
+  "items/seasons.json:/forage/pilgrims_cup/parts[1]",
+  "items/wild_foods.json:/edible/pilgrims_cup/parts[1]",
+  "tables/flora.json:/entries[116]/yields[1]"
+ ],
+ "pilgrims_cup_water": [
+  "items/seasons.json:/forage/pilgrims_cup/parts[0]",
+  "items/wild_foods.json:/edible/pilgrims_cup/parts[0]",
+  "tables/flora.json:/entries[116]/yields[0]"
+ ],
+ "pine_tar": [
+  "items/drops.json:/trunk/by_species/scots_pine[1][0]",
+  "tables/flora.json:/entries[3]/yields[1]"
+ ],
+ "pitch": [
+  "tables/flora.json:/entries[3]/uses[2]",
+  "tables/flora.json:/entries[4]/uses[2]",
+  "tables/flora.json:/entries[92]/uses[1]",
+  "tables/flora.json:/entries[125]/uses[2]"
+ ],
+ "plant_fibre": [
+  "items/cooking.json:/tinder",
+  "items/crops.json:/crops/flax/yields[1][0]",
+  "items/drops.json:/by_species/flax[0][0]",
+  "items/drops.json:/by_species/tall_grass[0][0]",
+  "items/drops.json:/by_species/nettle[0][0]",
+  "items/drops.json:/by_species/reeds[0][0]",
+  "items/drops.json:/by_species/riverbraid[0][0]",
+  "items/drops.json:/by_species/tanglewort[0][0]",
+  "items/fishing.json:/bait[2]",
+  "tables/flora.json:/entries[127]/yields[1]"
+ ],
+ "plantain_leaves": [
+  "items/drops.json:/harvest_yield/plantain/item",
+  "items/drops.json:/by_species/plantain[0][0]",
+  "items/seasons.json:/forage/plantain/parts[0]",
+  "items/wild_foods.json:/edible/plantain/parts[0]",
+  "tables/flora.json:/entries[58]/yields[0]"
+ ],
+ "plate_cuirass": [
+  "items/smithing.json:/temper/include[14]"
+ ],
+ "plum_jam": [
+  "items/cooking.json:/warms/plum_jam(key)",
+  "items/dishes.json:/dishes/plum_jam(key)",
+  "items/vitals.json:/food/by_id/plum_jam(key)"
+ ],
+ "plums": [
+  "items/dishes.json:/dishes/plum_jam/needs[0][0]",
+  "items/drops.json:/harvest_yield/plum/item",
+  "items/seasons.json:/fruit_and_nuts/plums(key)",
+  "items/vitals.json:/food/by_id/plums(key)",
+  "tables/flora.json:/entries[142]/yields[0]"
+ ],
+ "poles": [
+  "tables/flora.json:/entries[11]/uses[1]"
+ ],
+ "pomegranates": [
+  "items/drops.json:/harvest_yield/pomegranate/item",
+  "items/seasons.json:/fruit_and_nuts/pomegranates(key)",
+  "items/vitals.json:/food/by_id/pomegranates(key)",
+  "tables/flora.json:/entries[148]/yields[0]"
+ ],
+ "porcini": [
+  "items/cooking.json:/raw_sick/by_suffix/porcini(key)",
+  "items/drops.json:/harvest_yield/porcini(key)",
+  "items/drops.json:/harvest_yield/porcini/item",
+  "items/seasons.json:/forage/porcini(key)",
+  "items/seasons.json:/forage/porcini/parts[0]",
+  "items/vitals.json:/food/by_suffix/porcini(key)",
+  "items/wild_foods.json:/edible/porcini(key)",
+  "items/wild_foods.json:/edible/porcini/parts[0]",
+  "tables/flora.json:/entries[26]/look_alikes[1]",
+  "tables/flora.json:/entries[74]/look_alikes[0]",
+  "tables/flora.json:/entries[75]/name",
+  "tables/flora.json:/entries[75]/yields[0]"
+ ],
+ "potash": [
+  "items/seasons.json:/forage/saltbush/parts[1]",
+  "items/wild_foods.json:/edible/saltbush/parts[1]",
+  "tables/flora.json:/entries[16]/yields[1]",
+  "tables/flora.json:/entries[16]/uses[1]"
+ ],
+ "potato": [
+  "items/crops.json:/crops/potato(key)",
+  "items/crops.json:/crops/potato/yields[0][0]",
+  "items/dishes.json:/dishes/baked_potato/needs[0][0]",
+  "items/drops.json:/harvest_yield/wild_potato/item",
+  "items/seasons.json:/crops/potato(key)",
+  "tables/flora.json:/entries[153]/yields[0]"
+ ],
+ "potato_seeds": [
+  "items/crops.json:/crops/potato/seed",
+  "items/crops.json:/crops/potato/seeds_back[0]",
+  "items/drops.json:/seed_drops/wild_potato/rows[0][0]"
+ ],
+ "poultice": [
+  "items/vitals.json:/heal/poultice(key)",
+  "tables/flora.json:/entries[60]/uses[1]",
+  "tables/flora.json:/entries[84]/uses[1]"
+ ],
+ "preserved_damsons": [
+  "items/cooking.json:/warms/preserved_damsons(key)",
+  "items/dishes.json:/dishes/preserved_damsons(key)",
+  "items/vitals.json:/food/by_id/preserved_damsons(key)"
+ ],
+ "preserving_jar": [
+  "items/dishes.json:/dishes/sauerkraut/station"
+ ],
+ "prickly_pears": [
+  "items/dishes.json:/dishes/cactus_fry/needs[0][0]",
+  "items/drops.json:/harvest_yield/prickly_pear/item",
+  "items/seasons.json:/forage/prickly_pear/parts[0]",
+  "items/wild_foods.json:/edible/prickly_pear/parts[0]",
+  "tables/flora.json:/entries[82]/yields[0]"
+ ],
+ "puffball": [
+  "items/drops.json:/harvest_yield/puffball(key)",
+  "items/drops.json:/harvest_yield/puffball/item",
+  "items/seasons.json:/forage/puffball(key)",
+  "items/seasons.json:/forage/puffball/parts[0]",
+  "items/wild_foods.json:/edible/puffball(key)",
+  "items/wild_foods.json:/edible/puffball/parts[0]",
+  "tables/flora.json:/entries[76]/look_alikes[1]",
+  "tables/flora.json:/entries[78]/name",
+  "tables/flora.json:/entries[78]/yields[0]",
+  "tables/flora.json:/entries[79]/look_alikes[1]"
+ ],
+ "quenchbell_heads": [
+  "items/seasons.json:/forage/quenchbell/parts[0]",
+  "items/wild_foods.json:/edible/quenchbell/parts[0]",
+  "tables/flora.json:/entries[104]/yields[0]"
+ ],
+ "quenching_trough": [
+  "items/smithing.json:/temper/addon"
+ ],
+ "quill": [
+  "items/carcass.json:/species/porcupine/parts[1][0]",
+  "items/carcass.json:/species/hedgehog/parts[1][0]"
+ ],
+ "quince": [
+  "items/dishes.json:/dishes/quince_paste/needs[0][0]",
+  "items/drops.json:/fruit_tree/quince(key)",
+  "items/drops.json:/harvest_yield/quince(key)",
+  "items/drops.json:/harvest_yield/quince/item",
+  "items/seasons.json:/fruit_and_nuts/quince(key)",
+  "items/vitals.json:/food/by_id/quince(key)",
+  "tables/flora.json:/entries[144]/name",
+  "tables/flora.json:/entries[144]/yields[0]"
+ ],
+ "quince_paste": [
+  "items/cooking.json:/warms/quince_paste(key)",
+  "items/dishes.json:/dishes/quince_paste(key)",
+  "items/vitals.json:/food/by_id/quince_paste(key)"
+ ],
+ "radish": [
+  "items/crops.json:/crops/radish(key)",
+  "items/crops.json:/crops/radish/yields[0][0]",
+  "items/drops.json:/harvest_yield/wild_radish/item",
+  "items/seasons.json:/crops/radish(key)",
+  "tables/flora.json:/entries[159]/yields[0]"
+ ],
+ "radish_seeds": [
+  "items/crops.json:/crops/radish/seed",
+  "items/crops.json:/crops/radish/seeds_back[0]",
+  "items/drops.json:/seed_drops/wild_radish/rows[0][0]"
+ ],
+ "raspberries": [
+  "items/drops.json:/berry_yield/raspberry/item",
+  "items/seasons.json:/forage/raspberry/parts[0]",
+  "items/wild_foods.json:/edible/raspberry/parts[0]",
+  "tables/flora.json:/entries[32]/yields[0]"
+ ],
+ "raspberry_leaves": [
+  "tables/flora.json:/entries[32]/yields[1]"
+ ],
+ "raw_meat": [
+  "items/carcass.json:/species/rabbit/parts[0][0]",
+  "items/carcass.json:/species/grouse/parts[0][0]",
+  "items/carcass.json:/species/fox/parts[0][0]",
+  "items/carcass.json:/species/boar/parts[0][0]",
+  "items/carcass.json:/species/deer/parts[0][0]",
+  "items/carcass.json:/species/wolf/parts[0][0]",
+  "items/carcass.json:/species/moose/parts[0][0]",
+  "items/carcass.json:/species/duck/parts[0][0]",
+  "items/carcass.json:/species/hare/parts[0][0]",
+  "items/carcass.json:/species/beaver/parts[0][0]",
+  "items/carcass.json:/species/otter/parts[0][0]",
+  "items/carcass.json:/species/badger/parts[0][0]"
+ ],
+ "reed_stems": [
+  "items/seasons.json:/forage/reeds/parts[1]",
+  "items/wild_foods.json:/edible/reeds/parts[1]",
+  "tables/flora.json:/entries[20]/yields[1]"
+ ],
+ "resin": [
+  "items/drops.json:/trunk/by_species/scots_pine[0][0]",
+  "items/drops.json:/trunk/by_species/spruce[0][0]",
+  "items/drops.json:/trunk/by_species/balsam_fir[0][0]",
+  "items/drops.json:/tool_rules/suffixes/knife[3]",
+  "tables/flora.json:/entries[3]/yields[0]",
+  "tables/flora.json:/entries[4]/yields[0]",
+  "tables/flora.json:/entries[8]/yields[0]",
+  "tables/flora.json:/entries[125]/yields[0]"
+ ],
+ "rimecap_caps": [
+  "items/wild_foods.json:/poisonous/rimecap/parts[0]",
+  "tables/flora.json:/entries[86]/yields[0]"
+ ],
+ "riverbraid_stems": [
+  "items/seasons.json:/forage/riverbraid/parts[0]",
+  "items/wild_foods.json:/edible/riverbraid/parts[0]",
+  "tables/flora.json:/entries[101]/yields[0]"
+ ],
+ "roast_fish": [
+  "items/cooking.json:/warms/roast_fish(key)",
+  "items/cooking.json:/cooks_into/salmon",
+  "items/cooking.json:/cooks_into/herring",
+  "items/cooking.json:/cooks_into/mackerel",
+  "items/cooking.json:/cooks_into/smelt",
+  "items/cooking.json:/cooks_into/eel",
+  "items/cooking.json:/cooks_into/cod",
+  "items/cooking.json:/cooks_into/trout",
+  "items/cooking.json:/cooks_into/perch",
+  "items/cooking.json:/cooks_into/carp",
+  "items/cooking.json:/cooks_into/pike",
+  "items/vitals.json:/food/by_id/roast_fish(key)"
+ ],
+ "roast_forage": [
+  "items/cooking.json:/gives",
+  "items/cooking.json:/warms/roast_forage(key)",
+  "items/vitals.json:/food/by_id/roast_forage(key)"
+ ],
+ "roast_joint": [
+  "items/cooking.json:/warms/roast_joint(key)",
+  "items/dishes.json:/dishes/roast_joint(key)",
+  "items/vitals.json:/food/by_id/roast_joint(key)"
+ ],
+ "roast_meat": [
+  "items/cooking.json:/warms/roast_meat(key)",
+  "items/cooking.json:/cooks_into/raw_meat",
+  "items/vitals.json:/food/by_id/roast_meat(key)"
+ ],
+ "roast_platter": [
+  "items/vitals.json:/food/by_id/roast_platter(key)"
+ ],
+ "roast_roots": [
+  "items/cooking.json:/warms/roast_roots(key)",
+  "items/dishes.json:/dishes/roast_roots(key)",
+  "items/vitals.json:/food/by_id/roast_roots(key)"
+ ],
+ "roast_seal": [
+  "items/cooking.json:/warms/roast_seal(key)",
+  "items/cooking.json:/cooks_into/seal_meat",
+  "items/vitals.json:/food/by_id/roast_seal(key)"
+ ],
+ "roast_shellfish": [
+  "items/cooking.json:/warms/roast_shellfish(key)",
+  "items/cooking.json:/cooks_into/shellfish",
+  "items/cooking.json:/cooks_into/crab_meat",
+  "items/vitals.json:/food/by_id/roast_shellfish(key)"
+ ],
+ "root_cellar": [
+  "items/crops.json:/storage_chain/root_cellar(key)"
+ ],
+ "rope": [
+  "tables/flora.json:/entries[21]/uses[1]",
+  "tables/flora.json:/entries[101]/uses[0]",
+  "tables/flora.json:/entries[108]/uses[0]"
+ ],
+ "rose_hips": [
+  "items/seasons.json:/forage/wild_rose/parts[1]",
+  "items/wild_foods.json:/edible/wild_rose/parts[1]",
+  "tables/flora.json:/entries[36]/yields[1]"
+ ],
+ "rose_petals": [
+  "items/seasons.json:/forage/wild_rose/parts[0]",
+  "items/wild_foods.json:/edible/wild_rose/parts[0]",
+  "tables/flora.json:/entries[36]/yields[0]"
+ ],
+ "rosemary": [
+  "items/dishes.json:/dishes/garlic_meat/needs[2][0]",
+  "items/dishes.json:/dishes/roast_joint/needs[1][0]",
+  "items/drops.json:/harvest_yield/rosemary(key)",
+  "items/drops.json:/harvest_yield/rosemary/item",
+  "items/seasons.json:/forage/rosemary(key)",
+  "items/seasons.json:/forage/rosemary/parts[0]",
+  "items/wild_foods.json:/edible/rosemary(key)",
+  "items/wild_foods.json:/edible/rosemary/parts[0]",
+  "tables/flora.json:/entries[46]/look_alikes[0]",
+  "tables/flora.json:/entries[54]/look_alikes[0]",
+  "tables/flora.json:/entries[55]/name",
+  "tables/flora.json:/entries[55]/yields[0]"
+ ],
+ "rowan_berries": [
+  "items/drops.json:/harvest_yield/rowan/item",
+  "items/drops.json:/trunk/by_species/rowan[0][0]",
+  "items/seasons.json:/fruit_and_nuts/rowan_berries(key)",
+  "tables/flora.json:/entries[35]/yields[0]"
+ ],
+ "rye": [
+  "items/crops.json:/crops/rye(key)",
+  "items/crops.json:/crops/rye/yields[0][0]",
+  "items/seasons.json:/crops/rye(key)"
+ ],
+ "rye_flatbread": [
+  "items/cooking.json:/warms/rye_flatbread(key)",
+  "items/dishes.json:/dishes/rye_flatbread(key)",
+  "items/vitals.json:/food/by_id/rye_flatbread(key)"
+ ],
+ "rye_seeds": [
+  "items/crops.json:/crops/rye/seed",
+  "items/crops.json:/crops/rye/seeds_back[0]",
+  "items/drops.json:/seed_drops/tall_grass/rows[3][0]"
+ ],
+ "sage": [
+  "items/drops.json:/harvest_yield/wild_sage/item",
+  "items/seasons.json:/forage/wild_sage/parts[0]",
+  "items/wild_foods.json:/edible/wild_sage/parts[0]",
+  "tables/flora.json:/entries[54]/yields[0]"
+ ],
+ "salmon": [
+  "items/cooking.json:/cooks_into/salmon(key)",
+  "items/cooking.json:/raw_sick/by_id/salmon(key)",
+  "items/fish_schools.json:/species_by_kind/river[1][0]",
+  "items/fish_schools.json:/only_in/salmon(key)",
+  "items/seasons.json:/fish/salmon(key)",
+  "items/sickness.json:/infection/odds/salmon(key)",
+  "items/vitals.json:/food/by_id/salmon(key)"
+ ],
+ "salt": [
+  "items/boulders.json:/ore/items/salt(key)",
+  "items/boulders.json:/ore/needs_material/salt(key)",
+  "tables/resources.json:/entries[10]/name"
+ ],
+ "salted_fish": [
+  "items/cooking.json:/warms/salted_fish(key)",
+  "items/dishes.json:/dishes/salted_fish(key)",
+  "items/vitals.json:/food/by_id/salted_fish(key)"
+ ],
+ "samphire": [
+  "items/drops.json:/harvest_yield/samphire(key)",
+  "items/drops.json:/harvest_yield/samphire/item",
+  "items/seasons.json:/forage/samphire(key)",
+  "items/seasons.json:/forage/samphire/parts[0]",
+  "items/wild_foods.json:/edible/samphire(key)",
+  "items/wild_foods.json:/edible/samphire/parts[0]",
+  "tables/flora.json:/entries[16]/look_alikes[0]",
+  "tables/flora.json:/entries[52]/name",
+  "tables/flora.json:/entries[52]/yields[0]",
+  "tables/flora.json:/entries[96]/look_alikes[1]",
+  "tables/flora.json:/entries[128]/look_alikes[1]"
+ ],
+ "sand": [
+  "items/digging.json:/yield/volcanic_ash[0][0]",
+  "items/digging.json:/yield/sand(key)",
+  "items/digging.json:/yield/sand[0][0]",
+  "items/digging.json:/yield/beach_sand[0][0]",
+  "items/digging.json:/under/salt_flat[0]",
+  "items/digging.json:/fill[1]",
+  "tables/soils.json:/entries[1]/name",
+  "tables/surficial_deposits.json:/entries[3]/name"
+ ],
+ "sap": [
+  "items/drops.json:/tool_rules/suffixes/knife[2]",
+  "items/vitals.json:/food/by_suffix/sap(key)",
+  "tables/flora.json:/entries[2]/yields[1]",
+  "tables/flora.json:/entries[126]/yields[0]"
+ ],
+ "sauerkraut": [
+  "items/cooking.json:/warms/sauerkraut(key)",
+  "items/dishes.json:/dishes/sauerkraut(key)",
+  "items/vitals.json:/food/by_id/sauerkraut(key)"
+ ],
+ "sausage": [
+  "items/cooking.json:/warms/sausage(key)",
+  "items/dishes.json:/dishes/sausage(key)",
+  "items/vitals.json:/food/by_id/sausage(key)"
+ ],
+ "sea_buckthorn_berries": [
+  "items/drops.json:/harvest_yield/sea_buckthorn/item",
+  "items/seasons.json:/forage/sea_buckthorn/parts[0]",
+  "items/seasons.json:/fruit_and_nuts/sea_buckthorn_berries(key)",
+  "items/wild_foods.json:/edible/sea_buckthorn/parts[0]",
+  "tables/flora.json:/entries[39]/yields[0]"
+ ],
+ "sea_salt": [
+  "items/boulders.json:/ore/items/salt",
+  "items/digging.json:/yield/salt_flat[0][0]",
+  "items/dishes.json:/dishes/smoked_fish/needs[1][0]",
+  "items/dishes.json:/dishes/rye_flatbread/needs[2][0]",
+  "items/dishes.json:/dishes/jerky/needs[1][0]",
+  "items/dishes.json:/dishes/salted_fish/needs[1][0]",
+  "items/dishes.json:/dishes/sauerkraut/needs[1][0]",
+  "items/dishes.json:/dishes/sausage/needs[2][0]"
+ ],
+ "sea_water": [
+  "items/shore_nodes.json:/sea_water_item"
+ ],
+ "seafood_platter": [
+  "items/vitals.json:/food/by_id/seafood_platter(key)"
+ ],
+ "seal_meat": [
+  "items/carcass.json:/species/seal/parts[0][0]",
+  "items/cooking.json:/cooks_into/seal_meat(key)",
+  "items/cooking.json:/raw_sick/by_id/seal_meat(key)",
+  "items/dishes.json:/dishes/seal_stew/needs[0][0]",
+  "items/sickness.json:/infection/odds/seal_meat(key)",
+  "items/vitals.json:/food/by_id/seal_meat(key)"
+ ],
+ "seal_stew": [
+  "items/cooking.json:/warms/seal_stew(key)",
+  "items/dishes.json:/dishes/seal_stew(key)",
+  "items/vitals.json:/food/by_id/seal_stew(key)"
+ ],
+ "seaweed": [
+  "items/dishes.json:/dishes/seaweed_soup/needs[0][0]",
+  "items/shore_nodes.json:/nodes[0]/item",
+  "items/vitals.json:/food/by_id/seaweed(key)"
+ ],
+ "seaweed_soup": [
+  "items/cooking.json:/warms/seaweed_soup(key)",
+  "items/dishes.json:/dishes/seaweed_soup(key)",
+  "items/vitals.json:/food/by_id/seaweed_soup(key)"
+ ],
+ "seed_bundle": [
+  "items/vitals.json:/food/by_id/seed_bundle(key)"
+ ],
+ "seeds": [
+  "tables/flora.json:/entries[50]/yields[1]",
+  "tables/flora.json:/entries[58]/yields[1]",
+  "tables/flora.json:/entries[153]/yields[1]",
+  "tables/flora.json:/entries[154]/yields[1]",
+  "tables/flora.json:/entries[155]/yields[1]",
+  "tables/flora.json:/entries[156]/yields[1]",
+  "tables/flora.json:/entries[157]/yields[1]",
+  "tables/flora.json:/entries[158]/yields[1]",
+  "tables/flora.json:/entries[159]/yields[1]",
+  "tables/flora.json:/entries[160]/yields[1]"
+ ],
+ "sevenyear_blossoms": [
+  "items/seasons.json:/forage/sevenyear_lily/parts[1]",
+  "items/wild_foods.json:/edible/sevenyear_lily/parts[1]",
+  "tables/flora.json:/entries[119]/yields[1]"
+ ],
+ "sevenyear_bulbs": [
+  "items/seasons.json:/forage/sevenyear_lily/parts[0]",
+  "items/wild_foods.json:/edible/sevenyear_lily/parts[0]",
+  "tables/flora.json:/entries[119]/yields[0]"
+ ],
+ "shellfish": [
+  "items/cooking.json:/cooks_into/shellfish(key)",
+  "items/cooking.json:/raw_sick/by_id/shellfish(key)",
+  "items/dishes.json:/dishes/seaweed_soup/needs[1][0]",
+  "items/dishes.json:/dishes/mussel_stew/needs[0][0]",
+  "items/shore_nodes.json:/nodes[1]/item",
+  "items/sickness.json:/infection/odds/shellfish(key)",
+  "items/vitals.json:/food/by_id/shellfish(key)"
+ ],
+ "shore_net": [
+  "items/open_recipes.json:/open[0]"
+ ],
+ "sickle": [
+  "items/crops.json:/crops/wheat/tool_to_harvest",
+  "items/crops.json:/crops/barley/tool_to_harvest",
+  "items/crops.json:/crops/oats/tool_to_harvest",
+  "items/crops.json:/crops/rye/tool_to_harvest",
+  "items/crops.json:/crops/flax/tool_to_harvest"
+ ],
+ "sinew": [
+  "items/carcass.json:/species/fox/parts[3][0]",
+  "items/carcass.json:/species/boar/parts[3][0]",
+  "items/carcass.json:/species/deer/parts[3][0]",
+  "items/carcass.json:/species/wolf/parts[3][0]",
+  "items/carcass.json:/species/moose/parts[3][0]",
+  "items/carcass.json:/species/lynx/parts[3][0]",
+  "items/carcass.json:/species/bear/parts[3][0]",
+  "items/carcass.json:/species/mountain_goat/parts[3][0]",
+  "items/carcass.json:/species/wild_sheep/parts[3][0]",
+  "items/carcass.json:/species/reindeer/parts[3][0]",
+  "items/carcass.json:/species/horse/parts[3][0]",
+  "items/carcass.json:/species/donkey/parts[3][0]"
+ ],
+ "sleetberries": [
+  "items/drops.json:/harvest_yield/sleetberry/item",
+  "items/seasons.json:/forage/sleetberry/parts[0]",
+  "items/wild_foods.json:/edible/sleetberry/parts[0]",
+  "tables/flora.json:/entries[103]/yields[0]"
+ ],
+ "sling": [
+  "items/bow.json:/bows/sling(key)"
+ ],
+ "sling_stone": [
+  "items/bow.json:/bows/sling/ammo[0]"
+ ],
+ "sloes": [
+  "items/drops.json:/berry_yield/blackthorn/item",
+  "items/seasons.json:/forage/blackthorn/parts[0]",
+  "items/wild_foods.json:/edible/blackthorn/parts[0]",
+  "tables/flora.json:/entries[37]/yields[0]"
+ ],
+ "smelt": [
+  "items/cooking.json:/cooks_into/smelt(key)",
+  "items/cooking.json:/raw_sick/by_id/smelt(key)",
+  "items/fish_schools.json:/species_by_kind/sea_shallow[2][0]",
+  "items/fish_schools.json:/only_in/smelt(key)",
+  "items/seasons.json:/fish/smelt(key)",
+  "items/sickness.json:/infection/odds/smelt(key)",
+  "items/vitals.json:/food/by_id/smelt(key)"
+ ],
+ "smoked_fish": [
+  "items/cooking.json:/warms/smoked_fish(key)",
+  "items/dishes.json:/dishes/smoked_fish(key)",
+  "items/vitals.json:/food/by_id/smoked_fish(key)"
+ ],
+ "smoked_meat": [
+  "items/cooking.json:/warms/smoked_meat(key)",
+  "items/vitals.json:/food/by_id/smoked_meat(key)"
+ ],
+ "smoker": [
+  "items/dishes.json:/dishes/smoked_fish/station"
+ ],
+ "soap": [
+  "tables/flora.json:/entries[56]/uses[1]"
+ ],
+ "soil": [
+  "items/crops.json:/crops/wheat/soil(key)",
+  "items/crops.json:/crops/barley/soil(key)",
+  "items/crops.json:/crops/oats/soil(key)",
+  "items/crops.json:/crops/rye/soil(key)",
+  "items/crops.json:/crops/carrot/soil(key)",
+  "items/crops.json:/crops/potato/soil(key)",
+  "items/crops.json:/crops/turnip/soil(key)",
+  "items/crops.json:/crops/cabbage/soil(key)",
+  "items/crops.json:/crops/onion/soil(key)",
+  "items/crops.json:/crops/peas/soil(key)",
+  "items/crops.json:/crops/beet/soil(key)",
+  "items/crops.json:/crops/flax/soil(key)"
+ ],
+ "sorrel_leaves": [
+  "items/drops.json:/harvest_yield/sorrel/item",
+  "items/seasons.json:/forage/sorrel/parts[0]",
+  "items/wild_foods.json:/edible/sorrel/parts[0]",
+  "tables/flora.json:/entries[48]/yields[0]"
+ ],
+ "sour_cherries": [
+  "items/drops.json:/harvest_yield/sour_cherry/item",
+  "items/seasons.json:/fruit_and_nuts/sour_cherries(key)",
+  "items/vitals.json:/food/by_id/sour_cherries(key)",
+  "tables/flora.json:/entries[141]/yields[0]"
+ ],
+ "spear": [
+  "items/fishing.json:/spear(key)"
+ ],
+ "spines": [
+  "items/seasons.json:/forage/cactus/parts[1]",
+  "items/wild_foods.json:/edible/cactus/parts[1]",
+  "tables/flora.json:/entries[17]/yields[1]"
+ ],
+ "splint": [
+  "items/vitals.json:/limp/cure_items[0]"
+ ],
+ "st_johns_wort": [
+  "items/drops.json:/harvest_yield/st_johns_wort(key)",
+  "items/drops.json:/harvest_yield/st_johns_wort/item",
+  "items/seasons.json:/forage/st_johns_wort(key)",
+  "items/seasons.json:/forage/st_johns_wort/parts[0]",
+  "items/wild_foods.json:/edible/st_johns_wort(key)",
+  "items/wild_foods.json:/edible/st_johns_wort/parts[0]",
+  "tables/flora.json:/entries[49]/look_alikes[1]",
+  "tables/flora.json:/entries[61]/name",
+  "tables/flora.json:/entries[61]/yields[0]",
+  "tables/flora.json:/entries[67]/look_alikes[1]",
+  "tables/flora.json:/entries[100]/look_alikes[2]"
+ ],
+ "staunchmoss": [
+  "items/drops.json:/by_species/staunchmoss(key)",
+  "items/drops.json:/by_species/staunchmoss[0][0]",
+  "items/seasons.json:/forage/staunchmoss(key)",
+  "items/seasons.json:/forage/staunchmoss/parts[0]",
+  "items/wild_foods.json:/edible/staunchmoss(key)",
+  "items/wild_foods.json:/edible/staunchmoss/parts[0]",
+  "tables/flora.json:/entries[18]/look_alikes[1]",
+  "tables/flora.json:/entries[84]/name",
+  "tables/flora.json:/entries[84]/yields[0]",
+  "tables/flora.json:/entries[91]/look_alikes[1]",
+  "tables/flora.json:/entries[105]/look_alikes[2]",
+  "tables/flora.json:/entries[112]/look_alikes[2]"
+ ],
+ "steel_arrow": [
+  "items/bow.json:/ammo[7]"
+ ],
+ "steel_battleaxe": [
+  "items/smithing.json:/temper/include[7]"
+ ],
+ "steel_gauntlets": [
+  "items/smithing.json:/temper/include[17]"
+ ],
+ "steel_greataxe": [
+  "items/smithing.json:/temper/include[8]"
+ ],
+ "steel_greatsword": [
+  "items/smithing.json:/temper/include[4]"
+ ],
+ "steel_greaves": [
+  "items/smithing.json:/temper/include[18]"
+ ],
+ "steel_halberd": [
+  "items/smithing.json:/temper/include[12]"
+ ],
+ "steel_half_plate": [
+  "items/smithing.json:/temper/include[15]"
+ ],
+ "steel_helm": [
+  "items/smithing.json:/temper/include[13]"
+ ],
+ "steel_mace": [
+  "items/smithing.json:/temper/include[1]"
+ ],
+ "steel_maul": [
+  "items/smithing.json:/temper/include[10]"
+ ],
+ "steel_plate_harness": [
+  "items/smithing.json:/temper/include[16]"
+ ],
+ "steel_rapier": [
+  "items/smithing.json:/temper/include[5]"
+ ],
+ "steel_sabatons": [
+  "items/smithing.json:/temper/include[19]"
+ ],
+ "steel_scimitar": [
+  "items/smithing.json:/temper/include[6]"
+ ],
+ "steel_shield": [
+  "items/smithing.json:/temper/include[2]"
+ ],
+ "steel_shortsword": [
+  "items/smithing.json:/temper/include[3]"
+ ],
+ "steel_spear": [
+  "items/smithing.json:/temper/include[11]"
+ ],
+ "steel_striker": [
+  "items/smithing.json:/temper/exclude[0]"
+ ],
+ "steel_sword": [
+  "items/smithing.json:/temper/include[0]"
+ ],
+ "steel_warhammer": [
+  "items/smithing.json:/temper/include[9]"
+ ],
+ "stewed_berries": [
+  "items/cooking.json:/warms/stewed_berries(key)",
+  "items/vitals.json:/food/by_id/stewed_berries(key)"
+ ],
+ "stewed_pears": [
+  "items/cooking.json:/warms/stewed_pears(key)",
+  "items/dishes.json:/dishes/stewed_pears(key)",
+  "items/vitals.json:/food/by_id/stewed_pears(key)"
+ ],
+ "stick": [
+  "items/cooking.json:/fuel/stick(key)",
+  "items/cooking.json:/fuel_class/stick(key)",
+  "items/cooking.json:/fuel_order[33]",
+  "items/dishes.json:/dishes/meat_skewer/needs[1][0]",
+  "items/drops.json:/by_species/fallen_log[0][0]",
+  "items/drops.json:/by_species/hollow_log[0][0]",
+  "items/drops.json:/by_species/old_stump[0][0]",
+  "items/drops.json:/by_kind/shrub[0][0]",
+  "items/drops.json:/stump/chip[0][0]",
+  "items/drops.json:/stump/final[2][0]",
+  "items/drops.json:/stump/final_by_radius[0]/rows[2][0]",
+  "items/drops.json:/stump/final_by_radius[1]/rows[2][0]"
+ ],
+ "stillwater_petals": [
+  "items/seasons.json:/forage/stillwater_lotus/parts[1]",
+  "items/wild_foods.json:/edible/stillwater_lotus/parts[1]",
+  "tables/flora.json:/entries[120]/yields[1]"
+ ],
+ "stillwater_seeds": [
+  "items/seasons.json:/forage/stillwater_lotus/parts[0]",
+  "items/wild_foods.json:/edible/stillwater_lotus/parts[0]",
+  "tables/flora.json:/entries[120]/yields[0]"
+ ],
+ "stomach_tea": [
+  "items/cooking.json:/warms/stomach_tea(key)",
+  "items/vitals.json:/medicines/stomach_tea(key)"
+ ],
+ "stone": [
+  "items/boulders.json:/tools/pick/stone(key)",
+  "items/boulders.json:/tools/axe/stone(key)",
+  "items/boulders.json:/ore/needs_material/coal[0]",
+  "items/boulders.json:/ore/needs_material/copper[0]",
+  "items/boulders.json:/ore/needs_material/tin[0]",
+  "items/boulders.json:/ore/needs_material/salt[0]",
+  "items/bow.json:/break_chance/stone(key)",
+  "items/digging.json:/yield/stony_soil[1][0]",
+  "items/digging.json:/yield/rock[0][0]",
+  "items/digging.json:/fill[4]",
+  "items/drops.json:/wood_tools/speed/axe/stone(key)",
+  "items/drops.json:/wood_tools/speed/pick/stone(key)"
+ ],
+ "stone_arrow": [
+  "items/bow.json:/ammo[0]"
+ ],
+ "stormreed_stalks": [
+  "items/seasons.json:/forage/stormreed/parts[0]",
+  "items/wild_foods.json:/edible/stormreed/parts[0]",
+  "tables/flora.json:/entries[109]/yields[0]"
+ ],
+ "straw": [
+  "items/crops.json:/crops/wheat/yields[1][0]",
+  "items/crops.json:/crops/barley/yields[1][0]",
+  "items/crops.json:/crops/oats/yields[1][0]",
+  "items/crops.json:/crops/rye/yields[1][0]",
+  "items/drops.json:/by_species/tall_grass[2][0]",
+  "items/seasons.json:/forage/tall_grass/parts[1]",
+  "items/wild_foods.json:/edible/tall_grass/parts[1]",
+  "tables/flora.json:/entries[22]/yields[1]"
+ ],
+ "strawberries": [
+  "items/drops.json:/berry_yield/wild_strawberry/item",
+  "items/seasons.json:/forage/wild_strawberry/parts[0]",
+  "items/wild_foods.json:/edible/wild_strawberry/parts[0]",
+  "tables/flora.json:/entries[31]/yields[0]"
+ ],
+ "stuffing": [
+  "items/seasons.json:/forage/cotton_grass/parts[1]",
+  "items/wild_foods.json:/edible/cotton_grass/parts[1]",
+  "tables/flora.json:/entries[24]/yields[1]",
+  "tables/flora.json:/entries[24]/uses[1]",
+  "tables/flora.json:/entries[97]/uses[1]"
+ ],
+ "sunberries": [
+  "items/drops.json:/harvest_yield/sunberry/item",
+  "items/seasons.json:/forage/sunberry/parts[0]",
+  "items/wild_foods.json:/edible/sunberry/parts[0]",
+  "tables/flora.json:/entries[90]/yields[0]"
+ ],
+ "sunsilver_leaves": [
+  "items/seasons.json:/forage/sunsilver_vine/parts[0]",
+  "items/wild_foods.json:/edible/sunsilver_vine/parts[0]",
+  "tables/flora.json:/entries[117]/yields[0]"
+ ],
+ "table": [
+  "tables/feature_types.json:/table(key)",
+  "tables/flora.json:/table(key)",
+  "tables/province_kinds.json:/table(key)",
+  "tables/resources.json:/table(key)",
+  "tables/rocks.json:/table(key)",
+  "tables/site_types.json:/table(key)",
+  "tables/soils.json:/table(key)",
+  "tables/surficial_deposits.json:/table(key)",
+  "tables/water_classes.json:/table(key)"
+ ],
+ "tanglewort_vines": [
+  "items/seasons.json:/forage/tanglewort/parts[0]",
+  "items/wild_foods.json:/edible/tanglewort/parts[0]",
+  "tables/flora.json:/entries[108]/yields[0]"
+ ],
+ "tannin_bark": [
+  "items/drops.json:/harvest_yield/oak/item",
+  "tables/flora.json:/entries[10]/yields[0]"
+ ],
+ "tar": [
+  "items/drops.json:/tool_rules/suffixes/knife[5]"
+ ],
+ "tavern_supper_board": [
+  "items/vitals.json:/food/by_id/tavern_supper_board(key)"
+ ],
+ "thatch": [
+  "items/drops.json:/harvest_yield/thatch_grass/item",
+  "items/drops.json:/by_species/tall_grass[1][0]",
+  "items/drops.json:/by_species/heather[0][0]",
+  "items/drops.json:/by_species/reeds[1][0]",
+  "items/drops.json:/wood_tools/pick_splinters[1][0]",
+  "items/seasons.json:/forage/heather/parts[0]",
+  "items/seasons.json:/forage/reeds/parts[0]",
+  "items/seasons.json:/forage/tall_grass/parts[0]",
+  "items/seasons.json:/forage/thatch_grass/parts[0]",
+  "items/wild_foods.json:/edible/heather/parts[0]",
+  "items/wild_foods.json:/edible/reeds/parts[0]",
+  "items/wild_foods.json:/edible/tall_grass/parts[0]"
+ ],
+ "thorny_canes": [
+  "tables/flora.json:/entries[12]/yields[1]"
+ ],
+ "thorny_wood": [
+  "tables/flora.json:/entries[37]/yields[1]"
+ ],
+ "thyme": [
+  "items/dishes.json:/dishes/beet_roast/needs[1][0]",
+  "items/dishes.json:/dishes/herb_omelette/needs[1][0]",
+  "items/drops.json:/harvest_yield/wild_thyme/item",
+  "items/seasons.json:/forage/wild_thyme/parts[0]",
+  "items/wild_foods.json:/edible/wild_thyme/parts[0]",
+  "tables/flora.json:/entries[46]/yields[0]"
+ ],
+ "tidecrown_pearls": [
+  "items/seasons.json:/forage/tidecrown/parts[0]",
+  "items/wild_foods.json:/edible/tidecrown/parts[0]",
+  "tables/flora.json:/entries[124]/yields[0]"
+ ],
+ "tideglass_fronds": [
+  "items/seasons.json:/forage/tideglass_weed/parts[0]",
+  "items/wild_foods.json:/edible/tideglass_weed/parts[0]",
+  "tables/flora.json:/entries[96]/yields[0]"
+ ],
+ "timber": [
+  "items/drops.json:/tool_rules/suffixes/axe[2]",
+  "tables/flora.json:/entries[0]/uses[0]",
+  "tables/flora.json:/entries[1]/uses[0]",
+  "tables/flora.json:/entries[2]/uses[0]",
+  "tables/flora.json:/entries[3]/uses[0]",
+  "tables/flora.json:/entries[4]/uses[0]",
+  "tables/flora.json:/entries[5]/uses[0]",
+  "tables/flora.json:/entries[6]/uses[1]",
+  "tables/flora.json:/entries[7]/uses[2]",
+  "tables/flora.json:/entries[8]/uses[0]",
+  "tables/flora.json:/entries[9]/uses[0]",
+  "tables/flora.json:/entries[10]/uses[0]"
+ ],
+ "tin_ore": [
+  "items/boulders.json:/ore/items/tin"
+ ],
+ "tinder": [
+  "items/cooking.json:/tinder(key)",
+  "items/cooking.json:/tinder_also[0]",
+  "items/cooking.json:/fuel/tinder(key)",
+  "items/cooking.json:/fuel_class/tinder(key)",
+  "items/cooking.json:/fuel_order[35]",
+  "items/seasons.json:/forage/cotton_grass/parts[0]",
+  "items/wild_foods.json:/edible/cotton_grass/parts[0]",
+  "tables/flora.json:/entries[2]/uses[2]",
+  "tables/flora.json:/entries[24]/yields[0]",
+  "tables/flora.json:/entries[24]/uses[0]",
+  "tables/flora.json:/entries[78]/uses[1]",
+  "tables/flora.json:/entries[79]/uses[0]"
+ ],
+ "tinder_fungus": [
+  "items/cooking.json:/tinder_also[2]",
+  "items/drops.json:/harvest_yield/tinder_fungus(key)",
+  "items/drops.json:/harvest_yield/tinder_fungus/item",
+  "items/seasons.json:/forage/mushrooms/parts[1]",
+  "items/seasons.json:/forage/tinder_fungus(key)",
+  "items/seasons.json:/forage/tinder_fungus/parts[0]",
+  "items/wild_foods.json:/edible/mushrooms/parts[1]",
+  "items/wild_foods.json:/edible/tinder_fungus(key)",
+  "items/wild_foods.json:/edible/tinder_fungus/parts[0]",
+  "tables/flora.json:/entries[26]/yields[1]",
+  "tables/flora.json:/entries[76]/look_alikes[0]",
+  "tables/flora.json:/entries[78]/look_alikes[1]"
+ ],
+ "torch": [
+  "items/exertion.json:/tool_effort/torch(key)"
+ ],
+ "trail_bread": [
+  "items/cooking.json:/warms/trail_bread(key)",
+  "items/dishes.json:/dishes/trail_bread(key)",
+  "items/vitals.json:/food/by_id/trail_bread(key)"
+ ],
+ "tree_roots": [
+  "items/drops.json:/trunk/roots[0]"
+ ],
+ "trout": [
+  "items/cooking.json:/cooks_into/trout(key)",
+  "items/cooking.json:/raw_sick/by_id/trout(key)",
+  "items/dishes.json:/dishes/fish_pie/needs[0][0]",
+  "items/dishes.json:/dishes/salted_fish/needs[0][0]",
+  "items/fish_schools.json:/species_by_kind/brook[0][0]",
+  "items/fish_schools.json:/species_by_kind/river[0][0]",
+  "items/fishing.json:/species/stream[0][0]",
+  "items/seasons.json:/fish/trout(key)",
+  "items/sickness.json:/infection/odds/trout(key)",
+  "items/vitals.json:/food/by_id/trout(key)"
+ ],
+ "truthsage_leaves": [
+  "items/drops.json:/harvest_yield/truthsage/item",
+  "items/seasons.json:/forage/truthsage/parts[0]",
+  "items/wild_foods.json:/edible/truthsage/parts[0]",
+  "tables/flora.json:/entries[110]/yields[0]"
+ ],
+ "turnip": [
+  "items/crops.json:/crops/turnip(key)",
+  "items/crops.json:/crops/turnip/yields[0][0]",
+  "items/dishes.json:/dishes/turnip_mash/needs[0][0]",
+  "items/dishes.json:/dishes/seal_stew/needs[1][0]",
+  "items/drops.json:/harvest_yield/wild_turnip/item",
+  "items/seasons.json:/crops/turnip(key)",
+  "tables/flora.json:/entries[154]/yields[0]"
+ ],
+ "turnip_mash": [
+  "items/cooking.json:/warms/turnip_mash(key)",
+  "items/dishes.json:/dishes/turnip_mash(key)",
+  "items/vitals.json:/food/by_id/turnip_mash(key)"
+ ],
+ "turnip_seeds": [
+  "items/crops.json:/crops/turnip/seed",
+  "items/crops.json:/crops/turnip/seeds_back[0]",
+  "items/drops.json:/seed_drops/wild_turnip/rows[0][0]"
+ ],
+ "tusk": [
+  "items/carcass.json:/species/boar/parts[5][0]",
+  "items/carcass.json:/species/warthog/parts[5][0]",
+  "items/carcass.json:/species/elephant/parts[5][0]",
+  "items/carcass.json:/species/mammoth/parts[5][0]"
+ ],
+ "unbaked_apple_pie": [
+  "items/dishes.json:/dishes/apple_pie/prepared"
+ ],
+ "unbaked_chestnut_cakes": [
+  "items/dishes.json:/dishes/chestnut_cakes/prepared"
+ ],
+ "unbaked_fish_pie": [
+  "items/dishes.json:/dishes/fish_pie/prepared"
+ ],
+ "unbaked_flatbread": [
+  "items/dishes.json:/dishes/flatbread/prepared"
+ ],
+ "unbaked_garlic_flatbread": [
+  "items/dishes.json:/dishes/garlic_bread/prepared"
+ ],
+ "unbaked_honey_loaf": [
+  "items/dishes.json:/dishes/honey_loaf/prepared"
+ ],
+ "unbaked_oatcakes": [
+  "items/dishes.json:/dishes/oat_cakes/prepared"
+ ],
+ "unbaked_rye_flatbread": [
+  "items/dishes.json:/dishes/rye_flatbread/prepared"
+ ],
+ "unbaked_trail_bread": [
+  "items/dishes.json:/dishes/trail_bread/prepared"
+ ],
+ "unbaked_venison_pie": [
+  "items/dishes.json:/dishes/venison_pie/prepared"
+ ],
+ "uncooked_crab_cakes": [
+  "items/dishes.json:/dishes/crab_cakes/prepared"
+ ],
+ "uncooked_meat_skewers": [
+  "items/dishes.json:/dishes/meat_skewer/prepared"
+ ],
+ "uncooked_mushroom_skewers": [
+  "items/dishes.json:/dishes/mushroom_skewer/prepared"
+ ],
+ "uncooked_sausages": [
+  "items/dishes.json:/dishes/sausage/prepared"
+ ],
+ "valerian_roots": [
+  "items/drops.json:/harvest_yield/valerian/item",
+  "items/seasons.json:/forage/valerian/parts[0]",
+  "items/wild_foods.json:/edible/valerian/parts[0]",
+  "tables/flora.json:/entries[62]/yields[0]"
+ ],
+ "venison_pie": [
+  "items/cooking.json:/warms/venison_pie(key)",
+  "items/dishes.json:/dishes/venison_pie(key)",
+  "items/vitals.json:/food/by_id/venison_pie(key)"
+ ],
+ "walnut_husks": [
+  "tables/flora.json:/entries[44]/yields[1]"
+ ],
+ "walnuts": [
+  "items/drops.json:/harvest_yield/walnut/item",
+  "items/drops.json:/trunk/by_species/walnut[0][0]",
+  "items/seasons.json:/fruit_and_nuts/walnuts(key)",
+  "items/vitals.json:/food/by_suffix/walnuts(key)",
+  "tables/flora.json:/entries[44]/yields[0]"
+ ],
+ "wardpine_resin": [
+  "tables/flora.json:/entries[92]/yields[0]"
+ ],
+ "wardpine_wood": [
+  "tables/flora.json:/entries[92]/yields[1]"
+ ],
+ "water": [
+  "items/dishes.json:/dishes/acorn_mash/needs[1][0]",
+  "items/dishes.json:/dishes/flatbread/needs[1][0]",
+  "items/dishes.json:/dishes/oat_porridge/needs[1][0]",
+  "items/dishes.json:/dishes/barley_broth/needs[2][0]",
+  "items/dishes.json:/dishes/rye_flatbread/needs[1][0]",
+  "items/dishes.json:/dishes/pea_soup/needs[2][0]",
+  "items/dishes.json:/dishes/seaweed_soup/needs[2][0]",
+  "items/dishes.json:/dishes/mussel_stew/needs[2][0]",
+  "items/dishes.json:/dishes/seal_stew/needs[2][0]",
+  "items/seasons.json:/forage/cactus/parts[0]",
+  "items/wild_foods.json:/edible/cactus/parts[0]",
+  "tables/biomes.json:/entries[0]/group"
+ ],
+ "watercress": [
+  "items/dishes.json:/dishes/fish_stew/needs[1][0]",
+  "items/drops.json:/harvest_yield/watercress(key)",
+  "items/drops.json:/harvest_yield/watercress/item",
+  "items/seasons.json:/forage/watercress(key)",
+  "items/seasons.json:/forage/watercress/parts[0]",
+  "items/wild_foods.json:/edible/watercress(key)",
+  "items/wild_foods.json:/edible/watercress/parts[0]",
+  "tables/flora.json:/entries[47]/look_alikes[2]",
+  "tables/flora.json:/entries[48]/look_alikes[2]",
+  "tables/flora.json:/entries[51]/name",
+  "tables/flora.json:/entries[51]/yields[0]",
+  "tables/flora.json:/entries[98]/look_alikes[0]"
+ ],
+ "waterskin": [
+  "items/shore_nodes.json:/containers[2]"
+ ],
+ "wheat": [
+  "items/crops.json:/crops/wheat(key)",
+  "items/crops.json:/crops/wheat/yields[0][0]",
+  "items/seasons.json:/crops/wheat(key)",
+  "items/vitals.json:/food/by_suffix/wheat(key)"
+ ],
+ "wheat_seeds": [
+  "items/crops.json:/crops/wheat/seed",
+  "items/crops.json:/crops/wheat/seeds_back[0]",
+  "items/drops.json:/seed_drops/tall_grass/rows[0][0]"
+ ],
+ "whetstone": [
+  "items/smithing.json:/whetstone(key)",
+  "items/smithing.json:/whetstone/item"
+ ],
+ "whisperfern_fronds": [
+  "items/seasons.json:/forage/whisperfern/parts[0]",
+  "items/wild_foods.json:/edible/whisperfern/parts[0]",
+  "tables/flora.json:/entries[105]/yields[0]"
+ ],
+ "wild_apples": [
+  "items/drops.json:/harvest_yield/wild_apple_sweet/item",
+  "items/vitals.json:/food/by_id/wild_apples(key)",
+  "tables/flora.json:/entries[152]/yields[0]"
+ ],
+ "wild_carrot_roots": [
+  "items/dishes.json:/dishes/roast_roots/needs[1][0]",
+  "items/dishes.json:/dishes/hunters_stew/needs[1][0]",
+  "items/dishes.json:/dishes/fish_stew/needs[2][0]",
+  "items/dishes.json:/dishes/hearty_pottage/needs[1][0]",
+  "items/dishes.json:/dishes/barley_broth/needs[1][0]",
+  "items/drops.json:/harvest_yield/wild_carrot/item",
+  "items/seasons.json:/forage/wild_carrot/parts[0]",
+  "items/wild_foods.json:/edible/wild_carrot/parts[0]",
+  "tables/flora.json:/entries[50]/yields[0]"
+ ],
+ "wild_garlic_bulbs": [
+  "items/seasons.json:/forage/wild_garlic/parts[1]",
+  "items/wild_foods.json:/edible/wild_garlic/parts[1]",
+  "tables/flora.json:/entries[45]/yields[1]"
+ ],
+ "wild_garlic_leaves": [
+  "items/dishes.json:/dishes/mushroom_skewer/needs[1][0]",
+  "items/dishes.json:/dishes/garlic_meat/needs[1][0]",
+  "items/dishes.json:/dishes/hunters_stew/needs[2][0]",
+  "items/dishes.json:/dishes/roast_joint/needs[2][0]",
+  "items/dishes.json:/dishes/mussel_stew/needs[1][0]",
+  "items/dishes.json:/dishes/garlic_bread/needs[1][0]",
+  "items/dishes.json:/dishes/meat_skewer/needs[2][0]",
+  "items/seasons.json:/forage/wild_garlic/parts[0]",
+  "items/wild_foods.json:/edible/wild_garlic/parts[0]",
+  "tables/flora.json:/entries[45]/yields[0]"
+ ],
+ "wild_pears": [
+  "items/drops.json:/harvest_yield/wild_pear/item",
+  "items/drops.json:/trunk/by_species/wild_pear[0][0]",
+  "items/seasons.json:/fruit_and_nuts/wild_pears(key)",
+  "tables/flora.json:/entries[41]/yields[0]"
+ ],
+ "willow_bark": [
+  "items/drops.json:/trunk/by_species/willow[0][0]",
+  "tables/flora.json:/entries[6]/yields[1]"
+ ],
+ "willow_bark_tea": [
+  "items/cooking.json:/warms/willow_bark_tea(key)",
+  "items/vitals.json:/medicines/willow_bark_tea(key)"
+ ],
+ "wispbloom_heads": [
+  "items/drops.json:/harvest_yield/wispbloom/item",
+  "items/seasons.json:/forage/wispbloom/parts[0]",
+  "items/wild_foods.json:/edible/wispbloom/parts[0]",
+  "tables/flora.json:/entries[87]/yields[0]"
+ ],
+ "withies": [
+  "items/drops.json:/trunk/by_species/willow[1][0]",
+  "items/drops.json:/tool_rules/suffixes/axe[1]",
+  "tables/flora.json:/entries[6]/yields[0]"
+ ],
+ "witness_bark": [
+  "tables/flora.json:/entries[123]/yields[1]"
+ ],
+ "witness_leaves": [
+  "tables/flora.json:/entries[123]/yields[0]"
+ ],
+ "wolfsbane_roots": [
+  "items/wild_foods.json:/poisonous/wolfsbane/parts[0]",
+  "tables/flora.json:/entries[72]/yields[0]"
+ ],
+ "wood": [
+  "items/bow.json:/break_chance/wood(key)",
+  "items/drops.json:/tool_rules/suffixes/axe[0]"
+ ],
+ "wooden_arrow": [
+  "items/bow.json:/ammo[2]"
+ ],
+ "wooden_block": [
+  "items/cooking.json:/fuel/wooden_block(key)",
+  "items/cooking.json:/fuel_class/wooden_block(key)",
+  "items/cooking.json:/fuel_order[30]"
+ ],
+ "wooden_block_large": [
+  "items/cooking.json:/fuel/wooden_block_large(key)",
+  "items/cooking.json:/fuel_class/wooden_block_large(key)",
+  "items/cooking.json:/fuel_order[28]"
+ ],
+ "wooden_block_soft": [
+  "items/cooking.json:/fuel/wooden_block_soft(key)",
+  "items/cooking.json:/fuel_class/wooden_block_soft(key)",
+  "items/cooking.json:/fuel_order[31]"
+ ],
+ "wooden_block_soft_large": [
+  "items/cooking.json:/fuel/wooden_block_soft_large(key)",
+  "items/cooking.json:/fuel_class/wooden_block_soft_large(key)",
+  "items/cooking.json:/fuel_order[29]"
+ ],
+ "wooden_bolt": [
+  "items/bow.json:/bows/light_crossbow/ammo[0]",
+  "items/bow.json:/bows/heavy_crossbow/ammo[0]"
+ ],
+ "wooden_bow": [
+  "items/bow.json:/bows/wooden_bow(key)"
+ ],
+ "wooden_longbow": [
+  "items/bow.json:/bows/wooden_longbow(key)"
+ ],
+ "wool": [
+  "items/carcass.json:/species/wild_sheep/parts[5][0]",
+  "items/carcass.json:/species/bighorn/parts[5][0]"
+ ],
+ "worm": [
+  "items/digging.json:/finds[0]/item",
+  "items/fishing.json:/bait[4]",
+  "items/fishing.json:/trap/bait[1]"
+ ],
+ "yarrow": [
+  "items/drops.json:/harvest_yield/yarrow(key)",
+  "items/drops.json:/harvest_yield/yarrow/item",
+  "items/drops.json:/by_species/yarrow(key)",
+  "items/drops.json:/by_species/yarrow[0][0]",
+  "items/seasons.json:/forage/yarrow(key)",
+  "items/seasons.json:/forage/yarrow/parts[0]",
+  "items/wild_foods.json:/edible/yarrow(key)",
+  "items/wild_foods.json:/edible/yarrow/parts[0]",
+  "tables/flora.json:/entries[50]/look_alikes[1]",
+  "tables/flora.json:/entries[57]/name",
+  "tables/flora.json:/entries[57]/yields[0]",
+  "tables/flora.json:/entries[59]/look_alikes[1]"
+ ]
+}

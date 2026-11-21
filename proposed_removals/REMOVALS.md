@@ -98,3 +98,75 @@ No whole files. Removed inside live files (git history keeps them; why, and what
 | assets/audio/hits/hit_swing_0.ogg, hit_swing_1.ogg, hit_swing_2.ogg | Kathleen | 10 Nov | the whoosh every tool swing played, hit or miss | none: only the blow sounds (hit_sounds.hit) |
 | assets/audio/make_swing.py | Kathleen | 10 Nov | generated the whoosh | none |
 Also removed inside live files: hit_sounds.gd swing() with its SWING_* constants and counters, the call in held_item.gd _start_swing, the "swing" row of tools/sound_check.py, and the hit_swing rows of the sound manifest, SOUND_PACK.md and LOUDNESS.md.
+
+## Retired Iron and Steel doorways, 13 Nov 2026
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| assets/ui/item_icons/iron_doorway.png, steel_doorway.png | Claude (BUGLIST-002) | 13 Nov | Dave: "There is no iron or steel door" / "Yes remove them please": Iron - Doorway and Steel - Doorway are retired (their .import files deleted) | none: a saved one loads as Refined - Doorway / Fortified - Doorway, which have their own icons |
+
+## Retired clay plumbing, 14 Nov 2026
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| assets/ui/item_icons/clay_pipe.png, clay_pipe_run.png, clay_pipe_elbow.png, clay_pipe_tee.png | Claude (plumbing PR 3) | 14 Nov | Dave: "I don't think clay plumbing would make sense. We should remove clay plumbing altogether." Clay pipe, Clay - Pipe, Clay - Pipe elbow and Clay - Pipe tee are retired (their .import files deleted) | none: a saved Clay pipe loads as Clay (renames.json); stone channels and wooden pipes carry the water |
+Also removed inside live files: the three clay_pipe rows of look_table.gd (their structures.json rows are kept, retired, for their state numbers), the "clay" branches of piece_look.gd conduit, the clay_pipe painter of tools/paint_item_icons.py and its rows in tools/paint_look_icons.py.
+
+## Retired garden plot tiers, 14 Nov 2026
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| assets/ui/item_icons/thatch_garden_plot.png, stone_garden_plot.png, brick_garden_plot.png | Claude (gardening) | 14 Nov | Dave: "it would just be called gardening plot there would not be any Tiers": Thatch, Stone and Brick - Garden plot are retired (their .import files deleted) | none: a saved one loads as the Gardening plot (wooden_garden_plot, whose icon stays) |
+
+## Replaced code (deleted outright, Decision 61 as clarified by Dave, 12 Nov 2026)
+Code that new code replaced is deleted, not moved here. Add one row per deleted file in the same PR; `tools/merge_check.py` checks that the replacement exists and that nothing still uses the old file. Code with no replacement is an ordinary unused file: move it aside as above.
+| deleted path | replaced by (path at HEAD) | who | date | why |
+|---|---|---|---|---|
+| src/worldgen/tools/test_trunk_cutting.gd | src/worldgen/tools/test_fell_autosplit.gd | Claude (wood thread) | 2026-11-16 | Dave 16 Nov 2026: a tree falls already in logs; the hand-cut trunk path it tested is deleted, the fall test covers what replaced it |
+| src/client/copper_rock_look.gd | src/client/ore_rock_look.gd | Claude (copper rocks thread) | 2026-11-17 | renamed when tin rocks joined copper (Dave 17 Nov 2026, cassiterite photo); same meshes, one material per ore |
+| tools/copper_rock_view.gd | tools/ore_rock_view.gd | Claude (copper rocks thread) | 2026-11-17 | the picture tool now shows copper and tin rocks |
+| src/client/join_page.gd | scenes/server_pick/server_pick.gd | Claude (server pick page thread) | 2026-11-19 | Dave 19 Nov 2026 approved the server pick page (docs/design/SERVER_PICK_PAGE.md): it replaces the one-box join page in client-only builds |
+
+## Core rulebook consolidation — 15 Nov 2026
+
+Dave approved the four-rulebook structure in Clauda Optimization. This is limited to core-policy consolidation; the wider draft cut list remains a proposal. Original text is recoverable from reachable source commit `dd566834db6496d0d8d2bb2a6bf2b9cb1ec882aa`. All six source paths below remain as short temporary redirects; no document is deleted in this change. Retirement integrated through [PR #1164](https://github.com/DSul3791/DynastyALWL/pull/1164), merge `75b7d2191ad8f4bbb1966ef9a90e5dfe10f61dbe`. GitHub records `merged_at = 2026-11-15T20:36:21Z`; expiry is exactly 168 hours later, `2026-11-22T20:36:21Z`. These timestamps apply only to the six redirects below, not the wider cut list. Existing deletion enforcement remains in force pending the separately reviewed expiry implementation. Live Claude project settings/private copies: SYNC PENDING.
+
+| Original path | Source blob | Preserved authority | Retirement / expiry |
+|---|---|---|---|
+| `docs/ai-team/DECISION_AUTHORITY.md` | `74784f27f47cc2aeef0ba9798f05102d2a30da09` | `docs/ai-team/CONSTITUTION.md` | retired `2026-11-15T20:36:21Z`; expiry `2026-11-22T20:36:21Z` |
+| `docs/ai-team/DOCUMENT_AUTHORITY.md` | `8479456d6ee8fbfa2f720de9a368e90f721e72a9` | `docs/ai-team/CONSTITUTION.md` | retired `2026-11-15T20:36:21Z`; expiry `2026-11-22T20:36:21Z` |
+| `docs/ai-team/ROLE_CATALOG.md` | `c3acf10c8388c5d22a1287f48259ac1ec281b51f` | `docs/ai-team/WORKFLOW.md` | retired `2026-11-15T20:36:21Z`; expiry `2026-11-22T20:36:21Z` |
+| `docs/ai-team/SESSION_LIFECYCLE.md` | `1ec4dc4d750217b82df19b2c5c24174414761fec` | `docs/ai-team/WORKFLOW.md` | retired `2026-11-15T20:36:21Z`; expiry `2026-11-22T20:36:21Z` |
+| `RULES.md` | `e4b80e5f85b8f5a6c76c40bb6e49845212b98f5c` | `docs/ai-team/WORKFLOW.md`; docs/PONYTAIL_RULES.md (code); CONSTITUTION.md (authority); TEST_GATES.md (testing) | retired `2026-11-15T20:36:21Z`; expiry `2026-11-22T20:36:21Z` |
+| `docs/START_HERE.md` | `7710fb17f8ed653810a5f8177777828d25ebc525` | `README.md` | retired `2026-11-15T20:36:21Z`; expiry `2026-11-22T20:36:21Z` |
+
+Preservation/reader receipts: independent review PASS on exact tree `09c989473285abefb6dc9a2454fa331aac272a79`; [merge-guard run 43758894969](https://github.com/DSul3791/DynastyALWL/actions/runs/43758894969) succeeded. Installed agent/skill/current launcher readers use the four owners; two changed upload ZIPs match their sources. The checker rejects revived legacy routing; historical citations and deletion-test fixtures are not runtime readers. All 33 reviewed file blobs match the actual integration tree despite concurrent unrelated asset changes. Package checks and all eight isolated regression cases passed again on the merged dev tree. No source content is deleted, no retirement obligation is waived, and no gameplay/player validation is claimed.
+
+## Spade renamed Shovel, 16 Nov 2026 (Dave: "rename the icons to shovel and fix the internal code to shovel")
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| wooden_spade.png, stone_spade.png, iron_spade.png, steel_spade.png | Claude, PR #1182 | 16 Nov | renamed with their items (same pictures) | assets/ui/item_icons/*_shovel.png |
+| hit_spade_soil_0.ogg, hit_spade_soil_1.ogg, hit_spade_soil_2.ogg, hit_spade_stone_0.ogg, hit_spade_stone_1.ogg, hit_spade_stone_2.ogg, hit_spade_wood_0.ogg, hit_spade_wood_1.ogg, hit_spade_wood_2.ogg | Claude, PR #1182 | 16 Nov | renamed with the shovel tool class (same sounds) | assets/audio/hits/hit_shovel_*.ogg |
+
+## No doused torch, 16 Nov 2026 (Dave: "There should be no such thing as a doused torch")
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| assets/ui/item_icons/torch_doused.png, assets/ui/item_icons/improved_torch_doused.png | Claude, doused-torch PR | 16 Nov | their items are retired: a torch that goes out stays the same torch (docs/design/TORCH_TREE_SAP.md) | the torches' own icons |
+| assets/audio/cooking/eat_crunch_0.ogg | Claude, hold-E eating PR | 17 Nov | eating food makes no sound (Dave 17 Nov: "doesnt need sound for eating remove the sound") | none |
+| assets/audio/cooking/eat_crunch_1.ogg | Claude, hold-E eating PR | 17 Nov | eating food makes no sound (Dave 17 Nov: "doesnt need sound for eating remove the sound") | none |
+| assets/audio/cooking/eat_crunch_2.ogg | Claude, hold-E eating PR | 17 Nov | eating food makes no sound (Dave 17 Nov: "doesnt need sound for eating remove the sound") | none |
+| assets/audio/cooking/eat_soft_0.ogg | Claude, hold-E eating PR | 17 Nov | eating food makes no sound (Dave 17 Nov: "doesnt need sound for eating remove the sound") | none |
+| assets/audio/cooking/eat_soft_1.ogg | Claude, hold-E eating PR | 17 Nov | eating food makes no sound (Dave 17 Nov: "doesnt need sound for eating remove the sound") | none |
+| assets/audio/cooking/eat_soft_2.ogg | Claude, hold-E eating PR | 17 Nov | eating food makes no sound (Dave 17 Nov: "doesnt need sound for eating remove the sound") | none |
+
+## No pickup animation, 18 Nov 2026 (Dave 17 Nov: "I would like the player character to stop waving his arms when picking up stuff. its just not necessary.")
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| src/worldgen/tools/test_gather_clip.gd, src/worldgen/tools/test_gather_clip.gd.uid.removed | Claude, commit cd69d5f5 (copy added by the main-readiness PR) | 18 Nov | it tested only the first-person gather clip, which was deleted with the pickup animations | none |
+
+## Trees fall already in logs, 16 Nov 2026 (Dave 16 Nov 2026; commit 6303ef01)
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| tools/trunk_view.gd, tools/trunk_view.gd.uid.removed | Claude, commit 6303ef01 (row added by the main-readiness PR) | 16 Nov | pictures tool for the hand-cut trunk, which was removed when trees started falling already in logs | none |
+
+## Raised cistern id renamed, 21 Nov 2026 (Dave 21 Nov 2026: "I want the code to have to correct name also")
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| assets/ui/item_icons/stone_raised_cistern.png | Claude, Raised cistern rename PR | 21 Nov | the Raised cistern's id is raised_cistern (wood and copper, not stone); its icon moved with it | assets/ui/item_icons/raised_cistern.png |

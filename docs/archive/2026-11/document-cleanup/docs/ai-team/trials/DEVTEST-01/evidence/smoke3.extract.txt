@@ -1,0 +1,8 @@
+Launcher role: play
+WARNING: Play: UDP port 24600 is already in use, probably a server from an earlier run; not starting another
+Play: port 24600 is busy, joining the server already there (the connect window names it if it is out of date)
+Terrain client: welcome after 442 ms; world Modular Island World; spawn (53296.0, 68.03883, 68080.0); cache user://terrain_cache/Modular Island World/v76_726130f9c7 (4096 MB)
+Terrain client: 2026-11-11T15:32:39 [+1.2 s] JOIN: column answer 1.2 s after the welcome: ground 66.0 m, player 68.5 m, viewer y 68.5
+tools/godot_slot.sh: line 69:  1901 Segmentation fault      "$@"
+(lines: 73; last line:)
+tools/godot_slot.sh: line 69:  1901 Segmentation fault      "$@"

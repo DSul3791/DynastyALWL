@@ -15,7 +15,11 @@ var _by_number: Dictionary = {}    # int number -> entry
 var _spoil: Dictionary = {}
 var _spoil_loaded: bool = false
 var _groups: Dictionary = {}       # int number of a group id -> PackedInt32Array of the member item numbers (the group id itself first)
+var _group_label: Dictionary = {}   # group key item number -> the label its costs read under (wood_species.json group_labels)
 var _renamed: Dictionary = {}      # int number of a retired item -> int number of the item that replaced it
+var _rename_count: Dictionary = {}   # int number of a retired item -> how many of its replacement one stands for (absent: 1)
+var _softwood: Dictionary = {}     # tree species name -> true for wood_species.json class "softwood" (Tree sap, Dave 16 Nov 2026)
+var tree_sap: Dictionary = {}      # wood_species.json "tree_sap": the item, felled and per_softwood_log amounts
 
 
 static func load_default():
@@ -31,6 +35,7 @@ static func load_default():
 # "retired": true and the new row exists, so the swap waits for the retirement to land and stops if the new item goes away.
 func load_renames(path: String) -> void:
 	_renamed = {}
+	_rename_count = {}
 
 	if not FileAccess.file_exists(path):
 		return
@@ -43,10 +48,15 @@ func load_renames(path: String) -> void:
 	var pairs: Dictionary = parsed.get("renames", {})
 
 	for old_id in pairs:
-		var new_id: String = str(pairs[old_id])
+		var pair: Variant = pairs[old_id]   # "new id", or ["new id", count]: one saved old item loads as count of the new (a large block is 4 Wooden blocks)
+		var new_id: String = str(pair[0]) if typeof(pair) == TYPE_ARRAY else str(pair)
+		var per: int = maxi(int(pair[1]), 1) if typeof(pair) == TYPE_ARRAY and (pair as Array).size() > 1 else 1
 
 		if _by_id.has(old_id) and _by_id.has(new_id) and old_id != new_id and bool(_by_id[old_id].get("retired", false)):
 			_renamed[number_of(old_id)] = number_of(new_id)
+
+			if per > 1:
+				_rename_count[number_of(old_id)] = per
 
 
 # The item number a saved number stands for now: the replacement of a retired item (following a chain of renames), else the number itself.
@@ -60,6 +70,21 @@ func current_number(number: int) -> int:
 		now = int(_renamed[now])
 
 	return now
+
+
+# How many of current_number(number) one saved `number` stands for: the product of the counts along its rename chain, 1 for most.
+func rename_count(number: int) -> int:
+	var now: int = number
+	var per: int = 1
+
+	for _hop in 8:
+		if not _renamed.has(now):
+			break
+
+		per *= int(_rename_count.get(now, 1))
+		now = int(_renamed[now])
+
+	return per
 
 
 # Reads the ingredient groups: a recipe that asks for the group id (log) is filled by the group id itself or any member (log_oak ...).
@@ -86,10 +111,73 @@ func load_groups(path: String) -> void:
 
 		_groups[number_of(id)] = members
 
+	tree_sap = parsed.get("tree_sap", {})
+	var species: Dictionary = parsed.get("species", {})
+
+	for name in species:
+		if typeof(species[name]) == TYPE_DICTIONARY and str(species[name].get("class", "")) == "softwood":
+			_softwood[str(name)] = true
+
+	# A group cost reads under its label, not its key item's name (master s4 item 14): a softwood-log cost keyed by Spruce log reads
+	# "Softwood log", and a firewood cost "Firewood" though the key item is Hard firewood.
+	var labels: Dictionary = parsed.get("group_labels", {})
+
+	for id in labels:
+		if _groups.has(number_of(str(id))) and typeof(labels[id]) == TYPE_STRING:
+			_group_label[number_of(str(id))] = str(labels[id])
+
+
+# The name an ingredient reads under in a cost list: a labelled group's label, else the item's own name.
+func cost_name(number: int) -> String:
+	return String(_group_label.get(number, name_of(number)))
+
+
+func cost_sentence(number: int) -> String:
+	return in_sentence(cost_name(number))
+
+
+func has_group_label(number: int) -> bool:
+	return _group_label.has(number)
+
 
 # The item numbers that fill an ingredient: [] when the number is not a group id.
 func group_members(number: int) -> PackedInt32Array:
 	return _groups.get(number, PackedInt32Array())
+
+
+# Tree sap (Dave 16 Nov 2026): a tree species wood_species.json names as softwood, and a softwood log (the log_spruce group, the plain Log included).
+func is_softwood_species(name: String) -> bool:
+	return _softwood.has(name)
+
+
+func is_softwood_log(number: int) -> bool:
+	return number > 0 and group_members(number_of("log_spruce")).has(number)
+
+
+# The one ranking of a group's members, "lowest" first (coordinator 10 Nov 2026): the lowest items.json "tier", then the lowest material on SPEND_MATERIALS,
+# then the lowest "value"; a member with none of these ranks last on that field, and a full tie keeps the group's own order (its own id first: plain logs for any log).
+# A cost spends its lowest member first (Inventory.remove_fill, the ground and container takes in server_items.gd) and a taken-down piece gives it back (_refund_number),
+# so Bronze nails go before iron Nails and come back as Bronze nails. [] when the number is not a group id.
+const SPEND_MATERIALS := ["wood", "bone", "stone", "flint", "obsidian", "copper", "tin", "bronze", "iron", "steel"]
+
+
+func spend_order(number: int) -> PackedInt32Array:
+	var members: PackedInt32Array = group_members(number)
+	var rows: Array = []
+
+	for i in members.size():
+		var row: Dictionary = entry(id_of(members[i]))
+		var material_rank: int = SPEND_MATERIALS.find(str(row.get("material", "")))
+		rows.append([int(row.get("tier", 99)), material_rank if material_rank >= 0 else 99, float(row.get("value", 1.0e9)), i])
+
+	var order: Array = range(members.size())
+	order.sort_custom(func(a, b): return rows[a] < rows[b])   # Array compares element by element; the group index last makes the order total
+	var out: PackedInt32Array = PackedInt32Array()
+
+	for i in order:
+		out.append(members[i])
+
+	return out
 
 
 func load_file(path: String) -> bool:
@@ -124,6 +212,16 @@ func number_of(id: String) -> int:
 
 func id_of(number: int) -> String:
 	return String(_by_number.get(number, {}).get("id", ""))
+
+
+# A water container's capacity in mL (items.json "capacity_ml": its water is its slot's wear, in mL), 0 for anything else.
+func container_cap(number: int) -> int:
+	return int(_by_number.get(number, {}).get("capacity_ml", 0))
+
+
+# The mL one unit of a liquid ingredient takes out of the containers (the item's "unit_ml": water 500), 0 for an item that is no liquid ingredient.
+func liquid_unit_ml(number: int) -> int:
+	return int(_by_number.get(number, {}).get("unit_ml", 0))
 
 
 # An item's name inside a sentence: "Stone - Knife" (the UI label, item_system.md "Tier - Item") reads "stone knife" there
@@ -241,6 +339,30 @@ func _shelf_units_uncached(number: int) -> int:
 				break
 
 	return 0 if hours <= 0.0 else maxi(int(round(hours * float(cfg.get("gentle_mult", 1)) / float(cfg.get("unit_h", 0.1)))), 1)
+
+
+# Passive maturing (master s3.14 [D14], Mission 001 phase 6): the age in wear units at which a sealed food is Ready, from the "ready_age" (game
+# hours, not stretched by gentle_mult) of the recipe that makes it, which recipe_table.gd load_file sets here; 0 for food that is ready when made.
+# Below it the stack is Maturing: it is not eaten, used, sold or merged with a stack of another age (Inventory._mergeable).
+var _ready: Dictionary = {}   # item number -> ready age in wear units
+
+
+func set_ready_age(number: int, hours: float) -> void:
+	if number > 0 and hours > 0.0:
+		_ready[number] = maxi(int(_ready.get(number, 0)), int(round(hours / float(spoilage().get("unit_h", 0.1)))))
+
+
+func ready_units(number: int) -> int:
+	return int(_ready.get(number, 0))
+
+
+func maturing(number: int, age_units: int) -> bool:
+	return age_units < ready_units(number)
+
+
+# Game hours until a Maturing stack is Ready at the pack's pace, rounded up (0 once Ready): what the player is told and shown.
+func ready_hours_left(number: int, age_units: int) -> int:
+	return ceili(float(maxi(ready_units(number) - age_units, 0)) * float(spoilage().get("unit_h", 0.1)))
 
 
 # 1.0 fresh down to 0.0 rotten for a stack of `number` with the age `age_units`; 1.0 for anything that does not spoil.

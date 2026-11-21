@@ -16,11 +16,12 @@ func _init() -> void:
 		c.a = 0.0
 		TreeBuilderScript._round_fruit(acc, Vector3(-0.2 + 0.1 * float(k), 0.1, 0.03 * float(k % 2)), 0.07, c, rng)
 
-	var mesh: ArrayMesh = ArrayMesh.new()
 	var material: StandardMaterial3D = StandardMaterial3D.new()
 	material.vertex_color_use_as_albedo = true
 	material.cull_mode = BaseMaterial3D.CULL_DISABLED
-	acc.commit(mesh, material)
+	var surfaces: Array = []
+	acc.commit(surfaces, material)
+	var mesh: ArrayMesh = TreeBuilderScript.to_mesh(surfaces)
 	var node: MeshInstance3D = MeshInstance3D.new()
 	node.mesh = mesh
 	add_child(node)

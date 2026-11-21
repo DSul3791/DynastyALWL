@@ -1,0 +1,20 @@
+{
+	"note": "The character-discovered charcoal Map (docs/design/PLAYER_CARTOGRAPHY_MAP_DESIGN.md; WP-MAP, GOALS-REPAIR). Each character keeps a sparse record of the map cells (cell_m a side) it has actually surveyed, in blocks of block_cells x block_cells. Walking survey_step_m from the last survey point surveys every cell within survey_radius_m of the character (never in a cave). A cell keeps what was seen there (ground height, water, trees) and q, the character's Mapping skill when it was seen. The sketch's accuracy comes from q, never from today's skill, so a skill gain alone redraws nothing: a cell is seen again at the higher skill only when the character comes back and their Mapping is at least improve_min_levels above its q. Mapping practice comes only from new cells: one practice for every cells_per_practice cells never seen before (no practice for standing still, opening the map, or walking over known ground). Height is sent rounded to a step that runs from height_step_coarse_m at Mapping 1 to height_step_fine_m at Mapping 100; trees are sent as there or not below tree_detail_from and as a density 0..3 from it. Blocks go to their own character only: all of them on joining (send_per_pass a pass), then each block that changes, at most every resend_s. A connection's first position, a move longer than jump_steps survey steps or one faster than max_speed_mps (a respawn, a teleport, a claimed dash) surveys nothing until the character walks on from there; new cells bank at most bank_practices practices. Saved per character in maps/ in the server store. ALL NUMBERS ARE PROVISIONAL (GOALS-REPAIR A-5, Map constants): engineering defaults for Dave to tune in play.",
+	"_provisional": "PROVISIONAL (GOALS-REPAIR A-5): every number in this file",
+	"version": 1,
+	"cell_m": 16.0,
+	"block_cells": 32,
+	"survey_radius_m": 40.0,
+	"survey_step_m": 8.0,
+	"cells_per_practice": 20,
+	"improve_min_levels": 3,
+	"height_step_coarse_m": 10.0,
+	"height_step_fine_m": 1.0,
+	"tree_detail_from": 25,
+	"send_per_pass": 4,
+	"resend_s": 2.0,
+	"jump_steps": 4.0,
+	"max_speed_mps": 30.0,
+	"bank_practices": 2,
+	"save_every_s": 120.0
+}

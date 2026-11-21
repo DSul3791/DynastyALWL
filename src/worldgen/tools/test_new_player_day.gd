@@ -6,10 +6,12 @@ extends SceneTree
 # where the body fell. test_first_hour.gd covers the axe, the tree, the water and the shelter; this one covers the hunt and the end.
 #   godot --headless --path . --script res://src/worldgen/tools/test_new_player_day.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 var failures: int = 0
 var items
@@ -39,7 +41,7 @@ func pass_time(seconds: float, exertion: float) -> void:
 
 func queue(recipe_number: int, crafts: int) -> void:
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number, 0, crafts, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number, 0, crafts, CraftHand.at(items, 1, recipe_number))
 
 
 func slot_of(id: String) -> int:
@@ -104,7 +106,7 @@ func _init() -> void:
 	pass_time(10.0, 0.2)   # craft times raised by the pacing pass
 	check(count("campfire_kit") == 1, "a campfire kit is made by hand")
 
-	# The player puts the knife and the spear on the hotbar (new items no longer land there by themselves).
+	# The knife and the spear went into hotbar slots by themselves (new tools); the player moves them to keys 1 and 2.
 	items.action(1, Net.ACT_MOVE, slot_of("stone_knife"), 0, 0, Vector3.ZERO)
 	items.action(1, Net.ACT_MOVE, slot_of("wooden_spear"), 1, 0, Vector3.ZERO)
 
@@ -139,7 +141,7 @@ func _init() -> void:
 
 	for n in 6:
 		items._last_process.erase(1)
-		items.action(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_PROCESS, carcass, 0, 0, Vector3(float(HeldTool.slot_of(items, "knife") + 1), 0.0, 0.0))
 
 	check(count("raw_meat") >= 1 and count("hide") >= 1, "the knife gives raw meat and a hide (%d meat)" % count("raw_meat"))
 
@@ -185,7 +187,7 @@ func _init() -> void:
 	items.send_chest = func(_p, _i, _b): pass
 	items.action(1, Net.ACT_CHEST_OPEN, remains, 0, 0, Vector3.ZERO)
 
-	for slot in range(items.inventory_of(1).SLOTS):
+	for slot in range(items.inventory_of(1).slot_count):
 		items.action(1, Net.ACT_CHEST_TAKE, slot, remains, 99, Vector3.ZERO)
 
 	check(count("stone") + count("stick") >= pack_before - 2, "the dead character's pack can be taken back from the remains (%d of %d)" % [count("stone") + count("stick"), pack_before])

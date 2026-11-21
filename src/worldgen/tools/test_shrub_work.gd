@@ -4,6 +4,7 @@ extends SceneTree
 # the dug bush plants again elsewhere as a full-size bush (dynamic flora), which is a shrub, never a tree to fell.
 #   godot --headless --path . --script res://src/worldgen/tools/test_shrub_work.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -48,9 +49,9 @@ func _init() -> void:
 	check(hazel_bush != 0, "hazel_bush is an item")
 
 	# No tool: nothing happens.
-	items.action(1, Net.ACT_HIT_SHRUB, 11, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_HIT_SHRUB, 11, 0, 0, Vector3(float(HeldTool.slot_of(items, "axe") + 1), 0.0, 0.0))
 	items._last_hit.clear()
-	items.action(1, Net.ACT_HIT_SHRUB, 11, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_HIT_SHRUB, 11, 0, 0, Vector3(float(HeldTool.slot_of(items, "axe") + 1), 0.0, 0.0))
 	check(cut.is_empty(), "with no axe the bush stays")
 
 	# The axe: two blows chop it into leaves and sticks.
@@ -58,27 +59,27 @@ func _init() -> void:
 	var leaves_before: int = inv.count_of(leaves)
 	var sticks_before: int = inv.count_of(stick)
 	items._last_hit.clear()
-	items.action(1, Net.ACT_HIT_SHRUB, 11, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_HIT_SHRUB, 11, 0, 0, Vector3(float(HeldTool.slot_of(items, "axe") + 1), 0.0, 0.0))
 	check(cut.is_empty(), "one axe blow does not finish it")
 	items._last_hit.clear()
-	items.action(1, Net.ACT_HIT_SHRUB, 11, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_HIT_SHRUB, 11, 0, 0, Vector3(float(HeldTool.slot_of(items, "axe") + 1), 0.0, 0.0))
 	check(cut == [11], "the second axe blow chops the bush away (%s)" % str(cut))
 	check(inv.count_of(leaves) > leaves_before and inv.count_of(stick) > sticks_before, "and gives leaves and sticks (%d leaves, %d sticks)" % [inv.count_of(leaves) - leaves_before, inv.count_of(stick) - sticks_before])
 	check(inv.count_of(hazel_bush) == 0, "an axe never gives the bush whole")
 
-	# A pickaxe in hand (at.x = 1) with no pickaxe in the pack: refused.
+	# No pickaxe, nothing in hand (at.x = 0; the axe stays on the hotbar): refused, the axe is not used.
 	items._last_hit.clear()
-	items.action(1, Net.ACT_HIT_SHRUB, 12, 0, 0, Vector3(1.0, 0.0, 0.0))
+	items.action(1, Net.ACT_HIT_SHRUB, 12, 0, 0, Vector3(float(HeldTool.slot_of(items, "pick") + 1), 0.0, 0.0))
 	items._last_hit.clear()
-	items.action(1, Net.ACT_HIT_SHRUB, 12, 0, 0, Vector3(1.0, 0.0, 0.0))
+	items.action(1, Net.ACT_HIT_SHRUB, 12, 0, 0, Vector3(float(HeldTool.slot_of(items, "pick") + 1), 0.0, 0.0))
 	check(cut == [11], "no pickaxe: the second bush stays")
 
 	# The pickaxe: two blows dig it up whole.
 	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_pickaxe"), 0, 1, Vector3.ZERO)
 	items._last_hit.clear()
-	items.action(1, Net.ACT_HIT_SHRUB, 12, 0, 0, Vector3(1.0, 0.0, 0.0))
+	items.action(1, Net.ACT_HIT_SHRUB, 12, 0, 0, Vector3(float(HeldTool.slot_of(items, "pick") + 1), 0.0, 0.0))
 	items._last_hit.clear()
-	items.action(1, Net.ACT_HIT_SHRUB, 12, 0, 0, Vector3(1.0, 0.0, 0.0))
+	items.action(1, Net.ACT_HIT_SHRUB, 12, 0, 0, Vector3(float(HeldTool.slot_of(items, "pick") + 1), 0.0, 0.0))
 	check(cut == [11, 12] and inv.count_of(hazel_bush) == 1, "a pickaxe digs the hazel up whole into the pack (%s, %d)" % [str(cut), inv.count_of(hazel_bush)])
 
 	# Planting it: a full-size hazel stands where the player aimed, as a shrub.
@@ -106,6 +107,36 @@ func _init() -> void:
 	items.water_depth_at = Callable()
 	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(hazel_bush), 0, 0, spot + Vector3(0.3, 0.0, 0.0))
 	check(inv.count_of(hazel_bush) == 1 and said.has("Too close to another plant."), "right beside the first: not planted")
+
+	# A tree's seed (gardening, Dave 14 Nov 2026): an oak seed goes in as an oak sapling that grows like wild regrowth (planted now, not full size), 2 m from other plants.
+	var oak_seeds: int = items.table.number_of("oak_seed")
+	check(items.tree_seed_species("oak_seed") == "oak" and items.tree_seed_species("maple_keys") == "maple" and items.tree_seed_species("mirrorbark_seed") == "mirrorbark" and items.tree_seed_species("acorns") == "" and items.tree_seed_species("stone") == "", "every tree has its own seed (Oak seed, Sugar maple seed, Mirrorbark seed); acorns are food, not a seed; a stone is no seed")
+	items.action(1, Net.ACT_ADMIN_GIVE, oak_seeds, 0, 2, Vector3.ZERO)
+	said.clear()
+	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(oak_seeds), 0, 0, spot + Vector3(0.0, 0.0, -1.5))
+	check(inv.count_of(oak_seeds) == 2 and said.has("Too close to another plant."), "a tree seed 1.5 m from the hazel: not planted (trees keep 2 m)")
+	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(oak_seeds), 0, 0, spot + Vector3(0.0, 0.0, -2.5))
+	check(inv.count_of(oak_seeds) == 1 and items._saplings.size() == 2, "an oak seed 2.5 m away is planted from the pack (%d planted)" % items._saplings.size())
+
+	if items._saplings.size() == 2:
+		var oak: Dictionary = items._saplings[1]
+		check(int(oak["species"]) == int(items._flora_by_name["oak"]["id"]) and is_equal_approx(float(oak["planted_at"]), 5000000.0), "it is an oak sapling planted now, to grow (%s)" % str(oak))
+		var oak_home: Vector2i = Vector2i(oak["chunk"][0], oak["chunk"][1])
+		var oak_id: int = (int(oak["species"]) << 16) | (0xFFFF - int(oak["slot"]))
+		check(items.dynamic_tree_info(oak_home, oak_id).is_empty() and items.dynamic_shrub_info(oak_home, oak_id).is_empty(), "a new sapling is not yet a tree to fell")
+		items.game_seconds = func(): return 5000000.0 + ItemsScript.SAPLING_GROWN_S
+		check(str(items.dynamic_tree_info(oak_home, oak_id).get("name", "")) == "oak", "grown, it is an oak to fell (%s)" % str(items.dynamic_tree_info(oak_home, oak_id)))
+		items.game_seconds = func(): return 5000000.0
+
+	# Fruit is food; the tree's own seed is what is planted (Dave 14 Nov 2026): a crab apple is not planted, a Wild apple seed grows a wild apple tree.
+	var crab: int = items.table.number_of("crab_apples")
+	items.action(1, Net.ACT_ADMIN_GIVE, crab, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(crab), 0, 0, spot + Vector3(-2.5, 0.0, 0.0))
+	check(inv.count_of(crab) == 1 and items._saplings.size() == 2, "a crab apple is food: it stays in the pack and nothing is planted")
+	var apple_seed: int = items.table.number_of("wild_apple_seed")
+	items.action(1, Net.ACT_ADMIN_GIVE, apple_seed, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_PLANT_BUSH, inv.numbers.find(apple_seed), 0, 0, spot + Vector3(-2.5, 0.0, 0.0))
+	check(apple_seed > 0 and inv.count_of(apple_seed) == 0 and items._saplings.size() == 3 and int(items._saplings[-1]["species"]) == int(items._flora_by_name["wild_apple"]["id"]), "a Wild apple seed grows a wild apple tree")
 
 	items._finish_writer()
 	print("test_shrub_work: ", "FAIL (%d)" % failures if failures > 0 else "ok")

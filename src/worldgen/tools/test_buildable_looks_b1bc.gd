@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Buildables plan B1b and B1c (10 Nov 2026): stairs, railings, the double, iron and steel doorways, pillars and roof corners build, sit in the boxes of
+# Buildables plan B1b and B1c (10 Nov 2026): stairs, railings, the double doorway, pillars and roof corners build, sit in the boxes of
 # the pieces they match, and are solid where a player stands or is stopped. Bounds only (no pictures).
 #   godot --headless --path . --script res://src/worldgen/tools/test_buildable_looks_b1bc.gd
 
@@ -75,17 +75,15 @@ func _run() -> void:
 		check(_inside(box, Vector3(-1.01, -0.01, -0.08), Vector3(1.01, 1.07, 0.08)), "%s: 2 m long, 1 m high, thin (%s)" % [look, box])
 		check(_solid_at(node, Vector3(0.0, 0.9, 0.0)) and not _solid_at(node, Vector3(0.0, 0.5, 0.2)), "%s: stops a fall, nothing beside it" % look)
 
-	for look in ["double_doorway", "iron_doorway", "steel_doorway"]:
-		var half: float = 2.0 if look == "double_doorway" else 1.0
-		var gap: float = 1.0 if look == "double_doorway" else 0.5
-
-		for open in [false, true]:
-			var look_name: String = look + ("_open" if open else "")
-			var node: Node3D = _build(look_name)
-			var box: AABB = _mesh_box(node)
-			check(_inside(box, Vector3(-half - 0.03, -0.01, -0.2), Vector3(half + 0.03, 2.45, 1.1 if open else 0.2)) and box.end.y >= 2.3, "%s: in its %d m wall piece (%s)" % [look_name, int(half * 2.0), box])
-			check(_solid_at(node, Vector3(gap + 0.2, 1.0, 0.0)) and _solid_at(node, Vector3(-gap - 0.2, 1.0, 0.0)) and _solid_at(node, Vector3(0.0, 2.25, 0.0)), "%s: solid beside and over the gap" % look_name)
-			check(_solid_at(node, Vector3(0.0, 1.0, 0.0)) != open, "%s: the gap is %s" % [look_name, "walkable" if open else "shut"])
+	for look in ["double_doorway"]:   # Iron and Steel doorways retired 13 Nov 2026
+		var half: float = 2.0
+		var gap: float = 1.0
+		var node: Node3D = _build(look)
+		var box: AABB = _mesh_box(node)
+		check(_inside(box, Vector3(-half - 0.03, -0.01, -0.2), Vector3(half + 0.03, 2.45, 0.2)) and box.end.y >= 2.3, "%s: in its %d m wall piece (%s)" % [look, int(half * 2.0), box])
+		check(_solid_at(node, Vector3(gap + 0.2, 1.0, 0.0)) and _solid_at(node, Vector3(-gap - 0.2, 1.0, 0.0)) and _solid_at(node, Vector3(0.0, 2.25, 0.0)), "%s: solid beside and over the gap" % look)
+		check(not _solid_at(node, Vector3(0.0, 1.0, 0.0)) and not _solid_at(node, Vector3(gap - 0.1, 0.3, 0.0)), "%s: an empty frame, the gap is walkable (BUGLIST-002)" % look)
+		check(not LookTable.has_look(look + "_open"), "%s: no open twin look" % look)
 
 	for kind in ["thatch", "wooden", "log", "stone", "brick"]:
 		var look: String = kind + "_pillar"
@@ -95,12 +93,7 @@ func _run() -> void:
 		check(_inside(box, Vector3(-half, -0.01, -half), Vector3(half, 2.62, half)) and box.end.y > 2.55, "%s: in its footprint, 2.6 m high (%s)" % [look, box])
 		check(_solid_at(node, Vector3(0.0, 0.1, 0.0)) and _solid_at(node, Vector3(0.0, 2.5, 0.0)), "%s: solid top to bottom" % look)
 
-	for kind in ["thatch", "wooden", "log", "stone", "brick"]:
-		var look: String = kind + "_roof_corner"
-		var node: Node3D = _build(look)
-		var box: AABB = _mesh_box(node)
-		check(_inside(box, Vector3(-1.36, -0.01, -1.36), Vector3(1.36, 3.0, 1.36)) and box.end.y > 2.5, "%s: the straight roof's 2.4 m square (%s)" % [look, box])
-		check(_solid_at(node, Vector3(0.0, 2.55, 0.0)) and _solid_at(node, Vector3(1.0, 2.55, 1.0)), "%s: a roof to stand on" % look)
+	# The roof corners are hips over the 2 m corner square since GOALS-REPAIR A-37, no posts: checked with their 65 shapes in test_roof_panels.
 
 	print("test_buildable_looks_b1bc: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)

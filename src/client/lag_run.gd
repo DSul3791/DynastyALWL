@@ -84,8 +84,8 @@ func run() -> void:
 	await _wait(25.0)
 	print("LAGRUN logged in, at %s" % str(client.body.global_position.round()))
 	_give("stone_axe")
-	_give("wooden_spade")
-	_give("stone_hoe")
+	_give("wooden_shovel")
+	_give("wooden_hoe")
 	await _wait(2.0)
 
 	await _walk()
@@ -151,6 +151,11 @@ func _walk() -> void:
 	_end("walked %.0f m at %.1f m/s, %d turns" % [walked, client.run_speed, turns])
 
 
+# The pack slot holding the given item (the tool the run holds for a swing), -1 when it is not in the pack.
+func _slot_of(item: String) -> int:
+	return client.items.inventory.numbers.find(client.items.table.number_of(item))
+
+
 func _dig() -> void:
 	_begin("dig")
 	var done: int = 0
@@ -160,10 +165,10 @@ func _dig() -> void:
 		var spot: Vector3 = _ground_at(here.x + 1.5 + 0.4 * float(n % 3), here.z + 0.5 * floorf(float(n) / 3.0))
 
 		if not is_nan(spot.y):
-			client.net.inventory_action.rpc_id(1, NetScript.ACT_DIG, 0, 0, 0, spot)
+			client.net.inventory_action.rpc_id(1, NetScript.ACT_DIG, _slot_of("wooden_shovel"), 0, 0, spot)   # a: the shovel in hand
 			done += 1
 
-		await _wait(0.9)   # the server's spade pace is 0.7 s
+		await _wait(0.9)   # the server's shovel pace is 0.7 s
 
 	await _wait(2.0)
 	_end("%d digs sent" % done)
@@ -174,7 +179,7 @@ func _chop_and_split() -> void:
 	await client.items.run_chop_test(client)   # gives an axe, stands by the nearest tree, swings until it falls
 	_end("tree felled (see the Chop test line)")
 
-	# A felled trunk breaks into logs by itself once it lands (server_items _auto_split); Dave 2 Nov: a pause as the trunk came apart.
+	# A felled tree comes down already in its logs, which then wake to roll (server_items _fell_record, _land_fall); Dave 2 Nov: a pause as the trunk came apart.
 	_begin("split")
 	var before: int = client.items._world.size()
 	await _wait(10.0)
@@ -196,7 +201,7 @@ func _hoe() -> void:
 		var spot: Vector3 = _ground_at(here.x + 1.2, here.z + 0.7 * float(n % 4) - 1.0)
 
 		if not is_nan(spot.y):
-			client.net.inventory_action.rpc_id(1, NetScript.ACT_HOE_PATH if n % 3 != 2 else NetScript.ACT_HOE_SMOOTH, 0, 0, 0, spot)
+			client.net.inventory_action.rpc_id(1, NetScript.ACT_HOE_PATH if n % 3 != 2 else NetScript.ACT_HOE_SMOOTH, _slot_of("wooden_hoe"), 0, 0, spot)   # a: the hoe in hand
 			done += 1
 
 		await _wait(0.7)   # the server's hoe pace is 0.5 s

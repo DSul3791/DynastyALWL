@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Item system C2 stations (item_system.md draft 7, Jamie's #934, 10 Nov 2026): the Kiln, Tanning rack, Drying rack, Smoker and Oil press looks build inside
+# Item system C2 stations (item_system.md draft 7, Jamie's #934, 10 Nov 2026): the Kiln, Tanning rack, Drying rack, Smoker, Oil press and (15 Nov 2026) Wood carving station looks build inside
 # their structures.json footprints (w x d, centred, standing on y = 0, under the height given here), are solid over the footprint, and stay under the
 # look table's triangle cap. Bounds only (no pictures).
 #   godot --headless --path . --script res://src/worldgen/tools/test_station_looks_c2.gd
@@ -10,7 +10,7 @@ const LookTable := preload("res://src/client/look_table.gd")
 # look: footprint_x, height, footprint_z
 const SIZES := {
 	"kiln": Vector3(1.6, 1.7, 1.6), "tanning_rack": Vector3(2.0, 1.8, 0.6), "drying_rack": Vector3(1.6, 1.4, 0.6), "smoker": Vector3(1.2, 1.7, 1.2),
-	"oil_press": Vector3(1.2, 1.1, 1.2),
+	"oil_press": Vector3(1.2, 1.1, 1.2), "carving_station": Vector3(1.9, 0.65, 1.1),   # the Wood carving station of the 15 Nov 2026 wood redesign (W-6): a bench beside a chopping block, shavings round them
 }
 
 var failures: int = 0

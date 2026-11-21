@@ -12,6 +12,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 const BLOOMERY_AT := Vector3(3000.0, 10.0, 0.0)
 const FORGE_AT := Vector3(3400.0, 10.0, 0.0)
@@ -46,7 +47,7 @@ func _recipe(row: Dictionary) -> Dictionary:
 
 func _queue(number: int) -> void:
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, number, 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, number, 0, 1, CraftHand.at(items, 1, number))
 
 
 func _tick(seconds: int) -> void:
@@ -80,15 +81,10 @@ func _init() -> void:
 	_put("stone_forge", FORGE_AT)
 	_put("test_stonecutter", BENCH_AT)
 
-	# The live iron smelt is the yardstick: 4 ore + 1 fuel, 45 s (at the brick forge, level 2, #950).
-	var forge_smelt: Dictionary = {}
-
-	for n in items.recipes.numbers():
-		if str(items.recipes.recipe(int(n)).get("id", "")) == "smelt_iron":
-			forge_smelt = items.recipes.recipe(int(n))
-
+	# The yardstick is the old 45 s craft-queue iron smelt (the Smelters smelt by themselves since GOALS-REPAIR R2; server_smelter.gd): the
+	# stand-in body is about a recipe bound to its own station, not about smelting.
+	var forge_smelt: Dictionary = {"craft_s": 45.0}
 	check(table.number_of("cut_stone_block") > 0 and table.number_of("fuel") > 0, "the stand-ins' items exist (cut_stone_block, the fuel group)")
-	check(not forge_smelt.is_empty() and str(forge_smelt.get("station", "")) == "brick_forge", "the brick forge's iron smelt is the yardstick")
 	var bloom: Dictionary = _recipe({"number": 99961, "id": "test_bloomery_iron", "name": "Iron ingot", "category": "Materials",
 		"needs": [[table.number_of("iron_ore"), 5], [table.number_of("fuel"), 3]], "gives": [table.number_of("iron_ingot"), 1],
 		"craft_s": 3.0 * float(forge_smelt.get("craft_s", 45.0)), "known": true, "station": "test_bloomery"})
@@ -122,11 +118,13 @@ func _init() -> void:
 	items.report_position(1, BENCH_AT + Vector3(1.0, 0.0, 0.0))
 	pack.add(table.number_of("stone"), 4)
 	pack.add(table.number_of("stone_hammer"), 1)
+	pack.move(pack.numbers.find(table.number_of("stone_hammer")), 0)   # held, so the refusal below is the tier rule, not an empty hand
 	var blocks_before: int = count("cut_stone_block")
 	_queue(99962)
 	_tick(10)
 	check(count("cut_stone_block") == blocks_before and count("stone") == 4, "with only a stone tool the bench refuses: the kept tool is bronze or better")
 	pack.add(table.number_of("iron_hammer"), 1)
+	pack.move(pack.numbers.find(table.number_of("iron_hammer")), 0)   # onto hotbar key 1 in the stone hammer's place, so it is the tool in hand (protocol 126)
 	_queue(99962)
 	_tick(10)
 	check(count("cut_stone_block") == blocks_before + 2 and count("stone") == 2 and count("iron_hammer") == 1, "with an iron one it carves, and the tool is kept")

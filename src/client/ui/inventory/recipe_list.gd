@@ -6,11 +6,11 @@ extends RefCounted
 
 const RecipeFilter := preload("res://src/client/recipe_filter.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
-const AdminScript := preload("res://src/stream/server_admin.gd")
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const ItemSlot := preload("res://src/client/ui/inventory/item_slot.gd")
+const SmithingRules := preload("res://src/shared/smithing_rules.gd")
 const TAB_PX := 48.0                       # the category tabs: a column of 48 px glyph tabs (redesign 4.3)
 const LIST_PX := 226.0                     # the recipe list's width (196 cut about 47 of 338 names at text scale 1.2; 226 cuts about 11, 9 Nov 2026)
 const CARD_ICON_PX := 96.0                 # the made item's well on the recipe card
@@ -24,8 +24,8 @@ var _detail: VBoxContainer                # the chosen recipe: its needs, the qu
 var _footer: VBoxContainer                # under it, never scrolled away: the brass Craft button and Pin
 var _quantity: SpinBox                    # the How many box (null while no recipe is shown)
 var _qty: int = 1                         # the last quantity chosen, kept between refreshes
-const CRAFT_HOLD_MS := 400                 # a press this long on a recipe row is a hold: make as many as the stock allows (decisions row 24)
-var _press_msec: int = 0                  # when the recipe row was pressed
+var _variant: int = 0                     # the variant chosen on the card (SmithingRules code: Tempered, +1, +2), kept between refreshes
+var store_holder: VBoxContainer           # right of the recipe list, over the card: a crafting station's own store sits here (container_panel.set_compact)
 
 
 func _init(owner_view) -> void:
@@ -68,7 +68,14 @@ func build(queue_root: Control) -> Control:
 	plate.content_margin_top = 12.0
 	plate.content_margin_bottom = 12.0
 	card.add_theme_stylebox_override("panel", plate)
-	columns.add_child(card)
+	var right: VBoxContainer = VBoxContainer.new()   # a crafting station's store over the card (Dave 17 Nov 2026: the list on the left, its inventory beside it)
+	right.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right.add_theme_constant_override("separation", 10)
+	store_holder = VBoxContainer.new()
+	store_holder.visible = false
+	right.add_child(store_holder)
+	right.add_child(card)
+	columns.add_child(right)
 	var stack: VBoxContainer = VBoxContainer.new()
 	stack.add_theme_constant_override("separation", 10)
 	card.add_child(stack)
@@ -89,18 +96,42 @@ func build(queue_root: Control) -> Control:
 	return root
 
 
+# Opening the inventory stalled for seconds (Dave 14 Nov 2026: "I would prefer it opened the inventory immediately and asynchronously did the check
+# and caught up"): working out what about 490 recipes can make (each with its auto-make plan and station checks) and building a row for each ran in
+# the one frame the window opened. Now refresh() starts a pass that step() carries on, a slice of at most SLICE_USEC each frame, on the main
+# thread (no threads: the rows build controls and styleboxes). The pass first works out what each recipe can do, then brings the list on screen
+# up to date in place, a row at a time: a row whose state is unchanged keeps its button (only moved if its place changed), a changed one is made
+# again, rows no longer listed go last. Nothing is done to all rows in one frame (David4, 14 Nov: swapping 417 rows in at once took 50 to 60 ms).
+# A refresh asked while a pass runs (a pickup, the server's craft stock answer) lets that pass finish and starts one more, so a steady stream of
+# pickups never starves it.
+const SLICE_USEC := 4000
+
+var _pass: Dictionary = {}       # the running pass: rows to sort, how far it got, the groups, the rows built so far; {} while none runs
+var _again: bool = false         # a refresh came in while a pass ran: run one more when it ends
+var _rows: Dictionary = {}       # recipe number -> its row on screen {"button", "makeable", "ready", "two_line", "lit"}
+var _waiting: Label              # "Looking over what you can make" while the very first pass runs
+var _all_by_name: Array = []     # every recipe, alphabetical by name (sorted once)
+var _admin_nodes: Array = []     # the Admin heading and kit rows at the foot of the list (Admin mode), made again at the end of each pass
+
+
+func running() -> bool:
+	return not _pass.is_empty()
+
+
+# Picks a category tab from outside the list (left click with a saw opens Carpenter's); refresh() lights its tab and the pass picks its first card.
+func show_category(category: String) -> void:
+	_recipe_category = category if RecipeFilter.CATEGORIES.has(category) else ""
+	view._selected_recipe = 0   # the card shows the tab's first recipe (the next pass picks it), not one from another tab
+
+
 func refresh() -> void:
-	# Recipes (Dave 10 Nov 2026, every tab): what the hands make now on top, then what a working station within 12 m makes now (a craft
-	# there moves you to it), both with the golden line; then the rest. Each group alphabetical (RecipeFilter.order_groups).
-	view._hover_recipe = 0
-
-	for child in view._recipe_list.get_children():
-		child.queue_free()
-
-	var rows: Array = []
+	var typing: bool = view._recipe_search != null and view._recipe_search.text.strip_edges() != ""   # words typed search every tab, so none is lit
 
 	for tab_name in _category_buttons:
-		(_category_buttons[tab_name] as Button).button_pressed = str(tab_name) == _recipe_category
+		(_category_buttons[tab_name] as Button).button_pressed = not typing and str(tab_name) == _recipe_category
+
+	var rows: Array = []
+	var numbers: PackedInt32Array = PackedInt32Array()
 
 	for number in view.recipes.numbers():
 		var r: Dictionary = view.recipes.recipe(number)
@@ -109,61 +140,218 @@ func refresh() -> void:
 			continue
 
 		rows.append(r)
+		numbers.append(int(number))
 
-	var groups: Array = RecipeFilter.order_groups(rows, func(r): return view._can_craft(int(r["number"])), func(r): return view.station_in_reach(r))
-	var ready_count: int = (groups[0] as Array).size() + (groups[1] as Array).size()
-	var shown_recipes: Array = groups[0] + groups[1] + groups[2]
+	if running() and numbers == _pass["numbers"]:
+		_again = true   # the same rows: this pass ends, then one more catches up with what changed
+		_refresh_detail()   # the card's have / need counts follow at once
+		return
 
-	if view._selected_recipe == 0 or view.recipes.recipe(view._selected_recipe).is_empty():
-		view._selected_recipe = shown_recipes[0]["number"] if not shown_recipes.is_empty() else 0
+	stop()   # a new search or tab: the rows the running pass works on are not the ones asked for now
+	_pass = {"rows": rows, "numbers": numbers, "at": 0, "can": {}, "reach": {}, "shown": [], "ready": 0, "built": 0, "ordered": false, "gone": [], "cleared": 0}
 
-	for k in shown_recipes.size():
-		var r: Dictionary = shown_recipes[k]
-		var ready: bool = k < ready_count
-		var makeable: bool = ready or (view._can_craft(r["number"]) and view._station_ok(r))
-		var entry: Button = Button.new()
-		# A row (redesign 4.3): the made item's 32 px icon and its name; a recipe that needs a station you are not at has a second dim line,
-		# "at camp bench" (short: the dim row already says it can't be made here). A line too long for the 226 px list ends in "...".
-		entry.text = str(r["name"]) + (("\nat %s" % view._station_label(r)) if not view._station_ok(r) and not ready else "")
-		entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
-		entry.clip_text = true
-		entry.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
-		entry.icon = InventoryLook.icon_for(view.table.id_of(int(r["gives"][0]))) if not (r["gives"] as Array).is_empty() else null
-		entry.expand_icon = false
-		entry.add_theme_constant_override("icon_max_width", 32)
-		entry.custom_minimum_size = Vector2(0.0, 64.0 if not view._station_ok(r) and not ready else 44.0)
-		entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		entry.modulate = Color(0.55, 1.0, 0.55) if makeable else Color(0.55, 0.55, 0.55, 0.6)
-		entry.flat = r["number"] != view._selected_recipe
-		view._style(entry, view.BODY_PX - 12)
+	if view._recipe_list.get_child_count() == 0 and _waiting == null:
+		_waiting = _text("Looking over what you can make...", view.BODY_PX - 12, ArtKit.CREAM)
+		view._recipe_list.add_child(_waiting)
 
-		# Look doc section 9: a makeable row has the gold bar on its left; the others are dim and say what they still need.
-		InventoryLook.style_recipe_row(entry, makeable, r["number"] == view._selected_recipe, InventoryLook.unit_of(view))
+	_refresh_detail()   # the card's have / need counts follow at once; the list catches up
+	step()   # a short list (a search, one tab) is done in this frame
 
-		if ready:
-			InventoryLook.glow_recipe_row(entry, ItemSlot.glow_cfg(), InventoryLook.unit_of(view))
 
-			if str(r.get("station", "")) != "" and not view.station_near(str(r["station"]), int(r.get("station_level", 1))):
-				entry.tooltip_text = "Crafting this takes you to the %s nearby" % view._station_label(r)
+# One slice of the running pass. Called by refresh() and every frame by the view while running().
+func step() -> void:
+	if not running():
+		return
 
-		if not makeable and view._station_ok(r):
-			entry.tooltip_text = missing_text(r)
+	var t0: int = Time.get_ticks_usec()
+	var rows: Array = _pass["rows"]
 
-		entry.pressed.connect(_select_recipe.bind(r["number"]))
-		# A click on the row crafts (one, shift five, held as many as possible).
-		entry.button_down.connect(func(): _press_msec = Time.get_ticks_msec())
-		entry.button_up.connect(func(): view.craft_click(int(r["number"]), Input.is_key_pressed(KEY_SHIFT), Time.get_ticks_msec() - _press_msec >= CRAFT_HOLD_MS))
+	# First what each recipe can do here (the slow part: plans and station checks), then the rows in their order.
+	while int(_pass["at"]) < rows.size():
+		var r: Dictionary = rows[int(_pass["at"])]
+		var can: bool = view._can_craft(int(r["number"]))
+		_pass["can"][int(r["number"])] = can
+		_pass["reach"][int(r["number"])] = can and view.station_in_reach(r)
+		_pass["at"] = int(_pass["at"]) + 1
 
-		entry.mouse_entered.connect(func(): view._hover_recipe = int(r["number"]))
-		entry.mouse_exited.connect(func(): view._hover_recipe = 0 if view._hover_recipe == int(r["number"]) else view._hover_recipe)
-		view._recipe_list.add_child(entry)
+		if Time.get_ticks_usec() - t0 > SLICE_USEC:
+			return
 
+	if not bool(_pass["ordered"]):
+		if _all_by_name.size() != view.recipes.numbers().size():   # every recipe in name order, sorted once (names do not change): a pass only picks its rows out
+			_all_by_name = RecipeFilter.by_name(view.recipes.numbers().map(func(n): return view.recipes.recipe(n)))
+			return
+
+		var in_order: Array = _all_by_name.filter(func(r): return (_pass["can"] as Dictionary).has(int(r["number"])))
+		var groups: Array = RecipeFilter.groups_of(in_order, func(r): return bool(_pass["can"][int(r["number"])]), func(r): return bool(_pass["reach"][int(r["number"])]))
+		_pass["ready"] = (groups[0] as Array).size() + (groups[1] as Array).size()
+		_pass["shown"] = groups[0] + groups[1] + groups[2]
+		_pass["ordered"] = true
+
+		if view._selected_recipe == 0 or view.recipes.recipe(view._selected_recipe).is_empty() or not view.station_makes(view.recipes.recipe(view._selected_recipe)):   # a station opened: not a card it does not list
+			view._selected_recipe = _pass["shown"][0]["number"] if not (_pass["shown"] as Array).is_empty() else 0
+			_refresh_detail()   # the first recipe's card, now that there is one
+
+		if _waiting != null and is_instance_valid(_waiting):
+			view._recipe_list.remove_child(_waiting)   # the rows come in from the top now
+			_waiting.queue_free()
+
+		_waiting = null
+		return   # sorting is a step of its own
+
+	var shown: Array = _pass["shown"]
+	var list: VBoxContainer = view._recipe_list
+
+	while int(_pass["built"]) < shown.size():
+		var k: int = int(_pass["built"])
+		var r: Dictionary = shown[k]
+		var number: int = int(r["number"])
+		var ready: bool = k < int(_pass["ready"])
+		var makeable: bool = ready or (bool(_pass["can"][number]) and view._station_ok(r))
+		var two_line: bool = not view._station_ok(r) and not ready
+		var row: Dictionary = _rows.get(number, {})
+
+		if row.is_empty() or not is_instance_valid(row["button"]) or bool(row["makeable"]) != makeable or bool(row["ready"]) != ready or bool(row["two_line"]) != two_line:
+			if not row.is_empty() and is_instance_valid(row["button"]):
+				_drop_row(number, row["button"])
+
+			row = {"button": _make_row(r, ready, makeable), "makeable": makeable, "ready": ready, "two_line": two_line, "lit": number == view._selected_recipe}
+			_rows[number] = row
+			list.add_child(row["button"])
+
+		(row["button"] as Button).tooltip_text = _row_tip(r, ready, makeable)
+
+		if (row["button"] as Node).get_index() != k:
+			list.move_child(row["button"], k)
+
+		_pass["built"] = k + 1
+
+		if Time.get_ticks_usec() - t0 > SLICE_USEC:
+			return
+
+	# Rows no longer listed (a search, a tab) are taken away, a slice at a time like the rest.
+	if (_pass["gone"] as Array).is_empty() and int(_pass["cleared"]) == 0:
+		for number in _rows:
+			if not (_pass["numbers"] as PackedInt32Array).has(int(number)):
+				_pass["gone"].append(number)
+
+		_pass["cleared"] = -1 if (_pass["gone"] as Array).is_empty() else 1
+
+	while not (_pass["gone"] as Array).is_empty():
+		var number: int = int(_pass["gone"].pop_back())
+		var row: Dictionary = _rows.get(number, {})
+		_rows.erase(number)
+
+		if not row.is_empty() and is_instance_valid(row["button"]):
+			_drop_row(number, row["button"])
+
+		if Time.get_ticks_usec() - t0 > SLICE_USEC:
+			return
+
+	if int(_pass["cleared"]) != 2:
+		_pass["cleared"] = 2   # the last part, the selection and the Admin kits, gets a step of its own
+		return
+
+	_finish_pass()
+
+
+# Runs the pass to its end at once (the headless checks, which count rows right after a refresh).
+func finish_now() -> void:
+	while running():
+		step()
+
+
+# The window shut: the pass is dropped (the next open starts a new one; the rows it already brought up to date stay).
+func stop() -> void:
+	_pass = {}
+	_again = false
+
+
+# The panel is freed and built again (a new text size): its rows, the card's quantity box and any running pass belong to the old one.
+func panel_gone() -> void:
+	stop()
+	_rows.clear()
+	_admin_nodes.clear()
+	_waiting = null
+	_quantity = null
+
+
+# A row's button leaves the list. A freed button sends no mouse_exited, so a hover on it is forgotten (E over a recipe crafts the hovered one).
+func _drop_row(number: int, button: Node) -> void:
+	if view._hover_recipe == number:
+		view._hover_recipe = 0
+
+	view._recipe_list.remove_child(button)
+	button.queue_free()
+
+
+# The pass is done: the selection lit on the right row, the Admin kits at the foot (the card was drawn when the pass started, and again by a click).
+func _finish_pass() -> void:
+	_pass = {}
+
+	for number in _rows:   # a recipe clicked while the rows were being made: light the right one
+		var row: Dictionary = _rows[number]
+
+		if bool(row["lit"]) != (int(number) == view._selected_recipe):
+			_style_row(row["button"], int(number), bool(row["makeable"]), bool(row["ready"]))
+			row["lit"] = int(number) == view._selected_recipe
+
+	for node in _admin_nodes:
+		if is_instance_valid(node):
+			view._recipe_list.remove_child(node)
+			node.queue_free()
+
+	_admin_nodes.clear()
 	_add_admin_builds()
-	_refresh_detail()
+
+	if _again:
+		_again = false
+		refresh()
 
 
-# The search box and the category tabs at the top of the Make list (Dave 25 Oct). Search matches the recipe's name, what it makes and its ingredients (1 Nov);
-# a tab shows one category and the search works inside it. The same list is the crafting table, forge and every other station's menu.
+# One recipe row (redesign 4.3): the made item's 32 px icon and its name; a recipe that needs a station you are not at has a second dim line,
+# "at camp bench" (short: the dim row already says it can't be made here). A line too long for the 226 px list ends in "...".
+func _make_row(r: Dictionary, ready: bool, makeable: bool) -> Button:
+	var entry: Button = Button.new()
+	entry.text = str(r["name"]) + (("\nat %s" % view._station_label(r)) if not view._station_ok(r) and not ready else "")
+	entry.alignment = HORIZONTAL_ALIGNMENT_LEFT
+	entry.clip_text = true
+	entry.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	entry.icon = InventoryLook.icon_for(view.table.id_of(int(r["gives"][0]))) if not (r["gives"] as Array).is_empty() else null
+	entry.expand_icon = false
+	entry.add_theme_constant_override("icon_max_width", 32)
+	entry.custom_minimum_size = Vector2(0.0, 64.0 if not view._station_ok(r) and not ready else 44.0)
+	entry.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	view._style(entry, view.BODY_PX - 12)
+	_style_row(entry, int(r["number"]), makeable, ready)
+
+	entry.pressed.connect(func(): row_clicked(int(r["number"]), Input.is_key_pressed(KEY_SHIFT)))
+	entry.mouse_entered.connect(func(): view._hover_recipe = int(r["number"]))
+	entry.mouse_exited.connect(func(): view._hover_recipe = 0 if view._hover_recipe == int(r["number"]) else view._hover_recipe)
+	return entry
+
+
+# A row's tooltip: where a station craft takes you, or what a dim row still needs (it follows the pack, so every pass sets it).
+func _row_tip(r: Dictionary, ready: bool, makeable: bool) -> String:
+	if not makeable and view._station_ok(r):
+		return missing_text(r)
+
+	if ready and str(r.get("station", "")) != "" and not view.station_near(str(r["station"]), int(r.get("station_level", 1))):
+		return "Crafting this takes you to the %s nearby" % view._station_label(r)
+
+	return ""
+
+
+# Look doc section 9: a makeable row has the gold bar on its left, the chosen one is lit; the others are dim and say what they still need.
+func _style_row(entry: Button, number: int, makeable: bool, ready: bool) -> void:
+	InventoryLook.style_recipe_row(entry, makeable, number == view._selected_recipe, InventoryLook.unit_of(view))
+
+	if ready:
+		InventoryLook.glow_recipe_row(entry, ItemSlot.glow_cfg(), InventoryLook.unit_of(view))
+
+
+# The search box and the category tabs at the top of the Make list (Dave 25 Oct). Search matches the recipe's name and what it makes (RecipeFilter);
+# a tab shows one category, and words typed search every category (Dave 19 Nov 2026). The same list is the crafting table, forge and every other station's menu.
 func _build_recipe_filter() -> Control:
 	var holder: VBoxContainer = VBoxContainer.new()
 	# A real search box (Dave 4 Nov): a field background and border, a magnifying glass on the left, and no words in it.
@@ -205,7 +393,7 @@ func _build_recipe_filter() -> Control:
 	return holder
 
 
-# The category tabs (redesign 4.3): All and the 10 recipe categories as a column of 48 px raised tabs, each an engraved glyph;
+# The category tabs (redesign 4.3): All and the 11 recipe categories (Carpenter's, what a saw makes, since 17 Nov 2026) as a column of 48 px raised tabs, each an engraved glyph;
 # the chosen tab is lit with a gold glyph. The category's name is the tab's tooltip.
 func _build_tabs() -> Control:
 	var tabs: VBoxContainer = VBoxContainer.new()
@@ -234,6 +422,8 @@ func _build_tabs() -> Control:
 		tab.toggled.connect(func(_on: bool) -> void: tab.queue_redraw())
 		tab.pressed.connect(func():
 			_recipe_category = str(label)
+			if view._recipe_search != null:
+				view._recipe_search.text = ""   # a tab click shows that tab whole (the search covers every tab, Dave 19 Nov 2026)
 			view._refresh())
 		tabs.add_child(tab)
 		_category_buttons[str(label)] = tab
@@ -242,20 +432,96 @@ func _build_tabs() -> Control:
 
 
 func _recipe_shown(r: Dictionary) -> bool:
-	return RecipeFilter.shown(r, _recipe_category, view._recipe_search.text if view._recipe_search != null else "", view.table)
+	return view.station_makes(r) and RecipeFilter.shown(r, _recipe_category, view._recipe_search.text if view._recipe_search != null else "", view.table)
 
 
+# A click on a recipe row (Dave 12 Nov 2026, PLAYTEST-001 TEST-005): it selects the recipe and shows its card, and never crafts; the Craft button
+# makes the quantity in the box. Shift-click makes exactly one at once. (Replaces decisions row 24 (7): a 0.4 s hold made all the stock allowed,
+# the runaway crafts of TEST-001.)
+func row_clicked(number: int, shift: bool) -> void:
+	if shift:
+		view._start_craft(number, 1)
+
+	_select_recipe(number)
+
+
+# Choosing a recipe restyles the old and the new row and redraws the card; the list itself is not worked out again.
 func _select_recipe(number: int) -> void:
+	var was: int = view._selected_recipe
 	view._selected_recipe = number
-	view._refresh()
+
+	for chosen in [was, number]:
+		var row: Dictionary = _rows.get(chosen, {})
+
+		if not row.is_empty() and is_instance_valid(row["button"]):
+			_style_row(row["button"], chosen, bool(row["makeable"]), bool(row["ready"]))
+			row["lit"] = chosen == number
+
+	_refresh_detail()
 
 
 # Queue the chosen recipe `quantity` times. The server takes the ingredients now and makes the crafts in order.
-func craft_selected() -> void:
+func craft_selected(count: int = 0) -> void:
 	if view._selected_recipe == 0:
 		return
 
-	view._start_craft(view._selected_recipe, chosen_quantity())
+	view._start_craft(view._selected_recipe, count if count > 0 else chosen_quantity(), chosen_variant())
+
+
+# A craft time in words short enough for a half-width button: "8 s" under a minute, "2:40" from one minute up.
+static func time_words(seconds: float) -> String:
+	var whole: int = int(round(seconds))
+	return "%d s" % whole if whole < 60 else "%d:%02d" % [floori(whole / 60.0), whole % 60]
+
+
+# Whether the stock in reach covers `count` crafts of recipe `number` (CB-2). A recipe that one craft cannot cover from stock alone (logs, parts
+# made first) is left to the server, which refuses what is short.
+# `needs` are the card's needs for the variant chosen (made_as).
+func _covers(number: int, needs: Array, count: int) -> bool:
+	if view._free_craft() or not view._stock_can_make(number):
+		return true
+
+	for need in needs:
+		if view.stock_fill(int(need[0])) < int(need[1]) * count:
+			return false
+
+	return true
+
+
+# One brass Craft button, half the footer wide; long words trim with "..." rather than spill past the column.
+func _craft_button(words: String, off: bool) -> Button:
+	var make: Button = Button.new()
+	make.text = words
+	make.tooltip_text = words
+	make.disabled = off
+	make.custom_minimum_size = Vector2(0.0, 58.0)
+	make.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	make.clip_text = true
+	make.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+	make.add_theme_font_override("font", ArtKit.font("cinzel_bold"))
+	make.add_theme_font_size_override("font_size", view._px(view.BODY_PX - 6))
+
+	for state in ["normal", "hover", "focus"]:
+		make.add_theme_stylebox_override(state, ArtKit.stylebox_brass(false))
+
+	make.add_theme_stylebox_override("pressed", ArtKit.stylebox_brass(true))
+	var dull: StyleBox = ArtKit.stylebox_brass(true).duplicate()
+
+	if dull is StyleBoxFlat:
+		(dull as StyleBoxFlat).bg_color = ArtKit.darker(ArtKit.BRASS, 0.45)
+
+	make.add_theme_stylebox_override("disabled", dull)
+
+	for colour_name in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		make.add_theme_color_override(colour_name, ArtKit.INK)
+
+	make.add_theme_color_override("font_disabled_color", Color(ArtKit.INK, 0.6))
+	return make
+
+
+# The variant chosen on the card when the stations here still allow it, else plain.
+func chosen_variant() -> int:
+	return _variant if view.craft_variants(view.recipes.recipe(view._selected_recipe)).has(_variant) else 0
 
 
 # The quantity box's number, counting digits typed but not yet confirmed with Enter (BUG-025).
@@ -268,9 +534,10 @@ func chosen_quantity() -> int:
 
 
 # The Admin heading at the bottom of the list (Dave 2026-10-22): the building pieces to test plus the other placeables, free and unlocked. Click one to get it; put it in a quick key
-# and it is the usual placement blueprint (left click places one). Shown while the admin check is off (local play) .
+# and it is the usual placement blueprint (left click places one). Shown while Admin mode is on (Dave 11 Nov 2026), which only an admin on this server can switch on:
+# the client turns it off when the server says this player is not an admin (protocol admin_status, server/client split A5), and the server refuses the give anyway.
 func _add_admin_builds() -> void:
-	if AdminScript.check_enabled():
+	if not view.admin_craft:
 		return
 
 	var typed: String = view._recipe_search.text if view._recipe_search != null else ""
@@ -288,7 +555,8 @@ func _add_admin_builds() -> void:
 			continue
 
 		if listed == 0:
-			view._recipe_list.add_child(_section("Admin"))   # no Admin heading over an empty list
+			_admin_nodes.append(_section("Admin"))   # no Admin heading over an empty list
+			view._recipe_list.add_child(_admin_nodes[-1])
 
 		listed += 1
 		# The same row as a recipe's (44 px, its icon and name), gold-lettered: a click gives the kit.
@@ -306,6 +574,7 @@ func _add_admin_builds() -> void:
 		view._style(entry, view.BODY_PX - 12)
 		entry.add_theme_color_override("font_color", ArtKit.HEADING)
 		entry.pressed.connect(func(): view.net.inventory_action.rpc_id(1, Net.ACT_ADMIN_GIVE, number, 0, 1, Vector3.ZERO))
+		_admin_nodes.append(entry)
 		view._recipe_list.add_child(entry)
 
 
@@ -320,6 +589,16 @@ func _refresh_detail() -> void:
 
 	if r.is_empty():
 		return
+
+	# The variant chosen in Make as (catalog Phase 2c): its needs (more materials for +1/+2) are what the wells, the shortfall line and the
+	# Craft button show, so a variant the stock cannot cover is never offered as craftable.
+	var variants: Array = view.craft_variants(r)
+	var variant: int = _variant if variants.has(_variant) else 0
+	var made_as: Dictionary = r
+
+	if variant != 0:
+		made_as = r.duplicate()
+		made_as["needs"] = SmithingRules.scaled_needs(r["needs"], variant)
 
 	var gives: Array = r.get("gives", [0, 0])
 	var made: int = int(gives[0]) if not gives.is_empty() else 0
@@ -350,18 +629,18 @@ func _refresh_detail() -> void:
 		about.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_detail.add_child(about)
 
-	for stat in _stats_of(entry):
+	for stat in _stats_of(entry, variant):
 		_detail.add_child(_stat_row(str(stat[0]), str(stat[1])))
 
 	_detail.add_child(_section("Needs"))
-	var parts: Dictionary = view._parts_plan(view._selected_recipe)
+	var parts: Dictionary = view._parts_plan(view._selected_recipe) if variant == 0 else {"ok": false, "ambiguous": 0}   # the server plans parts for plain crafts only
 
 	if bool(parts["ok"]):
 		var made_first: Array = (parts["made"] as Array).map(func(m): return "%d %s" % [m[1], view.table.sentence_name(m[0])])
 		# The helper (look doc section 9): one press queues the recipe, and the server makes the parts first.
 		var helper: Button = _hint_button("Make it  (makes %s first)" % " and ".join(made_first))
 		var helper_number: int = view._selected_recipe
-		helper.pressed.connect(func() -> void: view.craft_click(helper_number, false, false))
+		helper.pressed.connect(func() -> void: view._start_craft(helper_number, 1))
 		_detail.add_child(helper)
 	elif int(parts["ambiguous"]) != 0:
 		var choose_line: Label = _text(str(parts["msg"]), 18, ArtKit.HEADING)
@@ -373,8 +652,8 @@ func _refresh_detail() -> void:
 	wells.add_theme_constant_override("v_separation", 10)
 	_detail.add_child(wells)
 
-	for need in r["needs"] + r["keeps"]:
-		var kept: bool = r["keeps"].has(need)
+	for need in made_as["needs"] + made_as["keeps"]:
+		var kept: bool = made_as["keeps"].has(need)
 		var have: int = view.stock_fill(need[0])   # the pack, loose stacks within 3 m and own containers within 12 m (craft_stock)
 		wells.add_child(_need_well(int(need[0]), int(need[1]), have, kept))
 
@@ -390,7 +669,26 @@ func _refresh_detail() -> void:
 	_quantity.value_changed.connect(func(v): _qty = int(v))
 	_quantity.get_line_edit().add_theme_font_size_override("font_size", view._px(view.BODY_PX - 8))
 	row.add_child(_quantity)
-	var short: String = missing_text(r)
+	# Make as (catalog Phase 2c): the variants the stations beside you allow, Plain first, each with what it costs over the plain craft.
+	if variants.size() > 1:
+		var as_row: HBoxContainer = HBoxContainer.new()
+		as_row.add_theme_constant_override("separation", 12)
+		_detail.add_child(as_row)
+		as_row.add_child(_text("Make as", 18, ArtKit.CREAM))
+		var pick: OptionButton = OptionButton.new()
+		pick.add_theme_font_size_override("font_size", view._px(view.BODY_PX - 8))
+
+		for code in variants:
+			var mats: float = float(SmithingRules.cfg().get("craft", {}).get("materials", [1.0, 1.0, 1.0])[SmithingRules.craft_in(code)])
+			pick.add_item("%s%s" % [SmithingRules.label(code), "" if code == 0 else "  (x%s materials, x%s time)" % [str(snappedf(mats, 0.1)), str(snappedf(SmithingRules.time_mult(code), 0.1))]], code)
+
+		pick.select(maxi(variants.find(variant), 0))
+		pick.item_selected.connect(func(index: int) -> void:
+			_variant = pick.get_item_id(index)
+			view._refresh())
+		as_row.add_child(pick)
+
+	var short: String = missing_text(made_as)
 
 	if short != "":
 		var shortfall: Label = _text("Short: " + short.trim_prefix("needs ") + ".", 18, ArtKit.BAD)
@@ -419,32 +717,27 @@ func _refresh_detail() -> void:
 		if users.size() > 2:
 			links.add_child(_text("+%d more" % (users.size() - 2), 18, ArtKit.DIM))
 
-	# The Craft button: cast brass, the word engraved; dim when the recipe cannot be made here now.
-	var make: Button = Button.new()
-	make.text = "Craft  (%.0f s)" % float(r["craft_s"])
-	make.disabled = not (view._can_craft(view._selected_recipe) and view._station_ok(r))
-	make.custom_minimum_size = Vector2(0.0, 58.0)
-	make.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	make.add_theme_font_override("font", ArtKit.font("cinzel_bold"))
-	make.add_theme_font_size_override("font_size", view._px(view.BODY_PX - 6))
-
-	for state in ["normal", "hover", "focus"]:
-		make.add_theme_stylebox_override(state, ArtKit.stylebox_brass(false))
-
-	make.add_theme_stylebox_override("pressed", ArtKit.stylebox_brass(true))
-	var dull: StyleBox = ArtKit.stylebox_brass(true).duplicate()
-
-	if dull is StyleBoxFlat:
-		(dull as StyleBoxFlat).bg_color = ArtKit.darker(ArtKit.BRASS, 0.45)
-
-	make.add_theme_stylebox_override("disabled", dull)
-
-	for colour_name in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
-		make.add_theme_color_override(colour_name, ArtKit.INK)
-
-	make.add_theme_color_override("font_disabled_color", Color(ArtKit.INK, 0.6))
-	make.pressed.connect(craft_selected)
-	_footer.add_child(make)
+	# Two Craft buttons side by side (Dave 17 Nov 2026): "Craft 1" makes one, "Craft x" makes the Make box's number and follows it as it changes.
+	# Cast brass, the word engraved; dim when that amount cannot be made here now (provisional CB-1..CB-3, craft_list_order_design.md).
+	var each_s: float = float(r["craft_s"]) * SmithingRules.time_mult(variant)
+	var one_ok: bool = (view._can_craft(view._selected_recipe) if variant == 0 else view._free_craft() or short == "") and view._station_ok(r)
+	var buttons: HBoxContainer = HBoxContainer.new()
+	buttons.add_theme_constant_override("separation", 8)
+	_footer.add_child(buttons)
+	var one: Button = _craft_button("Craft 1  (%s)" % time_words(each_s), not one_ok)
+	one.pressed.connect(func() -> void: craft_selected(1))
+	buttons.add_child(one)
+	var many: Button = _craft_button("", true)
+	buttons.add_child(many)
+	var many_number: int = view._selected_recipe
+	var many_needs: Array = made_as["needs"]
+	var set_many: Callable = func(count: int) -> void:
+		many.text = "Craft %d  (%s)" % [count, time_words(each_s * count)]
+		many.tooltip_text = many.text
+		many.disabled = not one_ok or not _covers(many_number, many_needs, count)
+	set_many.call(_qty)
+	_quantity.value_changed.connect(func(v) -> void: set_many.call(int(v)))
+	many.pressed.connect(func() -> void: craft_selected())
 
 	# Pin (Morgan's report): the recipe stays on screen as a checklist, window open or shut. A key hint, not a boxed button.
 	var pinned: bool = view._pinned_part.number == view._selected_recipe
@@ -484,16 +777,17 @@ func used_in(number: int) -> Array:
 
 
 # The made item's stats for the card: what it does, how long it lasts and what mends it (from items.json).
-func _stats_of(entry: Dictionary) -> Array:
+# `variant`: the Make as choice; Lasts shows the maximum durability a Tempered or +1/+2 craft is made with (SmithingRules.made_inst).
+func _stats_of(entry: Dictionary, variant: int = 0) -> Array:
 	var stats: Array = []
 
 	if int(entry.get("durability", 0)) > 0:
-		stats.append(["Lasts", "%d uses" % int(entry["durability"])])
+		stats.append(["Lasts", "%d uses" % SmithingRules.max_of(entry, SmithingRules.made_inst(entry, variant))])
 
 	var mends: PackedStringArray = PackedStringArray()
 
 	for cost in entry.get("repair", []):
-		mends.append(view.table.sentence_name(view.table.number_of(str(cost[0]))))
+		mends.append(view.table.cost_sentence(view.table.number_of(str(cost[0]))))
 
 	if not mends.is_empty():
 		stats.append(["Mends with", ", ".join(mends)])
@@ -557,11 +851,16 @@ func _hint_button(text: String) -> Button:
 func missing_text(r: Dictionary) -> String:
 	var short: Array = []
 
+	var hand_tool: String = view.hand_tool_short(int(r.get("number", 0)))
+
 	for need in r["needs"] + r["keeps"]:
 		var have: int = view.stock_fill(int(need[0]))
 
-		if have < int(need[1]):
-			short.append("%s %d / %d" % [view.table.sentence_name(int(need[0])), have, int(need[1])])
+		if have < int(need[1]) and view.table.cost_sentence(int(need[0])) != hand_tool:   # a tool named as wanted in hand is said once
+			short.append("%s %d / %d" % [view.table.cost_sentence(int(need[0])), have, int(need[1])])
+
+	if hand_tool != "":
+		short.push_front("%s in your hand" % hand_tool)   # first, so the card says it even when a log is short too
 
 	if short.is_empty():
 		return ""
@@ -578,7 +877,7 @@ func _need_well(number: int, need: int, have: int, kept: bool) -> Control:
 	var slot = InventoryLook.make_slot(view, -1)
 	slot.set_unit(NEED_PX / ItemSlot.SLOT_PX)
 	slot.focus_mode = Control.FOCUS_NONE
-	InventoryLook.show_stack(view, slot, number, 1, 0, view.table.name_of(number))
+	InventoryLook.show_stack(view, slot, number, 1, 0, view.table.cost_name(number))
 	slot.set_greyed(have < need)
 	box.add_child(slot)
 	var in_pack: int = view.inventory.count_fill(number) if view.inventory != null else 0
@@ -588,7 +887,7 @@ func _need_well(number: int, need: int, have: int, kept: bool) -> Control:
 		mark.position = Vector2(NEED_PX - 26.0, 4.0)
 		slot.add_child(mark)
 
-	var item_name: Label = _text(view._item_label(number), 18, ArtKit.CREAM)
+	var item_name: Label = _text(view.table.cost_name(number) if view.table.has_group_label(number) else view._item_label(number), 18, ArtKit.CREAM)
 	item_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	item_name.clip_text = true
 	item_name.custom_minimum_size = Vector2(NEED_PX, 0.0)

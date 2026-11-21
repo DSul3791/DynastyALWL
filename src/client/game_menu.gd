@@ -11,6 +11,7 @@ const DisplaySettingsScript := preload("res://src/client/display_settings.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const MenuSwitch := preload("res://src/client/menu_switch.gd")
 const KeyBindingsPage := preload("res://src/client/key_bindings_page.gd")
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const TitleArt := preload("res://scenes/title/title_art.gd")
 
@@ -38,6 +39,7 @@ var _hints_switch
 var _dialogue_switch
 var _tunnel_switch
 var _admin_mode_switch
+var _admin_buttons: Array = []   # the Admin buttons on the main and settings pages: shown only to an admin on this server (protocol 134)
 var _cave_button: Button
 var _sound_list: VBoxContainer
 var _controls_from_settings: bool = false   # Back on the Controls page returns to Settings when it was opened from there
@@ -102,6 +104,19 @@ func build(client) -> void:
 		_c.net.inventory_action.rpc_id(1, Net.ACT_RESET_EDITS, 0, 0, 0, Vector3.ZERO)
 		show_page("admin"))
 	_button(reset, "No, keep them", func(): show_page("admin"))
+	var world: VBoxContainer = _page("reset_world")
+	var world_warn: Label = Label.new()
+	world_warn.text = "Reset the WHOLE world for everyone?
+Every dig and fill, every dropped item and everything built or placed
+(chests and stations with their contents, fires, beds, farm beds) is deleted.
+Characters, packs, worn gear and skills are kept. This cannot be undone."
+	world_warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	world_warn.add_theme_font_size_override("font_size", 20)
+	world.add_child(world_warn)
+	_button(world, "Yes, reset the world", func():
+		_c.net.inventory_action.rpc_id(1, Net.ACT_RESET_WORLD, 0, 0, 0, Vector3.ZERO)
+		show_page("admin"))
+	_button(world, "No, keep it", func(): show_page("admin"))
 	var fresh: VBoxContainer = _page("new_player")
 	var fresh_warn: Label = Label.new()
 	fresh_warn.text = "Start over as a brand new player?\nYour pack and worn gear are emptied, your vitals reset\nand Admin mode goes off. You stay where you are."
@@ -159,6 +174,9 @@ func show_page(page_name: String) -> void:
 
 # The controls follow the game's state (quality marks, switches, cave-in time).
 func refresh() -> void:
+	for control in _admin_buttons:
+		control.visible = _c.is_admin_here
+
 	for n in range(quality_buttons.size()):
 		quality_buttons[n].text = _c.QUALITY_NAMES[n] + ("  (active)" if n == _c.quality else "")
 
@@ -166,7 +184,7 @@ func refresh() -> void:
 		_vsync_switch.set_on(_c.display.vsync_index != 2)
 		_fullscreen_switch.set_on(_c.display.fullscreen)
 		_tunnel_switch.set_on(_c.tunnel_on)
-		_admin_mode_switch.set_on(_c.items == null or _c.items.admin_craft)
+		_admin_mode_switch.set_on(_c.items != null and _c.items.admin_craft)
 		_cave_button.text = "Cave-in time: %d min (change)" % roundi(float(_c.tunnel_cave_in_s) / 60.0)
 		_voice_switch.set_on(_c._npc_voice == null or _c._npc_voice.enabled)
 		_damage_switch.set_on(_c.display.damage_numbers)
@@ -203,8 +221,9 @@ func _build_main() -> void:
 	_button(main, "Quit game", func(): show_page("quit"))
 
 	if SHOW_ADMIN:
-		main.add_child(HSeparator.new())
-		_button(main, "Admin", func(): show_page("admin"))
+		_admin_buttons.append(HSeparator.new())
+		main.add_child(_admin_buttons.back())
+		_admin_buttons.append(_button(main, "Admin", func(): show_page("admin")))
 
 	var quit: VBoxContainer = _page("quit")
 	var ask: Label = Label.new()
@@ -261,7 +280,7 @@ func _build_settings() -> void:
 		show_page("controls"))
 
 	if SHOW_ADMIN:
-		_button(settings, "Admin", func(): show_page("admin"))
+		_admin_buttons.append(_button(settings, "Admin", func(): show_page("admin")))
 
 	_button(settings, "Back", func(): show_page("main"))
 
@@ -427,6 +446,7 @@ func _build_admin() -> void:
 		_c._set_menu(false))
 	_button(admin, "Play as a new player", func(): show_page("new_player"))
 	_button(admin, "Reset all terrain edits", func(): show_page("reset_edits"))
+	_button(admin, "Reset world (terrain, dropped items, buildings)", func(): show_page("reset_world"))
 	_button(admin, "Dump water here (to a file on the server)", func():
 		var here: Vector3 = _c.body.global_position
 		_c.net.inventory_action.rpc_id(1, Net.ACT_DUMP_WATER, 0, 0, 0, here)
@@ -447,9 +467,15 @@ func _build_admin() -> void:
 		var key: String = _c.items.player_key() if _c.items != null else ""
 		DisplayServer.clipboard_set(key)
 		note.text = "Your player key (copied): %s\nPut it in data/admin.json as {\"keys\": [\"%s\"]}" % [key, key])
-	_button(admin, "Rebuild the starter ground (slow, 5 to 10 min)", func():
-		var problem: String = _c._bake.start()
-		note.text = "Baking the starter tiles in the background (about 5 to 10 minutes). The game stays usable; the result shows here." if problem == "" else problem)
+	# The bake runs the project's own bake script beside the editor's local server, so only an editor run has it: an installed client has
+	# no project and no tiles (server/client split A3).
+	if OS.has_feature("editor"):
+		_button(admin, "Rebuild the starter ground (slow, 5 to 10 min)", func():
+			if _c._bake == null:
+				_c._bake = load("res://src/admin/tile_bake_launcher.gd").new()
+
+			var problem: String = _c._bake.start()
+			note.text = "Baking the starter tiles in the background (about 5 to 10 minutes). The game stays usable; the result shows here." if problem == "" else problem)
 	_button(admin, "Respawn showroom (take it away and fill it again)", func(): if _c.showroom != null: _c.showroom.respawn())
 	_button(admin, "Clear dropped items within 50 m", func(): _c.net.inventory_action.rpc_id(1, Net.ACT_CLEAR_DROPS, 50, 0, 0, Vector3.ZERO))
 	_button(admin, "Developer tools", func(): show_page("developer"))
@@ -460,14 +486,14 @@ func _build_admin() -> void:
 func _build_developer() -> void:
 	var dev: VBoxContainer = _page("developer")
 	_heading(dev, "Developer tools")
-	_button(dev, "Debug text on screen (F3): on or off", func():
+	_button(dev, "Debug text on screen (%s): on or off" % KeyBindings.label("debug_details"), func():
 		_c.debug_hud.enabled = not _c.debug_hud.enabled
 		note.text = "Debug text %s" % ("on" if _c.debug_hud.enabled else "off"))
 	_button(dev, "Ground report for the spot you look at (copied)", func(): _c.ground_debug.dump_ground_here())
-	_button(dev, "Camera smoothness test (next spot, or J)", func():
+	_button(dev, "Camera smoothness test (next spot, or %s)" % KeyBindings.label("jitter_test"), func():
 		_c._jitter_test.next_spot()
 		_c._set_menu(false))
-	_button(dev, "Graphics timing table (stand still; Ctrl+Shift+G)", func():
+	_button(dev, "Graphics timing table (stand still; %s)" % KeyBindings.label("gpu_probe"), func():
 		_c._set_menu(false)
 		_c._gpu_probe.toggle())
 	_button(dev, "One-minute speed test of this PC", func():

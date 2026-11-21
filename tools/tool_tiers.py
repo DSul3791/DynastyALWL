@@ -9,7 +9,7 @@ import json, sys, os
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TIERS = {1: "wooden", 2: "stone", 3: "iron", 4: "steel"}
 # Classes the early-game list or the digging ladder expects, so a missing one shows as a gap.
-WANTED = ["axe", "hammer", "knife", "adze", "saw", "spade", "hoe", "pick", "rod", "net", "needle", "torch"]
+WANTED = ["axe", "hammer", "knife", "adze", "saw", "shovel", "hoe", "pick", "rod", "net", "needle", "torch"]
 
 
 REC = """## Recommendation (design call, for Dave through Tyler)
@@ -18,10 +18,10 @@ Keep the numbers as they are (renumbering would touch digging.json tier_extra, h
 
 | tier | rung | stays / new |
 |---|---|---|
-| 1 | wooden or first tool | wooden hammer, hoe, spade; stone axe, stone knife (no wooden axe or knife exists, so these are the first rung); torch, rod, net |
-| 2 | stone | stone hammer, hoe, spade, adze (exist); **new:** stone pick, stone saw |
-| 3 | iron | iron hoe, spade (future), hand saw (exists); iron pick (future) |
-| 4 | steel | steel hoe, spade, pick (future) |
+| 1 | wooden or first tool | wooden hammer, hoe, shovel; stone axe, stone knife (no wooden axe or knife exists, so these are the first rung); torch, rod, net |
+| 2 | stone | stone hammer, hoe, shovel, adze (exist); **new:** stone pick, stone saw |
+| 3 | iron | iron hoe, shovel (future), hand saw (exists); iron pick (future) |
+| 4 | steel | steel hoe, shovel, pick (future) |
 
 Not done on purpose: no copper or bronze rung until Dave asks for one. New early tools (stone saw, stone pick, sickle, scythe, rake) each come as their own plan from the reserved block (items 267-299, recipes 170-199), with the name sent to Kathleen first."""
 

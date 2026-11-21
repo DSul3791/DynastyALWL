@@ -2,8 +2,8 @@ extends SceneTree
 
 # BUG-024 (Dave's QA list, 3 Nov 2026: felled trees fall again after streaming out and back in; a cut tree must stay gone near and far).
 #   godot --headless --path . --script res://src/worldgen/tools/test_felled_stays_gone.gd
-# 1. A trunk is marked landed once its fall time has passed, and a saved trunk loads landed, so a client that sees it again
-#    (coming back into range) draws it lying instead of felling it a second time.
+# 1. A felled tree's stump is "fresh" (a client plays the fall) only until the fall lands, and a saved stump loads landed, so a client that sees it
+#    again (coming back into range) draws the stump and the lying logs instead of felling the tree a second time.
 # 2. A tree cut while the server is making its chunk on a worker thread is not kept in the server's packed copy
 #    (every later asker, near or far, would get the standing tree back).
 
@@ -58,34 +58,36 @@ func make_items(dir: String):
 
 
 func _init() -> void:
-	# 1. Landed after the fall. A trunk that has had a blow is not split by itself, so it stays a trunk here.
+	# 1. Landed after the fall (FALL_S of the server's own time).
 	var dir: String = "user://test_felled_stays_gone_%d" % Time.get_ticks_usec()
 	var w = make_items(dir)
-	var id: int = 777001
-	w._items[id] = {"number": 0, "count": 1, "pos": Vector3(3.0, 10.0, 3.0), "left": 1.0e9,
-		"tree": {"state": 3, "species": "oak", "yaw": 0.0, "pitch": 0.0, "length": 9.0, "radius": 0.3, "chunk": [0, 0], "blows": 1}}
-	w._split_due[id] = Time.get_ticks_msec() + 60000
-	w._auto_split()
-	check(not bool(w._items[id]["tree"].get("landed", false)), "a trunk still falling is not landed (a client near it sees it fall)")
-	w._split_due[id] = 0
-	w._auto_split()
-	check(w._items.has(id) and bool(w._items[id]["tree"].get("landed", false)), "after its fall time the trunk is landed (seen again, it lies; no second fall)")
+	var first_id: int = w._next_id
+	w._fell_record(Vector2i(0, 0), {"name": "oak", "position": Vector3(3.0, 10.0, 3.0), "height": 9.0, "trunk": 0.3}, Vector2(1.0, 0.0))
+	var id: int = first_id
+	var pieces: Array = range(first_id + 1, w._next_id)
+	w._fall_tick(ItemsScript.FALL_S - 0.5)
+	check(bool(w._items[id]["tree"].get("fresh", false)) and pieces.all(func(k): return w._items[k].has("fall")), "a tree still falling is fresh and its pieces carry the fall (a client near it sees it fall)")
+	w._fall_tick(0.6)
+	check(not w._items[id]["tree"].has("fresh") and pieces.all(func(k): return not w._items[k].has("fall")), "after its fall time the stump is landed and the pieces lie (seen again, no second fall)")
 
-	# A trunk saved before this fix (no landed mark) loads landed.
-	w._items[id]["tree"].erase("landed")
+	# A tree saved while it was still coming down loads landed: the stump is not fresh and its logs lie.
+	w._items[id]["tree"]["fresh"] = true
 	w._dirty = true
 	w.save()
 	w._finish_writer()   # the write runs in the background
 	var again = make_items(dir)
-	var trunks: int = 0
-	var landed: int = 0
+	var stumps: int = 0
+	var fresh: int = 0
+	var falling: int = 0
 
 	for k in again._items:
-		if again._items[k].has("tree") and int(again._items[k]["tree"]["state"]) == 3:
-			trunks += 1
-			landed += 1 if bool(again._items[k]["tree"].get("landed", false)) else 0
+		if again._items[k].has("tree"):
+			stumps += 1
+			fresh += 1 if again._items[k]["tree"].has("fresh") else 0
+		elif again._items[k].has("fall"):
+			falling += 1
 
-	check(trunks == 1 and landed == 1, "a saved trunk loads landed (%d of %d)" % [landed, trunks])
+	check(stumps == 1 and fresh == 0 and falling == 0, "a saved stump loads landed and its logs lie (%d fresh, %d falling, %d stumps)" % [fresh, falling, stumps])
 
 	# 2. A cut while the chunk is being made.
 	var flora = ServerFloraScript.new()

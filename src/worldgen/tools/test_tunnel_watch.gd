@@ -65,7 +65,7 @@ func _init() -> void:
 	_check(watch.working_count() > 0, "a wide tunnel starts windows (%d cells)" % watch.working_count())
 	peers[1] = (watch._cells.values()[0] as Dictionary)["pos"] + Vector3(1.0, 0.0, 0.0)   # inside the tunnel: the creak reaches only players within a few metres (QUAKE_NEAR_M)
 	var grace: int = int(watch._cells.values()[0]["grace_ms"])
-	_check(grace >= 225000 and grace <= 3600000, "grace within 225 s and 60 min (%d s)" % (grace / 1000))
+	_check(grace >= 225000 and grace <= 3600000, "grace within 225 s and 60 min (%d s)" % int(grace / 1000.0))
 	var early: Dictionary = watch.tick(1000, peers)
 	_check(early["quake"].is_empty() and early["collapse"].is_empty(), "quiet at the start")
 	var creak: Dictionary = watch.tick(int(float(grace) * 0.7), peers)
@@ -99,7 +99,7 @@ func _init() -> void:
 	wired.mark_dirty([Vector3i.ZERO])
 	wired.process_dirty(0)
 	_check(items.support_strength_at(Vector3(8.0, 8.0, 8.0)) == 0.0, "no supports: strength 0")
-	items._supports = [[Vector3(8.0, 8.0, 8.0), 200.0, 1.0, 86400.0, 0.25, 0.0], [Vector3(4.0, 8.0, 8.0), 200.0, 1.0, 86400.0, 0.25, 0.0]]
+	items._supports = ItemsScript._file_supports([[Vector3(8.0, 8.0, 8.0), 200.0, 1.0, 86400.0, 0.25, 0.0], [Vector3(4.0, 8.0, 8.0), 200.0, 1.0, 86400.0, 0.25, 0.0]])   # filed in every square their 200 m reaches
 	_check(items.support_strength_at(Vector3(8.0, 8.0, 8.0)) == 1.0, "a new support at the spot gives full strength")
 	_check(wired.tick(grace * 3, peers)["collapse"].is_empty(), "wired items: supported tunnel does not fall")
 	var again: Watch = _watch()
@@ -215,7 +215,6 @@ func _near_and_warn(grace: int) -> void:
 	var w: Watch = _watch()
 	w.mark_dirty([Vector3i.ZERO])
 	w.process_dirty(0)
-	var inside: Vector3 = Vector3(8.0, 6.0, 8.0)
 	var cell_pos: Vector3 = (w._cells.values()[0] as Dictionary)["pos"]
 	var far: Vector3 = cell_pos + Vector3(20.0, 0.0, 0.0)
 	var near_peers: Dictionary = {1: cell_pos + Vector3(2.0, 0.0, 0.0), 2: far}

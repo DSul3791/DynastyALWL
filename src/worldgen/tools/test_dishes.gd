@@ -7,6 +7,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 var failures: int = 0
 var items
@@ -42,7 +43,7 @@ func _init() -> void:
 	# Away from a fire nothing can be cooked.
 	var first: String = str(dishes.keys()[0])
 	_stock(first, dishes[first])
-	items.action(1, Net.ACT_CRAFT_QUEUE, int(recipes["cook_" + first]["number"]), 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, int(recipes["cook_" + first]["number"]), 0, 1, CraftHand.at(items, 1, int(recipes["cook_" + first]["number"])))
 	_pass(20.0)
 	check(items.count_for(1, first) == 0, "no dish without a fire")
 
@@ -67,16 +68,57 @@ func _init() -> void:
 	# Jam, compote, sauerkraut, preserved damsons and apple sauce at a preserving jar (item_system.md line 239; Morgan 10 Nov).
 	items._next_id += 1
 	items._items[items._next_id] = {"number": items.table.number_of("preserving_jar"), "count": 1, "pos": Vector3(1.0, 10.0, 1.0), "left": 1.0e9, "struct": {"kind": "preserving_jar", "yaw": 0.0}}
+	# Mission 001 phase 6 (master s3.12 [D12]): a dish with a "prepared" item is mixed or shaped at the Food preparation table first, then cooked from that.
+	items._next_id += 1
+	items._items[items._next_id] = {"number": items.table.number_of("food_preparation_table"), "count": 1, "pos": Vector3(-1.0, 10.0, -1.0), "left": 1.0e9, "struct": {"kind": "food_preparation_table", "yaw": 0.0}}
+
+	# The Grill, Cooking pot and Griddle (Dave 17 Nov 2026: "We dont use things like pots pans and griddles we use cooking stations").
+	for kind in ["grill", "cooking_pot", "griddle"]:
+		items._next_id += 1
+		items._items[items._next_id] = {"number": items.table.number_of(kind), "count": 1, "pos": Vector3(-1.0, 10.0, 1.0), "left": 1.0e9, "struct": {"kind": kind, "yaw": 0.0}}
 
 	var best_by_kinds: Dictionary = {}
 
 	for dish_id in dishes:
 		var d: Dictionary = dishes[dish_id]
 		_stock(dish_id, d)
+		var prepared: String = str(d.get("prepared", ""))
+
+		check(not d.has("keeps") and (recipes["cook_" + dish_id].get("keeps", []) as Array).is_empty(), "%s keeps no cookware, only its station" % dish_id)
+
+		if prepared != "":
+			var had: Array = (d["needs"] as Array).map(func(n): return items.count_for(1, str(n[0])))   # the first dish's stock from the no-fire check may still be there
+			items._last_queue_act.clear()
+			items.action(1, Net.ACT_CRAFT_QUEUE, int(recipes["prep_" + dish_id]["number"]), 0, 1, CraftHand.at(items, 1, int(recipes["prep_" + dish_id]["number"])))
+			_pass(float(d.get("prep_s", 4)) + 4.0)
+			var spent: bool = true
+
+			for k in (d["needs"] as Array).size():
+				spent = spent and items.count_for(1, str(d["needs"][k][0])) == int(had[k]) - int(d["needs"][k][1])
+
+			check(items.count_for(1, prepared) == int(d["gives"]) and spent, "%s: the table makes %d %s from the ingredients" % [dish_id, items.count_for(1, prepared), prepared])
+
 		items._last_queue_act.clear()
-		items.action(1, Net.ACT_CRAFT_QUEUE, int(recipes["cook_" + dish_id]["number"]), 0, 1, Vector3.ZERO)
+		items.action(1, Net.ACT_CRAFT_QUEUE, int(recipes["cook_" + dish_id]["number"]), 0, 1, CraftHand.at(items, 1, int(recipes["cook_" + dish_id]["number"])))
 		_pass(float(d["craft_s"]) + 4.0)
-		check(items.count_for(1, dish_id) == int(d["gives"]), "%s is made at the lit fire (%d)" % [dish_id, items.count_for(1, dish_id)])
+		check(items.count_for(1, dish_id) == int(d["gives"]) and (prepared == "" or items.count_for(1, prepared) == 0), "%s is made at the lit fire (%d)" % [dish_id, items.count_for(1, dish_id)])
+
+		# The other stations that cook it (also_cook): the Grill, Cooking pot or Griddle alone, `times` batches in one craft.
+		for way in d.get("also_cook", []):
+			var times: int = int(way.get("times", 1))
+			var had: int = items.count_for(1, dish_id)
+
+			if prepared != "":
+				items.give_to(1, prepared, int(d["gives"]) * times)
+			else:
+				for need in d["needs"]:
+					items.give_to(1, str(need[0]), int(need[1]) * times)
+
+			items._last_queue_act.clear()
+			var way_recipe: Dictionary = recipes["cook_%s_%s" % [dish_id, way["station"]]]
+			items.action(1, Net.ACT_CRAFT_QUEUE, int(way_recipe["number"]), 0, 1, CraftHand.at(items, 1, int(way_recipe["number"])))
+			_pass(float(way.get("craft_s", d["craft_s"])) + 4.0)
+			check(items.count_for(1, dish_id) - had == int(d["gives"]) * times and (way_recipe.get("keeps", []) as Array).is_empty(), "%s is made at the %s, keeping nothing (%d)" % [dish_id, way["station"], items.count_for(1, dish_id) - had])
 		var kinds: int = (d["needs"] as Array).size()
 		var points: int = int(vitals["food"]["by_id"].get(dish_id, 0))
 		check(points > 0 and float(points) / float(kinds) > 100.0, "%s gives food points (%d)" % [dish_id, points])

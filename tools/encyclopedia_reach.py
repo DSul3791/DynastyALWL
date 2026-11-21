@@ -9,14 +9,14 @@ Rerun this after any data change instead of hand-editing obtainable_now:
     python3 tools/encyclopedia_reach.py --check   # exit 1 when encyclopedia.json is out of date
 
 An item is obtainable now when a player can get it today, starting with empty hands:
-  * a world source the data names (flora yields, harvest and berry rows, tree, stump and shrub drops, digging, boulders,
+  * a world source the data names (flora yields, harvest and berry rows, tree, stump and shrub drops, felled tree seeds, digging, boulders,
     flint, shore nodes, fishing and fish schools, carcass parts, nests, the validator's CODE_SOURCES), gated on the tool
-    the code asks for where that tool might not exist yet (a pick of the right material for ore, a spade to dig, a hoe
+    the code asks for where that tool might not exist yet (a pick of the right material for ore, a shovel to dig, a hoe
     and the seed to farm, an axe to fell);
   * a recipe that is not locked or retired, at a station a player can build to the level the recipe asks for
     (structures.json station + station_level, +1 per add-on kind, "also" stations), with every need and kept tool
     obtainable;
-  * a hammer blueprint (not locked or retired) whose cost, hammer tier, station and "near" piece are all reachable
+  * a hammer blueprint (not locked or retired; a knife blueprint, "tool": "knife", needs a knife instead of a hammer) whose cost, hammer tier, station and "near" piece are all reachable
     builds its structure, and so its station;
   * cooking.json cooks_into from a raw item at a fire, spoilage rotten_item, doused_item/relit_item twins, and an
     ingredient group when any member is.
@@ -64,6 +64,7 @@ class Reach:
         self.recipes = read("recipes.json")["recipes"]
         self.blueprints = read("blueprints.json")["blueprints"]
         self.structures = read("structures.json")["structures"]
+        self.smelting = read("structures.json").get("smelting", {})
         self.drops = read("drops.json")
         self.digging = read("digging.json")
         self.boulders = read("boulders.json")
@@ -125,7 +126,7 @@ class Reach:
     def seed(self):
         twins = {it.get("doused_item") for it in self.all.values() if it.get("doused_item")}
         for iid in code_sources():
-            if iid not in twins:   # a doused twin (torch_doused, the dark lanterns) comes only from its lit item, below
+            if iid not in twins:   # a doused twin (the dark lanterns) comes only from its lit item, below
                 self.give(iid, "handed out by the code (CODE_SOURCES)")
         yields = {str(y) for e in self.flora for y in e.get("yields", [])}
         for iid in self.gathered:
@@ -171,13 +172,12 @@ class Reach:
                     for r in rows:
                         changed |= g(r[0], "felled %s (%s)" % (key, axe))
             # server_items.gd _log_number: a felled tree gives log_<species>, or the plain Log when that item is missing or retired;
-            # _wood_item: stump firewood is the species' class firewood (wood_species.json class_items).
+            # _chop_stump: a stump gives Firewood (one Firewood for every species since 15 Nov 2026, TREE_WOOD_TOOLS_DESIGN.md).
             for e in self.flora:
                 if e.get("kind") == "tree":
                     log = "log_" + e["name"]
                     changed |= g(log if self.live(log) else "log", "a felled %s (%s)" % (e["name"], axe))
-                    cls = self.wood.get("species", {}).get(e["name"], self.wood.get("default", {})).get("class", "hardwood")
-                    changed |= g(self.wood.get("class_items", {}).get(cls, {}).get("firewood"), "a %s stump (%s)" % (e["name"], axe))
+                    changed |= g("firewood", "a %s stump (%s)" % (e["name"], axe))
             trunk = self.drops.get("trunk", {})
             if trunk.get("roots"):
                 changed |= g(trunk["roots"][0], "the root ball of a felled tree")
@@ -186,35 +186,38 @@ class Reach:
                     changed |= g(r[0], "a felled %s trunk" % sp)
             for r in trunk.get("branch", []):
                 changed |= g(r[0], "a felled trunk's branches")
+            for sp, seed in trunk.get("felled_seeds", {}).get("by_species", {}).items():   # every felled tree drops 1 to 5 of its seed (server_items._felled_seeds)
+                changed |= g(seed, "the seeds of a felled %s" % sp)
         pick = self.tool("pick")
         if pick and self.drops.get("shrub_work", {}).get("dig_suffix"):
             for e in self.flora:
                 if e.get("kind") == "shrub":
                     changed |= g(e["name"] + self.drops["shrub_work"]["dig_suffix"], "a shrub dug up whole (%s)" % pick)
-        spade = self.tool("spade")
-        if spade:
+        shovel = self.tool("shovel")
+        if shovel:
             dig = self.digging
             for mat, rows in dig.get("yield", {}).items():
                 for r in rows:
-                    changed |= g(r[0], "dug from %s (%s)" % (mat, spade))
+                    changed |= g(r[0], "dug from %s (%s)" % (mat, shovel))
             for r in dig.get("default", []):
-                changed |= g(r[0], "dug (%s)" % spade)
+                changed |= g(r[0], "dug (%s)" % shovel)
             for mat, r in dig.get("under", {}).items():
-                changed |= g(r[0], "dug under %s (%s)" % (mat, spade))
+                changed |= g(r[0], "dug under %s (%s)" % (mat, shovel))
             for f in dig.get("finds", []):
-                changed |= g(f.get("item"), "found digging (%s)" % spade)
+                changed |= g(f.get("item"), "found digging (%s)" % shovel)
             bog = dig.get("bog_iron")
             if isinstance(bog, dict):
-                changed |= g(bog.get("item"), "bog iron dug in wetland mud (%s)" % spade)
+                changed |= g(bog.get("item"), "bog iron dug in wetland mud (%s)" % shovel)
         ore = self.boulders.get("ore", {})
         for name, iid in ore.get("items", {}).items():
             if name in ORE_NOT_IN_WORLD:
                 continue
-            p = self.tool(ore.get("tool_class", "pick"), ore.get("needs_material", {}).get(name))
+            classes = ["pick"] if name in ore.get("pick_only", []) else ore.get("tool_classes", [ore.get("tool_class", "pick")])   # the Stone Hammer takes ore since 15 Nov 2026, not iron
+            p = next((t for t in (self.tool(c, ore.get("needs_material", {}).get(name)) for c in classes) if t), None)
             if p:
                 changed |= g(iid, "a boulder over a %s body (%s)" % (name, p))
         for name, iid in ore.get("rocks", {}).items():
-            p = self.tool(ore.get("tool_class", "pick"))
+            p = next((t for t in (self.tool(c) for c in ore.get("tool_classes", [ore.get("tool_class", "pick")])) if t), None)
             if p:
                 changed |= g(iid, "a boulder over %s bedrock (%s)" % (name, p))
         hoe = self.tool("hoe")
@@ -251,7 +254,10 @@ class Reach:
             kind = b.get("structure")
             if kind in self.built or b.get("locked") or b.get("retired") or kind not in self.structures:
                 continue
-            if hammer_tier < int(b.get("hammer", 1)):
+            if b.get("tool") == "knife":   # a knife row (W-9) wants any knife, not a hammer
+                if not self.tool("knife"):
+                    continue
+            elif hammer_tier < int(b.get("hammer", 1)):
                 continue
             if b.get("station") and self.station_level(b["station"]) < int(b.get("station_level", 1)):
                 continue
@@ -277,12 +283,21 @@ class Reach:
             d = self.structures[kind]
             changed |= g(d.get("item"), "the placed %s (%s)" % (kind, self.built[kind]))
             changed |= g(d.get("kit"), "built: %s" % self.built[kind], True)
-        # server_items.gd: a log chopped on the ground with an axe gives wooden blocks (large from a shoulder log) of its class.
-        if axe and self.has("log"):
-            for cls, steps in self.wood.get("class_items", {}).items():
-                for step in ["block", "block_large"]:
-                    if isinstance(steps, dict) and steps.get(step):
-                        changed |= g(steps[step], "a %s log chopped on the ground (%s)" % (cls, axe))
+        # server_smelter.gd: a built Smelter does its jobs by itself (structures.json "smelting"; the old smelt recipes retired in PR #1092):
+        # a job's ingot is reached when its ores and a hopper fuel (and, for steel, the carbon, also Coal or Charcoal) are.
+        fuel = any(self.has(f) for f in self.smelting.get("fuel", []))
+        for kind in list(self.built):
+            sm = self.structures[kind].get("smelt", {}) if self.structures[kind].get("use") == "smelt" else {}
+            for jid in sm.get("jobs", []) if fuel else []:
+                job = self.smelting.get("jobs", {}).get(jid, {})
+                if job.get("out") and all(self.has(row[0]) for row in job.get("in", [])):
+                    changed |= g(job["out"][0], "smelted at the %s (job %s)" % (kind, jid))
+        # server_items.gd: an axe splits a loose Wooden block into Firewood (_chop_loose_log); blocks themselves are sawn (recipe saw_blocks).
+        if axe and self.has("wooden_block"):
+            changed |= g("firewood", "a wooden block split on the ground (%s)" % axe)
+        # server_items.gd _fire_leave_charcoal: firewood or logs burned on a campfire leave Charcoal in it (cooking.json charcoal_left, Dave 17 Nov 2026).
+        if self.has("campfire_kit") and any(self.has(w) for w in ["firewood", "wooden_block", "log"]):
+            changed |= g("charcoal", "left in a campfire as its wood burns")
         for rid, r in self.recipes.items():
             gives = r.get("gives", [""])[0]
             if self.has(gives) or r.get("locked") or r.get("retired"):
@@ -330,7 +345,14 @@ class Reach:
                 for key, lvl in [("station", "station_level"), ("near", "near_level")]:
                     if b.get(key) and self.station_level(b[key]) < int(b.get(lvl, 1)):
                         lack.append("%s %s L%d" % (key, b[key], int(b.get(lvl, 1))))
-                out.append("blueprint %s lacks %s" % (bid, ", ".join(lack) or "a hammer of tier %s" % b.get("hammer", 1)))
+                out.append("blueprint %s lacks %s" % (bid, ", ".join(lack) or ("a knife" if b.get("tool") == "knife" else "a hammer of tier %s" % b.get("hammer", 1))))
+        for jid, job in self.smelting.get("jobs", {}).items():
+            if job.get("out", [""])[0] == iid:
+                at = [k for k, d in self.structures.items() if d.get("use") == "smelt" and jid in d.get("smelt", {}).get("jobs", [])]
+                lack = [row[0] for row in job.get("in", []) if not self.has(row[0])]
+                lack += [] if any(self.has(f) for f in self.smelting.get("fuel", [])) else ["fuel (%s)" % ", ".join(self.smelting.get("fuel", []))]
+                lack += [] if any(k in self.built for k in at) else ["a built %s" % " or ".join(at)]
+                out.append("smelting job %s lacks %s" % (jid, ", ".join(lack) or "nothing?"))
         return out or ["no recipe and no world source"]
 
 

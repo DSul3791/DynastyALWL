@@ -309,12 +309,14 @@ func _init() -> void:
 	# Young conifers come in nurseries or beside a grown tree, never one by one in the middle of a meadow (Dave 2026-10-31).
 	var young: Array = []
 	var grown: Array = []
-	var spawn_xz: Vector2 = load("res://src/shared/spawn_point.gd").OVERRIDE   # only a fixed sample area of the starter tile
+	var spawn_xz: Vector2 = Vector2(53296.0, 68080.0)   # only a fixed sample area of the starter tile: the old spawn (x 53296, z 68080), kept when the spawn moved to the starter town (20 Nov 2026)
 	var spawn_chunk: Vector2i = placer.chunk_of(spawn_xz.x, spawn_xz.y)
 
 	for dz in range(-3, 4):
 		for dx in range(-3, 4):
-			var made: Dictionary = placer.chunk_items(Vector2i(spawn_chunk.x + dx, spawn_chunk.y + dz))
+			# Trees only: the trees are the full chunk's but for any beside a bush-covered spring (chunk_items), the same counts here on 15 Nov
+			# 2026 (14687 young, 10 lonely both ways), and only trees are counted; the full chunks cost 61 s of this test on David4, trees only 27 s (flora_profile.gd, 15 Nov 2026).
+			var made: Dictionary = placer.chunk_items(Vector2i(spawn_chunk.x + dx, spawn_chunk.y + dz), true)
 
 			for n in range(made["ids"].size()):
 				var sp: Dictionary = placer.species_of(made["ids"][n])
@@ -357,9 +359,45 @@ func _check_fruit_groves(placer) -> void:
 	var groves: Dictionary = {"apple_early": [], "apple_summer": [], "pear_summer": [], "sour_cherry": []}
 	var trees: Dictionary = {"apple_early": [], "apple_summer": [], "pear_summer": [], "sour_cherry": []}
 	var corner: Vector2i = placer.chunk_of(3.0 * 15360.0 + 2000.0, 4.0 * 15360.0 + 2000.0)
+	# Stand trees grow only inside their species' stand circles (FloraPlacer._groves_near with the stand rule; the placer widens each circle
+	# by 1.15 for its ragged edge), so only the window's chunks that such a circle touches are placed: the same stand trees as placing all
+	# 576 chunks (which took 107 s of this test on David4 and timed it out on Dave's PC; flora_profile.gd, 15 Nov 2026). A species with
+	# montane cells (also stand numbers, outside the circles) would need the whole window, so then every chunk is placed.
+	var wanted: Dictionary = {}   # chunk -> true
+	var whole: bool = false
+
+	for kind_name in trees:
+		var item: Dictionary = {}
+
+		for sp in placer._by_id.values():
+			if str(sp["name"]) == kind_name:
+				item = sp
+
+		whole = whole or item.is_empty() or not item.has("stand") or bool(item.get("montane", false))
+
+		if whole:
+			break
+
+		for cz in range(24):
+			for cx in range(24):
+				var chunk: Vector2i = Vector2i(corner.x + cx, corner.y + cz)
+
+				for st in placer._groves_near(item, item["stand"], placer._stand_seed, int(item["id"]), placer.chunk_origin(chunk)):
+					var r: float = float(st[1]) * 1.15
+					var low: Vector2i = placer.chunk_of((st[0] as Vector2).x - r, (st[0] as Vector2).y - r)
+					var high: Vector2i = placer.chunk_of((st[0] as Vector2).x + r, (st[0] as Vector2).y + r)
+
+					for tz in range(maxi(low.y, corner.y), mini(high.y, corner.y + 23) + 1):
+						for tx in range(maxi(low.x, corner.x), mini(high.x, corner.x + 23) + 1):
+							wanted[Vector2i(tx, tz)] = true
+
+	print("fruit grove window: %s of 576 chunks placed" % ("all" if whole else str(wanted.size())))
 
 	for cz in range(24):
 		for cx in range(24):
+			if not whole and not wanted.has(Vector2i(corner.x + cx, corner.y + cz)):
+				continue
+
 			var held: Dictionary = placer.chunk_items(Vector2i(corner.x + cx, corner.y + cz), true)
 
 			for n in range(held["ids"].size()):

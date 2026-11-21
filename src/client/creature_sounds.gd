@@ -15,7 +15,8 @@ extends Node
 # "threat" (angry or hurt: a danger cue, always allowed even when the voice budget is full).
 # Sounds: generated in assets/audio/creatures/ (make_creatures.py); recordings in
 # assets/audio/recorded/creatures/ win. Names: deer_grunt, deer_snort, rabbit_thump, rabbit_squeak,
-# fox_bark, fox_scream, wolf_howl, wolf_growl, bear_growl, bear_roar, moose_grunt/snort/bellow, horse_snort/whinny, duck_quack (_N variants).
+# fox_bark, fox_scream, wolf_howl, wolf_growl, bear_growl, bear_roar, moose_grunt/snort/bellow, horse_snort/whinny, duck_quack, goblin_chitter,
+# goblin_hiss (_N variants).
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
 const GENERATED_DIR := "res://assets/audio/creatures/"
@@ -40,6 +41,8 @@ const KINDS := {
 		"zones": {"meadow": 1.0}, "hours": [5.0, 21.0], "every": [500.0, 1100.0], "cutoff": 7000.0},
 	"duck": {"calls": {"idle": "duck_quack", "alert": "duck_quack", "threat": "duck_quack"}, "db": -10.0, "dist": [10.0, 50.0], "reach": 120.0, "unit": 6.0,
 		"zones": {"water": 1.0}, "hours": [5.0, 21.0], "every": [300.0, 700.0], "cutoff": 7000.0},
+	"goblin": {"calls": {"idle": "goblin_chitter", "alert": "goblin_chitter", "threat": "goblin_hiss"}, "db": -9.0, "dist": [10.0, 40.0], "reach": 90.0, "unit": 6.0,
+		"zones": {}, "hours": [0.0, 24.0], "every": [600.0, 1200.0], "cutoff": 7000.0},   # camp goblins at a weapon in hand (npc_view.gd goblin_called, Dave 20 Nov 2026): never a natural call
 	"bear": {"calls": {"idle": "bear_growl", "alert": "bear_growl", "threat": "bear_roar"}, "db": -4.0, "dist": [30.0, 130.0], "reach": 320.0, "unit": 15.0,
 		"zones": {"forest": 1.0, "highland": 0.6}, "hours": [6.0, 20.0], "every": [420.0, 900.0], "cutoff": 5000.0},
 }
@@ -225,6 +228,9 @@ func _main_zone() -> String:
 	var top: float = -1.0
 
 	for zone in _stage.ambient.weights:
+		if zone == "wetland":
+			continue                                   # wet ground under the open sky, wood or meadow: those still name the animals
+
 		if float(_stage.ambient.weights[zone]) > top:
 			top = float(_stage.ambient.weights[zone])
 			best = str(zone)

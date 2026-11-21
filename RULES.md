@@ -1,44 +1,4 @@
-# Rules (one file; replaces TEAM_AND_RULES, HOW_WE_WORK and PROCESS, 29 Oct 2026)
+# Retired rulebook — temporary redirect
+**Status: RETIRED AS AUTHORITY; compatibility redirect pending verified expiry.**
 
-Since 1 Nov 2026 Dave runs a team of Claude agents with a moderator coordinating; roles are in `docs/START_HERE.md` and `MODERATOR_QA_LOG.md`. (The October team of the same names, with a Technical Director, was a different arrangement.) Since 11 Nov 2026 work follows the AI Team Operating System (`CLAUDE.md`, `docs/ai-team/`): task branches -> nightly `dev` -> gated `main`; `main` still waits for Dave's go. The old files are in `docs/archive/2026-10/docs/mirror/tech/` for history. `docs/mirror/tech/BEST_PRACTICES.md` stays as the reference library of numbered entries (BP-xxx); look up the entry before anything new.
-
-## Dave
-- Dave decides design. He tests at his own pace; Claude never waits on him: park the job and take the next one.
-- Reports to Dave are SUCCINCT. Test results: "Test done: X pass, Y fail", one line per failure. Anything Dave must do is numbered steps. Big fix = say so. Times in Atlantic.
-- Thinly discussed design = ask one short question with your recommendation. Technical details: decide yourself.
-- Questions for Dave: pickable answers on the `qa` branch, `questions/QUESTIONS.md`, posted with `tools/qa_post.py`; answers come back in `questions/ANSWERS.md` on `qa`. Check HANDOFF, the design docs and DECISIONS first. Never merge `qa` and `main` into each other.
-- Safe place: the game never says anything that might divide people. No labels for groups of players; describe the use, never who it is for.
-- **Decision 61 (11 Nov 2026, at Dave's request):** code that is replaced is deleted (the no-flags rule wins over the line below for code). Documents are archived, never deleted. Other unused files are moved aside to `proposed_removals/` as below.
-- NOTHING IS DELETED. Unused files move to `proposed_removals/<original path>` (add `.removed` to .gd, .tscn, .tres, .uid), with one line in `proposed_removals/REMOVALS.md` (who, date, why, replaced by). Dave approves removals. `tools/merge_check.py` fails the merge if a file vanished and isn't there.
-- Never commit crash reports, editor logs, temp DLLs or `.tile` files.
-- Usage: pace the weekly tokens evenly (resets Wed 03:00 Atlantic). Do the work directly; use the local Qwen model only for bulk reading. At the bedtime backup, ask Dave for the weekly percent and log it in `C:\GodotProjects\Claude_Usage_Log.md`.
-
-## Git
-- `main` is protected and stable: pull requests only. Nothing is committed straight to `main`; no force-push. Nothing reaches `main` until the full merge gate passes (`docs/ai-team/TEST_GATES.md`) and Dave says go; on his go, back up first as before. (This outranks the `WORKFLOW.md` line on routine promotions until Dave changes it.)
-- Flow since 11 Nov 2026 (Dave): each task works on its own branch (`claude/<task>`) cut from `dev`; reviewed branches are integrated into `dev`, fully committed every night for Dave's playtest; promotion to `main` is a reviewed PR. Agents never push to `main`. (The 1 Nov per-day integration branch and the 2 Nov rule against any daily branch are superseded; history in `docs/ai-team/KNOWN_CONFLICTS.md` #1-2.)
-- `tools/ship.sh` (pushes `ship/build-N`, merges the PR with `tools/pr_merge.sh`) is the October way into `main`; use it only for that last step, with Dave's go.
-- Before handing a branch to the coordinator: `git fetch` and merge `dev` into your branch, conflict-marker grep empty, `python3 tools/merge_check.py`, headless parse of touched files, controls check. Label each change RUNTIME (no restart), RESTART (close the game after Pull) or BAKE (needs a tile bake).
-- Build number: the HUD number lives in `src/shared/build.gd` and is raised only by `tools/ship.sh` at the last step into `main` (it also appends `docs/mirror/tech/BUILD_LOG.md`). Agents on branches do not touch it.
-- Bakes: never bake or commit tiles in the cloud. A `TERRAIN_VERSION` change ships only with a bake.
-
-## Code
-- Typed GDScript; zero new warnings; no `@warning_ignore` without a reason. Baseline checked by `tools/local_check.sh`.
-- Server and client talk only through `src/stream/terrain_net.gd`; shared code in `src/shared`.
-- Any input change updates `CONTROLS.md` and passes `python3 tools/check_controls.py`.
-- Big changes need Dave's approval first: how the code is split, the network protocol, save formats, the block store, `TERRAIN_VERSION`, shared constants two areas touch, new dependencies or native code, per-frame cost not behind the quality setting.
-- After client, server, streaming, flora or water changes, run the performance routine and say what it costs at the Low tier.
-- Item numbers: Sal owns `data/items/items.json` (`next_number`); action ids: Steve owns `src/stream/terrain_net.gd`. `tools/merge_check.py` fails duplicates. (The October `ID_CLAIMS.md` list is history.)
-
-## Testing
-- Test first yourself (headless tests, look rig `tools/look_rig.sh`, the spawn showroom); only human-judgment checks go to Dave.
-- Run tests with `tools/tests_for_diff.py` and `tools/run_tests.sh` (put `tools/` on PATH so `godot` resolves).
-- Per change: `tools/tests_for_diff.py <base> <head> > plan.json`, then `tools/run_tests.sh --plan plan.json` (seconds to a minute). Small fast tests cover drainage, live water, the water hub and the erosion delta. The big tests on the real baked tiles run per change only when baked tiles, water data or plan files change.
-- Before a release or after a big world or water change, run `tools/release_check.sh` by hand (every test, about 7 min). There is no nightly schedule.
-- Ground tests: look down at the spot, step back about 1 m, say what you expect, then stop.
-- No chasing ghosts: fix only with a log, a repro or a screenshot.
-
-## Where things live
-`HANDOFF.md` (commands, setup, gotchas), `BIG_PICTURE.md`, `DESIGN_IDEAS.md`, `PROTOCOL.md`, `CONTROLS.md`, `WORLD_FORMAT_SPEC.md`, `ARCHITECTURE_BUDGET.md`, `tech/ACTION_PLANS/` (four plans still cited by code and data or not fully built; the other 41 finished October plans are in `docs/archive/2026-11/tech_ACTION_PLANS/`), `docs/mirror/tech/` (BUILD_LOG, DECISIONS, QA docs, backup and restore plans). QA page: https://dsul3791.github.io/DynastyALWL-QA/
-
-## Heavy Godot jobs share the PC (Tyler, 31 Oct 2026)
-At most 3 test or rig jobs run at once on this PC, across all sessions: `tools/run_tests.sh` / `tools/run_one_test.sh` take a slot from `tools/godot_slot.sh` on their own. For anything else that starts Godot for a while (picture rigs, servers and clients, probes), wrap it: `tools/godot_slot.sh godot --path . ...`. `GODOT_SLOTS=0` switches the guard off, `GODOT_SLOTS=N` changes the number. It never kills anything; a slot whose job is gone is taken over.
+Read [WORKFLOW.md](docs/ai-team/WORKFLOW.md). Engineering safeguards also live in `docs/PONYTAIL_RULES.md`. No rules are maintained here. Original content: `git show dd566834db6496d0d8d2bb2a6bf2b9cb1ec882aa:RULES.md`. Preservation and integration receipts: `proposed_removals/REMOVALS.md`. This redirect starts no clock before integration; removal requires the seven-day/history checks in the workflow.

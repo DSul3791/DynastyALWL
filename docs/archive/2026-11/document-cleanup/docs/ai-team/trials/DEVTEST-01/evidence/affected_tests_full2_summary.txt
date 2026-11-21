@@ -1,0 +1,4 @@
+run_tests: 177 parallel (jobs 3), 5 serial; output in C:/Users/david/AppData/Local/Temp/claude/01b3e68161e49208/4e34633a-7989-4835-8cc3-c3c5cfecc59f/scratchpad/devtest01/full2
+slowest: test_server_items 15.2s  test_spawn_dry 14.1s  test_cover_async 11.3s  test_skills 7.5s  test_first_hour 5.8s  
+wall time 220 s, seconds per test in C:/Users/david/AppData/Local/Temp/claude/01b3e68161e49208/4e34633a-7989-4835-8cc3-c3c5cfecc59f/scratchpad/devtest01/full2/seconds.txt
+Test done: 182 pass, 0 fail

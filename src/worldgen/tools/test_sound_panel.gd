@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Shift+F3 sound panel (sound_panel.gd): the playing sounds are listed with a switch; switching one off sends its players to the muted bus, switching it on puts
+# Ctrl+Shift+F5 sound panel (sound_panel.gd): the playing sounds are listed with a switch; switching one off sends its players to the muted bus, switching it on puts
 # the bus back, "Unmute all" clears the lot.
 #   godot --headless --path . --script res://src/worldgen/tools/test_sound_panel.gd
 

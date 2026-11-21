@@ -59,6 +59,7 @@ func _init() -> void:
 	items.water_depth_at = func(_p): return depth[0]
 	items.setup(ItemTableScript.load_default(), dir)
 	items.peer_connected_hello(1, "net-key-0000001")
+	items.set_fitness(1, 50)   # an average adult (50): on the game server a new player rolls fitness 40 to 60 (attributes.json), and fitness slows tool wear a little (tool_care)
 	items.report_position(1, Vector3(5.0, 10.0, 5.0))
 	var cfg: Dictionary = items._fishing_data()["net"]
 	var net_no: int = items.table.number_of("shore_net")

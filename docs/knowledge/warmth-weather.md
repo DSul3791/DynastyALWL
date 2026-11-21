@@ -44,5 +44,6 @@
 2. Wet clothes (DAVE_TODO 7): clothes stay damp about 1 hour after rain or a swim and keep you less warm. The soak level from #491 is the natural place for it.
 3. Cold acclimation (DAVE_TODO 6): the team suggests time spent in the cold, slowly, capped.
 4. Worth a card if Dave wants it: rain gear and leafy trees that slow soaking, as in Don't Starve.
+5. Clothing layers (M001-T11, 12 Nov 2026, catalog Phase 4a): worn warmth combines per slot with diminishing returns (`warmth.json layers.layer_keep`), and each piece's fabric sets `wet_keep` (wet hide 40%, wool 75%), `breath` (an overdressed heat load adds exertion: fur hot, linen cool) and `rain_shed` (an Oilcloth - Cloak slows soaking, the Don't Starve rain-gear idea of item 4). Numbers are s5 tuning for playtest.
 
 Open questions go on the QA page.

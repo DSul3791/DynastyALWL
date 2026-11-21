@@ -1,0 +1,36 @@
+{
+ "rows": 677,
+ "original": 651,
+ "adds": 26,
+ "design_status": {
+  "PASS": 230,
+  "NEEDS_CORRECTION": 247,
+  "BLOCKED": 144,
+  "NEEDS_TEST": 30
+ },
+ "review_method": {
+  "INDIVIDUAL": 323,
+  "RULE": 328
+ },
+ "individual_main": 118,
+ "evidence_level": {
+  "CODE_VERIFIED": 640,
+  "AUTOMATED_TESTED": 11
+ },
+ "runtime_support": {
+  "NEW_EVENT_REQUIRED": 23,
+  "EXISTING": 624,
+  "OTHER_IMPLEMENTATION_REQUIRED": 4
+ },
+ "content_status": {
+  "IMPLEMENTED": 627,
+  "APPROVED_BUT_NOT_IMPLEMENTED": 23,
+  "FUTURE": 1
+ },
+ "route": {
+  "MAIN": 118,
+  "ADDITIONAL": 533
+ },
+ "reward_total": 15670,
+ "recommended_total": 3059
+}

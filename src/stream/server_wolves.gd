@@ -10,7 +10,6 @@ extends RefCounted
 # the hotbar of a healthy player send the pack away. Prey (a deer) near a waiting pack draws it off: it feeds and forgets.
 # Pure server code; the animals module calls tick() once per server tick and owns the records.
 
-const Steering := preload("res://src/shared/steering.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 
 const STALK := 6      # wire states (animal rows): 0 graze, 1 hop, 6 stalk or circle, 7 attack
@@ -59,6 +58,16 @@ func wolf_count() -> int:
 		n += 1 if host.animals[id]["sp"] == "wolf" and host.animals[id].has("pack") else 0
 
 	return n
+
+
+# True when a wild pack may not be made at this den: the den or any spot of the 4 m ring spawn_pack stands its wolves on is within
+# no_spawn_m of something a player put down (checked at 8 points of the ring). Admin packs are not asked; pups ask for their own spots (_spawn_pup).
+func _den_blocked(home: Vector2) -> bool:
+	for p in [Vector2.ZERO, Vector2(4.0, 0.0), Vector2(-4.0, 0.0), Vector2(0.0, 4.0), Vector2(0.0, -4.0), Vector2(2.83, 2.83), Vector2(-2.83, 2.83), Vector2(2.83, -2.83), Vector2(-2.83, -2.83)]:
+		if host.no_spawn_at(home.x + p.x, home.y + p.y):
+			return true
+
+	return false
 
 
 # Admin and tests: a whole pack at once around (x, z). Returns the pack id or 0.
@@ -365,7 +374,7 @@ func _walk(m: Dictionary, goal: Vector3, speed: float, dt: float, infos: Array) 
 	var ground: Callable = host.ice_ground(host.ground_height, host.ice_mass("wolf")) if host.ice_on() and not is_nan(host.ice_mass("wolf")) else host.ground_height
 	var me = self
 	var shy: Callable = func(x, z): return (host_blocked.is_valid() and bool(host_blocked.call(x, z))) or me.lit(x, z, infos)
-	var r: Dictionary = Steering.step(m["pos"], goal, speed, dt, ground, shy, 0.5, m["heading"], host.crossing)
+	var r: Dictionary = host.walk_step(m["pos"], goal, speed, dt, ground, shy, 0.5, m["heading"], host.crossing)
 	m["moving"] = bool(r["moved"])
 
 	if r["moved"]:
@@ -717,6 +726,12 @@ func _natural(infos: Array) -> void:
 				var h: int = hash(key + str(w.get("seed", 7)))   # JSON reads the seed as the float 7.0, so the key is "cx,cz7.0"; kept, since changing it moves every den (design_notes/wolf_den_seed_note.md)
 				var home: Vector2 = Vector2((float(cx) + float(absi(h) % 1000) / 1000.0) * cell_m, (float(cz) + float(absi(h / 1000) % 1000) / 1000.0) * cell_m)
 
+				# A wolf cave in the cell is the pack's den (Dave 19 Nov 2026: wolves may den in caves; TileTerrainData.animal_den_species), when its mouth is wolf ground.
+				var cave: Vector2 = host.cave_den_in(Rect2(float(cx) * cell_m, float(cz) * cell_m, cell_m, cell_m), "wolf")
+
+				if cave.x != INF and host._habitat_score(host.species_def("wolf"), cave.x, cave.y, p.y) >= 0.0:
+					home = cave
+
 				if absi(h / 1000000) % 100 >= int(float(w.get("cell_share", 1.0)) * 100.0):
 					_cell_note(key, home, "a cell without a pack (cell_share)")
 					continue
@@ -734,6 +749,10 @@ func _natural(infos: Array) -> void:
 
 				if d > active or d < near_m:
 					_cell_note(key, home, "no player %.0f to %.0f m from the den" % [near_m, active])
+					continue
+
+				if _den_blocked(home):
+					_cell_note(key, home, "something a player put down stands near the den spot")
 					continue
 
 				var score: float = host._habitat_score(host.species_def("wolf"), home.x, home.y, p.y)
@@ -805,6 +824,10 @@ func make_pups(pid: int, forced: bool = false) -> int:
 
 func _spawn_pup(den: Vector3, k: int) -> int:
 	var ang: float = TAU * float(k) / 5.0
+
+	if host.no_spawn_at(den.x + cos(ang) * 2.0, den.z + sin(ang) * 2.0):
+		return 0   # a den a player has built beside makes no more pups there
+
 	var id: int = host.spawn("wolf", den.x + cos(ang) * 2.0, den.z + sin(ang) * 2.0)
 
 	if id == 0:
@@ -865,7 +888,7 @@ func step_pup(a: Dictionary, dt: float) -> void:
 		a["state"] = PLAY
 		return
 
-	var r: Dictionary = Steering.step(a["pos"], a["target"], 1.0, dt, host.ground_height, host.blocked, 0.4, a["heading"], host.crossing)
+	var r: Dictionary = host.walk_step(a["pos"], a["target"], 1.0, dt, host.ground_height, host.blocked, 0.4, a["heading"], host.crossing)
 
 	if r["moved"]:
 		a["pos"] = r["pos"]
@@ -925,7 +948,7 @@ func _walk_den(m: Dictionary, goal: Vector3, speed: float, dt: float, infos: Arr
 	var ground: Callable = host.ice_ground(host.ground_height, host.ice_mass("wolf")) if host.ice_on() and not is_nan(host.ice_mass("wolf")) else host.ground_height
 	var me = self
 	var shy: Callable = func(x, z): return (host_blocked.is_valid() and bool(host_blocked.call(x, z))) or me.fire_lit(x, z, infos)
-	var r: Dictionary = Steering.step(m["pos"], goal, speed, dt, ground, shy, 0.5, m["heading"], host.crossing)
+	var r: Dictionary = host.walk_step(m["pos"], goal, speed, dt, ground, shy, 0.5, m["heading"], host.crossing)
 	m["moving"] = bool(r["moved"])
 
 	if r["moved"]:

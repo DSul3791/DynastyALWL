@@ -49,10 +49,17 @@ func load_file(path: String, item_table) -> bool:
 			"craft_s": float(row.get("craft_s", 3.0)), "known": bool(row.get("known", false)), "locked": bool(row.get("locked", false)),
 			"station": str(row.get("station", "")), "station_level": int(row.get("station_level", 1)),
 			"wears_tool": str(row.get("wears_tool", "")),
+			"sawbuck": bool(row.get("sawbuck", false)),   # sawn twice as fast beside a Sawbuck (server_items._saw_slow; TREE_WOOD_TOOLS_DESIGN.md W-4)
+			"hand_keep": int(row.get("hand_keep", -1)),   # which kept tool goes in hand when a recipe keeps two (craft_stock.gd hand_tools; the bowl's chisel, Dave 18 Nov 2026)
+			"ready_age": float(row.get("ready_age", 0.0)),   # game hours a sealed batch matures (master s3.14): one timer for the whole batch, output at age 0
 		}
 		_by_number[entry["number"]] = entry
 
+		if float(entry["ready_age"]) > 0.0 and item_table.has_method("set_ready_age"):
+			item_table.set_ready_age(int(entry["gives"][0]), float(entry["ready_age"]))   # the item table rules Maturing stacks (merge, eat, use)
+
 	_open_listed(path.get_base_dir().path_join("open_recipes.json"))
+	_sorted = []   # a reload may change what a number makes: index again on the next ask
 	return true
 
 
@@ -81,10 +88,40 @@ func _open_listed(path: String) -> void:
 			open_unknown.append(str(id))
 
 
+# The recipe numbers in order, and item number -> the recipes that make it (in that order), worked out once: the craft planner asked for the
+# makers of every missing part by sorting and walking all 554 recipes, hundreds of times each time the inventory opened (Dave 14 Nov 2026).
+# Callers only read these arrays.
+var _sorted: Array = []
+var _makers: Dictionary = {}
+
+
 func numbers() -> Array:
-	var out: Array = _by_number.keys()
-	out.sort()
-	return out
+	if _sorted.size() != _by_number.size():
+		_index()
+
+	return _sorted
+
+
+# Every recipe whose output is `item`, known or not, in number order.
+func makers_of(item: int) -> Array:
+	if _sorted.size() != _by_number.size():
+		_index()
+
+	return _makers.get(item, [])
+
+
+func _index() -> void:
+	_sorted = _by_number.keys()
+	_sorted.sort()
+	_makers.clear()
+
+	for number in _sorted:
+		var gives: Array = _by_number[number]["gives"]
+
+		if not _makers.has(int(gives[0])):
+			_makers[int(gives[0])] = []
+
+		_makers[int(gives[0])].append(number)
 
 
 func recipe(number: int) -> Dictionary:
@@ -119,14 +156,13 @@ func craft(number: int, inventory) -> bool:
 	if not r["known"]:
 		return false
 
-	var backup: Array = [inventory.numbers.duplicate(), inventory.counts.duplicate()]
+	var backup = inventory.copy()   # its slot count too: the add may have grown a pack before it failed at MAX_SLOTS
 
 	for need in r["needs"]:
 		inventory.remove_fill(need[0], need[1])
 
 	if inventory.add(r["gives"][0], r["gives"][1]) > 0:
-		inventory.numbers = backup[0]
-		inventory.counts = backup[1]
+		inventory.from_json_array(backup.to_json_array())   # an undone craft gives every slot back as it was, wear and instance data included
 		return false
 
 	return true

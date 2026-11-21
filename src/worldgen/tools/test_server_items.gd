@@ -3,12 +3,14 @@ extends SceneTree
 # Server item rules without a network: validation, caps, despawn, save and reload.
 #   godot --headless --path . --script res://src/worldgen/tools/test_server_items.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const FloraLayoutScript := preload("res://src/worldgen/runtime/flora_layout.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const GatherRulesScript := preload("res://src/shared/gather_rules.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 var failures: int = 0
 var slots_sent: Array = []
 var world_sent: Array = []
@@ -54,14 +56,14 @@ func _init() -> void:
 	check(items.inventory_of(8) == null, "bad key refused")
 	items.report_position(7, Vector3(100.0, 5.0, 100.0))
 
-	items.action(7, Net.ACT_ADMIN_GIVE, stone, 0, 15, Vector3.ZERO)
-	check(items.inventory_of(7).count_of(stone) == 15, "admin give")
+	items.action(7, Net.ACT_ADMIN_GIVE, stone, 0, 40, Vector3.ZERO)
+	check(items.inventory_of(7).count_of(stone) == 40, "admin give")
 	check(not slots_sent.is_empty(), "slot change sent")
 
 	items.action(7, Net.ACT_DROP, 99, 0, 5, Vector3.ZERO)
 	items.action(7, Net.ACT_DROP, 0, 0, -3, Vector3.ZERO)
 	items.action(7, Net.ACT_MOVE, -1, 400, 0, Vector3.ZERO)
-	check(items.inventory_of(7).count_of(stone) == 15 and items.world_item_count() == 0, "bad slots and counts change nothing")
+	check(items.inventory_of(7).count_of(stone) == 40 and items.world_item_count() == 0, "bad slots and counts change nothing")
 
 	# The pickup feed: every gain is reported once with its source; moving a stack reports nothing.
 	DirAccess.make_dir_recursive_absolute("user://test_server_items_feed")
@@ -75,7 +77,7 @@ func _init() -> void:
 	feed.give(9, feed.table.number_of("stick"), 3)
 	check(gains == [[9, "stick", 3, "harvest"]], "a give is reported as a harvest gain (%s)" % str(gains))
 	gains.clear()
-	feed.action(9, Net.ACT_MOVE, 0, 20, 0, Vector3.ZERO)
+	feed.action(9, Net.ACT_MOVE, feed.inventory_of(9).numbers.find(feed.table.number_of("stick")), 20, 0, Vector3.ZERO)
 	check(gains.is_empty(), "moving a stack reports no gain (%s)" % str(gains))
 
 	# Money and reputation: coins pay into the purse as copper, richest coin first in the feed; reputation ranks and discounts.
@@ -84,10 +86,22 @@ func _init() -> void:
 	gains.clear()
 	feed.give_to(9, "coin_silver", 2)
 	feed.give_to(9, "coin_copper", 7)
-	check(feed.coins_of(9) == 207 and purse_seen.back() == 207, "coins pay into the purse as copper (%d)" % feed.coins_of(9))
+	check(feed.coins_of(9) == 207 and purse_seen.back() == PackedInt32Array([0, 2, 0, 7]), "coins go into the purse as they came, sent as counts gold..copper (%s)" % str(purse_seen.back()))
 	check(gains.size() == 2 and gains[0][1] == "coin_silver" and gains[0][2] == 2 and gains[1][1] == "coin_copper", "coins show in the feed as coins (%s)" % str(gains))
 	check(feed.purse_breakdown(1234) == [["coin_gold", 1], ["coin_silver", 2], ["coin_bronze", 3], ["coin_copper", 4]], "the purse shows gold, silver, bronze and copper")
 	check(feed.take_coins(9, 100) and feed.coins_of(9) == 107 and not feed.take_coins(9, 1000) and feed.coins_of(9) == 107, "paying takes coins, too little pays nothing")
+	check(feed.purse_of(9) == {"coin_silver": 1, "coin_copper": 7}, "the 7 copper went first, a silver was broken and its 7 copper change came back (%s)" % str(feed.purse_of(9)))
+	# Dave 14 Nov 2026: coins keep their denomination until a trader changes them.
+	feed.add_coins(9, 200, "goal")
+	check(feed.purse_of(9) == {"coin_silver": 1, "coin_copper": 207}, "200 copper earned stays 200 copper coins (%s)" % str(feed.purse_of(9)))
+	feed.redenominate(9)
+	check(feed.purse_of(9) == {"coin_silver": 3, "coin_copper": 7} and feed.coins_of(9) == 307, "at a trader the purse becomes the fewest coins (%s)" % str(feed.purse_of(9)))
+	check(feed.take_coins(9, 200) and feed.purse_of(9) == {"coin_silver": 1, "coin_copper": 7}, "200 paid: the 7 copper and two silver go, and the 7 copper change comes back (%s)" % str(feed.purse_of(9)))
+	check(feed.take_coins(9, 0) and feed.purse_of(9) == {"coin_silver": 1, "coin_copper": 7}, "paying nothing changes nothing")
+	feed.add_coins(9, 5, "goal")
+	check(feed.take_coins(9, 12) and feed.coins_of(9) == 100 and feed.purse_of(9) == {"coin_silver": 1}, "12 copper paid from 12 copper coins (%s)" % str(feed.purse_of(9)))
+	feed.give_to(9, "coin_copper", 7)
+	feed.give_to(9, "coin_bronze", 0)
 	check(feed.inventory_of(9).count_of(feed.table.number_of("coin_silver")) == 0, "coins never lie in the pack")
 	check(feed.rank_of(0) == "Stranger" and feed.rank_of(2) == "Known" and feed.rank_of(5) == "Friend" and feed.rank_of(12) == "Trusted", "rank words follow the score")
 	feed.add_rep(9, "hob", 1)
@@ -101,7 +115,10 @@ func _init() -> void:
 	feed._finish_writer()
 	var feed2 = make("user://test_server_items_feed")
 	feed2.peer_connected_hello(9, "feedfeed1234")
-	check(feed2.coins_of(9) == 107 and feed2.rep_points(9, "hob") == 30, "the purse and reputation are saved with the character")
+	check(feed2.purse_of(9) == {"coin_silver": 1, "coin_copper": 7} and feed2.rep_points(9, "hob") == 30, "the purse (as held) and reputation are saved with the character (%s)" % str(feed2.purse_of(9)))
+	feed2._characters["feedfeed1234"]["purse"] = {"coin_gold": int(float(feed2._coins_cfg.get("max_copper", 100000000)) / 1000.0) - 1}
+	feed2.add_coins(9, 5000, "goal")
+	check(feed2.coins_of(9) == int(feed2._coins_cfg.get("max_copper", 100000000)), "the purse's worth stops at max_copper (%d)" % feed2.coins_of(9))
 
 	# Tool work is hard (Dave 2026-10-21): a swing of an axe holds effort at running level.
 	feed.give(9, feed.table.number_of("stone_axe") if feed.table.number_of("stone_axe") > 0 else feed.table.number_of("axe"), 1)
@@ -119,38 +136,40 @@ func _init() -> void:
 	check(world_sent.size() == 1 and world_sent[0][1].size() == 1, "nearby item is announced")
 	var id: int = world_sent[0][1][0][0]
 	items.action(7, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
-	check(items.inventory_of(7).count_of(stone) == ItemsScript.PILE_HANDFUL and items.world_item_count() == 1, "a pile of 15 gives one handful")
+	check(items.inventory_of(7).count_of(stone) == ItemsScript.PILE_HANDFUL and items.world_item_count() == 1, "a pile of 40 gives one handful")
 	items.action(7, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 	items.action(7, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
-	check(items.inventory_of(7).count_of(stone) == 15 and items.world_item_count() == 0, "pick up")
+	check(items.inventory_of(7).count_of(stone) == 40 and items.world_item_count() == 0, "pick up")
 	items.action(7, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
-	check(items.inventory_of(7).count_of(stone) == 15, "second pick up of the same item does nothing")
+	check(items.inventory_of(7).count_of(stone) == 40, "second pick up of the same item does nothing")
+	items.inventory_of(7).remove(stone, 25)   # back to 15 (the rest of the test and the restart checks count 15): a 25 handful on top of 40 would pass the carry limit
 
 	items.report_position(7, Vector3(100.0, 5.0, 100.0))
 	items.drop_in_world(stone, 3, Vector3(5000.0, 0.0, 5000.0))
 	items.action(7, Net.ACT_PICKUP, 2, 0, 0, Vector3.ZERO)
 	check(items.world_item_count() == 1, "cannot pick up from far away")
 
-	var axe_number: int = items.table.number_of("stone_axe")   # a tool: never merges, so the crowd limit still bites
+	var axe_number: int = items.table.number_of("stone_axe")   # a tool: never merges, each lies as its own item
+	var all_laid: bool = true
 
-	for n in range(100):
-		items.drop_in_world(axe_number, 1, Vector3(10.0, 0.0, 10.0), 1)
-	check(items.world_item_count() == ItemsScript.MAX_DROPPED_NEAR + 1, "dropped cap near a spot holds")
+	for n in range(100):   # no limit on what lies on the ground (Dave 16 Nov 2026: "there should be no limit")
+		all_laid = items.drop_in_world(axe_number, 1, Vector3(10.0, 0.0, 10.0), 1) and all_laid
+	check(all_laid and items.world_item_count() == 100 + 1, "100 tools dropped on one spot all lie there (%d items)" % items.world_item_count())
 
 	items.drop_in_world(stone, 1, Vector3(4000.0, 0.0, 4000.0))
-	check(items.clear_dropped(Vector3(10.0, 0.0, 10.0), 50.0) == ItemsScript.MAX_DROPPED_NEAR and items.world_item_count() == 2, "clear dropped items removes the nearby loose ones only")
-	check(items.drop_in_world(stone, 1, Vector3(10.0, 0.0, 10.0)), "and drops work again afterwards")
+	check(items.clear_dropped(Vector3(10.0, 0.0, 10.0), 50.0) == 100 and items.world_item_count() == 2, "clear dropped items removes the nearby loose ones only")
+	check(items.drop_in_world(stone, 1, Vector3(10.0, 0.0, 10.0)), "and drops work afterwards")
 	items.clear_dropped(Vector3(10.0, 0.0, 10.0), 50.0)
 	items.clear_dropped(Vector3(4000.0, 0.0, 4000.0), 50.0)
 
 	items.drop_in_world(stone, 1, Vector3(10.0, 0.0, 10.0))
 	items.admin_ok = func(p: int) -> bool: return p == 7
-	check(items.free_craft_for(7) and not items.free_craft_for(9), "admin mode is on by default for an admin only")
-	items.action(7, Net.ACT_ADMIN_MODE, 0, 0, 0, Vector3.ZERO)
-	check(not items.free_craft_for(7), "an admin can switch it off")
+	check(not items.free_craft_for(7) and not items.free_craft_for(9), "admin mode is off by default, even for an admin (Dave 11 Nov 2026)")
 	items.action(9, Net.ACT_ADMIN_MODE, 1, 0, 0, Vector3.ZERO)
 	items.action(7, Net.ACT_ADMIN_MODE, 1, 0, 0, Vector3.ZERO)
-	check(items.free_craft_for(7), "and on again")
+	check(items.free_craft_for(7) and not items.free_craft_for(9), "an admin can switch it on, a non-admin cannot")
+	items.action(7, Net.ACT_ADMIN_MODE, 0, 0, 0, Vector3.ZERO)
+	check(not items.free_craft_for(7), "and off again")
 	items.admin_ok = Callable()
 
 	# Loose things let go in the air come down to the ground (Dave 2026-10-23, mined soil floating over the hole).
@@ -188,7 +207,7 @@ func _init() -> void:
 	items.inventory_of(7).remove(stone, items.inventory_of(7).count_of(stone) - rig_before)
 	items.clear_dropped(Vector3.ZERO, 1.0e7)
 
-	# Rock piles: stackable drops within a metre merge, ignore the crowd limit, a pile gives a handful and lives longer.
+	# Rock piles: stackable drops within a metre merge, a pile gives a handful and lives longer.
 	items.clear_dropped(Vector3.ZERO, 1.0e7)
 	var pile_at: Vector3 = Vector3(2000.0, 0.0, 2000.0)
 	items.report_position(7, pile_at)
@@ -196,13 +215,48 @@ func _init() -> void:
 	for n in range(100):
 		items.drop_in_world(stone, 1, pile_at + Vector3(0.1 * float(n % 5), 0.0, 0.0))
 	check(items.world_item_count() == 1, "100 stones dropped together are one ground item")
-	check(items.drop_in_world(stone, 5, pile_at), "and a pile never meets the crowd limit")
+	check(items.drop_in_world(stone, 5, pile_at), "and the pile takes more")
 	items.drop_in_world(stone, 3, pile_at + Vector3(5.0, 0.0, 0.0))
 	check(items.world_item_count() == 2, "a drop 5 m away is a separate item")
 	items.tick(ItemsScript.WORLD_ITEM_LIFETIME_S + 1.0)
 	check(items.world_item_count() == 1, "a pile outlives the loose 20 minutes")
 	items.tick(ItemsScript.PILE_LIFETIME_S + 1.0)
 	check(items.world_item_count() == 0, "and goes after its 2 hours")
+	# Cone piles (Dave 19 Nov 2026, boulders PLAN.md 5b): a big pile takes in what lands beside it, however wide it grew, but stops at a building.
+	items.drop_in_world(stone, 20000, pile_at)
+	var cone_r: float = items._cone_radius_of(stone, 20000)
+	check(cone_r > 1.5 and cone_r < 2.0, "20,000 stones of 0.5 kg make a solid cone about 1.75 m in radius (%f)" % cone_r)
+	items._sync_world_items()   # the grid files the pile in its 100 m cell (x 2000 up); its foot at x 1998 lies in the next cell down
+	items.drop_in_world(stone, 10, pile_at - Vector3(cone_r + 0.5, 0.0, 0.0))
+	check(items.world_item_count() == 1 and int(items._items[items._items.keys()[0]]["count"]) == 20010, "a drop at the foot of a big pile joins it, across a grid cell's edge (the wide-pile list)")
+	var pile_stop_id: int = items._next_id   # a real id: the server finds what may stop a pile through its sync grid, which files ids below _next_id
+	items._next_id += 1
+	items._items[pile_stop_id] = {"number": items.table.number_of("storage_chest") if items.table.number_of("storage_chest") > 0 else 1, "count": 1, "pos": pile_at + Vector3(-(cone_r + 0.3), 0.0, 0.0), "left": 1.0e9, "struct": {"kind": "chest", "yaw": 0.0}}
+	if items._structures.has("chest"):
+		items.drop_in_world(stone, 200000, pile_at + Vector3(0.5, 0.0, 0.0))
+		var beside: Array = items._items.keys().filter(func(k): return int(items._items[k]["count"]) == 200000)
+		check(items.world_item_count() == 3 and int(items._items[items._items.keys()[0]]["count"]) == 20010 and beside.size() == 1 and items._items[beside[0]]["pos"].x > pile_at.x + cone_r, "a pile that would grow into a building stops; the rest starts a new pile beside it, away from the building")
+		items.drop_in_world(stone, 10, pile_at + Vector3(0.5, 0.0, 0.0))
+		check(items.world_item_count() == 3 and int(items._items[beside[0]]["count"]) == 200010, "and the next drop there joins the pile beside, not a third cone on the first")
+	items._items.erase(pile_stop_id)
+	items.clear_dropped(Vector3.ZERO, 1.0e7)
+	# A floor under a pile or a roof over it does not stop it (gate review, PR #1322): only what stands in the pile's own height range does.
+	if items._structures.has("foundation_section"):
+		items.drop_in_world(stone, 1000, pile_at)
+		var floor_pile: int = items._items.keys()[0]
+		var floor_y: float = float(items._items[floor_pile]["pos"].y)
+		var floor_def: Dictionary = items._structures["foundation_section"]
+		var floor_top: float = float(floor_def.get("top_m", 0.3))
+		var floor_id: int = items._next_id   # real ids, so the grid lookup sees them (see the chest above)
+		var roof_id: int = items._next_id + 1
+		items._next_id += 2
+		items._items[floor_id] = {"number": 1, "count": 1, "pos": Vector3(pile_at.x, floor_y - floor_top, pile_at.z), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 0.0}}
+		items._items[roof_id] = {"number": 1, "count": 1, "pos": Vector3(pile_at.x, floor_y + 3.0, pile_at.z), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 0.0}}
+		items.drop_in_world(stone, 1000, pile_at + Vector3(0.2, 0.0, 0.0))
+		check(items.world_item_count() == 3 and int(items._items[floor_pile]["count"]) == 2000, "a pile on a floor and under a roof stays one pile (%d items)" % items.world_item_count())
+		items._items.erase(floor_id)
+		items._items.erase(roof_id)
+		items.clear_dropped(Vector3.ZERO, 1.0e7)
 	items.drop_in_world(stone, ItemsScript.PILE_CAP + 50, pile_at)
 	check(items.world_item_count() == 2, "over the cap a second pile starts")
 	var pile_id: int = -1
@@ -255,6 +309,7 @@ func _init() -> void:
 	g.game_seconds = func(): return clock[0]
 	g.season_now = func(): return "summer"
 	g.peer_connected_hello(1, "abcdef123456")
+	g.set_fitness(1, 50)   # an average adult (50): on the game server a new player rolls fitness 40 to 60 (attributes.json), and fitness nudges fitness-weighted factors (tool care, jumping, crafting)
 	g.report_position(1, Vector3(500.0, 70.0, 500.0))
 	check(g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "flax can be gathered")
 	check(g.inventory_of(1).count_of(g.table.number_of("plant_fibre")) >= 2, "flax gives fibre")
@@ -264,10 +319,10 @@ func _init() -> void:
 	check(g.inventory_of(1).count_of(g.table.number_of("dandelion_leaves")) + g.inventory_of(1).count_of(g.table.number_of("dandelion_roots")) + g.inventory_of(1).count_of(g.table.number_of("dandelion_flowers")) >= 1, "got a dandelion yield")
 	var noticed: Array = []
 	g.send_notice = func(_p, text): noticed.append(text)
-	check(not g.gather(1, "wolfsbane", "plant", "0,0,90", 90, Vector3(501.0, 70.0, 500.0)) and noticed.size() == 1, "roots by hand give nothing and the player is told to get a spade")
-	g.action(1, Net.ACT_ADMIN_GIVE, g.table.number_of("wooden_spade"), 0, 1, Vector3.ZERO)
-	check(g.gather(1, "wolfsbane", "plant", "0,0,90", 90, Vector3(501.0, 70.0, 500.0)) and g.inventory_of(1).count_of(g.table.number_of("wolfsbane_roots")) >= 1, "with a spade the roots come up")
-	check(g.inventory_of(1).wear[g.inventory_of(1).numbers.find(g.table.number_of("wooden_spade"))] == 1, "picking roots wears the spade one use")
+	check(not g.gather(1, "wolfsbane", "plant", "0,0,90", 90, Vector3(501.0, 70.0, 500.0)) and noticed.size() == 1, "roots by hand give nothing and the player is told to get a shovel")
+	g.action(1, Net.ACT_ADMIN_GIVE, g.table.number_of("wooden_shovel"), 0, 1, Vector3.ZERO)
+	check(g.gather(1, "wolfsbane", "plant", "0,0,90", 90, Vector3(501.0, 70.0, 500.0)) and g.inventory_of(1).count_of(g.table.number_of("wolfsbane_roots")) >= 1, "with a shovel the roots come up")
+	check(g.inventory_of(1).wear[g.inventory_of(1).numbers.find(g.table.number_of("wooden_shovel"))] == 1, "picking roots wears the shovel one use")
 	check(g.gather(1, "comfrey", "plant", "0,0,91", 91, Vector3(501.0, 70.0, 500.0)), "comfrey still gives by hand")
 	check(not g.gather(1, "flax", "plant", "0,0,77", 77, Vector3(501.0, 70.0, 500.0)), "a picked plant is bare until it regrows")
 	clock[0] += ItemsScript.REGROW_GAME_S + 1.0
@@ -551,7 +606,7 @@ func _init() -> void:
 	f.action(1, Net.ACT_ADMIN_GIVE, ck_meat, 0, 1, Vector3.ZERO)
 	var ck_mslot: int = -1
 
-	for sl in range(ck_inv.SLOTS):
+	for sl in range(ck_inv.slot_count):
 		if ck_inv.numbers[sl] == ck_meat:
 			ck_mslot = sl
 
@@ -564,7 +619,7 @@ func _init() -> void:
 	var ck_want: int = maxi(ck_life - int(minf(ck_left * 2.0, float(ck_life))), 0)
 	var ck_aged: bool = false
 
-	for sl in range(ck_inv.SLOTS):
+	for sl in range(ck_inv.slot_count):
 		if ck_inv.numbers[sl] == ck_roast_n:
 			ck_aged = ck_aged or absi(int(ck_inv.wear[sl]) - ck_want) <= 1
 
@@ -572,7 +627,7 @@ func _init() -> void:
 	f.vitals_of(1)["warmth"] = 50.0
 	f._last_eat.clear()
 
-	for sl in range(ck_inv.SLOTS):
+	for sl in range(ck_inv.slot_count):
 		if ck_inv.numbers[sl] == ck_roast_n:
 			f.action(1, Net.ACT_EAT, sl, 0, 0, Vector3.ZERO)
 			break
@@ -591,7 +646,7 @@ func _init() -> void:
 	check(made == 1, "a lit fire roasts one raw meat (%d roast)" % made)
 	f._last_eat.clear()
 
-	for sl in range(ck_inv.SLOTS):
+	for sl in range(ck_inv.slot_count):
 		if ck_inv.numbers[sl] == meat_n:
 			f.action(1, Net.ACT_EAT, sl, 0, 0, Vector3.ZERO)
 			break
@@ -659,7 +714,7 @@ func _init() -> void:
 		f._fire_add(tg, "firewood")
 
 	check(f._fire_best_state(tg) == 1, "two logs and three firewood make a campfire")
-	f._fire_add(tg, "firewood_soft")
+	f._fire_add(tg, "firewood")
 	f._fire_burn(tg, log_s * 2.0)
 	check(float(tg["wood"]["log"]) <= 0.001 and float(tg["wood"]["firewood"]) > 0.0, "logs burn before firewood")
 	var tfw: Dictionary = {"state": 9, "burn_left": 0.0}
@@ -685,7 +740,7 @@ func _init() -> void:
 	var capless: Variant = load("res://src/shared/inventory.gd").new(f.table)
 	var big_stone: int = f.table.number_of("stone")
 	check(f.table.stack_of(big_stone) == ItemTableScript.COUNT_MAX, "stone stacks to the count maximum (%d)" % f.table.stack_of(big_stone))
-	check(f.table.stack_of(f.table.number_of("steel_spade")) == 1 and f.table.stack_of(f.table.number_of("workbench_kit")) == 1, "a shovel and a kit stay one per slot")
+	check(f.table.stack_of(f.table.number_of("steel_shovel")) == 1 and f.table.stack_of(f.table.number_of("workbench_kit")) == 1, "a shovel and a kit stay one per slot")
 	var left_over: int = capless.add(big_stone, 70000)
 	check(capless.count_of(big_stone) == 70000 and left_over == 0 and capless.counts[capless.numbers.find(big_stone)] == 65535, "70,000 stones fill one slot and spill the rest into a second")
 	capless.from_json_array([[big_stone, 99999999, 0]])
@@ -710,19 +765,20 @@ func _init() -> void:
 	m.ground_height = func(x, z): return 10.0
 	m.rock_at = func(x, z): return x > 0.0
 	m.peer_connected_hello(1, "abcdef123456")
+	m.set_fitness(1, 50)   # an average adult (50): on the game server a new player rolls fitness 40 to 60 (attributes.json), and fitness nudges fitness-weighted factors (tool care, jumping, crafting)
 	m.report_position(1, Vector3(5.0, 10.0, 0.0))
 	var rock_stone: int = m.table.number_of("stone")
-	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_MINE, HeldTool.slot_of(m, "axe") + 1, 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(rock_stone) == 0, "no axe, no stone")
 	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
-	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_MINE, HeldTool.slot_of(m, "axe") + 1, 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(rock_stone) == 1, "axe on rock gives a stone")
-	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_MINE, HeldTool.slot_of(m, "axe") + 1, 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(rock_stone) == 1, "blows too close together give nothing")
 
 	for n in range(10):
 		m._last_mine.clear()
-		m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+		m.action(1, Net.ACT_MINE, HeldTool.slot_of(m, "axe") + 1, 0, 0, Vector3(6.0, 10.0, 0.0))
 
 	check(m.inventory_of(1).count_of(rock_stone) == ItemsScript.MINE_STONES_PER_CELL, "a patch gives only a few stones")
 	# Wear per use is data (drops.json tool_wear): three points a blow when the table says so.
@@ -730,34 +786,48 @@ func _init() -> void:
 	var wear_was: int = m.inventory_of(1).wear[axe_slot]
 	m._drops["tool_wear"]["per_use"]["axe"]["rock"] = 3
 	m._last_mine.clear()
-	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_MINE, HeldTool.slot_of(m, "axe") + 1, 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).wear[axe_slot] == wear_was + 3, "a blow on rock wears the axe by the table's number (%d to %d)" % [wear_was, m.inventory_of(1).wear[axe_slot]])
 	m._drops["tool_wear"]["per_use"]["axe"]["rock"] = 5
 
 	m.report_position(1, Vector3(-5.0, 10.0, 0.0))
-	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(-6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_MINE, HeldTool.slot_of(m, "axe") + 1, 0, 0, Vector3(-6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(rock_stone) == ItemsScript.MINE_STONES_PER_CELL, "soil gives no stone")
 	m.report_position(1, Vector3(5.0, 10.0, 0.0))
-	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(30.0, 10.0, 0.0))
+	m.action(1, Net.ACT_MINE, HeldTool.slot_of(m, "axe") + 1, 0, 0, Vector3(30.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(rock_stone) == ItemsScript.MINE_STONES_PER_CELL, "out of reach gives nothing")
+	# Dave 13 Nov 2026: every swing uses the tool in hand. A pickaxe in hand, the axe still on the hotbar: the pick mines and wears, the axe does not.
+	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("stone_pickaxe"), 0, 1, Vector3.ZERO)
+	var mine_pick: int = m.inventory_of(1).numbers.find(m.table.number_of("stone_pickaxe"))
+	var axe_wear_now: int = m.inventory_of(1).wear[axe_slot]
+	m._mined.clear()
+	m._last_mine.clear()
+	m.action(1, Net.ACT_MINE, mine_pick + 1, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(m.inventory_of(1).count_of(rock_stone) == ItemsScript.MINE_STONES_PER_CELL + 1 and int(m.inventory_of(1).wear[mine_pick]) == 1 and int(m.inventory_of(1).wear[axe_slot]) == axe_wear_now, "a pickaxe in hand mines bare rock and wears; the axe on the hotbar is not used")
+	m._last_mine.clear()
+	m.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(m.inventory_of(1).count_of(rock_stone) == ItemsScript.MINE_STONES_PER_CELL + 1, "nothing in hand (tools only on the hotbar): no stone")
+	m.inventory_of(1).clear_slot(mine_pick)
 
-	# Digging the ground with a spade (ACT_DIG).
+	# Digging the ground with a shovel (ACT_DIG).
 	var digs: Array = []
 	m.dig_ground = func(centre, radius): digs.append([centre, radius])
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
-	check(digs.is_empty(), "no spade, no dig")
-	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("wooden_spade"), 0, 1, Vector3.ZERO)
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(30.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(digs.is_empty(), "no shovel, no dig")
+	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("wooden_shovel"), 0, 1, Vector3.ZERO)
+	m.action(1, Net.ACT_DIG, -1, 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(digs.is_empty(), "the shovel on the hotbar but nothing in hand: no dig")
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(30.0, 10.0, 0.0))
 	check(digs.is_empty(), "a dig out of reach does nothing")
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
-	check(digs.size() == 1 and absf(float(digs[0][0].y) - (10.0 - ItemsScript.DIG_DEPTH_M)) < 0.001, "a spade digs a hole a little below the point")
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(digs.size() == 1 and absf(float(digs[0][0].y) - (10.0 - ItemsScript.DIG_DEPTH_M)) < 0.001, "a shovel digs a hole a little below the point")
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(digs.size() == 1, "digs too close together make one hole")
 	m._last_dig.clear()
-	var spade_slot: int = m.inventory_of(1).numbers.find(m.table.number_of("wooden_spade"))
-	var spade_wear: int = m.inventory_of(1).wear[spade_slot]
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
-	check(digs.size() == 2 and m.inventory_of(1).wear[spade_slot] == spade_wear + 1, "each dig wears the spade by one")
+	var shovel_slot: int = m.inventory_of(1).numbers.find(m.table.number_of("wooden_shovel"))
+	var shovel_wear: int = m.inventory_of(1).wear[shovel_slot]
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(digs.size() == 2 and m.inventory_of(1).wear[shovel_slot] == shovel_wear + 1, "each dig wears the shovel by one")
 
 	# Dig yields and fill (job 84): the ground's material decides what a dig brings up.
 	var soil_n: int = m.table.number_of("soil")
@@ -768,15 +838,15 @@ func _init() -> void:
 	var mat: Array = ["loam"]
 	m.ground_material = func(_x, _z): return mat[0]
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(soil_n) >= 1 and m.inventory_of(1).count_of(soil_n) <= 3 and m.inventory_of(1).count_of(sand_n) == 0, "a dig in loam brings up soil, not sand")
 	mat[0] = "sand"
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(sand_n) >= 1, "a dig in sand brings up sand")
 	mat[0] = "rock"
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(m.table.number_of("stone")) > held_stone, "a dig in bare rock gives stone")
 	var have_fill: int = m.fill_units_of(1)
 	check(have_fill >= 3, "the pack holds fill after digs")
@@ -786,12 +856,12 @@ func _init() -> void:
 	check(m.take_fill(2, 1) == 0, "a peer with no pack fills nothing")
 	mat[0] = "clay"
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(clay_n) >= 1, "a dig in clay brings up clay")
 	var salt_n: int = m.table.number_of("sea_salt")   # the one live Salt (item "salt" 292 is retired)
 	mat[0] = "salt_flat"
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(salt_n) >= 1, "a dig in a salt flat brings up salt, the same Salt as sea salt")
 	m.inventory_of(1).remove(salt_n, m.inventory_of(1).count_of(salt_n))
 	m.inventory_of(1).remove(sand_n, m.inventory_of(1).count_of(sand_n))
@@ -803,76 +873,75 @@ func _init() -> void:
 	m._dig_cfg["finds"] = [{"item": "rotten_food", "chance": 1.0, "soils": ["loam"]}]
 	mat[0] = "loam"
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(find_n) == 1, "a find comes up with a loam dig")
 	mat[0] = "sand"
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(find_n) == 1, "but not in sand")
 	m.inventory_of(1).remove(find_n, 1)
 	m.inventory_of(1).remove(soil_n, m.inventory_of(1).count_of(soil_n))
 	m.inventory_of(1).remove(sand_n, m.inventory_of(1).count_of(sand_n))
 	m._dig_cfg["finds"] = keep_finds
 
-	# Filling with the spade (ACT_FILL, saved edits step 3): spends a shovelful, makes a fill, hands it back if refused.
+	# Filling with the shovel (ACT_FILL, saved edits step 3): spends a shovelful, makes a fill, hands it back if refused.
 	var fills: Array = []
 	var accept: Array = [true]
 	m.fill_ground = func(centre, radius, material): fills.append([centre, radius, material]); return accept[0]
 	m.take_fill(1, 100000)
 	m._last_dig.clear()
-	m.action(1, Net.ACT_FILL, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_FILL, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(fills.is_empty(), "an empty shovel raises nothing")
 	m.action(1, Net.ACT_ADMIN_GIVE, soil_n, 0, 3, Vector3.ZERO)
 	m._last_dig.clear()
-	m.action(1, Net.ACT_FILL, 0, 0, 0, Vector3(30.0, 10.0, 0.0))
+	m.action(1, Net.ACT_FILL, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(30.0, 10.0, 0.0))
 	check(fills.is_empty(), "a raise out of reach does nothing")
-	m.action(1, Net.ACT_FILL, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_FILL, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(fills.size() == 1 and int(fills[0][2]) == 5 and m.inventory_of(1).count_of(soil_n) == 2, "a raise takes one shovelful from the pack and makes loam ground")
 	m._last_dig.clear()
 	accept[0] = false
-	m.action(1, Net.ACT_FILL, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_FILL, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(fills.size() == 2 and m.inventory_of(1).count_of(soil_n) == 2, "a raise that changed nothing hands the shovelful back")
 	accept[0] = true
 	check(m.carried_kg_of(1) < 60.0, "digging cannot overfill the pack")
 
-	# Spade sizes (Dave 2026-10-22): a large spade moves 8 pieces, a medium 4, a small 1.
-	m.inventory_of(1).remove(m.table.number_of("wooden_spade"), 1)
-	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("iron_spade"), 0, 1, Vector3.ZERO)
-	check(m._spade_pieces(m.inventory_of(1)) == 8, "a large spade moves 8 pieces (%d)" % m._spade_pieces(m.inventory_of(1)))
+	# Shovel sizes (Dave 2026-10-22): a large shovel moves 8 pieces, a medium 4, a small 1.
+	m.inventory_of(1).remove(m.table.number_of("wooden_shovel"), 1)
+	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("iron_shovel"), 0, 1, Vector3.ZERO)
+	check(m._shovel_pieces(m.inventory_of(1), HeldTool.slot_of(m, "shovel")) == 8, "a large shovel moves 8 pieces (%d)" % m._shovel_pieces(m.inventory_of(1), HeldTool.slot_of(m, "shovel")))
 	digs.clear()
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
-	check(digs.size() == 1 and is_equal_approx(float(digs[0][1]), 1.8), "a large spade digs a sphere twice as wide (%s)" % str(digs))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(digs.size() == 1 and is_equal_approx(float(digs[0][1]), 1.8), "a large shovel digs a sphere twice as wide (%s)" % str(digs))
 	m.take_fill(1, 100000)
 	m.action(1, Net.ACT_ADMIN_GIVE, soil_n, 0, 12, Vector3.ZERO)
 	fills.clear()
 	m._last_dig.clear()
-	m.action(1, Net.ACT_FILL, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_FILL, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(fills.size() == 1 and is_equal_approx(float(fills[0][1]), 1.8) and m.inventory_of(1).count_of(soil_n) == 4, "a large raise takes 8 shovelfuls from the pack")
 	m.take_fill(1, 100000)
 	m.action(1, Net.ACT_ADMIN_GIVE, soil_n, 0, 3, Vector3.ZERO)
 	fills.clear()
 	m._last_dig.clear()
-	m.action(1, Net.ACT_FILL, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_FILL, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(fills.size() == 1 and fills[0][1] < 1.8 and m.inventory_of(1).count_of(soil_n) == 0, "a short pack raises a smaller heap")
 	m.take_fill(1, 100000)
-	m.inventory_of(1).remove(m.table.number_of("iron_spade"), 1)
-	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("wooden_spade"), 0, 1, Vector3.ZERO)
+	m.inventory_of(1).remove(m.table.number_of("iron_shovel"), 1)
+	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("wooden_shovel"), 0, 1, Vector3.ZERO)
 
-	# The spade tier adds to the top of the dig roll (digging.json tier_extra).
-	m.action(1, Net.ACT_ADMIN_GIVE, m.table.number_of("stone_spade"), 0, 1, Vector3.ZERO)
-	check(m._spade_tier(m.inventory_of(1)) >= 1, "the spade tier is read from the tool in the pack")
+	# The shovel tier adds to the top of the dig roll (digging.json tier_extra).
+	check(m._shovel_tier(m.inventory_of(1), HeldTool.slot_of(m, "shovel")) >= 1, "the shovel tier is read from the tool in the pack")
 	var most: int = 0
 	mat[0] = "sand"
 
 	for tries in 40:
 		m._last_dig.clear()
 		var before_sand: int = m.inventory_of(1).count_of(sand_n)
-		m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+		m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 		most = maxi(most, m.inventory_of(1).count_of(sand_n) - before_sand)
 		m.take_fill(1, 100000)
 
-	check(most >= 1 and most <= 4, "a dig never exceeds the top of the roll plus the spade extra (%d)" % most)
+	check(most >= 1 and most <= 4, "a dig never exceeds the top of the roll plus the shovel extra (%d)" % most)
 
 	# A dig the ground refuses (nothing changed) gives nothing.
 	var refuse: Array = [false]
@@ -883,7 +952,7 @@ func _init() -> void:
 	var soil_before: int = m.inventory_of(1).count_of(soil_n)
 	refuse[0] = true
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(m.inventory_of(1).count_of(soil_n) == soil_before, "a dig that changes nothing brings up nothing")
 	refuse[0] = false
 
@@ -900,10 +969,10 @@ func _init() -> void:
 
 		return count
 	m._last_dig.clear()
-	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(6.3, 10.0, 0.4))
+	m.action(1, Net.ACT_HOE_PATH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(6.3, 10.0, 0.4))
 	check(patches_of.call() == 1, "a hoe stroke treads a path patch")
 	m._last_dig.clear()
-	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(6.6, 10.0, 0.6))
+	m.action(1, Net.ACT_HOE_PATH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(6.6, 10.0, 0.6))
 	check(patches_of.call() == 1, "a patch is not trodden twice within 0.7 m")
 	var patch_pos: Vector3 = Vector3.ZERO
 
@@ -916,38 +985,139 @@ func _init() -> void:
 	fills.clear()
 	accept[0] = true
 	m._last_dig.clear()
-	m._last_average.clear()
-	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(7.2, 10.0, 0.4))
+	m.action(1, Net.ACT_HOE_PATH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(7.2, 10.0, 0.4))
 	check(patches_of.call() == 2, "a second patch 0.9 m along is laid")
 	# Dave 3 Nov: the path goes round a rock instead of painting on it.
 	m._items[999001] = {"number": 0, "count": 4, "pos": Vector3(9.0, 10.0, 0.4), "left": 1.0e9, "scatter": 1, "boulder": {"radius": 0.5, "yaw": 0.0, "total": 4}}
 	m._last_dig.clear()
-	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(8.2, 10.0, 0.4))
+	m.action(1, Net.ACT_HOE_PATH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(8.2, 10.0, 0.4))
 	check(patches_of.call() == 2, "no path patch is laid within a boulder's radius plus 1 m")
 	m._items.erase(999001)
-	check(digs.size() + fills.size() >= 2 and digs.size() + fills.size() <= 4, "a path stroke averages the ground round it with at most 4 edits (%d cuts, %d fills)" % [digs.size(), fills.size()])
+	check(digs.size() + fills.size() >= 1 and digs.size() + fills.size() <= ItemsScript.PATH_LEVEL_OPS, "Pathen: one click levels the spot to its average with at most %d edits (%d cuts, %d fills)" % [ItemsScript.PATH_LEVEL_OPS, digs.size(), fills.size()])
 	digs.clear()
 	fills.clear()
 	m._last_dig.clear()
-	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(8.0, 10.0, 3.0))
-	check(digs.is_empty() and fills.is_empty() and patches_of.call() == 3, "a second path stroke within 1.5 s lays its patch but leaves the ground alone")
+	m.action(1, Net.ACT_HOE_PATH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(8.0, 10.0, 3.0))
+	check(patches_of.call() == 3, "the next click lays its own level spot at once (no wait between clicks)")
 	m._last_dig.clear()
-	m.action(1, Net.ACT_HOE_PATH, 0, 0, 0, Vector3(30.0, 10.0, 0.0))
+	m.action(1, Net.ACT_HOE_PATH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(30.0, 10.0, 0.0))
 	check(patches_of.call() == 3, "a path out of reach does nothing")
 	var hoe_slot: int = m.inventory_of(1).numbers.find(hoe_n)
 	var hoe_wear: int = m.inventory_of(1).wear[hoe_slot]
 	digs.clear()
 	fills.clear()
 	accept[0] = true
+	var soil_n1: int = m.table.number_of("soil")
+	# A cut the ground refuses gives no Soil back (BugsList entry 1, Dave play test 19 Nov 2026).
+	refuse[0] = true
 	m._last_dig.clear()
-	m.action(1, Net.ACT_HOE_SMOOTH, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
-	check(digs.size() == 1 and fills.size() >= 1 and m.inventory_of(1).wear[hoe_slot] == hoe_wear + 1, "smoothing cuts the high spot and fills the low ones (%d cuts, %d fills)" % [digs.size(), fills.size()])
-	check(patches_of.call() == 1, "smoothed ground loses its path patches within 2.5 m (the far one stays)")
+	var soil_before_refused: int = m.inventory_of(1).count_of(soil_n1)
+	m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(m.inventory_of(1).count_of(soil_n1) == soil_before_refused, "a refused Level cut gives no Soil")
+	refuse[0] = false
+	digs.clear()
+	m._level_hold.clear()
+	hoe_wear = m.inventory_of(1).wear[hoe_slot]
+	m._last_dig.clear()
+	var soil_before_cut: int = m.inventory_of(1).count_of(soil_n1)
+	m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	# Levelling (Dave 14 Nov 2026): a 1 m grid of 29 spots within 3 m, toward the ground the player stands on (10.0 at x 5), at most LEVEL_MAX_OPS edits a stroke,
+	# the spot farthest from level first. The 0.4 m step past x 6.5 is cut, nothing filled, and no cut goes below the player's ground.
+	check(digs.size() >= 1 and digs.size() <= ItemsScript.LEVEL_MAX_OPS and fills.is_empty() and m.inventory_of(1).wear[hoe_slot] == hoe_wear + 1, "levelling cuts the high side toward the ground the player stands on, fills nothing, at most %d edits (%d cuts, %d fills)" % [ItemsScript.LEVEL_MAX_OPS, digs.size(), fills.size()])
+	check(digs.all(func(cut): return absf(float(cut[1]) - ItemsScript.LEVEL_SPHERE_M) < 0.001 and float(cut[0].y) - ItemsScript.LEVEL_SPHERE_M >= 10.0 - 0.001), "no cut sphere reaches below the player's ground")
+	# BugsList entry 1 (Dave play test 19 Nov 2026): the soil a cut takes away comes back, at least one Soil a cut, at the rate a fill of the same depth costs.
+	var soil_from_cut: int = m.inventory_of(1).count_of(soil_n1) - soil_before_cut
+	check(soil_from_cut >= digs.size() and not digs.is_empty(), "cutting gives the soil back (%d Soil from %d cuts)" % [soil_from_cut, digs.size()])
+	check(ItemsScript._level_soil_units(ItemsScript.LEVEL_MAX_M, ItemsScript.LEVEL_SPHERE_M) > ItemsScript._level_soil_units(0.1, ItemsScript.LEVEL_SPHERE_M), "a deeper cut or fill moves more soil")
+	check(patches_of.call() == 0, "levelled ground loses its path patches within 4 m (all three, the farthest 3.6 m away)")
+	# Strokes add up: the heights are read through the edits made (the server's saved-edit log, here the digs and fills recorded), so held strokes level the whole circle and then stop.
+	var level_ops = func(_point, _radius) -> Array:
+		var ops: Array = []
+
+		for cut in digs:
+			ops.append([0, cut[0], cut[1]])
+
+		for put in fills:
+			ops.append([1, put[0], put[1]])
+
+		return ops
+	m.edits_near = level_ops
+	var level_at: Vector3 = Vector3(6.0, 10.0, 0.0)
+	var flat_after = func(height: float, slack: float) -> bool:
+		var ops: Array = level_ops.call(level_at, 0.0)
+
+		for cell_i in range(-3, 4):
+			for cell_j in range(-3, 4):
+				if cell_i * cell_i + cell_j * cell_j <= 9 and absf(m._edited_height(level_at.x + cell_i, level_at.z + cell_j, ops) - height) > slack:
+					return false
+
+		return true
+	for stroke in 40:
+		m._last_dig.clear()
+		m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, level_at)
+	var level_made: int = digs.size() + fills.size()
+	check(fills.is_empty() and flat_after.call(10.0, ItemsScript.LEVEL_MIN_M), "held strokes level every spot of the 6 m circle to the player's ground (%d cuts)" % digs.size())
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, level_at)
+	check(digs.size() + fills.size() == level_made, "once level, a stroke makes no more edits (the edit log does not grow)")
+	# Standing on a foundation 0.5 m up: levelled to 0.1 m below the feet (10.4); fills top out there, and every fill is paid for in soil (BugsList entry 1).
+	var cuts_before: int = digs.size()
+	var soil_n2: int = m.table.number_of("soil")
+	var notes_seen: Array = []
+	m.send_notice = func(_p, text): notes_seen.append(text)
+	m._items[999101] = {"number": m.table.number_of("wood_foundation"), "count": 1, "pos": Vector3(5.0, 10.4, 0.0), "left": 1.0e9, "struct": {"kind": "wood_foundation", "yaw": 0.0}}
+	m.report_position(1, Vector3(5.0, 10.5, 0.0))
+	m._level_hold.clear()
+	m.inventory_of(1).remove(soil_n2, m.inventory_of(1).count_of(soil_n2))
+	m._last_dig.clear()
+	notes_seen.clear()
+	m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, level_at)
+	check(fills.is_empty() and notes_seen.any(func(n): return str(n).begins_with("Not enough soil")), "no soil: the low ground is not filled (no free fill) and the player is told (%s)" % str(notes_seen))
+	m.action(1, Net.ACT_ADMIN_GIVE, soil_n2, 0, 400, Vector3.ZERO)
+	m._level_hold.clear()
+
+	for stroke in 40:
+		m._last_dig.clear()
+		m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, level_at)
+	check(digs.size() == cuts_before and not fills.is_empty() and fills.all(func(put): return float(put[0].y) + ItemsScript.LEVEL_SPHERE_M <= 10.4 + 0.001), "on a foundation: the ground is filled up toward just under the feet, never above (%d fills)" % fills.size())
+	check(m.inventory_of(1).count_of(soil_n2) < 400, "and the fill used up soil (%d of 400 left)" % m.inventory_of(1).count_of(soil_n2))
+	check(fills.all(func(put): return Vector2(put[0].x - 5.0, put[0].z).length() >= ItemsScript.LEVEL_KEEP_M - 0.001), "no edit is centred under the player: the ground holding them up is kept")
+	m._items.erase(999101)
+	# Feet in the air with nothing built under them (a jump, a log): the target is the ground under the feet, not the feet; and while the button is held the target
+	# stays where the action started, so ground it raised never lifts it (the creep Dave saw).
+	m.report_position(1, Vector3(5.0, 14.0, 0.0))
+	m._level_hold.clear()
+	m._last_dig.clear()
+	var fills_before: int = fills.size()
+	var under_feet: float = m._edited_height(5.0, 0.0, level_ops.call(level_at, 0.0))
+	m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, level_at)
+	check(fills.slice(fills_before).all(func(put): return float(put[0].y) + ItemsScript.LEVEL_SPHERE_M <= under_feet + 0.001), "feet 3.6 m up, nothing built under them: nothing is filled above the ground under them")
+	var held_target: float = float(m._level_hold[1][0])
+	m.report_position(1, Vector3(5.0, 15.0, 0.0))
+	m._last_dig.clear()
+	m.action(1, Net.ACT_HOE_SMOOTH, HeldTool.slot_of(m, "hoe"), 0, 0, level_at)
+	check(is_equal_approx(float(m._level_hold[1][0]), held_target), "a held stroke keeps the height the action started from")
+	# A foundation on raised ground (BugsList entry 2): placement reads the saved fills, so a site built up 1.6 m above the generated ground takes a foundation on top.
+	m.edits_near = func(_point, _radius) -> Array: return [[1, Vector3(-20.0, -18.4, 0.0), 30.0]]   # one wide fill: the ground round x -20 now stands about 11.6
+	m.report_position(1, Vector3(-18.0, 11.7, 0.0))
+	var raised_ids: Array = m._items.keys()
+	m.place_piece(1, "wood_foundation_kit", Vector3(-20.0, 11.6, 0.0))
+	var raised: Array = m._items.keys().filter(func(new_id): return not raised_ids.has(new_id) and m._items[new_id].has("struct") and str(m._items[new_id]["struct"]["kind"]) == "wood_foundation")
+	check(raised.size() == 1 and absf(float(m._items[raised[0]]["pos"].y) - 11.6) < 0.1, "a foundation sits on hoe-raised ground 1.6 m above the generated surface (%s)" % str(raised.map(func(new_id): return m._items[new_id]["pos"])))
+
+	for raised_id in raised:
+		m._items.erase(raised_id)
+
+	m.send_notice = Callable()
+	m.edits_near = Callable()
+	digs.clear()
+	fills.clear()
+	m.report_position(1, Vector3(5.0, 10.0, 0.0))
 	# The grade line: nothing happens before both points are set; then a stroke brings the high side toward the ramp (A 10.0 at x 4 to B 10.2 at x 8).
 	digs.clear()
 	fills.clear()
 	m._last_dig.clear()
-	m.action(1, Net.ACT_HOE_GRADE, 0, 0, 0, Vector3(8.0, 10.0, 0.0))
+	m.action(1, Net.ACT_HOE_GRADE, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(8.0, 10.0, 0.0))
 	check(digs.is_empty() and fills.is_empty(), "a grade stroke without points A and B does nothing")
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(4.0, 10.0, 0.0))
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(8.0, 10.0, 0.0))
@@ -961,22 +1131,69 @@ func _init() -> void:
 	check(patches_of.call() >= road_patches + 3, "setting point B lays a path along the A to B line by itself (%d patches more)" % (patches_of.call() - road_patches))
 	check(digs.size() + fills.size() >= 1 and digs.size() + fills.size() <= 3 * 13, "and levels the ground along it, a few edits a station (%d cuts, %d fills)" % [digs.size(), fills.size()])
 	check(m._roads.is_empty(), "the road job ends when the line is done")
-	# Surveyor mode: the first marker of an idle job is the start; later markers wait and are built toward nearest first, then deleted.
+	# Surveyor mode: the first marker of a job is the start; later markers wait and are built toward in the order set (the surveyor's line), then deleted.
 	var flags_down: Array = []
 	m.send_marker_done = func(_p, at): flags_down.append(at)
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(5.0, 10.0, -4.0))
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(5.0, 10.0, 4.0))
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(5.0, 10.0, 0.0))
-	check(m._roads.has(1) and m._roads[1]["markers"].size() == 2, "markers set after the first wait for the builder")
+	check(m._roads.has(1) and m._roads[1][0]["markers"].size() == 2, "markers set after the first wait for the builder")
 	m._road_tick(0.6)
-	check(m._roads[1]["seg"] != null and absf(m._roads[1]["seg"]["b"].z - 0.0) < 0.01, "the builder heads for the nearest marker first, not the first one set")
-	check(m._roads[1]["markers"].size() == 1, "and that marker is off the list once it is being built toward")
+	check(m._roads[1][0]["seg"] != null and absf(m._roads[1][0]["seg"]["b"].z - 4.0) < 0.01, "the builder heads for the markers in the order set (the line the surveyor saw), not the nearest")
+	check(m._roads[1][0]["markers"].size() == 1, "and that marker is off the list once it is being built toward")
 
 	for step in 120:
 		m._road_tick(0.6)
 
-	check(m._roads.is_empty(), "the road is done when no markers are left")
+	check(m._roads.is_empty(), "the road has caught up when no markers are left")
 	check(flags_down.size() >= 3, "each marker's flag is taken down once the builder reaches it (%d)" % flags_down.size())
+	# BUG-007: a fresh survey is only the start marker; it is not "caught up" before a road is built. Surveying, building and caught up are distinct.
+	var road_says: Array = []
+	m.send_notice = func(_p, text): road_says.append(text)
+	flags_down.clear()
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(4.0, 10.0, 0.0))
+
+	for step in 20:
+		m._road_tick(0.6)   # many ticks with only the start marker: early repeated ticks never finish it
+
+	check(m._roads.has(1) and m._roads[1].size() == 1 and not m._roads[1][0]["built"] and m._roads[1][0]["seg"] == null, "a fresh survey stays a survey while only its start marker is set")
+	check(road_says.size() == 1 and road_says[0].begins_with("Survey begun") and not road_says.any(func(said): return str(said).begins_with("The road has caught up")), "a fresh survey says it has begun, never that the road caught up (%s)" % str(road_says))
+	check(flags_down.is_empty(), "and its start flag stays up")
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(8.0, 10.0, 0.0))
+	check(m._roads.has(1) and m._roads[1].size() == 1 and Vector2(m._roads[1][0]["head"].x, m._roads[1][0]["head"].z).is_equal_approx(Vector2(8.0, 0.0)) and flags_down.size() == 1 and Vector2(flags_down[0].x, flags_down[0].z).is_equal_approx(Vector2(4.0, 0.0)), "a marker that starts a new road replaces a lone start marker (its flag comes down): the survey can be restarted")
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(5.0, 10.0, 2.0))
+	check(m._roads[1][0]["markers"].size() == 1 and road_says[road_says.size() - 1].begins_with("Marker set"), "the next marker joins the survey")
+	m._road_tick(0.6)
+	check(m._roads[1][0]["built"] and m._roads[1][0]["seg"] != null, "with a marker to build toward the road is being built")
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(5.0, 10.0, -2.0))
+	check(m._roads[1].size() == 2 and m._roads[1][0]["built"] and m._roads[1][0]["seg"] != null, "a road being built is not restarted by an unchained marker: the new survey waits its turn behind it")
+
+	for step in 120:
+		m._road_tick(0.6)
+
+	check(m._roads.has(1) and m._roads[1].size() == 1 and not m._roads[1][0]["built"], "the first road is done and the new survey is next, still only its start marker")
+	m._roads.clear()
+	# Any distance (Dave 17 Nov 2026: past 40 m the second click started a new road): a marker 120 m on carries the road on, and once it caught up the next carries on from it.
+	road_says.clear()
+	m.report_position(1, Vector3(60.0, 10.0, 0.0))
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(0.0, 10.0, 0.0))
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(120.0, 10.0, 0.0))
+	check(m._roads[1][0]["markers"].size() == 1 and road_says[road_says.size() - 1].begins_with("Marker set"), "a marker 120 m from the last joins the survey, not a new start (%s)" % str(road_says))
+	m._road_tick(0.6)
+	check(m._roads[1][0]["seg"] != null and int(m._roads[1][0]["seg"]["n"]) >= 170, "the road builds the whole 120 m stretch (%d stations)" % int(m._roads[1][0]["seg"]["n"]))
+	m._roads[1][0]["seg"]["i"] = int(m._roads[1][0]["seg"]["n"])   # the long walk is not the point here: jump to its end
+
+	for step in 6:
+		m._road_tick(0.6)
+
+	check(not m._roads.has(1) and road_says[road_says.size() - 1].begins_with("The road has caught up"), "the road caught up at the far marker")
+	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(120.0, 10.0, 30.0))
+	check(m._roads.has(1) and m._roads[1][0]["built"] and Vector2(m._roads[1][0]["head"].x, m._roads[1][0]["head"].z).is_equal_approx(Vector2(120.0, 0.0)) and m._roads[1][0]["markers"].size() == 1, "the next marker of the same survey carries on from the last one, after it caught up")
+	m._roads.clear()
+	m._road_last.clear()
+	m.report_position(1, Vector3(5.0, 10.0, 0.0))
+	m.send_notice = Callable()
+	m.send_notice = Callable()
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 0, 0, Vector3(4.0, 10.0, 0.0))
 	m.action(1, Net.ACT_HOE_GRADE_POINT, hoe_slot, 1, 0, Vector3(8.0, 10.0, 0.0))
 
@@ -987,7 +1204,7 @@ func _init() -> void:
 	fills.clear()
 	hoe_wear = m.inventory_of(1).wear[hoe_slot]
 	m._last_dig.clear()
-	m.action(1, Net.ACT_HOE_GRADE, 0, 0, 0, Vector3(7.0, 10.0, 0.0))
+	m.action(1, Net.ACT_HOE_GRADE, HeldTool.slot_of(m, "hoe"), 0, 0, Vector3(7.0, 10.0, 0.0))
 	check(digs.size() >= 1 and m.inventory_of(1).wear[hoe_slot] == hoe_wear + 1, "a grade stroke cuts ground above the A-B ramp (%d cuts, %d fills)" % [digs.size(), fills.size()])
 	m.ground_height = Callable()
 
@@ -1040,50 +1257,50 @@ func _init() -> void:
 		up[0] = false
 		return true
 	m.dig_support = func(_b, _r, _d): return share[0]
-	var trunks_of = func() -> int:
+	var trunks_of = func() -> int:   # felled trees: their stumps (a tree comes down in its logs, Dave 16 Nov 2026)
 		var n: int = 0
 
 		for it in m._items.values():
-			if it.has("tree") and int(it["tree"]["state"]) == 3:
+			if it.has("tree") and int(it["tree"]["state"]) == 4:
 				n += 1
 
 		return n
 
 	var base_trunks: int = trunks_of.call()
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(up[0] and trunks_of.call() == base_trunks, "a tree with half its ground left stays up")
 	share[0] = 0.4
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(up[0], "a beech holds at 40 percent")
 	species[0] = "spruce"
 	species[1] = 0.35
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
-	check(not up[0] and trunks_of.call() == base_trunks + 1, "a spruce falls at 40 percent (shallow roots) and leaves a trunk")
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
+	check(not up[0] and trunks_of.call() == base_trunks + 1, "a spruce falls at 40 percent (shallow roots) and leaves a stump")
 	up[0] = true
 	species[0] = "oak"
 	species[1] = 0.6
 	share[0] = 0.3
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(up[0], "a big oak holds at 30 percent")
 	share[0] = 0.2
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(not up[0] and trunks_of.call() == base_trunks + 2, "a big oak falls at 20 percent")
 	var trunk_dir: Dictionary = {}
 
 	for it in m._items.values():
-		if it.has("tree") and int(it["tree"]["state"]) == 3:
-			trunk_dir = it["tree"]
+		if it.has("tree") and int(it["tree"]["state"]) == 4:
+			trunk_dir = it["tree"]   # the last stump: the oak's
 
 	check(absf(float(trunk_dir["yaw"]) - atan2(1.0, 0.0)) < 0.01, "it falls away from the hole")
 	up[0] = true
 	refuse[0] = true
 	m._last_dig.clear()
-	m.action(1, Net.ACT_DIG, 0, 0, 0, Vector3(6.0, 10.0, 0.0))
+	m.action(1, Net.ACT_DIG, HeldTool.slot_of(m, "shovel"), 0, 0, Vector3(6.0, 10.0, 0.0))
 	check(up[0], "a refused dig fells nothing")
 
 	# The support maths: digs take ground away from under a tree, a fill puts it back.
@@ -1109,24 +1326,30 @@ func _init() -> void:
 	var notices: Array = []
 	var gs: Array = [5000.0]
 	w.game_seconds = func(): return gs[0]
-	w.tree_info = func(chunk, id): return {"name": "oak", "position": Vector3(10.0, 10.0, 0.0), "height": 18.0, "trunk": 0.1} if standing.has(id) else {}
+	w.tree_info = func(chunk, id): return {"name": "oak", "position": Vector3(10.0, 10.0, 0.0), "height": 18.0, "trunk": 0.3} if standing.has(id) else {}
 	w.cut_tree = func(chunk, id): standing.erase(id); felled_log.append(id); return true
 	w.send_notice = func(peer, text): notices.append(text)
 	w.peer_connected_hello(1, "abcdef123456")
 	w.report_position(1, Vector3(8.0, 10.0, 0.0))
-	w.action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
+	w.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(w))
 	check(felled_log.is_empty() and w.inventory_of(1).count_of(w.table.number_of("stone_axe")) == 0, "no axe, no chopping")
 	w.action(1, Net.ACT_ADMIN_GIVE, w.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
 
-	for n in range(3):
+	for n in range(20):   # TEST-013: the axe on the hotbar but nothing in hand fells nothing, however many blows
 		w._last_hit.clear()
 		w.action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
+
+	check(felled_log.is_empty(), "an axe on the hotbar but not in hand: the tree is not chopped")
+
+	for n in range(3):
+		w._last_hit.clear()
+		w.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(w))
 
 	check(felled_log.is_empty(), "a tree does not fall at the first blows")
 
 	for n in range(10):
 		w._last_hit.clear()
-		w.action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
+		w.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(w))
 
 	check(felled_log == [7], "enough blows fell it once")
 	var trunks: int = 0
@@ -1134,64 +1357,48 @@ func _init() -> void:
 
 	for k in w._items:
 		if w._items[k].has("tree"):
-			if w._items[k]["tree"]["state"] == 3:
-				trunks += 1
-			else:
+			if int(w._items[k]["tree"]["state"]) == 4:
 				stumps += 1
+			else:
+				trunks += 1
 
-	check(trunks == 1 and stumps == 1, "a trunk and a stump lie where it stood")
-	var trunk_id: int = 0
+	var ground_count = func(item: String) -> int:
+		var total: int = 0
 
-	for k in w._items:
-		if w._items[k].has("tree") and w._items[k]["tree"]["state"] == 3:
-			trunk_id = k
+		for k in w._items:
+			if not w._items[k].has("tree") and not w._items[k].has("struct") and int(w._items[k]["number"]) == w.table.number_of(item):
+				total += int(w._items[k]["count"])
 
-	w.report_position(1, Vector3(14.0, 10.0, 0.0))
-	var sticks: int = w.table.number_of("stick")
-	var logs: int = w.table.number_of("log")
-	var apple: Dictionary = (w._items[trunk_id] as Dictionary).duplicate(true)   # kept for the non-key wood test below
-	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
-	check(w.inventory_of(1).count_of(sticks) >= 1 and w.inventory_of(1).count_of(w.table.number_of("leaves")) >= 1, "first blows take branches and leaves")
-	w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
-	check(w.inventory_of(1).count_of(sticks) <= 3 or true, "pace limit applies")
-	var guard: int = 0
+		return total
 
-	while w._items.has(trunk_id) and guard < 100:
-		if int(w._items[trunk_id]["tree"].get("blows", 0)) >= 2:
-			w.report_position(1, w.cut_line_point(trunk_id))   # logs come off the far end: walk along to the cut line
+	check(trunks == 0 and stumps == 1, "a stump stays where it stood, no whole trunk")
+	check(ground_count.call("log_oak") >= 1 and w.shoulder_of(1) == "", "the oak comes down in oak logs on the ground, none in hand (%d logs)" % ground_count.call("log_oak"))
+	check(ground_count.call("tree_roots") >= 1 and ground_count.call("stick") >= 1, "the root ball and the branches' sticks lie there too")
 
-		w._last_process.clear()
-		w.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
-		guard += 1
-
-	var oak_logs: int = 0
+	# TEST-013 (Dave 12 Nov 2026): the tool in hand does the wood work. A held pickaxe (the axe still on the hotbar) only tears a fallen log up: kindling and
+	# thatch, no sticks, and the axe on the hotbar is not used.
+	var a_log: int = -1
 
 	for k in w._items:
-		if not w._items[k].has("tree") and not w._items[k].has("struct") and int(w._items[k]["number"]) == w.table.number_of("log_oak"):
-			oak_logs += 1
+		if not w._items[k].has("tree") and int(w._items[k]["number"]) == w.table.number_of("log_oak"):
+			a_log = k
 
-	check(not w._items.has(trunk_id) and w.shoulder_of(1) == "" and oak_logs >= 1, "the trunk is worked into oak logs that fall to the ground (none picked up by chopping) and used up (%d logs)" % oak_logs)
-	check(w.inventory_of(1).count_of(w.table.number_of("tree_roots")) >= 1, "the root ball comes up with the last log")
+	w.action(1, Net.ACT_ADMIN_GIVE, w.table.number_of("stone_pickaxe"), 0, 1, Vector3.ZERO)
+	var log_pick_slot: int = w.inventory_of(1).numbers.find(w.table.number_of("stone_pickaxe"))
+	var axe_wear: int = int(w.inventory_of(1).wear[int(HeldTool.at_axe(w).x) - 1])
+	var sticks_before: int = w.inventory_of(1).count_of(w.table.number_of("stick"))
+	var splinters_before: int = w.inventory_of(1).count_of(w.table.number_of("kindling")) + w.inventory_of(1).count_of(w.table.number_of("thatch"))
+	w.report_position(1, w._items[a_log]["pos"])
+	w._last_process.clear()
+	w.action(1, Net.ACT_PROCESS, a_log, 0, 0, Vector3(float(log_pick_slot + 1), 0.0, 0.0))
+	check(w.inventory_of(1).count_of(w.table.number_of("stick")) == sticks_before and w.inventory_of(1).count_of(w.table.number_of("kindling")) + w.inventory_of(1).count_of(w.table.number_of("thatch")) > splinters_before, "a pickaxe in hand tears kindling and thatch off a fallen log, no sticks")
+	check(int(w.inventory_of(1).wear[int(HeldTool.at_axe(w).x) - 1]) == axe_wear, "the axe on the hotbar is not used")
+	w.inventory_of(1).remove(w.table.number_of("stone_pickaxe"), 1)
+	w.report_position(1, Vector3(8.0, 10.0, 0.0))
 
-	# A trunk of a wood without its own log item (Dave 1 Nov: every tree gives logs) drops the plain Log.
-	apple["tree"]["species"] = "wild_apple"
-	var apple_id: int = trunk_id + 100000
-	var shoulder_before: String = w.shoulder_of(1)
-	w._items[apple_id] = apple
-	var apple_guard: int = 0
-	while w._items.has(apple_id) and apple_guard < 100:
-		w.report_position(1, w.cut_line_point(apple_id))
-		w._last_process.clear()
-		w.action(1, Net.ACT_PROCESS, apple_id, 0, 0, Vector3.ZERO)
-		apple_guard += 1
-
-	var plain_logs: int = 0
-
-	for k in w._items:
-		if not w._items[k].has("tree") and not w._items[k].has("struct") and int(w._items[k]["number"]) == w.table.number_of("log"):
-			plain_logs += 1
-
-	check(not w._items.has(apple_id) and w.shoulder_of(1) == shoulder_before and plain_logs >= 1, "an apple trunk is used up and drops plain logs on the ground (%d)" % plain_logs)
+	# A tree of a wood without its own log item (Dave 1 Nov: every tree gives logs) drops the plain Log.
+	w._fell_record(Vector2i(0, 0), {"name": "wild_apple", "position": Vector3(40.0, 10.0, 0.0), "height": 18.0, "trunk": 0.3}, Vector2(1.0, 0.0))
+	check(ground_count.call("log") >= 1, "an apple tree comes down in plain logs (%d)" % ground_count.call("log"))
 	check(w.table.number_of("log_wild_apple") > 0 and w.table.number_of("lumber_wild_cherry") > 0, "retired wood items stay in the item table, so old stock in saves and chests still loads")
 	var stump_left: bool = false
 
@@ -1204,7 +1411,7 @@ func _init() -> void:
 
 	w.report_position(1, Vector3(100.0, 10.0, 0.0))
 	w._last_hit.clear()
-	w.action(1, Net.ACT_HIT, 8, 0, 0, Vector3.ZERO)
+	w.action(1, Net.ACT_HIT, 8, 0, 0, HeldTool.at_axe(w))
 	check(felled_log == [7] and standing.has(8), "too far to chop")
 	w.save()
 	var w2 = make("user://test_server_items_f")
@@ -1214,7 +1421,7 @@ func _init() -> void:
 		if w2._items[k].has("tree"):
 			back += 1
 
-	check(back == 1, "the stump survives a restart")
+	check(back == 2, "both stumps (the oak's and the apple's) survive a restart (%d)" % back)
 	gs[0] += ItemsScript.ROT_GAME_S + 100.0
 	w.tick(61.0)
 	var left: int = 0
@@ -1246,22 +1453,16 @@ func _init() -> void:
 	var none: int = q._saplings.size()
 	q._maybe_sapling({"pos": Vector3(500.0, 10.0, 500.0), "tree": {"species": "birch", "chunk": [1, 1], "state": 4}})
 	check(q._saplings.size() == none, "no standing tree of that species near, no sapling")
-	# Nothing regrows within 50 m of a placed structure (BUG-013).
-	q._items[q._next_id] = {"number": 0, "count": 1, "pos": Vector3(700.0, 10.0, 700.0), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 0.0}}
+	# Nothing regrows within no_spawn_m (20 m) of a placed structure (BUG-013; Dave 17 Nov 2026). 40 stumps, each its own roll; the saplings would land 2 to 6 m off 710..717, 710..714.
+	q._items[q._next_id] = {"number": 0, "count": 1, "pos": Vector3(712.0, 10.0, 710.0), "left": 1.0e9, "struct": {"kind": "foundation_section", "yaw": 0.0}}
+	q._grid_add(q._next_id, q._items[q._next_id])
 	q._next_id += 1
 	var before_ban: int = q._saplings.size()
 
 	for n in range(40):
-		q._maybe_sapling({"pos": Vector3(700.0 + fmod(float(n), 5.0), 10.0, 710.0), "tree": {"species": "oak", "chunk": [14, 14], "state": 4}})
+		q._maybe_sapling({"pos": Vector3(700.0 + float(n % 8), 10.0, 710.0 + floorf(float(n) / 8.0)), "tree": {"species": "oak", "chunk": [14, 14], "state": 4}})
 
-	check(q._saplings.size() == before_ban, "no sapling is seeded within 50 m of a placed foundation")
-	q._items[q._next_id] = {"number": 0, "count": 1, "pos": Vector3(1.0, 10.0, 1.0), "left": 1.0e9, "tree": {"state": 3, "chunk": [0, 0], "species": "oak", "yaw": 0.0, "length": 5.0, "radius": 0.2, "felled_at": 0.0}}
-	var with_trunk: int = q._saplings.size()
-
-	for n in range(30):
-		q._maybe_sapling({"pos": Vector3(100.0 + float(n) * 3.0, 10.0, 130.0), "tree": {"species": "oak", "chunk": [0, 0], "state": 4}})
-
-	check(q._saplings.size() == with_trunk, "nothing respawns while a trunk lies in the chunk")
+	check(q._saplings.size() == before_ban, "no sapling is seeded within 20 m of a placed foundation")
 	var items0: Dictionary = q.dynamic_items(Vector2i(0, 0))
 	check(not items0.is_empty() and items0["ids"].size() > 0, "saplings are listed as flora items")
 	check(items0["heights"][0] < 2.0, "a new sapling is small")
@@ -1280,7 +1481,7 @@ func _init() -> void:
 	sp.peer_connected_hello(1, "abcdef123456")
 	sp.action(1, Net.ACT_ADMIN_GIVE, stone, 0, 10, Vector3.ZERO)
 	sp.action(1, Net.ACT_SPLIT, 0, 0, 4, Vector3.ZERO)
-	check(sp.inventory_of(1).counts[0] == 6 and sp.inventory_of(1).counts[1] == 4 and sp.inventory_of(1).numbers[1] == stone, "split moves a part to the next empty slot")
+	check(sp.inventory_of(1).counts[0] == 6 and sp.inventory_of(1).counts[10] == 4 and sp.inventory_of(1).numbers[10] == stone, "split moves a part to the first empty backpack slot (slot 10, after the hotbar)")
 	sp.action(1, Net.ACT_SPLIT, 0, 0, 6, Vector3.ZERO)
 	sp.action(1, Net.ACT_SPLIT, 0, 0, 0, Vector3.ZERO)
 	check(sp.inventory_of(1).counts[0] == 6 and sp.inventory_of(1).count_of(stone) == 10, "cannot split everything or nothing")
@@ -1304,25 +1505,20 @@ func _init() -> void:
 
 	for n in range(3):
 		wr._last_mine.clear()
-		wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
+		wr.action(1, Net.ACT_MINE, HeldTool.slot_of(wr, "axe") + 1, 0, 0, Vector3(1.0, 10.0, 0.0))
 
 	check(wr.inventory_of(1).wear[0] >= 13 and wr.inventory_of(1).wear[0] <= 16, "each effective blow on rock wears the axe five uses (drops.json tool_wear) (%d, care %.4f carry %.4f)" % [wr.inventory_of(1).wear[0], wr.skill_factor(1, "tool_care"), float(wr._wear_carry.get(1, 0.0))])
 	wr.inventory_of(1).wear[0] = durability - 1
 	wr._last_mine.clear()
 	wr._mined.clear()
-	wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
-	check(wr._is_broken(axe_n, wr.inventory_of(1).wear[0]), "the last use breaks it")
-	wr.inventory_of(1).wear[0] = durability   # a rock blow wears five uses, so the last one can overshoot
+	wr.action(1, Net.ACT_MINE, HeldTool.slot_of(wr, "axe") + 1, 0, 0, Vector3(1.0, 10.0, 0.0))
+	check(wr.inventory_of(1).count_of(axe_n) == 0, "the last use breaks the Stone - Axe and it is gone (no repair: master s2.2 rule 1; repair is test_tool_care)")
 	var stones_before: int = wr.inventory_of(1).count_of(wr.table.number_of("stone"))
 	wr._last_mine.clear()
-	wr.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(1.0, 10.0, 0.0))
-	check(wr.inventory_of(1).count_of(wr.table.number_of("stone")) == stones_before, "a broken axe does nothing")
-	wr.action(1, Net.ACT_REPAIR, 0, 0, 0, Vector3.ZERO)
-	check(wr.inventory_of(1).wear[0] == durability, "no materials, no repair")
-	wr.action(1, Net.ACT_ADMIN_GIVE, wr.table.number_of("twine"), 0, 1, Vector3.ZERO)
-	wr.action(1, Net.ACT_REPAIR, 0, 0, 0, Vector3.ZERO)
-	check(wr.inventory_of(1).wear[0] == durability - durability / 2 and wr.inventory_of(1).count_of(wr.table.number_of("twine")) == 0, "a repair spends materials and wins back half")
-	wr.action(1, Net.ACT_DROP, 0, 0, 1, Vector3(0.5, 10.0, 0.0))
+	wr.action(1, Net.ACT_MINE, HeldTool.slot_of(wr, "axe") + 1, 0, 0, Vector3(1.0, 10.0, 0.0))
+	check(wr.inventory_of(1).count_of(wr.table.number_of("stone")) == stones_before, "with no axe a blow on rock does nothing")
+	wr.inventory_of(1).add(axe_n, 1, ceili(durability * 0.5))   # a fresh half-worn axe in the backpack (= durability - durability / 2, as the checks below expect)
+	wr.action(1, Net.ACT_DROP, wr.inventory_of(1).numbers.find(axe_n), 0, 1, Vector3(0.5, 10.0, 0.0))
 	var dropped: int = 0
 
 	for k in wr._items:
@@ -1420,28 +1616,31 @@ func _init() -> void:
 	check(sent.is_empty(), "too far from the chest to open it")
 	ch.action(1, Net.ACT_CHEST_OPEN, chest_id, 0, 0, Vector3.ZERO)
 	check(sent.size() == 1 and sent[0][0] == 1, "opening sends the contents to the opener only")
-	check(ch._chests[1].usable == 12, "the woven chest has 12 slots")
+	check(ch._chests[1].usable == 18, "the woven chest has 18 slots (3 rows)")
 	ch.action(1, Net.ACT_ADMIN_GIVE, ch.table.number_of("plant_fibre"), 0, 1, Vector3.ZERO)
 
-	for n in range(14):
+	for n in range(20):
 		ch._chests[1].numbers[n] = 0
 
-	for n in range(12):
+	for n in range(18):
 		ch._chests[1].add(1000 + n, 1)
 
 	check(ch._chests[1].add(ch.table.number_of("stone"), 1) == 1, "a full woven chest takes no more")
 
-	for n in range(12):
+	for n in range(18):
 		ch._chests[1].numbers[n] = 0
 		ch._chests[1].counts[n] = 0
 
 	var chest_stone_slot: int = ch.inventory_of(1).numbers.find(stones_n)
 	ch.action(1, Net.ACT_CHEST_PUT, chest_stone_slot, chest_id, 6, Vector3.ZERO)
 	check(ch.inventory_of(1).count_of(stones_n) == 4 and ch._chests[1].count_of(stones_n) == 6, "putting stones in moves them")
-	ch.give(1, ch.table.number_of("log_oak"), 1)
+	ch._chests[1].add(stones_n, 14)   # 20 stones (10 kg) in the woven chest: a 22 kg oak log still goes in (Dave 19 Nov 2026: storage has no weight limit, only slots)
+	var oak_n: int = ch.table.number_of("log_oak")
+	ch.give(1, oak_n, 1)
 	ch.action(1, Net.ACT_CHEST_PUT, -1, chest_id, 1, Vector3.ZERO)
-	check(ch.shoulder_of(1) == "log_oak", "a 45 kg oak log is too heavy for the 40 kg woven chest and stays on the shoulder")
-	ch.lay_down_shoulder(1)
+	check(ch.shoulder_of(1) == "" and ch._chests[1].count_of(oak_n) == 1, "a 22 kg oak log goes into a woven chest already holding 20 stones (shoulder %s)" % ch.shoulder_of(1))
+	ch._chests[1].remove(oak_n, 1)
+	ch._chests[1].remove(stones_n, 14)
 	var chest_log: int = ch.table.number_of("log_willow")
 	ch.give(1, chest_log, 1)
 	check(ch.shoulder_of(1) == "log_willow", "a willow log goes on the shoulder")
@@ -1480,6 +1679,7 @@ func _init() -> void:
 	var notes: Array = []
 	cb.send_notice = func(_p, text): notes.append(text)
 	cb.peer_connected_hello(1, "abcdef123456")
+	cb.set_fitness(1, 50)   # an average adult (50): on the game server a new player rolls fitness 40 to 60 (attributes.json), and fitness nudges fitness-weighted factors (tool care, jumping, crafting)
 	cb.report_position(1, Vector3(0.0, 10.0, 0.0))
 	cb.action(1, Net.ACT_ADMIN_GIVE, cb.table.number_of("chopping_block"), 0, 1, Vector3.ZERO)
 	cb.place_item(1, cb.table.number_of("chopping_block"), Vector3(2.0, 10.0, 0.0), 0)
@@ -1490,10 +1690,15 @@ func _init() -> void:
 			block_id = k
 
 	check(block_id != 0, "a chopping block is placed")
-	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
+	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, HeldTool.slot_of(cb, "axe") + 1, Vector3.ZERO)
 	check(notes.size() == 1, "no axe: told so")
 	cb.action(1, Net.ACT_ADMIN_GIVE, cb.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+	cb._last_use.clear()
 	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
+	check(notes.size() == 2 and str(notes[-1]).contains("in hand"), "the axe on the hotbar but not in hand: told to hold it (%s)" % str(notes[-1]))
+	notes.remove_at(notes.size() - 1)
+	cb._last_use.clear()
+	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, HeldTool.slot_of(cb, "axe") + 1, Vector3.ZERO)
 	check(notes.size() == 2, "no wooden block: told so")
 	var firewood_n: int = cb.table.number_of("firewood")
 	var block_n: int = cb.table.number_of("wooden_block")
@@ -1506,26 +1711,29 @@ func _init() -> void:
 
 		return total
 	cb.action(1, Net.ACT_ADMIN_GIVE, block_n, 0, 2, Vector3.ZERO)
-	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
-	check(cb.inventory_of(1).count_of(block_n) == 1 and loose_of.call(firewood_n) == 2, "a wooden block splits into two firewood that falls beside the block")
+	var split_t0: int = Time.get_ticks_msec()
+	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, HeldTool.slot_of(cb, "axe") + 1, Vector3.ZERO)
+	check(cb.inventory_of(1).count_of(block_n) == 1 and loose_of.call(firewood_n) == 4, "a wooden block splits into four firewood that falls beside the block")
 	check(cb.inventory_of(1).wear[cb.inventory_of(1).numbers.find(cb.table.number_of("stone_axe"))] == 1, "and wears the axe one use")
-	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
+	check(int(cb._last_use.get(1, -1)) >= split_t0, "the first request starts the pace")
+	cb._last_use[1] = Time.get_ticks_msec()   # pin the clock: no time has passed since it (a loaded test PC can take longer than the pace between two lines)
+	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, HeldTool.slot_of(cb, "axe") + 1, Vector3.ZERO)
 	check(cb.inventory_of(1).count_of(block_n) == 1, "the pace limit holds")
 	cb._last_use.clear()
-	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
+	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, HeldTool.slot_of(cb, "axe") + 1, Vector3.ZERO)
 	var heaps: int = 0
 
 	for k in cb._items:
 		if int(cb._items[k]["number"]) == firewood_n and not cb._items[k].has("struct"):
 			heaps += 1
 
-	check(loose_of.call(firewood_n) == 4 and heaps == 1, "the next piece joins the same heap beside the block (%d pieces in %d heaps)" % [loose_of.call(firewood_n), heaps])
+	check(loose_of.call(firewood_n) == 8 and heaps == 1, "the next piece joins the same heap beside the block (%d pieces in %d heaps)" % [loose_of.call(firewood_n), heaps])
 	# Bug 3: the heap keeps growing past the 40 stack as one pile, and a pile lives the pile lifetime.
 	cb.action(1, Net.ACT_ADMIN_GIVE, block_n, 0, 25, Vector3.ZERO)
 
 	for n in range(25):
 		cb._last_use.clear()
-		cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
+		cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, HeldTool.slot_of(cb, "axe") + 1, Vector3.ZERO)
 
 	var big_heaps: int = 0
 	var heap_left: float = 0.0
@@ -1537,7 +1745,7 @@ func _init() -> void:
 
 	check(loose_of.call(firewood_n) > 40 and big_heaps == 1 and heap_left >= ItemsScript.PILE_LIFETIME_S - 1.0, "the heap beside the block grows past 40 as one pile and lives as a pile (%d pieces, %d heaps, %.0f s)" % [loose_of.call(firewood_n), big_heaps, heap_left])
 
-	# A log lying on the ground, struck with the axe, falls apart into wooden blocks.
+	# A log lying on the ground, struck with the axe, is not split: it is sawn into wooden blocks first (TREE_WOOD_TOOLS_DESIGN.md) and the player is told so.
 	cb.drop_in_world(cb.table.number_of("log"), 1, Vector3(1.0, 10.0, 0.0))
 	var lying: int = 0
 
@@ -1547,11 +1755,13 @@ func _init() -> void:
 
 	cb._last_process.clear()
 	cb.action(1, Net.ACT_PROCESS, lying, 0, 0, Vector3.ZERO)
-	check(not cb._items.has(lying) and loose_of.call(block_n) == 3, "a log chopped on the ground makes 3 wooden blocks (%d)" % loose_of.call(block_n))
-
-	# A softwood log chops to softwood blocks, and those split to softwood firewood (wood_species.json class_items).
-	var soft_n: int = cb.table.number_of("wooden_block_soft_large")   # a spruce log is a large shoulder log: large blocks (BUG-014)
-	var soft_fire_n: int = cb.table.number_of("firewood_soft")
+	check(cb._items.has(lying), "nothing in hand (the axe only on the hotbar): the log is not chopped (TEST-013)")
+	var blocks_before: int = int(loose_of.call(block_n))
+	var fire_before: int = int(loose_of.call(firewood_n))
+	cb._last_process.clear()
+	cb.action(1, Net.ACT_PROCESS, lying, 0, 0, HeldTool.at_axe(cb))
+	check(cb._items.has(lying) and int(cb._items[lying]["count"]) == 1 and loose_of.call(block_n) == blocks_before and loose_of.call(firewood_n) == fire_before, "an axe on a plain log gives nothing and leaves the log")
+	check(str(notes[-1]) == "Saw the log into wooden blocks first, then split the blocks.", "and says to saw it first (%s)" % str(notes[-1]))
 	cb.drop_in_world(cb.table.number_of("log_spruce"), 1, Vector3(1.0, 10.0, 0.0))
 	var spruce_lying: int = 0
 
@@ -1560,15 +1770,34 @@ func _init() -> void:
 			spruce_lying = k
 
 	cb._last_process.clear()
-	cb.action(1, Net.ACT_PROCESS, spruce_lying, 0, 0, Vector3.ZERO)
-	check(not cb._items.has(spruce_lying) and loose_of.call(soft_n) == 3, "a spruce log chopped on the ground makes 3 large softwood blocks (%d)" % loose_of.call(soft_n))
-	cb.action(1, Net.ACT_ADMIN_GIVE, soft_n, 0, 1, Vector3.ZERO)
-	cb.inventory_of(1).remove(block_n, cb.inventory_of(1).count_of(block_n))
-	cb._last_use.clear()
-	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, 0, Vector3.ZERO)
-	check(cb.inventory_of(1).count_of(soft_n) == 0 and loose_of.call(soft_fire_n) == 4, "a large softwood block splits into 4 softwood firewood (%d)" % loose_of.call(soft_fire_n))
+	cb.action(1, Net.ACT_PROCESS, spruce_lying, 0, 0, HeldTool.at_axe(cb))
+	check(cb._items.has(spruce_lying) and loose_of.call(block_n) == blocks_before and loose_of.call(firewood_n) == fire_before, "an axe on a large shoulder log gives nothing and leaves it too")
 
-	# The large log on the shoulder (Dave 2026-10-21): one at a time, named for its tree, heavy, split at the block, falls with the body.
+	# A wooden block lying on the ground: two axe blows split one block of the stack into four Firewood.
+	cb.drop_in_world(block_n, 2, Vector3(1.0, 10.0, 0.5))
+	blocks_before = int(loose_of.call(block_n))
+	var ground_block: int = 0
+
+	for k in cb._items:
+		if int(cb._items[k]["number"]) == block_n and not cb._items[k].has("struct"):
+			ground_block = k
+
+	cb._last_process.clear()
+	cb.action(1, Net.ACT_PROCESS, ground_block, 0, 0, HeldTool.at_axe(cb))
+	check(cb._items.has(ground_block) and loose_of.call(block_n) == blocks_before and loose_of.call(firewood_n) == fire_before, "the first axe blow on a ground block splits nothing yet")
+	cb._last_process.clear()
+	cb.action(1, Net.ACT_PROCESS, ground_block, 0, 0, HeldTool.at_axe(cb))
+	check(loose_of.call(block_n) == blocks_before - 1 and loose_of.call(firewood_n) == fire_before + 4, "the second blow uses one block and drops 4 Firewood (%d blocks, %d firewood)" % [loose_of.call(block_n), loose_of.call(firewood_n) - fire_before])
+
+	# The chopping block takes the block from the ground when the pack has none (Dave 15 Nov 2026).
+	cb.inventory_of(1).remove(block_n, cb.inventory_of(1).count_of(block_n))
+	blocks_before = int(loose_of.call(block_n))
+	fire_before = int(loose_of.call(firewood_n))
+	cb._last_use.clear()
+	cb.action(1, Net.ACT_USE_STRUCT, block_id, 0, HeldTool.slot_of(cb, "axe") + 1, Vector3.ZERO)
+	check(blocks_before >= 1 and loose_of.call(block_n) == blocks_before - 1 and loose_of.call(firewood_n) == fire_before + 4 and cb.inventory_of(1).count_of(block_n) == 0, "E on the chopping block with an empty pack takes a block lying on the ground and drops 4 Firewood")
+
+	# The large logs on the shoulder (Dave 2026-10-21; two at most since 15 Nov 2026): named for their tree, heavy, split at the block, fall with the body.
 	var oak_log: int = cb.table.number_of("log_oak")
 	var shoulder_sent: Array = []
 	cb.send_carry = func(_p, id): shoulder_sent.append(id)
@@ -1576,24 +1805,30 @@ func _init() -> void:
 	var kg_before: float = cb.carried_kg_of(1)
 	cb.give(1, oak_log, 1)
 	check(cb.shoulder_of(1) == "log_oak" and shoulder_sent.back() == "log_oak" and cb.inventory_of(1).count_of(oak_log) == 1, "an oak log is a pack item, shown on the shoulder")
-	check(cb.carried_kg_of(1) - kg_before > 40.0, "and its weight counts in the load (%.1f kg more)" % (cb.carried_kg_of(1) - kg_before))
+	check(absf(cb.carried_kg_of(1) - kg_before - 22.0) < 0.01, "and its weight counts in the load, 22 kg for a hardwood log (%.1f kg more)" % (cb.carried_kg_of(1) - kg_before))
+	var logs_said: Array = []
+	cb.send_notice = func(_p, text): logs_said.append(text)
 	cb.give(1, cb.table.number_of("log_beech"), 1)
-	check(cb.shoulder_of(1) == "log_oak" and cb.world_item_count() >= 2, "a second large log lies on the ground: only one on the shoulder")
-	var beech_id: int = 0
+	check(cb.shoulder_count(1) == 2 and cb.shoulder_of(1) == "log_oak" and cb.inventory_of(1).count_of(cb.table.number_of("log_beech")) == 1 and logs_said.is_empty(), "a second large log goes on the shoulder too")
+	cb.give(1, cb.table.number_of("log_birch"), 1)
+	var birch_id: int = 0
 
 	for k in cb._items:
-		if int(cb._items[k]["number"]) == cb.table.number_of("log_beech"):
-			beech_id = k
+		if int(cb._items[k]["number"]) == cb.table.number_of("log_birch"):
+			birch_id = k
 
-	cb.action(1, Net.ACT_PICKUP, beech_id, 0, 0, Vector3.ZERO)
-	check(cb.shoulder_of(1) == "log_oak" and cb._items.has(beech_id), "it cannot be picked up while carrying one")
-	cb.lay_down_shoulder(1)
-	cb.action(1, Net.ACT_PICKUP, beech_id, 0, 0, Vector3.ZERO)
-	check(cb.shoulder_of(1) == "log_beech" and not cb._items.has(beech_id), "with the shoulder free the beech log is picked up")
-	check(cb.lay_down_shoulder(1) and cb.shoulder_of(1) == "" and shoulder_sent.back() == "", "laying it down puts it on the ground")
+	check(cb.shoulder_count(1) == 2 and birch_id != 0 and logs_said.has("You can carry two logs at most. Put one down first (Q)."), "a third large log lies on the ground and the player is told")
+	logs_said.clear()
+	cb.action(1, Net.ACT_PICKUP, birch_id, 0, 0, Vector3.ZERO)
+	check(cb.shoulder_count(1) == 2 and cb._items.has(birch_id) and logs_said.has("You can carry two logs at most. Put one down first (Q)."), "it cannot be picked up while carrying two")
+	check(cb.lay_down_shoulder(1) and cb.shoulder_count(1) == 1 and cb.shoulder_of(1) == "log_beech", "laying down puts one log on the ground and the other stays on the shoulder")
+	cb.action(1, Net.ACT_PICKUP, birch_id, 0, 0, Vector3.ZERO)
+	check(cb.shoulder_count(1) == 2 and not cb._items.has(birch_id), "with a hand free the birch log is picked up")
+	check(cb.lay_down_shoulder(1) and cb.lay_down_shoulder(1) and cb.shoulder_count(1) == 0 and cb.shoulder_of(1) == "" and shoulder_sent.back() == "", "laying both down, one at a time, puts them on the ground")
 	cb.give(1, oak_log, 1)
+	cb.give(1, cb.table.number_of("log_beech"), 1)
 	cb.kill(1, "test")
-	check(cb.shoulder_of(1) == "", "dying drops the shoulder log")
+	check(cb.shoulder_count(1) == 0, "dying drops both shoulder logs")
 
 	# Hunger, health and weight.
 	var vd: String = "user://test_server_items_vitals"
@@ -1782,7 +2017,7 @@ func _init() -> void:
 	th2.peer_connected_hello(1, "thirstkey0001")
 	check(float(th2.vitals_of(1)["wet"]) == float(th.vitals_of(1)["wet"]), "thirst survives a restart")
 
-	# Carrying weight: stones weigh 1 kg; a 75 kg player carries 52.5 kg at most and up to 80 percent of that (42 kg) with no hindrance.
+	# Carrying weight: stones weigh 0.5 kg (Dave 19 Nov 2026); a 75 kg player carries 52.5 kg at most and up to 80 percent of that (42 kg) with no hindrance.
 	var cwd: String = "user://test_server_items_carry"
 	DirAccess.make_dir_recursive_absolute(cwd)
 
@@ -1793,10 +2028,10 @@ func _init() -> void:
 	cw.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	cw.peer_connected_hello(1, "carrykey0001")
 	cw.report_position(1, Vector3(0.0, 10.0, 0.0))
-	cw.give(1, cw.table.number_of("stone"), 20)
-	check(absf(cw.carried_kg_of(1) - 20.0) < 0.01, "twenty stones weigh 20 kg (%.1f)" % cw.carried_kg_of(1))
-	cw.give(1, cw.table.number_of("stone"), 100)
-	check(cw.carried_kg_of(1) <= 52.01 and cw.carried_kg_of(1) > 50.0, "give stops at the hard cap, %.1f kg" % cw.carried_kg_of(1))
+	cw.give(1, cw.table.number_of("stone"), 40)
+	check(absf(cw.carried_kg_of(1) - 20.0) < 0.01, "forty stones weigh 20 kg (%.1f)" % cw.carried_kg_of(1))
+	cw.give(1, cw.table.number_of("stone"), 200)
+	check(cw.carried_kg_of(1) <= 52.51 and cw.carried_kg_of(1) > 50.0, "give stops at the hard cap, %.1f kg" % cw.carried_kg_of(1))
 	var CarryScript = load("res://src/shared/carry_rules.gd")
 	var ccfg: Dictionary = CarryScript.load_config()
 	check(CarryScript.speed_factor(20.0, 75.0, ccfg) == 1.0 and absf(CarryScript.speed_factor(52.5, 75.0, ccfg) - 0.25) < 0.001, "no slowdown when comfortable, 25 percent speed at the cap")
@@ -1813,13 +2048,14 @@ func _init() -> void:
 	for load in [0.0, 2.0, 0.79 * cap_kg, 0.80 * cap_kg, 0.81 * cap_kg, 0.9 * cap_kg, cap_kg]:
 		var inv_c = cw.inventory_of(1)
 
-		for slot in range(inv_c.SLOTS):
+		for slot in range(inv_c.slot_count):
 			inv_c.numbers[slot] = 0
 			inv_c.counts[slot] = 0
 
-		var whole: int = int(floor(load))
+		var stone_kg: float = CarryScript.weight_of("stone", ccfg)
+		var whole: int = int(floor(load / stone_kg))
 		inv_c.add(cw.table.number_of("stone"), whole)
-		inv_c.add(cw.table.number_of("stick"), int(round((load - float(whole)) / CarryScript.weight_of("stick", ccfg))))
+		inv_c.add(cw.table.number_of("stick"), int(round((load - float(whole) * stone_kg) / CarryScript.weight_of("stick", ccfg))))
 		cw._moving[1] = 1.0
 		cw._exertion[1] = 0.0
 		var speed: float = CarryScript.speed_factor(cw.carried_kg_of(1), 75.0, ccfg)
@@ -1874,7 +2110,7 @@ func _init() -> void:
 	var winded: Dictionary = {}
 	var passed_out: Dictionary = {}
 
-	for fit in [-8, 0, 8]:
+	for fit in [10, 50, 90]:   # 0 to 100, 50 an average adult (Dave 19 Nov 2026)
 		var fd: String = "user://test_server_items_fitness%d" % (fit + 8)
 		DirAccess.make_dir_recursive_absolute(fd)
 
@@ -1901,9 +2137,9 @@ func _init() -> void:
 				passed_out[fit] = float(n) * 0.25
 				break
 
-	check(winded[8] > winded[0] and winded[0] > winded[-8] and winded[-8] > 0.0, "fitter characters are winded later: %s" % str(winded))
-	check(passed_out[8] > passed_out[0] and passed_out[0] > passed_out[-8] and passed_out[-8] > 0.0, "and black out later: %s" % str(passed_out))
-	check(absf(winded[8] / winded[0] - exp(8.0 * 0.05)) < 0.1, "fitness +8 stretches the time to get winded by about exp(0.4) (%.2f)" % (winded[8] / winded[0]))
+	check(winded[90] > winded[50] and winded[50] > winded[10] and winded[10] > 0.0, "fitter characters are winded later: %s" % str(winded))
+	check(passed_out[90] > passed_out[50] and passed_out[50] > passed_out[10] and passed_out[10] > 0.0, "and black out later: %s" % str(passed_out))
+	check(absf(winded[90] / winded[50] - 1.0 / 0.6) < 0.1, "fitness 90 raises exertion at 60%% of average (Dave 21 Nov: 100%% at 50 down to 50%% at 100), so the time to get winded stretches by 1/0.6 (%.2f)" % (winded[90] / winded[50]))
 	check(strains.size() > 0 and strains.size() < 1300, "strain updates are at most one per 4 Hz tick (never more than 4 a second while it changes) (%d sent)" % strains.size())
 	# Stance: sitting drops strain to 0; standing under a heavy pack only to about half; walking off stands you up.
 	var xd: String = "user://test_server_items_stance"
@@ -1924,7 +2160,7 @@ func _init() -> void:
 		sa._vitals_tick(0.25)
 
 	check(float(sa.strain_of(1)["s"]) < 0.01, "sitting rests strain to 0 (%.2f)" % float(sa.strain_of(1)["s"]))
-	sa.give(1, sa.table.number_of("stone"), 52)
+	sa.give(1, sa.table.number_of("stone"), 104)   # 52 kg, the carry limit, of 0.5 kg stones (Dave 19 Nov 2026)
 	sa._strain[1] = {"s": 0.9, "state": 1, "t": 0.0}
 	sa.action(1, Net.ACT_STANCE, 0, 0, 0, Vector3.ZERO)
 
@@ -1934,7 +2170,7 @@ func _init() -> void:
 	var floor_level: float = float(sa.strain_of(1)["s"])
 	check(floor_level > 0.4 and floor_level < 0.6, "standing with a pack at the limit rests only to about half (%.2f)" % floor_level)
 	# Fitness XP (fitness.json train, Dave 4 Nov): effort above 0.1 gives 1 + 2 x effort XP per 10 s into the day's bucket, which turns into points
-	# at game midnight (1,000 XP a point, the same at every level); only true rest (under 0.02 for 10 minutes) takes it back, never below the base.
+	# at game midnight (200 XP a point on the 0 to 100 scale, the old 1,000 per 5 points; the same at every level); only true rest (under 0.02 for 10 minutes) takes it back, below the base too (Dave 21 Nov 2026), never under 0.
 	var clk: Array = [100.0]   # game seconds, day 0
 	var fit_gs: Callable = func(): return clk[0]
 	var midnight: Callable = func(x): clk[0] += 86400.0; x._train_fitness(1, 0.0, 0.0)
@@ -1944,13 +2180,13 @@ func _init() -> void:
 	tr.send_training = func(_p, percent): training_sent.append(percent)
 	tr.game_seconds = fit_gs
 	tr.peer_connected_hello(1, "trainkey0001")
-	tr.set_fitness(1, 2)
-	check(tr.fitness_of(1) == 2, "fitness starts at its creation value")
-	tr._train_fitness(1, 1.0, 3300.0)
+	tr.set_fitness(1, 60)
+	check(tr.fitness_of(1) == 60, "fitness starts at its creation value")
+	tr._train_fitness(1, 1.0, 660.0)
 	midnight.call(tr)
-	check(tr.fitness_of(1) == 2, "just under a point of running changes nothing")
+	check(tr.fitness_of(1) == 60, "just under a point of running changes nothing")
 	tr._train_fitness(1, 1.0, 400.0)
-	check(tr.fitness_of(1) == 2, "XP earned today does not count until midnight")
+	check(tr.fitness_of(1) == 60, "XP earned today does not count until midnight")
 	check(float(tr._characters[tr._peer_key[1]]["xp_today"]) > 100.0, "the day's XP waits in the character's bucket")
 	check(not training_sent.is_empty() and int(training_sent[-1]) == tr.training_pm_of(1) and tr.training_pm_of(1) > 10, "today's training goes to the Tab screen as a percent of a point (%s)" % str(training_sent.slice(-1)))
 	var sends_before: int = training_sent.size()
@@ -1958,11 +2194,11 @@ func _init() -> void:
 	check(training_sent.size() == sends_before, "a tick that adds less than a whole percent sends nothing")
 	midnight.call(tr)
 	check(int(training_sent[-1]) == 0, "at midnight the Tab screen's training goes back to 0")
-	check(tr.fitness_of(1) == 3, "the day's running tips a point over at midnight")
+	check(tr.fitness_of(1) == 61, "the day's running tips a point over at midnight")
 	var before_stroll: float = float(tr._characters[tr._peer_key[1]]["train"])
 	tr._train_fitness(1, 0.05, 36000.0)
 	midnight.call(tr)
-	check(tr.fitness_of(1) == 3 and float(tr._characters[tr._peer_key[1]]["train"]) == before_stroll, "effort under the 10 percent line neither earns nor costs, even for hours")
+	check(tr.fitness_of(1) == 61 and float(tr._characters[tr._peer_key[1]]["train"]) == before_stroll, "effort under the 10 percent line neither earns nor costs, even for hours")
 	tr._train_fitness(1, 0.0, 300.0)
 	check(float(tr._characters[tr._peer_key[1]]["train"]) == before_stroll, "a short rest under the grace time costs nothing")
 	tr._asleep[1] = {"rested": 0.0, "t": 0.0}
@@ -2002,12 +2238,12 @@ func _init() -> void:
 	var gj: float = float(tj._characters[tj._peer_key[1]]["train"])
 	var gc: float = float(tc._characters[tc._peer_key[1]]["train"])
 	check(gw > 0.0 and gw < gj and gj < gc, "an hour of walking trains less than jogging, less than hard tool work (%.2f %.2f %.2f)" % [gw, gj, gc])
-	check(absf(gw - 0.72) < 0.01, "an hour of walking is 720 XP, 0.72 of a point (%.3f)" % gw)
+	check(absf(gw - 3.6) < 0.01, "an hour of walking is 720 XP, 3.6 points (%.3f)" % gw)
 	var t1 = make(xd)
 	t1.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	t1.game_seconds = fit_gs
 	t1.peer_connected_hello(1, "trainkey0007")
-	t1.set_fitness(1, 0)
+	t1.set_fitness(1, 50)
 	t1._train_fitness(1, 1.0, 1800.0)
 	midnight.call(t1)
 	var first_pt: float = float(t1._characters[t1._peer_key[1]]["train"])
@@ -2024,33 +2260,42 @@ func _init() -> void:
 	to._train_fitness(1, 1.0, 3400.0)
 	clk[0] += 86400.0 * 3.0
 	to._train_fitness(1, 0.0, 1.0)
-	check(to.fitness_of(1) == 1, "a midnight that passed while away is paid at the next tick, once (%d)" % to.fitness_of(1))
+	check(to.fitness_of(1) == to._fitness_default() + 5, "a midnight that passed while away is paid at the next tick, once (%d)" % to.fitness_of(1))
 	tr._train_fitness(1, 1.0, 1.0e7)
 	midnight.call(tr)
-	check(tr.fitness_of(1) == 10, "training stops at the top of the range")
-	tr.set_fitness(1, 2)
+	check(tr.fitness_of(1) == 100, "training stops at the top of the range")
+	tr.set_fitness(1, 60)
 	tr._train_fitness(1, 1.0, 1.0e7)
 	midnight.call(tr)
-	check(float(tr._characters[tr._peer_key[1]]["train"]) == 10.0 and tr.fitness_of(1) == 10, "training stops at max_gain above the base, clamped to the range")
-	tr.set_fitness(1, 2)
+	check(float(tr._characters[tr._peer_key[1]]["train"]) == 40.0 and tr.fitness_of(1) == 100, "training stops at the top of the range, no hidden points above it (base 60, 40 trained)")
+	tr.set_fitness(1, 60)
 	tr._characters[tr._peer_key[1]]["xp_today"] = 0.0
 	tr._train_fitness(1, 1.0, 1800.0 * 3.0)
 	midnight.call(tr)
-	check(tr.fitness_of(1) > 2, "an hour and a half of running earns a point")
-	tr._train_fitness(1, 0.0, 43200.0 * 12.0)
-	check(tr.fitness_of(1) == 2, "full rest takes points back, slowly")
+	check(tr.fitness_of(1) > 60, "an hour and a half of running earns points")
+	var earned: int = tr.fitness_of(1) - 60
+	tr._train_fitness(1, 0.0, 600.0 + 8640.0 * float(earned + 5))
+	check(tr.fitness_of(1) < 60 and tr.fitness_of(1) >= 54, "full rest takes points back, slowly, and below the creation value (Dave 21 Nov) (%d)" % tr.fitness_of(1))
 	tr._train_fitness(1, 0.0, 1.0e7)
-	check(tr.fitness_of(1) == 2, "and never below the creation value")
+	check(tr.fitness_of(1) == 0, "but never below 0 (%d)" % tr.fitness_of(1))
+	tr._train_fitness(1, 1.0, 1800.0)
+	midnight.call(tr)
+	check(tr.fitness_of(1) > 0, "a character idled to 0 trains back up")
+	tr.set_fitness(1, 60)
+	var rm_at: Callable = func(v): tr.set_fitness(1, v); return tr.fitness_rise_mult(1)
+	check(absf(rm_at.call(50) - 1.0) < 1.0e-6 and absf(rm_at.call(75) - 0.75) < 1.0e-6 and absf(rm_at.call(100) - 0.5) < 1.0e-6, "exertion rises at 100% at fitness 50, 75% at 75, 50% at 100 (Dave 21 Nov)")
+	check(absf(rm_at.call(0) - exp(0.5)) < 1.0e-6 and absf(rm_at.call(40) - exp(0.1)) < 1.0e-6, "under 50 the curve is kept: about 165% at 0, 110% at 40")
+	tr.set_fitness(1, 60)
 	# Saved: the training survives a restart (characters.json).
 	tr._train_fitness(1, 1.0, 6700.0)
 	midnight.call(tr)
-	check(tr.fitness_of(1) == 4, "two points earned")
+	check(tr.fitness_of(1) == 70, "ten points earned (the old two)")
 	tr.save()
 	tr._finish_writer()
 	var tr2 = make(xd)
 	tr2.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	tr2.peer_connected_hello(1, "trainkey0001")
-	check(tr2.fitness_of(1) == 4, "trained fitness is saved and read back (%d)" % tr2.fitness_of(1))
+	check(tr2.fitness_of(1) == 70, "trained fitness is saved and read back (%d)" % tr2.fitness_of(1))
 
 	# Energy (job 95, energy.json): 3 game days of ordinary play empty it, rest refills it, supplements cost fitness, 0 forces sleep.
 	var en = make(xd)
@@ -2103,12 +2348,12 @@ func _init() -> void:
 	var slot_bar: int = en.inventory_of(1).numbers.find(bar)
 	en._last_eat.clear()
 	en.action(1, Net.ACT_EAT, slot_bar, 0, 0, Vector3.ZERO)
-	check(en.energy_of(1) == 55.0 and en.inventory_of(1).count_of(bar) == 2, "an energy bar gives 25 energy at once")
-	check(float(en._characters["energykey001"]["train"]) < 0.0, "and costs fitness training")
+	check(en.energy_of(1) == 42.0 and en.inventory_of(1).count_of(bar) == 2, "a Nut cake gives 12 energy at once (master s3.16 [D17])")
+	check(float(en._characters["energykey001"].get("train", 0.0)) == 0.0, "and costs no fitness training")
 	en.vitals_of(1)["energy"] = 100.0
 	en._last_eat.clear()
 	en.action(1, Net.ACT_EAT, slot_bar, 0, 0, Vector3.ZERO)
-	check(en.inventory_of(1).count_of(bar) == 2, "not tired: the bar is kept")
+	check(en.inventory_of(1).count_of(bar) == 1, "not tired: it is eaten all the same (no refusal)")
 
 	for k in 40:
 		en.vitals_of(1)["energy"] = 10.0
@@ -2116,7 +2361,7 @@ func _init() -> void:
 		en.action(1, Net.ACT_ADMIN_GIVE, bar, 0, 1, Vector3.ZERO)
 		en.action(1, Net.ACT_EAT, en.inventory_of(1).numbers.find(bar), 0, 0, Vector3.ZERO)
 
-	check(en.fitness_of(1) == fit_before - 2 or en.fitness_of(1) == fit_before - 3, "supplements can wear fitness down by at most 3 points (%d to %d)" % [fit_before, en.fitness_of(1)])
+	check(en.fitness_of(1) == fit_before and en.energy_of(1) == 10.0, "40 more while its Dessert slot runs: no energy and no fitness lost (%d to %d, energy %.0f)" % [fit_before, en.fitness_of(1), en.energy_of(1)])
 
 	# Sleep (job 86): lying plus ACT_SLEEP rests faster, by place; rain on the open wakes; stance and rest end it.
 	var sleeper: Array = [0.0, 0.0]      # cover, rain
@@ -2352,13 +2597,14 @@ func _init() -> void:
 	hs.send_craft_queue = func(_p, _e, _l): pass
 	hs.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	hs.peer_connected_hello(1, "handsawkey01")
+	hs.set_fitness(1, 50)   # an average adult (50): on the game server a new player rolls fitness 40 to 60 (attributes.json), and fitness nudges fitness-weighted factors (tool care, jumping, crafting)
 	var by_hand: Dictionary = {}
 
 	for rn in hs.recipes.numbers():
 		if hs.recipes.recipe(rn)["id"] == "lumber_by_hand":
 			by_hand = hs.recipes.recipe(rn)
 
-	check(not by_hand.is_empty() and by_hand["gives"][1] == 2 and by_hand["craft_s"] == 24.0, "the hand saw recipe matches the balance row (2 lumber, 24 s)")
+	check(not by_hand.is_empty() and by_hand["gives"][1] == 6 and by_hand["craft_s"] == 24.0, "the hand saw recipe matches the balance row (6 lumber, 24 s, master s2.3)")
 	hs.give(1, hs.table.number_of("log"), 2)
 	hs._last_queue_act.clear()
 	hs.action(1, Net.ACT_CRAFT_QUEUE, int(by_hand.get("number", 0)), 0, 1, Vector3.ZERO)
@@ -2367,14 +2613,52 @@ func _init() -> void:
 	var saw_slot: int = hs.inventory_of(1).numbers.find(hs.table.number_of("hand_saw"))
 	hs._last_queue_act.clear()
 	hs.action(1, Net.ACT_CRAFT_QUEUE, int(by_hand.get("number", 0)), 0, 1, Vector3.ZERO)
+	check(hs.craft_queue_of(1).is_empty() and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 2, "a saw in the pack but not in hand saws nothing (Dave 17 Nov 2026: equip the saw)")
+	hs._last_queue_act.clear()
+	hs.action(1, Net.ACT_CRAFT_QUEUE, int(by_hand.get("number", 0)), 0, 1, Vector3(float(saw_slot + 1), 0.0, 0.0))   # at.x: the saw in hand + 1 (126)
 
 	for n in 100:
 		hs._craft_tick(0.25)
 
-	check(hs.inventory_of(1).count_of(hs.table.number_of("lumber")) == 2 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 1, "one log sawn by hand gives 2 lumber")
+	check(hs.inventory_of(1).count_of(hs.table.number_of("lumber")) == 6 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 1, "one log sawn by hand gives 6 lumber")
 	check(saw_slot >= 0 and hs.inventory_of(1).on_hotbar(saw_slot) and hs.inventory_of(1).wear[saw_slot] >= 1, "sawing wears the hand saw")
 
-	for rid in ["wooden_hammer", "stone_hammer"]:
+	# Saw speed (TREE_WOOD_TOOLS_DESIGN.md s5): the first saw on the hotbar sets the pace of a craft that keeps a saw (Copper 0.5, Iron 1.0), a Sawbuck in reach halves the time.
+	hs.ground_height = func(_x, _z): return 10.0
+	hs.report_position(1, Vector3(0.0, 10.0, 0.0))
+	check(is_equal_approx(hs._saw_slow(1, by_hand), 1.0), "an iron saw saws at the recipe's pace (x%.2f)" % hs._saw_slow(1, by_hand))
+	check(is_equal_approx(hs._saw_slow(1, hs.recipes.recipe(1)), 1.0), "a craft that keeps no saw is never slowed")
+	hs.inventory_of(1).remove(hs.table.number_of("hand_saw"), 1)
+	hs.give(1, hs.table.number_of("copper_saw"), 1)
+	check(is_equal_approx(hs._saw_slow(1, by_hand), 2.0), "a copper saw takes twice as long (x%.2f)" % hs._saw_slow(1, by_hand))
+	hs._items[900901] = {"number": hs.table.number_of("sawbuck"), "count": 1, "pos": Vector3(1.0, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "sawbuck", "yaw": 0.0, "uid": 0, "owner": "", "born": 0.0}}
+	var blocks_recipe: Dictionary = hs.recipes.recipe(728)   # saw_blocks: a log into 6 Wooden blocks (W-4)
+	check(hs.serving_station(1, "sawbuck") == 900901 and is_equal_approx(hs._saw_slow(1, blocks_recipe), 1.0), "a Sawbuck in reach halves sawing blocks: the copper saw is back to the recipe's pace (x%.2f)" % hs._saw_slow(1, blocks_recipe))
+	check(is_equal_approx(hs._saw_slow(1, by_hand), 1.0), "the Sawbuck speeds sawing planks too (W-33; x%.2f)" % hs._saw_slow(1, by_hand))
+	hs._items.erase(900901)
+
+	# A part sawn on the way needs the saw in hand too (W-32): a Chopping block (1 Wooden block) from the last log plans saw_blocks first.
+	var chop_rec: Dictionary = {}
+
+	for rn in hs.recipes.numbers():
+		if hs.recipes.recipe(rn)["id"] == "chopping_block":
+			chop_rec = hs.recipes.recipe(rn)
+
+	var copper_slot: int = hs._tool_slot(hs.inventory_of(1), "saw")
+	var chop_said: Array = []
+	hs.send_notice = func(_p, text): chop_said.append(text)
+	hs.vitals_of(1)["weight"] = 5000.0   # the six blocks the plan makes must fit; carrying is not under test here
+	hs._last_queue_act.clear()
+	hs.action(1, Net.ACT_CRAFT_QUEUE, int(chop_rec.get("number", 0)), 0, 1, Vector3.ZERO)
+	check(hs.craft_queue_of(1).is_empty() and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 1, "a Chopping block that would saw its block from a log is refused without the saw in hand, and the log stays")
+	hs._last_queue_act.clear()
+	hs.action(1, Net.ACT_CRAFT_QUEUE, int(chop_rec.get("number", 0)), 0, 1, Vector3(float(copper_slot + 1), 0.0, 0.0))
+	check(copper_slot >= 0 and hs.craft_queue_of(1).size() == 2 and hs.inventory_of(1).count_of(hs.table.number_of("log")) == 0, "with the saw in hand it queues the sawing, then the Chopping block (%d entries; said %s)" % [hs.craft_queue_of(1).size(), str(chop_said)])
+	hs._cancel_craft(1, 1)
+	hs._cancel_craft(1, 0)
+	hs.send_notice = Callable()
+
+	for rid in ["stone_hammer"]:
 		var rec: Dictionary = {}
 
 		for rn in hs.recipes.numbers():
@@ -2386,7 +2670,7 @@ func _init() -> void:
 		for row in rec.get("needs", []):
 			live = live and int(row[0]) > 0 and not bool(hs.table.entry(hs.table.id_of(int(row[0]))).get("retired", false))
 
-		check(live and int(rec["gives"][0]) == hs.table.number_of(rid), "%s is made at a workbench from live items" % rid)
+		check(live and int(rec["gives"][0]) == hs.table.number_of(rid), "%s is made from live items (the Wooden - Hammer retired 18 Nov 2026: tools start at Stone)" % rid)
 
 	# Crafting queue: ingredients taken when queued, crafts run on the tick, cancel refunds, caps, restart.
 	var qd: String = "user://test_server_items_queue"
@@ -2404,16 +2688,16 @@ func _init() -> void:
 	var cord: int = cq.table.number_of("twine")
 	cq.give(1, fibre, 30)
 	cq._last_queue_act.clear()
-	cq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 4, Vector3.ZERO)
+	cq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 4, CraftHand.at(cq, 1, 1))
 	check(cq.inventory_of(1).count_of(fibre) == 18, "queueing 4 twine takes 12 fibre now (%d left)" % cq.inventory_of(1).count_of(fibre))
 	check(cq.craft_queue_of(1) == [[1, 4]], "queue holds one entry of 4")
 	cq._last_queue_act.clear()
-	cq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 2, Vector3.ZERO)
+	cq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 2, CraftHand.at(cq, 1, 1))
 	check(cq.craft_queue_of(1) == [[1, 6]], "queueing the same recipe again merges")
 	cq._last_queue_act.clear()
-	cq.action(1, Net.ACT_CRAFT_QUEUE, 99, 0, 1, Vector3.ZERO)
+	cq.action(1, Net.ACT_CRAFT_QUEUE, 99, 0, 1, CraftHand.at(cq, 1, 99))
 	cq._last_queue_act.clear()
-	cq.action(1, Net.ACT_CRAFT_QUEUE, 16, 0, 1, Vector3.ZERO)
+	cq.action(1, Net.ACT_CRAFT_QUEUE, 16, 0, 1, CraftHand.at(cq, 1, 16))
 	check(cq.craft_queue_of(1).size() == 1, "unknown recipes are refused")
 
 	for n in range(4 * 2 + 1):
@@ -2436,12 +2720,15 @@ func _init() -> void:
 
 	for n in range(14):
 		cq._last_queue_act.clear()
-		cq.action(1, Net.ACT_CRAFT_QUEUE, 1 if n % 2 == 0 else 7, 0, 1, Vector3.ZERO)
+		cq.action(1, Net.ACT_CRAFT_QUEUE, 1 if n % 2 == 0 else 7, 0, 1, CraftHand.at(cq, 1, 1 if n % 2 == 0 else 7))
 
 	check(cq.craft_queue_of(1).size() <= 10, "queue is capped at 10 entries (%d)" % cq.craft_queue_of(1).size())
 	cq._last_queue_act.clear()
 	var in_a_row: int = cq.craft_queue_of(1).size()
+	var cancel_t0: int = Time.get_ticks_msec()
 	cq.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+	check(int(cq._last_queue_act.get(1, -1)) >= cancel_t0, "the first request starts the pace")
+	cq._last_queue_act[1] = Time.get_ticks_msec()   # pin the clock: no time has passed since it (a loaded test PC can take longer than the pace between two lines)
 	cq.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
 	check(cq.craft_queue_of(1).size() == in_a_row - 1, "queue requests faster than 100 ms apart are ignored")
 
@@ -2456,8 +2743,9 @@ func _init() -> void:
 	ad.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	ad.peer_connected_hello(1, "adminkey0001")
 	ad.admin_ok = func(_p): return true
+	ad.action(1, Net.ACT_ADMIN_MODE, 1, 0, 0, Vector3.ZERO)   # off by default: switched on as in Esc > Admin
 	ad._last_queue_act.clear()
-	ad.action(1, Net.ACT_CRAFT_QUEUE, 18, 0, 1, Vector3.ZERO)   # the iron pickaxe: not known, needs a forge and iron
+	ad.action(1, Net.ACT_CRAFT_QUEUE, 18, 0, 1, CraftHand.at(ad, 1, 18))   # the iron pickaxe: not known, needs a forge and iron
 	check(ad.craft_queue_of(1) == [[18, 1]], "an admin queues a locked recipe with nothing in the pack")
 
 	for n in range(60):
@@ -2466,10 +2754,10 @@ func _init() -> void:
 	check(ad.inventory_of(1).count_of(ad.table.number_of("iron_pickaxe")) == 1, "an admin's craft finishes without a station or ingredients")
 	ad.admin_mode_on = func(_p): return false
 	ad._last_queue_act.clear()
-	ad.action(1, Net.ACT_CRAFT_QUEUE, 18, 0, 1, Vector3.ZERO)
+	ad.action(1, Net.ACT_CRAFT_QUEUE, 18, 0, 1, CraftHand.at(ad, 1, 18))
 	check(ad.craft_queue_of(1).is_empty(), "with admin mode off the same craft is refused again")
 
-	# Restart mid-craft keeps the progress; a refund into a full pack drops the rest at the player's feet.
+	# Restart mid-craft keeps the progress; a refund into a pack at its carry limit drops the rest at the player's feet.
 	DirAccess.make_dir_recursive_absolute(qd + "_full")
 
 	for file in DirAccess.get_files_at(qd + "_full"):
@@ -2481,7 +2769,7 @@ func _init() -> void:
 	rq.peer_connected_hello(1, "queuekey0002")
 	rq.report_position(1, Vector3(0.0, 10.0, 0.0))
 	rq.give(1, fibre, 9)
-	rq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 3, Vector3.ZERO)
+	rq.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 3, CraftHand.at(rq, 1, 1))
 	rq._craft_tick(1.5)
 	rq._save_craft_queues()
 	var rq2 = make(qd + "_full")
@@ -2493,10 +2781,11 @@ func _init() -> void:
 	rq2._craft_tick(0.75)
 	check(rq2.inventory_of(1).count_of(cord) == 1, "the restored craft finishes after the rest of its time")
 
-	for n in range(rq2.inventory_of(1).SLOTS):
-		if rq2.inventory_of(1).numbers[n] == 0:
-			rq2.inventory_of(1).numbers[n] = rq2.table.number_of("stone")
-			rq2.inventory_of(1).counts[n] = 1
+	for k in range(5000):   # the pack grows (protocol 116): only its carry limit leaves no room
+		if rq2._fit(1, rq2.inventory_of(1), fibre, 1) <= 0:
+			break
+
+		rq2.inventory_of(1).add(rq2.table.number_of("stone"), 1)
 
 	rq2._last_queue_act.clear()
 	rq2.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
@@ -2506,7 +2795,7 @@ func _init() -> void:
 		if rq2._items[item_id]["number"] == fibre:
 			on_ground += int(rq2._items[item_id]["count"])
 
-	check(rq2.craft_queue_of(1).is_empty() and on_ground == 6, "a refund into a full pack lands at the player's feet (%d fibre)" % on_ground)
+	check(rq2.craft_queue_of(1).is_empty() and on_ground == 6, "a refund into a pack at its carry limit lands at the player's feet (%d fibre)" % on_ground)
 	# An entry refunds from its own saved ingredient list even if its recipe has gone.
 	rq2._craft_queues["queuekey0002"]["entries"] = [[9999, 2, [[fibre, 3]]]]
 	rq2._craft_tick(0.25)
@@ -2541,13 +2830,49 @@ func _init() -> void:
 		var u: float = lrng.randf()
 
 		for k in range(3):
-			var luck: int = [-10, 0, 10][k]
+			var luck: int = [0, 50, 100][k]   # 0 to 100, 50 neutral (Dave 19 Nov 2026)
 			hits[k] += 1 if Luck.chance(u, 0.5, luck, 0.04) else 0
 			sums[k] += Luck.amount(u, 1, 3, luck, 0.04)
 
-	check(hits[0] < hits[1] - 300 and hits[2] > hits[1] + 300 and absf(float(hits[1]) / 6000.0 - 0.5) < 0.02, "luck moves a 50 percent chance down and up and 0 is neutral (%s of 6000)" % str(hits))
-	check(sums[0] < sums[1] and sums[1] < sums[2] and Luck.amount(0.0, 1, 3, 10, 0.04) == 1 and Luck.amount(0.999999, 1, 3, -10, 0.04) <= 3, "luck moves the average of a 1 to 3 yield and keeps it in range (%s)" % str(sums))
-	check(not Luck.chance(0.99, 0.0, 10, 0.04) and Luck.chance(0.0, 1.0, -10, 0.04), "luck never makes the impossible possible or the certain doubtful")
+	check(hits[0] < hits[1] - 300 and hits[2] > hits[1] + 300 and absf(float(hits[1]) / 6000.0 - 0.5) < 0.02, "luck moves a 50 percent chance down and up and 50 is neutral (%s of 6000)" % str(hits))
+	check(sums[0] < sums[1] and sums[1] < sums[2] and Luck.amount(0.0, 1, 3, 100, 0.04) == 1 and Luck.amount(0.999999, 1, 3, 0, 0.04) <= 3 and Luck.amount(0.999999, 1, 3, 250, 0.04) <= 3, "luck moves the average of a 1 to 3 yield and keeps it in range (%s)" % str(sums))
+	check(not Luck.chance(0.99, 0.0, 100, 0.04) and Luck.chance(0.0, 1.0, 0, 0.04), "luck never makes the impossible possible or the certain doubtful")
+	check(Luck.low(0.5, 150, 0.04) == Luck.low(0.5, 100, 0.04) and Luck.low(0.5, -40, 0.04) == Luck.low(0.5, 0, 0.04), "a luck outside 0 to 100 counts as the nearest end")
+
+	# The 0 to 100 scale (Dave 19 Nov 2026, attributes.json): the bell-shaped creation roll and the conversion of old -10 to +10 values.
+	var Attr = load("res://src/shared/attributes.gd")
+	var acfg: Dictionary = Attr.load_config()
+	var arng: RandomNumberGenerator = RandomNumberGenerator.new()
+	arng.seed = 19
+	var bands: Array = [0, 0, 0, 0, 0]
+	var out_of_range: int = 0
+
+	var npc_fit: Array = [101, -1]
+	var player_fit: Array = [101, -1]
+
+	for n in range(20000):
+		var v: int = Attr.roll(arng, acfg["roll_bands"])
+		out_of_range += 0 if v >= 0 and v <= 100 else 1
+		bands[0 if v <= 19 else (1 if v <= 39 else (2 if v <= 60 else (3 if v <= 80 else 4)))] += 1
+
+		if n < 2000:
+			var pc: Dictionary = Attr.roll_character(arng, acfg, true)
+			var npc: Dictionary = Attr.roll_character(arng, acfg, false)
+			player_fit = [mini(player_fit[0], int(pc["fitness"])), maxi(player_fit[1], int(pc["fitness"]))]
+			npc_fit = [mini(npc_fit[0], int(npc["fitness"])), maxi(npc_fit[1], int(npc["fitness"]))]
+			out_of_range += 0 if pc.size() == 7 and pc.values().all(func(x): return int(x) >= 0 and int(x) <= 100) else 1
+
+	var want: Array = [0.05, 0.20, 0.50, 0.20, 0.05]
+	var close: bool = true
+
+	for b in range(5):
+		close = close and absf(float(bands[b]) / 20000.0 - float(want[b])) < 0.015
+
+	check(out_of_range == 0 and close, "the roll stays in 0 to 100 and lands 5/20/50/20/5 percent in 0-19, 20-39, 40-60, 61-80, 81-100 (%s of 20000)" % str(bands))
+	check(player_fit[0] >= 40 and player_fit[1] <= 60 and npc_fit[0] < 40 and npc_fit[1] > 60, "a player's fitness starts in the middle range (40 to 60), an NPC's anywhere (player %s, NPC %s)" % [str(player_fit), str(npc_fit)])
+	check(Attr.roll(arng, []) == 50 and Attr.roll(arng, [{"from": 70, "to": 70, "weight": 1}, "bad"]) == 70, "no bands give an average 50; a broken band is skipped")
+	check(Attr.from_old(-10) == 0 and Attr.from_old(0) == 50 and Attr.from_old(10) == 100 and Attr.from_old(-3) == 35 and Attr.from_old(40) == 100 and Attr.from_old("x") == 50, "an old -10 to +10 value moves to 0 to 100 (0 is 50), out-of-range and broken values are clamped")
+	check(Attr.clamp_value(-7) == 0 and Attr.clamp_value(130) == 100 and Attr.clamp_value(64) == 64 and Attr.offset(50.0) == 0.0 and Attr.offset(100.0) == 10.0 and Attr.offset(0.0) == -10.0, "values are kept in 0 to 100 and 50 is neutral")
 	var luck_dir: String = "user://test_server_items_luck"
 	DirAccess.make_dir_recursive_absolute(luck_dir)
 
@@ -2555,9 +2880,14 @@ func _init() -> void:
 		DirAccess.remove_absolute(luck_dir + "/" + file)
 
 	var lk = make(luck_dir)
+	lk.peer_connected_hello(3, "luckkey000003")
+	check(lk.luck_of(3) == 50 and lk.fitness_of(3) == 50 and lk.attributes_of(3).values().all(func(x): return x == 50.0), "with rolling off (tools and tests) a new character is average in everything")
+	lk.roll_new_characters = true   # as the game server sets it
 	lk.peer_connected_hello(1, "luckkey000001")
 	lk.peer_connected_hello(2, "luckkey000002")
-	check(lk.luck_of(1) >= -10 and lk.luck_of(1) <= 10 and lk.luck_of(99) == 0, "a character gets luck from -10 to 10 at first sight; an unknown peer is neutral")
+	var rolled_row: Dictionary = lk._characters["luckkey000001"]
+	check(lk.luck_of(1) >= 0 and lk.luck_of(1) <= 100 and lk.luck_of(99) == 50, "a character gets luck from 0 to 100 at first sight; an unknown peer is neutral (50)")
+	check(lk.fitness_of(1) >= 40 and lk.fitness_of(1) <= 60 and ["strength", "memory", "dexterity", "perception", "charisma"].all(func(a): return rolled_row.has(a) and int(rolled_row[a]) >= 0 and int(rolled_row[a]) <= 100), "a new player character rolls every attribute, fitness in 40 to 60 (%s)" % str(rolled_row))
 	lk._characters["luckkey000001"]["luck"] = 9
 	lk._dirty = true
 	lk.save()
@@ -2572,15 +2902,15 @@ func _init() -> void:
 	var same: RandomNumberGenerator = RandomNumberGenerator.new()
 	plain.seed = 3
 	same.seed = 3
-	lk2._characters["luckkey000001"]["luck"] = 0
+	lk2._characters["luckkey000001"]["luck"] = 50
 	var agree: int = 0
 
 	for n in range(200):
 		agree += 1 if (plain.randf() < 0.3) == lk2.roll_chance(1, same, 0.3) else 0
 
-	check(agree == 200, "with luck 0 a roll is exactly the plain random roll")
+	check(agree == 200, "with luck 50 a roll is exactly the plain random roll")
 	lk2._luck_cfg["strength"] = 0.0
-	lk2._characters["luckkey000001"]["luck"] = 10
+	lk2._characters["luckkey000001"]["luck"] = 100
 	plain.seed = 4
 	same.seed = 4
 	agree = 0
@@ -2590,6 +2920,40 @@ func _init() -> void:
 
 	check(agree == 200, "strength 0 switches luck off")
 	check(lk2.fate(1, "test", 1.0) and int(lk2.fate_counts["test"]) == 1, "the fate hook rolls and counts by kind")
+
+	# Old saves (characters.json version 1, attributes -10 to +10) load converted to 0 to 100; out-of-range values are brought into range (Dave 19 Nov 2026).
+	var scale_dir: String = "user://test_server_items_scale"
+	DirAccess.make_dir_recursive_absolute(scale_dir)
+
+	for file in DirAccess.get_files_at(scale_dir):
+		DirAccess.remove_absolute(scale_dir + "/" + file)
+
+	var old_file: FileAccess = FileAccess.open(scale_dir + "/characters.json", FileAccess.WRITE)
+	old_file.store_string(JSON.stringify({"version": 1, "players": {"scalekey00001": {"luck": -3, "fitness": 5, "train": 1.5, "charisma": -10}, "scalekey00002": {"luck": -14, "fitness": 22, "strength": 10}, "scalekey00003": {}}}))
+	old_file.close()
+	var sc1 = make(scale_dir)
+	var r1: Dictionary = sc1._characters["scalekey00001"]
+	var r2: Dictionary = sc1._characters["scalekey00002"]
+	var r3: Dictionary = sc1._characters["scalekey00003"]
+	check(int(r1["luck"]) == 35 and int(r1["fitness"]) == 75 and float(r1["train"]) == 7.5 and int(r1["charisma"]) == 0 and int(r1["strength"]) == 50, "an old save's attributes move to 0 to 100 (luck -3 is 35, fitness 5 is 75, training x5, a missing one is average) (%s)" % str(r1))
+	check(int(r2["luck"]) == 0 and int(r2["fitness"]) == 100 and int(r2["strength"]) == 100, "an old save's out-of-range values are clamped into 0 to 100 (%s)" % str(r2))
+	check(int(r3["luck"]) == 50 and int(r3["fitness"]) == sc1._fitness_default(), "an old row with no attributes is average, fitness its default")
+	sc1._dirty = true
+	sc1.save()
+	sc1._finish_writer()
+	check(int(JSON.parse_string(FileAccess.get_file_as_string(scale_dir + "/characters.json")).get("version", 0)) == 2, "the next save writes characters.json version 2")
+	var sc2 = make(scale_dir)
+	check(int(sc2._characters["scalekey00001"]["luck"]) == 35 and int(sc2._characters["scalekey00001"]["fitness"]) == 75 and float(sc2._characters["scalekey00001"]["train"]) == 7.5, "a version 2 save reads back unchanged (no second conversion)")
+	var new_file: FileAccess = FileAccess.open(scale_dir + "/characters.json", FileAccess.WRITE)
+	new_file.store_string(JSON.stringify({"version": 2, "players": {"scalekey00004": {"luck": -5, "fitness": 140, "perception": 300.0, "memory": "x"}}}))
+	new_file.close()
+	var sc3 = make(scale_dir)
+	var r4: Dictionary = sc3._characters["scalekey00004"]
+	check(int(r4["luck"]) == 0 and int(r4["fitness"]) == 100 and int(r4["perception"]) == 100 and int(r4["memory"]) == 50, "a new-scale save with values outside 0 to 100 loads clamped (%s)" % str(r4))
+	sc3.peer_connected_hello(1, "scalekey00004")
+	sc3.set_attribute(1, "charisma", 250)
+	sc3.set_fitness(1, -20)
+	check(int(sc3._characters["scalekey00004"]["charisma"]) == 100 and sc3.fitness_of(1) == 0 and sc3.attributes_of(1)["charisma"] == 100.0, "setting an attribute or fitness keeps it in 0 to 100")
 
 	# Bank stones: real pickable stones along the water's edge, none where there is no water.
 	sc.ground_height = func(x, z): return 10.0
@@ -2616,7 +2980,13 @@ func _init() -> void:
 
 	check(on_bank >= 8, "four cells by a stream get stones along its banks (%d on the bank)" % on_bank)
 	check(in_water == 0, "bank stones are never put in the water")
-	check(sc.world_item_count() - bank_before <= 4 * (6 + int(bank_cfg["stones_max"]) + int(bank_cfg["sticks_max"])), "bank stones stay within the per-cell limit")
+	var ore_rocks: int = 0   # copper and tin rocks by the stream (boulders.json ore_rocks, Dave 21 Nov 2026) are laid with the cell too, but they are not bank stones
+
+	for bid in sc._items:
+		var row: Dictionary = sc._items[bid]
+		ore_rocks += 1 if row.has("scatter") and ((int(row["scatter"]) & sc.ORE_KEY) != 0 or str(row.get("boulder", {}).get("ore", "")) != "") else 0
+
+	check(sc.world_item_count() - bank_before - ore_rocks <= 4 * (6 + int(bank_cfg["stones_max"]) + int(bank_cfg["sticks_max"])), "bank stones stay within the per-cell limit")
 
 	# Driftwood on the banks: a share of the bank spots, a real item that burns.
 	bank_cfg["bank"]["driftwood"] = 1.0
@@ -2649,6 +3019,7 @@ func _init() -> void:
 	fl.send_reject = func(_p, reason): rejects.append(reason)
 	fl.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	fl.peer_connected_hello(1, "fallkey00001")
+	fl.set_fitness(1, 50)   # an average adult (50): on the game server a new player rolls fitness 40 to 60 (attributes.json), and fitness nudges fitness-weighted factors (tool care, jumping, crafting)
 	fl.report_position(1, Vector3(0.0, 10.0, 0.0))
 	fl.action(1, Net.ACT_FALL, 500, 0, 0, Vector3.ZERO)
 	check(float(fl.vitals_of(1)["health"]) == 100.0, "a 5 m drop does no damage")
@@ -2677,7 +3048,7 @@ func _init() -> void:
 	fl.action(1, Net.ACT_PICKUP, far_id, 0, 0, Vector3.ZERO)
 	check(rejects == [0], "a pickup out of reach is refused as too far (%s)" % str(rejects))
 	fl.rock_at = func(x, z): return true
-	fl.action(1, Net.ACT_MINE, 0, 0, 0, Vector3(2.0, 10.0, 0.0))
+	fl.action(1, Net.ACT_MINE, HeldTool.slot_of(fl, "axe") + 1, 0, 0, Vector3(2.0, 10.0, 0.0))
 	check(rejects == [0, 1], "mining without an axe is refused as no tool (%s)" % str(rejects))
 
 	# Picking up at the weight cap: refused as pack full, nothing taken from the ground, nothing doubled.
@@ -2752,7 +3123,7 @@ func _init() -> void:
 	lazy_clock[0] = 13.0 * day_s
 	check(not lz.dynamic_tree_info(Vector2i(0, 0), (int(lz._flora_by_name[tree_name]["id"]) << 16) | 0xFFFF).is_empty(), "after 12 game days it is a full tree that can be felled")
 
-	# Container rules as data (job 73): the woven chest takes 40 kg, and partial puts, full chests and full packs behave.
+	# Container rules as data (job 73): a woven chest takes stacks until its slots are full, whatever they weigh (Dave 19 Nov 2026), and full packs behave.
 	DirAccess.make_dir_recursive_absolute(qd + "_box")
 
 	for file in DirAccess.get_files_at(qd + "_box"):
@@ -2781,19 +3152,16 @@ func _init() -> void:
 	var box = bx._chests[int(bx._items[box_id]["struct"]["uid"])]
 	var in_pack: int = bx.inventory_of(1).count_of(box_stone)
 
-	for slot_n in range(bx.inventory_of(1).SLOTS):
+	for slot_n in range(bx.inventory_of(1).slot_count):
 		if bx.inventory_of(1).numbers[slot_n] == box_stone:
 			bx.action(1, Net.ACT_CHEST_PUT, slot_n, box_id, 40, Vector3.ZERO)
 
 	bx.action(1, Net.ACT_CHEST_PUT, bx.inventory_of(1).numbers.find(box_stone), box_id, 10, Vector3.ZERO)
-	check(box.count_of(box_stone) == 40 and bx.inventory_of(1).count_of(box_stone) == in_pack - 40, "a put past the 40 kg limit puts what fits (%d in the chest, %d left in the pack)" % [box.count_of(box_stone), bx.inventory_of(1).count_of(box_stone)])
-	check(box_rejects == [2], "the stack that no longer fits is refused as too heavy (%s)" % str(box_rejects))
-	bx.action(1, Net.ACT_CHEST_PUT, bx.inventory_of(1).numbers.find(box_stone), box_id, 5, Vector3.ZERO)
-	check(box.count_of(box_stone) == 40 and box_rejects == [2, 2], "a full chest takes no more and refuses it as too heavy (%s)" % str(box_rejects))
+	check(box.count_of(box_stone) == 50 and bx.inventory_of(1).count_of(box_stone) == in_pack - 50 and box_rejects.is_empty(), "a chest that is not full takes all 50 stones, never refused by weight (%d in the chest, rejects %s)" % [box.count_of(box_stone), str(box_rejects)])
 	bx.give(1, box_stone, 500)
 	var before_take: int = bx.inventory_of(1).count_of(box_stone)
 	bx.action(1, Net.ACT_CHEST_TAKE, box.numbers.find(box_stone), box_id, 40, Vector3.ZERO)
-	check(bx.inventory_of(1).count_of(box_stone) == before_take and box.count_of(box_stone) == 40, "a take into a pack at its weight cap moves nothing and loses nothing")
+	check(bx.inventory_of(1).count_of(box_stone) == before_take and box.count_of(box_stone) == 50, "a take into a pack at its weight cap moves nothing and loses nothing")
 
 	# Skill hooks (job 70): factor 1.0 changes nothing; a stub skill of 2.0 doubles yield and halves craft time.
 	DirAccess.make_dir_recursive_absolute(qd + "_skill")
@@ -2805,11 +3173,12 @@ func _init() -> void:
 	sk.send_craft_queue = func(_p, _e, _l): pass
 	sk.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	sk.peer_connected_hello(1, "skillkey0001")
+	sk.set_fitness(1, 50)   # an average adult (50): on the game server a new player rolls fitness 40 to 60 (attributes.json), and fitness nudges fitness-weighted factors (tool care, jumping, crafting)
 	check(sk.skill_factor(1, "craft") == 1.0 and sk.skill_factor(1, "no_such_action") == 1.0, "with no skill system every factor is 1.0")
 	sk.skill_level = func(_peer, _skill): return 2.0
 	check(sk.skill_factor(1, "craft") == 2.0 and sk.skill_factor(1, "no_such_action") == 1.0, "a skill level of 2 gives a factor of 2 for a listed action only")
 	sk.give(1, sk.table.number_of("plant_fibre"), 9)
-	sk.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 1, Vector3.ZERO)
+	sk.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 1, CraftHand.at(sk, 1, 1))
 
 	for n in range(4 * 1 + 1):
 		sk._craft_tick(0.25)
@@ -2829,45 +3198,91 @@ func _init() -> void:
 	bo.send_reject = func(_p, reason): bo_rejects.append(reason)
 	bo.ground_height = func(x, _z): return 10.0 + x * 0.3
 	bo.peer_connected_hello(1, "boulderkey01")
+	bo.set_fitness(1, 50)   # an average adult (50): on the game server a new player rolls fitness 40 to 60 (attributes.json), and fitness nudges fitness-weighted factors (tool care, jumping, crafting)
 	bo.report_position(1, Vector3(5.0, 11.5, 5.0))
+	bo.vitals_of(1)["weight"] = 5000.0   # a big body: the carry limit stays out of the stone counts below
 	var big: int = bo._boulder_stones(1.0)
-	check(big >= 4000 and big <= 5200, "a 1 m radius boulder makes about 4600 stones at 0.85 height, 2600 kg/m3, half usable (%d)" % big)
-	check(bo._boulder_stones(0.3) >= 100 and bo._boulder_stones(0.3) <= 150 and bo._boulder_stones(1.2) > 7000, "small boulders make a hundred or so, a 1.2 m one several thousand (%d, %d)" % [bo._boulder_stones(0.3), bo._boulder_stones(1.2)])
+	check(big >= 860 and big <= 880, "a 1 m radius boulder makes about 870 stones at 0.85 height, 2600 kg/m3, 0.047 coming away as 0.5 kg stones (Dave 21 Nov 2026, BugsList 118: 3,200 from one rock was too many) (%d)" % big)
+	check(bo._boulder_stones(0.3) >= 20 and bo._boulder_stones(0.3) <= 26 and bo._boulder_stones(1.2) >= 1450 and bo._boulder_stones(1.2) <= 1550, "stones go with the rock's volume: a 0.3 m one about 23, the biggest (1.2 m) about 1,500 (%d, %d)" % [bo._boulder_stones(0.3), bo._boulder_stones(1.2)])
+	check(is_equal_approx(bo._boulder_per_kg(), 0.094), "0.094 stones of 0.5 kg per kg of plain rock (%f)" % bo._boulder_per_kg())
+	# Ore rocks keep their amounts (Dave 21 Nov 2026: fewer stones from plain rocks only; copper and tin stay abundant).
+	check(is_equal_approx(bo._boulder_per_kg(true), 1.4) and bo._boulder_stones(1.0, true) >= 12800 and bo._boulder_stones(1.0, true) <= 13100, "an ore rock still holds 1.4 stones per kg: about 12,960 at radius 1 (%d)" % bo._boulder_stones(1.0, true))
+	var plain_row: Dictionary = {"radius": 1.0}
+	var ore_row: Dictionary = {"radius": 1.0}
+	bo._set_boulder_ore(plain_row, "", 76)
+	bo._set_boulder_ore(ore_row, "iron", 75)
+	check(int(plain_row["total"]) == bo._boulder_stones(1.0) and int(ore_row["total"]) == bo._boulder_stones(1.0, true), "a laid-out row's total is by its kind (%d plain, %d ore)" % [int(plain_row["total"]), int(ore_row["total"])])
+	# A save from 19 Nov (one rate, 1.4 per kg, for every rock): a plain rock keeps its share, an ore rock its count.
+	bo._load_boulders_left({"boulders": {"76": 10000, "75": 10000}, "boulder_per_kg": 1.4})
+	check(bo._boulder_pending.size() == 2 and not bo._boulder_left.has(76), "saved at another rate: waits until the rock is laid out")
+	check(bo._boulder_left_of(76, plain_row) == 671 and int(bo._boulder_left[76]) == 671 and not bo._boulder_pending.has(76), "a plain rock saved with 10,000 left at 1.4 per kg is 671 now (%d)" % int(bo._boulder_left.get(76, -1)))
+	check(bo._boulder_left_of(75, ore_row) == 10000, "an ore rock saved with 10,000 left keeps 10,000 (%d)" % int(bo._boulder_left.get(75, -1)))
+	bo._load_boulders_left({"boulders": {"77": 10}})
+	check(bo._boulder_left_of(77, plain_row) == int(round(10.0 * bo._boulder_per_kg() / 0.04)), "a worked boulder in an older save (0.04 stones per kg) is scaled once to today's count (%d)" % int(bo._boulder_left[77]))
+	bo._load_boulders_left({"boulders": {"74": 3}, "boulders_then": {"73": [100, 1.4, 1.4]}, "boulder_per_kg": 0.094, "ore_per_kg": 1.4})
+	check(int(bo._boulder_left.get(74, -1)) == 3 and bo._boulder_pending.has(73), "a save at today's rates loads as it is; one not yet laid out keeps its old rates")
+	var lime_row: Dictionary = {"radius": 1.0}
+	bo._set_boulder_ore(lime_row, "limestone", 72)
+	check(int(lime_row["total"]) == bo._boulder_stones(1.0) and str(lime_row.get("ore", "")) == "limestone", "a limestone rock is stone: the plain count (%d)" % int(lime_row["total"]))
+	# A rock still waiting for its layout is saved with its old rates and loads the same way (no share lost across restarts).
+	bo._dirty = true
+	bo.save()
+	var bo_again = make(bld)
+	var waiting_rates: Array = bo_again._boulder_pending.get(73, [])
+	check(waiting_rates.size() == 3 and int(waiting_rates[0]) == 100 and is_equal_approx(float(waiting_rates[1]), 1.4) and is_equal_approx(float(waiting_rates[2]), 1.4) and not bo_again._boulder_left.has(73), "a rock not yet laid out keeps its old rates through a save (%s)" % str(waiting_rates))
+	check(int(bo_again._boulder_left.get(74, -1)) == 3 and bo_again._boulder_left_of(73, plain_row) == int(round(100.0 * 0.094 / 1.4)), "and is scaled when it is laid out (%d)" % int(bo_again._boulder_left.get(73, -1)))
+	bo._boulder_pending.clear()
+	bo._boulder_left.erase(73)
+	bo._boulder_left.erase(74)
+	bo._boulder_left.erase(75)
+	bo._boulder_left.erase(76)
+	bo._boulder_left.erase(77)
+	bo._boulder_left.erase(78)
 	bo._boulder_cfg["luck_extra"] = 0.0   # the exact-count checks below; luck's extra stone has its own check
 	bo._boulder_cfg["flint"] = {}   # flint has its own test (test_flint); these checks count plain stones
-	var small_total: int = bo._boulder_stones(0.3)
-	bo._items[900001] = {"number": 0, "count": small_total, "pos": Vector3(5.0, 11.5, 6.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 7, "boulder": {"radius": 0.3, "yaw": 0.0, "total": small_total}}
+	var small_total: int = bo._boulder_stones(0.6)   # about 190: enough for the blow counts below (36 stones)
+	bo._items[900001] = {"number": 0, "count": small_total, "pos": Vector3(5.0, 11.5, 6.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 7, "boulder": {"radius": 0.6, "yaw": 0.0, "total": small_total}}
 	bo._last_hit.clear()
 	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)
-	check(bo_rejects == [1] and int(bo._items[900001]["count"]) == small_total, "no pick or axe on the hotbar: refused (no tool), nothing taken (%s)" % str(bo_rejects))
+	check(bo_rejects == [1] and int(bo._items[900001]["count"]) == small_total, "nothing in hand: refused (no tool), nothing taken (%s)" % str(bo_rejects))
 	bo.action(1, Net.ACT_ADMIN_GIVE, bo.table.number_of("iron_pickaxe"), 0, 1, Vector3.ZERO)
 	var stone_id: int = bo.table.number_of("stone")
+	var pick_slot: int = bo.inventory_of(1).numbers.find(bo.table.number_of("iron_pickaxe"))
 
 	for n in range(10):
 		bo._last_hit.clear()
-		bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)
+		bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, pick_slot + 1, Vector3.ZERO)   # count: the held pack slot + 1 (protocol 115)
 
-	check(bo.inventory_of(1).count_of(stone_id) == 10 and int(bo._items[900001]["count"]) == small_total - 10, "an iron pick takes one stone per blow (%d stones, %d left)" % [bo.inventory_of(1).count_of(stone_id), int(bo._items[900001]["count"])])
-	var pick_slot: int = bo.inventory_of(1).numbers.find(bo.table.number_of("iron_pickaxe"))
-	check(int(bo.inventory_of(1).wear[pick_slot]) == 10, "every blow wears the pick (%d)" % int(bo.inventory_of(1).wear[pick_slot]))
-	bo.inventory_of(1).numbers[pick_slot] = 0
-	bo.inventory_of(1).counts[pick_slot] = 0
+	check(bo.inventory_of(1).count_of(stone_id) == 30 and int(bo._items[900001]["count"]) == small_total - 30, "an iron pick takes three stones a blow (boulders.json tools: stone 1, bronze 2, iron 3, steel 4): 10 blows, 30 stones (%d stones, %d left)" % [bo.inventory_of(1).count_of(stone_id), int(bo._items[900001]["count"])])
+	check(int(bo.inventory_of(1).wear[pick_slot]) == 10, "every blow wears the pick one (%d)" % int(bo.inventory_of(1).wear[pick_slot]))
+	# TEST-013 (Dave 12 Nov 2026): the tool IN HAND does the work, not the best one on the hotbar. With the iron pick still on the hotbar,
+	# a held stone axe takes half a stone a blow (half a stone pick's one; Dave 12 Nov 2026) and wears five a blow (drops.json tool_wear axe rock: it dulls fast on stone).
 	bo.action(1, Net.ACT_ADMIN_GIVE, bo.table.number_of("stone_axe"), 0, 1, Vector3.ZERO)
+	var boulder_axe_slot: int = bo.inventory_of(1).numbers.find(bo.table.number_of("stone_axe"))
 
-	for n in range(9):
+	for n in range(12):
 		bo._last_hit.clear()
-		bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)
+		bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, boulder_axe_slot + 1, Vector3.ZERO)
 
-	check(bo.inventory_of(1).count_of(stone_id) == 13, "a stone axe takes three blows per stone: 9 blows, 3 stones (%d)" % (bo.inventory_of(1).count_of(stone_id) - 10))
+	check(bo.inventory_of(1).count_of(stone_id) == 36, "a held stone axe takes a stone every two blows even with an iron pick on the hotbar: 12 blows, 6 stones (%d)" % (bo.inventory_of(1).count_of(stone_id) - 30))
+	check(int(bo.inventory_of(1).wear[boulder_axe_slot]) == 60 and int(bo.inventory_of(1).wear[pick_slot]) == 10, "the held axe wears five a blow on rock and the pick on the hotbar not at all (axe %d, pick %d)" % [int(bo.inventory_of(1).wear[boulder_axe_slot]), int(bo.inventory_of(1).wear[pick_slot])])
+	var left_before: int = int(bo._items[900001]["count"])
+	bo._last_hit.clear()
+	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, bo.inventory_of(1).numbers.find(stone_id) + 1, Vector3.ZERO)
+	check(bo_rejects[-1] == 1 and int(bo._items[900001]["count"]) == left_before, "a stone in hand is no tool: refused, nothing taken")
+	var spent_axe: Dictionary = bo.inventory_of(1).take_from_slot(boulder_axe_slot, 1)   # the axe goes to the backpack: off the hotbar it cannot be swung
+	bo._last_hit.clear()
+	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, boulder_axe_slot + 1, Vector3.ZERO)
+	check(bo_rejects[-1] == 1 and int(bo._items[900001]["count"]) == left_before and not spent_axe.is_empty(), "an empty slot in hand: refused")
 	bo.report_position(1, Vector3(40.0, 22.0, 40.0))
 	bo._last_hit.clear()
-	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)
+	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, pick_slot + 1, Vector3.ZERO)
 	check(bo_rejects[-1] == 0, "too far away: refused")
 	bo.report_position(1, Vector3(5.0, 11.5, 5.0))
 	bo._items[900001]["count"] = 1
-	bo._items[900001]["boulder"]["blows"] = 2
+	bo._items[900001]["boulder"]["progress"] = 0.0
 	bo._last_hit.clear()
-	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)
+	bo.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, pick_slot + 1, Vector3.ZERO)
 	check(not bo._items.has(900001) and int(bo._boulder_left[bo.BOULDER_KEY | 7]) == 0, "the last stone takes the boulder with it")
 	bo.action(1, Net.ACT_PICKUP, 900001, 0, 0, Vector3.ZERO)
 	check(bo.inventory_of(1).count_of(0) == 0, "a boulder cannot be picked up like a stone")
@@ -2875,31 +3290,67 @@ func _init() -> void:
 	bo._boulder_cfg["luck_extra"] = 0.2
 	var extras: Array = []
 
-	for fortune in [10, -10]:
+	for fortune in [100, 0]:
 		bo._characters["boulderkey01"]["luck"] = fortune
-		bo.inventory_of(1).numbers[bo.inventory_of(1).numbers.find(bo.table.number_of("stone_axe"))] = 0
 		bo.action(1, Net.ACT_ADMIN_GIVE, bo.table.number_of("iron_pickaxe"), 0, 1, Vector3.ZERO)
+		var luck_pick: int = bo.inventory_of(1).numbers.find(bo.table.number_of("iron_pickaxe"))
 		bo._items[900002] = {"number": 0, "count": 3000, "pos": Vector3(5.0, 11.5, 6.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 9, "boulder": {"radius": 1.0, "yaw": 0.0, "total": 3000}}
 		var taken: int = 0
 
 		for n in range(400):
 			bo._last_hit.clear()
 			var before_count: int = int(bo._items[900002]["count"])
-			bo.action(1, Net.ACT_HIT, 900002, Net.HIT_BOULDER, 0, Vector3.ZERO)
+			bo.action(1, Net.ACT_HIT, 900002, Net.HIT_BOULDER, luck_pick + 1, Vector3.ZERO)
 			taken += before_count - int(bo._items[900002]["count"])
 
 			# keep the pack light so the weight limit does not interfere
-			for slot in range(bo.inventory_of(1).SLOTS):
+			for slot in range(bo.inventory_of(1).slot_count):
 				if bo.inventory_of(1).numbers[slot] == bo.table.number_of("stone"):
 					bo.inventory_of(1).counts[slot] = 0
 					bo.inventory_of(1).numbers[slot] = 0
 
-		extras.append(taken - 400)
+		extras.append(taken - 1200)   # an iron pick: 3 stones a blow
 		bo._items.erase(900002)
 		bo.inventory_of(1).numbers[bo.inventory_of(1).numbers.find(bo.table.number_of("iron_pickaxe"))] = 0
 
-	check(extras[0] > extras[1] and extras[1] >= 0, "luck nudges the double stones: luck +10 got %d extra, luck -10 got %d in 400 blows" % [extras[0], extras[1]])
+	check(extras[0] > extras[1] and extras[1] >= 0, "luck nudges the double stones: luck 100 got %d extra, luck 0 got %d in 400 blows" % [extras[0], extras[1]])
 	bo._boulder_cfg["luck_extra"] = 0.0
+	# A full pack is never refused (Dave 19 Nov 2026, boulders PLAN.md 5): the stones go into one pile behind the miner, away from the rock,
+	# the same pile however the miner moves round it.
+	bo.action(1, Net.ACT_ADMIN_GIVE, bo.table.number_of("iron_pickaxe"), 0, 1, Vector3.ZERO)
+	var full_pick: int = bo.inventory_of(1).numbers.find(bo.table.number_of("iron_pickaxe"))
+	bo.vitals_of(1)["weight"] = 1.0   # a tiny body: nothing more fits in the pack
+	bo._items[900003] = {"number": 0, "count": 500, "pos": Vector3(5.0, 11.5, 6.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 10, "boulder": {"radius": 1.0, "yaw": 0.0, "total": 500}}
+	var full_rejects: int = bo_rejects.size()
+
+	for n in range(6):
+		bo._last_hit.clear()
+		bo.report_position(1, Vector3(5.0 + 0.3 * float(n % 2), 11.5, 5.0))   # stepping about a little
+		bo.action(1, Net.ACT_HIT, 900003, Net.HIT_BOULDER, full_pick + 1, Vector3.ZERO)
+
+	var behind_piles: Array = []
+
+	for k in bo._items:
+		if int(bo._items[k]["number"]) == stone_id and not bo._items[k].has("scatter"):
+			behind_piles.append(bo._items[k])
+
+	check(bo_rejects.size() == full_rejects and int(bo._items[900003]["count"]) == 500 - 18, "a full pack is not refused: 6 blows of an iron pick still take 18 stones (%d left)" % int(bo._items[900003]["count"]))
+	check(behind_piles.size() == 1 and int(behind_piles[0]["count"]) == 18 and behind_piles[0]["pos"].z < 5.0, "and they lie in one pile behind the miner, away from the rock (%s)" % str(behind_piles))
+	bo._items.erase(900003)
+	bo.clear_dropped(Vector3.ZERO, 1.0e7)
+	bo.vitals_of(1)["weight"] = 5000.0
+	bo.inventory_of(1).numbers[full_pick] = 0
+	# A boulder dug under comes down into the hole (Dave 19 Nov 2026, boulders PLAN.md stage 1), and a cave boulder is left alone.
+	var dug_y: Array = [11.5]
+	bo.floor_below = func(_p: Vector3) -> float: return dug_y[0]
+	bo._items[900004] = {"number": 0, "count": 50, "pos": Vector3(30.0, 11.5, 30.0), "left": 1.0e9, "scatter": bo.BOULDER_KEY | 11, "boulder": {"radius": 0.6, "yaw": 0.0, "total": 50}}
+	bo._items[900005] = {"number": 0, "count": 50, "pos": Vector3(30.0, 11.5, 31.0), "left": 1.0e9, "scatter": bo.CAVE_KEY | 1, "boulder": {"radius": 0.6, "yaw": 0.0, "total": 50}}
+	dug_y[0] = 10.0
+	bo.settle_loose_near(Vector3(30.0, 11.0, 30.0), 1.0)
+	check(is_equal_approx(bo._items[900004]["pos"].y, 10.0) and is_equal_approx(bo._items[900005]["pos"].y, 11.5), "a boulder dug under settles into the hole; a cave boulder stays")
+	bo._items.erase(900004)
+	bo._items.erase(900005)
+	bo.floor_below = Callable()
 	# Layout: on a slope the cells hold boulders, the same ones every time, none on flat ground.
 	var laid: Array = []
 
@@ -3005,7 +3456,7 @@ func _init() -> void:
 
 	var cord6b: int = sx6.inventory_of(1).count_of(cord6)
 	sx6._last_queue_act.clear()
-	sx6.action(1, Net.ACT_CRAFT_QUEUE, 900, 0, 1, Vector3.ZERO)
+	sx6.action(1, Net.ACT_CRAFT_QUEUE, 900, 0, 1, CraftHand.at(sx6, 1, 900))
 	check(sx6.inventory_of(1).count_of(sx6.table.number_of("bark")) == 1 and sx6.inventory_of(1).count_of(sx6.table.number_of("firewood")) == 1, "queueing it takes all six ingredients")
 
 	for n in 40:
@@ -3170,7 +3621,7 @@ func _init() -> void:
 	vi.report_position(1, Vector3(0.0, 5.0, 0.0))
 	check(vent_sent.size() == 4, "a returning player gets the vent again")
 
-	# Bow, arrows and quiver (recipes 170-173): arrows and the quiver by hand, the bow only at a workbench
+	# Bow, arrows and quiver (recipes 170-173): arrows and the quiver by hand, the bow only at the wood carving station (W-8)
 	var bw_dir: String = "user://test_server_items_bow"
 	DirAccess.make_dir_recursive_absolute(bw_dir)
 
@@ -3195,14 +3646,16 @@ func _init() -> void:
 	bw.give(1, bw.table.number_of("stone"), 4)
 	bw.give(1, bw.table.number_of("twine"), 10)
 	bw.give(1, bw.table.number_of("hide"), 2)
+	bw.give(1, bw.table.number_of("thread"), 2)   # needle work takes Thread, not Twine (master s3.4, Mission 001 phase 2b)
 	bw.give(1, bw.table.number_of("sewing_needle"), 1)   # sewn things keep a Bone - Needle (item system, 10 Nov 2026); it stays for the hood below
+	bw.give(1, bw.table.number_of("stone_knife"), 1)   # the knife in hand, so the refusal below is the missing station, not the missing knife (W-32)
 	bw._last_queue_act.clear()
-	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec["wooden_bow"]["number"]), 0, 1, Vector3.ZERO)
-	check(bw.craft_queue_of(1).is_empty(), "the bow is refused away from a workbench")
+	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec["wooden_bow"]["number"]), 0, 1, CraftHand.at(bw, 1, int(bw_rec["wooden_bow"]["number"])))
+	check(bw.craft_queue_of(1).is_empty(), "the bow is refused away from a carving station (W-8)")
 
 	for rid in ["wooden_arrow", "stone_arrow", "quiver"]:
 		bw._last_queue_act.clear()
-		bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec[rid]["number"]), 0, 1, Vector3.ZERO)
+		bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec[rid]["number"]), 0, 1, CraftHand.at(bw, 1, int(bw_rec[rid]["number"])))
 
 		for n in 80:
 			bw._craft_tick(0.25)
@@ -3213,24 +3666,51 @@ func _init() -> void:
 	bw.give(1, bw.table.number_of("twine"), 3)
 	bw.give(1, bw.table.number_of("stick"), 2)
 	bw._last_queue_act.clear()
-	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw.recipes.recipe(177)["number"]), 0, 1, Vector3.ZERO)
+	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw.recipes.recipe(177)["number"]), 0, 1, CraftHand.at(bw, 1, int(bw.recipes.recipe(177)["number"])))
 
 	for n in 40:
 		bw._craft_tick(0.25)
 
 	check(str(bw.recipes.recipe(177)["id"]) == "snare" and bool(bw.recipes.recipe(177).get("known", false)) and bw.inventory_of(1).count_of(bw.table.number_of("snare")) == 1, "a snare by hand from 3 twine and 2 sticks")
-	for rid in ["hide_cloak", "hide_boots", "hide_hood", "hide_mittens", "hide_trousers", "backpack"]:
+	for rid in ["hide_cloak", "hide_boots", "hide_hood", "hide_mittens", "hide_trousers", "simple_backpack"]:
 		check(bw_rec.has(rid) and bool(bw.recipes.recipe(int(bw_rec[rid]["number"])).get("known", false)) and str(bw.recipes.recipe(int(bw_rec[rid]["number"])).get("station", "")) == "" and not bool(bw.table.entry(rid).get("future", false)), "%s is live, known from the start and made by hand" % rid)
 
 	bw.give(1, bw.table.number_of("hide"), 1)
-	bw.give(1, bw.table.number_of("twine"), 1)
+	bw.give(1, bw.table.number_of("thread"), 1)
 	bw._last_queue_act.clear()
-	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec["hide_hood"]["number"]), 0, 1, Vector3.ZERO)
+	bw.action(1, Net.ACT_CRAFT_QUEUE, int(bw_rec["hide_hood"]["number"]), 0, 1, CraftHand.at(bw, 1, int(bw_rec["hide_hood"]["number"])))
 
 	for n in 40:
 		bw._craft_tick(0.25)
 
-	check(bw.inventory_of(1).count_of(bw.table.number_of("hide_hood")) == 1, "a hide hood by hand from a hide and twine")
+	check(bw.inventory_of(1).count_of(bw.table.number_of("hide_hood")) == 1, "a hide hood by hand from a hide and thread")
+
+	# Animal searches by grid (finding 8): before any sync every item is looked at; after one, the sync's cells round the point and anything made
+	# since; a fox reads the piece it is after by id.
+	DirAccess.make_dir_recursive_absolute("user://test_server_items_near")
+
+	for file in DirAccess.get_files_at("user://test_server_items_near"):
+		DirAccess.remove_absolute("user://test_server_items_near/" + file)
+
+	var near_items = make("user://test_server_items_near")
+	var near_forage: int = near_items.table.number_of("roast_forage")
+	var food_a: int = near_items._next_id
+	near_items._items[food_a] = {"number": near_forage, "count": 3, "pos": Vector3(1000.0, 5.0, 1000.0), "left": 1.0e9}
+	near_items._next_id += 1
+	check(near_items.loose_food_near(Vector3(1010.0, 5.0, 1000.0), 30.0).size() == 1, "before any sync, loose food is found")
+	near_items._sync_world_items()
+	var food_b: int = near_items._next_id
+	near_items._items[food_b] = {"number": near_forage, "count": 1, "pos": Vector3(1205.0, 5.0, 1000.0), "left": 1.0e9}
+	near_items._next_id += 1
+	var near_found: Array = near_items.loose_food_near(Vector3(1190.0, 5.0, 1000.0), 30.0)
+	check(near_found.size() == 1 and int(near_found[0][0]) == food_b, "food dropped since the last sync is found, far food is not (%s)" % str(near_found))
+	near_items._sync_world_items()
+	near_found = near_items.loose_food_near(Vector3(1190.0, 5.0, 1000.0), 30.0)
+	check(near_found.size() == 1 and int(near_found[0][0]) == food_b, "after the next sync it is found from the grid, in the next cell over (%s)" % str(near_found))
+	check(near_items.stealable_near(Vector3(1001.0, 5.0, 1000.0), 5.0).size() == 1 and near_items.stealable_near(Vector3(1050.0, 5.0, 1000.0), 5.0).is_empty(), "a goblin finds the loose stack within its reach only")
+	check(near_items.loose_food_pos(food_a) == Vector3(1000.0, 5.0, 1000.0) and near_items.loose_food_pos(999999) == null, "a fox reads its food by id")
+	near_items.take_loose(food_a)
+	check(near_items.loose_food_pos(food_a) == null and near_items.loose_food_near(Vector3(1000.0, 5.0, 1000.0), 5.0).is_empty(), "food taken is gone, though the grid still files its id")
 
 	print("server item tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

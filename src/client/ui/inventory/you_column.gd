@@ -20,6 +20,7 @@ const CAPTION := "Live character, as equipped"
 var view                            # the InventoryView (src/client/inventory_view.gd)
 var root: Control
 var wells: Dictionary = {}          # gear slot name -> its ItemSlot
+var well_at: Dictionary = {}        # gear slot name -> the worn position it shows (-1 none): a click on a worn bag opens it
 var preview: SubViewport
 var holder: SubViewportContainer    # the preview's frame; shown only while the window is open, so the preview renders only then
 var rig: Node3D
@@ -54,7 +55,7 @@ func build() -> Control:
 func _gear_column(names: Array) -> Control:
 	var column: VBoxContainer = VBoxContainer.new()
 	column.alignment = BoxContainer.ALIGNMENT_CENTER
-	column.add_theme_constant_override("separation", 16)   # five wells a side since the outer and waist slots (10 Nov 2026); was four at 26
+	column.add_theme_constant_override("separation", 6)   # five wells a side since the outer and waist slots (10 Nov 2026; was four at 26); 6, not 16, so the six stats under them fit the 820 px column at the largest text (tools/shot_station.gd)
 
 	for gear in names:
 		var slot = InventoryLook.make_slot(view, -1)
@@ -69,6 +70,21 @@ func _gear_column(names: Array) -> Control:
 			var side: float = 52.0
 			ArtKit.draw_glyph(ghost, glyph, Rect2(ghost.size * 0.5 - Vector2(side, side) * 0.5, Vector2(side, side)), ArtKit.GHOST, ArtKit.WELL))
 		slot.add_child(ghost)
+		slot.clicked.connect(func(button: int, _shift: bool) -> void:
+			if button == MOUSE_BUTTON_LEFT:
+				view.open_bag(int(well_at.get(gear, -1))))
+
+		# The pack slot (Dave 15 Nov 2026): drop a back piece from the inventory here to put it on, drag the worn pack back into the
+		# inventory to take it off. Only a worn pack raises the carry limit (CarryRules.carry_bonus_kg); one in the inventory does nothing.
+		if gear == "back":
+			slot.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and data.has("slot") and view.wear_slot_of(int(data["slot"])) == "back"
+			slot.on_drop = func(data: Variant) -> void: view.wear_slot(int(data["slot"]))
+			slot.drag_data = func() -> Variant:
+				if int(well_at.get("back", -1)) < 0:
+					return null
+
+				return {"worn": int(well_at["back"])}
+
 		column.add_child(slot)
 		wells[gear] = slot
 
@@ -121,21 +137,29 @@ func refresh() -> void:
 	if root == null or not is_instance_valid(root):
 		return
 
-	var slots: Array = view.clothing_slots()
-
 	for gear in LEFT + RIGHT:
 		var number: int = 0
-		var at: int = slots.find(gear)
+		var item_inst: Dictionary = {}
+		# A well shows its slot's outermost worn layer (protocol 107); the Outer well is the body's outer layer, so Body shows what is under it.
+		# Every layer, each with its own Take off, is on the Tab screen (character_screen.gd).
+		var at: int = view.worn_places().find("body:outer") if gear == "outer" else view.worn_top(gear, ["outer"] if gear == "body" else [])
+
+		if (gear == "back" or gear == "waist") and view.worn_places().find(gear + ":base") >= 0 and view.worn_places().find(gear + ":base") < view.worn.size() and view.worn[view.worn_places().find(gear + ":base")] != 0:
+			at = view.worn_places().find(gear + ":base")   # the pack and the belt themselves, not the bedroll or a pouch on them (Tab lists those)
+
+		well_at[gear] = at
 
 		if at >= 0 and at < view.worn.size():
 			number = view.worn[at]
+			item_inst = view.worn_inst.get(at, {})
 		elif gear == "right" and view.held_slot_now.is_valid():
 			var held: int = int(view.held_slot_now.call())
-			number = view.inventory.numbers[held] if held >= 0 and held < view.inventory.SLOTS else 0
+			number = view.inventory.numbers[held] if held >= 0 and held < view.inventory.slot_count else 0
+			item_inst = view.inventory.inst_of(held) if number != 0 else {}
 
 		# STUB(step 3d): the left hand shows its silhouette until the game has an off-hand item (a shield or torch held in the left).
 		var slot = wells[gear]
-		InventoryLook.show_stack(view, slot, number, 1, 0, view.table.name_of(number) if number != 0 else str(gear).capitalize())
+		InventoryLook.show_stack(view, slot, number, 1, 0, view.inst_label(number, item_inst) if number != 0 else str(gear).capitalize())
 		(slot.get_node("Ghost") as Control).visible = number == 0
 
 	var worn_sign: int = hash(view.worn)

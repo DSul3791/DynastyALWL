@@ -1,0 +1,7 @@
+Launcher role: play
+Play: started the terrain server (process 6924), joining it
+Terrain client: welcome after 32906 ms; world Modular Island World; spawn (53296.0, 68.03883, 68080.0); cache user://terrain_cache/Modular Island World/v76_726130f9c7 (4096 MB)
+Terrain client: 2026-11-11T15:25:37 [+1.8 s] JOIN: column answer 1.8 s after the welcome: ground 66.0 m, player 68.5 m, viewer y 68.5
+tools/godot_slot.sh: line 69:  1430 Segmentation fault      "$@"
+(lines: 96; last line:)
+tools/godot_slot.sh: line 69:  1430 Segmentation fault      "$@"

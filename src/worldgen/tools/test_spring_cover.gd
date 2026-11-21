@@ -169,6 +169,20 @@ func _init() -> void:
 
 	print("sampled %d clumps on tile 3,4 through chunk_items: %d of %d plants kept" % [sampled.size(), kept, wanted])
 	_check(not sampled.is_empty() and kept == wanted, "the sampled clumps come through the whole chunk placement whole (%d of %d plants)" % [kept, wanted])
+	# TerrainGenerator.surface_height_on (the placer's lock-free ground read): exactly surface_height on the tile in hand, and the
+	# fallback for a point off it, past the wrap seam, on a negative or placeholder tile.
+	var home_tile = generator.get_tile(Vector2i(3, 4))
+	var differ: Array = []
+
+	for p in [Vector2(50000.3, 65000.7), Vector2(46080.2, 61440.1), Vector2(61439.9, 76799.9), Vector2(50000.3 + generator.period_m, 65000.7), Vector2(62000.5, 65000.5)]:
+		if generator.surface_height_on(home_tile, p.x, p.y) != generator.surface_height(p.x, p.y):
+			differ.append(p)
+
+	for p in [Vector2(-100000.5, 65000.5), Vector2(20000.5, -140000.5)]:
+		if generator.surface_height_on(generator.get_tile(generator.tile_of(p.x, p.y)), p.x, p.y) != generator.surface_height(p.x, p.y):
+			differ.append(p)
+
+	_check(differ.is_empty(), "surface_height_on gives surface_height's value on, off and across the tile in hand %s" % str(differ))
 	print("PASS" if failures == 0 else "FAIL (%d)" % failures)
 	quit(1 if failures > 0 else 0)
 

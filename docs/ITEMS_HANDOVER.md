@@ -33,7 +33,7 @@
 - Questions waiting for Dave: berry calories (FIRST_HOUR_FOOD.md), whether to slow the first hour further (CRAFT_PACING.md, FIRST_WEEK_WALK.md), the crop list, shop names (TOWN_NPC_SPEC.md).
 - The log of every decision: ITEM_DECISION_LOG.md. The morning checklist: docs/archive/2026-11/DAVE_MORNING_ITEMS.md (archived).
 
-## Needs code (from the archived `docs/archive/2026-11/ITEM_CODE_HANDOFF.md`, 30 Oct; checked 1 Nov by Jamie against data and Steve's and Sal's answers; owner of the code: Steve, tests Tyler)
+## Needs code (from the archived [historical ITEM_CODE_HANDOFF.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/archive/2026-11/ITEM_CODE_HANDOFF.md), 30 Oct; checked 1 Nov by Jamie against data and Steve's and Sal's answers; owner of the code: Steve, tests Tyler)
 Full detail of each item (files, steps, tests) is in the archived page.
 1. **One Lumber and one Beam with a species tag** (Dave approved 25 Oct). Data side exists (`wood_species.json` has `key_woods`, `retired_to`); slot species tag, stack merge rule, save conversion and tooltip not verified.
 2. **Clay Oven and Iron Stove** (oven levels 4 and 5): no such items in `items.json`; open.
