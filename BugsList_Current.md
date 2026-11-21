@@ -1285,13 +1285,13 @@ Not yet played.
 
 **Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026, on wetlands: "they should be readable but lets talk about that. there are reeds everywhere there is a river. how can we make fens, bogs and swamps standout". Shown the plan (dark wet ground, shallow pools, plants of their own, mist and wetland sounds), he said: "make them all. I like it. do that now".
 
-**What was found:** fen and bog ground drew as plain grass, with no reeds, water or sound of its own (Dave's play-test note 17). The flora placer kept every plant off fen, bog and swamp cells, so they were bare.
+**What was found:** fen and bog ground drew as plain grass, with no reeds, water or sound of its own (Dave's play-test note 17, 20 Nov 2026, in the coordinator's play-test notes). The flora placer kept every plant off fen, bog and swamp cells, so they were bare.
 
 **Required outcome:** each wetland reads from a distance and up close, and none of its plants grows on river banks. Fen is green and wet with cattails. Bog is brown and mossy with white tufts. Swamp is dark, with dead trees and standing water. Marsh keeps its mud, reeds, willow and mint.
 
 **As built (PR #1422, reviewed head 820f1c62, merged to dev at b8a9bc54):**
 - Ground: new draw-only material ids 29 fen, 30 bog and 31 swamp. Digging still gives peat (fen, bog) or mud (swamp). Fen is near-black peat with sedge-green flecks, bog is brown with rust-red and ochre-green moss, and swamp is black mud, all with a wet sheen. TERRAIN_VERSION 79; the starter ground was rebuilt for it.
-- Pools: still brown water lies in the hollows whatever the weather, on flat ground only (fen 17%, bog 10%, swamp 30%). It freezes and takes snow like puddles. Wading one splashes and slows you to 0.85 of your pace.
+- Pools: still brown water lies in the hollows whatever the weather, on flat ground only (about 17% of fen, 10% of bog and 30% of swamp, as test_wetland_signs printed on Lane B at 820f1c62). It freezes and takes snow like puddles. Wading one splashes and slows you to 0.85 of your pace.
 - Plants (flora layout 32): Cattail on fen, 700 a hectare. Tussock sedge on fen (400) and swamp (150). Bog moss hummock on bog (500). Cotton grass on bog (1,000; no longer on the marsh edge). Dead tree with hanging moss in swamp (30). None of them grows on river banks.
 - Seeds: Cattail seed (item 1514), Tussock sedge seed (1515) and Bog moss spores (1516). Each comes from its wild plant late in its season and grows in a garden. The dead tree is scenery.
 - Sound: wetland steps squelch (existing step_mud and wet_squelch). Frogs, crickets and insects call over wetland. No new sound files.
@@ -1305,9 +1305,9 @@ Not yet played.
 - Lane B on 820f1c62: 376 pass / 0 fail (fast 365, timing 9, slow 2). validate_items 0 errors, look names 340, warnings 381 = baseline. Join smoke time to ground 34 s.
 - test_worldgen: a terrain version bump keeps digs, tile revisions and world_items saves. test_wetland_signs covers the look ids, sounds, pools, pace, plant rows and mist hours.
 
-**Acceptance:** at fen 58408,71560 or 58576,71776 the ground reads as a dark wet patch from a distance. Close up there are cattails, sedge and still brown pools that splash and slow you. Bogs are brown with moss hummocks and white cotton tufts, and swamps are black with dead trees and standing water. Near dawn and dusk low mist lies over them and frogs call. River banks have none of these plants.
+**Acceptance:** at the fen patches 58408,71560 or 58576,71776 near the spawn (the bog iron answer to Dave, 21 Nov 2026) the ground reads as a dark wet patch from a distance. Close up there are cattails, sedge and still brown pools that splash and slow you. Bogs are brown with moss hummocks and white cotton tufts, and swamps are black with dead trees and standing water. Near dawn and dusk low mist lies over them and frogs call. River banks have none of these plants.
 
-Not yet played.
+Not yet played; not yet seen in a picture.
 
 ## Rewrite interpretation
 
