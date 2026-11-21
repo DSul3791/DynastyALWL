@@ -7,6 +7,7 @@ extends SceneTree
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
+const TradeScript := preload("res://src/stream/server_trade.gd")
 
 var passes: int = 0
 var failures: int = 0
@@ -352,6 +353,43 @@ func _init() -> void:
 	var trees_file: Variant = JSON.parse_string(FileAccess.get_file_as_string(dir + "/tree_states.json"))
 	check(typeof(trees_file) == TYPE_DICTIONARY and (trees_file.get("trees", []) as Array).size() == 1, "a periodic save right after a load keeps the stump in tree_states.json")
 	check(loose(make()) == 1, "and the area items")
+
+	# A big event saves soon (D-TODO-2): its item's area is marked at once (no wait for the rolling check), the save waits out the gap since
+	# the last one and an idle writer, a burst makes one save, and the save writes the item.
+	wipe()
+	var ev = make()
+	ev._items[ev._next_id] = {"number": stone, "count": 61, "pos": Vector3(20.0, 10.0, 20.0), "left": 1.0e9}
+	ev._next_id += 1
+	ev._since_save = 0.0
+	ev.save_soon([ev._next_id - 1])
+	check(ev._dirty and ev._area_dirty.has(ItemsScript.area_key_of(20.0, 20.0)), "an event marks its item's area for the next save at once")
+	check(not ev._event_save_due(), "not inside the gap after the last save")
+	ev._since_save = ItemsScript.EVENT_SAVE_GAP_S
+	ev._writer = Thread.new()
+	ev._writer.start(func() -> void: OS.delay_msec(300))   # a write still under way on a slow disk
+	check(not ev._event_save_due(), "not while the writer is busy: an event save never waits for the disk on the tick")
+	ev._writer.wait_to_finish()
+	ev._writer = null
+	check(ev._event_save_due(), "due once the gap has passed and the writer is idle")
+	var saves_before: int = ev._event_saves
+	ev._autosave()
+	ev.save_soon()
+	ev.save_soon()
+	check(ev._event_saves == saves_before + 1 and not ev._event_save_due() and ev._save_in == ItemsScript.SAVE_EVERY_S, "one save, the 30 s timer starts again, and a burst right after waits for the gap")
+	ev._finish_writer()   # the tick reaps the writer (_reap_writer)
+	ev._since_save = ItemsScript.EVENT_SAVE_GAP_S
+	check(ev._event_save_due(), "the burst makes one more save after the gap")
+	var ev_back = make()
+	var found_61: bool = false
+
+	for id in ev_back._items:
+		found_61 = found_61 or int(ev_back._items[id].get("count", 0)) == 61
+
+	check(found_61, "the event's save wrote the item, with no rolling check run")
+	var ev_trade = TradeScript.new()
+	ev_trade.items = ev_back
+	ev_trade.save()
+	check(ev_back._event_save, "a trade brings the world save forward (the player's pack and coins)")
 	wipe()
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)

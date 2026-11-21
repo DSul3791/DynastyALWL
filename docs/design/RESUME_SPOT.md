@@ -12,7 +12,7 @@
 ## What it does now
 1. `"last"` and `"rests"` are read back at load (malformed entries dropped). No save-format change: the same rows as before.
 2. Every way of leaving resumes at the saved spot, with no time limit: Quit game, window closed, editor Stop, crash, dropped line, server stop. A new character (no `"last"`) still starts at the world spawn.
-3. The spot is noted every 10 s while playing (was 30 s), at leave, and for every player still in when the server closes (`note_spots_on_close`). Quit game (the `logout` message) writes it and saves at once, so a slow disconnect or a crash on exit cannot lose it. A hard kill of the server loses at most about 40 s (10 s note + 30 s save).
+3. The spot is noted every 10 s while playing (was 30 s), at leave, and for every player still in when the server closes (`note_spots_on_close`). Quit game (the `logout` message) writes it and saves at once, so a slow disconnect or a crash on exit cannot lose it. A hard kill of the server loses at most about 40 s (10 s note + 30 s save). A disconnect (dropped line, closed window) brings the save forward: it is written within about 5 s (`save_soon`, D-TODO-2, 21 Nov 2026).
 4. After the join, the spot is not overwritten until the client reports from within 8 m of the resume spot (or 120 s pass), so the reports still coming from the world spawn never replace it.
 5. The server makes the spot safe before sending it (see choices below). The client sets the body down on arrival the way a first arrival does (no fall damage from a spot left in mid-air).
 6. The `left` flag (deliberate / disconnect) is still written: the offline tunnel collapse (collapse-offline point 3, not built; tunnels have `"collapse": false`) needs it.

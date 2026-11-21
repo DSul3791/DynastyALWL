@@ -245,6 +245,10 @@ var _stock_sig: Dictionary = {}     # peer -> hash of the last craft stock sent 
 var _stock_poll_ms: Dictionary = {} # peer -> msec of the last hammer poll answered
 var _sync_in: float = 0.0
 var _save_in: float = SAVE_EVERY_S
+const EVENT_SAVE_GAP_S := 5.0      # PROVISIONAL (D-TODO-2): the least real time between a save and the next one a big event brings forward
+var _event_save: bool = false      # a big event asked for a save (save_soon)
+var _since_save: float = 0.0       # real seconds since the last tick save
+var _event_saves: int = 0          # saves that carried a big event's request (tests)
 var _dirty: bool = false
 var _drops: Dictionary = {}
 var _batch_cfg: Dictionary = {}       # data/items/pickup_batch.json
@@ -690,10 +694,7 @@ func note_logout(peer: int) -> void:
 		_logout_peers[peer] = true
 		print("Resume spot: peer %d quit on purpose at %s" % [peer, str(_peer_pos.get(peer, "no position"))])
 		_note_spot(peer, "deliberate")   # written and saved now: the line may close slowly or the game die on exit before the disconnect arrives
-		_async_writes = true   # as the periodic save: the files are written off the tick
-		save()
-		_async_writes = false
-		_start_writer()
+		_autosave()   # as the periodic save: the files are written off the tick
 
 
 # Writes where the peer is and how they last left into the character row: "online" while playing, then "deliberate" (the client
@@ -781,6 +782,7 @@ func peer_left(peer: int) -> void:
 	_vent_sent.erase(peer)
 	_goal_sent.erase(peer)
 	_note_spot(peer, "deliberate" if _logout_peers.has(peer) else "disconnect")
+	save_soon()   # a dropped line or a closed window: the spot and pack as they left (a deliberate logout saved already, note_logout)
 	print("Resume spot: peer %d left (%s) at %s%s" % [peer, "deliberate" if _logout_peers.has(peer) else "disconnect", str(_peer_pos.get(peer, "no position")), ", still on the way to the resume spot: kept" if _resume_to.has(peer) else ""])
 	_logout_peers.erase(peer)
 	_admin_mode_on.erase(peer)   # Admin mode never outlives a session: every login starts with it off
@@ -1735,13 +1737,10 @@ func tick(delta: float) -> void:
 		_dirty = true   # an area file could not be written: the next save builds it again
 
 	_save_parts = []
+	_since_save += delta
 
-	if _save_in <= 0.0:
-		_save_in = SAVE_EVERY_S
-		_async_writes = true
-		save()
-		_async_writes = false
-		_start_writer()
+	if _save_in <= 0.0 or _event_save_due():
+		_autosave()
 
 	_slow_mark("save" + (" (stringify %s)" % ", ".join(_save_parts) if not _save_parts.is_empty() else ""), t0)
 	var tick_ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
@@ -1782,6 +1781,36 @@ func _reap_log_lines() -> void:
 			still.append(task)
 
 	_log_tasks = still
+
+
+# A big event (a building finished, a trade, a station craft done, falling asleep or waking, a player leaving) saves soon, not at the next
+# 30 s save, so a crash never loses it (D-TODO-2, coordinator 21 Nov 2026; Minecraft and Valheim also save on such moments). Coalesced:
+# at most one such save each EVENT_SAVE_GAP_S, and only while the writer is idle, so a run of crafts costs one save and an event save never
+# waits for the disk on the tick (the 30 s save still does). `ids`: world items the event changed, marked for the save now; the rolling check
+# (_save_sweep) would reach them only within a save interval or two.
+func save_soon(ids: Array = []) -> void:
+	for id in ids:
+		if _items.has(id):
+			_save_note(id)
+
+	_event_save = true
+
+
+# A big event's save is due once the gap since the last save has passed and the writer is idle (_reap_writer ran this tick).
+func _event_save_due() -> bool:
+	return _event_save and _since_save >= EVENT_SAVE_GAP_S and _writer == null and _pending_writes.is_empty()
+
+
+# The tick's save: the files are copied now and written off the tick (_start_writer).
+func _autosave() -> void:
+	_save_in = SAVE_EVERY_S
+	_since_save = 0.0
+	_event_saves += 1 if _event_save else 0
+	_event_save = false
+	_async_writes = true
+	save()
+	_async_writes = false
+	_start_writer()
 
 
 func save() -> void:
@@ -11368,6 +11397,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 	_tank_split_pipe(placed)
 	_water_add(placed)
 	_dirty = true
+	save_soon([placed])
 
 
 # What a piece does once it stands: a support holds the ground, a lean-to is a place to rest, the goal list hears of it.
@@ -11805,6 +11835,7 @@ func _finish_site(peer: int, id: int) -> void:
 	_tank_split_pipe(id)
 	_water_add(id)
 	_dirty = true
+	save_soon([id])   # a finished building is never lost to a crash
 
 
 # Taking a site down gives back everything deposited (100 percent, like any blueprint).
@@ -13446,6 +13477,7 @@ func _energy_tick(peer: int, v: Dictionary, _spent: float, game_s: float) -> voi
 	if e <= 0.0 and not _forced_sleep(peer) and int(_strain.get(peer, {}).get("state", 0)) < 2:
 		_stance[peer] = 3
 		_asleep[peer] = {"rested": 0.0, "forced": true, "t": 0.0}
+		save_soon()   # lying down to sleep
 		_note_shelter(peer)
 		_strain_sent.erase(peer)
 		_say(peer, "You collapse with exhaustion")
@@ -13525,6 +13557,7 @@ func _sleep(peer: int, want: int) -> void:
 		napping = true
 
 	_asleep[peer] = {"rested": 0.0, "t": 0.0}
+	save_soon()   # lying down to sleep
 
 	if napping:
 		var end_strain: float = float(nap.get("exertion_end", 0.25)) * float(_exertion_cfg.get("over_on", 1.0))
@@ -13805,6 +13838,7 @@ func _end_sleep(peer: int) -> bool:
 		return false
 
 	_waking[peer] = {"t": 0.0}
+	save_soon()   # waking: the night's rest
 	return true
 
 
@@ -23214,6 +23248,9 @@ func _craft_tick(spent: float) -> void:
 
 			if worked_at >= 0:
 				_smithies.crafted(worked_at, recipe, peer)
+
+			if str(recipe.get("station", "")) != "" and not free_entry:
+				save_soon([store_id] if store_id >= 0 else [])   # a station craft done: its product (in the pack or the station's store) and its spent inputs
 
 			if not free_entry:   # an admin-mode craft earns no goal (GA-54)
 				_goal_made(peer, int(recipe["gives"][0]), times)

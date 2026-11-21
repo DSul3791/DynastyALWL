@@ -214,7 +214,9 @@ func _init() -> void:
 		if box(forge).numbers[i] == stone:
 			box(forge).clear_slot(i)
 
+	var event_saves: int = items._event_saves
 	craft(1, "bronze_nails", 1, 60)
+	check(items._event_saves > event_saves, "a finished station craft brings a save forward (D-TODO-2: %d, was %d)" % [items._event_saves, event_saves])
 	check(held(forge, nail) == nails_each * 2, "one more craft: %d Bronze nails in the store" % (nails_each * 2))
 	var fill_row: int = items._store_fill(items._items[forge])
 	check(fill_row >= 1 and fill_row <= 4, "the Primitive smithy's world row carries a fill level (%d)" % fill_row)
