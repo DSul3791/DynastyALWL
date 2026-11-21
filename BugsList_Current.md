@@ -1054,6 +1054,26 @@ Not yet played.
 
 Not yet played.
 
+## 102. Raised cistern costs 30 Copper ingot
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026 (02:29Z): "the cistern probably needs something like 30 copper ingots." Before this it cost 6 Copper ingot (entry 97).
+
+**Required outcome:** the Raised cistern takes about 30 Copper ingot to build.
+
+**As built (PR #1404, head ee0adc37, dev 38850ea5):**
+- Blueprint 149 costs 16 Plank, 20 Hardwood board, 30 Copper ingot and 40 Nails. Only the copper changed.
+- Taking it down gives back the full cost, so the refund follows automatically. Any hammer repair is charged as a share of this cost.
+- The encyclopedia line, PLUMBING_DESIGN (PV-12), DYNASTY_MASTER_ITEMS and the goals draft are updated. Entry 97's "6 Copper ingot" is superseded.
+
+**Evidence:**
+- Independent review PASS on ee0adc37.
+- Lane B on ee0adc37: 269 pass / 0 fail, warnings 381 (same as the baseline), validate_items 0 errors.
+- The run includes "the Raised cistern is a big tank anyone can build: copper lined with 30 Copper ingot".
+
+**Acceptance:** open the hammer menu. The Raised cistern lists 30 Copper ingot. Build one, then take it down: 30 Copper ingot come back.
+
+Play note: 30 ingots weigh 51 kg, close to the carry limit. Building also takes materials from nearby boxes and the ground. Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
