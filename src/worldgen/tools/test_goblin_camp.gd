@@ -594,7 +594,7 @@ func _props(items, said: Array, cfg: Dictionary) -> void:
 		kinds[str(prop["kind"])] = true
 		check(items._structures.has(str(prop["kind"])), "the %s is an existing structure kind" % str(prop["kind"]))
 
-	check(kinds.has("crude_chest") and kinds.has("log_bench") and (kinds.has("drying_rack") or kinds.has("tanning_rack")), "a chest, benches and a rack (%s)" % str(kinds.keys()))
+	check(kinds.has("small_chest") and kinds.has("log_bench") and (kinds.has("drying_rack") or kinds.has("tanning_rack")), "a chest, benches and a rack (%s)" % str(kinds.keys()))
 	items._tribe_props_tick()
 	var laid: Array = []
 
@@ -642,19 +642,19 @@ func _props(items, said: Array, cfg: Dictionary) -> void:
 	tribes.setup("")
 	items.tribe_stock_line = tribes.stock_line
 	check(tribes.stock("ragtooth").values().all(func(n): return int(n) == 0), "the stock starts empty (%s)" % str(tribes.stock("ragtooth")))
-	check(tribes.stock_line("ragtooth", "crude_chest") == "It is empty for now.", "an empty chest says so (%s)" % tribes.stock_line("ragtooth", "crude_chest"))
+	check(tribes.stock_line("ragtooth", "small_chest") == "It is empty for now.", "an empty chest says so (%s)" % tribes.stock_line("ragtooth", "small_chest"))
 	clock[0] += TribesScript.DAY_S
 	var day: Dictionary = tribes.stock("ragtooth")
 	check(int(day.get("firewood", 0)) == int(stock["per_game_day"]["firewood"]) and int(day.get("raw_meat", 0)) == int(stock["per_game_day"]["raw_meat"]), "a game day brings per_game_day of each (%s)" % str(day))
 	clock[0] += 100.0 * TribesScript.DAY_S
 	var full: Dictionary = tribes.stock("ragtooth")
 	check((stock.get("cap", {}) as Dictionary).keys().all(func(id): return int(full.get(id, -1)) == int(stock["cap"][id])), "and it stops at its cap (%s)" % str(full))
-	var chest_line: String = tribes.stock_line("ragtooth", "crude_chest")
+	var chest_line: String = tribes.stock_line("ragtooth", "small_chest")
 	check(chest_line.begins_with("In it: ") and chest_line.contains("%d firewood" % int(stock["cap"]["firewood"])) and chest_line.contains(" and "), "the chest names what it holds (%s)" % chest_line)
 	check(tribes.stock_line("ragtooth", "log_bench") == "", "a bench holds nothing")
 
 	for i in laid:
-		if str(items._items[i]["struct"]["kind"]) == "crude_chest":
+		if str(items._items[i]["struct"]["kind"]) == "small_chest":
 			said.clear()
 			items.action(1, Net.ACT_CHEST_OPEN, i, 0, 1, Vector3.ZERO)
 			check(said.size() == 1 and str(said[0]).contains("Ragtooth camp") and str(said[0]).contains(chest_line), "opening the camp chest is refused, with what is in it (%s)" % str(said))
