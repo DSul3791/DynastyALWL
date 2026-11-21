@@ -6883,6 +6883,11 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 				if fill >= 0:
 					signature += 23 * (fill + 1)   # a station store that fills or empties by a quarter is sent again (master s2.5 fill levels)
 
+				var bellows_by: int = _smelters.bellows_peer(id) if fill >= 0 else -1
+
+				if bellows_by >= 0:
+					signature += 523 * (2 if bellows_by == peer else 1)   # someone starts or stops working a smelter's bellows: sent again
+
 				var crop_extra: Dictionary = crop_row_extra(it) if it.has("struct") else {}
 
 				if crop_extra.has("crop"):
@@ -6941,6 +6946,9 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 
 						if fill >= 0:
 							(added[added.size() - 1][5] as Dictionary)["fill"] = fill   # a station store: 0 empty, 1 to 4 quarters full
+
+						if bellows_by >= 0:
+							(added[added.size() - 1][5] as Dictionary)["bellows"] = 2 if bellows_by == peer else 1   # its bellows worked: 2 by this player, 1 by another
 
 						if not crop_extra.is_empty():
 							(added[added.size() - 1][5] as Dictionary).merge(crop_extra)   # a bed's crop and stage (FARMING_SPEC.md step 6): the client draws the stage and words its E prompt
