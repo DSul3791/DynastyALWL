@@ -1254,7 +1254,7 @@ Not yet played; not yet seen in a picture.
 - Lane B on 6b97ba23: 320 pass / 0 fail (fast 309, timing 9, slow 2). validate_items 0 errors, look names 340, warnings 381 = baseline. Join smoke 26 s, client --chest self-test (now the Wicker basket) exit 0.
 - test_save_compat loads a saved Crude - Chest and Wicker - Chest with their contents.
 
-**Acceptance:** the knife's list shows the Wicker basket and no chest. With a knife, 8 Sticks and 4 Twine, a Wicker basket goes up and holds 6 stacks. The hammer's list shows no Wicker or Crude chest.
+**Acceptance:** the knife's list shows the Wicker basket and no chest. With a knife, 8 Sticks and 4 Twine, a Wicker basket goes up and holds 6 stacks. No build list, knife or hammer, shows a Wicker - Chest or Crude - Chest; the hammer's chests are the Small, Rustic, Fine, Large wooden and Ornate.
 
 Not yet played.
 
