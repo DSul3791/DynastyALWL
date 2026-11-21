@@ -195,6 +195,7 @@ var spring_ice_x: Callable       # (position) -> the ice's share by springs (Jam
 var _holes: Array = []            # ice fishing holes: {pos, owner key, until game seconds}
 var _hole_blows: Dictionary = {}  # peer -> [blows, msec of the last]
 var rock_near: Callable          # (position) -> the rocks.json name of the bedrock under a boulder there (TileTerrainData.bedrock_name_at), "" when unknown; set by the server scene (unset: no rock pieces)
+var cell_reads: Callable         # (x, z) -> {"ground", "water_near", "water_depth_at", "ore_near"}: the four answers above bound to the tile under (x, z) (src/stream/cell_reads.gd); set by the server scene (unset: the general callables)
 var ore_near: Callable           # (position, reach in metres, ore names wanted, layer depth in metres) -> the ore (data/tables/resources.json) a boulder there is an outcrop of, "" when none; set by the server scene (unset: no ore)
 var bog_deposit_at: Callable     # (x, z, digging.json bog_iron) -> BogIron.deposit_at on the baked tile there ({} when none); set by the server scene (unset: no bog iron)
 var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
@@ -7701,10 +7702,11 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	_lay_out_bank_stones(cell, cell_m, cfg, kinds.size())
 	part_usec = _cell_part("bank stones", part_usec)
 	_cell_parts[-1] += " (ground %.0f, water %.0f)" % [float(_bank_ground_usec) / 1000.0, float(_bank_water_usec) / 1000.0]
-	_lay_out_boulders(cell, cell_m)
+	var reads: Dictionary = _cell_reads(cell, cell_m)   # one tile look for the boulders and both ores
+	_lay_out_boulders(cell, cell_m, reads)
 	part_usec = _cell_part("boulders", part_usec)
-	_lay_out_ore_rocks(cell, cell_m, "copper")
-	_lay_out_ore_rocks(cell, cell_m, "tin")
+	_lay_out_ore_rocks(cell, cell_m, "copper", reads)
+	_lay_out_ore_rocks(cell, cell_m, "tin", reads)
 	_cell_part("copper and tin rocks", part_usec)
 
 
@@ -7754,12 +7756,30 @@ func _boulder_stones(radius: float) -> int:
 	return maxi(int(volume * float(cfg.get("density_kg_m3", 2600)) * float(cfg.get("yield", 0.5)) / stone_kg), 1)
 
 
-func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
+# A cell's ground, water and ore reads: the server's cell_reads bound to the cell's tile (one tile look and lock for the whole cell, not one a read;
+# Dave's PC 21 Nov 2026, a cell's copper and tin rocks waited 409 ms on the generator lock while a player ran into new ground), else the general
+# callables. The answers are the same either way (src/stream/cell_reads.gd; test_cell_reads compares the layouts).
+func _cell_reads(cell: Vector2i, cell_m: float) -> Dictionary:
+	var reads: Dictionary = {"ground": ground_height, "water_near": water_near, "water_depth_at": water_depth_at, "ore_near": ore_near}
+
+	if cell_reads.is_valid():
+		var mid: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
+		reads.merge(cell_reads.call(mid.x, mid.y), true)
+
+	return reads
+
+
+func _lay_out_boulders(cell: Vector2i, cell_m: float, reads: Dictionary = {}) -> void:
 	var cfg: Dictionary = _boulder_cfg
 
 	if cfg.is_empty():
 		return
 
+	if reads.is_empty():
+		reads = _cell_reads(cell, cell_m)
+
+	var ground: Callable = reads["ground"]
+	var wet: Callable = reads["water_near"]
 	var rng: RandomNumberGenerator = _layout_rng(cell, "boulders")
 	var laid: int = 0
 
@@ -7771,16 +7791,16 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
 		var draw: float = rng.randf()   # luck-exempt: seeded world layout
 		var size_draw: float = rng.randf()   # luck-exempt: seeded world layout
 		var yaw: float = rng.randf() * 360.0   # luck-exempt: seeded world layout
-		var y: float = float(ground_height.call(x, z))
+		var y: float = float(ground.call(x, z))
 
 		if is_nan(y) or y < 1.0 or laid >= mini(int(cfg.get("max_per_cell", 4)), 15):
 			continue
 
-		var rise: float = (absf(float(ground_height.call(x + 3.0, z)) - y) + absf(float(ground_height.call(x, z + 3.0)) - y)) / 3.0
+		var rise: float = (absf(float(ground.call(x + 3.0, z)) - y) + absf(float(ground.call(x, z + 3.0)) - y)) / 3.0
 		var chance: float = clampf((rise - float(cfg.get("min_slope", 0.1))) * float(cfg.get("slope_chance", 2.0)), 0.0, float(cfg.get("max_chance", 0.5)))
 		var spot: Vector3 = Vector3(x, y, z)
 
-		if water_near.is_valid() and not bool(water_near.call(spot, 0.0)) and bool(water_near.call(spot, float(cfg.get("bank_reach_m", 3.0)))):
+		if wet.is_valid() and not bool(wet.call(spot, 0.0)) and bool(wet.call(spot, float(cfg.get("bank_reach_m", 3.0)))):
 			chance = maxf(chance, float(cfg.get("bank_chance", 0.4)))
 
 		if draw > chance:
@@ -7790,7 +7810,7 @@ func _lay_out_boulders(cell: Vector2i, cell_m: float) -> void:
 		laid += 1
 		var radius: float = lerpf(float(cfg.get("radius_min", 0.3)), float(cfg.get("radius_max", 1.2)), pow(size_draw, float(cfg.get("radius_power", 2.0))))
 		var row: Dictionary = {"radius": radius, "yaw": yaw, "total": _boulder_stones(radius)}
-		_set_boulder_ore(row, _boulder_ore(spot, key), key)   # an outcrop: a pick takes this ore out of it (boulders.json ore); copper and tin resized
+		_set_boulder_ore(row, _boulder_ore(spot, key, reads["ore_near"]), key)   # an outcrop: a pick takes this ore out of it (boulders.json ore); copper and tin resized
 		var left: int = mini(int(_boulder_left.get(key, row["total"])), int(row["total"]))
 
 		if left <= 0:
@@ -7841,13 +7861,20 @@ func _set_boulder_ore(row: Dictionary, ore_name: String, key: int) -> void:
 # A share hand_share of the sizes is a loose ore item picked up by hand (ORE_KEY, kept in _taken like any scatter); the rest are boulder
 # rows with the ore, radius_min..radius_max (0.5 to 2 m across, Dave 17 Nov 2026), broken with a hammer or pick. Slots `slot`.. of the cell: copper 8..15 (BOULDER_KEY, after the cell's
 # boulders), tin 16..23 (ORE_KEY | BOULDER_KEY). Nothing depends on where spawn is.
-func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
+func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dictionary = {}) -> void:
 	var cfg: Dictionary = _ore_rock_cfg(ore)
 	var item: String = str((_boulder_cfg.get("ore", {}).get("items", {}) as Dictionary).get(ore, ""))
 
 	if cfg.is_empty() or item == "":
 		return
 
+	if reads.is_empty():
+		reads = _cell_reads(cell, cell_m)
+
+	var ground: Callable = reads["ground"]
+	var wet: Callable = reads["water_near"]
+	var depth_at: Callable = reads["water_depth_at"]
+	var body_at: Callable = reads["ore_near"]
 	var rng: RandomNumberGenerator = _layout_rng(cell, ore)
 	var reach: float = float(cfg.get("bank_reach_m", 3.0))
 	var bed_m: float = float(cfg.get("bed_depth_m", 0.8))
@@ -7868,11 +7895,11 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 
 	# Its own ore body: one geology look for the whole cell first (any of its spots within body_reach_m of a body), so only a cell by a body
 	# asks again per spot.
-	if body_m > 0.0 and ore_near.is_valid():
+	if body_m > 0.0 and body_at.is_valid():
 		var mid: Vector2 = (Vector2(cell) + Vector2(0.5, 0.5)) * cell_m
-		var mid_y: float = float(ground_height.call(mid.x, mid.y))
+		var mid_y: float = float(ground.call(mid.x, mid.y))
 
-		if not is_nan(mid_y) and str(ore_near.call(Vector3(mid.x, mid_y, mid.y), body_m + cell_m * 0.71, names, layer_m)) == ore:
+		if not is_nan(mid_y) and str(body_at.call(Vector3(mid.x, mid_y, mid.y), body_m + cell_m * 0.71, names, layer_m)) == ore:
 			body_p = float(cfg.get("body_chance", 0.0))
 
 	var top_p: float = maxf(maxf(land_p, maxf(coast_p, mountain_p)), body_p)
@@ -7891,7 +7918,7 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 		elif attempt >= mini(int(cfg.get("tries", 4)), ORE_ROCK_TRIES - 1) or draw > top_p:
 			continue   # cheap refusals first: most tries end here without reading the ground or the water
 
-		var y: float = float(ground_height.call(x, z))
+		var y: float = float(ground.call(x, z))
 
 		if is_nan(y) or y < 1.0:
 			continue
@@ -7901,27 +7928,27 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String) -> void:
 		var over_body: bool = false
 
 		if not is_foot and body_p > 0.0 and draw <= body_p:
-			over_body = str(ore_near.call(spot, body_m, names, layer_m)) == ore   # the spot itself over its own ore
+			over_body = str(body_at.call(spot, body_m, names, layer_m)) == ore   # the spot itself over its own ore
 
 		if not is_foot and not over_body and draw > maxf(land_p, lerpf(coast_p, mountain_p, upland)):
 			continue   # past every chance this high up: no ground water read
 
 		var by_water_only: bool = not is_foot and not over_body and draw > land_p
 
-		if by_water_only and water_near.is_valid() and not bool(water_near.call(spot, reach)):
+		if by_water_only and wet.is_valid() and not bool(wet.call(spot, reach)):
 			continue   # no water within reach (most of the land): no depth read, no second probe
 
-		var depth: float = float(water_depth_at.call(spot)) if water_depth_at.is_valid() else 0.0
+		var depth: float = float(depth_at.call(spot)) if depth_at.is_valid() else 0.0
 
 		if depth > bed_m:
 			continue   # deep water: nobody would find it
 
 		if is_foot:
-			if depth > 0.0 or not _at_mountain_foot(spot, foot):
+			if depth > 0.0 or not _at_mountain_foot(spot, foot, ground):
 				continue
 		elif by_water_only:
 			# Past the land share: only on a river or lake bed (shallow water) or a dry bank within reach of water.
-			var bank: bool = depth <= 0.0 and water_near.is_valid() and not bool(water_near.call(spot, 0.0)) and bool(water_near.call(spot, reach))
+			var bank: bool = depth <= 0.0 and wet.is_valid() and not bool(wet.call(spot, 0.0)) and bool(wet.call(spot, reach))
 
 			if depth <= 0.0 and not bank:
 				continue
@@ -7978,12 +8005,12 @@ func _ore_rock_cfg(ore: String) -> Dictionary:
 
 # How far the ground climbs above the spot within reach (at most SCATTER_PAD_M - 4, inside the tiles _cell_ground_ready loaded: a
 # farther read loads a tile on the main thread), the highest of the four directions; 0 on flat or falling ground.
-func _relief(spot: Vector3, reach_m: float) -> float:
+func _relief(spot: Vector3, reach_m: float, ground: Callable) -> float:
 	var reach: float = minf(reach_m, SCATTER_PAD_M - 4.0)
 	var best: float = 0.0
 
 	for d in [Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
-		var h: float = float(ground_height.call(spot.x + d.x, spot.z + d.y))
+		var h: float = float(ground.call(spot.x + d.x, spot.z + d.y))
 
 		if not is_nan(h):
 			best = maxf(best, h - spot.y)
@@ -7993,24 +8020,24 @@ func _relief(spot: Vector3, reach_m: float) -> float:
 
 # The foot of a mountain: the spot itself is gentle (rise per metre under max_slope over 3 m) and the ground climbs more than rise_m
 # within reach_m (_relief) in one of the four directions (boulders.json copper_rocks foot).
-func _at_mountain_foot(spot: Vector3, foot: Dictionary) -> bool:
-	var near: float = (absf(float(ground_height.call(spot.x + 3.0, spot.z)) - spot.y) + absf(float(ground_height.call(spot.x, spot.z + 3.0)) - spot.y)) / 3.0
+func _at_mountain_foot(spot: Vector3, foot: Dictionary, ground: Callable) -> bool:
+	var near: float = (absf(float(ground.call(spot.x + 3.0, spot.z)) - spot.y) + absf(float(ground.call(spot.x, spot.z + 3.0)) - spot.y)) / 3.0
 
 	if is_nan(near) or near > float(foot.get("max_slope", 0.3)):
 		return false
 
-	return _relief(spot, float(foot.get("reach_m", 24.0))) > float(foot.get("rise_m", 20.0))
+	return _relief(spot, float(foot.get("reach_m", 24.0)), ground) > float(foot.get("rise_m", 20.0))
 
 
 # The ore a boulder is an outcrop of ("" for a plain boulder): the terrain's ore body within reach of it, for a share of the boulders chosen from the key.
-func _boulder_ore(spot: Vector3, key: int) -> String:
+func _boulder_ore(spot: Vector3, key: int, body_at: Callable) -> String:
 	var cfg: Dictionary = _boulder_cfg.get("ore", {})
 
 	if cfg.is_empty():
 		return ""
 
-	if ore_near.is_valid() and float(hash(key) % 1000) < 1000.0 * float(cfg.get("boulder_share", 0.0)):
-		var name: String = str(ore_near.call(spot, float(cfg.get("reach_m", 40.0)), cfg.get("items", {}), float(cfg.get("layer_depth_m", 10.0))))
+	if body_at.is_valid() and float(hash(key) % 1000) < 1000.0 * float(cfg.get("boulder_share", 0.0)):
+		var name: String = str(body_at.call(spot, float(cfg.get("reach_m", 40.0)), cfg.get("items", {}), float(cfg.get("layer_depth_m", 10.0))))
 
 		if (cfg.get("items", {}) as Dictionary).has(name):
 			return name
@@ -8223,7 +8250,7 @@ func _lay_out_cave_items(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void
 		if int(spots[n * 5 + 3]) == 1 and not _boulder_cfg.is_empty():
 			var radius: float = spots[n * 5 + 4]
 			var cave_row: Dictionary = {"radius": radius, "yaw": float(hash(key) % 360), "total": _boulder_stones(radius)}
-			_set_boulder_ore(cave_row, _boulder_ore(spot, key), key)   # a cave boulder is an outcrop like one on the surface (Kathleen 10 Nov 2026: caves never rolled ore)
+			_set_boulder_ore(cave_row, _boulder_ore(spot, key, ore_near), key)   # a cave boulder is an outcrop like one on the surface (Kathleen 10 Nov 2026: caves never rolled ore)
 			var left: int = mini(int(_boulder_left.get(key, cave_row["total"])), int(cave_row["total"]))
 
 			if left > 0:
