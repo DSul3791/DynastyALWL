@@ -56,6 +56,7 @@ func _init() -> void:
 	_tile()
 	_npcs()
 	_chores()
+	_stock_restart()
 	_server()
 	print("goblin camp: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
@@ -488,6 +489,54 @@ func _chores() -> void:
 	var armed_ms: float = float(Time.get_ticks_usec() - t0) / 600.0 / 1000.0
 	print("goblin camp cost: %d members, %.3f ms per 10 Hz tick at their chores, %.3f ms with a weapon carrier by the fire (whole ServerNpcs tick, townsfolk included)" % [ids.size(), calm_ms, armed_ms])
 	check(ids.any(func(id): return int(npcs.npcs[id]["state"]) == NpcsScript.GUARD), "with a spear in hand by the fire, the members stand guard")
+
+
+# The camp stock across a server restart (gate review of #1369): the fill start saved in tribes_state.json is read back, so after a stop and a
+# start the stock is what the game clock says (no reset to empty, no second fill), the first tick after the start does not move it, and an
+# older state file without stock_from still loads (its stock starts on that run).
+func _stock_restart() -> void:
+	var dir: String = "user://test_goblin_camp_stock"
+	var said: Array = []
+	var items = _items(dir, said)
+	var data: Dictionary = camp.get("stock", {})
+	var fire_day: int = int(data["per_game_day"]["firewood"])
+	var fire_cap: int = int(data["cap"]["firewood"])
+	var clock: Array = [7200.0]
+	var first = TribesScript.new()
+	first.items = items
+	first.game_seconds = func(): return clock[0]
+	first.players = func() -> Array: return []
+	first.setup(dir)
+	first.tick(0.1)   # the server's first tick starts the fill and saves it
+	check(FileAccess.file_exists(dir.path_join(TribesScript.FILE)), "the fill start is written to the tribes state file")
+	clock[0] += 1.5 * TribesScript.DAY_S
+	var before: int = int(first.stock("ragtooth").get("firewood", -1))
+	check(before == int(floor(fire_day * 1.5)), "a game day and a half in, the chest holds %d firewood (%d)" % [int(floor(fire_day * 1.5)), before])
+
+	# Stop and start: a new ServerTribes over the same store and the same game clock.
+	var second = TribesScript.new()
+	second.items = items
+	second.game_seconds = func(): return clock[0]
+	second.players = func() -> Array: return []
+	second.setup(dir)
+	second.tick(0.1)
+	check(int(second.stock("ragtooth").get("firewood", -1)) == before, "after a restart the stock is the same (%d, was %d): no reset, no second fill" % [int(second.stock("ragtooth").get("firewood", -1)), before])
+	clock[0] += TribesScript.DAY_S
+	check(int(second.stock("ragtooth").get("firewood", -1)) == mini(fire_cap, int(floor(fire_day * 2.5))), "and it goes on filling from the first start (%d)" % int(second.stock("ragtooth").get("firewood", -1)))
+
+	# An older state file (camp life, before the light version) has no stock_from: it loads, keeps its anger rows, and the fill starts now.
+	var old: FileAccess = FileAccess.open(dir.path_join(TribesScript.FILE), FileAccess.WRITE)
+	old.store_string(JSON.stringify({"version": 1, "tribes": {"ragtooth": {"goblin-test-key9": {"angry_until": clock[0] + 1000.0}}}}))
+	old.close()
+	var third = TribesScript.new()
+	third.items = items
+	third.game_seconds = func(): return clock[0]
+	third.players = func() -> Array: return []
+	third.setup(dir)
+	check(third.angry("ragtooth", "goblin-test-key9"), "an older state file still loads its anger")
+	third.tick(0.1)
+	check(third.stock("ragtooth").values().all(func(n): return int(n) == 0), "and its stock starts empty on that run (%s)" % str(third.stock("ragtooth")))
+	check(FileAccess.get_file_as_string(dir.path_join(TribesScript.FILE)).contains("stock_from"), "and the fill start is saved into it")
 
 
 func run_for(tribes, npcs, seconds: float) -> void:
