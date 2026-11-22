@@ -2397,6 +2397,30 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_metal(parts, 0.5, 0.5)
 			else:
 				_cone(parts, 0.0056, 0.07, Vector3(0.3, 0.0, 0.0), shaft_wood.darkened(0.35))                         # the sharpened, fire-hardened point
+		"crossbow":
+			# A crossbow lying flat (refs: 13th-15th-century European crossbows): a wooden stock (tiller) along x with the butt at -x, a nut and trigger lever under it,
+			# a prod across the front bowed toward +x in five segments (wood and horn; a metal tier in bits gives a steel prod, the heavy crossbow), the string
+			# drawn back to the nut, and an iron stirrup at the very front for spanning it with the foot. About 0.7 m long at size 1.
+			var stock: Color = Color(0.36, 0.22, 0.1)
+			var prod: Color = tier_metal(bits, Color(0.42, 0.3, 0.16))
+			var metal_prod: bool = has_tier(bits)
+			_box(parts, Vector3(0.62, 0.04, 0.045), Vector3(-0.05, 0.0, 0.0), _tone(stock, 1, 0.08))                  # the tiller
+			_box(parts, Vector3(0.14, 0.06, 0.05), Vector3(-0.32, -0.01, 0.0), _tone(stock, 3, 0.08))                  # the butt, a little deeper
+			_box_rot(parts, Vector3(0.12, 0.008, 0.012), Vector3(-0.12, -0.03, 0.0), Vector3(0.0, 0.0, 0.25), Color(0.1, 0.1, 0.11))   # the trigger lever under the stock
+			_cyl(parts, 0.014, 0.03, Vector3(0.0, 0.025, 0.0), Vector3(PI * 0.5, 0.0, 0.0), Color(0.75, 0.7, 0.6))     # the bone nut that holds the string
+			var ends: Array = []
+			for k in range(5):                                                                                       # the prod, bowed forward: each segment turned a little further back
+				var t: float = (float(k) - 2.0) / 2.0
+				var z: float = 0.07 * (float(k) - 2.0)
+				_box_rot(parts, Vector3(0.025, 0.02, 0.075), Vector3(0.25 - 0.03 * t * t, 0.0, z), Vector3(0.0, -0.35 * t, 0.0), prod)
+				if metal_prod:
+					_metal(parts, 0.45, 0.6)
+				if k == 0 or k == 4:
+					ends.append(Vector3(0.25 - 0.03 - 0.01, 0.0, z * 1.2))
+			for e in ends:
+				_tube(parts, Vector2(e.x, e.z), Vector2(0.0, 0.0), 0.0015, Color(0.8, 0.75, 0.6), 4)                  # the string from each prod tip back to the nut
+			_torus(parts, 0.04, 0.006, Vector3(0.31, 0.0, 0.0), Color(0.12, 0.12, 0.13))                             # the stirrup
+			_metal(parts, 0.6, 0.4)
 		"quiver":
 			# A hide quiver (item 272), about 55 cm: a tapering leather tube with a darker rim and seam, a carrying strap loop and the feathered ends of four arrows standing out of the mouth.
 			# Mesh axes: tube along x, mouth at +x.
