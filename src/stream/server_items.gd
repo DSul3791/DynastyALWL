@@ -1033,6 +1033,7 @@ func give(peer: int, number: int, count: int, item_inst: Dictionary = {}, item_w
 
 	if left > 0:
 		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO), item_wear, 0.0, NAN, NAN, "", item_inst)
+		_say(peer, "%s: %d %s dropped at your feet" % ["Too heavy to carry" if fits < count else "Your pack is full", left, table.in_sentence(table.name_of(number))])
 
 	return count - left
 
@@ -1443,7 +1444,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_COOK:
 		_cook(peer, inv, a)
 	elif kind == Net.ACT_SPLIT:
-		_split(inv, a, count)
+		_split(inv, a, count, peer)
 	elif kind == Net.ACT_PROCESS:
 		_process_trunk(peer, inv, a, int(at.x) - 1)   # at.x: the held pack slot + 1 for wood work (protocol 115)
 	elif kind == Net.ACT_MINE:
@@ -10919,13 +10920,14 @@ func peers_near(position: Vector3, radius: float) -> Array:
 
 
 # Splits `count` off a stack into the backpack's first empty slot; a full pack grows a step for it (protocol 116). The stack keeps at least one.
-func _split(inv, slot: int, count: int) -> void:
+func _split(inv, slot: int, count: int, peer: int = -1) -> void:
 	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0 or count < 1 or count >= inv.counts[slot]:
 		return
 
 	var target: int = inv.make_room()
 
 	if target < 0:
+		_say(peer, "Your pack has no free slot to split into.")
 		return
 
 	inv.numbers[target] = inv.numbers[slot]
@@ -12808,6 +12810,7 @@ func _take_down(peer: int, inv, id: int) -> void:
 		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], true):
 			return
 	elif inv.add(table.number_of(str(def["kit"])), 1, int(it.get("wear", 0))) > 0:
+		_say(peer, "Make room in your pack first.")
 		return      # a placed torch comes back as its torch, unmarked: lit in the hand when it is pulled out again (only a pack at MAX_SLOTS refuses)
 
 	if it["struct"].has("roof") and roof_remove.is_valid():
@@ -13964,6 +13967,10 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 	inv.take_from_slot(a, amount - left)
 	_dirty = true
 
+	if amount > 0 and left == amount and id >= 0:
+		_say(peer, "The %s is full." % table.in_sentence(table.name_of(int(_items[id]["number"]))))
+		_reject(peer, 2)
+
 	if amount > left and id >= 0:
 		if bool(_structures.get(kind, {}).get("lockable", false)):
 			_goal_event_act(peer, "stored_item")   # ADD-13: once per act (Store all and a view deposit put many stacks); items went into a chest or crate (structures.json lockable: the chests and crates), not a fire, smelter, kiln or bin
@@ -13994,7 +14001,12 @@ func _box_take(peer: int, inv, chest, a: int, count: int, weighed: bool = false)
 
 		return 0
 
+	var asked: int = amount
 	amount = amount if weighed else _fit(peer, inv, number, amount, held_inst)   # a full bag weighs with its contents
+
+	if amount < asked:
+		_say(peer, "Too heavy to carry any more" if amount == 0 else "Too heavy: you took %d of %d" % [amount, asked])
+
 	var left: int = inv.add(number, amount, held_wear, held_inst)
 	chest.take_from_slot(a, amount - left)
 	_dirty = true
@@ -23080,12 +23092,13 @@ func _view_take(peer: int, inv, vid: int, number: int, count: int) -> void:
 				break
 
 			if int(row[1].numbers[slot]) == number:
+				var asked: int = mini(left, int(row[1].counts[slot]))
 				var took: int = _box_take(peer, inv, row[1], slot, left)
 				left -= took
 				took_here = took_here or took > 0
 
-				if took == 0:
-					left = 0   # the pack, the carry limit or the shoulder is full: stop rather than try every slot
+				if took < asked:
+					left = 0   # the pack, the carry limit or the shoulder is full (and said so once): stop rather than try every slot
 
 		if took_here:
 			_push_box(int(row[0]), row[1])
