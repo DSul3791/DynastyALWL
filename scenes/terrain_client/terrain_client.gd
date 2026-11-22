@@ -7118,7 +7118,7 @@ func _process(delta: float) -> void:
 	hud.text += "\n" + _ground_health_line()
 
 	if crash_report != null and crash_report.last_report != "" and Time.get_ticks_msec() < _previous_run_note_until_msec:
-		hud.text += "\nLast run did not close cleanly. %s\nReport: %s" % [crash_report.last_plain if crash_report.last_plain != "" else "The game quit for a bad reason.", crash_report.last_report]
+		hud.text += "\nLast run did not close cleanly. %s\nReport: %s (Esc > Settings > Report a problem puts it in a file to send)" % [crash_report.last_plain if crash_report.last_plain != "" else "The game quit for a bad reason.", crash_report.last_report]
 
 	if debug_hud.enabled:
 		hud.text += "\n" + _debug_text(avg_ms, worst_ms)

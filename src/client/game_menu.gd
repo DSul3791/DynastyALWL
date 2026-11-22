@@ -14,6 +14,7 @@ const KeyBindingsPage := preload("res://src/client/key_bindings_page.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const TitleArt := preload("res://scenes/title/title_art.gd")
+const ProblemReport := preload("res://src/client/problem_report.gd")
 
 const SHOW_ADMIN := true
 const BUTTON_W := 300.0
@@ -279,10 +280,49 @@ func _build_settings() -> void:
 		_controls_from_settings = true
 		show_page("controls"))
 
+	_button(settings, "Report a problem", func(): show_page("report"))
+
 	if SHOW_ADMIN:
 		_admin_buttons.append(_button(settings, "Admin", func(): show_page("admin")))
 
 	_button(settings, "Back", func(): show_page("main"))
+	_build_report()
+
+
+# Settings > Report a problem (problem_report.gd): the tester types what went wrong; the game saves a report file with the build and the end
+# of the log and opens its folder, so it can be sent to Dave; the bug form (GitHub account needed) opens with the build filled in.
+var _report_note: TextEdit
+var _report_status: Label
+
+
+func _build_report() -> void:
+	var report: VBoxContainer = _page("report")
+	_heading(report, "Report a problem")
+	var help: Label = Label.new()
+	help.text = "Say what happened and what you expected. Save makes a small file with your note, the build and the game's log, and opens its folder: send that file to Dave."
+	help.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	help.custom_minimum_size = Vector2(620.0, 0.0)
+	help.add_theme_font_size_override("font_size", 18)
+	report.add_child(help)
+	_report_note = TextEdit.new()
+	_report_note.custom_minimum_size = Vector2(620.0, 160.0)
+	_report_note.placeholder_text = "What happened?"
+	_report_note.wrap_mode = TextEdit.LINE_WRAPPING_BOUNDARY
+	report.add_child(_report_note)
+	_report_status = Label.new()
+	_report_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_report_status.custom_minimum_size = Vector2(620.0, 0.0)
+	_report_status.add_theme_font_size_override("font_size", 16)
+	report.add_child(_report_status)
+	_button(report, "Save the report and open its folder", func():
+		var at: Vector3 = _c.body.global_position if _c.body != null else Vector3.ZERO
+		var path: String = ProblemReport.write(_report_note.text, "%s:%d at %d, %d, %d" % [_c._host, _c._port, at.x, at.y, at.z])
+		_report_status.text = ("Saved: %s\nSend this file to Dave." % path) if path != "" else "The report could not be saved."
+		if path != "":
+			_report_note.text = ""
+			ProblemReport.open_folder())
+	_button(report, "Open the bug form (GitHub account)", func(): ProblemReport.open_form())
+	_button(report, "Back", func(): show_page("settings"))
 
 
 func _build_display() -> void:
