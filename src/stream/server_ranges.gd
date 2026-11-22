@@ -118,6 +118,10 @@ func slope_at(x: float, z: float) -> float:
 	var w: float = _h(x - r, z)
 	var n: float = _h(x, z + r)
 	var s: float = _h(x, z - r)
+
+	if is_nan(e) or is_nan(w) or is_nan(n) or is_nan(s):
+		return NAN
+
 	return maxf(absf(e - w), absf(n - s)) / (2.0 * r)
 
 
