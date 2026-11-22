@@ -116,6 +116,6 @@ These sources remain available. Their inclusion preserves discoverability; it do
 
 ## Technical contracts and operating rules
 
-Technical references: [network protocol](../PROTOCOL.md), [world formats](../WORLD_FORMAT_SPEC.md), [performance budget](../ARCHITECTURE_BUDGET.md).
+Technical references: [network protocol](../PROTOCOL.md), [world formats](../WORLD_FORMAT_SPEC.md), [performance budget](../ARCHITECTURE_BUDGET.md), [local server at the first load (plan)](design/LOCAL_SERVER_FIRST_LOAD_PLAN.md).
 
 Operating authority: [Constitution](ai-team/CONSTITUTION.md), [Workflow](ai-team/WORKFLOW.md), [Test gates](ai-team/TEST_GATES.md), [Ponytail engineering method](PONYTAIL_RULES.md). [CLAUDE.md](../CLAUDE.md) remains the agent entry point. These own the process; the design index adds no alternate rules.
