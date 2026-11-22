@@ -32,6 +32,7 @@ const WaterAreas := preload("res://src/shared/water_areas.gd")
 const FineWaterSend := preload("res://src/shared/fine_water_send.gd")
 const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 const EventLogScript := preload("res://src/shared/event_log.gd")
+const IceMoatScript := preload("res://src/shared/ice_moat.gd")
 const PlayServerScript := preload("res://src/shared/play_server.gd")
 const GitStamp := preload("res://src/debug/git_stamp.gd")
 const BuildInfo := preload("res://src/shared/build.gd")
@@ -243,6 +244,7 @@ var _aim: Dictionary = {}              # peer -> Vector2 ground point to make fi
 var _clear_generated_at_start: bool = false
 var _flag_check_msec: int = 0
 var _store_path: String = ""
+var ice_moat = IceMoatScript.new()   # the thaw's open shore moat, as the client draws it (ice_moat.gd)
 var game_clock = GameClockScript.new()   # the one game clock; advances only while the server runs
 var _clock_saved_msec: int = 0
 
@@ -479,6 +481,7 @@ func _ready() -> void:
 		return best.y
 	items.water_near = func(pos, reach): return DrinkRulesScript.water_near(generator.get_tile(generator.tile_of(pos.x, pos.z)), pos, reach, false)
 	items.drink_water_near = func(pos, reach): return DrinkRulesScript.water_near(generator.get_tile(generator.tile_of(pos.x, pos.z)), pos, reach, true)   # and not down a bank (DrinkRules.REACH_DROP_M)
+	items.ice_moat_at = func(pos): return IceMoatScript.in_moat(pos, ice_moat.moat_cells(pos, game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), int(settings.master_seed)), items.water_near)   # a thaw's open shore: a drink or fill without a hole, as the player sees it (#729)
 	# The drink's source rows for vitals.json thirst.sources, from the baked tile (DrinkRules.tile_rows), with the year mean of this climate zone.
 	items.water_source = func(pos, reach) -> Array:
 		var group = settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m))))
@@ -681,6 +684,7 @@ func _ready() -> void:
 	animals.canopy = func(point): return flora.covered(point)
 	animals.air_at = func(pos): return WeatherScript.air_c(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), int(settings.master_seed))   # Weather.air_c at the animal (#620)
 	animals.ice_cover_at = items.ice_cover_at   # the same ice as the players' (animals_on_ice_server.md)
+	animals.ice_moat_at = items.ice_moat_at     # and the same open moat in a thaw
 	animals.game_seconds = func(): return game_clock.seconds
 	animals.thunder_between = func(t0, t1, centre, reach): return ThunderScript.strikes(int(settings.master_seed), t0, t1, _weather_at(centre), centre, reach)   # the shared strikes, under that player's own weather (birds_and_thunder_server.md)
 	animals.canopy_ready = func(x, z): return _cover_ready(Vector3(x, 0.0, z))
