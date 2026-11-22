@@ -485,6 +485,8 @@ var _slowest_hint: String = ""
 var _slowest_hint_usec: int = 0
 var _sync_detail: String = ""         # the last _sync_world_items' split (the slow-tick line)
 var _throttle_path: String = "?"    # the container's cpu.stat when a CPU quota holds it (Linux), "" otherwise; "?" until first looked at
+var _bog_build_usec: int = 0       # time building bog fields (BogIron.field, main thread, once a square a run) since the sync began (the slow-tick line)
+var _bog_built: int = 0             # bog field squares built in that time
 var _throttle_mark: int = -1        # its paused microseconds before this tick's first scatter cell, -1 when not read (the slow-cell line)
 var _ore_usec: PackedInt64Array = PackedInt64Array([0, 0, 0, 0, 0, 0, 0])   # the last cell's boulders and ore rocks: binding the reads, the ore body looks, the water reads, settling rows, the mountain-foot probes (usec), the number of ore body looks, the spots' ground reads (usec) (the slow-cell line)
 var _ore_split: Dictionary = {}   # the last cell's ore rocks: ore -> usec of its whole layout (the slow-cell line, so no ore's cost hides in the sum)
@@ -1652,6 +1654,7 @@ func tick(delta: float) -> void:
 	var t0: int = Time.get_ticks_usec()
 	_slow_parts = []
 	_slow_prev_usec = t0
+	_throttle_mark = -1   # set by this tick's first scatter cell when a CPU quota holds the server (the slow lines)
 	_fly(delta)
 	_roll_tick(delta)
 	_showroom_retry(delta)
@@ -1753,7 +1756,15 @@ func tick(delta: float) -> void:
 	if tick_ms > SLOW_TICK_LOG_MS:
 		# One line a slow tick, naming each part's own time (the old lines gave only the running total, so a 274 ms "scatter reached after"
 		# did not say whether scatter or something before it took the time). Printed from a worker: a print can stall the main thread (#397).
-		_log_off_main("items tick slow: %.0f ms; parts over %.0f ms: %s" % [tick_ms, SLOW_PART_LOG_MS, ", ".join(_slow_parts)])
+		# With a CPU quota and a scatter cell laid this tick, how much the container's throttled time rose since then (as on the slow-cell line;
+		# no extra read on a tick that is not slow).
+		var paused: String = ""
+
+		if _throttle_mark >= 0:
+			var now_paused: int = CpuBudget.throttled_usec(CpuBudget.read_text(_throttle_path))
+			paused = "; container CPU quota throttling rose %.0f ms since the first scatter cell (summed over CPUs)" % (float(now_paused - _throttle_mark) / 1000.0) if now_paused >= 0 else ""
+
+		_log_off_main("items tick slow: %.0f ms; parts over %.0f ms: %s%s" % [tick_ms, SLOW_PART_LOG_MS, ", ".join(_slow_parts), paused])
 
 
 # Testing aid (Tyler, 31 Oct 2026): the items tick times its parts, so a join stall names its part. Each mark closes the part since the last
@@ -5210,7 +5221,10 @@ func _bog_field_of(fx: int, fz: int) -> Array:
 	var key: String = "%d,%d" % [fx, fz]
 
 	if not _bog_fields.has(key):
+		var build_started: int = Time.get_ticks_usec()
 		var patches: Variant = bog_field.call(fx, fz, _dig_cfg.get("bog_iron", {}))
+		_bog_build_usec += Time.get_ticks_usec() - build_started
+		_bog_built += 1
 
 		if typeof(patches) != TYPE_ARRAY:
 			return []
@@ -6969,6 +6983,9 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 	# record in the world (the soak test found 2 to 9 ms a second at 20 players and 500 records, growing with both).
 	var t_grid: int = Time.get_ticks_usec()
 	var send_usec: int = 0
+	var bog_usec: int = 0
+	_bog_build_usec = 0
+	_bog_built = 0
 	var sent: int = 0
 	var quick: bool = not fresh.is_empty()
 	var grid: Dictionary = {}
@@ -7125,7 +7142,11 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 							(added[added.size() - 1][5] as Dictionary)["fill_pm"] = int(round(BinRules.fill_share(bin_def, bin_box) * 1000.0))
 					known[id] = signature
 
-		for bog in ([] if quick else _bog_rows_near(peer, here)):
+		var bog_started: int = Time.get_ticks_usec()
+		var bog_rows: Array = [] if quick else _bog_rows_near(peer, here)
+		bog_usec += Time.get_ticks_usec() - bog_started
+
+		for bog in bog_rows:
 			near[int(bog[0])] = true
 			var bog_signature: int = int(bog[2]) + 1000 * BOG_STATE
 
@@ -7146,7 +7167,10 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 
 	# For the slow-tick line: where the time went (lag run 5 Nov: sync-world-items 60-124 ms at a join).
 	var total_ms: float = float(Time.get_ticks_usec() - t_grid) / 1000.0
-	_sync_detail = "(%d records: grid %.0f, scan %.0f, send %.0f for %d items)" % [_items.size(), float(t_scan - t_grid) / 1000.0, total_ms - float(t_scan - t_grid) / 1000.0 - float(send_usec) / 1000.0, float(send_usec) / 1000.0, sent]
+	# Bog rows apart from the scan: the first sight of a 512 m field square builds it on the main thread (BogIron.field, 4,096 samples a square).
+	_sync_detail = "(%d records: grid %.0f, scan %.0f, bog %.1f (built %d fields in %.1f), send %.0f for %d items)" % [_items.size(), float(t_scan - t_grid) / 1000.0,
+		total_ms - float(t_scan - t_grid) / 1000.0 - float(send_usec) / 1000.0 - float(bog_usec) / 1000.0, float(bog_usec) / 1000.0, _bog_built, float(_bog_build_usec) / 1000.0,
+		float(send_usec) / 1000.0, sent]
 
 
 func _send_changes(peer: int, inv, before: Array) -> void:
