@@ -9,14 +9,18 @@
 # (for the gaming server: docker load -i ..., then docker compose -f compose.yaml up -d). The first run compiles the engine (deploy/engine,
 # roughly 45 to 90 minutes of full CPU); later runs reuse it.
 param(
-	# The server players see first in the game's server list (src/client/server_list.gd official()). Provisional, coordinator 22 Nov 2026.
+	# The server players see first in the game's server list (src/client/server_list.gd official()). Dave 22 Nov 2026: hannibalshouse.duckdns.org is where the server will be.
 	[string]$Official = "hannibalshouse.duckdns.org:24600",
 	# Dave's Windows editor (Godot 4.7.2 + Voxel Tools 1.7). With it the game is exported on Windows itself, with a window, so the export
 	# shader baker can run (it needs a real renderer: Godot editor/export/shader_baker_export_plugin.cpp); without it the export runs headless
 	# in a container and ships no baked shaders (they compile while playing, as in the editor).
 	[string]$WindowsEditor = "",
-	# The bought animal models (assets/animals, gitignored by licence, decision 83) go into a pack only when this is given (Dave's call).
-	[switch]$IncludeAnimals,
+	# The bought animal models (assets/animals, gitignored by licence, decision 83) go into the game's pack (Dave 22 Nov 2026: "incorporated
+	# right in with the game"). They are copied, read only, from Dave's game folder into this clone; that folder is never changed. They are
+	# never committed and never uploaded as loose files, only inside the built game.
+	[string]$AnimalsFrom = "C:\GodotProjects\DynastyALWL\assets\animals",
+	# A build without them (the game draws its code-built animals instead).
+	[switch]$NoAnimals,
 	[switch]$Publish
 )
 $ErrorActionPreference = "Stop"
@@ -34,8 +38,29 @@ if (git status --porcelain -- addons assets data scenes src worlds project.godot
 	throw "make_release: the game files have changes not committed; a release is made from a commit"
 }
 
-if ((Test-Path assets\animals) -and -not $IncludeAnimals) {
-	throw "make_release: assets\animals (the bought models) is in this checkout and would go into a public download; use a fresh clone, or pass -IncludeAnimals once Dave has said yes"
+if ($NoAnimals) {
+	if (Test-Path assets\animals) { throw "make_release: -NoAnimals, but assets\animals is in this checkout; delete that copy first" }
+}
+else {
+	# Fail loudly rather than ship the plain animals by mistake.
+	if (-not (Get-ChildItem -LiteralPath $AnimalsFrom -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1)) {
+		throw "make_release: no animal models in $AnimalsFrom; pass -AnimalsFrom <folder> or -NoAnimals"
+	}
+	# This clone's copy is deleted before each copy, so it must never be Dave's folder itself: not the same path (any case or trailing
+	# slash) and not a link (a junction or symlink would let the delete reach through to the source).
+	$source = [IO.Path]::GetFullPath((Resolve-Path -LiteralPath $AnimalsFrom).ProviderPath).TrimEnd('\')
+	$mine = [IO.Path]::GetFullPath((Join-Path (Get-Location).ProviderPath "assets\animals")).TrimEnd('\')
+	if ($source -ieq $mine) { throw "make_release: -AnimalsFrom is this clone's own folder" }
+	if (Test-Path -LiteralPath $mine) {
+		if ((Get-Item -LiteralPath $mine -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) {
+			throw "make_release: $mine is a link; remove the link by hand (not its contents) and run again"
+		}
+		Remove-Item -LiteralPath $mine -Recurse -Force   # this clone's own copy from an earlier run
+	}
+	Write-Host "== animal models: copying from $source (read only)"
+	Copy-Item -LiteralPath $source -Destination $mine -Recurse
+	$count = (Get-ChildItem -LiteralPath $mine -Recurse -File).Count
+	Write-Host "   $count files"
 }
 # The island water record (gitignored bake input, ~90 MB a tile) would match the export's include filter; a fresh clone has none.
 if (Test-Path worlds\*\record) { throw "make_release: a world record folder (worlds\*\record) is in this checkout; use a fresh clone" }
