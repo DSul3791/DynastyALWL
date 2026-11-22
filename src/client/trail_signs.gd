@@ -10,6 +10,7 @@ extends Node3D
 # StandardMaterial3D like the bandit boot prints (track_look.gd), so they share that shader.
 
 const CONFIG := "res://data/look/trail_signs.json"
+const TrailCodec := preload("res://src/shared/trail_codec.gd")   # ROUTE_BLOCK_M, the side of a routes block
 const KIND_RUN := 0
 const KIND_DEER := 1
 const PELLET_COLOR := Color(0.24, 0.18, 0.11)
@@ -60,7 +61,7 @@ func update(player: Vector3, tracking: int, loading: bool) -> void:
 	_next_msec = Time.get_ticks_msec() + 500
 
 	for key in routes.keys():
-		if absi(key.x - int(floor(player.x / 256.0))) > 2 or absi(key.y - int(floor(player.z / 256.0))) > 2:
+		if absi(key.x - int(floor(player.x / TrailCodec.ROUTE_BLOCK_M))) > 2 or absi(key.y - int(floor(player.z / TrailCodec.ROUTE_BLOCK_M))) > 2:
 			routes.erase(key)   # far behind: the grass view forgets these blocks too, and they come again on return
 			_dirty = true
 
