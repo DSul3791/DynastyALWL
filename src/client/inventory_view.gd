@@ -449,6 +449,8 @@ func setup(terrain_net, hud_layer: CanvasLayer, world_root: Node3D, player_posit
 	_thought_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_layer.add_child(_thought_label)
 	net.hello.rpc_id(1, _player_key(), BuildStamp.stamped_build())   # a stamped server refuses another build (protocol 133)
+	var me: Dictionary = CharacterStore.active()
+	net.my_look.rpc_id(1, str(me.get("name", "")), str(me.get("body", "")), str(me.get("code", "")))   # protocol 151: how the other players see this character
 
 	for forgotten in CharacterKeys.take_forgotten():
 		net.forget_character.rpc_id(1, str(forgotten))
