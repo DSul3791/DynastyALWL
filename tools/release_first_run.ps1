@@ -37,6 +37,10 @@ $script:failed = $false
 $script:serverUp = $false
 $script:dockerOut = ""
 
+# True while the folder still holds a file. The uninstaller hands over to a copy of itself and returns at once; that copy deletes the
+# files one by one and its own unins000 files last, so a check must wait for the folder to empty.
+function Has-Files([string]$folder) { [bool](Get-ChildItem -LiteralPath $folder -Recurse -File -Force -ErrorAction SilentlyContinue | Select-Object -First 1) }
+
 function Fail([string]$why) { Write-Host "   FAIL: $why"; $script:failed = $true }
 
 # Starts a program and waits at most $limit seconds; past that it is closed (with everything it started) and that is a FAIL.
@@ -124,7 +128,7 @@ if (Test-Path -LiteralPath $uninstallKey) {
 		Write-Host "== removing the test install an earlier run left"
 		Run-Limited $leftover "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" 300 "the earlier test install's uninstaller" | Out-Null
 		$deadline = (Get-Date).AddSeconds(120)
-		while ((Test-Path -LiteralPath $uninstallKey) -and (Get-Date) -lt $deadline) { Start-Sleep -Seconds 2 }
+		while (((Test-Path -LiteralPath $uninstallKey) -or (Has-Files $install)) -and (Get-Date) -lt $deadline) { Start-Sleep -Seconds 2 }
 	}
 }
 if (Test-Path -LiteralPath $uninstallKey) {
@@ -213,11 +217,9 @@ finally {
 	if (Test-Path -LiteralPath $uninstaller) {
 		Write-Host "== uninstall"
 		Run-Limited $uninstaller "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" 300 "the uninstaller" | Out-Null
-		# The uninstaller hands over to a copy of itself and returns at once: wait for the files to go.
 		$deadline = (Get-Date).AddSeconds(120)
-		while ((Test-Path -LiteralPath $exe) -and (Get-Date) -lt $deadline) { Start-Sleep -Seconds 2 }
-		if (Test-Path -LiteralPath $exe) { Fail "the uninstaller left Dynasty.exe in $install" }
-		elseif (Get-ChildItem -LiteralPath $install -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1) { Fail "the uninstaller left files in $install" }
+		while ((Has-Files $install) -and (Get-Date) -lt $deadline) { Start-Sleep -Seconds 2 }
+		if (Has-Files $install) { Fail "the uninstaller left files in $install after 120 s" }
 		elseif (Test-Path -LiteralPath $uninstallKey) { Fail "the uninstaller left the uninstall entry" }
 		else { Write-Host "   uninstalled" }
 	}
