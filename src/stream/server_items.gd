@@ -504,7 +504,7 @@ var _slow_prev_usec: int = 0          # when the last part of this items tick en
 var _cell_parts: Array = []           # the last scatter cell's parts, as "name ms" (the slow-cell line)
 var _save_parts: Array = []           # this tick's save files over 10 ms to stringify, as "name ms (KB)" (the slow-tick line)
 var hint_every: int = HINT_EVERY_TICKS   # tests set 1: the hints every goals tick
-var _hint_ticks: int = HINT_EVERY_TICKS - 1   # slow ticks since the hints were last looked at (the first tick looks)
+var _hint_phase: int = 0   # which share of the players has its hints looked at this slow tick (each player every hint_every ticks)
 var _goals_detail: String = ""        # the last _goals_tick's split (the slow-tick line)
 var _slowest_hint: String = ""
 var _slowest_hint_usec: int = 0
@@ -22205,11 +22205,11 @@ func _goals_tick() -> void:
 
 	# Hints are looked at every HINT_EVERY_TICKS slow ticks (about once a second), not 4 times a second: the tree triggers
 	# (near_orchard, near_fruit_tree_in_season) scan the trees of nine flora chunks each look (lag run 5 Nov: hints 18 to 76 ms a tick).
-	_hint_ticks += 1
-	var hints_now: bool = _hint_ticks >= hint_every
-
-	if hints_now:
-		_hint_ticks = 0
+	# Each slow tick looks at the hints of one share of the players (every hint_every-th from _hint_phase), so each player still once a second but
+	# not all on the same tick (load bots 22 Nov 2026: 8 players, hints 39 to 69 ms on one tick, rising with every player).
+	var nth: int = 0
+	var phase: int = _hint_phase
+	_hint_phase = (_hint_phase + 1) % maxi(1, hint_every)
 
 	# shortcut: every goal is looked at for every player each slow tick (the have and worn checks read the pack); fine for the 49 live goals, the full catalog needs indexed events (GA-49).
 	for peer in _peer_key.keys():
@@ -22217,8 +22217,10 @@ func _goals_tick() -> void:
 		_goals_check(peer)
 		goals_usec += Time.get_ticks_usec() - tg
 
-		if hints_now:
+		if nth % maxi(1, hint_every) == phase:
 			_hints_check(peer)
+
+		nth += 1
 
 	# For the slow-tick line (lag run 5 Nov: goals 43 and 102 ms, no split).
 	_goals_detail = "(night walk %.0f, goals %.0f, hints %.0f, slowest hint trigger %s %.0f)" % [float(t1 - t0) / 1000.0, float(goals_usec) / 1000.0,
