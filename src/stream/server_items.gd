@@ -12190,6 +12190,9 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 func _after_built(peer: int, entry: Dictionary, def: Dictionary) -> void:
 	var spot: Vector3 = entry["pos"]
 
+	if bool(def.get("blocks_walk", false)):
+		_free_trapped(spot)
+
 	if str(def.get("use", "")) == "light" and _blueprint_of_kit.has(str(def.get("kit", ""))):   # a lantern built with its candle or oil ("spent") stands lit on it
 		for burnt in _blueprints[int(_blueprint_of_kit[str(def["kit"])])].get("spent", []):
 			if str(burnt[0]) == str(def.get("fuel", "")) and int(burnt[1]) > 0:
@@ -17396,6 +17399,27 @@ func _step_to_station(peer: int, station_id: int) -> Vector3:
 
 
 # Another player stands within `radius` (on the ground plane) of a point.
+const TRAPPED_NEAR_M := 6.0   # players this close to a piece that just went up are checked for standing inside it
+
+
+# A wall or a heavy station that just went up round a player (their own or a friend's): the server steps them to the nearest clear spot, as a
+# resume spot is made safe (_safe_resume), so nobody is left stuck inside a finished piece.
+func _free_trapped(at: Vector3) -> void:
+	for peer in _peer_pos.keys():
+		var pos: Vector3 = _peer_pos[peer]
+
+		if Vector2(pos.x - at.x, pos.z - at.z).length() > TRAPPED_NEAR_M or not structure_blocks(pos.x, pos.z, 0.0):
+			continue
+
+		var out: Vector3 = _safe_resume(int(peer), pos)
+
+		if out.distance_to(pos) > 0.01:
+			_peer_pos[peer] = out
+
+			if send_step_to.is_valid():
+				send_step_to.call(int(peer), out, atan2(-(at.x - out.x), -(at.z - out.z)))   # facing the piece they were moved out of
+
+
 func _player_within(point: Vector3, radius: float, but: int) -> bool:
 	for other in _peer_pos:
 		if int(other) != but and Vector2(_peer_pos[other].x - point.x, _peer_pos[other].z - point.z).length() <= radius:
