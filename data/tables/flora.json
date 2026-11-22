@@ -3365,8 +3365,6 @@
 				"temperate_grassland": 60,
 				"heath": 10,
 				"alpine_meadow": 15,
-				"temperate_forest": 6,
-				"mixed_forest": 4,
 				"temperate_forest": 24,
 				"mixed_forest": 12
 			},
@@ -3611,9 +3609,8 @@
 			],
 			"per_hectare": {
 				"temperate_grassland": 35,
-				"temperate_forest": 8,
-				"heath": 4,
 				"temperate_forest": 14,
+				"heath": 4,
 				"mixed_forest": 7
 			},
 			"moisture": [

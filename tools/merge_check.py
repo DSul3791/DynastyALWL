@@ -2,7 +2,7 @@
 """Pre-merge guard (BP fix 1 of RETRO_DAY2, Dave 2026-10-23: yes). Run it on the merged tree BEFORE you push.
    python3 tools/merge_check.py            (from the repo root; exit 0 = all clear, exit 1 = problems listed)
 Checks: conflict markers, unique item numbers, next_number above the highest, unique ACT_ action ids, unique protocol/build
-numbers, JSON files parse, build NUMBER not lower than before, no NEW crash reports or telemetry logs tracked, .uid for new scripts.
+numbers, JSON files parse (no key twice in an object), build NUMBER not lower than before, no NEW crash reports or telemetry logs tracked, .uid for new scripts.
 It does not run Godot (warning count and headless loads stay with tools/local_check.sh on a machine with Godot)."""
 import json, os, re, subprocess, sys
 
@@ -37,11 +37,23 @@ for f in sh("git", "ls-files").splitlines():
     if re.search(r"^(<<<<<<< |>>>>>>> )", txt, re.M) or re.search(r"^=======$", txt, re.M) and "<<<<<<<" in txt:
         bad("conflict marker in %s" % f)
 
-# 2. JSON parses
+# 2. JSON parses, with no key twice in one object (the later one silently wins in Godot and Python: a doubled wild_rose seed, PR #1569)
+def _no_twice(pairs, where):
+    seen = set()
+
+    for key, _ in pairs:
+        if key in seen:
+            bad("JSON key twice in one object: %s %r" % (where, key))
+
+        seen.add(key)
+
+    return dict(pairs)
+
+
 for f in sh("git", "ls-files", "data").splitlines():
     if f.endswith(".json") and os.path.isfile(f):
         try:
-            json.load(open(f, encoding="utf-8"))
+            json.load(open(f, encoding="utf-8"), object_pairs_hook=lambda pairs, f=f: _no_twice(pairs, f))
         except Exception as e:
             bad("JSON does not parse: %s (%s)" % (f, str(e)[:80]))
 
