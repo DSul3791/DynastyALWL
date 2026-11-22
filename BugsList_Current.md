@@ -1410,6 +1410,7 @@ Not yet played.
 **Known limits:**
 - The part-burnt unit (up to 1800 s of making) is not saved; after a server restart the next unit is taken from the slot.
 - The coals and flare have not been seen in game.
+- Release note, old saves: a smithy built before #1428 may still hold a product in its first slot, which is now the fuel slot. It then reads "no fuel" until the player takes that item out and puts Coal or Charcoal in. Nothing is lost.
 
 **Acceptance:** build a Primitive smithy. Before fuel it is cold and offers no recipes. Put Coal in slot 1: red coals glow. Make something: the fire flares bright and drops back to red coals when done. The same for the Blacksmithy, Advanced smithy and Master forge.
 
