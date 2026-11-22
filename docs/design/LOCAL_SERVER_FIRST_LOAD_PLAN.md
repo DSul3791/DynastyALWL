@@ -110,3 +110,7 @@ The long-term item stays BugsList 93 itself: the client's cold shader build of a
 
 - Answered 22 Nov: the Z ft1 server telemetry has them as 5850 ms ('between frames') and 18269 ms ('checks'); see above.
 - Answered 22 Nov (coordinator): B's trigger is the first player's ground ready, with 120 s after server start as the fallback.
+
+## 22 Nov: Vulkan on Windows
+
+The client now uses Vulkan on Windows (#1544). Lane A cold plays on e0c1ef58: longest FREEZE median 7959 ms on Vulkan against 23910 ms on d3d12, ground ready +22.6 s against +48.7 s. On Vulkan the server STALLs during the join were 600-700 ms (d3d12 runs up to 13 s), which fits the CPU-starvation reading above: the shorter client build leaves the server its CPU. The driver cache folders named above are the d3d12 ones; on Vulkan the NVIDIA driver keeps its pipeline cache under %LOCALAPPDATA%\NVIDIA\GLCache (general knowledge, not checked on the lane PC). Options B to E are not needed for now.
