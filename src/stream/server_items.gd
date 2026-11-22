@@ -12676,6 +12676,11 @@ func _finish_site(peer: int, id: int) -> void:
 	_grid_add(id, it)
 	_add_roof(it)
 	_after_built(peer, it, def)
+
+	for owner_peer in _peer_key:
+		if int(owner_peer) != peer and str(_peer_key[owner_peer]) == str(it["struct"].get("owner", "")):
+			_goal_event(int(owner_peer), "placed", str(it["struct"]["kind"]))   # a friend's last hammer blow: the one who laid the blueprint gets the goal too
+			break
 	_tank_split_pipe(id)
 	_water_add(id)
 	_dirty = true
@@ -17166,7 +17171,7 @@ func kill(peer: int, cause: String) -> bool:
 		_say(peer, "You come back at your shelter")
 
 	if _items.has(remains_id) and _remains_hold(_items[remains_id]):   # the set made above: a new player has no shelter and must be told where their things went
-		_say(peer, "Your things are on your remains where you fell. A marker shows the way.")
+		_say(peer, "Your things are on your remains where you fell. Press Tab to see which way.")
 
 	return true
 
