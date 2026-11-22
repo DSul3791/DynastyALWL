@@ -19246,7 +19246,7 @@ func _water_resolve(now_s: float) -> void:
 # while the worker stays within its use reach and is not worn out; the work is exertion (the block's effort, 0.7). A source with nothing linked below
 # it pours into the worker's containers instead (the first with room, hotbar first), and stops when they are full.
 const WELL_REACH_M := 200.0
-var nearest_fresh_water: Callable      # (position, reach m) -> Vector3(x, distance, z) of the nearest fresh water, distance INF when none; set by the server scene (unset: the drink hint names no way)
+var nearest_fresh_water: Callable      # (position, reach m) -> Vector3(x, distance, z) of the nearest fresh water, distance INF when none, NAN when not known yet; set by the server scene (unset: the drink hint names no way)
 const WATER_HINT_REACH_M := 1500.0    # PROVISIONAL: how far the drink goal's hint looks for fresh water
 const WATER_HINT_MOVE_M := 150.0      # PROVISIONAL: a player this far from where the hint was worked out gets it again
 var _water_hint_at: Dictionary = {}   # peer -> where the drink hint was last worked out (Vector3), or true once the drink goal is done
@@ -22505,6 +22505,9 @@ func _water_way(peer: int) -> String:
 
 	var spot: Vector3 = nearest_fresh_water.call(at, WATER_HINT_REACH_M)
 
+	if is_nan(spot.y):
+		return ""   # the ground there is not loaded yet: the plain hint (worked out again after the next walk)
+
 	if spot.y == INF:
 		return " No fresh water within %d m of here: try another way." % int(WATER_HINT_REACH_M)
 
@@ -22522,6 +22525,9 @@ func _drink_hint_due(peer: int, position: Vector3) -> bool:
 
 	if at is bool or (at is Vector3 and (at as Vector3).distance_to(position) < WATER_HINT_MOVE_M):
 		return false
+
+	if not _tile_ready_at(position):
+		return false   # its tile is still loading (ground_ready prefetches it): the next report tries again
 
 	var st: Dictionary = _goal_state_of(peer)
 

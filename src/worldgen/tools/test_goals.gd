@@ -560,5 +560,34 @@ func _init() -> void:
 	var lists_before: int = lists_sent.size()
 	w.report_position(1, Vector3(600.0, 10.0, 600.0))
 	check(lists_sent.size() == lists_before and not str(w.goals_rows(1)[0][2]).contains("fresh water"), "once drunk the hint is the plain one and is not sent again")
+
+	# The search itself on a small made-up tile (8 m samples): a one-sample-wide river 100 m away is found; marsh, sea and a seasonal pond
+	# nearer are not drinking water for the hint; nothing in reach is INF; a tile with no water map is INF.
+	var tile = load("res://src/worldgen/runtime/tile_terrain_data.gd").new()
+	tile.samples = 400
+	tile.spacing_m = 8.0
+	tile.x0 = 0.0
+	tile.z0 = 0.0
+	tile.water_class.resize(400 * 400)
+	tile.water_surface.resize(400 * 400)
+	tile.water_surface.fill(NAN)
+
+	for j in 400:   # a river one sample wide, running north-south at x = 1608 (sample 201), 104 m east of the player
+		tile.water_class[j * 400 + 201] = 3
+		tile.water_surface[j * 400 + 201] = 5.0
+
+	for cell in [[190, 200, 4], [195, 200, 1], [198, 200, 10]]:   # marsh, sea and a seasonal pond, all nearer
+		tile.water_class[cell[1] * 400 + cell[0]] = cell[2]
+		tile.water_surface[cell[1] * 400 + cell[0]] = 5.0
+
+	var t0: int = Time.get_ticks_usec()
+	var found: Vector3 = tile.fresh_water_spot(Vector3(1504.0, 10.0, 1600.0), 1500.0)
+	var dry_t0: int = Time.get_ticks_usec()
+	tile.fresh_water_spot(Vector3(400.0, 10.0, 400.0), 1500.0)   # far from the river: the near pass and the whole coarse pass
+	print("drink hint search: %d us found near, %d us the whole reach" % [dry_t0 - t0, Time.get_ticks_usec() - dry_t0])
+	check(absf(found.y - 104.0) < 17.0 and found.x == 1608.0, "a narrow river 104 m east is found past nearer marsh, sea and seasonal water (%s)" % str(found))
+	check(tile.fresh_water_spot(Vector3(1504.0, 10.0, 1600.0), 50.0).y == INF, "no fresh water in reach: INF")
+	tile.placeholder = true
+	check(tile.fresh_water_spot(Vector3(1504.0, 10.0, 1600.0), 1500.0).y == INF, "an ocean tile with no map: INF")
 	print("goals: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
