@@ -491,7 +491,7 @@ Source: [DESIGN_IDEAS §§8.17–8.20](https://github.com/DSul3791/DynastyALWL/b
 #### Ideas and proposals — not approved
 
 - **[Proposed]** The minimum distance between two markers is then twice the grand-city radius R. The settlement ladder below puts R at 1.5 km.
-- **[Proposed]** **The settlement ladder.** A new claim is a **camp**: a marker and a tent. Each paid expansion grows it by roughly 50 percent in radius (a smaller step for the first two), and the size names follow. Radius includes the surrounding farmland, since the circle runs out to the farms.
+- **[Proposed; size table PROVISIONAL, D-TODO-5, coordinator pick 22 Nov 2026 for Dave's review]** **The settlement ladder.** The radii and population bands in the table below are adopted as written for now, so later work has one set of numbers. This is not Dave's own approval. Sanity check, real medieval sizes: most towns had well under 2,000 people and only the largest cities had over 10,000, so 1,500 to 5,000 for a city and up to 15,000 for a grand city sit at the top of that range, as a city a guild can grow. The rest of this section (the pricing, the requirements and the reservation) stays proposed. A new claim is a **camp**: a marker and a tent. Each paid expansion grows it by roughly 50 percent in radius (a smaller step for the first two), and the size names follow. Radius includes the surrounding farmland, since the circle runs out to the farms.
 
 | Stage | Radius | Area | Rough population (NPCs and players) |
 |---|---|---|---|
