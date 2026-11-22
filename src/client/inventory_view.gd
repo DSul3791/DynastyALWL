@@ -3246,6 +3246,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 					(fixture_light as SpotLight3D).spot_range = light_m
 
 			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": fixture_light, "roof": roof_key, "yaw": rad_to_deg(yaw), "on": row.size() > 5 and bool((row[5] as Dictionary).get("on", false))}
+			_note_first_shown(int(row[1]), state)
 
 			if row.size() > 5 and (row[5] as Dictionary).has("len"):
 				_world[id]["len"] = float(row[5]["len"])   # a pipe run (PLUMBING_DESIGN s9): its ends are PipeRules.ends(pos, yaw, pitch, len)
@@ -3286,6 +3287,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			node.position = row[3]
 			_root.add_child(node)
 			_world[id] = {"node": node, "number": 0, "count": 1, "pos": row[3], "state": state, "light": null, "extra": extra}
+			_note_first_shown(0, state)
 			continue
 
 		var t_d: int = Time.get_ticks_usec()
@@ -3333,6 +3335,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		_root.add_child(node)
 		_world[id] = {"node": node, "number": row[1], "count": row[2], "pos": row[3], "state": state, "light": light}
+		_note_first_shown(int(row[1]), state)
 
 		if state == 0 and _is_log(int(row[1])):
 			_world[id]["log"] = true
@@ -5083,6 +5086,14 @@ static func _lit_state(state: int) -> bool:
 
 static func _fire_tier(state: int) -> int:
 	return 1 if state == 40 else (3 if state == 41 else 2)
+
+
+# The first world item of each kind and state this session is named on the next slow frame's line (FrameProbe.first_shown, BugsList 108).
+func _note_first_shown(number: int, state: int) -> void:
+	var key: String = "i%d_%d" % [number, state]
+
+	if FrameProbe.is_new(key):
+		FrameProbe.first_shown("item %s state %d" % [table.id_of(number) if number > 0 else "stump", state], key)
 
 
 # Loose items on the ground (Dave 2026-10-20: a stick must not look like a green box). One shared mesh per item

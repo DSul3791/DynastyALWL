@@ -15,6 +15,8 @@ const STALL_MS := 600
 const GAP_MS := 500                     # a main-thread frame gap this long prints a FREEZE gap line (the one to trust)
 const LATE_MS := 250                    # the watch woke this late: its stuck reading is not trusted (the thread was starved)
 
+const PrintQueueScript := preload("res://src/shared/print_queue.gd")
+static var printer = PrintQueueScript.new()   # the client's diagnostic lines, printed on a worker (D-LAG-1): a print on the main thread flushed the log 0.4-1.6 s
 static var _mutex: Mutex = Mutex.new()
 static var _beat_msec: int = 0
 static var _last_piece: String = "start"
@@ -38,7 +40,7 @@ static func beat() -> void:
 	# The real time between two frames, from the main thread itself (not the watch thread, which can be held up when every core is busy):
 	# Dave's 3 Nov log had watch lines of 0.7-0.9 s while no frame was over 142 ms, so the watch alone is not proof of a stall.
 	if gap > GAP_MS and frame > 30:
-		print("FREEZE gap: %d ms between frames %d and %d, last finished before it: \"%s\"" % [gap, frame - 1, frame, piece])
+		printer.line("FREEZE gap: %d ms between frames %d and %d, last finished before it: \"%s\"" % [gap, frame - 1, frame, piece])
 
 
 static func note(piece: String) -> void:
