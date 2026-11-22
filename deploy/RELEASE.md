@@ -31,6 +31,14 @@ Next time: `git pull` in that folder, then the last line again.
 
 `-WindowsEditor` exports the game with Dave's own Windows editor, which opens a window for a minute or two: only that way does the export shader baker run (PR #1544 turns it on; it needs a real renderer, so a headless export skips it). Leave it out and the export runs headless in a container, without baked shaders, so shaders compile while playing.
 
+Before any friend gets it (gate review of #1546), with a window, when Dave allows one:
+
+```
+powershell -ExecutionPolicy Bypass -File tools\release_first_run.ps1 -Exe ..\dynasty_export\build-<N>\client\Dynasty.exe -Play
+```
+
+It starts the exported game twice with a fresh APPDATA, LOCALAPPDATA and TEMP (no cache, settings or characters, as on a friend's PC): once with the default driver and once with `--rendering-driver d3d12`, 1200 frames each, and prints the driver line of each; it says FAIL when the d3d12 start fell back to Vulkan, or a start has no driver line. Then `-Play` opens one cold play (Vulkan, 1920x1080 windowed) that runs until the window is closed; its `play.log` has the longest FREEZE and ground-ready lines for the lag thread. The graphics quality is the game's first-start default unless it is changed in Settings during that play. "Cold" is cold for the game only: the graphics driver's own shader cache on that PC may still be warm from earlier plays, so the FREEZE times can come out a little low. The play joins whatever server is picked (the official one is the real test server), so use a throwaway character. Logs are in `..\dynasty_export\build-<N>\first_run\`. Record both driver lines with the run. Then install `DynastySetup-<N>.exe` once and start it from the Start menu.
+
 On the gaming server: copy `dynasty-server-build-<N>.tar` and `compose.yaml` there, then `docker load -i dynasty-server-build-<N>.tar` and `docker compose -f compose.yaml up -d` (SERVER.md has admin keys, password and ports).
 
 Players: download `DynastySetup-<N>.exe` from the release and run it. Windows SmartScreen warns about an unsigned program: More info, then Run anyway. The server refuses any other build, so when a new build is released, everyone installs it over the old one (the full updater, plan step A6, comes later).

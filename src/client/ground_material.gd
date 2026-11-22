@@ -43,6 +43,11 @@ uniform vec4 puddle_air = vec4(0.0, 0.0, 1.0, 0.0);    // rain 0..1, wind 0..1, 
 uniform vec2 puddle_origin = vec2(0.0); // a corner near the camera, in 60 m steps: the ripples are drawn from it, so they keep their precision far from 0
 uniform sampler2D trail_map : filter_linear, repeat_enable, hint_default_black;   // worn game trails (grass_view.gd), 4 m texels over 1024 m
 uniform float trail_draw = 0.25;
+uniform sampler2D run_map : filter_linear, repeat_disable, hint_default_black;   // rabbit runs and deer trails round the player (grass_view.gd, the grass's own run map)
+uniform vec2 run_origin = vec2(0.0);    // its south-west corner, world x, z
+uniform float run_size = 128.0;         // metres it covers
+uniform vec4 worn_earth = vec4(0.0, 30.0, 0.85, 0.7);   // worn earth on bare ground (data/look/worn_earth.json): on 0/1, draw_m, dark, litter_cut
+uniform vec4 worn_soil = vec4(0.16, 0.12, 0.085, 0.1);  // the packed soil's colour (linear) and how much smoother it is
 uniform vec2 summit_snow = vec2(0.0, 0.82); // summit snow (weather_look.gd, art_weather_light.md 8.2.1): the island's summit height (0 none known), lowest patches as a share of it
 uniform bool wet_look = false;          // set on by puddles.gd for the terrain (rain_look_design.md 3.4): wetness per layer (puddles.gd) instead of the one wet value
 uniform float wet_layer[6];             // turf, litter, gravel, mud, sand, rock: 0 dry .. 1 soaked
@@ -570,11 +575,21 @@ void fragment() {
 			color = mix(color, mix(vec3(0.80, 0.83, 0.86), color * 0.6, lw[3]), crown * 0.8);
 		}
 	}
+	// Worn earth (TR-14): a run or trail across ground with no meadow turf is a line of bared, packed soil, the litter pushed aside; it fades
+	// out toward draw_m. One run map read, only near the eye and only while the trails are on (grass_view.gd binds it after the routes come).
+	float worn = 0.0;
+	if (worn_earth.x > 0.5 && dist < worn_earth.y) {
+		vec2 run_uv = (world_pos.xz - run_origin) / run_size;
+		if (run_uv.x > 0.0 && run_uv.y > 0.0 && run_uv.x < 1.0 && run_uv.y < 1.0) {
+			worn = textureLod(run_map, run_uv, 0.0).r * (1.0 - lw[0] * cover) * (1.0 - lw[5]) * (1.0 - lying) * (1.0 - puddle) * (1.0 - smoothstep(worn_earth.y * 0.7, worn_earth.y, dist));
+			color = mix(color, mix(color, worn_soil.rgb, worn_earth.w * lw[1]) * worn_earth.z, worn);
+		}
+	}
 	ALBEDO = color;
 	// Mud is wet: a little sheen.
 	// Photo roughness near the eye, fading to the flat value with distance (it shimmers when far).
 	float base_rough = has_pbr && rough_w > 0.01 ? mix(0.92, clamp(tex_rough / rough_w, 0.35, 1.0), closeness) : 0.92;
-	ROUGHNESS = mix(mix(base_rough, 0.55, mud), wet_rough, max(soak * 0.7 * (1.0 - lying), damp * 0.8));
+	ROUGHNESS = mix(mix(base_rough - worn_soil.a * worn, 0.55, mud), wet_rough, max(soak * 0.7 * (1.0 - lying), damp * 0.8));
 	ROUGHNESS = mix(ROUGHNESS, 0.36, min(wetland, 1.0) * (1.0 - rock_mask) * (1.0 - lying));      // wet peat and mud have a sheen
 	ROUGHNESS = mix(ROUGHNESS, 0.18, wet_sand);      // wet sand shines and mirrors the sky
 	ROUGHNESS = mix(ROUGHNESS, 0.3, puddle_rim);

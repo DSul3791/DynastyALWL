@@ -7,6 +7,7 @@ extends SceneTree
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const PlacementRules := preload("res://src/shared/placement_rules.gd")
 
 var failures: int = 0
 var clock: float = 1.0e9
@@ -128,7 +129,7 @@ func _init() -> void:
 	second._remains_tick(1.0)
 	check(second.remains_ids().is_empty(), "remains are cleaned up after seven days")
 
-	# One character can leave only per_owner_cap sets of remains; the oldest goes first.
+	# Empty remains per character are capped at per_owner_cap; the oldest empty set goes first.
 	var third = make(dir + "_cap")
 	third.peer_connected_hello(1, "owner-key-0001")
 	third.report_position(1, Vector3(100.0, 12.0, 100.0))
@@ -137,11 +138,10 @@ func _init() -> void:
 	for n in 5:
 		clock += 10.0
 		third.report_position(1, Vector3(100.0, 12.0, 100.0))
-		third.inventory_of(1).add(third.table.number_of("stone"), 1)
 		third.kill(1, "drowning")
 
 	var left: Array = third.remains_ids()
-	check(left.size() == 3, "remains per owner are capped (%d)" % left.size())
+	check(left.size() == 3, "empty remains per owner are capped (%d)" % left.size())
 
 	var newest: float = 0.0
 	var oldest: float = 1.0e30
@@ -151,6 +151,57 @@ func _init() -> void:
 		oldest = minf(oldest, float(third._items[rid]["struct"]["born"]))
 
 	check(newest - oldest <= 20.0, "the oldest sets went first")
+
+	# Remains that hold anything, an item or only coins, are never removed to make room (no ground-item cap): the player keeps every set.
+	var fourth = make(dir + "_cap_full")
+	fourth.peer_connected_hello(1, "owner-key-0002")
+	fourth._death_cfg["per_owner_cap"] = 3
+
+	for n in 5:
+		clock += 10.0
+		fourth.report_position(1, Vector3(100.0, 12.0, 100.0))
+
+		if n == 0:
+			fourth._characters["owner-key-0002"]["purse"] = {"coin_copper": 4}
+		else:
+			fourth.inventory_of(1).add(fourth.table.number_of("stone"), 1)
+
+		fourth.kill(1, "drowning")
+
+	check(fourth.remains_ids().size() == 5, "remains holding things are never trimmed (%d of 5 kept)" % fourth.remains_ids().size())
+	check(fourth._remains_rows("owner-key-0002").size() == 5, "and each one, the coins-only set too, has a death marker")
+
+	# A death in a house: the remains lie on the floor the player stood on, not buried under it at the generated ground, and the
+	# recheck keeps them there; remains on dug or filled ground follow the ground as edited.
+	ground = 10.0
+	var house = make(dir + "_floor")
+	house.peer_connected_hello(1, "owner-key-0003")
+	house.report_position(1, Vector3(38.0, 10.0, 40.0))
+	house.place_piece(1, "wood_foundation_kit", Vector3(40.0, 10.0, 40.0))
+	var top: float = NAN
+
+	for fid in house._items:
+		if house._items[fid].has("struct") and str(house._items[fid]["struct"]["kind"]) == "wood_foundation":
+			top = float(house._items[fid]["pos"].y) + PlacementRules.anchor_top(house._structures["wood_foundation"])
+
+	check(not is_nan(top) and top > ground + 0.1, "a foundation stands above the ground (top %.2f)" % top)
+	house.report_position(1, Vector3(40.0, top, 40.0))
+	house.inventory_of(1).add(house.table.number_of("stone"), 1)
+	house.kill(1, "drowning")
+	var on_floor: Array = house.remains_ids()
+	check(on_floor.size() == 1 and absf(float(house._items[on_floor[0]]["pos"].y) - top) < 0.05, "the remains lie on the floor (%s, floor top %.2f)" % [str(house._items[on_floor[0]]["pos"]) if on_floor.size() == 1 else "none", top])
+	house._remains_check_in = 0.0
+	house._remains_tick(1.0)
+	check(on_floor.size() == 1 and absf(float(house._items[on_floor[0]]["pos"].y) - top) < 0.05, "the recheck leaves them on the floor")
+	var landing: Vector3 = house._bed_landing(Vector3(40.0, top, 40.0))
+	check(absf(landing.y - (top + 0.1)) < 0.05, "a bed on the floor lands the player on the floor beside it, not in the slab (y %.2f, floor top %.2f)" % [landing.y, top])
+	house.edits_near = func(_point, _radius) -> Array: return [[1, Vector3(80.0, 8.0, 80.0), 3.0]]   # a fill raising the ground round x 80 to about 11
+	house.report_position(1, Vector3(80.0, 10.0, 80.0))
+	house.inventory_of(1).add(house.table.number_of("stone"), 1)
+	house.kill(1, "drowning")
+	var filled: Array = house.remains_ids().filter(func(rid): return float(house._items[rid]["pos"].x) > 70.0)
+	check(filled.size() == 1 and absf(float(house._items[filled[0]]["pos"].y) - 11.0) < 0.05, "on filled ground the remains lie on the fill (%s)" % (str(house._items[filled[0]]["pos"]) if filled.size() == 1 else "none"))
+	ground = 7.0   # the shelter cases below stand on the ground set above
 
 	# Dave 2026-10-21: back at the last shelter slept in.
 	DirAccess.make_dir_recursive_absolute(dir + "_shelter")
@@ -216,6 +267,18 @@ func _init() -> void:
 	check(wolf.limp_share(1) == 1.0 and limps[limps.size() - 1][1] == 100, "healing to 60 percent ends the limp")
 	wolf._vitals["wolf-key-00001"]["health"] = 5.0
 	check(wolf.hurt_player(1, 8.0, true, "wolves", 25.0) == "dead", "a lethal bite kills")
+
+	# A sleeper bitten down to the maim floor wakes; one passed out from exhaustion does not.
+	var sleeper = make(dir + "_sleeper")
+	sleeper.peer_connected_hello(1, "sleep-key-00001")
+	sleeper.report_position(1, Vector3(100.0, 12.0, 100.0))
+	sleeper._asleep[1] = {}
+	sleeper._vitals["sleep-key-00001"]["health"] = 30.0
+	check(sleeper.hurt_player(1, 10.0, false, "wolves", 25.0) == "maimed" and not sleeper._asleep.has(1), "a maiming bite wakes a sleeper")
+	sleeper._asleep[1] = {"forced": true}   # passed out from exhaustion: a blow does not end that
+	sleeper._vitals["sleep-key-00001"]["health"] = 30.0
+	var forced_hit: String = sleeper.hurt_player(1, 10.0, false, "wolves", 25.0)
+	check(forced_hit == "maimed" and sleeper._asleep.has(1), "a maiming bite leaves a passed-out sleeper asleep (%s)" % forced_hit)
 
 	print("death tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

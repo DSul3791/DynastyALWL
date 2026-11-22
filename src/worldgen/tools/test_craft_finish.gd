@@ -152,5 +152,26 @@ func _init() -> void:
 	check(pack(shovel) == 1, "done when the countdown ends, not later")
 	items.recipes.recipe(shovel_recipe)["craft_s"] = craft_s
 
+	# 5. Queuing more of the craft that is last in the queue never takes ingredients it will not use: the entry holds at most
+	# CRAFT_QUEUE_MAX_COUNT, the rest starts a new entry (was: 15 then 10 took 25 crafts' sticks and made 20).
+	reset()
+	items.inventory_of(1).add(stick, 50)
+	items.inventory_of(1).add(stone, 1)
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_QUEUE, shovel_recipe, 0, 15, CraftHand.at(items, 1, shovel_recipe))
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_QUEUE, shovel_recipe, 0, 10, CraftHand.at(items, 1, shovel_recipe))
+	var queued: int = 0
+
+	for e in items._craft_queues[items._peer_key[1]]["entries"]:
+		queued += int(e[1])
+
+	check(queued == 25 and pack(stick) == 0, "15 then 10 shovels: 25 queued for the 50 sticks taken (%d queued, %d sticks left)" % [queued, pack(stick)])
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+	check(pack(stick) == 50 and items.craft_queue_of(1).is_empty(), "cancelling both gives every stick back (%d)" % pack(stick))
+
 	print("test_craft_finish: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)
