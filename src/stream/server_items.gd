@@ -790,7 +790,9 @@ func peer_left(peer: int) -> void:
 	_carts.peer_left(peer)   # a cart being pulled parks where it is
 	var key_left: String = str(_peer_key.get(peer, ""))
 
-	if _peer_key.keys().filter(func(p): return p != peer and str(_peer_key[p]) == key_left).is_empty():
+	var still_in: bool = not _peer_key.keys().filter(func(p): return p != peer and str(_peer_key[p]) == key_left).is_empty()   # the same character back on a new connection (a rejoin before the old one timed out)
+
+	if not still_in:
 		FoodEffects.pause(_food_of(peer), _now_game_s())   # food effects are kept through logout (master s3.16): the timers stop, unless the character is still in the game on another connection
 	_bed_cache.erase(peer)
 	_level_hold.erase(peer)
@@ -808,7 +810,9 @@ func peer_left(peer: int) -> void:
 	_zone_checked.erase(peer)
 	_vent_sent.erase(peer)
 	_goal_sent.erase(peer)
-	_note_spot(peer, "deliberate" if _logout_peers.has(peer) else "disconnect")
+	if not still_in:
+		_note_spot(peer, "deliberate" if _logout_peers.has(peer) else "disconnect")   # a stale connection never writes its old spot over the live one's
+
 	if not _logout_peers.has(peer):
 		save_soon()   # a dropped line or a closed window: the spot and pack as they left (a deliberate logout saved already, note_logout)
 	print("Resume spot: peer %d left (%s) at %s%s" % [peer, "deliberate" if _logout_peers.has(peer) else "disconnect", str(_peer_pos.get(peer, "no position")), ", still on the way to the resume spot: kept" if _resume_to.has(peer) else ""])
@@ -13768,12 +13772,12 @@ func _tend_fire(id: int, _it: Dictionary, fire: Dictionary, delta: float) -> voi
 
 
 # Sends fresh contents to whoever has this container open and still stands beside it.
-func _push_box(id: int, box) -> void:
+func _push_box(id: int, box, skip_peer: int = 0) -> void:
 	if not send_chest.is_valid():
 		return
 
 	for peer in _chest_viewer:
-		if int(_chest_viewer[peer]) == id and _peer_pos.has(peer) and _peer_pos[peer].distance_to(_items[id]["pos"]) <= CHEST_REACH_M and _may_access(peer, _items[id]):
+		if peer != skip_peer and int(_chest_viewer[peer]) == id and _peer_pos.has(peer) and _peer_pos[peer].distance_to(_items[id]["pos"]) <= CHEST_REACH_M and _may_access(peer, _items[id]):
 			send_chest.call(peer, id, box.to_bytes())
 
 
@@ -13876,6 +13880,9 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int, targe
 
 	if send_chest.is_valid():
 		send_chest.call(peer, id, chest.to_bytes())
+
+		if (kind == Net.ACT_CHEST_PUT or kind == Net.ACT_CHEST_TAKE) and id >= 0 and _items.has(id):
+			_push_box(id, chest, peer)   # a friend with the same chest or fire open sees the change too, not a stale slot they then click
 
 	if kind == Net.ACT_CHEST_OPEN:
 		_send_chest_info(peer, id)   # after the contents, so the client knows which container it is about
