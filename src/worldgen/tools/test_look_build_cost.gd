@@ -4,7 +4,7 @@ extends SceneTree
 # run and shared, so taking a tool or food in hand again costs nothing. Prints the five slowest looks.
 # The model looks' files are read first, as the client does at the join (BasicLook.warm_models, 20 Nov 2026: the handsaws' first builds took 56 ms
 # and 248 ms on Dave's PC and 9 to 11 ms on later runs, most likely the .glb read inside the build; not measured apart). That read is timed and
-# printed on its own (no bar). It runs in the parallel lanes again since 22 Nov 2026 (the read-ahead held under load in the 21 Nov gate diagnostic).
+# printed on its own (no bar). It runs in the serial lane.
 #   godot --headless --path . --script res://src/worldgen/tools/test_look_build_cost.gd
 
 const BasicLook := preload("res://src/client/basic_look.gd")
