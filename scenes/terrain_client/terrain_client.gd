@@ -2036,6 +2036,11 @@ func _on_dug(center: Vector3, radius: float) -> void:
 
 	var t_edit: int = Probe.start()   # Dave 3 Nov 2026: every hoe click pauses the game; these name the part (HITCH line, frame_probe.gd)
 	var tool: VoxelTool = terrain.get_voxel_tool()
+
+	if not _edit_area_loaded(tool, center, radius):
+		Probe.stop("dig: ground edit", t_edit)
+		return
+
 	tool.channel = VoxelBuffer.CHANNEL_SDF
 	tool.mode = VoxelTool.MODE_REMOVE
 	tool.do_sphere(center, radius)
@@ -2050,7 +2055,7 @@ func _on_dug(center: Vector3, radius: float) -> void:
 		grass.ground_changed(center, radius)
 		Probe.stop("dig: grass", t_grass)
 
-	print("Terrain client: applied a %.1f m dig at %s; ground value there now %.2f (above 0 is open)" % [
+	FreezeWatchScript.printer.line("Terrain client: applied a %.1f m dig at %s; ground value there now %.2f (above 0 is open)" % [
 		radius, str(center), tool.get_voxel_f(Vector3i(center.round()))
 	])
 
@@ -2064,6 +2069,11 @@ func _on_filled(center: Vector3, radius: float, _material: int) -> void:
 
 	var t_edit: int = Probe.start()
 	var tool: VoxelTool = terrain.get_voxel_tool()
+
+	if not _edit_area_loaded(tool, center, radius):
+		Probe.stop("fill: ground edit", t_edit)
+		return
+
 	tool.channel = VoxelBuffer.CHANNEL_SDF
 	tool.mode = VoxelTool.MODE_ADD
 	tool.do_sphere(center, radius)
@@ -2073,6 +2083,27 @@ func _on_filled(center: Vector3, radius: float, _material: int) -> void:
 		var t_grass: int = Probe.start()
 		grass.ground_changed(center, radius, true)
 		Probe.stop("fill: grass", t_grass)
+
+
+# A dig or fill the server sends for ground this game has not loaded (often far away: the replay of other players' edits) cannot be applied:
+# do_sphere then only prints "Area not editable" with a backtrace, 5,560 of them in Dave's 21 Nov play, each a main-thread print. Such an
+# edit is skipped quietly: _forget_edit already dropped its cached blocks, so they come from the server with the edit in them. Counted, and
+# said on one line every 30 s at most.
+var edits_skipped: int = 0
+var _edits_skipped_said_msec: int = -100000
+
+
+func _edit_area_loaded(tool: VoxelTool, center: Vector3, radius: float) -> bool:
+	if tool.is_area_editable(AABB(center - Vector3.ONE * radius, Vector3.ONE * (2.0 * radius))):
+		return true
+
+	edits_skipped += 1
+
+	if Time.get_ticks_msec() - _edits_skipped_said_msec >= 30000:
+		_edits_skipped_said_msec = Time.get_ticks_msec()
+		FreezeWatchScript.printer.line("Terrain client: %d dig or fill edit(s) so far on ground not loaded here, skipped (its blocks come with the edit)" % edits_skipped)
+
+	return false
 
 
 # Applies the experiment switches (Esc > Advanced); also at start.
@@ -2969,6 +3000,8 @@ var _ice_memo: Dictionary = {}   # [depth, zone group, seed, height band, game t
 var _ice_task: int = -1
 var _ice_task_out: Dictionary = {}   # written by the worker, read only after it finished
 var _ice_last: Dictionary = {}       # {"cover", "peak"} at the anchor
+var _ice_last_key: Array = []        # [zone group, height band] that answer was asked for
+var _ice_task_key: Array = []        # the same for the task still running
 
 
 func _ice_season_now(group: String, seed_value: int) -> Dictionary:
@@ -2976,15 +3009,20 @@ func _ice_season_now(group: String, seed_value: int) -> Dictionary:
 		WorkerThreadPool.wait_for_task_completion(_ice_task)
 		_ice_task = -1
 		_ice_last = _ice_task_out
+		_ice_last_key = _ice_task_key
 
 	var height: float = maxf(_anchor.y, 0.0)
 	var game_s: float = game_clock.seconds
+	var key: Array = [group, int(floorf(height / ICE_MEMO_BAND_M))]
 
-	if _ice_last.is_empty():
+	# The first answer, and the first after a new zone or a move to another height (a teleport, a respawn): worked out here once, so the
+	# step and the look never use another place's ice.
+	if _ice_last.is_empty() or _ice_last_key != key:
 		_ice_last = IceScript.season(game_s, group, height, ICE_POND_DEPTH_M, seed_value)
-
-	if _ice_task < 0:
-		_ice_task = WorkerThreadPool.add_task(func() -> void: _ice_task_out = IceScript.season(game_s, group, height, ICE_POND_DEPTH_M, seed_value), false, "pond ice")
+		_ice_last_key = key
+	elif _ice_task < 0:
+		_ice_task_key = key
+		_ice_task = WorkerThreadPool.add_task(func() -> void: _ice_task_out = IceScript.season(game_s, group, height, ICE_POND_DEPTH_M, seed_value), true, "pond ice")
 
 	return _ice_last
 
