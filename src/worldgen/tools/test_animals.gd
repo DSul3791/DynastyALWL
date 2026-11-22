@@ -53,8 +53,17 @@ func _init() -> void:
 	var a = make(players)
 	check(a.species_def("rabbit").size() > 0, "the rabbit is in data/animals/animals.json")
 
-	# Spawning: the player's share appears out of sight, never near.
-	run(a, 30.0)
+	# Spawning: the player's share appears out of sight, never near. Where each one appears is noted on the tick it appears: a group's
+	# leader drifts and its mates follow (_group_target), so a group's homes move after it appears; the rule is where it is made.
+	var born: Dictionary = {}
+
+	for _n in int(30.0 / 0.05):
+		a.tick(0.05)
+
+		for id in a.animals:
+			if not born.has(id):
+				born[id] = a.animals[id]["pos"]
+
 	var count: int = 0
 
 	for id in a.animals:
@@ -76,8 +85,8 @@ func _init() -> void:
 	check(grouped, "at least one rabbit has a group mate within 20 m")
 	var nearest: float = INF
 
-	for id in a.animals:
-		nearest = minf(nearest, Vector2(a.animals[id]["home"].x, a.animals[id]["home"].z).length())
+	for id in born:
+		nearest = minf(nearest, Vector2(born[id].x, born[id].z).length())
 
 	check(nearest >= 59.0, "they appear at least 60 m away, some within 120 m so a new player sees animals (%.0f)" % nearest)
 	run(a, 30.0)
