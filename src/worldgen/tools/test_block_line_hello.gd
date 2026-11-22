@@ -124,7 +124,12 @@ func _initialize() -> void:
 
 	OS.delay_msec(300)
 	check(_closed_within(quiet[0], 1000) and _closed_within(quiet[1], 1000), "past pending_max the oldest waiting connections are closed")
-	check(not _closed_within(quiet[5], 500), "the newest still waits for its hello")
+	var open_count: int = 0
+
+	for n in range(2, 6):
+		open_count += 0 if _closed_within(quiet[n], 300) else 1
+
+	check(open_count == 4, "exactly the newest four still wait for their hello (%d)" % open_count)
 
 	for tcp in quiet:
 		tcp.disconnect_from_host()
