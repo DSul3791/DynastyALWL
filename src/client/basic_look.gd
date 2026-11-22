@@ -2525,12 +2525,13 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			for gx in [-0.2, 0.08]:
 				_cyl(parts, 0.012, 0.12, Vector3(gx, 0.0, 0.06), Vector3(PI * 0.5, 0.0, 0.0), Color(0.4, 0.28, 0.15))
 			_box(parts, Vector3(0.05, 0.03, 0.03), Vector3(0.55, 0.0, 0.0), Color(0.12, 0.12, 0.13))
+			var scythe_blade: Color = tier_metal(bits, Color(0.5, 0.52, 0.56))                               # the tier's metal (TIER_METAL)
 			for k in range(14):
 				var b0: float = 1.25 * float(k) / 14.0
 				var b1: float = 1.25 * float(k + 1) / 14.0
 				var bm: float = (b0 + b1) * 0.5
 				var bp: Vector3 = Vector3(0.57 + 0.5 * sin(bm), 0.0, 0.5 * (1.0 - cos(bm)))
-				_box_rot(parts, Vector3(0.1, 0.005, 0.055 - 0.035 * float(k) / 14.0), bp, Vector3(0.0, -bm, 0.0), tier_metal(bits, Color(0.5, 0.52, 0.56)))
+				_box_rot(parts, Vector3(0.1, 0.005, 0.055 - 0.035 * float(k) / 14.0), bp, Vector3(0.0, -bm, 0.0), scythe_blade)
 			_metal(parts)
 		"striker":
 			# A steel striker for flint: a flat strip of dark steel bent into a C that fits the fingers, a notch at one end, plain and scuffed.

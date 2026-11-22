@@ -194,6 +194,18 @@ func _init() -> void:
 	_check(saws[0].r - saws[0].g > saws[1].r - saws[1].g and saws[3].get_luminance() > saws[2].get_luminance(), "saw: copper redder than bronze, steel lighter than iron")
 	_check(str(BasicLook.entry("hand_saw").get("bits", [])) == str(["metal", "iron"]), "hand_saw (Iron - Saw) is the iron tier")
 
+	# Placeholder looks 5a part 1 (21 Nov 2026): weapons, spears, arrows and bolts drawn from the existing shapes; each names its tier and builds a real mesh.
+	for id in ["iron_shortsword", "steel_shortsword", "iron_greatsword", "steel_greatsword", "steel_rapier", "steel_scimitar", "iron_battleaxe", "steel_battleaxe",
+			"iron_greataxe", "steel_greataxe", "iron_warhammer", "steel_warhammer", "steel_maul", "quarterstaff", "bronze_spear", "iron_spear", "steel_spear", "iron_pike",
+			"iron_halberd", "steel_halberd", "iron_trident", "iron_buckler", "bronze_arrow", "iron_arrow", "steel_arrow", "wooden_bolt", "iron_bolt"]:
+		var row: Dictionary = BasicLook.entry(id)
+		var tier: String = id.get_slice("_", 0)
+		_check(str(row.get("shape", "chunk")) != "chunk", "%s has a shape of its own (%s)" % [id, str(row.get("shape", ""))])
+		_check(not tier in ["iron", "steel", "bronze"] or (row.get("bits", []) as Array).has(tier), "%s names its tier in its look row" % id)
+		var look: Mesh = BasicLook.mesh_for(id)
+		_check(look != null and look.get_surface_count() > 0, "%s builds a mesh" % id)
+	_check(_mean_colour(BasicLook.mesh_for("steel_spear")).get_luminance() > _mean_colour(BasicLook.mesh_for("iron_spear")).get_luminance(), "steel spear head lighter than iron")
+
 	print("tool looks: %d failures" % failures)
 
 	for id in ["spear", "wooden_spear", "fishing_rod", "wooden_pin"]:                                                  # spears, the fishing rod and the pin
