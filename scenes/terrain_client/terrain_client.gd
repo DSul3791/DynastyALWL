@@ -2871,7 +2871,7 @@ func _update_weather() -> void:
 	tw = Probe.start()
 	# Ice on ponds and lakes: a pure function of the clock, zone and altitude (src/shared/ice.gd), so
 	# every client and the server agree with no traffic. Recomputed once a game minute.
-	var ice_now: float = IceScript.cover(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M, int(world.get("master_seed", 0)))
+	var ice_now: float = float(_ice_season(group, ICE_POND_DEPTH_M)["cover"])   # the same loop and numbers as IceScript.cover
 
 	ice_now = _update_ice_feel_weather(ice_now, group, now)
 
@@ -2936,6 +2936,27 @@ var _steam_logged: bool = false
 
 
 # Once a second with the weather: the forced cover (--frozen-force) also drives the collider and the sounds; every 5 s the thaw for the moat.
+# BugsList 108 (lane frame-time runs, 22 Nov 2026: "weather: ice" 8-24 ms and "weather: frozen water" 16-22 ms in HITCH frames): Ice.season
+# walks 30 game days hour by hour (721 weather samples) and was asked up to five times every 5 s. Each depth's answer is kept for ICE_MEMO_GAME_S
+# of game time and per metre of height: ice grows and melts over game hours, so a ten-minute-old answer looks the same (the server's animals keep
+# Ice.cover longer still, server_animals _ice_cache).
+const ICE_MEMO_GAME_S := 600.0
+var _ice_memo: Dictionary = {}   # [depth, zone group, metre of height, game time slot] -> Ice.season
+
+
+func _ice_season(group: String, depth_m: float) -> Dictionary:
+	var altitude: float = maxf(_anchor.y, 0.0)
+	var key: Array = [depth_m, group, int(floorf(altitude)), int(floorf(game_clock.seconds / ICE_MEMO_GAME_S))]
+
+	if not _ice_memo.has(key):
+		if _ice_memo.size() >= 8:
+			_ice_memo.clear()   # old slots and heights: a handful of entries at most, never a growing table
+
+		_ice_memo[key] = IceScript.season(game_clock.seconds, group, altitude, depth_m, int(world.get("master_seed", 0)))
+
+	return _ice_memo[key]
+
+
 func _update_ice_feel_weather(ice_now: float, group: String, now: int) -> float:
 	_read_frozen_switches()
 
@@ -2948,7 +2969,7 @@ func _update_ice_feel_weather(ice_now: float, group: String, now: int) -> float:
 		if _frozen_force.x >= 0.0:
 			_ice_thaw = _frozen_force.z
 		else:
-			var season: Dictionary = IceScript.season(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M, int(world.get("master_seed", 0)))
+			var season: Dictionary = _ice_season(group, ICE_POND_DEPTH_M)
 			_ice_thaw = FrozenWater.thaw_of(float(season["cover"]), float(season["peak"]))
 
 		var moat: int = IceFeelScript.moat_cells(_ice_thaw)
@@ -3110,7 +3131,8 @@ func _update_frozen_water(group: String, now: int) -> void:
 	_read_frozen_switches()
 
 	var snow: float = sound.weather.ground_snow if sound != null and sound.weather != null else 0.0
-	var look: Vector4 = _frozen_force if _frozen_force.x >= 0.0 else FrozenWater.look(game_clock.seconds, group, maxf(_anchor.y, 0.0), seed_value, snow)
+	var look: Vector4 = _frozen_force if _frozen_force.x >= 0.0 else FrozenWater.look_from(_ice_season(group, FrozenWater.OPEN_DEPTH_M),
+		float(_ice_season(group, FrozenWater.SHORE_DEPTH_M)["cover"]), snow)
 	var pools: Array = []
 
 	if _cave_streams != null:

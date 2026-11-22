@@ -50,6 +50,9 @@ func _init() -> void:
 	check(spring_morning.z < 0.1, "spring level day 343 09:00: not thawing yet (%.2f)" % spring_morning.z)
 	check(spring_thaw.z > 0.35, "spring level day 344 12:00: thawing (%.2f)" % spring_thaw.z)
 	check(absf(FrozenWater.look(at(342, 7.0), "temperate", SPAWN_POND_M, SEED, 0.7).w - 0.7) < 0.0001, "the lying snow is passed through (a Vector4 holds 32-bit floats)")
+	var t_dawn: float = at(342, 7.0)
+	check(FrozenWater.look_from(Ice.season(t_dawn, "temperate", SPAWN_POND_M, FrozenWater.OPEN_DEPTH_M, SEED), Ice.cover(t_dawn, "temperate", SPAWN_POND_M, FrozenWater.SHORE_DEPTH_M, SEED), 0.0) == dawn,
+		"look_from on a kept season and cover gives exactly look (the client keeps them ten game minutes)")
 	check(FrozenWater.thaw_of(0.05, 0.1) == 0.0, "no thaw counted below a 2.5 cm peak")
 	check(is_equal_approx(FrozenWater.thaw_of(0.1, 0.4), 0.75), "thaw = 1 - cover / peak")
 
