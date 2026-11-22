@@ -671,6 +671,15 @@ func _init() -> void:
 		if all.has(ore_item):
 			obtainable[ore_item] = true
 
+	# Pocket finds (resource distribution stage 2): a dig near an ore source opens a pocket rock that a pick breaks into its find (ore.finds).
+	for find_name in boulders.get("ore", {}).get("finds", {}):
+		var find_item: String = String(boulders["ore"]["finds"][find_name])
+
+		if all.has(find_item):
+			obtainable[find_item] = true
+		else:
+			fail("boulders.json ore.finds.%s: unknown item '%s'" % [find_name, find_item])
+
 	# Bedrock boulders (Steve, #965): a boulder over a rock in ore.rocks (limestone, chalk, marble) gives that item to a pick.
 	for rock_name in boulders.get("ore", {}).get("rocks", {}):
 		var rock_item: String = String(boulders["ore"]["rocks"][rock_name])

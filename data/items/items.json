@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1518,
+	"next_number": 1523,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -3477,6 +3477,57 @@
 			"look_alikes": [],
 			"value": 30,
 			"note": "Dave 21 Nov 2026: \"they break into iron chunks that count as iron ingots and can be worked or substituted directly for iron ingots. basically iron chunk inherits from iron ingot.\" Broken from meteorites (boulders.json meteorite_rocks) or picked up loose. Fills every need for an Iron ingot (wood_species.json ingredient_groups.iron_ingot): recipes, blueprints, repairs and the craft planner."
+		},
+		"gold_nugget": {
+			"number": 1518,
+			"name": "Gold nugget",
+			"description": "A small, heavy lump of native gold. Worth a great deal to a trader.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 200,
+			"note": "Coordinator decision D-ORE-1 (21 Nov 2026, under Dave's rule that agents' questions go to the coordinator): a sell-value find with no recipe yet; value PROVISIONAL. Revealed by digging near ore sources (boulders.json distribution pockets, docs/design/RESOURCE_DISTRIBUTION.md)."
+		},
+		"silver_ore": {
+			"number": 1519,
+			"name": "Silver ore",
+			"description": "A dull grey lump with bright metallic streaks. Traders pay well for it.",
+			"kind": "material",
+			"stack": 20,
+			"pile": {"shape": "cone", "handful": 25, "color": [0.42, 0.42, 0.45], "color2": [0.72, 0.72, 0.76], "mix": 0.3, "rock": 0.6, "squash": 0.75, "jitter": 0.3, "lumps": 0.3, "density_kg_m3": 5200},
+			"look_alikes": [],
+			"value": 40,
+			"note": "Coordinator decision D-ORE-1 (21 Nov 2026, under Dave's rule that agents' questions go to the coordinator): a sell-value find with no recipe yet; value PROVISIONAL. Revealed by digging near ore sources (boulders.json distribution pockets, docs/design/RESOURCE_DISTRIBUTION.md). Its pile is a cone like every ore (Dave: ore piles stack like stone): lead-grey with bright streaks, galena-like rock about 5,200 kg/m3."
+		},
+		"amethyst": {
+			"number": 1520,
+			"name": "Amethyst",
+			"description": "A cluster of violet quartz crystals from a hollow in the rock.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 60,
+			"note": "Coordinator decision D-ORE-1 (21 Nov 2026, under Dave's rule that agents' questions go to the coordinator): a sell-value find with no recipe yet; value PROVISIONAL. Revealed by digging near ore sources (boulders.json distribution pockets, docs/design/RESOURCE_DISTRIBUTION.md)."
+		},
+		"garnet": {
+			"number": 1521,
+			"name": "Garnet",
+			"description": "A deep red crystal grown in hard mountain rock.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 50,
+			"note": "Coordinator decision D-ORE-1 (21 Nov 2026, under Dave's rule that agents' questions go to the coordinator): a sell-value find with no recipe yet; value PROVISIONAL. Revealed by digging near ore sources (boulders.json distribution pockets, docs/design/RESOURCE_DISTRIBUTION.md)."
+		},
+		"agate": {
+			"number": 1522,
+			"name": "Agate",
+			"description": "A rounded stone that shows fine coloured bands when broken.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 25,
+			"note": "Coordinator decision D-ORE-1 (21 Nov 2026, under Dave's rule that agents' questions go to the coordinator): a sell-value find with no recipe yet; value PROVISIONAL. Revealed by digging near ore sources (boulders.json distribution pockets, docs/design/RESOURCE_DISTRIBUTION.md)."
 		},
 		"bog_iron_ore": {
 			"number": 1511,

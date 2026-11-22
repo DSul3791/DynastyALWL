@@ -3,8 +3,8 @@
 #   tools/gate_pc.sh <40-char hash> [--lane fast|slow|full] [--jobs N] [--fresh]
 # --fresh: a brand-new worktree with no import cache (the weekly "same result as a clean clone" check); default: the warm slot.
 # Prints HEAD=<hash> first. Builds the candidate = hash + current origin/main (trial merge, committed only inside a throw-away
-# warm worktree "slot" so the Godot import cache survives: a new worktree reimports everything because the files get new modification times, 3.5 min), imports with the warm Godot cache, runs parse_scan, merge_check, local_check, then the tests chosen by
-# tools/tests_for_diff.py through tools/run_tests.sh (parallel, serial and retry lanes, per-job data dir and log). Failures are compared BY NAME
+# warm worktree "slot" so the Godot import cache survives: a new worktree reimports everything because the files get new modification times, 3.5 min), imports with the warm Godot cache, runs parse_scan, merge_check, local_check, then the wide plan of
+# tools/tests_for_diff.py --wide (against main: every test that reaches the change) through tools/run_tests.sh (parallel, serial and retry lanes, per-job data dir and log). Failures are compared BY NAME
 # with tech/TEST_BASELINE_PC.md (block between "known failures" markers). Prints per-step seconds and `Test done: N pass, M fail`.
 # Environment: GODOT_EXE, PYTHON, GATE_JOBS, GATE_ROOT (default E:/Software/godotDev/gate_pc), GATE_PAUSE (flag file; while it exists no new test starts).
 # Exit: 0 = no new failure, 1 = new failure or a check failed, 2 = could not build the candidate (conflict, bad hash).
@@ -80,7 +80,7 @@ echo "$LC"; case "$LC" in *"LOCAL CHECK: PASS"*) ;; *) CHECK_FAIL=1;; esac; step
 # test plan. The gate tools come from this script's own checkout when the candidate does not have them yet (before they are on main).
 for f in tests_for_diff.py run_tests.sh run_one_test.sh test_lanes.json; do [ -f "tools/$f" ] || cp "$TOOLS_SRC/$f" "tools/$f"; done
 s=$(date +%s)
-"$PYTHON" tools/tests_for_diff.py "$BASE_REF" HEAD > "$OUT/plan.json" 2>"$OUT/plan.err" || "$PYTHON" tools/tests_for_diff.py "$BASE_REF" HEAD --all > "$OUT/plan.json"
+"$PYTHON" tools/tests_for_diff.py "$BASE_REF" HEAD --wide > "$OUT/plan.json" 2>"$OUT/plan.err" || "$PYTHON" tools/tests_for_diff.py "$BASE_REF" HEAD --all > "$OUT/plan.json"
 "$PYTHON" - "$OUT/plan.json" "$LANE" <<'PY'
 import json, sys
 d = json.load(open(sys.argv[1])); lane = sys.argv[2]

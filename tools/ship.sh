@@ -32,10 +32,10 @@ echo "$ENTRY" >> docs/mirror/tech/BUILD_LOG.md; [ -n "$LOGDIR" ] && [ -d "$LOGDI
 sed 's#export PATH="$PWD/tools:$PATH"#true#' tools/local_check.sh > tools/lc_tmp.sh
 CHANGE_LABEL=$LABEL bash tools/lc_tmp.sh 2>&1 | tail -3 | tee "${TMPDIR:-/tmp}/ship_lc.txt"; rm -f tools/lc_tmp.sh
 grep -q 'LOCAL CHECK: PASS' "${TMPDIR:-/tmp}/ship_lc.txt" || die "local_check failed (merge and bump are in the tree, not pushed)"
-# Before main: the tests this merge needs (tests_for_diff.py origin/main HEAD: the small fast tests for the code it touches, the big release tests only if baked
-# data changed). SKIP_TESTS=1 skips; tools/release_check.sh runs every test by hand.
+# Before main: the tests this merge needs (tests_for_diff.py origin/main HEAD --wide: every test that reaches the code it touches, the big release tests
+# only if baked data changed). SKIP_TESTS=1 skips; tools/release_check.sh runs every test by hand.
 if [ -z "${SKIP_TESTS:-}" ]; then
-	$PY tools/tests_for_diff.py origin/$BRANCH HEAD > "${TMPDIR:-/tmp}/ship_plan.json" || die "test selection failed"
+	$PY tools/tests_for_diff.py origin/$BRANCH HEAD --wide > "${TMPDIR:-/tmp}/ship_plan.json" || die "test selection failed"
 	bash tools/run_tests.sh --plan "${TMPDIR:-/tmp}/ship_plan.json" 2>&1 | tail -4 | tee "${TMPDIR:-/tmp}/ship_tests.txt"
 	grep -q 'Test done: [0-9]* pass, 0 fail' "${TMPDIR:-/tmp}/ship_tests.txt" || die "tests failed (merge and bump are in the tree, not pushed); SKIP_TESTS=1 to skip"
 fi

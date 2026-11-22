@@ -2313,6 +2313,31 @@
    "color": "#8a8a8a",
    "size": 1.0
   },
+  "gold_nugget": {
+   "shape": "chunk",
+   "color": "#d4a52a",
+   "size": 0.35
+  },
+  "silver_ore": {
+   "shape": "chunk",
+   "color": "#9a9ca0",
+   "size": 0.9
+  },
+  "amethyst": {
+   "shape": "chunk",
+   "color": "#8a5ab8",
+   "size": 0.45
+  },
+  "garnet": {
+   "shape": "chunk",
+   "color": "#8a1c24",
+   "size": 0.35
+  },
+  "agate": {
+   "shape": "chunk",
+   "color": "#c07a48",
+   "size": 0.45
+  },
   "coal": {
    "shape": "chunk",
    "color": "#8a8a8a",
@@ -5053,231 +5078,51 @@
    "color": "#8a8a8a",
    "size": 1.0
   },
-  "iron_shortsword": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "steel_shortsword": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_greatsword": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "steel_greatsword": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "steel_rapier": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "steel_scimitar": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_battleaxe": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "steel_battleaxe": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_greataxe": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "steel_greataxe": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_warhammer": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "steel_warhammer": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "steel_maul": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "quarterstaff": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "bronze_spear": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_spear": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "steel_spear": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_pike": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_halberd": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "steel_halberd": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_trident": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "light_crossbow": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "heavy_crossbow": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_buckler": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "bronze_arrow": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_arrow": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "steel_arrow": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "wooden_bolt": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_bolt": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "steel_bolt": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_lance": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_brigandine": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_breastplate": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_mail_hauberk": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "steel_half_plate": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "steel_plate_harness": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_mail_coif": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_gauntlets": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "steel_gauntlets": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "bronze_greaves": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_mail_chausses": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_greaves": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "steel_greaves": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_sabatons": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "steel_sabatons": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
+  "iron_shortsword": {"shape": "sword", "color": "#6c6f75", "size": 0.8, "bits": ["iron"]},
+  "steel_shortsword": {"shape": "sword", "color": "#9aa3ad", "size": 0.8, "bits": ["steel"]},
+  "iron_greatsword": {"shape": "sword", "color": "#6c6f75", "size": 1.5, "bits": ["iron"]},
+  "steel_greatsword": {"shape": "sword", "color": "#9aa3ad", "size": 1.5, "bits": ["steel"]},
+  "steel_rapier": {"shape": "sword", "color": "#9aa3ad", "size": 1.25, "bits": ["steel", "thin"]},
+  "steel_scimitar": {"shape": "sword", "color": "#9aa3ad", "size": 1.1, "bits": ["steel", "curved"]},
+  "iron_battleaxe": {"shape": "axe", "color": "#6c6f75", "size": 1.9, "bits": ["metal", "iron"]},
+  "steel_battleaxe": {"shape": "axe", "color": "#9aa3ad", "size": 1.9, "bits": ["metal", "steel"]},
+  "iron_greataxe": {"shape": "axe", "color": "#6c6f75", "size": 2.4, "bits": ["metal", "iron"]},
+  "steel_greataxe": {"shape": "axe", "color": "#9aa3ad", "size": 2.4, "bits": ["metal", "steel"]},
+  "iron_warhammer": {"shape": "hammer", "color": "#6c6f75", "size": 1.4, "bits": ["iron", "forged"]},
+  "steel_warhammer": {"shape": "hammer", "color": "#9aa3ad", "size": 1.4, "bits": ["steel", "forged"]},
+  "steel_maul": {"shape": "hammer", "color": "#9aa3ad", "size": 2.0, "bits": ["steel", "forged"]},
+  "quarterstaff": {"shape": "shaft", "color": "#8a6a3d", "size": 1.8, "bits": ["staff"]},
+  "bronze_spear": {"shape": "shaft", "color": "#b5803a", "size": 1.0, "bits": ["metal", "bronze"]},
+  "iron_spear": {"shape": "shaft", "color": "#6c6f75", "size": 1.0, "bits": ["metal", "iron"]},
+  "steel_spear": {"shape": "shaft", "color": "#9aa3ad", "size": 1.0, "bits": ["metal", "steel"]},
+  "iron_pike": {"shape": "shaft", "color": "#6c6f75", "size": 1.6, "bits": ["metal", "iron"]},
+  "iron_halberd": {"shape": "shaft", "color": "#6c6f75", "size": 1.3, "bits": ["metal", "iron", "halberd"]},
+  "steel_halberd": {"shape": "shaft", "color": "#9aa3ad", "size": 1.3, "bits": ["metal", "steel", "halberd"]},
+  "iron_trident": {"shape": "shaft", "color": "#6c6f75", "size": 1.0, "bits": ["metal", "iron", "trident"]},
+  "light_crossbow": {"shape": "crossbow", "color": "#6a4626", "size": 1.0},
+  "heavy_crossbow": {"shape": "crossbow", "color": "#9aa3ad", "size": 1.25, "bits": ["steel"]},
+  "iron_buckler": {"shape": "metal_shield", "color": "#6c6f75", "size": 0.6, "bits": ["iron"]},
+  "bronze_arrow": {"shape": "arrow", "color": "#b5803a", "size": 1.0, "bits": ["bronze"]},
+  "iron_arrow": {"shape": "arrow", "color": "#6c6f75", "size": 1.0, "bits": ["iron"]},
+  "steel_arrow": {"shape": "arrow", "color": "#9aa3ad", "size": 1.0, "bits": ["steel"]},
+  "wooden_bolt": {"shape": "arrow", "color": "#d8b070", "size": 0.55},
+  "iron_bolt": {"shape": "arrow", "color": "#6c6f75", "size": 0.55, "bits": ["iron"]},
+  "steel_bolt": {"shape": "arrow", "color": "#9aa3ad", "size": 0.55, "bits": ["steel"]},
+  "iron_lance": {"shape": "shaft", "color": "#6c6f75", "size": 1.8, "bits": ["metal", "iron"]},
+  "iron_brigandine": {"shape": "jerkin", "color": "#5a2e22", "size": 1.0, "bits": ["padded"]},
+  "iron_breastplate": {"shape": "jerkin", "color": "#6c6f75", "size": 1.0, "bits": ["plate", "iron"]},
+  "iron_mail_hauberk": {"shape": "jerkin", "color": "#6c6f75", "size": 1.15, "bits": ["mail", "iron"]},
+  "steel_half_plate": {"shape": "jerkin", "color": "#9aa3ad", "size": 1.05, "bits": ["plate", "steel"]},
+  "steel_plate_harness": {"shape": "jerkin", "color": "#9aa3ad", "size": 1.15, "bits": ["plate", "steel"]},
+  "iron_mail_coif": {"shape": "garment", "color": "#6c6f75", "size": 1.0, "bits": ["cap", "iron"]},
+  "iron_gauntlets": {"shape": "garment", "color": "#6c6f75", "size": 1.0, "bits": ["gloves", "iron"]},
+  "steel_gauntlets": {"shape": "garment", "color": "#9aa3ad", "size": 1.0, "bits": ["gloves", "steel"]},
+  "bronze_greaves": {"shape": "garment", "color": "#b5803a", "size": 1.0, "bits": ["boots", "bronze"]},
+  "iron_mail_chausses": {"shape": "garment", "color": "#6c6f75", "size": 1.0, "bits": ["trousers", "iron"]},
+  "iron_greaves": {"shape": "garment", "color": "#6c6f75", "size": 1.0, "bits": ["boots", "iron"]},
+  "steel_greaves": {"shape": "garment", "color": "#9aa3ad", "size": 1.0, "bits": ["boots", "steel"]},
+  "iron_sabatons": {"shape": "garment", "color": "#6c6f75", "size": 0.9, "bits": ["boots", "iron"]},
+  "steel_sabatons": {"shape": "garment", "color": "#9aa3ad", "size": 0.9, "bits": ["boots", "steel"]},
   "linen_trousers": {
    "shape": "chunk",
    "color": "#8a8a8a",
