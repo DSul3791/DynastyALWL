@@ -931,6 +931,12 @@ var _zone_checked: Dictionary = {}   # peer -> msec of the last read
 var _vent_sent: Dictionary = {}      # peer -> the vent anchor the client was last told (INF = none)
 
 
+# The server never reads a ground tile on its main thread from a periodic check (a read takes about a second on Dave's PC, BugsList 108): the
+# zone, vent, snow and hint checks skip a beat while the tile is read on a worker. Actions a player asks for (digging, drinking) still read it.
+func _tile_ready_at(at: Vector3) -> bool:
+	return not ground_ready.is_valid() or bool(ground_ready.call(at.x, at.z))
+
+
 # Tell a client its biome: at once for a new player, after every teleport or respawn, and after a change that reads the same twice running (no flicker on
 # a border). Reliable and ordered, so the client's last value is the server's last.
 func _note_zone(peer: int, position: Vector3) -> void:
@@ -941,6 +947,9 @@ func _note_zone(peer: int, position: Vector3) -> void:
 
 	if _zone_checked.has(peer) and now - int(_zone_checked[peer]) < ZONE_EVERY_MSEC:
 		return
+
+	if not _tile_ready_at(position):
+		return   # the tile is being read on a worker: the zone and vent are looked at on the next report once it is in (BugsList 108)
 
 	_zone_checked[peer] = now
 	_note_vent(peer, position)
@@ -15598,6 +15607,9 @@ func _on_snow(peer: int, position: Vector3) -> bool:
 	var cell: Vector2i = Vector2i(floori(position.x), floori(position.z))
 	var memo: Array = _snow_memo.get(peer, [])
 
+	if (memo.is_empty() or memo[0] != cell) and not _tile_ready_at(position):
+		return not memo.is_empty() and bool(memo[1])   # the tile is being read on a worker: as the last cell until it is in memory
+
 	if memo.is_empty() or memo[0] != cell:
 		memo = [cell, SnowWalk.name_is_snow(str(ground_material.call(position.x, position.z)))]
 		_snow_memo[peer] = memo
@@ -21450,7 +21462,7 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 		"moved":
 			return _hint_origin.has(peer) and (_hint_origin[peer] as Vector3).distance_to(_peer_pos[peer]) >= 5.0
 		"water_in_view":
-			return water_near.is_valid() and bool(water_near.call(_peer_pos[peer], 20.0)) and not v.is_empty() and float(v.get("wet", 0.0)) < float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400)) - 1.0
+			return water_near.is_valid() and _tile_ready_at(_peer_pos[peer]) and bool(water_near.call(_peer_pos[peer], 20.0)) and not v.is_empty() and float(v.get("wet", 0.0)) < float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400)) - 1.0
 		"after_drink":
 			return _hint_count(st, "event:drink") >= 1
 		"8_sticks":

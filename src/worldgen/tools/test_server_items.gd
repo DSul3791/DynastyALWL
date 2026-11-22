@@ -3575,6 +3575,29 @@ func _init() -> void:
 	zone_now[0] = 17000
 	zi.report_position(1, Vector3(5002.0, 5.0, 100.0))
 	check(zone_sent.size() == 4, "an unknown biome (-1) sends nothing")
+	# A tile not in memory yet (BugsList 108): the check never reads it on the tick, and looks again on the next 2 s check once it is in.
+	var tile_in: Array = [false]
+	var zone_reads: Array = [0]
+	zi.ground_ready = func(_x, _z): return tile_in[0]
+	zi.zone_at = func(_pos):
+		zone_reads[0] += 1
+		return 21
+	zone_now[0] = 20000
+	zi.report_position(1, Vector3(9000.0, 5.0, 100.0))
+	check(zone_reads[0] == 0 and zone_sent.size() == 4, "an unread tile: no zone read and nothing sent (%d reads)" % zone_reads[0])
+	tile_in[0] = true
+	zone_now[0] = 20500
+	zi.report_position(1, Vector3(9001.0, 5.0, 100.0))
+	check(zone_reads[0] == 1 and zone_sent.size() == 5 and zone_sent[4] == [1, 21], "once the tile is in, the next report reads it (no 2 s wait after a skip) and the teleport sends it (%s)" % str(zone_sent))
+	# The snow check: an unread tile reads no ground, keeps the last cell's answer (not snow before any), and reads once the tile is in.
+	var ground_reads: Array = [0]
+	zi.ground_material = func(_x, _z):
+		ground_reads[0] += 1
+		return "loam"
+	tile_in[0] = false
+	check(not zi._on_snow(7, Vector3(10.5, 5.0, 10.5)) and ground_reads[0] == 0, "an unread tile: no ground read, not snow")
+	tile_in[0] = true
+	check(not zi._on_snow(7, Vector3(10.5, 5.0, 10.5)) and ground_reads[0] == 1, "once in, the cell is read once")
 	# One minute of a player walking over a border back and forth every 5 s: messages and bytes (a zone call is a reliable rpc with one int, about 12 bytes with its header).
 	var walker = make("user://test_server_items_zone2")
 	var walker_sent: Array = []
