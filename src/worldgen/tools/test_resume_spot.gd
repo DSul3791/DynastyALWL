@@ -122,6 +122,10 @@ func _init() -> void:
 	items.report_position(7, base7 + Vector3(0.5, 0.0, 0.0))
 	items.report_position(7, base7 + Vector3(10.0, 0.0, 0.0))   # where the old connection was last heard from
 	var s8: Array = start_of(items, 8)   # the same character back on a new connection
+	check(items.key_of(7) == "" and items.key_of(8) == KEY, "the new connection takes the character from the old one at once (its hunger and crafts run once, not twice)")
+	check(items.peer_connected_hello(9, "resume-key-other01") == [] and items.key_of(8) == KEY, "another character joining replaces nobody")
+	items.peer_left(9)
+	items.report_position(7, base7 + Vector3(30.0, 0.0, 0.0))   # the old line still talking before it drops: ignored
 	items.report_position(8, Vector3(float(s8[0]), float(s8[1]), float(s8[2])) + Vector3(0.5, 0.0, 0.0))
 	items.report_position(8, base7 + Vector3(20.0, 0.0, 0.0))
 	items.peer_left(7)   # the old connection times out now

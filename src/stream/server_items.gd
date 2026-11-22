@@ -626,9 +626,18 @@ func setup(item_table, store_dir: String) -> void:
 					_unfit[str(yield_id)] = true
 
 
-func peer_connected_hello(peer: int, key: String) -> void:
+# Returns the older connections of the same character that this one replaces (a rejoin before the old line timed out, or the same account in a
+# second window): the server drops them (terrain_server.gd). They lose the character at once, so its hunger, thirst and crafts run once, not twice.
+func peer_connected_hello(peer: int, key: String) -> Array:
+	var replaced: Array = []
+
 	if not _valid_key(key):
-		return
+		return replaced
+
+	for other in _peer_key.keys():
+		if int(other) != peer and str(_peer_key[other]) == key:
+			_peer_key.erase(other)   # its later peer_left finds no character: it saves no spot over the live one and pauses nothing
+			replaced.append(int(other))
 
 	_peer_key[peer] = key
 	_zone_sent.erase(peer)
@@ -686,6 +695,8 @@ func peer_connected_hello(peer: int, key: String) -> void:
 	sync_shoulder(peer)
 	_sync_goals(peer)
 	_sync_craft_queue(peer)
+
+	return replaced
 
 
 # Delete-character (protocol 82): the client forgets a character it deleted, so its record is not left behind. The key is the secret, so whoever holds it may forget it; the
