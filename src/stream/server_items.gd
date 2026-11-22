@@ -7503,8 +7503,8 @@ func _load_world_items() -> void:
 				entry["struct"]["cave"] = row.size() > 13 and bool(row[13])
 				entry["struct"]["coins"] = maxi(int(row[14]), 0) if row.size() > 14 else 0
 
-			if row.size() > 11 and entry["struct"].has("uid") and str(row[9]) != "remains" and str(row[11]) != "":
-				entry["struct"]["owner"] = str(row[11])   # a container's owner (crafting stock); one saved before owners belongs to its first opener
+			if row.size() > 11 and str(row[9]) != "remains" and str(row[11]) != "":
+				entry["struct"]["owner"] = str(row[11])   # the builder (take-down) and a container's owner (crafting stock); a container saved before owners belongs to its first opener, any other piece saved before stays open to all
 
 			if row.size() > 16 and int(row[16]) == 1:
 				entry["struct"]["keep_out"] = true   # the owner keeps it out of crafting and blueprint sites
@@ -12121,9 +12121,10 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 	var entry: Dictionary = {"number": table.number_of(str(def["item"])), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": str(def["kind"]), "yaw": float(posmod(yaw_deg, 360))}}
 
+	entry["struct"]["owner"] = str(_peer_key.get(peer, ""))   # the builder: only they take it down (_may_take_down); crafting draws only on the owner's containers (CraftStock.owner_ok)
+
 	if int(def.get("slots", 0)) > 0:
 		entry["struct"]["uid"] = _next_uid
-		entry["struct"]["owner"] = str(_peer_key.get(peer, ""))   # crafting draws only on the owner's containers (CraftStock.owner_ok)
 		_chests[_next_uid] = _new_store(str(def["kind"]))
 		_next_uid += 1
 
@@ -12722,11 +12723,22 @@ func _holds_station(base: Dictionary, def: Dictionary) -> bool:
 	return false
 
 
+# Only the builder takes a placed piece or site down, or an admin in admin mode (coordinator for Dave, 22 Nov 2026: friends must not take each other's
+# houses apart for the materials). A piece with no owner (placed before owners were kept on every piece, or by the world) stays open to anyone.
+func _may_take_down(peer: int, it: Dictionary) -> bool:
+	var owner: String = str(it.get("struct", {}).get("owner", ""))
+	return owner == "" or owner == str(_peer_key.get(peer, "")) or (admin_mode_on.is_valid() and bool(admin_mode_on.call(peer)))
+
+
 # Taking a structure down (E near it) gives its kit back. A chest with things in it cannot be taken down.
 func _take_down(peer: int, inv, id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
 
 	if it.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(_reach_point(it, _peer_pos[peer])) > Interact.server_reach_m():
+		return
+
+	if not _may_take_down(peer, it):
+		_say(peer, "Only the one who built it can take it down.")
 		return
 
 	_kiln_lit_by.erase(id)   # a kiln taken down forgets who lit it (ADD-18)
