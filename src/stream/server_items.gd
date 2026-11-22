@@ -7824,22 +7824,21 @@ func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant
 		return parsed
 
 	if typeof(parsed) == TYPE_DICTIONARY and int(parsed.get("version", 0)) > version:
-		push_error("server items: %s was saved by a newer server (version %d, this one reads %d): not loaded, and nothing is saved over it" % [path, int(parsed.get("version", 0)), version])
+		push_error("server items: %s was saved by a newer server (version %d, this one reads %d): not loaded, nothing saved over it" % [path, int(parsed.get("version", 0)), version])
 		load_failures.append(name)   # an older build on a newer store: left as it is (terrain_server refuses to start)
 		return null
 
-	push_error("server items: %s is not usable; kept as %s.bad" % [path, path])
-	DirAccess.copy_absolute(path, path + ".bad")
-
 	if typeof(parsed) == TYPE_DICTIONARY:
-		DirAccess.remove_absolute(path)   # an older format this build no longer reads: dropped, as before
+		push_error("server items: %s is an older format this build no longer reads; kept as %s.bad" % [path, path])
+		DirAccess.rename_absolute(path, path + ".bad")   # dropped deliberately, as before
 		return null
 
 	if FileAccess.file_exists(path + ".prev"):
 		var previous: Variant = JSON.parse_string(FileAccess.get_file_as_string(path + ".prev"))
 
 		if typeof(previous) == TYPE_DICTIONARY and int(previous.get("version", 0)) <= version and int(previous.get("version", 0)) >= (version if oldest < 0 else oldest):
-			push_error("server items: %s restored from the save before it" % path)
+			push_error("server items: %s is damaged; kept as %s.bad and restored from the save before it" % [path, path])
+			DirAccess.rename_absolute(path, path + ".bad")
 			DirAccess.copy_absolute(path + ".prev", path)
 			return previous
 

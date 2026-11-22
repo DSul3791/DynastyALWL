@@ -249,6 +249,9 @@ var game_clock = GameClockScript.new()   # the one game clock; advances only whi
 var _clock_saved_msec: int = 0
 
 
+var _refused_start: bool = false   # a save file exists but could not be read: the server quits at once and saves nothing
+
+
 func _ready() -> void:
 	net = $TerrainNet
 	var port: int = 24600
@@ -593,11 +596,14 @@ func _ready() -> void:
 	items.setup(ItemTableScript.load_default(), store_dir)
 
 	if not items.load_failures.is_empty():
-		var why: String = "SERVER NOT STARTED: these save files in %s exist but could not be read: %s. Nothing was saved over them. Restore them (each has a .prev or .bad beside it) or run a server build that reads them." % [store_dir, ", ".join(PackedStringArray(items.load_failures))]
+		var why: String = "SERVER NOT STARTED: these save files in %s exist but could not be read: %s. Nothing was saved, moved or deleted. Run the server build that saved them, or restore each from its .prev copy if it has one, then start again." % [store_dir, ", ".join(PackedStringArray(items.load_failures))]
 		push_error(why)
 		print(why)
 		_events.event(why)
+		_run_note("refused", 0, why)
+		_refused_start = true
 		get_tree().quit(3)   # never come up on an empty world over the players' saves
+		return
 
 	admin = AdminScript.new()
 	admin.load_keys([store_dir + "/admin.json"] if _dedicated else ["res://data/admin.json", store_dir + "/admin.json"])
@@ -3142,6 +3148,9 @@ func _on_admin_place(peer: int, kind: String, pos: Vector3, arg: String) -> void
 
 
 func _process(delta: float) -> void:
+	if _refused_start:
+		return
+
 	if store == null:
 		return
 
@@ -3395,11 +3404,17 @@ func _log_dir() -> String:
 # whether it obeys Play's stop request ("stop": 1, a server Play started; _stop_if_asked).
 # A game started while the old server is closing, or from a newer checkout, replaces it instead of joining a server that
 # will stop answering (Dave, build 619: stuck on "0 blocks arriving").
-func _run_note(state: String, listen_port: int) -> void:
+func _run_note(state: String, listen_port: int, why: String = "") -> void:
 	var file: FileAccess = FileAccess.open(_run_note_path(), FileAccess.WRITE)
 
 	if file != null:
-		file.store_string(JSON.stringify({"pid": OS.get_process_id(), "port": listen_port, "commit": _commit, "state": state, "stop": 1 if _quit_when_empty else 0}))
+		var note: Dictionary = {"pid": OS.get_process_id(), "port": listen_port, "commit": _commit, "state": state, "stop": 1 if _quit_when_empty else 0}
+
+		if why != "":
+			note["why"] = why   # "refused": the game's connect window shows it (terrain_client.gd _play_server_refused)
+			note["t"] = Time.get_unix_time_from_system()
+
+		file.store_string(JSON.stringify(note))
 		file.close()
 
 
@@ -3683,6 +3698,9 @@ func _save_game_clock() -> void:
 
 
 func _exit_tree() -> void:
+	if _refused_start:
+		return   # it never started: nothing is saved over the files it could not read
+
 	_events.event("EXIT: server closed (exit_tree)")
 	_events.stop_watchdog()
 	_save_game_clock()
