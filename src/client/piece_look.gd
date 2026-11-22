@@ -1343,8 +1343,27 @@ static func clay_hearth() -> Node3D:
 	return root
 
 
-# A set snare (a trap kind), 0.4 m wide, 0.55 m high: a bent stick with a twine loop lying on the path. Stub look until Kathleen's art.
+const SIMPLE_SNARE_MODEL := "res://assets/traps/simple_snare.glb"
+
+
+# A set Simple snare: Dave's model (22 Nov 2026, tools/items/prepare_item_model.py: 0.62 m wide, 0.5 m high, floor on y 0, the noose's
+# loop 11 cm across a hand above the ground), standing across the run so a rabbit coming along it (along z) puts its head through. The
+# stub below stands in while the file is missing or not imported yet.
 static func snare_trap() -> Node3D:
+	if ResourceLoader.exists(SIMPLE_SNARE_MODEL):
+		var packed: PackedScene = load(SIMPLE_SNARE_MODEL) as PackedScene
+
+		if packed != null:
+			var model: Node3D = packed.instantiate() as Node3D
+			var holder: Node3D = Node3D.new()
+			holder.add_child(model)
+			return holder
+
+	return _snare_stub()
+
+
+# The old stub look (a bent stick with a twine loop), 0.4 m wide, 0.55 m high.
+static func _snare_stub() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
 	_rod(root, Vector3(-0.2, 0.0, 0.0), Vector3(-0.2, 0.55, 0.0), 0.02, _log)             # the bent stick
