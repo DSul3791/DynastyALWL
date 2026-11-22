@@ -96,10 +96,10 @@ player paths, choke points, signs) is folded in here as each part lands. Sources
 
 **Stage 2b (built)**: fox rounds (TR-9). A fox earth in some trail blocks, on side ground near the warrens; it keeps no trail
 of its own (not drawn, not sent, not a run for a snare), and each night the fox walks one of its rounds by way of 2 to 4 warrens, a
-different one from the night before, out half an hour after sunset and home a quarter hour before sunrise. Once the ground round a
+different one from the night before (picked by the night, turning at noon, so midnight does not start a second round), out half an hour after sunset and home a quarter hour before sunrise. Once the ground round a
 player is worked out, foxes are made only at earths (as rabbits at warrens), so foxes live where the rabbits are. A snare on a run
 near an earth may take a fox while nobody is near (TR-10). The server's "ranges: block ... worked out" line now gives the jobs' own
-time and the slowest job in ms, so a lane can tell ranges work from other ground waits. Sources: wildlifeonline.me.uk on red fox
+time and the slowest job in ms (a fox earth is one job per round, so no job lays more than a few legs), so a lane can tell ranges work from other ground waits. Sources: wildlifeonline.me.uk on red fox
 activity and ranging (Oxford radio-tracking: about 4.5 km a night over about 18 ha; first long activity about 30 min after sunset,
 ending about 15 min before dawn).
 
@@ -132,7 +132,7 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
   0.6, dry), with at least 2 warrens within 200 m; 3 rounds of 2-4 warrens each. Clock: out sunset + 0.5 h, home sunrise - 0.25 h,
   jitter 0.5 h.
 - TR-10 away fox: a snare on a run within 300 m of an earth may take a fox at 0.2 of the rabbit rate times the fox's activity, so
-  about one catch in six there is a fox.
+  about one catch in six there is a fox (which animal it was goes through the owner's luck, the fox being the bigger catch).
 
 ## Not done / risks
 

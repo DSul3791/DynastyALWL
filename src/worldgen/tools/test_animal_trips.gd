@@ -430,6 +430,7 @@ func fox_checks(r1, p1: Array) -> void:
 		return
 
 	var visits_ok: bool = true
+	var most: int = 0
 	var shape_ok: bool = true
 
 	for f in foxes:
@@ -445,10 +446,11 @@ func fox_checks(r1, p1: Array) -> void:
 						seen += 1
 						break
 
-			visits_ok = visits_ok and pts[0].distance_to(f["home"]) < 0.01 and seen >= 2 and seen <= 4
+			visits_ok = visits_ok and pts[0].distance_to(f["home"]) < 0.01 and seen >= 1 and seen <= 4   # a leg with no way round water is skipped
+			most = maxi(most, seen)
 
 	check(shape_ok, "a fox earth keeps no trail of its own (not drawn), with its rounds")
-	check(visits_ok, "each round leaves the earth and goes by 2 to 4 warrens")
+	check(visits_ok and most >= 2, "each round leaves the earth and goes by up to 4 warrens, some by 2 or more (most %d)" % most)
 
 	var fox: Dictionary = foxes[0]
 	var key: Vector2i = r1.block_of(fox["home"].x, fox["home"].y)
@@ -510,6 +512,21 @@ func fox_checks(r1, p1: Array) -> void:
 
 	var differs: bool = (fox["routes"] as Array).size() < 2 or (rounds_walked[0] != rounds_walked[1] and rounds_walked[1] != rounds_walked[2])
 	check(vixen.has("trip") and differs, "each night it sets off on a round, never last night's (%s of %d)" % [str(rounds_walked.values()), (fox["routes"] as Array).size()])
+
+	# Across midnight it keeps tonight's round: at the end of it at 23:00, still there at 01:00 the next day.
+	day[0] = 20
+	hour = 23.0
+	vixen["pos"] = Vector3(fox["home"].x, 10.0, fox["home"].y)
+	vixen["home"] = vixen["pos"]
+	a.routine_trip(vixen)
+	var end_at: Vector2 = (vixen["place"]["route"] as PackedVector2Array)[(vixen["place"]["route"] as PackedVector2Array).size() - 1]
+	vixen["pos"] = Vector3(end_at.x, 10.0, end_at.y)
+	vixen["home"] = vixen["pos"]
+	vixen.erase("trip")
+	day[0] = 21
+	hour = 1.0
+	check(a.wants_out(vixen) and not a.routine_trip(vixen), "after midnight a fox at the end of its round does not set off on another")
+	hour = 12.0
 
 
 func r1_water_ok() -> bool:

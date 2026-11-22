@@ -420,19 +420,19 @@ func away_checks() -> void:
 	traps._note_run(items._items[id])
 	check(bool(st.get("fox", false)), "a snare on a run near a fox earth notes the fox")
 	var foxes: int = 0
-	var catches: int = 0
+	var took: int = 0
 
 	for n in 1200:
 		reset(items, id)
 		st["away_at"] = clock[0] - 6.0 * 3600.0
 
 		if traps.check_away(id):
-			catches += 1
+			took += 1
 			foxes += 1 if str(items._items[int(st["catch"])]["struct"]["species"]) == "fox" else 0
 
 	var share: float = float(traps.cfg["away_fox_share"])
 	var want: float = share / (1.0 + share)
-	check(catches > 150 and absf(float(foxes) / float(catches) - want) < 0.08, "about %.0f%% of those catches are a fox (%d of %d)" % [want * 100.0, foxes, catches])
+	check(took > 150 and absf(float(foxes) / float(took) - want) < 0.08, "about %.0f%% of those catches are a fox (%d of %d)" % [want * 100.0, foxes, took])
 	earth_near[0] = false
 	traps._note_run(items._items[id])
 	foxes = 0

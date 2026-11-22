@@ -3116,7 +3116,7 @@ func routine_trip(a: Dictionary) -> bool:
 
 	if out and pl.has("rounds"):   # a fox: tonight's round, a different one from last night's (it keeps no fixed trail, stage 2b)
 		var rounds: Array = pl["rounds"]
-		pl["route"] = rounds[posmod(_day() + int(hash(str(pl["id"]))), rounds.size())]
+		pl["route"] = rounds[posmod(_night() + int(hash(str(pl["id"]))), rounds.size())]   # by the night, so midnight does not send it on a second round
 
 	var route: PackedVector2Array = pl["route"]
 	var goal: Vector2 = route[route.size() - 1] if out else route[0]
@@ -3197,9 +3197,14 @@ func _trip_step(a: Dictionary, r: Dictionary) -> bool:
 	return false
 
 
-# The game day (0 without a clock): which run a warren's group takes, which round a fox walks.
+# The game day (0 without a clock): which run a warren's or a range's group takes.
 func _day() -> int:
 	return int(floor(float(game_seconds.call()) / 86400.0)) if game_seconds.is_valid() else 0
+
+
+# The game night, turning at noon (0 without a clock): which round a fox walks, the same one from dusk to dawn across midnight.
+func _night() -> int:
+	return int(floor((float(game_seconds.call()) - 43200.0) / 86400.0)) if game_seconds.is_valid() else 0
 
 
 # Makes a group of a species with a daily clock at a free place near the player: at its home spot or out spot as its clock has it,
@@ -3220,7 +3225,7 @@ func _place_spawn(sp: String, def: Dictionary, p: Vector3, players: Array, room:
 
 	for place in ranges.places_near(sp, p, float(cfg.get("spawn_max_m", 250.0))):
 		var routes: Array = place["routes"]
-		var run: int = posmod(day + int(hash(str(place["id"]))), routes.size())   # a warren's group takes a different run each day
+		var run: int = posmod((day if bool(place.get("drawn", true)) else _night()) + int(hash(str(place["id"]))), routes.size())   # a warren's group takes a different run each day, a fox tonight's round
 
 		if taken.has(str(place["id"])):
 			continue   # one group a place

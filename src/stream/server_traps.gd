@@ -367,7 +367,7 @@ func check_away(id: int) -> bool:
 	if not host.fate(_owner_peer(st), "snare", over):
 		return false
 
-	if p_fox > 0.0 and randf() * (p + p_fox) < p_fox:   # luck-exempt: which animal the catch was, in proportion to their chances
+	if p_fox > 0.0 and host.fate(_owner_peer(st), "snare", p_fox / (p + p_fox)):   # which animal it was, in proportion to their chances (the bigger catch, so luck helps)
 		sp = "fox"
 
 	if bait >= 0:
