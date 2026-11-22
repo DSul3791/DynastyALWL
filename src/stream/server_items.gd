@@ -589,9 +589,9 @@ func setup(item_table, store_dir: String) -> void:
 	_load_inventories()
 	_load_chests()
 	_load_world_items()
-	_split_old_barrels()
 	var loaded_next: int = _next_id
 	_load_changed = {}
+	_split_old_barrels()   # after the reset: the barrels it turns are written to their area files at the first save
 	_carts.after_load()
 	var lights_parsed: Variant = _read_json_version("lights.json", 1)
 	_apply_lit_rows(lights_parsed.get("lit", []) if lights_parsed != null and typeof(lights_parsed.get("lit", null)) == TYPE_ARRAY else [])
@@ -7432,7 +7432,11 @@ func _split_old_barrels() -> void:
 		if goods:
 			it["struct"]["kind"] = "storage_barrel"
 			it["number"] = table.number_of("storage_barrel")
+			_load_changed[id] = true
 			_dirty = true
+		elif it["struct"].has("autoload"):
+			it["struct"].erase("autoload")   # a Water barrel does not autoload
+			_load_changed[id] = true
 
 
 func _load_world_items() -> void:
