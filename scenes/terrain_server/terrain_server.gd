@@ -1927,25 +1927,43 @@ func _cut_tree(chunk: Vector2i, id: int) -> bool:
 
 
 # Standing placer trees whose root lies within `radius` (flat) of a point, as [chunk, id] (dig under trees, job 85).
+# Only the chunks the radius reaches, and only those whose full list is made (tree_info reads that list): every dig asks this, and it used
+# to place and scan all nine 256 m chunks round the dig on the main thread (22 Nov 2026 load bots: 5.5 s on a first dig, about 50 ms on
+# every later one). A chunk not made yet is skipped: the same dig's bury job makes it on the flora thread.
+# shortcut: a dig in a chunk not made yet does not fell the trees it undermines; the next dig there does, once the chunk is made.
 func _trees_near(point: Vector3, radius: float) -> Array:
 	var size: float = flora.placer.chunk_m
 	var home: Vector2i = Vector2i(int(floor(point.x / size)), int(floor(point.z / size)))
+	var reach: int = maxi(int(ceil(radius / size)), 1)
 	var found: Array = []
 
-	for dz in [-1, 0, 1]:
-		for dx in [-1, 0, 1]:
+	for dz in range(-reach, reach + 1):
+		for dx in range(-reach, reach + 1):
+			var corner: Vector2 = Vector2(float(home.x + dx) * size, float(home.y + dz) * size)
+
+			if Vector2(clampf(point.x, corner.x, corner.x + size) - point.x, clampf(point.z, corner.y, corner.y + size) - point.z).length() > radius:
+				continue
+
 			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
-			var trees: Dictionary = flora.items_of(chunk, true)
+
+			if not flora.has_items(chunk):
+				continue   # the dig's own bury job (_bury_find, flora thread) makes it
+
+			var trees: Dictionary = flora.items_of(chunk)   # kept: no placement
 			var gone: Array = flora.removed_in(chunk)
+			var ids: PackedInt32Array = trees["ids"]
+			var positions: PackedVector3Array = trees["positions"]
 
-			for n in range(trees["ids"].size()):
-				var species: Dictionary = flora.placer._by_id.get(trees["ids"][n] >> 16, {})
+			for n in range(ids.size()):
+				var at: Vector3 = positions[n]
 
-				if species.is_empty() or int(species["kind"]) != PlacerScript.KIND_TREE or gone.has(trees["ids"][n]):
+				if absf(at.x - point.x) > radius or absf(at.z - point.z) > radius or Vector2(at.x - point.x, at.z - point.z).length() > radius:
 					continue
 
-				if Vector2(trees["positions"][n].x - point.x, trees["positions"][n].z - point.z).length() <= radius:
-					found.append([chunk, trees["ids"][n]])
+				var species: Dictionary = flora.placer._by_id.get(ids[n] >> 16, {})
+
+				if not species.is_empty() and int(species["kind"]) == PlacerScript.KIND_TREE and not gone.has(ids[n]):
+					found.append([chunk, ids[n]])
 
 	return found
 

@@ -5,13 +5,22 @@ const SelfTimeoutScript := preload("res://src/shared/self_timeout.gd")
 # A protocol-only player for load tests (tools/bots.sh): joins the server, walks, asks for ground, digs now and then, and prints
 # how the server treated it (heartbeat gaps, how long blocks took to arrive). No world, no rendering; the node is named Main with a
 # TerrainNet child like the real client so the RPC paths match. Blocks come by RPC here (the real client also has the block line).
-#   --server=HOST --port=N --name=NAME --seconds=S --dig-every=SECONDS (0 = never)
+#   --server=HOST --port=N --name=NAME --seconds=S --dig-every=SECONDS (0 = never) --work
+# --work (load tests, 22 Nov 2026): the bot works like an early player. It is given a wooden shovel, a stone axe and plant fibre (the
+# server needs --open-admin), digs with the shovel in hand at the real ground height, queues twine crafts, asks for the trees around it,
+# walks to the nearest and chops it with the axe, then the next. The final line adds how many digs, blows and crafts it sent.
 
 const NetScript := preload("res://src/stream/terrain_net.gd")
 const NetSettings := preload("res://src/shared/net_settings.gd")
 const BuildStamp := preload("res://src/shared/build_stamp.gd")
 const ServerAuthScript := preload("res://src/shared/server_auth.gd")
 const BLOCK_M := 16.0
+const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const ItemTableScript := preload("res://src/shared/item_table.gd")
+const InventoryScript := preload("res://src/shared/inventory.gd")
+const FLORA_CHUNK_M := 256.0      # flora_placer chunk_m (no rules override)
+const CRAFT_EVERY_MS := 30000
+const TWINE_RECIPE := 1           # Twine: 3 plant fibre, by hand
 
 var _net
 var _host: String = "127.0.0.1"
@@ -40,6 +49,22 @@ var _last_block: Vector3i = Vector3i(1 << 20, 0, 0)
 var _next_report_msec: int = 0
 var _next_dig_msec: int = 0
 var _done: bool = false
+var _work: bool = false
+var _table = null
+var _inv = null
+var _ground_y: float = NAN
+var _surface_asked_msec: int = 0
+var _trees: Array = []               # [chunk, id, position] of tall flora near the bot (the server says whether each is a tree)
+var _tried: Dictionary = {}          # "cx,cz,id" -> true: chopped or given up
+var _target: Array = []
+var _target_since_msec: int = 0
+var _flora_chunk: Vector2i = Vector2i(1 << 20, 0)
+var _next_hit_msec: int = 0
+var _next_craft_msec: int = 0
+var _gave: bool = false
+var _digs: int = 0
+var _hits: int = 0
+var _crafts: int = 0
 
 
 func _ready() -> void:
@@ -57,12 +82,22 @@ func _ready() -> void:
 			_password = argument.trim_prefix("--password=")
 		elif argument.begins_with("--dig-every="):
 			_dig_every = float(argument.trim_prefix("--dig-every="))
+		elif argument == "--work":
+			_work = true
 
 	_rng.seed = hash(_name)
 	_net = $TerrainNet
 	_net.welcome_received.connect(_on_welcome)
 	_net.blocks_received.connect(_on_blocks)
 	_net.pulse_received.connect(_on_pulse)
+
+	if _work:
+		_table = ItemTableScript.load_default()
+		_inv = InventoryScript.pack(_table)
+		_net.inventory_full_received.connect(func(bytes: PackedByteArray) -> void: _inv.from_bytes(bytes))
+		_net.inventory_slots_received.connect(_on_slots)
+		_net.surface_received.connect(_on_surface)
+		_net.flora_received.connect(_on_flora)
 	var peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
 	# Every server runs the join handshake (server_auth.gd); --password= answers a server that has one, once.
 	_auth = ServerAuthScript.new()
@@ -88,7 +123,7 @@ func _ready() -> void:
 	multiplayer.multiplayer_peer = peer
 	multiplayer.connected_to_server.connect(func():
 		NetSettings.apply(peer.get_peer(1))
-		_net.hello.rpc_id(1, "bot_" + _name, BuildStamp.stamped_build())
+		_net.hello.rpc_id(1, "loadbot_" + _name, BuildStamp.stamped_build())   # 8 to 64 characters (server_items _valid_key): "bot_b1" was refused, so no bot was ever a player
 		_net.my_look.rpc_id(1, "Bot " + _name, "", ""))   # protocol 151: players see a bot as a plain body with its name
 	multiplayer.server_disconnected.connect(func():
 		print("BOT %s: server left" % _name)
@@ -148,7 +183,17 @@ func _process(delta: float) -> void:
 		_heading = _rng.randf() * TAU
 		_heading_until = t + _rng.randf_range(5.0, 15.0)
 
-	_position += Vector3(cos(_heading), 0.0, sin(_heading)) * 3.2 * delta
+	if _work:
+		_work_step(now)
+
+	if not _target.is_empty():
+		var to: Vector3 = Vector3(_target[2]) - _position
+		to.y = 0.0
+		_heading = atan2(to.z, to.x)
+		_heading_until = t + 1.0
+
+	var near_tree: bool = not _target.is_empty() and Vector2(_position.x - _target[2].x, _position.z - _target[2].z).length() < 2.0
+	_position += Vector3.ZERO if near_tree else Vector3(cos(_heading), 0.0, sin(_heading)) * 3.2 * delta
 	var block: Vector3i = Vector3i(int(floor(_position.x / BLOCK_M)), int(floor(_position.y / BLOCK_M)), int(floor(_position.z / BLOCK_M)))
 
 	if block != _last_block:
@@ -161,7 +206,103 @@ func _process(delta: float) -> void:
 
 	if _next_dig_msec > 0 and now >= _next_dig_msec:
 		_next_dig_msec = now + int(_dig_every * 1000.0)
-		_net.inventory_action.rpc_id(1, NetScript.ACT_DIG, 0, 0, 0, _position + Vector3(1.0, -1.0, 0.0))
+
+		if not _work:
+			_net.inventory_action.rpc_id(1, NetScript.ACT_DIG, 0, 0, 0, _position + Vector3(1.0, -1.0, 0.0))
+		elif not is_nan(_ground_y) and _slot_of("wooden_shovel") >= 0:
+			_net.inventory_action.rpc_id(1, NetScript.ACT_DIG, _slot_of("wooden_shovel"), 0, 0, Vector3(_position.x + 1.0, _ground_y - 0.2, _position.z))
+			_digs += 1
+
+
+# --work: gifts once, the ground height every 2 s, the trees of the flora chunk it is in, chopping the nearest, crafts every 30 s.
+func _work_step(now: int) -> void:
+	if not _gave and now - _welcome_msec > 2000:
+		_gave = true
+
+		for row in [["wooden_shovel", 1], ["stone_axe", 1], ["plant_fibre", 100], ["plant_fibre", 100]]:
+			_net.inventory_action.rpc_id(1, NetScript.ACT_ADMIN_GIVE, _table.number_of(row[0]), 0, row[1], Vector3.ZERO)
+
+		_next_craft_msec = now + 3000
+
+	if now - _surface_asked_msec > 2000:
+		_surface_asked_msec = now
+		_net.request_surface.rpc_id(1, _position.x, _position.z)
+
+	var chunk: Vector2i = Vector2i(floori(_position.x / FLORA_CHUNK_M), floori(_position.z / FLORA_CHUNK_M))
+
+	if chunk != _flora_chunk:
+		_flora_chunk = chunk
+		_net.request_flora.rpc_id(1, PackedInt32Array([chunk.x, chunk.y, 1]))   # the full list, as a real client asks for the chunk it stands in
+
+	if _next_craft_msec > 0 and now >= _next_craft_msec:
+		_next_craft_msec = now + CRAFT_EVERY_MS
+		_net.inventory_action.rpc_id(1, NetScript.ACT_CRAFT_QUEUE, TWINE_RECIPE, 0, 5, Vector3.ZERO)
+		_crafts += 5
+
+	if _target.is_empty() or now - _target_since_msec > 40000:
+		if not _target.is_empty():
+			_tried["%d,%d,%d" % [_target[0].x, _target[0].y, _target[1]]] = true
+
+		_target = _nearest_tree()
+		_target_since_msec = now
+
+	if not _target.is_empty() and now >= _next_hit_msec and _slot_of("stone_axe") >= 0:
+		var flat: float = Vector2(_position.x - _target[2].x, _position.z - _target[2].z).length()
+
+		if flat < 3.0:
+			_next_hit_msec = now + 600
+			_net.inventory_action.rpc_id(1, NetScript.ACT_HIT, _target[1], _target[0].x, _target[0].y, Vector3(float(_slot_of("stone_axe") + 1), 0.0, 0.0))
+			_hits += 1
+
+
+func _nearest_tree() -> Array:
+	var best: Array = []
+	var best_d: float = 80.0
+
+	for tree in _trees:
+		if _tried.has("%d,%d,%d" % [tree[0].x, tree[0].y, tree[1]]):
+			continue
+
+		var d: float = Vector2(_position.x - tree[2].x, _position.z - tree[2].z).length()
+
+		if d < best_d:
+			best_d = d
+			best = tree
+
+	return best
+
+
+func _slot_of(id: String) -> int:
+	return _inv.numbers.find(_table.number_of(id)) if _inv != null else -1
+
+
+func _on_slots(bytes: PackedByteArray) -> void:
+	var n: int = mini(bytes[0], floori(float(bytes.size() - 1) / 9.0)) if not bytes.is_empty() else 0
+
+	for k in n:
+		var at: int = 1 + k * 9
+
+		if bytes[at] < _inv.slot_count:
+			_inv.numbers[bytes[at]] = bytes.decode_u32(at + 1)
+			_inv.counts[bytes[at]] = bytes.decode_u16(at + 5)
+
+
+func _on_surface(x: float, z: float, y: float) -> void:
+	if absf(x - _position.x) < 8.0 and absf(z - _position.z) < 8.0:
+		_ground_y = y
+		_position.y = y   # reported on the ground, as a walking player is
+
+
+# Tall items of a chunk (over 5 m) are taken as trees; a blow on anything else the server refuses, and the bot moves on after 40 s.
+func _on_flora(chunk: Vector2i, bytes: PackedByteArray, _water: PackedByteArray, _full: bool) -> void:
+	var items: Dictionary = PlacerScript.decode(bytes, Vector2(chunk) * FLORA_CHUNK_M)
+	_trees = []
+
+	for n in items["ids"].size():
+		if float(items["heights"][n]) > 5.0:
+			_trees.append([chunk, int(items["ids"][n]), items["positions"][n]])
+
+	_target = []
 
 
 func _ask_around(block: Vector3i, now: int) -> void:
@@ -191,4 +332,18 @@ func _finish() -> void:
 	var p95: int = int(_latencies[mini(int(count * 0.95), count - 1)]) if count > 0 else -1
 	print("BOT %s: welcome %d ms after start; pulses %d, worst heartbeat gap %d ms, gaps over 500 ms %d; blocks %d (%d KB), asked %d, still unanswered %d, block wait median %d ms p95 %d ms worst %d ms" % [
 		_name, _welcome_msec - _started_msec, _pulses, _worst_gap_ms, _gaps_over_500, _blocks, int(_bytes / 1024.0), _blocks + _asked.size(), _asked.size(), median, p95, int(_latencies[count - 1]) if count > 0 else -1])
+
+	if _work:
+		print("BOT %s: work sent: digs %d, axe blows %d, twine crafts %d; trees seen %d, given up %d; pack %s" % [_name, _digs, _hits, _crafts, _trees.size(), _tried.size(), _pack_summary()])
+
 	get_tree().quit(0)
+
+
+func _pack_summary() -> String:
+	var parts: PackedStringArray = PackedStringArray()
+
+	for slot in _inv.slot_count:
+		if _inv.numbers[slot] != 0:
+			parts.append("%s x%d" % [_table.id_of(_inv.numbers[slot]), _inv.counts[slot]])
+
+	return ", ".join(parts)

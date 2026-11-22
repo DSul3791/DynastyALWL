@@ -1,15 +1,16 @@
 #!/bin/bash
-# usage: tools/bots.sh BOTS SECONDS [DIG_EVERY_S]
+# usage: tools/bots.sh BOTS SECONDS [DIG_EVERY_S] [work]
+# "work" as the 4th argument: the bots dig with a shovel, chop trees and craft twine like early players (scenes/bot/bot_main.gd --work).
 # Starts a headless server on a spare port and BOTS protocol-only players (scenes/bot) that walk, ask for ground and dig,
 # then prints each bot's numbers and the server's worst frame gap. Run from the repository root; needs `godot` on PATH.
-BOTS=${1:-10}; SECS=${2:-60}; DIG=${3:-0}
+BOTS=${1:-10}; SECS=${2:-60}; DIG=${3:-0}; WORK=""; [ "$4" = "work" ] && WORK="--work"
 GODOT=${GODOT:-godot}
 PORT=$((7400 + RANDOM % 400)); D=$(mktemp -d /tmp/bots_XXXX); mkdir -p $D/store
 $GODOT --headless --rendering-driver dummy --path . res://scenes/terrain_server/terrain_server.tscn -- --port=$PORT --store=$D/store --quit-after=$(( SECS + 120 )) --open-admin > $D/server.log 2>&1 &
 SP=$!
 sleep 40
 for i in $(seq 1 $BOTS); do
-  $GODOT --headless --rendering-driver dummy --path . res://scenes/bot/bot_main.tscn -- --server=127.0.0.1 --port=$PORT --name=b$i --seconds=$SECS --dig-every=$DIG > $D/bot$i.log 2>&1 &
+  $GODOT --headless --rendering-driver dummy --path . res://scenes/bot/bot_main.tscn -- --server=127.0.0.1 --port=$PORT --name=b$i --seconds=$SECS --dig-every=$DIG $WORK > $D/bot$i.log 2>&1 &
   sleep 0.5
 done
 wait $(jobs -p | grep -v "^$SP$") 2>/dev/null
