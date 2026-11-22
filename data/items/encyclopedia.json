@@ -5188,6 +5188,18 @@
 			],
 			"obtainable_now": true
 		},
+		"iron_chunk": {
+			"name": "Iron chunk",
+			"kind": "material",
+			"description": "A heavy lump of meteorite iron and nickel. It works as an Iron ingot.",
+			"how_to_get": [
+				"Picked up loose, or broken from a dark pitted meteorite with any pick or the Stone Hammer. Meteorites lie anywhere."
+			],
+			"used_for": [
+				"Used anywhere an Iron ingot is: recipes, buildings and repairs"
+			],
+			"obtainable_now": true
+		},
 		"bog_iron_ore": {
 			"name": "Bog iron ore",
 			"kind": "material",
