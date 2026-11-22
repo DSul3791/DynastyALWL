@@ -84,6 +84,7 @@ func _initialize() -> void:
 	link = BlockLinkServer.new()
 	link.is_peer = func(peer: int) -> bool: return peer >= 1 and peer <= 2
 	link.on_request = func(_peer: int, _keys: PackedInt32Array, _urgent: int) -> void: pass
+	check(link.hello_wait_msec >= 15000, "the real hello wait stays long enough for a cold first join (%d ms)" % link.hello_wait_msec)
 	link.hello_wait_msec = 2000
 	link.pending_max = 4
 	var port: int = 0

@@ -193,6 +193,9 @@ func _init() -> void:
 	var meadow: int = biome_ids["temperate_grassland"]
 	var meadow_km2: float = float(area.get(meadow, 0.0))
 
+	print("meadow sampled %.2f km2" % meadow_km2)
+	_check(meadow_km2 > 0.05, "the sample covers meadow (%.2f km2)" % meadow_km2)
+
 	if meadow_km2 > 0.05:
 		_check(float(counts.get("%d/tall_grass" % meadow, 0)) / meadow_km2 >= 3000.0, "meadows have tall grass (%.0f per km2)" % (float(counts.get("%d/tall_grass" % meadow, 0)) / meadow_km2))
 
@@ -351,6 +354,7 @@ func _init() -> void:
 			lonely += 1
 
 	print("young conifers near the spawn: %d, lonely (no nursery, no grown tree within 22 m): %d" % [young.size(), lonely])
+	_check(young.size() > 100, "the sample holds young conifers (%d)" % young.size())
 	_check(lonely * 50 <= young.size(), "at most 2 percent of young conifers stand alone in open ground (a parent crown across a chunk edge is not seen) (%d of %d)" % [lonely, young.size()])
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)
