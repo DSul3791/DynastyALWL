@@ -23,6 +23,7 @@ if ! git merge --no-ff -q -m "Merge $TITLE ($HASH) into main" "$HASH"; then
 fi
 git grep -n '^<<<<<<<\|^>>>>>>>' -- src data scenes tools | head -3 | grep . && die "conflict markers in the tree"
 $PY tools/parse_scan.py | tail -1 | grep -q ' 0 problems' || die "parse_scan found problems"
+export MERGE_CHECK_BASE=origin/main   # the main gate compares against main (merge_check defaults to origin/dev for PRs)
 $PY tools/merge_check.py | tail -1 | grep -q 'all clear' || { $PY tools/merge_check.py | tail -6; die "merge_check failed"; }
 OLD=$(grep -o 'NUMBER := [0-9]*' src/shared/build.gd | grep -o '[0-9]*'); NEW=$((OLD + 1))
 sed -i "s/const NUMBER := $OLD/const NUMBER := $NEW/" src/shared/build.gd
