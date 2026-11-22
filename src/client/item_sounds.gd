@@ -37,6 +37,7 @@ const SHAPE_CLASS := {
 	"skin": "cloth", "feather": "cloth", "cloth": "cloth", "hand_net": "cloth", "chunk": "stone", "block": "stone", "brick": "stone", "ingot": "metal", "coin": "metal", "needle": "metal",
 	"pile": "soft", "leaves": "soft", "fish": "food", "meat": "food", "loaf": "food", "fruit": "food", "bowl": "food", "skewer": "food",
 	"bottle": "glass", "pot": "glass", "bone": "bone", "flower": "soft", "frond": "soft", "root": "soft", "cap": "soft", "nut": "bone",
+	"crossbow": "wood", "arrow": "wood", "garment": "cloth",
 }
 const MIN_GAP_MSEC := 60
 const WORK_DB := -18.0

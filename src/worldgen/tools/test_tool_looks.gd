@@ -223,7 +223,23 @@ func _init() -> void:
 	var light_xbow: Mesh = BasicLook.mesh_for("light_crossbow")
 	var heavy_xbow: Mesh = BasicLook.mesh_for("heavy_crossbow")
 	_check(str(BasicLook.entry("light_crossbow").get("shape", "")) == "crossbow" and light_xbow != null and light_xbow.get_aabb().size.z > 0.25 and light_xbow.get_aabb().size.x > 0.6, "the light crossbow is a stock with a prod across it")
-	_check(heavy_xbow != null and heavy_xbow.get_surface_count() > light_xbow.get_surface_count(), "the heavy crossbow has a steel prod (a metal surface the light one lacks)")
+	_check(heavy_xbow != null and light_xbow != null and heavy_xbow.get_surface_count() > light_xbow.get_surface_count(), "the heavy crossbow has a steel prod (a metal surface the light one lacks)")
+
+	# Placeholder looks 5b (clothing): each piece is a garment of its own kind, under the 300 triangle cap, and the kinds read apart.
+	var kinds := {"linen_trousers": "trousers", "linen_skirt": "skirt", "linen_dress": "dress", "wool_dress": "dress", "wool_cloak": "cloak", "wool_coat": "coat", "wool_robe": "robe",
+			"oilcloth_cloak": "cloak", "linen_apron": "apron", "leather_apron": "apron", "tabard": "tabard", "linen_headwrap": "headwrap", "leather_broad_brim_hat": "broad_brim",
+			"fur_mittens": "mittens", "leather_shoes": "shoes", "wool_socks": "socks", "wool_scarf": "scarf"}
+
+	for id in kinds:
+		var row: Dictionary = BasicLook.entry(id)
+		_check(str(row.get("shape", "")) == "garment" and (row.get("bits", []) as Array).has(kinds[id]), "%s is drawn as a %s" % [id, kinds[id]])
+		var tris: int = _tris(BasicLook.mesh_for(id))
+		_check(tris > 12 and tris <= 300, "%s: %d triangles (more than a plain box, at most 300)" % [id, tris])
+
+	_check(BasicLook.mesh_for("linen_dress").get_aabb().size.z > BasicLook.mesh_for("linen_skirt").get_aabb().size.z + 0.05, "a dress is longer than a skirt (it has a bodice)")
+	_check(BasicLook.mesh_for("wool_robe").get_aabb().size.z > BasicLook.mesh_for("wool_coat").get_aabb().size.z, "a robe is longer than a coat")
+	_check(BasicLook.mesh_for("leather_broad_brim_hat").get_aabb().size.x > 0.25, "the broad-brim hat has a wide brim (%.2f m)" % BasicLook.mesh_for("leather_broad_brim_hat").get_aabb().size.x)
+	_check(_mean_colour(BasicLook.mesh_for("leather_apron")).get_luminance() < _mean_colour(BasicLook.mesh_for("linen_apron")).get_luminance(), "a leather apron is darker than a linen one")
 
 	print("tool looks: %d failures" % failures)
 

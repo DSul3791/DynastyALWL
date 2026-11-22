@@ -5123,91 +5123,23 @@
   "steel_greaves": {"shape": "garment", "color": "#9aa3ad", "size": 1.0, "bits": ["boots", "steel"]},
   "iron_sabatons": {"shape": "garment", "color": "#6c6f75", "size": 0.9, "bits": ["boots", "iron"]},
   "steel_sabatons": {"shape": "garment", "color": "#9aa3ad", "size": 0.9, "bits": ["boots", "steel"]},
-  "linen_trousers": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "linen_skirt": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "linen_dress": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "wool_dress": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "wool_cloak": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "wool_coat": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "wool_robe": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "oilcloth_cloak": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "linen_apron": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "leather_apron": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "tabard": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "linen_headwrap": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "leather_broad_brim_hat": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "fur_mittens": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "leather_shoes": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "wool_socks": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "wool_scarf": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
+  "linen_trousers": {"shape": "garment", "color": "#e6dcc2", "size": 1.0, "bits": ["trousers"]},
+  "linen_skirt": {"shape": "garment", "color": "#e6dcc2", "size": 1.0, "bits": ["skirt"]},
+  "linen_dress": {"shape": "garment", "color": "#e6dcc2", "size": 1.1, "bits": ["dress"]},
+  "wool_dress": {"shape": "garment", "color": "#c9b99a", "size": 1.1, "bits": ["dress"]},
+  "wool_cloak": {"shape": "garment", "color": "#c9b99a", "size": 1.2, "bits": ["cloak"]},
+  "wool_coat": {"shape": "garment", "color": "#c9b99a", "size": 1.05, "bits": ["coat"]},
+  "wool_robe": {"shape": "garment", "color": "#c9b99a", "size": 1.1, "bits": ["robe"]},
+  "oilcloth_cloak": {"shape": "garment", "color": "#8a7a4a", "size": 1.2, "bits": ["cloak"]},
+  "linen_apron": {"shape": "garment", "color": "#e6dcc2", "size": 1.0, "bits": ["apron"]},
+  "leather_apron": {"shape": "garment", "color": "#7a4a28", "size": 1.0, "bits": ["apron"]},
+  "tabard": {"shape": "garment", "color": "#3d5470", "size": 1.0, "bits": ["tabard"]},
+  "linen_headwrap": {"shape": "garment", "color": "#e6dcc2", "size": 1.0, "bits": ["headwrap"]},
+  "leather_broad_brim_hat": {"shape": "garment", "color": "#7a4a28", "size": 1.0, "bits": ["broad_brim"]},
+  "fur_mittens": {"shape": "garment", "color": "#4a3322", "size": 1.0, "bits": ["mittens"]},
+  "leather_shoes": {"shape": "garment", "color": "#7a4a28", "size": 0.9, "bits": ["shoes"]},
+  "wool_socks": {"shape": "garment", "color": "#c9b99a", "size": 0.9, "bits": ["socks"]},
+  "wool_scarf": {"shape": "garment", "color": "#c9b99a", "size": 1.0, "bits": ["scarf"]},
   "fibre_shoulder_bag": {
    "shape": "chunk",
    "color": "#8a8a8a",
