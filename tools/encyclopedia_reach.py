@@ -25,7 +25,8 @@ The "future" flag in items.json is NOT a source here (validate_items.gd counts f
 recipe graph; that is a different question). The script lists items whose future flag disagrees with what it finds.
 
 status: "planned" when the item is not obtainable now, "retired" when items.json retires it (a retired kit row stands for its piece, so it
-is retired only when no blueprint that is not retired builds that piece), removed when it is obtainable; retired items are never obtainable.
+is retired only when no blueprint that is not retired or removed builds that piece; a blueprint row's "removed" flag also retires the
+piece's placed item), removed when it is obtainable; retired items are never obtainable.
 --check fails when obtainable_now or status would change.
 """
 
@@ -93,9 +94,14 @@ class Reach:
         return False
 
     def kit_piece_live(self, kit):
-        # a structure placed from this kit with a blueprint that is not retired (a locked one is coming: Cold frame, Compost bin)
+        # a structure placed from this kit with a blueprint that is neither retired nor removed (a locked one is coming: Cold frame, Compost bin)
         kinds = [k for k, d in self.structures.items() if d.get("kit") == kit]
-        return any(b.get("structure") in kinds and not b.get("retired") for b in self.blueprints_all.values())
+        return any(b.get("structure") in kinds and not b.get("retired") and not b.get("removed") for b in self.blueprints_all.values())   # removed: locked for good, the row kept loaded for tests (Wicker - Chest)
+
+    def piece_removed(self, iid):
+        # the placed item of a piece whose blueprint is removed (locked for good, kept loaded for the tests: Wicker - Chest, D-WICKER-1)
+        kinds = [k for k, d in self.structures.items() if d.get("item") == iid]
+        return any(b.get("structure") in kinds and b.get("removed") for b in self.blueprints_all.values())
 
     def has(self, iid):
         return iid in self.why
@@ -399,7 +405,7 @@ def main(argv):
         it = reach.all.get(iid, {})
         if now:
             e.pop("status", None)
-        elif it.get("retired") and not (iid.endswith("_kit") and reach.kit_piece_live(iid)):
+        elif (it.get("retired") and not (iid.endswith("_kit") and reach.kit_piece_live(iid))) or reach.piece_removed(iid):
             # replaced by another item (Greens by Nettles, Salt by Sea salt): no source is coming. A retired kit stands for its piece,
             # so it is retired only when every blueprint of the piece is retired (the pumps and iron pipes: Dave, copper taps, no pumps).
             e["status"] = "retired"
