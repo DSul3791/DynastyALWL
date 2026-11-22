@@ -201,6 +201,7 @@ func _init() -> void:
 	house.kill(1, "drowning")
 	var filled: Array = house.remains_ids().filter(func(rid): return float(house._items[rid]["pos"].x) > 70.0)
 	check(filled.size() == 1 and absf(float(house._items[filled[0]]["pos"].y) - 11.0) < 0.05, "on filled ground the remains lie on the fill (%s)" % (str(house._items[filled[0]]["pos"]) if filled.size() == 1 else "none"))
+	ground = 7.0   # the shelter cases below stand on the ground set above
 
 	# Dave 2026-10-21: back at the last shelter slept in.
 	DirAccess.make_dir_recursive_absolute(dir + "_shelter")
