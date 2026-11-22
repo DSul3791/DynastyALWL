@@ -1141,8 +1141,8 @@ func _probe_structure_for(id: int) -> Dictionary:
 	if str(_structure_by_state(state).get("use", "")) == "tap":   # a Copper - Tap (Dave 19 Nov 2026): E drinks, F opens its slots where water containers fill
 		return {"prompt": "Press E to take a drink, F to fill water containers (hold E to take it down)", "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_USE_STRUCT, id, 0, 0, Vector3.ZERO), "hold": take_down}
 
-	if _is_chest(state) and int(_world[id].get("water_l", 0)) >= 1:   # a barrel holding water (PLUMBING_DESIGN s9, PV-6): water or goods, never both
-		return {"prompt": "Press E to drink, or to fill what you hold (%d L in it; hold E to take it down)" % int(_world[id]["water_l"]), "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_DRINK, held_container_slot(), 0, 0, Vector3.ZERO), "hold": take_down}
+	if _is_chest(state) and bool(_structure_by_state(state).get("fills_containers", false)):   # a Water barrel (Dave 22 Nov 2026): E drinks or fills what you hold, F opens its 3 slots where water containers fill
+		return {"prompt": "Press E to drink, or to fill what you hold, F to fill water containers (%d L in it; hold E to take it down)" % int(_world[id].get("water_l", 0)), "tap": func(): net.inventory_action.rpc_id(1, Net.ACT_DRINK, held_container_slot(), 0, 0, Vector3.ZERO), "hold": take_down}
 
 	if _is_chest(state):
 		return {"prompt": "Press E to open (hold E to take it down)", "tap": func(): _ask_open(id), "hold": take_down}

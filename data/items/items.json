@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1545,
+	"next_number": 1546,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -6959,8 +6959,8 @@
 			"wooden_barrel_kit": {
 				"number": 648,
 				"retired": true,
-				"name": "Barrel",
-				"description": "A hooped plank barrel. Holds 8 stacks.",
+				"name": "Water barrel",
+				"description": "A hooped plank barrel for water.",
 				"kind": "placeable",
 				"stack": 1,
 				"unstackable": true,
@@ -6969,13 +6969,24 @@
 			},
 			"wooden_barrel": {
 				"number": 649,
-				"name": "Barrel",
-				"description": "A hooped barrel of hardwood staves. Holds 8 stacks.",
+				"name": "Water barrel",
+				"description": "A hooped barrel of hardwood staves that holds 60 L of water. Drink from it; its 3 slots take water containers and fill them from it.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
 				"look_alikes": [],
-				"note": "Placed piece: row state 133."
+				"note": "Placed piece: row state 133. The Water barrel (Dave 22 Nov 2026); a barrel placed before that which held goods loads as a Storage barrel."
+			},
+			"storage_barrel": {
+				"number": 1545,
+				"name": "Storage barrel",
+				"description": "A hooped barrel of hardwood staves for keeping food and goods. Holds 12 stacks.",
+				"kind": "structure",
+				"stack": 1,
+				"slots": 12,
+				"unstackable": true,
+				"look_alikes": [],
+				"note": "Placed piece: row state 463. The Storage barrel (Dave 22 Nov 2026)."
 			},
 			"log_stairs_kit": {
 				"number": 650,

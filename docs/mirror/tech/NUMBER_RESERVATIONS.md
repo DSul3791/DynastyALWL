@@ -92,3 +92,6 @@ TERRAIN_VERSION 80 (reserved for #1456 by the coordinator): the Ragtooth camp's 
 
 ## Resource distribution finds (coordinator decision D-ORE-1, 21 Nov 2026, under Dave's rule that agents' questions go to the coordinator; docs/design/RESOURCE_DISTRIBUTION.md)
 Items 1518 `gold_nugget`, 1519 `silver_ore`, 1520 `amethyst`, 1521 `garnet`, 1522 `agate` (coordinator gave 1518-1522, checked against dev and the open PRs #1455 to #1461; items.json and gathered.json next_number 1523). No recipes, blueprints, states, actions or protocol. Next free: item 1523.
+
+## Storage barrel and Water barrel (Dave 22 Nov 2026 20:24Z)
+Item 1545 `storage_barrel` (items.json and gathered.json next_number 1546). Blueprint 365 `storage_barrel` (next_number 366). Structure state 463 `storage_barrel`. The Barrel (`wooden_barrel`, state 133, blueprint 98) is renamed Water barrel. No recipes, actions or protocol. Next free: item 1546, blueprint 366, structure state 464.

@@ -589,6 +589,7 @@ func setup(item_table, store_dir: String) -> void:
 	_load_inventories()
 	_load_chests()
 	_load_world_items()
+	_split_old_barrels()
 	var loaded_next: int = _next_id
 	_load_changed = {}
 	_carts.after_load()
@@ -7401,6 +7402,39 @@ func _load_inventories() -> void:
 		_inventories[key] = inv
 
 
+# A Barrel placed before 22 Nov 2026 held water or goods (PV-6). Dave 22 Nov 2026 split it: the Water barrel (wooden_barrel, 3 slots of water
+# containers) and the Storage barrel (storage_barrel). One that holds anything but water containers in its first 3 slots loads as a Storage barrel, its
+# goods kept; one that is empty or holds water containers stays a Water barrel (its water and pipes kept). Runs before the water network is built.
+func _split_old_barrels() -> void:
+	var water_slots: int = int(_structures.get("wooden_barrel", {}).get("slots", 3))
+
+	if not _structures.has("storage_barrel"):
+		return
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct") or str(it["struct"].get("kind", "")) != "wooden_barrel" or it["struct"].has("site"):
+			continue
+
+		var box = _chests.get(int(it["struct"].get("uid", 0)))
+
+		if box == null:
+			continue
+
+		var goods: bool = false
+
+		for s in box.slot_count:
+			if box.numbers[s] != 0 and (s >= water_slots or _container_cap(box.numbers[s]) <= 0):
+				goods = true
+				break
+
+		if goods:
+			it["struct"]["kind"] = "storage_barrel"
+			it["number"] = table.number_of("storage_barrel")
+			_dirty = true
+
+
 func _load_world_items() -> void:
 	_wide_piles.clear()
 	_wide_piles_built = false   # the first drop after the load files the loaded cone piles
@@ -13935,7 +13969,7 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 		_reject(peer, 3)
 		return 0
 
-	if _barrel_water_l(id) >= BARREL_DRY_L:   # a barrel holds water or goods, never both (PLUMBING_DESIGN s9, PV-6)
+	if _water_blocks_goods(id):   # a tank that is a store holds water or goods, never both (PLUMBING_DESIGN s9, PV-6); a Water barrel holds both
 		_say(peer, "It holds water. Drink or draw it off first.")
 		_reject(peer, 3)
 		return 0
@@ -14064,7 +14098,7 @@ func _box_take(peer: int, inv, chest, a: int, count: int, weighed: bool = false)
 # A kind with neither takes anything (master s3.13: a log rack takes logs, a wardrobe clothes).
 func _box_takes(kind: String, number: int) -> bool:
 	var def: Dictionary = _structures.get(kind, {})
-	return StoreRules.takes(def, number, table) and (str(def.get("use", "")) != "tap" or _container_cap(number) > 0)   # a tap takes water containers only
+	return StoreRules.takes(def, number, table) and ((str(def.get("use", "")) != "tap" and not bool(def.get("fills_containers", false))) or _container_cap(number) > 0)   # a tap and a Water barrel take water containers only
 
 
 func _save_chests() -> void:
@@ -19858,6 +19892,16 @@ func _take_down_laid(peer: int, _inv, id: int, it: Dictionary, def: Dictionary) 
 	_gain_source = was_src
 
 
+# Whether a tank that is also a store holds enough water to refuse goods (PV-6). A Water barrel (structures.json fills_containers, Dave 22 Nov 2026)
+# takes its water containers whatever water it holds, and fills them from it.
+func _water_blocks_goods(id: int) -> bool:
+	return _barrel_water_l(id) >= BARREL_DRY_L and not _fills_containers(id)
+
+
+func _fills_containers(id: int) -> bool:
+	return bool(_structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {}).get("fills_containers", false))
+
+
 # Litres of water in a barrel (a tank that is also a store), 0 for anything else.
 func _barrel_water_l(id: int) -> float:
 	if not _water_kind.has(id) or not _water.pieces.get(id, {}).has("level_port"):
@@ -19889,7 +19933,7 @@ func _barrels_tick() -> void:
 			continue
 
 		var block: Dictionary = _structures.get(str(_water_kind[id]), {}).get("water", {})
-		var goods: bool = _barrel_has_goods(id)
+		var goods: bool = _barrel_has_goods(id) and not bool(_structures.get(str(_water_kind[id]), {}).get("fills_containers", false))   # a Water barrel's containers are not goods
 		var top: float = 0.0 if goods else float(block.get("litres_max", 0.0))
 
 		if absf(float(piece.get("litres_max", 0.0)) - top) > 0.001:
@@ -19990,7 +20034,9 @@ func _taps_fill(now_s: float) -> void:
 	for id in _water_kind:
 		var def: Dictionary = _structures.get(str(_water_kind[id]), {})
 
-		if str(def.get("use", "")) != "tap" or not _items.has(id):
+		var own: bool = bool(def.get("fills_containers", false))   # a Water barrel fills the containers in its slots from its own water (Dave 22 Nov 2026)
+
+		if (str(def.get("use", "")) != "tap" and not own) or not _items.has(id):
 			continue
 
 		var box = _chests.get(int(_items[id]["struct"].get("uid", 0)))
@@ -20007,7 +20053,7 @@ func _taps_fill(now_s: float) -> void:
 		if want.is_empty():
 			continue
 
-		var tank: int = _tap_supply(id)
+		var tank: int = (id if _water.pieces.has(id) and _water.litres(id, now_s) >= 0.01 else -1) if own else _tap_supply(id)
 
 		if tank < 0:
 			continue
@@ -23542,7 +23588,7 @@ func _autoload(peer: int, id: int, number: int, keep: bool) -> void:
 
 	if not _box_takes(str(it["struct"]["kind"]), number):
 		_say(peer, "The %s does not take %s." % [noun, what])
-	elif _barrel_water_l(id) >= BARREL_DRY_L:
+	elif _water_blocks_goods(id):
 		_say(peer, "It holds water. Drink or draw it off first.")
 	elif int(loaded[0]) > 0:
 		_say(peer, "Loaded %d %s into the %s.%s" % [int(loaded[0]), what, noun, (" %d more lies nearby." % int(loaded[1])) if int(loaded[1]) > 0 else ""])
@@ -23562,7 +23608,7 @@ func _autoload_into(id: int, box, number: int) -> Array:
 	var here: Vector3 = it["pos"]
 	var piles: Array = []
 
-	if not _box_takes(str(it["struct"]["kind"]), number) or _barrel_water_l(id) >= BARREL_DRY_L:   # a barrel holds water or goods, never both
+	if not _box_takes(str(it["struct"]["kind"]), number) or _water_blocks_goods(id):   # a tank that is a store holds water or goods, never both
 		return [0, 0]
 
 	for gid in _ids_near(here, AUTOLOAD_M):   # the last world sync's cells round it, not every record in the world
