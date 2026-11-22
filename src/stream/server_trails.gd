@@ -6,6 +6,7 @@ extends RefCounted
 # server store files, never in a tile file. Mandy draws cells at or above draw_threshold.
 
 const Codec := preload("res://src/shared/trail_codec.gd")
+const ItemsScript := preload("res://src/stream/server_items.gd")   # _write_file: whole-file writes
 var _NO_ROUTES: int = hash(PackedByteArray())
 
 var cfg: Dictionary = {}
@@ -251,11 +252,7 @@ func save() -> void:
 	for key in pblocks:
 		prows["%d,%d" % [key.x, key.y]] = Marshalls.raw_to_base64(Codec.encode(pblocks[key]["cells"]))
 
-	var file: FileAccess = FileAccess.open(_path, FileAccess.WRITE)
-
-	if file != null:
-		file.store_string(JSON.stringify({"version": 1, "blocks": rows, "players": prows}))   # "players": players' paths (an older server ignores it)
-		file.close()
+	if ItemsScript._write_file(_path, JSON.stringify({"version": 1, "blocks": rows, "players": prows})):   # "players": players' paths (an older server ignores it); whole to a .tmp, then moved over
 		dirty = false
 
 
@@ -267,6 +264,9 @@ func load_file() -> void:
 		return
 
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(_path))
+
+	if typeof(parsed) != TYPE_DICTIONARY and FileAccess.file_exists(_path + ".prev"):
+		parsed = JSON.parse_string(FileAccess.get_file_as_string(_path + ".prev"))   # damaged: the save before it
 
 	if typeof(parsed) != TYPE_DICTIONARY:
 		return

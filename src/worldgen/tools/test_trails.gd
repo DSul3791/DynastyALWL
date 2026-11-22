@@ -91,6 +91,15 @@ func _init() -> void:
 	again.game_seconds = t.game_seconds
 	again.setup(dir)
 	check(again.blocks.size() == 1 and absf(float(again.blocks.values()[0]["cells"].values()[0]) - pass_add) < 0.005, "the grid is saved and loaded")
+	t.dirty = true
+	t.save()   # a second save: the first becomes the .prev
+	var torn: FileAccess = FileAccess.open(again._path, FileAccess.WRITE)
+	torn.store_string("{\"version\": 1, \"blo")   # a hard stop mid-write of an old server
+	torn.close()
+	var after_tear = TrailsScript.new()
+	after_tear.game_seconds = t.game_seconds
+	after_tear.setup(dir)
+	check(after_tear.blocks.size() == 1, "a torn trails file loads the save before it (%d blocks)" % after_tear.blocks.size())
 
 	# Players' own paths (stage 2c, D-TRAP-3): half a deer's wear, shown like a trail, never read as one; on the ground only; saved.
 	var pp = TrailsScript.new()
