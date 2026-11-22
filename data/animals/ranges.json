@@ -26,6 +26,36 @@
 		"apart_m": [80.0, 200.0],
 		"kind": 1
 	},
+	"ranges": ["deer", "moose", "elk"],
+	"moose": {
+		"note": "TR-8 (stage 2a, D-TRAP-3): moose bed on side ground and feed longest at dawn and dusk (scienceinsights, citing studies), at wet ground and water edges (willow, pond weed): its feeding ground is a spot with deep water within feed_wet_m when there is one, else the flattest. Its trail is a deer trail (kind 1). Own spots (salt) so a deer and a moose range in one block lie apart.",
+		"species": "moose",
+		"tag": "m",
+		"weight_roll": true,
+		"salt": 300,
+		"tries": 12,
+		"inset_m": 24.0,
+		"bed_slope": [0.0, 0.45],
+		"bed_best": 0.15,
+		"feed_slope_max": 0.15,
+		"feed_wet_m": 40.0,
+		"apart_m": [80.0, 220.0],
+		"kind": 1
+	},
+	"elk": {
+		"note": "TR-8: elk keep a deer's day (crepuscular like deer and moose, as their animals.json active row says: day 0.6, dusk 1.0, night 0.3): bed by day, feed on open ground at dusk and dawn, on a deer trail. A little farther apart than deer (larger animals, larger ranges).",
+		"species": "elk",
+		"tag": "e",
+		"weight_roll": true,
+		"salt": 600,
+		"tries": 8,
+		"inset_m": 24.0,
+		"bed_slope": [0.0, 0.45],
+		"bed_best": 0.2,
+		"feed_slope_max": 0.15,
+		"apart_m": [100.0, 230.0],
+		"kind": 1
+	},
 	"route": {
 		"note": "TR-3: a point every step_m, each tried a side_m or two either side of the last one's line and the one with the gentlest climb kept (lines of least resistance round hills and banks), drifting at most max_side_m off the straight line and back by the end; side_w a metre keeps it from wandering for nothing; deep water is refused. Then a small sideways wiggle every wiggle_step_m so the trail is not ruler straight.",
 		"step_m": 12.0,
@@ -37,9 +67,12 @@
 		"wiggle_step_m": 4.0
 	},
 	"clock": {
-		"note": "TR-4: the hour an animal leaves for its out spot (out_hour) and comes back home (home_hour), each animal a fixed share of jitter_h either side (from its id) so they do not all go at once. Rabbits: out from late afternoon to early morning, home after dawn (NSW DPI, Agriculture Victoria). Deer: to the feeding ground at dusk, back to bed after the dawn feed (onX, Mississippi State, theHunter's whitetail zones). Stage 2 puts these on the real sunrise and sunset.",
-		"rabbit": {"out_hour": 18.0, "home_hour": 8.0, "jitter_h": 0.75},
-		"deer": {"out_hour": 18.0, "home_hour": 7.5, "jitter_h": 0.75},
+		"note": "TR-4: the hour an animal leaves for its out spot (out_hour) and comes back home (home_hour), each animal a fixed share of jitter_h either side (from its id) so they do not all go at once. Rabbits: out from late afternoon to early morning, home after dawn (NSW DPI, Agriculture Victoria). Deer: to the feeding ground at dusk, back to bed after the dawn feed (onX, Mississippi State, theHunter's whitetail zones).",
+		"note_sun": "TR-7 (stage 2a, D-TRAP-3): with the sun known, out is sunset + out_after_sunset_h and home is sunrise + home_after_sunrise_h (rabbits out an hour before sunset and home an hour after sunrise: NSW DPI; deer, moose and elk out half an hour before sunset, back half an hour after sunrise: onX, Delisle et al. 2024). At the equinox (sunrise 6, sunset 18) that is close to the fixed hours, which stay for a server without a sun.",
+		"rabbit": {"out_hour": 18.0, "home_hour": 8.0, "out_after_sunset_h": -1.0, "home_after_sunrise_h": 1.0, "jitter_h": 0.75},
+		"deer": {"out_hour": 18.0, "home_hour": 7.5, "out_after_sunset_h": -0.5, "home_after_sunrise_h": 0.5, "jitter_h": 0.75},
+		"moose": {"out_hour": 18.0, "home_hour": 7.5, "out_after_sunset_h": -0.5, "home_after_sunrise_h": 0.5, "jitter_h": 0.75},
+		"elk": {"out_hour": 18.0, "home_hour": 7.5, "out_after_sunset_h": -0.5, "home_after_sunrise_h": 0.5, "jitter_h": 0.75},
 		"near_m": 10.0
 	}
 }
