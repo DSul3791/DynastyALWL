@@ -9,7 +9,7 @@
 # (for the gaming server: docker load -i ..., then docker compose -f compose.yaml up -d). The first run compiles the engine (deploy/engine,
 # roughly 45 to 90 minutes of full CPU); later runs reuse it.
 param(
-	# The server players see first in the game's server list (src/client/server_list.gd official()). Provisional, coordinator 22 Nov 2026.
+	# The server players see first in the game's server list (src/client/server_list.gd official()). Dave 22 Nov 2026: hannibalshouse.duckdns.org is where the server will be.
 	[string]$Official = "hannibalshouse.duckdns.org:24600",
 	# Dave's Windows editor (Godot 4.7.2 + Voxel Tools 1.7). With it the game is exported on Windows itself, with a window, so the export
 	# shader baker can run (it needs a real renderer: Godot editor/export/shader_baker_export_plugin.cpp); without it the export runs headless
