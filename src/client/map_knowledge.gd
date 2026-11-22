@@ -7,10 +7,14 @@ extends RefCounted
 const Codec := preload("res://src/shared/map_codec.gd")
 
 signal block_changed(block: Vector2i)
+signal traps_changed
+
+const TRAP_KINDS := ["snare_trap", "bird_trap_set"]   # the kinds the Map page has a mark for (data/animals/traps.json)
 
 var cell_m: float = 16.0
 var block_cells: int = 32
 var blocks: Dictionary = {}   # Vector2i block -> {cell index: [q, height, water, trees]}
+var traps: Array = []         # [[Vector2 world x/z, kind], ...]: the traps this character has set (protocol 150, net.trap_marks_received)
 
 
 func _init() -> void:
@@ -33,6 +37,18 @@ func set_block(block: Vector2i, cells: Dictionary) -> void:
 		blocks[block] = cells
 
 	block_changed.emit(block)
+
+
+# net.trap_marks_received: the whole set of this character's traps replaces the last one. A row the page has no mark for is dropped.
+func set_traps(rows: Array) -> void:
+	var kept: Array = []
+
+	for row in rows:
+		if typeof(row) == TYPE_ARRAY and row.size() >= 3 and typeof(row[0]) in [TYPE_FLOAT, TYPE_INT] and typeof(row[1]) in [TYPE_FLOAT, TYPE_INT] and str(row[2]) in TRAP_KINDS:
+			kept.append([Vector2(float(row[0]), float(row[1])), str(row[2])])
+
+	traps = kept
+	traps_changed.emit()
 
 
 # A cell by its world cell coordinate (any block), [] where nothing is known.
