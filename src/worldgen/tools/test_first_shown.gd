@@ -39,6 +39,11 @@ func _init() -> void:
 
 	check(Probe._shown.is_empty() and Probe._shown_dropped == 0, "the window empties and the dropped count starts again")
 
+	Probe._this_frame = {"flora": 3000, "items": 9000, "sky": 1000}
+	check(Probe._top_text(2) == "items 9, flora 3", "the PHYSICS and HITCH lines name the biggest timed pieces first (%s)" % Probe._top_text(2))
+	Probe._this_frame = {}
+	check(Probe._top_text(5) == "", "nothing timed gives an empty list, each line says so in its own words")
+
 	var queue = PrintQueueScript.new()
 
 	for k in 50:
