@@ -4,6 +4,8 @@ extends RefCounted
 # 0..1}. Packed as [count u16][index u16, strength u8] x count, then deflated with the raw size in front (u32), so the client reads it
 # with decode(). Index = local_x + local_z * block_cells (local 0 to block_cells - 1, from the block's south-west corner).
 
+const ROUTE_BLOCK_M := 256.0   # the side of a routes block (data/animals/ranges.json block_m; the client decodes with it, test_animal_trips checks they match)
+
 
 static func encode(cells: Dictionary) -> PackedByteArray:
 	var raw: PackedByteArray = PackedByteArray()

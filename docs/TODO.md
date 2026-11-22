@@ -83,13 +83,13 @@ Grouped so that each piece can be one thread. Order is a suggestion (section 4).
 - The "Assumed on Dave's behalf" lists in BugsList_Current.md (several entries, and the list at the end) and the picks in the coordinator's AWAY ORDER log. Under Dave's 21 Nov rule the coordinator confirms or changes each one and records it. One docs-only thread.
 
 ### Piece 9. After-main list (coordinator, 21 Nov)
-- River barrel: PR #1523 (PV-13). Water at the cooking stations: this PR (PV-14). Both coordinator picks for Dave's review, not yet played.
+- River barrel: PR #1523 (PV-13). Water at the cooking stations: PR #1525 (PV-14). Both coordinator picks for Dave's review, not yet played.
 - Delete every kit record: **held, not an overnight job** (coordinator, 22 Nov). There are 191 `*_kit` records, 186 of them retired, across items.json, looks.json, encyclopedia.json, structures.json, recipes.json, blueprints.json and weights.json, plus code in basic_look.gd, held_item.gd and server_items.gd and about 12 tests. Saves may hold kit items, and item numbers are kept, never reused. It needs a plan (what an old kit item becomes, whether the numbers stay reserved) and Dave's say. Do not delete or renumber them before then. The irrigation thread has the sizes.
 - Data CSVs import as keep: PR #1515.
-- `.gdignore` for six `art/` picture folders: PR #1517. Still open: rig tag display names; the freeze diagnostics PR.
+- `.gdignore` for six `art/` picture folders: PR #1517. "Rig tag display names" and "the freeze diagnostics PR": unclear, nobody can place them; ask Dave.
 - Release note for old smithies: done, BugsList entry 116 Known limits (a product left in the first slot, now the fuel slot, reads "no fuel" until taken out).
 - Bog silting against tunnels: PR #1521 (a hole whose fill would reach open ground stays open; not yet played).
-- The gate thread's part 3 notes.
+- The gate thread's notes (NEXT_MAIN_GATE.md, Y part 3 and Z part 2): off-tile cases in test_cell_reads, test_slot_sounds in the terrain_net core list, and the routes block size as one constant: this PR. The look-cost test stays in serial_extra (coordinator, 22 Nov): moving it back to the parallel lanes needs a --jobs 3 run on Lane A first (the 21 Nov diagnostic was at --jobs 2). Still open: wolves paced by send time (approved, own PR); event-save cost (a measurement script, after the small leftovers). **For Dave:** the island resource landscape reads the bandit camps' stages once at start (terrain_server._resource_dangers), so where an assured iron, copper or tin source goes can change between restarts as camps grow. Proposed fix: count every bandit site as a danger whatever its stage (sites are seed-fixed), so ore placement is the same on every restart; test that the deposits come out the same with the sites at stage 0 and at stage 3. One-time move of a source possible on existing worlds, so it waits for Dave (coordinator, 22 Nov). Elephant and mammoth damage 40 (AT-2) is Dave's.
 
 ### Piece 10a. Sound and audio licences (before any release)
 - assets/audio/CREDITS.csv has 7 rows marked TODO: Dave's footsteps, frog, tree-frog, fish-splash and crow recordings, origin unknown. **Dave only**: say where each came from, or they are replaced.
