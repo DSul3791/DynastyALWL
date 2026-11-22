@@ -2900,7 +2900,7 @@ func _update_weather() -> void:
 	if sound != null and sound.occlusion != null and sound.occlusion.outdoors:     # --sound-outdoors (sound_outdoors_design.md)
 		sound.occlusion.set_air(weather, weather_look.day.elevation if weather_look != null else 0.5, game_clock.hour(), weather_look.fog_now() if weather_look != null else 0.0)
 
-	Probe.stop("weather: puddles, sound", tw)
+	Probe.stop("weather: puddles+sound", tw)
 
 
 # Frozen water look (docs/design/frozen_water_look.md): every 5 s the covers at 3 m and 1 m, the thaw, the lying snow, the springs
@@ -3080,7 +3080,7 @@ func _ice_feel_shock(water: Dictionary, delta: float) -> void:
 		if sound != null and sound.slots != null:
 			sound.slots.play("respawn_gasp", body.global_position + Vector3(0.0, 1.5, 0.0))
 
-		print(IceFeelScript.log_line(_ice_feel_band, "cold shock, water %.1f C" % IceFeelScript.water_c(air, _warmth_cfg()), "respawn_gasp", IceFeelScript.SHOCK_SWIM, INF))
+		FreezeWatchScript.printer.line(IceFeelScript.log_line(_ice_feel_band, "cold shock, water %.1f C" % IceFeelScript.water_c(air, _warmth_cfg()), "respawn_gasp", IceFeelScript.SHOCK_SWIM, INF))
 
 
 # After a footstep: skim or film broken under the wader leaves a patch in the look; the plunge jolts the eye.
@@ -3097,7 +3097,7 @@ func _ice_feel_after_step() -> void:
 
 	if event == "plunge":
 		feel.strike(1.0 if randf() < 0.5 else -1.0, IceFeelScript.PLUNGE_DIP_M / 0.08)
-		print(IceFeelScript.log_line(_ice_feel_band, "plunge", sound.ice.last, IceFeelScript.wade_mult(_ice_feel_band), INF))
+		FreezeWatchScript.printer.line(IceFeelScript.log_line(_ice_feel_band, "plunge", sound.ice.last, IceFeelScript.wade_mult(_ice_feel_band), INF))
 
 
 func _update_frozen_water(group: String, now: int) -> void:
