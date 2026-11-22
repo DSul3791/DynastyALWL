@@ -28,6 +28,7 @@ const SmithingRules := preload("res://src/shared/smithing_rules.gd")   # durabil
 const MeleeRules := preload("res://src/shared/melee_rules.gd")   # anything in hand is a weapon (data/items/melee.json, Dave 19 Nov 2026)
 const BogIron := preload("res://src/shared/bog_iron.gd")   # bog iron under fens and marshes (digging.json bog_iron)
 const SwimRules := preload("res://src/shared/swim.gd")
+const CpuBudget := preload("res://src/shared/cpu_budget.gd")   # the container's CPU quota pauses (the slow-cell line)
 const StructureLookScript := preload("res://src/shared/structure_look.gd")
 const SurveyLine := preload("res://src/shared/survey_line.gd")   # the survey line: only a building stops a surveyed road (Dave 17 Nov 2026)
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -483,6 +484,8 @@ var _goals_detail: String = ""        # the last _goals_tick's split (the slow-t
 var _slowest_hint: String = ""
 var _slowest_hint_usec: int = 0
 var _sync_detail: String = ""         # the last _sync_world_items' split (the slow-tick line)
+var _throttle_path: String = "?"    # the container's cpu.stat when a CPU quota holds it (Linux), "" otherwise; "?" until first looked at
+var _throttle_mark: int = -1        # its paused microseconds before this tick's first scatter cell, -1 when not read (the slow-cell line)
 var _ore_usec: PackedInt64Array = PackedInt64Array([0, 0, 0, 0, 0, 0, 0])   # the last cell's boulders and ore rocks: binding the reads, the ore body looks, the water reads, settling rows, the mountain-foot probes (usec), the number of ore body looks, the spots' ground reads (usec) (the slow-cell line)
 var _ore_split: Dictionary = {}   # the last cell's ore rocks: ore -> usec of its whole layout (the slow-cell line, so no ore's cost hides in the sum)
 var _bank_ground_usec: int = 0       # the last cell's bank stones: time reading the ground and asking for water (the slow-cell line)
@@ -7745,6 +7748,7 @@ func _scatter_around_players() -> void:
 	var cfg: Dictionary = _drops.get("ground_scatter", {})
 	var cell_m: float = float(cfg.get("cell_m", 32.0))
 	var budget: int = SCATTER_CELLS_PER_TICK
+	_throttle_mark = -1
 	var started: int = Time.get_ticks_usec()   # a tick lays out cells for at most SCATTER_TICK_MAX_MS: a join took 0.7 to 6.9 s here in one go (Tyler, 1 Nov 2026)
 
 	for peer in _peer_pos:
@@ -7765,12 +7769,28 @@ func _scatter_around_players() -> void:
 						continue
 
 					_cells_done[cell] = true
+
+					if _throttle_mark < 0 and _throttle_path != "":   # once a tick, and only on a tick that lays a cell: one small kernel file read
+						if _throttle_path == "?":
+							_throttle_path = CpuBudget.throttle_stat_path()
+
+						_throttle_mark = CpuBudget.throttled_usec(CpuBudget.read_text(_throttle_path)) if _throttle_path != "" else -1
+
 					var cell_usec: int = Time.get_ticks_usec()
 					_lay_out_cell(cell, cell_m, cfg)
 					var cell_ms: float = float(Time.get_ticks_usec() - cell_usec) / 1000.0
 
 					if cell_ms > 50.0:   # names a slow cell (a tile read on the main thread), so a hitch in the log says where
-						_log_off_main("items tick slow: scatter cell %s took %.0f ms (%s)" % [str(cell), cell_ms, ", ".join(_cell_parts)])
+						# With a CPU quota (a container), how much the container's throttled time rose so far this tick (cpu.stat: summed over its
+						# CPUs and every process in it, so it can read several times a pause's wall time). Above 0 means the kernel paused the group,
+						# the main thread too; a pause lands in whatever sub-step is running, so it explains a slow part that is cheap on its own.
+						var paused: String = ""
+
+						if _throttle_mark >= 0:
+							var now_paused: int = CpuBudget.throttled_usec(CpuBudget.read_text(_throttle_path))
+							paused = "; container CPU quota throttling rose %.0f ms this tick (summed over CPUs)" % (float(now_paused - _throttle_mark) / 1000.0) if now_paused >= 0 else ""
+
+						_log_off_main("items tick slow: scatter cell %s took %.0f ms (%s%s)" % [str(cell), cell_ms, ", ".join(_cell_parts), paused])
 
 					budget -= 1
 
