@@ -263,6 +263,18 @@ func _init() -> void:
 			outcrops += 1
 			angular = angular and float(it["boulder"]["ang"]) >= 0.7 and str(it["boulder"]["ore"]) == "tin" and float(it["boulder"]["grade"]) > 0.3
 
+	# 6b. The look lines (Lane A's pictures): each metal's nearest sources by route with a biggest outcrop where the server really puts one.
+	var looks: Array = Array(context.get("report")).filter(func(line: String) -> bool: return line.begins_with("resources: look "))
+	var tin_look: Array = looks.filter(func(line: String) -> bool: return line.begins_with("resources: look tin source at %.1f, %.1f " % [float(tin["x"]), float(tin["z"])]))
+	var look_ok: bool = looks.any(func(line: String) -> bool: return line.contains("look iron source")) and looks.any(func(line: String) -> bool: return line.contains("look copper source")) and looks.any(func(line: String) -> bool: return line.contains("look tin source"))
+
+	if not tin_look.is_empty():
+		var parts: PackedStringArray = str(tin_look[0]).split("biggest outcrop at ")[1].split(" (")[0].split(", ")
+		var biggest: Vector2 = Vector2(float(parts[0]), float(parts[1]))
+		look_ok = look_ok and items._items.values().any(func(it: Dictionary) -> bool: return it.has("boulder") and int((it["boulder"] as Dictionary).get("source", 0)) == int(tin["id"]) and biggest.distance_to(Vector2(it["pos"].x, it["pos"].z)) < 0.1)
+
+	check(look_ok, "the log names where to look: the nearest iron, copper and tin sources, the biggest outcrop where the server lays one (%d look lines)" % looks.size())
+
 	var first_lay: String = str(items._items.values().map(func(it): return [it["scatter"], it["pos"]]))
 	items._items.clear()
 

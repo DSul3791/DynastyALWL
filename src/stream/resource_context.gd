@@ -76,6 +76,7 @@ var _pocket_bins: Dictionary = {} # the same squares -> pocket indexes
 var _pocket_of: Dictionary = {}   # pocket id -> index in pockets
 var _island_dmax: PackedFloat32Array = PackedFloat32Array()
 var _island_peak: PackedFloat32Array = PackedFloat32Array()
+var _spawn_cost: PackedFloat32Array = PackedFloat32Array()   # route costs from spawn over the starting island (_assure), for the look lines
 
 
 # Reads every tile of `dir` (tile_<x>_<z>.tile: its low_height and low_water_class) into a grid of cell_m over their bounds, then builds.
@@ -182,6 +183,7 @@ func build(heights: PackedFloat32Array, classes: PackedByteArray, n_x: int, n_z:
 	_clues()
 	_seams()
 	_pockets()
+	_look_lines()
 	built = true   # last: a build that stopped part-way (a script error on the worker) is never published
 
 
@@ -934,6 +936,7 @@ func _assure(spawn: Vector3) -> void:
 
 	var home: int = island[start]
 	var cost: PackedFloat32Array = _route_costs(start, home)
+	_spawn_cost = cost
 	var budgets: Dictionary = _cfg.get("route_budget_m", {"iron": 3000.0, "copper": 3000.0, "tin": 6000.0})
 
 	var margin: float = float(_cfg.get("ore_margin", 2.0))
@@ -1020,6 +1023,75 @@ func _assure_one(m: int, cost: PackedFloat32Array, home: int, budget: float, why
 	_add_deposit(m, x, z, size, lerpf(float(_cfg.get("deposit_radius_min_m", 8.0)), float(_cfg.get("deposit_radius_max_m", 30.0)), size), _hash(_hash(pick, 0xa55), m), true)
 	report.append("resources: assured %s source at %.0f, %.0f, %.0f m by route from spawn (%s)" % [METALS[m], x, z, cost[pick], why])
 	return deposits.size() - 1
+
+
+# Where to look (the server log and resource_report.txt; Lane A's pictures, 22 Nov 2026: estimated spots showed nothing): world positions
+# of the nearest sources of each metal by route from spawn with their biggest outcrop (the server lays outcrops exactly so:
+# server_items._lay_out_sources; one under deep water is left out there), the nearest coal seams (their middle outcrop sits about at the
+# centre, the rest every outcrop_every_m along the contour; a seam in non-sedimentary rock shows nothing, decided in game), and the
+# nearest pocket of each find (buried, opened by a dig). Lines "resources: look ...". Off the starting island: nothing.
+func _look_lines() -> void:
+	if _spawn_cost.size() != nx * nz:
+		return
+
+	var dist: Callable = func(x: float, z: float) -> float:
+		var at: int = cell_at(x, z)
+		return _spawn_cost[at] if at >= 0 else INF
+
+	var per_metal: int = int(_cfg.get("look_sources", 3))
+
+	for m in 3:
+		var rows: Array = []
+
+		for d in deposits:
+			if int(d["m"]) == m and is_finite(float(dist.call(float(d["x"]), float(d["z"])))):
+				rows.append([float(dist.call(float(d["x"]), float(d["z"]))), d])
+
+		rows.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+
+		for row in rows.slice(0, per_metal):
+			var src: Dictionary = row[1]
+			var size: float = float(src["size"])
+			var outcrops: int = int(round(lerpf(float(_cfg.get("source_outcrops_min", 2)), float(_cfg.get("source_outcrops_max", 8)), size)))
+			var best: Vector2 = Vector2(float(src["x"]), float(src["z"]))
+			var best_u: float = -1.0
+
+			for k in range(outcrops):
+				var u3: float = unit(int(src["id"]), k, 3)
+
+				if u3 > best_u:
+					best_u = u3
+					best = Vector2(float(src["x"]), float(src["z"])) + Vector2(sqrt(unit(int(src["id"]), k, 1)) * float(src["radius"]), 0.0).rotated(unit(int(src["id"]), k, 2) * TAU)
+
+			var r: float = lerpf(float(_cfg.get("source_outcrop_radius_min", 0.5)), float(_cfg.get("source_outcrop_radius_max", 1.4)), size) * lerpf(0.7, 1.0, best_u)
+			report.append("resources: look %s source at %.1f, %.1f (%d outcrops within %.0f m%s), biggest outcrop at %.1f, %.1f (radius %.1f m), %.0f m by route" % [METALS[m], float(src["x"]), float(src["z"]), outcrops, float(src["radius"]), ", assured" if bool(src["assured"]) else "", best.x, best.y, r, row[0]])
+
+	var seam_rows: Array = []
+
+	for seam in seams:
+		if is_finite(float(dist.call(float(seam["x"]), float(seam["z"])))):
+			seam_rows.append([float(dist.call(float(seam["x"]), float(seam["z"]))), seam])
+
+	seam_rows.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
+	var coal_cfg: Dictionary = (_cfg.get("coal", {}) as Dictionary)
+
+	for row in seam_rows.slice(0, int(_cfg.get("look_seams", 6))):
+		var near: Dictionary = row[1]
+		var along: Vector2 = near["along"]
+		var up: Vector2 = near["up"]
+		report.append("resources: look coal seam at %.1f, %.1f, %.0f m long along %.2f, %.2f (uphill %.2f, %.2f), outcrops every %.0f m, %.0f m by route" % [float(near["x"]), float(near["z"]), float(near["length"]), along.x, along.y, up.x, up.y, float(coal_cfg.get("outcrop_every_m", 14.0)), row[0]])
+
+	var by_find: Dictionary = {}
+
+	for p in pockets:
+		var route: float = float(dist.call(float(p["x"]), float(p["z"])))
+
+		if is_finite(route) and (not by_find.has(p["find"]) or route < float(by_find[p["find"]][0])):
+			by_find[p["find"]] = [route, p]
+
+	for f in by_find:
+		var pocket: Dictionary = by_find[f][1]
+		report.append("resources: look %s pocket at %.1f, %.1f, %.1f m down, %.0f m by route" % [str(f), float(pocket["x"]), float(pocket["z"]), float(pocket["depth"]), float(by_find[f][0])])
 
 
 # Dijkstra over one island from cell `start` (binary heap of [cost, cell]).
