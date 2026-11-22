@@ -12419,7 +12419,7 @@
 		"wild_rose_seed": {
 			"name": "Wild rose seed",
 			"kind": "material",
-			"description": "Hard little seeds from inside rose hips. Sow them with the hoe in a tilled bed or a planter and a wild rose grows.",
+			"description": "Seeds from rose hips. Sow them with the hoe in a tilled bed or a planter and a wild rose grows.",
 			"how_to_get": [
 				"From a wild rose when its hips are picked in autumn",
 				"From a ripe wild rose in a garden"

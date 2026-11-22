@@ -12288,7 +12288,7 @@
 		"wild_rose_seed": {
 			"number": 1523,
 			"name": "Wild rose seed",
-			"description": "Hard little seeds from inside rose hips. Sow them with the hoe in a tilled bed or a planter and a wild rose grows.",
+			"description": "Seeds from rose hips. Sow them with the hoe in a tilled bed or a planter and a wild rose grows.",
 			"kind": "material",
 			"stack": 20,
 			"look_alikes": [],
