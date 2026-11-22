@@ -97,6 +97,22 @@ func run() -> void:
 	held.press_slot(0)
 	held._process(0.05)
 	_check(held.held_id() == "wooden_spear" and held._model != null and held._mounted, "the spear is in the first-person hand")
+	held._process(0.05)   # the cross follows the model made last frame (one frame behind the key)
+	_check(held._reticle != null and held._reticle.visible, "a spear in hand shows the crosshair by itself (Dave 22 Nov 2026)")
+	held.press_slot(1)
+	held._process(0.05)
+	held._process(0.05)
+	_check(held._reticle != null and not held._reticle.visible, "an axe in hand: no crosshair")
+	held.press_slot(0)
+	held._process(0.05)
+	held._process(0.05)
+	_check(held._reticle.visible, "the spear again: the crosshair is back")
+	held.press_slot(0)
+	held._process(0.05)
+	held._process(0.05)
+	_check(not held._reticle.visible, "the spear put away (its key again): the crosshair goes")
+	held.press_slot(0)
+	held._process(0.05)
 
 	# TEST-004: three jabs in a row, each ending on its own clock.
 	for n in range(3):
