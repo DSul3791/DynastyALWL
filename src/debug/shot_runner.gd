@@ -147,6 +147,7 @@ var _piece_built: bool = false
 var _pieces_regrounded: bool = false
 var piece_names: PackedStringArray = PackedStringArray()    # --shot-pieces=wall_section,chest: one building piece of each in a row with name tags (structures.json keys)
 var pieces_yaw_deg: float = 0.0    # --shot-pieces-yaw=N: the whole row turned N degrees
+var shadow_bias: Vector2 = Vector2(-1.0, -1.0)   # --shot-shadow-bias=B,N: the sun's shadow bias and normal bias for the piece pictures (outdoors 0.3 and 3.0 pull a thin thing's shadow off it)
 var piece_extra: Dictionary = {}   # --shot-piece-extra=forge:2,lit:1: the pieces drawn as placed with these row extras (a smithy's coals or flare, a lit kiln), not as the cold ghost
 var _pieces_t: int = 0
 var showroom_rows: PackedStringArray = PackedStringArray()   # --shot-showroom=all or row labels: one picture per admin showroom row (data/items/showroom.json)
@@ -305,6 +306,9 @@ func setup(owner_client, args: Array) -> void:
 				give_item = give_item.get_slice(":", 0)
 		elif argument == "--shot-piece-views":
 			piece_views = true
+		elif argument.begins_with("--shot-shadow-bias="):
+			var biases: PackedStringArray = argument.trim_prefix("--shot-shadow-bias=").split(",")
+			shadow_bias = Vector2(float(biases[0]), float(biases[1]) if biases.size() > 1 else 0.0)
 		elif argument.begins_with("--shot-item-at="):
 			var xz: PackedStringArray = argument.trim_prefix("--shot-item-at=").split(",")
 			item_at = Vector2(float(xz[0]), float(xz[1]))
@@ -1294,7 +1298,8 @@ func _show_pieces(now: int) -> void:
 		tag.position = Vector3(x, g + maxf(height, 0.4) + 0.5, z)
 		client.add_child(tag)
 		model.set_meta("piece_tag", tag)
-		print("shot runner: piece %s %s state %d look %s size %.2f x %.2f x %.2f at %s" % [models[n][0], "FAIL empty" if box.size == Vector3.ZERO else "ok", int(models[n][1]["state"]), str(models[n][1].get("look", "")), box.size.x, box.size.y, box.size.z, str(model.global_position)])
+		# the drawn model's lowest point against its placement height (its own sink or lift, not the ground: see the "clearance" line after the reground)
+		print("shot runner: piece %s %s state %d look %s size %.2f x %.2f x %.2f at %s, lowest point %+.3f m from its placement height" % [models[n][0], "FAIL empty" if box.size == Vector3.ZERO else "ok", int(models[n][1]["state"]), str(models[n][1].get("look", "")), box.size.x, box.size.y, box.size.z, str(model.global_position), box.position.y - g])
 		x += float(widths[n]) * 0.5 + 1.0
 		subject_y = g
 
@@ -1303,11 +1308,94 @@ func _show_pieces(now: int) -> void:
 	_pieces_t = now
 
 
+func _set_shadow_bias() -> void:
+	if shadow_bias.x >= 0.0 and client._sun != null:
+		client._sun.shadow_bias = shadow_bias.x
+		client._sun.shadow_normal_bias = shadow_bias.y
+		print("shot runner: sun shadow bias %.2f, normal bias %.2f (was 0.3 and 3.0 outdoors)" % [shadow_bias.x, shadow_bias.y])
+
+
+# The drawn model's lowest point against the collision ground under its box, at 9 probes (its corners, edge middles and middle): "from A to
+# B" is lowest point minus the highest and the lowest ground there. Both below 0: sunk in everywhere; above 0 somewhere: it floats over that
+# part (the gap seen in a picture can also be the outdoor sun's shadow bias, which moves thin things' shadows off them).
+func _print_clearance(model: Node3D, skip: Array) -> void:
+	var box: AABB = _aabb_of(model)
+
+	if box.size == Vector3.ZERO:
+		return
+
+	var worst: float = INF
+	var best: float = -INF
+
+	for fx in [0.0, 0.5, 1.0]:
+		for fz in [0.0, 0.5, 1.0]:
+			var from: Vector3 = Vector3(box.position.x + box.size.x * fx, box.end.y + 5.0, box.position.z + box.size.z * fz)
+			var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - Vector3(0.0, 20.0, 0.0))
+			query.exclude = skip
+			var hit: Dictionary = client.body.get_world_3d().direct_space_state.intersect_ray(query)
+
+			if not hit.is_empty():
+				worst = minf(worst, box.position.y - float(hit["position"].y))
+				best = maxf(best, box.position.y - float(hit["position"].y))
+
+	if is_inf(worst):
+		print("shot runner: piece %s clearance: no ground under it" % str(model.get_meta("piece_name")))
+	else:
+		print("shot runner: piece %s clearance: lowest point from %+.3f to %+.3f m against the ground under it (below 0 = in the ground)" % [str(model.get_meta("piece_name")), worst, best])
+
+	_print_surface_check(str(model.get_meta("piece_name")), box.get_center(), skip)
+
+
+# The drawn ground against the collision ground (the snare read as floating about 5 cm over the drawn ground while the probe had its feet in
+# the collision ground, 22 Nov 2026). At the four whole-metre columns round the piece: "mesh" is where the fine ground's values cross zero
+# up that column (the LOD 0 mesh has its vertices there: the mesher puts them on that crossing), "hits" every collider a ray down meets in
+# turn, each with its height and node name (the first is what placement and the clearance line use). A first hit above the mesh by more than a
+# centimetre or two means the collision there is not the drawn ground (another block's or level's collider, or another body).
+func _print_surface_check(piece: String, at: Vector3, skip: Array) -> void:
+	var tool = client.terrain.get_voxel_tool()
+	tool.channel = VoxelBuffer.CHANNEL_SDF
+
+	for corner in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]:
+		var cx: int = int(floor(at.x)) + corner.x
+		var cz: int = int(floor(at.z)) + corner.y
+		var mesh_y: float = NAN
+		var below: float = float(tool.get_voxel_f(Vector3i(cx, int(floor(at.y)) + 4, cz)))
+
+		for k in range(4, -6, -1):
+			var y0: int = int(floor(at.y)) + k - 1
+			var lower: float = float(tool.get_voxel_f(Vector3i(cx, y0, cz)))
+
+			if below > 0.0 and lower <= 0.0:
+				mesh_y = float(y0) + lower / (lower - below)   # open above, solid below: the crossing, linear as the mesher places it
+				break
+
+			below = lower
+
+		var hits: PackedStringArray = []
+		var left: Array = skip.duplicate()
+
+		for _n in 3:
+			var from: Vector3 = Vector3(float(cx), at.y + 3.0, float(cz))
+			var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - Vector3(0.0, 8.0, 0.0))
+			query.exclude = left
+			var hit: Dictionary = client.body.get_world_3d().direct_space_state.intersect_ray(query)
+
+			if hit.is_empty():
+				break
+
+			var what: Object = hit.get("collider")
+			hits.append("%.3f %s" % [float(hit["position"].y), str(what.get("name")) if what != null else "?"])
+			left.append(hit["rid"])
+
+		print("shot runner: piece %s surface at %d,%d: mesh %.3f, hits %s" % [piece, cx, cz, mesh_y, ", ".join(hits) if not hits.is_empty() else "none"])
+
+
 # After the 4 s piece wait: each piece is stood again on the physics ground. When _show_pieces ran, the collider under a piece may not have been built yet, and
 # then the voxel raycast placed it; that reading is a whole cell, so on 22 Nov the idle Primitive smithy (stone_forge forge:1) stood about 0.9 m into the
 # ground and read as two broken fragments. A piece with still no collider under it keeps its first height and says so.
 func _reground_pieces() -> void:
 	_pieces_regrounded = true
+	_set_shadow_bias()
 	var last: Node3D = null
 
 	for child in client.get_children():
@@ -1337,6 +1425,7 @@ func _reground_pieces() -> void:
 
 		if absf(shift) < 0.05:
 			print("shot runner: piece %s reground: already on the collision ground (%+.2f m)" % [str(model.get_meta("piece_name")), shift])
+			_print_clearance(model, skip)
 			continue
 
 		model.global_position = Vector3(at.x, phys, at.z)
@@ -1346,6 +1435,7 @@ func _reground_pieces() -> void:
 			tag.global_position += Vector3(0.0, shift, 0.0)
 
 		print("shot runner: piece %s reground %+.2f m to the collision ground, now at %s" % [str(model.get_meta("piece_name")), shift, str(model.global_position)])
+		_print_clearance(model, skip)
 
 	# The row views look at the last piece's height, as _show_pieces set it.
 	if last != null and _subject_set:
@@ -1357,6 +1447,7 @@ func _reground_pieces() -> void:
 # and the run ends with the row pictures only.
 func _build_piece_views() -> void:
 	_piece_built = true
+	_set_shadow_bias()
 	var wanted: String = str(piece_names[0]) if piece_names.size() > 0 else ""
 	var node: Node3D = null
 
