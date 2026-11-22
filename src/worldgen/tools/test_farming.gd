@@ -811,7 +811,7 @@ func _init() -> void:
 	days(1)
 	check(not items._crops.has(key), "a seedling does not survive winter frost")
 	give("turnip_seeds", 2)
-	check(not sow(bed, "turnip_seeds"), "turnip cannot be sown in winter (its seasons are spring and autumn)")
+	check(not sow(bed, "turnip_seeds"), "turnip cannot be sown in winter (its seasons are spring, summer and autumn)")
 	season[0] = "autumn"
 	check(sow(bed, "turnip_seeds"), "turnip can be sown in autumn (sow_seasons list)")
 	season[0] = "winter"
