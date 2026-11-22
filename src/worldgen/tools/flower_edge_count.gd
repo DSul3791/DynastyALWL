@@ -4,7 +4,7 @@ extends SceneTree
 # placer, round a point (default the starter town centre), the flowers (flora.json model "wildflower" or "flower") per hectare by distance from
 # the nearest tree: 0-5, 5-15, 15-30, 30-60 and over 60 m. The ground area of each band is measured on a 2 m grid over the same chunks, so the
 # numbers are densities, not counts. Also prints the flowers per hectare of each species in the open (over 30 m from a tree) and near trees.
-# A measurement for the meadow flowers design; it changes nothing.
+# A measurement for the meadow flowers design; it changes nothing. Trees load one chunk wider than the counted square. Near the town the placer clears trees round NPC markers, so also try a point away from it.
 #   godot --headless --path . --script res://src/worldgen/tools/flower_edge_count.gd -- [--at=58160,71360] [--chunks=1]
 
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
@@ -79,11 +79,16 @@ func _init() -> void:
 	var lo: Vector2 = Vector2(INF, INF)
 	var hi: Vector2 = Vector2(-INF, -INF)
 
-	for cj in range(centre.y - span, centre.y + span + 1):
-		for ci in range(centre.x - span, centre.x + span + 1):
+	# Trees load one chunk wider than the counted square, so ground and
+	# flowers near its edge still see the trees just outside it.
+	for cj in range(centre.y - span - 1, centre.y + span + 2):
+		for ci in range(centre.x - span - 1, centre.x + span + 2):
 			var made: Dictionary = placer.chunk_items(Vector2i(ci, cj))
-			lo = Vector2(minf(lo.x, float(ci) * placer.chunk_m), minf(lo.y, float(cj) * placer.chunk_m))
-			hi = Vector2(maxf(hi.x, float(ci + 1) * placer.chunk_m), maxf(hi.y, float(cj + 1) * placer.chunk_m))
+			var inner: bool = absi(ci - centre.x) <= span and absi(cj - centre.y) <= span
+
+			if inner:
+				lo = Vector2(minf(lo.x, float(ci) * placer.chunk_m), minf(lo.y, float(cj) * placer.chunk_m))
+				hi = Vector2(maxf(hi.x, float(ci + 1) * placer.chunk_m), maxf(hi.y, float(cj + 1) * placer.chunk_m))
 
 			for n in range(made["ids"].size()):
 				var row: Dictionary = placer.species_of(made["ids"][n])
@@ -99,7 +104,7 @@ func _init() -> void:
 						trees[cell] = []
 
 					trees[cell].append(Vector2(p.x, p.z))
-				elif flowers.has(str(row["name"])):
+				elif inner and flowers.has(str(row["name"])):
 					found.append([Vector2(p.x, p.z), str(row["name"])])
 
 	var area: PackedFloat64Array = PackedFloat64Array()
