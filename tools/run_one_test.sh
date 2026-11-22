@@ -13,18 +13,18 @@ export XDG_DATA_HOME="$JOB/data" APPDATA="$JOB/appdata"
 START=$(date +%s%N); case "$START" in *N*) START=$(( $(date +%s) * 1000000000 ));; esac
 # A script that fails to compile leaves Godot idle (no quit()), so a broken test used to run to the full limit (25 min for slow tests).
 # Watch the output and stop it at once; the result says why.
-# Extra arguments for one test (tools/test_args.txt: "<test> <args>"): none at the moment (8 Nov 2026: test_npc_view's
-# --old-body went with the old body).
-XARGS=$(grep -E "^$NAME " "$(dirname "$0")/test_args.txt" 2>/dev/null | head -1 | cut -d' ' -f2- | tr -d '
-')
+# Extra arguments for one test (tools/test_args.txt): "<test> <args>" go to the script after --; "<test> engine <args>" go to Godot
+# before --script (testing slim-down round 2, 22 Nov 2026: --fixed-fps 60 lets a physics-frame test step as fast as the machine allows).
+XARGS=$(grep -E "^$NAME " "$(dirname "$0")/test_args.txt" 2>/dev/null | grep -vE "^$NAME engine " | head -1 | cut -d' ' -f2- | tr -d '\r')
 [ -n "$XARGS" ] && XARGS="-- $XARGS"
+EARGS=$(grep -E "^$NAME engine " "$(dirname "$0")/test_args.txt" 2>/dev/null | head -1 | cut -d' ' -f3- | tr -d '\r')
 # Wait for a free Godot slot (at most 3 heavy jobs at once on the whole PC, tools/godot_slot.sh; GODOT_SLOTS=0 switches it off). The time waiting is not counted.
 # TEST_QUIET=1 (run_tests.sh's retries) takes every slot, so nothing else heavy runs beside it.
 . "$(dirname "$0")/godot_slot.sh"; if [ -n "$TEST_QUIET" ]; then slot_acquire_all; else slot_acquire; fi; trap slot_release EXIT
 START=$(date +%s%N); case "$START" in *N*) START=$(( $(date +%s) * 1000000000 ));; esac
 # The test folders, in tools/tests_for_diff.py's TEST_DIRS order.
 SCRIPT="src/worldgen/tools/$NAME.gd"; [ -f "$SCRIPT" ] || SCRIPT="src/water2/$NAME.gd"
-timeout "$LIMIT" "$GODOT" --headless --path . --log-file "$OUT/$NAME.godot.log" --script "res://$SCRIPT" $XARGS > "$OUT/$NAME.out" 2>&1 &
+timeout "$LIMIT" "$GODOT" --headless --path . --log-file "$OUT/$NAME.godot.log" $EARGS --script "res://$SCRIPT" $XARGS > "$OUT/$NAME.out" 2>&1 &
 GP=$!; DEAD=""
 while kill -0 $GP 2>/dev/null; do
 	sleep 0.5

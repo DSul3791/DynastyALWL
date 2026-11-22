@@ -428,7 +428,7 @@ def select(paths, lanes, force_all=False, full=False, wide=False, names=None, it
         # names (a new row), takes the whole group.
         rows = [(item_ids or {}).get(p) for p in item_hits]
         ids = set().union(*[r for r in rows if r]) if rows and all(r is not None for r in rows) else None
-        named = set()
+        users_of = {}
         if not wide and ids and len(ids) <= group.get("max_ids", 25):
             cap = lanes.get("name_max_tests", 40)
             for n in sorted(ids):
@@ -437,9 +437,10 @@ def select(paths, lanes, force_all=False, full=False, wide=False, names=None, it
                 if len(users) > cap:
                     users = sorted(users, key=lambda t: zlib.crc32((n + t).encode()))[:cap]
                     why.setdefault("item " + n, "named by more than %d tests: %d of them, the rest in the dev sweep" % (cap, cap))
-                named.update(users)
+                users_of[n] = users
+        if users_of and all(users_of.values()):   # every changed row is named by some test; one no test names (a new row) takes the group
+            for n, users in users_of.items():
                 add(users, "names %s, changed in %s" % (n, item_hits[0]))
-        if named:
             why.setdefault("item group", "%d changed rows: the tests naming them, the rest of the group in the dev sweep" % len(ids))
         else:
             # whole name parts only: "eat" picks test_eat_once, not test_animals_weather or test_death
