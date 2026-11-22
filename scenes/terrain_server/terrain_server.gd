@@ -50,6 +50,7 @@ const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.g
 const SwimScript := preload("res://src/shared/swim.gd")
 const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
+const PlayersScript := preload("res://src/stream/server_players.gd")
 const TribesScript := preload("res://src/stream/server_tribes.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const EditedGroundScript := preload("res://src/stream/edited_ground.gd")
@@ -124,6 +125,7 @@ var _send_round: int = 0
 var identity = IdentityScript.new()      # who a peer is (src/stream/identity_provider.gd): the swap point for real logins
 var items                              # ServerItems: inventories and world items
 var npcs                               # ServerNpcs: classic NPCs (protocol 45)
+var players                            # ServerPlayers: what each player sees of the others (protocol 151)
 var tribes                             # ServerTribes: goblin tribes (data/creatures/goblin_tribes.json): standing, keeping off, anger
 var admin                              # ServerAdmin: who may place markers and NPCs
 var dialogue                           # ServerDialogue: talking to NPCs
@@ -417,7 +419,15 @@ func _ready() -> void:
 	items.send_limp = func(peer, percent): net.limp.rpc_id(peer, percent)
 	items.ice_cover_at = func(pos): return IceScript.cover(game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), maxf(pos.y, 0.0), 3.0, int(settings.master_seed))
 	@warning_ignore("confusable_local_declaration")
-	items.send_worn = func(peer, numbers, insts): net.worn.rpc_id(peer, numbers, insts)
+	items.send_worn = func(peer, numbers, insts):
+		net.worn.rpc_id(peer, numbers, insts)
+		players.worn_changed(peer, numbers)   # the others see the new clothes (protocol 151)
+	players = PlayersScript.new()
+	players.items = items
+	players.send_rows = func(peer, ids, positions, yaws, states, held, times): net.players.rpc_id(peer, ids, positions, yaws, states, held, times)
+	players.send_look = func(peer, about, char_name, body, code, worn_numbers): net.player_look.rpc_id(peer, about, char_name, body, code, worn_numbers)
+	net.facing_reported.connect(players.note_report)
+	net.look_reported.connect(players.set_look)
 	@warning_ignore("confusable_local_declaration")
 	items.send_remains = func(peer, rows): net.remains_marks.rpc_id(peer, rows)
 	@warning_ignore("confusable_local_declaration")
@@ -1393,6 +1403,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_blood_sent.erase(peer_id)
 	_burrows_sent.erase(peer_id)
 	_trap_marks_sent.erase(peer_id)
+	players.forget(peer_id)
 	_nests_sent.erase(peer_id)
 	_holes_sent.erase(peer_id)
 	_far_fires_sent.erase(peer_id)
@@ -3137,6 +3148,8 @@ func _process(delta: float) -> void:
 	map_knowledge.tick(delta)   # the save interval only
 	_events.mark("send npcs")
 	_send_npcs(delta)
+	_events.mark("send players")
+	players.tick(delta)
 	_events.mark("deliver blocks")
 
 	# Send what the workers made, batched per peer.
