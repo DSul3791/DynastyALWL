@@ -714,6 +714,7 @@ func _ready() -> void:
 	animals.setup()
 	trails = TrailsScript.new()
 	trails.game_seconds = func(): return game_clock.seconds
+	trails.ground_height = edited_ground.height   # with digs and fills: a player in a dug hole still wears a path
 	trails.setup(store_dir)
 	animals.trails = trails
 	ranges = RangesScript.new()
@@ -3100,6 +3101,10 @@ func _process(delta: float) -> void:
 	animals.tick(delta)
 	coarse_ground.tick()
 	_events.mark("trails")
+
+	for peer in items._peer_pos:
+		trails.note_player(peer, items._peer_pos[peer])   # players' own worn paths (stage 2c): a write only on entering a new 4 m cell
+
 	trails.tick(delta)
 	ranges.tick(npcs.player_positions.call(), Time.get_ticks_msec())
 	bandits.tick()

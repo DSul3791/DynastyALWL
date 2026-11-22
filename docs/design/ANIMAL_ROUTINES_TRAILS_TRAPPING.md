@@ -103,8 +103,15 @@ time and the slowest job in ms (a fox earth is one job per round, so no job lays
 activity and ranging (Oxford radio-tracking: about 4.5 km a night over about 18 ha; first long activity about 30 min after sunset,
 ending about 15 min before dawn).
 
-**Stage 2c (next)**: boar routines once the research is verified; signs along trails (tracks, droppings: `tracking.gd`); players' own
-paths wearing the same way; a choke point (a log over the run) doubles a snare's chance.
+**Stage 2c (built, D-TRAP-3)**: players' own paths. Each step into a new 4 m cell wears the player's path in a grid of its own
+(server_trails `pblocks`) at half a deer's wear, on the ground only. Paths are drawn and sent with the trails (the more worn of the two
+in a cell), saved with them, and fade by about a game week from well walked. Snares and Tracking still read only the animals' trails,
+so a path to the well does not catch rabbits. Cost: a cell lookup per player per tick, and a write only on entering a new cell. A
+choke point (TR-12): a snare on a run within 1.2 m of a tree's root or a boulder's edge catches 1.5 times as often (snarers set where
+the run squeezes past stems or a rock). Placed logs do not count, since they settle the ground and the animals leave.
+
+**Stage 2d (next)**: signs along trails (tracks, droppings: `tracking.gd`); boar routines once the research is verified; a worn-earth
+mark where a trail crosses ground with no grass.
 
 **Stage 3 (larger game)**: a deadfall for fox, raccoon, mink and the like; heavier snares (wire, from the smithy) on deer trails,
 taking deer only on trails; a pit trap for boar and deer by trail crossings. Each a station or hammer/knife plus blueprint recipe
@@ -133,6 +140,9 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
   jitter 0.5 h.
 - TR-10 away fox: a snare on a run within 300 m of an earth may take a fox at 0.2 of the rabbit rate times the fox's activity, so
   about one catch in six there is a fox (which animal it was goes through the owner's luck, the fox being the bigger catch).
+- TR-11 players' paths: 0.04 a pass (half a deer's 0.08), drawn from about 6 walks there and back, fading 0.14 a game day (a
+  well-walked path is gone in about a game week, against 4 days for an animal trail), none more than 1.5 m above the ground.
+- TR-12 choke point: within 1.2 m of a tree's root or a boulder's edge, on a run, x1.5; the Bird trap takes no lift.
 
 ## Cost on the server tick
 

@@ -242,6 +242,7 @@ func _init() -> void:
 	check(traps.check_one(knob_id) and taken.is_empty(), "with the smoke knob on, a lone snare catches an imagined rabbit")
 	traps.cfg["test_chance"] = 0.0
 	away_checks()
+	choke_checks()
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -309,6 +310,33 @@ func bird_checks(items) -> void:
 # Makes every look a sure thing (the chance is clamped to 1).
 func base_up(items) -> void:
 	items._traps.cfg["base_chance"] = 100.0
+
+
+# Choke points (stage 2c, TR-12): a snare on a run beside a tree or a boulder catches choke_mult times as often; off a run, no lift.
+func choke_checks() -> void:
+	var items = make("user://test_traps_choke", true)
+	var traps = items._traps
+	var run_m: Array = [0.2]
+	var trees: Array = [[]]
+	items.run_distance = func(_x, _z, _kind): return run_m[0]
+	items.trees_near_cached = func(_point, _radius): return trees[0]
+	var bare: int = lay(items, Vector3(0.0, 10.0, 0.0))
+	var c: Dictionary = traps.of("snare_trap")
+	check(not bool(items._items[bare]["struct"].get("choke", false)) and is_equal_approx(traps._choke_mult(items._items[bare]["struct"], c), 1.0), "a snare on open run is no choke point")
+	trees[0] = [[Vector3(0.8, 10.0, 0.0), "oak"]]
+	var by_tree: int = lay(items, Vector3(20.0, 10.0, 0.0))
+	var st: Dictionary = items._items[by_tree]["struct"]
+	check(bool(st.get("choke", false)) and is_equal_approx(traps._choke_mult(st, c), float(c["choke_mult"])), "beside a tree on the run it is (x%.1f)" % traps._choke_mult(st, c))
+	trees[0] = []
+	var rock: int = items._next_id
+	items._next_id += 1
+	items._items[rock] = {"number": 1, "count": 1, "pos": Vector3(41.5, 10.0, 0.0), "boulder": {"radius": 1.0}}
+	var by_rock: int = lay(items, Vector3(40.0, 10.0, 0.0))
+	check(bool(items._items[by_rock]["struct"].get("choke", false)), "beside a boulder too (its edge half a metre off)")
+	run_m[0] = 5.0
+	traps._note_run(items._items[by_rock])
+	check(is_equal_approx(traps._choke_mult(items._items[by_rock]["struct"], c), 1.0), "off any run a choke lifts nothing")
+	check(is_equal_approx(traps._choke_mult({"choke": true, "run": 1.0}, traps.of("bird_trap_set")), 1.0), "a Bird trap takes no choke lift (birds keep to no runs)")
 
 
 # Snares on runs and while nobody is near (D-TRAP-1, TR-6).
