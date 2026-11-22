@@ -205,6 +205,10 @@ func _init() -> void:
 		var look: Mesh = BasicLook.mesh_for(id)
 		_check(look != null and look.get_surface_count() > 0, "%s builds a mesh" % id)
 	_check(_mean_colour(BasicLook.mesh_for("steel_spear")).get_luminance() > _mean_colour(BasicLook.mesh_for("iron_spear")).get_luminance(), "steel spear head lighter than iron")
+	var curved_z: float = BasicLook.mesh("sword", Color.html("#9aa3ad"), 1.0, ["steel", "curved"]).get_aabb().size.z
+	var straight_z: float = BasicLook.mesh("sword", Color.html("#9aa3ad"), 1.0, ["steel"]).get_aabb().size.z
+	_check(curved_z > straight_z + 0.03, "the scimitar's blade curves out past the guard (%.3f m across, straight %.3f)" % [curved_z, straight_z])
+	_check(BasicLook.mesh_for("quarterstaff").get_surface_count() == 2 and BasicLook.mesh_for("quarterstaff").get_aabb().size.x > 1.5, "the quarterstaff is a long staff with iron ferrules (%.2f m)" % BasicLook.mesh_for("quarterstaff").get_aabb().size.x)
 
 	print("tool looks: %d failures" % failures)
 

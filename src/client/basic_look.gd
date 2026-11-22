@@ -614,8 +614,11 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				for k in range(7):                                                                                   # each segment 7 cm, turning 0.07 rad further back than the last
 					var bend: float = 0.07 * float(k)
 					var along: Vector3 = Vector3(cos(bend), 0.0, -sin(bend))
-					_box_rot(parts, Vector3(0.075, 0.008, blade_w * (1.0 - 0.11 * float(k))), at + along * 0.035, Vector3(0.0, bend, 0.0), color.lightened(0.1) if k == 6 else color)
+					_box_rot(parts, Vector3(0.075, 0.008, blade_w * (1.0 - 0.11 * float(k))), at + along * 0.035, Vector3(0.0, bend, 0.0), color)
+					_metal(parts)
 					at += along * 0.07
+				var tip: Vector3 = Vector3(cos(0.49), 0.0, -sin(0.49))                                           # a short point past the last segment, turned on the same curve
+				_box_rot(parts, Vector3(0.05, 0.008, blade_w * 0.12), at + tip * 0.02, Vector3(0.0, 0.49, 0.0), color.lightened(0.1))   # narrow to a sliver: the point
 				_metal(parts)
 			else:
 				_box(parts, Vector3(0.36, 0.008, blade_w), Vector3(0.13, 0.0, 0.0), color)
@@ -2022,7 +2025,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				for k in range(6):
 					_cyl(parts, 0.0205, 0.009, Vector3(0.455 + 0.009 * float(k), 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5 + 0.3 * float(k % 2 * 2 - 1)), Color(0.16, 0.1, 0.05) if k < 4 else Color(0.6, 0.48, 0.28))
 			elif bits.has("staff"):
-				# A quarterstaff (ref: English quarterstaff, about 2 m of hardwood): no head, both ends rounded and bound with an iron ferrule.
+				# A quarterstaff (ref: English quarterstaff, about 2 m of hardwood; the shaft is about 0.93 m at size 1, so its row is size 1.8): no head, both ends bound with an iron ferrule.
 				for end in [-0.45, 0.45]:
 					_cyl(parts, 0.018, 0.03, Vector3(end, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.1, 0.1, 0.11))
 					_metal(parts, 0.6, 0.4)

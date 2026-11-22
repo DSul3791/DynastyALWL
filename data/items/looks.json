@@ -5066,7 +5066,7 @@
   "iron_warhammer": {"shape": "hammer", "color": "#6c6f75", "size": 1.4, "bits": ["iron", "forged"]},
   "steel_warhammer": {"shape": "hammer", "color": "#9aa3ad", "size": 1.4, "bits": ["steel", "forged"]},
   "steel_maul": {"shape": "hammer", "color": "#9aa3ad", "size": 2.0, "bits": ["steel", "forged"]},
-  "quarterstaff": {"shape": "shaft", "color": "#8a6a3d", "size": 1.0, "bits": ["staff"]},
+  "quarterstaff": {"shape": "shaft", "color": "#8a6a3d", "size": 1.8, "bits": ["staff"]},
   "bronze_spear": {"shape": "shaft", "color": "#b5803a", "size": 1.0, "bits": ["metal", "bronze"]},
   "iron_spear": {"shape": "shaft", "color": "#6c6f75", "size": 1.0, "bits": ["metal", "iron"]},
   "steel_spear": {"shape": "shaft", "color": "#9aa3ad", "size": 1.0, "bits": ["metal", "steel"]},
