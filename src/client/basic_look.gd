@@ -559,18 +559,18 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 						_box(parts, Vector3(0.016, 0.012, 0.12), Vector3(side * 0.08, 0.0, 0.06), color)
 						_box(parts, Vector3(0.008, 0.01, 0.045), Vector3(side * 0.08, 0.0, 0.13), fitting)
 						_metal(parts, 0.5, 0.7)
-						_box_rot(parts, Vector3(0.014, 0.008, 0.3), Vector3(side * 0.05, -0.004, 0.28), Vector3(0.0, side * 0.2, 0.0), dark)
+						_box_rot(parts, Vector3(0.014, 0.008, 0.3), Vector3(side * 0.05, -0.004, 0.28), Vector3(0.0, -side * 0.2, 0.0), dark)
 
 					_cyl(parts, 0.006, 0.16, Vector3(0.0, 0.0, 0.13), Vector3(0.0, 0.0, PI * 0.5), fitting)
 					_metal(parts, 0.5, 0.7)
 					_box(parts, Vector3(0.05, 0.008, 0.014), Vector3(0.0, -0.004, 0.43), dark)
 				"saddle", "travellers_saddle", "war_saddle":
 					# A saddle on its wooden tree: a dished seat between a raised pommel and cantle, flaps down both sides, iron stirrups on their leathers lying beside it.
-					# A traveller's saddle adds a rolled blanket behind the cantle and gear rings; a war saddle a tall cantle and pommel and iron plates on the bows.
+					# A traveller's saddle adds a rolled blanket strapped behind the cantle; a war saddle a tall cantle and pommel, each faced with an iron plate.
 					var tall: float = 2.0 if tk == "war_saddle" else 1.0
 					_sph(parts, 0.15, Vector3(1.0, 0.3, 1.4), Vector3(0.0, 0.03, 0.0), color, true)
 					_sph(parts, 0.05, Vector3(1.1, 0.8 * tall, 0.7), Vector3(0.0, 0.07 + 0.02 * tall, -0.17), color.darkened(0.08), true)
-					_box_rot(parts, Vector3(0.2, 0.05 * tall, 0.03), Vector3(0.0, 0.07 + 0.02 * tall, 0.19), Vector3(-0.3, 0.0, 0.0), color.darkened(0.08))
+					_box_rot(parts, Vector3(0.2, 0.05 * tall, 0.03), Vector3(0.0, 0.07 + 0.02 * tall, 0.19), Vector3(0.3, 0.0, 0.0), color.darkened(0.08))
 
 					for side in [-1.0, 1.0]:
 						_box_rot(parts, Vector3(0.12, 0.012, 0.26), Vector3(side * 0.16, -0.02, 0.0), Vector3(0.0, 0.0, -side * 0.6), dark)
@@ -586,8 +586,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 						_cyl(parts, 0.04, 0.3, Vector3(0.0, 0.09, 0.27), Vector3(0.0, 0.0, PI * 0.5), Color(0.42, 0.34, 0.24))
 						_box(parts, Vector3(0.31, 0.012, 0.016), Vector3(0.0, 0.13, 0.27), strap)
 					elif tk == "war_saddle":
-						for z in [-0.17, 0.19]:
-							_box(parts, Vector3(0.12, 0.05, 0.012), Vector3(0.0, 0.12, z - 0.02), fitting)
+						for z in [-0.215, 0.17]:
+							_box(parts, Vector3(0.12, 0.05, 0.012), Vector3(0.0, 0.12, z), fitting)
 							_metal(parts, 0.5, 0.7)
 				"pack_saddle":
 					# A sawbuck pack saddle: two crossed wooden bucks joined by side boards, on a thick pad.
@@ -641,7 +641,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 							_box(parts, Vector3(0.016, 0.012, 0.1), Vector3(bx, 0.0, -0.2), color.darkened(0.08))
 
 						for side in [-1.0, 1.0]:
-							_box(parts, Vector3(0.018, 0.01, 0.4), Vector3(bx + side * 0.09, -0.004, 0.14), dark)
+							_box(parts, Vector3(0.018, 0.01, 0.4), Vector3(bx + side * 0.09, -0.004, 0.105), dark)
 
 					if tk == "double_harness":
 						_box(parts, Vector3(0.012, 0.008, 0.46), Vector3(0.0, 0.006, 0.1), strap)
@@ -767,11 +767,11 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 						_metal(parts, 0.55, 0.7)
 
 					for side in [-1.0, 1.0]:
-						_box(parts, Vector3(0.025, 0.02, 0.36), Vector3(side * 0.25, -0.01, 0.12), oak)
-						_box_rot(parts, Vector3(0.012, 0.018, 0.06), Vector3(side * 0.25 + 0.012, -0.01, -0.07), Vector3(0.0, 0.4, 0.0), oak.darkened(0.1))
-						_box_rot(parts, Vector3(0.012, 0.018, 0.06), Vector3(side * 0.25 - 0.012, -0.01, -0.07), Vector3(0.0, -0.4, 0.0), oak.darkened(0.1))
+						_box(parts, Vector3(0.025, 0.02, 0.36), Vector3(side * 0.25, -0.01, 0.21), oak)
+						_box_rot(parts, Vector3(0.012, 0.018, 0.06), Vector3(side * 0.25 + 0.012, -0.01, 0.02), Vector3(0.0, -0.4, 0.0), oak.darkened(0.1))
+						_box_rot(parts, Vector3(0.012, 0.018, 0.06), Vector3(side * 0.25 - 0.012, -0.01, 0.02), Vector3(0.0, 0.4, 0.0), oak.darkened(0.1))
 				"grate":
-					# An iron grill grate: a square frame of flat bar, seven round rods across it and four short legs.
+					# An iron grill grate: an oblong frame of flat bar, seven bars across it and four short legs.
 					for side in [-1.0, 1.0]:
 						_box(parts, Vector3(0.36, 0.012, 0.016), Vector3(0.0, 0.0, side * 0.12), iron_c)
 						_metal(parts, 0.6, 0.7)
@@ -815,7 +815,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					_metal(parts, 0.6, 0.7)
 					_box(parts, Vector3(0.5, 0.025, 0.025), Vector3(0.25, 0.0, -0.24), iron_c)
 					_metal(parts, 0.6, 0.7)
-					_box_rot(parts, Vector3(0.42, 0.018, 0.018), Vector3(0.15, 0.0, -0.09), Vector3(0.0, -0.78, 0.0), iron_c.darkened(0.08))
+					_box_rot(parts, Vector3(0.42, 0.018, 0.018), Vector3(0.15, 0.0, -0.09), Vector3(0.0, 0.78, 0.0), iron_c.darkened(0.08))
 					_metal(parts, 0.6, 0.7)
 
 					for z in [-0.18, 0.18]:
@@ -1957,7 +1957,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 
 					_box(parts, Vector3(0.06, 0.016, 0.05), Vector3(0.1, -0.042, -0.07), Color(0.96, 0.94, 0.9))
 				"links":
-					# A string of sausages in their casings lying on a board, twisted between links; t0 is the casing's sheen.
+					# A string of sausages in their casings lying on a board, twisted between links.
 					_box(parts, Vector3(0.3, 0.014, 0.16), Vector3(0.0, -0.05, 0.0), wood)
 
 					for k in 4:
@@ -1965,7 +1965,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 						_sph(parts, 0.03, Vector3(1.1, 0.55, 0.55), at, _tone(color, k, 0.08), true)
 						_box(parts, Vector3(0.012, 0.01, 0.01), at + Vector3(0.034, 0.0, 0.0), color.darkened(0.25))
 				"platter":
-					# A serving platter of several foods (one portion per piece): a round wooden platter with a raised rim and a cluster of pieces in each of the tints.
+					# A serving platter of several foods (one portion per piece): a round wooden platter with a cluster of pieces in each of the tints.
 					_cyl(parts, 0.16, 0.016, Vector3(0.0, -0.05, 0.0), Vector3.ZERO, wood)
 					var foods: Array = [color] + tints
 
