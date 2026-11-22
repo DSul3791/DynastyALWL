@@ -65,7 +65,7 @@ func _init() -> void:
 		inv.counts[i] = 2
 
 	said.clear()
-	items._split(1, inv, 0, 1)
+	items._split(inv, 0, 1, 1)
 	check(inv.counts[0] == 2 and last().contains("no free slot"), "a split in a full pack is refused and said (\"%s\")" % last())
 
 	print("test_refusal_says: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])

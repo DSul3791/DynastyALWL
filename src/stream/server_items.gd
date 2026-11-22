@@ -1444,7 +1444,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_COOK:
 		_cook(peer, inv, a)
 	elif kind == Net.ACT_SPLIT:
-		_split(peer, inv, a, count)
+		_split(inv, a, count, peer)
 	elif kind == Net.ACT_PROCESS:
 		_process_trunk(peer, inv, a, int(at.x) - 1)   # at.x: the held pack slot + 1 for wood work (protocol 115)
 	elif kind == Net.ACT_MINE:
@@ -10920,7 +10920,7 @@ func peers_near(position: Vector3, radius: float) -> Array:
 
 
 # Splits `count` off a stack into the backpack's first empty slot; a full pack grows a step for it (protocol 116). The stack keeps at least one.
-func _split(peer: int, inv, slot: int, count: int) -> void:
+func _split(inv, slot: int, count: int, peer: int = -1) -> void:
 	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0 or count < 1 or count >= inv.counts[slot]:
 		return
 
