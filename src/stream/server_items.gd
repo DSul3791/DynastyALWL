@@ -12756,22 +12756,27 @@ func _may_take_down(peer: int, it: Dictionary) -> bool:
 	if owner == "" or owner == key or (admin_mode_on.is_valid() and bool(admin_mode_on.call(peer))):
 		return true
 
-	if key != "" and str(_structures.get(str(it.get("struct", {}).get("kind", "")), {}).get("attach_to", "")) == PlacementRules.DOOR_ATTACH and _frame_owner_at(it["pos"]) == key:
-		return true   # a door another player hung in your doorway: you may take it out, or the frame could never come down
+	if key != "" and str(_structures.get(str(it.get("struct", {}).get("kind", "")), {}).get("attach_to", "")) == PlacementRules.DOOR_ATTACH and _frame_owner_at(it["pos"]) in [key, ""]:
+		return true   # a door another player hung in your doorway (or in an old frame open to all): you may take it out, or the frame could never come down
 
 	var lock: Dictionary = _lock_of(it)   # a locked container: a player the owner let in may take it down too (s3.13 locked-crate movement rule)
 	return not lock.is_empty() and key != "" and ((lock.get("ok", []) as Array).has(key) or (lock.get("allow", []) as Array).has(key))
 
 
-# The builder of the doorway frame a door hangs in ("" when none is within DOOR_TAKEN_M).
+# The builder of the doorway frame a door hangs in ("" for a frame saved before owners, "-" when no frame is within DOOR_TAKEN_M).
 func _frame_owner_at(at: Vector3) -> String:
 	for id in _items:
 		var it: Dictionary = _items[id]
 
-		if it.has("struct") and str(_structures.get(str(it["struct"]["kind"]), {}).get("opening", "")) != "" and (it["pos"] as Vector3).distance_to(at) < PlacementRules.DOOR_TAKEN_M:
+		if not it.has("struct") or (it["pos"] as Vector3).distance_to(at) >= PlacementRules.DOOR_TAKEN_M:
+			continue
+
+		var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+		if str(def.get("opening", "")) != "" and str(def.get("attach_to", "")) != PlacementRules.DOOR_ATTACH:   # a door carries "opening" too: only the frame
 			return str(it["struct"].get("owner", ""))
 
-	return ""
+	return "-"   # no frame here: nobody gets the door by the frame rule
 
 
 # Taking a structure down (E near it) gives its kit back. A chest with things in it cannot be taken down.
@@ -19810,7 +19815,7 @@ func _pipe_fit(peer: int, inv, slot: int, kind: String, at: Vector3) -> void:
 	_send_changes(peer, inv, before)
 	var id: int = _next_id
 	_next_id += 1
-	_items[id] = {"number": number, "count": 1, "pos": end["at"], "left": 1.0e9, "struct": {"kind": kind, "yaw": float(end["yaw"])}}
+	_items[id] = {"number": number, "count": 1, "pos": end["at"], "left": 1.0e9, "struct": {"kind": kind, "yaw": float(end["yaw"]), "owner": str(_peer_key.get(peer, ""))}}   # owner: who fitted the tap or drip head (_may_take_down)
 
 	if int(_structures[kind].get("slots", 0)) > 0:   # a tap's few slots, where water containers fill
 		_items[id]["struct"]["uid"] = _next_uid
