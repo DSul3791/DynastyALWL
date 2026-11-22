@@ -5,10 +5,14 @@ extends PanelContainer
 # exception to the Inventory/Crafting look: no trim, icons, progress bar, coins, hints or buttons. A goal with an amount shows its count after its title
 # ("Gather plant fibre 3/12", GoalBook.label; Dave 14 Nov 2026). It sits under the Comfort/Rested line (inventory_view.gd
 # _comfort_label, top 18 px, 26 px text) and under the food effect lines when they show (food_effects_ui.gd), and hides while a screen (inventory, character, Journal, a talk) is open. View only: it tracks nothing.
+# One dim line under the titles names the key for the how-to ("G: how to do these", the player's own goals key) until the first
+# HOWTO_UNTIL goals are done (coordinator ruling 22 Nov 2026: a new tester could not find the hints; nothing else told them G or J).
 
 const DynastyTheme := preload("res://src/client/ui/dynasty_theme.gd")
 const GoalBook := preload("res://src/client/ui/goals/goal_book.gd")
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 const SHOWN := 2
+const HOWTO_UNTIL := 3        # the how-to line shows until this many goals are done
 const TOP_PX := 70.0          # clear of the Comfort/Rested line (18 + about 36 px tall) on the 1920 x 1080 canvas; lower while food effect lines show (from 56)
 const RIGHT_PX := 20.0        # the comfort line's right edge
 const WIDTH_PX := 420.0       # the comfort line's width: a long title wraps inside it
@@ -19,6 +23,7 @@ var _heading: Label
 var _lines: VBoxContainer
 var _built_px: int = -1
 var _shown: int = 0
+var _howto: String = ""            # the how-to line as drawn (a key rebound in Esc > Controls redraws it)
 
 
 func setup(items, book) -> void:
@@ -71,6 +76,14 @@ static func titles(book) -> PackedStringArray:
 	return out
 
 
+# The dim how-to line under the titles, "" once the first HOWTO_UNTIL goals are done (or with nothing to show).
+static func howto_line(book) -> String:
+	if book.done_count() >= HOWTO_UNTIL or book.unfinished(1).is_empty():
+		return ""
+
+	return "%s: how to do these" % KeyBindings.label("goals")
+
+
 func refresh() -> void:
 	var px: int = _items.text_px(24)
 	_built_px = px
@@ -90,6 +103,15 @@ func refresh() -> void:
 		bullet.custom_minimum_size = Vector2(WIDTH_PX - 28.0, 0.0)
 		_lines.add_child(bullet)
 
+	var howto: String = howto_line(_book)
+	_howto = howto
+
+	if howto != "":
+		var dim: Label = _label(howto)
+		dim.add_theme_font_size_override("font_size", _items.text_px(18))
+		dim.modulate = Color(1.0, 1.0, 1.0, 0.6)
+		_lines.add_child(dim)
+
 	_shown = shown.size()
 	_update_visible()
 	reset_size()
@@ -101,8 +123,8 @@ func _update_visible() -> void:
 
 
 func _process(_delta: float) -> void:
-	if _items.text_px(24) != _built_px:
-		refresh()   # the text size was changed in the settings
+	if _items.text_px(24) != _built_px or (visible and howto_line(_book) != _howto):
+		refresh()   # the text size was changed in the settings, or the goals key was rebound
 		return
 
 	_update_visible()

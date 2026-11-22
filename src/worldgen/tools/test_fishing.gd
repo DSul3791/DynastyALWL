@@ -167,5 +167,17 @@ func _init() -> void:
 
 	# Raw fish makes you sick; cooked fish is a different item.
 	check(items._cooking["raw_sick"]["by_id"].has("trout") and str(items._cooking["cooks_into"]["trout"]) == "roast_fish", "raw fish is raw_sick and cooks into roast fish")
+	# Bait: raw berries go on the hook, berries a player cooked to eat never do.
+	var bait_inv = items.inventory_of(1)
+	var bait_cfg: Dictionary = items._fishing_data()
+
+	for s in range(bait_inv.slot_count):
+		bait_inv.clear_slot(s)
+
+	bait_inv.add(items.table.number_of("stewed_berries"), 2)
+	check(items._fish_bait_slot(bait_inv, bait_cfg) == -1, "stewed berries are not bait")
+	bait_inv.add(items.table.number_of("blueberries"), 2)
+	var bait_at: int = items._fish_bait_slot(bait_inv, bait_cfg)
+	check(bait_at >= 0 and items.table.id_of(bait_inv.numbers[bait_at]) == "blueberries", "raw blueberries are bait")
 	print("fishing tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

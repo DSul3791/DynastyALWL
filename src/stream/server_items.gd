@@ -13995,6 +13995,9 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 		_say(peer, "The %s is full." % table.in_sentence(table.name_of(int(_items[id]["number"]))))
 		_reject(peer, 2)
 
+	if amount > left and id >= 0 and not smelter and not smithy and not BinRules.is_bin(_structures.get(kind, {})) and int(_structures.get(kind, {}).get("batch_logs", 0)) == 0 and not _is_station_store(_items[id]):
+		_goal_stored(peer, number, amount - left)   # put by hand into a storage container (a basket, sack, jar, barrel, crate, chest): the stored_item_any checks
+
 	if amount > left and id >= 0:
 		if bool(_structures.get(kind, {}).get("lockable", false)):
 			_goal_event_act(peer, "stored_item")   # ADD-13: once per act (Store all and a view deposit put many stacks); items went into a chest or crate (structures.json lockable: the chests and crates), not a fire, smelter, kiln or bin
@@ -17417,6 +17420,36 @@ func station_level_of(it: Dictionary, def: Dictionary, station: String) -> int:
 	return int(def.get("also", {}).get(station, 0))
 
 
+# A cold fire (laid, coals gone cold, ash) is what keeps this station from serving: a campfire within reach that is out, or for the pot a pot within
+# reach whose fire under it is out. A dish waiting on it says to light it, not to "go back" to what the player stands at.
+func _unlit_fire_near(peer: int, station: String) -> bool:
+	if not _peer_pos.has(peer):
+		return false
+
+	var reach: float = FIRE_USE_M + 1.0
+	var spots: Array = [_peer_pos[peer]]
+
+	if station == "campfire_pot":
+		spots = []
+
+		for id in _items:
+			var pot: Dictionary = _items[id]
+
+			if pot.has("struct") and str(pot["struct"]["kind"]) == "campfire_pot" and _peer_pos[peer].distance_to(pot["pos"]) <= reach:
+				spots.append(pot["pos"])
+
+		reach = POT_ON_FIRE_M
+
+	for at in spots:
+		for id in _items:
+			var it: Dictionary = _items[id]
+
+			if it.has("fire") and not it["fire"].has("camp") and not fire_is_lit(int(it["fire"]["state"])) and (at as Vector3).distance_to(it["pos"]) <= reach:
+				return true
+
+	return false
+
+
 # A smithy that would serve this station stands within its reach with no fuel in its fuel slot.
 func _unfuelled_smithy_near(peer: int, station: String) -> bool:
 	if not _peer_pos.has(peer):
@@ -18103,7 +18136,7 @@ func _fish_bait_slot(inv, cfg: Dictionary) -> int:
 		var id: String = table.id_of(inv.numbers[slot])
 
 		for word in cfg.get("bait", []):
-			if id == str(word) or id.ends_with(str(word)):
+			if id == str(word) or (id.ends_with(str(word)) and not _cooking.get("warms", {}).has(id)):   # raw "blueberries", never the cooked "stewed_berries" a player made to eat
 				return slot
 
 	return -1
@@ -20751,7 +20784,11 @@ func _sow_refusal(key: String, seed_id: String) -> String:
 
 func _season_refusal(seed_id: String) -> String:
 	var crop_id: String = FarmRules.crop_of_seed(_crop_table(), seed_id)
-	return "Not the season for %s." % table.in_sentence(str((_crop_table().get(crop_id, {}) as Dictionary).get("name", crop_id)))
+	var def: Dictionary = _crop_table().get(crop_id, {})
+	var seasons: Array = def.get("sow_seasons", [def.get("sow_season", "spring")])
+	var names: PackedStringArray = PackedStringArray(seasons.map(func(x): return str(x)))
+	var when: String = names[0] if names.size() == 1 else ", ".join(names.slice(0, names.size() - 1)) + " or " + names[names.size() - 1]
+	return "Not the season for %s: sow it in %s (it is %s now)." % [table.in_sentence(str(def.get("name", crop_id))), when, _season()]   # names when it can go in, so a summer start knows to wait or sow another
 
 
 # The crop record of a seed just sown (the seed already taken).
@@ -20944,7 +20981,14 @@ func harvest(peer: int, inv, bed_id: int, at: Vector3 = Vector3.ZERO) -> bool:
 		return false
 
 	if crop_stage(crop) < 3:
-		_say(peer, "It is not ripe yet.")
+		var grow_def: Dictionary = _crop_table().get(str(crop["crop"]), {})
+		var stalled: bool = int(floor(float(crop["age"]) / maxf(float(grow_def.get("grow_days", 100)), 1.0) * 4.0)) >= 3   # old enough to ripen (crop_stage's own sum): it holds at 2 for want of wet days
+		var dry: bool = not PlotWater.is_wet(_moisture_cfg, float((_plot_water.get(str(crop.get("plot", key)), [float(_moisture_cfg.get("start_pct", 50.0))]) as Array)[0]))
+
+		if stalled:
+			_say(peer, "It has stopped growing: it needs more wet days. Keep the bed watered and it will ripen.")   # it waits for wet days and nothing else said so
+		else:
+			_say(peer, "It is not ripe yet. The soil is dry: water it and it grows faster." if dry else "It is not ripe yet.")   # a dry bed grows at half pace
 		return false
 
 	var def: Dictionary = _crop_table().get(str(crop["crop"]), {})
@@ -21879,7 +21923,7 @@ func _hints_check(peer: int) -> void:
 # Goals (data/items/starter_goals.json by Sal, camp_goals.json; Tyler 31 Oct 2026; GOALS-REPAIR WP-GUIDE-UI 14 Nov 2026): the guide's goals in their authored order.
 # Every goal tracks on its own from the start of the character and completes the moment its check is met, in any order (GA-40): `after` names the goals
 # taught before it (the Journal's prerequisite links and the authored order), never a lock. Checks: {event, count, what?} (the server calls _goal_event: drink,
-# tree_felled, fire_lit, ate_food, placed what, carcass_worked), {made_item, count} (crafts that finished; a hand chop or split counts as one), {made_item_any: [ids], count} (those crafts summed over the ids), {got_item, count} (gathered first-hand, _goal_got), {have_item, count} and {have_item_any: [ids], count}
+# tree_felled, fire_lit, ate_food, placed what, carcass_worked), {made_item, count} (crafts that finished; a hand chop or split counts as one), {made_item_any: [ids], count} (those crafts summed over the ids), {got_item, count} (gathered first-hand, _goal_got), {stored_item_any: [ids], count} (units put into storage containers by hand, _goal_stored), {have_item, count} and {have_item_any: [ids], count}
 # (true while the pack holds that many, looked at every slow tick). A goal is done once per character and saved with it (characters.json goals_done and
 # goal_counts, the same atomic file as the coins); the reward (its stage's copper, goal_rewards.json; coins only, Dave 14 Nov) is paid in the same step and a
 # save follows on the next tick (GA-55). Debug play earns nothing (GA-54): while Admin mode is on no goal counts or completes, a free craft is never counted, and
@@ -22006,6 +22050,33 @@ func _goal_got(peer: int, item: int, n: int) -> void:
 	_goals_check(peer)
 
 
+# Units of an item this player put into a storage container by hand (_box_put): the stored_item_any checks (the winter fruit store, Dave 22 Nov 2026).
+# History, as got_item: fruit taken out again still counts. Admin mode counts nothing (_goals_paused).
+var _stored_ids: Dictionary = {}   # item id -> true: the items a stored_item_any check names ("" once built)
+
+
+func _goal_stored(peer: int, item: int, n: int) -> void:
+	var st: Dictionary = _goal_state_of(peer)
+
+	if st.is_empty() or n <= 0 or _goals_data().is_empty() or _goals_paused(peer):
+		return
+
+	if _stored_ids.is_empty():   # the ids some stored_item_any check names, once: other puts (sticks, stone) count and save nothing
+		_stored_ids[""] = true
+
+		for goal in _goals_data():
+			for id in goal.get("check", {}).get("stored_item_any", []):
+				_stored_ids[str(id)] = true
+
+	if not _stored_ids.has(table.id_of(item)):
+		return
+
+	var k: String = "stored:" + table.id_of(item)
+	st["goal_counts"][k] = int(st["goal_counts"].get(k, 0)) + n
+	_dirty = true
+	_goals_check(peer)
+
+
 # An admin give (ACT_ADMIN_GIVE): those units do not count towards a have check.
 func _goal_admin_gave(peer: int, item: int, n: int) -> void:
 	var st: Dictionary = _goal_state_of(peer)
@@ -22098,6 +22169,14 @@ func _goal_progress(peer: int, st: Dictionary, check: Dictionary, goal_id: Strin
 
 	if check.has("have_item"):
 		return Vector2i(_goal_have(st, inv, str(check["have_item"])), need)
+
+	if check.has("stored_item_any"):
+		var stored: int = 0
+
+		for id in check["stored_item_any"]:
+			stored += int(st["goal_counts"].get("stored:" + str(id), 0))
+
+		return Vector2i(stored, need)
 
 	if check.has("have_item_any"):
 		var total: int = int(st["goal_counts"].get(_goal_count_key(str(check["or_event"]), ""), 0)) if check.has("or_event") else 0   # a catch counts though the fish was eaten
@@ -23711,6 +23790,8 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 	if str(recipe.get("station", "")) != "" and not station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
 		if _broken_station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
 			_say(peer, "Needs repair")   # the exact warning for a worn-out smithy (master s2.2 item 9)
+		elif str(recipe["station"]).begins_with("campfire") and _unlit_fire_near(peer, str(recipe["station"])):
+			_say(peer, "The fire is out: light it first")   # standing at a cold fire, "That needs a Campfire nearby" tells the player nothing
 		else:
 			_say(peer, ("The %s has no fuel: put Coal or Charcoal in its fuel slot (its first slot)" if _unfuelled_smithy_near(peer, str(recipe["station"])) else "That needs a %s nearby") % _station_name(str(recipe["station"])))
 		return
@@ -24152,6 +24233,8 @@ func _craft_tick(spent: float) -> void:
 					var waiting: int = _variant_of(head)
 					if _unfuelled_smithy_near(peer, str(recipe["station"])):
 						_say(peer, "The %s has no fuel: put Coal or Charcoal in its fuel slot (its first slot)" % station_name)
+					elif str(recipe["station"]).begins_with("campfire") and _unlit_fire_near(peer, str(recipe["station"])):
+						_say(peer, "The fire is out: light it again and the craft goes on")   # beside a cold fire, "go back to the fire" tells the player nothing
 					elif waiting != 0:
 						_say(peer, "Your %s %s waits: go back to the %s" % [SmithingRules.label(waiting), str(recipe.get("name", "craft")), station_name])   # a Tempered or +1/+2 craft names the item it waits for
 					else:

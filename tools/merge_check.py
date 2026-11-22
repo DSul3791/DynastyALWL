@@ -2,12 +2,20 @@
 """Pre-merge guard (BP fix 1 of RETRO_DAY2, Dave 2026-10-23: yes). Run it on the merged tree BEFORE you push.
    python3 tools/merge_check.py            (from the repo root; exit 0 = all clear, exit 1 = problems listed)
 Checks: conflict markers, unique item numbers, next_number above the highest, unique ACT_ action ids, unique protocol/build
-numbers, JSON files parse, build NUMBER not lower than before, no NEW crash reports or telemetry logs tracked, .uid for new scripts.
+numbers, JSON files parse (no key twice in an object), build NUMBER not lower than before, no NEW crash reports or telemetry logs tracked, .uid for new scripts.
 It does not run Godot (warning count and headless loads stay with tools/local_check.sh on a machine with Godot)."""
 import json, os, re, subprocess, sys
 
 # What to compare against: the CI sets MERGE_CHECK_BASE to the commit before the push, so a later push cannot make a finished run fail.
-BASE = os.environ.get("MERGE_CHECK_BASE") or "origin/main"
+# Locally (no MERGE_CHECK_BASE) it compares against origin/dev, where PRs merge, as the CI does for a PR to dev (origin/<base>); against
+# origin/main a file added and deleted since the last release looked untouched, and a deletion passed here but failed in the CI (#1574).
+def _default_base() -> str:
+    for ref in ["origin/dev", "origin/main"]:
+        if subprocess.run(["git", "rev-parse", "--verify", "--quiet", ref], capture_output=True).returncode == 0:
+            return ref
+    return "origin/main"
+
+BASE = os.environ.get("MERGE_CHECK_BASE") or _default_base()
 # Compare from the merge base, not the tip of main (three-dot). A branch made before a later merge to main would otherwise
 # look as if it deleted every file main has gained since (false "deleted without approval", seen on #528 and #553).
 # When BASE is already an ancestor of HEAD the merge base is BASE itself, so a push to main checks exactly as before.
@@ -37,11 +45,23 @@ for f in sh("git", "ls-files").splitlines():
     if re.search(r"^(<<<<<<< |>>>>>>> )", txt, re.M) or re.search(r"^=======$", txt, re.M) and "<<<<<<<" in txt:
         bad("conflict marker in %s" % f)
 
-# 2. JSON parses
+# 2. JSON parses, with no key twice in one object (the later one silently wins in Godot and Python: a doubled wild_rose seed, PR #1569)
+def _no_twice(pairs, where):
+    seen = set()
+
+    for key, _ in pairs:
+        if key in seen:
+            bad("JSON key twice in one object: %s %r" % (where, key))
+
+        seen.add(key)
+
+    return dict(pairs)
+
+
 for f in sh("git", "ls-files", "data").splitlines():
     if f.endswith(".json") and os.path.isfile(f):
         try:
-            json.load(open(f, encoding="utf-8"))
+            json.load(open(f, encoding="utf-8"), object_pairs_hook=lambda pairs, f=f: _no_twice(pairs, f))
         except Exception as e:
             bad("JSON does not parse: %s (%s)" % (f, str(e)[:80]))
 

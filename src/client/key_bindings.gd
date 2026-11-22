@@ -478,7 +478,8 @@ static func conflicts() -> Array:
 
 # Which action each key letter in the game's built-in prompt texts stands for ("Press E to gather", "hold E", "F for wood"). The server's
 # notices and hints (hints.json: "press E on nettles", "Press F at the fire") come through localize on the client too.
-const PROMPT_LETTERS := {"E": "interact", "F": "open", "Z": "lie", "H": "ruler"}
+# I and R for the goal hints ("Open the inventory (I)", "press R and pick Lean-to"; first-hour fixes 22 Nov 2026).
+const PROMPT_LETTERS := {"E": "interact", "F": "open", "Z": "lie", "H": "ruler", "I": "inventory", "R": "blueprints"}
 static var _prompt_regex: RegEx = null
 
 
@@ -491,7 +492,7 @@ static func localize(text: String) -> String:
 		return text
 
 	if _prompt_regex == null:
-		_prompt_regex = RegEx.create_from_string("\\b(?:(?:[Pp]ress|[Hh]old|[Tt]ap) |(?<=, )|(?<=\\())([EFZH])\\b(?= to |,|\\)| twice| for | on | at | near | again|\\.|$)")
+		_prompt_regex = RegEx.create_from_string("\\b(?:(?:[Pp]ress|[Hh]old|[Tt]ap|with) |(?<=, )|(?<=\\())([EFZHIR])\\b(?= to |,|;|\\)| twice| for | on | at | near | again| and |\\.|$)")
 
 	var found: Array[RegExMatch] = _prompt_regex.search_all(text)
 	found.reverse()

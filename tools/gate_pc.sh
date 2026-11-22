@@ -69,7 +69,7 @@ step "import" $s
 
 # checks
 s=$(date +%s); echo "parse_scan: $("$PYTHON" tools/parse_scan.py 2>&1 | tail -1)"; step "parse_scan" $s
-s=$(date +%s); MC=$("$PYTHON" tools/merge_check.py 2>&1 | tail -3 | tr '\n' '|'); echo "merge_check: $MC"; step "merge_check" $s
+s=$(date +%s); MC=$(MERGE_CHECK_BASE=origin/main "$PYTHON" tools/merge_check.py 2>&1 | tail -3 | tr '\n' '|'); echo "merge_check: $MC"; step "merge_check" $s
 CHECK_FAIL=0
 case "$MC" in *"all clear"*) ;; *) CHECK_FAIL=1;; esac
 echo "conflict markers: $(git grep -nE '^(<<<<<<<|>>>>>>>) ' -- . ':!*.md' ':!*.txt' 2>/dev/null | head -3 | tr '\n' '|')"
