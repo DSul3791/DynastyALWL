@@ -795,6 +795,13 @@ func _init() -> void:
 	items._crops[dry_key] = {"crop": "wheat", "sown": 0, "age": float(grow) + 5.0, "wet": 0, "day": items._game_day(), "compost": false, "rained": -1}
 	check(items.crop_stage(items._crops[dry_key]) == 2, "old enough but never watered: stalls at stage 2, not ripe")
 	items._crops.erase(dry_key)
+	var kept: Dictionary = items._crops[key].duplicate()
+	items._crops[key]["age"] = float(grow) + 5.0
+	items._crops[key]["wet"] = 0
+	notes.clear()
+	act(Net.ACT_HARVEST, bed)
+	check(notes.has("It has stopped growing: it needs more wet days. Keep the bed watered and it will ripen."), "a crop stalled for water says so at harvest (%s)" % str(notes))
+	items._crops[key] = kept
 
 	# Harvest: without a sickle half the yield.
 	var yield_wheat: int = int(crops["wheat"]["yields"][0][1])
