@@ -7,7 +7,7 @@
 #   2. PAIRS: for every pair of branches, git merge-tree says which files would conflict (cheap, no checkout), and the owners (the two branches)
 #   3. MERGE: merges the branches one by one into the scratch tree; a branch that conflicts is aborted and listed per file with the other branches that touch
 #      the file, then the next one is tried
-#   4. PLAN: tests_for_diff.py of the result against $MAIN (default origin/main) decides the tests; the fast lane runs (with --release: every test, the big
+#   4. PLAN: tests_for_diff.py --wide of the result against $MAIN (default origin/main) decides the tests (a batch of merges); the fast lane runs (with --release: every test, the big
 #      ones included, instead)
 #   5. ITEMS: tools/items_check.py (unless --no-items)
 #   6. the page: pass/fail per step, failing tests marked NEW or KNOWN (tools/known_red.txt lists tests that are already red on the daily branch)
@@ -86,7 +86,7 @@ KNOWN="$(grep -v '^#' "$REPO/tools/known_red.txt" 2>/dev/null | awk '{print $1}'
 if [ $TESTS = 1 ] && [ -n "$MERGED" ]; then
 	say ""; say "## 3. Tests"
 	[ ! -f .godot/global_script_class_cache.cfg ] && { say "(first run in the scratch tree: importing, about 2 min)"; godot --headless --path . --import >/dev/null 2>&1; }
-	if [ $RELEASE = 1 ]; then "$PY" tools/tests_for_diff.py --paths project.godot --full > "$OUT/plan.json"; else "$PY" tools/tests_for_diff.py "$MAIN" HEAD > "$OUT/plan.json"; fi
+	if [ $RELEASE = 1 ]; then "$PY" tools/tests_for_diff.py --paths project.godot --full > "$OUT/plan.json"; else "$PY" tools/tests_for_diff.py "$MAIN" HEAD --wide > "$OUT/plan.json"; fi
 	# Item data checks always run on a merge (duplicate item numbers or ids, next_number): they are cheap and a collision between branches is exactly what a merge causes.
 	if godot --headless --path . --script res://src/worldgen/tools/validate_items.gd > "$OUT/validate_items.txt" 2>&1 && ! grep -qE "^FAIL|[1-9][0-9]* errors" "$OUT/validate_items.txt"; then say "validate_items: pass"; else FAILS=$((FAILS + 1)); say "validate_items: FAIL: $(grep -E 'FAIL|error' "$OUT/validate_items.txt" | head -3 | tr '
 ' ' ')"; fi

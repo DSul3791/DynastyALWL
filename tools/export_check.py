@@ -7,8 +7,8 @@ generator stay one build): checks export_presets.cfg without exporting, since ou
   python3 tools/export_check.py --list P   print the files preset P ("client" or "server") would carry
   python3 tools/export_check.py --disk     look at every file on disk, untracked and gitignored ones too, as Godot does: run it on
                                            the machine that exports, just before the export
-  python3 tools/export_check.py --ci       for tools/merge_check.py: as the plain check, except that server-only code that crept into
-                                           the client is a warning (routine work adds server scripts; --write puts them in the list)
+  tools/merge_check.py runs the plain check on every PR: server-only code that crept into the client fails it (22 Nov 2026: as a
+  warning it reached the main gate twice); --write puts the new script in the client's exclude list.
 
 What it does:
   1. Works out which tracked files each preset would put in the pack, the way Godot's "all_resources" filter does: every resource
@@ -382,12 +382,6 @@ def main(argv):
 
     for problem in problems:
         print("  - " + problem)
-
-    if "--ci" in argv:
-        broken = [p for p in problems if "server-only" not in p]   # only server-only code that crept in drifts with routine work
-        print("export_check: %s" % ("FAILED (%d problems)" % len(broken) if broken else
-                                    "%d warnings (python3 tools/export_check.py --write)" % len(problems) if problems else "all clear"))
-        return 1 if broken else 0
 
     print("export_check: %s" % ("FAILED (%d problems)" % len(problems) if problems else "all clear"))
     return 1 if problems else 0
