@@ -449,6 +449,7 @@ func _ready() -> void:
 			return null
 
 		return BogIronScript.field(generator.get_tile(generator.tile_of(cx, cz)), fx, fz, cfg)
+	items.ground_open = func(points): return store.any_open(points)   # whether any point is open ground now (a bog hole never silts into a tunnel)
 	items.bog_silt_at = func(x, z, cfg):   # what a dug hole on fen, marsh, swamp or bog silts back in with, 0 elsewhere (BogIron.silt_material); an unloaded tile counts as dry
 		return BogIronScript.silt_material(generator.get_tile(generator.tile_of(x, z)), x, z, cfg) if generator.tile_cached(x, z) else 0
 	items.fresh_water_y = func(pos, reach):   # wells and pumps (TileTerrainData.fresh_water_near): the nearest over every tile the reach touches

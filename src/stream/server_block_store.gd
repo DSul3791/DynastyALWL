@@ -557,6 +557,27 @@ func _report_bad(block: Vector3i, lod: int, cx: int, layer: int, cz: int, y: flo
 	push_error("server: bad block %s at LOD %d: solid at column (%d, %d) layer %d, y %.1f, but the ground there is %.1f; not saved" % [str(block), lod, cx, cz, layer, y, h])
 
 
+# Whether the ground as it is now (generated, plus every dig and fill) is open at any of `points` (SDF above 0 is air). A bog hole
+# checks the fill it would make with it, so silting never fills a tunnel or cellar under it (coordinator, 22 Nov 2026).
+func any_open(points: Array) -> bool:
+	var buffers: Dictionary = {}
+
+	for point in points:
+		var p: Vector3 = point
+		var block: Vector3i = Vector3i(floori(p.x / float(BLOCK_SIZE)), floori(p.y / float(BLOCK_SIZE)), floori(p.z / float(BLOCK_SIZE)))
+		var buffer: VoxelBuffer = buffers.get(block)
+
+		if buffer == null:
+			buffer = Layout.make_buffer(BLOCK_SIZE)
+			load_block(buffer, block, 0)
+			buffers[block] = buffer
+
+		if buffer.get_voxel_f(floori(p.x) - block.x * BLOCK_SIZE, floori(p.y) - block.y * BLOCK_SIZE, floori(p.z) - block.z * BLOCK_SIZE, Layout.CHANNEL_SDF) > 0.0:
+			return true
+
+	return false
+
+
 # Debug (Dave 2026-10-21, a solid block standing in the lake that only a saved copy kept): what every store
 # holds for the voxel at (x, y, z) at LOD 0, as text for the client's "Dump ground here" button.
 func dump_cell(x: float, y: float, z: float) -> String:
