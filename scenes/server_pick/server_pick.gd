@@ -15,7 +15,6 @@ const Store := preload("res://src/client/character/character_store.gd")
 const Style := preload("res://src/client/character/page_style.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
 const ProblemReport := preload("res://src/client/problem_report.gd")
-const ProblemReport := preload("res://src/client/problem_report.gd")
 
 const SELECT_SCENE := "res://scenes/character_select/character_select.tscn"
 const TITLE_SCENE := "res://scenes/title/title.tscn"
