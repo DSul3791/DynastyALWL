@@ -123,13 +123,13 @@ func _init() -> void:
 	var knife_wear: int = -1
 
 	for gid in f._items:
-		var g: Dictionary = f._items[gid]
+		var sg: Dictionary = f._items[gid]
 
-		if int(g.get("number", 0)) == f.table.number_of("stick") and not g.has("scatter") and (g["pos"] as Vector3).distance_to(AT) < 2.0:
-			spilled += int(g["count"])
+		if int(sg.get("number", 0)) == f.table.number_of("stick") and not sg.has("scatter") and (sg["pos"] as Vector3).distance_to(AT) < 2.0:
+			spilled += int(sg["count"])
 
-		if int(g.get("number", 0)) == f.table.number_of("stone_knife"):
-			knife_wear = int(g.get("wear", 0))
+		if int(sg.get("number", 0)) == f.table.number_of("stone_knife"):
+			knife_wear = int(sg.get("wear", 0))
 
 	check(not f._items.has(905) and not f._chests.has(7905) and spilled == 3, "a cold fire that goes leaves its store's 3 sticks beside it (%d found)" % spilled)
 	check(knife_wear == 5, "and a worn knife from the store keeps its wear (%d)" % knife_wear)
