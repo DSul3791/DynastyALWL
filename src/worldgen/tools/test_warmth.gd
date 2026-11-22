@@ -68,7 +68,7 @@ func _init() -> void:
 	check(said.has("You are freezing"), "the freezing message shows")
 
 	run(items, 9000)
-	check(float(items.vitals_of(1)["health"]) == 1.0, "cold stops at 1 health (like hunger)")
+	check(float(items.vitals_of(1)["health"]) == ItemsScript.COLD_FLOOR_HP, "cold stops at 25 health, the floor of an animal hit (coordinator for Dave, 22 Nov 2026) (%.1f)" % float(items.vitals_of(1)["health"]))
 
 	# Wet clothes (Dave 5 Nov rain card: only shelter dries you, slowly under a tree or roof, fast by a fire).
 	weather = {"temp_c": -3.0, "wind": 0.6, "rain": 0.0, "snow": 0.0}
