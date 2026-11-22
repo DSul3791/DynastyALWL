@@ -4,7 +4,8 @@
 # (with -WindowsEditor the game export runs in Dave's own editor instead). Use a clone made for releases: the import may touch its files.
 #   cd <a full clone of DynastyALWL at the release commit, normally main>
 #   powershell -ExecutionPolicy Bypass -File tools\make_release.ps1            build only
-#   powershell -ExecutionPolicy Bypass -File tools\make_release.ps1 -Publish   also make the GitHub Release build-<N> with the installer (gh)
+#   powershell -ExecutionPolicy Bypass -File tools\make_release.ps1 -Publish   also a PUBLIC GitHub Release build-<N> with the installer (gh);
+#       only on Dave's explicit yes (public repo, the installer holds the bought animal models; Dave 22 Nov 2026)
 # Output in ..\dynasty_export\build-<N>\: DynastySetup-<N>.exe (for players), dynasty-server-build-<N>.tar plus compose.yaml and SERVER.md
 # (for the gaming server: docker load -i ..., then docker compose -f compose.yaml up -d). The first run compiles the engine (deploy/engine,
 # roughly 45 to 90 minutes of full CPU); later runs reuse it.
