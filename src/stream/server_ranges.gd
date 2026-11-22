@@ -73,7 +73,10 @@ func tick(players: Array, now_ms: int) -> void:
 
 		if not (rec["jobs"] as Array).is_empty() and now_ms >= int(rec["retry_ms"]) and not _ground_loaded(key):
 			rec["retry_ms"] = now_ms + 5000   # a ground tile it reaches is still loading: never read a cold tile on the server tick
+			rec["waits"] = int(rec.get("waits", 0)) + 1
 			continue
+
+		var had_jobs: bool = not (rec["jobs"] as Array).is_empty()
 
 		while not (rec["jobs"] as Array).is_empty() and now_ms >= int(rec["retry_ms"]) and Time.get_ticks_usec() - started < budget:
 			var job: Array = rec["jobs"][0]
@@ -81,6 +84,7 @@ func tick(players: Array, now_ms: int) -> void:
 
 			if place == null:
 				rec["retry_ms"] = now_ms + 5000   # the ground there is not known yet: try again shortly
+				rec["waits"] = int(rec.get("waits", 0)) + 1
 				break
 
 			rec["jobs"].pop_front()
@@ -88,6 +92,21 @@ func tick(players: Array, now_ms: int) -> void:
 			if not (place as Dictionary).is_empty():
 				rec["places"].append(place)
 				rec["ver"] = int(rec["ver"]) + 1
+
+		if had_jobs and (rec["jobs"] as Array).is_empty():
+			_log_ready(key, rec)
+
+
+# One log line when a block is worked out (so a lane can see trails exist and where): its places, routes and each place's home spot.
+func _log_ready(key: Vector2i, rec: Dictionary) -> void:
+	var homes: PackedStringArray = PackedStringArray()
+	var routes: int = 0
+
+	for place in rec["places"]:
+		routes += (place["routes"] as Array).size()
+		homes.append("%s %s %.0f,%.0f%s" % [str(place["id"]), str(place["sp"]), place["home"].x, place["home"].y, " settled" if settled(place) else ""])
+
+	print("ranges: block %d,%d worked out (%d ground waits): %d places, %d routes: %s" % [key.x, key.y, int(rec.get("waits", 0)), (rec["places"] as Array).size(), routes, ", ".join(homes)])
 
 
 # Whether the ground under a block and the margin its routes may reach (runs, drift, the water detour) is loaded.

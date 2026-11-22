@@ -104,7 +104,7 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
   bottom), feeding ground on the flattest open ground 80-200 m from it.
 - TR-3 routes: a point every 12 m, each tried 3, 6 or 12 m either side of the last one's line, the gentlest climb kept, drifting at most 30 m off the straight line; round deep water by a dry point 20-60 m to one side of the middle; a small wiggle every 4 m.
 - TR-4 clock: rabbits out from dusk to dawn (dusk and night periods), deer to feed at dusk and back at dawn.
-- TR-5 the look: a run 0.35 m wide, a deer trail 0.6 m, fading over 0.4 m either side; the grass squashed by the trample's own squash (0.75, data/look/grass_trample.json) and shaded the same, so a trail looks like ground just walked.
+- TR-5 the look: a run 0.8 m wide, a deer trail 1.2 m, fading over 0.5 m either side (first 0.35 and 0.6 m: Lane A pictures 22 Nov showed nothing, too thin to read through the tufts; a walked path, the trample Dave likes, is 1.6 m); the grass squashed by the trample's own squash (0.75, data/look/grass_trample.json) and shaded the same, so a trail looks like ground just walked. Log lines for a lane: server "ranges: block ... worked out" (places and their homes) and "trails: block ... with N bytes of routes", client "grass runs: block ... came with N routes" and "grass runs: N routes near, T texels matted".
 - TR-6 snares: full factor within 0.5 m of a run, falling to the old factor at 2 m; away catches 0.045 a game hour at full rabbit
   activity: a snare squarely on a run takes about two rabbits in five nights, about one a game day in two (Wildwood's 3 in 15 the
   first night); six snares on runs feed one player well. Off a run, none while away.

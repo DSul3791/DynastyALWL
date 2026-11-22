@@ -174,6 +174,9 @@ func updates_for(peer: int, at: Vector3, now_msec: int) -> Array:
 					if float(blocks[key]["cells"][idx]) >= min_s:
 						cells[idx] = blocks[key]["cells"][idx]
 
+			if route_sig != (int(rec[2]) if not rec.is_empty() else _NO_ROUTES) and not routes.is_empty():
+				print("trails: block %d,%d to peer %d with %d bytes of routes" % [key.x, key.y, peer, routes.size()])   # once a block's routes change (a lane checks trails are sent)
+
 			known[key] = [ver, now_msec, route_sig]
 			out.append([key.x, key.y, Codec.encode(cells), routes])
 

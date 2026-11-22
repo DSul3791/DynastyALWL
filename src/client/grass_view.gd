@@ -301,8 +301,10 @@ var _trail_msec: int = 0
 var _trail_mult: float = 1.0
 const RUN_TEXELS := 256                  # the run map: 256 texels of 0.5 m round the player (128 m; the near grass reaches about 30 m)
 const RUN_TEXEL_M := 0.5
-const RUN_WIDTH_M := [0.35, 0.6]          # a rabbit run, a deer trail (trail_codec.gd route kinds; TR-5)
+const RUN_WIDTH_M := [0.8, 1.2]           # a rabbit run, a deer trail (trail_codec.gd route kinds; TR-5): as wide as a walked path (trample 1.6 m), so a line reads through the tufts
+const RUN_FADE_M := 0.5                    # the matting fades out over this past the half width
 const RUN_MOVE_M := 16.0                 # the map is laid again round the player after this walk
+var _run_logged: String = ""         # the last "grass runs:" line, so it is printed only when it changes
 var _run_routes: Dictionary = {}         # Vector2i block -> [[kind, PackedVector2Array world x, z], ...], as the server sent them
 var _run_image: Image = null
 var _run_texture: ImageTexture = null
@@ -474,9 +476,12 @@ func set_trail_routes(block_x: int, block_z: int, routes: Array) -> void:
 	_run_routes[Vector2i(block_x, block_z)] = routes
 	_run_dirty = true
 
+	if not routes.is_empty():
+		print("grass runs: block %d,%d came with %d routes" % [block_x, block_z, routes.size()])
+
 
 # Lays the trails within the run map round the player: each route stepped every half metre (a texel), the texels round each step full on its
-# middle and fading over 0.4 m past its half width. A few hundred metres of trail at most: a few thousand writes, twice a second at most.
+# middle and fading over RUN_FADE_M past its half width. A few hundred metres of trail at most: a few thousand writes, twice a second at most.
 func _rebuild_runs(player: Vector3) -> void:
 	var size: float = float(RUN_TEXELS) * RUN_TEXEL_M
 	var centre: Vector2 = _run_origin + Vector2(size, size) * 0.5
@@ -494,7 +499,9 @@ func _rebuild_runs(player: Vector3) -> void:
 	data.resize(RUN_TEXELS * RUN_TEXELS)
 	data.fill(0)
 	var here: Vector2i = Vector2i(int(floor(player.x / 256.0)), int(floor(player.z / 256.0)))
-	var window: Rect2 = Rect2(_run_origin, Vector2(size, size)).grow(1.0)
+	var window: Rect2 = Rect2(_run_origin, Vector2(size, size)).grow(2.0)
+	var drawn: int = 0
+	var texels: int = 0
 
 	for key in _run_routes.keys():
 		if absi(key.x - here.x) > 2 or absi(key.y - here.y) > 2:
@@ -503,6 +510,8 @@ func _rebuild_runs(player: Vector3) -> void:
 
 		for route in _run_routes[key]:
 			var half: float = float(RUN_WIDTH_M[clampi(int(route[0]), 0, RUN_WIDTH_M.size() - 1)]) * 0.5
+			var reach: int = int(ceil((half + RUN_FADE_M) / RUN_TEXEL_M))   # texels either side of each step that the matting can reach
+			drawn += 1
 			var pts: PackedVector2Array = route[1]
 
 			for i in range(1, pts.size()):
@@ -519,8 +528,8 @@ func _rebuild_runs(player: Vector3) -> void:
 					var tx: int = int(floor((p.x - _run_origin.x) / RUN_TEXEL_M))
 					var tz: int = int(floor((p.y - _run_origin.y) / RUN_TEXEL_M))
 
-					for dz in range(-1, 2):
-						for dx in range(-1, 2):
+					for dz in range(-reach, reach + 1):
+						for dx in range(-reach, reach + 1):
 							var x: int = tx + dx
 							var z: int = tz + dz
 
@@ -528,11 +537,20 @@ func _rebuild_runs(player: Vector3) -> void:
 								continue
 
 							var c: Vector2 = _run_origin + (Vector2(x, z) + Vector2(0.5, 0.5)) * RUN_TEXEL_M
-							var v: int = int(round(255.0 * (1.0 - smoothstep(half, half + 0.4, c.distance_to(p)))))
+							var v: int = int(round(255.0 * (1.0 - smoothstep(half, half + RUN_FADE_M, c.distance_to(p)))))
 							var at: int = x + z * RUN_TEXELS
 
 							if v > data[at]:
+								if data[at] == 0:
+									texels += 1
+
 								data[at] = v
+
+	var line: String = "grass runs: %d routes near, %d texels matted (%.0f m2)" % [drawn, texels, float(texels) * RUN_TEXEL_M * RUN_TEXEL_M]
+
+	if line != _run_logged:
+		_run_logged = line
+		print(line + " round %.0f,%.0f" % [player.x, player.z])   # a lane confirms the runs reach the grass
 
 	_run_image.set_data(RUN_TEXELS, RUN_TEXELS, false, Image.FORMAT_R8, data)
 	_run_texture.update(_run_image)
