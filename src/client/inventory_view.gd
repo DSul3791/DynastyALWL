@@ -4424,9 +4424,9 @@ func _make_smithy() -> Node3D:
 
 # The Improved smithy: Dave's model (21 Nov 2026), forge, bellows, anvil on a stump and a bench on a flagstone floor, 3 m wide ("sized so it
 # fits in 3/4 of the width of a foundation"). Its coals are painted in its emission texture, so this drops the shared coals and gives the
-# model its own copy of the material, whose glow BuildingLook.forge_state turns down to cold ash, up to red coals or to the flare. The flare's
-# tongues are shrunk to stand in its hearth. The brick forge stands in when the file is missing.
-const IMPROVED_SMITHY_TONGUES := 0.3   # the flames' size on this model (the shared ones are made for a hearth twice the size)
+# model its own copy of the material, whose glow BuildingLook.forge_state sets: cold ash, dim coals when idle, really bright while it works (no
+# flames: Dave 22 Nov 2026). The brick forge stands in when the file is missing.
+const IMPROVED_SMITHY_TONGUES := 0.3   # the (never shown) flame tongues' size on this model; the Flames node stays for the light and smoke hooks
 
 
 func _make_improved_smithy() -> Node3D:
@@ -4443,9 +4443,9 @@ func _make_improved_smithy() -> Node3D:
 # The Primitive smithy: Dave's model (21 Nov 2026), a clay and field-stone forge at the back, a flat-topped stone anvil in front of its mouth and
 # a rough bench beside it, on a patch of trodden ground, 3 m long front to back and 2.35 m wide (Dave: most things "fit neatly into 3/4 or half
 # of a foundation size"; 3/4 suits it: the anvil stone's top is then at working height, about 0.78 m). Its coals are painted cold, so it
-# keeps the shared coals for the red glow and the flare, shrunk to its mouth; the lit paint inside the mouth glows with them
-# (BuildingLook.forge_state). The basic forge with its stone anvil stands in when the file is missing. PROVISIONAL (PS-5, PS-6).
-const PRIMITIVE_SMITHY_FLAMES := 0.5   # the shared coals' and flames' size in its mouth (about half a metre across)
+# keeps the shared coals, shrunk to its mouth, dim when idle and really bright while it works (no flames: Dave 22 Nov 2026); the lit paint
+# inside the mouth glows with them (BuildingLook.forge_state). The basic forge with its stone anvil stands in when the file is missing. PROVISIONAL (PS-5, PS-6).
+const PRIMITIVE_SMITHY_FLAMES := 0.5   # the shared coals' size in its mouth (about half a metre across)
 
 
 func _make_primitive_smithy(state: int) -> Node3D:
