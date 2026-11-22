@@ -123,7 +123,7 @@ func _ready() -> void:
 	multiplayer.multiplayer_peer = peer
 	multiplayer.connected_to_server.connect(func():
 		NetSettings.apply(peer.get_peer(1))
-		_net.hello.rpc_id(1, "bot_" + _name, BuildStamp.stamped_build())
+		_net.hello.rpc_id(1, "loadbot_" + _name, BuildStamp.stamped_build())   # 8 to 64 characters (server_items _valid_key): "bot_b1" was refused, so no bot was ever a player
 		_net.my_look.rpc_id(1, "Bot " + _name, "", ""))   # protocol 151: players see a bot as a plain body with its name
 	multiplayer.server_disconnected.connect(func():
 		print("BOT %s: server left" % _name)
