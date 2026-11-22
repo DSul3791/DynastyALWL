@@ -3612,7 +3612,7 @@ static func drying_rack() -> Node3D:
 	return root
 
 
-# The Sawbuck, 1.4 x 0.8 (8 Planks, 16 Nails; TREE_WOOD_TOOLS_DESIGN.md W-4): two X-shaped leg frames joined by a rail, a log lying in the
+# The Sawbuck, 1.4 x 0.8 (8 Planks, 16 Wooden pins; TREE_WOOD_TOOLS_DESIGN.md W-4): two X-shaped leg frames joined by a rail, a log lying in the
 # crotches ready for the saw. PLACEHOLDER look until an art pass.
 static func sawbuck() -> Node3D:
 	_tier_materials()

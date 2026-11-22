@@ -97,6 +97,7 @@ var bodies: Array = []              # Dictionary per body, with "rect" (Rect2, w
 
 # Ore bodies with their resource id and xz bounds.
 var ores: Array = []                # Dictionary per ore body, with "rect" and "resource_id"
+var ore_names: Dictionary = {}      # resource name -> true for every body in ores: ore_at answers "" at once for ores the tile has none of
 
 # Caves: capsules (passages) and ellipsoids (chambers) with AABBs.
 var caves: Array = []               # Dictionary per cave: "aabb", "capsules", "chambers"
@@ -898,6 +899,7 @@ func _load_ores(list: Array, resource_ids: Dictionary, rock_ids: Dictionary) -> 
 				continue
 
 		ores.append(entry)
+		ore_names[str(ore["resource"])] = true
 
 
 # The ore a boulder at `pos` (on the ground) is an outcrop of, among the bodies whose resource is a key of `names` (boulders.json ore items), or ""
@@ -908,6 +910,18 @@ func _load_ores(list: Array, resource_ids: Dictionary, rock_ids: Dictionary) -> 
 # whose band comes within `depth_m` below the bedrock surface there (a coal seam shows where it nears the ground, not over the whole province).
 func ore_at(pos: Vector3, reach: float, names: Dictionary, depth_m: float) -> String:
 	if placeholder:
+		return ""
+
+	# None of the asked ores in this tile: no body can match, compact or layer, so the answer is "" without walking the bodies (Lane B 21 Nov
+	# 2026: the starter tile has no iron body, and every scatter cell's iron rock look walked all 81 of its bodies twice to find that out).
+	var asked: bool = false
+
+	for wanted in names:
+		if ore_names.has(wanted):
+			asked = true
+			break
+
+	if not asked:
 		return ""
 
 	var flat: Vector2 = Vector2(pos.x, pos.z)

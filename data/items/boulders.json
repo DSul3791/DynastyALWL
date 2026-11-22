@@ -140,6 +140,17 @@
 		"grade_min": 0.15,
 		"grade_max": 0.45
 	},
+	"iron_rocks": {
+		"note": "River iron stones (Dave 21 Nov 2026: \"there are reddish brown rocks everywhere normally so iron should be a common thing to find a long river bed as well\"; \"river iron rocks should be the same size as a rounded iron ingot and they are pickable so you gather them by hand\"; \"if there are any larger than that they need to be broken down like anormal rock with a pick bronze or better. 1 ingot sized iron rocks will be 50% of the stones out there, 30% of them should be double that size and 20% can be triple sized\"). Laid out by the shared ore_rocks rule like copper and tin, but commoner (chance on dry land, water_chance_coast and water_chance_mountain set here over the shared values), over an iron body too. sizes [[share, ores], ...] by the size draw (server_items._lay_out_ore_rocks): one ore is a loose Iron ore stone picked up by hand; two or three is a small rock of that volume (ingot_radius_m for one ore), all Iron ore (ore_only: that many Iron ore and no stone, and a tool that cannot take iron is refused, so it is not ground to stone), broken with a bronze or better pick (ore pick_only, needs_material). No mountain-foot boulder. outcrops_unchanged: the geology's iron outcrop boulders keep ore piece_share and their own size. Slots 24..30 of the cell. PROVISIONAL, docs/design/COPPER_ROCKS.md IR-1.",
+		"slot": 24,
+		"chance": 0.03,
+		"water_chance_coast": 0.4,
+		"water_chance_mountain": 0.9,
+		"sizes": [[0.5, 1], [0.3, 2], [0.2, 3]],
+		"ingot_radius_m": 0.07,
+		"foot": {},
+		"outcrops_unchanged": true
+	},
 	"flint": {
 		"note": "Flint (guide finding F-02, FLINT_ORE_SPEC.md): each stone that comes off a boulder is a flint nodule instead with this chance, more near water. Bank stones (drops.json ground_scatter.bank.flint) are flint with their own chance. Flint makes the hide scraper, javelin and sickle.",
 		"item": "flint",
