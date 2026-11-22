@@ -537,6 +537,209 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 						_box_rot(parts, Vector3(0.04, 0.03, 0.03), Vector3(cos(ba) * 0.17, 0.008, sin(ba) * 0.17), Vector3(0.0, -ba, 0.0), dark if k % 2 == 0 else color.darkened(0.15))
 				_:
 					_box(parts, Vector3(0.2, 0.06, 0.15), Vector3(0.0, 0.0, 0.0), color)
+		"tack":
+			# Horse tack, harness and cart parts lying on the ground (bits[0] names the piece; a tier bit colours any metal; the colour is the leather, rope, wood or cloth).
+			var tk: String = str(bits[0]) if bits.size() > 0 else "saddle"
+			var fitting: Color = tier_metal(bits, Color(0.36, 0.36, 0.38))
+			var strap: Color = Color(0.3, 0.18, 0.09)
+
+			match tk:
+				"halter":
+					# A rope halter: the crown loop and the noseband ring, with the lead rope lying out from under the chin.
+					_torus(parts, 0.1, 0.01, Vector3(0.0, 0.0, -0.04), color)
+					_torus(parts, 0.06, 0.01, Vector3(0.0, 0.0, 0.1), color.darkened(0.06))
+					_box_rot(parts, Vector3(0.02, 0.018, 0.32), Vector3(0.06, -0.004, 0.3), Vector3(0.0, 0.35, 0.0), color.darkened(0.1))
+					_sph(parts, 0.018, Vector3.ONE, Vector3(0.0, 0.004, 0.16), dark, true)
+				"bridle":
+					# A leather bridle: headstall and browband, cheek straps down to an iron bit with rings, and the reins lying in a long loop.
+					_torus(parts, 0.09, 0.008, Vector3(0.0, 0.0, -0.06), color)
+					_box(parts, Vector3(0.16, 0.014, 0.018), Vector3(0.0, 0.004, -0.11), dark)
+
+					for side in [-1.0, 1.0]:
+						_box(parts, Vector3(0.016, 0.012, 0.12), Vector3(side * 0.08, 0.0, 0.06), color)
+						_box(parts, Vector3(0.008, 0.01, 0.045), Vector3(side * 0.08, 0.0, 0.13), fitting)
+						_metal(parts, 0.5, 0.7)
+						_box_rot(parts, Vector3(0.014, 0.008, 0.3), Vector3(side * 0.05, -0.004, 0.28), Vector3(0.0, side * 0.2, 0.0), dark)
+
+					_cyl(parts, 0.006, 0.16, Vector3(0.0, 0.0, 0.13), Vector3(0.0, 0.0, PI * 0.5), fitting)
+					_metal(parts, 0.5, 0.7)
+					_box(parts, Vector3(0.05, 0.008, 0.014), Vector3(0.0, -0.004, 0.43), dark)
+				"saddle", "travellers_saddle", "war_saddle":
+					# A saddle on its wooden tree: a dished seat between a raised pommel and cantle, flaps down both sides, iron stirrups on their leathers and a girth.
+					# A traveller's saddle adds a rolled blanket behind the cantle and gear rings; a war saddle a tall cantle and pommel and iron plates on the bows.
+					var tall: float = 2.0 if tk == "war_saddle" else 1.0
+					_sph(parts, 0.15, Vector3(1.0, 0.3, 1.4), Vector3(0.0, 0.03, 0.0), color, true)
+					_sph(parts, 0.05, Vector3(1.1, 0.8 * tall, 0.7), Vector3(0.0, 0.07 + 0.02 * tall, -0.17), color.darkened(0.08), true)
+					_box_rot(parts, Vector3(0.2, 0.05 * tall, 0.03), Vector3(0.0, 0.07 + 0.02 * tall, 0.19), Vector3(-0.3, 0.0, 0.0), color.darkened(0.08))
+
+					for side in [-1.0, 1.0]:
+						_box_rot(parts, Vector3(0.12, 0.012, 0.26), Vector3(side * 0.17, -0.04, 0.0), Vector3(0.0, 0.0, side * 0.6), dark)
+						_box(parts, Vector3(0.014, 0.006, 0.12), Vector3(side * 0.26, -0.09, 0.0), strap)
+						_box(parts, Vector3(0.01, 0.006, 0.07), Vector3(side * 0.27, -0.155, 0.0), fitting)
+						_metal(parts, 0.5, 0.7)
+						_box_rot(parts, Vector3(0.006, 0.05, 0.008), Vector3(side * 0.27, -0.13, -0.032), Vector3(0.3, 0.0, 0.0), fitting)
+						_metal(parts, 0.5, 0.7)
+						_box_rot(parts, Vector3(0.006, 0.05, 0.008), Vector3(side * 0.27, -0.13, 0.032), Vector3(-0.3, 0.0, 0.0), fitting)
+						_metal(parts, 0.5, 0.7)
+
+					if tk == "travellers_saddle":
+						_cyl(parts, 0.04, 0.3, Vector3(0.0, 0.09, 0.27), Vector3(0.0, 0.0, PI * 0.5), Color(0.42, 0.34, 0.24))
+						_box(parts, Vector3(0.31, 0.012, 0.016), Vector3(0.0, 0.13, 0.27), strap)
+					elif tk == "war_saddle":
+						for z in [-0.17, 0.19]:
+							_box(parts, Vector3(0.12, 0.05, 0.012), Vector3(0.0, 0.12, z - 0.02), fitting)
+							_metal(parts, 0.5, 0.7)
+				"pack_saddle":
+					# A sawbuck pack saddle: two crossed wooden bucks joined by side boards, on a thick pad.
+					_box(parts, Vector3(0.34, 0.04, 0.4), Vector3(0.0, -0.04, 0.0), Color(0.5, 0.42, 0.3))
+
+					for z in [-0.15, 0.15]:
+						_box_rot(parts, Vector3(0.03, 0.2, 0.03), Vector3(0.04, 0.06, z), Vector3(0.0, 0.0, -0.45), color)
+						_box_rot(parts, Vector3(0.03, 0.2, 0.03), Vector3(-0.04, 0.06, z), Vector3(0.0, 0.0, 0.45), color)
+
+					for side in [-1.0, 1.0]:
+						_box_rot(parts, Vector3(0.012, 0.08, 0.42), Vector3(side * 0.12, 0.02, 0.0), Vector3(0.0, 0.0, side * 0.5), color.darkened(0.1))
+				"saddlebags":
+					# A matched pair of leather bags joined by a wide strap, each with a buckled flap.
+					_box(parts, Vector3(0.16, 0.014, 0.08), Vector3(0.0, 0.0, 0.0), dark)
+
+					for side in [-1.0, 1.0]:
+						_box(parts, Vector3(0.18, 0.08, 0.2), Vector3(side * 0.17, 0.0, 0.0), color)
+						_box(parts, Vector3(0.185, 0.012, 0.12), Vector3(side * 0.17, 0.045, -0.04), dark)
+						_box(parts, Vector3(0.024, 0.016, 0.018), Vector3(side * 0.17, 0.05, 0.03), Color.html("#b08d57").srgb_to_linear())
+						_metal(parts, 0.5, 0.7)
+				"panniers":
+					# Two woven side baskets slung from one carrying bar.
+					_box(parts, Vector3(0.5, 0.02, 0.03), Vector3(0.0, 0.08, 0.0), Color(0.4, 0.28, 0.14))
+
+					for side in [-1.0, 1.0]:
+						_cyl(parts, 0.1, 0.16, Vector3(side * 0.16, 0.0, 0.0), Vector3.ZERO, color)
+						_cyl(parts, 0.085, 0.15, Vector3(side * 0.16, 0.012, 0.0), Vector3.ZERO, dark)
+				"lashings":
+					# A coiled rope with a pair of buckled straps lying across it.
+					_torus(parts, 0.1, 0.014, Vector3(0.0, 0.0, 0.0), color)
+					_torus(parts, 0.075, 0.014, Vector3(0.0, 0.012, 0.0), color.darkened(0.08))
+
+					for side in [-1.0, 1.0]:
+						_box_rot(parts, Vector3(0.03, 0.01, 0.3), Vector3(side * 0.05, 0.03, 0.0), Vector3(0.0, side * 0.2, 0.0), strap)
+				"breastcollar", "collar", "double_harness":
+					# Draught harness: a breastcollar band (light) or a thick padded collar with iron hames (heavy), the traces lying out behind; a double harness is two
+					# breastcollars side by side on one pair of shared reins.
+					var bands: int = 2 if tk == "double_harness" else 1
+
+					for b in bands:
+						var bx: float = (float(b) - 0.5 * float(bands - 1)) * 0.3
+
+						if tk == "collar":
+							_torus(parts, 0.12, 0.035, Vector3(bx, 0.0, -0.08), color)
+							_box_rot(parts, Vector3(0.02, 0.02, 0.2), Vector3(bx + 0.13, 0.03, -0.08), Vector3(0.0, 0.0, 0.0), fitting)
+							_metal(parts, 0.5, 0.7)
+							_box_rot(parts, Vector3(0.02, 0.02, 0.2), Vector3(bx - 0.13, 0.03, -0.08), Vector3(0.0, 0.0, 0.0), fitting)
+							_metal(parts, 0.5, 0.7)
+						else:
+							_box_rot(parts, Vector3(0.2, 0.014, 0.05), Vector3(bx, 0.0, -0.12), Vector3(0.0, 0.0, 0.0), color)
+							_box(parts, Vector3(0.016, 0.012, 0.1), Vector3(bx, 0.0, -0.2), color.darkened(0.08))
+
+						for side in [-1.0, 1.0]:
+							_box(parts, Vector3(0.018, 0.01, 0.4), Vector3(bx + side * 0.09, -0.004, 0.14), dark)
+
+					if tk == "double_harness":
+						_box(parts, Vector3(0.012, 0.008, 0.46), Vector3(0.0, 0.006, 0.1), strap)
+				"ox_yoke":
+					# A wooden double ox yoke: a carved beam with two neck bows of bent wood under it and an iron ring in the middle for the pole.
+					_box(parts, Vector3(0.9, 0.07, 0.08), Vector3(0.0, 0.04, 0.0), color)
+
+					for x in [-0.25, 0.25]:
+						_torus_v(parts, 0.09, 0.012, Vector3(x, -0.02, 0.0), color.darkened(0.15))
+
+					_torus_v(parts, 0.03, 0.007, Vector3(0.0, 0.0, 0.05), fitting)
+					_metal(parts, 0.5, 0.7)
+				"horseshoes":
+					# A set of four iron horseshoes, each a U of five short bars with nail holes, lying in a rough stack.
+					for h in 4:
+						var at: Vector3 = Vector3((float(h % 2) - 0.5) * 0.13, 0.004 * float(h), (floorf(float(h) * 0.5) - 0.5) * 0.13)
+
+						for k in 5:
+							var ha: float = PI * (-0.15 + 1.3 * float(k) / 4.0)
+							_box_rot(parts, Vector3(0.018, 0.01, 0.04), at + Vector3(cos(ha) * 0.045, 0.0, -sin(ha) * 0.05), Vector3(0.0, ha, 0.0), color)
+							_metal(parts, 0.55, 0.7)
+				"blanket":
+					# A padded blanket folded on the ground: quilted panels with stitch lines and a darker border.
+					_box(parts, Vector3(0.42, 0.04, 0.3), Vector3(0.0, 0.0, 0.0), color)
+					_box(parts, Vector3(0.44, 0.03, 0.025), Vector3(0.0, 0.004, 0.15), dark)
+					_box(parts, Vector3(0.44, 0.03, 0.025), Vector3(0.0, 0.004, -0.15), dark)
+
+					for k in 3:
+						_box(parts, Vector3(0.006, 0.042, 0.28), Vector3(-0.1 + 0.1 * float(k), 0.001, 0.0), color.darkened(0.15))
+				"feedbag":
+					# A canvas nosebag: a round bag, a leather bottom and the head strap in a loop over the top.
+					_cyl(parts, 0.09, 0.18, Vector3(0.0, 0.0, 0.0), Vector3.ZERO, color)
+					_cyl(parts, 0.092, 0.03, Vector3(0.0, -0.075, 0.0), Vector3.ZERO, strap)
+					_torus_v(parts, 0.1, 0.008, Vector3(0.0, 0.1, 0.0), strap)
+				"grooming":
+					# A grooming kit laid out together: a stiff brush with its bristles, an oval curry comb and a hooked iron hoof pick.
+					_box(parts, Vector3(0.16, 0.025, 0.06), Vector3(-0.04, 0.012, -0.06), color)
+					_box(parts, Vector3(0.15, 0.025, 0.05), Vector3(-0.04, -0.012, -0.06), Color(0.2, 0.16, 0.12))
+					_sph(parts, 0.06, Vector3(1.2, 0.3, 0.9), Vector3(0.05, 0.0, 0.06), color.darkened(0.1), true)
+					_cyl(parts, 0.006, 0.12, Vector3(-0.06, 0.0, 0.07), Vector3(0.0, 0.0, PI * 0.5), color)
+					_box_rot(parts, Vector3(0.03, 0.008, 0.006), Vector3(0.005, 0.0, 0.075), Vector3(0.0, 0.0, 0.6), fitting)
+					_metal(parts, 0.5, 0.7)
+				"barding":
+					# Horse armour laid out: the body piece, a neck piece and the face plate (chanfron); padded is quilted cloth, mail and plate take their tier's colour,
+					# plate in overlapping lames.
+					var armour: Color = tier_metal(bits, color) if has_tier(bits) else color
+					_box(parts, Vector3(0.44, 0.03, 0.32), Vector3(0.0, 0.0, 0.04), armour)
+
+					if has_tier(bits):
+						_metal(parts, 0.45 if bits.has("steel") else 0.6, 0.75)
+
+					_box_rot(parts, Vector3(0.14, 0.03, 0.2), Vector3(0.0, 0.006, -0.2), Vector3(0.0, 0.0, 0.0), armour.darkened(0.08))
+
+					if has_tier(bits):
+						_metal(parts, 0.45 if bits.has("steel") else 0.6, 0.75)
+
+					_box(parts, Vector3(0.07, 0.03, 0.18), Vector3(0.28, 0.01, -0.12), tier_metal(bits, color.darkened(0.15)))
+
+					if has_tier(bits):
+						_metal(parts, 0.45 if bits.has("steel") else 0.6, 0.75)
+
+					for k in 4:
+						_box(parts, Vector3(0.445, 0.034, 0.008), Vector3(0.0, 0.001, -0.08 + 0.08 * float(k)), armour.darkened(0.25))
+				"wheel":
+					# A spoked wooden cart wheel lying flat: the felloe rim, eight spokes and a round hub with its iron hub band.
+					_torus(parts, 0.21, 0.025, Vector3(0.0, 0.0, 0.0), color)
+
+					for k in 8:
+						var sa: float = TAU * float(k) / 8.0
+						_box_rot(parts, Vector3(0.16, 0.022, 0.02), Vector3(cos(sa) * 0.11, 0.0, sin(sa) * 0.11), Vector3(0.0, -sa, 0.0), color.darkened(0.06))
+
+					_cyl(parts, 0.045, 0.08, Vector3(0.0, 0.0, 0.0), Vector3.ZERO, color.darkened(0.12))
+					_cyl(parts, 0.047, 0.016, Vector3(0.0, 0.03, 0.0), Vector3.ZERO, fitting)
+					_metal(parts, 0.55, 0.7)
+				"board_wheel":
+					# A reinforced wagon wheel lying flat: a solid disc of hardwood boards with dark joints, an iron tyre, cross battens and an iron hub.
+					_cyl(parts, 0.22, 0.05, Vector3(0.0, 0.0, 0.0), Vector3.ZERO, color)
+
+					for k in 2:
+						_box(parts, Vector3(0.006, 0.052, 0.42), Vector3(-0.07 + 0.14 * float(k), 0.0, 0.0), color.darkened(0.3))
+
+					_box(parts, Vector3(0.36, 0.06, 0.04), Vector3(0.0, 0.004, 0.0), color.darkened(0.1))
+					_torus(parts, 0.225, 0.016, Vector3(0.0, 0.0, 0.0), fitting)
+					_metal(parts, 0.55, 0.7)
+					_cyl(parts, 0.05, 0.09, Vector3(0.0, 0.01, 0.0), Vector3.ZERO, fitting)
+					_metal(parts, 0.55, 0.7)
+				"axle":
+					# A wooden axle beam, square in the middle and round at the arms, with iron arm bands and a linchpin through each end.
+					_box(parts, Vector3(0.5, 0.06, 0.06), Vector3(0.0, 0.0, 0.0), color)
+
+					for side in [-1.0, 1.0]:
+						_cyl(parts, 0.025, 0.18, Vector3(side * 0.34, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), color.darkened(0.06))
+						_cyl(parts, 0.028, 0.02, Vector3(side * 0.26, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), fitting)
+						_metal(parts, 0.55, 0.7)
+						_box(parts, Vector3(0.008, 0.07, 0.008), Vector3(side * 0.41, 0.0, 0.0), fitting)
+						_metal(parts, 0.55, 0.7)
+				_:
+					_box(parts, Vector3(0.3, 0.08, 0.3), Vector3(0.0, 0.0, 0.0), color)
 		"backpack":
 			# A hide rucksack: tall rounded body, a flap over the top with a buckle, two side pockets, two shoulder straps, a bedroll on top.
 			_sph(parts, 0.12, Vector3(1.0, 1.25, 0.7), Vector3(0.0, 0.0, 0.0), color)
@@ -1077,7 +1280,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 						for b in 4:
 							_sph(parts, 0.009, Vector3(1.0, 0.6, 1.0), Vector3(0.016, 0.02, -0.08 + float(b) * 0.07), dark.darkened(0.3), true)
 				"apron":
-					# A bib and a wide skirt panel, neck strap and waist ties; leather ones (dark brown) get a tool pocket.
+					# A bib and a wide skirt panel, neck strap and waist ties, and a front pocket.
 					_box(parts, Vector3(0.13, 0.026, 0.11), Vector3(0.0, 0.0, -0.13), color)
 					_box(parts, Vector3(0.22, 0.026, 0.22), Vector3(0.0, 0.0, 0.03), color.darkened(0.04))
 					_box_rot(parts, Vector3(0.012, 0.02, 0.09), Vector3(0.05, 0.0, -0.22), Vector3(0.0, 0.4, 0.0), dark)
@@ -1090,7 +1293,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					_box(parts, Vector3(0.17, 0.026, 0.5), Vector3(0.0, 0.0, 0.03), color)
 					_box(parts, Vector3(0.18, 0.03, 0.02), Vector3(0.0, 0.002, 0.27), dark)
 					_sph(parts, 0.035, Vector3(1.0, 0.3, 0.8), Vector3(0.0, 0.012, -0.12), dark.darkened(0.3), true)
-					var charge: Color = Color.html("#c8a040").srgb_to_linear()
+					var charge: Color = Color.html("#c8a040")
 					_box(parts, Vector3(0.03, 0.03, 0.18), Vector3(0.0, 0.003, 0.08), charge)
 					_box(parts, Vector3(0.12, 0.03, 0.03), Vector3(0.0, 0.003, 0.05), charge)
 				"headwrap":
