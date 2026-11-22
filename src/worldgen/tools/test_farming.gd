@@ -223,7 +223,7 @@ func _route_checks(bed: int, crops: Dictionary) -> void:
 	season[0] = off_season
 	notes.clear()
 	sow(bed, "flax_seeds")
-	check(not items._crops.has(key) and count("flax_seeds") == flax_seeds and notes.has("Not the season for flax."), "flax is refused in %s (sow_seasons %s): seed kept, the server's text says why and what to do (%s)" % [off_season, str(flax_seasons), str(notes)])
+	check(not items._crops.has(key) and count("flax_seeds") == flax_seeds and notes.any(func(n): return str(n).begins_with("Not the season for flax: sow it in spring")), "flax is refused in %s (sow_seasons %s): seed kept, the server's text says why and what to do (%s)" % [off_season, str(flax_seasons), str(notes)])
 	season[0] = in_season
 	items.report_position(1, Vector3(40.0, 10.0, 40.0))
 	sow(bed, "flax_seeds")
@@ -285,7 +285,7 @@ func _route_checks(bed: int, crops: Dictionary) -> void:
 	act(Net.ACT_HARVEST, bed)
 	check(count("flax") == after and not items._crops.has(key), "a second harvest of the same bed gives nothing")
 
-	# Flax and the four grains in every season: sown exactly in their sow_seasons (data/items/crops.json, GOALS-REPAIR A-4: no season data change).
+	# Flax and the four grains in every season: sown exactly in their sow_seasons (data/items/crops.json; A-4 kept the grains out of summer; winter wheat sows in autumn, coordinator 22 Nov 2026).
 	var sowable: int = 0
 
 	for crop in ["flax", "wheat", "barley", "oats", "rye"]:
@@ -313,6 +313,8 @@ func _route_checks(bed: int, crops: Dictionary) -> void:
 		check(not shown.is_empty() and shown.size() == seasons.size(), "%s sows in exactly its seasons %s (sown in %s)" % [crop, str(seasons), str(shown)])
 
 	check(sowable >= 5, "every one of flax and the four grains can be sown in some season (%d season slots)" % sowable)
+	var summer_crops: Array = crops.keys().filter(func(c): return crops[c] is Dictionary and crops[c].has("grow_days") and (crops[c].get("sow_seasons", [crops[c].get("sow_season", "spring")]) as Array).has("summer") and ["carrot", "turnip", "cabbage", "peas", "beet", "radish", "lettuce"].has(c))
+	check(summer_crops.size() == 7, "a new world starts in summer: the quick vegetables can be sown then (%s)" % str(summer_crops))   # coordinator 22 Nov 2026: crops really sown in summer may be
 	season[0] = "spring"
 
 
@@ -763,10 +765,10 @@ func _init() -> void:
 	items._last_dig.clear()
 	check(items.till(1, items.inventory_of(1), Vector3(1.3, 10.0, 1.3), HeldTool.slot_of(items, "hoe")) == 0 and items._items.keys().filter(func(k): return items._items[k].has("struct") and str(items._items[k]["struct"]["kind"]) == "tilled_bed").size() == 1, "the same metre is not tilled twice")
 
-	# Sow: wheat is a spring crop.
+	# Sow: wheat sows in spring and autumn (winter wheat), not in summer.
 	var bed: int = bed_id()
 	give("wheat_seeds", 3)
-	season[0] = "autumn"
+	season[0] = "summer"
 	check(not sow(bed, "wheat_seeds") and count("wheat_seeds") == 3, "wheat is refused out of season and the seed is kept")
 	season[0] = "spring"
 	check(sow(bed, "wheat_seeds") and count("wheat_seeds") == 2, "in spring the sowing works and uses one seed")
@@ -816,7 +818,7 @@ func _init() -> void:
 	days(1)
 	check(not items._crops.has(key), "a seedling does not survive winter frost")
 	give("turnip_seeds", 2)
-	check(not sow(bed, "turnip_seeds"), "turnip cannot be sown in winter (its seasons are spring and autumn)")
+	check(not sow(bed, "turnip_seeds"), "turnip cannot be sown in winter (its seasons are spring, summer and autumn)")
 	season[0] = "autumn"
 	check(sow(bed, "turnip_seeds"), "turnip can be sown in autumn (sow_seasons list)")
 	season[0] = "winter"

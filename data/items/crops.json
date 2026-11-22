@@ -1,5 +1,5 @@
 {
-	"_about": "PROPOSAL (Sal, 2026-10-31). Read by nothing yet; the crop table for the farming code (FARMING_SPEC.md). 12 crops. grow_days = game days sowing to ripe, water_per_day = buckets per bed per game day (0 if rain-fed), seed_source = the wild plant that gives seeds so a player starts from forage, store = how it keeps (drying, salting, root cellar). Agronomy numbers (days to maturity, soil, storage) are general growing knowledge for temperate crops, approximate and not individually sourced; a game day is one real hour so real months are scaled down by the code owner. Items for all 12 crops and their seeds exist (332 to 337 and 374 to 385); the wild-seed drops, the cellar and the drying rack do not. 2026-10-31 audit against Tyler's farming rules: the server compares `sow_season` to the current season as ONE string (turnip is hard-coded as always sowable), and a new world starts on day 100, early summer, so spring-only crops could not be sown for 265 real hours. `sow_season` is now the single season the code accepts (summer for nearly all crops except wheat and barley, which stay spring because test_farming sows them in spring: a summer-start player grows oats and the vegetables first; so a new player can plant on day 1; rye autumn; turnip spring but exempt) and `sow_seasons` keeps the realistic list (wheat spring and summer, rye autumn, turnip spring and autumn...) for when the code accepts a list. 2026-10-31 pace rebalance (moderator): grow_days are game days = real hours. Fast 4 to 6 h (radish 4, lettuce 5, turnip 5, peas 6), mid 8 to 16 h (beet 8, carrot 10, oats 12, cabbage 14, onion 16), slow 20 to 30 h (barley 20, flax 22, potato 24, rye 28, wheat 30). A game year is 365 real hours, a season about 91, so a crop sown in its season ripens inside it or the next. Water need (water_per_day x grow_days wet days) is unchanged in proportion: wheat 9 wet days of 30, radish 2 of 4.",
+	"_about": "PROPOSAL (Sal, 2026-10-31). Read by nothing yet; the crop table for the farming code (FARMING_SPEC.md). 12 crops. grow_days = game days sowing to ripe, water_per_day = buckets per bed per game day (0 if rain-fed), seed_source = the wild plant that gives seeds so a player starts from forage, store = how it keeps (drying, salting, root cellar). Agronomy numbers (days to maturity, soil, storage) are general growing knowledge for temperate crops, approximate and not individually sourced; a game day is one real hour so real months are scaled down by the code owner. Items for all 12 crops and their seeds exist (332 to 337 and 374 to 385); the wild-seed drops, the cellar and the drying rack do not. 2026-10-31 audit against Tyler's farming rules: the server compares `sow_season` to the current season as ONE string (turnip is hard-coded as always sowable), and a new world starts on day 100, early summer, so spring-only crops could not be sown for 265 real hours. `sow_season` is now the single season the code accepts (summer for nearly all crops except wheat and barley, which stay spring because test_farming sows them in spring: a summer-start player grows oats and the vegetables first; so a new player can plant on day 1; rye autumn; turnip spring but exempt) and `sow_seasons` keeps the realistic list (wheat spring and summer, rye autumn, turnip spring and autumn...) for when the code accepts a list. 2026-11-22: the code reads `sow_seasons` (a list, falling back to `sow_season`); summer is added for the crops really sown then that ripen before frost (carrot, turnip, cabbage, peas, beet, with radish and lettuce), and autumn for winter wheat (coordinator decision for the play-test: a new world starts in summer). 2026-10-31 pace rebalance (moderator): grow_days are game days = real hours. Fast 4 to 6 h (radish 4, lettuce 5, turnip 5, peas 6), mid 8 to 16 h (beet 8, carrot 10, oats 12, cabbage 14, onion 16), slow 20 to 30 h (barley 20, flax 22, potato 24, rye 28, wheat 30). A game year is 365 real hours, a season about 91, so a crop sown in its season ripens inside it or the next. Water need (water_per_day x grow_days wet days) is unchanged in proportion: wheat 9 wet days of 30, radish 2 of 4.",
 	"worm": {"note": "Dave 14 Nov 2026: gardens naturally produce worms, \"whenever you pick a crop that's ready maybe you get a chance of getting a worm like let's say a 20% chance\" (100 corn stalks give about 20). Each ripe garden crop harvested rolls once (server_items.harvest). The Worm is the existing item, already fishing bait (fishing.json bait).", "item": "worm", "chance": 0.2},
 	"moisture": {"note": "Plot moisture (buildables plan B5, Morgan 10 Nov 2026; Sonny's water rules section 8; garden moisture, Dave 19 Nov 2026, docs/design/GARDEN_MOISTURE.md): every tilled bed and garden plot holds 0 to 100 percent of a soil store of store_mm over its area (a 1 m bed: 25 mm = 25 L; a 2 x 2 plot: 100 L). Heavy rain (rain_heavy) fills it; lighter rain (rain_any) adds rain_gain_pct_per_day x rain; water poured or piped in adds its litres over the store; dry weather takes the weather's evaporation, cool_mm a day at cool_c up to hot_mm at hot_c (less below freezing, x (1 + wind_x x wind)), times the structure's moisture_factor (framed beds hold water). A new bed starts at start_pct. A crop's day is wet when its bed holds wet_min_pct or more; a dry day grows it dry_growth of a day. The look-at line calls the soil wet from wet_pct, damp from wet_min_pct, else dry. src/shared/plot_water.gd.", "store_mm": 25.0, "cool_c": 5.0, "cool_mm": 1.25, "hot_c": 25.0, "hot_mm": 4.0, "wind_x": 0.3, "rain_heavy": 0.5, "rain_any": 0.05, "rain_gain_pct_per_day": 600.0, "rain_gain_note": "PROVISIONAL (garden moisture GM-1, Dave 19 Nov 2026: rain should water it pretty good): was 200; an hour of moderate rain (0.3) adds 7.5 percent, six hours 45.", "pour_ml": 8000, "pour_ml_note": "PROVISIONAL (GOALS-REPAIR A-3), retuned GM-2 19 Nov 2026: one pour from filled containers is up to pour_ml (8000 mL, a bucket), never more than the soil has room for, and adds its litres over the bed's store (a 1 m bed: 32 percent a bucket); no daily limit. Precedent: items.json bucket capacity_ml 8000. Not approved by Dave.", "start_pct": 50.0, "wet_min_pct": 25.0, "wet_pct": 70.0, "dry_growth": 0.5, "dry_growth_note": "PROVISIONAL (GM-3): a day that ends with the bed below wet_min_pct grows its crop half a day."},
 	"storage_chain": {
@@ -41,7 +41,8 @@
 			"tool_to_harvest": "sickle",
 			"store": "dry in the sheaf, grain keeps 12 months in a dry store",
 			"sow_seasons": [
-				"spring"
+				"spring",
+				"autumn"
 			]
 		},
 		"barley": {
@@ -179,7 +180,8 @@
 			"tool_to_harvest": "hand",
 			"store": "root cellar: keeps 4 to 5 months cool and dark",
 			"sow_seasons": [
-				"spring"
+				"spring",
+				"summer"
 			]
 		},
 		"potato": {
@@ -244,6 +246,7 @@
 			"store": "root cellar: keeps 4 months",
 			"sow_seasons": [
 				"spring",
+				"summer",
 				"autumn"
 			]
 		},
@@ -276,7 +279,8 @@
 			"tool_to_harvest": "knife",
 			"store": "cellar 3 to 4 months, or salted into a ferment (needs sea salt)",
 			"sow_seasons": [
-				"spring"
+				"spring",
+				"summer"
 			]
 		},
 		"onion": {
@@ -338,7 +342,8 @@
 			"tool_to_harvest": "hand",
 			"store": "dry the pods: keeps 12 months; fresh only a few days",
 			"sow_seasons": [
-				"spring"
+				"spring",
+				"summer"
 			]
 		},
 		"beet": {
@@ -369,7 +374,8 @@
 			"tool_to_harvest": "hand",
 			"store": "root cellar: keeps 4 months",
 			"sow_seasons": [
-				"spring"
+				"spring",
+				"summer"
 			]
 		},
 		"flax": {

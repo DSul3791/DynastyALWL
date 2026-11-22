@@ -20781,7 +20781,11 @@ func _sow_refusal(key: String, seed_id: String) -> String:
 
 func _season_refusal(seed_id: String) -> String:
 	var crop_id: String = FarmRules.crop_of_seed(_crop_table(), seed_id)
-	return "Not the season for %s." % table.in_sentence(str((_crop_table().get(crop_id, {}) as Dictionary).get("name", crop_id)))
+	var def: Dictionary = _crop_table().get(crop_id, {})
+	var seasons: Array = def.get("sow_seasons", [def.get("sow_season", "spring")])
+	var names: PackedStringArray = PackedStringArray(seasons.map(func(x): return str(x)))
+	var when: String = names[0] if names.size() == 1 else ", ".join(names.slice(0, names.size() - 1)) + " or " + names[names.size() - 1]
+	return "Not the season for %s: sow it in %s (it is %s now)." % [table.in_sentence(str(def.get("name", crop_id))), when, _season()]   # names when it can go in, so a summer start knows to wait or sow another
 
 
 # The crop record of a seed just sown (the seed already taken).
