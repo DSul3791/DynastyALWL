@@ -395,6 +395,26 @@ func _take_locked() -> Array:
 	return [keys, urgent]
 
 
+# Main thread, after the block line was lost: every block a loader still waits for that was handed to the line goes back in the urgent
+# queue, so the next take_requests() asks for it over the game connection. Returns how many. A late answer from the old line, or two
+# answers, are harmless: the first fills the loader, a second is kept as a spare copy.
+func ask_again_waiting() -> int:
+	_mutex.lock()
+	var again: PackedInt32Array = PackedInt32Array()
+
+	for key in _waiting:
+		if not _unsent.has(key) and not _answers.has(key):
+			_unsent[key] = true
+			again.append_array(PackedInt32Array([key.x, key.y, key.z, key.w]))
+
+	@warning_ignore("integer_division")
+	var count: int = again.size() / 4
+	again.append_array(_outbox)
+	_outbox = again
+	_mutex.unlock()
+	return count
+
+
 # Requests the block line could not send go back in the queues for the game connection.
 func _put_back(taken: Array) -> void:
 	var keys: PackedInt32Array = taken[0]

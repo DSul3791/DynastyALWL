@@ -25,6 +25,7 @@ var _inbox: PackedByteArray = PackedByteArray()
 var _peer_id: int = 0
 var _state: int = 0                      # 0 connecting, 1 ready, 2 off
 var _started_msec: int = 0
+var _lost_line: bool = false             # the line closed after it was up: what it was asked for may never come (take_lost_line)
 
 
 # Main thread: starts connecting (port 0: the server has no block port).
@@ -50,6 +51,17 @@ func close() -> void:
 	_mutex.unlock()
 
 
+# Main thread: true once after the line closed while it was up. The requests it carried that were not answered are lost with it (the
+# server forgets a dropped line's queue), so the caller asks for them again over the game connection (cold first join, 22 Nov 2026:
+# 505 blocks waited for the 30 s ground retry). close() on purpose is not a loss.
+func take_lost_line() -> bool:
+	_mutex.lock()
+	var lost: bool = _lost_line
+	_lost_line = false
+	_mutex.unlock()
+	return lost
+
+
 # Sends a request; false when the line is not up (the caller uses ENet instead).
 func send_request(keys: PackedInt32Array, urgent: int) -> bool:
 	if keys.is_empty():
@@ -70,6 +82,7 @@ func send_request(keys: PackedInt32Array, urgent: int) -> bool:
 
 	if _state == 1 and not sent:
 		_state = 2
+		_lost_line = true
 		print("Terrain client: the block line closed; blocks come over the game connection")
 
 	_mutex.unlock()
@@ -103,6 +116,7 @@ func pump() -> void:
 			print("Terrain client: no block line; blocks come over the game connection")
 	elif status != StreamPeerTCP.STATUS_CONNECTED:
 		_state = 2
+		_lost_line = true
 		print("Terrain client: the block line closed; blocks come over the game connection")
 	else:
 		var available: int = _tcp.get_available_bytes()
