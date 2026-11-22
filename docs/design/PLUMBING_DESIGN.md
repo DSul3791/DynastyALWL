@@ -173,8 +173,10 @@ past it; a click on the next connection point lays the whole run, taking the pip
 - **Copper - Drip head** (1 Copper ingot, Primitive smithy; Dave 19 Nov 2026 20:09Z): fitted on a pipe's end or joint the same way. While its pipes
   bring it any water it irrigates the soil in a circle of 10 m radius round it: every tilled bed and garden plot there is kept fully watered.
   It draws 2 L/min while water reaches it (PV-5).
-- **Barrels hold water** (PV-6): 60 L (Dave 21 Nov 2026), as well as their 8 slots of goods, but never both at once: a barrel with goods in it takes no water and Superseded 22 Nov 2026 (Dave): the Barrel is now the Water barrel, 3 slots that take only water containers and fill them from its water (fill_lpm 30), a drink with E; goods go in the new Storage barrel (12 slots). A barrel saved with goods loads as a Storage barrel.
-  one holding water takes no goods ("It holds water."). Out in the open (not under a roof or tree) a barrel catches rain: 1 L a real minute in
+- **Barrels hold water** (PV-6): 60 L (Dave 21 Nov 2026), as well as their 8 slots of goods, but never both at once: a barrel with goods in it takes no water and
+  one holding water takes no goods ("It holds water."). (Superseded 22 Nov 2026 by Dave: the Barrel is now the Water barrel, 3 slots that take
+  only water containers and fill them from its water (fill_lpm 30), a drink with E; goods go in the new Storage barrel (12 slots). A barrel saved
+  with goods loads as a Storage barrel.) Out in the open (not under a roof or tree) a barrel catches rain: 1 L a real minute in
   full rain (its 0.25 m2 top at about 10 mm a game hour), less in lighter rain. A pipe end or open tap over its rim pours in. E at a barrel holding
   water drinks or fills the container in hand; one with no water opens as before.
 - **Linked barrels level out** (PV-7): barrels whose bottom points are joined by pipe (copper or wooden, any number of runs and junctions) share
