@@ -414,6 +414,38 @@ func away_checks() -> void:
 
 	check(birds == 0, "a Bird trap does not fish while away")
 
+	# A fox earth near (stage 2b, TR-10): now and then the catch is a fox, at away_fox_share of the rabbit chance.
+	var earth_near: Array = [true]
+	items.fox_near = func(_x, _z, _m): return earth_near[0]
+	traps._note_run(items._items[id])
+	check(bool(st.get("fox", false)), "a snare on a run near a fox earth notes the fox")
+	var foxes: int = 0
+	var took: int = 0
+
+	for n in 1200:
+		reset(items, id)
+		st["away_at"] = clock[0] - 6.0 * 3600.0
+
+		if traps.check_away(id):
+			took += 1
+			foxes += 1 if str(items._items[int(st["catch"])]["struct"]["species"]) == "fox" else 0
+
+	var share: float = float(traps.cfg["away_fox_share"])
+	var want: float = share / (1.0 + share)
+	check(took > 150 and absf(float(foxes) / float(took) - want) < 0.08, "about %.0f%% of those catches are a fox (%d of %d)" % [want * 100.0, foxes, took])
+	earth_near[0] = false
+	traps._note_run(items._items[id])
+	foxes = 0
+
+	for n in 300:
+		reset(items, id)
+		st["away_at"] = clock[0] - 3.0 * 3600.0
+
+		if traps.check_away(id):
+			foxes += 1 if str(items._items[int(st["catch"])]["struct"]["species"]) == "fox" else 0
+
+	check(not bool(st.get("fox", false)) and foxes == 0, "with no earth near, never a fox")
+
 	# Somebody near: the live look works and nothing builds up for later.
 	reset(items, id)
 	st["away_at"] = clock[0] - 50.0 * 3600.0

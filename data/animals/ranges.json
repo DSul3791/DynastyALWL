@@ -56,6 +56,20 @@
 		"apart_m": [100.0, 230.0],
 		"kind": 1
 	},
+	"fox": {
+		"note": "TR-9 (stage 2b): a red fox rests by day in an earth dug in a bank and hunts at night, about 4.5 km over about 18 ha, its route only loosely tied to the night before, so it keeps no trail of its own (wildlifeonline, Oxford radio-tracking). An earth in about chance of the trail blocks (times the fox biome weight), on the side ground nearest earth_best slope (a bank where there is one) within reach_m of at least visits[0] of the block's warrens. Each night it walks one of its rounds: from the earth by way of visits warrens, nearest first, a different round from the night before.",
+		"species": "fox",
+		"tag": "f",
+		"salt": 900,
+		"chance": 0.5,
+		"tries": 8,
+		"inset_m": 24.0,
+		"earth_best": 0.25,
+		"earth_slope_max": 0.6,
+		"reach_m": 200.0,
+		"visits": [2, 4],
+		"rounds": 3
+	},
 	"route": {
 		"note": "TR-3: a point every step_m, each tried a side_m or two either side of the last one's line and the one with the gentlest climb kept (lines of least resistance round hills and banks), drifting at most max_side_m off the straight line and back by the end; side_w a metre keeps it from wandering for nothing; deep water is refused. Then a small sideways wiggle every wiggle_step_m so the trail is not ruler straight.",
 		"step_m": 12.0,
@@ -68,11 +82,12 @@
 	},
 	"clock": {
 		"note": "TR-4: the hour an animal leaves for its out spot (out_hour) and comes back home (home_hour), each animal a fixed share of jitter_h either side (from its id) so they do not all go at once. Rabbits: out from late afternoon to early morning, home after dawn (NSW DPI, Agriculture Victoria). Deer: to the feeding ground at dusk, back to bed after the dawn feed (onX, Mississippi State, theHunter's whitetail zones).",
-		"note_sun": "TR-7 (stage 2a, D-TRAP-3): with the sun known, out is sunset + out_after_sunset_h and home is sunrise + home_after_sunrise_h (rabbits out an hour before sunset and home an hour after sunrise: NSW DPI; deer, moose and elk out half an hour before sunset, back half an hour after sunrise: onX, Delisle et al. 2024). At the equinox (sunrise 6, sunset 18) that is close to the fixed hours, which stay for a server without a sun.",
+		"note_sun": "TR-7 (stage 2a, D-TRAP-3): with the sun known, out is sunset + out_after_sunset_h and home is sunrise + home_after_sunrise_h (rabbits out an hour before sunset and home an hour after sunrise: NSW DPI; deer, moose and elk out half an hour before sunset, back half an hour after sunrise: onX, Delisle et al. 2024). At the equinox (sunrise 6, sunset 18) that is close to the fixed hours, which stay for a server without a sun. Foxes (stage 2b): out half an hour after sunset, home a quarter hour before sunrise (wildlifeonline: first long activity about 30 min after sunset, ending about 15 min before dawn).",
 		"rabbit": {"out_hour": 18.0, "home_hour": 8.0, "out_after_sunset_h": -1.0, "home_after_sunrise_h": 1.0, "jitter_h": 0.75},
 		"deer": {"out_hour": 18.0, "home_hour": 7.5, "out_after_sunset_h": -0.5, "home_after_sunrise_h": 0.5, "jitter_h": 0.75},
 		"moose": {"out_hour": 18.0, "home_hour": 7.5, "out_after_sunset_h": -0.5, "home_after_sunrise_h": 0.5, "jitter_h": 0.75},
 		"elk": {"out_hour": 18.0, "home_hour": 7.5, "out_after_sunset_h": -0.5, "home_after_sunrise_h": 0.5, "jitter_h": 0.75},
+		"fox": {"out_hour": 18.5, "home_hour": 5.75, "out_after_sunset_h": 0.5, "home_after_sunrise_h": -0.25, "jitter_h": 0.5},
 		"near_m": 10.0
 	}
 }

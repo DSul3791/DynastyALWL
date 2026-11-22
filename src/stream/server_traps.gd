@@ -300,6 +300,9 @@ func _note_run(it: Dictionary) -> void:
 	if not is_inf(d):   # INF: the ground round it is not worked out yet, keep what was noted
 		it["struct"]["run"] = _share(d)
 
+		if host.fox_near.is_valid():   # a fox earth near enough that its rounds pass the runs here (TR-10)
+			it["struct"]["fox"] = bool(host.fox_near.call(it["pos"].x, it["pos"].z, float(_of_item(it).get("away_fox_m", 0.0))))
+
 
 # A snare with nobody near (Dave 22 Nov 2026, D-TRAP-1: set at dusk, checked at dawn): once a game hour has gone by since its last
 # look it rolls for the hours since, with no animal simulated or taken. Only a snare on a rabbit run fishes this way (within run_none_m
@@ -342,20 +345,30 @@ func check_away(id: int) -> bool:
 
 	var worn: float = float(host.trail_strength.call(it["pos"].x, it["pos"].z)) if host.trail_strength.is_valid() else 0.0
 	var p: float = per_hour * trail_factor(maxf(on_run, worn), c)
-	p *= float(host.species_active.call(sp)) if host.species_active.is_valid() else 1.0
+	var p_fox: float = 0.0
 
+	if bool(st.get("fox", false)):   # a fox hunting along the runs near its earth (stage 2b, TR-10): a fifth of the rabbit rate at full activity
+		p_fox = p * float(c.get("away_fox_share", 0.0)) * (float(host.species_active.call("fox")) if host.species_active.is_valid() else 1.0)
+
+	p *= float(host.species_active.call(sp)) if host.species_active.is_valid() else 1.0
+	var mult: float = 1.0
 	var bait: int = _bait_id(it["pos"], c)
 
 	if bait >= 0:
-		p *= float(c.get("bait_mult", 2.0))
+		mult *= float(c.get("bait_mult", 2.0))
 
 	if host.rain_now.is_valid() and float(host.rain_now.call()) >= float(c.get("storm_rain", 0.6)):
-		p *= float(c.get("storm_mult", 1.0))
+		mult *= float(c.get("storm_mult", 1.0))
 
-	var over: float = 1.0 - pow(1.0 - clampf(p, 0.0, 1.0), float(mini(hours, int(c.get("away_max_hours", 12)))))
+	p *= mult
+	p_fox *= mult
+	var over: float = 1.0 - pow(1.0 - clampf(p + p_fox, 0.0, 1.0), float(mini(hours, int(c.get("away_max_hours", 12)))))
 
 	if not host.fate(_owner_peer(st), "snare", over):
 		return false
+
+	if p_fox > 0.0 and host.fate(_owner_peer(st), "snare", p_fox / (p + p_fox)):   # which animal it was, in proportion to their chances (the bigger catch, so luck helps)
+		sp = "fox"
 
 	if bait >= 0:
 		var food: Dictionary = host._items.get(bait, {})

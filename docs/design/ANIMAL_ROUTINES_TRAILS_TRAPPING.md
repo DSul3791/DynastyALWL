@@ -7,7 +7,7 @@ certain times or based on the sun and traveling and certain times and eating and
 design an idea around it then build your system around the idea." He loves the way grass mats down where he walks.
 
 Coordinator rulings D-TRAP-1 (goal, away catches with limits, protocol 149), D-TRAP-2 (night activity) and D-TRAP-3 (players'
-worn paths shown to all at half the animal rate on a cheap grid, fading over about a game week, its cost measured; the sun clock for animals only) are recorded in
+worn paths shown to all at half the animal rate on a cheap grid, fading over about a game week (provisional, to tune), its cost measured; the sun clock for animals only) are recorded in
 the coordinator log. Status: PROVISIONAL design by the trails thread under Dave's 21 Nov rule (questions go to the coordinator, answered from research,
 recorded). Values marked TR-n are provisional and live in data files.
 
@@ -94,7 +94,16 @@ moose's feeding ground by water when it can be, on a deer trail (kind 1; a wider
 player paths, choke points, signs) is folded in here as each part lands. Sources for 2a: Delisle et al. 2024, Sci. Rep.
 (deer activity in windows 2 h either side of sunrise and sunset); scienceinsights.org on moose (feeding peaks at dawn and dusk, water in heat).
 
-**Stage 2 (rest)**: fox rounds (2b); boar routines once the research is verified; signs along trails (tracks, droppings: `tracking.gd`); players' own
+**Stage 2b (built)**: fox rounds (TR-9). A fox earth in some trail blocks, on side ground near the warrens; it keeps no trail
+of its own (not drawn, not sent, not a run for a snare), and each night the fox walks one of its rounds by way of 2 to 4 warrens, a
+different one from the night before (picked by the night, turning at noon, so midnight does not start a second round), out half an hour after sunset and home a quarter hour before sunrise. Once the ground round a
+player is worked out, foxes are made only at earths (as rabbits at warrens), so foxes live where the rabbits are. A snare on a run
+near an earth may take a fox while nobody is near (TR-10). The server's "ranges: block ... worked out" line now gives the jobs' own
+time and the slowest job in ms (a fox earth is one job per round, so no job lays more than a few legs), so a lane can tell ranges work from other ground waits. Sources: wildlifeonline.me.uk on red fox
+activity and ranging (Oxford radio-tracking: about 4.5 km a night over about 18 ha; first long activity about 30 min after sunset,
+ending about 15 min before dawn).
+
+**Stage 2c (next)**: boar routines once the research is verified; signs along trails (tracks, droppings: `tracking.gd`); players' own
 paths wearing the same way; a choke point (a log over the run) doubles a snare's chance.
 
 **Stage 3 (larger game)**: a deadfall for fox, raccoon, mink and the like; heavier snares (wire, from the smithy) on deer trails,
@@ -119,6 +128,11 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
 - TR-6 snares: full factor within 0.5 m of a run, falling to the old factor at 2 m; away catches 0.045 a game hour at full rabbit
   activity: a snare squarely on a run takes about two rabbits in five nights, about one a game day in two (Wildwood's 3 in 15 the
   first night); six snares on runs feed one player well. Off a run, none while away.
+- TR-9 fox (salt 900): an earth in half the blocks (times the fox biome weight), 8 tries, the spot nearest slope 0.25 (at most
+  0.6, dry), with at least 2 warrens within 200 m; 3 rounds of 2-4 warrens each. Clock: out sunset + 0.5 h, home sunrise - 0.25 h,
+  jitter 0.5 h.
+- TR-10 away fox: a snare on a run within 300 m of an earth may take a fox at 0.2 of the rabbit rate times the fox's activity, so
+  about one catch in six there is a fox (which animal it was goes through the owner's luck, the fox being the bigger catch).
 
 ## Not done / risks
 

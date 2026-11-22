@@ -80,7 +80,20 @@ func tick(players: Array, now_ms: int) -> void:
 
 		while not (rec["jobs"] as Array).is_empty() and now_ms >= int(rec["retry_ms"]) and Time.get_ticks_usec() - started < budget:
 			var job: Array = rec["jobs"][0]
-			var place: Variant = _warren(job[1], job[2]) if job[0] == "w" else _deer_range(key, str(job[1]) if job.size() > 1 else "deer")
+			var job_us: int = Time.get_ticks_usec()
+			var place: Variant = null
+
+			match str(job[0]):
+				"w":
+					place = _warren(job[1], job[2])
+				"f":
+					place = _fox_earth(key, rec, int(job[1]))
+				_:
+					place = _deer_range(key, str(job[1]) if job.size() > 1 else "deer")
+
+			var spent: int = Time.get_ticks_usec() - job_us
+			rec["job_us"] = int(rec.get("job_us", 0)) + spent
+			rec["job_max_us"] = maxi(int(rec.get("job_max_us", 0)), spent)
 
 			if place == null:
 				rec["retry_ms"] = now_ms + 5000   # the ground there is not known yet: try again shortly
@@ -114,7 +127,8 @@ func _log_ready(key: Vector2i, rec: Dictionary) -> void:
 		routes += (place["routes"] as Array).size()
 		homes.append("%s %s %.0f,%.0f%s" % [str(place["id"]), str(place["sp"]), place["home"].x, place["home"].y, " settled" if settled(place) else ""])
 
-	print("ranges: block %d,%d worked out (%d ground waits): %d places, %d routes: %s" % [key.x, key.y, int(rec.get("waits", 0)), (rec["places"] as Array).size(), routes, ", ".join(homes)])
+	print("ranges: block %d,%d worked out (%d ground waits, jobs %.1f ms, slowest %.1f ms): %d places, %d routes: %s" % [key.x, key.y, int(rec.get("waits", 0)),
+		float(rec.get("job_us", 0)) / 1000.0, float(rec.get("job_max_us", 0)) / 1000.0, (rec["places"] as Array).size(), routes, ", ".join(homes)])
 
 
 # Whether the ground under a block and the margin its routes may reach (runs, drift, the water detour) is loaded.
@@ -151,6 +165,10 @@ func _jobs_for(key: Vector2i) -> Array:
 	for name in cfg.get("ranges", ["deer"]):
 		if cfg.has(str(name)):
 			jobs.append(["d", str(name)])   # a bed and feeding ground of each kind of deer (deer, moose, elk) that lives in the block
+
+	if cfg.has("fox"):
+		for n in maxi(int((cfg["fox"] as Dictionary).get("rounds", 3)), 1):
+			jobs.append(["f", n])   # last: a fox earth goes by the block's warrens, worked out by then; one round a job (each lays several legs)
 
 	return jobs
 
@@ -307,6 +325,142 @@ func _deer_range(key: Vector2i, name: String = "deer") -> Variant:
 		return {}
 
 	return {"id": "%s:%d,%d" % [str(dc.get("tag", "d")), key.x, key.y], "sp": sp, "kind": int(dc.get("kind", 1)), "home": bed, "outs": [feed], "routes": [route]}
+
+
+# The fox earth of a trail block (stage 2b, TR-9): {} for none, null when the ground is not known yet. A fox dens in a bank where there
+# is one (the spot nearest earth_best slope), within reach_m of at least visits[0] of the block's warrens; it keeps no trail of its own. Its routes are its rounds:
+# from the earth by way of 2 to 4 of those warrens, nearest first, so it hunts along the rabbits' ground. It walks a different round each
+# night (server_animals routine_trip), as a real fox's route is only loosely tied to the night before (Oxford radio-tracking). Rounds
+# are never drawn as trails nor count as runs for snares ("drawn": false).
+# Where a block's fox earth is (job "f" 0): the spot nearest earth_best slope with enough warrens in reach, {} for none, null while the
+# ground is not known.
+func _fox_spot(key: Vector2i, places: Array) -> Variant:
+	var fc: Dictionary = cfg["fox"]
+	var size: float = float(cfg.get("block_m", 256.0))
+	var inset: float = float(fc.get("inset_m", 24.0))
+	var sp: String = str(fc.get("species", "fox"))
+	var salt: int = int(fc.get("salt", 900))
+	var warrens: Array = []
+
+	for place in places:
+		if str(place["sp"]) == str((cfg.get("warren", {}) as Dictionary).get("species", "rabbit")):
+			warrens.append(place["home"])
+
+	var span: Array = fc.get("visits", [2, 4])
+
+	if warrens.size() < int(span[0]):
+		return {}
+
+	var middle: Vector2 = (Vector2(key) + Vector2(0.5, 0.5)) * size
+
+	if h01(key.x, key.y, salt + 200) >= float(fc.get("chance", 0.5)) * _weight(sp, middle.x, middle.y):
+		return {}   # an earth in about chance of the blocks where foxes live (a fox's nightly range is about 18 ha, a block 6.5 ha)
+
+	var reach: float = float(fc.get("reach_m", 200.0))
+	var best: Vector2 = Vector2.INF
+	var best_score: float = INF
+	var best_near: Array = []
+
+	for k in int(fc.get("tries", 8)):
+		var at: Vector2 = Vector2((float(key.x) * size) + inset + (size - 2.0 * inset) * h01(key.x, key.y, salt + k), (float(key.y) * size) + inset + (size - 2.0 * inset) * h01(key.x, key.y, salt + 100 + k))
+		var slope: float = slope_at(at.x, at.y)
+
+		if is_nan(slope):
+			return null
+
+		if slope > float(fc.get("earth_slope_max", 0.6)) or _wet(at.x, at.y) or _h(at.x, at.y) <= 0.0 or _weight(sp, at.x, at.y) <= 0.0:
+			continue
+
+		var near: Array = []
+
+		for w in warrens:
+			if (w as Vector2).distance_to(at) <= reach:
+				near.append(w)
+
+		var score: float = absf(slope - float(fc.get("earth_best", 0.25)))   # dug into a bank where there is one, else where it can
+
+		if near.size() >= int(span[0]) and score < best_score:
+			best = at
+			best_score = score
+			best_near = near
+
+	if best == Vector2.INF:
+		return {}
+
+	return {"home": best, "near": best_near, "routes": [], "outs": []}
+
+
+# One round of a block's fox earth (job "f" n): job 0 finds the earth first. The place goes in with the last round; null while the ground is not known.
+func _fox_earth(key: Vector2i, rec: Dictionary, n: int) -> Variant:
+	var fc: Dictionary = cfg["fox"]
+	var salt: int = int(fc.get("salt", 900))
+	var span: Array = fc.get("visits", [2, 4])
+
+	if n == 0:
+		var spot: Variant = _fox_spot(key, rec["places"])
+
+		if spot == null:
+			return null
+
+		rec["fox"] = spot
+
+	var earth: Dictionary = rec.get("fox", {})
+
+	if earth.is_empty():
+		return {}
+
+	var best: Vector2 = earth["home"]
+	var best_near: Array = earth["near"]
+	var rounds: Array = earth["routes"]
+	var ends: Array = earth["outs"]
+
+	var want: int = mini(int(span[0]) + int(floor(h01(key.x, key.y, salt + 300 + n) * float(int(span[1]) - int(span[0]) + 1))), best_near.size())
+	var pool: Array = best_near.duplicate()
+	var start: int = int(floor(h01(key.x, key.y, salt + 400 + n) * float(pool.size())))
+	var stops: Array = [pool[start]]
+	pool.remove_at(start)
+
+	while stops.size() < want:   # on to the nearest warren not yet visited
+		var last: Vector2 = stops[stops.size() - 1]
+		var pick: int = 0
+
+		for i in pool.size():
+			if last.distance_squared_to(pool[i]) < last.distance_squared_to(pool[pick]):
+				pick = i
+
+		stops.append(pool[pick])
+		pool.remove_at(pick)
+
+	var trip: PackedVector2Array = PackedVector2Array([best])
+	var leg_from: Vector2 = best
+
+	for i in stops.size():
+		var leg: Variant = lay_route(leg_from, stops[i], key.x * 613 + key.y * 389 + salt + n * 7 + i)
+
+		if leg == null:
+			return null
+
+		var pts: PackedVector2Array = leg
+
+		if pts.is_empty():
+			continue   # no way round water to that warren: the round skips it
+
+		trip.append_array(pts.slice(1))
+		leg_from = stops[i]
+
+	if trip.size() > 1:
+		rounds.append(trip)
+		ends.append(trip[trip.size() - 1])
+
+	if n < maxi(int(fc.get("rounds", 3)), 1) - 1:
+		return {}   # more rounds to come
+
+	rec.erase("fox")
+
+	if rounds.is_empty():
+		return {}   # no round could be laid
+
+	return {"id": "%s:%d,%d" % [str(fc.get("tag", "f")), key.x, key.y], "sp": str(fc.get("species", "fox")), "kind": -1, "drawn": false, "home": best, "outs": ends, "routes": rounds}
 
 
 # Deep water within m of a spot, in eight directions at half and full distance (a moose feeds at the water's edge).
@@ -498,8 +652,8 @@ func wire(key: Vector2i, now_ms: int) -> PackedByteArray:
 	var routes: Array = []
 
 	for place in blocks[key]["places"]:
-		if settled(place):
-			continue
+		if settled(place) or not bool(place.get("drawn", true)):
+			continue   # settled ground, or a fox's rounds (no trail of its own)
 
 		for route in place["routes"]:
 			routes.append([int(place["kind"]), route])
@@ -539,8 +693,8 @@ func route_distance(x: float, z: float, kind: int = -1, reach: float = 10.0) -> 
 				continue
 
 			for place in blocks[key]["places"]:
-				if kind >= 0 and int(place["kind"]) != kind:
-					continue
+				if (kind >= 0 and int(place["kind"]) != kind) or not bool(place.get("drawn", true)):
+					continue   # another kind, or a fox's rounds (not a worn trail)
 
 				var boxes: Array = _boxes(place)
 				var near: Array = []
@@ -559,6 +713,27 @@ func route_distance(x: float, z: float, kind: int = -1, reach: float = 10.0) -> 
 						best = minf(best, p.distance_to(Geometry2D.get_closest_point_to_segment(p, pts[i - 1], pts[i])))
 
 	return best
+
+
+# Whether a fox earth lies within m of a point, in worked-out blocks (a snare there may take a fox while nobody is near, TR-10).
+func fox_near(x: float, z: float, m: float) -> bool:
+	var size: float = float(cfg.get("block_m", 256.0))
+	var span: int = int(ceil(m / size))
+	var centre: Vector2i = block_of(x, z)
+	var sp: String = str((cfg.get("fox", {}) as Dictionary).get("species", "fox"))
+
+	for dz in range(-span, span + 1):
+		for dx in range(-span, span + 1):
+			var key: Vector2i = centre + Vector2i(dx, dz)
+
+			if not is_ready(key):
+				continue
+
+			for place in blocks[key]["places"]:
+				if str(place["sp"]) == sp and (place["home"] as Vector2).distance_to(Vector2(x, z)) <= m and not settled(place):
+					return true
+
+	return false
 
 
 # The bounding box of each of a place's routes, worked out once and kept on the place.
