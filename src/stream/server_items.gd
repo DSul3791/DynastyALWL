@@ -15021,6 +15021,9 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 		_sync_vitals(peer, true)
 		return "dead" if kill(peer, cause) else "hurt"
 
+	if not _forced_sleep(peer):
+		_end_sleep(peer)   # any blow wakes a sleeper, the maiming one too (it used to return first, leaving them asleep under the next bite)
+
 	if not lethal and float(v["health"]) <= floor_hp:
 		v["health"] = minf(before, floor_hp)
 		_say(peer, "The wolves have crippled you. Get away while you can." if cause == "wolves" else "You are badly hurt. Get away while you can.")
@@ -15028,9 +15031,6 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 		_sync_limp(peer, false)
 		_sync_vitals(peer, true)
 		return "maimed"
-
-	if not _forced_sleep(peer):
-		_end_sleep(peer)
 
 	_sync_vitals(peer, false)
 	return "hurt"
