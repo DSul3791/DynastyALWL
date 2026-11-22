@@ -163,13 +163,12 @@ func build_world(dir: String) -> Dictionary:
 	a.action(1, Net.ACT_WEAR, a.inventory_of(1).numbers.find(a.table.number_of("grass_cloak")), 0, 0, Vector3.ZERO)
 	a.place_piece(1, "workbench_kit", Vector3(-4.0, 10.0, 0.0))
 	a.place_piece(1, "tool_rack_kit", Vector3(-4.0, 10.0, 2.5))
-	# Seven deaths of one character leave only per_owner_cap sets of remains (the oldest go first).
+	# Seven deaths of one character with nothing on them leave only per_owner_cap sets of remains (the oldest empty ones go first; remains that hold anything are never removed).
 	a.peer_connected_hello(3, "drillkey00003")
 	a.report_position(3, Vector3(60.0, 10.0, 60.0))
 
 	for n in 7:
 		a.report_position(3, Vector3(60.0 + 3.0 * float(n), 10.0, 60.0))
-		a.action(3, Net.ACT_ADMIN_GIVE, fibre, 0, 1, Vector3.ZERO)
 		a.kill(3, "drill")
 	a.vitals_of(1)["sick"] = 5000.0
 	a._characters[KEY]["strength"] = 3

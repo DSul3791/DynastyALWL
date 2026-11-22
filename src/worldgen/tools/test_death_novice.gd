@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Novice grace (death.json novice_grace; Dave 31 Oct 2026): 'always' = everyone respawns (the default, the build as it was); 'level' = respawn only below the character level, then
-# real death (send_final_death is called, the character is marked); 'never' = real death at once. The character level is the best skill value (or the skill total).
+# real death (the character is marked; send_final_death only when death.json real_death is on, test_real_death); 'never' = real death at once. The character level is the best skill value (or the skill total).
 #   godot --headless --path . --script res://src/worldgen/tools/test_death_novice.gd
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -55,7 +55,7 @@ func _init() -> void:
 	var level: int = items.character_level(1)
 	check(level >= 5 and not items.novice_grace(1), "after a lot of practice (%s: level %d) the grace is over" % [skill, level])
 	died.clear()
-	check(items.kill(1, "drowning") and finals.size() == 1 and finals[0][1] == "drowning", "so a death calls send_final_death")
+	check(items.kill(1, "drowning") and finals.is_empty(), "with real death off (the shipped data) a death past the grace sends no final death: its screen would delete a living character")
 	check(items.remains_ids().size() == 2, "the remains are left either way")
 	check(bool(items._characters["novice0000001"].get("final_death_pending", false)) and died.size() == 1, "the character is marked final_death_pending; until the new-character flow exists the client still gets the respawn")
 
