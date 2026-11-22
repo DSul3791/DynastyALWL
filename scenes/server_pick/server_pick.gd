@@ -14,6 +14,7 @@ const BuildStamp := preload("res://src/shared/build_stamp.gd")
 const Store := preload("res://src/client/character/character_store.gd")
 const Style := preload("res://src/client/character/page_style.gd")
 const NetScript := preload("res://src/stream/terrain_net.gd")
+const ProblemReport := preload("res://src/client/problem_report.gd")
 
 const SELECT_SCENE := "res://scenes/character_select/character_select.tscn"
 const TITLE_SCENE := "res://scenes/title/title.tscn"
@@ -36,6 +37,7 @@ var go_on: bool = true               # tests turn it off: join_selected chooses 
 var _list: VBoxContainer
 var _official_box: VBoxContainer
 var _yours_label: Label
+var _hint: Label                     # the line under the list (a saved report's path shows here)
 var _join_button: Button
 var _remove_button: Button
 var _rename_button: Button
@@ -214,6 +216,22 @@ func join_selected() -> bool:
 		get_tree().change_scene_to_file(SELECT_SCENE)
 
 	return true
+
+
+# Report a problem (problem_report.gd): a tester who cannot join saves a report file (build, the server picked, the end of the log) and its
+# folder opens, to send to Dave. The bug form (GitHub account) is on the Esc menu in game, and in the report's folder note below.
+func report_problem() -> String:
+	var path: String = ProblemReport.write("(made on the server pick page; say what went wrong when you send it)", "server pick page, selected %s" % selected)
+
+	_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+
+	if path == "":
+		_hint.text = "The report could not be saved."
+		return ""
+
+	_hint.text = "Report saved: %s. Send this file to Dave, or attach it to the bug form at %s" % [path, ProblemReport.FORM_URL.get_slice("?", 0)]
+	ProblemReport.open_folder()
+	return path
 
 
 # ---- drawing ----
@@ -433,6 +451,7 @@ func _build_ui() -> void:
 	_list.add_theme_constant_override("separation", 10)
 	scroll.add_child(_list)
 	var hint: Label = Label.new()
+	_hint = hint
 	hint.text = "Double-click a server to join it. Servers that do not answer stay on the list, in red."
 	hint.add_theme_color_override("font_color", SUB)
 	hint.add_theme_font_size_override("font_size", 17)
@@ -452,6 +471,7 @@ func _build_ui() -> void:
 	bottom.add_child(_remove_button)
 	_rename_button = _button("Rename", Style.NEUTRAL, _open_rename, 150)
 	bottom.add_child(_rename_button)
+	bottom.add_child(_button("Report a problem", Style.NEUTRAL, report_problem, 220))
 	var gap: Control = Control.new()
 	gap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	bottom.add_child(gap)

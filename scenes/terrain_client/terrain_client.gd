@@ -4857,7 +4857,9 @@ func _input(event: InputEvent) -> void:
 		return
 
 	if event is InputEventKey and event.pressed and not event.echo:
-		crash_report.event("key %s" % OS.get_keycode_string(event.keycode))
+		# Keys typed into a text box (a server or chest password, a chat or report note) are never written down: reports are sent to others.
+		var focus: Control = get_viewport().gui_get_focus_owner()
+		crash_report.event("key (typing in a text box)" if focus is LineEdit or focus is TextEdit else "key %s" % OS.get_keycode_string(event.keycode))
 	elif event is InputEventMouseButton and event.pressed:
 		crash_report.event("mouse button %d at %d,%d" % [event.button_index, int(event.position.x), int(event.position.y)])
 
@@ -7126,7 +7128,7 @@ func _process(delta: float) -> void:
 	hud.text += "\n" + _ground_health_line()
 
 	if crash_report != null and crash_report.last_report != "" and Time.get_ticks_msec() < _previous_run_note_until_msec:
-		hud.text += "\nLast run did not close cleanly. %s\nReport: %s" % [crash_report.last_plain if crash_report.last_plain != "" else "The game quit for a bad reason.", crash_report.last_report]
+		hud.text += "\nLast run did not close cleanly. %s\nReport: %s (Esc > Settings > Report a problem puts it in a file to send)" % [crash_report.last_plain if crash_report.last_plain != "" else "The game quit for a bad reason.", crash_report.last_report]
 
 	if debug_hud.enabled:
 		hud.text += "\n" + _debug_text(avg_ms, worst_ms)
