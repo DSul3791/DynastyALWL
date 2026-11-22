@@ -5200,6 +5200,66 @@
 			],
 			"obtainable_now": true
 		},
+		"gold_nugget": {
+			"name": "Gold nugget",
+			"kind": "material",
+			"description": "A small, heavy lump of native gold. Worth a great deal to a trader.",
+			"how_to_get": [
+				"Found in a pocket of gravel or a quartz vein while digging below an ore source, then broken out with a pick or the Stone Hammer"
+			],
+			"used_for": [
+				"Sold to traders"
+			],
+			"obtainable_now": true
+		},
+		"silver_ore": {
+			"name": "Silver ore",
+			"kind": "material",
+			"description": "A dull grey lump with bright metallic streaks. Traders pay well for it.",
+			"how_to_get": [
+				"Found in a pocket while digging near a copper source, then broken out with a pick or the Stone Hammer"
+			],
+			"used_for": [
+				"Sold to traders"
+			],
+			"obtainable_now": true
+		},
+		"amethyst": {
+			"name": "Amethyst",
+			"kind": "material",
+			"description": "A cluster of violet quartz crystals from a hollow in the rock.",
+			"how_to_get": [
+				"Found in a crystal hollow while digging near an ore source inland, then broken out with a pick or the Stone Hammer"
+			],
+			"used_for": [
+				"Sold to traders"
+			],
+			"obtainable_now": true
+		},
+		"garnet": {
+			"name": "Garnet",
+			"kind": "material",
+			"description": "A deep red crystal grown in hard mountain rock.",
+			"how_to_get": [
+				"Found in a pocket of hard rock while digging near an ore source high in the mountains, then broken out with a pick or the Stone Hammer"
+			],
+			"used_for": [
+				"Sold to traders"
+			],
+			"obtainable_now": true
+		},
+		"agate": {
+			"name": "Agate",
+			"kind": "material",
+			"description": "A rounded stone that shows fine coloured bands when broken.",
+			"how_to_get": [
+				"Found in a hollow while digging near an ore source, then broken out with a pick or the Stone Hammer"
+			],
+			"used_for": [
+				"Sold to traders"
+			],
+			"obtainable_now": true
+		},
 		"bog_iron_ore": {
 			"name": "Bog iron ore",
 			"kind": "material",
@@ -6806,7 +6866,8 @@
 				"Picked from mango"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"oranges": {
 			"name": "Oranges",
@@ -6816,7 +6877,8 @@
 				"Picked from orange"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"lemons": {
 			"name": "Lemons",
@@ -6826,7 +6888,8 @@
 				"Picked from lemon"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"dried_apples": {
 			"name": "Dried apples",
@@ -11392,7 +11455,8 @@
 			"used_for": [
 				"Planted with the hoe (Garden) to grow a mango"
 			],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"orange_seed": {
 			"name": "Orange seed",
@@ -11404,7 +11468,8 @@
 			"used_for": [
 				"Planted with the hoe (Garden) to grow an orange"
 			],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"lemon_seed": {
 			"name": "Lemon seed",
@@ -11416,7 +11481,8 @@
 			"used_for": [
 				"Planted with the hoe (Garden) to grow a lemon"
 			],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"wild_apple_sweet_seed": {
 			"name": "Wild apple seed",

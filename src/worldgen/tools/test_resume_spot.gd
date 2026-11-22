@@ -68,6 +68,7 @@ func _init() -> void:
 	items.report_position(1, SPOT)
 	items.peer_left(1)
 	check(str(items._characters[KEY]["last"].get("left", "")) == "disconnect", "leaving without logout is a disconnect")
+	check(items._event_save, "a disconnect brings the save forward (D-TODO-2)")
 	items._characters[KEY]["last"]["t"] = int(Time.get_unix_time_from_system()) - 86400
 	items = restart(items, dir)
 	near(start_of(items, 2), SPOT, "a disconnect a day ago resumes at the spot after a restart (no 2-minute grace)")
@@ -88,6 +89,7 @@ func _init() -> void:
 	check(on_disk is Dictionary and str(on_disk["players"][KEY]["last"]["left"]) == "deliberate" and absf(float(on_disk["players"][KEY]["last"]["pos"][0]) - quit_at.x) < 0.01, "Quit game writes the spot to disk at once, before the line closes")
 	items.peer_left(3)
 	check(str(items._characters[KEY]["last"].get("left", "")) == "deliberate", "Quit game is a deliberate logout")
+	check(not items._event_save, "a deliberate logout saved at once: leaving asks for no second save")
 	items = restart(items, dir)
 	near(start_of(items, 4), quit_at, "a deliberate quit resumes where they quit after a restart")
 

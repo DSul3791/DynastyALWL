@@ -144,6 +144,7 @@ func _init() -> void:
 	menus()
 	benches()
 	print("test_wood_phase4: %d failures" % failures)
+	items._finish_writer()   # a craft's save may still be writing (D-TODO-2 event saves): the script must outlive it
 	quit(1 if failures > 0 else 0)
 
 

@@ -144,6 +144,7 @@ var _frame_start_msec: int = 0
 var build_label: String = ""             # --shot-build=: the commit the numbers belong to (printed in the frametime line)
 var piece_views: bool = false     # --shot-piece-views: the first named piece gets the four item views (front, side, top, diag) at 3 to 6 m instead of the row pictures
 var _piece_built: bool = false
+var _pieces_regrounded: bool = false
 var piece_names: PackedStringArray = PackedStringArray()    # --shot-pieces=wall_section,chest: one building piece of each in a row with name tags (structures.json keys)
 var pieces_yaw_deg: float = 0.0    # --shot-pieces-yaw=N: the whole row turned N degrees
 var piece_extra: Dictionary = {}   # --shot-piece-extra=forge:2,lit:1: the pieces drawn as placed with these row extras (a smithy's coals or flare, a lit kiln), not as the cold ghost
@@ -768,6 +769,9 @@ func _process(delta: float) -> void:
 	if (_flora_t != 0 and now - _flora_t < 6000) or (_pieces_t != 0 and now - _pieces_t < 4000):
 		return
 
+	if _pieces_t != 0 and not _pieces_regrounded:
+		_reground_pieces()
+
 	if piece_views and not _piece_built:
 		_build_piece_views()
 		return
@@ -1289,6 +1293,7 @@ func _show_pieces(now: int) -> void:
 		tag.no_depth_test = true
 		tag.position = Vector3(x, g + maxf(height, 0.4) + 0.5, z)
 		client.add_child(tag)
+		model.set_meta("piece_tag", tag)
 		print("shot runner: piece %s %s state %d look %s size %.2f x %.2f x %.2f at %s" % [models[n][0], "FAIL empty" if box.size == Vector3.ZERO else "ok", int(models[n][1]["state"]), str(models[n][1].get("look", "")), box.size.x, box.size.y, box.size.z, str(model.global_position)])
 		x += float(widths[n]) * 0.5 + 1.0
 		subject_y = g
@@ -1296,6 +1301,55 @@ func _show_pieces(now: int) -> void:
 	_subject = Vector3(p.x, subject_y, z)
 	_subject_set = true
 	_pieces_t = now
+
+
+# After the 4 s piece wait: each piece is stood again on the physics ground. When _show_pieces ran, the collider under a piece may not have been built yet, and
+# then the voxel raycast placed it; that reading is a whole cell, so on 22 Nov the idle Primitive smithy (stone_forge forge:1) stood about 0.9 m into the
+# ground and read as two broken fragments. A piece with still no collider under it keeps its first height and says so.
+func _reground_pieces() -> void:
+	_pieces_regrounded = true
+	var last: Node3D = null
+
+	for child in client.get_children():
+		if not (child is Node3D and child.has_meta("piece_name")):
+			continue
+
+		var model: Node3D = child
+		last = model
+		var at: Vector3 = model.global_position
+		# A forge or smithy carries its own box collider (inventory_view._forge_glb), so the ray skips the piece's own bodies as well as the player's.
+		var skip: Array = [client.body.get_rid()]
+
+		for body in model.find_children("*", "CollisionObject3D", true, false):
+			skip.append((body as CollisionObject3D).get_rid())
+
+		var from: Vector3 = Vector3(at.x, maxf(client.body.global_position.y, at.y) + 5.0, at.z)
+		var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - Vector3(0.0, 205.0, 0.0))
+		query.exclude = skip
+		var hit: Dictionary = client.body.get_world_3d().direct_space_state.intersect_ray(query)
+		var phys: float = float(hit["position"].y) if not hit.is_empty() else NAN
+
+		if is_nan(phys):
+			print("shot runner: piece %s reground: no collider under it, height %.2f kept (voxel reading)" % [str(model.get_meta("piece_name")), at.y])
+			continue
+
+		var shift: float = phys - at.y
+
+		if absf(shift) < 0.05:
+			print("shot runner: piece %s reground: already on the collision ground (%+.2f m)" % [str(model.get_meta("piece_name")), shift])
+			continue
+
+		model.global_position = Vector3(at.x, phys, at.z)
+		var tag: Label3D = model.get_meta("piece_tag", null) as Label3D
+
+		if tag != null:
+			tag.global_position += Vector3(0.0, shift, 0.0)
+
+		print("shot runner: piece %s reground %+.2f m to the collision ground, now at %s" % [str(model.get_meta("piece_name")), shift, str(model.global_position)])
+
+	# The row views look at the last piece's height, as _show_pieces set it.
+	if last != null and _subject_set:
+		_subject.y = last.global_position.y
 
 
 # --shot-piece-views: after _show_pieces, the first piece gets the four item views fitted to its drawn box (3 to 6 m, a low piece seen from higher up); the normal
@@ -1324,7 +1378,8 @@ func _build_piece_views() -> void:
 		return
 
 	var centre: Vector3 = box.get_center()
-	var ground: float = _piece_ground(centre.x, centre.z)
+	# Where the piece stands (re-grounded by _reground_pieces): a ray at the centre would land on the piece's own collider top (a forge's box).
+	var ground: float = node.global_position.y
 	var size: Vector2 = get_viewport().get_visible_rect().size
 	var low: bool = box.size.y < 0.6 * maxf(box.size.x, box.size.z)
 	_item_node = node
