@@ -222,12 +222,12 @@ func _init() -> void:
 	covered[0] = 0.0
 	raining[0] = 0.0
 	var box = items._chests[int(items._items[lone]["struct"]["uid"])]
-	box.add(n("stick"), 1)
+	box.add(n("waterskin"), 1)
 	level_now()
-	check(float(items._water.pieces[lone].get("litres_max", -1.0)) == 0.0, "a barrel holding goods holds no water")
-	box.remove(n("stick"), 1)
+	check(float(items._water.pieces[lone].get("litres_max", -1.0)) == 60.0, "a Water barrel holding water containers keeps its 60 L (Dave 22 Nov 2026: its slots fill them; goods go in a Storage barrel)")
+	box.remove(n("waterskin"), 1)
 	level_now()
-	check(float(items._water.pieces[lone].get("litres_max", 0.0)) == 60.0, "emptied, it holds 60 L again (Dave 21 Nov 2026)")
+	check(float(items._water.pieces[lone].get("litres_max", 0.0)) == 60.0, "emptied, it holds 60 L (Dave 21 Nov 2026)")
 
 	# --- River barrel (Dave 20 Nov 2026, PV-13): a barrel stood in a brook or river fills fast with river water ---
 	var dry_barrel: int = barrel(140.0, 140.0)
@@ -249,10 +249,10 @@ func _init() -> void:
 	level_now()
 	check(float(items._water.pieces[lone].get("river_lpm", -1.0)) == 0.0, "nor in water too shallow to reach it (0.1 m)")
 	stream_depth[0] = 0.4
-	box.add(n("stick"), 1)
+	box.add(n("waterskin"), 1)
 	level_now()
-	check(float(items._water.pieces[lone].get("river_lpm", -1.0)) == 0.0, "nor while it holds goods")
-	box.remove(n("stick"), 1)
+	check(absf(float(items._water.pieces[lone].get("river_lpm", -1.0)) - 20.0) < 0.01, "and still while its slots hold water containers (a Water barrel, Dave 22 Nov 2026)")
+	box.remove(n("waterskin"), 1)
 	level_now()
 	var river_net = Network.new()
 	var river_tank: Dictionary = items.water_piece(items._structures["wooden_barrel"], Vector3(0.0, 10.0, 0.0), 0.0)

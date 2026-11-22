@@ -48,6 +48,6 @@ static func takes(def: Dictionary, number: int, table) -> bool:
 
 
 # Whether a container (its structures.json def) takes part in Autoload (protocol 139): plain storage with slots (chests, crates, barrels, racks,
-# bins and the vehicles), not a store that does its own work (a kiln, smelter, chopping block, platter, fish trap, a station's store) or a body's remains.
+# bins and the vehicles), not a Water barrel (its slots fill water containers), not a store that does its own work (a kiln, smelter, chopping block, platter, fish trap, a station's store) or a body's remains.
 static func autoloads(def: Dictionary) -> bool:
-	return int(def.get("slots", 0)) > 0 and not bool(def.get("take_only", false)) and str(def.get("use", "")) == "" and not def.has("smelt") and int(def.get("batch_logs", 0)) == 0 and int(def.get("out_slots", 0)) == 0 and not bool(def.get("one_store", false)) and not bool(def.get("fish_trap", false))
+	return int(def.get("slots", 0)) > 0 and not bool(def.get("take_only", false)) and str(def.get("use", "")) == "" and not bool(def.get("fills_containers", false)) and not def.has("smelt") and int(def.get("batch_logs", 0)) == 0 and int(def.get("out_slots", 0)) == 0 and not bool(def.get("one_store", false)) and not bool(def.get("fish_trap", false))
