@@ -148,7 +148,7 @@ const OreRockLook := preload("res://src/client/ore_rock_look.gd")
 # Copper, tin and iron are not here: they are their own rocks (OreRockLook, Dave's photos and words 16, 17 and 19 Nov 2026).
 # ore: [stone tint, tint share, streak colour, streak width (0..0.5 of the band), flat (0 steep veins, 1 flat seams), halo share, fleck share]
 const OUTCROP_LOOK := {
-	"coal": [Color(0.21, 0.21, 0.21), 0.45, Color(0.05, 0.05, 0.05), 0.2, 1.0, 0.15, 0.0],         # flat black seams
+	"coal": [Color(0.07, 0.07, 0.07), 0.85, Color(0.015, 0.015, 0.015), 0.25, 1.0, 0.3, 0.0],    # near-black, flat black bands: a seam reads as coal (coordinator for Dave 22 Nov 2026: resources read as what they are)
 	"salt": [Color(0.42, 0.4, 0.37), 0.4, Color(0.8, 0.78, 0.72), 0.16, 1.0, 0.2, 0.05],           # pale crusted beds
 	"limestone": [Color(0.58, 0.55, 0.47), 0.7, Color(0.66, 0.63, 0.56), 0.04, 0.6, 0.0, 0.05],     # pale cream bedding
 	"chalk": [Color(0.72, 0.71, 0.66), 0.75, Color(0.3, 0.3, 0.3), 0.03, 0.9, 0.0, 0.04],          # white, with dark flint bands
