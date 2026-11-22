@@ -178,6 +178,17 @@ func _init() -> void:
 	check(tiers._smithy_add(smithy_def, box, tiers.table.number_of("coal"), 3) == 0 and box.numbers[0] == tiers.table.number_of("coal") and box.counts[0] == 3, "Coal put in goes to the fuel slot")
 	var stone_left: int = tiers._smithy_add(smithy_def, box, tiers.table.number_of("stone"), 2)
 	check(stone_left == 0 and box.numbers[0] == tiers.table.number_of("coal") and box.count_of(tiers.table.number_of("stone")) == 2, "anything else goes past the fuel slot")
+	# The fuel slot is the smithy's fire, not crafting stock: a recipe that needs Coal never empties it (the smithy would stop).
+	var coal_n: int = tiers.table.number_of("coal")
+	var pack = tiers.inventory_of(1)
+	var pack_coal: int = pack.count_fill(coal_n)
+	var stock: Dictionary = tiers._stock_of(1)
+	var in_stock: bool = (stock["boxes"] as Array).any(func(b): return b[1] == box)
+	check(in_stock and tiers._stock_have(pack, coal_n, stock) == pack_coal, "the Coal in the fuel slot does not count for a craft (%d, pack %d)" % [tiers._stock_have(pack, coal_n, stock), pack_coal])
+	box.add(coal_n, 2, 0, {}, 1)
+	stock = tiers._stock_of(1)
+	check(tiers._stock_have(pack, coal_n, stock) == pack_coal + 2, "Coal stored past the fuel slot does")
+	check(tiers._stock_take(pack, coal_n, pack_coal + 2, stock) == pack_coal + 2 and box.numbers[0] == coal_n and box.counts[0] == 3 and box.count_of(coal_n) == 3, "a craft takes the stored Coal and leaves the fire's 3")
 
 	# A placed standalone Bellows (an old save) still loads and takes down into its blueprint's materials, but can no longer be built (GOALS-REPAIR R3).
 	var bellows_id: int = -1
