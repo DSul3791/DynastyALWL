@@ -203,7 +203,7 @@ void vertex() {
 	float size = max(head_m, min_px * px);
 	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0], INV_VIEW_MATRIX[1], INV_VIEW_MATRIX[2], MODEL_MATRIX[3]);
 	VERTEX = vec3(VERTEX.xy * size, 0.0);
-	NORMAL = mat3(VIEW_MATRIX) * vec3(0.0, 1.0, 0.0);
+	NORMAL = vec3(0.0, 1.0, 0.0);   // local, and the instance basis is identity: lit like flat ground (the normal matrix is not the rewritten MODELVIEW)
 	v_fade = smoothstep(fade_in_start, fade_in_end, d) * (1.0 - smoothstep(fade_out_start, fade_out_end, d));
 	v_colour = INSTANCE_CUSTOM.rgb;
 }
@@ -216,7 +216,7 @@ void fragment() {
 	ROUGHNESS = 1.0;
 }
 """
-const FAR_FLOWER_M := [0.0, 110.0, 150.0, 150.0]   # far flower reach by quality (Low, Medium, High, Ultra); Low draws none
+const FAR_FLOWER_M := [0.0, 110.0, 150.0, 150.0]   # far flower reach by quality (Low, Medium, High, Ultra); Low draws none; never past full_m (_far_flower_reach)
 const FAR_FLOWER_IN_M := [45.0, 60.0]   # dots dither in over this, under the full models (view_m.plant), so the hand-over does not pop
 const FAR_FLOWER_OUT_M := 30.0          # and out over the last this much of the reach
 const FAR_FLOWER_MIN_PX := 2.0          # a dot is never smaller than this on the screen
@@ -802,8 +802,7 @@ func set_quality(quality: int) -> void:
 	far_flower_m = FAR_FLOWER_M[quality]
 
 	if _far_flower_material != null:
-		_far_flower_material.set_shader_parameter("fade_out_start", maxf(far_flower_m - FAR_FLOWER_OUT_M, FAR_FLOWER_IN_M[1]))
-		_far_flower_material.set_shader_parameter("fade_out_end", far_flower_m)
+		_far_flower_fade()
 	var tile: Vector2i = IMPOSTOR_TILE_PX[quality]
 
 	if tile != _impostor_tile and TreeImpostor.can_render():
@@ -1330,8 +1329,7 @@ func _make_tree_materials() -> void:
 	_far_flower_material.shader = far_flower_shader
 	_far_flower_material.set_shader_parameter("fade_in_start", FAR_FLOWER_IN_M[0])
 	_far_flower_material.set_shader_parameter("fade_in_end", FAR_FLOWER_IN_M[1])
-	_far_flower_material.set_shader_parameter("fade_out_start", maxf(far_flower_m - FAR_FLOWER_OUT_M, FAR_FLOWER_IN_M[1]))
-	_far_flower_material.set_shader_parameter("fade_out_end", far_flower_m)
+	_far_flower_fade()
 	_far_flower_material.set_shader_parameter("min_px", FAR_FLOWER_MIN_PX)
 	_far_flower_mesh = QuadMesh.new()
 	_far_flower_mesh.size = Vector2.ONE
@@ -2639,7 +2637,19 @@ func item_count() -> int:
 
 # ---------------------------------------------------------------- drawing
 
-# Level bits: 1 trees, 2 shrubs, 4 plants, 8 colliders, 16 and 32 full models, 64 tree impostors.
+# The far flower dots reach far_flower_m, but no farther than the chunks that hold their plants (full_m): past that a chunk has no dots,
+# so a dot fade reaching beyond would end in a strip along that chunk's edge.
+func _far_flower_reach() -> float:
+	return minf(far_flower_m, full_m())
+
+
+func _far_flower_fade() -> void:
+	var reach: float = _far_flower_reach()
+	_far_flower_material.set_shader_parameter("fade_out_start", maxf(reach - FAR_FLOWER_OUT_M, FAR_FLOWER_IN_M[1]))
+	_far_flower_material.set_shader_parameter("fade_out_end", maxf(reach, FAR_FLOWER_IN_M[1] + 1.0))
+
+
+# Level bits: 1 trees, 2 shrubs, 4 plants, 8 colliders, 16 and 32 full models, 64 far flower dots, 128 and up the tree proxy cells (PROXY_BIT).
 func _level(chunk: Vector2i, from_position: Vector3) -> int:
 	var distance: float = _distance(chunk, from_position)
 	var level: int = 0
@@ -2652,7 +2662,7 @@ func _level(chunk: Vector2i, from_position: Vector3) -> int:
 		level |= 8
 
 	# Far flower dots: only chunks that hold their plants (full_m), within the dots' reach.
-	if far_flower_m > 0.0 and distance <= minf(far_flower_m, full_m()):
+	if far_flower_m > 0.0 and distance <= _far_flower_reach():
 		level |= FAR_FLOWER_BIT
 
 	# Full-detail models near the player (trees 16, shrubs 32).
