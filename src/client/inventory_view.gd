@@ -3253,6 +3253,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 					(fixture_light as SpotLight3D).spot_range = light_m
 
 			_world[id] = {"node": node, "number": row[1], "count": 1, "pos": row[3], "state": state, "light": fixture_light, "roof": roof_key, "yaw": rad_to_deg(yaw), "on": row.size() > 5 and bool((row[5] as Dictionary).get("on", false))}
+			_note_first_shown(int(row[1]), state)
 
 			if row.size() > 5 and (row[5] as Dictionary).has("len"):
 				_world[id]["len"] = float(row[5]["len"])   # a pipe run (PLUMBING_DESIGN s9): its ends are PipeRules.ends(pos, yaw, pitch, len)
@@ -3293,6 +3294,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 			node.position = row[3]
 			_root.add_child(node)
 			_world[id] = {"node": node, "number": 0, "count": 1, "pos": row[3], "state": state, "light": null, "extra": extra}
+			_note_first_shown(0, state)
 			continue
 
 		var t_d: int = Time.get_ticks_usec()
@@ -3340,6 +3342,7 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 		_root.add_child(node)
 		_world[id] = {"node": node, "number": row[1], "count": row[2], "pos": row[3], "state": state, "light": light}
+		_note_first_shown(int(row[1]), state)
 
 		if state == 0 and _is_log(int(row[1])):
 			_world[id]["log"] = true
@@ -4507,11 +4510,11 @@ func _own_glow(model: Node3D) -> Array:
 
 # The Primitive kiln: Dave's model (21 Nov 2026), a long low tunnel of clay and field stones, its mouth at the front (+Z) and its chimney at the
 # back, "sized so its longest side is a minimum 2.74 meters" (2.74 m long, 0.98 m wide and high). Its embers are painted in its emission
-# texture: dark when cold, glowing with a few small flame tongues, the light at its mouth and smoke from the chimney while lit. The Improved
-# and Advanced kilns keep the brick kiln (PieceLook.kiln), which also stands in when the file is missing. Values PROVISIONAL (PK-3).
-const KILN_TONGUES := 0.25        # the flames' size in its mouth (its tunnel is under half a metre high inside)
-const KILN_EMBERS := 2.0          # the embers' glow while lit (0 cold)
-const KILN_LIGHT := [1.0, 5.0]    # its light while lit: [energy, range m]
+# texture: dark when cold; while lit they glow really bright, with the light at its mouth and smoke from the chimney, and no flames (Dave 22 Nov
+# 2026: "the forges and kilns dont really need flames just glowing coals ... glowing really bright while busy"; a kiln is busy whenever it is
+# lit). The Improved and Advanced kilns keep the brick kiln (PieceLook.kiln), which also stands in when the file is missing. Values PROVISIONAL (PK-3).
+const KILN_EMBERS := 4.0          # the embers' glow while lit (0 cold)
+const KILN_LIGHT := [2.0, 6.0]    # its light while lit: [energy, range m]
 
 
 func _make_primitive_kiln(lit: bool) -> Node3D:
@@ -4520,7 +4523,11 @@ func _make_primitive_kiln(lit: bool) -> Node3D:
 	if model == null:
 		return LookTable.build("kiln")
 
-	_painted_fire(model, KILN_TONGUES)
+	var flames: Node = model.get_node_or_null("Flames")
+
+	if flames != null:
+		flames.free()   # its painted embers are the fire: no shared coals or flame tongues
+
 	var glow: Array = _own_glow(model)
 
 	for embers in glow:
@@ -5087,6 +5094,14 @@ static func _lit_state(state: int) -> bool:
 
 static func _fire_tier(state: int) -> int:
 	return 1 if state == 40 else (3 if state == 41 else 2)
+
+
+# The first world item of each kind and state this session is named on the next slow frame's line (FrameProbe.first_shown, BugsList 108).
+func _note_first_shown(number: int, state: int) -> void:
+	var key: String = "i%d_%d" % [number, state]
+
+	if FrameProbe.is_new(key):
+		FrameProbe.first_shown("item %s state %d" % [table.id_of(number) if number > 0 else "stump", state], key)
 
 
 # Loose items on the ground (Dave 2026-10-20: a stick must not look like a green box). One shared mesh per item

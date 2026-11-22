@@ -506,4 +506,5 @@ func _init() -> void:
 	# --- 12. The cost of a pulled cart ---
 	print("cart follow: %d reports, %.1f us each (only a pulled cart costs anything: one dictionary look-up per report otherwise)" % [items._carts.follows, float(items._carts.follow_usec) / maxf(float(items._carts.follows), 1.0)])
 	print("test_handcart: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
+	items._finish_writer()   # a background save may still be writing (D-TODO-2 event saves): the script must outlive it
 	quit(1 if failures > 0 else 0)

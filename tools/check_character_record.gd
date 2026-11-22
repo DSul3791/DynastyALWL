@@ -151,7 +151,7 @@ func _check_text() -> void:
 func _check_identity() -> void:
 	var rec: Dictionary = _good()
 	_ok(int(rec["version"]) == Record.FORMAT_VERSION and rec["body"] == "body_1" and rec["frame"] == "neutral" and not rec.has("gender") and not rec.has("pronouns"), "a new record has the plain defaults and no gender")
-	_ok(Record.describe(rec) == "Body 1, Even frame", "describe: " + Record.describe(rec))
+	_ok(Record.describe(rec) == "Body A, Even frame", "describe: " + Record.describe(rec))
 
 	for f in Record.FRAMES:
 		_ok(Record.FRAME_LABELS.has(f), "frame %s has a label" % f)

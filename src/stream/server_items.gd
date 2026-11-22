@@ -248,6 +248,10 @@ var _stock_sig: Dictionary = {}     # peer -> hash of the last craft stock sent 
 var _stock_poll_ms: Dictionary = {} # peer -> msec of the last hammer poll answered
 var _sync_in: float = 0.0
 var _save_in: float = SAVE_EVERY_S
+const EVENT_SAVE_GAP_S := 5.0      # PROVISIONAL (D-TODO-2): the least real time between a save and the next one a big event brings forward
+var _event_save: bool = false      # a big event asked for a save (save_soon)
+var _since_save: float = 0.0       # real seconds since the last tick save
+var _event_saves: int = 0          # saves that carried a big event's request (tests)
 var _dirty: bool = false
 var _drops: Dictionary = {}
 var _batch_cfg: Dictionary = {}       # data/items/pickup_batch.json
@@ -500,6 +504,8 @@ var _slowest_hint: String = ""
 var _slowest_hint_usec: int = 0
 var _sync_detail: String = ""         # the last _sync_world_items' split (the slow-tick line)
 var _throttle_path: String = "?"    # the container's cpu.stat when a CPU quota holds it (Linux), "" otherwise; "?" until first looked at
+var _bog_build_usec: int = 0       # time building bog fields (BogIron.field, main thread, once a square a run) since the sync began (the slow-tick line)
+var _bog_built: int = 0             # bog field squares built in that time
 var _throttle_mark: int = -1        # its paused microseconds before this tick's first scatter cell, -1 when not read (the slow-cell line)
 var _ore_usec: PackedInt64Array = PackedInt64Array([0, 0, 0, 0, 0, 0, 0])   # the last cell's boulders and ore rocks: binding the reads, the ore body looks, the water reads, settling rows, the mountain-foot probes (usec), the number of ore body looks, the spots' ground reads (usec) (the slow-cell line)
 var _ore_split: Dictionary = {}   # the last cell's ore rocks: ore -> usec of its whole layout (the slow-cell line, so no ore's cost hides in the sum)
@@ -709,10 +715,7 @@ func note_logout(peer: int) -> void:
 		_logout_peers[peer] = true
 		print("Resume spot: peer %d quit on purpose at %s" % [peer, str(_peer_pos.get(peer, "no position"))])
 		_note_spot(peer, "deliberate")   # written and saved now: the line may close slowly or the game die on exit before the disconnect arrives
-		_async_writes = true   # as the periodic save: the files are written off the tick
-		save()
-		_async_writes = false
-		_start_writer()
+		_autosave()   # as the periodic save: the files are written off the tick
 
 
 # Writes where the peer is and how they last left into the character row: "online" while playing, then "deliberate" (the client
@@ -800,6 +803,8 @@ func peer_left(peer: int) -> void:
 	_vent_sent.erase(peer)
 	_goal_sent.erase(peer)
 	_note_spot(peer, "deliberate" if _logout_peers.has(peer) else "disconnect")
+	if not _logout_peers.has(peer):
+		save_soon()   # a dropped line or a closed window: the spot and pack as they left (a deliberate logout saved already, note_logout)
 	print("Resume spot: peer %d left (%s) at %s%s" % [peer, "deliberate" if _logout_peers.has(peer) else "disconnect", str(_peer_pos.get(peer, "no position")), ", still on the way to the resume spot: kept" if _resume_to.has(peer) else ""])
 	_logout_peers.erase(peer)
 	_admin_mode_on.erase(peer)   # Admin mode never outlives a session: every login starts with it off
@@ -1667,6 +1672,7 @@ func tick(delta: float) -> void:
 	var t0: int = Time.get_ticks_usec()
 	_slow_parts = []
 	_slow_prev_usec = t0
+	_throttle_mark = -1   # set by this tick's first scatter cell when a CPU quota holds the server (the slow lines)
 	_fly(delta)
 	_roll_tick(delta)
 	_showroom_retry(delta)
@@ -1754,13 +1760,10 @@ func tick(delta: float) -> void:
 		_dirty = true   # an area file could not be written: the next save builds it again
 
 	_save_parts = []
+	_since_save += delta
 
-	if _save_in <= 0.0:
-		_save_in = SAVE_EVERY_S
-		_async_writes = true
-		save()
-		_async_writes = false
-		_start_writer()
+	if _save_in <= 0.0 or _event_save_due():
+		_autosave()
 
 	_slow_mark("save" + (" (stringify %s)" % ", ".join(_save_parts) if not _save_parts.is_empty() else ""), t0)
 	var tick_ms: float = float(Time.get_ticks_usec() - t0) / 1000.0
@@ -1768,7 +1771,15 @@ func tick(delta: float) -> void:
 	if tick_ms > SLOW_TICK_LOG_MS:
 		# One line a slow tick, naming each part's own time (the old lines gave only the running total, so a 274 ms "scatter reached after"
 		# did not say whether scatter or something before it took the time). Printed from a worker: a print can stall the main thread (#397).
-		_log_off_main("items tick slow: %.0f ms; parts over %.0f ms: %s" % [tick_ms, SLOW_PART_LOG_MS, ", ".join(_slow_parts)])
+		# With a CPU quota and a scatter cell laid this tick, how much the container's throttled time rose since then (as on the slow-cell line;
+		# no extra read on a tick that is not slow).
+		var paused: String = ""
+
+		if _throttle_mark >= 0:
+			var now_paused: int = CpuBudget.throttled_usec(CpuBudget.read_text(_throttle_path))
+			paused = "; container CPU quota throttling rose %.0f ms since the first scatter cell (summed over CPUs)" % (float(now_paused - _throttle_mark) / 1000.0) if now_paused >= 0 else ""
+
+		_log_off_main("items tick slow: %.0f ms; parts over %.0f ms: %s%s" % [tick_ms, SLOW_PART_LOG_MS, ", ".join(_slow_parts), paused])
 
 
 # Testing aid (Tyler, 31 Oct 2026): the items tick times its parts, so a join stall names its part. Each mark closes the part since the last
@@ -1801,6 +1812,37 @@ func _reap_log_lines() -> void:
 			still.append(task)
 
 	_log_tasks = still
+
+
+# A big event (a building finished, a trade, a station craft done, falling asleep or waking, a player leaving) saves soon, not at the next
+# 30 s save, so a crash never loses it (D-TODO-2, coordinator 21 Nov 2026; Minecraft and Valheim also save on such moments). Coalesced:
+# at most one such save each EVENT_SAVE_GAP_S, and only while the writer is idle, so a run of crafts costs one save and an event save never
+# waits for the disk on the tick (the 30 s save still does). `ids`: world items the event changed, marked for the save now; the rolling check
+# (_save_sweep) would reach them only within a save interval or two.
+func save_soon(ids: Array = []) -> void:
+	for id in ids:
+		if _items.has(id):
+			_save_note(id)
+
+	_dirty = true   # the event changed something saved in the files every save writes (pack, coins, vitals, the character row)
+	_event_save = true
+
+
+# A big event's save is due once the gap since the last save has passed and the writer is idle (_reap_writer ran this tick).
+func _event_save_due() -> bool:
+	return _event_save and _since_save >= EVENT_SAVE_GAP_S and _writer == null and _pending_writes.is_empty()
+
+
+# The tick's save: the files are copied now and written off the tick (_start_writer).
+func _autosave() -> void:
+	_save_in = SAVE_EVERY_S
+	_since_save = 0.0
+	_event_saves += 1 if _event_save else 0
+	_event_save = false
+	_async_writes = true
+	save()
+	_async_writes = false
+	_start_writer()
 
 
 func save() -> void:
@@ -5222,7 +5264,10 @@ func _bog_field_of(fx: int, fz: int) -> Array:
 	var key: String = "%d,%d" % [fx, fz]
 
 	if not _bog_fields.has(key):
+		var build_started: int = Time.get_ticks_usec()
 		var patches: Variant = bog_field.call(fx, fz, _dig_cfg.get("bog_iron", {}))
+		_bog_build_usec += Time.get_ticks_usec() - build_started
+		_bog_built += 1
 
 		if typeof(patches) != TYPE_ARRAY:
 			return []
@@ -6981,6 +7026,9 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 	# record in the world (the soak test found 2 to 9 ms a second at 20 players and 500 records, growing with both).
 	var t_grid: int = Time.get_ticks_usec()
 	var send_usec: int = 0
+	var bog_usec: int = 0
+	_bog_build_usec = 0
+	_bog_built = 0
 	var sent: int = 0
 	var quick: bool = not fresh.is_empty()
 	var grid: Dictionary = {}
@@ -7137,7 +7185,11 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 							(added[added.size() - 1][5] as Dictionary)["fill_pm"] = int(round(BinRules.fill_share(bin_def, bin_box) * 1000.0))
 					known[id] = signature
 
-		for bog in ([] if quick else _bog_rows_near(peer, here)):
+		var bog_started: int = Time.get_ticks_usec()
+		var bog_rows: Array = [] if quick else _bog_rows_near(peer, here)
+		bog_usec += Time.get_ticks_usec() - bog_started
+
+		for bog in bog_rows:
 			near[int(bog[0])] = true
 			var bog_signature: int = int(bog[2]) + 1000 * BOG_STATE
 
@@ -7158,7 +7210,10 @@ func _sync_world_items(fresh: Array = [], near_to: Array = []) -> void:
 
 	# For the slow-tick line: where the time went (lag run 5 Nov: sync-world-items 60-124 ms at a join).
 	var total_ms: float = float(Time.get_ticks_usec() - t_grid) / 1000.0
-	_sync_detail = "(%d records: grid %.0f, scan %.0f, send %.0f for %d items)" % [_items.size(), float(t_scan - t_grid) / 1000.0, total_ms - float(t_scan - t_grid) / 1000.0 - float(send_usec) / 1000.0, float(send_usec) / 1000.0, sent]
+	# Bog rows apart from the scan: the first sight of a 512 m field square builds it on the main thread (BogIron.field, 4,096 samples a square).
+	_sync_detail = "(%d records: grid %.0f, scan %.0f, bog %.1f (built %d fields in %.1f), send %.0f for %d items)" % [_items.size(), float(t_scan - t_grid) / 1000.0,
+		total_ms - float(t_scan - t_grid) / 1000.0 - float(send_usec) / 1000.0 - float(bog_usec) / 1000.0, float(bog_usec) / 1000.0, _bog_built, float(_bog_build_usec) / 1000.0,
+		float(send_usec) / 1000.0, sent]
 
 
 func _send_changes(peer: int, inv, before: Array) -> void:
@@ -12042,6 +12097,7 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 	_tank_split_pipe(placed)
 	_water_add(placed)
 	_dirty = true
+	save_soon([placed])
 
 
 # What a piece does once it stands: a support holds the ground, a lean-to is a place to rest, the goal list hears of it.
@@ -12479,6 +12535,7 @@ func _finish_site(peer: int, id: int) -> void:
 	_tank_split_pipe(id)
 	_water_add(id)
 	_dirty = true
+	save_soon([id])   # a finished building is never lost to a crash
 
 
 # Taking a site down gives back everything deposited (100 percent, like any blueprint).
@@ -14120,6 +14177,7 @@ func _energy_tick(peer: int, v: Dictionary, _spent: float, game_s: float) -> voi
 	if e <= 0.0 and not _forced_sleep(peer) and int(_strain.get(peer, {}).get("state", 0)) < 2:
 		_stance[peer] = 3
 		_asleep[peer] = {"rested": 0.0, "forced": true, "t": 0.0}
+		save_soon()   # lying down to sleep
 		_note_shelter(peer)
 		_strain_sent.erase(peer)
 		_say(peer, "You collapse with exhaustion")
@@ -14199,6 +14257,7 @@ func _sleep(peer: int, want: int) -> void:
 		napping = true
 
 	_asleep[peer] = {"rested": 0.0, "t": 0.0}
+	save_soon()   # lying down to sleep
 
 	if napping:
 		var end_strain: float = float(nap.get("exertion_end", 0.25)) * float(_exertion_cfg.get("over_on", 1.0))
@@ -14479,6 +14538,7 @@ func _end_sleep(peer: int) -> bool:
 		return false
 
 	_waking[peer] = {"t": 0.0}
+	save_soon()   # waking: the night's rest
 	return true
 
 
@@ -21350,7 +21410,7 @@ func _hints_data() -> Array:
 
 
 # Fresh fruit that spoils fast (the "fruit_in_pack" hint): picked from trees, not cooked or dried.
-const HINT_FRUIT := ["wild_apples", "apple_early", "apple_summer", "apple_autumn", "apple_keeping", "apple_cooking", "pear_summer", "pear_autumn", "pear_winter", "sour_cherries", "plums", "damsons", "quince", "medlar", "figs", "pomegranates", "mangoes", "oranges", "lemons"]
+const HINT_FRUIT := ["wild_apples", "apple_early", "apple_summer", "apple_autumn", "apple_keeping", "apple_cooking", "pear_summer", "pear_autumn", "pear_winter", "sour_cherries", "plums", "damsons", "quince", "medlar", "figs", "pomegranates"]
 
 
 func _hint_count(st: Dictionary, key: String) -> int:
@@ -23888,6 +23948,9 @@ func _craft_tick(spent: float) -> void:
 
 			if worked_at >= 0:
 				_smithies.crafted(worked_at, recipe, peer)
+
+			if str(recipe.get("station", "")) != "" and not free_entry:
+				save_soon([store_id] if store_id >= 0 else [])   # a station craft done: its product (in the pack or the station's store) and its spent inputs
 
 			if not free_entry:   # an admin-mode craft earns no goal (GA-54)
 				_goal_made(peer, int(recipe["gives"][0]), times)

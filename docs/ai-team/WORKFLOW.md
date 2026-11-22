@@ -42,7 +42,7 @@ GODOT_EXE=/c/GodotInstaller/Godot_v4.7.2-stable_win64_console.exe tools/run_one_
 godot --path . -- --role=play
 ```
 
-Read the plan's `why`; `TEST_GATES.md` owns selection, deferral and full-suite requirements. A standard-build compile failure in a voxel world test is a wrong-runner result. Tests live under `src/worldgen/tools/` and `src/water2/`. Use `CONTROLS.md` for inputs and the current mission's player checklist. Water implementation is `src/water2/`; no old-water switch. Current body authority is `../DYNASTY_BODY.md`.
+Read the plan's `why`; `TEST_GATES.md` owns the change plan, the dev sweep (`--wide`), batches, carry-over and full-suite requirements. A standard-build compile failure in a voxel world test is a wrong-runner result. Tests live under `src/worldgen/tools/` and `src/water2/`. Use `CONTROLS.md` for inputs and the current mission's player checklist. Water implementation is `src/water2/`; no old-water switch. Current body authority is `../DYNASTY_BODY.md`.
 
 At most three heavy Godot jobs share the PC through `tools/godot_slot.sh`; test runners take slots automatically, other long jobs must use the wrapper. Do not disable the guard to evade contention. No heavy cloud Godot/headless tests, bakes or renders; permitted static/lint/CI checks may run in the cloud. `TEST_GATES.md` owns machine/water-record prerequisites and evidence.
 
