@@ -21,8 +21,9 @@ New-Item -ItemType Directory -Force -Path $page | Out-Null
 $zipName = "Dynasty-build-$build.zip"
 $zip = Join-Path $page $zipName
 Write-Host "== zip: $zip"
-# Compress-Archive (Windows PowerShell 5.1) takes files under 2 GB; the installer is about 0.8 GB.
-Compress-Archive -LiteralPath $setup -DestinationPath $zip -CompressionLevel Optimal
+# Compress-Archive (Windows PowerShell 5.1) takes files under 2 GB; the installer is about 0.8 GB and already compressed, so Fastest.
+if ((Get-Item -LiteralPath $setup).Length -ge 2GB) { throw "make_testplayers_page: the installer is over 2 GB; Compress-Archive in Windows PowerShell 5.1 cannot zip it" }
+Compress-Archive -LiteralPath $setup -DestinationPath $zip -CompressionLevel Fastest
 $hash = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
 $sizeMb = [int][Math]::Round((Get-Item -LiteralPath $zip).Length / 1MB)
 $date = (Get-Date).ToString("d MMMM yyyy", [Globalization.CultureInfo]::InvariantCulture)

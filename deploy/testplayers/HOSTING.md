@@ -26,7 +26,7 @@ This runs next to the game server's own `compose.yaml` and needs nothing else in
 2. On the router, forward TCP **80** and **443** to the game server. Caddy uses port 80 to prove to Let's Encrypt that it owns `hannibalshouse.duckdns.org`, then gets and renews the HTTPS certificate by itself. The game ports UDP 24600 and TCP 24601 stay as they are.
 3. In that folder, start it: `docker compose -f compose.web.yaml up -d`. Then `docker logs dynasty-web` should show the certificate being obtained. Open https://hannibalshouse.duckdns.org/dynasty/testplayers/ from a phone on mobile data to check it.
 4. Optional password: make a hash with `docker run --rm caddy:2.8 caddy hash-password --plaintext "the password"`. In `Caddyfile`, remove the `#` in front of the three `basic_auth` lines, and replace `PASTE_THE_HASH_HERE` with the hash. Then run `docker restart dynasty-web`. Testers then log in as `tester` with that password.
-5. A new build: replace the `testplayers` folder with the new one. No restart is needed.
+5. A new build: delete the files inside the `testplayers` folder and copy the new build's files in (keep the folder itself), or replace the folder and then `docker restart dynasty-web`: the container keeps the folder it started with.
 
 ## Option B: nginx is already running
 

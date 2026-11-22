@@ -1,4 +1,4 @@
-# The test players' download page as a small web container (Caddy) on the game server, beside the game server's compose.yaml.
+# The test players' download page as a small web container (Caddy) on the game server, in its own folder next to the game server.
 # deploy/testplayers/HOSTING.md has the steps. Serves ./testplayers (index.html and the zip from tools/make_testplayers_page.ps1) at
 # https://hannibalshouse.duckdns.org/dynasty/testplayers/
 #   docker compose -f compose.web.yaml up -d      start (and after a reboot)
