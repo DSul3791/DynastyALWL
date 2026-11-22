@@ -187,6 +187,19 @@ func _init() -> void:
 	items.floor_below = Callable()
 	items.clear_dropped(Vector3.ZERO, 1.0e7)
 
+	# A drop whose sent height is under the ground lands on the server's ground (main gate 21 Nov 2026: the client sends its own ground, or the
+	# feet less 1 m when it has none yet, and a stack dropped under the surface stayed buried). The fake floor answers the ground only from above.
+	var drop_floor_y: Array = [20.0]
+	items.floor_below = func(p: Vector3) -> float: return drop_floor_y[0] if p.y >= drop_floor_y[0] else NAN
+	items.report_position(7, Vector3(4000.0, 20.0, 4000.0))
+	items.give(7, stone, 3)
+	var buried_stack: int = items.inventory_of(7).numbers.find(stone)
+	items.action(7, Net.ACT_DROP, buried_stack, 0, 3, Vector3(4001.0, 19.0, 4000.0))
+	var buried_landed: Array = items._items.values().filter(func(it: Dictionary) -> bool: return Vector2(it["pos"].x, it["pos"].z).distance_to(Vector2(4001.0, 4000.0)) < 0.5)
+	check(buried_landed.size() == 1 and is_equal_approx(buried_landed[0]["pos"].y, 20.0), "a drop sent 1 m under the ground lands on the server's ground (%s)" % str(buried_landed))
+	items.floor_below = Callable()
+	items.clear_dropped(Vector3.ZERO, 1.0e7)
+
 	# MikeW's rig (2026-10-23): drop a pile of stones 2.2 m ahead; the world must hold ONE item with all of them, and the player is told.
 	items.clear_dropped(Vector3.ZERO, 1.0e7)
 	items.report_position(7, Vector3(100.0, 5.0, 100.0))
