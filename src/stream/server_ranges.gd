@@ -19,13 +19,14 @@ var ground_ready: Callable         # (x, z) -> bool, the ground tile there is lo
 var no_spawn: Callable             # (x, z) -> bool: settled ground (no_spawn_m round anything put down); its places are left
 var blocks: Dictionary = {}        # Vector2i -> {"places": Array, "jobs": Array, "retry_ms": int, "seen_ms": int, "ver": int}
 var _wire: Dictionary = {}         # Vector2i -> [msec built, bytes]
-var hold_until_ms: int = 0         # no work before this (msec): set when a player joins, so a cold join's own ground comes first
-# A job past the tick's budget stops at its next ground read and runs again next tick; the reads it made are kept, so each run gets
-# further and the place comes out as if worked in one go (the ground and water here never change while a job runs).
+var hold_until_ms: int = 0         # no work before this (msec): set when a player joins (hold_for_join), so a cold join's own ground comes first
+var _held_at_ms: int = -1000000000
+# A job past the tick's budget stops at its next ground read and runs again next tick; the reads it made are kept with its block
+# (rec "memo"), so each run gets further and the place comes out as if worked in one go (the generated ground never changes; deep water
+# is live, so a job spread over seconds may see a pool's edge move, as one started a moment later would).
 var fresh_reads_min: int = 4       # new ground reads a job may always make in a tick, so it never stalls (cfg fresh_reads_min)
-var _memo: Dictionary = {}         # [what, x, z] -> value, for the job being worked
-var _memo_job: Array = []          # [block, job] the reads belong to
-var _deadline_us: int = 0          # 0 outside tick(): reads never stop
+var _memo: Dictionary = {}         # [what, x, z] -> value: the block's reads for the job being worked (rec "memo" while tick() runs it)
+var _deadline_us: int = 0          # 0 outside tick(): reads never stop and are not kept
 var _fresh: int = 0
 var _out_of_time: bool = false
 
@@ -34,6 +35,15 @@ func setup() -> void:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/ranges.json"))
 	cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
 	fresh_reads_min = maxi(int(cfg.get("fresh_reads_min", 4)), 1)
+
+
+# A player has joined: hold the work for hold_after_join_s, at most once in three times that (so joins in a row cannot hold it for good).
+func hold_for_join(now_ms: int) -> void:
+	var hold_ms: int = int(float(cfg.get("hold_after_join_s", 0.0)) * 1000.0)
+
+	if hold_ms > 0 and now_ms - _held_at_ms >= hold_ms * 3:
+		_held_at_ms = now_ms
+		hold_until_ms = now_ms + hold_ms
 
 
 func on() -> bool:
@@ -102,10 +112,11 @@ func tick(players: Array, now_ms: int) -> void:
 			var job_us: int = Time.get_ticks_usec()
 			var place: Variant = null
 
-			if _memo_job != [key, job]:
-				_memo.clear()
-				_memo_job = [key, job]
+			if rec.get("memo_job", []) != job:
+				rec["memo"] = {}
+				rec["memo_job"] = job
 
+			_memo = rec["memo"]
 			_deadline_us = started + budget
 			_fresh = 0
 			_out_of_time = false
@@ -119,6 +130,7 @@ func tick(players: Array, now_ms: int) -> void:
 					place = _deer_range(key, str(job[1]) if job.size() > 1 else "deer")
 
 			_deadline_us = 0
+			_memo = {}   # the reads stay with the block (rec "memo") until its job is done
 			var spent: int = Time.get_ticks_usec() - job_us
 			rec["job_us"] = int(rec.get("job_us", 0)) + spent
 			rec["job_max_us"] = maxi(int(rec.get("job_max_us", 0)), spent)   # the longest single run (one tick's share of a job)
@@ -127,8 +139,9 @@ func tick(players: Array, now_ms: int) -> void:
 				out_of_time = true
 				break   # the budget ran out inside the job: it goes on next tick from the reads it made
 
-			_memo.clear()
-			_memo_job = []
+			rec.erase("memo")
+			rec.erase("memo_job")
+			_memo = {}
 
 			if place == null:
 				rec["retry_ms"] = now_ms + 5000   # the ground there is not known yet: try again shortly
@@ -232,7 +245,7 @@ func _h(x: float, z: float) -> float:
 
 	var v: float = float(ground_height.call(x, z))
 
-	if not is_nan(v):
+	if not is_nan(v) and _deadline_us > 0:
 		_memo[k] = v
 
 	return v
@@ -251,7 +264,10 @@ func _wet(x: float, z: float) -> bool:
 		return true   # any answer: the job's result is thrown away and it runs again
 
 	var v: bool = bool(blocked.call(x, z))
-	_memo[k] = v
+
+	if _deadline_us > 0:
+		_memo[k] = v
+
 	return v
 
 
@@ -282,7 +298,10 @@ func _weight(sp: String, x: float, z: float) -> float:
 		return 0.0   # as _wet
 
 	var v: float = float(biome_weight.call(sp, x, z))
-	_memo[k] = v
+
+	if _deadline_us > 0:
+		_memo[k] = v
+
 	return v
 
 

@@ -1165,7 +1165,7 @@ func _on_peer_connected(peer_id: int) -> void:
 	_peers[peer_id] = {"blocks": 0, "bytes": 0, "since": Time.get_ticks_msec()}
 
 	if ranges != null:   # the joining player's ground first: the trail places wait (data/animals/ranges.json hold_after_join_s)
-		ranges.hold_until_ms = Time.get_ticks_msec() + int(float(ranges.cfg.get("hold_after_join_s", 0.0)) * 1000.0)
+		ranges.hold_for_join(Time.get_ticks_msec())
 	_queue_mutex.lock()
 	_connected_peers[peer_id] = true
 	_queue_mutex.unlock()

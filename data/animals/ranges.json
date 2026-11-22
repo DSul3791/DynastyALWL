@@ -4,7 +4,7 @@
 	"budget_ms": 0.6,
 	"hold_after_join_s": 40.0,
 	"fresh_reads_min": 4,
-	"hold_note": "No places are worked out for hold_after_join_s after a player joins (22 Nov 2026, gate thread: a cold first join's longest freeze grew while this work shared the CPU with the client's ground load), and a job past budget_ms stops at its next ground read and goes on next tick (each tick it may make fresh_reads_min new reads whatever the budget, so it always gets on), so no tick spends much over budget_ms here. Until a block is worked out, animals spawn on the old random spots.",
+	"hold_note": "No places are worked out for hold_after_join_s after a player joins, at most once in three times that (22 Nov 2026, gate thread: a cold first join's longest freeze grew while this work shared the CPU with the client's ground load). A job past budget_ms stops at its next ground read and goes on next tick from the reads its block kept, making at least fresh_reads_min new reads a tick so it always gets on. A late tick of a long job also replays the reads it kept (quick look-ups, not ground reads), so a tick can run a little over budget_ms; the log line's slowest ms shows it. Until a block is worked out, animals spawn on the old random spots.",
 	"forget_s": 600.0,
 	"block_m": 256.0,
 	"slope_run_m": 3.0,

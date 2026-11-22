@@ -314,7 +314,7 @@ func _init() -> void:
 
 	sun_checks(p1)
 	fox_checks(r1, p1)
-	slice_checks(p1)
+	slice_checks()
 
 	print("test_animal_trips: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
@@ -415,7 +415,9 @@ func weighted_ranges(elk_weight: float) -> Array:
 
 # Work spread over ticks: a job past the budget stops at a ground read and goes on next tick, and the places come out the same as in
 # one go; nothing is worked out while a player has just joined (hold_until_ms).
-func slice_checks(p1: Array) -> void:
+func slice_checks() -> void:
+	var one = ranges_with(11)   # worked in one go (r1's places have since gained their route boxes)
+	work(one, Vector3(128.0, 10.0, 128.0))
 	var r = ranges_with(11)
 	r.cfg["budget_ms"] = 0.0
 	r.fresh_reads_min = 64   # a few dozen reads a tick, so the test runs quickly; the server takes 4
@@ -426,6 +428,13 @@ func slice_checks(p1: Array) -> void:
 		return ground(x, z)
 	r.tick([Vector3(128.0, 10.0, 128.0)], 1000)
 	check(reads[0] == 0 and not r.is_ready(Vector2i(0, 0)), "while a player has just joined no ground is read for the places")
+	var h = ranges_with(11)
+	h.hold_for_join(1000)
+	var first_hold: int = h.hold_until_ms
+	h.hold_for_join(30000)
+	var kept: bool = h.hold_until_ms == first_hold
+	h.hold_for_join(1000 + 3 * int(float(h.cfg["hold_after_join_s"]) * 1000.0))
+	check(first_hold > 1000 and kept and h.hold_until_ms > first_hold, "a join holds the work, joins in a row do not hold it for good")
 	var ticks: int = 0
 	var most: int = 0
 
@@ -443,11 +452,14 @@ func slice_checks(p1: Array) -> void:
 			break
 
 	var jobs: int = 0
+	var memo_left: bool = false
 
 	for key in r.blocks:
 		jobs += r._jobs_for(key).size()
+		memo_left = memo_left or r.blocks[key].has("memo")
 
-	check(str(all_places(r)) == str(p1), "worked a few reads a tick, the places are the same as worked in one go (%d ticks for %d jobs)" % [ticks, jobs])
+	check(str(all_places(r)) == str(all_places(one)), "worked a few reads a tick, the places are the same as worked in one go (%d ticks for %d jobs)" % [ticks, jobs])
+	check(not memo_left, "and a worked-out block keeps none of the reads")
 	check(ticks > jobs and most <= 4 * r.fresh_reads_min, "with no budget each tick makes only a few new reads (at most %d, over %d ticks)" % [most, ticks])
 
 

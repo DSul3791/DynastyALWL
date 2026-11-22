@@ -139,9 +139,12 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
 The places are worked out in jobs (a warren, a deer, moose or elk range, a fox earth then each of its rounds) within budget_ms
 (0.6 ms) a tick. A single range job measured 34 to 67 ms on Lane B (22 Nov, a throttled machine), almost all in laying one trail
 (a ground and water read for 7 tries every 12 m). So a job past the budget now stops at its next read and runs again next tick from the
-reads it kept: it makes at least fresh_reads_min (4) new reads a tick and comes out the same as worked in one go. Nothing is worked out
-for hold_after_join_s (40 s) after a player joins, so a cold join's own ground load does not share the CPU with it (the gate thread's
-reading of a longer first-join freeze); until then animals spawn on the old random spots.
+reads its block kept: it makes at least fresh_reads_min (4) new reads a tick and comes out the same as worked in one go. A late tick
+of a long job also replays its kept reads (look-ups, not ground reads), so a tick may run somewhat over budget; the "slowest ms" on
+the ranges log line is the measure, to be read on Lane A. On a slow machine a block takes longer to be worked out (seconds to
+minutes). Nothing is worked out for hold_after_join_s (40 s) after a player joins, at most once in 120 s, so a cold join's own
+ground load does not share the CPU with it (the gate thread's reading of a longer first-join freeze); until then animals spawn on the
+old random spots and snares use the old trail factor.
 
 ## Not done / risks
 
