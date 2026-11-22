@@ -43,14 +43,23 @@ if ($NoAnimals) {
 }
 else {
 	# Fail loudly rather than ship the plain animals by mistake.
-	if (-not (Get-ChildItem -Path $AnimalsFrom -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1)) {
+	if (-not (Get-ChildItem -LiteralPath $AnimalsFrom -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1)) {
 		throw "make_release: no animal models in $AnimalsFrom; pass -AnimalsFrom <folder> or -NoAnimals"
 	}
-	if ((Resolve-Path $AnimalsFrom).Path -eq (Join-Path (Get-Location).Path "assets\animals")) { throw "make_release: -AnimalsFrom is this clone's own folder" }
-	Write-Host "== animal models: copying from $AnimalsFrom (read only)"
-	if (Test-Path assets\animals) { Remove-Item assets\animals -Recurse -Force }   # this clone's own copy from an earlier run
-	Copy-Item -Path $AnimalsFrom -Destination assets\animals -Recurse
-	$count = (Get-ChildItem assets\animals -Recurse -File).Count
+	# This clone's copy is deleted before each copy, so it must never be Dave's folder itself: not the same path (any case or trailing
+	# slash) and not a link (a junction or symlink would let the delete reach through to the source).
+	$source = [IO.Path]::GetFullPath((Resolve-Path -LiteralPath $AnimalsFrom).ProviderPath).TrimEnd('\')
+	$mine = [IO.Path]::GetFullPath((Join-Path (Get-Location).ProviderPath "assets\animals")).TrimEnd('\')
+	if ($source -ieq $mine) { throw "make_release: -AnimalsFrom is this clone's own folder" }
+	if (Test-Path -LiteralPath $mine) {
+		if ((Get-Item -LiteralPath $mine -Force).Attributes -band [IO.FileAttributes]::ReparsePoint) {
+			throw "make_release: $mine is a link; remove the link by hand (not its contents) and run again"
+		}
+		Remove-Item -LiteralPath $mine -Recurse -Force   # this clone's own copy from an earlier run
+	}
+	Write-Host "== animal models: copying from $source (read only)"
+	Copy-Item -LiteralPath $source -Destination $mine -Recurse
+	$count = (Get-ChildItem -LiteralPath $mine -Recurse -File).Count
 	Write-Host "   $count files"
 }
 # The island water record (gitignored bake input, ~90 MB a tile) would match the export's include filter; a fresh clone has none.
