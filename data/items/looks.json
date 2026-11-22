@@ -5074,16 +5074,8 @@
   "iron_halberd": {"shape": "shaft", "color": "#6c6f75", "size": 1.3, "bits": ["metal", "iron", "halberd"]},
   "steel_halberd": {"shape": "shaft", "color": "#9aa3ad", "size": 1.3, "bits": ["metal", "steel", "halberd"]},
   "iron_trident": {"shape": "shaft", "color": "#6c6f75", "size": 1.0, "bits": ["metal", "iron", "trident"]},
-  "light_crossbow": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "heavy_crossbow": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
+  "light_crossbow": {"shape": "crossbow", "color": "#6a4626", "size": 1.0},
+  "heavy_crossbow": {"shape": "crossbow", "color": "#9aa3ad", "size": 1.25, "bits": ["steel"]},
   "iron_buckler": {"shape": "metal_shield", "color": "#6c6f75", "size": 0.6, "bits": ["iron"]},
   "bronze_arrow": {"shape": "arrow", "color": "#b5803a", "size": 1.0, "bits": ["bronze"]},
   "iron_arrow": {"shape": "arrow", "color": "#6c6f75", "size": 1.0, "bits": ["iron"]},

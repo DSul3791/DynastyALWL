@@ -5,8 +5,6 @@
   "thread": "Mission 001 phase 2b, live: no thread model yet (NOT visually complete)",
   "leatherworking_table": "Mission 001 phase 2b station: borrows the Carpenter's bench look (structures.json look carpenters_bench) until Art draws it; NOT visually complete; no item icon row",
   "tailors_table": "Mission 001 phase 2b station: borrows the plank table look (structures.json look table) until Art draws it; NOT visually complete; no item icon row",
-  "light_crossbow": "Mission 001 phase 4b, live: grey placeholder chunk, no model yet (NOT visually complete)",
-  "heavy_crossbow": "Mission 001 phase 4b, live: grey placeholder chunk, no model yet (NOT visually complete)",
   "linen_trousers": "Mission 001 phase 4b, live: grey placeholder chunk, no model yet (NOT visually complete)",
   "linen_skirt": "Mission 001 phase 4b, live: grey placeholder chunk, no model yet (NOT visually complete)",
   "linen_dress": "Mission 001 phase 4b, live: grey placeholder chunk, no model yet (NOT visually complete)",

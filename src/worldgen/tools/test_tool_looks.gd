@@ -220,6 +220,10 @@ func _init() -> void:
 		var look: Mesh = BasicLook.mesh_for(id)
 		_check(look != null and look.get_surface_count() > 0, "%s builds a mesh" % id)
 	_check(_mean_colour(BasicLook.mesh_for("steel_greaves")).get_luminance() > _mean_colour(BasicLook.mesh_for("iron_greaves")).get_luminance(), "steel greaves lighter than iron")
+	var light_xbow: Mesh = BasicLook.mesh_for("light_crossbow")
+	var heavy_xbow: Mesh = BasicLook.mesh_for("heavy_crossbow")
+	_check(str(BasicLook.entry("light_crossbow").get("shape", "")) == "crossbow" and light_xbow != null and light_xbow.get_aabb().size.z > 0.25 and light_xbow.get_aabb().size.x > 0.6, "the light crossbow is a stock with a prod across it")
+	_check(heavy_xbow != null and heavy_xbow.get_surface_count() > light_xbow.get_surface_count(), "the heavy crossbow has a steel prod (a metal surface the light one lacks)")
 
 	print("tool looks: %d failures" % failures)
 
