@@ -127,7 +127,9 @@ func _init() -> void:
 	box_of(old_skins).add(n("waterskin"), 1)
 	var old_empty: int = place("wooden_barrel", 16.0)
 	box_of(old_empty)
+	items._load_changed = {}
 	items._split_old_barrels()
+	check(items._load_changed.has(old_goods) and not items._load_changed.has(old_skins), "the turned barrel is marked for its area file (written at the first save), the others are not")
 	check(str(items._items[old_goods]["struct"]["kind"]) == "storage_barrel" and int(items._items[old_goods]["number"]) == n("storage_barrel") and box_of(old_goods).count_of(n("apple_keeping")) == 50, "an old barrel of apples loads as a Storage barrel, its apples kept")
 	check(str(items._items[old_skins]["struct"]["kind"]) == "wooden_barrel" and str(items._items[old_empty]["struct"]["kind"]) == "wooden_barrel", "an old barrel of water containers, or an empty one, stays a Water barrel")
 	items._water_prune()
