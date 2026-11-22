@@ -66,6 +66,7 @@ func _init() -> void:
 
 	a._dirty = true
 	a.save()
+	a._finish_writer()
 	var b = make(dir)
 	var bench_b: int = bench_of(b)
 	check(bench_b >= 0 and str(b._items[bench_b]["struct"].get("owner", "")) == "builder-key-0001", "the builder is kept through a save and load")
@@ -83,5 +84,6 @@ func _init() -> void:
 	b._take_down(1, b.inventory_of(1), mine)
 	check(mine >= 0 and not b._items.has(mine), "the builder takes their own piece down")
 
+	b._finish_writer()
 	print("test_take_down_owner: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)

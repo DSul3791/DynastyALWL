@@ -12727,7 +12727,13 @@ func _holds_station(base: Dictionary, def: Dictionary) -> bool:
 # houses apart for the materials). A piece with no owner (placed before owners were kept on every piece, or by the world) stays open to anyone.
 func _may_take_down(peer: int, it: Dictionary) -> bool:
 	var owner: String = str(it.get("struct", {}).get("owner", ""))
-	return owner == "" or owner == str(_peer_key.get(peer, "")) or (admin_mode_on.is_valid() and bool(admin_mode_on.call(peer)))
+	var key: String = str(_peer_key.get(peer, ""))
+
+	if owner == "" or owner == key or (admin_mode_on.is_valid() and bool(admin_mode_on.call(peer))):
+		return true
+
+	var lock: Dictionary = _lock_of(it)   # a locked container: a player the owner let in may take it down too (s3.13 locked-crate movement rule)
+	return not lock.is_empty() and key != "" and ((lock.get("ok", []) as Array).has(key) or (lock.get("allow", []) as Array).has(key))
 
 
 # Taking a structure down (E near it) gives its kit back. A chest with things in it cannot be taken down.
@@ -12737,13 +12743,13 @@ func _take_down(peer: int, inv, id: int) -> void:
 	if it.is_empty() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(_reach_point(it, _peer_pos[peer])) > Interact.server_reach_m():
 		return
 
-	if not _may_take_down(peer, it):
-		_say(peer, "Only the one who built it can take it down.")
-		return
-
 	_kiln_lit_by.erase(id)   # a kiln taken down forgets who lit it (ADD-18)
 
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+	if not _may_take_down(peer, it):
+		_say(peer, "Only the one who built it can take it down.")
+		return
 
 	if str(def.get("opening", "")) != "" and str(def.get("attach_to", "")) != PlacementRules.DOOR_ATTACH and PlacementRules.door_at(_structures_cfg, it["pos"], _foundation_rows()):
 		_say(peer, "Take the door out first.")   # a doorway frame, built or still a site, never leaves its door hanging in the air (BUGLIST-002)
@@ -12883,7 +12889,11 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 		return
 
 	if str(def.get("use", "")) == "unpile":
-		# A rock pile gives back all the stones it was made of (what does not fit in the pack lies on the ground).
+		# A rock pile gives back all the stones it was made of (what does not fit in the pack lies on the ground). Only its builder unpiles it.
+		if not _may_take_down(peer, it):
+			_say(peer, "Only the one who built it can take it down.")
+			return
+
 		var was_src: String = _gain_source
 		_gain_source = SRC_RETURN
 		give(peer, table.number_of("stone"), int(def.get("stones", 90)))
