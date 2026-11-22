@@ -19,11 +19,21 @@ var ground_ready: Callable         # (x, z) -> bool, the ground tile there is lo
 var no_spawn: Callable             # (x, z) -> bool: settled ground (no_spawn_m round anything put down); its places are left
 var blocks: Dictionary = {}        # Vector2i -> {"places": Array, "jobs": Array, "retry_ms": int, "seen_ms": int, "ver": int}
 var _wire: Dictionary = {}         # Vector2i -> [msec built, bytes]
+var hold_until_ms: int = 0         # no work before this (msec): set when a player joins, so a cold join's own ground comes first
+# A job past the tick's budget stops at its next ground read and runs again next tick; the reads it made are kept, so each run gets
+# further and the place comes out as if worked in one go (the ground and water here never change while a job runs).
+var fresh_reads_min: int = 4       # new ground reads a job may always make in a tick, so it never stalls (cfg fresh_reads_min)
+var _memo: Dictionary = {}         # [what, x, z] -> value, for the job being worked
+var _memo_job: Array = []          # [block, job] the reads belong to
+var _deadline_us: int = 0          # 0 outside tick(): reads never stop
+var _fresh: int = 0
+var _out_of_time: bool = false
 
 
 func setup() -> void:
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/animals/ranges.json"))
 	cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {}
+	fresh_reads_min = maxi(int(cfg.get("fresh_reads_min", 4)), 1)
 
 
 func on() -> bool:
@@ -60,10 +70,18 @@ func tick(players: Array, now_ms: int) -> void:
 				else:
 					blocks[key]["seen_ms"] = now_ms
 
+	if now_ms < hold_until_ms:
+		return   # a player has just joined: its ground first (this work's own tile loads and reads would share the CPU with the join)
+
 	var started: int = Time.get_ticks_usec()
 	var budget: int = int(float(cfg.get("budget_ms", 0.6)) * 1000.0)
+	var out_of_time: bool = false
+	var ran: bool = false
 
 	for key in blocks.keys():
+		if out_of_time:
+			break
+
 		var rec: Dictionary = blocks[key]
 
 		if now_ms - int(rec["seen_ms"]) > int(float(cfg.get("forget_s", 600.0)) * 1000.0):
@@ -78,10 +96,19 @@ func tick(players: Array, now_ms: int) -> void:
 
 		var had_jobs: bool = not (rec["jobs"] as Array).is_empty()
 
-		while not (rec["jobs"] as Array).is_empty() and now_ms >= int(rec["retry_ms"]) and Time.get_ticks_usec() - started < budget:
+		while not (rec["jobs"] as Array).is_empty() and now_ms >= int(rec["retry_ms"]) and (not ran or Time.get_ticks_usec() - started < budget):
+			ran = true   # one job a tick at least, so a slow machine still gets on
 			var job: Array = rec["jobs"][0]
 			var job_us: int = Time.get_ticks_usec()
 			var place: Variant = null
+
+			if _memo_job != [key, job]:
+				_memo.clear()
+				_memo_job = [key, job]
+
+			_deadline_us = started + budget
+			_fresh = 0
+			_out_of_time = false
 
 			match str(job[0]):
 				"w":
@@ -91,9 +118,17 @@ func tick(players: Array, now_ms: int) -> void:
 				_:
 					place = _deer_range(key, str(job[1]) if job.size() > 1 else "deer")
 
+			_deadline_us = 0
 			var spent: int = Time.get_ticks_usec() - job_us
 			rec["job_us"] = int(rec.get("job_us", 0)) + spent
-			rec["job_max_us"] = maxi(int(rec.get("job_max_us", 0)), spent)
+			rec["job_max_us"] = maxi(int(rec.get("job_max_us", 0)), spent)   # the longest single run (one tick's share of a job)
+
+			if _out_of_time:
+				out_of_time = true
+				break   # the budget ran out inside the job: it goes on next tick from the reads it made
+
+			_memo.clear()
+			_memo_job = []
 
 			if place == null:
 				rec["retry_ms"] = now_ms + 5000   # the ground there is not known yet: try again shortly
@@ -173,12 +208,51 @@ func _jobs_for(key: Vector2i) -> Array:
 	return jobs
 
 
+# Whether a job may make a new read now; false once the tick's budget is spent (after fresh_reads_min), which stops the job.
+func _may_read() -> bool:
+	if _out_of_time:
+		return false
+
+	if _deadline_us > 0 and _fresh >= fresh_reads_min and Time.get_ticks_usec() > _deadline_us:
+		_out_of_time = true
+		return false
+
+	_fresh += 1
+	return true
+
+
 func _h(x: float, z: float) -> float:
-	return float(ground_height.call(x, z))
+	var k: Array = [0, x, z]
+
+	if _memo.has(k):
+		return float(_memo[k])
+
+	if not _may_read():
+		return NAN   # stops the job (tick() runs it again next tick)
+
+	var v: float = float(ground_height.call(x, z))
+
+	if not is_nan(v):
+		_memo[k] = v
+
+	return v
 
 
 func _wet(x: float, z: float) -> bool:
-	return blocked.is_valid() and bool(blocked.call(x, z))
+	if not blocked.is_valid():
+		return false
+
+	var k: Array = [1, x, z]
+
+	if _memo.has(k):
+		return bool(_memo[k])
+
+	if not _may_read():
+		return true   # any answer: the job's result is thrown away and it runs again
+
+	var v: bool = bool(blocked.call(x, z))
+	_memo[k] = v
+	return v
 
 
 # The steepest rise over run_m across a spot (north-south or east-west), NAN where the ground is not known.
@@ -196,7 +270,20 @@ func slope_at(x: float, z: float) -> float:
 
 
 func _weight(sp: String, x: float, z: float) -> float:
-	return float(biome_weight.call(sp, x, z)) if biome_weight.is_valid() else 1.0
+	if not biome_weight.is_valid():
+		return 1.0
+
+	var k: Array = [sp, x, z]
+
+	if _memo.has(k):
+		return float(_memo[k])
+
+	if not _may_read():
+		return 0.0   # as _wet
+
+	var v: float = float(biome_weight.call(sp, x, z))
+	_memo[k] = v
+	return v
 
 
 # A warren in square (sx, sz), {} for none, null when the ground is not known yet.
@@ -331,9 +418,7 @@ func _deer_range(key: Vector2i, name: String = "deer") -> Variant:
 # is one (the spot nearest earth_best slope), within reach_m of at least visits[0] of the block's warrens; it keeps no trail of its own. Its routes are its rounds:
 # from the earth by way of 2 to 4 of those warrens, nearest first, so it hunts along the rabbits' ground. It walks a different round each
 # night (server_animals routine_trip), as a real fox's route is only loosely tied to the night before (Oxford radio-tracking). Rounds
-# are never drawn as trails nor count as runs for snares ("drawn": false).
-# Where a block's fox earth is (job "f" 0): the spot nearest earth_best slope with enough warrens in reach, {} for none, null while the
-# ground is not known.
+# are never drawn as trails nor count as runs for snares ("drawn": false). This finds the earth (job "f" 0); _fox_earth lays the rounds.
 func _fox_spot(key: Vector2i, places: Array) -> Variant:
 	var fc: Dictionary = cfg["fox"]
 	var size: float = float(cfg.get("block_m", 256.0))
@@ -399,8 +484,8 @@ func _fox_earth(key: Vector2i, rec: Dictionary, n: int) -> Variant:
 	if n == 0:
 		var spot: Variant = _fox_spot(key, rec["places"])
 
-		if spot == null:
-			return null
+		if spot == null or _out_of_time:
+			return null   # not known yet, or stopped for the tick: nothing kept
 
 		rec["fox"] = spot
 
@@ -447,6 +532,9 @@ func _fox_earth(key: Vector2i, rec: Dictionary, n: int) -> Variant:
 
 		trip.append_array(pts.slice(1))
 		leg_from = stops[i]
+
+	if _out_of_time:
+		return null   # stopped for the tick: the round is laid again from the kept reads next tick, so nothing is added twice
 
 	if trip.size() > 1:
 		rounds.append(trip)

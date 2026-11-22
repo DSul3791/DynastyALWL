@@ -314,6 +314,7 @@ func _init() -> void:
 
 	sun_checks(p1)
 	fox_checks(r1, p1)
+	slice_checks(p1)
 
 	print("test_animal_trips: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
@@ -410,6 +411,44 @@ func weighted_ranges(elk_weight: float) -> Array:
 					found[k] += 1
 
 	return found
+
+
+# Work spread over ticks: a job past the budget stops at a ground read and goes on next tick, and the places come out the same as in
+# one go; nothing is worked out while a player has just joined (hold_until_ms).
+func slice_checks(p1: Array) -> void:
+	var r = ranges_with(11)
+	r.cfg["budget_ms"] = 0.0
+	r.fresh_reads_min = 64   # a few dozen reads a tick, so the test runs quickly; the server takes 4
+	r.hold_until_ms = 5000
+	var reads: Array = [0]
+	r.ground_height = func(x, z):
+		reads[0] += 1
+		return ground(x, z)
+	r.tick([Vector3(128.0, 10.0, 128.0)], 1000)
+	check(reads[0] == 0 and not r.is_ready(Vector2i(0, 0)), "while a player has just joined no ground is read for the places")
+	var ticks: int = 0
+	var most: int = 0
+
+	while ticks < 200000:
+		var before: int = reads[0]
+		r.tick([Vector3(128.0, 10.0, 128.0)], 6000 + ticks)
+		most = maxi(most, reads[0] - before)
+		ticks += 1
+		var done: bool = true
+
+		for key in r.blocks:
+			done = done and r.is_ready(key)
+
+		if done:
+			break
+
+	var jobs: int = 0
+
+	for key in r.blocks:
+		jobs += r._jobs_for(key).size()
+
+	check(str(all_places(r)) == str(p1), "worked a few reads a tick, the places are the same as worked in one go (%d ticks for %d jobs)" % [ticks, jobs])
+	check(ticks > jobs and most <= 4 * r.fresh_reads_min, "with no budget each tick makes only a few new reads (at most %d, over %d ticks)" % [most, ticks])
 
 
 # Stage 2b (TR-9): a fox earth by the warrens, its rounds visiting 2 to 4 of them, not drawn and not a run; a fox walks a different

@@ -134,6 +134,15 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
 - TR-10 away fox: a snare on a run within 300 m of an earth may take a fox at 0.2 of the rabbit rate times the fox's activity, so
   about one catch in six there is a fox (which animal it was goes through the owner's luck, the fox being the bigger catch).
 
+## Cost on the server tick
+
+The places are worked out in jobs (a warren, a deer, moose or elk range, a fox earth then each of its rounds) within budget_ms
+(0.6 ms) a tick. A single range job measured 34 to 67 ms on Lane B (22 Nov, a throttled machine), almost all in laying one trail
+(a ground and water read for 7 tries every 12 m). So a job past the budget now stops at its next read and runs again next tick from the
+reads it kept: it makes at least fresh_reads_min (4) new reads a tick and comes out the same as worked in one go. Nothing is worked out
+for hold_after_join_s (40 s) after a player joins, so a cold join's own ground load does not share the CPU with it (the gate thread's
+reading of a longer first-join freeze); until then animals spawn on the old random spots.
+
 ## Not done / risks
 
 - Places use terrain, biome and water only (tree cover is not known far from players, and must give the same answer every visit).
