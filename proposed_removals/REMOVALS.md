@@ -183,3 +183,8 @@ Preservation/reader receipts: independent review PASS on exact tree `09c98947328
 | path (under proposed_removals/) | who | date | why | replaced by |
 |---|---|---|---|---|
 | src/worldgen/tools/snare_odds.gd, snare_odds.gd.uid | Claude, snare rework PR | 22 Nov | analysis tool for the snare draw (rabbits pulled in from 30 m), which no longer exists: snares roll only when an animal passes | none (test_traps.gd checks the pass rate) |
+
+## In-game Report a problem, 22 Nov 2026 (Dave 22 Nov 2026: "the testers will not be reporting a problem from the game. They will be doing it on the Github period"; #1574)
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| src/client/problem_report.gd, problem_report.gd.uid, src/worldgen/tools/test_problem_report.gd, test_problem_report.gd.uid | Claude, first-hour thread | 22 Nov | in-game report file and bug-form button (#1567), against the plan: testers report on GitHub only | DynastyALWL-QA issue forms (bug.yml, idea.yml) |
