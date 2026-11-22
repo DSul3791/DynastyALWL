@@ -87,7 +87,7 @@ Grouped so that each piece can be one thread. Order is a suggestion (section 4).
 - Delete every kit record: **held, not an overnight job** (coordinator, 22 Nov). There are 191 `*_kit` records, 186 of them retired, across items.json, looks.json, encyclopedia.json, structures.json, recipes.json, blueprints.json and weights.json, plus code in basic_look.gd, held_item.gd and server_items.gd and about 12 tests. Saves may hold kit items, and item numbers are kept, never reused. It needs a plan (what an old kit item becomes, whether the numbers stay reserved) and Dave's say. Do not delete or renumber them before then. The irrigation thread has the sizes.
 - Data CSVs import as keep: PR #1515.
 - `.gdignore` for six `art/` picture folders: PR #1517. Still open: rig tag display names; the freeze diagnostics PR.
-- Release note: old smithies keep their fuel in slot 0 ("no fuel" otherwise).
+- Release note for old smithies: done, BugsList entry 116 Known limits (a product left in the first slot, now the fuel slot, reads "no fuel" until taken out).
 - Bog silting against tunnels (BI-4 says no refill under 1 m; check it with a real tunnel).
 - The gate thread's part 3 notes.
 
