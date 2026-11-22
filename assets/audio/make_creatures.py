@@ -277,7 +277,7 @@ def goblin_chitter(rng):
         add(out, y / (np.max(np.abs(y)) + 1e-9) * rng.uniform(0.7, 1.0), at)
         at += d + rng.uniform(0.04, 0.09)
 
-    return finish(out[:int((at + 0.08) * SR)], 0.7, 0.02)
+    return finish(out[:int((at + 0.08) * SR)], 0.42, 0.02)   # peak about -7.5 dB: under the -6 dB creature limit (loudness_report.py --check, 22 Nov 2026; was 0.7)
 
 
 def goblin_hiss(rng):
@@ -288,7 +288,7 @@ def goblin_hiss(rng):
     h = noise(rng, n, lambda fr: band(fr, rng.uniform(3800, 4600), 0.7)) * np.minimum(t / 0.06, 1.0) * np.minimum((d - t) / 0.25, 1.0)
     g = voiced(rng, d, rng.uniform(210, 260), rng.uniform(170, 200), [(700, 1.0), (1600, 0.6)], rough=0.5, breath=0.2)
     g *= (0.6 + 0.4 * np.sin(2 * np.pi * 24 * t)) * np.minimum(t / 0.1, 1.0) * np.minimum((d - t) / 0.3, 1.0)
-    return finish(h / (np.max(np.abs(h)) + 1e-9) + 0.6 * g / (np.max(np.abs(g)) + 1e-9), 0.7, 0.05)
+    return finish(h / (np.max(np.abs(h)) + 1e-9) + 0.6 * g / (np.max(np.abs(g)) + 1e-9), 0.42, 0.05)   # peak about -7.5 dB, as the chitter
 
 
 SOUNDS = {
