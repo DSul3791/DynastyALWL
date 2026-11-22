@@ -230,6 +230,8 @@ func _init() -> void:
 	check(float(items._water.pieces[lone].get("litres_max", 0.0)) == 60.0, "emptied, it holds 60 L again (Dave 21 Nov 2026)")
 
 	# --- River barrel (Dave 20 Nov 2026, PV-13): a barrel stood in a brook or river fills fast with river water ---
+	var dry_barrel: int = barrel(140.0, 140.0)
+	check(float(items._water.pieces[dry_barrel].get("river_lpm", 0.0)) == 0.0, "a barrel just set down on dry ground takes no river water, even before the next look")
 	var stream_kind: Array = ["river"]
 	var stream_depth: Array = [0.4]
 	items.water_kind_at = func(x, z): return {"kind": stream_kind[0], "depth": stream_depth[0]} if Vector2(x - 120.0, z - 120.0).length() < 1.0 else {"kind": "", "depth": 0.0}   # only the lone barrel stands in it

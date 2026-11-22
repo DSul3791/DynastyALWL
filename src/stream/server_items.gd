@@ -18571,7 +18571,7 @@ func water_piece(def: Dictionary, pos: Vector3, yaw_deg: float, st: Dictionary =
 			piece[key] = ends
 		elif key == "level_port" and typeof(value) == TYPE_ARRAY and (value as Array).size() == 3:
 			piece[key] = pos + Vector3(float(value[0]), float(value[1]), float(value[2])).rotated(Vector3.UP, deg_to_rad(yaw_deg))
-		elif key != "note":
+		elif key != "note" and key != "river_lpm":   # river_lpm is the rate a river barrel may take; the piece's own river_lpm is set by _barrels_tick only where it stands in a river
 			piece[key] = value
 
 	if str(def.get("hand_laid", "")) == "pipe":
