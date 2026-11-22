@@ -925,6 +925,27 @@ func _ready() -> void:
 	_connect()
 
 
+var _refused_read_msec: int = -100000   # _play_server_refused: when the run note was last read
+
+
+# Play's own server refused to start (its save files could not be read: terrain_server.gd): its reason, from the note it left
+# (user://server_run.json, state "refused") since this game began waiting; "" otherwise.
+func _play_server_refused(waited: int) -> String:
+	var path: String = "user://server_run.json"
+	var now: int = Time.get_ticks_msec()
+
+	if now - _refused_read_msec < 1000:
+		return ""   # read once a second, not every frame of the start-up
+
+	_refused_read_msec = now
+	var note: Variant = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
+
+	if not (note is Dictionary) or str(note.get("state", "")) != "refused" or float(note.get("t", 0.0)) < Time.get_unix_time_from_system() - float(waited) - 30.0:
+		return ""
+
+	return str(note.get("why", "The server did not start."))
+
+
 # What the connection window says: the step the game is on, how long it has been there, and (when it is stuck) the likely reason.
 func _update_connect_window() -> void:
 	if _join_refused != "":
@@ -982,6 +1003,14 @@ func _update_connect_window() -> void:
 			_connect_window.fail("The server is not answering this game", text, func(): _finish(1))
 
 		_connect_window.update(text)
+		return
+
+	var refused: String = "" if _remote else _play_server_refused(waited)
+
+	if refused != "":
+		_join_refused = refused   # stays on the window; no retry
+		_telemetry.event("JOIN: Play's server refused to start: %s" % refused)
+		_connect_window.fail("The server did not start", refused, func(): _finish(1))
 		return
 
 	var trying: String = "1. Opening the connection to %s: %s, %d s\n2. Waiting for the server's welcome\n3. Loading the ground under you" % [where, "trying" if status == MultiplayerPeer.CONNECTION_CONNECTING else "not connected", waited]

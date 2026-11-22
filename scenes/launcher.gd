@@ -104,6 +104,9 @@ func _host_and_play() -> void:
 		"--threads=%d" % maxi(load("res://src/shared/cpu_budget.gd").usable() >> 1, 2),
 	])
 
+	if str(_read_note(RUN_NOTE).get("state", "")) == "refused":
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(RUN_NOTE))   # an earlier refusal: the window must not show it while this server starts
+
 	var pid: int = OS.create_process(OS.get_executable_path(), arguments)
 
 	if pid < 0:
