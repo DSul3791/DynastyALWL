@@ -81,6 +81,7 @@ var _patch_seed: int = 0
 var _beach_id: int = -1                 # biome ids for the sand / dirt edge rules (see _edge_m)
 var _ocean_id: int = -1
 var _clearings: Array = []              # [Vector2 centre, core radius, soft edge] where no tree or shrub stands: every NPC marker
+var _trodden: Array = []                # [Vector2 centre, core radius, soft edge, tallest kept m]: Edda and Hob's camp (camp.json "trodden"), _trodden_camp
 var _riparian: Dictionary = {}          # data/water/riparian.json read for the placer (_riparian_rules): the bank shrubs by distance from the water
 var _cover: Dictionary = {}             # the spring cover rules (tile_rules runtime_flora.spring_cover, see _spring_cover); "species" holds the species Dictionaries in order
 var _spring_seed: int = 0
@@ -104,6 +105,7 @@ func setup(terrain_generator, tables, tile_rules: Dictionary) -> void:
 	_patch_seed = SeedUtil.purpose_seed(int(generator.master_seed), "flora_patches")
 	_spring_seed = SeedUtil.purpose_seed(int(generator.master_seed), "flora_springs")
 	_clearings = _starter_clearings()
+	_trodden = _trodden_camp()
 	var biome_ids: Dictionary = {}
 	var water_ids: Dictionary = {}
 	_soil_growth.resize(256)
@@ -331,6 +333,38 @@ func _starter_clearings() -> Array:
 			list.append([Vector2(float(marker["x"]), float(marker["z"])), CLEAR_MARKER_M, CLEAR_SOFT_M])
 
 	return list
+
+
+# Edda and Hob's camp ground is trodden (data/npcs/camp.json "trodden"; coordinator 22 Nov 2026, Lane A's spawn pictures: a new player stood
+# inside tall grass and reeds by the camp): no plant or shrub taller than max_height_m within radius_m of the camp fire, thinning back over soft_m.
+# Trees stay (the camp tree). Keyed on the camp, never on the spawn (Dave 9 Nov 2026: "nothing is ever based on where spawn is").
+func _trodden_camp() -> Array:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/npcs/camp.json")) if FileAccess.file_exists("res://data/npcs/camp.json") else null
+
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return []
+
+	var fire: Dictionary = (parsed as Dictionary).get("fire", {})
+	var rule: Dictionary = (parsed as Dictionary).get("trodden", {})
+
+	if not fire.has("x") or rule.is_empty():
+		return []
+
+	return [Vector2(float(fire["x"]), float(fire["z"])), float(rule.get("radius_m", 12.0)), float(rule.get("soft_m", 2.0)), float(rule.get("max_height_m", 0.5))]
+
+
+# True when a plant or shrub of this height at this spot is kept off the camp's trodden ground: inside the core always, in the soft edge with a
+# stable chance that grows with the distance from the core.
+func _trodden_at(x: float, z: float, species_id: int, height: float) -> bool:
+	if _trodden.is_empty() or height <= float(_trodden[3]):
+		return false
+
+	var d: float = Vector2(x, z).distance_to(_trodden[0]) - float(_trodden[1])
+
+	if d >= float(_trodden[2]):
+		return false
+
+	return d < 0.0 or rng_pick(x, z, species_id + 223) >= d / float(_trodden[2])
 
 
 # True when a tree or shrub at this spot is kept out by a starter clearing: inside the core always, in the soft edge with a stable chance that
@@ -633,6 +667,8 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 	var kept: Array = []            # [id, position, height, yaw] of the items placed, in order
 	var bank_clumps: Dictionary = {}   # bank thicket (species << 16 | clump spot) -> members placed (_riparian_shrubs)
 
+	var trodden_here: bool = not _trodden.is_empty() and Vector2(origin.x + chunk_m * 0.5, origin.y + chunk_m * 0.5).distance_to(_trodden[0]) < chunk_m * 0.75 + float(_trodden[1]) + float(_trodden[2])
+
 	for c in _clearings:
 		clearings_here = clearings_here or (Vector2(origin.x + chunk_m * 0.5, origin.y + chunk_m * 0.5).distance_to(c[0]) < chunk_m * 0.75 + float(c[1]) + float(c[2]))
 
@@ -646,6 +682,9 @@ func chunk_items(chunk: Vector2i, trees_only: bool = false) -> Dictionary:
 		var height: float = f[6]
 
 		if clearings_here and item["kind"] != KIND_PLANT and _cleared_at(x, z, f[1]):
+			continue
+
+		if trodden_here and item["kind"] != KIND_TREE and _trodden_at(x, z, f[1], height):
 			continue
 
 		# The chunk's sand is found from its biome samples (every `step` m), so a small beach between them left has_beach false and the edge rules off:
