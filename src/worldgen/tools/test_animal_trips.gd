@@ -179,6 +179,7 @@ func _init() -> void:
 	var back: Array = Codec.decode_routes(Codec.encode_routes(some, Vector2i(1, 1), 256.0), Vector2i(1, 1), 256.0)
 	check(back.size() == 2 and int(back[1][0]) == 1 and (back[0][1] as PackedVector2Array)[0].distance_to(Vector2(260.5, 270.25)) < 0.04 and (back[1][1] as PackedVector2Array)[1].distance_to(Vector2(-20.0, 600.0)) < 0.04, "routes survive the wire (%s)" % str(back))
 	check(Codec.decode_routes(PackedByteArray([1, 2, 3]), Vector2i.ZERO, 256.0).is_empty(), "a damaged routes block decodes to none")
+	check(is_equal_approx(float(r1.cfg.get("block_m", -1.0)), Codec.ROUTE_BLOCK_M), "the server's routes blocks are the size the client decodes with (ranges.json block_m %s, TrailCodec.ROUTE_BLOCK_M %s)" % [str(r1.cfg.get("block_m", "none")), str(Codec.ROUTE_BLOCK_M)])
 
 	# Ground tiles still loading: nothing is worked out (no cold read on the tick), then it is once they are in.
 	var r5 = ranges_with(11)

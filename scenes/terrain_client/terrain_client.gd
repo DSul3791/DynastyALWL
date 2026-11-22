@@ -1639,7 +1639,7 @@ func _welcome_body(info: Dictionary) -> void:
 
 	net.trails_received.connect(func(bx: int, bz: int, bytes: PackedByteArray, routes: PackedByteArray) -> void:
 		grass.set_trail_block(bx, bz, TrailCodec.decode(bytes))
-		var decoded: Array = TrailCodec.decode_routes(routes, Vector2i(bx, bz), 256.0)
+		var decoded: Array = TrailCodec.decode_routes(routes, Vector2i(bx, bz), TrailCodec.ROUTE_BLOCK_M)
 		grass.set_trail_routes(bx, bz, decoded)   # the trails between animal places (protocol 149)
 		trail_signs.set_routes(bx, bz, decoded)
 	)

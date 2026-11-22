@@ -55,7 +55,7 @@
 		{
 			"why": "network protocol and constants (hub)",
 			"paths": ["src/stream/terrain_net.gd"],
-			"tests": ["test_net_look", "test_shore_net", "test_join_address", "test_server_auth", "test_play_server", "test_heartbeat", "test_client_wait", "test_stream_paused_timeout", "test_view_members", "test_fine_water_send", "test_water_notify", "test_worn_sync", "test_server_list", "test_server_pick", "test_self_timeout", "test_idle_timeout"]
+			"tests": ["test_net_look", "test_slot_sounds", "test_shore_net", "test_join_address", "test_server_auth", "test_play_server", "test_heartbeat", "test_client_wait", "test_stream_paused_timeout", "test_view_members", "test_fine_water_send", "test_water_notify", "test_worn_sync", "test_server_list", "test_server_pick", "test_self_timeout", "test_idle_timeout"]
 		},
 		{
 			"why": "server item, ground and storage authority (hub)",
