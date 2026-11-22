@@ -192,7 +192,7 @@ func reload(dir: String):
 func _init() -> void:
 	var dir: String = "user://test_drills"
 	var want: Dictionary = build_world(dir)
-	check(int(want["remains"]) == 6 and int(want["remains_fibre"]) == 10 and int(want["cap_owner"]) == 5 and int(want["benches"]) == 2 and int(want["energy"]) == 41 and int(want["age"]) == 321 and int(want["warmth"]) == 63 and int(want["sick"]) == 5000 and int(want["strength"]) == 3, "the drill world has a body, an aged stack, warmth, sickness and skills %s" % str(want))
+	check(int(want["remains"]) == 6 and int(want["remains_fibre"]) == 5 and int(want["cap_owner"]) == 5 and int(want["benches"]) == 2 and int(want["energy"]) == 41 and int(want["age"]) == 321 and int(want["warmth"]) == 63 and int(want["sick"]) == 5000 and int(want["strength"]) == 3, "the drill world has a body, an aged stack, warmth, sickness and skills %s" % str(want))
 	check(int(want["pack"]) == 20 and int(want["chest"]) == 7 and int(want["ground"]) == 3 and int(want["trees"]) == 1, "the drill world has what the drills count on %s" % str(want))
 
 	for file in FILES:

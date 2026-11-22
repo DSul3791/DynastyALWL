@@ -16921,7 +16921,7 @@ func kill(peer: int, cause: String) -> bool:
 	var ground: float = float(ground_height.call(pos.x, pos.z)) if ground_height.is_valid() else NAN
 	var cave: bool = not is_nan(ground) and pos.y < ground - 1.5   # underground: keep the spot, the surface above is not theirs
 	var spot: Vector3 = pos if (is_nan(ground) or cave) else Vector3(pos.x, ground, pos.z)
-	_trim_owner_remains(key, peer)
+	_trim_owner_remains(key)
 	var uid: int = _next_uid
 	_next_uid += 1
 	var chest = InventoryScript.new(table)
@@ -16997,7 +16997,7 @@ func kill(peer: int, cause: String) -> bool:
 
 # One character cannot litter the world: with per_owner_cap sets already out, the oldest empty set goes first to make room for the new one.
 # Remains that still hold anything (an item or coins) are never removed to make room (Dave: no ground-item cap; coordinator 22 Nov 2026), so a player may have more.
-func _trim_owner_remains(key: String, _peer: int = -1) -> void:
+func _trim_owner_remains(key: String) -> void:
 	var cap: int = int(_death_cfg.get("per_owner_cap", 5))
 	var mine: Array = []
 	var empty: Array = []
