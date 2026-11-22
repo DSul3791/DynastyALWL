@@ -1294,8 +1294,8 @@ func _show_pieces(now: int) -> void:
 		tag.position = Vector3(x, g + maxf(height, 0.4) + 0.5, z)
 		client.add_child(tag)
 		model.set_meta("piece_tag", tag)
-		# "lowest point" against the ground under it: below 0 is sunk in, above 0 floats (a gap read off shadows can be the sun's shadow bias)
-		print("shot runner: piece %s %s state %d look %s size %.2f x %.2f x %.2f at %s, lowest point %+.3f m from the ground" % [models[n][0], "FAIL empty" if box.size == Vector3.ZERO else "ok", int(models[n][1]["state"]), str(models[n][1].get("look", "")), box.size.x, box.size.y, box.size.z, str(model.global_position), box.position.y - g])
+		# the drawn model's lowest point against its placement height (its own sink or lift, not the ground: see the "clearance" line after the reground)
+		print("shot runner: piece %s %s state %d look %s size %.2f x %.2f x %.2f at %s, lowest point %+.3f m from its placement height" % [models[n][0], "FAIL empty" if box.size == Vector3.ZERO else "ok", int(models[n][1]["state"]), str(models[n][1].get("look", "")), box.size.x, box.size.y, box.size.z, str(model.global_position), box.position.y - g])
 		x += float(widths[n]) * 0.5 + 1.0
 		subject_y = g
 
@@ -1307,6 +1307,35 @@ func _show_pieces(now: int) -> void:
 # After the 4 s piece wait: each piece is stood again on the physics ground. When _show_pieces ran, the collider under a piece may not have been built yet, and
 # then the voxel raycast placed it; that reading is a whole cell, so on 22 Nov the idle Primitive smithy (stone_forge forge:1) stood about 0.9 m into the
 # ground and read as two broken fragments. A piece with still no collider under it keeps its first height and says so.
+# The drawn model's lowest point against the collision ground under its box, at 9 probes (its corners, edge middles and middle): "from A to
+# B" is lowest point minus the highest and the lowest ground there. Both below 0: sunk in everywhere; above 0 somewhere: it floats over that
+# part (the gap seen in a picture can also be the outdoor sun's shadow bias, which moves thin things' shadows off them).
+func _print_clearance(model: Node3D, skip: Array) -> void:
+	var box: AABB = _aabb_of(model)
+
+	if box.size == Vector3.ZERO:
+		return
+
+	var worst: float = INF
+	var best: float = -INF
+
+	for fx in [0.0, 0.5, 1.0]:
+		for fz in [0.0, 0.5, 1.0]:
+			var from: Vector3 = Vector3(box.position.x + box.size.x * fx, box.end.y + 5.0, box.position.z + box.size.z * fz)
+			var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - Vector3(0.0, 20.0, 0.0))
+			query.exclude = skip
+			var hit: Dictionary = client.body.get_world_3d().direct_space_state.intersect_ray(query)
+
+			if not hit.is_empty():
+				worst = minf(worst, box.position.y - float(hit["position"].y))
+				best = maxf(best, box.position.y - float(hit["position"].y))
+
+	if is_inf(worst):
+		print("shot runner: piece %s clearance: no ground under it" % str(model.get_meta("piece_name")))
+	else:
+		print("shot runner: piece %s clearance: lowest point from %+.3f to %+.3f m against the ground under it (below 0 = in the ground)" % [str(model.get_meta("piece_name")), worst, best])
+
+
 func _reground_pieces() -> void:
 	_pieces_regrounded = true
 	var last: Node3D = null
@@ -1338,6 +1367,7 @@ func _reground_pieces() -> void:
 
 		if absf(shift) < 0.05:
 			print("shot runner: piece %s reground: already on the collision ground (%+.2f m)" % [str(model.get_meta("piece_name")), shift])
+			_print_clearance(model, skip)
 			continue
 
 		model.global_position = Vector3(at.x, phys, at.z)
@@ -1347,6 +1377,7 @@ func _reground_pieces() -> void:
 			tag.global_position += Vector3(0.0, shift, 0.0)
 
 		print("shot runner: piece %s reground %+.2f m to the collision ground, now at %s" % [str(model.get_meta("piece_name")), shift, str(model.global_position)])
+		_print_clearance(model, skip)
 
 	# The row views look at the last piece's height, as _show_pieces set it.
 	if last != null and _subject_set:
