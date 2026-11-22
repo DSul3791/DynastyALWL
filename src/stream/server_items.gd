@@ -14513,11 +14513,13 @@ func _bed_landing(bed: Vector3) -> Vector3:
 	var r: float = float(cfg.get("landing_m", 1.2))
 	var max_r: float = float(cfg.get("search_m", 3.0))
 
+	var rows: Array = _foundation_rows()   # a bed in a house: the player lands on the floor beside it, not inside the slab at the generated ground
+
 	while r <= max_r + 0.001:
 		for k in 8:
 			var a: float = TAU * float(k) / 8.0
 			var spot: Vector3 = bed + Vector3(cos(a) * r, 0.0, sin(a) * r)
-			var ground: float = float(ground_height.call(spot.x, spot.z)) if ground_height.is_valid() else bed.y
+			var ground: float = _remains_surface(spot, rows) if ground_height.is_valid() else bed.y
 
 			if not is_nan(ground) and absf(ground - bed.y) < 2.0 and not _blocked_spot(spot, bed):
 				return Vector3(spot.x, ground + 0.1, spot.z)
@@ -17092,17 +17094,23 @@ func _remains_tick(spent: float) -> void:
 
 		var ground: float = float(ground_height.call(it["pos"].x, it["pos"].z))
 
-		if is_nan(ground) or absf(ground - it["pos"].y) <= 0.25:
-			continue
+		if is_nan(ground) or absf(ground - it["pos"].y) <= 0.25 or is_equal_approx(float(_remains_settled.get(id, NAN)), float(it["pos"].y)):
+			continue   # on the generated ground, or already found resting here (the edits scan runs once per set, not every tick)
 
 		if rows.is_empty():
 			rows = [_foundation_rows()]   # read once a tick, and only when some remains are off the generated ground (on a floor, in a dug spot)
 
-		var surface: float = _remains_surface(it["pos"], rows[0])
+		var floor_rows: Array = rows[0]
+		var surface: float = _remains_surface(it["pos"], floor_rows)
 
 		if not is_nan(surface) and absf(surface - it["pos"].y) > 0.25:
 			it["pos"].y = surface
 			_dirty = true
+
+		_remains_settled[id] = float(it["pos"].y)
+
+
+var _remains_settled: Dictionary = {}   # remains world id -> the y the recheck found them resting at, off the generated ground (memory only: a restart checks each once)
 
 
 # Where remains rest at `pos` (a point a little above or below the surface): the top of a foundation or floor within reach of it (a death in a house is
