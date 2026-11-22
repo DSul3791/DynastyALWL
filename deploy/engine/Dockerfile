@@ -20,18 +20,24 @@ WORKDIR /godot
 # Headless Linux: no desktop libraries in the container (the flags of tools/build_godot_linux.sh).
 ENV LINUX_FLAGS="x11=no wayland=no alsa=no pulseaudio=no udev=no dbus=no speechd=no fontconfig=no"
 
+# The three builds run one after another (each stage starts from the one before): run side by side, three -j"$(nproc)" compilers can
+# run Docker Desktop's memory out. Each stage keeps the binaries of the stages before it in bin/.
 FROM source AS editor
 RUN scons platform=linuxbsd target=editor $LINUX_FLAGS -j"$(nproc)" && bin/godot.linuxbsd.editor.x86_64 --version
 
-FROM source AS windows
-# d3d12 and accesskit need extra SDKs; the game uses Vulkan or OpenGL. An option this Godot does not know is only warned about.
-RUN scons platform=windows target=template_release arch=x86_64 use_mingw=yes d3d12=no accesskit=no -j"$(nproc)" \
+FROM editor AS windows
+# The game asks for Direct3D 12 on Windows (project.godot rendering_device/driver.windows, decision D-TODO-1, 21 Nov 2026), so the
+# template has it: Godot's own script fetches the Mesa NIR libraries it needs into bin/build_deps, where the Windows build looks when
+# cross-compiling. The Agility SDK and PIX parts are removed so the template uses the D3D12 that comes with Windows 10 and 11 and needs
+# no extra DLLs. AccessKit (screen reader) needs another SDK and is left out; an option this Godot does not know is only warned about.
+RUN python3 misc/scripts/install_d3d12_sdk_windows.py && rm -rf bin/build_deps/agility_sdk bin/build_deps/pix \
+    && scons platform=windows target=template_release arch=x86_64 use_mingw=yes d3d12=yes accesskit=no -j"$(nproc)" \
     && ls -l bin/godot.windows.template_release.x86_64.exe
 
-FROM source AS linux
+FROM windows AS linux
 RUN scons platform=linuxbsd target=template_release $LINUX_FLAGS -j"$(nproc)" && ls -l bin/godot.linuxbsd.template_release.x86_64
 
 FROM scratch
-COPY --from=editor /godot/bin/godot.linuxbsd.editor.x86_64 /godot
-COPY --from=windows /godot/bin/godot.windows.template_release.x86_64.exe /windows_release_x86_64.exe
+COPY --from=linux /godot/bin/godot.linuxbsd.editor.x86_64 /godot
+COPY --from=linux /godot/bin/godot.windows.template_release.x86_64.exe /windows_release_x86_64.exe
 COPY --from=linux /godot/bin/godot.linuxbsd.template_release.x86_64 /linux_release_x86_64

@@ -19,3 +19,4 @@ worlds/*/record
 worlds/*/setup_cache
 worlds/*/tiles
 assets/audio/**/*.import
+!assets/audio/CREDITS.csv.import

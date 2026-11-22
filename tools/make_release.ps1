@@ -31,16 +31,17 @@ $commit = (git rev-parse HEAD).Trim()
 $build = [int](git rev-list --count HEAD)
 $out = Join-Path (Split-Path (Get-Location) -Parent) "dynasty_export\build-$build"
 New-Item -ItemType Directory -Force -Path "$out\engine", "$out\client" | Out-Null
+$outFwd = $out.Replace("\", "/")   # buildx takes the folder paths with forward slashes
 $env:DOCKER_BUILDKIT = "1"
 
 # The stamp both builds carry (src/shared/build_stamp.gd reads it): the same format as tools/build_stamp.py, written without a BOM.
-$stamp = [ordered]@{ build = $build; commit = $commit; date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ") }
+$stamp = [ordered]@{ build = $build; commit = $commit; date = (Get-Date).ToUniversalTime().ToString("yyyy-MM-ddTHH:mm:ssZ", [Globalization.CultureInfo]::InvariantCulture) }
 [IO.File]::WriteAllText((Join-Path (Get-Location) "build_stamp.json"), ($stamp | ConvertTo-Json) + "`n")
 
 try {
-	Run "engine and templates (deploy/engine)" { docker build -f deploy/engine/Dockerfile --output "type=local,dest=$out\engine" deploy/engine }
+	Run "engine and templates (deploy/engine)" { docker buildx build -f deploy/engine/Dockerfile --output "type=local,dest=$outFwd/engine" deploy/engine }
 	Run "Windows game export (deploy/client)" {
-		docker build -f deploy/client/Dockerfile --build-context "engine=$out\engine" --build-arg "OFFICIAL=$Official" --output "type=local,dest=$out\client" .
+		docker buildx build -f deploy/client/Dockerfile --build-context "engine=$outFwd/engine" --build-arg "OFFICIAL=$Official" --output "type=local,dest=$outFwd/client" .
 	}
 
 	Copy-Item deploy\client\dynasty.iss $out -Force
@@ -52,7 +53,7 @@ try {
 	# The server image reuses the engine just built (deploy/server/engine/godot is gitignored) instead of compiling it again.
 	Copy-Item "$out\engine\godot" deploy\server\engine\godot -Force
 	Run "server image (deploy/server)" {
-		docker build -f deploy/server/Dockerfile --build-arg "COMMIT=$commit" -t "dynasty-server:build-$build" -t dynasty-server:latest .
+		docker buildx build --load -f deploy/server/Dockerfile --build-arg "COMMIT=$commit" -t "dynasty-server:build-$build" -t dynasty-server:latest .
 	}
 	Run "server image file" { docker save "dynasty-server:build-$build" dynasty-server:latest -o "$out\dynasty-server-build-$build.tar" }
 	Copy-Item deploy\server\compose.yaml, deploy\server\SERVER.md $out -Force

@@ -23,9 +23,11 @@ RUN printf '{"official": "%s"}\n' "$OFFICIAL" > client_config.json \
 # A first import can fail on a resource it has not seen yet and pass on the second run (tools/gate_pc.sh does the same).
 RUN godot --headless --path /game --import > /tmp/import.log 2>&1 || godot --headless --path /game --import > /tmp/import.log 2>&1 \
     || { tail -40 /tmp/import.log >&2; exit 1; }
-RUN mkdir /out && godot --headless --path /game --export-release "Windows Client" /out/Dynasty.exe > /tmp/export.log 2>&1; \
-    tail -20 /tmp/export.log; test -s /out/Dynasty.exe && test -s /out/Dynasty.pck \
-    || { echo "export failed: no Dynasty.exe and Dynasty.pck (log above)" >&2; exit 1; }
+# Godot's exit code counts, and the water library must sit beside the game, or the water falls back to the slow GDScript copy.
+RUN mkdir /out; godot --headless --path /game --export-release "Windows Client" /out/Dynasty.exe > /tmp/export.log 2>&1; code=$?; \
+    if [ $code -ne 0 ] || [ ! -s /out/Dynasty.exe ] || [ ! -s /out/Dynasty.pck ] || [ ! -s /out/libwatercore.windows.template_release.x86_64.dll ]; then \
+        cat /tmp/export.log >&2; ls -l /out >&2; echo "export failed (exit $code; Dynasty.exe, Dynasty.pck and the water dll must all be there)" >&2; exit 1; \
+    fi; tail -5 /tmp/export.log; ls -l /out
 
 FROM scratch
 COPY --from=export /out/ /
