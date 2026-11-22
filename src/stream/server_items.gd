@@ -591,6 +591,7 @@ func setup(item_table, store_dir: String) -> void:
 	_load_world_items()
 	var loaded_next: int = _next_id
 	_load_changed = {}
+	_split_old_barrels()   # after the reset: the barrels it turns are written to their area files at the first save
 	_carts.after_load()
 	var lights_parsed: Variant = _read_json_version("lights.json", 1)
 	_apply_lit_rows(lights_parsed.get("lit", []) if lights_parsed != null and typeof(lights_parsed.get("lit", null)) == TYPE_ARRAY else [])
@@ -7401,6 +7402,43 @@ func _load_inventories() -> void:
 		_inventories[key] = inv
 
 
+# A Barrel placed before 22 Nov 2026 held water or goods (PV-6). Dave 22 Nov 2026 split it: the Water barrel (wooden_barrel, 3 slots of water
+# containers) and the Storage barrel (storage_barrel). One that holds anything but water containers in its first 3 slots loads as a Storage barrel, its
+# goods kept; one that is empty or holds water containers stays a Water barrel (its water and pipes kept). Runs before the water network is built.
+func _split_old_barrels() -> void:
+	var water_slots: int = int(_structures.get("wooden_barrel", {}).get("slots", 3))
+
+	if not _structures.has("storage_barrel"):
+		return
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if not it.has("struct") or str(it["struct"].get("kind", "")) != "wooden_barrel" or it["struct"].has("site"):
+			continue
+
+		var box = _chests.get(int(it["struct"].get("uid", 0)))
+
+		if box == null:
+			continue
+
+		var goods: bool = false
+
+		for s in box.slot_count:
+			if box.numbers[s] != 0 and (s >= water_slots or _container_cap(box.numbers[s]) <= 0):
+				goods = true
+				break
+
+		if goods:
+			it["struct"]["kind"] = "storage_barrel"
+			it["number"] = table.number_of("storage_barrel")
+			_load_changed[id] = true
+			_dirty = true
+		elif it["struct"].has("autoload"):
+			it["struct"].erase("autoload")   # a Water barrel does not autoload
+			_load_changed[id] = true
+
+
 func _load_world_items() -> void:
 	_wide_piles.clear()
 	_wide_piles_built = false   # the first drop after the load files the loaded cone piles
@@ -12193,6 +12231,9 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 func _after_built(peer: int, entry: Dictionary, def: Dictionary) -> void:
 	var spot: Vector3 = entry["pos"]
 
+	if bool(def.get("blocks_walk", false)):
+		_free_trapped(spot)
+
 	if str(def.get("use", "")) == "light" and _blueprint_of_kit.has(str(def.get("kit", ""))):   # a lantern built with its candle or oil ("spent") stands lit on it
 		for burnt in _blueprints[int(_blueprint_of_kit[str(def["kit"])])].get("spent", []):
 			if str(burnt[0]) == str(def.get("fuel", "")) and int(burnt[1]) > 0:
@@ -12923,6 +12964,9 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 			_last_use[peer] = now_ms
 			it["struct"]["kind"] = str(def["toggle"])
 			_grid_add(id, it)   # a shut door or gate ("blocks_walk") stops animals again; the open one is forgotten by the grid itself (its kind changed)
+
+			if bool(_structures[str(def["toggle"])].get("blocks_walk", false)):
+				_free_trapped(it["pos"])   # shut on someone in the frame: they step out
 			_dirty = true
 
 		return
@@ -13938,7 +13982,7 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 		_reject(peer, 3)
 		return 0
 
-	if _barrel_water_l(id) >= BARREL_DRY_L:   # a barrel holds water or goods, never both (PLUMBING_DESIGN s9, PV-6)
+	if _water_blocks_goods(id):   # a tank that is a store holds water or goods, never both (PLUMBING_DESIGN s9, PV-6); a Water barrel holds both
 		_say(peer, "It holds water. Drink or draw it off first.")
 		_reject(peer, 3)
 		return 0
@@ -14067,7 +14111,7 @@ func _box_take(peer: int, inv, chest, a: int, count: int, weighed: bool = false)
 # A kind with neither takes anything (master s3.13: a log rack takes logs, a wardrobe clothes).
 func _box_takes(kind: String, number: int) -> bool:
 	var def: Dictionary = _structures.get(kind, {})
-	return StoreRules.takes(def, number, table) and (str(def.get("use", "")) != "tap" or _container_cap(number) > 0)   # a tap takes water containers only
+	return StoreRules.takes(def, number, table) and ((str(def.get("use", "")) != "tap" and not bool(def.get("fills_containers", false))) or _container_cap(number) > 0)   # a tap and a Water barrel take water containers only
 
 
 func _save_chests() -> void:
@@ -17398,6 +17442,28 @@ func _step_to_station(peer: int, station_id: int) -> Vector3:
 	return spot
 
 
+const TRAPPED_NEAR_M := 6.0   # players this close to a piece that just went up are checked for standing inside it
+const TRAPPED_HIGH_M := 2.5   # ... and this close in height (one storey)
+
+
+# A wall or a heavy station that just went up (or a door shut) round a player (their own or a friend's): the server steps them to the nearest clear spot, as a
+# resume spot is made safe (_safe_resume), so nobody is left stuck inside a finished piece.
+func _free_trapped(at: Vector3) -> void:
+	for peer in _peer_pos.keys():
+		var pos: Vector3 = _peer_pos[peer]
+
+		if Vector2(pos.x - at.x, pos.z - at.z).length() > TRAPPED_NEAR_M or absf(pos.y - at.y) > TRAPPED_HIGH_M or not structure_blocks(pos.x, pos.z, 0.0):
+			continue   # far off, or a floor above or a cellar below it: not inside
+
+		var out: Vector3 = _safe_resume(int(peer), pos)
+
+		if out.distance_to(pos) > 0.01 and out.distance_to(pos) <= RESUME_SEARCH_M + 0.5:   # nothing clear near: no long jump to a bed or the spawn
+			_peer_pos[peer] = out
+
+			if send_step_to.is_valid():
+				send_step_to.call(int(peer), out - Vector3(0.0, 1.0, 0.0), atan2(-(at.x - out.x), -(at.z - out.z)))   # the client lifts a step 1 m (_on_step_to); facing the piece
+
+
 # Another player stands within `radius` (on the ground plane) of a point.
 func _player_within(point: Vector3, radius: float, but: int) -> bool:
 	for other in _peer_pos:
@@ -19861,6 +19927,16 @@ func _take_down_laid(peer: int, _inv, id: int, it: Dictionary, def: Dictionary) 
 	_gain_source = was_src
 
 
+# Whether a tank that is also a store holds enough water to refuse goods (PV-6). A Water barrel (structures.json fills_containers, Dave 22 Nov 2026)
+# takes its water containers whatever water it holds, and fills them from it.
+func _water_blocks_goods(id: int) -> bool:
+	return _barrel_water_l(id) >= BARREL_DRY_L and not _fills_containers(id)
+
+
+func _fills_containers(id: int) -> bool:
+	return bool(_structures.get(str(_items.get(id, {}).get("struct", {}).get("kind", "")), {}).get("fills_containers", false))
+
+
 # Litres of water in a barrel (a tank that is also a store), 0 for anything else.
 func _barrel_water_l(id: int) -> float:
 	if not _water_kind.has(id) or not _water.pieces.get(id, {}).has("level_port"):
@@ -19892,7 +19968,7 @@ func _barrels_tick() -> void:
 			continue
 
 		var block: Dictionary = _structures.get(str(_water_kind[id]), {}).get("water", {})
-		var goods: bool = _barrel_has_goods(id)
+		var goods: bool = _barrel_has_goods(id) and not bool(_structures.get(str(_water_kind[id]), {}).get("fills_containers", false))   # a Water barrel's containers are not goods
 		var top: float = 0.0 if goods else float(block.get("litres_max", 0.0))
 
 		if absf(float(piece.get("litres_max", 0.0)) - top) > 0.001:
@@ -19993,7 +20069,9 @@ func _taps_fill(now_s: float) -> void:
 	for id in _water_kind:
 		var def: Dictionary = _structures.get(str(_water_kind[id]), {})
 
-		if str(def.get("use", "")) != "tap" or not _items.has(id):
+		var own: bool = bool(def.get("fills_containers", false))   # a Water barrel fills the containers in its slots from its own water (Dave 22 Nov 2026)
+
+		if (str(def.get("use", "")) != "tap" and not own) or not _items.has(id):
 			continue
 
 		var box = _chests.get(int(_items[id]["struct"].get("uid", 0)))
@@ -20010,7 +20088,7 @@ func _taps_fill(now_s: float) -> void:
 		if want.is_empty():
 			continue
 
-		var tank: int = _tap_supply(id)
+		var tank: int = (id if _water.pieces.has(id) and _water.litres(id, now_s) >= 0.01 else -1) if own else _tap_supply(id)
 
 		if tank < 0:
 			continue
@@ -23572,7 +23650,7 @@ func _autoload(peer: int, id: int, number: int, keep: bool) -> void:
 
 	if not _box_takes(str(it["struct"]["kind"]), number):
 		_say(peer, "The %s does not take %s." % [noun, what])
-	elif _barrel_water_l(id) >= BARREL_DRY_L:
+	elif _water_blocks_goods(id):
 		_say(peer, "It holds water. Drink or draw it off first.")
 	elif int(loaded[0]) > 0:
 		_say(peer, "Loaded %d %s into the %s.%s" % [int(loaded[0]), what, noun, (" %d more lies nearby." % int(loaded[1])) if int(loaded[1]) > 0 else ""])
@@ -23592,7 +23670,7 @@ func _autoload_into(id: int, box, number: int) -> Array:
 	var here: Vector3 = it["pos"]
 	var piles: Array = []
 
-	if not _box_takes(str(it["struct"]["kind"]), number) or _barrel_water_l(id) >= BARREL_DRY_L:   # a barrel holds water or goods, never both
+	if not _box_takes(str(it["struct"]["kind"]), number) or _water_blocks_goods(id):   # a tank that is a store holds water or goods, never both
 		return [0, 0]
 
 	for gid in _ids_near(here, AUTOLOAD_M):   # the last world sync's cells round it, not every record in the world

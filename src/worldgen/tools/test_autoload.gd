@@ -113,7 +113,7 @@ func _init() -> void:
 	stone = items.table.number_of("stone")
 	clay = items.table.number_of("clay")
 	check(stone > 0 and clay > 0 and Net.ACT_AUTOLOAD == 84 and Net.PROTOCOL_VERSION >= 139, "protocol 139: ACT_AUTOLOAD 84, the test items are in the table")
-	check(StoreRules.autoloads(items._structures["small_wagon"]) and StoreRules.autoloads(items._structures["wooden_barrel"]) and StoreRules.autoloads(items._structures["wooden_crate"]) and not StoreRules.autoloads(items._structures["kiln"]) and not StoreRules.autoloads(items._structures["smelter"]) and not StoreRules.autoloads(items._structures["remains"]) and not StoreRules.autoloads(items._structures["serving_platter"]) and not StoreRules.autoloads(items._structures["fish_trap_set"]), "carts, barrels and crates autoload; a kiln, smelter, remains, platter and fish trap do not")
+	check(StoreRules.autoloads(items._structures["small_wagon"]) and StoreRules.autoloads(items._structures["storage_barrel"]) and not StoreRules.autoloads(items._structures["wooden_barrel"]) and StoreRules.autoloads(items._structures["wooden_crate"]) and not StoreRules.autoloads(items._structures["kiln"]) and not StoreRules.autoloads(items._structures["smelter"]) and not StoreRules.autoloads(items._structures["remains"]) and not StoreRules.autoloads(items._structures["serving_platter"]) and not StoreRules.autoloads(items._structures["fish_trap_set"]), "carts, Storage barrels and crates autoload; a Water barrel (its slots fill water containers), a kiln, smelter, remains, platter and fish trap do not")
 
 	# 1. A Small wagon: stone nearest first up to its payload, a pile taken in part, the pile past 30 m left alone.
 	reset()

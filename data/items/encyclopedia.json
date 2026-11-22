@@ -8613,9 +8613,9 @@
 			"obtainable_now": true
 		},
 		"wooden_barrel_kit": {
-			"name": "Barrel",
+			"name": "Water barrel",
 			"kind": "placeable",
-			"description": "A hooped plank barrel. Holds 8 stacks.",
+			"description": "A hooped plank barrel for water.",
 			"how_to_get": [
 				"Build with a hammer (press R): 4 Plank, 2 Twine, 8 Bronze nails or better"
 			],
@@ -8623,10 +8623,20 @@
 			"obtainable_now": true
 		},
 		"wooden_barrel": {
-			"name": "Barrel",
+			"name": "Water barrel",
 			"kind": "structure",
-			"description": "A hooped plank barrel. Holds 8 stacks.",
+			"description": "A hooped barrel of hardwood staves that holds 60 L of water. Drink from it; its 3 slots take water containers and fill them from it.",
 			"how_to_get": [],
+			"used_for": [],
+			"obtainable_now": true
+		},
+		"storage_barrel": {
+			"name": "Storage barrel",
+			"kind": "structure",
+			"description": "A hooped barrel of hardwood staves for keeping food and goods. Holds 12 stacks.",
+			"how_to_get": [
+				"Build with a hammer (press R): 4 Hardwood board, 2 Twine, 8 Bronze nails or better"
+			],
 			"used_for": [],
 			"obtainable_now": true
 		},
