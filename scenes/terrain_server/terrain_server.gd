@@ -138,6 +138,7 @@ var weather: Dictionary = {}           # the weather at the water tile now (Weat
 var _weather_next_msec: int = 0
 var _blood_sent: Dictionary = {}       # peer -> hash of the blood trail last sent
 var _burrows_sent: Dictionary = {}     # peer -> hash of the burrow spots last sent
+var _trap_marks_sent: Dictionary = {}  # peer -> hash of the trap marks last sent for its Map
 var _nests_sent: Dictionary = {}       # peer -> hash of the nest spots last sent
 var _holes_sent: Dictionary = {}       # peer -> hash of the ice holes last sent (protocol 97)
 var _far_fires_sent: Dictionary = {}   # peer -> hash of the far lit campfires last sent (protocol 114)
@@ -801,11 +802,12 @@ func _ready() -> void:
 	items.nests_near = func(point, reach): return animals.nests_near(point, reach)
 	items.animals_near = func(point, radius): return animals.list_near(point, radius)
 	items.animal_snare = func(id): return animals.snare(id)
-	items.animal_lure = func(id, point): return animals.lure_to(id, point)
+	animals.snare_pass = func(id, sp, from, to): items.animal_passed(id, sp, from, to)
 	items.trail_strength = func(x, z): return trails.strength_at(x, z)
 	items.run_distance = func(x, z, kind): return ranges.route_distance(x, z, kind)
 	items.fox_near = func(x, z, m): return ranges.fox_near(x, z, m)
 	items.species_active = func(sp): return animals.activity_chance(animals.species_def(sp))
+	items.species_active_at = func(sp, hour): return animals.activity_at(animals.species_def(sp), hour)
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> Dictionary:
 		var member: String = tribes.member_along(origin, dir, reach)
@@ -1390,6 +1392,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 	_blood_sent.erase(peer_id)
 	_burrows_sent.erase(peer_id)
+	_trap_marks_sent.erase(peer_id)
 	_nests_sent.erase(peer_id)
 	_holes_sent.erase(peer_id)
 	_far_fires_sent.erase(peer_id)
@@ -3027,6 +3030,13 @@ func _send_npcs(delta: float) -> void:
 		for block in map_knowledge.updates_for(peer, now_ms):
 			net.map_blocks.rpc_id(peer, block[0], block[1], block[2])
 
+		var marks: Array = items.trap_marks(peer)   # the snares and Bird traps this character has set, marked on its Map (protocol 150)
+		var marks_sig: int = hash(marks)
+
+		if not _trap_marks_sent.has(peer) or int(_trap_marks_sent[peer]) != marks_sig:
+			_trap_marks_sent[peer] = marks_sig
+			net.trap_marks.rpc_id(peer, marks)
+
 		var trail: PackedVector3Array = animals.blood_near(at)
 		var trail_sig: int = hash(trail)
 
@@ -3119,9 +3129,12 @@ func _process(delta: float) -> void:
 		trails.note_player(peer, items._peer_pos[peer])   # players' own worn paths (stage 2c): a write only on entering a new 4 m cell
 
 	trails.tick(delta)
+	_events.mark("ranges")   # its own step: a cold join's WATCHDOG named "trails" for 6 s (22 Nov), which also held these
 	ranges.tick(npcs.player_positions.call(), Time.get_ticks_msec())
+	_events.mark("bandits")
 	bandits.tick()
 	bandits.camp_tick(delta, items.peer_positions())
+	_events.mark("map knowledge")
 	map_knowledge.tick(delta)   # the save interval only
 	_events.mark("send npcs")
 	_send_npcs(delta)

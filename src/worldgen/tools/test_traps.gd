@@ -1,9 +1,11 @@
 extends SceneTree
 
-# Snares (data/animals/traps.json, server_traps.gd): the catch rate on a worn trail and in open grass, small game only, the carcass, wear and breaking, sprung snares, the per-player cap, save and reload.
-# The Bird trap (traps.json kinds.bird_trap_set, Part C plan 3): ground birds only, flat trail factor, its own cap and words, saved like a snare.
+# Snares (data/animals/traps.json, server_traps.gd): the catch rate on a worn trail and none off one, small game only, a roll only when an animal
+# passes (Dave 22 Nov 2026), the carcass, wear and breaking, sprung snares, no limit a player, save and reload, no work for snares nobody is near, the Map's marks.
+# The Bird trap (traps.json kinds.bird_trap_set, Part C plan 3): ground birds only, flat trail factor, its own words, saved like a snare.
 # Snares on runs and while away (docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md, D-TRAP-1, TR-6): a snare on a trail between animal places
-# fishes as on a worn trail; with nobody near, one on a rabbit run rolls once a game hour, one off a run never; a sprung one holds its catch.
+# fishes as on a worn trail; the time with nobody near is rolled once when a player comes back (by the rabbits' hours), one off a run never;
+# a sprung one holds its catch.
 #   godot --headless --path . --script res://src/worldgen/tools/test_traps.gd      Prints "Test done: N pass, N fail".
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -61,6 +63,31 @@ func lay(items, at: Vector3, kind: String = "snare_trap") -> int:
 	return id
 
 
+# The Map's marks (protocol 150, marks_of): the owner's set traps, oldest first, and nobody else's; a trap gone leaves them at once,
+# with no tick; a reloaded world marks its traps from the first ask.
+func marks_checks(items, again, snares: Array, bird: int) -> void:
+	var marks: Array = items.trap_marks(1)
+	var want: Array = snares.duplicate()
+	want.append(bird)
+	var same: bool = marks.size() == want.size()
+
+	for n in mini(marks.size(), want.size()):
+		var it: Dictionary = items._items[int(want[n])]
+		same = same and absf(float(marks[n][0]) - it["pos"].x) < 0.11 and absf(float(marks[n][1]) - it["pos"].z) < 0.11 and str(marks[n][2]) == str(it["struct"]["kind"])
+
+	check(same, "the Map marks each set snare and the Bird trap, oldest first (%d marks)" % marks.size())
+	items.peer_connected_hello(2, "trap-key-00000002")
+	check(items.trap_marks(2).is_empty() and items.trap_marks(99).is_empty(), "another character's Map, or no character, marks none of them")
+	check(again.trap_marks(1).size() == want.size(), "after a reload the Map marks the same traps at once (%d)" % again.trap_marks(1).size())
+	var gone: int = int(snares[0])
+	items._items.erase(gone)
+	check(items.trap_marks(1).size() == want.size() - 1, "a trap taken up is gone from the Map at once")
+	var placed: int = lay(items, Vector3(600.0, 10.0, 600.0))
+	var last: Array = items.trap_marks(1)[items.trap_marks(1).size() - 1]
+	check(absf(float(last[0]) - 600.0) < 0.11 and absf(float(last[1]) - 600.0) < 0.11, "a snare just set is marked at once, last")
+	items._items.erase(placed)
+
+
 func reset(items, id: int) -> void:
 	var st: Dictionary = items._items[id]["struct"]
 	items._items.erase(int(st.get("catch", 0)))
@@ -93,13 +120,13 @@ func _init() -> void:
 	var id: int = lay(items, Vector3(0.0, 10.0, 0.0))
 	check(str(items._items[id]["struct"]["owner"]) == "trap-key-00000001", "a set snare knows its owner")
 
-	# On a worn trail a rabbit beside the snare is caught at the data rate (0.35 by day); in open grass under a fifth of that.
+	# On a worn trail a rabbit beside the snare is caught at the data rate (0.35 by day); off any trail never.
 	var base: float = float(traps.cfg["base_chance"])
 	var on_trail: int = catches(items, id, 2000)
 	check(absf(float(on_trail) / 2000.0 - base) < 0.04, "a snare on a trail catches at the data rate (%d of 2000)" % on_trail)
 	strength = 0.0
 	var in_grass: int = catches(items, id, 2000)
-	check(float(in_grass) < float(on_trail) / 5.0, "open grass catches under a fifth of a trail (%d against %d)" % [in_grass, on_trail])
+	check(in_grass == 0 and is_equal_approx(traps.chance_at(Vector3.ZERO, rabbit, true), 0.0), "off any animal trail a snare never catches (%d of 2000)" % in_grass)
 	strength = 0.6
 
 	# Night is likelier, a storm halves it, bait doubles it.
@@ -118,28 +145,29 @@ func _init() -> void:
 	near = []
 	check(catches(items, id, 200) == 0, "no animal near, no catch")
 
-	# The draw (MikeW, 3 Nov): with nothing inside lure_m, a rabbit living within draw_m may be drawn over to the snare, never
-	# caught from where it stands; a deer is never drawn; nothing beyond draw_m is.
-	var lured_to: Array = []
-	var far_rows: Array = [{"id": 21, "sp": "rabbit", "pos": Vector3(20.0, 10.0, 0.0)}, {"id": 22, "sp": "deer", "pos": Vector3(15.0, 10.0, 0.0)}, {"id": 23, "sp": "rabbit", "pos": Vector3(90.0, 10.0, 0.0)}]
-	items.animals_near = func(point, radius):
-		return far_rows.filter(func(r): return Vector2(r["pos"].x - point.x, r["pos"].z - point.z).length() <= radius)
-	items.animal_lure = func(aid, point) -> bool:
-		lured_to.append(aid)
-		return true
+	# Passes (Dave 22 Nov 2026): a roll only when an animal steps up to the snare, one for each time it comes within lure_m.
+	var lure: float = float(traps.cfg["lure_m"])
+	var passed: int = 0
+
+	for n in 2000:
+		reset(items, id)
+		taken.clear()
+		traps.on_pass(100 + n, "rabbit", Vector3(lure + 3.0, 10.0, 0.0), Vector3(lure - 1.0, 10.0, 0.0))
+		passed += 1 if not taken.is_empty() else 0
+
+	check(absf(float(passed) / 2000.0 - base) < 0.04, "a rabbit coming up the trail to the snare is caught at the data rate (%d of 2000)" % passed)
+	traps.cfg["base_chance"] = 100.0
+	reset(items, id)
 	taken.clear()
-	var drawn_catches: int = catches(items, id, 3000)
-	var ids: Dictionary = {}
-
-	for aid in lured_to:
-		ids[aid] = true
-
-	check(drawn_catches == 0 and taken.is_empty(), "a rabbit 20 m off is not caught from there")
-	check(ids.keys() == [21], "only the rabbit within draw_m is drawn, never the deer or a far rabbit (%s)" % str(ids.keys()))
-	var want: float = base * float(traps.cfg["draw_share"]) * 3000.0
-	check(absf(float(lured_to.size()) - want) < want * 0.35 + 3.0, "it is drawn at the catch chance x draw_share (%d, expected about %.0f)" % [lured_to.size(), want])
-	items.animals_near = func(_point, _radius): return near
-	items.animal_lure = Callable()
+	traps.on_pass(41, "rabbit", Vector3(-6.0, 10.0, 1.0), Vector3(6.0, 10.0, 1.0))
+	check(taken == [41] and items._items.has(int(items._items[id]["struct"]["catch"])), "a long step that crosses the noose counts as a pass")
+	reset(items, id)
+	taken.clear()
+	traps.on_pass(42, "rabbit", Vector3(1.0, 10.0, 0.0), Vector3(0.5, 10.0, 0.0))
+	traps.on_pass(43, "rabbit", Vector3(10.0, 10.0, 0.0), Vector3(10.0, 10.0, 3.0))
+	traps.on_pass(44, "deer", Vector3(6.0, 10.0, 0.0), Vector3(0.5, 10.0, 0.0))
+	check(taken.is_empty(), "no roll for one already beside it, one going by out of reach, or a deer")
+	traps.cfg["base_chance"] = base
 
 	bird_checks(items)
 
@@ -192,15 +220,15 @@ func _init() -> void:
 
 	check(made == dur and not items._items.has(wear_id), "the snare breaks on its %dth catch (%d)" % [dur, made])
 
-	# Placement: not near buildings or fires; six snares a player, the oldest goes back.
+	# Placement: not near buildings or fires; no limit on how many a player sets (Dave 22 Nov 2026), none is taken back.
 	items._items.erase(id)
 	var mine: Array = []
-	var cap: int = int(traps.cfg["per_player"])
 	items._items[items._next_id] = {"number": 1, "count": 1, "pos": Vector3(200.0, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "wall", "yaw": 0.0}}
 	items._next_id += 1
 	check(not traps.allow_place(1, Vector3(204.0, 10.0, 0.0)) and traps.allow_place(1, Vector3(230.0, 10.0, 0.0)), "a snare is not set within 8 m of a building")
+	said.clear()
 
-	for n in cap + 2:
+	for n in 20:
 		mine.append(lay(items, Vector3(100.0 + 10.0 * n, 10.0, 100.0)))
 
 	var left: int = 0
@@ -208,8 +236,7 @@ func _init() -> void:
 	for sid in mine:
 		left += 1 if items._items.has(sid) else 0
 
-	check(left == cap and not items._items.has(mine[0]) and not items._items.has(mine[1]) and items._items.has(mine[mine.size() - 1]), "past six snares the oldest are taken back (%d left)" % left)
-	check(said.has(str(traps.cfg["say_cap"])), "the player is told")
+	check(left == mine.size() and not said.any(func(t): return "taken back" in str(t)), "twenty snares by one player all stay set, none taken back (%d left)" % left)
 
 	# Saves and reloads: wear, owner and order survive.
 	var keep: int = mine[mine.size() - 1]
@@ -233,6 +260,7 @@ func _init() -> void:
 
 	check(bird_found, "a set bird trap saves and reloads with its owner")
 	check(found >= 0 and int(again._items[found].get("wear", 0)) == 3 and str(again._items[found]["struct"]["owner"]) == "trap-key-00000001" and float(again._items[found]["struct"]["seq"]) == float(items._items[keep]["struct"]["seq"]), "a set snare saves and reloads with its wear and owner")
+	marks_checks(items, again, mine, bird_keep)
 	# The smoke knob: off by default; on, a snare with no animal near catches an imagined rabbit and takes none from the world.
 	check(float(traps.cfg["test_chance"]) == 0.0, "the smoke knob is off in the data")
 	traps.cfg["test_chance"] = 1.0
@@ -252,7 +280,7 @@ func bird_checks(items) -> void:
 	var traps = items._traps
 	var bird_cfg: Dictionary = traps.of("bird_trap_set")
 	check(traps.is_kind("bird_trap_set") and traps.is_kind("snare_trap") and not traps.is_kind("chest"), "a bird trap is a trap kind")
-	check(float(bird_cfg["draw_m"]) == 60.0 and float(bird_cfg["base_chance"]) == float(traps.cfg["base_chance"]), "it has its own numbers over the snare's")
+	check(not bool(bird_cfg["needs_trail"]) and bool(traps.cfg["needs_trail"]) and float(bird_cfg["base_chance"]) == float(traps.cfg["base_chance"]), "it has its own numbers over the snare's (birds need no trail)")
 	var pheasant: Dictionary = {"id": 31, "sp": "pheasant", "pos": Vector3(51.0, 10.0, 1.0)}
 	var grouse: Dictionary = {"id": 32, "sp": "grouse", "pos": Vector3(51.0, 10.0, 1.0)}
 	var duck: Dictionary = {"id": 33, "sp": "duck", "pos": Vector3(1.0, 10.0, 1.0)}
@@ -285,7 +313,7 @@ func bird_checks(items) -> void:
 	check(catches(items, snare, 300) == 0, "a duck beside a snare is not caught")
 	near = []
 
-	# Its own words when refused, and its own cap.
+	# Its own words when refused.
 	var wall: int = items._next_id
 	items._items[items._next_id] = {"number": 1, "count": 1, "pos": Vector3(70.0, 10.0, 70.0), "left": 1.0e9, "struct": {"kind": "wall", "yaw": 0.0}}
 	items._next_id += 1
@@ -294,11 +322,10 @@ func bird_checks(items) -> void:
 
 	var birds: Array = [bird]
 
-	for n in int(bird_cfg["per_player"]):
+	for n in 8:
 		birds.append(lay(items, Vector3(-100.0 - 10.0 * n, 10.0, -100.0), "bird_trap_set"))
 
-	check(not items._items.has(bird) and items._items.has(birds[birds.size() - 1]), "past six bird traps the oldest bird trap is taken back")
-	check(items._items.has(snare) and said.has(str(bird_cfg["say_cap"])), "but no snare: each kind has its own cap, and its own words")
+	check(items._items.has(bird) and items._items.has(birds[birds.size() - 1]) and items._items.has(snare), "nine bird traps and a snare by one player all stay set")
 
 	for sid in birds:
 		items._items.erase(sid)
@@ -498,3 +525,48 @@ func away_checks() -> void:
 	items.report_position(1, Vector3(3.0, 10.0, 0.0))
 	traps.tick(float(traps.cfg["check_s"]) + 1.0)
 	check(float(st["away_at"]) == clock[0], "with the owner near, the away clock is kept at now")
+
+	# No work for snares nobody is near: 200 set far off cost no trail look and no roll on a tick; the near one alone is looked at.
+	var far: Array = []
+
+	for n in 200:
+		far.append(lay(items, Vector3(2000.0 + 10.0 * float(n % 20), 10.0, 2000.0 + 10.0 * floorf(float(n) / 20.0))))
+
+	clock[0] += 5.0 * 3600.0
+	var looks: int = calls[0]
+	traps.tick(float(traps.cfg["check_s"]) + 1.0)
+	var untouched: bool = true
+
+	for sid in far:
+		untouched = untouched and float(items._items[sid]["struct"]["away_at"]) == clock[0] - 5.0 * 3600.0
+
+	check(untouched and float(st["away_at"]) == clock[0] and calls[0] - looks <= 3, "a tick touches only the snares near a player (%d trail looks for 201 snares)" % (calls[0] - looks))
+	items.report_position(1, Vector3(2095.0, 10.0, 2095.0))
+	traps.tick(float(traps.cfg["check_s"]) + 1.0)
+	var caught_up: int = 0
+
+	for sid in far:
+		caught_up += 1 if float(items._items[sid]["struct"]["away_at"]) == clock[0] else 0
+
+	check(caught_up == far.size(), "walking back to them catches each up once (%d of %d)" % [caught_up, far.size()])
+
+	for sid in far:
+		items._items.erase(sid)
+
+	# The time away goes by the rabbits' own hours: twelve hours of day (rabbits abed) catch nothing, twelve of night do.
+	items.report_position(1, Vector3(5000.0, 10.0, 0.0))
+	items.species_active_at = func(sp, hour): return 1.0 if sp == "rabbit" and (hour >= 20.0 or hour < 8.0) else 0.0
+	var by_day: int = 0
+	var by_night: int = 0
+
+	for n in 400:
+		reset(items, id)
+		clock[0] = 20.0 * 3600.0
+		st["away_at"] = 8.0 * 3600.0
+		by_day += 1 if traps.check_away(id) else 0
+		reset(items, id)
+		clock[0] = 32.0 * 3600.0
+		st["away_at"] = 20.0 * 3600.0
+		by_night += 1 if traps.check_away(id) else 0
+
+	check(by_day == 0 and by_night > 100, "a day away catches nothing while the rabbits sleep, a night does (%d, %d of 400)" % [by_day, by_night])

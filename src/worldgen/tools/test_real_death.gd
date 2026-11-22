@@ -46,7 +46,7 @@ func _init() -> void:
 	a._characters["realdeathkey0001"]["skills"] = {"foraging": 90.0}
 	a._death_cfg["novice_grace"] = {"mode": "never"}
 	check(a.kill(1, "wolves"), "kill works")
-	check(finals.size() == 1 and died.size() == 1 and not bool(a._characters["realdeathkey0001"].get("dead", false)), "off: final_death is told as before but the character comes back (died sent, not marked dead)")
+	check(finals.is_empty() and died.size() == 1 and not bool(a._characters["realdeathkey0001"].get("dead", false)), "off: no final_death (its screen deletes the character) and the character comes back (died sent, not marked dead)")
 
 	# On: marked dead, no return.
 	finals.clear()

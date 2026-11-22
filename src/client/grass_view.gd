@@ -85,6 +85,7 @@ const LOD_SCALE_SHORT := [1.0, 1.5, 2.1, 2.1] # the Low tier (reach 40 m)
 const BAND_SHARE := [1.0, 1.0, 1.0, 1.0]      # cards built per band beyond 50 m: all of them now; the thinning is a smooth gradient in the shader (data/look/grass_far.json, Dave 3 Nov), not a step per band
 const TALL_MAX_LOD := 2                       # tall grass (meadow patches) is not built in the very far band; the shader fades it out by 80 percent of the radius
 const FAR_CONFIG := "res://data/look/grass_far.json"
+const WORN_CONFIG := "res://data/look/worn_earth.json"   # worn earth on bare ground (TR-14), drawn by the ground shader from the run map
 var fade_start_share: float = 0.5            # THE setting (grass_far.json): the thinning starts at this share of the grass radius
 var far_share: float = 0.3                   # share of the grass cards kept at the edge
 var tall_far_share: float = 0.0              # share of the tall grass kept at 80 percent of the radius
@@ -312,6 +313,10 @@ var _run_routes: Dictionary = {}         # Vector2i block -> [[kind, PackedVecto
 var _run_image: Image = null
 var _run_texture: ImageTexture = null
 var _run_origin: Vector2 = Vector2(INF, INF)
+var _ground_material: ShaderMaterial = null   # the terrain's ground material, for worn earth (set_ground_material)
+var _run_laid: bool = false                   # a route has been laid on the run map at least once (worn earth binds after that)
+var _run_laid_origin: Vector2 = Vector2.ZERO  # the corner the run map texture was last laid at
+var _worn_cfg: Dictionary = {}
 var _run_dirty: bool = false
 var _run_msec: int = 0
 var _flora
@@ -559,6 +564,11 @@ func _rebuild_runs(player: Vector3) -> void:
 
 	_run_image.set_data(RUN_TEXELS, RUN_TEXELS, false, Image.FORMAT_R8, data)
 	_run_texture.update(_run_image)
+	_run_laid_origin = _run_origin   # the corner the texture now holds (the ground gets this one, never a corner the map has not been laid at)
+	_run_laid = _run_laid or texels > 0
+
+	if _ground_material != null:
+		_ground_material.set_shader_parameter("run_origin", _run_laid_origin)
 
 	for n in range(_materials.size()):
 		if not _is_solid(n):
@@ -647,11 +657,45 @@ func set_trail_multiplier(mult: float) -> void:
 func set_trails_on(on: bool) -> void:
 	_trails_on = on
 
+	if _ground_material != null:
+		_ground_material.set_shader_parameter("worn_earth", _worn_params())
+
 	for n in range(_materials.size()):
 		if not _is_solid(n):
 			_materials[n].set_shader_parameter("trample_squash", _trample.squash if on else 0.0)
 			_materials[n].set_shader_parameter("trail_draw", _trail_draw if on else 9.0)
 			_materials[n].set_shader_parameter("run_flat", 1.0 if on else 0.0)
+
+
+# Whether routes have come and the run map is laid round the player (the worn earth is bound to the ground then).
+func has_runs() -> bool:
+	return _run_texture != null and _run_laid
+
+
+# The ground's material (puddles.gd binds it with the worn-trail map): the run map and its corner go to it too, for worn earth on bare ground.
+# Bound once the first routes have been laid (the run map is black until then), so nothing about it happens in the first-join window.
+func set_ground_material(material: ShaderMaterial) -> void:
+	_ground_material = material
+	material.set_shader_parameter("run_map", _run_texture)
+	material.set_shader_parameter("run_size", float(RUN_TEXELS) * RUN_TEXEL_M)
+	material.set_shader_parameter("run_origin", _run_laid_origin)
+	var c: Dictionary = _worn_config()
+	var soil: Array = c.get("soil_color", [0.16, 0.12, 0.085])
+	material.set_shader_parameter("worn_soil", Vector4(float(soil[0]), float(soil[1]), float(soil[2]), float(c.get("smooth", 0.1))))
+	material.set_shader_parameter("worn_earth", _worn_params())
+
+
+func _worn_config() -> Dictionary:
+	if _worn_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(WORN_CONFIG))
+		_worn_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"draw_m": 30.0}
+
+	return _worn_cfg
+
+
+func _worn_params() -> Vector4:
+	var c: Dictionary = _worn_config()
+	return Vector4(1.0 if _trails_on else 0.0, float(c.get("draw_m", 30.0)), float(c.get("dark", 0.85)), float(c.get("litter_cut", 0.7)))
 
 
 func trail_reach_m() -> float:

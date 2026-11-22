@@ -45,4 +45,4 @@ From the editor build: run the game with the user arguments `--client-only` (the
 
 ## Not done yet
 
-The exported server (C1 templates), stamped releases with an exported client (C2/C3), ghcr.io (open with Dave). The whole world folder ships in the image; a separate world volume is not needed while the world is the nine tracked tiles.
+A release (stamped server image plus the players' installer, the same build) is made by `tools/make_release.ps1`: see `deploy/RELEASE.md`. Still to do: running the server from the exported Linux template instead of the editor build, and ghcr.io (open with Dave). The whole world folder ships in the image; a separate world volume is not needed while the world is the nine tracked tiles.

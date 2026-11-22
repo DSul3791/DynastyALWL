@@ -119,6 +119,14 @@ Also removed inside live files: the three clay_pipe rows of look_table.gd (their
 Code that new code replaced is deleted, not moved here. Add one row per deleted file in the same PR; `tools/merge_check.py` checks that the replacement exists and that nothing still uses the old file. Code with no replacement is an ordinary unused file: move it aside as above.
 | deleted path | replaced by (path at HEAD) | who | date | why |
 |---|---|---|---|---|
+| src/worldgen/tools/test_buildable_looks_b1a.gd | src/worldgen/tools/test_buildable_looks.gd | Claude (testing slim-down thread) | 2026-11-22 | Dave 22 Nov 2026 testing audit: the 8 look batch tests became one test with the same 461 checks and messages |
+| src/worldgen/tools/test_buildable_looks_b1bc.gd | src/worldgen/tools/test_buildable_looks.gd | Claude (testing slim-down thread) | 2026-11-22 | Dave 22 Nov 2026 testing audit: the 8 look batch tests became one test with the same 461 checks and messages |
+| src/worldgen/tools/test_buildable_looks_b2.gd | src/worldgen/tools/test_buildable_looks.gd | Claude (testing slim-down thread) | 2026-11-22 | Dave 22 Nov 2026 testing audit: the 8 look batch tests became one test with the same 461 checks and messages |
+| src/worldgen/tools/test_buildable_looks_b3.gd | src/worldgen/tools/test_buildable_looks.gd | Claude (testing slim-down thread) | 2026-11-22 | Dave 22 Nov 2026 testing audit: the 8 look batch tests became one test with the same 461 checks and messages |
+| src/worldgen/tools/test_buildable_looks_b4.gd | src/worldgen/tools/test_buildable_looks.gd | Claude (testing slim-down thread) | 2026-11-22 | Dave 22 Nov 2026 testing audit: the 8 look batch tests became one test with the same 461 checks and messages |
+| src/worldgen/tools/test_buildable_looks_b5_b6.gd | src/worldgen/tools/test_buildable_looks.gd | Claude (testing slim-down thread) | 2026-11-22 | Dave 22 Nov 2026 testing audit: the 8 look batch tests became one test with the same 461 checks and messages |
+| src/worldgen/tools/test_station_looks_c2.gd | src/worldgen/tools/test_buildable_looks.gd | Claude (testing slim-down thread) | 2026-11-22 | Dave 22 Nov 2026 testing audit: the 8 look batch tests became one test with the same 461 checks and messages |
+| src/worldgen/tools/test_structure_looks_c3c4.gd | src/worldgen/tools/test_buildable_looks.gd | Claude (testing slim-down thread) | 2026-11-22 | Dave 22 Nov 2026 testing audit: the 8 look batch tests became one test with the same 461 checks and messages |
 | src/worldgen/tools/test_trunk_cutting.gd | src/worldgen/tools/test_fell_autosplit.gd | Claude (wood thread) | 2026-11-16 | Dave 16 Nov 2026: a tree falls already in logs; the hand-cut trunk path it tested is deleted, the fall test covers what replaced it |
 | src/client/copper_rock_look.gd | src/client/ore_rock_look.gd | Claude (copper rocks thread) | 2026-11-17 | renamed when tin rocks joined copper (Dave 17 Nov 2026, cassiterite photo); same meshes, one material per ore |
 | tools/copper_rock_view.gd | tools/ore_rock_view.gd | Claude (copper rocks thread) | 2026-11-17 | the picture tool now shows copper and tin rocks |
@@ -170,3 +178,8 @@ Preservation/reader receipts: independent review PASS on exact tree `09c98947328
 | path (under proposed_removals/) | who | date | why | replaced by |
 |---|---|---|---|---|
 | assets/ui/item_icons/stone_raised_cistern.png | Claude, Raised cistern rename PR | 21 Nov | the Raised cistern's id is raised_cistern (wood and copper, not stone); its icon moved with it | assets/ui/item_icons/raised_cistern.png |
+
+## Snare draw tool, 22 Nov 2026 (Dave 22 Nov 2026: no server work for a set snare; the draw is gone)
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| src/worldgen/tools/snare_odds.gd, snare_odds.gd.uid | Claude, snare rework PR | 22 Nov | analysis tool for the snare draw (rabbits pulled in from 30 m), which no longer exists: snares roll only when an animal passes | none (test_traps.gd checks the pass rate) |

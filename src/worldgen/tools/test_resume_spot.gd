@@ -115,6 +115,21 @@ func _init() -> void:
 	check(not items.structure_blocks(walked.x + 0.8, walked.z + 0.6, items.RESUME_CLEAR_M), "standing against a wall is not inside it")
 	items._items.erase(9002)
 
+	# A rejoin before the old connection timed out: the stale one leaving later never writes its old spot over the live one's.
+	items.peer_left(5)   # the earlier connection leaves first
+	var s7: Array = start_of(items, 7)
+	var base7: Vector3 = Vector3(float(s7[0]), float(s7[1]), float(s7[2]))
+	items.report_position(7, base7 + Vector3(0.5, 0.0, 0.0))
+	items.report_position(7, base7 + Vector3(10.0, 0.0, 0.0))   # where the old connection was last heard from
+	var s8: Array = start_of(items, 8)   # the same character back on a new connection
+	items.report_position(8, Vector3(float(s8[0]), float(s8[1]), float(s8[2])) + Vector3(0.5, 0.0, 0.0))
+	items.report_position(8, base7 + Vector3(20.0, 0.0, 0.0))
+	items.peer_left(7)   # the old connection times out now
+	var after_stale: Array = items._characters[KEY].get("last", {}).get("pos", [])
+	check(after_stale.size() != 3 or absf(float(after_stale[0]) - (base7.x + 10.0)) > 0.01, "a stale connection leaving does not save its old spot (%s)" % str(after_stale))
+	items.peer_left(8)
+	near(items._characters[KEY]["last"]["pos"], base7 + Vector3(20.0, 0.0, 0.0), "the live connection leaving saves where it is")
+
 	# A malformed saved spot is not a spot.
 	check(items._clean_last({"pos": [1.0, NAN, 2.0]}).is_empty() and items._clean_last({"pos": ["a", 1, 2]}).is_empty() and items._clean_last([]).is_empty(), "a broken saved spot is dropped at load")
 	check(items._clean_rests([[1, 2, 3, "fire"], [1, 2, "x", "fire"], [1, 2, 3, "bad"]]).size() == 1, "rest points are read back, broken ones dropped")

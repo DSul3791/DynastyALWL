@@ -116,6 +116,14 @@ func _init() -> void:
 	var blank: Image = Sketch.render_block(fresh, Vector2i(0, 0))
 	check(blank.get_used_rect().size == Vector2i.ZERO, "a blank map draws no marks")
 
+	# Trap marks (protocol 150): the client keeps the set the server sent, drops rows it has no mark for, and says when it changed.
+	var told: Array = [0]
+	fresh.traps_changed.connect(func() -> void: told[0] += 1)
+	fresh.set_traps([[10.5, -4.0, "snare_trap"], [3, 4, "bird_trap_set"], [1.0, 2.0, "wall"], "junk", [1.0]])
+	check(fresh.traps.size() == 2 and fresh.traps[0][0] == Vector2(10.5, -4.0) and str(fresh.traps[1][1]) == "bird_trap_set" and told[0] == 1, "the Map keeps a snare and a Bird trap mark and drops bad rows (%s)" % str(fresh.traps))
+	fresh.set_traps([])
+	check(fresh.traps.is_empty() and told[0] == 2 and fresh.is_empty(), "an empty set clears the marks and reveals no ground")
+
 	# 2. Walking records the ground near the path, nothing else.
 	var path: Array = []
 
