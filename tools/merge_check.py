@@ -7,7 +7,15 @@ It does not run Godot (warning count and headless loads stay with tools/local_ch
 import json, os, re, subprocess, sys
 
 # What to compare against: the CI sets MERGE_CHECK_BASE to the commit before the push, so a later push cannot make a finished run fail.
-BASE = os.environ.get("MERGE_CHECK_BASE") or "origin/main"
+# Locally (no MERGE_CHECK_BASE) it compares against origin/dev, where PRs merge, as the CI does for a PR to dev (origin/<base>); against
+# origin/main a file added and deleted since the last release looked untouched, and a deletion passed here but failed in the CI (#1574).
+def _default_base() -> str:
+    for ref in ["origin/dev", "origin/main"]:
+        if subprocess.run(["git", "rev-parse", "--verify", "--quiet", ref], capture_output=True).returncode == 0:
+            return ref
+    return "origin/main"
+
+BASE = os.environ.get("MERGE_CHECK_BASE") or _default_base()
 # Compare from the merge base, not the tip of main (three-dot). A branch made before a later merge to main would otherwise
 # look as if it deleted every file main has gained since (false "deleted without approval", seen on #528 and #553).
 # When BASE is already an ancestor of HEAD the merge base is BASE itself, so a push to main checks exactly as before.
