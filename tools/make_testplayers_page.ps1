@@ -3,7 +3,7 @@
 # tools\make_release.ps1 (which also calls it):
 #   powershell -ExecutionPolicy Bypass -File tools\make_testplayers_page.ps1 -Out ..\dynasty_export\build-<N>
 # Writes <Out>\testplayers\: Dynasty-build-<N>.zip (the installer, zipped: browsers and Windows treat a bare downloaded .exe worse) and
-# index.html (deploy/testplayers/index.html with the build, size, date and SHA-256 filled in). Copy that whole folder to the web server
+# index.html (deploy/testplayers/index.html with the build, size, date and SHA-256 filled in), hero.jpg and fonts\. Copy that whole folder to the web server
 # (deploy/testplayers/HOSTING.md). Nothing is uploaded from here.
 param(
 	[Parameter(Mandatory = $true)][string]$Out
@@ -31,7 +31,13 @@ $html = [IO.File]::ReadAllText((Resolve-Path -LiteralPath $template).ProviderPat
 $html = $html.Replace("{{BUILD}}", "$build").Replace("{{ZIP}}", $zipName).Replace("{{SHA256}}", $hash).Replace("{{SIZE_MB}}", "$sizeMb").Replace("{{DATE}}", $date)
 if ($html.Contains("{{")) { throw "make_testplayers_page: the page still has a {{...}} field the script does not fill" }
 [IO.File]::WriteAllText((Join-Path $page "index.html"), $html)   # UTF-8 without a byte order mark
+# The page's picture (cropped from the title painting) and the menu fonts with their licence (SIL OFL 1.1 travels with them).
+Copy-Item -LiteralPath (Join-Path $PSScriptRoot "..\deploy\testplayers\hero.jpg") -Destination $page
+New-Item -ItemType Directory -Force -Path (Join-Path $page "fonts") | Out-Null
+foreach ($f in "Cinzel-Bold.ttf", "EBGaramond-Regular.ttf", "EBGaramond-SemiBold.ttf", "FONTS_LICENSE.md") {
+	Copy-Item -LiteralPath (Join-Path $PSScriptRoot "..\assets\ui\fonts\$f") -Destination (Join-Path $page "fonts")
+}
 
 Write-Host "make_testplayers_page: $page"
-Write-Host "  index.html and $zipName ($sizeMb MB, SHA-256 $hash)"
+Write-Host "  index.html, hero.jpg, fonts\ and $zipName ($sizeMb MB, SHA-256 $hash)"
 Write-Host "  copy this folder to the web server: deploy\testplayers\HOSTING.md"

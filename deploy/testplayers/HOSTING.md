@@ -6,8 +6,8 @@ On 22 Nov 2026 Dave decided that test players download the game as a zip from a 
 
 ## What you put up
 
-`tools\make_release.ps1` writes a ready folder, `..\dynasty_export\build-<N>\testplayers\`, holding two files:
-- `index.html`, the page. It has the build number, the download button, the install steps (including Windows' "More info, then Run anyway"), how to join and where to report.
+`tools\make_release.ps1` writes a ready folder, `..\dynasty_export\build-<N>\testplayers\`, holding:
+- `index.html`, the page, with `hero.jpg` and `fonts\`. It has the build number, the download button, the install steps (including Windows' "More info, then Run anyway"), how to join and where to report.
 - `Dynasty-build-<N>.zip`, with the installer inside. Its size and SHA-256 are printed on the page.
 
 For a build that already exists, make the folder on its own:
