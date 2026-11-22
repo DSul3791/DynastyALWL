@@ -1133,7 +1133,7 @@ func _baked_wet(x: float, z: float) -> bool:
 
 # The server's own WorkerThreadPool jobs not finished yet, and the block line's sends waiting on a client, for the state and WATCHDOG lines:
 # what runs or waits while a client's first load runs (docs/design/LOCAL_SERVER_FIRST_LOAD_PLAN.md, option A). Any thread (the watchdog's):
-# the counts are read under their own mutexes, and the landscape task id is only compared, never asked about (the main thread frees it).
+# the counts are read under their own mutexes; the landscape task id is a plain read, only compared, never asked about (the main thread frees it).
 func _pool_summary() -> String:
 	var landscape: bool = items != null and items._resource_task != -1
 	return "pool jobs: tile reads %d, undergrowth %d, cover %d, landscape %s; block line sends in progress %d" % [generator._prefetch_tasks.busy() if generator != null else 0,

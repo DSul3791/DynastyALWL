@@ -44,6 +44,7 @@ func _initialize() -> void:
 	link.is_peer = func(_peer: int) -> bool: return false
 	link.on_request = func(_peer: int, _keys: PackedInt32Array, _urgent: int) -> void: pass
 	check(link.start(port + 1) == port + 1, "a local status line listens")
+	check(not link.send(12345, Vector4i.ZERO, PackedByteArray([1])) and link.sending() == 0, "a send to a peer with no line goes to ENet and counts no send in progress")
 	link.set_status({"name": "Hannibal's House", "players": 2, "max_players": 32, "locked": true, "protocol": load("res://src/stream/terrain_net.gd").PROTOCOL_VERSION})
 	ServerList.save_rows([])
 	var page = load(PAGE).instantiate()

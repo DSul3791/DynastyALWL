@@ -16,7 +16,7 @@ var on_request: Callable                 # (peer_id, keys, urgent) on the line's
 var is_peer: Callable                    # (peer_id) -> bool: an ENet peer that is connected
 var blocks_out: int = 0
 var bytes_out: int = 0
-var _sending: int = 0                    # workers inside put_data now: it waits while a client reads nothing (first-load plan, option A)
+var _sending: int = 0                    # workers inside send() now, waiting for the line's mutex or in put_data, which waits while a client reads nothing (first-load plan, option A)
 
 var _server: TCPServer = TCPServer.new()
 var _thread: Thread
