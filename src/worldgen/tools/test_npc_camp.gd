@@ -6,7 +6,8 @@ extends SceneTree
 # - Hob takes his own post and Edda her own chair there, facing the fire, and the town's middle does not move;
 # - the server lays the large camp fire, keeps it lit in rain, never saves it, lays it again when it goes, and refuses every use of it;
 # - a world saved before the camp (admin markers and NPC homes at the old town, a saved fire) loads with Hob and Edda at the camp tree and the camp fire laid;
-# - nothing is put down within keep_m of the tree (the ghost and the server), and the server's tree hit refuses the camp tree.
+# - nothing is put down within keep_m of the tree (the ghost and the server), and the server's tree hit refuses the camp tree;
+# - the camp's ground is trodden: no plant or shrub over knee height within camp.json trodden.radius_m of the fire, trees kept.
 #   godot --headless --path . --script res://src/worldgen/tools/test_npc_camp.gd
 
 const NpcCamp := preload("res://src/shared/npc_camp.gd")
@@ -22,6 +23,7 @@ const WorldSettingsScript := preload("res://src/worldgen/settings/world_settings
 const TileHeightScript := preload("res://src/worldgen/tile/tile_height.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const SpawnPoint := preload("res://src/shared/spawn_point.gd")
 
 var failures: int = 0
 
@@ -107,6 +109,64 @@ func _flora(tree: Vector2, fire: Vector2, own: Dictionary) -> void:
 			check((b[0] as Vector2).distance_to(at) >= 1.5, "%s's spot is 1.5 m clear of the %s at %s" % [id, b[1], str(b[0])])
 
 	print("camp tree: %s at %.2f, %.2f, %.1f m tall" % [camp_tree[0], camp_tree[1].x, camp_tree[1].z, float(camp_tree[2])])
+	_trodden(placer, fire)
+
+
+# The camp's trodden ground (camp.json "trodden", coordinator 22 Nov 2026): no plant or shrub over max_height_m within radius_m of the fire; trees
+# stay. Keyed on the camp, not the spawn (Dave 9 Nov 2026); the spawn (8 m off the fire) is checked only to show what a new player now sees.
+# With the rule off, what stood there is printed (Lane A's spawn pictures: tall grass and reeds).
+func _trodden(placer, fire: Vector2) -> void:
+	var rule: Dictionary = NpcCamp.cfg().get("trodden", {})
+	check(not rule.is_empty(), "camp.json has the trodden ground rule")
+	var radius: float = float(rule.get("radius_m", 12.0))
+	var tallest: float = float(rule.get("max_height_m", 0.5))
+	var spawn: Vector2 = SpawnPoint.OVERRIDE
+	var reach: float = radius + float(rule.get("soft_m", 2.0))
+	var saved: Array = placer._trodden
+
+	for rule_on in [false, true]:
+		placer._trodden = saved if rule_on else []
+		var inside: Dictionary = {}     # species name -> plants or shrubs over the height within radius of the fire
+		var by_spawn: Dictionary = {}   # the same within 3 m of the spawn
+		var trees: int = 0
+		var lo: Vector2i = placer.chunk_of(fire.x - reach, fire.y - reach)
+		var hi: Vector2i = placer.chunk_of(fire.x + reach, fire.y + reach)
+
+		for ci in range(lo.x, hi.x + 1):
+			for cj in range(lo.y, hi.y + 1):
+				var made: Dictionary = placer.chunk_items(Vector2i(ci, cj))
+
+				for n in range(made["ids"].size()):
+					var row: Dictionary = placer.species_of(made["ids"][n])
+					var p: Vector3 = made["positions"][n]
+					var at: Vector2 = Vector2(p.x, p.z)
+
+					if row.is_empty() or at.distance_to(fire) > reach:
+						continue
+
+					if int(row["kind"]) == PlacerScript.KIND_TREE:
+						trees += 1
+						continue
+
+					if float(made["heights"][n]) <= tallest:
+						continue
+
+					var name: String = str(row["name"])
+
+					if at.distance_to(fire) <= radius:
+						inside[name] = int(inside.get(name, 0)) + 1
+
+					if at.distance_to(spawn) <= 3.0:
+						by_spawn[name] = int(by_spawn.get(name, 0)) + 1
+
+		print("trodden %s: over %.1f m within %.0f m of the fire %s; within 3 m of the spawn %s; trees within %.0f m %d" % ["on" if rule_on else "off", tallest, radius, str(inside), str(by_spawn), reach, trees])
+
+		if rule_on:
+			check(inside.is_empty(), "no plant or shrub over %.1f m within %.0f m of the camp fire (%s)" % [tallest, radius, str(inside)])
+			check(by_spawn.is_empty(), "so none within 3 m of the spawn either (%s)" % str(by_spawn))
+			check(trees > 0, "trees stay on the trodden ground (%d)" % trees)
+
+	placer._trodden = saved
 
 
 # Hob takes his post and Edda her chair at the camp, turned to the fire; the town's middle is the old markers' middle.
