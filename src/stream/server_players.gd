@@ -14,6 +14,7 @@ const SEND_S := 0.125
 const NEAR_M := 150.0
 const MAX_ROWS := 31
 const RESEND_MS := 1000
+const LOOK_GAP_MS := 1000          # at most one look a second per player
 const NAME_MAX := 24               # character_record.gd NAME_MAX
 const BODY_MAX := 32
 const CODE_MAX := 400              # a body code (body_generator.gd encode) is well under 200 characters
@@ -29,16 +30,20 @@ var _looks: Dictionary = {}        # peer -> [name, body, code]
 var _yaw: Dictionary = {}          # peer -> facing (the body's rotation.y, radians)
 var _report_ms: Dictionary = {}    # peer -> server ms of its latest position report
 var _worn_sent: Dictionary = {}    # peer -> the worn numbers last told to everyone
+var _look_ms: Dictionary = {}      # peer -> server ms of its last accepted look
 var _sent: Dictionary = {}         # receiver -> [newest row ms sent, ids sent, ms sent]
 var _t: float = 0.0
 
 
 # A player's look (my_look). Clipped, never trusted further: the receiving client decodes the code and falls back to a plain body.
 func set_look(peer: int, char_name: String, body: String, code: String) -> void:
-	var look: Array = [char_name.strip_edges().left(NAME_MAX), body.left(BODY_MAX), code.strip_edges().left(CODE_MAX)]
+	var look: Array = [clean_name(char_name), body.left(BODY_MAX), code.strip_edges().left(CODE_MAX)]
+	var now: int = int(now_ms.call())
 
-	if _looks.get(peer, []) == look:
-		return
+	if _looks.get(peer, []) == look or now - int(_look_ms.get(peer, -LOOK_GAP_MS)) < LOOK_GAP_MS:
+		return   # unchanged, or a second look within LOOK_GAP_MS (a client cannot flood everyone with reliable looks)
+
+	_look_ms[peer] = now
 
 	var first: bool = not _looks.has(peer)
 	_looks[peer] = look
@@ -48,6 +53,17 @@ func set_look(peer: int, char_name: String, body: String, code: String) -> void:
 		for other in _looks:
 			if other != peer:
 				_tell(peer, other)
+
+
+# A name for a Label3D: control characters (newlines, tabs) become spaces, trimmed, at most NAME_MAX.
+static func clean_name(raw: String) -> String:
+	var out: String = ""
+
+	for i in raw.length():
+		var c: int = raw.unicode_at(i)
+		out += " " if c < 32 or c == 127 else raw[i]
+
+	return out.strip_edges().left(NAME_MAX)
 
 
 func note_report(peer: int, yaw: float) -> void:
@@ -67,6 +83,7 @@ func forget(peer: int) -> void:
 	_report_ms.erase(peer)
 	_worn_sent.erase(peer)
 	_sent.erase(peer)
+	_look_ms.erase(peer)
 
 
 func look_of(peer: int) -> Array:
@@ -92,12 +109,12 @@ func tick(delta: float) -> void:
 	for peer in peers:
 		var pos: Variant = items.position_of(peer)
 
-		if pos == null or not _looks.has(peer):
-			continue   # a player is shown once its look came in
+		if pos == null or not _looks.has(peer) or not _report_ms.has(peer):
+			continue   # a player is shown once its look and its first facing report came in
 
 		at[peer] = pos
 		var state: int = clampi(int(items.stance_of(peer)), 0, 3) | (SWIM if items.is_swimming(peer) else 0) | (CARRY if items.carries_log(peer) else 0)
-		info[peer] = [float(_yaw.get(peer, 0.0)), state, int(items.held_number(peer)), int(_report_ms.get(peer, 0))]
+		info[peer] = [float(_yaw.get(peer, 0.0)), state, int(items.held_number(peer)), int(_report_ms[peer])]
 
 	for receiver in at:
 		var rows: Array = rows_for(receiver, at)   # only a client that sent its look gets rows: one that never did (an old bot) could not draw them

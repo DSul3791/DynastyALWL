@@ -22,6 +22,7 @@ const WornSync := preload("res://src/client/worn_sync.gd")
 const HeldItem := preload("res://src/client/held_item.gd")
 
 const MAX_DRAWN := 31
+const MAKE_PER_ROWS := 2               # bodies made per rows message: a crowd coming into range is built over a few sends, not in one frame
 const FULL_M := 15.0
 const HALF_M := 40.0
 const QUARTER_M := 70.0
@@ -68,16 +69,18 @@ func on_rows(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedF
 		_last_ms = newest
 
 	var seen: Dictionary = {}
+	var made: int = 0
 
 	for i in range(n):
 		var peer: int = ids[i]
 		seen[peer] = true
 
 		if not _bodies.has(peer):
-			if _bodies.size() >= MAX_DRAWN or not _looks.has(peer) or not _can_make(_looks[peer]):
+			if made >= MAKE_PER_ROWS or _bodies.size() >= MAX_DRAWN or not _looks.has(peer) or not _can_make(_looks[peer]):
 				continue
 
 			_bodies[peer] = _make(peer, positions[i], yaws[i])
+			made += 1
 
 		var b: Dictionary = _bodies[peer]
 		var last_ms: int = int(b.get("row_ms", -1))

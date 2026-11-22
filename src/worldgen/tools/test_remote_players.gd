@@ -75,7 +75,14 @@ func _server() -> void:
 	check(to_one.size() == 1 and str(to_one[0][2]).length() <= PlayersScript.NAME_MAX and str(to_one[0][2]).begins_with("Bob"), "the name is trimmed and clipped to %d" % PlayersScript.NAME_MAX)
 	check(to_one.size() == 1 and to_one[0][5] == PackedInt32Array([5, 0, 9]), "the look carries the worn pieces")
 	players.set_look(3, "Cal", "body_1", "code3")
+	players.note_report(1, 0.0)
 	players.note_report(2, 1.5)
+	players.note_report(3, 0.0)
+	players.note_report(4, 0.0)
+	looks.clear()
+	players.set_look(1, "Ann B", "body_1", "code1")
+	check(looks.is_empty(), "a second look within a second is ignored (no flood of reliable looks)")
+	check(PlayersScript.clean_name("a\nb\tc") == "a b c", "control characters in a name become spaces")
 	clock[0] = 1200
 	players.tick(0.2)
 	var to_peer: Dictionary = {}

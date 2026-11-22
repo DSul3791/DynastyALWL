@@ -386,7 +386,7 @@ func player_look(peer_id: int, char_name: String, body_model: String, code: Stri
 
 # Protocol 151 (server_players.gd): the other players within 150 m, nearest first: peer ids, positions (the body's middle), facings (rotation.y),
 # states (stance 0 stand / 1 crouch / 2 sit / 3 lie, +4 swimming, +8 a log on the shoulder), the item number in the hand (0 none) and the server
-# ms each position came in. About eight times a second while one of them moved; again every second unchanged; empty once nobody is near.
+# ms each position came in. About eight times a second while one of them moved (they report five times a second, so in practice every send); again every second unchanged; empty once nobody is near.
 @rpc("authority", "call_remote", "unreliable")
 func players(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array) -> void:
 	players_received.emit(ids, positions, yaws, states, held, times)
