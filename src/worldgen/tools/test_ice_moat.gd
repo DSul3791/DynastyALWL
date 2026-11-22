@@ -2,7 +2,8 @@ extends SceneTree
 
 # The thaw's open shore moat on the server agrees with the client's sheet (ice_moat.gd; frozen_water_look.md 4, #729; coordinator 22 Nov 2026: "fix
 # the thaw-ice moat so the server agrees with what the player sees (drinking and filling at the open shore water in spring)").
-#   1. in_moat: no moat, no open water; a point one 8 m cell from dry ground is open in a one-cell moat, the middle of the lake is not; two cells reach further;
+#   1. in_moat: no moat, no open water; a one-cell moat is open to 16 m from dry ground (the client drops quads with a corner within a cell), the middle
+#      of the lake is not; two cells reach further (24 m);
 #   2. moat_cells is the client's IceFeel.moat_cells(FrozenWater.thaw_of(Ice.season at 3 m)) at the same time, height and zone, kept for an hour;
 #      over a temperate winter there is ice with no moat and a thaw with one;
 #   3. the server's ice rule (_on_ice) is open water in the moat and ice beside it, so a drink at the open shore needs no hole.
@@ -33,7 +34,8 @@ func _init() -> void:
 
 	check(not IceMoat.in_moat(Vector3(4.0, 10.0, 100.0), 0, lake), "no moat: the shore is ice")
 	check(IceMoat.in_moat(Vector3(4.0, 10.0, 100.0), 1, lake), "a one-cell moat: 4 m from the shore is open water")
-	check(not IceMoat.in_moat(Vector3(12.0, 10.0, 100.0), 1, lake) and IceMoat.in_moat(Vector3(12.0, 10.0, 100.0), 2, lake), "12 m out is ice in a one-cell moat, open in a two-cell one")
+	check(IceMoat.in_moat(Vector3(12.0, 10.0, 100.0), 1, lake), "a one-cell moat: 12 m out is open too (the client's dropped quad reaches 16 m)")
+	check(not IceMoat.in_moat(Vector3(20.0, 10.0, 100.0), 1, lake) and IceMoat.in_moat(Vector3(20.0, 10.0, 100.0), 2, lake), "20 m out is ice in a one-cell moat, open in a two-cell one")
 	check(not IceMoat.in_moat(Vector3(100.0, 10.0, 100.0), 2, lake), "the middle of the lake is ice in any moat")
 	check(not IceMoat.in_moat(Vector3(4.0, 10.0, 100.0), 1, Callable()), "no water map: no moat")
 
@@ -62,7 +64,12 @@ func _init() -> void:
 
 	if seen_thaw >= 0.0:
 		var first: int = moat.moat_cells(Vector3(0.0, ALT_M, 0.0), seen_thaw, "temperate", SEED)
-		check(first > 0 and moat.moat_cells(Vector3(0.0, ALT_M, 0.0), seen_thaw - 200.0 * DAY, "temperate", SEED) == 0, "kept for an hour, not for another time of year (%d)" % first)
+		var key: String = moat._bands.keys()[0]
+		moat._bands[key][0] = 7   # a marker: a kept value comes back as 7
+		check(moat.moat_cells(Vector3(0.0, ALT_M, 0.0), seen_thaw + 1800.0, "temperate", SEED) == 7, "kept for the hour (half an hour later the kept width is used)")
+		check(moat.moat_cells(Vector3(0.0, ALT_M, 0.0), seen_thaw + 3601.0, "temperate", SEED) != 7, "worked out again after the hour")
+		check(moat.moat_cells(Vector3(0.0, ALT_M, 0.0), seen_thaw - 200.0 * DAY, "temperate", SEED) == 0, "and not kept for another time of year (%d)" % first)
+		check(moat.moat_cells(Vector3(0.0, ALT_M, 0.0), seen_thaw + 3602.0, "arctic", SEED) >= 0 and moat._bands.size() == 2, "each zone group is kept apart")
 
 		# The server's ice rule as terrain_server wires it.
 		var items = ItemsScript.new()
