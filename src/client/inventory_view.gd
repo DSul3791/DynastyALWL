@@ -153,6 +153,13 @@ const OUTCROP_LOOK := {
 	"limestone": [Color(0.58, 0.55, 0.47), 0.7, Color(0.66, 0.63, 0.56), 0.04, 0.6, 0.0, 0.05],     # pale cream bedding
 	"chalk": [Color(0.72, 0.71, 0.66), 0.75, Color(0.3, 0.3, 0.3), 0.03, 0.9, 0.0, 0.04],          # white, with dark flint bands
 	"marble": [Color(0.64, 0.64, 0.62), 0.7, Color(0.42, 0.43, 0.45), 0.05, 0.3, 0.1, 0.0],         # grey veining
+	# Pocket rocks a dig opens (resource distribution stage 2, boulders.json distribution pockets): small, freshly dug, so a clear tell.
+	"gold": [Color(0.78, 0.76, 0.7), 0.6, Color(0.86, 0.66, 0.16), 0.08, 0.2, 0.0, 0.25],          # white quartz with gold specks
+	"silver": [Color(0.36, 0.36, 0.37), 0.5, Color(0.78, 0.79, 0.82), 0.1, 0.3, 0.1, 0.15],         # dark rock with bright grey streaks
+	"amethyst": [Color(0.55, 0.5, 0.58), 0.55, Color(0.55, 0.3, 0.75), 0.14, 0.4, 0.2, 0.2],       # a hollow lined with violet crystal
+	"garnet": [Color(0.4, 0.38, 0.38), 0.5, Color(0.55, 0.08, 0.12), 0.06, 0.5, 0.0, 0.3],         # dark schist with red specks
+	"agate": [Color(0.6, 0.5, 0.42), 0.55, Color(0.78, 0.46, 0.26), 0.12, 0.9, 0.1, 0.05],         # banded orange nodule
+	"quartz": [Color(0.8, 0.8, 0.78), 0.65, Color(0.92, 0.95, 0.96), 0.1, 0.3, 0.1, 0.1],           # clear quartz crystals
 }
 const OUTCROP_MOSS := 0.2   # an outcrop is a weathered, freshly broken face: little moss (plain boulders 0.65), so the host rock and its veins show (Dino's tin shot, 10 Nov: moss hid the pale quartz)
 const OUTCROP_GLSL := """	vec3 rock = mix(stone, ore_tint, tint_share) * (0.85 + 0.3 * mottle);
@@ -3726,7 +3733,8 @@ uniform vec3 moss_color").replace("\tALBEDO = mix(stone * (0.85 + 0.3 * mottle),
 	body.add_child(shape)
 	var lump: MeshInstance3D = MeshInstance3D.new()
 	var ore_rock: bool = OreRockLook.has_look(str(extra.get("ore", "")))   # copper, tin and iron: Dave's photos
-	lump.mesh = OreRockLook.mesh_for(float(extra.get("yaw", 0.0))) if ore_rock else _boulder_mesh
+	var ang: float = float(extra.get("ang", -1.0))   # how broken the rock is (the resource landscape, Dave 21 Nov 2026): round by the shore, jagged inland
+	lump.mesh = OreRockLook.mesh_for(float(extra.get("yaw", 0.0)), ang) if ore_rock or OreRockLook.shape_of(ang) == 2 else _boulder_mesh
 	lump.material_override = OreRockLook.material(str(extra.get("ore", ""))) if ore_rock else _boulder_material(str(extra.get("ore", "")))
 	lump.material_overlay = _crack_material()
 	body.add_child(lump)

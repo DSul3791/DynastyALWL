@@ -13,6 +13,13 @@ extends RefCounted
 #   orange-brown rust in the pits.
 
 const VARIANTS := 3   # mesh shapes; a rock picks one from its yaw so neighbours differ
+# Shapes by how worn a rock is (the row's "ang", 0..1: server_items._rock_shape, Dave 21 Nov 2026 resource landscape): water-worn rounded
+# rocks by the shore and down the rivers, the broken-faced shape of the photos in between, fresh jagged rock at the headwaters and sources.
+# Per shape: [broken faces (cuts), how deep they cut (the cut plane's distance from the centre, lo..hi; lower is deeper), lump strength].
+# The middle one is exactly the photos' shape (5 cuts at 0.36..0.46, full lumps), so rocks without a shape look as before.
+const SHAPES := [[0, 0.36, 0.46, 0.6], [5, 0.36, 0.46, 1.0], [8, 0.3, 0.4, 1.25]]
+const ROUND_UNDER := 0.35     # "ang" under this: the rounded shape
+const ANGULAR_FROM := 0.7     # "ang" from this: the jagged shape
 
 # The shared part: noise, and the rock's own coordinates (mesh space, 1 m across, shifted by where it lies, so a small rock shows the whole
 # pattern, not one patch). Each ore's fragment() follows it.
@@ -196,17 +203,31 @@ void fragment() {
 """,
 }
 
-static var _meshes: Array = []
+static var _meshes: Array = []   # per shape (SHAPES), VARIANTS meshes
 static var _materials: Dictionary = {}   # ore -> ShaderMaterial
 
 
-# The mesh for a rock of this yaw: one of VARIANTS lumpy, broken-faced shapes, 1 m across, flat underneath, made once.
-static func mesh_for(yaw: float) -> ArrayMesh:
+# The mesh for a rock of this yaw and shape ("ang"; below 0, a row without one: the broken-faced middle shape, as before): one of VARIANTS
+# lumpy shapes, 1 m across, flat underneath, made once.
+static func mesh_for(yaw: float, ang: float = -1.0) -> ArrayMesh:
 	if _meshes.is_empty():
-		for v in VARIANTS:
-			_meshes.append(make_mesh(101 + v * 17))
+		for shape in SHAPES:
+			var variants: Array = []
 
-	return _meshes[posmod(int(yaw), VARIANTS)]
+			for v in VARIANTS:
+				variants.append(make_mesh(101 + v * 17, int(shape[0]), float(shape[1]), float(shape[2]), float(shape[3])))
+
+			_meshes.append(variants)
+
+	return (_meshes[shape_of(ang)] as Array)[posmod(int(yaw), VARIANTS)]
+
+
+# Which of SHAPES a row's "ang" draws: 0 rounded, 1 broken (also a row without one), 2 jagged.
+static func shape_of(ang: float) -> int:
+	if ang < 0.0:
+		return 1
+
+	return 0 if ang < ROUND_UNDER else (2 if ang >= ANGULAR_FROM else 1)
 
 
 static func has_look(ore: String) -> bool:
@@ -227,7 +248,7 @@ static func material(ore: String) -> ShaderMaterial:
 
 # An icosphere split twice (320 faces), each corner pushed in or out by a few broad lumps, then cut by a few random planes (the broken
 # faces of the photo), wider than tall and flat underneath; flat shaded.
-static func make_mesh(seed_value: int) -> ArrayMesh:
+static func make_mesh(seed_value: int, cut_count: int = 5, cut_lo: float = 0.36, cut_hi: float = 0.46, lump_scale: float = 1.0) -> ArrayMesh:
 	var t: float = (1.0 + sqrt(5.0)) * 0.5
 	var points: Array = []
 
@@ -264,14 +285,20 @@ static func make_mesh(seed_value: int) -> ArrayMesh:
 	var lumps: Array = []   # [direction, strength]
 
 	for k in 7:
-		lumps.append([Vector3(rng.randf_range(-1.0, 1.0), rng.randf_range(-0.6, 1.0), rng.randf_range(-1.0, 1.0)).normalized(), rng.randf_range(-0.12, 0.16)])
+		lumps.append([Vector3(rng.randf_range(-1.0, 1.0), rng.randf_range(-0.6, 1.0), rng.randf_range(-1.0, 1.0)).normalized(), rng.randf_range(-0.12, 0.16) * lump_scale])
 
 	var cuts: Array = []   # [plane normal, distance]: the broken faces
 
-	for k in 5:
-		cuts.append([Vector3(rng.randf_range(-1.0, 1.0), rng.randf_range(-0.2, 1.0), rng.randf_range(-1.0, 1.0)).normalized(), rng.randf_range(0.36, 0.46)])
+	for k in 5:   # always these five draws, so the stretch below is the same whatever the shape
+		var cut: Array = [Vector3(rng.randf_range(-1.0, 1.0), rng.randf_range(-0.2, 1.0), rng.randf_range(-1.0, 1.0)).normalized(), rng.randf_range(cut_lo, cut_hi)]
+
+		if k < cut_count:
+			cuts.append(cut)
 
 	var stretch: Vector3 = Vector3(rng.randf_range(0.9, 1.15), rng.randf_range(0.6, 0.78), rng.randf_range(0.8, 1.05))
+
+	for k in range(5, cut_count):   # a jagged rock's extra broken faces
+		cuts.append([Vector3(rng.randf_range(-1.0, 1.0), rng.randf_range(-0.2, 1.0), rng.randf_range(-1.0, 1.0)).normalized(), rng.randf_range(cut_lo, cut_hi)])
 	var shaped: Array = []
 
 	for p in points:

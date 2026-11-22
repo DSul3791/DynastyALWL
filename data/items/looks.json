@@ -2313,6 +2313,31 @@
    "color": "#8a8a8a",
    "size": 1.0
   },
+  "gold_nugget": {
+   "shape": "chunk",
+   "color": "#d4a52a",
+   "size": 0.35
+  },
+  "silver_ore": {
+   "shape": "chunk",
+   "color": "#9a9ca0",
+   "size": 0.9
+  },
+  "amethyst": {
+   "shape": "chunk",
+   "color": "#8a5ab8",
+   "size": 0.45
+  },
+  "garnet": {
+   "shape": "chunk",
+   "color": "#8a1c24",
+   "size": 0.35
+  },
+  "agate": {
+   "shape": "chunk",
+   "color": "#c07a48",
+   "size": 0.45
+  },
   "coal": {
    "shape": "chunk",
    "color": "#8a8a8a",
