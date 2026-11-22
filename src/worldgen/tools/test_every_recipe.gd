@@ -5,6 +5,7 @@ extends SceneTree
 # player must take, confirm the recipe, station, tool, resource and goal hint exist and connect").
 # tools/encyclopedia_reach.py says on paper that every goal can be reached; this plays each step on the server, so a recipe whose station, kept tool,
 # group need or fuel the server does not accept, or a blueprint whose site the hammer cannot finish, shows here by name with what the server said.
+# It proves the parts connect, not that the player is told of the recipe (an unknown one is learned at its station, _try_learn: encyclopedia_reach.py's).
 #   1. every recipe that is not locked or retired: a new player beside a fresh station of the level it asks (a lit campfire for "campfire", fuel in a
 #      smithy's fuel slot), its needs and kept tools given (a group need: its first member), queued with the tool in hand, the clock run past its time,
 #      the station's store taken: the player has its product;
@@ -31,6 +32,7 @@ var next_peer: int = 100
 # its wall tops, a mill its tall foundation). Printed as SKIP with the rule, never counted.
 const FRAME_RULES := ["A door goes in a doorway", "A roof panel rests", "A roof corner goes", "It needs a tall foundation"]
 var skipped: int = 0
+const SKIP_MOST := 53   # the skips at b1ad56f0 (52 frame pieces, the one jar): more is a new refusal hiding behind a rule, so it fails (gate review S2)
 
 
 func check(ok: bool, what: String, peer: int = 0) -> void:
@@ -357,5 +359,10 @@ func _init() -> void:
 		items.peer_left(next_peer)
 
 	print("%d recipes and %d blueprints played, %d skipped (a frame or a jar)" % [recipes_n, bps_n, skipped])
+	if skipped > SKIP_MOST:
+		print("FAIL %d skipped, more than the %d known: a new SKIP line above is a refusal to look at" % [skipped, SKIP_MOST])
+		failures += 1
+
+	items._finish_writer()   # the periodic save and peer_left's save may have started the writer thread
 	print("Test done: %d failure(s)" % failures)
 	quit(1 if failures > 0 else 0)
