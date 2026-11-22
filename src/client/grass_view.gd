@@ -305,6 +305,8 @@ const RUN_WIDTH_M := [0.8, 1.2]           # a rabbit run, a deer trail (trail_co
 const RUN_FADE_M := 0.5                    # the matting fades out over this past the half width
 const RUN_MOVE_M := 16.0                 # the map is laid again round the player after this walk
 var _run_logged: String = ""         # the last "grass runs:" line, so it is printed only when it changes
+var _run_log_msec: int = 0          # and at most once in 10 s
+var _run_stamps: Dictionary = {}     # route kind -> its stamp (_run_stamp)
 var _run_routes: Dictionary = {}         # Vector2i block -> [[kind, PackedVector2Array world x, z], ...], as the server sent them
 var _run_image: Image = null
 var _run_texture: ImageTexture = null
@@ -480,8 +482,9 @@ func set_trail_routes(block_x: int, block_z: int, routes: Array) -> void:
 		print("grass runs: block %d,%d came with %d routes" % [block_x, block_z, routes.size()])
 
 
-# Lays the trails within the run map round the player: each route stepped every half metre (a texel), the texels round each step full on its
-# middle and fading over RUN_FADE_M past its half width. A few hundred metres of trail at most: a few thousand writes, twice a second at most.
+# Lays the trails within the run map round the player: each route stepped every half metre (a texel), a stamp of the texels round each
+# step (full on its middle, fading over RUN_FADE_M past the kind's half width, worked out once per kind) laid on the map, the stronger kept.
+# About 150 m of trail in the window: a few hundred steps of 13 (run) to 21 (deer trail) writes, at most twice a second while it changes.
 func _rebuild_runs(player: Vector3) -> void:
 	var size: float = float(RUN_TEXELS) * RUN_TEXEL_M
 	var centre: Vector2 = _run_origin + Vector2(size, size) * 0.5
@@ -509,10 +512,10 @@ func _rebuild_runs(player: Vector3) -> void:
 			continue
 
 		for route in _run_routes[key]:
-			var half: float = float(RUN_WIDTH_M[clampi(int(route[0]), 0, RUN_WIDTH_M.size() - 1)]) * 0.5
-			var reach: int = int(ceil((half + RUN_FADE_M) / RUN_TEXEL_M))   # texels either side of each step that the matting can reach
-			drawn += 1
+			var stamp: PackedInt32Array = _run_stamp(clampi(int(route[0]), 0, RUN_WIDTH_M.size() - 1))
 			var pts: PackedVector2Array = route[1]
+			var last: int = -1
+			drawn += 1
 
 			for i in range(1, pts.size()):
 				var a: Vector2 = pts[i - 1]
@@ -521,36 +524,37 @@ func _rebuild_runs(player: Vector3) -> void:
 				if not window.has_point(a) and not window.has_point(b):
 					continue
 
-				var steps: int = maxi(int(ceil(a.distance_to(b) / RUN_TEXEL_M)), 1)   # one step a texel: the 3 x 3 footprint covers the gaps
+				var steps: int = maxi(int(ceil(a.distance_to(b) / RUN_TEXEL_M)), 1)
 
 				for k in steps + 1:
 					var p: Vector2 = a.lerp(b, float(k) / float(steps))
 					var tx: int = int(floor((p.x - _run_origin.x) / RUN_TEXEL_M))
 					var tz: int = int(floor((p.y - _run_origin.y) / RUN_TEXEL_M))
 
-					for dz in range(-reach, reach + 1):
-						for dx in range(-reach, reach + 1):
-							var x: int = tx + dx
-							var z: int = tz + dz
+					if tx + tz * RUN_TEXELS == last:
+						continue   # the same texel as the step before: its stamp is already laid
 
-							if x < 0 or z < 0 or x >= RUN_TEXELS or z >= RUN_TEXELS:
-								continue
+					last = tx + tz * RUN_TEXELS
 
-							var c: Vector2 = _run_origin + (Vector2(x, z) + Vector2(0.5, 0.5)) * RUN_TEXEL_M
-							var v: int = int(round(255.0 * (1.0 - smoothstep(half, half + RUN_FADE_M, c.distance_to(p)))))
-							var at: int = x + z * RUN_TEXELS
+					for e in range(0, stamp.size(), 3):
+						var x: int = tx + stamp[e]
+						var z: int = tz + stamp[e + 1]
 
-							if v > data[at]:
-								if data[at] == 0:
-									texels += 1
+						if x < 0 or z < 0 or x >= RUN_TEXELS or z >= RUN_TEXELS:
+							continue
 
-								data[at] = v
+						var at: int = x + z * RUN_TEXELS
+
+						if stamp[e + 2] > data[at]:
+							texels += 1 if data[at] == 0 else 0
+							data[at] = stamp[e + 2]
 
 	var line: String = "grass runs: %d routes near, %d texels matted (%.0f m2)" % [drawn, texels, float(texels) * RUN_TEXEL_M * RUN_TEXEL_M]
 
-	if line != _run_logged:
+	if line != _run_logged and Time.get_ticks_msec() >= _run_log_msec:
 		_run_logged = line
-		print(line + " round %.0f,%.0f" % [player.x, player.z])   # a lane confirms the runs reach the grass
+		_run_log_msec = Time.get_ticks_msec() + 10000
+		print(line + " round %.0f,%.0f" % [player.x, player.z])   # a lane confirms the runs reach the grass (at most one line in 10 s)
 
 	_run_image.set_data(RUN_TEXELS, RUN_TEXELS, false, Image.FORMAT_R8, data)
 	_run_texture.update(_run_image)
@@ -558,6 +562,27 @@ func _rebuild_runs(player: Vector3) -> void:
 	for n in range(_materials.size()):
 		if not _is_solid(n):
 			_materials[n].set_shader_parameter("run_origin", _run_origin)
+
+
+# The texels round a step for a route kind, as [dx, dz, value 1..255] triples: full within the half width, fading over RUN_FADE_M, measured
+# from texel middle to texel middle (a step is placed to a texel; the line is off by at most a quarter metre). Worked out once per kind.
+func _run_stamp(kind: int) -> PackedInt32Array:
+	if _run_stamps.has(kind):
+		return _run_stamps[kind]
+
+	var half: float = float(RUN_WIDTH_M[kind]) * 0.5
+	var reach: int = int(ceil((half + RUN_FADE_M) / RUN_TEXEL_M))
+	var stamp: PackedInt32Array = PackedInt32Array()
+
+	for dz in range(-reach, reach + 1):
+		for dx in range(-reach, reach + 1):
+			var v: int = int(round(255.0 * (1.0 - smoothstep(half, half + RUN_FADE_M, Vector2(dx, dz).length() * RUN_TEXEL_M))))
+
+			if v > 0:
+				stamp.append_array([dx, dz, v])
+
+	_run_stamps[kind] = stamp
+	return stamp
 
 
 func _rebuild_trails(player: Vector3) -> void:

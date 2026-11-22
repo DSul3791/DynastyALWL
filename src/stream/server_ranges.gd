@@ -73,7 +73,7 @@ func tick(players: Array, now_ms: int) -> void:
 
 		if not (rec["jobs"] as Array).is_empty() and now_ms >= int(rec["retry_ms"]) and not _ground_loaded(key):
 			rec["retry_ms"] = now_ms + 5000   # a ground tile it reaches is still loading: never read a cold tile on the server tick
-			rec["waits"] = int(rec.get("waits", 0)) + 1
+			_note_wait(key, rec, "ground tiles loading")
 			continue
 
 		var had_jobs: bool = not (rec["jobs"] as Array).is_empty()
@@ -84,7 +84,7 @@ func tick(players: Array, now_ms: int) -> void:
 
 			if place == null:
 				rec["retry_ms"] = now_ms + 5000   # the ground there is not known yet: try again shortly
-				rec["waits"] = int(rec.get("waits", 0)) + 1
+				_note_wait(key, rec, "ground height unknown at a %s job" % str(job[0]))
 				break
 
 			rec["jobs"].pop_front()
@@ -95,6 +95,14 @@ func tick(players: Array, now_ms: int) -> void:
 
 		if had_jobs and (rec["jobs"] as Array).is_empty():
 			_log_ready(key, rec)
+
+
+# Counts a block's waits and logs the first and every 12th (about a minute), so a block that never gets worked out shows in the log.
+func _note_wait(key: Vector2i, rec: Dictionary, why: String) -> void:
+	rec["waits"] = int(rec.get("waits", 0)) + 1
+
+	if int(rec["waits"]) == 1 or int(rec["waits"]) % 12 == 0:
+		print("ranges: block %d,%d waiting (%s), %d waits, %d jobs left" % [key.x, key.y, why, int(rec["waits"]), (rec["jobs"] as Array).size()])
 
 
 # One log line when a block is worked out (so a lane can see trails exist and where): its places, routes and each place's home spot.
@@ -471,8 +479,14 @@ func wire(key: Vector2i, now_ms: int) -> PackedByteArray:
 			routes.append([int(place["kind"]), route])
 
 	var bytes: PackedByteArray = Codec.encode_routes(routes, key, float(cfg.get("block_m", 256.0)))
-	_wire[key] = [now_ms, bytes]
+	_wire[key] = [now_ms, bytes, routes.size()]
 	return bytes
+
+
+# How many routes the block's last wire() held (0 before it was built).
+func wire_count(key: Vector2i) -> int:
+	var rec: Array = _wire.get(key, [])
+	return int(rec[2]) if rec.size() > 2 else 0
 
 
 # The distance from a point to the nearest trail of a kind (-1 any) that is not on settled ground: INF while the block round the point, or a
