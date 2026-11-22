@@ -163,13 +163,12 @@ func build_world(dir: String) -> Dictionary:
 	a.action(1, Net.ACT_WEAR, a.inventory_of(1).numbers.find(a.table.number_of("grass_cloak")), 0, 0, Vector3.ZERO)
 	a.place_piece(1, "workbench_kit", Vector3(-4.0, 10.0, 0.0))
 	a.place_piece(1, "tool_rack_kit", Vector3(-4.0, 10.0, 2.5))
-	# Seven deaths of one character leave only per_owner_cap sets of remains (the oldest go first).
+	# Seven deaths of one character with nothing on them leave only per_owner_cap sets of remains (the oldest empty ones go first; remains that hold anything are never removed).
 	a.peer_connected_hello(3, "drillkey00003")
 	a.report_position(3, Vector3(60.0, 10.0, 60.0))
 
 	for n in 7:
 		a.report_position(3, Vector3(60.0 + 3.0 * float(n), 10.0, 60.0))
-		a.action(3, Net.ACT_ADMIN_GIVE, fibre, 0, 1, Vector3.ZERO)
 		a.kill(3, "drill")
 	a.vitals_of(1)["sick"] = 5000.0
 	a._characters[KEY]["strength"] = 3
@@ -193,7 +192,7 @@ func reload(dir: String):
 func _init() -> void:
 	var dir: String = "user://test_drills"
 	var want: Dictionary = build_world(dir)
-	check(int(want["remains"]) == 6 and int(want["remains_fibre"]) == 10 and int(want["cap_owner"]) == 5 and int(want["benches"]) == 2 and int(want["energy"]) == 41 and int(want["age"]) == 321 and int(want["warmth"]) == 63 and int(want["sick"]) == 5000 and int(want["strength"]) == 3, "the drill world has a body, an aged stack, warmth, sickness and skills %s" % str(want))
+	check(int(want["remains"]) == 6 and int(want["remains_fibre"]) == 5 and int(want["cap_owner"]) == 5 and int(want["benches"]) == 2 and int(want["energy"]) == 41 and int(want["age"]) == 321 and int(want["warmth"]) == 63 and int(want["sick"]) == 5000 and int(want["strength"]) == 3, "the drill world has a body, an aged stack, warmth, sickness and skills %s" % str(want))
 	check(int(want["pack"]) == 20 and int(want["chest"]) == 7 and int(want["ground"]) == 3 and int(want["trees"]) == 1, "the drill world has what the drills count on %s" % str(want))
 
 	for file in FILES:

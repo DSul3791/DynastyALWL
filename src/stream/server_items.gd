@@ -16923,12 +16923,13 @@ func kill(peer: int, cause: String) -> bool:
 	var ground: float = float(ground_height.call(pos.x, pos.z)) if ground_height.is_valid() else NAN
 	var cave: bool = not is_nan(ground) and pos.y < ground - 1.5   # underground: keep the spot, the surface above is not theirs
 	var spot: Vector3 = pos if (is_nan(ground) or cave) else Vector3(pos.x, _remains_surface(pos, _foundation_rows()), pos.z)   # on the floor they stood on, or the ground as dug
-	_trim_owner_remains(key, peer)
+	_trim_owner_remains(key)
 	var uid: int = _next_uid
 	_next_uid += 1
 	var chest = InventoryScript.new(table)
 	chest.from_json_array(inv.to_json_array())
 	_chests[uid] = chest
+	var remains_id: int = _next_id
 	_items[_next_id] = {"number": table.number_of("remains"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "remains", "yaw": float(randi() % 360), "uid": uid, "owner": key, "born": _unix(), "cave": cave, "coins": coins_of(peer)}}   # luck-exempt: a body's facing
 	_next_id += 1
 	inv.from_json_array(InventoryScript.new(table).to_json_array())
@@ -16969,13 +16970,12 @@ func kill(peer: int, cause: String) -> bool:
 	if not novice_grace(peer):
 		_characters[key]["final_death_pending"] = true   # real death: the remains stay; the new-character / heir flow is not built, so the character still comes back below
 
-		if send_final_death.is_valid():
+		# Only with real death on: the screen's one button deletes the character, so a respawning character must never see it.
+		if bool(_death_cfg.get("real_death", false)) and send_final_death.is_valid():   # the character does not come back (Dave's cards pending: off by default)
 			send_final_death.call(peer, cause)
-
-			if bool(_death_cfg.get("real_death", false)):   # the character does not come back (Dave's cards pending: off by default)
-				_characters[key]["dead"] = true
-				_dirty = true
-				return true
+			_characters[key]["dead"] = true
+			_dirty = true
+			return true
 
 	var back: Vector3 = respawn_for(peer, true)
 	_peer_pos[peer] = back
@@ -16991,39 +16991,44 @@ func kill(peer: int, cause: String) -> bool:
 	if back != respawn_point:
 		_say(peer, "You come back at your shelter")
 
+	if _items.has(remains_id) and _remains_hold(_items[remains_id]):   # the set made above: a new player has no shelter and must be told where their things went
+		_say(peer, "Your things are on your remains where you fell. A marker shows the way.")
+
 	return true
 
 
-# One character cannot litter the world: with per_owner_cap sets already out, the emptiest-then-oldest goes first to make room for the new one.
-func _trim_owner_remains(key: String, peer: int = -1) -> void:
+# One character cannot litter the world: with per_owner_cap sets already out, the oldest empty set goes first to make room for the new one.
+# Remains that still hold anything (an item or coins) are never removed to make room (Dave: no ground-item cap; coordinator 22 Nov 2026), so a player may have more.
+func _trim_owner_remains(key: String) -> void:
 	var cap: int = int(_death_cfg.get("per_owner_cap", 5))
 	var mine: Array = []
+	var empty: Array = []
 
 	for id in remains_ids():
 		if str(_items[id]["struct"].get("owner", "")) == key:
 			mine.append(id)
 
-	while mine.size() >= cap and cap > 0:
-		var drop: int = -1
+			if not _remains_hold(_items[id]):
+				empty.append(id)
 
-		for id in mine:
-			var chest = _chests.get(int(_items[id]["struct"].get("uid", 0)))
-			var empty: bool = chest == null or chest.is_empty()
-			var older: bool = drop < 0 or float(_items[id]["struct"].get("born", 0.0)) < float(_items[drop]["struct"].get("born", 0.0))
-			var drop_empty: bool = drop >= 0 and (_chests.get(int(_items[drop]["struct"].get("uid", 0))) == null or _chests[int(_items[drop]["struct"].get("uid", 0))].is_empty())
+	while mine.size() >= cap and cap > 0 and not empty.is_empty():
+		var drop: int = empty[0]
 
-			if drop < 0 or (empty and not drop_empty) or (empty == drop_empty and older):
+		for id in empty:
+			if float(_items[id]["struct"].get("born", 0.0)) < float(_items[drop]["struct"].get("born", 0.0)):
 				drop = id
-
-		var lost_chest = _chests.get(int(_items[drop]["struct"].get("uid", 0)))
-
-		if peer >= 0 and lost_chest != null and not lost_chest.is_empty():
-			_say(peer, "Your oldest remains crumble to make room. What was on them is lost.")
 
 		_chests.erase(int(_items[drop]["struct"].get("uid", 0)))
 		_items.erase(drop)
 		mine.erase(drop)
+		empty.erase(drop)
 		_dirty = true
+
+
+# Whether a set of remains still holds something: an item on them or the purse's coins (kept apart in struct.coins).
+func _remains_hold(it: Dictionary) -> bool:
+	var chest = _chests.get(int(it["struct"].get("uid", 0)))
+	return (chest != null and not chest.is_empty()) or int(it["struct"].get("coins", 0)) > 0
 
 
 # The owner's death markers (protocol 39): every set of their remains that still holds something, with the seconds until it is cleaned up.
@@ -17037,9 +17042,7 @@ func _remains_rows(key: String) -> Array:
 		if str(it["struct"].get("owner", "")) != key:
 			continue
 
-		var chest = _chests.get(int(it["struct"].get("uid", 0)))
-
-		if chest == null or chest.is_empty():
+		if not _remains_hold(it):
 			continue
 
 		rows.append([it["pos"], maxi(int(gone_s - (_unix() - float(it["struct"].get("born", 0.0)))), 0)])
