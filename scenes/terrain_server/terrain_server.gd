@@ -3129,9 +3129,12 @@ func _process(delta: float) -> void:
 		trails.note_player(peer, items._peer_pos[peer])   # players' own worn paths (stage 2c): a write only on entering a new 4 m cell
 
 	trails.tick(delta)
+	_events.mark("ranges")   # its own step: a cold join's WATCHDOG named "trails" for 6 s (22 Nov), which also held these
 	ranges.tick(npcs.player_positions.call(), Time.get_ticks_msec())
+	_events.mark("bandits")
 	bandits.tick()
 	bandits.camp_tick(delta, items.peer_positions())
+	_events.mark("map knowledge")
 	map_knowledge.tick(delta)   # the save interval only
 	_events.mark("send npcs")
 	_send_npcs(delta)

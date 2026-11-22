@@ -100,6 +100,7 @@ var _sent: Array = []
 var _sent_air: Vector4 = Vector4(-1.0, -1.0, 0.0, 0.0)
 var _sent_origin: Vector2 = Vector2(INF, INF)
 var _trail_bound: bool = false
+var _runs_bound: bool = false
 var _sizes: Dictionary = {}           # animal kind -> length in metres (models.json)
 var _rings: Array = []                # MeshInstance3D
 var _drops: Array = []                # CPUParticles3D
@@ -274,6 +275,10 @@ func update(delta: float, rain: float, wind: float, wind_dir: Vector2, cave_open
 		_trail_bound = true
 		material.set_shader_parameter("trail_map", _client.grass._trail_texture)
 		material.set_shader_parameter("trail_draw", float(_client.grass._trail_draw))
+
+	if not _runs_bound and _client != null and _client.grass != null and _client.grass.has_method("has_runs") and _client.grass.has_runs():
+		_runs_bound = true   # after the first routes were laid round the player: worn earth on bare ground (grass_view.set_ground_material)
+		_client.grass.set_ground_material(material)
 
 
 # Once a second from terrain_client.gd _update_weather (the zone group and the player's height); the ice itself every ICE_EVERY_S.
