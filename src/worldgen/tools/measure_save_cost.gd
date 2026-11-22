@@ -97,18 +97,21 @@ func periodic(items, dir: String, what: String) -> void:
 
 
 # One window of the items tick's save part as server_items tick runs it (save countdown, rolling check, writer reaped, timer or event save),
-# real time at 20 ticks a second, with a big event every `every_s` seconds (0: none). The events touch one world item each, as a build does.
+# real time at 20 ticks a second, with a big event every `every_s` seconds (0: none). Both windows change one world item a second, as ordinary play
+# does (so the timer saves write something); the events also change one item each, as a build does, and ask for a save soon.
 func event_window(items, window_s: float, every_s: float, what: String) -> void:
 	var dt: float = 0.05
 	var ticks: int = int(window_s / dt)
 	var ids: Array = items._items.keys()
 	var saves: int = 0
-	var event_saves_was: int = int(items._event_saves)
+	var event_saves_was: int = int(items.get("_event_saves"))
 	var save_us: int = 0
 	var worst_save_us: int = 0
 	var worst_tick_us: int = 0
 	var events: int = 0
 	var next_event: float = every_s
+	var next_touch: float = 1.0
+	var touches: int = 0
 	var clock: float = 0.0
 	items._save_in = ItemsScript.SAVE_EVERY_S
 	items._since_save = 0.0
@@ -116,6 +119,14 @@ func event_window(items, window_s: float, every_s: float, what: String) -> void:
 	for t in ticks:
 		var started: int = Time.get_ticks_usec()
 		clock += dt
+
+		if clock >= next_touch:
+			next_touch += 1.0
+			var touched = ids[(touches * 104729 + 13) % ids.size()]
+			items._items[touched]["count"] = int(items._items[touched]["count"]) + 1
+			items._save_note(touched)
+			items._dirty = true
+			touches += 1
 
 		if every_s > 0.0 and clock >= next_event:
 			next_event += every_s
@@ -143,7 +154,7 @@ func event_window(items, window_s: float, every_s: float, what: String) -> void:
 
 	items._async_writes = false
 	items._finish_writer()
-	var by_event: int = int(items._event_saves) - event_saves_was
+	var by_event: int = int(items.get("_event_saves")) - event_saves_was
 	print("save_cost: events %s over %.0f s: %d events, %d saves (%d brought forward by an event, %d on the timer), %.2f ms a save on the tick on average, %.2f ms at worst; worst tick %.2f ms; %.1f ms on the tick a minute" % [what, window_s, events, saves, by_event, saves - by_event, float(save_us) / maxf(float(saves), 1.0) / 1000.0, float(worst_save_us) / 1000.0, float(worst_tick_us) / 1000.0, float(save_us) / 1000.0 * 60.0 / window_s])
 
 
@@ -213,9 +224,10 @@ func _init() -> void:
 	check_interval(items)
 	periodic(items, dir, "a minute of countdowns")
 
-	if event_every_s > 0.0:
+	if event_every_s > 0.0 and n > 0 and items.has_method("save_soon"):
 		event_window(items, window_s, 0.0, "none")
 		event_window(items, window_s, event_every_s, "every %.1f s" % event_every_s)
+
 	t0 = Time.get_ticks_usec()
 	var again = make(dir)
 	print("save_cost: load %.1f ms, %d world items back" % [float(Time.get_ticks_usec() - t0) / 1000.0, again._items.size()])
