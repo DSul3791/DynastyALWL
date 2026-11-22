@@ -19,21 +19,25 @@ func check(ok: bool, what: String) -> void:
 
 func _init() -> void:
 	Probe.frame(0.016)
+	check(Probe.is_new("m1"), "a mesh not shown yet is new")
 	Probe.first_shown("flora oak tier 1", "m1")
-	Probe.first_shown("flora oak tier 1", "m1")
-	check(Probe._shown_text() == "; first shown: flora oak tier 1", "named once (%s)" % Probe._shown_text())
+	check(not Probe.is_new("m1") and Probe._shown_text() == "; first shown: flora oak tier 1", "named once, then no longer new (%s)" % Probe._shown_text())
 	Probe.frame(0.016)
 	Probe.frame(0.016)
 	check(Probe._shown_text().contains("flora oak tier 1"), "still named two frames later, for a drawing drawn a frame or two after it was made")
 	Probe.frame(0.016)
 	check(Probe._shown_text() == "", "gone after %d frames (%s)" % [Probe.SHOWN_FRAMES, Probe._shown_text()])
-	Probe.first_shown("flora oak tier 1", "m1")
-	check(Probe._shown_text() == "", "a mesh already shown this session is not named again")
+	check(not Probe.is_new("m1"), "a mesh already shown this session stays seen, so its callers do not name it again")
 
 	for k in Probe.SHOWN_MAX + 5:
 		Probe.first_shown("item %d" % k, "i%d" % k)
 
-	check(Probe._shown.size() == Probe.SHOWN_MAX and Probe._shown_text().ends_with(" and %d more" % (Probe.SHOWN_MAX - Probe.SHOWN_PRINT)), "capped at %d held, %d printed (%s)" % [Probe.SHOWN_MAX, Probe.SHOWN_PRINT, Probe._shown_text()])
+	check(Probe._shown.size() == Probe.SHOWN_MAX and Probe._shown_text().ends_with(" and %d more" % (Probe.SHOWN_MAX + 5 - Probe.SHOWN_PRINT)), "capped at %d held, %d printed, the rest counted (%s)" % [Probe.SHOWN_MAX, Probe.SHOWN_PRINT, Probe._shown_text()])
+
+	for k in Probe.SHOWN_FRAMES + 1:
+		Probe.frame(0.016)
+
+	check(Probe._shown.is_empty() and Probe._shown_dropped == 0, "the window empties and the dropped count starts again")
 
 	var queue = PrintQueueScript.new()
 

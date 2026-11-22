@@ -3284,7 +3284,10 @@ func _apply_step(job: Dictionary) -> bool:
 	node.add_child(draw)
 
 	if multimesh.mesh != null:
-		Probe.first_shown("flora %s tier %d" % [str(_slugs.get(key[0], "")), int(key[4])], "m%d" % multimesh.mesh.get_instance_id())   # names a first-sight stall (BugsList 108)
+		var seen_key: String = "m%d" % multimesh.mesh.get_instance_id()
+
+		if Probe.is_new(seen_key):
+			Probe.first_shown("flora %s tier %d" % [str(_slugs.get(key[0], "")), int(key[4])], seen_key)   # names a first-sight stall (BugsList 108)
 	instances += 0 if proxy_pass else int(draw_plan[1])
 	return int(job["draw"]) >= draws.size()
 

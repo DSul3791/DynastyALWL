@@ -5088,13 +5088,16 @@ static func _fire_tier(state: int) -> int:
 	return 1 if state == 40 else (3 if state == 41 else 2)
 
 
-# Loose items on the ground (Dave 2026-10-20: a stick must not look like a green box). One shared mesh per item
-# kind; each lying item is turned and scaled a little by its world id (_dress_item), so no per-frame cost.
 # The first world item of each kind and state this session is named on the next slow frame's line (FrameProbe.first_shown, BugsList 108).
 func _note_first_shown(number: int, state: int) -> void:
-	FrameProbe.first_shown("item %s state %d" % [table.id_of(number) if number > 0 else "stump", state], "i%d_%d" % [number, state])
+	var key: String = "i%d_%d" % [number, state]
+
+	if FrameProbe.is_new(key):
+		FrameProbe.first_shown("item %s state %d" % [table.id_of(number) if number > 0 else "stump", state], key)
 
 
+# Loose items on the ground (Dave 2026-10-20: a stick must not look like a green box). One shared mesh per item
+# kind; each lying item is turned and scaled a little by its world id (_dress_item), so no per-frame cost.
 func _mesh_for(number: int) -> Mesh:
 	if not _meshes.has(number):
 		var id: String = table.id_of(number)

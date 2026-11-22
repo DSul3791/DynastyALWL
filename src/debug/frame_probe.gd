@@ -30,6 +30,7 @@ static var _seen: Dictionary = {}         # key -> true: a mesh or look already 
 static var _shown: Array = []             # [frame, what]: the things first shown in the last SHOWN_FRAMES frames
 const SHOWN_FRAMES := 3                   # a drawing made in one frame may be drawn (and its shaders built) a frame or two later
 const SHOWN_MAX := 40
+static var _shown_dropped: int = 0        # first shown in the window beyond SHOWN_MAX
 const SHOWN_PRINT := 12
 
 
@@ -63,6 +64,13 @@ static func first_shown(what: String, key: String) -> void:
 
 	if _shown.size() < SHOWN_MAX:
 		_shown.append([_frames, what])
+	else:
+		_shown_dropped += 1   # a join burst: counted in "and N more", never silently left out
+
+
+# Not shown yet this session: callers test this before building the label, so a seen kind costs one look-up.
+static func is_new(key: String) -> bool:
+	return not _seen.has(key)
 
 
 static func _shown_text() -> String:
@@ -74,7 +82,8 @@ static func _shown_text() -> String:
 	for row in _shown.slice(0, SHOWN_PRINT):
 		names.append(str(row[1]))
 
-	return "; first shown: %s%s" % [", ".join(names), " and %d more" % (_shown.size() - SHOWN_PRINT) if _shown.size() > SHOWN_PRINT else ""]
+	var more: int = _shown.size() - names.size() + _shown_dropped
+	return "; first shown: %s%s" % [", ".join(names), " and %d more" % more if more > 0 else ""]
 
 
 # Call at the start of each frame with the previous frame's length (seconds).
@@ -146,6 +155,9 @@ static func frame(delta: float) -> void:
 
 	if not _shown.is_empty() and int(_shown[0][0]) < _frames - SHOWN_FRAMES + 1:
 		_shown = _shown.filter(func(row: Array) -> bool: return int(row[0]) >= _frames - SHOWN_FRAMES + 1)
+
+		if _shown.is_empty():
+			_shown_dropped = 0
 
 
 static func reset() -> void:
