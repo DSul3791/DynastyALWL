@@ -109,6 +109,27 @@ func _init() -> void:
 	f.action(2, Net.ACT_CHEST_PUT, f.inventory_of(2).numbers.find(f.table.number_of("log_beech")), id, 1, Vector3.ZERO)
 	f.peer_left(2)
 	check(float(fire["burn_left"]) > three_logs + log_s - 60.0, "a log put in by a player who quit with the fire open counts (%.0f s, was %.0f s)" % [float(fire["burn_left"]), three_logs])
+	# The same when another window is opened over the fire's without closing it (a second fire here).
+	f.action(1, Net.ACT_ADMIN_GIVE, f.table.number_of("log_beech"), 0, 1, Vector3.ZERO)
+	f.action(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+	var four_logs: float = float(fire["burn_left"])
+	f.action(1, Net.ACT_CHEST_PUT, f.inventory_of(1).numbers.find(f.table.number_of("log_beech")), id, 1, Vector3.ZERO)
+	f.action(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+	check(is_equal_approx(float(fire["burn_left"]), four_logs), "opening the same fire again counts nothing yet")
+	var other_id: int = -1
+
+	for k in f._items:
+		if k != id and f._items[k].has("struct") and f._chests.has(int(f._items[k]["struct"].get("uid", -1))):
+			other_id = k
+
+	if other_id < 0:
+		f._items[999001] = {"number": f.table.number_of("chest"), "count": 1, "pos": Vector3(1.0, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "chest", "yaw": 0.0, "uid": 999001}}
+		f._chests[999001] = f._new_store("chest")
+		other_id = 999001
+
+	f.action(1, Net.ACT_CHEST_OPEN, other_id, 0, 0, Vector3.ZERO)
+	check(float(fire["burn_left"]) > four_logs + log_s - 60.0 and int(f._chest_viewer.get(1, 0)) == other_id, "opening a chest with the fire still open counts the log put in (%.0f s, was %.0f s)" % [float(fire["burn_left"]), four_logs])
+	f.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
 
 	# Dave 2 Nov 2026 (QA): three logs lift the fire a tier and it stays there until those logs are gone. One log burned out of three: the
 	# store holds two, and closing it must not drop the bonfire. With the logs gone and three firewood it falls back to the medium fire.

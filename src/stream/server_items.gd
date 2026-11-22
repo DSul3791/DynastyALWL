@@ -13904,8 +13904,12 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int, targe
 		return
 
 	if kind == Net.ACT_CHEST_OPEN:
-		if int(_chest_viewer.get(peer, 0)) != id:
-			_sync_fire_from_box(0, int(_chest_viewer.get(peer, 0)))   # another window opened over a fire's: that fire counts its wood as on a close
+		var was_open: int = int(_chest_viewer.get(peer, 0))
+
+		if was_open != id:
+			var was_tier: int = _lit_tier_at(was_open)
+			_sync_fire_from_box(0, was_open)   # another window opened over a fire's: that fire counts its wood as on a close
+			_goal_fire_tier(peer, was_open, was_tier)
 
 		_chest_viewer[peer] = id
 		var opened: Dictionary = _items.get(id, {})
