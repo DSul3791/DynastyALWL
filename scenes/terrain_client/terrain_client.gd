@@ -7871,6 +7871,27 @@ func _exit_tree() -> void:
 		stream.close()
 
 	_telemetry.drain()   # its lines are written on a worker: the EXIT line reaches the file before the process ends
+	if _ends_at_exit_tree():
+		_end_now()
+
+
+# The exported Windows game crashed in the engine's own teardown, about 6 s after this _exit_tree (release check build 9193, 22 Nov
+# 2026: 0xC0000005 in ntdll.dll after "EXIT: game closed (exit_tree)"). Everything the client keeps is written by then: settings are
+# saved when changed, the block cache is flushed below and is only a cache (the server holds the world and the players). So the exported
+# Windows game ends here instead of tearing the world down; the editor and tests keep the normal quit.
+static func _ends_at_exit_tree() -> bool:
+	return OS.has_feature("template") and OS.get_name() == "Windows"
+
+
+func _end_now() -> void:
+	if cache != null:
+		cache.flush()   # the window-close path comes here without _finish()
+	if link != null:
+		link.close()
+	if multiplayer.multiplayer_peer != null:
+		multiplayer.multiplayer_peer.close()   # the server sees a disconnect now, not a timeout
+	print("EXIT: process ends after exit_tree (exported Windows game)")
+	OS.kill(OS.get_process_id())   # Windows: TerminateProcess with exit code 0
 
 
 # Why a torch cannot be lit right now: "water" (the eye is under water), "rain" (open rain, no tree, rock or roof over you; a cave is cover), or "".
