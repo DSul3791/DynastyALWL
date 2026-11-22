@@ -529,5 +529,65 @@ func _init() -> void:
 	check(camp._hint_trigger_true(1, hint_state, "digging_under_ceiling"), "a deep dig fires the cave-in hint")
 	camp.trees_near = func(_p, _r): return []
 	check(not camp._hint_trigger_true(1, hint_state, "near_orchard"), "no trees: no orchard hint")
+
+	# The drink goal's hint names the way and distance to the nearest fresh water from where the player stands (coordinator for Dave,
+	# 22 Nov 2026), worked out from the world's water map, again after a walk of WATER_HINT_MOVE_M, and no more once the player has drunk.
+	var wdir: String = "user://test_goals_water"
+	DirAccess.make_dir_recursive_absolute(wdir)
+
+	for file in DirAccess.get_files_at(wdir):
+		DirAccess.remove_absolute(wdir + "/" + file)
+
+	var w = make(wdir, {}, [false])
+	var lake: Array = [Vector3(1000.0, 10.0, -400.0)]
+	w.nearest_fresh_water = func(pos, reach):
+		var d: float = Vector2(lake[0].x - pos.x, lake[0].z - pos.z).length()
+		return Vector3(lake[0].x, d if d <= reach else INF, lake[0].z)
+	lists_sent.clear()
+	w.peer_connected_hello(1, "water0000001")
+	w.report_position(1, Vector3(1000.0, 10.0, 0.0))
+	var drink_how: String = str((lists_sent.back() as Array)[0][2]) if not lists_sent.is_empty() else ""
+	check(lists_sent.size() == 2 and drink_how.ends_with("The nearest fresh water is about 400 m north."), "the first position sends the drink hint with the way to water (%s)" % drink_how)
+	w.report_position(1, Vector3(1010.0, 10.0, 0.0))
+	check(lists_sent.size() == 2, "a few steps send nothing new")
+	w.report_position(1, Vector3(1000.0 - 300.0, 10.0, -400.0 + 300.0))
+	drink_how = str((lists_sent.back() as Array)[0][2])
+	check(lists_sent.size() == 3 and drink_how.ends_with("about 420 m north-east."), "after a walk the hint is worked out again (%s)" % drink_how)
+	lake[0] = Vector3(9000.0, 10.0, 9000.0)
+	w.report_position(1, Vector3(0.0, 10.0, 0.0))
+	check(str((lists_sent.back() as Array)[0][2]).contains("No fresh water within"), "no water in reach says so")
+	w._goal_state_of(1)["goals_done"]["drink"] = true
+	var lists_before: int = lists_sent.size()
+	w.report_position(1, Vector3(600.0, 10.0, 600.0))
+	check(lists_sent.size() == lists_before and not str(w.goals_rows(1)[0][2]).contains("fresh water"), "once drunk the hint is the plain one and is not sent again")
+
+	# The search itself on a small made-up tile (8 m samples): a one-sample-wide river 100 m away is found; marsh, sea and a seasonal pond
+	# nearer are not drinking water for the hint; nothing in reach is INF; a tile with no water map is INF.
+	var tile = load("res://src/worldgen/runtime/tile_terrain_data.gd").new()
+	tile.samples = 400
+	tile.spacing_m = 8.0
+	tile.x0 = 0.0
+	tile.z0 = 0.0
+	tile.water_class.resize(400 * 400)
+	tile.water_surface.resize(400 * 400)
+	tile.water_surface.fill(NAN)
+
+	for j in 400:   # a river one sample wide, running north-south at x = 1608 (sample 201), 104 m east of the player
+		tile.water_class[j * 400 + 201] = 3
+		tile.water_surface[j * 400 + 201] = 5.0
+
+	for cell in [[190, 200, 4], [195, 200, 1], [198, 200, 10]]:   # marsh, sea and a seasonal pond, all nearer
+		tile.water_class[cell[1] * 400 + cell[0]] = cell[2]
+		tile.water_surface[cell[1] * 400 + cell[0]] = 5.0
+
+	var t0: int = Time.get_ticks_usec()
+	var found: Vector3 = tile.fresh_water_spot(Vector3(1504.0, 10.0, 1600.0), 1500.0)
+	var dry_t0: int = Time.get_ticks_usec()
+	tile.fresh_water_spot(Vector3(400.0, 10.0, 400.0), 1500.0)   # far from the river: the near pass and the whole coarse pass
+	print("drink hint search: %d us found near, %d us the whole reach" % [dry_t0 - t0, Time.get_ticks_usec() - dry_t0])
+	check(absf(found.y - 104.0) < 17.0 and found.x == 1608.0, "a narrow river 104 m east is found past nearer marsh, sea and seasonal water (%s)" % str(found))
+	check(tile.fresh_water_spot(Vector3(1504.0, 10.0, 1600.0), 50.0).y == INF, "no fresh water in reach: INF")
+	tile.placeholder = true
+	check(tile.fresh_water_spot(Vector3(1504.0, 10.0, 1600.0), 1500.0).y == INF, "an ocean tile with no map: INF")
 	print("goals: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

@@ -411,6 +411,57 @@ func fresh_water_near(pos: Vector3, reach: float) -> Vector2:
 	return Vector2(best, surface)
 
 
+# Where the nearest open fresh water (water_classes.json "fresh": lakes and rivers, not wetland, sea or seasonal water) in this tile within
+# `reach` is, for the drink goal's hint (server_items.gd _water_way): Vector3(x, distance, z), the distance INF when there is none. A coarse
+# search: every map sample within 256 m (a narrow river near the player is still found), every 4th beyond (a river that winds crosses them).
+func fresh_water_spot(pos: Vector3, reach: float) -> Vector3:
+	if placeholder or water_class.size() != samples * samples:
+		return Vector3(0.0, INF, 0.0)
+
+	var near: Vector3 = _fresh_scan(pos, minf(reach, 256.0), 1)
+	return near if near.y != INF else _fresh_scan(pos, reach, 4)
+
+
+func _fresh_scan(pos: Vector3, reach: float, stride: int) -> Vector3:
+	var steps: int = int(ceil(reach / spacing_m))
+	var ci: int = int(round((pos.x - x0) / spacing_m))
+	var cj: int = int(round((pos.z - z0) / spacing_m))
+	var best: Vector3 = Vector3(0.0, INF, 0.0)
+	var fresh: PackedByteArray = fresh_flags()
+
+	for j in range(maxi(cj - steps, 0), mini(cj + steps, samples - 1) + 1, stride):
+		for i in range(maxi(ci - steps, 0), mini(ci + steps, samples - 1) + 1, stride):
+			var k: int = j * samples + i
+
+			if fresh[water_class[k]] == 0 or is_nan(water_surface[k]):
+				continue
+
+			var x: float = x0 + float(i) * spacing_m
+			var z: float = z0 + float(j) * spacing_m
+			var gap: float = Vector2(x - pos.x, z - pos.z).length()
+
+			if gap <= reach and gap < best.y:
+				best = Vector3(x, gap, z)
+
+	return best
+
+
+static var _fresh_ids: PackedByteArray = PackedByteArray()
+
+
+# 256 flags by water class id: 1 for open fresh water (water_classes.json "fresh").
+static func fresh_flags() -> PackedByteArray:
+	if _fresh_ids.is_empty():
+		_fresh_ids.resize(256)
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/tables/water_classes.json"))
+
+		for row in (parsed.get("entries", []) if typeof(parsed) == TYPE_DICTIONARY else []):
+			if bool(row.get("fresh", false)) and not bool(row.get("retired", false)):
+				_fresh_ids[int(row["id"])] = 1
+
+	return _fresh_ids
+
+
 # The surface height of the nearest fresh water in this tile within `reach` (fresh_water_near), NAN when there is none.
 func fresh_water_y(pos: Vector3, reach: float) -> float:
 	return fresh_water_near(pos, reach).y
