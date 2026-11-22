@@ -80,7 +80,7 @@ func tick(players: Array, now_ms: int) -> void:
 
 		while not (rec["jobs"] as Array).is_empty() and now_ms >= int(rec["retry_ms"]) and Time.get_ticks_usec() - started < budget:
 			var job: Array = rec["jobs"][0]
-			var place: Variant = _warren(job[1], job[2]) if job[0] == "w" else _deer_range(key)
+			var place: Variant = _warren(job[1], job[2]) if job[0] == "w" else _deer_range(key, str(job[1]) if job.size() > 1 else "deer")
 
 			if place == null:
 				rec["retry_ms"] = now_ms + 5000   # the ground there is not known yet: try again shortly
@@ -148,8 +148,9 @@ func _jobs_for(key: Vector2i) -> Array:
 			for sx in per:
 				jobs.append(["w", key.x * per + sx, key.y * per + sz])
 
-	if cfg.has("deer"):
-		jobs.append(["d"])
+	for name in cfg.get("ranges", ["deer"]):
+		if cfg.has(str(name)):
+			jobs.append(["d", str(name)])   # a bed and feeding ground of each kind of deer (deer, moose, elk) that lives in the block
 
 	return jobs
 
@@ -235,22 +236,28 @@ func _warren(sx: int, sz: int) -> Variant:
 
 
 # The deer range of a trail block: a bed on sheltered side ground and a feeding ground on flat open ground apart_m from it.
-func _deer_range(key: Vector2i) -> Variant:
-	var dc: Dictionary = cfg["deer"]
+func _deer_range(key: Vector2i, name: String = "deer") -> Variant:
+	var dc: Dictionary = cfg[name]
 	var size: float = float(cfg.get("block_m", 256.0))
 	var inset: float = float(dc.get("inset_m", 24.0))
-	var sp: String = str(dc.get("species", "deer"))
+	var sp: String = str(dc.get("species", name))
+	var salt: int = int(dc.get("salt", 100))   # each kind its own spots (deer 100 and 200, as in stage 1)
 	var spots: Array = []
 
 	for k in int(dc.get("tries", 8)):
-		var at: Vector2 = Vector2((float(key.x) * size) + inset + (size - 2.0 * inset) * h01(key.x, key.y, 100 + k), (float(key.y) * size) + inset + (size - 2.0 * inset) * h01(key.x, key.y, 200 + k))
+		var at: Vector2 = Vector2((float(key.x) * size) + inset + (size - 2.0 * inset) * h01(key.x, key.y, salt + k), (float(key.y) * size) + inset + (size - 2.0 * inset) * h01(key.x, key.y, salt + 100 + k))
 		var slope: float = slope_at(at.x, at.y)
 
 		if is_nan(slope):
 			return null
 
-		if _wet(at.x, at.y) or _h(at.x, at.y) <= 0.0 or _weight(sp, at.x, at.y) <= 0.0:
+		var weight: float = _weight(sp, at.x, at.y)
+
+		if _wet(at.x, at.y) or _h(at.x, at.y) <= 0.0 or weight <= 0.0:
 			continue
+
+		if bool(dc.get("weight_roll", false)) and h01(key.x, key.y, salt + 200 + k) >= weight:
+			continue   # moose and elk: a spot in a biome they like less (weight under 1) is taken less often, as the old random spawn rolled
 
 		spots.append([at, slope])
 
@@ -272,18 +279,26 @@ func _deer_range(key: Vector2i) -> Variant:
 	var apart: Array = dc.get("apart_m", [80.0, 200.0])
 	var feed: Vector2 = Vector2.INF
 	var flattest: float = float(dc.get("feed_slope_max", 0.15))
+	var wet_m: float = float(dc.get("feed_wet_m", 0.0))
+	var by_water: bool = false
 
 	for i in spots.size():
 		var d: float = (spots[i][0] as Vector2).distance_to(bed)
 
-		if i != best_bed and d >= float(apart[0]) and d <= float(apart[1]) and float(spots[i][1]) <= flattest:
+		if i == best_bed or d < float(apart[0]) or d > float(apart[1]) or float(spots[i][1]) > float(dc.get("feed_slope_max", 0.15)):
+			continue
+
+		var wet: bool = wet_m > 0.0 and _water_near(spots[i][0], wet_m)
+
+		if (wet and not by_water) or (wet == by_water and float(spots[i][1]) <= flattest):   # moose: a spot by water first, then the flattest
+			by_water = wet
 			flattest = float(spots[i][1])
 			feed = spots[i][0]
 
 	if feed == Vector2.INF:
 		return {}
 
-	var route: Variant = lay_route(bed, feed, key.x * 977 + key.y * 131)
+	var route: Variant = lay_route(bed, feed, key.x * 977 + key.y * 131 + salt - 100)
 
 	if route == null:
 		return null
@@ -291,7 +306,18 @@ func _deer_range(key: Vector2i) -> Variant:
 	if (route as PackedVector2Array).is_empty():
 		return {}
 
-	return {"id": "d:%d,%d" % [key.x, key.y], "sp": sp, "kind": int(dc.get("kind", 1)), "home": bed, "outs": [feed], "routes": [route]}
+	return {"id": "%s:%d,%d" % [str(dc.get("tag", "d")), key.x, key.y], "sp": sp, "kind": int(dc.get("kind", 1)), "home": bed, "outs": [feed], "routes": [route]}
+
+
+# Deep water within m of a spot, in eight directions at half and full distance (a moose feeds at the water's edge).
+func _water_near(at: Vector2, m: float) -> bool:
+	for k in 8:
+		var dir: Vector2 = Vector2.from_angle(TAU * float(k) / 8.0)
+
+		if _wet(at.x + dir.x * m * 0.5, at.y + dir.y * m * 0.5) or _wet(at.x + dir.x * m, at.y + dir.y * m):
+			return true
+
+	return false
 
 
 # The trail from a to b (empty when no way round deep water was found, null when the ground is not known yet). Where deep water lies on

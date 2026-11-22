@@ -5,7 +5,8 @@ extends SceneTree
 # water; warrens keep off steep ground; settled ground drops a place; routes survive the wire; trails ride with the trail block and go
 # out at once when first worked out; the clock sends rabbits out at dusk and home after dawn; a trip walks the trail point by point at
 # walking pace (never a jump) and ends at the far spot; a bolt ends a trip; a lured rabbit stays until its clock turns; animals are made
-# at their places once the ground is worked out, a rabbit group with its burrows at the warren.
+# at their places once the ground is worked out, a rabbit group with its burrows at the warren. Stage 2a: periods and trips on the real
+# sun (equinox = the fixed hours, midwinter and midsummer shift them), moose and elk ranges, a moose feeding by water.
 #   godot --headless --path . --script res://src/worldgen/tools/test_animal_trips.gd
 
 const RangesScript := preload("res://src/stream/server_ranges.gd")
@@ -106,10 +107,11 @@ func _init() -> void:
 				ok_runs = ok_runs and d >= 14.9 and d <= 40.1
 		else:
 			var d2: float = (p["outs"][0] as Vector2).distance_to(p["home"])
-			ok_apart = ok_apart and d2 >= 80.0 and d2 <= 200.0
+			var span: Array = r1.cfg[str(p["sp"])]["apart_m"]
+			ok_apart = ok_apart and d2 >= float(span[0]) and d2 <= float(span[1])
 
 	check(ok_runs, "every trail is a chain of points a few metres apart; runs are 15 to 40 m")
-	check(ok_apart, "a deer's bed and feeding ground are 80 to 200 m apart")
+	check(ok_apart, "a deer's (moose's, elk's) bed and feeding ground are their apart_m apart")
 
 	# A trail goes round a steep hill rather than over it (lines of least resistance).
 	var round_hill = r1.lay_route(Vector2(640.0, 700.0), Vector2(760.0, 700.0), 3)
@@ -309,5 +311,84 @@ func _init() -> void:
 	bare.setup()
 	check(not bare._place_spawn("rabbit", bare.species_def("rabbit"), player, [player], 30), "with no places the old spawn does")
 
+	sun_checks(p1)
+
 	print("test_animal_trips: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
+
+
+# Stage 2a (D-TRAP-3): periods and trips on the real sun; moose and elk ranges, a moose feeding by water.
+func sun_checks(p1: Array) -> void:
+	var s = AnimalsScript.new()
+	s.hour_now = func(): return hour
+	s.setup()
+	var rise: Array = [6.0]
+	s.sunrise_now = func(): return rise[0]
+	var same: bool = true
+
+	for h in 48:
+		var at: float = float(h) * 0.5 + 0.25
+		same = same and s.period_now(at) == AnimalsScript.period_of(at)
+
+	check(same, "at the equinox (sunrise 6) the sun periods are the fixed hours")
+	rise[0] = 7.15   # midwinter at the starter row: sunrise 07:09, sunset 16:51
+	s._sun = [-1, 0.0]
+	check(s.period_now(17.5) == "dusk" and s.period_now(16.0) == "day" and s.period_now(20.5) == "night" and s.period_now(8.5) == "dusk" and s.period_now(9.5) == "day", "in midwinter dusk comes at sunset (17:30 dusk, 16:00 day, 20:30 night, 08:30 still dawn)")
+	var deer: Dictionary = {"id": 7, "sp": "deer", "herd": 0}
+	var bun: Dictionary = {"id": 7, "sp": "rabbit", "herd": 0}
+	s.ranges = RangesScript.new()
+	s.ranges.setup()
+	hour = 17.5
+	check(s.wants_out(deer), "in midwinter a deer is out to feed at 17:30")
+	hour = 9.0
+	check(not s.wants_out(bun), "and a rabbit is home by 09:00")
+	rise[0] = 4.85   # midsummer: sunrise 04:51, sunset 19:09
+	s._sun = [-1, 0.0]
+	hour = 17.0
+	check(not s.wants_out(bun) and s.period_now(17.0) == "day", "in midsummer a rabbit is still home at 17:00, full day")
+	hour = 21.0
+	check(s.wants_out(bun) and s.period_now(21.0) == "dusk", "and out at 21:00, dusk")
+	var fixed = AnimalsScript.new()
+	fixed.hour_now = func(): return hour
+	fixed.setup()
+	fixed.ranges = s.ranges
+	hour = 17.5
+	check(not fixed.wants_out(deer) and fixed.period_now(17.5) == "day", "without a sun the fixed hours stay (deer home at 17:30, day)")
+
+	var moose: int = 0
+	var elk: int = 0
+	var kinds_ok: bool = true
+
+	for p in p1:
+		if str(p["sp"]) == "moose":
+			moose += 1
+			kinds_ok = kinds_ok and int(p["kind"]) == 1 and str(p["id"]).begins_with("m:")
+		elif str(p["sp"]) == "elk":
+			elk += 1
+			kinds_ok = kinds_ok and int(p["kind"]) == 1 and str(p["id"]).begins_with("e:")
+		elif str(p["sp"]) == "deer":
+			kinds_ok = kinds_ok and int(p["kind"]) == 1 and str(p["id"]).begins_with("d:")
+
+	check(moose >= 3 and elk >= 3 and kinds_ok, "moose and elk ranges beside the deer ones (%d moose, %d elk), each with its own id, on a deer trail" % [moose, elk])
+	var by_pond: int = 0
+	var anywhere: int = 0
+
+	for seed_no in 30:
+		var r = ranges_with(100 + seed_no)
+		var with_pref: Variant = r._deer_range(Vector2i(1, 1), "moose")   # the block with the pond (300, 300)
+		r.cfg["moose"]["feed_wet_m"] = 0.0
+		var without: Variant = r._deer_range(Vector2i(1, 1), "moose")
+
+		if with_pref is Dictionary and not (with_pref as Dictionary).is_empty() and r._water_near(with_pref["outs"][0], 40.0):
+			by_pond += 1
+
+		if without is Dictionary and not (without as Dictionary).is_empty() and r._water_near(without["outs"][0], 40.0):
+			anywhere += 1
+
+	check(r1_water_ok(), "water near: 50 m from the pond's middle yes, far off no")
+	check(by_pond > anywhere and by_pond >= 3, "a moose by the pond feeds at its edge when it can (%d of 30 worlds, %d without the preference)" % [by_pond, anywhere])
+
+
+func r1_water_ok() -> bool:
+	var r = ranges_with(11)
+	return r._water_near(Vector2(350.0, 300.0), 40.0) and not r._water_near(Vector2(600.0, 600.0), 40.0)
