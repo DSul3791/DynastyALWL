@@ -254,6 +254,7 @@ func _init() -> void:
 	fills.clear()
 	items._bog_holes_tick()
 	check(fills.size() == 1 and items._bog_holes.is_empty(), "a deep pit of its own digging still silts in (%d fills)" % fills.size())
+	items.ground_open = func(_points): return false
 	items.ground_ready = func(_x, _z): return false
 	items._bog_holes = [[6.0, 10.0, 0.0, 0.9, 0.0, 6, 9.0]]
 	fills.clear()
@@ -262,6 +263,15 @@ func _init() -> void:
 	items.ground_ready = Callable()
 	items._bog_holes_tick()
 	check(fills.size() == 1 and items._bog_holes.is_empty(), "and silts in once it is")
+	items._bog_holes = []
+	items._note_bog_hole(Vector3(6.0, 10.0, 0.0), 0.9)
+	items._note_bog_hole(Vector3(6.0, 8.85, 0.0), 0.9)   # the next dig strikes the first one's floor, 1.15 m down
+	var pit_floor: float = float(items._bog_holes[0][6]) if items._bog_holes.size() == 1 and (items._bog_holes[0] as Array).size() >= 7 else NAN
+	check(absf(pit_floor - 8.85) < 0.001, "digging a pit down deepens its hole (deepest dig %.2f)" % pit_floor)
+	items._note_bog_hole(Vector3(6.5, 4.85, 0.0), 0.9)   # a tunnel 4 m under it
+	pit_floor = float(items._bog_holes[0][6]) if items._bog_holes.size() == 1 else NAN
+	check(absf(pit_floor - 8.85) < 0.001, "but a dig far below the pit does not (deepest dig %.2f)" % pit_floor)
+	items._bog_holes = []
 	items.ground_open = Callable()
 
 	# 5. Save and load: what is left of a patch, its clock, and the waiting holes survive a restart.

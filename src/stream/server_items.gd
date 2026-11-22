@@ -404,7 +404,7 @@ const BOG_HOLE_JOIN_M := 1.5      # a dig this close to a waiting hole joins it 
 const BOG_HOLE_DEEP_M := 1.0      # a new hole is noted only when struck within this of the generated surface (not a tunnel under the bog); deeper digs join one
 const BOG_SILT_PER_TICK := 4      # at most this many holes silt in one slow tick (each is a ground edit, a message to everyone and a remesh)
 const BOG_REFILL_R_MIN := 2.5     # the silting fill: a sphere at least this big whose top just meets the old surface over the hole
-const BOG_PIT_STEP_M := 1.0      # a dig joining a hole deepens its pit only when it is at most this far under the pit's deepest dig
+const BOG_PIT_STEP_M := 0.5      # a dig joining a hole deepens its pit only when it strikes within this of the pit's floor (the last dig less its depth and radius)
 const BOG_OPEN_STEP_M := 1.0       # the silting fill is sampled on this grid below the hole; any open point under it leaves the hole open
 const PEAT_SOIL := 6              # data/tables/soils.json "peat": what a hole saved without its material silts in with
 const CAVE_KEY := 1 << 51       # cave floor stones and boulders: CAVE_KEY | cell x << 28 | cell y << 8 | entry (up to 256 a cell)
@@ -5390,7 +5390,7 @@ func _note_bog_hole(at: Vector3, radius: float) -> void:
 			hole[3] = maxf(float(hole[3]), radius)
 			hole[4] = due
 
-			if hole.size() >= 7 and at.y >= float(hole[6]) - BOG_PIT_STEP_M:
+			if hole.size() >= 7 and at.y >= float(hole[6]) - float(hole[3]) - DIG_DEPTH_M - BOG_PIT_STEP_M:
 				hole[6] = minf(float(hole[6]), at.y)   # the deepest dig of one pit dug down from the top: a dig far below it (a tunnel) does not deepen it
 			_dirty = true
 			return
