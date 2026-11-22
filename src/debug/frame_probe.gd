@@ -22,6 +22,8 @@ static var _win_frames: int = 0
 static var _win_process_ms: float = 0.0   # engine monitors summed per frame since window_reset (the GPU probe's engine rows)
 static var _win_physics_ms: float = 0.0
 const FREEZE_MS := 500.0
+const PHYSICS_SLOW_MS := 30.0           # a physics step this long prints a PHYSICS slow line (at most one every 5 s)
+static var _physics_next_msec: int = 0
 const HITCH_MS := 100.0                  # a frame this long prints a HITCH line at once (rate-limited)
 static var _hitch_next_msec: int = 0
 static var context: Callable = Callable()   # returns a short text about the game's state (set by the client), printed with every freeze line
@@ -86,6 +88,22 @@ static func _shown_text() -> String:
 	return "; first shown: %s%s" % [", ".join(names), " and %d more" % more if more > 0 else ""]
 
 
+# The frame's biggest timed pieces, "name ms", at most `count`.
+static func _top_text(count: int) -> String:
+	var named: Array = []
+
+	for name in _this_frame:
+		named.append([name, float(_this_frame[name]) / 1000.0])
+
+	named.sort_custom(func(a, b): return a[1] > b[1])
+	var text: PackedStringArray = PackedStringArray()
+
+	for k in range(mini(named.size(), count)):
+		text.append("%s %.0f" % [named[k][0], named[k][1]])
+
+	return ", ".join(text) if not text.is_empty() else "nothing"
+
+
 # Call at the start of each frame with the previous frame's length (seconds).
 static func frame(delta: float) -> void:
 	_frames += 1
@@ -112,6 +130,17 @@ static func frame(delta: float) -> void:
 			int(Performance.get_monitor(Performance.OBJECT_COUNT)), ", ".join(named) if not named.is_empty() else "nothing",
 			str(context.call()) if context.is_valid() else "", _shown_text()
 		])
+
+	# BugsList 108: single physics steps of 44-51 ms on Dave's PC, with nothing of ours in them (no script runs in the client's physics step). One
+	# line at most every 5 s names the physics server's load and what this frame did, so a play log says whether new colliders (flora trunks,
+	# ground) or many moving bodies are the cause.
+	var physics_ms: float = Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
+
+	if physics_ms > PHYSICS_SLOW_MS and _frames > 30 and Time.get_ticks_msec() >= _physics_next_msec:
+		_physics_next_msec = Time.get_ticks_msec() + 5000
+		FreezeWatch.printer.line("PHYSICS slow %.0f ms in a %.0f ms frame: active bodies %d, collision pairs %d, islands %d; timed: %s" % [physics_ms, ms,
+			int(Performance.get_monitor(Performance.PHYSICS_3D_ACTIVE_OBJECTS)), int(Performance.get_monitor(Performance.PHYSICS_3D_COLLISION_PAIRS)),
+			int(Performance.get_monitor(Performance.PHYSICS_3D_ISLAND_COUNT)), _top_text(5)])
 
 	if ms > SLOW_MS and _frames > 30:
 		_slow_count += 1
