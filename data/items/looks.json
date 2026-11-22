@@ -5140,51 +5140,15 @@
   "leather_shoes": {"shape": "garment", "color": "#7a4a28", "size": 0.9, "bits": ["shoes"]},
   "wool_socks": {"shape": "garment", "color": "#c9b99a", "size": 0.9, "bits": ["socks"]},
   "wool_scarf": {"shape": "garment", "color": "#c9b99a", "size": 1.0, "bits": ["scarf"]},
-  "fibre_shoulder_bag": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "wicker_pack_basket": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "leather_satchel": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "belt_pouch": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "tool_roll": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "travellers_rucksack": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "wooden_pack_frame": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "weapon_scabbard": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "utility_bandolier": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
+  "fibre_shoulder_bag": {"shape": "bag", "color": "#b8a468", "size": 1.0, "bits": ["shoulder_bag"]},
+  "wicker_pack_basket": {"shape": "basket", "color": "#a08050", "size": 1.4},
+  "leather_satchel": {"shape": "bag", "color": "#7a4a28", "size": 1.0, "bits": ["satchel"]},
+  "belt_pouch": {"shape": "bag", "color": "#6a4024", "size": 0.8, "bits": ["pouch"]},
+  "tool_roll": {"shape": "bag", "color": "#7a4a28", "size": 1.0, "bits": ["tool_roll"]},
+  "travellers_rucksack": {"shape": "backpack", "color": "#6e6250", "size": 1.5},
+  "wooden_pack_frame": {"shape": "bag", "color": "#8a6a3d", "size": 1.2, "bits": ["pack_frame"]},
+  "weapon_scabbard": {"shape": "bag", "color": "#5a3a22", "size": 1.6, "bits": ["scabbard"]},
+  "utility_bandolier": {"shape": "bag", "color": "#6a4024", "size": 1.0, "bits": ["bandolier"]},
   "rope_halter": {
    "shape": "chunk",
    "color": "#8a8a8a",

@@ -244,6 +244,21 @@ func _init() -> void:
 	_check(BasicLook.mesh_for("leather_broad_brim_hat").get_aabb().size.x > 0.25, "the broad-brim hat has a wide brim (%.2f m)" % BasicLook.mesh_for("leather_broad_brim_hat").get_aabb().size.x)
 	_check(_mean_colour(BasicLook.mesh_for("leather_apron")).get_luminance() < _mean_colour(BasicLook.mesh_for("linen_apron")).get_luminance(), "a leather apron is darker than a linen one")
 
+	# Placeholder looks 5c (bags): each is drawn as its own kind of bag, under the 300 triangle cap.
+	var bag_kinds := {"fibre_shoulder_bag": "shoulder_bag", "leather_satchel": "satchel", "belt_pouch": "pouch", "tool_roll": "tool_roll", "wooden_pack_frame": "pack_frame",
+			"weapon_scabbard": "scabbard", "utility_bandolier": "bandolier", "travellers_rucksack": "", "wicker_pack_basket": ""}
+
+	for id in bag_kinds:
+		var row: Dictionary = BasicLook.entry(id)
+		var want: String = str(bag_kinds[id])
+		_check(str(row.get("shape", "chunk")) != "chunk" and (want == "" or (str(row.get("shape", "")) == "bag" and (row.get("bits", []) as Array).has(want))), "%s is drawn as a bag (%s)" % [id, want])
+		var tris: int = _tris(BasicLook.mesh_for(id))
+		_check(tris > 12 and tris <= 300, "%s: %d triangles (more than a plain box, at most 300)" % [id, tris])
+
+	_check(BasicLook.mesh_for("weapon_scabbard").get_aabb().size.x > 0.7, "the scabbard is sword length (%.2f m)" % BasicLook.mesh_for("weapon_scabbard").get_aabb().size.x)
+	_check(BasicLook.mesh_for("weapon_scabbard").get_surface_count() == 2, "the scabbard has brass fittings on a metal surface")
+	_check(BasicLook.mesh_for("belt_pouch").get_aabb().size.x < BasicLook.mesh_for("leather_satchel").get_aabb().size.x, "a belt pouch is smaller than a satchel")
+
 	print("tool looks: %d failures" % failures)
 
 	for id in ["spear", "wooden_spear", "fishing_rod", "wooden_pin"]:                                                  # spears, the fishing rod and the pin
