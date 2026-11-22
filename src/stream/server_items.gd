@@ -2684,6 +2684,12 @@ func _gather_berries(peer: int, species_name: String, flora_key: String, berry: 
 		_say(peer, "Nothing left to pick this season")
 		return false
 
+	berry = GatherRules.harvest_row(_drops, species_name, season)   # a by-season row (wild rose) gives this season's product
+
+	if berry.is_empty():
+		_say(peer, "Not in season")
+		return false
+
 	var number: int = table.number_of(str(berry["item"]))
 
 	if number == 0:

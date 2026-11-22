@@ -356,14 +356,14 @@ func _init() -> void:
 		if (g._drops.get("fruit_tree", {}) as Dictionary).has(str(species_name)):
 			continue   # fruit trees have a real fruit store (a few pieces a press): test_fruit_tree.gd
 
-		var row: Dictionary = GatherRulesScript.harvest_row(g._drops, str(species_name))
 		var entry: Dictionary = flora_rows.get(str(species_name), {})
+		var seasons: Array = entry.get("season", [])
+		var season_name: String = "summer" if seasons.is_empty() or seasons.has("all") or seasons.has("summer") else str(seasons[0])
+		var row: Dictionary = GatherRulesScript.harvest_row(g._drops, str(species_name), season_name)
 		if entry.is_empty() or row.is_empty():
 			check(false, "%s has a harvest row and a flora row" % species_name)
 			continue
 
-		var seasons: Array = entry.get("season", [])
-		var season_name: String = "summer" if seasons.is_empty() or seasons.has("all") or seasons.has("summer") else str(seasons[0])
 		g.season_now = func(): return season_name
 		table_peer += 1
 		g.peer_connected_hello(table_peer, "tablepeer%03d" % table_peer)
@@ -395,6 +395,25 @@ func _init() -> void:
 		print("  %s | %s | %d | %d | %d | %s | %s | %s" % [species_name, row["item"], have_1, have_3, sticks_after - sticks_before, "yes" if stays else "NO", "nothing" if not second_try else "GAVE MORE", "yes" if bool(verdict["ok"]) else "NO"])
 		check(ok, "harvest row %s: product, counts, no sticks, stays, once a season, label agrees" % species_name)
 
+	# Wild rose (D-ROSE-1): petals in summer, hips and 1 to 2 seeds in autumn, nothing in spring though the bush is in leaf; the client's prompt agrees.
+	var rose_flora: Dictionary = flora_rows["wild_rose"]
+	var rose_avg: float = (float(rose_flora["height_m"][0]) + float(rose_flora["height_m"][1])) * 0.5
+	var rose_got: Dictionary = {}
+	for rose_season in ["spring", "summer", "autumn"]:
+		g.season_now = func(): return rose_season
+		table_peer += 1
+		g.peer_connected_hello(table_peer, "rosepeer%03d" % table_peer)
+		g.report_position(table_peer, Vector3(500.0, 70.0, 500.0))
+		g._last_gather.clear()
+		var picked: bool = g.gather(table_peer, "wild_rose", "shrub", "0,0,%d" % (3000 + table_peer), 3000 + table_peer, Vector3(501.0, 70.0, 500.0), rose_avg)
+		var rose_inv = g.inventory_of(table_peer)
+		var prompt_ok: bool = bool(GatherRulesScript.check(rose_flora, "shrub", g._drops, rose_season, func(_t): return true, func(_i): return true)["ok"])
+		rose_got[rose_season] = [picked, rose_inv.count_of(g.table.number_of("rose_petals")), rose_inv.count_of(g.table.number_of("rose_hips")), rose_inv.count_of(g.table.number_of("wild_rose_seed")), prompt_ok]
+	print("wild rose by season [picked, petals, hips, seeds, prompt]: %s" % str(rose_got))
+	check(rose_got["spring"] == [false, 0, 0, 0, false], "a wild rose gives nothing in spring and the prompt says not in season")
+	check(rose_got["summer"][0] and rose_got["summer"][1] >= 20 and rose_got["summer"][2] == 0 and rose_got["summer"][3] == 0 and rose_got["summer"][4], "a wild rose gives petals only in summer")
+	check(rose_got["autumn"][0] and rose_got["autumn"][1] == 0 and rose_got["autumn"][2] >= 150 and rose_got["autumn"][3] >= 1 and rose_got["autumn"][3] <= 2 and rose_got["autumn"][4], "a wild rose gives hips and 1 to 2 seeds in autumn")
+	check(str(GatherRulesScript.harvest_row(g._drops, "wild_rose").get("item", "")) == "rose_petals" and GatherRulesScript.harvest_row(g._drops, "wild_rose", "winter").is_empty(), "with no season the first row names the product; a season without a row has none")
 	check(GatherRulesScript.harvest_count({"count": 10}, 0.01) == 1 and GatherRulesScript.harvest_count({"count": 0}, 0.5) == 1, "a harvest count is never 0")
 	check(GatherRulesScript.harvest_count({"count": 10}, 3.0) == 30 and GatherRulesScript.harvest_count({"count": 7}, 1.2) == 9, "counts are the table number times size, rounded up")
 	check(GatherRulesScript.harvest_scale(g._drops, 99.0, {"height_m": [1.0, 1.0]}) == 3.0 and GatherRulesScript.harvest_scale(g._drops, 0.1, {"height_m": [1.0, 1.0]}) == 1.0, "size scale stays between 1x and 3x")

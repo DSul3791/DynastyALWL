@@ -85,7 +85,8 @@ for sp, rows in drops["by_species"].items():
 for row in drops["by_kind"].get("shrub", []):
     add(row[0], "plant:any shrub")
 for sp, row in drops["harvest_yield"].items():
-    add(row["item"], "plant:" + sp)
+    for r in row.get("by_season", {}).values() or [row]:   # a by-season row (wild rose) gives each season's product
+        add(r["item"], "plant:" + sp)
 for sp, row in drops["berry_yield"].items():
     add(row["item"], "plant:" + sp)
 # server gather() (server_items.gd ~1063): a plant with a harvest or berry row gives only that row; every other non-tree plant also gives one random

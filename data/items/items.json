@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1523,
+	"next_number": 1524,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -12284,6 +12284,17 @@
 			"value": 1,
 			"sell_lot": 15,
 			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
+		},
+		"wild_rose_seed": {
+			"number": 1523,
+			"name": "Wild rose seed",
+			"description": "Seeds from rose hips. Sow them with the hoe in a tilled bed or a planter and a wild rose grows.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 1,
+			"sell_lot": 15,
+			"note": "A herb or plant seed (gardening, Dave 14 Nov 2026: \"All herbs and plants should produce seeds\"). Wild rose (D-ROSE-1, coordinator pick 22 Nov 2026 for Dave's review): the seeds inside the hips, 1 to 2 with the hips picked in autumn (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back. PROVISIONAL."
 		},
 		"small_garden_plot": {
 			"number": 1472,

@@ -4752,6 +4752,11 @@
    "color": "#6a5a3a",
    "size": 0.3
   },
+  "wild_rose_seed": {
+   "shape": "chunk",
+   "color": "#7a6a4a",
+   "size": 0.3
+  },
   "sling": {
    "shape": "bundle",
    "color": "#8a6a4a",

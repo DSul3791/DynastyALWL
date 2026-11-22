@@ -32,6 +32,7 @@
 	"harvest_yield": {
 		"thatch_grass": {"item": "thatch", "count": 10},
 		"oak": {"item": "tannin_bark", "count": 3},
+		"wild_rose": {"by_season": {"summer": {"item": "rose_petals", "count": 20}, "autumn": {"item": "rose_hips", "count": 150}}},
 		"tinder_fungus": {"item": "tinder_fungus", "count": 3},
 		"wild_thyme": {"item": "thyme", "count": 12},
 		"wild_mint": {"item": "mint", "count": 12},
@@ -210,7 +211,8 @@
 		"cattail": {"seasons": ["autumn"], "rows": [["cattail_seed", 1, 2]]},
 		"tussock_sedge": {"seasons": ["autumn"], "rows": [["tussock_sedge_seed", 1, 2]]},
 		"moss_hummock": {"seasons": ["summer"], "rows": [["moss_hummock_seed", 1, 2]]},
-		"sea_holly": {"seasons": ["summer"], "rows": [["sea_holly_seed", 1, 2]]}
+		"sea_holly": {"seasons": ["summer"], "rows": [["sea_holly_seed", 1, 2]]},
+		"wild_rose": {"seasons": ["autumn"], "rows": [["wild_rose_seed", 1, 2]]}
 	},
 	"by_species": {
 		"wild_rose": [],

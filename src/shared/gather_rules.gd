@@ -22,13 +22,23 @@ static func tool_name(tool_class: String, drops: Dictionary) -> String:
 
 # The harvest row of a species: {"item", "count"} from drops.json "berry_yield" (berries) or "harvest_yield" (herbs, flowers, roots, mushrooms, other fruit);
 # {} when it has none. One field for both: E gives that product only, once a season, and the plant stays standing and bare until the season changes.
-static func harvest_row(drops: Dictionary, species_name: String) -> Dictionary:
-	var berry: Dictionary = (drops.get("berry_yield", {}) as Dictionary).get(species_name, {})
+# A row with "by_season" gives a different product by season (wild rose: petals in summer, hips in autumn): `season` picks that season's row, {} in a
+# season it has none; with no season ("" or "all") the first season's row answers "is this a harvest plant" and names its product.
+static func harvest_row(drops: Dictionary, species_name: String, season: String = "") -> Dictionary:
+	var row: Dictionary = (drops.get("berry_yield", {}) as Dictionary).get(species_name, {})
 
-	if not berry.is_empty():
-		return berry
+	if row.is_empty():
+		row = (drops.get("harvest_yield", {}) as Dictionary).get(species_name, {})
 
-	return (drops.get("harvest_yield", {}) as Dictionary).get(species_name, {})
+	if not row.has("by_season"):
+		return row
+
+	var by_season: Dictionary = row["by_season"]
+
+	if season == "" or season == "all":
+		return {} if by_season.is_empty() else by_season[by_season.keys()[0]]
+
+	return by_season.get(season, {})
 
 
 # Dave's count rule, once: the table count scaled by the plant's size against an average one of its species (patch scale 1 to 3 from drops.json
@@ -93,7 +103,8 @@ static func check(flora_row: Dictionary, kind: String, drops: Dictionary, season
 	# A harvest plant (drops.json "berry_yield" or "harvest_yield"): E picks its product, in the plant's season only.
 	if not harvest_row(drops, name).is_empty():
 		var berry_seasons: Array = flora_row.get("season", [])
-		return {"ok": true, "reason": ""} if berry_seasons.is_empty() or berry_seasons.has("all") or berry_seasons.has(season) else {"ok": false, "reason": "not in season"}
+		var in_berry_season: bool = berry_seasons.is_empty() or berry_seasons.has("all") or berry_seasons.has(season)
+		return {"ok": true, "reason": ""} if in_berry_season and not harvest_row(drops, name, season).is_empty() else {"ok": false, "reason": "not in season"}
 
 	if not rows.is_empty():
 		return {"ok": true, "reason": ""} if in_season(flora_row, season) else {"ok": false, "reason": "not in season"}
