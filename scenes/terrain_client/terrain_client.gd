@@ -357,6 +357,7 @@ var _tunnel_msec: int = 0
 var _tunnel_at: Vector3 = Vector3.ZERO
 var rescue = RescueScript.new()        # every way the player is stood back on the surface (src/client/rescue.gd)
 var test_walk: bool = false
+var shot_run: bool = false             # the shot runner's --shot-run: on foot along _walk_dir at run_speed while it measures frame times (running lag)
 var _walk_phase: int = 0               # 0 wait, 1 falling, 2 walking, 3 into a tree, 4 done
 var _walk_msec: int = 0
 var _walk_dir: Vector3 = Vector3.ZERO
@@ -5409,7 +5410,7 @@ func _move_player(delta: float) -> void:
 	if test_walk:
 		_walk_step()
 		direction = _walk_dir
-	elif lag_run != null and _walk_dir != Vector3.ZERO:
+	elif (lag_run != null or shot_run) and _walk_dir != Vector3.ZERO:
 		direction = _walk_dir
 	var fast: float = FAST if KeyBindings.held("run") else 1.0
 	var forward: bool = KeyBindings.held("move_forward")
@@ -5470,7 +5471,7 @@ func _move_player(delta: float) -> void:
 	elif _climb_ladder(delta, strain_cap):
 		pass
 	else:
-		var velocity: Vector3 = direction.normalized() * (run_speed if run_speed > 0.0 and (test_walk or lag_run != null) else pace)
+		var velocity: Vector3 = direction.normalized() * (run_speed if run_speed > 0.0 and (test_walk or lag_run != null or shot_run) else pace)
 
 		# Gravity only applies once there is ground below to land on. Fresh
 		# or far-off ground has no collision yet, so wait for it; a player who

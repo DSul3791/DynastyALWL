@@ -144,7 +144,8 @@ var _frame_start_msec: int = 0
 var build_label: String = ""             # --shot-build=: the commit the numbers belong to (printed in the frametime line)
 var run_mps: float = 0.0                 # --shot-run=M_PER_S: with --shot-frametime, run the way the shot faces at this speed while measuring (running lag, Dave's first complaint)
 var _run_m: float = 0.0                  # metres run so far
-var _run_no_ground: int = 0              # frames where the ground ahead was not loaded yet (the body kept its height)
+var _run_no_ground: int = 0              # frames where the ground under the runner was not loaded yet
+var _run_last: Vector3 = Vector3.INF
 var piece_views: bool = false     # --shot-piece-views: the first named piece gets the four item views (front, side, top, diag) at 3 to 6 m instead of the row pictures
 var _piece_built: bool = false
 var _pieces_regrounded: bool = false
@@ -393,7 +394,8 @@ func _process(delta: float) -> void:
 			client.weather["wind_dir"] = client.world_wind_dir
 			client.weather = client.wind_onto(client.weather)
 
-		client.body.velocity = Vector3.ZERO
+		if not client.shot_run:
+			client.body.velocity = Vector3.ZERO   # (a --shot-run keeps its velocity: the client's gravity builds on it)
 
 		if no_grass and client.grass != null and client.grass.enabled:
 			client.grass.set_radius(0.0)      # the grass view draws nothing (a quality change may turn it back on)
@@ -2214,30 +2216,35 @@ func _measure_frames(delta: float) -> void:
 			client._apply_quality()
 
 		DisplayServer.window_set_vsync_mode(DisplayServer.VSYNC_DISABLED)   # vsync snaps frame times to 16.7 ms steps
+
+		if run_mps > 0.0:
+			# On foot, as a player runs: a flying body holds all ground and plant building while it moves (_update_anchor), which would read falsely good.
+			var fwd: Vector3 = -client.body.global_transform.basis.z
+			fwd.y = 0.0
+			client.flying = false
+			client._walk_dir = fwd.normalized()
+			client.run_speed = run_mps
+			client.shot_run = true
+
 		_frame_state = 1
 		_frame_start_msec = now
 
 	_frame_times.append(delta * 1000.0)
 
 	if run_mps > 0.0:
-		# Run on at the shot's height over the ground, the way it faces: the ground, flora and grass stream in ahead as they do for a running player.
-		var fwd: Vector3 = -client.body.global_transform.basis.z
-		fwd.y = 0.0
-		fwd = fwd.normalized()
-		var step: float = run_mps * minf(delta, 0.25)   # a long frame does not jump the body into ground that is not loaded
-		var rx: float = client.body.global_position.x + fwd.x * step
-		var rz: float = client.body.global_position.z + fwd.z * step
-		var rg: float = _ground(rx, rz)
+		_run_m += client.body.global_position.distance_to(_run_last) if _run_last != Vector3.INF else 0.0
+		_run_last = client.body.global_position
 
-		if is_nan(rg):
+		if is_nan(_ground(_run_last.x, _run_last.z)):
 			_run_no_ground += 1
-
-		client.body.global_position = Vector3(rx, client.body.global_position.y if is_nan(rg) else rg + float(shots[_index]["pos"].y), rz)
-		client.body.velocity = Vector3.ZERO
-		_run_m += step
 
 	if now - _frame_start_msec >= int(frametime_s * 1000.0):
 		_frame_state = 2
+
+		if run_mps > 0.0:
+			client.shot_run = false
+			client._walk_dir = Vector3.ZERO
+
 		var sorted: PackedFloat32Array = _frame_times.duplicate()
 		sorted.sort()
 		var total: float = 0.0
@@ -2253,9 +2260,9 @@ func _measure_frames(delta: float) -> void:
 		var p99: float = sorted[int(float(sorted.size()) * 0.99)]
 		var verdict: String = "FAIL" if (p95 >= 33.0 or over_100 > 0) else ("WARN p99 over 50 ms" if p99 > 50.0 else "OK")
 		var spot: Vector3 = client.body.global_position
-		var spot_ground: float = _placed_ground if not is_nan(_placed_ground) else _ground(spot.x, spot.z)   # the ground the shot stands on (the server's height)
+		var spot_ground: float = _ground(spot.x, spot.z) if run_mps > 0.0 else (_placed_ground if not is_nan(_placed_ground) else _ground(spot.x, spot.z))   # a run ends elsewhere   # the ground the shot stands on (the server's height)
 		if run_mps > 0.0:
-			print("shot runner: ran %.0f m at %.1f m/s, ground not loaded ahead on %d frames" % [_run_m, run_mps, _run_no_ground])
+			print("shot runner: ran %.0f m on foot at %.1f m/s, ground under the runner not loaded on %d frames" % [_run_m, run_mps, _run_no_ground])
 
 		print("shot runner: frametime build %s quality %s spot %.0f,%.0f y %.1f (%s m above the ground) frames %d avg %.1f p95 %.1f p99 %.1f max %.1f ms over50 %d over100 %d [%s] machine: %s, %s, window %dx%d, vsync off" % [
 			build_label, client.QUALITY_NAMES[client.quality], spot.x, spot.z, spot.y, "?" if is_nan(spot_ground) else "%.1f" % (spot.y - spot_ground), sorted.size(), total / float(sorted.size()), p95, p99, sorted[sorted.size() - 1], over_50, over_100, verdict,
