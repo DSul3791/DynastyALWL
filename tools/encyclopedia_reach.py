@@ -236,6 +236,11 @@ class Reach:
                 changed |= g(iid, "a boulder over %s bedrock (%s)" % (name, p))
         hoe = self.tool("hoe")
         if hoe:
+            # server_items.gd dig_trench: the hoe's Irrigation Trench mode digs a trench piece, no items used (garden moisture stage 2).
+            if "irrigation_trench" in self.structures and "irrigation_trench" not in self.built:
+                self.built["irrigation_trench"] = "dug with the hoe (%s)" % hoe
+                changed = True
+            changed |= g("irrigation_trench", "dug with the hoe (%s)" % hoe)
             for cid, c in self.crops.items():
                 if self.has(c.get("seed")):
                     for r in c.get("yields", []):
@@ -389,8 +394,10 @@ def main(argv):
         it = reach.all.get(iid, {})
         if now:
             e.pop("status", None)
-        elif it.get("retired") and not iid.endswith("_kit"):
-            e["status"] = "retired"   # replaced by another item (Greens by Nettles, Salt by Sea salt): no source is coming
+        elif it.get("retired") and not (iid.endswith("_kit") and not reach.blueprints.get(iid[:-4], {}).get("retired")):
+            # replaced by another item (Greens by Nettles, Salt by Sea salt): no source is coming. A retired kit stands for its piece,
+            # so it is retired only when the piece's blueprint is retired too (the pumps and iron pipes: Dave, copper taps, no pumps).
+            e["status"] = "retired"
         else:
             e["status"] = "planned"
         if it.get("retired"):

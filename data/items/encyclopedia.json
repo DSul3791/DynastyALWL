@@ -4279,7 +4279,8 @@
 				"Craft at a workbench: 1 Wooden - Hoe, 2 Stone, 1 Twine"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"iron_hoe": {
 			"name": "Iron - Hoe",
@@ -4560,7 +4561,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"woodworking_table": {
 			"name": "Woodworking table",
@@ -4589,7 +4590,8 @@
 				"Craft at a wood carving station: 1 Wooden block, 1 Stick, 1 Twine (keep Stone - Knife)"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"stone_hammer": {
 			"name": "Stone - Hammer",
@@ -5083,7 +5085,8 @@
 				"Not made yet: its recipe is locked until it has a use"
 			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"javelin": {
 			"name": "Javelin",
@@ -5108,7 +5111,7 @@
 				"Used in Wooden shingle"
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"stone_pickaxe": {
 			"name": "Stone - Pickaxe",
@@ -8742,7 +8745,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"iron_doorway": {
 			"name": "Iron - Doorway",
@@ -8760,7 +8763,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"steel_doorway": {
 			"name": "Steel - Doorway",
@@ -9058,7 +9061,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"thatch_garden_plot": {
 			"name": "Thatch - Garden plot",
@@ -9114,7 +9117,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"stone_garden_plot": {
 			"name": "Stone - Garden plot",
@@ -9132,7 +9135,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"brick_garden_plot": {
 			"name": "Brick - Garden plot",
@@ -9338,7 +9341,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"log_trough": {
 			"name": "Log - Trough",
@@ -9597,7 +9600,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"clay_pipe_run": {
 			"name": "Clay - Pipe",
@@ -9617,7 +9620,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"clay_pipe_elbow": {
 			"name": "Clay - Pipe elbow",
@@ -9637,7 +9640,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"clay_pipe_tee": {
 			"name": "Clay - Pipe tee",
@@ -10221,7 +10224,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"clay_bloomery": {
 			"name": "Clay bloomery",
@@ -10535,7 +10538,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"iron_anvil": {
 			"name": "Anvil",
@@ -10735,7 +10738,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"log_shelf": {
 			"name": "Log - Shelf",
