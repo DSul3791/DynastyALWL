@@ -23620,6 +23620,20 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 	var entries: Array = queue["entries"]
 	var merge: bool = not entries.is_empty() and int(entries[entries.size() - 1][0]) == recipe_number and not (entries[entries.size() - 1][2] as Array).is_empty() and (entries[entries.size() - 1].size() < 5 or int(entries[entries.size() - 1][4]) == 0) and _variant_of(entries[entries.size() - 1]) == variant
 
+	var want: int = clampi(count, 1, CRAFT_QUEUE_MAX_COUNT)
+
+	if merge:   # an entry holds at most CRAFT_QUEUE_MAX_COUNT: what does not fit it starts a new entry, or (a full queue) only its room is queued
+		var room: int = CRAFT_QUEUE_MAX_COUNT - int(entries[entries.size() - 1][1])
+
+		if room < want and entries.size() < CRAFT_QUEUE_ENTRIES:
+			merge = false
+		elif room <= 0:
+			_say(peer, "The crafting queue is full")
+			return
+		elif room < want:
+			want = room
+			_say(peer, "Only room for %d more in the queue" % room)
+
 	if entries.size() >= CRAFT_QUEUE_ENTRIES and not merge:
 		_say(peer, "The crafting queue is full")
 		return
@@ -23630,7 +23644,7 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 	for need in recipe["needs"]:
 		held.append([])
 
-	for n in range(clampi(count, 1, CRAFT_QUEUE_MAX_COUNT)):
+	for n in range(want):
 		if not _stock_covers(inv, recipe, 1, stock):
 			break
 
@@ -23643,11 +23657,11 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 		_say(peer, "You do not have what that needs")
 		return
 
-	if taken < clampi(count, 1, CRAFT_QUEUE_MAX_COUNT):
+	if taken < want:
 		_say(peer, "You only have enough for %d" % taken)
 
 	if merge:
-		entries[entries.size() - 1][1] = mini(int(entries[entries.size() - 1][1]) + taken, CRAFT_QUEUE_MAX_COUNT)
+		entries[entries.size() - 1][1] = int(entries[entries.size() - 1][1]) + taken   # want kept it within CRAFT_QUEUE_MAX_COUNT
 		_hold_insts(entries[entries.size() - 1][2], held)
 	else:
 		var needs: Array = recipe["needs"].duplicate(true)
