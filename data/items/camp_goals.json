@@ -111,7 +111,7 @@
 		{
 			"id": "food_basket",
 			"title": "Make a food store",
-			"hint": "Hold your knife, press R and pick Wicker basket: 8 sticks and 4 twine. A Hide - Sack (2 hides, 1 twine) or a Storage jar (8 clay), built with the hammer, does too, and food keeps longer in any of them than in your pack.",
+			"hint": "Hold your knife, press R and pick Wicker basket: 8 sticks and 4 twine. A Hide - Sack (2 hides, 1 twine) or a Storage jar (8 clay), built with the hammer, does too, and food keeps longer in any of them than in your pack. For the whole winter you will want a Storage barrel (hammer, with a bronze chisel or better on the hand bar, R: 4 hardwood boards, 2 twine, 8 bronze nails).",
 			"after": [
 				"hammer",
 				"knife"
@@ -132,8 +132,8 @@
 		},
 		{
 			"id": "fruit_store",
-			"title": "Fill a barrel with food for winter",
-			"hint": "A winter lasts 91 days and you eat about 2,500 kcal a day: about 2,000 apples' worth. Pick fruit in season (July to November) and dry, smoke or salt what will not keep, then open your food store with F and put food in: 1,000 for the first barrel. Keeping apples, winter pears and dried or smoked food last into spring; cherries and plums do not.",
+			"title": "Fill a Storage barrel with food for winter",
+			"hint": "A winter lasts 91 days and you eat about 2,500 kcal a day: about 2,000 apples' worth. Pick fruit in season (July to November) and dry, smoke or salt what will not keep, then open your food store with F and put food in: 1,000 for the first Storage barrel. Keeping apples, winter pears and dried or smoked food last into spring; cherries and plums do not.",
 			"after": [
 				"food_basket",
 				"berries"
@@ -165,7 +165,7 @@
 		},
 		{
 			"id": "winter_food",
-			"title": "Fill a second barrel for winter",
+			"title": "Fill a second Storage barrel for winter",
 			"hint": "Keep storing food that keeps until 2,000 are put away, enough to eat through the whole winter.",
 			"after": [
 				"fruit_store"
