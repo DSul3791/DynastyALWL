@@ -1762,7 +1762,7 @@ func _welcome_body(info: Dictionary) -> void:
 		# The record's water where the settled water shows none (docs/design/drink_prompt_design.md (a); Kathleen: name what is there).
 		var source: String = _record_drink_here()
 		return {"prompt": "%s — Press E to drink" % source, "tap": items.drink} if source != "" else {})
-	# The sea's edge (Sonny, 31 Oct 2026; the server half is ACT_GATHER_EDGE): with a bucket, clay jug or waterskin in the pack E fills it with sea water; otherwise on a tide-line node
+	# The sea's edge (Sonny, 31 Oct 2026; the server half is ACT_GATHER_EDGE): with a container shore_nodes.json lists (bucket, clay jug, clay pot, waterskin) in the pack E fills it with sea water; otherwise on a tide-line node
 	# (data/items/shore_nodes.json) E gathers it. Shown only where the server would not refuse (ShoreRules.prompt), so before the plain drink prompt.
 	items.register_interactable("gather_edge", 34, func():
 		var text: String = _shore_prompt()

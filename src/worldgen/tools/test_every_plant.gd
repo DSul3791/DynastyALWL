@@ -5,7 +5,7 @@ extends SceneTree
 #   1. every crop in crops.json: its seed sown with the hoe on a tilled bed in its first sowing season, the bed kept wet, the clock run past its grow
 #      days: it is ripe (stage 3), and harvest by hand (or with its tool) gives every yield in full and at least its least seeds back;
 #   2. every live wild plant and shrub in flora.json with something to give: picked by hand (gather(), with a knife, shovel and axe in the pack for the
-#      yields that need one) in each of its seasons, it gives something; and in a season its drops.json seed_drops row lists, it gives that seed;
+#      yields that need one) in each of its seasons that has something to give, it gives it; every seed_drops row names one of them; and in a season its drops.json seed_drops row lists, it gives that seed;
 #   3. every tree's own seed (drops.json trunk.felled_seeds): planted with the hoe's Plant grid in open ground, it is a sapling, and after the grow time
 #      it is a grown tree that can be felled (dynamic_tree_info is not empty).
 # Felling, logs and stumps are test_all_trees_logs, test_fell_autosplit and test_stump_chop; the rules of each step are test_farming's.
@@ -130,7 +130,7 @@ func crops_part(crops: Dictionary) -> int:
 	return n
 
 
-func wild_part(seed_drops: Dictionary) -> int:
+func wild_part(seed_drops: Dictionary, harvest: Dictionary) -> int:
 	var n: int = 0
 	var id: int = 1000
 
@@ -143,7 +143,6 @@ func wild_part(seed_drops: Dictionary) -> int:
 
 		var seasons: Array = SEASONS if (entry.get("season", ["all"]) as Array).has("all") else entry.get("season", [])
 		var seed_def: Dictionary = seed_drops.get(species, {})
-		var gave_any: bool = false
 		n += 1
 
 		for s in seasons:
@@ -156,7 +155,11 @@ func wild_part(seed_drops: Dictionary) -> int:
 			var before: int = pack_total()
 			notes.clear()
 			items.gather(1, species, kind, "9,9,%d" % id, id, spot + Vector3(0.5, 0.0, 0.0), 2.0)
-			gave_any = gave_any or pack_total() > before
+			var by_season: Dictionary = (harvest.get(species, {}) as Dictionary).get("by_season", {})
+			var gives_here: bool = (not (entry.get("yields", []) as Array).is_empty() and (by_season.is_empty() or by_season.has(str(s)))) or (seed_def.get("seasons", []) as Array).has(str(s))
+
+			if gives_here:   # a seed-only plant (cattail) gives in its seed season; a wild rose's petals and hips are summer and autumn (drops.json harvest_yield by_season)
+				check(pack_total() > before, "%s %s: picked by hand in %s, one of its seasons, it gives nothing" % [kind, species, s])
 
 			if (seed_def.get("seasons", []) as Array).has(str(s)):
 				var seeds: int = 0
@@ -166,7 +169,15 @@ func wild_part(seed_drops: Dictionary) -> int:
 
 				check(seeds > 0, "%s %s: picked in %s it gives no seed (%s)" % [kind, species, s, str(seed_def["rows"].map(func(r): return r[0]))])
 
-		check(gave_any, "%s %s: picked by hand in every season %s it gives nothing" % [kind, species, str(seasons)])
+
+	for species in seed_drops:   # every seed row names a live plant this part picked, so no seed is out of reach (Dave 14 Nov 2026)
+		var entry: Dictionary = items._flora_by_name.get(species, {})
+
+		if not entry.is_empty() and bool(entry.get("future", false)):   # a wild crop not in the world yet (crops.json seed_source): its seed has no source, said, not failed
+			print("NOTE seed_drops %s: the plant is future in flora.json, so %s has no wild source" % [species, str(seed_drops[species]["rows"].map(func(r): return r[0]))])
+			continue
+
+		check(str(species) == "note" or (not entry.is_empty() and str(entry.get("kind", "")) != "tree" and not bool(entry.get("retired", false))), "seed_drops %s: no live wild plant of that name gives it" % species)
 
 	return n
 
@@ -236,8 +247,9 @@ func _init() -> void:
 	var crops: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/crops.json"))["crops"]
 	var drops: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/drops.json"))
 	var crops_n: int = crops_part(crops)
-	var wild_n: int = wild_part(drops["seed_drops"])
+	var wild_n: int = wild_part(drops["seed_drops"], drops.get("harvest_yield", {}))
 	var trees_n: int = trees_part(drops["trunk"]["felled_seeds"]["by_species"])
+	check(crops_n >= 80 and wild_n >= 100 and trees_n >= 40, "the parts played their cases (%d crops, %d wild plants, %d tree seeds)" % [crops_n, wild_n, trees_n])
 	print("%d crops grown, %d wild plants picked, %d tree seeds planted: %d checks" % [crops_n, wild_n, trees_n, checks])
 	items._finish_writer()
 	print("Test done: %d failure(s)" % failures)

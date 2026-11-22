@@ -106,7 +106,10 @@ func _init() -> void:
 
 		if cap >= unit_ml:
 			check(shore.has(id) and got and inv.count_of(sea_n) == sea_before + 1, "%s (%d mL): at the sea it takes no Sea water (shore_nodes.json containers %s)" % [id, cap, str(shore)])
+		else:
+			check(not shore.has(id) and inv.count_of(sea_n) == sea_before, "%s (%d mL, less than one water): at the sea it takes Sea water" % [id, cap])
 
+	check(n >= 5, "the containers were played (%d)" % n)
 	print("%d water containers played: %d checks" % [n, checks])
 	items._finish_writer()
 	print("Test done: %d failure(s)" % failures)
