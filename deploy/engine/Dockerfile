@@ -1,5 +1,5 @@
 # Our engine for releases (server/client split plan step C1): Godot 4.7.2 stable with Voxel Tools 1.7 compiled in, the engine Dave uses.
-# Voxel Tools publishes no ready export templates for this pair, so they are built here, all on Linux (the Windows one is
+# Voxel Tools publishes no ready export templates for this pair, so the Windows one is built here with the editor, all on Linux (it is
 # cross-compiled with MinGW), so nothing is installed on Windows besides Docker Desktop.
 #   docker build -f deploy/engine/Dockerfile --output type=local,dest=<folder> deploy/engine
 # writes into <folder>:
