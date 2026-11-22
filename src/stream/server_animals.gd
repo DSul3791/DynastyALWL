@@ -1523,8 +1523,7 @@ func _top_up(players: Array, only: int) -> void:
 				var cz: float = p.z + sin(angle) * dist
 				var too_near: bool = false
 
-				for q in players:
-					too_near = too_near or Vector2(q.x - cx, q.z - cz).length() < (never if cfg.has("near_share") else maxf(never, float(cfg.get("spawn_min_m", 150.0)) * 0.9))
+				too_near = _near_any(cx, cz, players, never if cfg.has("near_share") else maxf(never, float(cfg.get("spawn_min_m", 150.0)) * 0.9))
 
 				too_near = too_near or no_spawn_at(cx, cz)
 
@@ -1558,7 +1557,7 @@ func _top_up(players: Array, only: int) -> void:
 				x = edge.x
 				z = edge.y
 
-				if no_spawn_at(x, z):
+				if no_spawn_at(x, z) or _near_any(x, z, players, never):   # the edge can be nearer a player than the spot was
 					continue
 
 			var herd: Array = def.get("herd", [])
@@ -1575,12 +1574,7 @@ func _top_up(players: Array, only: int) -> void:
 			for k in members:
 				var hx: float = x + rng.randf_range(-6.0, 6.0)   # luck-exempt: herd spread
 				var hz: float = z + rng.randf_range(-6.0, 6.0)   # luck-exempt: herd spread
-				var by_player: bool = false
-
-				for q in players:
-					by_player = by_player or Vector2(q.x - hx, q.z - hz).length() < never   # a member spread toward a player is never made inside never_within_m either
-
-				if by_player or no_spawn_at(hx, hz):
+				if _near_any(hx, hz, players, never) or no_spawn_at(hx, hz):   # a member spread toward a player is never made inside never_within_m either
 					continue
 
 				var id: int = spawn(sp, hx, hz)
@@ -1588,6 +1582,15 @@ func _top_up(players: Array, only: int) -> void:
 				if id != 0:
 					animals[id]["herd"] = hid
 					_herds[hid].append(id)
+
+
+# Whether any player stands within `m` of (x, z) on the ground plan.
+func _near_any(x: float, z: float, players: Array, m: float) -> bool:
+	for q in players:
+		if Vector2(q.x - x, q.z - z).length() < m:
+			return true
+
+	return false
 
 
 # The mouth of a cave the species dens in where a new one may be made now (Vector2(INF, INF) for none): within spawn_max_m of the player and no
