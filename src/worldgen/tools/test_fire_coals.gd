@@ -9,6 +9,7 @@ extends SceneTree
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
+const InventoryScript := preload("res://src/shared/inventory.gd")
 const StructureLook := preload("res://src/shared/structure_look.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
@@ -110,6 +111,22 @@ func _init() -> void:
 	check(state_of(f, 900) == 8, "then it is cold ash (state %d)" % state_of(f, 900))
 	run(f, ItemsScript.FIRE_OUT_S + 1.0, 5.0)
 	check(not f._items.has(900), "and after FIRE_OUT_S the cold ash is gone")
+
+	# 1b. A fire that goes leaves what its store held beside it (food left cooking, spare wood), never deleting it with the fire.
+	var stored: Dictionary = fire_at(f, 905, 8, {}, 0.0, 1.0)
+	stored["uid"] = 7905
+	f._chests[7905] = InventoryScript.new(f.table)
+	f._chests[7905].add(f.table.number_of("stick"), 3)
+	run(f, 2.0, 1.0)
+	var spilled: int = 0
+
+	for gid in f._items:
+		var g: Dictionary = f._items[gid]
+
+		if int(g.get("number", 0)) == f.table.number_of("stick") and not g.has("scatter") and (g["pos"] as Vector3).distance_to(AT) < 2.0:
+			spilled += int(g["count"])
+
+	check(not f._items.has(905) and not f._chests.has(7905) and spilled == 3, "a cold fire that goes leaves its store's 3 sticks beside it (%d found)" % spilled)
 
 	# 2. A 2-minute stick fire goes straight to cold ash.
 	fire_at(f, 901, ItemsScript.FIRE_STATE_SURVIVAL, {"weak": 120.0})

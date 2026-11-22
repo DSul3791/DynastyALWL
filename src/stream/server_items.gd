@@ -6661,7 +6661,24 @@ func _fire_expire(it: Dictionary) -> bool:
 		drop_in_world(c, box.count_of(c), it["pos"] + Vector3(0.6, 0.0, 0.0))   # nobody came for it: it is left on the ground and the fire goes
 		box.remove(c, box.count_of(c))
 
+	_fire_spill_store(it)
 	return false
+
+
+# A fire that goes (cold too long, or laid and never lit) leaves what its store still held beside it: food left cooking and spare wood are never
+# deleted with it. The store itself goes with the fire.
+func _fire_spill_store(it: Dictionary) -> void:
+	var uid: int = int(it["fire"].get("uid", 0))
+	var box = _chests.get(uid)
+
+	if box == null:
+		return
+
+	for slot in box.slot_count:
+		if box.numbers[slot] != 0 and box.counts[slot] > 0:
+			drop_in_world(box.numbers[slot], box.counts[slot], it["pos"] + Vector3(0.6, 0.0, 0.0), box.wear[slot], 0.0, NAN, NAN, "", box.inst_of(slot))
+
+	_chests.erase(uid)
 
 
 # Coals and warm ash between ticks: rain of RAIN_PUTS_OUT or more on them uncovered turns coals to ash after coals.rain_s and ash cold after a further
