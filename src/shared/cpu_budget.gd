@@ -13,6 +13,8 @@ const CGROUP2_CPUSET := "/sys/fs/cgroup/cpuset.cpus.effective"   # "0-3,6"
 const CGROUP1_QUOTA := "/sys/fs/cgroup/cpu/cpu.cfs_quota_us"     # -1 = no limit
 const CGROUP1_PERIOD := "/sys/fs/cgroup/cpu/cpu.cfs_period_us"
 const CGROUP1_CPUSET := "/sys/fs/cgroup/cpuset/cpuset.effective_cpus"
+const CGROUP2_STAT := "/sys/fs/cgroup/cpu.stat"                  # "throttled_usec N": time the quota has paused the container
+const CGROUP1_STAT := "/sys/fs/cgroup/cpu/cpu.stat"              # "throttled_time N" in nanoseconds
 
 
 static func usable() -> int:
@@ -99,3 +101,37 @@ static func read_text(path: String) -> String:
 		text += file.get_line() + "\n"
 
 	return text
+
+
+# The file that counts how long the kernel has paused this container for being over its CPU quota: a CPU quota pauses every thread of the
+# group at once, the main thread too, for the rest of the 100 ms period (Lane B 21 and 22 Nov 2026: one sub-step of one scatter cell took 40
+# to 60 ms at a join, a different sub-step each run, while the quota'd container ran the server and two clients). "" on Windows and macOS,
+# with no quota or no such file; the slow-cell line then says nothing about it.
+static func throttle_stat_path() -> String:
+	if OS.get_name() != "Linux":
+		return ""
+
+	if quota_cpus(read_text(CGROUP2_MAX)) > 0 and FileAccess.file_exists(CGROUP2_STAT):
+		return CGROUP2_STAT
+
+	if quota_cpus_v1(read_text(CGROUP1_QUOTA), read_text(CGROUP1_PERIOD)) > 0 and FileAccess.file_exists(CGROUP1_STAT):
+		return CGROUP1_STAT
+
+	return ""
+
+
+# The microseconds paused so far from a cpu.stat text: cgroup v2 "throttled_usec", or v1 "throttled_time" (nanoseconds). -1 when neither is there.
+static func throttled_usec(text: String) -> int:
+	for line in text.split("\n", false):
+		var parts: PackedStringArray = line.strip_edges().split(" ", false)
+
+		if parts.size() != 2 or not parts[1].is_valid_int():
+			continue
+
+		if parts[0] == "throttled_usec":
+			return int(parts[1])
+
+		if parts[0] == "throttled_time":
+			return int(float(parts[1]) / 1000.0)
+
+	return -1

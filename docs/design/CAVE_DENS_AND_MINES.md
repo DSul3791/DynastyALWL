@@ -8,7 +8,7 @@
 | CD-1 | Bears, wolves and foxes may den in caves. | PROVISIONAL |
 | CD-2 | Dry natural caves stay off (Dave 7 Nov: "caves only at river starts"). Abandoned mines are the dry underground places. | PROVISIONAL (keeps his 7 Nov rule) |
 | CD-3 | 70 % of the inland caves with passages that hold no goblin den hold an animal den. The animal follows the cave's size: large caves and lava tubes are bears, medium caves wolves, small caves foxes. The pick comes from a hash of the cave's id. | PROVISIONAL (thread's value) |
-| CD-4 | The goblin camp's cave, 3,4#8006 since 21 Nov 2026 (was 3,4#8013), is kept free of animal dens and wild goblins (`TileTerrainData.CAMP_CAVES`; docs/design/GOBLIN_CAMP.md GOBLIN-19). | PROVISIONAL |
+| CD-4 | No baked cave is held free for the goblin camp any more: since 21 Nov 2026 the camp brings its own dry cave (`camp_caves.gd`, cave kind `camp_cave`, never a den; docs/design/GOBLIN_CAMP.md GOBLIN-20). Before that 3,4#8006 and earlier 3,4#8013 were kept free. | PROVISIONAL |
 | CD-5 | 2 to 4 abandoned mines per tile, with one about 1 km from the spawn. | PROVISIONAL |
 | CD-6 | A mine's old timbers are looks only. They cannot be pulled down for wood for now. | PROVISIONAL |
 | CD-7 | Bell pits wait for the iron work (bog iron, iron-stained outcrops). | PROVISIONAL |
@@ -19,7 +19,7 @@
 - **The animals:**
   - A bear or fox top-up near a player takes an empty den mouth first (`server_animals.cave_den_spot`). The mouth must be within the normal spawn reach, never within `never_within_m` of a player, and on ground the species lives on (its biomes and habitat, as for any spawn spot). It is not taken while one of its kind, or that animal's den, is within `cave_den_claim_m` (40 m) of the mouth. A bear made there has the mouth as its den.
   - A wolf pack's 2 km cell uses a wolf cave inside it as the pack's den, if the mouth is wolf ground (`server_wolves._natural`, `server_animals.cave_den_in`). Otherwise the pack keeps its hashed spot.
-- **Goblins and bears:** the goblins' old rule stays: no goblin band at a mouth with a bear within 120 m. Bear caves now make that happen more often near large caves; caves are at least 120 m apart, so it only bites when a bear wanders. The goblin camp cave is held free (CD-4).
+- **Goblins and bears:** the goblins' old rule stays: no goblin band at a mouth with a bear within 120 m. Bear caves now make that happen more often near large caves; caves are at least 120 m apart, so it only bites when a bear wanders. The goblin camp's own cave has no dens (CD-4).
 - **Not changed:** the bake, tile files and saves; the goblins' share and their floor rule; the ordinary habitat spawning.
 - **Test:** `src/worldgen/tools/test_cave_animal_dens.gd`, plus the den looks in `test_cave_dressing.gd`.
 
