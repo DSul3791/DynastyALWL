@@ -22,7 +22,7 @@ Fast = every test_*.gd in the test folders (TEST_DIRS: src/worldgen/tools and sr
 `git merge-base base head`: the head's own changes since it left base, as `git diff base...head` (19 Nov 2026: a two-dot diff against a
 dev that had moved on also selected the tests for dev's newer commits, which the head does not even contain). When base is an ancestor of
 head (a trial merge, main, the last green commit) M is base and nothing changes; with no merge base the plain two-dot diff is kept."""
-import fnmatch, json, os, re, subprocess, sys
+import fnmatch, json, os, re, subprocess, sys, zlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # The gate's test folders. A test is named without folder or .gd, so a name must be unique across them (--check-lanes says if not).
@@ -201,17 +201,25 @@ def serial_list(lanes, tests):
 
 
 def owners(lines):
-    """For each line of a GDScript file, the top-level name it belongs to (function, constant, variable, signal, enum or class)."""
-    out, cur = [], None
-    for line in lines:
+    """For each line of a GDScript file, the top-level name it belongs to (function, constant, variable, signal, enum or class).
+    An annotation on its own line (@rpc(...) above a func) belongs to the name it annotates: an @rpc edit changes that function."""
+    out, cur, pending = [], None, []
+    for i, line in enumerate(lines):
         m = FUNC.match(line) if not line[:1].isspace() else None
         d = TOP_DECL.match(line)
         if m:
             cur = m.group(1)
         elif d:
             cur = d.group(1)
+        elif line.startswith("@"):
+            pending.append(i)
+            out.append(None)
+            continue
         elif line.strip() and not line[:1].isspace() and not line.startswith("#"):
             cur = None
+        for j in pending:
+            out[j] = cur if (m or d) else None
+        pending = []
         out.append(cur)
     return out
 
@@ -248,6 +256,7 @@ def changed_names(base, head, path, cwd=ROOT):
                 names.add(f)
                 if f.startswith("_"):
                     todo.append(f)
+    # engine callbacks and very short names (add, get) cannot be matched to tests by their text; the hub's core list covers them
     return {n for n in names if n not in ENGINE_CALLS and len(n) >= 4}
 
 
@@ -259,7 +268,7 @@ def diff_base(base, head, cwd=ROOT):
 
 def patch_id(base, head, cwd=ROOT):
     """git patch-id of head's own change since it left base: equal ids = the same change, whatever dev did around it."""
-    diff = subprocess.run(["git", "diff", diff_base(base, head, cwd), head], cwd=cwd, capture_output=True)
+    diff = subprocess.run(["git", "diff", "--binary", "--no-ext-diff", diff_base(base, head, cwd), head], cwd=cwd, capture_output=True)
     if diff.returncode != 0:
         return None
     if not diff.stdout:
@@ -269,7 +278,7 @@ def patch_id(base, head, cwd=ROOT):
 
 
 def changed_paths(base, head, cwd=ROOT):
-    out = subprocess.run(["git", "diff", "--name-only", diff_base(base, head, cwd), head], cwd=cwd, capture_output=True, text=True)
+    out = subprocess.run(["git", "diff", "--name-only", "--no-renames", diff_base(base, head, cwd), head], cwd=cwd, capture_output=True, text=True)
     if out.returncode != 0:
         raise SystemExit("git diff failed: " + out.stderr.strip())
     return [p for p in out.stdout.splitlines() if p]
@@ -360,18 +369,21 @@ def select(paths, lanes, force_all=False, full=False, wide=False, names=None):
         add(rule["tests"], rule["why"] + ": " + hit)
         if wide:
             continue
+        if names is not None and hit in names and names[hit] is None:
+            add(["@all_fast"], "hub added, deleted or unreadable in the diff: " + hit)
+            continue
         changed = (names or {}).get(hit)
         if not changed:
-            why.setdefault("hub " + hit, "core list only (no diff to read names from; the dev sweep runs the wide plan)")
+            why.setdefault("hub " + hit, "core list only (" + ("no diff to read names from" if names is None else "no matchable name changed") + "; the dev sweep runs the wide plan)")
             continue
-        # a name nearly every test uses (setup, action) says nothing about this change: those tests wait for the dev sweep
         cap = lanes.get("name_max_tests", 40)
         for n in sorted(changed):
             word = re.compile(r'\b' + re.escape(n) + r'\b')
             users = [t for t, text in texts.items() if word.search(text)]
             if len(users) > cap:
-                why.setdefault("hub name " + n, "%d tests name it (over %d): left to the dev sweep" % (len(users), cap))
-                continue
+                # a name nearly every test uses: a fixed spread of cap of them (same pick on every run), the rest in the dev sweep
+                users = sorted(users, key=lambda t: zlib.crc32((n + t).encode()))[:cap]
+                why.setdefault("hub name " + n, "named by more than %d tests: %d of them, the rest in the dev sweep" % (cap, cap))
             add(users, "names %s, changed in %s" % (n, hit))
 
     if any(matches(p, lanes["item_group"]["paths"]) for p in live):

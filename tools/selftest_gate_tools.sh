@@ -39,11 +39,20 @@ mp() { "$PY" -c "import sys;sys.path.insert(0,'tools');import tests_for_diff as 
 # --same-change: a clean merge of base into a reviewed branch keeps its patch; a new edit does not. changed_names: the names an edit touched.
 ( cd "$R" && git checkout -q br && git checkout -qb br2 && git merge -q --no-edit base0 && git checkout -qb br3 && echo c >> br.gd && git commit -qam c3 \
 	&& git checkout -q base0 && printf 'func _helper():\n\treturn 1\n\nfunc public_call():\n\treturn _helper()\n\nfunc other():\n\tpass\n' > h.gd && git add . && git commit -qm h \
-	&& sed -i 's/return 1/return 2/' h.gd && git commit -qam h2 ) >/dev/null 2>&1
+	&& sed -i 's/return 1/return 2/' h.gd && git commit -qam h2 && git tag h2 \
+	&& printf '@rpc("authority", "call_remote", "reliable")\nfunc net_msg():\n\tpass\n\nfunc keep_me():\n\tpass\n\nfunc gone_soon():\n\tpass\n' > r.gd && git add . && git commit -qm r && git tag r0 \
+	&& sed -i 's/"authority"/"any_peer"/' r.gd && git commit -qam r1 && git tag r1 \
+	&& head -n 6 r.gd > r2 && mv r2 r.gd && git commit -qam r2 && git tag r2 \
+	&& git checkout -q br && git checkout -qb bin1 && printf '\000a' > m.bin && git add . && git commit -qm b1 \
+	&& git checkout -q br && git checkout -qb bin2 && printf '\000b' > m.bin && git add . && git commit -qm b2 && git checkout -q base0 ) >/dev/null 2>&1
+cn() { "$PY" -c "import sys;sys.path.insert(0,'tools');import tests_for_diff as t;print(sorted(t.changed_names(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4])))" "$1" "$2" "$3" "$R"; }
+[ "$(cn r0 r1 r.gd)" = "['net_msg']" ]; ok $? "changed_names: an @rpc line edit names the function it annotates"
+cn r1 r2 r.gd | grep -q "'gone_soon'"; ok $? "changed_names: a deleted function is named"
 pid() { "$PY" -c "import sys;sys.path.insert(0,'tools');import tests_for_diff as t;print(t.patch_id('base0',sys.argv[1],sys.argv[2]))" "$1" "$R"; }
 [ "$(pid br)" = "$(pid br2)" ] && [ "$(pid br)" != "None" ]; ok $? "--same-change: merging the base into a reviewed branch keeps the same change"
 [ "$(pid br)" != "$(pid br3)" ]; ok $? "--same-change: a new edit is a different change"
-[ "$("$PY" -c "import sys;sys.path.insert(0,'tools');import tests_for_diff as t;print(sorted(t.changed_names('base0~1','base0','h.gd',sys.argv[1])))" "$R")" = "['_helper', 'public_call']" ]; ok $? "changed_names: the edited private function and its public caller, not the untouched one"
+[ "$(pid bin1)" != "$(pid bin2)" ]; ok $? "--same-change: two different binary files are different changes"
+[ "$(cn h2~1 h2 h.gd)" = "['_helper', 'public_call']" ]; ok $? "changed_names: the edited private function and its public caller, not the untouched one"
 [ "$(mp base0 lone)" = "$(cd "$R" && "$PY" -c "import subprocess;print(sorted(subprocess.run(['git','diff','--name-only','base0','lone'],capture_output=True,text=True).stdout.split()))")" ]; ok $? "no shared history: the plain two-dot diff"
 
 cat > "$T/fakegodot" <<'F'

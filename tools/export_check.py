@@ -8,7 +8,8 @@ generator stay one build): checks export_presets.cfg without exporting, since ou
   python3 tools/export_check.py --disk     look at every file on disk, untracked and gitignored ones too, as Godot does: run it on
                                            the machine that exports, just before the export
   tools/merge_check.py runs the plain check on every PR: server-only code that crept into the client fails it (22 Nov 2026: as a
-  warning it reached the main gate twice); --write puts the new script in the client's exclude list.
+  warning it reached the main gate twice); --write puts the new script in the client's exclude list, and after a merge
+  conflict on that generated line, take either side and run --write again.
 
 What it does:
   1. Works out which tracked files each preset would put in the pack, the way Godot's "all_resources" filter does: every resource
@@ -48,7 +49,7 @@ LAUNCH_ONLY = {
 
 # Never in the client pack, whatever loads them; the server pack needs the world ones (WORLD).
 WORLD = ["worlds/base_world/tiles/*", "worlds/base_world/erosion_delta_v2.bin", "worlds/base_world/water/*"]
-# In neither pack. Folders first: a game file that loads anything under them is a problem (--ci fails); the file kinds after them
+# In neither pack. Folders first: a game file that loads anything under them is a problem (the check fails); the file kinds after them
 # are notes and scripts that sit beside the media and are never loaded.
 DEVELOPER_FOLDERS = ["docs/*", "tools/*", "art/*", "deploy/*", "native/*", "proposed_removals/*", "design/*", "tech/*", "items/*",
                      "120/*", ".claude/*", ".github/*", "src/worldgen/tools/*", "src/admin/*", "scenes/terrain_preview/*", "crash_reports/*",

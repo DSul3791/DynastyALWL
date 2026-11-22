@@ -50,7 +50,7 @@
 	],
 	"hub_min_tests": 100,
 	"name_max_tests": 40,
-	"hubs_note": "A hub is a file that 100 or more tests load directly (--check-lanes lists any hub missing here). In a change plan a hub edit adds its core tests plus every test whose own text names a function, constant or signal the diff changed in the hub (a private helper counts as its callers; a name more than name_max_tests tests use, such as setup, is too common to say anything); the tests that only reach the hub through other code wait for the dev sweep (wide plan). Rule: docs/ai-team/TEST_GATES.md, Test plans for dev.",
+	"hubs_note": "A hub is a file that 100 or more tests load directly (--check-lanes lists any hub missing here). In a change plan a hub edit adds its core tests plus every test whose own text names a function, constant or signal the diff changed in the hub (a private helper counts as its callers; a name more than name_max_tests tests use, such as setup, selects a fixed spread of name_max_tests of them; an added, deleted or renamed hub selects every fast test); the tests that only reach the hub through other code wait for the dev sweep (wide plan). Rule: docs/ai-team/TEST_GATES.md, Test plans for dev.",
 	"hubs": [
 		{
 			"why": "network protocol and constants (hub)",
