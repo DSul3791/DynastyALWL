@@ -178,3 +178,8 @@ Preservation/reader receipts: independent review PASS on exact tree `09c98947328
 | path (under proposed_removals/) | who | date | why | replaced by |
 |---|---|---|---|---|
 | assets/ui/item_icons/stone_raised_cistern.png | Claude, Raised cistern rename PR | 21 Nov | the Raised cistern's id is raised_cistern (wood and copper, not stone); its icon moved with it | assets/ui/item_icons/raised_cistern.png |
+
+## Snare draw tool, 22 Nov 2026 (Dave 22 Nov 2026: no server work for a set snare; the draw is gone)
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| src/worldgen/tools/snare_odds.gd, snare_odds.gd.uid | Claude, snare rework PR | 22 Nov | analysis tool for the snare draw (rabbits pulled in from 30 m), which no longer exists: snares roll only when an animal passes | none (test_traps.gd checks the pass rate) |
