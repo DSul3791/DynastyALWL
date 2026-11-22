@@ -925,10 +925,19 @@ func _ready() -> void:
 	_connect()
 
 
+var _refused_read_msec: int = -100000   # _play_server_refused: when the run note was last read
+
+
 # Play's own server refused to start (its save files could not be read: terrain_server.gd): its reason, from the note it left
 # (user://server_run.json, state "refused") since this game began waiting; "" otherwise.
 func _play_server_refused(waited: int) -> String:
 	var path: String = "user://server_run.json"
+	var now: int = Time.get_ticks_msec()
+
+	if now - _refused_read_msec < 1000:
+		return ""   # read once a second, not every frame of the start-up
+
+	_refused_read_msec = now
 	var note: Variant = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
 
 	if not (note is Dictionary) or str(note.get("state", "")) != "refused" or float(note.get("t", 0.0)) < Time.get_unix_time_from_system() - float(waited) - 30.0:

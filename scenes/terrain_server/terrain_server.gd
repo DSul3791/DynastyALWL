@@ -596,10 +596,9 @@ func _ready() -> void:
 	items.setup(ItemTableScript.load_default(), store_dir)
 
 	if not items.load_failures.is_empty():
-		var why: String = "SERVER NOT STARTED: these save files in %s exist but could not be read: %s. Nothing was saved, moved or deleted. Run the server build that saved them, or restore each from its .prev copy if it has one, then start again." % [store_dir, ", ".join(PackedStringArray(items.load_failures))]
+		var why: String = "SERVER NOT STARTED: these save files in %s exist but could not be read: %s. They were left as they are and nothing was saved over them. Run the server build that saved them, or restore each from its .prev copy if it has one, then start again." % [store_dir, ", ".join(PackedStringArray(items.load_failures))]
 		push_error(why)
 		print(why)
-		_events.event(why)
 		_run_note("refused", 0, why)
 		_refused_start = true
 		get_tree().quit(3)   # never come up on an empty world over the players' saves
@@ -3698,12 +3697,11 @@ func _save_game_clock() -> void:
 
 
 func _exit_tree() -> void:
-	if _refused_start:
-		return   # it never started: nothing is saved over the files it could not read
-
 	_events.event("EXIT: server closed (exit_tree)")
 	_events.stop_watchdog()
-	_save_game_clock()
+
+	if not _refused_start:   # it never started: nothing is saved over the files it could not read (items.save is a no-op then; the threads still join)
+		_save_game_clock()
 
 	tunnels.stop()
 
@@ -3736,7 +3734,7 @@ func _exit_tree() -> void:
 		_bury_thread.wait_to_finish()
 		_bury_thread = null
 
-	if flora != null:
+	if flora != null and not _refused_start:
 		flora.save_removed(true)
 
 	if animals != null and animals.goblins != null:

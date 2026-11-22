@@ -7777,8 +7777,8 @@ func _read_area(key: String, gen: int) -> Dictionary:
 	var main: Variant = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
 
 	if typeof(main) == TYPE_DICTIONARY and int(main.get("version", 0)) > VERSION:
-		push_error("server items: %s is from a newer version; kept as %s.bad" % [path, path])
-		DirAccess.rename_absolute(path, path + ".bad")
+		push_error("server items: %s is from a newer version; the server will not start over it" % path)
+		load_failures.append("%s/%s.json" % [AREA_DIR, key])   # nothing renamed: the build that wrote it still reads it
 		return {}
 
 	if typeof(main) == TYPE_DICTIONARY and int(main.get("gen", -1)) == gen and typeof(main.get("items")) == TYPE_ARRAY:
@@ -7805,7 +7805,8 @@ func _read_area(key: String, gen: int) -> Dictionary:
 		_area_recovered[key] = true
 		return prev   # as _read_json_version: a damaged file costs at most one save interval of that area
 
-	push_error("server items: %s is missing or damaged and has no usable copy; that area's items are lost" % path)
+	push_error("server items: %s is missing or damaged and has no usable earlier copy; the server will not start over it" % path)
+	load_failures.append("%s/%s.json" % [AREA_DIR, key])   # the header names it: saving now would drop that area's items for good
 	return {}
 
 
