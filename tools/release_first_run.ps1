@@ -2,7 +2,7 @@
 # built with Direct3D 12 but nothing else proves D3D12 is in it. Runs the exported Dynasty.exe on Dave's PC with a fresh APPDATA,
 # LOCALAPPDATA and TEMP (a first launch on a friend's PC: no shader cache, no settings, no characters), each run with its own log.
 #   powershell -ExecutionPolicy Bypass -File tools\release_first_run.ps1 -Exe <...\dynasty_export\build-N\client\Dynasty.exe>
-#       two short starts (about 20 s each, a window opens): the default driver, then --rendering-driver d3d12; prints each driver line
+#       two short starts (1200 frames each, a window opens): the default driver, then --rendering-driver d3d12; prints each driver line
 #   ... -Play
 #       then one cold play (Vulkan, 1920x1080 windowed) that runs until the window is closed, for the lag thread's longest FREEZE and
 #       ground-ready times; its log is play.log
@@ -16,7 +16,7 @@ $Exe = (Resolve-Path $Exe).Path
 $out = Join-Path (Split-Path (Split-Path $Exe -Parent) -Parent) "first_run"
 New-Item -ItemType Directory -Force -Path $out | Out-Null
 
-function Start-Fresh([string]$name, [string]$arguments) {
+function Start-Fresh([string]$name, [string]$arguments, [string]$want) {
 	$home_dir = Join-Path $out "$name-profile"
 	if (Test-Path $home_dir) { Remove-Item $home_dir -Recurse -Force }
 	foreach ($d in "Roaming", "Local", "Temp") { New-Item -ItemType Directory -Force -Path (Join-Path $home_dir $d) | Out-Null }
@@ -33,15 +33,22 @@ function Start-Fresh([string]$name, [string]$arguments) {
 		$env:APPDATA = $saved[0]; $env:LOCALAPPDATA = $saved[1]; $env:TEMP = $saved[2]; $env:TMP = $saved[3]
 	}
 	Write-Host "   exit $($p.ExitCode), log $log"
+	$line = $null
 	if (Test-Path $log) {
 		# Godot's start line names the driver and the GPU, e.g. "Vulkan 1.3.x - Forward+ - Using Device #0: ..." or "D3D12 ... - Using Device".
-		Select-String -Path $log -Pattern "Using Device|Vulkan|D3D12|Direct3D|OpenGL|rendering driver" | Select-Object -First 4 | ForEach-Object { Write-Host "   $($_.Line)" }
+		$line = Select-String -Path $log -Pattern "Using Device" | Select-Object -First 1
 	}
-	else { Write-Host "   no log written" }
+	if ($null -eq $line) { Write-Host "   FAIL: no driver line (no log, or the game did not start its renderer)"; $script:failed = $true; return }
+	Write-Host "   $($line.Line)"
+	# The game may fall back to the other driver by itself (project.godot fallback_to_*), so the line must name the one asked for.
+	if ($want -and $line.Line -notmatch $want) { Write-Host "   FAIL: asked for $want, the game used another driver"; $script:failed = $true }
+	elseif ($p.ExitCode -ne 0) { Write-Host "   FAIL: exit $($p.ExitCode)"; $script:failed = $true }
 }
 
-# --quit-after counts frames: about 20 s at 60 fps, enough to reach the title page.
-Start-Fresh "default" "--quit-after 1200"
-Start-Fresh "d3d12" "--rendering-driver d3d12 --quit-after 1200"
-if ($Play) { Start-Fresh "play" "--rendering-driver vulkan --windowed --resolution 1920x1080" }
-Write-Host "release_first_run: record the two driver lines above (and the play.log FREEZE / ground-ready lines) in the release notes of the run"
+$script:failed = $false
+# --quit-after counts frames (1200: about 20 s at 60 fps), enough to reach the title page.
+Start-Fresh "default" "--quit-after 1200" ""
+Start-Fresh "d3d12" "--rendering-driver d3d12 --quit-after 1200" "D3D12|Direct3D"
+if ($Play) { Start-Fresh "play" "--rendering-driver vulkan --windowed --resolution 1920x1080" "Vulkan" }
+if ($script:failed) { Write-Host "release_first_run: FAIL (see above); do not give this build to players"; exit 1 }
+Write-Host "release_first_run: ok; record the driver lines above (and the play.log FREEZE / ground-ready lines) with the run"
