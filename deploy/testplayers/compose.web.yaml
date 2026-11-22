@@ -1,0 +1,24 @@
+# The test players' download page as a small web container (Caddy) on the game server, in its own folder next to the game server.
+# deploy/testplayers/HOSTING.md has the steps. Serves ./testplayers (index.html and the zip from tools/make_testplayers_page.ps1) at
+# https://hannibalshouse.duckdns.org/dynasty/testplayers/
+#   docker compose -f compose.web.yaml up -d      start (and after a reboot)
+#   docker compose -f compose.web.yaml down       stop
+name: dynasty-web
+
+services:
+  web:
+    image: caddy:2.8
+    container_name: dynasty-web
+    restart: unless-stopped
+    ports:
+      - "80:80"     # certificate check and the redirect to https
+      - "443:443"   # the page
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - ./testplayers:/srv/testplayers:ro
+      - caddy-data:/data      # the certificate, kept across restarts
+      - caddy-config:/config
+
+volumes:
+  caddy-data:
+  caddy-config:
