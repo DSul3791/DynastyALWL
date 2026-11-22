@@ -88,7 +88,7 @@ static func _shown_text() -> String:
 	return "; first shown: %s%s" % [", ".join(names), " and %d more" % more if more > 0 else ""]
 
 
-# The frame's biggest timed pieces, "name ms", at most `count`.
+# The frame's biggest timed pieces, "name ms", at most `count` ("" when nothing was timed).
 static func _top_text(count: int) -> String:
 	var named: Array = []
 
@@ -101,7 +101,7 @@ static func _top_text(count: int) -> String:
 	for k in range(mini(named.size(), count)):
 		text.append("%s %.0f" % [named[k][0], named[k][1]])
 
-	return ", ".join(text) if not text.is_empty() else "nothing"
+	return ", ".join(text)
 
 
 # Call at the start of each frame with the previous frame's length (seconds).
@@ -140,7 +140,7 @@ static func frame(delta: float) -> void:
 		_physics_next_msec = Time.get_ticks_msec() + 5000
 		FreezeWatch.printer.line("PHYSICS slow %.0f ms in a %.0f ms frame: active bodies %d, collision pairs %d, islands %d; timed: %s" % [physics_ms, ms,
 			int(Performance.get_monitor(Performance.PHYSICS_3D_ACTIVE_OBJECTS)), int(Performance.get_monitor(Performance.PHYSICS_3D_COLLISION_PAIRS)),
-			int(Performance.get_monitor(Performance.PHYSICS_3D_ISLAND_COUNT)), _top_text(5)])
+			int(Performance.get_monitor(Performance.PHYSICS_3D_ISLAND_COUNT)), _top_text(5) if not _this_frame.is_empty() else "nothing"])
 
 	if ms > SLOW_MS and _frames > 30:
 		_slow_count += 1
@@ -160,18 +160,8 @@ static func frame(delta: float) -> void:
 
 		if ms >= HITCH_MS and now_msec >= _hitch_next_msec:
 			_hitch_next_msec = now_msec + 2000
-			var named: Array = []
-
-			for name in _this_frame:
-				named.append([name, float(_this_frame[name]) / 1000.0])
-
-			named.sort_custom(func(a, b): return a[1] > b[1])
-			var text: PackedStringArray = PackedStringArray()
-
-			for k in range(mini(named.size(), 5)):
-				text.append("%s %.0f" % [named[k][0], named[k][1]])
-
-			FreezeWatch.printer.line("HITCH %.0f ms: %s; script %.0f ms, physics %.0f ms, draw calls %d%s" % [ms, ", ".join(text) if not text.is_empty() else "nothing timed",
+			var top: String = _top_text(5)
+			FreezeWatch.printer.line("HITCH %.0f ms: %s; script %.0f ms, physics %.0f ms, draw calls %d%s" % [ms, top if top != "" else "nothing timed",
 				Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
 				int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), _shown_text()])
 		_slow.append([ms, parts])
