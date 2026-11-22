@@ -19,6 +19,8 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const CellReadsScript := preload("res://src/stream/cell_reads.gd")
+const ContextScript := preload("res://src/stream/resource_context.gd")
+const SpawnPointScript := preload("res://src/shared/spawn_point.gd")
 
 const STORE := "user://outcrops_near"
 
@@ -58,8 +60,9 @@ func _init() -> void:
 	var generator = GeneratorScript.new()
 	generator.setup(settings, rules, tables, world + "/tiles")
 	var started: int = Time.get_ticks_msec()
-	var bare: Dictionary = _boulders(generator, settings, at, radius, 0.0)
-	var covered: Dictionary = _boulders(generator, settings, at, radius, 1.0)
+	var context: RefCounted = _landscape(world, settings)
+	var bare: Dictionary = _boulders(generator, settings, at, radius, 0.0, context)
+	var covered: Dictionary = _boulders(generator, settings, at, radius, 1.0, context)
 	var exact: bool = bare.keys() == covered.keys()
 
 	for key in bare:
@@ -87,14 +90,34 @@ func _init() -> void:
 	for n in range(mini(rows.size(), top)):
 		var r: Dictionary = rows[n]
 		var p: Vector3 = r["pos"]
-		print("  %-9s at (%.1f, %.1f, %.1f)  %4.0f m  radius %.2f m%s" % [str(r["ore"]), p.x, p.y, p.z, float(r["dist"]), float(r["radius"]), "  (cave floor)" if bool(r["cave"]) else ""])
+		print("  %-9s at (%.1f, %.1f, %.1f)  %4.0f m  radius %.2f m%s%s" % [str(r["ore"]), p.x, p.y, p.z, float(r["dist"]), float(r["radius"]), "  (cave floor)" if bool(r["cave"]) else "",
+			"  (%s)" % str(r["from"]) if str(r["from"]) != "" else ""])
 
 	quit(0)
 
 
-# {scatter key: {"pos", "ore", "radius", "dist", "cave"}} for every boulder ServerItems lays out in the 32 m cells within radius of `at`,
-# with the flora cover read as `cover` everywhere.
-func _boulders(generator, settings, at: Vector2, radius: float, cover: float) -> Dictionary:
+# The island resource landscape as the server builds it at start (server_items.start_resources, here on this thread; no known dangers, so
+# only an assured source's place can differ from the game's): its sources and coal seams lay their own outcrops. Null when it cannot build.
+func _landscape(world: String, settings) -> RefCounted:
+	var all_cfg: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/boulders.json"))
+
+	if typeof(all_cfg) != TYPE_DICTIONARY or not (all_cfg as Dictionary).has("distribution"):
+		return null
+
+	var spawn2: Vector2 = SpawnPointScript.use_world(world)
+	var context: RefCounted = ContextScript.new()
+	var supply: Dictionary = ContextScript.supply_inputs(all_cfg as Dictionary)
+	context.set("first_bronze", supply["first_bronze"])
+	context.set("ore_per_m3", float(supply["ore_per_m3"]))
+	context.set("ore_cost", supply["ore_cost"])
+	context.call("load_tiles", world + "/tiles", float(settings.tile_size_m), int(settings.master_seed), (all_cfg as Dictionary)["distribution"], Vector3(spawn2.x, 0.0, spawn2.y))
+	print("outcrops_near: resource landscape %s" % ("built" if bool(context.call("ready")) else "NOT built: no sources or seams below"))
+	return context if bool(context.call("ready")) else null
+
+
+# {scatter key: {"pos", "ore", "radius", "dist", "cave", "from"}} for every boulder ServerItems lays out in the 32 m cells within radius of `at`,
+# with the flora cover read as `cover` everywhere. "from": "source" or "seam" for the resource landscape's outcrops.
+func _boulders(generator, settings, at: Vector2, radius: float, cover: float, context: RefCounted) -> Dictionary:
 	DirAccess.make_dir_recursive_absolute(STORE)
 	var items = ItemsScript.new()
 	items.send_full = func(_p, _b): pass
@@ -105,6 +128,7 @@ func _boulders(generator, settings, at: Vector2, radius: float, cover: float) ->
 	items._taken = {}
 	items.world_seed = int(settings.master_seed)
 	items.respawn_point = Vector3(at.x, float(generator.surface_height(at.x, at.y)), at.y)
+	items.resource_context = context
 	# As terrain_server.gd wires them.
 	items.ground_height = func(x, z): return generator.surface_height(x, z)
 	items.cover_at = func(_point): return cover
@@ -177,6 +201,7 @@ func _boulders(generator, settings, at: Vector2, radius: float, cover: float) ->
 
 		if dist <= radius:
 			out[int(it["scatter"])] = {"pos": pos, "ore": str(it["boulder"].get("ore", "")), "radius": float(it["boulder"]["radius"]), "dist": dist,
-				"cave": (int(it["scatter"]) & ItemsScript.CAVE_KEY) != 0}
+				"cave": (int(it["scatter"]) & ItemsScript.CAVE_KEY) != 0,
+				"from": "source" if (it["boulder"] as Dictionary).has("source") else ("seam" if (it["boulder"] as Dictionary).has("seam") else "")}
 
 	return out

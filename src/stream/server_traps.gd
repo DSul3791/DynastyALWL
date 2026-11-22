@@ -146,9 +146,7 @@ func chance_at(at: Vector3, row: Dictionary, baited: bool, c: Dictionary = {}) -
 		return clampf(float(use["test_chance"]), 0.0, 1.0)
 
 	var p: float = float(use.get("base_chance", 0.3)) * animal_weight(row, use)
-
-	if host.trail_strength.is_valid():
-		p *= trail_factor(float(host.trail_strength.call(at.x, at.z)), use)
+	p *= trail_factor(trail_at(at), use)
 
 	if baited:
 		p *= float(use.get("bait_mult", 2.0))
@@ -160,6 +158,27 @@ func chance_at(at: Vector3, row: Dictionary, baited: bool, c: Dictionary = {}) -
 		p *= float(use.get("storm_mult", 1.0))
 
 	return clampf(p, 0.0, 1.0)
+
+
+# How much of a trail a snare sits on, 0 to 1: the worn grass there, or a trail between animal places (server_ranges.gd) the snare is
+# set right on (run_full_m of its line; Dave 22 Nov 2026, "set traps or snares" on game trails), falling to nothing at run_none_m.
+func trail_at(at: Vector3) -> float:
+	var worn: float = float(host.trail_strength.call(at.x, at.z)) if host.trail_strength.is_valid() else 0.0
+	return maxf(worn, run_share(at, -1))
+
+
+# How squarely a spot is on a trail of a kind (0 rabbit run, 1 deer trail, -1 either): 1 within run_full_m of its line, 0 past run_none_m.
+func run_share(at: Vector3, kind: int) -> float:
+	if not host.run_distance.is_valid():
+		return 0.0
+
+	return _share(float(host.run_distance.call(at.x, at.z, kind)))
+
+
+func _share(d: float) -> float:
+	var full: float = float(cfg.get("run_full_m", 0.5))
+	var none: float = float(cfg.get("run_none_m", 2.0))
+	return clampf((none - d) / maxf(none - full, 0.01), 0.0, 1.0)
 
 
 func _owner_peer(st: Dictionary) -> int:
@@ -202,7 +221,11 @@ func tick(delta: float) -> void:
 				break
 
 		if watched:
+			st["away_at"] = host._now_game_s()   # someone is near: the live look does the work, nothing builds up for later
+			_note_run(it)
 			check_one(id)
+		else:
+			check_away(id)
 
 
 # One look at a snare. Returns true on a catch.
@@ -240,8 +263,21 @@ func check_one(id: int) -> bool:
 		else:
 			host._items.erase(bait)
 
+	_lay_catch(id, str(row["sp"]), c)
+	return true
+
+
+# A catch: the species' carcass beside the snare (marked as snared, for the "Snare a rabbit" goal), the snare quiet a while, worn, and
+# broken at its durability.
+func _lay_catch(id: int, sp: String, c: Dictionary) -> void:
+	var it: Dictionary = host._items[id]
+	var st: Dictionary = it["struct"]
 	var spot: Vector3 = it["pos"] + Vector3(float(c.get("carcass_offset_m", 0.7)), 0.0, 0.0)
-	st["catch"] = host.make_carcass(str(row["sp"]), spot, _owner_peer(st))
+	st["catch"] = host.make_carcass(sp, spot, _owner_peer(st))
+
+	if host._items.has(int(st["catch"])):
+		host._items[int(st["catch"])]["struct"]["snared"] = true
+
 	st["quiet"] = float(c.get("avoid_s", 25.0))
 	it["wear"] = int(it.get("wear", 0)) + int(c.get("wear_per_catch", 1))
 	host._dirty = true
@@ -252,6 +288,84 @@ func check_one(id: int) -> bool:
 		if _owner_peer(st) >= 0:
 			host._say(_owner_peer(st), str(c.get("say_broke", "")))
 
+
+# How squarely a snare sits on a rabbit run, noted on the snare while a player is near (the places round it are worked out only then),
+# for its looks while nobody is.
+func _note_run(it: Dictionary) -> void:
+	if not host.run_distance.is_valid():
+		return
+
+	var d: float = float(host.run_distance.call(it["pos"].x, it["pos"].z, int(_of_item(it).get("away_run_kind", 0))))
+
+	if not is_inf(d):   # INF: the ground round it is not worked out yet, keep what was noted
+		it["struct"]["run"] = _share(d)
+
+
+# A snare with nobody near (Dave 22 Nov 2026, D-TRAP-1: set at dusk, checked at dawn): once a game hour has gone by since its last
+# look it rolls for the hours since, with no animal simulated or taken. Only a snare on a rabbit run fishes this way (within run_none_m
+# of its line, noted while someone was near; a snare in open grass has no run of rabbits coming by), at away_per_hour x how squarely it sits on the run x the rabbits'
+# activity now x bait x storm, so trails matter. A sprung snare holds its one catch until it is taken. Cost: one roll per snare a game
+# hour, only while nobody is near it.
+func check_away(id: int) -> bool:
+	var it: Dictionary = host._items.get(id, {})
+
+	if not is_snare(it):
+		return false
+
+	var st: Dictionary = it["struct"]
+	var c: Dictionary = _of_item(it)
+	var per_hour: float = float(c.get("away_per_hour", 0.0))
+	var now: float = host._now_game_s()
+
+	if per_hour <= 0.0:
+		return false
+
+	if not st.has("away_at"):
+		st["away_at"] = now
+		return false
+
+	var hours: int = int(floor((now - float(st["away_at"])) / 3600.0))
+
+	if hours < 1:
+		return false
+
+	st["away_at"] = float(st["away_at"]) + float(hours) * 3600.0
+
+	if float(st.get("quiet", 0.0)) > 0.0 or host._items.has(int(st.get("catch", 0))):
+		return false   # sprung: its catch still lies there
+
+	var sp: String = str(c.get("away_species", "rabbit"))
+	var on_run: float = float(st.get("run", 0.0))   # noted while someone was near (the places round it are only worked out then)
+
+	if on_run <= 0.0:
+		return false
+
+	var worn: float = float(host.trail_strength.call(it["pos"].x, it["pos"].z)) if host.trail_strength.is_valid() else 0.0
+	var p: float = per_hour * trail_factor(maxf(on_run, worn), c)
+	p *= float(host.species_active.call(sp)) if host.species_active.is_valid() else 1.0
+
+	var bait: int = _bait_id(it["pos"], c)
+
+	if bait >= 0:
+		p *= float(c.get("bait_mult", 2.0))
+
+	if host.rain_now.is_valid() and float(host.rain_now.call()) >= float(c.get("storm_rain", 0.6)):
+		p *= float(c.get("storm_mult", 1.0))
+
+	var over: float = 1.0 - pow(1.0 - clampf(p, 0.0, 1.0), float(mini(hours, int(c.get("away_max_hours", 12)))))
+
+	if not host.fate(_owner_peer(st), "snare", over):
+		return false
+
+	if bait >= 0:
+		var food: Dictionary = host._items.get(bait, {})
+
+		if int(food.get("count", 1)) > 1:
+			food["count"] = int(food["count"]) - 1
+		else:
+			host._items.erase(bait)
+
+	_lay_catch(id, sp, c)
 	return true
 
 
@@ -278,6 +392,7 @@ func on_placed(peer: int, id: int) -> void:
 	var c: Dictionary = of(kind)
 	st["owner"] = key
 	st["set_at"] = host._now_game_s()
+	_note_run(host._items[id])
 	st["seq"] = host._next_uid
 	host._next_uid += 1
 

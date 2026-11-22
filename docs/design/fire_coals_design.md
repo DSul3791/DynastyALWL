@@ -139,3 +139,16 @@ Dave, 17 Nov 2026: "there are suppose to be 3 tiers of kilns. primative which is
 - **KL-5 Bigger tiers take small wood too.** All three take any wood; the bigger ones just hold more. All three fire bricks and lime as the old Kiln did.
 - **KL-6 Speed.** A charcoal every 3 seconds in every tier (a log 5 minutes, a firewood 30 seconds), as the old Kiln; the biggest wood burns first. Once all is done and still lit, it slowly burns its own charcoal, as before.
 - **KL-7 Looks.** All three use the old domed kiln model as a placeholder until art draws them.
+
+### The Primitive kiln's own model (Dave 21 Nov 2026)
+Dave made a model for the Primitive kiln and asked that it be "sized so its longest side is a minimum 2.74 meters". It replaces KL-7's placeholder for the Primitive kiln only. His file is a long, low tunnel kiln of orange clay and field stones, the firing mouth at one end with a bed of embers inside and a stone chimney at the other, about 100,000 triangles with three 4096 textures. `tools/stations/prepare_station_model.py primitive_kiln` (the same tool as the Improved smithy, `SMELTER_LIGHTING.md`) turns it into `assets/stations/primitive_kiln.glb`:
+
+- 2.74 m long, 0.98 m wide and 0.99 m high at the chimney top (the tunnel itself is about half a metre). Its footprint in structures.json is 0.98 x 2.74, the mouth at the front (+Z), so it faces the player who places it.
+- About 20,000 triangles, every texture seam kept; 2048 textures, VRAM Compressed, one-sided, casting shadows. The import settings are committed.
+- The painted embers are moved from the colour into an emission texture (dark ash left in their place). Cold: dark embers, no flames, no smoke. Lit: the embers glow really bright, a light at the mouth and smoke from the chimney, no flames (Dave 22 Nov 2026: "the forges and kilns dont really need flames just glowing coals. dim when not busy and glowing really bright while busy"; a kiln is busy whenever it is lit, and goes out when it has nothing left to burn). A kiln lit or put out is now drawn again at once (before, its light only showed after it was next streamed in).
+
+Provisional, chosen by Claude for Dave:
+- PK-1: the Improved and Advanced kilns keep the brick domed kiln (KL-7) until they have their own models.
+- PK-2: exactly 2.74 m long, Dave's minimum.
+- PK-3: embers glow 4.0 when lit (the Improved smithy's flare is 3.0); the light is 2.0 bright over 6 m. A cold kiln's embers are dark, not dim: a kiln that is out has no fire.
+- PK-4: a Primitive kiln already placed in a saved world takes the new shape where it stands (it was 1.6 x 1.6; it is now 0.98 x 2.74), so it may poke into a wall built close to it. Nothing in it moves or is lost.

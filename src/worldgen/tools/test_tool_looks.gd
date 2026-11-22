@@ -160,6 +160,159 @@ func _init() -> void:
 	_check(brightest < 0.4, "stone_knife: matt stone, no pale steel tones (brightest %.2f)" % brightest)
 	_check(str(BasicLook.entry("stone_hammer").get("shape", "")) == "hammer", "stone_hammer is drawn as a hammer, not an axe")
 
+	# Tool tier colours (D-TODO-4, 21 Nov 2026): every tool made in more than one metal names its tier in its look row and draws its metal in
+	# that metal's colour. Tiers of one tool share the haft, so their mean colours differ only by the metal: copper redder than bronze, steel
+	# lighter than iron, and no two tiers alike (a mean over the whole tool: the axe head is only about 4 percent of its vertices, so the gap bar is low). Saws are drawn through mesh() because three of them are Dave's models.
+	var families: Dictionary = {"axe": ["copper_axe", "bronze_axe", "iron_axe", "steel_axe"], "pick": ["copper_pickaxe", "bronze_pickaxe", "iron_pickaxe", "steel_pickaxe"],
+		"hammer": ["copper_hammer", "bronze_hammer", "iron_hammer", "steel_hammer"], "knife": ["copper_knife", "bronze_knife", "iron_knife", "steel_knife"],
+		"chisel": ["copper_chisel", "bronze_chisel", "iron_chisel", "steel_chisel"], "hoe": ["copper_hoe", "bronze_hoe", "iron_hoe", "steel_hoe"],
+		"shovel": ["copper_shovel", "bronze_shovel", "iron_shovel", "steel_shovel"], "sickle": ["copper_sickle", "bronze_sickle", "iron_sickle", "steel_sickle"],
+		"scythe": ["copper_scythe", "bronze_scythe", "scythe", "steel_scythe"]}
+	var tiers: Array[String] = ["copper", "bronze", "iron", "steel"]
+
+	for family in families:
+		var means: Array[Color] = []
+
+		for k in range(4):
+			var id: String = str(families[family][k])
+			_check((BasicLook.entry(id).get("bits", []) as Array).has(tiers[k]), "%s names its tier %s in its look row" % [id, tiers[k]])
+			means.append(_mean_colour(BasicLook.mesh_for(id)))
+
+		_check(means[0].r - means[0].g > means[1].r - means[1].g, "%s: copper redder than bronze (%s, %s)" % [family, means[0], means[1]])
+		_check(means[3].get_luminance() > means[2].get_luminance(), "%s: steel lighter than iron (%.3f, %.3f)" % [family, means[3].get_luminance(), means[2].get_luminance()])
+
+		for a in range(4):
+			for b in range(a + 1, 4):
+				var gap: float = absf(means[a].r - means[b].r) + absf(means[a].g - means[b].g) + absf(means[a].b - means[b].b)
+				_check(gap > 0.003, "%s: %s and %s tiers draw different colours (gap %.3f)" % [family, tiers[a], tiers[b], gap])
+
+	var saws: Array[Color] = []
+
+	for tier in tiers:
+		saws.append(_mean_colour(BasicLook.mesh("saw", Color.html("#8a8a90"), 1.0, ["metal", tier])))
+
+	_check(saws[0].r - saws[0].g > saws[1].r - saws[1].g and saws[3].get_luminance() > saws[2].get_luminance(), "saw: copper redder than bronze, steel lighter than iron")
+	_check(str(BasicLook.entry("hand_saw").get("bits", [])) == str(["metal", "iron"]), "hand_saw (Iron - Saw) is the iron tier")
+
+	# Placeholder looks 5a part 1 (21 Nov 2026): weapons, spears, arrows and bolts drawn from the existing shapes; each names its tier and builds a real mesh.
+	for id in ["iron_shortsword", "steel_shortsword", "iron_greatsword", "steel_greatsword", "steel_rapier", "steel_scimitar", "iron_battleaxe", "steel_battleaxe",
+			"iron_greataxe", "steel_greataxe", "iron_warhammer", "steel_warhammer", "steel_maul", "quarterstaff", "bronze_spear", "iron_spear", "steel_spear", "iron_pike",
+			"iron_halberd", "steel_halberd", "iron_trident", "iron_buckler", "bronze_arrow", "iron_arrow", "steel_arrow", "wooden_bolt", "iron_bolt", "steel_bolt", "iron_lance"]:
+		var row: Dictionary = BasicLook.entry(id)
+		var tier: String = id.get_slice("_", 0)
+		_check(str(row.get("shape", "chunk")) != "chunk", "%s has a shape of its own (%s)" % [id, str(row.get("shape", ""))])
+		_check(tier not in ["iron", "steel", "bronze"] or (row.get("bits", []) as Array).has(tier), "%s names its tier in its look row" % id)
+		var look: Mesh = BasicLook.mesh_for(id)
+		_check(look != null and look.get_surface_count() > 0, "%s builds a mesh" % id)
+	_check(_mean_colour(BasicLook.mesh_for("steel_spear")).get_luminance() > _mean_colour(BasicLook.mesh_for("iron_spear")).get_luminance(), "steel spear head lighter than iron")
+	var curved_z: float = BasicLook.mesh("sword", Color.html("#9aa3ad"), 1.0, ["steel", "curved"]).get_aabb().size.z
+	var straight_z: float = BasicLook.mesh("sword", Color.html("#9aa3ad"), 1.0, ["steel"]).get_aabb().size.z
+	_check(curved_z > straight_z + 0.03, "the scimitar's blade curves out past the guard (%.3f m across, straight %.3f)" % [curved_z, straight_z])
+	_check(BasicLook.mesh_for("quarterstaff").get_surface_count() == 2 and BasicLook.mesh_for("quarterstaff").get_aabb().size.x > 1.5, "the quarterstaff is a long staff with iron ferrules (%.2f m)" % BasicLook.mesh_for("quarterstaff").get_aabb().size.x)
+
+	# Placeholder looks 5a part 2 (armour): drawn from the jerkin and garment shapes; metal pieces name their tier and take its colour.
+	for id in ["iron_brigandine", "iron_breastplate", "iron_mail_hauberk", "steel_half_plate", "steel_plate_harness", "iron_mail_coif", "iron_gauntlets", "steel_gauntlets",
+			"bronze_greaves", "iron_greaves", "steel_greaves", "iron_mail_chausses", "iron_sabatons", "steel_sabatons"]:
+		var row: Dictionary = BasicLook.entry(id)
+		var tier: String = id.get_slice("_", 0)
+		_check(str(row.get("shape", "chunk")) in ["jerkin", "garment"], "%s is drawn as armour (%s)" % [id, str(row.get("shape", ""))])
+		_check(id == "iron_brigandine" or (row.get("bits", []) as Array).has(tier), "%s names its tier in its look row" % id)
+		var look: Mesh = BasicLook.mesh_for(id)
+		_check(look != null and look.get_surface_count() > 0, "%s builds a mesh" % id)
+	_check(_mean_colour(BasicLook.mesh_for("steel_greaves")).get_luminance() > _mean_colour(BasicLook.mesh_for("iron_greaves")).get_luminance(), "steel greaves lighter than iron")
+	var light_xbow: Mesh = BasicLook.mesh_for("light_crossbow")
+	var heavy_xbow: Mesh = BasicLook.mesh_for("heavy_crossbow")
+	_check(str(BasicLook.entry("light_crossbow").get("shape", "")) == "crossbow" and light_xbow != null and light_xbow.get_aabb().size.z > 0.25 and light_xbow.get_aabb().size.x > 0.6, "the light crossbow is a stock with a prod across it")
+	_check(heavy_xbow != null and light_xbow != null and heavy_xbow.get_surface_count() > light_xbow.get_surface_count(), "the heavy crossbow has a steel prod (a metal surface the light one lacks)")
+
+	# Placeholder looks 5b (clothing): each piece is a garment of its own kind, the new kinds under the 300 triangle cap, and the kinds read apart.
+	var kinds := {"linen_trousers": "trousers", "linen_skirt": "skirt", "linen_dress": "dress", "wool_dress": "dress", "wool_cloak": "cloak", "wool_coat": "coat", "wool_robe": "robe",
+			"oilcloth_cloak": "cloak", "linen_apron": "apron", "leather_apron": "apron", "tabard": "tabard", "linen_headwrap": "headwrap", "leather_broad_brim_hat": "broad_brim",
+			"fur_mittens": "mittens", "leather_shoes": "shoes", "wool_socks": "socks", "wool_scarf": "scarf"}
+
+	for id in kinds:
+		var row: Dictionary = BasicLook.entry(id)
+		_check(str(row.get("shape", "")) == "garment" and (row.get("bits", []) as Array).has(kinds[id]), "%s is drawn as a %s" % [id, kinds[id]])
+		var cloth: Mesh = BasicLook.mesh_for(id)
+		var tris: int = _tris(cloth) if cloth != null else 0
+
+		if str(kinds[id]) not in ["trousers", "cloak", "mittens"]:                                                       # the new kinds; trousers, cloaks and mittens are older drawings
+			_check(tris > 12 and tris <= 300, "%s: %d triangles (more than a plain box, at most 300)" % [id, tris])
+
+	_check(BasicLook.mesh_for("linen_dress").get_aabb().size.z > BasicLook.mesh_for("linen_skirt").get_aabb().size.z + 0.05, "a dress is longer than a skirt (it has a bodice)")
+	_check(BasicLook.mesh_for("wool_robe").get_aabb().size.z > BasicLook.mesh_for("wool_coat").get_aabb().size.z, "a robe is longer than a coat")
+	_check(BasicLook.mesh_for("leather_broad_brim_hat").get_aabb().size.x > 0.25, "the broad-brim hat has a wide brim (%.2f m)" % BasicLook.mesh_for("leather_broad_brim_hat").get_aabb().size.x)
+	_check(_mean_colour(BasicLook.mesh_for("leather_apron")).get_luminance() < _mean_colour(BasicLook.mesh_for("linen_apron")).get_luminance(), "a leather apron is darker than a linen one")
+
+	# Placeholder looks 5c (bags): each is drawn as its own kind of bag, the new kinds under the 300 triangle cap.
+	var bag_kinds := {"fibre_shoulder_bag": "shoulder_bag", "leather_satchel": "satchel", "belt_pouch": "pouch", "tool_roll": "tool_roll", "wooden_pack_frame": "pack_frame",
+			"weapon_scabbard": "scabbard", "utility_bandolier": "bandolier", "travellers_rucksack": "", "wicker_pack_basket": ""}
+
+	for id in bag_kinds:
+		var row: Dictionary = BasicLook.entry(id)
+		var want: String = str(bag_kinds[id])
+		_check(str(row.get("shape", "chunk")) != "chunk" and (want == "" or (str(row.get("shape", "")) == "bag" and (row.get("bits", []) as Array).has(want))), "%s is drawn as a bag (%s)" % [id, want])
+		var bag: Mesh = BasicLook.mesh_for(id)
+		var tris: int = _tris(bag) if bag != null else 0
+
+		if want != "":                                                                                                       # the retired rucksack and pack basket reuse older drawings
+			_check(tris > 12 and tris <= 300, "%s: %d triangles (more than a plain box, at most 300)" % [id, tris])
+
+	_check(BasicLook.mesh_for("weapon_scabbard").get_aabb().size.x > 0.7, "the scabbard is sword length (%.2f m)" % BasicLook.mesh_for("weapon_scabbard").get_aabb().size.x)
+	_check(BasicLook.mesh_for("weapon_scabbard").get_surface_count() == 2, "the scabbard has brass fittings on a metal surface")
+	_check(BasicLook.mesh_for("belt_pouch").get_aabb().size.x < BasicLook.mesh_for("leather_satchel").get_aabb().size.x, "a belt pouch is smaller than a satchel")
+
+	# Placeholder looks 5d (horse tack, harness, cart parts): each names its piece, stays under the 300 triangle cap, and metal fittings sit on a metal surface.
+	var tack_kinds := {"rope_halter": "halter", "leather_bridle": "bridle", "riding_saddle": "saddle", "travellers_saddle": "travellers_saddle", "war_saddle": "war_saddle",
+			"pack_saddle": "pack_saddle", "leather_saddlebags": "saddlebags", "wicker_panniers": "panniers", "cargo_lashings": "lashings", "light_draft_harness": "breastcollar",
+			"heavy_collar_harness": "collar", "double_draft_harness": "double_harness", "double_ox_yoke": "ox_yoke", "iron_horseshoes": "horseshoes", "padded_horse_blanket": "blanket",
+			"feedbag": "feedbag", "grooming_kit": "grooming", "padded_barding": "barding", "iron_mail_barding": "barding", "steel_plate_barding": "barding", "riding_boots": "boots",
+			"wooden_cart_wheel": "wheel", "axle": "axle", "reinforced_wagon_wheel": "board_wheel"}
+
+	for id in tack_kinds:
+		var row: Dictionary = BasicLook.entry(id)
+		_check(str(row.get("shape", "chunk")) in ["tack", "garment"] and (row.get("bits", []) as Array).has(tack_kinds[id]), "%s is drawn as a %s" % [id, tack_kinds[id]])
+		var piece: Mesh = BasicLook.mesh_for(id)
+		var tris: int = _tris(piece) if piece != null else 0
+		_check(tris > 12 and tris <= 300, "%s: %d triangles (more than a plain box, at most 300)" % [id, tris])
+
+	for id in ["riding_saddle", "leather_bridle", "wooden_cart_wheel", "reinforced_wagon_wheel", "iron_mail_barding"]:
+		var fitted: Mesh = BasicLook.mesh_for(id)
+		_check(fitted != null and fitted.get_surface_count() == 2, "%s has its iron on a metal surface" % id)
+
+	_check(BasicLook.mesh_for("padded_barding").get_surface_count() == 1, "padded barding is all cloth, no metal surface")
+	_check(_mean_colour(BasicLook.mesh_for("steel_plate_barding")).get_luminance() > _mean_colour(BasicLook.mesh_for("iron_mail_barding")).get_luminance(), "steel plate barding is lighter than iron mail")
+	_check(BasicLook.mesh_for("reinforced_wagon_wheel").get_aabb().size.x > 0.9 and BasicLook.mesh_for("wooden_cart_wheel").get_aabb().size.x > 0.9, "the wheels are about a metre across")
+	_check(BasicLook.mesh_for("war_saddle").get_aabb().size.y > BasicLook.mesh_for("riding_saddle").get_aabb().size.y, "a war saddle has a taller pommel and cantle than a riding saddle")
+
+	# Placeholder looks 5e and 5f (food, cooking gear, the work tables, thread): none draws the grey chunk; the new dish kinds, cookware and packed tables stay under 300 triangles.
+	var food_ids: Array = ["unbaked_flatbread", "unbaked_rye_flatbread", "unbaked_garlic_flatbread", "unbaked_honey_loaf", "unbaked_trail_bread", "unbaked_oatcakes", "unbaked_chestnut_cakes",
+			"unbaked_apple_pie", "unbaked_fish_pie", "unbaked_venison_pie", "uncooked_sausages", "uncooked_meat_skewers", "uncooked_mushroom_skewers", "uncooked_crab_cakes",
+			"banana_fritter_batter", "uncooked_meatballs", "smoked_meat", "dried_mushrooms", "seafood_platter", "roast_platter", "mixed_grill_platter", "charcuterie_board",
+			"harvest_platter", "tavern_supper_board", "breakfast_platter", "dessert_platter", "ploughmans_board", "food_preparation_table", "leatherworking_table", "tailors_table",
+			"fireplace_cooking_crane", "clay_griddle", "campfire_roasting_spit", "iron_grill_grate", "iron_frying_pan", "iron_cauldron", "thread"]
+	var capped_kinds: Array = ["dough", "links", "platter", "board"]
+
+	for id in food_ids:
+		var row: Dictionary = BasicLook.entry(id)
+		var food_shape: String = str(row.get("shape", "chunk"))
+		_check(food_shape != "chunk", "%s has a look of its own (%s)" % [id, food_shape])
+		var food_mesh: Mesh = BasicLook.mesh_for(id)
+		_check(food_mesh != null and food_mesh.get_surface_count() > 0, "%s builds a mesh" % id)
+		var bits: Array = row.get("bits", [])
+
+		if food_mesh != null and (food_shape in ["cookware", "bench_pack"] or (food_shape == "dish" and bits.size() > 0 and str(bits[0]) in capped_kinds)):
+			var tris: int = _tris(food_mesh)
+			_check(tris > 12 and tris <= 300, "%s: %d triangles (more than a plain box, at most 300)" % [id, tris])
+
+	for id in ["fireplace_cooking_crane", "campfire_roasting_spit", "iron_grill_grate", "iron_frying_pan", "iron_cauldron"]:
+		_check(str(BasicLook.entry(id).get("shape", "")) == "cookware" and (BasicLook.entry(id).get("bits", []) as Array).has("iron"), "%s is iron cookware" % id)
+
+	_check(BasicLook.mesh_for("iron_grill_grate").get_surface_count() == 1, "the grill grate is all iron (one metal surface)")
+	_check(BasicLook.mesh_for("clay_griddle").get_surface_count() == 1, "the clay griddle has no metal")
+	_check(BasicLook.mesh_for("ploughmans_board").get_aabb().size.x > BasicLook.mesh_for("ploughmans_board").get_aabb().size.z * 1.4, "a serving board is long, with a handle")
+	_check(_mean_colour(BasicLook.mesh_for("unbaked_apple_pie")).get_luminance() > _mean_colour(BasicLook.mesh_for("apple_pie")).get_luminance(), "an unbaked pie is paler than a baked one")
+
 	print("tool looks: %d failures" % failures)
 
 	for id in ["spear", "wooden_spear", "fishing_rod", "wooden_pin"]:                                                  # spears, the fishing rod and the pin
@@ -296,3 +449,16 @@ func _width_near(mesh: Mesh, at: float, within: float = 0.02) -> float:
 				high = maxf(high, v.z)
 
 	return high - low
+
+
+# The mean vertex colour of every surface of a mesh.
+func _mean_colour(mesh: Mesh) -> Color:
+	var sum: Color = Color(0, 0, 0, 0)
+	var count: int = 0
+
+	for surface in mesh.get_surface_count():
+		for c in (mesh.surface_get_arrays(surface)[Mesh.ARRAY_COLOR] as PackedColorArray):
+			sum += c
+			count += 1
+
+	return sum / float(maxi(count, 1))

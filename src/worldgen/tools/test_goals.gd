@@ -89,8 +89,15 @@ func _init() -> void:
 	check(lists_sent.size() == 1 and (lists_sent[0] as Array).size() == items._goals_data().size(), "the join sends the whole goal list once (%d lists)" % lists_sent.size())
 	var rows: Array = items.goals_rows(1)
 	check(rows.size() >= 10 and rows[0][0] == "drink" and rows[0][3] == 5 and rows[0][7] == false and rows.all(func(r): return r.size() == 10 and r[7] == false), "goals_rows lists every goal in the authored order, drink first paying 5 copper (start stage), none done (%d goals)" % rows.size())
-	check(rows.all(func(r): return r[3] == 5 and r[4] == "" and r[5] == 0) and rows.any(func(r): return r[0] == "axe" and r[6].has("twine") and r[2] != ""), "every live goal pays 5 copper and no item (coins only, Dave 14 Nov; A-42 start stage); a row carries its how-to and the goals taught before it")
 	var stages: Dictionary = (JSON.parse_string(FileAccess.get_file_as_string("res://data/items/goal_rewards.json")) as Dictionary).get("stages", {})
+	var goal_list: Array = items._goals_data()
+	var pays_stage: bool = rows.size() == goal_list.size()
+
+	for i in rows.size():
+		pays_stage = pays_stage and rows[i][0] == str(goal_list[i]["id"]) and rows[i][3] == int(stages.get(str(goal_list[i].get("stage", "")), -1))
+
+	check(pays_stage and rows.all(func(r): return r[4] == "" and r[5] == 0) and rows.any(func(r): return r[0] == "axe" and r[6].has("twine") and r[2] != ""), "every live goal pays its stage's copper and no item (coins only, Dave 14 Nov; A-42; the metal path pays 10 to 20); a row carries its how-to and the goals taught before it")
+	check(rows.any(func(r): return r[0] == "steel_tool" and r[3] == int(stages.get("steel", 0))), "the metal path's last goal pays the steel stage")
 	check(not stages.is_empty() and items._goals_data().all(func(g): return stages.has(str(g.get("stage", ""))) and not g.has("reward")), "every goal names a stage from the one table in goal_rewards.json and carries no reward of its own")
 	check(rows.any(func(r): return r[0] == "hoe") and rows.any(func(r): return r[0] == "path"), "the hoe and path goals are listed (Dave 4 Nov 2026)")
 	var amounts: Dictionary = {}

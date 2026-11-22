@@ -186,6 +186,21 @@ if goal_gaps.returncode != 0:   # every goal comes after the goals that build th
     for line in goal_gaps.stdout.splitlines()[:-1]:
         bad("goal order: " + line)
 
+goal_stage = subprocess.run([sys.executable, "tools/goal_stage_audit.py"], capture_output=True, text=True)
+if goal_stage.returncode != 0:   # every goal is reachable with its own stage's metals (Dave 21 Nov 2026: materials "available ... at every stage of the goals")
+    late = [line for line in goal_stage.stdout.splitlines() if line.startswith("LATE")]
+    for line in late:
+        bad("goal stage: " + line)
+    if not late:   # the audit itself failed (a data change it cannot read): never pass silently
+        bad("goal stage audit failed: " + " | ".join(goal_stage.stderr.strip().splitlines()[-3:]))
+
+reach = subprocess.run([sys.executable, "tools/encyclopedia_reach.py", "--check"], capture_output=True, text=True)
+if reach.returncode != 0:   # encyclopedia obtainable_now must follow the data (stale rows found on dev 22 Nov 2026)
+    if "out of date" in reach.stdout:
+        bad("encyclopedia_reach: encyclopedia.json is out of date (python3 tools/encyclopedia_reach.py --write)")
+    else:   # the script itself failed (a data change it cannot read): show why
+        bad("encyclopedia_reach failed: " + " | ".join(reach.stderr.strip().splitlines()[-3:]))
+
 placeable = subprocess.run([sys.executable, "tools/placeables_check.py"], capture_output=True, text=True)
 if placeable.returncode != 0:   # every placeable item must be placeable (Dave 5 Nov 2026)
     for line in placeable.stdout.splitlines()[1:]:
@@ -195,11 +210,9 @@ carry = subprocess.run([sys.executable, "tools/carry_audit.py"], capture_output=
 if carry.returncode != 0:   # a warning only until Dave picks the heavy-kits fix (docs/HEAVY_KITS_OPTIONS.md)
     print("WARNING: carry_audit: %d recipe(s) over the carry cap (python3 tools/carry_audit.py)" % sum(1 for l in carry.stdout.split("OVER CAP")[1].split("SLOWING")[0].splitlines() if " kg  recipe " in l))
 
-export = subprocess.run([sys.executable, "tools/export_check.py", "--ci"], capture_output=True, text=True)
-if export.returncode != 0:   # a release build would lack a file it loads or carry what it must not (server/client split C2)
+export = subprocess.run([sys.executable, "tools/export_check.py"], capture_output=True, text=True)
+if export.returncode != 0:   # a release build would lack a file it loads or carry what it must not (server/client split C2); fix server-only creep with --write
     bad("export_check: " + " | ".join([l.strip() for l in export.stdout.splitlines() if l.startswith("  - ")] + export.stderr.strip().splitlines()[-3:]))
-elif "warnings" in export.stdout:
-    print("WARNING: export_check: " + export.stdout.strip().splitlines()[-1])
 
 master = subprocess.run([sys.executable, "tools/item_master.py", "--check"], capture_output=True, text=True)
 if master.returncode != 0:   # a warning only: the master list lives outside the repo (tech/ITEM_MASTER.md)

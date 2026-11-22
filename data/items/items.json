@@ -2,7 +2,7 @@
 	"table": "items",
 	"format_version": 1,
 	"note": "Numbers are append-only. Never renumber or reuse a number; retire an entry with \"retired\": true and take next_number for new entries. stack = most per inventory slot. kind: material, tool, weapon, placeable. Numbers in 'tool' and 'weapon' are placeholders until skills exist. look_alikes feed inspection mode. durability = uses a tool lasts; wear is kept per inventory slot (server-owned). repair = materials one repair spends; a repair wins back half the durability. value = price of one item in COPPER (data/items/coins.json: 10 copper = 1 bronze, 10 bronze = 1 silver, 10 silver = 1 gold) (inventory sort; items without one count as 2). description: one plain line shown in the tooltip (job 75).",
-	"next_number": 1517,
+	"next_number": 1523,
 	"items": {
 		"stone": {
 			"number": 1,
@@ -2736,7 +2736,7 @@
 		"nails": {
 			"number": 228,
 			"name": "Iron nails",
-			"description": "Small iron nails. They fix boards in builds that take iron nails or a lesser metal.",
+			"description": "Small iron nails, strong. For construction and strong boxes: bins, racks, mills, fences and big chests.",
 			"kind": "material",
 			"material": "iron",
 			"stack": 200,
@@ -2747,7 +2747,7 @@
 		"steel_nails": {
 			"number": 1513,
 			"name": "Steel nails",
-			"description": "Small steel nails, the strongest. They fix boards in any build that takes nails.",
+			"description": "Small steel nails, the strongest. For fortification: fortified gates and the Ornate - Chest.",
 			"kind": "material",
 			"material": "steel",
 			"stack": 200,
@@ -3467,6 +3467,67 @@
 			"look_alikes": [],
 			"value": 5,
 			"pile": {"shape": "cone", "handful": 25, "color": [0.37, 0.34, 0.31], "color2": [0.63, 0.29, 0.16], "mix": 0.35, "rock": 0.6, "squash": 0.75, "jitter": 0.3, "lumps": 0.3, "density_kg_m3": 4800}
+		},
+		"iron_chunk": {
+			"number": 1517,
+			"name": "Iron chunk",
+			"description": "A heavy lump of meteorite iron and nickel. It works as an Iron ingot.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 30,
+			"note": "Dave 21 Nov 2026: \"they break into iron chunks that count as iron ingots and can be worked or substituted directly for iron ingots. basically iron chunk inherits from iron ingot.\" Broken from meteorites (boulders.json meteorite_rocks) or picked up loose. Fills every need for an Iron ingot (wood_species.json ingredient_groups.iron_ingot): recipes, blueprints, repairs and the craft planner."
+		},
+		"gold_nugget": {
+			"number": 1518,
+			"name": "Gold nugget",
+			"description": "A small, heavy lump of native gold. Worth a great deal to a trader.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 200,
+			"note": "Coordinator decision D-ORE-1 (21 Nov 2026, under Dave's rule that agents' questions go to the coordinator): a sell-value find with no recipe yet; value PROVISIONAL. Revealed by digging near ore sources (boulders.json distribution pockets, docs/design/RESOURCE_DISTRIBUTION.md)."
+		},
+		"silver_ore": {
+			"number": 1519,
+			"name": "Silver ore",
+			"description": "A dull grey lump with bright metallic streaks. Traders pay well for it.",
+			"kind": "material",
+			"stack": 20,
+			"pile": {"shape": "cone", "handful": 25, "color": [0.42, 0.42, 0.45], "color2": [0.72, 0.72, 0.76], "mix": 0.3, "rock": 0.6, "squash": 0.75, "jitter": 0.3, "lumps": 0.3, "density_kg_m3": 5200},
+			"look_alikes": [],
+			"value": 40,
+			"note": "Coordinator decision D-ORE-1 (21 Nov 2026, under Dave's rule that agents' questions go to the coordinator): a sell-value find with no recipe yet; value PROVISIONAL. Revealed by digging near ore sources (boulders.json distribution pockets, docs/design/RESOURCE_DISTRIBUTION.md). Its pile is a cone like every ore (Dave: ore piles stack like stone): lead-grey with bright streaks, galena-like rock about 5,200 kg/m3."
+		},
+		"amethyst": {
+			"number": 1520,
+			"name": "Amethyst",
+			"description": "A cluster of violet quartz crystals from a hollow in the rock.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 60,
+			"note": "Coordinator decision D-ORE-1 (21 Nov 2026, under Dave's rule that agents' questions go to the coordinator): a sell-value find with no recipe yet; value PROVISIONAL. Revealed by digging near ore sources (boulders.json distribution pockets, docs/design/RESOURCE_DISTRIBUTION.md)."
+		},
+		"garnet": {
+			"number": 1521,
+			"name": "Garnet",
+			"description": "A deep red crystal grown in hard mountain rock.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 50,
+			"note": "Coordinator decision D-ORE-1 (21 Nov 2026, under Dave's rule that agents' questions go to the coordinator): a sell-value find with no recipe yet; value PROVISIONAL. Revealed by digging near ore sources (boulders.json distribution pockets, docs/design/RESOURCE_DISTRIBUTION.md)."
+		},
+		"agate": {
+			"number": 1522,
+			"name": "Agate",
+			"description": "A rounded stone that shows fine coloured bands when broken.",
+			"kind": "material",
+			"stack": 20,
+			"look_alikes": [],
+			"value": 25,
+			"note": "Coordinator decision D-ORE-1 (21 Nov 2026, under Dave's rule that agents' questions go to the coordinator): a sell-value find with no recipe yet; value PROVISIONAL. Revealed by digging near ore sources (boulders.json distribution pockets, docs/design/RESOURCE_DISTRIBUTION.md)."
 		},
 		"bog_iron_ore": {
 			"number": 1511,
@@ -4688,7 +4749,9 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 10,
-			"look_alikes": []
+			"look_alikes": [],
+			"retired": true,
+			"note": "Hidden 21 Nov 2026 (coordinator ruling D-TODO-7 for Dave: the island has no mango, orange or lemon trees; fig, olive and pomegranate stay as warm-coast trees). Kept for its number."
 		},
 		"oranges": {
 			"number": 448,
@@ -4697,7 +4760,9 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
-			"look_alikes": []
+			"look_alikes": [],
+			"retired": true,
+			"note": "Hidden 21 Nov 2026 (coordinator ruling D-TODO-7 for Dave: the island has no mango, orange or lemon trees; fig, olive and pomegranate stay as warm-coast trees). Kept for its number."
 		},
 		"lemons": {
 			"number": 449,
@@ -4706,7 +4771,9 @@
 			"kind": "food",
 			"stack": 20,
 			"value": 8,
-			"look_alikes": []
+			"look_alikes": [],
+			"retired": true,
+			"note": "Hidden 21 Nov 2026 (coordinator ruling D-TODO-7 for Dave: the island has no mango, orange or lemon trees; fig, olive and pomegranate stay as warm-coast trees). Kept for its number."
 		},
 		"dried_apples": {
 			"number": 450,
@@ -9475,7 +9542,7 @@
 			"bronze_nails": {
 				"number": 894,
 				"name": "Bronze nails",
-				"description": "Small bronze nails. Fix boards in builds, the same as iron ones.",
+				"description": "Small bronze nails, stronger than copper. For chests, cabinets, furniture and upholstery.",
 				"kind": "material",
 				"material": "bronze",
 				"stack": 200,
@@ -11410,7 +11477,8 @@
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15,
-			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+			"note": "Hidden 21 Nov 2026 (coordinator ruling D-TODO-7 for Dave: the island has no mango, orange or lemon trees; fig, olive and pomegranate stay as warm-coast trees). Kept for its number. A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\".",
+			"retired": true
 		},
 		"orange_seed": {
 			"number": 1402,
@@ -11421,7 +11489,8 @@
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15,
-			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+			"note": "Hidden 21 Nov 2026 (coordinator ruling D-TODO-7 for Dave: the island has no mango, orange or lemon trees; fig, olive and pomegranate stay as warm-coast trees). Kept for its number. A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\".",
+			"retired": true
 		},
 		"lemon_seed": {
 			"number": 1403,
@@ -11432,7 +11501,8 @@
 			"look_alikes": [],
 			"value": 1,
 			"sell_lot": 15,
-			"note": "A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\"."
+			"note": "Hidden 21 Nov 2026 (coordinator ruling D-TODO-7 for Dave: the island has no mango, orange or lemon trees; fig, olive and pomegranate stay as warm-coast trees). Kept for its number. A felled tree's seed (gardening, Dave 14 Nov 2026: trees drop 1 to 5 seeds when cut down; drops.json trunk.felled_seeds). Dave 14 Nov 2026: every tree follows the same rules and its seed is the tree's name plus \"seed\".",
+			"retired": true
 		},
 		"wild_apple_sweet_seed": {
 			"number": 1404,
@@ -12281,7 +12351,7 @@
 			"stack": 1,
 			"unstackable": true,
 			"look_alikes": [],
-			"note": "Placed station (Dave 15 Nov 2026, W-4: 8 Planks, 16 Nails, hammer blueprint 352). Row state 442."
+			"note": "Placed station (Dave 15 Nov 2026, W-4: 8 Planks, 16 Wooden pins since GR-1 21 Nov 2026, hammer blueprint 352). Row state 442."
 		},
 		"carving_station": {
 			"number": 1477,
@@ -12356,7 +12426,7 @@
 		"copper_nails": {
 			"number": 1487,
 			"name": "Copper nails",
-			"description": "Small copper nails. Soft; a Quality - Backpack is sewn and nailed with them.",
+			"description": "Small copper nails, the softest. For copper sheet and light work: crates, garden plots and racks.",
 			"kind": "material",
 			"material": "copper",
 			"stack": 200,

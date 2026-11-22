@@ -4,7 +4,7 @@ extends SceneTree
 # and sell", later tribes friendly, unfriendly, indifferent; data/creatures/goblin_tribes.json, src/stream/server_tribes.gd). Checks, on the real
 # code and data:
 # - every member has a dialogue file and a voice, the trader a shop of real items, and no member takes a townsperson's id;
-# - the camp is at the mouth of a baked spring cave that holds no wild goblin band or animal den (TileTerrainData.CAMP_CAVES), a river runs near it, and every spot is dry, on ground of at
+# - the camp brings its own dry cave (CampCaves, its dig row), under the hill all the way in with no goblin band or animal den, a river runs near it, and every spot is dry, on ground of at
 #   most 20 degrees and clear of the cave's opening (the baked tile, as island_checks.gd reads it);
 # - the members stand at their spots; one backs off from a stranger who comes too close (never past its leash), holds still just outside, watches
 #   a player inside watch_m, keeps further from a weapon carrier and lets a friend of the tribe closer;
@@ -24,11 +24,12 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const PlacementRules := preload("res://src/shared/placement_rules.gd")
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
 const TileTerrainData := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
+const CampCaves := preload("res://src/worldgen/runtime/camp_caves.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 
 const TILE_M := 15360.0          # worlds/base_world/world.json tile_size_m
 const MAX_SLOPE_DEG := 20.0      # island_checks.gd marker_max_slope_deg
-const RIVER_M := 80.0            # "near a river"
+const RIVER_M := 120.0           # "placed anywhere near a river" (Dave 21 Nov 2026)
 const OPENING_M := 5.0           # a spot stands at least this far from the cave mouth (the mouth's radius is about 4 m)
 
 var failures: int = 0
@@ -100,32 +101,59 @@ func _tile() -> void:
 		return
 
 	var head: Dictionary = TileFileScript.read_header(path)
-	var sites: Dictionary = TileFileScript.read_list(path, head["table"], "sites")["value"]
-	var cave: Dictionary = {}
-	var caves: Array = sites.get("caves", [])
-	var camp_index: int = -1
-
-	for k in caves.size():
-		if str(caves[k].get("id", "")) == str(camp["cave"]):
-			cave = caves[k]
-			camp_index = k
-
-	check(not cave.is_empty(), "the camp's cave %s is in the tile" % camp["cave"])
-	check(TileTerrainData.CAMP_CAVES.has(str(camp["cave"])), "and kept for the camp (TileTerrainData.CAMP_CAVES)")
-
-	if cave.is_empty():
-		return
-
-	var entrance: Array = cave["nodes"][int(cave["entrances"][0])]
-	check(Vector2(float(entrance[0]), float(entrance[2])).distance_to(mouth) < 1.5, "the camp's mouth is the cave's entrance (%s)" % str(entrance))
-	check(str(cave.get("cave_kind", "")) == "spring_cave", "the cave is a spring cave, where a river starts")
-	check(TileTerrainData.goblin_den_node(cave) < 0, "no wild goblin band lives in this cave")
-	check(int(TileTerrainData.goblin_den_nodes(caves)[camp_index]) < 0, "nor the tile's first-spring-cave den")
-	check(TileTerrainData.animal_den_species(cave) == "", "and no animal dens in it")
 	var n: int = int(head["header"]["samples"])
 	var spacing: float = float(head["header"]["map_spacing_m"])
 	var heights: PackedFloat32Array = TileFileScript.decode_height(TileFileScript.read_section(path, head["table"], "height")["raw"], TileFileScript.height_step_of(head["header"]))
 	var water: PackedByteArray = TileFileScript.read_section(path, head["table"], "water_class")["raw"]
+	var land = TileTerrainData.new()   # the game's own height_at (Catmull-Rom, river cells straight), as the tile load hands CampCaves
+	land.tile = tile
+	land.x0 = float(tile.x) * TILE_M
+	land.z0 = float(tile.y) * TILE_M
+	land.samples = n
+	land.spacing_m = spacing
+	land.heights = heights
+	land.water_class = water
+	var ground: Callable = land.height_at
+	var dry = func(spot: Vector2) -> bool:
+		var sample: Vector2i = Vector2i(int(round((spot.x - float(tile.x) * TILE_M) / spacing)), int(round((spot.y - float(tile.y) * TILE_M) / spacing)))
+		return water[sample.y * n + sample.x] == 0
+
+	# The camp's own cave (CampCaves): carved from the camp's dig row, a dry camp cave with no goblin band or animal den, under the hill all the way in.
+	var planned: Array = CampCaves.plan(tile, float(tile.x) * TILE_M, float(tile.y) * TILE_M, TILE_M, ground)
+	var cave: Dictionary = {}
+
+	for planned_cave in planned:
+		if str(planned_cave["id"]) == str(camp["cave"]):
+			cave = planned_cave
+
+	check(camp.has("dig") and not cave.is_empty(), "the camp brings its cave %s (%d planned on the tile)" % [camp["cave"], planned.size()])
+
+	if cave.is_empty():
+		return
+
+	var cave_nodes: Array = cave["nodes"]
+	var entrance: Array = cave_nodes[int(cave["entrances"][0])]
+	check(Vector2(float(entrance[0]), float(entrance[2])).distance_to(mouth) < 3.5 and str(cave["cave_kind"]) == "camp_cave", "the cave opens at the camp's mouth (%s), a dry camp cave" % str(entrance))
+	check(TileTerrainData.goblin_den_node(cave) < 0 and TileTerrainData.animal_den_species(cave) == "", "no wild goblin band or animal den in it")
+	check(float(cave["cut_m"]) < float(camp["dig"]["depth_m"]), "the hill closes over it before its end (open cut %.0f m)" % float(cave["cut_m"]))
+	var under: bool = true
+
+	for k in range(1, cave_nodes.size()):   # every node past the open cut, the room's middle and its edge: rock over the roof and no water on it
+		var row: Array = cave_nodes[k]
+		var node_at: Vector2 = Vector2(float(row[0]), float(row[2]))
+
+		if node_at.distance_to(mouth) < float(cave["cut_m"]) - 0.1:
+			continue
+
+		for edge in [Vector2.ZERO, Vector2(0.5 * float(row[3]), 0.0), Vector2(-0.5 * float(row[3]), 0.0), Vector2(0.0, 0.5 * float(row[3])), Vector2(0.0, -0.5 * float(row[3]))]:
+			var probe: Vector2 = node_at + edge
+			var over: float = float(ground.call(probe.x, probe.y)) - (float(row[1]) + 0.5 * float(row[4]))
+
+			if not (over >= 1.5 and dry.call(probe)):
+				under = false
+				print("goblin camp: cave node %d at %s has %.1f m over its roof" % [k, str(probe), over])
+
+	check(under, "the hill stands over the passage and the room, dry, all the way in")
 	var cell = func(at: Vector2) -> Vector2i: return Vector2i(int(round((at.x - float(tile.x) * TILE_M) / spacing)), int(round((at.y - float(tile.y) * TILE_M) / spacing)))
 	var river: float = INF
 	var c0: Vector2i = cell.call(mouth)
@@ -311,6 +339,9 @@ func _npcs() -> void:
 	check(bool(npc_s.get("hidden", false)) and npc_s["pos"].distance_to(mouth) <= 1.5, "Skritch goes into the cave mouth (%s)" % str(npc_s["pos"]))
 	check(npcs.rows_near(player[0]).all(func(row): return str(row[0]) != "skritch"), "and is not seen")
 	check(tribes.member_along(player[0], (mouth - player[0]).normalized(), 10.0) == "", "nobody in the cave can be struck")
+	var skritch_spot: Vector3 = tribes._member["skritch"]["spot"]
+	player[0] = Vector3(skritch_spot.x, 10.0, skritch_spot.z) + Vector3(0.0, 0.0, -22.0)   # near its spot, but past angry_keep_m plus 5 m from the mouth
+	check(Vector2(player[0].x - mouth.x, player[0].z - mouth.z).length() > float(att["angry_keep_m"]) + TribesScript.HIDE_EXTRA_M, "the striker stands out of the mouth's reach")
 	run.call(float(tribes.cfg.get("calm_s", 30.0)) + 10.0)
 	check(bool(npc_s.get("hidden", false)), "it stays in while the striker waits at the camp, far from the mouth")
 	player[0] = mouth + Vector3(-80.0, 0.0, 0.0)
@@ -355,7 +386,7 @@ func _chores() -> void:
 	var items = _items("user://test_goblin_camp_chores", said)
 	items.peer_connected_hello(1, "goblin-test-key3")
 	var fire: Vector3 = Vector3(float(camp["fire"]["x"]), 10.0, float(camp["fire"]["z"]))
-	var player: Array = [fire + Vector3(6.0, 0.0, -29.0)]   # across the brook, past watch_m from the camp but the mouth and every chore point inside near_m (npcs.json 60 m), so all step at 10 Hz
+	var player: Array = [fire + Vector3(-12.4, 0.0, -26.5)]   # out on the flat toward the spawn, past watch_m from the camp and clear of the gathering points, but the mouth and every chore point inside near_m (npcs.json 60 m), so all step at 10 Hz
 	var npcs = NpcsScript.new()
 	npcs.hour_now = func(): return 12.0
 	npcs.ground_height = func(_x, _z): return 10.0
@@ -467,7 +498,7 @@ func _chores() -> void:
 	run_for(tribes, npcs, 1.5)
 	var eyes: Vector2 = Vector2(cos(float(stuck["heading"])), sin(float(stuck["heading"])))
 	check(int(stuck["state"]) == NpcsScript.WALK or eyes.dot(Vector2(player[0].x - stuck["pos"].x, player[0].z - stuck["pos"].z).normalized()) > 0.9, "a member at its chore turns to watch a character 12 m off")
-	player[0] = fire + Vector3(6.0, 0.0, -29.0)
+	player[0] = fire + Vector3(-12.4, 0.0, -26.5)
 
 	# What the camp costs a tick, for the NPC budget (test_npcs: 60 townsfolk under 1 ms): chores alone, then with a weapon carrier in sight.
 	var t0: int = Time.get_ticks_usec()

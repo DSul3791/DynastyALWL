@@ -1,21 +1,28 @@
 #!/usr/bin/env python3
-"""Which tests does a diff need? (gate fix, 25 Oct 2026; Steve.)
-   python3 tools/tests_for_diff.py <base> <head>         one JSON line (see below), exit 0
-   python3 tools/tests_for_diff.py --paths a b c          the same for a list of changed paths
+"""Which tests does a diff need? (gate fix, 25 Oct 2026; Steve. Change and wide plans: 22 Nov 2026.)
+   python3 tools/tests_for_diff.py <base> <head>         the CHANGE plan, one JSON line (see below), exit 0: what a PR runs before dev
+   python3 tools/tests_for_diff.py --paths a b c          the same for a list of changed paths (a hub edit then adds its core list only)
+   python3 tools/tests_for_diff.py <base> <head> --wide   the WIDE plan: every test that reaches a changed file through any chain of
+                                                          loads (the dev sweep over a batch of merges; also works with --paths)
    python3 tools/tests_for_diff.py <base> <head> --all    every fast test (the unknown-change answer)
    python3 tools/tests_for_diff.py <base> <head> --full   every test, slow lane included (nightly, before main; also works with --paths)
    python3 tools/tests_for_diff.py --print-lanes          the lanes with the serial list worked out (JSON)
    python3 tools/tests_for_diff.py --check-lanes          names in tools/test_lanes.json that are not tests (exit 1)
    python3 tools/tests_for_diff.py --explain TEST         the files and directory prefixes the scan found for one test
-Output: {"class":"docs|data|code|bake","fast":[...],"timing":[...],"slow":[...],"pictures":[paths],"checks":[...],"pin":bool,"why":{test or lane: reason}}
-Rules (tools/test_lanes.json): docs-only diff = no tests; a test is chosen when the files it loads (followed through preload, load,
-res:// strings, class_name use, directories and path-prefix strings) include a changed path; the always set, the item group, the path
-rules and the extra inputs add to that; a path nobody knows, or a test file the scan cannot read, means ALL fast tests: more, never fewer.
+   python3 tools/tests_for_diff.py --same-change OLD NEW [BASE]   exit 0 when NEW's own change (from where it left BASE, default
+                                                          origin/dev) is the same patch as OLD's: a clean merge of dev into a reviewed
+                                                          branch; review and test results carry over (TEST_GATES.md)
+Output: {"plan":"change|wide|all|full","class":"docs|data|code|bake","fast":[...],"timing":[...],"slow":[...],"pictures":[paths],"checks":[...],"pin":bool,"why":{test or lane: reason}}
+Rules (tools/test_lanes.json): docs-only diff = no tests. CHANGE plan: a test is chosen when the test itself, or a helper script in
+src/worldgen/tools it uses, loads a changed path directly (preload, load, res:// strings, class_name use, directories and path-prefix
+strings); a hub (a file 100+ tests load directly) adds its core list and the tests that name what the diff changed in it. WIDE plan:
+the same scan followed through every chain of loads. Both add the always set, the item group, the path rules and the extra inputs; a
+path nobody knows, a project.godot edit, or a test file the scan cannot read means ALL fast tests: more, never fewer.
 Fast = every test_*.gd in the test folders (TEST_DIRS: src/worldgen/tools and src/water2) that is not timing or slow. Diff is `git diff --name-only M head` where M is
 `git merge-base base head`: the head's own changes since it left base, as `git diff base...head` (19 Nov 2026: a two-dot diff against a
 dev that had moved on also selected the tests for dev's newer commits, which the head does not even contain). When base is an ancestor of
 head (a trial merge, main, the last green commit) M is base and nothing changes; with no merge base the plain two-dot diff is kept."""
-import fnmatch, json, os, re, subprocess, sys
+import fnmatch, json, os, re, subprocess, sys, zlib
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # The gate's test folders. A test is named without folder or .gd, so a name must be unique across them (--check-lanes says if not).
@@ -26,6 +33,11 @@ LANES_PATH = os.path.join(ROOT, "tools", "test_lanes.json")
 SCAN_EXT = (".gd", ".tscn", ".tres", ".json")
 RES = re.compile(r'"res://([^"\\\s]*)"')
 CLASS_DECL = re.compile(r'^class_name\s+(\w+)', re.M)
+# Shared test helpers (held_tool.gd, craft_hand.gd): in a change plan what a helper loads counts as loaded by the test that uses it.
+HELPER_DIR = "src/worldgen/tools/"
+FUNC = re.compile(r'^\s*(?:static\s+)?func\s+(\w+)')
+TOP_DECL = re.compile(r'^(?:@\w+(?:\([^)]*\))?\s+)*(?:static\s+)?(?:const|var|signal|enum|class)\s+(\w+)')
+ENGINE_CALLS = {"_init", "_ready", "_process", "_physics_process", "_notification", "_enter_tree", "_exit_tree", "_input", "_unhandled_input", "_to_string"}
 
 
 def load_lanes():
@@ -131,6 +143,25 @@ class Scan:
         self.cache[rel] = (files, prefixes)
         return self.cache[rel]
 
+    def near(self, rel, hubs=()):
+        """What a test loads directly, with the loads of the src/worldgen/tools helpers it uses (a helper is part of the test).
+        Hubs are left out: the change plan handles them by their core list and the names the diff touched."""
+        files, prefixes, todo, seen = set(), set(), [rel], set()
+        while todo:
+            cur = todo.pop()
+            if cur in seen:
+                continue
+            seen.add(cur)
+            f, p = self.direct(cur)
+            prefixes |= p
+            for x in f:
+                if x in hubs:
+                    continue
+                files.add(x)
+                if x.startswith(HELPER_DIR) and not os.path.basename(x).startswith("test_") and x.endswith(".gd"):
+                    todo.append(x)
+        return files, prefixes, seen
+
     def closure(self, rel):
         seen, prefixes, todo = set(), set(), [rel]
         while todo:
@@ -169,24 +200,96 @@ def serial_list(lanes, tests):
     return [t for t in out if t in tests]
 
 
+def owners(lines):
+    """For each line of a GDScript file, the top-level name it belongs to (function, constant, variable, signal, enum or class).
+    An annotation on its own line (@rpc(...) above a func) belongs to the name it annotates: an @rpc edit changes that function."""
+    out, cur, pending = [], None, []
+    for i, line in enumerate(lines):
+        m = FUNC.match(line) if not line[:1].isspace() else None
+        d = TOP_DECL.match(line)
+        if m:
+            cur = m.group(1)
+        elif d:
+            cur = d.group(1)
+        elif line.startswith("@"):
+            pending.append(i)
+            out.append(None)
+            continue
+        elif line.strip() and not line[:1].isspace() and not line.startswith("#"):
+            cur = None
+        for j in pending:
+            out[j] = cur if (m or d) else None
+        pending = []
+        out.append(cur)
+    return out
+
+
+def changed_names(base, head, path, cwd=ROOT):
+    """The names in one script whose lines head changed since it left base, and, for a private name, the functions that call it
+    (followed up to public names: tests call the public ones). None when git cannot say (a new or deleted file)."""
+    mb = diff_base(base, head, cwd)
+    diff = subprocess.run(["git", "diff", "-U0", mb, head, "--", path], cwd=cwd, capture_output=True, text=True)
+    new = subprocess.run(["git", "show", "%s:%s" % (head, path)], cwd=cwd, capture_output=True, text=True)
+    old = subprocess.run(["git", "show", "%s:%s" % (mb, path)], cwd=cwd, capture_output=True, text=True)
+    if diff.returncode != 0 or new.returncode != 0 or old.returncode != 0:
+        return None
+    lines, old_lines = new.stdout.splitlines(), old.stdout.splitlines()
+    own, old_own = owners(lines), owners(old_lines)
+    names = set()
+    for m in re.finditer(r'^@@ -(\d+)(?:,(\d+))? \+(\d+)(?:,(\d+))? @@', diff.stdout, re.M):
+        o0, oc, n0, nc = int(m.group(1)), int(m.group(2) or 1), int(m.group(3)), int(m.group(4) or 1)
+        for i in range(max(n0, 1), n0 + max(nc, 1)):   # nc == 0: a pure deletion, after line n0
+            if i <= len(own) and own[i - 1]:
+                names.add(own[i - 1])
+        for i in range(max(o0, 1), o0 + oc):           # removed lines: what they belonged to (a deleted function too)
+            if i <= len(old_own) and old_own[i - 1]:
+                names.add(old_own[i - 1])
+    bodies = {}
+    for line, o in zip(lines, own):
+        bodies.setdefault(o, []).append(line)
+    todo = [n for n in names if n.startswith("_")]
+    while todo:
+        n = todo.pop()
+        call = re.compile(r'\b' + re.escape(n) + r'\b')
+        for f, body in bodies.items():
+            if f and f not in names and call.search("\n".join(body[1:] if body and FUNC.match(body[0]) else body)):
+                names.add(f)
+                if f.startswith("_"):
+                    todo.append(f)
+    # engine callbacks and very short names (add, get) cannot be matched to tests by their text; the hub's core list covers them
+    return {n for n in names if n not in ENGINE_CALLS and len(n) >= 4}
+
+
 # Where head left base (git merge-base), so only head's own changes are diffed; base itself when they share no history (more, never fewer).
 def diff_base(base, head, cwd=ROOT):
     out = subprocess.run(["git", "merge-base", base, head], cwd=cwd, capture_output=True, text=True)
     return out.stdout.strip() if out.returncode == 0 and out.stdout.strip() else base
 
 
+def patch_id(base, head, cwd=ROOT):
+    """git patch-id of head's own change since it left base: equal ids = the same change, whatever dev did around it."""
+    diff = subprocess.run(["git", "diff", "--binary", "--no-ext-diff", diff_base(base, head, cwd), head], cwd=cwd, capture_output=True)
+    if diff.returncode != 0:
+        return None
+    if not diff.stdout:
+        return "empty"
+    out = subprocess.run(["git", "patch-id", "--stable"], cwd=cwd, input=diff.stdout, capture_output=True)
+    return out.stdout.split()[0].decode() if out.returncode == 0 and out.stdout else None
+
+
 def changed_paths(base, head, cwd=ROOT):
-    out = subprocess.run(["git", "diff", "--name-only", diff_base(base, head, cwd), head], cwd=cwd, capture_output=True, text=True)
+    out = subprocess.run(["git", "diff", "--name-only", "--no-renames", diff_base(base, head, cwd), head], cwd=cwd, capture_output=True, text=True)
     if out.returncode != 0:
         raise SystemExit("git diff failed: " + out.stderr.strip())
     return [p for p in out.stdout.splitlines() if p]
 
 
-def select(paths, lanes, force_all=False, full=False):
+def select(paths, lanes, force_all=False, full=False, wide=False, names=None):
+    """names: {hub path: names the diff changed in it} (changed_names); None or a missing path = that hub's core list only."""
     tests = all_tests()
     fast_all, timing_all, slow_all = lane_sets(lanes, tests)
     why = {}
-    result = {"class": "docs", "fast": [], "timing": [], "slow": [], "pictures": [], "checks": [], "pin": False, "why": why}
+    result = {"plan": "full" if full else "all" if force_all else "wide" if wide else "change", "class": "docs", "fast": [], "timing": [], "slow": [], "pictures": [], "checks": [], "pin": False, "why": why}
     tooling = [p for p in paths if matches(p, lanes.get("tooling_globs", []))]
     watched = [g for rule in lanes["extra_inputs"] for g in rule["paths"]]   # a doc a test reads (CONTROLS.md) is not "docs only"
     live = [p for p in paths if p not in tooling and (matches(p, watched) or not matches(p, lanes["docs_globs"] + lanes.get("offline_globs", [])))]
@@ -238,20 +341,50 @@ def select(paths, lanes, force_all=False, full=False):
 
     add(lanes["always"], "always set")
 
+    hubs = [rule for rule in lanes.get("hubs", [])]
+    hub_files = {p for rule in hubs for p in rule["paths"]}
     scan = Scan()
-    closures = {}
+    closures, texts = {}, {}
     for t in tests:
         rel = test_path(t)
         text = read(rel)
         if text is None:
             add(["@all_fast"], "cannot read " + rel)
             continue
-        closures[t] = scan.closure(rel)
-    live_set = set(live)
+        if wide:
+            closures[t] = scan.closure(rel)
+        else:
+            files, prefixes, own = scan.near(rel, hub_files)
+            closures[t] = (files, prefixes)
+            texts[t] = "\n".join(read(x) or "" for x in sorted(own))
     for t, (files, prefixes) in closures.items():
-        hit = next((p for p in live if p in files or any(p.startswith(x) for x in prefixes if x)), None)
+        hit = next((p for p in live if (wide or p not in hub_files) and (p in files or any(p.startswith(x) for x in prefixes if x))), None)
         if hit:
-            add([t], "loads " + hit)
+            add([t], ("loads " if wide else "loads directly ") + hit)
+
+    for rule in hubs:
+        hit = next((p for p in live if p in rule["paths"]), None)
+        if not hit:
+            continue
+        add(rule["tests"], rule["why"] + ": " + hit)
+        if wide:
+            continue
+        if names is not None and hit in names and names[hit] is None:
+            add(["@all_fast"], "hub added, deleted or unreadable in the diff: " + hit)
+            continue
+        changed = (names or {}).get(hit)
+        if not changed:
+            why.setdefault("hub " + hit, "core list only (" + ("no diff to read names from" if names is None else "no matchable name changed") + "; the dev sweep runs the wide plan)")
+            continue
+        cap = lanes.get("name_max_tests", 40)
+        for n in sorted(changed):
+            word = re.compile(r'\b' + re.escape(n) + r'\b')
+            users = [t for t, text in texts.items() if word.search(text)]
+            if len(users) > cap:
+                # a name nearly every test uses: a fixed spread of cap of them (same pick on every run), the rest in the dev sweep
+                users = sorted(users, key=lambda t: zlib.crc32((n + t).encode()))[:cap]
+                why.setdefault("hub name " + n, "named by more than %d tests: %d of them, the rest in the dev sweep" % (cap, cap))
+            add(users, "names %s, changed in %s" % (n, hit))
 
     if any(matches(p, lanes["item_group"]["paths"]) for p in live):
         pats = lanes["item_group"]["name_patterns"]
@@ -317,9 +450,18 @@ def main(argv):
     if "--check-lanes" in argv:
         tests = set(all_tests())
         names = set(lanes["timing"] + lanes["retry"] + lanes["slow"] + lanes.get("release", []) + lanes["always"] + lanes.get("serial_extra", []))
-        for rule in lanes["path_rules"] + lanes["extra_inputs"]:
+        for rule in lanes["path_rules"] + lanes["extra_inputs"] + lanes.get("hubs", []):
             names |= {n for n in rule["tests"] if n != "@all_fast"}
         missing = sorted(n for n in names if n not in tests)
+        # every file that hub_min_tests or more tests load directly needs a hub entry (a core list), or a change plan would run no
+        # tests for it beyond the always set
+        scan, count, listed = Scan(), {}, {p for rule in lanes.get("hubs", []) for p in rule["paths"]}
+        for t in sorted(tests):
+            for f in scan.near(test_path(t))[0]:
+                count[f] = count.get(f, 0) + 1
+        unlisted = sorted(f for f, n in count.items() if n >= lanes.get("hub_min_tests", 100) and f not in listed)
+        for f in unlisted:
+            print("hub without a core list in test_lanes.json hubs (%d tests load it directly): %s" % (count[f], f))
         for n in missing:
             print("not a test (no %s.gd in %s): %s" % (n, " or ".join(TEST_DIRS), n))
         seen, twice = {}, []
@@ -330,23 +472,35 @@ def main(argv):
                     print("test name in two folders (%s and %s): %s" % (seen[n], d, n))
                 seen[n] = d
         print("lanes: %d names checked, %d missing; %d tests in %d folders, %d names twice" % (len(names), len(missing), len(seen), len(TEST_DIRS), len(twice)))
-        return 1 if missing or twice else 0
+        return 1 if missing or twice or unlisted else 0
     if "--explain" in argv:
         t = argv[argv.index("--explain") + 1]
         files, prefixes = Scan().closure(test_path(t))
         print(json.dumps({"files": sorted(files), "prefixes": sorted(prefixes)}, indent=1))
         return 0
+    if "--same-change" in argv:
+        i = argv.index("--same-change")
+        old, new = argv[i + 1], argv[i + 2]
+        base = argv[i + 3] if len(argv) > i + 3 else "origin/dev"
+        ids = [patch_id(base, h) for h in (old, new)]
+        same = ids[0] is not None and ids[0] == ids[1]
+        print(json.dumps({"same": same, "old": ids[0], "new": ids[1], "base": base}))
+        return 0 if same else 1
     full = "--full" in argv
     force_all = "--all" in argv or full
-    argv = [a for a in argv if a not in ("--all", "--full")]
+    wide = "--wide" in argv
+    argv = [a for a in argv if a not in ("--all", "--full", "--wide")]
+    names = None
     if argv and argv[0] == "--paths":
         paths = argv[1:]
     elif len(argv) >= 2:
         paths = changed_paths(argv[0], argv[1])
+        hub_files = {p for rule in lanes.get("hubs", []) for p in rule["paths"]}
+        names = {p: changed_names(argv[0], argv[1], p) for p in paths if p in hub_files}
     else:
         print(__doc__)
         return 2
-    print(json.dumps(select(paths, lanes, force_all, full), separators=(",", ":")))
+    print(json.dumps(select(paths, lanes, force_all, full, wide, names), separators=(",", ":")))
     return 0
 
 

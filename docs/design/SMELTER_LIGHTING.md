@@ -42,7 +42,8 @@ Dave: "it currently has a fire in the blueprint that is burning before you make 
 - The Primitive smithy's model (Dave's `forge_basic.glb`, shared with the Primitive smelter) gets a rough stone anvil beside the fire: `BuildingLook.add_stone_anvil`, with its own solid. Not a catalog item, recipe or separate placeable; the cost is unchanged. The smelters that share the model have no anvil.
 
 For Dave (assumed on his behalf, provisional):
-- PS-1: the anvil is three uneven stone courses narrowing to a dressed flat top about 34 by 29 cm, 0.6 m up.
+- PS-1, PS-2: superseded by Dave's own Primitive smithy model (21 Nov 2026, below); the drawn stone anvil is now only the stand-in when the file is missing.
+- PS-1 (old): the anvil is three uneven stone courses narrowing to a dressed flat top about 34 by 29 cm, 0.6 m up.
 - PS-2: it stands to one side of the fire (the model's +x side; not yet seen in a picture), the forge moved 0.25 m the other way; the footprint grows from 0.9 to 1.6 m wide to hold both (1.4 at first; Lane A measured the forge with its anvil at x -0.79 to 0.73, 1.52 m, so 18 Nov 2026 it became 1.6; the look is unchanged).
 - PS-3, PS-4: superseded by the smithy fuel slot below (Dave 21 Nov 2026).
 
@@ -53,12 +54,53 @@ Dave: "smithys should just take coal in a fuel slot. same for all smithys. dont 
 - All four smithies (Primitive, Improved, Advanced, Master) have `"fuel_slot": "fuel"` in structures.json. The first slot of the smithy's store is its fuel slot. Coal or Charcoal put in goes there first, anything else never goes there (a drag of anything else onto it is refused), and a product never lands there.
 - A smithy works only with fuel in that slot. It is never lit, and E does nothing new. The old `craft_needs_lit` firing from the pack or from a nearby bin, kiln or unlit fire (A-28 for smithies) is deleted.
 - Fuel burns only while a craft is worked there: one unit gives `fuel_craft_s` seconds of making, and the next unit is taken from the slot when that runs out. An idle smithy burns nothing.
-- The look follows the row's `forge`: 0 cold (no fuel), 1 red coals (fuel in, idle, a dim red glow, no flame or smoke), 2 the flare (a craft worked there: tall flames, smoke and a bright light). `BuildingLook.forge_state`.
+- The look follows the row's `forge`: 0 cold (no fuel), 1 red coals (fuel in, idle, a dim red glow, no flame or smoke), 2 busy (a craft worked there: smoke and a bright light; since 22 Nov 2026 the coals glow really bright and there are no flames, see "Coals only, no flames"). `BuildingLook.forge_state`.
 
 For Dave (assumed on his behalf, provisional):
 - SF-1: Charcoal counts as well as Coal, the same "fuel" group the smelters burn.
 - SF-2: one Coal or Charcoal lasts 1800 s (30 minutes) of making, the old firing time.
 - SF-3: the fuel slot holds one stack. More Coal put in is kept in the rest of the store but not burnt until it is moved into the fuel slot.
-- SF-4: idle coals glow at 0.45 energy over 3.5 m; the flare is 3.2 energy over 12 m.
+- SF-4: idle coals glow at 0.45 energy over 3.5 m; the flare (now the bright coals, see below) is 3.2 energy over 12 m.
 - SF-5: a smithy goes back to idle coals 1.5 s after the last craft worked there.
 - shortcut: the part-burnt unit (fuel_left) is not saved, so a restart loses under one unit's making time.
+
+## The Improved smithy's own model (Dave 21 Nov 2026)
+
+Dave made a new model for the Improved smithy (`blacksmithy`): the forge and chimney, a bellows, the anvil on a stump and a work bench on a flagstone floor. He asked that it be "sized so it fits in 3/4 of the width of a foundation". His file had about 150,000 triangles and three 4096 textures. `tools/stations/prepare_station_model.py improved_smithy` turns it into `assets/stations/improved_smithy.glb`:
+
+- 3.0 m wide (foundations are 4 m), 1.65 m high and 1.92 m deep. The footprint in structures.json matches it.
+- About 37,000 triangles, with every texture seam kept, and Godot makes the distance levels on import. A cut to 15,000 smeared the coals' orange across the stone.
+- 2048 textures, VRAM Compressed, one-sided, casting shadows. The import settings are committed.
+- The painted coals are moved from the colour into an emission texture, and dark ash is left where they were. Each smithy gets its own copy of the material. `BuildingLook.forge_state` sets the coals' glow (SF-4 still sets the light): 0 when cold, then the idle and busy values in "Coals only, no flames" below. The shared flame tongues are never shown, and the shared coals are left out.
+
+Provisional, chosen by Claude while Dave was away:
+- IS-1: the Advanced smithy, which shared the Improved smithy's look, keeps the brick forge.
+- IS-2: the flagstone floor stays as part of the model.
+- IS-3: the triangle count is about 37,000, not the other forges' 7,000 to 16,000, so that no texture seam is smeared.
+- IS-4: the coal glow values are 0, 1 and 3, and the flare's tongues are drawn at 0.3.
+
+## The Primitive smithy's own model (Dave 21 Nov 2026)
+
+Dave also made a model for the Primitive smithy (`stone_forge`). It has a clay and field-stone forge at the back with a chimney, a flat-topped stone anvil in front of the forge's mouth, and a rough bench beside it, all on a patch of trodden ground. He gave no size for this one. His rule is that most things "fit neatly into 3/4 or half of a foundation size so they can easily be arranged". `tools/stations/prepare_station_model.py primitive_smithy` makes `assets/stations/primitive_smithy.glb` the same way as the Improved smithy:
+
+- It is 3.0 m long front to back, 2.35 m wide and 1.31 m high. The footprint in structures.json matches.
+- It has about 30,000 triangles.
+- Its coals are painted cold and black, so it keeps the shared coals at 0.5 of their size in its mouth: none when cold, dim when idle, really bright while working (no flames since 22 Nov 2026). The little lit paint inside the mouth is in its emission texture and glows by the same SMITHY_COALS values.
+- The Primitive and Improved smelters, which shared the basic forge, keep it, with no anvil.
+
+Provisional, chosen by Claude:
+- PS-5: 3/4 of a foundation (3 m), not half. At half (2 m) the forge is 0.87 m high and the anvil's top 0.52 m. At 3/4 they are 1.31 m and about 0.78 m, which is working height.
+- PS-6: the shared coals and tongues are drawn at 0.5 in its mouth.
+
+## Coals only, no flames (Dave 22 Nov 2026)
+
+Dave on 22 Nov 2026: "the forges and kilns dont really need flames just glowing coals. dim when not busy and glowing really bright while busy." For every smithy, `BuildingLook.forge_state` now never shows the flame tongues.
+
+- **Idle:** the coals are dim.
+  - The shared coal mesh has heat 0.55. Its `COAL_SHADER` `heat` instance uniform defaults to 1, the campfire's coals.
+  - The painted coals of the new models glow at 0.6.
+- **Busy:** the coals glow really bright and yellower.
+  - The shared coal mesh has heat 2.6, and the painted coals glow at 4.
+  - The bright light (SF-4) and the chimney smoke stay.
+- This replaces the coal glow values and the tongue sizes in IS-4 and PS-6. The 0.5 coal size on the Primitive smithy stays. Scope: the smithies. The kilns are their own thread's; the smelters (lit or not, no idle) keep their flames until Dave says otherwise.
+- SF-7 (provisional): the values 0.55 and 2.6, and 0.6 and 4.

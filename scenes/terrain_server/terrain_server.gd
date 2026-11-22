@@ -56,6 +56,7 @@ const EditedGroundScript := preload("res://src/stream/edited_ground.gd")
 const CoarseGroundScript := preload("res://src/stream/server_coarse_ground.gd")
 const FogGroundScript := preload("res://src/shared/fog_ground.gd")
 const TrailsScript := preload("res://src/stream/server_trails.gd")
+const RangesScript := preload("res://src/stream/server_ranges.gd")
 const BanditsScript := preload("res://src/stream/server_bandits.gd")
 const MapScript := preload("res://src/stream/server_map.gd")
 const MapCodec := preload("res://src/shared/map_codec.gd")
@@ -112,6 +113,7 @@ var generator
 var store
 var flora
 var trails                             # ServerTrails: worn game trails the animals leave
+var ranges                             # ServerRanges: animal places and the trails between them (docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md)
 var bandits                            # ServerBandits: bandit camp sites woken by road traffic (docs/design/BANDIT_CAMPS.md)
 var map_knowledge                      # ServerMap: what each character has surveyed for its charcoal Map (protocol 120)
 var animals                            # ServerAnimals: wildlife around the players (rabbits)
@@ -673,6 +675,7 @@ func _ready() -> void:
 	animals.undergrowth = func(point): return flora.in_undergrowth(point)
 	animals.player_stalk = func(): return items.peer_stalk_factors()
 	animals.hour_now = func(): return game_clock.hour()
+	animals.sunrise_now = func(): return WeatherScript.sunrise_hour(WeatherScript.year_phase(game_clock.seconds) * float(GameClockScript.DAYS_PER_YEAR))   # the sun the sky draws (weather.gd slope_breeze uses the same): animal periods and trips follow it
 	animals.season_now = func(): return game_clock.season()
 	var biome_names: Dictionary = {}
 
@@ -713,6 +716,16 @@ func _ready() -> void:
 	trails.game_seconds = func(): return game_clock.seconds
 	trails.setup(store_dir)
 	animals.trails = trails
+	ranges = RangesScript.new()
+	ranges.setup()
+	ranges.world_seed = items.world_seed
+	ranges.ground_height = edited_ground.surface   # the generated ground: the places come out the same whatever has been dug
+	ranges.blocked = npcs.blocked
+	ranges.biome_weight = func(sp, x, z): return animals.biome_weight(animals.species_def(sp), x, z)
+	ranges.no_spawn = animals.no_spawn
+	ranges.ground_ready = items.ground_ready
+	animals.ranges = ranges
+	trails.ranges = ranges
 	map_knowledge = MapScript.new()
 	map_knowledge.key_of = func(peer): return items.key_of(peer)
 	map_knowledge.skill_of = func(peer): return items.working_level(peer, "mapping")
@@ -788,6 +801,8 @@ func _ready() -> void:
 	items.animal_snare = func(id): return animals.snare(id)
 	items.animal_lure = func(id, point): return animals.lure_to(id, point)
 	items.trail_strength = func(x, z): return trails.strength_at(x, z)
+	items.run_distance = func(x, z, kind): return ranges.route_distance(x, z, kind)
+	items.species_active = func(sp): return animals.activity_chance(animals.species_def(sp))
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> Dictionary:
 		var member: String = tribes.member_along(origin, dir, reach)
@@ -897,6 +912,7 @@ func _ready() -> void:
 		print(site_line)
 
 	items.respawn_point = spawn
+	items.start_resources(world_dir + "/tiles", float(settings.tile_size_m), spawn, _resource_dangers())   # the island resource landscape, built on a worker thread before the first scatter
 	_world_dir = world_dir
 	_start_water()
 
@@ -1742,7 +1758,7 @@ func _cover_at(point: Vector3) -> float:
 
 			if not flora.chunk_made(chunk) and not _cover_warming.has(chunk):
 				_cover_warming[chunk] = true
-				WorkerThreadPool.add_task(_warm_cover_chunk.bind(chunk))
+				_start_cover_warm(chunk)
 
 	if flora.roofed(point) or _in_cave(point):
 		return 2.0   # under a built roof or in a cave: also shelter from the wind
@@ -1797,9 +1813,17 @@ func _cover_ready(point: Vector3) -> bool:
 
 				if not _cover_warming.has(chunk):
 					_cover_warming[chunk] = true
-					WorkerThreadPool.add_task(_warm_cover_chunk.bind(chunk))
+					_start_cover_warm(chunk)
 
 	return all_made
+
+
+var _cover_tasks = preload("res://src/shared/pool_tasks.gd").new()   # _warm_cover_chunk tasks, waited for in _exit_tree
+
+
+func _start_cover_warm(chunk: Vector2i) -> void:
+	if not _cover_tasks.add(_warm_cover_chunk.bind(chunk), "cover chunk"):
+		_cover_warming.erase(chunk)   # shutting down
 
 
 func _warm_cover_chunk(chunk: Vector2i) -> void:
@@ -2975,7 +2999,7 @@ func _send_npcs(delta: float) -> void:
 			net.animals.rpc_id(peer, beasts, Time.get_ticks_msec())   # with the server clock the row times are on (protocol 147)
 
 		for block in trails.updates_for(peer, at, now_ms):
-			net.trails.rpc_id(peer, block[0], block[1], block[2])
+			net.trails.rpc_id(peer, block[0], block[1], block[2], block[3])
 
 		for block in map_knowledge.updates_for(peer, now_ms):
 			net.map_blocks.rpc_id(peer, block[0], block[1], block[2])
@@ -3067,6 +3091,7 @@ func _process(delta: float) -> void:
 	coarse_ground.tick()
 	_events.mark("trails")
 	trails.tick(delta)
+	ranges.tick(npcs.player_positions.call(), Time.get_ticks_msec())
 	bandits.tick()
 	bandits.camp_tick(delta, items.peer_positions())
 	map_knowledge.tick(delta)   # the save interval only
@@ -3623,8 +3648,47 @@ func _exit_tree() -> void:
 	if water_live != null:
 		water_live.stop()
 
+	# The pool tasks nothing else waits for: none may still run while the engine shuts its worker pool down (PoolTasks; main gate 21 Nov).
+	_cover_tasks.finish()
+
+	if items != null:
+		items.finish_resources()   # the island resource landscape's build (start_resources)
+
+	if flora != null:
+		flora.finish_tasks()
+
+	if generator != null:
+		generator.finish_tasks()
+
 	if store != null and OS.has_environment("BLOCKTIME"):
 		print(store.timing_report())
 
 	if store != null:
 		store.flush()
+
+	_events.close()   # last: nothing may start a log worker task while the engine shuts down (EventLog.close)
+
+
+# Known dangers for the island resource landscape's starting-island check (handoff 13: "use existing danger information where available"):
+# the camp of every goblin tribe that will not trade (its attitude's trades false) and every bandit site whose camp stands (stage 3), each
+# with boulders.json distribution danger_m round it. Read once at start; nothing new is made for it.
+func _resource_dangers() -> Array:
+	var reach: float = float((items._boulder_cfg.get("distribution", {}) as Dictionary).get("danger_m", 200.0))
+	var out: Array = []
+	var attitudes: Dictionary = tribes.cfg.get("attitudes", {})
+
+	for tribe in tribes.tribes():
+		var attitude: Dictionary = attitudes.get(str((tribes.tribes()[tribe] as Dictionary).get("attitude", "")), {})
+		var camp: Dictionary = (tribes.tribes()[tribe] as Dictionary).get("camp", {})
+		var at: Dictionary = camp.get("fire", camp.get("mouth", {}))
+
+		if not bool(attitude.get("trades", true)) and not at.is_empty():
+			out.append([float(at.get("x", 0.0)), float(at.get("z", 0.0)), reach])
+
+	for cell in bandits.sites:
+		var site: Dictionary = bandits.sites[cell]
+
+		if int(site.get("stage", 0)) >= int(bandits.CAMP):
+			out.append([float(site.get("x", 0.0)), float(site.get("z", 0.0)), reach])
+
+	return out

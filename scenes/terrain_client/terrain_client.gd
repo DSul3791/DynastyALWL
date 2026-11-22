@@ -1630,7 +1630,10 @@ func _welcome_body(info: Dictionary) -> void:
 			sound.slots.footfall(kind, at, ground, speed, body.global_position)
 		)
 
-	net.trails_received.connect(func(bx, bz, bytes): grass.set_trail_block(bx, bz, TrailCodec.decode(bytes)))
+	net.trails_received.connect(func(bx: int, bz: int, bytes: PackedByteArray, routes: PackedByteArray) -> void:
+		grass.set_trail_block(bx, bz, TrailCodec.decode(bytes))
+		grass.set_trail_routes(bx, bz, TrailCodec.decode_routes(routes, Vector2i(bx, bz), 256.0))   # the trails between animal places (protocol 149)
+	)
 	net.map_block_received.connect(map_knowledge.receive)
 	net.blood_received.connect(animal_view.on_blood)
 	var burrow_view: Node3D = BurrowViewScript.new()      # rabbit burrow mounds (MikeW #236 sends the spots, Kathleen draws them)
@@ -4018,7 +4021,7 @@ func _run_ground_watchdog() -> void:
 func _join_log(text: String) -> void:
 	var line: String = "%s [+%.1f s] %s" % [Time.get_datetime_string_from_system(), float(Time.get_ticks_msec() - connected_msec) * 0.001, text]
 	_telemetry.event(line)
-	print("Terrain client: " + line)
+	FreezeWatchScript.printer.line("Terrain client: " + line)   # off the main thread (D-LAG-1); the lanes read these lines from the log afterwards
 
 
 # Diagnostics for the join line: does a ray straight down from the player find any collision (the thing "waiting for ground" waits for)?
@@ -5688,7 +5691,7 @@ func _log_frame(delta: float) -> void:
 		return
 
 	if int(_frame_log["slow"]) > 0 or float(_frame_log["sum"]) / float(_frame_log["n"]) > 25.0:
-		print("client frames: avg %.1f ms, worst %.0f ms, %d over 50 ms in %.0f s at %s" % [float(_frame_log["sum"]) / float(_frame_log["n"]), float(_frame_log["worst"]), int(_frame_log["slow"]), float(_frame_log["t"]), str(body.global_position) if body != null else "?"])
+		FreezeWatchScript.printer.line("client frames: avg %.1f ms, worst %.0f ms, %d over 50 ms in %.0f s at %s" % [float(_frame_log["sum"]) / float(_frame_log["n"]), float(_frame_log["worst"]), int(_frame_log["slow"]), float(_frame_log["t"]), str(body.global_position) if body != null else "?"])
 
 	_frame_log = {"t": 0.0, "n": 0, "sum": 0.0, "worst": 0.0, "slow": 0}
 
@@ -7662,6 +7665,7 @@ func _finish_cache_task() -> void:
 func _exit_tree() -> void:
 	_telemetry.event("EXIT: game closed (exit_tree)")
 	_freeze_watch.stop()
+	FreezeWatchScript.printer.drain()   # the diagnostic lines still queued reach the log before the game closes
 	DynastyArmsScript.settle()   # an arms prebuild still running at a quick quit: let it finish rather than hang the quit
 
 	if crash_report != null:
