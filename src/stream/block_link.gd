@@ -115,8 +115,7 @@ func pump() -> void:
 			_tcp.put_data(hello.data_array)
 			_state = 1
 			_open_msec = Time.get_ticks_msec()
-			# The server waits 5 s for the hello from its accept (block_link_server HELLO_WAIT_MSEC), about when open() started connecting;
-			# a hello sent later goes to a line the server has already closed.
+			# The server waits block_line_hello_ms (60 s) for the hello from its accept, about when open() started connecting.
 			FreezeWatchScript.printer.line("Terrain client: block line open (hello sent %d ms after open())" % (_open_msec - _started_msec))
 		elif status != StreamPeerTCP.STATUS_CONNECTING or Time.get_ticks_msec() - _started_msec > CONNECT_MSEC:
 			_state = 2

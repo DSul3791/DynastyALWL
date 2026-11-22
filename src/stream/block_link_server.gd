@@ -11,7 +11,6 @@ const KIND_REQUEST := 1
 const KIND_STATUS := 2                   # (server pick page) a line that opens with [u32 4][u32 2] instead of a hello gets one status frame
                                          # [u32 size][u32 2][JSON utf-8] and is closed: name, message, build, protocol, players, max_players, locked
 const MAX_FRAME := 1 << 20
-const HELLO_WAIT_MSEC := 5000            # a connection that has not said hello by then is closed
 const NetSettings := preload("res://src/shared/net_settings.gd")
 
 var on_request: Callable                 # (peer_id, keys, urgent) on the line's thread
@@ -28,6 +27,12 @@ var _sending: int = 0                    # workers inside send() now (first-load
 # tests set these directly.
 var outbox_max_bytes: int = NetSettings.value("block_line_outbox_kb", 8192) * 1024
 var stall_msec: int = NetSettings.value("block_line_stall_ms", 60000)
+# A new connection has hello_wait_msec to say which player it is. The game sends its hello from its own frame after the connect, and on a
+# cold first join that frame comes after a 5-6 s freeze at the welcome: with the old 5 s every such line was closed before it served the
+# join (22 Nov 2026, Lane A cold plays). At most pending_max connections wait at once; a new one past that closes the oldest.
+# data/network.json block_line_hello_ms and block_line_pending_max; tests set these directly.
+var hello_wait_msec: int = NetSettings.value("block_line_hello_ms", 60000)
+var pending_max: int = maxi(1, NetSettings.value("block_line_pending_max", 32))
 var lines_dropped: int = 0               # lines dropped for a stall (each logged once)
 var sends_refused: int = 0               # sends turned to the game connection because a line's outbox was full
 
@@ -35,7 +40,9 @@ var _server: TCPServer = TCPServer.new()
 var _thread: Thread
 var _mutex: Mutex = Mutex.new()
 var _stopping: bool = false
-var _pending: Array = []                 # [tcp, inbox, since msec] before their hello
+var _evicted: int = 0                   # waiting connections closed by the cap since the last log line (logged at most every 5 s)
+var _evicted_logged_at: int = -100000
+var _pending: Array = []                 # [tcp, inbox, since msec, why it was refused] before their hello, oldest first
 var _lines: Dictionary = {}              # peer id -> {"tcp", "inbox", "mutex", "outbox" and "out_at" (bytes from out_at on not yet taken by the socket), "since" (msec of the last write, or when the outbox filled)}
 var _status: PackedByteArray = PackedByteArray()   # the status reply's JSON, set on the main thread (set_status)
 
@@ -243,6 +250,16 @@ func _loop() -> void:
 			tcp.set_no_delay(true)
 			_pending.append([tcp, PackedByteArray(), Time.get_ticks_msec(), ""])   # [tcp, inbox, since msec, why it was refused]
 
+			if _pending.size() > pending_max:
+				var oldest: Array = _pending.pop_front()
+				oldest[0].disconnect_from_host()
+				_evicted += 1
+
+		if _evicted > 0 and Time.get_ticks_msec() - _evicted_logged_at >= 5000:
+			print("Terrain server: %d block line(s) closed: more than %d connections waiting for their hello" % [_evicted, pending_max])
+			_evicted = 0
+			_evicted_logged_at = Time.get_ticks_msec()
+
 		var still: Array = []
 
 		for item in _pending:
@@ -252,11 +269,11 @@ func _loop() -> void:
 				_mutex.lock()
 				_lines[peer_id] = {"tcp": item[0], "inbox": item[1], "mutex": Mutex.new(), "outbox": PackedByteArray(), "out_at": 0, "since": Time.get_ticks_msec()}
 				_mutex.unlock()
-			elif peer_id == 0 and Time.get_ticks_msec() - int(item[2]) < HELLO_WAIT_MSEC:
+			elif peer_id == 0 and Time.get_ticks_msec() - int(item[2]) < hello_wait_msec:
 				still.append(item)
 			else:
 				if peer_id == 0:
-					print("Terrain server: a block line closed: no hello within %d ms of connecting (%d bytes read)" % [HELLO_WAIT_MSEC, (item[1] as PackedByteArray).size()])
+					print("Terrain server: a block line closed: no hello within %d ms of connecting (%d bytes read)" % [hello_wait_msec, (item[1] as PackedByteArray).size()])
 				elif str(item[3]) != "":
 					print("Terrain server: a block line closed before it served anyone, %d ms after connecting: %s" % [Time.get_ticks_msec() - int(item[2]), str(item[3])])
 
