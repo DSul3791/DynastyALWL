@@ -10822,11 +10822,6 @@ func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
 	if _flora_of_plant(item_id).is_empty():
 		return
 
-	if _season() == "winter":
-		_say(peer, "The ground is frozen hard: nothing can be planted in winter.")   # the hoe's list greys it out too (FarmRules.plantable_now)
-		_reject(peer, 0)
-		return
-
 	if Vector2(_peer_pos[peer].x - at.x, _peer_pos[peer].z - at.z).length() > PLANT_BUSH_REACH_M:
 		_reject(peer, 0)
 		return
@@ -10860,6 +10855,9 @@ func _flora_of_plant(item_id: String) -> Dictionary:
 
 # Why a bush or tree seed cannot go into the ground at `spot` (its height the ground's), "" when it can.
 func _sapling_refusal(item_id: String, spot: Vector3) -> String:
+	if _season() == "winter":
+		return "The ground is frozen hard: nothing can be planted in winter."   # the hoe's list greys it out too (FarmRules.plantable_now)
+
 	var gap: float = PLANT_TREE_GAP_M if tree_seed_species(item_id) != "" else PLANT_BUSH_GAP_M
 
 	if is_nan(spot.y) or spot.y < 1.0:

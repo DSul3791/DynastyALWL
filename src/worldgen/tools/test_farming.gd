@@ -834,6 +834,32 @@ func _init() -> void:
 	season[0] = "winter"
 	days(2)
 	check(items._crops.has(key) and float(items._crops[key]["age"]) >= 2.0, "and grows through it")
+	# Winter: no bush or tree goes in either, by the hoe's grid or the bush key (Dave 22 Nov 2026: the ground is too hard).
+	var by_tree: Dictionary = ((items._drops.get("trunk", {}) as Dictionary).get("felled_seeds", {}) as Dictionary).get("by_species", {})
+	var tree_seed: String = str(by_tree[by_tree.keys()[0]])
+	give(tree_seed, 1)
+	var open_spot: Vector3 = Vector3(260.5, 10.0, 260.5)
+	var stood: Vector3 = items._peer_pos[1]
+	items.report_position(1, open_spot + Vector3(1.0, 0.0, 0.0))
+	items._last_dig.clear()
+	items._hoe_check_ms.clear()
+	notes.clear()
+	var saplings_before: int = items._saplings.size()
+	var hoe_w: int = HeldTool.slot_of(items, "hoe")
+	items.inventory_of(1).wear[hoe_w] = 0
+	check(items.plant_grid(1, items.inventory_of(1), hoe_w, items.table.number_of(tree_seed), 101, open_spot) == 0 and count(tree_seed) == 1 and items._saplings.size() == saplings_before, "winter: the hoe plants no tree seed and the pack keeps it (%s)" % str(notes))
+	notes.clear()
+	items._plant_bush(1, items.inventory_of(1), items.inventory_of(1).numbers.find(items.table.number_of(tree_seed)), open_spot)
+	check(count(tree_seed) == 1 and items._saplings.size() == saplings_before and notes.has("The ground is frozen hard: nothing can be planted in winter."), "winter: the bush key plants nothing either (%s)" % str(notes))
+	season[0] = "spring"
+	items._last_dig.clear()
+	items._hoe_check_ms.clear()
+	items.inventory_of(1).wear[hoe_w] = 0
+	check(items.plant_grid(1, items.inventory_of(1), hoe_w, items.table.number_of(tree_seed), 101, open_spot) > 0 and count(tree_seed) == 0, "spring: the same seed goes in (%s)" % str(notes))
+	season[0] = "winter"
+	items.report_position(1, stood)
+	items._last_dig.clear()
+	items._hoe_check_ms.clear()
 
 	# Wheat with the sickle: put a ripe crop in directly (growth was tested above) and harvest it with the tool.
 	items._crops.erase(key)

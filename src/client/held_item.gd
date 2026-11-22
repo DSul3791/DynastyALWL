@@ -2528,6 +2528,9 @@ func _garden_row_why(n: int) -> String:
 		return "The ground is frozen hard: nothing can be planted in winter."
 
 	var seasons: Array = FarmRules.sow_seasons(_inv.crop_table().get(FarmRules.crop_of_seed(_inv.crop_table(), str(_garden_rows[n]["id"])), {})).filter(func(x): return str(x) != "winter")
+	if seasons.is_empty():
+		return "Out of season: it cannot be sown now."
+
 	return "Out of season: sow it in %s (it is %s now)." % [" or ".join(PackedStringArray(seasons.map(func(x): return str(x)))), _season_now()]
 
 
