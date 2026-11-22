@@ -274,6 +274,14 @@ static func dress(avatar, items) -> void:
 	if avatar == null or items == null:
 		return
 
+	dress_worn(avatar, items.worn, items.table)
+
+
+# The same for any body and worn list: the player's own (dress), or another player's as the server sent it (player_view.gd, protocol 151).
+static func dress_worn(avatar, worn_numbers, table) -> void:
+	if avatar == null or table == null:
+		return
+
 	# A generated body wears the clothes and skin the player chose in the creator unless an item is worn over them; the old body keeps the fixed colours.
 	var genome: Variant = avatar.get("genome")
 	var base: Dictionary = {}
@@ -283,6 +291,6 @@ static func dress(avatar, items) -> void:
 		skin = (genome as Dictionary)["skin"]
 		base = {"coat": (genome as Dictionary)["tunic"], "trousers": (genome as Dictionary)["trousers"], "shoes": (genome as Dictionary)["boots"]}
 
-	var colors: Dictionary = outfit_colors(items.worn, items.table, base)
+	var colors: Dictionary = outfit_colors(worn_numbers, table, base)
 	avatar.dress(skin, colors["coat"], colors["trousers"], colors["shoes"])
-	WornSync.apply(avatar, WornSync.ids_of(items.worn, items.table), false)   # the own avatar shows in third person only, so no first-person clipping (worn_look.gd maps the old bone names to the generated body)
+	WornSync.apply(avatar, WornSync.ids_of(worn_numbers, table), false)   # the own avatar shows in third person only, so no first-person clipping (worn_look.gd maps the old bone names to the generated body)

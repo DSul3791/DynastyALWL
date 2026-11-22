@@ -88,7 +88,8 @@ func _ready() -> void:
 	multiplayer.multiplayer_peer = peer
 	multiplayer.connected_to_server.connect(func():
 		NetSettings.apply(peer.get_peer(1))
-		_net.hello.rpc_id(1, "bot_" + _name, BuildStamp.stamped_build()))
+		_net.hello.rpc_id(1, "bot_" + _name, BuildStamp.stamped_build())
+		_net.my_look.rpc_id(1, "Bot " + _name, "", ""))   # protocol 151: players see a bot as a plain body with its name
 	multiplayer.server_disconnected.connect(func():
 		print("BOT %s: server left" % _name)
 		_finish())
@@ -156,7 +157,7 @@ func _process(delta: float) -> void:
 
 	if now >= _next_report_msec:
 		_next_report_msec = now + 200
-		_net.report_position.rpc_id(1, _position, Vector3(cos(_heading), 0.0, sin(_heading)) * 3.2)
+		_net.report_position.rpc_id(1, _position, Vector3(cos(_heading), 0.0, sin(_heading)) * 3.2, atan2(-cos(_heading), -sin(_heading)))   # protocol 151: facing as rotation.y (forward is -Z)
 
 	if _next_dig_msec > 0 and now >= _next_dig_msec:
 		_next_dig_msec = now + int(_dig_every * 1000.0)

@@ -56,6 +56,7 @@ var _freeze_watch = FreezeWatchScript.new()   # its own thread: names a main-thr
 const CompassScript := preload("res://src/client/admin_compass.gd")
 const InventoryViewScript := preload("res://src/client/inventory_view.gd")
 const NpcViewScript := preload("res://src/client/npc_view.gd")
+const PlayerViewScript := preload("res://src/client/player_view.gd")
 const GroundDebugScript := preload("res://src/client/ground_debug.gd")
 const ShowroomScript := preload("res://src/client/showroom.gd")
 const CaveinDeathScript := preload("res://src/client/cavein_death.gd")
@@ -120,6 +121,7 @@ const BuildStamp := preload("res://src/shared/build_stamp.gd")
 var BUILD: int = BuildStamp.number()   # the release stamp's build number, or build.gd NUMBER in an editor run (step A1)
 var rig_flora_hold: Dictionary = {}   # look rig (--shot-flora): chunks whose plants the rig drew itself; incoming server flora for them is dropped
 var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+Shift+N shortcut
+var _player_view: Node3D = null         # the other players (protocol 151, player_view.gd)
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
@@ -1669,6 +1671,12 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.stop("welcome: items view ready", tq_items_ready)
 	var tq_items_view: int = Probe.start()
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
+	_player_view = PlayerViewScript.new()   # the other players (protocol 151)
+	_player_view.name = "Players"
+	_player_view.table = items.table
+	add_child(_player_view)
+	net.player_look_received.connect(_player_view.on_look)
+	net.players_received.connect(_player_view.on_rows)
 	items.journal.map_knowledge = map_knowledge   # the Journal's Map page draws what this character surveyed (protocol 120)
 	Probe.stop("welcome: items view", tq_items_view)
 	# The 4 Nov freeze watch said the welcome was stuck 1.5 s "after welcome: items view" and before "welcome: held item": these three pieces were not timed.
@@ -6059,7 +6067,7 @@ func _process(delta: float) -> void:
 		var seconds: float = float(now - _aim_msec) / 1000.0
 
 		if _aim_msec > 0 and not (cavein_death != null and cavein_death.active):   # the server already has the character at the respawn point
-			net.report_position.rpc_id(1, here, (here - _aim_pos) / seconds)
+			net.report_position.rpc_id(1, here, (here - _aim_pos) / seconds, body.rotation.y)   # protocol 151: the facing, for the other players
 
 		_aim_msec = now
 		_aim_pos = here

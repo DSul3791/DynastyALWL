@@ -15540,6 +15540,15 @@ func set_swimming(peer: int, swimming: bool) -> void:
 	_swimming[peer] = swimming
 
 
+# Protocol 151 (server_players.gd): what the other players see of this one.
+func is_swimming(peer: int) -> bool:
+	return bool(_swimming.get(peer, false))
+
+
+func carries_log(peer: int) -> bool:
+	return str(_shoulder_sent.get(peer, "")) != ""
+
+
 func set_cave_pool(peer: int, in_pool: bool) -> void:
 	_cave_pool[peer] = in_pool
 
