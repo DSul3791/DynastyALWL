@@ -12926,6 +12926,9 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 			_last_use[peer] = now_ms
 			it["struct"]["kind"] = str(def["toggle"])
 			_grid_add(id, it)   # a shut door or gate ("blocks_walk") stops animals again; the open one is forgotten by the grid itself (its kind changed)
+
+			if bool(_structures[str(def["toggle"])].get("blocks_walk", false)):
+				_free_trapped(it["pos"])   # shut on someone in the frame: they step out
 			_dirty = true
 
 		return
@@ -17401,28 +17404,29 @@ func _step_to_station(peer: int, station_id: int) -> Vector3:
 	return spot
 
 
-# Another player stands within `radius` (on the ground plane) of a point.
 const TRAPPED_NEAR_M := 6.0   # players this close to a piece that just went up are checked for standing inside it
+const TRAPPED_HIGH_M := 2.5   # ... and this close in height (one storey)
 
 
-# A wall or a heavy station that just went up round a player (their own or a friend's): the server steps them to the nearest clear spot, as a
+# A wall or a heavy station that just went up (or a door shut) round a player (their own or a friend's): the server steps them to the nearest clear spot, as a
 # resume spot is made safe (_safe_resume), so nobody is left stuck inside a finished piece.
 func _free_trapped(at: Vector3) -> void:
 	for peer in _peer_pos.keys():
 		var pos: Vector3 = _peer_pos[peer]
 
-		if Vector2(pos.x - at.x, pos.z - at.z).length() > TRAPPED_NEAR_M or not structure_blocks(pos.x, pos.z, 0.0):
-			continue
+		if Vector2(pos.x - at.x, pos.z - at.z).length() > TRAPPED_NEAR_M or absf(pos.y - at.y) > TRAPPED_HIGH_M or not structure_blocks(pos.x, pos.z, 0.0):
+			continue   # far off, or a floor above or a cellar below it: not inside
 
 		var out: Vector3 = _safe_resume(int(peer), pos)
 
-		if out.distance_to(pos) > 0.01:
+		if out.distance_to(pos) > 0.01 and out.distance_to(pos) <= RESUME_SEARCH_M + 0.5:   # nothing clear near: no long jump to a bed or the spawn
 			_peer_pos[peer] = out
 
 			if send_step_to.is_valid():
-				send_step_to.call(int(peer), out, atan2(-(at.x - out.x), -(at.z - out.z)))   # facing the piece they were moved out of
+				send_step_to.call(int(peer), out - Vector3(0.0, 1.0, 0.0), atan2(-(at.x - out.x), -(at.z - out.z)))   # the client lifts a step 1 m (_on_step_to); facing the piece
 
 
+# Another player stands within `radius` (on the ground plane) of a point.
 func _player_within(point: Vector3, radius: float, but: int) -> bool:
 	for other in _peer_pos:
 		if int(other) != but and Vector2(_peer_pos[other].x - point.x, _peer_pos[other].z - point.z).length() <= radius:
