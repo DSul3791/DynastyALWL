@@ -92,6 +92,64 @@ func _init() -> void:
 	again.setup(dir)
 	check(again.blocks.size() == 1 and absf(float(again.blocks.values()[0]["cells"].values()[0]) - pass_add) < 0.005, "the grid is saved and loaded")
 
+	# Players' own paths (stage 2c, D-TRAP-3): half a deer's wear, shown like a trail, never read as one; on the ground only; saved.
+	var pp = TrailsScript.new()
+	pp.game_seconds = func(): return clock[0]
+	pp.ground_height = func(_x, _z): return 5.0
+	DirAccess.make_dir_recursive_absolute(dir + "_players")
+
+	for file in DirAccess.get_files_at(dir + "_players"):
+		DirAccess.remove_absolute(dir + "_players/" + file)
+
+	pp.setup(dir + "_players")
+	var walks: int = 0
+
+	while pp.player_strength_at(102.0, 102.0) < float(pp.cfg["draw_threshold"]) and walks < 100:
+		for step in 10:   # there and back along a 40 m line
+			pp.note_player(3, Vector3(100.0 + float(step) * 4.0, 5.2, 102.0))
+
+		for step in range(9, -1, -1):
+			pp.note_player(3, Vector3(100.0 + float(step) * 4.0, 5.2, 102.0))
+
+		walks += 1
+
+	var per_pass: float = float(pp.cfg["pass_add"]) * float(pp.cfg["player_weight"])
+	check(walks >= 3 and walks <= 8, "a path walked there and back draws after a few walks (%d)" % walks)
+	check(absf(pp.player_strength_at(102.0, 102.0) - per_pass * float(walks + 1)) < 0.005 and is_zero_approx(pp.strength_at(102.0, 102.0)), "half a deer's wear a pass, and not an animal trail (snares and Tracking read only those)")
+	pp.note_player(4, Vector3(300.0, 9.0, 300.0))
+	pp.note_player(4, Vector3(340.0, -20.0, 300.0))
+	check(is_zero_approx(pp.player_strength_at(300.0, 300.0)) and is_zero_approx(pp.player_strength_at(340.0, 300.0)), "a player on a floor 4 m up, or in a tunnel 25 m down, wears no path")
+	var sent_cells: Array = pp.updates_for(9, Vector3(110.0, 5.0, 110.0), 1000)
+	var drawn: float = 0.0
+
+	for u in sent_cells:
+		for v in Codec.decode(u[2]).values():
+			drawn = maxf(drawn, float(v))
+
+	check(sent_cells.size() == 1 and drawn >= pp.player_strength_at(102.0, 102.0) - 0.01, "the path is sent with the trails (%d blocks, %.2f)" % [sent_cells.size(), drawn])
+	pp.save()
+	var pp2 = TrailsScript.new()
+	pp2.game_seconds = pp.game_seconds
+	pp2.setup(dir + "_players")
+	check(absf(pp2.player_strength_at(102.0, 102.0) - pp.player_strength_at(102.0, 102.0)) < 0.01, "and saved and loaded")
+
+	for k in 40:   # walked daily to the top
+		for step in 10:
+			pp.note_player(3, Vector3(100.0 + float(step) * 4.0, 5.2, 102.0 + float(k % 2)))
+		pp.note_player(3, Vector3(0.0, 5.2, 0.0))
+
+	var full: float = pp.player_strength_at(102.0, 102.0)
+	clock[0] = 500000.0
+	pp._decay()
+	clock[0] += 86400.0 * 3.0
+	pp._decay()
+	var after3: float = pp.player_strength_at(102.0, 102.0)
+	clock[0] += 86400.0 * 5.0
+	pp._decay()
+	check(full > 0.9 and after3 > 0.4 and pp.pblocks.is_empty(), "a well-walked path lasts days and is gone in about a game week (%.2f, %.2f after 3 days)" % [full, after3])
+	pp.forget_peer(3)
+	check(not pp._last_cell.has(-4), "a player who leaves is forgotten")
+
 	# Cost: 300 animals stepping 100 cells each, then 20 players' updates.
 	var big = TrailsScript.new()
 	big.game_seconds = t.game_seconds

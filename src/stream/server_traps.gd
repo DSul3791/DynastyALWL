@@ -249,7 +249,7 @@ func check_one(id: int) -> bool:
 
 	var bait: int = _bait_id(it["pos"], c)
 
-	if not host.fate(_owner_peer(st), "snare", chance_at(it["pos"], row, bait >= 0, c)):
+	if not host.fate(_owner_peer(st), "snare", clampf(chance_at(it["pos"], row, bait >= 0, c) * _choke_mult(st, c), 0.0, 1.0)):
 		return false
 
 	if int(row["id"]) != 0 and (not host.animal_snare.is_valid() or not bool(host.animal_snare.call(int(row["id"])))):
@@ -303,6 +303,35 @@ func _note_run(it: Dictionary) -> void:
 		if host.fox_near.is_valid():   # a fox earth near enough that its rounds pass the runs here (TR-10)
 			it["struct"]["fox"] = bool(host.fox_near.call(it["pos"].x, it["pos"].z, float(_of_item(it).get("away_fox_m", 0.0))))
 
+	it["struct"]["choke"] = _choke_at(it["pos"], _of_item(it))
+
+
+# Whether something narrows the run at a snare (stage 2c, TR-12): a tree's root or a boulder's edge within choke_m. Real snarers set
+# where the run squeezes between stems or past a rock, where the animal cannot step round the noose. Read while someone is near
+# (the trees from chunks already made only), noted on the snare for its looks while nobody is. A placed log or fence would settle the
+# ground (the animals leave it), so only what grows or lies there counts.
+func _choke_at(at: Vector3, c: Dictionary) -> bool:
+	var m: float = float(c.get("choke_m", 0.0))
+
+	if m <= 0.0:
+		return false
+
+	if host.trees_near_cached.is_valid() and not (host.trees_near_cached.call(at, m) as Array).is_empty():
+		return true
+
+	for id in host._ids_near(at, m + 3.0):
+		var other: Dictionary = host._items.get(id, {})
+
+		if other.has("boulder") and Vector2(other["pos"].x - at.x, other["pos"].z - at.z).length() <= float((other["boulder"] as Dictionary).get("radius", 0.5)) + m:
+			return true
+
+	return false
+
+
+# The choke point's lift on a snare's chance: choke_mult when it sits on a run (a choke off any run channels nothing), else 1.
+func _choke_mult(st: Dictionary, c: Dictionary) -> float:
+	return float(c.get("choke_mult", 1.0)) if bool(st.get("choke", false)) and float(st.get("run", 0.0)) > 0.0 else 1.0
+
 
 # A snare with nobody near (Dave 22 Nov 2026, D-TRAP-1: set at dusk, checked at dawn): once a game hour has gone by since its last
 # look it rolls for the hours since, with no animal simulated or taken. Only a snare on a rabbit run fishes this way (within run_none_m
@@ -351,7 +380,7 @@ func check_away(id: int) -> bool:
 		p_fox = p * float(c.get("away_fox_share", 0.0)) * (float(host.species_active.call("fox")) if host.species_active.is_valid() else 1.0)
 
 	p *= float(host.species_active.call(sp)) if host.species_active.is_valid() else 1.0
-	var mult: float = 1.0
+	var mult: float = _choke_mult(st, c)
 	var bait: int = _bait_id(it["pos"], c)
 
 	if bait >= 0:
