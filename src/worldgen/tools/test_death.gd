@@ -7,6 +7,7 @@ extends SceneTree
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const PlacementRules := preload("res://src/shared/placement_rules.gd")
 
 var failures: int = 0
 var clock: float = 1.0e9
@@ -151,6 +152,35 @@ func _init() -> void:
 		oldest = minf(oldest, float(third._items[rid]["struct"]["born"]))
 
 	check(newest - oldest <= 20.0, "the oldest sets went first")
+
+	# A death in a house: the remains lie on the floor the player stood on, not buried under it at the generated ground, and the
+	# recheck keeps them there; remains on dug or filled ground follow the ground as edited.
+	ground = 10.0
+	var house = make(dir + "_floor")
+	house.peer_connected_hello(1, "owner-key-0003")
+	house.report_position(1, Vector3(38.0, 10.0, 40.0))
+	house.place_piece(1, "wood_foundation_kit", Vector3(40.0, 10.0, 40.0))
+	var top: float = NAN
+
+	for fid in house._items:
+		if house._items[fid].has("struct") and str(house._items[fid]["struct"]["kind"]) == "wood_foundation":
+			top = float(house._items[fid]["pos"].y) + PlacementRules.anchor_top(house._structures["wood_foundation"])
+
+	check(not is_nan(top) and top > ground + 0.1, "a foundation stands above the ground (top %.2f)" % top)
+	house.report_position(1, Vector3(40.0, top, 40.0))
+	house.inventory_of(1).add(house.table.number_of("stone"), 1)
+	house.kill(1, "drowning")
+	var on_floor: Array = house.remains_ids()
+	check(on_floor.size() == 1 and absf(float(house._items[on_floor[0]]["pos"].y) - top) < 0.05, "the remains lie on the floor (%s, floor top %.2f)" % [str(house._items[on_floor[0]]["pos"]) if on_floor.size() == 1 else "none", top])
+	house._remains_check_in = 0.0
+	house._remains_tick(1.0)
+	check(on_floor.size() == 1 and absf(float(house._items[on_floor[0]]["pos"].y) - top) < 0.05, "the recheck leaves them on the floor")
+	house.edits_near = func(_point, _radius) -> Array: return [[1, Vector3(80.0, 8.0, 80.0), 3.0]]   # a fill raising the ground round x 80 to about 11
+	house.report_position(1, Vector3(80.0, 10.0, 80.0))
+	house.inventory_of(1).add(house.table.number_of("stone"), 1)
+	house.kill(1, "drowning")
+	var filled: Array = house.remains_ids().filter(func(rid): return float(house._items[rid]["pos"].x) > 70.0)
+	check(filled.size() == 1 and absf(float(house._items[filled[0]]["pos"].y) - 11.0) < 0.05, "on filled ground the remains lie on the fill (%s)" % (str(house._items[filled[0]]["pos"]) if filled.size() == 1 else "none"))
 
 	# Dave 2026-10-21: back at the last shelter slept in.
 	DirAccess.make_dir_recursive_absolute(dir + "_shelter")
