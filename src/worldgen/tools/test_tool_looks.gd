@@ -201,7 +201,7 @@ func _init() -> void:
 		var row: Dictionary = BasicLook.entry(id)
 		var tier: String = id.get_slice("_", 0)
 		_check(str(row.get("shape", "chunk")) != "chunk", "%s has a shape of its own (%s)" % [id, str(row.get("shape", ""))])
-		_check(not tier in ["iron", "steel", "bronze"] or (row.get("bits", []) as Array).has(tier), "%s names its tier in its look row" % id)
+		_check(tier not in ["iron", "steel", "bronze"] or (row.get("bits", []) as Array).has(tier), "%s names its tier in its look row" % id)
 		var look: Mesh = BasicLook.mesh_for(id)
 		_check(look != null and look.get_surface_count() > 0, "%s builds a mesh" % id)
 	_check(_mean_colour(BasicLook.mesh_for("steel_spear")).get_luminance() > _mean_colour(BasicLook.mesh_for("iron_spear")).get_luminance(), "steel spear head lighter than iron")
