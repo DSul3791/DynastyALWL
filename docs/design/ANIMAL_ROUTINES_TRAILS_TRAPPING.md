@@ -6,7 +6,8 @@ like rabbits and eventually trap larger ... trapping and taming live later." And
 certain times or based on the sun and traveling and certain times and eating and drinking near the water at certain times ...
 design an idea around it then build your system around the idea." He loves the way grass mats down where he walks.
 
-Coordinator rulings D-TRAP-1 (goal, away catches with limits, protocol 149) and D-TRAP-2 (night activity) are recorded in
+Coordinator rulings D-TRAP-1 (goal, away catches with limits, protocol 149), D-TRAP-2 (night activity) and D-TRAP-3 (players'
+worn paths shown to all at half the animal rate on a cheap grid, its cost measured; the sun clock for animals only) are recorded in
 the coordinator log. Status: PROVISIONAL design by the trails thread under Dave's 21 Nov rule (questions go to the coordinator, answered from research,
 recorded). Values marked TR-n are provisional and live in data files.
 
@@ -86,8 +87,14 @@ arrive or the player moves 16 m.
   rabbit run, a sprung snare holds its catch, carcasses rot as before), the starter goal "Snare a rabbit" after "Twist twine"
   (D-TRAP-1; event snare_catch when a snared carcass is worked). Tests: `test_traps` away_checks, `test_animal_trips`.
 
-**Stage 2**: the clock on the real sunrise and sunset (weather.gd `sunrise_hour`, the sun the sky draws) for every species, not the
-fixed hours; elk and moose ranges; fox and boar routines; signs along trails (tracks, droppings: `tracking.gd`); players' own
+**Stage 2a (built, D-TRAP-3)**: animals' periods on the real sun (server_animals `period_now`: dawn from an hour before sunrise to two
+after, dusk from sunset to three after, from weather.gd `sunrise_hour`, so equal to the fixed hours at the equinox; bandits and
+companions keep `period_of`); the trip clock as offsets from sunrise and sunset (TR-7); moose and elk ranges like deer (TR-8), a
+moose's feeding ground by water when it can be, on a deer trail (kind 1; a wider moose trail would touch the grass code and its tests for little). The rest of stage 2 (fox rounds,
+player paths, choke points, signs) is folded in here as each part lands. Sources for 2a: Delisle et al. 2024, Sci. Rep.
+(deer activity in windows 2 h either side of sunrise and sunset); scienceinsights.org on moose (feeding peaks at dawn and dusk, water in heat).
+
+**Stage 2 (rest)**: fox rounds (2b); boar routines once the research is verified; signs along trails (tracks, droppings: `tracking.gd`); players' own
 paths wearing the same way; a choke point (a log over the run) doubles a snare's chance.
 
 **Stage 3 (larger game)**: a deadfall for fox, raccoon, mink and the like; heavier snares (wire, from the smithy) on deer trails,
@@ -105,13 +112,16 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
 - TR-3 routes: a point every 12 m, each tried 3, 6 or 12 m either side of the last one's line, the gentlest climb kept, drifting at most 30 m off the straight line; round deep water by a dry point 20-60 m to one side of the middle; a small wiggle every 4 m.
 - TR-4 clock: rabbits out from dusk to dawn (dusk and night periods), deer to feed at dusk and back at dawn.
 - TR-5 the look: a run 0.8 m wide, a deer trail 1.2 m, fading over 0.5 m either side (first 0.35 and 0.6 m: Lane A pictures 22 Nov showed nothing, too thin to read through the tufts; a walked path, the trample Dave likes, is 1.6 m); the grass squashed by the trample's own squash (0.75, data/look/grass_trample.json) and shaded the same, so a trail looks like ground just walked. Log lines for a lane: server "ranges: block ... worked out" (places and their homes) and "trails: block ... with N bytes of routes", client "grass runs: block ... came with N routes" and "grass runs: N routes near, T texels matted".
+- TR-7 sun clock: rabbits out 1 h before sunset, home 1 h after sunrise; deer, moose and elk out half an hour before sunset, home
+  half an hour after sunrise (jitter 0.75 h each way). At the starter row sunrise runs 04:51 (midsummer) to 07:09 (midwinter).
+- TR-8 moose (salt 300): 12 tries, feeding ground within 40 m of deep water preferred, bed and feed 80-220 m apart, trail kind 1; elk: deer's
+  rules (salt 600, so its spots and rolls share no hash with moose or deer), 100-230 m apart; both take a spot in a less liked biome at its weight (weight_roll), as the random spawn did.
 - TR-6 snares: full factor within 0.5 m of a run, falling to the old factor at 2 m; away catches 0.045 a game hour at full rabbit
   activity: a snare squarely on a run takes about two rabbits in five nights, about one a game day in two (Wildwood's 3 in 15 the
   first night); six snares on runs feed one player well. Off a run, none while away.
 
 ## Not done / risks
 
-- Periods are still the fixed hours (stage 2 moves them onto the sun).
 - Places use terrain, biome and water only (tree cover is not known far from players, and must give the same answer every visit).
 - Animals leave ground people settle: a place inside a no-spawn zone (20 m round anything a player put down) is not used, its
   animals keep their old home, and its routes are not sent, so the trail grows back. Real wildlife abandons settled ground.

@@ -70,6 +70,8 @@ var drop_loot: Callable            # (item number, count, position) when a thief
 var big_game = null                # defending big game (moose; server_big_game.gd): warn, dodgeable charge, recover
 var biome_at: Callable             # (x, z) -> biome name of the ground there ("" unknown); species rows may list "biomes" weights (0 or missing = never)
 var hour_now: Callable             # () -> hour of the game day 0..24 (the server's clock); species rows may list "active" {day, dusk, night} spawn chances 0..1
+var sunrise_now: Callable          # () -> today's sunrise hour (weather.gd sunrise_hour, the sun the sky draws); unset keeps the fixed hours of period_of
+var _sun: Array = [-1, 6.0]        # [msec read, sunrise hour]: the sunrise moves a few minutes a game day, read again every 5 s
 var air_at: Callable               # (Vector3) -> Weather.air_c at that point: its zone's air at that height, this hour (docs/design/one_temperature.md); unset: temp_c less the lapse
 var no_spawn: Callable                # (x, z) -> bool: true within no_spawn_m of something a player put down (server_items.spawn_blocked; Dave 17 Nov 2026): no animal is made there
 var lair_guarded: Callable            # (x, z, radius) -> bool: true when a burning placed fire lies within radius of a lair's mouth (lair.guard_m), so no new group comes (Dave 8 Nov 2026, decision 13)
@@ -1784,6 +1786,37 @@ static func period_of(hour: float) -> String:
 	return "night"
 
 
+# Today's sunrise hour (6 without a sun); sunset is as far after noon as sunrise is before it.
+func sunrise_hour() -> float:
+	if not sunrise_now.is_valid():
+		return 6.0
+
+	if _sun[0] < 0 or Time.get_ticks_msec() - int(_sun[0]) > 5000:
+		_sun = [Time.get_ticks_msec(), float(sunrise_now.call())]
+
+	return float(_sun[1])
+
+
+# An animal's period on the real sun (stage 2a, D-TRAP-3; docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md): dawn from an hour before
+# sunrise to two after, dusk from sunset to three after, day between, night the rest. At the equinox (sunrise 6) these are period_of's
+# fixed hours, so the "active" rows keep their meaning; in winter the deer's dusk comes at 17:00, in summer after 19:00. Bandits and
+# companions keep period_of. (Sunrise stays between about 4 and 8 at any row a player lives on, so the windows never cross midnight.)
+func period_now(hour: float) -> String:
+	if not sunrise_now.is_valid():
+		return period_of(hour)
+
+	var rise: float = sunrise_hour()
+	var fall: float = 24.0 - rise
+
+	if hour >= rise + 2.0 and hour < fall:
+		return "day"
+
+	if (hour >= rise - 1.0 and hour < rise + 2.0) or (hour >= fall and hour < fall + 3.0):
+		return "dusk"
+
+	return "night"
+
+
 # The chance (0..1) that a top-up may spawn this species now: the row's "active" value for the current period, 1 without a clock or a row.
 func activity_chance(def: Dictionary) -> float:
 	if not def.has("active") or not hour_now.is_valid():
@@ -1803,7 +1836,7 @@ func resting(def: Dictionary) -> bool:
 
 
 func _feeding_before_storm(def: Dictionary) -> bool:
-	return _storm_ahead and _wx_on() and str(def.get("weather", "")) in ["bird", "small", "deer"] and hour_now.is_valid() and period_of(float(hour_now.call())) == "day"
+	return _storm_ahead and _wx_on() and str(def.get("weather", "")) in ["bird", "small", "deer"] and hour_now.is_valid() and period_now(float(hour_now.call())) == "day"
 
 
 # Lying down (docs/design/ANIMAL_RESTING.md, protocol 148): a resting animal lies; otherwise a standing grazer lies when its own fixed
@@ -2581,12 +2614,13 @@ static func fog_ring_m(stalk_m: float, v: float, min_m: float) -> float:
 
 # Deer keep their dawn hours longer on a foggy morning (4.5): 08:00 to 08:00 + deer_late_h count as dusk while the fog's V is under deer_v_m.
 func fog_period(def: Dictionary, hour: float) -> String:
-	var period: String = period_of(hour)
+	var period: String = period_now(hour)
 
 	if period != "day" or not fog_on() or str(def.get("weather", "")) != "deer" or fog_v() >= float(_fog_cfg().get("deer_v_m", 1000.0)):
 		return period
 
-	return "dusk" if hour >= 8.0 and hour < 8.0 + float(_fog_cfg().get("deer_late_h", 1.5)) else period
+	var day_from: float = sunrise_hour() + 2.0   # 08:00 at the equinox
+	return "dusk" if hour >= day_from and hour < day_from + float(_fog_cfg().get("deer_late_h", 1.5)) else period
 
 
 # A deer's grazing hop in fog keeps to the wood edge (4.5): open ground with tree crowns within edge_m in one of four directions.
@@ -2928,7 +2962,7 @@ func drink_on() -> bool:
 
 
 func _twilight() -> bool:
-	return hour_now.is_valid() and period_of(float(hour_now.call())) == "dusk"
+	return hour_now.is_valid() and period_now(float(hour_now.call())) == "dusk"
 
 
 # Fresh open water at a spot: a water surface over ground above the sea (salt water is never a drink, #719).
@@ -3048,8 +3082,15 @@ func wants_out(a: Dictionary) -> bool:
 
 	var hour: float = float(hour_now.call())
 	var shift: float = (fposmod(float(who["id"]) * 0.7548776, 1.0) - 0.5) * 2.0 * float(ck.get("jitter_h", 0.0))
-	var out_h: float = fposmod(float(ck.get("out_hour", 18.0)) + shift, 24.0)
-	var home_h: float = fposmod(float(ck.get("home_hour", 8.0)) + shift, 24.0)
+	var out_h: float = float(ck.get("out_hour", 18.0))
+	var home_h: float = float(ck.get("home_hour", 8.0))
+
+	if sunrise_now.is_valid() and ck.has("out_after_sunset_h") and ck.has("home_after_sunrise_h"):   # on the real sun (stage 2a)
+		out_h = 24.0 - sunrise_hour() + float(ck["out_after_sunset_h"])
+		home_h = sunrise_hour() + float(ck["home_after_sunrise_h"])
+
+	out_h = fposmod(out_h + shift, 24.0)
+	home_h = fposmod(home_h + shift, 24.0)
 
 	if out_h > home_h:
 		return hour >= out_h or hour < home_h
