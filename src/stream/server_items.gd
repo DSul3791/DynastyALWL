@@ -25681,7 +25681,12 @@ func _salt_only(peer: int, thirst: Dictionary) -> bool:
 
 
 func _save_vitals() -> void:
-	_write_atomic("vitals.json", {"version": 1, "players": _vitals, "last_rain_s": _last_rain_s if is_finite(_last_rain_s) else null})   # seasonal brooks after a restart
+	var rain: Variant = null   # seasonal brooks after a restart
+
+	if is_finite(_last_rain_s):
+		rain = _last_rain_s
+
+	_write_atomic("vitals.json", {"version": 1, "players": _vitals, "last_rain_s": rain})
 
 
 func _load_vitals() -> void:
