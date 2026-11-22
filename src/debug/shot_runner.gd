@@ -147,6 +147,7 @@ var _piece_built: bool = false
 var _pieces_regrounded: bool = false
 var piece_names: PackedStringArray = PackedStringArray()    # --shot-pieces=wall_section,chest: one building piece of each in a row with name tags (structures.json keys)
 var pieces_yaw_deg: float = 0.0    # --shot-pieces-yaw=N: the whole row turned N degrees
+var shadow_bias: Vector2 = Vector2(-1.0, -1.0)   # --shot-shadow-bias=B,N: the sun's shadow bias and normal bias for the piece pictures (outdoors 0.3 and 3.0 pull a thin thing's shadow off it)
 var piece_extra: Dictionary = {}   # --shot-piece-extra=forge:2,lit:1: the pieces drawn as placed with these row extras (a smithy's coals or flare, a lit kiln), not as the cold ghost
 var _pieces_t: int = 0
 var showroom_rows: PackedStringArray = PackedStringArray()   # --shot-showroom=all or row labels: one picture per admin showroom row (data/items/showroom.json)
@@ -305,6 +306,9 @@ func setup(owner_client, args: Array) -> void:
 				give_item = give_item.get_slice(":", 0)
 		elif argument == "--shot-piece-views":
 			piece_views = true
+		elif argument.begins_with("--shot-shadow-bias="):
+			var biases: PackedStringArray = argument.trim_prefix("--shot-shadow-bias=").split(",")
+			shadow_bias = Vector2(float(biases[0]), float(biases[1]) if biases.size() > 1 else 0.0)
 		elif argument.begins_with("--shot-item-at="):
 			var xz: PackedStringArray = argument.trim_prefix("--shot-item-at=").split(",")
 			item_at = Vector2(float(xz[0]), float(xz[1]))
@@ -1304,6 +1308,13 @@ func _show_pieces(now: int) -> void:
 	_pieces_t = now
 
 
+func _set_shadow_bias() -> void:
+	if shadow_bias.x >= 0.0 and client._sun != null:
+		client._sun.shadow_bias = shadow_bias.x
+		client._sun.shadow_normal_bias = shadow_bias.y
+		print("shot runner: sun shadow bias %.2f, normal bias %.2f (was 0.3 and 3.0 outdoors)" % [shadow_bias.x, shadow_bias.y])
+
+
 # The drawn model's lowest point against the collision ground under its box, at 9 probes (its corners, edge middles and middle): "from A to
 # B" is lowest point minus the highest and the lowest ground there. Both below 0: sunk in everywhere; above 0 somewhere: it floats over that
 # part (the gap seen in a picture can also be the outdoor sun's shadow bias, which moves thin things' shadows off them).
@@ -1384,6 +1395,7 @@ func _print_surface_check(piece: String, at: Vector3, skip: Array) -> void:
 # ground and read as two broken fragments. A piece with still no collider under it keeps its first height and says so.
 func _reground_pieces() -> void:
 	_pieces_regrounded = true
+	_set_shadow_bias()
 	var last: Node3D = null
 
 	for child in client.get_children():
@@ -1435,6 +1447,7 @@ func _reground_pieces() -> void:
 # and the run ends with the row pictures only.
 func _build_piece_views() -> void:
 	_piece_built = true
+	_set_shadow_bias()
 	var wanted: String = str(piece_names[0]) if piece_names.size() > 0 else ""
 	var node: Node3D = null
 
