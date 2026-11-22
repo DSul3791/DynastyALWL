@@ -18571,7 +18571,7 @@ func water_piece(def: Dictionary, pos: Vector3, yaw_deg: float, st: Dictionary =
 			piece[key] = ends
 		elif key == "level_port" and typeof(value) == TYPE_ARRAY and (value as Array).size() == 3:
 			piece[key] = pos + Vector3(float(value[0]), float(value[1]), float(value[2])).rotated(Vector3.UP, deg_to_rad(yaw_deg))
-		elif key != "note":
+		elif key != "note" and key != "river_lpm":   # river_lpm is the rate a river barrel may take; the piece's own river_lpm is set by _barrels_tick only where it stands in a river
 			piece[key] = value
 
 	if str(def.get("hand_laid", "")) == "pipe":
@@ -19248,6 +19248,8 @@ const LEGACY_PIPE_UP_M := 0.13
 const BARREL_DRY_L := 0.5            # a barrel holding less counts as dry (it takes goods again)
 const BARREL_RAIN_LPM_M2 := 4.0      # PV-6: full rain into an open top, L/min a square metre (1 L a minute on a barrel's 0.25 m2: about 10 mm a game hour)
 const BARREL_TICK_S := 3.0           # PV-7: rain and levelling are looked at this often (real seconds)
+const RIVER_BARREL_KINDS := ["brook", "river"]   # running water a barrel stood in fills from (PV-13; lakes, ponds and the sea do not)
+const RIVER_BARREL_MIN_M := 0.15     # PV-13: the water must be at least this deep at its spot (as deep as blocks other building)
 const LEVEL_SLACK_L := 0.5           # linked barrels this close to level are left alone
 const PIPE_WEAR_REFRESH_S := 600.0   # a worn wooden pipe's flow is worked out again this often (real seconds)
 var _barrel_next_s: float = 0.0
@@ -19717,8 +19719,32 @@ func _barrels_tick() -> void:
 			piece["rain_lpm"] = lpm
 			_water_dirty = true
 
+		var river: float = 0.0 if goods else _river_lpm(id, block)
+
+		if absf(float(piece.get("river_lpm", 0.0)) - river) > 0.001:
+			piece["river_lpm"] = river
+			_water_dirty = true
+
 	_taps_fill(now_s)
 	_level_barrels(now_s)
+
+
+# A river barrel (Dave 20 Nov 2026 22:42Z: "the river barrel is just a barrel that sits in a river and fills up with river water gradually. it will
+# have a fill speed that is pretty fast and it can have copper pipes attached"): a tank whose water block has river_lpm, stood in a brook or river
+# at least RIVER_BARREL_MIN_M deep, takes that many litres a minute of river water. 0 anywhere else, or when the water is not known there.
+func _river_lpm(id: int, block: Dictionary) -> float:
+	var rate: float = float(block.get("river_lpm", 0.0))
+
+	if rate <= 0.0 or not water_kind_at.is_valid() or not water_depth_at.is_valid():
+		return 0.0
+
+	var pos: Vector3 = _items[id]["pos"]
+
+	if not str(water_kind_at.call(pos.x, pos.z).get("kind", "")) in RIVER_BARREL_KINDS:
+		return 0.0
+
+	var depth: float = float(water_depth_at.call(pos))
+	return rate if not is_nan(depth) and depth >= RIVER_BARREL_MIN_M else 0.0
 
 
 # The tank a tap's pipes reach that holds water (walking up the network from the tap), -1 for none. A tap only lets water out to a drink or a container.

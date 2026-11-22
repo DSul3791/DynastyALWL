@@ -17,6 +17,7 @@ extends RefCounted
 #   drop_m     how far a feeder's water may fall into an open piece (a spout over a trough; default PORT_JOIN_M)
 #   head_m     a tank's water stands this far over its base outlet (the raised cistern's tank on its frame, its downpipe built in)
 #   rain_lpm   rain falling straight into a tank now, L/min (a barrel in the open; the server sets it from the weather; PLUMBING_DESIGN s9)
+#   river_lpm  river water coming into a tank stood in a river or brook now, L/min (a river barrel; PLUMBING_DESIGN s10): river quality
 #   cap_lpm    on a consumer: the most it takes (a drip head's 2 L/min); none takes whatever comes
 #   level_port a tank's point at its foot (a barrel's bottom centre) that pipes join to: tanks linked through pipes there level out (level_groups)
 #   spout      a closed piece whose outlet always pours into what is under it (a tap: the pipe end it hangs from never caps it)
@@ -460,6 +461,12 @@ func solve(now_s: float) -> void:
 				if rain > 0.0:
 					got += rain
 					q = _worse(q, "clean")   # rain is clean water
+
+				var river: float = maxf(float(piece.get("river_lpm", 0.0)), 0.0)
+
+				if river > 0.0:
+					got += river
+					q = _worse(q, "river")   # a river barrel's water is the river's
 
 				var held: float = float(_litres.get(id, 0.0))
 				out = BIG if held > 0.0 else got   # holding water, it passes what the pieces below take; empty, at most its inflow

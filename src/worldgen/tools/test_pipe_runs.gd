@@ -12,6 +12,7 @@ const Network := preload("res://src/shared/water_network.gd")
 const PipeRules := preload("res://src/shared/pipe_rules.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const LookTable := preload("res://src/client/look_table.gd")
+const Placement := preload("res://src/shared/placement_rules.gd")
 
 const DIR := "user://test_pipe_runs"
 const FOOT := Vector3(0.0, 0.05, 0.0)   # a barrel's bottom point over its spot (structures.json wooden_barrel level_port)
@@ -227,6 +228,47 @@ func _init() -> void:
 	box.remove(n("stick"), 1)
 	level_now()
 	check(float(items._water.pieces[lone].get("litres_max", 0.0)) == 60.0, "emptied, it holds 60 L again (Dave 21 Nov 2026)")
+
+	# --- River barrel (Dave 20 Nov 2026, PV-13): a barrel stood in a brook or river fills fast with river water ---
+	var dry_barrel: int = barrel(140.0, 140.0)
+	check(float(items._water.pieces[dry_barrel].get("river_lpm", 0.0)) == 0.0, "a barrel just set down on dry ground takes no river water, even before the next look")
+	var stream_kind: Array = ["river"]
+	var stream_depth: Array = [0.4]
+	items.water_kind_at = func(x, z): return {"kind": stream_kind[0], "depth": stream_depth[0]} if Vector2(x - 120.0, z - 120.0).length() < 1.0 else {"kind": "", "depth": 0.0}   # only the lone barrel stands in it
+	items.water_depth_at = func(pos): return stream_depth[0] if Vector2((pos as Vector3).x - 120.0, (pos as Vector3).z - 120.0).length() < 1.0 else 0.0
+	level_now()
+	check(absf(float(items._water.pieces[lone].get("river_lpm", 0.0)) - 20.0) < 0.01, "a barrel in a river 0.4 m deep takes 20 L a minute (%.2f)" % float(items._water.pieces[lone].get("river_lpm", 0.0)))
+	stream_kind[0] = "brook"
+	level_now()
+	check(absf(float(items._water.pieces[lone].get("river_lpm", 0.0)) - 20.0) < 0.01, "and in a brook")
+	stream_kind[0] = "lake"
+	level_now()
+	check(float(items._water.pieces[lone].get("river_lpm", -1.0)) == 0.0, "but none in a lake (still water)")
+	stream_kind[0] = "river"
+	stream_depth[0] = 0.1
+	level_now()
+	check(float(items._water.pieces[lone].get("river_lpm", -1.0)) == 0.0, "nor in water too shallow to reach it (0.1 m)")
+	stream_depth[0] = 0.4
+	box.add(n("stick"), 1)
+	level_now()
+	check(float(items._water.pieces[lone].get("river_lpm", -1.0)) == 0.0, "nor while it holds goods")
+	box.remove(n("stick"), 1)
+	level_now()
+	var river_net = Network.new()
+	var river_tank: Dictionary = items.water_piece(items._structures["wooden_barrel"], Vector3(0.0, 10.0, 0.0), 0.0)
+	river_tank["river_lpm"] = 20.0
+	river_net.add(1, river_tank)
+	river_net.solve(0.0)
+	check(absf(river_net.litres(1, 90.0) - 30.0) < 0.1 and river_net.quality(1) == "river", "the network fills it at that rate with river water (%.1f L after 90 s, %s)" % [river_net.litres(1, 90.0), river_net.quality(1)])
+	stream_depth[0] = 0.0
+	level_now()
+	items.water_kind_at = Callable()
+	items.water_depth_at = Callable()
+	level_now()
+	var barrel_cfg: Dictionary = items._structures_cfg
+	check(not Placement.over_water(barrel_cfg, "wooden_barrel_kit", Vector3.ZERO, 0.0, func(_x, _z): return 0.5), "a barrel may be set down in water 0.5 m deep")
+	check(Placement.over_water(barrel_cfg, "wooden_barrel_kit", Vector3.ZERO, 0.0, func(_x, _z): return 0.7), "but not in water deeper than 0.6 m")
+	check(Placement.over_water(barrel_cfg, "chest_kit", Vector3.ZERO, 0.0, func(_x, _z): return 0.5), "other pieces still cannot stand in water")
 
 	net_ok("rain")
 
