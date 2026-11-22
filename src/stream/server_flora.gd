@@ -360,6 +360,18 @@ var _main_wait_usec: int = 0
 var _main_waits: int = 0
 var _main_wait_note_msec: int = 0
 var _log_tasks: Array = []          # worker tasks printing log lines (_log_off_main), main thread only
+var _brush_tasks = preload("res://src/shared/pool_tasks.gd").new()   # _make_brush tasks, waited for by finish_tasks() at exit
+
+
+# Waits for this store's worker tasks (undergrowth chunks, log lines); later ones start nothing. The server's _exit_tree, before the engine
+# shuts its worker pool down.
+func finish_tasks() -> void:
+	_brush_tasks.finish()
+
+	for task in _log_tasks:
+		WorkerThreadPool.wait_for_task_completion(task)
+
+	_log_tasks = []
 
 
 func _lock_noting(what: String) -> void:
@@ -408,7 +420,8 @@ func in_undergrowth(pos: Vector3) -> bool:
 
 	if cells == null and not _brush_pending.has(home):
 		_brush_pending[home] = true
-		WorkerThreadPool.add_task(_make_brush.bind(home))
+		if not _brush_tasks.add(_make_brush.bind(home), "undergrowth chunk"):
+			_brush_pending.erase(home)   # shutting down (finish_tasks)
 
 	_mutex.unlock()
 	return cells != null and (cells as Dictionary).has(Vector2i(int(floor(x / BRUSH_CELL_M)), int(floor(z / BRUSH_CELL_M))))
