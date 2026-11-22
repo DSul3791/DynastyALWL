@@ -5090,16 +5090,8 @@
   "steel_arrow": {"shape": "arrow", "color": "#9aa3ad", "size": 1.0, "bits": ["steel"]},
   "wooden_bolt": {"shape": "arrow", "color": "#d8b070", "size": 0.55},
   "iron_bolt": {"shape": "arrow", "color": "#6c6f75", "size": 0.55, "bits": ["iron"]},
-  "steel_bolt": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "iron_lance": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
+  "steel_bolt": {"shape": "arrow", "color": "#9aa3ad", "size": 0.55, "bits": ["steel"]},
+  "iron_lance": {"shape": "shaft", "color": "#6c6f75", "size": 1.8, "bits": ["metal", "iron"]},
   "iron_brigandine": {"shape": "jerkin", "color": "#5a2e22", "size": 1.0, "bits": ["padded"]},
   "iron_breastplate": {"shape": "jerkin", "color": "#6c6f75", "size": 1.0, "bits": ["plate", "iron"]},
   "iron_mail_hauberk": {"shape": "jerkin", "color": "#6c6f75", "size": 1.15, "bits": ["mail", "iron"]},
