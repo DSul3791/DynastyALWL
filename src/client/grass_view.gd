@@ -482,9 +482,9 @@ func set_trail_routes(block_x: int, block_z: int, routes: Array) -> void:
 		print("grass runs: block %d,%d came with %d routes" % [block_x, block_z, routes.size()])
 
 
-# Lays the trails within the run map round the player: each route stepped every half metre (a texel), a stamp of the texels round each
+# Lays the trails within the run map round the player: each route stepped every half metre (a texel), a footprint of the texels round each
 # step (full on its middle, fading over RUN_FADE_M past the kind's half width, worked out once per kind) laid on the map, the stronger kept.
-# About 150 m of trail in the window: a few hundred steps of 13 (run) to 21 (deer trail) writes, at most twice a second while it changes.
+# About 150 m of trail in the window: a few hundred steps of 9 (run) to 13 (deer trail) writes, at most twice a second while it changes.
 func _rebuild_runs(player: Vector3) -> void:
 	var size: float = float(RUN_TEXELS) * RUN_TEXEL_M
 	var centre: Vector2 = _run_origin + Vector2(size, size) * 0.5
@@ -512,7 +512,7 @@ func _rebuild_runs(player: Vector3) -> void:
 			continue
 
 		for route in _run_routes[key]:
-			var stamp: PackedInt32Array = _run_stamp(clampi(int(route[0]), 0, RUN_WIDTH_M.size() - 1))
+			var footprint: PackedInt32Array = _run_stamp(clampi(int(route[0]), 0, RUN_WIDTH_M.size() - 1))
 			var pts: PackedVector2Array = route[1]
 			var last: int = -1
 			drawn += 1
@@ -532,22 +532,22 @@ func _rebuild_runs(player: Vector3) -> void:
 					var tz: int = int(floor((p.y - _run_origin.y) / RUN_TEXEL_M))
 
 					if tx + tz * RUN_TEXELS == last:
-						continue   # the same texel as the step before: its stamp is already laid
+						continue   # the same texel as the step before: its footprint is already laid
 
 					last = tx + tz * RUN_TEXELS
 
-					for e in range(0, stamp.size(), 3):
-						var x: int = tx + stamp[e]
-						var z: int = tz + stamp[e + 1]
+					for e in range(0, footprint.size(), 3):
+						var x: int = tx + footprint[e]
+						var z: int = tz + footprint[e + 1]
 
 						if x < 0 or z < 0 or x >= RUN_TEXELS or z >= RUN_TEXELS:
 							continue
 
 						var at: int = x + z * RUN_TEXELS
 
-						if stamp[e + 2] > data[at]:
+						if footprint[e + 2] > data[at]:
 							texels += 1 if data[at] == 0 else 0
-							data[at] = stamp[e + 2]
+							data[at] = footprint[e + 2]
 
 	var line: String = "grass runs: %d routes near, %d texels matted (%.0f m2)" % [drawn, texels, float(texels) * RUN_TEXEL_M * RUN_TEXEL_M]
 
@@ -572,17 +572,17 @@ func _run_stamp(kind: int) -> PackedInt32Array:
 
 	var half: float = float(RUN_WIDTH_M[kind]) * 0.5
 	var reach: int = int(ceil((half + RUN_FADE_M) / RUN_TEXEL_M))
-	var stamp: PackedInt32Array = PackedInt32Array()
+	var footprint: PackedInt32Array = PackedInt32Array()
 
 	for dz in range(-reach, reach + 1):
 		for dx in range(-reach, reach + 1):
 			var v: int = int(round(255.0 * (1.0 - smoothstep(half, half + RUN_FADE_M, Vector2(dx, dz).length() * RUN_TEXEL_M))))
 
 			if v > 0:
-				stamp.append_array([dx, dz, v])
+				footprint.append_array([dx, dz, v])
 
-	_run_stamps[kind] = stamp
-	return stamp
+	_run_stamps[kind] = footprint
+	return footprint
 
 
 func _rebuild_trails(player: Vector3) -> void:
