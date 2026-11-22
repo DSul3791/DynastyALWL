@@ -20,7 +20,7 @@ func check(ok: bool, what: String) -> void:
 func _init() -> void:
 	var view = load("res://src/client/inventory_view.gd").new()
 	var structures: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/structures.json"))["structures"]
-	var tiers: Dictionary = {"basic": "stone_forge", "medium": "advanced_smithy", "large": "large_forge", "master": "master_forge"}
+	var tiers: Dictionary = {"basic": "smelter", "medium": "advanced_smithy", "large": "large_forge", "master": "master_forge"}
 
 	for tier in tiers:
 		var m: Node3D = view._forge_glb("forge_" + tier)
@@ -35,13 +35,9 @@ func _init() -> void:
 		var k: float = view._forge_scale("forge_" + tier)
 		var foot: AABB = b
 
-		if tier == "basic":   # the Primitive smithy's footprint holds its forge and the stone anvil beside it (Dave 17 Nov 2026, provisional PS-2)
-			var whole: Node3D = view._make_forge(int(def["state"]))
-			foot = view._bounds_in(whole, whole)
-			check(foot.position.x >= -float(def["footprint_x"]) * 0.5 - 0.02 and foot.end.x <= float(def["footprint_x"]) * 0.5 + 0.02, "the Primitive smithy and its anvil (x %.2f to %.2f) stand inside its footprint" % [foot.position.x, foot.end.x])
-			whole.free()
-
-		check(absf(foot.size.x - float(def["footprint_x"])) <= 0.35 and absf(foot.size.z - float(def["footprint_z"])) <= 0.35, "%s footprint %.2f x %.2f matches the mesh %.2f x %.2f" % [tier, def["footprint_x"], def["footprint_z"], foot.size.x, foot.size.z])
+		# The basic forge is now drawn only for the smelters (the Primitive smithy has Dave's own model since 21 Nov 2026), whose
+		# footprints were set on their own; the others match their smithy's footprint.
+		check(tier == "basic" or absf(foot.size.x - float(def["footprint_x"])) <= 0.35 and absf(foot.size.z - float(def["footprint_z"])) <= 0.35, "%s footprint %.2f x %.2f matches the mesh %.2f x %.2f" % [tier, def["footprint_x"], def["footprint_z"], foot.size.x, foot.size.z])
 		check(absf(b.position.y) < 0.02 and b.size.y > 2.0 * k and b.size.y > b.size.x * 0.6, "%s stands upright with its base on the ground (height %.2f)" % [tier, b.size.y])
 		check(absf(b.position.x + b.size.x * 0.5) < 0.02 and absf(b.position.z + b.size.z * 0.5) < 0.02, "%s footprint is centred on the pivot" % tier)
 		var light: Node3D = m.get_node_or_null("Light")
@@ -216,9 +212,51 @@ func _init() -> void:
 		check((ghost.get_node_or_null("Flames") as Node3D) != null and not (ghost.get_node_or_null("Flames") as Node3D).visible, "%s blueprint ghost shows no fire" % kind)
 		ghost.free()
 
-	var smithy_fire: Node3D = view._model_for_state(int(structures["stone_forge"]["state"]), {})
-	check(smithy_fire.get_node_or_null("StoneAnvil") != null, "the Primitive smithy has its stone anvil beside the fire (Dave 17 Nov 2026)")
-	smithy_fire.free()
+	# The Primitive smithy (Dave 21 Nov 2026): his own model, the forge at the back, a flat stone anvil in front of its mouth and a bench beside,
+	# 3 m long front to back (3/4 of a 4 m foundation: Dave, most things "fit neatly into 3/4 or half of a foundation size"), on its floor at
+	# the pivot, one-sided, its coals by the row's "forge" (the shared coals and flare; its painted mouth glows with them). The smelters
+	# that share the basic forge keep it, with no anvil.
+	var primitive: Dictionary = structures["stone_forge"]
+
+	for look in [0, 1, 2]:
+		var pm: Node3D = view._model_for_state(int(primitive["state"]), {"forge": look})
+		var pmesh: MeshInstance3D = pm.find_child("Smithy", true, false) as MeshInstance3D
+		check(pmesh != null and pm.get_node_or_null("StoneAnvil") == null, "the Primitive smithy draws Dave's model, its own stone anvil (forge %d)" % look)
+
+		if pmesh == null:
+			pm.free()
+			continue
+
+		var pb: AABB = view._bounds_in(pmesh, pm)
+		var pglow: Array = pm.get_meta("coal_glow", [])
+		var plight: Node3D = pm.get_node_or_null("Light")
+		var psmoke: Node3D = pm.get_node_or_null("ForgeSmoke")
+
+		if look == 0:
+			check(absf(pb.size.z - 3.0) < 0.05 and pb.size.x < pb.size.z and absf(pb.size.x - float(primitive["footprint_x"])) < 0.05 and absf(pb.size.z - float(primitive["footprint_z"])) < 0.05, "Primitive smithy: 3 m long and its footprint %.2f x %.2f matches the mesh %.2f x %.2f" % [primitive["footprint_x"], primitive["footprint_z"], pb.size.x, pb.size.z])
+			check(absf(pb.position.y) < 0.02 and pb.size.y > 1.1 and pb.size.y < 1.6, "Primitive smithy: its floor on the ground, %.2f m high" % pb.size.y)
+			check(absf(pb.position.x + pb.size.x * 0.5) < 0.02 and absf(pb.position.z + pb.size.z * 0.5) < 0.02, "Primitive smithy: centred on the pivot")
+			check(plight != null and psmoke != null and plight.position.z > psmoke.position.z and psmoke.position.y > pb.size.y * 0.9 and plight.position.y < pb.size.y * 0.8, "Primitive smithy: fire low in its mouth, smoke at the chimney top")
+			check(pm.get_node_or_null("Flames/Coals") != null and pm.get_node_or_null("Flames/Tongues") != null, "Primitive smithy: the shared coals and flare in its mouth")
+			var pown: BaseMaterial3D = pmesh.mesh.surface_get_material(0) as BaseMaterial3D
+			check(pown != null and pown.cull_mode == BaseMaterial3D.CULL_BACK, "Primitive smithy: one-sided")
+			check(pmesh.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_ON, "Primitive smithy casts shadows")
+			var psolid: CollisionShape3D = null
+
+			for c in pm.get_children():
+				if c is StaticBody3D:
+					psolid = c.get_child(0)
+
+			check(psolid != null and (psolid.shape as BoxShape3D).size.z > 2.9, "Primitive smithy is solid")
+
+		var penergy: float = (pglow[0] as BaseMaterial3D).emission_energy_multiplier if not pglow.is_empty() else -1.0
+		check(not pglow.is_empty() and is_equal_approx(penergy, float(BuildingLook.SMITHY_COALS[look])), "Primitive smithy with forge %d: mouth glow %.2f" % [look, penergy])
+		pm.free()
+
+	for kind in ["smelter", "improved_smelter"]:
+		var sm: Node3D = view._model_for_state(int(structures[kind]["state"]), {})
+		check(sm.find_child("Smithy", true, false) == null, "the %s keeps the basic forge" % kind)
+		sm.free()
 
 	# Every smithy's fire follows its row's "forge" (Dave 21 Nov 2026): 0 cold, 1 red coals when idle, 2 a bright flare while making.
 	for kind in ["stone_forge", "blacksmithy", "advanced_smithy", "master_forge"]:

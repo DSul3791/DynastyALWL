@@ -4383,8 +4383,9 @@ func _make_log_bench() -> Node3D:
 
 
 # Large: a stone hearth with a hooded chimney, an anvil on a stump, a bellows of leather and wood, and a plank bench alongside.
-# The Primitive smithy (the same model without "use": "smelt") has a rough stone anvil beside its fire (Dave 17 Nov 2026: "a flat topped carved
-# rough stone beside it for hammering on materials"); the forge moves aside so the two sit centred on its footprint (structures.json).
+# Drawn for the Primitive and Improved smelters; also the Primitive smithy's stand-in when its own model (_make_primitive_smithy) is missing,
+# then with a rough stone anvil beside its fire (Dave 17 Nov 2026: "a flat topped carved rough stone beside it for hammering on materials"),
+# the forge moved aside so the two sit centred.
 func _make_forge(state: int) -> Node3D:
 	var model: Node3D = _forge_glb("forge_basic")
 
@@ -4435,6 +4436,29 @@ func _make_improved_smithy() -> Node3D:
 		return _make_smithy()
 
 	_painted_fire(model, IMPROVED_SMITHY_TONGUES)
+	model.set_meta("coal_glow", _own_glow(model))
+	return model
+
+
+# The Primitive smithy: Dave's model (21 Nov 2026), a clay and field-stone forge at the back, a flat-topped stone anvil in front of its mouth and
+# a rough bench beside it, on a patch of trodden ground, 3 m long front to back and 2.35 m wide (Dave: most things "fit neatly into 3/4 or half
+# of a foundation size"; 3/4 suits it: the anvil stone's top is then at working height, about 0.78 m). Its coals are painted cold, so it
+# keeps the shared coals for the red glow and the flare, shrunk to its mouth; the lit paint inside the mouth glows with them
+# (BuildingLook.forge_state). The basic forge with its stone anvil stands in when the file is missing. PROVISIONAL (PS-5, PS-6).
+const PRIMITIVE_SMITHY_FLAMES := 0.5   # the shared coals' and flames' size in its mouth (about half a metre across)
+
+
+func _make_primitive_smithy(state: int) -> Node3D:
+	var model: Node3D = _forge_glb("primitive_smithy", false)
+
+	if model == null:
+		return _make_forge(state)
+
+	var flames: Node3D = model.get_node_or_null("Flames") as Node3D
+
+	if flames != null:
+		flames.scale = Vector3.ONE * PRIMITIVE_SMITHY_FLAMES
+
 	model.set_meta("coal_glow", _own_glow(model))
 	return model
 
@@ -4522,7 +4546,7 @@ func _make_big_forge(state: int) -> Node3D:
 
 
 var _forge_sizes: Dictionary = {}
-const FORGE_ASIDE_M := -0.25   # the Primitive smithy's forge moved along x to make room for its stone anvil (provisional PS-2)
+const FORGE_ASIDE_M := -0.25   # the Primitive smithy stand-in's forge moved along x to make room for its stone anvil (PS-2, now the stand-in only)
 const ANVIL_AT_M := 0.45       # where the anvil stands along x, beside the fire
 
 
@@ -4969,7 +4993,8 @@ func _model_for_look(look: String, state: int, extra: Dictionary) -> Node3D:
 		"log_workbench":
 			return _make_log_bench()
 		"stone_forge":
-			return _forge_fire(_make_forge(state), state, extra)
+			# the Primitive smithy has Dave's own model (21 Nov 2026); the Primitive and Improved smelters keep the basic forge
+			return _forge_fire(_make_primitive_smithy(state) if str(_structure_by_state(state).get("item", "")) == "stone_forge" else _make_forge(state), state, extra)
 		"blacksmithy":
 			# the Improved smithy has Dave's own model (21 Nov 2026); the Advanced smithy keeps the brick forge
 			return _forge_fire(_make_improved_smithy() if str(_structure_by_state(state).get("item", "")) == "blacksmithy" else _make_smithy(), state, extra)
