@@ -31,13 +31,21 @@ Next time: `git pull` in that folder, then the last line again.
 
 `-WindowsEditor` exports the game with Dave's own Windows editor, which opens a window for a minute or two: only that way does the export shader baker run (PR #1544 turns it on; it needs a real renderer, so a headless export skips it). Leave it out and the export runs headless in a container, without baked shaders, so shaders compile while playing.
 
-Before any friend gets it (gate review of #1546), with a window, when Dave allows one:
+Before any friend gets it (gate review of #1546), with Docker Desktop running, when Dave allows his PC (windows open, nothing waits on a person):
 
 ```
-powershell -ExecutionPolicy Bypass -File tools\release_first_run.ps1 -Exe ..\dynasty_export\build-<N>\client\Dynasty.exe -Play
+powershell -ExecutionPolicy Bypass -File tools\release_first_run.ps1 -Out ..\dynasty_export\build-<N>
 ```
 
-It starts the exported game twice with a fresh APPDATA, LOCALAPPDATA and TEMP (no cache, settings or characters, as on a friend's PC): once with the default driver and once with `--rendering-driver d3d12`, 1200 frames each, and prints the driver line of each; it says FAIL when the d3d12 start fell back to Vulkan, or a start has no driver line. Then `-Play` opens one cold play (Vulkan, 1920x1080 windowed) that runs until the window is closed; its `play.log` has the longest FREEZE and ground-ready lines for the lag thread. The graphics quality is the game's first-start default unless it is changed in Settings during that play. "Cold" is cold for the game only: the graphics driver's own shader cache on that PC may still be warm from earlier plays, so the FREEZE times can come out a little low. The play joins whatever server is picked (the official one is the real test server), so use a throwaway character. Logs are in `..\dynasty_export\build-<N>\first_run\`. Record both driver lines with the run. Then install `DynastySetup-<N>.exe` once and start it from the Start menu.
+Each step has a hard time limit that closes whatever it started:
+1. Install `DynastySetup-<N>.exe` silently into `first_run\install`. The script refuses to start when Dynasty is already installed on that PC, because the test would take over that install's uninstall entry.
+2. Start the installed game twice with a fresh APPDATA, LOCALAPPDATA and TEMP (no cache, settings or characters, as on a friend's PC), 1200 frames each: once with the default driver and once with `--rendering-driver d3d12`. Each start's driver line is printed. FAIL if a start has no driver line or used another driver.
+3. Load the server tar and bring its `compose.yaml` up as a throwaway project. It runs as `dynasty-firstrun` on ports 24700/24701 with its own volume, so it never clashes with Dave's own Play server or touches the real `dynasty_dynasty-data`. The script waits until the server is running.
+4. Cold play: the installed game (Vulkan, 1920x1080 windowed, fresh profile) joins that server by itself (`--test`: no pages, no character), stands about two minutes and quits. The script prints the `JOIN: ground ready` line and the longest FREEZE. "Cold" is cold for the game only: the graphics driver's own shader cache may still be warm, so FREEZE times can come out a little low.
+5. `compose stop`: the server must save and exit 0 inside the 90 s grace. Then `compose down -v` removes the test container and its volume.
+6. Uninstall silently. The install folder and the uninstall entry must be gone.
+
+Docker steps have time limits too. A test container or install left by a cut-off run is removed at the next run. The `docker load` also tags the image `dynasty-server:latest` on that PC, as `make_release.ps1` already did. `-NoServer` skips steps 3 to 5. Logs are in `..\dynasty_export\build-<N>\first_run\`; record the driver lines, the ground ready line and the longest FREEZE with the run.
 
 On the gaming server: copy `dynasty-server-build-<N>.tar` and `compose.yaml` there, then `docker load -i dynasty-server-build-<N>.tar` and `docker compose -f compose.yaml up -d` (SERVER.md has admin keys, password and ports).
 
