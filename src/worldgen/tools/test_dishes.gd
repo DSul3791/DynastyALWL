@@ -43,9 +43,21 @@ func _init() -> void:
 	# Away from a fire nothing can be cooked.
 	var first: String = str(dishes.keys()[0])
 	_stock(first, dishes[first])
+
+	# Beside a fire that is out, the refusal says to light it (not "That needs a Campfire nearby" to a player standing at it).
+	var said: Array = []
+	items.send_notice = func(_p, t): said.append(str(t))
+	items._next_id += 1
+	var cold_id: int = items._next_id
+	items._items[cold_id] = {"number": items.table.number_of("campfire"), "count": 1, "pos": Vector3(1.0, 10.0, 0.0), "left": 1.0e9, "fire": {"state": 0, "burn_left": 0.0, "covered": false, "recheck": 5.0}}
+	items.action(1, Net.ACT_CRAFT_QUEUE, int(recipes["cook_" + first]["number"]), 0, 1, CraftHand.at(items, 1, int(recipes["cook_" + first]["number"])))
+	check(said.any(func(t): return str(t).begins_with("The fire is out")), "beside a cold fire the craft says to light it (%s)" % str(said))
+	items._items.erase(cold_id)
+	items.send_notice = func(_p, _t): pass
 	items.action(1, Net.ACT_CRAFT_QUEUE, int(recipes["cook_" + first]["number"]), 0, 1, CraftHand.at(items, 1, int(recipes["cook_" + first]["number"])))
 	_pass(20.0)
 	check(items.count_for(1, first) == 0, "no dish without a fire")
+
 
 	# A lit campfire at the origin.
 	items._next_id += 1

@@ -17404,6 +17404,20 @@ func station_level_of(it: Dictionary, def: Dictionary, station: String) -> int:
 
 
 # A smithy that would serve this station stands within its reach with no fuel in its fuel slot.
+# A fire within reach that is not burning (laid, coals gone cold, ash): a dish waiting on a lit fire says to light it.
+func _unlit_fire_near(peer: int) -> bool:
+	if not _peer_pos.has(peer):
+		return false
+
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("fire") and not it["fire"].has("camp") and not fire_is_lit(int(it["fire"]["state"])) and _peer_pos[peer].distance_to(it["pos"]) <= FIRE_USE_M + 1.0:
+			return true
+
+	return false
+
+
 func _unfuelled_smithy_near(peer: int, station: String) -> bool:
 	if not _peer_pos.has(peer):
 		return false
@@ -18089,7 +18103,7 @@ func _fish_bait_slot(inv, cfg: Dictionary) -> int:
 		var id: String = table.id_of(inv.numbers[slot])
 
 		for word in cfg.get("bait", []):
-			if id == str(word) or id.ends_with(str(word)):
+			if id == str(word) or (id.ends_with(str(word)) and not _cooking.get("warms", {}).has(id)):   # raw "blueberries", never the cooked "stewed_berries" a player made to eat
 				return slot
 
 	return -1
@@ -20930,7 +20944,14 @@ func harvest(peer: int, inv, bed_id: int, at: Vector3 = Vector3.ZERO) -> bool:
 		return false
 
 	if crop_stage(crop) < 3:
-		_say(peer, "It is not ripe yet.")
+		var grow_def: Dictionary = _crop_table().get(str(crop["crop"]), {})
+		var stalled: bool = float(crop["age"]) >= maxf(float(grow_def.get("grow_days", 100)), 1.0) * 0.75   # old enough to ripen: crop_stage holds it at 2 for want of wet days
+		var dry: bool = not PlotWater.is_wet(_moisture_cfg, float((_plot_water.get(str(crop.get("plot", key)), [float(_moisture_cfg.get("start_pct", 50.0))]) as Array)[0]))
+
+		if stalled:
+			_say(peer, "It has stopped growing for want of water: water the bed and it will ripen.")   # it waits for wet days and nothing else said so
+		else:
+			_say(peer, "It is not ripe yet. The soil is dry: water it and it grows faster." if dry else "It is not ripe yet.")   # a dry bed grows at half pace
 		return false
 
 	var def: Dictionary = _crop_table().get(str(crop["crop"]), {})
@@ -23695,6 +23716,8 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 	if str(recipe.get("station", "")) != "" and not station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
 		if _broken_station_near(peer, str(recipe["station"]), int(recipe.get("station_level", 1))):
 			_say(peer, "Needs repair")   # the exact warning for a worn-out smithy (master s2.2 item 9)
+		elif str(recipe["station"]).begins_with("campfire") and _unlit_fire_near(peer):
+			_say(peer, "The fire is out: light it first")   # standing at a cold fire, "That needs a Campfire nearby" tells the player nothing
 		else:
 			_say(peer, ("The %s has no fuel: put Coal or Charcoal in its fuel slot (its first slot)" if _unfuelled_smithy_near(peer, str(recipe["station"])) else "That needs a %s nearby") % _station_name(str(recipe["station"])))
 		return
@@ -24136,6 +24159,8 @@ func _craft_tick(spent: float) -> void:
 					var waiting: int = _variant_of(head)
 					if _unfuelled_smithy_near(peer, str(recipe["station"])):
 						_say(peer, "The %s has no fuel: put Coal or Charcoal in its fuel slot (its first slot)" % station_name)
+					elif str(recipe["station"]).begins_with("campfire") and _unlit_fire_near(peer):
+						_say(peer, "The fire is out: light it again and the craft goes on")   # beside a cold fire, "go back to the fire" tells the player nothing
 					elif waiting != 0:
 						_say(peer, "Your %s %s waits: go back to the %s" % [SmithingRules.label(waiting), str(recipe.get("name", "craft")), station_name])   # a Tempered or +1/+2 craft names the item it waits for
 					else:
