@@ -259,5 +259,22 @@ func _init() -> void:
 	print("cell reads with running water: %d rows (dry %d); %.1f ms general, %.1f ms bound" % [live_before[0].size(), before[0].size(), float(live_before[1]), float(live_after[1])])
 	check(str(live_after[0]) == str(live_before[0]), "with running water the bound reads lay exactly the same rocks too")
 	check(int(live_bound.get("general", 0)) == 0, "and take no general read (%d)" % int(live_bound.get("general", 0)))
+	# Off the bound tile (gate review Y part 3, 21 Nov 2026): a probe that reaches past the tile edge takes the general path, so it answers as the
+	# general callables do. Bound 2 m inside the spawn tile's east edge; the probes stand 2 m past it, on the next tile.
+	var edge_x: float = (floorf(spawn.x / float(generator.tile_size_m)) + 1.0) * float(generator.tile_size_m)
+	var edge_reads: Dictionary = CellReadsScript.bound(generator, null, edge_x - 2.0, spawn.y)
+	var off_ok: bool = generator.tile_of(edge_x + 2.0, spawn.y) != generator.tile_of(edge_x - 2.0, spawn.y)
+	var off_tile = generator.get_tile(generator.tile_of(edge_x + 2.0, spawn.y))
+
+	for off_dz in [-30.0, 0.0, 30.0]:
+		var probe: Vector3 = Vector3(edge_x + 2.0, 0.0, spawn.y + off_dz)
+		probe.y = float(generator.surface_height(probe.x, probe.z))
+		var general_depth: Array = CellReadsScript.water_at(generator, off_tile, null, false, probe)
+		off_ok = off_ok and is_equal_approx(float(edge_reads["ground"].call(probe.x, probe.z)), float(generator.surface_height(probe.x, probe.z)))
+		off_ok = off_ok and bool(edge_reads["water_near"].call(probe, 40.0)) == DrinkRulesScript.water_near(off_tile, probe, 40.0, false)
+		off_ok = off_ok and is_equal_approx(float(edge_reads["water_depth_at"].call(probe)), 0.0 if is_nan(general_depth[0]) else maxf(float(general_depth[0]) - float(general_depth[1]), 0.0))
+		off_ok = off_ok and str(edge_reads["ore_near"].call(probe, 300.0, {"copper": "copper_ore", "tin": "tin_ore", "iron": "iron_ore"}, 10.0)) == str(off_tile.ore_at(probe, 300.0, {"copper": "copper_ore", "tin": "tin_ore", "iron": "iron_ore"}, 10.0))
+
+	check(off_ok, "reads past the bound tile's edge answer as the general reads do (ground, water near, depth, ore)")
 	print("test_cell_reads: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

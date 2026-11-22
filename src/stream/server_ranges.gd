@@ -765,7 +765,7 @@ func wire(key: Vector2i, now_ms: int) -> PackedByteArray:
 		for route in place["routes"]:
 			routes.append([int(place["kind"]), route])
 
-	var bytes: PackedByteArray = Codec.encode_routes(routes, key, float(cfg.get("block_m", 256.0)))
+	var bytes: PackedByteArray = Codec.encode_routes(routes, key, float(cfg.get("block_m", Codec.ROUTE_BLOCK_M)))
 	_wire[key] = [now_ms, bytes, routes.size()]
 	return bytes
 

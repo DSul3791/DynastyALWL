@@ -1632,7 +1632,7 @@ func _welcome_body(info: Dictionary) -> void:
 
 	net.trails_received.connect(func(bx: int, bz: int, bytes: PackedByteArray, routes: PackedByteArray) -> void:
 		grass.set_trail_block(bx, bz, TrailCodec.decode(bytes))
-		grass.set_trail_routes(bx, bz, TrailCodec.decode_routes(routes, Vector2i(bx, bz), 256.0))   # the trails between animal places (protocol 149)
+		grass.set_trail_routes(bx, bz, TrailCodec.decode_routes(routes, Vector2i(bx, bz), TrailCodec.ROUTE_BLOCK_M))   # the trails between animal places (protocol 149)
 	)
 	net.map_block_received.connect(map_knowledge.receive)
 	net.blood_received.connect(animal_view.on_blood)
