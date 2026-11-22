@@ -18,6 +18,9 @@
 	"item_group": {
 		"checks": ["validate_items"],
 		"paths": ["data/items/**", "src/shared/item_table.gd", "src/shared/recipe_table.gd"],
+		"skip_paths": ["data/items/looks.json", "data/items/look_placeholders.json", "data/items/descriptions_voice.json", "data/items/encyclopedia.json", "data/items/gathered_text.json", "data/items/design_names.json", "data/items/*.md"],
+		"skip_note": "Testing slim-down (22 Nov 2026): client-only looks and text-only files never reach the server rules the group tests; the tests that load them directly, the look path rule (warnings, look names, pictures) and the dev sweep still cover them. A data JSON change made only of rows (items, recipes, structures ...) selects the tests naming a changed id (max_ids rows at most), as a hub's names do; anything else, --paths or --wide takes the whole group.",
+		"max_ids": 25,
 		"name_patterns": ["items", "inventory", "craft", "recipe", "blueprint", "structure", "bed", "eat", "fish", "bow", "traps", "carcass", "hunt", "vitals", "shore", "dishes", "sickness", "spoilage", "stations", "trade", "worn", "offhand", "pick_axes", "thatch", "campfire", "hammer", "auto_", "first_hour", "new_player", "coin", "tool_looks", "showroom", "forge", "ladder", "tier", "persistence", "save_compat", "placed_clearing", "placement"]
 	},
 	"path_rules": [

@@ -6,6 +6,7 @@
                                                           loads (the dev sweep over a batch of merges; also works with --paths)
    python3 tools/tests_for_diff.py <base> <head> --all    every fast test (the unknown-change answer)
    python3 tools/tests_for_diff.py <base> <head> --full   every test, slow lane included (nightly, before main; also works with --paths)
+   python3 tools/tests_for_diff.py <base> <head> --all --no-slow   every fast and timing test, no slow lane (main gate Lane A; Lane B runs the slow lane)
    python3 tools/tests_for_diff.py --print-lanes          the lanes with the serial list worked out (JSON)
    python3 tools/tests_for_diff.py --check-lanes          names in tools/test_lanes.json that are not tests (exit 1)
    python3 tools/tests_for_diff.py --explain TEST         the files and directory prefixes the scan found for one test
@@ -260,6 +261,37 @@ def changed_names(base, head, path, cwd=ROOT):
     return {n for n in names if n not in ENGINE_CALLS and len(n) >= 4}
 
 
+def changed_rows(base, head, path, cwd=ROOT):
+    """The row ids (item, recipe, structure ...) whose value head changed, added or removed in one data JSON file since it left base.
+    A row is a key of a top-level object of objects, or one level down ({"recipes": {id: {...}}}). None when the file is new, deleted,
+    unreadable, or changed outside its rows (a new top-level key or a plain value): the caller then takes the whole item group."""
+    mb = diff_base(base, head, cwd)
+    out = []
+    for rev in (mb, head):
+        r = subprocess.run(["git", "show", "%s:%s" % (rev, path)], cwd=cwd, capture_output=True, text=True)
+        if r.returncode != 0:
+            return None
+        try:
+            out.append(json.loads(r.stdout))
+        except ValueError:
+            return None
+    old, new = out
+    if not isinstance(old, dict) or not isinstance(new, dict) or set(old) != set(new):
+        return None if old != new else set()
+
+    def is_rows(d):
+        return isinstance(d, dict) and bool(d) and all(isinstance(v, dict) for v in d.values())
+    ids = set()
+    for k in new:
+        x, y = old[k], new[k]
+        if x == y or k == "next_number" or (isinstance(x, str) and isinstance(y, str) and "note" in k):
+            continue   # the next free number moves with every new row; a note is text
+        if not (is_rows(x) and is_rows(y)):
+            return None   # a rule value, not rows
+        ids.update(i for i in set(x) | set(y) if x.get(i) != y.get(i))
+    return {i for i in ids if len(i) >= 3}
+
+
 # Where head left base (git merge-base), so only head's own changes are diffed; base itself when they share no history (more, never fewer).
 def diff_base(base, head, cwd=ROOT):
     out = subprocess.run(["git", "merge-base", base, head], cwd=cwd, capture_output=True, text=True)
@@ -284,7 +316,7 @@ def changed_paths(base, head, cwd=ROOT):
     return [p for p in out.stdout.splitlines() if p]
 
 
-def select(paths, lanes, force_all=False, full=False, wide=False, names=None):
+def select(paths, lanes, force_all=False, full=False, wide=False, names=None, item_ids=None):
     """names: {hub path: names the diff changed in it} (changed_names); None or a missing path = that hub's core list only."""
     tests = all_tests()
     fast_all, timing_all, slow_all = lane_sets(lanes, tests)
@@ -386,10 +418,28 @@ def select(paths, lanes, force_all=False, full=False, wide=False, names=None):
                 why.setdefault("hub name " + n, "named by more than %d tests: %d of them, the rest in the dev sweep" % (cap, cap))
             add(users, "names %s, changed in %s" % (n, hit))
 
-    if any(matches(p, lanes["item_group"]["paths"]) for p in live):
-        pats = lanes["item_group"]["name_patterns"]
-        add([t for t in tests if any(x in t for x in pats)], "item data changed: whole item group")
-        for c in lanes["item_group"].get("checks", []):
+    group = lanes["item_group"]
+    item_hits = [p for p in live if matches(p, group["paths"]) and not matches(p, group.get("skip_paths", []))]
+    if item_hits:
+        # Changed item, recipe or structure rows (item_ids): only the tests that name a changed id, like a hub's names. A change that
+        # is not a set of rows (a new top-level section, a file git cannot read, too many rows, --paths, --wide) takes the whole group.
+        rows = [(item_ids or {}).get(p) for p in item_hits]
+        ids = set().union(*[r for r in rows if r]) if rows and all(r is not None for r in rows) else None
+        if not wide and ids is not None and 0 < len(ids) <= group.get("max_ids", 25):
+            cap = lanes.get("name_max_tests", 40)
+            for n in sorted(ids):
+                word = re.compile(r'\b' + re.escape(n) + r'\b')
+                users = [t for t, text in texts.items() if word.search(text)]
+                if len(users) > cap:
+                    users = sorted(users, key=lambda t: zlib.crc32((n + t).encode()))[:cap]
+                    why.setdefault("item " + n, "named by more than %d tests: %d of them, the rest in the dev sweep" % (cap, cap))
+                add(users, "names %s, changed in %s" % (n, item_hits[0]))
+            why.setdefault("item group", "%d changed rows: the tests naming them, the rest of the group in the dev sweep" % len(ids))
+        else:
+            # whole name parts only: "eat" picks test_eat_once, not test_animals_weather or test_death
+            pats = group["name_patterns"]
+            add([t for t in tests if any(("_" + x) in ("_" + t[5:]) for x in pats)], "item data changed: whole item group")
+        for c in group.get("checks", []):
             if c not in result["checks"]:
                 result["checks"].append(c)
 
@@ -489,18 +539,25 @@ def main(argv):
     full = "--full" in argv
     force_all = "--all" in argv or full
     wide = "--wide" in argv
-    argv = [a for a in argv if a not in ("--all", "--full", "--wide")]
-    names = None
+    no_slow = "--no-slow" in argv   # main gate Lane A: the slow lane runs once, on Lane B (TEST_GATES.md "Main gate jobs")
+    argv = [a for a in argv if a not in ("--all", "--full", "--wide", "--no-slow")]
+    names = item_ids = None
     if argv and argv[0] == "--paths":
         paths = argv[1:]
     elif len(argv) >= 2:
         paths = changed_paths(argv[0], argv[1])
         hub_files = {p for rule in lanes.get("hubs", []) for p in rule["paths"]}
         names = {p: changed_names(argv[0], argv[1], p) for p in paths if p in hub_files}
+        group = lanes["item_group"]
+        item_ids = {p: changed_rows(argv[0], argv[1], p) for p in paths if p.endswith(".json") and matches(p, group["paths"])}
     else:
         print(__doc__)
         return 2
-    print(json.dumps(select(paths, lanes, force_all, full, wide, names), separators=(",", ":")))
+    plan = select(paths, lanes, force_all, full, wide, names, item_ids)
+    if no_slow and plan.get("slow"):
+        plan["why"]["slow lane"] = "left out with --no-slow (run on Lane B): " + ", ".join(plan["slow"])
+        plan["slow"] = []
+    print(json.dumps(plan, separators=(",", ":")))
     return 0
 
 
