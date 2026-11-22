@@ -1780,12 +1780,34 @@ Not yet played. Left for later: an animal at the edge of the nearest 30 sent to 
 
 Not yet played.
 
+## 132. Game trails, animal routines and a simple snare for early food
+
+**Status: Implemented - awaiting player verification.** Dave, 22 Nov 2026: "Im thinking we need to add trapping for players to gather food early before they are skilled at hunting. I also love when the grass mats down when I walk through it. so Im wondering if we could add the idea of Game trails to the our game where animals might travel occassionally and we could set traps or snares." Then: plan animal routines (sleep, travel, eat and drink near water at certain times) from how others do it, and "the first snare should be a simple snare that uses 2 sticks and 3 twine", with his model Basic_Rabbit_Snare_80k.glb, "sized appropriately for catching rabbits".
+
+**Required outcome:** animals keep daily routines and travel set paths between where they rest and where they feed; those paths show as matted grass; a snare set on one catches rabbits, including while the player is away; Dave's snare model, sized for a rabbit, costs 2 sticks and 3 twine.
+
+**As built:**
+- PR #1484 (merged to dev at 6ddb9ee5, protocol 149). Rabbit warrens and deer beds and feeding grounds, placed from the world seed; trails between them sent to clients and drawn as matted grass (runs 0.8 m, deer trails 1.2 m); rabbits out at dusk and home after dawn, deer feeding at night; snares on a run work best and catch while the owner is away; goal "Snare a rabbit".
+- PR #1497 (merged at 924afa57). The set snare is Dave's model, cut from 81,898 to 4,994 triangles with its texture rebaked (tools/items/prepare_item_model.py), 0.5 m high, the noose 11 cm across and about 9 cm above the ground, posts 3 cm into the ground. The recipe was already 2 sticks and 3 twine by hand. The carried item keeps its parcel look.
+- PR #1504 (merged at 82d484db). Animals keep to each day's real sunrise and sunset; moose and elk get beds and feeding grounds (moose by water when it can).
+- Design: docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md (TR-1 to TR-8).
+
+**Evidence:**
+- Independent review PASS on each head (#1484 c1179f7e and its dev merges; #1497 e9d08a15 and 9ddac19e; #1504 a2e5306f).
+- Lane B: #1484 206 pass / 0 fail and a join smoke with 0 ground waits; #1497 29 / 0, test_look_table under its 5,000 cap; #1504 79 / 0. Warnings 381 (0 new) on each.
+- Lane A: a trail shows as a curving line of flattened grass about 0.8 m wide (2 of 4 spots; the other 2 were under a bush and on bare sand). The snare is Dave's model, sharp, with a shadow, the right size for a rabbit; one front and side picture after the 3 cm sink is still to come.
+
+**Acceptance:** walk out from the spawn at dusk. Matted lines run between rabbit warrens; set a Simple snare across one and come back next morning to a rabbit some of the time. Deer, moose and elk walk wider trails between bed and feeding ground, out around sunset and back after sunrise.
+
+Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
 
 ## Assumed on Dave's behalf (provisional values, for review)
 
+- D-TRAP-1 to D-TRAP-3 (entry 132, coordinator): goal "Snare a rabbit" and away catches with limits; rabbits 0.7 and deer 0.5 active at night; players' worn paths (stage 2c, not built yet) shown to everyone at half the animal rate on a cheap grid, fading over about a game week; the sun clock for animals only. Provisional values TR-1 to TR-8 in docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md. How many moose and elk a player sees is to tune after Dave plays.
 - CT-1 (entry 111): the copper chest is the Small chest, 24 slots. Chest slots go in six-slot rows, so 27 would leave half a row. That made it the same size as the Crude - Chest, retired since (entry 112). The Small chest is built with a hammer from copper nails and needs no twine. Its lid lifts off, because there are no copper hinges.
 - CT-2 (entry 111): Dave's "superior" chest is the existing Ornate - Chest, since Ornate is the top furniture grade. It keeps its Iron hinges, because there are no steel hinges.
 - CT-3 (entry 111): the Fine - Chest is in the iron tier, so it takes Iron nails or better and Iron hinges. Nothing else about it changed.

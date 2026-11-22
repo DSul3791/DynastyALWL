@@ -7,7 +7,7 @@ certain times or based on the sun and traveling and certain times and eating and
 design an idea around it then build your system around the idea." He loves the way grass mats down where he walks.
 
 Coordinator rulings D-TRAP-1 (goal, away catches with limits, protocol 149), D-TRAP-2 (night activity) and D-TRAP-3 (players'
-worn paths shown to all at half the animal rate on a cheap grid, its cost measured; the sun clock for animals only) are recorded in
+worn paths shown to all at half the animal rate on a cheap grid, fading over about a game week, its cost measured; the sun clock for animals only) are recorded in
 the coordinator log. Status: PROVISIONAL design by the trails thread under Dave's 21 Nov rule (questions go to the coordinator, answered from research,
 recorded). Values marked TR-n are provisional and live in data files.
 
@@ -115,7 +115,7 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
 - TR-7 sun clock: rabbits out 1 h before sunset, home 1 h after sunrise; deer, moose and elk out half an hour before sunset, home
   half an hour after sunrise (jitter 0.75 h each way). At the starter row sunrise runs 04:51 (midsummer) to 07:09 (midwinter).
 - TR-8 moose (salt 300): 12 tries, feeding ground within 40 m of deep water preferred, bed and feed 80-220 m apart, trail kind 1; elk: deer's
-  rules (salt 600, so its spots and rolls share no hash with moose or deer), 100-230 m apart; both take a spot in a less liked biome at its weight (weight_roll), as the random spawn did.
+  rules (salt 600, so its spots and rolls share no hash with moose or deer), 100-230 m apart; both take a spot in a less liked biome at its weight (weight_roll), as the random spawn did. How many a player sees is to tune after Dave plays.
 - TR-6 snares: full factor within 0.5 m of a run, falling to the old factor at 2 m; away catches 0.045 a game hour at full rabbit
   activity: a snare squarely on a run takes about two rabbits in five nights, about one a game day in two (Wildwood's 3 in 15 the
   first night); six snares on runs feed one player well. Off a run, none while away.
