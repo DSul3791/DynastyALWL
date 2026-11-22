@@ -1880,8 +1880,13 @@ func _autosave() -> void:
 	_start_writer()
 
 
+# Save files that exist but could not be read (damaged with no usable .prev, or written by a newer server). While any are listed nothing is
+# saved, so a world that came up empty never overwrites the real one; terrain_server.gd refuses to start.
+var load_failures: Array = []
+
+
 func save() -> void:
-	if _dir == "" or not _dirty:
+	if _dir == "" or not _dirty or not load_failures.is_empty():
 		return
 
 	var t_wait: int = Time.get_ticks_usec()
@@ -7818,10 +7823,16 @@ func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant
 	if typeof(parsed) == TYPE_DICTIONARY and int(parsed.get("version", 0)) <= version and int(parsed.get("version", 0)) >= (version if oldest < 0 else oldest):
 		return parsed
 
+	if typeof(parsed) == TYPE_DICTIONARY and int(parsed.get("version", 0)) > version:
+		push_error("server items: %s was saved by a newer server (version %d, this one reads %d): not loaded, and nothing is saved over it" % [path, int(parsed.get("version", 0)), version])
+		load_failures.append(name)   # an older build on a newer store: left as it is (terrain_server refuses to start)
+		return null
+
 	push_error("server items: %s is not usable; kept as %s.bad" % [path, path])
-	DirAccess.rename_absolute(path, path + ".bad")
+	DirAccess.copy_absolute(path, path + ".bad")
 
 	if typeof(parsed) == TYPE_DICTIONARY:
+		DirAccess.remove_absolute(path)   # an older format this build no longer reads: dropped, as before
 		return null
 
 	if FileAccess.file_exists(path + ".prev"):
@@ -7832,6 +7843,8 @@ func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant
 			DirAccess.copy_absolute(path + ".prev", path)
 			return previous
 
+	push_error("server items: %s is damaged and has no usable earlier copy: not loaded, and nothing is saved over it" % path)
+	load_failures.append(name)   # starting on an empty world here would write it over the players' saves (terrain_server refuses to start)
 	return null
 
 

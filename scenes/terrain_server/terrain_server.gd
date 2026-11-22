@@ -591,6 +591,14 @@ func _ready() -> void:
 	items.trunks_near = _arrow_trunks
 	items.dig_support = func(base, radius, depth): return TreeSupport.solid_share(store.ops.edits_near(base, radius + depth), base, radius, depth)
 	items.setup(ItemTableScript.load_default(), store_dir)
+
+	if not items.load_failures.is_empty():
+		var why: String = "SERVER NOT STARTED: these save files in %s exist but could not be read: %s. Nothing was saved over them. Restore them (each has a .prev or .bad beside it) or run a server build that reads them." % [store_dir, ", ".join(PackedStringArray(items.load_failures))]
+		push_error(why)
+		print(why)
+		_events.event(why)
+		get_tree().quit(3)   # never come up on an empty world over the players' saves
+
 	admin = AdminScript.new()
 	admin.load_keys([store_dir + "/admin.json"] if _dedicated else ["res://data/admin.json", store_dir + "/admin.json"])
 	items.reset_terrain_edits = _reset_terrain_edits
