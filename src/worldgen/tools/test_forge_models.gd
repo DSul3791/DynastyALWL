@@ -112,7 +112,8 @@ func _init() -> void:
 
 	# The Primitive kiln (Dave 21 Nov 2026, "sized so its longest side is a minimum 2.74 meters"): his tunnel kiln, 2.74 m long along z with its
 	# mouth at the front (+Z) and its chimney at the back, its footprint the mesh's, one-sided, casting shadows, solid; its painted embers dark
-	# and its flames and smoke out when cold, glowing with them while lit; the Improved and Advanced kilns keep the brick kiln.
+	# and its smoke out when cold, glowing really bright with chimney smoke while lit, never flames (Dave 22 Nov 2026: "just glowing coals");
+	# the Improved and Advanced kilns keep the brick kiln.
 	var kiln: Dictionary = structures["kiln"]
 
 	for lit in [false, true]:
@@ -135,7 +136,6 @@ func _init() -> void:
 			check(absf(b.size.x - float(kiln["footprint_x"])) < 0.02 and absf(b.size.z - float(kiln["footprint_z"])) < 0.02, "Primitive kiln: its footprint %.2f x %.2f matches the mesh" % [kiln["footprint_x"], kiln["footprint_z"]])
 			check(absf(b.position.y) < 0.02 and absf(b.position.x + b.size.x * 0.5) < 0.02 and absf(b.position.z + b.size.z * 0.5) < 0.02, "Primitive kiln: on the ground, centred on the pivot")
 			check(light != null and plume != null and light.position.z > 0.5 and plume.position.z < -0.5 and plume.position.y > b.size.y * 0.9, "Primitive kiln: fire in the mouth at the front, smoke at the chimney top at the back")
-			check(flames != null and flames.get_node_or_null("Coals") == null, "Primitive kiln: its own painted embers, not the shared coals")
 			var own: BaseMaterial3D = mesh.mesh.surface_get_material(0) as BaseMaterial3D
 			check(own != null and own.cull_mode == BaseMaterial3D.CULL_BACK and own.emission_enabled, "Primitive kiln: one-sided, with an emission texture")
 			check(mesh.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_ON, "Primitive kiln casts shadows")
@@ -152,7 +152,7 @@ func _init() -> void:
 		var kiln_light: Array = (view.get_script() as GDScript).get_script_constant_map()["KILN_LIGHT"]
 		var lamp: OmniLight3D = light as OmniLight3D
 		check(lamp != null and is_equal_approx(lamp.light_energy, float(kiln_light[0])) and is_equal_approx(lamp.omni_range, float(kiln_light[1])) and is_equal_approx(float(lamp.get_meta("base_energy", -1.0)), float(kiln_light[0])) and is_equal_approx(float(lamp.get_meta("base_range", -1.0)), float(kiln_light[1])), "Primitive kiln: its light %s over %s m, kept by the flicker and the weather (base_energy, base_range)" % [kiln_light[0], kiln_light[1]])
-		check(flames != null and flames.visible == lit and plume != null and plume.visible == lit, "Primitive kiln lit %s: flames and smoke %s" % [lit, "shown" if lit else "out"])
+		check(flames == null and plume != null and plume.visible == lit, "Primitive kiln lit %s: no flames, only its painted embers; smoke %s" % [lit, "shown" if lit else "out"])
 		m.free()
 
 	var kiln_ghost: Node3D = view._model_for_state(int(kiln["state"]), {"ghost": true})

@@ -130,7 +130,7 @@ func _check_page() -> void:
 	await process_frame
 	_ok(page._rows.get_child_count() == 2, "the page lists two characters")
 	var about: Label = page._rows.get_child(1).find_child("AboutLabel", true, false)
-	_ok(about != null and about.text == "Body 1, Even frame", "the page shows the body model and frame under the name")
+	_ok(about != null and about.text == "Body A, Even frame", "the page shows the body model and frame under the name")
 	_ok(page.selected_id == b and not page._play.disabled, "the active character starts selected and Play is ready")
 	(page._rows.get_child(0) as Button).button_pressed = true
 	(page._rows.get_child(0) as Button).pressed.emit()
