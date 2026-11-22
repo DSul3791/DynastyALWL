@@ -83,7 +83,7 @@ Grouped so that each piece can be one thread. Order is a suggestion (section 4).
 - The "Assumed on Dave's behalf" lists in BugsList_Current.md (several entries, and the list at the end) and the picks in the coordinator's AWAY ORDER log. Under Dave's 21 Nov rule the coordinator confirms or changes each one and records it. One docs-only thread.
 
 ### Piece 9. After-main list (coordinator, 21 Nov)
-- River barrel: PR #1523 (PV-13). Water at the cooking stations: this PR (PV-14). Both coordinator picks for Dave's review, not yet played.
+- River barrel: PR #1523 (PV-13). Water at the cooking stations: PR #1525 (PV-14). Both coordinator picks for Dave's review, not yet played.
 - Delete every kit record: **held, not an overnight job** (coordinator, 22 Nov). There are 191 `*_kit` records, 186 of them retired, across items.json, looks.json, encyclopedia.json, structures.json, recipes.json, blueprints.json and weights.json, plus code in basic_look.gd, held_item.gd and server_items.gd and about 12 tests. Saves may hold kit items, and item numbers are kept, never reused. It needs a plan (what an old kit item becomes, whether the numbers stay reserved) and Dave's say. Do not delete or renumber them before then. The irrigation thread has the sizes.
 - Data CSVs import as keep: PR #1515.
 - `.gdignore` for six `art/` picture folders: PR #1517. "Rig tag display names" and "the freeze diagnostics PR": unclear, nobody can place them; ask Dave.
