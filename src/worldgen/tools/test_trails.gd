@@ -102,8 +102,6 @@ func _init() -> void:
 		DirAccess.remove_absolute(dir + "_players/" + file)
 
 	pp.setup(dir + "_players")
-	pp.pblocks.clear()
-	pp.blocks.clear()
 	var walks: int = 0
 
 	while pp.player_strength_at(102.0, 102.0) < float(pp.cfg["draw_threshold"]) and walks < 100:
@@ -119,7 +117,8 @@ func _init() -> void:
 	check(walks >= 3 and walks <= 8, "a path walked there and back draws after a few walks (%d)" % walks)
 	check(absf(pp.player_strength_at(102.0, 102.0) - per_pass * float(walks + 1)) < 0.005 and is_zero_approx(pp.strength_at(102.0, 102.0)), "half a deer's wear a pass, and not an animal trail (snares and Tracking read only those)")
 	pp.note_player(4, Vector3(300.0, 9.0, 300.0))
-	check(is_zero_approx(pp.player_strength_at(300.0, 300.0)), "a player on a floor 4 m up wears no path")
+	pp.note_player(4, Vector3(340.0, -20.0, 300.0))
+	check(is_zero_approx(pp.player_strength_at(300.0, 300.0)) and is_zero_approx(pp.player_strength_at(340.0, 300.0)), "a player on a floor 4 m up, or in a tunnel 25 m down, wears no path")
 	var sent_cells: Array = pp.updates_for(9, Vector3(110.0, 5.0, 110.0), 1000)
 	var drawn: float = 0.0
 

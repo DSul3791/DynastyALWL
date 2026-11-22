@@ -71,8 +71,8 @@ func note_player(peer: int, pos: Vector3) -> void:
 	if ground_height.is_valid():
 		var ground: float = float(ground_height.call(pos.x, pos.z))
 
-		if is_nan(ground) or pos.y - ground > float(cfg.get("player_above_m", 1.5)):
-			return   # on a floor, a roof or a ladder: no grass underfoot
+		if is_nan(ground) or absf(pos.y - ground) > float(cfg.get("player_above_m", 1.5)):
+			return   # on a floor, a roof or a ladder, in a tunnel or cave below, or swimming: no grass underfoot
 
 	_wear(pblocks, cell, float(cfg.get("pass_add", 0.08)) * weight)
 
@@ -203,7 +203,7 @@ func updates_for(peer: int, at: Vector3, now_msec: int) -> Array:
 		for dx in range(-1, 2):
 			var key: Vector2i = centre + Vector2i(dx, dz)
 			var rec: Array = known.get(key, [])
-			var ver: int = hash([int(blocks[key]["ver"]) if blocks.has(key) else 0, int(pblocks[key]["ver"]) if pblocks.has(key) else 0]) if pblocks.has(key) else (int(blocks[key]["ver"]) if blocks.has(key) else 0)
+			var ver: int = (int(blocks[key]["ver"]) if blocks.has(key) else 0) + (int(pblocks[key]["ver"]) * 1000003 if pblocks.has(key) else 0)   # either grid's change shows
 			var routes: PackedByteArray = ranges.wire(key, now_msec) if ranges != null else PackedByteArray()
 			var route_sig: int = hash(routes)
 

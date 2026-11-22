@@ -338,6 +338,24 @@ func choke_checks() -> void:
 	check(is_equal_approx(traps._choke_mult(items._items[by_rock]["struct"], c), 1.0), "off any run a choke lifts nothing")
 	check(is_equal_approx(traps._choke_mult({"choke": true, "run": 1.0}, traps.of("bird_trap_set")), 1.0), "a Bird trap takes no choke lift (birds keep to no runs)")
 
+	# The lift shows in the catches: the snare by the tree, with nobody near, choke noted or not.
+	var clock: Array = [20.0 * 3600.0]
+	items.game_seconds = func(): return clock[0]
+	items.species_active = func(_sp): return 1.0
+	items.report_position(1, Vector3(5000.0, 10.0, 0.0))
+	var got: Array = [0, 0]
+
+	for side in 2:
+		st["choke"] = side == 1
+
+		for n in 1500:
+			reset(items, by_tree)
+			st["away_at"] = clock[0] - 6.0 * 3600.0
+			got[side] += 1 if traps.check_away(by_tree) else 0
+
+	var lift: float = float(got[1]) / maxf(float(got[0]), 1.0)
+	check(got[0] > 200 and lift > 1.15 and lift < 1.75, "and a choke point catches about 1.4 times as often over a night (%d against %d)" % [got[1], got[0]])
+
 
 # Snares on runs and while nobody is near (D-TRAP-1, TR-6).
 func away_checks() -> void:
