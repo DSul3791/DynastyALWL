@@ -130,6 +130,7 @@ func _init() -> void:
 	check(cliff.animals.is_empty(), "no animal is placed on a steep slope (%d)" % cliff.animals.size())
 	var flat = make([Vector3(0.0, 10.0, 0.0)], [0], calm, false)
 	flat.cfg["species"]["rabbit"]["target_per_player"] = 4
+	flat.cfg["species"]["rabbit"]["herd"] = []   # singles: a group would top the share (docs/design/ANIMAL_RESTING.md)
 	flat.cfg["species"]["deer"]["target_per_player"] = 0
 
 	for n in 400:

@@ -26,6 +26,7 @@ const SNEAK := 13               # a thief creeping up on food, 14 running off wi
 const HIDDEN := 5               # in its burrow: never sent, never hunted
 const HIT_ZONES := ["body", "head", "chest", "hip", "leg"]   # animal_hit zone codes, the order of MikeW's animal_view HIT_ZONES (docs/design/hunt_feedback_server.md 3)
 const HUNCH := 20               # wire only: a grazer standing out the rain, still, head low (animals_in_weather_design.md 6; GRAZE on the server)
+const LIE := 19                 # wire only: a grazer bedded down outside its active hours, lying (the companions' LIE; protocol 148, docs/design/ANIMAL_RESTING.md)
 const DRINK := 21               # wire only: a deer or stock animal at its drinking place, head down at the water (animals_at_water_server.md; GRAZE on the server)
 const STAGGER := 4              # a quarter of the animals are looked at each tick
 
@@ -1027,6 +1028,16 @@ func _curious(a: Dictionary, def: Dictionary, seen_d: float) -> bool:
 	return def.has("tame") and float(a.get("tame", 0.0)) >= float(def["tame"].get("curious_min", 0.7)) and seen_d <= float(def["tame"].get("curious_m", 45.0))
 
 
+# Whether a hunter that may attack (its temperament; never a passive or friendly one) sees a player inside hunter.chase_m running away
+# from it at senses.run_ms or faster (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md: a big cat or a bear chases what runs).
+func _chases_runner(a: Dictionary, def: Dictionary, seen_p: Vector3, seen_d: float) -> bool:
+	if seen_d > float(def["hunter"].get("chase_m", 0.0)) or not may_attack(a):
+		return false
+
+	var away: Vector2 = Vector2(seen_p.x - a["pos"].x, seen_p.z - a["pos"].z).normalized()
+	return player_velocity_at(seen_p).dot(away) >= float(cfg.get("senses", {}).get("run_ms", 5.0))
+
+
 # How far short of a player a curious animal stops.
 func _stop_m(a: Dictionary, def: Dictionary) -> float:
 	if temper_of(a) == "friendly":
@@ -1139,6 +1150,22 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		if big_game.warn(a, seen_p, float(def["defend"].get("threat_warn_s", 0.8))):
 			return
 
+	# Hunters (docs/design/ANIMAL_BEHAVIOUR.md; Dave 21 Nov 2026: "Agressive animals should be aggressive"): a predator that may attack
+	# gives chase to a player running away from it inside hunter.chase_m (running "may trigger an instinct to chase", Panthera): a charge
+	# at once, up to hunter.run_m. One born aggressive walks in on a player it has noticed until the threat range above warns and charges;
+	# it breaks off while it cools down after a charge. Never into a fire's light, never out of its hours.
+	var stalk_mps: float = -1.0
+
+	if def.has("hunter") and def.has("defend") and seen_p != Vector3.INF and a["state"] != FLEE and not resting(def) and _fire_guard(seen_p) == Vector3.INF:
+		if _chases_runner(a, def, seen_p, seen_d) and big_game.chase(a, seen_p, float(def["hunter"].get("run_m", 30.0))):
+			return
+
+		if bool(_temper_row(a).get("stalks", false)) and float(a.get("cool", 0.0)) <= 0.0 and seen_d <= float(def.get("alert_m", 40.0)) and seen_d > _threat_m(a, def):
+			var gap: Vector3 = Vector3(seen_p.x - a["pos"].x, 0.0, seen_p.z - a["pos"].z)
+			a["target"] = a["pos"] + gap.normalized() * maxf(gap.length() - _threat_m(a, def) * 0.5, 0.0)
+			a["state"] = HOP
+			stalk_mps = float(def["hunter"].get("stalk_mps", 1.0))
+
 	# A protective animal (defending young) does not bolt: it warns a player who comes too close, and only then charges.
 	# With its young modelled (traits on) it runs sooner instead, and fights only for them (above).
 	var stands: bool = def.has("defend") and bool(a.get("protective", false)) and a["state"] != FLEE and not (traits and def.has("young"))
@@ -1238,6 +1265,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		return
 
 	var speed: float = float(def.get("walk_mps", 1.5))
+
+	if stalk_mps > 0.0:
+		speed = stalk_mps   # a hunter walking in on a player, low and steady
 
 	if a["state"] == FLEE:
 		# Sprint for burst_s seconds, then trot: an animal cannot outrun a chase for ever.
@@ -1545,8 +1575,12 @@ func _top_up(players: Array, only: int) -> void:
 			for k in members:
 				var hx: float = x + rng.randf_range(-6.0, 6.0)   # luck-exempt: herd spread
 				var hz: float = z + rng.randf_range(-6.0, 6.0)   # luck-exempt: herd spread
+				var by_player: bool = false
 
-				if no_spawn_at(hx, hz):
+				for q in players:
+					by_player = by_player or Vector2(q.x - hx, q.z - hz).length() < never   # a member spread toward a player is never made inside never_within_m either
+
+				if by_player or no_spawn_at(hx, hz):
 					continue
 
 				var id: int = spawn(sp, hx, hz)
@@ -1740,10 +1774,24 @@ func activity_chance(def: Dictionary) -> float:
 # an animal beds down where it is: it does not wander, and a player gets closer (rest.spook_share of spook_m) before it wakes and runs.
 # Before a storm (animals_in_weather_design.md 8) feeding animals skip their daytime rest.
 func resting(def: Dictionary) -> bool:
-	if _storm_ahead and _wx_on() and str(def.get("weather", "")) in ["bird", "small", "deer"] and hour_now.is_valid() and period_of(float(hour_now.call())) == "day":
+	if _feeding_before_storm(def):
 		return false
 
 	return def.has("active") and hour_now.is_valid() and activity_chance(def) <= float(cfg.get("rest", {}).get("below", 0.1))
+
+
+func _feeding_before_storm(def: Dictionary) -> bool:
+	return _storm_ahead and _wx_on() and str(def.get("weather", "")) in ["bird", "small", "deer"] and hour_now.is_valid() and period_of(float(hour_now.call())) == "day"
+
+
+# Lying down (docs/design/ANIMAL_RESTING.md, protocol 148): a resting animal lies; otherwise a standing grazer lies when its own fixed
+# draw (from its id) is at or over its active chance now, so a deer herd by day (0.4) is about 60% bedded and 40% feeding, and at dusk
+# (1.0) all are up. No new number: the "active" rows say how much of the time a species is up.
+func lies_down(a: Dictionary, def: Dictionary) -> bool:
+	if not def.has("active") or not hour_now.is_valid() or _feeding_before_storm(def):
+		return false
+
+	return resting(def) or fposmod(float(a["id"]) * 0.6180339, 1.0) >= activity_chance(def)
 
 
 # The weight (0..1+) of the biome at a spot for this species: 1 without a "biomes" row or a lookup, 0 for a biome the row does not list.
@@ -1938,6 +1986,14 @@ func _wire_state(a: Dictionary) -> int:
 
 	if a["state"] == GRAZE and (bool(a.get("hunch", false)) or bool(a.get("sheltered", false))):
 		return HUNCH
+
+	# Bedded down (lies_down: out of its hours, or its share of the herd at rest), an animal is drawn lying, not grazing (Dave 21 Nov 2026: "relaxing" first among the
+	# situations; protocol 148). Birds and flocks stay as they are: they perch or float.
+	if a["state"] == GRAZE and not a.has("fly") and not bool(a.get("perched", false)) and not a.has("companion_id"):
+		var def: Dictionary = species_def(str(a["sp"]))
+
+		if not def.has("flock") and not def.has("flight") and lies_down(a, def):
+			return LIE
 
 	return int(a["state"])
 
@@ -2571,7 +2627,7 @@ func _alarm_herd(a: Dictionary, def: Dictionary) -> void:
 		var span: Array = def.get("alarm_s", [0.2, 0.9])
 
 		for mate_id in _herds.get(a["herd"], []):
-			if mate_id != a["id"] and animals.has(mate_id) and animals[mate_id]["state"] != FLEE and animals[mate_id]["alarm"] < 0.0:
+			if mate_id != a["id"] and animals.has(mate_id) and animals[mate_id]["state"] != FLEE and animals[mate_id]["state"] != HIDDEN and animals[mate_id]["alarm"] < 0.0:
 				animals[mate_id]["alarm"] = rng.randf_range(float(span[0]), float(span[1]))   # luck-exempt: how fast a herd mate reacts
 
 	if def.has("alarm_group"):

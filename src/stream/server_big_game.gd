@@ -95,8 +95,27 @@ func provoke(a: Dictionary, at: Vector3, warn_s: float) -> bool:
 	return true
 
 
+# A hunter giving chase to a player running away from it (ServerAnimals._chases_runner; docs/design/ANIMAL_BEHAVIOUR.md HB-2): no warning
+# and no bluff, a charge straight away that runs up to `run_m` (the hunter's own chase length, longer than a defending charge) before it
+# gives up. The same cool-down and the same dodge as any charge. Returns true when it charges.
+func chase(a: Dictionary, at: Vector3, run_m: float) -> bool:
+	if host.species_def(a["sp"]).get("defend", {}).is_empty() or float(a.get("cool", 0.0)) > 0.0 or handles(a) or not host.may_attack(a):
+		return false
+
+	a.erase("foe_dog")
+	a["state"] = CHARGE
+	a["heading"] = atan2(at.z - a["pos"].z, at.x - a["pos"].x)
+	a["dir"] = a["heading"]
+	a["ran"] = 0.0
+	a["hit"] = false
+	a["bluff"] = false
+	a["run_m"] = run_m
+	return true
+
+
 func _start_warn(a: Dictionary, at: Vector3, warn_s: float, forced: bool) -> void:
 	var def: Dictionary = host.species_def(a["sp"]).get("defend", {})
+	a.erase("run_m")   # a warned charge runs the species' own charge_m
 	a["state"] = WARN
 	a["timer"] = warn_s
 	a["huff_s"] = float(a["timer"]) * (1.0 - float(def.get("huff_share", 1.0)))   # the jaw-pop starts when this much warning is left
@@ -197,9 +216,10 @@ func step(a: Dictionary, dt: float) -> void:
 		if bool(a.get("bluff", false)):
 			var short: bool = not near.is_empty() and Vector2(near["pos"].x - a["pos"].x, near["pos"].z - a["pos"].z).length() <= float(def.get("bluff_stop_m", 4.0))
 
-			if short or float(a["ran"]) >= float(def.get("charge_m", 24.0)) or not r["moved"]:
+			if short or float(a["ran"]) >= float(a.get("run_m", def.get("charge_m", 24.0))) or not r["moved"]:
 				a["state"] = RECOVER
 				a["timer"] = float(def.get("recover_s", 5.0))
+				a.erase("run_m")
 
 			return
 
@@ -223,9 +243,10 @@ func step(a: Dictionary, dt: float) -> void:
 						struck.call(a, int(info["peer"]), landed)
 					break
 
-		if bool(a["hit"]) or float(a["ran"]) >= float(def.get("charge_m", 24.0)) or not r["moved"]:
+		if bool(a["hit"]) or float(a["ran"]) >= float(a.get("run_m", def.get("charge_m", 24.0))) or not r["moved"]:
 			a["state"] = RECOVER
 			a["timer"] = float(def.get("recover_s", 5.0))
+			a.erase("run_m")
 
 		return
 
@@ -247,6 +268,7 @@ static func _off_path(p: Vector3, a0: Vector3, a1: Vector3) -> float:
 
 func _calm(a: Dictionary, def: Dictionary) -> void:
 	a.erase("foe_dog")
+	a.erase("run_m")   # a chase's run length, for that chase only
 	a["state"] = host.GRAZE
 	a["timer"] = host._graze_time(host.species_def(a["sp"]))
 	a["alert"] = 0.0

@@ -1,5 +1,5 @@
 {
-	"_about": "PROPOSAL (Sal, 2026-10-31), read by nothing yet. Starter goals for the first island, taken from TUTORIAL_FIRST_30_MIN.md (the guide's text is the source of truth for hint wording). Format for a coder: `goals` is an ordered list; each goal has `id`, `title`, `hint` (plain text shown in the goal list), `after` (goal ids that must be done first; empty = available at start), `check` (one of: {event, count, what?} fired by the server when the thing happens, {have_item, count} true while the pack holds that many, {made_item, count} counted when a craft finishes, {got_item, count} counted when the player gathers it first-hand (not trades, rewards, refunds or admin gives), {have_item_any, count}), and `stage` (the progression stage; the goal pays that stage's copper from data/items/goal_rewards.json, coins only). A goal completes once and is saved per character (characters.json `goals_done`). Events to emit in server_items.gd: drink, tree_felled, fire_lit, ate_food, placed(what), carcass_worked.",
+	"_about": "Sal, 2026-10-31; read by the server (server_items.gd _goals_data) and shown in the Journal. Starter goals for the first island, taken from TUTORIAL_FIRST_30_MIN.md (the guide's text is the source of truth for hint wording). Format for a coder: `goals` is an ordered list; each goal has `id`, `title`, `hint` (plain text shown in the goal list), `after` (goal ids that must be done first; empty = available at start), `check` (one of: {event, count, what?} fired by the server when the thing happens, {have_item, count} true while the pack holds that many, {made_item, count} counted when a craft finishes, {got_item, count} counted when the player gathers it first-hand (not trades, rewards, refunds or admin gives), {have_item_any, count}), and `stage` (the progression stage; the goal pays that stage's copper from data/items/goal_rewards.json, coins only). A goal completes once and is saved per character (characters.json `goals_done`). Events to emit in server_items.gd: drink, tree_felled, fire_lit, ate_food, placed(what), carcass_worked.",
 	"goals": [
 		{
 			"id": "drink",
@@ -169,7 +169,7 @@
 		{
 			"id": "workbench",
 			"title": "Build a Workbench",
-			"hint": "Hold your hammer, press R and pick Workbench: 16 sticks, 6 twine and 8 stones. It unlocks better tools.",
+			"hint": "Hold your hammer, press R and pick Workbench: 16 sticks, 6 twine and 8 stones. At it you make cobblestones, stone blocks, wooden pins, the flint scraper and more.",
 			"after": [
 				"hammer"
 			],
@@ -209,7 +209,7 @@
 		{
 			"id": "fish",
 			"title": "Catch a fish",
-			"hint": "Make a fishing rod (2 sticks, 2 twine) or a fishing net and fish at the pond.",
+			"hint": "Make a fishing rod (2 sticks, 2 twine and a hook carved from a bone) or a fishing net (3 rope, 4 stones) and fish at the water.",
 			"after": [
 				"twine"
 			],

@@ -20,7 +20,7 @@ const TIERS_PATH := "res://data/items/spyglass.json"
 # Wire animal states (server_animals.gd, server_wolves.gd, server_big_game.gd, server_thieves.gd) as words for the readout.
 const STATE_WORDS := {0: "grazing", 1: "moving", 2: "fleeing", 3: "alert", 6: "stalking", 7: "attacking", 8: "rolling in the grass", 9: "playing",
 	10: "warning", 11: "charging", 12: "recovering", 13: "sneaking", 14: "running off with food", 15: "flying", 16: "warning", 20: "standing out the rain",
-	21: "drinking"}
+	19: "lying down", 21: "drinking"}
 
 var active: bool = false
 var zoom: float = START_ZOOM

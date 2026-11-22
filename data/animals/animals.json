@@ -53,6 +53,17 @@
 			"zig_deg": 35.0,
 			"zig_leg_m": 8.0,
 			"burrow_m": 40.0,
+			"herd": [
+				2,
+				4
+			],
+			"herd_pull_m": 8.0,
+			"group_spacing_m": 2.0,
+			"alarm_s": [
+				0.1,
+				0.6
+			],
+			"note_herd": "PROVISIONAL HB-4 (21 Nov 2026, docs/design/ANIMAL_RESTING.md): wild rabbits live in warrens and feed in loose groups at dawn and dusk; one that bolts sets the others off (a thump).",
 			"hide_s": [
 				20.0,
 				40.0
@@ -415,9 +426,9 @@
 				"threat_warn_s": 0.5
 			},
 			"temperament": {
-				"passive": 0.6,
-				"neutral": 0.25,
-				"friendly": 0.15
+				"passive": 0.8,
+				"neutral": 0.15,
+				"friendly": 0.05
 			},
 			"note_temperament": "Dave 6 Nov 2026: inherent temperament, season changes and young (MikeW, first values; QA card)."
 		},
@@ -646,8 +657,9 @@
 			],
 			"model": true,
 			"temperament": {
-				"defensive": 0.7,
-				"aggressive": 0.3
+				"passive": 0.3,
+				"defensive": 0.65,
+				"aggressive": 0.05
 			},
 			"young": {
 				"share": 0.3,
@@ -1004,10 +1016,16 @@
 				"night": 0.05
 			},
 			"model": true,
+			"hunter": {
+				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack charges at once, with no warning, at a player running away from it inside chase_m, and runs up to run_m before it gives up; one born aggressive walks in on a player it has noticed at stalk_mps.",
+				"chase_m": 25.0,
+				"stalk_mps": 1.3,
+				"run_m": 50.0
+			},
 			"temperament": {
-				"defensive": 0.6,
-				"neutral": 0.25,
-				"aggressive": 0.15
+				"defensive": 0.75,
+				"neutral": 0.2,
+				"aggressive": 0.05
 			},
 			"seasons": {
 				"spring": {
@@ -1332,9 +1350,8 @@
 				"threat_warn_s": 0.5
 			},
 			"temperament": {
-				"passive": 0.6,
-				"neutral": 0.25,
-				"friendly": 0.15
+				"passive": 0.9,
+				"neutral": 0.1
 			},
 			"note": "Dave 7 Nov 2026 (add all the animals we have models for), batch 1. A lynx is a shy night hunter of boreal and mixed forest and alpine meadow (FAUNA_BY_BIOME rarity 4): it keeps well away from a player, bites one who corners it. Fox movement numbers, bigger and rarer."
 		},
@@ -1409,10 +1426,16 @@
 				"dusk": 1.0,
 				"night": 0.05
 			},
+			"hunter": {
+				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack charges at once, with no warning, at a player running away from it inside chase_m, and runs up to run_m before it gives up; one born aggressive walks in on a player it has noticed at stalk_mps.",
+				"chase_m": 15.0,
+				"stalk_mps": 1.2,
+				"run_m": 35.0
+			},
 			"temperament": {
-				"defensive": 0.6,
-				"neutral": 0.25,
-				"aggressive": 0.15
+				"passive": 0.5,
+				"defensive": 0.4,
+				"aggressive": 0.1
 			},
 			"seasons": {
 				"spring": {
@@ -1956,9 +1979,8 @@
 				"threat_warn_s": 0.5
 			},
 			"temperament": {
-				"passive": 0.6,
-				"neutral": 0.25,
-				"friendly": 0.15
+				"passive": 0.85,
+				"defensive": 0.15
 			},
 			"note": "Dave 7 Nov 2026, batch 2. A mink is a small dark hunter of river banks and marsh edges, mostly at dusk and night; it slips away from a player and bites only one who corners it. Fox numbers, much smaller, kept to the water edge; it does not swim or steal in this version."
 		},
@@ -2701,8 +2723,9 @@
 				"night": 0.3
 			},
 			"temperament": {
-				"defensive": 0.7,
-				"neutral": 0.3
+				"defensive": 0.6,
+				"neutral": 0.2,
+				"aggressive": 0.2
 			},
 			"seasons": {
 				"spring": {
@@ -2795,10 +2818,16 @@
 				"threat_m": 5.0,
 				"threat_warn_s": 0.5
 			},
+			"hunter": {
+				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack charges at once, with no warning, at a player running away from it inside chase_m, and runs up to run_m before it gives up; one born aggressive walks in on a player it has noticed at stalk_mps.",
+				"chase_m": 20.0,
+				"stalk_mps": 1.0,
+				"run_m": 40.0
+			},
 			"temperament": {
 				"passive": 0.6,
-				"neutral": 0.25,
-				"friendly": 0.15
+				"defensive": 0.3,
+				"aggressive": 0.1
 			},
 			"note": "Batch 4 (Dave 7 Nov 2026: add every animal we own). A puma is a big, solitary mountain cat of forest edge, alpine meadow and rock, active at dusk and night; it keeps away from a player but charges one who comes close or corners it. Lynx numbers, bigger and more dangerous; rarity 4."
 		},
@@ -2972,8 +3001,9 @@
 				5
 			],
 			"temperament": {
-				"defensive": 0.7,
-				"aggressive": 0.3
+				"passive": 0.2,
+				"defensive": 0.75,
+				"aggressive": 0.05
 			},
 			"young": {
 				"share": 0.3,
@@ -3058,10 +3088,16 @@
 				"threat_m": 4.0,
 				"threat_warn_s": 0.5
 			},
+			"hunter": {
+				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack charges at once, with no warning, at a player running away from it inside chase_m, and runs up to run_m before it gives up; one born aggressive walks in on a player it has noticed at stalk_mps.",
+				"chase_m": 15.0,
+				"stalk_mps": 1.3,
+				"run_m": 60.0
+			},
 			"temperament": {
-				"passive": 0.6,
-				"neutral": 0.25,
-				"friendly": 0.15
+				"passive": 0.5,
+				"defensive": 0.4,
+				"aggressive": 0.1
 			}
 		},
 		"wildebeest": {
@@ -3225,10 +3261,16 @@
 				"threat_m": 8.0,
 				"threat_warn_s": 0.5
 			},
+			"hunter": {
+				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack charges at once, with no warning, at a player running away from it inside chase_m, and runs up to run_m before it gives up; one born aggressive walks in on a player it has noticed at stalk_mps.",
+				"chase_m": 25.0,
+				"stalk_mps": 1.1,
+				"run_m": 50.0
+			},
 			"temperament": {
-				"passive": 0.6,
-				"neutral": 0.25,
-				"friendly": 0.15
+				"passive": 0.3,
+				"defensive": 0.5,
+				"aggressive": 0.2
 			}
 		},
 		"leopard": {
@@ -3294,10 +3336,16 @@
 				"threat_m": 4.0,
 				"threat_warn_s": 0.5
 			},
+			"hunter": {
+				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack charges at once, with no warning, at a player running away from it inside chase_m, and runs up to run_m before it gives up; one born aggressive walks in on a player it has noticed at stalk_mps.",
+				"chase_m": 15.0,
+				"stalk_mps": 1.0,
+				"run_m": 35.0
+			},
 			"temperament": {
 				"passive": 0.6,
-				"neutral": 0.25,
-				"friendly": 0.15
+				"defensive": 0.3,
+				"aggressive": 0.1
 			}
 		},
 		"rhino": {
@@ -3367,8 +3415,9 @@
 				"night": 0.4
 			},
 			"temperament": {
-				"defensive": 0.7,
-				"neutral": 0.3
+				"defensive": 0.6,
+				"neutral": 0.15,
+				"aggressive": 0.25
 			},
 			"seasons": {
 				"spring": {
@@ -3465,7 +3514,8 @@
 			},
 			"temperament": {
 				"defensive": 0.7,
-				"neutral": 0.3
+				"neutral": 0.25,
+				"aggressive": 0.05
 			},
 			"seasons": {
 				"spring": {
@@ -3712,9 +3762,8 @@
 				"threat_warn_s": 0.5
 			},
 			"temperament": {
-				"passive": 0.6,
-				"neutral": 0.25,
-				"friendly": 0.15
+				"defensive": 0.6,
+				"neutral": 0.4
 			},
 			"note": "Batch 4, savanna (Dave 7 Nov 2026: add every animal we own). A honey badger digs through savanna and scrub alone, mostly at night, and fears nothing: it stands its ground and bites hard. Raccoon numbers, far tougher and bolder."
 		},
@@ -3882,7 +3931,8 @@
 			},
 			"temperament": {
 				"defensive": 0.7,
-				"neutral": 0.3
+				"neutral": 0.25,
+				"aggressive": 0.05
 			},
 			"seasons": {
 				"spring": {
@@ -3973,10 +4023,16 @@
 				"threat_m": 7.0,
 				"threat_warn_s": 0.5
 			},
+			"hunter": {
+				"note": "PROVISIONAL HB-2 (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md): a predator that may attack charges at once, with no warning, at a player running away from it inside chase_m, and runs up to run_m before it gives up; one born aggressive walks in on a player it has noticed at stalk_mps.",
+				"chase_m": 25.0,
+				"stalk_mps": 1.0,
+				"run_m": 45.0
+			},
 			"temperament": {
-				"passive": 0.6,
-				"neutral": 0.25,
-				"friendly": 0.15
+				"passive": 0.4,
+				"defensive": 0.4,
+				"aggressive": 0.2
 			},
 			"note": "Batch 4 (Dave 7 Nov 2026: add every animal we own). A tiger is the biggest of the cats: solitary, in deep forest and marsh edge, out at dusk and night; it keeps away but attacks one who comes close or corners it. Leopard numbers, much bigger and stronger, forest instead of savanna."
 		},
@@ -4051,8 +4107,9 @@
 				"night": 0.8
 			},
 			"temperament": {
-				"aggressive": 0.6,
-				"defensive": 0.4
+				"passive": 0.4,
+				"defensive": 0.5,
+				"aggressive": 0.1
 			},
 			"note": "Dave 8 Nov 2026 (docs/design/ALLIGATOR_SWIMMING.md): an alligator lives in the fresh water of marsh and slow rivers and on their banks, rides the surface, basks on the bank and ambushes: it attacks a swimming player and anyone at the water's edge (decided by the coordinator for Dave). Black bear defend rows reshaped for an ambush predator: short warning, long reach in water, one hard bite.",
 			"water": {
@@ -4345,7 +4402,8 @@
 				"threat_x": 2.0,
 				"bluff_x": 0.5,
 				"attacks": true,
-				"alert": false
+				"alert": false,
+				"stalks": true
 			},
 			"friendly": {
 				"spook_x": 0.0,
