@@ -3494,9 +3494,10 @@
 			"description": "A dull grey lump with bright metallic streaks. Traders pay well for it.",
 			"kind": "material",
 			"stack": 20,
+			"pile": {"shape": "cone", "handful": 25, "color": [0.42, 0.42, 0.45], "color2": [0.72, 0.72, 0.76], "mix": 0.3, "rock": 0.6, "squash": 0.75, "jitter": 0.3, "lumps": 0.3, "density_kg_m3": 5200},
 			"look_alikes": [],
 			"value": 40,
-			"note": "Coordinator decision D-ORE-1 (21 Nov 2026, under Dave's rule that agents' questions go to the coordinator): a sell-value find with no recipe yet; value PROVISIONAL. Revealed by digging near ore sources (boulders.json distribution pockets, docs/design/RESOURCE_DISTRIBUTION.md)."
+			"note": "Coordinator decision D-ORE-1 (21 Nov 2026, under Dave's rule that agents' questions go to the coordinator): a sell-value find with no recipe yet; value PROVISIONAL. Revealed by digging near ore sources (boulders.json distribution pockets, docs/design/RESOURCE_DISTRIBUTION.md). Its pile is a cone like every ore (Dave: ore piles stack like stone): lead-grey with bright streaks, galena-like rock about 5,200 kg/m3."
 		},
 		"amethyst": {
 			"number": 1520,

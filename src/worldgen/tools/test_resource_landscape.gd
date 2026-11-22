@@ -205,24 +205,24 @@ func _init() -> void:
 	var hungry_supply: Dictionary = supply.duplicate(true)
 	hungry_supply["first_bronze"]["tin"] = 1000000000
 	var hungry: RefCounted = island(cfg, spawn, Vector2.INF, hungry_supply)
-	var count_tin: Callable = func(c: RefCounted, only_assured: bool) -> int:
-		return (c.get("deposits") as Array).filter(func(d): return str(d["metal"]) == "tin" and (bool(d["assured"]) or not only_assured)).size()
+	var count_tin: Callable = func(ctx: RefCounted, only_assured: bool) -> int:
+		return (ctx.get("deposits") as Array).filter(func(d): return str(d["metal"]) == "tin" and (bool(d["assured"]) or not only_assured)).size()
 	var hungry_report: String = "\n".join(hungry.get("report"))
 	var lean: Dictionary = cfg.duplicate(true)
 	lean["known_sources"] = {"iron": 1, "copper": 1, "tin": 1}
 	var base: RefCounted = island(lean, spawn)   # no quantity check, one source of each wanted: only the nearest-source assurance
 	check(int(count_tin.call(hungry, true)) - int(count_tin.call(base, true)) == 3 and int(count_tin.call(hungry, false)) == int(count_tin.call(base, false)) + 3 and hungry_report.contains("tin within") and hungry_report.contains("SHORT") and (hungry.get("deposits") as Array).filter(func(d): return str(d["metal"]) == "copper").size() == (fed.get("deposits") as Array).filter(func(d): return str(d["metal"]) == "copper").size(), "short of tin, the island gets at most three assured tin sources and says SHORT; copper untouched")
-	var tin_held: Callable = func(c: RefCounted) -> float:
+	var tin_held: Callable = func(ctx: RefCounted) -> float:
 		var total: float = 0.0
-		for d in c.get("deposits"):
-			total += float(c.call("source_ore", d)) if str(d["metal"]) == "tin" else 0.0
+		for d in ctx.get("deposits"):
+			total += float(ctx.call("source_ore", d)) if str(d["metal"]) == "tin" else 0.0
 		return total
 	check(float(tin_held.call(hungry)) > float(tin_held.call(fed)), "each assured tin source adds its ore")
 	var curious: Dictionary = cfg.duplicate(true)
 	curious["known_sources"] = {"iron": 50, "copper": 1, "tin": 1}
 	var known: RefCounted = island(curious, spawn, Vector2.INF, supply)
-	var iron_assured: Callable = func(c: RefCounted) -> int:
-		return (c.get("deposits") as Array).filter(func(d): return str(d["metal"]) == "iron" and bool(d["assured"])).size()
+	var iron_assured: Callable = func(ctx: RefCounted) -> int:
+		return (ctx.get("deposits") as Array).filter(func(d): return str(d["metal"]) == "iron" and bool(d["assured"])).size()
 	check(int(iron_assured.call(known)) == int(iron_assured.call(base)) + 3 and "\n".join(known.get("report")).contains("(50 wanted)"), "wanting more known iron sources than drawn adds up to three assured ones (several iron locations known before iron smelting)")
 
 	# 6. The server lays a source out: outcrops and fragments in the right cells, the same every time, angular, its own ore.
@@ -245,6 +245,11 @@ func _init() -> void:
 	var in_cell: bool = true
 	var outcrops: int = 0
 	var angular: bool = true
+	var tin_size: float = float(tin["size"])
+	var outcrop_at: Array = []   # where the server puts the source's outcrops (server_items._lay_out_sources), so its fragments are not counted as outcrops
+
+	for k in range(int(round(lerpf(float(cfg.get("source_outcrops_min", 2)), float(cfg.get("source_outcrops_max", 8)), tin_size)))):
+		outcrop_at.append(Vector2(float(tin["x"]), float(tin["z"])) + Vector2(sqrt(ContextScript.unit(int(tin["id"]), k, 1)) * float(tin["radius"]), 0.0).rotated(ContextScript.unit(int(tin["id"]), k, 2) * TAU))
 
 	for id in items._items:
 		var it: Dictionary = items._items[id]
@@ -254,7 +259,7 @@ func _init() -> void:
 		var own: Vector2i = Vector2i(floori(it["pos"].x / 32.0), floori(it["pos"].z / 32.0))
 		in_cell = in_cell and ((key >> 28) & 0xfffff) == (own.x & 0xfffff) and ((key >> 8) & 0xfffff) == (own.y & 0xfffff)
 
-		if it.has("boulder") and int((it["boulder"] as Dictionary).get("source", 0)) == int(tin["id"]) and Vector2(it["pos"].x - float(tin["x"]), it["pos"].z - float(tin["z"])).length() <= float(tin["radius"]) + 0.5:
+		if it.has("boulder") and int((it["boulder"] as Dictionary).get("source", 0)) == int(tin["id"]) and outcrop_at.any(func(at: Vector2) -> bool: return at.distance_to(Vector2(it["pos"].x, it["pos"].z)) < 0.01):
 			outcrops += 1
 			angular = angular and float(it["boulder"]["ang"]) >= 0.7 and str(it["boulder"]["ore"]) == "tin" and float(it["boulder"]["grade"]) > 0.3
 
@@ -433,9 +438,9 @@ func _stage_two(all_cfg: Dictionary, cfg: Dictionary, spawn: Vector3, plain: Ref
 
 	for id in coal_server._items:
 		var it: Dictionary = coal_server._items[id]
-		var key: int = int(it["scatter"])
-		slots_ok = slots_ok and (key & 0xff) >= coal_server.SEAM_SLOT_FIRST and not seen.has(key)
-		seen[key] = true
+		var item_key: int = int(it["scatter"])
+		slots_ok = slots_ok and (item_key & 0xff) >= coal_server.SEAM_SLOT_FIRST and not seen.has(item_key)
+		seen[item_key] = true
 
 		if it.has("boulder") and int((it["boulder"] as Dictionary).get("seam", 0)) == int(seam["id"]):
 			outcrops += 1

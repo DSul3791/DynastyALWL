@@ -68,7 +68,7 @@ Coal: from the first hour, dark coal outcrops on hillsides beside rivers, lakes 
 
 ## Server start and the network
 
-- Every scatter cell (stones and sticks too) waits until the landscape is built on its worker thread, so no cell is ever laid without it. The build time is logged ("resources: N tiles read and built in X ms"); NOT MEASURED yet in Godot (the Python mirror took 5 s; GDScript expected 1 to 3 s). A cell near a coal seam also waits for the tile under the seam's centre, whose ground sets the seam's height.
+- Every scatter cell (stones and sticks too) waits until the landscape is built on its worker thread, so no cell is ever laid without it. The build time is logged ("resources: N tiles read and built in X ms"); measured on Lane B (Linux, the slow lane machine) at 7.9 s for the nine tiles, 22 Nov 2026, on a worker thread: the main thread keeps running, but no stones, sticks or rocks are laid out around a player who joins in those first seconds until it is done. A cell near a coal seam also waits for the tile under the seam's centre, whose ground sets the seam's height.
 - Boulder rows sent to clients carry a few more keys (`ang`; `source`, `seam` or `pocket` on those rocks) and plain boulders are up to 1.5 times commoner at the headwaters: the world-item traffic grows a little, NOT MEASURED. No protocol change: an older client ignores the keys.
 - The area noise is seeded from each metal's name with Godot's String.hash(): an engine upgrade that changed that hash would move the areas (as it would every other seeded layout that uses it).
 
@@ -80,7 +80,7 @@ Nothing is regenerated and no world is reset. Two save fields are added to `worl
 
 - Pockets do not read the geology's own gold, silver and gem bodies: they follow the sources. Coal districts read the host rock only at each seam's centre (item 19).
 - Pictures (Lane A) of a coal seam's outcrops and an opened pocket rock.
-- Lane measurement of the build time (now with seams and pockets) (cloud mirror took 5 s in Python; GDScript expected 1 to 3 s on a worker thread, NOT MEASURED) and of the scatter cost per cell (NOT MEASURED).
+- Build time: 7.9 s on Lane B (worker thread). Not yet measured on Dave's PC. Scatter cost per cell: NOT MEASURED.
 - Pictures (Lane A): rounded, broken and jagged rocks; a source with its outcrops and fragments; a river with clues.
 - Handoff 13 (stage 4, items 15 to 20): checked in code and its test, and measured in the cloud mirror. Lane runs still to do: the server log lines and resource_map.gd on the real tiles; seam coal through an Improved smelter in one test; how many seams the host rock keeps.
 - Region boundaries and reloads with other seeds: lane work.

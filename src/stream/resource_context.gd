@@ -831,7 +831,11 @@ func _coal() -> void:
 	if cfg.is_empty():
 		return
 
-	var wet: Array = cfg.get("wet_classes", [2, 3, 4, 6, 7, 8])
+	var wet: Dictionary = {}   # the classes as int keys: JSON gives floats, and Array.has(2) never matches a 2.0
+
+	for c in cfg.get("wet_classes", [2, 3, 4, 6, 7, 8]):
+		wet[int(c)] = true
+
 	var to_wet: PackedFloat32Array = PackedFloat32Array()
 	to_wet.resize(nx * nz)
 
@@ -1063,7 +1067,7 @@ func _route_costs(start: int, home: int) -> PackedFloat32Array:
 
 			if next < cost[o]:
 				cost[o] = next
-				_heap_push(heap, [next, o])
+				_heap_push(heap, [cost[o], o])   # the stored (float32) cost: pushing the float64 one would make the pop above see it as stale and skip the cell
 
 	return cost
 
