@@ -10855,6 +10855,9 @@ func _flora_of_plant(item_id: String) -> Dictionary:
 
 # Why a bush or tree seed cannot go into the ground at `spot` (its height the ground's), "" when it can.
 func _sapling_refusal(item_id: String, spot: Vector3) -> String:
+	if _season() == "winter":
+		return "The ground is frozen hard: nothing can be planted in winter."   # the hoe's list greys it out too (FarmRules.plantable_now)
+
 	var gap: float = PLANT_TREE_GAP_M if tree_seed_species(item_id) != "" else PLANT_BUSH_GAP_M
 
 	if is_nan(spot.y) or spot.y < 1.0:
@@ -20831,17 +20834,21 @@ func _sow_refusal(key: String, seed_id: String) -> String:
 	if crop_id == "":
 		return "That cannot be sown."
 
-	var def: Dictionary = _crop_table()[crop_id]
-	var sow_seasons: Array = def.get("sow_seasons", [def.get("sow_season", "spring")])   # Sal's data: a list of sowing seasons (older rows: one string)
-	return "" if sow_seasons.has(_season()) else "season"
+	return "" if FarmRules.plantable_now(_crop_table(), seed_id, "seed", _season()) else "season"   # the hoe's list greys out the same rows (farm_rules.gd)
 
 
 func _season_refusal(seed_id: String) -> String:
 	var crop_id: String = FarmRules.crop_of_seed(_crop_table(), seed_id)
 	var def: Dictionary = _crop_table().get(crop_id, {})
-	var seasons: Array = def.get("sow_seasons", [def.get("sow_season", "spring")])
+	var seasons: Array = FarmRules.sow_seasons(def).filter(func(x): return str(x) != "winter")
 	var names: PackedStringArray = PackedStringArray(seasons.map(func(x): return str(x)))
+
+	if names.is_empty():
+		return "The ground is frozen hard: %s cannot be sown." % table.in_sentence(str(def.get("name", crop_id)))   # a crop the data sows only in winter
 	var when: String = names[0] if names.size() == 1 else ", ".join(names.slice(0, names.size() - 1)) + " or " + names[names.size() - 1]
+	if _season() == "winter":
+		return "The ground is frozen hard: nothing can be sown in winter. Sow %s in %s." % [table.in_sentence(str(def.get("name", crop_id))), when]
+
 	return "Not the season for %s: sow it in %s (it is %s now)." % [table.in_sentence(str(def.get("name", crop_id))), when, _season()]   # names when it can go in, so a summer start knows to wait or sow another
 
 

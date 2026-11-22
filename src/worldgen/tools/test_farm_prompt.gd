@@ -59,6 +59,16 @@ func _init() -> void:
 	var rows: Array = FarmRules.plantables(crops, ["", "stick", "hazel_bush", "wheat_seeds", "hazel_bush", "flax_seeds", "bronze_sickle"])
 	check(rows.size() == 3 and rows[0] == {"id": "hazel_bush", "kind": "bush"} and rows[1] == {"id": "wheat_seeds", "kind": "seed"} and rows[2]["id"] == "flax_seeds", "plantables: hazel bush, wheat seeds, flax seeds once each in pack order; sticks and sickles are not")
 	check(FarmRules.plantables(crops, ["", "stick"]).is_empty(), "plantables: nothing to plant in a pack of sticks")
+	# The hoe's list greys out what cannot go in now (Dave 22 Nov 2026): nothing in winter, a crop seed only in its sowing seasons, a bush any other season.
+	check(not FarmRules.plantable_now(crops, "wheat_seeds", "seed", "summer") and FarmRules.plantable_now(crops, "wheat_seeds", "seed", "spring"), "plantable_now: wheat in spring, not in summer")
+	check(FarmRules.plantable_now(crops, "carrot_seeds", "seed", "summer"), "plantable_now: carrots in summer")
+	check(FarmRules.plantable_now(crops, "hazel_bush", "bush", "autumn"), "plantable_now: a bush in autumn")
+	var winter_any: bool = false
+
+	for crop in crops:
+		winter_any = winter_any or FarmRules.plantable_now(crops, str(crops[crop].get("seed", "")), "seed", "winter")
+
+	check(not winter_any and not FarmRules.plantable_now(crops, "hazel_bush", "bush", "winter") and not FarmRules.plantable_now(crops, "oak_seed", "tree", "winter"), "plantable_now: nothing at all in winter (the ground is frozen hard)")
 	# The hoe grid (Dave 14 Nov 2026): width by length, turned by the wheel, spaced for the plant; unturned 1 m grids sit on the metre cells.
 	var one: Array = FarmRules.grid_points(1, 1, 1.0, FarmRules.grid_centre(1, 1, 1.0, Vector2(3.7, -2.2), 0, Vector2(3.5, -2.5)), 0)
 	check(one.size() == 1 and one[0].is_equal_approx(Vector2(3.5, -2.5)), "hoe grid: one point, moved onto the aimed metre cell's centre (%s)" % str(one))
