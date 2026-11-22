@@ -2848,6 +2848,8 @@ func _update_weather() -> void:
 		return
 
 	_weather_next_msec = now + 1000
+	# BugsList 108: "clock, weather" reached 30-59 ms in some lane frames; each part is timed on its own so a HITCH line names which.
+	var tw: int = Probe.start()
 	var tile_m: float = float(world.get("tile_size_m", 15360))
 	var row: int = ClimateScript.row_of_z(_anchor.z, tile_m)
 	var group: String = WeatherScript.zone_group(world.get("zones", []), int(world.get("equator_row", 0)), row)
@@ -2865,6 +2867,8 @@ func _update_weather() -> void:
 	if items != null:
 		items.air_c = float(weather["temp_c"])
 
+	Probe.stop("weather: state", tw)
+	tw = Probe.start()
 	# Ice on ponds and lakes: a pure function of the clock, zone and altitude (src/shared/ice.gd), so
 	# every client and the server agree with no traffic. Recomputed once a game minute.
 	var ice_now: float = IceScript.cover(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M, int(world.get("master_seed", 0)))
@@ -2881,7 +2885,11 @@ func _update_weather() -> void:
 	if sound != null and sound.weather != null:
 		sound.weather.ice_cover = ice_now
 
+	Probe.stop("weather: ice", tw)
+	tw = Probe.start()
 	_update_frozen_water(group, now)
+	Probe.stop("weather: frozen water", tw)
+	tw = Probe.start()
 
 	if weather_look != null and weather_look.puddles != null:
 		weather_look.puddles.set_ice_from(game_clock.seconds, group, _anchor.y)      # puddles freeze by the same rule, shallow (every 10 s)
@@ -2891,6 +2899,8 @@ func _update_weather() -> void:
 
 	if sound != null and sound.occlusion != null and sound.occlusion.outdoors:     # --sound-outdoors (sound_outdoors_design.md)
 		sound.occlusion.set_air(weather, weather_look.day.elevation if weather_look != null else 0.5, game_clock.hour(), weather_look.fog_now() if weather_look != null else 0.0)
+
+	Probe.stop("weather: puddles+sound", tw)
 
 
 # Frozen water look (docs/design/frozen_water_look.md): every 5 s the covers at 3 m and 1 m, the thaw, the lying snow, the springs
@@ -2948,12 +2958,12 @@ func _update_ice_feel_weather(ice_now: float, group: String, now: int) -> float:
 
 		if moat != _ice_moat_logged:
 			_ice_moat_logged = moat
-			print("ice feel: moat %d cell%s (thaw %.2f)" % [moat, "" if moat == 1 else "s", _ice_thaw])
+			FreezeWatchScript.printer.line("ice feel: moat %d cell%s (thaw %.2f)" % [moat, "" if moat == 1 else "s", _ice_thaw])
 
 	var band: int = IceFeelScript.band_of(ice_now)
 
 	if band != _ice_feel_band:
-		print(IceFeelScript.log_line(band, "band now", "", 1.0, INF))
+		FreezeWatchScript.printer.line(IceFeelScript.log_line(band, "band now", "", 1.0, INF))
 
 	_ice_feel_cover = ice_now
 	_ice_feel_band = band
@@ -3014,7 +3024,7 @@ func _update_spring_steam() -> void:
 
 	if steaming != _steam_logged:
 		_steam_logged = steaming
-		print("ice feel: spring steam %s (strength %.2f, air %.1f C, %d mouths known)" % ["on" if steaming else "off", _spring_steam.strength, air, mouths.size()])
+		FreezeWatchScript.printer.line("ice feel: spring steam %s (strength %.2f, air %.1f C, %d mouths known)" % ["on" if steaming else "off", _spring_steam.strength, air, mouths.size()])
 
 
 func _warmth_cfg() -> Dictionary:
@@ -3070,7 +3080,7 @@ func _ice_feel_shock(water: Dictionary, delta: float) -> void:
 		if sound != null and sound.slots != null:
 			sound.slots.play("respawn_gasp", body.global_position + Vector3(0.0, 1.5, 0.0))
 
-		print(IceFeelScript.log_line(_ice_feel_band, "cold shock, water %.1f C" % IceFeelScript.water_c(air, _warmth_cfg()), "respawn_gasp", IceFeelScript.SHOCK_SWIM, INF))
+		FreezeWatchScript.printer.line(IceFeelScript.log_line(_ice_feel_band, "cold shock, water %.1f C" % IceFeelScript.water_c(air, _warmth_cfg()), "respawn_gasp", IceFeelScript.SHOCK_SWIM, INF))
 
 
 # After a footstep: skim or film broken under the wader leaves a patch in the look; the plunge jolts the eye.
@@ -3087,7 +3097,7 @@ func _ice_feel_after_step() -> void:
 
 	if event == "plunge":
 		feel.strike(1.0 if randf() < 0.5 else -1.0, IceFeelScript.PLUNGE_DIP_M / 0.08)
-		print(IceFeelScript.log_line(_ice_feel_band, "plunge", sound.ice.last, IceFeelScript.wade_mult(_ice_feel_band), INF))
+		FreezeWatchScript.printer.line(IceFeelScript.log_line(_ice_feel_band, "plunge", sound.ice.last, IceFeelScript.wade_mult(_ice_feel_band), INF))
 
 
 func _update_frozen_water(group: String, now: int) -> void:
