@@ -33,5 +33,10 @@ Source: "client\*"; DestDir: "{app}"; Flags: recursesubdirs ignoreversion
 Name: "{autoprograms}\Dynasty"; Filename: "{app}\Dynasty.exe"
 Name: "{autodesktop}\Dynasty"; Filename: "{app}\Dynasty.exe"; Tasks: desktopicon
 
+[UninstallDelete]
+; The game writes its crash reports and telemetry beside itself while it runs (src/shared/event_log.gd, src/client/crash_report.gd:
+; res://crash_reports). The installer did not put them there, so Inno would leave the folder behind without this.
+Type: filesandordirs; Name: "{app}\crash_reports"
+
 [Run]
 Filename: "{app}\Dynasty.exe"; Description: "Play Dynasty now"; Flags: nowait postinstall skipifsilent

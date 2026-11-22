@@ -215,6 +215,11 @@ finally {
 	# 6. uninstall (also after a failure, so the test install never stays)
 	$uninstaller = Join-Path $install "unins000.exe"
 	if (Test-Path -LiteralPath $uninstaller) {
+		# The game's own crash reports and telemetry (res://crash_reports) go with the install, so keep a copy beside the logs first.
+		$reports = Join-Path $install "crash_reports"
+		$kept = Join-Path $runs "crash_reports"
+		if (Test-Path -LiteralPath $kept) { Remove-Item -LiteralPath $kept -Recurse -Force }
+		if (Test-Path -LiteralPath $reports) { Copy-Item -LiteralPath $reports -Destination $kept -Recurse -Force; Write-Host "   the game's crash reports: $kept" }
 		Write-Host "== uninstall"
 		Run-Limited $uninstaller "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" 300 "the uninstaller" | Out-Null
 		$deadline = (Get-Date).AddSeconds(120)
