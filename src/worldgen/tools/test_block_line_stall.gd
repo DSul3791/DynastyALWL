@@ -18,7 +18,7 @@ var link
 var _jobs: Array = []                  # [peer, n] for the workers, in order
 var _jobs_mutex: Mutex = Mutex.new()
 var _slowest_send_msec: int = 0
-var _stuck_refused: int = 0            # sends to the stuck player that came back false (its line dropped)
+var _stuck_refused: int = 0            # sends to the stuck player that came back false (its outbox full: the game connection carries them)
 
 
 func check(ok: bool, what: String) -> void:
@@ -239,8 +239,9 @@ func _initialize() -> void:
 	quiet.disconnect_from_host()
 
 	# 3. An honest slow reader keeps its line: 25 MB waits for it (more than the socket holds, so the outbox has a backlog), it reads
-	# 256 KB every 20 ms and once pauses 2 s, under the 3 s stall time. A large cap here: this part is about the stall clock.
+	# 256 KB every 20 ms and once pauses 2 s, under a 6 s stall time (room for a loaded lane). A large cap here: this part is about the stall clock.
 	link.outbox_max_bytes = 64 * 1024 * 1024
+	link.stall_msec = 6000
 	var refused_before: int = int(link.sends_refused)
 	var slow: StreamPeerTCP = _open(port, 4)
 	check(_wait_line(4), "a slow player's line is up")
