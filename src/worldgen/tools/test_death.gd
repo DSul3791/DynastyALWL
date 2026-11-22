@@ -268,13 +268,17 @@ func _init() -> void:
 	wolf._vitals["wolf-key-00001"]["health"] = 5.0
 	check(wolf.hurt_player(1, 8.0, true, "wolves", 25.0) == "dead", "a lethal bite kills")
 
-	# A sleeper bitten down to the maim floor wakes (that blow returned before the wake, so the next bite found them still asleep).
+	# A sleeper bitten down to the maim floor wakes; one passed out from exhaustion does not.
 	var sleeper = make(dir + "_sleeper")
 	sleeper.peer_connected_hello(1, "sleep-key-00001")
 	sleeper.report_position(1, Vector3(100.0, 12.0, 100.0))
 	sleeper._asleep[1] = {}
 	sleeper._vitals["sleep-key-00001"]["health"] = 30.0
 	check(sleeper.hurt_player(1, 10.0, false, "wolves", 25.0) == "maimed" and not sleeper._asleep.has(1), "a maiming bite wakes a sleeper")
+	sleeper._asleep[1] = {"forced": true}   # passed out from exhaustion: a blow does not end that
+	sleeper._vitals["sleep-key-00001"]["health"] = 30.0
+	sleeper.hurt_player(1, 10.0, false, "wolves", 25.0)
+	check(sleeper._asleep.has(1), "a maiming bite leaves a passed-out sleeper asleep")
 
 	print("death tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

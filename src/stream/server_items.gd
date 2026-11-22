@@ -15022,7 +15022,7 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 		return "dead" if kill(peer, cause) else "hurt"
 
 	if not _forced_sleep(peer):
-		_end_sleep(peer)   # any blow wakes a sleeper, the maiming one too (it used to return first, leaving them asleep under the next bite)
+		_end_sleep(peer)   # any blow wakes a sleeper, maiming ones too
 
 	if not lethal and float(v["health"]) <= floor_hp:
 		v["health"] = minf(before, floor_hp)
