@@ -16,6 +16,7 @@ var on_request: Callable                 # (peer_id, keys, urgent) on the line's
 var is_peer: Callable                    # (peer_id) -> bool: an ENet peer that is connected
 var blocks_out: int = 0
 var bytes_out: int = 0
+var _sending: int = 0                    # workers inside put_data now: it waits while a client reads nothing (first-load plan, option A)
 
 var _server: TCPServer = TCPServer.new()
 var _thread: Thread
@@ -67,6 +68,14 @@ func drop(peer_id: int) -> void:
 		line["mutex"].unlock()
 
 
+# Workers waiting in send() now (any thread).
+func sending() -> int:
+	_mutex.lock()
+	var count: int = _sending
+	_mutex.unlock()
+	return count
+
+
 # Worker thread: sends one block; false when this peer has no line (use ENet).
 func send(peer_id: int, key: Vector4i, bytes: PackedByteArray) -> bool:
 	_mutex.lock()
@@ -84,9 +93,15 @@ func send(peer_id: int, key: Vector4i, bytes: PackedByteArray) -> bool:
 	frame.encode_s32(12, key.z)
 	frame.encode_s32(16, key.w)
 	frame.append_array(bytes)
+	_mutex.lock()
+	_sending += 1
+	_mutex.unlock()
 	line["mutex"].lock()
 	var ok: bool = line["tcp"].get_status() == StreamPeerTCP.STATUS_CONNECTED and line["tcp"].put_data(frame) == OK
 	line["mutex"].unlock()
+	_mutex.lock()
+	_sending -= 1
+	_mutex.unlock()
 
 	if not ok:
 		drop(peer_id)

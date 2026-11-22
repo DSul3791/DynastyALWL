@@ -936,6 +936,7 @@ func _ready() -> void:
 	_auth.log_event = func(text: String) -> void: _events.event(text)
 	_auth.attach_server(multiplayer as SceneMultiplayer)
 	_events.start("telemetry_server_%d.log" % port, _log_dir())
+	_events.watch_extra = _pool_summary
 	_events.start_watchdog()
 	_events.event("server listening on port %d after %d ms of start-up, %s, ram %d MB, commit %s" % [port, Time.get_ticks_msec(), OS.get_name(), int(OS.get_static_memory_usage() / 1048576.0), _commit])
 	_listen_port = port
@@ -1130,6 +1131,15 @@ func _baked_wet(x: float, z: float) -> bool:
 	return not tile_data.placeholder and not tile_data.water_class.is_empty() and int(tile_data.water_class[tile_data.nearest(x, z)]) != 0
 
 
+# The server's own WorkerThreadPool jobs not finished yet, and the block line's sends waiting on a client, for the state and WATCHDOG lines:
+# what runs or waits while a client's first load runs (docs/design/LOCAL_SERVER_FIRST_LOAD_PLAN.md, option A). Any thread (the watchdog's):
+# the counts are read under their own mutexes, and the landscape task id is only compared, never asked about (the main thread frees it).
+func _pool_summary() -> String:
+	var landscape: bool = items != null and items._resource_task != -1
+	return "pool jobs: tile reads %d, undergrowth %d, cover %d, landscape %s; block line sends in progress %d" % [generator._prefetch_tasks.busy() if generator != null else 0,
+		flora._brush_tasks.busy() if flora != null else 0, _cover_tasks.busy(), "on" if landscape else "off", _link.sending() if _link != null else 0]
+
+
 # The server's state line for user://server_events.log; keeps each peer's last statistics for the "left" line.
 func _event_state() -> String:
 	var enet: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
@@ -1147,6 +1157,7 @@ func _event_state() -> String:
 	queued += ", limiter drops: " + dropped if dropped != "" else ""
 	queued += ", " + store.settle.summary() + ", busiest block %d edits" % store.ops.busiest_block() if store.ops.count > 0 else ""
 	queued += ", digs refused (block full): %d" % store.ops.rejected if store.ops.rejected > 0 else ""
+	queued += ", " + _pool_summary()
 	return "peers %d fps %d ram %d MB, %s, %s | %s" % [_peers.size(), Engine.get_frames_per_second(), int(OS.get_static_memory_usage() / 1048576.0), queued, EventLogScript.host_stats(multiplayer.multiplayer_peer), " | ".join(parts)]
 
 
@@ -3090,6 +3101,7 @@ func _process(delta: float) -> void:
 	_update_weather()
 	_events.mark("items")
 	items.tick(delta)
+	_events.mark("tunnels+buried")
 	_tunnel_tick()
 	_send_buried()
 	_events.mark("npcs")
@@ -3173,6 +3185,7 @@ func _process(delta: float) -> void:
 			net.tile_changed.rpc(tile, store.revision_of(tile))
 
 		_tiles_changed.clear()
+		_events.mark("checks: held edits")
 
 		for peer_id in _edits_held.keys():
 			var at: Variant = items.position_of(int(peer_id))
@@ -3182,10 +3195,14 @@ func _process(delta: float) -> void:
 			elif at != null:
 				_send_held_edits(int(peer_id), at)
 
+		_events.mark("checks: fine water")
 		_send_fine({})   # a player who came within reach of a wet dig gets its water
+		_events.mark("checks: revisions file")
 		store.save_revisions()
+		_events.mark("checks: flora removed file")
 		flora.save_removed()
 
+	_events.mark("checks: flags, report")
 	var flag_path: String = _store_path + "/clear_generated.now"
 
 	if now >= _flag_check_msec:
@@ -3239,12 +3256,12 @@ func _process(delta: float) -> void:
 
 	if now >= _report_at_msec:
 		_report_at_msec = now + 10000
-		print("server: %d urgent and %d prefetch queued; generated %d, cache hits %d, edit hits %d; flora chunks %d made, %d from memory; idle-built %d columns; bad blocks %d, failed tile loads %d" % [
+		_print_off_main("server: %d urgent and %d prefetch queued; generated %d, cache hits %d, edit hits %d; flora chunks %d made, %d from memory; idle-built %d columns; bad blocks %d, failed tile loads %d" % [
 			queued[0], queued[1], store.blocks_generated, store.cache_hits, store.edit_hits, flora.chunks_made, flora.memory_hits, _idle_built, store.bad_blocks, generator.failed_tiles
 		])
 
 		if _link != null and _link.blocks_out > 0:
-			print("server: %d blocks sent on the block line (%.1f MB)" % [_link.blocks_out, float(_link.bytes_out) / 1048576.0])
+			_print_off_main("server: %d blocks sent on the block line (%.1f MB)" % [_link.blocks_out, float(_link.bytes_out) / 1048576.0])
 
 	if _quit_when_empty and _quit_at_msec < 0:
 		if not _peers.is_empty():
@@ -3289,6 +3306,14 @@ func _process(delta: float) -> void:
 		get_tree().quit(0)
 
 	_events.mark("between frames (rpc handlers, engine)")
+
+
+# The 10 s report lines on a worker, like the items log lines (a print flushes the log on the PC's debug build: #397, #1491).
+func _print_off_main(line: String) -> void:
+	if items != null:
+		items._log_off_main(line)
+	else:
+		print(line)
 
 
 # A dedicated server keeps its notes and logs with its store (a container's one volume); Play's server keeps them where the launcher looks.
