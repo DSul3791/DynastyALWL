@@ -2,7 +2,7 @@
 
 All Currently unfixed bugs go here.
 
-This list records the problems Dave found in his play tests and the intended player experience needed to resolve them. It includes requested behaviour where a bug fix alone would be incomplete. Entries stay here until Dave confirms the fix in play. Each entry says what he played: "found in play" (the problem came from his play test), "fix played" (he has played the fixed version) or "fix not yet played". When an entry is verified fixed, move it to [BugsList_Fixed.md](BugsList_Fixed.md).
+This list records the problems Dave found in his play tests and the intended player experience needed to resolve them. It includes requested behaviour where a bug fix alone would be incomplete. Entries stay here until Dave confirms the fix in play. Each entry says what he played: "found in play" (the problem came from his play test), "fix played" (he has played the fixed version) or "fix not yet played". When an entry is verified fixed, move it to [BugsList_Fixed.md](BugsList_Fixed.md). Work that is not built yet, including the open parts of entries here, is listed in [docs/TODO.md](docs/TODO.md) (reviewed 21 Nov 2026: every PR named in entries 1 to 127 is in dev; none of them has been played yet).
 
 ## Intended experience
 

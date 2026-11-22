@@ -1,5 +1,7 @@
 # Flora and fauna: findings and backlog (MikeW, updated 2026-11-01 Phase 1)
 
+> **Not a live to-do list (reviewed 21 Nov 2026).** This was a queue for a role in the 1 Nov team, which no longer exists. Its open items that still matter are in [docs/TODO.md](TODO.md), with what was done or is no longer relevant. Kept as history.
+
 Owner of every row: MikeW (Flora and Fauna Density, Placement and Behaviour) unless another owner is named. Rules: never merge to main; at most 3 heavy Godot jobs (tools/godot_slot.sh); how things LOOK is Kathleen's (report with a picture).
 
 ## Phase 1 results (no Godot)
