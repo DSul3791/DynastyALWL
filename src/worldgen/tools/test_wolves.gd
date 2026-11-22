@@ -126,6 +126,39 @@ func _init() -> void:
 	run(a, 5.0)
 	check(phase_of(a, pid) == "prowl" and health[1] == 25.0, "a maimed player who got away is forgotten")
 
+	# 2c. The town keep-out (coordinator for Dave, 22 Nov 2026): a meat-carrying player inside town_keep_m of the town markers is not
+	# stalked or rushed, and a rush breaks off when the player runs into town. host.town is the markers' middle, never the spawn.
+	a = make()
+	log_bites = 0
+	health = {1: 100.0}
+	a.town = Vector2(0.0, 0.0)
+	players = [player(1, 0.0, 0.0, 1.0, true)]
+	pid = a.wolves.spawn_pack(30.0, 0.0)
+	a.wolves.packs[pid]["den"] = Vector3(9000.0, 0.0, 0.0)
+	var town_phases: Dictionary = {}
+
+	for n in 400:
+		a.tick(0.1)
+		town_phases[phase_of(a, pid)] = true
+
+	check(log_bites == 0 and not town_phases.has("rush") and not town_phases.has("stalk"), "a player in town is not stalked or rushed (%s)" % str(town_phases.keys()))
+	var keep: float = float(a.cfg["wolves"].get("town_keep_m", 300.0))
+	players[0]["pos"] = Vector3(keep + 10.0, 10.0, 0.0)
+	a.wolves.packs[pid]["ids"].map(func(id): a.animals[id]["pos"] = Vector3(keep + 40.0, 10.0, 0.0))
+	var rushed: bool = false
+
+	for n in 400:
+		a.tick(0.1)
+
+		if phase_of(a, pid) == "rush":
+			rushed = true
+			break
+
+	check(rushed, "outside the keep-out the same player is rushed")
+	players[0]["pos"] = Vector3(keep - 20.0, 10.0, 0.0)
+	run(a, 2.0)
+	check(phase_of(a, pid) != "rush", "a rush breaks off when the player is in town (%s)" % phase_of(a, pid))
+
 	# 3. Fire: wolves never step into the light; they circle outside it.
 	a = make()
 	log_bites = 0
