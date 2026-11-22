@@ -15,7 +15,7 @@ Dave's recorded stance (BugsList_Current.md, BugsList 93, and TODO.md, 21 Nov) i
   - The state line after the 11.3 s one names the slowest steps since the last state line: "between frames (rpc handlers, engine) 1791, items 3524, checks 7740". `event_log.mark` keeps each step's maximum since the last state line, so these are not one frame. items + checks = 11264 ms fits the 11306 ms frame. The 1791 most likely belongs to the earlier 1791 ms STALL, whose own line closed before its step mark (inferred; the two lines' timestamps overlap by about 1 s).
   - The same log has "terrain: tile (3, 4) loaded in 2874 ms (file 2845 ms)", which is a 2.8 s file read of the spawn tile.
   - On that build, "items" was `items.tick` plus `_tunnel_tick` and `_send_buried` (option A splits these out as "tunnels+buried"). "checks" is everything after the block delivery in `terrain_server._process`: `_send_held_edits`, `_send_fine`, `store.save_revisions`, `flora.save_removed`, the flag files, and direct `print()` calls. Option A names them "checks" (the tile_changed calls only), "checks: held edits", "checks: fine water", "checks: revisions file", "checks: flora removed file" and "checks: flags, report".
-- **Z against Y'''.** Z is about 1.3 s slower on all three runs. Z adds more start-up work on the server: the resource landscape (#1469, #1500, about 9 tiles on a worker), the animal range jobs (#1484, #1504, main-thread lumps of 34-67 ms per block), and the cave and ore layout.
+- **Z against Y'''.** Z was about 1.3 s slower on all three runs, and Z adds more start-up work on the server: the resource landscape (#1469, #1500, about 9 tiles on a worker), the animal range jobs (#1484, #1504, main-thread lumps of 34-67 ms per block), and the cave and ore layout. **Settled 22 Nov as machine drift, not code** (next section): main itself, re-run in the same session as Z, reads the same as Z.
 
 ### Z ft1 telemetry (read 22 Nov, /mnt/project-files/first_load_df896777_ft1_*)
 
@@ -64,10 +64,39 @@ The Z ft1 telemetry above adds a cause that now fits best: 0. **the server's mai
 
 The client's own cold shader build (BugsList 93) is the larger part of the 25 s and is a separate track. It is the targeted warm-up, once Dave's play log names the first-shown stalls. That work and these options add up; they do not replace each other.
 
+## The 1.3 s was machine drift (22 Nov)
+
+Lane A ran cold windowed Plays in one session on the morning of 22 Nov (coordinator's relay; record in NEXT_MAIN_GATE.md):
+
+| Build | Longest FREEZE (ms) |
+|---|---|
+| main d6801991 (3 runs) | 25797, 25161, 25065; median 25.16 s |
+| Z df896777 (median of 3, earlier in the night) | 25230 |
+| dev b91852d3 (median of 3) | 25167 |
+| 9c252970, before the landscape and #1484 (1 run) | 25497 |
+
+The same main tree gave a median of 23.96 s on the evening of 21 Nov. So the gap between Z and Y''' came from the PC, not from Z's commits. The boot and the driver (610.88) were the same, with no updates. What had changed was other programs: Firefox (about 16 processes) and a video player were open from the evening on, and the GPU sat at 21 % load while idle. The NVIDIA driver cache (DXCache, 22.4 GB, 293 files) was warm in every run.
+
+"Cold" in the lane jobs means a fresh APPDATA, TEMP and TMP in a new clone. That clears Godot's own user:// caches (shader_cache, the vulkan folder, terrain_cache), but not the driver's or Windows' caches under %LOCALAPPDATA% (NVIDIA DXCache, AMD DxcCache, D3DSCache). The project renders with d3d12, so the driver's compiled pipelines persist between runs.
+
+### Proposal for the gate's frame-time step (for Dave; not in force)
+
+What to log before each cold run, as a lane-job change and docs only:
+- other processes that use the GPU or much CPU (from Task Manager's GPU column or `nvidia-smi`), and the GPU load while idle
+- the driver version and the size and file count of the driver caches (DXCache or DxcCache, D3DSCache)
+- the wait between the clone's import and the Play, since the virus scanner and the search indexer read about 5,500 new files there
+
+How the FREEZE limit could hold up when the machine state changes. Today the limit is a fixed number taken from one evening (24.85 s). Options, recommended first:
+1. **Same-session comparison against main.** In the same session, run 3 cold Plays of the candidate and 3 of current main, interleaved (main, candidate, main, and so on). It passes if the candidate's median is no more than about 4 % above main's median (24.85 / 23.96 is 1.037, the margin the fixed limit had). Drift then affects both sides equally. This costs about 10 more minutes per gate.
+2. **A clean-machine rule.** The fixed limit stays, but the run only counts when no other GPU program is open and idle GPU load is under 5 %. Otherwise the run is repeated. This is simpler, but it depends on the lane cleaning up a PC that Dave is using. The lane must not close his programs.
+3. **Record only, no limit.** The FREEZE goes on record, and only a jump far beyond noise (for example more than 3 s over main) holds the gate. This matches Dave's stance that a long first load is expected (BugsList 93).
+
+The long-term item stays BugsList 93 itself: the client's cold shader build of about 25 s.
+
 ## Recommendation
 
 1. Do **A** now. It is safe before or after a main gate and turns causes 1-3 from inference into numbers.
-2. Then do **B** if A shows the pool busy with start-up jobs during the freeze. It is the smallest change aimed at Z's extra 1.3 s.
+2. Then do **B** only if A's logs show the pool busy with start-up jobs during the freeze. Z's extra 1.3 s turned out to be drift (above), so B no longer has that reason. Its trigger is ruled: the first player's ground ready, or 120 s after server start.
 3. Do **C** or **D** only if A's numbers point there.
 4. Keep **E** as the last resort.
 5. B to E should land after a main gate, not just before one. Each changes timing on the first join, which is what the gate's A5 step measures.
@@ -75,4 +104,4 @@ The client's own cold shader build (BugsList 93) is the larger part of the 25 s 
 ## Open questions (for the coordinator)
 
 - Answered 22 Nov: the Z ft1 server telemetry has them as 5850 ms ('between frames') and 18269 ms ('checks'); see above.
-- For B: is "the first player's ground ready" the right trigger on a Play server, or simply a fixed 60 s after start? The second is simpler and does not depend on a client message.
+- Answered 22 Nov (coordinator): B's trigger is the first player's ground ready, with 120 s after server start as the fallback.
