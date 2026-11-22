@@ -322,5 +322,38 @@ func _init() -> void:
 	check(stolen[0] == 0 and log_bites == 0, "a starving pack with meat never enters a fire's light (%d bites)" % log_bites)
 	fires_at = []
 
+	# 10. Pacing: a pack wolf's row carries the server time the pack brain moved it (moved_ms), and once it stops, the time it first stood
+	# (stood_ms), as every other animal's row does; before this, the pack's rows carried the time they were sent.
+	a = make()
+	players = [player(1, 0.0, 0.0)]
+	pid = a.wolves.spawn_pack(60.0, 0.0)
+	a.wolves.packs[pid]["den"] = Vector3(9000.0, 0.0, 0.0)
+	var pace_wolf: Dictionary = a.wolves._members(a.wolves.packs[pid])[0]
+	var stamped_moves: int = 0
+	var rows_on_move_time: int = 0
+
+	for n in 100:
+		var before: Vector3 = pace_wolf["pos"]
+		var stamp_before: int = int(pace_wolf.get("moved_ms", -1))
+		a.tick(0.1)
+
+		if pace_wolf["pos"] != before:
+			stamped_moves += 1 if int(pace_wolf.get("moved_ms", -1)) >= stamp_before and pace_wolf.has("moved_ms") else 0
+			OS.delay_msec(2)   # the row is sent a little after the move: it must carry the move's time, not the send time
+
+			for row in a.rows_near(players[0]["pos"], 500.0, 50):
+				if int(row[0]) == int(pace_wolf["id"]):
+					rows_on_move_time += 1 if int(row[5]) == int(pace_wolf["moved_ms"]) else 0
+
+	check(stamped_moves > 0 and rows_on_move_time == stamped_moves, "a pack wolf's row carries the time it moved (%d moves, %d rows on time)" % [stamped_moves, rows_on_move_time])
+	var still: Dictionary = {"pos": Vector3(1.0, 10.0, 1.0)}
+	a.wolves.pace(still, 1000)
+	a.wolves.pace(still, 1100)
+	var first_still: int = int(still.get("stood_ms", -1))
+	a.wolves.pace(still, 1200)
+	check(int(still["moved_ms"]) == 1000 and first_still == 1100 and int(still["stood_ms"]) == 1100, "a pack wolf that stops gets the time it first stood, once (%s)" % str(still))
+	still["pos"] = Vector3(2.0, 10.0, 1.0)
+	a.wolves.pace(still, 1300)
+	check(int(still["moved_ms"]) == 1300 and int(still["stood_ms"]) == 1100, "and a new move stamps again")
 	print("wolves: %d failures" % failures)
 	quit(failures)
