@@ -165,6 +165,7 @@ const PieceLook := preload("res://src/client/piece_look.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const AmbientCrittersScript := preload("res://src/client/ambient_critters.gd")
 const GrassViewScript := preload("res://src/client/grass_view.gd")
+const TrailSignsScript := preload("res://src/client/trail_signs.gd")
 const SoundStageScript := preload("res://src/client/sound_stage.gd")
 const GroundMaterialScript := preload("res://src/client/ground_material.gd")
 const HarvestScript := preload("res://src/client/harvest.gd")
@@ -496,6 +497,7 @@ var heart_pulse                       # HeartPulse: the line of light over the h
 var hud_fade                          # HudFade: passing out fades the whole HUD but the heartbeat line (heartbeat_design.md "Passing out")
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
 var grass                             # GrassView
+var trail_signs                       # TrailSigns: signs along the animals' trails (stage 2d)
 var map_knowledge = MapKnowledgeScript.new()   # this character's surveyed map cells (protocol 120); the Journal's Map page draws them (map_page.gd)
 var critters                          # AmbientCritters: butterflies, bees, dragonflies, birds and fireflies (client only)
 var faint                             # FaintEffect: tunnel vision, blur and black-out (set_state)
@@ -1430,6 +1432,11 @@ func _welcome_body(info: Dictionary) -> void:
 	root.add_child(critters)
 	grass.setup(terrain, flora, _tables)
 	grass.brook_spots = _brook_spots
+	trail_signs = TrailSignsScript.new()   # signs along the trails (stage 2d): latrines, scrapes, deer prints and droppings, by Tracking
+	trail_signs.name = "TrailSigns"
+	trail_signs.ground_height = func(x, z): return _ground_below(Vector3(x, body.global_position.y + 40.0, z)) if body != null else NAN
+	trail_signs.wet = func(x, z): return _wet_near(x, z, float(trail_signs.cfg.get("wet_m", 3.0)))
+	root.add_child(trail_signs)
 	_jitter_test = JitterTestScript.new()
 	add_child(_jitter_test)
 	_jitter_test.setup(self)
@@ -1632,7 +1639,9 @@ func _welcome_body(info: Dictionary) -> void:
 
 	net.trails_received.connect(func(bx: int, bz: int, bytes: PackedByteArray, routes: PackedByteArray) -> void:
 		grass.set_trail_block(bx, bz, TrailCodec.decode(bytes))
-		grass.set_trail_routes(bx, bz, TrailCodec.decode_routes(routes, Vector2i(bx, bz), TrailCodec.ROUTE_BLOCK_M))   # the trails between animal places (protocol 149)
+		var decoded: Array = TrailCodec.decode_routes(routes, Vector2i(bx, bz), TrailCodec.ROUTE_BLOCK_M)
+		grass.set_trail_routes(bx, bz, decoded)   # the trails between animal places (protocol 149)
+		trail_signs.set_routes(bx, bz, decoded)
 	)
 	net.map_block_received.connect(map_knowledge.receive)
 	net.blood_received.connect(animal_view.on_blood)
@@ -6013,6 +6022,9 @@ func _process(delta: float) -> void:
 		flora.apply_built()
 		Probe.stop("flora apply", ta)
 
+	if body != null and items != null and trail_signs != null:
+		trail_signs.update(body.global_position, int(items.skill_level_of("tracking")), _world_loading())   # at most twice a second, never while loading
+
 	if (not flying or grass_while_flying) and body != null:
 		var tg: int = Probe.start()
 		grass.update(body.global_position)
@@ -7626,6 +7638,18 @@ func wind_line(state: Dictionary) -> String:
 		float(wind_here.get("grade", 0.0)), int(round(WeatherScript.bearing_of_heading(down.angle()))) if down.length() > 0.01 else 0,
 		float(state.get("wind_slope_mps", 0.0)), float(wind_here.get("sea_upwind", 0.0)), float(state.get("wind_sea_mps", 0.0)),
 		float(wind_here.get("lee", 0.0)), float(wind_here.get("canopy", 0.0))]
+
+
+# Water within m of a spot (a deer trail's prints show where it crosses wet ground, stage 2d): the spot and four round it.
+func _wet_near(x: float, z: float, m: float) -> bool:
+	if flora == null:
+		return false
+
+	for d in [Vector2.ZERO, Vector2(m, 0.0), Vector2(-m, 0.0), Vector2(0.0, m), Vector2(0.0, -m)]:
+		if not is_nan(float(flora.water_surface_at(x + d.x, z + d.y))):
+			return true
+
+	return false
 
 
 func _ground_below(p: Vector3) -> float:
