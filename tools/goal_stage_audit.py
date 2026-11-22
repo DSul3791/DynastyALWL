@@ -16,7 +16,6 @@ and gives each item and structure the first stage that reaches it. A goal's targ
 A blueprint's chisel tier is honoured (the reach model does not read it): a piece needing a Bronze chisel is not built before bronze.
 
 shortcut: one goal stage covers copper and bronze together, so a copper_bronze goal that needs tin passes; the stage list above is the finer one.
-shortcut: Iron ore from rock is not in the dev world (encyclopedia_reach ORE_NOT_IN_WORLD), so iron comes from bog iron here.
 
 Run: python3 tools/goal_stage_audit.py      (prints each goal's stage and the stage that reaches it; exit 1 on a goal that comes too early)
 """

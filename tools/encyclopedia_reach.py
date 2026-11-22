@@ -24,8 +24,10 @@ An item is obtainable now when a player can get it today, starting with empty ha
 The "future" flag in items.json is NOT a source here (validate_items.gd counts future materials so it can check the
 recipe graph; that is a different question). The script lists items whose future flag disagrees with what it finds.
 
-status: "planned" when the item is not obtainable now, "retired" when items.json retires it (a kit row excepted: it stands for its
-piece), removed when it is obtainable; retired items are never obtainable.
+status: "planned" when the item is not obtainable now, "retired" when items.json retires it (a retired kit row stands for its piece, so it
+is retired only when no blueprint that is not retired or removed builds that piece; a blueprint row's "removed" flag also retires the
+piece's placed item), removed when it is obtainable; retired items are never obtainable.
+--check fails when obtainable_now or status would change.
 """
 
 import json
@@ -38,8 +40,7 @@ ITEMS = os.path.join(ROOT, "data", "items")
 ENC = os.path.join(ITEMS, "encyclopedia.json")
 
 # World facts the data files cannot show. Each names who said so and when; remove a row when the world changes.
-ORE_NOT_IN_WORLD = {
-    "iron": "both iron bodies on the nine baked tiles lie under the sea (Sonny, 10 Nov 2026); land iron comes from bog iron (digging.json, #996)",
+ORE_NOT_IN_WORLD = {   # iron was here (both baked iron bodies lie under the sea, Sonny 10 Nov 2026) until the ore plan (#1469) laid iron sources on land
 }
 
 
@@ -63,6 +64,7 @@ class Reach:
         self.all.update(self.gathered)
         self.recipes = read("recipes.json")["recipes"]
         self.blueprints = read("blueprints.json")["blueprints"]
+        self.blueprints_all = self.blueprints   # every row, for the kit status (goal_stage_audit narrows self.blueprints by chisel tier)
         self.structures = read("structures.json")["structures"]
         self.smelting = read("structures.json").get("smelting", {})
         self.drops = read("drops.json")
@@ -90,6 +92,16 @@ class Reach:
             self.why[iid] = how
             return True
         return False
+
+    def kit_piece_live(self, kit):
+        # a structure placed from this kit with a blueprint that is neither retired nor removed (a locked one is coming: Cold frame, Compost bin)
+        kinds = [k for k, d in self.structures.items() if d.get("kit") == kit]
+        return any(b.get("structure") in kinds and not b.get("retired") and not b.get("removed") for b in self.blueprints_all.values())   # removed: locked for good, the row kept loaded for tests (Wicker - Chest)
+
+    def piece_removed(self, iid):
+        # the placed item of a piece whose blueprint is removed (locked for good, kept loaded for the tests: Wicker - Chest, D-WICKER-1)
+        kinds = [k for k, d in self.structures.items() if d.get("item") == iid]
+        return any(b.get("structure") in kinds and b.get("removed") for b in self.blueprints_all.values())
 
     def has(self, iid):
         return iid in self.why
@@ -216,6 +228,21 @@ class Reach:
             p = next((t for t in (self.tool(c, ore.get("needs_material", {}).get(name)) for c in classes) if t), None)
             if p:
                 changed |= g(iid, "a boulder over a %s body (%s)" % (name, p))
+        # Loose pieces picked up by hand (boulders.json copper_rocks, tin_rocks: "a loose piece picked up by hand"; iron_rocks sizes: one ore is
+        # a loose Iron ore stone picked up by hand, Dave 21 Nov 2026; loose coal below a seam outcrop, distribution coal).
+        for key, name in [("copper_rocks", "copper"), ("tin_rocks", "tin"), ("iron_rocks", "iron")]:
+            if key in self.boulders and name in ore.get("items", {}):
+                changed |= g(ore["items"][name], "a loose piece picked up by hand (%s)" % key)
+        if "coal" in self.boulders.get("distribution", {}) and "coal" in ore.get("items", {}):
+            changed |= g(ore["items"]["coal"], "loose coal below a seam outcrop")
+        # Pocket finds (distribution pockets, #1469): a shovel dig opens the pocket, then a pick or the Stone Hammer breaks its rock.
+        if shovel:
+            p = next((t for t in (self.tool(c) for c in ore.get("tool_classes", [ore.get("tool_class", "pick")])) if t), None)
+            if p:
+                for row in self.boulders.get("distribution", {}).get("pockets", []):
+                    iid = ore.get("finds", {}).get(row.get("find"))
+                    if iid:
+                        changed |= g(iid, "a pocket dug open (%s) and broken out (%s)" % (shovel, p))
         for name, iid in ore.get("rocks", {}).items():
             p = next((t for t in (self.tool(c) for c in ore.get("tool_classes", [ore.get("tool_class", "pick")])) if t), None)
             if p:
@@ -273,7 +300,8 @@ class Reach:
         # Pieces the code lays down itself: a hoe tills a bed or wears a path, a kill leaves a carcass, a death leaves remains.
         code_laid = {"carcass": "an animal killed" if self.carcass.get("species") else None, "remains": "what a death leaves"}
         if hoe:
-            code_laid.update({"tilled_bed": "ground tilled with a %s" % hoe, "path_patch": "a path laid with a %s" % hoe})
+            code_laid.update({"tilled_bed": "ground tilled with a %s" % hoe, "path_patch": "a path laid with a %s" % hoe,
+                              "irrigation_trench": "a trench dug with a %s" % hoe})   # server_items.gd dig_trench, no items used
         for kind, how in code_laid.items():
             if how and kind in self.structures and kind not in self.built:
                 self.built[kind] = how
@@ -366,7 +394,9 @@ def main(argv):
         text = f.read()
     enc = json.loads(text)
     on, off, future_live, live_unreached = [], [], [], []
+    restatus = []
     for iid, e in enc["items"].items():
+        old_status = e.get("status")
         now = reach.has(iid)
         was = bool(e.get("obtainable_now"))
         if now != was:
@@ -375,10 +405,14 @@ def main(argv):
         it = reach.all.get(iid, {})
         if now:
             e.pop("status", None)
-        elif it.get("retired") and not iid.endswith("_kit"):
-            e["status"] = "retired"   # replaced by another item (Greens by Nettles, Salt by Sea salt): no source is coming
+        elif (it.get("retired") and not (iid.endswith("_kit") and reach.kit_piece_live(iid))) or reach.piece_removed(iid):
+            # replaced by another item (Greens by Nettles, Salt by Sea salt): no source is coming. A retired kit stands for its piece,
+            # so it is retired only when every blueprint of the piece is retired (the pumps and iron pipes: Dave, copper taps, no pumps).
+            e["status"] = "retired"
         else:
             e["status"] = "planned"
+        if e.get("status") != old_status and now == was:
+            restatus.append((iid, old_status, e.get("status")))
         if it.get("retired"):
             continue
         if now and it.get("future"):
@@ -395,7 +429,10 @@ def main(argv):
     show("No longer obtainable (true -> false)", off, lambda i: "; ".join(reach.blocked(i)))
     show("Reached but items.json says future", future_live, lambda i: reach.why[i])
     show("Not reached and not future", live_unreached, lambda i: "; ".join(reach.blocked(i)))
-    if "--check" in argv and (on or off):
+    print("Status changed (%d)" % len(restatus))
+    for iid, a, b in sorted(restatus):
+        print("  %-28s %s -> %s" % (iid, a, b))
+    if "--check" in argv and (on or off or restatus):
         print("encyclopedia.json is out of date: run python3 tools/encyclopedia_reach.py --write")
         return 1
     if "--write" in argv:

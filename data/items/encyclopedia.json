@@ -2382,7 +2382,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"chest": {
 			"name": "Wicker - Chest",
@@ -2391,7 +2391,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"chopping_block": {
 			"name": "Chopping block",
@@ -4279,7 +4279,8 @@
 				"Craft at a workbench: 1 Wooden - Hoe, 2 Stone, 1 Twine"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"iron_hoe": {
 			"name": "Iron - Hoe",
@@ -4560,7 +4561,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"woodworking_table": {
 			"name": "Woodworking table",
@@ -4589,7 +4590,8 @@
 				"Craft at a wood carving station: 1 Wooden block, 1 Stick, 1 Twine (keep Stone - Knife)"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"stone_hammer": {
 			"name": "Stone - Hammer",
@@ -5083,7 +5085,8 @@
 				"Not made yet: its recipe is locked until it has a use"
 			],
 			"used_for": [],
-			"obtainable_now": false
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"javelin": {
 			"name": "Javelin",
@@ -5108,7 +5111,7 @@
 				"Used in Wooden shingle"
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"stone_pickaxe": {
 			"name": "Stone - Pickaxe",
@@ -5157,7 +5160,8 @@
 			"kind": "material",
 			"description": "A heavy lump streaked green and red. A smelter turns each one into a copper ingot.",
 			"how_to_get": [
-				"Broken from a boulder over a copper body with any pick"
+				"Picked up by hand as small green pieces along rivers and streams inland, more and bigger toward the hills",
+				"Broken from a copper rock or a green outcrop at a copper source with any pick or the Stone Hammer"
 			],
 			"used_for": [
 				"Used in Copper ingot"
@@ -5169,7 +5173,8 @@
 			"kind": "material",
 			"description": "A dark, very heavy lump. A smelter turns each one into a tin ingot; with copper ore, into bronze.",
 			"how_to_get": [
-				"Broken from a boulder over a tin body with any pick"
+				"Picked up by hand as small dark pebbles in river beds below a tin source, which lies farther inland than copper, below the high hills",
+				"Broken from a tin rock or an outcrop at a tin source with any pick or the Stone Hammer"
 			],
 			"used_for": [
 				"Used in Tin ingot"
@@ -5181,7 +5186,8 @@
 			"kind": "material",
 			"description": "A rusty brown lump. Smelts to iron in an Improved smelter with its bellows worked, or an Advanced smelter.",
 			"how_to_get": [
-				"Break iron rock outcrops with a bronze or better pick."
+				"Picked up by hand as small rust-red stones along rivers and streams almost anywhere",
+				"Broken from larger iron rocks and rusty outcrops at an iron source with a bronze or better pick"
 			],
 			"used_for": [
 				"Smelted into Iron ingots and, with carbon, Steel ingots"
@@ -5276,7 +5282,11 @@
 			"name": "Coal",
 			"kind": "material",
 			"description": "A black lump that burns hot. Smelts iron and makes steel.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Broken from a dark coal outcrop on a hillside beside a river, lake or wet ground with any pick or the Stone Hammer",
+				"Picked up loose below a coal outcrop",
+				"Dug with any shovel along a coal seam into the hill"
+			],
 			"used_for": [
 				"Used in Copper ingot",
 				"Used in Iron ingot",
@@ -7294,7 +7304,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"stewed_berries": {
 			"name": "Stewed berries",
@@ -8735,7 +8745,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"iron_doorway": {
 			"name": "Iron - Doorway",
@@ -8753,7 +8763,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"steel_doorway": {
 			"name": "Steel - Doorway",
@@ -9051,7 +9061,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"thatch_garden_plot": {
 			"name": "Thatch - Garden plot",
@@ -9107,7 +9117,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"stone_garden_plot": {
 			"name": "Stone - Garden plot",
@@ -9125,7 +9135,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"brick_garden_plot": {
 			"name": "Brick - Garden plot",
@@ -9331,7 +9341,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"log_trough": {
 			"name": "Log - Trough",
@@ -9590,7 +9600,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"clay_pipe_run": {
 			"name": "Clay - Pipe",
@@ -9610,7 +9620,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"clay_pipe_elbow": {
 			"name": "Clay - Pipe elbow",
@@ -9630,7 +9640,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"clay_pipe_tee": {
 			"name": "Clay - Pipe tee",
@@ -10214,7 +10224,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"clay_bloomery": {
 			"name": "Clay bloomery",
@@ -10528,7 +10538,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"iron_anvil": {
 			"name": "Anvil",
@@ -10728,7 +10738,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"log_shelf": {
 			"name": "Log - Shelf",
