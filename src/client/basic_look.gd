@@ -929,7 +929,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			for k in 3:
 				_box(parts, Vector3(0.018, 0.02, 0.06), Vector3(-0.09 + 0.09 * float(k), -0.026, 0.0), Color(0.9, 0.88, 0.8))
 		"garment":
-			# Clothing lying flat (bits[0]: tunic, trousers, gloves, mittens, cap, cloak, boots; colour tells the material: hide brown, wool cream, linen pale, fur dark): simple readable silhouettes,
+			# Clothing lying flat (bits[0]: tunic, shirt, trousers, skirt, dress, robe, coat, apron, tabard, gloves, mittens, cap, headwrap, broad_brim, cloak, boots, shoes, socks, scarf; colour tells the material: hide brown, wool cream, linen pale, fur dark): simple readable silhouettes,
 			# a collar or seam line for each.
 			var gk: String = str(bits[0]) if bits.size() > 0 else "tunic"
 			if has_tier(bits):                                                                                    # metal armour drawn as a garment (mail coif, gauntlets, greaves, chausses, sabatons): its tier's colour
@@ -973,6 +973,92 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 						_box(parts, Vector3(0.07, 0.07, 0.12), Vector3(side * 0.05, 0.0, 0.0), color)
 						_box(parts, Vector3(0.075, 0.045, 0.1), Vector3(side * 0.05, -0.02, -0.1), color.darkened(0.1))
 						_box(parts, Vector3(0.078, 0.014, 0.2), Vector3(side * 0.05, -0.05, -0.04), dark)
+				"skirt", "dress":
+					# A skirt flares from its waistband to the hem in three widening tiers; a dress adds a fitted bodice with short sleeves above it.
+					var waist_z: float = -0.14
+
+					if gk == "dress":
+						_box(parts, Vector3(0.15, 0.03, 0.13), Vector3(0.0, 0.0, -0.2), color)
+						_box(parts, Vector3(0.07, 0.034, 0.03), Vector3(0.0, 0.0, -0.255), dark)
+						_box_rot(parts, Vector3(0.07, 0.026, 0.05), Vector3(0.1, 0.0, -0.23), Vector3(0.0, -0.6, 0.0), color.darkened(0.05))
+						_box_rot(parts, Vector3(0.07, 0.026, 0.05), Vector3(-0.1, 0.0, -0.23), Vector3(0.0, 0.6, 0.0), color.darkened(0.05))
+						waist_z = -0.13
+
+					_box(parts, Vector3(0.16, 0.034, 0.03), Vector3(0.0, 0.002, waist_z), dark)
+
+					for t in 3:
+						_box(parts, Vector3(0.18 + float(t) * 0.06, 0.03 - float(t) * 0.002, 0.11), Vector3(0.0, 0.0, waist_z + 0.07 + float(t) * 0.1), color.darkened(float(t) * 0.04))
+
+					_box(parts, Vector3(0.31, 0.03, 0.02), Vector3(0.0, 0.002, waist_z + 0.29), dark.lightened(0.1))
+				"robe", "coat":
+					# A long body with long sleeves; a robe has a hood at the neck and a cord belt, a coat a front opening with buttons and a turned collar.
+					var long_z: float = 0.46 if gk == "robe" else 0.38
+					_box(parts, Vector3(0.24, 0.03, long_z), Vector3(0.0, 0.0, long_z * 0.5 - 0.17), color)
+					_box_rot(parts, Vector3(0.24, 0.026, 0.07), Vector3(0.19, 0.0, -0.05), Vector3(0.0, -0.7, 0.0), color.darkened(0.05))
+					_box_rot(parts, Vector3(0.24, 0.026, 0.07), Vector3(-0.19, 0.0, -0.05), Vector3(0.0, 0.7, 0.0), color.darkened(0.05))
+
+					if gk == "robe":
+						_sph(parts, 0.07, Vector3(1.2, 0.35, 0.8), Vector3(0.0, 0.012, -0.19), dark)
+						_box(parts, Vector3(0.25, 0.036, 0.018), Vector3(0.0, 0.002, 0.0), dark.darkened(0.2))
+						_box(parts, Vector3(0.014, 0.036, 0.12), Vector3(0.04, 0.002, 0.06), dark.darkened(0.2))
+					else:
+						_box(parts, Vector3(0.012, 0.034, long_z - 0.04), Vector3(0.0, 0.002, long_z * 0.5 - 0.15), dark)
+						_box(parts, Vector3(0.16, 0.036, 0.04), Vector3(0.0, 0.003, -0.16), dark.lightened(0.08))
+
+						for b in 4:
+							_sph(parts, 0.009, Vector3(1.0, 0.6, 1.0), Vector3(0.016, 0.02, -0.08 + float(b) * 0.07), dark.darkened(0.3), true)
+				"apron":
+					# A bib and a wide skirt panel, neck strap and waist ties; leather ones (dark brown) get a tool pocket.
+					_box(parts, Vector3(0.13, 0.026, 0.11), Vector3(0.0, 0.0, -0.13), color)
+					_box(parts, Vector3(0.22, 0.026, 0.22), Vector3(0.0, 0.0, 0.03), color.darkened(0.04))
+					_box_rot(parts, Vector3(0.012, 0.02, 0.09), Vector3(0.05, 0.0, -0.22), Vector3(0.0, 0.4, 0.0), dark)
+					_box_rot(parts, Vector3(0.012, 0.02, 0.09), Vector3(-0.05, 0.0, -0.22), Vector3(0.0, -0.4, 0.0), dark)
+					_box_rot(parts, Vector3(0.12, 0.02, 0.012), Vector3(0.16, 0.0, -0.07), Vector3(0.0, 0.3, 0.0), dark)
+					_box_rot(parts, Vector3(0.12, 0.02, 0.012), Vector3(-0.16, 0.0, -0.07), Vector3(0.0, -0.3, 0.0), dark)
+					_box(parts, Vector3(0.13, 0.03, 0.06), Vector3(0.0, 0.002, 0.05), color.darkened(0.15))
+				"tabard":
+					# A long open-sided panel, front and back in one, with a neck hole and a household charge (a cross) in a bright dye down the front.
+					_box(parts, Vector3(0.17, 0.026, 0.5), Vector3(0.0, 0.0, 0.03), color)
+					_box(parts, Vector3(0.18, 0.03, 0.02), Vector3(0.0, 0.002, 0.27), dark)
+					_sph(parts, 0.035, Vector3(1.0, 0.3, 0.8), Vector3(0.0, 0.012, -0.12), dark.darkened(0.3), true)
+					var charge: Color = Color.html("#c8a040").srgb_to_linear()
+					_box(parts, Vector3(0.03, 0.03, 0.18), Vector3(0.0, 0.003, 0.08), charge)
+					_box(parts, Vector3(0.12, 0.03, 0.03), Vector3(0.0, 0.003, 0.05), charge)
+				"headwrap":
+					# Cloth wound in a ring with a knot and a hanging tail.
+					_torus(parts, 0.07, 0.024, Vector3(0.0, 0.0, 0.0), color)
+					_sph(parts, 0.055, Vector3(1.0, 0.45, 1.0), Vector3(0.0, 0.006, 0.0), color.darkened(0.05), true)
+					_sph(parts, 0.025, Vector3(1.2, 0.8, 1.0), Vector3(0.0, 0.02, 0.085), dark, true)
+					_box_rot(parts, Vector3(0.04, 0.012, 0.11), Vector3(0.025, -0.01, 0.15), Vector3(0.0, -0.3, 0.0), color.darkened(0.08))
+				"broad_brim":
+					# A wide flat brim, a round crown and a band.
+					_cyl(parts, 0.15, 0.012, Vector3(0.0, -0.02, 0.0), Vector3.ZERO, color)
+					_cyl(parts, 0.07, 0.07, Vector3(0.0, 0.02, 0.0), Vector3.ZERO, color.darkened(0.06))
+					_cyl(parts, 0.073, 0.016, Vector3(0.0, -0.006, 0.0), Vector3.ZERO, dark)
+				"shoes":
+					# A low pair: an upper with an opening, a rounded toe, a darker sole.
+					for side in [-1.0, 1.0]:
+						_box(parts, Vector3(0.065, 0.045, 0.13), Vector3(side * 0.05, 0.0, 0.0), color)
+						_sph(parts, 0.033, Vector3(1.0, 0.7, 1.0), Vector3(side * 0.05, -0.004, -0.065), color.darkened(0.05), true)
+						_box(parts, Vector3(0.045, 0.01, 0.05), Vector3(side * 0.05, 0.022, 0.03), dark.darkened(0.3))
+						_box(parts, Vector3(0.07, 0.012, 0.17), Vector3(side * 0.05, -0.026, -0.01), dark)
+				"socks":
+					# A pair laid flat, each an L of leg and foot with a ribbed cuff.
+					for side in [-1.0, 1.0]:
+						_box(parts, Vector3(0.06, 0.022, 0.15), Vector3(side * 0.05, 0.0, -0.04), color)
+						_box(parts, Vector3(0.06, 0.022, 0.09), Vector3(side * 0.05 + side * 0.03, 0.0, 0.06), color.darkened(0.04))
+						_box(parts, Vector3(0.064, 0.026, 0.03), Vector3(side * 0.05, 0.001, -0.11), dark)
+						_box(parts, Vector3(0.062, 0.025, 0.02), Vector3(side * 0.05 + side * 0.04, 0.001, 0.095), color.darkened(0.12))
+				"scarf":
+					# A long strip folded once, with stripes near the ends and fringed tips.
+					_box(parts, Vector3(0.06, 0.02, 0.42), Vector3(-0.04, 0.0, 0.0), color)
+					_box_rot(parts, Vector3(0.06, 0.02, 0.3), Vector3(0.03, 0.01, 0.06), Vector3(0.0, -0.25, 0.0), color.darkened(0.05))
+
+					for z in [-0.16, 0.16]:
+						_box(parts, Vector3(0.062, 0.024, 0.015), Vector3(-0.04, 0.001, z), dark)
+
+					for f in 4:
+						_box(parts, Vector3(0.006, 0.01, 0.03), Vector3(-0.062 + float(f) * 0.015, 0.0, 0.225), dark)
 				_:
 					_box(parts, Vector3(0.22, 0.03, 0.3), Vector3(0.0, 0.0, 0.0), color)
 		"parcel":
