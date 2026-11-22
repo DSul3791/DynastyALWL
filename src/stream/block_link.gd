@@ -26,6 +26,7 @@ var _inbox: PackedByteArray = PackedByteArray()
 var _peer_id: int = 0
 var _state: int = 0                      # 0 connecting, 1 ready, 2 off
 var _started_msec: int = 0
+var _open_msec: int = 0                  # when the hello went (the line counts as up from then)
 var _lost_line: bool = false             # the line closed after it was up: what it was asked for may never come (take_lost_line)
 
 
@@ -84,8 +85,9 @@ func send_request(keys: PackedInt32Array, urgent: int) -> bool:
 	if _state == 1 and not sent:
 		_state = 2
 		_lost_line = true
+		var status: int = _tcp.get_status()
 		_tcp.disconnect_from_host()   # closed at our end too, so the server stops sending answers down a line nobody reads
-		FreezeWatchScript.printer.line("Terrain client: the block line closed; blocks come over the game connection")
+		FreezeWatchScript.printer.line("Terrain client: the block line closed (a request could not be written, status %d, %d ms after it opened); blocks come over the game connection" % [status, Time.get_ticks_msec() - _open_msec])
 
 	_mutex.unlock()
 	return sent
@@ -112,14 +114,16 @@ func pump() -> void:
 			hello.put_32(_peer_id)
 			_tcp.put_data(hello.data_array)
 			_state = 1
-			print("Terrain client: block line open")
+			_open_msec = Time.get_ticks_msec()
+			# The server waits block_line_hello_ms (60 s) for the hello from its accept, about when open() started connecting.
+			FreezeWatchScript.printer.line("Terrain client: block line open (hello sent %d ms after open())" % (_open_msec - _started_msec))
 		elif status != StreamPeerTCP.STATUS_CONNECTING or Time.get_ticks_msec() - _started_msec > CONNECT_MSEC:
 			_state = 2
-			print("Terrain client: no block line; blocks come over the game connection")
+			FreezeWatchScript.printer.line("Terrain client: no block line (status %d after %d ms); blocks come over the game connection" % [status, Time.get_ticks_msec() - _started_msec])
 	elif status != StreamPeerTCP.STATUS_CONNECTED:
 		_state = 2
 		_lost_line = true
-		FreezeWatchScript.printer.line("Terrain client: the block line closed; blocks come over the game connection")
+		FreezeWatchScript.printer.line("Terrain client: the block line closed (the server's end, status %d, %d ms after it opened); blocks come over the game connection" % [status, Time.get_ticks_msec() - _open_msec])
 	else:
 		var available: int = _tcp.get_available_bytes()
 

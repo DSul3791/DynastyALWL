@@ -14,6 +14,7 @@ const TrampleScript := preload("res://src/client/grass_trample.gd")
 const NearWater := preload("res://src/shared/near_water_growth.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")   # "grass: <part>" splits of the client's "grass" (Jason/Steve 5 Nov 2026: #374 found no gain)
 const Puddles := preload("res://src/client/puddles.gd")
+const TrailCodec := preload("res://src/shared/trail_codec.gd")   # ROUTE_BLOCK_M, the side of a routes block
 const CELL_M := 6.0
 const PLAYER_CLEAR_M := 1.4              # grass within this of the local player is cut down to PLAYER_KEEP of its height (soft edge) so the feet show in third person
 const PLAYER_KEEP := 0.4               # Dave 2 Nov QA: standing in grass looked like "a weird green carpet" (it was 0.12 of height, in first person too); now gentler and third person only
@@ -506,7 +507,7 @@ func _rebuild_runs(player: Vector3) -> void:
 	var data: PackedByteArray = PackedByteArray()
 	data.resize(RUN_TEXELS * RUN_TEXELS)
 	data.fill(0)
-	var here: Vector2i = Vector2i(int(floor(player.x / 256.0)), int(floor(player.z / 256.0)))
+	var here: Vector2i = Vector2i(int(floor(player.x / TrailCodec.ROUTE_BLOCK_M)), int(floor(player.z / TrailCodec.ROUTE_BLOCK_M)))
 	var window: Rect2 = Rect2(_run_origin, Vector2(size, size)).grow(2.0)
 	var drawn: int = 0
 	var texels: int = 0
