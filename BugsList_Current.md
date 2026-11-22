@@ -1656,6 +1656,41 @@ Not yet played.
 
 Not yet played.
 
+## 128. Each nail metal has its own use, and stone-age pieces need no metal or chisel
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026 17:53Z: "anything that uses copper cladding should use copper nails to attach the copper sheets. copper nails are also good for light duty connections like decorations or small light boxes and such. bronze are slightly stronger and bigger and better for stronger construction like chests, cabinets, upholstery, iron are stronger and great for construction and building strong boxes, etc. steel is the strongest and is best for fortification level strength like steel rivets and fortified doors etc. use judgement based on these suggestions." The chisel and stone-age follow-ups were ruled by the coordinator under Dave's 21 Nov questions rule (D-CHISEL-1, GR-1, GR-2, GR-3).
+
+**What was found:** after entry 111 every non-chest build asked for Bronze nails and Bronze hinges, whatever it was. Plain nailed furniture needed a Bronze chisel. The Sawbuck and the Palisade gate needed bronze before any smithy, and laid stone pieces needed an Iron chisel.
+
+**Required outcome:** each build asks for the nail metal its use needs ("or better" still serves). A chisel only where something is carved. Stone-age pieces need no metal.
+
+**As built (merged to dev in order; dev 0703e012 after the last):**
+- PR #1460 (reviewed head 2f9ea1ef, merged at 4afeb074). Copper nails: Raised cistern, Crate, garden plots, Bottle and jar rack. Iron nails: Sawmill, Advanced smithy, resource bins, Ore and metal rack, Warehouse crate, iron fence and railing. Iron hinges: the iron, stone, brick, engineered and fortified gates, the Advanced smithy. The Fortified gate takes Steel nails. The Water wheel takes Iron nails. The Sawbuck (until GR-1), the Improved smithy and the Improved smelter keep bronze, because they come before iron. The four nail descriptions say what each is for. Design: docs/design/CHEST_TIERS.md "Nails for every build".
+- PR #1466 (reviewed head 02b2d9ed, merged at 21583b78), D-CHISEL-1. The Rustic - Chair, Rustic - Table and Cupboard take no chisel. The Barrel and Raised cistern keep Bronze. The Canopy bed goes from Steel to Iron.
+- PR #1470 (reviewed head 071ae4e1, merged at 0703e012):
+  - GR-1: the Sawbuck takes 8 Lumber and 16 Wooden pins instead of 16 Bronze nails.
+  - GR-2: the Palisade gate takes 8 Log, 3 Twine and 1 Rope, with no hinges.
+  - GR-3: the Stone - Planter, Trough, Channel, Channel corner and Channel tee take no chisel.
+- Decisions: REPAIR_DECISIONS.md TT-3; TREE_WOOD_TOOLS_DESIGN.md W-4.
+
+**Evidence:**
+- Independent review PASS on 7425a191, 4ffd023d and 77bff927, and on 2f9ea1ef, 02b2d9ed and 071ae4e1 after the description fix.
+- Lane B on 77bff927, one run for the whole stack: 298 pass / 0 fail. validate_items had 1 error, because the Copper nails description was 119 characters (the limit is 110). It was fixed on #1460 and merged up the stack.
+- Lane B on 071ae4e1 (trial merge onto dev e10712cb):
+  - 298 pass / 0 fail.
+  - validate_items 0 errors.
+  - Warnings 381, which is the baseline. Look names 340.
+  - Join smoke 20 s to welcome.
+
+**Acceptance:**
+- Hover a Crate's cost: it asks for Copper nails or better.
+- A Sawmill asks for Iron nails, and a Fortified - Gate asks for Steel nails.
+- A Rustic - Chair goes up with no chisel on the hand bar. A Barrel still needs a Bronze chisel or better.
+- A Sawbuck goes up from Lumber and Wooden pins, and a Palisade gate from Logs, Twine and Rope, both before any smithy.
+- A Stone - Trough goes up with no chisel.
+
+Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
