@@ -23,7 +23,7 @@ recorded). Values marked TR-n are provisional and live in data files.
   storm. A catch lays a carcass. The Bird trap is a second kind. The fish trap is separate.
 - Changed 22 Nov 2026 (Dave: "the server doesn't have to do any work once a trap is put out"): no looks and no draw. A catchable
   animal stepping within lure_m of a set snare (animals step only near players) gets one roll for that pass. A snare off any animal
-  trail never catches. With nobody near nothing runs; when a player comes back within 150 m the time away is rolled once, by the
+  trail never catches. With nobody near nothing runs; when a player comes back within 200 m (the animals' own active radius) the time away is rolled once, by the
   rabbits' activity at each hour (latest 24 h). Snares sit in a 32 m grid. No limit on how many a player sets.
 
 What is missing, and why trails never really showed: the client kept the worn blocks but never laid them into the grass map (`grass_view._rebuild_trails` was never called; now it is). And animals have one home point and wander a few metres round it. Nothing walks

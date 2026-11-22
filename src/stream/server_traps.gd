@@ -317,7 +317,7 @@ func check_one(id: int, row: Dictionary = {}) -> bool:
 	return true
 
 
-# Quiet after a catch until a game second ("quiet"); older saves held seconds left, which are long past by the game clock.
+# Quiet after a catch until a game second ("quiet", not saved).
 func _quiet(st: Dictionary) -> bool:
 	return host._now_game_s() < float(st.get("quiet", 0.0))
 
@@ -386,7 +386,7 @@ func _lay_catch(id: int, sp: String, c: Dictionary) -> void:
 	if host._items.has(int(st["catch"])):
 		host._items[int(st["catch"])]["struct"]["snared"] = true
 
-	st["quiet"] = host._now_game_s() + float(c.get("avoid_s", 25.0))
+	st["quiet"] = host._now_game_s() + float(c.get("avoid_s", 600.0))
 	it["wear"] = int(it.get("wear", 0)) + int(c.get("wear_per_catch", 1))
 	host._dirty = true
 

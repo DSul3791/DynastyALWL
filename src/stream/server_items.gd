@@ -14776,15 +14776,15 @@ func wolf_info() -> Array:
 	return out
 
 
-# World ids that may lie within r (flat) of a point, for the animals' searches (finding 8, docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md):
-# the last world sync's NEAR_M cells that the circle touches, plus every id made since that sync; every id when no sync has filed a grid yet.
-# The caller checks each id is still there and how far it is.
 # An animal near a player stepped from `from` to `to` (server_animals.gd snare_pass): a set trap it has just come up to may take it.
 func animal_passed(animal_id: int, sp: String, from: Vector3, to: Vector3) -> void:
 	if _traps != null:
 		_traps.on_pass(animal_id, sp, from, to)
 
 
+# World ids that may lie within r (flat) of a point, for the animals' searches (finding 8, docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md):
+# the last world sync's NEAR_M cells that the circle touches, plus every id made since that sync; every id when no sync has filed a grid yet.
+# The caller checks each id is still there and how far it is.
 func _ids_near(centre: Vector3, r: float) -> Array:
 	if _sync_grid.is_empty():
 		return _items.keys()
