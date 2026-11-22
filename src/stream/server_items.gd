@@ -20972,7 +20972,7 @@ func _crops_tick() -> void:
 			var winter: bool = _season() == "winter" and not bool(def.get("grows_in_winter", str(crop["crop"]) == "turnip"))   # data flag grows_in_winter; turnip by default
 
 			if winter:
-				if crop_stage(crop) == 0:
+				if crop_stage(crop) == 0 and not bool(def.get("overwinters", false)):   # overwinters (data): winter wheat, rye and autumn onions sit out the frost as seedlings and grow on in spring
 					_crops.erase(key)   # frost kills a seedling
 					_dirty = true
 					break

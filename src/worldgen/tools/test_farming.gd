@@ -1,7 +1,7 @@
 extends SceneTree
 
 # Farming rules on the server (FARMING_SPEC.md steps 2 to 5; Tyler 31 Oct 2026). A hoe tills a bed; a seed is sown only in its season and is used up; a game day that
-# ends with the bed's moisture at 25 percent or more (rain fills it, a pour adds to it, the weather dries it) is a wet day; a crop is ripe only when old enough AND wet enough (a dry bed stalls at stage 2); winter pauses growth and kills a seedling (turnip
+# ends with the bed's moisture at 25 percent or more (rain fills it, a pour adds to it, the weather dries it) is a wet day; a crop is ripe only when old enough AND wet enough (a dry bed stalls at stage 2); winter pauses growth and kills a seedling, unless the crop overwinters (wheat, rye, autumn onions) (turnip
 # grows on); compost speeds growth by 20 percent; harvest gives the yields and seeds back, half without the sickle for grain; an unripe crop is refused; crops are saved.
 # GOALS-REPAIR WP-R1B adds the player's route through the requests the client sends (sowing is the hoe's Plant grid, ACT_PLANT_GRID, since Dave's play test of 19 Nov 2026: E on a
 # bed no longer sows; ACT_WATER_BED, ACT_HARVEST): a real flax
@@ -817,7 +817,14 @@ func _init() -> void:
 	check(sow(bed, "wheat_seeds"), "the bed is sown again")
 	season[0] = "winter"
 	days(1)
-	check(not items._crops.has(key), "a seedling does not survive winter frost")
+	check(items._crops.has(key) and items.crop_stage(items._crops[key]) == 0, "a wheat seedling (overwinters) sits out the frost")
+	items._crops.erase(key)
+	season[0] = "spring"
+	give("barley_seeds", 1)
+	check(sow(bed, "barley_seeds"), "barley is sown")
+	season[0] = "winter"
+	days(1)
+	check(not items._crops.has(key), "a barley seedling does not survive winter frost")
 	give("turnip_seeds", 2)
 	check(not sow(bed, "turnip_seeds"), "turnip cannot be sown in winter (its seasons are spring, summer and autumn)")
 	season[0] = "autumn"

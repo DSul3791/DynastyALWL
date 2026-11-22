@@ -40,6 +40,7 @@
 			],
 			"tool_to_harvest": "sickle",
 			"store": "dry in the sheaf, grain keeps 12 months in a dry store",
+			"overwinters": true,
 			"sow_seasons": [
 				"spring",
 				"autumn"
@@ -148,6 +149,7 @@
 			],
 			"tool_to_harvest": "sickle",
 			"store": "dry grain keeps 12 months; sown in autumn, overwinters",
+			"overwinters": true,
 			"sow_seasons": [
 				"autumn"
 			]
@@ -310,8 +312,10 @@
 			],
 			"tool_to_harvest": "hand",
 			"store": "dry and hang: keeps 6 months",
+			"overwinters": true,
 			"sow_seasons": [
-				"spring"
+				"spring",
+				"autumn"
 			]
 		},
 		"peas": {
