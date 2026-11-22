@@ -62,7 +62,7 @@ pid() { "$PY" -c "import sys;sys.path.insert(0,'tools');import tests_for_diff as
 cr() { "$PY" -c "import sys;sys.path.insert(0,'tools');import tests_for_diff as t;r=t.changed_rows(sys.argv[1],sys.argv[2],'it.json',sys.argv[3]);print(sorted(r) if r is not None else None)" "$1" "$2" "$R"; }
 [ "$(cr j0 j1)" = "['new_rock', 'stone_axe']" ]; ok $? "changed_rows: an edited and an added row, not the untouched one or the note and next_number"
 [ "$(cr j1 j2)" = "None" ]; ok $? "changed_rows: a new top-level value is not rows (whole item group)"
-sel data/items/looks.json | field "'test_eat_once' not in d['fast'] and 'test_item_looks' in d['fast']" | grep -q True; ok $? "looks.json (client only) skips the item group, keeps its direct loaders"
+sel data/items/looks.json | field "'test_eat_once' not in d['fast'] and 'test_item_looks' in d['fast'] and 'validate_items' in d['checks']" | grep -q True; ok $? "looks.json (client only) skips the item group, keeps its direct loaders and validate_items"
 "$PY" tools/tests_for_diff.py --paths src/worldgen/tile/tile_drainage.gd --full --no-slow | field "len(d['slow'])==0 and len(d['fast'])>60" | grep -q True; ok $? "--no-slow leaves the slow lane out (main gate Lane A)"
 sel data/items/items.json | field "'test_animals_weather' not in d['fast'] and 'test_death' not in d['fast']" | grep -q True; ok $? "item group name patterns match whole name parts ('eat' is not in test_animals_weather)"
 cat > "$T/fakegodot" <<'F'

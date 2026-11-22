@@ -17,7 +17,8 @@ Output: {"plan":"change|wide|all|full","class":"docs|data|code|bake","fast":[...
 Rules (tools/test_lanes.json): docs-only diff = no tests. CHANGE plan: a test is chosen when the test itself, or a helper script in
 src/worldgen/tools it uses, loads a changed path directly (preload, load, res:// strings, class_name use, directories and path-prefix
 strings); a hub (a file 100+ tests load directly) adds its core list and the tests that name what the diff changed in it. WIDE plan:
-the same scan followed through every chain of loads. Both add the always set, the item group, the path rules and the extra inputs; a
+the same scan followed through every chain of loads. Both add the always set, the item group (a change plan: only the tests naming
+changed item rows, when the change is just rows that tests name), the path rules and the extra inputs; a
 path nobody knows, a project.godot edit, or a test file the scan cannot read means ALL fast tests: more, never fewer.
 Fast = every test_*.gd in the test folders (TEST_DIRS: src/worldgen/tools and src/water2) that is not timing or slow. Diff is `git diff --name-only M head` where M is
 `git merge-base base head`: the head's own changes since it left base, as `git diff base...head` (19 Nov 2026: a two-dot diff against a
@@ -263,7 +264,7 @@ def changed_names(base, head, path, cwd=ROOT):
 
 def changed_rows(base, head, path, cwd=ROOT):
     """The row ids (item, recipe, structure ...) whose value head changed, added or removed in one data JSON file since it left base.
-    A row is a key of a top-level object of objects, or one level down ({"recipes": {id: {...}}}). None when the file is new, deleted,
+    A row is a key of a top-level object whose values are all objects ({"recipes": {id: {...}}}). None when the file is new, deleted,
     unreadable, or changed outside its rows (a new top-level key or a plain value): the caller then takes the whole item group."""
     mb = diff_base(base, head, cwd)
     out = []
@@ -289,7 +290,7 @@ def changed_rows(base, head, path, cwd=ROOT):
         if not (is_rows(x) and is_rows(y)):
             return None   # a rule value, not rows
         ids.update(i for i in set(x) | set(y) if x.get(i) != y.get(i))
-    return {i for i in ids if len(i) >= 3}
+    return None if any(len(i) < 3 for i in ids) else ids   # a short key cannot be matched to test text: whole group
 
 
 # Where head left base (git merge-base), so only head's own changes are diffed; base itself when they share no history (more, never fewer).
@@ -419,13 +420,16 @@ def select(paths, lanes, force_all=False, full=False, wide=False, names=None, it
             add(users, "names %s, changed in %s" % (n, hit))
 
     group = lanes["item_group"]
-    item_hits = [p for p in live if matches(p, group["paths"]) and not matches(p, group.get("skip_paths", []))]
+    all_item = [p for p in live if matches(p, group["paths"])]
+    item_hits = [p for p in all_item if not matches(p, group.get("skip_paths", []))]
     if item_hits:
         # Changed item, recipe or structure rows (item_ids): only the tests that name a changed id, like a hub's names. A change that
-        # is not a set of rows (a new top-level section, a file git cannot read, too many rows, --paths, --wide) takes the whole group.
+        # is not a set of rows (a new top-level section, a file git cannot read, too many rows, --paths, --wide), or rows no test
+        # names (a new row), takes the whole group.
         rows = [(item_ids or {}).get(p) for p in item_hits]
         ids = set().union(*[r for r in rows if r]) if rows and all(r is not None for r in rows) else None
-        if not wide and ids is not None and 0 < len(ids) <= group.get("max_ids", 25):
+        named = set()
+        if not wide and ids and len(ids) <= group.get("max_ids", 25):
             cap = lanes.get("name_max_tests", 40)
             for n in sorted(ids):
                 word = re.compile(r'\b' + re.escape(n) + r'\b')
@@ -433,12 +437,16 @@ def select(paths, lanes, force_all=False, full=False, wide=False, names=None, it
                 if len(users) > cap:
                     users = sorted(users, key=lambda t: zlib.crc32((n + t).encode()))[:cap]
                     why.setdefault("item " + n, "named by more than %d tests: %d of them, the rest in the dev sweep" % (cap, cap))
+                named.update(users)
                 add(users, "names %s, changed in %s" % (n, item_hits[0]))
+        if named:
             why.setdefault("item group", "%d changed rows: the tests naming them, the rest of the group in the dev sweep" % len(ids))
         else:
             # whole name parts only: "eat" picks test_eat_once, not test_animals_weather or test_death
             pats = group["name_patterns"]
             add([t for t in tests if any(("_" + x) in ("_" + t[5:]) for x in pats)], "item data changed: whole item group")
+    if all_item:
+        # validate_items checks every item file, looks.json included, so a skipped file still gets it
         for c in group.get("checks", []):
             if c not in result["checks"]:
                 result["checks"].append(c)

@@ -105,6 +105,15 @@ func _init() -> void:
 	view.on_rows(rows)
 	check(view.roster.size() == roster.size(), "roster kept (%d of %d)" % [view.roster.size(), roster.size()])
 	check(view.drawn_count() == mini(rows.size(), view.MAX_DRAWN), "every listed NPC drawn: %d of %d" % [view.drawn_count(), rows.size()])
+	# The width and face shapes are made on a worker (dynasty_shapes.gd) and reach a body in a later frame: wait for them, not a fixed
+	# number of frames (under a loaded machine the worker finished after the check and the test failed; it passed alone).
+	var shapes_since: int = Time.get_ticks_msec()
+	while not Shapes.ready() and Time.get_ticks_msec() - shapes_since < 10000:
+		await process_frame
+	var settle_frames: int = 0
+	while settle_frames < 3:
+		await process_frame
+		settle_frames += 1
 	_check_bodies(view)
 	var near: Dictionary = view.nearest(spawn, 20.0)
 	check(not near.is_empty(), "an NPC is within 20 m of spawn")
