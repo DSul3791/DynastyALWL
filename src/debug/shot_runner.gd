@@ -1294,7 +1294,8 @@ func _show_pieces(now: int) -> void:
 		tag.position = Vector3(x, g + maxf(height, 0.4) + 0.5, z)
 		client.add_child(tag)
 		model.set_meta("piece_tag", tag)
-		print("shot runner: piece %s %s state %d look %s size %.2f x %.2f x %.2f at %s" % [models[n][0], "FAIL empty" if box.size == Vector3.ZERO else "ok", int(models[n][1]["state"]), str(models[n][1].get("look", "")), box.size.x, box.size.y, box.size.z, str(model.global_position)])
+		# "lowest point" against the ground under it: below 0 is sunk in, above 0 floats (a gap read off shadows can be the sun's shadow bias)
+		print("shot runner: piece %s %s state %d look %s size %.2f x %.2f x %.2f at %s, lowest point %+.3f m from the ground" % [models[n][0], "FAIL empty" if box.size == Vector3.ZERO else "ok", int(models[n][1]["state"]), str(models[n][1].get("look", "")), box.size.x, box.size.y, box.size.z, str(model.global_position), box.position.y - g])
 		x += float(widths[n]) * 0.5 + 1.0
 		subject_y = g
 
