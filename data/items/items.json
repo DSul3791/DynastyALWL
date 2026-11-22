@@ -2736,7 +2736,7 @@
 		"nails": {
 			"number": 228,
 			"name": "Iron nails",
-			"description": "Small iron nails. They fix boards in builds that take iron nails or a lesser metal.",
+			"description": "Small iron nails, strong. For construction and strong boxes: bins, racks, mills, fences and big chests.",
 			"kind": "material",
 			"material": "iron",
 			"stack": 200,
@@ -2747,7 +2747,7 @@
 		"steel_nails": {
 			"number": 1513,
 			"name": "Steel nails",
-			"description": "Small steel nails, the strongest. They fix boards in any build that takes nails.",
+			"description": "Small steel nails, the strongest. For fortification: fortified gates and the Ornate - Chest.",
 			"kind": "material",
 			"material": "steel",
 			"stack": 200,
@@ -9475,7 +9475,7 @@
 			"bronze_nails": {
 				"number": 894,
 				"name": "Bronze nails",
-				"description": "Small bronze nails. Fix boards in builds, the same as iron ones.",
+				"description": "Small bronze nails, stronger than copper. For chests, cabinets, furniture and upholstery.",
 				"kind": "material",
 				"material": "bronze",
 				"stack": 200,
@@ -12281,7 +12281,7 @@
 			"stack": 1,
 			"unstackable": true,
 			"look_alikes": [],
-			"note": "Placed station (Dave 15 Nov 2026, W-4: 8 Planks, 16 Nails, hammer blueprint 352). Row state 442."
+			"note": "Placed station (Dave 15 Nov 2026, W-4: 8 Planks, 16 Wooden pins since GR-1 21 Nov 2026, hammer blueprint 352). Row state 442."
 		},
 		"carving_station": {
 			"number": 1477,
@@ -12356,7 +12356,7 @@
 		"copper_nails": {
 			"number": 1487,
 			"name": "Copper nails",
-			"description": "Small copper nails. Soft; a Quality - Backpack is sewn and nailed with them.",
+			"description": "Small copper nails, the softest. For copper sheet and light work: crates, garden plots and racks.",
 			"kind": "material",
 			"material": "copper",
 			"stack": 200,

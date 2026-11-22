@@ -71,6 +71,15 @@ func _init() -> void:
 	events.drain()
 	check(FileAccess.get_file_as_string("user://line_writer_test/test_line_writer_events.log").contains("] hello"), "EventLog lines reach the file")
 
+	# close() is the server's last _exit_tree call (main gate, 21 Nov 2026: exit 132 after a clean stop): what is queued is written, and a
+	# line logged after it (a peer dropping as the network closes) starts no worker task and is dropped.
+	events.event("before close")
+	events.close()
+	check(FileAccess.get_file_as_string("user://line_writer_test/test_line_writer_events.log").contains("] before close"), "EventLog.close() writes what was queued")
+	events.event("after close")
+	check(int(events._writer._task) == -1 and not bool(events._writer._busy), "a line after close() starts no worker task")
+	check(not FileAccess.get_file_as_string("user://line_writer_test/test_line_writer_events.log").contains("after close"), "and is dropped")
+
 	DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
 	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://line_writer_test/test_line_writer_events.log"))
 	print("test_line_writer: %s" % ("PASS" if failures == 0 else "%d failures" % failures))

@@ -65,6 +65,7 @@ var _tiles: Dictionary = {}           # Vector2i -> tile data
 var failed_tiles: int = 0              # times a tile file existed but failed to load (a stand-in was used)
 var _mutex: Mutex = Mutex.new()
 var _prefetching: Dictionary = {}       # Vector2i -> true while a worker thread reads that tile
+var _prefetch_tasks = preload("res://src/shared/pool_tasks.gd").new()   # the prefetch tasks, waited for by finish_tasks() at exit
 var _loading: Dictionary = {}           # Vector2i -> true while one thread reads that tile in get_tile; the others wait for it
 var tile_reads: int = 0                 # tile files read by get_tile (one per tile unless a bad file gave a stand-in)
 var tile_load_waits: int = 0            # get_tile calls that waited for another thread's read instead of reading the file again
@@ -295,11 +296,21 @@ func prefetch_tile(x: float, z: float) -> void:
 	if busy:
 		return
 
-	WorkerThreadPool.add_task(func():
+	var started: bool = _prefetch_tasks.add(func():
 		get_tile(coord)
 		_mutex.lock()
 		_prefetching.erase(coord)
-		_mutex.unlock())
+		_mutex.unlock(), "tile prefetch")
+
+	if not started:   # shutting down (finish_tasks): the tile is read when asked for
+		_mutex.lock()
+		_prefetching.erase(coord)
+		_mutex.unlock()
+
+
+# Waits for the prefetch tasks still running; later prefetches start nothing. The server's _exit_tree, before the engine shuts its worker pool.
+func finish_tasks() -> void:
+	_prefetch_tasks.finish()
 
 
 # Prefetches the tile under a position and any neighbour tile within `margin` metres, so main-thread height lookups near a tile edge never read a file.
