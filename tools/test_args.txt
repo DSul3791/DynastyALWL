@@ -1,1 +1,7 @@
 # Extra command line arguments for one test, read by tools/run_one_test.sh: <test name> <arguments>
+# --fixed-fps 60 (22 Nov 2026): the physics still steps at 1/60 s, without waiting real time. Only tests that time nothing by the wall clock.
+# Cloud at f1f62ac5: step_up_slow 38 s -> 6 s, stairs_climb 22 s -> 2 s, step_up 4.5 s -> 0.2 s, creator_preview 4.5 s -> 1 s; same checks pass.
+test_step_up_slow engine --fixed-fps 60
+test_stairs_climb engine --fixed-fps 60
+test_step_up engine --fixed-fps 60
+test_creator_preview engine --fixed-fps 60
