@@ -1,0 +1,21 @@
+# What docker build sends for the client export (deploy/client/Dockerfile names what goes in). The client preset leaves these out anyway.
+.git
+.godot
+art
+docs
+design
+tech
+items
+120
+native
+proposed_removals
+crash_reports
+.claude
+.github
+tools
+deploy
+data/admin.json
+worlds/*/record
+worlds/*/setup_cache
+worlds/*/tiles
+assets/audio/**/*.import
