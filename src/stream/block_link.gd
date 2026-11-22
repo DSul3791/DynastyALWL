@@ -115,8 +115,9 @@ func pump() -> void:
 			_tcp.put_data(hello.data_array)
 			_state = 1
 			_open_msec = Time.get_ticks_msec()
-			# The server waits 5 s for the hello after the connect (block_link_server); a later one closes the line at once.
-			FreezeWatchScript.printer.line("Terrain client: block line open (hello sent %d ms after connecting)" % (_open_msec - _started_msec))
+			# The server waits 5 s for the hello from its accept (block_link_server HELLO_WAIT_MSEC), about when open() started connecting;
+			# a hello sent later goes to a line the server has already closed.
+			FreezeWatchScript.printer.line("Terrain client: block line open (hello sent %d ms after open())" % (_open_msec - _started_msec))
 		elif status != StreamPeerTCP.STATUS_CONNECTING or Time.get_ticks_msec() - _started_msec > CONNECT_MSEC:
 			_state = 2
 			FreezeWatchScript.printer.line("Terrain client: no block line (status %d after %d ms); blocks come over the game connection" % [status, Time.get_ticks_msec() - _started_msec])

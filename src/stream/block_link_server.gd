@@ -11,6 +11,7 @@ const KIND_REQUEST := 1
 const KIND_STATUS := 2                   # (server pick page) a line that opens with [u32 4][u32 2] instead of a hello gets one status frame
                                          # [u32 size][u32 2][JSON utf-8] and is closed: name, message, build, protocol, players, max_players, locked
 const MAX_FRAME := 1 << 20
+const HELLO_WAIT_MSEC := 5000            # a connection that has not said hello by then is closed
 const NetSettings := preload("res://src/shared/net_settings.gd")
 
 var on_request: Callable                 # (peer_id, keys, urgent) on the line's thread
@@ -251,13 +252,13 @@ func _loop() -> void:
 				_mutex.lock()
 				_lines[peer_id] = {"tcp": item[0], "inbox": item[1], "mutex": Mutex.new(), "outbox": PackedByteArray(), "out_at": 0, "since": Time.get_ticks_msec()}
 				_mutex.unlock()
-			elif peer_id == 0 and Time.get_ticks_msec() - int(item[2]) < 5000:
+			elif peer_id == 0 and Time.get_ticks_msec() - int(item[2]) < HELLO_WAIT_MSEC:
 				still.append(item)
 			else:
 				if peer_id == 0:
-					print("Terrain server: a block line closed: no hello within 5 s of connecting (%d bytes came)" % (item[1] as PackedByteArray).size())
+					print("Terrain server: a block line closed: no hello within %d ms of connecting (%d bytes read)" % [HELLO_WAIT_MSEC, (item[1] as PackedByteArray).size()])
 				elif str(item[3]) != "":
-					print("Terrain server: a block line closed before it served anyone: %s" % str(item[3]))
+					print("Terrain server: a block line closed before it served anyone, %d ms after connecting: %s" % [Time.get_ticks_msec() - int(item[2]), str(item[3])])
 
 				item[0].disconnect_from_host()
 
@@ -278,7 +279,7 @@ func _read_hello(item: Array) -> int:
 	tcp.poll()
 
 	if tcp.get_status() != StreamPeerTCP.STATUS_CONNECTED:
-		item[3] = "the game's end closed it before its hello (status %d, %d bytes came)" % [tcp.get_status(), (item[1] as PackedByteArray).size()]
+		item[3] = "the game's end closed it before its hello (status %d, %d bytes read)" % [tcp.get_status(), (item[1] as PackedByteArray).size()]
 		return -1
 
 	var available: int = tcp.get_available_bytes()
