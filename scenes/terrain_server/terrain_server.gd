@@ -1022,7 +1022,12 @@ func _ready() -> void:
 			return
 
 		_slow_rpc("hello: authenticate", t0)
-		items.peer_connected_hello(peer, identity.store_key(account))
+		for old_peer in items.peer_connected_hello(peer, identity.store_key(account)):
+			print("Peer %d is the same character as peer %d: the older connection is dropped" % [peer, old_peer])
+
+			if multiplayer.multiplayer_peer != null and _peers.has(old_peer):
+				multiplayer.multiplayer_peer.disconnect_peer(old_peer)
+
 		_slow_rpc("hello: peer_connected_hello", t0)
 		net.admin_status.rpc_id(peer, admin.is_admin(items.key_of(peer)))   # protocol 134: the client's Admin menu follows it
 		net.npc_roster.rpc_id(peer, npcs.roster())
