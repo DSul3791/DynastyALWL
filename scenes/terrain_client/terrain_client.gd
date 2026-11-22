@@ -2880,11 +2880,12 @@ func _update_weather() -> void:
 	tw = Probe.start()
 	# Ice on ponds and lakes: a pure function of the clock, zone and altitude (src/shared/ice.gd), so
 	# every client and the server agree with no traffic.
-	# The walkable ice (collider, ice feel bands, sounds) stays exact each second, as before: only the look below uses kept answers. On the
-	# 5 s thaw tick the one season run gives the cover too (the same loop and numbers as IceScript.cover), so it is not walked twice.
+	# The walkable ice (collider, ice feel bands, sounds) takes a fresh answer each second from a worker (_ice_season_now): only the look
+	# below uses kept answers. The one season run gives the cover and the thaw (the same loop and numbers as IceScript.cover).
 	var seed_value: int = int(world.get("master_seed", 0))
-	var thaw_season: Dictionary = IceScript.season(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M, seed_value) if now >= _ice_thaw_next_msec else {}
-	var ice_now: float = float(thaw_season["cover"]) if not thaw_season.is_empty() else IceScript.cover(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M, seed_value)
+	var season_now: Dictionary = _ice_season_now(group, seed_value)
+	var thaw_season: Dictionary = season_now if now >= _ice_thaw_next_msec else {}
+	var ice_now: float = float(season_now["cover"])
 
 	if not thaw_season.is_empty():
 		_ice_memo_put(group, ICE_POND_DEPTH_M, thaw_season)   # the look's 3 m answer for this slot: the same depth, height and game time (FrozenWater.OPEN_DEPTH_M)
@@ -2959,6 +2960,39 @@ var _steam_logged: bool = false
 const ICE_MEMO_GAME_S := 600.0
 const ICE_MEMO_BAND_M := 10.0
 var _ice_memo: Dictionary = {}   # [depth, zone group, seed, height band, game time slot] -> Ice.season
+
+
+# The pond ice for the feel and the look, once a second (BugsList 108: "weather: ice" 8-24 ms in HITCH frames, a hitch every second). Ice.season
+# walks 30 game days hour by hour, so it runs on a worker: each second takes the answer the worker finished (asked about a second earlier;
+# ice grows and melts over game hours, so a second-old cover is the same cover to the step) and asks the next one. The first second, and any
+# second whose worker has not finished, uses the last answer; the very first answer is worked out here, so the walkable ice is never unknown.
+var _ice_task: int = -1
+var _ice_task_out: Dictionary = {}   # written by the worker, read only after it finished
+var _ice_last: Dictionary = {}       # {"cover", "peak"} at the anchor
+
+
+func _ice_season_now(group: String, seed_value: int) -> Dictionary:
+	if _ice_task >= 0 and WorkerThreadPool.is_task_completed(_ice_task):
+		WorkerThreadPool.wait_for_task_completion(_ice_task)
+		_ice_task = -1
+		_ice_last = _ice_task_out
+
+	var height: float = maxf(_anchor.y, 0.0)
+	var game_s: float = game_clock.seconds
+
+	if _ice_last.is_empty():
+		_ice_last = IceScript.season(game_s, group, height, ICE_POND_DEPTH_M, seed_value)
+
+	if _ice_task < 0:
+		_ice_task = WorkerThreadPool.add_task(func() -> void: _ice_task_out = IceScript.season(game_s, group, height, ICE_POND_DEPTH_M, seed_value), false, "pond ice")
+
+	return _ice_last
+
+
+func _finish_ice_task() -> void:
+	if _ice_task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_ice_task)
+		_ice_task = -1
 
 
 func _ice_memo_key(group: String, depth_m: float) -> Array:
@@ -7749,6 +7783,7 @@ func _exit_tree() -> void:
 		crash_report.mark_clean()
 
 	_finish_cache_task()
+	_finish_ice_task()
 	_drain_incoming()
 	if stream != null:
 		stream.close()
