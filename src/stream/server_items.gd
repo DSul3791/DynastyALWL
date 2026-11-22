@@ -21696,7 +21696,7 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 		"beach_with_container", "beach_with_bucket":   # a water container in the pack at the sea edge (ACT_GATHER_EDGE reach)
 			var carries: bool = false
 
-			for container in (["bucket"] if trigger == "beach_with_bucket" else ["bucket", "clay_jug", "waterskin"]):
+			for container in (["bucket"] if trigger == "beach_with_bucket" else _shore_data().get("containers", [])):   # the containers gather_edge fills
 				carries = carries or inv.count_of(table.number_of(container)) >= 1
 
 			return carries and _sea_near(_peer_pos[peer], float(_shore_data().get("reach_m", 4.0)))
