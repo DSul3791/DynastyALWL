@@ -15,7 +15,7 @@ Dave's recorded stance (BugsList_Current.md, BugsList 93, and TODO.md, 21 Nov) i
   - The state line after the 11.3 s one names the slowest steps since the last state line: "between frames (rpc handlers, engine) 1791, items 3524, checks 7740". `event_log.mark` keeps each step's maximum since the last state line, so these are not one frame. items + checks = 11264 ms fits the 11306 ms frame. The 1791 most likely belongs to the earlier 1791 ms STALL, whose own line closed before its step mark (inferred; the two lines' timestamps overlap by about 1 s).
   - The same log has "terrain: tile (3, 4) loaded in 2874 ms (file 2845 ms)", which is a 2.8 s file read of the spawn tile.
   - On that build, "items" was `items.tick` plus `_tunnel_tick` and `_send_buried` (option A splits these out as "tunnels+buried"). "checks" is everything after the block delivery in `terrain_server._process`: `_send_held_edits`, `_send_fine`, `store.save_revisions`, `flora.save_removed`, the flag files, and direct `print()` calls. Option A names them "checks" (the tile_changed calls only), "checks: held edits", "checks: fine water", "checks: revisions file", "checks: flora removed file" and "checks: flags, report".
-- **Z against Y'''.** Z was about 1.3 s slower on all three runs, and Z adds more start-up work on the server: the resource landscape (#1469, #1500, about 9 tiles on a worker), the animal range jobs (#1484, #1504, main-thread lumps of 34-67 ms per block), and the cave and ore layout. **Settled 22 Nov as machine drift, not code** (next section): main itself, re-run in the same session as Z, reads the same as Z.
+- **Z against Y'''.** Z was about 1.3 s slower on all three runs, and Z adds more start-up work on the server: the resource landscape (#1469, #1500, about 9 tiles on a worker), the animal range jobs (#1484, #1504, main-thread lumps of 34-67 ms per block), and the cave and ore layout. **Settled 22 Nov as the machine, not code** (next section): main itself, re-run in the same session as Z, reads the same as Z. Which part of the machine is not shown.
 
 ### Z ft1 telemetry (read 22 Nov, /mnt/project-files/first_load_df896777_ft1_*)
 
@@ -47,7 +47,7 @@ The CPU reading (cause 1 below) fits these times less well than a wait. The pool
 
 The Z ft1 telemetry above adds a cause that now fits best: 0. **the server's main thread is held by something tied to the frozen client** (the timing is measured; what holds it is not named yet). The four below were written before that telemetry was read.
 
-1. **CPU oversubscription.** The client's shader build plus the server's uncapped, normal-priority pool tasks, with more of them since #1469 and #1484. This fits the extra 1.3 s at Z and the server STALL matching the client FREEZE. It is inferred, not measured.
+1. **CPU oversubscription.** The client's shader build plus the server's uncapped, normal-priority pool tasks, with more of them since #1469 and #1484. It was written to fit the extra 1.3 s at Z, which is withdrawn (that was the machine, see below), and the server STALL matching the client FREEZE (the ft1 timing above puts the stall about 1 s after the freeze starts). It is inferred, not measured.
 2. **The server main thread waiting on a starved worker.** This happens through `get_tile`'s wait, or through a lock a pool task holds (the flora lock, the store). This fits a STALL length close to the freeze. It is inferred.
 3. **Synchronous main-thread work in the server's "items" and "checks" steps at the first join** (3.5 s and 7.7 s on 20 Nov). Which sub-step is slow is not yet measured. Candidates are the save writes (`save_revisions`, `save_removed`), `_send_held_edits` and `_send_fine` on a new player, and direct `print()` on a debug build. The client fix #1491 shows that a main-thread print can take 0.4-1.6 s there.
 4. **Disk contention.** The 2.9 s spawn-tile read against the client's cache writes on a cold run. This adds to 1-3 but is unlikely on its own to make 25 s.
@@ -57,37 +57,37 @@ The Z ft1 telemetry above adds a cause that now fits best: 0. **the server's mai
 | # | Option | Risk | Expected effect | What it needs to test |
 |---|---|---|---|---|
 | A | **Measure first.** Sub-marks inside the server's "items" and "checks" steps, a server-side "pool tasks running/queued" count on the state line, and the server's 10 s report prints moved onto a worker (`items._log_off_main`). The other direct prints stay: the rare ones, and "Client %d connected" on the join path. | Very low: logging, and print order only | Names the slow step, so B to E aim at it (measure before fixing: docs/PONYTAIL_RULES.md) | Change plan on Lane B (smokes dedicated_stop, play_stop, join_remote); one cold windowed Play on Lane A to read the new STALL breakdown |
-| B | **Hold the server's start-up jobs while a player is joining.** The local Play server starts the resource landscape, range jobs and similar after the first player reports ground ready, or after a fixed time, whichever comes first. A dedicated server starts them at once, as now. | Low to medium: a job order change, and nothing in the world differs once done | Takes Z's +1.3 s out of the first-join window; less pool load during the shader build | Change plan; Lane A 3 cold windowed Plays, median FREEZE against Y''' and Z; a check that the resource landscape and ranges still finish (their existing tests, plus a Lane B log line) |
+| B | **Hold the server's start-up jobs while a player is joining.** The local Play server starts the resource landscape, range jobs and similar after the first player reports ground ready, or after a fixed time, whichever comes first. A dedicated server starts them at once, as now. | Low to medium: a job order change, and nothing in the world differs once done | Less pool load during the shader build, if A shows that matters (Z's +1.3 s, its first reason, was the machine) | Change plan; Lane A 3 cold windowed Plays, median FREEZE against Y''' and Z; a check that the resource landscape and ranges still finish (their existing tests, plus a Lane B log line) |
 | C | **Cap the server's pool on Play.** The Play server's own pool tasks go through one small queue with its own cap (for example half the cores, the same as `--threads`), instead of straight to `WorkerThreadPool.add_task`. Godot has no per-process command-line override for `threading/worker_pool/max_threads` that I could find in this repo, so the cap is ours. | Medium: touches every server pool user; a too-small cap slows block and tile service | Bounds the server's share of the PC while the client builds shaders | Change plan plus the timing tests (flora walk cost, stock poll cost); Lane A 3 cold Plays; Lane B dedicated smokes to confirm dedicated servers are unchanged |
 | D | **Take the measured main-thread steps off the server's main thread.** Whatever A names, for example the save writes into the existing writer pattern, or a new player's held edits sent over several frames. | Medium: depends on the step; saves need the crash-safety checks of #1473 | Removes the STALL's own share | The owning tests for that step, plus Lane B save and resume tests (test_area_saves, test_resume_spot) |
 | E | **Lower the whole Play server process's priority** (below normal on Windows). | Medium to high: needs a platform-specific launch (`OS.create_process` has no priority); the Linux and dedicated paths must stay as they are | Gives the client first claim on every core | A Windows-only lane check (Lane A); Lane B confirms Linux is unchanged |
 
 The client's own cold shader build (BugsList 93) is the larger part of the 25 s and is a separate track. It is the targeted warm-up, once Dave's play log names the first-shown stalls. That work and these options add up; they do not replace each other.
 
-## The 1.3 s was machine drift (22 Nov)
+## The 1.3 s was the machine, not code (22 Nov)
 
-Lane A ran cold windowed Plays in one session on the morning of 22 Nov (coordinator's relay; record in NEXT_MAIN_GATE.md):
+Lane A ran these cold windowed Plays in one session in the night and morning of 22 Nov (coordinator's relay; record in NEXT_MAIN_GATE.md, A5 follow-up):
 
 | Build | Longest FREEZE (ms) |
 |---|---|
 | main d6801991 (3 runs) | 25797, 25161, 25065; median 25.16 s |
-| Z df896777 (median of 3, earlier in the night) | 25230 |
+| Z df896777 (median of 3) | 25230 |
 | dev b91852d3 (median of 3) | 25167 |
 | 9c252970, before the landscape and #1484 (1 run) | 25497 |
 
-The same main tree gave a median of 23.96 s on the evening of 21 Nov. So the gap between Z and Y''' came from the PC, not from Z's commits. The boot and the driver (610.88) were the same, with no updates. What had changed was other programs: Firefox (about 16 processes) and a video player were open from the evening on, and the GPU sat at 21 % load while idle. The NVIDIA driver cache (DXCache, 22.4 GB, 293 files) was warm in every run.
+The same main tree gave a median of 23.96 s on the evening of 21 Nov. So the gap between Z and Y''' came from the PC, not from Z's commits. The boot and the driver (610.88) were the same, with no updates. New since the Y''' runs: Firefox (about 16 processes) and a video player were open, and the GPU sat at 21 % load with the lane stopped. These happened at the same time; they are not shown to be the cause. The NVIDIA driver cache (DXCache, 22.4 GB, 293 files) and D3DSCache (33 MB) were warm in every run.
 
-"Cold" in the lane jobs means a fresh APPDATA, TEMP and TMP in a new clone. That clears Godot's own user:// caches (shader_cache, the vulkan folder, terrain_cache), but not the driver's or Windows' caches under %LOCALAPPDATA% (NVIDIA DXCache, AMD DxcCache, D3DSCache). The project renders with d3d12, so the driver's compiled pipelines persist between runs.
+"Cold" in the lane jobs means a fresh APPDATA, TEMP and TMP in a new clone (LANE_JOBS_Z.md). That clears whatever Godot keeps under user:// (terrain_cache in this repo, and the engine's own shader caches, by general knowledge, not checked here). It does not clear the machine-wide driver caches that the lane saw warm (DXCache, D3DSCache), which as far as I know live under %LOCALAPPDATA% (not checked). The project renders with d3d12 (project.godot), so the driver's compiled pipelines most likely persist between runs (inferred).
 
 ### Proposal for the gate's frame-time step (for Dave; not in force)
 
 What to log before each cold run, as a lane-job change and docs only:
 - other processes that use the GPU or much CPU (from Task Manager's GPU column or `nvidia-smi`), and the GPU load while idle
 - the driver version and the size and file count of the driver caches (DXCache or DxcCache, D3DSCache)
-- the wait between the clone's import and the Play, since the virus scanner and the search indexer read about 5,500 new files there
+- the wait between the clone's import and the Play (the import writes about 5,570 files to `.godot/imported`; a virus-scanner or indexer effect on those is possible but not measured)
 
-How the FREEZE limit could hold up when the machine state changes. Today the limit is a fixed number taken from one evening (24.85 s). Options, recommended first:
-1. **Same-session comparison against main.** In the same session, run 3 cold Plays of the candidate and 3 of current main, interleaved (main, candidate, main, and so on). It passes if the candidate's median is no more than about 4 % above main's median (24.85 / 23.96 is 1.037, the margin the fixed limit had). Drift then affects both sides equally. This costs about 10 more minutes per gate.
+How the FREEZE limit could hold up when the machine state changes. Today the limit is a fixed number (24.85 s) set from the 20 Nov X runs. Options, recommended first:
+1. **Same-session comparison against main.** In the same session, run 3 cold Plays of the candidate and 3 of current main, interleaved (main, candidate, main, and so on). It passes if the candidate's median is no more than a set margin above main's median. The margin is Dave's pick: about 4 % (1 s) is one choice, roughly where 24.85 s sits above the 23.96 s main later measured; runs of one build spread about 0.7 s, so a smaller margin would fail on noise. Whether 1 s is enough is not measured. Drift then affects both sides equally. It adds 3 Plays, about 10 minutes by estimate.
 2. **A clean-machine rule.** The fixed limit stays, but the run only counts when no other GPU program is open and idle GPU load is under 5 %. Otherwise the run is repeated. This is simpler, but it depends on the lane cleaning up a PC that Dave is using. The lane must not close his programs.
 3. **Record only, no limit.** The FREEZE goes on record, and only a jump far beyond noise (for example more than 3 s over main) holds the gate. This matches Dave's stance that a long first load is expected (BugsList 93).
 
