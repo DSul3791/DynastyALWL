@@ -233,6 +233,7 @@ func _build_main() -> void:
 	quit.add_child(ask)
 	_button(quit, "Yes, leave", func():
 		_c._say_logout()
+		_c.quitting = true
 		_c.get_tree().quit())
 	_button(quit, "No, stay", func(): show_page("main"))
 
