@@ -637,6 +637,8 @@ func peer_connected_hello(peer: int, key: String) -> Array:
 	for other in _peer_key.keys():
 		if int(other) != peer and str(_peer_key[other]) == key:
 			_peer_key.erase(other)   # its later peer_left finds no character: it saves no spot over the live one and pauses nothing
+			_peer_pos.erase(other)   # and no ghost body stays for animals and other players until the old line drops
+			_stance.erase(other)
 			replaced.append(int(other))
 
 	_peer_key[peer] = key
