@@ -74,7 +74,7 @@ Grouped so that each piece can be one thread. Order is a suggestion (section 4).
 - Done: all 132 grey items now have their own look, in groups 5a to 5f (#1492, #1493, #1494, #1496, #1499), with fixes from the first Lane A pictures (#1507). Only `kindling_duplicate` stays in data/items/look_placeholders.json, for its number. Not yet played.
 
 ### Piece 6. Settlement size table
-- **Decided, D-TODO-5** (a coordinator pick for Dave, under his 21 Nov questions rule; not Dave's own approval; corrected 22 Nov): the proposed city size table in Design_Ideas_Unapproved.md ("The settlement ladder") is adopted as written: hamlet 10 to 100, village 100 to 400, town 400 to 1,500, city 1,500 to 5,000, grand city 5,000 to 15,000, with radii 300, 450, 675, 1,000 and 1,500 m. Real medieval sizes were the sanity check (most towns well under 2,000 people; only the largest cities over 10,000). Still to do: record it in the design with its status, for Dave's review (piece 8).
+- **Decided, D-TODO-5** (a coordinator pick for Dave, under his 21 Nov questions rule; not Dave's own approval; corrected 22 Nov): the proposed city size table in Design_Ideas_Unapproved.md ("The settlement ladder") is adopted as written: hamlet 10 to 100, village 100 to 400, town 400 to 1,500, city 1,500 to 5,000, grand city 5,000 to 15,000, with radii 300, 450, 675, 1,000 and 1,500 m. Real medieval sizes were the sanity check (most towns well under 2,000 people; only the largest cities over 10,000). Recorded in Design_Ideas_Unapproved.md ("The settlement ladder") as PROVISIONAL, for Dave's review (piece 8).
 
 ### Piece 7. Bandit toll and robbery (BugsList 82, 83)
 - Built and switched off. **Dave only** (robbery switch).
