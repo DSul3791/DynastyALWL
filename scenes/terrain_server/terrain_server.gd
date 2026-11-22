@@ -801,11 +801,12 @@ func _ready() -> void:
 	items.nests_near = func(point, reach): return animals.nests_near(point, reach)
 	items.animals_near = func(point, radius): return animals.list_near(point, radius)
 	items.animal_snare = func(id): return animals.snare(id)
-	items.animal_lure = func(id, point): return animals.lure_to(id, point)
+	animals.snare_pass = func(id, sp, from, to): items.animal_passed(id, sp, from, to)
 	items.trail_strength = func(x, z): return trails.strength_at(x, z)
 	items.run_distance = func(x, z, kind): return ranges.route_distance(x, z, kind)
 	items.fox_near = func(x, z, m): return ranges.fox_near(x, z, m)
 	items.species_active = func(sp): return animals.activity_chance(animals.species_def(sp))
+	items.species_active_at = func(sp, hour): return animals.activity_at(animals.species_def(sp), hour)
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> Dictionary:
 		var member: String = tribes.member_along(origin, dir, reach)

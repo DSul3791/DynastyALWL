@@ -465,12 +465,12 @@ var send_cart_pull: Callable        # (peer, cart world id or 0, pace in tenths 
 var send_items_moved: Callable      # (peer, ids PackedInt32Array, positions PackedVector3Array, yaws PackedFloat32Array): placed things that moved (a pulled cart and its crates; protocol 111)
 var send_logs_moved: Callable       # (peer, ids PackedInt32Array, positions PackedVector3Array, poses PackedVector3Array of [rot_y, pitch, spin] radians): loose logs that moved (protocol 125)
 var animals_near: Callable           # (point, radius) -> Array of {id, sp, pos}: the animals a snare can reach (set by the server)
-var animal_lure: Callable            # (animal id, point) -> bool: the animal moves its home to a snare and grazes there (set by the server)
 var animal_snare: Callable           # (animal id) -> bool: a snare closes on it, it leaves the world (set by the server)
 var trail_strength: Callable         # (x, z) -> how worn the game trail is there, 0 to 1 (set by the server)
 var run_distance: Callable           # (x, z, kind) -> metres to the nearest trail between animal places of that kind (-1 any), INF while the ground there is not worked out, 10 when no trail is nearer (server_ranges.gd)
 var fox_near: Callable              # (x, z, m) -> a fox earth lies within m, in worked-out ground (server_ranges.gd fox_near; stage 2b)
-var species_active: Callable         # (species) -> 0..1, how active that species is now (server_animals.activity_chance): snares fishing while nobody is near
+var species_active: Callable         # (species) -> 0..1, how active that species is now (server_animals.activity_chance)
+var species_active_at: Callable      # (species, game hour) -> 0..1, how active it is at that hour: a snare's time away, worked out when a player comes back
 var _bow = null                     # server_bow.gd, made at the first shot
 var _aim_rng: RandomNumberGenerator = RandomNumberGenerator.new()   # luck-exempt: the bow's aim spread stream (luck then nudges each draw, _shoot)
 var _last_shot: Dictionary = {}     # peer -> msec
@@ -14779,6 +14779,12 @@ func wolf_info() -> Array:
 # World ids that may lie within r (flat) of a point, for the animals' searches (finding 8, docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md):
 # the last world sync's NEAR_M cells that the circle touches, plus every id made since that sync; every id when no sync has filed a grid yet.
 # The caller checks each id is still there and how far it is.
+# An animal near a player stepped from `from` to `to` (server_animals.gd snare_pass): a set trap it has just come up to may take it.
+func animal_passed(animal_id: int, sp: String, from: Vector3, to: Vector3) -> void:
+	if _traps != null:
+		_traps.on_pass(animal_id, sp, from, to)
+
+
 func _ids_near(centre: Vector3, r: float) -> Array:
 	if _sync_grid.is_empty():
 		return _items.keys()

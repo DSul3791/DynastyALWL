@@ -21,6 +21,10 @@ recorded). Values marked TR-n are provisional and live in data files.
 - `server_traps.gd` (25 Oct): the Snare (twine 3, stick 2, by hand) is set as `snare_trap`; while a player is within 150 m it looks
   every 30 s for a rabbit or fox within 2.5 m (or draws one from 30 m) and rolls 0.35 x the worn-trail factor x night x bait x
   storm. A catch lays a carcass. The Bird trap is a second kind. The fish trap is separate.
+- Changed 22 Nov 2026 (Dave: "the server doesn't have to do any work once a trap is put out"): no looks and no draw. A catchable
+  animal stepping within lure_m of a set snare (animals step only near players) gets one roll for that pass. A snare off any animal
+  trail never catches. With nobody near nothing runs; when a player comes back within 150 m the time away is rolled once, by the
+  rabbits' activity at each hour (latest 24 h). Snares sit in a 32 m grid. No limit on how many a player sets.
 
 What is missing, and why trails never really showed: the client kept the worn blocks but never laid them into the grass map (`grass_view._rebuild_trails` was never called; now it is). And animals have one home point and wander a few metres round it. Nothing walks
 the same line twice, so the worn grid is a blob round each home, 4 m cells draw as a wide smudge, not a path, and animals (and so
@@ -73,7 +77,7 @@ Server cost: places and routes are worked out once per 256 m square when a playe
 warren square or deer range, a deer job some 150-250 ground reads), jobs run until 0.6 ms of a tick is spent (one job may run over;
 to be measured on the PC), only once the ground tiles under the square are loaded, kept in memory and dropped when no player is near.
 A snare's distance to a run looks only at routes whose box passes near it. A trip is a list of points
-on the animal (the step code is unchanged). A snare away from players is one roll per check (30 s). Network: a square's routes ride
+on the animal (the step code is unchanged). A snare away from players costs nothing until a player comes back (one roll for the time away). Network: a square's routes ride
 in the trail block already sent when it changes (a few hundred bytes deflated). Client: one 256 x 256 texture rebuilt when blocks
 arrive or the player moves 16 m.
 
@@ -143,7 +147,7 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
   rules (salt 600, so its spots and rolls share no hash with moose or deer), 100-230 m apart; both take a spot in a less liked biome at its weight (weight_roll), as the random spawn did. How many a player sees is to tune after Dave plays.
 - TR-6 snares: full factor within 0.5 m of a run, falling to the old factor at 2 m; away catches 0.045 a game hour at full rabbit
   activity: a snare squarely on a run takes about two rabbits in five nights, about one a game day in two (Wildwood's 3 in 15 the
-  first night); six snares on runs feed one player well. Off a run, none while away.
+  first night); six snares on runs feed one player well (there is no limit on how many a player sets). Off a run, none while away.
 - TR-9 fox (salt 900): an earth in half the blocks (times the fox biome weight), 8 tries, the spot nearest slope 0.25 (at most
   0.6, dry), with at least 2 warrens within 200 m; 3 rounds of 2-4 warrens each. Clock: out sunset + 0.5 h, home sunrise - 0.25 h,
   jitter 0.5 h.

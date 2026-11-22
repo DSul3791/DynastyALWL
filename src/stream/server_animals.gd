@@ -61,6 +61,7 @@ var died: Callable                 # (species, position, source peer) when an an
 var send_hit: Callable             # (peer, animal id, zone, at): a hit, for every player within hit_send_m (hunt_feedback_server.md 3)
 var ticks_run: int = 0
 var trails = null                  # game trails (server_trails.gd): every step into a new cell wears the grass a little
+var snare_pass: Callable            # (id, species, from, to): a step by an animal near a player, for the set traps it comes up to (server_traps.gd on_pass)
 var ranges = null                  # animal places and their trails (server_ranges.gd): warrens, deer beds and feeding grounds; unset: no daily trips
 var flocks = null                  # bird flocks on water (server_flocks.gd)
 var water_level: Callable          # (x, z) -> water surface height, NAN on dry land (flocks float on it)
@@ -970,6 +971,10 @@ func tick(delta: float) -> void:
 		if trails != null and int(a.get("state", 0)) != HIDDEN and not bool(a.get("in_cave", false)) and not a.has("fly") and not bool(a.get("perched", false)):
 			trails.note(id, str(a["sp"]), a["pos"])
 
+		# Last, as it may take the animal out of the world: a set trap it walked up to (Dave 22 Nov 2026: traps cost nothing until an animal comes by).
+		if snare_pass.is_valid() and animals.has(id) and a["pos"] != was and int(a.get("state", 0)) != HIDDEN and not a.has("fly") and not bool(a.get("perched", false)):
+			snare_pass.call(id, str(a["sp"]), was, a["pos"])
+
 	for id in gone:
 		if trails != null:
 			trails.forget(id)
@@ -1823,6 +1828,14 @@ func activity_chance(def: Dictionary) -> float:
 		return clampf(weather_activity_x(def), 0.0, 1.0)
 
 	return clampf(float((def["active"] as Dictionary).get(fog_period(def, float(hour_now.call())), 1.0)) * weather_activity_x(def), 0.0, 1.0)
+
+
+# The same at a given game hour (a snare's time away, server_traps.gd check_away): the row's "active" value for that hour's period.
+func activity_at(def: Dictionary, hour: float) -> float:
+	if not def.has("active"):
+		return clampf(weather_activity_x(def), 0.0, 1.0)
+
+	return clampf(float((def["active"] as Dictionary).get(fog_period(def, hour), 1.0)) * weather_activity_x(def), 0.0, 1.0)
 
 
 # Resting (MikeW 2026-11-02, Dave's behaviour list): outside its active hours (its "active" chance for the period at or under rest.below)
