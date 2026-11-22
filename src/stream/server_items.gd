@@ -11710,6 +11710,7 @@ func _place_torch(peer: int, inv, slot: int, on_wall: bool, yaw_deg: int, at: Ve
 		placed["struct"]["lit"] = true
 		placed["struct"]["fuel_left"] = light_burn_s(def)
 
+	placed["struct"]["owner"] = str(_peer_key.get(peer, ""))   # the one who set it: only they take it down (_may_take_down), as a built piece
 	_items[_next_id] = placed
 	_grid_add(_next_id, placed)
 	_next_id += 1
@@ -12755,8 +12756,22 @@ func _may_take_down(peer: int, it: Dictionary) -> bool:
 	if owner == "" or owner == key or (admin_mode_on.is_valid() and bool(admin_mode_on.call(peer))):
 		return true
 
+	if key != "" and str(_structures.get(str(it.get("struct", {}).get("kind", "")), {}).get("attach_to", "")) == PlacementRules.DOOR_ATTACH and _frame_owner_at(it["pos"]) == key:
+		return true   # a door another player hung in your doorway: you may take it out, or the frame could never come down
+
 	var lock: Dictionary = _lock_of(it)   # a locked container: a player the owner let in may take it down too (s3.13 locked-crate movement rule)
 	return not lock.is_empty() and key != "" and ((lock.get("ok", []) as Array).has(key) or (lock.get("allow", []) as Array).has(key))
+
+
+# The builder of the doorway frame a door hangs in ("" when none is within DOOR_TAKEN_M).
+func _frame_owner_at(at: Vector3) -> String:
+	for id in _items:
+		var it: Dictionary = _items[id]
+
+		if it.has("struct") and str(_structures.get(str(it["struct"]["kind"]), {}).get("opening", "")) != "" and (it["pos"] as Vector3).distance_to(at) < PlacementRules.DOOR_TAKEN_M:
+			return str(it["struct"].get("owner", ""))
+
+	return ""
 
 
 # Taking a structure down (E near it) gives its kit back. A chest with things in it cannot be taken down.
@@ -17165,6 +17180,11 @@ func _remains_tick(spent: float) -> void:
 		_sync_remains(peer, false)
 
 	var rows: Array = []   # [_foundation_rows()] once some remains need it
+	var full: bool = _unix() >= _remains_full_at   # every REMAINS_SETTLE_S all remains are looked at, those on the generated ground too: one saved
+	# before #1552 under a slab, or one a foundation was later laid over, comes up onto it (the first tick after a start does this at once)
+
+	if full:
+		_remains_full_at = _unix() + REMAINS_SETTLE_S
 
 	for id in remains_ids():
 		var it: Dictionary = _items[id]
@@ -17183,7 +17203,7 @@ func _remains_tick(spent: float) -> void:
 
 		var settled: Array = _remains_settled.get(id, [])
 
-		if is_nan(ground) or absf(ground - it["pos"].y) <= 0.25 or (settled.size() == 2 and is_equal_approx(float(settled[0]), float(it["pos"].y)) and _unix() - float(settled[1]) < REMAINS_SETTLE_S):
+		if is_nan(ground) or (not full and absf(ground - it["pos"].y) <= 0.25) or (not full and settled.size() == 2 and is_equal_approx(float(settled[0]), float(it["pos"].y)) and _unix() - float(settled[1]) < REMAINS_SETTLE_S):
 			continue   # on the generated ground, or found resting here lately (the floor and edits scan runs every REMAINS_SETTLE_S per set, not every tick)
 
 		if rows.is_empty():
@@ -17200,6 +17220,7 @@ func _remains_tick(spent: float) -> void:
 
 
 const REMAINS_SETTLE_S := 600.0   # remains off the generated ground are looked at again this often: a floor taken down or a fill dug away lets them settle
+var _remains_full_at: float = 0.0   # unix time of the next pass over every remains (memory only: a start does one at once)
 var _remains_settled: Dictionary = {}   # remains world id -> [the y the recheck found them resting at, unix time] (memory only)
 
 
@@ -19620,6 +19641,9 @@ func _pipe_split(id: int, at: Vector3) -> int:
 	it["struct"]["paid"] = first_paid
 	# shortcut: pipe_lay's network-size check counts the new run, not this twin; a network at its MAX_PIECES could leave the twin standing alone (dry).
 	var twin: int = _new_pipe(str(it["struct"]["kind"]), second, paid - first_paid, it["struct"].get("born", _now_game_s()))
+
+	if it["struct"].has("owner"):
+		_items[twin]["struct"]["owner"] = it["struct"]["owner"]   # a pipe cut in two: both halves stay the layer's
 	_water_relink_at.append_array(e)
 	_water_relink_at.append(at)
 	_water.remove(id)   # its piece is made again from its new ends
@@ -19762,7 +19786,8 @@ func pipe_lay(peer: int, slot: int, from: Vector3, to: Vector3) -> void:
 	var before: Array = _snapshot(inv)
 	inv.remove(number, need)
 	_send_changes(peer, inv, before)
-	_new_pipe(held, pose, need, _now_game_s())
+	var laid: int = _new_pipe(held, pose, need, _now_game_s())
+	_items[laid]["struct"]["owner"] = str(_peer_key.get(peer, ""))   # the one who laid it: only they take it down (_may_take_down)
 	_say(peer, "You lay %.1f m of %s (%d used)." % [length, table.sentence_name(number), need])
 
 
@@ -20128,7 +20153,7 @@ func _till_cell(peer: int, inv, hoe: int, at: Vector3, yaw_deg: int, quiet: bool
 	if hoe >= 0:   # a garden job goes on with the hoe put away (it wears only while held)
 		_wear_slot(peer, inv, hoe, "dig")
 
-	_items[_next_id] = {"number": table.number_of("tilled_bed"), "count": 1, "pos": cell, "left": 1.0e9, "struct": {"kind": "tilled_bed", "yaw": float(yaw_deg)}}
+	_items[_next_id] = {"number": table.number_of("tilled_bed"), "count": 1, "pos": cell, "left": 1.0e9, "struct": {"kind": "tilled_bed", "yaw": float(yaw_deg), "owner": str(_peer_key.get(peer, ""))}}   # owner: the one who tilled it (_may_take_down)
 	_zone_add(_next_id)
 	_next_id += 1
 	_dirty = true
@@ -20199,7 +20224,7 @@ func dig_trench(peer: int, inv, at: Vector3, held_slot: int, yaw_deg: int) -> in
 
 	_wear_slot(peer, inv, hoe, "dig")
 	var id: int = _next_id
-	_items[id] = {"number": table.number_of(TRENCH_KIND), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": TRENCH_KIND, "yaw": float(posmod(yaw_deg, 360))}}
+	_items[id] = {"number": table.number_of(TRENCH_KIND), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": TRENCH_KIND, "yaw": float(posmod(yaw_deg, 360)), "owner": str(_peer_key.get(peer, ""))}}   # owner: the digger (_may_take_down)
 	_zone_add(id)
 	_next_id += 1
 	_trench_beds[id] = _beds_by_trench(spot, _plot_ids())

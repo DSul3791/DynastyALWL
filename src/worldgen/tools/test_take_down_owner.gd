@@ -84,6 +84,33 @@ func _init() -> void:
 	b._take_down(1, b.inventory_of(1), mine)
 	check(mine >= 0 and not b._items.has(mine), "the builder takes their own piece down")
 
+	# A door a friend hung in your doorway: the frame's builder may take it out (else neither could ever come down); a third player may not.
+	var at: Vector3 = Vector3(20.0, 10.0, 20.0)
+	b._next_id += 1
+	var frame: int = b._next_id
+	b._items[frame] = {"number": b.table.number_of("log_doorway"), "count": 1, "pos": at, "left": 1.0e9, "struct": {"kind": "log_doorway", "yaw": 0.0, "owner": "builder-key-0001"}}
+	b._next_id += 1
+	var door: int = b._next_id
+	b._items[door] = {"number": b.table.number_of("crude_door"), "count": 1, "pos": at, "left": 1.0e9, "struct": {"kind": "crude_door", "yaw": 0.0, "owner": "friend-key-00002"}}
+	b.peer_connected_hello(3, "stranger-key-003")
+	check(b._may_take_down(1, b._items[door]), "the doorway's builder may take out a door another player hung in it")
+	check(not b._may_take_down(3, b._items[door]) and b._may_take_down(2, b._items[door]), "a stranger may not; the door's own hanger still may")
+	check(not b._may_take_down(2, b._items[frame]), "the door's hanger still cannot take the frame")
+	b._items.erase(door)
+	b._items.erase(frame)
+
+	# Pieces laid by hand record their maker too: a torch, a tilled bed, a trench.
+	b.give_to(1, "torch", 1)
+	b.report_position(1, Vector3(30.0, 10.0, 30.0))
+	b._place_torch(1, b.inventory_of(1), b.inventory_of(1).numbers.find(b.table.number_of("torch")), false, 0, Vector3(30.5, 10.0, 30.0))
+	var torch_owner: String = ""
+
+	for id in b._items:
+		if b._items[id].has("struct") and str(b._items[id]["struct"]["kind"]).contains("torch"):
+			torch_owner = str(b._items[id]["struct"].get("owner", ""))
+
+	check(torch_owner == "builder-key-0001", "a placed torch records who set it (%s)" % torch_owner)
+
 	b._finish_writer()
 	print("test_take_down_owner: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
 	quit(1 if failures > 0 else 0)
