@@ -251,13 +251,13 @@ func _initialize() -> void:
 
 	var slow_got: Array = []
 	var slow_inbox: PackedByteArray = PackedByteArray()
-	var paused: bool = false
+	var slow_paused: bool = false
 	var backlog_in_pause: int = 0
 	since = Time.get_ticks_msec()
 
 	while Time.get_ticks_msec() - since < 30000 and slow_got.size() < 400:
-		if not paused and slow_got.size() >= 40:
-			paused = true
+		if not slow_paused and slow_got.size() >= 40:
+			slow_paused = true
 			OS.delay_msec(2000)
 			link._mutex.lock()
 			var slow_line: Dictionary = link._lines.get(4, {})
