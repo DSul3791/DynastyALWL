@@ -565,7 +565,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					_metal(parts, 0.5, 0.7)
 					_box(parts, Vector3(0.05, 0.008, 0.014), Vector3(0.0, -0.004, 0.43), dark)
 				"saddle", "travellers_saddle", "war_saddle":
-					# A saddle on its wooden tree: a dished seat between a raised pommel and cantle, flaps down both sides, iron stirrups on their leathers and a girth.
+					# A saddle on its wooden tree: a dished seat between a raised pommel and cantle, flaps down both sides, iron stirrups on their leathers lying beside it.
 					# A traveller's saddle adds a rolled blanket behind the cantle and gear rings; a war saddle a tall cantle and pommel and iron plates on the bows.
 					var tall: float = 2.0 if tk == "war_saddle" else 1.0
 					_sph(parts, 0.15, Vector3(1.0, 0.3, 1.4), Vector3(0.0, 0.03, 0.0), color, true)
@@ -573,13 +573,13 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					_box_rot(parts, Vector3(0.2, 0.05 * tall, 0.03), Vector3(0.0, 0.07 + 0.02 * tall, 0.19), Vector3(-0.3, 0.0, 0.0), color.darkened(0.08))
 
 					for side in [-1.0, 1.0]:
-						_box_rot(parts, Vector3(0.12, 0.012, 0.26), Vector3(side * 0.17, -0.04, 0.0), Vector3(0.0, 0.0, side * 0.6), dark)
-						_box(parts, Vector3(0.014, 0.006, 0.12), Vector3(side * 0.26, -0.09, 0.0), strap)
-						_box(parts, Vector3(0.01, 0.006, 0.07), Vector3(side * 0.27, -0.155, 0.0), fitting)
+						_box_rot(parts, Vector3(0.12, 0.012, 0.26), Vector3(side * 0.16, -0.02, 0.0), Vector3(0.0, 0.0, -side * 0.6), dark)
+						_box(parts, Vector3(0.1, 0.006, 0.014), Vector3(side * 0.27, -0.05, 0.0), strap)
+						_box(parts, Vector3(0.01, 0.006, 0.07), Vector3(side * 0.36, -0.055, 0.0), fitting)
 						_metal(parts, 0.5, 0.7)
-						_box_rot(parts, Vector3(0.006, 0.05, 0.008), Vector3(side * 0.27, -0.13, -0.032), Vector3(0.3, 0.0, 0.0), fitting)
+						_box_rot(parts, Vector3(0.05, 0.006, 0.008), Vector3(side * 0.34, -0.055, -0.032), Vector3(0.0, -side * 0.3, 0.0), fitting)
 						_metal(parts, 0.5, 0.7)
-						_box_rot(parts, Vector3(0.006, 0.05, 0.008), Vector3(side * 0.27, -0.13, 0.032), Vector3(-0.3, 0.0, 0.0), fitting)
+						_box_rot(parts, Vector3(0.05, 0.006, 0.008), Vector3(side * 0.34, -0.055, 0.032), Vector3(0.0, side * 0.3, 0.0), fitting)
 						_metal(parts, 0.5, 0.7)
 
 					if tk == "travellers_saddle":
@@ -594,8 +594,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					_box(parts, Vector3(0.34, 0.04, 0.4), Vector3(0.0, -0.04, 0.0), Color(0.5, 0.42, 0.3))
 
 					for z in [-0.15, 0.15]:
-						_box_rot(parts, Vector3(0.03, 0.2, 0.03), Vector3(0.04, 0.06, z), Vector3(0.0, 0.0, -0.45), color)
-						_box_rot(parts, Vector3(0.03, 0.2, 0.03), Vector3(-0.04, 0.06, z), Vector3(0.0, 0.0, 0.45), color)
+						_box_rot(parts, Vector3(0.03, 0.2, 0.03), Vector3(0.0, 0.06, z - 0.016), Vector3(0.0, 0.0, -0.45), color)
+						_box_rot(parts, Vector3(0.03, 0.2, 0.03), Vector3(0.0, 0.06, z + 0.016), Vector3(0.0, 0.0, 0.45), color)
 
 					for side in [-1.0, 1.0]:
 						_box_rot(parts, Vector3(0.012, 0.08, 0.42), Vector3(side * 0.12, 0.02, 0.0), Vector3(0.0, 0.0, side * 0.5), color.darkened(0.1))
@@ -610,13 +610,13 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 						_metal(parts, 0.5, 0.7)
 				"panniers":
 					# Two woven side baskets slung from one carrying bar.
-					_box(parts, Vector3(0.5, 0.02, 0.03), Vector3(0.0, 0.08, 0.0), Color(0.4, 0.28, 0.14))
+					_box(parts, Vector3(0.5, 0.02, 0.03), Vector3(0.0, 0.1, 0.0), Color(0.4, 0.28, 0.14))
 
 					for side in [-1.0, 1.0]:
-						_cyl(parts, 0.1, 0.16, Vector3(side * 0.16, 0.0, 0.0), Vector3.ZERO, color)
-						_cyl(parts, 0.085, 0.15, Vector3(side * 0.16, 0.012, 0.0), Vector3.ZERO, dark)
+						_cyl(parts, 0.1, 0.16, Vector3(side * 0.16, 0.02, 0.0), Vector3.ZERO, color)
+						_cyl(parts, 0.085, 0.15, Vector3(side * 0.16, 0.032, 0.0), Vector3.ZERO, dark)
 				"lashings":
-					# A coiled rope with a pair of buckled straps lying across it.
+					# A coiled rope with a pair of straps lying across it.
 					_torus(parts, 0.1, 0.014, Vector3(0.0, 0.0, 0.0), color)
 					_torus(parts, 0.075, 0.014, Vector3(0.0, 0.012, 0.0), color.darkened(0.08))
 
@@ -647,15 +647,15 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 						_box(parts, Vector3(0.012, 0.008, 0.46), Vector3(0.0, 0.006, 0.1), strap)
 				"ox_yoke":
 					# A wooden double ox yoke: a carved beam with two neck bows of bent wood under it and an iron ring in the middle for the pole.
-					_box(parts, Vector3(0.9, 0.07, 0.08), Vector3(0.0, 0.04, 0.0), color)
+					_box(parts, Vector3(0.9, 0.07, 0.08), Vector3(0.0, 0.1, 0.0), color)
 
 					for x in [-0.25, 0.25]:
-						_torus_v(parts, 0.09, 0.012, Vector3(x, -0.02, 0.0), color.darkened(0.15))
+						_torus_v(parts, 0.09, 0.012, Vector3(x, 0.04, 0.0), color.darkened(0.15))
 
-					_torus_v(parts, 0.03, 0.007, Vector3(0.0, 0.0, 0.05), fitting)
+					_torus_v(parts, 0.03, 0.007, Vector3(0.0, 0.06, 0.05), fitting)
 					_metal(parts, 0.5, 0.7)
 				"horseshoes":
-					# A set of four iron horseshoes, each a U of five short bars with nail holes, lying in a rough stack.
+					# A set of four iron horseshoes, each a U of five short bars, laid out in a square.
 					for h in 4:
 						var at: Vector3 = Vector3((float(h % 2) - 0.5) * 0.13, 0.004 * float(h), (floorf(float(h) * 0.5) - 0.5) * 0.13)
 
@@ -673,9 +673,9 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 						_box(parts, Vector3(0.006, 0.042, 0.28), Vector3(-0.1 + 0.1 * float(k), 0.001, 0.0), color.darkened(0.15))
 				"feedbag":
 					# A canvas nosebag: a round bag, a leather bottom and the head strap in a loop over the top.
-					_cyl(parts, 0.09, 0.18, Vector3(0.0, 0.0, 0.0), Vector3.ZERO, color)
-					_cyl(parts, 0.092, 0.03, Vector3(0.0, -0.075, 0.0), Vector3.ZERO, strap)
-					_torus_v(parts, 0.1, 0.008, Vector3(0.0, 0.1, 0.0), strap)
+					_cyl(parts, 0.09, 0.18, Vector3(0.0, 0.03, 0.0), Vector3.ZERO, color)
+					_cyl(parts, 0.092, 0.03, Vector3(0.0, -0.045, 0.0), Vector3.ZERO, strap)
+					_torus_v(parts, 0.1, 0.008, Vector3(0.0, 0.2, 0.0), strap)
 				"grooming":
 					# A grooming kit laid out together: a stiff brush with its bristles, an oval curry comb and a hooked iron hoof pick.
 					_box(parts, Vector3(0.16, 0.025, 0.06), Vector3(-0.04, 0.012, -0.06), color)
@@ -796,18 +796,18 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					_cyl(parts, 0.008, 0.012, Vector3(0.33, 0.012, 0.0), Vector3.ZERO, Color(0.08, 0.07, 0.06))
 				"cauldron":
 					# A cast-iron cauldron: a round belly, a thick everted rim, three short legs and an iron bail handle.
-					_sph(parts, 0.13, Vector3(1.0, 0.85, 1.0), Vector3(0.0, 0.0, 0.0), iron_c, true)
+					_sph(parts, 0.13, Vector3(1.0, 0.85, 1.0), Vector3(0.0, 0.05, 0.0), iron_c, true)
 					_metal(parts, 0.6, 0.7)
-					_cyl(parts, 0.11, 0.022, Vector3(0.0, 0.1, 0.0), Vector3.ZERO, iron_c.darkened(0.1))
+					_cyl(parts, 0.11, 0.022, Vector3(0.0, 0.15, 0.0), Vector3.ZERO, iron_c.darkened(0.1))
 					_metal(parts, 0.6, 0.7)
-					_cyl(parts, 0.09, 0.004, Vector3(0.0, 0.112, 0.0), Vector3.ZERO, Color(0.05, 0.05, 0.05))
+					_cyl(parts, 0.09, 0.004, Vector3(0.0, 0.162, 0.0), Vector3.ZERO, Color(0.05, 0.05, 0.05))
 
 					for k in 3:
 						var la: float = TAU * float(k) / 3.0
-						_box(parts, Vector3(0.02, 0.05, 0.02), Vector3(cos(la) * 0.08, -0.12, sin(la) * 0.08), iron_c)
+						_box(parts, Vector3(0.02, 0.05, 0.02), Vector3(cos(la) * 0.08, -0.045, sin(la) * 0.08), iron_c)
 						_metal(parts, 0.6, 0.7)
 
-					_torus_v(parts, 0.105, 0.005, Vector3(0.0, 0.11, 0.0), iron_c.darkened(0.2))
+					_torus_v(parts, 0.105, 0.005, Vector3(0.0, 0.16, 0.0), iron_c.darkened(0.2))
 					_metal(parts, 0.6, 0.7)
 				"crane":
 					# A fireplace crane: an upright iron pivot bar with its two wall pins, the swinging arm out from the top with a diagonal brace, and a pot hook at the end.
@@ -1366,6 +1366,9 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 						_box(parts, Vector3(0.07, 0.07, 0.12), Vector3(side * 0.05, 0.0, 0.0), color)
 						_box(parts, Vector3(0.075, 0.045, 0.1), Vector3(side * 0.05, -0.02, -0.1), color.darkened(0.1))
 						_box(parts, Vector3(0.078, 0.014, 0.2), Vector3(side * 0.05, -0.05, -0.04), dark)
+
+						if bits.has("tall"):                                                                          # riding boots: a tall shaft folded over at the top
+							_box(parts, Vector3(0.068, 0.05, 0.12), Vector3(side * 0.05, 0.0, 0.11), color.darkened(0.04))
 				"skirt", "dress":
 					# A skirt flares from its waistband to the hem in three widening tiers; a dress adds a fitted bodice with short sleeves above it.
 					var waist_z: float = -0.14

@@ -5165,7 +5165,7 @@
   "padded_barding": {"shape": "tack", "color": "#8a7a5a", "size": 1.8, "bits": ["barding"]},
   "iron_mail_barding": {"shape": "tack", "color": "#6c6f75", "size": 1.8, "bits": ["barding", "iron"]},
   "steel_plate_barding": {"shape": "tack", "color": "#9aa3ad", "size": 1.8, "bits": ["barding", "steel"]},
-  "riding_boots": {"shape": "garment", "color": "#5a3a22", "size": 1.1, "bits": ["boots"]},
+  "riding_boots": {"shape": "garment", "color": "#5a3a22", "size": 1.1, "bits": ["boots", "tall"]},
   "wooden_cart_wheel": {"shape": "tack", "color": "#8a6a3d", "size": 2.2, "bits": ["wheel", "iron"]},
   "axle": {"shape": "tack", "color": "#8a6a3d", "size": 2.0, "bits": ["axle", "iron"]},
   "reinforced_wagon_wheel": {"shape": "tack", "color": "#6a4a30", "size": 2.4, "bits": ["board_wheel", "iron"]},
