@@ -8047,7 +8047,8 @@
 			"uses": ["food"],
 			"look_alikes": ["wild_cherry"],
 			"properties": [],
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		{
 			"id": 150,
@@ -8075,7 +8076,8 @@
 			"uses": ["food"],
 			"look_alikes": ["wild_cherry"],
 			"properties": [],
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		{
 			"id": 151,
@@ -8103,7 +8105,8 @@
 			"uses": ["food"],
 			"look_alikes": ["wild_cherry"],
 			"properties": [],
-			"future": true
+			"future": true,
+			"retired": true
 		},
 		{
 			"id": 152,

@@ -113,6 +113,10 @@ func _run() -> void:
 	# Another body model (when the page can switch to one) keeps the drag turn and the part views.
 	var models: Array = BodyModels.ids()
 
+	# Body labels (D-TODO-3, 21 Nov 2026; BM-1): letters with a look note, never a gender.
+	_check(BodyModels.choice("body_1") == "Body A, sturdy build" and BodyModels.choice("body_2") == "Body B, slender build", "the creator offers Body A, sturdy build and Body B, slender build")
+	_check(BodyModels.label("body_2") == "Body B", "a saved body_2 character shows as Body B")
+
 	if models.size() > 1 and screen.has_method("_pick_body"):
 		screen._pick_body(str(models[1]))
 		await process_frame

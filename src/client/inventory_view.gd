@@ -4499,11 +4499,11 @@ func _own_glow(model: Node3D) -> Array:
 
 # The Primitive kiln: Dave's model (21 Nov 2026), a long low tunnel of clay and field stones, its mouth at the front (+Z) and its chimney at the
 # back, "sized so its longest side is a minimum 2.74 meters" (2.74 m long, 0.98 m wide and high). Its embers are painted in its emission
-# texture: dark when cold, glowing with a few small flame tongues, the light at its mouth and smoke from the chimney while lit. The Improved
-# and Advanced kilns keep the brick kiln (PieceLook.kiln), which also stands in when the file is missing. Values PROVISIONAL (PK-3).
-const KILN_TONGUES := 0.25        # the flames' size in its mouth (its tunnel is under half a metre high inside)
-const KILN_EMBERS := 2.0          # the embers' glow while lit (0 cold)
-const KILN_LIGHT := [1.0, 5.0]    # its light while lit: [energy, range m]
+# texture: dark when cold; while lit they glow really bright, with the light at its mouth and smoke from the chimney, and no flames (Dave 22 Nov
+# 2026: "the forges and kilns dont really need flames just glowing coals ... glowing really bright while busy"; a kiln is busy whenever it is
+# lit). The Improved and Advanced kilns keep the brick kiln (PieceLook.kiln), which also stands in when the file is missing. Values PROVISIONAL (PK-3).
+const KILN_EMBERS := 4.0          # the embers' glow while lit (0 cold)
+const KILN_LIGHT := [2.0, 6.0]    # its light while lit: [energy, range m]
 
 
 func _make_primitive_kiln(lit: bool) -> Node3D:
@@ -4512,7 +4512,11 @@ func _make_primitive_kiln(lit: bool) -> Node3D:
 	if model == null:
 		return LookTable.build("kiln")
 
-	_painted_fire(model, KILN_TONGUES)
+	var flames: Node = model.get_node_or_null("Flames")
+
+	if flames != null:
+		flames.free()   # its painted embers are the fire: no shared coals or flame tongues
+
 	var glow: Array = _own_glow(model)
 
 	for embers in glow:

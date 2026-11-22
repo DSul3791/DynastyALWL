@@ -110,10 +110,13 @@ func _init() -> void:
 	check(typeof(dry[5]) == TYPE_DICTIONARY and str(dry[5]["key"]) == dry_key and int(dry[5]["total"]) == 8 and is_equal_approx(float(dry[5]["r"]), 3.0) and not dry[5].has("wet"), "its extra is {key, total 8, r 3}")
 	check(is_equal_approx((dry[3] as Vector3).y, 10.0), "its centre is on the generated ground (10 m)")
 	check(int(rows[east_key][0]) != int(dry[0]), "each patch has its own id")
+	# The slow-tick line times the bog rows apart from the scan and counts the field squares built on first sight (D-STALL-1, 22 Nov 2026).
+	check(items._bog_built >= 1 and str(items._sync_detail).contains("bog ") and str(items._sync_detail).contains("built %d fields" % items._bog_built), "the first sync builds the field squares in sight and the sync line says so (%s)" % str(items._sync_detail))
 
 	# Nothing changed: nothing sent again.
 	_sync()
 	check(_bog_added().is_empty(), "an unchanged deposit is not sent again")
+	check(items._bog_built == 0 and str(items._sync_detail).contains("built 0 fields"), "the next sync builds none: they are kept (%s)" % str(items._sync_detail))
 
 	# A dig takes ore: the row comes again with less left.
 	items._dig_bog_iron(1, NEAR_SPOT, 1, 1)
