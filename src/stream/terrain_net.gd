@@ -40,7 +40,8 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 149  # 149 (22 Nov 2026, Dave: game trails "where animals might travel occassionally and we could set traps or snares"): trails(block_x, block_z, bytes, routes), routes the block's trails between animal places (src/shared/trail_codec.gd decode_routes: [kind, world points]), drawn as matted grass. Client and server must be updated together.
+const PROTOCOL_VERSION := 150  # 150 (22 Nov 2026, Dave: "if you place a snare it will mark on your map"): trap_marks(rows), the snares and Bird traps this character has set, [[x, z, kind], ...] oldest first (server_traps.gd marks_of), sent when they change; the Journal Map page marks them. Client and server must be updated together.
+# 149 (22 Nov 2026, Dave: game trails "where animals might travel occassionally and we could set traps or snares"): trails(block_x, block_z, bytes, routes), routes the block's trails between animal places (src/shared/trail_codec.gd decode_routes: [kind, world points]), drawn as matted grass. Client and server must be updated together.
 # 148 (21 Nov 2026, Dave: animals "relaxing"): a grazer bedded down (resting, or its share by its active chance) is sent as state 19 (LIE, the companions' lying state) and drawn lying. Client and server must be updated together.
 # 147 (21 Nov 2026, Dave's play test: "animals are still teleporting and not actually running"): animals(rows, server_ms), each row's field 5 the server ms its animal reached that position; the client draws animals on the server's timeline. Client and server must be updated together.
 # 146 (20 Nov 2026, goblin camp life, Dave: the Ragtooth goblins "keep themselves busy", "if the player has a weapon they will take up defensive positions with thier spears"): held_item(number), the item in the player's hand, sent when it changes; npc rows state 4 (WORK: a goblin tribe member at a chore) and 5 (GUARD: standing its ground, spear forward). Client and server must be updated together.
@@ -135,6 +136,7 @@ signal animals_received(rows: Array, server_ms: int)
 signal animal_info_received(id: int, info: Dictionary)
 signal blood_received(points: PackedVector3Array)
 signal burrows_received(points: PackedVector3Array)
+signal trap_marks_received(rows: Array)
 signal nests_received(points: PackedVector3Array, kinds: PackedByteArray)
 signal ice_holes_received(points: PackedVector3Array, untils: PackedFloat32Array)
 signal far_fires_received(points: PackedVector3Array, tiers: PackedByteArray)
@@ -685,6 +687,13 @@ func animal_info(id: int, info: Dictionary) -> void:
 @rpc("authority", "call_remote", "reliable")
 func blood(points: PackedVector3Array) -> void:
 	blood_received.emit(points)
+
+
+# The charcoal Map's trap marks (protocol 150, server_traps.gd marks_of): [[x, z, kind], ...], the snares and Bird traps this
+# character has set, oldest first, sent to its own connection when they change; map_knowledge.gd keeps them for the Map page.
+@rpc("authority", "call_remote", "reliable")
+func trap_marks(rows: Array) -> void:
+	trap_marks_received.emit(rows)
 
 
 # Animal burrows (protocol 87, MikeW 3 Nov): ground positions of the burrows of living animals within 120 m, nearest 40, sent

@@ -9,6 +9,8 @@ var cfg: Dictionary = {}           # the snare's numbers (traps.json top level)
 var kinds_cfg: Dictionary = {}     # struct kind -> the snare's numbers with that kind's laid over them
 var host = null                    # the items module (server_items.gd)
 var _acc: float = 0.0
+var _marks: Dictionary = {}        # owner key -> [[x, z, kind], ...]: that owner's set traps, oldest first, for their Map (protocol 150)
+var _marks_built: bool = false     # false until the first build (a loaded save's traps are marked from the first ask)
 
 
 func _init() -> void:
@@ -226,6 +228,8 @@ func tick(delta: float) -> void:
 			check_one(id)
 		else:
 			check_away(id)
+
+	_build_marks()   # a trap taken up, broken or gone any other way leaves its owner's Map by the next check
 
 
 # One look at a snare. Returns true on a catch.
@@ -450,6 +454,7 @@ func on_placed(peer: int, id: int) -> void:
 			mine.append(other_id)
 
 	if mine.size() <= int(c.get("per_player", 6)):
+		_build_marks()   # the new trap is on its owner's Map at the next send
 		return
 
 	mine.sort_custom(func(a, b): return float(host._items[a]["struct"].get("seq", 0)) < float(host._items[b]["struct"].get("seq", 0)))
@@ -463,3 +468,40 @@ func on_placed(peer: int, id: int) -> void:
 
 	host._items.erase(oldest)
 	host._say(peer, str(c.get("say_cap", "")))
+	_build_marks()
+
+
+# The Map's marks for the traps the character `key` has set: [[x, z, kind], ...], oldest first; [] for none or no character.
+func marks_of(key: String) -> Array:
+	if not _marks_built:
+		_build_marks()
+
+	return _marks.get(key, [])
+
+
+# One pass over the world items (as tick already makes every check_s): each owner's set traps by their order of setting.
+func _build_marks() -> void:
+	var seqs: Dictionary = {}   # owner key -> [[seq, row], ...]
+
+	for id in host._items:
+		var it: Dictionary = host._items[id]
+
+		if not is_snare(it) or str(it["struct"].get("owner", "")) == "":
+			continue
+
+		var st: Dictionary = it["struct"]
+		var key: String = str(st["owner"])
+
+		if not seqs.has(key):
+			seqs[key] = []
+
+		seqs[key].append([float(st.get("seq", 0)), [snappedf(float(it["pos"].x), 0.1), snappedf(float(it["pos"].z), 0.1), str(st.get("kind", ""))]])
+
+	_marks = {}
+
+	for key in seqs:
+		var rows: Array = seqs[key]
+		rows.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
+		_marks[key] = rows.map(func(row): return row[1])
+
+	_marks_built = true
