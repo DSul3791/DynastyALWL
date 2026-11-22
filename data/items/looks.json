@@ -5073,11 +5073,7 @@
    "color": "#7a5232",
    "size": 1.0
   },
-  "thread": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
+  "thread": {"shape": "coil", "color": "#e8e0d0", "size": 0.45},
   "iron_shortsword": {"shape": "sword", "color": "#6c6f75", "size": 0.8, "bits": ["iron"]},
   "steel_shortsword": {"shape": "sword", "color": "#9aa3ad", "size": 0.8, "bits": ["steel"]},
   "iron_greatsword": {"shape": "sword", "color": "#6c6f75", "size": 1.5, "bits": ["iron"]},
@@ -5173,141 +5169,33 @@
   "wooden_cart_wheel": {"shape": "tack", "color": "#8a6a3d", "size": 2.2, "bits": ["wheel", "iron"]},
   "axle": {"shape": "tack", "color": "#8a6a3d", "size": 2.0, "bits": ["axle", "iron"]},
   "reinforced_wagon_wheel": {"shape": "tack", "color": "#6a4a30", "size": 2.4, "bits": ["board_wheel", "iron"]},
-  "unbaked_flatbread": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "unbaked_rye_flatbread": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "unbaked_garlic_flatbread": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "unbaked_honey_loaf": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "unbaked_trail_bread": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "unbaked_oatcakes": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "unbaked_chestnut_cakes": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "unbaked_apple_pie": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "unbaked_fish_pie": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "unbaked_venison_pie": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "uncooked_sausages": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "uncooked_meat_skewers": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "uncooked_mushroom_skewers": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "uncooked_crab_cakes": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "banana_fritter_batter": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "uncooked_meatballs": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "smoked_meat": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "dried_mushrooms": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "seafood_platter": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "roast_platter": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "mixed_grill_platter": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "charcuterie_board": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "harvest_platter": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "tavern_supper_board": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "breakfast_platter": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "dessert_platter": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
-  "ploughmans_board": {
-   "shape": "chunk",
-   "color": "#8a8a8a",
-   "size": 1.0
-  },
+  "unbaked_flatbread": {"shape": "dish", "color": "#e8dcc0", "size": 1.0, "bits": ["dough"]},
+  "unbaked_rye_flatbread": {"shape": "dish", "color": "#b8a07a", "size": 1.0, "bits": ["dough"]},
+  "unbaked_garlic_flatbread": {"shape": "dish", "color": "#e8dcc0", "size": 1.0, "bits": ["dough", "#4a7a28"]},
+  "unbaked_honey_loaf": {"shape": "loaf", "color": "#e0c898", "size": 1.0},
+  "unbaked_trail_bread": {"shape": "loaf", "color": "#d8c090", "size": 1.0},
+  "unbaked_oatcakes": {"shape": "dish", "color": "#e0d0a8", "size": 1.0, "bits": ["cakes", "#b8a070"]},
+  "unbaked_chestnut_cakes": {"shape": "dish", "color": "#c8a878", "size": 1.0, "bits": ["cakes", "#8a6a44"]},
+  "unbaked_apple_pie": {"shape": "dish", "color": "#e8d8b0", "size": 1.0, "bits": ["pie", "#d8c080"]},
+  "unbaked_fish_pie": {"shape": "dish", "color": "#ece0c0", "size": 1.0, "bits": ["pie", "#e8d8b0"]},
+  "unbaked_venison_pie": {"shape": "dish", "color": "#e8d8b0", "size": 1.0, "bits": ["pie", "#5a2a1c"]},
+  "uncooked_sausages": {"shape": "dish", "color": "#c87070", "size": 1.0, "bits": ["links"]},
+  "uncooked_meat_skewers": {"shape": "skewer", "color": "#b04840", "size": 1.0},
+  "uncooked_mushroom_skewers": {"shape": "skewer", "color": "#e8dcc8", "size": 1.0},
+  "uncooked_crab_cakes": {"shape": "dish", "color": "#e0b090", "size": 1.0, "bits": ["cakes", "#e86a3a"]},
+  "banana_fritter_batter": {"shape": "dish", "color": "#e8d890", "size": 1.0, "bits": ["mash"]},
+  "uncooked_meatballs": {"shape": "joint", "color": "#b05a50", "size": 0.6},
+  "smoked_meat": {"shape": "joint", "color": "#5a2e1a", "size": 0.9},
+  "dried_mushrooms": {"shape": "dish", "color": "#6a4a2a", "size": 1.0, "bits": ["balls"]},
+  "seafood_platter": {"shape": "dish", "color": "#c8b088", "size": 1.2, "bits": ["platter", "#e86a3a", "#2a2a3a", "#d8c8a0"]},
+  "roast_platter": {"shape": "dish", "color": "#6e3a1c", "size": 1.2, "bits": ["platter", "#c88a40", "#8a1830", "#5a8a3a"]},
+  "mixed_grill_platter": {"shape": "dish", "color": "#8a4a2a", "size": 1.2, "bits": ["platter", "#6e3a1c", "#b07040", "#5a8a3a"]},
+  "charcuterie_board": {"shape": "dish", "color": "#8a3a2a", "size": 1.2, "bits": ["board", "#6a3a22", "#b05a50", "#d8d8a0"]},
+  "harvest_platter": {"shape": "dish", "color": "#c88a40", "size": 1.2, "bits": ["platter", "#8a1830", "#5a8a3a", "#8a5a34"]},
+  "tavern_supper_board": {"shape": "dish", "color": "#c08a3a", "size": 1.2, "bits": ["board", "#d9b87a", "#5a8a3a", "#c89040"]},
+  "breakfast_platter": {"shape": "dish", "color": "#e8b020", "size": 1.2, "bits": ["platter", "#c8a868", "#8a4a2a", "#f0f0e0"]},
+  "dessert_platter": {"shape": "dish", "color": "#c89040", "size": 1.2, "bits": ["platter", "#d8a040", "#8a2a3a", "#e8c880"]},
+  "ploughmans_board": {"shape": "dish", "color": "#d9b87a", "size": 1.2, "bits": ["board", "#e8c860", "#6a8a3a", "#f0e8d0"]},
   "iron_anvil_part": {
    "shape": "chunk",
    "color": "#4a4c50",
@@ -5317,6 +5205,15 @@
    "shape": "chunk",
    "color": "#8f989f",
    "size": 1.4
-  }
+  },
+  "food_preparation_table": {"shape": "bench_pack", "color": "#8a6a3d", "size": 1.4, "bits": ["prep"]},
+  "leatherworking_table": {"shape": "bench_pack", "color": "#7a5a34", "size": 1.5, "bits": ["leather"]},
+  "tailors_table": {"shape": "bench_pack", "color": "#9a7a4a", "size": 1.4, "bits": ["tailor"]},
+  "fireplace_cooking_crane": {"shape": "cookware", "color": "#3a3a3c", "size": 1.4, "bits": ["crane", "iron"]},
+  "clay_griddle": {"shape": "cookware", "color": "#a0603a", "size": 1.0, "bits": ["griddle"]},
+  "campfire_roasting_spit": {"shape": "cookware", "color": "#3a3a3c", "size": 1.4, "bits": ["spit", "iron"]},
+  "iron_grill_grate": {"shape": "cookware", "color": "#3a3a3c", "size": 1.0, "bits": ["grate", "iron"]},
+  "iron_frying_pan": {"shape": "cookware", "color": "#3a3a3c", "size": 1.0, "bits": ["pan", "iron"]},
+  "iron_cauldron": {"shape": "cookware", "color": "#3a3a3c", "size": 1.2, "bits": ["cauldron", "iron"]}
  }
 }

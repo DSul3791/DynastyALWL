@@ -283,6 +283,34 @@ func _init() -> void:
 	_check(BasicLook.mesh_for("reinforced_wagon_wheel").get_aabb().size.x > 0.9 and BasicLook.mesh_for("wooden_cart_wheel").get_aabb().size.x > 0.9, "the wheels are about a metre across")
 	_check(BasicLook.mesh_for("war_saddle").get_aabb().size.y > BasicLook.mesh_for("riding_saddle").get_aabb().size.y, "a war saddle has a taller pommel and cantle than a riding saddle")
 
+	# Placeholder looks 5e and 5f (food, cooking gear, the work tables, thread): none draws the grey chunk; the new dish kinds, cookware and packed tables stay under 300 triangles.
+	var food_ids: Array = ["unbaked_flatbread", "unbaked_rye_flatbread", "unbaked_garlic_flatbread", "unbaked_honey_loaf", "unbaked_trail_bread", "unbaked_oatcakes", "unbaked_chestnut_cakes",
+			"unbaked_apple_pie", "unbaked_fish_pie", "unbaked_venison_pie", "uncooked_sausages", "uncooked_meat_skewers", "uncooked_mushroom_skewers", "uncooked_crab_cakes",
+			"banana_fritter_batter", "uncooked_meatballs", "smoked_meat", "dried_mushrooms", "seafood_platter", "roast_platter", "mixed_grill_platter", "charcuterie_board",
+			"harvest_platter", "tavern_supper_board", "breakfast_platter", "dessert_platter", "ploughmans_board", "food_preparation_table", "leatherworking_table", "tailors_table",
+			"fireplace_cooking_crane", "clay_griddle", "campfire_roasting_spit", "iron_grill_grate", "iron_frying_pan", "iron_cauldron", "thread"]
+	var capped_kinds: Array = ["dough", "links", "platter", "board"]
+
+	for id in food_ids:
+		var row: Dictionary = BasicLook.entry(id)
+		var food_shape: String = str(row.get("shape", "chunk"))
+		_check(food_shape != "chunk", "%s has a look of its own (%s)" % [id, food_shape])
+		var food_mesh: Mesh = BasicLook.mesh_for(id)
+		_check(food_mesh != null and food_mesh.get_surface_count() > 0, "%s builds a mesh" % id)
+		var bits: Array = row.get("bits", [])
+
+		if food_mesh != null and (food_shape in ["cookware", "bench_pack"] or (food_shape == "dish" and bits.size() > 0 and str(bits[0]) in capped_kinds)):
+			var tris: int = _tris(food_mesh)
+			_check(tris > 12 and tris <= 300, "%s: %d triangles (more than a plain box, at most 300)" % [id, tris])
+
+	for id in ["fireplace_cooking_crane", "campfire_roasting_spit", "iron_grill_grate", "iron_frying_pan", "iron_cauldron"]:
+		_check(str(BasicLook.entry(id).get("shape", "")) == "cookware" and (BasicLook.entry(id).get("bits", []) as Array).has("iron"), "%s is iron cookware" % id)
+
+	_check(BasicLook.mesh_for("iron_grill_grate").get_surface_count() == 1, "the grill grate is all iron (one metal surface)")
+	_check(BasicLook.mesh_for("clay_griddle").get_surface_count() == 1, "the clay griddle has no metal")
+	_check(BasicLook.mesh_for("ploughmans_board").get_aabb().size.x > BasicLook.mesh_for("ploughmans_board").get_aabb().size.z * 1.4, "a serving board is long, with a handle")
+	_check(_mean_colour(BasicLook.mesh_for("unbaked_apple_pie")).get_luminance() > _mean_colour(BasicLook.mesh_for("apple_pie")).get_luminance(), "an unbaked pie is paler than a baked one")
+
 	print("tool looks: %d failures" % failures)
 
 	for id in ["spear", "wooden_spear", "fishing_rod", "wooden_pin"]:                                                  # spears, the fishing rod and the pin

@@ -740,6 +740,127 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 						_metal(parts, 0.55, 0.7)
 				_:
 					_box(parts, Vector3(0.3, 0.08, 0.3), Vector3(0.0, 0.0, 0.0), color)
+		"cookware":
+			# Cooking gear lying on the ground (bits[0]: griddle, spit, grate, pan, cauldron, crane; a tier bit makes the metal its tier's colour).
+			var ck: String = str(bits[0]) if bits.size() > 0 else "pan"
+			var iron_c: Color = tier_metal(bits, color)
+			var oak: Color = Color(0.45, 0.31, 0.17)
+
+			match ck:
+				"griddle":
+					# A round flat fired-clay griddle with a low rim and two lug handles.
+					_cyl(parts, 0.15, 0.02, Vector3(0.0, 0.0, 0.0), Vector3.ZERO, color)
+					_torus(parts, 0.145, 0.008, Vector3(0.0, 0.012, 0.0), color.darkened(0.12))
+
+					for side in [-1.0, 1.0]:
+						_box(parts, Vector3(0.04, 0.018, 0.035), Vector3(side * 0.165, 0.0, 0.0), color.darkened(0.06))
+				"spit":
+					# A roasting spit: an iron rod with a crank handle and a pair of meat prongs, and the two forked uprights it turns on.
+					_cyl(parts, 0.006, 0.7, Vector3(0.0, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), iron_c)
+					_metal(parts, 0.55, 0.7)
+					_box(parts, Vector3(0.008, 0.008, 0.07), Vector3(0.35, 0.0, 0.035), iron_c)
+					_metal(parts, 0.55, 0.7)
+					_box(parts, Vector3(0.03, 0.01, 0.01), Vector3(0.335, 0.0, 0.07), oak)
+
+					for x in [-0.05, 0.05]:
+						_box(parts, Vector3(0.006, 0.006, 0.05), Vector3(x, 0.0, 0.0), iron_c)
+						_metal(parts, 0.55, 0.7)
+
+					for side in [-1.0, 1.0]:
+						_box(parts, Vector3(0.025, 0.02, 0.36), Vector3(side * 0.25, -0.01, 0.12), oak)
+						_box_rot(parts, Vector3(0.012, 0.018, 0.06), Vector3(side * 0.25 + 0.012, -0.01, -0.07), Vector3(0.0, 0.4, 0.0), oak.darkened(0.1))
+						_box_rot(parts, Vector3(0.012, 0.018, 0.06), Vector3(side * 0.25 - 0.012, -0.01, -0.07), Vector3(0.0, -0.4, 0.0), oak.darkened(0.1))
+				"grate":
+					# An iron grill grate: a square frame of flat bar, seven round rods across it and four short legs.
+					for side in [-1.0, 1.0]:
+						_box(parts, Vector3(0.36, 0.012, 0.016), Vector3(0.0, 0.0, side * 0.12), iron_c)
+						_metal(parts, 0.6, 0.7)
+						_box(parts, Vector3(0.016, 0.012, 0.25), Vector3(side * 0.18, 0.0, 0.0), iron_c)
+						_metal(parts, 0.6, 0.7)
+
+					for k in 7:
+						_box(parts, Vector3(0.008, 0.008, 0.24), Vector3(-0.135 + 0.045 * float(k), 0.002, 0.0), iron_c.darkened(0.1))
+						_metal(parts, 0.6, 0.7)
+
+					for k in 4:
+						_box(parts, Vector3(0.012, 0.05, 0.012), Vector3((float(k % 2) - 0.5) * 0.36, -0.03, (floorf(float(k) * 0.5) - 0.5) * 0.24), iron_c)
+						_metal(parts, 0.6, 0.7)
+				"pan":
+					# A wrought-iron frying pan: a shallow round pan with sloped sides and a long flat handle with a hanging hole.
+					_frustum(parts, 0.1, 0.12, 0.035, Vector3(0.0, 0.0, 0.0), iron_c)
+					_metal(parts, 0.55, 0.7)
+					_cyl(parts, 0.1, 0.004, Vector3(0.0, 0.016, 0.0), Vector3.ZERO, iron_c.darkened(0.3))
+					_metal(parts, 0.55, 0.7)
+					_box(parts, Vector3(0.24, 0.01, 0.03), Vector3(0.23, 0.01, 0.0), iron_c)
+					_metal(parts, 0.55, 0.7)
+					_cyl(parts, 0.008, 0.012, Vector3(0.33, 0.012, 0.0), Vector3.ZERO, Color(0.08, 0.07, 0.06))
+				"cauldron":
+					# A cast-iron cauldron: a round belly, a thick everted rim, three short legs and an iron bail handle.
+					_sph(parts, 0.13, Vector3(1.0, 0.85, 1.0), Vector3(0.0, 0.0, 0.0), iron_c, true)
+					_metal(parts, 0.6, 0.7)
+					_cyl(parts, 0.11, 0.022, Vector3(0.0, 0.1, 0.0), Vector3.ZERO, iron_c.darkened(0.1))
+					_metal(parts, 0.6, 0.7)
+					_cyl(parts, 0.09, 0.004, Vector3(0.0, 0.112, 0.0), Vector3.ZERO, Color(0.05, 0.05, 0.05))
+
+					for k in 3:
+						var la: float = TAU * float(k) / 3.0
+						_box(parts, Vector3(0.02, 0.05, 0.02), Vector3(cos(la) * 0.08, -0.12, sin(la) * 0.08), iron_c)
+						_metal(parts, 0.6, 0.7)
+
+					_torus_v(parts, 0.105, 0.005, Vector3(0.0, 0.11, 0.0), iron_c.darkened(0.2))
+					_metal(parts, 0.6, 0.7)
+				"crane":
+					# A fireplace crane: an upright iron pivot bar with its two wall pins, the swinging arm out from the top with a diagonal brace, and a pot hook at the end.
+					_box(parts, Vector3(0.025, 0.025, 0.5), Vector3(0.0, 0.0, 0.0), iron_c)
+					_metal(parts, 0.6, 0.7)
+					_box(parts, Vector3(0.5, 0.025, 0.025), Vector3(0.25, 0.0, -0.24), iron_c)
+					_metal(parts, 0.6, 0.7)
+					_box_rot(parts, Vector3(0.42, 0.018, 0.018), Vector3(0.15, 0.0, -0.09), Vector3(0.0, -0.78, 0.0), iron_c.darkened(0.08))
+					_metal(parts, 0.6, 0.7)
+
+					for z in [-0.18, 0.18]:
+						_box(parts, Vector3(0.06, 0.015, 0.015), Vector3(-0.03, 0.0, z), iron_c.darkened(0.15))
+						_metal(parts, 0.6, 0.7)
+
+					_torus(parts, 0.022, 0.005, Vector3(0.48, 0.0, -0.2), iron_c)
+					_metal(parts, 0.6, 0.7)
+				_:
+					_box(parts, Vector3(0.25, 0.05, 0.25), Vector3(0.0, 0.0, 0.0), color)
+		"bench_pack":
+			# A work table packed for carrying (the item before it is placed; bits[0]: prep, leather, tailor): the tabletop with the legs bundled beside it, and the tools of its trade on top.
+			# prep = a cutting board, rolling pin and knife; leather = a hide offcut, an awl and a round knife; tailor = a folded cloth, shears and a spool of thread.
+			var tool_steel: Color = Color(0.55, 0.56, 0.58)
+			var handle: Color = Color(0.3, 0.2, 0.11)
+			_box(parts, Vector3(0.44, 0.03, 0.24), Vector3(0.0, 0.0, 0.0), color)
+
+			for k in 4:
+				_box(parts, Vector3(0.38, 0.03, 0.03), Vector3(0.0, -0.005 + 0.03 * floorf(float(k) * 0.5), 0.15 + 0.032 * float(k % 2)), color.darkened(0.08))
+
+			match str(bits[0]) if bits.size() > 0 else "prep":
+				"leather":
+					_box_rot(parts, Vector3(0.18, 0.008, 0.13), Vector3(-0.08, 0.02, 0.0), Vector3(0.0, 0.2, 0.0), Color(0.5, 0.3, 0.16))
+					_cyl(parts, 0.012, 0.07, Vector3(0.1, 0.028, -0.05), Vector3(0.0, 0.0, PI * 0.5), handle)
+					_cyl(parts, 0.003, 0.05, Vector3(0.16, 0.028, -0.05), Vector3(0.0, 0.0, PI * 0.5), tool_steel)
+					_metal(parts, 0.4, 0.8)
+					_cyl(parts, 0.035, 0.004, Vector3(0.12, 0.02, 0.06), Vector3.ZERO, tool_steel)
+					_metal(parts, 0.4, 0.8)
+					_box(parts, Vector3(0.012, 0.014, 0.05), Vector3(0.12, 0.024, 0.11), handle)
+				"tailor":
+					_box(parts, Vector3(0.16, 0.024, 0.12), Vector3(-0.09, 0.027, 0.0), Color(0.42, 0.5, 0.62))
+					_box(parts, Vector3(0.16, 0.004, 0.02), Vector3(-0.09, 0.04, 0.03), Color(0.36, 0.44, 0.56))
+
+					for side in [-1.0, 1.0]:
+						_box_rot(parts, Vector3(0.12, 0.006, 0.012), Vector3(0.1, 0.02, -0.04 + side * 0.008), Vector3(0.0, side * 0.12, 0.0), tool_steel)
+						_metal(parts, 0.4, 0.8)
+
+					_cyl(parts, 0.02, 0.04, Vector3(0.12, 0.035, 0.06), Vector3.ZERO, Color(0.9, 0.86, 0.76))
+					_cyl(parts, 0.026, 0.006, Vector3(0.12, 0.016, 0.06), Vector3.ZERO, handle)
+				_:
+					_box(parts, Vector3(0.2, 0.014, 0.14), Vector3(-0.08, 0.022, 0.0), color.lightened(0.15))
+					_cyl(parts, 0.016, 0.22, Vector3(0.1, 0.03, -0.05), Vector3(0.0, 0.0, PI * 0.5), color.lightened(0.2))
+					_box(parts, Vector3(0.12, 0.006, 0.022), Vector3(0.1, 0.02, 0.06), tool_steel)
+					_metal(parts, 0.4, 0.8)
+					_box(parts, Vector3(0.06, 0.012, 0.018), Vector3(0.18, 0.02, 0.06), handle)
 		"backpack":
 			# A hide rucksack: tall rounded body, a flap over the top with a buckle, two side pockets, two shoulder straps, a bedroll on top.
 			_sph(parts, 0.12, Vector3(1.0, 1.25, 0.7), Vector3(0.0, 0.0, 0.0), color)
@@ -1821,6 +1942,47 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 						var sa: float = float(k) * 1.1
 						_sph(parts, 0.028, Vector3(1.4, 0.5, 0.9), Vector3(cos(sa) * 0.06, 0.012, sin(sa) * 0.06), Color(0.14, 0.15, 0.24), true)
 						_sph(parts, 0.015, Vector3(1.2, 0.4, 0.7), Vector3(cos(sa) * 0.06, 0.02, sin(sa) * 0.06), Color(0.95, 0.62, 0.25), true)
+				"dough":
+					# Raw flat dough (unbaked flatbreads): two pale rounds on a floured board, no char, a dusting of flour and finger dimples; t0 is a topping (wild garlic).
+					_box(parts, Vector3(0.3, 0.014, 0.22), Vector3(0.0, -0.05, 0.0), wood)
+
+					for k in 2:
+						_cyl(parts, 0.085, 0.012, Vector3(-0.055 + 0.11 * float(k), -0.037, 0.01 * float(k)), Vector3.ZERO, color if k == 0 else color.lightened(0.05))
+
+					for k in 3:
+						_sph(parts, 0.012, Vector3(1.4, 0.2, 1.0), Vector3(-0.08 + 0.065 * float(k), -0.03, -0.02 + 0.015 * float(k % 2)), t0 if tints.size() > 0 else color.darkened(0.1), true)
+
+					_box(parts, Vector3(0.06, 0.016, 0.05), Vector3(0.1, -0.042, -0.07), Color(0.96, 0.94, 0.9))
+				"links":
+					# A string of sausages in their casings lying on a board, twisted between links; t0 is the casing's sheen.
+					_box(parts, Vector3(0.3, 0.014, 0.16), Vector3(0.0, -0.05, 0.0), wood)
+
+					for k in 4:
+						var at: Vector3 = Vector3(-0.1 + 0.067 * float(k), -0.025, 0.02 * float(k % 2) - 0.01)
+						_sph(parts, 0.03, Vector3(1.1, 0.55, 0.55), at, _tone(color, k, 0.08), true)
+						_box(parts, Vector3(0.012, 0.01, 0.01), at + Vector3(0.034, 0.0, 0.0), color.darkened(0.25))
+				"platter":
+					# A serving platter of several foods (one portion per piece): a round wooden platter with a raised rim and a cluster of pieces in each of the tints.
+					_cyl(parts, 0.16, 0.016, Vector3(0.0, -0.05, 0.0), Vector3.ZERO, wood)
+					var foods: Array = [color] + tints
+
+					for k in mini(foods.size(), 4):
+						var pa: float = TAU * float(k) / float(mini(foods.size(), 4)) + 0.4
+						var at: Vector3 = Vector3(cos(pa) * 0.07, -0.025, sin(pa) * 0.07)
+						var food_c: Color = foods[k]
+						_sph(parts, 0.035, Vector3(1.2, 0.6, 0.9), at, food_c, true)
+						_box_rot(parts, Vector3(0.04, 0.02, 0.025), at + Vector3(0.02, -0.004, 0.025), Vector3(0.0, pa, 0.0), food_c.darkened(0.12))
+				"board":
+					# A wooden serving board with a handle (charcuterie, ploughman's, tavern supper): long, with a cluster of pieces in each of the tints in a row.
+					_box(parts, Vector3(0.32, 0.02, 0.18), Vector3(0.0, -0.05, 0.0), wood)
+					_box(parts, Vector3(0.07, 0.02, 0.05), Vector3(0.19, -0.05, 0.0), wood.darkened(0.08))
+					var spread: Array = [color] + tints
+
+					for k in mini(spread.size(), 4):
+						var at: Vector3 = Vector3(-0.11 + 0.075 * float(k), -0.03, 0.02 * float(k % 2) - 0.01)
+						var piece_c: Color = spread[k]
+						_sph(parts, 0.034, Vector3(1.0, 0.6, 1.1), at, piece_c, true)
+						_box(parts, Vector3(0.04, 0.02, 0.03), at + Vector3(0.0, -0.004, 0.045), piece_c.darkened(0.12))
 				_:
 					_bowl(parts, wood)
 					_fill(parts, color, [], false)
