@@ -95,7 +95,7 @@ class Reach:
     def kit_piece_live(self, kit):
         # a structure placed from this kit with a blueprint that is not retired (a locked one is coming: Cold frame, Compost bin)
         kinds = [k for k, d in self.structures.items() if d.get("kit") == kit]
-        return any(b.get("structure") in kinds and not b.get("retired") for b in self.blueprints_all.values())
+        return any(b.get("structure") in kinds and not b.get("retired") and not b.get("removed") for b in self.blueprints_all.values())   # removed: locked for good, the row kept loaded for tests (Wicker - Chest)
 
     def has(self, iid):
         return iid in self.why
