@@ -220,6 +220,19 @@
 			"stage": "start"
 		},
 		{
+			"id": "snare",
+			"title": "Snare a rabbit",
+			"hint": "Make a Snare (3 twine and 2 sticks) and set it on a rabbit run: a thin line of matted grass leading out from a warren. Rabbits come out along their runs from dusk to dawn, so set it in the evening and look in the morning. Work the catch with a knife.",
+			"after": [
+				"twine"
+			],
+			"check": {
+				"event": "snare_catch",
+				"count": 1
+			},
+			"stage": "start"
+		},
+		{
 			"id": "sell",
 			"title": "Sell to Hob",
 			"hint": "Hob the trader buys what you pick. Talk to him with E, ask what he sells, and sell him a lot of stones.",

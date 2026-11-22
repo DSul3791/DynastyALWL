@@ -6,7 +6,8 @@ like rabbits and eventually trap larger ... trapping and taming live later." And
 certain times or based on the sun and traveling and certain times and eating and drinking near the water at certain times ...
 design an idea around it then build your system around the idea." He loves the way grass mats down where he walks.
 
-Status: PROVISIONAL design by the trails thread under Dave's 21 Nov rule (questions go to the coordinator, answered from research,
+Coordinator rulings D-TRAP-1 (goal, away catches with limits, protocol 149) and D-TRAP-2 (night activity) are recorded in
+the coordinator log. Status: PROVISIONAL design by the trails thread under Dave's 21 Nov rule (questions go to the coordinator, answered from research,
 recorded). Values marked TR-n are provisional and live in data files.
 
 ## What is already in dev (built on, not duplicated)
@@ -76,11 +77,12 @@ arrive or the player moves 16 m.
 ## Stages
 
 **Stage 1 (this work)**
-- 1a, PR 1: places, the daily clock for rabbits and deer, routes as trails, trips along them, routes on the wire (protocol bump),
+- 1a: places, the daily clock for rabbits and deer, routes as trails, trips along them, routes on the wire (protocol bump),
   the matted-grass look, spawn at the places. Tests: routes repeatable and off steep ground, rabbits out at dusk and home at dawn,
   deer bed by day and feed by night, a trip walks the route, the block codec round trip.
-- 1b, PR 2: snares on runs (distance to the line), catches while away, an early goal ("Snare a rabbit", after "Twist twine";
-  coordinator ruling needed, catalog control). Tests: on-run vs off-run rates, away catches by the hour, the goal event.
+- 1b (same PR, one lane run): snares on runs (distance to the line), catches while away (D-TRAP-1: one roll a game hour, only on a
+  rabbit run, a sprung snare holds its catch, carcasses rot as before), the starter goal "Snare a rabbit" after "Twist twine"
+  (D-TRAP-1; event snare_catch when a snared carcass is worked). Tests: `test_traps` away_checks, `test_animal_trips`.
 
 **Stage 2**: the clock on the real sunrise and sunset (weather.gd `sunrise_hour`, the sun the sky draws) for every species, not the
 fixed hours; elk and moose ranges; fox and boar routines; signs along trails (tracks, droppings: `tracking.gd`); players' own
@@ -101,8 +103,9 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
 - TR-3 routes: a point every 12 m, each tried 3, 6 or 12 m either side of the last one's line, the gentlest climb kept, drifting at most 30 m off the straight line; round deep water by a dry point 20-60 m to one side of the middle; a small wiggle every 4 m.
 - TR-4 clock: rabbits out from dusk to dawn (dusk and night periods), deer to feed at dusk and back at dawn.
 - TR-5 the look: a run 0.35 m wide, a deer trail 0.6 m, fading over 0.4 m either side; the grass squashed by the trample's own squash (0.75, data/look/grass_trample.json) and shaded the same, so a trail looks like ground just walked.
-- TR-6 snares: full factor within 0.5 m of a run, falling to the old factor at 2 m; away catches tuned to about one rabbit in three
-  nights for a snare on a busy run (Wildwood's 3 in 15 the first night).
+- TR-6 snares: full factor within 0.5 m of a run, falling to the old factor at 2 m; away catches 0.045 a game hour at full rabbit
+  activity: a snare squarely on a run takes about two rabbits in five nights, about one a game day in two (Wildwood's 3 in 15 the
+  first night); six snares on runs feed one player well. Off a run, none while away.
 
 ## Not done / risks
 

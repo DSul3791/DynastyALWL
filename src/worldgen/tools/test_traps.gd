@@ -2,6 +2,8 @@ extends SceneTree
 
 # Snares (data/animals/traps.json, server_traps.gd): the catch rate on a worn trail and in open grass, small game only, the carcass, wear and breaking, sprung snares, the per-player cap, save and reload.
 # The Bird trap (traps.json kinds.bird_trap_set, Part C plan 3): ground birds only, flat trail factor, its own cap and words, saved like a snare.
+# Snares on runs and while away (docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md, D-TRAP-1, TR-6): a snare on a trail between animal places
+# fishes as on a worn trail; with nobody near, one on a rabbit run rolls once a game hour, one off a run never; a sprung one holds its catch.
 #   godot --headless --path . --script res://src/worldgen/tools/test_traps.gd      Prints "Test done: N pass, N fail".
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -239,6 +241,7 @@ func _init() -> void:
 	var knob_id: int = lay(items, Vector3(300.0, 10.0, 300.0))
 	check(traps.check_one(knob_id) and taken.is_empty(), "with the smoke knob on, a lone snare catches an imagined rabbit")
 	traps.cfg["test_chance"] = 0.0
+	away_checks()
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -306,3 +309,114 @@ func bird_checks(items) -> void:
 # Makes every look a sure thing (the chance is clamped to 1).
 func base_up(items) -> void:
 	items._traps.cfg["base_chance"] = 100.0
+
+
+# Snares on runs and while nobody is near (D-TRAP-1, TR-6).
+func away_checks() -> void:
+	var items = make("user://test_traps_away", true)
+	var traps = items._traps
+	var clock: Array = [20.0 * 3600.0]
+	var run_m: Array = [0.2]
+	var calls: Array = [0]
+	items.game_seconds = func(): return clock[0]
+	items.run_distance = func(_x, _z, _kind):
+		calls[0] += 1
+		return run_m[0]
+	items.species_active = func(_sp): return 1.0
+	strength = 0.0
+	rain = 0.0
+
+	# On the run: the share is full within run_full_m, half way at 1.25 m, nothing past run_none_m.
+	check(is_equal_approx(traps.run_share(Vector3.ZERO, 0), 1.0), "a snare right on a run sits fully on it")
+	run_m[0] = 1.25
+	check(absf(traps.run_share(Vector3.ZERO, 0) - 0.5) < 0.01, "a metre and a quarter off, half")
+	run_m[0] = 3.0
+	check(is_equal_approx(traps.run_share(Vector3.ZERO, 0), 0.0), "past two metres, not at all")
+	var rabbit: Dictionary = {"id": 9, "sp": "rabbit", "pos": Vector3(1.0, 10.0, 1.0)}
+	var open_grass: float = traps.chance_at(Vector3.ZERO, rabbit, false)
+	run_m[0] = 0.2
+	var on_run: float = traps.chance_at(Vector3.ZERO, rabbit, false)
+	strength = 0.6
+	run_m[0] = 3.0
+	var worn: float = traps.chance_at(Vector3.ZERO, rabbit, false)
+	strength = 0.0
+	check(is_equal_approx(on_run, worn) and on_run > open_grass * 5.0, "a live look on a run is as good as on a well worn trail, over five times open grass (%.3f %.3f %.3f)" % [on_run, worn, open_grass])
+
+	# Away: the owner is far off.
+	items.report_position(1, Vector3(5000.0, 10.0, 0.0))
+	run_m[0] = 0.2
+	var id: int = lay(items, Vector3(0.0, 10.0, 0.0))
+	var st: Dictionary = items._items[id]["struct"]
+	check(float(st.get("run", 0.0)) == 1.0, "a snare set on a run notes it")
+	check(not traps.check_away(id) and float(st["away_at"]) == clock[0], "the first look away only starts its clock")
+	clock[0] += 1800.0
+	check(not traps.check_away(id), "nothing within the game hour")
+	var got: int = 0
+	var tries: int = 600
+
+	for n in tries:
+		reset(items, id)
+		st["away_at"] = clock[0] - 3600.0
+
+		if traps.check_away(id):
+			got += 1
+
+	var per_hour: float = float(traps.cfg["away_per_hour"])
+	check(absf(float(got) / float(tries) - per_hour) < 0.025, "on a run it catches at about away_per_hour a game hour (%d of %d, %.3f)" % [got, tries, per_hour])
+	reset(items, id)
+	st["away_at"] = clock[0] - 100.0 * 3600.0
+	var calls_before: int = calls[0]
+	traps.check_away(id)
+	check(float(st["away_at"]) > clock[0] - 3600.0 and calls[0] - calls_before <= 3, "a long absence is one roll, its clock caught up (%d trail looks)" % (calls[0] - calls_before))
+
+	var caught: int = -1
+
+	for n in 400:
+		reset(items, id)
+		st["away_at"] = clock[0] - 12.0 * 3600.0
+
+		if traps.check_away(id):
+			caught = int(st["catch"])
+			break
+
+	check(caught > 0 and items._items.has(caught) and str(items._items[caught]["struct"]["species"]) == "rabbit" and bool(items._items[caught]["struct"].get("snared", false)), "an away catch lays a rabbit carcass, marked as snared")
+	var again: int = 0
+
+	for n in 50:
+		st["quiet"] = 0.0
+		st["away_at"] = clock[0] - 12.0 * 3600.0
+		again += 1 if traps.check_away(id) else 0
+
+	check(again == 0, "a sprung snare holds its one catch until it is taken")
+
+	run_m[0] = INF
+	traps._note_run(items._items[id])
+	check(float(st["run"]) == 1.0, "with the places round it not worked out (nobody near) the snare keeps the run it was noted on")
+	run_m[0] = 5.0
+	traps._note_run(items._items[id])
+	check(float(st["run"]) == 0.0, "a snare looked at again off any run is noted off it")
+	var off: int = 0
+
+	for n in 300:
+		reset(items, id)
+		st["away_at"] = clock[0] - 12.0 * 3600.0
+		off += 1 if traps.check_away(id) else 0
+
+	check(off == 0, "a snare off any run catches nothing while nobody is near")
+	run_m[0] = 0.2
+	var bird: int = lay(items, Vector3(40.0, 10.0, 0.0), "bird_trap_set")
+	var birds: int = 0
+
+	for n in 200:
+		reset(items, bird)
+		items._items[bird]["struct"]["away_at"] = clock[0] - 12.0 * 3600.0
+		birds += 1 if traps.check_away(bird) else 0
+
+	check(birds == 0, "a Bird trap does not fish while away")
+
+	# Somebody near: the live look works and nothing builds up for later.
+	reset(items, id)
+	st["away_at"] = clock[0] - 50.0 * 3600.0
+	items.report_position(1, Vector3(3.0, 10.0, 0.0))
+	traps.tick(float(traps.cfg["check_s"]) + 1.0)
+	check(float(st["away_at"]) == clock[0], "with the owner near, the away clock is kept at now")

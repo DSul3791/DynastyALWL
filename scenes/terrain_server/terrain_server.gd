@@ -799,6 +799,8 @@ func _ready() -> void:
 	items.animal_snare = func(id): return animals.snare(id)
 	items.animal_lure = func(id, point): return animals.lure_to(id, point)
 	items.trail_strength = func(x, z): return trails.strength_at(x, z)
+	items.run_distance = func(x, z, kind): return ranges.route_distance(x, z, kind)
+	items.species_active = func(sp): return animals.activity_chance(animals.species_def(sp))
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> Dictionary:
 		var member: String = tribes.member_along(origin, dir, reach)
