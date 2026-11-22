@@ -6,7 +6,8 @@ extends SceneTree
 # out at once when first worked out; the clock sends rabbits out at dusk and home after dawn; a trip walks the trail point by point at
 # walking pace (never a jump) and ends at the far spot; a bolt ends a trip; a lured rabbit stays until its clock turns; animals are made
 # at their places once the ground is worked out, a rabbit group with its burrows at the warren. Stage 2a: periods and trips on the real
-# sun (equinox = the fixed hours, midwinter and midsummer shift them), moose and elk ranges, a moose feeding by water.
+# sun (equinox = the fixed hours, midwinter and midsummer shift them), moose and elk ranges, a moose feeding by water. Stage 2b: fox
+# earths and their night rounds by way of warrens, never drawn nor a run, a different round each night, foxes out after sunset.
 #   godot --headless --path . --script res://src/worldgen/tools/test_animal_trips.gd
 
 const RangesScript := preload("res://src/stream/server_ranges.gd")
@@ -105,7 +106,7 @@ func _init() -> void:
 			for out in p["outs"]:
 				var d: float = (out as Vector2).distance_to(p["home"])
 				ok_runs = ok_runs and d >= 14.9 and d <= 40.1
-		else:
+		elif bool(p.get("drawn", true)):   # a deer, moose or elk range (a fox's rounds are checked in fox_checks)
 			var d2: float = (p["outs"][0] as Vector2).distance_to(p["home"])
 			var span: Array = r1.cfg[str(p["sp"])]["apart_m"]
 			ok_apart = ok_apart and d2 >= float(span[0]) and d2 <= float(span[1])
@@ -154,7 +155,7 @@ func _init() -> void:
 	var dropped: int = 0
 
 	for p in r1.blocks[r1.block_of(a_place["home"].x, a_place["home"].y)]["places"]:
-		dropped += (p["routes"] as Array).size() if r1.settled(p) else 0   # any other place reaching into the same zone goes too
+		dropped += (p["routes"] as Array).size() if r1.settled(p) and bool(p.get("drawn", true)) else 0   # any other place reaching into the same zone goes too (a fox's rounds are never sent)
 
 	check(after.size() == before.size() - dropped and dropped >= (a_place["routes"] as Array).size(), "its trails are no longer sent (%d -> %d)" % [before.size(), after.size()])
 	check(not r1.places_near("rabbit", Vector3(a_place["home"].x, 10.0, a_place["home"].y), 1.0).has(a_place), "and no animal is made there")
@@ -164,7 +165,7 @@ func _init() -> void:
 	var on: Vector2 = Vector2(INF, INF)
 
 	for p in r1.blocks[Vector2i(0, 0)]["places"]:
-		for route in p["routes"]:
+		for route in (p["routes"] if bool(p.get("drawn", true)) else []):
 			for q in (route as PackedVector2Array):
 				if on.x == INF and r1.block_of(q.x, q.y) == Vector2i(0, 0):
 					on = q
@@ -312,6 +313,7 @@ func _init() -> void:
 	check(not bare._place_spawn("rabbit", bare.species_def("rabbit"), player, [player], 30), "with no places the old spawn does")
 
 	sun_checks(p1)
+	fox_checks(r1, p1)
 
 	print("test_animal_trips: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
@@ -408,6 +410,106 @@ func weighted_ranges(elk_weight: float) -> Array:
 					found[k] += 1
 
 	return found
+
+
+# Stage 2b (TR-9): a fox earth by the warrens, its rounds visiting 2 to 4 of them, not drawn and not a run; a fox walks a different
+# round on the next night and keeps a fox's hours.
+func fox_checks(r1, p1: Array) -> void:
+	var foxes: Array = []
+	var warren_homes: Array = []
+
+	for p in p1:
+		if str(p["sp"]) == "fox":
+			foxes.append(p)
+		elif str(p["sp"]) == "rabbit":
+			warren_homes.append(p["home"])
+
+	check(foxes.size() >= 1 and foxes.size() < r1.blocks.size(), "fox earths in some blocks, not all (%d of %d)" % [foxes.size(), r1.blocks.size()])
+
+	if foxes.is_empty():
+		return
+
+	var visits_ok: bool = true
+	var shape_ok: bool = true
+
+	for f in foxes:
+		shape_ok = shape_ok and not bool(f.get("drawn", true)) and str(f["id"]).begins_with("f:") and (f["routes"] as Array).size() >= 1
+
+		for route in f["routes"]:
+			var pts: PackedVector2Array = route
+			var seen: int = 0
+
+			for w in warren_homes:
+				for q in pts:
+					if (w as Vector2).distance_to(q) <= 1.0:
+						seen += 1
+						break
+
+			visits_ok = visits_ok and pts[0].distance_to(f["home"]) < 0.01 and seen >= 2 and seen <= 4
+
+	check(shape_ok, "a fox earth keeps no trail of its own (not drawn), with its rounds")
+	check(visits_ok, "each round leaves the earth and goes by 2 to 4 warrens")
+
+	var fox: Dictionary = foxes[0]
+	var key: Vector2i = r1.block_of(fox["home"].x, fox["home"].y)
+	var sent: Array = Codec.decode_routes(r1.wire(key, 900000), key, 256.0)
+	var drawn: int = 0
+
+	for p in r1.blocks[key]["places"]:
+		drawn += (p["routes"] as Array).size() if bool(p.get("drawn", true)) and not r1.settled(p) else 0
+
+	check(sent.size() == drawn, "a fox's rounds are not sent as trails (%d sent, %d drawn routes in the block)" % [sent.size(), drawn])
+	var mid: Vector2 = Vector2(INF, INF)   # the point of any round nearest the worked-out middle, so the blocks round it are known
+
+	for f in foxes:
+		for route in f["routes"]:
+			for q in (route as PackedVector2Array):
+				if q.distance_to(Vector2(128.0, 128.0)) < mid.distance_to(Vector2(128.0, 128.0)):
+					mid = q
+
+	var nearest: float = 10.0
+
+	for p in all_places(r1):
+		if bool(p.get("drawn", true)):
+			for route in p["routes"]:
+				var pts: PackedVector2Array = route
+
+				for i in range(1, pts.size()):
+					nearest = minf(nearest, mid.distance_to(Geometry2D.get_closest_point_to_segment(mid, pts[i - 1], pts[i])))
+
+	check(absf(r1.route_distance(mid.x, mid.y) - nearest) < 0.01, "and do not count as a run for a snare (%.2f m, the runs' own %.2f m)" % [r1.route_distance(mid.x, mid.y), nearest])
+	check(r1.fox_near(fox["home"].x, fox["home"].y, 50.0) and not r1.fox_near(fox["home"].x + 2000.0, fox["home"].y, 300.0), "a fox earth is near its own spot, not 2 km off")
+
+	# A fox at its earth: out after sunset on tonight's round, another round tomorrow night.
+	var day: Array = [0]
+	var a = AnimalsScript.new()
+	a.ground_height = func(x, z): return ground(x, z)
+	a.blocked = func(x, z): return wet(x, z)
+	a.hour_now = func(): return hour
+	a.game_seconds = func(): return float(day[0]) * 86400.0 + hour * 3600.0
+	a.weather_ahead = func(_h): return {}
+	a.setup()
+	a.traits = false
+	a.ranges = r1
+	var id: int = a.spawn("fox", fox["home"].x, fox["home"].y)
+	var vixen: Dictionary = a.animals[id]
+	vixen["place"] = {"id": fox["id"], "route": fox["routes"][0], "rounds": fox["routes"]}
+	hour = 17.0
+	check(not a.wants_out(vixen), "a fox is in its earth at 17:00")
+	hour = 23.0
+	check(a.wants_out(vixen), "and out hunting at 23:00")
+	var rounds_walked: Dictionary = {}
+
+	for n in 3:
+		day[0] = 10 + n
+		vixen["pos"] = Vector3(fox["home"].x, 10.0, fox["home"].y)
+		vixen["home"] = vixen["pos"]
+		vixen["state"] = a.GRAZE
+		a.routine_trip(vixen)
+		rounds_walked[n] = (fox["routes"] as Array).find(vixen["place"]["route"])
+
+	var differs: bool = (fox["routes"] as Array).size() < 2 or (rounds_walked[0] != rounds_walked[1] and rounds_walked[1] != rounds_walked[2])
+	check(vixen.has("trip") and differs, "each night it sets off on a round, never last night's (%s of %d)" % [str(rounds_walked.values()), (fox["routes"] as Array).size()])
 
 
 func r1_water_ok() -> bool:
