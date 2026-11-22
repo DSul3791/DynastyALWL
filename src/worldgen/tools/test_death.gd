@@ -128,7 +128,7 @@ func _init() -> void:
 	second._remains_tick(1.0)
 	check(second.remains_ids().is_empty(), "remains are cleaned up after seven days")
 
-	# One character can leave only per_owner_cap sets of remains; the oldest goes first.
+	# Empty remains per character are capped at per_owner_cap; the oldest empty set goes first.
 	var third = make(dir + "_cap")
 	third.peer_connected_hello(1, "owner-key-0001")
 	third.report_position(1, Vector3(100.0, 12.0, 100.0))
@@ -137,11 +137,10 @@ func _init() -> void:
 	for n in 5:
 		clock += 10.0
 		third.report_position(1, Vector3(100.0, 12.0, 100.0))
-		third.inventory_of(1).add(third.table.number_of("stone"), 1)
 		third.kill(1, "drowning")
 
 	var left: Array = third.remains_ids()
-	check(left.size() == 3, "remains per owner are capped (%d)" % left.size())
+	check(left.size() == 3, "empty remains per owner are capped (%d)" % left.size())
 
 	var newest: float = 0.0
 	var oldest: float = 1.0e30
@@ -151,6 +150,25 @@ func _init() -> void:
 		oldest = minf(oldest, float(third._items[rid]["struct"]["born"]))
 
 	check(newest - oldest <= 20.0, "the oldest sets went first")
+
+	# Remains that hold anything, an item or only coins, are never removed to make room (no ground-item cap): the player keeps every set.
+	var fourth = make(dir + "_cap_full")
+	fourth.peer_connected_hello(1, "owner-key-0002")
+	fourth._death_cfg["per_owner_cap"] = 3
+
+	for n in 5:
+		clock += 10.0
+		fourth.report_position(1, Vector3(100.0, 12.0, 100.0))
+
+		if n == 0:
+			fourth._characters["owner-key-0002"]["purse"] = {"coin_copper": 4}
+		else:
+			fourth.inventory_of(1).add(fourth.table.number_of("stone"), 1)
+
+		fourth.kill(1, "drowning")
+
+	check(fourth.remains_ids().size() == 5, "remains holding things are never trimmed (%d of 5 kept)" % fourth.remains_ids().size())
+	check(fourth._remains_rows("owner-key-0002").size() == 5, "and each one, the coins-only set too, has a death marker")
 
 	# Dave 2026-10-21: back at the last shelter slept in.
 	DirAccess.make_dir_recursive_absolute(dir + "_shelter")
