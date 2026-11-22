@@ -586,7 +586,7 @@ void fragment() {
 			color = mix(color, mix(color, worn_soil.rgb, worn_earth.w * lw[1]) * worn_earth.z, worn);
 		}
 	}
-	// Never a NaN or an over-bright albedo: a bad value is dark ground.
+	// Never a NaN or an over-bright albedo (fen pools drawn flat white under Vulkan, gate Z4 A4 22 Nov 2026): a bad value is dark ground.
 	if (any(isnan(color)) || any(isinf(color))) {
 		color = vec3(0.05, 0.045, 0.04);
 	}
@@ -598,10 +598,7 @@ void fragment() {
 	ROUGHNESS = mix(ROUGHNESS, 0.36, min(wetland, 1.0) * (1.0 - rock_mask) * (1.0 - lying));      // wet peat and mud have a sheen
 	ROUGHNESS = mix(ROUGHNESS, 0.18, wet_sand);      // wet sand shines and mirrors the sky
 	ROUGHNESS = mix(ROUGHNESS, 0.3, puddle_rim);
-	ROUGHNESS = mix(ROUGHNESS, mix(mix(0.12, 0.2, puddle_ice), 0.36, pool), puddle);      // a rain puddle shines with the sky, ice a little less; a wetland pool is dull peat water
-	// A wetland pool does not mirror the sky: at a grazing angle the sky drew it as a flat white sheet on Vulkan and d3d12 alike (gate Z4 A4 22 Nov 2026,
-	// fen_wide_cmp.png). A low specular cuts the grazing reflection (Godot scales it by 50 * f0), so the pool reads as dark peat water.
-	SPECULAR = mix(0.5, 0.12, pool);
+	ROUGHNESS = mix(ROUGHNESS, mix(0.12, 0.2, puddle_ice), puddle);      // a puddle shines with the sky; ice a little less (not a 0.03 mirror: white under Vulkan, gate Z4 A4)
 	ROUGHNESS = isnan(ROUGHNESS) ? 0.9 : clamp(ROUGHNESS, 0.05, 1.0);
 	if (any(isnan(NORMAL))) {
 		NORMAL = (VIEW_MATRIX * vec4(0.0, 1.0, 0.0, 0.0)).xyz;
