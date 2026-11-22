@@ -481,6 +481,9 @@ func _machine_key() -> String:
 
 
 func toggle() -> void:
+	if _modal_up():
+		return   # I over a talk, trade, lock-code or food prompt would stack a second window and capture the mouse from under it
+
 	hotbar_hover = -1   # a hover left over from the last time the window was open never acts on a hotbar slot
 
 	if chest_mode:
@@ -528,6 +531,11 @@ func search_escape() -> bool:
 	return true
 
 
+# A window that must be answered or shut first: a talk or trade, the lock-code or storage window, the food-replace prompt.
+func _modal_up() -> bool:
+	return dialogue_open or _storage_ui.is_open() or _food_ui.is_open()
+
+
 func close() -> void:
 	if _storage_ui.is_open():
 		_storage_ui.close()
@@ -535,6 +543,7 @@ func close() -> void:
 
 	if _food_ui.is_open():
 		_food_ui.close()
+		_storage_ui._release_mouse()   # Esc on the food prompt alone gives the camera back, as the storage window does
 		return
 
 	if dialogue_open and dialogue_close.is_valid():
@@ -552,7 +561,7 @@ func close() -> void:
 
 # The Tab character screen (src/client/character_screen.gd): health, exertion, heart, hunger, thirst, attributes, skills.
 func toggle_character() -> void:
-	if chest_mode:
+	if chest_mode or _modal_up():
 		return
 
 	if open:
