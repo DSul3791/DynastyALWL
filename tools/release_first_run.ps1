@@ -35,6 +35,7 @@ $container = "dynasty-firstrun"
 $port = 24700   # not 24600: Dave's own Play server may be using it
 $script:failed = $false
 $script:serverUp = $false
+$script:dockerOut = ""
 
 function Fail([string]$why) { Write-Host "   FAIL: $why"; $script:failed = $true }
 
@@ -81,19 +82,57 @@ function Start-Fresh([string]$name, [string]$engine, [string]$game, [string]$wan
 	return $log
 }
 
-function Compose([string]$what) {
-	& docker compose -p $project -f $compose @args
-	if ($LASTEXITCODE -ne 0) { throw "release_first_run: docker compose $what failed (exit $LASTEXITCODE)" }
+# Docker with a time limit too (a stuck Docker Desktop must not hold the script): returns the exit code, -1 when it had to be stopped.
+function Docker-Limited([int]$limit, [string]$what, [string[]]$arguments) {
+	$job = Start-Job -ScriptBlock { param($a) & docker @a 2>&1 | ForEach-Object { "$_" }; "EXIT:$LASTEXITCODE" } -ArgumentList (, $arguments)
+	if (-not (Wait-Job $job -Timeout $limit)) {
+		Stop-Job $job; Remove-Job $job -Force
+		Write-Host "   docker $what still running after $limit s; stopped"
+		return -1
+	}
+	$lines = @(Receive-Job $job); Remove-Job $job -Force
+	$code = -1
+	foreach ($l in $lines) { if ($l -match '^EXIT:(-?\d+)$') { $code = [int]$Matches[1] } else { $script:dockerOut += "$l`n"; Write-Host "   $l" } }
+	return $code
+}
+
+function Docker([int]$limit, [string]$what, [string[]]$arguments) {
+	$code = Docker-Limited $limit $what $arguments
+	if ($code -ne 0) { throw "release_first_run: docker $what failed (exit $code)" }
+}
+
+function Compose([int]$limit, [string]$what, [string[]]$arguments) {
+	Docker $limit "compose $what" (@("compose", "-p", $project, "-f", $compose) + $arguments)
+}
+
+# Quiet docker for polling: its output only, at most 30 s.
+function Docker-Text([string[]]$arguments) {
+	$job = Start-Job -ScriptBlock { param($a) & docker @a 2>$null } -ArgumentList (, $arguments)
+	if (-not (Wait-Job $job -Timeout 30)) { Stop-Job $job; Remove-Job $job -Force; return "" }
+	$text = "$(Receive-Job $job)"; Remove-Job $job -Force
+	return $text.Trim()
 }
 
 foreach ($f in @($setup) + $(if ($NoServer) { @() } else { @($tar, $compose) })) {
 	if (-not (Test-Path -LiteralPath $f)) { throw "release_first_run: no $f; run tools\make_release.ps1 first" }
 }
 if (Test-Path -LiteralPath $uninstallKey) {
+	# A test install left by a run that was cut off (its finally never ran) is removed; any other install is Dave's own.
+	$location = "$((Get-ItemProperty -LiteralPath $uninstallKey -ErrorAction SilentlyContinue).InstallLocation)".TrimEnd('\')
+	$leftover = Join-Path $install "unins000.exe"
+	if ($location -ieq $install -and (Test-Path -LiteralPath $leftover)) {
+		Write-Host "== removing the test install an earlier run left"
+		Run-Limited $leftover "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" 300 "the earlier test install's uninstaller" | Out-Null
+		$deadline = (Get-Date).AddSeconds(120)
+		while ((Test-Path -LiteralPath $uninstallKey) -and (Get-Date) -lt $deadline) { Start-Sleep -Seconds 2 }
+	}
+}
+if (Test-Path -LiteralPath $uninstallKey) {
 	throw "release_first_run: Dynasty is installed on this PC (Settings > Apps); a test install would take over its uninstall entry. Uninstall it first, or test on another PC."
 }
 New-Item -ItemType Directory -Force -Path $runs | Out-Null
-$composeEnv = @{ DYNASTY_TAG = "build-$build"; DYNASTY_PORT = "$port"; DYNASTY_BLOCK_PORT = "$($port + 1)"; DYNASTY_CONTAINER = $container }
+# The test server has no password whatever this shell has set (the --test client cannot answer one).
+$composeEnv = @{ DYNASTY_TAG = "build-$build"; DYNASTY_PORT = "$port"; DYNASTY_BLOCK_PORT = "$($port + 1)"; DYNASTY_CONTAINER = $container; DYNASTY_SERVER_PASSWORD = "" }
 $savedEnv = @{}
 foreach ($k in $composeEnv.Keys) { $savedEnv[$k] = [Environment]::GetEnvironmentVariable($k); [Environment]::SetEnvironmentVariable($k, $composeEnv[$k]) }
 
@@ -115,32 +154,33 @@ try {
 
 	if (-not $NoServer) {
 		# 3. server package
-		Write-Host "== server: docker load -i $tar"
-		& docker load -i $tar
-		if ($LASTEXITCODE -ne 0) { throw "release_first_run: docker load failed (exit $LASTEXITCODE)" }
-		Write-Host "== server: compose up ($project, ports $port/$($port + 1), its own volume)"
+		Write-Host "== server: docker load -i $tar (also tags it dynasty-server:latest on this PC, as make_release did)"
+		Docker 900 "load" @("load", "-i", $tar)
+		Write-Host "== server: compose up ($project, ports $port/$($port + 1), its own new volume)"
 		$script:serverUp = $true
-		Compose "up" up -d
+		Compose 300 "down (an earlier cut-off run)" @("down", "-v", "--timeout", "90")
+		Compose 300 "up" @("up", "-d")
 		$deadline = (Get-Date).AddMinutes(15)
 		$running = $false
 		while ((Get-Date) -lt $deadline) {
-			$note = & docker exec $container sh -c "cat /data/store/server_run.json 2>/dev/null"
-			if ("$note" -match '"state":"running"') { $running = $true; break }
-			if ((& docker inspect -f "{{.State.Running}}" $container) -ne "true") { break }
+			$note = Docker-Text @("exec", $container, "sh", "-c", "cat /data/store/server_run.json 2>/dev/null")
+			if ($note -match '"state":"running"') { $running = $true; break }
+			if ((Docker-Text @("inspect", "-f", "{{.State.Running}}", $container)) -ne "true") { break }
 			Start-Sleep -Seconds 5
 		}
 		if (-not $running) {
-			& docker logs --tail 40 $container
+			Write-Host (Docker-Text @("logs", "--tail", "40", $container))
 			throw "release_first_run: the server did not reach running inside 15 minutes (or stopped); its log is above"
 		}
 		Write-Host "   server running"
 
-		# 4. cold play: joins by itself; --frames makes the game quit after about two minutes at 60 fps
-		$log = Start-Fresh "play" "--rendering-driver vulkan --windowed --resolution 1920x1080" "--test --server=127.0.0.1 --port=$port --frames=7200" "Vulkan" 420
+		# 4. cold play: joins by itself and quits after 150 s by the clock (--timeout); --frames is only a backstop
+		$log = Start-Fresh "play" "--rendering-driver vulkan --windowed --resolution 1920x1080" "--test --server=127.0.0.1 --port=$port --timeout=150 --frames=200000" "Vulkan" 420
 		$ground = Select-String -LiteralPath $log -Pattern "JOIN: ground ready" -ErrorAction SilentlyContinue | Select-Object -First 1
 		if ($ground) { Write-Host "   $($ground.Line)" } else { Fail "the cold play never logged JOIN: ground ready (did not join or land)" }
 		$worst = 0
-		foreach ($m in (Select-String -LiteralPath $log -Pattern "^FREEZE (\d+) ms" -ErrorAction SilentlyContinue)) {
+		# "FREEZE gap: N ms" (src/debug/freeze_watch.gd, the main thread's own clock) and the probe's "FREEZE N ms" lines
+		foreach ($m in (Select-String -LiteralPath $log -Pattern "^FREEZE (?:gap: )?(\d+) ms" -ErrorAction SilentlyContinue)) {
 			$worst = [Math]::Max($worst, [int]$m.Matches[0].Groups[1].Value)
 		}
 		Write-Host "   longest FREEZE: $(if ($worst -gt 0) { "$worst ms" } else { 'none over 500 ms' })"
@@ -148,11 +188,11 @@ try {
 		# 5. stop: run_server.sh turns TERM into the server's own save and close
 		Write-Host "== server: compose stop (must save and exit 0 inside 90 s)"
 		$started = Get-Date
-		Compose "stop" stop
+		Compose 150 "stop" @("stop")
 		$seconds = [int]((Get-Date) - $started).TotalSeconds
-		$exit = & docker inspect -f "{{.State.ExitCode}}" $container
+		$exit = Docker-Text @("inspect", "-f", "{{.State.ExitCode}}", $container)
 		Write-Host "   stopped in $seconds s, exit $exit"
-		& docker logs --tail 5 $container
+		Write-Host (Docker-Text @("logs", "--tail", "5", $container))
 		if ("$exit" -ne "0") { Fail "the server exit $exit on stop (not a clean save)" }
 	}
 }
@@ -164,7 +204,8 @@ finally {
 	if ($script:serverUp) {
 		foreach ($k in $composeEnv.Keys) { [Environment]::SetEnvironmentVariable($k, $composeEnv[$k]) }
 		Write-Host "== server: compose down (removes the test container and its volume)"
-		& docker compose -p $project -f $compose down -v --timeout 90
+		$code = Docker-Limited 300 "compose down" @("compose", "-p", $project, "-f", $compose, "down", "-v", "--timeout", "90")
+		if ($code -ne 0) { Fail "compose down exit $code: the test container $container or its volume may be left (docker compose -p $project down -v)" }
 		foreach ($k in $savedEnv.Keys) { [Environment]::SetEnvironmentVariable($k, $savedEnv[$k]) }
 	}
 	# 6. uninstall (also after a failure, so the test install never stays)
@@ -176,6 +217,7 @@ finally {
 		$deadline = (Get-Date).AddSeconds(120)
 		while ((Test-Path -LiteralPath $exe) -and (Get-Date) -lt $deadline) { Start-Sleep -Seconds 2 }
 		if (Test-Path -LiteralPath $exe) { Fail "the uninstaller left Dynasty.exe in $install" }
+		elseif (Get-ChildItem -LiteralPath $install -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1) { Fail "the uninstaller left files in $install" }
 		elseif (Test-Path -LiteralPath $uninstallKey) { Fail "the uninstaller left the uninstall entry" }
 		else { Write-Host "   uninstalled" }
 	}

@@ -2,7 +2,7 @@
 #   docker compose -f compose.yaml up -d      start (and start again after a reboot, unless it was stopped by hand)
 #   docker compose -f compose.yaml down       stop: the server saves and closes within the 90 s grace
 # DYNASTY_TAG picks the image (default latest), for example DYNASTY_TAG=build-7979 to go back to a build.
-# DYNASTY_PORT (default 24600; the block line is the next port) and DYNASTY_CONTAINER (default dynasty-server) are for a second server
+# DYNASTY_PORT (default 24600) with DYNASTY_BLOCK_PORT (must be DYNASTY_PORT + 1: the block line) and DYNASTY_CONTAINER (default dynasty-server) are for a second server
 # on one machine, such as tools/release_first_run.ps1's test server; the server listens on the same port inside, since it tells
 # clients its block line port.
 name: dynasty   # fixed, so the volume is dynasty_dynasty-data whatever folder this file is in
