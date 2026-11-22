@@ -263,18 +263,6 @@ func _init() -> void:
 			outcrops += 1
 			angular = angular and float(it["boulder"]["ang"]) >= 0.7 and str(it["boulder"]["ore"]) == "tin" and float(it["boulder"]["grade"]) > 0.3
 
-	# 6b. The look lines (Lane A's pictures): each metal's nearest sources by route with a biggest outcrop where the server really puts one.
-	var looks: Array = Array(context.get("report")).filter(func(line: String) -> bool: return line.begins_with("resources: look "))
-	var tin_look: Array = looks.filter(func(line: String) -> bool: return line.begins_with("resources: look tin source at %.1f, %.1f " % [float(tin["x"]), float(tin["z"])]))
-	var look_ok: bool = looks.any(func(line: String) -> bool: return line.contains("look iron source")) and looks.any(func(line: String) -> bool: return line.contains("look copper source")) and looks.any(func(line: String) -> bool: return line.contains("look tin source"))
-
-	if not tin_look.is_empty():
-		var parts: PackedStringArray = str(tin_look[0]).split("biggest outcrop at ")[1].split(" (")[0].split(", ")
-		var biggest: Vector2 = Vector2(float(parts[0]), float(parts[1]))
-		look_ok = look_ok and items._items.values().any(func(it: Dictionary) -> bool: return it.has("boulder") and int((it["boulder"] as Dictionary).get("source", 0)) == int(tin["id"]) and biggest.distance_to(Vector2(it["pos"].x, it["pos"].z)) < 0.1)
-
-	check(look_ok, "the log names where to look: the nearest iron, copper and tin sources, the biggest outcrop where the server lays one (%d look lines)" % looks.size())
-
 	var first_lay: String = str(items._items.values().map(func(it): return [it["scatter"], it["pos"]]))
 	items._items.clear()
 
@@ -285,6 +273,32 @@ func _init() -> void:
 	check(outcrops >= 2 and angular, "a tin source shows %d angular, rich tin outcrops at its place" % outcrops)
 	check(keys_unique and in_cell, "every source rock has its own key, in the cell that holds it")
 	check(str(items._items.values().map(func(it): return [it["scatter"], it["pos"]])) == first_lay, "the same rocks in the same places every time")
+
+	# 6b. The look lines (Lane A's pictures): each metal's nearest sources by route, the nearest tin's biggest outcrop where the server lays one.
+	var looks: Array = Array(context.get("report")).filter(func(line: String) -> bool: return line.begins_with("resources: look "))
+	var tin_look: Array = looks.filter(func(line: String) -> bool: return line.begins_with("resources: look tin source at "))
+	var look_ok: bool = looks.any(func(line: String) -> bool: return line.begins_with("resources: look iron source at ")) and looks.any(func(line: String) -> bool: return line.begins_with("resources: look copper source at ")) and not tin_look.is_empty()
+
+	if look_ok:
+		var line0: String = str(tin_look[0])
+		var at_parts: PackedStringArray = line0.trim_prefix("resources: look tin source at ").split(" (")[0].split(", ")
+		var big_parts: PackedStringArray = line0.split("biggest outcrop at ")[1].split(" (")[0].split(", ")
+		var look_centre: Vector2 = Vector2(float(at_parts[0]), float(at_parts[1]))
+		var biggest: Vector2 = Vector2(float(big_parts[0]), float(big_parts[1]))
+		var look_src: Array = (context.get("deposits") as Array).filter(func(d: Dictionary) -> bool: return str(d["metal"]) == "tin" and look_centre.distance_to(Vector2(float(d["x"]), float(d["z"]))) < 0.1)
+		look_ok = look_src.size() == 1
+
+		if look_ok:
+			var look_cell: Vector2i = Vector2i(floori(float(look_src[0]["x"]) / 32.0), floori(float(look_src[0]["z"]) / 32.0))
+			items._items.clear()
+
+			for dz in range(-2, 3):
+				for dx in range(-2, 3):
+					items._lay_out_sources(look_cell + Vector2i(dx, dz), 32.0, items._cell_reads(look_cell + Vector2i(dx, dz), 32.0))
+
+			look_ok = items._items.values().any(func(it: Dictionary) -> bool: return it.has("boulder") and int((it["boulder"] as Dictionary).get("source", 0)) == int(look_src[0]["id"]) and biggest.distance_to(Vector2(it["pos"].x, it["pos"].z)) < 0.1)
+
+	check(look_ok, "the log names where to look: the nearest iron, copper and tin sources, and the nearest tin's biggest outcrop is a rock the server lays there (%d look lines)" % looks.size())
 
 	# 7. Copper and tin rocks keep their inland identity: none on dry shore land far from any source or clue.
 	items._items.clear()

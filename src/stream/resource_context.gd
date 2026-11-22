@@ -1044,8 +1044,10 @@ func _look_lines() -> void:
 		var rows: Array = []
 
 		for d in deposits:
-			if int(d["m"]) == m and is_finite(float(dist.call(float(d["x"]), float(d["z"])))):
-				rows.append([float(dist.call(float(d["x"]), float(d["z"]))), d])
+			var to_d: float = float(dist.call(float(d["x"]), float(d["z"])))
+
+			if int(d["m"]) == m and is_finite(to_d):
+				rows.append([to_d, d])
 
 		rows.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
 
@@ -1069,8 +1071,10 @@ func _look_lines() -> void:
 	var seam_rows: Array = []
 
 	for seam in seams:
-		if is_finite(float(dist.call(float(seam["x"]), float(seam["z"])))):
-			seam_rows.append([float(dist.call(float(seam["x"]), float(seam["z"]))), seam])
+		var to_seam: float = float(dist.call(float(seam["x"]), float(seam["z"])))
+
+		if is_finite(to_seam):
+			seam_rows.append([to_seam, seam])
 
 	seam_rows.sort_custom(func(a: Array, b: Array) -> bool: return a[0] < b[0])
 	var coal_cfg: Dictionary = (_cfg.get("coal", {}) as Dictionary)
@@ -1090,8 +1094,10 @@ func _look_lines() -> void:
 			by_find[p["find"]] = [route, p]
 
 	for f in by_find:
-		var pocket: Dictionary = by_find[f][1]
-		report.append("resources: look %s pocket at %.1f, %.1f, %.1f m down, %.0f m by route" % [str(f), float(pocket["x"]), float(pocket["z"]), float(pocket["depth"]), float(by_find[f][0])])
+		var found: Dictionary = by_find[f][1]
+		report.append("resources: look %s pocket at %.1f, %.1f, %.1f m down, %.0f m by route" % [str(f), float(found["x"]), float(found["z"]), float(found["depth"]), float(by_find[f][0])])
+
+	_spawn_cost = PackedFloat32Array()   # only the look lines read it
 
 
 # Dijkstra over one island from cell `start` (binary heap of [cost, cell]).
