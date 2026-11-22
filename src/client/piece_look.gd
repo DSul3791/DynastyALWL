@@ -1344,17 +1344,22 @@ static func clay_hearth() -> Node3D:
 
 
 const SIMPLE_SNARE_MODEL := "res://assets/traps/simple_snare.glb"
+static var _simple_snare: PackedScene = null   # loaded once, the first time a snare is drawn
+static var _simple_snare_looked: bool = false   # whether that load was tried (the file may be missing)
 
 
 # A set Simple snare: Dave's model (22 Nov 2026, tools/items/prepare_item_model.py: 0.62 m wide, 0.5 m high, floor on y 0, the noose's
-# loop 11 cm across a hand above the ground), standing across the run so a rabbit coming along it (along z) puts its head through. The
-# stub below stands in while the file is missing or not imported yet.
+# loop 11 cm across a hand above the ground; 5,000 triangles), standing across the run so a rabbit coming along it (along z) puts its
+# head through. The stub below stands in while the file is missing or not imported yet. The carried item keeps its parcel look.
 static func snare_trap() -> Node3D:
-	if ResourceLoader.exists(SIMPLE_SNARE_MODEL):
-		var packed: PackedScene = load(SIMPLE_SNARE_MODEL) as PackedScene
+	if not _simple_snare_looked:
+		_simple_snare_looked = true
+		_simple_snare = load(SIMPLE_SNARE_MODEL) as PackedScene if ResourceLoader.exists(SIMPLE_SNARE_MODEL) else null
 
-		if packed != null:
-			var model: Node3D = packed.instantiate() as Node3D
+	if _simple_snare != null:
+		var model: Node3D = _simple_snare.instantiate() as Node3D
+
+		if model != null:
 			var holder: Node3D = Node3D.new()
 			holder.add_child(model)
 			return holder

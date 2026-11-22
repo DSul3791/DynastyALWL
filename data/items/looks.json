@@ -2182,9 +2182,7 @@
    "shape": "kit",
    "color": "#8a7040",
    "size": 0.6,
-   "model": "res://assets/traps/simple_snare.glb",
-   "model_length_m": 0.62,
-   "note_model": "Dave's Simple snare mesh (22 Nov 2026, Basic_Rabbit_Snare_80k.glb, tools/items/prepare_item_model.py): 0.62 m wide, 0.5 m high, the loop 11 cm across a hand above the ground. The set snare (snare_trap) draws the same file standing (piece_look.snare_trap)."
+   "placeholder": true
   },
   "log_workbench_kit": {
    "shape": "kit",
