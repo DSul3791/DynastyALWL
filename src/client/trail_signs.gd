@@ -175,7 +175,12 @@ static func _junctions(runs: Array, c: Dictionary, out: Array) -> void:
 		for entry in grid[cell]:
 			for dz in range(-1, 2):
 				for dx in range(-1, 2):
-					for other in grid.get(cell + Vector2i(dx, dz), []):
+					var beside: Vector2i = cell + Vector2i(dx, dz)
+
+					if not grid.has(beside):
+						continue
+
+					for other in grid[beside]:
 						var a: int = int(entry[0])
 						var b: int = int(other[0])
 
@@ -185,8 +190,8 @@ static func _junctions(runs: Array, c: Dictionary, out: Array) -> void:
 						var q: Vector2 = entry[1]
 						var gap: float = q.distance_to(other[1])
 
-						if gap > near_m or (runs[b][0] as Vector2).distance_to(q) < clear_m:
-							continue
+						if gap > near_m or (runs[b][0] as Vector2).distance_to(q) < clear_m or (runs[a][0] as Vector2).distance_to(other[1]) < clear_m:
+							continue   # both points clear of both warrens, so the answer does not depend on which run came first
 
 						pairs.append([gap, (q + (other[1] as Vector2)) * 0.5])
 
@@ -196,14 +201,14 @@ static func _junctions(runs: Array, c: Dictionary, out: Array) -> void:
 
 	for pair in pairs:
 		var spot: Vector2 = pair[1]
-		var free: bool = true
+		var open: bool = true
 
 		for done in placed:
 			if (done as Vector2).distance_to(spot) < 6.0:
-				free = false
+				open = false
 				break
 
-		if free:
+		if open:
 			placed.append(spot)
 			out.append(["scrape", spot, 0.0])
 
