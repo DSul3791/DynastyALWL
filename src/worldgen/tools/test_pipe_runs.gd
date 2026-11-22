@@ -232,8 +232,8 @@ func _init() -> void:
 	# --- River barrel (Dave 20 Nov 2026, PV-13): a barrel stood in a brook or river fills fast with river water ---
 	var stream_kind: Array = ["river"]
 	var stream_depth: Array = [0.4]
-	items.water_kind_at = func(_x, _z): return {"kind": stream_kind[0], "depth": stream_depth[0]}
-	items.water_depth_at = func(_pos): return stream_depth[0]
+	items.water_kind_at = func(x, z): return {"kind": stream_kind[0], "depth": stream_depth[0]} if Vector2(x - 120.0, z - 120.0).length() < 1.0 else {"kind": "", "depth": 0.0}   # only the lone barrel stands in it
+	items.water_depth_at = func(pos): return stream_depth[0] if Vector2((pos as Vector3).x - 120.0, (pos as Vector3).z - 120.0).length() < 1.0 else 0.0
 	level_now()
 	check(absf(float(items._water.pieces[lone].get("river_lpm", 0.0)) - 20.0) < 0.01, "a barrel in a river 0.4 m deep takes 20 L a minute (%.2f)" % float(items._water.pieces[lone].get("river_lpm", 0.0)))
 	stream_kind[0] = "brook"
