@@ -179,6 +179,50 @@ void fragment() {
 
 # Wildflower heads (petals, umbels, spikes; Kathreen 3 Nov 2026): plain vertex colour, soft light through the petals, swaying exactly like the stems (the bark shader's
 # gust), so a head stays on its stem. They used the bark material, whose bark texture, ground shade and foot moss turned white chamomile and yarrow grey-blue and speckled.
+# Far flowers (docs/TODO.md flora line, coordinator ruling 22 Nov 2026, option B): small plants draw only to view_m.plant (60 m) and a flower head
+# is under a pixel past that, so from a meadow's edge its middle read bare though placement fills it (flower_edge_count.gd, meadow_flowers.gd).
+# Each in-season wildflower of a chunk within far_flower_m also gets one dot at its head: a camera-facing quad at least FAR_FLOWER_MIN_PX
+# pixels across in the petal colour, lit like the ground, no shadows. It dithers in from FAR_FLOWER_IN_M (under the full models, so no pop at
+# the hand-over) and out over the last FAR_FLOWER_OUT_M of far_flower_m. One MultiMesh a chunk; client only, the item lists the chunk already has.
+const FAR_FLOWER_SHADER := """
+shader_type spatial;
+render_mode diffuse_lambert, specular_disabled, cull_disabled, shadows_disabled;
+uniform float fade_in_start = 45.0;
+uniform float fade_in_end = 60.0;
+uniform float fade_out_start = 120.0;
+uniform float fade_out_end = 150.0;
+uniform float min_px = 2.0;
+uniform float head_m = 0.12;
+varying float v_fade;
+varying vec3 v_colour;
+
+void vertex() {
+	vec4 centre = VIEW_MATRIX * vec4(MODEL_MATRIX[3].xyz, 1.0);
+	float d = -centre.z;
+	float px = 2.0 * d / (PROJECTION_MATRIX[1][1] * VIEWPORT_SIZE.y);
+	float size = max(head_m, min_px * px);
+	MODELVIEW_MATRIX = VIEW_MATRIX * mat4(INV_VIEW_MATRIX[0], INV_VIEW_MATRIX[1], INV_VIEW_MATRIX[2], MODEL_MATRIX[3]);
+	VERTEX = vec3(VERTEX.xy * size, 0.0);
+	NORMAL = mat3(VIEW_MATRIX) * vec3(0.0, 1.0, 0.0);
+	v_fade = smoothstep(fade_in_start, fade_in_end, d) * (1.0 - smoothstep(fade_out_start, fade_out_end, d));
+	v_colour = INSTANCE_CUSTOM.rgb;
+}
+
+void fragment() {
+	if (fract(sin(dot(floor(FRAGCOORD.xy), vec2(12.9898, 78.233))) * 43758.5453) >= v_fade) {
+		discard;
+	}
+	ALBEDO = v_colour;
+	ROUGHNESS = 1.0;
+}
+"""
+const FAR_FLOWER_M := [0.0, 110.0, 150.0, 150.0]   # far flower reach by quality (Low, Medium, High, Ultra); Low draws none
+const FAR_FLOWER_IN_M := [45.0, 60.0]   # dots dither in over this, under the full models (view_m.plant), so the hand-over does not pop
+const FAR_FLOWER_OUT_M := 30.0          # and out over the last this much of the reach
+const FAR_FLOWER_MIN_PX := 2.0          # a dot is never smaller than this on the screen
+const FAR_FLOWER_BIT := 64              # level bit 6: the chunk draws its far flower dots
+const TIER_FAR_FLOWER := 6              # plan keys only: the chunk's far flower dots (key[0] is -1, no species)
+
 const PETAL_SHADER := """
 shader_type spatial;
 render_mode diffuse_burley, specular_disabled, cull_disabled;
@@ -525,6 +569,9 @@ var part_m: Array = PART_M            # the size of the square one shrub or plan
 var impostor_m: float = 300.0          # trees beyond this are drawn as impostors (set by set_quality)
 var far_shadows: bool = false
 var shadow_m: float = 60.0
+var far_flower_m: float = 150.0      # far flower dots reach (set_quality, FAR_FLOWER_M); 0 = none
+var _far_flower_material: ShaderMaterial = null
+var _far_flower_mesh: QuadMesh = null
 var instances: int = 0                 # items drawn now
 var colliders: int = 0                 # trunk colliders now
 var water_chunks: int = 0              # chunks with water drawn
@@ -752,6 +799,11 @@ func set_quality(quality: int) -> void:
 	part_m = PART_M_LOW if quality <= 2 else PART_M
 	shrub_share = SHRUB_SHARE[clampi(quality, 0, SHRUB_SHARE.size() - 1)]
 	shadow_m = SHADOW_M[quality]
+	far_flower_m = FAR_FLOWER_M[quality]
+
+	if _far_flower_material != null:
+		_far_flower_material.set_shader_parameter("fade_out_start", maxf(far_flower_m - FAR_FLOWER_OUT_M, FAR_FLOWER_IN_M[1]))
+		_far_flower_material.set_shader_parameter("fade_out_end", far_flower_m)
 	var tile: Vector2i = IMPOSTOR_TILE_PX[quality]
 
 	if tile != _impostor_tile and TreeImpostor.can_render():
@@ -1217,6 +1269,9 @@ func _setup_entry(entry: Dictionary, deadline_usec: int = 1 << 62) -> bool:
 		_species[int(entry["id"])]["mid_m"] = float(entry["mid_m"])   # flora.json "mid_m": the full model only within this, the mid model out to near_m, the far model beyond
 		_close_ms[float(entry["mid_m"])] = true
 
+	if str(entry.get("model", "")) == "wildflower" and TreeBuilder.WILDFLOWER_LOOKS.has(str(entry["name"])):
+		_species[int(entry["id"])]["far_flower"] = TreeBuilder.WILDFLOWER_LOOKS[str(entry["name"])]["petal"]   # the far dot is the petal colour
+
 	if entry.has("young_below_m"):
 		_species[int(entry["id"])]["young_below"] = float(entry["young_below_m"])
 
@@ -1269,6 +1324,18 @@ func _make_tree_materials() -> void:
 	var petal_material: ShaderMaterial = ShaderMaterial.new()
 	petal_material.shader = petal_shader
 	_tree_materials["petal"] = petal_material
+	var far_flower_shader: Shader = Shader.new()
+	far_flower_shader.code = FAR_FLOWER_SHADER
+	_far_flower_material = ShaderMaterial.new()
+	_far_flower_material.shader = far_flower_shader
+	_far_flower_material.set_shader_parameter("fade_in_start", FAR_FLOWER_IN_M[0])
+	_far_flower_material.set_shader_parameter("fade_in_end", FAR_FLOWER_IN_M[1])
+	_far_flower_material.set_shader_parameter("fade_out_start", maxf(far_flower_m - FAR_FLOWER_OUT_M, FAR_FLOWER_IN_M[1]))
+	_far_flower_material.set_shader_parameter("fade_out_end", far_flower_m)
+	_far_flower_material.set_shader_parameter("min_px", FAR_FLOWER_MIN_PX)
+	_far_flower_mesh = QuadMesh.new()
+	_far_flower_mesh.size = Vector2.ONE
+	_far_flower_mesh.material = _far_flower_material
 	var chrome: Shader = Shader.new()
 	chrome.code = CHROME_SHADER
 	var chrome_material: ShaderMaterial = ShaderMaterial.new()
@@ -2584,6 +2651,10 @@ func _level(chunk: Vector2i, from_position: Vector3) -> int:
 	if distance <= collision_m:
 		level |= 8
 
+	# Far flower dots: only chunks that hold their plants (full_m), within the dots' reach.
+	if far_flower_m > 0.0 and distance <= minf(far_flower_m, full_m()):
+		level |= FAR_FLOWER_BIT
+
 	# Full-detail models near the player (trees 16, shrubs 32).
 	for kind in range(2):
 		if distance <= near_m[kind]:
@@ -3019,6 +3090,7 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 	var groups: Dictionary = {}       # [species, part x, part z, variant, near] -> PackedInt32Array of indices
 	var shapes: Array = []            # [species, radius, position]
 	var lights: Array = []
+	var far_flowers: PackedInt32Array = PackedInt32Array()   # indices of the in-season wildflowers that get a far dot (FAR_FLOWER_BIT)
 	# Never past the shortest of the item arrays (they change together; a mismatch must not crash the worker).
 	var count: int = mini(mini(ids.size(), items["positions"].size()), mini(items["heights"].size(), items["yaws"].size()))
 
@@ -3026,7 +3098,13 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 		var species_id: int = ids[n] >> 16
 		var info: Dictionary = _species.get(species_id, {})
 
-		if info.is_empty() or (level & (1 << int(info["kind"]))) == 0:
+		if info.is_empty():
+			continue
+
+		if (level & FAR_FLOWER_BIT) != 0 and info.has("far_flower") and GatherRules.in_season(info["season_row"], season):
+			far_flowers.append(n)
+
+		if (level & (1 << int(info["kind"]))) == 0:
 			continue
 
 		var p: Vector3 = items["positions"][n]
@@ -3189,6 +3267,28 @@ func _plan(items: Dictionary, level: int, masks: Dictionary = {}) -> Dictionary:
 
 		draws.append([key, indices.size(), buffer])
 
+	if not far_flowers.is_empty():
+		var dots: PackedFloat32Array = PackedFloat32Array()
+		dots.resize(far_flowers.size() * 16)
+
+		for m in range(far_flowers.size()):
+			var n: int = far_flowers[m]
+			var head: Vector3 = items["positions"][n] + Vector3(0.0, float(items["heights"][n]) * 0.9, 0.0)
+			var colour: Color = _species[ids[n] >> 16]["far_flower"]
+			var o: int = m * 16
+			dots[o] = 1.0
+			dots[o + 3] = head.x
+			dots[o + 5] = 1.0
+			dots[o + 7] = head.y
+			dots[o + 10] = 1.0
+			dots[o + 11] = head.z
+			dots[o + 12] = colour.r
+			dots[o + 13] = colour.g
+			dots[o + 14] = colour.b
+			dots[o + 15] = 1.0
+
+		draws.append([[-1, 0, 0, 0, TIER_FAR_FLOWER, false], far_flowers.size(), dots])
+
 	return {"draws": draws, "shapes": shapes, "lights": lights, "shapes_key": hash(shapes)}
 
 
@@ -3253,6 +3353,26 @@ func _apply_step(job: Dictionary) -> bool:
 	var draw_plan: Array = draws[int(job["draw"])]
 	job["draw"] = int(job["draw"]) + 1
 	var key: Array = draw_plan[0]
+
+	if key[4] == TIER_FAR_FLOWER:
+		var dots: MultiMesh = MultiMesh.new()
+		dots.transform_format = MultiMesh.TRANSFORM_3D
+		dots.use_custom_data = true
+		dots.mesh = _far_flower_mesh
+		dots.instance_count = int(draw_plan[1])
+		dots.buffer = draw_plan[2]
+		var dot_draw: MultiMeshInstance3D = MultiMeshInstance3D.new()
+		dot_draw.multimesh = dots
+		dot_draw.visibility_range_end = far_flower_m + 0.71 * chunk_m   # the shader fades each dot by its own distance; this only culls the chunk
+		dot_draw.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		dot_draw.set_meta("kind", KIND_PLANT)
+		dot_draw.set_meta("casts", false)
+		dot_draw.set_meta("tier", TIER_FAR_FLOWER)
+		dot_draw.set_meta("species", "far_flowers")
+		node.add_child(dot_draw)
+		instances += int(draw_plan[1])
+		return int(job["draw"]) >= draws.size()
+
 	var info: Dictionary = _species[key[0]]
 	var multimesh: MultiMesh = MultiMesh.new()
 	multimesh.transform_format = MultiMesh.TRANSFORM_3D
