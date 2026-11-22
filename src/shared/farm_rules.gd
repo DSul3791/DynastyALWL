@@ -10,6 +10,23 @@ const EMPTY_BED_PROMPT := "hold the hoe, right click and choose Plant to sow it"
 const PlotWater := preload("res://src/shared/plot_water.gd")
 
 
+# The seasons a crop row sows in (crops.json sow_seasons, an older row's one sow_season).
+static func sow_seasons(def: Dictionary) -> Array:
+	return def.get("sow_seasons", [def.get("sow_season", "spring")])
+
+
+# Whether a row of the hoe's plant list can go in now (Dave 22 Nov 2026): nothing in winter (the ground is frozen hard), a crop seed only in its own
+# sowing seasons; a bush or a tree's seed any other season. The server's sowing and planting refusals ask the same, so the list and the server agree.
+static func plantable_now(crops: Dictionary, item: String, kind: String, season: String) -> bool:
+	if season == "winter":
+		return false
+
+	if kind != "seed":
+		return true
+
+	return sow_seasons(crops.get(crop_of_seed(crops, item), {})).has(season)
+
+
 # The crop a seed item sows (crops.json "seed"), "" when the item is not a crop seed.
 static func crop_of_seed(crops: Dictionary, seed_id: String) -> String:
 	if seed_id == "":

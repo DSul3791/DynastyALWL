@@ -209,6 +209,7 @@ func wild_part(seed_drops: Dictionary, harvest: Dictionary, by_species: Dictiona
 
 func trees_part(by_species: Dictionary) -> int:
 	var n: int = 0
+	season[0] = "spring"   # trees go in any season but winter
 	var at: float = 2000.5
 
 	for species in by_species:

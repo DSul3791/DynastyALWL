@@ -132,8 +132,8 @@
 		},
 		{
 			"id": "fruit_store",
-			"title": "Store fruit for winter",
-			"hint": "Pick apples, pears, sour cherries or plums from fruit trees in season (July to November: sour cherries first, keeping apples and winter pears last), then open your food store with F and put 20 in it.",
+			"title": "Fill a barrel with food for winter",
+			"hint": "A winter lasts 91 days and you eat about 2,500 kcal a day: about 2,000 apples' worth. Pick fruit in season (July to November) and dry, smoke or salt what will not keep, then open your food store with F and put food in: 1,000 for the first barrel. Keeping apples, winter pears and dried or smoked food last into spring; cherries and plums do not.",
 			"after": [
 				"food_basket",
 				"berries"
@@ -150,9 +150,47 @@
 					"pear_autumn",
 					"pear_winter",
 					"sour_cherries",
-					"plums"
+					"plums",
+					"dried_apples",
+					"dried_berries",
+					"smoked_fish",
+					"salted_fish",
+					"jerky",
+					"trail_bread"
 				],
-				"count": 20
+				"count": 1000
+			},
+			"stage": "start",
+			"needs_code": false
+		},
+		{
+			"id": "winter_food",
+			"title": "Fill a second barrel for winter",
+			"hint": "Keep storing food that keeps until 2,000 are put away, enough to eat through the whole winter.",
+			"after": [
+				"fruit_store"
+			],
+			"check": {
+				"stored_item_any": [
+					"wild_apples",
+					"apple_early",
+					"apple_summer",
+					"apple_autumn",
+					"apple_keeping",
+					"apple_cooking",
+					"pear_summer",
+					"pear_autumn",
+					"pear_winter",
+					"sour_cherries",
+					"plums",
+					"dried_apples",
+					"dried_berries",
+					"smoked_fish",
+					"salted_fish",
+					"jerky",
+					"trail_bread"
+				],
+				"count": 2000
 			},
 			"stage": "start",
 			"needs_code": false

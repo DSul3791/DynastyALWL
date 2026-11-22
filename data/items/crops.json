@@ -1361,7 +1361,7 @@
 		"sleetberry": {
 			"name": "Sleetberry",
 			"seed": "sleetberry_seed",
-			"sow_season": "winter",
+			"sow_season": "autumn",
 			"grow_days": 12,
 			"water_per_day": 0.3,
 			"soil": "any garden soil",
@@ -1387,7 +1387,7 @@
 			"tool_to_harvest": "hand",
 			"store": "",
 			"sow_seasons": [
-				"winter"
+				"autumn"
 			],
 			"herb": true,
 			"grows_in_winter": true
@@ -3382,7 +3382,7 @@
 		"frostglass_orchid": {
 			"name": "Frostglass orchid",
 			"seed": "frostglass_orchid_seed",
-			"sow_season": "winter",
+			"sow_season": "autumn",
 			"grow_days": 12,
 			"water_per_day": 0.3,
 			"soil": "any garden soil",
@@ -3407,7 +3407,7 @@
 			"tool_to_harvest": "hand",
 			"store": "",
 			"sow_seasons": [
-				"winter"
+				"autumn"
 			],
 			"herb": true,
 			"grows_in_winter": true

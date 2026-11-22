@@ -1785,6 +1785,7 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(held)
 	var tq_held_item: int = Probe.start()
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
+	held.season_now = func(): return game_clock.season()   # the hoe's plant list greys out what is out of season (the server's own clock, synced at the welcome)
 	held.animal_aim_rows = func() -> Array: return _animal_view_node.aim_rows(camera.global_position, 80.0) if _animal_view_node != null else []   # the bow's aim assist
 	held.spyglass_look = _spyglass_item
 	held.light_block_fn = _light_block
