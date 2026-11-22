@@ -36,6 +36,8 @@ godot_path.txt
 # Godot import settings for the generated sounds: each machine writes its own
 # (they differ between Windows and the Linux cloud build), so they are not tracked.
 assets/audio/**/*.import
+# ...except the credits table, which is kept as a plain file (not a translation) on every machine
+!assets/audio/CREDITS.csv.import
 __pycache__/
 
 # Real admin keys never go in the repository (data/admin.example.json shows the shape)
