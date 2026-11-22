@@ -2036,6 +2036,9 @@ func _on_dug(center: Vector3, radius: float) -> void:
 
 	var t_edit: int = Probe.start()   # Dave 3 Nov 2026: every hoe click pauses the game; these name the part (HITCH line, frame_probe.gd)
 	var tool: VoxelTool = terrain.get_voxel_tool()
+	var t_note: int = Probe.start()
+	_note_dig(center)   # even on ground not loaded yet: a player rejoining in their own tunnel must not be lifted to the surface
+	Probe.stop("dig: note", t_note)
 
 	if not _edit_area_loaded(tool, center, radius):
 		Probe.stop("dig: ground edit", t_edit)
@@ -2046,9 +2049,6 @@ func _on_dug(center: Vector3, radius: float) -> void:
 	tool.do_sphere(center, radius)
 	Probe.stop("dig: ground edit", t_edit)
 	dig_applied += 1
-	var t_note: int = Probe.start()
-	_note_dig(center)
-	Probe.stop("dig: note", t_note)
 
 	if grass != null:
 		var t_grass: int = Probe.start()
@@ -3005,23 +3005,25 @@ var _ice_task_key: Array = []        # the same for the task still running
 
 
 func _ice_season_now(group: String, seed_value: int) -> Dictionary:
+	var height: float = maxf(_anchor.y, 0.0)
+	var game_s: float = game_clock.seconds
+	var band: int = int(floorf(height / ICE_MEMO_BAND_M))
+
 	if _ice_task >= 0 and WorkerThreadPool.is_task_completed(_ice_task):
 		WorkerThreadPool.wait_for_task_completion(_ice_task)
 		_ice_task = -1
-		_ice_last = _ice_task_out
-		_ice_last_key = _ice_task_key
 
-	var height: float = maxf(_anchor.y, 0.0)
-	var game_s: float = game_clock.seconds
-	var key: Array = [group, int(floorf(height / ICE_MEMO_BAND_M))]
+		if str(_ice_task_key[0]) == group and absi(int(_ice_task_key[1]) - band) <= 1:   # asked for another zone or height: dropped
+			_ice_last = _ice_task_out
+			_ice_last_key = _ice_task_key
 
-	# The first answer, and the first after a new zone or a move to another height (a teleport, a respawn): worked out here once, so the
-	# step and the look never use another place's ice.
-	if _ice_last.is_empty() or _ice_last_key != key:
+	# The first answer, and the first after a new zone or a move of two height bands or more (a teleport, a respawn): worked out here once,
+	# so the step and the look never use another place's ice. A climb into the next band (under 0.1 C of air) waits for the worker.
+	if _ice_last.is_empty() or str(_ice_last_key[0]) != group or absi(int(_ice_last_key[1]) - band) >= 2:
 		_ice_last = IceScript.season(game_s, group, height, ICE_POND_DEPTH_M, seed_value)
-		_ice_last_key = key
+		_ice_last_key = [group, band]
 	elif _ice_task < 0:
-		_ice_task_key = key
+		_ice_task_key = [group, band]
 		_ice_task = WorkerThreadPool.add_task(func() -> void: _ice_task_out = IceScript.season(game_s, group, height, ICE_POND_DEPTH_M, seed_value), true, "pond ice")
 
 	return _ice_last
