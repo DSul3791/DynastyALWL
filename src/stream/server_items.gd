@@ -17086,6 +17086,7 @@ func _remains_tick(spent: float) -> void:
 		if _unix() - float(it["struct"].get("born", 0.0)) >= gone_s:
 			_chests.erase(int(it["struct"].get("uid", 0)))
 			_items.erase(id)
+			_remains_settled.erase(id)
 			_dirty = true
 			continue
 
@@ -17094,8 +17095,10 @@ func _remains_tick(spent: float) -> void:
 
 		var ground: float = float(ground_height.call(it["pos"].x, it["pos"].z))
 
-		if is_nan(ground) or absf(ground - it["pos"].y) <= 0.25 or is_equal_approx(float(_remains_settled.get(id, NAN)), float(it["pos"].y)):
-			continue   # on the generated ground, or already found resting here (the edits scan runs once per set, not every tick)
+		var settled: Array = _remains_settled.get(id, [])
+
+		if is_nan(ground) or absf(ground - it["pos"].y) <= 0.25 or (settled.size() == 2 and is_equal_approx(float(settled[0]), float(it["pos"].y)) and _unix() - float(settled[1]) < REMAINS_SETTLE_S):
+			continue   # on the generated ground, or found resting here lately (the floor and edits scan runs every REMAINS_SETTLE_S per set, not every tick)
 
 		if rows.is_empty():
 			rows = [_foundation_rows()]   # read once a tick, and only when some remains are off the generated ground (on a floor, in a dug spot)
@@ -17107,10 +17110,11 @@ func _remains_tick(spent: float) -> void:
 			it["pos"].y = surface
 			_dirty = true
 
-		_remains_settled[id] = float(it["pos"].y)
+		_remains_settled[id] = [float(it["pos"].y), _unix()]
 
 
-var _remains_settled: Dictionary = {}   # remains world id -> the y the recheck found them resting at, off the generated ground (memory only: a restart checks each once)
+const REMAINS_SETTLE_S := 600.0   # remains off the generated ground are looked at again this often: a floor taken down or a fill dug away lets them settle
+var _remains_settled: Dictionary = {}   # remains world id -> [the y the recheck found them resting at, unix time] (memory only)
 
 
 # Where remains rest at `pos` (a point a little above or below the surface): the top of a foundation or floor within reach of it (a death in a house is
