@@ -303,6 +303,37 @@ func _init() -> void:
 	var held: float = litres(a) + litres(b)
 	items._use_struct(1, items.inventory_of(1), tap)
 	check(float(v["wet"]) > 0.0 and absf(held - litres(a) - litres(b) - float(v["wet"]) / 1000.0) < 0.01, "E takes a drink: the barrels give what the player drank (%.0f ml; %.2f -> %.2f L)" % [float(v["wet"]), held, litres(a) + litres(b)])
+	# --- Piped water at a cooking station (PV-14, coordinator pick 22 Nov 2026): a Food preparation table with the tap within 2 m draws from the barrels ---
+	var water_n: int = n("water")
+	var kitchen: int = items.dev_place("food_preparation_table@103,103.5,0")
+	items._items[kitchen]["pos"] = Vector3(103.0, 10.0, 103.5)
+	items._items[kitchen]["struct"]["owner"] = str(items._peer_key.get(1, ""))   # the player's own table, so its store is in their craft stock
+	var kitchen_box = items._chests.get(int(items._items[kitchen]["struct"].get("uid", 0)))
+
+	if kitchen_box != null:
+		kitchen_box.add(n("stick"), 3)
+	var kitchen_stock: Dictionary = items._stock_of(1)
+	var pack_ml: int = items.inventory_of(1).liquid_ml()
+	var piped_before: float = litres(a) + litres(b)
+	check((kitchen_stock["tanks"] as Array).size() == 1 and items._stock_have(items.inventory_of(1), water_n, kitchen_stock) >= 2, "a cooking station by the tap counts the barrels' water as the recipe's water (%d units)" % items._stock_have(items.inventory_of(1), water_n, kitchen_stock))
+	var piped_took: int = items._stock_take(items.inventory_of(1), water_n, 2, kitchen_stock, [])
+	check(piped_took == 2 and pack_ml == 0 and absf(piped_before - litres(a) - litres(b) - 1.0) < 0.01, "taking 2 units drops the barrels by 1 L (%.2f -> %.2f L)" % [piped_before, litres(a) + litres(b)])
+	check(kitchen_box != null and items._stock_have(items.inventory_of(1), n("stick"), items._stock_of(1)) >= 3, "the station's own store still counts in the craft stock")
+	var refund_tank: int = int((kitchen_stock["tanks"] as Array)[0]) if not (kitchen_stock["tanks"] as Array).is_empty() else -1
+	var before_refund: float = litres(a) + litres(b)
+	items._pour_back(1, 500, {"liquid_ml": 500, "tank": refund_tank})
+	check(refund_tank >= 0 and absf(litres(a) + litres(b) - before_refund - 0.5) < 0.01, "a cancelled craft pours its tap water back into the tank (%.2f -> %.2f L)" % [before_refund, litres(a) + litres(b)])
+	items._items[kitchen]["pos"] = Vector3(103.0, 10.0, 105.5)   # still within the player's reach, 2.7 m from the tap
+	check((items._stock_of(1)["tanks"] as Array).is_empty(), "a station more than 2 m from any tap or pipe end draws nothing")
+	items._items[kitchen]["pos"] = Vector3(103.0, 10.0, 103.5)
+	items._items[kitchen]["struct"]["kind"] = "campfire_pot"
+	check((items._stock_of(1)["tanks"] as Array).is_empty(), "nor does a campfire pot by the tap")
+	if kitchen_box != null:
+		kitchen_box.remove(n("stick"), 3)
+
+	items._items.erase(kitchen)
+	check(items._structures["oven"].get("piped_water", false) and items._structures["cooking_pot"].get("piped_water", false) and not items._structures["campfire_pot"].get("piped_water", false), "the plumbed stations are marked in the data")
+
 	var keep_a: float = litres(a)
 	var keep_b: float = litres(b)
 	items._water.set_litres(a, 0.0)
