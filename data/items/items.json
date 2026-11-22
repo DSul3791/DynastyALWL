@@ -6970,7 +6970,7 @@
 			"wooden_barrel": {
 				"number": 649,
 				"name": "Water barrel",
-				"description": "A hooped barrel of hardwood staves that holds 60 L of water. Drink from it; its 3 slots take water containers and fill them from it.",
+				"description": "A hooped barrel that holds 60 L of water to drink; its 3 slots fill water containers from it.",
 				"kind": "structure",
 				"stack": 1,
 				"unstackable": true,
