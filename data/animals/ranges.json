@@ -47,7 +47,7 @@
 		"species": "elk",
 		"tag": "e",
 		"weight_roll": true,
-		"salt": 500,
+		"salt": 600,
 		"tries": 8,
 		"inset_m": 24.0,
 		"bed_slope": [0.0, 0.45],

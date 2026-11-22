@@ -386,7 +386,28 @@ func sun_checks(p1: Array) -> void:
 			anywhere += 1
 
 	check(r1_water_ok(), "water near: 50 m from the pond's middle yes, far off no")
+	var liked: Array = weighted_ranges(1.0)
+	var shy: Array = weighted_ranges(0.001)
+	check(liked[0] >= 5 and liked[1] >= 5, "where moose and elk like the land, most blocks have their ranges (%d moose, %d elk of 25)" % [liked[0], liked[1]])
+	check(shy[0] == 0 and shy[1] <= 1, "where the land is no good for moose (weight 0) none are placed, and hardly any elk where it is barely liked (%d of 25)" % shy[1])
 	check(by_pond > anywhere and by_pond >= 3, "a moose by the pond feeds at its edge when it can (%d of 30 worlds, %d without the preference)" % [by_pond, anywhere])
+
+
+# Moose and elk ranges over 25 blocks with a biome weight of 0 for moose and `elk_weight` for elk (1 = liked everywhere): [moose, elk].
+func weighted_ranges(elk_weight: float) -> Array:
+	var r = ranges_with(11)
+	r.biome_weight = func(sp, _x, _z): return (1.0 if elk_weight >= 1.0 else 0.0) if sp == "moose" else elk_weight
+	var found: Array = [0, 0]
+
+	for bx in 5:
+		for bz in 5:
+			for k in 2:
+				var range_at: Variant = r._deer_range(Vector2i(bx, bz), ["moose", "elk"][k])
+
+				if range_at is Dictionary and not (range_at as Dictionary).is_empty():
+					found[k] += 1
+
+	return found
 
 
 func r1_water_ok() -> bool:
