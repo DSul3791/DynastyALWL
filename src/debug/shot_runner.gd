@@ -1308,12 +1308,14 @@ func _show_pieces(now: int) -> void:
 # ground and read as two broken fragments. A piece with still no collider under it keeps its first height and says so.
 func _reground_pieces() -> void:
 	_pieces_regrounded = true
+	var last: Node3D = null
 
 	for child in client.get_children():
 		if not (child is Node3D and child.has_meta("piece_name")):
 			continue
 
 		var model: Node3D = child
+		last = model
 		var at: Vector3 = model.global_position
 		# A forge or smithy carries its own box collider (inventory_view._forge_glb), so the ray skips the piece's own bodies as well as the player's.
 		var skip: Array = [client.body.get_rid()]
@@ -1343,10 +1345,11 @@ func _reground_pieces() -> void:
 		if tag != null:
 			tag.global_position += Vector3(0.0, shift, 0.0)
 
-		if _subject_set and absf(_subject.y - at.y) < 0.01:
-			_subject.y = phys
-
 		print("shot runner: piece %s reground %+.2f m to the collision ground, now at %s" % [str(model.get_meta("piece_name")), shift, str(model.global_position)])
+
+	# The row views look at the last piece's height, as _show_pieces set it.
+	if last != null and _subject_set:
+		_subject.y = last.global_position.y
 
 
 # --shot-piece-views: after _show_pieces, the first piece gets the four item views fitted to its drawn box (3 to 6 m, a low piece seen from higher up); the normal
@@ -1375,7 +1378,8 @@ func _build_piece_views() -> void:
 		return
 
 	var centre: Vector3 = box.get_center()
-	var ground: float = _piece_ground(centre.x, centre.z)
+	# Where the piece stands (re-grounded by _reground_pieces): a ray at the centre would land on the piece's own collider top (a forge's box).
+	var ground: float = node.global_position.y
 	var size: Vector2 = get_viewport().get_visible_rect().size
 	var low: bool = box.size.y < 0.6 * maxf(box.size.x, box.size.z)
 	_item_node = node
