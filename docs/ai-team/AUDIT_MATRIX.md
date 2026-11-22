@@ -20,8 +20,8 @@ Each behavioral case must be replayed in the actual Claude project after deploym
 | 13 Author approves own PR | TEST_GATES | gate-reviewer | Non-author review + GitHub protection require separate check |
 | 14 PC occupied by Dave | WORKFLOW, TEST_GATES | PC runner | No Godot job interrupting F6; NOT RUN label if blocked |
 | 15 Sonny's water autonomy | DECISION_AUTHORITY | terrain-water | Delegated scope, no hidden override of Dave/security |
-| 21 Broad selector, narrow additive edit | TEST_GATES (risk-based selection) | coordinator + gate-reviewer | Selector `why` recorded; scoped dev-only plan accepted by non-author reviewer; deferred tests and residual risk listed; CI and main gate unchanged |
-| 22 Broad selector, real protocol change | TEST_GATES, DECISION_AUTHORITY | coordinator + systems-engineer | Selected tests kept or expanded (both protocol sides, auth, saves); Class C approval before the change |
+| 21 Hub edit, narrow change | TEST_GATES (test plans for dev) | coordinator + gate-reviewer | Change plan run as printed (hub core list, named tests, direct tests, always set); no `--all` or trimming; wide plan left to the dev sweep; CI and main gate unchanged |
+| 22 Real protocol change | TEST_GATES, CONSTITUTION | coordinator + systems-engineer | Plan kept or expanded for the named risk (both protocol sides, auth, saves); Class C approval before the change |
 | 16-20 Ponytail method vs design, tests, review | PONYTAIL_RULES (below CONSTITUTION) | ponytail-review / gate-reviewer | Approved scope unchanged; tests NOT RUN until PC; review advice never a gate PASS |
 
 ## Release criteria for the system itself

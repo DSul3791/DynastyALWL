@@ -8,7 +8,10 @@ sel() { "$PY" tools/tests_for_diff.py --paths "$@"; }
 field() { "$PY" -c "import json,sys;d=json.loads(sys.stdin.read());print($1)"; }
 
 [ "$(sel docs/mirror/x.md tech/ACTION_PLANS/y.md | field "d['class']+str(len(d['fast']))")" = "docs0" ]; ok $? "docs only selects no tests"
-[ "$(sel src/stream/terrain_net.gd | field "len(d['fast'])")" -gt 60 ]; ok $? "a shared base file selects all fast tests"
+[ "$(sel project.godot | field "len(d['fast'])")" -gt 60 ]; ok $? "project.godot selects all fast tests"
+sel src/stream/terrain_net.gd | field "d['plan']=='change' and 'test_net_look' in d['fast'] and 'test_inventory' in d['fast'] and len(d['fast'])<60" | grep -q True; ok $? "a hub edit in a change plan selects its core list and the always set, not every fast test"
+[ "$(sel src/stream/server_items.gd --wide | field "len(d['fast'])")" -gt "$(sel src/stream/server_items.gd | field "len(d['fast'])")" ]; ok $? "--wide follows every chain of loads and selects more than the change plan"
+sel src/worldgen/tools/held_tool.gd | field "len(d['fast'])>11" | grep -q True; ok $? "a test helper selects the tests that use it"
 [ "$(sel weird/new.gd | field "len(d['fast'])")" -gt 60 ]; ok $? "an unknown path selects all fast tests"
 sel data/items/items.json | field "'test_eat_once' in d['fast'] and 'test_inventory' in d['fast']" | grep -q True; ok $? "item data selects the item group and the always set"
 sel src/client/piece_look.gd | field "'test_tool_looks' in d['fast'] and 'warnings' in d['checks'] and bool(d['pictures'])" | grep -q True; ok $? "a look file selects the look tests, the warnings check and the picture lane"
@@ -17,7 +20,7 @@ sel src/worldgen/tools/test_traps.gd | field "'test_traps' in d['fast']" | grep 
 "$PY" tools/tests_for_diff.py --check-lanes >/dev/null; ok $? "every name in test_lanes.json is a test"
 sel src/worldgen/tools/export_tile_maps.gd | field "len(d['slow'])==0"  | grep -q True; ok $? "an offline worldgen tool script does not start the slow lane"
 sel tools/erosion_precarve/rock.py | field "d['class']=='docs' and len(d['fast'])==0" | grep -q True; ok $? "an offline python tool selects no tests"
-sel src/worldgen/tile/tile_drainage.gd | field "len(d['slow'])>0" | grep -q True; ok $? "worldgen runtime code selects the slow tests that load it"
+sel src/worldgen/tile/tile_drainage.gd --wide | field "len(d['slow'])>0" | grep -q True; ok $? "worldgen runtime code: the wide plan selects the slow tests that reach it"
 sel src/worldgen/tile/tile_drainage.gd | field "'test_head_pond_fill' not in d['slow'] and 'test_drainage_small' in d['fast']" | grep -q True; ok $? "worldgen water code selects the small tests, not the big release tests"
 sel worlds/base_world/tiles/tile_3_4.tile | field "'test_head_pond_fill' in d['slow'] and 'test_tile_lakes' in d['slow']" | grep -q True; ok $? "baked tile data selects the big release tests"
 "$PY" tools/tests_for_diff.py --paths src/worldgen/tile/tile_drainage.gd --full | field "len(d['slow'])==len(json.load(open('tools/test_lanes.json'))['slow']) and len(d['fast'])>60" | grep -q True; ok $? "--full selects the whole slow lane and every fast test"
@@ -33,6 +36,23 @@ R="$T/repo"; mkdir -p "$R"
 mp() { "$PY" -c "import sys;sys.path.insert(0,'tools');import tests_for_diff as t;print(sorted(t.changed_paths(sys.argv[1],sys.argv[2],sys.argv[3])))" "$1" "$2" "$R"; }   # paths as arguments: Git Bash converts them for Windows python
 [ "$(mp base0 br)" = "['br.gd']" ]; ok $? "a base that moved on: only head's own change (not dev_only.gd)"
 [ "$(mp base0~1 br)" = "['br.gd']" ]; ok $? "a base that is an ancestor: the same as the two-dot diff"
+# --same-change: a clean merge of base into a reviewed branch keeps its patch; a new edit does not. changed_names: the names an edit touched.
+( cd "$R" && git checkout -q br && git checkout -qb br2 && git merge -q --no-edit base0 && git checkout -qb br3 && echo c >> br.gd && git commit -qam c3 \
+	&& git checkout -q base0 && printf 'func _helper():\n\treturn 1\n\nfunc public_call():\n\treturn _helper()\n\nfunc other():\n\tpass\n' > h.gd && git add . && git commit -qm h \
+	&& sed -i 's/return 1/return 2/' h.gd && git commit -qam h2 && git tag h2 \
+	&& printf '@rpc("authority", "call_remote", "reliable")\nfunc net_msg():\n\tpass\n\nfunc keep_me():\n\tpass\n\nfunc gone_soon():\n\tpass\n' > r.gd && git add . && git commit -qm r && git tag r0 \
+	&& sed -i 's/"authority"/"any_peer"/' r.gd && git commit -qam r1 && git tag r1 \
+	&& head -n 6 r.gd > r2 && mv r2 r.gd && git commit -qam r2 && git tag r2 \
+	&& git checkout -q br && git checkout -qb bin1 && printf '\000a' > m.bin && git add . && git commit -qm b1 \
+	&& git checkout -q br && git checkout -qb bin2 && printf '\000b' > m.bin && git add . && git commit -qm b2 && git checkout -q base0 ) >/dev/null 2>&1
+cn() { "$PY" -c "import sys;sys.path.insert(0,'tools');import tests_for_diff as t;print(sorted(t.changed_names(sys.argv[1],sys.argv[2],sys.argv[3],sys.argv[4])))" "$1" "$2" "$3" "$R"; }
+[ "$(cn r0 r1 r.gd)" = "['net_msg']" ]; ok $? "changed_names: an @rpc line edit names the function it annotates"
+cn r1 r2 r.gd | grep -q "'gone_soon'"; ok $? "changed_names: a deleted function is named"
+pid() { "$PY" -c "import sys;sys.path.insert(0,'tools');import tests_for_diff as t;print(t.patch_id('base0',sys.argv[1],sys.argv[2]))" "$1" "$R"; }
+[ "$(pid br)" = "$(pid br2)" ] && [ "$(pid br)" != "None" ]; ok $? "--same-change: merging the base into a reviewed branch keeps the same change"
+[ "$(pid br)" != "$(pid br3)" ]; ok $? "--same-change: a new edit is a different change"
+[ "$(pid bin1)" != "$(pid bin2)" ]; ok $? "--same-change: two different binary files are different changes"
+[ "$(cn h2~1 h2 h.gd)" = "['_helper', 'public_call']" ]; ok $? "changed_names: the edited private function and its public caller, not the untouched one"
 [ "$(mp base0 lone)" = "$(cd "$R" && "$PY" -c "import subprocess;print(sorted(subprocess.run(['git','diff','--name-only','base0','lone'],capture_output=True,text=True).stdout.split()))")" ]; ok $? "no shared history: the plain two-dot diff"
 
 cat > "$T/fakegodot" <<'F'
