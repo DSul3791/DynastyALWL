@@ -4,5 +4,8 @@
 	"peer_timeout_min_ms": 60000,
 	"peer_timeout_max_ms": 120000,
 	"server_empty_grace_s": 120,
-	"settled_ground": 1
+	"settled_ground": 1,
+	"block_line_outbox_kb": 8192,
+	"block_line_stall_ms": 60000,
+	"_note_block_line": "The direct block line (block_link_server.gd): blocks a player's game has not taken yet wait in an outbox of at most block_line_outbox_kb; while it is full, further blocks go over the game connection. A line that takes nothing for block_line_stall_ms while blocks wait is dropped, and that player gets blocks over the game connection. One player who stops reading never holds the block workers for everyone."
 }
