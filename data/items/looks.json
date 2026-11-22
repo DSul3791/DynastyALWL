@@ -2307,6 +2307,11 @@
    "color": "#8a8a8a",
    "size": 1.0
   },
+  "iron_chunk": {
+   "shape": "chunk",
+   "color": "#8a8a8a",
+   "size": 1.0
+  },
   "coal": {
    "shape": "chunk",
    "color": "#8a8a8a",

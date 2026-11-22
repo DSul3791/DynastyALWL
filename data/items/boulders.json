@@ -55,7 +55,8 @@
 			"copper": "copper_ore",
 			"tin": "tin_ore",
 			"iron": "iron_ore",
-			"salt": "sea_salt"
+			"salt": "sea_salt",
+			"meteorite": "iron_chunk"
 		},
 		"needs_material": {
 			"coal": [
@@ -150,6 +151,21 @@
 		"ingot_radius_m": 0.07,
 		"foot": {},
 		"outcrops_unchanged": true
+	},
+	"meteorite_rocks": {
+		"note": "Iron-nickel meteorites (Dave 21 Nov 2026: \"lets have meteors about half as frequent as rocks because they have been falling for millions and billions of years. they break into iron chunks that count as iron ingots\"). Read as half as often as iron rocks on open ground, the same everywhere (they fall from the sky, so no more by rivers or mountains and no ore body): on the shared ore_rocks rule with chance 0.015 a try anywhere (shallow water too), no water chances, no body, no mountain-foot boulder, full size everywhere (size_coast 1). A loose piece picked up by hand is an Iron chunk; a meteorite to break, radius_min..radius_max (40 to 70 cm across), breaks with any pick or the Stone Hammer (no needs_material, not pick_only) and holds stones at the plain boulder yield, not ore_yield (plain_yield: a lump of metal, not a big ore rock), each piece an Iron chunk with chance grade, else stone. Slots 32..39 of the cell. Look: ore_rock_look meteorite. PROVISIONAL, docs/design/COPPER_ROCKS.md MT-1.",
+		"slot": 32,
+		"grade_min": 0.6,
+		"grade_max": 0.9,
+		"chance": 0.015,
+		"water_chance_coast": 0.0,
+		"water_chance_mountain": 0.0,
+		"body_reach_m": 0.0,
+		"size_coast": 1.0,
+		"radius_min": 0.2,
+		"radius_max": 0.35,
+		"foot": {},
+		"plain_yield": true
 	},
 	"flint": {
 		"note": "Flint (guide finding F-02, FLINT_ORE_SPEC.md): each stone that comes off a boulder is a flint nodule instead with this chance, more near water. Bank stones (drops.json ground_scatter.bank.flint) are flint with their own chance. Flint makes the hide scraper, javelin and sickle.",

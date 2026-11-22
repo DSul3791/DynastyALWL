@@ -1656,6 +1656,64 @@ Not yet played.
 
 Not yet played.
 
+## 128. Each nail metal has its own use, and stone-age pieces need no metal or chisel
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026 17:53Z: "anything that uses copper cladding should use copper nails to attach the copper sheets. copper nails are also good for light duty connections like decorations or small light boxes and such. bronze are slightly stronger and bigger and better for stronger construction like chests, cabinets, upholstery, iron are stronger and great for construction and building strong boxes, etc. steel is the strongest and is best for fortification level strength like steel rivets and fortified doors etc. use judgement based on these suggestions." The chisel and stone-age follow-ups were ruled by the coordinator under Dave's 21 Nov questions rule (D-CHISEL-1, GR-1, GR-2, GR-3).
+
+**What was found:** after entry 111 every non-chest build asked for Bronze nails and Bronze hinges, whatever it was. Plain nailed furniture needed a Bronze chisel. The Sawbuck and the Palisade gate needed bronze before any smithy, and laid stone pieces needed an Iron chisel.
+
+**Required outcome:** each build asks for the nail metal its use needs ("or better" still serves). A chisel only where something is carved. Stone-age pieces need no metal.
+
+**As built (merged to dev in order; dev 0703e012 after the last):**
+- PR #1460 (reviewed head 2f9ea1ef, merged at 4afeb074). Copper nails: Raised cistern, Crate, garden plots, Bottle and jar rack. Iron nails: Sawmill, Advanced smithy, resource bins, Ore and metal rack, Warehouse crate, iron fence and railing. Iron hinges: the iron, stone, brick, engineered and fortified gates, the Advanced smithy. The Fortified gate takes Steel nails. The Water wheel takes Iron nails. The Sawbuck (until GR-1), the Improved smithy and the Improved smelter keep bronze, because they come before iron. The four nail descriptions say what each is for. Design: docs/design/CHEST_TIERS.md "Nails for every build".
+- PR #1466 (reviewed head 02b2d9ed, merged at 21583b78), D-CHISEL-1. The Rustic - Chair, Rustic - Table and Cupboard take no chisel. The Barrel and Raised cistern keep Bronze. The Canopy bed goes from Steel to Iron.
+- PR #1470 (reviewed head 071ae4e1, merged at 0703e012):
+  - GR-1: the Sawbuck takes 8 Lumber and 16 Wooden pins instead of 16 Bronze nails.
+  - GR-2: the Palisade gate takes 8 Log, 3 Twine and 1 Rope, with no hinges.
+  - GR-3: the Stone - Planter, Trough, Channel, Channel corner and Channel tee take no chisel.
+- Decisions: REPAIR_DECISIONS.md TT-3; TREE_WOOD_TOOLS_DESIGN.md W-4.
+
+**Evidence:**
+- Independent review PASS on 7425a191, 4ffd023d and 77bff927, and on 2f9ea1ef, 02b2d9ed and 071ae4e1 after the description fix.
+- Lane B on 77bff927, one run for the whole stack: 298 pass / 0 fail. validate_items had 1 error, because the Copper nails description was 119 characters (the limit is 110). It was fixed on #1460 and merged up the stack.
+- Lane B on 071ae4e1 (trial merge onto dev e10712cb):
+  - 298 pass / 0 fail.
+  - validate_items 0 errors.
+  - Warnings 381, which is the baseline. Look names 340.
+  - Join smoke 20 s to welcome.
+
+**Acceptance:**
+- Hover a Crate's cost: it asks for Copper nails or better.
+- A Sawmill asks for Iron nails, and a Fortified - Gate asks for Steel nails.
+- A Rustic - Chair goes up with no chisel on the hand bar. A Barrel still needs a Bronze chisel or better.
+- A Sawbuck goes up from Lumber and Wooden pins, and a Palisade gate from Logs, Twine and Rope, both before any smithy.
+- A Stone - Trough goes up with no chisel.
+
+Not yet played.
+
+## 129. Iron is common: river iron stones and iron-nickel meteorites
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "there is covered in iron. It's commonly found as meteorites that are often a combination of iron and nickel so it's readily usable. Also, there are reddish brown rocks everywhere normally so iron should be a common thing to find a long river bed as well." Then: "lets have meteors about half as frequent as rocks ... they break into iron chunks that count as iron ingots ... basically iron chunk inherits from iron ingot"; "river iron rocks should be the same size as a rounded iron ingot and they are pickable so you gather them by hand"; "1 ingot sized iron rocks will be 50% of the stones out there, 30% of them should be double that size and 20% can be triple sized" (bigger ones broken "with a pick bronze or better"); "picking up the single gives 1 Iron ore".
+
+**What was found:** iron came only from bog iron and two iron ore bodies, the nearest 16 km from the spawn, so iron was rare.
+
+**Required outcome:** reddish-brown iron rocks along river beds, like copper and tin; meteorites about half as common, breaking into Iron chunk that serves as an Iron ingot.
+
+**As built:**
+- PR #1455 (reviewed head 391e702a, merged to dev at b5d39135). River iron stones (IR-1): 3% a try on dry land, 40% by the sea to 90% under the mountains by water. Half are loose ingot-sized stones you pick up by hand for 1 Iron ore. 30% and 20% are small all-ore rocks that give exactly 2 or 3 Iron ore and no stone, only to a bronze or better pick (any other tool is refused). Geology iron outcrops are unchanged. Iron ore is now drawn as a rounded red-brown stone the size of an Iron ingot; it still smelts. An ore look for an ore the tile has no body of now answers at once (the starter tile has no iron body; a Lane B join smoke had one iron look at 42 ms in the slow-cell line).
+- PR #1457 (reviewed head 4fd3a5c7, merged to dev at c7ceb2fb). Iron-nickel meteorites (MT-1): 1.5% a try anywhere, 40 to 70 cm across, black-brown crust with thumbprint pits and rust. Any pick or the Stone Hammer breaks one into Iron chunk and stone; loose pieces are Iron chunk by hand. New item 1517 Iron chunk fills every need for an Iron ingot (recipes, blueprints, repairs); a cost spends ingots first and a refund gives Iron ingots.
+- Design: docs/design/COPPER_ROCKS.md IR-1, MT-1.
+
+**Evidence:**
+- Independent review PASS on both heads, and on 4fd3a5c7 after the merge with the nails PR (#1460).
+- Lane B on 391e702a (trial merge onto dev e10712cb): 342 pass / 0 fail, warnings 381, validate_items 0 errors, join smoke with 0 slow lines.
+- Lane B on 4fd3a5c7 (trial merge onto dev b1b0ae86): 325 pass / 0 fail, test_meteorites, test_copper_rocks, test_cell_reads pass; warnings 381; validate_items 0 errors; looks 341. Iron ore body look 3.4 us against copper 86 us.
+- Not yet: Lane A pictures (/mnt/project-files/iron-meteorite/LANE_A_PICTURES.md).
+
+**Acceptance:** walk a river near the spawn. Red-brown Iron ore stones lie along it and pick up by hand. The larger ones break to 2 or 3 Iron ore with a bronze pick and refuse a stone one. Dark pitted meteorites lie here and there on open ground, about 3 within 100 m. One breaks with a Stone Hammer into Iron chunks, and a recipe that asks for an Iron ingot takes an Iron chunk.
+
+Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
@@ -1698,3 +1756,5 @@ Dave requested this rewrite around the intended experience rather than a literal
 - Rock stones (entry 118; called BW-4 in boulders.json, not the bellows BW-4 of entry 115): plain stone, limestone, chalk and marble rocks yield 0.047 of their weight in 0.5 kg stones (the biggest, 2.4 m across, about 1,500); ore rocks keep 0.7. The value was the coordinator's pick for Dave while he slept (Dave gave no number); limestone counts as stone, not ore (Claude's pick).
 - ET-1 (entry 104): an item the reticle is on is reached to 3 m, as fires and stations are (it was 2.5 m; the server allows 3.5 m).
 - Crops need tilled soil (Plant does not till); scatter stone, flint and ores count as small rocks to pick up; wild shrubs are not checked for duplicates.
+- IR-1 (entry 129): river iron chances 3% dry land, 40% by the sea to 90% by mountain water; all-ore rocks 18 and 20 cm across; no mountain-foot iron boulder.
+- MT-1 (entry 129): meteorites 1.5% a try anywhere, no water chance, 40 to 70 cm across, grade 0.6 to 0.9, plain boulder yield; Iron chunk weighs 1.5 kg.

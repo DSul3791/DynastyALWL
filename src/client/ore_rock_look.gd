@@ -8,6 +8,9 @@ extends RefCounted
 # - iron (19 Nov 2026, Dave: "red brown lines all over them like the limestone and the copper but it should also have red brown streaks down the
 #   sides", and his photo of iron-stained slabs): rust orange with red-brown and ochre blotches, pale mineral patches, a little yellow-green lichen
 #   on top, thin dark red-brown lines all over and red-brown rust streaks running down the steep sides.
+# - meteorite (21 Nov 2026, Dave: iron-nickel meteorites "falling for millions and billions of years"): a black-brown fusion crust dented all
+#   over with shallow thumbprint pits (regmaglypts, from a cellular noise), bright grey metal where the crust is worn off the high edges, and
+#   orange-brown rust in the pits.
 
 const VARIANTS := 3   # mesh shapes; a rock picks one from its yaw so neighbours differ
 
@@ -141,6 +144,54 @@ void fragment() {
 	vec3 grad = sign(det) * (dFdx(h) * r1 + dFdy(h) * r2);
 	NORMAL = normalize(abs(det) * NORMAL - grad);
 	ROUGHNESS = 0.85;
+}
+""",
+	"meteorite": """
+uniform vec3 crust : source_color = vec3(0.10, 0.085, 0.075);
+uniform vec3 brown : source_color = vec3(0.22, 0.15, 0.10);
+uniform vec3 metal : source_color = vec3(0.55, 0.56, 0.58);
+uniform vec3 rust : source_color = vec3(0.50, 0.26, 0.10);
+
+// Distance to the nearest of a jittered grid of points: 0 at a pit's centre, rising to its rim.
+float cells(vec3 p) {
+	vec3 i = floor(p);
+	vec3 f = fract(p);
+	float best = 1.0;
+
+	for (int z = -1; z <= 1; z++) {
+		for (int y = -1; y <= 1; y++) {
+			for (int x = -1; x <= 1; x++) {
+				vec3 o = vec3(float(x), float(y), float(z));
+				vec3 c = o + vec3(hash3(i + o), hash3(i + o + 7.3), hash3(i + o + 13.1));
+				best = min(best, length(c - f));
+			}
+		}
+	}
+
+	return best;
+}
+
+void fragment() {
+	float pit = cells(rock_pos * 5.5);
+	float grain = noise3(rock_pos * 30.0) * 0.6 + noise3(rock_pos * 70.0) * 0.4;
+	float n1 = noise3(rock_pos * 3.0 + 2.2);
+	vec3 col = mix(crust, brown, smoothstep(0.45, 0.75, n1) * 0.6);
+	// Worn rims: the pit edges stand proud, and there the crust is rubbed off to bright metal.
+	float rim = smoothstep(0.55, 0.75, pit) * smoothstep(0.6, 0.8, noise3(rock_pos * 9.0 + 4.4));
+	col = mix(col, metal * (0.85 + 0.3 * grain), rim * 0.8);
+	// Rust in the bottoms of the pits.
+	col = mix(col, rust, (1.0 - smoothstep(0.1, 0.35, pit)) * smoothstep(0.4, 0.7, noise3(rock_pos * 6.0 + 1.7)) * 0.7);
+	ALBEDO = col * (0.85 + 0.3 * grain);
+	float h = (pit * 0.8 + grain * 0.2) * bump * 2.0 * rock_scale;
+	// Pit bump from the screen-space slope of h (surface gradient). Written out here: derivatives belong in fragment().
+	vec3 dpdx = dFdx(VERTEX);
+	vec3 dpdy = dFdy(VERTEX);
+	vec3 r1 = cross(dpdy, NORMAL);
+	vec3 r2 = cross(NORMAL, dpdx);
+	float det = dot(dpdx, r1);
+	vec3 grad = sign(det) * (dFdx(h) * r1 + dFdy(h) * r2);
+	NORMAL = normalize(abs(det) * NORMAL - grad);
+	ROUGHNESS = mix(0.8, 0.35, rim);
 }
 """,
 }

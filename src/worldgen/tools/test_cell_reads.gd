@@ -84,19 +84,45 @@ func make(generator, settings, calls: Dictionary, bound: bool, hub: FakeHub = nu
 	return items
 
 
-# Every boulder and copper or tin rock the cells lay, as text sorted by key, and the milliseconds the layout took.
+# Every boulder and ore rock the cells lay, as text sorted by key, the milliseconds the layout took, and the ore rocks' costs per cell: the slowest
+# cell's ore rocks in ms, the most ore body looks in one cell, and the meteorites' body looks and ms over all cells.
 func lay(items, cells: Array) -> Array:
 	items._items.clear()
 	var started: int = Time.get_ticks_usec()
+	var worst_ms: float = 0.0
+	var worst_cell: Vector2i = Vector2i.ZERO
+	var most_looks: int = 0
+	var met_looks: int = 0
+	var met_usec: int = 0
+	var body_usec: Dictionary = {}    # ore -> usec in its ore body looks over all cells
+	var body_looks: Dictionary = {}   # ore -> its ore body looks over all cells
 
 	for cell in cells:
 		var reads: Dictionary = items._cell_reads(cell, CELL_M)
 		items._lay_out_boulders(cell, CELL_M, reads)
-		items._lay_out_ore_rocks(cell, CELL_M, "copper", reads)
-		items._lay_out_ore_rocks(cell, CELL_M, "tin", reads)
-		items._lay_out_ore_rocks(cell, CELL_M, "iron", reads)
+		items._ore_usec = PackedInt64Array([0, 0, 0, 0, 0, 0, 0])
+		items._ore_split.clear()
+		var ore_started: int = Time.get_ticks_usec()
+		var looks_before: int = 0
+
+		for ore in ["copper", "tin", "iron", "meteorite"]:
+			var body_before: int = items._ore_usec[1]
+			looks_before = items._ore_usec[5]
+			items._lay_out_ore_rocks(cell, CELL_M, ore, reads)
+			body_usec[ore] = int(body_usec.get(ore, 0)) + items._ore_usec[1] - body_before
+			body_looks[ore] = int(body_looks.get(ore, 0)) + items._ore_usec[5] - looks_before
+
+		var cell_ms: float = float(Time.get_ticks_usec() - ore_started) / 1000.0
+		met_looks += items._ore_usec[5] - looks_before
+		met_usec += int(items._ore_split.get("meteorite", 0))
+		most_looks = maxi(most_looks, items._ore_usec[5])
+
+		if cell_ms > worst_ms:
+			worst_ms = cell_ms
+			worst_cell = cell
 
 	var ms: float = float(Time.get_ticks_usec() - started) / 1000.0
+	print("ore rocks: slowest cell %s %.1f ms, at most %d ore body looks in a cell; meteorites %d looks, %.1f ms in all" % [str(worst_cell), worst_ms, most_looks, met_looks, float(met_usec) / 1000.0])
 	var rows: Array = []
 
 	for id in items._items:
@@ -105,7 +131,13 @@ func lay(items, cells: Array) -> Array:
 		rows.append([int(it["scatter"]), "%.9f %.9f %.9f" % [it["pos"].x, it["pos"].y, it["pos"].z], int(it["number"]), int(it["count"]), "%.9f" % float(row.get("radius", -1.0)), str(row.get("ore", "")), "%.9f" % float(row.get("grade", -1.0))])
 
 	rows.sort_custom(func(a, b): return int(a[0]) < int(b[0]))
-	return [rows, ms]
+	return [rows, ms, worst_ms, most_looks, met_looks, float(met_usec) / 1000.0, body_usec, body_looks]
+
+
+# The microseconds one ore body look of `ore` took on average in a lay() result, or 0 with no look.
+func per_look(result: Array, ore: String) -> float:
+	var looks: int = int((result[7] as Dictionary).get(ore, 0))
+	return float((result[6] as Dictionary).get(ore, 0)) / float(looks) if looks > 0 else 0.0
 
 
 func _init() -> void:
@@ -142,7 +174,7 @@ func _init() -> void:
 	var rocks: int = 0
 
 	for row in before[0]:
-		rocks += 1 if str(row[5]) in ["copper", "tin", "iron"] or int(row[2]) != 0 else 0
+		rocks += 1 if str(row[5]) in ["copper", "tin", "iron", "meteorite"] or int(row[2]) != 0 else 0
 
 	print("cell reads: %d cells, %d rows (%d copper, tin or iron), general reads %d in %.1f ms; bound: %d tile looks, %d general reads in %.1f ms" % [cells.size(), before[0].size(), rocks,
 		int(general_calls.get("general", 0)), float(before[1]), int(bound_calls.get("cells", 0)), int(bound_calls.get("general", 0)), float(after[1])])
@@ -150,6 +182,12 @@ func _init() -> void:
 	check(str(after[0]) == str(before[0]), "the bound reads lay exactly the same rocks: keys, places, sizes, ores and grades")
 	check(int(bound_calls.get("general", 0)) == 0 and int(general_calls.get("general", 0)) > cells.size() * 4, "with the bound reads the layout never takes the general (locking) path (%d general reads before)" % int(general_calls.get("general", 0)))
 	check(int(bound_calls.get("cells", 0)) == cells.size(), "one tile look a cell (%d)" % int(bound_calls.get("cells", 0)))
+	# The ore rocks' cost per cell (Lane B 21 Nov 2026: slow-cell lines of 55 to 60 ms in the ore part near spawn), with the cells round spawn among
+	# them. Body looks are bounded by the rule: one per ore for the cell, then at most one per try for each ore whose body is near; meteorites none.
+	# The time bound is generous (a slow lane machine; about 1 ms a cell is usual) and still catches a stall of the size seen.
+	check(int(after[3]) <= 3 * 8 and int(after[4]) == 0, "ore body looks stay bounded: at most %d in a cell, meteorites %d" % [int(after[3]), int(after[4])])
+	check(minf(float(before[2]), float(after[2])) < 25.0, "no cell's ore rocks take long: the slowest cell of each of two runs (%.1f and %.1f ms); a one-off hiccup of a busy machine shows in one run only" % [float(before[2]), float(after[2])])
+	check(float(after[5]) < float(after[1]) * 0.25, "meteorites are a small share of the layout (%.1f of %.1f ms)" % [float(after[5]), float(after[1])])
 
 	# Cold (Lane B 21 Nov 2026, #1457 join smoke: "ore bodies 42.2 in 3 looks ... iron 42.0" in cell 1817, 2228 at 25 s): a fresh generator and
 	# items server, the tile read inside the first cell's reads as on a joining server, and that cell first. The starter tile has no iron body, so
@@ -170,6 +208,12 @@ func _init() -> void:
 	var tile_now = cold_generator.get_tile(cold_generator.tile_of(spawn.x, spawn.y))
 	check(not tile_now.ore_names.has("iron") and tile_now.ore_names.has("copper") and tile_now.ore_names.has("tin"), "the starter tile has copper and tin bodies and no iron body")
 	check(str(tile_now.ore_at(Vector3(spawn.x, 60.0, spawn.y), 500.0, {"iron": "iron_ore"}, 10.0)) == "", "an iron look there answers no iron")
+	var iron_us: float = per_look(cold, "iron")
+	var other_us: float = maxf(per_look(cold, "copper"), per_look(cold, "tin"))
+	print("ore body looks, cold: copper %.1f us, tin %.1f us, iron %.1f us a look (%d iron looks); warm bound: copper %.1f, tin %.1f, iron %.1f" % [per_look(cold, "copper"),
+		per_look(cold, "tin"), iron_us, int((cold[7] as Dictionary).get("iron", 0)), per_look(after, "copper"), per_look(after, "tin"), per_look(after, "iron")])
+	check(int((cold[7] as Dictionary).get("iron", 0)) > 0 and iron_us <= other_us + 20.0, "an iron body look costs no more than a copper or tin look, cold (%.1f us against %.1f)" % [iron_us, other_us])
+	check(per_look(after, "iron") <= maxf(per_look(after, "copper"), per_look(after, "tin")) + 20.0, "and warm (%.1f us against %.1f)" % [per_look(after, "iron"), maxf(per_look(after, "copper"), per_look(after, "tin"))])
 	var spot: Vector3 = Vector3(spawn.x, float(cold_generator.surface_height(spawn.x, spawn.y)), spawn.y)
 	var timed: Dictionary = {}
 

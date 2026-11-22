@@ -5080,10 +5080,10 @@
 			"kind": "tool",
 			"description": "A strip of hard steel. Strike flint on it for a shower of sparks.",
 			"how_to_get": [
-				"Craft at a brick forge: 1 Steel ingot"
+				"Not made yet: its recipe is locked until it has a use"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false
 		},
 		"javelin": {
 			"name": "Javelin",
@@ -5185,6 +5185,18 @@
 			],
 			"used_for": [
 				"Smelted into Iron ingots and, with carbon, Steel ingots"
+			],
+			"obtainable_now": true
+		},
+		"iron_chunk": {
+			"name": "Iron chunk",
+			"kind": "material",
+			"description": "A heavy lump of meteorite iron and nickel. It works as an Iron ingot.",
+			"how_to_get": [
+				"Picked up loose, or broken from a dark pitted meteorite with any pick or the Stone Hammer. Meteorites lie anywhere."
+			],
+			"used_for": [
+				"Used anywhere an Iron ingot is: recipes, buildings and repairs"
 			],
 			"obtainable_now": true
 		},
