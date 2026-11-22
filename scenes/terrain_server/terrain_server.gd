@@ -490,6 +490,12 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	@warning_ignore("confusable_local_declaration")
 	items.send_zone = func(peer, biome_id): net.zone.rpc_id(peer, biome_id)
+	items.tile_ready = func(x: float, z: float) -> bool:   # in memory now; if not, read on a worker for a later look (the periodic checks never wait for a tile)
+		if generator.tile_cached(x, z):
+			return true
+
+		generator.prefetch_tile(x, z)
+		return false
 	items.zone_at = func(pos: Vector3) -> int:
 		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
 

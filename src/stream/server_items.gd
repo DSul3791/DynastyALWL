@@ -340,6 +340,7 @@ var zone_at: Callable = Callable()          # (position Vector3) -> biome id fro
 var zone_clock: Callable = Callable()       # () -> msec; tests set it, the game uses Time.get_ticks_msec
 var send_vent: Callable = Callable()        # (peer, Vector3): the nearest volcanic vent within VENT_RANGE_M, Vector3.INF when none (protocol 77; the volcano bed sits there)
 var vent_near: Callable = Callable()        # (position Vector3) -> Vector3 of the nearest vent top within VENT_RANGE_M, INF when none; set by the server scene
+var tile_ready: Callable = Callable()       # (x, z) -> true when the ground tile there is in memory; false asks for it on a worker. Unset: always ready (tests)
 var zone_samples: int = 0                   # biome lookups made, messages sent and microseconds spent (the report reads these)
 var zone_messages: int = 0
 var vent_messages: int = 0
@@ -933,6 +934,12 @@ var _vent_sent: Dictionary = {}      # peer -> the vent anchor the client was la
 
 # Tell a client its biome: at once for a new player, after every teleport or respawn, and after a change that reads the same twice running (no flicker on
 # a border). Reliable and ordered, so the client's last value is the server's last.
+# The server never reads a ground tile on its main thread from a periodic check (a read takes about a second on Dave's PC, BugsList 108): the
+# zone, vent, snow and hint checks skip a beat while the tile is read on a worker. Actions a player asks for (digging, drinking) still read it.
+func _tile_ready_at(at: Vector3) -> bool:
+	return not tile_ready.is_valid() or bool(tile_ready.call(at.x, at.z))
+
+
 func _note_zone(peer: int, position: Vector3) -> void:
 	if not zone_at.is_valid() or not send_zone.is_valid():
 		return
@@ -943,6 +950,10 @@ func _note_zone(peer: int, position: Vector3) -> void:
 		return
 
 	_zone_checked[peer] = now
+
+	if not _tile_ready_at(position):
+		return   # the tile is being read on a worker: the zone and vent are looked at on the next 2 s check (BugsList 108)
+
 	_note_vent(peer, position)
 	var started: int = Time.get_ticks_usec()
 	var biome: int = int(zone_at.call(position))
@@ -15598,6 +15609,9 @@ func _on_snow(peer: int, position: Vector3) -> bool:
 	var cell: Vector2i = Vector2i(floori(position.x), floori(position.z))
 	var memo: Array = _snow_memo.get(peer, [])
 
+	if (memo.is_empty() or memo[0] != cell) and not _tile_ready_at(position):
+		return not memo.is_empty() and bool(memo[1])   # the tile is being read on a worker: as the last cell until it is in memory
+
 	if memo.is_empty() or memo[0] != cell:
 		memo = [cell, SnowWalk.name_is_snow(str(ground_material.call(position.x, position.z)))]
 		_snow_memo[peer] = memo
@@ -21450,7 +21464,7 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 		"moved":
 			return _hint_origin.has(peer) and (_hint_origin[peer] as Vector3).distance_to(_peer_pos[peer]) >= 5.0
 		"water_in_view":
-			return water_near.is_valid() and bool(water_near.call(_peer_pos[peer], 20.0)) and not v.is_empty() and float(v.get("wet", 0.0)) < float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400)) - 1.0
+			return water_near.is_valid() and _tile_ready_at(_peer_pos[peer]) and bool(water_near.call(_peer_pos[peer], 20.0)) and not v.is_empty() and float(v.get("wet", 0.0)) < float(_vitals_cfg.get("thirst", {}).get("cap_ml", 2400)) - 1.0
 		"after_drink":
 			return _hint_count(st, "event:drink") >= 1
 		"8_sticks":

@@ -367,7 +367,7 @@ func _note_pace(id: int, cart: Dictionary, v: Dictionary, grade: float) -> void:
 	rec["share"] = clampf(load_kg(id, rec["riders"]) / payload, 0.0, 1.0)
 	var rough: float = 1.0
 
-	if host.ground_material.is_valid():
+	if host.ground_material.is_valid() and host._tile_ready_at(cart["pos"]):   # an unread tile: plain ground for this pace check (never a read on the tick)
 		var ground: String = str(host.ground_material.call(cart["pos"].x, cart["pos"].z))
 		var wet: Dictionary = v.get("wet", {})
 		rough = float(v.get("rough", {}).get(ground, 1.0))
