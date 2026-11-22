@@ -11,6 +11,7 @@ const KIND_REQUEST := 1
 const KIND_STATUS := 2                   # (server pick page) a line that opens with [u32 4][u32 2] instead of a hello gets one status frame
                                          # [u32 size][u32 2][JSON utf-8] and is closed: name, message, build, protocol, players, max_players, locked
 const MAX_FRAME := 1 << 20
+const HELLO_WAIT_MSEC := 5000            # a connection that has not said hello by then is closed
 const NetSettings := preload("res://src/shared/net_settings.gd")
 
 var on_request: Callable                 # (peer_id, keys, urgent) on the line's thread
@@ -69,7 +70,9 @@ func stop() -> void:
 
 
 # Forgets a player's line and closes it. `only` (a line's dictionary): drop that line only, not a newer one the same peer id opened since.
-func drop(peer_id: int, only: Dictionary = {}) -> void:
+# `why`: printed when the line is really dropped (off the main thread: the line's thread or a worker), so a log says which end closed
+# a line and why (cold first joins, 22 Nov 2026: every line closed just before the long freeze). Empty: silent (the player left).
+func drop(peer_id: int, only: Dictionary = {}, why: String = "") -> void:
 	_mutex.lock()
 	var line: Dictionary = _lines.get(peer_id, {})
 
@@ -79,6 +82,9 @@ func drop(peer_id: int, only: Dictionary = {}) -> void:
 		_lines.erase(peer_id)
 
 	_mutex.unlock()
+
+	if not line.is_empty() and why != "":
+		print("Terrain server: block line of peer %d closed: %s" % [peer_id, why])
 
 	if not line.is_empty():
 		line["mutex"].lock()
@@ -149,7 +155,7 @@ func send(peer_id: int, key: Vector4i, bytes: PackedByteArray) -> bool:
 	_mutex.unlock()
 
 	if why != "":
-		drop(peer_id, line)
+		drop(peer_id, line, "a block could not be written (the game's end is gone)")
 		return false
 
 	if full:
@@ -235,7 +241,7 @@ func _loop() -> void:
 		while _server.is_connection_available():
 			var tcp: StreamPeerTCP = _server.take_connection()
 			tcp.set_no_delay(true)
-			_pending.append([tcp, PackedByteArray(), Time.get_ticks_msec()])
+			_pending.append([tcp, PackedByteArray(), Time.get_ticks_msec(), ""])   # [tcp, inbox, since msec, why it was refused]
 
 		var still: Array = []
 
@@ -246,9 +252,14 @@ func _loop() -> void:
 				_mutex.lock()
 				_lines[peer_id] = {"tcp": item[0], "inbox": item[1], "mutex": Mutex.new(), "outbox": PackedByteArray(), "out_at": 0, "since": Time.get_ticks_msec()}
 				_mutex.unlock()
-			elif peer_id == 0 and Time.get_ticks_msec() - int(item[2]) < 5000:
+			elif peer_id == 0 and Time.get_ticks_msec() - int(item[2]) < HELLO_WAIT_MSEC:
 				still.append(item)
 			else:
+				if peer_id == 0:
+					print("Terrain server: a block line closed: no hello within %d ms of connecting (%d bytes read)" % [HELLO_WAIT_MSEC, (item[1] as PackedByteArray).size()])
+				elif str(item[3]) != "":
+					print("Terrain server: a block line closed before it served anyone, %d ms after connecting: %s" % [Time.get_ticks_msec() - int(item[2]), str(item[3])])
+
 				item[0].disconnect_from_host()
 
 		_pending = still
@@ -262,12 +273,13 @@ func _loop() -> void:
 		OS.delay_msec(1)
 
 
-# 0 while waiting, -1 for a bad or unknown peer, else the peer id.
+# 0 while waiting, -1 for a bad or unknown peer (item[3] says why; empty for a status request, which is normal), else the peer id.
 func _read_hello(item: Array) -> int:
 	var tcp: StreamPeerTCP = item[0]
 	tcp.poll()
 
 	if tcp.get_status() != StreamPeerTCP.STATUS_CONNECTED:
+		item[3] = "the game's end closed it before its hello (status %d, %d bytes read)" % [tcp.get_status(), (item[1] as PackedByteArray).size()]
 		return -1
 
 	var available: int = tcp.get_available_bytes()
@@ -284,7 +296,12 @@ func _read_hello(item: Array) -> int:
 
 	var peer_id: int = item[1].decode_s32(8)
 
-	if item[1].decode_u32(0) != 8 or item[1].decode_u32(4) != KIND_HELLO or not is_peer.call(peer_id):
+	if item[1].decode_u32(0) != 8 or item[1].decode_u32(4) != KIND_HELLO:
+		item[3] = "not a hello (size %d, kind %d)" % [item[1].decode_u32(0), item[1].decode_u32(4)]
+		return -1
+
+	if not is_peer.call(peer_id):
+		item[3] = "peer %d is not a connected player" % peer_id
 		return -1
 
 	item[1] = item[1].slice(12)
@@ -318,7 +335,7 @@ func _read_requests(peer_id: int, line: Dictionary) -> void:
 	line["mutex"].unlock()
 
 	if not connected:
-		drop(peer_id, line)
+		drop(peer_id, line, "the game's end closed it (status %d)" % tcp.get_status())
 		return
 
 	if stalled:
@@ -332,7 +349,7 @@ func _read_requests(peer_id: int, line: Dictionary) -> void:
 		var size: int = inbox.decode_u32(at)
 
 		if size < 8 or size > MAX_FRAME:
-			drop(peer_id, line)
+			drop(peer_id, line, "a request frame of %d bytes" % size)
 			return
 
 		if inbox.size() - at - 4 < size:
