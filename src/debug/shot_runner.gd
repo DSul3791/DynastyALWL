@@ -146,6 +146,7 @@ var piece_views: bool = false     # --shot-piece-views: the first named piece ge
 var _piece_built: bool = false
 var piece_names: PackedStringArray = PackedStringArray()    # --shot-pieces=wall_section,chest: one building piece of each in a row with name tags (structures.json keys)
 var pieces_yaw_deg: float = 0.0    # --shot-pieces-yaw=N: the whole row turned N degrees
+var piece_extra: Dictionary = {}   # --shot-piece-extra=forge:2,lit:1: the pieces drawn as placed with these row extras (a smithy's coals or flare, a lit kiln), not as the cold ghost
 var _pieces_t: int = 0
 var showroom_rows: PackedStringArray = PackedStringArray()   # --shot-showroom=all or row labels: one picture per admin showroom row (data/items/showroom.json)
 var showroom_cam_height: float = -1.0    # --shot-showroom-height=M: the --showroom camera stands M m above the ground (default 1.6 + 0.25 x row length)
@@ -259,6 +260,12 @@ func setup(owner_client, args: Array) -> void:
 			showroom_rows = argument.trim_prefix("--shot-showroom=").split(",", false)
 			no_grass = true
 			no_plants = true
+		elif argument.begins_with("--shot-piece-extra="):
+			for pair in argument.trim_prefix("--shot-piece-extra=").split(",", false):
+				var kv: PackedStringArray = pair.split(":")
+
+				if kv.size() == 2:
+					piece_extra[kv[0]] = int(kv[1])
 		elif argument.begins_with("--shot-pieces-yaw="):
 			pieces_yaw_deg = float(argument.trim_prefix("--shot-pieces-yaw="))
 		elif argument.begins_with("--shot-pieces="):
@@ -1230,11 +1237,18 @@ func _show_pieces(now: int) -> void:
 			print("shot runner: piece %s skipped: planned, not built yet" % piece_name)
 			continue
 
-		var model: Node3D = client.items.ghost_model(int(def["state"]))
+		var model: Node3D = client.items.ghost_model(int(def["state"])) if piece_extra.is_empty() else client.items._model_for_state(int(def["state"]), piece_extra)
 
 		if model == null:
 			print("shot runner: piece %s FAIL no model for state %d" % [piece_name, int(def["state"])])
 			continue
+
+		# Drawn as placed (--shot-piece-extra): in the game the row hands a burning fire's Light to the lights list (inventory_view), which the rig
+		# does not run, so it is switched on here for a smithy's coals or flare (forge 1 or 2) or anything lit.
+		var fire_light: Light3D = model.get_node_or_null("Light") as Light3D
+
+		if fire_light != null and (int(piece_extra.get("forge", 0)) >= 1 or int(piece_extra.get("lit", 0)) >= 1):
+			fire_light.visible = true
 
 		client.add_child(model)
 		model.set_meta("piece_name", str(piece_name))
