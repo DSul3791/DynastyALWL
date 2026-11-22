@@ -10,6 +10,7 @@ extends SceneTree
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
+const AnimalsScript := preload("res://src/stream/server_animals.gd")
 
 var passes: int = 0
 var failures: int = 0
@@ -260,6 +261,7 @@ func _init() -> void:
 
 	check(bird_found, "a set bird trap saves and reloads with its owner")
 	check(found >= 0 and int(again._items[found].get("wear", 0)) == 3 and str(again._items[found]["struct"]["owner"]) == "trap-key-00000001" and float(again._items[found]["struct"]["seq"]) == float(items._items[keep]["struct"]["seq"]), "a set snare saves and reloads with its wear and owner")
+	traps.cfg["marks_refresh_s"] = 0.0   # every ask reads the list afresh (in play at most every 2 s)
 	marks_checks(items, again, mine, bird_keep)
 	# The smoke knob: off by default; on, a snare with no animal near catches an imagined rabbit and takes none from the world.
 	check(float(traps.cfg["test_chance"]) == 0.0, "the smoke knob is off in the data")
@@ -271,6 +273,8 @@ func _init() -> void:
 	traps.cfg["test_chance"] = 0.0
 	away_checks()
 	choke_checks()
+	pile_checks()
+	wiring_checks()
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)
 
@@ -332,6 +336,81 @@ func bird_checks(items) -> void:
 
 	items._items.erase(snare)
 	items._items.erase(wall)
+
+
+# A pile of traps in one spot (no limit a player, Dave 22 Nov 2026): a step reads at most PASS_LOOK_MAX of them, the Map has one mark.
+func pile_checks() -> void:
+	var items = make("user://test_traps_pile", true)
+	var traps = items._traps
+	var looks: Array = [0]
+	items.trail_strength = func(_x, _z):
+		looks[0] += 1
+		return 0.6
+	var pile: Array = []
+
+	for n in 300:
+		pile.append(lay(items, Vector3(700.0, 10.0, 700.0)))
+
+	traps.cfg["base_chance"] = 0.0001
+	taken.clear()
+	traps.on_pass(501, "rabbit", Vector3(705.0, 10.0, 700.0), Vector3(701.0, 10.0, 700.0))
+	check(looks[0] > 0 and looks[0] <= 2 * traps.PASS_LOOK_MAX, "a rabbit by a pile of 300 snares is rolled by at most %d of them (%d trail looks)" % [traps.PASS_LOOK_MAX, looks[0]])
+	traps.cfg["base_chance"] = 100.0
+	traps.on_pass(502, "rabbit", Vector3(705.0, 10.0, 700.0), Vector3(701.0, 10.0, 700.0))
+	check(taken == [502], "and one of them takes it")
+	traps.cfg["marks_refresh_s"] = 0.0
+	check(items.trap_marks(1).size() == 1, "the Map marks the pile once (%d marks)" % items.trap_marks(1).size())
+
+	for n in 290:
+		items._items.erase(pile[n])
+
+	var met: Dictionary = {}
+
+	for n in 120:
+		for id in traps._pass_candidates(Vector3(701.0, 10.0, 700.0), 4.5, n):
+			met[id] = true
+
+	check(met.size() == 10, "with most of the pile taken up, steps still meet the ten left (%d)" % met.size())
+
+
+# The animals' step calls the traps (terrain_server wires animals.snare_pass to items.animal_passed): a rabbit that moves is passed on,
+# and one a snare takes in the middle of the animals' tick leaves the world with nothing else of it run.
+func wiring_checks() -> void:
+	var wire: String = FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd")
+	check(wire.contains("animals.snare_pass = func(id, sp, from, to): items.animal_passed(id, sp, from, to)"), "the server wires the animals' steps to the traps")
+	var a = AnimalsScript.new()
+	a.ground_height = func(_x, _z): return 10.0
+	a.blocked = func(_x, _z): return false
+	a.player_positions = func(): return [Vector3(0.0, 10.0, 0.0)]
+	a.hour_now = func(): return 21.0
+	a.setup()
+	a.traits = false
+
+	for sp in a.cfg["species"]:
+		if sp != "rabbit":
+			a.cfg["species"][sp]["target_per_player"] = 0
+
+	a.rng.seed = 5
+	var passes_seen: Array = []
+	var snared: Array = []
+	a.snare_pass = func(id, sp, from, to):
+		passes_seen.append([id, sp, from, to])
+
+		if snared.is_empty() and a.snare(id):
+			snared.append(id)
+
+	for n in 1200:
+		a.tick(0.1)
+
+	var moved: bool = not passes_seen.is_empty() and str(passes_seen[0][1]) == "rabbit" and (passes_seen[0][2] as Vector3) != (passes_seen[0][3] as Vector3)
+	check(moved, "a rabbit's step is passed to the traps with where it came from and went (%d steps)" % passes_seen.size())
+	check(snared.size() == 1 and not a.animals.has(int(snared[0])), "a rabbit taken in the middle of the tick is gone from the world")
+	var after: int = 0
+
+	for row in passes_seen:
+		after += 1 if not snared.is_empty() and int(row[0]) == int(snared[0]) else 0
+
+	check(after == 1, "and is never stepped again (%d steps after)" % (after - 1))
 
 
 # Makes every look a sure thing (the chance is clamped to 1).
