@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dynasty play-test</title>
+<!-- The test players' download page (Dave 22 Nov 2026: hannibalshouse.duckdns.org/dynasty/testplayers). tools/make_testplayers_page.ps1
+     fills in the fields in double braces and writes it with the zip into dynasty_export\build-<N>\testplayers\; deploy/testplayers/HOSTING.md
+     puts it on the game server. One file, no scripts or outside links except the report forms. -->
+<style>
+  :root { --bg: #f6f3ec; --fg: #1f1b16; --muted: #5d554a; --card: #ffffff; --line: #ddd4c4; --accent: #7a3e12; --accent-fg: #ffffff; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #17140f; --fg: #eee7da; --muted: #b3a894; --card: #221e17; --line: #3a3328; --accent: #d98b4a; --accent-fg: #17140f; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 17px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 2rem; margin: 8px 0 0; letter-spacing: 0.01em; }
+  .sub { color: var(--muted); margin: 4px 0 24px; }
+  section { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px 20px; margin: 0 0 16px; }
+  h2 { font-size: 1.15rem; margin: 0 0 8px; }
+  ol, ul { margin: 0; padding-left: 1.3em; }
+  li { margin: 4px 0; }
+  .download { display: block; text-align: center; background: var(--accent); color: var(--accent-fg); text-decoration: none;
+              font-weight: 700; font-size: 1.15rem; padding: 14px 18px; border-radius: 10px; margin: 4px 0 10px; }
+  .download:hover { filter: brightness(1.08); }
+  .small { color: var(--muted); font-size: 0.9rem; }
+  code { font: 0.85rem/1.4 ui-monospace, Consolas, monospace; background: var(--bg); border: 1px solid var(--line); border-radius: 4px; padding: 1px 4px; word-break: break-all; }
+  a { color: var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>Dynasty: A Life Well Lived</h1>
+  <p class="sub">Play-test build {{BUILD}} &middot; {{DATE}} &middot; Windows 10 or 11, 64-bit</p>
+
+  <section>
+    <h2>Download</h2>
+    <a class="download" href="{{ZIP}}" download>Download build {{BUILD}} ({{SIZE_MB}} MB)</a>
+    <p class="small">File: {{ZIP}}<br>SHA-256: <code>{{SHA256}}</code></p>
+  </section>
+
+  <section>
+    <h2>Install</h2>
+    <ol>
+      <li>Open the zip you downloaded and take out <strong>DynastySetup-{{BUILD}}.exe</strong> (right-click the zip, <em>Extract All</em>).</li>
+      <li>Run DynastySetup-{{BUILD}}.exe.</li>
+      <li>Windows will probably show a blue box, <em>Windows protected your PC</em>. The game is not signed yet, so Windows does not know it. Click <strong>More info</strong>, then <strong>Run anyway</strong>.</li>
+      <li>It installs just for you (no administrator needed) and adds Dynasty to the Start menu. At the end you can start it right away.</li>
+    </ol>
+    <p class="small">A new build: download it and install it over the old one. Your characters are kept. Everyone must be on the same build to play together.</p>
+  </section>
+
+  <section>
+    <h2>Join the game</h2>
+    <ul>
+      <li>On the server page, the first row is Dave's server, <strong>Hannibal's House</strong> (hannibalshouse.duckdns.org). Pick it and press Join.</li>
+      <li>If it says <em>Needs update</em>, a newer build is out: download it from this page.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Tell us what you find</h2>
+    <ul>
+      <li>Bugs and ideas go on GitHub (free account needed): <a href="https://github.com/DSul3791/DynastyALWL-QA/issues/new/choose">report a bug or an idea</a>. There is no reporting from inside the game.</li>
+      <li>Put the build number ({{BUILD}}, also on the title page) in the Build box.</li>
+      <li>Drag in your game log: <code>%APPDATA%\Godot\app_userdata\Dynasty a life well lived\logs\godot.log</code></li>
+      <li>A list of everything that felt wrong is just as useful as one big report.</li>
+    </ul>
+  </section>
+
+  <p class="small">Uninstall: Windows Settings &gt; Apps &gt; Dynasty &gt; Uninstall.</p>
+</main>
+</body>
+</html>

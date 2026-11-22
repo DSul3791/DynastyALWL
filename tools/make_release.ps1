@@ -6,7 +6,8 @@
 #   powershell -ExecutionPolicy Bypass -File tools\make_release.ps1            build only
 #   powershell -ExecutionPolicy Bypass -File tools\make_release.ps1 -Publish   also a PUBLIC GitHub Release build-<N> with the installer (gh);
 #       only on Dave's explicit yes (public repo, the installer holds the bought animal models; Dave 22 Nov 2026)
-# Output in ..\dynasty_export\build-<N>\: DynastySetup-<N>.exe (for players), dynasty-server-build-<N>.tar plus compose.yaml and SERVER.md
+# Output in ..\dynasty_export\build-<N>\: DynastySetup-<N>.exe (for players; testplayers\ holds it zipped with the download page),
+# dynasty-server-build-<N>.tar plus compose.yaml and SERVER.md
 # (for the gaming server: docker load -i ..., then docker compose -f compose.yaml up -d). The first run compiles the engine (deploy/engine,
 # roughly 45 to 90 minutes of full CPU); later runs reuse it.
 param(
@@ -122,6 +123,8 @@ try {
 	# shortcut: Inno Setup 6 under Wine from a community image (amake/innosetup, floating innosetup6 tag); revisit if it breaks or moves.
 	Run "installer (Inno Setup)" { docker run --rm -v "${out}:/work" amake/innosetup:innosetup6-bookworm dynasty.iss }
 	if (-not (Test-Path "$out\DynastySetup-$build.exe")) { throw "make_release: no DynastySetup-$build.exe in $out" }
+	# The test players' download page with the zipped installer (Dave 22 Nov 2026; deploy/testplayers/HOSTING.md puts it on his server).
+	& (Join-Path $PSScriptRoot "make_testplayers_page.ps1") -Out $out
 
 	# The server image reuses the engine just built (deploy/server/engine/godot is gitignored) instead of compiling it again.
 	Copy-Item "$out\engine\godot" deploy\server\engine\godot -Force
@@ -143,5 +146,5 @@ finally {
 }
 
 Write-Host "make_release: build $build ready in $out"
-Write-Host "  players:        DynastySetup-$build.exe"
+Write-Host "  players:        testplayers\ (index.html and Dynasty-build-$build.zip; deploy\testplayers\HOSTING.md), or DynastySetup-$build.exe"
 Write-Host "  gaming server:  dynasty-server-build-$build.tar, compose.yaml (docker load -i dynasty-server-build-$build.tar; docker compose -f compose.yaml up -d)"
