@@ -35,6 +35,14 @@ func drain() -> void:
 	_writer.drain()
 
 
+# Writes what is queued, waits for the writer's last worker task and closes the file; later lines are dropped. The last call of a
+# node's _exit_tree: a line logged after it (a peer that drops as the network closes, during engine teardown) would otherwise start a
+# worker task while the engine shuts its worker pool down, and a task still running when the log is freed (main gate, 21 Nov 2026: the
+# dedicated server exited 132 after a clean stop in 3 of 8 stops on Lane B).
+func close() -> void:
+	_writer.close()
+
+
 # Call every frame: logs a stall when the main thread was away more than `stall_msec`, and `state` (a Callable returning text) every `every_msec`.
 func tick(state: Callable, every_msec: int, stall_msec: int) -> void:
 	var now: int = Time.get_ticks_msec()

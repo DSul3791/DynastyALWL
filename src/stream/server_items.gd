@@ -3039,6 +3039,23 @@ func _settled(position: Vector3) -> Vector3:
 	return Vector3(position.x, rest, position.z) if not is_nan(rest) and rest < position.y - 0.05 else position
 
 
+# The height a dropped stack lands at, from the server's own ground (main gate 21 Nov 2026: the client sends the ground it has under the player,
+# or the feet less 1 m when it has none yet; with a coarse or missing client ground a drop landed under the surface, and _settled only lowers
+# an item, so it stayed buried). The search starts DROP_LOOK_ABOVE_M over the higher of the player's reported feet and the sent height (that
+# height capped DROP_REACH_M over the feet), so a drop up a slope or onto a dug floor finds the right ground; with no ground found the sent
+# height stays.
+const DROP_LOOK_ABOVE_M := 1.0
+
+
+func _drop_height(spot: Vector3, feet: Vector3) -> float:
+	if not floor_below.is_valid():
+		return spot.y
+
+	var start: float = maxf(feet.y, minf(spot.y, feet.y + DROP_REACH_M)) + DROP_LOOK_ABOVE_M
+	var rest: float = float(floor_below.call(Vector3(spot.x, start, spot.z)))
+	return spot.y if is_nan(rest) else rest
+
+
 # After a dig or fill: loose items near it come down (or stay) onto what the ground is now.
 func settle_loose_near(centre: Vector3, radius: float) -> void:
 	for id in _items:
@@ -3078,6 +3095,7 @@ func _drop(peer: int, inv, slot: int, count: int, at: Vector3) -> void:
 
 	var here: Vector3 = _peer_pos.get(peer, at)
 	var spot: Vector3 = at if at.distance_to(here) <= DROP_REACH_M else here
+	spot.y = _drop_height(spot, here)
 	var number: int = inv.numbers[slot]
 	var amount: int = mini(count, inv.counts[slot])
 
