@@ -94,6 +94,7 @@ func lay(items, cells: Array) -> Array:
 		items._lay_out_boulders(cell, CELL_M, reads)
 		items._lay_out_ore_rocks(cell, CELL_M, "copper", reads)
 		items._lay_out_ore_rocks(cell, CELL_M, "tin", reads)
+		items._lay_out_ore_rocks(cell, CELL_M, "iron", reads)
 
 	var ms: float = float(Time.get_ticks_usec() - started) / 1000.0
 	var rows: Array = []
@@ -141,14 +142,48 @@ func _init() -> void:
 	var rocks: int = 0
 
 	for row in before[0]:
-		rocks += 1 if str(row[5]) == "copper" or str(row[5]) == "tin" or int(row[2]) != 0 else 0
+		rocks += 1 if str(row[5]) in ["copper", "tin", "iron"] or int(row[2]) != 0 else 0
 
-	print("cell reads: %d cells, %d rows (%d copper or tin), general reads %d in %.1f ms; bound: %d tile looks, %d general reads in %.1f ms" % [cells.size(), before[0].size(), rocks,
+	print("cell reads: %d cells, %d rows (%d copper, tin or iron), general reads %d in %.1f ms; bound: %d tile looks, %d general reads in %.1f ms" % [cells.size(), before[0].size(), rocks,
 		int(general_calls.get("general", 0)), float(before[1]), int(bound_calls.get("cells", 0)), int(bound_calls.get("general", 0)), float(after[1])])
-	check(before[0].size() > 0 and rocks > 0, "the cells lay boulders and copper or tin rocks (%d rows)" % before[0].size())
+	check(before[0].size() > 0 and rocks > 0, "the cells lay boulders and copper, tin or iron rocks (%d rows)" % before[0].size())
 	check(str(after[0]) == str(before[0]), "the bound reads lay exactly the same rocks: keys, places, sizes, ores and grades")
 	check(int(bound_calls.get("general", 0)) == 0 and int(general_calls.get("general", 0)) > cells.size() * 4, "with the bound reads the layout never takes the general (locking) path (%d general reads before)" % int(general_calls.get("general", 0)))
 	check(int(bound_calls.get("cells", 0)) == cells.size(), "one tile look a cell (%d)" % int(bound_calls.get("cells", 0)))
+
+	# Cold (Lane B 21 Nov 2026, #1457 join smoke: "ore bodies 42.2 in 3 looks ... iron 42.0" in cell 1817, 2228 at 25 s): a fresh generator and
+	# items server, the tile read inside the first cell's reads as on a joining server, and that cell first. The starter tile has no iron body, so
+	# an iron look answers at once (TileTerrainData.ore_names) instead of walking every body of the tile twice. That walk is about what a copper or
+	# tin look costs (well under 1 ms), so it cannot by itself be a 42 ms look: that one is a stall of the server's main thread while the join
+	# loads (Lane B samples the load); the test keeps every look's own work small, cold or warm.
+	check(cells.has(Vector2i(1817, 2228)), "the cell slow in the #1457 join smoke is among them")
+	var cold_generator = GeneratorScript.new()
+	cold_generator.setup(settings, rules, tables, WORLD + "/tiles")
+	var cold_cells: Array = [Vector2i(1817, 2228)]
+
+	for cell in cells:
+		if cell != cold_cells[0]:
+			cold_cells.append(cell)
+
+	var cold: Array = lay(make(cold_generator, settings, {}, true), cold_cells)
+	check(str(cold[0]) == str(after[0]), "the cold run, slow cell first, lays the same rocks")
+	var tile_now = cold_generator.get_tile(cold_generator.tile_of(spawn.x, spawn.y))
+	check(not tile_now.ore_names.has("iron") and tile_now.ore_names.has("copper") and tile_now.ore_names.has("tin"), "the starter tile has copper and tin bodies and no iron body")
+	check(str(tile_now.ore_at(Vector3(spawn.x, 60.0, spawn.y), 500.0, {"iron": "iron_ore"}, 10.0)) == "", "an iron look there answers no iron")
+	var spot: Vector3 = Vector3(spawn.x, float(cold_generator.surface_height(spawn.x, spawn.y)), spawn.y)
+	var timed: Dictionary = {}
+
+	for ore in ["copper", "tin", "iron"]:
+		var names: Dictionary = {ore: ore + "_ore"}
+		var t0: int = Time.get_ticks_usec()
+
+		for _n in range(2000):
+			tile_now.ore_at(spot, 45.0, names, 10.0)
+
+		timed[ore] = float(Time.get_ticks_usec() - t0) / 2000.0
+
+	print("ore_at at spawn, 2000 looks each: copper %.2f us, tin %.2f us, iron %.2f us" % [float(timed["copper"]), float(timed["tin"]), float(timed["iron"])])
+	check(float(timed["iron"]) < 0.25 * minf(float(timed["copper"]), float(timed["tin"])) + 0.5, "a look for an ore the tile lacks answers without walking the bodies: under a quarter of a copper or tin look (iron %.2f us)" % float(timed["iron"]))
 
 	# With running water: the live levels a little over the baked rivers and lakes round both places, dry elsewhere. Both ways read the same
 	# depths, so the same rocks again.

@@ -2993,7 +2993,7 @@ func _init() -> void:
 
 	check(on_bank >= 8, "four cells by a stream get stones along its banks (%d on the bank)" % on_bank)
 	check(in_water == 0, "bank stones are never put in the water")
-	var ore_rocks: int = 0   # copper and tin rocks by the stream (boulders.json ore_rocks, Dave 21 Nov 2026) are laid with the cell too, but they are not bank stones
+	var ore_rocks: int = 0   # copper, tin and iron rocks by the stream (boulders.json ore_rocks, Dave 21 Nov 2026) are laid with the cell too, but they are not bank stones
 
 	for bid in sc._items:
 		var row: Dictionary = sc._items[bid]

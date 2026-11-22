@@ -368,7 +368,7 @@ const BOULDER_KEY := 1 << 50
 const BOULDER_TRIES_MAX := 16          # a cell's boulder keys: the low four bits
 const COPPER_ROCK_FIRST := 8           # boulders take keys 0..7, copper rocks 8..15 (the last the mountain-foot boulder)
 const ORE_ROCK_TRIES := 8              # tries a cell for each ore's rocks (_lay_out_ore_rocks)
-const ORE_KEY := 1 << 52               # copper and tin rocks picked by hand: ORE_KEY | cell x << 28 | cell y << 8 | slot; tin boulders add BOULDER_KEY
+const ORE_KEY := 1 << 52               # copper, tin and iron rocks picked by hand: ORE_KEY | cell x << 28 | cell y << 8 | slot; tin boulders add BOULDER_KEY
 const BOG_STATE := 229            # world-item row state of a bog iron deposit (next free structure state, 10 Nov 2026; no structure may take it)
 const BOG_ID_BASE := 2000000000   # bog deposit world row ids count down from here (int32, far above _next_id), one per deposit key per run
 var _bog_ids: Dictionary = {}     # deposit key "gi,gj" -> its world row id
@@ -7883,7 +7883,8 @@ func _lay_out_cell(cell: Vector2i, cell_m: float, cfg: Dictionary) -> void:
 	part_usec = _cell_part("boulders", part_usec)
 	_lay_out_ore_rocks(cell, cell_m, "copper", reads)
 	_lay_out_ore_rocks(cell, cell_m, "tin", reads)
-	_cell_part("copper and tin rocks", part_usec)
+	_lay_out_ore_rocks(cell, cell_m, "iron", reads)
+	_cell_part("copper, tin and iron rocks", part_usec)
 	_cell_parts[-1] += " (reads bound %.1f, ore bodies %.1f, water %.1f, settling %.1f)" % [float(_ore_usec[0]) / 1000.0, float(_ore_usec[1]) / 1000.0, float(_ore_usec[2]) / 1000.0, float(_ore_usec[3]) / 1000.0]
 
 
@@ -7929,6 +7930,10 @@ func _load_boulders_left(parsed: Dictionary) -> void:
 # What is left of the rock `key` whose laid-out `row` has its total: a worked rock saved at other rates (_boulder_pending) is scaled once by
 # its own kind's rate, so it keeps the share it had (plain stone and ore rocks have different rates since 21 Nov 2026); untouched = its total.
 func _boulder_left_of(key: int, row: Dictionary) -> int:
+	if _boulder_pending.has(key) and bool(row.get("ore_only", false)):
+		_boulder_left[key] = int(_boulder_pending[key][0])   # a river iron rock's total is whole ores, not its rock's weight: kept as saved
+		_boulder_pending.erase(key)
+
 	if _boulder_pending.has(key):
 		var then: Array = _boulder_pending[key]
 		var ore: bool = _holds_ore(row)
@@ -8040,8 +8045,8 @@ func _set_boulder_ore_only(row: Dictionary, ore_name: String, key: int) -> void:
 	row["ore"] = ore_name
 	var own: Dictionary = _boulder_cfg.get(ore_name + "_rocks", {})
 
-	if own.is_empty():
-		return   # iron, coal and the rest: an outcrop without a grade or a size range
+	if own.is_empty() or bool(own.get("outcrops_unchanged", false)):
+		return   # coal, salt and the rest, and iron (its own rule lays only hand stones): an outcrop without a grade or a size range
 
 	var shared: Dictionary = _boulder_cfg.get("ore_rocks", {})   # read in place: _ore_rock_cfg copies, and this runs for every ore boulder
 
@@ -8069,7 +8074,8 @@ func _set_boulder_ore_only(row: Dictionary, ore_name: String, key: int) -> void:
 # - the last try a big boulder at a mountain's foot.
 # A share hand_share of the sizes is a loose ore item picked up by hand (ORE_KEY, kept in _taken like any scatter); the rest are boulder
 # rows with the ore, radius_min..radius_max (0.5 to 2 m across, Dave 17 Nov 2026), broken with a hammer or pick. Slots `slot`.. of the cell: copper 8..15 (BOULDER_KEY, after the cell's
-# boulders), tin 16..23 (ORE_KEY | BOULDER_KEY). Nothing depends on where spawn is.
+# boulders), tin 16..23 (ORE_KEY | BOULDER_KEY) and iron 24..30 (since Dave 21 Nov 2026: commoner by its own chances, half loose stones picked by hand
+# and half small all-ore rocks of two or three ores for a bronze or better pick: iron_rocks sizes). Nothing depends on where spawn is.
 func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dictionary = {}) -> void:
 	var cfg: Dictionary = _ore_rock_cfg(ore)
 	var item: String = str((_boulder_cfg.get("ore", {}).get("items", {}) as Dictionary).get(ore, ""))
@@ -8090,6 +8096,8 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dicti
 	var foot: Dictionary = cfg.get("foot", {})
 	var slot0: int = int(cfg.get("slot", COPPER_ROCK_FIRST))
 	var hand_share: float = float(cfg.get("hand_share", 0.0))
+	var sizes: Array = cfg.get("sizes", [])
+	var ore_stone_kg: float = maxf(CarryRules.weight_of("stone", _carry_cfg) if not _carry_cfg.is_empty() else 1.0, 0.05)
 	var land_p: float = float(cfg.get("chance", 0.0))
 	var coast_p: float = float(cfg.get("water_chance_coast", 0.0))
 	var mountain_p: float = float(cfg.get("water_chance_mountain", coast_p))
@@ -8186,9 +8194,27 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dicti
 		else:
 			radius = lerpf(float(cfg.get("radius_min", 0.25)), float(cfg.get("radius_max", 1.0)), pow(clampf((s - hand_share) / maxf(1.0 - hand_share, 0.01), 0.0, 1.0), float(cfg.get("radius_power", 1.0))))
 
+		# Sizes in whole ores (iron_rocks sizes, Dave 21 Nov 2026: "1 ingot sized iron rocks will be 50% of the stones out there, 30% of them should be
+		# double that size and 20% can be triple sized"): [[share, ores], ...] by the size draw; one ore is a loose stone picked up by hand, more is a
+		# small rock of that many ores' volume (ingot_radius_m for one), all ore, broken with the ore's own pick.
+		var ores_in: int = 0
+
+		if not is_foot and not sizes.is_empty():
+			var acc: float = 0.0
+			ores_in = int((sizes[sizes.size() - 1] as Array)[1])
+
+			for size_row in sizes:
+				acc += float(size_row[0])
+
+				if size_draw < acc:
+					ores_in = int(size_row[1])
+					break
+
+			radius = float(cfg.get("ingot_radius_m", 0.07)) * pow(float(ores_in), 1.0 / 3.0)
+
 		var slot: int = slot0 + attempt
 
-		if s < hand_share and not is_foot:
+		if (ores_in == 1) if ores_in > 0 else (s < hand_share and not is_foot):
 			var loose_key: int = ORE_KEY | cell_bits | slot
 
 			if not _taken.has(loose_key):
@@ -8200,6 +8226,13 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dicti
 		var key: int = (BOULDER_KEY | ((cell.x & 0xfffff) << 24) | ((cell.y & 0xfffff) << 4) | slot) if slot < BOULDER_TRIES_MAX else (ORE_KEY | BOULDER_KEY | cell_bits | slot)
 		var row: Dictionary = {"radius": radius, "yaw": yaw}
 		_set_boulder_ore(row, ore, key)
+
+		if ores_in > 1:
+			row["radius"] = radius   # its own small size, never the shared 0.5 to 2 m clamp
+			row["grade"] = 1.0
+			row["ore_only"] = true
+			row["total"] = ores_in * _ore_cost(item, ore_stone_kg)
+
 		var left: int = _boulder_left_of(key, row)
 
 		if left <= 0:
@@ -8213,7 +8246,7 @@ func _lay_out_ore_rocks(cell: Vector2i, cell_m: float, ore: String, reads: Dicti
 
 
 # An ore's rock rule: boulders.json ore_rocks (shared by copper and tin, Dave 21 Nov 2026) under the ore's own <ore>_rocks (its slot and
-# grade, and any value it sets itself); {} for an ore without its own block (iron, coal: outcrops only).
+# grade, and any value it sets itself); {} for an ore without its own block (coal, salt: outcrops only).
 func _ore_rock_cfg(ore: String) -> Dictionary:
 	var own: Dictionary = _boulder_cfg.get(ore + "_rocks", {})
 
@@ -8325,6 +8358,18 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 	# Dave 19 Nov 2026 (boulders PLAN.md 5): never refused for weight. What fits goes in the pack; the rest drops behind the miner, away from
 	# the rock, at one spot kept for this miner and this rock so the job makes one pile (_overflow_spot: "just drop it right behind them").
 	var held: Dictionary = table.entry(table.id_of(inv.numbers[int(tool[0])]))   # read before the wear: a stone tool that breaks on this blow leaves its slot empty
+
+	# A river iron stone (boulders.json iron_rocks sizes, Dave 21 Nov 2026: "if there are any larger than that they need to be broken down like a
+	# normal rock with a pick bronze or better"): all ore, so a tool that cannot take its ore does not grind it to stone; it is refused, unworn.
+	if bool(info.get("ore_only", false)):
+		var oc: Dictionary = _boulder_cfg.get("ore", {})
+		var cls: String = str(held.get("tool_class", ""))
+		var mats: Array = (oc.get("needs_material", {}) as Dictionary).get(str(info.get("ore", "")), [])
+
+		if ((oc.get("pick_only", []) as Array).has(str(info.get("ore", ""))) and cls != "pick") or not (oc.get("tool_classes", [oc.get("tool_class", "pick")]) as Array).has(cls) or (not mats.is_empty() and not mats.has(str(held.get("material", "")))):
+			_say(peer, "%s needs a bronze or better pick." % table.name_of(table.number_of(str((oc.get("items", {}) as Dictionary).get(str(info.get("ore", "")), "")))))
+			return
+
 	_last_hit[peer] = now
 	_wear_slot(peer, inv, int(tool[0]), "rock")
 	hit_number(peer, it["pos"] + Vector3(0.0, size_now, 0.0), HIT_POINTS * minf(rate, 1.0))
