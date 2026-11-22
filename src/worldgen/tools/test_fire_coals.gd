@@ -117,8 +117,10 @@ func _init() -> void:
 	stored["uid"] = 7905
 	f._chests[7905] = InventoryScript.new(f.table)
 	f._chests[7905].add(f.table.number_of("stick"), 3)
+	f._chests[7905].add(f.table.number_of("stone_knife"), 1, 5)   # a worn tool keeps its wear on the ground
 	run(f, 2.0, 1.0)
 	var spilled: int = 0
+	var knife_wear: int = -1
 
 	for gid in f._items:
 		var g: Dictionary = f._items[gid]
@@ -126,7 +128,11 @@ func _init() -> void:
 		if int(g.get("number", 0)) == f.table.number_of("stick") and not g.has("scatter") and (g["pos"] as Vector3).distance_to(AT) < 2.0:
 			spilled += int(g["count"])
 
+		if int(g.get("number", 0)) == f.table.number_of("stone_knife"):
+			knife_wear = int(g.get("wear", 0))
+
 	check(not f._items.has(905) and not f._chests.has(7905) and spilled == 3, "a cold fire that goes leaves its store's 3 sticks beside it (%d found)" % spilled)
+	check(knife_wear == 5, "and a worn knife from the store keeps its wear (%d)" % knife_wear)
 
 	# 2. A 2-minute stick fire goes straight to cold ash.
 	fire_at(f, 901, ItemsScript.FIRE_STATE_SURVIVAL, {"weak": 120.0})
