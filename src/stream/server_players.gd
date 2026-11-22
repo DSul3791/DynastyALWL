@@ -57,6 +57,7 @@ func set_look(peer: int, char_name: String, body: String, code: String) -> void:
 
 # A name for a Label3D: control characters (newlines, tabs) become spaces, trimmed, at most NAME_MAX.
 static func clean_name(raw: String) -> String:
+	raw = raw.left(NAME_MAX * 4)   # clipped first: a hostile client's very long name costs nothing (the loop below is per character)
 	var out: String = ""
 
 	for i in raw.length():
