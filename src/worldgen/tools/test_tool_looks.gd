@@ -197,7 +197,7 @@ func _init() -> void:
 	# Placeholder looks 5a part 1 (21 Nov 2026): weapons, spears, arrows and bolts drawn from the existing shapes; each names its tier and builds a real mesh.
 	for id in ["iron_shortsword", "steel_shortsword", "iron_greatsword", "steel_greatsword", "steel_rapier", "steel_scimitar", "iron_battleaxe", "steel_battleaxe",
 			"iron_greataxe", "steel_greataxe", "iron_warhammer", "steel_warhammer", "steel_maul", "quarterstaff", "bronze_spear", "iron_spear", "steel_spear", "iron_pike",
-			"iron_halberd", "steel_halberd", "iron_trident", "iron_buckler", "bronze_arrow", "iron_arrow", "steel_arrow", "wooden_bolt", "iron_bolt"]:
+			"iron_halberd", "steel_halberd", "iron_trident", "iron_buckler", "bronze_arrow", "iron_arrow", "steel_arrow", "wooden_bolt", "iron_bolt", "steel_bolt", "iron_lance"]:
 		var row: Dictionary = BasicLook.entry(id)
 		var tier: String = id.get_slice("_", 0)
 		_check(str(row.get("shape", "chunk")) != "chunk", "%s has a shape of its own (%s)" % [id, str(row.get("shape", ""))])
@@ -220,6 +220,10 @@ func _init() -> void:
 		var look: Mesh = BasicLook.mesh_for(id)
 		_check(look != null and look.get_surface_count() > 0, "%s builds a mesh" % id)
 	_check(_mean_colour(BasicLook.mesh_for("steel_greaves")).get_luminance() > _mean_colour(BasicLook.mesh_for("iron_greaves")).get_luminance(), "steel greaves lighter than iron")
+	var light_xbow: Mesh = BasicLook.mesh_for("light_crossbow")
+	var heavy_xbow: Mesh = BasicLook.mesh_for("heavy_crossbow")
+	_check(str(BasicLook.entry("light_crossbow").get("shape", "")) == "crossbow" and light_xbow != null and light_xbow.get_aabb().size.z > 0.25 and light_xbow.get_aabb().size.x > 0.6, "the light crossbow is a stock with a prod across it")
+	_check(heavy_xbow != null and heavy_xbow.get_surface_count() > light_xbow.get_surface_count(), "the heavy crossbow has a steel prod (a metal surface the light one lacks)")
 
 	print("tool looks: %d failures" % failures)
 
