@@ -1163,6 +1163,9 @@ func _on_peer_connected(peer_id: int) -> void:
 	_never_joined = false
 	NetSettings.apply((multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(peer_id))
 	_peers[peer_id] = {"blocks": 0, "bytes": 0, "since": Time.get_ticks_msec()}
+
+	if ranges != null:   # the joining player's ground first: the trail places wait (data/animals/ranges.json hold_after_join_s)
+		ranges.hold_for_join(Time.get_ticks_msec())
 	_queue_mutex.lock()
 	_connected_peers[peer_id] = true
 	_queue_mutex.unlock()
