@@ -100,6 +100,16 @@ func _init() -> void:
 	check(float(fire["burn_left"]) > two_logs + log_s - 60.0 and float(fire["burn_left"]) < two_logs + log_s, "closing counts the third log, less what has burned (%.0f s, two logs %.0f s)" % [float(fire["burn_left"]), two_logs])
 	check(int(fire["state"]) == ItemsScript.FIRE_STATE_BONFIRE, "three logs: the large fire (state %d)" % int(fire["state"]))
 
+	# A second player puts a log in and quits with the fire still open: the log counts, as a close would (it used to sit unburned in the store).
+	f.peer_connected_hello(2, "firestore0002")
+	f.report_position(2, Vector3(0.5, 10.0, 0.0))
+	f.action(2, Net.ACT_ADMIN_GIVE, f.table.number_of("log_beech"), 0, 1, Vector3.ZERO)
+	f.action(2, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+	var three_logs: float = float(fire["burn_left"])
+	f.action(2, Net.ACT_CHEST_PUT, f.inventory_of(2).numbers.find(f.table.number_of("log_beech")), id, 1, Vector3.ZERO)
+	f.peer_left(2)
+	check(float(fire["burn_left"]) > three_logs + log_s - 60.0, "a log put in by a player who quit with the fire open counts (%.0f s, was %.0f s)" % [float(fire["burn_left"]), three_logs])
+
 	# Dave 2 Nov 2026 (QA): three logs lift the fire a tier and it stays there until those logs are gone. One log burned out of three: the
 	# store holds two, and closing it must not drop the bonfire. With the logs gone and three firewood it falls back to the medium fire.
 	var stay_box = f._chests[int(fire["uid"])]

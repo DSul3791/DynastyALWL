@@ -822,6 +822,7 @@ func peer_left(peer: int) -> void:
 	_food_sent.erase(peer)
 	spyglass.erase(peer)
 	spyglass_tier.erase(peer)
+	_sync_fire_from_box(0, int(_chest_viewer.get(peer, 0)))   # a fire left open by one who quit counts the wood they put in, as closing it would
 	_chest_viewer.erase(peer)
 	_bag_edit.erase(peer)
 	_over_cap.erase(peer)
@@ -13903,6 +13904,9 @@ func _chest_action(peer: int, inv, kind: int, a: int, id: int, count: int, targe
 		return
 
 	if kind == Net.ACT_CHEST_OPEN:
+		if int(_chest_viewer.get(peer, 0)) != id:
+			_sync_fire_from_box(0, int(_chest_viewer.get(peer, 0)))   # another window opened over a fire's: that fire counts its wood as on a close
+
 		_chest_viewer[peer] = id
 		var opened: Dictionary = _items.get(id, {})
 
