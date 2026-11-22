@@ -89,6 +89,34 @@ func _init() -> void:
 	a._ice_cache.clear()
 	check(a.ice_edge_spot(150.0, 0.0, "duck") == Vector2(150.0, 0.0), "open water: the flock floats where it was")
 
+	# A flock moved to the open water's edge is never made inside never_within_m of a player (the edge can be nearer than the spot).
+	check(a._near_any(190.0, 0.0, [Vector3(215.0, 10.0, 0.0)], 60.0) and not a._near_any(150.0, 0.0, [Vector3(215.0, 10.0, 0.0)], 60.0), "_near_any: 25 m is near, 65 m is not")
+	cover[0] = 0.6
+	moat_from_x[0] = 188.0
+	a._ice_cache.clear()
+	var stand: Vector3 = Vector3(215.0, 10.0, 0.0)   # a player on the bank past the moat: the moat edge at x 186 is 29 m off
+	a.player_positions = func(): return [stand]
+	var never: float = float(a.cfg.get("never_within_m", 60.0))
+	var born: Dictionary = {}
+
+	for _n in 200:
+		a.tick(0.05)
+
+		for id in a.animals:
+			if not born.has(id):
+				born[id] = a.animals[id]["pos"]
+
+	var nearest: float = INF
+
+	for id in born:
+		nearest = minf(nearest, Vector2(born[id].x - stand.x, born[id].z - stand.z).length())
+
+	check(nearest >= never - 1.0, "nothing is made inside never_within_m by the frozen pond (nearest %.0f m)" % nearest)
+	a.player_positions = func(): return []
+	cover[0] = 0.0
+	moat_from_x[0] = INF
+	a._ice_cache.clear()
+
 	# The players' side: the moat is not ice, and the holes go out nearest first, live ones only.
 	var items = ItemsScript.new()
 	items.game_seconds = func(): return 1000.0
