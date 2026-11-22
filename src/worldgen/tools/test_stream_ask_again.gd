@@ -57,7 +57,10 @@ func _initialize() -> void:
 			break
 		OS.delay_msec(5)
 
+	var near_lost: Vector4i = Vector4i(2, 0, 1, 0)   # a neighbour of block 1, prefetched with it on the lost line
+	check(stream._asked.has(near_lost), "its neighbours were prefetched")
 	check(stream.ask_again_waiting() == 1, "after the line is lost only the block that went out on it is asked again")
+	check(not stream._asked.has(near_lost), "and its lost prefetch is forgotten, so it is prefetched again")
 	var again: Array = stream.take_requests()
 	var again_keys: Array = _keys(again)
 	check(int(again[1]) == 2 and again_keys.slice(0, 2).has(Vector4i(1, 0, 1, 0)) and again_keys.slice(0, 2).has(Vector4i(2, 0, 2, 0)), "both go out once, as urgent, over the game connection (%d urgent)" % int(again[1]))
@@ -88,15 +91,17 @@ func _initialize() -> void:
 		var peer: StreamPeerTCP = null
 		var since: int = Time.get_ticks_msec()
 
-		while Time.get_ticks_msec() - since < 3000 and not link.ready():
+		while Time.get_ticks_msec() - since < 3000 and (not link.ready() or peer == null):
 			if peer == null and server.is_connection_available():
 				peer = server.take_connection()
 
 			link.pump()
 			OS.delay_msec(5)
 
-		check(link.ready() and not link.take_lost_line(), "the line is up and not lost")
-		peer.disconnect_from_host()
+		check(link.ready() and peer != null and not link.take_lost_line(), "the line is up and not lost")
+
+		if peer != null:
+			peer.disconnect_from_host()
 		since = Time.get_ticks_msec()
 
 		while Time.get_ticks_msec() - since < 3000 and link.ready():
@@ -111,7 +116,7 @@ func _initialize() -> void:
 		var kept: Array = []   # the server's end stays open, so only the game's close() ends this line
 		since = Time.get_ticks_msec()
 
-		while Time.get_ticks_msec() - since < 3000 and not quiet.ready():
+		while Time.get_ticks_msec() - since < 3000 and (not quiet.ready() or kept.is_empty()):
 			if server.is_connection_available():
 				kept.append(server.take_connection())
 

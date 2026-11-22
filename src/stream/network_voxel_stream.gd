@@ -407,6 +407,17 @@ func ask_again_waiting() -> int:
 			_unsent[key] = true
 			again.append_array(PackedInt32Array([key.x, key.y, key.z, key.w]))
 
+	# Prefetch the lost line carried never comes either: forget it was asked, so the ground round the player is prefetched again over
+	# the game connection (keys still queued here, or kept as spares, stay asked).
+	var queued: Dictionary = {}
+
+	for k in range(0, _prefetch.size(), 4):
+		queued[Vector4i(_prefetch[k], _prefetch[k + 1], _prefetch[k + 2], _prefetch[k + 3])] = true
+
+	for key in _asked.keys():
+		if not _waiting.has(key) and not _spare.has(key) and not queued.has(key):
+			_asked.erase(key)
+
 	@warning_ignore("integer_division")
 	var count: int = again.size() / 4
 	again.append_array(_outbox)

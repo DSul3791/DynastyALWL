@@ -12,6 +12,7 @@ extends RefCounted
 #   server -> client: i32 x, y, z, lod, then the block bytes
 # Thread safe: send and pump may be called from any thread.
 
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")   # its printer: a print on the game's main thread can flush the log for a second (D-LAG-1)
 const KIND_HELLO := 0
 const KIND_REQUEST := 1
 const CONNECT_MSEC := 3000               # given up (ENet carries the blocks) if not connected by then
@@ -83,7 +84,8 @@ func send_request(keys: PackedInt32Array, urgent: int) -> bool:
 	if _state == 1 and not sent:
 		_state = 2
 		_lost_line = true
-		print("Terrain client: the block line closed; blocks come over the game connection")
+		_tcp.disconnect_from_host()   # closed at our end too, so the server stops sending answers down a line nobody reads
+		FreezeWatchScript.printer.line("Terrain client: the block line closed; blocks come over the game connection")
 
 	_mutex.unlock()
 	return sent
@@ -117,7 +119,7 @@ func pump() -> void:
 	elif status != StreamPeerTCP.STATUS_CONNECTED:
 		_state = 2
 		_lost_line = true
-		print("Terrain client: the block line closed; blocks come over the game connection")
+		FreezeWatchScript.printer.line("Terrain client: the block line closed; blocks come over the game connection")
 	else:
 		var available: int = _tcp.get_available_bytes()
 
