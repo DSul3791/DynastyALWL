@@ -118,6 +118,18 @@ func _init() -> void:
 	check(_walls() == 2 and _site_at(site3 + Vector3(0.0, 0.0, 3.0)) != 0, "blocks 20 m away: the wall is only a site")
 	check(_on_ground("cut_stone_block") == blocks and _have("mortar") == mortar, "setting down the site takes nothing")
 
+	# A friend lands the last hammer blow: the one who laid the blueprint gets the "placed" goal count too (friends building together, 22 Nov 2026).
+	var credit_site: int = _site_at(site3 + Vector3(0.0, 0.0, 3.0))
+	items.peer_connected_hello(2, "buildstockkey2")
+	items.report_position(2, site3)
+	var placed_key: String = items._goal_count_key("placed", "stone_wall")
+	var before_owner: int = int(items._goal_state_of(1)["goal_counts"].get(placed_key, 0))
+	var site_copy: Dictionary = items._items[credit_site].duplicate(true)
+	items._finish_site(2, credit_site)
+	check(int(items._goal_state_of(1)["goal_counts"].get(placed_key, 0)) == before_owner + 1 and int(items._goal_state_of(2)["goal_counts"].get(placed_key, 0)) == 1, "a friend finishing the site: the owner counts it as placed, and so does the friend")
+	items._items[credit_site] = site_copy   # back to a site for the gather checks below
+	items.peer_left(2)
+
 	_check_site_gather(blocks, mortar, site3)
 	_check_group_stock(blocks, mortar, int(wall["number"]), here + Vector3(0.0, 0.0, 40.0))
 	_check_spend_lowest(here + Vector3(0.0, 0.0, 120.0))   # before the refund check, which swaps the real nails group for a stand-in and erases it

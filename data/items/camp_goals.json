@@ -96,7 +96,7 @@
 		{
 			"id": "dry_berries",
 			"title": "Dry berries for winter",
-			"hint": "Dry 3 berries at a time on the drying rack so they keep.",
+			"hint": "Dry berries on the drying rack so they keep: three times, 3 berries each.",
 			"after": [
 				"berries",
 				"drying_rack"
