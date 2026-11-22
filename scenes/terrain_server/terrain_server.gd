@@ -1291,7 +1291,7 @@ func _resume_spot(spot: Vector3) -> Vector3:
 # point are made first.
 func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -> void:
 	# A tile not in memory is never read here on the main thread (about 1 s on Dave's PC, BugsList 108): it is read on a worker, and the
-	# swim, breath and cave pool state stay as last reported until it is in (a report or two later).
+	# swim, breath and cave pool state stay as last reported until it is in (a second or more).
 	if generator.tile_cached(position.x, position.z):
 		var water: Array = _player_water_at(position)
 		items.set_swimming(peer_id, SwimScript.swimming(position.y, water[0], water[1]))
