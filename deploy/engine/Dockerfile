@@ -5,7 +5,6 @@
 # writes into <folder>:
 #   godot                         headless Linux editor: imports and exports the game, and runs the server (deploy/server)
 #   windows_release_x86_64.exe    Windows release template: the players' Dynasty.exe
-#   linux_release_x86_64          headless Linux release template (for a later exported server)
 # The first build takes roughly 45 to 90 minutes of full CPU; Docker keeps every stage, so later builds take seconds.
 FROM ubuntu:24.04 AS source
 RUN apt-get update && apt-get install -y --no-install-recommends ca-certificates git build-essential pkg-config scons python3 \
@@ -20,8 +19,9 @@ WORKDIR /godot
 # Headless Linux: no desktop libraries in the container (the flags of tools/build_godot_linux.sh).
 ENV LINUX_FLAGS="x11=no wayland=no alsa=no pulseaudio=no udev=no dbus=no speechd=no fontconfig=no"
 
-# The three builds run one after another (each stage starts from the one before): run side by side, three -j"$(nproc)" compilers can
-# run Docker Desktop's memory out. Each stage keeps the binaries of the stages before it in bin/.
+# The builds run one after another (each stage starts from the one before): run side by side, two -j"$(nproc)" compilers can
+# run Docker Desktop's memory out. Each stage keeps the binaries of the stage before it in bin/. Docker keeps each finished stage,
+# so a run after a failure starts at the stage that failed (keep the RUN lines above a changed one as they are).
 FROM source AS editor
 RUN scons platform=linuxbsd target=editor $LINUX_FLAGS -j"$(nproc)" && bin/godot.linuxbsd.editor.x86_64 --version
 
@@ -34,10 +34,8 @@ RUN python3 misc/scripts/install_d3d12_sdk_windows.py && rm -rf bin/build_deps/a
     && scons platform=windows target=template_release arch=x86_64 use_mingw=yes d3d12=yes accesskit=no -j"$(nproc)" \
     && ls -l bin/godot.windows.template_release.x86_64.exe
 
-FROM windows AS linux
-RUN scons platform=linuxbsd target=template_release $LINUX_FLAGS -j"$(nproc)" && ls -l bin/godot.linuxbsd.template_release.x86_64
-
+# No Linux release template: nothing uses it yet (the server image runs the editor binary above), and the headless one does not
+# link in 4.7.2 with these flags (undefined RenderingContextDriverVulkan, Lane A 22 Nov 2026). Add it back with the exported server.
 FROM scratch
-COPY --from=linux /godot/bin/godot.linuxbsd.editor.x86_64 /godot
-COPY --from=linux /godot/bin/godot.windows.template_release.x86_64.exe /windows_release_x86_64.exe
-COPY --from=linux /godot/bin/godot.linuxbsd.template_release.x86_64 /linux_release_x86_64
+COPY --from=windows /godot/bin/godot.linuxbsd.editor.x86_64 /godot
+COPY --from=windows /godot/bin/godot.windows.template_release.x86_64.exe /windows_release_x86_64.exe
