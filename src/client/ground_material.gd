@@ -581,7 +581,7 @@ void fragment() {
 	if (worn_earth.x > 0.5 && dist < worn_earth.y) {
 		vec2 run_uv = (world_pos.xz - run_origin) / run_size;
 		if (run_uv.x > 0.0 && run_uv.y > 0.0 && run_uv.x < 1.0 && run_uv.y < 1.0) {
-			worn = textureLod(run_map, run_uv, 0.0).r * (1.0 - lw[0] * cover) * (1.0 - lw[5]) * (1.0 - lying) * (1.0 - smoothstep(worn_earth.y * 0.7, worn_earth.y, dist));
+			worn = textureLod(run_map, run_uv, 0.0).r * (1.0 - lw[0] * cover) * (1.0 - lw[5]) * (1.0 - lying) * (1.0 - puddle) * (1.0 - smoothstep(worn_earth.y * 0.7, worn_earth.y, dist));
 			color = mix(color, mix(color, worn_soil.rgb, worn_earth.w * lw[1]) * worn_earth.z, worn);
 		}
 	}

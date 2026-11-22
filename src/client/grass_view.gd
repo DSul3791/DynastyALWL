@@ -313,6 +313,8 @@ var _run_image: Image = null
 var _run_texture: ImageTexture = null
 var _run_origin: Vector2 = Vector2(INF, INF)
 var _ground_material: ShaderMaterial = null   # the terrain's ground material, for worn earth (set_ground_material)
+var _run_laid: bool = false                   # a route has been laid on the run map at least once (worn earth binds after that)
+var _run_laid_origin: Vector2 = Vector2.ZERO  # the corner the run map texture was last laid at
 var _worn_cfg: Dictionary = {}
 var _run_dirty: bool = false
 var _run_msec: int = 0
@@ -561,9 +563,11 @@ func _rebuild_runs(player: Vector3) -> void:
 
 	_run_image.set_data(RUN_TEXELS, RUN_TEXELS, false, Image.FORMAT_R8, data)
 	_run_texture.update(_run_image)
+	_run_laid_origin = _run_origin   # the corner the texture now holds (the ground gets this one, never a corner the map has not been laid at)
+	_run_laid = _run_laid or texels > 0
 
 	if _ground_material != null:
-		_ground_material.set_shader_parameter("run_origin", _run_origin)
+		_ground_material.set_shader_parameter("run_origin", _run_laid_origin)
 
 	for n in range(_materials.size()):
 		if not _is_solid(n):
@@ -664,7 +668,7 @@ func set_trails_on(on: bool) -> void:
 
 # Whether routes have come and the run map is laid round the player (the worn earth is bound to the ground then).
 func has_runs() -> bool:
-	return _run_texture != null and _run_origin.x != INF and not _run_routes.is_empty()
+	return _run_texture != null and _run_laid
 
 
 # The ground's material (puddles.gd binds it with the worn-trail map): the run map and its corner go to it too, for worn earth on bare ground.
@@ -673,7 +677,7 @@ func set_ground_material(material: ShaderMaterial) -> void:
 	_ground_material = material
 	material.set_shader_parameter("run_map", _run_texture)
 	material.set_shader_parameter("run_size", float(RUN_TEXELS) * RUN_TEXEL_M)
-	material.set_shader_parameter("run_origin", _run_origin)
+	material.set_shader_parameter("run_origin", _run_laid_origin)
 	var c: Dictionary = _worn_config()
 	var soil: Array = c.get("soil_color", [0.16, 0.12, 0.085])
 	material.set_shader_parameter("worn_soil", Vector4(float(soil[0]), float(soil[1]), float(soil[2]), float(c.get("smooth", 0.1))))
