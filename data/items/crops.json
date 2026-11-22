@@ -41,7 +41,8 @@
 			"tool_to_harvest": "sickle",
 			"store": "dry in the sheaf, grain keeps 12 months in a dry store",
 			"sow_seasons": [
-				"spring"
+				"spring",
+				"autumn"
 			]
 		},
 		"barley": {
@@ -179,7 +180,8 @@
 			"tool_to_harvest": "hand",
 			"store": "root cellar: keeps 4 to 5 months cool and dark",
 			"sow_seasons": [
-				"spring"
+				"spring",
+				"summer"
 			]
 		},
 		"potato": {
@@ -244,6 +246,7 @@
 			"store": "root cellar: keeps 4 months",
 			"sow_seasons": [
 				"spring",
+				"summer",
 				"autumn"
 			]
 		},
@@ -276,7 +279,8 @@
 			"tool_to_harvest": "knife",
 			"store": "cellar 3 to 4 months, or salted into a ferment (needs sea salt)",
 			"sow_seasons": [
-				"spring"
+				"spring",
+				"summer"
 			]
 		},
 		"onion": {
@@ -338,7 +342,8 @@
 			"tool_to_harvest": "hand",
 			"store": "dry the pods: keeps 12 months; fresh only a few days",
 			"sow_seasons": [
-				"spring"
+				"spring",
+				"summer"
 			]
 		},
 		"beet": {
@@ -369,7 +374,8 @@
 			"tool_to_harvest": "hand",
 			"store": "root cellar: keeps 4 months",
 			"sow_seasons": [
-				"spring"
+				"spring",
+				"summer"
 			]
 		},
 		"flax": {
