@@ -22318,7 +22318,7 @@ func _is_loose(it: Dictionary) -> bool:
 # `reach_x` scales both distances (building with a better hammer, master s2.1). Station stores come after the containers (master s4 item 10:
 # pack, ground stock, containers, then station inventories).
 func _stock_of(peer: int, from_grid: bool = false, reach_x: float = 1.0) -> Dictionary:
-	var stock: Dictionary = {"boxes": [], "near": []}
+	var stock: Dictionary = {"boxes": [], "near": [], "kitchens": []}
 
 	if not _peer_pos.has(peer):
 		return stock
@@ -22336,6 +22336,7 @@ func _stock_of(peer: int, from_grid: bool = false, reach_x: float = 1.0) -> Dict
 
 	(stock["boxes"] as Array).sort_custom(func(a, b): return [a[3], float(a[2])] < [b[3], float(b[2])])
 	(stock["near"] as Array).sort_custom(func(a, b): return float(a[1]) < float(b[1]))
+	stock["tanks"] = _piped_tanks(stock["kitchens"])
 	return stock
 
 
@@ -22351,6 +22352,8 @@ func _stock_note(stock: Dictionary, sid: int, here: Vector3, key: String, reach_
 	if _is_loose(s):
 		if d <= CraftStock.LOOSE_STOCK_M * reach_x:
 			(stock["near"] as Array).append([sid, d])
+	elif s.has("struct") and not s["struct"].has("site") and bool(_structures.get(str(s["struct"]["kind"]), {}).get("piped_water", false)) and d <= float(_structures[str(s["struct"]["kind"])].get("reach_m", 3.0)) + 1.0:
+		(stock["kitchens"] as Array).append(sid)   # a plumbed cooking station the player stands at (its own reach, as station_near)
 	elif _is_storage(s) and not _smelters.is_smelter(_structures.get(str(s["struct"]["kind"]), {})) and CraftStock.box_counts(str(s["struct"].get("owner", "")), bool(s["struct"].get("keep_out", false)), key, d, CraftStock.CRAFT_REACH_M * reach_x):
 		(stock["boxes"] as Array).append([sid, _chests[int(s["struct"]["uid"])], d, 1 if _keeps_products(str(s["struct"]["kind"])) else 0])
 
@@ -22386,6 +22389,9 @@ func _stock_have(inv, number: int, stock: Dictionary, plain_only: bool = false) 
 
 	for box in stock.get("boxes", []):
 		total += box[1].count_fill(number, plain_only)
+
+	if not plain_only and number == table.number_of("water"):
+		total += floori(_tanks_ml(stock.get("tanks", [])) / float(maxi(table.liquid_unit_ml(number), 1)))
 
 	return total
 
@@ -22443,6 +22449,88 @@ func _stock_take(inv, number: int, want: int, stock: Dictionary, taken_inst: Arr
 
 			_push_box(int(boxes[i][0]), boxes[i][1])   # whoever has that chest open sees it go
 			_dirty = true
+
+	if took < want and not plain_only and number == table.number_of("water"):
+		took += _take_piped_water(number, want - took, stock.get("tanks", []), taken_inst)
+
+	return took
+
+
+# Piped water at the cooking stations (Dave 20 Nov 2026: "we could also plumb into advanced cooking stations so they could draw water from the rain water
+# and pipe system"; coordinator 21-22 Nov, PLUMBING_DESIGN s10, PV-14 PROVISIONAL): a station with structures.json "piped_water" that has a Copper - Tap
+# or an open pipe end within PIPED_WATER_M of it draws from the tank that tap or pipe reaches. The tanks those stations reach, no repeats.
+const PIPED_WATER_M := 2.0
+
+func _piped_tanks(kitchens: Array) -> Array:
+	var tanks: Array = []
+
+	if kitchens.is_empty():
+		return tanks
+
+	for wid in _water_kind:
+		if not _items.has(wid):
+			continue
+
+		var def: Dictionary = _structures.get(str(_water_kind[wid]), {})
+		var points: Array = []
+
+		if str(def.get("use", "")) == "tap":
+			points = [_items[wid]["pos"]]
+		elif str(def.get("hand_laid", "")) == "pipe":
+			points = pipe_ends(_items[wid])
+		else:
+			continue
+
+		var close: bool = false
+
+		for k in kitchens:
+			for point in points:
+				close = close or (point as Vector3).distance_to(_items[int(k)]["pos"]) <= PIPED_WATER_M
+
+		if close:
+			var tank: int = _tap_supply(int(wid))
+
+			if tank >= 0 and not tanks.has(tank):
+				tanks.append(tank)
+
+	return tanks
+
+
+func _tanks_ml(tanks: Array) -> float:
+	var now_s: float = _water_now_s()
+	var ml: float = 0.0
+
+	for tank in tanks:
+		ml += floorf(_water.litres(int(tank), now_s) * 1000.0)
+
+	return ml
+
+
+# Takes up to `want` units of water out of the tanks (nearest list order), as liquid rows a refund pours back into containers (never the stackable item).
+func _take_piped_water(number: int, want: int, tanks: Array, taken_inst: Array) -> int:
+	var unit: int = maxi(table.liquid_unit_ml(number), 1)
+	var now_s: float = _water_now_s()
+	var took: int = 0
+
+	if tanks.is_empty():
+		return 0
+
+	_water_resolve(now_s)   # the tanks' litres are brought to now before any is taken
+
+	for tank in tanks:
+		var held_ml: int = int(floor(_water.litres(int(tank), now_s) * 1000.0))
+		var units: int = mini(want - took, floori(float(held_ml) / float(unit)))
+
+		if units <= 0:
+			continue
+
+		_water.set_litres(int(tank), float(held_ml - units * unit) / 1000.0)
+		taken_inst.append([number, {"liquid_ml": units * unit}, 0, units])
+		took += units
+		_water_dirty = true
+
+		if took >= want:
+			break
 
 	return took
 
@@ -22514,6 +22602,11 @@ func _send_stock(peer: int, poll: bool = false, building: bool = false) -> void:
 
 		if water_units > 0:
 			counts[water_n] = int(counts.get(water_n, 0)) + water_units
+
+	var piped_units: int = floori(_tanks_ml(stock.get("tanks", [])) / float(maxi(table.liquid_unit_ml(table.number_of("water")), 1)))   # the water a plumbed cooking station draws (PV-14)
+
+	if piped_units > 0:
+		counts[table.number_of("water")] = int(counts.get(table.number_of("water"), 0)) + piped_units
 
 	var numbers: PackedInt32Array = PackedInt32Array()
 	var amounts: PackedInt32Array = PackedInt32Array()
