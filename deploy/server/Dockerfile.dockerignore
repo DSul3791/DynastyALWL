@@ -22,4 +22,5 @@ data/admin.json
 worlds/*/record
 worlds/*/setup_cache
 assets/audio/**/*.import
+!assets/audio/CREDITS.csv.import
 assets/animals

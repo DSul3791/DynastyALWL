@@ -852,6 +852,8 @@ Not yet played.
 
 **Cause of the pause (not changed):** Godot builds the world's shaders after the welcome (DIAG-93: with only the shader cache deleted the 25 s freeze came back; with it kept the freeze was gone). An attempt to spread the building over frames (PR #1393) did not shorten it and was closed unmerged.
 
+**22 Nov 2026, renderer:** Windows now uses Vulkan with the d3d12 fallback, and the Windows package bakes its shaders (#1544, dev 8fd7dd8c; coordinator decision under the questions rule). Lane A, six interleaved cold windowed plays on e0c1ef58: longest FREEZE median 7959 ms on Vulkan against 23910 ms on d3d12, ground ready +22.6 s against +48.7 s, running frames the same, picture normal. Not yet played by Dave. The note above still fits the shorter pause.
+
 **As built (PR #1405, reviewed head 6e5bcce5, dev 58d03b3b):** the Joining window shows, in yellow under its steps: "First start on this computer (or after an update): the game is preparing its graphics. Once the server answers, this can take up to about half a minute. The window may stop moving, or Windows may say "Not responding". Please wait: the game is not stuck. Later starts are much quicker." The note shows until a join with the same Godot version, graphics driver, graphics card and game build has reached the ground (user://graphics_prepared.txt), so it returns after an update. While it is up, the window stays until the player has landed, so it is still on screen through the freeze.
 
 **Evidence:**
@@ -1212,7 +1214,7 @@ Not yet played; not yet seen in a picture. The colours, lumps and densities are 
   - Lane B: 291 pass, 0 fail, warnings 381. The join smoke had no slow-tick or lock lines.
 
 **Still open (for after main):**
-- First-sight shader builds on d3d12 (0.5 to 0.9 s): needs a shader warm-up or a renderer choice by Dave.
+- First-sight shader builds on d3d12 (0.5 to 0.9 s): needs a shader warm-up or a renderer choice by Dave. **22 Nov:** the renderer is now Vulkan on Windows (#1544, coordinator decision, see BugsList 93).
 - Single physics steps of 44 to 51 ms, and clock and weather at 31 to 37 ms: small regular hitches.
 - The server can pause in cheap code (goals, the world-item scan) when the PC is busy loading new ground tiles. Tuning thread counts would fix it, but that is too risky now.
 - A server save can hold a tick about 1.2 s while it waits for the previous save to finish writing. The wait is now logged.

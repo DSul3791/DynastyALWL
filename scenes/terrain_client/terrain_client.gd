@@ -1644,6 +1644,7 @@ func _welcome_body(info: Dictionary) -> void:
 		trail_signs.set_routes(bx, bz, decoded)
 	)
 	net.map_block_received.connect(map_knowledge.receive)
+	net.trap_marks_received.connect(map_knowledge.set_traps)   # the snares this character has set, marked on the Map (protocol 150)
 	net.blood_received.connect(animal_view.on_blood)
 	var burrow_view: Node3D = BurrowViewScript.new()      # rabbit burrow mounds (MikeW #236 sends the spots, Kathleen draws them)
 	burrow_view.name = "Burrows"
@@ -2036,21 +2037,26 @@ func _on_dug(center: Vector3, radius: float) -> void:
 
 	var t_edit: int = Probe.start()   # Dave 3 Nov 2026: every hoe click pauses the game; these name the part (HITCH line, frame_probe.gd)
 	var tool: VoxelTool = terrain.get_voxel_tool()
+	var t_note: int = Probe.start()
+	_note_dig(center)   # even on ground not loaded yet: a player rejoining in their own tunnel must not be lifted to the surface
+	Probe.stop("dig: note", t_note)
+
+	if not _edit_area_loaded(tool, center, radius):
+		Probe.stop("dig: ground edit", t_edit)
+		return
+
 	tool.channel = VoxelBuffer.CHANNEL_SDF
 	tool.mode = VoxelTool.MODE_REMOVE
 	tool.do_sphere(center, radius)
 	Probe.stop("dig: ground edit", t_edit)
 	dig_applied += 1
-	var t_note: int = Probe.start()
-	_note_dig(center)
-	Probe.stop("dig: note", t_note)
 
 	if grass != null:
 		var t_grass: int = Probe.start()
 		grass.ground_changed(center, radius)
 		Probe.stop("dig: grass", t_grass)
 
-	print("Terrain client: applied a %.1f m dig at %s; ground value there now %.2f (above 0 is open)" % [
+	FreezeWatchScript.printer.line("Terrain client: applied a %.1f m dig at %s; ground value there now %.2f (above 0 is open)" % [
 		radius, str(center), tool.get_voxel_f(Vector3i(center.round()))
 	])
 
@@ -2064,6 +2070,11 @@ func _on_filled(center: Vector3, radius: float, _material: int) -> void:
 
 	var t_edit: int = Probe.start()
 	var tool: VoxelTool = terrain.get_voxel_tool()
+
+	if not _edit_area_loaded(tool, center, radius):
+		Probe.stop("fill: ground edit", t_edit)
+		return
+
 	tool.channel = VoxelBuffer.CHANNEL_SDF
 	tool.mode = VoxelTool.MODE_ADD
 	tool.do_sphere(center, radius)
@@ -2073,6 +2084,27 @@ func _on_filled(center: Vector3, radius: float, _material: int) -> void:
 		var t_grass: int = Probe.start()
 		grass.ground_changed(center, radius, true)
 		Probe.stop("fill: grass", t_grass)
+
+
+# A dig or fill the server sends for ground this game has not loaded (often far away: the replay of other players' edits) cannot be applied:
+# do_sphere then only prints "Area not editable" with a backtrace, 5,560 of them in Dave's 21 Nov play, each a main-thread print. Such an
+# edit is skipped quietly: _forget_edit already dropped its cached blocks, so they come from the server with the edit in them. Counted, and
+# said on one line every 30 s at most.
+var edits_skipped: int = 0
+var _edits_skipped_said_msec: int = -100000
+
+
+func _edit_area_loaded(tool: VoxelTool, center: Vector3, radius: float) -> bool:
+	if tool.is_area_editable(AABB(center - Vector3.ONE * radius, Vector3.ONE * (2.0 * radius))):
+		return true
+
+	edits_skipped += 1
+
+	if Time.get_ticks_msec() - _edits_skipped_said_msec >= 30000:
+		_edits_skipped_said_msec = Time.get_ticks_msec()
+		FreezeWatchScript.printer.line("Terrain client: %d dig or fill edit(s) so far on ground not loaded here, skipped (its blocks come with the edit)" % edits_skipped)
+
+	return false
 
 
 # Applies the experiment switches (Esc > Advanced); also at start.
@@ -2880,11 +2912,12 @@ func _update_weather() -> void:
 	tw = Probe.start()
 	# Ice on ponds and lakes: a pure function of the clock, zone and altitude (src/shared/ice.gd), so
 	# every client and the server agree with no traffic.
-	# The walkable ice (collider, ice feel bands, sounds) stays exact each second, as before: only the look below uses kept answers. On the
-	# 5 s thaw tick the one season run gives the cover too (the same loop and numbers as IceScript.cover), so it is not walked twice.
+	# The walkable ice (collider, ice feel bands, sounds) takes a fresh answer each second from a worker (_ice_season_now): only the look
+	# below uses kept answers. The one season run gives the cover and the thaw (the same loop and numbers as IceScript.cover).
 	var seed_value: int = int(world.get("master_seed", 0))
-	var thaw_season: Dictionary = IceScript.season(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M, seed_value) if now >= _ice_thaw_next_msec else {}
-	var ice_now: float = float(thaw_season["cover"]) if not thaw_season.is_empty() else IceScript.cover(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M, seed_value)
+	var season_now: Dictionary = _ice_season_now(group, seed_value)
+	var thaw_season: Dictionary = season_now if now >= _ice_thaw_next_msec else {}
+	var ice_now: float = float(season_now["cover"])
 
 	if not thaw_season.is_empty():
 		_ice_memo_put(group, ICE_POND_DEPTH_M, thaw_season)   # the look's 3 m answer for this slot: the same depth, height and game time (FrozenWater.OPEN_DEPTH_M)
@@ -2959,6 +2992,48 @@ var _steam_logged: bool = false
 const ICE_MEMO_GAME_S := 600.0
 const ICE_MEMO_BAND_M := 10.0
 var _ice_memo: Dictionary = {}   # [depth, zone group, seed, height band, game time slot] -> Ice.season
+
+
+# The pond ice for the feel and the look, once a second (BugsList 108: "weather: ice" 8-24 ms in HITCH frames, a hitch every second). Ice.season
+# walks 30 game days hour by hour, so it runs on a worker: each second takes the answer the worker finished (asked about a second earlier;
+# ice grows and melts over game hours, so a second-old cover is the same cover to the step) and asks the next one. The first second, and any
+# second whose worker has not finished, uses the last answer; the very first answer is worked out here, so the walkable ice is never unknown.
+var _ice_task: int = -1
+var _ice_task_out: Dictionary = {}   # written by the worker, read only after it finished
+var _ice_last: Dictionary = {}       # {"cover", "peak"} at the anchor
+var _ice_last_key: Array = []        # [zone group, height band] that answer was asked for
+var _ice_task_key: Array = []        # the same for the task still running
+
+
+func _ice_season_now(group: String, seed_value: int) -> Dictionary:
+	var height: float = maxf(_anchor.y, 0.0)
+	var game_s: float = game_clock.seconds
+	var band: int = int(floorf(height / ICE_MEMO_BAND_M))
+
+	if _ice_task >= 0 and WorkerThreadPool.is_task_completed(_ice_task):
+		WorkerThreadPool.wait_for_task_completion(_ice_task)
+		_ice_task = -1
+
+		if str(_ice_task_key[0]) == group and absi(int(_ice_task_key[1]) - band) <= 1:   # asked for another zone or height: dropped
+			_ice_last = _ice_task_out
+			_ice_last_key = _ice_task_key
+
+	# The first answer, and the first after a new zone or a move of two height bands or more (a teleport, a respawn): worked out here once,
+	# so the step and the look never use another place's ice. A climb into the next band (under 0.1 C of air) waits for the worker.
+	if _ice_last.is_empty() or str(_ice_last_key[0]) != group or absi(int(_ice_last_key[1]) - band) >= 2:
+		_ice_last = IceScript.season(game_s, group, height, ICE_POND_DEPTH_M, seed_value)
+		_ice_last_key = [group, band]
+	elif _ice_task < 0:
+		_ice_task_key = [group, band]
+		_ice_task = WorkerThreadPool.add_task(func() -> void: _ice_task_out = IceScript.season(game_s, group, height, ICE_POND_DEPTH_M, seed_value), true, "pond ice")
+
+	return _ice_last
+
+
+func _finish_ice_task() -> void:
+	if _ice_task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_ice_task)
+		_ice_task = -1
 
 
 func _ice_memo_key(group: String, depth_m: float) -> Array:
@@ -7749,6 +7824,7 @@ func _exit_tree() -> void:
 		crash_report.mark_clean()
 
 	_finish_cache_task()
+	_finish_ice_task()
 	_drain_incoming()
 	if stream != null:
 		stream.close()

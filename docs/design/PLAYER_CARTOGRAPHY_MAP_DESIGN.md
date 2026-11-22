@@ -11,6 +11,8 @@
 5. **Revisiting areas improves the character's existing map accuracy at their improved skill level.** Previously visited areas are not instantly globally redrawn just because a skill value increased; new observation/retracing is meaningful.
 6. **Clean/simple UI**: keep one Journal window (J Index, G Goals, M Map) matching existing Inventory/Crafting look, with the charcoal-styled map artwork as the Map page content. Do not add a second map screen, cluttered minimap, mandatory tooltip series, persistent coordinate/XP overlays, intricate drawing minigame, or an intrusive separate tool panel without the creator's approval.
 
+7. **Trap marks (Dave, 22 Nov 2026):** "if you place a snare it will mark on your map". Each snare and Bird trap the character has set is marked on its own Map (a charcoal noose for a snare, a little cage for a Bird trap) and the mark goes when the trap does. Built in protocol 150 (`trap_marks`, `server_traps.gd marks_of`); marks are rebuilt when a trap is set and at each snare check (30 s). Not yet played.
+
 ## 2. Proposed minimum practical experience (engineering default; verify with creator if it changes gameplay)
 
 - Opening Map for a fresh character shows an **unmapped/blank charcoal-page state**, not a complete terrain atlas. The HUD Goals widget stays unchanged and separate.

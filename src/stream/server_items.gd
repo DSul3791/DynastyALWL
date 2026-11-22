@@ -1033,6 +1033,7 @@ func give(peer: int, number: int, count: int, item_inst: Dictionary = {}, item_w
 
 	if left > 0:
 		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO), item_wear, 0.0, NAN, NAN, "", item_inst)
+		_say(peer, "%s: %d %s dropped at your feet" % ["Too heavy to carry" if fits < count else "Your pack is full", left, table.in_sentence(table.name_of(number))])
 
 	return count - left
 
@@ -1443,7 +1444,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_COOK:
 		_cook(peer, inv, a)
 	elif kind == Net.ACT_SPLIT:
-		_split(inv, a, count)
+		_split(inv, a, count, peer)
 	elif kind == Net.ACT_PROCESS:
 		_process_trunk(peer, inv, a, int(at.x) - 1)   # at.x: the held pack slot + 1 for wood work (protocol 115)
 	elif kind == Net.ACT_MINE:
@@ -7503,8 +7504,8 @@ func _load_world_items() -> void:
 				entry["struct"]["cave"] = row.size() > 13 and bool(row[13])
 				entry["struct"]["coins"] = maxi(int(row[14]), 0) if row.size() > 14 else 0
 
-			if row.size() > 11 and entry["struct"].has("uid") and str(row[9]) != "remains" and str(row[11]) != "":
-				entry["struct"]["owner"] = str(row[11])   # a container's owner (crafting stock); one saved before owners belongs to its first opener
+			if row.size() > 11 and str(row[9]) != "remains" and str(row[11]) != "":
+				entry["struct"]["owner"] = str(row[11])   # the builder (take-down) and a container's owner (crafting stock); a container saved before owners belongs to its first opener, any other piece saved before stays open to all
 
 			if row.size() > 16 and int(row[16]) == 1:
 				entry["struct"]["keep_out"] = true   # the owner keeps it out of crafting and blueprint sites
@@ -10919,13 +10920,14 @@ func peers_near(position: Vector3, radius: float) -> Array:
 
 
 # Splits `count` off a stack into the backpack's first empty slot; a full pack grows a step for it (protocol 116). The stack keeps at least one.
-func _split(inv, slot: int, count: int) -> void:
+func _split(inv, slot: int, count: int, peer: int = -1) -> void:
 	if slot < 0 or slot >= inv.slot_count or inv.numbers[slot] == 0 or count < 1 or count >= inv.counts[slot]:
 		return
 
 	var target: int = inv.make_room()
 
 	if target < 0:
+		_say(peer, "Your pack has no free slot to split into.")
 		return
 
 	inv.numbers[target] = inv.numbers[slot]
@@ -12121,9 +12123,10 @@ func _place_structure(peer: int, inv, slot: int, spot: Vector3, yaw_deg: int, de
 
 	var entry: Dictionary = {"number": table.number_of(str(def["item"])), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": str(def["kind"]), "yaw": float(posmod(yaw_deg, 360))}}
 
+	entry["struct"]["owner"] = str(_peer_key.get(peer, ""))   # the builder: only they take it down (_may_take_down); crafting draws only on the owner's containers (CraftStock.owner_ok)
+
 	if int(def.get("slots", 0)) > 0:
 		entry["struct"]["uid"] = _next_uid
-		entry["struct"]["owner"] = str(_peer_key.get(peer, ""))   # crafting draws only on the owner's containers (CraftStock.owner_ok)
 		_chests[_next_uid] = _new_store(str(def["kind"]))
 		_next_uid += 1
 
@@ -12722,6 +12725,19 @@ func _holds_station(base: Dictionary, def: Dictionary) -> bool:
 	return false
 
 
+# Only the builder takes a placed piece or site down, or an admin in admin mode (coordinator for Dave, 22 Nov 2026: friends must not take each other's
+# houses apart for the materials). A piece with no owner (placed before owners were kept on every piece, or by the world) stays open to anyone.
+func _may_take_down(peer: int, it: Dictionary) -> bool:
+	var owner: String = str(it.get("struct", {}).get("owner", ""))
+	var key: String = str(_peer_key.get(peer, ""))
+
+	if owner == "" or owner == key or (admin_mode_on.is_valid() and bool(admin_mode_on.call(peer))):
+		return true
+
+	var lock: Dictionary = _lock_of(it)   # a locked container: a player the owner let in may take it down too (s3.13 locked-crate movement rule)
+	return not lock.is_empty() and key != "" and ((lock.get("ok", []) as Array).has(key) or (lock.get("allow", []) as Array).has(key))
+
+
 # Taking a structure down (E near it) gives its kit back. A chest with things in it cannot be taken down.
 func _take_down(peer: int, inv, id: int) -> void:
 	var it: Dictionary = _items.get(id, {})
@@ -12732,6 +12748,10 @@ func _take_down(peer: int, inv, id: int) -> void:
 	_kiln_lit_by.erase(id)   # a kiln taken down forgets who lit it (ADD-18)
 
 	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+	if not _may_take_down(peer, it):
+		_say(peer, "Only the one who built it can take it down.")
+		return
 
 	if str(def.get("opening", "")) != "" and str(def.get("attach_to", "")) != PlacementRules.DOOR_ATTACH and PlacementRules.door_at(_structures_cfg, it["pos"], _foundation_rows()):
 		_say(peer, "Take the door out first.")   # a doorway frame, built or still a site, never leaves its door hanging in the air (BUGLIST-002)
@@ -12790,6 +12810,7 @@ func _take_down(peer: int, inv, id: int) -> void:
 		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], true):
 			return
 	elif inv.add(table.number_of(str(def["kit"])), 1, int(it.get("wear", 0))) > 0:
+		_say(peer, "Make room in your pack first.")
 		return      # a placed torch comes back as its torch, unmarked: lit in the hand when it is pulled out again (only a pack at MAX_SLOTS refuses)
 
 	if it["struct"].has("roof") and roof_remove.is_valid():
@@ -12871,7 +12892,11 @@ func _use_struct(peer: int, inv, id: int, choice: int = 0, held_slot: int = -1) 
 		return
 
 	if str(def.get("use", "")) == "unpile":
-		# A rock pile gives back all the stones it was made of (what does not fit in the pack lies on the ground).
+		# A rock pile gives back all the stones it was made of (what does not fit in the pack lies on the ground). Only its builder unpiles it.
+		if not _may_take_down(peer, it):
+			_say(peer, "Only the one who built it can take it down.")
+			return
+
 		var was_src: String = _gain_source
 		_gain_source = SRC_RETURN
 		give(peer, table.number_of("stone"), int(def.get("stones", 90)))
@@ -13942,6 +13967,10 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 	inv.take_from_slot(a, amount - left)
 	_dirty = true
 
+	if amount > 0 and left == amount and id >= 0:
+		_say(peer, "The %s is full." % table.in_sentence(table.name_of(int(_items[id]["number"]))))
+		_reject(peer, 2)
+
 	if amount > left and id >= 0:
 		if bool(_structures.get(kind, {}).get("lockable", false)):
 			_goal_event_act(peer, "stored_item")   # ADD-13: once per act (Store all and a view deposit put many stacks); items went into a chest or crate (structures.json lockable: the chests and crates), not a fire, smelter, kiln or bin
@@ -13972,7 +14001,12 @@ func _box_take(peer: int, inv, chest, a: int, count: int, weighed: bool = false)
 
 		return 0
 
+	var asked: int = amount
 	amount = amount if weighed else _fit(peer, inv, number, amount, held_inst)   # a full bag weighs with its contents
+
+	if amount < asked:
+		_say(peer, "Too heavy to carry any more" if amount == 0 else "Too heavy: you took %d of %d" % [amount, asked])
+
 	var left: int = inv.add(number, amount, held_wear, held_inst)
 	chest.take_from_slot(a, amount - left)
 	_dirty = true
@@ -14513,11 +14547,13 @@ func _bed_landing(bed: Vector3) -> Vector3:
 	var r: float = float(cfg.get("landing_m", 1.2))
 	var max_r: float = float(cfg.get("search_m", 3.0))
 
+	var rows: Array = _foundation_rows()   # a bed in a house: the player lands on the floor beside it, not inside the slab at the generated ground
+
 	while r <= max_r + 0.001:
 		for k in 8:
 			var a: float = TAU * float(k) / 8.0
 			var spot: Vector3 = bed + Vector3(cos(a) * r, 0.0, sin(a) * r)
-			var ground: float = float(ground_height.call(spot.x, spot.z)) if ground_height.is_valid() else bed.y
+			var ground: float = _remains_surface(spot, rows) if ground_height.is_valid() else bed.y
 
 			if not is_nan(ground) and absf(ground - bed.y) < 2.0 and not _blocked_spot(spot, bed):
 				return Vector3(spot.x, ground + 0.1, spot.z)
@@ -15457,6 +15493,11 @@ func position_of(peer: int) -> Variant:
 
 func key_of(peer: int) -> String:
 	return str(_peer_key.get(peer, ""))
+
+
+# The Map's marks for the traps this peer's character has set (server_traps.gd marks_of, protocol 150): [[x, z, kind], ...].
+func trap_marks(peer: int) -> Array:
+	return _traps.marks_of(key_of(peer)) if _traps != null else []
 
 
 func stance_of(peer: int) -> int:
@@ -16920,13 +16961,14 @@ func kill(peer: int, cause: String) -> bool:
 	var pos: Vector3 = _peer_pos[peer]
 	var ground: float = float(ground_height.call(pos.x, pos.z)) if ground_height.is_valid() else NAN
 	var cave: bool = not is_nan(ground) and pos.y < ground - 1.5   # underground: keep the spot, the surface above is not theirs
-	var spot: Vector3 = pos if (is_nan(ground) or cave) else Vector3(pos.x, ground, pos.z)
-	_trim_owner_remains(key, peer)
+	var spot: Vector3 = pos if (is_nan(ground) or cave) else Vector3(pos.x, _remains_surface(pos, _foundation_rows()), pos.z)   # on the floor they stood on, or the ground as dug
+	_trim_owner_remains(key)
 	var uid: int = _next_uid
 	_next_uid += 1
 	var chest = InventoryScript.new(table)
 	chest.from_json_array(inv.to_json_array())
 	_chests[uid] = chest
+	var remains_id: int = _next_id
 	_items[_next_id] = {"number": table.number_of("remains"), "count": 1, "pos": spot, "left": 1.0e9, "struct": {"kind": "remains", "yaw": float(randi() % 360), "uid": uid, "owner": key, "born": _unix(), "cave": cave, "coins": coins_of(peer)}}   # luck-exempt: a body's facing
 	_next_id += 1
 	inv.from_json_array(InventoryScript.new(table).to_json_array())
@@ -16967,13 +17009,12 @@ func kill(peer: int, cause: String) -> bool:
 	if not novice_grace(peer):
 		_characters[key]["final_death_pending"] = true   # real death: the remains stay; the new-character / heir flow is not built, so the character still comes back below
 
-		if send_final_death.is_valid():
+		# Only with real death on: the screen's one button deletes the character, so a respawning character must never see it.
+		if bool(_death_cfg.get("real_death", false)) and send_final_death.is_valid():   # the character does not come back (Dave's cards pending: off by default)
 			send_final_death.call(peer, cause)
-
-			if bool(_death_cfg.get("real_death", false)):   # the character does not come back (Dave's cards pending: off by default)
-				_characters[key]["dead"] = true
-				_dirty = true
-				return true
+			_characters[key]["dead"] = true
+			_dirty = true
+			return true
 
 	var back: Vector3 = respawn_for(peer, true)
 	_peer_pos[peer] = back
@@ -16989,39 +17030,44 @@ func kill(peer: int, cause: String) -> bool:
 	if back != respawn_point:
 		_say(peer, "You come back at your shelter")
 
+	if _items.has(remains_id) and _remains_hold(_items[remains_id]):   # the set made above: a new player has no shelter and must be told where their things went
+		_say(peer, "Your things are on your remains where you fell. A marker shows the way.")
+
 	return true
 
 
-# One character cannot litter the world: with per_owner_cap sets already out, the emptiest-then-oldest goes first to make room for the new one.
-func _trim_owner_remains(key: String, peer: int = -1) -> void:
+# One character cannot litter the world: with per_owner_cap sets already out, the oldest empty set goes first to make room for the new one.
+# Remains that still hold anything (an item or coins) are never removed to make room (Dave: no ground-item cap; coordinator 22 Nov 2026), so a player may have more.
+func _trim_owner_remains(key: String) -> void:
 	var cap: int = int(_death_cfg.get("per_owner_cap", 5))
 	var mine: Array = []
+	var empty: Array = []
 
 	for id in remains_ids():
 		if str(_items[id]["struct"].get("owner", "")) == key:
 			mine.append(id)
 
-	while mine.size() >= cap and cap > 0:
-		var drop: int = -1
+			if not _remains_hold(_items[id]):
+				empty.append(id)
 
-		for id in mine:
-			var chest = _chests.get(int(_items[id]["struct"].get("uid", 0)))
-			var empty: bool = chest == null or chest.is_empty()
-			var older: bool = drop < 0 or float(_items[id]["struct"].get("born", 0.0)) < float(_items[drop]["struct"].get("born", 0.0))
-			var drop_empty: bool = drop >= 0 and (_chests.get(int(_items[drop]["struct"].get("uid", 0))) == null or _chests[int(_items[drop]["struct"].get("uid", 0))].is_empty())
+	while mine.size() >= cap and cap > 0 and not empty.is_empty():
+		var drop: int = empty[0]
 
-			if drop < 0 or (empty and not drop_empty) or (empty == drop_empty and older):
+		for id in empty:
+			if float(_items[id]["struct"].get("born", 0.0)) < float(_items[drop]["struct"].get("born", 0.0)):
 				drop = id
-
-		var lost_chest = _chests.get(int(_items[drop]["struct"].get("uid", 0)))
-
-		if peer >= 0 and lost_chest != null and not lost_chest.is_empty():
-			_say(peer, "Your oldest remains crumble to make room. What was on them is lost.")
 
 		_chests.erase(int(_items[drop]["struct"].get("uid", 0)))
 		_items.erase(drop)
 		mine.erase(drop)
+		empty.erase(drop)
 		_dirty = true
+
+
+# Whether a set of remains still holds something: an item on them or the purse's coins (kept apart in struct.coins).
+func _remains_hold(it: Dictionary) -> bool:
+	var chest = _chests.get(int(it["struct"].get("uid", 0)))
+	return (chest != null and not chest.is_empty()) or int(it["struct"].get("coins", 0)) > 0
 
 
 # The owner's death markers (protocol 39): every set of their remains that still holds something, with the seconds until it is cleaned up.
@@ -17035,9 +17081,7 @@ func _remains_rows(key: String) -> Array:
 		if str(it["struct"].get("owner", "")) != key:
 			continue
 
-		var chest = _chests.get(int(it["struct"].get("uid", 0)))
-
-		if chest == null or chest.is_empty():
+		if not _remains_hold(it):
 			continue
 
 		rows.append([it["pos"], maxi(int(gone_s - (_unix() - float(it["struct"].get("born", 0.0)))), 0)])
@@ -17076,12 +17120,15 @@ func _remains_tick(spent: float) -> void:
 	for peer in _peer_key:
 		_sync_remains(peer, false)
 
+	var rows: Array = []   # [_foundation_rows()] once some remains need it
+
 	for id in remains_ids():
 		var it: Dictionary = _items[id]
 
 		if _unix() - float(it["struct"].get("born", 0.0)) >= gone_s:
 			_chests.erase(int(it["struct"].get("uid", 0)))
 			_items.erase(id)
+			_remains_settled.erase(id)
 			_dirty = true
 			continue
 
@@ -17090,9 +17137,37 @@ func _remains_tick(spent: float) -> void:
 
 		var ground: float = float(ground_height.call(it["pos"].x, it["pos"].z))
 
-		if not is_nan(ground) and absf(ground - it["pos"].y) > 0.25:
-			it["pos"].y = ground
+		var settled: Array = _remains_settled.get(id, [])
+
+		if is_nan(ground) or absf(ground - it["pos"].y) <= 0.25 or (settled.size() == 2 and is_equal_approx(float(settled[0]), float(it["pos"].y)) and _unix() - float(settled[1]) < REMAINS_SETTLE_S):
+			continue   # on the generated ground, or found resting here lately (the floor and edits scan runs every REMAINS_SETTLE_S per set, not every tick)
+
+		if rows.is_empty():
+			rows = [_foundation_rows()]   # read once a tick, and only when some remains are off the generated ground (on a floor, in a dug spot)
+
+		var floor_rows: Array = rows[0]
+		var surface: float = _remains_surface(it["pos"], floor_rows)
+
+		if not is_nan(surface) and absf(surface - it["pos"].y) > 0.25:
+			it["pos"].y = surface
 			_dirty = true
+
+		_remains_settled[id] = [float(it["pos"].y), _unix()]
+
+
+const REMAINS_SETTLE_S := 600.0   # remains off the generated ground are looked at again this often: a floor taken down or a fill dug away lets them settle
+var _remains_settled: Dictionary = {}   # remains world id -> [the y the recheck found them resting at, unix time] (memory only)
+
+
+# Where remains rest at `pos` (a point a little above or below the surface): the top of a foundation or floor within reach of it (a death in a house is
+# not buried under the slab), else the ground as dug and filled. `rows` is _foundation_rows().
+func _remains_surface(pos: Vector3, rows: Array) -> float:
+	var top: float = PlacementRules.support_top(_structures_cfg, pos, rows, true)
+
+	if not is_nan(top):
+		return top
+
+	return _edited_height(pos.x, pos.z, (edits_near.call(pos, 4.0) if edits_near.is_valid() else []) as Array)
 
 
 # --- Fall damage (job 62) ---
@@ -23017,12 +23092,13 @@ func _view_take(peer: int, inv, vid: int, number: int, count: int) -> void:
 				break
 
 			if int(row[1].numbers[slot]) == number:
+				var asked: int = mini(left, int(row[1].counts[slot]))
 				var took: int = _box_take(peer, inv, row[1], slot, left)
 				left -= took
 				took_here = took_here or took > 0
 
-				if took == 0:
-					left = 0   # the pack, the carry limit or the shoulder is full: stop rather than try every slot
+				if took < asked:
+					left = 0   # the pack, the carry limit or the shoulder is full (and said so once): stop rather than try every slot
 
 		if took_here:
 			_push_box(int(row[0]), row[1])
@@ -23612,6 +23688,20 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 	var entries: Array = queue["entries"]
 	var merge: bool = not entries.is_empty() and int(entries[entries.size() - 1][0]) == recipe_number and not (entries[entries.size() - 1][2] as Array).is_empty() and (entries[entries.size() - 1].size() < 5 or int(entries[entries.size() - 1][4]) == 0) and _variant_of(entries[entries.size() - 1]) == variant
 
+	var want: int = clampi(count, 1, CRAFT_QUEUE_MAX_COUNT)
+
+	if merge:   # an entry holds at most CRAFT_QUEUE_MAX_COUNT: what does not fit it starts a new entry, or (a full queue) only its room is queued
+		var room: int = CRAFT_QUEUE_MAX_COUNT - int(entries[entries.size() - 1][1])
+
+		if room < want and entries.size() < CRAFT_QUEUE_ENTRIES:
+			merge = false
+		elif room <= 0:
+			_say(peer, "The crafting queue is full")
+			return
+		elif room < want:
+			want = room
+			_say(peer, "Only room for %d more in the queue" % room)
+
 	if entries.size() >= CRAFT_QUEUE_ENTRIES and not merge:
 		_say(peer, "The crafting queue is full")
 		return
@@ -23622,7 +23712,7 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 	for need in recipe["needs"]:
 		held.append([])
 
-	for n in range(clampi(count, 1, CRAFT_QUEUE_MAX_COUNT)):
+	for n in range(want):
 		if not _stock_covers(inv, recipe, 1, stock):
 			break
 
@@ -23635,11 +23725,11 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 		_say(peer, "You do not have what that needs")
 		return
 
-	if taken < clampi(count, 1, CRAFT_QUEUE_MAX_COUNT):
+	if taken < want:
 		_say(peer, "You only have enough for %d" % taken)
 
 	if merge:
-		entries[entries.size() - 1][1] = mini(int(entries[entries.size() - 1][1]) + taken, CRAFT_QUEUE_MAX_COUNT)
+		entries[entries.size() - 1][1] = int(entries[entries.size() - 1][1]) + taken   # want kept it within CRAFT_QUEUE_MAX_COUNT
 		_hold_insts(entries[entries.size() - 1][2], held)
 	else:
 		var needs: Array = recipe["needs"].duplicate(true)
