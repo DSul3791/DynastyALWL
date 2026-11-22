@@ -3539,7 +3539,7 @@ static func raised_cistern() -> Node3D:
 # --- Item system C2 stations (item_system.md draft 7, Jamie's #934, 10 Nov 2026). Free-placed on the footprint in structures.json, standing on y = 0,
 # the working side toward +Z (the front of every station here, as the forges). Each is solid over its footprint.
 
-# The Kiln, 1.6 x 1.6: one brick beehive kiln (30 Brick, 8 Clay, 4 Clay mortar). A square brick base with a stone sill, a brick dome over it with a
+# The Kiln, 1.6 x 1.6 (the Improved and Advanced kilns; the Primitive kiln has its own model, inventory_view._make_primitive_kiln): one brick beehive kiln (30 Brick, 8 Clay, 4 Clay mortar). A square brick base with a stone sill, a brick dome over it with a
 # short chimney, the arched firing mouth low at the front and a stoke hole above it, both sooted.
 static func kiln() -> Node3D:
 	_tier_materials()

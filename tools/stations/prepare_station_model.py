@@ -1,20 +1,20 @@
 #!/usr/bin/env python3
-"""Turn Dave's Improved smithy model into the game's mesh (Dave 21 Nov 2026: a better model for the Improved smithy, "sized so it fits in 3/4 of
-the width of a foundation").
+"""Turn one of Dave's baked station models into the game's mesh: the Improved smithy (Dave 21 Nov 2026, "sized so it fits in 3/4 of the
+width of a foundation") and the Primitive kiln (Dave 21 Nov 2026, "sized so its longest side is a minimum 2.74 meters").
 
-His file is one baked mesh of about 150,000 triangles with three 4096 textures: the forge with its chimney, a bellows on the left, the anvil on
-a stump in front and a work bench on the right, all on a flagstone floor (+Y up, the fire opening toward +Z). This:
+Each file is one baked mesh (+Y up, the fire opening toward +Z) with three 4096 textures. This:
 
-1. Cuts it to about 37,000 triangles with meshoptimizer (tools/stations/simplify_mesh.mjs), keeping every texture seam: a cut to 15,000 smeared
-   the coals' orange across the stone, because the texture is many small islands.
-2. Scales it to WIDTH_M across (3/4 of a 4 m foundation), its floor on y 0 and centred on the pivot, in metres, so the game uses it as it is.
-3. Takes the painted coals out of the colour (dark ash in their place) and puts them in an emission texture, so the game can make them cold, glow
-   red or flare (BuildingLook.forge_state: Dave 21 Nov 2026, "red coals when idle and flare really bright while making stuff").
-   The coals are the orange paint on the triangles in the hearth (HEARTH box), nothing else.
+1. Cuts it with meshoptimizer (tools/stations/simplify_mesh.mjs), keeping every texture seam: the textures are many small islands, and a cut
+   across a seam smeared the smithy's coals' orange over its stone.
+2. Scales it so its size along one axis is the station's metres, its floor on y 0 and centred on the pivot, so the game uses it as it is.
+3. Takes the painted coals or embers out of the colour (dark ash in their place) into an emission texture, so the game can make them cold or
+   glowing (BuildingLook.forge_state for the smithy, inventory_view._make_primitive_kiln for the kiln). The coals are the hot paint on the
+   triangles in the station's hearth box, nothing else.
 4. Scales the textures to 2048 and makes the material one-sided (Cast Shadow On, not Double-Sided: Dave's mesh rule).
 5. Adds empty "Fire" (on the coals) and "Smoke" (the chimney top) nodes, which inventory_view._forge_glb hangs the light, flames and smoke on.
 
-Usage: python3 -I tools/stations/prepare_improved_smithy.py SOURCE.glb assets/stations/improved_smithy.glb --node-modules DIR
+Usage: python3 -I tools/stations/prepare_station_model.py STATION SOURCE.glb OUT.glb --node-modules DIR
+STATION is a key of STATIONS (improved_smithy -> assets/stations/improved_smithy.glb, primitive_kiln -> assets/stations/primitive_kiln.glb).
 DIR is a folder whose node_modules holds meshoptimizer 0.25.0 (npm i meshoptimizer@0.25.0 in it). Needs numpy and Pillow, and node.
 Writes OUT.glb, its .import and its four textures as OUT_<texture>.png with their .import files (VRAM Compressed), as tools/hair/prepare_hair.py.
 """
@@ -33,32 +33,51 @@ from PIL import Image, ImageDraw, ImageFilter
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "hair"))
 from prepare_hair import Glb, write_imports  # noqa: E402  (the same reader and import files as the hair)
 
-WIDTH_M = 3.0                 # Dave: 3/4 of the width of a foundation (log and brick foundations are 4 m)
-TARGET_TRIANGLES = 15000      # asked of the simplifier; the seams stop it at about 37,000
-MAX_ERROR = 0.05              # the simplifier's limit, a share of the model's size
 TEXTURE_SIZE = 2048
-HEARTH = ((-0.28, 0.28), (-0.2, 0.12), (-0.45, 0.1))   # the hearth in Dave's units (x, y, z ranges): the triangles (by their middle) whose paint may be coals
-FIRE_AT = (0.02, -0.07, -0.15)    # the coal bed's middle, Dave's units
-SMOKE_AT = (0.0, 0.53, -0.30)     # the chimney's top, Dave's units
-ASH = 0.3                     # the colour left where coals were painted: their brightness times this, greyed (cold ash)
+ASH = 0.3   # the colour left where coals were painted: their brightness times this, greyed (cold ash)
+
+# Per station. Boxes and points are in Dave's units (x, y, z). fit: (axis, metres) the model is scaled to. target: triangles asked of the
+# simplifier (the seams stop it higher). hearth: the triangles (by their middle) whose paint may be coals. hot: (k, s) of coal_strength.
+STATIONS = {
+    "improved_smithy": {
+        "node": "Smithy", "material": "ImprovedSmithy",
+        "fit": (0, 3.0),                     # 3 m wide: 3/4 of a 4 m log or brick foundation
+        "target": 15000, "max_error": 0.05,  # stops at about 37,000
+        "hearth": ((-0.28, 0.28), (-0.2, 0.12), (-0.45, 0.1)),
+        "fire": (0.02, -0.07, -0.15),        # the coal bed's middle
+        "smoke": (0.0, 0.53, -0.30),         # the chimney's top
+        "hot": (1.2, 0.8),
+    },
+    "primitive_kiln": {
+        "node": "Kiln", "material": "PrimitiveKiln",
+        "fit": (2, 2.74),                    # its length, the longest side: Dave's minimum, 2.74 m
+        "target": 15000, "max_error": 0.05,  # stops at about 20,000
+        "hearth": ((-0.24, 0.24), (-0.345, -0.06), (-0.75, 0.95)),   # the charcoal bed along the tunnel's floor
+        "fire": (0.0, -0.27, 0.6),           # the embers' middle, inside the mouth
+        "smoke": (0.0, 0.34, -0.75),         # the chimney's top, at the back
+        "hot": (1.75, 0.4),                  # stricter than the smithy's: the kiln's clay is orange too, its embers redder and brighter
+    },
+}
 
 Image.MAX_IMAGE_PIXELS = None
 
 
-def coal_strength(colour, hearth_mask):
-    """0 to 1 per texel: how much of the paint is glowing coal (orange to yellow, red well above green, little blue), inside the hearth's islands."""
+def coal_strength(colour, hearth_mask, k, s):
+    """0 to 1 per texel: how much of the paint is glowing coal (red well above k times the green, blue under s times the red), inside the hearth's islands."""
     c = np.asarray(colour, np.float32)
     r, g, b = c[..., 0], c[..., 1], c[..., 2]
-    hot = np.clip((r - 1.2 * g) / 25.0, 0.0, 1.0) * np.clip((r - 40.0) / 40.0, 0.0, 1.0) * np.clip((r * 0.8 - b) / 20.0, 0.0, 1.0)
+    hot = np.clip((r - k * g) / 25.0, 0.0, 1.0) * np.clip((r - 40.0) / 40.0, 0.0, 1.0) * np.clip((r * s - b) / 20.0, 0.0, 1.0)
     return hot * hearth_mask
 
 
 def main():
     ap = argparse.ArgumentParser()
+    ap.add_argument("station", choices=sorted(STATIONS))
     ap.add_argument("source")
     ap.add_argument("out")
     ap.add_argument("--node-modules", required=True)
     args = ap.parse_args()
+    st = STATIONS[args.station]
 
     src = Glb(args.source)
     prim = src.j["meshes"][0]["primitives"][0]
@@ -81,7 +100,7 @@ def main():
         # An ES module finds its packages from where it lies, so the script is run from a copy in the folder that holds node_modules.
         local = os.path.join(os.path.abspath(args.node_modules), "simplify_mesh.mjs")
         open(local, "w").write(open(script).read())
-        report = subprocess.run(["node", local, *files, str(TARGET_TRIANGLES), str(MAX_ERROR)], check=True, capture_output=True, text=True).stdout
+        report = subprocess.run(["node", local, *files, str(st["target"]), str(st["max_error"])], check=True, capture_output=True, text=True).stdout
         print("simplified:", report.strip())
         kept = np.fromfile(files[3], np.uint32).reshape(-1, 3)
 
@@ -91,16 +110,17 @@ def main():
     middles = pos[kept].mean(axis=1)
     inside = np.ones(len(kept), bool)
 
-    for axis, (low, high) in enumerate(HEARTH):
+    for axis, (low, high) in enumerate(st["hearth"]):
         inside &= (middles[:, axis] >= low) & (middles[:, axis] <= high)
 
     hearth_tris = kept[inside]
     other_tris = kept[~inside]
     pos, nor, uv, kept = pos[used], nor[used], uv[used], remap[kept].astype(np.uint32)
 
-    # 2. Size and place: WIDTH_M across, floor on 0, centred.
+    # 2. Size and place: the fit's metres along its axis, floor on 0, centred.
     lo, hi = pos.min(0), pos.max(0)
-    scale = WIDTH_M / float(hi[0] - lo[0])
+    axis, metres = st["fit"]
+    scale = metres / float(hi[axis] - lo[axis])
     shift = np.array([-(lo[0] + hi[0]) * 0.5, -lo[1], -(lo[2] + hi[2]) * 0.5], np.float32)
     place = lambda p: ((np.asarray(p, np.float32) + shift) * scale).astype(np.float32)
     out_pos = place(pos)
@@ -123,7 +143,7 @@ def main():
 
     # ... but never a texel another part of the model is painted with (the bench and the bellows have islands beside the hearth's).
     hearth = (np.asarray(mask, np.float32) / 255.0) * (np.asarray(others) == 0)
-    hot = coal_strength(colour, hearth)[..., None]
+    hot = coal_strength(colour, hearth, *st["hot"])[..., None]
     c = np.asarray(colour, np.float32)
     ash = np.repeat(c.mean(axis=2, keepdims=True) * ASH, 3, axis=2) * np.array([1.0, 0.95, 0.9], np.float32)
     base = np.clip(c * (1.0 - hot) + ash * hot, 0, 255).astype(np.uint8)
@@ -141,14 +161,14 @@ def main():
         "texture_0_metallic_roughness": png(src.image(tex_of["texture_0_metallic_roughness"]).convert("RGB").resize((TEXTURE_SIZE, TEXTURE_SIZE), Image.LANCZOS)),
         "emissive": png(Image.fromarray(emission)),
     }
-    write_glb(args.out, out_pos, nor, uv, kept, pngs, place(FIRE_AT), place(SMOKE_AT))
+    write_glb(args.out, out_pos, nor, uv, kept, pngs, place(st["fire"]), place(st["smoke"]), st["node"], st["material"])
     write_imports(args.out, pngs)
     size = out_pos.max(0) - out_pos.min(0)
     print("written %s: %d triangles, %.2f x %.2f x %.2f m (w x h x d), fire %s, smoke %s" % (args.out, len(kept), size[0], size[1], size[2],
-                                                                                         place(FIRE_AT).round(3).tolist(), place(SMOKE_AT).round(3).tolist()))
+                                                                                         place(st["fire"]).round(3).tolist(), place(st["smoke"]).round(3).tolist()))
 
 
-def write_glb(path, pos, nor, uv, tris, pngs, fire, smoke):
+def write_glb(path, pos, nor, uv, tris, pngs, fire, smoke, node, material):
     blobs = []
     views = []
 
@@ -171,11 +191,11 @@ def write_glb(path, pos, nor, uv, tris, pngs, fire, smoke):
     names = ["normal", "texture_0", "texture_0_metallic_roughness", "emissive"]   # each becomes OUT_<name>.png on import
     images = [{"name": n, "mimeType": "image/png", "bufferView": add(pngs[n])} for n in names]
     doc = {
-        "asset": {"version": "2.0", "generator": "Dynasty tools/stations/prepare_improved_smithy.py"},
+        "asset": {"version": "2.0", "generator": "Dynasty tools/stations/prepare_station_model.py"},
         "scene": 0, "scenes": [{"nodes": [0, 1, 2]}],   # all at the top, where inventory_view._forge_glb looks for Fire and Smoke (as in Dave's forges)
-        "nodes": [{"name": "Smithy", "mesh": 0}, {"name": "Fire", "translation": [float(v) for v in fire]}, {"name": "Smoke", "translation": [float(v) for v in smoke]}],
-        "meshes": [{"name": "Smithy", "primitives": [{"attributes": {"POSITION": 0, "NORMAL": 1, "TEXCOORD_0": 2}, "indices": 3, "material": 0}]}],
-        "materials": [{"name": "ImprovedSmithy", "doubleSided": False, "normalTexture": {"index": 0},
+        "nodes": [{"name": node, "mesh": 0}, {"name": "Fire", "translation": [float(v) for v in fire]}, {"name": "Smoke", "translation": [float(v) for v in smoke]}],
+        "meshes": [{"name": node, "primitives": [{"attributes": {"POSITION": 0, "NORMAL": 1, "TEXCOORD_0": 2}, "indices": 3, "material": 0}]}],
+        "materials": [{"name": material, "doubleSided": False, "normalTexture": {"index": 0},
                        "pbrMetallicRoughness": {"baseColorTexture": {"index": 1}, "metallicRoughnessTexture": {"index": 2}},
                        "emissiveTexture": {"index": 3}, "emissiveFactor": [1.0, 1.0, 1.0]}],
         "textures": [{"source": i, "sampler": 0} for i in range(4)],

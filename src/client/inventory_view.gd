@@ -3180,8 +3180,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 				if state == StructureLook.FIRE_COALS and _world[id].get("light") != null and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and (row[5] as Dictionary).has("glow"):
 					BuildingLook.coals_glow(_world[id]["light"], float(row[5]["glow"]))   # the coals dim as their time runs down
 
-				# A Smelter lit or put out is drawn again: its fire and light are set only when its model is built (_forge_fire).
-				var smelter_lit_changed: bool = str(_structure_by_state(state).get("use", "")) == "smelt" and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and bool(row[5].get("lit", false)) != bool(_world[id].get("lit", false))
+				# A Smelter or kiln lit or put out is drawn again: its fire and light are set only when its model is built (_forge_fire, _make_primitive_kiln).
+				var smelter_lit_changed: bool = str(_structure_by_state(state).get("use", "")) in ["smelt", "kiln"] and row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and bool(row[5].get("lit", false)) != bool(_world[id].get("lit", false))
 				# A smithy that takes fuel, runs out, starts or stops working is drawn again too (its coals, flare and light are set as its model is built).
 				smelter_lit_changed = smelter_lit_changed or (row.size() > 5 and typeof(row[5]) == TYPE_DICTIONARY and int(row[5].get("forge", -1)) != int(_world[id].get("forge", -1)))
 				_note_platter(id, row, state)
@@ -3230,6 +3230,8 @@ func _on_world_items(added: Array, removed: PackedInt32Array) -> void:
 
 			if row.size() > 5 and bool((row[5] as Dictionary).get("lit", false)) and str(_structure_by_state(state).get("use", "")) == "smelt":
 				fixture_light = node.get_node_or_null("Light")   # a lit Smelter: its forge's own fire light (_forge_fire shows its flames)
+			elif row.size() > 5 and bool((row[5] as Dictionary).get("lit", false)) and node.has_meta("coal_glow"):
+				fixture_light = node.get_node_or_null("Light")   # a lit Primitive kiln: its own light at its mouth (_make_primitive_kiln)
 			elif row.size() > 5 and int((row[5] as Dictionary).get("forge", 0)) >= 1:
 				fixture_light = node.get_node_or_null("Light")   # a smithy with fuel: its coals' glow or its flare (BuildingLook.forge_state)
 			elif row.size() > 5 and bool((row[5] as Dictionary).get("lit", false)):
@@ -4432,15 +4434,26 @@ func _make_improved_smithy() -> Node3D:
 	if model == null:
 		return _make_smithy()
 
+	_painted_fire(model, IMPROVED_SMITHY_TONGUES)
+	model.set_meta("coal_glow", _own_glow(model))
+	return model
+
+
+# A station model with painted coals or embers (tools/stations/prepare_station_model.py): its shared coals dropped and its flame tongues
+# shrunk by `tongues` to stand in its own hearth.
+func _painted_fire(model: Node3D, tongues: float) -> void:
 	var flames: Node3D = model.get_node_or_null("Flames") as Node3D
 
 	if flames != null:
-		flames.scale = Vector3.ONE * IMPROVED_SMITHY_TONGUES
+		flames.scale = Vector3.ONE * tongues
 		var coals: Node = flames.get_node_or_null("Coals")
 
 		if coals != null:
 			coals.free()
 
+
+# Each glowing material of the model, copied so that this one's glow is its own (one smithy flaring or kiln lit lights no other).
+func _own_glow(model: Node3D) -> Array:
 	var glow: Array = []
 
 	for child in model.find_children("*", "MeshInstance3D", true, false):
@@ -4457,7 +4470,40 @@ func _make_improved_smithy() -> Node3D:
 				mesh_node.set_surface_override_material(surface, copy)
 				glow.append(copy)
 
+	return glow
+
+
+# The Primitive kiln: Dave's model (21 Nov 2026), a long low tunnel of clay and field stones, its mouth at the front (+Z) and its chimney at the
+# back, "sized so its longest side is a minimum 2.74 meters" (2.74 m long, 0.98 m wide and high). Its embers are painted in its emission
+# texture: dark when cold, glowing with a few small flame tongues, the light at its mouth and smoke from the chimney while lit. The Improved
+# and Advanced kilns keep the brick kiln (PieceLook.kiln), which also stands in when the file is missing. Values PROVISIONAL (PK-3).
+const KILN_TONGUES := 0.25        # the flames' size in its mouth (its tunnel is under half a metre high inside)
+const KILN_EMBERS := 2.0          # the embers' glow while lit (0 cold)
+const KILN_LIGHT := [1.0, 5.0]    # its light while lit: [energy, range m]
+
+
+func _make_primitive_kiln(lit: bool) -> Node3D:
+	var model: Node3D = _forge_glb("primitive_kiln", false)
+
+	if model == null:
+		return LookTable.build("kiln")
+
+	_painted_fire(model, KILN_TONGUES)
+	var glow: Array = _own_glow(model)
+
+	for embers in glow:
+		(embers as BaseMaterial3D).emission_energy_multiplier = KILN_EMBERS if lit else 0.0
+
 	model.set_meta("coal_glow", glow)
+	var light: OmniLight3D = model.get_node_or_null("Light") as OmniLight3D
+
+	if light != null:
+		light.light_energy = float(KILN_LIGHT[0])
+		light.omni_range = float(KILN_LIGHT[1])
+		light.set_meta("base_energy", light.light_energy)   # the nearest-lights pass flickers it round this
+		light.set_meta("base_range", light.omni_range)   # FireWeather scales the reach from this in fog and snow
+
+	BuildingLook.show_forge_fire(model, lit)
 	return model
 
 
@@ -4485,7 +4531,7 @@ const ANVIL_AT_M := 0.45       # where the anvil stands along x, beside the fire
 # of every building here: placed with the camera yaw it faces the player who put it down), puts the
 # centre of the footprint at the pivot and the base on the ground, and takes the flame light and smoke from the Fire and Smoke empties
 # in the file. Returns null when the file is not there yet. A model made Y up already (improved_smithy.glb, from
-# tools/stations/prepare_improved_smithy.py) passes z_up false and is not turned.
+# tools/stations/prepare_station_model.py) passes z_up false and is not turned.
 func _forge_glb(file: String, z_up: bool = true) -> Node3D:
 	var path: String = "res://assets/stations/%s.glb" % file
 
@@ -4929,6 +4975,8 @@ func _model_for_look(look: String, state: int, extra: Dictionary) -> Node3D:
 			return _forge_fire(_make_improved_smithy() if str(_structure_by_state(state).get("item", "")) == "blacksmithy" else _make_smithy(), state, extra)
 		"big_forge":
 			return _forge_fire(_make_big_forge(state), state, extra)
+		"primitive_kiln":
+			return _make_primitive_kiln(bool(extra.get("lit", false)))
 		"carcass":
 			return _make_carcass(str(extra.get("sp", "")))
 

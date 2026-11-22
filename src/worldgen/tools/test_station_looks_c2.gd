@@ -3,6 +3,7 @@ extends SceneTree
 # Item system C2 stations (item_system.md draft 7, Jamie's #934, 10 Nov 2026): the Kiln, Tanning rack, Drying rack, Smoker, Oil press and (15 Nov 2026) Wood carving station looks build inside
 # their structures.json footprints (w x d, centred, standing on y = 0, under the height given here), are solid over the footprint, and stay under the
 # look table's triangle cap. Bounds only (no pictures).
+# "kiln" is the brick kiln the Improved and Advanced kilns draw; the Primitive kiln has its own model (test_forge_models.gd).
 #   godot --headless --path . --script res://src/worldgen/tools/test_station_looks_c2.gd
 
 const LookTable := preload("res://src/client/look_table.gd")

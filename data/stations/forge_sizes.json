@@ -1,8 +1,9 @@
 {
-	"note": "Each forge's size as a share of the size Dave imported it at (1.0 = his mesh as is). improved_smithy is already 3 m wide in metres (tools/stations/prepare_improved_smithy.py; Dave 21 Nov 2026: 3/4 of a foundation's width). Tune here; footprint, collision and the fire, light and smoke follow.",
+	"note": "Each forge's size as a share of the size Dave imported it at (1.0 = his mesh as is). improved_smithy (3 m wide, Dave 21 Nov 2026: 3/4 of a foundation's width) and primitive_kiln (2.74 m long, Dave 21 Nov 2026: \"longest side is a minimum 2.74 meters\") are already in metres (tools/stations/prepare_station_model.py). Tune here; footprint, collision and the fire, light and smoke follow.",
 	"forge_basic": 0.3,
 	"forge_medium": 0.45,
 	"forge_large": 0.65,
 	"forge_master": 0.8,
-	"improved_smithy": 1.0
+	"improved_smithy": 1.0,
+	"primitive_kiln": 1.0
 }
