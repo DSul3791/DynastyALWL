@@ -339,6 +339,17 @@ func store_checks() -> void:
 	items._chest_viewer[1] = chest
 	items.action(1, Net.ACT_BULK, 1, 0, 0, Vector3.ZERO)
 	check(items._chests[int(items._items[chest]["struct"]["uid"])].count_of(n("flint")) == 2 and ev("stored_item") == 2, "Store all of three stacks is one act: stored_item rose by 1, not 3 (%d)" % ev("stored_item"))
+	# The winter fruit store (camp_goals.json fruit_store, stored_item_any; Dave 22 Nov 2026): each fruit put into a food store counts, a fire does not.
+	var fruit_check := {"stored_item_any": ["wild_apples", "plums"], "count": 5}
+	var basket: int = items.dev_place("wicker_basket@1.5,0.0,0")
+	items.give(1, n("wild_apples"), 3)
+	items.action(1, Net.ACT_CHEST_PUT, slot_of("wild_apples"), basket, 3, Vector3.ZERO)
+	check(items._goal_progress(1, items._goal_state_of(1), fruit_check) == Vector2i(3, 5), "3 apples put in a wicker basket count 3 of 5 (%s)" % str(items._goal_progress(1, items._goal_state_of(1), fruit_check)))
+	items.give(1, n("plums"), 2)
+	items.action(1, Net.ACT_CHEST_PUT, slot_of("plums"), fire, 2, Vector3.ZERO)
+	check(items._goal_progress(1, items._goal_state_of(1), fruit_check).x == 3, "plums offered to a fire count nothing")
+	items.action(1, Net.ACT_CHEST_PUT, slot_of("plums"), basket, 2, Vector3.ZERO)
+	check(items._goal_met(1, items._goal_state_of(1), fruit_check), "2 plums in the basket as well: the fruit store goal is met")
 
 
 # ---------------- Part 2: a fresh world (no stations or fires left over from part 1) ----------------
