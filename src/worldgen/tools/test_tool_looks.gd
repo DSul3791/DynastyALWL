@@ -316,7 +316,6 @@ func _init() -> void:
 	# Lane A pictures 22 Nov (fix forward): straight sword tips meet in a point, plate and brigandine read as armour, greaves, sabatons and chausses have shapes of their own.
 	for id in ["iron_shortsword", "steel_shortsword", "iron_greatsword", "steel_greatsword", "steel_rapier"]:
 		var blade: Mesh = BasicLook.mesh_for(id)
-		var sword_size: float = float(BasicLook.entry(id).get("size", 1.0))
 		var tip_w: float = _z_width(blade, blade.get_aabb().end.x - 0.012, INF)
 		var body_w: float = _z_width(blade, 0.0, blade.get_aabb().end.x - 0.06)                                     # the blade and the back of the tip, past the guard
 		_check(tip_w < body_w * 0.75, "%s: the blade ends in a point, not a fork (%.3f m wide at the tip, %.3f mid-blade)" % [id, tip_w, body_w])

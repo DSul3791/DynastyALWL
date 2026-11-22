@@ -1062,9 +1062,9 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				# The tip: two pieces, each turned in toward the blade's middle so their far ends meet in one point (Lane A pictures 22 Nov: the old turn splayed them into a fish-tail).
 				# The turn scales with the blade's width so a narrow rapier blade tapers as gently as a broad one; each piece starts at its edge of the blade and crosses the middle.
 				var taper: float = blade_w * 4.0
-				_box_rot(parts, Vector3(0.09, 0.008, blade_w * 0.5), Vector3(0.35, 0.0, blade_w * 0.12), Vector3(0.0, taper, 0.0), color)
+				_box_rot(parts, Vector3(0.09, 0.008, blade_w * 0.4), Vector3(0.35, 0.0, blade_w * 0.15), Vector3(0.0, taper, 0.0), color)
 				_metal(parts)
-				_box_rot(parts, Vector3(0.09, 0.008, blade_w * 0.5), Vector3(0.35, 0.0, -blade_w * 0.12), Vector3(0.0, -taper, 0.0), color)
+				_box_rot(parts, Vector3(0.09, 0.008, blade_w * 0.4), Vector3(0.35, 0.0, -blade_w * 0.15), Vector3(0.0, -taper, 0.0), color)
 				_metal(parts)
 				_box(parts, Vector3(0.34, 0.01, blade_w * 0.22), Vector3(0.13, 0.001, 0.0), dark)
 				_metal(parts)
