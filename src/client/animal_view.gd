@@ -12,6 +12,7 @@ const MODELS_PATH := "res://data/animals/models.json"
 const BoneOffsetsScript := preload("res://src/client/bone_offsets.gd")
 const BreathLook := preload("res://src/client/breath_look.gd")   # head_bone_of: where an animal breathes from in the cold
 const MotionBuffer := preload("res://src/client/motion_buffer.gd")   # drawn between sent points, a little behind (Dave 19 Nov 2026)
+const AnimalGait := preload("res://src/client/animal_gait.gd")   # which leg clip and how fast, smoothed (Dave 21 Nov 2026: no running without moving the feet)
 const BanditLook := preload("res://src/client/bandit_look.gd")   # camp bandits (species 52) are drawn as the human ragdoll (docs/design/BANDIT_CAMPS.md)
 const TETHERED := 22   # a horse tethered at a bandit camp: its saddle is shown (server_bandits.gd)
 const GRAZE := 0
@@ -586,17 +587,22 @@ func _process_body(delta: float) -> void:
 		var drawn: Array = MotionBuffer.at(b["samples"], drawn_at)
 		node.position = drawn[0]
 		node.rotation.y = lerp_angle(node.rotation.y, -float(drawn[1]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
+		# The legs follow the drawn ground speed eased over a moment (AnimalGait.smooth), not each frame's own: that jumped at every sent point.
+		var spd: float = AnimalGait.smooth(float(b.get("spd", 0.0)), Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), delta)
+		b["spd"] = spd
 		if node.has_meta("bandit"):
-			BanditLook.animate(node, state, Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001))
+			BanditLook.animate(node, state, spd)
 			continue
 
 		if state == TETHERED and not node.has_meta("saddled"):
 			_show_hidden(node)   # a camp horse wears its saddle
 		if bool(b.get("model", false)):
-			var model_speed: float = Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001)
+			var model_speed: float = spd
 			if node.has_meta("flock_birds"):
-				for bird in node.get_meta("flock_birds"):
-					_animate_model(bird, b, state, model_speed, delta)
+				var birds: Array = node.get_meta("flock_birds")
+
+				for bird in birds:
+					_animate_model(bird, b, state, model_speed, delta, bird == birds[0])      # the flock's gait (footsteps) counts once, not once a bird
 			else:
 				_animate_model(node, b, state, model_speed, delta)
 			_emit_steps(b, node, state, model_speed)
@@ -612,16 +618,16 @@ func _process_body(delta: float) -> void:
 		rig.rotation.x = lerp_angle(rig.rotation.x, 0.28 if state == 10 or state == 13 else (0.12 if state == 11 or state == 15 else 0.0), clampf(delta * 8.0, 0.0, 1.0))
 		rig.rotation.z = lerp_angle(rig.rotation.z, roll, clampf(delta * 6.0, 0.0, 1.0))
 		if bool(b.get("wolf", false)):
-			_animate_wolf(node, b, state, Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), delta)
+			_animate_wolf(node, b, state, spd, delta)
 		elif bool(b.get("quad", false)):
-			_animate_quad(node, b, state, Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001), delta)
+			_animate_quad(node, b, state, spd, delta)
 		else:
 			rig.position.y = lerp(rig.position.y, lift + (0.25 * absf(sin(_t * 7.0 + float(b["phase"]))) if state == 9 else 0.0), clampf(delta * 20.0, 0.0, 1.0))
 
 		if bool(b.get("gulls", false)):
 			_animate_gulls(rig, state == 15)
 
-		_emit_steps(b, node, state, Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001))
+		_emit_steps(b, node, state, spd)
 
 
 # Realistic animal models (Dave 6 Nov 2026: aim for photorealism; design/realistic_animals_plan.md): a species listed in
@@ -837,9 +843,15 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 					anim.set_meta("stride_measured", true)
 					var stride_mps: float = _measure_stride(player, anim, rig)
 
-					if stride_mps >= 0.2 and stride_mps <= 25.0:
+					var typed_mps: float = float(row.get(str(key) + "_mps", 0.0))   # walk_mps or run_mps: the speed the row says this clip was made at
+
+					if stride_mps >= 0.2 and stride_mps <= 25.0 and AnimalGait.stride_ok(stride_mps, typed_mps):
 						anim.set_meta("travel_mps", stride_mps)
 						_model_note(kind, "clip %s: feet move %.2f m/s on the ground, played at speed / %.2f" % [anim_name, stride_mps, stride_mps])
+					elif stride_mps > 0.0:
+						# The lynx walk measured 0.26 m/s and the guineafowl run 0.20 (Dave's log, 21 Nov 2026): played at a fifth of the ground
+						# speed their legs hardly moved. A measurement that far off the row's speed is a failed one.
+						_model_note(kind, "clip %s: feet measured %.2f m/s, too far from the row's %.2f: played at speed / %.2f" % [anim_name, stride_mps, typed_mps, typed_mps])
 				roles[str(key)] = anim_name
 				break
 
@@ -1501,13 +1513,27 @@ func _measure_stride(player: AnimationPlayer, anim: Animation, rig: Node3D) -> f
 	var near_ground: float = low + (high - low) * 0.03
 	var dt: float = anim.length / float(samples)
 	var speeds: Array = []
+	# A bone that stays put over the whole clip (the root at the rig's feet, an IK target) lies on the ground too, at no speed: counted, it
+	# pulled the middle speed down to a fifth (the lynx walk 0.26 m/s; Dave's log, 21 Nov 2026). Only bones that move count: a foot does.
+	var first: PackedVector3Array = frames[0]
+	var swings: PackedByteArray = PackedByteArray()
+	swings.resize(first.size())
+
+	for bone in swings.size():
+		var box: Rect2 = Rect2(Vector2(first[bone].x, first[bone].z), Vector2.ZERO)
+
+		for f in frames:
+			var at: PackedVector3Array = f
+			box = box.expand(Vector2(at[bone].x, at[bone].z))
+
+		swings[bone] = 1 if box.size.length() >= (high - low) * 0.05 else 0
 
 	for i in samples:
 		var a: PackedVector3Array = frames[i]
 		var b: PackedVector3Array = frames[i + 1]
 
 		for bone in a.size():
-			if a[bone].y <= near_ground and b[bone].y <= near_ground:
+			if swings[bone] == 1 and a[bone].y <= near_ground and b[bone].y <= near_ground:
 				speeds.append(Vector2(b[bone].x - a[bone].x, b[bone].z - a[bone].z).length() / dt)
 
 	if speeds.size() < 4:
@@ -1599,20 +1625,23 @@ static func drink_looking(id: int, t: float) -> bool:
 
 
 # Plays the clip for the animal's state (a moving animal walks or runs by its real ground speed) and keeps the gait count for footsteps.
-func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta: float) -> void:
+func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta: float, count_gait: bool = true) -> void:
 	var row: Dictionary = node.get_meta("model_row", {})
 	var clips: Dictionary = row.get("clips", {})
 	var clip: String = str(clips.get(str(state), clips.get("0", "")))
 	var walk_mps: float = float(row.get("walk_mps", 1.5))
 	var run_mps: float = float(row.get("run_mps", 7.0))
 	var ref: float = 0.0
+	# Standing, walking or running, with a margin either side so the clip does not flick at the edge (AnimalGait.role).
+	var moving: String = AnimalGait.role(speed, str(b.get("gait_role", "")), walk_mps, run_mps) if state != 10 and state != 12 and state != WARN_POP else ""
+	b["gait_role"] = moving
 
-	if speed > 0.3 and state != 10 and state != 12 and state != WARN_POP:
-		var running: bool = speed > (walk_mps + run_mps) * 0.5
-		clip = str(clips.get("run" if running else "walk", clip))
-		ref = run_mps if running else walk_mps
+	if moving != "":
+		clip = str(clips.get(moving, clip))
+		ref = run_mps if moving == "run" else walk_mps
 
-	b["gait"] = float(b.get("gait", 0.0)) + speed * delta / maxf(float(row.get("stride_m", 1.2)), 0.1)
+	if count_gait:
+		b["gait"] = float(b.get("gait", 0.0)) + speed * delta / maxf(float(row.get("stride_m", 1.2)), 0.1)
 
 	if not node.has_meta("player"):
 		return
@@ -1637,15 +1666,22 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 			if clip != "" and player.current_animation != clip:
 				player.play(clip, 0.25)
 
-			player.speed_scale = clampf(speed / ref, 0.5, 2.0) if ref > 0.0 else 0.6
+			player.speed_scale = AnimalGait.rate(speed, ref) if ref > 0.0 else 0.6
 			return
 
 	if ref > 0.0 and not (state in AIR_STATES and roles.has(str(state))):      # in the air a flock plays its flight clip at any speed
-		role = "run" if ref == run_mps else "walk"
+		role = moving
 	elif state in AIR_STATES and roles.has(str(state)):
 		ref = 0.0
 
-	clip = str(roles.get(role, roles.get("0", "")))
+	# A moving animal plays a moving clip: a model with a walk but no run (or the other way) uses the one it has, not its idle pose.
+	clip = AnimalGait.moving_clip(roles, role) if role == "walk" or role == "run" else str(roles.get(role, roles.get("0", "")))
+
+	if (role == "walk" or role == "run") and not roles.has(role):
+		if roles.has("walk") or roles.has("run"):
+			ref = walk_mps if role == "run" else run_mps      # the other moving clip stands in: played by its own speed
+		else:
+			ref = 0.0      # no moving clip at all: the idle clip plays at its own rate
 
 	if clip != "" and player.current_animation != clip:
 		player.play(clip, 0.25)
@@ -1653,7 +1689,7 @@ func _animate_model(node: Node3D, b: Dictionary, state: int, speed: float, delta
 	if ref > 0.0 and clip != "" and player.has_animation(clip):
 		ref = float(player.get_animation(clip).get_meta("travel_mps", ref))      # the speed the clip's feet were made for (_strip_root_drift)
 
-	player.speed_scale = clampf(speed / ref, 0.5, 2.0) if ref > 0.0 else 1.0
+	player.speed_scale = AnimalGait.rate(speed, ref)
 
 
 # A step lands when the gait (four-legged and wolf) passes a whole number, or a rabbit's hop comes down; none while standing, grazing or a duck flock (no gait yet).
