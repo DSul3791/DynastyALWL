@@ -206,6 +206,19 @@ func _init() -> void:
 	run(a, 70.0)
 	check(phase_of(a, pid) == "prowl", "after feeding the pack goes back to prowling and forgets the player")
 
+	# 5b. A hunt ends at the town keep-out: a deer already chosen that is in town is let go and lives (with no town, 5 above, it is taken).
+	a = make()
+	players = [player(1, 0.0, 0.0)]
+	pid = a.wolves.spawn_pack(30.0, 0.0)
+	a.wolves.packs[pid]["den"] = Vector3(9000.0, 0.0, 0.0)
+	deer = a.spawn("deer", 60.0, 20.0)
+	a.wolves.packs[pid]["phase"] = "feed"
+	a.wolves.packs[pid]["prey"] = deer
+	a.wolves.packs[pid]["timer"] = 60.0
+	a.town = Vector2(60.0, 20.0)
+	run(a, 2.0)
+	check(a.animals.has(deer) and phase_of(a, pid) != "feed" and int(a.wolves.packs[pid]["prey"]) == 0, "a deer in town is not hunted (%s)" % phase_of(a, pid))
+
 	# 6. Boldness: at the den a healthy lone player is attacked; far away not.
 	a = make()
 	log_bites = 0
