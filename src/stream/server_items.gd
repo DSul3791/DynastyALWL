@@ -424,6 +424,7 @@ var _work_level: Dictionary = {}    # peer -> effort of the last tool work (data
 var _work_until: Dictionary = {}    # peer -> msec until which tool work counts as effort
 var _last_eat: Dictionary = {}      # peer -> msec
 var _last_drink: Dictionary = {}    # peer -> msec of the last mouthful at the water
+const COLD_FLOOR_HP := 25.0          # cold stops here, as an animal's blow does (hurt_player floor_hp)
 var _last_rain_s: float = -INF      # game seconds when it last rained (thirst.sources: intermittent brooks run for a day after rain)
 var _unfit: Dictionary = {}         # item id -> true: yields of poisonous plants never feed anyone
 var _last_use: Dictionary = {}      # peer -> msec of the last structure use
@@ -11619,7 +11620,9 @@ func _learn_food(peer: int, item_id: String, what: String) -> void:
 # A food that harms: in the first hour an unknown one costs food and water only, otherwise the stomach pays. Either way it is remembered.
 func _harm_bite(peer: int, item_id: String, hours: float, line: String) -> void:
 	var unknown: bool = not tried_of(peer).has(item_id)
-	_learn_food(peer, item_id, "harm")
+
+	if not (unknown and grace_of(peer) > 0.0 and _infection_cfg().get("odds", {}).has(item_id)):
+		_learn_food(peer, item_id, "harm")   # a food that only sometimes harms (raw meat) is not marked in the first hour: the first bite after it is a first bite (coordinator 22 Nov 2026)
 
 	if unknown and grace_of(peer) > 0.0:
 		var v: Dictionary = vitals_of(peer)
@@ -16700,9 +16703,10 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 	var hurt_at: float = float(cfg.get("hurt_at", 20.0))
 
 	if w < hurt_at:
-		# Cold costs health, slowly, more the colder; like hunger it stops at 1.
+		# Cold costs health, slowly, more the colder; it stops at COLD_FLOOR_HP (the floor of an animal's blow), so cold alone never leaves a
+		# player too weak to hold off wolves (coordinator 22 Nov 2026); one already lower is not pushed further.
 		var severe_mult: float = float(_body_cfg().get("severe_hurt_mult", 2.0)) if cold_stage(peer) == 3 else 1.0   # severe cold (docs/design/body_in_weather_design.md 4)
-		v["health"] = maxf(float(v["health"]) - float(cfg.get("hurt_per_s", 0.15)) * spent * (hurt_at - w) / maxf(hurt_at, 1.0) * 2.0 * severe_mult, 1.0)
+		v["health"] = maxf(float(v["health"]) - float(cfg.get("hurt_per_s", 0.15)) * spent * (hurt_at - w) / maxf(hurt_at, 1.0) * 2.0 * severe_mult, minf(float(v["health"]), COLD_FLOOR_HP))
 
 	# Messages with two levels each way, so a player on the edge is not nagged; with body_703 on, a third for severe cold.
 	var level: int = int(_cold_level.get(peer, 0))
@@ -25690,7 +25694,12 @@ func _salt_only(peer: int, thirst: Dictionary) -> bool:
 
 
 func _save_vitals() -> void:
-	_write_atomic("vitals.json", {"version": 1, "players": _vitals})
+	var rain: Variant = null   # seasonal brooks after a restart
+
+	if is_finite(_last_rain_s):
+		rain = _last_rain_s
+
+	_write_atomic("vitals.json", {"version": 1, "players": _vitals, "last_rain_s": rain})
 
 
 func _load_vitals() -> void:
@@ -25698,6 +25707,9 @@ func _load_vitals() -> void:
 
 	if parsed == null:
 		return
+
+	if parsed.get("last_rain_s", null) != null:
+		_last_rain_s = float(parsed["last_rain_s"])   # it rained before the restart: intermittent brooks still run (it read -INF: dry until the next rain)
 
 	for key in parsed.get("players", {}):
 		var row: Dictionary = parsed["players"][key]
