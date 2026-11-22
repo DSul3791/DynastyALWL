@@ -21331,7 +21331,7 @@ func _goals_tick() -> void:
 	if hints_now:
 		_hint_ticks = 0
 
-	# shortcut: every goal is looked at for every player each slow tick (the have and worn checks read the pack); fine for 28 goals, the full catalog needs indexed events (GA-49).
+	# shortcut: every goal is looked at for every player each slow tick (the have and worn checks read the pack); fine for the 49 live goals, the full catalog needs indexed events (GA-49).
 	for peer in _peer_key.keys():
 		var tg: int = Time.get_ticks_usec()
 		_goals_check(peer)

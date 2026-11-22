@@ -109,7 +109,7 @@
 		{
 			"id": "workbench",
 			"trigger": "bed_placed",
-			"text": "A Workbench: hold your hammer, press R and pick it. 16 sticks, 6 twine, 8 stones. It is for better tools.",
+			"text": "A Workbench: hold your hammer, press R and pick it. 16 sticks, 6 twine, 8 stones. At it you make cobblestones, stone blocks, wooden pins, the flint scraper and more.",
 			"goal": "workbench"
 		},
 		{
