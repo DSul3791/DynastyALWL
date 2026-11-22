@@ -172,7 +172,10 @@ func run_share(at: Vector3, kind: int) -> float:
 	if not host.run_distance.is_valid():
 		return 0.0
 
-	var d: float = float(host.run_distance.call(at.x, at.z, kind))
+	return _share(float(host.run_distance.call(at.x, at.z, kind)))
+
+
+func _share(d: float) -> float:
 	var full: float = float(cfg.get("run_full_m", 0.5))
 	var none: float = float(cfg.get("run_none_m", 2.0))
 	return clampf((none - d) / maxf(none - full, 0.01), 0.0, 1.0)
@@ -289,10 +292,13 @@ func _lay_catch(id: int, sp: String, c: Dictionary) -> void:
 # How squarely a snare sits on a rabbit run, noted on the snare while a player is near (the places round it are worked out only then),
 # for its looks while nobody is.
 func _note_run(it: Dictionary) -> void:
-	var share: float = run_share(it["pos"], int(_of_item(it).get("away_run_kind", 0)))
+	if not host.run_distance.is_valid():
+		return
 
-	if host.run_distance.is_valid() and (share > 0.0 or not is_inf(float(host.run_distance.call(it["pos"].x, it["pos"].z, -1)))):
-		it["struct"]["run"] = share   # INF everywhere: the ground round it is not worked out yet, keep what was noted
+	var d: float = float(host.run_distance.call(it["pos"].x, it["pos"].z, int(_of_item(it).get("away_run_kind", 0))))
+
+	if not is_inf(d):   # INF: the ground round it is not worked out yet, keep what was noted
+		it["struct"]["run"] = _share(d)
 
 
 # A snare with nobody near (Dave 22 Nov 2026, D-TRAP-1: set at dusk, checked at dawn): once a game hour has gone by since its last

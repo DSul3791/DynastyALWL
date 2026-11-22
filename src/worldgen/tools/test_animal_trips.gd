@@ -149,9 +149,27 @@ func _init() -> void:
 	settled_at = a_place["home"]
 	check(r1.settled(a_place), "a place inside a no-spawn zone is settled")
 	var after: Array = Codec.decode_routes(r1.wire(r1.block_of(a_place["home"].x, a_place["home"].y), 200000), r1.block_of(a_place["home"].x, a_place["home"].y), 256.0)
-	check(after.size() == before.size() - (a_place["routes"] as Array).size(), "its trails are no longer sent (%d -> %d)" % [before.size(), after.size()])
+	var dropped: int = 0
+
+	for p in r1.blocks[r1.block_of(a_place["home"].x, a_place["home"].y)]["places"]:
+		dropped += (p["routes"] as Array).size() if r1.settled(p) else 0   # any other place reaching into the same zone goes too
+
+	check(after.size() == before.size() - dropped and dropped >= (a_place["routes"] as Array).size(), "its trails are no longer sent (%d -> %d)" % [before.size(), after.size()])
 	check(not r1.places_near("rabbit", Vector3(a_place["home"].x, 10.0, a_place["home"].y), 1.0).has(a_place), "and no animal is made there")
 	settled_at = Vector2(INF, INF)
+
+	# Distance to a run: zero on its line, INF where the ground is not worked out.
+	var on: Vector2 = Vector2(INF, INF)
+
+	for p in r1.blocks[Vector2i(0, 0)]["places"]:
+		for route in p["routes"]:
+			for q in (route as PackedVector2Array):
+				if on.x == INF and r1.block_of(q.x, q.y) == Vector2i(0, 0):
+					on = q
+
+	check(on.x != INF and r1.route_distance(on.x, on.y) < 0.05, "a spot on a run is on it (%.3f)" % r1.route_distance(on.x, on.y))
+	check(r1.route_distance(on.x + 1.0, on.y, -1) <= 1.0, "a metre off, within a metre")
+	check(is_inf(r1.route_distance(90000.0, 90000.0)), "ground not worked out: INF")
 
 	# The wire: routes come back within 1/32 m, kinds kept.
 	var some: Array = [[0, PackedVector2Array([Vector2(260.5, 270.25), Vector2(270.0, 290.0)])], [1, PackedVector2Array([Vector2(300.0, 300.0), Vector2(-20.0, 600.0)])]]
@@ -176,6 +194,8 @@ func _init() -> void:
 
 	check(with_routes >= 7 and with_routes == next.size(), "once worked out the blocks go out at once with their trails (%d of 9)" % with_routes)
 	check(t.updates_for(3, Vector3(128.0, 10.0, 128.0), 3000).is_empty(), "and not again while unchanged")
+	t.updates_for(3, Vector3(128.0 + 4.0 * 256.0, 10.0, 128.0), 4000)   # walked four blocks off: the client forgets the old ones
+	check(t.updates_for(3, Vector3(128.0, 10.0, 128.0), 5000).size() == next.size(), "back again, the blocks and their trails are sent again")
 
 	# The clock and the trips.
 	var a = AnimalsScript.new()

@@ -13,6 +13,7 @@ var world_seed: int = 0
 var ground_height: Callable        # (x, z) -> height, NAN where the ground is not known yet
 var blocked: Callable              # (x, z) -> bool: deep water
 var biome_weight: Callable         # (species, x, z) -> 0..1, how well the species lives there
+var ground_ready: Callable         # (x, z) -> bool, the ground tile there is loaded (asks for it when not); unset means always
 var no_spawn: Callable             # (x, z) -> bool: settled ground (no_spawn_m round anything put down); its places are left
 var blocks: Dictionary = {}        # Vector2i -> {"places": Array, "jobs": Array, "retry_ms": int, "seen_ms": int, "ver": int}
 var _wire: Dictionary = {}         # Vector2i -> [msec built, bytes]
@@ -68,6 +69,10 @@ func tick(players: Array, now_ms: int) -> void:
 			_wire.erase(key)
 			continue
 
+		if not (rec["jobs"] as Array).is_empty() and now_ms >= int(rec["retry_ms"]) and not _ground_loaded(key):
+			rec["retry_ms"] = now_ms + 5000   # a ground tile it reaches is still loading: never read a cold tile on the server tick
+			continue
+
 		while not (rec["jobs"] as Array).is_empty() and now_ms >= int(rec["retry_ms"]) and Time.get_ticks_usec() - started < budget:
 			var job: Array = rec["jobs"][0]
 			var place: Variant = _warren(job[1], job[2]) if job[0] == "w" else _deer_range(key)
@@ -81,6 +86,23 @@ func tick(players: Array, now_ms: int) -> void:
 			if not (place as Dictionary).is_empty():
 				rec["places"].append(place)
 				rec["ver"] = int(rec["ver"]) + 1
+
+
+# Whether the ground under a block and the margin its routes may reach (runs, drift, the water detour) is loaded.
+func _ground_loaded(key: Vector2i) -> bool:
+	if not ground_ready.is_valid():
+		return true
+
+	var m: float = float(cfg.get("block_m", 256.0))
+	var pad: float = 128.0
+	var lo: Vector2 = Vector2(key) * m - Vector2(pad, pad)
+	var hi: Vector2 = Vector2(key + Vector2i.ONE) * m + Vector2(pad, pad)
+	var ok: bool = true
+
+	for c in [lo, hi, Vector2(lo.x, hi.y), Vector2(hi.x, lo.y)]:
+		ok = bool(ground_ready.call(c.x, c.y)) and ok   # every corner asked, so all the tiles start loading at once
+
+	return ok
 
 
 func is_ready(key: Vector2i) -> bool:
@@ -432,11 +454,16 @@ func wire(key: Vector2i, now_ms: int) -> PackedByteArray:
 	return bytes
 
 
-# The distance from a point to the nearest trail of a kind (-1 any), INF when none is near (ready blocks round the point only).
-func route_distance(x: float, z: float, kind: int = -1) -> float:
+# The distance from a point to the nearest trail of a kind (-1 any) that is not on settled ground: INF while the block round the point is
+# not worked out, `reach` when no trail is nearer. Each route keeps a bounding box, so only the routes that pass near are measured.
+func route_distance(x: float, z: float, kind: int = -1, reach: float = 10.0) -> float:
 	var p: Vector2 = Vector2(x, z)
-	var best: float = INF
 	var centre: Vector2i = block_of(x, z)
+
+	if not is_ready(centre):
+		return INF
+
+	var best: float = reach
 
 	for dz in range(-1, 2):
 		for dx in range(-1, 2):
@@ -446,13 +473,42 @@ func route_distance(x: float, z: float, kind: int = -1) -> float:
 				continue
 
 			for place in blocks[key]["places"]:
-				if (kind >= 0 and int(place["kind"]) != kind) or settled(place):
+				if kind >= 0 and int(place["kind"]) != kind:
 					continue
 
-				for route in place["routes"]:
-					var pts: PackedVector2Array = route
+				var boxes: Array = _boxes(place)
+				var near: Array = []
+
+				for n in boxes.size():
+					if (boxes[n] as Rect2).grow(best).has_point(p):
+						near.append(n)
+
+				if near.is_empty() or settled(place):
+					continue
+
+				for n in near:
+					var pts: PackedVector2Array = place["routes"][n]
 
 					for i in range(1, pts.size()):
 						best = minf(best, p.distance_to(Geometry2D.get_closest_point_to_segment(p, pts[i - 1], pts[i])))
 
 	return best
+
+
+# The bounding box of each of a place's routes, worked out once and kept on the place.
+func _boxes(place: Dictionary) -> Array:
+	if not place.has("boxes"):
+		var boxes: Array = []
+
+		for route in place["routes"]:
+			var pts: PackedVector2Array = route
+			var box: Rect2 = Rect2(pts[0], Vector2.ZERO) if not pts.is_empty() else Rect2()
+
+			for q in pts:
+				box = box.expand(q)
+
+			boxes.append(box)
+
+		place["boxes"] = boxes
+
+	return place["boxes"]

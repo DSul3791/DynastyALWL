@@ -146,6 +146,10 @@ func updates_for(peer: int, at: Vector3, now_msec: int) -> Array:
 	var min_s: float = float(cfg.get("send_min", 0.05))
 	var resend_ms: int = int(float(cfg.get("resend_s", 30.0)) * 1000.0)
 
+	for key in known.keys():
+		if absi(key.x - centre.x) > 2 or absi(key.y - centre.y) > 2:
+			known.erase(key)   # the client drops blocks this far away (grass_view.gd): forgotten here too, so they go again on return
+
 	for dz in range(-1, 2):
 		for dx in range(-1, 2):
 			var key: Vector2i = centre + Vector2i(dx, dz)

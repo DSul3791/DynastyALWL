@@ -475,7 +475,7 @@ func set_trail_routes(block_x: int, block_z: int, routes: Array) -> void:
 	_run_dirty = true
 
 
-# Lays the trails within the run map round the player: each route stepped every quarter metre, the texels round each step full on its
+# Lays the trails within the run map round the player: each route stepped every half metre (a texel), the texels round each step full on its
 # middle and fading over 0.4 m past its half width. A few hundred metres of trail at most: a few thousand writes, twice a second at most.
 func _rebuild_runs(player: Vector3) -> void:
 	var size: float = float(RUN_TEXELS) * RUN_TEXEL_M
@@ -512,7 +512,7 @@ func _rebuild_runs(player: Vector3) -> void:
 				if not window.has_point(a) and not window.has_point(b):
 					continue
 
-				var steps: int = maxi(int(ceil(a.distance_to(b) / 0.25)), 1)
+				var steps: int = maxi(int(ceil(a.distance_to(b) / RUN_TEXEL_M)), 1)   # one step a texel: the 3 x 3 footprint covers the gaps
 
 				for k in steps + 1:
 					var p: Vector2 = a.lerp(b, float(k) / float(steps))

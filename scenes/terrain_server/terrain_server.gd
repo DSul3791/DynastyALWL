@@ -722,6 +722,7 @@ func _ready() -> void:
 	ranges.blocked = npcs.blocked
 	ranges.biome_weight = func(sp, x, z): return animals.biome_weight(animals.species_def(sp), x, z)
 	ranges.no_spawn = animals.no_spawn
+	ranges.ground_ready = items.ground_ready
 	animals.ranges = ranges
 	trails.ranges = ranges
 	map_knowledge = MapScript.new()

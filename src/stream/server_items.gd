@@ -445,7 +445,7 @@ var animals_near: Callable           # (point, radius) -> Array of {id, sp, pos}
 var animal_lure: Callable            # (animal id, point) -> bool: the animal moves its home to a snare and grazes there (set by the server)
 var animal_snare: Callable           # (animal id) -> bool: a snare closes on it, it leaves the world (set by the server)
 var trail_strength: Callable         # (x, z) -> how worn the game trail is there, 0 to 1 (set by the server)
-var run_distance: Callable           # (x, z, kind) -> metres to the nearest trail between animal places of that kind (-1 any), INF for none (server_ranges.gd)
+var run_distance: Callable           # (x, z, kind) -> metres to the nearest trail between animal places of that kind (-1 any), INF while the ground there is not worked out, 10 when no trail is nearer (server_ranges.gd)
 var species_active: Callable         # (species) -> 0..1, how active that species is now (server_animals.activity_chance): snares fishing while nobody is near
 var _bow = null                     # server_bow.gd, made at the first shot
 var _aim_rng: RandomNumberGenerator = RandomNumberGenerator.new()   # luck-exempt: the bow's aim spread stream (luck then nudges each draw, _shoot)

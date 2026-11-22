@@ -68,8 +68,10 @@ the-reality-of-red-dead-redemption-2s-ai-part-1; [13] allthings.how permafrost r
    the loop. And because real snares are set at dusk and checked at dawn, a snare on a run now also catches while nobody is near,
    at a slow rate by the hour and the warren's activity (no animal is simulated or taken; the carcass is laid as now).
 
-Server cost: places and routes are worked out once per 256 m square when a player first needs it (about 30 routes of a few dozen
-ground-height reads), at most one square per tick, kept in memory and dropped when no player is near. A trip is a list of points
+Server cost: places and routes are worked out once per 256 m square when a player first needs it (about 30 routes, one job per
+warren square or deer range, a deer job some 150-250 ground reads), jobs run until 0.6 ms of a tick is spent (one job may run over;
+to be measured on the PC), only once the ground tiles under the square are loaded, kept in memory and dropped when no player is near.
+A snare's distance to a run looks only at routes whose box passes near it. A trip is a list of points
 on the animal (the step code is unchanged). A snare away from players is one roll per check (30 s). Network: a square's routes ride
 in the trail block already sent when it changes (a few hundred bytes deflated). Client: one 256 x 256 texture rebuilt when blocks
 arrive or the player moves 16 m.
