@@ -490,12 +490,6 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	@warning_ignore("confusable_local_declaration")
 	items.send_zone = func(peer, biome_id): net.zone.rpc_id(peer, biome_id)
-	items.tile_ready = func(x: float, z: float) -> bool:   # in memory now; if not, read on a worker for a later look (the periodic checks never wait for a tile)
-		if generator.tile_cached(x, z):
-			return true
-
-		generator.prefetch_tile(x, z)
-		return false
 	items.zone_at = func(pos: Vector3) -> int:
 		var tile_data = generator.get_tile(generator.tile_of(pos.x, pos.z))
 
@@ -1296,10 +1290,16 @@ func _resume_spot(spot: Vector3) -> Vector3:
 # along their heading the higher and faster they are. Blocks nearest this
 # point are made first.
 func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -> void:
-	var water: Array = _player_water_at(position)
-	items.set_swimming(peer_id, SwimScript.swimming(position.y, water[0], water[1]))
-	items.set_head_under(peer_id, SwimScript.head_under(position.y, water[0], water[1]))
-	items.set_cave_pool(peer_id, SwimScript.swimming(position.y, water[0], water[1]) and _in_cave_pool(position))
+	# A tile not in memory is never read here on the main thread (about 1 s on Dave's PC, BugsList 108): it is read on a worker, and the
+	# swim, breath and cave pool state stay as last reported until it is in (a report or two later).
+	if generator.tile_cached(position.x, position.z):
+		var water: Array = _player_water_at(position)
+		items.set_swimming(peer_id, SwimScript.swimming(position.y, water[0], water[1]))
+		items.set_head_under(peer_id, SwimScript.head_under(position.y, water[0], water[1]))
+		items.set_cave_pool(peer_id, SwimScript.swimming(position.y, water[0], water[1]) and _in_cave_pool(position))
+	else:
+		generator.prefetch_tile(position.x, position.z)
+
 	items.report_position(peer_id, position)
 
 	if map_knowledge != null:

@@ -340,7 +340,6 @@ var zone_at: Callable = Callable()          # (position Vector3) -> biome id fro
 var zone_clock: Callable = Callable()       # () -> msec; tests set it, the game uses Time.get_ticks_msec
 var send_vent: Callable = Callable()        # (peer, Vector3): the nearest volcanic vent within VENT_RANGE_M, Vector3.INF when none (protocol 77; the volcano bed sits there)
 var vent_near: Callable = Callable()        # (position Vector3) -> Vector3 of the nearest vent top within VENT_RANGE_M, INF when none; set by the server scene
-var tile_ready: Callable = Callable()       # (x, z) -> true when the ground tile there is in memory; false asks for it on a worker. Unset: always ready (tests)
 var zone_samples: int = 0                   # biome lookups made, messages sent and microseconds spent (the report reads these)
 var zone_messages: int = 0
 var vent_messages: int = 0
@@ -932,14 +931,14 @@ var _zone_checked: Dictionary = {}   # peer -> msec of the last read
 var _vent_sent: Dictionary = {}      # peer -> the vent anchor the client was last told (INF = none)
 
 
-# Tell a client its biome: at once for a new player, after every teleport or respawn, and after a change that reads the same twice running (no flicker on
-# a border). Reliable and ordered, so the client's last value is the server's last.
 # The server never reads a ground tile on its main thread from a periodic check (a read takes about a second on Dave's PC, BugsList 108): the
 # zone, vent, snow and hint checks skip a beat while the tile is read on a worker. Actions a player asks for (digging, drinking) still read it.
 func _tile_ready_at(at: Vector3) -> bool:
-	return not tile_ready.is_valid() or bool(tile_ready.call(at.x, at.z))
+	return not ground_ready.is_valid() or bool(ground_ready.call(at.x, at.z))
 
 
+# Tell a client its biome: at once for a new player, after every teleport or respawn, and after a change that reads the same twice running (no flicker on
+# a border). Reliable and ordered, so the client's last value is the server's last.
 func _note_zone(peer: int, position: Vector3) -> void:
 	if not zone_at.is_valid() or not send_zone.is_valid():
 		return
@@ -949,11 +948,10 @@ func _note_zone(peer: int, position: Vector3) -> void:
 	if _zone_checked.has(peer) and now - int(_zone_checked[peer]) < ZONE_EVERY_MSEC:
 		return
 
-	_zone_checked[peer] = now
-
 	if not _tile_ready_at(position):
-		return   # the tile is being read on a worker: the zone and vent are looked at on the next 2 s check (BugsList 108)
+		return   # the tile is being read on a worker: the zone and vent are looked at on the next report once it is in (BugsList 108)
 
+	_zone_checked[peer] = now
 	_note_vent(peer, position)
 	var started: int = Time.get_ticks_usec()
 	var biome: int = int(zone_at.call(position))
