@@ -424,6 +424,7 @@ var _work_level: Dictionary = {}    # peer -> effort of the last tool work (data
 var _work_until: Dictionary = {}    # peer -> msec until which tool work counts as effort
 var _last_eat: Dictionary = {}      # peer -> msec
 var _last_drink: Dictionary = {}    # peer -> msec of the last mouthful at the water
+const COLD_FLOOR_HP := 25.0          # cold stops here, as an animal's blow does (hurt_player floor_hp)
 var _last_rain_s: float = -INF      # game seconds when it last rained (thirst.sources: intermittent brooks run for a day after rain)
 var _unfit: Dictionary = {}         # item id -> true: yields of poisonous plants never feed anyone
 var _last_use: Dictionary = {}      # peer -> msec of the last structure use
@@ -1884,8 +1885,13 @@ func _autosave() -> void:
 	_start_writer()
 
 
+# Save files that exist but could not be read (damaged with no usable .prev, or written by a newer server). While any are listed nothing is
+# saved, so a world that came up empty never overwrites the real one; terrain_server.gd refuses to start.
+var load_failures: Array = []
+
+
 func save() -> void:
-	if _dir == "" or not _dirty:
+	if _dir == "" or not _dirty or not load_failures.is_empty():
 		return
 
 	var t_wait: int = Time.get_ticks_usec()
@@ -7776,8 +7782,8 @@ func _read_area(key: String, gen: int) -> Dictionary:
 	var main: Variant = JSON.parse_string(FileAccess.get_file_as_string(path)) if FileAccess.file_exists(path) else null
 
 	if typeof(main) == TYPE_DICTIONARY and int(main.get("version", 0)) > VERSION:
-		push_error("server items: %s is from a newer version; kept as %s.bad" % [path, path])
-		DirAccess.rename_absolute(path, path + ".bad")
+		push_error("server items: %s is from a newer version; the server will not start over it" % path)
+		load_failures.append("%s/%s.json" % [AREA_DIR, key])   # nothing renamed: the build that wrote it still reads it
 		return {}
 
 	if typeof(main) == TYPE_DICTIONARY and int(main.get("gen", -1)) == gen and typeof(main.get("items")) == TYPE_ARRAY:
@@ -7804,7 +7810,8 @@ func _read_area(key: String, gen: int) -> Dictionary:
 		_area_recovered[key] = true
 		return prev   # as _read_json_version: a damaged file costs at most one save interval of that area
 
-	push_error("server items: %s is missing or damaged and has no usable copy; that area's items are lost" % path)
+	push_error("server items: %s is missing or damaged and has no usable earlier copy; the server will not start over it" % path)
+	load_failures.append("%s/%s.json" % [AREA_DIR, key])   # the header names it: saving now would drop that area's items for good
 	return {}
 
 
@@ -7822,20 +7829,27 @@ func _read_json_version(name: String, version: int, oldest: int = -1) -> Variant
 	if typeof(parsed) == TYPE_DICTIONARY and int(parsed.get("version", 0)) <= version and int(parsed.get("version", 0)) >= (version if oldest < 0 else oldest):
 		return parsed
 
-	push_error("server items: %s is not usable; kept as %s.bad" % [path, path])
-	DirAccess.rename_absolute(path, path + ".bad")
+	if typeof(parsed) == TYPE_DICTIONARY and int(parsed.get("version", 0)) > version:
+		push_error("server items: %s was saved by a newer server (version %d, this one reads %d): not loaded, nothing saved over it" % [path, int(parsed.get("version", 0)), version])
+		load_failures.append(name)   # an older build on a newer store: left as it is (terrain_server refuses to start)
+		return null
 
 	if typeof(parsed) == TYPE_DICTIONARY:
+		push_error("server items: %s is an older format this build no longer reads; kept as %s.bad" % [path, path])
+		DirAccess.rename_absolute(path, path + ".bad")   # dropped deliberately, as before
 		return null
 
 	if FileAccess.file_exists(path + ".prev"):
 		var previous: Variant = JSON.parse_string(FileAccess.get_file_as_string(path + ".prev"))
 
 		if typeof(previous) == TYPE_DICTIONARY and int(previous.get("version", 0)) <= version and int(previous.get("version", 0)) >= (version if oldest < 0 else oldest):
-			push_error("server items: %s restored from the save before it" % path)
+			push_error("server items: %s is damaged; kept as %s.bad and restored from the save before it" % [path, path])
+			DirAccess.rename_absolute(path, path + ".bad")
 			DirAccess.copy_absolute(path + ".prev", path)
 			return previous
 
+	push_error("server items: %s is damaged and has no usable earlier copy: not loaded, and nothing is saved over it" % path)
+	load_failures.append(name)   # starting on an empty world here would write it over the players' saves (terrain_server refuses to start)
 	return null
 
 
@@ -11610,7 +11624,9 @@ func _learn_food(peer: int, item_id: String, what: String) -> void:
 # A food that harms: in the first hour an unknown one costs food and water only, otherwise the stomach pays. Either way it is remembered.
 func _harm_bite(peer: int, item_id: String, hours: float, line: String) -> void:
 	var unknown: bool = not tried_of(peer).has(item_id)
-	_learn_food(peer, item_id, "harm")
+
+	if not (unknown and grace_of(peer) > 0.0 and _infection_cfg().get("odds", {}).has(item_id)):
+		_learn_food(peer, item_id, "harm")   # a food that only sometimes harms (raw meat) is not marked in the first hour: the first bite after it is a first bite (coordinator 22 Nov 2026)
 
 	if unknown and grace_of(peer) > 0.0:
 		var v: Dictionary = vitals_of(peer)
@@ -16691,9 +16707,10 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 	var hurt_at: float = float(cfg.get("hurt_at", 20.0))
 
 	if w < hurt_at:
-		# Cold costs health, slowly, more the colder; like hunger it stops at 1.
+		# Cold costs health, slowly, more the colder; it stops at COLD_FLOOR_HP (the floor of an animal's blow), so cold alone never leaves a
+		# player too weak to hold off wolves (coordinator 22 Nov 2026); one already lower is not pushed further.
 		var severe_mult: float = float(_body_cfg().get("severe_hurt_mult", 2.0)) if cold_stage(peer) == 3 else 1.0   # severe cold (docs/design/body_in_weather_design.md 4)
-		v["health"] = maxf(float(v["health"]) - float(cfg.get("hurt_per_s", 0.15)) * spent * (hurt_at - w) / maxf(hurt_at, 1.0) * 2.0 * severe_mult, 1.0)
+		v["health"] = maxf(float(v["health"]) - float(cfg.get("hurt_per_s", 0.15)) * spent * (hurt_at - w) / maxf(hurt_at, 1.0) * 2.0 * severe_mult, minf(float(v["health"]), COLD_FLOOR_HP))
 
 	# Messages with two levels each way, so a player on the edge is not nagged; with body_703 on, a third for severe cold.
 	var level: int = int(_cold_level.get(peer, 0))
@@ -25727,7 +25744,12 @@ func _salt_only(peer: int, thirst: Dictionary) -> bool:
 
 
 func _save_vitals() -> void:
-	_write_atomic("vitals.json", {"version": 1, "players": _vitals})
+	var rain: Variant = null   # seasonal brooks after a restart
+
+	if is_finite(_last_rain_s):
+		rain = _last_rain_s
+
+	_write_atomic("vitals.json", {"version": 1, "players": _vitals, "last_rain_s": rain})
 
 
 func _load_vitals() -> void:
@@ -25735,6 +25757,9 @@ func _load_vitals() -> void:
 
 	if parsed == null:
 		return
+
+	if parsed.get("last_rain_s", null) != null:
+		_last_rain_s = float(parsed["last_rain_s"])   # it rained before the restart: intermittent brooks still run (it read -INF: dry until the next rain)
 
 	for key in parsed.get("players", {}):
 		var row: Dictionary = parsed["players"][key]

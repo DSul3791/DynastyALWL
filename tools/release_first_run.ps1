@@ -209,7 +209,7 @@ finally {
 		foreach ($k in $composeEnv.Keys) { [Environment]::SetEnvironmentVariable($k, $composeEnv[$k]) }
 		Write-Host "== server: compose down (removes the test container and its volume)"
 		$code = Docker-Limited 300 "compose down" @("compose", "-p", $project, "-f", $compose, "down", "-v", "--timeout", "90")
-		if ($code -ne 0) { Fail "compose down exit $code: the test container $container or its volume may be left (docker compose -p $project down -v)" }
+		if ($code -ne 0) { Fail "compose down exit ${code}: the test container $container or its volume may be left (docker compose -p $project down -v)" }
 		foreach ($k in $savedEnv.Keys) { [Environment]::SetEnvironmentVariable($k, $savedEnv[$k]) }
 	}
 	# 6. uninstall (also after a failure, so the test install never stays)

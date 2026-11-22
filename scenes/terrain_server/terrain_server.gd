@@ -249,6 +249,9 @@ var game_clock = GameClockScript.new()   # the one game clock; advances only whi
 var _clock_saved_msec: int = 0
 
 
+var _refused_start: bool = false   # a save file exists but could not be read: the server quits at once and saves nothing
+
+
 func _ready() -> void:
 	net = $TerrainNet
 	var port: int = 24600
@@ -606,6 +609,16 @@ func _ready() -> void:
 	items.trunks_near = _arrow_trunks
 	items.dig_support = func(base, radius, depth): return TreeSupport.solid_share(store.ops.edits_near(base, radius + depth), base, radius, depth)
 	items.setup(ItemTableScript.load_default(), store_dir)
+
+	if not items.load_failures.is_empty():
+		var why: String = "SERVER NOT STARTED: these save files in %s exist but could not be read: %s. They were left as they are and nothing was saved over them. Run the server build that saved them, or restore each from its .prev copy if it has one, then start again." % [store_dir, ", ".join(PackedStringArray(items.load_failures))]
+		push_error(why)
+		print(why)
+		_run_note("refused", 0, why)
+		_refused_start = true
+		get_tree().quit(3)   # never come up on an empty world over the players' saves
+		return
+
 	admin = AdminScript.new()
 	admin.load_keys([store_dir + "/admin.json"] if _dedicated else ["res://data/admin.json", store_dir + "/admin.json"])
 	items.reset_terrain_edits = _reset_terrain_edits
@@ -3149,6 +3162,9 @@ func _on_admin_place(peer: int, kind: String, pos: Vector3, arg: String) -> void
 
 
 func _process(delta: float) -> void:
+	if _refused_start:
+		return
+
 	if store == null:
 		return
 
@@ -3402,11 +3418,17 @@ func _log_dir() -> String:
 # whether it obeys Play's stop request ("stop": 1, a server Play started; _stop_if_asked).
 # A game started while the old server is closing, or from a newer checkout, replaces it instead of joining a server that
 # will stop answering (Dave, build 619: stuck on "0 blocks arriving").
-func _run_note(state: String, listen_port: int) -> void:
+func _run_note(state: String, listen_port: int, why: String = "") -> void:
 	var file: FileAccess = FileAccess.open(_run_note_path(), FileAccess.WRITE)
 
 	if file != null:
-		file.store_string(JSON.stringify({"pid": OS.get_process_id(), "port": listen_port, "commit": _commit, "state": state, "stop": 1 if _quit_when_empty else 0}))
+		var note: Dictionary = {"pid": OS.get_process_id(), "port": listen_port, "commit": _commit, "state": state, "stop": 1 if _quit_when_empty else 0}
+
+		if why != "":
+			note["why"] = why   # "refused": the game's connect window shows it (terrain_client.gd _play_server_refused)
+			note["t"] = Time.get_unix_time_from_system()
+
+		file.store_string(JSON.stringify(note))
 		file.close()
 
 
@@ -3673,6 +3695,9 @@ func _load_game_clock() -> void:
 
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 
+	if typeof(parsed) != TYPE_DICTIONARY and FileAccess.file_exists(path + ".prev"):
+		parsed = JSON.parse_string(FileAccess.get_file_as_string(path + ".prev"))   # damaged: the save before it
+
 	if typeof(parsed) == TYPE_DICTIONARY and parsed.has("seconds"):
 		game_clock.seconds = float(parsed["seconds"])
 
@@ -3683,16 +3708,15 @@ func _save_game_clock() -> void:
 	if _store_path == "":
 		return
 
-	var file: FileAccess = FileAccess.open(_store_path + "/game_clock.json", FileAccess.WRITE)
-
-	if file != null:
-		file.store_string(JSON.stringify({"seconds": game_clock.seconds}))
+	ItemsScript._write_file(_store_path + "/game_clock.json", JSON.stringify({"seconds": game_clock.seconds}))   # whole to a .tmp, then moved over: a hard stop never tears it
 
 
 func _exit_tree() -> void:
 	_events.event("EXIT: server closed (exit_tree)")
 	_events.stop_watchdog()
-	_save_game_clock()
+
+	if not _refused_start:   # it never started: nothing is saved over the files it could not read (items.save is a no-op then; the threads still join)
+		_save_game_clock()
 
 	tunnels.stop()
 
@@ -3725,7 +3749,7 @@ func _exit_tree() -> void:
 		_bury_thread.wait_to_finish()
 		_bury_thread = null
 
-	if flora != null:
+	if flora != null and not _refused_start:
 		flora.save_removed(true)
 
 	if animals != null and animals.goblins != null:

@@ -12,7 +12,7 @@ Server/client split plan steps C1 to C3 (`/mnt/project-files/server-client-split
 2. `deploy/client/Dockerfile`: exports the "Windows Client" preset with that template: `Dynasty.exe`, `Dynasty.pck` and the water library, with `build_stamp.json` and `client_config.json` (the official server, `-Official`, default `hannibalshouse.duckdns.org:24600`, confirmed by Dave 22 Nov 2026) inside.
 3. `deploy/client/dynasty.iss`: Inno Setup (in a container) makes `DynastySetup-<N>.exe`. It installs for the current user into `%LOCALAPPDATA%\Programs\Dynasty`, with a Start menu entry and an optional desktop shortcut, and needs no administrator.
 4. `deploy/server/Dockerfile`: the server image of the same build, stamped, saved as `dynasty-server-build-<N>.tar` with `compose.yaml` and `SERVER.md`.
-5. With `-Publish`: a GitHub Release `build-<N>` (marked pre-release) with the installer, made with `gh` (signed in on Dave's PC).
+5. Only with `-Publish`: a GitHub Release `build-<N>` (marked pre-release) with the installer, made with `gh` (signed in on Dave's PC). The repository is public (Dave, 22 Nov 2026), so that is a public download of a game that holds the bought animal models: use it only on Dave's explicit yes. The default hand-off is the installer file on Dave's PC, shared by his own link.
 
 Everything lands in `..\dynasty_export\build-<N>\`.
 
@@ -24,7 +24,7 @@ On Dave's PC (PowerShell; not while he plays or a test gate runs):
 cd E:\Software\godotDev
 git clone -b main https://github.com/DSul3791/DynastyALWL.git dynasty_release
 cd dynasty_release
-powershell -ExecutionPolicy Bypass -File tools\make_release.ps1 -WindowsEditor <path to Dave's Godot 4.7.2 voxel editor .exe> -Publish
+powershell -ExecutionPolicy Bypass -File tools\make_release.ps1
 ```
 
 Next time: `git pull` in that folder, then the last line again.

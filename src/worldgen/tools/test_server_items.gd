@@ -311,7 +311,7 @@ func _init() -> void:
 	damaged.close()
 	var fourth = make(dir)
 	fourth.peer_connected_hello(1, "abcdef123456")
-	check(fourth.inventory_of(1).count_of(stone) == 0, "with no earlier copy a corrupt save starts clean")
+	check(fourth.inventory_of(1).count_of(stone) == 0 and fourth.load_failures == ["inventories.json"], "with no earlier copy a corrupt save is named and nothing is loaded from it (terrain_server refuses to start)")
 
 	# Gathering and loose items.
 	var g = make("user://test_server_items_b")
