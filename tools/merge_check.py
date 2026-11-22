@@ -195,6 +195,8 @@ ps1 = subprocess.run([sys.executable, "tools/check_ps1.py"], capture_output=True
 if ps1.returncode != 0:   # Dave's PC runs Windows PowerShell 5.1 and nothing here can run it: a script that does not parse fails there first
     for line in ps1.stdout.splitlines():
         bad("PowerShell: " + line)
+    if not ps1.stdout.strip():
+        bad("PowerShell check crashed: " + ps1.stderr[-200:])
 
 looks = subprocess.run([sys.executable, "tools/check_look_names.py"], capture_output=True, text=True)
 if looks.returncode != 0:

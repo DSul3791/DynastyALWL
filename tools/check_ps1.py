@@ -9,9 +9,9 @@ PC with "exit $code:" in a string, which 5.1 refuses to parse: InvalidVariableRe
 import re, subprocess, sys
 
 SCOPES = {"env", "script", "global", "local", "private", "using", "variable", "function", "alias"}
-VAR_COLON = re.compile(r'(?<![`\w])\$([A-Za-z_][A-Za-z0-9_]*):(?!:)')
+VAR_COLON = re.compile(r'(?<!`)\$([A-Za-z_][A-Za-z0-9_]*):(?!:)')
 
-files = subprocess.run(["git", "ls-files", "*.ps1"], capture_output=True, text=True, check=True).stdout.split()
+files = [f for f in subprocess.run(["git", "ls-files", "-z", "*.ps1"], capture_output=True, text=True, check=True).stdout.split("\0") if f]
 problems = []
 for path in files:
     raw = open(path, "rb").read()
