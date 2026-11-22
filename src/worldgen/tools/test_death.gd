@@ -277,8 +277,8 @@ func _init() -> void:
 	check(sleeper.hurt_player(1, 10.0, false, "wolves", 25.0) == "maimed" and not sleeper._asleep.has(1), "a maiming bite wakes a sleeper")
 	sleeper._asleep[1] = {"forced": true}   # passed out from exhaustion: a blow does not end that
 	sleeper._vitals["sleep-key-00001"]["health"] = 30.0
-	sleeper.hurt_player(1, 10.0, false, "wolves", 25.0)
-	check(sleeper._asleep.has(1), "a maiming bite leaves a passed-out sleeper asleep")
+	var forced_hit: String = sleeper.hurt_player(1, 10.0, false, "wolves", 25.0)
+	check(forced_hit == "maimed" and sleeper._asleep.has(1), "a maiming bite leaves a passed-out sleeper asleep (%s)" % forced_hit)
 
 	print("death tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
