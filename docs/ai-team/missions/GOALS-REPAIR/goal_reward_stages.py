@@ -27,7 +27,7 @@ STAGE_KEY = {"stone": "start", "bronze": "copper_bronze", "iron": "iron", "steel
 # Events with no item or structure to trace: the stage of what the event needs (the tool, station or skill named).
 EVENT_STAGES = {
     "drink": "stone", "tree_felled": "stone", "fire_lit": "stone", "ate_food": "stone", "sold": "stone", "fish_caught": "stone", "wanted_order": "stone",
-    "carcass_worked": "stone", "worn_warmth": "stone", "talked": "stone", "moved_lit_night": "stone", "path_laid": "stone", "fire_tier": "stone",
+    "carcass_worked": "stone", "snare_catch": "stone", "worn_warmth": "stone", "talked": "stone", "moved_lit_night": "stone", "path_laid": "stone", "fire_tier": "stone",
     "map_surveyed": "stone", "map_redrawn": "stone",
     "bellows_iron": "iron",          # iron ore smelted at the Improved smelter's bellows
     "tempered": "steel",             # tempering steel at the Master smithy

@@ -56,6 +56,7 @@ const EditedGroundScript := preload("res://src/stream/edited_ground.gd")
 const CoarseGroundScript := preload("res://src/stream/server_coarse_ground.gd")
 const FogGroundScript := preload("res://src/shared/fog_ground.gd")
 const TrailsScript := preload("res://src/stream/server_trails.gd")
+const RangesScript := preload("res://src/stream/server_ranges.gd")
 const BanditsScript := preload("res://src/stream/server_bandits.gd")
 const MapScript := preload("res://src/stream/server_map.gd")
 const MapCodec := preload("res://src/shared/map_codec.gd")
@@ -112,6 +113,7 @@ var generator
 var store
 var flora
 var trails                             # ServerTrails: worn game trails the animals leave
+var ranges                             # ServerRanges: animal places and the trails between them (docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md)
 var bandits                            # ServerBandits: bandit camp sites woken by road traffic (docs/design/BANDIT_CAMPS.md)
 var map_knowledge                      # ServerMap: what each character has surveyed for its charcoal Map (protocol 120)
 var animals                            # ServerAnimals: wildlife around the players (rabbits)
@@ -713,6 +715,16 @@ func _ready() -> void:
 	trails.game_seconds = func(): return game_clock.seconds
 	trails.setup(store_dir)
 	animals.trails = trails
+	ranges = RangesScript.new()
+	ranges.setup()
+	ranges.world_seed = items.world_seed
+	ranges.ground_height = edited_ground.surface   # the generated ground: the places come out the same whatever has been dug
+	ranges.blocked = npcs.blocked
+	ranges.biome_weight = func(sp, x, z): return animals.biome_weight(animals.species_def(sp), x, z)
+	ranges.no_spawn = animals.no_spawn
+	ranges.ground_ready = items.ground_ready
+	animals.ranges = ranges
+	trails.ranges = ranges
 	map_knowledge = MapScript.new()
 	map_knowledge.key_of = func(peer): return items.key_of(peer)
 	map_knowledge.skill_of = func(peer): return items.working_level(peer, "mapping")
@@ -788,6 +800,8 @@ func _ready() -> void:
 	items.animal_snare = func(id): return animals.snare(id)
 	items.animal_lure = func(id, point): return animals.lure_to(id, point)
 	items.trail_strength = func(x, z): return trails.strength_at(x, z)
+	items.run_distance = func(x, z, kind): return ranges.route_distance(x, z, kind)
+	items.species_active = func(sp): return animals.activity_chance(animals.species_def(sp))
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> Dictionary:
 		var member: String = tribes.member_along(origin, dir, reach)
@@ -2984,7 +2998,7 @@ func _send_npcs(delta: float) -> void:
 			net.animals.rpc_id(peer, beasts, Time.get_ticks_msec())   # with the server clock the row times are on (protocol 147)
 
 		for block in trails.updates_for(peer, at, now_ms):
-			net.trails.rpc_id(peer, block[0], block[1], block[2])
+			net.trails.rpc_id(peer, block[0], block[1], block[2], block[3])
 
 		for block in map_knowledge.updates_for(peer, now_ms):
 			net.map_blocks.rpc_id(peer, block[0], block[1], block[2])
@@ -3076,6 +3090,7 @@ func _process(delta: float) -> void:
 	coarse_ground.tick()
 	_events.mark("trails")
 	trails.tick(delta)
+	ranges.tick(npcs.player_positions.call(), Time.get_ticks_msec())
 	bandits.tick()
 	bandits.camp_tick(delta, items.peer_positions())
 	map_knowledge.tick(delta)   # the save interval only
