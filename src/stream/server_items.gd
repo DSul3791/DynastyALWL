@@ -15530,6 +15530,11 @@ func trap_marks(peer: int) -> Array:
 	return _traps.marks_of(key_of(peer)) if _traps != null else []
 
 
+# A number that changes when this peer's trap marks do (server_traps.gd marks_sig, worked out with the marks, not on every ask).
+func trap_marks_sig(peer: int) -> int:
+	return _traps.marks_sig(key_of(peer)) if _traps != null else 0
+
+
 func stance_of(peer: int) -> int:
 	return int(_stance.get(peer, 0))
 
