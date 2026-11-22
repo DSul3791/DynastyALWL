@@ -26,8 +26,11 @@ const SPRING_NEAR_M := 5500.0      # and springs (their open radius reaches abou
 # Vector4(open, shore, thaw, snow): open and shore are Ice covers at 3 m and 1 m, thaw 0..1 how much of the last 30 days' thickest ice has gone,
 # snow the lying snow (weather_sounds.gd ground_snow), which the shader puts only on ice of 5 cm or more.
 static func look(game_s: float, zone_group: String, altitude_m: float, seed_value: int, ground_snow: float) -> Vector4:
-	var deep: Dictionary = Ice.season(game_s, zone_group, altitude_m, OPEN_DEPTH_M, seed_value)
-	var shore: float = Ice.cover(game_s, zone_group, altitude_m, SHORE_DEPTH_M, seed_value)
+	return look_from(Ice.season(game_s, zone_group, altitude_m, OPEN_DEPTH_M, seed_value), Ice.cover(game_s, zone_group, altitude_m, SHORE_DEPTH_M, seed_value), ground_snow)
+
+
+# The same from an Ice.season at OPEN_DEPTH_M and an Ice.cover at SHORE_DEPTH_M already worked out (terrain_client keeps them a while).
+static func look_from(deep: Dictionary, shore: float, ground_snow: float) -> Vector4:
 	return Vector4(float(deep["cover"]), shore, thaw_of(float(deep["cover"]), float(deep["peak"])), clampf(ground_snow, 0.0, 1.0))
 
 
