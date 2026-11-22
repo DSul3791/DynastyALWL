@@ -1260,7 +1260,7 @@
 			"kind": "material",
 			"description": "Bright red seed pods of the wild rose. Tart and full of seeds; boiled into syrup.",
 			"how_to_get": [
-				"Picked from wild rose (spring/summer/autumn)"
+				"Picked from wild rose in autumn"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -1270,7 +1270,7 @@
 			"kind": "material",
 			"description": "Soft pink wild rose petals. Scent a room or steep in water.",
 			"how_to_get": [
-				"Picked from wild rose (spring/summer/autumn)"
+				"Picked from wild rose in summer"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -12413,6 +12413,19 @@
 			],
 			"used_for": [
 				"Sown with the hoe (Garden) to grow a sea holly"
+			],
+			"obtainable_now": true
+		},
+		"wild_rose_seed": {
+			"name": "Wild rose seed",
+			"kind": "material",
+			"description": "Hard little seeds from inside rose hips. Sow them with the hoe in a tilled bed or a planter and a wild rose grows.",
+			"how_to_get": [
+				"From a wild rose when its hips are picked in autumn",
+				"From a ripe wild rose in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a wild rose"
 			],
 			"obtainable_now": true
 		},

@@ -145,9 +145,11 @@ class Reach:
             if iid in yields:
                 self.give(iid, "a flora yield")
         for key, row in self.drops.get("harvest_yield", {}).items():
-            self.give(row.get("item"), "harvested from %s" % key)
+            for r in row.get("by_season", {}).values() or [row]:   # a by-season row (wild rose) gives each season's product
+                self.give(r.get("item"), "harvested from %s" % key)
         for key, row in self.drops.get("berry_yield", {}).items():
-            self.give(row.get("item"), "picked from %s" % key)
+            for r in row.get("by_season", {}).values() or [row]:
+                self.give(r.get("item"), "picked from %s" % key)
         for row in self.drops.get("stump", {}).get("chip", []) + self.drops.get("stump", {}).get("final", []):
             self.give(row[0], "chopped from a stump")
         for row in self.drops.get("shrub_work", {}).get("axe_gives", []):

@@ -146,9 +146,11 @@ func _init() -> void:
 			states_seen[int(srow["state"])] = sid
 
 	var species: Dictionary = {}
+	var species_seasons: Dictionary = {}
 
 	for entry in _read("../tables/flora.json").get("entries", []):
 		species[String(entry.get("name", ""))] = true
+		species_seasons[String(entry.get("name", ""))] = entry.get("season", [])
 
 	# Where items can come from.
 	var obtainable: Dictionary = {}
@@ -382,6 +384,10 @@ func _init() -> void:
 	# Berries per plant (drops.json berry_yield): a flora species, one of its yields, a count of at least 1 and a berry stack of 100.
 	for key in drops.get("berry_yield", {}):
 		var berry: Dictionary = drops["berry_yield"][key]
+
+		if berry.has("by_season"):
+			fail("drops.json berry_yield.%s: by_season rows go in harvest_yield" % key)
+
 		var berry_id: String = String(berry.get("item", ""))
 
 		if not species.has(key):
@@ -402,18 +408,25 @@ func _init() -> void:
 
 	# Harvest per plant beyond berries (drops.json harvest_yield): same shape, and a harvest takes at most 3 pack slots.
 	for key in drops.get("harvest_yield", {}):
-		var harvest: Dictionary = drops["harvest_yield"][key]
-		var harvest_id: String = String(harvest.get("item", ""))
-
 		if not species.has(key):
 			fail("drops.json harvest_yield: unknown flora species '%s'" % key)
 
-		want_item.call(harvest_id, "drops.json harvest_yield.%s" % key)
-		obtainable[harvest_id] = true   # a harvest row (fruit trees included) is a source
-		var harvest_stack: int = maxi(1, int(gathered_file.get("items", {}).get(harvest_id, items_file.get("items", {}).get(harvest_id, {})).get("stack", 1)))
+		# A by-season row (wild rose: petals in summer, hips in autumn) is one row per season, each a season of the plant (flora.json "season").
+		var by_season: Dictionary = (drops["harvest_yield"][key] as Dictionary).get("by_season", {})
+		var harvest_rows: Array = by_season.values() if not by_season.is_empty() else [drops["harvest_yield"][key]]
 
-		if int(harvest.get("count", 0)) < 1 or ceili(float(harvest.get("count", 0)) / float(harvest_stack)) > 3:
-			fail("drops.json harvest_yield.%s: count must be 1 or more and fit 3 slots (%s stacks to %d)" % [key, harvest_id, harvest_stack])
+		for season_key in by_season:
+			if not (species_seasons.get(key, []) as Array).has(season_key):
+				fail("drops.json harvest_yield.%s.by_season: '%s' is not one of the plant's seasons" % [key, season_key])
+
+		for harvest in harvest_rows:
+			var harvest_id: String = String(harvest.get("item", ""))
+			want_item.call(harvest_id, "drops.json harvest_yield.%s" % key)
+			obtainable[harvest_id] = true   # a harvest row (fruit trees included) is a source
+			var harvest_stack: int = maxi(1, int(gathered_file.get("items", {}).get(harvest_id, items_file.get("items", {}).get(harvest_id, {})).get("stack", 1)))
+
+			if int(harvest.get("count", 0)) < 1 or ceili(float(harvest.get("count", 0)) / float(harvest_stack)) > 3:
+				fail("drops.json harvest_yield.%s: count must be 1 or more and fit 3 slots (%s stacks to %d)" % [key, harvest_id, harvest_stack])
 
 	for group in ["by_species", "by_kind"]:
 		for key in drops.get(group, {}):

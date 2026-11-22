@@ -269,15 +269,17 @@ func product_name_at(point: Vector3) -> String:
 	if not named_for_product(row):
 		return ""
 
+	var season: String = _client.game_clock.season()
 	var berry: Dictionary = GatherRules.harvest_row(_drops, str(row.get("name", "")))
 
 	if berry.is_empty() or _client.flora.is_stripped(found[0], id):
 		return ""
 
-	var product: String = _items.table.name_of(_items.table.number_of(str(berry["item"])))
+	var now_row: Dictionary = GatherRules.harvest_row(_drops, str(row.get("name", "")), season)   # a by-season bush (wild rose) names this season's product
+	var product: String = _items.table.name_of(_items.table.number_of(str((berry if now_row.is_empty() else now_row)["item"])))
 
 	# Out of its season the bush says so (Dave's QA list, BUG-018: no raspberries in spring is right, but the look-at line must say why).
-	if not GatherRules.in_season(row, _client.game_clock.season()):
+	if not GatherRules.in_season(row, season) or now_row.is_empty():
 		return OUT_OF_SEASON_FORMAT % product
 
 	return product
@@ -386,7 +388,7 @@ func _candidates(radius: float, view_only: bool = false) -> Array:
 			if berry and verdict["ok"] and _client.flora.is_stripped(chunk, id):
 				verdict = {"ok": false, "reason": "nothing left to pick this season"}
 
-			out.append({"d": d, "pos": p, "chunk": chunk, "id": id, "key": key, "name": name, "ok": verdict["ok"], "reason": verdict["reason"], "berry": berry, "left": left, "item": str(GatherRules.harvest_row(_drops, str(row.get("name", ""))).get("item", ""))})
+			out.append({"d": d, "pos": p, "chunk": chunk, "id": id, "key": key, "name": name, "ok": verdict["ok"], "reason": verdict["reason"], "berry": berry, "left": left, "item": str(GatherRules.harvest_row(_drops, str(row.get("name", "")), season).get("item", ""))})
 
 	out.sort_custom(func(a, b): return a["d"] < b["d"])
 	return out
