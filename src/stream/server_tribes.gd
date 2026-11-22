@@ -1,5 +1,7 @@
 extends RefCounted
 
+const ItemsScript := preload("res://src/stream/server_items.gd")   # _write_file: whole-file writes
+
 # Goblin tribes (Dave 19 Nov 2026: goblins "apprehensive but willing to communicate and trade/buy and sell"; later tribes "friendly, not friendly,
 # indifferent etc."). data/creatures/goblin_tribes.json holds every tribe, its attitude and every number; this file holds no tribe of its own.
 # The members are ordinary NPCs (server_npcs.gd adds them from the same file, at their own spots), so talking and trading are Hob's: the same
@@ -61,6 +63,9 @@ func setup(store_dir: String = "") -> void:
 
 	if _path != "" and FileAccess.file_exists(_path):
 		var saved: Variant = JSON.parse_string(FileAccess.get_file_as_string(_path))
+
+		if typeof(saved) != TYPE_DICTIONARY and FileAccess.file_exists(_path + ".prev"):
+			saved = JSON.parse_string(FileAccess.get_file_as_string(_path + ".prev"))   # damaged: the save before it
 		_state = saved.get("tribes", {}) if typeof(saved) == TYPE_DICTIONARY and int(saved.get("version", 0)) == 1 else {}
 		_stock_from = saved.get("stock_from", {}) if typeof(saved) == TYPE_DICTIONARY and int(saved.get("version", 0)) == 1 else {}
 
@@ -632,8 +637,4 @@ func save() -> void:
 	if _path == "":
 		return
 
-	var file: FileAccess = FileAccess.open(_path, FileAccess.WRITE)
-
-	if file != null:
-		file.store_string(JSON.stringify({"version": 1, "tribes": _state, "stock_from": _stock_from}))
-		file.close()
+	ItemsScript._write_file(_path, JSON.stringify({"version": 1, "tribes": _state, "stock_from": _stock_from}))   # whole to a .tmp, then moved over: a hard stop never tears it

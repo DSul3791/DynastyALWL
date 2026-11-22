@@ -3680,6 +3680,9 @@ func _load_game_clock() -> void:
 
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
 
+	if typeof(parsed) != TYPE_DICTIONARY and FileAccess.file_exists(path + ".prev"):
+		parsed = JSON.parse_string(FileAccess.get_file_as_string(path + ".prev"))   # damaged: the save before it
+
 	if typeof(parsed) == TYPE_DICTIONARY and parsed.has("seconds"):
 		game_clock.seconds = float(parsed["seconds"])
 
@@ -3690,10 +3693,7 @@ func _save_game_clock() -> void:
 	if _store_path == "":
 		return
 
-	var file: FileAccess = FileAccess.open(_store_path + "/game_clock.json", FileAccess.WRITE)
-
-	if file != null:
-		file.store_string(JSON.stringify({"seconds": game_clock.seconds}))
+	ItemsScript._write_file(_store_path + "/game_clock.json", JSON.stringify({"seconds": game_clock.seconds}))   # whole to a .tmp, then moved over: a hard stop never tears it
 
 
 func _exit_tree() -> void:
