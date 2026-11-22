@@ -15530,6 +15530,11 @@ func trap_marks(peer: int) -> Array:
 	return _traps.marks_of(key_of(peer)) if _traps != null else []
 
 
+# A number that changes when this peer's trap marks do (server_traps.gd marks_sig, worked out with the marks, not on every ask).
+func trap_marks_sig(peer: int) -> int:
+	return _traps.marks_sig(key_of(peer)) if _traps != null else 0
+
+
 func stance_of(peer: int) -> int:
 	return int(_stance.get(peer, 0))
 
@@ -15538,6 +15543,15 @@ func stance_of(peer: int) -> int:
 # see terrain_server._swim_state): swimming is work whatever the client says.
 func set_swimming(peer: int, swimming: bool) -> void:
 	_swimming[peer] = swimming
+
+
+# Protocol 151 (server_players.gd): what the other players see of this one.
+func is_swimming(peer: int) -> bool:
+	return bool(_swimming.get(peer, false))
+
+
+func carries_log(peer: int) -> bool:
+	return str(_shoulder_sent.get(peer, "")) != ""
 
 
 func set_cave_pool(peer: int, in_pool: bool) -> void:
@@ -18291,7 +18305,7 @@ func _drop_free_crafts(peer: int) -> void:
 
 
 # --- Gather from the sea edge (WATER_GATHER_SPEC.md; Tyler 31 Oct 2026) ---
-# ACT_GATHER_EDGE: with a bucket, clay jug or waterskin in the pack and the sea within reach, one `sea_water`; otherwise the tide-line node of the cell the player stands in
+# ACT_GATHER_EDGE: with a container shore_nodes.json lists (bucket, clay jug, clay pot, waterskin) in the pack and the sea within reach, one `sea_water`; otherwise the tide-line node of the cell the player stands in
 # (data/items/shore_nodes.json), the same node every time that game day, used up until the next. `water_kind` is set by the server scene (position -> "sea_shallow", "river", ...;
 # unset: no sea anywhere). Fresh water into a container is the existing drink action (_drink_water).
 var _shore_taken: Dictionary = {} # "cx,cz" -> game day the node was used
@@ -21696,8 +21710,8 @@ func _hint_trigger_true(peer: int, st: Dictionary, trigger: String) -> bool:
 		"beach_with_container", "beach_with_bucket":   # a water container in the pack at the sea edge (ACT_GATHER_EDGE reach)
 			var carries: bool = false
 
-			for container in (["bucket"] if trigger == "beach_with_bucket" else ["bucket", "clay_jug", "waterskin"]):
-				carries = carries or inv.count_of(table.number_of(container)) >= 1
+			for container in (["bucket"] if trigger == "beach_with_bucket" else _shore_data().get("containers", [])):   # the containers gather_edge fills
+				carries = carries or inv.count_of(table.number_of(str(container))) >= 1
 
 			return carries and _sea_near(_peer_pos[peer], float(_shore_data().get("reach_m", 4.0)))
 		"near_nettle":   # no flora query for small plants on the server: the first nettles in the pack stand in for "near a nettle"

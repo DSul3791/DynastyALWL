@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Gather from the sea edge (WATER_GATHER_SPEC.md; Tyler 31 Oct 2026): with a bucket, clay jug or waterskin in the pack and the sea within reach, E at the edge gives one
+# Gather from the sea edge (WATER_GATHER_SPEC.md; Tyler 31 Oct 2026): with a container shore_nodes.json lists (bucket, clay jug, clay pot, waterskin) in the pack and the sea within reach, E at the edge gives one
 # sea water; sea water boiled at a campfire pot gives sea salt; without a container the beach cell holds a tide-line node (seaweed, shellfish, crab meat at night, eggs in
 # spring and summer) that is the same every time on a game day, is used up until the next day, and is not there away from the sea.
 #   godot --headless --path . --script res://src/worldgen/tools/test_shore_gather.gd

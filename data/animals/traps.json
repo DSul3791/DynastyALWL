@@ -5,6 +5,8 @@
 	"kind": "snare_trap",
 	"item": "snare",
 	"check_s": 30.0,
+	"marks_refresh_s": 2.0,
+	"marks_note": "The Map's trap marks (protocol 150): each owner's list is read at most every marks_refresh_s real seconds (a trap set shows at once, one taken up within this), and traps of one kind within a metre are one mark.",
 	"active_m": 200.0,
 	"base_chance": 0.35,
 	"lure_m": 2.5,
