@@ -154,8 +154,10 @@ func _init() -> void:
 	var area: Dictionary = {}
 	var data = generator.get_tile(Vector2i(3, 4))
 
-	for cz in range(0, 60, 7):
-		for cx in range(0, 60, 7):
+	# Sample sizes (testing slim-down round 2, 22 Nov 2026; 113 s -> 56 s in the cloud): every 10th chunk (0.60 km2 of forest, the check needs
+	# 0.3), 3 x 3 chunks of shrubs (5332 shrubs) and young conifers in 3 x 3 chunks with their parents in 5 x 5 (6806 young). Same checks, all pass.
+	for cz in range(0, 60, 10):
+		for cx in range(0, 60, 10):
 			var origin: Vector2 = Vector2(data.x0 + float(cx) * 256.0, data.z0 + float(cz) * 256.0)
 			var made: Dictionary = placer.chunk_items(placer.chunk_of(origin.x + 1.0, origin.y + 1.0))
 
@@ -191,6 +193,9 @@ func _init() -> void:
 	var meadow: int = biome_ids["temperate_grassland"]
 	var meadow_km2: float = float(area.get(meadow, 0.0))
 
+	print("meadow sampled %.2f km2" % meadow_km2)
+	_check(meadow_km2 > 0.05, "the sample covers meadow (%.2f km2)" % meadow_km2)
+
 	if meadow_km2 > 0.05:
 		_check(float(counts.get("%d/tall_grass" % meadow, 0)) / meadow_km2 >= 3000.0, "meadows have tall grass (%.0f per km2)" % (float(counts.get("%d/tall_grass" % meadow, 0)) / meadow_km2))
 
@@ -199,8 +204,8 @@ func _init() -> void:
 	var points: Array = []   # [x, z, species id]
 	var origin_chunk: Vector2i = placer.chunk_of(53301.0, 68427.0)
 
-	for cj in range(-2, 3):
-		for ci in range(-2, 3):
+	for cj in range(-1, 2):
+		for ci in range(-1, 2):
 			var made: Dictionary = placer.chunk_items(Vector2i(origin_chunk.x + ci, origin_chunk.y + cj))
 
 			for n in range(made["ids"].size()):
@@ -312,10 +317,10 @@ func _init() -> void:
 	var spawn_xz: Vector2 = Vector2(53296.0, 68080.0)   # only a fixed sample area of the starter tile: the old spawn (x 53296, z 68080), kept when the spawn moved to the starter town (20 Nov 2026)
 	var spawn_chunk: Vector2i = placer.chunk_of(spawn_xz.x, spawn_xz.y)
 
-	for dz in range(-3, 4):
-		for dx in range(-3, 4):
+	for dz in range(-2, 3):
+		for dx in range(-2, 3):
 			# Trees only: the trees are the full chunk's but for any beside a bush-covered spring (chunk_items), the same counts here on 15 Nov
-			# 2026 (14687 young, 10 lonely both ways), and only trees are counted; the full chunks cost 61 s of this test on David4, trees only 27 s (flora_profile.gd, 15 Nov 2026).
+			# 2026 (14687 young, 10 lonely both ways, at the 7 x 7 sample), and only trees are counted; the full chunks cost 61 s of this test on David4, trees only 27 s (flora_profile.gd, 15 Nov 2026).
 			var made: Dictionary = placer.chunk_items(Vector2i(spawn_chunk.x + dx, spawn_chunk.y + dz), true)
 
 			for n in range(made["ids"].size()):
@@ -329,7 +334,7 @@ func _init() -> void:
 
 				if h >= 8.0:
 					grown.append(Vector2(at.x, at.z))
-				elif h < 4.0 and str(sp["shape"]) == "conifer" and absi(dx) <= 2 and absi(dz) <= 2:
+				elif h < 4.0 and str(sp["shape"]) == "conifer" and absi(dx) <= 1 and absi(dz) <= 1:
 					young.append(Vector2(at.x, at.z))
 
 	var lonely: int = 0
@@ -349,6 +354,7 @@ func _init() -> void:
 			lonely += 1
 
 	print("young conifers near the spawn: %d, lonely (no nursery, no grown tree within 22 m): %d" % [young.size(), lonely])
+	_check(young.size() > 100, "the sample holds young conifers (%d)" % young.size())
 	_check(lonely * 50 <= young.size(), "at most 2 percent of young conifers stand alone in open ground (a parent crown across a chunk edge is not seen) (%d of %d)" % [lonely, young.size()])
 	print("Test done: %d fail" % failures)
 	quit(1 if failures > 0 else 0)

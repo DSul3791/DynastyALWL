@@ -138,6 +138,7 @@ var weather: Dictionary = {}           # the weather at the water tile now (Weat
 var _weather_next_msec: int = 0
 var _blood_sent: Dictionary = {}       # peer -> hash of the blood trail last sent
 var _burrows_sent: Dictionary = {}     # peer -> hash of the burrow spots last sent
+var _trap_marks_sent: Dictionary = {}  # peer -> hash of the trap marks last sent for its Map
 var _nests_sent: Dictionary = {}       # peer -> hash of the nest spots last sent
 var _holes_sent: Dictionary = {}       # peer -> hash of the ice holes last sent (protocol 97)
 var _far_fires_sent: Dictionary = {}   # peer -> hash of the far lit campfires last sent (protocol 114)
@@ -1391,6 +1392,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 	_blood_sent.erase(peer_id)
 	_burrows_sent.erase(peer_id)
+	_trap_marks_sent.erase(peer_id)
 	_nests_sent.erase(peer_id)
 	_holes_sent.erase(peer_id)
 	_far_fires_sent.erase(peer_id)
@@ -3027,6 +3029,13 @@ func _send_npcs(delta: float) -> void:
 
 		for block in map_knowledge.updates_for(peer, now_ms):
 			net.map_blocks.rpc_id(peer, block[0], block[1], block[2])
+
+		var marks: Array = items.trap_marks(peer)   # the snares and Bird traps this character has set, marked on its Map (protocol 150)
+		var marks_sig: int = hash(marks)
+
+		if not _trap_marks_sent.has(peer) or int(_trap_marks_sent[peer]) != marks_sig:
+			_trap_marks_sent[peer] = marks_sig
+			net.trap_marks.rpc_id(peer, marks)
 
 		var trail: PackedVector3Array = animals.blood_near(at)
 		var trail_sig: int = hash(trail)

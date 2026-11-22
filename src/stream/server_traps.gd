@@ -19,6 +19,8 @@ var _grid: Dictionary = {}         # Vector2i cell -> Array of set trap ids (sta
 var _grid_built: bool = false
 var _catch_sp: Dictionary = {}     # species any trap kind can catch: a pass by any other animal returns at once
 var _lure_max: float = 0.0         # the widest lure_m of any kind
+var _owned: Dictionary = {}        # owner key -> Array of that owner's set trap ids, oldest first, for their Map (protocol 150)
+var _owned_built: bool = false     # false until the first ask (a loaded save's traps are found once, then kept by on_placed)
 
 const GRID_M := 32.0
 
@@ -215,7 +217,7 @@ func tick(delta: float) -> void:
 	if _grid.is_empty():
 		return
 
-	var active: float = float(cfg.get("active_m", 150.0))
+	var active: float = float(cfg.get("active_m", 200.0))
 	var now: float = host._now_game_s()
 	var seen: Dictionary = {}
 
@@ -560,11 +562,78 @@ func on_placed(peer: int, id: int) -> void:
 	st["owner"] = str(host._peer_key.get(peer, ""))
 	st["set_at"] = host._now_game_s()
 	st["away_at"] = host._now_game_s()
+	st["seq"] = host._next_uid
+	host._next_uid += 1
 	_note_run(host._items[id])
 	_ensure_grid()
 	_grid_add(id)
-	st["seq"] = host._next_uid
-	host._next_uid += 1
+	_own(str(st["owner"]), id)
 
 	if str(st.get("kind", "")) == str(cfg.get("kind", "snare_trap")):
 		host._goal_event(peer, "snare_set")   # ADD-08: a snare, not the Bird trap kind
+
+
+# The Map's marks for the traps the character `key` has set: [[x, z, kind], ...], oldest first; [] for none or no character. Reads only
+# that owner's own list: a trap taken up or broken drops out here, at once, with no pass over the world.
+func marks_of(key: String) -> Array:
+	_ensure_owned()
+
+	if not _owned.has(key):
+		return []
+
+	var ids: Array = _owned[key]
+	var out: Array = []
+
+	for i in range(ids.size() - 1, -1, -1):
+		var it: Dictionary = host._items.get(ids[i], {})
+
+		if is_snare(it) and str(it["struct"].get("owner", "")) == key:
+			out.push_front([snappedf(float(it["pos"].x), 0.1), snappedf(float(it["pos"].z), 0.1), str(it["struct"].get("kind", ""))])
+		else:
+			ids.remove_at(i)
+
+	if ids.is_empty():
+		_owned.erase(key)
+
+	return out
+
+
+# Each owner's set traps by their order of setting: one pass over the world items, once (a load); on_placed keeps it after that.
+func _ensure_owned() -> void:
+	if _owned_built:
+		return
+
+	_owned_built = true
+	var seqs: Dictionary = {}   # owner key -> [[seq, id], ...]
+
+	for id in host._items:
+		var it: Dictionary = host._items[id]
+
+		if not is_snare(it) or str(it["struct"].get("owner", "")) == "":
+			continue
+
+		var key: String = str(it["struct"]["owner"])
+
+		if not seqs.has(key):
+			seqs[key] = []
+
+		seqs[key].append([float(it["struct"].get("seq", 0)), int(id)])
+
+	for key in seqs:
+		var rows: Array = seqs[key]
+		rows.sort_custom(func(a, b): return float(a[0]) < float(b[0]))
+		_owned[key] = rows.map(func(row): return row[1])
+
+
+func _own(key: String, id: int) -> void:
+	_ensure_owned()
+
+	if key == "":
+		return
+
+	var ids: Array = _owned.get(key, [])
+
+	if not ids.has(id):
+		ids.append(id)
+
+	_owned[key] = ids
