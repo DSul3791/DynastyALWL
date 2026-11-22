@@ -64,6 +64,16 @@ func _init() -> void:
 	check(on_wet and prints.size() == 1, "deer prints only on the wet crossing, one line per 30 m (%d)" % prints.size())
 	check(count(signs, "droppings") == 1, "deer droppings by the bed")
 	check(SignsScript.signs_for({Vector2i(0, 0): [routes[2]]}, wet, c).filter(func(s): return str(s[0]) == "scrape").is_empty(), "a run on its own has no scrape")
+	# Runs crossing square between their points (points 4 m apart, the nearest 2 m either side of the crossing): still one scrape there.
+	var square: Array = [
+		[0, line(Vector2(300.0, 290.0), Vector2(300.0, 330.0))],   # points at z 290, 294 ... 310, 314: the crossing at z 312 is between
+		[0, line(Vector2(270.0, 312.0), Vector2(330.0, 312.0))],   # points at x 270, 274 ... 298, 302: the crossing at x 300 is between
+	]
+	var cross: Array = SignsScript.signs_for({Vector2i(1, 1): square}, wet, c).filter(func(s): return str(s[0]) == "scrape")
+	check(cross.size() == 1 and (cross[0][1] as Vector2).distance_to(Vector2(300.0, 312.0)) < 1.5, "runs crossing between their points still get one scrape at the crossing (%s)" % str(cross))
+	# Only the routes near the player are worked out, each kept whole.
+	var near: Dictionary = SignsScript.routes_near({Vector2i(0, 0): routes}, Vector2(100.0, 60.0), 15.0)
+	check(near.size() == 1 and (near[Vector2i(0, 0)] as Array).size() == 1 and (near[Vector2i(0, 0)][0][1] as PackedVector2Array).size() == routes[2][1].size(), "only the run that comes within reach is worked out, whole")
 
 	# Tracking: nothing untrained, latrines and droppings from see_level, scrapes and prints from fine_level; reach grows to 100.
 	check(is_zero_approx(SignsScript.reach_m(10, c)) and not SignsScript.shows("latrine", 10, c), "at Tracking 10 no sign shows")
@@ -93,6 +103,40 @@ func _init() -> void:
 	view._next_msec = 0
 	view.update(Vector3(120.0, 5.0, 110.0), 80, false)
 	check(view.shown == 0, "settled ground (its routes no longer sent) leaves no signs")
+
+	# Water that loads after the routes came: the prints show once the player has moved, with no new routes.
+	var loaded: Dictionary = {"water": false}
+	view.wet = func(x, _z): return loaded["water"] and x > 120.0 and x < 140.0
+	view.set_routes(0, 0, [routes[3]])
+	view._next_msec = 0
+	view.update(Vector3(130.0, 5.0, 195.0), 80, false)
+	check(not view._nodes.has("print") or (view._nodes["print"] as MultiMeshInstance3D).multimesh.instance_count == 0, "before the water is known the deer trail shows no prints")
+	loaded["water"] = true
+	view._next_msec = 0
+	view.update(Vector3(130.0, 5.0, 204.0), 80, false)
+	check(view._nodes.has("print") and (view._nodes["print"] as MultiMeshInstance3D).multimesh.instance_count >= 4, "once it loads and the player moves on, the prints show")
+
+	# A heap whose middle falls on a trunk (ground 14 m there) lies on the ground beside it, and a print on the trunk is left out.
+	var dung: Vector2 = signs.filter(func(s): return str(s[0]) == "droppings")[0][1]
+	view.ground_height = func(x, z): return 14.0 if Vector2(x, z).distance_to(dung) < 0.3 or (absf(x - 122.0) < 0.35 and absf(z - 200.0) < 0.5) else 5.0
+	view._next_msec = 0
+	view.update(Vector3(60.0, 5.0, 200.0), 100, false)
+	var low_heap: bool = view._nodes.has("deer_pellet") and (view._nodes["deer_pellet"] as MultiMeshInstance3D).multimesh.instance_count > 0
+	var heap_mm: MultiMesh = (view._nodes["deer_pellet"] as MultiMeshInstance3D).multimesh if view._nodes.has("deer_pellet") else null
+
+	for n in (heap_mm.instance_count if heap_mm != null else 0):
+		low_heap = low_heap and heap_mm.get_instance_transform(n).origin.y < 6.0
+
+	check(low_heap, "droppings by a trunk lie on the ground, not on top of it")
+	view._next_msec = 0
+	view.update(Vector3(125.0, 5.0, 200.0), 100, false)
+	var print_mm: MultiMesh = (view._nodes["print"] as MultiMeshInstance3D).multimesh
+	var flat: bool = print_mm.instance_count >= 1
+
+	for n in print_mm.instance_count:
+		flat = flat and print_mm.get_instance_transform(n).origin.y < 6.0
+
+	check(flat, "no print sits on top of the trunk (%d prints)" % print_mm.instance_count)
 
 	# Cost: 70 routes of 30 points.
 	var many: Array = []

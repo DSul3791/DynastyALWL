@@ -114,7 +114,9 @@ the run squeezes past stems or a rock). Placed logs do not count, since they set
 data/look/trail_signs.json; design /mnt/project-files/trails/STAGE2D_SIGNS_DESIGN.md). Pellet latrines lie 1 to 3 m off each run's
 ends (warren and grazing), a scrape where runs of two warrens meet, deer prints where a trail crosses water (one line per 30 m),
 and deer droppings by the bed. A player sees them from Tracking 25 (latrines, droppings) and 50 (scrapes, prints), within 15 m
-rising to 30 m at 100. Nothing is made or drawn while the world loads round the player. Settled ground's routes stop, and its signs
+rising to 30 m at 100. Nothing is made or drawn while the world loads round the player, or below Tracking 25; signs are
+worked out afresh (routes within reach plus 40 m only) when the player moves 8 m, so water loaded since shows. Heaps take the lowest
+of three ground probes, so one by a trunk lies on the ground. Settled ground's routes stop, and its signs
 go with them. Not yet: a look hint on a sign, fen and bog ground as wet (only water counts now), fox scat. Sources: Ziege et al. 2016,
 BMC Ecology (rabbit latrines); onX, Texas Parks and Wildlife and Idaho Fish and Game on deer sign.
 
