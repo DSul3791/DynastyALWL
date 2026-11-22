@@ -1304,9 +1304,6 @@ func _show_pieces(now: int) -> void:
 	_pieces_t = now
 
 
-# After the 4 s piece wait: each piece is stood again on the physics ground. When _show_pieces ran, the collider under a piece may not have been built yet, and
-# then the voxel raycast placed it; that reading is a whole cell, so on 22 Nov the idle Primitive smithy (stone_forge forge:1) stood about 0.9 m into the
-# ground and read as two broken fragments. A piece with still no collider under it keeps its first height and says so.
 # The drawn model's lowest point against the collision ground under its box, at 9 probes (its corners, edge middles and middle): "from A to
 # B" is lowest point minus the highest and the lowest ground there. Both below 0: sunk in everywhere; above 0 somewhere: it floats over that
 # part (the gap seen in a picture can also be the outdoor sun's shadow bias, which moves thin things' shadows off them).
@@ -1336,6 +1333,9 @@ func _print_clearance(model: Node3D, skip: Array) -> void:
 		print("shot runner: piece %s clearance: lowest point from %+.3f to %+.3f m against the ground under it (below 0 = in the ground)" % [str(model.get_meta("piece_name")), worst, best])
 
 
+# After the 4 s piece wait: each piece is stood again on the physics ground. When _show_pieces ran, the collider under a piece may not have been built yet, and
+# then the voxel raycast placed it; that reading is a whole cell, so on 22 Nov the idle Primitive smithy (stone_forge forge:1) stood about 0.9 m into the
+# ground and read as two broken fragments. A piece with still no collider under it keeps its first height and says so.
 func _reground_pieces() -> void:
 	_pieces_regrounded = true
 	var last: Node3D = null

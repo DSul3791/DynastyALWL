@@ -1349,12 +1349,12 @@ static var _simple_snare_looked: bool = false   # whether that load was tried (t
 # The posts pushed into the ground, as a real snare's stakes are: the model's three feet (x -0.24, 0, +0.23) all end on its y 0, so the frame
 # is sunk this far and they stay in the ground on a slight slope or bump under its 0.62 m. At 3 cm the gate pictures (22 Nov 2026) still showed
 # a gap between the feet and their shadows; the cause is not proven (the outdoor sun's shadow bias also pulls thin things' shadows off them),
-# so 5 cm, which is how far a real stake goes in, and the rig's "clearance" line measures the feet against the ground. The noose's bottom is at y 0.11 to 0.12 in the model, so it hangs 6 to 7 cm above the ground: three to four
-# fingers, as snarers set it for rabbits.
+# so 5 cm, which is how far a real stake goes in, and the rig's "clearance" line measures the feet against the ground.
+# The noose's bottom is at y 0.11 to 0.12 in the model, so it hangs 6 to 7 cm above the ground: three to four fingers, as snarers set it for rabbits.
 const SIMPLE_SNARE_SINK_M := 0.05
 
 
-# A set Simple snare: Dave's model (22 Nov 2026, tools/items/prepare_item_model.py: 0.62 m wide, 0.5 m high, floor on y 0, the noose's
+# A set Simple snare: Dave's model (22 Nov 2026, tools/items/prepare_item_model.py: 0.62 m wide, 0.5 m high, floor on y 0, the
 # noose's bottom 11 cm above its floor; the model is sunk 5 cm; 5,000 triangles), standing across the run so a rabbit coming along it (along z) puts its
 # head through. The stub below stands in while the file is missing or not imported yet. The carried item keeps its parcel look.
 static func snare_trap() -> Node3D:
