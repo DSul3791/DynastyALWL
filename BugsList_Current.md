@@ -1665,10 +1665,10 @@ Not yet played.
 **Required outcome:** each build asks for the nail metal its use needs ("or better" still serves). A chisel only where something is carved. Stone-age pieces need no metal.
 
 **As built (merged to dev in order; dev 0703e012 after the last):**
-- PR #1460 (reviewed head 2f9ea1ef, merged at 4afeb074). Copper nails: Raised cistern, Wooden crate, garden plots, Bottle and jar rack. Iron nails: Saw mill, Advanced smithy, resource bins, Ore and metal rack, Warehouse crate, iron fence and railing. Iron hinges: the iron, stone, brick, engineered and fortified gates, the Advanced smithy. The Fortified gate takes Steel nails. The Water wheel takes Iron nails. The Sawbuck (until GR-1), the Improved smithy and the Improved smelter keep bronze, because they come before iron. The four nail descriptions say what each is for. Design: docs/design/CHEST_TIERS.md "Nails for every build".
+- PR #1460 (reviewed head 2f9ea1ef, merged at 4afeb074). Copper nails: Raised cistern, Crate, garden plots, Bottle and jar rack. Iron nails: Sawmill, Advanced smithy, resource bins, Ore and metal rack, Warehouse crate, iron fence and railing. Iron hinges: the iron, stone, brick, engineered and fortified gates, the Advanced smithy. The Fortified gate takes Steel nails. The Water wheel takes Iron nails. The Sawbuck (until GR-1), the Improved smithy and the Improved smelter keep bronze, because they come before iron. The four nail descriptions say what each is for. Design: docs/design/CHEST_TIERS.md "Nails for every build".
 - PR #1466 (reviewed head 02b2d9ed, merged at 21583b78), D-CHISEL-1. The Rustic - Chair, Rustic - Table and Cupboard take no chisel. The Barrel and Raised cistern keep Bronze. The Canopy bed goes from Steel to Iron.
 - PR #1470 (reviewed head 071ae4e1, merged at 0703e012):
-  - GR-1: the Sawbuck takes 8 Lumber and 16 Wooden pins (treenails) instead of 16 Bronze nails.
+  - GR-1: the Sawbuck takes 8 Lumber and 16 Wooden pins instead of 16 Bronze nails.
   - GR-2: the Palisade gate takes 8 Log, 3 Twine and 1 Rope, with no hinges.
   - GR-3: the Stone - Planter, Trough, Channel, Channel corner and Channel tee take no chisel.
 - Decisions: REPAIR_DECISIONS.md TT-3; TREE_WOOD_TOOLS_DESIGN.md W-4.
@@ -1683,8 +1683,8 @@ Not yet played.
   - Join smoke 20 s to welcome.
 
 **Acceptance:**
-- Hover a Wooden crate's cost: it asks for Copper nails or better.
-- A Saw mill asks for Iron nails, and a Fortified gate asks for Steel nails.
+- Hover a Crate's cost: it asks for Copper nails or better.
+- A Sawmill asks for Iron nails, and a Fortified - Gate asks for Steel nails.
 - A Rustic - Chair goes up with no chisel on the hand bar. A Barrel still needs a Bronze chisel or better.
 - A Sawbuck goes up from Lumber and Wooden pins, and a Palisade gate from Logs, Twine and Rope, both before any smithy.
 - A Stone - Trough goes up with no chisel.
