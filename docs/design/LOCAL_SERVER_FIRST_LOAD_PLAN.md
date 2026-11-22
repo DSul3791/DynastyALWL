@@ -1,6 +1,6 @@
 # Local server and client competing at the first load: plan (BugsList 108, 93)
 
-Status: plan only, no code yet (22 Nov 2026). It was written for the lag list, piece 1, "server pauses while the PC loads tiles". The trigger was the second main gate's Z step A5, which went red. The cold first-join FREEZE had medians of 25.23 s at Z and 23.96 s at Y''', against a pass rule of 24.85 s (record: /mnt/project-files/server-client-split/NEXT_MAIN_GATE.md, A5 ruling and its follow-up). Evidence cited here under /mnt/project-files/ is the project's shared folder, not in this repo.
+Status: plan (22 Nov 2026); option A, measurement only, is in #1518. It was written for the lag list, piece 1, "server pauses while the PC loads tiles". The trigger was the second main gate's Z step A5, which went red. The cold first-join FREEZE had medians of 25.23 s at Z and 23.96 s at Y''', against a pass rule of 24.85 s (record: /mnt/project-files/server-client-split/NEXT_MAIN_GATE.md, A5 ruling and its follow-up). Evidence cited here under /mnt/project-files/ is the project's shared folder, not in this repo.
 
 Dave's recorded stance (BugsList_Current.md, BugsList 93, and TODO.md, 21 Nov) is that a long first load is "not a problem. its expected on the first load", and #1405 shows a note saying so. This plan is lag-list work picked by the coordinator, not a request from Dave. Whether the second main merge waits for any of it is his choice.
 
@@ -9,13 +9,32 @@ Dave's recorded stance (BugsList_Current.md, BugsList 93, and TODO.md, 21 Nov) i
 - **Client, cold first join (Z, Y''').** There is one FREEZE gap of about 25 s after the "held item" piece, with a HUNG report. During it, voxel streaming shows 1000 blocks outstanding and the link rtt reads 12.6 s (NEXT_MAIN_GATE.md, A5 follow-up); the coordinator also relays that nothing is received.
   - Those last three are symptoms of the frozen client main thread, not causes. ENet is polled from the main thread, so a frozen client acknowledges nothing; the rtt grows and the outstanding count stays full.
   - The FREEZE comes before any first-shown model. BugsList 93 puts the cause in the cold d3d12 pipeline and shader build of the world materials. On 20 Nov a warm APPDATA cut the longest FREEZE to 2754 and 2988 ms (/mnt/project-files/server-client-split/MAIN_GATE_TONIGHT.md, evening of 20 Nov).
-- **Launcher server, the same runs.** Two server STALL lines, about 5.7 s and about 25 s, are known here only as relayed by the coordinator from the gate lanes; their full lines are not in a record yet. The second has about the same length as the client's freeze.
+- **Launcher server, the same runs.** Two server STALL lines were first relayed as about 5.7 s and about 25 s. The Z ft1 telemetry has them as 5850 ms and 18269 ms, back to back: about 24 s together, the length of the client's freeze (next section).
 - **Older full report** (/mnt/project-files/diag93_X1_hung_report_2026-11-20_17-56-22.txt, build of 20 Nov):
   - Server STALLs of 1791 and 11306 ms during the first join. The client's own main thread also stalled 6475 ms at 17:56:07.
   - The state line after the 11.3 s one names the slowest steps since the last state line: "between frames (rpc handlers, engine) 1791, items 3524, checks 7740". `event_log.mark` keeps each step's maximum since the last state line, so these are not one frame. items + checks = 11264 ms fits the 11306 ms frame. The 1791 most likely belongs to the earlier 1791 ms STALL, whose own line closed before its step mark (inferred; the two lines' timestamps overlap by about 1 s).
   - The same log has "terrain: tile (3, 4) loaded in 2874 ms (file 2845 ms)", which is a 2.8 s file read of the spawn tile.
-  - "items" is `items.tick` plus `_tunnel_tick` and `_send_buried`. "checks" is everything after the block delivery in `terrain_server._process`: `_send_held_edits`, `_send_fine`, `store.save_revisions`, `flora.save_removed`, the flag files, and direct `print()` calls.
+  - On that build, "items" was `items.tick` plus `_tunnel_tick` and `_send_buried` (option A splits these out as "tunnels+buried"). "checks" is everything after the block delivery in `terrain_server._process`: `_send_held_edits`, `_send_fine`, `store.save_revisions`, `flora.save_removed`, the flag files, and direct `print()` calls. Option A names them "checks" (the tile_changed calls only), "checks: held edits", "checks: fine water", "checks: revisions file", "checks: flora removed file" and "checks: flags, report".
 - **Z against Y'''.** Z is about 1.3 s slower on all three runs. Z adds more start-up work on the server: the resource landscape (#1469, #1500, about 9 tiles on a worker), the animal range jobs (#1484, #1504, main-thread lumps of 34-67 ms per block), and the cave and ore layout.
+
+### Z ft1 telemetry (read 22 Nov, /mnt/project-files/first_load_df896777_ft1_*)
+
+Measured (telemetry and play log line times):
+- **Server.** Its main thread stopped twice, back to back:
+  - stall A: 5850 ms in "between frames (rpc handlers, engine)", about 02:21:20.0 to 02:21:25.85
+  - stall B: 18269 ms in "checks", 02:21:25.85 to 02:21:44.12
+  No "SLOW RPC" line names a handler for stall A.
+- **Client.** The JOIN lines count from the connect: the server saw the peer at 02:21:13.2. They place the client's 5.3 s freeze at about 02:21:13.5 to 18.8 and its 25.23 s freeze at about 02:21:18.8 to 44.0. This is inferred from the gap lengths and the JOIN stamps.
+- **So the server's main thread was stopped from about 1 s after the client's long freeze began until it ended.** Stall B ends within about 0.1 s of the client's freeze. Stall A does not line up with either client freeze on its own.
+- **The watchdog.** During stall B the watchdog thread wrote a line every second, so the server process ran and only its main thread was held. During stall A there is a single WATCHDOG line, at its end (02:21:25.853, "silent for 5 s"). The lines due at about 23 s and 24 s are missing, so either the whole server process was held, or its log writing was.
+- **The block line, a hypothesis.** The client logs "the block line closed; blocks come over the game connection" just before its long freeze. Block-line workers send with `StreamPeerTCP.put_data`, which blocks while a client reads nothing, and they hold the line's mutex while they do. But the state lines just before and after (02:21:19.286, 02:21:44.123) show "queued urgent 0 prefetch 0, in work 0", so nothing shows that workers had blocks to send. Option A's counter tests this.
+
+Open questions:
+- What held stall B? Option A splits "checks" into its calls.
+- What held stall A, and was it the whole process? Both are open.
+- Does the client wait on the server in turn? If not, the server's stalls are a symptom of the client's freeze rather than a cause of it.
+
+The CPU reading (cause 1 below) fits these times less well than a wait. The pool's non-high queue, which all these jobs use, also gets only part of the pool's threads (`threading/worker_pool/low_priority_thread_ratio`; the server_items comment says 30 %).
 
 ## How the two processes share the PC today
 
@@ -26,6 +45,8 @@ Dave's recorded stance (BugsList_Current.md, BugsList 93, and TODO.md, 21 Nov) i
 
 ## Candidate causes, most likely first
 
+The Z ft1 telemetry above adds a cause that now fits best: 0. **the server's main thread is held by something tied to the frozen client** (the timing is measured; what holds it is not named yet). The four below were written before that telemetry was read.
+
 1. **CPU oversubscription.** The client's shader build plus the server's uncapped, normal-priority pool tasks, with more of them since #1469 and #1484. This fits the extra 1.3 s at Z and the server STALL matching the client FREEZE. It is inferred, not measured.
 2. **The server main thread waiting on a starved worker.** This happens through `get_tile`'s wait, or through a lock a pool task holds (the flora lock, the store). This fits a STALL length close to the freeze. It is inferred.
 3. **Synchronous main-thread work in the server's "items" and "checks" steps at the first join** (3.5 s and 7.7 s on 20 Nov). Which sub-step is slow is not yet measured. Candidates are the save writes (`save_revisions`, `save_removed`), `_send_held_edits` and `_send_fine` on a new player, and direct `print()` on a debug build. The client fix #1491 shows that a main-thread print can take 0.4-1.6 s there.
@@ -35,7 +56,7 @@ Dave's recorded stance (BugsList_Current.md, BugsList 93, and TODO.md, 21 Nov) i
 
 | # | Option | Risk | Expected effect | What it needs to test |
 |---|---|---|---|---|
-| A | **Measure first.** Sub-marks inside the server's "items" and "checks" steps, a server-side "pool tasks running/queued" count on the state line, and the server's direct `print()` calls in `_process` moved to the existing print queue (`src/shared/print_queue.gd`, as the client does since #1491). | Very low: logging, and print order only | Names the slow step, so B to E aim at it (measure before fixing: docs/PONYTAIL_RULES.md) | Change plan on Lane B (smokes dedicated_stop, play_stop, join_remote); one cold windowed Play on Lane A to read the new STALL breakdown |
+| A | **Measure first.** Sub-marks inside the server's "items" and "checks" steps, a server-side "pool tasks running/queued" count on the state line, and the server's 10 s report prints moved onto a worker (`items._log_off_main`). The other direct prints stay: the rare ones, and "Client %d connected" on the join path. | Very low: logging, and print order only | Names the slow step, so B to E aim at it (measure before fixing: docs/PONYTAIL_RULES.md) | Change plan on Lane B (smokes dedicated_stop, play_stop, join_remote); one cold windowed Play on Lane A to read the new STALL breakdown |
 | B | **Hold the server's start-up jobs while a player is joining.** The local Play server starts the resource landscape, range jobs and similar after the first player reports ground ready, or after a fixed time, whichever comes first. A dedicated server starts them at once, as now. | Low to medium: a job order change, and nothing in the world differs once done | Takes Z's +1.3 s out of the first-join window; less pool load during the shader build | Change plan; Lane A 3 cold windowed Plays, median FREEZE against Y''' and Z; a check that the resource landscape and ranges still finish (their existing tests, plus a Lane B log line) |
 | C | **Cap the server's pool on Play.** The Play server's own pool tasks go through one small queue with its own cap (for example half the cores, the same as `--threads`), instead of straight to `WorkerThreadPool.add_task`. Godot has no per-process command-line override for `threading/worker_pool/max_threads` that I could find in this repo, so the cap is ours. | Medium: touches every server pool user; a too-small cap slows block and tile service | Bounds the server's share of the PC while the client builds shaders | Change plan plus the timing tests (flora walk cost, stock poll cost); Lane A 3 cold Plays; Lane B dedicated smokes to confirm dedicated servers are unchanged |
 | D | **Take the measured main-thread steps off the server's main thread.** Whatever A names, for example the save writes into the existing writer pattern, or a new player's held edits sent over several frames. | Medium: depends on the step; saves need the crash-safety checks of #1473 | Removes the STALL's own share | The owning tests for that step, plus Lane B save and resume tests (test_area_saves, test_resume_spot) |
@@ -53,5 +74,5 @@ The client's own cold shader build (BugsList 93) is the larger part of the 25 s 
 
 ## Open questions (for the coordinator)
 
-- The 5.7 s and 25 s server STALL lines from Z are known here only as relayed. Their full lines, with the steps named, would confirm whether the 25 s server STALL is in "items", "checks" or "between frames". Ask the lane for `telemetry_server_*.log` from one Z run.
+- Answered 22 Nov: the Z ft1 server telemetry has them as 5850 ms ('between frames') and 18269 ms ('checks'); see above.
 - For B: is "the first player's ground ready" the right trigger on a Play server, or simply a fixed 60 s after start? The second is simpler and does not depend on a client message.
