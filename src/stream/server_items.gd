@@ -7781,13 +7781,14 @@ func _scatter_around_players() -> void:
 					var cell_ms: float = float(Time.get_ticks_usec() - cell_usec) / 1000.0
 
 					if cell_ms > 50.0:   # names a slow cell (a tile read on the main thread), so a hitch in the log says where
-						# With a CPU quota (a container), how long the kernel paused the whole server so far this tick: a pause lands in whatever
-						# sub-step is running, so it explains a slow part that is cheap on its own.
+						# With a CPU quota (a container), how much the container's throttled time rose so far this tick (cpu.stat: summed over its
+						# CPUs and every process in it, so it can read several times a pause's wall time). Above 0 means the kernel paused the group,
+						# the main thread too; a pause lands in whatever sub-step is running, so it explains a slow part that is cheap on its own.
 						var paused: String = ""
 
 						if _throttle_mark >= 0:
 							var now_paused: int = CpuBudget.throttled_usec(CpuBudget.read_text(_throttle_path))
-							paused = "; container paused by its CPU quota %.0f ms this tick" % (float(now_paused - _throttle_mark) / 1000.0) if now_paused >= 0 else ""
+							paused = "; container CPU quota throttling rose %.0f ms this tick (summed over CPUs)" % (float(now_paused - _throttle_mark) / 1000.0) if now_paused >= 0 else ""
 
 						_log_off_main("items tick slow: scatter cell %s took %.0f ms (%s%s)" % [str(cell), cell_ms, ", ".join(_cell_parts), paused])
 
