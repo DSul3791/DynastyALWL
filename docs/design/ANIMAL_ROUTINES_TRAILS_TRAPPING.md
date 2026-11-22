@@ -110,8 +110,17 @@ so a path to the well does not catch rabbits. Cost: a cell lookup per player per
 choke point (TR-12): a snare on a run within 1.2 m of a tree's root or a boulder's edge catches 1.5 times as often (snarers set where
 the run squeezes past stems or a rock). Placed logs do not count, since they settle the ground and the animals leave.
 
-**Stage 2d (next)**: signs along trails (tracks, droppings: `tracking.gd`); boar routines once the research is verified; a worn-earth
-mark where a trail crosses ground with no grass.
+**Stage 2d (built, TR-13)**: signs along trails, worked out on each client from the routes it already has (src/client/trail_signs.gd,
+data/look/trail_signs.json; design /mnt/project-files/trails/STAGE2D_SIGNS_DESIGN.md). Pellet latrines lie 1 to 3 m off each run's
+ends (warren and grazing), a scrape where runs of two warrens meet, deer prints where a trail crosses water (one line per 30 m),
+and deer droppings by the bed. A player sees them from Tracking 25 (latrines, droppings) and 50 (scrapes, prints), within 15 m
+rising to 30 m at 100. Nothing is made or drawn while the world loads round the player, or below Tracking 25; signs are
+worked out afresh (routes within reach plus 40 m only) when the player moves 8 m, so water loaded since shows. Heaps take the lowest
+of three ground probes, so one by a trunk lies on the ground. Settled ground's routes stop, and its signs
+go with them. Not yet: a look hint on a sign, fen and bog ground as wet (only water counts now), fox scat. Sources: Ziege et al. 2016,
+BMC Ecology (rabbit latrines); onX, Texas Parks and Wildlife and Idaho Fish and Game on deer sign.
+
+**Next**: boar routines once the research is verified; a worn-earth mark where a trail crosses ground with no grass.
 
 **Stage 3 (larger game)**: a deadfall for fox, raccoon, mink and the like; heavier snares (wire, from the smithy) on deer trails,
 taking deer only on trails; a pit trap for boar and deer by trail crossings. Each a station or hammer/knife plus blueprint recipe
@@ -142,6 +151,8 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
   about one catch in six there is a fox (which animal it was goes through the owner's luck, the fox being the bigger catch).
 - TR-11 players' paths: 0.04 a pass (half a deer's 0.08), drawn from about 6 walks there and back, fading 0.14 a game day (a
   well-walked path is gone in about a game week, against 4 days for an animal trail), none more than 1.5 m above the ground.
+- TR-13 signs: see data/look/trail_signs.json (latrine 1-3 m off, 8-15 pellets; scrape where runs pass within 2 m, 5 m clear of
+  a warren; prints 4-6 on water within 3 m, one line per 30 m; droppings within 4 m of a bed; Tracking 25 and 50; 15 to 30 m).
 - TR-12 choke point: within 1.2 m of a tree's root or a boulder's edge, on a rabbit run (the snare's prey), x1.5; the Bird trap takes no lift.
 
 ## Cost on the server tick

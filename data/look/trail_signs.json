@@ -1,0 +1,17 @@
+{
+	"note": "Stage 2d (22 Nov 2026, docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md, TR-13): signs along the trails, worked out on each client from the routes it already has (same spots for every player, no server cost). Rabbits leave pellet latrines by the warren and at the grazing end of a run and dig scrapes where runs of different warrens meet; deer leave prints where a trail crosses wet ground and droppings by the bed (Ziege et al. 2016, BMC Ecology, rabbit latrines; onX and Idaho Fish and Game on deer sign). A player sees them from Tracking skill see_level (latrines and droppings) and fine_level (scrapes and prints), within draw_m (min at see_level, max at 100). Nothing is made before the player has ground (the first-join window). Provisional.",
+	"see_level": 25,
+	"fine_level": 50,
+	"draw_m": [15.0, 30.0],
+	"latrine_off_m": [1.0, 3.0],
+	"latrine_pellets": [8, 15],
+	"junction_m": 2.0,
+	"junction_clear_m": 5.0,
+	"prints_every_m": 30.0,
+	"prints": [4, 6],
+	"print_step_m": 0.6,
+	"wet_m": 3.0,
+	"droppings_off_m": 4.0,
+	"droppings_pellets": [10, 20],
+	"rebuild_move_m": 8.0
+}
