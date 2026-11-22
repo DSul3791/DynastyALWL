@@ -1932,7 +1932,7 @@ func _test_streaming(generator, data) -> void:
 	reopened.load_block(replayed, dug_block, 0)
 	_check(reopened.ops.count == 1 and replayed.get_voxel_f(inside.x, inside.y, inside.z, TerrainLayout.CHANNEL_SDF) > 0.0,
 		"a saved dig survives a restart and a re-bake")
-	# A TERRAIN_VERSION bump (79, wetland looks, 21 Nov 2026) throws only the generated ground away: the digs replay, and the world's other
+	# A TERRAIN_VERSION bump (80, the goblin camp's own cave, 22 Nov 2026) throws only the generated ground away: the digs replay, and the world's other
 	# saves beside it in the same folder (placed structures and what they hold: world_items.json and its world_items/ area files) are not touched.
 	reopened.flush()
 	reopened = null
