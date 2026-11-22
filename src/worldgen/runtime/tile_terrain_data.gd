@@ -411,6 +411,35 @@ func fresh_water_near(pos: Vector3, reach: float) -> Vector2:
 	return Vector2(best, surface)
 
 
+# Where the nearest fresh water in this tile within `reach` is, looking at every `stride`-th map sample (a coarse search for the drink goal's
+# hint, server_items.gd _water_way): Vector3(x, distance, z), the distance INF when there is none.
+func fresh_water_spot(pos: Vector3, reach: float, stride: int) -> Vector3:
+	if placeholder or water_class.size() != samples * samples:
+		return Vector3(0.0, INF, 0.0)
+
+	var steps: int = int(ceil(reach / spacing_m))
+	var ci: int = int(round((pos.x - x0) / spacing_m))
+	var cj: int = int(round((pos.z - z0) / spacing_m))
+	var best: Vector3 = Vector3(0.0, INF, 0.0)
+	var well: PackedByteArray = well_flags()
+
+	for j in range(maxi(cj - steps, 0), mini(cj + steps, samples - 1) + 1, maxi(stride, 1)):
+		for i in range(maxi(ci - steps, 0), mini(ci + steps, samples - 1) + 1, maxi(stride, 1)):
+			var k: int = j * samples + i
+
+			if well[water_class[k]] == 0 or is_nan(water_surface[k]):
+				continue   # dry, the sea, the estuary, seasonal water or salt marsh
+
+			var x: float = x0 + float(i) * spacing_m
+			var z: float = z0 + float(j) * spacing_m
+			var gap: float = Vector2(x - pos.x, z - pos.z).length()
+
+			if gap <= reach and gap < best.y:
+				best = Vector3(x, gap, z)
+
+	return best
+
+
 # The surface height of the nearest fresh water in this tile within `reach` (fresh_water_near), NAN when there is none.
 func fresh_water_y(pos: Vector3, reach: float) -> float:
 	return fresh_water_near(pos, reach).y

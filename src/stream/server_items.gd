@@ -801,6 +801,7 @@ func note_spots_on_close() -> void:
 
 func peer_left(peer: int) -> void:
 	_held.erase(peer)
+	_water_hint_at.erase(peer)
 	_carts.peer_left(peer)   # a cart being pulled parks where it is
 	var key_left: String = str(_peer_key.get(peer, ""))
 
@@ -926,6 +927,9 @@ func held_number(peer: int) -> int:
 func report_position(peer: int, position: Vector3) -> void:
 	if _peer_key.has(peer):
 		_peer_pos[peer] = position
+
+		if nearest_fresh_water.is_valid() and _drink_hint_due(peer, position):
+			_sync_goals(peer)   # the drink goal's hint names the way to water from here
 		_note_motion(peer, position)
 		_carts.follow(peer)   # the cart this player pulls comes after them (nothing for anyone else)
 		_note_road_trip(peer, position)
@@ -19225,6 +19229,10 @@ func _water_resolve(now_s: float) -> void:
 # while the worker stays within its use reach and is not worn out; the work is exertion (the block's effort, 0.7). A source with nothing linked below
 # it pours into the worker's containers instead (the first with room, hotbar first), and stops when they are full.
 const WELL_REACH_M := 200.0
+var nearest_fresh_water: Callable      # (position, reach m) -> Vector3(x, distance, z) of the nearest fresh water, distance INF when none; set by the server scene (unset: the drink hint names no way)
+const WATER_HINT_REACH_M := 1500.0    # PROVISIONAL: how far the drink goal's hint looks for fresh water
+const WATER_HINT_MOVE_M := 150.0      # PROVISIONAL: a player this far from where the hint was worked out gets it again
+var _water_hint_at: Dictionary = {}   # peer -> where the drink hint was last worked out (Vector3), or true once the drink goal is done
 var fresh_water_y: Callable             # (position, reach m) -> surface height of the nearest lake or river within reach, NAN when none; set by the server scene (unset: the block's depth_m)
 var _pumping: Dictionary = {}           # peer -> item id of the well or pump they work
 var _water_depth: Dictionary = {}       # item id -> metres down to the water it lifts
@@ -22461,12 +22469,54 @@ func goals_rows(peer: int) -> Array:
 		var id: String = str(goal["id"])
 		var progress: Vector2i = _goal_progress(peer, st, goal.get("check", {}), id)
 		var so_far: int = mini(progress.x, progress.y)
-		rows.append([id, str(goal.get("title", "")), str(goal.get("hint", "")), _goal_copper(goal), "", 0,   # reward item fields stay in the protocol 119 row, always empty: goals pay coins only
+		var how: String = str(goal.get("hint", "")) + (_water_way(peer) if id == "drink" and not st["goals_done"].has(id) else "")
+		rows.append([id, str(goal.get("title", "")), how, _goal_copper(goal), "", 0,   # reward item fields stay in the protocol 119 row, always empty: goals pay coins only
 			PackedStringArray(goal.get("after", [])), st["goals_done"].has(id), progress.y, so_far])
 		sent[id] = progress.x
 
 	_goal_sent[peer] = sent   # the list carries every count: goal_progress sends only what moves after it
 	return rows
+
+
+# The drink goal's hint (coordinator for Dave, 22 Nov 2026): which way and about how far the nearest fresh water is from where the player
+# stands, from the world's water map (never from the spawn). "" with no position yet or no search hooked up.
+func _water_way(peer: int) -> String:
+	var at: Variant = _water_hint_at.get(peer, _peer_pos.get(peer, null))
+
+	if not (at is Vector3) or not nearest_fresh_water.is_valid():
+		return ""
+
+	var spot: Vector3 = nearest_fresh_water.call(at, WATER_HINT_REACH_M)
+
+	if spot.y == INF:
+		return " No fresh water within %d m of here: try another way." % int(WATER_HINT_REACH_M)
+
+	if spot.y < 30.0:
+		return " Fresh water is right here."
+
+	var to: Vector2 = Vector2(spot.x - (at as Vector3).x, spot.z - (at as Vector3).z)
+	var way: String = ["east", "south-east", "south", "south-west", "west", "north-west", "north", "north-east"][posmod(int(round(atan2(to.y, to.x) / (PI / 4.0))), 8)]   # +z is south (character_screen.gd)
+	return " The nearest fresh water is about %d m %s." % [int(round(spot.y / 10.0)) * 10, way]
+
+
+# True when this player should get the drink hint worked out again: the drink goal not done and no hint yet, or they moved WATER_HINT_MOVE_M.
+func _drink_hint_due(peer: int, position: Vector3) -> bool:
+	var at: Variant = _water_hint_at.get(peer, null)
+
+	if at is bool or (at is Vector3 and (at as Vector3).distance_to(position) < WATER_HINT_MOVE_M):
+		return false
+
+	var st: Dictionary = _goal_state_of(peer)
+
+	if st.is_empty():
+		return false
+
+	if st["goals_done"].has("drink"):
+		_water_hint_at[peer] = true
+		return false
+
+	_water_hint_at[peer] = position
+	return true
 
 
 # The whole list to the client, silently (the join and a reconnect: no placards for goals already done).

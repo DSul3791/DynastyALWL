@@ -479,6 +479,21 @@ func _ready() -> void:
 				best = near
 
 		return best.y
+	items.nearest_fresh_water = func(pos, reach):   # the drink goal's hint (server_items.gd _water_way): the player's tile and any loaded tile the reach touches
+		var best: Vector3 = Vector3(0.0, INF, 0.0)
+		var coords: Dictionary = {generator.tile_of(pos.x, pos.z): true}
+
+		for corner in [Vector2(-reach, -reach), Vector2(reach, -reach), Vector2(-reach, reach), Vector2(reach, reach)]:
+			if generator.tile_cached(pos.x + corner.x, pos.z + corner.y):
+				coords[generator.tile_of(pos.x + corner.x, pos.z + corner.y)] = true
+
+		for coord in coords:
+			var spot: Vector3 = generator.get_tile(coord).fresh_water_spot(pos, reach, 4)
+
+			if spot.y < best.y:
+				best = spot
+
+		return best
 	items.water_near = func(pos, reach): return DrinkRulesScript.water_near(generator.get_tile(generator.tile_of(pos.x, pos.z)), pos, reach, false)
 	items.drink_water_near = func(pos, reach): return DrinkRulesScript.water_near(generator.get_tile(generator.tile_of(pos.x, pos.z)), pos, reach, true)   # and not down a bank (DrinkRules.REACH_DROP_M)
 	items.ice_moat_at = func(pos): return IceMoatScript.in_moat(pos, ice_moat.moat_cells(pos, game_clock.seconds, settings.get_zone_group_for_row(int(floor(pos.z / float(settings.tile_size_m)))), int(settings.master_seed)), items.water_near)   # a thaw's open shore: a drink or fill without a hole, as the player sees it (#729)
