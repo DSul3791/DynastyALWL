@@ -12,5 +12,9 @@
 	"resend_s": 30.0,
 	"save_every_s": 120.0,
 	"default_weight": 1.0,
+	"player_weight": 0.5,
+	"player_above_m": 1.5,
+	"player_decay_per_game_day": 0.14,
+	"player_note": "Stage 2c (D-TRAP-3, 22 Nov 2026): players wear their own paths in the same 4 m grid, kept apart from the animal trails (snares and Tracking read only the animals'), at player_weight of a deer's step (half the animal rate), only on the ground (within player_above_m of it: not on a floor, nor in a tunnel or cave below, nor swimming). They draw and send like the trails, the more worn of the two in a cell. They fade by player_decay_per_game_day: a well-walked path (1.0) is gone in about a game week, one walked a few times sooner (provisional, to tune after Dave plays). A path walked about 6 times draws (0.04 a pass, draw_threshold 0.25). Saved with the trails (\"players\").",
 	"species_weight": {"rabbit": 0.3, "deer": 1.0, "wolf": 0.8, "moose": 1.5, "fox": 0.4, "duck": 0.0}
 }
