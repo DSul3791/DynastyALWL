@@ -43,6 +43,7 @@ func _init() -> void:
 	# Away from a fire nothing can be cooked.
 	var first: String = str(dishes.keys()[0])
 	_stock(first, dishes[first])
+	items._last_queue_act.clear()
 
 	# Beside a fire that is out, the refusal says to light it (not "That needs a Campfire nearby" to a player standing at it).
 	var said: Array = []
@@ -58,13 +59,14 @@ func _init() -> void:
 		check(said.has("That needs a campfire pot nearby") and not said.any(func(t): return str(t).begins_with("The fire is out")), "a cold fire with no pot: the pot is what is missing (%s)" % str(said))
 		said.clear()
 		items._next_id += 1
-		items._items[items._next_id] = {"number": items.table.number_of("campfire_pot"), "count": 1, "pos": Vector3(1.0, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "campfire_pot", "yaw": 0.0}}
+		var pot_id: int = items._next_id
+		items._items[pot_id] = {"number": items.table.number_of("campfire_pot"), "count": 1, "pos": Vector3(1.0, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "campfire_pot", "yaw": 0.0}}
 		items._refresh_pots()
 		items._last_queue_act.clear()   # two presses inside the real-time gap: the second is one press
 		items.action(1, Net.ACT_CRAFT_QUEUE, int(recipes["cook_" + first]["number"]), 0, 1, CraftHand.at(items, 1, int(recipes["cook_" + first]["number"])))   # a pot is all the queue asks: the dish waits on the fire
 		items._station_said.clear()
 		_pass(2.0)
-		items._items.erase(items._next_id)
+		items._items.erase(pot_id)
 		items._refresh_pots()
 
 		if items._craft_queues.has("dishkey-0001"):
