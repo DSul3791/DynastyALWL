@@ -3,7 +3,7 @@ extends Node3D
 const FrameProbe := preload("res://src/debug/frame_probe.gd")
 
 # Animals on the client (protocol 48): a simple rabbit until Art makes a real one (brown body, head, two ears, white
-# tail). The server sends rows about four times a second; the view glides to each, faces the way it goes and hops while moving
+# tail). The server sends rows about four times a second; the view draws each between the sent points (motion_buffer.gd), faces the way it goes and hops while moving
 # (higher and quicker when it bolts). At most MAX_DRAWN are drawn, the nearest ones (the server already sends only 30 within 120 m).
 
 const MAX_DRAWN := 30
@@ -11,6 +11,9 @@ const SPYGLASS_DRAWN := 60      # while an admin looks through the spyglass the 
 const MODELS_PATH := "res://data/animals/models.json"
 const BoneOffsetsScript := preload("res://src/client/bone_offsets.gd")
 const BreathLook := preload("res://src/client/breath_look.gd")   # head_bone_of: where an animal breathes from in the cold
+const MotionBuffer := preload("res://src/client/motion_buffer.gd")   # drawn between sent points, a little behind (Dave 19 Nov 2026)
+const BanditLook := preload("res://src/client/bandit_look.gd")   # camp bandits (species 52) are drawn as the human ragdoll (docs/design/BANDIT_CAMPS.md)
+const TETHERED := 22   # a horse tethered at a bandit camp: its saddle is shown (server_bandits.gd)
 const GRAZE := 0
 const HOP := 1
 const FLEE := 2
@@ -23,7 +26,7 @@ signal fell(kind: String, at: Vector3, small: bool)            # an animal went 
 
 # Species numbers 8 to 13 were missing, so their voices and footsteps never fired (Kathreen, 2 Nov 2026). The sound side (creature_sounds.gd KINDS, the `<kind>_step` slots in
 # data/sound/batch1_slots.json) skips a kind it has no clip for, so these stay silent until Jason adds the clips; the names here are the ones to use.
-const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear", 15: "donkey", 16: "goblin", 17: "lynx", 18: "black_bear", 19: "elk", 20: "bighorn", 21: "mountain_goat", 22: "beaver", 23: "chamois", 24: "mink", 25: "raccoon", 26: "rat", 27: "crow", 28: "pheasant", 29: "goose", 30: "cow", 31: "goat", 32: "chicken", 33: "cat", 34: "dog", 35: "buffalo", 36: "puma", 37: "pronghorn", 38: "warthog", 39: "hyena", 40: "wildebeest", 41: "lion", 42: "leopard", 43: "rhino", 44: "elephant", 45: "camel", 46: "guineafowl", 47: "honey_badger", 48: "kangaroo", 49: "mammoth", 50: "tiger", 51: "alligator"}
+const KIND_OF_SPECIES := {1: "rabbit", 2: "deer", 3: "wolf", 4: "moose", 5: "fox", 6: "duck", 7: "horse", 8: "boar", 9: "songbird", 10: "frog", 11: "grouse", 12: "seal", 13: "seabird", 14: "bear", 15: "donkey", 16: "goblin", 17: "lynx", 18: "black_bear", 19: "elk", 20: "bighorn", 21: "mountain_goat", 22: "beaver", 23: "chamois", 24: "mink", 25: "raccoon", 26: "rat", 27: "crow", 28: "pheasant", 29: "goose", 30: "cow", 31: "goat", 32: "chicken", 33: "cat", 34: "dog", 35: "buffalo", 36: "puma", 37: "pronghorn", 38: "warthog", 39: "hyena", 40: "wildebeest", 41: "lion", 42: "leopard", 43: "rhino", 44: "elephant", 45: "camel", 46: "guineafowl", 47: "honey_badger", 48: "kangaroo", 49: "mammoth", 50: "tiger", 51: "alligator", 52: "bandit"}
 const FELL_WINDOW_MS := 1500             # a body gone this soon after a hit near it fell from that hit
 const FELL_M := 3.0                      # how near the hit (the hit is placed at the chest; rows move up to a few metres between updates)
 const SMALL_FALL_KINDS := ["rabbit", "songbird", "frog", "grouse", "seabird", "duck", "fox"]   # fall softly
@@ -32,7 +35,11 @@ const VOICED_STATES := [2, 3, 10, 11]         # flee, alert, warn, charge
 const WARN_POP := 16                          # the threat ladder's jaw-pop rung (server_big_game.gd); drawn as the warning (10) unless the model maps a clip "16"
 const AIR_STATES := [15]                      # a flock in the air (takes off, flies): its own clip, never walk or run
 
-var _bodies: Dictionary = {}     # id -> {node, target Vector3, heading, state, phase}
+var _bodies: Dictionary = {}     # id -> {node, target Vector3 (newest sent), samples (MotionBuffer), heading, state, phase}
+var _rows_at: float = -1.0       # seconds the last rows came (Time ticks)
+var _gap: float = 0.25           # recent seconds between rows, for MotionBuffer
+var _clock_off: float = INF      # local seconds minus server seconds, the smallest seen (the fastest delivery): MotionBuffer.clock_off
+var _server_ms: int = -1         # the server clock on the last batch
 var max_drawn: int = MAX_DRAWN   # SPYGLASS_DRAWN while the admin spyglass is up (terrain_client.gd)
 var _models: Variant = null      # data/animals/models.json "species" (loaded on first use)
 var _model_notes: Dictionary = {}  # log lines already printed by _model_note
@@ -84,11 +91,20 @@ void fragment() {
 # New species numbers (Sal's data/animals/spawn_plan.json proposal: boar 8, songbirds 9, frog 10, grouse 11, seal 12, seabird 13). The small ones hop
 # on the generic Rig path like the rabbit; the boar is a four-legged body and animates like the deer. A species number with no model is not drawn.
 const SMALL_SPECIES := [9, 10, 11, 13]
+const GOBLIN_SPECIES := 16   # KIND_OF_SPECIES: the goblin
 const YOUNG_NUM := 100       # a young animal's species number + 100 (server_animals.gd)
 const YOUNG_SCALE := 0.5     # how big the young are drawn
 
 
 const FEATHERED := [6, 9, 11, 13]     # flock birds, songbirds, grouse, gulls: they take the feather coat while they build
+
+
+# A goblin tribe member's body (npc_view.gd, data/creatures/goblin_tribes.json, Dave 19 Nov 2026): the goblin model's look `variant` (0 Skritch,
+# 1 Rukz, 2 Vrixa, 3 Grikka), with its own steady height roll from `look_seed`, drawn and clipped exactly as a wild goblin; null when the model file is not
+# there. Every look is open here, also those marked "wild": false that wild goblins never get.
+func make_goblin(variant: int, look_seed: int) -> Node3D:
+	var looks: int = maxi((_model_rows().get("goblin", {}).get("variants", []) as Array).size(), 1)
+	return _make_model(GOBLIN_SPECIES, posmod(variant, looks) + looks * posmod(look_seed, 4096), false, true)
 
 
 # young: a young animal. When its species' model row has a young_model, that model is drawn at its own size (the calf beside
@@ -109,6 +125,9 @@ func _make_species_body(number: int, id: int, young: bool = false) -> Node3D:
 
 		if flock != null:
 			return flock
+
+	if number == 52:
+		return BanditLook.make(id)
 
 	var model: Node3D = _make_model(number, id, young)
 
@@ -302,6 +321,31 @@ static func near_blood(at: Vector3, points: PackedVector3Array) -> bool:
 	return false
 
 
+# A blow landed on animal `id` (animal_hit, protocol 96; Dave 19 Nov 2026: he could not tell a spear was hurting a bear): the body squashes and
+# springs back in a fifth of a second, so a hit is seen. FLINCH is the squash (PROVISIONAL HIT-2).
+const FLINCH := Vector3(1.08, 0.88, 1.08)
+const FLINCH_S := 0.2
+
+
+func flinch(id: int) -> void:
+	if not _bodies.has(id) or not is_instance_valid(_bodies[id]["node"]):
+		return
+
+	var node: Node3D = _bodies[id]["node"]
+
+	if not node.has_meta("rest_scale"):
+		node.set_meta("rest_scale", node.scale)   # the species' own size (a lynx is drawn 1.4 times): a second hit mid-flinch springs back to it
+
+	var rest: Vector3 = node.get_meta("rest_scale")
+
+	if not node.is_inside_tree():
+		return
+
+	var tween: Tween = node.create_tween()
+	tween.tween_property(node, "scale", rest * FLINCH, FLINCH_S * 0.3).set_ease(Tween.EASE_OUT)
+	tween.tween_property(node, "scale", rest, FLINCH_S * 0.7).set_ease(Tween.EASE_OUT).set_trans(Tween.TRANS_BACK)
+
+
 # A hit the server reported (hit_number, protocol 85) at `at`: kept a moment so a body that then leaves the rows reads as killed.
 func note_hit(at: Vector3) -> void:
 	var now: int = Time.get_ticks_msec()
@@ -342,8 +386,16 @@ func aim_rows(from: Vector3, range_m: float) -> Array:
 	return out
 
 
-func on_rows(rows: Array) -> void:
+func on_rows(rows: Array, server_ms: int) -> void:
 	var seen: Dictionary = {}
+	var now_s: float = float(Time.get_ticks_usec()) / 1.0e6
+
+	if _rows_at >= 0.0:
+		_gap = lerpf(_gap, clampf(now_s - _rows_at, 0.05, 0.5), 0.2)
+
+	_rows_at = now_s
+	_clock_off = MotionBuffer.clock_off(_clock_off, now_s, server_ms, _server_ms)
+	_server_ms = server_ms
 
 	for row in rows:
 		var id: int = int(row[0])
@@ -372,13 +424,15 @@ func on_rows(rows: Array) -> void:
 				node.scale = Vector3.ONE * YOUNG_SCALE
 
 			add_child(node)
-			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13, "id": int(id)}
+			_bodies[id] = {"node": node, "target": row[2], "heading": float(row[3]), "state": int(row[4]), "phase": float(id % 7), "deer": int(row[1]) >= 2 and not SMALL_SPECIES.has(int(row[1])), "wolf": int(row[1]) == 3 and not node.has_meta("model"), "quad": node.has_meta("quad"), "model": node.has_meta("model"), "kind": KIND_OF_SPECIES.get(int(row[1]), ""), "step_count": -1, "gulls": int(row[1]) == 13, "id": int(id), "samples": []}
 
 		if int(row[4]) != int(_bodies[id]["state"]) and int(row[4]) in VOICED_STATES and KIND_OF_SPECIES.has(int(row[1])):
 			state_changed.emit(KIND_OF_SPECIES[int(row[1])], int(row[4]), row[2])
 
 		_bodies[id]["target"] = row[2]
 		_bodies[id]["heading"] = float(row[3])
+
+		MotionBuffer.push_row(_bodies[id], row[2], float(row[3]), int(row[5]), _clock_off, _gap)   # when the server moved it, on this clock; a repeat is skipped
 		_bodies[id]["state"] = int(row[4])
 
 	var now: int = Time.get_ticks_msec()
@@ -518,6 +572,7 @@ func _process(delta: float) -> void:
 
 func _process_body(delta: float) -> void:
 	_t += delta
+	var drawn_at: float = float(Time.get_ticks_usec()) / 1.0e6 - MotionBuffer.delay_s(_gap)
 
 	for id in _bodies:
 		var b: Dictionary = _bodies[id]
@@ -528,8 +583,15 @@ func _process_body(delta: float) -> void:
 			state = 10
 
 		var before: Vector3 = node.position
-		node.position = node.position.lerp(b["target"], clampf(delta * (10.0 if state == FLEE or state == 11 or state == 14 or state == 15 else 5.0), 0.0, 1.0))
-		node.rotation.y = lerp_angle(node.rotation.y, -float(b["heading"]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
+		var drawn: Array = MotionBuffer.at(b["samples"], drawn_at)
+		node.position = drawn[0]
+		node.rotation.y = lerp_angle(node.rotation.y, -float(drawn[1]) - PI * 0.5, clampf(delta * 10.0, 0.0, 1.0))
+		if node.has_meta("bandit"):
+			BanditLook.animate(node, state, Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001))
+			continue
+
+		if state == TETHERED and not node.has_meta("saddled"):
+			_show_hidden(node)   # a camp horse wears its saddle
 		if bool(b.get("model", false)):
 			var model_speed: float = Vector2(node.position.x - before.x, node.position.z - before.z).length() / maxf(delta, 0.001)
 			if node.has_meta("flock_birds"):
@@ -577,16 +639,22 @@ func _model_rows() -> Dictionary:
 	return _models
 
 
-func _make_model(number: int, id: int = 0, young: bool = false) -> Node3D:
+func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool = false) -> Node3D:
 	var kind: String = str(KIND_OF_SPECIES.get(number, ""))
 	var row: Dictionary = _model_rows().get(kind, {})
 
 	# Several looks for one species (goblins, Dave 7 Nov 2026: Skritch and Rukz): the row's "variants" are laid over it, one picked by the
 	# animal's id, so every goblin keeps its look. A row with height_m is sized by its mesh height, not its longest side, and each animal
 	# gets its own height: height_m plus a bell-shaped roll of up to height_variation_m either way (the mean of three even rolls), seeded
-	# from its id so it is the same on every client and every time it comes into view.
+	# from its id so it is the same on every client and every time it comes into view. A look marked "wild": false (Vrixa and Grikka, Dave 20 Nov 2026:
+	# named Ragtooth goblins) is only drawn for a tribe member (every_look, make_goblin), never picked for a wild animal.
 	if row.has("variants") and not (row["variants"] as Array).is_empty():
 		var looks: Array = row["variants"]
+
+		if not every_look:
+			var wild: Array = looks.filter(func(look: Variant) -> bool: return bool((look as Dictionary).get("wild", true)))
+			looks = wild if not wild.is_empty() else looks
+
 		row = row.duplicate()
 		row.merge(looks[id % looks.size()], true)
 
@@ -869,6 +937,7 @@ func _model_materials(meshes: Array, row: Dictionary) -> void:
 						gone.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA_SCISSOR
 						gone.albedo_color = Color(1.0, 1.0, 1.0, 0.0)
 						mi.set_surface_override_material(surface, gone)
+						mi.set_meta("hidden_surfaces", (mi.get_meta("hidden_surfaces", []) as Array) + [surface])
 						_model_note(str(row.get("scene", "")).get_file(), "surface %d of %s [%s] hidden" % [surface, str(mi.name), name_text.strip_edges()])
 						break
 
@@ -2383,3 +2452,12 @@ func _make_moose(id: int) -> Node3D:
 # a stag's branched antlers on every second one (by id).
 func _make_deer(id: int = 0) -> Node3D:
 	return _make_quad({"leg_h": 0.62, "rb": 0.22, "len": 1.05, "neck": 0.42, "head": 0.32, "snout": 1.1, "pale_belly": false, "coat": Color(0.52, 0.38, 0.24), "dark": Color(0.32, 0.23, 0.15), "pale": Color(0.9, 0.85, 0.77), "rump": true, "tines": id % 2 == 0, "socks": false})
+
+
+# Puts back the surfaces a hide entry cut away (a tethered camp horse's saddle, docs/design/BANDIT_CAMPS.md), once per body.
+func _show_hidden(node: Node3D) -> void:
+	node.set_meta("saddled", true)
+
+	for mi in node.find_children("*", "MeshInstance3D", true, false):
+		for surface in (mi.get_meta("hidden_surfaces", []) as Array):
+			(mi as MeshInstance3D).set_surface_override_material(int(surface), null)

@@ -31,3 +31,92 @@ You craft a station recipe from the pack (a click, or Craft). The station is wor
   - when you are already at the station.
 
 All the numbers are in `data/items/station_step.json`.
+
+## A station's own window lists only what it makes (Dave 17 Nov 2026)
+
+Dave, playtest:
+
+> "when you open an inventory other than yours like the workstation or the primative smithy it should only list the crafting recipes for stuff that station makes."
+
+F on a station opens its window: the crafting screen for a station without a store (workbench, carving station, tanning rack), or the store window on its Craft tab (smithies, kiln, leatherworking table, the campfire's window). That window's recipe list now holds only the recipes that station makes (`inventory_view.station_makes`, the view's `_station_screen`). Search, tabs and the three groups above work inside that list. Any other container's window (a chest, a smelter) lists none (SR-2). Your own inventory (I) is unchanged: every recipe you know, in the order above, near a station or not.
+
+### For Dave (provisional, assumed on his behalf; change any of them by saying so)
+
+- **SR-1, levels and stand-ins.** A station lists the recipes it can serve: its own station at its level or lower, add-ons that raise its level (the workbench's tool rack and vice) counted as the server's craft check counts them (the bellows and quenching trough raise nothing), and the stations it stands in for. So a Carpenter's bench (workbench 2) shows level 1 and 2 bench recipes, an Improved smithy (brick forge 2, also forge 1) shows brick forge 1 and 2 and the Primitive smithy's forge recipes, and a clay hearth shows the campfire's. Recipes above its level are not listed.
+- **SR-2, plain storage.** A chest, bin, smelter or other store that makes nothing by crafting lists no recipes: its Craft tab is empty. Only your own inventory (I) shows your whole list.
+- **SR-3, the campfire's window** lists the campfire recipes, lit or not (an unlit fire's rows are dim, as before). Pot recipes (soups, stews) stay with the pot's own window and your own inventory.
+- **SR-4, the Sawbuck** lists Wooden block, the recipe it speeds. The chopping block has no recipes (E splits logs), so its Craft tab is empty.
+- **SR-5, your own inventory near a station** still lists everything, station recipes second as above. Dave's ruling named only other inventories.
+
+## A crafting station has one inventory, beside its recipes (Dave 17 Nov 2026)
+
+Dave, playtest:
+
+> "I just used the primative smithy and didnt like the way there is a separate chest inventory. it should be combined so when it makes items they appear so the player can see them."
+
+> "in a station that has an inventory there should only be on inventory not a chest and crafting. it should have unlimited inventory slots starting with 20 and on the left it lists the items you can craft."
+
+He picked "Station's slots on the craft screen" (17 Nov 02:12Z) over products going straight to the pack, and "ship it all at once".
+
+- **One store.** The crafting stations that had input and output slots (Primitive, Improved and Advanced smithy, Master smithy, leatherworking table, tailor's table, loom, food preparation table, saw mill) have one store instead (`structures.json` `"one_store": true`, `"slots": 20`, no `out_slots`). It holds what you put in and what the station makes. A finished craft goes into it (`server_items._out_add`), never to the pack or the ground.
+- **Unlimited, from 20.** A new store has 20 slots and grows when full, as the pack does (`Inventory.grows`, 5 at a time, up to the 250 the protocol carries). Empty slots past 20 and past the last thing in it are given back when it is next used (`_store_usable`).
+- **Saves.** A store saved with the old input and output slots loads whole: every stack is in the one store, nothing moves or is lost (`test_station_storage`).
+- **The window.** No Chest and Craft tabs: the category tabs and recipe list on the left, the station's store on the right over the recipe card (`recipe_list.store_holder`, `container_panel.set_compact`, `inventory_view._store_with_recipes`). What the station makes is seen landing in it.
+
+### For Dave (provisional, assumed on his behalf; change any of them by saying so)
+
+- **SC-1, size.** Beside the recipes the store's wells are 60 px, 5 across, four rows (its first 20 slots) in view; a store grown past 20 scrolls. A chest's are 100 px, 6 across.
+- **SC-2, what steps aside.** The store keeps Keep out of crafting, Take all, Store all and Lock (on two lines); Sort both and Stack into my chests are left off for the room (their keys still work).
+- **SC-3, what keeps its old store.** The Kiln (a batch of logs into its output, being rebuilt in three tiers), the chopping block (E splits blocks into its output; no recipes), the smelters (fuel hopper, ore input, ingot rack), chests and fires.
+- **SC-4, no weight limit.** A station's store has no kilogram limit (it is never carried); the 250-slot protocol limit is the only cap.
+- **SC-5, the saw mill** still takes only logs from you; its planks land in the same store.
+
+## Two Craft buttons (Dave 17 Nov 2026)
+
+Dave: "cut the Craft button into two buttons left button says Craft 1, right button says Craft x where x is the number you set above for amount of items to craft." The recipe card's footer (own crafting screen and every station window, `recipe_list.gd`) now has two brass buttons side by side where the one wide Craft button was: **Craft 1** makes one; **Craft x** makes the Make box's number and its words follow the box as it changes. Pin stays below. Left click selects, Shift+click crafts one and E crafts the box's number, as before.
+
+### For Dave (provisional, assumed on his behalf; change any of them by saying so)
+
+- **CB-1, times.** Each button shows its own time: Craft 1 the time for one, Craft x the time for x ("8 s" under a minute, "2:40" from a minute up). Words too long for half the column end in "..." and show whole on hover.
+- **CB-2, greyed.** Craft 1 is greyed exactly as the old button was. Craft x is also greyed when the stock in reach covers one but not x. A recipe whose one craft needs logs or parts made first is left to the server, which refuses what is short.
+- **CB-3, quantity box** still runs 1 to 20.
+
+## Chests have no Craft side, and their size follows their slots (Dave 18 Nov 2026)
+
+"get rid of the craft button/window in the chests. chest models also need to be bigger the larger their inventory is ... its ok for it to be directly proportional"; "they dont grow. they just have different sizes according to how many inventory slots they have"; "use common sense and think about how the physics of chests should work in the real world".
+
+A container that makes nothing (no structures.json `station`, no `also`, not a fire) opens on its store alone: no Chest and Craft tabs, no recipe list, no Craft buttons (`inventory_view._store_only`). Each chest's body holds about 0.012 m³ per slot, so its volume is directly proportional to its slots; its footprint (placement, ghost, no-spawn) is the drawn size. The woven look shared by three chests is drawn at a uniform `look_scale`, so its proportions and any collision box stay true; the crude and large wooden chests draw the crate look at their own size (`PieceLook.crate(size)`).
+
+Slots (Dave 18 Nov 2026: "the lowest tier should have 3 rows of slots. then each tier up gives it another row"): rows of 6, the chest window's width.
+
+| Chest (tier order) | Rows | Slots | Weight | Drawn size, metres (wide x high x deep) | Footprint |
+|---|---|---|---|---|---|
+| Wicker - Chest | 3 | 18 | 40 kg | 0.76 x 0.57 x 0.50 (woven look, scale 0.81) | 0.76 x 0.50 |
+| Crude - Chest | 4 | 24 | 110 kg | 0.90 x 0.64 x 0.50 | 0.90 x 0.50 |
+| Rustic - Chest | 5 | 30 | 150 kg | 0.90 x 0.67 x 0.59 (woven look, scale 0.96) | 0.90 x 0.59 |
+| Fine - Chest | 6 | 36 | 200 kg | 0.96 x 0.71 x 0.63 (woven look, scale 1.02) | 0.96 x 0.63 |
+| Large wooden chest | 7 | 42 | 350 kg | 1.40 x 0.60 x 0.60 | 1.40 x 0.60 |
+| Ornate - Chest | 8 | 48 | 250 kg | 1.17 x 0.70 x 0.70 (iron look, scale 1.17) | 1.17 x 0.70 |
+
+### For Dave (provisional, assumed on his behalf; change any of them by saying so)
+
+- **CH-1, which windows.** Every container that cannot craft loses the Craft side, not only chests: shelves, cupboards, racks, barrels, jars, sacks, baskets, bins, crates, carts, sleds, wagons, the root cellar and the smelters (their Craft list was already empty, SR-2). Fires, kilns, the chopping block, the Sawbuck and every station keep theirs.
+- **CH-2, sizes.** Volume follows slots at about 0.012 m³ a slot; the table above. Weight limits and the catalog's items are unchanged.
+- **CH-3, tier order.** Wicker, Crude, Rustic, Fine, Large wooden, Ornate (the Ornate - Chest is iron-bound, hammer level 3, "more than any other chest"); the Large wooden chest sits one row below it. Odd, left as it is: the Large wooden chest still holds more weight (350 kg) than the Ornate (250 kg), the [D17] ruling. Placed chests already in a world are drawn at their new size; their slot count in an old save was not checked (new game expected).
+
+## The golden line marks only what the store takes (Dave 17 Nov 2026)
+
+Dave: "when I open stations or containers or fires its suppose to highlight the stuff in my inventory that can go in that station or campfire or container. I just opened a campfire and it had fiddle heads highlighted and they cant go into a campfire."
+
+Cause: the line at a fire lit every ingredient of a recipe made at a campfire (herbs, eggs, clay, nettles ...) as well as what the fire's store takes, so it marked things the fire refuses (`station_use.gd`). Smelters, kilns, racks and bins named what they take but lit nothing. The fix: one rule, `src/shared/store_rules.gd`, decides what a store takes; the server's put (`server_items._fire_takes`, `_box_takes`) and the pack's line (`station_use.gd`) both ask it.
+
+- A fire lights exactly its store's rule: wood it burns and food it cooks (`cooking.json`).
+- A container that names what it takes (`structures.json` `takes` / `takes_kinds`: kilns, smelters, racks, bins, the chopping block, the saw mill, the log sled) lights exactly those.
+- A crafting station whose store takes anything lights the ingredients of its recipes, as before; its own fuel is lit too.
+- A plain chest lights nothing, as before.
+
+### For Dave (provisional, assumed on his behalf; change any of them by saying so)
+
+- **SU-1, campfire recipe ingredients.** Herbs, eggs, clay and the rest of a campfire recipe stay unlit at a fire, because the fire does not take them; those recipes still craft from the pack.
+- **SU-2, fiddleheads.** No campfire recipe in the data takes fiddleheads (only the Clay hearth roasts them); the campfire recipes do take nettles, wild garlic leaves and herbs, which the old line lit. If fiddleheads themselves still light at a plain campfire after this, that is a separate cause to chase.
+- **SU-3, a store that is full** (a smelter's hopper, a kiln's batch) still lights what it takes; the put then says it is full.

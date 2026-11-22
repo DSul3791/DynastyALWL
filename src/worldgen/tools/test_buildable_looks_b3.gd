@@ -7,7 +7,7 @@ extends SceneTree
 const LookTable := preload("res://src/client/look_table.gd")
 
 const SIZES := {
-	"log_bench": Vector3(2.0, 0.45, 0.4), "stone_bench": Vector3(2.0, 0.45, 0.4), "iron_bench": Vector3(2.0, 0.45, 0.4),
+	"log_bench": Vector3(1.2, 0.45, 0.45), "log_double_bench": Vector3(2.2, 0.45, 0.45), "log_backed_bench": Vector3(1.5, 0.9, 0.6), "stone_bench": Vector3(2.0, 0.45, 0.4), "iron_bench": Vector3(2.0, 0.45, 0.4),
 	"log_table": Vector3(1.4, 0.8, 0.7), "stone_table": Vector3(1.4, 0.85, 0.8), "iron_table": Vector3(1.4, 0.8, 0.7),
 	"iron_chair": Vector3(0.6, 0.9, 0.6), "stone_workbench": Vector3(2.0, 1.1, 1.0),
 	"wooden_shelf": Vector3(1.2, 1.2, 0.3), "wooden_cupboard": Vector3(1.0, 1.8, 0.5), "wooden_barrel": Vector3(0.7, 0.9, 0.7),

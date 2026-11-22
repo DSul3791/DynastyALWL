@@ -85,7 +85,8 @@ class Acc:
 		tri(a, b, d)
 		tri(a, d, e)
 
-	func commit(mesh: ArrayMesh, material: Material) -> void:
+	# Adds this accumulator as one surface [arrays, material] to `out` (plain data, safe on a worker thread; to_mesh makes the mesh on the main thread).
+	func commit(out: Array, material: Material) -> void:
 		if v.is_empty():
 			return
 
@@ -96,8 +97,7 @@ class Acc:
 		arrays[Mesh.ARRAY_TEX_UV] = uv
 		arrays[Mesh.ARRAY_COLOR] = c
 		arrays[Mesh.ARRAY_INDEX] = i
-		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, arrays)
-		mesh.surface_set_material(mesh.get_surface_count() - 1, material)
+		out.append([arrays, material])
 
 
 # `materials`: {"bark": Material, "broad": Material, "conifer": Material, "palm": Material,
@@ -105,9 +105,26 @@ class Acc:
 # have a bare model (birch) no leaves; anything else gives the leafy model (the
 # leaf color is the per-tree tint, so summer and autumn share one model).
 static func build(entry: Dictionary, h: float, variant: int, far: bool, materials: Dictionary, season: String = "", stripped: bool = false, mid: bool = false, fruit_share: float = 1.0) -> ArrayMesh:
+	return to_mesh(build_surfaces(entry, h, variant, far, materials, season, stripped, mid, fruit_share))
+
+
+# Makes the mesh of build_surfaces' surfaces. Main thread only.
+static func to_mesh(surfaces: Array) -> ArrayMesh:
+	var mesh: ArrayMesh = ArrayMesh.new()
+
+	for surface in surfaces:
+		mesh.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, surface[0])
+		mesh.surface_set_material(mesh.get_surface_count() - 1, surface[1])
+
+	return mesh
+
+
+# One model as plain surfaces [[mesh arrays, material], ...], without making a mesh. Worker threads call this: an ArrayMesh made off the main thread
+# crashed the client at join (signal 11 after "can't call propagate_notification()", David4 smoke 14 Nov 2026); the main thread calls to_mesh.
+static func build_surfaces(entry: Dictionary, h: float, variant: int, far: bool, materials: Dictionary, season: String = "", stripped: bool = false, mid: bool = false, fruit_share: float = 1.0) -> Array:
 	# A flower or herb out of its season is not there at all (Dave 2026-10-31); only rows flagged "seasonal": true in flora.json are built per season, so the flag is also the switch.
 	if season != "" and bool(entry.get("seasonal", false)) and str(entry.get("model", entry.get("shape", ""))) in ["wildflower", "herb_nettle", "flower"] and not in_season(entry, season):
-		return ArrayMesh.new()
+		return []
 
 	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
 	rng.seed = hash([str(entry["name"]), variant])
@@ -232,18 +249,18 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 
 	_crown_variety(entry, leaves, twigs, bark, variant, h, crown, far)
 
-	var mesh: ArrayMesh = ArrayMesh.new()
-	bark.commit(mesh, materials["bark"])
-	white.commit(mesh, materials.get("birch_bark", materials["bark"]))
-	smooth.commit(mesh, materials.get("smooth_bark", materials["bark"]))
-	fruit.commit(mesh, materials.get("fruit", materials.get("smooth_bark", materials["bark"])))
-	chrome.commit(mesh, materials.get("chrome", materials["bark"]))
-	ember.commit(mesh, materials.get("ember", materials["bark"]))
-	greens.commit(mesh, materials.get("greens", materials["bark"]))
-	fungi.commit(mesh, materials.get("fungus", materials["bark"]))
-	berries.commit(mesh, materials.get("berry", materials["bark"]))
-	petals.commit(mesh, materials.get("petal", materials["bark"]))
-	twigs.commit(mesh, materials.get("twig", materials["broad"]))
+	var surfaces: Array = []
+	bark.commit(surfaces, materials["bark"])
+	white.commit(surfaces, materials.get("birch_bark", materials["bark"]))
+	smooth.commit(surfaces, materials.get("smooth_bark", materials["bark"]))
+	fruit.commit(surfaces, materials.get("fruit", materials.get("smooth_bark", materials["bark"])))
+	chrome.commit(surfaces, materials.get("chrome", materials["bark"]))
+	ember.commit(surfaces, materials.get("ember", materials["bark"]))
+	greens.commit(surfaces, materials.get("greens", materials["bark"]))
+	fungi.commit(surfaces, materials.get("fungus", materials["bark"]))
+	berries.commit(surfaces, materials.get("berry", materials["bark"]))
+	petals.commit(surfaces, materials.get("petal", materials["bark"]))
+	twigs.commit(surfaces, materials.get("twig", materials["broad"]))
 	var shape: String = str(entry["shape"])
 	var leaf_kind: String = "broad"
 
@@ -267,8 +284,8 @@ static func build(entry: Dictionary, h: float, variant: int, far: bool, material
 
 	# A species can name its own leaf texture (oak: lobed leaves).
 	leaf_kind = str(entry.get("leaf", leaf_kind))
-	leaves.commit(mesh, materials.get(leaf_kind, materials["broad"]))
-	return mesh
+	leaves.commit(surfaces, materials.get(leaf_kind, materials["broad"]))
+	return surfaces
 
 
 # The butt radius of the trunk `build` draws for this species, variant and height (before root flare and flutes). The server lays a felled trunk, its
@@ -577,8 +594,9 @@ static func _branch(acc: Acc, from: Vector3, to: Vector3, r0: float, r1: float, 
 		acc.tri(a + 1, a + sides + 2, a + sides + 1)
 
 
-# A clump of leaves: crossed cards at `at`; normals point away from `crown_center`.
-static func _clump(acc: Acc, rng: RandomNumberGenerator, at: Vector3, crown_center: Vector3, size: float, shade: float, cards: int) -> void:
+# A clump of leaves: crossed cards at `at`; normals point away from `crown_center`. `flat`: how steeply the last card of a three-card clump stands
+# (its up axis is the level side plus flat x up: 1.1 about 48 degrees, 0.3 about 17 degrees, nearly level, so it covers the view from below).
+static func _clump(acc: Acc, rng: RandomNumberGenerator, at: Vector3, crown_center: Vector3, size: float, shade: float, cards: int, flat: float = 1.1) -> void:
 	var out: Vector3 = (at - crown_center)
 	out = out.normalized() if out.length() > 0.01 else Vector3.UP
 	var color: Color = Color(shade, shade, shade, rng.randf_range(0.5, 1.0))
@@ -594,9 +612,32 @@ static func _clump(acc: Acc, rng: RandomNumberGenerator, at: Vector3, crown_cent
 			# One card more flat than upright, so a clump has body from above.
 			up = Vector3(-right.z, 0.0, right.x)
 			right = Vector3(cos(turn), 0.0, sin(turn))
-			up = (up + Vector3.UP * 1.1).normalized()
+			up = (up + Vector3.UP * flat).normalized()
 
 		acc.card(at, right, (up + right * tilt * 0.25).normalized(), size * 0.5, size * 0.5, (out * 0.8 + Vector3.UP * 0.2).normalized(), color)
+
+
+# Crown core (TEST-007, Dave's playtest 12 Nov 2026: seen from underneath, the middle and upper canopy had large gaps). The limb-built hardwood crowns
+# (maple, beech, oak, sweet chestnut, walnut) hang their leaf clumps on the limb tips, and the limbs spread out to the crown's shell, so nothing filled the
+# upper middle over the trunk: looking up from under the tree the sky showed straight through it (an oak let through about nine tenths of the sky
+# overhead, a maple or beech up to a third or more for some variants). This adds `count` clumps under the top of the crown's egg (centre `center`,
+# `crown_w` wide, topping out at `h`), spread over `reach` of its width, each with one card laid nearly flat. Near models only (the far model is seen from
+# afar, where the shell covers it); its own random stream, so the rest of the tree is built exactly as before. About 40 cards on a 700 to 900 card maple or beech crown (6 percent), 66 on an oak's 560.
+static func _crown_core(leaves: Acc, center: Vector3, crown_w: float, h: float, count: int, reach: float, far: bool) -> void:
+	if far:
+		return
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = hash([int(round(h * 100.0)), int(round(crown_w * 100.0)), int(round(center.x * 100.0)), int(round(center.z * 100.0)), "crown core"])
+	var half_h: float = (h - center.y) * 1.02
+	var phase: float = rng.randf() * TAU
+
+	for i in range(count):
+		phase += 2.4   # golden-angle turn: an even spread over the disc
+		var r: float = crown_w * reach * sqrt((float(i) + 0.5) / float(count))
+		var y: float = center.y + half_h * sqrt(maxf(1.0 - pow(r / crown_w, 2.0), 0.0)) * rng.randf_range(0.4, 0.8)
+		var at: Vector3 = Vector3(center.x + cos(phase) * r, minf(y, h * 0.97), center.z + sin(phase) * r)
+		_clump(leaves, rng, at, center, crown_w * 0.36 * rng.randf_range(0.9, 1.1), 0.8 * rng.randf_range(0.92, 1.06), 3, 0.3)
 
 
 static func _broadleaf(bark: Acc, leaves: Acc, rng: RandomNumberGenerator, h: float, crown_m: float, trunk_m: float, far: bool) -> void:
@@ -1007,6 +1048,9 @@ static func _maple(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerato
 	_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, dir: Vector3, length: float, r: float) -> void:
 		_maple_limb(bark, leaves, twigs, rng, from, dir, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.3))
 
+	if not bare:
+		_crown_core(leaves, center, crown_w, h, 14, 0.65, far)
+
 
 # One limb of a maple: a tube, then two or three smaller limbs from its end that
 # spread and turn up toward the light, until the last twigs carry the leaves.
@@ -1389,6 +1433,9 @@ static func _oak(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator,
 	_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, dir: Vector3, length: float, r: float) -> void:
 		_oak_limb(bark, leaves, twigs, rng, from, dir, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.35))
 
+	if not bare:
+		_crown_core(leaves, center, crown_w, h, 22, 0.8, far)   # the oak's wide, flat-reaching dome is the most open: more clumps, spread wider
+
 
 # Sweet chestnut from the owner's photos (2026-10-18, young and mature in four
 # seasons): a thick trunk with deep furrows that spiral up it, a broad rounded
@@ -1447,6 +1494,9 @@ static func _chestnut(bark: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGener
 
 		_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, dir: Vector3, length: float, r: float) -> void:
 			_maple_limb(bark, leaves, twigs, rng, from, dir, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.3, tint))
+
+		if not bare:
+			_crown_core(leaves, center, crown_w, h, 14, 0.65, far)
 
 	if far or bare:
 		return
@@ -1987,6 +2037,9 @@ static func _beech(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenera
 
 	_skirt_limbs(rng, fork_y, lean, trunk_r, crown_w, far, func(from: Vector3, dir: Vector3, length: float, r: float) -> void:
 		_maple_limb(smooth, leaves, twigs, rng, from, dir, length, r, 0, 1 if far else 2, center, crown_w, h, far, bare, -0.3, BARK_TINT_BEECH))
+
+	if not bare:
+		_crown_core(leaves, center, crown_w, h, 14, 0.65, far)
 
 
 static func _beech_young(smooth: Acc, leaves: Acc, twigs: Acc, rng: RandomNumberGenerator, h: float, crown: float, trunk: float, far: bool, bare: bool) -> void:
@@ -3474,6 +3527,8 @@ const GRASS_LOOKS := {
 	# Thatching grass (Dave 24 Oct): a fuller, taller clump than tall_grass, golden-green with many seed heads, so a patch reads as "pick me" from a distance.
 	# Dune grass (marram, beach pass): stiff blue-grey-green blades in a rounded tuft with pale straw plumes standing just above them.
 	"dune_grass": {"cards": 3, "width": 1.2, "head": "seed", "heads": 5, "head_color": Color(0.82, 0.76, 0.5), "reach": 1.1, "blade_h": 0.9, "blade_base": Color(0.32, 0.42, 0.24), "blade_tip": Color(0.62, 0.7, 0.46), "head_size": 1.1},
+	# Tussock sedge of fen and swamp (Dave 21 Nov 2026): a raised, dense clump of arching dark olive leaves with short brown flower spikes.
+	"tussock_sedge": {"cards": 4, "width": 1.5, "head": "spike", "heads": 4, "head_color": Color(0.26, 0.18, 0.1), "reach": 1.05, "blade_h": 1.0, "blade_base": Color(0.16, 0.2, 0.07), "blade_tip": Color(0.48, 0.52, 0.22)},
 	"thatch_grass": {"cards": 4, "width": 1.8, "head": "seed", "heads": 6, "head_color": Color(0.84, 0.7, 0.34), "reach": 1.3, "blade_h": 0.9, "blade_base": Color(0.16, 0.28, 0.08), "blade_tip": Color(0.82, 0.7, 0.34), "head_size": 1.3},
 }
 
@@ -3569,12 +3624,20 @@ const FALLEN_LOGS := {
 	"fallen_log": {"kind": "log", "bark": Color(0.27, 0.19, 0.12), "moss": Color(0.22, 0.4, 0.14), "hollow": false},
 	"hollow_log": {"kind": "log", "bark": Color(0.25, 0.18, 0.12), "moss": Color(0.24, 0.42, 0.16), "hollow": true},
 	"old_stump": {"kind": "stump", "bark": Color(0.28, 0.2, 0.13), "moss": Color(0.22, 0.4, 0.14), "hollow": false},
+	# Dead tree of the swamp (Dave 21 Nov 2026: "dead grey trees and hanging moss"): a standing grey snag, its top snapped off, a few bare broken
+	# limbs, grey-green moss hanging in strands from them. `h` is its height.
+	"dead_tree": {"kind": "snag", "bark": Color(0.42, 0.4, 0.37), "moss": Color(0.42, 0.47, 0.33), "hollow": false},
 }
 
 
 static func _fallen_log(look: Dictionary, bark: Acc, _leaves: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
 	var colour: Color = look["bark"]
 	var moss: Color = look["moss"]
+
+	if str(look["kind"]) == "snag":
+		_snag(bark, rng, h, colour, moss, far)
+		return
+
 	var radius: float = clampf(maxf(crown * 0.12, h * 0.075), 0.14, 0.45)
 
 	if str(look["kind"]) == "stump":
@@ -3619,6 +3682,36 @@ static func _fallen_log(look: Dictionary, bark: Acc, _leaves: Acc, rng: RandomNu
 		_bead(bark, Vector3(mx, radius + cos(ma) * radius * 0.95 + radius * 0.12 + rise * (mx / h + 0.5), sin(ma) * radius * 0.95), Vector3(size, radius * 0.34, size * 0.55), moss * rng.randf_range(0.8, 1.25))
 
 
+# A standing dead tree (FALLEN_LOGS "snag"): a leaning grey trunk in two pieces, a pale snapped top, bare limbs reaching out and up, and near
+# the eye two strands of hanging moss from each limb. About 160 vertices near, 60 far (test_flora_budget: plants 600 and 150).
+static func _snag(bark: Acc, rng: RandomNumberGenerator, h: float, colour: Color, moss: Color, far: bool) -> void:
+	var r: float = clampf(h * 0.035, 0.12, 0.3)
+	var lean: Vector3 = Vector3(rng.randf_range(-0.08, 0.08), 0.0, rng.randf_range(-0.08, 0.08)) * h
+	var mid: Vector3 = Vector3(0.0, h * 0.5, 0.0) + lean * 0.4
+	var top: Vector3 = Vector3(0.0, h, 0.0) + lean
+	var sides: int = 4 if far else 6
+	_branch(bark, Vector3(0.0, -0.1, 0.0), mid, r * 1.25, r * 0.85, colour, sides)
+	_branch(bark, mid, top, r * 0.85, r * 0.4, colour.lightened(0.05), sides)
+	_bead(bark, top, Vector3(r * 0.45, r * 0.3, r * 0.45), colour.lightened(0.3))      # the snapped, paler top
+
+	for k in range(2 if far else 5):
+		var at: float = rng.randf_range(0.4, 0.92)
+		var from: Vector3 = Vector3(0.0, h * at, 0.0) + lean * at
+		var a: float = rng.randf() * TAU
+		var out: Vector3 = Vector3(cos(a), 0.0, sin(a))
+		var reach: float = h * rng.randf_range(0.12, 0.26) * (1.2 - at)
+		var to: Vector3 = from + out * reach + Vector3(0.0, reach * rng.randf_range(0.2, 0.7), 0.0)
+		_branch(bark, from, to, r * 0.4, r * 0.12, colour.darkened(0.05), 3)
+
+		if far:
+			continue
+
+		for m in range(2):   # hanging moss: thin grey-green strands from the outer half of the limb
+			var hang: Vector3 = from.lerp(to, rng.randf_range(0.45, 0.95))
+			var drop: float = rng.randf_range(0.4, 1.2)
+			_branch(bark, hang, hang + Vector3(rng.randf_range(-0.08, 0.08), -drop, rng.randf_range(-0.08, 0.08)), 0.035, 0.01, moss * rng.randf_range(0.85, 1.15), 3)
+
+
 # Kelp (beach pass): a holdfast of short roots and a clump of long, wavy brown-olive ribbons with a few round gas bladders near the tips. `h` is the ribbon length.
 static func _kelp(bark: Acc, rng: RandomNumberGenerator, h: float, crown: float, far: bool) -> void:
 	for k in range(3 if far else 6):   # the holdfast: short grasping roots on the seabed
@@ -3658,6 +3751,8 @@ const FERN_LOOKS := {
 	"whisperfern": {"kind": "fronds", "fronds": 11, "length": 0.95, "rise": 1.2, "width": 0.14, "tint": Color(0.85, 1.0, 0.9)},
 	"staunchmoss": {"kind": "moss", "domes": 16, "color": Color(0.28, 0.5, 0.2), "stalk": Color(0.55, 0.5, 0.3)},
 	"echo_moss": {"kind": "moss", "domes": 14, "color": Color(0.5, 0.68, 0.72), "stalk": Color(0.8, 0.9, 0.95)},
+	# Bog moss hummock (Dave 21 Nov 2026): a low cushion of sphagnum, rust-red and ochre-green domes in one mound, no spore stalks.
+	"moss_hummock": {"kind": "moss", "domes": 16, "color": Color(0.5, 0.2, 0.1), "color2": Color(0.5, 0.48, 0.18)},
 }
 
 
@@ -3669,9 +3764,10 @@ static func _fern_rosette(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomN
 			var a: float = rng.randf() * TAU
 			var r: float = sqrt(rng.randf()) * crown * 0.9
 			var size: float = maxf(h, 0.04) * rng.randf_range(0.5, 1.0)
-			_bead(bark, Vector3(cos(a) * r, size * 0.3, sin(a) * r), Vector3(size * 0.9, size * 0.6, size * 0.9), color * rng.randf_range(0.85, 1.15))
+			var dome: Color = color.lerp(look["color2"], rng.randf()) if look.has("color2") else color
+			_bead(bark, Vector3(cos(a) * r, size * 0.3, sin(a) * r), Vector3(size * 0.9, size * 0.6, size * 0.9), dome * rng.randf_range(0.85, 1.15))
 
-		if not far:
+		if not far and look.has("stalk"):
 			for k in range(5):
 				var a: float = rng.randf() * TAU
 				var base: Vector3 = Vector3(cos(a), 0.0, sin(a)) * crown * rng.randf_range(0.0, 0.6)
@@ -3717,6 +3813,8 @@ const REED_LOOKS := {
 	"riverbraid": {"stems": 9, "head": "none", "head_color": Color(0.4, 0.62, 0.55), "stem": Color(0.38, 0.6, 0.5), "lean": 0.55},
 	"stormreed": {"stems": 8, "head": "plume", "head_color": Color(0.5, 0.48, 0.62), "stem": Color(0.5, 0.5, 0.55), "lean": 0.1},
 	"tidecrown": {"stems": 6, "head": "crown", "head_color": Color(0.92, 0.95, 0.98), "stem": Color(0.5, 0.65, 0.5), "lean": 0.2},
+	# Cattail of the fen (Dave 21 Nov 2026): stiff upright stems with a fat dark-brown velvet head two thirds up and a thin spike above it.
+	"cattail": {"stems": 9, "head": "cattail", "head_color": Color(0.3, 0.18, 0.09), "stem": Color(0.42, 0.5, 0.24), "lean": 0.06},
 }
 
 
@@ -3740,6 +3838,9 @@ static func _reed_stand(look: Dictionary, bark: Acc, leaves: Acc, rng: RandomNum
 			"wisp":
 				for b in range(2 if far else 4):
 					_bead(bark, tip + Vector3(0.0, float(b) * h * 0.04, 0.0) + out * h * 0.02 * float(b), Vector3(h * 0.025, h * 0.04, h * 0.025) * (1.0 - 0.2 * float(b)), color)
+			"cattail":
+				var head_at: Vector3 = base.lerp(tip, 0.78)
+				_bead(bark, head_at, Vector3(h * 0.022, h * 0.075, h * 0.022), color * rng.randf_range(0.85, 1.1))
 			"crown":
 				for b in range(3 if far else 6):
 					var pa: float = TAU * float(b) / 6.0

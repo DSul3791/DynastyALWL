@@ -21,6 +21,9 @@ func _init() -> void:
 	var states: Dictionary = {}
 
 	for kind in defs:
+		if bool(defs[kind].get("retired", false)) and not defs[kind].has("look"):   # kept for its state number only, never built (the clay pipes, Dave 14 Nov 2026)
+			continue
+
 		check(defs[kind].has("look") and defs[kind].has("sound") and defs[kind].has("clears_grass"), "%s has look, sound and clears_grass" % kind)
 		states[int(defs[kind]["state"])] = true
 

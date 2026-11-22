@@ -1,4 +1,6 @@
 # Building tiers plan (revised BUILDING_PLAN point 1)
+
+**ARCHIVED HISTORICAL PROPOSAL — NOT CURRENT DESIGN AUTHORITY.** This 22 October six-tier draft and its rough-plank item proposal were replaced by the seven active construction tiers (**Crude, Rustic, Refined, Sturdy, Superior, Engineered, Fortified**) and the approved Plank / Hardwood board definitions. None of the proposed materials, costs, tier mappings or built-in-door interpretations below authorizes implementation. For current doors and empty doorway frames see `docs/design/DYNASTY_MASTER_ITEMS.md` §3.0 and `docs/buglists/BUGLIST-002.md`. Existing historical details remain for traceability only.
 Sal_Crafts, 2026-10-22 20:40. Replaces "one piece plus a material skin". Dave 20:10-20:15: walls come in TIERS, each a real different build. Status: PROPOSED. No building code until Dave approves. Kathleen shows the looks; this page is items, recipes, foundations and what happens to what we already built.
 
 ## 1. The six tiers (Dave's words, my numbers)

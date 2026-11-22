@@ -24,7 +24,7 @@ PARAMS = {
     "thatch": (0.4, "tall grass 4 thatch a plant (drops.json), 1.5 s a plant (assumption); tall grass is now within 50 m of the spawn"),
     "bedding": (0.25, "fern 6 bedding a plant (drops.json), 1.5 s a plant (assumption)"),
     "stone": (6.0, "loose stone every ~10 m of walking at 1.4-2 m/s (assumption; spawn boost 1-2 extra per 32 m cell)"),
-    "clay": (1.0, "spade dig 0.7 s a stroke (DIG_COOLDOWN_MS) giving 1-3 shovelfuls (digging.json); needs wet soil (assumption)"),
+    "clay": (1.0, "shovel dig 0.7 s a stroke (DIG_COOLDOWN_MS) giving 1-3 shovelfuls (digging.json); needs wet soil (assumption)"),
     "hide": (60.0, "one rabbit: find, strike (0.6 s cooldown), dress 4 blows (carcass.json): about a minute (assumption)"),
     "log": (7.0, "fell 13 blows x 0.4 s (HIT_COOLDOWN_MS) + 3 blows x 0.45 s a log (PROCESS_COOLDOWN_MS) + walking (assumption: a 0.3 m trunk)"),
     "sinew": (60.0, "carcass part (assumption)"),

@@ -8,7 +8,7 @@ HOURS = float(sys.argv[1]) if len(sys.argv) > 1 else 4.0
 # item: (assumed picks per minute, sell_lot)
 RATES = {"stone": (6, 30), "stick": (12, 60), "leaves": (12, 60), "plant_fibre": (10, 50), "bark": (6, 30), "nettles": (8, 40),
          "feather": (1, 6), "soil": (4, 20), "clay": (4, 20), "sand": (4, 20), "gravel": (4, 20), "wheat_seeds": (3, 15),
-         "firewood_soft": (3, 12), "wooden_pin": (3, 12), "nails": (3, 15)}
+         "firewood": (3, 12), "wooden_pin": (3, 12), "nails": (3, 15)}
 mult = C["buy_discount"]
 rows = []
 for k, (rate, lot) in RATES.items():
@@ -21,5 +21,5 @@ for r in rows:
     print("| %s | %d | %d | %.2f | %.0f |" % (r[0], r[1], r[2], r[3], r[4]))
 buy = C["sell_markup"]
 print()
-for name, k in (("meal", "roast_forage"), ("waterskin", "waterskin"), ("clothing", "hide_cloak"), ("basic iron tool", "iron_spade")):
+for name, k in (("meal", "roast_forage"), ("waterskin", "waterskin"), ("clothing", "hide_cloak"), ("basic iron tool", "iron_shovel")):
     print("%s (%s): value %d, trader price about %d" % (name, k, I[k]["value"], math.ceil(I[k]["value"] * buy)))

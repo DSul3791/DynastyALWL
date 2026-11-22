@@ -5,21 +5,21 @@ from pathlib import Path
 import re, sys
 
 root = Path(__file__).resolve().parent.parent
-required = [
-    'docs/ai-team/package/README_FIRST.md', 'docs/ai-team/package/REVISION_AND_AUDIT_LOG.md', 'CLAUDE.md',
+core_rulebooks = [
+    'docs/ai-team/CONSTITUTION.md', 'docs/ai-team/WORKFLOW.md',
+    'docs/ai-team/TEST_GATES.md', 'docs/PONYTAIL_RULES.md',
+]
+required = core_rulebooks + [
+    'CLAUDE.md', 'README.md', 'docs/DOC_MAP.md',
     'docs/ai-team/package/cowork/PROJECT_INSTRUCTIONS.txt', 'docs/ai-team/package/cowork/COORDINATOR_BOOTSTRAP.md',
-    'docs/ai-team/CONSTITUTION.md', 'docs/ai-team/DECISION_AUTHORITY.md',
-    'docs/ai-team/DOCUMENT_AUTHORITY.md', 'docs/ai-team/WORKFLOW.md',
-    'docs/ai-team/TEST_GATES.md', 'docs/ai-team/ROLE_CATALOG.md',
-    'docs/ai-team/SESSION_LIFECYCLE.md', 'docs/ai-team/KNOWN_CONFLICTS.md',
-    'docs/ai-team/MIGRATION_PLAN.md', 'docs/ai-team/EVALUATION_CASES.md',
     'docs/ai-team/TASK_BRIEF_TEMPLATE.md', 'docs/ai-team/HANDOFF_TEMPLATE.md',
-    'docs/ai-team/COORDINATOR_STATE_TEMPLATE.md',
-    'docs/ai-team/SOURCES_AND_ASSUMPTIONS.md',
 ]
 errors=[]
 for rel in required:
     if not (root/rel).is_file(): errors.append(f'MISSING: {rel}')
+if errors:
+    for e in errors: print(e)
+    sys.exit(1)
 agent_files = sorted((root/'.claude/agents').glob('*.md'))
 skill_files = sorted((root/'.claude/skills').glob('*/SKILL.md'))
 if len(agent_files) != 8: errors.append(f'EXPECTED 8 agent definitions, got {len(agent_files)}')
@@ -58,34 +58,52 @@ for path in (root/'docs/ai-team').glob('*.md'):
     if 'Status:' not in s and path.name not in {'SOURCES_AND_ASSUMPTIONS.md','EVALUATION_CASES.md'}:
         errors.append(f'NO STATUS: {path.name}')
 
-policy = '\n'.join(p.read_text(encoding='utf-8') for p in (root/'docs/ai-team').glob('*.md'))
+policy = '\n'.join((root/p).read_text(encoding='utf-8') for p in core_rulebooks if (root/p).is_file())
 for term in ('dev', 'main', 'PROPOSED', 'SOURCE UNVERIFIED', 'handoff freeze',
              'SYNC PENDING', 'NOT RUN', 'water record', 'Foundation', 'Ceiling'):
     if term.lower() not in policy.lower(): errors.append(f'MISSING POLICY TERM: {term}')
 
 # Key behavior is routed in all entry points; these assertions are not agent evaluations.
 entrypoints = {
-    'CLAUDE.md': ('docs/START_HERE.md','CONSTITUTION.md','freeze'),
-    'docs/ai-team/package/cowork/PROJECT_INSTRUCTIONS.txt': ('START_HERE.md','freeze','Coordinator'),
-    'docs/ai-team/package/cowork/COORDINATOR_BOOTSTRAP.md': ('MIGRATION_PLAN.md','KNOWN_CONFLICTS.md','freeze'),
+    'CLAUDE.md': ('CONSTITUTION.md','WORKFLOW.md','TEST_GATES.md','PONYTAIL_RULES.md','docs/DOC_MAP.md'),
+    'README.md': ('CLAUDE.md','docs/DOC_MAP.md','WORKFLOW.md'),
+    'docs/ai-team/package/cowork/PROJECT_INSTRUCTIONS.txt': ('CLAUDE.md','CONSTITUTION.md','WORKFLOW.md','TEST_GATES.md','PONYTAIL_RULES.md','Coordinator'),
+    'docs/ai-team/package/cowork/COORDINATOR_BOOTSTRAP.md': ('CLAUDE.md','CONSTITUTION.md','WORKFLOW.md','TEST_GATES.md','PONYTAIL_RULES.md'),
 }
 for rel,terms in entrypoints.items():
+    if not (root/rel).is_file(): continue  # already reported MISSING
     s=(root/rel).read_text(encoding='utf-8').lower()
     for term in terms:
         if term.lower() not in s: errors.append(f'MISSING ENTRYPOINT POINTER {term}: {rel}')
+
+# Live readers must not route back to retired rulebooks. Historical evidence may cite them.
+retired = ('DECISION_AUTHORITY.md','DOCUMENT_AUTHORITY.md','ROLE_CATALOG.md',
+           'SESSION_LIFECYCLE.md','START_HERE.md','RULES.md')
+active = set(required) | {'docs/ai-team/EVALUATION_CASES.md', 'docs/ai-team/COORDINATOR_STATE_TEMPLATE.md'} | {str(p.relative_to(root)) for p in agent_files + skill_files}
+for rel in active:
+    path=root/rel
+    if not path.is_file(): continue
+    s=path.read_text(encoding='utf-8')
+    for name in retired:
+        # RULES.md must not match PONYTAIL_RULES.md; reject both short and qualified paths.
+        if re.search(r'(?<![\w])'+re.escape(name)+r'\b',s):
+            errors.append(f'RETIRED RULEBOOK IN ACTIVE ROUTING: {rel}: {name}')
+
+# Redirects are optional temporary compatibility files, never required forever.
+for rel in ('RULES.md','docs/START_HERE.md',*(f'docs/ai-team/{n}' for n in retired[:4])):
+    path=root/rel
+    if path.is_file() and ('RETIRED AS AUTHORITY' not in path.read_text() or len(path.read_text().splitlines())>8):
+        errors.append(f'RETIRED RULEBOOK REVIVED: {rel}')
 
 # Tests are not allowed to silently become claims about what ran.
 for rel in ('docs/ai-team/TEST_GATES.md','docs/ai-team/WORKFLOW.md',
             '.claude/skills/nightly-dev-checkpoint/SKILL.md'):
     s=(root/rel).read_text(encoding='utf-8').lower()
     if 'sha' not in s: errors.append(f'NO EXACT SHA CONCEPT: {rel}')
-for rel in ('CLAUDE.md', 'docs/ai-team/WORKFLOW.md','docs/ai-team/package/cowork/PROJECT_INSTRUCTIONS.txt',
-            'docs/START_HERE.md', 'RULES.md'):  # repo entry points reconciled at install
+for rel in ('CLAUDE.md', 'docs/ai-team/WORKFLOW.md','docs/ai-team/package/cowork/PROJECT_INSTRUCTIONS.txt'):
     s=(root/rel).read_text(encoding='utf-8').lower()
     if 'there is no daily branch' in s or 'dailydev_yyyy' in s:
         errors.append(f'SUPERSEDED OLD RULE IN ACTIVE ENTRY: {rel}')
-if 'ff650afb' not in (root/'docs/ai-team/package/README_FIRST.md').read_text(encoding='utf-8'):
-    errors.append('MISSING VERIFIED FINAL HANDOFF SHA IN README')
 
 # Cowork upload copies must match the repo skills byte for byte (one master: the repo SKILL.md).
 import zipfile
@@ -128,7 +146,7 @@ if errors:
     print(f'FAIL: {len(errors)} package consistency findings')
     for e in errors: print(' -',e)
     sys.exit(1)
-print(f'PASS: {len(required)} core files, {len(agent_files)} Claude Code agents, {len(skill_files)} skills')
+print(f'PASS: {len(core_rulebooks)} rulebooks, {len(required)} required files, {len(agent_files)} Claude Code agents, {len(skill_files)} skills')
 print('PASS: frontmatter, known instruction collisions, authority markers, guardrail references')
 print('PASS: Cowork skill ZIPs match, Ponytail pinned and ranked below the constitution, no hooks/plugins/MCP in shared settings, agent or skill frontmatter')
 print('LIMIT: static checks only; no Cowork, GitHub write, PC, Godot or live Claude evaluation.')

@@ -1,16 +1,18 @@
 extends SceneTree
 
 # Playability bot (Tyler, 31 Oct 2026): a headless player who follows the first-hour steps of PLAYTHROUGH_GUIDE.md on the server logic and STOPS at the first step
-# that cannot be done, saying which step and why. Steps: spawn, gather sticks and fibre and stones, twist twine, make the stone axe, chop a tree and work the
-# trunk, make and light a fire, build a lean-to. Recipes are found by NAME (the id in data/items/recipes.json), never by number, and the gather amounts come from
+# that cannot be done, saying which step and why. Steps: spawn, gather sticks and fibre and stones, twist twine, make the stone axe, fell a tree (it comes
+# down in its logs) and gather its leaves, make and light a fire, build a lean-to. Recipes are found by NAME (the id in data/items/recipes.json), never by number, and the gather amounts come from
 # the recipes themselves, so a changed recipe is followed; a recipe that grows past what a first hour can reasonably gather, or needs a station or an unknown
 # material, stops the bot at that step. test_first_hour stays as the vitals-curve check; this one is the "can a new player get through it" check.
 # What it cannot see: the real terrain (whether sticks lie within reach of the spawn is the world-alive metrics tool's job) and the client's hands.
 #   godot --headless --path . --script res://src/worldgen/tools/test_playability_bot.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 # What a first hour can fairly ask of the hands (the guide's pace: about 10 minutes of gathering). The bot fails when the recipes ask for more.
 const GATHER_BUDGET := {"stick": 70, "stone": 40, "plant_fibre": 90, "leaves": 220}
@@ -87,7 +89,7 @@ func craft(id: String, crafts: int) -> String:
 			return "recipe '%s' needs %d x %s, the pack holds %d" % [id, int(part[1]) * crafts, items.table.name_of(int(part[0])), have]
 
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, int(r["number"]), 0, crafts, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, int(r["number"]), 0, crafts, CraftHand.at(items, 1, int(r["number"])))
 	pass_time(float(r["craft_s"]) * float(crafts) + 6.0, 0.2)
 	var made: int = items.inventory_of(1).count_of(int(r["gives"][0])) - before
 
@@ -147,7 +149,7 @@ func _init() -> void:
 	items.send_notice = func(_p, _t): pass
 	items.ground_height = func(_x, _z): return 10.0
 	var standing: Dictionary = {7: true}
-	items.tree_info = func(_chunk, id): return {"name": "oak", "position": Vector3(10.0, 10.0, 0.0), "height": 18.0, "trunk": 0.1} if standing.has(id) else {}
+	items.tree_info = func(_chunk, id): return {"name": "oak", "position": Vector3(10.0, 10.0, 0.0), "height": 18.0, "trunk": 0.3} if standing.has(id) else {}
 	items.cut_tree = func(_chunk, id): standing.erase(id); return true
 	items.water_near = func(_pos, _reach): return false
 	items.setup(ItemTableScript.load_default(), dir)
@@ -236,7 +238,7 @@ func _init() -> void:
 		return
 	items.action(1, Net.ACT_MOVE, items.inventory_of(1).numbers.find(items.table.number_of("stone_axe")), 0, 0, Vector3.ZERO)
 
-	step("chop: fell the tree, cut a log off the trunk, pick it up")
+	step("chop: fell the tree, it comes down in its logs, gather its leaves")
 	items.report_position(1, Vector3(8.0, 10.0, 0.0))
 
 	for n in range(200):   # as many blows as it takes (the count is tuned by the felling design, so the bot does not depend on it)
@@ -244,51 +246,37 @@ func _init() -> void:
 			break
 
 		items._last_hit.clear()
-		items.action(1, Net.ACT_HIT, 7, 0, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_HIT, 7, 0, 0, HeldTool.at_axe(items))
 
 	need(standing.is_empty(), "the tree did not fall to 200 axe blows")
 	if halted:
 		return
 
 	pass_time(60.0, 0.8)
-	var trunk_id: int = 0
-
-	for k in items._items:
-		if items._items[k].has("tree") and items._items[k]["tree"]["state"] == 3:
-			trunk_id = k
-
-	need(trunk_id != 0, "the felled tree left no trunk on the ground to work")
-	if halted:
-		return
-
-	items.report_position(1, Vector3(14.0, 10.0, 0.0))
-	var guard: int = 0
 	var log_on_ground: int = 0
 	var log_numbers: PackedInt32Array = items.table.group_members(items.table.number_of("log"))
 
-	# Chopping the lying trunk cuts logs off its end; they fall on the ground and are not picked up by themselves (branches, bark and sticks are).
-	while log_on_ground == 0 and guard < 300:
-		if items._items.has(trunk_id):
-			items.report_position(1, items.cut_line_point(trunk_id))   # the player walks to the cut line (the server says "Walk along the trunk" otherwise)
+	# The tree comes down already in its logs, its crown's sticks and leaves over the circle it lands on (Dave 16 Nov 2026); the bot walks to the leaves and picks them up.
+	for k in items._items:
+		var it: Dictionary = items._items[k]
 
-		items._last_process.clear()
-		items.action(1, Net.ACT_PROCESS, trunk_id, 0, 0, Vector3.ZERO)
-		guard += 1
-		items.tick(1.0)
+		if not (it.has("tree") or it.has("fire") or it.has("struct") or it.has("scatter")) and log_numbers.has(int(it.get("number", 0))):
+			log_on_ground = k
 
-		for k in items._items:
-			var it: Dictionary = items._items[k]
-
-			if not (it.has("tree") or it.has("fire") or it.has("struct") or it.has("scatter")) and log_numbers.has(int(it.get("number", 0))):
-				log_on_ground = k
-
-	need(log_on_ground != 0, "%d chops on the trunk cut no log that lies on the ground" % guard)
+	need(log_on_ground != 0, "the felled tree left no log on the ground")
 	if halted:
 		return
 
+	for _pass in range(6):
+		for k in items._items.keys():
+			if items._items.has(k) and not items._items[k].has("scatter") and items.table.id_of(int(items._items[k].get("number", 0))) == "leaves":
+				items.report_position(1, items._items[k]["pos"])
+				items.action(1, Net.ACT_PICKUP, k, 0, 0, Vector3.ZERO)
+
+	items.report_position(1, Vector3(8.0, 10.0, 0.0))
 	pass_time(30.0, 0.8)
 	var leaves_need: int = int(raw.get("leaves", 0))
-	need(count("leaves") * 3 >= leaves_need, "working the trunk gave %d leaves; one crown should give at least a third of the %d the lean-to needs" % [count("leaves"), leaves_need])
+	need(count("leaves") * 3 >= leaves_need, "the felled crown gave %d leaves; one crown should give at least a third of the %d the lean-to needs" % [count("leaves"), leaves_need])
 	var leaf_short: int = leaves_need - count("leaves")   # the lean-to takes 200 (Dave 4 Nov): a real player sweeps the rest from more crowns, the bot is given it
 
 	while leaf_short > 0:
@@ -297,21 +285,22 @@ func _init() -> void:
 	if halted:
 		return
 
+	items.report_position(1, items._items[log_on_ground]["pos"])   # walk to the log: the fall laid it along the line, up to the tree's height away
 	items.action(1, Net.ACT_PICKUP, log_on_ground, 0, 0, Vector3.ZERO)
 	var carried: bool = items.shoulder_of(1) != "" or items.inventory_of(1).count_fill(items.table.number_of("log")) > 0
 	need(carried, "the log on the ground could not be picked up (shoulder empty, none in the pack)")
 	if halted:
 		return
 
-	# A chopping block from one large wooden block (Dave 10 Nov 2026). The shoulder and ground log rules are test_logs_carry's.
-	step("block: a chopping block from a large wooden block")
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("wooden_block_large"), 0, 1, Vector3.ZERO)
+	# A chopping block from one wooden block (15 Nov 2026). The shoulder and ground log rules are test_logs_carry's.
+	step("block: a chopping block from a wooden block")
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("wooden_block"), 0, 1, Vector3.ZERO)
 	why = craft("chopping_block", 1)
 	need(why == "", why)
 	if halted:
 		return
 
-	need(count("chopping_block") >= 1 and count("wooden_block_large") == 0, "the chopping block was made but the large block is still in the pack")
+	need(count("chopping_block") >= 1 and count("wooden_block") == 0, "the chopping block was made but the wooden block is still in the pack")
 	if halted:
 		return
 
@@ -372,7 +361,7 @@ func _init() -> void:
 	if halted:
 		return
 
-	need(not controls.contains("Splits one log into 4 firewood"), "CONTROLS.md says the chopping block splits a log into 4 firewood; it splits one wooden block into one firewood")
+	need(not controls.contains("Splits one log into 4 firewood"), "CONTROLS.md says the chopping block splits a log into 4 firewood; it splits one wooden block into 4 firewood")
 	if halted:
 		return
 

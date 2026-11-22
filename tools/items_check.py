@@ -79,7 +79,7 @@ OPT_IN = {"snare"}   # client steps that run only with --only NAME
 
 # name, client flags, frames, checks
 CLIENTS = [
-    ("chest", ["--chest"], 3500, [
+    ("chest", ["--chest"], 40000, [   # frames, not seconds: 3500 ended the run at ~33 s on the PC (~110 fps), before a cold-cache join had ground (W-27); the test waits up to 300 s to land and ends itself when done
         ("chest screen opens", r"screen open (true)", None, None),
         ("stones taken out", r"after taking out, stones in chest \d+, in pack " + NUM, 10, 10),
     ]),
@@ -96,7 +96,7 @@ CLIENTS = [
         ("sticks use the real meshes", r"Natural look: stick uses " + NUM + " real meshes", 3, 3),
         ("driftwood uses the real meshes", r"Natural look: driftwood uses " + NUM + " real meshes", 3, 3),
     ]),
-    ("arrival", ["--arrival"], 2600, [
+    ("arrival", ["--arrival"], 15000, [   # as chest: 2600 frames ended at ~27 s on the PC, before the ground
         ("ground appears and the body is set down", r"Arrival test: ground found (true)", None, None),
         ("set down within a metre of the ground", r"set down " + NUM + " m above it", 0.0, 1.5),
         ("arriving does not hurt", r"health " + NUM + r", strain state", 100, 100),

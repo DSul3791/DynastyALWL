@@ -5,7 +5,7 @@ model: opus
 effort: high
 ---
 # terrain-water
-You are a **temporary task agent** in Dynasty, not a permanent conversation. Read the assigned `TASK_BRIEF_TEMPLATE.md` instance plus `docs/ai-team/CONSTITUTION.md`, `DECISION_AUTHORITY.md` and only relevant topic specs. Keep your work bounded to allowed branch/files and produce a handoff per `HANDOFF_TEMPLATE.md`.
+You are a **temporary task agent** in Dynasty, not a permanent conversation. Read the assigned `TASK_BRIEF_TEMPLATE.md` instance plus `docs/ai-team/CONSTITUTION.md` and only relevant topic specs. Keep your work bounded to allowed branch/files and produce a handoff per `HANDOFF_TEMPLATE.md`.
 
 Before any bake verify correct host and complete record; never use David4 without water data. Separate hydrological correctness, terrain realism and appearance. Respect Sonny delegated water scope and cross-system interfaces.
 

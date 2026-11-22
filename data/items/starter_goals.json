@@ -1,5 +1,5 @@
 {
-	"_about": "PROPOSAL (Sal, 2026-10-31), read by nothing yet. Starter goals for the first island, taken from TUTORIAL_FIRST_30_MIN.md (the guide's text is the source of truth for hint wording). Format for a coder: `goals` is an ordered list; each goal has `id`, `title`, `hint` (plain text shown in the goal list), `after` (goal ids that must be done first; empty = available at start), `check` (one of: {event, count, what?} fired by the server when the thing happens, {have_item, count} true while the pack holds that many, {made_item, count} counted when a craft finishes, {have_item_any, count}), and `reward` ({coin_copper: n} through the purse, or {item: [id, n]} given to the pack; both small on purpose). A goal completes once and is saved per character (characters.json `goals_done`). Events to emit in server_items.gd: drink, tree_felled, fire_lit, ate_food, placed(what), carcass_worked. Rewards total about 70 copper plus a few sticks and kindling.",
+	"_about": "PROPOSAL (Sal, 2026-10-31), read by nothing yet. Starter goals for the first island, taken from TUTORIAL_FIRST_30_MIN.md (the guide's text is the source of truth for hint wording). Format for a coder: `goals` is an ordered list; each goal has `id`, `title`, `hint` (plain text shown in the goal list), `after` (goal ids that must be done first; empty = available at start), `check` (one of: {event, count, what?} fired by the server when the thing happens, {have_item, count} true while the pack holds that many, {made_item, count} counted when a craft finishes, {got_item, count} counted when the player gathers it first-hand (not trades, rewards, refunds or admin gives), {have_item_any, count}), and `stage` (the progression stage; the goal pays that stage's copper from data/items/goal_rewards.json, coins only). A goal completes once and is saved per character (characters.json `goals_done`). Events to emit in server_items.gd: drink, tree_felled, fire_lit, ate_food, placed(what), carcass_worked.",
 	"goals": [
 		{
 			"id": "drink",
@@ -10,9 +10,7 @@
 				"event": "drink",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 2
-			}
+			"stage": "start"
 		},
 		{
 			"id": "fibre",
@@ -20,12 +18,10 @@
 			"hint": "Nettles and tall grass give plant fibre. Press E on a plant.",
 			"after": [],
 			"check": {
-				"have_item": "plant_fibre",
+				"got_item": "plant_fibre",
 				"count": 12
 			},
-			"reward": {
-				"coin_copper": 3
-			}
+			"stage": "start"
 		},
 		{
 			"id": "twine",
@@ -38,12 +34,7 @@
 				"made_item": "twine",
 				"count": 2
 			},
-			"reward": {
-				"item": [
-					"stick",
-					4
-				]
-			}
+			"stage": "start"
 		},
 		{
 			"id": "axe",
@@ -57,9 +48,7 @@
 				"count": 1,
 				"or_have": true
 			},
-			"reward": {
-				"coin_copper": 5
-			}
+			"stage": "start"
 		},
 		{
 			"id": "fell",
@@ -72,36 +61,28 @@
 				"event": "tree_felled",
 				"count": 1
 			},
-			"reward": {
-				"item": [
-					"kindling",
-					3
-				]
-			}
+			"stage": "start"
 		},
 		{
 			"id": "hammer",
-			"title": "Make a Wooden - Hammer",
-			"hint": "Cut a wooden block from a felled log, then make a Wooden - Hammer: a wooden block, a stick and a twine. You build everything with it.",
+			"title": "Make a Stone - Hammer",
+			"hint": "Make a Stone - Hammer from a stone, a stick and a twine. You build and repair with it, and it breaks stone and ore from boulders.",
 			"after": [
 				"fell"
 			],
 			"check": {
-				"have_item_any": [
-					"wooden_hammer",
-					"wooden_hammer_soft",
+				"made_item_any": [
 					"stone_hammer"
 				],
-				"count": 1
+				"count": 1,
+				"or_have": true
 			},
-			"reward": {
-				"coin_copper": 3
-			}
+			"stage": "start"
 		},
 		{
 			"id": "fire",
 			"title": "Light a fire",
-			"hint": "Make a Campfire (6 sticks, 3 stones) and place it. Put sticks on it with F, then press E near it to light it.",
+			"hint": "Make a Campfire (6 sticks, 16 stones) and place it. Put sticks on it with F, then press E near it to light it.",
 			"after": [
 				"fell"
 			],
@@ -109,9 +90,7 @@
 				"event": "fire_lit",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 5
-			}
+			"stage": "start"
 		},
 		{
 			"id": "hoe",
@@ -121,16 +100,11 @@
 				"fire"
 			],
 			"check": {
-				"have_item_any": [
-					"wooden_hoe",
-					"stone_hoe",
-					"steel_hoe"
-				],
-				"count": 1
+				"made_item": "wooden_hoe",
+				"count": 1,
+				"or_have": true
 			},
-			"reward": {
-				"coin_copper": 3
-			}
+			"stage": "start"
 		},
 		{
 			"id": "path",
@@ -143,9 +117,7 @@
 				"event": "path_laid",
 				"count": 15
 			},
-			"reward": {
-				"coin_copper": 5
-			}
+			"stage": "start"
 		},
 		{
 			"id": "berries",
@@ -158,14 +130,12 @@
 				"event": "ate_food",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 3
-			}
+			"stage": "start"
 		},
 		{
 			"id": "shelter",
 			"title": "Build a lean-to",
-			"hint": "Hold your Wooden - Hammer, press R and pick Lean-to: 20 sticks, 60 leaves and 6 twine. Build it with the open side towards you.",
+			"hint": "Hold your hammer, press R and pick Lean-to: 20 sticks, 60 leaves and 6 twine. Build it with the open side towards you.",
 			"after": [
 				"fire",
 				"hammer"
@@ -175,44 +145,40 @@
 				"what": "lean_to",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 8
-			}
+			"stage": "start"
 		},
 		{
 			"id": "bed",
 			"title": "Make a bed",
-			"hint": "Make a Rough bed from your pack (10 thatch from thatch grass or heather, 4 sticks, 2 twine) and place it in your lean-to.",
+			"hint": "Make a bed and place it in your lean-to: a Thatch - Bed from your pack (10 thatch from thatch grass or heather, 4 sticks, 2 twine), or a Straw - Bed with the hammer. Any bed counts.",
 			"after": [
 				"shelter"
 			],
 			"check": {
 				"event": "placed",
-				"what": "rough_bed",
+				"what_any": [
+					"rough_bed",
+					"straw_bed",
+					"feather_bed",
+					"canopy_bed"
+				],
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 8
-			}
+			"stage": "start"
 		},
 		{
 			"id": "workbench",
 			"title": "Build a Workbench",
-			"hint": "Hold your hammer, press R and pick Workbench: 16 sticks, 6 twine and 4 stones. It unlocks better tools.",
+			"hint": "Hold your hammer, press R and pick Workbench: 16 sticks, 6 twine and 8 stones. It unlocks better tools.",
 			"after": [
 				"hammer"
 			],
 			"check": {
 				"event": "placed",
-				"what_any": [
-					"workbench",
-					"log_workbench"
-				],
+				"what": "workbench",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 10
-			}
+			"stage": "start"
 		},
 		{
 			"id": "spear",
@@ -225,9 +191,7 @@
 				"made_item": "spear",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 5
-			}
+			"stage": "start"
 		},
 		{
 			"id": "knife",
@@ -240,9 +204,7 @@
 				"event": "carcass_worked",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 10
-			}
+			"stage": "start"
 		},
 		{
 			"id": "fish",
@@ -252,24 +214,10 @@
 				"twine"
 			],
 			"check": {
-				"have_item_any": [
-					"trout",
-					"perch",
-					"carp",
-					"pike",
-					"salmon",
-					"eel",
-					"herring",
-					"mackerel",
-					"smelt",
-					"cod"
-				],
-				"count": 1,
-				"or_event": "fish_caught"
+				"event": "fish_caught",
+				"count": 1
 			},
-			"reward": {
-				"coin_copper": 10
-			}
+			"stage": "start"
 		},
 		{
 			"id": "sell",
@@ -282,9 +230,7 @@
 				"event": "sold",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 2
-			}
+			"stage": "start"
 		},
 		{
 			"id": "order",
@@ -297,9 +243,7 @@
 				"event": "wanted_order",
 				"count": 1
 			},
-			"reward": {
-				"coin_copper": 3
-			}
+			"stage": "start"
 		}
 	]
 }

@@ -1,6 +1,6 @@
 extends SceneTree
 
-# First-hour thatch pieces (Sal, 24 Oct): a thatch floor (the tier 1 foundation), a wall, a roof and a doorway are placed on it,
+# First-hour thatch pieces (Sal, 24 Oct): a thatch floor (the tier 1 foundation), a wall, a roof panel resting on the wall top and a doorway are placed on it,
 # the world is saved and loaded again, and the same pieces stand in the same places with the same ids and snaps.
 #   godot --headless --path . --script res://src/worldgen/tools/test_thatch_pieces.gd
 
@@ -58,7 +58,7 @@ func _init() -> void:
 	place(items, "thatch_floor_kit", Vector3(400.0, 10.0, 402.0))
 	place(items, "thatch_wall_kit", Vector3(399.2, 10.0, 399.7))
 	place(items, "thatch_doorway_kit", Vector3(402.0, 10.0, 399.7))
-	place(items, "thatch_roof_kit", Vector3(400.0, 10.0, 402.0))
+	place(items, "thatch_roof_kit", Vector3(399.0, 12.0, 400.1))   # a roof panel rests on the wall top (BUG-011), it does not stand on the floor
 	var before: Array = pieces_of(items)
 	var kinds: Array = before.map(func(row): return row[0])
 	check(kinds.has("thatch_floor") and kinds.has("thatch_wall") and kinds.has("thatch_doorway") and kinds.has("thatch_roof"), "floor, wall, doorway and roof are all placed (%s)" % str(kinds))
@@ -67,6 +67,13 @@ func _init() -> void:
 		if row[0] == "thatch_wall" or row[0] == "thatch_doorway":
 			check(is_equal_approx(row[2], 10.3), "a %s stands on the thatch floor top, 0.3 m up like the stone foundation (y %.2f)" % [row[0], row[2]])
 
+	var roof_y: float = -1.0
+
+	for row in before:
+		if row[0] == "thatch_roof":
+			roof_y = row[2]
+
+	check(is_equal_approx(roof_y, 10.3 + 2.4 + 1.0), "the roof panel rests on the wall top and rises from it (middle y %.2f)" % roof_y)
 	var ids_before: Array = items._items.keys()
 	items._dirty = true
 	items.save()

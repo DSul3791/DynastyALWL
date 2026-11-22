@@ -216,7 +216,7 @@ There is **no** clip for: jump, fall, land, swim, climb or ladder, turn, start o
 
 - [tools/check_ragdoll.gd](tools/check_ragdoll.gd): headless check (about 1.8 m tall, every animation present and keying every bone, mounts exist, arms model has only arms, mesh not heavy).
 - [src/worldgen/tools/test_worn_sync.gd](src/worldgen/tools/test_worn_sync.gd).
-- `debug_pace` in `terrain_client.gd` ("shot runner only: pretend to move at this speed") and `docs/mirror/tech/STANDARD_SHOTS.md` are how earlier agents looked at the character (software-rendered stills).
+- `debug_pace` in `terrain_client.gd` ("shot runner only: pretend to move at this speed") and [historical STANDARD_SHOTS.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/tech/STANDARD_SHOTS.md) are how earlier agents looked at the character (software-rendered stills).
 
 ## 1.9 What I could not determine
 
@@ -1099,7 +1099,7 @@ These passages are **copied unchanged** (each line prefixed with "> ") from the 
 
 > - **Modeled assets for** the look: hand-made tree, plant, building and character models, several per species, each with 3 or 4 detail levels. Procedural code then picks the model, scale, tilt and tint.
 
-**Source:** `docs/mirror/tech/DECISIONS.md` lines 121-121; under heading: ## 2026-10-21 Ground edits must tell the grass
+**Source:** [historical DECISIONS.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/tech/DECISIONS.md) lines 121-121; under heading: ## 2026-10-21 Ground edits must tell the grass
 
 > - Character bodies for OTHER players need a budget of 1 ms at Low for 20 visible (distance cull, animation LOD); Art's 2-6 ms estimate is too high for the 1050-class minimum.
 
@@ -1192,11 +1192,11 @@ These passages are **copied unchanged** (each line prefixed with "> ") from the 
 > - 344 Items first-person arms hold the tool (Art's Ragdoll.new(true) on hand_mount_l); HUD stays at upstream 353. Items holds 329, 330, 337, 338, 339, 351, 352.
 > - 354 Art ragdoll sides fixed (right is +X, hand_mount_r; held_item.gd and inventory_view.gd changed in same commit). Art holds 355.
 
-**Source:** `docs/mirror/tech/JOBS.md` lines 320-320; under heading: ## Note to Art from Items (2026-10-21T03:50:25Z)
+**Source:** [historical JOBS.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/tech/JOBS.md) lines 320-320; under heading: ## Note to Art from Items (2026-10-21T03:50:25Z)
 
 > Arms wired (3b437ce): held_item.gd adds Ragdoll.new(true) as camera child 'Arms' and parents tools to hand_mount_l, because in the rig 'left' is +X which appears on the viewer's right (facing -Z, +X is the character's right), so left and right look swapped: please check the naming. Boulders: Dave's card is open; keep your scenery until he picks.
 
-**Source:** `docs/mirror/tech/JOBS.md` lines 398-398; under heading: ## Moves awaiting Steve (Dave 2026-10-21 20:54: Steve approves every "set aside and move on")
+**Source:** [historical JOBS.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/tech/JOBS.md) lines 398-398; under heading: ## Moves awaiting Steve (Dave 2026-10-21 20:54: Steve approves every "set aside and move on")
 
 > - Mandy (Arts): src/client look and view files (flora, tree, grass_view, sky, weather look, water_material.gd and fall_mist.gd shaders, character/ragdoll, npc_view and animal_view looks, building/forge looks), assets/, art/, sound code and data, ART_DIRECTION.md.
 
@@ -1256,7 +1256,7 @@ These passages are **copied unchanged** (each line prefixed with "> ") from the 
 
 > - **[Idea] (brainstorm)** **Footsteps follow the feet.** Walking uses short strides, jogging longer, running longer again, with cadence following speed; a forced exertion slowdown changes the spacing to match. Surface-dependent sound triggered by foot contact, not a timer. The camera bob already works this way: stride 3 m walking, 4.2 m jogging, 6 m running (build 23), with a footfall at each step phase. The same step phase can fire the footstep sounds. **[Open]** surface tagging, what is sent over the network (footsteps of other players are played locally from their reported movement), and cost.
 
-**Source:** `docs/archive/2026-10/docs/mirror/tyler/BEST_PRACTICES.md` lines 99-109; under heading: ## Character animation (decision for Dave's question, 2026-10-21)
+**Source:** [historical BEST_PRACTICES.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/archive/2026-10/docs/mirror/tyler/BEST_PRACTICES.md) lines 99-109; under heading: ## Character animation (decision for Dave's question, 2026-10-21)
 
 > ## Character animation (decision for Dave's question, 2026-10-21)
 > FINDING FIRST: it is not a mesh problem. src/client/ragdoll_body.gd already has a 17-bone skeleton with separate arm/forearm, thigh/shin/foot bones and keyframed clips (idle, walk, run, crouch, sit, lie, swing, jab, throw, use). Knees (shin -0.7 rad walk, -1.5 run), elbows (forearm +0.3 walk, +1.3 run) and opposite arm/leg swing are already keyed, and terrain_client.gd:2079-2088 plays walk/run by speed and scales the cycle to ground speed. So what Dave saw is probably: (a) flying or admin mode shows idle; (b) first person hides the body (animation off by design); (c) OTHER players and NPCs: src/client/npc_view.gd has no animation calls, so they likely stand stiff. Ask Mandy to check (c) first with a still of a walking NPC and another player.
@@ -1270,7 +1270,7 @@ These passages are **copied unchanged** (each line prefixed with "> ") from the 
 > 7 Sources: Godot AnimationTree/BlendSpace1D is the standard speed-blend tool; stride-matching and additive layers are standard practice in character animation. I did not find a single authoritative source worth citing for the numbers; they are typical human gait ranges and should be tuned by eye.
 > Hand to Mandy (owner of the character model).
 
-**Source:** `docs/archive/2026-10/docs/mirror/tyler/BEST_PRACTICES.md` lines 130-152; under heading: ## Natural walk, jog, run: numbers for the ragdoll (for Mandy, Dave's request 2026-10-21)
+**Source:** [historical BEST_PRACTICES.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/archive/2026-10/docs/mirror/tyler/BEST_PRACTICES.md) lines 130-152; under heading: ## Natural walk, jog, run: numbers for the ragdoll (for Mandy, Dave's request 2026-10-21)
 
 > ## Natural walk, jog, run: numbers for the ragdoll (for Mandy, Dave's request 2026-10-21)
 > Sources: only the walk-run transition at Froude number about 0.5 is sourced ([Kram et al. via PMC, Apollo Number paper](https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2719915/), [Kram 1997 gait transition](https://sites.utexas.edu/neptune/wp-content/uploads/sites/6031/2020/07/jeb2085.pdf)); my search found no source for the other values, which are typical adult gait-lab ranges from memory: tune by eye, they are targets not laws.
@@ -1296,7 +1296,7 @@ These passages are **copied unchanged** (each line prefixed with "> ") from the 
 > Footsteps: key the sound and any dust/grass hook on the foot-plant frame of the clip (not a timer), so the audio matches the visible step; and add a small camera bob in first person at the same rate (2-3 cm walk, 4-6 cm run), reduced for comfort.
 > Cost: all clip data plus a few lines for lean, head counter-rotation and slope; nothing per bone beyond what runs today.
 
-**Source:** `docs/archive/2026-10/docs/mirror/tyler/FINDINGS.md` lines 215-222; under heading: # Report 13 (2026-10-21): build 465 walk/jog/run against my table (ragdoll_body.gd _gait, terrain_client.gd:2179-2193)
+**Source:** [historical FINDINGS.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/archive/2026-10/docs/mirror/tyler/FINDINGS.md) lines 215-222; under heading: # Report 13 (2026-10-21): build 465 walk/jog/run against my table (ragdoll_body.gd _gait, terrain_client.gd:2179-2193)
 
 > # Report 13 (2026-10-21): build 465 walk/jog/run against my table (ragdoll_body.gd _gait, terrain_client.gd:2179-2193)
 > Good: lean (2.0 / 5.7 / 10.3 deg across spine, chest and head, head counter-rotated), knee swing peaks (60 / 95 / 109 deg), knee at plant (17 / 37 / 43 deg), elbows (23 / 69 / 86 deg), bob (4 / 6 / 9 cm peak to peak at two per stride), shoulder/pelvis counter-rotation, hysteresis on the clip switch and a jog clip. All match my targets.
@@ -1317,11 +1317,11 @@ These passages are **copied unchanged** (each line prefixed with "> ") from the 
 > - 346 Ground third-person camera (scroll wheel, placeholder body, zoom saved; controls checked). Ground spare 347 (old 299 void). Next 348.
 > - 346 Ground third-person camera pushed (bed68da): one ray per frame, small body draw. Ground holds 347 and 348. check_controls fails on Tab (Items b0c856a): Items to fix. Next 349.
 
-**Source:** `docs/mirror/tech/CAMERA_TURN_RECIPE.md` lines 11-11; under heading: ## The recipe (one change, three parts)
+**Source:** [historical CAMERA_TURN_RECIPE.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/tech/CAMERA_TURN_RECIPE.md) lines 11-11; under heading: ## The recipe (one change, three parts)
 
 > C0. **Third person and subject shots must NOT turn the body** (Dave watching Mike's run, 25 Oct 01:42): `_side_view()` in shot_runner.gd (line 847) places view_cam with the BODY's basis (`left = body.global_transform.basis * (-1,0,0)`), so any body turn turns the camera with the character and every picture is the same. Replace it with a world-space orbit: `angle = start_angle + k * PI/2` (k = 0, 1, 2); `view_cam.global_position = subject + Vector3(sin(angle) * dist, height, cos(angle) * dist)`; `view_cam.look_at(subject + Vector3(0, aim_height, 0), Vector3.UP)`. The character stays put, the camera goes round it, same distance and height. Read back the camera position and heading toward the subject (each view differs by 90 degrees around the subject, distance equal within 5 cm), not the body yaw. Subject = the character (third person), a tree, a shrub, the ground item group, or the placed piece. In shot mode the player camera is hidden/unused for these shots (client.third_person = true already does this).
 
-**Source:** `docs/mirror/tech/STANDARD_SHOTS.md` lines 15-15; under heading: ## STANDARD SET v3 (Dave 25 Oct 01:26: "only take 3 shots and rotate left 90 degrees after each shot")
+**Source:** [historical STANDARD_SHOTS.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/tech/STANDARD_SHOTS.md) lines 15-15; under heading: ## STANDARD SET v3 (Dave 25 Oct 01:26: "only take 3 shots and rotate left 90 degrees after each shot")
 
 > - **SUBJECT spot** (the picture is of a thing: a tree, shrub, ground items, a placed piece, or the character in third person): the thing stays put and the CAMERA ORBITS it, 90 degrees around per shot at the same distance and height, always looking at the subject (a, b = 90 degrees, c = 180 degrees around). K03, K04, K05, K06, K11, K12, K13, and any third-person shot of the character. Turning the body is never used for these: it would swing the view away from the subject, or (third person) turn the camera with the character.
 
@@ -1345,7 +1345,7 @@ These passages are **copied unchanged** (each line prefixed with "> ") from the 
 
 > - Spear (Dave, 2026-10-20, decided, not built): normal attack keys jab; hold right click to raise and aim a throw, left click throws, release right click returns to normal stance.
 
-**Source:** `docs/archive/2026-10/docs/mirror/tech/ACTION_PLANS/Kathleen_held_tools_pose_heads.md` lines 1-8; under heading: # Held tools: pose, saw shape, tool heads (Kathleen, 25 Oct)
+**Source:** [historical Kathleen_held_tools_pose_heads.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/archive/2026-10/docs/mirror/tech/ACTION_PLANS/Kathleen_held_tools_pose_heads.md) lines 1-8; under heading: # Held tools: pose, saw shape, tool heads (Kathleen, 25 Oct)
 
 > # Held tools: pose, saw shape, tool heads (Kathleen, 25 Oct)
 > From Mike's hands10 pictures (results/20261025_hands10). One branch claude/kathleen-held-pose, RUNTIME, three small commits:
@@ -1356,7 +1356,7 @@ These passages are **copied unchanged** (each line prefixed with "> ") from the 
 >
 > Update 25 Oct: part 1 = commit 3af62551 (heads, saw, hammer). Part 2 (pose) = its own commit 1c089053 (third-person lean 78 deg, grip choke 0.6), revertable alone.
 
-**Source:** `docs/archive/2026-10/docs/mirror/tyler/FINDINGS.md` lines 495-523; under heading: # Report 26 (2026-10-21): the first-person axe chop looks wrong (Dave): how a real chop moves, how FPS games animate it, a keyframe table, and why ours is off. Read from src/client/held_item.gd (SWING_S 0.55, ARMS_POS (0,-0.1,-0.15), ARMS_PITCH 50 deg, TOOL_TILT 20 deg, strike fired at 0.5 x SWING_S) and ragdoll_body.gd `_swing` (shared by first and third person). I have not seen a render of the chop.
+**Source:** [historical FINDINGS.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/archive/2026-10/docs/mirror/tyler/FINDINGS.md) lines 495-523; under heading: # Report 26 (2026-10-21): the first-person axe chop looks wrong (Dave): how a real chop moves, how FPS games animate it, a keyframe table, and why ours is off. Read from src/client/held_item.gd (SWING_S 0.55, ARMS_POS (0,-0.1,-0.15), ARMS_PITCH 50 deg, TOOL_TILT 20 deg, strike fired at 0.5 x SWING_S) and ragdoll_body.gd `_swing` (shared by first and third person). I have not seen a render of the chop.
 
 > # Report 26 (2026-10-21): the first-person axe chop looks wrong (Dave): how a real chop moves, how FPS games animate it, a keyframe table, and why ours is off. Read from src/client/held_item.gd (SWING_S 0.55, ARMS_POS (0,-0.1,-0.15), ARMS_PITCH 50 deg, TOOL_TILT 20 deg, strike fired at 0.5 x SWING_S) and ragdoll_body.gd `_swing` (shared by first and third person). I have not seen a render of the chop.
 > ## 1 How a real chop looks (felling or splitting with an axe; references: woodcutting form guides, biomechanics of axe swing, game viewmodel practice)
@@ -1399,13 +1399,13 @@ These passages are **copied unchanged** (each line prefixed with "> ") from the 
 
 > - 23:55 Mandy: 559 (shoulder log carry: carry_idle and carry_walk clips (right arm over the log, empty left hand at rest, forward lean, slow roll), log on the shoulder in third person and at the edge of the view in first person; runtime only, client)
 
-**Source:** `docs/mirror/tech/SCALE_PLAN.md` lines 138-138; under heading: ## 11b Who handles what: server or client, per feature (the centre of the plan; "cost at 1000" is per second across the whole world, est.)
+**Source:** [historical SCALE_PLAN.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/tech/SCALE_PLAN.md) lines 138-138; under heading: ## 11b Who handles what: server or client, per feature (the centre of the plan; "cost at 1000" is per second across the whole world, est.)
 
 > | Chopping, gathering | S | drops and tree HP are economy | swing animation, hit sound/particles, predicted impact only | hit-spam (limit by tool rate), reach/line-of-sight cheat; server must own loot rolls (luck.gd) | per hit < 0.2 ms after limit; felling broadcasts via AoI |
 
 ### B6. Clothing and equipment visuals
 
-**Source:** `docs/archive/2026-10/docs/mirror/tech/ACTION_PLANS/Kathleen_worn_clothing.md` lines 1-17; under heading: # Kathleen: worn clothing meshes (goal 1f, all clothing items in one plan)
+**Source:** [historical Kathleen_worn_clothing.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/archive/2026-10/docs/mirror/tech/ACTION_PLANS/Kathleen_worn_clothing.md) lines 1-17; under heading: # Kathleen: worn clothing meshes (goal 1f, all clothing items in one plan)
 
 > # Kathleen: worn clothing meshes (goal 1f, all clothing items in one plan)
 > Goal: every wearable item (hide_cloak, hide_boots, hide_hood, hide_mittens, hide_leggings, grass_skirt, grass_cloak, fibre_sandals, backpack) has a worn mesh per body slot for NPC/remote-player bodies (npc_view._make_body) so worn clothing shows.
@@ -1425,7 +1425,7 @@ These passages are **copied unchanged** (each line prefixed with "> ") from the 
 > 8. **Test (groupable).** ONE labelled row of dressed bodies in the showroom (one body per item plus one wearing everything), via REQUEST; PASS IF each shows its own mesh on the right slot, no clipping at the character screen extremes. Headless: triangle count per piece in a table.
 > 9. **Order and commits.** Cloak, hood, boots, leggings, mittens, skirt, sandals, pack; one commit per slot; merge in the hourly batch.
 
-**Source:** `docs/archive/2026-10/docs/mirror/tech/ACTION_PLANS/Steve_worn_attach.md` lines 1-20; under heading: # Steve: wear Kathleen's worn clothing on bodies (RUNTIME, client only; one item)
+**Source:** [historical Steve_worn_attach.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/archive/2026-10/docs/mirror/tech/ACTION_PLANS/Steve_worn_attach.md) lines 1-20; under heading: # Steve: wear Kathleen's worn clothing on bodies (RUNTIME, client only; one item)
 
 > # Steve: wear Kathleen's worn clothing on bodies (RUNTIME, client only; one item)
 > Branch claude/steve-worn-attach from generator-v2 after claude/kathleen-worn-clothing merges (needs src/client/worn_look.gd and data/items/worn.json). Queued behind the river settle work.
@@ -1441,24 +1441,24 @@ These passages are **copied unchanged** (each line prefixed with "> ") from the 
 > Best-practice suggestions:
 > 1. **One helper, one conversion.** src/client/worn_sync.gd with a single entry: apply(rig, worn_numbers_or_ids, far). It converts numbers to ids once (table.id_of), diffs against what is already attached (remember the applied ids on the rig as metadata) and adds or removes only the pieces that changed, so a worn change does not rebuild the whole outfit.
 > 2. **Distance switch in one place.** Keep a single `far` decision (30 m, one check per second, hysteresis of a few metres so a body at 30 m does not flicker) inside the helper or its caller, not in each of the three places. Re-attach only when the far flag flips.
-> 3. **Closed screens cost nothing.** The character-screen SubViewport uses render_target_update_mode DISABLED (or UPDATE_ONCE per refresh) while the screen is hidden, and its body is freed or paused; the idle turn runs only while visible. Report the frame cost with the screen open and closed (Ctrl+Shift+G).
+> 3. **Closed screens cost nothing.** The character-screen SubViewport uses render_target_update_mode DISABLED (or UPDATE_ONCE per refresh) while the screen is hidden, and its body is freed or paused; the idle turn runs only while visible. Report the frame cost with the screen open and closed (Ctrl+Shift+P).
 > 4. **First-person arms.** Show mittens on the arms only if Kathleen's builder is flagged for it in worn.json (arm_ok); the first-person camera must not see clipping through the cloak or hood (hide hood/cloak parts on the own head layer, visible to others and the third-person view only).
 > 5. **NPC rosters.** The optional "worn" list in data/npcs rows is validated in Python (every id exists and has a worn.json row); an unknown id logs once and is skipped, never an error.
 > 6. **Protocol note.** No protocol change today is right. When remote-player bodies arrive, the same apply() takes the list the server sends; document that in worn_sync.gd's header and claim a protocol number then.
 > 7. **Tests.** parse_scan, local_check at 233, validate_items, plus one headless test that attaches an outfit twice (second call changes nothing) and swaps one item (only that piece changes). Mike's picture is one REQUEST: full outfit side view, and the character-screen body (two pictures).
 > Label RUNTIME. Merge: next hourly batch after Kathleen's branch.
 
-**Source:** `docs/mirror/items/CLOTHING_AND_WARMTH_DESIGN.md` lines 19-19; under heading: ## Clothes (items, mostly future)
+**Source:** [historical CLOTHING_AND_WARMTH_DESIGN.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/items/CLOTHING_AND_WARMTH_DESIGN.md) lines 19-19; under heading: ## Clothes (items, mostly future)
 
 > Wrapped hide cloak, hide boots, leather jerkin, wool cloak, fur hat, mittens. Early game: plant fibre skirt and grass cloak (small warmth, rot quickly). They need hides, wool, a sewing needle (job 90) and the Tailoring skill. Items get `kind: clothing`, `slot`, `warmth`, `wet_resist`, `durability` (wear from use), a body slot panel in the Tab screen, and appear on the character model (Art builds the layer rig after the ragdoll). Equipment is a new inventory section (9 slots); a protocol and save bump when built.
 
-**Source:** `docs/mirror/items/NPC_DESIGN.md` lines 69-69; under heading: ## 10. Questions for Steve (not Dave)
+**Source:** [historical NPC_DESIGN.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/items/NPC_DESIGN.md) lines 69-69; under heading: ## 10. Questions for Steve (not Dave)
 
 > - NPC body: reuse the player ragdoll with a clothes set for the first wave. I recommend yes.
 
 ### B7. Other people's bodies: NPCs, other players, animation level of detail, network
 
-**Source:** `docs/archive/2026-10/docs/mirror/tyler/FINDINGS.md` lines 299-307; under heading: # Report 17 (2026-10-21): NPC bodies, pre-generated NPC voice lines, river surface problems. Practice notes from industry norms (Skyrim, GTA, WoW, Witcher 3, Wwise and FMOD guidance) and hydrology; not tested in the game.
+**Source:** [historical FINDINGS.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/archive/2026-10/docs/mirror/tyler/FINDINGS.md) lines 299-307; under heading: # Report 17 (2026-10-21): NPC bodies, pre-generated NPC voice lines, river surface problems. Practice notes from industry norms (Skyrim, GTA, WoW, Witcher 3, Wwise and FMOD guidance) and hydrology; not tested in the game.
 
 > # Report 17 (2026-10-21): NPC bodies, pre-generated NPC voice lines, river surface problems. Practice notes from industry norms (Skyrim, GTA, WoW, Witcher 3, Wwise and FMOD guidance) and hydrology; not tested in the game.
 > ## A. NPC bodies in an MMO (for Mandy)
@@ -1470,12 +1470,12 @@ These passages are **copied unchanged** (each line prefixed with "> ") from the 
 > 6 Pitfalls: foot sliding (scale walk speed to path speed, as 486 did), popping when LOD changes (blend over 0.3 s), NPCs standing in each other's space (steering with 0.5 m personal space), sleeping NPCs ending up in the wall (bake sleep marker as the only legal pose position), time-of-day schedules all firing at the same minute (random +-10 min).
 > 7 Dave's rule: unwell NPCs sit or lie down and keep conversation short; add an unwell posture variant (hand to head, slower walk 0.6x) so it is visible from distance.
 
-**Source:** `docs/mirror/tech/DECISIONS.md` lines 201-202; under heading: ## 2026-10-21 18:10 Animation and river mouth (Tyler, from Dave; Steve)
+**Source:** [historical DECISIONS.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/tech/DECISIONS.md) lines 201-202; under heading: ## 2026-10-21 18:10 Animation and river mouth (Tyler, from Dave; Steve)
 
 > ## 2026-10-21 18:10 Animation and river mouth (Tyler, from Dave; Steve)
 > (1) Animation for other players and NPCs: APPROVED, Mandy. Clients derive clips from velocity and stance (no protocol change). Animation LOD: full at <= 15 m, 15 Hz to 40 m, 5 Hz to 70 m, frozen beyond; stays inside the 1 ms at Low budget for 20 visible bodies (measure). npc_view.gd must play clips.
 
-**Source:** `docs/mirror/items/NPC_DESIGN.md` lines 53-53; under heading: ## 7. Server cost at 20 players
+**Source:** [historical NPC_DESIGN.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/items/NPC_DESIGN.md) lines 53-53; under heading: ## 7. Server cost at 20 players
 
 > - Network: NPC position/heading/state for NPCs within 120 m at 4 Hz, about 12 bytes each, delta sent: under 2 KB/s per player in a busy square. A dialogue message is one small RPC per line. New RPCs `npcs(numbers)`, `npc_say(npc, text, voice, choices)`, `npc_talk(npc, choice)`: protocol bump when built, cost at Low stated then (draw the same ragdoll body as the player, max 20 NPCs drawn).
 
@@ -1496,15 +1496,15 @@ Nothing has been removed. This list is for Dave's approval. For each entry: file
 - `ART_DIRECTION.md` lines 82-84, heading: ## 5. Realism over storybook
 - `ART_DIRECTION.md` lines 107-109, heading: ## 10. Character look (owner decision, 2026-10-20)
 - `ARCHITECTURE_BUDGET.md` lines 68-68, heading: ## 5. Modeled and procedural assets
-- `docs/mirror/tech/DECISIONS.md` lines 121-121, heading: ## 2026-10-21 Ground edits must tell the grass
+- [historical DECISIONS.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/tech/DECISIONS.md) lines 121-121, heading: ## 2026-10-21 Ground edits must tell the grass
 - `DESIGN_IDEAS.md` lines 1671-1671, heading: ### 9.2 Crime memory and delayed discovery
 - `ART_DIRECTION.md` lines 330-332, heading: ## 45. Ragdoll character (build 349)
 - `ART_DIRECTION.md` lines 369-371, heading: ## 48. Ragdoll sides (build 354)
 - `assets/character/README.md` (whole file): KEEP IN PLACE; it is the technical reference that ships with the code. Copied above for reading only.
 - `docs/mirror/tech/BUILD_LOG.md` lines 51-54, heading: ## One number ahead (Dave 2026-10-20 23:42: threads must not wait on a number)
 - `docs/mirror/tech/BUILD_LOG.md` lines 59-60, heading: ## One number ahead (Dave 2026-10-20 23:42: threads must not wait on a number)
-- `docs/mirror/tech/JOBS.md` lines 320-320, heading: ## Note to Art from Items (2026-10-21T03:50:25Z)
-- `docs/mirror/tech/JOBS.md` lines 398-398, heading: ## Moves awaiting Steve (Dave 2026-10-21 20:54: Steve approves every "set aside and move on")
+- [historical JOBS.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/tech/JOBS.md) lines 320-320, heading: ## Note to Art from Items (2026-10-21T03:50:25Z)
+- [historical JOBS.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/tech/JOBS.md) lines 398-398, heading: ## Moves awaiting Steve (Dave 2026-10-21 20:54: Steve approves every "set aside and move on")
 - `CONTROLS.md` lines 17-17, heading: ## Now (terrain client, build 23)
 - `CONTROLS.md` lines 26-26, heading: ## Now (terrain client, build 23)
 - `CONTROLS.md` lines 68-73, heading: ## Now (terrain client, build 23)
@@ -1516,30 +1516,30 @@ Nothing has been removed. This list is for Dave's approval. For each entry: file
 - `DESIGN_IDEAS.md` lines 967-969, heading: ### 6.16 Exertion, fitness and health (brainstorm)
 - `DESIGN_IDEAS.md` lines 940-940, heading: ### 6.14 Senses, thoughts and the minimal HUD
 - `DESIGN_IDEAS.md` lines 985-985, heading: ### 6.17 The sound stage (brainstorm)
-- `docs/archive/2026-10/docs/mirror/tyler/BEST_PRACTICES.md` lines 99-109, heading: ## Character animation (decision for Dave's question, 2026-10-21)
-- `docs/archive/2026-10/docs/mirror/tyler/BEST_PRACTICES.md` lines 130-152, heading: ## Natural walk, jog, run: numbers for the ragdoll (for Mandy, Dave's request 2026-10-21)
-- `docs/archive/2026-10/docs/mirror/tyler/FINDINGS.md` lines 215-222, heading: # Report 13 (2026-10-21): build 465 walk/jog/run against my table (ragdoll_body.gd _gait, terrain_client.gd:2179-2193)
+- [historical BEST_PRACTICES.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/archive/2026-10/docs/mirror/tyler/BEST_PRACTICES.md) lines 99-109, heading: ## Character animation (decision for Dave's question, 2026-10-21)
+- [historical BEST_PRACTICES.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/archive/2026-10/docs/mirror/tyler/BEST_PRACTICES.md) lines 130-152, heading: ## Natural walk, jog, run: numbers for the ragdoll (for Mandy, Dave's request 2026-10-21)
+- [historical FINDINGS.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/archive/2026-10/docs/mirror/tyler/FINDINGS.md) lines 215-222, heading: # Report 13 (2026-10-21): build 465 walk/jog/run against my table (ragdoll_body.gd _gait, terrain_client.gd:2179-2193)
 - `CONTROLS.md` lines 10-10, heading: ## Now (terrain client, build 23)
 - `docs/mirror/tech/BUILD_LOG.md` lines 51-52, heading: ## One number ahead (Dave 2026-10-20 23:42: threads must not wait on a number)
-- `docs/mirror/tech/CAMERA_TURN_RECIPE.md` lines 11-11, heading: ## The recipe (one change, three parts)
-- `docs/mirror/tech/STANDARD_SHOTS.md` lines 15-15, heading: ## STANDARD SET v3 (Dave 25 Oct 01:26: "only take 3 shots and rotate left 90 degrees after each shot")
+- [historical CAMERA_TURN_RECIPE.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/tech/CAMERA_TURN_RECIPE.md) lines 11-11, heading: ## The recipe (one change, three parts)
+- [historical STANDARD_SHOTS.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/tech/STANDARD_SHOTS.md) lines 15-15, heading: ## STANDARD SET v3 (Dave 25 Oct 01:26: "only take 3 shots and rotate left 90 degrees after each shot")
 - `ITEMS_DESIGN.md` lines 131-133, heading: ## First-person arms (2026-10-21)
 - `DESIGN_IDEAS.md` lines 568-568, heading: ### 5.3 Crafting
 - `CONTROLS.md` lines 52-52, heading: ## Now (terrain client, build 23)
 - `CONTROLS.md` lines 88-88, heading: ## Planned / not decided
-- `docs/archive/2026-10/docs/mirror/tech/ACTION_PLANS/Kathleen_held_tools_pose_heads.md` lines 1-8, heading: # Held tools: pose, saw shape, tool heads (Kathleen, 25 Oct)
-- `docs/archive/2026-10/docs/mirror/tyler/FINDINGS.md` lines 495-523, heading: # Report 26 (2026-10-21): the first-person axe chop looks wrong (Dave): how a real chop moves, how FPS games animate it, a keyframe table, and why ours is off. Read from src/client/held_item.gd (SWING_S 0.55, ARMS_POS (0,-0.1,-0.15), ARMS_PITCH 50 deg, TOOL_TILT 20 deg, strike fired at 0.5 x SWING_S) and ragdoll_body.gd `_swing` (shared by first and third person). I have not seen a render of the chop.
+- [historical Kathleen_held_tools_pose_heads.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/archive/2026-10/docs/mirror/tech/ACTION_PLANS/Kathleen_held_tools_pose_heads.md) lines 1-8, heading: # Held tools: pose, saw shape, tool heads (Kathleen, 25 Oct)
+- [historical FINDINGS.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/archive/2026-10/docs/mirror/tyler/FINDINGS.md) lines 495-523, heading: # Report 26 (2026-10-21): the first-person axe chop looks wrong (Dave): how a real chop moves, how FPS games animate it, a keyframe table, and why ours is off. Read from src/client/held_item.gd (SWING_S 0.55, ARMS_POS (0,-0.1,-0.15), ARMS_PITCH 50 deg, TOOL_TILT 20 deg, strike fired at 0.5 x SWING_S) and ragdoll_body.gd `_swing` (shared by first and third person). I have not seen a render of the chop.
 - `docs/mirror/tech/BUILD_LOG.md` lines 306-306, heading: ## One number ahead (Dave 2026-10-20 23:42: threads must not wait on a number)
 - `docs/mirror/tech/BUILD_LOG.md` lines 333-333, heading: ## One number ahead (Dave 2026-10-20 23:42: threads must not wait on a number)
 - `docs/mirror/tech/BUILD_LOG.md` lines 254-254, heading: ## One number ahead (Dave 2026-10-20 23:42: threads must not wait on a number)
-- `docs/mirror/tech/SCALE_PLAN.md` lines 138-138, heading: ## 11b Who handles what: server or client, per feature (the centre of the plan; "cost at 1000" is per second across the whole world, est.)
-- `docs/archive/2026-10/docs/mirror/tech/ACTION_PLANS/Kathleen_worn_clothing.md` lines 1-17, heading: # Kathleen: worn clothing meshes (goal 1f, all clothing items in one plan)
-- `docs/archive/2026-10/docs/mirror/tech/ACTION_PLANS/Steve_worn_attach.md` lines 1-20, heading: # Steve: wear Kathleen's worn clothing on bodies (RUNTIME, client only; one item)
-- `docs/mirror/items/CLOTHING_AND_WARMTH_DESIGN.md` lines 19-19, heading: ## Clothes (items, mostly future)
-- `docs/mirror/items/NPC_DESIGN.md` lines 69-69, heading: ## 10. Questions for Steve (not Dave)
-- `docs/archive/2026-10/docs/mirror/tyler/FINDINGS.md` lines 299-307, heading: # Report 17 (2026-10-21): NPC bodies, pre-generated NPC voice lines, river surface problems. Practice notes from industry norms (Skyrim, GTA, WoW, Witcher 3, Wwise and FMOD guidance) and hydrology; not tested in the game.
-- `docs/mirror/tech/DECISIONS.md` lines 201-202, heading: ## 2026-10-21 18:10 Animation and river mouth (Tyler, from Dave; Steve)
-- `docs/mirror/items/NPC_DESIGN.md` lines 53-53, heading: ## 7. Server cost at 20 players
+- [historical SCALE_PLAN.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/tech/SCALE_PLAN.md) lines 138-138, heading: ## 11b Who handles what: server or client, per feature (the centre of the plan; "cost at 1000" is per second across the whole world, est.)
+- [historical Kathleen_worn_clothing.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/archive/2026-10/docs/mirror/tech/ACTION_PLANS/Kathleen_worn_clothing.md) lines 1-17, heading: # Kathleen: worn clothing meshes (goal 1f, all clothing items in one plan)
+- [historical Steve_worn_attach.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/archive/2026-10/docs/mirror/tech/ACTION_PLANS/Steve_worn_attach.md) lines 1-20, heading: # Steve: wear Kathleen's worn clothing on bodies (RUNTIME, client only; one item)
+- [historical CLOTHING_AND_WARMTH_DESIGN.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/items/CLOTHING_AND_WARMTH_DESIGN.md) lines 19-19, heading: ## Clothes (items, mostly future)
+- [historical NPC_DESIGN.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/items/NPC_DESIGN.md) lines 69-69, heading: ## 10. Questions for Steve (not Dave)
+- [historical FINDINGS.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/archive/2026-10/docs/mirror/tyler/FINDINGS.md) lines 299-307, heading: # Report 17 (2026-10-21): NPC bodies, pre-generated NPC voice lines, river surface problems. Practice notes from industry norms (Skyrim, GTA, WoW, Witcher 3, Wwise and FMOD guidance) and hydrology; not tested in the game.
+- [historical DECISIONS.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/tech/DECISIONS.md) lines 201-202, heading: ## 2026-10-21 18:10 Animation and river mouth (Tyler, from Dave; Steve)
+- [historical NPC_DESIGN.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/items/NPC_DESIGN.md) lines 53-53, heading: ## 7. Server cost at 20 players
 - `docs/mirror/tech/BUILD_LOG.md` lines 185-185, heading: ## One number ahead (Dave 2026-10-20 23:42: threads must not wait on a number)
 - `DESIGN_IDEAS.md` lines 1765-1765, heading: ### 11.3 Life in the world
 

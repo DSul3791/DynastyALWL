@@ -82,7 +82,11 @@ func _init() -> void:
 
 	for tier in [1, 2, 3]:
 		var camp: OmniLight3D = BuildingLook.fire(true, false, tier).get_node("Light")
-		check(camp.omni_range <= 3.5 * pow(2.0, tier - 1) + 0.1 and camp.omni_attenuation >= 2.0 and camp.has_meta("base_energy"), "campfire tier %d light: range %.1f m, falloff %.1f" % [tier, camp.omni_range, camp.omni_attenuation])
+		var want: Array = BuildingLook.FIRE_LIGHT[tier]   # tiers 1 and 2 stay on 3.5 m x 2 per step and falloff 2; the large fire (3) is 20 m / 1.5 for BUG-002 (4x a torch), changed from "<= 3.5 x 2^(tier-1) and falloff >= 2" on 13 Nov 2026 (ledger)
+		check(is_equal_approx(camp.omni_range, float(want[0])) and is_equal_approx(camp.omni_attenuation, float(want[2])) and camp.has_meta("base_energy"), "campfire tier %d light: range %.1f m, falloff %.1f" % [tier, camp.omni_range, camp.omni_attenuation])
+
+		if tier < 3:
+			check(camp.omni_range <= 3.5 * pow(2.0, tier - 1) + 0.1 and camp.omni_attenuation >= 2.0, "campfire tier %d keeps its old bounds (range at most 3.5 x 2 per step, falloff 2 or more)" % tier)
 
 	print("lit fixture: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

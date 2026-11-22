@@ -1,0 +1,166 @@
+{
+	"note": "Bandit camp sites, stage 1 (Dave 19 Nov 2026, project chat: sites fixed by the seed, woken by road traffic, a few km apart, none near the start; plan /mnt/project-files/bandit-camps/PLAN.md, docs/design/BANDIT_CAMPS.md). Stage 1 finds sites and wakes them; stage 2 lays the camp (camp below). All numbers are first tries (BANDIT-1..27), tune after play.",
+	"cell_m": 1000.0,
+	"share": 0.5,
+	"stretch_m": 100.0,
+	"weights": {
+		"road": 1.0,
+		"path": 0.5,
+		"cart": 3.0
+	},
+	"half_life_days": 3.0,
+	"near_road_m": 500.0,
+	"wake_points": 30.0,
+	"road_off_m": [
+		100.0,
+		300.0
+	],
+	"spacing_m": 3000.0,
+	"start_clear_m": 1500.0,
+	"building_clear_m": 150.0,
+	"tribe_clear_m": 1500.0,
+	"cave_clear_m": 150.0,
+	"slope_max_deg": 15.0,
+	"slope_step_m": 5.0,
+	"check_s": 3600.0,
+	"drop_points": 0.05,
+	"robbery": {
+		"note": "Stage 4 (docs/design/BANDIT_CAMPS.md, BANDIT-30..35) switch: enabled false means bandits ask no toll, charge no one for refusing and take nothing from a player. Turning it on is Dave's decision alone.",
+		"enabled": false,
+		"rob_stacks": 2
+	},
+	"toll": {
+		"note": "Stage 4: a player within watch_m of the road point by an awake camp, once a game day, is met by up to walkers bandits who stop stop_m off and ask copper_per_level copper by the camp's top level (Pay / Refuse). No answer in answer_s, walking refuse_walk_m on, refusing or not having the coins: they charge (the existing big game charge). They never follow past leash_m from their fire.",
+		"watch_m": 60.0,
+		"walkers": 2,
+		"stop_m": 4.0,
+		"copper_per_level": 5,
+		"answer_s": 30.0,
+		"refuse_walk_m": 20.0,
+		"leash_m": 400.0
+	},
+	"clearing": {
+		"note": "Stage 5 (docs/design/BANDIT_CAMPS.md, BANDIT-21..27): a bandit beaten under surrender_share of his health gives up and drops his weapon; a strike with Rope or Twine in hand ties him; he follows within follow_m, slips free past lead_slack_m or after escape_game_hours; led within guard_m of a guard he is handed over for bounty_copper_per_level a level. With no bandit left the camp dissolves after dissolve_game_days and the site stays dormant quiet_game_days.",
+		"surrender_share": 0.15,
+		"follow_m": 2.0,
+		"lead_slack_m": 30.0,
+		"escape_game_hours": 1.0,
+		"guard_m": 5.0,
+		"bounty_copper_per_level": 10,
+		"dissolve_game_days": 2.0,
+		"quiet_game_days": 10.0
+	},
+	"warnings": {
+		"note": "Stage 3 (docs/design/BANDIT_CAMPS.md, BANDIT-17..20): a woken site is first signs (a cold fire pit, boot prints from the road), then one bandit watching the road from lookout_m off it who walks back to camp when a player comes within lookout_leave_m, then the camp; each stage lasts stage_game_days and needs the road at sleep_share of wake_points or the site sleeps again. Prints: track_step_m apart, track_gap_m either side of the line, for track_m off the road, at most track_max.",
+		"stage_game_days": 2.0,
+		"sleep_share": 0.5,
+		"lookout_m": 60.0,
+		"lookout_leave_m": 40.0,
+		"track_m": 25.0,
+		"track_step_m": 0.8,
+		"track_gap_m": 0.12,
+		"track_max": 32
+	},
+	"camp": {
+		"note": "Stage 2 (Dave 19 Nov 2026: a campfire, a couple of tamed horses with saddles, a tent or two (a Lean-to for now: he agreed the default), 1 to 5 bandits levelled for the area). The camp is laid again from the site row at every start and never saved in the world (bandit_sites.json is its record). Bandits are made while a player is within spawn_m and fight back only when hit (stage 4 adds the toll).",
+		"bands": [
+			{
+				"to_m": 3000.0,
+				"bandits": [
+					1,
+					2
+				],
+				"level": [
+					1,
+					1
+				],
+				"up_share": 0.25
+			},
+			{
+				"to_m": 5000.0,
+				"bandits": [
+					2,
+					3
+				],
+				"level": [
+					1,
+					3
+				]
+			},
+			{
+				"to_m": 8000.0,
+				"bandits": [
+					2,
+					4
+				],
+				"level": [
+					3,
+					6
+				]
+			},
+			{
+				"to_m": 1000000000.0,
+				"bandits": [
+					3,
+					5
+				],
+				"level": [
+					5,
+					10
+				]
+			}
+		],
+		"lean_tos": [
+			[
+				2,
+				1
+			],
+			[
+				5,
+				2
+			]
+		],
+		"lean_to_m": 5.0,
+		"sit_m": 2.2,
+		"horses": 2,
+		"horse_m": 9.0,
+		"tether_m": 1.5,
+		"spawn_m": 200.0,
+		"walk_mps": 1.3,
+		"run_mps": 4.5,
+		"flee_share": 0.3,
+		"flee_m": 40.0,
+		"gear": [
+			{
+				"from": 1,
+				"weapon": "wooden_club",
+				"worn": [
+					"hide_tunic",
+					"hide_trousers",
+					"hide_boots"
+				]
+			},
+			{
+				"from": 3,
+				"weapon": "bronze_spear",
+				"worn": [
+					"hide_tunic",
+					"hide_trousers",
+					"hide_boots",
+					"hide_hood"
+				]
+			},
+			{
+				"from": 5,
+				"weapon": "iron_sword",
+				"worn": [
+					"hide_tunic",
+					"hide_trousers",
+					"hide_boots",
+					"hide_hood",
+					"fur_cloak"
+				]
+			}
+		]
+	}
+}

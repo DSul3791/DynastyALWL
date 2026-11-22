@@ -58,13 +58,8 @@ func _init() -> void:
 	check(grass._flat_at(10.0 - 0.45, 17.9), "grass at the margin of the thin end is flat")
 	check(not grass._flat_at(11.2, 14.0), "grass 1.2 m out is not")
 	check(not grass._flat_at(10.0, 19.5), "grass past the end is not")
-	# Dave 2 Nov: grass came up through logs. A cut trunk is thicker at its cut end than the 0.55 taper, and loose logs must press too.
+	# Dave 2 Nov: grass came up through logs: loose logs must press it too (a felled tree is its loose logs at once, 16 Nov 2026).
 	const Lying := preload("res://src/shared/lying_logs.gd")
-	var whole: Array = Lying.trunk_segment(Vector3(0, 0, 0), {"radius": 0.3, "length": 12.0, "orig_length": 12.0, "yaw": 0.0})
-	check(is_equal_approx(whole[5], 0.3 * 0.55), "a whole trunk tapers to 55 percent (%f)" % whole[5])
-	var cut: Array = Lying.trunk_segment(Vector3(0, 0, 0), {"radius": 0.3, "length": 3.0, "orig_length": 12.0, "yaw": 0.0})
-	check(cut[5] > 0.3 * 0.8, "a short cut log is nearly as thick at the far end (%f)" % cut[5])
-	check(is_equal_approx(cut[3], 3.0), "the log runs its length along yaw 0 (z)")
 	var loose: Array = Lying.loose_segment(Vector3(5, 0, 5), Vector3(0, 0, -1), 2.5, 0.22, 0.28)
 	check(is_equal_approx(loose[1], 3.75) and is_equal_approx(loose[3], 6.25), "a loose log spans its length centred on its spot")
 	grass.trunks = [loose]
@@ -81,6 +76,27 @@ func _init() -> void:
 	grass.set_bare(patches)
 	check(grass._bare_at(100.0, 300.0) and grass._bare_at(139.3, 300.2) and grass._bare_at(120.5, 300.0), "every patch of a 40 patch path is bare, near and far")
 	check(not grass._bare_at(120.0, 301.5) and not grass._bare_at(97.5, 300.0), "grass well beside the path and past its end stays")
+	# Dave 19 Nov 2026: grass came back onto paths in patches. A ground point beside a path scattered its clump of cards onto it, so every card
+	# is tested where it stands, in the cells a path or clearing reaches.
+	var on_path: Dictionary = grass._cell_clears(Vector2i(20, 50), 0.5)
+	check(not on_path.is_empty() and bool(on_path["bare"]), "a cell the path crosses is tested card by card")
+	var at_piece: Dictionary = grass._cell_clears(Vector2i(16, 33), 0.5)
+	check(not at_piece.is_empty() and (at_piece["spots"] as Array).size() == 1, "a cell a placed piece's clearing reaches is tested card by card, against that piece")
+	check(grass._cell_clears(Vector2i(-40, -40), 2.85).is_empty(), "a cell no path or clearing reaches is not")
+	# Cell (24, 50) starts at x 144, 5 m past the path's last patch (139, 300).
+	check(grass._cell_clears(Vector2i(24, 50), 0.5).is_empty(), "a cell 5 m past the path's end is not tested")
+	# A cell beside the path whose cards land past its low edge (the farthest band scatters 2.85 m): 1.3 m past the edge is reached.
+	grass.set_bare([Vector3(118.7, 0.0, 303.0)])
+	check(grass._cell_clears(Vector2i(20, 50), 0.0).is_empty(), "without the far cards' reach that patch is missed (the bug)")
+	check(bool(grass._cell_clears(Vector2i(20, 50), 2.85).get("bare", false)), "a patch beyond a cell's low edge is reached by its far cards")
+	check(grass._cell_clears(Vector2i(16, 34), 0.0).is_empty() and not grass._cell_clears(Vector2i(16, 34), 2.85).is_empty(), "a clearing just past a cell's edge is reached only by the far cards")
+	grass.set_bare(patches)
+	check(grass._kept_off(120.0, 300.2, on_path) and grass._kept_off(100.5, 200.0, at_piece), "a card on a path patch or in a clearing is kept off")
+	check(not grass._kept_off(120.0, 302.0, on_path) and not grass._kept_off(100.0, 205.0, at_piece), "a card beside them stands")
+	grass.set_bare([], [Vector3(300.0, 0.0, 300.0)])
+	var road: Dictionary = grass._cell_clears(Vector2i(50, 50), 0.5)
+	check(grass._kept_off(302.5, 300.0, road) and not grass._kept_off(304.0, 300.0, road), "a road patch keeps cards off 3 m round it, not 4 m")
+	grass.set_bare(patches)
 	grass.set_bare([])
 	check(not grass._bare_at(100.0, 300.0), "a path taken away leaves no bare spot")
 

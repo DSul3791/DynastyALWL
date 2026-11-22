@@ -1,0 +1,22 @@
+# M001-T12 brief: Phase 6 cooking and preservation
+
+Mission 001, Phase 6 (`docs/design/CATALOG_IMPLEMENTATION_PLAN.md`). Owner: systems-engineer agent (data and code). Reviewer: independent gate-reviewer. Branch `m001/p6` in clone `E:\Software\godotDev\m001_p6` (base `f3d0d2ac0` = dev `5285e2e20` + state). New game: no old-save migration.
+
+Parallel work: Phase 9 storage (branch `m001/p9`, clone m001_p9) edits container/chest code and storage rows; Phase 4a (m001_p4a) edits worn/warmth code. Keep your edits to food, cooking stations and their data; keep JSON edits line-local (helper `C:\Users\david\AppData\Local\Temp\claude\01b3e68161e49208\35a61d07-6ae9-47de-b88c-fe7400bb03ef\scratchpad\jsonedit.py`). Number ranges for you: structure states 250-259, blueprints 210-219, recipes from 430 (check `next_number` at merge).
+
+## Behaviour (master `docs/design/DYNASTY_MASTER_ITEMS.md` s3.12, s3.14, s4, s6 rows for cooking, s7 items 18 and 21; companion `docs/design/FOOD_PREPARATION_PRESERVATION_SERVING.md` s1, s2, s4, s5)
+1. **Food Preparation Table** (inactive row): a hammer blueprint of logs and twine like the Log - Table (no Planks, no metal: basic bread stays pre-metal), station id, its own state; required station for assembling/mixing/kneading food (no personal-inventory knife prep, [D12]).
+2. **Six other equipment rows** (Clay griddle, Campfire roasting spit, Iron - Grill grate, Iron - Frying pan, Iron - Cauldron, Fireplace cooking crane): kept equipment used at `campfire`, `campfire_pot` or `clay_hearth` as the catalog routes them; attach code only for the Fireplace Cooking Crane (`addon_of` the Fireplace #514). Iron ones at the Smithy; the griddle pre-iron.
+3. **Sixteen prepared intermediates** (Unbaked Flatbread ... Banana fritter batter, Uncooked Meatballs): made at the Food Preparation Table from the ingredients today's one-step recipes use, then cooked at the destinations the catalog lists into the SAME existing cooked items (prepare → cook). Generated dishes change through `tools/gen_dishes.py` / `dishes.json`, never by hand-editing generated rows. Meatballs 837 goes live with Uncooked Meatballs (s3.12 DELEGATED).
+4. **Nut cake and Fruit juice** move to the Food Preparation Table with no intermediate (s3.12 hand-made foods RECOMMEND).
+5. **Preservation [D14, D17]:** keep Preserving Jar #830 (no new jar row, never reintroduce a Sealable Preserve Jar); batches sealed at #830 as the finished food's own stack with a `ready_age` on the existing age; batch size into pack and nearby containers; no merge across `ready_age`; an unready stack cannot be eaten or used; fresh-input floor; `wear`-cap validation; moved preserve recipes (s3.14) from the pot; crafted age inherits the oldest input. **Smoked Meat** (raw meat + salt at Smoker #777, one step) and **Dried Mushrooms** (one drying recipe per fresh mushroom at the Drying rack, outside the `mushrooms` group, plus the dried-mushroom skewer) go live; shelf lives for Mushrooms 551 and Puffball.
+6. Looks: placeholders allowed if marked in `look_placeholders.json` (NOT visually complete).
+7. Ledger rows updated; `python3 -I tools/catalog_ledger.py --check` passes.
+
+## Rules
+Work only in `E:\Software\godotDev\m001_p6`. Never touch `C:\GodotProjects\DynastyALWL` or other clones. Do not push. Godot only through `tools/run_one_test.sh` / `tools/run_tests.sh` with timeouts (shared slot lock, max 3 jobs, other agents also test); never kill a Godot process you did not start. No catalog changes beyond the catalog text; report problems. Amounts are s5 tuning; record your choices.
+
+## Acceptance (voxel build `GODOT_EXE=/c/GodotInstaller/godot.windows.editor.x86_64.exe`)
+- New player-path tests asserting real server state: bake Flatbread pre-iron (prepare at the Table, cook at the Clay hearth); a pan dish post-iron; seal a batch of Sauerkraut at #830, it is not eatable before Ready and is after; Smoked Meat at the Smoker; Dried Mushrooms at the Drying rack; batch conservation (counts in = out, nothing lost to full packs: overflow to nearby containers or the ground as the design says); no merge across ready ages.
+- `validate_items` PASS (run explicitly), `merge_check.py` clear, `python3 tools/tests_for_diff.py f3d0d2ac0 HEAD` with no new failures vs base (known flakes: test_flora_density timeout under load, test_npc_view crash at quit).
+- `/ponytail-review` of your diff; commit with `docs/ai-team/missions/M001/T12_RESULTS.md` (head SHA, counts, numbers, placeholders, risks).

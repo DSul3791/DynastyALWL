@@ -3,17 +3,21 @@ extends RefCounted
 # Stage-one models (Kathleen, art/MODEL_PLAN.md): any loose item drawn from a small shape and a colour, so every item has a look before
 # any item gets a good one. `data/items/looks.json` maps an item id to {shape, color, size}; `mesh()` returns one vertex-coloured ArrayMesh
 # (a few hundred triangles, 1200 at most for a bowl of stew, one shared material) centred on its middle with the underside near y = -0.06 * size. Upgrading an item later means
-# deleting its looks.json entry or giving it a real model; nothing here changes.
+# deleting its looks.json entry or giving it a real model; nothing here changes. A row with "model" is drawn from that .glb instead (_model_mesh: Dave's own mesh
+# with its own textured material and up to his 5000 triangle cap), the procedural shape standing in until the file is imported.
 
 const LOOKS_PATH := "res://data/items/looks.json"
 const BOW_HALF_M := 0.85       # a self bow: nock to nock about the archer's height, 1.7 m (the "bow" shape; held_item.gd places the hands and the string by these)
 const BOW_BRACE_M := 0.16      # string to the back of the grip, braced
 const BOW_STRING_R := 0.0009   # a real bowstring is about 2 mm thick (Dave 10 Nov 2026: the string was "way too thick")
+const BOARD_M := Vector3(2.44, 0.025, 0.2)   # one sawn board, 8 ft long (Dave 21 Nov 2026: "they should look like 8ft long boards"); drawn at its real size on the ground
 
 static var _table: Dictionary = {}
 static var _loaded: bool = false
 static var _material: StandardMaterial3D
 static var _metal_mats: Dictionary = {}
+const GLASS := -1.0   # _metal(parts, rough, GLASS): the glassy stone material (_glass_material) instead of metal (river tin)
+static var _glass: ShaderMaterial
 
 
 # The looks table, read once: item id -> {shape, color, size}. A missing or broken file means no entries (everything keeps its old look).
@@ -99,6 +103,8 @@ const ART_OVERRIDES := {
 	"candle": {"shape": "candle", "color": "#d6c493", "size": 1.0},
 	"bronze_pickaxe": {"shape": "pick", "color": "#b5803a", "size": 1.0, "bits": ["bronze"]},
 	"bronze_axe": {"shape": "axe", "color": "#b5803a", "size": 1.6, "bits": ["bronze"]},
+	"copper_pickaxe": {"shape": "pick", "color": "#b87333", "size": 1.0, "bits": ["bronze"]},   # PLACEHOLDER: the bronze pick look in copper
+	"copper_axe": {"shape": "axe", "color": "#b87333", "size": 1.6, "bits": ["bronze"]},   # PLACEHOLDER: the bronze axe look in copper
 	"bronze_hammer": {"shape": "hammer", "color": "#b5803a", "size": 1.0, "bits": ["bronze", "forged"]},
 	"iron_hammer": {"shape": "hammer", "color": "#6c6f75", "size": 1.0, "bits": ["forged"]},
 	"wooden_lantern": {"shape": "lantern", "color": "#5a3e22", "size": 1.0},
@@ -145,7 +151,7 @@ const ART_OVERRIDES := {
 	"roof_section_kit": {"shape": "parcel", "color": "#6a4a2a", "size": 1.0, "bits": ["planks"]},
 	"foundation_section_kit": {"shape": "parcel", "color": "#7d7a74", "size": 1.0, "bits": ["planks"]},
 	"wood_foundation_kit": {"shape": "parcel", "color": "#9a7a45", "size": 1.0, "bits": ["planks"]},
-	"doorway_section_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["planks", "door"]},
+	"doorway_section_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["planks"]},
 	"window_section_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["planks", "window"]},
 	"saw_mill_kit": {"shape": "parcel", "color": "#8a6a3a", "size": 1.0, "bits": ["sawmill"]},
 	"woodworking_table_kit": {"shape": "parcel", "color": "#7a5430", "size": 1.0, "bits": ["bench", "table"]},
@@ -266,7 +272,6 @@ const ART_OVERRIDES := {
 	"potato_seeds": {"shape": "seedpile", "color": "#c9a878", "size": 1.1},
 	"turnip_seeds": {"shape": "seedpile", "color": "#3a2a22", "size": 0.9},
 	"flax_seeds": {"shape": "seedpile", "color": "#7a5230", "size": 0.9, "bits": ["long"]},
-	"obsidian_knife": {"shape": "knife", "color": "#101014", "size": 1.0, "bits": ["glass"]},
 	"stone_pickaxe": {"shape": "pick", "color": "#7d7a74", "size": 1.0, "bits": ["stone"]},
 	"hide_scraper": {"shape": "scraper", "color": "#4a4238", "size": 1.0},
 	"sickle": {"shape": "sickle", "color": "#8a8d92", "size": 1.0},
@@ -274,9 +279,10 @@ const ART_OVERRIDES := {
 	"steel_striker": {"shape": "striker", "color": "#3a3c40", "size": 1.0},
 	"javelin": {"shape": "shaft", "color": "#b8bcc4", "size": 0.85, "bits": ["metal"]},
 	"yeast": {"shape": "pot", "color": "#e6dbc0", "size": 0.5},
-	"copper_ore": {"shape": "ore", "color": "#6a5a4c", "size": 1.0, "bits": ["#3fa77a"]},
-	"tin_ore": {"shape": "ore", "color": "#5c5a58", "size": 1.0, "bits": ["#2b2218"]},
+	"copper_ore": {"shape": "malachite", "color": "#176a4e", "size": 1.0},     # a small copper rock picked up by hand (Dave's photo, 16 Nov 2026)
+	"tin_ore": {"shape": "tin_glass", "color": "#7a3a20", "size": 1.0},     # a glassy plum-sized river tin stone (Dave, 17 Nov 2026)
 	"iron_ore": {"shape": "ore", "color": "#5e5650", "size": 1.0, "bits": ["#a04a28"]},
+	"bog_iron_ore": {"shape": "bog_iron", "color": "#7a3a1c", "size": 1.0},     # a lumpy red-brown bog iron rock (Dave 19 Nov 2026)
 	"coal": {"shape": "coal", "color": "#0e0e10", "size": 1.0},
 }
 
@@ -323,6 +329,13 @@ static func mesh_for(item_id: String) -> Mesh:
 	if def.is_empty():
 		return null
 
+	if def.has("model"):
+		var drawn: ArrayMesh = _model_mesh(item_id, def)
+
+		if drawn != null:
+			_built[item_id] = drawn
+			return drawn
+
 	_building = item_id
 	_short = false
 	var made: ArrayMesh = mesh(str(def.get("shape", "chunk")), Color.html(str(def.get("color", "#8a8a8a"))), float(def.get("size", 1.0)), def.get("bits", []))
@@ -334,10 +347,93 @@ static func mesh_for(item_id: String) -> Mesh:
 	return made
 
 
+# The model looks' files (looks.json "model": Dave's handsaws), read ahead at the join so the first time one is taken in hand does not read the
+# .glb and its textures on the main thread (20 Nov 2026: the saws' first builds took 56 ms and 248 ms on Dave's PC, 9 to 11 ms on later runs;
+# most likely the file read, not measured apart).
+# In a window they load on a loader thread; headless (tests, the dummy renderer, whose stores are not thread safe: test_worker_resources) on the
+# main thread here, as DynastyBody.warm does. _model_mesh's load() then finds them in the resource cache.
+static var _models_here: Dictionary = {}   # model path -> its PackedScene, read here headless and held so the cache keeps it (empty in a window: the loader holds it)
+
+
+static func warm_models() -> void:
+	entry("")   # loads looks.json
+
+	for id in _table.keys() + ART_OVERRIDES.keys():
+		var path: String = str(entry(str(id)).get("model", ""))
+
+		if path == "" or _models_here.has(path) or not ResourceLoader.exists(path):
+			continue
+
+		if DisplayServer.get_name() == "headless":
+			_models_here[path] = load(path)
+		elif ResourceLoader.load_threaded_get_status(path) == ResourceLoader.THREAD_LOAD_INVALID_RESOURCE:
+			ResourceLoader.load_threaded_request(path, "", true)
+
+
+# A look from one of Dave's own meshes (looks.json "model": a .glb holding one mesh, used as it is): turned by "model_turn" (where the file's x, y and z axes
+# go, so it lies on the axes of its procedural "shape", which held_item.gd turns and grips by), centred, and scaled to "model_length_m" along x. Its own
+# materials and textures are kept. Null while the file is missing or not imported yet: the procedural shape stands in.
+static func _model_mesh(item_id: String, def: Dictionary) -> ArrayMesh:
+	var path: String = str(def["model"])
+	var packed: PackedScene = load(path) as PackedScene if ResourceLoader.exists(path) else null
+
+	if packed == null:
+		push_warning("basic_look: %s: model %s is missing or not imported; drawing the procedural %s" % [item_id, path, str(def.get("shape", ""))])
+		return null
+
+	var scene: Node = packed.instantiate()
+	var found: Array = scene.find_children("*", "MeshInstance3D", true, false)
+	var source: Mesh = (found[0] as MeshInstance3D).mesh if not found.is_empty() else null
+	var materials: Array = []
+
+	for surface in (source.get_surface_count() if source != null else 0):
+		materials.append((found[0] as MeshInstance3D).get_active_material(surface))   # the surface's own material, or an override the import put on the node
+
+	scene.free()
+
+	if source == null:
+		push_warning("basic_look: %s: model %s holds no mesh; drawing the procedural %s" % [item_id, path, str(def.get("shape", ""))])
+		return null
+
+	var axes: Array = def.get("model_turn", [[1, 0, 0], [0, 1, 0], [0, 0, 1]])
+	var turn: Basis = Basis(Vector3(axes[0][0], axes[0][1], axes[0][2]), Vector3(axes[1][0], axes[1][1], axes[1][2]), Vector3(axes[2][0], axes[2][1], axes[2][2]))
+	if not turn.is_conformal() or absf(turn.determinant() - 1.0) > 0.001:
+		push_warning("basic_look: %s: model_turn is not a plain turn (axes must be unit, square to each other, right-handed); drawing the procedural %s" % [item_id, str(def.get("shape", ""))])
+		return null
+
+	var box: AABB = Transform3D(turn, Vector3.ZERO) * source.get_aabb()
+	var scale: float = float(def.get("model_length_m", box.size.x)) / maxf(box.size.x, 0.001)
+	var place: Transform3D = Transform3D(turn.scaled(Vector3.ONE * scale), -box.get_center() * scale)
+	var out: ArrayMesh = ArrayMesh.new()
+
+	for surface in source.get_surface_count():
+		var arrays: Array = source.surface_get_arrays(surface)
+		arrays[Mesh.ARRAY_VERTEX] = place * (arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array)   # whole arrays at once in the engine, cheaper than a GDScript loop per vertex (test_look_build_cost 40 ms bar)
+
+		if arrays[Mesh.ARRAY_NORMAL] is PackedVector3Array:
+			arrays[Mesh.ARRAY_NORMAL] = Transform3D(turn, Vector3.ZERO) * (arrays[Mesh.ARRAY_NORMAL] as PackedVector3Array)
+
+		if arrays[Mesh.ARRAY_TANGENT] is PackedFloat32Array:   # x, y, z and the bitangent sign, which a pure turn keeps
+			var tangents: PackedFloat32Array = arrays[Mesh.ARRAY_TANGENT]
+
+			for i in range(0, tangents.size() - 3, 4):
+				var t: Vector3 = turn * Vector3(tangents[i], tangents[i + 1], tangents[i + 2])
+				tangents[i] = t.x
+				tangents[i + 1] = t.y
+				tangents[i + 2] = t.z
+
+			arrays[Mesh.ARRAY_TANGENT] = tangents
+
+		out.add_surface_from_arrays(source.surface_get_primitive_type(surface), arrays)
+		out.surface_set_material(out.get_surface_count() - 1, materials[surface])
+
+	return out
+
+
 static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = []) -> ArrayMesh:
 	var parts: Array = []
 
-	if shape not in ["bone", "coil", "coin", "ingot"]:
+	if shape not in ["bone", "coil", "coin", "ingot", "malachite", "tin_glass"]:
 		color = Color.from_hsv(color.h, minf(color.s * 1.35, 1.0), minf(color.v * 1.08, 1.0))      # bolder colours so loose items tell apart on the grass (Dave 2026-10-22)
 	var dark: Color = color.darkened(0.35)
 	var light: Color = color.lightened(0.25)
@@ -885,9 +981,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					for x in [-0.09, 0.09]:
 						_box(parts, Vector3(0.016, 0.13, 0.16), Vector3(x, 0.0, 0.0), cord)
 
-					if bits.has("door"):
-						_box(parts, Vector3(0.12, 0.03, 0.07), Vector3(0.0, 0.085, 0.0), color.darkened(0.45))
-					elif bits.has("window"):
+					if bits.has("window"):
 						_box(parts, Vector3(0.1, 0.03, 0.06), Vector3(0.05, 0.085, 0.0), Color(0.1, 0.12, 0.14))
 				"bench":
 					_box(parts, Vector3(0.36, 0.035, 0.2), Vector3(0.0, 0.0, 0.0), color)
@@ -1610,6 +1704,21 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_torus_v(parts, 0.026, 0.006, Vector3(-0.06, 0.002, 0.0), Color(0.72, 0.62, 0.38))
 			for k in 4:
 				_sph(parts, 0.016 + 0.004 * float(k % 2), Vector3(1.2, 0.6, 1.0), Vector3(-0.03 + 0.03 * float(k), -0.008, 0.03 * float(k % 3 - 1)), _tone(soil, k, 0.15), true)
+		"board":
+			# One sawn board lying flat at its real size (BOARD_M; the ground does not enlarge it): pale cut ends with growth-ring arcs and a few
+			# darker grain streaks and a knot along the top face.
+			var half: float = BOARD_M.x * 0.5
+			var low: float = -0.12 + BOARD_M.y * 0.5   # the underside on the drawn ground: loose items are set 0.12 m over it (InventoryView._snap_loose)
+			_box(parts, BOARD_M, Vector3(0.0, low, 0.0), color)
+
+			for end in [-1.0, 1.0]:
+				_box(parts, Vector3(0.004, BOARD_M.y - 0.002, BOARD_M.z - 0.004), Vector3(end * half, low, 0.0), light)
+				_box(parts, Vector3(0.005, 0.004, BOARD_M.z * 0.45), Vector3(end * (half + 0.0015), low - 0.004, 0.02 * end), dark)
+
+			for k in 3:
+				_box(parts, Vector3(0.9 - 0.2 * float(k), 0.003, 0.008), Vector3(-0.5 + 0.55 * float(k), low + BOARD_M.y * 0.5, -0.06 + 0.06 * float(k)), _tone(dark, k, 0.1))
+
+			_box(parts, Vector3(0.03, 0.003, 0.022), Vector3(0.35, low + BOARD_M.y * 0.5, 0.04), dark.darkened(0.25))
 		"planks":
 			# Sawn boards stacked in a neat pile, ends slightly staggered, a pale cut end and darker grain streaks on the top board.
 			for k in 5:
@@ -1796,6 +1905,15 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			_sph(parts, 0.03, Vector3(1.0, 0.25, 1.0), Vector3(0.0, 0.052, 0.0), Color(0.3, 0.45, 0.2))
 		"bowl":
 			_bowl(parts, color)
+		"mortar":
+			# The Mortar and pestle (MORTAR_PESTLE.md MP-5): a heavy grey stone bowl about 30 cm across, its hollow dark with a smear of green herb mash,
+			# and a short club-shaped stone pestle standing in it, its thick end down in the bowl and its handle leaning out over the rim.
+			_frustum(parts, 0.12, 0.15, 0.14, Vector3(0.0, -0.01, 0.0), color)
+			_torus(parts, 0.135, 0.018, Vector3(0.0, 0.06, 0.0), light)
+			_cyl(parts, 0.12, 0.006, Vector3(0.0, 0.062, 0.0), Vector3.ZERO, color.darkened(0.55))
+			_cyl(parts, 0.07, 0.005, Vector3(0.0, 0.066, 0.0), Vector3.ZERO, Color(0.3, 0.42, 0.18))
+			_root_seg(parts, 0.032, 0.02, Vector3(-0.05, 0.03, 0.0), Vector3(0.14, 0.22, 0.03), light.darkened(0.08))
+			_sph(parts, 0.022, Vector3.ONE, Vector3(0.14, 0.22, 0.03), light.darkened(0.08))
 		"stew":
 			_bowl(parts, Color(0.5, 0.34, 0.19))      # one shared wooden bowl under every soup and stew (Dave 2026-10-22)
 			_fill(parts, color, bits, false)
@@ -1897,7 +2015,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# A hafted stone axe (modelled on a real hafted stone felling axe, Dave 2026-10-25: tools to the pickaxe standard): a straight ash haft with weathered grain and a swollen
 			# head end, a knapped stone wedge head lashed into it, thick at the poll and ground to a sharp edge that flares wider than the body, one chipped corner, and
 			# five cross-lashing bands of leather thong either side of the head. Mesh axes: haft along x (grip at -x), head at x = 0.22, edge toward +z.
-			color = color if bits.has("bronze") else _warm_stone(color)                                              # darker and warmer: in sunlight the plain grey read pale blue (a bronze head keeps its own colour)
+			color = color if bits.has("bronze") or bits.has("metal") else _warm_stone(color)                                              # darker and warmer: in sunlight the plain grey read pale blue (a bronze head keeps its own colour)
 			dark = color.darkened(0.3)
 			light = color.lightened(0.18)
 			var haft_wood: Color = Color(0.3, 0.2, 0.11)
@@ -1958,8 +2076,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_box(parts, Vector3(0.012, 0.012, 0.12), Vector3(0.302, 0.0, 0.0), iron * 1.7)                  # steel: a polished ridge along the top of the head
 				_metal(parts)
 				_cyl(parts, 0.032, 0.012, Vector3(0.245, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), Color(0.72, 0.58, 0.22))   # and a brass band
-		"spade":
-			# A digging spade at real size for the large tier (size 1.0; the smaller tiers scale down): a 3.2 cm ash haft, a leather sleeve at the grip, a rounded D-grip loop about 15 by 10 cm
+		"shovel":
+			# A digging shovel at real size for the large tier (size 1.0; the smaller tiers scale down): a 3.2 cm ash haft, a leather sleeve at the grip, a rounded D-grip loop about 15 by 10 cm
 			# and 3 cm thick in the haft's own grain, a short socket cone with a rolled collar fused to a 28 by 19 cm blade plate (a real polygon plate, see _plate: square shoulders, rounded
 			# tip, dished, turned-up side lips, a rolled lip along the top) and flat rivets. Mesh axes: haft along x (grip at -x, blade at +x), blade thin in y, wide in z.
 			# Iron and steel (bits "metal") are on the metal surface: iron roughness 0.65 / metallic 0.3, steel a little shinier (0.45 / 0.45) but neutral grey, not blue.
@@ -1977,7 +2095,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			else:
 				blade = ash.darkened(0.15)                                                                      # wood: the same ash as the haft, a little darker
 
-			var g: float = 0.12                                                                                     # the grip's flat side; the whole spade is about 0.8 m
+			var g: float = 0.12                                                                                     # the grip's flat side; the whole shovel is about 0.8 m
 			var cuts: Array = [0.0, 0.3, 0.5]                                                      # the haft in uneven lengths: subtle grain-like tone changes, no hard seam
 			for k in range(2):
 				var x0: float = g + cuts[k] * (0.45 - g) / 0.5
@@ -2010,7 +2128,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				if metal_blade:
 					_metal(parts, rough, sheen)
 			# Use (Art_Direction: lived-in, worn tools): dried earth caked on the lower blade on both faces, darker where it is still damp at the very tip.
-			# Thin flat boxes (12 triangles each, 72 in all) to stay inside the 1200-triangle tool budget (the spade was about 1100).
+			# Thin flat boxes (12 triangles each, 72 in all) to stay inside the 1200-triangle tool budget (the shovel was about 1100).
 			# Plain surface, so a metal blade keeps its sheen where it is clean.
 			var soil: Color = Color(0.3, 0.21, 0.13)
 			for face in [-1.0, 1.0]:
@@ -2078,7 +2196,7 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 		"hoe":
 			# A garden draw hoe (modelled on a real long-handled hoe; tools to the pickaxe standard): a 1.25 m ash haft with a slight taper, a darker patch where the hands go and a rounded
 			# end, a socket cone, a goose-neck that bends down from it, and a thin trapezoid blade plate (a real polygon plate, dished, rolled edge) set a little back toward the grip.
-			# Mesh axes: haft along x (grip at -x), blade hangs toward +z and is wide across y. Iron and steel (bits "metal") are on the metal surface like the spades.
+			# Mesh axes: haft along x (grip at -x), blade hangs toward +z and is wide across y. Iron and steel (bits "metal") are on the metal surface like the shovels.
 			var metal_blade: bool = bits.has("metal")
 			var blade: Color = color
 			var ash: Color = Color(0.42, 0.3, 0.17)
@@ -2130,6 +2248,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				stone = Color(0.012, 0.012, 0.018)
 			elif bits.has("bronze"):
 				stone = Color(0.5, 0.26, 0.06)                                                                                                          # a bronze blade
+			elif bits.has("metal"):
+				stone = color   # a forged iron or steel blade in its looks.json colour (Mission 001 phase 2c)
 			for k in range(4):
 				_cyl(parts, 0.016, 0.03, Vector3(-0.1 + 0.03 * float(k) + 0.015, 0.0, 0.0), Vector3(0.0, 0.0, PI * 0.5), _tone(Color(0.38, 0.25, 0.13), k, 0.04))
 			for k in range(2):
@@ -2386,6 +2506,44 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				var a: float = TAU * float(k) / 8.0 + 0.4
 				_sph(parts, 0.012 + 0.004 * float(k % 3), Vector3(1.0, 0.7, 1.0), Vector3(cos(a) * 0.06, -0.01 + 0.012 * float(k % 3), sin(a) * 0.055), _tone(mineral, k, 0.15))
 			_box_rot(parts, Vector3(0.07, 0.006, 0.012), Vector3(0.0, 0.026, 0.0), Vector3(0.0, 0.6, 0.0), mineral)
+		"bog_iron":
+			# Bog iron ore (Dave 19 Nov 2026: "its own lumpy redbrown rock"): limonite, a knobbly cluster of small rounded nodules grown together,
+			# red-brown (color) with rust-orange crusts and a few dark, almost black-brown knobs; no pale host rock, unlike the rock Iron ore.
+			var rust: Color = Color(0.7, 0.36, 0.13)
+			var deep: Color = Color(0.24, 0.1, 0.05)
+			_sph(parts, 0.06, Vector3(1.15, 0.75, 1.0), Vector3(0.0, -0.035, 0.0), color)
+			for k in 9:
+				var a: float = TAU * float(k) / 9.0 + 0.2
+				var r: float = 0.035 + 0.012 * float(k % 3)
+				_sph(parts, 0.022 + 0.006 * float(k % 3), Vector3(1.0, 0.8, 1.0), Vector3(cos(a) * r, -0.03 + 0.012 * float(k % 2), sin(a) * r), deep if k % 4 == 0 else (rust if k % 3 == 1 else _tone(color, k, 0.15)))
+			for k in 4:
+				_sph(parts, 0.018, Vector3(1.0, 0.75, 1.0), Vector3(-0.02 + 0.014 * float(k), 0.006, 0.012 * float(k % 2) - 0.006), rust if k % 2 == 0 else _tone(color, k, 0.12))
+		"malachite":
+			# A small copper rock (Dave's photo, 16 Nov 2026): a rough lump of three blobs wholly coated in malachite, green to teal (color is the
+			# green), dark blue-black patches and a few yellow-green flecks on top. Drawn without the colour boost below: the coat's own greens.
+			var teal: Color = Color(0.07, 0.36, 0.4)
+			var blue_black: Color = Color(0.05, 0.1, 0.12)
+			_sph(parts, 0.07, Vector3(1.15, 0.72, 0.95), Vector3(0.0, -0.03, 0.0), color)
+			_sph(parts, 0.05, Vector3(1.0, 0.8, 1.0), Vector3(0.055, -0.035, 0.03), teal)
+			_sph(parts, 0.045, Vector3(1.0, 0.75, 1.1), Vector3(-0.05, -0.03, -0.03), _tone(color, 2, 0.12))
+			for k in 6:
+				var a: float = TAU * float(k) / 6.0 + 0.3
+				_sph(parts, 0.016 + 0.004 * float(k % 3), Vector3(1.0, 0.6, 1.0), Vector3(cos(a) * 0.055, 0.0 + 0.008 * float(k % 2), sin(a) * 0.045), blue_black if k % 3 == 0 else (teal if k % 3 == 1 else _tone(color, k, 0.15)))
+			for k in 4:
+				_sph(parts, 0.008, Vector3.ONE, Vector3(-0.03 + 0.02 * float(k), 0.02, 0.01 * float(k % 2)), Color(0.46, 0.52, 0.22))
+		"tin_glass":
+			# A river tin stone (Dave 17 Nov 2026: "the river stream tin rocks should look like glass rocks shiny and reflective the size of plumbs"):
+			# one smooth water-worn cassiterite pebble, dark red-brown and glassy (GLASS: _glass_material, a glint and sheen from each light plus the
+			# sky's reflection in game), drawn about 7 cm across at the loose-item scale (inventory_view.BASIC_DROP_SCALE
+			# 1.8). A finer sphere than _sph so the highlight stays round. Colour converted to linear: this material reads vertex colours as linear.
+			# Pictures 17 Nov: roughness 0.06 metallic 0.2, then a clear coat, both drew matte; hence the written-out lighting.
+			var glass: SphereMesh = SphereMesh.new()
+			glass.radius = 0.019
+			glass.height = 0.038
+			glass.radial_segments = 16
+			glass.rings = 8
+			parts.append([glass, Transform3D(Basis.from_scale(Vector3(1.1, 0.82, 0.95)), Vector3(0.0, -0.074, 0.0)), color.srgb_to_linear()])
+			_metal(parts, 0.3, GLASS)
 		"coal":
 			# A lump of coal: black, angular and blocky, a few flat shiny facets, one broken face a shade lighter, and crumbs of coal dust beside it.
 			_box_rot(parts, Vector3(0.1, 0.075, 0.085), Vector3(0.0, -0.025, 0.0), Vector3(0.2, 0.5, 0.15), color)
@@ -2624,7 +2782,7 @@ static func _wedge(parts: Array, base: float, out: float, along: float, at: Vect
 	parts.append([prism, Transform3D(Basis(Vector3(0.0, 1.0, 0.0), Vector3(0.0, 0.0, 1.0), Vector3(1.0, 0.0, 0.0)), at), color])
 
 
-# A spade blade as a real polygon plate (Dave 2026-10-25 review: stacked boxes always stair-step): `rows` outline rows along x from `x0` over `length`, 7 columns across, the
+# A shovel blade as a real polygon plate (Dave 2026-10-25 review: stacked boxes always stair-step): `rows` outline rows along x from `x0` over `length`, 7 columns across, the
 # half width flat to 45 percent of the length (square shoulders) then an elliptical taper to a rounded tip, dished across (the edges lift 1.4 cm), curving forward at the
 # socket, 4 mm thin with a rolled (thicker) edge, smooth-shaded. `from_row` to `to_row` of 12 build one piece, so the tip can take its own colour.
 static func _plate(parts: Array, x0: float, length: float, wide: float, from_row: int, to_row: int, color: Color, with_root: bool, metal: bool, rough: float, metallic: float, xform: Transform3D = Transform3D.IDENTITY, mode: int = 0, thick_scale: float = 1.0) -> void:
@@ -2638,7 +2796,7 @@ static func _plate(parts: Array, x0: float, length: float, wide: float, from_row
 
 	for i in range(from_row, to_row + 1):
 		var t: float = float(i) / float(rows)
-		var half: float = 0.5 * wide * (1.0 - 0.15 * t / 0.6) if t < 0.6 else 0.5 * wide * 0.85 * sqrt(maxf(1.0 - pow((t - 0.6) / 0.4, 2.0), 0.0))   # a spade blade: widest at the shoulders under the socket, gently tapering sides, a round arched tip
+		var half: float = 0.5 * wide * (1.0 - 0.15 * t / 0.6) if t < 0.6 else 0.5 * wide * 0.85 * sqrt(maxf(1.0 - pow((t - 0.6) / 0.4, 2.0), 0.0))   # a shovel blade: widest at the shoulders under the socket, gently tapering sides, a round arched tip
 
 		if mode == 1:
 			half = 0.5 * wide * (0.62 + 0.38 * t)                                                                     # a hoe blade: a trapezoid widening to a straight edge
@@ -2709,7 +2867,7 @@ static func _plate_quad(tool: SurfaceTool, a: Vector3, b: Vector3, c: Vector3, d
 		tool.add_vertex(v)
 
 
-# A leather wrap on a haft from x0 to x1: slanted bands in two dark tones so the spiral turns read (spade and hoe hand grips).
+# A leather wrap on a haft from x0 to x1: slanted bands in two dark tones so the spiral turns read (shovel and hoe hand grips).
 static func _wrap(parts: Array, x0: float, x1: float, radius: float) -> void:
 	var count: int = int((x1 - x0) / 0.03)
 
@@ -2865,7 +3023,7 @@ static func _metal(parts: Array, rough: float = 0.4, metallic: float = 0.8) -> v
 
 static func _combine(parts: Array, size: float) -> ArrayMesh:
 	var plain: Array = []
-	var metal: Dictionary = {}                                                  # roughness -> parts: one surface per roughness (the pickaxe 0.4, spades 0.55)
+	var metal: Dictionary = {}                                                  # roughness -> parts: one surface per roughness (the pickaxe 0.4, shovels 0.55)
 
 	for part in parts:
 		if (part as Array).size() > 3:
@@ -2890,7 +3048,14 @@ static func _combine(parts: Array, size: float) -> ArrayMesh:
 
 		if not (metal_arrays[Mesh.ARRAY_VERTEX] as PackedVector3Array).is_empty():
 			result.add_surface_from_arrays(Mesh.PRIMITIVE_TRIANGLES, metal_arrays)
-			result.surface_set_material(result.get_surface_count() - 1, _metal_material((kind as Vector2).x, (kind as Vector2).y))
+			var material: Material
+
+			if (kind as Vector2).y == GLASS:
+				material = _glass_material()
+			else:
+				material = _metal_material((kind as Vector2).x, (kind as Vector2).y)
+
+			result.surface_set_material(result.get_surface_count() - 1, material)
 
 	return result
 
@@ -2945,11 +3110,43 @@ static func _metal_material(rough: float = 0.4, metallic: float = 0.8) -> Standa
 	if not _metal_mats.has(key):
 		var material: StandardMaterial3D = StandardMaterial3D.new()
 		material.vertex_color_use_as_albedo = true
-		material.metallic = metallic
 		material.roughness = rough
+
+		material.metallic = metallic
 		_metal_mats[key] = material
 
 	return _metal_mats[key]
+
+
+# The glassy river tin stone's material, built once (Dave 17 Nov 2026: "glass rocks shiny and reflective"). Lane A pictures of a plain
+# low-roughness StandardMaterial3D (and then a clear coat) showed a matte stone: a sun highlight that small is under a pixel at play
+# distance. Here the lighting is written out: soft diffuse, a sharp glint plus a wider sheen from each light (so it reads shiny at a few
+# pixels and goes dark with the light at night, no glow), and a smooth surface so the game's sky shows in it (the engine adds the
+# environment reflection from ROUGHNESS). Vertex colour is the body colour.
+static func _glass_material() -> ShaderMaterial:
+	if _glass == null:
+		var shader: Shader = Shader.new()
+		shader.code = """
+shader_type spatial;
+render_mode specular_schlick_ggx;
+
+void fragment() {
+	ALBEDO = COLOR.rgb;
+	ROUGHNESS = 0.05;
+	SPECULAR = 0.9;
+}
+
+void light() {
+	float lit = max(dot(NORMAL, LIGHT), 0.0);
+	DIFFUSE_LIGHT += lit * ATTENUATION * LIGHT_COLOR / PI;
+	float h = max(dot(NORMAL, normalize(LIGHT + VIEW)), 0.0);
+	SPECULAR_LIGHT += (pow(h, 300.0) * 3.0 + pow(h, 24.0) * 0.25) * lit * ATTENUATION * LIGHT_COLOR;
+}
+"""
+		_glass = ShaderMaterial.new()
+		_glass.shader = shader
+
+	return _glass
 
 
 static func _shared_material() -> StandardMaterial3D:

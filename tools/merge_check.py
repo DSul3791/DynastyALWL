@@ -105,24 +105,57 @@ for f in sh("git", "ls-files", "-o", "--exclude-standard").splitlines():
         bad("new script without .uid: %s (commit its .uid)" % f)
 
 
-# 7. Dave's rule (25 Oct 2026): nothing is deleted. A model, image, sound, art, design, scene, resource or code file that was in BASE and
-#    is gone from the tree must be present under proposed_removals/ (scripts, scenes, resources with ".removed" added) with a line in REMOVALS.md.
-KEEP_EXT = (".glb", ".gltf", ".obj", ".fbx", ".png", ".jpg", ".jpeg", ".webp", ".svg", ".tga", ".exr", ".hdr", ".dds", ".ogg", ".wav", ".mp3",
-            ".tscn", ".tres", ".gd", ".gdshader", ".shader", ".md")
-KEEP_DIRS = ("art/", "assets/", "design/", "docs/", "items/", "src/", "scenes/", "worlds/", "data/")
-SKIP_PREFIX = ("proposed_removals/", "docs/mirror/", "docs/archive/", "questions/", "evidence/", "results/")
+# 7. Deletions (Decision 61 as clarified by Dave, 12 Nov 2026; rules and their source in tools/deletion_rules.py):
+#    Replaced code requires a declared live replacement. Document expiry additionally requires verified seven-day
+#    integration/recovery receipts. Other files keep their existing removal safeguards.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import deletion_rules
+import doc_retirement
 if sh("git", "rev-parse", "--verify", "-q", BASE).strip():
-    for f in sh("git", "diff", "--name-only", "--diff-filter=D", BASE).splitlines():
-        if f.startswith(SKIP_PREFIX) or not (f.endswith(KEEP_EXT) and f.startswith(KEEP_DIRS)):
-            continue
-        suffix = ".removed" if f.endswith((".gd", ".tscn", ".tres", ".uid")) else ""
-        if not (os.path.isfile("proposed_removals/" + f + suffix) or os.path.isfile("proposed_removals/" + f)):
-            bad("deleted without approval (Dave's rule): %s (move it to proposed_removals/%s%s and add a line to proposed_removals/REMOVALS.md)" % (f, f, suffix))
+    _deleted = sh("git", "diff", "--no-renames", "--name-only", "--diff-filter=D", BASE).splitlines()
+    _added = sh("git", "diff", "--no-renames", "--name-only", "--diff-filter=A", BASE).splitlines()
+    _modified = sh("git", "diff", "--name-only", "--diff-filter=M", BASE).splitlines()
+    _prior_retirements = sh("git", "show", BASE + ":" + doc_retirement.MANIFEST)
+    try:
+        _retirement_data = doc_retirement.load('.')
+        _retirement_events = doc_retirement.integration_events(_retirement_data)
+        _retirement_errors, _expired_docs = doc_retirement.validate(
+            '.', _retirement_data, _deleted, integrations=_retirement_events,
+            previous=json.loads(_prior_retirements) if _prior_retirements.strip() else None)
+        _retirement_touched = set(_deleted) & {e[k] for b in _retirement_data['batches'] for e in b['entries'] for k in ('original','retired')}
+        if _retirement_touched and not _retirement_errors:
+            _retirement_errors, _expired_docs = doc_retirement.validate(
+                '.', _retirement_data, _deleted, integrations=_retirement_events,
+                previous=json.loads(_prior_retirements) if _prior_retirements.strip() else None,
+                protected=doc_retirement.active_work('.'))
+    except (ValueError, OSError) as exc:
+        _retirement_errors, _expired_docs = [str(exc)], set()
+    for msg in _retirement_errors:
+        bad(msg)
+    _game = {}
+    for f in (sh("git", "ls-files").splitlines() if _deleted else []):   # read game files only when something was deleted
+        if f.endswith(deletion_rules.USE_EXT) and os.path.isfile(f):
+            try:
+                _game[f] = open(f, encoding="utf-8", errors="ignore").read()
+            except OSError:
+                pass
+    _removals = open("proposed_removals/REMOVALS.md", encoding="utf-8").read() if os.path.isfile("proposed_removals/REMOVALS.md") else ""
+    def _head_read(p):
+        try:
+            return open(p, encoding="utf-8", errors="ignore").read()
+        except OSError:
+            return ""
+    for msg in deletion_rules.deletion_problems(_deleted, _added, os.path.isfile, lambda p: sh("git", "show", BASE + ":" + p),
+                                                _head_read, _game, _removals, _modified, _expired_docs):
+        bad(msg)
     # looks: a look entry that was in BASE must still be in data/items/looks.json
+    renames = json.load(open("data/items/id_renames.json", encoding="utf-8")).get("renames", {}) if os.path.isfile("data/items/id_renames.json") else {}   # outside the try: a broken file fails loudly
     try:
         old = json.loads(sh("git", "show", BASE + ":data/items/looks.json"))["items"]
         new = json.load(open("data/items/looks.json", encoding="utf-8"))["items"]
         for k in sorted(set(old) - set(new)):
+            if renames.get(k, "") in new:   # an approved id rename (data/items/id_renames.json, Dave 16 Nov 2026): the look moved to the new id
+                continue
             bad("look removed from data/items/looks.json: %s (retire it, do not delete it)" % k)
     except Exception:
         pass
@@ -148,6 +181,11 @@ if text.returncode != 0:   # player-facing numbers (encyclopedia, hints, goals) 
     for line in text.stdout.splitlines()[:-1]:
         bad("text vs recipe: " + line)
 
+goal_gaps = subprocess.run([sys.executable, "tools/goal_station_audit.py"], capture_output=True, text=True)
+if goal_gaps.returncode != 0:   # every goal comes after the goals that build the stations it needs (Dave 17 Nov 2026, the Hoe report)
+    for line in goal_gaps.stdout.splitlines()[:-1]:
+        bad("goal order: " + line)
+
 placeable = subprocess.run([sys.executable, "tools/placeables_check.py"], capture_output=True, text=True)
 if placeable.returncode != 0:   # every placeable item must be placeable (Dave 5 Nov 2026)
     for line in placeable.stdout.splitlines()[1:]:
@@ -156,6 +194,12 @@ if placeable.returncode != 0:   # every placeable item must be placeable (Dave 5
 carry = subprocess.run([sys.executable, "tools/carry_audit.py"], capture_output=True, text=True)
 if carry.returncode != 0:   # a warning only until Dave picks the heavy-kits fix (docs/HEAVY_KITS_OPTIONS.md)
     print("WARNING: carry_audit: %d recipe(s) over the carry cap (python3 tools/carry_audit.py)" % sum(1 for l in carry.stdout.split("OVER CAP")[1].split("SLOWING")[0].splitlines() if " kg  recipe " in l))
+
+export = subprocess.run([sys.executable, "tools/export_check.py", "--ci"], capture_output=True, text=True)
+if export.returncode != 0:   # a release build would lack a file it loads or carry what it must not (server/client split C2)
+    bad("export_check: " + " | ".join([l.strip() for l in export.stdout.splitlines() if l.startswith("  - ")] + export.stderr.strip().splitlines()[-3:]))
+elif "warnings" in export.stdout:
+    print("WARNING: export_check: " + export.stdout.strip().splitlines()[-1])
 
 master = subprocess.run([sys.executable, "tools/item_master.py", "--check"], capture_output=True, text=True)
 if master.returncode != 0:   # a warning only: the master list lives outside the repo (tech/ITEM_MASTER.md)

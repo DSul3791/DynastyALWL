@@ -1,0 +1,8 @@
+run_tests: 330 parallel (jobs 3), 10 serial; output in C:/Users/david/AppData/Local/Temp/claude/01b3e68161e49208/3ccfae89-8254-4e50-a5df-cc087f5ec15a/scratchpad/suite
+FAILED test_flora_density: FAIL 300.5 124 timed out after 300s
+    | ok   sour_cherry grows in at least one wild grove of 4 or more trees ([9])
+    | ok   standing in a sour_cherry grove sets off the near_orchard hint (a fruit_tree in drops.json, 4 or more within 25 m)
+    | ok   future fruit trees (14) are never placed []
+slowest: test_flora_density 300.5s  test_sullivan_water_live 122.7s  test_beach_belt 112.0s  test_flora_walk_cost 103.8s  test_water_sim 40.2s  
+wall time 928 s, seconds per test in C:/Users/david/AppData/Local/Temp/claude/01b3e68161e49208/3ccfae89-8254-4e50-a5df-cc087f5ec15a/scratchpad/suite/seconds.txt
+Test done: 339 pass, 1 fail

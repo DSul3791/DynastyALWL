@@ -1,18 +1,32 @@
 {
-	"note": "Boulders (Dave 2026-10-21): not rocks; a pick (or a stone axe, 3 times slower) breaks them into rough stones. The yield is plain math from the size: volume (an ellipsoid of the boulder's radius and height_ratio x radius high, the buried part included) x density x yield, divided by the mass of one stone (weights.json, 1 kg), is the number of stones; a 1 m radius boulder makes about 4600, 0.3 m about 125, 1.2 m about 7900 at yield 0.5. One blow with an iron or steel pick takes one stone; whacks_per_stone is by the tool's material (items.json material) and applies to the best tool on the hotbar; a stone axe takes 3 blows per stone. The boulder shrinks as stones come out (cube root of what is left) and is gone with the last one; what is left is saved (world_items.json boulders). Every blow wears the tool like other work (durability in items.json, drops.json tool_wear per_use may add more). Boulders are server-owned and laid out like loose stones: per 32 m cell, up to max_per_cell, only where the ground rises more than min_slope or at a water bank, deterministic from the cell. size: radius_min..radius_max, radius_power > 1 makes small ones commoner. luck_extra: the chance that a blow's stone comes away as two (and takes two from the boulder), passed through the luck function (0 switches it off; 0.05 means about 5 percent at luck 0, about 7 percent at +10, 3.5 percent at -10).",
+	"note": "Boulders (Dave 2026-10-21): not rocks; a pick (or an axe, half as fast) breaks them into rough stones. The yield is plain math from the size: volume (an ellipsoid of the boulder's radius and height_ratio x radius high, the buried part included) x density x yield, divided by the mass of one stone (weights.json, 0.5 kg since Dave 19 Nov 2026), is the number of stones; a 1 m radius boulder makes about 870, 0.3 m about 23, 1.2 m about 1,500 at yield 0.047. STONES PER BLOW (tools; Dave 12 Nov 2026, TEST-013: \"a stone pickaxe ... at least 1 rock per swing and higher tiers more rocks per swing ... destroy the rock faster and still get the same amount of rock while degrading the durability less for higher tiers\") are by the tool class and material (items.json) of the tool IN HAND, which must be on the hotbar: pick stone 1, bronze 2, iron 3, steel 4. 14 Nov 2026 (GOALS-REPAIR R2b): copper pick 1.5 and copper axe 0.75, between stone and bronze, PROVISIONAL (GOALS-REPAIR A-14). A fraction carries over between blows (the boulder's progress). Every blow wears the tool once (drops.json tool_wear rock), so a better pick wears less for the same stone. An axe is the wrong tool: half the pick's stones of its material, and tool_wear rock wears it 5 per blow. The stones in a boulder are fixed by its size whatever the tool. Each piece rolls its own luck double, ore and flint. The boulder shrinks as stones come out (src/shared/boulder_wear.gd: its radius falls in a straight line with the share left, to a fifth at the last stone; cracks from the first blow; Dave 21 Nov 2026) and is gone with the last one; what is left is saved (world_items.json boulders). Every blow wears the tool like other work (durability in items.json, drops.json tool_wear per_use may add more). Boulders are server-owned and laid out like loose stones: per 32 m cell, up to max_per_cell, only where the ground rises more than min_slope or at a water bank, deterministic from the cell. size: radius_min..radius_max, radius_power > 1 makes small ones commoner. luck_extra: the chance that a blow's stone comes away as two (and takes two from the boulder), passed through the luck function (0 switches it off; 0.05 means about 5 percent at luck 0, about 7 percent at +10, 3.5 percent at -10).",
 	"density_kg_m3": 2600,
-	"yield": 0.5,
+	"yield": 0.047,
+	"ore_yield": 0.7,
+	"ore_yield_note": "A rock with an ore (copper, tin, iron, coal or salt: boulders.json ore items, and the copper and tin ore_rocks; limestone, chalk and marble rocks are stone and use yield) holds stones at this rate, as every rock did from 19 Nov 2026; plain stone rocks use yield. Dave 21 Nov 2026 asked for fewer stones from plain rocks only and for copper and tin to stay abundant (BugsList 118), so ore rocks keep their amounts and a big one still holds thousands.",
+	"yield_note": "Dave 21 Nov 2026 play test (BugsList 118: \"so far I have mined over 3200 stones from this big rock and it feels accessive. it also hasnt shrunk any that we can see.\"): PROVISIONAL BW-4 0.047 for plain stone rocks (ore rocks: ore_yield), so the biggest common boulder (radius 1.2 m, 2.4 m across) holds about 1,500 stones and every size keeps the same stones per volume: radius 1.0 about 870, 0.75 about 370, 0.5 about 110, 0.3 about 23, 0.25 about 13. Saves scale what is left in worked boulders by the change (boulder_per_kg). Before that: Dave 19 Nov 2026 (boulders PLAN.md section 3: \"lets make stones 0.5kg and when you break bigger rocks you loose some material just to dust and smaller bits that are lost ... into 0.5kg bits with about 30% loss of material\"; \"I don't want that video game thing where a bold just gets broken in 5 minutes\"): 0.7 of the rock's weight comes away, in 0.5 kg stones (weights.json), so a rock 1 m across (radius 0.5) gives about 1,620 and one 2 m across about 12,960; stones per blow are unchanged. Before that, BugsList_Current.md entry 3 (Dave 18 Nov 2026: a rock yielded hundreds of stones without shrinking): the share of a boulder's mass that comes away as 1 kg stones, 0.5 until 18 Nov (a 1.2 m rock held over 7000). PROVISIONAL RK-1: 0.04, so the stones stay proportional to the rock's volume (a 0.3 m rock about 10, a 0.6 m one about 80, a 1.2 m one about 640) and each blow visibly cracks and shrinks it.",
 	"height_ratio": 0.85,
 	"tools": {
 		"pick": {
-			"iron": 1,
-			"steel": 1,
-			"stone": 3,
-			"bronze": 2
+			"stone": 1,
+			"copper": 1.5,
+			"bronze": 2,
+			"iron": 3,
+			"steel": 4
 		},
 		"axe": {
-			"stone": 3,
-			"bronze": 2
+			"stone": 0.5,
+			"copper": 0.75,
+			"bronze": 1,
+			"iron": 1.5,
+			"steel": 2
+		},
+		"hammer": {
+			"stone": 1,
+			"copper": 1.25,
+			"bronze": 1.5,
+			"iron": 2,
+			"steel": 2
 		}
 	},
 	"radius_min": 0.3,
@@ -27,12 +41,15 @@
 	"bank_chance": 0.4,
 	"luck_extra": 0.05,
 	"ore": {
-		"note": "Ore and coal from boulders (guide finding F-23, FLINT_ORE_SPEC.md): a boulder that lies within reach_m of an ore body of the terrain (the geology's ore_bodies) is an outcrop with that ore with chance boulder_share (decided from the boulder's key, so it is the same every time). A PICK (not an axe) takes the ore: each piece that comes away is the ore with chance piece_share, else stone. Iron needs no better pick than copper: there is no bronze pick in the game, and an iron pick needs iron ore first (a circle), so the ladder is made by rarity, not by tool. items: ore name in data/tables/resources.json -> item id. 2026-10-31 (Sal): `needs_material` lists which pick materials may take each ore: coal, copper and tin with any pick, iron only with a bronze, iron or steel pick, so the ladder is stone pick (copper, tin, coal) -> forge -> bronze ingot -> bronze pickaxe -> iron. The server reads needs_material in _hit_boulder (checked 3 Nov 2026), so a stone pick cannot take iron. 2026-11-10 (Steve, Jamie's tin check): a compact ore body (lens, halo, pipe, vein, placer) within reach_m comes first, the nearest of them; else a coal seam or other layer of the province under the boulder counts only where one of its bands lies within layer_depth_m under the bedrock surface. Bodies of ores not in items (gems, flint) are skipped instead of hiding the rest. 10 Nov 2026 (coordinator, item_system.md): rock salt. An evaporite salt bed (a layer) shows in boulders where its band comes within layer_depth_m of the bedrock surface, and a salt dome (a pipe) only where its top does; its pieces are the same Salt as sea salt, with any pick. 10 Nov 2026 (Steve, Dave's seven building tiers: Concrete = Lime powder + Sand + Stone): a boulder that is not an ore outcrop is of its own bedrock (TileTerrainData.bedrock_name_at, the layered rock at the bedrock surface under it). Over a rock in `rocks` (rock name -> item) a share rock_boulder_share of the boulders (from the key) give that item: each piece a pick takes is it with chance rock_piece_share, else stone; any pick material. Limestone, chalk and marble all give Limestone.",
+		"note": "Ore and coal from boulders (guide finding F-23, FLINT_ORE_SPEC.md): a boulder that lies within reach_m of an ore body of the terrain (the geology's ore_bodies) is an outcrop with that ore with chance boulder_share (decided from the boulder's key, so it is the same every time). A PICK (not an axe) takes the ore: each piece that comes away is the ore with chance piece_share, else stone. Iron needs no better pick than copper: there is no bronze pick in the game, and an iron pick needs iron ore first (a circle), so the ladder is made by rarity, not by tool. items: ore name in data/tables/resources.json -> item id. 2026-10-31 (Sal): `needs_material` lists which pick materials may take each ore (14 Nov 2026, GOALS-REPAIR R2b: a Copper pick takes what a stone one does, not iron; master s2 \"Bronze mines Iron\"): coal, copper and tin with any pick, iron only with a bronze, iron or steel pick, so the ladder is stone pick (copper, tin, coal) -> forge -> bronze ingot -> bronze pickaxe -> iron. The server reads needs_material in _hit_boulder (checked 3 Nov 2026), so a stone pick cannot take iron. 2026-11-10 (Steve, Jamie's tin check): a compact ore body (lens, halo, pipe, vein, placer) within reach_m comes first, the nearest of them; else a coal seam or other layer of the province under the boulder counts only where one of its bands lies within layer_depth_m under the bedrock surface. Bodies of ores not in items (gems, flint) are skipped instead of hiding the rest. 10 Nov 2026 (coordinator, item_system.md): rock salt. An evaporite salt bed (a layer) shows in boulders where its band comes within layer_depth_m of the bedrock surface, and a salt dome (a pipe) only where its top does; its pieces are the same Salt as sea salt, with any pick. 10 Nov 2026 (Steve, Dave's seven building tiers: Concrete = Lime powder + Sand + Stone): a boulder that is not an ore outcrop is of its own bedrock (TileTerrainData.bedrock_name_at, the layered rock at the bedrock surface under it). Over a rock in `rocks` (rock name -> item) a share rock_boulder_share of the boulders (from the key) give that item: each piece a pick takes is it with chance rock_piece_share, else stone; any pick material. Limestone, chalk and marble all give Limestone.",
 		"reach_m": 40.0,
 		"layer_depth_m": 10.0,
 		"boulder_share": 0.4,
 		"piece_share": 0.3,
 		"tool_class": "pick",
+		"tool_classes": ["pick", "hammer"],
+		"pick_only": ["iron"],
+		"hammer_note": "Dave 15 Nov 2026 (TREE_WOOD_TOOLS_DESIGN.md s1, W-12): the Stone Hammer breaks rock and takes copper, tin, coal, salt and limestone like a stone pick; iron ore still needs a bronze or better PICK (pick_only). A Wooden hammer does not break rock (no tools.hammer.wood rate).",
 		"items": {
 			"coal": "coal",
 			"copper": "copper_ore",
@@ -43,24 +60,28 @@
 		"needs_material": {
 			"coal": [
 				"stone",
+				"copper",
 				"bronze",
 				"iron",
 				"steel"
 			],
 			"copper": [
 				"stone",
+				"copper",
 				"bronze",
 				"iron",
 				"steel"
 			],
 			"tin": [
 				"stone",
+				"copper",
 				"bronze",
 				"iron",
 				"steel"
 			],
 			"salt": [
 				"stone",
+				"copper",
 				"bronze",
 				"iron",
 				"steel"
@@ -79,17 +100,51 @@
 		"rock_boulder_share": 0.5,
 		"rock_piece_share": 0.4
 	},
+	"ore_rocks": {
+		"note": "One rule for copper AND tin rocks (Dave 21 Nov 2026, play test: \"both copper and tin should be placed along or close to rivers being more abundant and bigger near the mountains and smaller and less abundant closer to the ocean but they should both be there. they should even have a small chance of randomly being almost anywhere\"; \"they should also be very abundant if they are right over an ore vein of their type\"). copper_rocks and tin_rocks below take every value here and add their own slot and grade (server_items._ore_rock_cfg). Per 32 m cell, from the cell's own stream named after the ore (server_items._lay_out_ore_rocks), `tries` spots and one more for the mountain-foot boulder. Upland u, 0..1, from the ground height at the spot: 0 at or under upland_low_m (the coastal plain), 1 at upland_high_m and over (the foothills and valleys under the mountains). A spot in water no deeper than bed_depth_m (a river or lake bed) or on a dry bank within bank_reach_m of water takes a rock with chance lerp(water_chance_coast, water_chance_mountain, u); anywhere else on dry land with chance `chance`; never in deeper water. Over a body of its own ore (the geology within body_reach_m: one look for the cell first, then the spot), every spot takes a rock with chance at least body_chance, wherever it lies, and u is raised by body_upland. Size share s = size draw x lerp(size_coast, 1, u): under hand_share it is a loose ore picked up by hand, above it a rock to break, radius_min..radius_max over the rest (0.5 to 2 m across, Dave 17 Nov 2026), so rocks are smaller and mostly hand pieces by the sea and up to 2 m by the mountains. foot: the last try, a big boulder with chance foot.chance on gentle ground (rise per metre under max_slope) where the ground climbs more than rise_m within reach_m (at most 26 m, inside the prefetched pad). All values PROVISIONAL, docs/design/COPPER_ROCKS.md For Dave OR-1..OR-6.",
+		"tries": 7,
+		"chance": 0.01,
+		"water_chance_coast": 0.3,
+		"water_chance_mountain": 0.8,
+		"bank_reach_m": 8.0,
+		"bed_depth_m": 0.8,
+		"upland_low_m": 10.0,
+		"upland_high_m": 300.0,
+		"body_reach_m": 40.0,
+		"body_chance": 0.7,
+		"body_upland": 0.5,
+		"size_coast": 0.5,
+		"hand_share": 0.35,
+		"radius_min": 0.25,
+		"radius_max": 1.0,
+		"radius_power": 1.0,
+		"foot": {
+			"chance": 0.25,
+			"reach_m": 24.0,
+			"rise_m": 12.0,
+			"max_slope": 0.3,
+			"radius_min": 0.6,
+			"radius_max": 1.0,
+			"radius_power": 1.0
+		}
+	},
+	"copper_rocks": {
+		"note": "Copper rocks (Dave 16 Nov 2026, his photo of real copper ore: rough rocks wholly coated in green to blue-green malachite, fist size to boulders). Laid out by the shared ore_rocks rule (Dave 21 Nov 2026). Server rows like boulders with ore copper, mined the same way (a pick or the Stone Hammer, any material); a loose piece picked up by hand is Copper ore. grade_min..grade_max (from the rock's key): the share of its pieces that are copper ore, so the copper in a rock is its size times its grade; every copper outcrop boulder of the geology gets a grade too, in place of ore piece_share. slot: the cell's slots from 8 (15 the mountain-foot boulder). PROVISIONAL, docs/design/COPPER_ROCKS.md CR-6.",
+		"slot": 8,
+		"grade_min": 0.2,
+		"grade_max": 0.6
+	},
+	"tin_rocks": {
+		"note": "Tin rocks (Dave 17 Nov 2026, his photo of cassiterite: pale speckled granite with white quartz veins carrying dark brown-black crystals; river pebbles glassy, plum size). Laid out by the shared ore_rocks rule (Dave 21 Nov 2026), exactly like copper; before that only by water within 80 m of a tin body, so a river away from tin geology had none. grade_min..grade_max: share of a boulder's pieces that are Tin ore. Slots 16..23 of the cell (23 the mountain-foot boulder). PROVISIONAL, docs/design/COPPER_ROCKS.md TN-5.",
+		"slot": 16,
+		"grade_min": 0.15,
+		"grade_max": 0.45
+	},
 	"flint": {
 		"note": "Flint (guide finding F-02, FLINT_ORE_SPEC.md): each stone that comes off a boulder is a flint nodule instead with this chance, more near water. Bank stones (drops.json ground_scatter.bank.flint) are flint with their own chance. Flint makes the hide scraper, javelin and sickle.",
 		"item": "flint",
 		"chance": 0.04,
 		"near_water_chance": 0.08,
 		"water_reach_m": 6.0
-	},
-	"draw_cap_by_quality": [
-		24,
-		48,
-		80,
-		120
-	]
+	}
 }

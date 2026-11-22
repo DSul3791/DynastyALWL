@@ -97,11 +97,7 @@ func build() -> Control:
 	view._grid.add_theme_constant_override("h_separation", ArtKit.SLOT_GAP)
 	view._grid.add_theme_constant_override("v_separation", ArtKit.SLOT_GAP)
 	_slot_scroll.add_child(view._grid)
-
-	for i in view.inventory.SLOTS:
-		var slot: Control = _make_slot(i)
-		view._grid.add_child(slot)
-		view._buttons.append(slot)
+	_fit_slots()
 
 	info = InfoStrip.new()
 	right.add_child(info)
@@ -136,9 +132,21 @@ func fit_rows(room: Vector2) -> void:
 	_slot_scroll.size = Vector2(room.x, float(rows * pitch - ArtKit.SLOT_GAP))
 
 
+# One slot button per pack slot: the pack grows when full and gives empty slots back (Inventory.trim), so buttons come and go with it.
+func _fit_slots() -> void:
+	while view._buttons.size() > view.inventory.slot_count:
+		view._buttons.pop_back().queue_free()
+
+	for i in range(view._buttons.size(), view.inventory.slot_count):
+		var slot: Control = _make_slot(i)
+		view._grid.add_child(slot)
+		view._buttons.append(slot)
+
+
 # The slots: arranged by the sort, then each one's text, bars, tooltip and whether the search shows it.
 func refresh() -> void:
 	station = view.station_use() if view.has_method("station_use") else {}
+	_fit_slots()
 	arrange_slots()
 
 	if view._weight_label != null:
@@ -148,7 +156,7 @@ func refresh() -> void:
 
 	_note_crafts()
 
-	for i in view.inventory.SLOTS:
+	for i in view.inventory.slot_count:
 		_refresh_look_slot(i, filter)
 
 	_last_numbers = view.inventory.numbers.duplicate()
@@ -189,8 +197,8 @@ func show_info() -> void:
 	if int(entry.get("capacity_ml", 0)) > 0:
 		item_facts.append(["Holds", view._litres(int(entry.get("capacity_ml", 0)))])
 		item_facts.append(["Filled", view._litres(wear)])
-	elif int(entry.get("durability", 0)) > 0:
-		item_facts.append(["Condition", "%d %%" % int(round(100.0 * clampf(1.0 - float(wear) / float(entry["durability"]), 0.0, 1.0)))])
+	elif store.max_durability(slot) > 0:
+		item_facts.append(["Condition", "%d %%" % int(round(100.0 * clampf(1.0 - float(wear) / float(store.max_durability(slot)), 0.0, 1.0)))])
 
 	var kcal: int = VitalsRules.food_value(item_id, view._vitals_cfg)
 
@@ -200,7 +208,15 @@ func show_info() -> void:
 	if view.table.shelf_units(number) > 0:
 		item_facts.append(["Fresh", "%d %%" % int(view.table.freshness(number, wear) * 100.0)])
 
-	info.show_item(InventoryLook.icon_for(item_id), view._item_label(number), str(entry.get("description", "")), item_facts)
+	if view.table.ready_units(number) > 0:   # a sealed batch (master s3.14): Maturing until its ready age, then Ready
+		item_facts.append(["Maturing", "about %d h more" % view.table.ready_hours_left(number, wear)] if view.table.maturing(number, wear) else ["Ready", "to eat"])
+
+	var inst_facts: Array = []
+
+	for line in view.inst_lines(store.inst_of(slot), number):
+		inst_facts.append(["", line])   # sharpness and filled magical slots (catalog Phase 1b, 2c), first so the one-line row never cuts them
+
+	info.show_item(InventoryLook.icon_for(item_id), view.inst_label(number, store.inst_of(slot)), str(entry.get("description", "")), inst_facts + item_facts)
 
 
 # One pack slot (item_slot.gd), keeping slot `index` wherever the sort puts it. Click selects and moves, shift-click moves the stack into the open
@@ -230,8 +246,12 @@ func _make_slot(index: int) -> Control:
 			return null
 
 		return {"slot": index}
-	slot.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and data.has("slot")
-	slot.on_drop = func(data: Variant) -> void: view.move_slot(int(data["slot"]), index)
+	slot.can_drop = func(data: Variant) -> bool: return typeof(data) == TYPE_DICTIONARY and (data.has("slot") or data.has("worn"))
+	slot.on_drop = func(data: Variant) -> void:
+		if data.has("worn"):   # a pack dragged off the You column's Back slot comes off into the inventory (the server picks the slot)
+			view.take_off(int(data["worn"]))
+		else:
+			view.move_slot(int(data["slot"]), index)
 	return slot
 
 
@@ -298,13 +318,13 @@ func _refresh_look_slot(i: int, filter: String) -> void:
 	var slot = view._buttons[i]
 	var number: int = view.inventory.numbers[i]
 	# No floating tooltip on a pack well: the info strip under the grid shows the slot under the pointer (redesign 4.1 and 11.3).
-	InventoryLook.show_stack(view, slot, number, view.inventory.counts[i], view.inventory.wear[i], "")
+	InventoryLook.show_stack(view, slot, number, view.inventory.counts[i], view.inventory.wear[i], "", view.inventory.max_durability(i))
 	slot.set_marked(ItemSlot.MARK_GOLD if i == view._selected else 0)
 	slot.set_favourite(view.inventory.is_fav(i))
 	slot.set_station_glow(number != 0 and station.has(number))   # the station here can use it (Dave 10 Nov 2026)
-	slot.set_linked_key(view.linked_key(i))
 	_note_arrival(i, slot, number)
-	slot.visible = (filter == "" or (number != 0 and _matches(view.table.name_of(number), filter)))
+	# The hotbar slots (0 to 9) are shown in the hotbar strip, not again here: an item is in one place only (TEST-008).
+	slot.visible = i >= view.inventory.hotbar_slots and (filter == "" or (number != 0 and _matches(view.table.name_of(number), filter)))
 
 
 # What the queue is making, so its arrival in the pack can fly in from the queue (look doc section 9).
@@ -318,7 +338,7 @@ func _note_crafts() -> void:
 
 # A stack that grew or appeared since the last refresh: a made item flies in from the queue; any other new kind of item shimmers.
 func _note_arrival(i: int, slot, number: int) -> void:
-	if number == 0 or _last_numbers.size() != view.inventory.SLOTS:
+	if number == 0 or _last_numbers.size() != view.inventory.slot_count:
 		return
 
 	var grew: bool = _last_numbers[i] != number or view.inventory.counts[i] > _last_counts[i]
@@ -358,7 +378,7 @@ func arrange_slots() -> void:
 	if view._panel == null or view._buttons.is_empty():
 		return
 
-	var order: Array = range(view.inventory.SLOTS)
+	var order: Array = range(view.inventory.slot_count)
 	var cfg: Dictionary = view._carry_cfg
 
 	var key: Callable = func(slot: int) -> Variant:
@@ -382,6 +402,12 @@ func arrange_slots() -> void:
 	order.sort_custom(func(a, b):
 		var empty_a: bool = view.inventory.numbers[a] == 0
 		var empty_b: bool = view.inventory.numbers[b] == 0
+
+		var bar_a: bool = a < view.inventory.hotbar_slots   # the hidden hotbar slots go after the backpack
+		var bar_b: bool = b < view.inventory.hotbar_slots
+
+		if bar_a != bar_b:
+			return bar_b
 
 		if empty_a != empty_b:
 			return empty_b

@@ -450,11 +450,15 @@ func drop_unsent_prefetch() -> void:
 	_mutex.unlock()
 
 
-# Drops prefetched blocks (after a tile changed they may be stale).
-func forget_prefetch() -> void:
+# Drops the prefetched copies of the given blocks (Vector4i block + LOD, from ClientBlockCache.forget_area) after a ground edit
+# there; the rest of the prefetch is still good.
+func forget_blocks(keys: Array) -> void:
 	_mutex.lock()
-	_spare.clear()
-	_asked.clear()
+
+	for key in keys:
+		_spare.erase(key)
+		_asked.erase(key)
+
 	_mutex.unlock()
 
 

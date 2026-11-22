@@ -1,9 +1,13 @@
 extends SceneTree
 
-# Building on the spot (Dave 2 Nov 2026): a hammer blueprint takes its heavy materials from loose stacks lying within BUILD_STOCK_M
-# of the builder first, then the pack, so a stone wall (12 blocks of 25 kg) can be carried over in trips and stacked beside the site.
+# Building stock (Dave 2 Nov 2026: heavy stock stacked beside the site; Dave 10 Nov 2026: the hammer pulls from all around; Dave 18 Nov 2026: "blue
+# prints should not autocomplete on placement. they should only get supplies added to them when they are hit with a hammer"): placing a blueprint
+# always sets down a site and takes nothing; a hammer hit on the site takes what it still needs from the pack first, then loose stacks and the
+# builder's own containers within site_gather_m (12 m) times the hammer's reach, so a stone wall (12 blocks of 25 kg) can be carried over in trips
+# and stacked beside the site.
 #   godot --headless --path . --script res://src/worldgen/tools/test_build_stock.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
@@ -79,38 +83,44 @@ func _init() -> void:
 			mortar = int(need[1])
 
 	check(blocks > 0 and mortar > 0, "the stone wall blueprint costs blocks and mortar")
-	_give("wooden_hammer", 1)
+	_give("stone_hammer", 1)
 	_give("mortar", mortar)
 
-	# Blocks stacked 2 m away, none in the pack: the wall goes up and the stack is used.
+	# Blocks stacked 2 m away, none in the pack: placing sets down a site and takes nothing; a hammer hit puts the wall up and uses the stack.
 	check(items.drop_in_world(items.table.number_of("cut_stone_block"), blocks, here + Vector3(2.0, 0.0, 0.0)), "blocks laid on the ground")
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(wall["number"]), 0, 0, here + Vector3(0.0, 0.0, 3.0))
-	check(_walls() == 1, "the wall is built from the ground stack")
+	var first: int = _site_at(here + Vector3(0.0, 0.0, 3.0))
+	check(first != 0 and _walls() == 0 and _on_ground("cut_stone_block") == blocks and _have("mortar") == mortar, "placing with every material to hand sets down a site and takes nothing (Dave 18 Nov 2026)")
+	HeldTool.hit_site(items, first)
+	check(_walls() == 1, "a hammer hit builds the wall from the ground stack")
 	check(_on_ground("cut_stone_block") == 0, "the ground blocks were used")
 	check(_have("mortar") == 0, "the mortar came out of the pack")
 
-	# Half on the ground, half in the pack: both are used, the ground first. The builder walks to a new site (placing has a 6 m reach).
+	# Half in the pack, half on the ground: both are used, the pack first (_gather_site). The builder walks to a new site (placing has a 6 m reach).
 	var site2: Vector3 = here + Vector3(16.0, 0.0, 0.0)
 	items.report_position(1, site2)
 	_give("mortar", mortar)
-	_give("cut_stone_block", blocks)
-	items.drop_in_world(items.table.number_of("cut_stone_block"), blocks / 2, site2 + Vector3(-2.0, 0.0, 0.0))
+	_give("cut_stone_block", blocks / 2)
+	items.drop_in_world(items.table.number_of("cut_stone_block"), blocks - blocks / 2 + 2, site2 + Vector3(-2.0, 0.0, 0.0))
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(wall["number"]), 0, 0, site2 + Vector3(0.0, 0.0, 3.0))
-	check(_walls() == 2, "a wall from ground and pack")
-	check(_on_ground("cut_stone_block") == 0 and _have("cut_stone_block") == blocks / 2, "ground stack used first, the rest from the pack (%d left)" % _have("cut_stone_block"))
+	HeldTool.hit_site(items, _site_at(site2 + Vector3(0.0, 0.0, 3.0)))
+	check(_walls() == 2, "a wall from pack and ground")
+	check(_have("cut_stone_block") == 0 and _on_ground("cut_stone_block") == 2, "the pack's blocks went first, then only what was missing off the stack (%d left on the ground)" % _on_ground("cut_stone_block"))
+	items._ground_take(items.table.number_of("cut_stone_block"), 2, site2, 4.0)   # cleared away: the checks below count every block on the ground
 
-	# Stock too far away does not count, and nothing is taken.
+	# Stock too far away: placing sets down a site and takes nothing (the hammer gather on it is _check_site_gather).
 	items.inventory_of(1).remove(items.table.number_of("cut_stone_block"), _have("cut_stone_block"))
 	_give("mortar", mortar)
 	var site3: Vector3 = here + Vector3(-16.0, 0.0, 0.0)
 	items.report_position(1, site3)
 	items.drop_in_world(items.table.number_of("cut_stone_block"), blocks, site3 + Vector3(-20.0, 0.0, 0.0))
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(wall["number"]), 0, 0, site3 + Vector3(0.0, 0.0, 3.0))
-	check(_walls() == 2, "blocks 20 m away do not build a wall")
-	check(_on_ground("cut_stone_block") == blocks and _have("mortar") == mortar, "a refused wall takes nothing")
+	check(_walls() == 2 and _site_at(site3 + Vector3(0.0, 0.0, 3.0)) != 0, "blocks 20 m away: the wall is only a site")
+	check(_on_ground("cut_stone_block") == blocks and _have("mortar") == mortar, "setting down the site takes nothing")
 
 	_check_site_gather(blocks, mortar, site3)
 	_check_group_stock(blocks, mortar, int(wall["number"]), here + Vector3(0.0, 0.0, 40.0))
+	_check_spend_lowest(here + Vector3(0.0, 0.0, 120.0))   # before the refund check, which swaps the real nails group for a stand-in and erases it
 	_check_group_refund()
 	_check_chest_build(blocks, mortar, int(wall["number"]), here + Vector3(0.0, 0.0, -60.0))
 
@@ -130,12 +140,12 @@ func _site_at(at: Vector3) -> int:
 
 
 # The hammer in Repair mode on a blueprint site (Dave 10 Nov 2026, craft from containers built in): it pulls what the site still needs from within
-# building_wear.json site_gather_m (12 m) of the builder, the pack first, then the ground and the builder's own containers nearest first; never more than
+# building_wear.json site_gather_m (12 m) times the swing hammer's reach (building_wear.json hammer_reach_x) of the builder, the pack first, then the ground and the builder's own containers nearest first; never more than
 # it needs, never from a stranger's chest; one line says what came and what is missing.
 func _check_site_gather(blocks: int, mortar: int, site3: Vector3) -> void:
 	var half: int = floori(float(blocks) / 2.0)
 	var site: int = _site_at(site3 + Vector3(0.0, 0.0, 3.0))
-	check(site != 0, "the refused wall left a blue site")
+	check(site != 0, "the wall placed with its blocks 20 m away is a blue site")
 
 	if site == 0:
 		return
@@ -145,8 +155,9 @@ func _check_site_gather(blocks: int, mortar: int, site3: Vector3) -> void:
 	# The 20 m stack is out of reach: nothing comes, and the line says what is missing.
 	items.inventory_of(1).remove(items.table.number_of("mortar"), _have("mortar"))
 	said.clear()
-	items.action(1, Net.ACT_REPAIR_STRUCT, site, 0, 0, Vector3.ZERO)
-	check(_on_ground("cut_stone_block") == blocks and said.size() == 1 and str(said[0]).begins_with("Nothing within 12 m"), "stock 20 m away is not taken (%s)" % str(said))
+	items.action(1, Net.ACT_REPAIR_STRUCT, site, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)
+	var reach_m: int = int(round(12.0 * items._hammer_x(1, HeldTool.slot_of(items, "hammer"))))   # 12 m times the swing hammer's reach (stone, tier 2: x1.25, 15 m)
+	check(reach_m < 20 and _on_ground("cut_stone_block") == blocks and said.size() == 1 and str(said[0]).begins_with("Nothing within %d m" % reach_m), "stock 20 m away is not taken (%s)" % str(said))
 	# Half the blocks 8 m away on the ground, a few in the pack, the mortar in the builder's own chest 6 m away, more mortar in a stranger's chest.
 	items.drop_in_world(block_n, half, site3 + Vector3(8.0, 0.0, 0.0))
 	_give("cut_stone_block", 2)
@@ -159,7 +170,7 @@ func _check_site_gather(blocks: int, mortar: int, site3: Vector3) -> void:
 	own_box.add(items.table.number_of("mortar"), mortar + 3)
 	stranger_box.add(items.table.number_of("mortar"), mortar)
 	said.clear()
-	items.action(1, Net.ACT_REPAIR_STRUCT, site, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_REPAIR_STRUCT, site, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)
 	var have: Dictionary = items._site_of(items._items[site])["have"]
 	check(int(have.get("cut_stone_block", 0)) == 2 + half, "the pack's 2 blocks and the 8 m stack went in (%s)" % str(have))
 	check(_have("cut_stone_block") == 0 and _on_ground("cut_stone_block") == blocks, "the pack first, then the near stack; the 20 m stack untouched")
@@ -169,7 +180,7 @@ func _check_site_gather(blocks: int, mortar: int, site3: Vector3) -> void:
 	# The rest carried to within reach: the next hit finishes it.
 	items.drop_in_world(block_n, blocks, site3 + Vector3(-3.0, 0.0, 2.0))
 	said.clear()
-	items.action(1, Net.ACT_REPAIR_STRUCT, site, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_REPAIR_STRUCT, site, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)
 	check(items._items.has(site) and not items._items[site]["struct"].has("site"), "with nothing missing the wall is built")
 	check(said.size() == 1 and str(said[0]).ends_with("Built."), "and the line says so (%s)" % str(said))
 	check(_on_ground("cut_stone_block") == blocks + blocks - (blocks - 2 - half), "only what was missing came off the new stack (%d on the ground)" % _on_ground("cut_stone_block"))
@@ -192,14 +203,15 @@ func _check_group_stock(blocks: int, mortar: int, wall_number: int, spot: Vector
 	_give("cut_stone_block", blocks)
 	items.drop_in_world(clay_n, mortar, spot + Vector3(2.0, 0.0, 0.0))
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, wall_number, 0, 0, spot + Vector3(0.0, 0.0, 3.0))
-	check(_walls() == walls_before + 1 and _on_ground("clay") == 0, "clay on the ground fills the wall's mortar (a group member in the ground stock)")
-	# A site that needs mortar takes clay from the pack and from the ground on a deposit.
+	HeldTool.hit_site(items, _site_at(spot + Vector3(0.0, 0.0, 3.0)))
+	check(_walls() == walls_before + 1 and _on_ground("clay") == 0, "clay on the ground fills the wall's mortar on a hammer hit (a group member on the ground)")
+	# A site that needs mortar takes clay from the pack and from the ground on a hammer hit.
 	var site_spot: Vector3 = spot + Vector3(12.0, 0.0, 0.0)
 	items.report_position(1, site_spot)
 	_give("cut_stone_block", blocks)
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, wall_number, 0, 0, site_spot + Vector3(0.0, 0.0, 3.0))
 	var site: int = _site_at(site_spot + Vector3(0.0, 0.0, 3.0))
-	check(site != 0, "with no mortar or clay to hand the wall is set down as a site")
+	check(site != 0, "the wall is set down as a site")
 
 	if site == 0:
 		return
@@ -214,8 +226,8 @@ func _check_group_stock(blocks: int, mortar: int, wall_number: int, spot: Vector
 		on_hand += int(row[2]) if str(row[0]) == "mortar" else 0
 
 	check(not view.is_empty() and on_hand == mortar, "the site's list counts clay in the pack and on the ground as mortar on hand (%d)" % on_hand)
-	items._deposit_site(1, inv, site)
-	check(items._items.has(site) and not items._items[site]["struct"].has("site"), "the deposit takes the clay and the wall is built")
+	HeldTool.hit_site(items, site)
+	check(items._items.has(site) and not items._items[site]["struct"].has("site"), "the hammer hit takes the clay and the wall is built")
 	check(inv.count_of(clay_n) == 0 and _on_ground("clay") == 0, "all the clay went in")
 	items.table._groups.erase(mortar_n)
 
@@ -225,7 +237,7 @@ func _check_group_stock(blocks: int, mortar: int, wall_number: int, spot: Vector
 func _check_group_refund() -> void:
 	var t = items.table
 	check(items._refund_number(t.number_of("knife")) == t.number_of("stone_knife"), "a knife cost gives back the stone knife (tier 1)")
-	check(items._refund_number(t.number_of("wooden_block")) == t.number_of("wooden_block_soft"), "a wooden block cost gives back the cheaper softwood block")
+	check(items._refund_number(t.number_of("wooden_block")) == t.number_of("wooden_block"), "a wooden block cost gives back a wooden block (no longer a group, 15 Nov 2026)")
 	check(items._refund_number(t.number_of("log")) == t.number_of("log"), "a log cost still gives back plain logs")
 	check(items._refund_number(t.number_of("mortar")) == t.number_of("mortar"), "a cost that is no group gives back itself")
 	# A stand-in pair like Nails and Bronze nails: the bronze member ranks below one with no material.
@@ -250,8 +262,81 @@ func _check_group_refund() -> void:
 		bronze_entry.erase("material")
 
 
-# A blueprint draws on what a craft draws on (CraftStock, coordinator 10 Nov 2026): the pack, loose stacks within 12 m and the builder's own containers
-# within 12 m that are not kept out. The hammer list counts the same stock, so a piece it shows as covered is built at once, never set down as a site.
+# A group cost spends its lowest member first, by the ranking the refund gives back (DEVTEST-01: iron Nails were spent before Bronze nails, then a taken-down
+# piece gave Bronze nails back). Real bronze_nails group (bronze or better): Bronze nails (material bronze) rank below Iron nails. Within each source a site gather draws on (the
+# pack: Inventory.remove_fill; the ground: _ground_take and _spend_sorted; a chest: its remove_fill) the lowest goes first; the gather order of the sources
+# is the pack, then the ground and the builder's containers nearest first (_gather_site).
+func _check_spend_lowest(spot: Vector3) -> void:
+	var t = items.table
+	var nails_n: int = t.number_of("nails")   # Iron nails
+	var bronze_n: int = t.number_of("bronze_nails")   # the group key every building's nails cost names: bronze or better (Dave 21 Nov 2026)
+	var inv = items.inventory_of(1)
+	check(t.group_members(bronze_n).has(nails_n) and t.spend_order(bronze_n)[0] == bronze_n and items._refund_number(bronze_n) == bronze_n, "the real bronze-or-better nails group ranks Bronze nails lowest, and the refund agrees")
+	check(not t.group_members(nails_n).has(bronze_n) and t.group_members(nails_n).has(t.number_of("steel_nails")), "an iron nails need takes iron or steel, never bronze")
+	items.report_position(1, spot)
+	inv.remove(nails_n, inv.count_of(nails_n))
+	inv.remove(bronze_n, inv.count_of(bronze_n))
+
+	# Pack only (plain units, as a site gather takes them): 3 iron and 2 bronze, a take of 4 takes the 2 bronze first, then 2 iron.
+	inv.add(nails_n, 3)
+	inv.add(bronze_n, 2)
+	inv.remove_fill(bronze_n, 4, [], true)
+	check(inv.count_of(bronze_n) == 0 and inv.count_of(nails_n) == 1, "pack: 4 nails take both Bronze nails first, then 2 iron (%d bronze, %d iron left)" % [inv.count_of(bronze_n), inv.count_of(nails_n)])
+	inv.add(bronze_n, 3)
+	inv.remove_fill(bronze_n, 2, [], true)
+	check(inv.count_of(bronze_n) == 1 and inv.count_of(nails_n) == 1, "pack: the lowest alone covers a take of 2 (%d bronze, %d iron left)" % [inv.count_of(bronze_n), inv.count_of(nails_n)])
+	inv.remove_fill(nails_n, 1, [], true)
+	check(inv.count_of(bronze_n) == 1 and inv.count_of(nails_n) == 0, "an iron nails take (nails) spends iron and leaves the bronze")
+	inv.remove_fill(bronze_n, 1, [], true)
+	check(inv.count_of(bronze_n) == 0, "the last bronze nail is spent when it is all there is")
+	check(not inv.remove_fill(bronze_n, 1), "nothing left: a group take is refused with no change")
+	inv.add(bronze_n, 1)
+	inv.add(nails_n, 1)
+	check(not inv.remove_fill(bronze_n, 3) and inv.count_of(bronze_n) == 1 and inv.count_of(nails_n) == 1, "a total that is too small refuses and changes nothing")
+	inv.remove(bronze_n, 1)
+	inv.remove(nails_n, 1)
+
+	# A ground stack nearer than the lowest one: the lowest still goes first (iron 1 m away, bronze 3 m away, a take of 3 takes both bronze and 1 iron).
+	items.drop_in_world(nails_n, 5, spot + Vector3(1.0, 0.0, 0.0))
+	items.drop_in_world(bronze_n, 2, spot + Vector3(3.0, 0.0, 0.0))
+	items._ground_take(bronze_n, 3, spot, items.BUILD_STOCK_M)
+	check(_on_ground("bronze_nails") == 0 and _on_ground("nails") == 4, "on the ground the lowest member goes first, not the nearest (%d iron, %d bronze left)" % [_on_ground("nails"), _on_ground("bronze_nails")])
+	check(items._ground_take(bronze_n, 9, spot, items.BUILD_STOCK_M) == 4 and _on_ground("nails") == 0, "a take of more than lies there takes what is there")
+	items.drop_in_world(nails_n, 3, spot + Vector3(1.0, 0.0, 0.0))
+	items.drop_in_world(bronze_n, 2, spot + Vector3(3.0, 0.0, 0.0))
+	items._ground_take(bronze_n, 3, spot, items.BUILD_STOCK_M)
+	check(_on_ground("bronze_nails") == 0 and _on_ground("nails") == 2, "a repair take (_ground_take) spends the lowest first too (%d iron, %d bronze left)" % [_on_ground("nails"), _on_ground("bronze_nails")])
+	items._ground_take(bronze_n, 9, spot, items.BUILD_STOCK_M)
+
+	# A chest: 3 iron and 2 bronze, a take of 3 (as a site gather takes from a container).
+	var chest: int = items.dev_place("chest@%s,%s,0" % [str(spot.x + 9.0), str(spot.z)])
+	items._items[chest]["struct"]["owner"] = str(items._peer_key[1])
+	var box = items._chests[int(items._items[chest]["struct"]["uid"])]
+	box.add(nails_n, 3)
+	box.add(bronze_n, 2)
+	box.remove_fill(bronze_n, 3, [], true)
+	check(box.count_of(bronze_n) == 0 and box.count_of(nails_n) == 2, "a chest: the bronze first, then iron (%d bronze, %d iron left)" % [box.count_of(bronze_n), box.count_of(nails_n)])
+	box.remove(nails_n, box.count_of(nails_n))
+
+	# A blueprint site's gather (hammer repair mode): iron 2 m away, bronze 8 m away, the barrel needs 8 nails: all 6 bronze first, then 2 iron.
+	var barrel: int = int(JSON.parse_string(FileAccess.get_file_as_string("res://data/items/blueprints.json"))["blueprints"]["wooden_barrel"]["number"])
+	var site_spot: Vector3 = spot + Vector3(0.0, 0.0, -40.0)
+	items.report_position(1, site_spot)
+	_give("steel_chisel", 1)   # the Barrel needs a Bronze chisel or better on the hand bar (Dave 18 Nov 2026)
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, barrel, 0, 0, site_spot + Vector3(0.0, 0.0, 3.0))
+	var site: int = _site_at(site_spot + Vector3(0.0, 0.0, 3.0))
+	check(site != 0, "a barrel with nothing to hand is set down as a site")
+
+	if site != 0:
+		items.drop_in_world(nails_n, 6, site_spot + Vector3(2.0, 0.0, 0.0))
+		items.drop_in_world(bronze_n, 6, site_spot + Vector3(8.0, 0.0, 0.0))
+		items.action(1, Net.ACT_REPAIR_STRUCT, site, HeldTool.slot_of(items, "hammer") + 1, 0, Vector3.ZERO)
+		var have: Dictionary = items._site_of(items._items[site])["have"]
+		check(int(have.get("bronze_nails", 0)) == 8 and _on_ground("bronze_nails") == 0 and _on_ground("nails") == 4, "a site gather takes the lowest first from the ground (%d iron, %d bronze left; site %s)" % [_on_ground("nails"), _on_ground("bronze_nails"), str(have)])
+
+
+# A site gather draws on the pack, loose stacks and the builder's own containers within site_gather_m (12 m) that are not kept out (CraftStock.owner_ok),
+# never a stranger's chest; placing takes nothing from any of them (Dave 18 Nov 2026).
 func _check_chest_build(blocks: int, mortar: int, wall_number: int, spot: Vector3) -> void:
 	var inv = items.inventory_of(1)
 	var block_n: int = items.table.number_of("cut_stone_block")
@@ -269,14 +354,16 @@ func _check_chest_build(blocks: int, mortar: int, wall_number: int, spot: Vector
 	stranger_box.add(block_n, blocks)
 	var walls_before: int = _walls()
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, wall_number, 0, 0, spot + Vector3(0.0, 0.0, 3.0))
-	check(_walls() == walls_before and _site_at(spot + Vector3(0.0, 0.0, 3.0)) != 0, "a stranger's chest of blocks does not count: the wall is set down as a site")
+	check(_walls() == walls_before and _site_at(spot + Vector3(0.0, 0.0, 3.0)) != 0, "the wall is set down as a site")
 	check(stranger_box.count_of(block_n) == blocks and own_box.count_of(mortar_n) == mortar, "setting down a site takes nothing from either chest")
-	# Blocks lying 9 m away (past the 4 m ground stock, inside the 12 m craft stock) and the mortar in the builder's own chest: built at once.
+	# Blocks lying 9 m away and the mortar in the builder's own chest (10.6 m): one hammer hit builds the wall; the stranger's blocks (10.6 m) are never used.
 	var spot2: Vector3 = spot + Vector3(0.0, 0.0, -8.0)
 	items.report_position(1, spot2)
 	items.drop_in_world(block_n, blocks, spot2 + Vector3(0.0, 0.0, -9.0))
 	items.action(1, Net.ACT_PLACE_BLUEPRINT, wall_number, 0, 0, spot2 + Vector3(0.0, 0.0, -3.0))
-	check(_walls() == walls_before + 1, "blocks 9 m away and mortar in the builder's own chest build the wall at once")
+	check(_walls() == walls_before and own_box.count_of(mortar_n) == mortar, "placed, the second wall is a site too, and nothing is taken")
+	HeldTool.hit_site(items, _site_at(spot2 + Vector3(0.0, 0.0, -3.0)))
+	check(_walls() == walls_before + 1, "a hammer hit builds it from blocks 9 m away and mortar in the builder's own chest")
 	check(own_box.count_of(mortar_n) == 0 and stranger_box.count_of(block_n) == blocks, "the mortar came out of the builder's chest; the stranger's blocks are untouched")
 	var far_blocks: int = 0
 
@@ -285,4 +372,3 @@ func _check_chest_build(blocks: int, mortar: int, wall_number: int, spot: Vector
 		far_blocks += int(it["count"]) if not it.has("struct") and int(it.get("number", 0)) == block_n and (it["pos"] as Vector3).distance_to(spot2) < 10.0 else 0
 
 	check(far_blocks == 0, "the blocks 9 m away were used")
-

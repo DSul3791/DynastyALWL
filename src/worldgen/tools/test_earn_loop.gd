@@ -34,8 +34,8 @@ func _init() -> void:
 	items.setup(ItemTableScript.load_default(), dir)
 	items.peer_connected_hello(1, "earnloopkey01")
 	items.report_position(1, Vector3(0.0, 10.0, 0.0))
-	items._characters["earnloopkey01"]["luck"] = 0
-	items.set_attribute(1, "charisma", 0)
+	items._characters["earnloopkey01"]["luck"] = 50   # neutral (0 to 100)
+	items.set_attribute(1, "charisma", 50)
 	var npcs := {"npcs": {"hob": {"dormant": false, "placed": true, "pos": Vector3(1.0, 10.0, 0.0)}}}
 	var trade = TradeScript.new()
 	trade.items = items
@@ -49,13 +49,13 @@ func _init() -> void:
 	var stone: int = items.table.number_of("stone")
 	var start: int = items.coins_of(1)
 
-	# One day of picking: stones carried to Hob in 30-stone lots (a lot weighs 30 kg, inside the free carry), 1 copper a lot.
+	# One day of picking: stones carried to Hob in 60-stone lots (0.5 kg stones, Dave 19 Nov 2026: a lot weighs 30 kg, inside the free carry), 1 copper a lot.
 	var lots: int = 48
 
 	for n in lots:
-		items.give_to(1, "stone", 30)
+		items.give_to(1, "stone", 60)
 		var slot: int = items.inventory_of(1).numbers.find(stone)
-		trade.deal(1, "hob", 1, slot, 30)
+		trade.deal(1, "hob", 1, slot, 60)
 
 	var wage: int = items.coins_of(1) - start
 	check(wage >= 40 and wage <= 60, "a long day of picking pays a poor wage, about 48 copper (%d)" % wage)

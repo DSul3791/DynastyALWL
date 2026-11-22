@@ -11,6 +11,7 @@ const FOG_CUT := 0.5          # dense fog halves the reach (Jamie: about -50 %)
 const SNOW_FALL_CUT := 0.2    # heavy falling snow (about -20 %)
 const SNOW_LYING_GAIN := 0.6  # fresh lying snow throws the light back (1.5 to 2 times)
 const HALO_ALPHA := 0.35
+const FIRE_FOG_SHARE := 1.0  # the fire light's share in the volumetric fog (Dave's fog instruction: softened halos, shafts of light)
 const HALO_SNOW := 0.6        # heavy snow's share of the halo, for the sphere of lit flakes
 
 static var _halo_mesh: QuadMesh
@@ -48,6 +49,7 @@ static func register(light: OmniLight3D, halo_scale: float = 1.0) -> void:
 		return
 
 	light.set_meta("base_range", light.omni_range)
+	light.light_volumetric_fog_energy = FIRE_FOG_SHARE   # a soft halo in the volumetric fog (High and Ultra, fog_volume.gd)
 	light.add_to_group(GROUP)
 	_lights.append(light)
 	var halo: MeshInstance3D = MeshInstance3D.new()
@@ -94,7 +96,7 @@ static func _shared_material() -> StandardMaterial3D:
 	return _halo_material
 
 
-# Once a second from weather_look.gd: veil = mist x mist_inside, snow = eased falling snow (0..1), ground_snow = the ground's
+# Once a second from weather_look.gd: veil = the fog at the eye (mist_inside: strength x depth in the valley or sea fog), snow = eased falling snow (0..1), ground_snow = the ground's
 # snow memory, daylight 0 night .. 1 day.
 static func update(tree: SceneTree, veil: float, snow: float, ground_snow: float, daylight: float) -> void:
 	if tree == null:

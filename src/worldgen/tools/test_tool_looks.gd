@@ -1,9 +1,11 @@
 extends SceneTree
-# Headless check of the tool looks brought to the pickaxe standard (Dave 2026-10-25), one group per round. Spades: a long straight haft along x with the blade at +x, wide in z
+# Headless check of the tool looks brought to the pickaxe standard (Dave 2026-10-25), one group per round. Shovels: a long straight haft along x with the blade at +x, wide in z
 # and thin in y, metal tiers (iron, steel) on the metal surface, wood and stone tiers on one plain surface, the blade narrowing to a point.
 
 const BasicLook := preload("res://src/client/basic_look.gd")
 const HeldItem := preload("res://src/client/held_item.gd")
+
+const HAND_HALF_M := 0.03   # from the middle of a closed hand to its front edge along the handle
 
 var failures: int = 0
 
@@ -17,15 +19,15 @@ func _check(ok: bool, what: String) -> void:
 
 
 func _init() -> void:
-	# Spades at real size for the large tier (size 1.0): about 85 cm of haft plus the grip, a 28 by 19 cm blade, scaled down for the medium (0.85) and small (0.7) tiers.
+	# Shovels at real size for the large tier (size 1.0): about 85 cm of haft plus the grip, a 28 by 19 cm blade, scaled down for the medium (0.85) and small (0.7) tiers.
 	for tier in ["wooden", "stone", "iron", "steel"]:
 		for size in ["", "_medium", "_large"]:
-			var id: String = tier + "_spade" + size
+			var id: String = tier + "_shovel" + size
 			var mesh: Mesh = BasicLook.mesh_for(id)
 			var metal: bool = tier in ["iron", "steel"]
 			var box: AABB = mesh.get_aabb()
 			var scale: float = float(BasicLook.entry(id).get("size", 1.0))
-			_check(absf(scale - {"": 0.7, "_medium": 0.85, "_large": 1.0}[size]) < 0.001, id + ": size %.2f scales the real-size large spade" % scale)
+			_check(absf(scale - {"": 0.7, "_medium": 0.85, "_large": 1.0}[size]) < 0.001, id + ": size %.2f scales the real-size large shovel" % scale)
 			_check(mesh.get_surface_count() == (2 if metal else 1), id + ": surfaces %d (metal tiers have the metal head surface)" % mesh.get_surface_count())
 			_check(box.size.x > 0.68 * scale and box.size.x < 0.8 * scale, id + ": about 0.74 m overall at size 1, %.2f m (size %.2f)" % [box.size.x / scale, scale])
 			_check(_y_extent(mesh, 0.52 * scale, 1.0, 1.0) < 0.045 * scale, id + ": the dished blade is shallow (y %.3f)" % (_y_extent(mesh, 0.52 * scale, 1.0, 1.0) / scale))
@@ -41,8 +43,8 @@ func _init() -> void:
 
 			_check(tris <= 1200, id + ": %d triangles (budget 1200)" % tris)
 
-	# Metal colours: no blue tint (blue not above red by more than 15 percent), iron darker than steel, spade metal roughness 0.55 while the pickaxe stays 0.4.
-	for id in ["iron_spade_large", "steel_spade_large"]:
+	# Metal colours: no blue tint (blue not above red by more than 15 percent), iron darker than steel, shovel metal roughness 0.55 while the pickaxe stays 0.4.
+	for id in ["iron_shovel_large", "steel_shovel_large"]:
 		var mesh: Mesh = BasicLook.mesh_for(id)
 		var colours: PackedColorArray = mesh.surface_get_arrays(1)[Mesh.ARRAY_COLOR]
 		var mean: Color = Color(0, 0, 0, 0)
@@ -55,10 +57,10 @@ func _init() -> void:
 		var want_rough: float = 0.3 if id.begins_with("steel") else 0.65
 		var want_metal: float = 0.6 if id.begins_with("steel") else 0.3
 		var mat: StandardMaterial3D = mesh.surface_get_material(1) as StandardMaterial3D
-		_check(absf(mat.roughness - want_rough) < 0.001 and absf(mat.metallic - want_metal) < 0.001, id + ": spade metal roughness %.2f metallic %.2f (steel a little shinier than iron)" % [mat.roughness, mat.metallic])
+		_check(absf(mat.roughness - want_rough) < 0.001 and absf(mat.metallic - want_metal) < 0.001, id + ": shovel metal roughness %.2f metallic %.2f (steel a little shinier than iron)" % [mat.roughness, mat.metallic])
 
 	_check(absf((BasicLook.mesh_for("iron_pickaxe").surface_get_material(1) as StandardMaterial3D).roughness - 0.4) < 0.001, "the locked pickaxe keeps metal roughness 0.4")
-	_check(BasicLook.mesh_for("iron_spade_large").get_surface_count() == 2 and BasicLook.mesh_for("iron_spade_large").surface_get_material(1) != BasicLook.mesh_for("iron_pickaxe").surface_get_material(1), "spade and pickaxe use separate shared metal materials")
+	_check(BasicLook.mesh_for("iron_shovel_large").get_surface_count() == 2 and BasicLook.mesh_for("iron_shovel_large").surface_get_material(1) != BasicLook.mesh_for("iron_pickaxe").surface_get_material(1), "shovel and pickaxe use separate shared metal materials")
 
 	# Carry in third person: a hoe blade-down (haft 45 to 60 degrees below horizontal), a saw by the handle with the blade down and back about 30 degrees.
 	var hoe_dir: Vector3 = Basis(Vector3.RIGHT, deg_to_rad(HeldItem.THIRD_HOE_PITCH_DEG)) * HeldItem.HELD_LOOK_TURN["hoe"] * Vector3(1.0, 0.0, 0.0)
@@ -68,15 +70,15 @@ func _init() -> void:
 	_check(hoe_below >= 45.0 and hoe_below <= 60.0, "the carried hoe's haft is %.0f degrees below horizontal (45 to 60)" % hoe_below)
 	_check(saw_dir.z < -0.8 and saw_dir.y < -0.3, "the carried saw's blade points down and back (%.2f, %.2f)" % [saw_dir.y, saw_dir.z])
 
-	# Carry: a spade carried in third person points its blade down, at least 20 degrees from vertical but not past it (blade end below the hand).
-	var carry: Basis = Basis(Vector3.RIGHT, deg_to_rad(HeldItem.THIRD_SPADE_PITCH_DEG)) * HeldItem.HELD_LOOK_TURN["spade"]
+	# Carry: a shovel carried in third person points its blade down, at least 20 degrees from vertical but not past it (blade end below the hand).
+	var carry: Basis = Basis(Vector3.RIGHT, deg_to_rad(HeldItem.THIRD_SHOVEL_PITCH_DEG)) * HeldItem.HELD_LOOK_TURN["shovel"]
 	var blade_dir: Vector3 = carry * Vector3(1.0, 0.0, 0.0)
 	var from_vertical: float = rad_to_deg(acos(clampf(-blade_dir.z, -1.0, 1.0)))
-	print("spade carried: blade direction ", blade_dir, " is ", from_vertical, " degrees from straight down")
-	_check(blade_dir.z < -0.5 and from_vertical >= 20.0, "the carried spade points its blade down, %.0f degrees from vertical" % from_vertical)
+	print("shovel carried: blade direction ", blade_dir, " is ", from_vertical, " degrees from straight down")
+	_check(blade_dir.z < -0.5 and from_vertical >= 20.0, "the carried shovel points its blade down, %.0f degrees from vertical" % from_vertical)
 
 	# Axes and hammers: a straight haft along x with the head at its +x end, head wider in z than the haft is thick, all on one plain surface (no metal heads yet).
-	for id in ["stone_axe", "stone_hammer", "wooden_hammer"]:
+	for id in ["stone_axe", "stone_hammer"]:
 		var mesh: Mesh = BasicLook.mesh_for(id)
 		var box: AABB = mesh.get_aabb()
 		var scale: float = float(BasicLook.entry(id).get("size", 1.0))
@@ -85,7 +87,7 @@ func _init() -> void:
 		_check(box.size.z > 0.1 * scale, id + ": the head is wide across the haft (z %.3f)" % box.size.z)
 		_check(_width_near(mesh, 0.22 * scale, 0.1 * scale) > 0.1 * scale, id + ": the head sits at the haft's end (width %.3f near x 0.22)" % _width_near(mesh, 0.22 * scale, 0.1 * scale))
 	# Hoes (size 1.0): a 1.25 m haft along x, the blade hanging toward +z, thin in x, wide across y, widening toward the edge; metal tiers on the metal surface.
-	for tier in ["wooden", "stone", "iron", "steel"]:
+	for tier in ["wooden", "iron", "steel"]:   # the Stone - Hoe retired 18 Nov 2026
 		var id: String = tier + "_hoe"
 		var mesh: Mesh = BasicLook.mesh_for(id)
 		var box: AABB = mesh.get_aabb()
@@ -99,20 +101,49 @@ func _init() -> void:
 		_check(box.size.y > 0.15 and box.size.y < 0.19 and box.end.z > 0.15, id + ": the blade is wide across y (%.3f) and hangs toward +z (to %.3f)" % [box.size.y, box.end.z])
 		_check(tris <= 1200, id + ": %d triangles" % tris)
 
-	# Hand saw: about 60 cm overall, a thin blade (z extent 11 cm at the heel), narrower at the toe, on the metal surface.
-	var saw: Mesh = BasicLook.mesh_for("hand_saw")
-	_check(saw.get_surface_count() == 2, "hand_saw: wooden grip plus the metal blade surface")
-	_check(saw.get_aabb().size.x > 0.55 and saw.get_aabb().size.x < 0.66, "hand_saw: about 60 cm overall (%.2f)" % saw.get_aabb().size.x)
-	_check(_width_near(saw, -0.1, 0.02) > _width_near(saw, 0.25, 0.02) + 0.02, "hand_saw: the blade narrows toward the toe (%.3f to %.3f)" % [_width_near(saw, -0.1, 0.02), _width_near(saw, 0.25, 0.02)])
-	_check(_width_near(saw, -0.1, 0.015) > 0.12 and _width_near(saw, -0.1, 0.015) < 0.16, "hand_saw: about 14 cm across at the heel (%.3f)" % _width_near(saw, -0.1, 0.015))
-	_check(_width_near(saw, 0.32, 0.012) < 0.06, "hand_saw: about 5 cm or less at the rounded toe (%.3f)" % _width_near(saw, 0.32, 0.012))
-	var saw_tris: int = 0
+	# The procedural hand saw (Steel - Saw, and the stand-in while a model is not imported): about 60 cm overall, a thin blade (z extent 11 cm at the heel), narrower at the toe, on the metal surface.
+	var saw: Mesh = BasicLook.mesh("saw", Color.html("#8a8a90"), 1.0, [])
+	_check(saw.get_surface_count() == 2, "procedural saw: wooden grip plus the metal blade surface")
+	_check(saw.get_aabb().size.x > 0.55 and saw.get_aabb().size.x < 0.66, "procedural saw: about 60 cm overall (%.2f)" % saw.get_aabb().size.x)
+	_check(_width_near(saw, -0.1, 0.02) > _width_near(saw, 0.25, 0.02) + 0.02, "procedural saw: the blade narrows toward the toe (%.3f to %.3f)" % [_width_near(saw, -0.1, 0.02), _width_near(saw, 0.25, 0.02)])
+	_check(_width_near(saw, -0.1, 0.015) > 0.12 and _width_near(saw, -0.1, 0.015) < 0.16, "procedural saw: about 14 cm across at the heel (%.3f)" % _width_near(saw, -0.1, 0.015))
+	_check(_width_near(saw, 0.32, 0.012) < 0.06, "procedural saw: about 5 cm or less at the rounded toe (%.3f)" % _width_near(saw, 0.32, 0.012))
+	_check(_tris(saw) <= 1200, "procedural saw: %d triangles" % _tris(saw))
+	_check(_y_extent(saw, 0.0, 0.02, 0.03) < 0.01, "procedural saw: a thin plate (%.4f)" % _y_extent(saw, 0.0, 0.02, 0.03))
+	var saw_hand_x: float = -HeldItem.look_grip_y(BasicLook.mesh_for("steel_saw"), BasicLook.entry("steel_saw"), 1.0) * HeldItem.third_choke("saw")
+	_check(saw_hand_x < -0.17, "procedural saw: the third-person hand at x %.3f is behind the blade's heel (-0.17), in the grip" % saw_hand_x)
 
-	for surface in saw.get_surface_count():
-		saw_tris += int((saw.surface_get_arrays(surface)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3.0)
+	# Dave's handsaw meshes (assets/tools/handsaws, 15 Nov 2026) for the Copper, Bronze and Iron saws: drawn from the file with its own textured material, on the
+	# procedural saw's axes (handle at -x, blade toward +x, flat across y), copper the shortest, bronze a little longer, iron the longest.
+	var lengths: Array = []
 
-	_check(saw_tris <= 1200, "hand_saw: %d triangles" % saw_tris)
-	_check(_y_extent(saw, 0.0, 0.02, 0.03) < 0.01, "hand_saw: a thin plate (%.4f)" % _y_extent(saw, 0.0, 0.02, 0.03))
+	for id in ["copper_saw", "bronze_saw", "hand_saw"]:
+		var def: Dictionary = BasicLook.entry(id)
+		var drawn: Mesh = BasicLook.mesh_for(id)
+		var box: AABB = drawn.get_aabb()
+		var material: StandardMaterial3D = drawn.surface_get_material(0) as StandardMaterial3D
+		lengths.append(box.size.x)
+		_check(drawn.get_surface_count() == 1 and material != null and material.albedo_texture != null and material.normal_texture != null, id + ": drawn from %s with its own colour and normal textures (imported?)" % def.get("model", "?"))
+		_check(absf(box.size.x - float(def.get("model_length_m", 0.0))) < 0.005, id + ": %.3f m overall (looks.json %.2f)" % [box.size.x, float(def.get("model_length_m", 0.0))])
+		var blade_x: float = box.position.x + 0.8 * box.size.x
+		_check(_y_extent(drawn, blade_x, 0.04 * box.size.x, 1.0) < 0.6 * _width_near(drawn, blade_x, 0.04 * box.size.x), id + ": the blade lies flat, thin across y (%.3f) and deep across z (%.3f)" % [_y_extent(drawn, blade_x, 0.04 * box.size.x, 1.0), _width_near(drawn, blade_x, 0.04 * box.size.x)])
+		_check(absf(box.get_center().x) < 0.002 and absf(box.get_center().y) < 0.002 and absf(box.get_center().z) < 0.002, id + ": centred on its origin")
+		var x0: float = box.position.x
+		_check(_y_extent(drawn, x0 + 0.06 * box.size.x, 0.04 * box.size.x, 1.0) > 1.5 * _y_extent(drawn, x0 + 0.8 * box.size.x, 0.04 * box.size.x, 1.0), id + ": the thick handle is at -x and the thin blade toward +x (%.3f vs %.3f)" % [_y_extent(drawn, x0 + 0.06 * box.size.x, 0.04 * box.size.x, 1.0), _y_extent(drawn, x0 + 0.8 * box.size.x, 0.04 * box.size.x, 1.0)])
+		var edge: Vector2i = _blade_edges(drawn, box)
+		_check(edge.x > int(1.5 * float(edge.y)), id + ": the toothed edge is on +z, down when held (%d vertices on the +z edge, %d on the -z spine)" % [edge.x, edge.y])
+		_check(_tris(drawn) <= 5000, id + ": %d triangles (Dave's 5000 cap)" % _tris(drawn))
+		_check(BasicLook.mesh_for(id) == drawn, id + ": built once and shared")
+		# The hand closes on the handle, not the blade, in both views (Dave 17 Nov 2026: "it is stabbed right through his hand"): the grip point in third person
+		# and first person, and the front of the fist, lie on the thick handle end.
+		var held_x: float = -HeldItem.look_grip_y(drawn, def, 1.0)
+		var third_x: float = held_x * HeldItem.third_choke("saw")
+		var blade_t: float = _y_extent(drawn, x0 + 0.8 * box.size.x, 0.04 * box.size.x, 1.0)
+		for hand_x in [held_x, third_x]:
+			for at in [hand_x, hand_x + HAND_HALF_M]:   # the hand's middle and its front edge, toward the blade
+				_check(_y_extent(drawn, at, 0.01, 1.0) > 1.5 * blade_t, id + ": the hand at x %.3f is on the handle at %.3f (thickness %.3f there, blade %.3f)" % [hand_x, at, _y_extent(drawn, at, 0.01, 1.0), blade_t])
+
+	_check(lengths[0] < lengths[1] and lengths[1] < lengths[2], "copper saw shortest, bronze longer, iron longest (%.2f, %.2f, %.2f)" % lengths)
 
 	# Stone knife: about 23 cm overall at size 1, blade about as long as the handle, a leaf blade (widest in the middle, narrow at the tip), matt stone (not bright steel).
 	var knife: Mesh = BasicLook.mesh_for("stone_knife")
@@ -127,7 +158,7 @@ func _init() -> void:
 		brightest = maxf(brightest, v.get_luminance())
 
 	_check(brightest < 0.4, "stone_knife: matt stone, no pale steel tones (brightest %.2f)" % brightest)
-	_check(str(BasicLook.entry("wooden_hammer").get("shape", "")) == "hammer", "wooden_hammer is drawn as a mallet, not an axe")
+	_check(str(BasicLook.entry("stone_hammer").get("shape", "")) == "hammer", "stone_hammer is drawn as a hammer, not an axe")
 
 	print("tool looks: %d failures" % failures)
 
@@ -147,7 +178,7 @@ func _init() -> void:
 	_check(BasicLook.mesh_for("wooden_pin").get_aabb().size.x < 0.15, "wooden pin: a short peg")
 
 
-	for id in ["wooden_spade", "stone_spade_medium", "iron_spade_large"]:                                              # the blade plate is present at every size (not collapsed or missing)
+	for id in ["wooden_shovel", "stone_shovel_medium", "iron_shovel_large"]:                                              # the blade plate is present at every size (not collapsed or missing)
 		var plate_mesh: Mesh = BasicLook.mesh_for(id)
 		var plate_scale: float = float(BasicLook.entry(id).get("size", 1.0))
 		var plate_tris: int = 0
@@ -207,6 +238,50 @@ func _y_extent(mesh: Mesh, from_x: float, window: float, z_limit: float) -> floa
 				high = maxf(high, v.y)
 
 	return high - low
+
+
+# Along the blade (the front 55 percent), in 20 slices: x = vertices within 8 percent of the blade depth of the slice's +z edge, y = of its -z edge. The teeth
+# make the toothed edge much denser than the plain spine.
+func _blade_edges(mesh: Mesh, box: AABB) -> Vector2i:
+	var verts: PackedVector3Array = mesh.surface_get_arrays(0)[Mesh.ARRAY_VERTEX]
+	var from_x: float = box.position.x + 0.4 * box.size.x
+	var step: float = 0.55 * box.size.x / 20.0
+	var depth: float = box.size.z
+	var slices: Array = []
+	slices.resize(20)
+
+	for k in 20:
+		slices[k] = []
+
+	for v in verts:
+		var k: int = int(floorf((v.x - from_x) / step))
+
+		if k >= 0 and k < 20:
+			slices[k].append(v.z)
+
+	var counts: Vector2i = Vector2i.ZERO
+
+	for slice in slices:
+		if slice.is_empty():
+			continue
+
+		var top: float = slice.max()
+		var bottom: float = slice.min()
+
+		for z in slice:
+			counts.x += 1 if z > top - 0.08 * depth else 0
+			counts.y += 1 if z < bottom + 0.08 * depth else 0
+
+	return counts
+
+
+func _tris(mesh: Mesh) -> int:
+	var count: int = 0
+
+	for surface in mesh.get_surface_count():
+		count += int((mesh.surface_get_arrays(surface)[Mesh.ARRAY_INDEX] as PackedInt32Array).size() / 3.0)
+
+	return count
 
 
 # The z extent of the vertices whose x is within `within` of `at`.

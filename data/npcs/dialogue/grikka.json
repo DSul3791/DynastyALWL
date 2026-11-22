@@ -1,0 +1,20 @@
+{
+	"npc": "grikka",
+	"note": "Grikka Ragtooth of the Ragtooth goblins (data/creatures/goblin_tribes.json, Dave 20 Nov 2026: \"this is Grikka Ragtooth please add her to the game\"; the Ragtooth are \"friendly goblins but nervous\"). Kin to Skritch (PROVISIONAL, from her name). Stands by the fire and sends a player to Skritch, the trader. See hob.json for the format. PROVISIONAL lines (GOBLIN-6, docs/design/GOBLIN_CAMP.md).",
+	"barks": {
+		"greeting": ["Hm. Big-folk. Grikka sees you. Stay there.", "You talk soft? Then Grikka talks.", "Skritch is Grikka's kin. Trade with Skritch."],
+		"farewell": ["Go slow, big-folk.", "Hm. Go.", "Go quiet."],
+		"idle": ["Fire needs wood. Snag is lazy.", "Sniff. River is high today."],
+		"complaint": ["Not now.", "Belly hurts.", "Head pounds.", "Too tired. Go.", "No talk today.", "Bad mushroom. Ugh.", "Tooth hurts.", "Go see Skritch."],
+		"cooldown": ["Wait.", "Slow."],
+		"info": ["Skritch trades. Grikka watches the fire.", "The cave is Ragtooth cave."]
+	},
+	"roots": [{"node": "post"}],
+	"nodes": {
+		"post": {
+			"text": "$greeting",
+			"choices": [{"text": "Goodbye.", "goto": "bye"}]
+		},
+		"bye": {"text": "$farewell", "end": true}
+	}
+}

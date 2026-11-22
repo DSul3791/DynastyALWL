@@ -7,7 +7,7 @@ extends Node
 #   sound.itemfx.play("item_pickup")   or any name below, directly
 #
 # While a craft runs (the panel's progress) the work sound of its recipe type plays from the start,
-# `craft_<type>` (twine, knap, bind, carve, stack, pound, wrap), and stops when it finishes, then craft_done.
+# `craft_<type>` (twine, knap, bind, carve, stack, pound, wrap), clip after clip until the queue is done (or the craft waits), then craft_done.
 # The type comes from the recipe's own "sound" field when it has one, else from its id (WORK_TYPES, then
 # a name prefix), else "knap". A new recipe only needs a "sound" field to get the right work sound.
 # Cues: item_pickup (stacks grew), item_drop (stacks shrank), inv_open, inv_close, item_swap (slots
@@ -17,8 +17,8 @@ extends Node
 # short and quiet; the world's sounds keep running while a panel is open.
 # Cooking and eating: a roast that appears in the bag sizzles at the nearest fire (sound.fire.cook); wood
 # used up within FUEL_WINDOW_MSEC of fuel_pressed() (the V key at a fire) plays sound.fire.fuel there.
-#   sound.itemfx.eat("crunch")    eating: "crunch" (roast, nuts, roots), "soft" (berries, greens), "drink"
-# Eating has no action yet: the Items thread calls eat() when it adds one (EAT_KINDS maps item ids).
+#   sound.itemfx.eat("drink")     a mouthful of water; "poultice_*" / "bandage_*" when a medicine is applied
+# Using food or drink from the pack is silent; eat() plays the water gulp and the medicine sounds (ItemSounds.EAT).
 # Sounds: generated in assets/audio/items/ (make_items.py); recordings in assets/audio/recorded/items/ win.
 
 const SoundStage := preload("res://src/client/sound_stage.gd")
@@ -32,7 +32,7 @@ const NAMES := {"item_pickup_wood": -17.0, "item_pickup_stone": -17.0, "item_pic
 const BasicLook := preload("res://src/client/basic_look.gd")
 # Stage-one pick-up and put-down sounds by what the item is made of (make_items.py class_sound): the shape in data/items/looks.json says which.
 const SHAPE_CLASS := {
-	"planks": "wood", "beams": "wood", "bark": "wood", "shaft": "wood", "axe": "wood", "pick": "wood", "spade": "wood", "hoe": "wood", "knife": "wood",
+	"planks": "wood", "board": "wood", "beams": "wood", "bark": "wood", "shaft": "wood", "axe": "wood", "pick": "wood", "shovel": "wood", "hoe": "wood", "knife": "wood",
 	"torch": "wood", "rod": "wood", "kit": "wood", "bucket": "wood", "bundle": "cloth", "split_wood": "wood", "sticks": "wood", "sack": "cloth", "hide": "cloth", "coil": "cloth",
 	"skin": "cloth", "feather": "cloth", "cloth": "cloth", "hand_net": "cloth", "chunk": "stone", "block": "stone", "brick": "stone", "ingot": "metal", "coin": "metal", "needle": "metal",
 	"pile": "soft", "leaves": "soft", "fish": "food", "meat": "food", "loaf": "food", "fruit": "food", "bowl": "food", "skewer": "food",
@@ -41,12 +41,9 @@ const SHAPE_CLASS := {
 const MIN_GAP_MSEC := 60
 const WORK_DB := -18.0
 const WORK_TYPES := {"twine": "twine", "stone_axe": "knap", "stone_knife": "knap", "wooden_spear": "carve", "spear": "bind", "torch": "bind", "campfire": "stack"}
-const EAT := {"crunch": ["eat_crunch", -15.0], "soft": ["eat_soft", -17.0], "drink": ["drink_gulp", -16.0],
-	"poultice": ["heal_poultice", -16.0], "bandage": ["heal_bandage", -16.0]}
-const EAT_KINDS := {"roast_forage": "crunch", "tree_roots": "crunch", "seed_bundle": "crunch"}   # by item id; other food is soft
-# An item id ending in one of these is crunchy (nuts, roots, hard fruit); "sap" is drunk; poultices and bandages heal.
-const CRUNCHY := ["nuts", "roots", "bulbs", "apples", "pears", "acorns", "chestnuts", "walnuts", "hazelnuts", "beechnuts", "coconuts", "dates", "roast_forage"]
-const DRINKS := ["sap", "water", "juice"]
+# Eating and drinking food make no sound (Dave 17 Nov 2026: "doesnt need sound for eating remove the sound"); a mouthful of water
+# (container or water's edge) gulps, and a poultice or bandage sounds as it is applied.
+const EAT := {"drink": ["drink_gulp", -16.0], "poultice": ["heal_poultice", -16.0], "bandage": ["heal_bandage", -16.0]}
 const COOKING_DIR := "res://assets/audio/cooking/"
 const COOKING_RECORDED_DIR := "res://assets/audio/recorded/cooking/"
 const FUEL_WINDOW_MSEC := 1500
@@ -66,6 +63,7 @@ var _total: int = -1
 var _numbers: PackedInt32Array = PackedInt32Array()
 var _was_crafting: int = 0
 var _work: AudioStreamPlayer
+var _work_recipe: int = 0   # the recipe the work sound is playing for (0 none)
 var work_played: int = 0
 var eat_played: int = 0
 var _mouth: AudioStreamPlayer
@@ -178,10 +176,21 @@ func watch(items) -> void:
 
 	if _was_crafting == 0 and crafting != 0:
 		play("craft_start")
-		_start_work(items, crafting)
+
+	# The work sound lasts as long as the craft runs, window open or shut (Dave 12 Nov 2026, PLAYTEST-001 TEST-012): each clip is about 4.5 s,
+	# so another starts when one ends. A craft that waits (away from its station, no room for the product) stops it; the next queue update
+	# from the server starts it again.
+	if work_running(crafting, Time.get_ticks_msec(), int(items.get("_craft_head_end_msec"))):
+		if crafting != _work_recipe or not _work.playing:
+			_start_work(items, crafting, crafting != _work_recipe)
+			_work_recipe = crafting
+	elif _work.playing:
+		_work.stop()
+
+	if crafting == 0:
+		_work_recipe = 0
 
 	if _was_crafting != 0 and crafting == 0:
-		_work.stop()
 		play("craft_done")
 
 	_was_crafting = crafting
@@ -217,9 +226,8 @@ func _watch_wear(items, inv) -> void:
 func _watch_block(items, counts: Dictionary) -> void:
 	var log_n: int = items.table.number_of("log")
 	var wood_n: int = items.table.number_of("firewood")
-	var soft_n: int = items.table.number_of("firewood_soft")
 
-	if int(counts.get(log_n, 0)) >= int(_counts_by_number.get(log_n, 0)) or (int(counts.get(wood_n, 0)) <= int(_counts_by_number.get(wood_n, 0)) and int(counts.get(soft_n, 0)) <= int(_counts_by_number.get(soft_n, 0))):
+	if int(counts.get(log_n, 0)) >= int(_counts_by_number.get(log_n, 0)) or int(counts.get(wood_n, 0)) <= int(_counts_by_number.get(wood_n, 0)):
 		return
 
 	var here: Vector3 = items._player_position.call()
@@ -242,7 +250,7 @@ func fuel_pressed() -> void:
 	_fuel_msec = Time.get_ticks_msec()
 
 
-# The eating kind of an item id: "poultice", "bandage", "drink", "crunch" or "soft".
+# The sound kind of an item used from the pack: "poultice", "bandage", or "" (food and drink are silent).
 static func eat_kind(item_id: String) -> String:
 	if item_id.begins_with("poultice"):
 		return "poultice"
@@ -250,24 +258,17 @@ static func eat_kind(item_id: String) -> String:
 	if item_id.begins_with("bandage"):
 		return "bandage"
 
-	if EAT_KINDS.has(item_id):
-		return str(EAT_KINDS[item_id])
-
-	for word in DRINKS:
-		if item_id.ends_with(word):
-			return "drink"
-
-	for word in CRUNCHY:
-		if item_id.ends_with(word):
-			return "crunch"
-
-	return "soft"
+	return ""
 
 
-# Eating or applying: "crunch", "soft", "drink", "poultice", "bandage", or an item id (the Items thread calls
-# this from `eat_event` when the server confirms the food or medicine took effect).
+# A mouthful of water or a medicine applied: "drink", "poultice", "bandage", or an item id (`eat_event`, when the server confirms it
+# took effect). Food and drink items are silent: false.
 func eat(kind: String) -> bool:
-	var entry: Array = EAT.get(kind, EAT.get(eat_kind(kind)))
+	var entry: Array = EAT.get(kind, EAT.get(eat_kind(kind), []))
+
+	if entry.is_empty():
+		return false
+
 	var list: Array = _variants(str(entry[0]))
 
 	if list.is_empty():
@@ -337,12 +338,21 @@ func work_type(recipe: Dictionary) -> String:
 	return "knap"
 
 
-func _start_work(items, number: int) -> void:
+const WORK_GRACE_MSEC := 1500   # how long past the head craft's expected end the work sound keeps on before the craft counts as waiting
+
+
+# Does a craft run now: one at the head of the queue and not past its expected end (the server's time left) by more than WORK_GRACE_MSEC.
+static func work_running(crafting: int, now_msec: int, head_end_msec: int) -> bool:
+	return crafting != 0 and now_msec <= head_end_msec + WORK_GRACE_MSEC
+
+
+# `fresh`: a new recipe began (the lashing clip plays once for it, not with every repeat of the work sound).
+func _start_work(items, number: int, fresh: bool = true) -> void:
 	var kind: String = work_type(items.recipes.recipe(number))
 
 	var stage = get_parent()
 
-	if kind == "bind" and stage != null and stage.get("slots") != null and get_viewport().get_camera_3d() != null:
+	if fresh and kind == "bind" and stage != null and stage.get("slots") != null and get_viewport().get_camera_3d() != null:
 		stage.slots.play("twine_lash", get_viewport().get_camera_3d().global_position)   # lashing with twine (R1 clip)
 
 	var list: Array = _variants("craft_" + kind)
@@ -392,7 +402,7 @@ func _variants(sound_name: String) -> Array:
 	if _streams.has(sound_name):
 		return _streams[sound_name]
 
-	var crafting: bool = sound_name.begins_with("craft_") and sound_name != "craft_done"
+	var crafting: bool = sound_name.begins_with("craft_") and sound_name != "craft_done" and sound_name != "craft_start"   # the two cues live with the item sounds
 	var eating: bool = sound_name.begins_with("eat_") or sound_name == "drink_gulp" or sound_name.begins_with("heal_")
 	var list: Array = SoundStage._find(CRAFT_RECORDED_DIR if crafting else (COOKING_RECORDED_DIR if eating else RECORDED_DIR), sound_name)
 

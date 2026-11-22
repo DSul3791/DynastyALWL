@@ -42,6 +42,7 @@ signal lightning(at: Vector3, distance_m: float)
 
 const FADE_PER_SEC := 0.15              # about 7 s from none to full
 const ThunderScript := preload("res://src/shared/thunder.gd")
+const RainAudio := preload("res://src/shared/rain_audio.gd")
 const THUNDER_HEARD_ALL_M := 3000.0     # every shared strike this near is played (the server's birds flush within 1 km of a player)
 const THUNDER_FAR_KEEP := 0.015         # the share of shared strikes past that played as far rolls (about one a minute at storm 1)
 const THUNDER_CATCH_UP_S := 120.0       # game seconds; a longer gap (login, a clock jump) starts the schedule fresh, no backlog of claps
@@ -75,9 +76,7 @@ const KINDS := {
 }
 const LOOP_DB := {"rain_light": -14.0, "rain_heavy": -13.0, "rain_leaves": -15.0, "rain_woodroof_light": -14.0, "rain_woodroof_heavy": -13.0, "rain_water": -17.0, "wind_storm": -18.0,
 	"rain_stone": -14.0, "rain_mud": -15.0, "rain_litter": -16.0, "rain_snow": -23.0}
-# Rain on the ground under the player (open sky only; under a canopy the leaves take it): how much of the plain
-# open-ground bed (rain_light / rain_heavy) stays when that ground has its own loop.
-const GROUND_BED_KEEP := {"stone": 0.35, "mud": 0.4, "litter": 0.5, "snow": 0.2}
+# Rain on the ground under the player (open sky only; under a canopy the leaves take it): which loops play and how loud is RainAudio.layers.
 const GROUND_EASE_SEC := 1.5
 const THUNDER_DB := -4.0
 # The ground remembers the weather (owner's job 17): it soaks in rain and dries slowly, snow settles
@@ -103,6 +102,8 @@ var forced: bool = false                # --weather=KIND on the command line: th
 var kind: String = "clear"
 var intensity: float = 1.0
 var rain: float = 0.0                   # smoothed levels the sound stage and HUD read
+var rain_heard: float = 0.0             # the same level for the rain layers and drops only: held at 0 until the world's rain is RainAudio.AUDIBLE_FROM (BUG-004)
+var rain_audible: bool = true           # the world's rain has passed AUDIBLE_FROM (apply_state)
 var wind: float = 0.0
 var hush: float = 0.0
 var calls: float = 1.0
@@ -166,6 +167,7 @@ func setup(stage, ambient) -> void:
 			forced = true
 			set_weather(arg.get_slice("=", 1), 1.0)
 			rain = float(KINDS[kind]["rain"]) * intensity
+			rain_heard = rain
 			wind = float(KINDS[kind]["wind"]) * intensity
 			calls = float(KINDS[kind]["calls"])
 			ground_wet = 1.0 if float(KINDS[kind]["rain"]) > 0.0 else 0.0
@@ -202,6 +204,7 @@ func set_weather(new_kind: String, new_intensity: float = 1.0) -> void:
 
 	kind = new_kind
 	intensity = clampf(new_intensity, 0.0, 1.0)
+	rain_audible = true   # a kind set by hand (the sound test, --weather=) is heard as it is; apply_state sets it from the world's rain after this
 
 
 # Plays the world's weather state (src/shared/weather.gd: rain, snow, storm, wind, each 0 to 1).
@@ -226,6 +229,8 @@ func apply_state(state: Dictionary) -> void:
 		set_weather("drizzle", clampf(rain_level * 2.5, 0.3, 1.0))
 	else:
 		set_weather("clear", 1.0)
+
+	rain_audible = RainAudio.state_audible(rain_level)   # the kind (birds and frogs stop for any rain) is as it was; the rain layers and drops wait for the sky to show it (BUG-004)
 
 
 # Looping weather beds that are audible: [[name, volume_db]] (for the "what is that sound" list).
@@ -261,6 +266,7 @@ func update(frame_delta: float, body: CharacterBody3D, underwater: bool) -> void
 	var step: float = FADE_PER_SEC * delta
 	world_wind = move_toward(world_wind, maxf(_wind_target, wind) if forced else _wind_target, 0.1 * delta)
 	rain = move_toward(rain, float(target["rain"]) * intensity, step)
+	rain_heard = move_toward(rain_heard, float(target["rain"]) * intensity if rain_audible else 0.0, step)
 	wind = move_toward(wind, float(target["wind"]) * intensity, step)
 	hush = move_toward(hush, float(target["hush"]) * intensity, step)
 	calls = move_toward(calls, calls_for(kind, intensity), step)
@@ -281,22 +287,15 @@ func update(frame_delta: float, body: CharacterBody3D, underwater: bool) -> void
 	var cover: float = covered
 	var roof: float = minf(roofed, cover)
 	var water: float = float(_ambient.weights["water"])
-	var heavy: float = smoothstep(0.4, 0.9, rain)
-	var light: float = minf(rain * 2.0, 1.0) * (1.0 - 0.6 * heavy)
-	var keep: float = 1.0
 
 	for key in _ground_w:
 		_ground_w[key] = move_toward(_ground_w[key], 1.0 if ground_class == key else 0.0, delta / GROUND_EASE_SEC)
-		keep -= (1.0 - float(GROUND_BED_KEEP[key])) * float(_ground_w[key])
-		_loop("rain_" + key, minf(rain * 1.6, 1.0) * float(_ground_w[key]) * (1.0 - cover))
 
-	_loop("rain_light", light * (1.0 - 0.7 * cover) * (1.0 - roof) * keep)
-	_loop("rain_heavy", heavy * (1.0 - 0.7 * cover) * (1.0 - roof) * keep)
-	_loop("rain_leaves", minf(rain * 1.6, 1.0) * (cover - roof))
-	# Rain on a wooden roof: the clacky loops (Dave 2026-10-23, they sound like rain on a metal roof in the open).
-	_loop("rain_woodroof_light", light * roof)
-	_loop("rain_woodroof_heavy", heavy * roof)
-	_loop("rain_water", minf(rain * 1.6, 1.0) * water)
+	var layers: Dictionary = RainAudio.layers(rain_heard, cover, roof, water, _ground_w)   # which rain sounds, by the rain the sky shows (BUG-004)
+
+	for loop_name in layers:
+		_loop(loop_name, layers[loop_name])
+
 	_loop("wind_storm", clampf(wind - 0.2, 0.0, 1.0) / 0.8)
 	_thunder(delta, body.global_position)
 	_ground(delta)

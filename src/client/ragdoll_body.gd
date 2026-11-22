@@ -104,7 +104,7 @@ const PARTS := [
 	["foot_l", "ellipsoid", Vector3(0.0, -0.03, -0.06), Vector3(0.056, 0.04, 0.135), false],
 ]
 
-const ANIMATIONS := ["idle", "walk", "jog", "run", "crouch", "sit", "lie", "swing", "jab", "throw", "use", "gather"]
+const ANIMATIONS := ["idle", "walk", "jog", "run", "crouch", "sit", "lie", "swing", "jab", "throw", "use"]
 
 var arms_only: bool = false
 var skeleton: Skeleton3D
@@ -115,6 +115,7 @@ var hand_mount_l: Marker3D
 var head_mount: Marker3D         # a hat, or a camera for a head cam: the middle of the head
 var _bones: Dictionary = {}      # name -> index
 var _log: MeshInstance3D         # the log on the shoulder (set_shoulder_log)
+var _log_two: MeshInstance3D     # the second log, beside it
 
 
 func _init(arms: bool = false) -> void:
@@ -396,7 +397,6 @@ func _build_animations() -> void:
 	library.add_animation("jab", _once(0.5, 10, _jab))
 	library.add_animation("throw", _once(0.8, 16, _throw))
 	library.add_animation("use", _once(0.6, 12, _use))
-	library.add_animation("gather", _once(0.6, 14, _gather))
 	library.add_animation("bow_draw", _once(1.0, 20, _bow_draw))
 	animation_player.add_animation_library("", library)
 	animation_player.play("idle")
@@ -631,14 +631,18 @@ func _carry(base: Dictionary, p: float, weight: float) -> Dictionary:
 	return pose
 
 
-# A large log across the right shoulder: shown or hidden, `length` and `radius` in metres (the species' log).
-func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0.23, 0.15)) -> void:
+# A large log across the right shoulder: shown or hidden, `length` and `radius` in metres (the species' log). `second`: the colour of a second log carried beside it
+# (TREE_WOOD_TOOLS_DESIGN.md s1.2, two logs at most), null for one.
+func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0.23, 0.15), second: Variant = null) -> void:
 	if arms_only or not _bones.has("chest"):
 		return
 
 	if length <= 0.0:
 		if _log != null:
 			_log.visible = false
+
+		if _log_two != null:
+			_log_two.visible = false
 
 		return
 
@@ -664,6 +668,23 @@ func set_shoulder_log(length: float, radius: float, color: Color = Color(0.32, 0
 	_log.position = Vector3(CARRY_LOG_X, CARRY_LOG_Y, 0.15)
 	_log.visible = true
 
+	if not (second is Color):
+		if _log_two != null:
+			_log_two.visible = false
+
+		return
+
+	if _log_two == null:
+		_log_two = MeshInstance3D.new()
+		_log_two.material_override = StandardMaterial3D.new()
+		_log.get_parent().add_child(_log_two)
+
+	(_log_two.material_override as StandardMaterial3D).albedo_color = second
+	_log_two.mesh = _log.mesh
+	_log_two.rotation = _log.rotation
+	_log_two.position = _log.position + Vector3(radius * 2.1, -radius * 0.4, 0.0)   # side by side, out over the arm
+	_log_two.visible = true
+
 
 # A thrust straight ahead from the shoulder (a spear).
 func _jab(p: float) -> Dictionary:
@@ -687,19 +708,6 @@ func _throw(p: float) -> Dictionary:
 		"arm_r": Vector3(arm, 0.0, 0.1), "forearm_r": Vector3(elbow, 0.0, 0.0),
 		"arm_l": LEFT_REST_ARM, "forearm_l": LEFT_REST_FOREARM,
 		"spine": Vector3(lean, twist, 0.0), "chest": Vector3(lean * 0.5, twist * 0.6, 0.0),
-	}
-
-
-# E gathers by hand (a stick, a stone, a berry, fibre): lean in and reach forward and down with an almost straight arm, take hold, then draw the
-# hand back up to the chest with the elbow bent, as if tucking the find away, and settle. Different from `use` (a push straight ahead).
-func _gather(p: float) -> Dictionary:
-	var arm: float = _keys([[0.0, 0.2], [0.35, 0.75], [0.5, 0.8], [0.75, 0.55], [1.0, 0.2]], p)
-	var elbow: float = _keys([[0.0, 0.12], [0.35, 0.15], [0.5, 0.25], [0.75, 1.6], [1.0, 0.12]], p)
-	var lean: float = _keys([[0.0, 0.0], [0.4, -0.22], [0.55, -0.2], [0.8, -0.05], [1.0, 0.0]], p)
-	return {
-		"arm_r": Vector3(arm, 0.0, 0.07), "forearm_r": Vector3(elbow, 0.0, 0.0),
-		"arm_l": LEFT_REST_ARM, "forearm_l": LEFT_REST_FOREARM,
-		"spine": Vector3(lean, 0.0, 0.0), "chest": Vector3(lean * 0.6, 0.0, 0.0), "head": Vector3(-lean * 0.7, 0.0, 0.0),
 	}
 
 

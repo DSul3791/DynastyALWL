@@ -5,7 +5,6 @@ extends RefCounted
 # away. Food in a chest or the pack is safe. A player near the food or near the fox, a fire at the food, or a fox that is hurt or
 # frightened, stops it: it never goes near people for a meal unless nobody is around. Numbers: the species' "thief" block in animals.json.
 
-const Steering := preload("res://src/shared/steering.gd")
 
 const SNEAK := 13
 const CARRY := 14
@@ -13,6 +12,7 @@ const CARRY := 14
 var host                        # ServerAnimals
 var loose_food: Callable        # (centre Vector3, radius) -> Array of [id, position Vector3]
 var take_food: Callable         # (id) -> Array [item number, count] taken, or [] when it is gone
+var food_at: Callable           # (id) -> position Vector3 of that loose food, or null when it is gone (server_items.loose_food_pos)
 var player_positions: Callable  # () -> Array of Vector3 (host's list is used when unset)
 var fires: Callable             # () -> Array of Vector3, burning fires
 
@@ -90,7 +90,7 @@ func step(a: Dictionary, dt: float) -> void:
 			_give_up(a)
 			return
 
-		var r: Dictionary = Steering.step(a["pos"], goal, float(def.get("sneak_mps", 2.5)), dt, host.ground_height, host.blocked, 0.8, a["heading"], host.crossing)
+		var r: Dictionary = host.walk_step(a["pos"], goal, float(def.get("sneak_mps", 2.5)), dt, host.ground_height, host.blocked, 0.8, a["heading"], host.crossing)
 
 		if r["moved"]:
 			a["pos"] = r["pos"]
@@ -114,7 +114,7 @@ func step(a: Dictionary, dt: float) -> void:
 		return
 
 	# CARRY: sprint away with the food and eat it far off.
-	var r2: Dictionary = Steering.step(a["pos"], a["target"], float(def.get("run_mps", 9.0)), dt, host.ground_height, host.blocked, 1.0, a["heading"], host.crossing)
+	var r2: Dictionary = host.walk_step(a["pos"], a["target"], float(def.get("run_mps", 9.0)), dt, host.ground_height, host.blocked, 1.0, a["heading"], host.crossing)
 
 	if r2["moved"]:
 		a["ran"] = float(a["ran"]) + a["pos"].distance_to(r2["pos"])
@@ -125,14 +125,15 @@ func step(a: Dictionary, dt: float) -> void:
 		host.animals.erase(a["id"])   # it eats the meal somewhere out of sight; a fox elsewhere will turn up later
 
 
-# Where the food the fox is after lies, or null when it is gone. `reach` covers the farthest a downwind fox smells (the search was a
-# fixed 80 m, so a fox that smelled food from farther gave up at once).
+# Where the food the fox is after lies, or null when it is gone or farther than `reach` (at least 80 m: it covers the farthest a downwind fox
+# smells). Read by id, not by searching round the fox (finding 8 of docs/ai-team/audits/2026-11-18_oversized_reactions_audit.md).
 func _food_pos(id: int, from: Vector3, reach: float = 80.0) -> Variant:
-	for row in (loose_food.call(from, maxf(reach, 80.0)) if loose_food.is_valid() else []):
-		if int(row[0]) == id:
-			return row[1]
+	var at: Variant = food_at.call(id) if food_at.is_valid() else null
 
-	return null
+	if at == null or Vector2((at as Vector3).x - from.x, (at as Vector3).z - from.z).length() > maxf(reach, 80.0):
+		return null
+
+	return at
 
 
 func _give_up(a: Dictionary) -> void:

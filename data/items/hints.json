@@ -58,8 +58,8 @@
 		},
 		{
 			"id": "kit",
-			"trigger": "6_sticks_3_stones",
-			"text": "Craft a Campfire kit: 6 sticks and 3 stones."
+			"trigger": "6_sticks_16_stones",
+			"text": "Craft a Campfire kit: 6 sticks and 16 stones."
 		},
 		{
 			"id": "place_fire",
@@ -86,7 +86,7 @@
 		{
 			"id": "leanto",
 			"trigger": "fire_burning_cold",
-			"text": "Hold your wooden hammer, press R and pick Lean-to: 20 sticks, 60 leaves, 6 twine.",
+			"text": "Hold your hammer, press R and pick Lean-to: 20 sticks, 60 leaves, 6 twine.",
 			"goal": "shelter"
 		},
 		{
@@ -98,7 +98,7 @@
 		{
 			"id": "bed",
 			"trigger": "leanto_placed",
-			"text": "Make a Rough bed from your pack: 10 thatch, 4 sticks and 2 twine. Place it inside your lean-to.",
+			"text": "Make a bed: a Thatch - Bed from your pack (10 thatch, 4 sticks, 2 twine) or a Straw - Bed with the hammer. Place it inside your lean-to.",
 			"goal": "bed"
 		},
 		{
@@ -109,8 +109,13 @@
 		{
 			"id": "workbench",
 			"trigger": "bed_placed",
-			"text": "A Workbench: hold your hammer, press R and pick it. 16 sticks, 6 twine, 4 stones. It is for better tools.",
+			"text": "A Workbench: hold your hammer, press R and pick it. 16 sticks, 6 twine, 8 stones. It is for better tools.",
 			"goal": "workbench"
+		},
+		{
+			"id": "roof_panel",
+			"trigger": "wall_placed",
+			"text": "Hammer (press R): Crude - Roof 45 or 65. A roof panel rests on a wall top, a ceiling edge or another panel's end: aim at one and face across it. The mouse wheel flips it to rise or fall."
 		},
 		{
 			"id": "spear",
@@ -144,7 +149,7 @@
 		{
 			"id": "night",
 			"trigger": "dusk",
-			"text": "Night is dark. Craft a Torch: a stick, a fibre and pitch (resin or animal fat)."
+			"text": "Night is dark. Craft a Simple - Torch: a stick, a twine and a plant fibre."
 		},
 		{
 			"id": "fruit_pick",
@@ -209,7 +214,7 @@
 		{
 			"id": "pot_first_dish",
 			"trigger": "campfire_pot_placed",
-			"text": "Put 3 berries and water in the pot for Stewed berries. Baked food needs a clay hearth: 10 bricks, 6 clay and 4 stones, built with a hammer."
+			"text": "Put 3 berries and water in the pot for Stewed berries. Baked food needs a clay hearth: 10 bricks, 6 clay and 8 stones, built with a hammer."
 		},
 		{
 			"id": "nettles",

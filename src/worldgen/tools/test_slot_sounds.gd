@@ -123,8 +123,7 @@ func _check_sites(names: Array) -> void:
 	check(names.has("player_hurt"), "a blow on the player has its slot")
 	var structure_look = preload("res://src/shared/structure_look.gd")
 	check(structure_look.step_surface(42) == "thatch" and structure_look.step_surface(54) == "slab" and structure_look.step_surface(51) == "plank" and structure_look.step_surface(32) == "path" and structure_look.step_surface(47) == "", "steps on a thatch, stone or log floor and a trodden path sound as that floor; a tilled bed does not")
-	var spear_script = preload("res://src/client/spear_sounds.gd")
-	check(spear_script.hit_strength(0) == 0.5 and spear_script.hit_strength(30) == 1.0 and spear_script.hit_strength(9) > 0.5 and FileAccess.file_exists("res://assets/audio/spear/spear_hit_flesh_0.ogg"), "a hit on an animal thuds louder with more damage, and the flesh clip exists")
+	check(FileAccess.file_exists("res://assets/audio/spear/spear_hit_flesh_0.ogg"), "the flesh clip a hit on an animal plays exists")
 	var inv_script = preload("res://src/client/inventory_view.gd")
 	check(names.has("skill_tock") and float(SlotSounds.COOLDOWN_S.get("skill", 0.0)) >= 20.0 and inv_script.skill_rose([[3, 10, 0]], [[3, 11, 0]]) and not inv_script.skill_rose([[3, 10, 0]], [[3, 9, 1]]) and not inv_script.skill_rose([[3, 10, 0]], [[3, 10, 0], [4, 5, 0]]), "a skill rising plays the wooden tock at most once every 20 s; rust and new rows stay silent")
 	var weather_script = preload("res://src/client/weather_sounds.gd")
@@ -150,13 +149,13 @@ func _check_sites(names: Array) -> void:
 	var doors: Dictionary = {}
 
 	for state in StructureLook.table():
-		if StructureLook.look_of(int(state)) in ["door_shut", "door_open"]:
+		if str(StructureLook.table().get(state, {}).get("piece_kind", "")) == "door":
 			doors[StructureLook.material_of(int(state))] = true
 
 	for material in doors:
 		check(material != "" and names.has("door_%s_open" % material) and names.has("door_%s_close" % material), "door material '%s' has open and close slots" % material)
 
-	var no_clips_yet: Array = []   # kinds mapped without a step slot yet (all six from 2 Nov 2026 now have one, borrowed clips)
+	var no_clips_yet: Array = ["bandit"]   # kinds mapped without a step slot yet (a camp bandit, drawn as the human ragdoll: its steps come with stage 3)
 
 	for kind in AnimalView.KIND_OF_SPECIES.values():
 		var slot: String = "rabbit_hop" if kind == "rabbit" else "%s_step" % kind

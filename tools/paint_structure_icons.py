@@ -681,7 +681,7 @@ def tool_rack():
 
     for i, x in enumerate((-0.5, 0.0, 0.5)):
         faces += box((x, 0.82, 0.08), (0.06, 0.95, 0.06), PLANK)      # handle
-        head = [(0.34, 0.2), (0.16, 0.36), (0.42, 0.14)][i]       # an axe, a spade, a hoe
+        head = [(0.34, 0.2), (0.16, 0.36), (0.42, 0.14)][i]       # an axe, a shovel, a hoe
         faces += box((x + (head[0] / 2 - 0.03 if i != 1 else 0.0), 0.36, 0.08), (head[0], head[1], 0.06), STEEL)
 
     return faces

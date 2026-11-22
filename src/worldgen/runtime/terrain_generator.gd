@@ -37,6 +37,8 @@ const TOPSOIL_M := 0.4                 # topsoil layer over a clay subsoil
 const CLAY_UNDER_MOISTURE := 165       # wet air (0 to 255) from which loam and humus lie on clay
 const MUD_DEPTH_M := 3.0               # lake and river beds this far below the water line are mud
 const BANK_SOIL_M := 1.0               # banks within this of the water line (or above it) are soil, between is clay
+const WET_EDGE := 0.5                  # share of the four samples that must be wetland for the wetland look (_wetland_look)
+const WET_EDGE_JITTER := 0.6           # how far the noise moves that share either way
 const ORE_LENS := 0
 const ORE_HALO := 1
 const ORE_PIPE := 2
@@ -63,6 +65,7 @@ var _tiles: Dictionary = {}           # Vector2i -> tile data
 var failed_tiles: int = 0              # times a tile file existed but failed to load (a stand-in was used)
 var _mutex: Mutex = Mutex.new()
 var _prefetching: Dictionary = {}       # Vector2i -> true while a worker thread reads that tile
+var _prefetch_tasks = preload("res://src/shared/pool_tasks.gd").new()   # the prefetch tasks, waited for by finish_tasks() at exit
 var _loading: Dictionary = {}           # Vector2i -> true while one thread reads that tile in get_tile; the others wait for it
 var tile_reads: int = 0                 # tile files read by get_tile (one per tile unless a bad file gave a stand-in)
 var tile_load_waits: int = 0            # get_tile calls that waited for another thread's read instead of reading the file again
@@ -79,6 +82,7 @@ var _humus: int = -1
 var _silt: int = -1
 var _alluvium: int = -1
 var _mud: int = -1
+var _wet_look: PackedByteArray = PackedByteArray()   # water class id -> its wetland look id (Layout.WETLAND_LOOKS), 0 for the rest
 var _marble: int = 9
 var _granite: int = 5
 var _basalt: int = 7
@@ -114,6 +118,13 @@ func setup(settings, tile_rules: Dictionary, tables, tiles_directory: String) ->
 
 	for entry in tables.get_entries("resources"):
 		_resource_ids[str(entry["name"])] = int(entry["id"])
+
+	_wet_look.resize(256)
+	_wet_look.fill(0)
+
+	for entry in tables.get_entries("water_classes"):
+		if Layout.WETLAND_LOOKS.has(str(entry["name"])):
+			_wet_look[int(entry["id"])] = int(Layout.WETLAND_LOOKS[str(entry["name"])])
 
 	_limestone = _rock_ids["limestone"]
 	_marble = _rock_ids["marble"]
@@ -285,11 +296,21 @@ func prefetch_tile(x: float, z: float) -> void:
 	if busy:
 		return
 
-	WorkerThreadPool.add_task(func():
+	var started: bool = _prefetch_tasks.add(func():
 		get_tile(coord)
 		_mutex.lock()
 		_prefetching.erase(coord)
-		_mutex.unlock())
+		_mutex.unlock(), "tile prefetch")
+
+	if not started:   # shutting down (finish_tasks): the tile is read when asked for
+		_mutex.lock()
+		_prefetching.erase(coord)
+		_mutex.unlock()
+
+
+# Waits for the prefetch tasks still running; later prefetches start nothing. The server's _exit_tree, before the engine shuts its worker pool.
+func finish_tasks() -> void:
+	_prefetch_tasks.finish()
 
 
 # Prefetches the tile under a position and any neighbour tile within `margin` metres, so main-thread height lookups near a tile edge never read a file.
@@ -332,6 +353,18 @@ func surface_height(x: float, z: float, lod: int = 0):
 	var zw: float = wrap_x(z)
 	var data = get_tile(Vector2i(int(floor(xw / tile_size_m)), int(floor(zw / tile_size_m))))
 	return _height(data, xw, zw, float(1 << lod))
+
+
+# surface_height on a tile already in hand: the same value when the point lies on `data`'s tile, without get_tile's lock (the flora placer
+# asks it tens of thousands of times a chunk from many threads at once; the shared lock made 11 threads 6 times slower than 3, David4 15 Nov 2026).
+func surface_height_on(data, x: float, z: float) -> float:
+	var xw: float = wrap_x(x)
+	var zw: float = wrap_x(z)
+
+	if Vector2i(int(floor(xw / tile_size_m)), int(floor(zw / tile_size_m))) == data.tile:
+		return _height(data, xw, zw, 1.0)
+
+	return surface_height(x, z)
 
 
 func _height(data, xw: float, zw: float, spacing: float) -> float:
@@ -558,7 +591,7 @@ func generate(buffer: VoxelBuffer, origin: Vector3i, lod: int) -> void:
 					cover_m = data.cover_at(wx[i + 1], wz[k + 1])
 					offset_m = data.offset_at(wx[i + 1], wz[k + 1])
 
-				buffer.fill_area(_surface_material_known(data, sample, soil_id, cover_m, offset_m, h), Vector3i(i, 0, k), Vector3i(i + 1, ny, k + 1), Layout.CHANNEL_MATERIAL)
+				buffer.fill_area(_surface_material_known(data, sample, _wetland_look(data, soil_id, wx[i + 1], wz[k + 1]), cover_m, offset_m, h), Vector3i(i, 0, k), Vector3i(i + 1, ny, k + 1), Layout.CHANNEL_MATERIAL)
 			else:
 				buffer.fill_area(_surface_material(data, wx[i + 1], wz[k + 1], h), Vector3i(i, 0, k), Vector3i(i + 1, ny, k + 1), Layout.CHANNEL_MATERIAL)
 
@@ -633,6 +666,43 @@ func _ground_soil(data, sample: int, h: float, x: float, z: float) -> int:
 	return _clay if depth > BANK_SOIL_M else _alluvium
 
 
+# The draw material of soil `soil` at (x, z): the wetland look (Layout.MATERIAL_FEN, _BOG, _SWAMP) where the four samples round the column
+# are mostly fen, bog or swamp, else the soil itself. The edge wanders with value noise about 3 m across, so a patch does not show the 8 m
+# cells. Drawing only: the soil channel keeps the soil (Dave 21 Nov 2026: wetlands "should be readable").
+func _wetland_look(data, soil: int, x: float, z: float) -> int:
+	if soil <= 0 or data.placeholder or _wet_look.is_empty() or data.water_class.size() != data.samples * data.samples:
+		return soil
+
+	var side: int = data.samples
+	var fx: float = clampf((x - data.x0) / data.spacing_m, 0.0, float(side - 1) - 0.001)
+	var fz: float = clampf((z - data.z0) / data.spacing_m, 0.0, float(side - 1) - 0.001)
+	var i0: int = int(fx)
+	var j0: int = int(fz)
+	var tx: float = fx - float(i0)
+	var tz: float = fz - float(j0)
+	var total: float = 0.0
+	var best_w: float = 0.0
+	var best: int = 0
+
+	for c in 4:
+		var look: int = _wet_look[data.water_class[(j0 + (c >> 1)) * side + i0 + (c & 1)]]
+
+		if look == 0:
+			continue
+
+		var wgt: float = (tx if (c & 1) == 1 else 1.0 - tx) * (tz if (c & 2) == 2 else 1.0 - tz)
+		total += wgt
+
+		if wgt > best_w:
+			best_w = wgt
+			best = look
+
+	if total <= 0.0 or total < WET_EDGE + (_value_noise(x / 3.1 + 17.0, z / 3.1) - 0.5) * WET_EDGE_JITTER:
+		return soil
+
+	return best
+
+
 # Smooth value noise in 0..1 on a unit grid (deterministic, no seed needed for looks).
 static func _value_noise(x: float, z: float) -> float:
 	var xi: float = floorf(x)
@@ -658,7 +728,7 @@ func _surface_material(data, x: float, z: float, h: float) -> int:
 	var soil: int = _ground_soil(data, sample, h, x, z)
 
 	if soil > 0:
-		return soil
+		return _wetland_look(data, soil, x, z)
 
 	var p: int = data.province[sample]
 	var depth: float = data.prov_datum[p] + data.offset_at(x, z) - (h - data.cover_at(x, z))

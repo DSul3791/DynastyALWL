@@ -52,14 +52,14 @@ const ROOF_BELOW_M := 0.5   # a structure's roof covers from this far under its 
 
 
 # The roof of a placed structure: the box from its structures.json "half_x", "half_z" and "height" (a lean-to, every tier's roof piece), turned
-# with it, from ROOF_BELOW_M under its `base` up to its height. [] for a structure that is no roof. Client and server both add exactly this,
+# with it, from ROOF_BELOW_M (its "cover_below_m": a sloped roof panel's middle stands a wall's height and more above the floor it covers) under its `base` up to its height. [] for a structure that is no roof. Client and server both add exactly this,
 # so the cover a player sees (rain stops, the torch burns) and the cover the server rules on cannot drift (Dave 10 Nov 2026: in a lean-to the
 # client's old hard-coded box was 1.3 x 1.7 m and 1.5 m tall, the server's 2.08 x 2.72 m and 2.4 m, so the eye was "out in the rain").
 static func structure_roof(def: Dictionary, base: Vector3, yaw: float) -> Array:
 	if not def.has("height") or not def.has("half_x") or not def.has("half_z"):
 		return []
 
-	return box_roof(Vector2(base.x, base.z), float(def["half_x"]), float(def["half_z"]), yaw, base.y - ROOF_BELOW_M, base.y + float(def["height"]))
+	return box_roof(Vector2(base.x, base.z), float(def["half_x"]), float(def["half_z"]), yaw, base.y - float(def.get("cover_below_m", ROOF_BELOW_M)), base.y + float(def["height"]))
 
 
 static func disc_roof(centre: Vector2, radius: float, floor_y: float, top_y: float) -> Array:
@@ -81,11 +81,18 @@ static func crown_radius(crown_m: float, reference_height_m: float, height_m: fl
 
 
 static func add_chunk(index, chunk: Vector2i, items: Dictionary, info: Callable) -> void:
+	index.set_chunk(chunk, tree_rows(items, info))
+
+
+# The rows add_chunk puts in an index, worked out from the item list alone (no index touched): the server builds them on its worker before
+# it takes the flora lock, so the lock is held only for set_chunk (lag while running, 21 Nov 2026: a 256 m chunk's tens of thousands of items
+# were walked under the lock and the server's main thread waited for it in every shelter check, up to 0.5 s a tick).
+static func tree_rows(items: Dictionary, info: Callable) -> Array:
 	var ids: PackedInt32Array = items["ids"]
 	var heights = items["heights"]
 	var positions = items["positions"]
 	var trees: Array = []
-	var rows: Dictionary = {}     # species id -> info row, asked once per species (this runs on the main thread)
+	var rows: Dictionary = {}     # species id -> info row, asked once per species
 
 	for n in range(ids.size()):
 		var species: int = ids[n] >> 16
@@ -106,7 +113,7 @@ static func add_chunk(index, chunk: Vector2i, items: Dictionary, info: Callable)
 
 		trees.append([ids[n], p.x, p.z, crown_radius(float(row[1]), float(row[2]), height), p.y + height, row.size() > 3 and bool(row[3])])
 
-	index.set_chunk(chunk, trees)
+	return trees
 
 
 class Index:
@@ -129,13 +136,15 @@ class Index:
 
 	# Replaces a chunk's trees. `list` rows: [id, x, z, crown_radius, top_y, bare in winter (optional bool)].
 	func set_chunk(chunk: Vector2i, list: Array) -> void:
-		remove_chunk(chunk)
+		set_packed(chunk, pack(chunk, list))
 
-		if list.is_empty():
-			return
 
+	# A chunk's rows grouped into this index's cells, ready for set_packed. Touches no index, so the server makes it on its worker before the
+	# flora lock (lag while running, 21 Nov 2026); under the lock set_packed only appends whole arrays.
+	static func pack(chunk: Vector2i, list: Array) -> Dictionary:
 		var base: int = _chunk_key(chunk) << 24
 		var cells: Dictionary = {}
+		var count: int = 0
 
 		for row in list:
 			var radius: float = float(row[3])
@@ -147,10 +156,10 @@ class Index:
 			var z: float = float(row[2])
 			var cell: Vector2i = Vector2i(int(floor(x / CELL_M)), int(floor(z / CELL_M)))
 
-			if not _cells.has(cell):
-				_cells[cell] = {"f": PackedFloat32Array(), "k": PackedInt64Array(), "b": PackedByteArray()}
+			if not cells.has(cell):
+				cells[cell] = {"f": PackedFloat32Array(), "k": PackedInt64Array(), "b": PackedByteArray()}
 
-			var entry: Dictionary = _cells[cell]
+			var entry: Dictionary = cells[cell]
 			var f: PackedFloat32Array = entry["f"]
 			f.append(x)
 			f.append(z)
@@ -159,9 +168,38 @@ class Index:
 			entry["f"] = f
 			entry["k"].append(base | (int(row[0]) & 0xFFFFFF))
 			entry["b"].append(1 if row.size() > 5 and bool(row[5]) else 0)
-			cells[cell] = true
-			trees += 1
+			count += 1
 
+		return {"cells": cells, "trees": count}
+
+
+	# Replaces a chunk's trees with what pack made for it (the packed arrays are taken over, not copied).
+	func set_packed(chunk: Vector2i, packed: Dictionary) -> void:
+		remove_chunk(chunk)
+		var cells: Dictionary = packed.get("cells", {})
+
+		if cells.is_empty():
+			return
+
+		for cell in cells:
+			var add: Dictionary = cells[cell]
+
+			if not _cells.has(cell):
+				_cells[cell] = add
+				continue
+
+			var entry: Dictionary = _cells[cell]
+			var f: PackedFloat32Array = entry["f"]
+			var k: PackedInt64Array = entry["k"]
+			var b: PackedByteArray = entry["b"]
+			f.append_array(add["f"])
+			k.append_array(add["k"])
+			b.append_array(add["b"])
+			entry["f"] = f
+			entry["k"] = k
+			entry["b"] = b
+
+		trees += int(packed["trees"])
 		_chunk_cells[chunk] = cells.keys()
 
 
@@ -170,9 +208,49 @@ class Index:
 		var base: int = _chunk_key(chunk)
 
 		for cell in cells:
-			_filter(cell, func(key: int) -> bool: return (key >> 24) == base)
+			_drop_chunk(cell, base)
 
 		_chunk_cells.erase(chunk)
+
+
+	# remove_chunk for one cell without a Callable per tree (the server runs it under its flora lock for every chunk the index lets go): a
+	# cell holding only this chunk's trees, the usual case, goes whole.
+	func _drop_chunk(cell: Vector2i, base: int) -> void:
+		var entry: Dictionary = _cells.get(cell, {})
+
+		if entry.is_empty():
+			return
+
+		var keys: PackedInt64Array = entry["k"]
+		var others: int = 0
+
+		for key: int in keys:
+			if (key >> 24) != base:
+				others += 1
+
+		if others == 0:
+			trees -= keys.size()
+			_cells.erase(cell)
+			return
+
+		var old_f: PackedFloat32Array = entry["f"]
+		var old_b: PackedByteArray = entry["b"]
+		var f: PackedFloat32Array = PackedFloat32Array()
+		var k: PackedInt64Array = PackedInt64Array()
+		var b: PackedByteArray = PackedByteArray()
+
+		for n in range(keys.size()):
+			if (keys[n] >> 24) == base:
+				trees -= 1
+				continue
+
+			f.append_array(old_f.slice(n * 4, n * 4 + 4))
+			k.append(keys[n])
+			b.append(old_b[n])
+
+		entry["f"] = f
+		entry["k"] = k
+		entry["b"] = b
 
 
 	# Felling: the tree with this item id leaves the index, so the ground opens up.

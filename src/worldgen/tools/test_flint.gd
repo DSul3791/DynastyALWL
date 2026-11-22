@@ -40,7 +40,7 @@ func make(dir_name: String):
 	items.peer_connected_hello(1, "flint000001")
 	items.report_position(1, Vector3(5.0, 11.5, 5.0))
 	items.vitals_of(1)["weight"] = 5000.0
-	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("iron_pickaxe"), 0, 1, Vector3.ZERO)
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_pickaxe"), 0, 1, Vector3.ZERO)
 	items._items[900001] = {"number": 0, "count": 5000, "pos": Vector3(5.0, 11.5, 6.0), "left": 1.0e9, "scatter": items.BOULDER_KEY | 7, "boulder": {"radius": 1.0, "yaw": 0.0, "total": 5000}}
 	return items
 
@@ -48,7 +48,7 @@ func make(dir_name: String):
 func blows(items, n: int) -> void:
 	for k in range(n):
 		items._last_hit.clear()
-		items.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, 0, Vector3.ZERO)
+		items.action(1, Net.ACT_HIT, 900001, Net.HIT_BOULDER, items.inventory_of(1).numbers.find(items.table.number_of("stone_pickaxe")) + 1, Vector3.ZERO)   # the pick in hand (protocol 115)
 
 
 func count(items, id: String) -> int:

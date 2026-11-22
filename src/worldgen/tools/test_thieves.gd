@@ -44,6 +44,7 @@ func make(weather: Dictionary = {}):
 			if Vector2(food[id].x - centre.x, food[id].z - centre.z).length() <= r:
 				out.append([id, food[id]])
 		return out
+	a.thieves.food_at = func(id): return food.get(id, null)
 	a.thieves.take_food = func(id):
 		if food.has(id):
 			food.erase(id)

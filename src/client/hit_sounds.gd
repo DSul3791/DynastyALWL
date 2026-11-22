@@ -1,11 +1,11 @@
 extends Node
 
 # Tool hit sounds (client only): the sound of a basic tool striking something. Basic set only
-# (owner, 2026-10-20): axe, pick, hammer and spade on wood, stone and soil. Twelve slots,
+# (owner, 2026-10-20): axe, pick, hammer and shovel on wood, stone and soil. Twelve slots,
 # `hit_<tool>_<material>_N`. There is no tool system yet, so this is only the hook:
 #
 #   sound.hits.hit("axe", "wood", position, strength)       one strike at a place (strength 0 to 1)
-#   sound.hits.hit_ground("spade", position, strength)       material from the ground under the point
+#   sound.hits.hit_ground("shovel", position, strength)       material from the ground under the point
 #
 # `strength` is how hard the blow was (a full swing 1, a tap 0.3): it sets loudness and pitch a little.
 # Sounds: generated in assets/audio/hits/ (make_hits.py); recordings in assets/audio/recorded/hits/ win.
@@ -15,7 +15,7 @@ const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const GENERATED_DIR := "res://assets/audio/hits/"
 const RECORDED_DIR := "res://assets/audio/recorded/hits/"
 
-const TOOLS := ["axe", "pick", "hammer", "spade"]
+const TOOLS := ["axe", "pick", "hammer", "shovel"]
 const MATERIALS := ["wood", "stone", "soil"]
 const BASE_DB := -4.0                   # a full blow at the source
 const MAX_DISTANCE_M := 120.0
@@ -33,7 +33,7 @@ func setup(stage) -> void:
 	_rng.randomize()
 
 
-# One blow of `tool` (axe, pick, hammer, spade) on `material` (wood, stone, soil) at `at`.
+# One blow of `tool` (axe, pick, hammer, shovel) on `material` (wood, stone, soil) at `at`.
 # Returns false for an unknown slot or when no sound exists.
 func hit(tool: String, material: String, at: Vector3, strength: float = 1.0) -> bool:
 	if tool not in TOOLS or material not in MATERIALS:

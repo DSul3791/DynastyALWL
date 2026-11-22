@@ -20,7 +20,7 @@ GROUPS = {
 	"berries": ("cloudberries", "blueberries", "raspberries"),
 	"fuel": ("coal", "charcoal"),
 	"pitch": ("animal_fat", "resin", "pine_tar"),
-	"knife": ("stone_knife", "obsidian_knife", "bronze_knife"),   # any knife (#941)
+	"knife": ("stone_knife", "copper_knife", "bronze_knife"),   # any knife (#941)
 	"fruit": ("plums", "pear_summer", "apple_summer"),   # any juicy fruit or berry (#940)
 	"vegetable": ("cabbage", "beet", "carrot"),   # any root or cabbage-type vegetable (#955)
 }

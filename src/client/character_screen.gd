@@ -250,11 +250,11 @@ func refresh() -> void:
 		_rep_box.add_child(_label("%s: %s" % [_items.rep_names[i], _items.rank_word(int(_items.rep_points[i]))], BODY_PX - 4))
 
 	var rows: Array = [
-		["Luck", "%+d" % int(_items.luck) if int(_items.luck) != 0 else "0", "Fixed when the character was made; nudges every roll of chance."],
-		["Fitness", "%+d" % int(_items.fitness) if int(_items.fitness) != 0 else "0", "How slowly exertion builds when you run, climb or haul. Hard work makes you fitter; long idleness slowly loses it."],
+		["Luck", "%d%%" % int(_items.luck), "Fixed when the character was made; nudges every roll of chance. 50% is average."],
+		["Fitness", "%d%%" % int(_items.fitness), "How slowly exertion builds when you run, climb or haul. Hard work makes you fitter; long idleness slowly loses it. 50% is an average adult."],
 		["Today's training", "%d%% of a point" % int(_items.training_today), "The hard work you have done today (walking, running, chopping, hauling). At midnight it turns into fitness."],
-		["Strength", "%+d" % int(_items.strength) if int(_items.strength) != 0 else "0", "Helps woodcutting, mining, digging and jumping."],
-		["Memory", "%+d" % int(_items.memory) if int(_items.memory) != 0 else "0", "Helps foraging and crafting, and recognising things you inspect."],
+		["Strength", "%d%%" % int(_items.strength), "Helps woodcutting, mining, digging and jumping."],
+		["Memory", "%d%%" % int(_items.memory), "Helps foraging and crafting, and recognising things you inspect."],
 		["Health status", "well" if int(_items.sick_hours) <= 0 else "ill, %d h" % int(_items.sick_hours), "Rotten food ruins your health for about a day: vomiting and diarrhoea keep you working hard. Sleep or medicine shortens it."],
 		["Body weight", "%.1f kg" % float(_items.weight_kg), ""],
 		["Can carry", "%.0f kg" % float(_items.carry_limit_kg()), ""],
@@ -515,32 +515,67 @@ func _skill_depth(id: String, defs: Dictionary) -> int:
 	return depth
 
 
-# What you wear, one line per body slot with a button to take the piece off (Use on the item in the pack puts it on).
+# What you wear: every worn layer on its own line with a button to take that piece off, and "nothing" for a body slot with nothing on
+# (Use on the item in the pack puts it on). Layers show inside to outside under their slot (clothing.json layers, protocol 107).
 func _add_worn_lines() -> void:
-	var slots: Array = _items.clothing_slots()
+	var places: Array = _items.worn_places()
 
-	if slots.is_empty():
+	if places.is_empty():
 		return
 
 	_remains_box.add_child(HSeparator.new())
 	_remains_box.add_child(_label("Wearing", TITLE_PX - 6))
-	var labels: Dictionary = _items.clothing_cfg.get("labels", {})
+	var labels: Dictionary = _items.clothing_cfg.get("worn_labels", {})
+	var slot_labels: Dictionary = _items.clothing_cfg.get("labels", {})
+	var covered: Dictionary = {}   # slot -> the piece that also fills it (a Dress covers the legs)
 
-	for i in slots.size():
-		var number: int = int(_items.worn[i]) if i < _items.worn.size() else 0
-		var line: HBoxContainer = HBoxContainer.new()
-		var name: Label = _label("%s: %s" % [labels.get(slots[i], str(slots[i])), _items.table.name_of(number) if number > 0 else "nothing"], BODY_PX)
-		name.custom_minimum_size = Vector2(_px(360), 0)
-		line.add_child(name)
+	for i in mini(places.size(), _items.worn.size()):
+		if int(_items.worn[i]) > 0:
+			for other in _items.table.entry(_items.table.id_of(int(_items.worn[i]))).get("spans", []):
+				covered[str(other)] = int(_items.worn[i])
 
-		if number > 0:
-			var off: Button = Button.new()
-			off.text = "Take off"
-			off.add_theme_font_size_override("font_size", BODY_PX)
-			off.pressed.connect(func() -> void: _items.net.inventory_action.rpc_id(1, Net.ACT_UNWEAR, i, 0, 0, Vector3.ZERO))
-			line.add_child(off)
+	for slot in _items.clothing_slots():
+		var shown: int = 0
 
-		_remains_box.add_child(line)
+		for layer in _items.clothing_cfg.get("layers", {}).get(slot, []):
+			var i: int = places.find("%s:%s" % [slot, layer])
+			var number: int = int(_items.worn[i]) if i >= 0 and i < _items.worn.size() else 0
+
+			if number > 0:
+				_add_worn_line(str(labels.get(places[i], places[i])), i, number)
+				shown += 1
+
+		if shown == 0 and covered.has(slot):
+			_remains_box.add_child(_label("%s: covered by %s" % [slot_labels.get(slot, slot), _items.table.name_of(int(covered[slot]))], BODY_PX))
+		elif shown == 0:
+			_add_worn_line(str(slot_labels.get(slot, slot)), -1, 0)
+
+
+func _add_worn_line(label: String, i: int, number: int) -> void:
+	var line: HBoxContainer = HBoxContainer.new()
+	var name: Label = _label("%s: %s" % [label, _items.inst_label(number, _items.worn_inst.get(i, {})) if number > 0 else "nothing"], BODY_PX)
+	name.custom_minimum_size = Vector2(_px(360), 0)
+	line.add_child(name)
+
+	if number > 0:
+		var off: Button = Button.new()
+		off.text = "Take off"
+		off.add_theme_font_size_override("font_size", BODY_PX)
+		off.pressed.connect(func() -> void: _items.net.inventory_action.rpc_id(1, Net.ACT_UNWEAR, i, 0, 0, Vector3.ZERO))
+		line.add_child(off)
+
+		if int(_items.table.entry(_items.table.id_of(number)).get("bag_slots", 0)) > 0:   # a worn bag opens beside the pack (catalog Phase 5)
+			var bag: Button = Button.new()
+			bag.text = "Open"
+			bag.add_theme_font_size_override("font_size", BODY_PX)
+			bag.pressed.connect(func() -> void:
+				if open:
+					toggle()
+
+				_items.open_bag(i))
+			line.add_child(bag)
+
+	_remains_box.add_child(line)
 
 
 # The death markers (DESIGN_IDEAS 6.1): each of your remains that still holds gear, with the way and distance to it and the

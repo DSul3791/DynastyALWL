@@ -1,0 +1,25 @@
+# What docker build sends from the repository (deploy/server/Dockerfile names what goes in the image). Large folders the server
+# never loads stay out so the send is quick.
+.git
+.godot
+art
+docs
+design
+tech
+items
+120
+native
+proposed_removals
+crash_reports
+.claude
+.github
+tools/*
+!tools/build_godot_linux.sh
+# Local files that must never go into an image: Dave's admin keys and the island water record (bake input, ~90 MB a tile); the
+# per-machine sound import files (.gitignore), which the image makes again; the bought animal models (licensed, never published;
+# the server never loads them, and the client falls back to its code-built animals).
+data/admin.json
+worlds/*/record
+worlds/*/setup_cache
+assets/audio/**/*.import
+assets/animals

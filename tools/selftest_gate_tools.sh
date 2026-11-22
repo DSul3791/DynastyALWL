@@ -25,6 +25,16 @@ sel tools/run_tests.sh | field "d['class']=='tools' and len(d['fast'])==0 and 's
 sel src/water2/water_field.gd | field "'test_water_field' in d['fast'] and 'test_water_flow_texture' in d['fast']" | grep -q True; ok $? "src/water2 code selects the src/water2 tests that load it"
 sel src/water2/test_water_window.gd | field "'test_water_window' in d['fast']" | grep -q True; ok $? "a changed src/water2 test selects itself"
 
+# <base> <head> diffs from the merge base: a base that moved on past head adds none of its own newer files (19 Nov 2026).
+R="$T/repo"; mkdir -p "$R"
+( cd "$R" && git init -q && git config commit.gpgsign false && git config user.email t@t && git config user.name t && echo a > a.gd && git add . && git commit -qm c0 && git branch -q -M base0 \
+	&& git checkout -qb br && echo b > br.gd && git add . && git commit -qm br && git checkout -q base0 && echo d > dev_only.gd && git add . && git commit -qm dev \
+	&& git checkout -q --orphan lone && git rm -rqf . && echo l > lone.gd && git add . && git commit -qm lone ) >/dev/null 2>&1
+mp() { "$PY" -c "import sys;sys.path.insert(0,'tools');import tests_for_diff as t;print(sorted(t.changed_paths(sys.argv[1],sys.argv[2],sys.argv[3])))" "$1" "$2" "$R"; }   # paths as arguments: Git Bash converts them for Windows python
+[ "$(mp base0 br)" = "['br.gd']" ]; ok $? "a base that moved on: only head's own change (not dev_only.gd)"
+[ "$(mp base0~1 br)" = "['br.gd']" ]; ok $? "a base that is an ancestor: the same as the two-dot diff"
+[ "$(mp base0 lone)" = "$(cd "$R" && "$PY" -c "import subprocess;print(sorted(subprocess.run(['git','diff','--name-only','base0','lone'],capture_output=True,text=True).stdout.split()))")" ]; ok $? "no shared history: the plain two-dot diff"
+
 cat > "$T/fakegodot" <<'F'
 #!/bin/bash
 for a in "$@"; do case "$a" in res://*) S="$a";; esac; done

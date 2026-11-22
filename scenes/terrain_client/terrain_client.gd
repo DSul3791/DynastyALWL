@@ -38,9 +38,14 @@ extends Node
 
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
+const NpcCampScript := preload("res://src/shared/npc_camp.gd")   # facing at the spawn (face_fire_yaw)
 const SlotSoundsScript := preload("res://src/client/slot_sounds.gd")
 const LogLookScript := preload("res://src/client/log_look.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
+const JoinAddress := preload("res://src/client/join_address.gd")
+const ServerAuthScript := preload("res://src/shared/server_auth.gd")
+const ServerListScript := preload("res://src/client/server_list.gd")
+const PasswordBoxScript := preload("res://src/client/password_box.gd")
 const OceanWaves := preload("res://src/sullivan_water/ocean/ocean_waves.gd")
 const OceanMesh := preload("res://src/sullivan_water/ocean/ocean_mesh.gd")
 const GroundWatchdogScript := preload("res://src/client/ground_watchdog.gd")
@@ -69,23 +74,28 @@ const LADDER_RUNG_M := 0.35               # rungs are about a third of a metre a
 const NpcVoiceScript := preload("res://src/client/npc_voice.gd")
 const TestSwitchesScript := preload("res://src/client/test_switches.gd")
 const TrailCodec := preload("res://src/shared/trail_codec.gd")
+const MapKnowledgeScript := preload("res://src/client/map_knowledge.gd")
 const AnimalViewScript := preload("res://src/client/animal_view.gd")
 const BurrowViewScript := preload("res://src/client/burrow_view.gd")
 const NestViewScript := preload("res://src/client/nest_view.gd")
+const FarSmokeScript := preload("res://src/client/far_smoke.gd")
 const DialogueViewScript := preload("res://src/client/dialogue_view.gd")
 const HeldItemScript := preload("res://src/client/held_item.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const WeatherScript := preload("res://src/shared/weather.gd")
+const DrinkRules := preload("res://src/shared/drink_rules.gd")
 const ClimateScript := preload("res://src/shared/climate.gd")
 const DayCycleScript := preload("res://src/client/day_cycle.gd")
 const IceScript := preload("res://src/shared/ice.gd")
 const FrozenWater := preload("res://src/client/frozen_water.gd")   # the liquid sheets' ice look (docs/design/frozen_water_look.md)
 const SpringSteam := preload("res://src/client/spring_steam.gd")   # steam over spring mouths on frosty mornings (Jamie #739)
+const WetlandMist := preload("res://src/client/wetland_mist.gd")   # low mist over fen, bog and swamp at dawn and dusk (Dave 21 Nov 2026)
 const IceFeelScript := preload("res://src/client/ice_feel.gd")     # ice sounds, footing and cold shock by thickness (docs/design/ice_walk_feel.md)
 const SnowWalkScript := preload("res://src/shared/snow_walk.gd")   # walking on snow and snowshoes (Part C plan 7)
 const OceanIceScript := preload("res://src/client/ocean_ice.gd")
 const ShoreProps := preload("res://src/client/shore_props.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
+const FogGroundScript := preload("res://src/shared/fog_ground.gd")
 const ICE_POND_DEPTH_M := 3.0           # a typical pond's depth for its freezing speed
 const CoverScript := preload("res://src/shared/cover.gd")
 const StanceScript := preload("res://src/client/stance.gd")
@@ -106,10 +116,10 @@ const ShotRunnerScript := preload("res://src/debug/shot_runner.gd")
 const FallGrowthScript := preload("res://src/client/fall_growth.gd")
 # Shown on the HUD. Owner (2026-10-19): raise it by one with every push.
 const RescueScript := preload("res://src/client/rescue.gd")
-const BuildInfo := preload("res://src/shared/build.gd")
-const BUILD: int = BuildInfo.NUMBER
+const BuildStamp := preload("res://src/shared/build_stamp.gd")
+var BUILD: int = BuildStamp.number()   # the release stamp's build number, or build.gd NUMBER in an editor run (step A1)
 var rig_flora_hold: Dictionary = {}   # look rig (--shot-flora): chunks whose plants the rig drew itself; incoming server flora for them is dropped
-var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+N shortcut
+var _npc_view: Node3D = null            # NPC bodies, for the Ctrl+Shift+N shortcut
 var _npc_voice: Node = null             # NPC speech (npc_voice.gd), switched in Settings
 const AirBandsCheck := preload("res://src/client/air_bands.gd")
 const WaterMaterial := preload("res://src/client/water_material.gd")
@@ -153,7 +163,6 @@ const WaterFallsScript := preload("res://src/worldgen/runtime/water_falls.gd")
 const FloraViewScript := preload("res://src/flora/flora_view.gd")
 const PieceLook := preload("res://src/client/piece_look.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
-const TileBakeScript := preload("res://src/admin/tile_bake_launcher.gd")
 const AmbientCrittersScript := preload("res://src/client/ambient_critters.gd")
 const GrassViewScript := preload("res://src/client/grass_view.gd")
 const SoundStageScript := preload("res://src/client/sound_stage.gd")
@@ -185,6 +194,7 @@ const WATER_MIN_MSEC := 3000          # and never more often than this, ground l
 const WATER_MAX_MSEC := 12000         # a re-ask that brought no new water doubles the wait, up to this (settled water: the log spam in the lag logs)
 const GroundColumn := preload("res://src/client/ground_column.gd")
 const WaterReask := preload("res://src/client/water_reask.gd")
+const WaterAreas := preload("res://src/shared/water_areas.gd")
 # Spawn near the ground (Dave 25 Oct, Tyler): the server's spawn y is already the ground height at the spawn x,z plus 2 m (terrain_server._spawn_point), and a respawn point is
 # a real standing place, so the player is put there with this small lift instead of 28 m up. The old +28 m was only waiting for ground to appear.
 const SPAWN_LIFT_M := 0.5
@@ -225,7 +235,7 @@ var body: CharacterBody3D
 var camera: Camera3D
 var hud: Label
 var _breath_label: Label             # the seconds of air left, shown with the oxygen symbol
-var sound_panel = SoundPanelScript.new()   # Shift+F3: every playing sound with a switch to mute it (sound_panel.gd)
+var sound_panel = SoundPanelScript.new()   # Ctrl+Shift+F5: every playing sound with a switch to mute it (sound_panel.gd)
 var debug_hud = DebugHudScript.new()   # F3 or Esc > Settings: the long list of diagnostic lines; threads add lines with debug_hud.add_line(name, callable)
 var _last_sound: String = ""
 var _quality_buttons: Array = []         # Esc > Settings, one per tier; the active one is marked
@@ -237,6 +247,7 @@ var _sound_now_log_msec: int = -100000
 var compass                         # temporary admin compass (AdminCompass)
 var sea: MeshInstance3D
 var _work_serial: int = 0               # the held tool's swing count the avatar's chop clip was last started for
+var is_admin_here: bool = false   # protocol 134: the server says after the hello whether this player is an admin there (in local play it says yes; false until it does)
 var flying: bool = false
 var grass_while_flying: bool = false   # the shot runner sets this: its camera flies, but a picture must show the grass a walking player sees (no grass in any rig shot until 9 Nov 2026)
 var underwater: bool = false
@@ -266,6 +277,8 @@ var _was_waiting: bool = false
 var arrival_protect_until_msec: int = 0   # no fall damage report until then (Dave 2026-10-21: arriving must not hurt)
 const ARRIVAL_HEIGHT_M := 0.5             # the body is set this far above the ground when the ground first appears
 const ARRIVAL_PROTECT_MS := 6000
+const LOAD_QUIET_MS := 3000      # placed-thing sounds stay quiet this long after landing and after the join window closes (_world_loading)
+var _load_quiet_until_msec: int = 0
 const FLY_LAND_PROTECT_MS := 60000   # Dave 2026-10-21: pressing G to land from flying hurts nothing for a minute
 var _tint: ColorRect
 var _aim_msec: int = 0
@@ -433,7 +446,7 @@ var test_quickkeys: bool = false
 var test_texttest: bool = false
 var test_plantpick: bool = false
 var test_embed: bool = false
-var test_resume: String = ""          # --resume-test=logout|drop (leave 60 m from the spawn) or =check (say where the game starts)
+var test_resume: String = ""          # --resume-test=logout|drop (leave 60 m from the spawn), =stay (then 90 m, and stay in) or =check (say where the game starts)
 var test_dig_next: bool = false
 var test_spear: bool = false
 var test_chop: bool = false
@@ -478,11 +491,12 @@ var fall_growth                       # FallGrowth: ferns around the foot of the
 var items                             # InventoryView: inventory panel (I), pick-up (E)
 var harvest                           # Harvest: E prompt, tap to pick, hold to sweep
 var pickup_feed                       # PickupFeed: "+3 Firewood" notices on the left of the screen
-var hotbar_strip                      # HotbarStrip: keys 1 to 0 on screen, drag items onto a key (keys hold items: inventory step 4)
+var hotbar_strip                      # HotbarStrip: keys 1 to 0 on screen, drag items onto a key (the keys are pack slots 0 to 9)
 var heart_pulse                       # HeartPulse: the line of light over the hotbar that pulses with the heartbeat (heartbeat_design.md)
 var hud_fade                          # HudFade: passing out fades the whole HUD but the heartbeat line (heartbeat_design.md "Passing out")
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
 var grass                             # GrassView
+var map_knowledge = MapKnowledgeScript.new()   # this character's surveyed map cells (protocol 120); the Journal's Map page draws them (map_page.gd)
 var critters                          # AmbientCritters: butterflies, bees, dragonflies, birds and fireflies (client only)
 var faint                             # FaintEffect: tunnel vision, blur and black-out (set_state)
 var sound                             # SoundStage: wind, footsteps, grass swish
@@ -490,9 +504,9 @@ var _commit: String = GitStamp.short_commit()   # which checkout is running
 var _render_scale: float = 1.0            # 3D resolution scale now (render_scale.gd)
 var _jitter_test                      # float-precision test, J or Esc > Advanced
 var _machine_probe                    # "Measure this machine" run for the minimum-spec test (Esc > Advanced)
-var _gpu_probe                        # GPU cost per piece of the scene, Ctrl+Shift+G
+var _gpu_probe                        # GPU cost per piece of the scene, Ctrl+Shift+P
 var weather_look                      # WeatherLook: clouds, rain, snow, fog, lightning from `weather`
-var _bake = TileBakeScript.new()      # admin: background tile bake
+var _bake = null                      # admin: background tile bake (src/admin/tile_bake_launcher.gd), made when started; editor runs only (game_menu.gd)
 var _bake_check_msec: int = 0
 var _bake_status: String = ""
 var _bake_alert_until: int = 0
@@ -527,7 +541,7 @@ var _water_asked_msec: int = 0
 var _water_wait_msec: int = WATER_MIN_MSEC   # the wait between re-asks now (WATER_MIN_MSEC to WATER_MAX_MSEC)
 var _water_new_since_ask: int = 0           # chunks with changed water since the last re-ask
 var _water_quiet_asks: int = 0              # re-asks in a row that brought nothing new (the log line is printed for the first only)
-var _water_dirty_area: Rect2 = Rect2()   # protocol 88: where the water moved since the last ask (no area: everywhere)
+var _water_dirty_areas: Array = []   # protocol 88, a list since 130: the Rect2s where the water moved since the last ask
 var _water_dirty_all: bool = false
 var _flora_chunks: int = 0
 var _flora_bytes: int = 0
@@ -536,10 +550,18 @@ var _flora_done_msec: int = 0
 var _host: String = "127.0.0.1"
 var _port: int = 24600
 var _wait_until_msec: int = 0
+var _auth = null                          # the join handshake (server_auth.gd): an open server passes at once, one with a password asks
+var _password_arg: String = ""            # --password= (tests, bots): typed for the player once
+var _password_box = null                  # the password popup (password_box.gd), made when a server first asks
+var _remember_password: bool = false      # the player ticked "Remember on this computer" for the password now being tried
+var _avatar_glb: String = ""              # the player's own body model file (my_character.gd body_model), warmed in _ready
+var _remote: bool = false                 # a client-only build joining someone's server: no local Play server to restart (join_address.gd)
 
 
 func _ready() -> void:
-	DynastyBodyScript.warm()   # the body and arm files load on loader threads now, not on the main thread at the welcome (a 3 s freeze)
+	var my_model: String = MyCharacter.body_model()
+	_avatar_glb = DynastyBodyScript.BodyModels.glb(my_model)
+	DynastyBodyScript.warm([my_model], [MyCharacter.genome().get("hair_model", "")])   # the body and arm files (and the player's own body model and hair style) load on loader threads now, not on the main thread at the welcome (a 3 s freeze)
 
 	# Ground loading threads (Dave 2026-10-21, settling after a fast fly-over took 61 s): each ground block a worker asks for
 	# waits for the server's answer, so with the engine's default pool (half the cores: 2 on a 4 core machine) only two
@@ -587,6 +609,12 @@ func _ready() -> void:
 			break
 	var host: String = "127.0.0.1"
 	var port: int = 24600
+	_remote = JoinAddress.client_only()
+
+	if _remote and AppConfig.get_command_line_value("server", "") == "":   # --server= (tests, rigs) names its own host and port
+		var joined: Dictionary = JoinAddress.parse(JoinAddress.current())
+		host = str(joined.get("host", ""))
+		port = int(joined.get("port", JoinAddress.DEFAULT_PORT))
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--server="):
@@ -810,8 +838,10 @@ func _ready() -> void:
 			test_creatures = true
 
 	net.welcome_received.connect(_on_welcome)
+	net.join_refused_received.connect(_on_join_refused)
 	net.blocks_received.connect(_on_blocks)
 	net.tile_changed_received.connect(_on_tile_changed)
+	net.edits_since_received.connect(_on_edits_since)
 	net.dug_received.connect(_on_dug)
 	net.filled_received.connect(_on_filled)
 	net.flora_received.connect(_on_flora)
@@ -845,12 +875,10 @@ func _ready() -> void:
 	net.died_received.connect(_on_died)
 	net.final_death_received.connect(_on_final_death)
 	net.hit_number_received.connect(func(at: Vector3, amount: int) -> void:
-		if sound != null:
-			sound.spear.hit("flesh", at, SoundStageScript.SpearScript.hit_strength(amount))   # the hit lands: a jab, a thrown spear or an arrow in an animal (the numbers setting does not mute it)
-
 		if display.damage_numbers:
-			HitNumbersScript.spawn(self, at, amount))
+			HitNumbersScript.spawn(self, at, amount))   # the flesh thud comes with animal_hit below: a tree or boulder blow sends a number too and is not flesh
 	net.start_at_received.connect(_on_start_at)
+	net.admin_status_received.connect(_on_admin_status)
 	net.step_to_received.connect(_on_step_to)
 	net.water_received.connect(_on_water_received)
 	net.cave_streams_received.connect(_on_cave_streams)
@@ -868,23 +896,35 @@ func _ready() -> void:
 
 	# Started by the "play" launcher, whose server may still be loading.
 	if waits_for_server(AppConfig.get_command_line_value("role", "")) and _wait_until_msec == 0:
-		_wait_until_msec = Time.get_ticks_msec() + 120000
+		_wait_until_msec = Time.get_ticks_msec() + (30000 if _remote else 120000)   # a remote server is already up; 30 s rides out a brief drop
 	multiplayer.server_disconnected.connect(_on_server_lost)
 	multiplayer.connected_to_server.connect(func():
 		_link_up_msec = Time.get_ticks_msec()
 		NetSettings.apply((multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(1)))
 	multiplayer.connection_failed.connect(_on_connection_failed)
+	multiplayer.peer_authentication_failed.connect(_on_auth_failed)
 	started_msec = Time.get_ticks_msec()
 
 	if DisplayServer.get_name() != "headless":
 		_connect_window = ConnectWindowScript.new()
+
+		if _remote:
+			_connect_window.on_back = _back_to_servers   # server pick page: Cancel while joining, Back to servers on a failure
+
 		_connect_window.setup(self)
+		_connect_window.show_first_load_note(BUILD)
+
+		if _remote and Engine.has_meta("continue_join"):
+			_connect_window.set_heading("Joining %s as %s" % [_server_label(), str(CharacterStoreScript.active().get("name", "your character"))])
 
 	_connect()
 
 
 # What the connection window says: the step the game is on, how long it has been there, and (when it is stuck) the likely reason.
 func _update_connect_window() -> void:
+	if _join_refused != "":
+		return   # the refusal stays on the window until the player quits
+
 	var now: int = Time.get_ticks_msec()
 	var waited: int = int(float(now - started_msec) * 0.001)
 	var where: String = "%s:%d" % [_host, _port]
@@ -892,10 +932,19 @@ func _update_connect_window() -> void:
 	if connected_msec > 0:
 		var since: int = int(float(now - connected_msec) * 0.001)
 
-		if (not waiting_for_ground and since >= 3) or since > 120:
+		# On a first start the window (and its note) stays until the player has landed ("JOIN: ground ready"): the long pause comes a frame
+		# after the welcome, when waiting_for_ground is still false (Lane A, 21 Nov 2026: the window closed at +5 s, then froze 24 s).
+		# Ground on the very first walk step (a warm ground cache after an update) never logs "ground ready": then 10 s, past the pause's start.
+		var landed: bool = (_ground_logged or (not waiting_for_ground and since >= 10)) if _connect_window.first_load_note_shown() else not waiting_for_ground
+
+		if (landed and since >= 3) or since > 120:
 			_telemetry.event("connect window closed after %d s in the world" % since)
+
+			if landed:
+				ConnectWindowScript.mark_first_load_done(BUILD)
 			_connect_window.close()
 			_connect_window = null
+			_load_quiet_until_msec = maxi(_load_quiet_until_msec, now + LOAD_QUIET_MS)
 			return
 
 		var silent_server: bool = waiting_for_ground and stream != null and _ground_received() == 0 and stream.pending() == 0 and _ground_watchdog.tries == 0
@@ -903,6 +952,10 @@ func _update_connect_window() -> void:
 		if silent_server and since >= 20:
 			_telemetry.event("JOIN: %d s in the world with no ground, 0 blocks received, 0 asked for; link: %s" % [since, link_bars.text() if link_bars != null else "?"])
 			var advice: String = "The server welcomed this game but no ground has arrived for %d s and none is being asked for. Most likely the server is an old one from an earlier run that is closing or out of date. Quit, wait a few seconds, and press Play again (a new game replaces an out-of-date server)." % since
+
+			if _remote:
+				advice = "The server welcomed this game but no ground has arrived for %d s and none is being asked for. The server may be restarting. Quit, wait a minute and join again; if it keeps happening, tell whoever runs the server." % since
+
 			_connect_window.fail("The server is not sending ground", "1. Server found at %s: done\n2. Welcome received\n3. Loading the ground under you: nothing arriving\n\n%s" % [where, advice], func(): _finish(1))
 
 		_connect_window.update("1. Server found at %s: done\n2. Welcome received, server protocol %s, this game %d: matches\n3. Loading the ground under you: %d blocks still arriving, %d received, %d s so far\n\nThe game opens as soon as there is ground to stand on.%s%s" % [where, str(world.get("protocol", "?")), NetScript.PROTOCOL_VERSION, stream.pending() if stream != null else 0, _ground_received(), since, ("\n\n" + _ground_watchdog.note()) if _ground_watchdog.tries > 0 else "", ("\n\nThe ground is taking long: %d blocks received, %d failed, %d still arriving, player height %.0f m." % [_ground_received(), _ground_failed(), stream.pending() if stream != null else 0, body.global_position.y]) if since > 60 and body != null else ""])
@@ -916,7 +969,11 @@ func _update_connect_window() -> void:
 		var text: String = "1. Opening the connection to %s: done\n2. Waiting for the server's welcome: %d s" % [where, quiet]
 
 		if quiet >= 8:
-			text += "\n\nThe server accepted the connection but has not welcomed this game. Most likely an OLD server from an earlier run is still running on port %d. Close the game, end every \"Godot\" process except the editor in Task Manager, then press Play again." % _port
+			if _remote:
+				text += "\n\nThe server at %s accepted the connection but has not welcomed this game. It may be busy or restarting. Quit, wait a minute and try again; if it keeps happening, tell whoever runs the server." % where
+			else:
+				text += "\n\nThe server accepted the connection but has not welcomed this game. Most likely an OLD server from an earlier run is still running on port %d. Close the game, end every \"Godot\" process except the editor in Task Manager, then press Play again." % _port
+
 			_connect_window.fail("The server is not answering this game", text, func(): _finish(1))
 
 		_connect_window.update(text)
@@ -924,21 +981,33 @@ func _update_connect_window() -> void:
 
 	var trying: String = "1. Opening the connection to %s: %s, %d s\n2. Waiting for the server's welcome\n3. Loading the ground under you" % [where, "trying" if status == MultiplayerPeer.CONNECTION_CONNECTING else "not connected", waited]
 
-	if waited >= 20:
+	if waited >= 20 and _remote:
+		trying += "\n\nNo server has answered yet at %s. The game keeps trying for about half a minute." % where
+	elif waited >= 20:
 		trying += "\n\nNo server has answered yet. The server may still be starting (the game keeps trying for up to 2 minutes), or it did not start: if port %d is held by another program the new server cannot use it." % _port
 
 	_connect_window.update(trying)
 
 
 func _connect() -> void:
+	if _remote and _host == "":
+		_cannot_reach("This game has no server address yet. Start it again and choose a server on the server pick page.")
+		return
+
 	var peer: ENetMultiplayerPeer = ENetMultiplayerPeer.new()
 	var error: int = peer.create_client(_host, _port)
 
 	if error != OK:
 		push_error("Terrain client: cannot connect to %s:%d (%s)" % [_host, _port, error_string(error)])
-		get_tree().quit(1)
+
+		if not _remote:
+			get_tree().quit(1)
+			return
+
+		_cannot_reach("The game cannot open a connection to %s:%d (%s). If that is a name, check its spelling and this computer's internet connection." % [_host, _port, error_string(error)])
 		return
 
+	_attach_auth()
 	multiplayer.multiplayer_peer = peer
 	print("Terrain client: connecting to %s:%d" % [_host, _port])
 	GroundMaterialScript.start_early(quality)   # the ground photos are sized on a worker while the welcome is on its way
@@ -949,7 +1018,11 @@ func _connect() -> void:
 # visible (the game is paused); a headless test run quits as before. The crash report is written first.
 func _on_server_lost() -> void:
 	print("Terrain client: server left")
-	_telemetry.event("EXIT: server_disconnected (the server dropped this client or ended); last link: %s" % (EventLogScript.peer_stats((multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(1)) if multiplayer.multiplayer_peer is ENetMultiplayerPeer else "gone"))
+	var enet: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
+	_telemetry.event("EXIT: server_disconnected (the server dropped this client or ended); last link: %s" % (EventLogScript.peer_stats(enet.get_peer(1)) if enet != null and enet.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED else "gone"))
+
+	if _join_refused != "":
+		return   # dropped after a refusal: the window already says why (_on_join_refused)
 
 	if crash_report != null:
 		crash_report.report_now("server left: the connection to the server was lost")
@@ -1029,6 +1102,9 @@ static func waits_for_server(role: String) -> bool:
 
 # While a --wait is running, a server not up yet is tried again.
 func _on_connection_failed() -> void:
+	if _join_refused != "":
+		return   # refused at the password or the build: the window already says why, and a retry would only ask again
+
 	if Time.get_ticks_msec() < _wait_until_msec:
 		multiplayer.multiplayer_peer = null
 		get_tree().create_timer(1.0).timeout.connect(_connect)
@@ -1040,7 +1116,162 @@ func _on_connection_failed() -> void:
 		_show_lost_notice("the connection failed after joining")
 		return
 
+	if _remote:
+		_cannot_reach("No server answered at %s:%d. Check the address on the server pick page, that the server is running, and this computer's internet connection." % [_host, _port])
+		return
+
 	_finish(1)
+
+
+# The server cannot be reached before joining: a window says why, with Back to servers and Quit;
+# a headless run quits with code 1 as before.
+func _cannot_reach(text: String) -> void:
+	_telemetry.event("JOIN: cannot reach the server: %s" % text)
+
+	if _connect_window == null:
+		_finish(1)
+		return
+
+	_connect_window.fail("Cannot reach the server", text, func(): _finish(1))
+
+
+# Every server runs the join handshake (server_auth.gd); it must be attached before the connection opens. A server with a password asks for it:
+# --password= answers once (tests); a player gets the password popup (password_box.gd): 3 tries (Dave 19 Nov 2026), then "You got it wrong
+# 3 times..." and back to the server pick page. A password the player chose to remember is tried first (only its salted hash is kept).
+func _attach_auth() -> void:
+	if _auth != null:
+		_auth.new_connection()
+		return
+
+	_password_arg = AppConfig.get_command_line_value("password", "")
+	_auth = ServerAuthScript.new()
+	_auth.remembered = func(salt_hex: String) -> String:
+		var rows: Array = ServerListScript.load_rows()
+		var index: int = ServerListScript.find(rows, "%s:%d" % [_host, _port])
+		var saved: Dictionary = rows[index].get("password", {}) if index >= 0 and rows[index].get("password") is Dictionary else {}
+		return str(saved.get("hash", "")) if str(saved.get("salt", "")) == salt_hex else ""
+	_auth.password_needed.connect(_on_password_needed)
+	_auth.accepted.connect(func(salt_hex: String, hash_hex: String) -> void:
+		var rows: Array = ServerListScript.load_rows()
+		var index: int = ServerListScript.find(rows, "%s:%d" % [_host, _port])
+
+		if index >= 0 and _remember_password:
+			rows[index]["password"] = {"salt": salt_hex, "hash": hash_hex}
+			ServerListScript.save_rows(rows))
+	_auth.refused.connect(func(reason: String) -> void:
+		var words: String = "You got it wrong 3 times. Check your Caps Lock, and take a minute to recompose."
+
+		if reason == "busy":
+			words = "Too many wrong passwords from this computer. Wait a minute and try again."
+
+		if _password_box != null:
+			_join_refused = words
+			_password_box.fail("Wrong password" if reason != "busy" else "Wait a minute", words)
+		else:
+			_on_join_refused(words, "Wrong password" if reason != "busy" else "Wait a minute"))
+	_auth.attach_client(multiplayer as SceneMultiplayer)
+
+
+func _on_password_needed(tries_left: int, wrong: bool) -> void:
+	_telemetry.event("JOIN: the server asks for a password (%d tries left%s)" % [tries_left, ", the last one was wrong" if wrong else ""])
+
+	if _auth.remembered_was_wrong:
+		_forget_password()
+
+	if _password_arg != "" and not wrong:
+		_auth.submit(_password_arg)
+		return
+
+	if _connect_window == null or not _remote:
+		_on_join_refused("The password was wrong." if wrong else "The server at %s:%d has a password: start the game with --password=." % [_host, _port], "Wrong password" if wrong else "Password needed")
+		return
+
+	if _password_box == null:
+		_password_box = PasswordBoxScript.new()
+		_password_box.on_ok = func(typed: String, keep: bool) -> void:
+			_remember_password = keep
+			_auth.submit(typed)
+		_password_box.on_cancel = _back_to_servers
+		_password_box.setup(self)
+
+	_password_box.ask(_server_label(), tries_left, wrong and not _auth.remembered_was_wrong, _auth.remembered_was_wrong)
+
+
+func _forget_password() -> void:
+	var rows: Array = ServerListScript.load_rows()
+	var index: int = ServerListScript.find(rows, "%s:%d" % [_host, _port])
+
+	if index >= 0 and rows[index].has("password"):
+		rows[index].erase("password")
+		ServerListScript.save_rows(rows)
+
+
+# The server's name as the player knows it on the server pick page, else its address.
+func _server_label() -> String:
+	var rows: Array = ServerListScript.load_rows()
+	var index: int = ServerListScript.find(rows, "%s:%d" % [_host, _port])
+	return ServerListScript.shown_name(rows[index]) if index >= 0 else "%s:%d" % [_host, _port]
+
+
+# Back to the server pick page: the game starts again on that page (the cleanest way out of a half-made join; nothing is saved here).
+func _back_to_servers() -> void:
+	_telemetry.event("JOIN: back to the server pick page")
+	var user_args: Array = []
+
+	for argument in OS.get_cmdline_user_args():
+		if argument not in ["--to-servers", "--test"] and not argument.begins_with("--password=") and not argument.begins_with("--server="):   # else the launcher rejoins
+			user_args.append(argument)
+
+	OS.set_restart_on_exit(true, OS.get_cmdline_args() + PackedStringArray(["--"]) + PackedStringArray(user_args + ["--to-servers"]))
+	_finish(0)
+
+
+# A remote server welcomed this game: remember when, and as which character, for Continue and the server pick page's Last played.
+func _note_played() -> void:
+	var rows: Array = ServerListScript.load_rows()
+	var index: int = ServerListScript.find(rows, "%s:%d" % [_host, _port])
+
+	if index < 0:
+		var added: Dictionary = ServerListScript.add(rows, "%s:%d" % [_host, _port])
+
+		if added.has("error"):
+			return
+
+		index = int(added["index"])
+
+	ServerListScript.mark_played(rows, str(rows[index]["address"]), CharacterStoreScript.active_id())
+	ServerListScript.save_rows(rows)
+
+
+# The join handshake ended without getting in (server_auth.gd). A server that never said a word there does not speak this game's join: it is
+# an older or newer build. Otherwise the server dropped the join (a refusal already says why), or it went away: as a failed connection.
+func _on_auth_failed(_peer: int) -> void:
+	if _join_refused != "":
+		return
+
+	if _auth != null and not _auth.heard:
+		_on_join_refused("The server at %s:%d answered but does not speak this game's way of joining: it runs an older or newer build of the game. Update the game, or ask whoever runs the server to update it." % [_host, _port], "Different version")
+		return
+
+	_on_connection_failed()
+
+
+# The server runs another build (step A1): its reason stays on the join window until the player quits. The server drops this client next.
+# Also a password the server would not take (title says which).
+func _on_join_refused(text: String, title: String = "Update required") -> void:
+	if _join_refused != "":
+		return   # already showing (the welcome's check came first)
+
+	_join_refused = text if text != "" else "The server refused this game."
+	print("Terrain client: join refused: ", _join_refused.replace("\n", " "))
+	_telemetry.event("JOIN: refused by the server: " + _join_refused.replace("\n", " "))
+
+	if _connect_window != null:
+		_connect_window.fail(title, _join_refused, func(): _finish(1))
+	elif DisplayServer.get_name() != "headless":
+		_show_lost_notice(_join_refused.replace("\n", " "))
+	else:
+		_finish(1)
 
 
 func _on_welcome(info: Dictionary) -> void:
@@ -1050,8 +1281,15 @@ func _on_welcome(info: Dictionary) -> void:
 
 
 func _welcome_body(info: Dictionary) -> void:
+	if _remote:
+		_note_played()
+
 	if int(info.get("protocol", 0)) != NetScript.PROTOCOL_VERSION:
 		push_error("Terrain client: server speaks protocol %s, this client %d" % [str(info.get("protocol")), NetScript.PROTOCOL_VERSION])
+
+		if _remote:   # a tester's game: no local server to restart, only an update helps
+			_on_join_refused("This game and the server are different versions (protocol %d; the server %s).\nUpdate the game and try again." % [NetScript.PROTOCOL_VERSION, str(info.get("protocol"))])
+			return
 
 		if _connect_window != null:
 			_connect_window.fail("The server is out of date", "The server on port %d speaks protocol %s, this game speaks %d.\nAn old server from an earlier run is still running. Close the game, end every \"Godot\" process except the editor in Task Manager, then press Play again." % [_port, str(info.get("protocol")), NetScript.PROTOCOL_VERSION], func(): _finish(1))
@@ -1060,9 +1298,19 @@ func _welcome_body(info: Dictionary) -> void:
 		_finish(1)
 		return
 
+	# A release server names its build in the welcome (protocol 133): another build stops here, before anything is loaded or the hello is
+	# sent, with the server's own wording. The server refuses it at hello too (BuildStamp.refusal), so a client that skips this is still kept out.
+	if bool(info.get("server_stamped", false)):
+		var refused: String = BuildStamp.refusal(int(info.get("server_build", 0)), BuildStamp.stamped_build())
+
+		if refused != "":
+			_on_join_refused(refused)
+			return
+
 	var server_commit: String = str(info.get("server_commit", ""))
 
-	if server_commit != "" and _commit != "" and server_commit != _commit and _connect_window != null:
+	# A stamped server checks the build itself (above and at hello); this commit check is for editor Play.
+	if not bool(info.get("server_stamped", false)) and server_commit != "" and _commit != "" and server_commit != _commit and _connect_window != null:
 		# Dave (build 621): an old server answered and sent no ground. A different checkout is named at once. A joined server
 		# cannot be restarted from here, so the player closes the game and presses Play again.
 		_telemetry.event("JOIN: server is build %s commit %s, this game is build %d commit %s" % [str(info.get("server_build", "?")), server_commit, BUILD, _commit])
@@ -1099,6 +1347,8 @@ func _welcome_body(info: Dictionary) -> void:
 	if seeded > 0:
 		cache.set_revisions(info["revisions"])
 		print("Terrain client: first run, copied the starter ground for the spawn (%d tile)" % seeded)
+
+	_ask_catch_up()
 	stream = StreamScript.new()
 	stream.cache = cache
 	stream.drop_lods = _drop_ground_lods
@@ -1140,6 +1390,9 @@ func _welcome_body(info: Dictionary) -> void:
 	root.add_child(terrain)
 	var tp0: int = Probe.start()
 	_make_player(root, test_start if test_start.is_finite() else info["spawn"] + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0))
+
+	if not test_start.is_finite():
+		_face_from_spawn(Vector3(info["spawn"]))
 	Probe.stop("welcome: player", tp0)
 	flora = FloraViewScript.new()
 	flora.name = "Flora"
@@ -1194,6 +1447,7 @@ func _welcome_body(info: Dictionary) -> void:
 	sound.name = "Sound"
 	root.add_child(sound)
 	sound.ground_below = _ground_below
+	sound.under_land = _under_land   # no sea under the island: a deep tunnel has dry steps (Dave 20 Nov 2026)
 	sound.floor_under = _floor_under
 	var t4: int = Probe.start()
 	sound.setup(terrain, flora, grass)
@@ -1347,6 +1601,8 @@ func _welcome_body(info: Dictionary) -> void:
 	animal_view.name = "Animals"
 	add_child(animal_view)
 	_animal_view_node = animal_view
+	npc_view.goblin_called.connect(func(at: Vector3, mood: String) -> void: sound.creatures.call_at("goblin", at, mood))   # a camp goblin squaring up to a weapon (Dave 20 Nov 2026: "make angry sounds")
+	npc_view.goblin_maker = animal_view.make_goblin   # goblin tribe members wear the wild goblin's model (data/creatures/goblin_tribes.json)
 	animal_view.water_level = func(x: float, z: float) -> float: return flora.water_level_at(x, z) if flora != null else NAN      # swimmers play their swim clip in water
 	net.animals_received.connect(animal_view.on_rows)
 	animal_view.state_changed.connect(func(kind: String, state: int, at: Vector3) -> void:
@@ -1357,6 +1613,13 @@ func _welcome_body(info: Dictionary) -> void:
 			weather_look.puddles.animal_step(kind, at, sound._ground_under(at))      # a foot in a puddle splashes (puddles.gd)
 	)
 	net.hit_number_received.connect(func(at: Vector3, _amount: int) -> void: animal_view.note_hit(at))
+	# A blow that lands on an animal (any player's, within 60 m; Dave 19 Nov 2026: "there need to be damage numbers or better hit sounds. or both"):
+	# the flesh thud where it struck, and the body flinches. A miss is only the swing or the jab, so a hit is heard and seen.
+	net.animal_hit_point_received.connect(func(id: int, _zone: int, at: Vector3) -> void:
+		if sound != null:
+			sound.spear.hit("flesh", at, 1.0)
+
+		animal_view.flinch(id))
 	animal_view.fell.connect(func(_kind: String, at: Vector3, small: bool) -> void:
 		sound.slots.play("animal_fall", at, body.global_position, 0.4 if small else 1.0))      # the body drops where it was killed (a small one softly)
 
@@ -1368,6 +1631,7 @@ func _welcome_body(info: Dictionary) -> void:
 		)
 
 	net.trails_received.connect(func(bx, bz, bytes): grass.set_trail_block(bx, bz, TrailCodec.decode(bytes)))
+	net.map_block_received.connect(map_knowledge.receive)
 	net.blood_received.connect(animal_view.on_blood)
 	var burrow_view: Node3D = BurrowViewScript.new()      # rabbit burrow mounds (MikeW #236 sends the spots, Kathleen draws them)
 	burrow_view.name = "Burrows"
@@ -1378,6 +1642,11 @@ func _welcome_body(info: Dictionary) -> void:
 	nest_view.name = "Nests"
 	add_child(nest_view)
 	net.nests_received.connect(nest_view.on_nests)
+	var far_smoke: Node3D = FarSmokeScript.new()           # smoke of campfires 100 m to 2 km off (TEST-011, protocol 114 far_fires)
+	far_smoke.name = "FarSmoke"
+	far_smoke.view_m = func() -> float: return float(terrain.view_distance)
+	add_child(far_smoke)
+	net.far_fires_received.connect(far_smoke.on_far_fires)
 	net.burrows_received.connect(_on_burrows_for_grass)
 	Probe.stop("welcome: hud, npc, animal, burrow and nest views", tq_views)
 	var tq_items_ready: int = Probe.start()
@@ -1387,6 +1656,7 @@ func _welcome_body(info: Dictionary) -> void:
 	Probe.stop("welcome: items view ready", tq_items_ready)
 	var tq_items_view: int = Probe.start()
 	items.setup(net, layer, root, func(): return body.global_position, _ground_below)
+	items.journal.map_knowledge = map_knowledge   # the Journal's Map page draws what this character surveyed (protocol 120)
 	Probe.stop("welcome: items view", tq_items_view)
 	# The 4 Nov freeze watch said the welcome was stuck 1.5 s "after welcome: items view" and before "welcome: held item": these three pieces were not timed.
 	var tq_dialogue: int = Probe.start()
@@ -1412,11 +1682,11 @@ func _welcome_body(info: Dictionary) -> void:
 		if not talker.is_empty():       # nobody in earshot is talking: no voice (the text still shows)
 			npc_voice.speak(voice_id, text, talker["pos"])
 	items.knowledge = knowledge
-	items.max_lights = func(): return [1, 2, 3, 3][clampi(quality, 0, 3)]
 	items.is_inspecting = func(): return inspecting
 	items.auto_pickup_blocked = func(): return swimming or (held != null and (held.placing() or held.tool_busy()))
 	items.stance_event = _on_stance_from_server
 	items.lie_on_bed = _lie_on_bed
+	items.on_bed = func(): return not _bed_hold.is_empty()
 	items.sit_on_seat = _sit_on_seat
 	items.notice_event = func(text: String):
 		var cue: String = SlotSoundsScript.net_cue(text)
@@ -1434,9 +1704,9 @@ func _welcome_body(info: Dictionary) -> void:
 		_save_display()
 		items.set_text_scale(display.TEXT_SCALES[display.text_index])
 	items.gather_event = func():
-		held.play_gather()
 		feel.strike(0.0, 0.3)
 	items.eat_event = func(item_id): sound.itemfx.eat(item_id)
+	items.bellows_event = func(at: Vector3): sound.workshop.bellows(at)
 	items.worn_event = func(changed: Array, ids: Array) -> void:
 		if not test_gear:
 			sound.gear.set_worn(SoundStageScript.GearScript.layers_for(ids))   # what is worn rustles, creaks or clinks on every step (--test-gear keeps its own set)
@@ -1445,7 +1715,6 @@ func _welcome_body(info: Dictionary) -> void:
 			sound.gear.dress(str(changed[0]))   # one sound for a change (a swap sends both pieces in one list)
 	items.skill_up_event = func() -> void: sound.slots.play("skill_tock", body.global_position + Vector3(0.0, 1.5, 0.0))   # a skill rises: a soft wooden tock (the skill group cools down 20 s)
 	items.hurt_event = func(lost: int) -> void: sound.slots.play("player_hurt", body.global_position + Vector3(0.0, 1.5, 0.0), Vector3.INF, clampf(float(lost) / 25.0, 0.4, 1.0))   # a blow lands on you: a sharp breath, louder for a bigger hit
-	items.boulder_budget = func(): return [24, 48, 80, 120][clampi(quality, 0, 3)]
 	items.fuel_event = func(): sound.itemfx.fuel_pressed()
 	items.reject_event = func(reason): sound.itemfx.reject(reason)
 	items.thought_event = func(line_id, kind): sound.inner.speak(line_id, kind)
@@ -1501,13 +1770,17 @@ func _welcome_body(info: Dictionary) -> void:
 	var tq_tail: int = Probe.start()   # Low-quality lag runs (5 Nov) stuck up to 2.2 s "after held item": the rest of the welcome was not timed
 	held.struck.connect(func(side: float, weight: float): feel.strike(side, weight))
 	held.shrub_near = _shrub_near
+	held.swath_cut = func(slot: int, tool_class: String) -> float: return harvest.swath(slot, tool_class) if harvest != null else 0.0
 	held.water_depth_at = func(x: float, z: float) -> float:
 		var surface: float = flora.water_surface_at(x, z)
 		return 0.0 if is_nan(surface) else WaterVolume.depth(surface, _ground_below(Vector3(x, body.global_position.y, z)))
 	held.held_light_budget = func(): return quality >= 1
 	items.equip_requested = func(slot): held.equip_toggle(slot)
 	items.held_slot_now = func(): return held.held_slot if held.holding else -1
+	items.pick_hand = func(key: int): held.press_slot(key)
 	items.held_key_now = func(): return held.held_key if held.holding else -1
+	items.crop_model = func(crop: String, share: float, spots: Array): return flora.crop_model(crop, share, spots) if flora != null else null   # a garden crop wears its wild plant's model (Dave play test 19 Nov 2026)
+	items.crop_models_ready = func(): return flora == null or flora.models_ready()
 	hotbar_strip = HotbarStripScript.new()
 	hotbar_strip.setup(items, layer, held)
 	items.hotbar_strip = hotbar_strip
@@ -1522,7 +1795,7 @@ func _welcome_body(info: Dictionary) -> void:
 
 	# The server's one "received" event for every gain (pickup, quest reward, craft, harvest); Items adds the RPC.
 	if net.has_signal("item_received"):
-		net.connect("item_received", func(item_id: String, count: int, _source: String): pickup_feed.push_id(item_id, count))
+		net.connect("item_received", func(item_id: String, count: int, source: String): pickup_feed.push_id(item_id, count, source))
 
 	if test_items:
 		items.run_test()
@@ -1611,14 +1884,56 @@ func _on_blocks(keys: PackedInt32Array, payloads: Array) -> void:
 		Probe.stop("blocks in", t)
 
 
+# The server's note that a tile's ground was edited (sent at most every half second, after the edits' own dug / filled messages).
+# Dave 18 Nov 2026 (ground "unloaded" for many minutes while a road was built): this used to throw the whole 15 km tile out of the
+# saved ground and every prefetched block with it, at every edit. Only the blocks round this session's edits are outdated
+# (_forget_edit); they are marked again here, so a block the server answered just before the edit and that landed after it is
+# asked for again too. Edits made while this client was away still empty the tile at the next join (the welcome's revisions).
 func _on_tile_changed(tile: Vector2i, revision: int) -> void:
-	if cache != null:
-		cache.set_revision(tile, revision)
+	for edit in _edits_untold:
+		_forget_edit(edit[0], edit[1], false)
 
-	if stream != null:
-		stream.forget_prefetch()
+	_edits_untold.clear()
 
 	print("Terrain client: tile %s is now revision %d" % [str(tile), revision])
+
+
+# Protocol 128 (Dave 18 Nov 2026): saved tiles older than the server's are held while the server is asked for the edits since, so only
+# the blocks round those edits are fetched again at a join (it used to fetch the whole 15 km tile after any edit by anyone).
+func _ask_catch_up() -> void:
+	for ask in cache.take_catch_up():
+		net.ask_edits_since.rpc_id(1, ask[0], int(ask[1]))
+		print("Terrain client: saved ground of tile %s is at revision %d; asking for the edits since" % [str(ask[0]), int(ask[1])])
+
+
+func _on_edits_since(tile: Vector2i, since: int, revision: int, spheres: PackedFloat32Array, whole: bool) -> void:
+	if cache == null:
+		return
+
+	var keys: Array = cache.apply_catch_up(tile, since, revision, spheres, whole)
+
+	if stream != null:
+		stream.forget_blocks(keys)
+
+	@warning_ignore("integer_division")
+	print("Terrain client: tile %s caught up from revision %d to %d: %s" % [str(tile), since, revision, "saved ground dropped (the server could not list the edits)" if whole else "%d edits, %d blocks to fetch again" % [spheres.size() / 4, keys.size()]])
+
+
+var _edits_untold: Array = []   # [center, radius] of the dug / filled edits since the last tile_changed
+
+
+# A ground edit: the saved and prefetched copies of the blocks it touches are outdated and come from the server again.
+func _forget_edit(center: Vector3, radius: float, remember: bool = true) -> void:
+	if cache == null:
+		return
+
+	var keys: Array = cache.forget_area(center, radius)
+
+	if stream != null:
+		stream.forget_blocks(keys)
+
+	if remember:
+		_edits_untold.append([center, radius])
 
 
 # Applies an edit to the terrain already loaded; blocks loaded later come
@@ -1699,6 +2014,8 @@ func _tunnel_step() -> void:
 
 
 func _on_dug(center: Vector3, radius: float) -> void:
+	_forget_edit(center, radius)
+
 	if terrain == null:
 		return
 
@@ -1728,6 +2045,8 @@ func _on_dug(center: Vector3, radius: float) -> void:
 
 # A fill (a dam, a filled hole): the same sphere put back as ground, the grass under it buried.
 func _on_filled(center: Vector3, radius: float, _material: int) -> void:
+	_forget_edit(center, radius)
+
 	if terrain == null:
 		return
 
@@ -1784,9 +2103,9 @@ func _stamp_walkers(now: int) -> void:
 
 # Placed things clear the ground around them (data/look/placed_clearing.json): grass and litter in grass_view, shrubs and small plants in
 # flora_view. The spots are read from the world items the inventory view already holds (a fire, shelter, chest, bench, forge...; loose
-# sticks, felled trunks, boulders, remains and carcasses do not count). Updated when the set changes.
+# sticks, stumps, boulders, remains and carcasses do not count). Updated when the set changes.
 const PLACED_CLEARING := "res://data/look/placed_clearing.json"
-const CLEARING_NOT := [0, 2, 3, 4, 10]   # loose items, felled trunks and stumps; every other state asks structures.json "clears_grass" (StructureLook)
+const CLEARING_NOT := [0, 2, 4, 10]   # loose items and stumps; every other state asks structures.json "clears_grass" (StructureLook)
 const StructureLook := preload("res://src/shared/structure_look.gd")
 const LyingLogs := preload("res://src/shared/lying_logs.gd")
 var wet_gap_override: float = -1.0     # look rig (--shot-wet=GAP): pretend this many metres of rock lie between the tunnel ceiling and the water; -1 = the real drip view
@@ -1820,11 +2139,12 @@ func _sync_cleared() -> void:
 
 	if _cleared_cfg.is_empty():
 		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(PLACED_CLEARING))
-		_cleared_cfg = parsed if parsed is Dictionary else {"radius_m": 5.0, "edge_m": 1.5}
+		_cleared_cfg = parsed if parsed is Dictionary else {"radius_m": 3.0, "edge_m": 1.0}
 
 	var spots: Array = []
 	var lying: Array = []
 	var paths: Array = []      # trodden path patches: left out of the grass cells (set_bare), pressed out of the plants like a log
+	var roads: Array = []      # a surveyed road's patches: the same, 2 m out past the road's edges (Dave 17 Nov 2026)
 	var key: int = 0
 
 	if showroom == null and world.has("spawn"):
@@ -1843,18 +2163,6 @@ func _sync_cleared() -> void:
 	for id in items._world:
 		var row: Dictionary = items._world[id]
 
-		if int(row.get("state", 0)) == 3 and not _switches.on("log_grass"):
-			continue
-
-		if int(row.get("state", 0)) == 3:
-			# A felled trunk lies from the stump along its yaw (inventory_view._make_felled): the grass under it is pressed flat.
-			var extra: Dictionary = row.get("extra", {})
-			var at: Vector3 = row["pos"]
-			var length: float = float(extra.get("length", 8.0))
-			lying.append(LyingLogs.trunk_segment(at, extra))
-			key = key ^ hash(Vector2(at.x, at.z)) ^ int(id) ^ int(length * 10.0)
-			continue
-
 		if int(row.get("state", 0)) == 4 and _switches.on("log_grass"):
 			# A standing stump: no blade grows out of it (inventory_view._make_felled draws it as a short cylinder).
 			var stump_at: Vector3 = row["pos"]
@@ -1867,18 +2175,20 @@ func _sync_cleared() -> void:
 			var loose_id: String = items.table.id_of(int(row.get("number", 0)))
 
 			if loose_id == "log" or loose_id.begins_with("log_"):
-				# A loose log lies along its node's x axis, centred on it (inventory_view._log_mesh): pressed like a felled trunk.
-				var plain: bool = loose_id == "log"
+				# A loose log lies along its node's x axis, centred on it (inventory_view._log_mesh): the grass under it is pressed flat.
 				var node: Node3D = row["node"]
 				var seg: Array
 
-				# A kicked log rolls (inventory_view._roll_tick): its node moves and turns every frame, and each new segment made the grass and the
+				if items._falling.has(id):
+					continue   # a felled tree's log still coming down: pressed once it lies (a segment every frame of the fall would filter the grass again each time)
+
+				# A log on the move (gliding where the server's physics rolls it, inventory_view._glide_tick): its node moves and turns every frame, and each new segment made the grass and the
 				# plants of its chunks filter again, ten times a second for the whole roll (Dave 3 Nov 2026: "every time I drop a log off my shoulder
 				# or I kick one everything lags each time it moves"). While it rolls it keeps the segment it had; the new one is taken once it rests.
-				if items._rolling.has(id) and _loose_segs.has(id):
+				if items._gliding.has(id) and _loose_segs.has(id):
 					seg = _loose_segs[id]
 				else:
-					seg = LyingLogs.loose_segment(node.global_position, node.global_transform.basis.x, 1.0 if plain else 2.5, 0.11 if plain else 0.22, 0.13 if plain else 0.28)
+					seg = LyingLogs.loose_segment(node.global_position, node.global_transform.basis.x, 3.0, 0.22, 0.28)
 
 				segs_now[id] = seg
 				lying.append(seg)
@@ -1888,7 +2198,7 @@ func _sync_cleared() -> void:
 		if int(row.get("state", 0)) == 32:
 			# A trodden hoe path (Dave 2 Nov 2026): a round patch, so the grass is pressed out of its brown middle only, not cleared 5 m round like a bench.
 			var path_at: Vector3 = row["pos"]
-			paths.append(Vector3(snappedf(path_at.x, 0.01), path_at.y, snappedf(path_at.z, 0.01)))
+			(roads if bool(row.get("road", false)) else paths).append(Vector3(snappedf(path_at.x, 0.01), path_at.y, snappedf(path_at.z, 0.01)))
 			key = key ^ hash(Vector2(path_at.x, path_at.z)) ^ int(id)
 			continue
 
@@ -1922,6 +2232,11 @@ func _sync_cleared() -> void:
 		paths.append(mound)
 		key = key ^ hash(Vector2(mound.x, mound.z))
 
+	for bog_id in items.bogs:      # a bog iron stain (Dave 19 Nov 2026: obvious to find): no grass or small plant stands on it
+		var bog_at: Vector3 = items.bogs[bog_id]["pos"]
+		spots.append(Vector3(snappedf(bog_at.x, 0.01), bog_at.y, snappedf(bog_at.z, 0.01)))
+		key = key ^ hash(Vector2(bog_at.x, bog_at.z)) ^ int(bog_id)
+
 	for boulder_id in items._boulders:
 		var boulder: Dictionary = items._boulders[boulder_id]
 		var rock_r: float = float(boulder.get("now", boulder.get("radius", 0.5)))
@@ -1932,14 +2247,17 @@ func _sync_cleared() -> void:
 		return
 
 	_cleared_key = key
-	var radius: float = float(_cleared_cfg.get("radius_m", 5.0))
-	grass.set_cleared(spots, radius, float(_cleared_cfg.get("edge_m", 1.5)))
+	var radius: float = float(_cleared_cfg.get("radius_m", 3.0))
+	grass.set_cleared(spots, radius, float(_cleared_cfg.get("edge_m", 1.0)))
 	grass.set_trunks(lying, float(_cleared_cfg.get("trunk_margin_m", 0.3)), float(_cleared_cfg.get("trunk_squash", 0.15)))
-	grass.set_bare(paths)
+	grass.set_bare(paths, roads)
 	var plant_lying: Array = lying.duplicate()
 
 	for patch in paths:
 		plant_lying.append(LyingLogs.round_segment(patch, 0.6))
+
+	for patch in roads:
+		plant_lying.append(LyingLogs.round_segment(patch, grass.ROAD_BARE_M))
 
 	flora.set_cleared(spots, radius)
 	flora.set_trunks(plant_lying, float(_cleared_cfg.get("trunk_margin_m", 0.3)))
@@ -1994,7 +2312,7 @@ func _shore_prompt() -> String:
 
 	var sea: bool = false
 
-	for offset in [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]:
+	for offset in ([] if _under_land(here) else [Vector2.ZERO, Vector2(reach, 0.0), Vector2(-reach, 0.0), Vector2(0.0, reach), Vector2(0.0, -reach)]):   # a tunnel under the island is no shore
 		var g: float = _ground_below(here + Vector3(offset.x, 0.0, offset.y))
 
 		if not is_nan(g) and g < 0.0:
@@ -2026,6 +2344,8 @@ const DRINK_REACH_M := 3.0   # vitals.json thirst.reach_m, the server's reach fo
 var _drink_chunks: Dictionary = {}   # chunk -> [cell keys (Array of Vector2i), springs PackedFloat32Array x, z], oldest first
 var _drink_cells: Dictionary = {}    # Vector2i world sample (cell_m grid) -> 1 + the brook's regime
 var _drink_cell_m: float = 8.0
+var _drink_season: String = ""      # the season and rain the server's drink rule reads (DrinkRules.brook_shows), set each second in _update_weather
+var _drink_raining: bool = false
 var _drink_heads: Dictionary = {}    # Vector2i cell (cell_m grid) -> PackedFloat32Array x, z of the spring heads in it, for the lush grass (_brook_spots)
 var _spring_heads = null   # SpringHeads: the damp patch, runnel and pebbles at each spring head of the drink points, made on the first that has any
 
@@ -2118,7 +2438,7 @@ func _update_spring_heads(delta: float) -> void:
 
 
 # "Spring" within DRINK_REACH_M of a ground spring head, "Brook" when one of the five points the server reads (the feet and DRINK_REACH_M each
-# way, nearest sample: DrinkRules.tile_rows) is a record brook cell, else "".
+# way, nearest sample: DrinkRules.tile_rows) is a record brook cell that runs now (DrinkRules.brook_shows), else "".
 func _record_drink_here() -> String:
 	if body == null or _drink_chunks.is_empty():
 		return ""
@@ -2132,16 +2452,25 @@ func _record_drink_here() -> String:
 			var springs: PackedFloat32Array = _drink_chunks.get(home + Vector2i(dx, dz), [[], PackedFloat32Array()])[1]
 
 			for n in range(0, springs.size() - 1, 2):
-				if Vector2(springs[n] - here.x, springs[n + 1] - here.z).length() <= DRINK_REACH_M:
+				if Vector2(springs[n] - here.x, springs[n + 1] - here.z).length() <= DRINK_REACH_M and _bed_in_reach(springs[n], springs[n + 1]):
 					return "Spring"
 
 	for offset in [Vector2.ZERO, Vector2(DRINK_REACH_M, 0.0), Vector2(-DRINK_REACH_M, 0.0), Vector2(0.0, DRINK_REACH_M), Vector2(0.0, -DRINK_REACH_M)]:
 		var key: Vector2i = Vector2i(roundi((here.x + offset.x) / _drink_cell_m), roundi((here.z + offset.y) / _drink_cell_m))
 
-		if _drink_cells.has(key):
+		# Only a bed the rule says runs now: a dry gully offered a drink the server always refused (Dave 19 Nov 2026: "press e to drink" on a dry hillside).
+		if _drink_cells.has(key) and DrinkRules.brook_shows(int(_drink_cells[key]) - 1, _drink_season, _drink_raining) and _bed_in_reach(float(key.x) * _drink_cell_m, float(key.y) * _drink_cell_m):
 			return "Brook"
 
 	return ""
+
+
+# The ground at a record drink point (a brook cell's sample point, a spring head) is not down a bank out of reach, as the server measures it
+# (DrinkRules.too_far_below on the sample's height or the head's). The ray starts well above the player, so water uphill is found too; no ground
+# read yet is no.
+func _bed_in_reach(x: float, z: float) -> bool:
+	var bed: float = _ground_below(Vector3(x, body.global_position.y + 40.0, z))
+	return not is_nan(bed) and not DrinkRules.too_far_below(bed, body.global_position.y)
 
 
 func _water_ahead() -> bool:
@@ -2153,10 +2482,26 @@ func _water_ahead() -> bool:
 		var spot: Vector3 = body.global_position + forward * step
 		var surface: float = flora.water_surface_at(spot.x, spot.z)
 
-		if not is_nan(surface) and WaterVolume.depth(surface, _ground_below(spot)) >= WaterVolume.DRINK_DEPTH_M:   # shallow reed water too (BUG-015)
+		# Water down a bank out of reach is none, as the server's test (DrinkRules.too_far_below).
+		if is_nan(surface) or DrinkRules.too_far_below(surface, body.global_position.y):
+			continue
+
+		var ground: float = _ground_below(spot)
+
+		if is_nan(ground):
+			continue   # no ground read yet (its collision not built) is no answer: depth() would take the whole surface height for the depth
+
+		if WaterVolume.depth(surface, ground) >= WaterVolume.DRINK_DEPTH_M:   # shallow reed water too (BUG-015)
 			return true
 
 	return false
+
+
+# The world is still loading round the player (Dave 21 Nov 2026: at login "it makes the sounds of building everything really fast ... it can mute
+# sounds until they land on the ground and everything is loaded"): not yet joined, gliding for ground, the join window still up, or less than
+# LOAD_QUIET_MS since landing or since that window closed. Placed-thing sounds only note the rows meanwhile (PlacedSounds.quiet).
+func _world_loading() -> bool:
+	return connected_msec == 0 or waiting_for_ground or _connect_window != null or Time.get_ticks_msec() < _load_quiet_until_msec
 
 
 # The body glides high above the spawn until the ground under it has collision. When it does, set it down just above the
@@ -2167,24 +2512,29 @@ func _arrive_on_ground() -> void:
 		_join_log("JOIN: ground ready after %d retries, test drops %d, player %s, viewer y %s" % [_ground_watchdog.tries, stream.drops_made if stream != null else 0, str(body.global_position), _viewer_y_text()])
 
 	var ground: float = _ground_below(body.global_position)
+	var water: Dictionary = _water_here()
+
+	if not is_nan(ground) and not water.is_empty():
+		ground = maxf(ground, float(water["surface"]) - ARRIVAL_HEIGHT_M)   # water has no collider: arriving over it is at its surface, swimming, never on the bed
 
 	if not is_nan(ground) and body.global_position.y - ground > ARRIVAL_HEIGHT_M + 0.2:
 		body.global_position.y = ground + ARRIVAL_HEIGHT_M
 		body.velocity = Vector3.ZERO
 
 	arrival_protect_until_msec = Time.get_ticks_msec() + ARRIVAL_PROTECT_MS
+	_load_quiet_until_msec = Time.get_ticks_msec() + LOAD_QUIET_MS
 	sound.forget_fall(body)
 
 
 # The character died (protocol 34): the server already holds the remains and the reset vitals; put the body back at the spawn
 # high up and let it settle on the ground the way a first arrival does (no fall, a few seconds of protection).
-# Ctrl+N (admin): stand next to the nearest NPC that is drawn (they are sent within 120 m); press E there to talk.
+# Ctrl+Shift+N (admin): stand next to the nearest NPC that is drawn (they are sent within 120 m); press E there to talk.
 func _go_to_npc() -> void:
 	var near: Dictionary = _npc_view.nearest(body.global_position, 100000.0) if _npc_view != null else {}
 
 	if near.is_empty():
 		if items != null:
-			items.show_notice("No NPC drawn (roster %d, drawn %d). You are at x %.0f z %.0f; Hob stands at x 53304 z 68431." % [_npc_view.roster.size(), _npc_view.drawn_count(), body.global_position.x, body.global_position.z])
+			items.show_notice("No NPC drawn (roster %d, drawn %d). You are at x %.0f z %.0f." % [_npc_view.roster.size(), _npc_view.drawn_count(), body.global_position.x, body.global_position.z])
 
 		return
 
@@ -2194,7 +2544,21 @@ func _go_to_npc() -> void:
 	body.global_position = near["pos"] + Vector3(2.0, 1.5, 0.0)
 
 
-# The server's answer to hello with where this character resumes (protocol 69): their last spot, or the nearest rest or shelter.
+# Not an admin on this server (server/client split A5): no Esc > Admin, no flying, no admin free crafting. The server refuses the
+# admin requests anyway; this keeps the client's own admin keys (fly, go to the nearest NPC) from working.
+func _on_admin_status(on: bool) -> void:
+	is_admin_here = on
+
+	if not on:
+		flying = false
+
+		if items != null:
+			items.admin_craft = false
+
+	game_menu.refresh()
+
+
+# The server's answer to hello with where this character resumes (protocol 69): the spot they left, made safe by the server.
 func _on_start_at(spot: Vector3) -> void:
 	if body == null or body.global_position.distance_to(spot) < 8.0:
 		return
@@ -2202,6 +2566,7 @@ func _on_start_at(spot: Vector3) -> void:
 	_telemetry.event("JOIN: resuming at %s (from %s)" % [str(spot.round()), str(body.global_position.round())])
 	body.global_position = spot + Vector3(0.0, 1.0, 0.0)
 	body.velocity = Vector3.ZERO
+	_was_waiting = true   # set down like a first arrival once there is ground (_arrive_on_ground): a spot left in mid-air is not a fall
 
 
 # The server moved this player to a station to craft there (protocol 103, server_items._step_to_station): stand there facing it.
@@ -2229,8 +2594,22 @@ func go_to_spawn() -> void:
 
 	body.global_position = Vector3(world["spawn"]) + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0)
 	body.velocity = Vector3.ZERO
+	_face_from_spawn(Vector3(world["spawn"]))
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
+
+
+# Back from a death: at the starter spawn (not a shelter or bed the server chose) face the camp fire again; elsewhere keep the facing.
+func _face_if_starter_spawn(spawn_point: Vector3) -> void:
+	if world.has("spawn") and Vector2(spawn_point.x, spawn_point.z).distance_to(Vector2(Vector3(world["spawn"]).x, Vector3(world["spawn"]).z)) < 1.0:
+		_face_from_spawn(spawn_point)
+
+
+# Set down at the starter spawn (first arrival, a death that sends the character back there, Go to spawn): face Edda and Hob's camp fire
+# (npc_camp.gd face_fire_yaw; Dave 20 Nov 2026). A returning character is then moved to where they left (_on_start_at) and keeps this facing.
+func _face_from_spawn(spawn_at: Vector3) -> void:
+	if body != null:
+		body.rotation.y = NpcCampScript.face_fire_yaw(Vector2(spawn_at.x, spawn_at.z))
 
 
 var death_screen                      # the real-death screen (src/client/death_screen.gd), made when the server sends final_death
@@ -2263,6 +2642,7 @@ func _on_died(cause: String, spawn_point: Vector3) -> void:
 
 	body.global_position = spawn_point + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0)
 	body.velocity = Vector3.ZERO
+	_face_if_starter_spawn(spawn_point)
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
 	_respawn_gasp()
@@ -2310,6 +2690,7 @@ func finish_cavein_death(spawn_point: Vector3) -> void:
 
 	body.global_position = spawn_point + Vector3(0.0, SPAWN_LIFT_M + _spawn_y_offset, 0.0)
 	body.velocity = Vector3.ZERO
+	_face_if_starter_spawn(spawn_point)
 	_was_waiting = true
 	arrival_protect_until_msec = Time.get_ticks_msec() + 10000
 	_respawn_gasp()
@@ -2470,6 +2851,11 @@ func _update_weather() -> void:
 	DayCycleScript.sky_row_latitude = ClimateScript.latitude_of_row(row, int(world.get("equator_row", 0)))   # this row's sky
 	under_cover = CoverScript.at(_anchor, flora.cover) if flora != null else 0.0
 	weather = WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, group, _anchor.y, 0.0, row, int(world.get("equator_row", 0)))
+	# The drink rule's season and rain as the server reads them (_drink_source_ok): the season at the player's row (season_at), and the rain of the
+	# server's one weather, over the starter row at sea level (terrain_server._update_weather), not this player's own sky.
+	var starter: int = WeatherScript.STARTER_ROW
+	_drink_season = WeatherScript.season_at(game_clock.seconds, _anchor.z, tile_m, int(world.get("equator_row", 0)))
+	_drink_raining = float(WeatherScript.state(int(world.get("master_seed", 0)), game_clock.seconds, WeatherScript.zone_group(world.get("zones", []), int(world.get("equator_row", 0)), starter), 0.0, 0.0, starter, int(world.get("equator_row", 0)))["rain"]) > 0.05
 	world_wind_dir = float(weather["wind_dir"])
 	weather = wind_onto(weather)
 
@@ -2532,6 +2918,7 @@ var _warmth_cfg_cache: Dictionary = {}
 var _ice_moat_logged: int = -1
 var _spring_mouths: Dictionary = {}       # tile -> PackedVector3Array, where spring cave brooks leave their caves
 var _spring_steam = null                  # SpringSteam, made on the first frosty update with a mouth known
+var _wetland_mist = null                  # WetlandMist, made at the first dawn or dusk it could show
 var _steam_logged: bool = false
 
 
@@ -2572,7 +2959,29 @@ func _update_ice_feel_weather(ice_now: float, group: String, now: int) -> float:
 		sound.ice.hour = WeatherScript.hour_of(game_clock.seconds)
 
 	_update_spring_steam()
+	_update_wetland_mist()
 	return ice_now
+
+
+func _update_wetland_mist() -> void:
+	if sound == null or sound.ambient == null:
+		return
+
+	var hour: float = WeatherScript.hour_of(game_clock.seconds)
+	var sun: Array = sound.ambient._sun()
+	var wind: float = float(weather.get("wind", 0.0))
+	var rain: float = float(weather.get("rain", 0.0))
+
+	if _wetland_mist == null:
+		if WetlandMist.strength_of(hour, float(sun[0]), float(sun[1]), wind, rain) <= 0.02:
+			return
+
+		_wetland_mist = WetlandMist.new()
+		_wetland_mist.name = "WetlandMist"
+		_wetland_mist.setup(quality)
+		add_child(_wetland_mist)
+
+	_wetland_mist.update(body.global_position, hour, float(sun[0]), float(sun[1]), wind, rain, float(weather.get("wind_dir", 0.0)), sound.ground_at)
 
 
 func _update_spring_steam() -> void:
@@ -2878,7 +3287,7 @@ func _admin_dig() -> void:
 		net.dig.rpc_id(1, hit["position"], 2.0)
 
 
-# Ctrl+R (admin): a rabbit on the ground where the crosshair points, up to 40 m away (testing animals).
+# Ctrl+Shift+R (admin): a rabbit on the ground where the crosshair points, up to 40 m away (testing animals).
 func _admin_rabbit() -> void:
 	var origin: Vector3 = camera.global_position
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(origin, origin - camera.global_transform.basis.z * 40.0)
@@ -2906,9 +3315,12 @@ func _on_water_changed() -> void:
 	_water_dirty_all = true
 
 
-func _on_water_changed_in(area: Rect2) -> void:
+func _on_water_changed_in(areas: Array) -> void:
 	_water_dirty = true
-	_water_dirty_area = area if not _water_dirty_area.has_area() else _water_dirty_area.merge(area)
+
+	for area in areas:
+		if typeof(area) == TYPE_RECT2 and (area as Rect2).has_area() and not _water_dirty_areas.has(area):
+			_water_dirty_areas.append(area)   # each kept apart: two digs far apart do not make a box over the ground between (audit finding 7)
 
 
 # Asks again for the water of the chunks held. While ground is still loading this waits up
@@ -2932,15 +3344,12 @@ func _send_water_request(now: int) -> void:
 	_water_dirty = false
 	_water_asked_msec = now
 	var chunks: PackedInt32Array = PackedInt32Array()
-	var area: Rect2 = Rect2() if _water_dirty_all else _water_dirty_area.grow(flora.chunk_m)
+	var areas: Array = [] if _water_dirty_all else _water_dirty_areas
 	_water_dirty_all = false
-	_water_dirty_area = Rect2()
+	_water_dirty_areas = []
 
-	for chunk in flora.held_chunks():
-		# Only the chunks the moving water touches (protocol 88); the rest still hold the right water.
-		if area.has_area() and not area.intersects(Rect2(Vector2(chunk) * flora.chunk_m, Vector2(flora.chunk_m, flora.chunk_m))):
-			continue
-
+	# Only the chunks the moving water touches (protocol 88, a list since 130); the rest still hold the right water.
+	for chunk in WaterAreas.chunks_to_ask(flora.held_chunks(), areas, flora.chunk_m):
 		chunks.append_array(PackedInt32Array([chunk.x, chunk.y]))
 
 	if _water_quiet_asks <= 1 and not chunks.is_empty():   # "asking again for 0 chunks" (the moved water is outside every chunk held) says nothing
@@ -3005,12 +3414,19 @@ func _on_flora_cut(chunk: Vector2i, id: int) -> void:
 	print("Terrain client: flora item %d in chunk %s was cut" % [id, str(chunk)])
 
 
+var _bogs_rev: int = -1      # the inventory_view.bogs_rev last handed to the ground shader (set_bogs)
+
+
 # Asks for flora chunks coming into view and forgets ones far behind. Far chunks
 # are asked for with their trees only, near ones in full (owner, 2026-10-19).
 func _update_flora() -> void:
 	var p: Vector3 = _anchor
 	var falls: Array = flora.fall_list()
 	GroundMaterialScript.set_falls(terrain.material as ShaderMaterial, falls, p)
+
+	if items != null and items.bogs_rev != _bogs_rev:   # the bog iron rust (only when a patch came, went or changed)
+		_bogs_rev = items.bogs_rev
+		GroundMaterialScript.set_bogs(terrain.material as ShaderMaterial, items.bogs, p)
 
 	if fall_mist != null:
 		fall_mist.update(falls, p)
@@ -3316,6 +3732,9 @@ func _apply_quality() -> void:
 	grass.set_shore(QUALITY_SHORE_M[quality], QUALITY_SHORE_AMOUNT[quality])
 	if fall_mist != null:
 		fall_mist.set_quality(quality)
+
+	if _wetland_mist != null:
+		_wetland_mist.set_quality(quality)
 	if fall_growth != null:
 		fall_growth.set_quality(quality)
 
@@ -3452,6 +3871,7 @@ var _dig_spam_next_msec: int = 0
 var _step_lift: float = 0.0               # metres the eye still has to rise after a step-up (eased out)
 var _movement: Dictionary = {}        # data/movement.json
 var _telemetry = EventLogScript.new()       # crash_reports/telemetry_client.log: traffic, backlog and frame gaps once a second
+var _join_refused: String = ""            # the server's reason when it refused this build (join_refused, protocol 133)
 var _connect_window = null                # shown until the ground under the player is ready (connect_window.gd)
 var _link_up_msec: int = 0                # when ENet reported the connection up (welcome still to come)
 var _pit_shadow_msec: int = 0
@@ -3466,16 +3886,17 @@ var _previous_run_note_until_msec: int = 0
 var _ground_line: String = ""
 var _ground_line_msec: int = 0
 # Esc > Controls: every hotkey on one screen (CONTROLS.md has the full rules; keep this in step with it).
-const HELP_TEXT := """Move: W A S D   Run: Shift+W   Jump / fly up: Space   Fly down: Ctrl   Walk or fly: G or F
+const HELP_TEXT := """Move: W A S D   Run: Shift+W   Jump / fly up: Space   Fly down: Ctrl   Walk or fly (admin): Ctrl+Shift+G
 Crouch C   Sit X   Lie down Z (hold Z 3 s to sleep)   Mouse wheel: third-person camera
 K: photo camera (mouse swings round you, wheel zooms, PageUp / PageDown raise and lower it, W A S D walk relative to it, K again to leave)
-Ctrl+L: admin spyglass (wheel zooms 2x to 40x; the animal at the centre dot shows its name, level and health; Ctrl+L or Esc to lower it)
+Ctrl+Shift+L: admin spyglass (wheel zooms 2x to 40x; the animal at the centre dot shows its name, level and health; Ctrl+Shift+L or Esc to lower it)
 Spyglass in hand: hold the right mouse button to look through it (3x), let go to lower it
 E: gather, drink, fill, talk, open (hold E for the long action)   Left click: use held item   Right click: aim or eat
-I: crafting and inventory   Hammer in hand: right click for blueprints (R too)   Tab: character screen   1 to 9, 0: hotbar   Split S, Drop D, Use E, Repair R, Transfer T (inventory)
-/: inspection mode   + and -: spring flow (tuning)
-F2: quality   F3: debug details   F4: all screen text on or off   Ctrl+Shift+G: GPU probe table (press again to close)   J: jitter test
-Admin: Ctrl+N nearest NPC   Ctrl+R rabbit   Ctrl+X dig hole   ]: starter items   Esc > Advanced > Dump ground: crosshair ground report
+J: Journal   G: goals   M: map   I: crafting and inventory   Hammer in hand: right click for blueprints (R too)   Tab: character screen   1 to 9, 0: hotbar   Split S, Drop D, Use E, Repair R, Transfer T (inventory)
+/: inspection mode
+Admin and debug shortcuts always need Ctrl+Shift together with the key (Esc > Settings > Controls changes the key, never the Ctrl+Shift):
+Ctrl+Shift+F2: quality   F3: debug details   F4: all screen text on or off   F5: sound panel   F7 / F8: water debug   P: GPU probe table (press again to close)   J: jitter test
+Ctrl+Shift+N: nearest NPC   R: rabbit   X: dig hole   ]: starter items   = and -: spring flow (tuning)   Esc > Advanced > Dump ground: crosshair ground report
 Esc: this menu"""
 
 
@@ -3645,6 +4066,8 @@ func _reload_ground() -> void:
 	link.stream = stream
 	terrain.stream = stream
 	cache.seed_starter("res://worlds/base_world/starter_cache", str(world.get("starter_stamp", "")))
+	cache.set_revisions({})   # the starter ground just copied in is caught up like any older saved tile
+	_ask_catch_up()
 
 
 # Inspection mode (the / key): names whatever the crosshair points at. Checked
@@ -3687,6 +4110,11 @@ func _inspect_target() -> String:
 
 	var collider: Object = hit["collider"]
 	var species: int = -1
+
+	# A boulder (TEST-013, Dave 12 Nov 2026): it is drawn apart from the world items, so the look fell through to the ground under it and read
+	# "Forest humus". It is rock to break with a pick.
+	if collider != null and collider.has_meta("boulder"):
+		return "Rock"
 
 	# A tree trunk: its shape number says which species it is.
 	if collider != null and collider.has_meta("species_ids"):
@@ -3749,7 +4177,7 @@ func _ground_name(point: Vector3) -> String:
 	var material: int = tool.get_voxel(cell)
 
 	if material < Layout.MATERIAL_ROCK:
-		return _known_from_table("soils", "s", material)
+		return _known_from_table("soils", "s", Layout.soil_of(material))
 
 	tool.channel = Layout.CHANNEL_RESOURCE
 	var resource: int = tool.get_voxel(cell)
@@ -3816,8 +4244,40 @@ func _make_environment(root: Node3D) -> void:
 # 64-bit floats (ocean_waves.gd), so the shader's swell and _sea_height_at() are the same water at the same moment.
 func _follow_sea() -> void:
 	sea.global_position = Vector3(body.global_position.x, 0.0, body.global_position.z)
+	_mask_sea_under_land()
 	var origin: Vector2 = OceanWaves.origin_for(Vector2(body.global_position.x, body.global_position.z))
 	OceanWaves.apply(sea.material_override as ShaderMaterial, origin, _sea_clock())
+
+
+# Under the island, not the sea (Dave 20 Nov 2026: a tunnel dug below sea level hit water): the baked ground round p is above sea level
+# (fog_ground.gd under_land, a lookup in the window the server already sends). False until that window has come: the old rule.
+func _under_land(p: Vector3) -> bool:
+	return weather_look != null and weather_look.fog_ground.under_land(p.x, p.z)
+
+
+# The sea plane is not drawn under the island, so a tunnel below 0 m shows no sheet of sea across it: the window's ground ("low", the
+# lowest within 64 m) goes to the sea shader as a small texture (water_material.gd land_low), made again only when a new window comes.
+var _sea_land_grid: Dictionary = {}
+
+
+func _mask_sea_under_land() -> void:
+	if weather_look == null or is_same(weather_look.fog_ground.grid, _sea_land_grid):
+		return
+
+	_sea_land_grid = weather_look.fog_ground.grid
+	var material: ShaderMaterial = sea.material_override as ShaderMaterial
+
+	if _sea_land_grid.is_empty():
+		material.set_shader_parameter("land_on", 0.0)
+		return
+
+	var n: int = int(_sea_land_grid["n"])
+	var low: PackedFloat32Array = _sea_land_grid["low"]
+	material.set_shader_parameter("land_low", ImageTexture.create_from_image(Image.create_from_data(n, n, false, Image.FORMAT_RF, low.to_byte_array())))
+	material.set_shader_parameter("land_origin", _sea_land_grid["origin"])
+	material.set_shader_parameter("land_size_m", float(n) * FogGroundScript.CELL_M)
+	material.set_shader_parameter("land_above_m", FogGroundScript.LAND_ABOVE_M)
+	material.set_shader_parameter("land_on", 1.0)
 
 
 # The sea clock (s): this client's own (M5 second step; a shared server clock comes with the boats, M7).
@@ -3846,7 +4306,7 @@ var _view_ball: SphereShape3D          # the camera's ball for the wall sweep (V
 const PhotoCameraScript := preload("res://src/client/photo_camera.gd")
 var photo = PhotoCameraScript.new()                      # K: the photo camera (src/client/photo_camera.gd), a free orbiting view of the character
 const SpyglassScript := preload("res://src/client/spyglass.gd")
-var spyglass = SpyglassScript.new()                      # Ctrl+L: the admin spyglass (src/client/spyglass.gd), zoom and the watched animal's readout
+var spyglass = SpyglassScript.new()                      # Ctrl+Shift+L: the admin spyglass (src/client/spyglass.gd), zoom and the watched animal's readout
 var _spyglass_overlay = null
 var _spyglass_sent_ms: int = 0
 var third_person: bool = false:
@@ -3927,9 +4387,22 @@ func _clear_view_m(from: Vector3, to: Vector3) -> float:
 	return maxf(reach - VIEW_CLEAR_M, 0.0)
 
 
+# The colour of the second log on the shoulders (the pack's second large log), null when only one or none is carried.
+func _second_log_color() -> Variant:
+	if items == null or items.shoulder_id == "":
+		return null   # nothing on the shoulders: no pack scan
+
+	var logs: Array = items.shoulder_logs()
+
+	if logs.size() < 2:
+		return null
+
+	return LogLookScript.color_of(str(logs[1]))
+
+
 # Each drawn frame: place the drawn camera, keep it out of walls and trunks, and show the ragdoll body.
-# The log on the shoulder: about two and a half metres of trunk (the species' real length is not sent; Radar's item data has the weight).
-const CARRY_LOG_LENGTH_M := 2.4
+# The log on the shoulder: a full 3 m log (drops.json log_length_m; the species' real length is not sent; Radar's item data has the weight).
+const CARRY_LOG_LENGTH_M := 3.0
 const CARRY_LOG_RADIUS_M := 0.14
 const FOV_BASE := 75.0                 # Godot's default, which the game has always used
 const FOV_RUN_EXTRA := 5.0             # degrees wider at a full run
@@ -3952,12 +4425,12 @@ func _update_view(delta: float) -> void:
 	if _avatar == null:
 		# Dave's PC log 4 Nov 2026: the first call waited for the body file still loading on a loader thread ("update view" 404 ms at the join).
 		# The body is made once the file is in; until then (a second or two, while the ground loads) there is no third-person body to draw.
-		if ResourceLoader.load_threaded_get_status(DynastyBodyScript.GLB) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
+		if ResourceLoader.load_threaded_get_status(DynastyBodyScript.GLB) == ResourceLoader.THREAD_LOAD_IN_PROGRESS or ResourceLoader.load_threaded_get_status(_avatar_glb) == ResourceLoader.THREAD_LOAD_IN_PROGRESS:
 			return
 
 		_avatar = _make_avatar()
 		body.add_child(_avatar)
-		net.worn_received.connect(func(_numbers: PackedInt32Array) -> void: _dress_avatar())
+		net.worn_received.connect(func(_numbers: PackedInt32Array, _insts: PackedByteArray) -> void: _dress_avatar())
 		_dress_avatar()
 
 	var want: float = _view_m if third_person and not spyglass.active else 0.0
@@ -3992,7 +4465,8 @@ func _update_view(delta: float) -> void:
 	if held != null:
 		held.set_avatar(_avatar)
 		held.set_first_person(_view_now <= 0.5)
-		held.set_shoulder(items != null and items.shoulder_id != "" and _view_now <= 0.5, CARRY_LOG_LENGTH_M, CARRY_LOG_RADIUS_M, LogLookScript.color_of(items.shoulder_id if items != null else ""))
+		held.carrying_log = items != null and items.shoulder_id != ""
+		held.set_shoulder(items != null and items.shoulder_id != "" and _view_now <= 0.5, CARRY_LOG_LENGTH_M, CARRY_LOG_RADIUS_M, LogLookScript.color_of(items.shoulder_id if items != null else ""), _second_log_color())
 	if _avatar.animation_player != null:
 		_avatar.animation_player.active = _avatar.visible      # no animation cost in first person
 	# Feet on the ground whatever the stance (the capsule's bottom stays put; the body origin is its standing middle).
@@ -4015,7 +4489,7 @@ func _update_view(delta: float) -> void:
 
 		# Tool work (31 Oct 2026): swinging an axe plays the wide chop, a pick axe the overhead arc (the generated body only: the old body has no such clip). The clip restarts at every
 		# swing and its impact frame is the moment held_item.gd sends the blow.
-		var hook: String = AvatarDriver.hook_clip(_avatar, {"swimming": swimming, "asleep": items != null and items.asleep, "stance": stance.stance if shot_stance < 0 else shot_stance, "drink_stamp": items._drink_msec if items != null else 0, "pick_stamp": items.pick_stamp if items != null else 0}, pace, delta)
+		var hook: String = AvatarDriver.hook_clip(_avatar, {"swimming": swimming, "asleep": items != null and items.asleep, "stance": stance.stance if shot_stance < 0 else shot_stance, "drink_stamp": items._drink_msec if items != null else 0}, pace, delta)
 
 		if hook != "" and debug_clip == "":
 			clip = hook
@@ -4032,7 +4506,7 @@ func _update_view(delta: float) -> void:
 
 		_avatar.set_meta("torch_in_hand", held != null and held.holding_torch())
 		_avatar.set_meta("torch_left", held != null and held.torch_in_left())
-		_avatar.set_shoulder_log(CARRY_LOG_LENGTH_M if carrying else 0.0, CARRY_LOG_RADIUS_M, LogLookScript.color_of(items.shoulder_id if items != null else ""))
+		_avatar.set_shoulder_log(CARRY_LOG_LENGTH_M if carrying else 0.0, CARRY_LOG_RADIUS_M, LogLookScript.color_of(items.shoulder_id if items != null else ""), _second_log_color())
 
 		if _avatar.current() != clip and not _avatar.is_one_shot_playing():
 			_avatar.play(clip, 1.0, 0.25)
@@ -4052,9 +4526,9 @@ func _update_view(delta: float) -> void:
 var _photo_saved: Dictionary = {}
 
 
-# Ctrl+L: the admin spyglass up or down (docs/design/spyglass_design.md). Not from the photo camera. The server is told (ACT_SPYGLASS) so it
+# Ctrl+Shift+L: the admin spyglass up or down (docs/design/spyglass_design.md). Not from the photo camera. The server is told (ACT_SPYGLASS) so it
 # sends animals out to 300 m and the watched one's readout; a player who is not an admin is refused and the glass comes down.
-# Ctrl+L or Esc while looking through a held spyglass item lowers that instead.
+# Ctrl+Shift+L or Esc while looking through a held spyglass item lowers that instead.
 func _toggle_spyglass() -> void:
 	if spyglass.active and spyglass.tier > 0:
 		_spyglass_item(false, -1, spyglass.tier)
@@ -4073,7 +4547,7 @@ func _toggle_spyglass() -> void:
 # pack slot, `item_tier` its tier. The server checks the item, takes one use and sends animals out to the tier's radius (ACT_SPYGLASS a = 2).
 func _spyglass_item(on: bool, slot: int, item_tier: int) -> void:
 	if on == spyglass.active or (not on and spyglass.tier == 0):
-		return   # already so, or the admin glass is up: Ctrl+L owns that one
+		return   # already so, or the admin glass is up: Ctrl+Shift+L owns that one
 
 	var cfg: Dictionary = SpyglassScript.tier_config(item_tier)
 
@@ -4169,7 +4643,7 @@ func _update_spyglass() -> void:
 # K: into the photo view (the normal view is remembered) or back out (all of it restored: heading, pitch, roll, drawn camera and field of view).
 func _toggle_photo() -> void:
 	if spyglass.active:
-		return   # lower the spyglass first (Ctrl+L or Esc)
+		return   # lower the spyglass first (Ctrl+Shift+L or Esc)
 
 	if not photo.active:
 		_photo_saved = PhotoCameraScript.snapshot(body, camera, view_cam, pitch)
@@ -4266,6 +4740,13 @@ func _unhandled_input(event: InputEvent) -> void:
 	if menu_open:
 		return
 
+	# The hammer or knife build screen takes the keys and clicks while it is open (its search box, rows and tabs; right click and Esc shut it).
+	if held != null and held.blueprints.is_open:
+		if event is InputEventKey and event.pressed and not event.echo and KeyBindings.matches(event, "blueprints"):
+			held.toggle_blueprints()   # R shuts it too while the search box does not have the key
+
+		return
+
 	if event is InputEventKey and event.pressed and not event.echo and KeyBindings.matches(event, "inventory") and items != null:
 		items.toggle()
 		return
@@ -4273,6 +4754,24 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and KeyBindings.matches(event, "character") and items != null:
 		items.toggle_character()
 		return
+
+	# The Journal (docs/design/PLAYER_JOURNAL_GOALS_UI.md): J the index, G goals, M map, from the world or inside the Journal. With the inventory up
+	# these keys stay the inventory's (plain G is Store all there); I and Tab above swap the Journal for their own screen.
+	if event is InputEventKey and event.pressed and not event.echo and items != null and items.journal != null and (items.journal.open or not items.screen_open()):
+		if KeyBindings.matches(event, "journal"):
+			items.journal.press_journal()
+			return
+
+		if KeyBindings.matches(event, "goals"):
+			items.journal.show_page("goals")
+			return
+
+		if KeyBindings.matches(event, "map"):
+			items.journal.show_page("map")
+			return
+
+	if items != null and items.journal != null and items.journal.open:
+		return   # the Journal takes no other key (Esc is handled above)
 
 	if items != null and items.screen_open():
 		if event is InputEventKey and event.pressed and not event.echo:
@@ -4315,7 +4814,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			sound_panel.toggle()
 		elif KeyBindings.matches(event, "admin_dig"):
 			_admin_dig()
-		elif KeyBindings.matches(event, "admin_npc"):
+		elif KeyBindings.matches(event, "admin_npc") and is_admin_here:
 			_go_to_npc()
 		elif KeyBindings.matches(event, "admin_rabbit"):
 			_admin_rabbit()
@@ -4332,9 +4831,9 @@ func _unhandled_input(event: InputEvent) -> void:
 
 			if not inspecting:
 				_inspect_label.text = ""
-		elif KeyBindings.matches(event, "spring_up") or event.keycode == KEY_PLUS or event.keycode == KEY_KP_ADD:
+		elif KeyBindings.matches(event, "spring_up"):
 			net.step_water_rate.rpc_id(1, 1)
-		elif KeyBindings.matches(event, "spring_down") or event.keycode == KEY_KP_SUBTRACT:
+		elif KeyBindings.matches(event, "spring_down"):
 			net.step_water_rate.rpc_id(1, -1)
 		elif KeyBindings.matches(event, "put_down_log") and not flying and items != null and not items.open:
 			items.lay_down_shoulder()
@@ -4362,7 +4861,8 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif KeyBindings.matches(event, "interact") and items != null:
 			items.press_e()
 		elif KeyBindings.matches(event, "starter_items") and items != null:
-			items.admin_give_test_set()
+			if items.admin_craft:   # free items only while Admin mode is on (Dave 11 Nov 2026)
+				items.admin_give_test_set()
 		elif KeyBindings.matches(event, "jitter_test") and _jitter_test != null:
 			_jitter_test.next_spot()
 		elif KeyBindings.matches(event, "debug_details"):
@@ -4375,11 +4875,13 @@ func _unhandled_input(event: InputEvent) -> void:
 			quality = (quality + 1) % QUALITY_NAMES.size()
 			_apply_quality()
 			_save_display()
-		elif KeyBindings.matches(event, "delete_plan") and held != null and held.delete_plan():
+		elif KeyBindings.matches(event, "garden_wider") and held != null and held.garden_resize(1, 0):
 			pass
-		elif KeyBindings.matches(event, "hammer_group_next") and held != null and held.step_blueprint_group(true):
+		elif KeyBindings.matches(event, "garden_narrower") and held != null and held.garden_resize(-1, 0):
 			pass
-		elif KeyBindings.matches(event, "hammer_group_prev") and held != null and held.step_blueprint_group(false):
+		elif KeyBindings.matches(event, "garden_longer") and held != null and held.garden_resize(0, 1):
+			pass
+		elif KeyBindings.matches(event, "garden_shorter") and held != null and held.garden_resize(0, -1):
 			pass
 		elif KeyBindings.matches(event, "blueprints") and items != null and not items.open:
 			if held != null:
@@ -4388,8 +4890,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			_horizon.toggle()   # the inclination ruler underground (Dave 4 Nov 2026); off until asked for
 		elif KeyBindings.matches(event, "open"):
 			if items != null and not flying:
-				items.press_f(Time.get_ticks_msec())   # F opens the chest beside you (Dave 2026-10-22; fly is G); with a log on the shoulder and nothing to open, F twice puts the log down
-		elif KeyBindings.matches(event, "fly"):
+				items.press_f(Time.get_ticks_msec())   # F opens the chest beside you (Dave 2026-10-22; fly is Ctrl+Shift+G); with a log on the shoulder and nothing to open, F twice puts the log down
+		elif KeyBindings.matches(event, "fly") and is_admin_here:
 			flying = not flying
 			body.velocity = Vector3.ZERO
 
@@ -4473,6 +4975,7 @@ func _step_player(delta: float) -> void:
 		if not test_fire and not test_fire_world and not sound.fire.manual_active():
 			sound.fire.sync_world(items._world, _cover_here)
 
+		sound.placed.quiet = _world_loading()
 		sound.placed.watch_world(items._world, body.global_position)
 		sound.placed.watch_open(items._world, body.global_position)
 
@@ -4491,6 +4994,9 @@ func _set_stance(wanted: int, toggle: bool = false) -> void:
 
 	if target != StanceScript.SIT and not _seat.is_empty():
 		_leave_seat()   # off the seat first: the room check would find the seat itself
+
+	if target != StanceScript.LIE and not _bed_hold.is_empty():
+		_leave_bed()   # off the bed first, to its side
 
 	if target < stance.stance and not _room_to_rise(target):
 		_menu_note.text = "Not enough room to stand up here"
@@ -4598,15 +5104,59 @@ func _leave_seat() -> void:
 	stance.seated = false
 
 
-# E on a bed (Dave 4 Nov 2026): the player is laid on top of it along its length, head at the pillow end, and lies down.
-func _lie_on_bed(bed_pos: Vector3, yaw_deg: float) -> void:
-	if swimming:
+# E on a bed (Dave 4 Nov 2026): the player is laid on top of it along its length, head at the pillow end, and lies down. Held there while lying (Dave 18 Nov 2026,
+# "should allow me to lay on it": before, nothing held the body on the bed, and the straw and feather beds laid it across the bed, not along it). E again, Z,
+# a movement key or the server standing the player up gets them up beside the bed. structures.json: lie_turn_deg turns the lie pose (head along its +Z) to the
+# bed's head end (the comfort beds have the head at -X: -90), lie_top_m is the top of its solid (default 0.5). E with no bed (an empty row) gets up.
+const BED_STEP_OFF_M := 0.95       # getting up puts the player this far to the side of the bed's middle (a bed is 1.0 m wide, the capsule 0.33 m)
+const BED_TOP_M := 0.5
+
+var _bed_hold: Dictionary = {}     # while lying on a bed: {"at": the body position held, "off": where getting up puts the body, "yaw": the body's turn held}
+
+
+func _lie_on_bed(bed_pos: Vector3, yaw_deg: float, def: Dictionary) -> void:
+	if def.is_empty():
+		_set_stance(StanceScript.STAND)
 		return
 
+	if swimming or flying:
+		return
+
+	var half: float = float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5
 	body.velocity = Vector3.ZERO
-	body.global_position = Vector3(bed_pos.x, bed_pos.y + 0.5 + float(StanceScript.SHAPE_HEIGHT[StanceScript.STAND]) * 0.5, bed_pos.z)
-	body.rotation.y = deg_to_rad(yaw_deg)
+	body.rotation.y = deg_to_rad(yaw_deg + float(def.get("lie_turn_deg", 0.0)))
+	var at: Vector3 = Vector3(bed_pos.x, bed_pos.y + float(def.get("lie_top_m", BED_TOP_M)) + half, bed_pos.z)
+	var off: Vector3 = bed_pos + body.global_transform.basis.x * BED_STEP_OFF_M + Vector3(0.0, half + 0.05, 0.0)
+	body.global_position = at
 	_set_stance(StanceScript.LIE)
+
+	if stance.stance == StanceScript.LIE:
+		_bed_hold = {"at": at, "off": off, "yaw": body.rotation.y}
+
+
+# Holds a player lying on a bed there (true while held: no gravity, no sliding off). A stance the server changed ends it.
+func _hold_bed() -> bool:
+	if _bed_hold.is_empty():
+		return false
+
+	if body.global_position.distance_to(_bed_hold["at"]) > 2.0:   # moved away by something else (a respawn, a teleport): no longer on the bed
+		_bed_hold = {}
+		return false
+
+	if stance.stance != StanceScript.LIE:
+		_leave_bed()
+		return false
+
+	body.velocity = Vector3.ZERO
+	body.global_position = _bed_hold["at"]
+	body.rotation.y = float(_bed_hold["yaw"])   # mouse look turns the head, not the body across the bed
+	return true
+
+
+func _leave_bed() -> void:
+	body.global_position = _bed_hold["off"]
+	body.velocity = Vector3.ZERO
+	_bed_hold = {}
 
 
 # The server's answer (or its own change: fainting forces lying, walking off stands you up).
@@ -4661,6 +5211,18 @@ func _snow_pace() -> float:
 	return _snow_pace_now
 
 
+# Movement keys held for the body (jump, swim up, fly, Ctrl down or dive, ladder climb): never while a screen (inventory, character, Journal, a talk) is open, as walking
+# is not (the screen's keys and clicks are not the world's).
+func _move_held(id: String) -> bool:
+	return KeyBindings.held(id) and not _screen_up()
+
+
+# A screen that takes the keys is up: the inventory, character, Journal, a talk, or the hammer or knife build screen (letters typed in its search
+# box are not walking).
+func _screen_up() -> bool:
+	return (items != null and items.screen_open()) or (held != null and held.blueprints.is_open)
+
+
 func _move_player(delta: float) -> void:
 	if menu_open or (cavein_death != null and cavein_death.active) or (death_screen != null and death_screen.active):
 		body.velocity = Vector3.ZERO
@@ -4671,8 +5233,8 @@ func _move_player(delta: float) -> void:
 		0.0,
 		float(KeyBindings.held("move_back")) - float(KeyBindings.held("move_forward"))
 	)
-	if items != null and items.screen_open():
-		input = Vector3.ZERO   # the inventory's quick keys (S split) are not walking
+	if _screen_up():
+		input = Vector3.ZERO   # the inventory's quick keys (S split) and the build screen's search are not walking
 
 	var direction: Vector3 = photo.move_direction(input) if photo.active else body.global_transform.basis * input
 
@@ -4682,7 +5244,7 @@ func _move_player(delta: float) -> void:
 	# Any movement key stands the player up from sitting or lying; those stances do not move.
 	var sleeping_now: bool = items != null and items.asleep
 
-	if sleeping_now and KeyBindings.held("jump") and input == Vector3.ZERO:
+	if sleeping_now and KeyBindings.held("jump") and input == Vector3.ZERO:   # waking works with a screen open too (Dave 2026-10-21: hold Space to wake)
 		# Dave 2026-10-21: holding Space wakes a sleeper early (not fully rested: the energy stays where it was).
 		_space_wake_s += delta
 
@@ -4692,7 +5254,7 @@ func _move_player(delta: float) -> void:
 	else:
 		_space_wake_s = 0.0
 
-	if input != Vector3.ZERO or (KeyBindings.held("jump") and not sleeping_now):
+	if input != Vector3.ZERO or (_move_held("jump") and not sleeping_now):
 		if stance.stance >= StanceScript.SIT:
 			_set_stance(StanceScript.STAND)
 
@@ -4723,6 +5285,9 @@ func _move_player(delta: float) -> void:
 
 		pace *= _snow_pace()   # snow and glacial ice are slow going, snowshoes ease it (snow_walk.json, Part C plan 7)
 
+		if items.pulling_id != 0:
+			pace = minf(pace, items.pull_pace_mps)   # a handcart in hand: no faster than the cart can go (server cart_pull, catalog Phase 10)
+
 		if strain_cap > 0.0:
 			pace = minf(pace, strain_cap)
 		elif strain_cap < 0.0:
@@ -4750,9 +5315,11 @@ func _move_player(delta: float) -> void:
 		if not body.get_world_3d().direct_space_state.intersect_ray(below).is_empty():
 			_fly_ground_msec = Time.get_ticks_msec()
 	elif flying:
-		direction.y += float(KeyBindings.held("jump")) - float(KeyBindings.held("down"))
+		direction.y += float(_move_held("jump")) - float(_move_held("down"))
 		body.global_position += direction * FLY_SPEED * fast * delta
 	elif _hold_seat():
+		pass
+	elif _hold_bed():
 		pass
 	elif _climb_ladder(delta, strain_cap):
 		pass
@@ -4799,12 +5366,17 @@ func _move_player(delta: float) -> void:
 				velocity.x *= slow
 				velocity.z *= slow
 
+			# An ankle-deep wetland pool (the last step splashed in one, sound_stage.gd pool_pace) slows a walker a little.
+			if body.is_on_floor() and sound != null:
+				velocity.x *= sound.pool_pace
+				velocity.z *= sound.pool_pace
+
 			velocity = _ice_feel_velocity(velocity, water, delta)
 
 		if not waiting_for_ground:
 			_ice_feel_shock(water, delta)
 
-		if not swimming and body.is_on_floor() and KeyBindings.held("jump") and strain_cap >= 0.0:
+		if not swimming and body.is_on_floor() and _move_held("jump") and strain_cap >= 0.0:
 			velocity.y = 7.0
 			feel.jump()
 			sound.footstep(body, 1, -3.0, "right")        # the push off the ground (job 61: a jump had no sound, only the landing)
@@ -4817,8 +5389,14 @@ func _move_player(delta: float) -> void:
 		var fall_speed: float = -body.velocity.y
 		var was_on_floor: bool = body.is_on_floor()
 		var tm: int = Probe.start()
+		var wanted_move: Vector3 = body.velocity
 		body.move_and_slide()
 		Probe.stop("p slide", tm)
+
+		if items != null and not swimming and not waiting_for_ground:
+			# Loose logs are bodies in the server's physics, not in this world: the walker stops at one they walk into and pushes it (inventory_view.walker_logs).
+			var capsule: CapsuleShape3D = _shape.shape as CapsuleShape3D
+			body.global_position += items.walker_logs(body.global_position - Vector3(0.0, 0.9, 0.0), capsule.radius if capsule != null else 0.35, capsule.height if capsule != null else 1.8, wanted_move, running)
 
 		if not was_on_floor and body.is_on_floor() and not swimming and not waiting_for_ground:
 			var landed: float = feel.land(fall_speed)
@@ -4857,7 +5435,7 @@ func _climb_ladder(delta: float, strain_cap: float) -> bool:
 		return false
 
 	var look: Vector3 = -body.global_transform.basis.z
-	var result: Dictionary = ladder.step(items.ladders.values(), body.global_position - Vector3(0.0, 0.9, 0.0), look, KeyBindings.held("move_forward"), KeyBindings.held("move_back"), KeyBindings.held("jump"), delta)
+	var result: Dictionary = ladder.step(items.ladders.values(), body.global_position - Vector3(0.0, 0.9, 0.0), look, _move_held("move_forward"), _move_held("move_back"), _move_held("jump"), delta * items.worn_speed())   # a pack frame climbs slower
 	var at: Vector3 = result["position"]
 
 	if at != Vector3.INF:
@@ -4914,7 +5492,10 @@ func _water_here() -> Dictionary:
 		if not is_nan(pool):
 			surface = pool
 
-	if is_nan(surface) and here.y > 2.0:
+	# Under the island the sea is not there (_under_land): only a lake, river or cave pool counts.
+	var land: bool = _under_land(here)
+
+	if is_nan(surface) and (here.y > 2.0 or land):
 		return {}
 
 	# The bed under a swimmer or wader hardly changes from frame to frame: one ray down per 0.25 m moved or 150 ms, not one per frame.
@@ -4930,6 +5511,9 @@ func _water_here() -> Dictionary:
 		_water_ground_msec = now
 		_water_ground_at = Vector2(here.x, here.z)
 
+	if land:
+		return {"surface": surface, "ground": ground}
+
 	return SwimScript.water_at(here.y, surface, ground, _sea_height_at(here))   # a swimmer in the sea rides the swell (M5)
 
 
@@ -4944,8 +5528,8 @@ func _swim_velocity(wanted: Vector3, direction: Vector3, pace: float, hard: bool
 	if strain_cap < 0.0:
 		horizontal = Vector3.ZERO
 
-	var up: bool = KeyBindings.held("jump") and strain_cap >= 0.0
-	var down: bool = KeyBindings.held("down") and strain_cap >= 0.0
+	var up: bool = _move_held("jump") and strain_cap >= 0.0
+	var down: bool = _move_held("down") and strain_cap >= 0.0
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
 	# BUG-028: W / S swim along the view, so looking up rises and looking down dives; Space and Ctrl still do.
@@ -5162,7 +5746,7 @@ func _process(delta: float) -> void:
 
 		# Admin digs on a 9 x 9 grid by the spawn, layer by layer downward, plus a drop every 10th request.
 		if i == 0:
-			net.inventory_action.rpc_id(1, NetScript.ACT_ADMIN_GIVE, items.table.number_of("spade"), 0, 1, Vector3.ZERO)
+			net.inventory_action.rpc_id(1, NetScript.ACT_ADMIN_GIVE, items.table.number_of("wooden_shovel"), 0, 1, Vector3.ZERO)
 			net.inventory_action.rpc_id(1, NetScript.ACT_ADMIN_GIVE, items.table.number_of("stone"), 0, 20, Vector3.ZERO)
 		elif i % 10 == 0:
 			net.inventory_action.rpc_id(1, NetScript.ACT_DROP, 1, 0, 1, Vector3(world["spawn"]))
@@ -5197,8 +5781,12 @@ func _process(delta: float) -> void:
 		print("Terrain client: ", link_bars.text())
 
 	if crash_report != null:
+		var tc: int = Probe.start()
 		crash_report.tick(_crash_state)
+		Probe.stop("crash report", tc)
+		tc = Probe.start()
 		_telemetry.tick(_telemetry_state, 1000, 500)
+		Probe.stop("telemetry", tc)
 
 	if pickup_feed != null:
 		pickup_feed.update(delta)
@@ -5213,7 +5801,7 @@ func _process(delta: float) -> void:
 	tp = Probe.start()
 
 	if harvest != null:
-		harvest.update(delta, KeyBindings.held("interact") and not items.open)
+		harvest.update(delta, KeyBindings.held("interact") and not _screen_up())   # no harvest under any screen (the Journal, Tab), not only the inventory
 
 	Probe.stop("harvest", tp)
 	tp = Probe.start()
@@ -5316,7 +5904,7 @@ func _process(delta: float) -> void:
 	Probe.stop("anchor", ta0)
 	# Owner (2026-10-19): while a bake runs, ask only for the ground the game is waiting on
 	# right now, not the extra ground around it (it is all thrown away when the bake ends).
-	stream.only_urgent = _bake.running
+	stream.only_urgent = _bake != null and _bake.running
 	link.pump()
 	var wanted: Array = [PackedInt32Array(), 0] if _building_paused else stream.take_requests()
 
@@ -5389,7 +5977,7 @@ func _process(delta: float) -> void:
 		Probe.stop("grass: stamp", tg_stamp)
 		Probe.stop("grass", tg)
 
-	if _bake.running and now >= _bake_check_msec:
+	if _bake != null and _bake.running and now >= _bake_check_msec:
 		_bake_check_msec = now + 2000
 		_bake_status = _bake.status()
 
@@ -5568,7 +6156,7 @@ func _process(delta: float) -> void:
 		sound.fire.cook(spot)
 		sound.fire.fuel(spot)
 
-		for kind in ["crunch", "soft", "drink", "roast_forage", "raspberries", "poultice_plantain", "bandage_plantain"]:
+		for kind in ["drink", "roast_forage", "raspberries", "poultice_plantain", "bandage_plantain"]:   # food is silent (Dave 17 Nov 2026): 3 sounds
 			sound.itemfx.eat(kind)
 
 		# A mouthful at the water's edge (Dave 2026-10-21): E sends the drink, the server raises thirst, the gulp plays; a rise without E is silent.
@@ -5594,6 +6182,7 @@ func _process(delta: float) -> void:
 		sound.placed.container(false, here)
 		sound.placed.tool_break(here)
 		sound.placed.tool_repair(here)
+		sound.placed.quiet = false   # this check hears the hooks, not the join
 		sound.placed.watch_world({}, here)
 		sound.placed.watch_world({7: {"state": 6, "pos": here}}, here)
 		sound.placed.watch_world({}, here)
@@ -5865,7 +6454,7 @@ func _process(delta: float) -> void:
 	if test_insects and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
 		var amb = sound.ambient
-		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0}
+		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0, "wetland": 0.0}
 		var levels: Array = []
 		sound.weather.rain = 0.0
 		sound.wind_strength = 0.3
@@ -5876,13 +6465,13 @@ func _process(delta: float) -> void:
 			levels.append("%.2f" % sound.insects.target())
 
 		amb.set_conditions(13.0, "summer", "clear")
-		amb.weights = {"forest": 0.0, "meadow": 0.0, "water": 1.0, "highland": 0.0}
+		amb.weights = {"forest": 0.0, "meadow": 0.0, "water": 1.0, "highland": 0.0, "wetland": 0.0}
 		var lake_noon: String = "%.2f" % sound.insects.target()
 		var lake_cricket: bool = amb._water_day()
 		amb.set_conditions(2.0, "summer", "clear")
 		var lake_night: String = "%.2f" % sound.insects.target()
 		amb.set_conditions(13.0, "summer", "clear")
-		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0}
+		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0, "wetland": 0.0}
 		sound.weather.rain = 1.0
 		levels.append("%.2f" % sound.insects.target())
 		sound.weather.rain = 0.0
@@ -5984,6 +6573,7 @@ func _process(delta: float) -> void:
 		@warning_ignore("shadowed_variable")
 		var weather = sound.weather
 		weather.rain = 1.0
+		weather.rain_heard = 1.0   # the drops read the level the sky shows (BUG-004)
 		weather.covered = 0.0
 		weather.roofed = 0.0
 		weather.ground_snow = 0.0
@@ -6014,6 +6604,7 @@ func _process(delta: float) -> void:
 		var roofed_drops: int = sp.drops_played - before
 		weather.roofed = 0.0
 		weather.rain = 0.5
+		weather.rain_heard = 0.5
 		before = sp.drops_played
 
 		for n in 50:
@@ -6022,6 +6613,7 @@ func _process(delta: float) -> void:
 
 		var half_drops: int = sp.drops_played - before
 		weather.rain = 0.0
+		weather.rain_heard = 0.0
 		weather.covered = 0.0
 		print("Terrain client: splash check: %d grounds played, unknown %s, burst %d of 40 (cap %d, live %d), 5 s of heavy rain %d, covered %d, roofed %d, half rain %d, rate %.1f %.1f %.1f, last %s" % [
 			played, str(unknown), burst, cap_now, live_now, open_drops, covered_drops, roofed_drops, half_drops, sp.rate(1.0, 0.0, 0.0, false), sp.rate(1.0, 0.0, 0.0, true), sp.rate(0.05, 0.0, 0.0, false), sp.last])
@@ -6069,7 +6661,7 @@ func _process(delta: float) -> void:
 			voice.play()
 			made.append(voice)
 
-		sound.ambient.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0}
+		sound.ambient.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0, "wetland": 0.0}
 		sound.weather.roofed = 0.0
 		sound.cave.enclosure = 0.0
 		sound.occlusion._scan(body, false)
@@ -6078,7 +6670,7 @@ func _process(delta: float) -> void:
 		for voice in made:
 			open_buses.append(str(voice.bus))
 
-		sound.ambient.weights = {"forest": 1.0, "meadow": 0.0, "water": 0.0, "highland": 0.0}
+		sound.ambient.weights = {"forest": 1.0, "meadow": 0.0, "water": 0.0, "highland": 0.0, "wetland": 0.0}
 		sound.occlusion._scan(body, false)
 		var forest_buses: Array = []
 
@@ -6163,7 +6755,7 @@ func _process(delta: float) -> void:
 	if test_night and now - connected_msec > 18000 and now >= _test_fire_at:
 		_test_fire_at = now + 10000000
 		var amb = sound.ambient
-		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0}
+		amb.weights = {"forest": 0.0, "meadow": 1.0, "water": 0.0, "highland": 0.0, "wetland": 0.0}
 		sound.weather.rain = 0.0
 		sound.wind_strength = 0.3
 		sound.cave.enclosure = 0.0
@@ -6379,7 +6971,7 @@ func _process(delta: float) -> void:
 	status_icons.tick(delta)
 	_note_last_sound()
 	_note_sound_now(delta)
-	hud.text = "build %d (%s)  %d fps (vsync %s)  %s (F2)\nx %.0f  y %.1f  z %.0f\nlast sound: %s\nplaying: %s" % [BUILD, _commit, Engine.get_frames_per_second(), "off" if display.vsync_index == 2 else display.VSYNC_NAMES[display.vsync_index], QUALITY_NAMES[quality], body.global_position.x, body.global_position.y, body.global_position.z, _last_sound, _sound_now]
+	hud.text = "build %d (%s)  %d fps (vsync %s)  %s (Ctrl+Shift+F2)\nx %.0f  y %.1f  z %.0f\nlast sound: %s\nplaying: %s" % [BUILD, _commit, Engine.get_frames_per_second(), "off" if display.vsync_index == 2 else display.VSYNC_NAMES[display.vsync_index], QUALITY_NAMES[quality], body.global_position.x, body.global_position.y, body.global_position.z, _last_sound, _sound_now]
 	hud.text += "\n" + _ground_health_line()
 
 	if crash_report != null and crash_report.last_report != "" and Time.get_ticks_msec() < _previous_run_note_until_msec:
@@ -6473,9 +7065,9 @@ func _process(delta: float) -> void:
 # Debug details (Dave 2026-10-20: the default HUD is only build, position and the last sound).
 # Any thread that wants a diagnostic line on screen registers a Callable returning a String with
 # debug_hud (debug_hud.add_line(name, callable), see src/client/debug_hud.gd); it is only called
-# while Debug details is on (F3, or Esc > Settings).
+# while Debug details is on (Ctrl+Shift+F3, or Esc > Settings).
 func _debug_text(avg_ms: float, worst_ms: float) -> String:
-	var text: String = "avg %.1f ms  worst %.1f ms  quality %s (F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders, grass %d" % [
+	var text: String = "avg %.1f ms  worst %.1f ms  quality %s (Ctrl+Shift+F2)\nmem %.0f MB\nblocks: %d from server (%.1f MB), %d from cache\nflora: %d drawn, %d colliders, grass %d" % [
 		avg_ms, worst_ms, QUALITY_NAMES[quality],
 		float(OS.get_static_memory_usage()) / 1048576.0,
 		stream.blocks_received, float(stream.bytes_received) / 1048576.0, cache.hits, flora.instances, flora.colliders, grass.tufts
@@ -6491,7 +7083,7 @@ func _debug_text(avg_ms: float, worst_ms: float) -> String:
 	var win: Vector2i = get_window().size
 	@warning_ignore("static_called_on_instance")
 	text += "\n3D %dx%d 16:9 in window %dx%d (scale %.2f)%s, %s, %s" % [int(display.BASE.x * _render_scale), int(display.BASE.y * _render_scale), win.x, win.y, _render_scale, " (embedded: editor owns the window)" if display.embedded() else "", RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name()]
-	text += "\nGPU breakdown: Ctrl+Shift+G or Esc > Advanced; table shows top left, press again to close; also in the log and user://gpu_probe.txt"
+	text += "\nGPU breakdown: Ctrl+Shift+P or Esc > Advanced; table shows top left, press again to close; also in the log and user://gpu_probe.txt"
 	text += "\nlast step: " + sound.last_step
 	text += "\nsound budget: " + sound.budget_text()
 	text += "\n" + sound.debug_sound_text(body)       # cached half a second: it walks every player in the scene (was every frame)
@@ -6689,10 +7281,17 @@ func _run_dig_next_test() -> void:
 	print("Dig-next test: %d digs around the player; start y %.1f, lowest y %.1f, now y %.1f, longest time off the floor %d frames, rescues %d, %s" % [spots.size(), start.y, lowest, body.global_position.y, off_floor_max, rescue.rescued, "NEVER BELOW THE WORLD" if lowest > start.y - 6.0 else "FELL THROUGH"])
 
 
-# Headless check (--resume-test=logout|drop|check): two runs against one server. "logout"/"drop" walk 60 m from the spawn and leave
-# with or without telling the server; "check" prints how far from the spawn the game starts (a resume puts it back at the spot).
+# Headless check (--resume-test=logout|drop|stay|check): two runs against one server. "logout"/"drop" walk 60 m from the spawn and leave
+# with or without telling the server; "stay" then moves on to 90 m and stays in while the server is stopped; "check" prints how far
+# from the spawn the game starts (a resume puts it back at the spot).
 func _run_resume_test() -> void:
-	await get_tree().create_timer(25.0).timeout
+	var waited: float = 0.0
+
+	while arrival_protect_until_msec == 0 and waited < 300.0:   # landed: before that the body glides and a slow lane's run left before it moved
+		await get_tree().create_timer(1.0).timeout
+		waited += 1.0
+
+	await _server_caught_up()
 	var spawn: Vector3 = world["spawn"]
 
 	if test_resume == "check":
@@ -6702,7 +7301,17 @@ func _run_resume_test() -> void:
 
 	body.global_position = spawn + Vector3(60.0, 4.0, 0.0)
 	body.velocity = Vector3.ZERO
-	await get_tree().create_timer(6.0).timeout
+	await _server_caught_up()   # the server has read the reports from the new spot (a slow first save can hold its tick for a minute)
+	await get_tree().create_timer(12.0).timeout   # past one 10 s spot note (server_items SAVE_SPOT_EVERY_MSEC): a drop is saved without the leave note
+	await _server_caught_up()
+
+	if test_resume == "stay":   # tools/dedicated_stop_smoke.sh: the server knows 60 m; only its save at the stop can keep 90 m
+		body.global_position = spawn + Vector3(90.0, 4.0, 0.0)
+		body.velocity = Vector3.ZERO
+		await _server_caught_up()
+		print("Resume test: staying in at %s" % str(body.global_position.round()))
+		return
+
 	print("Resume test: leaving (%s) at %s" % [test_resume, str(body.global_position.round())])
 
 	if test_resume == "logout":
@@ -6710,6 +7319,15 @@ func _run_resume_test() -> void:
 		await get_tree().create_timer(0.5).timeout
 
 	_finish(0)
+
+
+# Asks the server for the ground here and waits for the answer (up to 300 s): everything sent before has then reached a server that is ticking.
+func _server_caught_up() -> void:
+	var asked: int = Time.get_ticks_msec()
+	net.request_surface.rpc_id(1, body.global_position.x, body.global_position.z)
+
+	while _surface_answered_msec < asked and Time.get_ticks_msec() - asked < 300000:
+		await get_tree().create_timer(0.5).timeout
 
 
 # Headless check (--embed-test): put the body 4 m inside the ground; it must be out within 3 s.
@@ -6751,24 +7369,27 @@ func _update_underwater() -> void:
 	# view turned blue with nothing drawn. The highest wet corner of an 8 m square (water_level_at)
 	# is the top of the film, tens of m above the eye. Now the blended surface at the eye's own
 	# spot, and the water there must be deeper than a film.
-	var surface: float = flora.water_surface_at(eye.x, eye.z) if eye.y >= 0.0 else NAN
+	# Under the island (_under_land, Dave 20 Nov 2026) below 0 m is no sea, so a lake's or cave pool's water there is read too.
+	var land: bool = _under_land(eye)
+	var surface: float = flora.water_surface_at(eye.x, eye.z) if eye.y >= 0.0 or land else NAN
 
 	# Dino's cave retake 5 Nov 2026 (x 52107 z 70264): 2.6 m over the cave mouth's floor the view was under water. The water grid's level there is
 	# the film on the hillside over the cave roof, 1 m above the eye, and the ray down from the eye found the cave floor 3.7 m under that level.
 	if not is_nan(surface) and eye.y < surface and _rock_over(eye, surface):
 		surface = NAN
 
-	if eye.y >= 0.0 and (is_nan(surface) or surface < eye.y - 3.0) and _cave_streams != null:
+	if (eye.y >= 0.0 or land) and (is_nan(surface) or surface < eye.y - 3.0) and _cave_streams != null:
 		var pool: float = _cave_streams.pool_surface_at(eye)   # a spring cave's deep pool (BUG-008)
 
 		if not is_nan(pool):
 			surface = pool
 
 	# The sea's surface at the eye is the swell's (M5): a crest over the eye is under water, but only where the ground is under the sea.
+	# Under the island (_under_land) there is no sea below 0 m: a deep tunnel is dry (Dave 20 Nov 2026).
 	var sea_y: float = _sea_height_at(eye)
-	var under: bool = eye.y < minf(sea_y, 0.0)
+	var under: bool = not land and eye.y < minf(sea_y, 0.0)
 
-	if not under and eye.y < sea_y:
+	if not under and not land and eye.y < sea_y:
 		var bed: float = _ground_below(eye)
 		under = is_nan(bed) or bed < 0.0   # no ground found: open deep sea
 
@@ -7022,6 +7643,7 @@ func _finish(code: int) -> void:
 	if cache != null:
 		cache.flush()
 
+	_telemetry.drain()   # its lines are written on a worker
 	get_tree().quit(code)
 
 
@@ -7050,6 +7672,8 @@ func _exit_tree() -> void:
 	if stream != null:
 		stream.close()
 
+	_telemetry.drain()   # its lines are written on a worker: the EXIT line reaches the file before the process ends
+
 
 # Why a torch cannot be lit right now: "water" (the eye is under water), "rain" (open rain, no tree, rock or roof over you; a cave is cover), or "".
 # Asked at the moment of the key press, so it reads the state of that frame.
@@ -7065,7 +7689,7 @@ func _light_block() -> String:
 
 
 # A torch in either hand goes out under water or after a few seconds in the open rain (Dave, 4 Nov 2026; flame_rules.gd). The client knows the held slot,
-# so it asks the server to swap the torch for a doused one; a carried lantern (buildables plan B4) only goes out under water. Both burn only in the hand
+# so it asks the server to put the torch out (the same torch, marked out); a carried lantern (buildables plan B4) only goes out under water. Both burn only in the hand
 # (ACT_TORCH_BURN): a torch down to nothing, a lantern through its candle or lamp oil.
 func _flame_wet(delta: float) -> void:
 	if held == null or items == null or items.inventory == null or net == null:

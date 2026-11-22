@@ -1,7 +1,7 @@
 """Makes placeholder tool hit sounds for src/client/hit_sounds.gd.
 
 Run: python3 assets/audio/make_hits.py   (needs numpy and ffmpeg)
-Writes assets/audio/hits/hit_<tool>_<material>_N.ogg for tools axe, pick, hammer and spade on
+Writes assets/audio/hits/hit_<tool>_<material>_N.ogg for tools axe, pick, hammer and shovel on
 wood, stone and soil, 3 variants each. Recordings go in assets/audio/recorded/hits/ under the
 same names (hit_axe_wood_0.ogg ...); the game prefers them.
 """
@@ -24,7 +24,7 @@ TOOLS = {
     "axe": {"weight": 1.0, "sharp": 0.8, "ring": 0.35, "scrape": 0.0, "pitch": 1.0},
     "pick": {"weight": 0.9, "sharp": 1.0, "ring": 0.8, "scrape": 0.0, "pitch": 1.1},
     "hammer": {"weight": 1.3, "sharp": 0.45, "ring": 1.0, "scrape": 0.0, "pitch": 0.9},
-    "spade": {"weight": 0.8, "sharp": 0.3, "ring": 0.2, "scrape": 1.0, "pitch": 0.85},
+    "shovel": {"weight": 0.8, "sharp": 0.3, "ring": 0.2, "scrape": 1.0, "pitch": 0.85},
 }
 # material: body pitch, thud decay, crack centre, ring share, crumble grains
 MATERIALS = {
@@ -84,7 +84,7 @@ def hit(rng, tool, material):
     if m["crumble"]:
         add(out, grains(rng, n, m["crumble"], 0.04, 0.35, lambda: burst(rng, rng.uniform(0.006, 0.02), rng.uniform(900, 2200), 0.7)) * (0.7 if material == "soil" else 0.5), 0.0)
 
-    if t["scrape"]:                                                   # the spade drags after it strikes
+    if t["scrape"]:                                                   # the shovel drags after it strikes
         sn = int(0.3 * SR)
         scrape = noise(rng, sn, lambda f: band(f, 1900 if material == "stone" else 1100, 0.8)) * (np.minimum(np.arange(sn) / SR / 0.05, 1.0) * np.exp(-np.arange(sn) / SR / 0.12))
         add(out, scrape / (np.max(np.abs(scrape)) + 1e-9) * (0.5 if material == "stone" else 0.35), 0.06)

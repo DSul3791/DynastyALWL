@@ -17,6 +17,7 @@ extends Node
 # replace them under the same names (name_N.ogg; every variant found is used).
 
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
+const RainAudio := preload("res://src/shared/rain_audio.gd")
 const AmbientScript := preload("res://src/client/ambient_life.gd")
 const WeatherScript := preload("res://src/client/weather_sounds.gd")
 const DigScript := preload("res://src/client/dig_sounds.gd")
@@ -72,7 +73,7 @@ const FEET_M := 0.9                     # player origin to the soles (capsule ha
 const SOIL_SURFACE := {
 	0: "stone", 1: "sand", 2: "gravel", 3: "dirt", 4: "dirt", 5: "dirt", 6: "mud", 7: "dirt",
 	8: "leaves", 9: "gravel", 10: "dirt", 11: "snow", 12: "stone", 13: "sand", 14: "sand", 15: "sand",
-	16: "mud",
+	16: "mud", 29: "mud", 30: "mud", 31: "mud",   # 29 to 31 the fen, bog and swamp looks (terrain_layout.gd MATERIAL_FEN ...): they squelch
 }
 const SURFACE_DB := {
 	"grass": -15.0, "dirt": -10.0, "sand": -11.0, "gravel": -9.0, "stone": -8.0,
@@ -91,7 +92,8 @@ const ROCK_STEP := {
 const ORE_STEP := {1: ["stone", -3.0, 0.9], 10: ["sand", 0.0, 1.05], 12: ["mud", 0.0, 1.0], 29: ["mud", -2.0, 0.9]}
 const ORE_METAL := [2, 3, 4, 5, 6, 7, 8, 9, 15, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27]
 # Soils with their own character: [dB, pitch] on top of their surface (data/tables/soils.json).
-const SOIL_TUNE := {3: [-1.0, 0.95], 4: [0.0, 0.97], 12: [2.0, 1.1], 13: [0.0, 1.06], 14: [-3.0, 0.9]}
+const SOIL_TUNE := {3: [-1.0, 0.95], 4: [0.0, 0.97], 12: [2.0, 1.1], 13: [0.0, 1.06], 14: [-3.0, 0.9], 29: [0.0, 0.94], 30: [1.0, 0.9], 31: [1.0, 0.88]}   # bog and swamp a deeper, wetter squelch
+const POOL_PACE := 0.85                 # share of the pace left wading a wetland's ankle-deep pool (Dave 21 Nov 2026: "slow you a little"; provisional)
 const RAIN_SOAK := 0.5                  # ground wetness from which loose dirt and leaves turn to wet mud steps
 const SNOW_COVER := 0.35                # snow on the ground from which steps crunch
 const PUDDLE_WET := 0.6                 # ground wetness from which steps on firm ground splash
@@ -201,11 +203,12 @@ var ambient                             # AmbientLife: birds, crickets, frogs by
 var water                               # WaterSounds: brooks, rivers, pond shores, waterfalls
 var weather                             # WeatherSounds: rain, gale, thunder, snow hush (set_weather)
 var occlusion                           # SoundOcclusion: hills and forest muffle distant sounds
-var hits                                # HitSounds: axe, pick, hammer, spade on wood, stone, soil (hit, hit_ground)
+var hits                                # HitSounds: axe, pick, hammer, shovel on wood, stone, soil (hit, hit_ground)
 var flame                               # FlameSounds: the torch or lantern in the hand (set_held)
 var breath                              # BreathSounds: the heartbeat (always heard, the Daggorath pulse loaded at setup), exertion and the faint (set_exertion, stand-in follows the body)
 var trees                               # TreeSounds: felling (watch the world rows, fall(), chips())
 var fire                                # FireSounds: campfire loops by size, lit, put out, rain sizzle (set_fires)
+var under_land: Callable = Callable()    # terrain_client sets this: true under the island, where below 0 m is no sea (unset: all below 0 m is sea)
 var ground_below: Callable = Callable()   # terrain_client sets this: ground height under a point (NAN when not loaded)
 var itemfx                              # ItemSounds: inventory cues (watch(items) every frame)
 var inner                               # InnerVoiceSounds: the character's thoughts in the headset (speak(line_id, kind))
@@ -228,6 +231,7 @@ var creatures                           # CreatureSounds: deer, rabbit, fox, wol
 var ui                                  # UiSounds: menu click, toggle and quality cues (play(name))
 var swim                                # SwimSounds: splash, strokes, diving, the hum under water (driven by the body)
 var ice_break_event: String = ""      # "", "skim", "film" or "plunge" for the last footstep (terrain_client reads it)
+var pool_pace: float = 1.0             # share of the pace left: POOL_PACE while the last step landed in a wetland pool (terrain_client reads it)
 var _wading_ice: bool = false          # the last water step was through skim or film (the next film step is no plunge)
 var town                                # TownSounds: fire, hammering, crowd, bell hooks (set_sources, ring_bell)
 var cavewater                          # CaveWaterSounds: the water inside spring caves (stream along the passage, spring pool, more springs = more water)
@@ -961,14 +965,20 @@ func set_floor(sound_name: String) -> void:
 	floor_surface = sound_name if FLOOR_SURFACES.has(sound_name) else ""
 
 
+# Below 0 m at p is the sea, not a dry tunnel under the island (under_land).
+func sea_below(p: Vector3) -> bool:
+	return not (under_land.is_valid() and bool(under_land.call(p)))
+
+
 # One footfall at gait 0 walk, 1 jog, 2 run; `boost_db` makes it louder (landings).
 # `foot` is "left" or "right" (recorded sets have one of each).
 func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: String = "left") -> void:
 	boost_db += stance.step_db()                                  # crouched steps are softer, and the gear with them
+	pool_pace = 1.0
 	var feet: Vector3 = body.global_position - Vector3(0.0, FEET_M, 0.0)
 	var water_here: float = _flora.water_surface_at(feet.x, feet.z)
 
-	if feet.y < 0.0 and (is_nan(water_here) or water_here < 0.0):
+	if feet.y < 0.0 and (is_nan(water_here) or water_here < 0.0) and sea_below(feet):
 		water_here = 0.0                                              # the sea
 
 	var depth: float = water_here - feet.y if not is_nan(water_here) else -1.0
@@ -1005,6 +1015,9 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 		tune = [found[1], found[2]]
 	elif _in_bush(feet):
 		surface = "bushes"
+	elif Layout.is_wetland(soil):
+		surface = "mud"                                          # fen, bog and swamp squelch underfoot, grass or not
+		tune = SOIL_TUNE.get(soil, [0.0, 1.0])
 	elif thick >= GRASS_MIN and soil != 8:
 		surface = "grass_tall" if tall > 0.35 else "grass"
 	else:
@@ -1090,6 +1103,8 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 		splash = depth <= DAMP_M and built == "" and surface != "snow" and puddles.foot_in(feet, soil, body.get_floor_normal().y if body.is_on_floor() else 1.0, gait)
 	elif weather != null and weather.ground_wet >= PUDDLE_WET and surface in PUDDLE_SURFACES and _rng.randf() < weather.ground_wet * 0.7:
 		splash = true
+
+	pool_pace = POOL_PACE if splash and Layout.is_wetland(soil) else 1.0
 
 	if splash:
 		puddles_played += 1
@@ -1346,7 +1361,7 @@ func _build_warm_list() -> void:
 	for sound_name in ["pick_pluck", "pick_pull", "pick_snap", "pick_snip", "pick_twist", "plant_rustle_leaves", "plant_rustle_reeds"]:
 		early.append([harvestfx, sound_name])
 
-	for sound_name in ["craft_start", "craft_twine", "craft_knap", "craft_bind", "craft_carve", "craft_stack", "craft_pound", "craft_wrap", "item_reject", "hotbar_tick", "eat_soft", "eat_crunch", "drink_gulp"]:
+	for sound_name in ["craft_start", "craft_twine", "craft_knap", "craft_bind", "craft_carve", "craft_stack", "craft_pound", "craft_wrap", "item_reject", "hotbar_tick", "drink_gulp"]:
 		early.append([itemfx, sound_name])
 
 	for slot in ["bed_forest_day", "bed_night", "bed_crickets", "bed_surf", "bed_forest_winter"]:
@@ -1441,13 +1456,28 @@ func splash_ground(body: CharacterBody3D) -> String:
 
 	var surface_kind: String = str(SOIL_SURFACE.get(soil, "dirt"))
 
-	if surface_kind == "mud" or (surface_kind in ["dirt", "leaves"] and weather.ground_wet >= RAIN_SOAK):
+	if _rain_mud(feet, soil, surface_kind, body):
 		return "mud"
 
 	if surface_kind == "dirt" and _grass != null and _grass.grass_at(feet.x, feet.z, soil).x > 0.3:
 		return "grass"
 
 	return {"leaves": "litter", "stone": "stone", "sand": "sand", "gravel": "gravel"}.get(surface_kind, "dirt")
+
+
+# Is the loose ground under the feet soaked mud for the rain sounds? True mud soil always; soaked dirt or leaves only where a puddle is drawn at the feet (puddles.gd water_under, RainAudio.is_mud).
+# Without puddles (headless checks) soaked ground counts as standing water, as before. The puddle test reads nothing when no puddle is shown (BUG-004).
+func _rain_mud(feet: Vector3, soil: int, surface_kind: String, body: CharacterBody3D) -> bool:
+	var soaked: bool = weather.ground_wet >= RAIN_SOAK
+	var standing: float = 0.0
+
+	if surface_kind in ["dirt", "leaves"] and soaked:
+		if puddles == null:
+			standing = 1.0
+		elif puddles.shown > 0.001:
+			standing = puddles.water_under(feet, soil, body.get_floor_normal().y if body.is_on_floor() else 1.0)
+
+	return RainAudio.is_mud(surface_kind, soaked, standing)
 
 
 func rain_ground(body: CharacterBody3D) -> String:
@@ -1457,7 +1487,8 @@ func rain_ground(body: CharacterBody3D) -> String:
 	if floor_surface in ["slab", "plank", "path"]:
 		return "stone"
 
-	var soil: int = _ground_under(body.global_position - Vector3(0.0, FEET_M, 0.0))
+	var feet: Vector3 = body.global_position - Vector3(0.0, FEET_M, 0.0)
+	var soil: int = _ground_under(feet)
 
 	if soil < 0 or soil >= Layout.MATERIAL_ROCK:
 		return "stone"
@@ -1467,7 +1498,7 @@ func rain_ground(body: CharacterBody3D) -> String:
 	if ground == "stone":
 		return "stone"
 
-	if ground == "mud" or (ground in ["dirt", "leaves"] and weather.ground_wet >= RAIN_SOAK):
+	if _rain_mud(feet, soil, ground, body):
 		return "mud"
 
 	if ground == "leaves":

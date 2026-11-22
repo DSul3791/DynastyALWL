@@ -37,7 +37,7 @@ func lines() -> Array:
 
 	for need in r["needs"] + r["keeps"]:
 		var have: int = view.stock_fill(int(need[0]))
-		out.append({"text": "%s  %d / %d" % [view.table.name_of(int(need[0])), mini(have, int(need[1])), int(need[1])], "done": have >= int(need[1])})
+		out.append({"text": "%s  %d / %d" % [view.table.cost_name(int(need[0])), mini(have, int(need[1])), int(need[1])], "done": have >= int(need[1])})
 
 	return out
 

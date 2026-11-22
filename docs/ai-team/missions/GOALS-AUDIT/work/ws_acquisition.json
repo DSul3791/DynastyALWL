@@ -1,0 +1,2186 @@
+{
+ "acorns": {
+  "evidence": [
+   "data/items/drops.json#trunk.by_species.oak",
+   "data/items/drops.json#trunk.seed_chance",
+   "src/stream/server_items.gd:6527-6533 (seed roll gives only own[0] of trunk.by_species)",
+   "src/stream/server_items.gd:6886-6900",
+   "src/stream/server_items.gd:5828-5900 (_hit: axe or pick in hand fells)"
+  ],
+  "mechanism": "Fell an oak, then cut the trunk with an axe (or let it auto-split): each log rolls seed_chance 0.28 for 1-3 acorns",
+  "notes": "E on an oak does nothing (oak is a tree, not in fruit_tree). The flora yield \"acorns\" is never handed out by gather().",
+  "status": "SOURCED",
+  "tool": "axe (stone axe or better) in hand",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "oak: temperate/mixed forest, temperate grassland"
+ },
+ "animal_fat": {
+  "evidence": [
+   "src/stream/server_items.gd:2271-2285 (make_carcass)",
+   "src/stream/server_items.gd:2288-2341 (_process_carcass: knife in hand, parts over blows)",
+   "scenes/terrain_server/terrain_server.gd:640 (animals.died -> make_carcass)",
+   "src/client/held_item.gd:1213 (knife swing -> ACT_PROCESS)",
+   "data/items/carcass.json#species.deer.parts",
+   "data/items/carcass.json#species.boar.parts",
+   "data/items/carcass.json#species.moose.parts",
+   "data/items/carcass.json#species.beaver.parts",
+   "data/items/carcass.json#species.badger(no spawn).parts",
+   "data/items/carcass.json#species.bear.parts",
+   "data/items/carcass.json#species.seal.parts",
+   "data/items/carcass.json#species.elk.parts",
+   "data/items/carcass.json#species.....parts",
+   "data/animals/animals.json#species (target_per_player, biomes; species without a row never spawn)"
+  ],
+  "mechanism": "Kill the animal (spear jab/throw, bow, snare for rabbit/fox), then swing a knife in hand at the carcass: parts come over the blows (4).",
+  "notes": "",
+  "status": "SOURCED",
+  "tool": "weapon to kill; knife in hand to dress",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "medium/large mammals; species: deer, boar, moose, beaver, badger(no spawn), bear, seal, elk, ..."
+ },
+ "antler": {
+  "evidence": [
+   "src/stream/server_items.gd:2271-2285 (make_carcass)",
+   "src/stream/server_items.gd:2288-2341 (_process_carcass: knife in hand, parts over blows)",
+   "scenes/terrain_server/terrain_server.gd:640 (animals.died -> make_carcass)",
+   "src/client/held_item.gd:1213 (knife swing -> ACT_PROCESS)",
+   "data/items/carcass.json#species.deer.parts",
+   "data/items/carcass.json#species.moose.parts",
+   "data/items/carcass.json#species.elk.parts",
+   "data/animals/animals.json#species (target_per_player, biomes; species without a row never spawn)"
+  ],
+  "mechanism": "Kill the animal (spear jab/throw, bow, snare for rabbit/fox), then swing a knife in hand at the carcass: parts come over the blows (4).",
+  "notes": "",
+  "status": "SOURCED",
+  "tool": "weapon to kill; knife in hand to dress",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "temperate/mixed/boreal forest, marsh; species: deer, moose, elk"
+ },
+ "apple_autumn": {
+  "evidence": [
+   "data/items/drops.json#fruit_tree.apple_autumn",
+   "data/items/drops.json#harvest_yield.apple_autumn",
+   "data/tables/flora.json#entries[name=apple_autumn]",
+   "src/stream/server_items.gd:1708-1758 (_gather_fruit_tree)"
+  ],
+  "mechanism": "E on the fruit tree: up to per_pick pieces a press from the tree's store (refills each fruiting season), weight-limited",
+  "notes": "Fruit trees are the only trees E works on.",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tree apple_autumn; season autumn; biomes per flora.json"
+ },
+ "apple_cooking": {
+  "evidence": [
+   "data/items/drops.json#fruit_tree.apple_cooking",
+   "data/items/drops.json#harvest_yield.apple_cooking",
+   "data/tables/flora.json#entries[name=apple_cooking]",
+   "src/stream/server_items.gd:1708-1758 (_gather_fruit_tree)"
+  ],
+  "mechanism": "E on the fruit tree: up to per_pick pieces a press from the tree's store (refills each fruiting season), weight-limited",
+  "notes": "Fruit trees are the only trees E works on.",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tree apple_cooking; season summer, autumn; biomes per flora.json"
+ },
+ "apple_early": {
+  "evidence": [
+   "data/items/drops.json#fruit_tree.apple_early",
+   "data/items/drops.json#harvest_yield.apple_early",
+   "data/tables/flora.json#entries[name=apple_early]",
+   "src/stream/server_items.gd:1708-1758 (_gather_fruit_tree)"
+  ],
+  "mechanism": "E on the fruit tree: up to per_pick pieces a press from the tree's store (refills each fruiting season), weight-limited",
+  "notes": "Fruit trees are the only trees E works on.",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tree apple_early; season summer; biomes per flora.json"
+ },
+ "apple_keeping": {
+  "evidence": [
+   "data/items/drops.json#fruit_tree.apple_keeping",
+   "data/items/drops.json#harvest_yield.apple_keeping",
+   "data/tables/flora.json#entries[name=apple_keeping]",
+   "src/stream/server_items.gd:1708-1758 (_gather_fruit_tree)"
+  ],
+  "mechanism": "E on the fruit tree: up to per_pick pieces a press from the tree's store (refills each fruiting season), weight-limited",
+  "notes": "Fruit trees are the only trees E works on.",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tree apple_keeping; season autumn; biomes per flora.json"
+ },
+ "apple_summer": {
+  "evidence": [
+   "data/items/drops.json#fruit_tree.apple_summer",
+   "data/items/drops.json#harvest_yield.apple_summer",
+   "data/tables/flora.json#entries[name=apple_summer]",
+   "src/stream/server_items.gd:1708-1758 (_gather_fruit_tree)"
+  ],
+  "mechanism": "E on the fruit tree: up to per_pick pieces a press from the tree's store (refills each fruiting season), weight-limited",
+  "notes": "Fruit trees are the only trees E works on.",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tree apple_summer; season summer; biomes per flora.json"
+ },
+ "bananas": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.wild_banana",
+   "data/tables/flora.json#entries[name=wild_banana]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 40 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check). Only in warm/dry or tropical biomes.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "wild_banana (shrub); season all; biomes tropical_forest"
+ },
+ "bark": {
+  "evidence": [
+   "data/items/drops.json#trunk.bark_chance",
+   "data/items/drops.json#trunk.thatch_bark",
+   "src/stream/server_items.gd:6518-6525",
+   "src/stream/server_items.gd:6888-6896"
+  ],
+  "mechanism": "Cut a felled trunk with an axe (or auto-split): bark_chance 0.55 per log gives 1 bark (not birch/spruce/scots pine/balsam fir, whose bark comes as thatch)",
+  "notes": "A pick on wood gives no bark (drops.json#wood_tools). Oak E harvest is impossible (tree).",
+  "status": "SOURCED",
+  "tool": "axe in hand",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "any broadleaf tree except birch"
+ },
+ "barley": {
+  "evidence": [
+   "data/items/crops.json#crops.barley.yields",
+   "src/stream/terrain_net.gd:179-182 (ACT_TILL/SOW/HARVEST/WATER_BED)",
+   "src/client/held_item.gd:2064 (only ACT_TILL is ever sent by the client; grep finds no ACT_SOW/ACT_HARVEST/ACT_WATER_BED sender in src/client or scenes)",
+   "src/stream/server_items.gd:14635 (sow, server only)",
+   "src/stream/server_items.gd:14757-14790 (harvest, server only)"
+  ],
+  "mechanism": "Only a crop yield (crops.json): till with a hoe, sow seeds, wait, harvest with E. The client sends ACT_TILL only; it never sends ACT_SOW, ACT_HARVEST or ACT_WATER_BED, so sowing and harvesting cannot happen in play. Not sold by Hob, not wild.",
+  "notes": "Server-side sow/harvest exist and test_farming.gd exercises them directly; the gap is the client trigger.",
+  "status": "NO_SOURCE",
+  "tool": "(hoe, seeds, sickle - unreachable)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "farm beds"
+ },
+ "bedding": {
+  "evidence": [
+   "data/tables/flora.json#entries[name=fern]",
+   "data/tables/flora.json#entries[name=heather]",
+   "data/items/drops.json#by_species.heather",
+   "src/stream/server_items.gd:1563-1646 (gather)"
+  ],
+  "mechanism": "E on fern (spring-autumn) or heather (summer/autumn): one of the plant's yields at random, 1-3; fern: bedding or fiddleheads; heather: thatch, bedding or honey flowers (+4 thatch fixed)",
+  "notes": "Balsam fir also lists bedding but is a tree (not gatherable). Picked plant is removed from the world (terrain_server.gd:1882).",
+  "status": "SOURCED",
+  "tool": "none",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "fern: temperate/mixed/boreal/tropical forest; heather: heath, boreal"
+ },
+ "beechnuts": {
+  "evidence": [
+   "data/items/drops.json#trunk.by_species.beech",
+   "src/stream/server_items.gd:6527-6533 (seed roll gives only own[0] of trunk.by_species)",
+   "src/stream/server_items.gd:6886-6900"
+  ],
+  "mechanism": "Fell a beech and cut/auto-split the trunk: seed roll 0.28 per log gives 1-3 beechnuts",
+  "notes": "No E pick from a standing beech.",
+  "status": "SOURCED",
+  "tool": "axe in hand",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "beech: temperate/mixed forest (common)"
+ },
+ "beet": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.sea_beet",
+   "data/tables/flora.json#entries[name=sea_beet]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 2 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check).  Also a crop row, unreachable from the client (see wheat).",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "sea_beet (plant); season summer; biomes beach, temperate_grassland"
+ },
+ "berries": {
+  "evidence": [
+   "data/items/wood_species.json#ingredient_groups.berries"
+  ],
+  "mechanism": "Group: raspberries, blueberries, blackberries, strawberries, cranberries, cloudberries, lingonberries, crowberries (see each)",
+  "notes": "No berry group member is available in winter or spring.",
+  "status": "SOURCED",
+  "tool": "none",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "seasonal (summer/autumn)"
+ },
+ "blackberries": {
+  "evidence": [
+   "data/items/drops.json#berry_yield.bramble",
+   "data/tables/flora.json#entries[name=bramble]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)"
+  ],
+  "mechanism": "E on the bush: berry_yield gives all 250 (x1-3 by size), once a season; bush stays, bare",
+  "notes": "Seasonal: none in other seasons (\"Not in season\").",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "bramble (shrub); season summer, autumn; biomes temperate/mixed forest, temperate_grassland, heath"
+ },
+ "blueberries": {
+  "evidence": [
+   "data/items/drops.json#berry_yield.blueberry",
+   "data/tables/flora.json#entries[name=blueberry]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)"
+  ],
+  "mechanism": "E on the bush: berry_yield gives all 150 (x1-3 by size), once a season; bush stays, bare",
+  "notes": "Seasonal: none in other seasons (\"Not in season\").",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "blueberry (plant); season summer; biomes heath, boreal/mixed/temperate forest"
+ },
+ "bone": {
+  "evidence": [
+   "src/stream/server_items.gd:2271-2285 (make_carcass)",
+   "src/stream/server_items.gd:2288-2341 (_process_carcass: knife in hand, parts over blows)",
+   "scenes/terrain_server/terrain_server.gd:640 (animals.died -> make_carcass)",
+   "src/client/held_item.gd:1213 (knife swing -> ACT_PROCESS)",
+   "data/items/carcass.json#species.rabbit.parts",
+   "data/items/carcass.json#species.deer.parts",
+   "data/items/carcass.json#species.grouse.parts",
+   "data/items/carcass.json#species.....parts",
+   "data/animals/animals.json#species (target_per_player, biomes; species without a row never spawn)"
+  ],
+  "mechanism": "Kill the animal (spear jab/throw, bow, snare for rabbit/fox), then swing a knife in hand at the carcass: parts come over the blows (4).",
+  "notes": "",
+  "status": "SOURCED",
+  "tool": "weapon to kill; knife in hand to dress",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "most animals; species: rabbit, deer, grouse, ..."
+ },
+ "burdock_roots": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.burdock",
+   "data/tables/flora.json#entries[name=burdock]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 2 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check).  drops.json tool_rules says roots need a spade, but the harvest_row path does not check tools: by hand.",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "burdock (plant); season autumn; biomes temperate_grassland, temperate_forest, marsh"
+ },
+ "cabbage": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.sea_cabbage",
+   "data/tables/flora.json#entries[name=sea_cabbage]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 2 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check).  Also a crop row, unreachable from the client (see wheat).",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "sea_cabbage (plant); season summer; biomes beach, marsh, temperate_grassland"
+ },
+ "carp": {
+  "evidence": [
+   "data/items/fishing.json#species",
+   "data/items/fish_schools.json#species_by_kind",
+   "data/items/fish_schools.json#only_in",
+   "src/stream/server_items.gd:13393-13445 (_fish rod)",
+   "src/stream/server_items.gd:13565 (_spear_fish)",
+   "src/stream/server_items.gd:13372-13390 (_fish_species)",
+   "src/stream/server_items.gd:13812-13825 (_fish_land)"
+  ],
+  "mechanism": "Fishing rod (cast, click on the bite), fishing spear / spear jab in 0.2-1.5 m water, or a fish trap: species from the water cell type (stream/pond/lake) or a nearby school",
+  "notes": "Spear fishing and traps never use schools (_fish_species(cell) without a hit), so they give only trout/perch/carp/pike.",
+  "status": "SOURCED",
+  "tool": "fishing rod (2 stick, 2 twine, 1 hook) or fishing spear (1 stick, keeps a knife) or spear; net for schools",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "pond, lake"
+ },
+ "chamomile_flowers": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.chamomile",
+   "data/tables/flora.json#entries[name=chamomile]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 20 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check). ",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "chamomile (plant); season summer; biomes temperate_grassland, beach, temperate/mixed forest"
+ },
+ "chanterelles": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.chanterelle",
+   "data/tables/flora.json#entries[name=chanterelle]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 4 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check). ",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "chanterelle (plant); season summer, autumn; biomes mixed/boreal/temperate forest"
+ },
+ "cherries": {
+  "evidence": [
+   "data/items/drops.json#fruit_tree.wild_cherry",
+   "data/items/drops.json#harvest_yield.wild_cherry",
+   "data/tables/flora.json#entries[name=wild_cherry]",
+   "src/stream/server_items.gd:1708-1758 (_gather_fruit_tree)"
+  ],
+  "mechanism": "E on the fruit tree: up to per_pick pieces a press from the tree's store (refills each fruiting season), weight-limited",
+  "notes": "Fruit trees are the only trees E works on. Also the trunk seed roll when a felled wild_cherry is cut (drops.json#trunk.by_species.wild_cherry, axe).",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tree wild_cherry; season summer; biomes per flora.json"
+ },
+ "chestnuts": {
+  "evidence": [
+   "data/items/drops.json#fruit_tree.sweet_chestnut",
+   "data/items/drops.json#harvest_yield.sweet_chestnut",
+   "data/tables/flora.json#entries[name=sweet_chestnut]",
+   "src/stream/server_items.gd:1708-1758 (_gather_fruit_tree)"
+  ],
+  "mechanism": "E on the fruit tree: up to per_pick pieces a press from the tree's store (refills each fruiting season), weight-limited",
+  "notes": "Fruit trees are the only trees E works on. Also the trunk seed roll when a felled sweet_chestnut is cut (drops.json#trunk.by_species.sweet_chestnut, axe).",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tree sweet_chestnut; season autumn; biomes per flora.json"
+ },
+ "clay": {
+  "evidence": [
+   "data/items/digging.json#yield.clay",
+   "data/items/digging.json#under",
+   "src/stream/server_items.gd:2641-2690 (_dig: spade in hand)",
+   "src/stream/server_items.gd:3369-3400 (_give_dig_yield: yield/under/finds)",
+   "scenes/terrain_server/terrain_server.gd:492-499 (ground_material)"
+  ],
+  "mechanism": "Dig with a spade (swing at ground): clay soil gives 1-3; loam/forest humus also give 1 clay with chance 0.35, silt/alluvium 0.5 (the layer under the topsoil).",
+  "notes": "",
+  "status": "SOURCED",
+  "tool": "any spade in hand (wooden spade = 2 sticks; Hob sells one)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "clay ground; wet lowland soils"
+ },
+ "cloudberries": {
+  "evidence": [
+   "data/items/drops.json#berry_yield.cloudberry",
+   "data/tables/flora.json#entries[name=cloudberry]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)"
+  ],
+  "mechanism": "E on the bush: berry_yield gives all 3 (x1-3 by size), once a season; bush stays, bare",
+  "notes": "Seasonal: none in other seasons (\"Not in season\").",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "cloudberry (plant); season summer; biomes tundra, marsh, boreal_forest"
+ },
+ "coal": {
+  "evidence": [
+   "data/items/boulders.json#ore.items.coal",
+   "data/items/boulders.json#ore.layer_depth_m",
+   "src/stream/server_items.gd:5568-5682 (_hit_boulder: pick or axe in hand; ore only with a pick, needs_material)",
+   "src/stream/server_items.gd:5529-5552 (_boulder_ore)",
+   "src/client/held_item.gd:1973-1975"
+  ],
+  "mechanism": "Pick on an outcrop boulder over a coal seam (layer within 10 m of bedrock surface); piece share 0.3",
+  "notes": "",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "pick in hand (any material)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "boulders over coal seams"
+ },
+ "cod": {
+  "evidence": [
+   "data/items/fishing.json#species",
+   "data/items/fish_schools.json#species_by_kind",
+   "data/items/fish_schools.json#only_in",
+   "src/stream/server_items.gd:13393-13445 (_fish rod)",
+   "src/stream/server_items.gd:13565 (_spear_fish)",
+   "src/stream/server_items.gd:13372-13390 (_fish_species)",
+   "src/stream/server_items.gd:13812-13825 (_fish_land)"
+  ],
+  "mechanism": "Fishing rod (cast, wait for \"Something bites!\", click again) or shore net within reach of a school of this species",
+  "notes": "Spear fishing and traps never use schools (_fish_species(cell) without a hit), so they give only trout/perch/carp/pike.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "fishing rod (2 stick, 2 twine, 1 hook) or fishing spear (1 stick, keeps a knife) or spear; net for schools",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "sea_shallow schools"
+ },
+ "comfrey_leaves": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.comfrey",
+   "data/tables/flora.json#entries[name=comfrey]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 12 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check). ",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "comfrey (plant); season spring-autumn; biomes marsh, temperate forest, temperate grassland"
+ },
+ "copper_ore": {
+  "evidence": [
+   "data/items/boulders.json#ore",
+   "src/stream/server_items.gd:5568-5682 (_hit_boulder: pick or axe in hand; ore only with a pick, needs_material)",
+   "src/stream/server_items.gd:5529-5552 (_boulder_ore)",
+   "src/client/held_item.gd:1973-1975",
+   "src/client/inventory_view.gd:124-139 (outcrop look)",
+   "src/worldgen/tools/test_ore.gd"
+  ],
+  "mechanism": "Swing a PICK (stone pickaxe or better) at an outcrop boulder within 40 m of a copper ore body (40% of such boulders are outcrops); each piece is ore with chance 0.3, else stone. An axe never takes ore.",
+  "notes": "Location depends on world geology; no fixed spot.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "pick in hand (any material)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "boulders near copper ore bodies (geology); outcrops have their own look"
+ },
+ "crab_apples": {
+  "evidence": [
+   "data/items/drops.json#fruit_tree.wild_apple",
+   "data/items/drops.json#harvest_yield.wild_apple",
+   "data/tables/flora.json#entries[name=wild_apple]",
+   "src/stream/server_items.gd:1708-1758 (_gather_fruit_tree)"
+  ],
+  "mechanism": "E on the fruit tree: up to per_pick pieces a press from the tree's store (refills each fruiting season), weight-limited",
+  "notes": "Fruit trees are the only trees E works on. Also the trunk seed roll when a felled wild_apple is cut (drops.json#trunk.by_species.wild_apple, axe).",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tree wild_apple; season autumn; biomes per flora.json"
+ },
+ "crab_meat": {
+  "evidence": [
+   "data/items/shore_nodes.json#nodes[kind=crabs]",
+   "src/stream/server_items.gd:13954-14003 (gather_edge)",
+   "src/shared/shore_rules.gd:61-75 (prompt: sea near, no container)",
+   "scenes/terrain_client/terrain_client.gd:1489-1493,2016-2017"
+  ],
+  "mechanism": "E on a tide-line crabs node, only 18:00-06:00 game time: 1-2",
+  "notes": "Night only.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "none, no water container in pack",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "sea beaches, at night"
+ },
+ "cranberries": {
+  "evidence": [
+   "data/items/drops.json#berry_yield.cranberry",
+   "data/tables/flora.json#entries[name=cranberry]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)"
+  ],
+  "mechanism": "E on the bush: berry_yield gives all 12 (x1-3 by size), once a season; bush stays, bare",
+  "notes": "Seasonal: none in other seasons (\"Not in season\").",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "cranberry (plant); season autumn; biomes marsh, tundra, boreal_forest"
+ },
+ "crowberries": {
+  "evidence": [
+   "data/items/drops.json#berry_yield.crowberry",
+   "data/tables/flora.json#entries[name=crowberry]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)"
+  ],
+  "mechanism": "E on the bush: berry_yield gives all 40 (x1-3 by size), once a season; bush stays, bare",
+  "notes": "Seasonal: none in other seasons (\"Not in season\").",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "crowberry (plant); season autumn; biomes heath, tundra, alpine_meadow"
+ },
+ "crystal_lens": {
+  "evidence": [
+   "data/items/digging.json#under.gravel",
+   "data/items/digging.json#under.rock",
+   "src/stream/server_items.gd:3388-3392"
+  ],
+  "mechanism": "Spade dig on gravel or bare rock: 3% chance of 1 crystal lens",
+  "notes": "Rare.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "any spade",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "gravel / rock ground"
+ },
+ "damsons": {
+  "evidence": [
+   "data/items/drops.json#fruit_tree.damson",
+   "data/items/drops.json#harvest_yield.damson",
+   "data/tables/flora.json#entries[name=damson]",
+   "src/stream/server_items.gd:1708-1758 (_gather_fruit_tree)"
+  ],
+  "mechanism": "E on the fruit tree: up to per_pick pieces a press from the tree's store (refills each fruiting season), weight-limited",
+  "notes": "Fruit trees are the only trees E works on.",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tree damson; season autumn; biomes per flora.json"
+ },
+ "down": {
+  "evidence": [
+   "src/stream/server_items.gd:2271-2285 (make_carcass)",
+   "src/stream/server_items.gd:2288-2341 (_process_carcass: knife in hand, parts over blows)",
+   "scenes/terrain_server/terrain_server.gd:640 (animals.died -> make_carcass)",
+   "src/client/held_item.gd:1213 (knife swing -> ACT_PROCESS)",
+   "data/items/carcass.json#species.duck.parts",
+   "data/items/carcass.json#species.goose.parts",
+   "data/animals/animals.json#species (target_per_player, biomes; species without a row never spawn)"
+  ],
+  "mechanism": "Kill the animal (spear jab/throw, bow, snare for rabbit/fox), then swing a knife in hand at the carcass: parts come over the blows (4).",
+  "notes": "Only ducks (flock on water) and geese.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "weapon to kill; knife in hand to dress",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "COND marsh, temperate grassland, beach, tundra; species: duck, goose"
+ },
+ "eel": {
+  "evidence": [
+   "data/items/fishing.json#species",
+   "data/items/fish_schools.json#species_by_kind",
+   "data/items/fish_schools.json#only_in",
+   "src/stream/server_items.gd:13393-13445 (_fish rod)",
+   "src/stream/server_items.gd:13565 (_spear_fish)",
+   "src/stream/server_items.gd:13372-13390 (_fish_species)",
+   "src/stream/server_items.gd:13812-13825 (_fish_land)"
+  ],
+  "mechanism": "Fishing rod (cast, wait for \"Something bites!\", click again) or shore net within reach of a school of this species",
+  "notes": "Spear fishing and traps never use schools (_fish_species(cell) without a hit), so they give only trout/perch/carp/pike.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "fishing rod (2 stick, 2 twine, 1 hook) or fishing spear (1 stick, keeps a knife) or spear; net for schools",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "river schools, summer/autumn"
+ },
+ "egg": {
+  "evidence": [
+   "data/items/shore_nodes.json#nodes[kind=nest]",
+   "src/stream/server_items.gd:13954-14003 (gather_edge)",
+   "src/shared/shore_rules.gd:61-75 (prompt: sea near, no container)",
+   "scenes/terrain_client/terrain_client.gd:1489-1493,2016-2017",
+   "data/items/carcass.json#species.seabird.parts",
+   "data/items/nests.json#kinds",
+   "src/stream/server_items.gd:13958-13959",
+   "src/stream/server_items.gd:14042-14073",
+   "src/client/nest_view.gd:49 (nearest() never called)"
+  ],
+  "mechanism": "(a) Tide-line \"nest\" node on a beach cell next to the sea, spring/summer: E gives 1-3 (weight 1 of 9; only with NO bucket/clay jug/waterskin in the pack); (b) seabird carcass (knife). Inland grouse/songbird nests are server-side only: the client never sends ACT_GATHER_EDGE away from the sea, so they cannot be robbed in play.",
+  "notes": "Inland nests: server code + test_nests.gd exist, client trigger missing (shore prompt requires sea_near: shore_rules.gd:62-63).",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "none (shore); weapon + knife (seabird)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "sea beaches; seabirds on beach/marsh/bare rock"
+ },
+ "feather": {
+  "evidence": [
+   "src/stream/server_items.gd:2271-2285 (make_carcass)",
+   "src/stream/server_items.gd:2288-2341 (_process_carcass: knife in hand, parts over blows)",
+   "scenes/terrain_server/terrain_server.gd:640 (animals.died -> make_carcass)",
+   "src/client/held_item.gd:1213 (knife swing -> ACT_PROCESS)",
+   "data/items/carcass.json#species.grouse.parts",
+   "data/items/carcass.json#species.duck.parts",
+   "data/items/carcass.json#species.pheasant.parts",
+   "data/items/carcass.json#species.goose.parts",
+   "data/items/carcass.json#species.crow.parts",
+   "data/items/carcass.json#species.seabird.parts",
+   "data/items/carcass.json#species.songbirds.parts",
+   "data/animals/animals.json#species (target_per_player, biomes; species without a row never spawn)"
+  ],
+  "mechanism": "Kill the animal (spear jab/throw, bow, snare for rabbit/fox), then swing a knife in hand at the carcass: parts come over the blows (4).",
+  "notes": "Also grouse nests (nests.json extra) but those cannot be triggered from the client (see egg).",
+  "status": "SOURCED",
+  "tool": "weapon to kill; knife in hand to dress",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "grassland, heath, boreal, marsh, beach; species: grouse, duck, pheasant, goose, crow, seabird, songbirds"
+ },
+ "fiddleheads": {
+  "evidence": [
+   "data/tables/flora.json#entries[name=fern]",
+   "src/stream/server_items.gd:1563-1646 (gather)"
+  ],
+  "mechanism": "E on fern: random choice between bedding and fiddleheads, 1-3",
+  "notes": "About half the fern picks give fiddleheads.",
+  "status": "SOURCED",
+  "tool": "none",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "fern, spring-autumn, forests"
+ },
+ "figs": {
+  "evidence": [
+   "data/items/drops.json#fruit_tree.fig",
+   "data/items/drops.json#harvest_yield.fig",
+   "data/tables/flora.json#entries[name=fig]",
+   "src/stream/server_items.gd:1708-1758 (_gather_fruit_tree)"
+  ],
+  "mechanism": "E on the fruit tree: up to per_pick pieces a press from the tree's store (refills each fruiting season), weight-limited",
+  "notes": "Fruit trees are the only trees E works on. Fig grows only in dry_scrub, savanna, hot_desert.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tree fig; season summer, autumn; biomes per flora.json"
+ },
+ "fish": {
+  "evidence": [
+   "data/items/wood_species.json#ingredient_groups.fish",
+   "src/stream/server_items.gd:13393-13445 (_fish rod)",
+   "src/stream/server_items.gd:13565 (_spear_fish)",
+   "src/stream/server_items.gd:13372-13390 (_fish_species)",
+   "src/stream/server_items.gd:13812-13825 (_fish_land)"
+  ],
+  "mechanism": "Group: any of carp, cod, eel, herring, mackerel, perch, pike, salmon, smelt, trout (see each).",
+  "notes": "",
+  "status": "SOURCED",
+  "tool": "rod / fishing spear / spear / net",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "any fishable water"
+ },
+ "flax": {
+  "evidence": [
+   "data/items/crops.json#crops.flax.yields",
+   "src/stream/terrain_net.gd:179-182 (ACT_TILL/SOW/HARVEST/WATER_BED)",
+   "src/client/held_item.gd:2064 (only ACT_TILL is ever sent by the client; grep finds no ACT_SOW/ACT_HARVEST/ACT_WATER_BED sender in src/client or scenes)",
+   "src/stream/server_items.gd:14635 (sow, server only)",
+   "src/stream/server_items.gd:14757-14790 (harvest, server only)",
+   "data/items/drops.json#by_species.flax"
+  ],
+  "mechanism": "Only a crop yield (crops.json): till with a hoe, sow seeds, wait, harvest with E. The client sends ACT_TILL only; it never sends ACT_SOW, ACT_HARVEST or ACT_WATER_BED, so sowing and harvesting cannot happen in play. Not sold by Hob, not wild.",
+  "notes": "Server-side sow/harvest exist and test_farming.gd exercises them directly; the gap is the client trigger. Wild flax (E) gives plant_fibre, linseed and flax seeds, never the `flax` item.",
+  "status": "NO_SOURCE",
+  "tool": "(hoe, seeds, sickle - unreachable)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "farm beds"
+ },
+ "flint": {
+  "evidence": [
+   "data/items/boulders.json#flint",
+   "src/stream/server_items.gd:5650-5662",
+   "data/items/drops.json#ground_scatter.bank.flint",
+   "src/stream/server_items.gd:5770-5772",
+   "src/stream/server_items.gd:5711 (cave stones)",
+   "src/worldgen/tools/test_flint.gd"
+  ],
+  "mechanism": "Any stone a pick or axe breaks off a boulder is flint with chance 0.04 (0.08 within 6 m of water); 6% of loose bank stones by water are flint nodules (pick up with E); cave stones also roll flint.",
+  "notes": "Existing test test_flint.gd (not run in this audit).",
+  "status": "SOURCED",
+  "tool": "none for bank flint; pick or axe in hand for boulders",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "water banks (best), any boulder, caves"
+ },
+ "fruit": {
+  "evidence": [
+   "data/items/wood_species.json#ingredient_groups.fruit"
+  ],
+  "mechanism": "Group: apples, pears, wild apples/pears, crab apples, plums, damsons, cherries, sour cherries, sloes, prickly pears and the berries",
+  "notes": "Seasonal: summer/autumn fruit and berries; none of the group members is pickable in winter.",
+  "status": "SOURCED",
+  "tool": "none",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "seasonal"
+ },
+ "fur": {
+  "evidence": [
+   "src/stream/server_items.gd:2271-2285 (make_carcass)",
+   "src/stream/server_items.gd:2288-2341 (_process_carcass: knife in hand, parts over blows)",
+   "scenes/terrain_server/terrain_server.gd:640 (animals.died -> make_carcass)",
+   "src/client/held_item.gd:1213 (knife swing -> ACT_PROCESS)",
+   "data/items/carcass.json#species.fox.parts",
+   "data/items/carcass.json#species.wolf.parts",
+   "data/items/carcass.json#species.beaver.parts",
+   "data/items/carcass.json#species.lynx.parts",
+   "data/items/carcass.json#species.bear.parts",
+   "data/items/carcass.json#species.black_bear.parts",
+   "data/items/carcass.json#species.seal.parts",
+   "data/items/carcass.json#species.mink.parts",
+   "data/items/carcass.json#species.reindeer(no spawn).parts",
+   "data/items/carcass.json#species.otter(no spawn).parts",
+   "data/animals/animals.json#species (target_per_player, biomes; species without a row never spawn)"
+  ],
+  "mechanism": "Kill the animal (spear jab/throw, bow, snare for rabbit/fox), then swing a knife in hand at the carcass: parts come over the blows (4).",
+  "notes": "",
+  "status": "SOURCED",
+  "tool": "weapon to kill; knife in hand to dress",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "forests, marsh, beach (seal); species: fox, wolf, beaver, lynx, bear, black_bear, seal, mink, reindeer(no spawn), otter(no spawn)"
+ },
+ "gravel": {
+  "evidence": [
+   "data/items/digging.json#yield.gravel",
+   "src/stream/server_items.gd:2641-2690 (_dig: spade in hand)",
+   "src/stream/server_items.gd:3369-3400 (_give_dig_yield: yield/under/finds)",
+   "scenes/terrain_server/terrain_server.gd:492-499 (ground_material)"
+  ],
+  "mechanism": "Dig gravel ground (1-3) or permafrost (0-1)",
+  "notes": "Needs a gravel surface material.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "any spade",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "gravel surfaces (seasonal channels, gravel soil), permafrost"
+ },
+ "gut": {
+  "evidence": [
+   "src/stream/server_items.gd:2271-2285 (make_carcass)",
+   "src/stream/server_items.gd:2288-2341 (_process_carcass: knife in hand, parts over blows)",
+   "scenes/terrain_server/terrain_server.gd:640 (animals.died -> make_carcass)",
+   "src/client/held_item.gd:1213 (knife swing -> ACT_PROCESS)",
+   "data/items/carcass.json#species.boar.parts",
+   "data/items/carcass.json#species.deer.parts",
+   "data/items/carcass.json#species.wolf.parts",
+   "data/items/carcass.json#species.moose.parts",
+   "data/items/carcass.json#species.beaver.parts",
+   "data/items/carcass.json#species.lynx.parts",
+   "data/items/carcass.json#species.bear.parts",
+   "data/items/carcass.json#species.seal.parts",
+   "data/items/carcass.json#species.horse.parts",
+   "data/items/carcass.json#species.....parts",
+   "data/animals/animals.json#species (target_per_player, biomes; species without a row never spawn)"
+  ],
+  "mechanism": "Kill the animal (spear jab/throw, bow, snare for rabbit/fox), then swing a knife in hand at the carcass: parts come over the blows (4).",
+  "notes": "",
+  "status": "SOURCED",
+  "tool": "weapon to kill; knife in hand to dress",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "medium/large mammals; species: boar, deer, wolf, moose, beaver, lynx, bear, seal, horse, ..."
+ },
+ "hazelnuts": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.hazel",
+   "data/tables/flora.json#entries[name=hazel]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 60 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check). ",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "hazel (shrub); season autumn; biomes temperate/mixed forest, temperate grassland"
+ },
+ "herbs": {
+  "evidence": [
+   "data/items/wood_species.json#ingredient_groups.herbs"
+  ],
+  "mechanism": "Group: thyme, rosemary, marjoram, sage, mint (harvest rows, E)",
+  "notes": "Herbs is itself a gathered item row (gathered.json number 1074) used as the group key.",
+  "status": "SOURCED",
+  "tool": "none",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "grassland, heath, marsh; rosemary/sage dry scrub"
+ },
+ "herring": {
+  "evidence": [
+   "data/items/fishing.json#species",
+   "data/items/fish_schools.json#species_by_kind",
+   "data/items/fish_schools.json#only_in",
+   "src/stream/server_items.gd:13393-13445 (_fish rod)",
+   "src/stream/server_items.gd:13565 (_spear_fish)",
+   "src/stream/server_items.gd:13372-13390 (_fish_species)",
+   "src/stream/server_items.gd:13812-13825 (_fish_land)"
+  ],
+  "mechanism": "Fishing rod (cast, wait for \"Something bites!\", click again) or shore net within reach of a school of this species",
+  "notes": "Spear fishing and traps never use schools (_fish_species(cell) without a hit), so they give only trout/perch/carp/pike.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "fishing rod (2 stick, 2 twine, 1 hook) or fishing spear (1 stick, keeps a knife) or spear; net for schools",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "sea_shallow schools, spring/autumn/winter"
+ },
+ "hide": {
+  "evidence": [
+   "src/stream/server_items.gd:2271-2285 (make_carcass)",
+   "src/stream/server_items.gd:2288-2341 (_process_carcass: knife in hand, parts over blows)",
+   "scenes/terrain_server/terrain_server.gd:640 (animals.died -> make_carcass)",
+   "src/client/held_item.gd:1213 (knife swing -> ACT_PROCESS)",
+   "data/items/carcass.json#species.rabbit.parts",
+   "data/items/carcass.json#species.deer.parts",
+   "data/items/carcass.json#species.fox.parts",
+   "data/items/carcass.json#species.boar.parts",
+   "data/items/carcass.json#species.moose.parts",
+   "data/items/carcass.json#species.....parts",
+   "data/animals/animals.json#species (target_per_player, biomes; species without a row never spawn)"
+  ],
+  "mechanism": "Kill the animal (spear jab/throw, bow, snare for rabbit/fox), then swing a knife in hand at the carcass: parts come over the blows (4).",
+  "notes": "Rabbits and hares are the easy source; carcasses rot after 2 game days and are not saved.",
+  "status": "SOURCED",
+  "tool": "weapon to kill; knife in hand to dress",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "most land animals; species: rabbit, deer, fox, boar, moose, ..."
+ },
+ "honeyspindle_nectar": {
+  "evidence": [
+   "data/tables/flora.json#entries[name=honeyspindle]",
+   "data/items/drops.json#tool_rules.suffixes.knife",
+   "src/stream/server_items.gd:1563-1646 (gather)"
+  ],
+  "mechanism": "E on a honeyspindle shrub in summer: random choice of nectar or pods 1-3, plus 1-3 sticks (by_kind shrub); nectar needs a knife on the hotbar (id ends in \"tar\", tool_rules knife suffix)",
+  "notes": "The knife requirement comes from the accidental suffix match \"nectar\" ends with \"tar\". docs/ai-team/missions/M001/T19_RESULTS.md:35 lists it as a give with no gathering route test.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "knife on the hotbar (any knife class)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "honeyspindle (fantasy shrub): mixed/temperate forest, heath; summer only"
+ },
+ "horn": {
+  "evidence": [
+   "src/stream/server_items.gd:2271-2285 (make_carcass)",
+   "src/stream/server_items.gd:2288-2341 (_process_carcass: knife in hand, parts over blows)",
+   "scenes/terrain_server/terrain_server.gd:640 (animals.died -> make_carcass)",
+   "src/client/held_item.gd:1213 (knife swing -> ACT_PROCESS)",
+   "data/items/carcass.json#species.mountain_goat.parts",
+   "data/items/carcass.json#species.bighorn.parts",
+   "data/items/carcass.json#species.chamois.parts",
+   "data/items/carcass.json#species.buffalo.parts",
+   "data/items/carcass.json#species.pronghorn.parts",
+   "data/items/carcass.json#species.wildebeest.parts",
+   "data/items/carcass.json#species.rhino.parts",
+   "data/items/carcass.json#species.cow/goat(target 0).parts",
+   "data/animals/animals.json#species (target_per_player, biomes; species without a row never spawn)"
+  ],
+  "mechanism": "Kill the animal (spear jab/throw, bow, snare for rabbit/fox), then swing a knife in hand at the carcass: parts come over the blows (4).",
+  "notes": "Mountain/grassland/savanna animals only.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "weapon to kill; knife in hand to dress",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "COND alpine, bare rock, grassland, savanna; species: mountain_goat, bighorn, chamois, buffalo, pronghorn, wildebeest, rhino, cow/goat(target 0)"
+ },
+ "iron_ore": {
+  "evidence": [
+   "data/items/digging.json#bog_iron",
+   "src/stream/server_items.gd:3405-3445 (_dig_bog_iron)",
+   "scenes/terrain_server/terrain_server.gd:362-363",
+   "data/items/boulders.json#ore.needs_material.iron",
+   "src/stream/server_items.gd:5616-5622",
+   "src/worldgen/tools/test_bog_iron.gd"
+  ],
+  "mechanism": "(a) Bog iron: dig with any spade on a bog iron deposit in fen/bog/marsh/swamp water classes: 1-2 per dig (+spade tier), deposit 6-12, regrows 1 per 3 game days; (b) rock: pick on an iron outcrop boulder, but only with a BRONZE, IRON or STEEL pick (a stone pick is told \"This pick is too soft for that ore\").",
+  "notes": "Bog iron is the early route (wooden spade = 2 sticks).",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "any spade (bog); bronze+ pickaxe (rock)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "bog/fen/marsh/swamp ground (bog); iron ore bodies (rock)"
+ },
+ "juniper_berries": {
+  "evidence": [
+   "data/items/drops.json#berry_yield.juniper",
+   "data/tables/flora.json#entries[name=juniper]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)"
+  ],
+  "mechanism": "E on the bush: berry_yield gives all 100 (x1-3 by size), once a season; bush stays, bare",
+  "notes": "Seasonal: none in other seasons (\"Not in season\").",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "juniper (shrub); season autumn, winter; biomes heath, alpine, dry_scrub, boreal, grassland, forests"
+ },
+ "limestone": {
+  "evidence": [
+   "data/items/boulders.json#ore.rocks",
+   "data/items/boulders.json#ore.rock_boulder_share",
+   "src/stream/server_items.gd:5529-5552",
+   "src/stream/server_items.gd:5640-5648",
+   "scenes/terrain_server/terrain_server.gd:360-361"
+  ],
+  "mechanism": "Pick on a boulder over limestone, chalk or marble bedrock: half of those boulders are limestone boulders; each piece is limestone with chance 0.4. Only when the boulder is not already an ore outcrop.",
+  "notes": "Location depends on geology.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "pick in hand (any material)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "regions with limestone/chalk/marble bedrock"
+ },
+ "lingonberries": {
+  "evidence": [
+   "data/items/drops.json#berry_yield.lingonberry",
+   "data/tables/flora.json#entries[name=lingonberry]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)"
+  ],
+  "mechanism": "E on the bush: berry_yield gives all 15 (x1-3 by size), once a season; bush stays, bare",
+  "notes": "Seasonal: none in other seasons (\"Not in season\").",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "lingonberry (plant); season autumn; biomes boreal_forest, heath, tundra"
+ },
+ "linseed": {
+  "evidence": [
+   "data/tables/flora.json#entries[name=flax]",
+   "data/items/drops.json#by_species.flax",
+   "data/items/drops.json#seed_drops.flax",
+   "src/stream/server_items.gd:1563-1646 (gather)"
+  ],
+  "mechanism": "E on wild flax in summer: 2-4 plant fibre + 1-3 linseed (+ flax seeds 1-3 summer/autumn)",
+  "notes": "Flax is in season summer only (flora season), so autumn seed_drops never fire for it.",
+  "status": "SOURCED",
+  "tool": "none",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "flax plant: temperate grassland/forest; summer"
+ },
+ "log": {
+  "evidence": [
+   "data/items/wood_species.json#ingredient_groups.log",
+   "src/stream/server_items.gd:5828-5900 (_hit: axe or pick in hand fells)",
+   "src/stream/server_items.gd:6640-6745 (_auto_split/split_trunk: logs dropped on ground)",
+   "src/stream/server_items.gd:6627-6637 (_log_number: retired species -> plain log)",
+   "src/stream/server_items.gd:15836-15925 (logs from shoulder/ground within 3 m)"
+  ],
+  "mechanism": "Group: any species log (log_oak, log_beech, log_birch, log_scots_pine, log_spruce, log_tropical_hardwood, log_walnut, log_maple) fills it; the plain Log item itself drops from trees whose own log is retired or missing (alder, willow, balsam fir, rowan, wild apple/pear/cherry, sweet chestnut, mangrove, apple/pear cultivars...).",
+  "notes": "Plain log is a pack item (not carry=shoulder). Hob does not sell logs.",
+  "status": "SOURCED",
+  "tool": "axe in hand",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "any forest"
+ },
+ "log_beech": {
+  "evidence": [
+   "src/stream/server_items.gd:5828-5900 (_hit: axe or pick in hand fells)",
+   "src/stream/server_items.gd:6640-6745 (_auto_split/split_trunk: logs dropped on ground)",
+   "src/stream/server_items.gd:6627-6637 (_log_number: retired species -> plain log)",
+   "src/stream/server_items.gd:6919-6945 (_cut_log_off)",
+   "src/stream/server_items.gd:4637-4652 (_pickup: shoulder item)",
+   "src/stream/server_items.gd:851-852 (carry=shoulder)",
+   "data/items/items.json#items.log_beech.carry"
+  ],
+  "mechanism": "Fell a standing beech (swing the axe in hand at it until it falls); the trunk splits into log_beech logs on the ground by itself (or cut them off with the axe). E picks one up onto the shoulder (one at a time; Q puts it down).",
+  "notes": "Shoulder log, unstackable. A craft/blueprint needing the log group draws the shoulder log, then logs lying within 3 m (LOG_NEAR_M), then the pack (src/stream/server_items.gd:15836-15925, 17005).",
+  "status": "SOURCED",
+  "tool": "axe in hand (stone axe or better; a pick also fells, very slowly)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "beech: temperate_forest 72/ha, mixed 30"
+ },
+ "log_birch": {
+  "evidence": [
+   "src/stream/server_items.gd:5828-5900 (_hit: axe or pick in hand fells)",
+   "src/stream/server_items.gd:6640-6745 (_auto_split/split_trunk: logs dropped on ground)",
+   "src/stream/server_items.gd:6627-6637 (_log_number: retired species -> plain log)",
+   "src/stream/server_items.gd:6919-6945 (_cut_log_off)",
+   "src/stream/server_items.gd:4637-4652 (_pickup: shoulder item)",
+   "src/stream/server_items.gd:851-852 (carry=shoulder)",
+   "data/items/items.json#items.log_birch.carry"
+  ],
+  "mechanism": "Fell a standing birch (swing the axe in hand at it until it falls); the trunk splits into log_birch logs on the ground by itself (or cut them off with the axe). E picks one up onto the shoulder (one at a time; Q puts it down).",
+  "notes": "Shoulder log, unstackable. A craft/blueprint needing the log group draws the shoulder log, then logs lying within 3 m (LOG_NEAR_M), then the pack (src/stream/server_items.gd:15836-15925, 17005).",
+  "status": "SOURCED",
+  "tool": "axe in hand (stone axe or better; a pick also fells, very slowly)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "birch: mixed 13, boreal 12, temperate 2.7, heath 1.3 (also dense stands)"
+ },
+ "log_maple": {
+  "evidence": [
+   "src/stream/server_items.gd:5828-5900 (_hit: axe or pick in hand fells)",
+   "src/stream/server_items.gd:6640-6745 (_auto_split/split_trunk: logs dropped on ground)",
+   "src/stream/server_items.gd:6627-6637 (_log_number: retired species -> plain log)",
+   "src/stream/server_items.gd:6919-6945 (_cut_log_off)",
+   "src/stream/server_items.gd:4637-4652 (_pickup: shoulder item)",
+   "src/stream/server_items.gd:851-852 (carry=shoulder)",
+   "data/items/items.json#items.log_maple.carry"
+  ],
+  "mechanism": "Fell a standing maple (swing the axe in hand at it until it falls); the trunk splits into log_maple logs on the ground by itself (or cut them off with the axe). E picks one up onto the shoulder (one at a time; Q puts it down).",
+  "notes": "Shoulder log, unstackable. A craft/blueprint needing the log group draws the shoulder log, then logs lying within 3 m (LOG_NEAR_M), then the pack (src/stream/server_items.gd:15836-15925, 17005).",
+  "status": "SOURCED",
+  "tool": "axe in hand (stone axe or better; a pick also fells, very slowly)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "maple: temperate_forest 42/ha, mixed 34"
+ },
+ "log_oak": {
+  "evidence": [
+   "src/stream/server_items.gd:5828-5900 (_hit: axe or pick in hand fells)",
+   "src/stream/server_items.gd:6640-6745 (_auto_split/split_trunk: logs dropped on ground)",
+   "src/stream/server_items.gd:6627-6637 (_log_number: retired species -> plain log)",
+   "src/stream/server_items.gd:6919-6945 (_cut_log_off)",
+   "src/stream/server_items.gd:4637-4652 (_pickup: shoulder item)",
+   "src/stream/server_items.gd:851-852 (carry=shoulder)",
+   "data/items/items.json#items.log_oak.carry"
+  ],
+  "mechanism": "Fell a standing oak (swing the axe in hand at it until it falls); the trunk splits into log_oak logs on the ground by itself (or cut them off with the axe). E picks one up onto the shoulder (one at a time; Q puts it down).",
+  "notes": "Shoulder log, unstackable. A craft/blueprint needing the log group draws the shoulder log, then logs lying within 3 m (LOG_NEAR_M), then the pack (src/stream/server_items.gd:15836-15925, 17005). Group key: log_oak (Hardwood log) is filled by log_oak, log_beech, log_birch, log_tropical_hardwood, log_walnut, log_maple (wood_species.json#ingredient_groups.log_oak).",
+  "status": "SOURCED",
+  "tool": "axe in hand (stone axe or better; a pick also fells, very slowly)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "oak: temperate_forest 10/ha, mixed 5, temperate grassland 1"
+ },
+ "log_scots_pine": {
+  "evidence": [
+   "src/stream/server_items.gd:5828-5900 (_hit: axe or pick in hand fells)",
+   "src/stream/server_items.gd:6640-6745 (_auto_split/split_trunk: logs dropped on ground)",
+   "src/stream/server_items.gd:6627-6637 (_log_number: retired species -> plain log)",
+   "src/stream/server_items.gd:6919-6945 (_cut_log_off)",
+   "src/stream/server_items.gd:4637-4652 (_pickup: shoulder item)",
+   "src/stream/server_items.gd:851-852 (carry=shoulder)",
+   "data/items/items.json#items.log_scots_pine.carry"
+  ],
+  "mechanism": "Fell a standing scots_pine (swing the axe in hand at it until it falls); the trunk splits into log_scots_pine logs on the ground by itself (or cut them off with the axe). E picks one up onto the shoulder (one at a time; Q puts it down).",
+  "notes": "Shoulder log, unstackable. A craft/blueprint needing the log group draws the shoulder log, then logs lying within 3 m (LOG_NEAR_M), then the pack (src/stream/server_items.gd:15836-15925, 17005).",
+  "status": "SOURCED",
+  "tool": "axe in hand (stone axe or better; a pick also fells, very slowly)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "scots_pine: boreal 60/ha, mixed 40, heath 6, temperate 4"
+ },
+ "log_spruce": {
+  "evidence": [
+   "src/stream/server_items.gd:5828-5900 (_hit: axe or pick in hand fells)",
+   "src/stream/server_items.gd:6640-6745 (_auto_split/split_trunk: logs dropped on ground)",
+   "src/stream/server_items.gd:6627-6637 (_log_number: retired species -> plain log)",
+   "src/stream/server_items.gd:6919-6945 (_cut_log_off)",
+   "src/stream/server_items.gd:4637-4652 (_pickup: shoulder item)",
+   "src/stream/server_items.gd:851-852 (carry=shoulder)",
+   "data/items/items.json#items.log_spruce.carry"
+  ],
+  "mechanism": "Fell a standing spruce (swing the axe in hand at it until it falls); the trunk splits into log_spruce logs on the ground by itself (or cut them off with the axe). E picks one up onto the shoulder (one at a time; Q puts it down).",
+  "notes": "Shoulder log, unstackable. A craft/blueprint needing the log group draws the shoulder log, then logs lying within 3 m (LOG_NEAR_M), then the pack (src/stream/server_items.gd:15836-15925, 17005). Group key: log_spruce (Softwood log) is filled by log_spruce, log_scots_pine and plain log (wood_species.json#ingredient_groups.log_spruce).",
+  "status": "SOURCED",
+  "tool": "axe in hand (stone axe or better; a pick also fells, very slowly)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "spruce: boreal 120/ha, mixed 20, alpine 4"
+ },
+ "log_tropical_hardwood": {
+  "evidence": [
+   "src/stream/server_items.gd:5828-5900 (_hit: axe or pick in hand fells)",
+   "src/stream/server_items.gd:6640-6745 (_auto_split/split_trunk: logs dropped on ground)",
+   "src/stream/server_items.gd:6627-6637 (_log_number: retired species -> plain log)",
+   "src/stream/server_items.gd:6919-6945 (_cut_log_off)",
+   "src/stream/server_items.gd:4637-4652 (_pickup: shoulder item)",
+   "src/stream/server_items.gd:851-852 (carry=shoulder)",
+   "data/items/items.json#items.log_tropical_hardwood.carry"
+  ],
+  "mechanism": "Fell a standing tropical_hardwood (swing the axe in hand at it until it falls); the trunk splits into log_tropical_hardwood logs on the ground by itself (or cut them off with the axe). E picks one up onto the shoulder (one at a time; Q puts it down).",
+  "notes": "Shoulder log, unstackable. A craft/blueprint needing the log group draws the shoulder log, then logs lying within 3 m (LOG_NEAR_M), then the pack (src/stream/server_items.gd:15836-15925, 17005). Tropical forest only.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "axe in hand (stone axe or better; a pick also fells, very slowly)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tropical_hardwood: tropical_forest 90/ha"
+ },
+ "log_walnut": {
+  "evidence": [
+   "src/stream/server_items.gd:5828-5900 (_hit: axe or pick in hand fells)",
+   "src/stream/server_items.gd:6640-6745 (_auto_split/split_trunk: logs dropped on ground)",
+   "src/stream/server_items.gd:6627-6637 (_log_number: retired species -> plain log)",
+   "src/stream/server_items.gd:6919-6945 (_cut_log_off)",
+   "src/stream/server_items.gd:4637-4652 (_pickup: shoulder item)",
+   "src/stream/server_items.gd:851-852 (carry=shoulder)",
+   "data/items/items.json#items.log_walnut.carry"
+  ],
+  "mechanism": "Fell a standing walnut (swing the axe in hand at it until it falls); the trunk splits into log_walnut logs on the ground by itself (or cut them off with the axe). E picks one up onto the shoulder (one at a time; Q puts it down).",
+  "notes": "Shoulder log, unstackable. A craft/blueprint needing the log group draws the shoulder log, then logs lying within 3 m (LOG_NEAR_M), then the pack (src/stream/server_items.gd:15836-15925, 17005). Rare tree (about 1 per ha).",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "axe in hand (stone axe or better; a pick also fells, very slowly)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "walnut: temperate_forest 1/ha, temperate_grassland 0.5"
+ },
+ "mackerel": {
+  "evidence": [
+   "data/items/fishing.json#species",
+   "data/items/fish_schools.json#species_by_kind",
+   "data/items/fish_schools.json#only_in",
+   "src/stream/server_items.gd:13393-13445 (_fish rod)",
+   "src/stream/server_items.gd:13565 (_spear_fish)",
+   "src/stream/server_items.gd:13372-13390 (_fish_species)",
+   "src/stream/server_items.gd:13812-13825 (_fish_land)"
+  ],
+  "mechanism": "Fishing rod (cast, wait for \"Something bites!\", click again) or shore net within reach of a school of this species",
+  "notes": "Spear fishing and traps never use schools (_fish_species(cell) without a hit), so they give only trout/perch/carp/pike.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "fishing rod (2 stick, 2 twine, 1 hook) or fishing spear (1 stick, keeps a knife) or spear; net for schools",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "sea_shallow schools, summer"
+ },
+ "marjoram": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.wild_marjoram",
+   "data/tables/flora.json#entries[name=wild_marjoram]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 12 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check). Only in warm/dry or tropical biomes.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "wild_marjoram (plant); season summer; biomes temperate_grassland, dry_scrub"
+ },
+ "mint": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.wild_mint",
+   "data/tables/flora.json#entries[name=wild_mint]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 12 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check). ",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "wild_mint (plant); season spring, summer; biomes marsh, temperate grassland, temperate forest"
+ },
+ "morels": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.morel",
+   "data/tables/flora.json#entries[name=morel]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 3 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check). ",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "morel (plant); season spring; biomes temperate/mixed forest"
+ },
+ "mushrooms": {
+  "evidence": [
+   "data/items/wood_species.json#ingredient_groups.mushrooms"
+  ],
+  "mechanism": "Group: porcini (autumn), chanterelles (summer/autumn), morels (spring), puffball (summer/autumn)",
+  "notes": "None in winter.",
+  "status": "SOURCED",
+  "tool": "none",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "forests, grassland"
+ },
+ "nettles": {
+  "evidence": [
+   "data/items/drops.json#by_species.nettle",
+   "data/tables/flora.json#entries[name=nettle]",
+   "src/stream/server_items.gd:1563-1646 (gather)"
+  ],
+  "mechanism": "E on nettle: 2-4 nettles + 1-2 plant fibre",
+  "notes": "Not in autumn/winter.",
+  "status": "SOURCED",
+  "tool": "none",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "nettle: temperate/mixed forest, marsh; spring, summer"
+ },
+ "nuts": {
+  "evidence": [
+   "data/items/wood_species.json#ingredient_groups.nuts"
+  ],
+  "mechanism": "Group: hazelnuts (E, autumn), chestnuts and walnuts (fruit trees, autumn), beechnuts (felling seed roll)",
+  "notes": "",
+  "status": "SOURCED",
+  "tool": "none / axe",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "temperate forest"
+ },
+ "oats": {
+  "evidence": [
+   "data/items/crops.json#crops.oats.yields",
+   "src/stream/terrain_net.gd:179-182 (ACT_TILL/SOW/HARVEST/WATER_BED)",
+   "src/client/held_item.gd:2064 (only ACT_TILL is ever sent by the client; grep finds no ACT_SOW/ACT_HARVEST/ACT_WATER_BED sender in src/client or scenes)",
+   "src/stream/server_items.gd:14635 (sow, server only)",
+   "src/stream/server_items.gd:14757-14790 (harvest, server only)"
+  ],
+  "mechanism": "Only a crop yield (crops.json): till with a hoe, sow seeds, wait, harvest with E. The client sends ACT_TILL only; it never sends ACT_SOW, ACT_HARVEST or ACT_WATER_BED, so sowing and harvesting cannot happen in play. Not sold by Hob, not wild.",
+  "notes": "Server-side sow/harvest exist and test_farming.gd exercises them directly; the gap is the client trigger.",
+  "status": "NO_SOURCE",
+  "tool": "(hoe, seeds, sickle - unreachable)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "farm beds"
+ },
+ "obsidian": {
+  "evidence": [
+   "data/items/boulders.json#ore.items",
+   "data/items/digging.json#yield",
+   "data/npcs/shops.json#hob.stock"
+  ],
+  "mechanism": "None: not a boulder ore/rock item, not in digging, drops, shops or carcass tables; grep finds no code that gives it.",
+  "notes": "Blocks Obsidian - Knife (recipes.json#recipes.obsidian_knife).",
+  "status": "NO_SOURCE",
+  "tool": "-",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "-"
+ },
+ "onion": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.ramsons",
+   "data/tables/flora.json#entries[name=ramsons]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 2 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check).  Also a crop row, unreachable from the client (see wheat).",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "ramsons (plant); season spring; biomes mixed_forest, temperate_grassland"
+ },
+ "pear_autumn": {
+  "evidence": [
+   "data/items/drops.json#fruit_tree.pear_autumn",
+   "data/items/drops.json#harvest_yield.pear_autumn",
+   "data/tables/flora.json#entries[name=pear_autumn]",
+   "src/stream/server_items.gd:1708-1758 (_gather_fruit_tree)"
+  ],
+  "mechanism": "E on the fruit tree: up to per_pick pieces a press from the tree's store (refills each fruiting season), weight-limited",
+  "notes": "Fruit trees are the only trees E works on.",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tree pear_autumn; season autumn; biomes per flora.json"
+ },
+ "pear_summer": {
+  "evidence": [
+   "data/items/drops.json#fruit_tree.pear_summer",
+   "data/items/drops.json#harvest_yield.pear_summer",
+   "data/tables/flora.json#entries[name=pear_summer]",
+   "src/stream/server_items.gd:1708-1758 (_gather_fruit_tree)"
+  ],
+  "mechanism": "E on the fruit tree: up to per_pick pieces a press from the tree's store (refills each fruiting season), weight-limited",
+  "notes": "Fruit trees are the only trees E works on.",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tree pear_summer; season summer; biomes per flora.json"
+ },
+ "pear_winter": {
+  "evidence": [
+   "data/items/drops.json#fruit_tree.pear_winter",
+   "data/items/drops.json#harvest_yield.pear_winter",
+   "data/tables/flora.json#entries[name=pear_winter]",
+   "src/stream/server_items.gd:1708-1758 (_gather_fruit_tree)"
+  ],
+  "mechanism": "E on the fruit tree: up to per_pick pieces a press from the tree's store (refills each fruiting season), weight-limited",
+  "notes": "Fruit trees are the only trees E works on.",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tree pear_winter; season autumn; biomes per flora.json"
+ },
+ "peas": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.wild_vetch",
+   "data/tables/flora.json#entries[name=wild_vetch]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 2 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check).  Also a crop row, unreachable from the client (see wheat).",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "wild_vetch (plant); season summer; biomes temperate_grassland, heath"
+ },
+ "perch": {
+  "evidence": [
+   "data/items/fishing.json#species",
+   "data/items/fish_schools.json#species_by_kind",
+   "data/items/fish_schools.json#only_in",
+   "src/stream/server_items.gd:13393-13445 (_fish rod)",
+   "src/stream/server_items.gd:13565 (_spear_fish)",
+   "src/stream/server_items.gd:13372-13390 (_fish_species)",
+   "src/stream/server_items.gd:13812-13825 (_fish_land)"
+  ],
+  "mechanism": "Fishing rod (cast, click on the bite), fishing spear / spear jab in 0.2-1.5 m water, or a fish trap: species from the water cell type (stream/pond/lake) or a nearby school",
+  "notes": "Spear fishing and traps never use schools (_fish_species(cell) without a hit), so they give only trout/perch/carp/pike.",
+  "status": "SOURCED",
+  "tool": "fishing rod (2 stick, 2 twine, 1 hook) or fishing spear (1 stick, keeps a knife) or spear; net for schools",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "stream, pond, lake"
+ },
+ "pike": {
+  "evidence": [
+   "data/items/fishing.json#species",
+   "data/items/fish_schools.json#species_by_kind",
+   "data/items/fish_schools.json#only_in",
+   "src/stream/server_items.gd:13393-13445 (_fish rod)",
+   "src/stream/server_items.gd:13565 (_spear_fish)",
+   "src/stream/server_items.gd:13372-13390 (_fish_species)",
+   "src/stream/server_items.gd:13812-13825 (_fish_land)"
+  ],
+  "mechanism": "Fishing rod (cast, click on the bite), fishing spear / spear jab in 0.2-1.5 m water, or a fish trap: species from the water cell type (stream/pond/lake) or a nearby school",
+  "notes": "Spear fishing and traps never use schools (_fish_species(cell) without a hit), so they give only trout/perch/carp/pike.",
+  "status": "SOURCED",
+  "tool": "fishing rod (2 stick, 2 twine, 1 hook) or fishing spear (1 stick, keeps a knife) or spear; net for schools",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "lake"
+ },
+ "pine_tar": {
+  "evidence": [
+   "data/tables/flora.json#entries[name=scots_pine]",
+   "data/items/drops.json#trunk.by_species.scots_pine",
+   "scenes/terrain_server/terrain_server.gd:1864",
+   "src/client/harvest.gd:278-279",
+   "src/stream/server_items.gd:6527-6533 (seed roll gives only own[0] of trunk.by_species)",
+   "src/stream/server_items.gd:6886-6900"
+  ],
+  "mechanism": "None in play. Scots pine is a tree (E refused); its trunk seed roll gives only own[0]=resin, never pine_tar.",
+  "notes": "Not given by any recipe, vendor, carcass, dig or shore table. The draft gather:pine_tar instruction is unachievable. The \"pitch\" group can still be filled by resin or animal fat.",
+  "status": "NO_SOURCE",
+  "tool": "(knife suffix \"tar\" is moot)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "scots_pine would be the only bearer"
+ },
+ "pitch": {
+  "evidence": [
+   "data/items/wood_species.json#ingredient_groups.pitch"
+  ],
+  "mechanism": "Group: resin (trunk seed roll on conifers), pine_tar (no source), animal_fat (carcass)",
+  "notes": "Fillable only by resin or animal fat.",
+  "status": "SOURCED",
+  "tool": "axe or weapon+knife",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "conifer forests / hunting"
+ },
+ "plant_fibre": {
+  "evidence": [
+   "data/items/drops.json#by_species",
+   "src/stream/server_items.gd:1563-1646 (gather)",
+   "src/client/harvest.gd:62-104 (hold-E sweep)",
+   "data/npcs/shops.json#hob.stock",
+   "data/npcs/dialogue/hob.json:232 (open_shop)"
+  ],
+  "mechanism": "E on tall grass (1-3), nettle (1-2), reeds (2-3), wild flax (2-4), riverbraid (2-3), tanglewort (1-2); hold E to sweep plants within 2 m. Hob sells it.",
+  "notes": "Thatching grass has plant_fibre as a flora yield but its harvest_row (thatch) shadows it: no fibre from thatching grass. In winter only reeds/tanglewort give fibre (tall grass and nettle out of season). A picked tall grass/nettle disappears from the world.",
+  "status": "SOURCED",
+  "tool": "none",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tall grass nearly everywhere (spring-autumn); nettle spring/summer; reeds all year (marsh, banks)"
+ },
+ "plantain_leaves": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.plantain",
+   "data/tables/flora.json#entries[name=plantain]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 12 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check). ",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "plantain (plant); season spring-autumn; biomes temperate_grassland, alpine_meadow"
+ },
+ "plums": {
+  "evidence": [
+   "data/items/drops.json#fruit_tree.plum",
+   "data/items/drops.json#harvest_yield.plum",
+   "data/tables/flora.json#entries[name=plum]",
+   "src/stream/server_items.gd:1708-1758 (_gather_fruit_tree)"
+  ],
+  "mechanism": "E on the fruit tree: up to per_pick pieces a press from the tree's store (refills each fruiting season), weight-limited",
+  "notes": "Fruit trees are the only trees E works on.",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tree plum; season summer, autumn; biomes per flora.json"
+ },
+ "porcini": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.porcini",
+   "data/tables/flora.json#entries[name=porcini]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 2 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check). ",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "porcini (plant); season autumn; biomes temperate/mixed/boreal forest"
+ },
+ "potash": {
+  "evidence": [
+   "data/tables/flora.json#entries[name=saltbush]",
+   "src/stream/server_items.gd:1563-1646 (gather)"
+  ],
+  "mechanism": "E on saltbush: random of fodder/potash 1-3, plus 1-3 sticks",
+  "notes": "Desert biomes only.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "none",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "saltbush: dry_scrub, hot_desert, all seasons"
+ },
+ "potato": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.wild_potato",
+   "data/tables/flora.json#entries[name=wild_potato]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 2 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check).  Also a crop (crops.json#crops.potato) but crops cannot be sown/harvested from the client (see wheat).",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "wild_potato (plant); season spring-autumn; biomes temperate_grassland, heath, boreal_forest"
+ },
+ "prickly_pears": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.prickly_pear",
+   "data/tables/flora.json#entries[name=prickly_pear]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 25 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check). Only in warm/dry or tropical biomes.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "prickly_pear (shrub); season summer, autumn; biomes dry_scrub, hot_desert, savanna"
+ },
+ "puffball": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.puffball",
+   "data/tables/flora.json#entries[name=puffball]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 1 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check). ",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "puffball (plant); season summer, autumn; biomes temperate grassland/forest"
+ },
+ "quill": {
+  "evidence": [
+   "data/items/carcass.json#species.porcupine.parts",
+   "data/items/carcass.json#species.hedgehog.parts",
+   "data/animals/animals.json#species (target_per_player, biomes; species without a row never spawn)",
+   "data/animals/traps.json#species_weight"
+  ],
+  "mechanism": "Only porcupine and hedgehog carcasses give quills, and neither species has an animals.json row, so neither spawns or dies.",
+  "notes": "Snares catch rabbit/fox only.",
+  "status": "NO_SOURCE",
+  "tool": "-",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "-"
+ },
+ "quince": {
+  "evidence": [
+   "data/items/drops.json#fruit_tree.quince",
+   "data/items/drops.json#harvest_yield.quince",
+   "data/tables/flora.json#entries[name=quince]",
+   "src/stream/server_items.gd:1708-1758 (_gather_fruit_tree)"
+  ],
+  "mechanism": "E on the fruit tree: up to per_pick pieces a press from the tree's store (refills each fruiting season), weight-limited",
+  "notes": "Fruit trees are the only trees E works on. Rare (0.3 per ha, temperate_grassland/dry_scrub).",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tree quince; season autumn; biomes per flora.json"
+ },
+ "raspberries": {
+  "evidence": [
+   "data/items/drops.json#berry_yield.raspberry",
+   "data/tables/flora.json#entries[name=raspberry]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)"
+  ],
+  "mechanism": "E on the bush: berry_yield gives all 150 (x1-3 by size), once a season; bush stays, bare",
+  "notes": "Seasonal: none in other seasons (\"Not in season\").",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "raspberry (shrub); season summer; biomes temperate/mixed/boreal forest"
+ },
+ "raw_meat": {
+  "evidence": [
+   "src/stream/server_items.gd:2271-2285 (make_carcass)",
+   "src/stream/server_items.gd:2288-2341 (_process_carcass: knife in hand, parts over blows)",
+   "scenes/terrain_server/terrain_server.gd:640 (animals.died -> make_carcass)",
+   "src/client/held_item.gd:1213 (knife swing -> ACT_PROCESS)",
+   "data/items/carcass.json#species.rabbit.parts",
+   "data/items/carcass.json#species.deer.parts",
+   "data/items/carcass.json#species.boar.parts",
+   "data/items/carcass.json#species.grouse.parts",
+   "data/items/carcass.json#species...all spawning species except songbirds.parts",
+   "data/animals/animals.json#species (target_per_player, biomes; species without a row never spawn)"
+  ],
+  "mechanism": "Kill the animal (spear jab/throw, bow, snare for rabbit/fox), then swing a knife in hand at the carcass: parts come over the blows (4).",
+  "notes": "Rabbit (target 6 per player, grassland/heath/forest) is the easiest; snares (twine 3 + stick 2) catch rabbits/foxes.",
+  "status": "SOURCED",
+  "tool": "weapon to kill; knife in hand to dress",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "nearly every biome; species: rabbit, deer, boar, grouse, ..all spawning species except songbirds"
+ },
+ "resin": {
+  "evidence": [
+   "data/items/drops.json#trunk.by_species.scots_pine",
+   "data/items/drops.json#trunk.by_species.spruce",
+   "data/items/drops.json#trunk.by_species.balsam_fir",
+   "src/stream/server_items.gd:6527-6533 (seed roll gives only own[0] of trunk.by_species)",
+   "src/stream/server_items.gd:6886-6900"
+  ],
+  "mechanism": "Fell a Scots pine, spruce or balsam fir and cut/auto-split the trunk: seed roll 0.28 per log gives 1-2 resin",
+  "notes": "The flora yields (knife suffix \"resin\") are never reachable: conifers are trees and E is refused on non-fruit trees.",
+  "status": "SOURCED",
+  "tool": "axe in hand",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "conifer forests (boreal, mixed, heath; spruce also alpine)"
+ },
+ "roast_fish": {
+  "evidence": [
+   "data/items/cooking.json#cooks_into",
+   "src/stream/server_items.gd:7647-7672 (_cook)",
+   "src/stream/server_items.gd:9834-9866 (_tend_fire: raw food in a lit fire store cooks)",
+   "data/items/cooking.json#cooks_into"
+  ],
+  "mechanism": "Any of the ten fish cooked at a lit campfire (fire store or cook action)",
+  "notes": "",
+  "status": "SOURCED",
+  "tool": "lit campfire",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "any"
+ },
+ "roast_meat": {
+  "evidence": [
+   "data/items/cooking.json#cooks_into.raw_meat",
+   "src/stream/server_items.gd:7647-7672 (_cook)",
+   "src/stream/server_items.gd:9834-9866 (_tend_fire: raw food in a lit fire store cooks)",
+   "data/items/cooking.json#cooks_into"
+  ],
+  "mechanism": "Raw meat cooked at a LIT campfire: put it in the fire's store (one item every 8 s) or ACT_COOK at the fire (one per 1.2 s)",
+  "notes": "No recipe makes it; cooking is not a recipe.",
+  "status": "SOURCED",
+  "tool": "lit campfire",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "any"
+ },
+ "roast_shellfish": {
+  "evidence": [
+   "data/items/cooking.json#cooks_into.shellfish",
+   "data/items/cooking.json#cooks_into.crab_meat",
+   "src/stream/server_items.gd:7647-7672 (_cook)",
+   "src/stream/server_items.gd:9834-9866 (_tend_fire: raw food in a lit fire store cooks)",
+   "data/items/cooking.json#cooks_into"
+  ],
+  "mechanism": "Shellfish or crab meat cooked at a lit campfire",
+  "notes": "Conditional on the shore source.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "lit campfire",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "needs shore food"
+ },
+ "rosemary": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.rosemary",
+   "data/tables/flora.json#entries[name=rosemary]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 12 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check). Only in warm/dry or tropical biomes.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "rosemary (shrub); season all; biomes dry_scrub, savanna"
+ },
+ "rotten_food": {
+  "evidence": [
+   "data/items/spoilage.json#rotten_item",
+   "src/stream/server_items.gd:12569-12592"
+  ],
+  "mechanism": "Any perishable stack that reaches full age turns into rotten_food (pack, chest, ground)",
+  "notes": "",
+  "status": "SOURCED",
+  "tool": "none (wait)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "any"
+ },
+ "rye": {
+  "evidence": [
+   "data/items/crops.json#crops.rye.yields",
+   "src/stream/terrain_net.gd:179-182 (ACT_TILL/SOW/HARVEST/WATER_BED)",
+   "src/client/held_item.gd:2064 (only ACT_TILL is ever sent by the client; grep finds no ACT_SOW/ACT_HARVEST/ACT_WATER_BED sender in src/client or scenes)",
+   "src/stream/server_items.gd:14635 (sow, server only)",
+   "src/stream/server_items.gd:14757-14790 (harvest, server only)"
+  ],
+  "mechanism": "Only a crop yield (crops.json): till with a hoe, sow seeds, wait, harvest with E. The client sends ACT_TILL only; it never sends ACT_SOW, ACT_HARVEST or ACT_WATER_BED, so sowing and harvesting cannot happen in play. Not sold by Hob, not wild.",
+  "notes": "Server-side sow/harvest exist and test_farming.gd exercises them directly; the gap is the client trigger.",
+  "status": "NO_SOURCE",
+  "tool": "(hoe, seeds, sickle - unreachable)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "farm beds"
+ },
+ "sage": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.wild_sage",
+   "data/tables/flora.json#entries[name=wild_sage]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 12 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check). Only in warm/dry or tropical biomes.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "wild_sage (plant); season spring-autumn; biomes dry_scrub, savanna"
+ },
+ "salmon": {
+  "evidence": [
+   "data/items/fishing.json#species",
+   "data/items/fish_schools.json#species_by_kind",
+   "data/items/fish_schools.json#only_in",
+   "src/stream/server_items.gd:13393-13445 (_fish rod)",
+   "src/stream/server_items.gd:13565 (_spear_fish)",
+   "src/stream/server_items.gd:13372-13390 (_fish_species)",
+   "src/stream/server_items.gd:13812-13825 (_fish_land)"
+  ],
+  "mechanism": "Fishing rod (cast, wait for \"Something bites!\", click again) or shore net within reach of a school of this species",
+  "notes": "Spear fishing and traps never use schools (_fish_species(cell) without a hit), so they give only trout/perch/carp/pike.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "fishing rod (2 stick, 2 twine, 1 hook) or fishing spear (1 stick, keeps a knife) or spear; net for schools",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "river schools, autumn only"
+ },
+ "sand": {
+  "evidence": [
+   "data/items/digging.json#yield.sand",
+   "data/items/digging.json#yield.beach_sand",
+   "src/stream/server_items.gd:2641-2690 (_dig: spade in hand)",
+   "src/stream/server_items.gd:3369-3400 (_give_dig_yield: yield/under/finds)",
+   "scenes/terrain_server/terrain_server.gd:492-499 (ground_material)"
+  ],
+  "mechanism": "Dig sand or beach sand (1-3), volcanic ash (1-2); 0.5 chance under a salt flat",
+  "notes": "",
+  "status": "SOURCED",
+  "tool": "any spade",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "beaches, sandy ground"
+ },
+ "sea_water": {
+  "evidence": [
+   "data/items/shore_nodes.json#containers",
+   "src/stream/server_items.gd:13965-13977",
+   "src/worldgen/tools/test_shore_gather.gd:60-64"
+  ],
+  "mechanism": "E at the sea edge with a bucket, clay jug or waterskin in the pack: 1 sea_water per press",
+  "notes": "Hob sells waterskins.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "bucket / clay jug / waterskin in the pack (not consumed)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "within 4 m of sea water"
+ },
+ "seal_meat": {
+  "evidence": [
+   "src/stream/server_items.gd:2271-2285 (make_carcass)",
+   "src/stream/server_items.gd:2288-2341 (_process_carcass: knife in hand, parts over blows)",
+   "scenes/terrain_server/terrain_server.gd:640 (animals.died -> make_carcass)",
+   "src/client/held_item.gd:1213 (knife swing -> ACT_PROCESS)",
+   "data/items/carcass.json#species.seal.parts",
+   "data/animals/animals.json#species (target_per_player, biomes; species without a row never spawn)"
+  ],
+  "mechanism": "Kill the animal (spear jab/throw, bow, snare for rabbit/fox), then swing a knife in hand at the carcass: parts come over the blows (4).",
+  "notes": "Seals only.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "weapon to kill; knife in hand to dress",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "COND beach, bare rock, marsh; species: seal"
+ },
+ "seaweed": {
+  "evidence": [
+   "data/items/shore_nodes.json#nodes[kind=kelp]",
+   "src/stream/server_items.gd:13954-14003 (gather_edge)",
+   "src/shared/shore_rules.gd:61-75 (prompt: sea near, no container)",
+   "scenes/terrain_client/terrain_client.gd:1489-1493,2016-2017"
+  ],
+  "mechanism": "E on a tide-line kelp node: 2-5",
+  "notes": "",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "none, no water container in pack",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "sea beaches"
+ },
+ "seed_bundle": {
+  "evidence": [
+   "data/items/drops.json#trunk.seed_chance",
+   "src/stream/server_items.gd:6529-6531",
+   "src/stream/server_items.gd:6899"
+  ],
+  "mechanism": "Cut/auto-split a felled tree whose species has no trunk.by_species row (e.g. maple, alder, mangrove, tropical hardwood, apple/pear cultivars): seed roll 0.28 per log gives 1",
+  "notes": "",
+  "status": "SOURCED",
+  "tool": "axe in hand",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "any such tree"
+ },
+ "shellfish": {
+  "evidence": [
+   "data/items/shore_nodes.json#nodes[kind=mussels]",
+   "src/stream/server_items.gd:13954-14003 (gather_edge)",
+   "src/shared/shore_rules.gd:61-75 (prompt: sea near, no container)",
+   "scenes/terrain_client/terrain_client.gd:1489-1493,2016-2017"
+  ],
+  "mechanism": "E on a tide-line mussels node (beach cell at the sea, ground <= 4 m, 50% of 8 m cells hold a node per game day): 3-8; node used up for the day",
+  "notes": "Carrying a bucket, clay jug or waterskin turns E at the sea into \"fill with sea water\" (gather_edge checks containers first), blocking all tide-line nodes.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "none, and NO water container in the pack",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "sea beaches"
+ },
+ "sinew": {
+  "evidence": [
+   "src/stream/server_items.gd:2271-2285 (make_carcass)",
+   "src/stream/server_items.gd:2288-2341 (_process_carcass: knife in hand, parts over blows)",
+   "scenes/terrain_server/terrain_server.gd:640 (animals.died -> make_carcass)",
+   "src/client/held_item.gd:1213 (knife swing -> ACT_PROCESS)",
+   "data/items/carcass.json#species.fox.parts",
+   "data/items/carcass.json#species.deer.parts",
+   "data/items/carcass.json#species.boar.parts",
+   "data/items/carcass.json#species.moose.parts",
+   "data/items/carcass.json#species.wolf.parts",
+   "data/items/carcass.json#species.lynx.parts",
+   "data/items/carcass.json#species.bear.parts",
+   "data/items/carcass.json#species.elk.parts",
+   "data/items/carcass.json#species.....parts",
+   "data/animals/animals.json#species (target_per_player, biomes; species without a row never spawn)"
+  ],
+  "mechanism": "Kill the animal (spear jab/throw, bow, snare for rabbit/fox), then swing a knife in hand at the carcass: parts come over the blows (4).",
+  "notes": "",
+  "status": "SOURCED",
+  "tool": "weapon to kill; knife in hand to dress",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "medium and large mammals (not rabbit); species: fox, deer, boar, moose, wolf, lynx, bear, elk, ..."
+ },
+ "sloes": {
+  "evidence": [
+   "data/items/drops.json#berry_yield.blackthorn",
+   "data/tables/flora.json#entries[name=blackthorn]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)"
+  ],
+  "mechanism": "E on the bush: berry_yield gives all 300 (x1-3 by size), once a season; bush stays, bare",
+  "notes": "Seasonal: none in other seasons (\"Not in season\").",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "blackthorn (shrub); season autumn; biomes temperate grassland/forest"
+ },
+ "smelt": {
+  "evidence": [
+   "data/items/fishing.json#species",
+   "data/items/fish_schools.json#species_by_kind",
+   "data/items/fish_schools.json#only_in",
+   "src/stream/server_items.gd:13393-13445 (_fish rod)",
+   "src/stream/server_items.gd:13565 (_spear_fish)",
+   "src/stream/server_items.gd:13372-13390 (_fish_species)",
+   "src/stream/server_items.gd:13812-13825 (_fish_land)"
+  ],
+  "mechanism": "Fishing rod (cast, wait for \"Something bites!\", click again) or shore net within reach of a school of this species",
+  "notes": "Spear fishing and traps never use schools (_fish_species(cell) without a hit), so they give only trout/perch/carp/pike.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "fishing rod (2 stick, 2 twine, 1 hook) or fishing spear (1 stick, keeps a knife) or spear; net for schools",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "sea_shallow schools, spring/winter"
+ },
+ "soil": {
+  "evidence": [
+   "data/items/digging.json#yield",
+   "data/items/digging.json#default",
+   "src/stream/server_items.gd:2641-2690 (_dig: spade in hand)",
+   "src/stream/server_items.gd:3369-3400 (_give_dig_yield: yield/under/finds)",
+   "scenes/terrain_server/terrain_server.gd:492-499 (ground_material)"
+  ],
+  "mechanism": "Dig loam, forest humus, silt, alluvium (1-3), stony soil/peat/mud (1-2); any unknown material gives the default 1-2",
+  "notes": "",
+  "status": "SOURCED",
+  "tool": "any spade",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "most ground"
+ },
+ "sour_cherries": {
+  "evidence": [
+   "data/items/drops.json#fruit_tree.sour_cherry",
+   "data/items/drops.json#harvest_yield.sour_cherry",
+   "data/tables/flora.json#entries[name=sour_cherry]",
+   "src/stream/server_items.gd:1708-1758 (_gather_fruit_tree)"
+  ],
+  "mechanism": "E on the fruit tree: up to per_pick pieces a press from the tree's store (refills each fruiting season), weight-limited",
+  "notes": "Fruit trees are the only trees E works on.",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tree sour_cherry; season summer; biomes per flora.json"
+ },
+ "staunchmoss": {
+  "evidence": [
+   "data/tables/flora.json#entries[name=staunchmoss]",
+   "data/items/drops.json#by_species.staunchmoss",
+   "src/stream/server_items.gd:1563-1646 (gather)"
+  ],
+  "mechanism": "E on staunchmoss: 1-2 (by_species) + 1-3 natural",
+  "notes": "",
+  "status": "SOURCED",
+  "tool": "none",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "boreal forest, alpine meadow, heath, temperate/mixed forest; all seasons"
+ },
+ "stick": {
+  "evidence": [
+   "src/stream/server_items.gd:4619-4700 (_pickup)",
+   "src/stream/server_items.gd:4706 (_pickup_batch)",
+   "data/items/pickup_batch.json#batch.stick",
+   "src/stream/server_items.gd:3543-3557 (_pick_litter)",
+   "src/client/harvest.gd:105-122 (branches)",
+   "data/items/drops.json#by_kind.shrub",
+   "data/items/drops.json#by_species.fallen_log",
+   "data/items/drops.json#ground_scatter",
+   "data/items/drops.json#trunk.crown_scatter",
+   "data/items/drops.json#shrub_work",
+   "src/client/auto_pickup.gd:3",
+   "data/npcs/shops.json#hob.stock",
+   "data/npcs/dialogue/hob.json:232 (open_shop)"
+  ],
+  "mechanism": "E on loose sticks (scatter; hold E takes 10 per press from nearby heaps), E on dead branches drawn on the forest floor (1 each), E on any shrub (1-3), fallen log/hollow log/old stump plants (sticks + firewood); felled crowns scatter about 30 sticks; axe on a bush (2-4); stump chopping; auto pickup (P) takes loose ones. Hob sells sticks.",
+  "notes": "",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "everywhere; denser under trees and near the respawn (spawn_boost)"
+ },
+ "stone": {
+  "evidence": [
+   "src/stream/server_items.gd:4619-4700",
+   "src/stream/server_items.gd:5568-5682 (_hit_boulder)",
+   "data/items/boulders.json#tools",
+   "src/stream/server_items.gd:3560-3606 (_mine bare rock)",
+   "src/stream/server_items.gd:5730-5775 (bank stones)",
+   "data/items/drops.json#ground_scatter",
+   "data/items/digging.json#yield.stony_soil",
+   "data/npcs/shops.json#hob.stock",
+   "data/npcs/dialogue/hob.json:232 (open_shop)"
+  ],
+  "mechanism": "E on loose stones (ground scatter on slopes/rock, bank stones by water, cave stones); swing a pick (1/blow stone pick) or axe (0.5/blow, wears 5) at a boulder; swing a pick/axe at bare rock (1 stone per blow, limited per patch); dig stony soil/rock with a spade; Hob sells stones; E on a rock pile structure returns its stones.",
+  "notes": "Boulders are not picked up; the tool must be held (in hand) and on the hotbar.",
+  "status": "SOURCED",
+  "tool": "none for loose stones; pick or axe in hand for boulders/bare rock",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "everywhere, mostly slopes and water banks"
+ },
+ "straw": {
+  "evidence": [
+   "data/items/drops.json#by_species.tall_grass",
+   "data/tables/flora.json#entries[name=tall_grass]",
+   "src/stream/server_items.gd:1563-1646 (gather)"
+  ],
+  "mechanism": "E on tall grass (spring-autumn): 1-3 straw fixed + random natural yield (thatch or straw 1-3)",
+  "notes": "Grain crops also give straw but farming is not reachable from the client.",
+  "status": "SOURCED",
+  "tool": "none",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tall_grass: almost every biome"
+ },
+ "strawberries": {
+  "evidence": [
+   "data/items/drops.json#berry_yield.wild_strawberry",
+   "data/tables/flora.json#entries[name=wild_strawberry]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)"
+  ],
+  "mechanism": "E on the bush: berry_yield gives all 10 (x1-3 by size), once a season; bush stays, bare",
+  "notes": "Seasonal: none in other seasons (\"Not in season\").",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "wild_strawberry (plant); season summer; biomes temperate grassland, temperate/mixed forest, alpine_meadow"
+ },
+ "tannin_bark": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.oak",
+   "data/tables/flora.json#entries[name=oak]",
+   "data/tables/flora.json#entries[name=mangrove]",
+   "scenes/terrain_server/terrain_server.gd:1862-1865",
+   "src/client/harvest.gd:277-279",
+   "data/items/drops.json#trunk.by_species.oak",
+   "src/worldgen/tools/test_mission001_walkthrough.gd:606 (route test gives tannin bark: \"no route test proves stripping bark\")",
+   "docs/ai-team/missions/M001/T19_RESULTS.md:35"
+  ],
+  "mechanism": "None in play. drops.json#harvest_yield.oak (3 tannin bark) is dead: E on a non-fruit tree is refused by the client and the server. Mangrove's flora yield is also a tree yield. No trunk/felling row gives it (felled oak gives acorns + plain bark).",
+  "notes": "Blocks Leather (recipes.json#recipes.leather) and everything downstream unless another tannin source is added. Design/code conflict for escalation; do not invent a method.",
+  "status": "NO_SOURCE",
+  "tool": "none applicable",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "oak / mangrove would be bearers"
+ },
+ "thatch": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.thatch_grass",
+   "data/items/drops.json#by_species.reeds",
+   "data/items/drops.json#by_species.heather",
+   "data/items/drops.json#by_species.tall_grass",
+   "data/items/drops.json#trunk.thatch_bark",
+   "data/items/drops.json#wood_tools.pick_splinters",
+   "src/stream/server_items.gd:1563-1646 (gather)",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)"
+  ],
+  "mechanism": "E on thatching grass (10 x1-3, all seasons, harvest_row), reeds (8 + natural, all seasons), heather (4 + natural, summer/autumn), tall grass (2 + natural, spring-autumn); also birch/conifer trunk bark (thatch_bark) and pick blows on wood (1 each)",
+  "notes": "",
+  "status": "SOURCED",
+  "tool": "none (E); axe or pick for wood sources",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "grassland, forests, heath, marsh, alpine, savanna"
+ },
+ "thyme": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.wild_thyme",
+   "data/tables/flora.json#entries[name=wild_thyme]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 12 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check). ",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "wild_thyme (plant); season spring-autumn; biomes temperate_grassland, heath, alpine_meadow, dry_scrub"
+ },
+ "tin_ore": {
+  "evidence": [
+   "data/items/boulders.json#ore",
+   "src/stream/server_items.gd:5568-5682 (_hit_boulder: pick or axe in hand; ore only with a pick, needs_material)",
+   "src/stream/server_items.gd:5529-5552 (_boulder_ore)",
+   "src/client/held_item.gd:1973-1975",
+   "src/client/inventory_view.gd:124-139 (outcrop look)",
+   "src/worldgen/tools/test_ore.gd"
+  ],
+  "mechanism": "Swing a PICK (stone pickaxe or better) at an outcrop boulder within 40 m of a tin ore body (40% of such boulders are outcrops); each piece is ore with chance 0.3, else stone. An axe never takes ore.",
+  "notes": "Location depends on world geology.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "pick in hand (any material)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "boulders near tin ore bodies"
+ },
+ "trout": {
+  "evidence": [
+   "data/items/fishing.json#species",
+   "data/items/fish_schools.json#species_by_kind",
+   "data/items/fish_schools.json#only_in",
+   "src/stream/server_items.gd:13393-13445 (_fish rod)",
+   "src/stream/server_items.gd:13565 (_spear_fish)",
+   "src/stream/server_items.gd:13372-13390 (_fish_species)",
+   "src/stream/server_items.gd:13812-13825 (_fish_land)"
+  ],
+  "mechanism": "Fishing rod (cast, click on the bite), fishing spear / spear jab in 0.2-1.5 m water, or a fish trap: species from the water cell type (stream/pond/lake) or a nearby school",
+  "notes": "Spear fishing and traps never use schools (_fish_species(cell) without a hit), so they give only trout/perch/carp/pike.",
+  "status": "SOURCED",
+  "tool": "fishing rod (2 stick, 2 twine, 1 hook) or fishing spear (1 stick, keeps a knife) or spear; net for schools",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "streams (rod/spear/trap cell type) and brook/river schools"
+ },
+ "turnip": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.wild_turnip",
+   "data/tables/flora.json#entries[name=wild_turnip]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 2 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check).  Also a crop row, unreachable from the client (see wheat).",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "wild_turnip (plant); season spring, autumn; biomes temperate_grassland, boreal_forest, tundra"
+ },
+ "tusk": {
+  "evidence": [
+   "src/stream/server_items.gd:2271-2285 (make_carcass)",
+   "src/stream/server_items.gd:2288-2341 (_process_carcass: knife in hand, parts over blows)",
+   "scenes/terrain_server/terrain_server.gd:640 (animals.died -> make_carcass)",
+   "src/client/held_item.gd:1213 (knife swing -> ACT_PROCESS)",
+   "data/items/carcass.json#species.boar.parts",
+   "data/items/carcass.json#species.warthog.parts",
+   "data/items/carcass.json#species.elephant.parts",
+   "data/items/carcass.json#species.mammoth.parts",
+   "data/animals/animals.json#species (target_per_player, biomes; species without a row never spawn)"
+  ],
+  "mechanism": "Kill the animal (spear jab/throw, bow, snare for rabbit/fox), then swing a knife in hand at the carcass: parts come over the blows (4).",
+  "notes": "",
+  "status": "SOURCED",
+  "tool": "weapon to kill; knife in hand to dress",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "temperate forest/grassland (boar); savanna; tundra; species: boar, warthog, elephant, mammoth"
+ },
+ "walnuts": {
+  "evidence": [
+   "data/items/drops.json#fruit_tree.walnut",
+   "data/items/drops.json#harvest_yield.walnut",
+   "data/tables/flora.json#entries[name=walnut]",
+   "src/stream/server_items.gd:1708-1758 (_gather_fruit_tree)"
+  ],
+  "mechanism": "E on the fruit tree: up to per_pick pieces a press from the tree's store (refills each fruiting season), weight-limited",
+  "notes": "Fruit trees are the only trees E works on. Also the trunk seed roll when a felled walnut is cut (drops.json#trunk.by_species.walnut, axe).",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tree walnut; season autumn; biomes per flora.json"
+ },
+ "water": {
+  "evidence": [
+   "data/tables/flora.json#entries[name=cactus]",
+   "src/stream/server_items.gd:18396-18405 (container fill = wear ml)",
+   "src/stream/server_items.gd:14673-14690 (water_bed consumes the item)",
+   "src/worldgen/tools/test_textile_route.gd:209 and test_mission001_walkthrough.gd:612/831 (water given: \"no route test proves drawing water\")",
+   "docs/ai-team/missions/M001/T19_RESULTS.md:35"
+  ],
+  "mechanism": "Only from E on a cactus (random of water/spines, 1-3, plus sticks). Filling a bucket/waterskin/clay jug at fresh water stores millilitres in the container (slot wear), it never creates `water` items; sea edge gives sea_water.",
+  "notes": "No code converts container water into the `water` ingredient (grep for capacity_ml/water item in craft code). 26 unlocked recipes (28 in all) need the `water` item (leather, teas, soups, concrete, flatbread...). Outside desert biomes these are unobtainable. HIGH.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "none (cactus)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "cactus: hot_desert, dry_scrub only"
+ },
+ "watercress": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.watercress",
+   "data/tables/flora.json#entries[name=watercress]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 12 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check). ",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "watercress (plant); season spring-autumn; biomes marsh, temperate forest/grassland"
+ },
+ "wheat": {
+  "evidence": [
+   "data/items/crops.json#crops.wheat.yields",
+   "src/stream/terrain_net.gd:179-182 (ACT_TILL/SOW/HARVEST/WATER_BED)",
+   "src/client/held_item.gd:2064 (only ACT_TILL is ever sent by the client; grep finds no ACT_SOW/ACT_HARVEST/ACT_WATER_BED sender in src/client or scenes)",
+   "src/stream/server_items.gd:14635 (sow, server only)",
+   "src/stream/server_items.gd:14757-14790 (harvest, server only)"
+  ],
+  "mechanism": "Only a crop yield (crops.json): till with a hoe, sow seeds, wait, harvest with E. The client sends ACT_TILL only; it never sends ACT_SOW, ACT_HARVEST or ACT_WATER_BED, so sowing and harvesting cannot happen in play. Not sold by Hob, not wild.",
+  "notes": "Server-side sow/harvest exist and test_farming.gd exercises them directly; the gap is the client trigger.",
+  "status": "NO_SOURCE",
+  "tool": "(hoe, seeds, sickle - unreachable)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "farm beds"
+ },
+ "wild_apples": {
+  "evidence": [
+   "data/items/drops.json#fruit_tree.wild_apple_sweet",
+   "data/items/drops.json#harvest_yield.wild_apple_sweet",
+   "data/tables/flora.json#entries[name=wild_apple_sweet]",
+   "src/stream/server_items.gd:1708-1758 (_gather_fruit_tree)"
+  ],
+  "mechanism": "E on the fruit tree: up to per_pick pieces a press from the tree's store (refills each fruiting season), weight-limited",
+  "notes": "Fruit trees are the only trees E works on.",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tree wild_apple_sweet; season autumn; biomes per flora.json"
+ },
+ "wild_carrot_roots": {
+  "evidence": [
+   "data/items/drops.json#harvest_yield.wild_carrot",
+   "data/tables/flora.json#entries[name=wild_carrot]",
+   "src/stream/server_items.gd:1761-1806 (_gather_berries: harvest_row, once a season, by hand, no tool check)",
+   "scenes/terrain_server/terrain_server.gd:1862-1882 (E pick: trees refused unless fruit_tree)"
+  ],
+  "mechanism": "E (tap or hold) on the plant: harvest_row gives all 2 (x1-3 by plant size), once a season; plant stays standing, bare",
+  "notes": "Out of season the plant offers nothing (GatherRules.check).  Roots by hand (harvest_row path skips tool_rules).",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "wild_carrot (plant); season summer, autumn; biomes temperate_grassland, beach, temperate/mixed forest"
+ },
+ "wild_garlic_leaves": {
+  "evidence": [
+   "data/tables/flora.json#entries[name=wild_garlic]",
+   "src/stream/server_items.gd:1563-1646 (gather)"
+  ],
+  "mechanism": "E on wild garlic in spring: random of leaves (by hand) or bulbs (needs spade on hotbar), 1-3",
+  "notes": "Without a spade only the leaves are usable, so every pick gives leaves. Spring only.",
+  "status": "SOURCED",
+  "tool": "none for leaves",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "wild_garlic: temperate/mixed forest; spring only"
+ },
+ "wild_pears": {
+  "evidence": [
+   "data/items/drops.json#fruit_tree.wild_pear",
+   "data/items/drops.json#harvest_yield.wild_pear",
+   "data/tables/flora.json#entries[name=wild_pear]",
+   "src/stream/server_items.gd:1708-1758 (_gather_fruit_tree)"
+  ],
+  "mechanism": "E on the fruit tree: up to per_pick pieces a press from the tree's store (refills each fruiting season), weight-limited",
+  "notes": "Fruit trees are the only trees E works on. Also the trunk seed roll when a felled wild_pear is cut (drops.json#trunk.by_species.wild_pear, axe).",
+  "status": "SOURCED",
+  "tool": "none (by hand)",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "tree wild_pear; season autumn; biomes per flora.json"
+ },
+ "willow_bark": {
+  "evidence": [
+   "data/items/drops.json#trunk.by_species.willow",
+   "src/stream/server_items.gd:6527-6533 (seed roll gives only own[0] of trunk.by_species)",
+   "src/stream/server_items.gd:6886-6900"
+  ],
+  "mechanism": "Fell a willow and cut/auto-split the trunk: seed roll 0.28 per log gives 1-3 willow bark (only own[0]; withies never drop)",
+  "notes": "Willow is a retired log species: it gives plain logs. No E/knife stripping.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "axe in hand",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "willow: marsh, temperate_grassland"
+ },
+ "wooden_block_large": {
+  "evidence": [
+   "src/stream/server_items.gd:9223-9278 (_chop_loose_log)",
+   "data/items/wood_species.json#class_items",
+   "data/items/wood_species.json#species",
+   "data/items/structures.json#chopping_block (blocks_per_shoulder_log)",
+   "src/client/held_item.gd:1970-1972"
+  ],
+  "mechanism": "Lay a HARDWOOD shoulder log (log_oak/beech/birch/maple/walnut/tropical_hardwood) on the ground (Q) and swing an axe at it: it falls apart into 3 large wooden blocks on the ground; pick them up with E. Group key also accepts wooden_block_soft_large.",
+  "notes": "A plain Log (not a shoulder log) gives small wooden_block_soft (default class softwood). A pick turns the log into kindling instead.",
+  "status": "SOURCED",
+  "tool": "axe in hand",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "anywhere with a hardwood log"
+ },
+ "wooden_block_soft_large": {
+  "evidence": [
+   "src/stream/server_items.gd:9223-9278",
+   "data/items/wood_species.json#class_items.softwood",
+   "data/items/wood_species.json#species.spruce"
+  ],
+  "mechanism": "Lay a SOFTWOOD shoulder log (log_spruce or log_scots_pine) on the ground and swing an axe at it: 3 soft large blocks",
+  "notes": "Balsam fir is softwood but gives plain logs (retired species log), which yield small soft blocks, not large ones.",
+  "status": "SOURCED",
+  "tool": "axe in hand",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "conifer forests"
+ },
+ "wool": {
+  "evidence": [
+   "src/stream/server_items.gd:2271-2285 (make_carcass)",
+   "src/stream/server_items.gd:2288-2341 (_process_carcass: knife in hand, parts over blows)",
+   "scenes/terrain_server/terrain_server.gd:640 (animals.died -> make_carcass)",
+   "src/client/held_item.gd:1213 (knife swing -> ACT_PROCESS)",
+   "data/items/carcass.json#species.bighorn.parts",
+   "data/animals/animals.json#species (target_per_player, biomes; species without a row never spawn)"
+  ],
+  "mechanism": "Kill the animal (spear jab/throw, bow, snare for rabbit/fox), then swing a knife in hand at the carcass: parts come over the blows (4).",
+  "notes": "carcass.json wild_sheep also gives wool but has no animals.json row (never spawns); bighorn is the only live source.",
+  "status": "SOURCED_CONDITIONAL",
+  "tool": "weapon to kill; knife in hand to dress",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "COND alpine_meadow, bare_rock, tundra, heath; species: bighorn"
+ },
+ "worm": {
+  "evidence": [
+   "data/items/digging.json#finds",
+   "src/stream/server_items.gd:3394-3400"
+  ],
+  "mechanism": "Each spade dig in loam, forest humus, silt, alluvium, stony soil or mud has a 6% chance of 1 worm",
+  "notes": "",
+  "status": "SOURCED",
+  "tool": "any spade",
+  "verification": "CODE_VERIFIED (static read of data and code at dc2fa52 tree; nothing run)",
+  "where": "living soils"
+ }
+}

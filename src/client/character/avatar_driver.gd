@@ -131,11 +131,12 @@ static func clip_for(avatar, stance: int, velocity: Vector3, basis: Basis, on_fl
 	return choose_clip_moving(stance, Vector2(local.x, local.z), velocity.y, air_t > AIR_DELAY, current, carrying)
 
 
-# The state hooks of the Dynasty body (docs/DYNASTY_BODY.md): swimming, drinking, picking up, sitting down, standing up and waking, each a clip the game asks for
-# when its state says so. `ctx` is {swimming, asleep, stance (what choose_clip sees), drink_stamp, pick_stamp (msec of the latest drink and pick-up; 0 = never)}.
+# The state hooks of the Dynasty body (docs/DYNASTY_BODY.md): swimming, drinking, sitting down, standing up and waking, each a clip the game asks for
+# when its state says so. `ctx` is {swimming, asleep, stance (what choose_clip sees), drink_stamp (msec of the latest drink; 0 = never)}.
+# Picking up plays no clip (Dave 17 Nov 2026: "stop waving his arms when picking up stuff").
 # Returns the clip to play instead of the usual one, "" for none. A body without these clips (the generated body, the old ragdoll) always gets "". The one-shots
 # play for the clip's own length; swimming holds for as long as it lasts. State between frames lives in meta on the avatar.
-const HOOK_CLIPS := ["swim", "swim_idle", "drink", "pick_up", "sit_down", "stand_up", "wake_up"]
+const HOOK_CLIPS := ["swim", "swim_idle", "drink", "sit_down", "stand_up", "wake_up"]
 
 
 static func hook_clip(avatar, ctx: Dictionary, pace: float, delta: float) -> String:
@@ -150,7 +151,7 @@ static func hook_clip(avatar, ctx: Dictionary, pace: float, delta: float) -> Str
 	var left: float = maxf(float(avatar.get_meta("hook_t", 0.0)) - delta, 0.0)
 	var held: String = str(avatar.get_meta("hook_clip", ""))
 	var stance: int = int(ctx.get("stance", StanceScript.STAND))
-	var seen: Dictionary = avatar.get_meta("hook_seen", {"stance": stance, "asleep": bool(ctx.get("asleep", false)), "drink": int(ctx.get("drink_stamp", 0)), "pick": int(ctx.get("pick_stamp", 0))})
+	var seen: Dictionary = avatar.get_meta("hook_seen", {"stance": stance, "asleep": bool(ctx.get("asleep", false)), "drink": int(ctx.get("drink_stamp", 0))})
 	var start: String = ""
 
 	# The latest event wins; each is noticed once, when its state changes.
@@ -161,18 +162,15 @@ static func hook_clip(avatar, ctx: Dictionary, pace: float, delta: float) -> Str
 
 	if int(ctx.get("drink_stamp", 0)) != int(seen["drink"]) and int(ctx.get("drink_stamp", 0)) > 0:
 		start = "drink"
-	elif int(ctx.get("pick_stamp", 0)) != int(seen["pick"]) and int(ctx.get("pick_stamp", 0)) > 0 and start == "":
-		start = "pick_up"
 
-	avatar.set_meta("hook_seen", {"stance": stance, "asleep": bool(ctx.get("asleep", false)), "drink": int(ctx.get("drink_stamp", 0)), "pick": int(ctx.get("pick_stamp", 0))})
+	avatar.set_meta("hook_seen", {"stance": stance, "asleep": bool(ctx.get("asleep", false)), "drink": int(ctx.get("drink_stamp", 0))})
 
 	if bool(ctx.get("swimming", false)):
 		avatar.set_meta("hook_t", 0.0)
 		avatar.set_meta("hook_clip", "")
 		return "swim" if pace > WALK_MIN_PACE * 0.5 else "swim_idle"
 
-	# A one-shot only starts standing or sitting still enough to show it: walking on, the pick-up and the drink are skipped (a sweep would never let the body walk).
-	if start != "" and (start != "pick_up" or pace < JOG_FROM):
+	if start != "":
 		held = start
 		left = player.get_animation(start).length
 
@@ -243,7 +241,8 @@ static func slope_tilt(on_floor: bool, local_normal: Vector3, pace: float, clip:
 	return clampf(angle, -0.1, 0.44) if angle > 0.0 else clampf(angle * 0.4, -0.1, 0.0)
 
 
-# The clothes colours of the worn items: body colours the coat, legs the trousers, feet the shoes (stage-one clothing, art/MODEL_PLAN.md).
+# The clothes colours of the worn items: body colours the coat, legs the trousers, feet the shoes (stage-one clothing, art/MODEL_PLAN.md). Only the
+# layer that is the body's own garment tints it (body and legs base, feet footwear); cloaks, armour and socks hang as their own pieces.
 static func outfit_colors(worn_numbers: Array, table, base: Dictionary = {}) -> Dictionary:
 	var out: Dictionary = {"coat": base.get("coat", COAT), "trousers": base.get("trousers", TROUSERS), "shoes": base.get("shoes", SHOES)}
 
@@ -255,7 +254,7 @@ static func outfit_colors(worn_numbers: Array, table, base: Dictionary = {}) -> 
 		var slot: String = str(table.entry(id).get("slot", ""))
 		var def: Dictionary = BasicLookScript.entry(id)
 
-		if def.is_empty():
+		if def.is_empty() or not str(table.entry(id).get("wear_layer", "base")) in ["base", "footwear"]:
 			continue
 
 		var tint: Color = Color.html(str(def.get("color", "#808080")))

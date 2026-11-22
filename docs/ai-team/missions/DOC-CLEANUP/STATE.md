@@ -1,0 +1,89 @@
+# Documentation cleanup checkpoint
+
+Task state only; [DOC_MAP](../../../DOC_MAP.md) remains the main design index and [CLAUDE](../../../../CLAUDE.md) routes operating authority.
+
+## Integrated phases
+
+Preservation/link checks, independent review and final static CI passed for these documentation phases. Each PR records exact base/head, paths, findings and checks; runtime/player verification is not claimed.
+
+| Phase | Receipt | Integrated dev commit |
+|---|---|---|
+| Aging | [#1183](https://github.com/DSul3791/DynastyALWL/pull/1183) | `bcdee5666bec5f7fadb4d418c9e14a264ea585c2` |
+| Children/family | [#1185](https://github.com/DSul3791/DynastyALWL/pull/1185) | `b8130aecd2d6325a772c065b9e73959953f3d64a` |
+| Death/rescue | [#1186](https://github.com/DSul3791/DynastyALWL/pull/1186) | `dbe793cbcbe04d2207a33e7fd8e2e1edbf266d13` |
+| Succession/inheritance | [#1189](https://github.com/DSul3791/DynastyALWL/pull/1189) | `61cba95e7f41c0aa2528820835844f637262103b` |
+| NPC population/migration | [#1190](https://github.com/DSul3791/DynastyALWL/pull/1190) | `7311ee19374bdb5f0d369e92aee25db11f365e42` |
+| Property/town management | [#1191](https://github.com/DSul3791/DynastyALWL/pull/1191) | `8516664b13661113d5f7bf2bfac481d296d14266` |
+| Founding/settlement construction | [#1192](https://github.com/DSul3791/DynastyALWL/pull/1192) | `c5dcfdc3cf91580aa6bbf8a5870b8ae8ce62769e` |
+| Outposts/settlement decline | [#1193](https://github.com/DSul3791/DynastyALWL/pull/1193) | `b26830b31e9cb88c0fdeefe451019df7564ccba2` |
+| Creature/exploration guide | [#1194](https://github.com/DSul3791/DynastyALWL/pull/1194) | `21be0543772f67b1c94be88ed3a91f59918d91ed` |
+| High-use overview reconciliation | [#1195](https://github.com/DSul3791/DynastyALWL/pull/1195) | `f416e55fd65494da2936f028fa87777b768b246b` |
+
+## Completed cleanup checkpoint
+
+Final consistency/retirement report; base `f416e55fd65494da2936f028fa87777b768b246b`. This commit's PR owns exact-head review/checks and final integration receipt. Preserve source-unverified decisions and unresolved discrepancies; no Approved/Built certification is invented. Complete reviewed integration of this report, then stop this scoped pass. No code, schedules, deletion or main changes.
+
+## Retirement review — 16 Nov 2026
+
+- Manifest DOCRET-20261115-A: 560 entries, integrated 15 Nov 21:43:22 UTC; expiry 22 Nov 21:43:22 UTC. No entry is eligible today. Frozen historical files remain unchanged.
+- Six core-rulebook redirects: retirement receipt PR #1164, integration 15 Nov 20:36:21 UTC; expiry 22 Nov 20:36:21 UTC. Not eligible today.
+- No cleanup schedule, automatic deletion or age-based inferred retirement. Recovery/dependency checks must be completed at the later manual deletion review, not pre-certified here.
+
+## Final consistency disposition
+
+- DOC_MAP remains the only main design index. Extracted sections keep old numbered/subsection routes; source-unverified recorded decisions, actual proposals and open questions remain distinguishable.
+- Full source-verified aging/family/settlement specifications were not established; no empty Approved/Built files or invented approvals were created. Implementation snapshots stay distinct from approved design and current test/player evidence.
+- Historical mirror records are frozen: link immutable versions for evidence rather than making them active readers or editing them.
+- Existing north-facing snow-shader mismatch and apparent client ice-hole connection gap remain prior environmental findings, not fixes delivered here. No runtime verification is claimed.
+- Remaining-overlap triage: item catalog cleanup is already owned by open PRs #1082/#1084; wood has its own active mission and PR #1147; goals have active repair/draft records. Preserve those owners and records. Goblin behavior/den and first-day economy references retain distinct dated technical content rather than being folded into a creature guide or general price plan. BIG_PICTURE was the high-use stale operating overlap addressed in this pass. Further merges lack enough demonstrated benefit to justify widening this review.
+
+Final static audit: 561 original source lines preserved across the reviewed sections; one documented redundant lifespan paragraph consolidated; all legacy headings retained; 171 relative paths and 84 available local anchors checked; all 560 frozen manifest paths unchanged. Creature cards and G/D IDs are unchanged. This is a bounded documentation audit, not runtime verification or an exhaustive repository audit.
+
+## Current checkpoint — provenance/evidence, 16 Nov 2026
+
+- Base: `83c4abfd7f3ac8fe815f1a96cf0784881b7721c4`. Examined 200 design-history entries plus the selected original aging/succession commits; recovered the 14 Oct session locator without original user answers. Family statuses remain SOURCE UNVERIFIED.
+- Added Approved/Built records for natural fog: existing dated full verbatim instruction remains its single specification; original chat independently unavailable. Originating implementation commit and actual PR #1142 merge verified, with current static caller wiring and regression-file existence checked. Godot/visual/player checks NOT RUN; no full-completion claim.
+- Paths: both new status records, Unapproved provenance lead, DOC_MAP and this checkpoint. No source specifications, code, schedules or retired files changed. Exact candidate hashes, independent review, CI and merge receipt belong to this phase's PR.
+- Remaining: original family answers, additional bounded provenance batches and actual runtime/player evidence where absent. Retirement remains manual after 22 Nov with recovery/dependency checks; no automation.
+
+## Current checkpoint — succession clarification, 16 Nov 2026
+
+- Authority: Dave directly specified blood children grouped by mother in relationship order, followed by stepchild/spouse family groups; confirmed the full restatement and final-child fallback, then requested document changes. Exact quotes and the single specification are in Design_Ideas_Approved.md.
+- Base: `cf16e87da52a48bd8a809f667fe6330868dfa39a`. Paths: Approved, Unapproved, DESIGN_IDEAS legacy route, DOC_MAP, and this state. Old global age-sort/youngest-child prescriptions are replaced with links; unrelated design, code, retired files and schedules are unchanged.
+- Checks: hosted JavaScript exact-replacement, preservation and local-reference/anchor checks; published candidate and CI evidence will be recorded in this phase's PR. Runtime/player checks NOT RUN (documentation only). Independent non-author review pending; do not integrate before it passes.
+- Next action: inspect the exact published diff, complete required non-author review and static CI, then merge into dev. The PR owns exact head and integration receipt. Broader family status migration and adopted-child placement are outside this clarification.
+
+- Follow-up authority: Dave specified that arranging estate-debt payments is the successor's first responsibility, and explicitly deferred addressing that future mechanic. Recorded a short approved note and a link beside inherited debt; no payment design or code is added.
+
+## Integration checkpoint — 17 Nov 2026
+
+- Succession PR #1200 refreshed against dev `7495d2a08bbe889015045ab6f3dc3e2c64b5e26d`, retaining concurrent design/index additions. Non-author agent review passed original head `a400af0459131ece57cd150a99d0df26cd96f724`; refreshed exact-head review and CI are required before integration. No gameplay changes or runtime claims.
+- Aging PR #1201 follows after succession integration. Reviewer identified a birth-spacing route that must point to its proposal, not the approved fertility specification. Preserve both batches and record final head/merge/check evidence in each PR.
+
+## Current checkpoint — aging status migration, 16 Nov 2026
+
+- Base: `195ac57f0b370b8fb73fdf7ffbe60f91bc6fdf4f`. Dave's instruction that documented decisions are his is applied to ten recorded aging decisions. Eight explicit proposals remain separate. Full source paragraphs, numbers and unique consolidation receipt are preserved; retirement, wishes, clock/outage and illness qualifications stay attached to the approved specification. Clock semantics and other design questions are not settled by migration.
+- Five paths: Approved, Unapproved, DESIGN_IDEAS, DOC_MAP, this checkpoint. One full aging specification; old topic/numbered routes remain. Source-warning boilerplate is shortened; no new topic file. Unrelated recorded decisions await later bounded migration; no original chat recovery is required to recognize Dave's documented decisions.
+- Validation: hosted exact-text preservation, proposal-status, changed-link/anchor and candidate-content checks; exact head and CI results belong to this phase's PR. Independent non-author review pending; runtime/player checks NOT RUN. No code, main, schedule or retired-file changes.
+- PR #1200 remains unmerged: exact-head CI PASS (run 43980108156), independent review missing. This batch shares documentation paths: reconcile both PRs before integration, retaining its approved succession/deferred-debt additions. No user clarification is required.
+- Next: independent review and CI, reconcile the two documentation candidates without overwriting either, integrate into dev, then choose the next high-value topic. Do not claim pending work merged.
+
+## Reconciled candidate checkpoint — 17 Nov 2026
+
+- Combined aging and succession candidate retains both full specifications once, both phase receipts and concurrent dev design/index additions from `7495d2a08bbe889015045ab6f3dc3e2c64b5e26d`. Parent heads identify the exact reconciliation; each PR records final reviewed head, CI and actual integration commit.
+- Reviewer finding fixed: the family dependency links approved fertility and proposed birth spacing separately. Ten aging decision paragraphs and all eight proposals remain verbatim. Author checked 42 changed local links/anchors within the combined five-file candidate. Runtime/player checks NOT RUN; documentation only.
+- Independent final-head review and exact-head CI must pass before merging. Merge #1200 first, then #1201; record actual results in PR receipts and verify final dev contents. No new design choices or estate-debt implementation.
+
+## Current checkpoint — children/family status migration, 17 Nov 2026
+
+- Base: `d3957a5f5102bc56535f0f1d3f56fae770cc5989`. Applied Dave's 16 Nov instruction that documented decisions are his. Ten childhood/teaching/adoption decision paragraphs move verbatim to Approved; six proposals/ideas and four open-question paragraphs remain verbatim in Unapproved. No new values or eligibility decisions.
+- Five paths: Approved, Unapproved, DESIGN_IDEAS, DOC_MAP, this state. Keep one full specification, existing family/subtopic anchors and source snapshot. Move dependencies with the approved design; explicitly link proposed birth spacing and adopted-heir eligibility without promoting them. Remove redundant proposal subheadings; preserve all sibling concepts and deferral.
+- Checks: preservation, affected links/anchors and scope. Exact reviewed head, independent review, CI and integration receipt belong to this phase's PR. Runtime/player checks NOT RUN (documentation only). No code, main, schedule or retired-file changes.
+- Next: independent review, resolve substantive findings, pass exact-head CI, merge into dev and verify actual merged contents. Then choose the next bounded high-value topic; do not leave an unreviewed draft described as merged.
+
+## Current checkpoint — death/rescue status migration, 17 Nov 2026
+
+- Base: `290a40f8ea980f3e6bf3321dc89818d2b2fc1682`. Apply Dave's recorded-decision instruction to death/rescue decisions, preserving complete nested remains, surface-safety, owner/party, wizard-service and map-marker exceptions. Explicit proposals/open questions remain separate and unchanged. No new design or gameplay values.
+- Five paths: Approved, Unapproved, DESIGN_IDEAS, DOC_MAP, this state. One full death/rescue specification; numbered/subtopic routes preserved. Keep “eight real days” versus cleanup on day eight visible and unresolved. Dated respawn plan remains an immutable history link, not a built/tested claim; no retired file is edited.
+- Checks: exact full-block preservation including nested bullets, proposal/open-question preservation, affected links and scope. Independent final-head review and CI must pass before merge. PR owns exact head, review/check results and actual integration receipt. Runtime/player checks NOT RUN (documentation only).
+- Next: resolve review findings, merge into dev after checks pass, verify merged contents and record receipt. No code, main, schedule, deletion or estate-debt implementation.

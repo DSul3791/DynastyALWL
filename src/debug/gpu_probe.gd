@@ -1,5 +1,5 @@
 extends Node
-# GPU cost probe (Art direction, 2026-10-20). Press Ctrl+Shift+G (or Esc > Advanced > GPU breakdown) while standing still in the scene you
+# GPU cost probe (Art direction, 2026-10-20). Press Ctrl+Shift+P (or Esc > Advanced > GPU breakdown) while standing still in the scene you
 # want to measure. It switches one thing off at a time (grass, trees and shrubs, ground, sea,
 # sun shadows, SSAO, glow, fog, anti-aliasing), averages the GPU time over 40 frames for each
 # and shows the table at the bottom left; the same table is printed to the log and saved to
@@ -201,7 +201,7 @@ func _process(_delta: float) -> void:
 func _show(done: bool) -> void:
 	var win: Vector2i = get_window().size
 	var text: String = "BUILD %d (%s)\n" % [_client.BUILD, _client._commit]
-	text += "GPU probe (Ctrl+Shift+G)%s\n" % ("" if done else ", keep still: step %d of %d" % [_results.size() + 1, _steps.size()])
+	text += "GPU probe (Ctrl+Shift+P)%s\n" % ("" if done else ", keep still: step %d of %d" % [_results.size() + 1, _steps.size()])
 	text += "%s, %s, window %dx%d, 3D scale %.2f, quality %s\n" % [RenderingServer.get_video_adapter_name(), RenderingServer.get_current_rendering_driver_name(), win.x, win.y, _client._render_scale, _client.QUALITY_NAMES[_client.quality]]
 
 	# CPU side, so a frame that does not move with any switch below is recognised as CPU bound (owner table,
@@ -240,7 +240,7 @@ func _show(done: bool) -> void:
 		else:
 			text += "%-26s %5.1f ms  (saves %.1f)\n" % [_results[n][0], gpu, float(_results[0][1]) - gpu]
 
-	_label.text = text + "(press Ctrl+Shift+G again to close this table)"
+	_label.text = text + "(press Ctrl+Shift+P again to close this table)"
 	_client.hud.visible = false
 
 

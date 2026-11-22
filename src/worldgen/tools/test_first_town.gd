@@ -5,6 +5,7 @@ extends SceneTree
 # Every step runs on the real server code (items, NPCs, dialogue, trade). Fails loudly when any step is impossible.
 #   godot --headless --path . --script res://src/worldgen/tools/test_first_town.gd
 
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const DialogueScript := preload("res://src/stream/server_dialogue.gd")
@@ -12,6 +13,7 @@ const TradeScript := preload("res://src/stream/server_trade.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const SkillWebScript := preload("res://src/shared/skill_web.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 var failures: int = 0
 var step: int = 0
@@ -50,7 +52,7 @@ func pass_time(seconds: float, exertion: float) -> void:
 
 func craft(recipe: int, crafts: int) -> void:
 	items._last_queue_act.clear()
-	items.action(1, Net.ACT_CRAFT_QUEUE, recipe, 0, crafts, Vector3.ZERO)
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe, 0, crafts, CraftHand.at(items, 1, recipe))
 	pass_time(10.0 * float(crafts), 0.2)
 
 
@@ -85,6 +87,7 @@ func _init() -> void:
 	items.ground_height = func(_x, _z): return 10.0
 	items.respawn_point = Vector3(5.0, 10.0, 5.0)
 	items.setup(table, dir)
+	items._goals_loaded = true   # no goals here: a goal's own reward (coins) would change the amounts this test checks; test_goals covers goals (protocol 119 lifted the `after` lock)
 	items.peer_connected_hello(1, "first-town-key01")
 	items._vitals_cfg["eat_pace_ms"] = 0
 	items.vitals_of(1)["weight"] = 90.0
@@ -126,10 +129,10 @@ func _init() -> void:
 	say(2)   # Goodbye
 	mark("met Hob")
 
-	# 3. Gather what lies about, craft a knife, an axe and a chopping block (a large wooden block lies at the camp), place the block.
+	# 3. Gather what lies about, craft a knife, an axe and a chopping block (three wooden blocks lie at the camp: one for the chopping block, two to split), place the block.
 	var camp: Vector3 = Vector3(float(chair["x"]) + 1.0, 10.0, float(chair["z"]))
 
-	items.drop_in_world(table.number_of("wooden_block_large"), 1, camp + Vector3(0.5, 0.0, 0.5))
+	items.drop_in_world(table.number_of("wooden_block"), 3, camp + Vector3(0.5, 0.0, 0.5))
 
 	for n in range(4):
 		items.drop_in_world(table.number_of("stone"), 4, camp + Vector3(float(n) * 0.3, 0.0, 1.0))
@@ -140,7 +143,7 @@ func _init() -> void:
 		for id in items._items.keys():
 			items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
-	check(count("stone") >= 14 and count("stick") >= 20 and count("wooden_block_large") == 1, "gathering fills the pack (%d stones, %d sticks, %d large blocks)" % [count("stone"), count("stick"), count("wooden_block_large")])
+	check(count("stone") >= 14 and count("stick") >= 20 and count("wooden_block") == 3, "gathering fills the pack (%d stones, %d sticks, %d wooden blocks)" % [count("stone"), count("stick"), count("wooden_block")])
 	craft(1, 5)   # twine is twisted by hand from fibre
 	craft(2, 1)
 	craft(6, 1)
@@ -157,7 +160,7 @@ func _init() -> void:
 	check(block != 0, "the chopping block is placed in the camp")
 	mark("crafted")
 
-	# 4. Chop a log into wooden blocks on the ground, split a block at the chopping block, pick the firewood up.
+	# 4. An axe on a log on the ground only says to saw it first (the plain Log is softwood since Mission 001, master s4 item 3); split a wooden block at the chopping block, pick the firewood up.
 	items.report_position(1, items._items[block]["pos"] + Vector3(1.0, 0.0, 0.0))
 	items.drop_in_world(table.number_of("log"), 1, items._items[block]["pos"] + Vector3(1.0, 0.0, 1.0))
 	var lying: int = 0
@@ -167,23 +170,16 @@ func _init() -> void:
 			lying = id
 
 	items._last_process.clear()
-	items.action(1, Net.ACT_PROCESS, lying, 0, 0, Vector3.ZERO)
-
-	for id in items._items.keys():
-		if int(items._items[id]["number"]) == table.number_of("wooden_block"):
-			items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
-
-	check(count("wooden_block") == 3, "a log chopped on the ground gives three wooden blocks (%d)" % count("wooden_block"))
-
-	for n in range(2):
-		items._last_use.clear()
-		items.action(1, Net.ACT_USE_STRUCT, block, 0, 0, Vector3.ZERO)
+	items.action(1, Net.ACT_PROCESS, lying, 0, 0, HeldTool.at_axe(items))
+	check(items._items.has(lying) and count("wooden_block") == 2, "a log struck on the ground is left whole (%d blocks in the pack)" % count("wooden_block"))
+	items._last_use.clear()
+	items.action(1, Net.ACT_USE_STRUCT, block, 0, HeldTool.slot_of(items, "axe") + 1, Vector3.ZERO)
 
 	for id in items._items.keys():
 		if int(items._items[id]["number"]) == table.number_of("firewood") and not items._items[id].has("struct"):
 			items.action(1, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 
-	check(count("firewood") == 4 and count("wooden_block") == 1, "two blocks split into four firewood at the block (%d firewood, %d blocks)" % [count("firewood"), count("wooden_block")])
+	check(count("firewood") == 4 and count("wooden_block") == 1, "a block split at the chopping block gives four firewood (%d firewood, %d blocks)" % [count("firewood"), count("wooden_block")])
 	mark("split wood")
 
 	# 5. Hob's quest: ask, hand over the firewood, get the reward and the reputation.

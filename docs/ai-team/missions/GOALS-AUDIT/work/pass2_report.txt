@@ -1,0 +1,86 @@
+MAIN-ROUTE ORDER / COVERAGE DEFECTS
+  16 craft:chopping_block             untaught=['input:wooden_block_large x1'] later=[] additional_only=[]
+  51 craft:leather                    untaught=['input:water x1'] later=[] additional_only=[]
+  98 craft:concrete                   untaught=['input:water x1'] later=[] additional_only=[]
+
+UNTAUGHT DEPENDENCIES ACROSS ALL GOALS (no goal teaches it):
+  input:water                              20
+  input:honeyspindle_nectar                12
+  input:feather                            10
+  input:raw_meat                           10
+  input:wild_garlic_leaves                 7
+  input:soil                               7
+  input:sinew                              7
+  input:onion                              5
+  input:hazelnuts                          5
+  input:wild_carrot_roots                  5
+  input:fur                                4
+  input:wooden_block_large                 3
+  input:plantain_leaves                    3
+  input:herbs                              3
+  input:egg                                3
+  input:nettles                            3
+  input:rosemary                           2
+  input:comfrey_leaves                     2
+  input:straw                              2
+  input:thyme                              2
+  input:apple_cooking                      2
+  input:linseed                            2
+  input:oats                               2
+  input:crab_apples                        2
+  input:cabbage                            2
+  input:burdock_roots                      2
+  input:mint                               2
+  input:shellfish                          2
+  input:turnip                             2
+  input:chamomile_flowers                  2
+  input:rotten_food                        1
+  input:worm                               1
+  input:gravel                             1
+  input:bark                               1
+  input:wheat                              1
+  input:juniper_berries                    1
+  input:apple_autumn                       1
+  input:figs                               1
+  input:porcini                            1
+  input:horn                               1
+  input:wooden_block_soft_large            1
+  input:bananas                            1
+  input:fruit                              1
+  input:nuts                               1
+  input:chestnuts                          1
+  input:crab_meat                          1
+  input:mushrooms                          1
+  input:acorns                             1
+  input:potato                             1
+  input:barley                             1
+  input:beet                               1
+  input:berries                            1
+  input:prickly_pears                      1
+  input:watercress                         1
+  input:chanterelles                       1
+  input:cranberries                        1
+  input:peas                               1
+  input:plums                              1
+  input:damsons                            1
+  input:quince                             1
+  input:sea_water                          1
+  input:seal_meat                          1
+  input:seaweed                            1
+  input:raspberries                        1
+  input:pear_autumn                        1
+  input:down                               1
+  input:roast_meat                         1
+  input:roast_fish                         1
+  input:roast_shellfish                    1
+  input:potash                             1
+  input:gut                                1
+  input:willow_bark                        1
+  input:antler                             1
+  input:tusk                               1
+  input:crystal_lens                       1
+
+ADDITIONAL goals listed BEFORE a goal that teaches their dependency (document order): 3
+   ('craft:herb_fish', 'input', 'fish x1', 'fish')
+   ('craft:juniper_trout', 'input', 'fish x1', 'fish')
+   ('craft:stone_hoe', 'input', 'wooden_hoe x1', 'hoe')

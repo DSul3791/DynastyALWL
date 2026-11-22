@@ -6,7 +6,7 @@ Prepared by Sal, 2026-10-30. DRAFT for Dave's decision. Nothing here changes any
 
 ## How to read this
 
-- **Source:** `Items_in_other_games_Analysis.md` (the "analysis") plus our `data/items/items.json` ("ours", numbers are item numbers) and `docs/mirror/design/ITEM_TRIM_LIST.md` (Tyler's proposals, not yet approved).
+- **Source:** `Items_in_other_games_Analysis.md` (the "analysis") plus our `data/items/items.json` ("ours", numbers are item numbers) and [historical ITEM_TRIM_LIST.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/design/ITEM_TRIM_LIST.md) (Tyler's proposals, not yet approved).
 - **Flag after a name:** none = the analysis marks the row C (sub-agent says it read it; "likely", not proof). `*` = the analysis marks it U (unconfirmed). Names are as the analysis lists them, sometimes shortened by me; a few rows group several items under one name.
 - **Weak coverage:** Atlas, Aska, Medieval Engineers, Medieval Dynasty, Farming Simulator, Space Engineers and Astroneer are thin; Rust is a sample; The Forest, Don't Starve, Vintage Story, Valheim and No Man's Sky are partial. A game missing from a group may simply not have been catalogued. Absence is not evidence.
 - **Not used for grouping:** sci-fi, electronics, nuclear, spaceship, magic and Tek-tier items (Satisfactory/NMS/Space Engineers/Astroneer/Ark Tek/Dragonwilds magic). They are listed in the closing "Excluded" section so nothing is hidden.
@@ -96,7 +96,7 @@ CORRECTION (Dave, 2026-10-30): Dave described THREE ovens, not the six rungs I l
 |---|---|---|---|---|---|
 | Axe (wood) | Ark Stone Hatchet*, Metal Hatchet*; Atlas Stone/Metal Hatchet; Rust Stone Hatchet; 7DtD Stone Axe, Iron Fireaxe*; Dragonwilds Stone Logging Axe*, "Logging Axes Bronze-Rune"*; Valheim Stone Axe, Flint Axe, Bronze/Iron Axe; Conan Stone/Iron/Steel Hatchet*; Forest Crafted Axe; MD Stone axe; DS Axe; VS Axe; Aska Iron Axe | Fell trees; also weak weapon | T1 stone, T3 iron | Stone axe 6 (no iron/steel axe in list) | REC **Axe**, with material in the name (Stone axe, Iron axe...). Add Iron axe and Steel axe (gap, see end). Alt: Hatchet for the small one-handed form. |
 | Pickaxe | Ark Stone Pick*, Metal Pick*; Atlas Stone/Metal Pick; Rust Pickaxe; 7DtD Iron/Steel Pickaxe*; Dragonwilds Stone/Bone/Bronze...Rune Pickaxe; Conan Stone/Iron/Steel Pick*; Minecraft pickaxe (wooden to netherite); MD Stone pickaxe; DS Pickaxe; VS Pickaxe | Mine rock and ore | T1-T4 | Iron pickaxe 33, Steel pickaxe 34 (no stone pickaxe) | REC **Pickaxe**; add Stone pickaxe for T1 (gap). Alt: Pick. |
-| Shovel / spade | 7DtD Stone/Iron/Steel Shovel*; Minecraft shovel; Dragonwilds Spades*; Valheim Shovel*; DS Shovel; VS Shovel; Atlas Shovel* | Dig soil, sand, gravel | T1-T4 | Wooden 19, Stone 45, Iron 46, Steel 47 + sizes 213-220 | REC **Spade** (our word), one per material; sizes merged (Tyler A). Alt: Shovel. |
+| Shovel / spade | 7DtD Stone/Iron/Steel Shovel*; Minecraft shovel; Dragonwilds Spades*; Valheim Shovel*; DS Shovel; VS Shovel; Atlas Shovel* | Dig soil, sand, gravel | T1-T4 | Wooden 19, Stone 45, Iron 46, Steel 47 + sizes 213-220 | REC **Shovel** (renamed from Spade by Dave, 16 Nov 2026, ids included), one per material; sizes merged (Tyler A). |
 | Hoe | Minecraft hoe; MD Wooden hoe, Copper/Bronze hoe; Dragonwilds none; VS Hoe | Till farmland | T1-T4 | Hoes 221-224 | REC keep. |
 | Knife | Valheim Flint Knife, Copper Knife; 7DtD Bone Knife*, Hunting Knife*; Forest none; MD Stone knife; VS Knife; Conan none | Skin, cut, carve; weak weapon | T1-T3 | Stone knife 11 | REC **Knife**; add Iron knife later. |
 | Hammer | Rust Hammer; Valheim Hammer*; 7DtD Claw Hammer*; DS Hammer; VS Hammer; MD Wooden hammer; Conan Repair Hammer*; Atlas Repair Hammer*; Aska Hammer | Build/repair, also smithing tool | T1-T3 | Wooden hammer 247, Stone hammer 244 | REC one **Hammer** line (Tyler B). Smithing hammer is a different job: REC **Smith's hammer** (VS lists a separate Helve Hammer; I have not checked what it does). |
@@ -302,7 +302,7 @@ Dave approved the plan and said to decide without him where possible, research o
 | First animals | Chicken (eggs), bees (honey), then sheep (wool), goats/cows (milk), pigs. |
 
 ## B3. Tyler's trim list A to J: CORRECTED (Dave already answered these on 25 Oct)
-I found `docs/mirror/design/ITEM_TRIM_DECISIONS.md` (Dave's answers, read by Tyler 25 Oct). My first version of this table decided the groups myself and CONTRADICTED several of Dave's earlier answers. Dave's answers win; the corrected result:
+I found [historical ITEM_TRIM_DECISIONS.md](https://github.com/DSul3791/DynastyALWL/blob/286af10bc9abc5c82c768f3617565f6e6ee356b8/docs/mirror/design/ITEM_TRIM_DECISIONS.md) (Dave's answers, read by Tyler 25 Oct). My first version of this table decided the groups myself and CONTRADICTED several of Dave's earlier answers. Dave's answers win; the corrected result:
 | Group | Dave's answer (25 Oct) | Note |
 |---|---|---|
 | A spades | YES: one spade per material; 213-220 retire; all spades same weight | needs a bite-size setting in code |
@@ -366,7 +366,7 @@ Dave: furniture should be fun and useful. REC set: **Stool** (sit to work; small
 (Each family is by material tier; a family is one item line, material is in the name. Counts are rough, to be fixed when data work starts.)
 | Category | Families (REC) |
 |---|---|
-| Tools | Axe, Pickaxe, Spade, Hoe, Knife, Hammer (and Smith's hammer), Saw, Scythe, Shears, Fishing rod, Net, Hide scraper, Chisel (stone/carving, Vintage Story), Prospecting pan, Climbing pick, Torch/lantern, Bucket |
+| Tools | Axe, Pickaxe, Shovel, Hoe, Knife, Hammer (and Smith's hammer), Saw, Scythe, Shears, Fishing rod, Net, Hide scraper, Chisel (stone/carving, Vintage Story), Prospecting pan, Climbing pick, Torch/lantern, Bucket |
 | Melee weapons | Club, Spear, Javelin, Dagger, Short sword, Sword, Longsword, Mace, Warhammer, Battleaxe, Halberd / polearm |
 | Ranged | Sling, Hunting bow, Longbow, Crossbow, Throwing axe; guns at the top |
 | Shields | Round shield, Buckler, Heater shield, Tower shield |

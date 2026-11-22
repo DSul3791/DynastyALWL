@@ -751,7 +751,11 @@ const FLAME_TONGUES := {
 }
 # Light range and energy by tier (Dave 1 Nov): each step up is twice the radius and twice the brightness; flames about twice as tall; the bonfire's light is warmer.
 # Short range with a real falloff (omni_attenuation 2 = inverse-square style), centred on the flame; the nearest-lights pass flickers it a few percent around meta base_energy (Dave 31 Oct).
-const FIRE_LIGHT := {1: [3.5, 1.0], 2: [7.0, 2.0], 3: [14.0, 4.0]}
+# [range m, energy, omni_attenuation]. The large fire (tier 3) is the exception, held to Dave's BUG-002 rule: its output is at least 4 times the held torch's (not 4 times the radius).
+# Godot's omni gives energy x (1 - (d/range)^4)^2 / d^attenuation, and the torch is 2 (+-0.4) at range 12 with attenuation 1 (FlameRules.TORCH_*), so a bonfire at 14 m / energy 4 / attenuation 2 was dimmer than the torch beyond about 2 m.
+# The large fire is 20 m, energy 18, attenuation 1.5: a softer core and a longer tail than the inverse square, still dark past its reach. test_fire_light_vs_torch.gd holds it to 4x by source, emitted flux and light on the ground, against the torch's mean and its flicker peak (ledger BUGLIST-001 BUG-002).
+# Smoke, sparks and flames are unchanged (TEST-011). No shadows on any fire light: a shadow-casting omni is six shadow passes, too dear at three fires on a GTX 1050.
+const FIRE_LIGHT := {1: [3.5, 1.0, 2.0], 2: [7.0, 2.0, 2.0], 3: [20.0, 36.0, 1.5]}   # large fire energy 18 -> 36 (18 Nov 2026, provisional TS-15) so it stays 4x the longer-reaching held torch (BUG-002 rule)
 const FIRE_LIGHT_COLOR := {1: Color(1.0, 0.64, 0.34), 2: Color(1.0, 0.62, 0.3), 3: Color(1.0, 0.54, 0.2)}
 const LIGHT_FALLOFF := 2.0
 const FIRE_HALO_SCALE := {1: 1.0, 2: 1.2, 3: 1.5}   # the fog halo round a fire, as a share of a torch's (firelight_weather_design.md)
@@ -872,6 +876,23 @@ static func coals_fire(glow: float) -> Node3D:
 	return root
 
 
+# A burning fire's light, flickering with its flame (BUG-002): the same two beating sines the flame cards pulse on (about 9 and 11 Hz in FLAME_SHADER), so the light and the tongues move together,
+# and a slow lean as the fire settles. Returns the share of base_energy, 1 +- 0.15 at most and 1 on average. `phase` keeps two fires from pulsing together.
+const FLICKER_FAST := 0.09
+const FLICKER_SLOW := 0.06
+
+
+static func flame_flicker(t_s: float, phase: float) -> float:
+	var fast: float = sin(t_s * 9.0 + phase) * sin(t_s * 11.3 + phase * 0.6 + 1.0)
+	var slow: float = 0.5 * sin(t_s * 1.7 + phase * 0.5) + 0.5 * sin(t_s * 0.63 + phase)
+	return 1.0 + FLICKER_FAST * fast + FLICKER_SLOW * slow
+
+
+# The colour follows the same swing: a brighter flame is a shade yellower, a dimmer one redder (the green channel moves by half the energy swing).
+static func flame_flicker_color(base: Color, factor: float) -> Color:
+	return Color(base.r, clampf(base.g * (1.0 + 0.5 * (factor - 1.0)), 0.0, 1.0), base.b)
+
+
 static func coals_glow(light: Light3D, glow: float) -> void:
 	light.light_energy = COALS_LIGHT_ENERGY * (0.3 + 0.7 * clampf(glow, 0.0, 1.0))
 	light.set_meta("base_energy", light.light_energy)
@@ -897,13 +918,20 @@ static func fire(lit: bool, loaded: bool = false, tier: int = 2) -> Node3D:
 		var smoke: GPUParticles3D = _campfire_smoke(tier)
 		smoke.position = Vector3(0.0, float(FLAME_TONGUES[tier][0][1]), 0.0)
 		root.add_child(smoke)
+		var tall: GPUParticles3D = _tall_smoke_plume(tier)
+		tall.position = smoke.position
+		root.add_child(tall)
 		var light: OmniLight3D = OmniLight3D.new()
 		light.name = "Light"
 		light.light_color = FIRE_LIGHT_COLOR[tier]
 		light.omni_range = float(FIRE_LIGHT[tier][0])
 		light.light_energy = float(FIRE_LIGHT[tier][1])
-		light.omni_attenuation = LIGHT_FALLOFF
+		light.omni_attenuation = float(FIRE_LIGHT[tier][2])
 		light.set_meta("base_energy", light.light_energy)
+
+		if tier == 3:
+			light.set_meta("base_color", light.light_color)
+			light.set_meta("flame_flicker", true)   # the large fire only (BUG-002): inventory_view flickers it with its flame every frame; tiers 1 and 2 keep the gentle flicker
 		light.shadow_enabled = false
 		light.position = Vector3(0.0, 0.8, 0.0)
 		light.visible = false
@@ -1360,8 +1388,57 @@ static func _stone_forge_coals() -> ArrayMesh:
 static func stone_forge() -> Node3D:
 	var root: Node3D = Node3D.new()
 	root.add_child(_instance(_stone_forge_mesh()))
-	root.add_child(_instance(_stone_forge_coals()))
+	var coals: MeshInstance3D = _instance(_stone_forge_coals())
+	coals.name = "Flames"   # its glowing coals are its fire: show_forge_fire hides them on a cold smelter (the stand-in when forge_basic.glb is missing)
+	root.add_child(coals)
 	return root
+
+
+# The Primitive smithy's stone anvil (Dave 17 Nov 2026: "a flat topped carved rough stone beside it for hammering on materials"): a rough block of
+# three uneven courses narrowing upwards to a dressed flat top 0.6 m up (provisional PS-1), a few chips at its foot. Part of the smithy's model.
+static func _stone_anvil_mesh() -> ArrayMesh:
+	if _cache.has("stone_anvil"):
+		return _cache["stone_anvil"]
+
+	var rng: RandomNumberGenerator = RandomNumberGenerator.new()
+	rng.seed = 88
+	var st: SurfaceTool = SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	var widths: Array = [Vector2(0.4, 0.34), Vector2(0.36, 0.31), Vector2(0.33, 0.28)]
+
+	for c in range(3):   # the rough body, each course a little off true
+		var w: Vector2 = widths[c]
+		_box(st, Vector3(rng.randf_range(-0.012, 0.012), 0.09 + 0.18 * float(c), rng.randf_range(-0.012, 0.012)), Vector3(w.x, 0.19, w.y), _tone(STONE_FORGE, rng, 0.08), rng.randf_range(-0.06, 0.06))
+
+	_box(st, Vector3(0.0, 0.575, 0.0), Vector3(0.34, 0.05, 0.29), _tone(STONE_PALE, rng, 0.04))   # the carved flat top, paler where it is worked
+
+	for n in range(4):   # chips knocked off it
+		var a: float = TAU * (float(n) + rng.randf()) / 4.0
+		_blob(st, Vector3(cos(a) * 0.27, 0.02, sin(a) * 0.24), Vector3(0.035, 0.02, 0.03), _tone(STONE, rng, 0.1), rng, 5, 2, 0.25)
+
+	return _finish_cached("stone_anvil", st, _solid_material())
+
+
+# Puts the stone anvil into a forge model built by inventory_view._forge_glb: every part of the forge (mesh, solid, fire hooks) moves `aside` along x
+# and the anvil, with a solid of its own, stands at `at`. Ghosts and sites drop or switch off the solid as for any station.
+static func add_stone_anvil(model: Node3D, aside: float, at: float) -> void:
+	for child in model.get_children():
+		if child is Node3D:
+			(child as Node3D).position.x += aside
+
+	var anvil: MeshInstance3D = _instance(_stone_anvil_mesh())
+	anvil.name = "StoneAnvil"
+	anvil.position = Vector3(at, 0.0, 0.0)
+	model.add_child(anvil)
+	var body: StaticBody3D = StaticBody3D.new()
+	body.set_meta("placed_structure", true)   # not rock: the cave module's enclosure rays skip it (BUG-027)
+	var shape: CollisionShape3D = CollisionShape3D.new()
+	var solid: BoxShape3D = BoxShape3D.new()
+	solid.size = Vector3(0.4, 0.6, 0.34)
+	shape.shape = solid
+	shape.position = Vector3(at, 0.3, 0.0)
+	body.add_child(shape)
+	model.add_child(body)
 
 
 # --------------------------------------------------------------- hooks for Dave's own station meshes
@@ -1421,12 +1498,26 @@ const EMBERS_BY_TIER := {1: 4, 2: 8, 3: 16}
 # slowing as they go (rise_end_share), and spread and fade; nothing steers them at random.
 static var _camp_smoke: Dictionary = {}           # tier -> ParticleProcessMaterial
 static var _camp_smoke_mesh: QuadMesh
+# The tall plume (TEST-011, Dave's playtest 12 Nov 2026: the smoke "looks good near the fire but disappears around tree-canopy height"; it should rise above
+# the trees, spread and thin out, and be seen from a distance, a nearby hill too, so a camp can be found by its smoke). A second, sparse emitter on every lit
+# campfire: a few dozen big soft puffs that leave the flames with the near plume, unseen for their first moments (the near plume is the smoke there), keep
+# rising for fire_smoke.json "tall" life_s, slowing as they go, spread wide and fade: the column carries on over the canopy and drifts off as a haze.
+# Limits: tens of puffs per fire, not hundreds; stepped at "tall" fixed_fps (its warm start is life_s x fixed_fps steps, the near plume's count); and only
+# the "tall" max_fires fires nearest the camera draw it (set_fire_air, once a second), so a camp of many fires costs no more than a few. Fires 100 m to
+# 2 km off (protocol 114 far_fires) get this column alone (far_smoke_plume, src/client/far_smoke.gd, its own cap far_max_fires).
+static var _tall_smoke: Dictionary = {}           # tier -> ParticleProcessMaterial
+static var _tall_smoke_mesh: QuadMesh
+static var _tall_plumes: Array = []               # a WeakRef to every tall plume made (the nearest-fires cap); freed ones drop out
 const SMOKE_CFG_PATH := "res://data/look/fire_smoke.json"
 const SMOKE_DEFAULTS := {"rise_m_s": [0.30, 0.39, 0.53], "amount": [90, 130, 190], "puff_m": [0.3, 0.4, 0.5], "grow_to": 8.0, "life_s": 20.0, "rise_end_share": 0.4,
 	"calm_rise_m_s": 0.8, "calm_mps": [0.3, 1.0], "night_rise_m_s": 1.2, "night_top_m": 12.0, "spread_deg": [8.0, 14.0], "alpha": 0.2, "near_grey": 0.3,
 	"far_grey": 0.74, "fade": [[0.0, 0.0], [0.05, 1.0], [0.3, 0.65], [0.7, 0.25], [1.0, 0.0]], "wind_start_share": 0.25, "waver_m": 0.6,
 	"grow_shape": [[0.0, 0.0], [1.0, 1.0]], "density": [1.0, 1.0, 1.0], "life_share": [1.0, 1.0, 1.0], "light_grey": 0.7, "fire_light": 0.45,
-	"coals": {"amount": 30, "puff_m": 0.15, "rise_m_s": 0.25, "density": 0.45, "grow_to": 6.0}}
+	"coals": {"amount": 30, "puff_m": 0.15, "rise_m_s": 0.25, "density": 0.45, "grow_to": 6.0},
+	"tall": {"amount": [28, 42, 56], "life_s": 70.0, "rise_m_s": [1.2, 1.5, 1.8], "calm_rise_m_s": 1.6, "rise_end_share": 0.45, "puff_m": [1.2, 1.6, 2.0],
+		"grow_to": 10.0, "alpha": 0.2, "near_grey": 0.55, "far_grey": 0.78, "waver_m": 2.0, "spread_deg": [4.0, 8.0], "night_top_m": 45.0,
+		"fade": [[0.0, 0.0], [0.06, 0.0], [0.15, 0.8], [0.55, 0.75], [0.8, 0.4], [1.0, 0.0]], "max_fires": 6, "fixed_fps": 8, "view_wide_m": 450.0, "view_high_m": 100.0,
+		"wind_low_mps": 2.0, "wind_rise_mps": 1.5, "wind_fade_mps": 4.0, "min_rise_m_s": 0.15, "far_max_fires": 8}}
 const COALS_TIER := 0                     # _campfire_smoke(COALS_TIER): the thin wisp off a bed of glowing coals (fire_smoke.json "coals")
 static var _smoke_cfg: Dictionary = {}
 const FORGE_SMOKE_RISE := 0.7
@@ -1503,12 +1594,22 @@ static func smoke_tier(key: String, tier: int) -> float:
 	return float(row[clampi(tier - 1, 0, (row as Array).size() - 1)])
 
 
+# A tall-plume number (fire_smoke.json "tall"): a per-tier row for fire tier 1 to 3, or one number for all.
+static func tall_tier(key: String, tier: int) -> float:
+	var row: Variant = (smoke_cfg()["tall"] as Dictionary).get(key, (SMOKE_DEFAULTS["tall"] as Dictionary)[key])
+
+	if not row is Array:
+		return float(row)
+
+	return float(row[clampi(tier - 1, 0, (row as Array).size() - 1)])
+
+
 # The puffs' start velocity: the wind's speed along its heading (where it blows toward) and the plume's rise up. Near calm a column at least
-# calm_rise_m_s; on a still clear night night_rise_m_s.
-static func plume_velocity(wind_ms: float, heading: float, rise: float, still_night: float) -> Vector3:
+# calm_rise_m_s (or `calm`, the tall plume's); on a still clear night night_rise_m_s.
+static func plume_velocity(wind_ms: float, heading: float, rise: float, still_night: float, calm: float = -1.0) -> Vector3:
 	var cfg: Dictionary = smoke_cfg()
 	var u: float = maxf(wind_ms, 0.0)
-	var w: float = lerpf(maxf(rise, float(cfg["calm_rise_m_s"])), rise, smoothstep(float(cfg["calm_mps"][0]), float(cfg["calm_mps"][1]), u))
+	var w: float = lerpf(maxf(rise, calm if calm > 0.0 else float(cfg["calm_rise_m_s"])), rise, smoothstep(float(cfg["calm_mps"][0]), float(cfg["calm_mps"][1]), u))
 	w = lerpf(w, float(cfg["night_rise_m_s"]), clampf(still_night, 0.0, 1.0))
 	return Vector3(cos(heading) * u, w, sin(heading) * u)
 
@@ -1531,6 +1632,47 @@ static func smoke_brake(velocity: Vector3, still_night: float) -> float:
 	return rise_brake(velocity.y) * (1.0 - night) + night_brake(night)
 
 
+# The tall plume's start velocity for fire tier 1 to 3: the wind as for the near plume, its own rise (calm at least "tall" calm_rise_m_s). On a still
+# clear night it rises only to "tall" night_top_m (the cold air over the ground holds it down), there spreading flat, still above most crowns.
+static func tall_velocity(wind_ms: float, heading: float, tier: int, still_night: float) -> Vector3:
+	var v: Vector3 = plume_velocity(wind_ms, heading, tall_rise(tier, wind_ms), 0.0, tall_tier("calm_rise_m_s", tier))
+	v.y = lerpf(v.y, 2.0 * tall_tier("night_top_m", tier) / maxf(tall_tier("life_s", tier), 0.1), clampf(still_night, 0.0, 1.0))
+	return v
+
+
+# The tall plume's rise in a wind (Dave 13 Nov 2026: "strong wind the smoke stays low and sideways. low wind it climbs higher and dissipates
+# slower"): the tier's rise_m_s up to wind_low_mps, then cut to 1 / (1 + the wind over that / wind_rise_mps), never under min_rise_m_s. So a medium
+# fire's smoke rises 1.5 m/s in a 2 m/s breeze, 0.5 m/s at 5 m/s and 0.3 m/s at 8 m/s, and the wind lays it over.
+static func tall_rise(tier: int, wind_ms: float) -> float:
+	var over: float = maxf(wind_ms - tall_tier("wind_low_mps", tier), 0.0)
+	return maxf(tall_tier("rise_m_s", tier) / (1.0 + over / maxf(tall_tier("wind_rise_mps", tier), 0.01)), tall_tier("min_rise_m_s", tier))
+
+
+# The share of its life the tall plume keeps its fade over: 1 up to wind_low_mps, then 1 / (1 + the wind over that / wind_fade_mps): a strong wind
+# tears the smoke apart sooner (0.5 at 6 m/s, 0.4 at 8 m/s).
+static func tall_fade_share(wind_ms: float) -> float:
+	return 1.0 / (1.0 + maxf(wind_ms - tall_tier("wind_low_mps", 1), 0.0) / maxf(tall_tier("wind_fade_mps", 1), 0.01))
+
+
+# The tall plume's fade (fire_smoke.json "tall" fade) with everything after its thickest point (0.15 of its life) squeezed into `share` of the rest.
+static func tall_fade(share: float) -> Gradient:
+	var rows: Array = []
+
+	for row in (smoke_cfg()["tall"] as Dictionary).get("fade", (SMOKE_DEFAULTS["tall"] as Dictionary)["fade"]):
+		var at: float = float(row[0])
+		rows.append([at if at <= 0.15 else 0.15 + (at - 0.15) * clampf(share, 0.05, 1.0), float(row[1])])
+
+	return smoke_fade(1.0, rows)
+
+
+# The tall plume's downward pull: by day the rise slows to "tall" rise_end_share of its start over its life; on a still clear night it stops at the end of
+# its life (at night_top_m, with tall_velocity's night rise).
+static func tall_brake(velocity: Vector3, still_night: float) -> float:
+	var life: float = maxf(tall_tier("life_s", 1), 0.1)
+	var night: float = clampf(still_night, 0.0, 1.0)
+	return -velocity.y * (1.0 - clampf(tall_tier("rise_end_share", 1), 0.0, 1.0)) / life * (1.0 - night) - velocity.y / life * night
+
+
 static func spark_gravity(wind_ms: float, heading: float) -> Vector3:
 	return Vector3(cos(heading) * SPARK_PUSH * wind_ms, SPARK_LIFT, sin(heading) * SPARK_PUSH * wind_ms)
 
@@ -1542,16 +1684,19 @@ static func spark_direction(wind_ms: float, heading: float) -> Vector3:
 
 # A fresh puff rises on its heat with only wind_start_share of the wind; the wind takes it fully by the end of its life (a steady sideways pull), so the
 # plume leaves the fire steep and bends over more the higher it gets.
-static func _aim_smoke(material: ParticleProcessMaterial, velocity: Vector3, brake: float) -> void:
+# `life_s` and `cone` (the [calm, windy] spread_deg) default to the near plume's; the tall plume passes its own.
+static func _aim_smoke(material: ParticleProcessMaterial, velocity: Vector3, brake: float, life_s: float = -1.0, cone: Array = []) -> void:
 	var share: float = clampf(float(smoke_cfg()["wind_start_share"]), 0.0, 1.0)
 	var start: Vector3 = Vector3(velocity.x * share, velocity.y, velocity.z * share)
 	var speed: float = maxf(start.length(), 0.01)
-	var life: float = maxf(float(smoke_cfg()["life_s"]), 0.1)
+	var life: float = maxf(life_s if life_s > 0.0 else float(smoke_cfg()["life_s"]), 0.1)
 	material.direction = start / speed
 	material.initial_velocity_min = speed * 0.9
 	material.initial_velocity_max = speed * 1.1
 	material.gravity = Vector3(velocity.x * (1.0 - share) / life, brake, velocity.z * (1.0 - share) / life)
-	var cone: Array = smoke_cfg()["spread_deg"]
+	if cone.is_empty():
+		cone = smoke_cfg()["spread_deg"]
+
 	material.spread = lerpf(float(cone[0]), float(cone[1]), clampf(Vector2(velocity.x, velocity.z).length() / 3.0, 0.0, 1.0))
 
 
@@ -1560,6 +1705,18 @@ static func set_fire_air(wind_ms: float, heading: float, still_night: float) -> 
 	for tier in _camp_smoke:
 		var velocity: Vector3 = plume_velocity(wind_ms, heading, smoke_tier("rise_m_s", tier), still_night)
 		_aim_smoke(_camp_smoke[tier], velocity, smoke_brake(velocity, still_night))
+
+	for tier in _tall_smoke:
+		var tall: Vector3 = tall_velocity(wind_ms, heading, tier, still_night)
+		_aim_smoke(_tall_smoke[tier], tall, tall_brake(tall, still_night), tall_tier("life_s", tier), (smoke_cfg()["tall"] as Dictionary).get("spread_deg", [4.0, 8.0]))
+		var ramp: GradientTexture1D = (_tall_smoke[tier] as ParticleProcessMaterial).color_ramp as GradientTexture1D
+		var share: float = snappedf(tall_fade_share(wind_ms), 0.05)   # rebuilt only when it moves a step (a new ramp texture)
+
+		if not is_equal_approx(float(ramp.get_meta("share", 1.0)), share):
+			ramp.gradient = tall_fade(share)
+			ramp.set_meta("share", share)
+
+	_cap_tall_plumes()
 
 	if _smoke != null:
 		_aim_smoke(_smoke, plume_velocity(wind_ms, heading, FORGE_SMOKE_RISE, 0.0), 0.0)
@@ -1588,11 +1745,11 @@ static func smoke_grow(grow_to: float) -> Curve:
 
 
 # The density of a puff over its life (fire_smoke.json "fade"), times `density`: thick as it leaves the fire, thinning to nothing.
-static func smoke_fade(density: float) -> Gradient:
+static func smoke_fade(density: float, rows: Array = []) -> Gradient:
 	var offsets: PackedFloat32Array = PackedFloat32Array()
 	var colors: PackedColorArray = PackedColorArray()
 
-	for row in smoke_cfg()["fade"]:
+	for row in (rows if not rows.is_empty() else smoke_cfg()["fade"]):
 		offsets.append(clampf(float(row[0]), 0.0, 1.0))
 		colors.append(Color(1.0, 1.0, 1.0, clampf(float(row[1]) * density, 0.0, 1.0)))
 
@@ -1648,6 +1805,115 @@ static func _campfire_smoke(tier: int) -> GPUParticles3D:
 	plume.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	plume.visibility_aabb = AABB(Vector3(-40.0, -2.0, -40.0), Vector3(80.0, 24.0, 80.0))   # a long life downwind
 	return plume
+
+
+# A fire within world_items' 100 m (server_items.gd NEAR_M) gets this with its flames; one 100 m to 2 km off gets it alone (far_smoke_plume).
+# register false: the caller caps it (far_smoke.gd), not _cap_tall_plumes.
+static func _tall_smoke_plume(tier: int, register: bool = true) -> GPUParticles3D:
+	var tall: Dictionary = smoke_cfg()["tall"]
+
+	if not _tall_smoke.has(tier):
+		var material: ParticleProcessMaterial = ParticleProcessMaterial.new()
+		material.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_SPHERE
+		material.emission_sphere_radius = 0.2
+		material.turbulence_enabled = false     # as the near plume: no random steering (Dave 10 Nov 2026)
+		material.damping_min = 0.0
+		material.damping_max = 0.0
+		material.scale_min = tall_tier("puff_m", tier) * 0.8
+		material.scale_max = tall_tier("puff_m", tier) * 1.2
+		var grow_tex: CurveTexture = CurveTexture.new()
+		grow_tex.curve = smoke_grow(tall_tier("grow_to", tier))
+		material.scale_curve = grow_tex
+		var fade_tex: GradientTexture1D = GradientTexture1D.new()
+		fade_tex.gradient = tall_fade(1.0)
+		material.color_ramp = fade_tex
+		material.angle_min = -180.0
+		material.angle_max = 180.0
+		var still: Vector3 = tall_velocity(0.0, 0.0, tier, 0.0)
+		_aim_smoke(material, still, tall_brake(still, 0.0), tall_tier("life_s", tier), tall.get("spread_deg", [4.0, 8.0]))
+		_tall_smoke[tier] = material
+
+	if _tall_smoke_mesh == null:
+		_tall_smoke_mesh = QuadMesh.new()
+		_tall_smoke_mesh.size = Vector2(1.0, 1.0)
+		var shader: Shader = Shader.new()
+		shader.code = CAMP_SMOKE_SHADER
+		var look: ShaderMaterial = ShaderMaterial.new()
+		look.shader = shader
+
+		for key in ["near_grey", "far_grey", "alpha", "waver_m"]:
+			look.set_shader_parameter(key, tall_tier(key, 1))
+
+		for key in ["light_grey", "fire_light"]:
+			look.set_shader_parameter(key, float(smoke_cfg()[key]))
+
+		_tall_smoke_mesh.material = look
+
+	var plume: GPUParticles3D = GPUParticles3D.new()
+	plume.name = "TallSmoke"
+	plume.amount = int(tall_tier("amount", tier))
+	plume.lifetime = tall_tier("life_s", tier)
+	plume.fixed_fps = int(tall_tier("fixed_fps", tier))   # slow, big puffs: a coarse step (interpolated) keeps the warm start as cheap as the near plume's
+	plume.interpolate = true
+	plume.preprocess = plume.lifetime                      # already a column over the trees when it comes into view
+	plume.process_material = _tall_smoke[tier]
+	plume.draw_pass_1 = _tall_smoke_mesh
+	plume.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var box: float = tall_tier("view_wide_m", tier)
+	plume.visibility_aabb = AABB(Vector3(-box * 0.5, -2.0, -box * 0.5), Vector3(box, tall_tier("view_high_m", tier), box))   # 60 s downwind in a breeze, up over the canopy
+
+	if not register:
+		plume.visible = false   # far_smoke.gd shows the nearest few (and restarts them warm)
+		return plume
+
+	var live: int = 0
+
+	for ref in _tall_plumes:
+		live += 1 if (ref as WeakRef).get_ref() != null else 0
+
+	plume.visible = live < int(tall_tier("max_fires", tier))   # past the cap it starts hidden (no warm start paid); the cap corrects it within a second
+	_tall_plumes.append(weakref(plume))
+	return plume
+
+
+# A far campfire's smoke (protocol 114 far_fires, src/client/far_smoke.gd): the same tall column and materials (so the same wind), started hidden.
+static func far_smoke_plume(tier: int) -> GPUParticles3D:
+	var plume: GPUParticles3D = _tall_smoke_plume(tier, false)
+	plume.name = "FarSmoke"
+	return plume
+
+
+# Only the "tall" max_fires lit fires nearest the camera draw their tall plume (once a second, from set_fire_air): a hidden one is not simulated, and
+# starts again warm (its preprocess) when it comes back into the nearest few.
+static func _cap_tall_plumes() -> void:
+	var live: Array = []
+	var ranked: Array = []
+
+	for ref in _tall_plumes:
+		var plume: GPUParticles3D = (ref as WeakRef).get_ref() as GPUParticles3D
+
+		if plume == null:
+			continue
+
+		live.append(ref)
+		var camera: Camera3D = plume.get_viewport().get_camera_3d() if plume.is_inside_tree() else null
+
+		if camera != null:   # each plume ranked by its own viewport's camera
+			ranked.append([plume.global_position.distance_squared_to(camera.global_position), plume])
+
+	_tall_plumes = live
+	ranked.sort_custom(func(a: Array, b: Array) -> bool: return float(a[0]) < float(b[0]))
+	var cap: int = int(tall_tier("max_fires", 1))
+
+	for i in range(ranked.size()):
+		var plume: GPUParticles3D = ranked[i][1]
+		var on: bool = i < cap
+
+		if on != plume.visible:
+			plume.visible = on
+
+			if on:
+				plume.restart()
 
 
 static func _ember_sparks(tier: int) -> GPUParticles3D:
@@ -1771,18 +2037,150 @@ static func add_hooks(model: Node3D, fire_node: Variant, smoke: Variant, fx_scal
 		flames.name = "Flames"
 		flames.position = spot
 		flames.scale = Vector3.ONE * 1.8 * fx_scale
-		flames.add_child(_instance(_coals()))
-		flames.add_child(_instance(_flame_cards()))
+		var coals: MeshInstance3D = _instance(_coals())
+		coals.name = "Coals"
+		flames.add_child(coals)
+		var tongues: MeshInstance3D = _instance(_flame_cards())
+		tongues.name = "Tongues"   # forge_state hides them on a smithy's idle coals
+		flames.add_child(tongues)
 		model.add_child(flames)
 
 	if smoke != null:
 		var at: Vector3 = Vector3(float(smoke[0]), float(smoke[1]), float(smoke[2])) if typeof(smoke) == TYPE_ARRAY else smoke
 		var plume: GPUParticles3D = _smoke_plume()
+		plume.name = "ForgeSmoke"
 		plume.position = at
 		plume.scale = Vector3.ONE * fx_scale
 		model.add_child(plume)
 
 	return model
+
+
+# A forge model's fire (add_hooks' flames and smoke) shown or hidden: a Smelter shows it only while lit (Dave 17 Nov 2026: "it needs to show
+# no fire when its not lit"). Its Light stays off unless the placed row hands it to the lights list (inventory_view).
+static func show_forge_fire(model: Node3D, on: bool) -> void:
+	var flames: Node3D = model.get_node_or_null("Flames") as Node3D
+
+	if flames != null:
+		flames.visible = on
+
+	var plume: GPUParticles3D = model.get_node_or_null("ForgeSmoke") as GPUParticles3D
+
+	if plume != null:
+		plume.visible = on
+		plume.emitting = on
+
+
+# A smithy's fire by its world row "forge" (Dave 21 Nov 2026: "they should have red coals when idle and flare really bright while making stuff"):
+# 0 cold (no fuel in its fuel slot), 1 red coals (fuel in, idle: no flame tongues, no smoke, a dim red glow), 2 the flare (a craft worked there:
+# tall tongues, smoke and a bright light). Light reach and brightness are PROVISIONAL SF-4.
+const SMITHY_GLOW := [[0.0, 0.0], [0.45, 3.5], [3.2, 12.0]]   # [energy, range m] by state
+const SMITHY_COLOR := [Color(1.0, 0.3, 0.1), Color(1.0, 0.28, 0.08), Color(1.0, 0.62, 0.28)]
+
+
+static func forge_state(model: Node3D, state: int) -> void:
+	state = clampi(state, 0, 2)
+	show_forge_fire(model, state == 2)
+	var flames: Node3D = model.get_node_or_null("Flames") as Node3D
+
+	if flames != null:
+		flames.visible = state >= 1
+		var tongues: Node3D = flames.get_node_or_null("Tongues") as Node3D
+
+		if tongues != null:
+			tongues.visible = state == 2
+			tongues.scale = Vector3(1.0, 1.6, 1.0)   # the flare stands tall
+
+	var light: OmniLight3D = model.get_node_or_null("Light") as OmniLight3D
+
+	if light != null:
+		light.light_energy = float(SMITHY_GLOW[state][0])
+		light.set_meta("base_energy", light.light_energy)   # the nearest-lights pass flickers it round this
+		light.omni_range = float(SMITHY_GLOW[state][1])
+		light.set_meta("base_range", light.omni_range)   # FireWeather scales the reach from this in fog and snow
+		light.light_color = SMITHY_COLOR[state]
+
+
+# A smelter's bellows worked (inventory_view._note_store, the row's "bellows"; Dave 21 Nov 2026: "the light should get brighter, the smoke should
+# puff and their should be a bellows sound"): its fire light burns brighter for as long as they are worked, and at each stroke the flames leap,
+# a puff of smoke goes up and `stroke` is called with where it is (the bellows sound). A Timer in the model beats the strokes, so nothing runs
+# per frame and nothing on the server; it goes with the model when the smelter is put out or drawn again. Stopped, all of it goes back.
+const BELLOWS_STROKE_S := 1.4   # PROVISIONAL (BW-1, 21 Nov 2026): one push and draw of the bellows
+const BELLOWS_LIGHT := 1.8      # PROVISIONAL (BW-2): the fire light's energy while worked, times its calm energy
+const BELLOWS_FLAME := 1.35     # PROVISIONAL (BW-3): how far the flames leap at a stroke, times their size
+
+
+static func show_forge_bellows(model: Node3D, on: bool, stroke: Callable = Callable()) -> void:
+	var light: Light3D = model.get_node_or_null("Light") as Light3D
+
+	if light != null:   # inventory_view._update_fire_lights flickers it round its base_energy (1.4 when none is set)
+		if on and not light.has_meta("calm_energy"):
+			light.set_meta("calm_energy", float(light.get_meta("base_energy", 1.4)))
+			light.set_meta("base_energy", float(light.get_meta("calm_energy")) * BELLOWS_LIGHT)
+		elif not on and light.has_meta("calm_energy"):
+			light.set_meta("base_energy", float(light.get_meta("calm_energy")))
+			light.remove_meta("calm_energy")
+
+	var timer: Timer = model.get_node_or_null("BellowsStroke") as Timer
+
+	if not on:
+		if timer != null:
+			timer.stop()
+
+		var puff: GPUParticles3D = model.get_node_or_null("BellowsPuff") as GPUParticles3D
+
+		if puff != null:
+			puff.emitting = false
+
+		return
+
+	if timer == null:
+		timer = Timer.new()
+		timer.name = "BellowsStroke"
+		timer.wait_time = BELLOWS_STROKE_S
+		timer.timeout.connect(_bellows_stroke.bind(model, stroke))
+		model.add_child(timer)
+
+	if model.is_inside_tree():
+		if timer.is_stopped():   # worked by one player and then straight on by another: the beat goes on as it was
+			timer.start()
+			_bellows_stroke(model, stroke)   # the first stroke at once: the press is answered straight away
+	else:
+		timer.autostart = true
+
+
+static func _bellows_stroke(model: Node3D, stroke: Callable) -> void:
+	var flames: Node3D = model.get_node_or_null("Flames") as Node3D
+
+	if flames != null and flames.visible:
+		if not flames.has_meta("calm_scale"):
+			flames.set_meta("calm_scale", flames.scale)
+
+		var calm: Vector3 = flames.get_meta("calm_scale")
+		flames.scale = calm * BELLOWS_FLAME
+		flames.create_tween().tween_property(flames, "scale", calm, BELLOWS_STROKE_S * 0.8).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+
+	var plume: GPUParticles3D = model.get_node_or_null("ForgeSmoke") as GPUParticles3D
+
+	if plume != null and plume.visible:
+		var puff: GPUParticles3D = model.get_node_or_null("BellowsPuff") as GPUParticles3D
+
+		if puff == null:   # a short burst of the forge's own smoke from its chimney
+			puff = _smoke_plume()
+			puff.name = "BellowsPuff"
+			puff.amount = 4
+			puff.lifetime = 3.5
+			puff.one_shot = true
+			puff.explosiveness = 0.8
+			puff.speed_scale = 1.6
+			puff.position = plume.position
+			puff.scale = plume.scale
+			model.add_child(puff)
+
+		puff.restart()
+
+	if stroke.is_valid() and model.is_inside_tree():
+		stroke.call(model.global_position)
 
 
 # --------------------------------------------------------------- chair and bed (where the NPCs sit and sleep)

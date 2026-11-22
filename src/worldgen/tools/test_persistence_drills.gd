@@ -9,6 +9,7 @@ extends SceneTree
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
 
 const FILES := ["inventories.json", "world_items.json", "tree_states.json", "chests.json", "vitals.json", "craft_queues.json", "characters.json"]
 const KEY := "drillkey00001"
@@ -35,10 +36,26 @@ func make(dir: String):
 
 
 func wipe(dir: String) -> void:
-	DirAccess.make_dir_recursive_absolute(dir)
+	DirAccess.make_dir_recursive_absolute(dir + "/" + ItemsScript.AREA_DIR)
 
 	for file in DirAccess.get_files_at(dir):
 		DirAccess.remove_absolute(dir + "/" + file)
+
+	for file in DirAccess.get_files_at(dir + "/" + ItemsScript.AREA_DIR):
+		DirAccess.remove_absolute(dir + "/" + ItemsScript.AREA_DIR + "/" + file)
+
+
+# The save files and the world item area files (world_items/, version 4), with their .prev copies when `prev`.
+func copy_store(from: String, to: String, prev: bool = true) -> void:
+	for name in FILES:
+		DirAccess.copy_absolute(from + "/" + name, to + "/" + name)
+
+		if prev:
+			DirAccess.copy_absolute(from + "/" + name + ".prev", to + "/" + name + ".prev")
+
+	for file in DirAccess.get_files_at(from + "/" + ItemsScript.AREA_DIR):
+		if prev or not file.ends_with(".prev"):
+			DirAccess.copy_absolute(from + "/" + ItemsScript.AREA_DIR + "/" + file, to + "/" + ItemsScript.AREA_DIR + "/" + file)
 
 
 func write(path: String, text: String) -> void:
@@ -64,7 +81,7 @@ func state_of(items) -> Dictionary:
 	var water: int = 0
 	var bucket: int = items.table.number_of("bucket")
 
-	for i in items.inventory_of(1).SLOTS:
+	for i in items.inventory_of(1).slot_count:
 		if items.inventory_of(1).numbers[i] == bucket:
 			water += items.inventory_of(1).wear[i]
 
@@ -82,7 +99,7 @@ func state_of(items) -> Dictionary:
 	var roast: int = items.table.number_of("roast_forage")
 	var food_age: int = -1
 
-	for i in items.inventory_of(1).SLOTS:
+	for i in items.inventory_of(1).slot_count:
 		if items.inventory_of(1).numbers[i] == roast:
 			food_age = items.inventory_of(1).wear[i]
 
@@ -159,7 +176,7 @@ func build_world(dir: String) -> Dictionary:
 	a._characters[KEY]["skills_v"] = 2
 	a._characters[KEY]["skills"] = {"mining": {"p": 12.5, "peak": 12.5, "last": 5.0}}
 	a._last_queue_act.clear()
-	a.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 3, Vector3.ZERO)
+	a.action(1, Net.ACT_CRAFT_QUEUE, 1, 0, 3, CraftHand.at(a, 1, 1))
 	a._dirty = true
 	a.save()
 	a._dirty = true
@@ -190,8 +207,7 @@ func _init() -> void:
 	# unchanged and the missing parts read as neutral, then the next save writes the new fields.
 	wipe(dir + "_old")
 
-	for name in FILES:
-		DirAccess.copy_absolute(dir + "/" + name, dir + "_old/" + name)
+	copy_store(dir, dir + "_old", false)
 
 	var old_vitals: Variant = JSON.parse_string(FileAccess.get_file_as_string(dir + "_old/vitals.json"))
 
@@ -214,8 +230,8 @@ func _init() -> void:
 		if not ["warmth", "sick", "skill_p", "strength", "energy", "worn"].has(field):
 			check(after[field] == want[field], "an older save keeps %s (%s vs %s)" % [field, str(after[field]), str(want[field])])
 
-	check(int(after["warmth"]) == 100 and int(after["sick"]) == 0 and int(after["strength"]) == 0 and float(after["skill_p"]) == -1.0, "an older save reads warm, well, no skills and no attributes (%s)" % str(after))
-	check(migrated.worn_of(1) == [0, 0, 0, 0, 0, 0, 0, 0], "an older save wears nothing (eight slots since outer and waist)")
+	check(int(after["warmth"]) == 100 and int(after["sick"]) == 0 and int(after["strength"]) == 50 and float(after["skill_p"]) == -1.0, "an older save reads warm, well, no skills and average attributes (%s)" % str(after))
+	check(migrated.worn_of(1).size() == migrated._worn_places().size() and migrated.worn_of(1).all(func(x): return x == 0), "an older save wears nothing (one entry per worn position since protocol 107)")
 	migrated._dirty = true
 	migrated.save()
 	check(JSON.parse_string(FileAccess.get_file_as_string(dir + "_old/vitals.json"))["players"][KEY].has("warmth"), "the next save writes the newer fields")
@@ -225,9 +241,7 @@ func _init() -> void:
 		wipe(dir + "_x")
 		var snap: String = dir + "_x"
 
-		for name in FILES:
-			DirAccess.copy_absolute(dir + "/" + name, snap + "/" + name)
-			DirAccess.copy_absolute(dir + "/" + name + ".prev", snap + "/" + name + ".prev")
+		copy_store(dir, snap)
 
 		write(snap + "/" + file, "{\"version\": 1, \"trunc")
 		var restored: Dictionary = state_of(reload(snap))
@@ -238,9 +252,7 @@ func _init() -> void:
 		# A kill mid-write leaves a half-written .tmp beside the good file: loads as if it was not there.
 		wipe(snap)
 
-		for name in FILES:
-			DirAccess.copy_absolute(dir + "/" + name, snap + "/" + name)
-			DirAccess.copy_absolute(dir + "/" + name + ".prev", snap + "/" + name + ".prev")
+		copy_store(dir, snap)
 
 		write(snap + "/" + file + ".tmp", "{\"version\": 1, \"half")
 		var torn_tmp = reload(snap)
@@ -252,9 +264,7 @@ func _init() -> void:
 		# Both the file and its copy damaged: only this file starts clean, the rest stay, no crash.
 		wipe(snap)
 
-		for name in FILES:
-			DirAccess.copy_absolute(dir + "/" + name, snap + "/" + name)
-			DirAccess.copy_absolute(dir + "/" + name + ".prev", snap + "/" + name + ".prev")
+		copy_store(dir, snap)
 
 		write(snap + "/" + file, "not json")
 		write(snap + "/" + file + ".prev", "{\"version\": 1, \"trunc")
@@ -275,9 +285,7 @@ func _init() -> void:
 	# A newer-version file is set aside and the older copy is not used in its place.
 	wipe(dir + "_x")
 
-	for name in FILES:
-		DirAccess.copy_absolute(dir + "/" + name, dir + "_x/" + name)
-		DirAccess.copy_absolute(dir + "/" + name + ".prev", dir + "_x/" + name + ".prev")
+	copy_store(dir, dir + "_x")
 
 	write(dir + "_x/world_items.json", "{\"version\": 9999, \"items\": []}")
 	var newer = reload(dir + "_x")

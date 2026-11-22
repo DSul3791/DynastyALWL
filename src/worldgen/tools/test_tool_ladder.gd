@@ -1,0 +1,305 @@
+extends SceneTree
+
+# Mission 001 phase 2c data (M001-T09; master s2.1, s2.2, s3.1, s4 items 1, 4, 13): the tool ladders, through the real server, recipes
+# and blueprints. Every amount is read from the live data, so tuning keeps the test valid.
+#   1. the rows: each family's tiers rise with its material (Wooden 1 ... Steel 5); disposable gear has no repair; metal tools repair at
+#      the station type that makes them; edge only on sharpening-eligible metal tools; the Stone - Shovel, Stone - Sickle, Wooden - Hammer, Stone - Hoe and Obsidian - Knife are retired;
+#   2. the groups take the better tool: an Iron - Knife for the Wooden bowl (recipe 20), a Copper - Saw for Wooden blocks (728), a
+#      Steel - Saw for Planks by hand (159), with no stone knife or Iron - Saw in the pack;
+#   3. every new ladder tool is made at its station from live materials: copper and bronze at the Primitive smithy (stone_forge), iron and steel at the Smithy, with Charcoal in its fuel slot;
+#   4. any metal hammer builds a blueprint of the top hammer tier, and the wooden and stone hammers do not (decision 73);
+#   5. the Grindstone is built before the first saw and is a station.
+#   godot --headless --path . --script res://src/worldgen/tools/test_tool_ladder.gd
+
+const ItemsScript := preload("res://src/stream/server_items.gd")
+const ItemTableScript := preload("res://src/shared/item_table.gd")
+const Net := preload("res://src/stream/terrain_net.gd")
+const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the hand slot a craft holds its tool in (protocol 126)
+const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
+
+const HERE := Vector3(0.0, 10.0, 0.0)
+const RANK := {"wood": 1, "stone": 2, "copper": 2, "bronze": 3, "iron": 4, "steel": 5}   # Copper shares Stone's tier: between Stone and Bronze in its rates (GOALS-REPAIR R2b)
+const FAMILIES := ["axe", "pick", "shovel", "hammer", "hoe", "knife", "saw", "sickle", "scythe", "chisel"]
+const EDGED := ["axe", "pick", "knife", "saw", "sickle", "scythe", "chisel"]
+const NEW_TOOLS := ["iron_axe", "steel_axe", "iron_knife", "steel_knife", "steel_saw", "bronze_sickle", "iron_sickle", "steel_sickle",
+		"bronze_scythe", "steel_scythe", "copper_pickaxe", "copper_axe", "copper_saw", "bronze_saw",
+		"copper_hammer", "copper_knife", "copper_hoe", "bronze_hoe", "copper_shovel", "bronze_shovel",
+		"copper_sickle", "copper_scythe", "copper_chisel"]
+const DISPOSABLE := ["stone_axe", "stone_knife", "stone_saw", "stone_hammer", "stone_pickaxe", "wooden_shovel", "wooden_hoe",
+		"hide_scraper", "spear", "stone_mace", "javelin", "sewing_needle"]
+const STATION := {"copper": "forge", "bronze": "forge", "iron": "brick_forge", "steel": "brick_forge"}
+
+var failures: int = 0
+var items
+var said: Array = []
+
+
+func check(ok: bool, what: String) -> void:
+	print(("ok   " if ok else "FAIL ") + what)
+
+	if not ok:
+		failures += 1
+		print("     the server said: ", str(said.slice(maxi(said.size() - 3, 0))) if not said.is_empty() else "nothing")
+
+
+func n_of(id: String) -> int:
+	return items.table.number_of(id)
+
+
+func have(id: String) -> int:
+	return items.inventory_of(1).count_of(n_of(id))
+
+
+func row(id: String) -> Dictionary:
+	return items.table.entry(id)
+
+
+func recipe_number(id: String) -> int:
+	for n in items.recipes.numbers():
+		if str(items.recipes.recipe(int(n)).get("id", "")) == id:
+			return int(n)
+
+	return 0
+
+
+func recipe(id: String) -> Dictionary:
+	return items.recipes.recipe(recipe_number(id))
+
+
+func empty_pack() -> void:
+	var inv = items.inventory_of(1)
+
+	for slot in range(inv.slot_count):
+		if inv.numbers[slot] != 0:
+			inv.remove(inv.numbers[slot], inv.counts[slot])
+
+
+# Puts one of the tool in a hotbar slot (wears_tool and the hammer need it on the hotbar).
+func hold(id: String) -> void:
+	var inv = items.inventory_of(1)
+	items.give(1, n_of(id), 1)
+
+	var at: int = inv.numbers.find(n_of(id))
+
+	if not inv.on_hotbar(at):
+		inv.move(at, 0)   # into hotbar slot 0 (key 1), as a player would drag it
+
+
+func give_needs(id: String) -> void:
+	for need in recipe(id).get("needs", []):
+		items.inventory_of(1).add(int(need[0]), int(need[1]))   # straight into the pack (a log would go on the shoulder through give)
+
+
+func craft(id: String, seconds: int = 60) -> void:
+	items._last_queue_act.clear()
+	items.action(1, Net.ACT_CRAFT_QUEUE, recipe_number(id), 0, 1, CraftHand.at(items, 1, recipe_number(id)))
+
+	for s in range(seconds):
+		items.tick(1.0)
+
+	collect()
+
+
+# Station products stay in the station (master s2.5, M001-T18): after a craft the player takes them out of their own station stores beside
+# them through the real server path (open, Take all, close), as a player does.
+func collect() -> void:
+	for id in items._items.keys():
+		var it: Dictionary = items._items.get(id, {})
+
+		if it.has("struct") and items._is_station_store(it) and str(it["struct"].get("owner", "")) == items.key_of(1) and (it["pos"] as Vector3).distance_to(items.position_of(1)) <= 4.0:
+			items.action(1, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+			items.action(1, Net.ACT_BULK, ItemsScript.BULK_TAKE_ALL, 0, 0, Vector3.ZERO)
+			items.action(1, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+
+
+func blueprint_of(structure: String) -> Dictionary:
+	for number in items._blueprints:
+		if str(items._blueprints[number].get("structure", "")) == structure:
+			return items._blueprints[number]
+
+	return {}
+
+
+func standing_at(structure: String, at: Vector3) -> int:
+	for id in items._items:
+		var it: Dictionary = items._items[id]
+
+		if it.has("struct") and str(it["struct"]["kind"]) == structure and not it["struct"].has("site") and Vector3(it["pos"]).distance_to(at) < 1.0:
+			return int(id)
+
+	return -1
+
+
+# Places a blueprint with the cost in the pack and hits the site with the hammer; true when the piece stands there.
+func place(structure: String, at: Vector3) -> bool:
+	var bp: Dictionary = blueprint_of(structure)
+
+	for need in bp.get("cost", []):
+		items.give(1, n_of(str(need[0])), int(need[1]))
+
+	items.action(1, Net.ACT_PLACE_BLUEPRINT, int(bp.get("number", 0)), 0, 0, at)
+	HeldTool.hit_site(items, HeldTool.site_of(items, structure))   # placing only sets down a site; the hammer hit fills it from the pack (Dave 18 Nov 2026)
+	var built: int = standing_at(structure, at)
+
+	if built >= 0 and items._fuel_slot_kind(items._structures.get(structure, {})):   # a smithy works on the Charcoal in its fuel slot (Dave 21 Nov 2026)
+		items._smithy_add(items._structures[structure], items._chests[int(items._items[built]["struct"]["uid"])], n_of("charcoal"), 20)
+
+	return built >= 0
+
+
+func _init() -> void:
+	var dir: String = "user://test_tool_ladder"
+	DirAccess.make_dir_recursive_absolute(dir)
+
+	for file in DirAccess.get_files_at(dir):
+		DirAccess.remove_absolute(dir + "/" + file)
+
+	items = ItemsScript.new()
+	items.send_full = func(_p, _b): pass
+	items.send_slots = func(_p, _b): pass
+	items.send_world_items = func(_p, _a, _r): pass
+	items.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
+	items.send_reject = func(_p, _r): pass
+	items.send_notice = func(_p, text): said.append(str(text))
+	items.ground_height = func(_x, _z): return 10.0
+	items.setup(ItemTableScript.load_default(), dir)
+	items.admin_mode_on = func(_p): return false
+	items.peer_connected_hello(1, "ladder000001")
+	items.report_position(1, HERE)
+	items.vitals_of(1)["weight"] = 5000.0   # carrying is not under test
+
+	# 1. The rows.
+	for id in items.table.ids():
+		var r: Dictionary = row(id)
+		var cls: String = str(r.get("tool_class", ""))
+
+		if str(r.get("kind", "")) != "tool" or not FAMILIES.has(cls) or bool(r.get("retired", false)) or bool(r.get("future", false)):
+			continue
+
+		var mat: String = str(r.get("material", "wood" if id.begins_with("wooden_") else ""))
+		check(RANK.has(mat) and int(r.get("tier", 1)) == int(RANK.get(mat, 0)), "%s: tier %d is its material's rank (%s)" % [id, int(r.get("tier", 1)), mat])
+		check(bool(r.get("edge", false)) == (STATION.has(mat) and EDGED.has(cls)), "%s: edge only on a sharpening-eligible metal tool" % id)
+
+		if STATION.has(mat):
+			check(not r.get("repair", []).is_empty() and str(r.get("repair_station", "")) == STATION[mat], "%s: repaired at the %s" % [id, STATION[mat]])
+
+	for id in DISPOSABLE:
+		check(not row(id).is_empty() and not row(id).has("repair"), "%s is disposable: no repair" % id)
+
+	for id in NEW_TOOLS + ["steel_pickaxe", "steel_shovel", "steel_hoe", "steel_hammer", "steel_chisel", "grindstone"]:
+		check(not row(id).is_empty() and not bool(row(id).get("future", false)), "%s is live" % id)
+
+	for id in ["steel_pickaxe", "steel_chisel"] + NEW_TOOLS:
+		check(bool(recipe(id).get("known", false)) and not bool(recipe(id).get("locked", false)), "the %s recipe is known from the start" % id)
+
+	for id in ["stone_shovel", "sickle", "wooden_hammer", "stone_hoe", "obsidian_knife"]:   # extras off the one ladder (Dave 18 Nov 2026)
+		check(bool(row(id).get("retired", false)) and recipe_number(id) == 0, "%s and its recipe are retired" % id)
+
+	check(int(row("javelin").get("stack", 0)) == 1 and int(recipe("spear").get("needs", []).filter(func(c): return int(c[0]) == n_of("stone")).size()) == 1 and recipe("spear").get("keeps", []).is_empty(), "the Javelin stacks 1; the Stone - Spear uses up its stone")
+
+	var extra: Dictionary = items._dig_cfg.get("tier_extra", {})
+	check(int(extra.get(str(int(row("wooden_shovel").get("tier", 1))), 0)) == 0 and int(extra.get(str(int(row("iron_shovel")["tier"])), 0)) == 2 and int(extra.get(str(int(row("steel_shovel")["tier"])), 0)) == 3, "dig extra by shovel: wooden 0, iron 2, steel 3 (as before the renumbering)")
+
+	# 2. The groups take the better tool. The bowl is carved at the wood carving station (15 Nov 2026, W-8), placed beside the player here, clear of the forge site 4 m east (structures stand 2.5 m apart).
+	check(items.dev_place("carving_station@0,0,-3") != 0, "a wood carving station stands beside the player for the bowl")
+
+	for pair in [["wooden_bowl", "iron_knife", "stone_knife"], ["saw_blocks", "copper_saw", "hand_saw"], ["lumber_by_hand", "steel_saw", "hand_saw"]]:
+		empty_pack()
+		hold(str(pair[1]))
+
+		if str(pair[0]) == "wooden_bowl":
+			hold("copper_chisel")   # the bowl is carved with a Copper chisel or better in hand, the knife kept in the pack (Dave 18 Nov 2026)
+
+		give_needs(str(pair[0]))
+		var gives: Array = recipe(str(pair[0])).get("gives", [0, 0])
+		craft(str(pair[0]))
+		check(have(str(pair[2])) == 0 and items.inventory_of(1).count_of(int(gives[0])) == int(gives[1]) and have(str(pair[1])) == 1, "%s is made keeping a %s (no %s): %d %s" % [pair[0], pair[1], pair[2], items.inventory_of(1).count_of(int(gives[0])), items.table.id_of(int(gives[0]))])
+
+	# The craft above ran only because a saw-class tool was on the hotbar (server_items.gd: wears_tool needs one); the recipe keeps the group.
+	check(str(recipe("lumber_by_hand").get("wears_tool", "")) == "saw" and recipe("lumber_by_hand").get("keeps", []).any(func(c): return int(c[0]) == n_of("saw")), "Planks by hand keep any saw and wear it")
+
+	for gid in ["knife", "axe", "saw"]:
+		check(items.table.has_group_label(n_of(gid)) and items.table.cost_name(n_of(gid)).begins_with("Any "), "a %s cost reads \"%s\"" % [gid, items.table.cost_name(n_of(gid))])
+
+	# 3. Every new tool at its station, from live materials.
+	empty_pack()
+	hold("stone_hammer")
+	var forge_at: Vector3 = HERE + Vector3(4.0, 0.0, 0.0)
+	var smithy_at: Vector3 = HERE + Vector3(0.0, 0.0, 30.0)
+	check(place("stone_forge", forge_at), "a Stone - Forge stands")
+
+	for id in NEW_TOOLS:
+		var r: Dictionary = recipe(id)
+		var live: bool = r.get("needs", []).all(func(c): return not bool(row(items.table.id_of(int(c[0]))).get("future", false)) and not bool(row(items.table.id_of(int(c[0]))).get("retired", false)))
+		check(live and str(r.get("station", "")) == STATION[str(row(id).get("material", ""))], "%s: made at the %s from live materials" % [id, str(r.get("station", ""))])
+
+	for id in NEW_TOOLS.filter(func(t): return STATION[str(row(t).get("material", ""))] == "forge"):
+		give_needs(id)
+		craft(id)
+		check(have(id) == 1, "%s is made at the Stone - Forge" % id)
+
+	items.report_position(1, smithy_at)
+	empty_pack()
+	hold("stone_hammer")
+	check(place("advanced_smithy", smithy_at + Vector3(2.0, 0.0, 0.0)), "an Advanced smithy stands (iron at brick forge level 2 and steel at 3, GOALS-REPAIR R4)")
+
+	for id in NEW_TOOLS.filter(func(t): return STATION[str(row(t).get("material", ""))] != "forge"):
+		give_needs(id)
+		craft(id)
+		check(have(id) == 1, "%s is made at the fuelled Advanced smithy" % id)
+
+	# 4. Any bronze or better hammer builds the top hammer tier; the stone and copper ones do not.
+	var top: int = 0
+
+	for number in items._blueprints:
+		if not bool(items._blueprints[number].get("retired", false)):
+			top = maxi(top, int(items._blueprints[number].get("hammer", 1)))
+
+	var top_row: String = "iron_brazier"   # a free-standing piece of the top hammer tier
+	check(int(blueprint_of(top_row).get("hammer", 0)) == top and top > int(row("stone_hammer").get("tier", 1)), "the %s needs the top hammer tier %d" % [top_row, top])
+
+	var spot: int = 0
+
+	for hammer in ["stone_hammer", "copper_hammer", "bronze_hammer", "iron_hammer", "steel_hammer"]:
+		empty_pack()
+		hold(hammer)
+		spot += 1
+		var at: Vector3 = HERE + Vector3(-8.0 * float(spot), 0.0, -12.0)
+		items.report_position(1, at + Vector3(0.0, 0.0, 2.0))
+		var metal: bool = int(row(hammer).get("tier", 1)) >= top   # Copper shares Stone's tier (RANK), so the Copper - Hammer builds what the Stone one does
+		check(place(top_row, at) == metal, "%s %s a %s (hammer tier %d)" % [hammer, "builds" if metal else "cannot build", top_row, top])
+
+	# 5. The Grindstone: before the first saw, a station.
+	empty_pack()
+	hold("stone_hammer")
+	var grind_at: Vector3 = HERE + Vector3(-6.0, 0.0, 12.0)
+	items.report_position(1, grind_at + Vector3(0.0, 0.0, 1.5))
+	var cost_ids: Array = blueprint_of("grindstone").get("cost", []).map(func(c): return str(c[0]))
+	check(not cost_ids.is_empty() and cost_ids.all(func(c): return c in ["stone", "log"]), "the Grindstone costs only stone and logs (%s)" % str(cost_ids))
+	check(place("grindstone", grind_at) and items.station_near(1, "grindstone"), "the Grindstone stands and is a grindstone station")
+
+	# 6. Chisel tiers (Dave 18 Nov 2026): a blueprint's "chisel" is the lowest chisel on the hand bar, a better one serves; a recipe keeps its chisel group, held in hand.
+	var chisel_rows: Dictionary = {"chair": 3, "stone_trough": 4, "iron_chest": 5, "plank_chest": 0}   # the Copper row, the Log - Trough, is a retired blueprint; Copper is covered by the bowl. The Rustic - Chest takes no chisel (Dave 21 Nov 2026: "this shouldnt need a chisel")
+
+	for st in chisel_rows:
+		check(int(blueprint_of(st).get("chisel", 0)) == int(chisel_rows[st]), "%s needs chisel tier %d" % [st, int(chisel_rows[st])])
+
+	check(recipe("carved_stone_block").get("keeps", []).any(func(c): return int(c[0]) == n_of("steel_chisel")) and recipe("bench_stone_block").get("keeps", []).any(func(c): return int(c[0]) == n_of("iron_chisel")) and recipe("wooden_bowl").get("keeps", []).any(func(c): return int(c[0]) == n_of("copper_chisel")), "carved stone wants a steel chisel, the bench Stone block an iron one, the bowl a copper one")
+	check(items.table.group_members(n_of("iron_chisel")).has(n_of("steel_chisel")) and not items.table.group_members(n_of("iron_chisel")).has(n_of("bronze_chisel")) and not items.table.group_members(n_of("bronze_chisel")).has(n_of("copper_chisel")), "a better chisel fills a lower group, a lesser one never does")
+	var chisel_spot: int = 0
+
+	for trial in [["chair", "", false], ["plank_chest", "", true], ["small_chest", "", true], ["chair", "copper_chisel", false], ["chair", "bronze_chisel", true], ["iron_chest", "iron_chisel", false], ["iron_chest", "steel_chisel", true]]:
+		empty_pack()
+		hold("steel_hammer")
+
+		if str(trial[1]) != "":
+			items.give(1, n_of(str(trial[1])), 1)   # given, so it lands on a hand bar key
+
+		chisel_spot += 1
+		var cat: Vector3 = HERE + Vector3(12.0 * float(chisel_spot), 0.0, 24.0)
+		items.report_position(1, cat + Vector3(0.0, 0.0, 2.0))
+		check(place(str(trial[0]), cat) == bool(trial[2]), "%s with %s: %s" % [trial[0], "no chisel" if str(trial[1]) == "" else str(trial[1]), "builds" if bool(trial[2]) else "refused"])
+
+	print("tool ladder: %d failures" % failures)
+	items._finish_writer()
+	quit(1 if failures > 0 else 0)

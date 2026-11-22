@@ -147,33 +147,43 @@ func _check_text() -> void:
 	_ok(Record.from_text("not json").is_empty() and Record.from_text("[1, 2]").is_empty() and Record.from_text("{}").is_empty(), "text that is not a record gives an empty one")
 
 
-# Gender, pronouns and frame (format version 2); a version 1 file loads with the plain defaults.
+# Body model and frame (format version 3; the character has no gender, Dave 17 Nov 2026); older files load with the plain defaults.
 func _check_identity() -> void:
 	var rec: Dictionary = _good()
-	_ok(int(rec["version"]) == Record.FORMAT_VERSION and rec["gender"] == "prefer_not_to_say" and rec["pronouns"] == "they_them" and rec["frame"] == "neutral", "a new record has the plain defaults")
+	_ok(int(rec["version"]) == Record.FORMAT_VERSION and rec["body"] == "body_1" and rec["frame"] == "neutral" and not rec.has("gender") and not rec.has("pronouns"), "a new record has the plain defaults and no gender")
+	_ok(Record.describe(rec) == "Body 1, Even frame", "describe: " + Record.describe(rec))
 
-	for g in Record.GENDERS:
-		_ok(Record.GENDER_LABELS.has(g) and Record.PRONOUNS.has(Record.default_pronouns(g)) and Record.FRAMES.has(Record.default_frame(g)), "gender %s has a label, default pronouns and a default frame" % g)
+	for f in Record.FRAMES:
+		_ok(Record.FRAME_LABELS.has(f), "frame %s has a label" % f)
 
-	_ok(Record.GENDER_LABELS["woman"] == "Woman" and Record.GENDER_LABELS["man"] == "Man" and Record.GENDER_LABELS["non_binary"] == "Non-binary" and Record.GENDER_LABELS["prefer_not_to_say"] == "Prefer not to say", "the four gender labels")
-	_ok(Record.describe(rec) == "Prefer not to say, they/them", "describe: " + Record.describe(rec))
-	rec["gender"] = "woman"
-	rec["pronouns"] = "he_him"
-	_ok(Record.describe(rec) == "Woman, he/him" and Record.validate(rec, ANCESTRIES).is_empty(), "any pronouns go with any gender")
-
-	for key in ["gender", "pronouns", "frame"]:
+	for key in ["body", "frame"]:
 		var bad: Dictionary = _good()
 		bad[key] = "nonsense"
 		_ok(not Record.validate(bad, ANCESTRIES).is_empty(), "an unknown %s is refused" % key)
 
+	rec["frame"] = "masculine"
 	var back: Dictionary = Record.from_text(Record.to_text(rec))
-	_ok(back == rec, "gender, pronouns and frame round-trip")
-	# A version 1 file: no version, gender, pronouns or frame.
+	_ok(back == rec, "body model and frame round-trip")
+	# A version 2 file: a gender and pronouns, no body model.
+	var two: Dictionary = _good()
+	two["version"] = 2
+	two.erase("body")
+	two["gender"] = "woman"
+	two["pronouns"] = "she_her"
+	two["frame"] = "feminine"
+	var two_back: Dictionary = Record.from_text(Record.to_text(two))
+	_ok(two_back["body"] == "body_1" and two_back["frame"] == "feminine" and not two_back.has("gender") and not two_back.has("pronouns"), "a version 2 file drops its gender and pronouns and wears the first body model")
+	_ok(Record.validate(two_back, ANCESTRIES).is_empty(), "and still passes the checks")
+	# A body model that is no longer listed falls back to the first one.
+	var gone: Dictionary = _good()
+	gone["body"] = "body_99"
+	_ok(Record.from_text(Record.to_text(gone))["body"] == "body_1", "an unlisted body model loads as the first one")
+	# A version 1 file: no version, body model or frame.
 	var old: Dictionary = _good()
 
-	for key in ["version", "gender", "pronouns", "frame"]:
+	for key in ["version", "body", "frame"]:
 		old.erase(key)
 
 	var loaded: Dictionary = Record.from_text(Record.to_text(old))
-	_ok(int(loaded["version"]) == 1 and loaded["gender"] == "prefer_not_to_say" and loaded["pronouns"] == "they_them" and loaded["frame"] == "neutral", "a version 1 file loads with the plain defaults")
+	_ok(int(loaded["version"]) == 1 and loaded["body"] == "body_1" and loaded["frame"] == "neutral", "a version 1 file loads with the plain defaults")
 	_ok(Record.validate(loaded, ANCESTRIES).is_empty(), "and still passes the checks")

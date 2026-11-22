@@ -20,6 +20,15 @@ class FakeTable:
 	func sentence_name(number: int) -> String:
 		return in_sentence(name_of(number))
 
+	func cost_name(number: int) -> String:   # no labelled groups here (ItemTable.cost_name)
+		return name_of(number)
+
+	func cost_sentence(number: int) -> String:
+		return in_sentence(cost_name(number))
+
+	func has_group_label(_number: int) -> bool:
+		return false
+
 	func in_sentence(text: String) -> String:
 		return text.replace(" - ", " ").to_lower()
 
@@ -38,6 +47,9 @@ class FakeView:
 
 	func stock_fill(number: int) -> int:
 		return int(stock.get(number, 0))
+
+	func hand_tool_short(_number: int) -> String:   # no sawing recipe here (InventoryView.hand_tool_short)
+		return ""
 
 var failures: int = 0
 

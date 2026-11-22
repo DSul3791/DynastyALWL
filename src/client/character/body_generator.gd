@@ -56,8 +56,8 @@ const HAIR_STYLES := ["long_loose", "bald", "buzz", "short_crop", "side_part", "
 const HAIR_STYLE_LABELS := {"long_loose": "Long and loose", "bald": "Bald", "buzz": "Buzz cut", "short_crop": "Short crop", "side_part": "Side part", "ponytail": "Ponytail",
 	"bun": "Bun", "braid": "Braid", "curly": "Curly", "shaved_sides": "Shaved sides"}
 
-# Body frames (Sonny, 30 Oct 2026): a starting point for hips, chest, shoulders, belly and neck plus a default clothing set, chosen with the Gender step of the creator or on
-# its own in the Frame row. Only starting values: every slider and colour stays editable. No gameplay number depends on a frame.
+# Body frames (Sonny, 30 Oct 2026): a starting point for hips, chest, shoulders, belly and neck plus a default clothing set, chosen in the Frame row of the creator
+# (the character has no gender, Dave 17 Nov 2026). Only starting values: every slider and colour stays editable. No gameplay number depends on a frame.
 const FRAMES := {
 	"feminine": {"hips": 0.45, "chest": -0.1, "bust": 0.3, "shoulders": -0.3, "belly": -0.15, "neck": -0.25,
 		"tunic": Color(0.52, 0.34, 0.42), "trousers": Color(0.3, 0.26, 0.22), "boots": Color(0.34, 0.22, 0.13)},
@@ -106,6 +106,7 @@ static func make_genome(preset: String = "average", skin: Color = Color(0.82, 0.
 
 	g["bust"] = BUST_NONE
 	g["hair_style"] = 0
+	g["hair_model"] = ""       # the hair style the Dynasty bodies wear (hair_models.gd id; "" no hair); hair_style is this generated body's own
 
 	for key in PRESETS.get(preset, {}):
 		g[key] = float(PRESETS[preset][key])
@@ -1113,7 +1114,7 @@ static func set_expression(face: Node3D, open: float, brow_raise: float) -> void
 
 # ---------------------------------------------------------------- share code and detail levels
 
-const CODE_VERSION := 4         # 4 adds the hair style (one byte after the colours); 3 split chest (the rib cage) from bust (the soft bump, "chest" in version 2); older codes still decode, with the first hair style
+const CODE_VERSION := 5         # 5 adds the Dynasty bodies' hair style (hair_models.gd id: a length byte and its letters, after the hair style byte); 4 adds the hair style (one byte after the colours); 3 split chest (the rib cage) from bust (the soft bump, "chest" in version 2); older codes still decode, with the first hair style
 const COLOR_KEYS := ["skin", "hair", "tunic", "trousers", "boots"]
 
 
@@ -1145,6 +1146,9 @@ static func encode(g: Dictionary) -> String:
 		bytes.append(clampi(roundi(c.b * 255.0), 0, 255))
 
 	bytes.append(clampi(int(g.get("hair_style", 0)), 0, HAIR_STYLES.size() - 1))
+	var hair_id: PackedByteArray = _clean_hair_id(str(g.get("hair_model", ""))).to_ascii_buffer()
+	bytes.append(hair_id.size())
+	bytes.append_array(hair_id)
 	bytes.append(_crc8(bytes))
 	return Marshalls.raw_to_base64(bytes)
 
@@ -1158,7 +1162,9 @@ static func decode(code: String) -> Dictionary:
 
 	var version: int = int(bytes[0])
 	var slider_count: int = SLIDERS_V1 + mini(version, 3) - 1
-	var expected: int = 1 + slider_count + COLOR_KEYS.size() * 3 + (1 if version >= 4 else 0) + 1
+	var hair_at: int = 1 + slider_count + COLOR_KEYS.size() * 3 + 1      # version 5: the hair model id's length byte
+	var hair_len: int = int(bytes[hair_at]) if version >= 5 and bytes.size() > hair_at else 0
+	var expected: int = 1 + slider_count + COLOR_KEYS.size() * 3 + (1 if version >= 4 else 0) + (1 + hair_len if version >= 5 else 0) + 1
 
 	if bytes.size() != expected:
 		return {}
@@ -1189,8 +1195,35 @@ static func decode(code: String) -> Dictionary:
 		at += 3
 
 	g["hair_style"] = clampi(int(bytes[at]), 0, HAIR_STYLES.size() - 1) if version >= 4 else 0
+	g["hair_model"] = ""
+
+	if version >= 5:
+		var id_bytes: PackedByteArray = bytes.slice(hair_at + 1, hair_at + 1 + hair_len)
+		var plain: bool = true
+
+		for b in id_bytes:
+			plain = plain and b > 0 and b < 128      # no NUL or high bytes before the text is made
+
+		g["hair_model"] = _clean_hair_id(id_bytes.get_string_from_ascii()) if plain else ""
+
 	g["lips"] = (g["skin"] as Color).lerp(Color(0.7, 0.25, 0.25), 0.5)
 	return g
+
+
+# A hair model id as a code may carry it: lower-case letters, digits and "_", at most HAIR_ID_MAX; anything else is no hair. Whether the style exists is
+# hair_models.gd's business (an id from a newer game simply shows no hair).
+const HAIR_ID_MAX := 32
+
+
+static func _clean_hair_id(id: String) -> String:
+	if id.length() > HAIR_ID_MAX:
+		return ""
+
+	for ch in id:
+		if not ((ch >= "a" and ch <= "z") or (ch >= "0" and ch <= "9") or ch == "_"):
+			return ""
+
+	return id
 
 
 # The voxel size for a detail level (0 near, 1 middle, 2 far).

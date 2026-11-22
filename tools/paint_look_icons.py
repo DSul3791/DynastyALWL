@@ -30,11 +30,11 @@ PLOT_VIEW = rot_y(math.radians(-20.0)) @ rot_x(math.radians(14.0))
 WALL_HUNG = rot_y(math.radians(-30.0))
 CORNER_VIEW = rot_y(math.radians(-45.0))
 
-# item: (look, view). Doorways show their open look (the gap reads at slot size; a shut door reads as a wall), gates their shut one.
+# item: (look, view). Doorways are empty frames since BUGLIST-002 (the gap reads at slot size), gates show their shut look.
 ITEMS = {
     # B1a: foundations, doorways, windows
     "log_foundation": ("log_foundation", SLAB_VIEW), "brick_foundation": ("brick_foundation", SLAB_VIEW),
-    "log_doorway": ("log_doorway_open", WALL_VIEW), "stone_doorway": ("stone_doorway_open", WALL_VIEW), "brick_doorway": ("brick_doorway_open", WALL_VIEW),
+    "log_doorway": ("log_doorway", WALL_VIEW), "stone_doorway": ("stone_doorway", WALL_VIEW), "brick_doorway": ("brick_doorway", WALL_VIEW),
     "thatch_window": ("thatch_window", WALL_VIEW), "log_window": ("log_window", WALL_VIEW), "stone_window": ("stone_window", WALL_VIEW),
     "brick_window": ("brick_window", WALL_VIEW),
     # B2: fences and gates
@@ -43,12 +43,9 @@ ITEMS = {
     "log_palisade": ("log_palisade", FENCE_VIEW), "log_palisade_gate": ("log_palisade_gate", FENCE_VIEW), "stone_fence": ("stone_fence", FENCE_VIEW),
     "stone_gate": ("stone_gate", FENCE_VIEW), "brick_fence": ("brick_fence", FENCE_VIEW), "brick_gate": ("brick_gate", FENCE_VIEW),
     "iron_fence": ("iron_fence", FENCE_VIEW), "iron_gate": ("iron_gate", FENCE_VIEW),
-    # B1c: pillars and roof corners
+    # B1c: pillars (the roof corners are hips since GOALS-REPAIR A-37, piece_look.roof_hip: not drawn here yet, see below)
     "thatch_pillar": ("thatch_pillar", STATION_VIEW), "wooden_pillar": ("wooden_pillar", STATION_VIEW), "log_pillar": ("log_pillar", STATION_VIEW),
     "stone_pillar": ("stone_pillar", STATION_VIEW), "brick_pillar": ("brick_pillar", STATION_VIEW),
-    "thatch_roof_corner": ("thatch_roof_corner", CORNER_VIEW), "wooden_roof_corner": ("wooden_roof_corner", CORNER_VIEW),
-    "log_roof_corner": ("log_roof_corner", CORNER_VIEW), "stone_roof_corner": ("stone_roof_corner", CORNER_VIEW),
-    "brick_roof_corner": ("brick_roof_corner", CORNER_VIEW),
     # B3: furniture and storage
     "log_bench": ("log_bench", FURNITURE_VIEW), "log_table": ("log_table", FURNITURE_VIEW), "stone_bench": ("stone_bench", FURNITURE_VIEW),
     "stone_table": ("stone_table", FURNITURE_VIEW), "iron_bench": ("iron_bench", FURNITURE_VIEW), "iron_chair": ("iron_chair", rot_y(math.radians(-40.0))),
@@ -57,7 +54,7 @@ ITEMS = {
     # B1b: stairs, railings, the double and metal doorways
     "log_stairs": ("log_stairs", STAIR_VIEW), "stone_stairs": ("stone_stairs", STAIR_VIEW), "brick_stairs": ("brick_stairs", STAIR_VIEW),
     "wooden_railing": ("wooden_railing", FENCE_VIEW), "iron_railing": ("iron_railing", FENCE_VIEW),
-    "double_doorway": ("double_doorway_open", WALL_VIEW), "iron_doorway": ("iron_doorway_open", WALL_VIEW), "steel_doorway": ("steel_doorway_open", WALL_VIEW),
+    "double_doorway": ("double_doorway", WALL_VIEW),
     # B4: lights
     "wooden_hanging_lantern": ("wooden_hanging_lantern", STATION_VIEW), "iron_hanging_lantern": ("iron_hanging_lantern", STATION_VIEW),
     "iron_wall_lantern": ("iron_wall_lantern", WALL_HUNG), "wooden_torch_post": ("wooden_torch_post", STATION_VIEW),
@@ -65,21 +62,20 @@ ITEMS = {
     "wooden_lamp_post": ("wooden_lamp_post", STATION_VIEW), "iron_lamp_post": ("iron_lamp_post", STATION_VIEW),
     "stone_lamp_post": ("stone_lamp_post", STATION_VIEW), "stone_brazier": ("stone_brazier", STATION_VIEW), "iron_brazier": ("iron_brazier", STATION_VIEW),
     # B5: garden
-    "thatch_garden_plot": ("thatch_garden_plot", PLOT_VIEW), "wooden_garden_plot": ("wooden_garden_plot", PLOT_VIEW),
-    "stone_garden_plot": ("stone_garden_plot", PLOT_VIEW), "brick_garden_plot": ("brick_garden_plot", PLOT_VIEW),
+    "small_garden_plot": ("small_garden_plot", PLOT_VIEW), "wooden_garden_plot": ("wooden_garden_plot", PLOT_VIEW),
+    "large_garden_plot": ("large_garden_plot", PLOT_VIEW),
     "wooden_planter_box": ("wooden_planter_box", STATION_VIEW), "stone_planter": ("stone_planter", STATION_VIEW),
     "wooden_trellis": ("wooden_trellis", STATION_VIEW), "wooden_compost_bin": ("wooden_compost_bin", STATION_VIEW),
     "thatch_scarecrow": ("thatch_scarecrow", STATION_VIEW), "wooden_cold_frame": ("wooden_cold_frame", STATION_VIEW),
     # B6: water
-    "stone_well": ("stone_well", STATION_VIEW), "wooden_hand_pump": ("wooden_hand_pump", STATION_VIEW), "iron_hand_pump": ("iron_hand_pump", STATION_VIEW),
+    "primitive_well": ("primitive_well", STATION_VIEW), "stone_well": ("stone_well", STATION_VIEW), "advanced_well": ("advanced_well", STATION_VIEW), "wooden_hand_pump": ("wooden_hand_pump", STATION_VIEW), "iron_hand_pump": ("iron_hand_pump", STATION_VIEW),
     "log_trough": ("log_trough", STATION_VIEW), "wooden_trough": ("wooden_trough", STATION_VIEW), "stone_trough": ("stone_trough", STATION_VIEW),
-    "wooden_channel": ("wooden_channel", STATION_VIEW), "wooden_channel_corner": ("wooden_channel_corner", STATION_VIEW),
+    "wooden_pipe": ("wooden_pipe", STATION_VIEW), "wooden_channel": ("wooden_channel", STATION_VIEW), "wooden_channel_corner": ("wooden_channel_corner", STATION_VIEW),
     "wooden_channel_tee": ("wooden_channel_tee", STATION_VIEW), "wooden_sluice": ("wooden_sluice", STATION_VIEW),
     "stone_channel": ("stone_channel", STATION_VIEW), "stone_channel_corner": ("stone_channel_corner", STATION_VIEW),
-    "stone_channel_tee": ("stone_channel_tee", STATION_VIEW), "clay_pipe_run": ("clay_pipe_run", STATION_VIEW),
-    "clay_pipe_elbow": ("clay_pipe_elbow", STATION_VIEW), "clay_pipe_tee": ("clay_pipe_tee", STATION_VIEW), "iron_pipe": ("iron_pipe", STATION_VIEW),
-    "iron_pipe_elbow": ("iron_pipe_elbow", STATION_VIEW), "iron_tap": ("iron_tap", STATION_VIEW), "iron_deep_well_pump": ("iron_deep_well_pump", STATION_VIEW),
-    "stone_cistern": ("stone_cistern", STATION_VIEW), "stone_raised_cistern": ("stone_raised_cistern", STATION_VIEW),
+    "stone_channel_tee": ("stone_channel_tee", STATION_VIEW),
+    "copper_pipe": ("copper_pipe", STATION_VIEW), "copper_tap": ("copper_tap", STATION_VIEW), "copper_drip_head": ("copper_drip_head", STATION_VIEW), "iron_deep_well_pump": ("iron_deep_well_pump", STATION_VIEW),
+    "stone_cistern": ("stone_cistern", STATION_VIEW), "raised_cistern": ("raised_cistern", STATION_VIEW),
     # Item system C2: stations
     "kiln": ("kiln", STATION_VIEW), "tanning_rack": ("tanning_rack", STATION_VIEW), "drying_rack": ("drying_rack", STATION_VIEW),
     "smoker": ("smoker", STATION_VIEW), "oil_press": ("oil_press", STATION_VIEW),
@@ -158,14 +154,12 @@ ITEMS["iron_chest"] = ("iron_chest", FURNITURE_VIEW)
 ITEMS["wooden_crate"] = ("wooden_crate", FURNITURE_VIEW)
 for _tier in ("engineered", "fortified"):   # the seven-tier ladder's concrete tiers (10 Nov 2026); Fortified is the same model with iron bands
     for _piece, _view in (("foundation", SLAB_VIEW), ("wall", WALL_VIEW), ("doorway", WALL_VIEW), ("pillar", STATION_VIEW)):
-        ITEMS[_tier + "_" + _piece] = (_tier + "_" + _piece + ("_open" if _piece == "doorway" else ""), _view)
+        ITEMS[_tier + "_" + _piece] = (_tier + "_" + _piece, _view)
 ITEMS["engineered_window"] = ("engineered_window", WALL_VIEW)
 ITEMS["engineered_stairs"] = ("engineered_stairs", STAIR_VIEW)
 ITEMS["engineered_floor"] = ("engineered_floor", SLAB_VIEW)
-ITEMS["engineered_roof_corner"] = ("engineered_roof_corner", CORNER_VIEW)
-for _item, _look in (("roof_section", "roof"), ("log_roof", "log_roof"), ("stone_roof", "stone_roof"), ("brick_roof", "brick_roof"),
-        ("engineered_roof", "engineered_roof")):   # the pitched tier roofs (Kathleen, 10 Nov 2026), from the side like their corners
-    ITEMS[_item] = (_look, CORNER_VIEW)
+# The tier roofs are roof panels since GOALS-REPAIR A-35/A-36 (piece_look.tier_panel) and the roof corners hips since A-37 (piece_look.roof_hip), not
+# drawn here yet: tools/look_runtime.py has neither, and their old icons in assets/ui/item_icons wait for a PC re-render (the 65s have none, as Crude - Roof 65).
 ITEMS["fortified_gate"] = ("fortified_gate", WALL_VIEW)
 ITEMS["fortified_wall_top"] = ("fortified_wall_top", WALL_VIEW)
 ITEMS["mixer"] = ("mixer", STATION_VIEW)
@@ -188,9 +182,6 @@ SHORTEN = {
     "wooden_lamp_post": (0.3, 0.8, 0.12), "iron_lamp_post": (0.35, 0.8, 0.12), "stone_lamp_post": (0.35, 0.8, 0.12), "thatch_scarecrow": (0.1, 1.2, 0.4),
     "armour_stand": (0.1, 0.95, 0.5),
 }
-for _item in ("roof_section", "log_roof", "stone_roof", "brick_roof", "engineered_roof", "thatch_roof_corner", "wooden_roof_corner", "log_roof_corner",
-        "stone_roof_corner", "brick_roof_corner", "engineered_roof_corner"):   # a roof on its posts: the posts shortened so the roof fills the icon
-    SHORTEN[_item] = (0.1, 0.6, 0.3)
 
 
 def _shortener(top, keep):

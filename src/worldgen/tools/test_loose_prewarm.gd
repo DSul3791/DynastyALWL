@@ -41,13 +41,14 @@ func _init() -> void:
 		print("FAIL cached lookups too slow")
 		failures += 1
 
-	# Bug 6 (Dave 2 Nov: a pause and a missing tree on the first fell): a trunk and a stump are built at load, so the bark shader exists before the first fell.
+	# Bug 6 (Dave 2 Nov: a pause and a missing tree on the first fell): a stump is built at load, so the bark shader exists before the first fell
+	# (a felled tree has no trunk any more: it comes down in its logs, 16 Nov 2026).
 	var world: Node3D = Node3D.new()
 	view._root = world
 	view._prewarm_felled()
 
-	if world.get_child_count() != 2 or ViewScript._felled_bark_shader == null:
-		print("FAIL felled trunk and stump not prewarmed (%d nodes)" % world.get_child_count())
+	if world.get_child_count() != 1 or ViewScript._felled_bark_shader == null:
+		print("FAIL stump not prewarmed (%d nodes)" % world.get_child_count())
 		failures += 1
 
 	view._drop_felled_warm()

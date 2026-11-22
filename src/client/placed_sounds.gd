@@ -20,6 +20,8 @@ extends Node
 #   sound.placed.watch_world(world, here)  about once a second: a world row of state 5 to 7 (lean-to, chest, chopping block) or a fire (1, 8, 9)
 #                                           that appears near the player plays place, one that vanishes near
 #                                           the player plays pick_up (rows streamed in from afar are silent)
+#                                           While `quiet` (the world still loading at the join: terrain_client) or when more than BULK_ROWS
+#                                           rows appear near at once (a batch streamed in, not a player building), rows are only noted.
 #
 # Sounds: generated in assets/audio/placed/ (make_placed.py); recordings in assets/audio/recorded/placed/ win.
 
@@ -36,6 +38,7 @@ const StructureLook := preload("res://src/shared/structure_look.gd")   # which s
 const OPENABLES := {"door": ["door_open", "door_close"], "gate": ["gate_open", "gate_close"], "hatch": ["hatch_open", "hatch_close"], "chest": ["chest_open", "chest_close"]}
 var open_kinds: Dictionary = {}         # world row state -> openable kind; filled when Items has doors (rows carry "open" 0 or 1)
 const NEAR_M := 40.0                    # rows closer than this are heard appearing or vanishing
+const BULK_ROWS := 3                    # more new rows than this near the player in one look is the world streaming in, heard as nothing
 const MAX_DISTANCE_M := 120.0
 
 var played: Dictionary = {}             # sound name -> count
@@ -45,6 +48,7 @@ var _stage                              # SoundStage (voice budget, interior che
 var _streams: Dictionary = {}
 var _rows: Dictionary = {}              # world row id -> place sound kind, of the rows seen last time
 var _primed: bool = false
+var quiet: bool = false                 # set by terrain_client while the world first loads round the player (Dave 21 Nov 2026: no build sounds at login)
 var _open_rows: Dictionary = {}         # world row id -> [kind, open, pos] seen last time
 var _open_primed: bool = false
 var _rng := RandomNumberGenerator.new()
@@ -148,7 +152,7 @@ func watch_world(world: Dictionary, here: Vector3) -> void:
 		if kind != "":
 			seen[id] = [kind, row["pos"], int(row["state"])]
 
-	if _primed:
+	if _primed and not quiet:
 		var swung: Dictionary = {}      # row ids already heard as a door opening or closing (not as a thing placed or taken up)
 
 		for id in seen:
@@ -165,8 +169,14 @@ func watch_world(world: Dictionary, here: Vector3) -> void:
 						_swing(seen[id], here)
 						break
 
+		var arrived: Array = []
+
 		for id in seen:
 			if not _rows.has(id) and not swung.has(id) and here.distance_to(seen[id][1]) <= NEAR_M:
+				arrived.append(id)
+
+		if arrived.size() <= BULK_ROWS:
+			for id in arrived:
 				place(str(seen[id][0]), seen[id][1])
 
 		for id in _rows:
@@ -177,17 +187,17 @@ func watch_world(world: Dictionary, here: Vector3) -> void:
 	_primed = true
 
 
-# A door piece (structures.json look door_shut or door_open).
+# A door piece (structures.json piece_kind "door": the shut door and its open twin, whose look ends in "_open").
 func _is_door(state: int) -> bool:
-	return StructureLook.look_of(state) in ["door_shut", "door_open"]
+	return str(StructureLook.table().get(state, {}).get("piece_kind", "")) == "door"
 
 
-# A door swung: heard as the door opening (state look door_open) or shutting.
+# A door swung: heard as the door opening (an open-twin state) or shutting.
 func _swing(row: Array, here: Vector3) -> void:
 	if here.distance_to(row[1]) > NEAR_M:
 		return
 
-	var opened: bool = StructureLook.look_of(int(row[2])) == "door_open"
+	var opened: bool = StructureLook.look_of(int(row[2])).ends_with("_open")
 	var slot: String = "door_%s_%s" % [StructureLook.material_of(int(row[2])), "open" if opened else "close"]      # the door's own material (data), the clips are Kathleen's slots
 
 	if not _stage.slots.play(slot, row[1], here):

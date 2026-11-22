@@ -453,7 +453,7 @@
    "state": "generated",
    "variants": 3,
    "used_in": "dig_sounds.gd: digging dirt and humus",
-   "to_supply": "3 spade or shovel scoops into earth",
+   "to_supply": "3 shovel scoops into earth",
    "priority": 2
   },
   {
@@ -569,27 +569,27 @@
    "priority": 4
   },
   {
-   "name": "hit_spade_wood",
+   "name": "hit_shovel_wood",
    "state": "generated",
    "variants": 3,
-   "used_in": "hit_sounds.gd: a spade strike on wood",
-   "to_supply": "3 spade knocks and scrapes on wood",
+   "used_in": "hit_sounds.gd: a shovel strike on wood",
+   "to_supply": "3 shovel knocks and scrapes on wood",
    "priority": 4
   },
   {
-   "name": "hit_spade_stone",
+   "name": "hit_shovel_stone",
    "state": "generated",
    "variants": 3,
-   "used_in": "hit_sounds.gd: a spade scraping on stone",
-   "to_supply": "3 spade scrapes on stone",
+   "used_in": "hit_sounds.gd: a shovel scraping on stone",
+   "to_supply": "3 shovel scrapes on stone",
    "priority": 4
   },
   {
-   "name": "hit_spade_soil",
+   "name": "hit_shovel_soil",
    "state": "generated",
    "variants": 3,
-   "used_in": "hit_sounds.gd: a spade strike into soil",
-   "to_supply": "3 spade thuds into earth",
+   "used_in": "hit_sounds.gd: a shovel strike into soil",
+   "to_supply": "3 shovel thuds into earth",
    "priority": 3
   },
   {
@@ -1249,6 +1249,14 @@
    "priority": 4
   },
   {
+   "name": "ui_goal",
+   "state": "generated",
+   "variants": 1,
+   "used_in": "goal_placard.gd: the Goal Achieved placard's fanfare, once per completed goal",
+   "to_supply": "A short triumphal trumpet fanfare, 1 to 2 s, original or properly licensed",
+   "priority": 3
+  },
+  {
    "name": "swim_splash_small",
    "state": "generated",
    "variants": 3,
@@ -1369,6 +1377,14 @@
    "priority": 3
   },
   {
+   "name": "bellows_blow",
+   "state": "generated",
+   "variants": 2,
+   "used_in": "workshop_sounds.gd bellows(at): one stroke of a smelter's bellows while a player works them, about every 1.4 s",
+   "to_supply": "2 recordings of a leather forge bellows pushed once, the fire roaring up, 1 s",
+   "priority": 2
+  },
+  {
    "name": "plank_drop",
    "state": "generated",
    "variants": 2,
@@ -1487,22 +1503,6 @@
    "used_in": "fire_sounds.gd fuel(): a stick or log laid on a fire (V key)",
    "to_supply": "2 recordings of wood put on a fire with a flare of crackles, 1 s",
    "priority": 2
-  },
-  {
-   "name": "eat_crunch",
-   "state": "generated",
-   "variants": 3,
-   "used_in": "item_sounds.gd eat(): a crisp bite and chews (roast, nuts, roots)",
-   "to_supply": "2 to 3 recordings of biting and chewing something crisp, 1 s",
-   "priority": 3
-  },
-  {
-   "name": "eat_soft",
-   "state": "generated",
-   "variants": 3,
-   "used_in": "item_sounds.gd eat(): soft chewing (berries, greens)",
-   "to_supply": "2 to 3 recordings of chewing something soft, 1 s",
-   "priority": 3
   },
   {
    "name": "drink_gulp",

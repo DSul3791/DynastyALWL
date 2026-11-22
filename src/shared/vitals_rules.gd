@@ -44,7 +44,7 @@ static func drink_value(item_id: String, cfg: Dictionary) -> int:
 	return 0
 
 
-# What an energy supplement gives: {energy, fitness} (fitness = training points it costs), or {} when it is not one.
+# What an energy supplement gives: {energy} (at once, only when its food group slot is new: server_items _use_energy_aid), or {} when it is not one.
 static func energy_aid(item_id: String, cfg: Dictionary) -> Dictionary:
 	return cfg.get("energy_aids", {}).get(item_id, {})
 

@@ -13,7 +13,7 @@ Each row: `id`, `trigger` (free text naming a moment), `text`, optional `goal` (
 | 2_twine_1_stone_1_stick | pack holds those |
 | axe_made, axe_held_near_tree | made stone axe; axe held and a tree within 20 m |
 | tree_down | event `tree_felled` |
-| 6_sticks_3_stones, kit_made, fire_placed, fire_lit | pack holds them; made `campfire_kit`; event `placed` what fire; event `fire_lit` |
+| 6_sticks_16_stones, kit_made, fire_placed, fire_lit | pack holds them; made `campfire_kit`; event `placed` what fire; event `fire_lit` |
 | hungry | Food bar under 80 |
 | fire_burning_cold | fire lit and Warmth under 70 |
 | leanto_made, leanto_placed, bed_placed | made `lean_to_kit`; `placed` lean_to; `placed` rough_bed |
