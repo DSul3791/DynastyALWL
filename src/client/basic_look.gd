@@ -959,7 +959,8 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					_box(parts, Vector3(0.004, 0.004, 0.17), Vector3((float(k) - 1.5) * 0.04, 0.045 - absf(float(k) - 1.5) * 0.02, 0.0), dark.lightened(0.15))
 		"jerkin":
 			# A body garment lying flat (leather jerkin, quilted gambeson, mail shirt, plate cuirass), seen from the front: a torso panel with a neck opening, shoulder pieces, a belt and the
-			# material told in the surface: bits "leather" smooth with lacing, "padded" a diamond of quilting lines, "mail" rows of rings (alternating tone), "plate" two domed plates with rivets.
+			# material told in the surface: bits "leather" smooth with lacing, "padded" a diamond of quilting lines, "mail" rows of rings (alternating tone), "plate" a cuirass with faulds and straps,
+			# "brigandine" dyed cloth studded with rivet rows.
 			var kind: String = str(bits[0]) if bits.size() > 0 else "leather"
 			if kind in ["mail", "plate"]:
 				color = tier_metal(bits, color)                                                                   # a metal tier's own colour (TIER_METAL)
@@ -967,17 +968,55 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				light = color.lightened(0.25)
 
 			if kind == "plate":
-				_sph(parts, 0.17, Vector3(0.95, 0.28, 1.05), Vector3(0.0, 0.0, 0.0), color)
-				_sph(parts, 0.14, Vector3(0.8, 0.22, 0.9), Vector3(0.0, 0.03, -0.01), color.lightened(0.12))
-				_box(parts, Vector3(0.012, 0.02, 0.3), Vector3(0.0, 0.056, 0.0), light)
+				# A plate cuirass lying on its back (Lane A pictures 22 Nov: the old domed lump read as a sack): a long breastplate with a raised middle ridge, a rolled neck edge and
+				# arm cut-outs, a skirt of three overlapping fauld lames below the waist, leather shoulder straps with buckles and a row of rivets. bits "half" adds pauldrons (half plate);
+				# "full" adds pauldrons, vambraces laid beside it and tassets (a full harness).
+				var plate_r: float = 0.45 if bits.has("steel") else 0.6
+				_sph(parts, 0.15, Vector3(1.0, 0.3, 1.2), Vector3(0.0, 0.0, -0.02), color)
+				_metal(parts, plate_r, 0.75)
+				_box(parts, Vector3(0.014, 0.012, 0.3), Vector3(0.0, 0.044, -0.02), light)
+				_metal(parts, plate_r, 0.75)
+				_box(parts, Vector3(0.13, 0.03, 0.022), Vector3(0.0, 0.018, -0.19), light)
+				_metal(parts, plate_r, 0.75)
 
-				for k in 8:
-					var pa: float = TAU * float(k) / 8.0
-					_sph(parts, 0.008, Vector3.ONE, Vector3(cos(pa) * 0.15, 0.025, sin(pa) * 0.155), dark, true)
+				for side in [-1.0, 1.0]:
+					_sph(parts, 0.04, Vector3(0.8, 0.5, 1.2), Vector3(side * 0.14, 0.012, -0.12), Color(0.06, 0.05, 0.045), true)        # the arm cut-out
+					_box(parts, Vector3(0.025, 0.012, 0.1), Vector3(side * 0.06, 0.03, -0.2), Color(0.32, 0.19, 0.09))                    # shoulder strap
+					_box(parts, Vector3(0.03, 0.016, 0.016), Vector3(side * 0.06, 0.034, -0.16), Color(0.55, 0.42, 0.22))
 
-				_box_rot(parts, Vector3(0.1, 0.012, 0.07), Vector3(0.17, 0.01, -0.12), Vector3(0.0, 0.3, 0.1), color)
-				_box_rot(parts, Vector3(0.1, 0.012, 0.07), Vector3(-0.17, 0.01, -0.12), Vector3(0.0, -0.3, -0.1), color)
-				_metal(parts)
+				for k in 3:
+					_box(parts, Vector3(0.26 + 0.02 * float(k), 0.022, 0.045), Vector3(0.0, -0.004 * float(k), 0.17 + 0.035 * float(k)), color.darkened(0.06 * float(k)))
+					_metal(parts, plate_r, 0.75)
+
+				for k in 6:
+					_box(parts, Vector3(0.01, 0.014, 0.01), Vector3(-0.1 + 0.04 * float(k), 0.034, 0.15), dark)
+
+				if bits.has("half") or bits.has("full"):
+					for side in [-1.0, 1.0]:
+						_sph(parts, 0.07, Vector3(1.0, 0.45, 1.1), Vector3(side * 0.21, 0.004, -0.15), color.darkened(0.05), true)
+						_metal(parts, plate_r, 0.75)
+
+				if bits.has("full"):
+					for side in [-1.0, 1.0]:
+						_box_rot(parts, Vector3(0.04, 0.04, 0.24), Vector3(side * 0.3, 0.0, 0.06), Vector3(0.0, side * 0.12, 0.0), color.darkened(0.08))   # vambrace
+						_metal(parts, plate_r, 0.75)
+						_box(parts, Vector3(0.11, 0.02, 0.1), Vector3(side * 0.07, -0.01, 0.3), color.darkened(0.12))                                    # tasset
+						_metal(parts, plate_r, 0.75)
+			elif kind == "brigandine":
+				# A brigandine (Lane A pictures 22 Nov: the plain padded panel read as a brick tile): a dark dyed cloth coat with small iron plates riveted inside, shown as rows of
+				# rivet heads on the outside, a neck opening, shoulder pieces and a belt.
+				_box(parts, Vector3(0.3, 0.03, 0.34), Vector3(0.0, 0.0, 0.0), color)
+				_box(parts, Vector3(0.1, 0.036, 0.08), Vector3(0.0, 0.0, -0.17), Color(0.05, 0.04, 0.035))
+
+				for side in [-1.0, 1.0]:
+					_box(parts, Vector3(0.09, 0.03, 0.1), Vector3(side * 0.16, 0.0, -0.13), color.darkened(0.08))
+
+				_box(parts, Vector3(0.31, 0.034, 0.03), Vector3(0.0, 0.002, 0.11), Color(0.2, 0.12, 0.06))
+
+				for rz in 5:
+					for rx in 5:
+						_box(parts, Vector3(0.012, 0.04, 0.012), Vector3(-0.1 + 0.05 * float(rx), 0.002, -0.1 + 0.045 * float(rz)), Color(0.55, 0.56, 0.58))
+						_metal(parts, 0.5, 0.8)
 			else:
 				_box(parts, Vector3(0.3, 0.03, 0.34), Vector3(0.0, 0.0, 0.0), color)
 				_box(parts, Vector3(0.1, 0.036, 0.1), Vector3(0.0, 0.0, -0.17), dark)
@@ -1019,8 +1058,14 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 				_metal(parts)
 			else:
 				_box(parts, Vector3(0.36, 0.008, blade_w), Vector3(0.13, 0.0, 0.0), color)
-				_box_rot(parts, Vector3(0.09, 0.008, blade_w * 0.57), Vector3(0.375, 0.0, blade_w * 0.23), Vector3(0.0, -0.3, 0.0), color)   # the tip: two tilted pieces meeting in a point
-				_box_rot(parts, Vector3(0.09, 0.008, blade_w * 0.57), Vector3(0.375, 0.0, -blade_w * 0.23), Vector3(0.0, 0.3, 0.0), color)
+				_metal(parts)
+				# The tip: two pieces, each turned in toward the blade's middle so their far ends meet in one point (Lane A pictures 22 Nov: the old turn splayed them into a fish-tail).
+				# The turn scales with the blade's width so a narrow rapier blade tapers as gently as a broad one; each piece starts at its edge of the blade and crosses the middle.
+				var taper: float = blade_w * 4.0
+				_box_rot(parts, Vector3(0.09, 0.008, blade_w * 0.4), Vector3(0.35, 0.0, blade_w * 0.1), Vector3(0.0, taper, 0.0), color)
+				_metal(parts)
+				_box_rot(parts, Vector3(0.09, 0.008, blade_w * 0.4), Vector3(0.35, 0.0, -blade_w * 0.1), Vector3(0.0, -taper, 0.0), color)
+				_metal(parts)
 				_box(parts, Vector3(0.34, 0.01, blade_w * 0.22), Vector3(0.13, 0.001, 0.0), dark)
 				_metal(parts)
 			if bits.has("thin"):
@@ -1356,11 +1401,51 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					_sph(parts, 0.08, Vector3(1.0, 0.8, 1.1), Vector3(0.0, 0.0, 0.0), color)
 					_torus(parts, 0.07, 0.014, Vector3(0.0, -0.04, 0.0), dark)
 				"cloak":
-					_sph(parts, 0.17, Vector3(1.0, 0.18, 1.2), Vector3(0.0, 0.0, 0.0), color)
-					_sph(parts, 0.07, Vector3(1.2, 0.3, 0.7), Vector3(0.0, 0.015, -0.17), dark)
+					# A cloak folded once and laid down (Lane A pictures 22 Nov: the old round blob did not read): a wide drape, three long folds running down from the neck,
+					# the hood lying at the top with its dark opening, a turned-back hem and a metal brooch at the throat.
+					_sph(parts, 0.2, Vector3(1.15, 0.12, 1.0), Vector3(0.0, 0.0, 0.02), color)
 
-					for k in 6:
-						_sph(parts, 0.04, Vector3(1.0, 0.5, 1.0), Vector3(cos(TAU * float(k) / 6.0) * 0.14, 0.0, sin(TAU * float(k) / 6.0) * 0.17), _tone(color, k, 0.15), true)
+					for k in 3:
+						_sph(parts, 0.05, Vector3(0.5, 0.35, 3.0), Vector3(-0.09 + 0.09 * float(k), 0.016, 0.06), color.darkened(0.1 + 0.05 * float(k % 2)), true)
+
+					_box(parts, Vector3(0.36, 0.02, 0.03), Vector3(0.0, 0.004, 0.2), dark)
+					_sph(parts, 0.08, Vector3(1.0, 0.45, 0.8), Vector3(0.0, 0.02, -0.19), color.darkened(0.06), true)
+					_sph(parts, 0.04, Vector3(1.0, 0.3, 0.7), Vector3(0.0, 0.045, -0.2), Color(0.06, 0.05, 0.045), true)
+					_box(parts, Vector3(0.03, 0.012, 0.03), Vector3(0.0, 0.04, -0.13), Color.html("#b08d57").srgb_to_linear())
+					_metal(parts, 0.5, 0.7)
+				"greaves":
+					# A pair of greaves (Lane A pictures 22 Nov: drawn as boots they read as blocks): each a long curved shin plate with a raised middle line, a flared ankle edge
+					# and two leather straps with buckles.
+					for side in [-1.0, 1.0]:
+						_sph(parts, 0.05, Vector3(0.9, 0.55, 3.2), Vector3(side * 0.06, 0.0, 0.0), color, true)
+						_metal(parts, 0.55, 0.75)
+						_box(parts, Vector3(0.008, 0.012, 0.26), Vector3(side * 0.06, 0.026, 0.0), color.lightened(0.15))
+						_metal(parts, 0.55, 0.75)
+						_box(parts, Vector3(0.07, 0.012, 0.02), Vector3(side * 0.06, -0.004, 0.15), color.darkened(0.1))
+						_metal(parts, 0.55, 0.75)
+
+						for z in [-0.08, 0.06]:
+							_box(parts, Vector3(0.1, 0.034, 0.016), Vector3(side * 0.06, 0.0, z), Color(0.3, 0.18, 0.09))
+				"sabatons":
+					# A pair of sabatons: armoured shoes of five overlapping lames over the foot to a pointed toe cap, a heel strap behind.
+					for side in [-1.0, 1.0]:
+						for k in 5:
+							_box(parts, Vector3(0.075 - 0.006 * float(k), 0.035 - 0.004 * float(k), 0.035), Vector3(side * 0.055, -0.003 * float(k), -0.06 + 0.028 * float(k)), color.darkened(0.05 * float(k % 2)))
+							_metal(parts, 0.55, 0.75)
+
+						_sph(parts, 0.028, Vector3(1.0, 0.6, 1.6), Vector3(side * 0.055, -0.014, 0.1), color.lightened(0.05), true)
+						_metal(parts, 0.55, 0.75)
+						_box(parts, Vector3(0.07, 0.01, 0.06), Vector3(side * 0.055, -0.02, -0.1), Color(0.3, 0.18, 0.09))
+				"chausses":
+					# Mail chausses: a pair of long mail leggings lying side by side, tapering to the feet, the rings shown as bands of alternating tone and a leather tie at the top.
+					for side in [-1.0, 1.0]:
+						for k in 8:
+							_box(parts, Vector3(0.085 - 0.005 * float(k), 0.022, 0.044), Vector3(side * 0.055, 0.0, -0.17 + 0.044 * float(k)), _tone(color, k * 3 + int(side + 1.0), 0.18))
+							_metal(parts, 0.6, 0.75)
+
+						_box(parts, Vector3(0.06, 0.02, 0.07), Vector3(side * 0.055 + side * 0.03, 0.0, 0.2), color.darkened(0.08))
+						_metal(parts, 0.6, 0.75)
+						_box(parts, Vector3(0.09, 0.028, 0.012), Vector3(side * 0.055, 0.002, -0.2), Color(0.3, 0.18, 0.09))
 				"boots":
 					for side in [-1.0, 1.0]:
 						_box(parts, Vector3(0.07, 0.07, 0.12), Vector3(side * 0.05, 0.0, 0.0), color)
@@ -1413,9 +1498,12 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 					_box_rot(parts, Vector3(0.12, 0.02, 0.012), Vector3(-0.16, 0.0, -0.07), Vector3(0.0, -0.3, 0.0), dark)
 					_box(parts, Vector3(0.13, 0.03, 0.06), Vector3(0.0, 0.002, 0.05), color.darkened(0.15))
 				"tabard":
-					# A long open-sided panel, front and back in one, with a neck hole and a household charge (a cross) in a bright dye down the front.
-					_box(parts, Vector3(0.17, 0.026, 0.5), Vector3(0.0, 0.0, 0.03), color)
-					_box(parts, Vector3(0.18, 0.03, 0.02), Vector3(0.0, 0.002, 0.27), dark)
+					# A long open-sided panel, front and back in one, wider at the shoulders, with a neck hole, a dagged hem and a household charge (a cross) in a bright dye down the front.
+					_box(parts, Vector3(0.2, 0.026, 0.5), Vector3(0.0, 0.0, 0.03), color)
+					_box(parts, Vector3(0.28, 0.026, 0.09), Vector3(0.0, 0.0, -0.17), color.darkened(0.04))                       # the shoulders, wider than the panel
+
+					for k in 5:                                                                                                 # a dagged (scalloped) hem
+						_box_rot(parts, Vector3(0.035, 0.03, 0.035), Vector3(-0.08 + 0.04 * float(k), 0.002, 0.28), Vector3(0.0, PI * 0.25, 0.0), dark)
 					_sph(parts, 0.035, Vector3(1.0, 0.3, 0.8), Vector3(0.0, 0.012, -0.12), dark.darkened(0.3), true)
 					var charge: Color = Color.html("#c8a040")
 					_box(parts, Vector3(0.03, 0.03, 0.18), Vector3(0.0, 0.003, 0.08), charge)
