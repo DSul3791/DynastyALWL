@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Snares (data/animals/traps.json, server_traps.gd): the catch rate on a worn trail and in open grass, small game only, the carcass, wear and breaking, sprung snares, the per-player cap, save and reload.
+# Snares (data/animals/traps.json, server_traps.gd): the catch rate on a worn trail and in open grass, small game only, the carcass, wear and breaking, sprung snares, the per-player cap, save and reload, the Map's marks.
 # The Bird trap (traps.json kinds.bird_trap_set, Part C plan 3): ground birds only, flat trail factor, its own cap and words, saved like a snare.
 # Snares on runs and while away (docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md, D-TRAP-1, TR-6): a snare on a trail between animal places
 # fishes as on a worn trail; with nobody near, one on a rabbit run rolls once a game hour, one off a run never; a sprung one holds its catch.
@@ -59,6 +59,33 @@ func lay(items, at: Vector3, kind: String = "snare_trap") -> int:
 	items._items[id] = {"number": 1, "count": 1, "pos": at, "left": 1.0e9, "wear": 0, "struct": {"kind": kind, "yaw": 0.0}}
 	items._traps.on_placed(1, id)
 	return id
+
+
+# The Map's marks (protocol 150, marks_of): the owner's set traps, oldest first, and nobody else's; a trap gone leaves them by the
+# next check; a reloaded world marks its traps from the first ask.
+func marks_checks(items, again, snares: Array, bird: int) -> void:
+	var marks: Array = items.trap_marks(1)
+	var want: Array = snares.duplicate()
+	want.append(bird)
+	var same: bool = marks.size() == want.size()
+
+	for n in mini(marks.size(), want.size()):
+		var it: Dictionary = items._items[int(want[n])]
+		same = same and absf(float(marks[n][0]) - it["pos"].x) < 0.11 and absf(float(marks[n][1]) - it["pos"].z) < 0.11 and str(marks[n][2]) == str(it["struct"]["kind"])
+
+	check(same, "the Map marks each set snare and the Bird trap, oldest first (%d marks)" % marks.size())
+	items.peer_connected_hello(2, "trap-key-00000002")
+	check(items.trap_marks(2).is_empty() and items.trap_marks(99).is_empty(), "another character's Map, or no character, marks none of them")
+	check(again.trap_marks(1).size() == want.size(), "after a reload the Map marks the same traps at once (%d)" % again.trap_marks(1).size())
+	var gone: int = int(snares[0])
+	items._items.erase(gone)
+	check(items.trap_marks(1).size() == want.size(), "a trap taken up stays marked until the next check")
+	items._traps.tick(float(items._traps.cfg["check_s"]) + 1.0)
+	check(items.trap_marks(1).size() == want.size() - 1, "and is gone from the Map after it")
+	var placed: int = lay(items, Vector3(600.0, 10.0, 600.0))
+	var last: Array = items.trap_marks(1)[items.trap_marks(1).size() - 1]
+	check(absf(float(last[0]) - 600.0) < 0.11 and absf(float(last[1]) - 600.0) < 0.11, "a snare just set is marked at once, last")
+	items._items.erase(placed)
 
 
 func reset(items, id: int) -> void:
@@ -233,6 +260,7 @@ func _init() -> void:
 
 	check(bird_found, "a set bird trap saves and reloads with its owner")
 	check(found >= 0 and int(again._items[found].get("wear", 0)) == 3 and str(again._items[found]["struct"]["owner"]) == "trap-key-00000001" and float(again._items[found]["struct"]["seq"]) == float(items._items[keep]["struct"]["seq"]), "a set snare saves and reloads with its wear and owner")
+	marks_checks(items, again, mine.slice(mine.size() - cap), bird_keep)
 	# The smoke knob: off by default; on, a snare with no animal near catches an imagined rabbit and takes none from the world.
 	check(float(traps.cfg["test_chance"]) == 0.0, "the smoke knob is off in the data")
 	traps.cfg["test_chance"] = 1.0

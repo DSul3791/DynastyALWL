@@ -1644,6 +1644,7 @@ func _welcome_body(info: Dictionary) -> void:
 		trail_signs.set_routes(bx, bz, decoded)
 	)
 	net.map_block_received.connect(map_knowledge.receive)
+	net.trap_marks_received.connect(map_knowledge.set_traps)   # the snares this character has set, marked on the Map (protocol 150)
 	net.blood_received.connect(animal_view.on_blood)
 	var burrow_view: Node3D = BurrowViewScript.new()      # rabbit burrow mounds (MikeW #236 sends the spots, Kathleen draws them)
 	burrow_view.name = "Burrows"

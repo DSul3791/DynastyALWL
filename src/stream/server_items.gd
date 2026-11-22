@@ -15459,6 +15459,11 @@ func key_of(peer: int) -> String:
 	return str(_peer_key.get(peer, ""))
 
 
+# The Map's marks for the traps this peer's character has set (server_traps.gd marks_of, protocol 150): [[x, z, kind], ...].
+func trap_marks(peer: int) -> Array:
+	return _traps.marks_of(key_of(peer)) if _traps != null else []
+
+
 func stance_of(peer: int) -> int:
 	return int(_stance.get(peer, 0))
 
