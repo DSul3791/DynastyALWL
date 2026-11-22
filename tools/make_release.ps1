@@ -1,6 +1,7 @@
 # Makes a play-test release from this checkout (server/client split plan step C3, Dave 22 Nov 2026: friends need an installer to
 # play-test): the players' Windows installer and the matching server image, both stamped with the same build number, so the server lets
-# exactly this game in. Runs on Dave's PC in PowerShell with Docker Desktop; everything is built inside containers, nothing is installed.
+# exactly this game in. Runs on Dave's PC in PowerShell with Docker Desktop; everything is built inside containers, nothing is installed
+# (with -WindowsEditor the game export runs in Dave's own editor instead). Use a clone made for releases: the import may touch its files.
 #   cd <a full clone of DynastyALWL at the release commit, normally main>
 #   powershell -ExecutionPolicy Bypass -File tools\make_release.ps1            build only
 #   powershell -ExecutionPolicy Bypass -File tools\make_release.ps1 -Publish   also make the GitHub Release build-<N> with the installer (gh)
@@ -36,6 +37,8 @@ if (git status --porcelain -- addons assets data scenes src worlds project.godot
 if ((Test-Path assets\animals) -and -not $IncludeAnimals) {
 	throw "make_release: assets\animals (the bought models) is in this checkout and would go into a public download; use a fresh clone, or pass -IncludeAnimals once Dave has said yes"
 }
+# The island water record (gitignored bake input, ~90 MB a tile) would match the export's include filter; a fresh clone has none.
+if (Test-Path worlds\*\record) { throw "make_release: a world record folder (worlds\*\record) is in this checkout; use a fresh clone" }
 
 $commit = (git rev-parse HEAD).Trim()
 $build = [int](git rev-list --count HEAD)
@@ -52,18 +55,27 @@ try {
 	Run "engine and templates (deploy/engine)" { docker buildx build -f deploy/engine/Dockerfile --output "type=local,dest=$outFwd/engine" deploy/engine }
 	if ($WindowsEditor) {
 		# The same export as deploy/client/Dockerfile, on Windows: the server address and our template are put in for the export only.
-		[IO.File]::WriteAllText((Join-Path (Get-Location) "client_config.json"), "{`"official`": `"$Official`"}`n")
-		$presets = [IO.File]::ReadAllText((Join-Path (Get-Location) "export_presets.cfg"))
-		$presets = ([regex]'(?m)^custom_template/release=""').Replace($presets, "custom_template/release=`"$outFwd/engine/windows_release_x86_64.exe`"", 1)
-		[IO.File]::WriteAllText((Join-Path (Get-Location) "export_presets.cfg"), $presets)
+		$here = (Get-Location).Path
+		$project = $here.Replace("\", "/")
+		$log = "$outFwd/export.log"
 		try {
-			# The editor is a window program: Start-Process -Wait is what waits for it and gives its exit code. Start-Process joins
-			# the arguments as they are, so the quotes are written in. The import's own exit code is not trusted (tools/gate_pc.sh retries it).
-			Write-Host "== Windows editor import"
-			Start-Process -FilePath $WindowsEditor -ArgumentList "--path . --import" -Wait -NoNewWindow
+			[IO.File]::WriteAllText((Join-Path $here "client_config.json"), "{`"official`": `"$Official`"}`n")
+			$presets = [IO.File]::ReadAllText((Join-Path $here "export_presets.cfg"))
+			$presets = ([regex]'(?m)^custom_template/release=""').Replace($presets, "custom_template/release=`"$outFwd/engine/windows_release_x86_64.exe`"", 1)
+			[IO.File]::WriteAllText((Join-Path $here "export_presets.cfg"), $presets)
+			# The editor is a window program: Start-Process -Wait is what waits for it and gives its exit code. Start-Process joins the
+			# arguments as they are, so the quotes are written in. A first import can fail and pass the second time (tools/gate_pc.sh).
+			foreach ($try in 1, 2) {
+				Write-Host "== Windows editor import ($try)"
+				$p = Start-Process -FilePath $WindowsEditor -WorkingDirectory $here -ArgumentList "--path `"$project`" --import --log-file `"$log`"" -Wait -PassThru -NoNewWindow
+				if ($p.ExitCode -eq 0) { break }
+			}
 			Write-Host "== Windows editor export"
-			$p = Start-Process -FilePath $WindowsEditor -ArgumentList "--path . --export-release `"Windows Client`" `"$outFwd/client/Dynasty.exe`"" -Wait -PassThru -NoNewWindow
-			if ($p.ExitCode -ne 0) { throw "make_release: the Windows export failed (exit $($p.ExitCode))" }
+			$p = Start-Process -FilePath $WindowsEditor -WorkingDirectory $here -ArgumentList "--path `"$project`" --export-release `"Windows Client`" `"$outFwd/client/Dynasty.exe`" --log-file `"$log`"" -Wait -PassThru -NoNewWindow
+			if ($p.ExitCode -ne 0) {
+				if (Test-Path "$out\export.log") { Get-Content "$out\export.log" -Tail 40 }
+				throw "make_release: the Windows export failed (exit $($p.ExitCode)); log $out\export.log"
+			}
 		}
 		finally {
 			git checkout -- export_presets.cfg
