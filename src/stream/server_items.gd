@@ -1033,7 +1033,7 @@ func give(peer: int, number: int, count: int, item_inst: Dictionary = {}, item_w
 
 	if left > 0:
 		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO), item_wear, 0.0, NAN, NAN, "", item_inst)
-		_say(peer, "Too heavy to carry: %d %s dropped at your feet" % [left, table.in_sentence(table.name_of(number))])
+		_say(peer, "%s: %d %s dropped at your feet" % ["Too heavy to carry" if fits < count else "Your pack is full", left, table.in_sentence(table.name_of(number))])
 
 	return count - left
 
@@ -10926,7 +10926,7 @@ func _split(peer: int, inv, slot: int, count: int) -> void:
 
 	var target: int = inv.make_room()
 
-	if target < 0 or target >= inv.slot_count:   # make_room gives slot_count when the pack is at MAX_SLOTS and full
+	if target < 0:
 		_say(peer, "Your pack has no free slot to split into.")
 		return
 

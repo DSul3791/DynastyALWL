@@ -54,12 +54,11 @@ func _init() -> void:
 	var took: int = items._box_take(1, inv, chest, 0, 50)
 	check(took == 0 and chest.count_of(stone) == 50 and last().contains("Too heavy"), "a take past the limit is refused and said (\"%s\")" % last())
 
-	# A split with no free slot says so (and a pack at its most slots no longer reads past its end).
+	# A split with no free slot (the pack at its most slots, all full) says so.
 	inv.remove(stone, inv.count_of(stone))
 	var stick: int = items.table.number_of("stick")
 
-	while inv.slot_count < InventoryScript.MAX_SLOTS:
-		inv.make_room()
+	inv._resize(InventoryScript.MAX_SLOTS)
 
 	for i in inv.slot_count:
 		inv.numbers[i] = stick
