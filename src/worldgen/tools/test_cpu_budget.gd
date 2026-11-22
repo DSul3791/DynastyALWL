@@ -27,6 +27,12 @@ func _init() -> void:
 	check(CpuBudget.set_size("0-3,6,8-9") == 7, "a CPU set 0-3,6,8-9")
 	check(CpuBudget.set_size("") == 0 and CpuBudget.set_size("3-1") == 0, "an empty or odd CPU set is no limit")
 
+	check(CpuBudget.throttled_usec("usage_usec 9000\nuser_usec 6000\nsystem_usec 3000\nnr_periods 40\nnr_throttled 3\nthrottled_usec 54100\n") == 54100, "cgroup v2 cpu.stat: paused 54.1 ms")
+	check(CpuBudget.throttled_usec("nr_periods 40\nnr_throttled 3\nthrottled_time 54100000\n") == 54100, "cgroup v1 cpu.stat: throttled_time in ns")
+	check(CpuBudget.throttled_usec("") == -1 and CpuBudget.throttled_usec("usage_usec 5\n") == -1, "no throttle count: -1")
+	var stat_path: String = CpuBudget.throttle_stat_path()
+	check(stat_path == "" or CpuBudget.throttled_usec(CpuBudget.read_text(stat_path)) >= 0, "this machine's throttle count reads (%s)" % (stat_path if stat_path != "" else "no CPU quota"))
+
 	if OS.get_name() == "Linux":
 		var online: String = CpuBudget.read_text("/sys/devices/system/cpu/online")
 		check(CpuBudget.set_size(online) >= 1, "a kernel file reads (online CPUs %s)" % online.strip_edges())

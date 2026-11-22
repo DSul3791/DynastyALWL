@@ -1632,7 +1632,7 @@ Not yet played.
 
 ## 119. The goblin camp is at the cave nearest the spawn
 
-**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "I think we should move the goblins cave much closer to spawn so people might actually find it. it should probably be right in the closest mountain or hill to the spawn point then we can make a path to it for players later." And: "include that before merging to main."
+**Status: Replaced by entry 131 (the camp brings its own cave, PR #1456).** The camp no longer stands at 3,4#8006; the text below is history. Dave, 21 Nov 2026: "I think we should move the goblins cave much closer to spawn so people might actually find it. it should probably be right in the closest mountain or hill to the spawn point then we can make a path to it for players later." And: "include that before merging to main."
 
 **What was found:** the Ragtooth camp sat at spring cave 3,4#8013, about 3.6 km north-north-west of the spawn. The nearest cave is 3,4#8006, about 1.6 km west-south-west. The nearer hills, about 1.2 km south and north of the spawn, have no cave.
 
@@ -1752,6 +1752,33 @@ Not yet played.
 - An aggressive tiger or bear walks in on the player, then warns and charges, and stops at firelight.
 
 Not yet played. Left for later: an animal at the edge of the nearest 30 sent to a player can vanish and reappear (the client reads a body leaving the list as a possible kill).
+
+## 131. The goblin camp brings its own dry cave, 0.7 km south of the spawn
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "couldn't we just make a new cave for the goblin camp like it would be part of the goblin camp only place it that way we can make it a lot closer or put it anywhere we want to." And: "It could be a dry cave with no water source shallow, and it would just have to be placed anywhere near a river, and it doesn't even have to be near the head."
+
+**What was found:** after entry 119 the camp sat at spring cave 3,4#8006, about 1.6 km from the spawn, because no nearer hill had a cave. The nearer hills about 1.2 km away have no cave, and the hill about 0.7 km south does not either.
+
+**Required outcome:** a camp can bring its own shallow dry cave, placed by its data anywhere near a river; the Ragtooth camp uses one much closer to the spawn; nothing is left at the old cave; existing worlds get the cave cut into the hill after a restart.
+
+**As built (PR #1456, reviewed head 019477ba, merged to dev at f5738dd7):**
+- src/worldgen/runtime/camp_caves.gd: a camp row in data/creatures/goblin_tribes.json with a "dig" gets its own cave, worked out when the tile loads (never baked), like the abandoned mines.
+  - It is an open cut into the hill until 2 m of rock stands over the roof, then a 2.2 x 2.4 m passage rising 1 in 100 so it drains out, then a 4 m room at the end.
+  - Its cave kind is camp_cave: no spring or stream, and never a wild goblin band or an animal den.
+- The Ragtooth camp's cave is 3,4#camp_ragtooth: mouth x 58264 z 72084 on the north face of the hill about 0.7 km south of the spawn, running 26 m in, with a brook about 95 m away. The fire, Small chest, two Log benches, Drying rack, Tanning rack, the five goblins and their chore points stand on 3 to 10 degree ground in front of it.
+- TileTerrainData.CAMP_CAVES is gone; 3,4#8006 is a plain spring cave again (its own goblin band and wolf den by its id, as before 21 Nov).
+- TERRAIN_VERSION 80; the starter cache was rebuilt for stamp 80_f1a421bfb9. Ground edits are kept.
+- Provisional: GOBLIN-20 in docs/design/GOBLIN_CAMP.md (replaces GOBLIN-19); CD-4 in docs/design/CAVE_DENS_AND_MINES.md. Camps made automatically wherever goblins spawn are a later step.
+
+**Evidence:**
+- Independent review PASS on 5bbc6241 (twice), fbe96e30 and 019477ba.
+- Lane B on 019477ba, trial-merged onto dev cc5bd0f0: 318 pass / 0 fail (the selector's whole plan, test_worldgen and test_bake_from_record included), test_starter_cache_stamp PASS, warnings 381 (none new), looks 341, validate_items 0 errors, join smoke 33 s to ground with 0 retries.
+- Tile 3,4's abandoned mines are identical on dev and on the PR (print_tile_mines_3_4.gd: MINES 2 on both).
+- Not yet: Lane A pictures of the camp, the mouth and the hill over the room.
+
+**Acceptance:** walk about 0.7 km south from the spawn to the hill. The Ragtooth camp stands in front of a cave cut into its north face, with the goblins at their chores. The passage goes about 26 m in to a small dry room, and the hill above it shows no hole. Strike a goblin and they all run into the cave, staying in while you wait at the camp. Nothing is left at 3,4#8006.
+
+Not yet played.
 
 ## Rewrite interpretation
 
