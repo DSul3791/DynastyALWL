@@ -254,6 +254,14 @@ func _init() -> void:
 	fills.clear()
 	items._bog_holes_tick()
 	check(fills.size() == 1 and items._bog_holes.is_empty(), "a deep pit of its own digging still silts in (%d fills)" % fills.size())
+	items.ground_ready = func(_x, _z): return false
+	items._bog_holes = [[6.0, 10.0, 0.0, 0.9, 0.0, 6, 9.0]]
+	fills.clear()
+	items._bog_holes_tick()
+	check(fills.is_empty() and items._bog_holes.size() == 1, "a hole whose ground is not in memory waits, never read on the main thread")
+	items.ground_ready = Callable()
+	items._bog_holes_tick()
+	check(fills.size() == 1 and items._bog_holes.is_empty(), "and silts in once it is")
 	items.ground_open = Callable()
 
 	# 5. Save and load: what is left of a patch, its clock, and the waiting holes survive a restart.

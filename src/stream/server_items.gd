@@ -404,6 +404,7 @@ const BOG_HOLE_JOIN_M := 1.5      # a dig this close to a waiting hole joins it 
 const BOG_HOLE_DEEP_M := 1.0      # a new hole is noted only when struck within this of the generated surface (not a tunnel under the bog); deeper digs join one
 const BOG_SILT_PER_TICK := 4      # at most this many holes silt in one slow tick (each is a ground edit, a message to everyone and a remesh)
 const BOG_REFILL_R_MIN := 2.5     # the silting fill: a sphere at least this big whose top just meets the old surface over the hole
+const BOG_PIT_STEP_M := 1.0      # a dig joining a hole deepens its pit only when it is at most this far under the pit's deepest dig
 const BOG_OPEN_STEP_M := 1.0       # the silting fill is sampled on this grid below the hole; any open point under it leaves the hole open
 const PEAT_SOIL := 6              # data/tables/soils.json "peat": what a hole saved without its material silts in with
 const CAVE_KEY := 1 << 51       # cave floor stones and boulders: CAVE_KEY | cell x << 28 | cell y << 8 | entry (up to 256 a cell)
@@ -5389,8 +5390,8 @@ func _note_bog_hole(at: Vector3, radius: float) -> void:
 			hole[3] = maxf(float(hole[3]), radius)
 			hole[4] = due
 
-			if hole.size() >= 7:
-				hole[6] = minf(float(hole[6]), at.y)   # the deepest dig: silting may meet the pit it made, not a tunnel under it
+			if hole.size() >= 7 and at.y >= float(hole[6]) - BOG_PIT_STEP_M:
+				hole[6] = minf(float(hole[6]), at.y)   # the deepest dig of one pit dug down from the top: a dig far below it (a tunnel) does not deepen it
 			_dirty = true
 			return
 
@@ -5418,7 +5419,7 @@ func _bog_holes_tick() -> void:
 	var silted: int = 0
 
 	for hole in _bog_holes:
-		if silted >= BOG_SILT_PER_TICK or now_s < float(hole[4]) or _someone_near_hole(hole):
+		if silted >= BOG_SILT_PER_TICK or now_s < float(hole[4]) or _someone_near_hole(hole) or (ground_ready.is_valid() and not bool(ground_ready.call(float(hole[0]), float(hole[2])))):
 			keep.append(hole)
 		else:
 			_silt_hole(hole)
@@ -5452,7 +5453,7 @@ func _silt_reach(hole: Array, r: float) -> Array:
 	var centre: Vector3 = Vector3(float(hole[0]), float(hole[1]) - r, float(hole[2]))
 	var dug: Vector2 = Vector2(float(hole[0]), float(hole[2]))
 	var dug_r: float = float(hole[3]) + 0.5 + BOG_HOLE_JOIN_M   # the pit's column: every dig within the join distance, plus its radius and a margin
-	var dug_floor: float = (float(hole[6]) if hole.size() >= 7 else float(hole[1])) - float(hole[3]) - 0.5
+	var dug_floor: float = (float(hole[6]) if hole.size() >= 7 else float(hole[1]) - float(hole[3])) - float(hole[3]) - 0.5   # an older hole: as loaded
 	var steps: int = int(ceil(r / BOG_OPEN_STEP_M))
 	var points: Array = []
 
