@@ -7,6 +7,8 @@
 # serial lane); then the serial lane (timing tests and file writers) runs one at a time. A test on the `retry` list that fails is run ONCE more:
 # passing the second time is logged as a FLAKE (never silent), failing twice is a real failure. Everything else fails at once.
 # Prints: one line per test (seconds), the retry log, the slowest five, then `Test done: N pass, M fail`; exit 1 when M > 0.
+# Every check the plan lists runs after the tests (lanes, selftest, validate_items, check_look_names.py, warnings) and counts as one pass or fail;
+# a check it does not know prints "CHECKS NOT RUN" and fails the run.
 # Environment: GODOT_EXE (the Godot program, default `godot`), PYTHON (default python3). No `wait -n`: Git bash safe (xargs -P).
 cd "$(dirname "$0")/.." || exit 2
 # A fresh checkout or worktree has no import cache: classes and addons are unknown and most tests fail with misleading errors. Import once.
@@ -34,7 +36,7 @@ import json, sys
 d = json.load(open(sys.argv[1]))
 for k in ("fast", "timing", "slow"):
     print('%s="$%s %s"' % (k.upper(), k.upper(), " ".join(d.get(k, []))))
-print('CHECKS="%s"' % " ".join(c for c in d.get("checks", []) if c in ("lanes", "selftest")))
+print('CHECKS="%s"' % " ".join(d.get("checks", [])))
 PYEOF
 )"
 fi
@@ -96,13 +98,24 @@ done
 [ -s "$OUT/retries.log" ] && sed 's/^/NOTE  /' "$OUT/retries.log"
 echo "slowest: $(sort -rn "$OUT/seconds.txt" | head -5 | awk '{printf "%s %ss  ", $2, $1}')"
 echo "wall time $(( $(date +%s) - START )) s, seconds per test in $OUT/seconds.txt"
-# Gate-tooling checks from the plan (a diff that only touches the lane lists, the runner or the selector): lane check and selftest.
+# Every check the plan lists runs here (22 Nov 2026: a plan listed validate_items, this loop ran only lanes and selftest, and a red reached
+# dev). A check this runner does not know is not a pass: it is named on a "checks not run" line and the run fails.
+NOT_RUN=""
 for c in $CHECKS; do
 	case "$c" in
 		lanes) if "$PY" tools/tests_for_diff.py --check-lanes >/dev/null; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); echo "FAILED check lanes: tests_for_diff.py --check-lanes"; fi;;
 		selftest) R=$(bash tools/selftest_gate_tools.sh 2>&1 | tail -3); if echo "$R" | grep -q 'Test done: [0-9]* pass, 0 fail'; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); echo "FAILED check selftest: $R"; fi;;
+		validate_items) R=$(timeout 600 "${GODOT_EXE:-godot}" --headless --path . --script res://src/worldgen/tools/validate_items.gd 2>&1); L=$(echo "$R" | tail -1)
+			case "$L" in *" 0 errors"*|"0 errors"*) PASS=$((PASS + 1));; *) FAIL=$((FAIL + 1)); echo "FAILED check validate_items: $L"; echo "$R" | grep -iE "error" | head -8 | sed 's/^/    /';; esac;;
+		check_look_names.py) if R=$("$PY" tools/check_look_names.py 2>&1); then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); echo "FAILED check check_look_names.py:"; echo "$R" | tail -8 | sed 's/^/    /'; fi;;
+		warnings) CUR="$OUT/warnings.txt"; bash tools/check_warnings.sh > "$CUR" 2>"$OUT/warnings.err"; WRC=$?
+			if [ $WRC -ne 0 ]; then FAIL=$((FAIL + 1)); echo "FAILED check warnings: tools/check_warnings.sh exit $WRC (2 did not finish, 3 a script does not parse)"; tail -5 "$OUT/warnings.err" | sed 's/^/    /'
+			else NEW=$(grep -v "^scripts checked" "$CUR" | awk 'NR==FNR{b[$2]=$1; next} {if ($1 > b[$2]+0) printf "    %s: %d now, %d in baseline\n", $2, $1, b[$2]+0}' tools/warning_baseline.txt -)
+				if [ -z "$NEW" ]; then PASS=$((PASS + 1)); else FAIL=$((FAIL + 1)); echo "FAILED check warnings: new warnings against tools/warning_baseline.txt"; echo "$NEW"; fi; fi;;
+		*) NOT_RUN="$NOT_RUN $c";;
 	esac
 done
+if [ -n "$NOT_RUN" ]; then FAIL=$((FAIL + 1)); echo "CHECKS NOT RUN:$NOT_RUN (run them by hand; the run is not a pass without them)"; fi
 [ -n "$KNOWN_HIT" ] && echo "KNOWN PC failure (not counted, see tech/TEST_BASELINE_PC.md):$KNOWN_HIT"
 echo "Test done: $PASS pass, $FAIL fail"
 [ "$FAIL" -eq 0 ]
