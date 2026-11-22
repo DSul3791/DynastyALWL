@@ -20775,7 +20775,7 @@ func harvest(peer: int, inv, bed_id: int, at: Vector3 = Vector3.ZERO) -> bool:
 	if back.size() == 2:
 		give(peer, table.number_of(str(back[0])), roll_amount(peer, rng, int((back[1] as Array)[0]), int((back[1] as Array)[1])))
 
-	if rng.randf() < float((_crops_file_extra.get("worm", {}) as Dictionary).get("chance", 0.0)):
+	if fate(peer, "garden_worm", float((_crops_file_extra.get("worm", {}) as Dictionary).get("chance", 0.0))):
 		give(peer, table.number_of(str(_crops_file_extra["worm"].get("item", "worm"))), 1)   # gardens breed worms (Dave 14 Nov 2026: about 20 from 100 crops)
 
 	if full and tool_class != "hand" and swath_mult <= 0.0:
@@ -22619,7 +22619,7 @@ func _lock_action(peer: int, inv, id: int, op: int, value: int) -> void:
 			_reject(peer, 3)
 			return
 
-		var salt: String = "%08x%08x" % [randi(), randi()]
+		var salt: String = "%08x%08x" % [randi(), randi()]   # luck-exempt: a lock's hash salt, no outcome
 		it["struct"]["lock"] = {"salt": salt, "hash": _code_hash(salt, code), "ok": [], "allow": lock.get("allow", []), "tries": lock.get("tries", {})}   # a new code drops code-based access
 		_say(peer, "Locked with a four-digit code. Only you, those you let in and those who know the code can open it.")
 		_goal_event(peer, "container_locked")   # ADD-14: the owner set a valid four-digit code

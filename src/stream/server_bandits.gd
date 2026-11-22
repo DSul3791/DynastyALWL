@@ -525,9 +525,9 @@ func camp_levels(cell: Vector2i, spot: Vector2) -> Array:
 	var levels: Array = []
 
 	for _n in rng.randi_range(int(band["bandits"][0]), int(band["bandits"][1])):   # luck-exempt: the seed's camp
-		levels.append(rng.randi_range(int(band["level"][0]), int(band["level"][1])))
+		levels.append(rng.randi_range(int(band["level"][0]), int(band["level"][1])))   # luck-exempt: the seed's camp
 
-	if rng.randf() < float(band.get("up_share", 0.0)):
+	if rng.randf() < float(band.get("up_share", 0.0)):   # luck-exempt: the seed's camp
 		levels[0] = int(levels[0]) + 1   # the one a little stronger
 
 	return levels
