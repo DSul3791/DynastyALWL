@@ -313,6 +313,24 @@ func _init() -> void:
 	_check(BasicLook.mesh_for("ploughmans_board").get_aabb().size.x > BasicLook.mesh_for("ploughmans_board").get_aabb().size.z * 1.4, "a serving board is long, with a handle")
 	_check(_mean_colour(BasicLook.mesh_for("unbaked_apple_pie")).get_luminance() > _mean_colour(BasicLook.mesh_for("apple_pie")).get_luminance(), "an unbaked pie is paler than a baked one")
 
+	# Lane A pictures 22 Nov (fix forward): straight sword tips meet in a point, plate and brigandine read as armour, greaves, sabatons and chausses have shapes of their own.
+	for id in ["iron_shortsword", "steel_shortsword", "iron_greatsword", "steel_greatsword", "steel_rapier"]:
+		var blade: Mesh = BasicLook.mesh_for(id)
+		var sword_size: float = float(BasicLook.entry(id).get("size", 1.0))
+		var tip_w: float = _z_width(blade, blade.get_aabb().end.x - 0.012, INF)
+		var body_w: float = _z_width(blade, 0.0, blade.get_aabb().end.x - 0.06)                                     # the blade and the back of the tip, past the guard
+		_check(tip_w < body_w * 0.75, "%s: the blade ends in a point, not a fork (%.3f m wide at the tip, %.3f mid-blade)" % [id, tip_w, body_w])
+
+	_check((BasicLook.entry("iron_brigandine").get("bits", []) as Array).has("brigandine") and BasicLook.mesh_for("iron_brigandine").get_surface_count() == 2, "the brigandine is cloth with riveted iron (a metal surface)")
+	_check(BasicLook.mesh_for("steel_plate_harness").get_aabb().size.x > BasicLook.mesh_for("iron_breastplate").get_aabb().size.x + 0.15, "a full harness lays out pauldrons and vambraces beside the cuirass")
+
+	for id in ["bronze_greaves", "iron_greaves", "steel_greaves", "iron_sabatons", "steel_sabatons", "iron_mail_chausses"]:
+		var want_kind: String = "chausses" if id.ends_with("chausses") else ("sabatons" if id.ends_with("sabatons") else "greaves")
+		_check((BasicLook.entry(id).get("bits", []) as Array).has(want_kind), "%s is drawn as %s" % [id, want_kind])
+		_check(BasicLook.mesh_for(id).get_surface_count() == 2, "%s has its metal on a metal surface and leather straps apart" % id)
+
+	_check(BasicLook.mesh_for("iron_greaves").get_aabb().size.z > BasicLook.mesh_for("iron_sabatons").get_aabb().size.z, "greaves are longer than sabatons")
+
 	print("tool looks: %d failures" % failures)
 
 	for id in ["spear", "wooden_spear", "fishing_rod", "wooden_pin"]:                                                  # spears, the fishing rod and the pin
@@ -462,3 +480,17 @@ func _mean_colour(mesh: Mesh) -> Color:
 			count += 1
 
 	return sum / float(maxi(count, 1))
+
+
+# The width (z) of a mesh over the vertices with x between from_x and to_x: a pointed blade is narrow at its end, a forked one wide.
+func _z_width(mesh: Mesh, from_x: float, to_x: float) -> float:
+	var low: float = INF
+	var high: float = -INF
+
+	for surface in mesh.get_surface_count():
+		for v in (mesh.surface_get_arrays(surface)[Mesh.ARRAY_VERTEX] as PackedVector3Array):
+			if v.x >= from_x and v.x <= to_x:
+				low = minf(low, v.z)
+				high = maxf(high, v.z)
+
+	return maxf(high - low, 0.0)
