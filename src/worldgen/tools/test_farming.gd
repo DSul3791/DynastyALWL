@@ -800,7 +800,7 @@ func _init() -> void:
 	items._crops[key]["wet"] = 0
 	notes.clear()
 	act(Net.ACT_HARVEST, bed)
-	check(notes.has("It has stopped growing for want of water: water the bed and it will ripen."), "a crop stalled for water says so at harvest (%s)" % str(notes))
+	check(notes.has("It has stopped growing: it needs more wet days. Keep the bed watered and it will ripen."), "a crop stalled for water says so at harvest (%s)" % str(notes))
 	items._crops[key] = kept
 
 	# Harvest: without a sickle half the yield.

@@ -50,8 +50,28 @@ func _init() -> void:
 	items._next_id += 1
 	var cold_id: int = items._next_id
 	items._items[cold_id] = {"number": items.table.number_of("campfire"), "count": 1, "pos": Vector3(1.0, 10.0, 0.0), "left": 1.0e9, "fire": {"state": 0, "burn_left": 0.0, "covered": false, "recheck": 5.0}}
+	var station: String = str(recipes["cook_" + first].get("station", ""))
+	items._last_queue_act.clear()
 	items.action(1, Net.ACT_CRAFT_QUEUE, int(recipes["cook_" + first]["number"]), 0, 1, CraftHand.at(items, 1, int(recipes["cook_" + first]["number"])))
-	check(said.any(func(t): return str(t).begins_with("The fire is out")), "beside a cold fire the craft says to light it (%s)" % str(said))
+
+	if station == "campfire_pot":
+		check(said.has("That needs a campfire pot nearby") and not said.any(func(t): return str(t).begins_with("The fire is out")), "a cold fire with no pot: the pot is what is missing (%s)" % str(said))
+		said.clear()
+		items._next_id += 1
+		items._items[items._next_id] = {"number": items.table.number_of("campfire_pot"), "count": 1, "pos": Vector3(1.0, 10.0, 0.0), "left": 1.0e9, "struct": {"kind": "campfire_pot", "yaw": 0.0}}
+		items._refresh_pots()
+		items._last_queue_act.clear()   # two presses inside the real-time gap: the second is one press
+		items.action(1, Net.ACT_CRAFT_QUEUE, int(recipes["cook_" + first]["number"]), 0, 1, CraftHand.at(items, 1, int(recipes["cook_" + first]["number"])))   # a pot is all the queue asks: the dish waits on the fire
+		items._station_said.clear()
+		_pass(2.0)
+		items._items.erase(items._next_id)
+		items._refresh_pots()
+
+		if items._craft_queues.has("dishkey-0001"):
+			items._craft_queues.erase("dishkey-0001")   # the waiting dish is dropped; its ingredients are given again for the cases below
+			_stock(first, dishes[first])
+
+	check(said.any(func(t): return str(t).begins_with("The fire is out")), "a pot over a cold fire: the craft says to light it (%s, station %s)" % [str(said), station])
 	items._items.erase(cold_id)
 	items.send_notice = func(_p, _t): pass
 	items.action(1, Net.ACT_CRAFT_QUEUE, int(recipes["cook_" + first]["number"]), 0, 1, CraftHand.at(items, 1, int(recipes["cook_" + first]["number"])))
