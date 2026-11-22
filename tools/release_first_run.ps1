@@ -1,54 +1,185 @@
-# First-run checks of a built play-test game, before players get it (gate review of PR #1546, 22 Nov 2026): the Windows template is
-# built with Direct3D 12 but nothing else proves D3D12 is in it. Runs the exported Dynasty.exe on Dave's PC with a fresh APPDATA,
-# LOCALAPPDATA and TEMP (a first launch on a friend's PC: no shader cache, no settings, no characters), each run with its own log.
-#   powershell -ExecutionPolicy Bypass -File tools\release_first_run.ps1 -Exe <...\dynasty_export\build-N\client\Dynasty.exe>
-#       two short starts (1200 frames each, a window opens): the default driver, then --rendering-driver d3d12; prints each driver line
-#   ... -Play
-#       then one cold play (Vulkan, 1920x1080 windowed) that runs until the window is closed, for the lag thread's longest FREEZE and
-#       ground-ready times; its log is play.log
-# Logs and the fresh folders are in <exe folder>\..\first_run\; Dave's own game data is never touched.
+# First-run checks of a built play-test release, before players get it (gate review of PR #1546; coordinator 22 Nov 2026: nothing may
+# wait on a person). Runs on Dave's PC in PowerShell with Docker Desktop, on the folder tools\make_release.ps1 made:
+#   powershell -ExecutionPolicy Bypass -File tools\release_first_run.ps1 -Out ..\dynasty_export\build-<N>
+# In order, each with a hard time limit that closes whatever it started (a window, the installer, the container):
+#   1. installer: DynastySetup-<N>.exe installed silently into <Out>\first_run\install (refused when Dynasty is already installed on
+#      this PC: the test install would take over that install's uninstall entry)
+#   2. two short starts of the installed game (1200 frames each, a window opens): the default driver, then --rendering-driver d3d12;
+#      FAIL when a start has no driver line or used another driver than asked
+#   3. server package: docker load of dynasty-server-build-<N>.tar, then its compose.yaml up as a throwaway project (dynasty-firstrun,
+#      host ports 24700/24701, its own volume), waits until the server is running
+#   4. cold play: the installed game (fresh profile, Vulkan, 1920x1080 windowed) joins that server by itself (--test: no title or
+#      character pages, no character), stands about two minutes and quits; prints the "JOIN: ground ready" line and the longest FREEZE
+#   5. compose stop: the server must save and exit 0 inside the 90 s grace; then compose down removes the container and its volume
+#   6. uninstall: the installer's own uninstaller, silently; the install folder and the uninstall entry must be gone
+# -NoServer skips 3 to 5 (no Docker needed). Logs and the fresh profiles are in <Out>\first_run\. Dave's own game data, his Godot,
+# his saves, his own containers and the dynasty_dynasty-data volume are never touched; only Dynasty.exe processes started from
+# <Out>\first_run\install are ever closed.
 param(
-	[Parameter(Mandatory = $true)][string]$Exe,
-	[switch]$Play
+	[Parameter(Mandatory = $true)][string]$Out,
+	[switch]$NoServer
 )
 $ErrorActionPreference = "Stop"
-$Exe = (Resolve-Path $Exe).Path
-$out = Join-Path (Split-Path (Split-Path $Exe -Parent) -Parent) "first_run"
-New-Item -ItemType Directory -Force -Path $out | Out-Null
+$Out = (Resolve-Path -LiteralPath $Out).ProviderPath.TrimEnd('\')
+$build = (Split-Path $Out -Leaf) -replace '^build-', ''
+$setup = Join-Path $Out "DynastySetup-$build.exe"
+$tar = Join-Path $Out "dynasty-server-build-$build.tar"
+$compose = Join-Path $Out "compose.yaml"
+$runs = Join-Path $Out "first_run"
+$install = Join-Path $runs "install"
+$exe = Join-Path $install "Dynasty.exe"
+# The AppId of deploy/client/dynasty.iss; a per-user install (PrivilegesRequired=lowest) keeps its uninstall entry here.
+$uninstallKey = "HKCU:\Software\Microsoft\Windows\CurrentVersion\Uninstall\{6B0E5C1E-7D4A-4F55-9C1B-2D7A3E9F4C21}_is1"
+$project = "dynasty-firstrun"
+$container = "dynasty-firstrun"
+$port = 24700   # not 24600: Dave's own Play server may be using it
+$script:failed = $false
+$script:serverUp = $false
 
-function Start-Fresh([string]$name, [string]$arguments, [string]$want) {
-	$home_dir = Join-Path $out "$name-profile"
-	if (Test-Path $home_dir) { Remove-Item $home_dir -Recurse -Force }
+function Fail([string]$why) { Write-Host "   FAIL: $why"; $script:failed = $true }
+
+# Starts a program and waits at most $limit seconds; past that it is closed (with everything it started) and that is a FAIL.
+# Returns the exit code, or -1 when it had to be closed.
+function Run-Limited([string]$file, [string]$arguments, [int]$limit, [string]$what) {
+	$p = Start-Process -FilePath $file -ArgumentList $arguments -WorkingDirectory (Split-Path $file -Parent) -PassThru
+	$null = $p.Handle   # Windows PowerShell 5.1 gives no ExitCode later without this
+	if (-not $p.WaitForExit($limit * 1000)) {
+		Fail "$what still running after $limit s; closed"
+		& taskkill.exe /PID $p.Id /T /F | Out-Null
+		return -1
+	}
+	return $p.ExitCode
+}
+
+# The game with a fresh APPDATA, LOCALAPPDATA and TEMP (a first launch on a friend's PC: no shader cache, settings or characters).
+function Start-Fresh([string]$name, [string]$engine, [string]$game, [string]$want, [int]$limit) {
+	$home_dir = Join-Path $runs "$name-profile"
+	if (Test-Path -LiteralPath $home_dir) { Remove-Item -LiteralPath $home_dir -Recurse -Force }
 	foreach ($d in "Roaming", "Local", "Temp") { New-Item -ItemType Directory -Force -Path (Join-Path $home_dir $d) | Out-Null }
-	$log = Join-Path $out "$name.log"
-	# The child takes this session's environment: a profile nobody has used, so caches and settings start empty.
+	$log = Join-Path $runs "$name.log"
+	if (Test-Path -LiteralPath $log) { Remove-Item -LiteralPath $log -Force }
 	$saved = @($env:APPDATA, $env:LOCALAPPDATA, $env:TEMP, $env:TMP)
 	$env:APPDATA = Join-Path $home_dir "Roaming"; $env:LOCALAPPDATA = Join-Path $home_dir "Local"
 	$env:TEMP = Join-Path $home_dir "Temp"; $env:TMP = $env:TEMP
 	try {
-		Write-Host "== $name : $Exe $arguments"
-		$p = Start-Process -FilePath $Exe -ArgumentList "$arguments --log-file `"$log`"" -WorkingDirectory (Split-Path $Exe -Parent) -Wait -PassThru
+		# Engine options first, the game's own after "--". Start-Process joins the arguments as they are, so the quotes are written in.
+		$arguments = "$engine --log-file `"$log`"" + $(if ($game) { " -- $game" } else { "" })
+		Write-Host "== $name : Dynasty.exe $arguments (at most $limit s)"
+		$code = Run-Limited $exe $arguments $limit $name
 	}
 	finally {
 		$env:APPDATA = $saved[0]; $env:LOCALAPPDATA = $saved[1]; $env:TEMP = $saved[2]; $env:TMP = $saved[3]
 	}
-	Write-Host "   exit $($p.ExitCode), log $log"
+	Write-Host "   exit $code, log $log"
 	$line = $null
-	if (Test-Path $log) {
-		# Godot's start line names the driver and the GPU, e.g. "Vulkan 1.3.x - Forward+ - Using Device #0: ..." or "D3D12 ... - Using Device".
-		$line = Select-String -Path $log -Pattern "Using Device" | Select-Object -First 1
-	}
-	if ($null -eq $line) { Write-Host "   FAIL: no driver line (no log, or the game did not start its renderer)"; $script:failed = $true; return }
+	if (Test-Path -LiteralPath $log) { $line = Select-String -LiteralPath $log -Pattern "Using Device" | Select-Object -First 1 }
+	if ($null -eq $line) { Fail "no driver line (no log, or the game did not start its renderer)"; return $log }
 	Write-Host "   $($line.Line)"
 	# The game may fall back to the other driver by itself (project.godot fallback_to_*), so the line must name the one asked for.
-	if ($want -and $line.Line -notmatch $want) { Write-Host "   FAIL: asked for $want, the game used another driver"; $script:failed = $true }
-	elseif ($p.ExitCode -ne 0) { Write-Host "   FAIL: exit $($p.ExitCode)"; $script:failed = $true }
+	if ($want -and $line.Line -notmatch $want) { Fail "asked for $want, the game used another driver" }
+	elseif ($code -ne 0 -and $code -ne -1) { Fail "exit $code" }
+	return $log
 }
 
-$script:failed = $false
-# --quit-after counts frames (1200: about 20 s at 60 fps), enough to reach the title page.
-Start-Fresh "default" "--quit-after 1200" ""
-Start-Fresh "d3d12" "--rendering-driver d3d12 --quit-after 1200" "D3D12|Direct3D"
-if ($Play) { Start-Fresh "play" "--rendering-driver vulkan --windowed --resolution 1920x1080" "Vulkan" }
+function Compose([string]$what) {
+	& docker compose -p $project -f $compose @args
+	if ($LASTEXITCODE -ne 0) { throw "release_first_run: docker compose $what failed (exit $LASTEXITCODE)" }
+}
+
+foreach ($f in @($setup) + $(if ($NoServer) { @() } else { @($tar, $compose) })) {
+	if (-not (Test-Path -LiteralPath $f)) { throw "release_first_run: no $f; run tools\make_release.ps1 first" }
+}
+if (Test-Path -LiteralPath $uninstallKey) {
+	throw "release_first_run: Dynasty is installed on this PC (Settings > Apps); a test install would take over its uninstall entry. Uninstall it first, or test on another PC."
+}
+New-Item -ItemType Directory -Force -Path $runs | Out-Null
+$composeEnv = @{ DYNASTY_TAG = "build-$build"; DYNASTY_PORT = "$port"; DYNASTY_BLOCK_PORT = "$($port + 1)"; DYNASTY_CONTAINER = $container }
+$savedEnv = @{}
+foreach ($k in $composeEnv.Keys) { $savedEnv[$k] = [Environment]::GetEnvironmentVariable($k); [Environment]::SetEnvironmentVariable($k, $composeEnv[$k]) }
+
+try {
+	# 1. installer
+	if (Test-Path -LiteralPath $install) { Remove-Item -LiteralPath $install -Recurse -Force }
+	Write-Host "== install: $setup into $install"
+	$code = Run-Limited $setup "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART /SP- /TASKS=`"`" /DIR=`"$install`" /LOG=`"$runs\install.log`"" 600 "the installer"
+	if ($code -ne 0) { Fail "the installer exit $code (log $runs\install.log)" }
+	if (-not (Test-Path -LiteralPath $exe)) { throw "release_first_run: the installer put no Dynasty.exe in $install" }
+	foreach ($f in "Dynasty.pck", "libwatercore.windows.template_release.x86_64.dll") {
+		if (-not (Test-Path -LiteralPath (Join-Path $install $f))) { Fail "the install has no $f" }
+	}
+	Write-Host "   installed: $((Get-ChildItem -LiteralPath $install -File).Name -join ', ')"
+
+	# 2. short starts (--quit-after counts frames: 1200 is about 20 s at 60 fps, enough to reach the title page)
+	Start-Fresh "default" "--quit-after 1200" "" "" 300 | Out-Null
+	Start-Fresh "d3d12" "--rendering-driver d3d12 --quit-after 1200" "" "D3D12|Direct3D" 300 | Out-Null
+
+	if (-not $NoServer) {
+		# 3. server package
+		Write-Host "== server: docker load -i $tar"
+		& docker load -i $tar
+		if ($LASTEXITCODE -ne 0) { throw "release_first_run: docker load failed (exit $LASTEXITCODE)" }
+		Write-Host "== server: compose up ($project, ports $port/$($port + 1), its own volume)"
+		$script:serverUp = $true
+		Compose "up" up -d
+		$deadline = (Get-Date).AddMinutes(15)
+		$running = $false
+		while ((Get-Date) -lt $deadline) {
+			$note = & docker exec $container sh -c "cat /data/store/server_run.json 2>/dev/null"
+			if ("$note" -match '"state":"running"') { $running = $true; break }
+			if ((& docker inspect -f "{{.State.Running}}" $container) -ne "true") { break }
+			Start-Sleep -Seconds 5
+		}
+		if (-not $running) {
+			& docker logs --tail 40 $container
+			throw "release_first_run: the server did not reach running inside 15 minutes (or stopped); its log is above"
+		}
+		Write-Host "   server running"
+
+		# 4. cold play: joins by itself; --frames makes the game quit after about two minutes at 60 fps
+		$log = Start-Fresh "play" "--rendering-driver vulkan --windowed --resolution 1920x1080" "--test --server=127.0.0.1 --port=$port --frames=7200" "Vulkan" 420
+		$ground = Select-String -LiteralPath $log -Pattern "JOIN: ground ready" -ErrorAction SilentlyContinue | Select-Object -First 1
+		if ($ground) { Write-Host "   $($ground.Line)" } else { Fail "the cold play never logged JOIN: ground ready (did not join or land)" }
+		$worst = 0
+		foreach ($m in (Select-String -LiteralPath $log -Pattern "^FREEZE (\d+) ms" -ErrorAction SilentlyContinue)) {
+			$worst = [Math]::Max($worst, [int]$m.Matches[0].Groups[1].Value)
+		}
+		Write-Host "   longest FREEZE: $(if ($worst -gt 0) { "$worst ms" } else { 'none over 500 ms' })"
+
+		# 5. stop: run_server.sh turns TERM into the server's own save and close
+		Write-Host "== server: compose stop (must save and exit 0 inside 90 s)"
+		$started = Get-Date
+		Compose "stop" stop
+		$seconds = [int]((Get-Date) - $started).TotalSeconds
+		$exit = & docker inspect -f "{{.State.ExitCode}}" $container
+		Write-Host "   stopped in $seconds s, exit $exit"
+		& docker logs --tail 5 $container
+		if ("$exit" -ne "0") { Fail "the server exit $exit on stop (not a clean save)" }
+	}
+}
+finally {
+	foreach ($k in $savedEnv.Keys) { [Environment]::SetEnvironmentVariable($k, $savedEnv[$k]) }
+	# Nothing is left running: only games started from the test install are closed.
+	Get-Process -Name Dynasty -ErrorAction SilentlyContinue | Where-Object { $_.Path -and $_.Path.StartsWith($install, [StringComparison]::OrdinalIgnoreCase) } |
+		ForEach-Object { Write-Host "   closing a leftover game window (pid $($_.Id))"; & taskkill.exe /PID $_.Id /T /F | Out-Null }
+	if ($script:serverUp) {
+		foreach ($k in $composeEnv.Keys) { [Environment]::SetEnvironmentVariable($k, $composeEnv[$k]) }
+		Write-Host "== server: compose down (removes the test container and its volume)"
+		& docker compose -p $project -f $compose down -v --timeout 90
+		foreach ($k in $savedEnv.Keys) { [Environment]::SetEnvironmentVariable($k, $savedEnv[$k]) }
+	}
+	# 6. uninstall (also after a failure, so the test install never stays)
+	$uninstaller = Join-Path $install "unins000.exe"
+	if (Test-Path -LiteralPath $uninstaller) {
+		Write-Host "== uninstall"
+		Run-Limited $uninstaller "/VERYSILENT /SUPPRESSMSGBOXES /NORESTART" 300 "the uninstaller" | Out-Null
+		# The uninstaller hands over to a copy of itself and returns at once: wait for the files to go.
+		$deadline = (Get-Date).AddSeconds(120)
+		while ((Test-Path -LiteralPath $exe) -and (Get-Date) -lt $deadline) { Start-Sleep -Seconds 2 }
+		if (Test-Path -LiteralPath $exe) { Fail "the uninstaller left Dynasty.exe in $install" }
+		elseif (Test-Path -LiteralPath $uninstallKey) { Fail "the uninstaller left the uninstall entry" }
+		else { Write-Host "   uninstalled" }
+	}
+}
+
 if ($script:failed) { Write-Host "release_first_run: FAIL (see above); do not give this build to players"; exit 1 }
-Write-Host "release_first_run: ok; record the driver lines above (and the play.log FREEZE / ground-ready lines) with the run"
+Write-Host "release_first_run: ok; record the driver lines, the ground ready line and the longest FREEZE above with the run"
