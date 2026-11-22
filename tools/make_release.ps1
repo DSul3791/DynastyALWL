@@ -10,6 +10,12 @@
 param(
 	# The server players see first in the game's server list (src/client/server_list.gd official()). Provisional, coordinator 22 Nov 2026.
 	[string]$Official = "hannibalshouse.duckdns.org:24600",
+	# Dave's Windows editor (Godot 4.7.2 + Voxel Tools 1.7). With it the game is exported on Windows itself, with a window, so the export
+	# shader baker can run (it needs a real renderer: Godot editor/export/shader_baker_export_plugin.cpp); without it the export runs headless
+	# in a container and ships no baked shaders (they compile while playing, as in the editor).
+	[string]$WindowsEditor = "",
+	# The bought animal models (assets/animals, gitignored by licence, decision 83) go into a pack only when this is given (Dave's call).
+	[switch]$IncludeAnimals,
 	[switch]$Publish
 )
 $ErrorActionPreference = "Stop"
@@ -27,6 +33,10 @@ if (git status --porcelain -- addons assets data scenes src worlds project.godot
 	throw "make_release: the game files have changes not committed; a release is made from a commit"
 }
 
+if ((Test-Path assets\animals) -and -not $IncludeAnimals) {
+	throw "make_release: assets\animals (the bought models) is in this checkout and would go into a public download; use a fresh clone, or pass -IncludeAnimals once Dave has said yes"
+}
+
 $commit = (git rev-parse HEAD).Trim()
 $build = [int](git rev-list --count HEAD)
 $out = Join-Path (Split-Path (Get-Location) -Parent) "dynasty_export\build-$build"
@@ -40,8 +50,33 @@ $stamp = [ordered]@{ build = $build; commit = $commit; date = (Get-Date).ToUnive
 
 try {
 	Run "engine and templates (deploy/engine)" { docker buildx build -f deploy/engine/Dockerfile --output "type=local,dest=$outFwd/engine" deploy/engine }
-	Run "Windows game export (deploy/client)" {
-		docker buildx build -f deploy/client/Dockerfile --build-context "engine=$outFwd/engine" --build-arg "OFFICIAL=$Official" --output "type=local,dest=$outFwd/client" .
+	if ($WindowsEditor) {
+		# The same export as deploy/client/Dockerfile, on Windows: the server address and our template are put in for the export only.
+		[IO.File]::WriteAllText((Join-Path (Get-Location) "client_config.json"), "{`"official`": `"$Official`"}`n")
+		$presets = [IO.File]::ReadAllText((Join-Path (Get-Location) "export_presets.cfg"))
+		$presets = ([regex]'(?m)^custom_template/release=""').Replace($presets, "custom_template/release=`"$outFwd/engine/windows_release_x86_64.exe`"", 1)
+		[IO.File]::WriteAllText((Join-Path (Get-Location) "export_presets.cfg"), $presets)
+		try {
+			# The editor is a window program: Start-Process -Wait is what waits for it and gives its exit code. Start-Process joins
+			# the arguments as they are, so the quotes are written in. The import's own exit code is not trusted (tools/gate_pc.sh retries it).
+			Write-Host "== Windows editor import"
+			Start-Process -FilePath $WindowsEditor -ArgumentList "--path . --import" -Wait -NoNewWindow
+			Write-Host "== Windows editor export"
+			$p = Start-Process -FilePath $WindowsEditor -ArgumentList "--path . --export-release `"Windows Client`" `"$outFwd/client/Dynasty.exe`"" -Wait -PassThru -NoNewWindow
+			if ($p.ExitCode -ne 0) { throw "make_release: the Windows export failed (exit $($p.ExitCode))" }
+		}
+		finally {
+			git checkout -- export_presets.cfg
+			Remove-Item client_config.json -ErrorAction SilentlyContinue
+		}
+		foreach ($f in @("Dynasty.exe", "Dynasty.pck", "libwatercore.windows.template_release.x86_64.dll")) {
+			if (-not (Test-Path "$out\client\$f")) { throw "make_release: the export has no $f" }
+		}
+	}
+	else {
+		Run "Windows game export (deploy/client)" {
+			docker buildx build -f deploy/client/Dockerfile --build-context "engine=$outFwd/engine" --build-arg "OFFICIAL=$Official" --output "type=local,dest=$outFwd/client" .
+		}
 	}
 
 	Copy-Item deploy\client\dynasty.iss $out -Force

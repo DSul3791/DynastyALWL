@@ -8,7 +8,7 @@ Server/client split plan steps C1 to C3 (`/mnt/project-files/server-client-split
 
 `tools/make_release.ps1`, run in PowerShell on Dave's PC with Docker Desktop, from a full clone at the release commit (main):
 
-1. `deploy/engine/Dockerfile`: compiles our engine (Godot 4.7.2 + Voxel Tools 1.7): the headless Linux editor, the Windows release template (MinGW cross-compile, with Direct3D 12 as the game asks) and the Linux one. About 45 to 90 minutes the first time; Docker keeps it.
+1. `deploy/engine/Dockerfile`: compiles our engine (Godot 4.7.2 + Voxel Tools 1.7): the headless Linux editor, the Windows release template (MinGW cross-compile, with Vulkan and Direct3D 12; untested on a player's PC) and the Linux one. About 45 to 90 minutes the first time; Docker keeps it.
 2. `deploy/client/Dockerfile`: exports the "Windows Client" preset with that template: `Dynasty.exe`, `Dynasty.pck` and the water library, with `build_stamp.json` and `client_config.json` (the official server, `-Official`, default `hannibalshouse.duckdns.org:24600`, provisional) inside.
 3. `deploy/client/dynasty.iss`: Inno Setup (in a container) makes `DynastySetup-<N>.exe`. It installs for the current user into `%LOCALAPPDATA%\Programs\Dynasty`, with a Start menu entry and an optional desktop shortcut, and needs no administrator.
 4. `deploy/server/Dockerfile`: the server image of the same build, stamped, saved as `dynasty-server-build-<N>.tar` with `compose.yaml` and `SERVER.md`.
@@ -24,10 +24,12 @@ On Dave's PC (PowerShell; not while he plays or a test gate runs):
 cd E:\Software\godotDev
 git clone -b main https://github.com/DSul3791/DynastyALWL.git dynasty_release
 cd dynasty_release
-powershell -ExecutionPolicy Bypass -File tools\make_release.ps1 -Publish
+powershell -ExecutionPolicy Bypass -File tools\make_release.ps1 -WindowsEditor <path to Dave's Godot 4.7.2 voxel editor .exe> -Publish
 ```
 
 Next time: `git pull` in that folder, then the last line again.
+
+`-WindowsEditor` exports the game with Dave's own Windows editor, which opens a window for a minute or two: only that way does the export shader baker run (PR #1544 turns it on; it needs a real renderer, so a headless export skips it). Leave it out and the export runs headless in a container, without baked shaders, so shaders compile while playing.
 
 On the gaming server: copy `dynasty-server-build-<N>.tar` and `compose.yaml` there, then `docker load -i dynasty-server-build-<N>.tar` and `docker compose -f compose.yaml up -d` (SERVER.md has admin keys, password and ports).
 
@@ -38,4 +40,4 @@ Players: download `DynastySetup-<N>.exe` from the release and run it. Windows Sm
 - The bought animal models (`assets/animals`, gitignored) are not in a fresh clone, so the release draws the code-built animals.
 - The game is not code-signed.
 - `amake/innosetup` is a community image (Inno Setup 6 under Wine) on a floating tag. If `innosetup6-bookworm` is gone, use `amake/innosetup:innosetup6` in `tools/make_release.ps1`.
-- Bought animal models: `tools/export_check.py` lets them into a pack (decision 83: copied in on a build machine), but whether play-test downloads, which are public on GitHub, may carry them is Dave's call; until then build from a fresh clone, which has none.
+- Bought animal models: `tools/export_check.py` lets them into a pack (decision 83: copied in on a build machine), but whether play-test downloads, which are public on GitHub, may carry them is Dave's call; until then build from a fresh clone, which has none. The script stops if `assets\animals` is there, unless `-IncludeAnimals` is given.
