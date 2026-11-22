@@ -33,8 +33,12 @@ func setup(store_dir: String = "") -> void:
 		_state = saved.get("traders", {}) if typeof(saved) == TYPE_DICTIONARY else {}
 
 
-# Shelves and purses are saved after every deal (a few hundred bytes).
+# Shelves and purses are saved after every deal (a few hundred bytes); the player's side of the deal (pack, coins) goes in the world save
+# that the deal brings forward (save_soon): seconds later, not up to a minute.
 func save() -> void:
+	if items != null:
+		items.save_soon()
+
 	if _path == "":
 		return
 
