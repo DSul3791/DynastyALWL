@@ -15,8 +15,12 @@ param(
 	# shader baker can run (it needs a real renderer: Godot editor/export/shader_baker_export_plugin.cpp); without it the export runs headless
 	# in a container and ships no baked shaders (they compile while playing, as in the editor).
 	[string]$WindowsEditor = "",
-	# The bought animal models (assets/animals, gitignored by licence, decision 83) go into a pack only when this is given (Dave's call).
-	[switch]$IncludeAnimals,
+	# The bought animal models (assets/animals, gitignored by licence, decision 83) go into the game's pack (Dave 22 Nov 2026: "incorporated
+	# right in with the game"). They are copied, read only, from Dave's game folder into this clone; that folder is never changed. They are
+	# never committed and never uploaded as loose files, only inside the built game.
+	[string]$AnimalsFrom = "C:\GodotProjects\DynastyALWL\assets\animals",
+	# A build without them (the game draws its code-built animals instead).
+	[switch]$NoAnimals,
 	[switch]$Publish
 )
 $ErrorActionPreference = "Stop"
@@ -34,8 +38,20 @@ if (git status --porcelain -- addons assets data scenes src worlds project.godot
 	throw "make_release: the game files have changes not committed; a release is made from a commit"
 }
 
-if ((Test-Path assets\animals) -and -not $IncludeAnimals) {
-	throw "make_release: assets\animals (the bought models) is in this checkout and would go into a public download; use a fresh clone, or pass -IncludeAnimals once Dave has said yes"
+if ($NoAnimals) {
+	if (Test-Path assets\animals) { throw "make_release: -NoAnimals, but assets\animals is in this checkout; delete that copy first" }
+}
+else {
+	# Fail loudly rather than ship the plain animals by mistake.
+	if (-not (Get-ChildItem -Path $AnimalsFrom -Recurse -File -ErrorAction SilentlyContinue | Select-Object -First 1)) {
+		throw "make_release: no animal models in $AnimalsFrom; pass -AnimalsFrom <folder> or -NoAnimals"
+	}
+	if ((Resolve-Path $AnimalsFrom).Path -eq (Join-Path (Get-Location).Path "assets\animals")) { throw "make_release: -AnimalsFrom is this clone's own folder" }
+	Write-Host "== animal models: copying from $AnimalsFrom (read only)"
+	if (Test-Path assets\animals) { Remove-Item assets\animals -Recurse -Force }   # this clone's own copy from an earlier run
+	Copy-Item -Path $AnimalsFrom -Destination assets\animals -Recurse
+	$count = (Get-ChildItem assets\animals -Recurse -File).Count
+	Write-Host "   $count files"
 }
 # The island water record (gitignored bake input, ~90 MB a tile) would match the export's include filter; a fresh clone has none.
 if (Test-Path worlds\*\record) { throw "make_release: a world record folder (worlds\*\record) is in this checkout; use a fresh clone" }

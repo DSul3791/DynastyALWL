@@ -45,7 +45,7 @@ Players: download `DynastySetup-<N>.exe` from the release and run it. Windows Sm
 
 ## Known limits
 
-- The bought animal models (`assets/animals`, gitignored) are not in a fresh clone, so the release draws the code-built animals.
+- The bought animal models (`assets/animals`, gitignored by licence) go inside the game's pack (Dave, 22 Nov 2026: "incorporated right in with the game"). The script copies them, read only, from `-AnimalsFrom` (default `C:\GodotProjects\DynastyALWL\assets\animals`, Dave's game folder, never changed) into the release clone, and stops if there are none; `-NoAnimals` builds without them. They are never committed, never uploaded loose, and never in the server image.
 - The game is not code-signed.
 - `amake/innosetup` is a community image (Inno Setup 6 under Wine) on a floating tag. If `innosetup6-bookworm` is gone, use `amake/innosetup:innosetup6` in `tools/make_release.ps1`.
-- Bought animal models: `tools/export_check.py` lets them into a pack (decision 83: copied in on a build machine), but whether play-test downloads, which are public on GitHub, may carry them is Dave's call; until then build from a fresh clone, which has none. The script stops if `assets\animals` is there, unless `-IncludeAnimals` is given, and if a world record folder is there. Keep the release clone for releases only: the editor's import may touch its files.
+- The script stops if a world record folder is in the release clone. Keep that clone for releases only: the editor's import may touch its files.
