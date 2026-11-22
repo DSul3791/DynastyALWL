@@ -1,6 +1,6 @@
 # Dynasty to-do list
 
-**Reviewed 21 Nov 2026 against dev `53fb11a9`; updated 22 Nov 2026 for the work merged overnight (dev `5be6b7bf`).** (Y'' `4ca7ad5b` plus one docs commit), on Dave's request: "review our to do list and see what we have already done, what is no longer relevant and what still needs to be done."
+**Reviewed 21 Nov 2026 against dev `53fb11a9`, and updated 22 Nov 2026 for the work merged overnight (dev `5be6b7bf`),** on Dave's request: "review our to do list and see what we have already done, what is no longer relevant and what still needs to be done."
 
 This file is the one home for work that is **not built yet**. Other records keep their own jobs:
 
@@ -41,11 +41,11 @@ Checked against the code and dev history, not against the lists' own tick marks.
 
 ## 3. Still to do
 
-Grouped so that each piece can be one thread. Order is a suggestion (section 4). Already running elsewhere and **not repeated here**: world resource distribution, goal list and recipe check, natural animal movement and behaviour, and the pieces held for tonight's second merge (#1455 river iron stones, #1457 meteorites and Iron chunk, #1456 the goblins' own cave, #1459 Improved smithy model, #1461 Primitive kiln model, #1460 nail tiers, and the Primitive smithy model).
+Grouped so that each piece can be one thread. Order is a suggestion (section 4). Already running elsewhere and **not repeated here**: world resource distribution, goal list and recipe check, natural animal movement and behaviour. The pieces held for the second merge on 21 Nov (#1455, #1456, #1457, #1459, #1460, #1461 and the Primitive smithy model) are all in dev now.
 
 ### Piece 1. Lag leftovers (BugsList 108, still open part)
 - **Gate Z result (not BugsList 108; delete this line once Dave decides):** the cold first-join freeze grew from 24.0 s to 25.2 s. This is the same freeze as BugsList 93, measured by the gate's A5 rule: the longest FREEZE, median of 3 cold windowed Play runs, limit 24.85 s (set from main's 23.96 s). Dave, 21 Nov 2026, on that freeze: "thats not a problem. its expected on the first load" and "we should have a message that is clear that tells people that." (the message is built, PR #1405). The second main merge waits on Dave's choice: accept, or fix and re-gate.
-- First-sight shader builds on d3d12 (0.5 to 0.9 s a new thing). **Decided, D-TODO-1** (coordinator, 22 Nov): keep d3d12 and warm up the materials near the spawn once, behind the "preparing graphics" note (BugsList 93). Step 1 is in dev: the FREEZE and HITCH lines name what is first shown in a slow frame, and log lines are written off the main thread (#1491). Still to do: the warm-up itself.
+- First-sight shader builds on d3d12 (0.5 to 0.9 s a new thing). **Decided, D-TODO-1** (coordinator, 21 Nov): keep d3d12 and warm up the materials near the spawn once, behind the "preparing graphics" note (BugsList 93). Step 1 is in dev: the FREEZE and HITCH lines name what is first shown in a slow frame, and log lines are written off the main thread (#1491). Still to do: the warm-up itself.
 - Single physics steps of 44 to 51 ms; clock and weather at 31 to 37 ms.
 - Server pauses in cheap code while the PC loads new ground tiles (thread counts).
 - Done: the server's periodic checks and the position report no longer read a ground tile on the tick (#1503). Check whether any other server call still waits for an unloaded tile.
@@ -57,7 +57,7 @@ Grouped so that each piece can be one thread. Order is a suggestion (section 4).
 - The log writer may lose the last lines on a hard crash (gate review risk).
 - **Decided, D-TODO-2:** keep the 30 s timer and also save soon after big events. Done in dev: a finished building, a trade, a station craft, sleep and a disconnect each start a save (#1473). Still open: the log writer's last lines on a hard crash.
 
-### Piece 3. Body B and hair finishing (BugsList 90, 94)
+### Piece 3. Body B and hair finishing (BugsList 90, 94; Body 2 is now Body B, Body 1 is Body A)
 - First-person arms are Body 1's (no parts file for Body 2, docs/CHARACTER_SYSTEM.md). Try cutting her arms from her own model first; **Dave: asset** only if that cannot look right.
 - Her feet may slide (walk and run retimed on Body 1); grip and shoulder log offset fitted to Body 1; sleep pose 8 cm lower; her own walk and run stand up to 11 cm high on the toes.
 - Done, **D-TODO-3:** the bodies are labelled "Body A" and "Body B" with a short look note; BM-1 stands (no gender labels) (#1474).
@@ -67,18 +67,19 @@ Grouped so that each piece can be one thread. Order is a suggestion (section 4).
 - Delete the old drawn hair styles in body_generator.gd (after main, Dave's cut-off).
 
 ### Piece 4. Tool tier colours and icons
-- Done, **D-TODO-4:** every metal tool draws its metal in its tier's colour: copper red-orange, bronze dull gold-brown, iron dark grey, steel light blue-grey (#1474). Not yet played.
+- Done, **D-TODO-4:** every metal tool draws its metal in its tier's colour: copper red-orange, bronze dull gold-brown, iron dark grey, steel light cool grey (#1474). Not yet played.
 
 ### Piece 5. Placeholder looks
 - Done: all 132 grey items now have their own look, in groups 5a to 5f (#1492, #1493, #1494, #1496, #1499), with fixes from the first Lane A pictures (#1507). Only `kindling_duplicate` stays in data/items/look_placeholders.json, for its number. Not yet played.
 
 ### Piece 6. Settlement size table
-- **Decided, D-TODO-5:** the city size table is approved with populations checked against real medieval places: hamlet under about 100, village about 100 to 1,000, town about 1,000 to 10,000, city over 10,000, grand city 5,000 to 15,000. Still to do: write it into the design (Design_Ideas_Approved.md and the settlement topic), replacing [Proposed].
+- **Decided, D-TODO-5** (a coordinator pick for Dave, under his 21 Nov questions rule; not Dave's own approval; corrected 22 Nov): the proposed city size table in Design_Ideas_Unapproved.md ("The settlement ladder") is adopted as written: hamlet 10 to 100, village 100 to 400, town 400 to 1,500, city 1,500 to 5,000, grand city 5,000 to 15,000, with radii 300, 450, 675, 1,000 and 1,500 m. Real medieval sizes were the sanity check (most towns well under 2,000 people; only the largest cities over 10,000). Still to do: record it in the design with its status, for Dave's review (piece 8).
 
 ### Piece 7. Bandit toll and robbery (BugsList 82, 83)
 - Built and switched off. **Dave only** (robbery switch).
 
 ### Piece 8. Review the provisional picks
+- D-TODO-1 to 7 (21 and 22 Nov) are coordinator picks made for Dave under his questions rule, not his own approvals; they are listed here with the other overnight picks for his review.
 - The "Assumed on Dave's behalf" lists in BugsList_Current.md (several entries, and the list at the end) and the picks in the coordinator's AWAY ORDER log. Under Dave's 21 Nov rule the coordinator confirms or changes each one and records it. One docs-only thread.
 
 ### Piece 9. After-main list (coordinator, 21 Nov)
