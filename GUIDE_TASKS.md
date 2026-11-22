@@ -1,5 +1,7 @@
 # Dino (formerly Guide) session: self-made task rounds (standing instruction from Dave, via the moderator, 1 Nov 2026)
 
+> **Not a live to-do list (reviewed 21 Nov 2026).** This was a queue for a role in the 1 Nov team, which no longer exists. Its open items that still matter are in [docs/TODO.md](docs/TODO.md), with what was done or is no longer relevant. Kept as history.
+
 Rules I keep: read, play, photograph and report only (no game code or data edits); never merge to main; at most 3 heavy Godot jobs through `tools/godot_slot.sh`; short notes to the moderator as I go.
 
 ## Round 0 (assigned): walk checklist steps 1-14 in the client, creator preview picture, refresh PLAYTHROUGH_STEP_STATUS.md

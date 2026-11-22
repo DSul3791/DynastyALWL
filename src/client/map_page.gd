@@ -3,7 +3,8 @@ extends Control
 # The Journal's Map page (docs/design/PLAYER_JOURNAL_GOALS_UI.md, PLAYER_CARTOGRAPHY_MAP_DESIGN.md s1.6): one paper surface showing the
 # charcoal sketch of what THIS character has surveyed, nothing else. A fresh character sees a blank page. The Journal (journal_view.gd)
 # puts this control in its Map panel and sets `knowledge` (map_knowledge.gd) and `where` (the body's position, for the small cross).
-# Mouse wheel zooms, dragging pans; nothing else on the page. Block sketches are cached and only changed blocks (and their neighbours,
+# The snares and Bird traps this character has set are marked on it (protocol 150, map_knowledge.traps). Mouse wheel zooms, dragging
+# pans; nothing else on the page. Block sketches are cached and only changed blocks (and their neighbours,
 # whose edges read them) are drawn again, one at a time on a worker thread (a block is about 55 ms of work, David4 14 Nov 2026: on the
 # main thread every opening of a big map would stutter); the main thread only copies a block's cells out and makes the texture.
 
@@ -42,6 +43,9 @@ func set_knowledge(store) -> void:
 	if knowledge != null and knowledge.block_changed.is_connected(_on_block_changed):
 		knowledge.block_changed.disconnect(_on_block_changed)
 
+	if knowledge != null and knowledge.traps_changed.is_connected(queue_redraw):
+		knowledge.traps_changed.disconnect(queue_redraw)
+
 	knowledge = store
 	_textures.clear()
 	_dirty.clear()
@@ -49,6 +53,7 @@ func set_knowledge(store) -> void:
 
 	if knowledge != null:
 		knowledge.block_changed.connect(_on_block_changed)
+		knowledge.traps_changed.connect(queue_redraw)
 
 		for block in knowledge.blocks:
 			_dirty[block] = true
@@ -156,10 +161,29 @@ func _draw() -> void:
 		var width: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16).x
 		draw_string(font, middle - Vector2(width * 0.5, 0.0), text, HORIZONTAL_ALIGNMENT_LEFT, -1, 16, Color(Sketch.INK, 0.6))
 
+	# The traps this character has set: a snare is a noose on its stake, a Bird trap a little cage.
+	for trap in knowledge.traps:
+		var spot: Vector2 = middle + (_world_to_sketch(Vector3(trap[0].x, 0.0, trap[0].y)) - centre) * zoom
+
+		if Rect2(Vector2.ZERO, size).grow(12.0).has_point(spot):
+			_draw_trap(spot, str(trap[1]))
+
 	# Where you are: a small charcoal cross.
 	var me: Vector2 = middle + (_world_to_sketch(player_at) - centre) * zoom
 	draw_line(me + Vector2(-5, -5), me + Vector2(5, 5), Color(Sketch.INK, 0.85), 2.0)
 	draw_line(me + Vector2(-5, 5), me + Vector2(5, -5), Color(Sketch.INK, 0.85), 2.0)
+
+
+# One trap mark at `spot`.
+func _draw_trap(spot: Vector2, kind: String) -> void:
+	var ink: Color = Color(Sketch.INK, 0.9)
+
+	if kind == "bird_trap_set":
+		draw_polyline(PackedVector2Array([spot + Vector2(-5, 4), spot + Vector2(0, -5), spot + Vector2(5, 4), spot + Vector2(-5, 4)]), ink, 1.6)
+		draw_line(spot + Vector2(0, -5), spot + Vector2(0, 4), ink, 1.2)
+	else:
+		draw_arc(spot + Vector2(0, -2), 4.0, 0.0, TAU, 14, ink, 1.6)
+		draw_line(spot + Vector2(0, 2), spot + Vector2(0, 8), ink, 2.0)
 
 
 func _gui_input(event: InputEvent) -> void:

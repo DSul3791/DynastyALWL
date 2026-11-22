@@ -44,6 +44,19 @@ func finish() -> void:
 		WorkerThreadPool.wait_for_task_completion(task)
 
 
+# The tasks started here and not finished yet (running or still queued on the pool): the server's state line (first-load plan, option A).
+func busy() -> int:
+	_mutex.lock()
+	var count: int = 0
+
+	for task in _tasks:
+		if not WorkerThreadPool.is_task_completed(task):
+			count += 1
+
+	_mutex.unlock()
+	return count
+
+
 func running() -> int:
 	_mutex.lock()
 	var count: int = _tasks.size()

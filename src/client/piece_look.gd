@@ -1343,8 +1343,39 @@ static func clay_hearth() -> Node3D:
 	return root
 
 
-# A set snare (a trap kind), 0.4 m wide, 0.55 m high: a bent stick with a twine loop lying on the path. Stub look until Kathleen's art.
+const SIMPLE_SNARE_MODEL := "res://assets/traps/simple_snare.glb"
+static var _simple_snare: PackedScene = null   # loaded once, the first time a snare is drawn
+static var _simple_snare_looked: bool = false   # whether that load was tried (the file may be missing)
+# The posts pushed into the ground, as a real snare's stakes are: the model's three feet (x -0.24, 0, +0.23) all end on its y 0, so the frame
+# is sunk this far and they stay in the ground on a slight slope or bump under its 0.62 m. At 3 cm the gate pictures (22 Nov 2026) still showed
+# a gap between the feet and their shadows; the cause is not proven (the outdoor sun's shadow bias also pulls thin things' shadows off them),
+# so 5 cm, which is how far a real stake goes in, and the rig's "clearance" line measures the feet against the ground.
+# The noose's bottom is at y 0.11 to 0.12 in the model, so it hangs 6 to 7 cm above the ground: three to four fingers, as snarers set it for rabbits.
+const SIMPLE_SNARE_SINK_M := 0.05
+
+
+# A set Simple snare: Dave's model (22 Nov 2026, tools/items/prepare_item_model.py: 0.62 m wide, 0.5 m high, floor on y 0, the
+# noose's bottom 11 cm above its floor; the model is sunk 5 cm; 5,000 triangles), standing across the run so a rabbit coming along it (along z) puts its
+# head through. The stub below stands in while the file is missing or not imported yet. The carried item keeps its parcel look.
 static func snare_trap() -> Node3D:
+	if not _simple_snare_looked:
+		_simple_snare_looked = true
+		_simple_snare = load(SIMPLE_SNARE_MODEL) as PackedScene if ResourceLoader.exists(SIMPLE_SNARE_MODEL) else null
+
+	if _simple_snare != null:
+		var model: Node3D = _simple_snare.instantiate() as Node3D
+
+		if model != null:
+			var root: Node3D = Node3D.new()   # the placed piece's transform goes on this root, so the model's own sink below stays
+			model.position.y = -SIMPLE_SNARE_SINK_M
+			root.add_child(model)
+			return root
+
+	return _snare_stub()
+
+
+# The old stub look (a bent stick with a twine loop), 0.4 m wide, 0.55 m high.
+static func _snare_stub() -> Node3D:
 	_materials()
 	var root: Node3D = Node3D.new()
 	_rod(root, Vector3(-0.2, 0.0, 0.0), Vector3(-0.2, 0.55, 0.0), 0.02, _log)             # the bent stick
@@ -3539,7 +3570,7 @@ static func raised_cistern() -> Node3D:
 # --- Item system C2 stations (item_system.md draft 7, Jamie's #934, 10 Nov 2026). Free-placed on the footprint in structures.json, standing on y = 0,
 # the working side toward +Z (the front of every station here, as the forges). Each is solid over its footprint.
 
-# The Kiln, 1.6 x 1.6: one brick beehive kiln (30 Brick, 8 Clay, 4 Clay mortar). A square brick base with a stone sill, a brick dome over it with a
+# The Kiln, 1.6 x 1.6 (the Improved and Advanced kilns; the Primitive kiln has its own model, inventory_view._make_primitive_kiln): one brick beehive kiln (30 Brick, 8 Clay, 4 Clay mortar). A square brick base with a stone sill, a brick dome over it with a
 # short chimney, the arched firing mouth low at the front and a stoke hole above it, both sooted.
 static func kiln() -> Node3D:
 	_tier_materials()
@@ -3612,7 +3643,7 @@ static func drying_rack() -> Node3D:
 	return root
 
 
-# The Sawbuck, 1.4 x 0.8 (8 Planks, 16 Nails; TREE_WOOD_TOOLS_DESIGN.md W-4): two X-shaped leg frames joined by a rail, a log lying in the
+# The Sawbuck, 1.4 x 0.8 (8 Planks, 16 Wooden pins; TREE_WOOD_TOOLS_DESIGN.md W-4): two X-shaped leg frames joined by a rail, a log lying in the
 # crotches ready for the saw. PLACEHOLDER look until an art pass.
 static func sawbuck() -> Node3D:
 	_tier_materials()

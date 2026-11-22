@@ -7,9 +7,6 @@
 		"fig": {"max": [30, 80], "per_pick": 5},
 		"olive": {"max": [60, 160], "per_pick": 5},
 		"pomegranate": {"max": [20, 50], "per_pick": 4},
-		"mango": {"max": [30, 90], "per_pick": 4},
-		"orange": {"max": [40, 100], "per_pick": 5},
-		"lemon": {"max": [40, 100], "per_pick": 5},
 		"date_palm": {"max": [60, 150], "per_pick": 5},
 		"coconut_palm": {"max": [20, 40], "per_pick": 3},
 		"apple_early": {"max": [30, 80], "per_pick": 5},
@@ -35,6 +32,7 @@
 	"harvest_yield": {
 		"thatch_grass": {"item": "thatch", "count": 10},
 		"oak": {"item": "tannin_bark", "count": 3},
+		"wild_rose": {"by_season": {"summer": {"item": "rose_petals", "count": 20}, "autumn": {"item": "rose_hips", "count": 150}}},
 		"tinder_fungus": {"item": "tinder_fungus", "count": 3},
 		"wild_thyme": {"item": "thyme", "count": 12},
 		"wild_mint": {"item": "mint", "count": 12},
@@ -80,9 +78,6 @@
 		"fig": {"item": "figs", "count": 40},
 		"olive": {"item": "olives", "count": 40},
 		"pomegranate": {"item": "pomegranates", "count": 40},
-		"mango": {"item": "mangoes", "count": 40},
-		"orange": {"item": "oranges", "count": 40},
-		"lemon": {"item": "lemons", "count": 40},
 		"apple_early": {"item": "apple_early", "count": 40},
 		"apple_summer": {"item": "apple_summer", "count": 40},
 		"apple_autumn": {"item": "apple_autumn", "count": 40},
@@ -216,7 +211,8 @@
 		"cattail": {"seasons": ["autumn"], "rows": [["cattail_seed", 1, 2]]},
 		"tussock_sedge": {"seasons": ["autumn"], "rows": [["tussock_sedge_seed", 1, 2]]},
 		"moss_hummock": {"seasons": ["summer"], "rows": [["moss_hummock_seed", 1, 2]]},
-		"sea_holly": {"seasons": ["summer"], "rows": [["sea_holly_seed", 1, 2]]}
+		"sea_holly": {"seasons": ["summer"], "rows": [["sea_holly_seed", 1, 2]]},
+		"wild_rose": {"seasons": ["autumn"], "rows": [["wild_rose_seed", 1, 2]]}
 	},
 	"by_species": {
 		"wild_rose": [],
@@ -445,7 +441,7 @@
 		"bark_species": ["oak"],
 		"thatch_bark_note": "Birch and the softwoods give thatch-worthy bark instead of plain bark (Dave 24 Oct): per blow chance and a count range, keyed by tree species.",
 		"thatch_bark": {"birch": {"chance": 0.5, "count": [3, 5]}, "spruce": {"chance": 0.3, "count": [2, 4]}, "balsam_fir": {"chance": 0.3, "count": [2, 4]}, "scots_pine": {"chance": 0.3, "count": [2, 4]}},
-		"felled_seeds": {"count": [1, 5], "by_species": {"oak": "oak_seed", "beech": "beech_seed", "birch": "birch_seeds", "scots_pine": "pine_cones", "spruce": "spruce_cones", "alder": "alder_cones", "willow": "willow_seeds", "coconut_palm": "coconut_palm_seed", "tropical_hardwood": "hardwood_seeds", "acacia": "acacia_pods", "mangrove": "mangrove_propagules", "rowan": "rowan_seed", "wild_apple": "wild_apple_seed", "wild_pear": "wild_pear_seed", "wild_cherry": "wild_cherry_seed", "sweet_chestnut": "sweet_chestnut_seed", "walnut": "walnut_seed", "date_palm": "date_palm_seed", "mirrorbark": "mirrorbark_seed", "wardpine": "wardpine_seed", "hearthwood": "hearthwood_seed", "everember": "everember_seed", "witness_tree": "witness_tree_seed", "balsam_fir": "fir_cones", "maple": "maple_keys", "apple_early": "apple_early_seed", "apple_summer": "apple_summer_seed", "apple_autumn": "apple_autumn_seed", "apple_keeping": "apple_keeping_seed", "apple_cooking": "apple_cooking_seed", "pear_summer": "pear_summer_seed", "pear_autumn": "pear_autumn_seed", "pear_winter": "pear_winter_seed", "sour_cherry": "sour_cherry_seed", "plum": "plum_seed", "damson": "damson_seed", "quince": "quince_seed", "medlar": "medlar_seed", "fig": "fig_seed", "olive": "olive_seed", "pomegranate": "pomegranate_seed", "mango": "mango_seed", "orange": "orange_seed", "lemon": "lemon_seed", "wild_apple_sweet": "wild_apple_sweet_seed"}},
+		"felled_seeds": {"count": [1, 5], "by_species": {"oak": "oak_seed", "beech": "beech_seed", "birch": "birch_seeds", "scots_pine": "pine_cones", "spruce": "spruce_cones", "alder": "alder_cones", "willow": "willow_seeds", "coconut_palm": "coconut_palm_seed", "tropical_hardwood": "hardwood_seeds", "acacia": "acacia_pods", "mangrove": "mangrove_propagules", "rowan": "rowan_seed", "wild_apple": "wild_apple_seed", "wild_pear": "wild_pear_seed", "wild_cherry": "wild_cherry_seed", "sweet_chestnut": "sweet_chestnut_seed", "walnut": "walnut_seed", "date_palm": "date_palm_seed", "mirrorbark": "mirrorbark_seed", "wardpine": "wardpine_seed", "hearthwood": "hearthwood_seed", "everember": "everember_seed", "witness_tree": "witness_tree_seed", "balsam_fir": "fir_cones", "maple": "maple_keys", "apple_early": "apple_early_seed", "apple_summer": "apple_summer_seed", "apple_autumn": "apple_autumn_seed", "apple_keeping": "apple_keeping_seed", "apple_cooking": "apple_cooking_seed", "pear_summer": "pear_summer_seed", "pear_autumn": "pear_autumn_seed", "pear_winter": "pear_winter_seed", "sour_cherry": "sour_cherry_seed", "plum": "plum_seed", "damson": "damson_seed", "quince": "quince_seed", "medlar": "medlar_seed", "fig": "fig_seed", "olive": "olive_seed", "pomegranate": "pomegranate_seed", "wild_apple_sweet": "wild_apple_sweet_seed"}},
 		"felled_seeds_note": "Dave 14 Nov 2026: \"Trees should drop some seeds when cut down. a random number of seeds between 1 and 5 seeds per tree.\" A felled tree drops count of its by_species seed over its crown circle when it breaks up (credited to the feller, like its logs), or into the hand cutter's pack with the first axe blow on the branches. Every tree has its own seed item, named the tree plus \"seed\" (Dave 14 Nov 2026: all trees follow the same rules); its fruit or nut is food, not a seed. The hoe's Garden list plants any of them in open ground as a sapling that grows like wild regrowth. The fantasy trees drop theirs too. PROVISIONAL.",
 		"seed_chance": 0.28,
 		"log_length_m": 3.0,

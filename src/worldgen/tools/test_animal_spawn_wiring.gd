@@ -88,9 +88,9 @@ func _init() -> void:
 
 	for id in near.animals:
 		var d: float = Vector2(near.animals[id]["home"].x, near.animals[id]["home"].z).length()
-		inside += 1 if d >= 55.0 and d <= 125.0 else 0
+		inside += 1 if d >= 55.0 and d <= 130.0 else 0   # a rabbit group (HB-4) spreads up to 6 m either way round its spot
 
-	check(near.animals.size() > 0 and inside == near.animals.size(), "near-share spawns land 60 to 120 m out (%d of %d)" % [inside, near.animals.size()])
+	check(near.animals.size() > 0 and inside == near.animals.size(), "near-share spawns land 60 to 120 m out, a group a few metres round that (%d of %d)" % [inside, near.animals.size()])
 
 	# Starter island levels (Dave 6 Nov 2026, corrected): species live wherever is natural for them, the town too; only their level
 	# rises with distance from the town point (the real spawn): about 1 to 5 by the town, 5 to 10 half way, 10 to 20 on the far side.

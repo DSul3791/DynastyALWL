@@ -165,6 +165,7 @@ const PieceLook := preload("res://src/client/piece_look.gd")
 const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const AmbientCrittersScript := preload("res://src/client/ambient_critters.gd")
 const GrassViewScript := preload("res://src/client/grass_view.gd")
+const TrailSignsScript := preload("res://src/client/trail_signs.gd")
 const SoundStageScript := preload("res://src/client/sound_stage.gd")
 const GroundMaterialScript := preload("res://src/client/ground_material.gd")
 const HarvestScript := preload("res://src/client/harvest.gd")
@@ -496,6 +497,7 @@ var heart_pulse                       # HeartPulse: the line of light over the h
 var hud_fade                          # HudFade: passing out fades the whole HUD but the heartbeat line (heartbeat_design.md "Passing out")
 var held                              # HeldItem: hotbar keys 1 to 8, spear jab and throw
 var grass                             # GrassView
+var trail_signs                       # TrailSigns: signs along the animals' trails (stage 2d)
 var map_knowledge = MapKnowledgeScript.new()   # this character's surveyed map cells (protocol 120); the Journal's Map page draws them (map_page.gd)
 var critters                          # AmbientCritters: butterflies, bees, dragonflies, birds and fireflies (client only)
 var faint                             # FaintEffect: tunnel vision, blur and black-out (set_state)
@@ -1430,6 +1432,11 @@ func _welcome_body(info: Dictionary) -> void:
 	root.add_child(critters)
 	grass.setup(terrain, flora, _tables)
 	grass.brook_spots = _brook_spots
+	trail_signs = TrailSignsScript.new()   # signs along the trails (stage 2d): latrines, scrapes, deer prints and droppings, by Tracking
+	trail_signs.name = "TrailSigns"
+	trail_signs.ground_height = func(x, z): return _ground_below(Vector3(x, body.global_position.y + 40.0, z)) if body != null else NAN
+	trail_signs.wet = func(x, z): return _wet_near(x, z, float(trail_signs.cfg.get("wet_m", 3.0)))
+	root.add_child(trail_signs)
 	_jitter_test = JitterTestScript.new()
 	add_child(_jitter_test)
 	_jitter_test.setup(self)
@@ -1630,8 +1637,14 @@ func _welcome_body(info: Dictionary) -> void:
 			sound.slots.footfall(kind, at, ground, speed, body.global_position)
 		)
 
-	net.trails_received.connect(func(bx, bz, bytes): grass.set_trail_block(bx, bz, TrailCodec.decode(bytes)))
+	net.trails_received.connect(func(bx: int, bz: int, bytes: PackedByteArray, routes: PackedByteArray) -> void:
+		grass.set_trail_block(bx, bz, TrailCodec.decode(bytes))
+		var decoded: Array = TrailCodec.decode_routes(routes, Vector2i(bx, bz), TrailCodec.ROUTE_BLOCK_M)
+		grass.set_trail_routes(bx, bz, decoded)   # the trails between animal places (protocol 149)
+		trail_signs.set_routes(bx, bz, decoded)
+	)
 	net.map_block_received.connect(map_knowledge.receive)
+	net.trap_marks_received.connect(map_knowledge.set_traps)   # the snares this character has set, marked on the Map (protocol 150)
 	net.blood_received.connect(animal_view.on_blood)
 	var burrow_view: Node3D = BurrowViewScript.new()      # rabbit burrow mounds (MikeW #236 sends the spots, Kathleen draws them)
 	burrow_view.name = "Burrows"
@@ -2024,21 +2037,26 @@ func _on_dug(center: Vector3, radius: float) -> void:
 
 	var t_edit: int = Probe.start()   # Dave 3 Nov 2026: every hoe click pauses the game; these name the part (HITCH line, frame_probe.gd)
 	var tool: VoxelTool = terrain.get_voxel_tool()
+	var t_note: int = Probe.start()
+	_note_dig(center)   # even on ground not loaded yet: a player rejoining in their own tunnel must not be lifted to the surface
+	Probe.stop("dig: note", t_note)
+
+	if not _edit_area_loaded(tool, center, radius):
+		Probe.stop("dig: ground edit", t_edit)
+		return
+
 	tool.channel = VoxelBuffer.CHANNEL_SDF
 	tool.mode = VoxelTool.MODE_REMOVE
 	tool.do_sphere(center, radius)
 	Probe.stop("dig: ground edit", t_edit)
 	dig_applied += 1
-	var t_note: int = Probe.start()
-	_note_dig(center)
-	Probe.stop("dig: note", t_note)
 
 	if grass != null:
 		var t_grass: int = Probe.start()
 		grass.ground_changed(center, radius)
 		Probe.stop("dig: grass", t_grass)
 
-	print("Terrain client: applied a %.1f m dig at %s; ground value there now %.2f (above 0 is open)" % [
+	FreezeWatchScript.printer.line("Terrain client: applied a %.1f m dig at %s; ground value there now %.2f (above 0 is open)" % [
 		radius, str(center), tool.get_voxel_f(Vector3i(center.round()))
 	])
 
@@ -2052,6 +2070,11 @@ func _on_filled(center: Vector3, radius: float, _material: int) -> void:
 
 	var t_edit: int = Probe.start()
 	var tool: VoxelTool = terrain.get_voxel_tool()
+
+	if not _edit_area_loaded(tool, center, radius):
+		Probe.stop("fill: ground edit", t_edit)
+		return
+
 	tool.channel = VoxelBuffer.CHANNEL_SDF
 	tool.mode = VoxelTool.MODE_ADD
 	tool.do_sphere(center, radius)
@@ -2061,6 +2084,27 @@ func _on_filled(center: Vector3, radius: float, _material: int) -> void:
 		var t_grass: int = Probe.start()
 		grass.ground_changed(center, radius, true)
 		Probe.stop("fill: grass", t_grass)
+
+
+# A dig or fill the server sends for ground this game has not loaded (often far away: the replay of other players' edits) cannot be applied:
+# do_sphere then only prints "Area not editable" with a backtrace, 5,560 of them in Dave's 21 Nov play, each a main-thread print. Such an
+# edit is skipped quietly: _forget_edit already dropped its cached blocks, so they come from the server with the edit in them. Counted, and
+# said on one line every 30 s at most.
+var edits_skipped: int = 0
+var _edits_skipped_said_msec: int = -100000
+
+
+func _edit_area_loaded(tool: VoxelTool, center: Vector3, radius: float) -> bool:
+	if tool.is_area_editable(AABB(center - Vector3.ONE * radius, Vector3.ONE * (2.0 * radius))):
+		return true
+
+	edits_skipped += 1
+
+	if Time.get_ticks_msec() - _edits_skipped_said_msec >= 30000:
+		_edits_skipped_said_msec = Time.get_ticks_msec()
+		FreezeWatchScript.printer.line("Terrain client: %d dig or fill edit(s) so far on ground not loaded here, skipped (its blocks come with the edit)" % edits_skipped)
+
+	return false
 
 
 # Applies the experiment switches (Esc > Advanced); also at start.
@@ -2845,6 +2889,8 @@ func _update_weather() -> void:
 		return
 
 	_weather_next_msec = now + 1000
+	# BugsList 108: "clock, weather" reached 30-59 ms in some lane frames; each part is timed on its own so a HITCH line names which.
+	var tw: int = Probe.start()
 	var tile_m: float = float(world.get("tile_size_m", 15360))
 	var row: int = ClimateScript.row_of_z(_anchor.z, tile_m)
 	var group: String = WeatherScript.zone_group(world.get("zones", []), int(world.get("equator_row", 0)), row)
@@ -2862,11 +2908,21 @@ func _update_weather() -> void:
 	if items != null:
 		items.air_c = float(weather["temp_c"])
 
+	Probe.stop("weather: state", tw)
+	tw = Probe.start()
 	# Ice on ponds and lakes: a pure function of the clock, zone and altitude (src/shared/ice.gd), so
-	# every client and the server agree with no traffic. Recomputed once a game minute.
-	var ice_now: float = IceScript.cover(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M, int(world.get("master_seed", 0)))
+	# every client and the server agree with no traffic.
+	# The walkable ice (collider, ice feel bands, sounds) takes a fresh answer each second from a worker (_ice_season_now): only the look
+	# below uses kept answers. The one season run gives the cover and the thaw (the same loop and numbers as IceScript.cover).
+	var seed_value: int = int(world.get("master_seed", 0))
+	var season_now: Dictionary = _ice_season_now(group, seed_value)
+	var thaw_season: Dictionary = season_now if now >= _ice_thaw_next_msec else {}
+	var ice_now: float = float(season_now["cover"])
 
-	ice_now = _update_ice_feel_weather(ice_now, group, now)
+	if not thaw_season.is_empty():
+		_ice_memo_put(group, ICE_POND_DEPTH_M, thaw_season)   # the look's 3 m answer for this slot: the same depth, height and game time (FrozenWater.OPEN_DEPTH_M)
+
+	ice_now = _update_ice_feel_weather(ice_now, group, now, thaw_season)
 
 	if flora != null:
 		flora.set_ice_cover(ice_now)
@@ -2878,7 +2934,11 @@ func _update_weather() -> void:
 	if sound != null and sound.weather != null:
 		sound.weather.ice_cover = ice_now
 
+	Probe.stop("weather: ice", tw)
+	tw = Probe.start()
 	_update_frozen_water(group, now)
+	Probe.stop("weather: frozen water", tw)
+	tw = Probe.start()
 
 	if weather_look != null and weather_look.puddles != null:
 		weather_look.puddles.set_ice_from(game_clock.seconds, group, _anchor.y)      # puddles freeze by the same rule, shallow (every 10 s)
@@ -2888,6 +2948,8 @@ func _update_weather() -> void:
 
 	if sound != null and sound.occlusion != null and sound.occlusion.outdoors:     # --sound-outdoors (sound_outdoors_design.md)
 		sound.occlusion.set_air(weather, weather_look.day.elevation if weather_look != null else 0.5, game_clock.hour(), weather_look.fog_now() if weather_look != null else 0.0)
+
+	Probe.stop("weather: puddles+sound", tw)
 
 
 # Frozen water look (docs/design/frozen_water_look.md): every 5 s the covers at 3 m and 1 m, the thaw, the lying snow, the springs
@@ -2922,8 +2984,80 @@ var _wetland_mist = null                  # WetlandMist, made at the first dawn 
 var _steam_logged: bool = false
 
 
+# BugsList 108 (lane frame-time runs, 22 Nov 2026: "weather: ice" 8-24 ms and "weather: frozen water" 16-22 ms in HITCH frames): Ice.season
+# walks 30 game days hour by hour (721 weather samples) and was asked up to five times every 5 s. For the frozen water LOOK only (never what
+# bears a step: that stays the exact Ice.cover each second), each depth's answer is kept for ICE_MEMO_GAME_S of game time and per ICE_MEMO_BAND_M
+# of height (climbing a slope no longer misses every tick; 10 m of height is under 0.1 C of air): ice grows and melts over game hours, so a
+# ten-minute-old answer looks the same (coordinator ruling, 22 Nov 2026).
+const ICE_MEMO_GAME_S := 600.0
+const ICE_MEMO_BAND_M := 10.0
+var _ice_memo: Dictionary = {}   # [depth, zone group, seed, height band, game time slot] -> Ice.season
+
+
+# The pond ice for the feel and the look, once a second (BugsList 108: "weather: ice" 8-24 ms in HITCH frames, a hitch every second). Ice.season
+# walks 30 game days hour by hour, so it runs on a worker: each second takes the answer the worker finished (asked about a second earlier;
+# ice grows and melts over game hours, so a second-old cover is the same cover to the step) and asks the next one. The first second, and any
+# second whose worker has not finished, uses the last answer; the very first answer is worked out here, so the walkable ice is never unknown.
+var _ice_task: int = -1
+var _ice_task_out: Dictionary = {}   # written by the worker, read only after it finished
+var _ice_last: Dictionary = {}       # {"cover", "peak"} at the anchor
+var _ice_last_key: Array = []        # [zone group, height band] that answer was asked for
+var _ice_task_key: Array = []        # the same for the task still running
+
+
+func _ice_season_now(group: String, seed_value: int) -> Dictionary:
+	var height: float = maxf(_anchor.y, 0.0)
+	var game_s: float = game_clock.seconds
+	var band: int = int(floorf(height / ICE_MEMO_BAND_M))
+
+	if _ice_task >= 0 and WorkerThreadPool.is_task_completed(_ice_task):
+		WorkerThreadPool.wait_for_task_completion(_ice_task)
+		_ice_task = -1
+
+		if str(_ice_task_key[0]) == group and absi(int(_ice_task_key[1]) - band) <= 1:   # asked for another zone or height: dropped
+			_ice_last = _ice_task_out
+			_ice_last_key = _ice_task_key
+
+	# The first answer, and the first after a new zone or a move of two height bands or more (a teleport, a respawn): worked out here once,
+	# so the step and the look never use another place's ice. A climb into the next band (under 0.1 C of air) waits for the worker.
+	if _ice_last.is_empty() or str(_ice_last_key[0]) != group or absi(int(_ice_last_key[1]) - band) >= 2:
+		_ice_last = IceScript.season(game_s, group, height, ICE_POND_DEPTH_M, seed_value)
+		_ice_last_key = [group, band]
+	elif _ice_task < 0:
+		_ice_task_key = [group, band]
+		_ice_task = WorkerThreadPool.add_task(func() -> void: _ice_task_out = IceScript.season(game_s, group, height, ICE_POND_DEPTH_M, seed_value), true, "pond ice")
+
+	return _ice_last
+
+
+func _finish_ice_task() -> void:
+	if _ice_task >= 0:
+		WorkerThreadPool.wait_for_task_completion(_ice_task)
+		_ice_task = -1
+
+
+func _ice_memo_key(group: String, depth_m: float) -> Array:
+	return [depth_m, group, int(world.get("master_seed", 0)), int(floorf(maxf(_anchor.y, 0.0) / ICE_MEMO_BAND_M)), int(floorf(game_clock.seconds / ICE_MEMO_GAME_S))]
+
+
+func _ice_memo_put(group: String, depth_m: float, season: Dictionary) -> void:
+	if _ice_memo.size() >= 8:
+		_ice_memo.clear()   # old slots and heights: a handful of entries at most, never a growing table
+
+	_ice_memo[_ice_memo_key(group, depth_m)] = season
+
+
+func _ice_season(group: String, depth_m: float) -> Dictionary:
+	var key: Array = _ice_memo_key(group, depth_m)
+
+	if not _ice_memo.has(key):
+		_ice_memo_put(group, depth_m, IceScript.season(game_clock.seconds, group, maxf(_anchor.y, 0.0), depth_m, int(world.get("master_seed", 0))))
+
+	return _ice_memo[key]
+
+
 # Once a second with the weather: the forced cover (--frozen-force) also drives the collider and the sounds; every 5 s the thaw for the moat.
-func _update_ice_feel_weather(ice_now: float, group: String, now: int) -> float:
+func _update_ice_feel_weather(ice_now: float, group: String, now: int, thaw_season: Dictionary = {}) -> float:
 	_read_frozen_switches()
 
 	if _frozen_force.x >= 0.0:
@@ -2935,7 +3069,8 @@ func _update_ice_feel_weather(ice_now: float, group: String, now: int) -> float:
 		if _frozen_force.x >= 0.0:
 			_ice_thaw = _frozen_force.z
 		else:
-			var season: Dictionary = IceScript.season(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M, int(world.get("master_seed", 0)))
+			var season: Dictionary = thaw_season if not thaw_season.is_empty() else IceScript.season(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M,
+				int(world.get("master_seed", 0)))
 			_ice_thaw = FrozenWater.thaw_of(float(season["cover"]), float(season["peak"]))
 
 		var moat: int = IceFeelScript.moat_cells(_ice_thaw)
@@ -2945,12 +3080,12 @@ func _update_ice_feel_weather(ice_now: float, group: String, now: int) -> float:
 
 		if moat != _ice_moat_logged:
 			_ice_moat_logged = moat
-			print("ice feel: moat %d cell%s (thaw %.2f)" % [moat, "" if moat == 1 else "s", _ice_thaw])
+			FreezeWatchScript.printer.line("ice feel: moat %d cell%s (thaw %.2f)" % [moat, "" if moat == 1 else "s", _ice_thaw])
 
 	var band: int = IceFeelScript.band_of(ice_now)
 
 	if band != _ice_feel_band:
-		print(IceFeelScript.log_line(band, "band now", "", 1.0, INF))
+		FreezeWatchScript.printer.line(IceFeelScript.log_line(band, "band now", "", 1.0, INF))
 
 	_ice_feel_cover = ice_now
 	_ice_feel_band = band
@@ -3011,7 +3146,7 @@ func _update_spring_steam() -> void:
 
 	if steaming != _steam_logged:
 		_steam_logged = steaming
-		print("ice feel: spring steam %s (strength %.2f, air %.1f C, %d mouths known)" % ["on" if steaming else "off", _spring_steam.strength, air, mouths.size()])
+		FreezeWatchScript.printer.line("ice feel: spring steam %s (strength %.2f, air %.1f C, %d mouths known)" % ["on" if steaming else "off", _spring_steam.strength, air, mouths.size()])
 
 
 func _warmth_cfg() -> Dictionary:
@@ -3067,7 +3202,7 @@ func _ice_feel_shock(water: Dictionary, delta: float) -> void:
 		if sound != null and sound.slots != null:
 			sound.slots.play("respawn_gasp", body.global_position + Vector3(0.0, 1.5, 0.0))
 
-		print(IceFeelScript.log_line(_ice_feel_band, "cold shock, water %.1f C" % IceFeelScript.water_c(air, _warmth_cfg()), "respawn_gasp", IceFeelScript.SHOCK_SWIM, INF))
+		FreezeWatchScript.printer.line(IceFeelScript.log_line(_ice_feel_band, "cold shock, water %.1f C" % IceFeelScript.water_c(air, _warmth_cfg()), "respawn_gasp", IceFeelScript.SHOCK_SWIM, INF))
 
 
 # After a footstep: skim or film broken under the wader leaves a patch in the look; the plunge jolts the eye.
@@ -3084,7 +3219,7 @@ func _ice_feel_after_step() -> void:
 
 	if event == "plunge":
 		feel.strike(1.0 if randf() < 0.5 else -1.0, IceFeelScript.PLUNGE_DIP_M / 0.08)
-		print(IceFeelScript.log_line(_ice_feel_band, "plunge", sound.ice.last, IceFeelScript.wade_mult(_ice_feel_band), INF))
+		FreezeWatchScript.printer.line(IceFeelScript.log_line(_ice_feel_band, "plunge", sound.ice.last, IceFeelScript.wade_mult(_ice_feel_band), INF))
 
 
 func _update_frozen_water(group: String, now: int) -> void:
@@ -3097,7 +3232,8 @@ func _update_frozen_water(group: String, now: int) -> void:
 	_read_frozen_switches()
 
 	var snow: float = sound.weather.ground_snow if sound != null and sound.weather != null else 0.0
-	var look: Vector4 = _frozen_force if _frozen_force.x >= 0.0 else FrozenWater.look(game_clock.seconds, group, maxf(_anchor.y, 0.0), seed_value, snow)
+	var look: Vector4 = _frozen_force if _frozen_force.x >= 0.0 else FrozenWater.look_from(_ice_season(group, FrozenWater.OPEN_DEPTH_M),
+		float(_ice_season(group, FrozenWater.SHORE_DEPTH_M)["cover"]), snow)
 	var pools: Array = []
 
 	if _cave_streams != null:
@@ -4018,7 +4154,7 @@ func _run_ground_watchdog() -> void:
 func _join_log(text: String) -> void:
 	var line: String = "%s [+%.1f s] %s" % [Time.get_datetime_string_from_system(), float(Time.get_ticks_msec() - connected_msec) * 0.001, text]
 	_telemetry.event(line)
-	print("Terrain client: " + line)
+	FreezeWatchScript.printer.line("Terrain client: " + line)   # off the main thread (D-LAG-1); the lanes read these lines from the log afterwards
 
 
 # Diagnostics for the join line: does a ray straight down from the player find any collision (the thing "waiting for ground" waits for)?
@@ -5688,7 +5824,7 @@ func _log_frame(delta: float) -> void:
 		return
 
 	if int(_frame_log["slow"]) > 0 or float(_frame_log["sum"]) / float(_frame_log["n"]) > 25.0:
-		print("client frames: avg %.1f ms, worst %.0f ms, %d over 50 ms in %.0f s at %s" % [float(_frame_log["sum"]) / float(_frame_log["n"]), float(_frame_log["worst"]), int(_frame_log["slow"]), float(_frame_log["t"]), str(body.global_position) if body != null else "?"])
+		FreezeWatchScript.printer.line("client frames: avg %.1f ms, worst %.0f ms, %d over 50 ms in %.0f s at %s" % [float(_frame_log["sum"]) / float(_frame_log["n"]), float(_frame_log["worst"]), int(_frame_log["slow"]), float(_frame_log["t"]), str(body.global_position) if body != null else "?"])
 
 	_frame_log = {"t": 0.0, "n": 0, "sum": 0.0, "worst": 0.0, "slow": 0}
 
@@ -5906,6 +6042,10 @@ func _process(delta: float) -> void:
 	# right now, not the extra ground around it (it is all thrown away when the bake ends).
 	stream.only_urgent = _bake != null and _bake.running
 	link.pump()
+
+	if link.take_lost_line():   # what the lost line carried and never answered goes again over the game connection, now
+		FreezeWatchScript.printer.line("Terrain client: asked again over the game connection for %d blocks the block line had not delivered" % stream.ask_again_waiting())
+
 	var wanted: Array = [PackedInt32Array(), 0] if _building_paused else stream.take_requests()
 
 	if not wanted[0].is_empty() and not link.send_request(wanted[0], wanted[1]):
@@ -5960,6 +6100,9 @@ func _process(delta: float) -> void:
 		var ta: int = Probe.start()
 		flora.apply_built()
 		Probe.stop("flora apply", ta)
+
+	if body != null and items != null and trail_signs != null:
+		trail_signs.update(body.global_position, int(items.skill_level_of("tracking")), _world_loading())   # at most twice a second, never while loading
 
 	if (not flying or grass_while_flying) and body != null:
 		var tg: int = Probe.start()
@@ -7576,6 +7719,18 @@ func wind_line(state: Dictionary) -> String:
 		float(wind_here.get("lee", 0.0)), float(wind_here.get("canopy", 0.0))]
 
 
+# Water within m of a spot (a deer trail's prints show where it crosses wet ground, stage 2d): the spot and four round it.
+func _wet_near(x: float, z: float, m: float) -> bool:
+	if flora == null:
+		return false
+
+	for d in [Vector2.ZERO, Vector2(m, 0.0), Vector2(-m, 0.0), Vector2(0.0, m), Vector2(0.0, -m)]:
+		if not is_nan(float(flora.water_surface_at(x + d.x, z + d.y))):
+			return true
+
+	return false
+
+
 func _ground_below(p: Vector3) -> float:
 	var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(p + Vector3(0.0, 2.0, 0.0), p + Vector3(0.0, -200.0, 0.0))
 	query.exclude = [body.get_rid()]
@@ -7662,12 +7817,14 @@ func _finish_cache_task() -> void:
 func _exit_tree() -> void:
 	_telemetry.event("EXIT: game closed (exit_tree)")
 	_freeze_watch.stop()
+	FreezeWatchScript.printer.drain()   # the diagnostic lines still queued reach the log before the game closes
 	DynastyArmsScript.settle()   # an arms prebuild still running at a quick quit: let it finish rather than hang the quit
 
 	if crash_report != null:
 		crash_report.mark_clean()
 
 	_finish_cache_task()
+	_finish_ice_task()
 	_drain_incoming()
 	if stream != null:
 		stream.close()

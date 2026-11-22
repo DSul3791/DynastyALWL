@@ -12,6 +12,7 @@ const Network := preload("res://src/shared/water_network.gd")
 const PipeRules := preload("res://src/shared/pipe_rules.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const LookTable := preload("res://src/client/look_table.gd")
+const Placement := preload("res://src/shared/placement_rules.gd")
 
 const DIR := "user://test_pipe_runs"
 const FOOT := Vector3(0.0, 0.05, 0.0)   # a barrel's bottom point over its spot (structures.json wooden_barrel level_port)
@@ -228,6 +229,47 @@ func _init() -> void:
 	level_now()
 	check(float(items._water.pieces[lone].get("litres_max", 0.0)) == 60.0, "emptied, it holds 60 L again (Dave 21 Nov 2026)")
 
+	# --- River barrel (Dave 20 Nov 2026, PV-13): a barrel stood in a brook or river fills fast with river water ---
+	var dry_barrel: int = barrel(140.0, 140.0)
+	check(float(items._water.pieces[dry_barrel].get("river_lpm", 0.0)) == 0.0, "a barrel just set down on dry ground takes no river water, even before the next look")
+	var stream_kind: Array = ["river"]
+	var stream_depth: Array = [0.4]
+	items.water_kind_at = func(x, z): return {"kind": stream_kind[0], "depth": stream_depth[0]} if Vector2(x - 120.0, z - 120.0).length() < 1.0 else {"kind": "", "depth": 0.0}   # only the lone barrel stands in it
+	items.water_depth_at = func(pos): return stream_depth[0] if Vector2((pos as Vector3).x - 120.0, (pos as Vector3).z - 120.0).length() < 1.0 else 0.0
+	level_now()
+	check(absf(float(items._water.pieces[lone].get("river_lpm", 0.0)) - 20.0) < 0.01, "a barrel in a river 0.4 m deep takes 20 L a minute (%.2f)" % float(items._water.pieces[lone].get("river_lpm", 0.0)))
+	stream_kind[0] = "brook"
+	level_now()
+	check(absf(float(items._water.pieces[lone].get("river_lpm", 0.0)) - 20.0) < 0.01, "and in a brook")
+	stream_kind[0] = "lake"
+	level_now()
+	check(float(items._water.pieces[lone].get("river_lpm", -1.0)) == 0.0, "but none in a lake (still water)")
+	stream_kind[0] = "river"
+	stream_depth[0] = 0.1
+	level_now()
+	check(float(items._water.pieces[lone].get("river_lpm", -1.0)) == 0.0, "nor in water too shallow to reach it (0.1 m)")
+	stream_depth[0] = 0.4
+	box.add(n("stick"), 1)
+	level_now()
+	check(float(items._water.pieces[lone].get("river_lpm", -1.0)) == 0.0, "nor while it holds goods")
+	box.remove(n("stick"), 1)
+	level_now()
+	var river_net = Network.new()
+	var river_tank: Dictionary = items.water_piece(items._structures["wooden_barrel"], Vector3(0.0, 10.0, 0.0), 0.0)
+	river_tank["river_lpm"] = 20.0
+	river_net.add(1, river_tank)
+	river_net.solve(0.0)
+	check(absf(river_net.litres(1, 90.0) - 30.0) < 0.1 and river_net.quality(1) == "river", "the network fills it at that rate with river water (%.1f L after 90 s, %s)" % [river_net.litres(1, 90.0), river_net.quality(1)])
+	stream_depth[0] = 0.0
+	level_now()
+	items.water_kind_at = Callable()
+	items.water_depth_at = Callable()
+	level_now()
+	var barrel_cfg: Dictionary = items._structures_cfg
+	check(not Placement.over_water(barrel_cfg, "wooden_barrel_kit", Vector3.ZERO, 0.0, func(_x, _z): return 0.5), "a barrel may be set down in water 0.5 m deep")
+	check(Placement.over_water(barrel_cfg, "wooden_barrel_kit", Vector3.ZERO, 0.0, func(_x, _z): return 0.7), "but not in water deeper than 0.6 m")
+	check(Placement.over_water(barrel_cfg, "chest_kit", Vector3.ZERO, 0.0, func(_x, _z): return 0.5), "other pieces still cannot stand in water")
+
 	net_ok("rain")
 
 	# --- A junction: a run started in the middle of another ---
@@ -261,6 +303,37 @@ func _init() -> void:
 	var held: float = litres(a) + litres(b)
 	items._use_struct(1, items.inventory_of(1), tap)
 	check(float(v["wet"]) > 0.0 and absf(held - litres(a) - litres(b) - float(v["wet"]) / 1000.0) < 0.01, "E takes a drink: the barrels give what the player drank (%.0f ml; %.2f -> %.2f L)" % [float(v["wet"]), held, litres(a) + litres(b)])
+	# --- Piped water at a cooking station (PV-14, coordinator pick 22 Nov 2026): a Food preparation table with the tap within 2 m draws from the barrels ---
+	var water_n: int = n("water")
+	var kitchen: int = items.dev_place("food_preparation_table@103,103.5,0")
+	items._items[kitchen]["pos"] = Vector3(103.0, 10.0, 103.5)
+	items._items[kitchen]["struct"]["owner"] = str(items._peer_key.get(1, ""))   # the player's own table, so its store is in their craft stock
+	var kitchen_box = items._chests.get(int(items._items[kitchen]["struct"].get("uid", 0)))
+
+	if kitchen_box != null:
+		kitchen_box.add(n("stick"), 3)
+	var kitchen_stock: Dictionary = items._stock_of(1)
+	var pack_ml: int = items.inventory_of(1).liquid_ml()
+	var piped_before: float = litres(a) + litres(b)
+	check((kitchen_stock["tanks"] as Array).size() == 1 and items._stock_have(items.inventory_of(1), water_n, kitchen_stock) >= 2, "a cooking station by the tap counts the barrels' water as the recipe's water (%d units)" % items._stock_have(items.inventory_of(1), water_n, kitchen_stock))
+	var piped_took: int = items._stock_take(items.inventory_of(1), water_n, 2, kitchen_stock, [])
+	check(piped_took == 2 and pack_ml == 0 and absf(piped_before - litres(a) - litres(b) - 1.0) < 0.01, "taking 2 units drops the barrels by 1 L (%.2f -> %.2f L)" % [piped_before, litres(a) + litres(b)])
+	check(kitchen_box != null and items._stock_have(items.inventory_of(1), n("stick"), items._stock_of(1)) >= 3, "the station's own store still counts in the craft stock")
+	var refund_tank: int = int((kitchen_stock["tanks"] as Array)[0]) if not (kitchen_stock["tanks"] as Array).is_empty() else -1
+	var before_refund: float = litres(a) + litres(b)
+	items._pour_back(1, 500, {"liquid_ml": 500, "tank": refund_tank})
+	check(refund_tank >= 0 and absf(litres(a) + litres(b) - before_refund - 0.5) < 0.01, "a cancelled craft pours its tap water back into the tank (%.2f -> %.2f L)" % [before_refund, litres(a) + litres(b)])
+	items._items[kitchen]["pos"] = Vector3(103.0, 10.0, 105.5)   # still within the player's reach, 2.7 m from the tap
+	check((items._stock_of(1)["tanks"] as Array).is_empty(), "a station more than 2 m from any tap or pipe end draws nothing")
+	items._items[kitchen]["pos"] = Vector3(103.0, 10.0, 103.5)
+	items._items[kitchen]["struct"]["kind"] = "campfire_pot"
+	check((items._stock_of(1)["tanks"] as Array).is_empty(), "nor does a campfire pot by the tap")
+	if kitchen_box != null:
+		kitchen_box.remove(n("stick"), 3)
+
+	items._items.erase(kitchen)
+	check(items._structures["oven"].get("piped_water", false) and items._structures["cooking_pot"].get("piped_water", false) and not items._structures["campfire_pot"].get("piped_water", false), "the plumbed stations are marked in the data")
+
 	var keep_a: float = litres(a)
 	var keep_b: float = litres(b)
 	items._water.set_litres(a, 0.0)

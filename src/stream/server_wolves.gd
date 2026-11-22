@@ -312,9 +312,25 @@ func _think(pack: Dictionary, dt: float, infos: Array) -> void:
 		"feed":
 			_feed(pack, members, c, dt, infos)
 
+	var now_ms: int = Time.get_ticks_msec()
+
 	for m in members:
 		var moved: bool = bool(m.get("moving", false))
+
+		pace(m, now_ms)
 		m["state"] = ATTACK if pack["phase"] == "rush" or (pack["phase"] == "den_guard" and bool(pack.get("guard_rush", false))) else (STALK if pack["phase"] in ["stalk", "den_guard"] else (int(m["play_kind"]) if float(m.get("play", 0.0)) > 0.0 else (1 if moved else 0)))
+
+
+# The pace stamps the other animals get from their own step (server_animals tick): when the pack brain moved this wolf (moved_ms), and the
+# first think it stood (stood_ms), so rows_near sends the server's move times and the client draws a steady trot that stops dead.
+func pace(m: Dictionary, now_ms: int) -> void:
+	if m["pos"] != m.get("paced_pos"):
+		m["paced_pos"] = m["pos"]
+		m["moved_ms"] = now_ms
+		m["paced_moving"] = true
+	elif bool(m.get("paced_moving", false)):
+		m["paced_moving"] = false
+		m["stood_ms"] = now_ms
 
 
 # A player's dog within reach comes first (dog_companion_design.md 11, MikeW's DOG_REACTIONS.md: wolves go for the dog); otherwise the nearest deer or moose.

@@ -85,6 +85,10 @@ func _slowest_phases() -> String:
 	return " (slow steps ms: %s)" % ", ".join(parts) if not parts.is_empty() else ""
 
 
+# Optional, called on the watchdog thread (so it must be safe from any thread); its text ends each WATCHDOG line.
+var watch_extra: Callable = Callable()
+
+
 # A thread that writes a line each second while the main thread has not run for 3 s, naming the step it is stuck in.
 func start_watchdog() -> void:
 	_watchdog = Thread.new()
@@ -106,7 +110,8 @@ func _watch() -> void:
 		var silent: int = Time.get_ticks_msec() - _last_tick_msec
 
 		if _last_tick_msec > 0 and silent > 3000:
-			event("WATCHDOG: the main thread has been silent for %d s, in step '%s' for %d s" % [int(silent / 1000.0), _phase, int((Time.get_ticks_msec() - _phase_since_msec) / 1000.0)])
+			event("WATCHDOG: the main thread has been silent for %d s, in step '%s' for %d s%s" % [int(silent / 1000.0), _phase, int((Time.get_ticks_msec() - _phase_since_msec) / 1000.0),
+				"; " + str(watch_extra.call()) if watch_extra.is_valid() else ""])
 
 
 # Statistics of one ENet peer: round trip, packet loss, state.

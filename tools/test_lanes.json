@@ -18,6 +18,9 @@
 	"item_group": {
 		"checks": ["validate_items"],
 		"paths": ["data/items/**", "src/shared/item_table.gd", "src/shared/recipe_table.gd"],
+		"skip_paths": ["data/items/looks.json", "data/items/look_placeholders.json", "data/items/descriptions_voice.json", "data/items/encyclopedia.json", "data/items/gathered_text.json", "data/items/design_names.json", "data/items/*.md"],
+		"skip_note": "Testing slim-down (22 Nov 2026): client-only looks and text-only files never reach the server rules the group tests; the tests that load them directly, the look path rule (warnings, look names, pictures) and the dev sweep still cover them. A data JSON change made only of rows (items, recipes, structures ...) selects the tests naming a changed id (max_ids rows at most), as a hub's names do; anything else, --paths or --wide takes the whole group.",
+		"max_ids": 25,
 		"name_patterns": ["items", "inventory", "craft", "recipe", "blueprint", "structure", "bed", "eat", "fish", "bow", "traps", "carcass", "hunt", "vitals", "shore", "dishes", "sickness", "spoilage", "stations", "trade", "worn", "offhand", "pick_axes", "thatch", "campfire", "hammer", "auto_", "first_hour", "new_player", "coin", "tool_looks", "showroom", "forge", "ladder", "tier", "persistence", "save_compat", "placed_clearing", "placement"]
 	},
 	"path_rules": [
@@ -46,11 +49,26 @@
 			"why": "sound slots read client sources as text",
 			"paths": ["data/sound/**", "src/client/slot_sounds.gd", "src/client/placed_sounds.gd", "src/client/animal_view.gd", "src/client/sound_test_menu.gd", "scenes/terrain_client/terrain_client.gd"],
 			"tests": ["test_slot_sounds", "test_batch3_slots"]
+		}
+	],
+	"hub_min_tests": 100,
+	"name_max_tests": 40,
+	"hubs_note": "A hub is a file that 100 or more tests load directly (--check-lanes lists any hub missing here). In a change plan a hub edit adds its core tests plus every test whose own text names a function, constant or signal the diff changed in the hub (a private helper counts as its callers; a name more than name_max_tests tests use, such as setup, selects a fixed spread of name_max_tests of them; an added, deleted or renamed hub selects every fast test); the tests that only reach the hub through other code wait for the dev sweep (wide plan). Rule: docs/ai-team/TEST_GATES.md, Test plans for dev.",
+	"hubs": [
+		{
+			"why": "network protocol and constants (hub)",
+			"paths": ["src/stream/terrain_net.gd"],
+			"tests": ["test_net_look", "test_slot_sounds", "test_shore_net", "test_join_address", "test_server_auth", "test_play_server", "test_heartbeat", "test_client_wait", "test_stream_paused_timeout", "test_view_members", "test_fine_water_send", "test_water_notify", "test_worn_sync", "test_server_list", "test_server_pick", "test_self_timeout", "test_idle_timeout"]
 		},
 		{
-			"why": "protocol and net constants are used everywhere",
-			"paths": ["src/stream/terrain_net.gd", "PROTOCOL.md"],
-			"tests": ["@all_fast"]
+			"why": "server item, ground and storage authority (hub)",
+			"paths": ["src/stream/server_items.gd"],
+			"tests": ["test_item_instances", "test_auto_pickup", "test_storage_locks", "test_station_storage", "test_station_use", "test_craft_finish", "test_craft_stock", "test_bulk_ops", "test_world_items_cost", "test_persistence_drills", "test_ground_ops", "test_trade", "test_pile_logs", "test_economy_guard"]
+		},
+		{
+			"why": "item table (hub; the item group also runs)",
+			"paths": ["src/shared/item_table.gd"],
+			"tests": ["test_item_instances", "test_item_renames", "test_ingredient_groups", "test_item_slot"]
 		}
 	],
 	"extra_inputs": [
@@ -66,7 +84,7 @@
 			"pin": true
 		}
 	],
-	"shared_all": ["project.godot", "tools/warning_baseline.txt"],
+	"shared_all": ["project.godot"],
 	"bake_regex": "^(src/worldgen/(tile|plan|sketch|tables|matrix|settings)/|src/worldgen/runtime/(terrain_layout|terrain_generator|flora_placer|tile_terrain_data)\\.gd|worlds/base_world/)|(world_elevation|river_network)\\.gd$",
 	"docs_globs": ["docs/**", "tech/**", "design/**", "proposed_removals/**", "art/**/*.md", "*.md", "**/*.md", "*.txt", "**/*.txt"],
 	"known_prefixes": ["src/", "scenes/", "data/", "tools/", "assets/", "addons/", "worlds/", "art/", ".github/", "deploy/"],

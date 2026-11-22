@@ -26,6 +26,7 @@ const SNEAK := 13               # a thief creeping up on food, 14 running off wi
 const HIDDEN := 5               # in its burrow: never sent, never hunted
 const HIT_ZONES := ["body", "head", "chest", "hip", "leg"]   # animal_hit zone codes, the order of MikeW's animal_view HIT_ZONES (docs/design/hunt_feedback_server.md 3)
 const HUNCH := 20               # wire only: a grazer standing out the rain, still, head low (animals_in_weather_design.md 6; GRAZE on the server)
+const LIE := 19                 # wire only: a grazer bedded down outside its active hours, lying (the companions' LIE; protocol 148, docs/design/ANIMAL_RESTING.md)
 const DRINK := 21               # wire only: a deer or stock animal at its drinking place, head down at the water (animals_at_water_server.md; GRAZE on the server)
 const STAGGER := 4              # a quarter of the animals are looked at each tick
 
@@ -60,6 +61,8 @@ var died: Callable                 # (species, position, source peer) when an an
 var send_hit: Callable             # (peer, animal id, zone, at): a hit, for every player within hit_send_m (hunt_feedback_server.md 3)
 var ticks_run: int = 0
 var trails = null                  # game trails (server_trails.gd): every step into a new cell wears the grass a little
+var snare_pass: Callable            # (id, species, from, to): a step by an animal near a player, for the set traps it comes up to (server_traps.gd on_pass)
+var ranges = null                  # animal places and their trails (server_ranges.gd): warrens, deer beds and feeding grounds; unset: no daily trips
 var flocks = null                  # bird flocks on water (server_flocks.gd)
 var water_level: Callable          # (x, z) -> water surface height, NAN on dry land (flocks float on it)
 var fresh_water_m: Callable        # (x, z) -> distance (m) to perennial fresh water from the baked tile (Stage E), NAN when the tile has none
@@ -68,6 +71,8 @@ var drop_loot: Callable            # (item number, count, position) when a thief
 var big_game = null                # defending big game (moose; server_big_game.gd): warn, dodgeable charge, recover
 var biome_at: Callable             # (x, z) -> biome name of the ground there ("" unknown); species rows may list "biomes" weights (0 or missing = never)
 var hour_now: Callable             # () -> hour of the game day 0..24 (the server's clock); species rows may list "active" {day, dusk, night} spawn chances 0..1
+var sunrise_now: Callable          # () -> today's sunrise hour (weather.gd sunrise_hour, the sun the sky draws); unset keeps the fixed hours of period_of
+var _sun: Array = [-1, 6.0]        # [msec read, sunrise hour]: the sunrise moves a few minutes a game day, read again every 5 s
 var air_at: Callable               # (Vector3) -> Weather.air_c at that point: its zone's air at that height, this hour (docs/design/one_temperature.md); unset: temp_c less the lapse
 var no_spawn: Callable                # (x, z) -> bool: true within no_spawn_m of something a player put down (server_items.spawn_blocked; Dave 17 Nov 2026): no animal is made there
 var lair_guarded: Callable            # (x, z, radius) -> bool: true when a burning placed fire lies within radius of a lair's mouth (lair.guard_m), so no new group comes (Dave 8 Nov 2026, decision 13)
@@ -787,6 +792,11 @@ func lure_to(id: int, point: Vector3) -> bool:
 	a["home"] = point
 	a["target"] = point
 	a["state"] = HOP
+	a.erase("trip")
+
+	if a.has("place"):
+		a["lured"] = wants_out(a)   # it stays at the snare until its clock turns (then it goes home or out as usual)
+
 	return true
 
 
@@ -961,6 +971,10 @@ func tick(delta: float) -> void:
 		if trails != null and int(a.get("state", 0)) != HIDDEN and not bool(a.get("in_cave", false)) and not a.has("fly") and not bool(a.get("perched", false)):
 			trails.note(id, str(a["sp"]), a["pos"])
 
+		# Last, as it may take the animal out of the world: a set trap it walked up to (Dave 22 Nov 2026: traps cost nothing until an animal comes by).
+		if snare_pass.is_valid() and animals.has(id) and a["pos"] != was and int(a.get("state", 0)) != HIDDEN and not bool(a.get("in_cave", false)) and not a.has("fly") and not bool(a.get("perched", false)):
+			snare_pass.call(id, str(a["sp"]), was, a["pos"])
+
 	for id in gone:
 		if trails != null:
 			trails.forget(id)
@@ -1025,6 +1039,16 @@ func _curious(a: Dictionary, def: Dictionary, seen_d: float) -> bool:
 		return seen_d <= float(_temper_row(a).get("curious_m", 25.0))
 
 	return def.has("tame") and float(a.get("tame", 0.0)) >= float(def["tame"].get("curious_min", 0.7)) and seen_d <= float(def["tame"].get("curious_m", 45.0))
+
+
+# Whether a hunter that may attack (its temperament; never a passive or friendly one) sees a player inside hunter.chase_m running away
+# from it at senses.run_ms or faster (Dave 21 Nov 2026, docs/design/ANIMAL_BEHAVIOUR.md: a big cat or a bear chases what runs).
+func _chases_runner(a: Dictionary, def: Dictionary, seen_p: Vector3, seen_d: float) -> bool:
+	if seen_d > float(def["hunter"].get("chase_m", 0.0)) or not may_attack(a):
+		return false
+
+	var away: Vector2 = Vector2(seen_p.x - a["pos"].x, seen_p.z - a["pos"].z).normalized()
+	return player_velocity_at(seen_p).dot(away) >= float(cfg.get("senses", {}).get("run_ms", 5.0))
 
 
 # How far short of a player a curious animal stops.
@@ -1139,6 +1163,22 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		if big_game.warn(a, seen_p, float(def["defend"].get("threat_warn_s", 0.8))):
 			return
 
+	# Hunters (docs/design/ANIMAL_BEHAVIOUR.md; Dave 21 Nov 2026: "Agressive animals should be aggressive"): a predator that may attack
+	# gives chase to a player running away from it inside hunter.chase_m (running "may trigger an instinct to chase", Panthera): a charge
+	# at once, up to hunter.run_m. One born aggressive walks in on a player it has noticed until the threat range above warns and charges;
+	# it breaks off while it cools down after a charge. Never into a fire's light, never out of its hours.
+	var stalk_mps: float = -1.0
+
+	if def.has("hunter") and def.has("defend") and seen_p != Vector3.INF and a["state"] != FLEE and not resting(def) and _fire_guard(seen_p) == Vector3.INF:
+		if _chases_runner(a, def, seen_p, seen_d) and big_game.chase(a, seen_p, float(def["hunter"].get("run_m", 30.0))):
+			return
+
+		if bool(_temper_row(a).get("stalks", false)) and float(a.get("cool", 0.0)) <= 0.0 and seen_d <= float(def.get("alert_m", 40.0)) and seen_d > _threat_m(a, def):
+			var gap: Vector3 = Vector3(seen_p.x - a["pos"].x, 0.0, seen_p.z - a["pos"].z)
+			a["target"] = a["pos"] + gap.normalized() * maxf(gap.length() - _threat_m(a, def) * 0.5, 0.0)
+			a["state"] = HOP
+			stalk_mps = float(def["hunter"].get("stalk_mps", 1.0))
+
 	# A protective animal (defending young) does not bolt: it warns a player who comes too close, and only then charges.
 	# With its young modelled (traits on) it runs sooner instead, and fights only for them (above).
 	var stands: bool = def.has("defend") and bool(a.get("protective", false)) and a["state"] != FLEE and not (traits and def.has("young"))
@@ -1185,11 +1225,14 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		a["timer"] -= dt
 		_weather_graze(a, def, dt)
 
-		if a["herd"] != 0 and float(def.get("herd_pull_m", 0.0)) > 0.0:
+		if a["herd"] != 0 and float(def.get("herd_pull_m", 0.0)) > 0.0 and not a.has("place"):   # a herd with a place keeps together at its spots
 			var centre: Vector3 = _herd_centre(a["herd"])
 
 			if centre != Vector3.INF and not a.has("drink_home") and a["home"].distance_to(centre) > float(def.get("herd_pull_m", 12.0)) * fog_herd_x(def):
 				a["home"] = a["home"].lerp(centre, 0.5)
+
+		if a["timer"] <= 0.0 and routine_trip(a):
+			return   # its clock says it is time to go home or out: it walks the trail
 
 		if a["timer"] <= 0.0 and resting(def):
 			a["timer"] = _graze_time(def) * float(cfg.get("rest", {}).get("graze_x", 3.0))   # out of its hours it beds down: stays put, longer
@@ -1239,6 +1282,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 	var speed: float = float(def.get("walk_mps", 1.5))
 
+	if stalk_mps > 0.0:
+		speed = stalk_mps   # a hunter walking in on a player, low and steady
+
 	if a["state"] == FLEE:
 		# Sprint for burst_s seconds, then trot: an animal cannot outrun a chase for ever.
 		a["burst"] += dt
@@ -1259,6 +1305,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		if in_water(def, a["pos"]):
 			speed = float(def["water"].get("swim_mps", speed)) * (1.0 if a["state"] == FLEE else 0.4)      # cruising slowly, bolting at full speed
 
+	if a["state"] == HOP and a.has("trip"):
+		_trip_ahead(a)   # on a trail: the next point before this one is reached, so it never stops between points
+
 	var r: Dictionary = walk_step(a["pos"], a["target"], speed, dt, ground_for, blocked_for, 0.4, a["heading"], crossing)
 
 	if r["moved"]:
@@ -1277,6 +1326,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 			a["pos"] = a["burrow"]
 			a["timer"] = rng.randf_range(float(hide[0]), float(hide[1]))   # luck-exempt: how long an animal stays in its burrow
 			return
+
+	if a["state"] == HOP and a.has("trip") and _trip_step(a, r):
+		return
 
 	if r["arrived"] or not r["moved"]:
 		if a["state"] == FLEE and near_d < float(def.get("safe_m", 35.0)):
@@ -1478,6 +1530,10 @@ func _top_up(players: Array, only: int) -> void:
 				spawn(sp, den_mouth.x, den_mouth.y)   # a species with a "den" row (the bear) takes its spawn spot, the mouth, as its den
 				continue
 
+			# A species with a daily clock is made at its places (a warren, a deer range) once the ground round the player is worked out.
+			if _place_spawn(sp, def, p, players, per_player - all_near):
+				continue
+
 			# A few candidate spots; the first the species can live on wins, a forest animal takes a spot under trees if one turns up.
 			var x: float = 0.0
 			var z: float = 0.0
@@ -1493,8 +1549,7 @@ func _top_up(players: Array, only: int) -> void:
 				var cz: float = p.z + sin(angle) * dist
 				var too_near: bool = false
 
-				for q in players:
-					too_near = too_near or Vector2(q.x - cx, q.z - cz).length() < (never if cfg.has("near_share") else maxf(never, float(cfg.get("spawn_min_m", 150.0)) * 0.9))
+				too_near = _near_any(cx, cz, players, never if cfg.has("near_share") else maxf(never, float(cfg.get("spawn_min_m", 150.0)) * 0.9))
 
 				too_near = too_near or no_spawn_at(cx, cz)
 
@@ -1528,7 +1583,7 @@ func _top_up(players: Array, only: int) -> void:
 				x = edge.x
 				z = edge.y
 
-				if no_spawn_at(x, z):
+				if no_spawn_at(x, z) or _near_any(x, z, players, never):   # the edge can be nearer a player than the spot was
 					continue
 
 			var herd: Array = def.get("herd", [])
@@ -1545,8 +1600,7 @@ func _top_up(players: Array, only: int) -> void:
 			for k in members:
 				var hx: float = x + rng.randf_range(-6.0, 6.0)   # luck-exempt: herd spread
 				var hz: float = z + rng.randf_range(-6.0, 6.0)   # luck-exempt: herd spread
-
-				if no_spawn_at(hx, hz):
+				if _near_any(hx, hz, players, never) or no_spawn_at(hx, hz):   # a member spread toward a player is never made inside never_within_m either
 					continue
 
 				var id: int = spawn(sp, hx, hz)
@@ -1554,6 +1608,15 @@ func _top_up(players: Array, only: int) -> void:
 				if id != 0:
 					animals[id]["herd"] = hid
 					_herds[hid].append(id)
+
+
+# Whether any player stands within `m` of (x, z) on the ground plan.
+func _near_any(x: float, z: float, players: Array, m: float) -> bool:
+	for q in players:
+		if Vector2(q.x - x, q.z - z).length() < m:
+			return true
+
+	return false
 
 
 # The mouth of a cave the species dens in where a new one may be made now (Vector2(INF, INF) for none): within spawn_max_m of the player and no
@@ -1728,6 +1791,37 @@ static func period_of(hour: float) -> String:
 	return "night"
 
 
+# Today's sunrise hour (6 without a sun); sunset is as far after noon as sunrise is before it.
+func sunrise_hour() -> float:
+	if not sunrise_now.is_valid():
+		return 6.0
+
+	if _sun[0] < 0 or Time.get_ticks_msec() - int(_sun[0]) > 5000:
+		_sun = [Time.get_ticks_msec(), float(sunrise_now.call())]
+
+	return float(_sun[1])
+
+
+# An animal's period on the real sun (stage 2a, D-TRAP-3; docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md): dawn from an hour before
+# sunrise to two after, dusk from sunset to three after, day between, night the rest. At the equinox (sunrise 6) these are period_of's
+# fixed hours, so the "active" rows keep their meaning; in winter the deer's dusk comes at 17:00, in summer after 19:00. Bandits and
+# companions keep period_of. (Sunrise stays between about 4 and 8 at any row a player lives on, so the windows never cross midnight.)
+func period_now(hour: float) -> String:
+	if not sunrise_now.is_valid():
+		return period_of(hour)
+
+	var rise: float = sunrise_hour()
+	var fall: float = 24.0 - rise
+
+	if hour >= rise + 2.0 and hour < fall:
+		return "day"
+
+	if (hour >= rise - 1.0 and hour < rise + 2.0) or (hour >= fall and hour < fall + 3.0):
+		return "dusk"
+
+	return "night"
+
+
 # The chance (0..1) that a top-up may spawn this species now: the row's "active" value for the current period, 1 without a clock or a row.
 func activity_chance(def: Dictionary) -> float:
 	if not def.has("active") or not hour_now.is_valid():
@@ -1736,14 +1830,36 @@ func activity_chance(def: Dictionary) -> float:
 	return clampf(float((def["active"] as Dictionary).get(fog_period(def, float(hour_now.call())), 1.0)) * weather_activity_x(def), 0.0, 1.0)
 
 
+# The same at a given game hour (a snare's time away, server_traps.gd check_away): the row's "active" value for that hour's period.
+func activity_at(def: Dictionary, hour: float) -> float:
+	if not def.has("active"):
+		return clampf(weather_activity_x(def), 0.0, 1.0)
+
+	return clampf(float((def["active"] as Dictionary).get(fog_period(def, hour), 1.0)) * weather_activity_x(def), 0.0, 1.0)
+
+
 # Resting (MikeW 2026-11-02, Dave's behaviour list): outside its active hours (its "active" chance for the period at or under rest.below)
 # an animal beds down where it is: it does not wander, and a player gets closer (rest.spook_share of spook_m) before it wakes and runs.
 # Before a storm (animals_in_weather_design.md 8) feeding animals skip their daytime rest.
 func resting(def: Dictionary) -> bool:
-	if _storm_ahead and _wx_on() and str(def.get("weather", "")) in ["bird", "small", "deer"] and hour_now.is_valid() and period_of(float(hour_now.call())) == "day":
+	if _feeding_before_storm(def):
 		return false
 
 	return def.has("active") and hour_now.is_valid() and activity_chance(def) <= float(cfg.get("rest", {}).get("below", 0.1))
+
+
+func _feeding_before_storm(def: Dictionary) -> bool:
+	return _storm_ahead and _wx_on() and str(def.get("weather", "")) in ["bird", "small", "deer"] and hour_now.is_valid() and period_now(float(hour_now.call())) == "day"
+
+
+# Lying down (docs/design/ANIMAL_RESTING.md, protocol 148): a resting animal lies; otherwise a standing grazer lies when its own fixed
+# draw (from its id) is at or over its active chance now, so a deer herd by day (0.4) is about 60% bedded and 40% feeding, and at dusk
+# (1.0) all are up. No new number: the "active" rows say how much of the time a species is up.
+func lies_down(a: Dictionary, def: Dictionary) -> bool:
+	if not def.has("active") or not hour_now.is_valid() or _feeding_before_storm(def):
+		return false
+
+	return resting(def) or fposmod(float(a["id"]) * 0.6180339, 1.0) >= activity_chance(def)
 
 
 # The weight (0..1+) of the biome at a spot for this species: 1 without a "biomes" row or a lookup, 0 for a biome the row does not list.
@@ -1939,6 +2055,14 @@ func _wire_state(a: Dictionary) -> int:
 	if a["state"] == GRAZE and (bool(a.get("hunch", false)) or bool(a.get("sheltered", false))):
 		return HUNCH
 
+	# Bedded down (lies_down: out of its hours, or its share of the herd at rest), an animal is drawn lying, not grazing (Dave 21 Nov 2026: "relaxing" first among the
+	# situations; protocol 148). Birds and flocks stay as they are: they perch or float.
+	if a["state"] == GRAZE and not a.has("fly") and not bool(a.get("perched", false)) and not a.has("companion_id"):
+		var def: Dictionary = species_def(str(a["sp"]))
+
+		if not def.has("flock") and not def.has("flight") and lies_down(a, def):
+			return LIE
+
 	return int(a["state"])
 
 
@@ -1982,6 +2106,8 @@ func _bolt(a: Dictionary, from: Vector3, def: Dictionary) -> void:
 	a["state"] = FLEE
 	a["burst"] = 0.0
 	a["alert"] = 0.0
+	a.erase("trip")
+	a.erase("lured")
 	a.erase("hunch")
 	a.erase("sheltered")
 	a["target"] = a["pos"] + _zig(away, def) * float(def.get("zig_leg_m", float(def.get("flee_run_m", 25.0))))
@@ -2501,12 +2627,13 @@ static func fog_ring_m(stalk_m: float, v: float, min_m: float) -> float:
 
 # Deer keep their dawn hours longer on a foggy morning (4.5): 08:00 to 08:00 + deer_late_h count as dusk while the fog's V is under deer_v_m.
 func fog_period(def: Dictionary, hour: float) -> String:
-	var period: String = period_of(hour)
+	var period: String = period_now(hour)
 
 	if period != "day" or not fog_on() or str(def.get("weather", "")) != "deer" or fog_v() >= float(_fog_cfg().get("deer_v_m", 1000.0)):
 		return period
 
-	return "dusk" if hour >= 8.0 and hour < 8.0 + float(_fog_cfg().get("deer_late_h", 1.5)) else period
+	var day_from: float = sunrise_hour() + 2.0   # 08:00 at the equinox
+	return "dusk" if hour >= day_from and hour < day_from + float(_fog_cfg().get("deer_late_h", 1.5)) else period
 
 
 # A deer's grazing hop in fog keeps to the wood edge (4.5): open ground with tree crowns within edge_m in one of four directions.
@@ -2571,7 +2698,7 @@ func _alarm_herd(a: Dictionary, def: Dictionary) -> void:
 		var span: Array = def.get("alarm_s", [0.2, 0.9])
 
 		for mate_id in _herds.get(a["herd"], []):
-			if mate_id != a["id"] and animals.has(mate_id) and animals[mate_id]["state"] != FLEE and animals[mate_id]["alarm"] < 0.0:
+			if mate_id != a["id"] and animals.has(mate_id) and animals[mate_id]["state"] != FLEE and animals[mate_id]["state"] != HIDDEN and animals[mate_id]["alarm"] < 0.0:
 				animals[mate_id]["alarm"] = rng.randf_range(float(span[0]), float(span[1]))   # luck-exempt: how fast a herd mate reacts
 
 	if def.has("alarm_group"):
@@ -2848,7 +2975,7 @@ func drink_on() -> bool:
 
 
 func _twilight() -> bool:
-	return hour_now.is_valid() and period_of(float(hour_now.call())) == "dusk"
+	return hour_now.is_valid() and period_now(float(hour_now.call())) == "dusk"
 
 
 # Fresh open water at a spot: a water surface over ground above the sea (salt water is never a drink, #719).
@@ -2937,6 +3064,244 @@ func _drink_done(a: Dictionary) -> void:
 
 	for key in ["drink_home", "drink_at", "drink_to", "drinking", "drink_legs", "drink_spring"]:
 		a.erase(key)
+
+
+# Daily trips (docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md; data/animals/ranges.json clock): an animal made at a place (a warren, a
+# deer range) has a home spot and an out spot and the trail between them. At its species' hours it walks the trail out (a rabbit to its
+# grazing, a deer to its feeding ground) and back home, point by point with the normal step, so it never slides or jumps. The daily
+# shares of lying and feeding at each spot stay the "active" rows'. In a herd group the leader's clock decides for all, so they go
+# together, one after another as each one's grazing pause ends (single file along the trail).
+func _clock(sp: String) -> Dictionary:
+	if ranges == null or not ranges.on():
+		return {}
+
+	return (ranges.cfg.get("clock", {}) as Dictionary).get(sp, {})
+
+
+# Whether the clock has this animal (or its herd group's leader) out now, on its own fixed share of jitter_h either side.
+func wants_out(a: Dictionary) -> bool:
+	var who: Dictionary = a
+
+	if a["herd"] != 0 and _groups_on():
+		var lead: int = _group_leader(a["herd"])
+
+		if lead != 0:
+			who = animals[lead]
+
+	var ck: Dictionary = _clock(str(who["sp"]))
+
+	if ck.is_empty() or not hour_now.is_valid():
+		return false
+
+	var hour: float = float(hour_now.call())
+	var shift: float = (fposmod(float(who["id"]) * 0.7548776, 1.0) - 0.5) * 2.0 * float(ck.get("jitter_h", 0.0))
+	var out_h: float = float(ck.get("out_hour", 18.0))
+	var home_h: float = float(ck.get("home_hour", 8.0))
+
+	if sunrise_now.is_valid() and ck.has("out_after_sunset_h") and ck.has("home_after_sunrise_h"):   # on the real sun (stage 2a)
+		out_h = 24.0 - sunrise_hour() + float(ck["out_after_sunset_h"])
+		home_h = sunrise_hour() + float(ck["home_after_sunrise_h"])
+
+	out_h = fposmod(out_h + shift, 24.0)
+	home_h = fposmod(home_h + shift, 24.0)
+
+	if out_h > home_h:
+		return hour >= out_h or hour < home_h
+
+	return hour >= out_h and hour < home_h
+
+
+# Starts the walk home or out when the clock asks and the animal is not already there: the trail from its point nearest the animal
+# to the spot, then a few metres off the end (its own spot there, so a group does not stand in one place). True when it set off.
+func routine_trip(a: Dictionary) -> bool:
+	if not a.has("place") or not hour_now.is_valid() or a.has("drink_home"):
+		return false   # a deer gone to the water finishes its drink first (its home comes back with it)
+
+	var out: bool = wants_out(a)
+
+	if a.has("lured"):
+		if bool(a["lured"]) == out:
+			return false   # still at the snare that drew it until its clock turns
+
+		a.erase("lured")
+
+	var pl: Dictionary = a["place"]
+
+	if out and pl.has("rounds"):   # a fox: tonight's round, a different one from last night's (it keeps no fixed trail, stage 2b)
+		var rounds: Array = pl["rounds"]
+		pl["route"] = rounds[posmod(_night() + int(hash(str(pl["id"]))), rounds.size())]   # by the night, so midnight does not send it on a second round
+
+	var route: PackedVector2Array = pl["route"]
+	var goal: Vector2 = route[route.size() - 1] if out else route[0]
+	var near_m: float = float((ranges.cfg.get("clock", {}) as Dictionary).get("near_m", 10.0))
+
+	if Vector2(a["home"].x, a["home"].z).distance_to(goal) <= near_m:
+		return false
+
+	var at: Vector2 = Vector2(a["pos"].x, a["pos"].z)
+	var nearest: int = 0
+	var best: float = INF
+
+	for i in route.size():
+		var d: float = at.distance_squared_to(route[i])
+
+		if d < best:
+			best = d
+			nearest = i
+
+	var trip: PackedVector2Array = PackedVector2Array()
+
+	if out:
+		for i in range(nearest, route.size()):
+			trip.append(route[i])
+	else:
+		for i in range(nearest, -1, -1):
+			trip.append(route[i])
+
+	var spread: float = float(species_def(str(a["sp"])).get("group_spacing_m", 2.0)) * 1.5
+	var turn: float = fposmod(float(a["id"]) * 2.39996, TAU)
+	trip.append(goal + Vector2(cos(turn), sin(turn)) * spread * fposmod(float(a["id"]) * 0.381966, 1.0))
+	a["trip"] = trip
+	a["trip_i"] = 0
+	_trip_next(a)
+	return true
+
+
+func _trip_next(a: Dictionary) -> void:
+	var p: Vector2 = a["trip"][int(a["trip_i"])]
+	var y: float = float(ground_height.call(p.x, p.y)) if ground_height.is_valid() else a["pos"].y
+	a["target"] = Vector3(p.x, a["pos"].y if is_nan(y) else y, p.y)
+	a["trip_at"] = a["target"]
+	a["state"] = HOP
+
+
+# Within a metre of the trail point it is making for, it makes for the next one instead: the walk flows on along the trail without the
+# stop an arrival would make (Steering stands still the step it arrives).
+func _trip_ahead(a: Dictionary) -> void:
+	if a.get("trip_at", Vector3.INF) != a["target"]:
+		return
+
+	var trip: PackedVector2Array = a["trip"]
+
+	while int(a["trip_i"]) < trip.size() - 1 and Vector2(a["pos"].x - a["target"].x, a["pos"].z - a["target"].z).length() <= 1.0:
+		a["trip_i"] = int(a["trip_i"]) + 1
+		_trip_next(a)
+
+
+# A step of a trip ended: on to the next trail point, or home at the end (or where it is, when something stopped it). True while
+# the trip goes on. A target set by anything else (a lure, a stalk) ends the trip.
+func _trip_step(a: Dictionary, r: Dictionary) -> bool:
+	if a.get("trip_at", Vector3.INF) != a["target"]:
+		a.erase("trip")
+		return false
+
+	if r["arrived"]:
+		a["trip_i"] = int(a["trip_i"]) + 1
+
+		if int(a["trip_i"]) < (a["trip"] as PackedVector2Array).size():
+			_trip_next(a)
+			return true
+
+	elif r["moved"]:
+		return true
+
+	a.erase("trip")
+	a["home"] = a["pos"]   # there (or stopped by a wall or water on the way: it grazes here and tries again later)
+	return false
+
+
+# The game day (0 without a clock): which run a warren's or a range's group takes.
+func _day() -> int:
+	return int(floor(float(game_seconds.call()) / 86400.0)) if game_seconds.is_valid() else 0
+
+
+# The game night, turning at noon (0 without a clock): which round a fox walks, the same one from dusk to dawn across midnight.
+func _night() -> int:
+	return int(floor((float(game_seconds.call()) - 43200.0) / 86400.0)) if game_seconds.is_valid() else 0
+
+
+# Makes a group of a species with a daily clock at a free place near the player: at its home spot or out spot as its clock has it,
+# outside never_within_m of every player and off settled ground. True when the ground round the player is worked out (whether or not
+# a place was free), so the species is then only ever made at its places; false to let the old random spot do (no ranges, not ready).
+func _place_spawn(sp: String, def: Dictionary, p: Vector3, players: Array, room: int) -> bool:
+	if _clock(sp).is_empty() or not ranges.is_ready(ranges.block_of(p.x, p.z)):
+		return false
+
+	var never: float = float(cfg.get("never_within_m", 60.0))
+	var taken: Dictionary = {}
+
+	for id in animals:
+		if animals[id].has("place"):
+			taken[str(animals[id]["place"]["id"])] = true
+
+	var day: int = _day()
+
+	for place in ranges.places_near(sp, p, float(cfg.get("spawn_max_m", 250.0))):
+		var routes: Array = place["routes"]
+		var run: int = posmod((day if bool(place.get("drawn", true)) else _night()) + int(hash(str(place["id"]))), routes.size())   # a warren's group takes a different run each day, a fox tonight's round
+
+		if taken.has(str(place["id"])):
+			continue   # one group a place
+
+		var route: PackedVector2Array = routes[run]
+		var probe: Dictionary = {"id": _next_id, "sp": sp, "herd": 0}
+		var spot: Vector2 = route[route.size() - 1] if wants_out(probe) else route[0]
+		var clear: bool = not no_spawn_at(spot.x, spot.y) and not (blocked.is_valid() and bool(blocked.call(spot.x, spot.y)))
+
+		for q in players:
+			clear = clear and Vector2(q.x - spot.x, q.z - spot.y).length() >= never
+
+		# Out of sight as a rule (spawn_min_m), now and then nearer (near_share), as the random spots do.
+		if clear and Vector2(p.x - spot.x, p.z - spot.y).length() < float(cfg.get("spawn_min_m", 150.0)) and rng.randf() >= float(cfg.get("near_share", 0.0)):   # luck-exempt: where wildlife appears, no outcome for the player
+			continue
+
+		if not clear:
+			continue
+
+		var herd: Array = def.get("herd", [])
+		var members: int = clampi(rng.randi_range(int(herd[0]), int(herd[1])), 1, maxi(room, 1)) if not herd.is_empty() else 1   # luck-exempt: how many in a group
+		var hid: int = 0
+
+		if members > 1:
+			hid = _next_herd
+			_next_herd += 1
+			_herds[hid] = []
+
+		var warren: Vector2 = route[0]
+
+		for k in members:
+			var sx: float = spot.x + rng.randf_range(-3.0, 3.0)   # luck-exempt: where each of the group stands
+			var sz: float = spot.y + rng.randf_range(-3.0, 3.0)   # luck-exempt: as above
+
+			if no_spawn_at(sx, sz):
+				continue
+
+			var id: int = spawn(sp, sx, sz)
+
+			if id == 0:
+				continue
+
+			animals[id]["place"] = {"id": str(place["id"]), "route": route}
+
+			if not bool(place.get("drawn", true)):
+				animals[id]["place"]["rounds"] = routes   # a fox: one of its rounds each night
+
+			animals[id]["home"] = animals[id]["pos"]
+
+			if animals[id]["burrow"] != Vector3.INF:
+				var bx: float = warren.x + rng.randf_range(-2.0, 2.0)   # luck-exempt: which hole of the warren is its own
+				var bz: float = warren.y + rng.randf_range(-2.0, 2.0)   # luck-exempt: as above
+				var by: float = float(ground_height.call(bx, bz)) if ground_height.is_valid() else animals[id]["pos"].y
+				animals[id]["burrow"] = Vector3(bx, animals[id]["pos"].y if is_nan(by) else by, bz)
+
+			if hid != 0:
+				animals[id]["herd"] = hid
+				_herds[hid].append(id)
+
+		return true
+
+	return true
+
 
 
 # A grazing spell has ended: start, continue or end a walk to water (true when it set the next target or stand).

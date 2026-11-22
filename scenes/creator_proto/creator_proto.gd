@@ -248,7 +248,7 @@ func _build_about(body: VBoxContainer) -> void:
 	var models: Array = BodyModels.ids()
 
 	for id in models:
-		_body_pick.add_item(BodyModels.label(id))
+		_body_pick.add_item(BodyModels.choice(id))
 
 	_body_pick.select(models.find(_body_model))
 	_body_pick.item_selected.connect(func(index: int) -> void: _pick_body(str(models[index])))

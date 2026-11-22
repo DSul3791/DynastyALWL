@@ -21,7 +21,7 @@ const PIECES := {
 	"fortified_stairs": ["Fortified - Stairs", 1332, 322, 402, "engineered_stairs", [["concrete", 17], ["iron_band", 4]], 3],
 	"fortified_fence": ["Fortified - Fence", 1333, 323, 403, "engineered_fence", [["concrete", 9], ["iron_band", 2]], 3],
 	"engineered_fence": ["Engineered - Fence", 1334, 324, 404, "brick_fence", [["concrete", 7]], 1],
-	"engineered_gate": ["Engineered - Gate", 1335, 325, 405, "brick_gate", [["concrete", 4], ["lumber", 3], ["bronze_hinges", 2]], 1],
+	"engineered_gate": ["Engineered - Gate", 1335, 325, 405, "brick_gate", [["concrete", 4], ["lumber", 3], ["hinges", 2]], 1],
 }
 
 var failures: int = 0

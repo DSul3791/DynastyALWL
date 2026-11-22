@@ -30,7 +30,9 @@ func _init() -> void:
 	for n in range(12):
 		check(tasks.add(_slow_job, "test job"), "add() starts a task before finish()")
 
+	check(tasks.busy() > 0, "busy() counts the tasks not finished yet (%d)" % tasks.busy())
 	tasks.finish()
+	check(tasks.busy() == 0, "and none after finish()")
 	check(done == 12, "finish() waits for every task (%d of 12 done)" % done)
 	check(tasks.running() == 0, "and keeps none")
 	check(not tasks.add(_slow_job, "late job"), "add() after finish() starts nothing")

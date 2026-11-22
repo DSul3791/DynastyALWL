@@ -1,5 +1,7 @@
 # Terrain and water backlog (Sonny, 1 Nov 2026)
 
+> **Not a live to-do list (reviewed 21 Nov 2026).** This was a queue for a role in the 1 Nov team, which no longer exists. Its open items that still matter are in [docs/TODO.md](TODO.md), with what was done or is no longer relevant. Kept as history.
+
 Owner for every item: the terrain and water agent (Sonny, or whoever takes the role). Read `docs/DYNASTY_WATER_HISTORY.md` and `docs/handoff/HANDOFF_SONNY.md` first. Each line: what, exact next step, why.
 
 ## Join and terrain loading

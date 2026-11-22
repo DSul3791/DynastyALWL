@@ -2,7 +2,7 @@
 
 All Currently unfixed bugs go here.
 
-This list records the problems Dave found in his play tests and the intended player experience needed to resolve them. It includes requested behaviour where a bug fix alone would be incomplete. Entries stay here until Dave confirms the fix in play. Each entry says what he played: "found in play" (the problem came from his play test), "fix played" (he has played the fixed version) or "fix not yet played". When an entry is verified fixed, move it to [BugsList_Fixed.md](BugsList_Fixed.md).
+This list records the problems Dave found in his play tests and the intended player experience needed to resolve them. It includes requested behaviour where a bug fix alone would be incomplete. Entries stay here until Dave confirms the fix in play. Each entry says what he played: "found in play" (the problem came from his play test), "fix played" (he has played the fixed version) or "fix not yet played". When an entry is verified fixed, move it to [BugsList_Fixed.md](BugsList_Fixed.md). Work that is not built yet, including the open parts of entries here, is listed in [docs/TODO.md](docs/TODO.md) (reviewed 21 Nov 2026: every PR named in entries 1 to 127 is in dev; none of them has been played yet).
 
 ## Intended experience
 
@@ -852,6 +852,8 @@ Not yet played.
 
 **Cause of the pause (not changed):** Godot builds the world's shaders after the welcome (DIAG-93: with only the shader cache deleted the 25 s freeze came back; with it kept the freeze was gone). An attempt to spread the building over frames (PR #1393) did not shorten it and was closed unmerged.
 
+**22 Nov 2026, renderer:** Windows now uses Vulkan with the d3d12 fallback, and the Windows package bakes its shaders (#1544, dev 8fd7dd8c; coordinator decision under the questions rule). Lane A, six interleaved cold windowed plays on e0c1ef58: longest FREEZE median 7959 ms on Vulkan against 23910 ms on d3d12, ground ready +22.6 s against +48.7 s, running frames the same, picture normal. Not yet played by Dave. The note above still fits the shorter pause.
+
 **As built (PR #1405, reviewed head 6e5bcce5, dev 58d03b3b):** the Joining window shows, in yellow under its steps: "First start on this computer (or after an update): the game is preparing its graphics. Once the server answers, this can take up to about half a minute. The window may stop moving, or Windows may say "Not responding". Please wait: the game is not stuck. Later starts are much quicker." The note shows until a join with the same Godot version, graphics driver, graphics card and game build has reached the ground (user://graphics_prepared.txt), so it returns after an update. While it is up, the window stays until the player has landed, so it is still on screen through the freeze.
 
 **Evidence:**
@@ -1212,7 +1214,7 @@ Not yet played; not yet seen in a picture. The colours, lumps and densities are 
   - Lane B: 291 pass, 0 fail, warnings 381. The join smoke had no slow-tick or lock lines.
 
 **Still open (for after main):**
-- First-sight shader builds on d3d12 (0.5 to 0.9 s): needs a shader warm-up or a renderer choice by Dave.
+- First-sight shader builds on d3d12 (0.5 to 0.9 s): needs a shader warm-up or a renderer choice by Dave. **22 Nov:** the renderer is now Vulkan on Windows (#1544, coordinator decision, see BugsList 93).
 - Single physics steps of 44 to 51 ms, and clock and weather at 31 to 37 ms: small regular hitches.
 - The server can pause in cheap code (goals, the world-item scan) when the PC is busy loading new ground tiles. Tuning thread counts would fix it, but that is too risky now.
 - A server save can hold a tick about 1.2 s while it waits for the previous save to finish writing. The wait is now logged.
@@ -1410,6 +1412,7 @@ Not yet played.
 **Known limits:**
 - The part-burnt unit (up to 1800 s of making) is not saved; after a server restart the next unit is taken from the slot.
 - The coals and flare have not been seen in game.
+- Release note, old saves: a smithy built before #1428 may still hold a product in its first slot, which is now the fuel slot. It then reads "no fuel" until the player takes that item out and puts Coal or Charcoal in. Nothing is lost.
 
 **Acceptance:** build a Primitive smithy. Before fuel it is cold and offers no recipes. Put Coal in slot 1: red coals glow. Make something: the fire flares bright and drops back to red coals when done. The same for the Blacksmithy, Advanced smithy and Master forge.
 
@@ -1632,7 +1635,7 @@ Not yet played.
 
 ## 119. The goblin camp is at the cave nearest the spawn
 
-**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "I think we should move the goblins cave much closer to spawn so people might actually find it. it should probably be right in the closest mountain or hill to the spawn point then we can make a path to it for players later." And: "include that before merging to main."
+**Status: Replaced by entry 131 (the camp brings its own cave, PR #1456).** The camp no longer stands at 3,4#8006; the text below is history. Dave, 21 Nov 2026: "I think we should move the goblins cave much closer to spawn so people might actually find it. it should probably be right in the closest mountain or hill to the spawn point then we can make a path to it for players later." And: "include that before merging to main."
 
 **What was found:** the Ragtooth camp sat at spring cave 3,4#8013, about 3.6 km north-north-west of the spawn. The nearest cave is 3,4#8006, about 1.6 km west-south-west. The nearer hills, about 1.2 km south and north of the spawn, have no cave.
 
@@ -1656,12 +1659,158 @@ Not yet played.
 
 Not yet played.
 
+## 128. Each nail metal has its own use, and stone-age pieces need no metal or chisel
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026 17:53Z: "anything that uses copper cladding should use copper nails to attach the copper sheets. copper nails are also good for light duty connections like decorations or small light boxes and such. bronze are slightly stronger and bigger and better for stronger construction like chests, cabinets, upholstery, iron are stronger and great for construction and building strong boxes, etc. steel is the strongest and is best for fortification level strength like steel rivets and fortified doors etc. use judgement based on these suggestions." The chisel and stone-age follow-ups were ruled by the coordinator under Dave's 21 Nov questions rule (D-CHISEL-1, GR-1, GR-2, GR-3).
+
+**What was found:** after entry 111 every non-chest build asked for Bronze nails and Bronze hinges, whatever it was. Plain nailed furniture needed a Bronze chisel. The Sawbuck and the Palisade gate needed bronze before any smithy, and laid stone pieces needed an Iron chisel.
+
+**Required outcome:** each build asks for the nail metal its use needs ("or better" still serves). A chisel only where something is carved. Stone-age pieces need no metal.
+
+**As built (merged to dev in order; dev 0703e012 after the last):**
+- PR #1460 (reviewed head 2f9ea1ef, merged at 4afeb074). Copper nails: Raised cistern, Crate, garden plots, Bottle and jar rack. Iron nails: Sawmill, Advanced smithy, resource bins, Ore and metal rack, Warehouse crate, iron fence and railing. Iron hinges: the iron, stone, brick, engineered and fortified gates, the Advanced smithy. The Fortified gate takes Steel nails. The Water wheel takes Iron nails. The Sawbuck (until GR-1), the Improved smithy and the Improved smelter keep bronze, because they come before iron. The four nail descriptions say what each is for. Design: docs/design/CHEST_TIERS.md "Nails for every build".
+- PR #1466 (reviewed head 02b2d9ed, merged at 21583b78), D-CHISEL-1. The Rustic - Chair, Rustic - Table and Cupboard take no chisel. The Barrel and Raised cistern keep Bronze. The Canopy bed goes from Steel to Iron.
+- PR #1470 (reviewed head 071ae4e1, merged at 0703e012):
+  - GR-1: the Sawbuck takes 8 Lumber and 16 Wooden pins instead of 16 Bronze nails.
+  - GR-2: the Palisade gate takes 8 Log, 3 Twine and 1 Rope, with no hinges.
+  - GR-3: the Stone - Planter, Trough, Channel, Channel corner and Channel tee take no chisel.
+- Decisions: REPAIR_DECISIONS.md TT-3; TREE_WOOD_TOOLS_DESIGN.md W-4.
+
+**Evidence:**
+- Independent review PASS on 7425a191, 4ffd023d and 77bff927, and on 2f9ea1ef, 02b2d9ed and 071ae4e1 after the description fix.
+- Lane B on 77bff927, one run for the whole stack: 298 pass / 0 fail. validate_items had 1 error, because the Copper nails description was 119 characters (the limit is 110). It was fixed on #1460 and merged up the stack.
+- Lane B on 071ae4e1 (trial merge onto dev e10712cb):
+  - 298 pass / 0 fail.
+  - validate_items 0 errors.
+  - Warnings 381, which is the baseline. Look names 340.
+  - Join smoke 20 s to welcome.
+
+**Acceptance:**
+- Hover a Crate's cost: it asks for Copper nails or better.
+- A Sawmill asks for Iron nails, and a Fortified - Gate asks for Steel nails.
+- A Rustic - Chair goes up with no chisel on the hand bar. A Barrel still needs a Bronze chisel or better.
+- A Sawbuck goes up from Lumber and Wooden pins, and a Palisade gate from Logs, Twine and Rope, both before any smithy.
+- A Stone - Trough goes up with no chisel.
+
+Not yet played.
+
+## 129. Iron is common: river iron stones and iron-nickel meteorites
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "there is covered in iron. It's commonly found as meteorites that are often a combination of iron and nickel so it's readily usable. Also, there are reddish brown rocks everywhere normally so iron should be a common thing to find a long river bed as well." Then: "lets have meteors about half as frequent as rocks ... they break into iron chunks that count as iron ingots ... basically iron chunk inherits from iron ingot"; "river iron rocks should be the same size as a rounded iron ingot and they are pickable so you gather them by hand"; "1 ingot sized iron rocks will be 50% of the stones out there, 30% of them should be double that size and 20% can be triple sized" (bigger ones broken "with a pick bronze or better"); "picking up the single gives 1 Iron ore".
+
+**What was found:** iron came only from bog iron and two iron ore bodies, the nearest 16 km from the spawn, so iron was rare.
+
+**Required outcome:** reddish-brown iron rocks along river beds, like copper and tin; meteorites about half as common, breaking into Iron chunk that serves as an Iron ingot.
+
+**As built:**
+- PR #1455 (reviewed head 391e702a, merged to dev at b5d39135). River iron stones (IR-1): 3% a try on dry land, 40% by the sea to 90% under the mountains by water. Half are loose ingot-sized stones you pick up by hand for 1 Iron ore. 30% and 20% are small all-ore rocks that give exactly 2 or 3 Iron ore and no stone, only to a bronze or better pick (any other tool is refused). Geology iron outcrops are unchanged. Iron ore is now drawn as a rounded red-brown stone the size of an Iron ingot; it still smelts. An ore look for an ore the tile has no body of now answers at once (the starter tile has no iron body; a Lane B join smoke had one iron look at 42 ms in the slow-cell line).
+- PR #1457 (reviewed head 4fd3a5c7, merged to dev at c7ceb2fb). Iron-nickel meteorites (MT-1): 1.5% a try anywhere, 40 to 70 cm across, black-brown crust with thumbprint pits and rust. Any pick or the Stone Hammer breaks one into Iron chunk and stone; loose pieces are Iron chunk by hand. New item 1517 Iron chunk fills every need for an Iron ingot (recipes, blueprints, repairs); a cost spends ingots first and a refund gives Iron ingots.
+- Design: docs/design/COPPER_ROCKS.md IR-1, MT-1.
+
+**Evidence:**
+- Independent review PASS on both heads, and on 4fd3a5c7 after the merge with the nails PR (#1460).
+- Lane B on 391e702a (trial merge onto dev e10712cb): 342 pass / 0 fail, warnings 381, validate_items 0 errors, join smoke with 0 slow lines.
+- Lane B on 4fd3a5c7 (trial merge onto dev b1b0ae86): 325 pass / 0 fail, test_meteorites, test_copper_rocks, test_cell_reads pass; warnings 381; validate_items 0 errors; looks 341. Iron ore body look 3.4 us against copper 86 us.
+- Not yet: Lane A pictures (/mnt/project-files/iron-meteorite/LANE_A_PICTURES.md).
+
+**Acceptance:** walk a river near the spawn. Red-brown Iron ore stones lie along it and pick up by hand. The larger ones break to 2 or 3 Iron ore with a bronze pick and refuse a stone one. Dark pitted meteorites lie here and there on open ground, about 3 within 100 m. One breaks with a Stone Hammer into Iron chunks, and a recipe that asks for an Iron ingot takes an Iron chunk.
+
+Not yet played.
+
+## 130. Animals move and behave like the real species
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "put someone to work trying to make the animals move more natural. they shouldn't be teleporting around or running without moving their feet or legs. Agressive animals should be aggressive and passive animals should be passive etc. list each animal and look up how they should naturally behave in situations like, relaxing, eating, being approached by a human, being attacked etc. then find a way to work those findings into the animals ai."
+
+**What was found:** the teleporting was fixed earlier (#1433, #1454: animals drawn on the server's timeline). Dave's game log showed in-place clip speeds measured far too low, because bones that never move were counted (lynx walk 0.26 m/s against 1.3), so with the play rate capped at 2 those animals glided. Big cats and hyenas had the generic small-carnivore temperament mix, with 15% "friendly" walking up to the player. No predator chased a player running away. Resting animals were sent as grazing, so they stood all day. Rabbits were all singles.
+
+**Required outcome:** legs keep pace with the ground; each species reacts to people as the real animal does; animals lie down to rest; rabbits feed in small groups.
+
+**As built:**
+- PR #1464 (reviewed head 1547b033, merged to dev at ac479b9c, client only). The eased speed picks walk or run with margins. A measured clip speed is trusted only within 3x of models.json's walk_mps and run_mps. The play rate runs from 0.4 to 2.5. If a model has only one moving clip, that clip stands in for the other. docs/design/ANIMAL_GAIT.md.
+- PR #1467 (reviewed head 00bb06a9, merged at 81cf9b65, server only). A per-species research table with sources is in docs/design/ANIMAL_BEHAVIOUR.md.
+  - HB-1: temperament shares by species.
+  - HB-2: a hunter that may attack charges a player who runs from it inside chase_m, with no warning first.
+  - HB-3: aggressive hunters stalk a player they have noticed, but not into fire or torch light. This covers the bears, puma, lion, leopard, tiger and hyena.
+- PR #1471 (reviewed head b9b4026d, merged at 9c252970, protocol 148). docs/design/ANIMAL_RESTING.md.
+  - A grazer is sent lying (state 19) when it is resting, or for its own share of the time by its active chance. A deer herd by day is about 60% bedded and all are up at dusk.
+  - The client plays the model's lying clip (never a lie-down, get-up or death clip), or folds the legs of the code-built bodies.
+  - HB-4: rabbits come in loose groups of 2 to 4, and a bolting rabbit sets the others off.
+  - Herd members are never made inside never_within_m of a player.
+  - A rabbit in its burrow is not alarmed by a mate bolting outside.
+  - The spyglass reads "lying down".
+
+**Evidence:**
+- An independent review passed on each head. #1471 needed two fixes: deer and rabbits never reached the old rest threshold, and test_animals' 60 m check measured herd drift instead of where animals appear.
+- Lane B ran one trial merge of all three onto dev 853ff67a: 454 pass, 0 fail.
+  - Warnings were 381 (none new), validate_items reported 0 errors, and looks were 341.
+  - Stress cap: 150 animals with a tick average of 1.934 ms.
+  - Join smoke: 35 s to the ground with 0 retries.
+- Not yet: Lane A pictures (a deer herd by day lying, a code-built quad lying, goblins at dusk, foot speed).
+
+**Acceptance:**
+- A deer, lynx or rabbit walking or running moves its legs at the pace it covers ground, with no gliding.
+- By day some deer lie bedded down and some graze; at dusk they are all up.
+- Rabbits feed in small groups and bolt together.
+- A tiger or bear that is not aggressive leaves a standing player alone, but charges at once if the player runs.
+- An aggressive tiger or bear walks in on the player, then warns and charges, and stops at firelight.
+
+Not yet played. Left for later: an animal at the edge of the nearest 30 sent to a player can vanish and reappear (the client reads a body leaving the list as a possible kill).
+
+## 131. The goblin camp brings its own dry cave, 0.7 km south of the spawn
+
+**Status: Implemented - awaiting player verification.** Dave, 21 Nov 2026: "couldn't we just make a new cave for the goblin camp like it would be part of the goblin camp only place it that way we can make it a lot closer or put it anywhere we want to." And: "It could be a dry cave with no water source shallow, and it would just have to be placed anywhere near a river, and it doesn't even have to be near the head."
+
+**What was found:** after entry 119 the camp sat at spring cave 3,4#8006, about 1.6 km from the spawn, because no nearer hill had a cave. The nearer hills about 1.2 km away have no cave, and the hill about 0.7 km south does not either.
+
+**Required outcome:** a camp can bring its own shallow dry cave, placed by its data anywhere near a river; the Ragtooth camp uses one much closer to the spawn; nothing is left at the old cave; existing worlds get the cave cut into the hill after a restart.
+
+**As built (PR #1456, reviewed head 019477ba, merged to dev at f5738dd7):**
+- src/worldgen/runtime/camp_caves.gd: a camp row in data/creatures/goblin_tribes.json with a "dig" gets its own cave, worked out when the tile loads (never baked), like the abandoned mines.
+  - It is an open cut into the hill until 2 m of rock stands over the roof, then a 2.2 x 2.4 m passage rising 1 in 100 so it drains out, then a 4 m room at the end.
+  - Its cave kind is camp_cave: no spring or stream, and never a wild goblin band or an animal den.
+- The Ragtooth camp's cave is 3,4#camp_ragtooth: mouth x 58264 z 72084 on the north face of the hill about 0.7 km south of the spawn, running 26 m in, with a brook about 95 m away. The fire, Small chest, two Log benches, Drying rack, Tanning rack, the five goblins and their chore points stand on 3 to 10 degree ground in front of it.
+- TileTerrainData.CAMP_CAVES is gone; 3,4#8006 is a plain spring cave again (its own goblin band and wolf den by its id, as before 21 Nov).
+- TERRAIN_VERSION 80; the starter cache was rebuilt for stamp 80_f1a421bfb9. Ground edits are kept.
+- Provisional: GOBLIN-20 in docs/design/GOBLIN_CAMP.md (replaces GOBLIN-19); CD-4 in docs/design/CAVE_DENS_AND_MINES.md. Camps made automatically wherever goblins spawn are a later step.
+
+**Evidence:**
+- Independent review PASS on 5bbc6241 (twice), fbe96e30 and 019477ba.
+- Lane B on 019477ba, trial-merged onto dev cc5bd0f0: 318 pass / 0 fail (the selector's whole plan, test_worldgen and test_bake_from_record included), test_starter_cache_stamp PASS, warnings 381 (none new), looks 341, validate_items 0 errors, join smoke 33 s to ground with 0 retries.
+- Tile 3,4's abandoned mines are identical on dev and on the PR (print_tile_mines_3_4.gd: MINES 2 on both).
+- Not yet: Lane A pictures of the camp, the mouth and the hill over the room.
+
+**Acceptance:** walk about 0.7 km south from the spawn to the hill. The Ragtooth camp stands in front of a cave cut into its north face, with the goblins at their chores. The passage goes about 26 m in to a small dry room, and the hill above it shows no hole. Strike a goblin and they all run into the cave, staying in while you wait at the camp. Nothing is left at 3,4#8006.
+
+Not yet played.
+
+## 132. Game trails, animal routines and a simple snare for early food
+
+**Status: Implemented - awaiting player verification.** Dave, 22 Nov 2026: "Im thinking we need to add trapping for players to gather food early before they are skilled at hunting. I also love when the grass mats down when I walk through it. so Im wondering if we could add the idea of Game trails to the our game where animals might travel occassionally and we could set traps or snares." Then: plan animal routines (sleep, travel, eat and drink near water at certain times) from how others do it, and "the first snare should be a simple snare that uses 2 sticks and 3 twine", with his model Basic_Rabbit_Snare_80k.glb, "sized appropriately for catching rabbits".
+
+**Required outcome:** animals keep daily routines and travel set paths between where they rest and where they feed; those paths show as matted grass; a snare set on one catches rabbits, including while the player is away; Dave's snare model, sized for a rabbit, costs 2 sticks and 3 twine.
+
+**As built:**
+- PR #1484 (merged to dev at 6ddb9ee5, protocol 149). Rabbit warrens and deer beds and feeding grounds, placed from the world seed; trails between them sent to clients and drawn as matted grass (runs 0.8 m, deer trails 1.2 m); rabbits out at dusk and home after dawn, deer feeding at night; snares on a run work best and catch while the owner is away; goal "Snare a rabbit".
+- PR #1497 (merged at 924afa57). The set snare is Dave's model, cut from 81,898 to 4,994 triangles with its texture rebaked (tools/items/prepare_item_model.py), 0.5 m high, the noose 11 cm across and about 9 cm above the ground, posts 3 cm into the ground. The recipe was already 2 sticks and 3 twine by hand. The carried item keeps its parcel look.
+- PR #1504 (merged at 82d484db). Animals keep to each day's real sunrise and sunset; moose and elk get beds and feeding grounds (moose by water when it can).
+- Design: docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md (TR-1 to TR-8).
+
+**Evidence:**
+- Independent review PASS on each head (#1484 c1179f7e and its dev merges; #1497 e9d08a15 and 9ddac19e; #1504 a2e5306f).
+- Lane B: #1484 206 pass / 0 fail and a join smoke with 0 ground waits; #1497 29 / 0, test_look_table under its 5,000 cap; #1504 79 / 0. Warnings 381 (0 new) on each.
+- Lane A: a trail shows as a curving line of flattened grass about 0.8 m wide (2 of 4 spots; the other 2 were under a bush and on bare sand). The snare is Dave's model, sharp, with a shadow, the right size for a rabbit; one front and side picture after the 3 cm sink is still to come.
+
+**Acceptance:** walk out from the spawn at dusk. Matted lines run between rabbit warrens; set a Simple snare across one and come back next morning to a rabbit some of the time. Deer, moose and elk walk wider trails between bed and feeding ground, out around sunset and back after sunrise.
+
+Not yet played.
+
 ## Rewrite interpretation
 
 Dave requested this rewrite around the intended experience rather than a literal transcript. The following implementation clarifications are interpretations, not additional verbatim directives: rock volume represents physical size; resource depletion survives reload; previews stay within the game viewport; placement validates before changing terrain; obstacle checks cover the garden blend; and occupied planting positions cannot receive duplicates. These support the described behaviour without introducing new items, recipes or progression systems.
 
 ## Assumed on Dave's behalf (provisional values, for review)
 
+- D-TRAP-1 to D-TRAP-3 (entry 132, coordinator): goal "Snare a rabbit" and away catches with limits; rabbits 0.7 and deer 0.5 active at night; players' worn paths (stage 2c, not built yet) shown to everyone at half the animal rate on a cheap grid, fading over about a game week; the sun clock for animals only. Provisional values TR-1 to TR-8 in docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md. How many moose and elk a player sees is to tune after Dave plays.
 - CT-1 (entry 111): the copper chest is the Small chest, 24 slots. Chest slots go in six-slot rows, so 27 would leave half a row. That made it the same size as the Crude - Chest, retired since (entry 112). The Small chest is built with a hammer from copper nails and needs no twine. Its lid lifts off, because there are no copper hinges.
 - CT-2 (entry 111): Dave's "superior" chest is the existing Ornate - Chest, since Ornate is the top furniture grade. It keeps its Iron hinges, because there are no steel hinges.
 - CT-3 (entry 111): the Fine - Chest is in the iron tier, so it takes Iron nails or better and Iron hinges. Nothing else about it changed.
@@ -1698,3 +1847,9 @@ Dave requested this rewrite around the intended experience rather than a literal
 - Rock stones (entry 118; called BW-4 in boulders.json, not the bellows BW-4 of entry 115): plain stone, limestone, chalk and marble rocks yield 0.047 of their weight in 0.5 kg stones (the biggest, 2.4 m across, about 1,500); ore rocks keep 0.7. The value was the coordinator's pick for Dave while he slept (Dave gave no number); limestone counts as stone, not ore (Claude's pick).
 - ET-1 (entry 104): an item the reticle is on is reached to 3 m, as fires and stations are (it was 2.5 m; the server allows 3.5 m).
 - Crops need tilled soil (Plant does not till); scatter stone, flint and ores count as small rocks to pick up; wild shrubs are not checked for duplicates.
+- IR-1 (entry 129): river iron chances 3% dry land, 40% by the sea to 90% by mountain water; all-ore rocks 18 and 20 cm across; no mountain-foot iron boulder.
+- MT-1 (entry 129): meteorites 1.5% a try anywhere, no water chance, 40 to 70 cm across, grade 0.6 to 0.9, plain boulder yield; Iron chunk weighs 1.5 kg.
+- HB-1 (entry 130): temperament shares per species from field guides and attack studies (docs/design/ANIMAL_BEHAVIOUR.md), e.g. tiger passive .4, defensive .4, aggressive .2; no friendly big cats or hyenas.
+- HB-2 (entry 130): hunter chase_m / run_m: bear 25/50, black bear 15/35, puma 20/40, lion 25/50, leopard 15/35, tiger 25/45, hyena 15/60; a runner is one moving away at 5 m/s or more.
+- HB-3 (entry 130): stalk speeds 1.0 to 1.3 m/s; only aggressive hunters stalk, never into fire or torch light.
+- HB-4 (entry 130): rabbit groups 2 to 4, pull 8 m, spacing 2 m, alarm 0.1 to 0.6 s. Lying share by active chance (no new number).

@@ -1099,6 +1099,9 @@ static func over_water(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: floa
 		return false   # it is set down in the water on purpose (a fish trap): water_short says when there is too little
 	var block_m: float = FIRE_WATER_BLOCK_M if kit_id == "campfire_kit" else WATER_BLOCK_M
 
+	if def.has("wade_m"):
+		block_m = maxf(block_m, float(def["wade_m"]) + 0.001)   # it may stand in water up to this deep (a barrel in a river, Dave 20 Nov 2026)
+
 	if def.is_empty():
 		for corner in [Vector2(0.8, 0.0), Vector2(-0.8, 0.0), Vector2(0.0, 0.8), Vector2(0.0, -0.8)]:
 			offsets.append(corner)

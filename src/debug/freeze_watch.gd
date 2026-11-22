@@ -15,6 +15,8 @@ const STALL_MS := 600
 const GAP_MS := 500                     # a main-thread frame gap this long prints a FREEZE gap line (the one to trust)
 const LATE_MS := 250                    # the watch woke this late: its stuck reading is not trusted (the thread was starved)
 
+const PrintQueueScript := preload("res://src/shared/print_queue.gd")
+static var printer = PrintQueueScript.new()   # the client's diagnostic lines, printed on a worker (D-LAG-1): a print on the main thread flushed the log 0.4-1.6 s
 static var _mutex: Mutex = Mutex.new()
 static var _beat_msec: int = 0
 static var _last_piece: String = "start"
@@ -37,8 +39,36 @@ static func beat() -> void:
 
 	# The real time between two frames, from the main thread itself (not the watch thread, which can be held up when every core is busy):
 	# Dave's 3 Nov log had watch lines of 0.7-0.9 s while no frame was over 142 ms, so the watch alone is not proof of a stall.
+	var built: String = _pipelines_built()
+
 	if gap > GAP_MS and frame > 30:
-		print("FREEZE gap: %d ms between frames %d and %d, last finished before it: \"%s\"" % [gap, frame - 1, frame, piece])
+		printer.line("FREEZE gap: %d ms between frames %d and %d, last finished before it: \"%s\"%s" % [gap, frame - 1, frame, piece, built])
+
+
+# The renderer's pipeline builds since the last beat (Godot's PIPELINE_COMPILATIONS monitors, counted since start), as ", pipelines built:
+# draw 3, surface 120" (only those not 0), or "" when none: tells a stall in the driver's pipeline building (draw: built while drawing)
+# from Godot's own shader compiling, which these do not count (22 Nov 2026: the 8 s cold first-join freeze on Vulkan, after "held item").
+const PIPELINE_MONITORS := [["draw", Performance.PIPELINE_COMPILATIONS_DRAW], ["surface", Performance.PIPELINE_COMPILATIONS_SURFACE],
+	["mesh", Performance.PIPELINE_COMPILATIONS_MESH], ["specialization", Performance.PIPELINE_COMPILATIONS_SPECIALIZATION],
+	["canvas", Performance.PIPELINE_COMPILATIONS_CANVAS]]
+static var _pipelines_seen: PackedInt64Array = PackedInt64Array()
+
+
+static func _pipelines_built() -> String:
+	if _pipelines_seen.size() != PIPELINE_MONITORS.size():
+		_pipelines_seen.resize(PIPELINE_MONITORS.size())
+
+	var parts: PackedStringArray = PackedStringArray()
+
+	for i in range(PIPELINE_MONITORS.size()):
+		var total: int = int(Performance.get_monitor(PIPELINE_MONITORS[i][1]))
+
+		if total > _pipelines_seen[i]:
+			parts.append("%s %d" % [PIPELINE_MONITORS[i][0], total - _pipelines_seen[i]])
+
+		_pipelines_seen[i] = total
+
+	return "" if parts.is_empty() else ", pipelines built: " + ", ".join(parts)
 
 
 static func note(piece: String) -> void:

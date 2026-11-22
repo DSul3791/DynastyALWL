@@ -56,6 +56,7 @@ const EditedGroundScript := preload("res://src/stream/edited_ground.gd")
 const CoarseGroundScript := preload("res://src/stream/server_coarse_ground.gd")
 const FogGroundScript := preload("res://src/shared/fog_ground.gd")
 const TrailsScript := preload("res://src/stream/server_trails.gd")
+const RangesScript := preload("res://src/stream/server_ranges.gd")
 const BanditsScript := preload("res://src/stream/server_bandits.gd")
 const MapScript := preload("res://src/stream/server_map.gd")
 const MapCodec := preload("res://src/shared/map_codec.gd")
@@ -112,6 +113,7 @@ var generator
 var store
 var flora
 var trails                             # ServerTrails: worn game trails the animals leave
+var ranges                             # ServerRanges: animal places and the trails between them (docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md)
 var bandits                            # ServerBandits: bandit camp sites woken by road traffic (docs/design/BANDIT_CAMPS.md)
 var map_knowledge                      # ServerMap: what each character has surveyed for its charcoal Map (protocol 120)
 var animals                            # ServerAnimals: wildlife around the players (rabbits)
@@ -136,6 +138,7 @@ var weather: Dictionary = {}           # the weather at the water tile now (Weat
 var _weather_next_msec: int = 0
 var _blood_sent: Dictionary = {}       # peer -> hash of the blood trail last sent
 var _burrows_sent: Dictionary = {}     # peer -> hash of the burrow spots last sent
+var _trap_marks_sent: Dictionary = {}  # peer -> hash of the trap marks last sent for its Map
 var _nests_sent: Dictionary = {}       # peer -> hash of the nest spots last sent
 var _holes_sent: Dictionary = {}       # peer -> hash of the ice holes last sent (protocol 97)
 var _far_fires_sent: Dictionary = {}   # peer -> hash of the far lit campfires last sent (protocol 114)
@@ -447,6 +450,7 @@ func _ready() -> void:
 			return null
 
 		return BogIronScript.field(generator.get_tile(generator.tile_of(cx, cz)), fx, fz, cfg)
+	items.ground_open = func(points): return store.any_open(points)   # whether any point is open ground now (a bog hole never silts into a tunnel)
 	items.bog_silt_at = func(x, z, cfg):   # what a dug hole on fen, marsh, swamp or bog silts back in with, 0 elsewhere (BogIron.silt_material); an unloaded tile counts as dry
 		return BogIronScript.silt_material(generator.get_tile(generator.tile_of(x, z)), x, z, cfg) if generator.tile_cached(x, z) else 0
 	items.fresh_water_y = func(pos, reach):   # wells and pumps (TileTerrainData.fresh_water_near): the nearest over every tile the reach touches
@@ -673,6 +677,7 @@ func _ready() -> void:
 	animals.undergrowth = func(point): return flora.in_undergrowth(point)
 	animals.player_stalk = func(): return items.peer_stalk_factors()
 	animals.hour_now = func(): return game_clock.hour()
+	animals.sunrise_now = func(): return WeatherScript.sunrise_hour(WeatherScript.year_phase(game_clock.seconds) * float(GameClockScript.DAYS_PER_YEAR))   # the sun the sky draws (weather.gd slope_breeze uses the same): animal periods and trips follow it
 	animals.season_now = func(): return game_clock.season()
 	var biome_names: Dictionary = {}
 
@@ -711,8 +716,19 @@ func _ready() -> void:
 	animals.setup()
 	trails = TrailsScript.new()
 	trails.game_seconds = func(): return game_clock.seconds
+	trails.ground_height = edited_ground.height   # with digs and fills: a player in a dug hole still wears a path
 	trails.setup(store_dir)
 	animals.trails = trails
+	ranges = RangesScript.new()
+	ranges.setup()
+	ranges.world_seed = items.world_seed
+	ranges.ground_height = edited_ground.surface   # the generated ground: the places come out the same whatever has been dug
+	ranges.blocked = npcs.blocked
+	ranges.biome_weight = func(sp, x, z): return animals.biome_weight(animals.species_def(sp), x, z)
+	ranges.no_spawn = animals.no_spawn
+	ranges.ground_ready = items.ground_ready
+	animals.ranges = ranges
+	trails.ranges = ranges
 	map_knowledge = MapScript.new()
 	map_knowledge.key_of = func(peer): return items.key_of(peer)
 	map_knowledge.skill_of = func(peer): return items.working_level(peer, "mapping")
@@ -786,8 +802,12 @@ func _ready() -> void:
 	items.nests_near = func(point, reach): return animals.nests_near(point, reach)
 	items.animals_near = func(point, radius): return animals.list_near(point, radius)
 	items.animal_snare = func(id): return animals.snare(id)
-	items.animal_lure = func(id, point): return animals.lure_to(id, point)
+	animals.snare_pass = func(id, sp, from, to): items.animal_passed(id, sp, from, to)
 	items.trail_strength = func(x, z): return trails.strength_at(x, z)
+	items.run_distance = func(x, z, kind): return ranges.route_distance(x, z, kind)
+	items.fox_near = func(x, z, m): return ranges.fox_near(x, z, m)
+	items.species_active = func(sp): return animals.activity_chance(animals.species_def(sp))
+	items.species_active_at = func(sp, hour): return animals.activity_at(animals.species_def(sp), hour)
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> Dictionary:
 		var member: String = tribes.member_along(origin, dir, reach)
@@ -897,6 +917,7 @@ func _ready() -> void:
 		print(site_line)
 
 	items.respawn_point = spawn
+	items.start_resources(world_dir + "/tiles", float(settings.tile_size_m), spawn, _resource_dangers())   # the island resource landscape, built on a worker thread before the first scatter
 	_world_dir = world_dir
 	_start_water()
 
@@ -919,6 +940,7 @@ func _ready() -> void:
 	_auth.log_event = func(text: String) -> void: _events.event(text)
 	_auth.attach_server(multiplayer as SceneMultiplayer)
 	_events.start("telemetry_server_%d.log" % port, _log_dir())
+	_events.watch_extra = _pool_summary
 	_events.start_watchdog()
 	_events.event("server listening on port %d after %d ms of start-up, %s, ram %d MB, commit %s" % [port, Time.get_ticks_msec(), OS.get_name(), int(OS.get_static_memory_usage() / 1048576.0), _commit])
 	_listen_port = port
@@ -1113,6 +1135,15 @@ func _baked_wet(x: float, z: float) -> bool:
 	return not tile_data.placeholder and not tile_data.water_class.is_empty() and int(tile_data.water_class[tile_data.nearest(x, z)]) != 0
 
 
+# The server's own WorkerThreadPool jobs not finished yet, and the block line's sends waiting on a client, for the state and WATCHDOG lines:
+# what runs or waits while a client's first load runs (docs/design/LOCAL_SERVER_FIRST_LOAD_PLAN.md, option A). Any thread (the watchdog's):
+# the counts are read under their own mutexes; the landscape task id is a plain read, only compared, never asked about (the main thread frees it).
+func _pool_summary() -> String:
+	var landscape: bool = items != null and items._resource_task != -1
+	return "pool jobs: tile reads %d, undergrowth %d, cover %d, landscape %s; block line sends in progress %d" % [generator._prefetch_tasks.busy() if generator != null else 0,
+		flora._brush_tasks.busy() if flora != null else 0, _cover_tasks.busy(), "on" if landscape else "off", _link.sending() if _link != null else 0]
+
+
 # The server's state line for user://server_events.log; keeps each peer's last statistics for the "left" line.
 func _event_state() -> String:
 	var enet: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
@@ -1130,6 +1161,7 @@ func _event_state() -> String:
 	queued += ", limiter drops: " + dropped if dropped != "" else ""
 	queued += ", " + store.settle.summary() + ", busiest block %d edits" % store.ops.busiest_block() if store.ops.count > 0 else ""
 	queued += ", digs refused (block full): %d" % store.ops.rejected if store.ops.rejected > 0 else ""
+	queued += ", " + _pool_summary()
 	return "peers %d fps %d ram %d MB, %s, %s | %s" % [_peers.size(), Engine.get_frames_per_second(), int(OS.get_static_memory_usage() / 1048576.0), queued, EventLogScript.host_stats(multiplayer.multiplayer_peer), " | ".join(parts)]
 
 
@@ -1146,6 +1178,9 @@ func _on_peer_connected(peer_id: int) -> void:
 	_never_joined = false
 	NetSettings.apply((multiplayer.multiplayer_peer as ENetMultiplayerPeer).get_peer(peer_id))
 	_peers[peer_id] = {"blocks": 0, "bytes": 0, "since": Time.get_ticks_msec()}
+
+	if ranges != null:   # the joining player's ground first: the trail places wait (data/animals/ranges.json hold_after_join_s)
+		ranges.hold_for_join(Time.get_ticks_msec())
 	_queue_mutex.lock()
 	_connected_peers[peer_id] = true
 	_queue_mutex.unlock()
@@ -1275,10 +1310,16 @@ func _resume_spot(spot: Vector3) -> Vector3:
 # along their heading the higher and faster they are. Blocks nearest this
 # point are made first.
 func _on_position_reported(peer_id: int, position: Vector3, velocity: Vector3) -> void:
-	var water: Array = _player_water_at(position)
-	items.set_swimming(peer_id, SwimScript.swimming(position.y, water[0], water[1]))
-	items.set_head_under(peer_id, SwimScript.head_under(position.y, water[0], water[1]))
-	items.set_cave_pool(peer_id, SwimScript.swimming(position.y, water[0], water[1]) and _in_cave_pool(position))
+	# A tile not in memory is never read here on the main thread (about 1 s on Dave's PC, BugsList 108): it is read on a worker, and the
+	# swim, breath and cave pool state stay as last reported until it is in (a second or more).
+	if generator.tile_cached(position.x, position.z):
+		var water: Array = _player_water_at(position)
+		items.set_swimming(peer_id, SwimScript.swimming(position.y, water[0], water[1]))
+		items.set_head_under(peer_id, SwimScript.head_under(position.y, water[0], water[1]))
+		items.set_cave_pool(peer_id, SwimScript.swimming(position.y, water[0], water[1]) and _in_cave_pool(position))
+	else:
+		generator.prefetch_tile(position.x, position.z)
+
 	items.report_position(peer_id, position)
 
 	if map_knowledge != null:
@@ -1351,6 +1392,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 
 	_blood_sent.erase(peer_id)
 	_burrows_sent.erase(peer_id)
+	_trap_marks_sent.erase(peer_id)
 	_nests_sent.erase(peer_id)
 	_holes_sent.erase(peer_id)
 	_far_fires_sent.erase(peer_id)
@@ -2983,10 +3025,17 @@ func _send_npcs(delta: float) -> void:
 			net.animals.rpc_id(peer, beasts, Time.get_ticks_msec())   # with the server clock the row times are on (protocol 147)
 
 		for block in trails.updates_for(peer, at, now_ms):
-			net.trails.rpc_id(peer, block[0], block[1], block[2])
+			net.trails.rpc_id(peer, block[0], block[1], block[2], block[3])
 
 		for block in map_knowledge.updates_for(peer, now_ms):
 			net.map_blocks.rpc_id(peer, block[0], block[1], block[2])
+
+		var marks: Array = items.trap_marks(peer)   # the snares and Bird traps this character has set, marked on its Map (protocol 150)
+		var marks_sig: int = hash(marks)
+
+		if not _trap_marks_sent.has(peer) or int(_trap_marks_sent[peer]) != marks_sig:
+			_trap_marks_sent[peer] = marks_sig
+			net.trap_marks.rpc_id(peer, marks)
 
 		var trail: PackedVector3Array = animals.blood_near(at)
 		var trail_sig: int = hash(trail)
@@ -3064,6 +3113,7 @@ func _process(delta: float) -> void:
 	_update_weather()
 	_events.mark("items")
 	items.tick(delta)
+	_events.mark("tunnels+buried")
 	_tunnel_tick()
 	_send_buried()
 	_events.mark("npcs")
@@ -3074,9 +3124,17 @@ func _process(delta: float) -> void:
 	animals.tick(delta)
 	coarse_ground.tick()
 	_events.mark("trails")
+
+	for peer in items._peer_pos:
+		trails.note_player(peer, items._peer_pos[peer])   # players' own worn paths (stage 2c): a write only on entering a new 4 m cell
+
 	trails.tick(delta)
+	_events.mark("ranges")   # its own step: a cold join's WATCHDOG named "trails" for 6 s (22 Nov), which also held these
+	ranges.tick(npcs.player_positions.call(), Time.get_ticks_msec())
+	_events.mark("bandits")
 	bandits.tick()
 	bandits.camp_tick(delta, items.peer_positions())
+	_events.mark("map knowledge")
 	map_knowledge.tick(delta)   # the save interval only
 	_events.mark("send npcs")
 	_send_npcs(delta)
@@ -3146,6 +3204,7 @@ func _process(delta: float) -> void:
 			net.tile_changed.rpc(tile, store.revision_of(tile))
 
 		_tiles_changed.clear()
+		_events.mark("checks: held edits")
 
 		for peer_id in _edits_held.keys():
 			var at: Variant = items.position_of(int(peer_id))
@@ -3155,10 +3214,14 @@ func _process(delta: float) -> void:
 			elif at != null:
 				_send_held_edits(int(peer_id), at)
 
+		_events.mark("checks: fine water")
 		_send_fine({})   # a player who came within reach of a wet dig gets its water
+		_events.mark("checks: revisions file")
 		store.save_revisions()
+		_events.mark("checks: flora removed file")
 		flora.save_removed()
 
+	_events.mark("checks: flags, report")
 	var flag_path: String = _store_path + "/clear_generated.now"
 
 	if now >= _flag_check_msec:
@@ -3212,12 +3275,12 @@ func _process(delta: float) -> void:
 
 	if now >= _report_at_msec:
 		_report_at_msec = now + 10000
-		print("server: %d urgent and %d prefetch queued; generated %d, cache hits %d, edit hits %d; flora chunks %d made, %d from memory; idle-built %d columns; bad blocks %d, failed tile loads %d" % [
+		_print_off_main("server: %d urgent and %d prefetch queued; generated %d, cache hits %d, edit hits %d; flora chunks %d made, %d from memory; idle-built %d columns; bad blocks %d, failed tile loads %d" % [
 			queued[0], queued[1], store.blocks_generated, store.cache_hits, store.edit_hits, flora.chunks_made, flora.memory_hits, _idle_built, store.bad_blocks, generator.failed_tiles
 		])
 
 		if _link != null and _link.blocks_out > 0:
-			print("server: %d blocks sent on the block line (%.1f MB)" % [_link.blocks_out, float(_link.bytes_out) / 1048576.0])
+			_print_off_main("server: %d blocks sent on the block line (%.1f MB)" % [_link.blocks_out, float(_link.bytes_out) / 1048576.0])
 
 	if _quit_when_empty and _quit_at_msec < 0:
 		if not _peers.is_empty():
@@ -3262,6 +3325,14 @@ func _process(delta: float) -> void:
 		get_tree().quit(0)
 
 	_events.mark("between frames (rpc handlers, engine)")
+
+
+# The 10 s report lines on a worker, like the items log lines (a print flushes the log on the PC's debug build: #397, #1491).
+func _print_off_main(line: String) -> void:
+	if items != null:
+		items._log_off_main(line)
+	else:
+		print(line)
 
 
 # A dedicated server keeps its notes and logs with its store (a container's one volume); Play's server keeps them where the launcher looks.
@@ -3634,6 +3705,9 @@ func _exit_tree() -> void:
 	# The pool tasks nothing else waits for: none may still run while the engine shuts its worker pool down (PoolTasks; main gate 21 Nov).
 	_cover_tasks.finish()
 
+	if items != null:
+		items.finish_resources()   # the island resource landscape's build (start_resources)
+
 	if flora != null:
 		flora.finish_tasks()
 
@@ -3647,3 +3721,28 @@ func _exit_tree() -> void:
 		store.flush()
 
 	_events.close()   # last: nothing may start a log worker task while the engine shuts down (EventLog.close)
+
+
+# Known dangers for the island resource landscape's starting-island check (handoff 13: "use existing danger information where available"):
+# the camp of every goblin tribe that will not trade (its attitude's trades false) and every bandit site whose camp stands (stage 3), each
+# with boulders.json distribution danger_m round it. Read once at start; nothing new is made for it.
+func _resource_dangers() -> Array:
+	var reach: float = float((items._boulder_cfg.get("distribution", {}) as Dictionary).get("danger_m", 200.0))
+	var out: Array = []
+	var attitudes: Dictionary = tribes.cfg.get("attitudes", {})
+
+	for tribe in tribes.tribes():
+		var attitude: Dictionary = attitudes.get(str((tribes.tribes()[tribe] as Dictionary).get("attitude", "")), {})
+		var camp: Dictionary = (tribes.tribes()[tribe] as Dictionary).get("camp", {})
+		var at: Dictionary = camp.get("fire", camp.get("mouth", {}))
+
+		if not bool(attitude.get("trades", true)) and not at.is_empty():
+			out.append([float(at.get("x", 0.0)), float(at.get("z", 0.0)), reach])
+
+	for cell in bandits.sites:
+		var site: Dictionary = bandits.sites[cell]
+
+		if int(site.get("stage", 0)) >= int(bandits.CAMP):
+			out.append([float(site.get("x", 0.0)), float(site.get("z", 0.0)), reach])
+
+	return out

@@ -22,10 +22,18 @@ static var _win_frames: int = 0
 static var _win_process_ms: float = 0.0   # engine monitors summed per frame since window_reset (the GPU probe's engine rows)
 static var _win_physics_ms: float = 0.0
 const FREEZE_MS := 500.0
+const PHYSICS_SLOW_MS := 30.0           # a physics step this long prints a PHYSICS slow line (at most one every 5 s)
+static var _physics_next_msec: int = 0
 const HITCH_MS := 100.0                  # a frame this long prints a HITCH line at once (rate-limited)
 static var _hitch_next_msec: int = 0
 static var context: Callable = Callable()   # returns a short text about the game's state (set by the client), printed with every freeze line
 static var _freeze_prints: int = 0
+static var _seen: Dictionary = {}         # key -> true: a mesh or look already shown once this session (first_shown)
+static var _shown: Array = []             # [frame, what]: the things first shown in the last SHOWN_FRAMES frames
+const SHOWN_FRAMES := 3                   # a drawing made in one frame may be drawn (and its shaders built) a frame or two later
+const SHOWN_MAX := 40
+static var _shown_dropped: int = 0        # first shown in the window beyond SHOWN_MAX
+const SHOWN_PRINT := 12
 
 
 static func start() -> int:
@@ -37,7 +45,7 @@ static func stop(name: String, started: int) -> void:
 	FreezeWatch.note(name)   # the last piece finished, for the freeze watch thread
 
 	if used > 2500 and OS.has_environment("SPIKES"):
-		print("SPIKE %s %.1f ms at %d" % [name, float(used) / 1000.0, Time.get_ticks_msec()])
+		FreezeWatch.printer.line("SPIKE %s %.1f ms at %d" % [name, float(used) / 1000.0, Time.get_ticks_msec()])
 
 	var entry: Array = _totals.get(name, [0, 0, 0])
 	entry[0] += 1
@@ -46,6 +54,54 @@ static func stop(name: String, started: int) -> void:
 	_totals[name] = entry
 	_this_frame[name] = int(_this_frame.get(name, 0)) + used
 	_win[name] = int(_win.get(name, 0)) + used
+
+
+# BugsList 108 (D-TODO-1): a mesh or look drawn for the first time this session, named on the FREEZE and HITCH lines of the next few frames, so a
+# first-sight stall (its shaders and textures built in "flush" and "draw") says what came on screen. `key` tells the things apart (a mesh's id).
+static func first_shown(what: String, key: String) -> void:
+	if _seen.has(key):
+		return
+
+	_seen[key] = true
+
+	if _shown.size() < SHOWN_MAX:
+		_shown.append([_frames, what])
+	else:
+		_shown_dropped += 1   # a join burst: counted in "and N more", never silently left out
+
+
+# Not shown yet this session: callers test this before building the label, so a seen kind costs one look-up.
+static func is_new(key: String) -> bool:
+	return not _seen.has(key)
+
+
+static func _shown_text() -> String:
+	if _shown.is_empty():
+		return ""
+
+	var names: PackedStringArray = PackedStringArray()
+
+	for row in _shown.slice(0, SHOWN_PRINT):
+		names.append(str(row[1]))
+
+	var more: int = _shown.size() - names.size() + _shown_dropped
+	return "; first shown: %s%s" % [", ".join(names), " and %d more" % more if more > 0 else ""]
+
+
+# The frame's biggest timed pieces, "name ms", at most `count` ("" when nothing was timed).
+static func _top_text(count: int) -> String:
+	var named: Array = []
+
+	for name in _this_frame:
+		named.append([name, float(_this_frame[name]) / 1000.0])
+
+	named.sort_custom(func(a, b): return a[1] > b[1])
+	var text: PackedStringArray = PackedStringArray()
+
+	for k in range(mini(named.size(), count)):
+		text.append("%s %.0f" % [named[k][0], named[k][1]])
+
+	return ", ".join(text)
 
 
 # Call at the start of each frame with the previous frame's length (seconds).
@@ -67,13 +123,24 @@ static func frame(delta: float) -> void:
 			if int(_this_frame[name]) > 1000:
 				named.append("%s %.0f" % [name, float(_this_frame[name]) / 1000.0])
 
-		print("FREEZE %.0f ms (frame %d): script %.0f ms, physics %.0f ms, draw calls %d, video mem %d MB, objects %d; timed: %s; %s" % [
+		FreezeWatch.printer.line("FREEZE %.0f ms (frame %d): script %.0f ms, physics %.0f ms, draw calls %d, video mem %d MB, objects %d; timed: %s; %s%s" % [
 			ms, _frames,
 			Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
 			int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), int(Performance.get_monitor(Performance.RENDER_VIDEO_MEM_USED) / 1048576.0),
 			int(Performance.get_monitor(Performance.OBJECT_COUNT)), ", ".join(named) if not named.is_empty() else "nothing",
-			str(context.call()) if context.is_valid() else ""
+			str(context.call()) if context.is_valid() else "", _shown_text()
 		])
+
+	# BugsList 108: single physics steps of 44-51 ms on Dave's PC, with nothing of ours in them (no script runs in the client's physics step). One
+	# line at most every 5 s names the physics server's load and what this frame did, so a play log says whether new colliders (flora trunks,
+	# ground) or many moving bodies are the cause.
+	var physics_ms: float = Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
+
+	if physics_ms > PHYSICS_SLOW_MS and _frames > 30 and Time.get_ticks_msec() >= _physics_next_msec:
+		_physics_next_msec = Time.get_ticks_msec() + 5000
+		FreezeWatch.printer.line("PHYSICS slow %.0f ms in a %.0f ms frame: active bodies %d, collision pairs %d, islands %d; timed: %s" % [physics_ms, ms,
+			int(Performance.get_monitor(Performance.PHYSICS_3D_ACTIVE_OBJECTS)), int(Performance.get_monitor(Performance.PHYSICS_3D_COLLISION_PAIRS)),
+			int(Performance.get_monitor(Performance.PHYSICS_3D_ISLAND_COUNT)), _top_text(5) if not _this_frame.is_empty() else "nothing"])
 
 	if ms > SLOW_MS and _frames > 30:
 		_slow_count += 1
@@ -93,20 +160,10 @@ static func frame(delta: float) -> void:
 
 		if ms >= HITCH_MS and now_msec >= _hitch_next_msec:
 			_hitch_next_msec = now_msec + 2000
-			var named: Array = []
-
-			for name in _this_frame:
-				named.append([name, float(_this_frame[name]) / 1000.0])
-
-			named.sort_custom(func(a, b): return a[1] > b[1])
-			var text: PackedStringArray = PackedStringArray()
-
-			for k in range(mini(named.size(), 5)):
-				text.append("%s %.0f" % [named[k][0], named[k][1]])
-
-			print("HITCH %.0f ms: %s; script %.0f ms, physics %.0f ms, draw calls %d" % [ms, ", ".join(text) if not text.is_empty() else "nothing timed",
+			var top: String = _top_text(5)
+			FreezeWatch.printer.line("HITCH %.0f ms: %s; script %.0f ms, physics %.0f ms, draw calls %d%s" % [ms, top if top != "" else "nothing timed",
 				Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0, Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0,
-				int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))])
+				int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME)), _shown_text()])
 		_slow.append([ms, parts])
 		_slow.sort_custom(func(a, b): return a[0] > b[0])
 
@@ -114,6 +171,12 @@ static func frame(delta: float) -> void:
 			_slow.resize(KEEP_SLOW)
 
 	_this_frame = {}
+
+	if not _shown.is_empty() and int(_shown[0][0]) < _frames - SHOWN_FRAMES + 1:
+		_shown = _shown.filter(func(row: Array) -> bool: return int(row[0]) >= _frames - SHOWN_FRAMES + 1)
+
+		if _shown.is_empty():
+			_shown_dropped = 0
 
 
 static func reset() -> void:

@@ -1,0 +1,8 @@
+{
+	"note": "Worn earth (22 Nov 2026, docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md, TR-14; design /mnt/project-files/trails/WORN_EARTH_DESIGN.md): where a rabbit run or deer trail crosses ground with no meadow turf (forest litter, dirt, sand, gravel), the ground shader draws it as a line of bared, packed soil: the leaf litter pushed aside (litter_cut of the litter's share goes to soil_color), darker (dark), a little smoother (smooth off the roughness). It reads the run map the grass already uses (grass_view.gd), within draw_m of the eye. Packed bare soil through litter is how field guides describe a regular deer trail (Idaho Fish and Game; onX). Provisional.",
+	"draw_m": 30.0,
+	"dark": 0.85,
+	"litter_cut": 0.7,
+	"soil_color": [0.16, 0.12, 0.085],
+	"smooth": 0.1
+}

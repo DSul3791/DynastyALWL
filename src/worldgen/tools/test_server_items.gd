@@ -187,6 +187,19 @@ func _init() -> void:
 	items.floor_below = Callable()
 	items.clear_dropped(Vector3.ZERO, 1.0e7)
 
+	# A drop whose sent height is under the ground lands on the server's ground (main gate 21 Nov 2026: the client sends its own ground, or the
+	# feet less 1 m when it has none yet, and a stack dropped under the surface stayed buried). The fake floor answers the ground only from above.
+	var drop_floor_y: Array = [20.0]
+	items.floor_below = func(p: Vector3) -> float: return drop_floor_y[0] if p.y >= drop_floor_y[0] else NAN
+	items.report_position(7, Vector3(4000.0, 20.0, 4000.0))
+	items.give(7, stone, 3)
+	var buried_stack: int = items.inventory_of(7).numbers.find(stone)
+	items.action(7, Net.ACT_DROP, buried_stack, 0, 3, Vector3(4001.0, 19.0, 4000.0))
+	var buried_landed: Array = items._items.values().filter(func(it: Dictionary) -> bool: return Vector2(it["pos"].x, it["pos"].z).distance_to(Vector2(4001.0, 4000.0)) < 0.5)
+	check(buried_landed.size() == 1 and is_equal_approx(buried_landed[0]["pos"].y, 20.0), "a drop sent 1 m under the ground lands on the server's ground (%s)" % str(buried_landed))
+	items.floor_below = Callable()
+	items.clear_dropped(Vector3.ZERO, 1.0e7)
+
 	# MikeW's rig (2026-10-23): drop a pile of stones 2.2 m ahead; the world must hold ONE item with all of them, and the player is told.
 	items.clear_dropped(Vector3.ZERO, 1.0e7)
 	items.report_position(7, Vector3(100.0, 5.0, 100.0))
@@ -343,14 +356,14 @@ func _init() -> void:
 		if (g._drops.get("fruit_tree", {}) as Dictionary).has(str(species_name)):
 			continue   # fruit trees have a real fruit store (a few pieces a press): test_fruit_tree.gd
 
-		var row: Dictionary = GatherRulesScript.harvest_row(g._drops, str(species_name))
 		var entry: Dictionary = flora_rows.get(str(species_name), {})
+		var seasons: Array = entry.get("season", [])
+		var season_name: String = "summer" if seasons.is_empty() or seasons.has("all") or seasons.has("summer") else str(seasons[0])
+		var row: Dictionary = GatherRulesScript.harvest_row(g._drops, str(species_name), season_name)
 		if entry.is_empty() or row.is_empty():
 			check(false, "%s has a harvest row and a flora row" % species_name)
 			continue
 
-		var seasons: Array = entry.get("season", [])
-		var season_name: String = "summer" if seasons.is_empty() or seasons.has("all") or seasons.has("summer") else str(seasons[0])
 		g.season_now = func(): return season_name
 		table_peer += 1
 		g.peer_connected_hello(table_peer, "tablepeer%03d" % table_peer)
@@ -382,6 +395,25 @@ func _init() -> void:
 		print("  %s | %s | %d | %d | %d | %s | %s | %s" % [species_name, row["item"], have_1, have_3, sticks_after - sticks_before, "yes" if stays else "NO", "nothing" if not second_try else "GAVE MORE", "yes" if bool(verdict["ok"]) else "NO"])
 		check(ok, "harvest row %s: product, counts, no sticks, stays, once a season, label agrees" % species_name)
 
+	# Wild rose (D-ROSE-1): petals in summer, hips and 1 to 2 seeds in autumn, nothing in spring though the bush is in leaf; the client's prompt agrees.
+	var rose_flora: Dictionary = flora_rows["wild_rose"]
+	var rose_avg: float = (float(rose_flora["height_m"][0]) + float(rose_flora["height_m"][1])) * 0.5
+	var rose_got: Dictionary = {}
+	for rose_season in ["spring", "summer", "autumn"]:
+		g.season_now = func(): return rose_season
+		table_peer += 1
+		g.peer_connected_hello(table_peer, "rosepeer%03d" % table_peer)
+		g.report_position(table_peer, Vector3(500.0, 70.0, 500.0))
+		g._last_gather.clear()
+		var picked: bool = g.gather(table_peer, "wild_rose", "shrub", "0,0,%d" % (3000 + table_peer), 3000 + table_peer, Vector3(501.0, 70.0, 500.0), rose_avg)
+		var rose_inv = g.inventory_of(table_peer)
+		var prompt_ok: bool = bool(GatherRulesScript.check(rose_flora, "shrub", g._drops, rose_season, func(_t): return true, func(_i): return true)["ok"])
+		rose_got[rose_season] = [picked, rose_inv.count_of(g.table.number_of("rose_petals")), rose_inv.count_of(g.table.number_of("rose_hips")), rose_inv.count_of(g.table.number_of("wild_rose_seed")), prompt_ok]
+	print("wild rose by season [picked, petals, hips, seeds, prompt]: %s" % str(rose_got))
+	check(rose_got["spring"] == [false, 0, 0, 0, false], "a wild rose gives nothing in spring and the prompt says not in season")
+	check(rose_got["summer"][0] and rose_got["summer"][1] >= 20 and rose_got["summer"][2] == 0 and rose_got["summer"][3] == 0 and rose_got["summer"][4], "a wild rose gives petals only in summer")
+	check(rose_got["autumn"][0] and rose_got["autumn"][1] == 0 and rose_got["autumn"][2] >= 150 and rose_got["autumn"][3] >= 1 and rose_got["autumn"][3] <= 2 and rose_got["autumn"][4], "a wild rose gives hips and 1 to 2 seeds in autumn")
+	check(str(GatherRulesScript.harvest_row(g._drops, "wild_rose").get("item", "")) == "rose_petals" and GatherRulesScript.harvest_row(g._drops, "wild_rose", "winter").is_empty(), "with no season the first row names the product; a season without a row has none")
 	check(GatherRulesScript.harvest_count({"count": 10}, 0.01) == 1 and GatherRulesScript.harvest_count({"count": 0}, 0.5) == 1, "a harvest count is never 0")
 	check(GatherRulesScript.harvest_count({"count": 10}, 3.0) == 30 and GatherRulesScript.harvest_count({"count": 7}, 1.2) == 9, "counts are the table number times size, rounded up")
 	check(GatherRulesScript.harvest_scale(g._drops, 99.0, {"height_m": [1.0, 1.0]}) == 3.0 and GatherRulesScript.harvest_scale(g._drops, 0.1, {"height_m": [1.0, 1.0]}) == 1.0, "size scale stays between 1x and 3x")
@@ -2980,7 +3012,7 @@ func _init() -> void:
 
 	check(on_bank >= 8, "four cells by a stream get stones along its banks (%d on the bank)" % on_bank)
 	check(in_water == 0, "bank stones are never put in the water")
-	var ore_rocks: int = 0   # copper and tin rocks by the stream (boulders.json ore_rocks, Dave 21 Nov 2026) are laid with the cell too, but they are not bank stones
+	var ore_rocks: int = 0   # copper, tin and iron rocks by the stream (boulders.json ore_rocks, Dave 21 Nov 2026) are laid with the cell too, but they are not bank stones
 
 	for bid in sc._items:
 		var row: Dictionary = sc._items[bid]
@@ -3562,6 +3594,29 @@ func _init() -> void:
 	zone_now[0] = 17000
 	zi.report_position(1, Vector3(5002.0, 5.0, 100.0))
 	check(zone_sent.size() == 4, "an unknown biome (-1) sends nothing")
+	# A tile not in memory yet (BugsList 108): the check never reads it on the tick, and looks again on the next 2 s check once it is in.
+	var tile_in: Array = [false]
+	var zone_reads: Array = [0]
+	zi.ground_ready = func(_x, _z): return tile_in[0]
+	zi.zone_at = func(_pos):
+		zone_reads[0] += 1
+		return 21
+	zone_now[0] = 20000
+	zi.report_position(1, Vector3(9000.0, 5.0, 100.0))
+	check(zone_reads[0] == 0 and zone_sent.size() == 4, "an unread tile: no zone read and nothing sent (%d reads)" % zone_reads[0])
+	tile_in[0] = true
+	zone_now[0] = 20500
+	zi.report_position(1, Vector3(9001.0, 5.0, 100.0))
+	check(zone_reads[0] == 1 and zone_sent.size() == 5 and zone_sent[4] == [1, 21], "once the tile is in, the next report reads it (no 2 s wait after a skip) and the teleport sends it (%s)" % str(zone_sent))
+	# The snow check: an unread tile reads no ground, keeps the last cell's answer (not snow before any), and reads once the tile is in.
+	var ground_reads: Array = [0]
+	zi.ground_material = func(_x, _z):
+		ground_reads[0] += 1
+		return "loam"
+	tile_in[0] = false
+	check(not zi._on_snow(7, Vector3(10.5, 5.0, 10.5)) and ground_reads[0] == 0, "an unread tile: no ground read, not snow")
+	tile_in[0] = true
+	check(not zi._on_snow(7, Vector3(10.5, 5.0, 10.5)) and ground_reads[0] == 1, "once in, the cell is read once")
 	# One minute of a player walking over a border back and forth every 5 s: messages and bytes (a zone call is a reliable rpc with one int, about 12 bytes with its header).
 	var walker = make("user://test_server_items_zone2")
 	var walker_sent: Array = []

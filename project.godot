@@ -41,4 +41,5 @@ window/stretch/mode="viewport"
 
 [rendering]
 
-rendering_device/driver.windows="d3d12"
+rendering_device/driver.windows="vulkan"
+rendering_device/fallback_to_d3d12=true

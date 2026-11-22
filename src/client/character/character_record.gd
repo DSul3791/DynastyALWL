@@ -22,7 +22,7 @@ const FRAME_LABELS := {"feminine": "Curved", "masculine": "Broad", "neutral": "E
 const DEFAULT_FRAME := "neutral"
 
 
-# "Body 1, Even frame" for showing under a name.
+# "Body A, Even frame" for showing under a name.
 static func describe(rec: Dictionary) -> String:
 	return "%s, %s frame" % [BodyModels.label(str(rec.get("body", BodyModels.DEFAULT))), FRAME_LABELS.get(str(rec.get("frame", DEFAULT_FRAME)), "Even")]
 

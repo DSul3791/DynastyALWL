@@ -1,5 +1,7 @@
 # Kathleen's art task queue (standing instruction from Dave: finish, make up three more, do them, repeat)
 
+> **Not a live to-do list (reviewed 21 Nov 2026).** This was a queue for a role in the 1 Nov team, which no longer exists. Its open items that still matter are in [docs/TODO.md](../docs/TODO.md), with what was done or is no longer relevant. Kept as history.
+
 Nov 1, round A (assigned work first):
 - [ ] A1 Lying trunk after the final bark fix, real game, QA card.
 - [ ] A2 Held stone axe (F-10), real game, QA card.

@@ -68,6 +68,7 @@ Keep these separate from the design: they own assignments, implementation state,
 
 | Work area | Records | Purpose |
 |---|---|---|
+| To-do list | [TODO](TODO.md), [current bugs](../BugsList_Current.md), [fixed bugs](../BugsList_Fixed.md) | What is not built yet, grouped into thread-sized pieces; Dave's play-test problems until he has played the fix. |
 | Goal authoring | [Working walkthrough draft](design/PLAYER_GOALS_REWARDS_DRAFT.md), [corrected review catalog](design/PLAYER_GOALS_CATALOG_CORRECTED.md) | Current walkthrough authoring/regeneration inputs; use mission decisions for approvals, amounts and activation. |
 | Goals/progression repair | [State](ai-team/missions/GOALS-REPAIR/STATE.md), [decisions](ai-team/missions/GOALS-REPAIR/REPAIR_DECISIONS.md) | Current mission state and scoped decisions/assumptions. |
 | Repair planning | [Integration plan](design/CATALOG_IMPLEMENTATION_PLAN.md), [missing-systems plan](design/PLAYER_PROGRESSION_MISSING_SYSTEMS_REPAIR_PLAN.md) | Repair sequence and dependencies; not new gameplay authorization. |
@@ -75,6 +76,7 @@ Keep these separate from the design: they own assignments, implementation state,
 | Wood implementation | [WOOD-SYSTEM state](ai-team/missions/WOOD-SYSTEM/STATE.md) | Phases, provisional choices, evidence and remaining player checks. |
 | Doors and doorways | [Contract](ai-team/missions/BUGLIST-002/CONTRACT.md), [ledger](ai-team/missions/BUGLIST-002/LEDGER.md), [design correction](buglists/BUGLIST-002.md) | Approved task scope and actual implementation/verification records. |
 | Fog implementation | [Technical plan](design/FOG_PLAN.md), [F6 checklist](design/FOG_F6.md) | Implementation details and appearance checks for the director's fog design. |
+| First-load lag (BugsList 108, 93) | [Local server at the first load](design/LOCAL_SERVER_FIRST_LOAD_PLAN.md) | Plan only: evidence, candidate causes and options for the launcher's server and the client competing at the first join; not an approval. |
 
 ## Reviewed character and wildlife references
 
@@ -88,6 +90,8 @@ Separate references for distinct topics. Dated implementation notes preserve cod
 | Comfort and Rested | [Comfort](COMFORT_DESIGN.md) | Comfort/Rested behavior, tuning, open questions and integration reference; recipes route to the master catalog. No blanket approval or runtime certification. |
 | Wildlife coverage | [Animal specification](../ANIMAL_SPEC.md) | 30–31 Oct data audit/species proposals and 8 Nov alarm-group design; not a current species census or passing test certificate. |
 | Animal reactions to players | [Animal reactions](design/ANIMAL_REACTIONS.md) | Provisional 19 Nov 2026 reaction table (notice / flee / safe per species) and the sense changes RX-1 to RX-3, for Dave's review; values live in data/animals/animals.json. |
+| Animals lying down, rabbit groups | [Animal resting](design/ANIMAL_RESTING.md) | 21 Nov 2026 (D-ANIM-1, protocol 148): grazers sent lying (state 19) by their active share; rabbits in groups of 2 to 4 (HB-4, provisional). |
+| Animal routines, game trails, trapping | [Routines, trails and trapping](design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md) | 22 Nov 2026 (protocol 149, D-TRAP-1/2/3): warrens and deer ranges, daily trips along trails drawn as matted grass, snares on runs and while away, "Snare a rabbit" goal; stage 2a animals keep to the sun, moose and elk ranges; stage 2b fox earths and night rounds by the warrens, a fox now and then in a snare while away; stage 2c players' own worn paths and choke points; stage 2d signs along trails by Tracking; stages 3-4 planned. |
 
 ## Further design areas — routing review pending
 

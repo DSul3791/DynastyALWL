@@ -5,8 +5,11 @@ extends SceneTree
 # tick, the background writer's part, and how many files and bytes it wrote, for a save with one item changed and a save after
 # a fire has burned a minute. Before each, one save interval of the rolling save check runs as the tick runs it, and its cost a tick is
 # printed. Works on builds before and after the area saves and the check, so the same numbers compare. Prints "save_cost:" lines.
+# --events=S (event saves, D-TODO-2 #1473): then runs the tick's save part for --window=W real seconds (default 60) twice at 20 ticks a
+# second, once with no big events and once with a big event (save_soon: a build, trade, craft, sleep or leave) every S seconds, and prints
+# for each how many saves ran (timer or event), what each cost on the tick, the worst tick and the total on the tick per minute.
 # Never point it at a live save.
-#   godot --headless --path . --script res://src/worldgen/tools/measure_save_cost.gd -- [--items=N] [--store=DIR]
+#   godot --headless --path . --script res://src/worldgen/tools/measure_save_cost.gd -- [--items=N] [--store=DIR] [--events=S] [--window=W]
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -93,15 +96,83 @@ func periodic(items, dir: String, what: String) -> void:
 	print("save_cost: %s: on the tick %.1f ms, writer %.1f ms, world item files written %d (%d KB)" % [what, float(t1 - t0) / 1000.0, float(t2 - t1) / 1000.0, written, bytes >> 10])
 
 
+# One window of the items tick's save part as server_items tick runs it (save countdown, rolling check, writer reaped, timer or event save),
+# real time at 20 ticks a second, with a big event every `every_s` seconds (0: none). Both windows change one world item a second, as ordinary play
+# does (so the timer saves write something); the events also change one item each, as a build does, and ask for a save soon.
+func event_window(items, window_s: float, every_s: float, what: String) -> void:
+	var dt: float = 0.05
+	var ticks: int = int(window_s / dt)
+	var ids: Array = items._items.keys()
+	var saves: int = 0
+	var event_saves_was: int = int(items.get("_event_saves"))
+	var save_us: int = 0
+	var worst_save_us: int = 0
+	var worst_tick_us: int = 0
+	var events: int = 0
+	var next_event: float = every_s
+	var next_touch: float = 1.0
+	var touches: int = 0
+	var clock: float = 0.0
+	items._save_in = ItemsScript.SAVE_EVERY_S
+	items._since_save = 0.0
+
+	for t in ticks:
+		var started: int = Time.get_ticks_usec()
+		clock += dt
+
+		if clock >= next_touch:
+			next_touch += 1.0
+			var touched = ids[(touches * 104729 + 13) % ids.size()]
+			items._items[touched]["count"] = int(items._items[touched]["count"]) + 1
+			items._save_note(touched)
+			items._dirty = true
+			touches += 1
+
+		if every_s > 0.0 and clock >= next_event:
+			next_event += every_s
+			var id = ids[(events * 7919) % ids.size()]
+			items._items[id]["count"] = int(items._items[id]["count"]) + 1
+			items.save_soon([id])
+			events += 1
+
+		items._save_in -= dt
+		items._save_sweep(items._sweep_slice(dt))
+		items._reap_writer()
+		items._since_save += dt
+		var before_save: int = Time.get_ticks_usec()
+
+		if items._save_in <= 0.0 or items._event_save_due():
+			items._autosave()
+			var spent: int = Time.get_ticks_usec() - before_save
+			saves += 1
+			save_us += spent
+			worst_save_us = maxi(worst_save_us, spent)
+
+		var tick_us: int = Time.get_ticks_usec() - started
+		worst_tick_us = maxi(worst_tick_us, tick_us)
+		OS.delay_usec(maxi(0, int(dt * 1000000.0) - tick_us))   # real time, so the background writer finishes as it would on a server
+
+	items._async_writes = false
+	items._finish_writer()
+	var by_event: int = int(items.get("_event_saves")) - event_saves_was
+	print("save_cost: events %s over %.0f s: %d events, %d saves (%d brought forward by an event, %d on the timer), %.2f ms a save on the tick on average, %.2f ms at worst; worst tick %.2f ms; %.1f ms on the tick a minute" % [what, window_s, events, saves, by_event, saves - by_event, float(save_us) / maxf(float(saves), 1.0) / 1000.0, float(worst_save_us) / 1000.0, float(worst_tick_us) / 1000.0, float(save_us) / 1000.0 * 60.0 / window_s])
+
+
 func _init() -> void:
 	var n: int = 50000
 	var dir: String = "user://measure_save_cost"
+	var event_every_s: float = -1.0
+	var window_s: float = 60.0
 
 	for argument in OS.get_cmdline_user_args():
 		if argument.begins_with("--items="):
 			n = int(argument.trim_prefix("--items="))
 		elif argument.begins_with("--store="):
 			dir = argument.trim_prefix("--store=")
+		elif argument.begins_with("--events="):
+			event_every_s = maxf(float(argument.trim_prefix("--events=")), 0.05)
+		elif argument.begins_with("--window="):
+			window_s = maxf(float(argument.trim_prefix("--window=")), 1.0)
 
 	if dir.begins_with("user://server_store"):
 		print("measure_save_cost: give a throwaway --store=DIR")
@@ -152,6 +223,11 @@ func _init() -> void:
 
 	check_interval(items)
 	periodic(items, dir, "a minute of countdowns")
+
+	if event_every_s > 0.0 and n > 0 and items.has_method("save_soon"):
+		event_window(items, window_s, 0.0, "none")
+		event_window(items, window_s, event_every_s, "every %.1f s" % event_every_s)
+
 	t0 = Time.get_ticks_usec()
 	var again = make(dir)
 	print("save_cost: load %.1f ms, %d world items back" % [float(Time.get_ticks_usec() - t0) / 1000.0, again._items.size()])

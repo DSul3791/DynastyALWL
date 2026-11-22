@@ -14,6 +14,7 @@ const TrampleScript := preload("res://src/client/grass_trample.gd")
 const NearWater := preload("res://src/shared/near_water_growth.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")   # "grass: <part>" splits of the client's "grass" (Jason/Steve 5 Nov 2026: #374 found no gain)
 const Puddles := preload("res://src/client/puddles.gd")
+const TrailCodec := preload("res://src/shared/trail_codec.gd")   # ROUTE_BLOCK_M, the side of a routes block
 const CELL_M := 6.0
 const PLAYER_CLEAR_M := 1.4              # grass within this of the local player is cut down to PLAYER_KEEP of its height (soft edge) so the feet show in third person
 const PLAYER_KEEP := 0.4               # Dave 2 Nov QA: standing in grass looked like "a weird green carpet" (it was 0.12 of height, in first person too); now gentler and third person only
@@ -84,6 +85,7 @@ const LOD_SCALE_SHORT := [1.0, 1.5, 2.1, 2.1] # the Low tier (reach 40 m)
 const BAND_SHARE := [1.0, 1.0, 1.0, 1.0]      # cards built per band beyond 50 m: all of them now; the thinning is a smooth gradient in the shader (data/look/grass_far.json, Dave 3 Nov), not a step per band
 const TALL_MAX_LOD := 2                       # tall grass (meadow patches) is not built in the very far band; the shader fades it out by 80 percent of the radius
 const FAR_CONFIG := "res://data/look/grass_far.json"
+const WORN_CONFIG := "res://data/look/worn_earth.json"   # worn earth on bare ground (TR-14), drawn by the ground shader from the run map
 var fade_start_share: float = 0.5            # THE setting (grass_far.json): the thinning starts at this share of the grass radius
 var far_share: float = 0.3                   # share of the grass cards kept at the edge
 var tall_far_share: float = 0.0              # share of the tall grass kept at 80 percent of the radius
@@ -162,6 +164,10 @@ uniform sampler2D trample : filter_nearest, repeat_enable, hint_default_black;  
 uniform float trample_now = 0.0;
 uniform sampler2D trail_map : filter_linear, repeat_enable, hint_default_black;   // worn game trails, R = strength, 4 m texels over 1024 m (set_trail_block)
 uniform float trail_draw = 0.25;
+uniform sampler2D run_map : filter_linear, repeat_disable, hint_default_black;   // trails between animal places, matted (set_trail_routes), RUN_TEXELS of RUN_TEXEL_M
+uniform vec2 run_origin = vec2(0.0);    // the run map's south-west corner, world x, z
+uniform float run_size = 128.0;         // metres it covers
+uniform float run_flat = 1.0;           // 0 with the trails switched off
 uniform float recover_s = 300.0;        // data/look/grass_trample.json
 uniform float trample_squash = 0.75;
 uniform vec3 season_tint = vec3(1.0);   // data/look/seasons.json ground.grass tint_rgb for the season (set_season)
@@ -192,6 +198,11 @@ void vertex() {
 		// Stays down most of the time (so the trail reads) and stands back up smoothly, fully only after recover_s.
 		float q = clamp(age / recover_s, 0.0, 1.0);
 		flat_down = 1.0 - q * q;
+	}
+	// Trails between animal places (Dave 22 Nov 2026): the grass on a run or a deer trail lies matted, as where someone walked, and stays so.
+	vec2 run_uv = (MODEL_MATRIX[3].xz - run_origin) / run_size;
+	if (run_uv.x > 0.0 && run_uv.y > 0.0 && run_uv.x < 1.0 && run_uv.y < 1.0) {
+		flat_down = max(flat_down, textureLod(run_map, run_uv, 0.0).r * run_flat);
 	}
 	VERTEX.y *= 1.0 - trample_squash * flat_down;
 	// Game trails (Dave 2026-10-21): where animals pass again and again the grass grows low and thin and a little paler.
@@ -290,6 +301,24 @@ var _trails_on: bool = true
 var _trail_draw: float = 0.25
 var _trail_msec: int = 0
 var _trail_mult: float = 1.0
+const RUN_TEXELS := 256                  # the run map: 256 texels of 0.5 m round the player (128 m; the near grass reaches about 30 m)
+const RUN_TEXEL_M := 0.5
+const RUN_WIDTH_M := [0.8, 1.2]           # a rabbit run, a deer trail (trail_codec.gd route kinds; TR-5): as wide as a walked path (trample 1.6 m), so a line reads through the tufts
+const RUN_FADE_M := 0.5                    # the matting fades out over this past the half width
+const RUN_MOVE_M := 16.0                 # the map is laid again round the player after this walk
+var _run_logged: String = ""         # the last "grass runs:" line, so it is printed only when it changes
+var _run_log_msec: int = 0          # and at most once in 10 s
+var _run_stamps: Dictionary = {}     # route kind -> its stamp (_run_stamp)
+var _run_routes: Dictionary = {}         # Vector2i block -> [[kind, PackedVector2Array world x, z], ...], as the server sent them
+var _run_image: Image = null
+var _run_texture: ImageTexture = null
+var _run_origin: Vector2 = Vector2(INF, INF)
+var _ground_material: ShaderMaterial = null   # the terrain's ground material, for worn earth (set_ground_material)
+var _run_laid: bool = false                   # a route has been laid on the run map at least once (worn earth binds after that)
+var _run_laid_origin: Vector2 = Vector2.ZERO  # the corner the run map texture was last laid at
+var _worn_cfg: Dictionary = {}
+var _run_dirty: bool = false
+var _run_msec: int = 0
 var _flora
 var _tables
 var brook_spots: Callable = Callable()   # (x0, z0, x1, z1) -> PackedFloat32Array of (x, z, NAN): the record brooks and spring heads in the box (terrain_client)
@@ -428,10 +457,15 @@ func setup(terrain: Node3D, flora, tables) -> void:
 		draw = float(parsed.get("draw_threshold", 0.25))
 		_trail_draw = draw
 
+	_run_image = Image.create(RUN_TEXELS, RUN_TEXELS, false, Image.FORMAT_R8)
+	_run_texture = ImageTexture.create_from_image(_run_image)
+
 	for n in range(_materials.size()):
 		if not _is_solid(n):
 			_materials[n].set_shader_parameter("trail_map", _trail_texture)
 			_materials[n].set_shader_parameter("trail_draw", draw)
+			_materials[n].set_shader_parameter("run_map", _run_texture)
+			_materials[n].set_shader_parameter("run_size", float(RUN_TEXELS) * RUN_TEXEL_M)
 
 	set_radius(radius_m)
 
@@ -442,6 +476,124 @@ func setup(terrain: Node3D, flora, tables) -> void:
 func set_trail_block(block_x: int, block_z: int, cells: Dictionary) -> void:
 	_trail_blocks[Vector2i(block_x, block_z)] = cells
 	_trail_dirty = true
+
+
+# One block's trails between animal places (protocol 149, trail_codec.gd decode_routes): [[kind, world points], ...]. Kept per block;
+# the run map is laid from the blocks round the player.
+func set_trail_routes(block_x: int, block_z: int, routes: Array) -> void:
+	_run_routes[Vector2i(block_x, block_z)] = routes
+	_run_dirty = true
+
+	if not routes.is_empty():
+		print("grass runs: block %d,%d came with %d routes" % [block_x, block_z, routes.size()])
+
+
+# Lays the trails within the run map round the player: each route stepped every half metre (a texel), a footprint of the texels round each
+# step (full on its middle, fading over RUN_FADE_M past the kind's half width, worked out once per kind) laid on the map, the stronger kept.
+# About 150 m of trail in the window: a few hundred steps of 9 (run) to 13 (deer trail) writes, at most twice a second while it changes.
+func _rebuild_runs(player: Vector3) -> void:
+	var size: float = float(RUN_TEXELS) * RUN_TEXEL_M
+	var centre: Vector2 = _run_origin + Vector2(size, size) * 0.5
+
+	if _run_origin.x == INF or Vector2(player.x, player.z).distance_to(centre) > RUN_MOVE_M:
+		_run_origin = (Vector2(player.x, player.z) - Vector2(size, size) * 0.5).snapped(Vector2(RUN_TEXEL_M, RUN_TEXEL_M))
+		_run_dirty = true
+
+	if not _run_dirty or Time.get_ticks_msec() < _run_msec:
+		return
+
+	_run_msec = Time.get_ticks_msec() + 500
+	_run_dirty = false
+	var data: PackedByteArray = PackedByteArray()
+	data.resize(RUN_TEXELS * RUN_TEXELS)
+	data.fill(0)
+	var here: Vector2i = Vector2i(int(floor(player.x / TrailCodec.ROUTE_BLOCK_M)), int(floor(player.z / TrailCodec.ROUTE_BLOCK_M)))
+	var window: Rect2 = Rect2(_run_origin, Vector2(size, size)).grow(2.0)
+	var drawn: int = 0
+	var texels: int = 0
+
+	for key in _run_routes.keys():
+		if absi(key.x - here.x) > 2 or absi(key.y - here.y) > 2:
+			_run_routes.erase(key)
+			continue
+
+		for route in _run_routes[key]:
+			var footprint: PackedInt32Array = _run_stamp(clampi(int(route[0]), 0, RUN_WIDTH_M.size() - 1))
+			var pts: PackedVector2Array = route[1]
+			var last: int = -1
+			drawn += 1
+
+			for i in range(1, pts.size()):
+				var a: Vector2 = pts[i - 1]
+				var b: Vector2 = pts[i]
+
+				if not window.has_point(a) and not window.has_point(b):
+					continue
+
+				var steps: int = maxi(int(ceil(a.distance_to(b) / RUN_TEXEL_M)), 1)
+
+				for k in steps + 1:
+					var p: Vector2 = a.lerp(b, float(k) / float(steps))
+					var tx: int = int(floor((p.x - _run_origin.x) / RUN_TEXEL_M))
+					var tz: int = int(floor((p.y - _run_origin.y) / RUN_TEXEL_M))
+
+					if tx + tz * RUN_TEXELS == last:
+						continue   # the same texel as the step before: its footprint is already laid
+
+					last = tx + tz * RUN_TEXELS
+
+					for e in range(0, footprint.size(), 3):
+						var x: int = tx + footprint[e]
+						var z: int = tz + footprint[e + 1]
+
+						if x < 0 or z < 0 or x >= RUN_TEXELS or z >= RUN_TEXELS:
+							continue
+
+						var at: int = x + z * RUN_TEXELS
+
+						if footprint[e + 2] > data[at]:
+							texels += 1 if data[at] == 0 else 0
+							data[at] = footprint[e + 2]
+
+	var line: String = "grass runs: %d routes near, %d texels matted (%.0f m2)" % [drawn, texels, float(texels) * RUN_TEXEL_M * RUN_TEXEL_M]
+
+	if line != _run_logged and Time.get_ticks_msec() >= _run_log_msec:
+		_run_logged = line
+		_run_log_msec = Time.get_ticks_msec() + 10000
+		print(line + " round %.0f,%.0f" % [player.x, player.z])   # a lane confirms the runs reach the grass (at most one line in 10 s)
+
+	_run_image.set_data(RUN_TEXELS, RUN_TEXELS, false, Image.FORMAT_R8, data)
+	_run_texture.update(_run_image)
+	_run_laid_origin = _run_origin   # the corner the texture now holds (the ground gets this one, never a corner the map has not been laid at)
+	_run_laid = _run_laid or texels > 0
+
+	if _ground_material != null:
+		_ground_material.set_shader_parameter("run_origin", _run_laid_origin)
+
+	for n in range(_materials.size()):
+		if not _is_solid(n):
+			_materials[n].set_shader_parameter("run_origin", _run_origin)
+
+
+# The texels round a step for a route kind, as [dx, dz, value 1..255] triples: full within the half width, fading over RUN_FADE_M, measured
+# from texel middle to texel middle (a step is placed to a texel; the line is off by at most a quarter metre). Worked out once per kind.
+func _run_stamp(kind: int) -> PackedInt32Array:
+	if _run_stamps.has(kind):
+		return _run_stamps[kind]
+
+	var half: float = float(RUN_WIDTH_M[kind]) * 0.5
+	var reach: int = int(ceil((half + RUN_FADE_M) / RUN_TEXEL_M))
+	var footprint: PackedInt32Array = PackedInt32Array()
+
+	for dz in range(-reach, reach + 1):
+		for dx in range(-reach, reach + 1):
+			var v: int = int(round(255.0 * (1.0 - smoothstep(half, half + RUN_FADE_M, Vector2(dx, dz).length() * RUN_TEXEL_M))))
+
+			if v > 0:
+				footprint.append_array([dx, dz, v])
+
+	_run_stamps[kind] = footprint
+	return footprint
 
 
 func _rebuild_trails(player: Vector3) -> void:
@@ -505,10 +657,45 @@ func set_trail_multiplier(mult: float) -> void:
 func set_trails_on(on: bool) -> void:
 	_trails_on = on
 
+	if _ground_material != null:
+		_ground_material.set_shader_parameter("worn_earth", _worn_params())
+
 	for n in range(_materials.size()):
 		if not _is_solid(n):
 			_materials[n].set_shader_parameter("trample_squash", _trample.squash if on else 0.0)
 			_materials[n].set_shader_parameter("trail_draw", _trail_draw if on else 9.0)
+			_materials[n].set_shader_parameter("run_flat", 1.0 if on else 0.0)
+
+
+# Whether routes have come and the run map is laid round the player (the worn earth is bound to the ground then).
+func has_runs() -> bool:
+	return _run_texture != null and _run_laid
+
+
+# The ground's material (puddles.gd binds it with the worn-trail map): the run map and its corner go to it too, for worn earth on bare ground.
+# Bound once the first routes have been laid (the run map is black until then), so nothing about it happens in the first-join window.
+func set_ground_material(material: ShaderMaterial) -> void:
+	_ground_material = material
+	material.set_shader_parameter("run_map", _run_texture)
+	material.set_shader_parameter("run_size", float(RUN_TEXELS) * RUN_TEXEL_M)
+	material.set_shader_parameter("run_origin", _run_laid_origin)
+	var c: Dictionary = _worn_config()
+	var soil: Array = c.get("soil_color", [0.16, 0.12, 0.085])
+	material.set_shader_parameter("worn_soil", Vector4(float(soil[0]), float(soil[1]), float(soil[2]), float(c.get("smooth", 0.1))))
+	material.set_shader_parameter("worn_earth", _worn_params())
+
+
+func _worn_config() -> Dictionary:
+	if _worn_cfg.is_empty():
+		var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(WORN_CONFIG))
+		_worn_cfg = parsed if typeof(parsed) == TYPE_DICTIONARY else {"draw_m": 30.0}
+
+	return _worn_cfg
+
+
+func _worn_params() -> Vector4:
+	var c: Dictionary = _worn_config()
+	return Vector4(1.0 if _trails_on else 0.0, float(c.get("draw_m", 30.0)), float(c.get("dark", 0.85)), float(c.get("litter_cut", 0.7)))
 
 
 func trail_reach_m() -> float:
@@ -1429,6 +1616,8 @@ func update(from_position: Vector3) -> void:
 	t_part = Probe.start()
 	_trample.flush()
 	_push_player(from_position)
+	_rebuild_trails(from_position)   # the worn grid (it was kept but never laid into its map until 22 Nov 2026)
+	_rebuild_runs(from_position)
 
 	if _trunk_msec == 0 or (_trunk_msec > 0 and now >= _trunk_msec):
 		_trunk_msec = now + 1500

@@ -1260,7 +1260,7 @@
 			"kind": "material",
 			"description": "Bright red seed pods of the wild rose. Tart and full of seeds; boiled into syrup.",
 			"how_to_get": [
-				"Picked from wild rose (spring/summer/autumn)"
+				"Picked from wild rose in autumn"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -1270,7 +1270,7 @@
 			"kind": "material",
 			"description": "Soft pink wild rose petals. Scent a room or steep in water.",
 			"how_to_get": [
-				"Picked from wild rose (spring/summer/autumn)"
+				"Picked from wild rose in summer"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -2382,7 +2382,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"chest": {
 			"name": "Wicker - Chest",
@@ -2391,7 +2391,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"chopping_block": {
 			"name": "Chopping block",
@@ -4279,7 +4279,8 @@
 				"Craft at a workbench: 1 Wooden - Hoe, 2 Stone, 1 Twine"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"iron_hoe": {
 			"name": "Iron - Hoe",
@@ -4334,7 +4335,7 @@
 		"nails": {
 			"name": "Iron nails",
 			"kind": "material",
-			"description": "Small iron nails. They fix boards in builds that take iron nails or a lesser metal.",
+			"description": "Small iron nails, strong. For construction and strong boxes: bins, racks, mills, fences and big chests.",
 			"how_to_get": [
 				"Craft at a brick forge: 1 Iron ingot"
 			],
@@ -4526,7 +4527,7 @@
 			"kind": "material",
 			"description": "A wooden wheel with paddles. It turns where running water pushes it.",
 			"how_to_get": [
-				"Craft at a workbench: 20 Plank, 80 Bronze nails or better, 4 Tar"
+				"Craft at a workbench: 20 Plank, 80 Iron nails or better, 4 Tar"
 			],
 			"used_for": [
 				"Used to build Sawmill"
@@ -4538,7 +4539,7 @@
 			"kind": "placeable",
 			"description": "A saw frame on a tall foundation, driven by a water wheel in running water.",
 			"how_to_get": [
-				"Build with a hammer (press R): 40 Plank, 100 Bronze nails or better, 1 Saw blade, 1 Water wheel"
+				"Build with a hammer (press R): 40 Plank, 100 Iron nails or better, 1 Saw blade, 1 Water wheel"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -4560,7 +4561,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"woodworking_table": {
 			"name": "Woodworking table",
@@ -4589,7 +4590,8 @@
 				"Craft at a wood carving station: 1 Wooden block, 1 Stick, 1 Twine (keep Stone - Knife)"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"stone_hammer": {
 			"name": "Stone - Hammer",
@@ -5080,10 +5082,11 @@
 			"kind": "tool",
 			"description": "A strip of hard steel. Strike flint on it for a shower of sparks.",
 			"how_to_get": [
-				"Craft at a brick forge: 1 Steel ingot"
+				"Not made yet: its recipe is locked until it has a use"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "planned"
 		},
 		"javelin": {
 			"name": "Javelin",
@@ -5108,7 +5111,7 @@
 				"Used in Wooden shingle"
 			],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"stone_pickaxe": {
 			"name": "Stone - Pickaxe",
@@ -5157,7 +5160,8 @@
 			"kind": "material",
 			"description": "A heavy lump streaked green and red. A smelter turns each one into a copper ingot.",
 			"how_to_get": [
-				"Broken from a boulder over a copper body with any pick"
+				"Picked up by hand as small green pieces along rivers and streams inland, more and bigger toward the hills",
+				"Broken from a copper rock or a green outcrop at a copper source with any pick or the Stone Hammer"
 			],
 			"used_for": [
 				"Used in Copper ingot"
@@ -5169,7 +5173,8 @@
 			"kind": "material",
 			"description": "A dark, very heavy lump. A smelter turns each one into a tin ingot; with copper ore, into bronze.",
 			"how_to_get": [
-				"Broken from a boulder over a tin body with any pick"
+				"Picked up by hand as small dark pebbles in river beds below a tin source, which lies farther inland than copper, below the high hills",
+				"Broken from a tin rock or an outcrop at a tin source with any pick or the Stone Hammer"
 			],
 			"used_for": [
 				"Used in Tin ingot"
@@ -5181,10 +5186,83 @@
 			"kind": "material",
 			"description": "A rusty brown lump. Smelts to iron in an Improved smelter with its bellows worked, or an Advanced smelter.",
 			"how_to_get": [
-				"Break iron rock outcrops with a bronze or better pick."
+				"Picked up by hand as small rust-red stones along rivers and streams almost anywhere",
+				"Broken from larger iron rocks and rusty outcrops at an iron source with a bronze or better pick"
 			],
 			"used_for": [
 				"Smelted into Iron ingots and, with carbon, Steel ingots"
+			],
+			"obtainable_now": true
+		},
+		"iron_chunk": {
+			"name": "Iron chunk",
+			"kind": "material",
+			"description": "A heavy lump of meteorite iron and nickel. It works as an Iron ingot.",
+			"how_to_get": [
+				"Picked up loose, or broken from a dark pitted meteorite with any pick or the Stone Hammer. Meteorites lie anywhere."
+			],
+			"used_for": [
+				"Used anywhere an Iron ingot is: recipes, buildings and repairs"
+			],
+			"obtainable_now": true
+		},
+		"gold_nugget": {
+			"name": "Gold nugget",
+			"kind": "material",
+			"description": "A small, heavy lump of native gold. Worth a great deal to a trader.",
+			"how_to_get": [
+				"Found in a pocket of gravel or a quartz vein while digging below an ore source, then broken out with a pick or the Stone Hammer"
+			],
+			"used_for": [
+				"Sold to traders"
+			],
+			"obtainable_now": true
+		},
+		"silver_ore": {
+			"name": "Silver ore",
+			"kind": "material",
+			"description": "A dull grey lump with bright metallic streaks. Traders pay well for it.",
+			"how_to_get": [
+				"Found in a pocket while digging near a copper source, then broken out with a pick or the Stone Hammer"
+			],
+			"used_for": [
+				"Sold to traders"
+			],
+			"obtainable_now": true
+		},
+		"amethyst": {
+			"name": "Amethyst",
+			"kind": "material",
+			"description": "A cluster of violet quartz crystals from a hollow in the rock.",
+			"how_to_get": [
+				"Found in a crystal hollow while digging near an ore source inland, then broken out with a pick or the Stone Hammer"
+			],
+			"used_for": [
+				"Sold to traders"
+			],
+			"obtainable_now": true
+		},
+		"garnet": {
+			"name": "Garnet",
+			"kind": "material",
+			"description": "A deep red crystal grown in hard mountain rock.",
+			"how_to_get": [
+				"Found in a pocket of hard rock while digging near an ore source high in the mountains, then broken out with a pick or the Stone Hammer"
+			],
+			"used_for": [
+				"Sold to traders"
+			],
+			"obtainable_now": true
+		},
+		"agate": {
+			"name": "Agate",
+			"kind": "material",
+			"description": "A rounded stone that shows fine coloured bands when broken.",
+			"how_to_get": [
+				"Found in a hollow while digging near an ore source, then broken out with a pick or the Stone Hammer"
+			],
+			"used_for": [
+				"Sold to traders"
 			],
 			"obtainable_now": true
 		},
@@ -5204,7 +5282,11 @@
 			"name": "Coal",
 			"kind": "material",
 			"description": "A black lump that burns hot. Smelts iron and makes steel.",
-			"how_to_get": [],
+			"how_to_get": [
+				"Broken from a dark coal outcrop on a hillside beside a river, lake or wet ground with any pick or the Stone Hammer",
+				"Picked up loose below a coal outcrop",
+				"Dug with any shovel along a coal seam into the hill"
+			],
 			"used_for": [
 				"Used in Copper ingot",
 				"Used in Iron ingot",
@@ -6794,7 +6876,8 @@
 				"Picked from mango"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"oranges": {
 			"name": "Oranges",
@@ -6804,7 +6887,8 @@
 				"Picked from orange"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"lemons": {
 			"name": "Lemons",
@@ -6814,7 +6898,8 @@
 				"Picked from lemon"
 			],
 			"used_for": [],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"dried_apples": {
 			"name": "Dried apples",
@@ -7219,7 +7304,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"stewed_berries": {
 			"name": "Stewed berries",
@@ -8046,7 +8131,7 @@
 			"kind": "placeable",
 			"description": "A palisade section that swings open like a door.",
 			"how_to_get": [
-				"Build with a hammer (press R): 8 Log, 3 Twine, 2 Bronze hinges or better"
+				"Build with a hammer (press R): 8 Log, 3 Twine, 1 Rope"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8082,7 +8167,7 @@
 			"kind": "placeable",
 			"description": "A timber gate between stone piers. Opens like a door.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Cobblestone, 3 Plank, 2 Bronze hinges or better"
+				"Build with a hammer (press R): 6 Cobblestone, 3 Plank, 2 Iron hinges"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8118,7 +8203,7 @@
 			"kind": "placeable",
 			"description": "A timber gate between brick piers. Opens like a door.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Brick, 2 Clay mortar, 3 Plank, 2 Bronze hinges or better"
+				"Build with a hammer (press R): 6 Brick, 2 Clay mortar, 3 Plank, 2 Iron hinges"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8136,7 +8221,7 @@
 			"kind": "placeable",
 			"description": "Iron railings on a brick plinth, two metres long.",
 			"how_to_get": [
-				"Build with a hammer (press R): 3 Iron ingot, 6 Bronze nails or better"
+				"Build with a hammer (press R): 3 Iron ingot, 6 Iron nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8154,7 +8239,7 @@
 			"kind": "placeable",
 			"description": "A wrought iron gate. Opens like a door.",
 			"how_to_get": [
-				"Build with a hammer (press R): 4 Iron ingot, 2 Bronze hinges or better"
+				"Build with a hammer (press R): 4 Iron ingot, 2 Iron hinges"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8622,7 +8707,7 @@
 			"kind": "placeable",
 			"description": "An iron railing along a ceiling or foundation edge. Stops falls.",
 			"how_to_get": [
-				"Build with a hammer (press R): 2 Iron ingot, 4 Bronze nails or better"
+				"Build with a hammer (press R): 2 Iron ingot, 4 Iron nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -8660,7 +8745,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"iron_doorway": {
 			"name": "Iron - Doorway",
@@ -8678,7 +8763,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"steel_doorway": {
 			"name": "Steel - Doorway",
@@ -8976,7 +9061,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"thatch_garden_plot": {
 			"name": "Thatch - Garden plot",
@@ -8992,7 +9077,7 @@
 			"kind": "placeable",
 			"description": "A plank-edged bed of soil, two metres square, nailed at the corners. Sow and tend it like a tilled bed.",
 			"how_to_get": [
-				"Build with a hammer (press R): 3 Plank, 8 Bronze nails or better"
+				"Build with a hammer (press R): 3 Plank, 8 Copper nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9010,7 +9095,7 @@
 			"kind": "structure",
 			"description": "A plank-edged bed of soil, one metre square, nailed at the corners. Sow and tend it like a tilled bed.",
 			"how_to_get": [
-				"Build with a hammer (press R): 2 Plank, 8 Bronze nails or better"
+				"Build with a hammer (press R): 2 Plank, 8 Copper nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9020,7 +9105,7 @@
 			"kind": "structure",
 			"description": "A plank-edged bed of soil, three metres square, nailed at the corners. Sow and tend it like a tilled bed.",
 			"how_to_get": [
-				"Build with a hammer (press R): 4 Plank, 8 Bronze nails or better"
+				"Build with a hammer (press R): 4 Plank, 8 Copper nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -9032,7 +9117,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"stone_garden_plot": {
 			"name": "Stone - Garden plot",
@@ -9050,7 +9135,7 @@
 			"how_to_get": [],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"brick_garden_plot": {
 			"name": "Brick - Garden plot",
@@ -9256,7 +9341,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"log_trough": {
 			"name": "Log - Trough",
@@ -9515,7 +9600,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"clay_pipe_run": {
 			"name": "Clay - Pipe",
@@ -9535,7 +9620,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"clay_pipe_elbow": {
 			"name": "Clay - Pipe elbow",
@@ -9555,7 +9640,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"clay_pipe_tee": {
 			"name": "Clay - Pipe tee",
@@ -9661,7 +9746,7 @@
 			"kind": "placeable",
 			"description": "A big copper-lined tank on a wooden frame. Rain and pipes from above fill it; it feeds pipes below.",
 			"how_to_get": [
-				"Build with a hammer (press R): 16 Plank, 20 Hardwood board, 30 Copper ingot, 40 Bronze nails or better"
+				"Build with a hammer (press R): 16 Plank, 20 Hardwood board, 30 Copper ingot, 40 Copper nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -10139,7 +10224,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"clay_bloomery": {
 			"name": "Clay bloomery",
@@ -10453,7 +10538,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"iron_anvil": {
 			"name": "Anvil",
@@ -10653,7 +10738,7 @@
 			],
 			"used_for": [],
 			"obtainable_now": false,
-			"status": "planned"
+			"status": "retired"
 		},
 		"log_shelf": {
 			"name": "Log - Shelf",
@@ -10669,7 +10754,7 @@
 			"kind": "placeable",
 			"description": "A braced plank crate with a nailed lid. Holds 10 stacks.",
 			"how_to_get": [
-				"Build with a hammer (press R): 5 Plank, 8 Bronze nails or better"
+				"Build with a hammer (press R): 5 Plank, 8 Copper nails or better"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -11380,7 +11465,8 @@
 			"used_for": [
 				"Planted with the hoe (Garden) to grow a mango"
 			],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"orange_seed": {
 			"name": "Orange seed",
@@ -11392,7 +11478,8 @@
 			"used_for": [
 				"Planted with the hoe (Garden) to grow an orange"
 			],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"lemon_seed": {
 			"name": "Lemon seed",
@@ -11404,7 +11491,8 @@
 			"used_for": [
 				"Planted with the hoe (Garden) to grow a lemon"
 			],
-			"obtainable_now": true
+			"obtainable_now": false,
+			"status": "retired"
 		},
 		"wild_apple_sweet_seed": {
 			"name": "Wild apple seed",
@@ -12328,6 +12416,19 @@
 			],
 			"obtainable_now": true
 		},
+		"wild_rose_seed": {
+			"name": "Wild rose seed",
+			"kind": "material",
+			"description": "Seeds from rose hips. Sow them with the hoe in a tilled bed or a planter and a wild rose grows.",
+			"how_to_get": [
+				"From a wild rose when its hips are picked in autumn",
+				"From a ripe wild rose in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a wild rose"
+			],
+			"obtainable_now": true
+		},
 		"fortified_roof_65": {
 			"name": "Fortified - Roof 65",
 			"kind": "structure",
@@ -12469,7 +12570,7 @@
 			"kind": "placeable",
 			"description": "A heavy plank gate strapped with iron, hung between concrete posts.",
 			"how_to_get": [
-				"Build with a hammer (press R): 6 Concrete, 7 Iron band, 5 Plank, 2 Bronze hinges or better"
+				"Build with a hammer (press R): 6 Concrete, 7 Iron band, 5 Plank, 2 Iron hinges, 12 Steel nails"
 			],
 			"used_for": [],
 			"obtainable_now": true
@@ -12656,7 +12757,7 @@
 		"bronze_nails": {
 			"name": "Bronze nails",
 			"kind": "material",
-			"description": "Small bronze nails. Fix boards in builds, the same as iron ones.",
+			"description": "Small bronze nails, stronger than copper. For chests, cabinets, furniture and upholstery.",
 			"how_to_get": [
 				"Craft at a forge: 1 Bronze ingot"
 			],
@@ -13221,7 +13322,7 @@
 		"copper_nails": {
 			"name": "Copper nails",
 			"kind": "material",
-			"description": "Small copper nails. Soft; a Quality - Backpack is sewn and nailed with them.",
+			"description": "Small copper nails, the softest. For copper sheet and light work: crates, garden plots and racks.",
 			"how_to_get": [
 				"Craft at the Primitive smithy: 1 Copper ingot"
 			],

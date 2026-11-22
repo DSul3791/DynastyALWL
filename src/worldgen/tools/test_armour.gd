@@ -91,10 +91,11 @@ func recipe_number(id: String) -> int:
 	return 0
 
 
-# A real item for a cost: a group's first member that is not the group id itself (any knife: a stone knife).
+# A real item for a cost: a group's first member that is not the group id itself (any knife: a stone knife). An Iron ingot stays an Iron
+# ingot (its group only adds the meteorite Iron chunk, Dave 21 Nov 2026), so the real ingot path keeps its coverage.
 func filler(number: int) -> int:
 	var members: PackedInt32Array = items.table.group_members(number)
-	return members[1] if members.size() > 1 else number
+	return members[1] if members.size() > 1 and number != items.table.number_of("iron_ingot") else number
 
 
 func wear(id: String) -> void:

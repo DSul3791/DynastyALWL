@@ -18,6 +18,12 @@ QUALITY_PACK = ((24, 12, 6), (78, 42, 22), (150, 92, 54))   # the backpack tiers
 ADVANCED_PACK = ((18, 14, 12), (66, 50, 40), (132, 112, 96))   # Advanced: dark leather with a cool steel cast from its frame
 LAMP_OIL = ((36, 22, 6), (150, 112, 40), (236, 204, 128))
 BOG_IRON = ((40, 14, 6), (122, 58, 28), (196, 112, 52))   # Bog iron ore (Dave 19 Nov 2026): the Iron ore lumps in red-brown and rust   # lamp oil (B4): the oil bottle in a deeper amber, as basic_look draws it (#9a7a32)
+METEORITE = ((14, 12, 11), (62, 56, 52), (150, 150, 154))   # Iron chunk (Dave 21 Nov 2026): the Iron ore lumps as dark meteorite iron with bright worn metal
+GOLD = ((60, 36, 6), (178, 128, 30), (250, 218, 120))   # Gold nugget (D-ORE-1, 21 Nov 2026): the copper ore lump in warm native gold
+SILVER_ORE = ((26, 26, 28), (96, 98, 102), (196, 198, 204))   # Silver ore: the Iron ore lumps in dull grey with bright metal
+AMETHYST = ((34, 14, 52), (120, 72, 172), (214, 186, 240))   # Amethyst: the crystal lens in violet quartz
+GARNET = ((36, 4, 8), (120, 20, 32), (214, 96, 104))   # Garnet: the crystal lens in deep red
+AGATE = ((52, 22, 10), (176, 104, 60), (238, 206, 168))   # Agate: the crystal lens in banded orange-brown
 HARDWOOD = ((34, 18, 8), (110, 70, 40), (184, 136, 92))   # Hardwood board (Dave 21 Nov 2026): the Plank icon in a darker oak brown
 
 RECOLOURS = {
@@ -30,7 +36,13 @@ RECOLOURS = {
 	"leather_quiver": ("quiver", LEATHER),
 	"lamp_oil": ("oil", LAMP_OIL),
 	"bog_iron_ore": ("iron_ore", BOG_IRON),
+	"iron_chunk": ("iron_ore", METEORITE),
 	"hardwood_board": ("lumber", HARDWOOD),
+	"gold_nugget": ("copper_ore", GOLD),
+	"silver_ore": ("iron_ore", SILVER_ORE),
+	"amethyst": ("crystal_lens", AMETHYST),
+	"garnet": ("crystal_lens", GARNET),
+	"agate": ("crystal_lens", AGATE),
 }
 # A metal tier of a tool that shares its sibling's look (basic_look.gd: the same shape, a different colour) while no bake has drawn it
 # (Dave 21 Nov 2026: "how does the copper pickaxe not have an icon"): the sibling's icon with only its metal recoloured. The metal is

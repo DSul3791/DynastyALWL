@@ -146,9 +146,11 @@ func _init() -> void:
 			states_seen[int(srow["state"])] = sid
 
 	var species: Dictionary = {}
+	var species_seasons: Dictionary = {}
 
 	for entry in _read("../tables/flora.json").get("entries", []):
 		species[String(entry.get("name", ""))] = true
+		species_seasons[String(entry.get("name", ""))] = entry.get("season", [])
 
 	# Where items can come from.
 	var obtainable: Dictionary = {}
@@ -382,6 +384,10 @@ func _init() -> void:
 	# Berries per plant (drops.json berry_yield): a flora species, one of its yields, a count of at least 1 and a berry stack of 100.
 	for key in drops.get("berry_yield", {}):
 		var berry: Dictionary = drops["berry_yield"][key]
+
+		if berry.has("by_season"):
+			fail("drops.json berry_yield.%s: by_season rows go in harvest_yield" % key)
+
 		var berry_id: String = String(berry.get("item", ""))
 
 		if not species.has(key):
@@ -402,18 +408,25 @@ func _init() -> void:
 
 	# Harvest per plant beyond berries (drops.json harvest_yield): same shape, and a harvest takes at most 3 pack slots.
 	for key in drops.get("harvest_yield", {}):
-		var harvest: Dictionary = drops["harvest_yield"][key]
-		var harvest_id: String = String(harvest.get("item", ""))
-
 		if not species.has(key):
 			fail("drops.json harvest_yield: unknown flora species '%s'" % key)
 
-		want_item.call(harvest_id, "drops.json harvest_yield.%s" % key)
-		obtainable[harvest_id] = true   # a harvest row (fruit trees included) is a source
-		var harvest_stack: int = maxi(1, int(gathered_file.get("items", {}).get(harvest_id, items_file.get("items", {}).get(harvest_id, {})).get("stack", 1)))
+		# A by-season row (wild rose: petals in summer, hips in autumn) is one row per season, each a season of the plant (flora.json "season").
+		var by_season: Dictionary = (drops["harvest_yield"][key] as Dictionary).get("by_season", {})
+		var harvest_rows: Array = by_season.values() if not by_season.is_empty() else [drops["harvest_yield"][key]]
 
-		if int(harvest.get("count", 0)) < 1 or ceili(float(harvest.get("count", 0)) / float(harvest_stack)) > 3:
-			fail("drops.json harvest_yield.%s: count must be 1 or more and fit 3 slots (%s stacks to %d)" % [key, harvest_id, harvest_stack])
+		for season_key in by_season:
+			if not (species_seasons.get(key, []) as Array).has(season_key):
+				fail("drops.json harvest_yield.%s.by_season: '%s' is not one of the plant's seasons" % [key, season_key])
+
+		for harvest in harvest_rows:
+			var harvest_id: String = String(harvest.get("item", ""))
+			want_item.call(harvest_id, "drops.json harvest_yield.%s" % key)
+			obtainable[harvest_id] = true   # a harvest row (fruit trees included) is a source
+			var harvest_stack: int = maxi(1, int(gathered_file.get("items", {}).get(harvest_id, items_file.get("items", {}).get(harvest_id, {})).get("stack", 1)))
+
+			if int(harvest.get("count", 0)) < 1 or ceili(float(harvest.get("count", 0)) / float(harvest_stack)) > 3:
+				fail("drops.json harvest_yield.%s: count must be 1 or more and fit 3 slots (%s stacks to %d)" % [key, harvest_id, harvest_stack])
 
 	for group in ["by_species", "by_kind"]:
 		for key in drops.get(group, {}):
@@ -670,6 +683,15 @@ func _init() -> void:
 
 		if all.has(ore_item):
 			obtainable[ore_item] = true
+
+	# Pocket finds (resource distribution stage 2): a dig near an ore source opens a pocket rock that a pick breaks into its find (ore.finds).
+	for find_name in boulders.get("ore", {}).get("finds", {}):
+		var find_item: String = String(boulders["ore"]["finds"][find_name])
+
+		if all.has(find_item):
+			obtainable[find_item] = true
+		else:
+			fail("boulders.json ore.finds.%s: unknown item '%s'" % [find_name, find_item])
 
 	# Bedrock boulders (Steve, #965): a boulder over a rock in ore.rocks (limestone, chalk, marble) gives that item to a pick.
 	for rock_name in boulders.get("ore", {}).get("rocks", {}):
@@ -1087,7 +1109,8 @@ func _init() -> void:
 			future.append(id)
 
 		# "legacy": true keeps a live item that is no longer made, for the saves that hold one (the Stone - Pickaxe, TREE_WOOD_TOOLS_DESIGN.md W-12).
-		if not obtainable.has(id) and not String(id).ends_with("_kit") and not is_future and not renamed_away.has(id) and not bool(entry.get("legacy", false)):
+		# A retired row is kept only for its number (mango, orange and lemon, D-TODO-7 21 Nov 2026): it needs no source.
+		if not obtainable.has(id) and not String(id).ends_with("_kit") and not is_future and not renamed_away.has(id) and not bool(entry.get("legacy", false)) and not bool(entry.get("retired", false)):
 			fail("core item '%s' is not gatherable, not craftable and not marked \"future\": true" % id)
 		elif obtainable.has(id) and is_future:
 			warn("core item '%s' is marked future but can be obtained" % id)
