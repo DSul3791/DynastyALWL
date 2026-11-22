@@ -4422,6 +4422,111 @@
    "color": "#6a5a3a",
    "size": 0.3
   },
+  "bramble_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "juniper_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "gorse_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "dwarf_birch_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "saltbush_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "cactus_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "raspberry_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "elder_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "wild_rose_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "blackthorn_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "hawthorn_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "sea_buckthorn_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "rosemary_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "wild_banana_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "prickly_pear_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "drakethorn_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "sunberry_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "hagwillow_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "honeyspindle_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "sleetberry_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
+  "sunsilver_vine_seed": {
+   "shape": "chunk",
+   "color": "#6a5a3a",
+   "size": 0.3
+  },
   "cotton_grass_seed": {
    "shape": "chunk",
    "color": "#6a5a3a",

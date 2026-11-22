@@ -11558,6 +11558,279 @@
 			],
 			"obtainable_now": true
 		},
+		"bramble_seed": {
+			"name": "Bramble seed",
+			"kind": "material",
+			"description": "Seeds from a bramble. Sow them with the hoe in a tilled bed or a planter and a bramble grows.",
+			"how_to_get": [
+				"From a wild bramble picked late in its season",
+				"From a ripe bramble in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a bramble"
+			],
+			"obtainable_now": true
+		},
+		"juniper_seed": {
+			"name": "Juniper seed",
+			"kind": "material",
+			"description": "Seeds from a juniper. Sow them with the hoe in a tilled bed or a planter and a juniper grows.",
+			"how_to_get": [
+				"From a wild juniper picked late in its season",
+				"From a ripe juniper in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a juniper"
+			],
+			"obtainable_now": true
+		},
+		"gorse_seed": {
+			"name": "Gorse seed",
+			"kind": "material",
+			"description": "Seeds from a gorse. Sow them with the hoe in a tilled bed or a planter and a gorse grows.",
+			"how_to_get": [
+				"From a wild gorse picked late in its season",
+				"From a ripe gorse in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a gorse"
+			],
+			"obtainable_now": true
+		},
+		"dwarf_birch_seed": {
+			"name": "Dwarf birch seed",
+			"kind": "material",
+			"description": "Seeds from a dwarf birch. Sow them with the hoe in a tilled bed or a planter and a dwarf birch grows.",
+			"how_to_get": [
+				"From a wild dwarf birch picked late in its season",
+				"From a ripe dwarf birch in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a dwarf birch"
+			],
+			"obtainable_now": true
+		},
+		"saltbush_seed": {
+			"name": "Saltbush seed",
+			"kind": "material",
+			"description": "Seeds from a saltbush. Sow them with the hoe in a tilled bed or a planter and a saltbush grows.",
+			"how_to_get": [
+				"From a wild saltbush picked late in its season",
+				"From a ripe saltbush in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a saltbush"
+			],
+			"obtainable_now": true
+		},
+		"cactus_seed": {
+			"name": "Barrel cactus seed",
+			"kind": "material",
+			"description": "Seeds from a barrel cactus. Sow them with the hoe in a tilled bed or a planter and a barrel cactus grows.",
+			"how_to_get": [
+				"From a wild barrel cactus picked late in its season",
+				"From a ripe barrel cactus in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a barrel cactus"
+			],
+			"obtainable_now": true
+		},
+		"raspberry_seed": {
+			"name": "Raspberry seed",
+			"kind": "material",
+			"description": "Seeds from a raspberry. Sow them with the hoe in a tilled bed or a planter and a raspberry grows.",
+			"how_to_get": [
+				"From a wild raspberry picked late in its season",
+				"From a ripe raspberry in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a raspberry"
+			],
+			"obtainable_now": true
+		},
+		"elder_seed": {
+			"name": "Elder seed",
+			"kind": "material",
+			"description": "Seeds from a elder. Sow them with the hoe in a tilled bed or a planter and a elder grows.",
+			"how_to_get": [
+				"From a wild elder picked late in its season",
+				"From a ripe elder in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a elder"
+			],
+			"obtainable_now": true
+		},
+		"wild_rose_seed": {
+			"name": "Wild rose seed",
+			"kind": "material",
+			"description": "Seeds from a wild rose. Sow them with the hoe in a tilled bed or a planter and a wild rose grows.",
+			"how_to_get": [
+				"From a wild wild rose picked late in its season",
+				"From a ripe wild rose in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a wild rose"
+			],
+			"obtainable_now": true
+		},
+		"blackthorn_seed": {
+			"name": "Blackthorn seed",
+			"kind": "material",
+			"description": "Seeds from a blackthorn. Sow them with the hoe in a tilled bed or a planter and a blackthorn grows.",
+			"how_to_get": [
+				"From a wild blackthorn picked late in its season",
+				"From a ripe blackthorn in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a blackthorn"
+			],
+			"obtainable_now": true
+		},
+		"hawthorn_seed": {
+			"name": "Hawthorn seed",
+			"kind": "material",
+			"description": "Seeds from a hawthorn. Sow them with the hoe in a tilled bed or a planter and a hawthorn grows.",
+			"how_to_get": [
+				"From a wild hawthorn picked late in its season",
+				"From a ripe hawthorn in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a hawthorn"
+			],
+			"obtainable_now": true
+		},
+		"sea_buckthorn_seed": {
+			"name": "Sea buckthorn seed",
+			"kind": "material",
+			"description": "Seeds from a sea buckthorn. Sow them with the hoe in a tilled bed or a planter and a sea buckthorn grows.",
+			"how_to_get": [
+				"From a wild sea buckthorn picked late in its season",
+				"From a ripe sea buckthorn in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a sea buckthorn"
+			],
+			"obtainable_now": true
+		},
+		"rosemary_seed": {
+			"name": "Rosemary seed",
+			"kind": "material",
+			"description": "Seeds from a rosemary. Sow them with the hoe in a tilled bed or a planter and a rosemary grows.",
+			"how_to_get": [
+				"From a wild rosemary picked late in its season",
+				"From a ripe rosemary in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a rosemary"
+			],
+			"obtainable_now": true
+		},
+		"wild_banana_seed": {
+			"name": "Wild banana seed",
+			"kind": "material",
+			"description": "Seeds from a wild banana. Sow them with the hoe in a tilled bed or a planter and a wild banana grows.",
+			"how_to_get": [
+				"From a wild wild banana picked late in its season",
+				"From a ripe wild banana in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a wild banana"
+			],
+			"obtainable_now": true
+		},
+		"prickly_pear_seed": {
+			"name": "Prickly pear seed",
+			"kind": "material",
+			"description": "Seeds from a prickly pear. Sow them with the hoe in a tilled bed or a planter and a prickly pear grows.",
+			"how_to_get": [
+				"From a wild prickly pear picked late in its season",
+				"From a ripe prickly pear in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a prickly pear"
+			],
+			"obtainable_now": true
+		},
+		"drakethorn_seed": {
+			"name": "Drakethorn seed",
+			"kind": "material",
+			"description": "Seeds from a drakethorn. Sow them with the hoe in a tilled bed or a planter and a drakethorn grows.",
+			"how_to_get": [
+				"From a wild drakethorn picked late in its season",
+				"From a ripe drakethorn in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a drakethorn"
+			],
+			"obtainable_now": true
+		},
+		"sunberry_seed": {
+			"name": "Sunberry seed",
+			"kind": "material",
+			"description": "Seeds from a sunberry. Sow them with the hoe in a tilled bed or a planter and a sunberry grows.",
+			"how_to_get": [
+				"From a wild sunberry picked late in its season",
+				"From a ripe sunberry in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a sunberry"
+			],
+			"obtainable_now": true
+		},
+		"hagwillow_seed": {
+			"name": "Hag willow seed",
+			"kind": "material",
+			"description": "Seeds from a hag willow. Sow them with the hoe in a tilled bed or a planter and a hag willow grows.",
+			"how_to_get": [
+				"From a wild hag willow picked late in its season",
+				"From a ripe hag willow in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a hag willow"
+			],
+			"obtainable_now": true
+		},
+		"honeyspindle_seed": {
+			"name": "Honeyspindle seed",
+			"kind": "material",
+			"description": "Seeds from a honeyspindle. Sow them with the hoe in a tilled bed or a planter and a honeyspindle grows.",
+			"how_to_get": [
+				"From a wild honeyspindle picked late in its season",
+				"From a ripe honeyspindle in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a honeyspindle"
+			],
+			"obtainable_now": true
+		},
+		"sleetberry_seed": {
+			"name": "Sleetberry seed",
+			"kind": "material",
+			"description": "Seeds from a sleetberry. Sow them with the hoe in a tilled bed or a planter and a sleetberry grows.",
+			"how_to_get": [
+				"From a wild sleetberry picked late in its season",
+				"From a ripe sleetberry in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a sleetberry"
+			],
+			"obtainable_now": true
+		},
+		"sunsilver_vine_seed": {
+			"name": "Sunsilver vine seed",
+			"kind": "material",
+			"description": "Seeds from a sunsilver vine. Sow them with the hoe in a tilled bed or a planter and a sunsilver vine grows.",
+			"how_to_get": [
+				"From a wild sunsilver vine picked late in its season",
+				"From a ripe sunsilver vine in a garden"
+			],
+			"used_for": [
+				"Sown with the hoe (Garden) to grow a sunsilver vine"
+			],
+			"obtainable_now": true
+		},
 		"cotton_grass_seed": {
 			"name": "Cotton grass seed",
 			"kind": "material",
