@@ -51,7 +51,7 @@ func on() -> bool:
 
 
 func block_of(x: float, z: float) -> Vector2i:
-	var size: float = float(cfg.get("block_m", 256.0))
+	var size: float = float(cfg.get("block_m", Codec.ROUTE_BLOCK_M))
 	return Vector2i(int(floor(x / size)), int(floor(z / size)))
 
 
@@ -184,7 +184,7 @@ func _ground_loaded(key: Vector2i) -> bool:
 	if not ground_ready.is_valid():
 		return true
 
-	var m: float = float(cfg.get("block_m", 256.0))
+	var m: float = float(cfg.get("block_m", Codec.ROUTE_BLOCK_M))
 	var pad: float = 128.0
 	var lo: Vector2 = Vector2(key) * m - Vector2(pad, pad)
 	var hi: Vector2 = Vector2(key + Vector2i.ONE) * m + Vector2(pad, pad)
@@ -203,7 +203,7 @@ func is_ready(key: Vector2i) -> bool:
 func _jobs_for(key: Vector2i) -> Array:
 	var jobs: Array = []
 	var wc: Dictionary = cfg.get("warren", {})
-	var per: int = maxi(int(round(float(cfg.get("block_m", 256.0)) / float(wc.get("cell_m", 64.0)))), 1)
+	var per: int = maxi(int(round(float(cfg.get("block_m", Codec.ROUTE_BLOCK_M)) / float(wc.get("cell_m", 64.0)))), 1)
 
 	if not wc.is_empty():
 		for sz in per:
@@ -362,7 +362,7 @@ func _warren(sx: int, sz: int) -> Variant:
 # The deer range of a trail block: a bed on sheltered side ground and a feeding ground on flat open ground apart_m from it.
 func _deer_range(key: Vector2i, name: String = "deer") -> Variant:
 	var dc: Dictionary = cfg[name]
-	var size: float = float(cfg.get("block_m", 256.0))
+	var size: float = float(cfg.get("block_m", Codec.ROUTE_BLOCK_M))
 	var inset: float = float(dc.get("inset_m", 24.0))
 	var sp: String = str(dc.get("species", name))
 	var salt: int = int(dc.get("salt", 100))   # each kind its own spots (deer 100 and 200, as in stage 1)
@@ -440,7 +440,7 @@ func _deer_range(key: Vector2i, name: String = "deer") -> Variant:
 # are never drawn as trails nor count as runs for snares ("drawn": false). This finds the earth (job "f" 0); _fox_earth lays the rounds.
 func _fox_spot(key: Vector2i, places: Array) -> Variant:
 	var fc: Dictionary = cfg["fox"]
-	var size: float = float(cfg.get("block_m", 256.0))
+	var size: float = float(cfg.get("block_m", Codec.ROUTE_BLOCK_M))
 	var inset: float = float(fc.get("inset_m", 24.0))
 	var sp: String = str(fc.get("species", "fox"))
 	var salt: int = int(fc.get("salt", 900))
@@ -710,7 +710,7 @@ func _wiggle(pts: PackedVector2Array, salt: int, rc: Dictionary) -> PackedVector
 # Places of a species within reach of a point, in ready blocks only (the nearest first), not on settled ground.
 func places_near(sp: String, at: Vector3, reach: float) -> Array:
 	var found: Array = []
-	var size: float = float(cfg.get("block_m", 256.0))
+	var size: float = float(cfg.get("block_m", Codec.ROUTE_BLOCK_M))
 	var span: int = int(ceil(reach / size))
 	var centre: Vector2i = block_of(at.x, at.z)
 
@@ -792,7 +792,7 @@ func route_distance(x: float, z: float, kind: int = -1, reach: float = 10.0) -> 
 			var key: Vector2i = centre + Vector2i(dx, dz)
 
 			if not is_ready(key):
-				var m: float = float(cfg.get("block_m", 256.0))
+				var m: float = float(cfg.get("block_m", Codec.ROUTE_BLOCK_M))
 
 				if Rect2(Vector2(key) * m, Vector2(m, m)).grow(reach + REACH_OUT_M).has_point(p):
 					return INF   # a neighbour whose runs could pass this near is not worked out yet: not known, rather than off a run
@@ -824,7 +824,7 @@ func route_distance(x: float, z: float, kind: int = -1, reach: float = 10.0) -> 
 
 # Whether a fox earth lies within m of a point, in worked-out blocks (a snare there may take a fox while nobody is near, TR-10).
 func fox_near(x: float, z: float, m: float) -> bool:
-	var size: float = float(cfg.get("block_m", 256.0))
+	var size: float = float(cfg.get("block_m", Codec.ROUTE_BLOCK_M))
 	var span: int = int(ceil(m / size))
 	var centre: Vector2i = block_of(x, z)
 	var sp: String = str((cfg.get("fox", {}) as Dictionary).get("species", "fox"))

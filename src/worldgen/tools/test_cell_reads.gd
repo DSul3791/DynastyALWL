@@ -261,7 +261,7 @@ func _init() -> void:
 	check(int(live_bound.get("general", 0)) == 0, "and take no general read (%d)" % int(live_bound.get("general", 0)))
 	# Off the bound tile (gate review Y part 3, 21 Nov 2026): a probe that reaches past the tile edge takes the general path, so it answers as the
 	# general callables do. Bound 2 m inside the spawn tile's east edge; the probes stand 2 m past it, on the next tile.
-	var edge_x: float = (floorf(spawn.x / float(generator.tile_size_m)) + 1.0) * float(generator.tile_size_m)
+	var edge_x: float = (floorf(spawn.x / generator.tile_size_m) + 1.0) * generator.tile_size_m
 	var edge_reads: Dictionary = CellReadsScript.bound(generator, null, edge_x - 2.0, spawn.y)
 	var off_ok: bool = generator.tile_of(edge_x + 2.0, spawn.y) != generator.tile_of(edge_x - 2.0, spawn.y)
 	var off_tile = generator.get_tile(generator.tile_of(edge_x + 2.0, spawn.y))
