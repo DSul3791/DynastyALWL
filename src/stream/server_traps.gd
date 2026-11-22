@@ -365,7 +365,7 @@ func _pass_candidates(at: Vector3, r: float, turn: int) -> Array:
 	var looked: int = 0
 	var lo: Vector2i = Vector2i(floori((at.x - r) / FINE_M), floori((at.z - r) / FINE_M))
 	var hi: Vector2i = Vector2i(floori((at.x + r) / FINE_M), floori((at.z + r) / FINE_M))
-	var share: int = maxi(2, PASS_LOOK_MAX / maxi((hi.x - lo.x + 1) * (hi.y - lo.y + 1), 1))   # each cell its share, so a pile in one cell cannot starve its neighbours
+	var share: int = maxi(2, int(float(PASS_LOOK_MAX) / float(maxi((hi.x - lo.x + 1) * (hi.y - lo.y + 1), 1))))   # each cell its share, so a pile in one cell cannot starve its neighbours
 
 	for gx in range(lo.x, hi.x + 1):
 		for gz in range(lo.y, hi.y + 1):
