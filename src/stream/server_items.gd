@@ -25546,6 +25546,10 @@ func _load_characters() -> void:
 			"grace_s": maxf(float(parsed["players"][key].get("grace_s", 0.0)), 0.0),   # eat-once: an older save has none, so no first-hour protection
 		}
 
+		for kept in ["xp_day", "xp_today", "season_seen"]:   # the day's fitness XP so far and the season the season hint last saw (restart drill 22 Nov 2026: a restart dropped them)
+			if parsed["players"][key].has(kept):
+				_characters[str(key)][kept] = float(parsed["players"][key][kept]) if kept == "xp_today" else int(parsed["players"][key][kept])
+
 		for a in ATTRIBUTE_KEYS:   # every attribute 0 to 100 (an old-scale value moves to the new scale; a missing one is average, fitness its default)
 			var saved: Variant = parsed["players"][key].get(a, null)
 
