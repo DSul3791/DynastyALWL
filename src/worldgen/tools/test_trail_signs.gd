@@ -55,13 +55,13 @@ func _init() -> void:
 	check(by_warren, "each latrine lies 1 to 3 m off a run's end")
 	var scrapes: Array = signs.filter(func(s): return str(s[0]) == "scrape")
 	check(scrapes.size() == 1 and (scrapes[0][1] as Vector2).distance_to(Vector2(120.0, 113.3)) < 4.0, "one scrape where the two warrens' runs cross (%s)" % str(scrapes))
-	var prints: Array = signs.filter(func(s): return str(s[0]) == "prints")
-	var on_wet: bool = not prints.is_empty()
+	var print_lines: Array = signs.filter(func(s): return str(s[0]) == "prints")
+	var on_wet: bool = not print_lines.is_empty()
 
-	for s in prints:
+	for s in print_lines:
 		on_wet = on_wet and (s[1] as Vector2).x > 120.0 and (s[1] as Vector2).x < 140.0
 
-	check(on_wet and prints.size() == 1, "deer prints only on the wet crossing, one line per 30 m (%d)" % prints.size())
+	check(on_wet and print_lines.size() == 1, "deer prints only on the wet crossing, one line per 30 m (%d)" % print_lines.size())
 	check(count(signs, "droppings") == 1, "deer droppings by the bed")
 	check(SignsScript.signs_for({Vector2i(0, 0): [routes[2]]}, wet, c).filter(func(s): return str(s[0]) == "scrape").is_empty(), "a run on its own has no scrape")
 	# Runs crossing square between their points (points 4 m apart, the nearest 2 m either side of the crossing): still one scrape there.
