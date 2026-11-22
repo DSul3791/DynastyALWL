@@ -1332,6 +1332,52 @@ func _print_clearance(model: Node3D, skip: Array) -> void:
 	else:
 		print("shot runner: piece %s clearance: lowest point from %+.3f to %+.3f m against the ground under it (below 0 = in the ground)" % [str(model.get_meta("piece_name")), worst, best])
 
+	_print_surface_check(str(model.get_meta("piece_name")), box.get_center(), skip)
+
+
+# The drawn ground against the collision ground (the snare read as floating about 5 cm over the drawn ground while the probe had its feet in
+# the collision ground, 22 Nov 2026). At the four whole-metre columns round the piece: "mesh" is where the fine ground's values cross zero
+# up that column (the LOD 0 mesh has its vertices there: the mesher puts them on that crossing), "hits" every collider a ray down meets in
+# turn, each with its height and node name (the first is what placement and the clearance line use). A first hit above the mesh by more than a
+# centimetre or two means the collision there is not the drawn ground (another block's or level's collider, or another body).
+func _print_surface_check(piece: String, at: Vector3, skip: Array) -> void:
+	var tool = client.terrain.get_voxel_tool()
+	tool.channel = VoxelBuffer.CHANNEL_SDF
+
+	for corner in [Vector2i(0, 0), Vector2i(1, 0), Vector2i(0, 1), Vector2i(1, 1)]:
+		var cx: int = int(floor(at.x)) + corner.x
+		var cz: int = int(floor(at.z)) + corner.y
+		var mesh_y: float = NAN
+		var below: float = float(tool.get_voxel_f(Vector3i(cx, int(floor(at.y)) + 4, cz)))
+
+		for k in range(4, -6, -1):
+			var y0: int = int(floor(at.y)) + k - 1
+			var lower: float = float(tool.get_voxel_f(Vector3i(cx, y0, cz)))
+
+			if below > 0.0 and lower <= 0.0:
+				mesh_y = float(y0) + lower / (lower - below)   # open above, solid below: the crossing, linear as the mesher places it
+				break
+
+			below = lower
+
+		var hits: PackedStringArray = []
+		var left: Array = skip.duplicate()
+
+		for _n in 3:
+			var from: Vector3 = Vector3(float(cx), at.y + 3.0, float(cz))
+			var query: PhysicsRayQueryParameters3D = PhysicsRayQueryParameters3D.create(from, from - Vector3(0.0, 8.0, 0.0))
+			query.exclude = left
+			var hit: Dictionary = client.body.get_world_3d().direct_space_state.intersect_ray(query)
+
+			if hit.is_empty():
+				break
+
+			var what: Object = hit.get("collider")
+			hits.append("%.3f %s" % [float(hit["position"].y), str(what.get("name")) if what != null else "?"])
+			left.append(hit["rid"])
+
+		print("shot runner: piece %s surface at %d,%d: mesh %.3f, hits %s" % [piece, cx, cz, mesh_y, ", ".join(hits) if not hits.is_empty() else "none"])
+
 
 # After the 4 s piece wait: each piece is stood again on the physics ground. When _show_pieces ran, the collider under a piece may not have been built yet, and
 # then the voxel raycast placed it; that reading is a whole cell, so on 22 Nov the idle Primitive smithy (stone_forge forge:1) stood about 0.9 m into the
