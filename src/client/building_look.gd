@@ -134,13 +134,16 @@ const COAL_SHADER := """
 shader_type spatial;
 render_mode unshaded, shadows_disabled;
 
+instance uniform float heat = 1.0;   // a smithy's coals (BuildingLook.forge_state): dim while idle, far brighter and yellower while it works
+
 void fragment() {
 	float t = TIME * 3.0 + NODE_POSITION_WORLD.x * 5.0;
 	float pulse = 0.5 + 0.5 * sin(t) * sin(t * 0.7 + 1.3);
 	float spot = 0.5 + 0.5 * sin(UV.x * 40.0 + t * 1.3) * sin(UV.y * 40.0 - t);
 	vec3 deep = vec3(0.75, 0.16, 0.03);
 	vec3 hot = vec3(1.0, 0.62, 0.2);
-	ALBEDO = mix(deep, hot, 0.35 + 0.5 * pulse * spot) * (1.5 + 0.7 * pulse);
+	float mixed = clamp(0.35 + 0.5 * pulse * spot + 0.3 * max(heat - 1.0, 0.0), 0.0, 1.0);
+	ALBEDO = mix(deep, hot, mixed) * (1.5 + 0.7 * pulse) * heat;
 }
 """
 
@@ -2071,12 +2074,14 @@ static func show_forge_fire(model: Node3D, on: bool) -> void:
 		plume.emitting = on
 
 
-# A smithy's fire by its world row "forge" (Dave 21 Nov 2026: "they should have red coals when idle and flare really bright while making stuff"):
-# 0 cold (no fuel in its fuel slot), 1 red coals (fuel in, idle: no flame tongues, no smoke, a dim red glow), 2 the flare (a craft worked there:
-# tall tongues, smoke and a bright light). Light reach and brightness are PROVISIONAL SF-4.
+# A smithy's fire by its world row "forge" (Dave 21 Nov 2026: "they should have red coals when idle and flare really bright while making stuff";
+# 22 Nov 2026: "the forges and kilns dont really need flames just glowing coals. dim when not busy and glowing really bright while busy"):
+# 0 cold (no fuel in its fuel slot), 1 dim red coals (fuel in, idle: no smoke, a dim red glow), 2 the coals glowing really bright (a craft worked
+# there: smoke and a bright light). Never flame tongues. Light reach and brightness are PROVISIONAL SF-4.
 const SMITHY_GLOW := [[0.0, 0.0], [0.45, 3.5], [3.2, 12.0]]   # [energy, range m] by state
 const SMITHY_COLOR := [Color(1.0, 0.3, 0.1), Color(1.0, 0.28, 0.08), Color(1.0, 0.62, 0.28)]
-const SMITHY_COALS := [0.0, 1.0, 3.0]   # a model with painted coals (meta coal_glow, the Improved smithy): their glow by state
+const SMITHY_COALS := [0.0, 0.6, 4.0]   # a model with painted coals (meta coal_glow, the new smithy models): their glow by state
+const SMITHY_HEAT := [0.0, 0.55, 2.6]   # the shared coal mesh's brightness (COAL_SHADER heat) by state; 1 is a campfire's coals
 
 
 static func forge_state(model: Node3D, state: int) -> void:
@@ -2089,8 +2094,12 @@ static func forge_state(model: Node3D, state: int) -> void:
 		var tongues: Node3D = flames.get_node_or_null("Tongues") as Node3D
 
 		if tongues != null:
-			tongues.visible = state == 2
-			tongues.scale = Vector3(1.0, 1.6, 1.0)   # the flare stands tall
+			tongues.visible = false   # no flames at a smithy, only coals (Dave 22 Nov 2026)
+
+		var coal_bed: GeometryInstance3D = flames.get_node_or_null("Coals") as GeometryInstance3D
+
+		if coal_bed != null:
+			coal_bed.set_instance_shader_parameter("heat", float(SMITHY_HEAT[state]))
 
 	for coals in model.get_meta("coal_glow", []):
 		(coals as BaseMaterial3D).emission_energy_multiplier = float(SMITHY_COALS[state])

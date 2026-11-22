@@ -85,7 +85,7 @@ func _init() -> void:
 			check(absf(b.position.y) < 0.02 and b.size.y > 1.4 and b.size.y < 2.0, "Improved smithy: its floor on the ground, %.2f m high" % b.size.y)
 			check(absf(b.position.x + b.size.x * 0.5) < 0.02 and absf(b.position.z + b.size.z * 0.5) < 0.02, "Improved smithy: centred on the pivot")
 			check(light != null and plume != null and light.position.z > plume.position.z and plume.position.y > b.size.y * 0.9 and light.position.y < b.size.y * 0.7, "Improved smithy: fire low in front, smoke at the chimney top")
-			check(m.get_node_or_null("Flames/Coals") == null and m.get_node_or_null("Flames/Tongues") != null, "Improved smithy: its own painted coals, the shared flames for the flare")
+			check(m.get_node_or_null("Flames/Coals") == null and m.get_node_or_null("Flames/Tongues") != null, "Improved smithy: its own painted coals (the shared flames kept, never shown)")
 			var own: BaseMaterial3D = mesh.mesh.surface_get_material(0) as BaseMaterial3D
 			check(own != null and own.cull_mode == BaseMaterial3D.CULL_BACK and own.emission_enabled, "Improved smithy: one-sided, with an emission texture")
 			check(mesh.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_ON, "Improved smithy casts shadows")
@@ -237,7 +237,7 @@ func _init() -> void:
 			check(absf(pb.position.y) < 0.02 and pb.size.y > 1.1 and pb.size.y < 1.6, "Primitive smithy: its floor on the ground, %.2f m high" % pb.size.y)
 			check(absf(pb.position.x + pb.size.x * 0.5) < 0.02 and absf(pb.position.z + pb.size.z * 0.5) < 0.02, "Primitive smithy: centred on the pivot")
 			check(plight != null and psmoke != null and plight.position.z > psmoke.position.z and psmoke.position.y > pb.size.y * 0.9 and plight.position.y < pb.size.y * 0.8, "Primitive smithy: fire low in its mouth, smoke at the chimney top")
-			check(pm.get_node_or_null("Flames/Coals") != null and pm.get_node_or_null("Flames/Tongues") != null, "Primitive smithy: the shared coals and flare in its mouth")
+			check(pm.get_node_or_null("Flames/Coals") != null and pm.get_node_or_null("Flames/Tongues") != null, "Primitive smithy: the shared coals in its mouth")
 			var pown: BaseMaterial3D = pmesh.mesh.surface_get_material(0) as BaseMaterial3D
 			check(pown != null and pown.cull_mode == BaseMaterial3D.CULL_BACK, "Primitive smithy: one-sided")
 			check(pmesh.cast_shadow == GeometryInstance3D.SHADOW_CASTING_SETTING_ON, "Primitive smithy casts shadows")
@@ -258,7 +258,8 @@ func _init() -> void:
 		check(sm.find_child("Smithy", true, false) == null, "the %s keeps the basic forge" % kind)
 		sm.free()
 
-	# Every smithy's fire follows its row's "forge" (Dave 21 Nov 2026): 0 cold, 1 red coals when idle, 2 a bright flare while making.
+	# Every smithy's fire follows its row's "forge" (Dave 21 Nov 2026), coals only, never flames (Dave 22 Nov 2026: "just glowing coals. dim when
+	# not busy and glowing really bright while busy"): 0 cold, 1 dim coals when idle, 2 the coals far brighter while making.
 	for kind in ["stone_forge", "blacksmithy", "advanced_smithy", "master_forge"]:
 		if not structures.has(kind):
 			continue
@@ -269,8 +270,10 @@ func _init() -> void:
 			var tongues: Node3D = fl.get_node_or_null("Tongues") as Node3D if fl != null else null
 			var plume: GPUParticles3D = m.get_node_or_null("ForgeSmoke") as GPUParticles3D
 			var glow: OmniLight3D = m.get_node_or_null("Light") as OmniLight3D
-			var ok: bool = fl != null and tongues != null and glow != null and fl.visible == (look >= 1) and tongues.visible == (look == 2) and (plume == null or plume.emitting == (look == 2))
-			check(ok and (look == 0 or glow.light_energy > 0.0) and (look < 2 or glow.light_energy > 2.0 * float(BuildingLook.SMITHY_GLOW[1][0])), "%s with forge %d: %s" % [kind, look, ["cold", "red coals", "the flare"][look]])
+			var bed: GeometryInstance3D = fl.get_node_or_null("Coals") as GeometryInstance3D if fl != null else null
+			var heat_ok: bool = bed == null or is_equal_approx(float(bed.get_instance_shader_parameter("heat")), float(BuildingLook.SMITHY_HEAT[look]))
+			var ok: bool = fl != null and tongues != null and glow != null and fl.visible == (look >= 1) and not tongues.visible and heat_ok and (plume == null or plume.emitting == (look == 2))
+			check(ok and (look == 0 or glow.light_energy > 0.0) and (look < 2 or glow.light_energy > 2.0 * float(BuildingLook.SMITHY_GLOW[1][0])), "%s with forge %d: %s" % [kind, look, ["cold", "dim coals", "bright coals, no flames"][look]])
 			m.free()
 	var smelter_model: Node3D = view._model_for_state(int(structures["smelter"]["state"]), {})
 	check(smelter_model.get_node_or_null("StoneAnvil") == null, "the Primitive smelter, which shares the model, has no anvil")
