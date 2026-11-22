@@ -120,7 +120,13 @@ of three ground probes, so one by a trunk lies on the ground. Settled ground's r
 go with them. Not yet: a look hint on a sign, fen and bog ground as wet (only water counts now), fox scat. Sources: Ziege et al. 2016,
 BMC Ecology (rabbit latrines); onX, Texas Parks and Wildlife and Idaho Fish and Game on deer sign.
 
-**Next**: boar routines once the research is verified; a worn-earth mark where a trail crosses ground with no grass.
+**Worn earth (built, TR-14, merge waits for Lane A cold-join and frametime checks)**: where a run or deer trail crosses ground with no
+meadow turf (forest litter, dirt, sand, gravel), the ground shader draws it as bared, packed soil, the litter pushed aside, from the run
+map the grass already uses (src/client/ground_material.gd, grass_view.gd set_ground_material, data/look/worn_earth.json; design
+/mnt/project-files/trails/WORN_EARTH_DESIGN.md). Within 30 m of the eye; bound only after the first routes are laid; off with the
+trails switch. Players' own paths keep only their puddles (their map is 4 m texels).
+
+**Next**: boar routines (research notes /mnt/project-files/trails/BOAR_ROUTINE_RESEARCH.md; nothing built).
 
 **Stage 3 (larger game)**: a deadfall for fox, raccoon, mink and the like; heavier snares (wire, from the smithy) on deer trails,
 taking deer only on trails; a pit trap for boar and deer by trail crossings. Each a station or hammer/knife plus blueprint recipe
