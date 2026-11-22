@@ -13995,6 +13995,9 @@ func _box_put(peer: int, inv, id: int, chest, a: int, count: int, target: int = 
 		_say(peer, "The %s is full." % table.in_sentence(table.name_of(int(_items[id]["number"]))))
 		_reject(peer, 2)
 
+	if amount > left and id >= 0 and not smelter and not smithy and not BinRules.is_bin(_structures.get(kind, {})) and int(_structures.get(kind, {}).get("batch_logs", 0)) == 0 and not _is_station_store(_items[id]):
+		_goal_stored(peer, number, amount - left)   # put by hand into a storage container (a basket, sack, jar, barrel, crate, chest): the stored_item_any checks
+
 	if amount > left and id >= 0:
 		if bool(_structures.get(kind, {}).get("lockable", false)):
 			_goal_event_act(peer, "stored_item")   # ADD-13: once per act (Store all and a view deposit put many stacks); items went into a chest or crate (structures.json lockable: the chests and crates), not a fire, smelter, kiln or bin
@@ -21920,7 +21923,7 @@ func _hints_check(peer: int) -> void:
 # Goals (data/items/starter_goals.json by Sal, camp_goals.json; Tyler 31 Oct 2026; GOALS-REPAIR WP-GUIDE-UI 14 Nov 2026): the guide's goals in their authored order.
 # Every goal tracks on its own from the start of the character and completes the moment its check is met, in any order (GA-40): `after` names the goals
 # taught before it (the Journal's prerequisite links and the authored order), never a lock. Checks: {event, count, what?} (the server calls _goal_event: drink,
-# tree_felled, fire_lit, ate_food, placed what, carcass_worked), {made_item, count} (crafts that finished; a hand chop or split counts as one), {made_item_any: [ids], count} (those crafts summed over the ids), {got_item, count} (gathered first-hand, _goal_got), {have_item, count} and {have_item_any: [ids], count}
+# tree_felled, fire_lit, ate_food, placed what, carcass_worked), {made_item, count} (crafts that finished; a hand chop or split counts as one), {made_item_any: [ids], count} (those crafts summed over the ids), {got_item, count} (gathered first-hand, _goal_got), {stored_item_any: [ids], count} (units put into storage containers by hand, _goal_stored), {have_item, count} and {have_item_any: [ids], count}
 # (true while the pack holds that many, looked at every slow tick). A goal is done once per character and saved with it (characters.json goals_done and
 # goal_counts, the same atomic file as the coins); the reward (its stage's copper, goal_rewards.json; coins only, Dave 14 Nov) is paid in the same step and a
 # save follows on the next tick (GA-55). Debug play earns nothing (GA-54): while Admin mode is on no goal counts or completes, a free craft is never counted, and
@@ -22047,6 +22050,33 @@ func _goal_got(peer: int, item: int, n: int) -> void:
 	_goals_check(peer)
 
 
+# Units of an item this player put into a storage container by hand (_box_put): the stored_item_any checks (the winter fruit store, Dave 22 Nov 2026).
+# History, as got_item: fruit taken out again still counts. Admin mode counts nothing (_goals_paused).
+var _stored_ids: Dictionary = {}   # item id -> true: the items a stored_item_any check names ("" once built)
+
+
+func _goal_stored(peer: int, item: int, n: int) -> void:
+	var st: Dictionary = _goal_state_of(peer)
+
+	if st.is_empty() or n <= 0 or _goals_data().is_empty() or _goals_paused(peer):
+		return
+
+	if _stored_ids.is_empty():   # the ids some stored_item_any check names, once: other puts (sticks, stone) count and save nothing
+		_stored_ids[""] = true
+
+		for goal in _goals_data():
+			for id in goal.get("check", {}).get("stored_item_any", []):
+				_stored_ids[str(id)] = true
+
+	if not _stored_ids.has(table.id_of(item)):
+		return
+
+	var k: String = "stored:" + table.id_of(item)
+	st["goal_counts"][k] = int(st["goal_counts"].get(k, 0)) + n
+	_dirty = true
+	_goals_check(peer)
+
+
 # An admin give (ACT_ADMIN_GIVE): those units do not count towards a have check.
 func _goal_admin_gave(peer: int, item: int, n: int) -> void:
 	var st: Dictionary = _goal_state_of(peer)
@@ -22139,6 +22169,14 @@ func _goal_progress(peer: int, st: Dictionary, check: Dictionary, goal_id: Strin
 
 	if check.has("have_item"):
 		return Vector2i(_goal_have(st, inv, str(check["have_item"])), need)
+
+	if check.has("stored_item_any"):
+		var stored: int = 0
+
+		for id in check["stored_item_any"]:
+			stored += int(st["goal_counts"].get("stored:" + str(id), 0))
+
+		return Vector2i(stored, need)
 
 	if check.has("have_item_any"):
 		var total: int = int(st["goal_counts"].get(_goal_count_key(str(check["or_event"]), ""), 0)) if check.has("or_event") else 0   # a catch counts though the fish was eaten

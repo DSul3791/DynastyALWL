@@ -109,6 +109,55 @@
 			"needs_code": false
 		},
 		{
+			"id": "food_basket",
+			"title": "Make a food store",
+			"hint": "Hold your knife, press R and pick Wicker basket: 8 sticks and 4 twine. A Hide - Sack (2 hides, 1 twine) or a Storage jar (8 clay), built with the hammer, does too, and food keeps longer in any of them than in your pack.",
+			"after": [
+				"hammer",
+				"knife"
+			],
+			"check": {
+				"event": "placed",
+				"what_any": [
+					"wicker_basket",
+					"hide_sack",
+					"storage_jar",
+					"wooden_barrel",
+					"wooden_crate"
+				],
+				"count": 1
+			},
+			"stage": "start",
+			"needs_code": false
+		},
+		{
+			"id": "fruit_store",
+			"title": "Store fruit for winter",
+			"hint": "Pick apples, pears, sour cherries or plums from fruit trees in season (July to November: sour cherries first, keeping apples and winter pears last), then open your food store with F and put 20 in it.",
+			"after": [
+				"food_basket",
+				"berries"
+			],
+			"check": {
+				"stored_item_any": [
+					"wild_apples",
+					"apple_early",
+					"apple_summer",
+					"apple_autumn",
+					"apple_keeping",
+					"apple_cooking",
+					"pear_summer",
+					"pear_autumn",
+					"pear_winter",
+					"sour_cherries",
+					"plums"
+				],
+				"count": 20
+			},
+			"stage": "start",
+			"needs_code": false
+		},
+		{
 			"id": "jerky",
 			"title": "Make jerky",
 			"hint": "Dry 2 raw meat with a salt on the drying rack. Salt is boiled from sea water at the campfire pot.",
