@@ -76,6 +76,7 @@ Keep these separate from the design: they own assignments, implementation state,
 | Wood implementation | [WOOD-SYSTEM state](ai-team/missions/WOOD-SYSTEM/STATE.md) | Phases, provisional choices, evidence and remaining player checks. |
 | Doors and doorways | [Contract](ai-team/missions/BUGLIST-002/CONTRACT.md), [ledger](ai-team/missions/BUGLIST-002/LEDGER.md), [design correction](buglists/BUGLIST-002.md) | Approved task scope and actual implementation/verification records. |
 | Fog implementation | [Technical plan](design/FOG_PLAN.md), [F6 checklist](design/FOG_F6.md) | Implementation details and appearance checks for the director's fog design. |
+| First-load lag (BugsList 108, 93) | [Local server at the first load](design/LOCAL_SERVER_FIRST_LOAD_PLAN.md) | Plan only: evidence, candidate causes and options for the launcher's server and the client competing at the first join; not an approval. |
 
 ## Reviewed character and wildlife references
 
