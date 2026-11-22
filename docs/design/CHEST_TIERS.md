@@ -38,11 +38,13 @@ Each cost names the lowest metal it takes; a better metal always serves ("or bet
 | Nails | Builds |
 |---|---|
 | Copper | Raised cistern (copper lined), Crate, the three gardening plots, Bottle and jar rack, Small chest, Quality - Backpack |
-| Bronze | Rustic - Chest; Cupboard, Wardrobe, Dresser, Bookcase, Apothecary cabinet, Tool cabinet; Rustic, Fine and Ornate chairs and tables, Fine - Bench (upholstery); Barrel; Warehouse desk; Sawbuck, Improved smithy, Improved smelter (kept bronze: they come before iron in the route, so iron nails would lock them) |
+| Bronze | Rustic - Chest; Cupboard, Wardrobe, Dresser, Bookcase, Apothecary cabinet, Tool cabinet; Rustic, Fine and Ornate chairs and tables, Fine - Bench (upholstery); Barrel; Warehouse desk; Improved smithy, Improved smelter (kept bronze: they come before iron in the route, so iron nails would lock them) |
 | Iron | Large wooden chest, Fine - Chest; Warehouse crate, Ore and metal rack, the three resource bins (strong boxes); Sawmill, Water wheel, Advanced smithy, Iron - Fence, Iron - Railing (construction) |
 | Steel | Ornate - Chest; Fortified - Gate (new: 12 Steel nails as its rivets) |
 
-Hinges (there are only bronze and iron): bronze for the wooden gates (Refined, Palisade), the Sluice, chests, cabinets and the Improved smithy and smelter; iron for the Sturdy, Superior, Engineered, Iron and Fortified gates, the Advanced smithy and the iron-tier chests.
+Hinges (there are only bronze and iron): bronze for the Refined gate, the Sluice, chests, cabinets and the Improved smithy and smelter; iron for the Sturdy, Superior, Engineered, Iron and Fortified gates, the Advanced smithy and the iron-tier chests.
+
+Stone-age pieces take no metal (coordinator GR-1 and GR-2, 21 Nov 2026, under Dave's questions rule): the Sawbuck is pegged with 16 Wooden pins (treenails) instead of 16 Bronze nails, and the Palisade gate hangs on 1 Rope (8 Log, 3 Twine, 1 Rope) with no hinges, so both come before any smithy.
 
 ## Provisional picks (for Dave)
 - CT-1: the copper chest is the **Small chest** (the Small / Medium / Large size words the gardening plots and resource bins use, beside the Large wooden chest). 24 slots: 27 would leave half a six-slot row, so it matched the Crude - Chest (retired since, see above). A bigger Small chest is for Dave. For comfort it counts as the crude grade of the chest family, so chests still count once. Cost 4 Hardwood board and 8 Copper nails, a lift-off lid with no hinges (there are no copper hinges).
