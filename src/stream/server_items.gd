@@ -25602,6 +25602,16 @@ func _load_characters() -> void:
 			"grace_s": maxf(float(parsed["players"][key].get("grace_s", 0.0)), 0.0),   # eat-once: an older save has none, so no first-hour protection
 		}
 
+		# The day's fitness XP so far and the season the season hint last saw (restart drill 22 Nov 2026: a restart dropped them).
+		if parsed["players"][key].has("xp_day"):
+			_characters[str(key)]["xp_day"] = int(parsed["players"][key]["xp_day"])
+
+		if parsed["players"][key].has("xp_today"):
+			_characters[str(key)]["xp_today"] = maxf(float(parsed["players"][key]["xp_today"]), 0.0)
+
+		if parsed["players"][key].has("season_seen"):
+			_characters[str(key)]["season_seen"] = int(parsed["players"][key]["season_seen"])
+
 		for a in ATTRIBUTE_KEYS:   # every attribute 0 to 100 (an old-scale value moves to the new scale; a missing one is average, fitness its default)
 			var saved: Variant = parsed["players"][key].get(a, null)
 
