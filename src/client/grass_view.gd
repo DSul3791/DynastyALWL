@@ -370,6 +370,11 @@ var _checks: Array = []                  # [cell, due msec, check number, ladder
 # The earliest due time in _checks once a full pass has seen them all (0: not known, look). Steve 5 Nov 2026 (Dave's PC lag run, #401): "grass: check
 # ground" was 56% of the grass time, 1.07 ms every frame, walking the whole list (thousands of cells) to find the few due ones.
 var _checks_due: int = 0
+# Where the last cut-short look stopped, and the earliest due time seen so far in this pass (22 Nov 2026, cloud lag run: "grass: check ground"
+# 0.76 ms a frame on average and 94 ms worst. A look cut short by the cap began again at the start, walking every not-due cell before it
+# reached the due ones, and the first cell's walk had no time cap at all). A look now goes on from where the last one stopped.
+var _check_at: int = 0
+var _check_pass_due: int = 0x7fffffffffffffff
 var _scan_keep: Dictionary = {}
 const SCAN_ROWS_PER_FRAME := 4
 var _center: Vector3 = Vector3.ZERO
@@ -1853,11 +1858,14 @@ func _check_ground(now: int) -> void:
 
 	var space: PhysicsDirectSpaceState3D = get_world_3d().direct_space_state
 	var done: int = 0
-	var n: int = 0
-	var next_due: int = 0x7fffffffffffffff
+	var n: int = _check_at if _check_at < _checks.size() else 0
+
+	if n == 0:
+		_check_pass_due = 0x7fffffffffffffff
+
 	var started: int = Time.get_ticks_usec()
 
-	while n < _checks.size() and done < CHECK_CELLS_PER_FRAME and (done == 0 or Time.get_ticks_usec() - started < CHECK_USEC):
+	while n < _checks.size() and done < CHECK_CELLS_PER_FRAME and Time.get_ticks_usec() - started < CHECK_USEC:
 		var check: Array = _checks[n]
 		var entry = _cells.get(check[0])
 
@@ -1866,7 +1874,7 @@ func _check_ground(now: int) -> void:
 			continue
 
 		if now < int(check[1]):
-			next_due = mini(next_due, int(check[1]))
+			_check_pass_due = mini(_check_pass_due, int(check[1]))
 			n += 1
 			continue
 
@@ -1887,13 +1895,18 @@ func _check_ground(now: int) -> void:
 		elif int(check[2]) + 1 < (check[3] as Array).size():
 			check[2] = int(check[2]) + 1
 			check[1] = now + int((check[3] as Array)[check[2]])
-			next_due = mini(next_due, int(check[1]))
+			_check_pass_due = mini(_check_pass_due, int(check[1]))
 			n += 1
 		else:
 			_checks.remove_at(n)
 
-	# A full pass knows the earliest due time; one cut short by the per-frame cap looks again next frame.
-	_checks_due = next_due if n >= _checks.size() else 0
+	# A full pass knows the earliest due time; one cut short by the per-frame caps goes on from here next frame.
+	if n >= _checks.size():
+		_check_at = 0
+		_checks_due = _check_pass_due
+	else:
+		_check_at = n
+		_checks_due = 0
 
 
 var ground_rebuilds: int = 0             # cells built again because their ground moved after the first build (for the tests and the debug panel)
