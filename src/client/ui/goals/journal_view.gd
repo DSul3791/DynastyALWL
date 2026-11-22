@@ -14,6 +14,7 @@ const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const MapPageScript := preload("res://src/client/map_page.gd")
 const InventoryLook := preload("res://src/client/ui/inventory/inventory_look.gd")
 const GoalBook := preload("res://src/client/ui/goals/goal_book.gd")
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 const INDEX := "index"
 const GOALS := "goals"
 const MAP := "map"
@@ -350,7 +351,7 @@ func _show_details() -> void:
 	_items.fill_coin_line(reward, segments)
 	card.add_child(reward)
 	card.add_child(_section("How to"))
-	card.add_child(_text(str(row["howto"]) if str(row["howto"]) != "" else "No instructions yet.", 24, ArtKit.CREAM))
+	card.add_child(_text(KeyBindings.localize(str(row["howto"])) if str(row["howto"]) != "" else "No instructions yet.", 24, ArtKit.CREAM))   # the player's own keys
 	var firsts: PackedStringArray = row["after"]
 
 	if not firsts.is_empty():

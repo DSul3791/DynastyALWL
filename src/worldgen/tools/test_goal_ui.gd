@@ -63,6 +63,9 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 	book.on_goals([row("drink", "Drink at the water", true), row("fibre", "Gather plant fibre", false), row("twine", "Twist twine", false, ["fibre"]), row("axe", "Make a Stone - Axe", false, ["twine"])])
 	check(book.rows.size() == 4 and heard.is_empty() and changes[0] == 1, "the join's list fills the book silently, done goals included")
 	check(GoalsHud.titles(book) == PackedStringArray(["Gather plant fibre", "Twist twine"]), "the box shows the first two unfinished goals in the authored order (%s)" % str(GoalsHud.titles(book)))
+	Bindings.use_path("user://test_goal_ui_keys.json")   # no saved file here: the defaults
+	DirAccess.remove_absolute(ProjectSettings.globalize_path("user://test_goal_ui_keys.json"))
+	check(GoalsHud.howto_line(book) == "G: how to do these", "the box names the key for the how-to while few goals are done (%s)" % GoalsHud.howto_line(book))
 	book.on_done("twine", 0)
 	check(heard == [["twine", 0]] and bool(book.row("twine")["done"]), "a goal_done out of order marks it done and announces it")
 	check(GoalsHud.titles(book) == PackedStringArray(["Gather plant fibre", "Make a Stone - Axe"]), "and the box moves on to the next unfinished one (%s)" % str(GoalsHud.titles(book)))
@@ -70,6 +73,7 @@ func _initialize() -> void:   # nodes added to root enter the tree only after a 
 	check(heard.size() == 1, "a repeated goal_done is not announced again")
 	book.on_goals([row("drink", "Drink at the water", true), row("fibre", "Gather plant fibre", true), row("twine", "Twist twine", true, ["fibre"]), row("axe", "Make a Stone - Axe", false, ["twine"])])
 	check(heard.size() == 1 and GoalsHud.titles(book) == PackedStringArray(["Make a Stone - Axe"]), "a rejoin's list replays nothing; one goal left shows one title")
+	check(GoalsHud.howto_line(book) == "", "the how-to line goes once the first three goals are done")
 	book.on_done("axe", 5)
 	check(GoalsHud.titles(book).is_empty() and book.done_count() == 4, "with every goal done the box has nothing to show")
 	book.on_done("unknown_goal", 2)
