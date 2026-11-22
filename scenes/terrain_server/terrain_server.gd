@@ -1925,7 +1925,7 @@ func _cut_tree(chunk: Vector2i, id: int) -> bool:
 # Standing placer trees whose root lies within `radius` (flat) of a point, as [chunk, id] (dig under trees, job 85).
 # Only the chunks the radius reaches, and only those whose full list is made (tree_info reads that list): every dig asks this, and it used
 # to place and scan all nine 256 m chunks round the dig on the main thread (22 Nov 2026 load bots: 5.5 s on a first dig, about 50 ms on
-# every later one). A chunk not made yet goes to the flora thread, as _warm_flora does.
+# every later one). A chunk not made yet is skipped: the same dig's bury job makes it on the flora thread.
 # shortcut: a dig in a chunk not made yet does not fell the trees it undermines; the next dig there does, once the chunk is made.
 func _trees_near(point: Vector3, radius: float) -> Array:
 	var size: float = flora.placer.chunk_m
@@ -1943,10 +1943,7 @@ func _trees_near(point: Vector3, radius: float) -> Array:
 			var chunk: Vector2i = flora.placer.normalize(home + Vector2i(dx, dz))
 
 			if not flora.has_items(chunk):
-				if not flora.full_known(chunk):
-					_flora_job(["warm", chunk])
-
-				continue
+				continue   # the dig's own bury job (_bury_find, flora thread) makes it
 
 			var trees: Dictionary = flora.items_of(chunk)   # kept: no placement
 			var gone: Array = flora.removed_in(chunk)

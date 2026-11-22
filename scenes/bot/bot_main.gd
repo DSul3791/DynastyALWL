@@ -232,7 +232,7 @@ func _work_step(now: int) -> void:
 
 	if chunk != _flora_chunk:
 		_flora_chunk = chunk
-		_net.request_flora.rpc_id(1, PackedInt32Array([chunk.x, chunk.y, 0]))
+		_net.request_flora.rpc_id(1, PackedInt32Array([chunk.x, chunk.y, 1]))   # the full list, as a real client asks for the chunk it stands in
 
 	if _next_craft_msec > 0 and now >= _next_craft_msec:
 		_next_craft_msec = now + CRAFT_EVERY_MS
