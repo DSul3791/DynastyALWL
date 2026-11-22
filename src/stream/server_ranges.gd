@@ -9,6 +9,8 @@ extends RefCounted
 const Codec := preload("res://src/shared/trail_codec.gd")
 
 var cfg: Dictionary = {}
+const REACH_OUT_M := 50.0          # how far a block's trails may run past its edge (a warren's runs, 40 m at most, and their wiggle)
+
 var world_seed: int = 0
 var ground_height: Callable        # (x, z) -> height, NAN where the ground is not known yet
 var blocked: Callable              # (x, z) -> bool: deep water
@@ -454,8 +456,8 @@ func wire(key: Vector2i, now_ms: int) -> PackedByteArray:
 	return bytes
 
 
-# The distance from a point to the nearest trail of a kind (-1 any) that is not on settled ground: INF while the block round the point is
-# not worked out, `reach` when no trail is nearer. Each route keeps a bounding box, so only the routes that pass near are measured.
+# The distance from a point to the nearest trail of a kind (-1 any) that is not on settled ground: INF while the block round the point, or a
+# neighbour whose trails could come this near, is not worked out, `reach` when no trail is nearer. Each route keeps a bounding box, so only the routes that pass near are measured.
 func route_distance(x: float, z: float, kind: int = -1, reach: float = 10.0) -> float:
 	var p: Vector2 = Vector2(x, z)
 	var centre: Vector2i = block_of(x, z)
@@ -470,6 +472,11 @@ func route_distance(x: float, z: float, kind: int = -1, reach: float = 10.0) -> 
 			var key: Vector2i = centre + Vector2i(dx, dz)
 
 			if not is_ready(key):
+				var m: float = float(cfg.get("block_m", 256.0))
+
+				if Rect2(Vector2(key) * m, Vector2(m, m)).grow(reach + REACH_OUT_M).has_point(p):
+					return INF   # a neighbour whose runs could pass this near is not worked out yet: not known, rather than off a run
+
 				continue
 
 			for place in blocks[key]["places"]:

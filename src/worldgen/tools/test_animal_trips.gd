@@ -177,6 +177,20 @@ func _init() -> void:
 	check(back.size() == 2 and int(back[1][0]) == 1 and (back[0][1] as PackedVector2Array)[0].distance_to(Vector2(260.5, 270.25)) < 0.04 and (back[1][1] as PackedVector2Array)[1].distance_to(Vector2(-20.0, 600.0)) < 0.04, "routes survive the wire (%s)" % str(back))
 	check(Codec.decode_routes(PackedByteArray([1, 2, 3]), Vector2i.ZERO, 256.0).is_empty(), "a damaged routes block decodes to none")
 
+	# Ground tiles still loading: nothing is worked out (no cold read on the tick), then it is once they are in.
+	var r5 = ranges_with(11)
+	var loaded: Array = [false]
+	r5.ground_ready = func(_x, _z): return loaded[0]
+	work(r5, Vector3(128.0, 10.0, 128.0))
+	check(all_places(r5).is_empty() and not r5.is_ready(Vector2i(0, 0)), "nothing is worked out while the ground is loading")
+	loaded[0] = true
+
+	for k in 50:
+		r5.tick([Vector3(128.0, 10.0, 128.0)], 10000 + k)
+
+	check(r5.is_ready(Vector2i(0, 0)) and str(all_places(r5)) == str(all_places(r2)), "and the same places once it is in")
+	check(is_inf(r5.route_distance(128.0, 506.0)), "next to a block not worked out, a run's distance is not known")
+
 	# The trail block carries the routes, and goes out at once when they are first worked out.
 	var t = TrailsScript.new()
 	t.game_seconds = func(): return 0.0
