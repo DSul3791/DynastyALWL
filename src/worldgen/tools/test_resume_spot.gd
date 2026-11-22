@@ -130,6 +130,25 @@ func _init() -> void:
 	items.peer_left(8)
 	near(items._characters[KEY]["last"]["pos"], base7 + Vector3(20.0, 0.0, 0.0), "the live connection leaving saves where it is")
 
+	# A wall that goes up round a player in the game (their own or a friend's): the server steps them out at once.
+	var steps: Array = []
+	items.send_step_to = func(p, at, _yaw): steps.append([p, at])
+	var inside: Vector3 = Vector3(600.0, 10.9, 600.0)
+	items._peer_pos[9] = inside
+	items._peer_pos[10] = inside + Vector3(30.0, 0.0, 0.0)   # far off: left alone
+	add_struct(items, 9010, "wall_section", inside)
+	items._after_built(1, items._items[9010], items._structures["wall_section"])
+	var moved: Vector3 = items._peer_pos[9]
+	check(steps.size() == 1 and int(steps[0][0]) == 9 and not items.structure_blocks(moved.x, moved.z, 0.0) and moved.distance_to(inside) < 3.0, "a player inside a wall just built is stepped out beside it (%s)" % str(steps))
+	steps.clear()
+	add_struct(items, 9011, "wall_section", inside + Vector3(30.0, 0.0, 8.0))
+	items._after_built(1, items._items[9011], items._structures["wall_section"])
+	check(steps.is_empty(), "a wall built beside a player, not over them, moves nobody (%s)" % str(steps))
+	items._peer_pos[10] = inside + Vector3(0.0, 4.0, 40.0)   # on a floor above where the next wall goes up
+	add_struct(items, 9012, "wall_section", inside + Vector3(0.0, 0.0, 40.0))
+	items._after_built(1, items._items[9012], items._structures["wall_section"])
+	check(steps.is_empty(), "a wall built a storey below a player moves nobody (%s)" % str(steps))
+
 	# A malformed saved spot is not a spot.
 	check(items._clean_last({"pos": [1.0, NAN, 2.0]}).is_empty() and items._clean_last({"pos": ["a", 1, 2]}).is_empty() and items._clean_last([]).is_empty(), "a broken saved spot is dropped at load")
 	check(items._clean_rests([[1, 2, 3, "fire"], [1, 2, "x", "fire"], [1, 2, 3, "bad"]]).size() == 1, "rest points are read back, broken ones dropped")
