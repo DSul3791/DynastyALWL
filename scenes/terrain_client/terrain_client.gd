@@ -2870,12 +2870,15 @@ func _update_weather() -> void:
 	Probe.stop("weather: state", tw)
 	tw = Probe.start()
 	# Ice on ponds and lakes: a pure function of the clock, zone and altitude (src/shared/ice.gd), so
-	# every client and the server agree with no traffic. Recomputed once a game minute.
+	# every client and the server agree with no traffic.
 	# The walkable ice (collider, ice feel bands, sounds) stays exact each second, as before: only the look below uses kept answers. On the
 	# 5 s thaw tick the one season run gives the cover too (the same loop and numbers as IceScript.cover), so it is not walked twice.
 	var seed_value: int = int(world.get("master_seed", 0))
 	var thaw_season: Dictionary = IceScript.season(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M, seed_value) if now >= _ice_thaw_next_msec else {}
 	var ice_now: float = float(thaw_season["cover"]) if not thaw_season.is_empty() else IceScript.cover(game_clock.seconds, group, maxf(_anchor.y, 0.0), ICE_POND_DEPTH_M, seed_value)
+
+	if not thaw_season.is_empty():
+		_ice_memo_put(group, ICE_POND_DEPTH_M, thaw_season)   # the look's 3 m answer for this slot: the same depth, height and game time (FrozenWater.OPEN_DEPTH_M)
 
 	ice_now = _update_ice_feel_weather(ice_now, group, now, thaw_season)
 
@@ -2939,28 +2942,37 @@ var _wetland_mist = null                  # WetlandMist, made at the first dawn 
 var _steam_logged: bool = false
 
 
-# Once a second with the weather: the forced cover (--frozen-force) also drives the collider and the sounds; every 5 s the thaw for the moat.
 # BugsList 108 (lane frame-time runs, 22 Nov 2026: "weather: ice" 8-24 ms and "weather: frozen water" 16-22 ms in HITCH frames): Ice.season
 # walks 30 game days hour by hour (721 weather samples) and was asked up to five times every 5 s. For the frozen water LOOK only (never what
-# bears a step: that stays the exact Ice.cover each second), each depth's answer is kept for ICE_MEMO_GAME_S of game time and per metre of
-# height: ice grows and melts over game hours, so a ten-minute-old answer looks the same (coordinator ruling, 22 Nov 2026).
+# bears a step: that stays the exact Ice.cover each second), each depth's answer is kept for ICE_MEMO_GAME_S of game time and per ICE_MEMO_BAND_M
+# of height (climbing a slope no longer misses every tick; 10 m of height is under 0.1 C of air): ice grows and melts over game hours, so a
+# ten-minute-old answer looks the same (coordinator ruling, 22 Nov 2026).
 const ICE_MEMO_GAME_S := 600.0
-var _ice_memo: Dictionary = {}   # [depth, zone group, metre of height, game time slot] -> Ice.season
+const ICE_MEMO_BAND_M := 10.0
+var _ice_memo: Dictionary = {}   # [depth, zone group, seed, height band, game time slot] -> Ice.season
+
+
+func _ice_memo_key(group: String, depth_m: float) -> Array:
+	return [depth_m, group, int(world.get("master_seed", 0)), int(floorf(maxf(_anchor.y, 0.0) / ICE_MEMO_BAND_M)), int(floorf(game_clock.seconds / ICE_MEMO_GAME_S))]
+
+
+func _ice_memo_put(group: String, depth_m: float, season: Dictionary) -> void:
+	if _ice_memo.size() >= 8:
+		_ice_memo.clear()   # old slots and heights: a handful of entries at most, never a growing table
+
+	_ice_memo[_ice_memo_key(group, depth_m)] = season
 
 
 func _ice_season(group: String, depth_m: float) -> Dictionary:
-	var altitude: float = maxf(_anchor.y, 0.0)
-	var key: Array = [depth_m, group, int(floorf(altitude)), int(floorf(game_clock.seconds / ICE_MEMO_GAME_S))]
+	var key: Array = _ice_memo_key(group, depth_m)
 
 	if not _ice_memo.has(key):
-		if _ice_memo.size() >= 8:
-			_ice_memo.clear()   # old slots and heights: a handful of entries at most, never a growing table
-
-		_ice_memo[key] = IceScript.season(game_clock.seconds, group, altitude, depth_m, int(world.get("master_seed", 0)))
+		_ice_memo_put(group, depth_m, IceScript.season(game_clock.seconds, group, maxf(_anchor.y, 0.0), depth_m, int(world.get("master_seed", 0))))
 
 	return _ice_memo[key]
 
 
+# Once a second with the weather: the forced cover (--frozen-force) also drives the collider and the sounds; every 5 s the thaw for the moat.
 func _update_ice_feel_weather(ice_now: float, group: String, now: int, thaw_season: Dictionary = {}) -> float:
 	_read_frozen_switches()
 
