@@ -210,6 +210,17 @@ func _init() -> void:
 	_check(curved_z > straight_z + 0.03, "the scimitar's blade curves out past the guard (%.3f m across, straight %.3f)" % [curved_z, straight_z])
 	_check(BasicLook.mesh_for("quarterstaff").get_surface_count() == 2 and BasicLook.mesh_for("quarterstaff").get_aabb().size.x > 1.5, "the quarterstaff is a long staff with iron ferrules (%.2f m)" % BasicLook.mesh_for("quarterstaff").get_aabb().size.x)
 
+	# Placeholder looks 5a part 2 (armour): drawn from the jerkin and garment shapes; metal pieces name their tier and take its colour.
+	for id in ["iron_brigandine", "iron_breastplate", "iron_mail_hauberk", "steel_half_plate", "steel_plate_harness", "iron_mail_coif", "iron_gauntlets", "steel_gauntlets",
+			"bronze_greaves", "iron_greaves", "steel_greaves", "iron_mail_chausses", "iron_sabatons", "steel_sabatons"]:
+		var row: Dictionary = BasicLook.entry(id)
+		var tier: String = id.get_slice("_", 0)
+		_check(str(row.get("shape", "chunk")) in ["jerkin", "garment"], "%s is drawn as armour (%s)" % [id, str(row.get("shape", ""))])
+		_check(id == "iron_brigandine" or (row.get("bits", []) as Array).has(tier), "%s names its tier in its look row" % id)
+		var look: Mesh = BasicLook.mesh_for(id)
+		_check(look != null and look.get_surface_count() > 0, "%s builds a mesh" % id)
+	_check(_mean_colour(BasicLook.mesh_for("steel_greaves")).get_luminance() > _mean_colour(BasicLook.mesh_for("iron_greaves")).get_luminance(), "steel greaves lighter than iron")
+
 	print("tool looks: %d failures" % failures)
 
 	for id in ["spear", "wooden_spear", "fishing_rod", "wooden_pin"]:                                                  # spears, the fishing rod and the pin

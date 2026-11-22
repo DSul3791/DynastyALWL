@@ -568,6 +568,10 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# A body garment lying flat (leather jerkin, quilted gambeson, mail shirt, plate cuirass), seen from the front: a torso panel with a neck opening, shoulder pieces, a belt and the
 			# material told in the surface: bits "leather" smooth with lacing, "padded" a diamond of quilting lines, "mail" rows of rings (alternating tone), "plate" two domed plates with rivets.
 			var kind: String = str(bits[0]) if bits.size() > 0 else "leather"
+			if kind in ["mail", "plate"]:
+				color = tier_metal(bits, color)                                                                   # a metal tier's own colour (TIER_METAL)
+				dark = color.darkened(0.35)
+				light = color.lightened(0.25)
 
 			if kind == "plate":
 				_sph(parts, 0.17, Vector3(0.95, 0.28, 1.05), Vector3(0.0, 0.0, 0.0), color)
@@ -928,6 +932,9 @@ static func mesh(shape: String, color: Color, size: float = 1.0, bits: Array = [
 			# Clothing lying flat (bits[0]: tunic, trousers, gloves, mittens, cap, cloak, boots; colour tells the material: hide brown, wool cream, linen pale, fur dark): simple readable silhouettes,
 			# a collar or seam line for each.
 			var gk: String = str(bits[0]) if bits.size() > 0 else "tunic"
+			if has_tier(bits):                                                                                    # metal armour drawn as a garment (mail coif, gauntlets, greaves, chausses, sabatons): its tier's colour
+				color = tier_metal(bits, color)
+				dark = color.darkened(0.35)
 
 			match gk:
 				"tunic", "shirt":
