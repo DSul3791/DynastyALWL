@@ -307,6 +307,7 @@ func _init() -> void:
 	var water_n: int = n("water")
 	var kitchen: int = items.dev_place("food_preparation_table@103,103.5,0")
 	items._items[kitchen]["pos"] = Vector3(103.0, 10.0, 103.5)
+	items._items[kitchen]["struct"]["owner"] = str(items._peer_key.get(1, ""))   # the player's own table, so its store is in their craft stock
 	var kitchen_box = items._chests.get(int(items._items[kitchen]["struct"].get("uid", 0)))
 
 	if kitchen_box != null:
