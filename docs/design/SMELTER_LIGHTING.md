@@ -60,7 +60,7 @@ For Dave (assumed on his behalf, provisional):
 - SF-1: Charcoal counts as well as Coal, the same "fuel" group the smelters burn.
 - SF-2: one Coal or Charcoal lasts 1800 s (30 minutes) of making, the old firing time.
 - SF-3: the fuel slot holds one stack. More Coal put in is kept in the rest of the store but not burnt until it is moved into the fuel slot.
-- SF-4: idle coals glow at 0.45 energy over 3.5 m; the flare is 3.2 energy over 12 m.
+- SF-4: idle coals glow at 0.45 energy over 3.5 m; the flare (now the bright coals, see below) is 3.2 energy over 12 m.
 - SF-5: a smithy goes back to idle coals 1.5 s after the last craft worked there.
 - shortcut: the part-burnt unit (fuel_left) is not saved, so a restart loses under one unit's making time.
 
@@ -91,3 +91,16 @@ Dave also made a model for the Primitive smithy (`stone_forge`). It has a clay a
 Provisional, chosen by Claude:
 - PS-5: 3/4 of a foundation (3 m), not half. At half (2 m) the forge is 0.87 m high and the anvil's top 0.52 m. At 3/4 they are 1.31 m and about 0.78 m, which is working height.
 - PS-6: the shared coals and tongues are drawn at 0.5 in its mouth.
+
+## Coals only, no flames (Dave 22 Nov 2026)
+
+Dave on 22 Nov 2026: "the forges and kilns dont really need flames just glowing coals. dim when not busy and glowing really bright while busy." For every smithy, `BuildingLook.forge_state` now never shows the flame tongues.
+
+- **Idle:** the coals are dim.
+  - The shared coal mesh has heat 0.55. Its `COAL_SHADER` `heat` instance uniform defaults to 1, the campfire's coals.
+  - The painted coals of the new models glow at 0.6.
+- **Busy:** the coals glow really bright and yellower.
+  - The shared coal mesh has heat 2.6, and the painted coals glow at 4.
+  - The bright light (SF-4) and the chimney smoke stay.
+- This replaces the coal glow values and the tongue sizes in IS-4 and PS-6. The 0.5 coal size on the Primitive smithy stays.
+- SF-7 (provisional): the values 0.55 and 2.6, and 0.6 and 4.
