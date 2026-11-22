@@ -133,7 +133,7 @@
 		{
 			"id": "fruit_store",
 			"title": "Store fruit for winter",
-			"hint": "Pick apples, pears, sour cherries or plums from fruit trees in season (July to November: sour cherries first, keeping apples and winter pears last), then open your food store with F and put 20 in it. Keeping apples and winter pears keep the longest.",
+			"hint": "Pick apples, pears, sour cherries or plums from fruit trees in season (July to November: sour cherries first, keeping apples and winter pears last), then open your food store with F and put 20 in it.",
 			"after": [
 				"food_basket",
 				"berries"

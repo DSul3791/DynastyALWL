@@ -342,6 +342,14 @@ func store_checks() -> void:
 	# The winter fruit store (camp_goals.json fruit_store, stored_item_any; Dave 22 Nov 2026): each fruit put into a food store counts, a fire does not.
 	var fruit_check := {"stored_item_any": ["wild_apples", "plums"], "count": 5}
 	var basket: int = items.dev_place("wicker_basket@1.5,0.0,0")
+	admin_on[0] = true
+	items.give(1, n("wild_apples"), 1)
+	items.action(1, Net.ACT_CHEST_PUT, slot_of("wild_apples"), basket, 1, Vector3.ZERO)
+	admin_on[0] = false
+	check(items._goal_progress(1, items._goal_state_of(1), fruit_check).x == 0, "an apple stored in Admin mode counts nothing")
+	items.give(1, n("stick"), 1)
+	items.action(1, Net.ACT_CHEST_PUT, slot_of("stick"), basket, 1, Vector3.ZERO)
+	check(not items._goal_state_of(1)["goal_counts"].has("stored:stick"), "a stick no goal names is stored without a count kept for it")
 	items.give(1, n("wild_apples"), 3)
 	items.action(1, Net.ACT_CHEST_PUT, slot_of("wild_apples"), basket, 3, Vector3.ZERO)
 	check(items._goal_progress(1, items._goal_state_of(1), fruit_check) == Vector2i(3, 5), "3 apples put in a wicker basket count 3 of 5 (%s)" % str(items._goal_progress(1, items._goal_state_of(1), fruit_check)))

@@ -22052,10 +22052,23 @@ func _goal_got(peer: int, item: int, n: int) -> void:
 
 # Units of an item this player put into a storage container by hand (_box_put): the stored_item_any checks (the winter fruit store, Dave 22 Nov 2026).
 # History, as got_item: fruit taken out again still counts. Admin mode counts nothing (_goals_paused).
+var _stored_ids: Dictionary = {}   # item id -> true: the items a stored_item_any check names ("" once built)
+
+
 func _goal_stored(peer: int, item: int, n: int) -> void:
 	var st: Dictionary = _goal_state_of(peer)
 
 	if st.is_empty() or n <= 0 or _goals_data().is_empty() or _goals_paused(peer):
+		return
+
+	if _stored_ids.is_empty():   # the ids some stored_item_any check names, once: other puts (sticks, stone) count and save nothing
+		_stored_ids[""] = true
+
+		for goal in _goals_data():
+			for id in goal.get("check", {}).get("stored_item_any", []):
+				_stored_ids[str(id)] = true
+
+	if not _stored_ids.has(table.id_of(item)):
 		return
 
 	var k: String = "stored:" + table.id_of(item)
