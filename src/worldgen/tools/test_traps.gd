@@ -366,7 +366,7 @@ func pile_checks() -> void:
 
 	var met: Dictionary = {}
 
-	for n in 120:
+	for n in 400:
 		for id in traps._pass_candidates(Vector3(701.0, 10.0, 700.0), 4.5, n):
 			met[id] = true
 

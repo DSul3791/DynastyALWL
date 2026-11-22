@@ -3030,12 +3030,11 @@ func _send_npcs(delta: float) -> void:
 		for block in map_knowledge.updates_for(peer, now_ms):
 			net.map_blocks.rpc_id(peer, block[0], block[1], block[2])
 
-		var marks: Array = items.trap_marks(peer)   # the snares and Bird traps this character has set, marked on its Map (protocol 150)
-		var marks_sig: int = hash(marks)
+		var marks_sig: int = items.trap_marks_sig(peer)   # the snares and Bird traps this character has set, marked on its Map (protocol 150): sent when they change
 
 		if not _trap_marks_sent.has(peer) or int(_trap_marks_sent[peer]) != marks_sig:
 			_trap_marks_sent[peer] = marks_sig
-			net.trap_marks.rpc_id(peer, marks)
+			net.trap_marks.rpc_id(peer, items.trap_marks(peer))
 
 		var trail: PackedVector3Array = animals.blood_near(at)
 		var trail_sig: int = hash(trail)

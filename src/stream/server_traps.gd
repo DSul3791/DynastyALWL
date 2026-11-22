@@ -349,27 +349,23 @@ func _grid_add(id: int) -> void:
 	var at: Vector3 = host._items[id]["pos"]
 	var key: Vector2i = _cell(at)
 	var ids: Array = _grid.get(key, [])
-
-	if not ids.has(id):
-		ids.append(id)
-
+	ids.append(id)   # each id once: from the one build (_ensure_grid) or from on_placed after it, never both
 	_grid[key] = ids
 	var fine_key: Vector2i = Vector2i(floori(at.x / FINE_M), floori(at.z / FINE_M))
 	var fine: Array = _fine.get(fine_key, [])
-
-	if not fine.has(id):
-		fine.append(id)
-
+	fine.append(id)
 	_fine[fine_key] = fine
 
 
-# The set traps a step may come up to: from the FINE_M cells within r of a point, at most PASS_LOOK_MAX ids read in all, starting at a
-# place in each cell turned by the animal's id (so in a pile of traps each animal meets its own few). Stale ids met are dropped.
+# The set traps a step may come up to: from the FINE_M cells within r of a point, each cell its share of PASS_LOOK_MAX ids (at least 2,
+# at most twice PASS_LOOK_MAX in all), starting at a place in each cell turned by the animal's id (so in a pile of traps each animal
+# meets its own few). Stale ids met are dropped.
 func _pass_candidates(at: Vector3, r: float, turn: int) -> Array:
 	var out: Array = []
 	var looked: int = 0
 	var lo: Vector2i = Vector2i(floori((at.x - r) / FINE_M), floori((at.z - r) / FINE_M))
 	var hi: Vector2i = Vector2i(floori((at.x + r) / FINE_M), floori((at.z + r) / FINE_M))
+	var share: int = maxi(2, PASS_LOOK_MAX / maxi((hi.x - lo.x + 1) * (hi.y - lo.y + 1), 1))   # each cell its share, so a pile in one cell cannot starve its neighbours
 
 	for gx in range(lo.x, hi.x + 1):
 		for gz in range(lo.y, hi.y + 1):
@@ -380,7 +376,7 @@ func _pass_candidates(at: Vector3, r: float, turn: int) -> Array:
 
 			var ids: Array = _fine[key]
 			var start: int = posmod(turn, ids.size())
-			var n: int = mini(ids.size(), PASS_LOOK_MAX - looked)
+			var n: int = mini(ids.size(), mini(share, PASS_LOOK_MAX * 2 - looked))
 			var stale: Array = []
 
 			for k in n:
@@ -398,7 +394,7 @@ func _pass_candidates(at: Vector3, r: float, turn: int) -> Array:
 			if ids.is_empty():
 				_fine.erase(key)
 
-			if looked >= PASS_LOOK_MAX:
+			if looked >= PASS_LOOK_MAX * 2:
 				return out
 
 	return out
@@ -609,8 +605,8 @@ func allow_place(peer: int, spot: Vector3, kind: String = "") -> bool:
 	return true
 
 
-# A trap has just been set by `peer`: stamps the owner. There is no limit on how many a player sets (Dave 22 Nov 2026): each one costs
-# a live look every check_s only while a player is within active_m, and one cheap roll a game hour while nobody is.
+# A trap has just been set by `peer`: stamps the owner. There is no limit on how many a player sets (Dave 22 Nov 2026): a set trap costs
+# nothing until an animal passes it or a player comes back near it.
 func on_placed(peer: int, id: int) -> void:
 	var st: Dictionary = host._items[id]["struct"]
 	st["owner"] = str(host._peer_key.get(peer, ""))
@@ -619,8 +615,12 @@ func on_placed(peer: int, id: int) -> void:
 	st["seq"] = host._next_uid
 	host._next_uid += 1
 	_note_run(host._items[id])
-	_ensure_grid()
-	_grid_add(id)
+
+	if _grid_built:
+		_grid_add(id)
+	else:
+		_ensure_grid()   # the first build takes in this one too
+
 	_own(str(st["owner"]), id)
 
 	if str(st.get("kind", "")) == str(cfg.get("kind", "snare_trap")):
@@ -642,8 +642,14 @@ func marks_of(key: String) -> Array:
 		return cached[1]
 
 	var rows: Array = _marks_rows(key)
-	_marks_cache[key] = [now_ms, rows]
+	_marks_cache[key] = [now_ms, rows, hash(rows)]
 	return rows
+
+
+# A number that changes when the owner's marks do (the server sends them only then), without hashing the rows on every send.
+func marks_sig(key: String) -> int:
+	marks_of(key)
+	return int(_marks_cache[key][2]) if _marks_cache.has(key) else 0
 
 
 # The owner's marks, read from their own list; traps that sit within a metre of each other and are of one kind are one mark (the Map
@@ -656,12 +662,14 @@ func _marks_rows(key: String) -> Array:
 		var it: Dictionary = host._items.get(ids[i], {})
 
 		if is_snare(it) and str(it["struct"].get("owner", "")) == key:
-			out.push_front([snappedf(float(it["pos"].x), 0.1), snappedf(float(it["pos"].z), 0.1), str(it["struct"].get("kind", ""))])
+			out.append([snappedf(float(it["pos"].x), 0.1), snappedf(float(it["pos"].z), 0.1), str(it["struct"].get("kind", ""))])
 		else:
 			ids.remove_at(i)
 
 	if ids.is_empty():
 		_owned.erase(key)
+
+	out.reverse()   # read newest first (so a stale id comes out in place), sent oldest first
 
 	var spots: Dictionary = {}
 	var kept: Array = []
@@ -704,15 +712,11 @@ func _ensure_owned() -> void:
 
 
 func _own(key: String, id: int) -> void:
-	_ensure_owned()
-
-	if key == "":
-		return
-
-	var ids: Array = _owned.get(key, [])
-
-	if not ids.has(id):
+	if not _owned_built:
+		_ensure_owned()   # the first build takes in this one too
+	elif key != "":
+		var ids: Array = _owned.get(key, [])
 		ids.append(id)
+		_owned[key] = ids
 
-	_owned[key] = ids
 	_marks_cache.erase(key)   # a trap just set is on the Map at the next send
