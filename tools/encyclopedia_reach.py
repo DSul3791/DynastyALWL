@@ -24,8 +24,9 @@ An item is obtainable now when a player can get it today, starting with empty ha
 The "future" flag in items.json is NOT a source here (validate_items.gd counts future materials so it can check the
 recipe graph; that is a different question). The script lists items whose future flag disagrees with what it finds.
 
-status: "planned" when the item is not obtainable now, "retired" when items.json retires it (a kit row excepted: it stands for its
-piece), removed when it is obtainable; retired items are never obtainable.
+status: "planned" when the item is not obtainable now, "retired" when items.json retires it (a retired kit row stands for its piece, so it
+is retired only when no blueprint that is not retired builds that piece), removed when it is obtainable; retired items are never obtainable.
+--check fails when obtainable_now or status would change.
 """
 
 import json
@@ -62,6 +63,7 @@ class Reach:
         self.all.update(self.gathered)
         self.recipes = read("recipes.json")["recipes"]
         self.blueprints = read("blueprints.json")["blueprints"]
+        self.blueprints_all = self.blueprints   # every row, for the kit status (goal_stage_audit narrows self.blueprints by chisel tier)
         self.structures = read("structures.json")["structures"]
         self.smelting = read("structures.json").get("smelting", {})
         self.drops = read("drops.json")
@@ -89,6 +91,11 @@ class Reach:
             self.why[iid] = how
             return True
         return False
+
+    def kit_piece_live(self, kit):
+        # a structure placed from this kit with a blueprint that is not retired (a locked one is coming: Cold frame, Compost bin)
+        kinds = [k for k, d in self.structures.items() if d.get("kit") == kit]
+        return any(b.get("structure") in kinds and not b.get("retired") for b in self.blueprints_all.values())
 
     def has(self, iid):
         return iid in self.why
@@ -287,7 +294,8 @@ class Reach:
         # Pieces the code lays down itself: a hoe tills a bed or wears a path, a kill leaves a carcass, a death leaves remains.
         code_laid = {"carcass": "an animal killed" if self.carcass.get("species") else None, "remains": "what a death leaves"}
         if hoe:
-            code_laid.update({"tilled_bed": "ground tilled with a %s" % hoe, "path_patch": "a path laid with a %s" % hoe})
+            code_laid.update({"tilled_bed": "ground tilled with a %s" % hoe, "path_patch": "a path laid with a %s" % hoe,
+                              "irrigation_trench": "a trench dug with a %s" % hoe})   # server_items.gd dig_trench, no items used
         for kind, how in code_laid.items():
             if how and kind in self.structures and kind not in self.built:
                 self.built[kind] = how
@@ -380,7 +388,9 @@ def main(argv):
         text = f.read()
     enc = json.loads(text)
     on, off, future_live, live_unreached = [], [], [], []
+    restatus = []
     for iid, e in enc["items"].items():
+        old_status = e.get("status")
         now = reach.has(iid)
         was = bool(e.get("obtainable_now"))
         if now != was:
@@ -389,10 +399,14 @@ def main(argv):
         it = reach.all.get(iid, {})
         if now:
             e.pop("status", None)
-        elif it.get("retired") and not iid.endswith("_kit"):
-            e["status"] = "retired"   # replaced by another item (Greens by Nettles, Salt by Sea salt): no source is coming
+        elif it.get("retired") and not (iid.endswith("_kit") and reach.kit_piece_live(iid)):
+            # replaced by another item (Greens by Nettles, Salt by Sea salt): no source is coming. A retired kit stands for its piece,
+            # so it is retired only when every blueprint of the piece is retired (the pumps and iron pipes: Dave, copper taps, no pumps).
+            e["status"] = "retired"
         else:
             e["status"] = "planned"
+        if e.get("status") != old_status and now == was:
+            restatus.append((iid, old_status, e.get("status")))
         if it.get("retired"):
             continue
         if now and it.get("future"):
@@ -409,7 +423,10 @@ def main(argv):
     show("No longer obtainable (true -> false)", off, lambda i: "; ".join(reach.blocked(i)))
     show("Reached but items.json says future", future_live, lambda i: reach.why[i])
     show("Not reached and not future", live_unreached, lambda i: "; ".join(reach.blocked(i)))
-    if "--check" in argv and (on or off):
+    print("Status changed (%d)" % len(restatus))
+    for iid, a, b in sorted(restatus):
+        print("  %-28s %s -> %s" % (iid, a, b))
+    if "--check" in argv and (on or off or restatus):
         print("encyclopedia.json is out of date: run python3 tools/encyclopedia_reach.py --write")
         return 1
     if "--write" in argv:
