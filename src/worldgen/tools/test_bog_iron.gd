@@ -225,14 +225,45 @@ func _init() -> void:
 	check(fills.size() == 1 and items._bog_holes.is_empty(), "then it silts back in, once (%d fills)" % fills.size())
 	check(absf(top - 10.0) < 0.01 and float(fill[1]) >= 2.5 and int(fill[2]) == 6, "with the fen's own peat, a sphere whose top just meets the old surface (top %.2f, r %.2f, material %d)" % [top, float(fill[1]), int(fill[2])])
 
+	# 4b. A hole over a tunnel or cellar stays open: the fill would reach open ground under it (coordinator, 22 Nov 2026).
+	var near_hole: Array = [6.0, 10.0, 0.0, 0.9, 0.0, 6]
+	var reach: Array = items._silt_reach(near_hole, items._silt_radius(near_hole))
+	var reach_ok: bool = not reach.is_empty()
+
+	for reach_point in reach:
+		var rp: Vector3 = reach_point
+		reach_ok = reach_ok and rp.y <= 9.0 + 0.001 and (rp.y < 8.6 + 0.001 or Vector2(rp.x - 6.0, rp.z).length() > 2.9)
+
+	check(reach_ok, "the fill is checked only under the ground and outside the dug pit (%d points)" % reach.size())
+	var asked: Array = []
+	items.ground_open = func(points: Array) -> bool:   # a tunnel 3.5 m down
+		asked.append(points.size())
+		return points.any(func(q): return (q as Vector3).y < 6.5)
+	items._bog_holes = [near_hole.duplicate()]
+	fills.clear()
+	items._bog_holes_tick()
+	check(fills.is_empty() and items._bog_holes.is_empty() and asked.size() == 1, "a hole over a tunnel is left open and never filled (%d fills, %d waiting)" % [fills.size(), items._bog_holes.size()])
+	items.ground_open = func(_points): return false
+	items._bog_holes = [near_hole.duplicate()]
+	items._bog_holes_tick()
+	check(fills.size() == 1 and items._bog_holes.is_empty(), "with solid ground under it the same hole silts in (%d fills)" % fills.size())
+	# A pit dug 3 m down by several digs is the hole's own opening, not a tunnel: it still silts in.
+	items.ground_open = func(points: Array) -> bool:
+		return points.any(func(q): return Vector2((q as Vector3).x - 6.0, (q as Vector3).z).length() < 1.0 and (q as Vector3).y >= 7.0)
+	items._bog_holes = [[6.0, 10.0, 0.0, 0.9, 0.0, 6, 7.0]]
+	fills.clear()
+	items._bog_holes_tick()
+	check(fills.size() == 1 and items._bog_holes.is_empty(), "a deep pit of its own digging still silts in (%d fills)" % fills.size())
+	items.ground_open = Callable()
+
 	# 5. Save and load: what is left of a patch, its clock, and the waiting holes survive a restart.
 	items._bog_left["11,22"] = [3, 12345.0]
-	items._bog_holes = [[6.0, 10.0, 0.0, 0.9, 777.0, 16]]
+	items._bog_holes = [[6.0, 10.0, 0.0, 0.9, 777.0, 16, 8.0]]
 	items._dirty = true
 	items.save()
 	var reloaded = _make(dir)
 	check(reloaded._bog_left.get("11,22", []) == [3, 12345.0], "a worked patch is saved and loaded (%s)" % str(reloaded._bog_left.get("11,22", [])))
-	check(reloaded._bog_holes == [[6.0, 10.0, 0.0, 0.9, 777.0, 16]], "a waiting hole is saved and loaded with its soil (%s)" % str(reloaded._bog_holes))
+	check(reloaded._bog_holes == [[6.0, 10.0, 0.0, 0.9, 777.0, 16, 8.0]], "a waiting hole is saved and loaded with its soil and deepest dig (%s)" % str(reloaded._bog_holes))
 	reloaded.peer_connected_hello(1, "b0b0b0b0b0b0")
 	reloaded.game_seconds = func(): return clock[0]
 	reloaded.send_notice = func(_p, text): notices.append(text)
