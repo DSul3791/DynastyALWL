@@ -14,6 +14,7 @@ const BreathLook := preload("res://src/client/breath_look.gd")   # head_bone_of:
 const MotionBuffer := preload("res://src/client/motion_buffer.gd")   # drawn between sent points, a little behind (Dave 19 Nov 2026)
 const AnimalGait := preload("res://src/client/animal_gait.gd")   # which leg clip and how fast, smoothed (Dave 21 Nov 2026: no running without moving the feet)
 const BanditLook := preload("res://src/client/bandit_look.gd")   # camp bandits (species 52) are drawn as the human ragdoll (docs/design/BANDIT_CAMPS.md)
+const LIE := 19        # lying down to rest: a companion at heel, or a wild grazer bedded down (protocol 148)
 const TETHERED := 22   # a horse tethered at a bandit camp: its saddle is shown (server_bandits.gd)
 const GRAZE := 0
 const HOP := 1
@@ -611,7 +612,7 @@ func _process_body(delta: float) -> void:
 		var rig: Node3D = node.get_node("Rig")
 		var rate: float = 9.0 if state == FLEE else 5.0
 		var big: bool = bool(b.get("deer", false))
-		var lift: float = ((0.06 if big else 0.22) if state == FLEE else (0.02 if big else 0.1)) * absf(sin(_t * (rate * (0.8 if big else 1.0)) + float(b["phase"]))) if state != GRAZE and state != 3 else 0.0
+		var lift: float = ((0.06 if big else 0.22) if state == FLEE else (0.02 if big else 0.1)) * absf(sin(_t * (rate * (0.8 if big else 1.0)) + float(b["phase"]))) if state != GRAZE and state != 3 and state != LIE else 0.0
 		# Wolf idle (protocol states 8 roll in the grass, 9 play): placeholder motion until Mandy animates it.
 		var roll: float = PI * 0.5 if state == 8 else 0.0
 		# Big game (protocol states 10 warn: head down and stamping, 11 charge: gallop, 12 recover): placeholder motion until Mandy animates it.
@@ -830,7 +831,8 @@ func _make_model(number: int, id: int = 0, young: bool = false, every_look: bool
 				# measured against the rest pose, and the next clip for the role is tried; with none, the model keeps its rest pose.
 				var clip_h: float = _clip_height(player, anim, rig)
 
-				if rest_h > 0.0001 and clip_h < rest_h * float(row.get("flat_share", 0.5)):      # flat_share: an upright animal (the kangaroo) bends lower than half its height to eat
+				# A lying clip is low by nature: only one flatter than LIE_FLAT_SHARE of the standing height is refused.
+				if rest_h > 0.0001 and clip_h < rest_h * (LIE_FLAT_SHARE if str(key) == "19" else float(row.get("flat_share", 0.5))):      # flat_share: an upright animal (the kangaroo) bends lower than half its height to eat
 					_model_note(kind, "clip %s lays the model flat (height %.2f against %.2f standing): not used" % [anim_name, clip_h, rest_h])
 					refused[anim_name] = true
 					continue
@@ -1012,7 +1014,19 @@ func _clip_full(player: AnimationPlayer, row: Dictionary, clip_name: String) -> 
 
 # The words that name a role's clip in a file, tried in order when the row's own names are not in it (WildMesh files differ:
 # G0_Walk, WalkMedium_F, walk_fwd_01). Transitions and turns ("Idle_to_Walk", "WalkL") are skipped.
-const _ROLE_WORDS := {"0": ["idle_breathing", "graz", "idle"], "21": ["drink", "eat", "graz"], "walk": ["walkmedium", "walk"], "run": ["gallop", "runfast", "run", "canter", "trot", "sprint"]}
+const _ROLE_WORDS := {"0": ["idle_breathing", "graz", "idle"], "19": ["lying_breathing", "lying_idle", "lying", "sleep", "lay"], "21": ["drink", "eat", "graz"], "walk": ["walkmedium", "walk"], "run": ["gallop", "runfast", "run", "canter", "trot", "sprint"]}
+
+
+# Lying down or getting up ("Lying_Down", "Lay_Down", "Lying_Get_Up", "Stand_Up") is a change of pose, not lying.
+static func _lie_change(bare: String) -> bool:
+	for w in ["down", "get_up", "getup", "stand", "rise", "_up"]:
+		if bare.contains(w):
+			return true
+
+	return false
+
+
+const LIE_FLAT_SHARE := 0.2   # a lying clip lower than this share of the standing height is a broken one (the bear's legless tube)
 
 
 func _role_clip(player: AnimationPlayer, row: Dictionary, role: String, refused: Dictionary = {}) -> String:
@@ -1039,7 +1053,11 @@ func _role_clip(player: AnimationPlayer, row: Dictionary, role: String, refused:
 			if refused.has(str(full)):
 				continue
 
-			if names_word(cased, str(word)) and not bare.contains("_to_") and not bare.contains("2") and not bare.ends_with("l") and not bare.ends_with("r") and not bare.contains("wound") and not bare.contains("injur") and not bare.contains("lying"):
+			# The lying role (19, protocol 148) takes a lying clip, numbered variants too (Lying_Idle_02), never a change of pose (Idle_to_Lying).
+			if role == "19" and names_word(cased, str(word)) and not bare.contains("_to_") and not bare.contains("trans") and not bare.contains("wound") and not bare.contains("injur") and not _lie_change(bare):
+				return str(full)
+
+			if role != "19" and names_word(cased, str(word)) and not bare.contains("_to_") and not bare.contains("2") and not bare.ends_with("l") and not bare.ends_with("r") and not bare.contains("wound") and not bare.contains("injur") and not bare.contains("lying") and not names_word(cased, "lay") and not names_word(cased, "sleep"):
 				return str(full)
 
 	return ""
@@ -2229,6 +2247,9 @@ func _animate_wolf(node: Node3D, b: Dictionary, state: int, speed: float, delta:
 	for leg in legs:
 		var pivot: Node3D = rig.get_node(leg)
 		var target: float = float(legs[leg]) * amp + (kick * (1.0 if leg.ends_with("L") else -1.0) + 1.2 if rolling else 0.0)
+
+		if state == LIE:
+			target = 1.4 if leg.begins_with("Leg_F") else -1.4      # lying: the legs folded under
 		pivot.rotation.x = lerpf(pivot.rotation.x, target, clampf(delta * 18.0, 0.0, 1.0))
 
 	var head_down: float = 0.0
@@ -2257,7 +2278,7 @@ func _animate_wolf(node: Node3D, b: Dictionary, state: int, speed: float, delta:
 	tail.rotation.x = lerpf(tail.rotation.x, tail_target, clampf(delta * 6.0, 0.0, 1.0))
 	tail.rotation.y = lerpf(tail.rotation.y, tail_wag, clampf(delta * 10.0, 0.0, 1.0))
 	# Crouch low when stalking, bob with the stride, play bow (front down, hips up) when playing.
-	var crouch: float = -0.12 if state == 6 else 0.0
+	var crouch: float = -0.12 if state == 6 else (-0.3 if state == LIE else 0.0)
 	var bob: float = absf(sin(float(b["gait"]) * TAU * 0.5)) * 0.04 * amp
 	rig.position.y = lerpf(rig.position.y, crouch + bob + (0.06 if state == 9 else 0.0), clampf(delta * 10.0, 0.0, 1.0))
 
@@ -2423,7 +2444,9 @@ func _animate_quad(node: Node3D, b: Dictionary, state: int, speed: float, delta:
 		var pivot: Node3D = rig.get_node(leg)
 		var target: float = float(legs[leg]) * amp
 
-		if state == 10 and leg == "Leg_FR":
+		if state == LIE:
+			target = 1.4 if leg.begins_with("Leg_F") else -1.4      # lying: the legs folded under
+		elif state == 10 and leg == "Leg_FR":
 			target = -0.9 + 0.9 * maxf(0.0, sin(_t * 9.0))      # paws and stamps the ground
 		elif state == 10 and leg == "Leg_FL":
 			target = -0.2 * maxf(0.0, sin(_t * 9.0 + 3.1))
@@ -2432,7 +2455,9 @@ func _animate_quad(node: Node3D, b: Dictionary, state: int, speed: float, delta:
 
 	var head_down: float = 0.0
 
-	if state == 0 and speed < 0.3:
+	if state == LIE:
+		head_down = 0.15 + 0.03 * sin(_t * 0.6 + float(b["phase"]))      # lying, the head up, chewing or dozing
+	elif state == 0 and speed < 0.3:
 		head_down = 0.9 + 0.08 * sin(_t * 0.9 + float(b["phase"]))      # grazing
 	elif state == DRINK and speed < 0.3:
 		head_down = -0.35 if drink_looking(int(b.get("id", 0)), _t) else 0.95 + 0.04 * sin(_t * 2.2 + float(b["phase"]))      # drinking, the head up now and then to look round
@@ -2456,7 +2481,8 @@ func _animate_quad(node: Node3D, b: Dictionary, state: int, speed: float, delta:
 	tail.rotation.x = lerpf(tail.rotation.x, tail_target, clampf(delta * 6.0, 0.0, 1.0))
 	var bob: float = absf(swing) * leg_h * 0.04 * amp
 	var heave: float = 0.012 * sin(_t * 7.0) * leg_h if state == 12 else 0.0
-	rig.position.y = lerpf(rig.position.y, bob + heave, clampf(delta * 10.0, 0.0, 1.0))
+	var down: float = -leg_h * 0.7 if state == LIE else 0.0      # lying: the body on the ground
+	rig.position.y = lerpf(rig.position.y, bob + heave + down, clampf(delta * (3.0 if state == LIE else 10.0), 0.0, 1.0))
 
 
 # A fox (Mandy 2026-10-22): small, rusty red, pale belly and muzzle, dark socks, big bushy white-tipped brush. State 13 creeps low, 14 runs with food.
