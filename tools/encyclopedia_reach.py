@@ -38,8 +38,7 @@ ITEMS = os.path.join(ROOT, "data", "items")
 ENC = os.path.join(ITEMS, "encyclopedia.json")
 
 # World facts the data files cannot show. Each names who said so and when; remove a row when the world changes.
-ORE_NOT_IN_WORLD = {
-    "iron": "both iron bodies on the nine baked tiles lie under the sea (Sonny, 10 Nov 2026); land iron comes from bog iron (digging.json, #996)",
+ORE_NOT_IN_WORLD = {   # iron was here (both baked iron bodies lie under the sea, Sonny 10 Nov 2026) until the ore plan (#1469) laid iron sources on land
 }
 
 
@@ -216,6 +215,21 @@ class Reach:
             p = next((t for t in (self.tool(c, ore.get("needs_material", {}).get(name)) for c in classes) if t), None)
             if p:
                 changed |= g(iid, "a boulder over a %s body (%s)" % (name, p))
+        # Loose pieces picked up by hand (boulders.json copper_rocks, tin_rocks: "a loose piece picked up by hand"; iron_rocks sizes: one ore is
+        # a loose Iron ore stone picked up by hand, Dave 21 Nov 2026; loose coal below a seam outcrop, distribution coal).
+        for key, name in [("copper_rocks", "copper"), ("tin_rocks", "tin"), ("iron_rocks", "iron")]:
+            if key in self.boulders and name in ore.get("items", {}):
+                changed |= g(ore["items"][name], "a loose piece picked up by hand (%s)" % key)
+        if "coal" in self.boulders.get("distribution", {}) and "coal" in ore.get("items", {}):
+            changed |= g(ore["items"]["coal"], "loose coal below a seam outcrop")
+        # Pocket finds (distribution pockets, #1469): a shovel dig opens the pocket, then a pick or the Stone Hammer breaks its rock.
+        if shovel:
+            p = next((t for t in (self.tool(c) for c in ore.get("tool_classes", [ore.get("tool_class", "pick")])) if t), None)
+            if p:
+                for row in self.boulders.get("distribution", {}).get("pockets", []):
+                    iid = ore.get("finds", {}).get(row.get("find"))
+                    if iid:
+                        changed |= g(iid, "a pocket dug open (%s) and broken out (%s)" % (shovel, p))
         for name, iid in ore.get("rocks", {}).items():
             p = next((t for t in (self.tool(c) for c in ore.get("tool_classes", [ore.get("tool_class", "pick")])) if t), None)
             if p:

@@ -209,7 +209,7 @@
 		{
 			"id": "charcoal",
 			"title": "Save some charcoal",
-			"hint": "Burn firewood or logs on your campfire: the wood leaves charcoal in the fire. Take it out and keep it. Smelters and smithies burn charcoal or coal.",
+			"hint": "Burn firewood or logs on your campfire: the wood leaves charcoal in the fire. Take it out and keep it. Smelters and smithies burn charcoal or coal. Coal shows as dark outcrops on hillsides beside rivers, lakes and wet ground.",
 			"after": [
 				"fire"
 			],
@@ -222,7 +222,7 @@
 		{
 			"id": "copper_ore",
 			"title": "Find copper ore",
-			"hint": "Copper ore is rock coated green or blue-green. Follow a river or stream inland and upstream: copper rocks lie along the water, more and bigger toward the hills. Pick small pieces up with E; break bigger rocks with the Stone - Hammer.",
+			"hint": "Copper ore is rock coated green or blue-green. There is little by the coast: follow a river or stream inland and upstream, where copper rocks lie along the water, more and bigger toward the hills, up to green outcrops where it comes from. Pick small pieces up with E; break bigger rocks with any pick or the Stone - Hammer.",
 			"after": [
 				"hammer"
 			],
@@ -301,7 +301,7 @@
 		{
 			"id": "tin_ore",
 			"title": "Find tin ore",
-			"hint": "Tin ore is a dark, very heavy rock, rarer than copper and farther inland. Look in river beds below the high hills and follow the finds upstream to where they come from. Break it like copper ore.",
+			"hint": "Tin ore is a dark, very heavy rock, rarer than copper and farther inland. Look in river beds below the high hills and follow the finds upstream to where they come from. Break it like copper ore, with any pick or the Stone - Hammer.",
 			"after": [
 				"copper_ingot"
 			],
@@ -367,7 +367,7 @@
 		{
 			"id": "iron_ore",
 			"title": "Find iron ore",
-			"hint": "Iron is common. Dig rust-red bog iron with a shovel in wet fen and marsh ground; it smelts once you have an Improved smelter.",
+			"hint": "Iron is common. Rust-red iron stones lie along rivers and streams: pick the small ones up with E. Dig bog iron with a shovel in wet fen and marsh ground. Bigger iron rocks and rusty outcrops need a bronze or better pick. Iron smelts once you have an Improved smelter.",
 			"after": [
 				"bronze_tool"
 			],

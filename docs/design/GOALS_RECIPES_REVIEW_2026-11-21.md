@@ -61,3 +61,18 @@ Every active recipe (427) and every offered blueprint (253) was read once in tie
 - **Iron (119 items, 69 pieces):** iron tools and weapons at the Improved smithy; Fortified pieces need iron bands and a Bronze hammer; Handcart and Small wagon wheels need iron bands. Iron - Saw, iron weapons and iron armour sat at brick forge level 1, the other iron tools at level 2: moved to level 2 like the tools (coordinator ruling, 21 Nov 2026). The Iron band and Iron anvil stay at level 1; no smithy gives level 1 alone, so neither change is felt in play today.
 - **Steel (51 items, 19 pieces):** steel tools at the Advanced smithy; steel armour keeps iron rivets (GR-4); Steel - Striker locked (GR-5). Nothing else.
 - **Never reached:** only the locked future rows (Bird trap, Fish trap, Wicker - Chest, Compost bin, Cold frame, Wool - Rug, Claw - Necklace, Fish soup, Pickled vegetables, Bonemeal) and now Butter and Cheese.
+
+## Final pass after the ore plan (22 Nov 2026, dev 3dc0e40c)
+
+The ore plan (#1469, stages 1 to 4) and river iron (#1455) are in dev. Read against `docs/design/RESOURCE_DISTRIBUTION.md` ("Where each ore is findable by game stage") and `boulders.json` (`copper_rocks`, `tin_rocks`, `iron_rocks`, `ore`, `distribution`).
+
+| Change | Why |
+|---|---|
+| `iron_ore` goal hint: rust-red iron stones along rivers picked up with E, bog iron dug with a shovel, bigger rocks and outcrops with a bronze or better pick | River iron stones are hand-picked (iron_rocks, Dave 21 Nov 2026) and sources lay iron outcrops on land; the hint named bog iron only. |
+| `copper_ore` goal hint: little by the coast, up to green outcrops at a source; any pick or the Stone - Hammer | Copper keeps its inland identity (RD-6); any pick takes it, not only the hammer. |
+| `tin_ore` goal hint: any pick or the Stone - Hammer | Said "like copper ore" without naming the tools. |
+| `charcoal` goal hint: where coal shows | Coal seams on hillsides by water (RD-9); the hint named coal without saying where. |
+| Encyclopedia how to get: Copper ore, Tin ore, Iron ore, Coal | Copper and tin said "a boulder over a body with any pick"; iron named outcrops only; coal had no row. |
+| `tools/encyclopedia_reach.py`: iron no longer off the map; loose hand-picked copper, tin and iron pieces, loose coal and pocket finds | The reach model still had both iron bodies under the sea and knew no hand-picked pieces or pockets, so it listed Iron ore and the five new finds as "no world source". |
+
+Checked and left: the bronze goals (a bronze pick breaks iron rock, which is the ore plan's ladder); the first-bronze quantity (RD-13: about 11 copper and 11 tin ore a player, against goals asking 4 copper and 2 tin, then the bronze kit); gold, silver and gems are sell-only finds, so no goal or recipe needs them; the coming "Snare a rabbit" goal (#1484) is that thread's.
