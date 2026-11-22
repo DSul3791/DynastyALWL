@@ -40,8 +40,7 @@ The live list was 31 goals, all stage `start`: the stone camp (water, fibre, twi
 
 ## Depends on the ore layout (final pass)
 
-- Goal hints `copper_ore`, `tin_ore` and `iron_ore` are worded for the ore thread's early layout (draft #1469: iron everywhere from the first hour as loose stones, bog iron and rusty outcrops needing a bronze pick; copper inland, first source about 1.4 km by route from spawn; tin from river finds below sources, first source about 2 km by route below the high mountains). For now the iron hint names bog iron only (the only iron on land in dev); the river iron stones (#1455) and rusty outcrops go in at the final pass.
-- Encyclopedia `how_to_get` for Copper ore, Tin ore and Iron ore still say "a boulder over a body with any pick"; copper and tin rocks lie along rivers and are picked by hand or broken with the Stone - Hammer.
+Done on 22 Nov 2026: see "Final pass after the ore plan" at the end.
 
 ## Checked and left as they are
 

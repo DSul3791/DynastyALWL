@@ -367,7 +367,7 @@
 		{
 			"id": "iron_ore",
 			"title": "Find iron ore",
-			"hint": "Iron is common. Rust-red iron stones lie along rivers and streams: pick the small ones up with E. Dig bog iron with a shovel in wet fen and marsh ground. Bigger iron rocks and rusty outcrops need a bronze or better pick. Iron smelts once you have an Improved smelter.",
+			"hint": "Iron is common. Rust-red iron stones lie along rivers and streams: pick the small ones up with E. Dig bog iron with a shovel in wet fen, marsh, swamp or bog ground. Bigger iron rocks and rusty outcrops need a bronze or better pick. Iron smelts once you have an Improved smelter.",
 			"after": [
 				"bronze_tool"
 			],
