@@ -23614,13 +23614,17 @@ func _queue_craft(peer: int, inv, recipe_number: int, count: int, variant: int =
 
 	var want: int = clampi(count, 1, CRAFT_QUEUE_MAX_COUNT)
 
-	if merge:   # an entry holds at most CRAFT_QUEUE_MAX_COUNT: take only what it can still make, or start a new entry when it is full
+	if merge:   # an entry holds at most CRAFT_QUEUE_MAX_COUNT: what does not fit it starts a new entry, or (a full queue) only its room is queued
 		var room: int = CRAFT_QUEUE_MAX_COUNT - int(entries[entries.size() - 1][1])
 
-		if room <= 0:
+		if room < want and entries.size() < CRAFT_QUEUE_ENTRIES:
 			merge = false
-		else:
-			want = mini(want, room)
+		elif room <= 0:
+			_say(peer, "The crafting queue is full")
+			return
+		elif room < want:
+			want = room
+			_say(peer, "Only room for %d more in the queue" % room)
 
 	if entries.size() >= CRAFT_QUEUE_ENTRIES and not merge:
 		_say(peer, "The crafting queue is full")
