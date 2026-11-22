@@ -762,6 +762,7 @@ func _init() -> void:
 	give("wooden_hoe" if items.table.has_id("wooden_hoe") else "stone_hoe", 1)
 	var made: int = items.till(1, items.inventory_of(1), Vector3(1.2, 10.0, 1.2), HeldTool.slot_of(items, "hoe"))
 	check(made != 0 and bed_id() != 0, "with a hoe a bed is tilled")
+	check(str(items._items[bed_id()]["struct"].get("owner", "")) == str(items._peer_key[1]), "the tilled bed records who tilled it (only they take it down)")
 	items._last_dig.clear()
 	check(items.till(1, items.inventory_of(1), Vector3(1.3, 10.0, 1.3), HeldTool.slot_of(items, "hoe")) == 0 and items._items.keys().filter(func(k): return items._items[k].has("struct") and str(items._items[k]["struct"]["kind"]) == "tilled_bed").size() == 1, "the same metre is not tilled twice")
 
