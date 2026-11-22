@@ -40,7 +40,7 @@ import prepare_station_model as stations  # noqa: E402
 # units) holding a thin part cut on its own with its share of the triangles, as the shape error alone flattens a cord a few mm thick.
 ITEMS = {
     # A rabbit snare: the loop a fist across (about 11 cm) with its bottom a hand (about 12 cm) above the ground (Shooting UK, MeatEater,
-    # Wildwood: see docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md). In Dave's file the loop is 0.33 of 1.52 units high, so the frame stands
+    # Wildwood; the trails and trapping design doc lists them). In Dave's file the loop is 0.33 of 1.52 units high, so the frame stands
     # 0.5 m (0.63 m wide): a rabbit (0.45 m long in the game) puts its head through the loop.
     "simple_snare": {"node": "SimpleSnare", "material": "SimpleSnare", "fit": (1, 0.5), "target": 5000, "max_error": 0.01, "texture": 1024, "samples": 6,
                      "thin": ((-0.173, -0.421, 0.116, 0.435), 0.25)},   # the noose hanging free under the crossbar
@@ -48,7 +48,8 @@ ITEMS = {
 
 
 def _frames(pos, tris, uv, nor):
-    """Per triangle: tangent and bitangent (the directions u and v grow along) made square to the corners' mean normal."""
+    """Per triangle: tangent (the way u grows) and bitangent made square to the corners' mean normal. The bitangent is the normal map's +Y,
+    which glTF and Godot read as up the image: v here runs down it, so +Y is the way v shrinks."""
     a, b, c = pos[tris[:, 0]], pos[tris[:, 1]], pos[tris[:, 2]]
     ta, tb, tc = uv[tris[:, 0]], uv[tris[:, 1]], uv[tris[:, 2]]
     e1, e2, d1, d2 = b - a, c - a, tb - ta, tc - ta
@@ -61,7 +62,45 @@ def _frames(pos, tris, uv, nor):
     t -= n * (t * n).sum(1, keepdims=True)
     t /= np.maximum(np.linalg.norm(t, axis=1, keepdims=True), 1e-12)
     hand = np.sign((np.cross(n, t) * bt).sum(1, keepdims=True))
-    return t, np.cross(n, t) * np.where(hand == 0, 1, hand)
+    return t, -np.cross(n, t) * np.where(hand == 0, 1, hand)
+
+
+def _vertex_frames(count, tris, t, b, nor):
+    """Per corner: the faces' tangents and bitangents summed and made square to the corner's normal, so the bake's frames turn smoothly
+    across the cut mesh as the tangents Godot makes for it on import (ensure_tangents, MikkTSpace) do, not face by face."""
+    vt, vb = np.zeros((count, 3)), np.zeros((count, 3))
+    for k in range(3):
+        np.add.at(vt, tris[:, k], t)
+        np.add.at(vb, tris[:, k], b)
+    vt -= nor * (vt * nor).sum(1, keepdims=True)
+    vt /= np.maximum(np.linalg.norm(vt, axis=1, keepdims=True), 1e-12)
+    hand = np.where((np.cross(nor, vt) * vb).sum(1, keepdims=True) < 0, -1.0, 1.0)
+    return vt, np.cross(nor, vt) * hand
+
+
+def _to_local(nt, src_t, src_b, src_n, dst_t, dst_b, dst_n):
+    """A tangent-space normal (x right, y up the image, z out) read in one surface frame, written in another."""
+    world = src_t * nt[:, 0:1] + src_b * nt[:, 1:2] + src_n * nt[:, 2:3]
+    world /= np.maximum(np.linalg.norm(world, axis=1, keepdims=True), 1e-12)
+    local = np.column_stack([(world * dst_t).sum(1), (world * dst_b).sum(1), (world * dst_n).sum(1)])
+    local[:, 2] = np.maximum(local[:, 2], 0.05)
+    return local / np.linalg.norm(local, axis=1, keepdims=True)
+
+
+def _check_frames():
+    """A flat quad, its texture laid once straight and once turned a quarter: a bump tilted toward +x of the image in the first must read
+    as tilted toward the image's -y (down) in the second, whose u runs along the quad's y. Stops the tool on a sign slip."""
+    pos = np.array([[0, 0, 0], [1, 0, 0], [1, 1, 0], [0, 1, 0]], float)
+    tris = np.array([[0, 1, 2], [0, 2, 3]])
+    nor = np.tile([0.0, 0.0, 1.0], (4, 1))
+    straight = np.array([[0, 1], [1, 1], [1, 0], [0, 0]], float)   # u along x, v down the image = along -y
+    turned = np.array([[0, 0], [0, 1], [1, 1], [1, 0]], float)     # u along y, v along x
+    st, sb = _frames(pos, tris, straight, nor)
+    dt, db = _frames(pos, tris, turned, nor)
+    assert np.allclose(sb[0], [0, 1, 0]), "straight +Y must be the quad's +y"
+    nx, ny = 0.6, 0.3
+    got = _to_local(np.array([[nx, ny, np.sqrt(1 - nx * nx - ny * ny)]]), st[:1], sb[:1], np.array([[0, 0, 1.0]]), dt[:1], db[:1], np.array([[0, 0, 1.0]]))[0]
+    assert np.allclose(got[:2], [ny, -nx], atol=1e-6), "normal bake frames: expected (%.2f, %.2f), got (%.2f, %.2f)" % (ny, -nx, got[0], got[1])
 
 
 def _sample(img, uv):
@@ -99,6 +138,7 @@ def main():
     ap.add_argument("--node-modules", required=True)
     args = ap.parse_args()
     it = ITEMS[args.item]
+    _check_frames()
 
     src = Glb(args.source)
     prim = src.j["meshes"][0]["primitives"][0]
@@ -125,7 +165,8 @@ def main():
     cuts = []
     with tempfile.TemporaryDirectory() as tmp:
         local = os.path.join(os.path.abspath(args.node_modules), "simplify_shape.mjs")
-        open(local, "w").write(open(os.path.join(HERE, "items", "simplify_shape.mjs")).read())
+        with open(os.path.join(HERE, "items", "simplify_shape.mjs")) as mjs, open(local, "w") as copy:
+            copy.write(mjs.read())
         for part, target, flags in parts:
             files = [os.path.join(tmp, n) for n in ("pos.bin", "idx.bin", "out.bin")]
             weld.astype(np.float32).tofile(files[0])
@@ -170,7 +211,7 @@ def main():
     pts_t, pts_b = np.repeat(ht, s, 0), np.repeat(hb, s, 0)
     tree = cKDTree(pts)
 
-    lt, lb = _frames(lpos, ltris, luv, lnor)
+    lt, lb = _vertex_frames(len(lpos), ltris, *_frames(lpos, ltris, luv, lnor), lnor)
     texel_xyz, texel_n, texel_t, texel_b, texel_at = [], [], [], [], []
     for f in range(len(ltris)):
         corner = luv[ltris[f]] * size - 0.5
@@ -191,8 +232,8 @@ def main():
         texel_xyz.append(w @ lpos[ltris[f]])
         n = w @ lnor[ltris[f]]
         texel_n.append(n / np.maximum(np.linalg.norm(n, axis=1, keepdims=True), 1e-12))
-        texel_t.append(np.repeat(lt[f:f + 1], len(w), 0))
-        texel_b.append(np.repeat(lb[f:f + 1], len(w), 0))
+        texel_t.append(w @ lt[ltris[f]])
+        texel_b.append(w @ lb[ltris[f]])
         texel_at.append(g)
     xyz, tn, tt, tb, at = (np.concatenate(v) for v in (texel_xyz, texel_n, texel_t, texel_b, texel_at))
     _, near = tree.query(xyz, workers=-1)
@@ -207,13 +248,9 @@ def main():
         out[key] = _pad(img, filled)
     # The normal: Dave's tangent-space normal into world space by his surface's frame, then into the cut surface's frame.
     nt = _sample(images["normal"], src_uv) * 2.0 - 1.0
-    world = pts_t[near] * nt[:, 0:1] + pts_b[near] * nt[:, 1:2] + pts_n[near] * nt[:, 2:3]
-    world /= np.maximum(np.linalg.norm(world, axis=1, keepdims=True), 1e-12)
-    local = np.column_stack([(world * tt).sum(1), (world * tb).sum(1), (world * tn).sum(1)])
-    local[:, 2] = np.maximum(local[:, 2], 0.05)
-    local /= np.linalg.norm(local, axis=1, keepdims=True)
+    local = _to_local(nt, pts_t[near], pts_b[near], pts_n[near], tt, tb, tn)
     img = np.zeros((size, size, 3), np.float32)
-    img[..., 2] = 1.0
+    img[...] = (0.5, 0.5, 1.0)   # flat, wherever the padding does not reach
     img[at[:, 1], at[:, 0]] = local * 0.5 + 0.5
     out["normal"] = _pad(img, filled)
 

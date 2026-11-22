@@ -1360,9 +1360,7 @@ static func snare_trap() -> Node3D:
 		var model: Node3D = _simple_snare.instantiate() as Node3D
 
 		if model != null:
-			var holder: Node3D = Node3D.new()
-			holder.add_child(model)
-			return holder
+			return model
 
 	return _snare_stub()
 
