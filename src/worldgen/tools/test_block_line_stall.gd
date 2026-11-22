@@ -217,7 +217,9 @@ func _initialize() -> void:
 	var waiting: int = 0
 	since = Time.get_ticks_msec()
 
-	while Time.get_ticks_msec() - since < 10000 and waiting == 0 and n3 < 2000:   # fill the socket until the outbox holds something
+	# Fill the socket until the outbox holds 512 KB: with only a little waiting, a host whose socket buffers are larger (the cloud
+	# containers: 4 MB send buffer) can take the rest a moment later, the outbox empties and nothing is stalled.
+	while Time.get_ticks_msec() - since < 10000 and waiting < 512 * 1024 and n3 < 2000:
 		link.send(3, Vector4i(n3, 0, 0, 0), _block(n3, BLOCK_BYTES))
 		n3 += 1
 		link._mutex.lock()
