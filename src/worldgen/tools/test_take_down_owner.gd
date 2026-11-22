@@ -98,8 +98,9 @@ func _init() -> void:
 	check(not b._may_take_down(2, b._items[frame]), "the door's hanger still cannot take the frame")
 	b._items[frame]["struct"].erase("owner")   # a frame saved before owners: open to all, so its door is too (else the frame could never come down)
 	check(b._may_take_down(3, b._items[door]), "a door in an old unowned frame may be taken out by anyone")
-	b._items.erase(door)
 	b._items.erase(frame)
+	check(not b._may_take_down(3, b._items[door]), "a stranger may not take a door that hangs in no frame")
+	b._items.erase(door)
 
 	# Pieces laid by hand record their maker too: a torch (the tilled bed is in test_farming).
 	b.give_to(1, "torch", 1)
@@ -119,8 +120,9 @@ func _init() -> void:
 			torch_id = int(id)
 
 	b.report_position(2, Vector3(30.0, 10.0, 30.0))
+	said.clear()
 	b._take_down(2, b.inventory_of(2), torch_id)
-	check(b._items.has(torch_id), "another player cannot pick up a torch someone set")
+	check(torch_id != -1 and b._items.has(torch_id) and said.any(func(t): return str(t).contains("built it")), "another player cannot pick up a torch someone set (%s)" % str(said))
 
 	b._finish_writer()
 	print("test_take_down_owner: %s (%d failures)" % ["PASS" if failures == 0 else "FAIL", failures])
