@@ -11647,17 +11647,6 @@
 			"sell_lot": 15,
 			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
 		},
-		"wild_rose_seed": {
-			"number": 1532,
-			"name": "Wild rose seed",
-			"description": "Seeds from a wild rose. Sow them with the hoe in a tilled bed or a planter and a wild rose grows.",
-			"kind": "material",
-			"stack": 20,
-			"look_alikes": [],
-			"value": 1,
-			"sell_lot": 15,
-			"note": "A shrub seed (coordinator 22 Nov 2026 on Dave's ruling \"All herbs and plants should produce seeds\"). A wild one picked by hand late in its season gives 1 to 2 (drops.json seed_drops); sown in a tilled bed or planter it grows (crops.json) and gives seeds back, like the herb seeds. PROVISIONAL."
-		},
 		"blackthorn_seed": {
 			"number": 1533,
 			"name": "Blackthorn seed",

@@ -152,7 +152,6 @@
 		"cactus": {"seasons": ["summer", "autumn"], "rows": [["cactus_seed", 1, 2]]},
 		"raspberry": {"seasons": ["summer"], "rows": [["raspberry_seed", 1, 2]]},
 		"elder": {"seasons": ["autumn"], "rows": [["elder_seed", 1, 2]]},
-		"wild_rose": {"seasons": ["autumn"], "rows": [["wild_rose_seed", 1, 2]]},
 		"blackthorn": {"seasons": ["autumn"], "rows": [["blackthorn_seed", 1, 2]]},
 		"hawthorn": {"seasons": ["autumn"], "rows": [["hawthorn_seed", 1, 2]]},
 		"sea_buckthorn": {"seasons": ["autumn"], "rows": [["sea_buckthorn_seed", 1, 2]]},

@@ -11662,19 +11662,6 @@
 			],
 			"obtainable_now": true
 		},
-		"wild_rose_seed": {
-			"name": "Wild rose seed",
-			"kind": "material",
-			"description": "Seeds from a wild rose. Sow them with the hoe in a tilled bed or a planter and a wild rose grows.",
-			"how_to_get": [
-				"From a wild wild rose picked late in its season",
-				"From a ripe wild rose in a garden"
-			],
-			"used_for": [
-				"Sown with the hoe (Garden) to grow a wild rose"
-			],
-			"obtainable_now": true
-		},
 		"blackthorn_seed": {
 			"name": "Blackthorn seed",
 			"kind": "material",

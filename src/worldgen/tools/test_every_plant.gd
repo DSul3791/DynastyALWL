@@ -181,7 +181,7 @@ func wild_part(seed_drops: Dictionary, harvest: Dictionary, by_species: Dictiona
 			print("NOTE seed_drops %s: the plant is future in flora.json, so %s has no wild source" % [species, str(seed_drops[species]["rows"].map(func(r): return r[0]))])
 			continue
 
-		check(str(species) == "note" or (not entry.is_empty() and str(entry.get("kind", "")) != "tree" and not bool(entry.get("retired", false))), "seed_drops %s: no live wild plant of that name gives it" % species)
+		check(str(species) == "note" or (not entry.is_empty() and str(entry.get("kind", "")) != "tree" and not bool(entry.get("retired", false)) and not bool(entry.get("future", false))), "seed_drops %s: no live wild plant of that name gives it" % species)
 
 	return n
 
