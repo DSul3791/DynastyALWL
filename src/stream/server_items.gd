@@ -22599,7 +22599,7 @@ func _stock_note(stock: Dictionary, sid: int, here: Vector3, key: String, reach_
 		if d <= CraftStock.LOOSE_STOCK_M * reach_x:
 			(stock["near"] as Array).append([sid, d])
 	elif _is_storage(s) and not _smelters.is_smelter(_structures.get(str(s["struct"]["kind"]), {})) and CraftStock.box_counts(str(s["struct"].get("owner", "")), bool(s["struct"].get("keep_out", false)), key, d, CraftStock.CRAFT_REACH_M * reach_x):
-		(stock["boxes"] as Array).append([sid, _chests[int(s["struct"]["uid"])], d, 1 if _keeps_products(str(s["struct"]["kind"])) else 0])
+		(stock["boxes"] as Array).append([sid, _chests[int(s["struct"]["uid"])], d, 1 if _keeps_products(str(s["struct"]["kind"])) else 0, _fuel_slot_kind(_structures.get(str(s["struct"]["kind"]), {}))])
 
 
 # Loose stacks of an ingredient (or any member of its group: a `log` need takes any log) near the player: [[world id, count], ...], nearest first.
@@ -22632,12 +22632,35 @@ func _stock_have(inv, number: int, stock: Dictionary, plain_only: bool = false) 
 		total += int(row[1])
 
 	for box in stock.get("boxes", []):
-		total += box[1].count_fill(number, plain_only)
+		total += _box_fill(box, number, plain_only)
 
 	if not plain_only and number == table.number_of("water"):
 		total += _tanks_units(stock.get("tanks", []), number)
 
 	return total
+
+
+# One craft-stock box's count of an ingredient. A smithy's fuel slot is its fire, not stock: the coal in it is never counted or taken for a craft
+# (a recipe that needs Coal used to empty the fire, which then stopped the smithy).
+func _box_fill(box: Array, number: int, plain_only: bool) -> int:
+	var total: int = box[1].count_fill(number, plain_only)
+
+	if bool(box[4]) and int(box[1].numbers[FUEL_SLOT]) != 0 and box[1].fills_of(number).has(int(box[1].numbers[FUEL_SLOT])) and not (plain_only and not box[1].inst[FUEL_SLOT].is_empty()) and not box[1].maturing_at(FUEL_SLOT):
+		total -= int(box[1].counts[FUEL_SLOT])
+
+	return total
+
+
+# Takes from one craft-stock box, the fuel slot of a smithy left alone (hidden for the take, then put back).
+func _stock_box_take(box: Array, number: int, share: int, taken_inst: Array, plain_only: bool) -> bool:
+	if not bool(box[4]):
+		return box[1].remove_fill(number, share, taken_inst, plain_only)
+
+	var fuel_n: int = int(box[1].numbers[FUEL_SLOT])
+	box[1].numbers[FUEL_SLOT] = 0
+	var ok: bool = box[1].remove_fill(number, share, taken_inst, plain_only)
+	box[1].numbers[FUEL_SLOT] = fuel_n
+	return ok
 
 
 # Takes up to `want` of an ingredient: the pack first, then the ground near the player, then the containers nearest first. Returns how many it took.
@@ -22653,7 +22676,7 @@ func _stock_take(inv, number: int, want: int, stock: Dictionary, taken_inst: Arr
 		have.append(int(row[1]))
 
 	for box in boxes:
-		have.append(box[1].count_fill(number, plain_only))
+		have.append(_box_fill(box, number, plain_only))
 
 	var plan: Array = CraftStock.take_plan(want, have)
 	var took: int = 0
@@ -22683,7 +22706,7 @@ func _stock_take(inv, number: int, want: int, stock: Dictionary, taken_inst: Arr
 
 		var rows_before: int = taken_inst.size()
 
-		if share > 0 and boxes[i][1].remove_fill(number, share, taken_inst, plain_only):
+		if share > 0 and _stock_box_take(boxes[i], number, share, taken_inst, plain_only):
 			took += share
 
 			for k in range(rows_before, taken_inst.size()):   # water taken from this chest's containers goes back there on a refund (_pour_back)
@@ -22840,7 +22863,7 @@ func _send_stock(peer: int, poll: bool = false, building: bool = false) -> void:
 
 	for box in stock["boxes"]:
 		for slot in box[1].slot_count:
-			if int(box[1].numbers[slot]) != 0:
+			if int(box[1].numbers[slot]) != 0 and not (bool(box[4]) and slot == FUEL_SLOT):   # a smithy's fuel slot is its fire, not crafting stock
 				counts[int(box[1].numbers[slot])] = int(counts.get(int(box[1].numbers[slot]), 0)) + int(box[1].counts[slot])
 
 		var water_n: int = table.number_of("water")
