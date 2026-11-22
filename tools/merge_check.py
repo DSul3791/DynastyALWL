@@ -196,7 +196,10 @@ if goal_stage.returncode != 0:   # every goal is reachable with its own stage's 
 
 reach = subprocess.run([sys.executable, "tools/encyclopedia_reach.py", "--check"], capture_output=True, text=True)
 if reach.returncode != 0:   # encyclopedia obtainable_now must follow the data (stale rows found on dev 22 Nov 2026)
-    bad("encyclopedia_reach: encyclopedia.json is out of date (python3 tools/encyclopedia_reach.py, then --write)")
+    if "out of date" in reach.stdout:
+        bad("encyclopedia_reach: encyclopedia.json is out of date (python3 tools/encyclopedia_reach.py --write)")
+    else:   # the script itself failed (a data change it cannot read): show why
+        bad("encyclopedia_reach failed: " + " | ".join(reach.stderr.strip().splitlines()[-3:]))
 
 placeable = subprocess.run([sys.executable, "tools/placeables_check.py"], capture_output=True, text=True)
 if placeable.returncode != 0:   # every placeable item must be placeable (Dave 5 Nov 2026)
