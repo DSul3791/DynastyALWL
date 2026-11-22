@@ -40,6 +40,7 @@ Checked against the code and dev history, not against the lists' own tick marks.
 Grouped so that each piece can be one thread. Order is a suggestion (section 4). Already running elsewhere and **not repeated here**: world resource distribution, goal list and recipe check, natural animal movement and behaviour, and the pieces held for tonight's second merge (#1455 river iron stones, #1457 meteorites and Iron chunk, #1456 the goblins' own cave, #1459 Improved smithy model, #1461 Primitive kiln model, #1460 nail tiers, and the Primitive smithy model).
 
 ### Piece 1. Lag leftovers (BugsList 108, still open part)
+- Cold first-join freeze grew from 24.0 s to 25.2 s at gate Z (limit 24.85 s); second main merge waits on Dave's choice: accept or fix and re-gate.
 - First-sight shader builds on d3d12 (0.5 to 0.9 s a new thing). **Decision**: shader warm-up at load or a renderer default. Recommendation: warm up the materials of what is near the spawn behind the existing "preparing graphics" note (BugsList 93); keep the renderer.
 - Single physics steps of 44 to 51 ms; clock and weather at 31 to 37 ms.
 - Server pauses in cheap code while the PC loads new ground tiles (thread counts).
