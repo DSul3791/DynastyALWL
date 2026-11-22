@@ -20,7 +20,7 @@ recorded). Values marked TR-n are provisional and live in data files.
   every 30 s for a rabbit or fox within 2.5 m (or draws one from 30 m) and rolls 0.35 x the worn-trail factor x night x bait x
   storm. A catch lays a carcass. The Bird trap is a second kind. The fish trap is separate.
 
-What is missing, and why trails never really showed: animals have one home point and wander a few metres round it. Nothing walks
+What is missing, and why trails never really showed: the client kept the worn blocks but never laid them into the grass map (`grass_view._rebuild_trails` was never called; now it is). And animals have one home point and wander a few metres round it. Nothing walks
 the same line twice, so the worn grid is a blob round each home, 4 m cells draw as a wide smudge, not a path, and animals (and so
 trails) only exist within 300 m of a player and are made at random spots each visit. A snare catches only while its owner stands
 within 150 m.
@@ -98,9 +98,9 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
 - TR-1 warren chance 0.45 per 64 m square of open ground with rabbit biome weight, slope under 0.35; 2-3 runs of 15-40 m each.
 - TR-2 deer range: one per 256 m square where deer may live; bed on the steepest acceptable side ground (sheltered, above the
   bottom), feeding ground on the flattest open ground 80-200 m from it.
-- TR-3 routes: a point every 12 m, each tried at five side offsets, the flattest kept; a small wiggle every 4 m; deep water refused.
+- TR-3 routes: a point every 12 m, each tried 3, 6 or 12 m either side of the last one's line, the gentlest climb kept, drifting at most 30 m off the straight line; round deep water by a dry point 20-60 m to one side of the middle; a small wiggle every 4 m.
 - TR-4 clock: rabbits out from dusk to dawn (dusk and night periods), deer to feed at dusk and back at dawn.
-- TR-5 the look: a run 0.35 m wide, a deer trail 0.6 m, grass squashed 0.7 like a trodden step.
+- TR-5 the look: a run 0.35 m wide, a deer trail 0.6 m, fading over 0.4 m either side; the grass squashed by the trample's own squash (0.75, data/look/grass_trample.json) and shaded the same, so a trail looks like ground just walked.
 - TR-6 snares: full factor within 0.5 m of a run, falling to the old factor at 2 m; away catches tuned to about one rabbit in three
   nights for a snare on a busy run (Wildwood's 3 in 15 the first night).
 

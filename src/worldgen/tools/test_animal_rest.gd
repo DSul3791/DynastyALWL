@@ -78,8 +78,8 @@ func _init() -> void:
 
 	var day_h: float = hour_at(a, deer, 0.4)
 	var dusk_h: float = hour_at(a, deer, 1.0)
-	var night_h: float = hour_at(a, deer, 0.2)
-	check(day_h >= 0.0 and dusk_h >= 0.0 and night_h >= 0.0, "the deer row has day 0.4, dusk 1.0, night 0.2 (%.0f %.0f %.0f)" % [day_h, dusk_h, night_h])
+	var night_h: float = hour_at(a, deer, 0.5)
+	check(day_h >= 0.0 and dusk_h >= 0.0 and night_h >= 0.0, "the deer row has day 0.4, dusk 1.0, night 0.5 (%.0f %.0f %.0f)" % [day_h, dusk_h, night_h])
 
 	hour = dusk_h
 	check(lying_count(a, herd) == 0, "at dusk every deer is up (%d of 20 lying)" % lying_count(a, herd))
@@ -87,7 +87,7 @@ func _init() -> void:
 	var by_day: int = lying_count(a, herd)
 	check(by_day >= 8 and by_day <= 16, "by day about 60% of a herd is bedded (%d of 20)" % by_day)
 	hour = night_h
-	check(lying_count(a, herd) > by_day, "at night more are bedded than by day (%d)" % lying_count(a, herd))
+	check(lying_count(a, herd) < by_day and lying_count(a, herd) > 0, "at night fewer are bedded than by day, some still are (%d; D-TRAP-2: bucks bed 64%% of the day, 47%% of the night)" % lying_count(a, herd))
 
 	# A bedded deer: drinking and hunched come first; moving or fleeing it is never sent lying.
 	var bed: Dictionary = {}

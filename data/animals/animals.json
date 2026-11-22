@@ -86,8 +86,9 @@
 			"active": {
 				"day": 0.5,
 				"dusk": 1.0,
-				"night": 0.15
-			}
+				"night": 0.7
+			},
+			"note_active": "D-TRAP-2 (22 Nov 2026, docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md): night 0.15 -> 0.7. Rabbits are most active late afternoon to early morning and stay above ground at night (NSW DPI; Agriculture Victoria)."
 		},
 		"deer": {
 			"group_spacing_m": 3.0,
@@ -141,8 +142,9 @@
 			"active": {
 				"day": 0.4,
 				"dusk": 1.0,
-				"night": 0.2
+				"night": 0.5
 			},
+			"note_active": "D-TRAP-2 (22 Nov 2026, docs/design/ANIMAL_ROUTINES_TRAILS_TRAPPING.md): night 0.2 -> 0.5. Bucks are bedded 64% of the day but 47% of the night, feeding 39% (Mississippi State).",
 			"protective_share": 0.0,
 			"defend": {
 				"note": "Dave 6 Nov 2026 threat range: a deer (a stag's antlers, a hind's hooves) runs from a player at spook_m but turns and strikes one who gets within threat_m or corners it. protective_share 0: no standing its ground.",

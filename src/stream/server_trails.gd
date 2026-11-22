@@ -6,6 +6,7 @@ extends RefCounted
 # server store files, never in a tile file. Mandy draws cells at or above draw_threshold.
 
 const Codec := preload("res://src/shared/trail_codec.gd")
+var _NO_ROUTES: int = hash(PackedByteArray())
 
 var cfg: Dictionary = {}
 var game_seconds: Callable                 # () -> game clock seconds (24:1)
@@ -17,6 +18,7 @@ var _decay_acc: float = 0.0
 var _save_acc: float = 0.0
 var _decayed_at: float = -1.0
 var _path: String = ""
+var ranges = null                  # animal places (server_ranges.gd): their trails ride with each block
 
 
 func setup(store_dir: String) -> void:
@@ -134,7 +136,8 @@ func _decay() -> void:
 		blocks.erase(key)
 
 
-# The blocks to send this player now: the 3 x 3 around `at` that changed (or were never sent) and are due. [[bx, bz, bytes], ...]
+# The blocks to send this player now: the 3 x 3 around `at` that changed (or were never sent) and are due. [[bx, bz, bytes, routes], ...]
+# routes: the block's trails between animal places (server_ranges.gd wire, protocol 149), empty while not worked out.
 func updates_for(peer: int, at: Vector3, now_msec: int) -> Array:
 	var per: float = float(cfg.get("block_cells", 64)) * float(cfg.get("cell_m", 4.0))
 	var centre: Vector2i = Vector2i(int(floor(at.x / per)), int(floor(at.z / per)))
@@ -148,12 +151,16 @@ func updates_for(peer: int, at: Vector3, now_msec: int) -> Array:
 			var key: Vector2i = centre + Vector2i(dx, dz)
 			var rec: Array = known.get(key, [])
 			var ver: int = int(blocks[key]["ver"]) if blocks.has(key) else 0
+			var routes: PackedByteArray = ranges.wire(key, now_msec) if ranges != null else PackedByteArray()
+			var route_sig: int = hash(routes)
 
-			if not rec.is_empty() and (int(rec[0]) == ver or now_msec - int(rec[1]) < resend_ms):
+			var first_routes: bool = not rec.is_empty() and int(rec[2]) == _NO_ROUTES and not routes.is_empty()   # just worked out: sent at once
+
+			if not rec.is_empty() and ((int(rec[0]) == ver and int(rec[2]) == route_sig) or (now_msec - int(rec[1]) < resend_ms and not first_routes)):
 				continue
 
-			if rec.is_empty() and not blocks.has(key):
-				known[key] = [0, now_msec]   # nothing worn here: remembered as sent so we do not ask again
+			if rec.is_empty() and not blocks.has(key) and routes.is_empty():
+				known[key] = [0, now_msec, route_sig]   # nothing worn here: remembered as sent so we do not ask again
 				continue
 
 			var cells: Dictionary = {}
@@ -163,8 +170,8 @@ func updates_for(peer: int, at: Vector3, now_msec: int) -> Array:
 					if float(blocks[key]["cells"][idx]) >= min_s:
 						cells[idx] = blocks[key]["cells"][idx]
 
-			known[key] = [ver, now_msec]
-			out.append([key.x, key.y, Codec.encode(cells)])
+			known[key] = [ver, now_msec, route_sig]
+			out.append([key.x, key.y, Codec.encode(cells), routes])
 
 	_sent[peer] = known
 	return out

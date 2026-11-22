@@ -40,7 +40,8 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 148  # 148 (21 Nov 2026, Dave: animals "relaxing"): a grazer bedded down (resting, or its share by its active chance) is sent as state 19 (LIE, the companions' lying state) and drawn lying. Client and server must be updated together.
+const PROTOCOL_VERSION := 149  # 149 (22 Nov 2026, Dave: game trails "where animals might travel occassionally and we could set traps or snares"): trails(block_x, block_z, bytes, routes), routes the block's trails between animal places (src/shared/trail_codec.gd decode_routes: [kind, world points]), drawn as matted grass. Client and server must be updated together.
+# 148 (21 Nov 2026, Dave: animals "relaxing"): a grazer bedded down (resting, or its share by its active chance) is sent as state 19 (LIE, the companions' lying state) and drawn lying. Client and server must be updated together.
 # 147 (21 Nov 2026, Dave's play test: "animals are still teleporting and not actually running"): animals(rows, server_ms), each row's field 5 the server ms its animal reached that position; the client draws animals on the server's timeline. Client and server must be updated together.
 # 146 (20 Nov 2026, goblin camp life, Dave: the Ragtooth goblins "keep themselves busy", "if the player has a weapon they will take up defensive positions with thier spears"): held_item(number), the item in the player's hand, sent when it changes; npc rows state 4 (WORK: a goblin tribe member at a chore) and 5 (GUARD: standing its ground, spear forward). Client and server must be updated together.
 # 144 (20 Nov 2026, bandit camps stage 3, the warnings, Dave 19 Nov: a woken site shows signs first): a bandit camp's cold fire pit (state 8) and a mark at the road whose world row extra, {"camp": 2, "marks": true, "tracks": [[dx, dy, dz, yaw], ...]} (at most 32), the client draws as boot prints with no pit; the lookout is a camp bandit (species 52) on the existing states. Client and server must be updated together.
@@ -91,7 +92,7 @@ signal trade_requested(peer_id: int, npc_id: String, kind: int, a: int, count: i
 signal held_reported(peer_id: int, number: int)
 signal purse_received(counts: PackedInt32Array)
 signal carry_received(item_id: String)
-signal trails_received(block_x: int, block_z: int, bytes: PackedByteArray)
+signal trails_received(block_x: int, block_z: int, bytes: PackedByteArray, routes: PackedByteArray)
 signal map_block_received(block_x: int, block_z: int, bytes: PackedByteArray)
 signal reputation_received(ids: PackedStringArray, names: PackedStringArray, points: PackedInt32Array)
 signal item_received(item_id: String, count: int, source: String)
@@ -917,9 +918,10 @@ func held_item(number: int) -> void:
 # Game trails (protocol 65): one block of worn grass, compressed (src/shared/trail_codec.gd decode() gives {cell index: strength 0..1};
 # index = local_x + local_z * 64 from the block's south-west corner; block = 256 m, cell = 4 m, see data/animals/trails.json).
 # Sent for the 3 x 3 blocks around the player when they enter a block and when a block changes (at most every 30 s a block).
+# routes (protocol 149): the block's trails between animal places, trail_codec.gd decode_routes (empty while not worked out).
 @rpc("authority", "call_remote", "reliable")
-func trails(block_x: int, block_z: int, bytes: PackedByteArray) -> void:
-	trails_received.emit(block_x, block_z, bytes)
+func trails(block_x: int, block_z: int, bytes: PackedByteArray, routes: PackedByteArray) -> void:
+	trails_received.emit(block_x, block_z, bytes, routes)
 
 
 # The large log on the shoulder (protocol 64): its item id, "" when nothing is carried. The client counts its weight in the load
