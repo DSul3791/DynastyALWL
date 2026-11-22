@@ -18,7 +18,6 @@ const HeldTool := preload("res://src/worldgen/tools/held_tool.gd")
 const SEASONS := ["spring", "summer", "autumn", "winter"]
 const NO_SEED_PLANTS := ["fallen_log", "hollow_log", "old_stump", "dead_tree"]   # not plants (HOE_GARDENING_DESIGN.md "Which plants")
 const FUNGI := ["mushrooms", "chanterelle", "porcini", "morel", "fly_agaric", "puffball", "tinder_fungus", "rimecap", "lumencap", "cinderfoot", "mirrorcap"]   # spores, not seed (as designed)
-const FUTURE_WILD_CROPS := ["wild_potato", "wild_turnip", "sea_cabbage", "ramsons", "wild_vetch", "sea_beet", "wild_radish", "prickly_lettuce"]   # not in the world yet: their seeds have no wild source (coordinator 22 Nov 2026: switch them on)
 
 var failures: int = 0
 var checks: int = 0
@@ -177,11 +176,33 @@ func wild_part(seed_drops: Dictionary, harvest: Dictionary, by_species: Dictiona
 	for species in seed_drops:   # every seed row names a live plant this part picked, so no seed is out of reach (Dave 14 Nov 2026)
 		var entry: Dictionary = items._flora_by_name.get(species, {})
 
-		if not entry.is_empty() and bool(entry.get("future", false)) and FUTURE_WILD_CROPS.has(species):   # a wild crop not in the world yet: its seed has no source, said, not failed
-			print("NOTE seed_drops %s: the plant is future in flora.json, so %s has no wild source" % [species, str(seed_drops[species]["rows"].map(func(r): return r[0]))])
+		check(str(species) == "note" or (not entry.is_empty() and str(entry.get("kind", "")) != "tree" and not bool(entry.get("retired", false)) and not bool(entry.get("future", false))), "seed_drops %s: no live wild plant of that name gives it" % species)
+
+	# Every garden crop can be started from the world (coordinator 22 Nov 2026: the 8 wild crop plants switched on so peas, turnip, radish, potato,
+	# cabbage, beet, onion and lettuce can be): its seed is a seed_drops row of a live plant, or the yield of a live plant (hazelnuts).
+	var wild_seeds: Dictionary = {}
+
+	for species in seed_drops:
+		var entry: Dictionary = items._flora_by_name.get(species, {})
+
+		if str(species) != "note" and not entry.is_empty() and not bool(entry.get("retired", false)) and not bool(entry.get("future", false)):
+			for row in seed_drops[species]["rows"]:
+				wild_seeds[str(row[0])] = species
+
+	for species in items._flora_by_name:
+		var entry: Dictionary = items._flora_by_name[species]
+
+		if not bool(entry.get("retired", false)) and not bool(entry.get("future", false)):
+			for y in entry.get("yields", []):
+				wild_seeds[str(y)] = wild_seeds.get(str(y), species)
+
+	for crop_id in crops:
+		var seed_id: String = str((crops[crop_id] as Dictionary).get("seed", ""))
+
+		if str(crop_id).begins_with("_") or bool(items.table.entry(seed_id).get("future", false)):   # a crop whose seed item is future (parsnip) is not offered yet
 			continue
 
-		check(str(species) == "note" or (not entry.is_empty() and str(entry.get("kind", "")) != "tree" and not bool(entry.get("retired", false)) and not bool(entry.get("future", false))), "seed_drops %s: no live wild plant of that name gives it" % species)
+		check(wild_seeds.has(seed_id), "crop %s: its seed %s comes from nothing live in the world" % [crop_id, seed_id])
 
 	return n
 
