@@ -5967,6 +5967,10 @@ func _process(delta: float) -> void:
 	# right now, not the extra ground around it (it is all thrown away when the bake ends).
 	stream.only_urgent = _bake != null and _bake.running
 	link.pump()
+
+	if link.take_lost_line():   # what the lost line carried and never answered goes again over the game connection, now
+		FreezeWatchScript.printer.line("Terrain client: asked again over the game connection for %d blocks the block line had not delivered" % stream.ask_again_waiting())
+
 	var wanted: Array = [PackedInt32Array(), 0] if _building_paused else stream.take_requests()
 
 	if not wanted[0].is_empty() and not link.send_request(wanted[0], wanted[1]):

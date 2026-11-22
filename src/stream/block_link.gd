@@ -12,6 +12,7 @@ extends RefCounted
 #   server -> client: i32 x, y, z, lod, then the block bytes
 # Thread safe: send and pump may be called from any thread.
 
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")   # its printer: a print on the game's main thread can flush the log for a second (D-LAG-1)
 const KIND_HELLO := 0
 const KIND_REQUEST := 1
 const CONNECT_MSEC := 3000               # given up (ENet carries the blocks) if not connected by then
@@ -25,6 +26,7 @@ var _inbox: PackedByteArray = PackedByteArray()
 var _peer_id: int = 0
 var _state: int = 0                      # 0 connecting, 1 ready, 2 off
 var _started_msec: int = 0
+var _lost_line: bool = false             # the line closed after it was up: what it was asked for may never come (take_lost_line)
 
 
 # Main thread: starts connecting (port 0: the server has no block port).
@@ -50,6 +52,17 @@ func close() -> void:
 	_mutex.unlock()
 
 
+# Main thread: true once after the line closed while it was up. The requests it carried that were not answered are lost with it (the
+# server forgets a dropped line's queue), so the caller asks for them again over the game connection (cold first join, 22 Nov 2026:
+# 505 blocks waited for the 30 s ground retry). close() on purpose is not a loss.
+func take_lost_line() -> bool:
+	_mutex.lock()
+	var lost: bool = _lost_line
+	_lost_line = false
+	_mutex.unlock()
+	return lost
+
+
 # Sends a request; false when the line is not up (the caller uses ENet instead).
 func send_request(keys: PackedInt32Array, urgent: int) -> bool:
 	if keys.is_empty():
@@ -70,7 +83,9 @@ func send_request(keys: PackedInt32Array, urgent: int) -> bool:
 
 	if _state == 1 and not sent:
 		_state = 2
-		print("Terrain client: the block line closed; blocks come over the game connection")
+		_lost_line = true
+		_tcp.disconnect_from_host()   # closed at our end too, so the server stops sending answers down a line nobody reads
+		FreezeWatchScript.printer.line("Terrain client: the block line closed; blocks come over the game connection")
 
 	_mutex.unlock()
 	return sent
@@ -103,7 +118,8 @@ func pump() -> void:
 			print("Terrain client: no block line; blocks come over the game connection")
 	elif status != StreamPeerTCP.STATUS_CONNECTED:
 		_state = 2
-		print("Terrain client: the block line closed; blocks come over the game connection")
+		_lost_line = true
+		FreezeWatchScript.printer.line("Terrain client: the block line closed; blocks come over the game connection")
 	else:
 		var available: int = _tcp.get_available_bytes()
 
