@@ -29,6 +29,9 @@ extends Node
 #                       too, a dark one is lit, first person keeps the arms on so the flame hangs in the drawn hand (with the arms off it sat on the hidden
 #                       body's hand, and a light under a hidden node gives no light: Dino's black lantern shots, 10 Nov 2026), the held light stays on beside a
 #                       fire light at Low, and each picture logs the flame's state. Without it a dark one given (--shot-give=wooden_lantern_dark) stays dark
+#   --shot-pieces-lit   with --shot-pieces: each piece is drawn as placed and lit (its row's "lit" on, a smithy's "forge" 2, the flare) instead of as the
+#                       cold placement ghost, and its own fire light (the "Light" a forge, smithy, smelter or the Primitive kiln model carries) is switched on,
+#                       as the game's nearest-lights list does for a lit one in play. Pieces lit by an added fixture (torches, braziers) are not covered
 #   --shot-sway         let the drawn bow's sway turn the camera as in play (terrain_client shot_sway): the rig's shot_lock otherwise holds the view still
 #   --shot-nograss      hide the grass; --shot-right puts the third-person camera on the body's right (look rig)
 #   --shot-ready=held   a held-item picture (look rig --give/--item): no fixed waits. The first shot starts once the ground under the player is in
@@ -144,6 +147,7 @@ var _frame_start_msec: int = 0
 var build_label: String = ""             # --shot-build=: the commit the numbers belong to (printed in the frametime line)
 var piece_views: bool = false     # --shot-piece-views: the first named piece gets the four item views (front, side, top, diag) at 3 to 6 m instead of the row pictures
 var _piece_built: bool = false
+var pieces_lit: bool = false   # --shot-pieces-lit
 var piece_names: PackedStringArray = PackedStringArray()    # --shot-pieces=wall_section,chest: one building piece of each in a row with name tags (structures.json keys)
 var pieces_yaw_deg: float = 0.0    # --shot-pieces-yaw=N: the whole row turned N degrees
 var _pieces_t: int = 0
@@ -295,6 +299,8 @@ func setup(owner_client, args: Array) -> void:
 			if give_item.contains(":"):
 				give_count = int(give_item.get_slice(":", 1))
 				give_item = give_item.get_slice(":", 0)
+		elif argument == "--shot-pieces-lit":
+			pieces_lit = true    # the --shot-pieces row drawn lit (see the header)
 		elif argument == "--shot-piece-views":
 			piece_views = true
 		elif argument.begins_with("--shot-item-at="):
@@ -1230,7 +1236,11 @@ func _show_pieces(now: int) -> void:
 			print("shot runner: piece %s skipped: planned, not built yet" % piece_name)
 			continue
 
-		var model: Node3D = client.items.ghost_model(int(def["state"]))
+		var model: Node3D = client.items._model_for_state(int(def["state"]), {"lit": true, "forge": 2}) if pieces_lit else client.items.ghost_model(int(def["state"]))
+		var fire_light: Node3D = model.get_node_or_null("Light") as Node3D if model != null and pieces_lit else null
+
+		if fire_light != null:
+			fire_light.visible = true   # in play the nearest-lights list switches it on
 
 		if model == null:
 			print("shot runner: piece %s FAIL no model for state %d" % [piece_name, int(def["state"])])
