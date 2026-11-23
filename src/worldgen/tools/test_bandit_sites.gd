@@ -740,6 +740,11 @@ func _clearing_camp() -> void:
 	animals.player_positions = func(): return []
 	animals.setup()
 	animals.traits = false
+
+	for sp in animals.cfg["species"]:
+		animals.cfg["species"][sp]["target_per_player"] = 0   # the animals' tick below spawns nothing: only the camp's own people and horses
+
+	animals.cfg["wolves"]["cell_share"] = 0.0
 	b.animals = animals
 	animals.bandit_camps = b
 	var players: Array = []
