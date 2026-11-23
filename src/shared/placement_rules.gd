@@ -881,6 +881,41 @@ static func holds(base: Dictionary, row: Dictionary, spot: Vector3) -> bool:
 	return absf(local.x) <= float(base.get("footprint_x", 4.0)) * 0.5 and absf(local.y) <= float(base.get("footprint_z", 4.0)) * 0.5
 
 
+# True when a standing tree's trunk comes up through the piece placed at `spot` (yaw in radians): `trunks` are [root position, trunk radius m,
+# height m] (server_items trunks_near). A trunk counts while the piece is below its top half (a floor high over a short tree is clear of it).
+# Physical world audit round 4 (coordinator 23 Nov 2026: "yes to refusing placement over a standing tree"): nothing stopped a foundation, wall or
+# station being placed over a tree, and its trunk stood through the floor. Saplings have no trunk and are not listed.
+static func over_trunk(cfg: Dictionary, kit_id: String, spot: Vector3, yaw: float, trunks: Array) -> bool:
+	var def: Dictionary = structure_of_kit(cfg, kit_id)
+	var half: Vector2 = Vector2(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0))) * 0.5
+
+	for trunk in trunks:
+		var root: Vector3 = trunk[0]
+		var r: float = float(trunk[1])
+
+		if spot.y > root.y + maxf(TRUNK_CLEAR_M, 0.5 * float(trunk[2])):
+			continue
+
+		var local: Vector2 = Vector2(root.x - spot.x, root.z - spot.z).rotated(yaw)
+		var nearest: Vector2 = Vector2(clampf(local.x, -half.x, half.x), clampf(local.y, -half.y, half.y))
+
+		if local.distance_to(nearest) < r - TRUNK_TOUCH_M:
+			return true
+
+	return false
+
+
+# How far round a piece's middle to look for trunks (over_trunk): its half diagonal and the widest trunk the server's trunk search margin covers
+# (tree_trunks.gd SEARCH_TRUNK_M; wider trunks terrain_server finds by their own radius).
+static func footprint_reach(cfg: Dictionary, kit_id: String) -> float:
+	var def: Dictionary = structure_of_kit(cfg, kit_id)
+	return 0.5 * Vector2(float(def.get("footprint_x", 1.0)), float(def.get("footprint_z", 1.0))).length() + 2.0
+
+
+const TRUNK_CLEAR_M := 3.0     # over_trunk: a piece this far over a tree's root (or half its height, if more) is above its trunk
+const TRUNK_TOUCH_M := 0.05    # and a footprint may graze the bark this much (the trunk's measured radius is a quartile, not the widest bark)
+
+
 # The top of the building floor a station, furniture or a fire is aimed at, or NAN: a foundation, or with `floors` a ceiling too (piece_kind "floor", the
 # floor of the storey above: Dave 17 Nov 2026 "on foundations and on top of ceilings like on the second floor"), whose footprint holds `spot` across the
 # ground and whose top lies within SUPPORT_REACH_M of the aim's height; the nearest such top wins, so a ground-floor aim is not lifted to the floor above.
