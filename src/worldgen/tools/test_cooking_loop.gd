@@ -6,7 +6,7 @@ extends SceneTree
 # campfire cooks roasts into its cooks_into row on the fire (raw meat also in the fire's store) and keeps longer than it did raw; raw meat
 # makes you sick later and rotten food at once, roast meat not at all; raw meat ages slower in a chest and slower still in a root cellar than in
 # the pack; a craft half done at a station (with its progress), the fire's store and food ages carry over a restart; two players' crafts at
-# one station both finish, each from their own pack. A year of rot by container is test_winter_stores'; the jar's maturing is test_goal_events'.
+# one station both finish, each from their own pack; a herbal tea is a cup of water with its energy or cure. A year of rot by container is test_winter_stores'; the jar's maturing is test_goal_events'.
 #   godot --headless --path . --script res://src/worldgen/tools/test_cooking_loop.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -598,6 +598,54 @@ func _init() -> void:
 				made3 += int(it["count"])
 
 	check(made3 >= 2 * int(slow_r["gives"][1]), "6. and the hearth gave both batches (%d %s)" % [made3, items.table.id_of(out3)], b)
+
+	# 7. A herbal tea is a cup of water too (coordinator ruling for Dave, 23 Nov 2026): it gives the water it is brewed from, with its energy or cure.
+	var unit_ml: int = items.table.liquid_unit_ml(items.table.number_of("water"))
+	var teas: Array = []
+
+	for n in items.recipes.numbers():
+		var r: Dictionary = items.recipes.recipe(int(n))
+		var tea_id: String = items.table.id_of(int(r["gives"][0]))
+
+		if bool(r.get("retired", false)) or not tea_id.ends_with("_tea") or not (items._vitals_cfg.get("medicines", {}).has(tea_id) or items._vitals_cfg.get("energy_aids", {}).has(tea_id)):
+			continue
+
+		var water_n: int = 0
+
+		for row in r.get("needs", []):
+			water_n += int(row[1]) if items.table.id_of(int(row[0])) == "water" else 0
+
+		if water_n == 0:
+			continue
+
+		teas.append(tea_id)
+		var tea_n: int = int(r["gives"][0])
+		var ml: int = VitalsRules.drink_value(tea_id, items._vitals_cfg)
+		check(ml == water_n * unit_ml, "7. %s gives the %d mL of water it is brewed from (%d)" % [tea_id, water_n * unit_ml, ml])
+		var drinker: int = new_player()
+		var v: Dictionary = items.vitals_of(drinker)
+		v["wet"] = 200.0
+		v["energy"] = 40.0
+		var sick_before: float = 0.0
+
+		if items._vitals_cfg.get("medicines", {}).has(tea_id):
+			items.make_sick(drinker, 24.0, false)
+			sick_before = float(v.get("sick", 0.0))
+
+		items.inventory_of(drinker).add(tea_n, 1)
+		items._last_eat.clear()
+		items._last_dose.clear()
+		items.action(drinker, Net.ACT_EAT, slot_of(drinker, tea_n), 0, 0, Vector3.ZERO)
+		var effect: bool = float(v.get("sick", 0.0)) < sick_before if sick_before > 0.0 else float(v.get("energy", 0.0)) > 40.0
+		check(have(drinker, tea_n) == 0 and absf(float(v["wet"]) - 200.0 - float(ml)) < 1.0 and effect, "7. drinking %s quenches thirst by %d mL (%.0f) and still does its work" % [tea_id, ml, float(v["wet"]) - 200.0], drinker)
+		var well: int = new_player()
+		items.vitals_of(well)["wet"] = 200.0
+		items.inventory_of(well).add(tea_n, 1)
+		items._last_eat.clear()
+		items.action(well, Net.ACT_EAT, slot_of(well, tea_n), 0, 0, Vector3.ZERO)
+		check(have(well, tea_n) == 0 and float(items.vitals_of(well)["wet"]) > 200.0, "7. a thirsty player who is well drinks %s too" % tea_id, well)
+
+	check(teas.size() >= 5, "7. the herbal teas found (%s)" % str(teas))
 
 	items._finish_writer()
 	print("Test done: %d pass, %d fail" % [passes, failures])
