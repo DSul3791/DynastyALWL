@@ -2514,10 +2514,9 @@ func _refresh_weight() -> void:
 
 func _load_text() -> String:
 	var load_kg: float = carried_kg()
-	var free: float = CarryRules.comfort_kg(carry_body_kg(), _carry_cfg)
 	var limit: float = CarryRules.cap_kg(carry_body_kg(), _carry_cfg)
-	var state: String = "" if load_kg <= free else ("   (heavy: you move slower)" if load_kg < limit else "   (at the limit)")
-	return "Carrying %.1f kg of %.0f kg you can carry%s" % [load_kg, limit, state] + ("\nOn your shoulder: %s (Q lays one down)" % _carried_names() if shoulder_id != "" else "")
+	var state: String = ["", "   (heavy: you move slower)", "   (at the limit)", "   (over the limit: put something down)"][CarryRules.load_state(load_kg, carry_body_kg(), _carry_cfg)]   # CarryRules.load_state, the thresholds the HUD load symbol uses too
+	return "Carrying %.1f kg of %.1f kg you can carry%s" % [load_kg, limit, state] + ("\nOn your shoulder: %s (Q lays one down)" % _carried_names() if shoulder_id != "" else "")
 
 
 func _on_strain(strain_pm: int, state: int, fade_pm: int, stance: int) -> void:

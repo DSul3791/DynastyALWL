@@ -130,4 +130,4 @@ Dave, 23 Nov 2026: animals "should look up and stare at the player before runnin
 
 **Voices.** Twelve kinds had no voice, so their warnings were silent. They borrow one until Dave's recordings exist (docs/SOUND_MAP.md, "Stand-in animal voices").
 
-**The blow waits for its lunge (`strike_min_s`, 0.35 s).** A charge's blow lands only once the charge has run this long, so every screen draws the lunge first (a warthog charging from 1 m used to hit 0.18 s in, drawn 1.7 to 2.8 m short of the player).
+**The blow waits for its lunge (`strike_min_s`, 0.6 s; goblins and bandits 0.35 s).** A charge's blow lands only once the charge has run this long, so every screen draws the lunge first (a warthog charging from 1 m used to hit 0.18 s in, drawn 1.7 to 2.8 m short of the player; at 0.35 s a rhino charging from 3.6 m still struck before a robot over 120 ms drew its charge). A charge set off close runs at the pace that reaches the player as the blow may land (at least `CLOSE_PACE_X`, 0.3, of its charge speed), not at full speed into a hold; a chase of a runner keeps its full speed.

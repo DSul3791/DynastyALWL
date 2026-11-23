@@ -244,6 +244,30 @@ func _init() -> void:
 			hog_charging += 0.025
 
 	check(close_hurt.size() >= 1 and hog_charging >= float(near_mw.cfg["strike_min_s"]) - 0.11, "a warthog warning from 1.3 m strikes after %.2f s drawn charging (strike_min_s %.2f)" % [hog_charging, float(near_mw.cfg["strike_min_s"])])
+	# One set off from 4 m runs the whole of strike_min_s, paced to reach the player as the blow may land, not at full speed into a hold
+	# beside them (robots 23 Nov 2026: a rhino's charge from 3.6 m struck 0.33 s in, before any screen drew it).
+	var rh_hurt: Array = []
+	var rh_players: Array = [Vector3(0.0, 10.0, 0.0)]
+	var rh_mw = _animals(rh_players, rh_hurt)
+	var rh_id: int = rh_mw.spawn("rhino", 4.0, 0.0)
+	rh_mw.animals[rh_id]["temper"] = "defensive"
+	rh_mw.animals[rh_id]["protective"] = false
+	rh_mw.big_game.warn(rh_mw.animals[rh_id], rh_players[0], 0.1, true)
+	var rh_charging: float = 0.0
+	var rh_arrived: float = -1.0   # the charge's time when it first came within reach of the player
+	var rh_reach: float = AnimalContact.contact_m("rhino") + 0.3
+
+	for _k in 160:
+		rh_mw.tick(0.025)
+
+		if rh_hurt.is_empty() and rh_mw.animals.has(rh_id) and int(rh_mw.animals[rh_id]["state"]) == rh_mw.big_game.CHARGE:
+			rh_charging += 0.025
+
+			if rh_arrived < 0.0 and Vector2(rh_mw.animals[rh_id]["pos"].x, rh_mw.animals[rh_id]["pos"].z).length() <= rh_reach:
+				rh_arrived = rh_charging
+
+	check(rh_hurt.size() >= 1 and rh_charging >= float(rh_mw.cfg["strike_min_s"]) - 0.11 and rh_arrived >= float(rh_mw.cfg["strike_min_s"]) - 0.2,
+		"a rhino warning from 4 m strikes after %.2f s charging (strike_min_s %.2f), reaching the player %.2f s in, not early into a hold" % [rh_charging, float(rh_mw.cfg["strike_min_s"]), rh_arrived])
 	var resting_wolf: Dictionary = {"sp": "wolf", "pos": Vector3(0.2, 10.0, 0.0), "state": 0}
 	mw.wolves._make_way(resting_wolf, [{"peer": 1, "pos": Vector3(0.0, 10.0, 0.0)}], 0.1)
 	check(resting_wolf["pos"].x > 0.2, "a resting pack wolf a player walked into steps out too (%s)" % str(resting_wolf["pos"]))
