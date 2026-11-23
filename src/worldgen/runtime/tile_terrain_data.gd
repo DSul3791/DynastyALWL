@@ -127,6 +127,7 @@ var cave_openings: Array = []         # [Vector2 a, Vector2 b, radius m, Rect2 b
 var cave_mouths: Array = []           # [Vector3 entrance node, int CaveClimate kind (1 rises, 0 level, -1 drops)]: where cave air is measured from (docs/design/cave_climate_design.md)
 const CAVE_POOL_M := 0.4            # a spring cave pool's surface: this far above the bottom of its chamber as the chamber is carved
 const CAVE_WATER_CELL_M := 16.0     # near_cave_water's index cell (build_cave_water_cells)
+const CAVE_SEAT_DROP_M := 3.0       # the most _seat_cave_scatter lowers a stone (the audit's worst float was 3 m; deeper is a spring pool's bed)
 const CAVE_FLOOR_SEARCH_M := 24.0   # how far under a cave floor spot cave_floor_under looks for the bottom of the air (a spring pool is 20 m deep)
 const CAVE_POOL_DEPTH_M := 20.0     # Dave's QA list BUG-008 (answer 4 Nov 2026): the pool goes 20 m down below that, in a natural shape; the chamber stays
 var cave_streams: PackedFloat32Array = PackedFloat32Array()   # spring cave streams (Dave 3 Nov 2026): per piece x, y, z of the upper end, x, y, z of the lower end (floor heights, world m), width m; then per spring pool x, y, z, -radius (a negative width marks a pool)
@@ -1114,15 +1115,16 @@ func _add_animal_den(cave: Dictionary, mouth_node: int) -> void:
 	var nodes: Array = cave["nodes"]
 	var mouth: Array = nodes[mouth_node]
 
-	var listed: PackedVector2Array = animal_den_mouths.get(sp, PackedVector2Array())
-	listed.append(Vector2(float(mouth[0]), float(mouth[2])))
-	animal_den_mouths[sp] = listed   # a packed array is copied on read, so it goes back in
 	var inner: Array = mouth
 
 	for segment in cave["segments"]:
 		if int(segment[0]) == mouth_node or int(segment[1]) == mouth_node:
 			inner = nodes[int(segment[1]) if int(segment[0]) == mouth_node else int(segment[0])]
 			break
+
+	var listed: PackedVector2Array = animal_den_mouths.get(sp, PackedVector2Array())
+	listed.append(den_doorstep(Vector2(float(mouth[0]), float(mouth[2])), Vector2(float(inner[0]), float(inner[2]))))
+	animal_den_mouths[sp] = listed   # a packed array is copied on read, so it goes back in
 
 	var a: Vector3 = Vector3(float(mouth[0]), float(mouth[1]) - 0.5 * float(mouth[4]), float(mouth[2]))
 	var b: Vector3 = Vector3(float(inner[0]), float(inner[1]) - 0.5 * float(inner[4]), float(inner[2]))
@@ -1142,6 +1144,22 @@ func _add_animal_den(cave: Dictionary, mouth_node: int) -> void:
 	if den >= 0:
 		var dn: Array = nodes[den]
 		cave_bones.append_array(PackedFloat32Array([float(dn[0]), float(dn[1]) - 0.5 * float(dn[4]), float(dn[2]), DEN_SIGN_BEDDING, yaw + 1.3]))
+
+
+# Where the server puts a den's animals: on the ground just outside the mouth's cut (world audit 23 Nov 2026: at the mouth itself 8 of 10 new
+# den animals stood 0.3 to 0.9 m over the cut floor, because animals walk the tile heights, which do not know the cave). From the mouth
+# outward, away from the passage, to the first point outside every cave opening (in_cave_opening); the mouth itself when none is found in 12 m.
+func den_doorstep(mouth: Vector2, inner: Vector2) -> Vector2:
+	var out: Vector2 = mouth - inner
+	out = out.normalized() if out.length() > 0.01 else Vector2(1.0, 0.0)
+
+	for step in range(1, 13):
+		var at: Vector2 = mouth + out * float(step)
+
+		if not in_cave_opening(at.x, at.y):
+			return at
+
+	return mouth
 
 
 # The tile's ground springs ({pos [x, y, z], m3_s, cover}, tile_sites._make_record_springs), in the file's order: the order gives each spring's
@@ -1493,12 +1511,12 @@ func _seat_cave_scatter(surface: Callable) -> void:
 		var rest: float = NAN
 
 		if not is_nan(ground) and ground < p.y + 0.5:
-			rest = float(surface.call(p.x, p.z)) if surface.is_valid() else NAN   # in the open (a mine's spoil heap), on the ground
+			rest = float(surface.call(p.x, p.z)) if surface.is_valid() else NAN   # in the open (a mine's spoil heap), on the ground; NAN off this tile
 		else:
 			rest = cave_floor_under(p)
 
-		if not is_nan(rest):
-			cave_scatter[n * 5 + 1] = rest
+		if not is_nan(rest) and p.y - rest <= CAVE_SEAT_DROP_M:
+			cave_scatter[n * 5 + 1] = rest   # a longer drop (into a spring pool's 20 m basin) keeps the spot as laid
 
 
 # The cave floor stones and boulders whose spot lies in one scatter cell (cell_m square, as the server lays its loose things out): entry numbers into

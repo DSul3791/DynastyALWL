@@ -47,6 +47,9 @@ func _init() -> void:
 	var off_before: int = 0
 	var off_after: int = 0
 	var measured: int = 0
+	var most_drop: float = 0.0
+	var open_spots: int = 0
+	var open_on_ground: bool = true
 
 	@warning_ignore("integer_division")
 	for n in range(mini(raw.size(), seated.size()) / 5):
@@ -56,6 +59,12 @@ func _init() -> void:
 		if int(raw[n * 5 + 3]) == 1:
 			boulders_kept = boulders_kept and raw[n * 5 + 1] == seated[n * 5 + 1]
 			continue
+
+		most_drop = maxf(most_drop, raw[n * 5 + 1] - seated[n * 5 + 1])
+
+		if data.height_at(raw[n * 5], raw[n * 5 + 2]) < raw[n * 5 + 1] + 0.5:   # in the open (a mine's spoil heap): on the ground players stand on
+			open_spots += 1
+			open_on_ground = open_on_ground and absf(seated[n * 5 + 1] - float(generator.surface_height(raw[n * 5], raw[n * 5 + 2]))) < 0.001
 
 		if n % 3 != 0:
 			continue   # a third of them against the mesh keeps the test short
@@ -68,6 +77,8 @@ func _init() -> void:
 
 	check(same, "every entry keeps x, z, kind and value")
 	check(boulders_kept, "every boulder keeps its height")
+	check(most_drop <= 3.0, "no stone lowered more than 3 m (a spring pool's bed is not a floor to move to): most %.2f m" % most_drop)
+	check(open_spots > 0 and open_on_ground, "every stone in the open lies on the ground's surface height (%d)" % open_spots)
 	print("     %d stones and leftovers measured: %d off the floor before, %d after" % [measured, off_before, off_after])
 	check(off_before > 20, "the unseated layout has floating or buried stones (the fault is measured)")
 	check(off_after * 20 <= measured, "seated: at most 5% more than 0.10 m over or 0.15 m under the mesh floor")

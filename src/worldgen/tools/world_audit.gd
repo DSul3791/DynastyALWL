@@ -1084,7 +1084,7 @@ func _check_cave_scatter(data) -> void:
 
 		var rest: float = data.cave_floor_under(p)
 
-		if not is_nan(f.x) and f.z == 0.0:
+		if kind != 1 and not is_nan(f.x) and f.z == 0.0:
 			_checked("cave items, resting floor within 0.10 m of the mesh" if not is_nan(rest) and absf(rest - f.x) <= 0.10 else "cave items, resting floor off the mesh")
 
 		if f.z > 0.0:
