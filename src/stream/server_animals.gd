@@ -850,7 +850,9 @@ func make_way(a: Dictionary, at: Vector3, dt: float) -> bool:
 		return false   # a swimmer in the water keeps its line (its height is the water's)
 
 	var out: Vector3 = AnimalContact.keep_off(a["pos"], at, AnimalContact.contact_m(str(a["sp"])))
-	var step: Vector3 = Vector3(out.x - a["pos"].x, 0.0, out.z - a["pos"].z).limit_length(float(def.get("walk_mps", 1.5)) * dt)
+	# At up to half its flee speed (robots 23 Nov 2026: a dog a running player chased stayed 0.1 to 0.3 m inside them for 0.66 s at walking pace).
+	var pace_mps: float = maxf(float(def.get("walk_mps", 1.5)), 0.5 * float(def.get("flee_mps", 0.0)))
+	var step: Vector3 = Vector3(out.x - a["pos"].x, 0.0, out.z - a["pos"].z).limit_length(pace_mps * dt)
 
 	if step.length() < 0.01 or (blocked.is_valid() and bool(blocked.call(a["pos"].x + step.x, a["pos"].z + step.z))):
 		return false
