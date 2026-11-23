@@ -151,5 +151,16 @@ func _init() -> void:
 	check(items.passed_out(1), "passed out again before leaving")
 	items.peer_left(1)
 	check(not items.passed_out(1), "leaving clears the state")
+	# A player whose position the server does not know yet is never passed out and carried (to the spawn or anywhere).
+	died.clear()
+	items.peer_connected_hello(2, "cold-out-key-002")
+	var v2: Dictionary = items.vitals_of(2)
+	v2["warmth"] = 0.0
+	v2["health"] = 1.0
+
+	for t in 60:
+		items.tick(1.0)
+
+	check(not items.passed_out(2) and died.filter(func(d): return int(d[0]) == 2).is_empty(), "no known position: never passed out or moved (%s)" % str(died))
 	print("cold pass out: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
