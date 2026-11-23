@@ -632,7 +632,7 @@ func damage(id: int, amount: float, source_peer: int = -1, _kind: String = "spea
 
 
 # The animal a jab from `origin` along `dir` reaches: nearest within reach and about 35 degrees of the aim; 0 for none.
-func target_along(origin: Vector3, dir: Vector3, reach: float) -> int:
+func target_along(origin: Vector3, dir: Vector3, reach: float, seen_ms: int = -1, present_ms: int = -1) -> int:
 	var flat: Vector2 = Vector2(dir.x, dir.z).normalized()
 	var best: int = 0
 	var best_d: float = reach
@@ -641,14 +641,75 @@ func target_along(origin: Vector3, dir: Vector3, reach: float) -> int:
 		if animals[id]["state"] == HIDDEN:
 			continue
 
-		var to: Vector2 = Vector2(animals[id]["pos"].x - origin.x, animals[id]["pos"].z - origin.z)
+		var at: Vector3 = pos_at(animals[id], judged_ms(animals[id], seen_ms, present_ms))   # where the player saw it (protocol 155)
+		var to: Vector2 = Vector2(at.x - origin.x, at.z - origin.z)
 		var d: float = to.length()
 
-		if d <= best_d and (d < 0.6 or to.normalized().dot(flat) > 0.82) and absf(animals[id]["pos"].y - origin.y) < 3.5:
+		if d <= best_d and (d < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - origin.y) < 3.5:
 			best_d = d
 			best = id
 
 	return best
+
+
+# Where each animal was lately (protocol 155, docs/design/ANIMAL_NETCODE.md "Fair hits"): [server ms, position] at each move, the place it
+# left first (held until `step_ms` before the move: the step's time), for a blow judged at the moment the player saw (pos_at). Kept for rewind_max_ms plus a little; a few entries an animal.
+func note_past(a: Dictionary, was: Vector3, step_ms: int = 334) -> void:
+	var now: int = int(a.get("moved_ms", Time.get_ticks_msec()))
+	var past: Array = a.get("past", [])
+
+	if past.is_empty() or (past[-1][1] as Vector3) != was or now - int(past[-1][0]) > step_ms:   # also after a stand: it was still there until this step began
+		past.append([maxi(int(a.get("past_ms", now - 1)), now - step_ms), was])   # where it stood until this move began (`step_ms`, the step's own time)
+
+	past.append([now, a["pos"]])
+	a["past_ms"] = now
+	var keep_ms: int = int(cfg.get("rewind_max_ms", 500)) + 250
+
+	while past.size() > 2 and int(past[1][0]) < now - keep_ms:
+		past.pop_front()
+
+	a["past"] = past
+
+
+# Where animal `a` was at server time `ms` (a blow from a player who saw it then; protocol 155): between the two moves either side, its
+# place now when `ms` is after its last move or unknown (-1), its oldest kept place before that.
+func pos_at(a: Dictionary, ms: int) -> Vector3:
+	var past: Array = a.get("past", [])
+
+	if ms < 0 or past.is_empty() or ms >= int(past[-1][0]):
+		return a["pos"]
+
+	if ms <= int(past[0][0]):
+		return past[0][1]
+
+	for i in range(past.size() - 1, 0, -1):
+		if int(past[i - 1][0]) <= ms:
+			var t0: int = int(past[i - 1][0])
+			var t1: int = int(past[i][0])
+			return (past[i - 1][1] as Vector3).lerp(past[i][1], float(ms - t0) / float(maxi(t1 - t0, 1)))
+
+	return a["pos"]
+
+
+# The server moment a blow from a player is judged at (protocol 155, Dave 23 Nov 2026: "battle was almost impossible"): the time the
+# player's screen showed the animal (`seen_ms`, the client's row clock: a committed charge is drawn at `present_ms`), never more than
+# rewind_max_ms ago, so a laggy or lying client cannot hit an animal that left long since. -1 when the client sent none (judged now).
+func judged_ms(a: Dictionary, seen_ms: int, present_ms: int) -> int:
+	if seen_ms <= 0:
+		return -1
+
+	var now: int = Time.get_ticks_msec()
+	var ms: int = present_ms if int(a.get("state", 0)) in [WARN, 11, 12, 16] and present_ms > 0 else seen_ms
+	return clampi(ms, now - int(cfg.get("rewind_max_ms", 500)), now)
+
+
+# How far animal `id` has gone since the moment a blow from (`seen_ms`, `present_ms`) is judged at: a struck point found where the player
+# saw it, plus this, is the same spot on the body now (its zone, the floating number and the hit report go there).
+func moved_since(id: int, seen_ms: int, present_ms: int) -> Vector3:
+	if not animals.has(id):
+		return Vector3.ZERO
+
+	return animals[id]["pos"] - pos_at(animals[id], judged_ms(animals[id], seen_ms, present_ms))
 
 
 # The first animal whose chest sphere the segment from -> to passes through (a flying arrow): {"id", "at"} or {} when none. Hidden animals are skipped.
@@ -696,11 +757,11 @@ func hit_zone(id: int, p: Vector3) -> int:
 
 
 # The point of a jab's aim line (from `origin` along `dir`, within `reach`) nearest the animal's chest centre.
-func jab_point(id: int, origin: Vector3, dir: Vector3, reach: float, chest_m: float = 0.5) -> Vector3:
+func jab_point(id: int, origin: Vector3, dir: Vector3, reach: float, chest_m: float = 0.5, seen_ms: int = -1, present_ms: int = -1) -> Vector3:
 	if not animals.has(id) or dir.length() < 0.001:
 		return origin
 
-	var centre: Vector3 = animals[id]["pos"] + Vector3(0.0, chest_m, 0.0)
+	var centre: Vector3 = pos_at(animals[id], judged_ms(animals[id], seen_ms, present_ms)) + Vector3(0.0, chest_m, 0.0)
 	var n: Vector3 = dir.normalized()
 	return origin + n * clampf((centre - origin).dot(n), 0.0, reach)
 
@@ -1031,6 +1092,7 @@ func tick(delta: float) -> void:
 		if animals.has(id) and a["pos"] != was:
 			a["moved_ms"] = Time.get_ticks_msec()   # when it got here, sent with its row (rows_near) so the client draws it on the server's timeline
 			a["moving"] = true
+			note_past(a, was, int(dt * 1000.0))
 		else:
 			a["moving"] = false   # standing: rows_near stamps its row with the send time
 

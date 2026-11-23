@@ -303,6 +303,7 @@ var _energy_cfg: Dictionary = {}    # data/items/energy.json
 var _death_cfg: Dictionary = {}     # data/items/death.json
 var hit_animal_path: Callable        # (peer, from, to, damage) -> {"at": position} or {}: the first animal an arrow passes through is hurt (set by the server)
 var animal_alarm: Callable           # (point, radius): a loud noise (a shot) startles animals near it (set by the server)
+var strike_seen: Dictionary = {}    # peer -> [server ms its screen showed the animals at, the same for a committed charge] of its last blow (protocol 155; hit_animal reads it)
 var hit_animal: Callable            # (peer, origin, direction, reach, damage) -> {"at": the point struck} or {} (tests may answer a bool): set by the server, hits the animal in front
 var bind_animal: Callable           # (peer, origin, direction, reach) -> bool: a strike with Rope or Twine in hand ties the bandit in front who gave up (BANDIT_CAMPS.md stage 5); true uses one
 const BIND_ITEMS := ["rope", "twine"]
@@ -1560,6 +1561,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 	elif kind == Net.ACT_PLACE_TORCH:
 		_place_torch(peer, inv, a, b == 1, count, at)
 	elif kind == Net.ACT_STRIKE:
+		strike_seen[peer] = [b, count]   # protocol 155: when its screen showed the animals (0 from a client that sends none: judged now)
 		_strike(peer, inv, a, at)
 	elif kind == Net.ACT_CRAFT:
 		if (not admin_ok.is_valid() or admin_ok.call(peer)) and _hand_tool_ok(peer, inv, recipes.recipe(a), int(at.x) - 1):   # the instant craft (test keys; admin only, split A5: no station, no time) keeps the in-hand rule too (126)
