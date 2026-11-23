@@ -341,21 +341,29 @@ func _fill_cover(home: Vector2i, crowns: Dictionary) -> void:
 		cover.remove_chunk(_cover_order.pop_front())
 
 
-# The game season, for bare winter broadleaves (Cover.leafless_for; docs/design/cover_by_season_design.md). Cheap to call every tick.
-func set_season(season: String) -> void:
-	var bare: bool = CoverScript.leafless_for(season)
-
-	if bare == cover.leafless:
-		return
-
-	_lock_noting("set_season")
-	cover.leafless = bare
-	_mutex.unlock()
+var season_at: Callable   # (position) -> the season there (Weather.season_at); unset: the broadleaves stay in leaf
+var _bare_bands: Dictionary = {}   # 1 km band of z -> [msec read, bare]: the spot's season read once a band every 5 s (under _mutex)
+const BARE_BAND_M := 1000.0
+const BARE_KEEP_MSEC := 5000
 
 
-# Whether a spot is under a tree's canopy (Cover.at on the server's index).
+# Whether a spot is under a tree's canopy (Cover.at on the server's index). With season_at the broadleaves are bare by the spot's own season
+# (half a year on across the equator; docs/design/cover_by_season_design.md). Cost: the season is read once a 1 km band every 5 s, so an
+# animal's sight line (up to 12 calls) costs no more than before.
 func covered(pos: Vector3) -> bool:
 	_lock_noting("covered")
+
+	if season_at.is_valid():
+		var band: int = floori(pos.z / BARE_BAND_M)   # shortcut: a season changes only at the equator's row edge, a band edge while equator_tile_row is 0
+		var kept: Array = _bare_bands.get(band, [-BARE_KEEP_MSEC - 1, false])
+		var now: int = Time.get_ticks_msec()
+
+		if now - int(kept[0]) > BARE_KEEP_MSEC:
+			kept = [now, CoverScript.leafless_for(str(season_at.call(pos)))]
+			_bare_bands[band] = kept
+
+		cover.leafless = bool(kept[1])
+
 	var yes: bool = CoverScript.at(pos, cover) > 0.0
 	_mutex.unlock()
 	return yes
