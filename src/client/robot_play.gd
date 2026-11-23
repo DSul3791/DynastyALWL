@@ -23,6 +23,7 @@ extends Node
 const NetScript := preload("res://src/stream/terrain_net.gd")
 const StanceScript := preload("res://src/client/stance.gd")
 const CharacterStore := preload("res://src/client/character/character_store.gd")
+const BagRules := preload("res://src/shared/bag_rules.gd")
 const Generator := preload("res://src/client/character/body_generator.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const RobotRules := preload("res://src/shared/robot_rules.gd")   # the pack signature the server prints too
@@ -1784,7 +1785,11 @@ func _station_round(view) -> void:
 		if view._world[id].get("site") != null:
 			var hammer: int = _slot_of("stone_hammer")
 
-			if hammer >= 0 and hammer <= 9 and client.held.held_slot != hammer:
+			if hammer < 0 or hammer >= client.items.inventory.hotbar_slots:
+				_note("stations", "%s: a site, but the hammer is not on the hotbar (slot %d): not hit" % [kind, hammer])
+				continue
+
+			if client.held.held_slot != hammer:
 				client.held.press_slot(hammer)
 				await _wait(0.5)
 
@@ -1796,6 +1801,8 @@ func _station_round(view) -> void:
 
 				client.net.inventory_action.rpc_id(1, NetScript.ACT_REPAIR_STRUCT, id, client.held.held_slot + 1, 0, Vector3.ZERO)
 				await _wait(0.6)
+
+			await _go_to(here, 10.0, 1.0)   # back where the row is measured from: the next spot stays within the place reach
 
 			if view._world.has(id) and view._world[id].get("site") != null:
 				_fail("stations", kind, "%s: its blueprint site was hit 12 times with the hammer and is still a site (%s)" % [kind, str(_notices.slice(heard))])
@@ -1817,8 +1824,9 @@ func _station_round(view) -> void:
 	if pressed == 0:
 		_note("stations", "no recipe lit at %s" % ", ".join(kinds))
 
-	await _esc()
-	await _wait(0.5)
+	if view.open:
+		await _esc()
+		await _wait(0.5)
 
 
 # Puts on a skirt, sandals and the Fibre shoulder bag (the first clothes and bag), opens the bag, stores and takes the pack's fibre through it,
@@ -1893,15 +1901,20 @@ func _worn_round(view) -> void:
 			_fail("drag", "move", "fibre dragged from slot %d to empty slot %d: slot %d now holds %d x %d, fibre in the pack %d (was %d)" % [from, to, to, int(inv.counts[to]), int(inv.numbers[to]), _count("plant_fibre"), total])
 		else:
 			print("ROBOT %s step drag: %d fibre moved from slot %d to %d" % [robot_name, moved_n, from, to])
+	else:
+		_note("drag", "not tried: fibre in slot %d, first empty slot past the hotbar %d" % [from, to])
 
 	if bag_at >= 0:
 		_step = "worn bag"
 		var fibre: int = _count("plant_fibre")
 		var outside: int = 0
+		var ahead: int = 0   # other stacks Store all reaches first (it goes in slot order; the bag holds bag_slots stacks)
 
 		for k in range(inv.hotbar_slots, inv.slot_count):
 			if int(inv.numbers[k]) == _num("plant_fibre") and not inv.is_fav(k):
 				outside += int(inv.counts[k])
+			elif outside == 0 and int(inv.numbers[k]) != 0 and not inv.is_fav(k):
+				ahead += 1
 		view.open_bag(bag_at)
 		var end2: int = Time.get_ticks_msec() + 4000
 
@@ -1917,7 +1930,7 @@ func _worn_round(view) -> void:
 
 			if _count("plant_fibre") + stored != fibre:
 				_fail("worn", "bag_store", "Store all into the worn bag: %d fibre became %d in the pack and %d in the bag" % [fibre, _count("plant_fibre"), stored])
-			elif outside > 0 and stored == 0:
+			elif outside > 0 and stored == 0 and ahead < BagRules.slots_of(client.items.table, _num("fibre_shoulder_bag")):
 				_fail("worn", "bag_store", "Store all into the worn bag stored nothing, with %d fibre past the hotbar" % outside)
 
 			view.bulk(0)   # Take all
