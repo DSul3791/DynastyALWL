@@ -110,7 +110,7 @@ func _init() -> void:
 			y -= 0.05
 		return NAN
 	items.dig_ground = func(c, r): edits.append([0, c, r]); return true
-	items.fill_ground = func(c, r, m): edits.append([1, c, r]); return true
+	items.fill_ground = func(c, r, _m): edits.append([1, c, r]); return true
 	items.season_now = func(): return "spring"
 	items.setup(ItemTableScript.load_default(), dir)
 	items.peer_connected_hello(1, "digfill000001")
