@@ -1697,6 +1697,9 @@ func _welcome_body(info: Dictionary) -> void:
 
 	net.trails_received.connect(func(bx: int, bz: int, bytes: PackedByteArray, routes: PackedByteArray) -> void:
 		grass.set_trail_block(bx, bz, TrailCodec.decode(bytes))
+
+		if routes == TrailCodec.ROUTES_SAME:
+			return   # only the worn cells changed (protocol 158): the routes kept are right, nothing to decode, rebuild or log
 		var decoded: Array = TrailCodec.decode_routes(routes, Vector2i(bx, bz), TrailCodec.ROUTE_BLOCK_M)
 		grass.set_trail_routes(bx, bz, decoded)   # the trails between animal places (protocol 149)
 		trail_signs.set_routes(bx, bz, decoded)
@@ -7454,7 +7457,7 @@ func _note_sound_now(delta: float) -> void:
 	if top != _sound_now_logged and now - _sound_now_log_msec >= 10000:
 		_sound_now_logged = top
 		_sound_now_log_msec = now
-		print("sound now: %s at %s" % [_sound_now, str(body.global_position.round())])
+		FreezeWatchScript.printer.line("sound now: %s at %s" % [_sound_now, str(body.global_position.round())])   # on a worker (D-LAG-1: a main-thread line here was followed by a 0.8-1.3 s freeze in the PC standing plays, 23 Nov 2026)
 
 
 func _walk_step() -> void:

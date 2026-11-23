@@ -41,6 +41,7 @@ extends Node
 # and the LOD.
 
 const PROTOCOL_VERSION := 159  # 159 (23 Nov 2026, what players see of each other): held_item gains the left-hand item and hand flags (bow raised, drawn, shield up, on a ladder); players rows gain left and more (a burning torch, those flags, eats and drinks); flight_seen (an arrow or thrown weapon leaving another player's hand, flown by the receiver). 156 was reserved for the sound thread. Client and server must be updated together. 155 (23 Nov 2026, Dave on the real server: "battle was almost impossible"): ACT_STRIKE b and count = the server ms the striker's screen showed the animals at (the row clock's draw time, and the present a committed charge is drawn at); the server judges the blow there, at most data/animals/animals.json rewind_max_ms back (server_animals pos_at). Client and server must be updated together.
+# 158 (23 Nov 2026, the stutter hunt: a standing player's client logged "grass runs: block X came with N routes" again and again): trails() carries a block's routes once and again only when they change; when only the worn cells changed it carries trail_codec.gd ROUTES_SAME and the client keeps its routes (server_trails.gd updates_for). Client and server must be updated together.
 # 157 (23 Nov 2026): ACT_SEEN before ACT_SHOOT and ACT_THROW: arrows and thrown spears are judged where the shooter saw the animals (server_items.shot_lag, server_animals target_on_segment).
 # 156 (23 Nov 2026, Dave: sound "very broad and hard to pinpoint"; the coordinator: other players' blows, gathering and crafting heard nearby): action_cue (server to client, unreliable: another player's blow, pick or craft and where; src/stream/server_action_cues.gd). Client and server must be updated together.
 # 155 (23 Nov 2026, Dave on the real server: "battle was almost impossible"): ACT_STRIKE b and count = the server ms the striker's screen showed the animals at (the row clock's draw time, and the present a committed charge is drawn at); the server judges the blow there, at most data/animals/animals.json rewind_max_ms back (server_animals pos_at). Client and server must be updated together.
@@ -1001,6 +1002,7 @@ func held_item(number: int, left: int, flags: int) -> void:
 # index = local_x + local_z * 64 from the block's south-west corner; block = 256 m, cell = 4 m, see data/animals/trails.json).
 # Sent for the 3 x 3 blocks around the player when they enter a block and when a block changes (at most every 30 s a block).
 # routes (protocol 149): the block's trails between animal places, trail_codec.gd decode_routes (empty while not worked out).
+# routes is trail_codec.gd ROUTES_SAME (protocol 158) when this peer already has the block's routes and only the cells changed.
 @rpc("authority", "call_remote", "reliable")
 func trails(block_x: int, block_z: int, bytes: PackedByteArray, routes: PackedByteArray) -> void:
 	trails_received.emit(block_x, block_z, bytes, routes)

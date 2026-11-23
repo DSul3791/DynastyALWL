@@ -127,6 +127,8 @@ var cave_openings: Array = []         # [Vector2 a, Vector2 b, radius m, Rect2 b
 var cave_mouths: Array = []           # [Vector3 entrance node, int CaveClimate kind (1 rises, 0 level, -1 drops)]: where cave air is measured from (docs/design/cave_climate_design.md)
 const CAVE_POOL_M := 0.4            # a spring cave pool's surface: this far above the bottom of its chamber as the chamber is carved
 const CAVE_WATER_CELL_M := 16.0     # near_cave_water's index cell (build_cave_water_cells)
+const CAVE_SEAT_DROP_M := 3.0       # the most _seat_cave_scatter lowers a stone (the audit's worst float was 3 m; deeper is a spring pool's bed)
+const CAVE_FLOOR_SEARCH_M := 24.0   # how far under a cave floor spot cave_floor_under looks for the bottom of the air (a spring pool is 20 m deep)
 const CAVE_POOL_DEPTH_M := 20.0     # Dave's QA list BUG-008 (answer 4 Nov 2026): the pool goes 20 m down below that, in a natural shape; the chamber stays
 var cave_streams: PackedFloat32Array = PackedFloat32Array()   # spring cave streams (Dave 3 Nov 2026): per piece x, y, z of the upper end, x, y, z of the lower end (floor heights, world m), width m; then per spring pool x, y, z, -radius (a negative width marks a pool)
 var _cave_water_cells: Dictionary = {}   # Vector2i cell (CAVE_WATER_CELL_M) -> PackedInt32Array of cave_streams entry numbers near it
@@ -1113,15 +1115,16 @@ func _add_animal_den(cave: Dictionary, mouth_node: int) -> void:
 	var nodes: Array = cave["nodes"]
 	var mouth: Array = nodes[mouth_node]
 
-	var listed: PackedVector2Array = animal_den_mouths.get(sp, PackedVector2Array())
-	listed.append(Vector2(float(mouth[0]), float(mouth[2])))
-	animal_den_mouths[sp] = listed   # a packed array is copied on read, so it goes back in
 	var inner: Array = mouth
 
 	for segment in cave["segments"]:
 		if int(segment[0]) == mouth_node or int(segment[1]) == mouth_node:
 			inner = nodes[int(segment[1]) if int(segment[0]) == mouth_node else int(segment[0])]
 			break
+
+	var listed: PackedVector2Array = animal_den_mouths.get(sp, PackedVector2Array())
+	listed.append(den_doorstep(Vector2(float(mouth[0]), float(mouth[2])), Vector2(float(inner[0]), float(inner[2]))))
+	animal_den_mouths[sp] = listed   # a packed array is copied on read, so it goes back in
 
 	var a: Vector3 = Vector3(float(mouth[0]), float(mouth[1]) - 0.5 * float(mouth[4]), float(mouth[2]))
 	var b: Vector3 = Vector3(float(inner[0]), float(inner[1]) - 0.5 * float(inner[4]), float(inner[2]))
@@ -1141,6 +1144,22 @@ func _add_animal_den(cave: Dictionary, mouth_node: int) -> void:
 	if den >= 0:
 		var dn: Array = nodes[den]
 		cave_bones.append_array(PackedFloat32Array([float(dn[0]), float(dn[1]) - 0.5 * float(dn[4]), float(dn[2]), DEN_SIGN_BEDDING, yaw + 1.3]))
+
+
+# Where the server puts a den's animals: on the ground just outside the mouth's cut (world audit 23 Nov 2026: at the mouth itself 8 of 10 new
+# den animals stood 0.3 to 0.9 m over the cut floor, because animals walk the tile heights, which do not know the cave). From the mouth
+# outward, away from the passage, to the first point outside every cave opening (in_cave_opening); the mouth itself when none is found in 12 m.
+func den_doorstep(mouth: Vector2, inner: Vector2) -> Vector2:
+	var out: Vector2 = mouth - inner
+	out = out.normalized() if out.length() > 0.01 else Vector2(1.0, 0.0)
+
+	for step in range(1, 13):
+		var at: Vector2 = mouth + out * float(step)
+
+		if not in_cave_opening(at.x, at.y):
+			return at
+
+	return mouth
 
 
 # The tile's ground springs ({pos [x, y, z], m3_s, cover}, tile_sites._make_record_springs), in the file's order: the order gives each spring's
@@ -1389,9 +1408,84 @@ func _add_cave_floor_spot(centre: Vector3, side_dir: Vector2, side: float, rw: f
 	cave_scatter.append_array(PackedFloat32Array([x, y, z, float(kind), radius]))
 
 
+# The floor a loose thing at p comes to rest on: the bottom of the cave air in the column through p, from just above p down, where the
+# LOD 0 mesh has it; NAN when p is not in a cave's air. The air is every capsule and chamber of the caves round p as
+# terrain_generator._carve_caves carves them (each squashed to a ball of its width, SDF = width - distance, over the ground's SDF), and the
+# mesh floor is where that SDF, sampled on the 1 m voxel grid, crosses zero: found in the four voxel columns round p and blended. A spot
+# laid on one shape's own floor floats where a lower shape (a junction, a deeper chamber, a spring pool's basin) cuts under it, and the voxel
+# floor sits up to 0.3 m off the exact shape (world audit 23 Nov 2026: 12% of the cave stones floated, up to 3 m; 4% were buried).
+func cave_floor_under(p: Vector3) -> float:
+	var shapes: Array = []
+	var probe: AABB = AABB(p - Vector3(1.5, CAVE_FLOOR_SEARCH_M, 1.5), Vector3(3.0, CAVE_FLOOR_SEARCH_M + 2.0, 3.0))
+
+	for cave in caves:
+		if not cave["aabb"].intersects(probe):
+			continue
+
+		for capsule in cave["capsules"]:
+			if capsule["aabb"].intersects(probe):
+				shapes.append(_air_shape(capsule["a"], capsule["b"], float(capsule["rw"]), float(capsule["rh"])))
+
+		for chamber in cave["chambers"]:
+			if chamber["aabb"].intersects(probe):
+				shapes.append(_air_shape(chamber["center"], chamber["center"], float(chamber["r"]), float(chamber["rh"])))
+
+	if shapes.is_empty() or _cave_sdf(shapes, p.x, p.y + 0.05, p.z) <= 0.0:
+		return NAN
+
+	var low: float = p.y + 0.05
+
+	while low > p.y - CAVE_FLOOR_SEARCH_M and _cave_sdf(shapes, p.x, low - 0.5, p.z) > 0.0:
+		low -= 0.5
+
+	# The SDF on the 1 m voxel grid, blended across the four voxel columns round p (trilinear, as the mesh follows it): its highest
+	# air-over-rock crossing at or under low + 1.5.
+	var gx: float = floor(p.x)
+	var gz: float = floor(p.z)
+	var fx: float = p.x - gx
+	var fz: float = p.z - gz
+	var j: float = ceil(low + 1.5)
+	var above: float = _grid_sdf(shapes, gx, gz, fx, fz, j)
+
+	for _k in range(8):
+		var under: float = _grid_sdf(shapes, gx, gz, fx, fz, j - 1.0)
+
+		if above > 0.0 and under <= 0.0:
+			return j - above / (above - under)
+
+		above = under
+		j -= 1.0
+
+	return low
+
+
+func _grid_sdf(shapes: Array, gx: float, gz: float, fx: float, fz: float, y: float) -> float:
+	return lerpf(lerpf(_cave_sdf(shapes, gx, y, gz), _cave_sdf(shapes, gx + 1.0, y, gz), fx), lerpf(_cave_sdf(shapes, gx, y, gz + 1.0), _cave_sdf(shapes, gx + 1.0, y, gz + 1.0), fx), fz)
+
+
+# A cave shape as the carve measures it: [a, b with y squashed, width, squash].
+static func _air_shape(a: Vector3, b: Vector3, rw: float, rh: float) -> Array:
+	var squash: float = rw / maxf(rh, 0.1)
+	return [Vector3(a.x, a.y * squash, a.z), Vector3(b.x, b.y * squash, b.z), rw, squash]
+
+
+# The carved SDF at a point (positive = air), the larger of the caves' and the ground's (terrain_generator._carve_caves keeps the larger).
+func _cave_sdf(shapes: Array, x: float, y: float, z: float) -> float:
+	var ground: float = height_at(x, z)
+	var best: float = -INF if is_nan(ground) else y - ground
+
+	for shape in shapes:
+		var q: Vector3 = Vector3(x, y * float(shape[3]), z)
+		best = maxf(best, float(shape[2]) - q.distance_to(Geometry3D.get_closest_point_to_segment(q, shape[0], shape[1])))
+
+	return best
+
+
 # The cave floor stones and boulders of the whole tile. The tile loader calls it on its worker before the tile is published (Steve 5 Nov 2026:
 # built by the first scatter cell that asked, it held the server main thread 345 ms in Dave's PC lag run, cell (1666, 2136)).
-func build_cave_scatter() -> void:
+# surface: (x, z) -> the ground height players stand on (terrain_generator.surface_height_on, the tile heights with the detail noise) for the
+# spots in the open (a mine's spoil heap); without it they keep the tile height.
+func build_cave_scatter(surface: Callable = Callable()) -> void:
 	if _cave_scatter_built:
 		return
 
@@ -1399,6 +1493,30 @@ func build_cave_scatter() -> void:
 
 	for cave in _cave_sources:
 		_scatter_cave(cave)
+
+	_seat_cave_scatter(surface)
+
+
+# Every cave stone and mine leftover down onto the floor it would rest on (cave_floor_under), and every one in the open onto the ground. Only
+# the height changes: the entries keep their number and order (the server's item keys) and x, z. A boulder stays as laid: its ore is read
+# at its spot (server_items._boulder_ore), so moving it could change what it gives on a live world.
+func _seat_cave_scatter(surface: Callable) -> void:
+	@warning_ignore("integer_division")
+	for n in range(cave_scatter.size() / 5):
+		if int(cave_scatter[n * 5 + 3]) == 1:
+			continue
+
+		var p: Vector3 = Vector3(cave_scatter[n * 5], cave_scatter[n * 5 + 1], cave_scatter[n * 5 + 2])
+		var ground: float = height_at(p.x, p.z)
+		var rest: float = NAN
+
+		if not is_nan(ground) and ground < p.y + 0.5:
+			rest = float(surface.call(p.x, p.z)) if surface.is_valid() else NAN   # in the open (a mine's spoil heap), on the ground; NAN off this tile
+		else:
+			rest = cave_floor_under(p)
+
+		if not is_nan(rest) and p.y - rest <= CAVE_SEAT_DROP_M:
+			cave_scatter[n * 5 + 1] = rest   # a longer drop (into a spring pool's 20 m basin) keeps the spot as laid
 
 
 # The cave floor stones and boulders whose spot lies in one scatter cell (cell_m square, as the server lays its loose things out): entry numbers into

@@ -14,6 +14,7 @@ extends RefCounted
 # built into the grid on the client (receive). Every function below the loader is pure.
 
 const TileFileScript := preload("res://src/worldgen/tile/tile_file.gd")
+const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")   # its printer: lines printed on a worker (D-LAG-1)
 
 const CELL_M := 32.0                # the grid's step: the tiles' coarse height map
 const WINDOW_M := 4608.0            # the square read round the player
@@ -117,12 +118,13 @@ func poll() -> void:
 
 # One line per finished read, so a smoke can show the worker ran (client and server).
 func _log_read() -> void:
+	# Printed on a worker (D-LAG-1; lag lane 23 Nov 2026: "weather look: ground fog 1379 ms" in the PC join frame was this line's print).
 	if _next.is_empty():
-		print("fog ground (%s): no tile at %.0f, %.0f" % [who, _centre.x, _centre.y])
+		FreezeWatchScript.printer.line("fog ground (%s): no tile at %.0f, %.0f" % [who, _centre.x, _centre.y])
 		return
 
 	var span: Vector2 = _next.get("floor_range", Vector2.ZERO)
-	print("fog ground (%s): read %d x %d cells round %.0f, %.0f; cold-air floor %.0f to %.0f m" % [who, int(_next["n"]), int(_next["n"]), _centre.x, _centre.y, span.x, span.y])
+	FreezeWatchScript.printer.line("fog ground (%s): read %d x %d cells round %.0f, %.0f; cold-air floor %.0f to %.0f m" % [who, int(_next["n"]), int(_next["n"]), _centre.x, _centre.y, span.x, span.y])
 
 
 # Is a read running?

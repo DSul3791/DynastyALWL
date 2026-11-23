@@ -60,6 +60,9 @@ static func decode(bytes: PackedByteArray) -> Dictionary:
 # [kind u8][points u16] and each point as s16 x, s16 z in 1/32 m from the block's south-west corner (so a route may run up to
 # 1 km past its block), deflated with the raw size in front (u32).
 const ROUTE_SCALE := 32.0
+# Sent in place of a block's routes when the peer already has them and only the worn cells changed (protocol 158):
+# the client keeps the routes it has and does no work for them. Never a real routes block (those are 6 bytes or more).
+const ROUTES_SAME: PackedByteArray = [0xFF]
 
 
 static func encode_routes(routes: Array, block: Vector2i, block_m: float) -> PackedByteArray:
