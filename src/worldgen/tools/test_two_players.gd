@@ -218,7 +218,7 @@ func _init() -> void:
 	var site: int = HeldTool.site_of(items, "wooden_crate")
 	check(site >= 0, "player A sets down a crate blueprint")
 	HeldTool.hit_site(items, site, 1)
-	check(site >= 0 and items._items.has(site) and items._items[site]["struct"].has("site"), "player A's hammer puts in what A has (3 lumber): still a site")
+	check(site >= 0 and items._items.has(site) and items._items[site]["struct"].has("site") and wood_all - _total(items, lumber) == 3, "player A's hammer puts in what A has (3 lumber, %d went in): still a site" % (wood_all - _total(items, lumber)))
 	HeldTool.hit_site(items, site, 2)
 	check(site >= 0 and items._items.has(site) and not items._items[site]["struct"].has("site"), "player B's hammer puts in the rest: the crate stands")
 	var wood_used: int = wood_all - _total(items, lumber)
