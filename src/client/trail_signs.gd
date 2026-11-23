@@ -18,10 +18,10 @@ const DEER_PELLET_COLOR := Color(0.17, 0.13, 0.09)
 const SCRAPE_COLOR := Color(0.30, 0.22, 0.14)
 const PRINT_COLOR := Color(0.20, 0.15, 0.10)
 const NEAR_PAD_M := 40.0         # routes this far past the reach are worked out too (a route's print spacing starts at its home)
-const HEAP_PROBE_M := 0.6        # a heap's ground is the lowest of three probes this far apart (a trunk or boulder under one is skipped)
-const PRINT_RISE_M := 1.0
+const HEAP_PROBE_M := 0.6        # a heap's ground is the middle of three probes this far apart (a trunk or boulder under one is passed over)
+const PRINT_RISE_M := 1.0        # a print more than this above its line's lowest ground lies on something else and is left out
 const PELLET_LIFT_M := 0.02      # pellets sit this far up: on top of the leaf litter and the latrine's bare patch, not under them
-const LATRINE_BED_COLOR := Color(0.22, 0.16, 0.10)        # a print more than this above its line's lowest ground lies on something else and is left out
+const LATRINE_BED_COLOR := Color(0.22, 0.16, 0.10)
 
 var cfg: Dictionary = {}
 var ground_height: Callable        # (x, z) -> the ground's height there, NAN when not known
@@ -321,17 +321,22 @@ func _lay(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> void:
 					(rows["print"] as Array).append(piece)   # yaw: the direction on the ground (x, z) the print's long side lies along
 
 
-# The ground under a small heap: the lowest of the spot and two probes HEAP_PROBE_M either side, NAN when none is known.
+# The ground under a small heap: the middle of the spot and two probes HEAP_PROBE_M either side (so one probe on a trunk or boulder
+# is passed over, and on a slope the heap sits on the ground at its centre, not buried by the lowest), NAN when none is known.
 func _heap_ground(spot: Vector2) -> float:
-	var low: float = NAN
+	var ys: Array = []
 
 	for d in [Vector2.ZERO, Vector2(HEAP_PROBE_M, 0.0), Vector2(-HEAP_PROBE_M * 0.5, HEAP_PROBE_M)]:
 		var y: float = float(ground_height.call(spot.x + d.x, spot.y + d.y))
 
-		if not is_nan(y) and (is_nan(low) or y < low):
-			low = y
+		if not is_nan(y):
+			ys.append(y)
 
-	return low
+	if ys.is_empty():
+		return NAN
+
+	ys.sort()
+	return float(ys[(ys.size() - 1) >> 1])   # the middle one (the lower of two)
 
 
 func _fill(layer: String, rows: Array) -> void:

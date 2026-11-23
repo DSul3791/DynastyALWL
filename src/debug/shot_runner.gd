@@ -1870,6 +1870,9 @@ func _run_view(now: int) -> void:
 			_subject_set = true
 			print("shot runner: views aimed at the spotted sign at %s" % str(_subject))
 
+		if not _subject_set and skill_set.begins_with("tracking"):
+			print("shot runner: WARNING no sign spotted yet (none within spot_m of the player, or the settle was short): the views look 4 m north as usual")
+
 		if not _subject_set:
 			var p: Vector3 = client.body.global_position
 			_subject = Vector3(p.x, _ground(p.x, p.z - 4.0), p.z - 4.0)
