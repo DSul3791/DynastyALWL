@@ -3169,9 +3169,9 @@ var _fill_names: Array = []
 
 # What the server fills with: the first of digging.json "fill" the pack holds (server_items._fill takes the same order).
 static func fill_is_stony(order: Array, count_of: Callable) -> bool:
-	for name in order:
-		if int(count_of.call(str(name))) > 0:
-			return STONY_FILL.has(str(name))
+	for item in order:
+		if int(count_of.call(str(item))) > 0:
+			return STONY_FILL.has(str(item))
 
 	return false
 
