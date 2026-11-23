@@ -1287,6 +1287,9 @@ func _show_pieces(now: int) -> void:
 			model.add_child(fixture)
 			var lamp: Light3D = fixture.get_node_or_null("Light") as Light3D
 
+			if lamp != null:
+				lamp.visible = true   # in the game the lights list switches it on (inventory_view), which the rig does not run
+
 			if lamp is OmniLight3D and float(def.get("light_m", 0.0)) > 0.0:
 				(lamp as OmniLight3D).omni_range = float(def["light_m"])
 
