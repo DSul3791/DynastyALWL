@@ -1819,6 +1819,7 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 var ground_ready: Callable              # (x, z) -> bool: the ground there is in memory; when not, it is being read in the background (unset in tests = always ready)
 var water_flow_at: Callable             # set by the server: (Vector3) -> float, the running speed of the water there in m/s (-1 none, 0 still), for placement rules
 var water_wheel: Callable               # set by the server: (a: Vector3, b: Vector3) -> {"w": watts, "why": "" or dry/river/still/shallow, "along": bool}, a water wheel spanning a to b (WaterFlow.wheel)
+var cave_floor: Callable                # set by the server: (Vector3) -> the floor of the cave air at a point (a passage, chamber or a mouth's cut), NAN outside one; ground_height does not know the caves
 var edits_near: Callable                # set by the server: (point, radius) -> [[kind 0 dig / 1 fill, centre, radius]], the saved ground edits near a point, oldest first (ground_ops.gd); ground_height does not know them
 var floor_below: Callable               # set by the server: (Vector3) -> float, the height a loose item let go there comes to rest at (NAN if none)
 var land_types: Callable                # set by the server: (x, z) -> String, classifies the land near a point from the live water and writes a text file
@@ -4970,8 +4971,8 @@ func _piece_under(feet: Vector3) -> bool:
 
 # The ground height at a column with the saved edits laid over the generated surface, oldest first: a dig sphere the surface passes through lowers it to the
 # sphere's bottom, a fill sphere that reaches the surface raises it to the sphere's top (a pocket under the surface or a blob in the air leaves it). NAN where not loaded.
-func _edited_height(x: float, z: float, edits: Array) -> float:
-	var surface: float = float(ground_height.call(x, z))
+func _edited_height(x: float, z: float, edits: Array, base: float = NAN) -> float:
+	var surface: float = float(ground_height.call(x, z)) if is_nan(base) else base   # base: the ground before the edits, when it is not the generated surface (a cave floor)
 
 	if is_nan(surface):
 		return NAN
@@ -6325,6 +6326,18 @@ func _foundation_rows() -> Array:
 const PLACE_EDITS_REACH_M := 16.0   # the saved ground edits read round a placement: the widest footprint and a 65 roof panel's run, with the edit spheres
 
 
+const CAVE_PROBE_UP_M := 0.5   # a spot in a cave is looked for in the cave's air this far over the ghost's foot (as terrain_generator and server_carts CAVE_PROBE_UP_M)
+
+
+# The ground under a spot: the cave floor when the spot is under the generated surface `surface` and in a cave's air, else `surface`.
+func _cave_ground(at: Vector3, surface: float) -> float:
+	if not cave_floor.is_valid() or is_nan(surface) or at.y >= surface - 0.05:
+		return surface
+
+	var floor_y: float = float(cave_floor.call(at + Vector3(0.0, CAVE_PROBE_UP_M, 0.0)))
+	return surface if is_nan(floor_y) else floor_y
+
+
 func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps: int = 0, blueprint: Dictionary = {}) -> void:
 	var number: int = 0
 	var kit_id: String = ""
@@ -6423,6 +6436,18 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 	# read as the old ground and a foundation on it was "too far above or below the ground". Every height check below reads the saved digs and fills too.
 	var site_edits: Array = (edits_near.call(at, PLACE_EDITS_REACH_M) if edits_near.is_valid() else []) as Array
 	var surface := func(x: float, z: float) -> float: return _edited_height(x, z, site_edits)
+
+	# In a cave the ground under the piece is the cave floor (physical world audit round 6, 23 Nov 2026: the generated surface is the hill over it, so
+	# every piece in a cave was refused as "too far above or below the ground" while the ghost showed it fits). A corner off the cave's air (in its
+	# wall) reads the hill and the piece is refused as too steep, as on a rock face.
+	var generated: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else NAN
+
+	if not on_base and not is_nan(generated) and _cave_ground(at, generated) != generated:
+		var cave_y: float = at.y
+		surface = func(x: float, z: float) -> float:
+			var floor_y: float = float(cave_floor.call(Vector3(x, cave_y + CAVE_PROBE_UP_M, z)))
+			return _edited_height(x, z, site_edits) if is_nan(floor_y) else _edited_height(x, z, site_edits, floor_y)
+
 	var ground: float = float(surface.call(at.x, at.z)) if ground_height.is_valid() else at.y
 
 	if is_nan(ground):
@@ -7575,7 +7600,7 @@ func _pick_up_fire(peer: int, inv, id: int) -> void:
 	var whole: bool = box != null and box.count_of(stick) == start and _box_holds_only(box, stick)   # its first sticks are still in it: they go back into the kit
 
 	if box != null and not box.is_empty() and not whole:
-		_say(peer, "Empty it first, or leave just its %d Sticks to pack it as a Campfire kit." % start)
+		_say(peer, "Empty it first, or leave just its %d sticks to pack it up as a Campfire." % start)
 		return
 
 	if whole:
@@ -12644,7 +12669,7 @@ func _place_torch(peer: int, inv, slot: int, on_wall: bool, yaw_deg: int, at: Ve
 	var spot: Vector3 = at
 
 	if not on_wall:
-		var ground: float = float(ground_height.call(at.x, at.z)) if ground_height.is_valid() else at.y
+		var ground: float = _cave_ground(at, float(ground_height.call(at.x, at.z))) if ground_height.is_valid() else at.y   # a torch in a cave goes into the cave floor
 
 		if is_nan(ground) or absf(ground - at.y) > 0.6:
 			_say(peer, "Push it into the ground.")
@@ -17017,7 +17042,7 @@ func _breath_tick(peer: int, v: Dictionary, spent: float) -> void:
 
 				# Passed out under water: rescued as from the cold (warmth.json pass_out), or the faint and the wake would come round for ever with
 				# the head still under and movement locked (no auto-rise, BUG-029).
-				if not _cold_out.has(peer) and bool(_warmth_cfg.get("pass_out", {}).get("enabled", false)) and rescue_spots.is_valid() and _peer_pos.has(peer):
+				if not _cold_out.has(peer) and bool(_warmth_cfg.get("pass_out", {}).get("enabled", false)) and _peer_pos.has(peer):
 					_out_water[peer] = true
 					_cold_pass_out(peer)
 			else:
@@ -18071,13 +18096,16 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	var here: Vector3 = _peer_pos.get(peer, respawn_point)
 	var best: Array = []
 
-	for spot in rescue_spots.call(here):
+	for spot in (rescue_spots.call(here) if rescue_spots.is_valid() else []):
 		if best.is_empty() or (spot[0] as Vector3).distance_to(here) < (best[0] as Vector3).distance_to(here):
 			best = spot
 
 	# No camp and no town square anywhere (a test world): they come to where they lay, never at the spawn (nothing is based on the spawn).
 	var to: Vector3 = best[0] if not best.is_empty() else here
 	var kind: String = str(best[1]) if not best.is_empty() else "here"   # later: a bandit camp may take from the pack, a goblin camp by its goblins' type (not built)
+
+	if water and best.is_empty():
+		to = _dry_shore(here)   # no place to be carried to: the nearest dry shore, never the spawn (coordinator 23 Nov 2026)
 	v["health"] = maxf(float(v["health"]), float(cfg.get("wake_health", 10.0)))
 	v["warmth"] = maxf(float(v.get("warmth", 0.0)), hurt_at + float(cfg.get("wake_warmth_over", 5.0)))
 	_cold_level.erase(peer)
@@ -18087,7 +18115,7 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	_resume_to.erase(peer)
 	_motion.erase(peer)
 
-	if water and not best.is_empty():   # carried out of the water: breathing again (the client's next report says where the head is)
+	if water:   # carried out of the water: breathing again (the client's next report says where the head is; with no shore found, a full breath to swim up awake)
 		_head_under[peer] = false
 		_suffocate.erase(peer)
 		_breath.erase(peer)
@@ -18097,7 +18125,7 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	_sync_warmth(peer, true)
 	_dirty = true
 
-	if send_died.is_valid() and not best.is_empty():
+	if send_died.is_valid() and not to.is_equal_approx(here):
 		send_died.call(peer, "passed out", to)   # the client moves the body there and waits for the ground, as after a death (no death screen)
 
 	if water:
@@ -18110,6 +18138,36 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 
 func passed_out(peer: int) -> bool:
 	return _cold_out.has(peer)
+
+
+# The nearest dry ground to `from` (no more than SHORE_DRY_M of water over it), searched in rings SHORE_STEP_M apart out to SHORE_MAX_M (points
+# about a tenth of the radius apart, never under SHORE_STEP_M), 2 m over the ground as every wake spot is set down (_rescue_ground,
+# dug_out_height); `from` when none is found or the ground and water are not known. A water pass-out with no rescue place wakes there.
+const SHORE_STEP_M := 3.0
+const SHORE_MAX_M := 200.0
+const SHORE_DRY_M := 0.05
+
+func _dry_shore(from: Vector3) -> Vector3:
+	if not ground_height.is_valid() or not water_depth_at.is_valid():
+		return from
+
+	var r: float = SHORE_STEP_M
+
+	while r <= SHORE_MAX_M:
+		var steps: int = maxi(int(ceil(TAU * r / maxf(SHORE_STEP_M, r * 0.1))), 8)
+
+		for i in steps:
+			var a: float = TAU * float(i) / float(steps)
+			var x: float = from.x + cos(a) * r
+			var z: float = from.z + sin(a) * r
+			var g: float = float(ground_height.call(x, z))
+
+			if not is_nan(g) and float(water_depth_at.call(Vector3(x, g, z))) <= SHORE_DRY_M:
+				return Vector3(x, g + 2.0, z)
+
+		r += SHORE_STEP_M
+
+	return from
 
 
 func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void:

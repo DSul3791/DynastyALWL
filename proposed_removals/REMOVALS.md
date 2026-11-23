@@ -194,3 +194,8 @@ Preservation/reader receipts: independent review PASS on exact tree `09c98947328
 |---|---|---|---|---|
 | tools/make_testplayers_page.ps1, deploy/testplayers/Caddyfile, compose.web.yaml (HOSTING.md archived in docs/archive/2026-11/) | Claude, packaging thread | 23 Nov | made and hosted the page in a /dynasty/testplayers/ folder on a web server we would set up; Dave set up his own, with its own login | tools/make_testplayers_site.ps1, deploy/testplayers/SERVER.md |
 | deploy/testplayers/index.html, deploy/testplayers/site.css | Claude, packaging thread | 23 Nov | the "Opening soon" front page and its look, a stand-in until the testers' own pages were merged (#1609) | deploy/testersite/site/index.html and css/dynasty.css; /download/ now uses dynasty.css |
+
+## Hob's old lesson voice line, 23 Nov 2026 (coordinator ruling for Dave: the lesson fee is reputation-priced, so the line names no number)
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| assets/audio/npc_voice/hob/15286205.ogg | Claude, trade loop thread | 23 Nov | voice of "Three stones for the lesson. Now count with me.", a line no longer in hob.json (a Trusted player pays 2 stones) | assets/audio/npc_voice/hob/a91dee27.ogg ("A few stones for the lesson. Now count with me.") |

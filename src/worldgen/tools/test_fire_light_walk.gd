@@ -163,5 +163,26 @@ func _init() -> void:
 	check(still, "after a restart the Fireplace is still lit")
 	check(f.warmth_target(1) > cold, "and still warms (%.1f)" % f.warmth_target(1))
 
+	# 5. The campfire's burn time is the floor (coordinator 23 Nov 2026, no gatekeeping by limiting resources): every placed light burns one of
+	# its fuel items at least as long as a campfire burns that wood.
+	var fuel_table: Dictionary = f._cooking.get("fuel", {})
+	var below: Array = []
+	var looked: int = 0
+
+	for kind in f._structures:
+		var def: Dictionary = f._structures[kind]
+
+		if not def.has("fuel") or typeof(def["fuel"]) != TYPE_STRING or not fuel_table.has(str(def["fuel"])):
+			continue
+
+		looked += 1
+		var floor_s: float = float(fuel_table[str(def["fuel"])]) / ItemsScript.GAME_RATE
+
+		if f.light_burn_s(def) < floor_s - 0.01:
+			below.append("%s %.0f s < %.0f s" % [kind, f.light_burn_s(def), floor_s])
+
+	check(looked >= 7 and below.is_empty(), "no placed light burns a wood shorter than a campfire does (%d looked at; %s)" % [looked, ", ".join(below) if not below.is_empty() else "none below"])
+	check(is_equal_approx(f.light_burn_s(f._structures["stone_brazier"]), float(fuel_table["log"]) / ItemsScript.GAME_RATE) and f.light_burn_s(f._structures["fireplace"]) >= 7200.0, "a brazier burns a log 3 h, as a campfire; a Fireplace a firewood 2 h")
+
 	print("test_fire_light_walk: %s" % ("PASS" if failures == 0 else "FAIL (%d)" % failures))
 	quit(1 if failures > 0 else 0)
