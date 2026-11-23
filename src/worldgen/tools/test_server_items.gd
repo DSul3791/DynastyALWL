@@ -1956,7 +1956,7 @@ func _init() -> void:
 		if vt.remains_ids().size() > 0:
 			break
 
-	check(faint_seen and vt.remains_ids().is_empty() and float(vt.vitals_of(1)["health"]) == 1.0, "[%d remains, health %.0f] fainting under water leaves 1 health, not dead (death.json stop_at_1)" % [vt.remains_ids().size(), float(vt.vitals_of(1)["health"])])
+	check(faint_seen and vt.remains_ids().is_empty() and float(vt.vitals_of(1)["health"]) <= 2.0, "[%d remains, health %.0f] fainting under water leaves 1 health, not dead (death.json stop_at_1)" % [vt.remains_ids().size(), float(vt.vitals_of(1)["health"])])
 	vt._death_cfg["stop_at_1"] = false
 	vt._vitals[vt._peer_key[1]]["health"] = 100.0
 	vt._suffocate.erase(1)

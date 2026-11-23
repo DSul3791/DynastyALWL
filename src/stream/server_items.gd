@@ -15146,7 +15146,8 @@ func _take_from_bags(peer: int, number: int) -> int:
 # which take health directly. Worn armour stops its share first (protection_of in the attack's damage mode: `mode`, else protection.json
 # attack_modes by the cause, else its default_mode; `pen` is a weapon's armour penetration), and every piece that protects wears by the hit.
 # Not lethal: health stops at maim_hp and the bite reports "maimed" (a crippling injury; the pack then backs off). Lethal (a player already
-# maimed): health can reach zero and the character dies. Returns "hurt", "maimed" or "dead".
+# maimed): with death.json stop_at_1 (on) it stops at 1 and reports "maimed" again; off, health can reach zero and the character dies.
+# Returns "hurt", "maimed" or "dead".
 func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp: float = 25.0, mode: String = "", pen: float = 0.0) -> String:
 	var v: Dictionary = vitals_of(peer)
 

@@ -2752,7 +2752,11 @@ func _tunnel_tick() -> void:
 
 		for victim in collapse["victims"]:
 			var was: Variant = items.position_of(int(victim))
-			var above: Vector3 = Vector3(was.x, maxf(generator.surface_height(was.x, was.z), 0.0) + 2.0, was.z) if was != null else items.respawn_point
+			var above: Vector3 = items.respawn_point
+
+			if was != null:   # the top of the ground (a fill on it counts) or of the water over it, never inside rock or under a lake
+				var top: float = maxf(maxf(float(generator.surface_height(was.x, was.z)), float(animals.ground_height.call(was.x, was.z))), float(_water_at(Vector3(was.x, 0.0, was.z))[0]))
+				above = Vector3(was.x, maxf(top, 0.0) + 2.0, was.z)
 
 			if not items.survive_cave_in(int(victim), above):   # death.json stop_at_1: dug out onto the ground above, health 1
 				items.kill(int(victim), "cave-in")
