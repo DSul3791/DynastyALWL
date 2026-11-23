@@ -16,7 +16,7 @@ const BurrowView := preload("res://src/client/burrow_view.gd")   # its mound mes
 const FreezeWatchScript := preload("res://src/debug/freeze_watch.gd")
 const KIND_RUN := 0
 const KIND_DEER := 1
-const PELLET_COLOR := Color(0.24, 0.18, 0.11)
+const PELLET_COLOR := Color(0.44, 0.36, 0.22)   # dry rabbit pellets, khaki: they stand out on the dark scratched patch (Lane A 23 Nov: none seen)
 const DEER_PELLET_COLOR := Color(0.17, 0.13, 0.09)
 const SCRAPE_COLOR := Color(0.30, 0.22, 0.14)
 const PRINT_COLOR := Color(0.20, 0.15, 0.10)
@@ -487,7 +487,7 @@ static func halo_alpha(level: int, c: Dictionary) -> float:
 	if level < from:
 		return 0.0
 
-	var span: Array = c.get("halo_alpha", [0.06, 0.28])
+	var span: Array = c.get("halo_alpha", [0.15, 0.4])
 	return lerpf(float(span[0]), float(span[1]), clampf(float(level - from) / maxf(100.0 - float(from), 1.0), 0.0, 1.0))
 
 
@@ -523,7 +523,7 @@ func _lay(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> void:
 		"latrine", "droppings":
 			var span: Array = cfg.get("latrine_pellets" if kind == "latrine" else "droppings_pellets", [8, 15])
 			var count: int = int(span[0]) + int(_h01(spot, 20) * float(int(span[1]) - int(span[0]) + 1))
-			var big: float = 1.0 if kind == "latrine" else 1.4
+			var big: float = (1.0 if kind == "latrine" else 1.4) * float(cfg.get("pellet_scale", 1.0))
 			var y: float = _heap_ground(spot)
 
 			if is_nan(y):
@@ -563,7 +563,8 @@ func _lay(kind: String, spot: Vector2, yaw: float, rows: Dictionary) -> void:
 				var y6: float = _heap_ground(at3)
 
 				if not is_nan(y6):
-					var big2: float = 0.85 + 0.35 * _h01(spot, 44 + n)
+					var mound_span: Array = cfg.get("mound_scale", [0.85, 1.2])
+					var big2: float = lerpf(float(mound_span[0]), float(mound_span[1]), _h01(spot, 44 + n))
 					(rows["mound"] as Array).append([Vector3(at3.x, y6 - BurrowView.SINK, at3.y), a2 + PI, Vector3(big2, big2, big2)])   # the hole faces out from the warren's middle
 		"hops":   # a rabbit's hop in mud: the two long hind feet side by side ahead, the two small fore feet one behind the other
 			var sets: Array = cfg.get("hop_sets", [3, 4])
@@ -683,8 +684,8 @@ func _mesh(layer: String) -> Mesh:
 			return sphere
 		"latrine_bed":
 			var bed: CylinderMesh = CylinderMesh.new()
-			bed.top_radius = 0.3
-			bed.bottom_radius = 0.34
+			bed.top_radius = 0.4
+			bed.bottom_radius = 0.45
 			bed.height = 0.015
 			bed.radial_segments = 10
 			bed.rings = 1
@@ -780,7 +781,7 @@ func _glow(at: Vector3, size: float) -> void:
 	node.position = at + Vector3(0.0, 0.03, 0.0)
 	add_child(node)
 	var glow_s: float = float(cfg.get("glow_s", 4.0))
-	var peak: float = float(cfg.get("glow_alpha", 0.45))
+	var peak: float = float(cfg.get("glow_alpha", 0.6))
 	var tween: Tween = node.create_tween()
 	tween.tween_property(material, "albedo_color:a", peak, glow_s * 0.15)
 

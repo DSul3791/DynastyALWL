@@ -11,7 +11,7 @@ Find sign, read it, follow the trail, spot the animal (trails end at beds and wa
 
 ## What changed
 - **Signs for everyone** (data/look/trail_signs.json everyone_note): every kind shows from the first level within 15 m (30 m at 100).
-  From Tracking 10 a faint steady pale patch lies under each shown sign, growing to 0.28 alpha at 100, lit like the ground (no marker at
+  From Tracking 10 a faint steady pale patch lies under each shown sign, growing to 0.4 alpha at 100 (0.15 at 10; Lane A 23 Nov: the first values did not show), lit like the ground (no marker at
   night). Spotting (glow, sound, XP) unchanged, now from the first level (server_traps reads see_level 0).
 - **Deer beds**: 2-3 ovals of 1.5 x 0.8 m within 1.5-3.5 m of each deer trail's home, pressed into the run map (grass_view
   _press_beds), so grass lies flat and worn earth bares the litter; a sign for spotting and reading.
