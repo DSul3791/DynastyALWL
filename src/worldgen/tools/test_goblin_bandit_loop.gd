@@ -226,22 +226,22 @@ func _tribe() -> void:
 	items.peer_connected_hello(1, DAVE)
 	items.peer_connected_hello(2, ANNA)
 	var clock: Array = [50.0 * DAY]
-	var tr = TribesScript.new()
-	tr.items = items
-	tr.game_seconds = func(): return clock[0]
-	tr.players = func() -> Array: return []
-	tr.setup(dir)
-	items.rep_key = tr.rep_id
-	var att: Dictionary = tr.attitude("ragtooth")
+	var tribe1 = TribesScript.new()
+	tribe1.items = items
+	tribe1.game_seconds = func(): return clock[0]
+	tribe1.players = func() -> Array: return []
+	tribe1.setup(dir)
+	items.rep_key = tribe1.rep_id
+	var att: Dictionary = tribe1.attitude("ragtooth")
 	var gain: int = int(att["trade_rep"])
-	tr.note_deal(1, "skritch")
-	tr.note_deal(1, "rukz")
-	tr.note_deal(2, "skritch")
+	tribe1.note_deal(1, "skritch")
+	tribe1.note_deal(1, "rukz")
+	tribe1.note_deal(2, "skritch")
 	var dave_rep: int = items.rep_points(1, "skritch")
 	var anna_rep: int = items.rep_points(2, "skritch")
 	check(dave_rep == gain and anna_rep == gain, "a deal gives each their own standing, once a game day for the tribe (%d, %d; trade_rep %d)" % [dave_rep, anna_rep, gain])
-	tr.harm(1, "snag")
-	check(tr.angry("ragtooth", DAVE) and not tr.angry("ragtooth", ANNA), "Dave strikes Snag: the tribe is angry with him only")
+	tribe1.harm(1, "snag")
+	check(tribe1.angry("ragtooth", DAVE) and not tribe1.angry("ragtooth", ANNA), "Dave strikes Snag: the tribe is angry with him only")
 	check(said.any(func(s): return str(s).contains("will not deal with you") and str(s).contains("The Ragtooth goblins")), "he is told, with the tribe's name from the data (%s)" % str(said))
 	var tr2 = TribesScript.new()
 	tr2.items = items
@@ -311,9 +311,9 @@ func _bandits() -> void:
 	b.clear_camp = func(_k, _ids): pass
 	b.drop_gear = func(_g, _at): pass
 	b.tell = func(peer, text): said.append([peer, str(text)])
-	b.pay_bounty = func(peer, copper): paid.append([peer, copper])
-	b.take_coins = func(peer, copper):
-		asked.append([peer, copper])
+	b.pay_bounty = func(peer, coins): paid.append([peer, coins])
+	b.take_coins = func(peer, coins):
+		asked.append([peer, coins])
 		return false
 	var guard: Vector3 = Vector3(spot.x + 6.0, 50.0, spot.y)
 	b.guards_at = func(): return [guard]
