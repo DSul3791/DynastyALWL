@@ -89,6 +89,22 @@ func _init() -> void:
 	check(absf(a.fog_floor(in_basin) - 200.0) < 1.0 and near(a.fog_v(in_basin), full_v), "through the server: the basin's floor (%.0f m) and its fog" % a.fog_floor(in_basin))
 	check(near(a.fog_floor(Vector3(0.0, 220.0, 0.0)), 0.0) and near(a.fog_v(Vector3(0.0, 220.0, 0.0)), clear_v), "outside every window: sea level, so 220 m up is clear")
 	a._fog_grounds = []
+	# Sea cut off (the fen flats, Lane A 22 Nov 2026): a window with open sea bed west of column 16, flats at 0.3 m, a hollow at -0.4 m.
+	var flats := PackedFloat32Array()
+	flats.resize(n * n)
+
+	for j in range(n):
+		for i in range(n):
+			flats[j * n + i] = -10.0 if i < 16 else (-0.4 if i >= 40 and i <= 44 and j >= 40 and j <= 44 else 0.3)
+
+	var coast = FogGroundScript.new()
+	coast.grid = FogGroundScript.build_grid(flats, fresh, n, Vector2(5000.0, 5000.0))
+	var cell_at: Callable = func(i: int, j: int) -> Vector2: return Vector2(5000.0, 5000.0) + Vector2((float(i) + 0.5) * FogGroundScript.CELL_M, (float(j) + 0.5) * FogGroundScript.CELL_M)
+	check(not a.sea_cut_off(cell_at.call(42, 42).x, cell_at.call(42, 42).y), "no window: the old rule, ground below 0 m is sea")
+	a._fog_grounds = [coast]
+	check(a.sea_cut_off(cell_at.call(42, 42).x, cell_at.call(42, 42).y), "a hollow below sea level cut off from the sea is not sea")
+	check(not a.sea_cut_off(cell_at.call(8, 42).x, cell_at.call(8, 42).y), "the open sea is sea")
+	a._fog_grounds = []
 	# Along the line: both ends in the fog is the full fog; a player on the clear slope above sees and is seen through half of it.
 	a._read_weather({"wind": 0.0, "mist": 1.0, "mist_depth_m": 50.0}, 0.1)
 	var both_in: Vector3 = a.fog_shape_between(Vector3.ZERO, Vector3(40.0, 10.0, 0.0))
