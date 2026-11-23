@@ -75,7 +75,7 @@ func _init() -> void:
 		_check_sites(names)
 		return
 
-	# One-shots: play, cooldown on the table group, skip beyond 30 m, voice cap and priority.
+	# One-shots: play, cooldown on the table group, skip beyond 30 m (an animal step 60 m), voice cap and priority.
 	var origin: Vector3 = Vector3.ZERO
 	check(slots.play("door_wood_open", Vector3(2, 0, 0), origin), "a near door plays")
 	check(not slots.play("door_wood_open", Vector3(40, 0, 0), origin), "a source beyond 30 m is skipped, not played quietly")
@@ -84,6 +84,29 @@ func _init() -> void:
 	check(not slots.play("wolf_step", Vector3(2, 0, 0), origin), "a creature step (low priority) waits when the voices are full")
 	check(slots.play("door_iron_close", Vector3(2, 0, 0), origin), "a door (high priority) still plays when the voices are full")
 	stage.playing = 0
+	var before: int = slots.get_child_count()
+	check(slots.play("wolf_step", Vector3(45, 0, 0), origin), "an animal's step 45 m off still plays (creature steps reach %.0f m)" % SlotSounds.CREATURE_STEP_REACH_M)
+	var step_voice: Node = slots.get_child(slots.get_child_count() - 1) if slots.get_child_count() > before else null
+	check(step_voice is AudioStreamPlayer3D and is_equal_approx((step_voice as AudioStreamPlayer3D).max_distance, SlotSounds.CREATURE_STEP_REACH_M) and is_equal_approx((step_voice as AudioStreamPlayer3D).unit_size, SlotSounds.CREATURE_STEP_UNIT_M),
+			"its voice has the creature step unit and reach (level pass 23 Nov 2026)")
+	check(not slots.play("wolf_step", Vector3(SlotSounds.CREATURE_STEP_REACH_M + 5.0, 0, 0), origin), "past that reach it is skipped")
+	var herd: int = 0
+
+	for kind in ["deer", "duck", "fox", "horse", "donkey", "lynx", "elk", "bighorn"]:
+		herd += 1 if slots.play(kind + "_step", Vector3(5, 0, 0), origin) else 0
+
+	check(herd == SlotSounds.CREATURE_STEP_VOICES and slots._step_voices.size() == SlotSounds.CREATURE_STEP_VOICES
+			and not slots._step_voices.any(func(v) -> bool: return is_equal_approx((v.get_meta("at") as Vector3).x, 45.0)),
+			"a herd's steps sound at most %d at once, and a near one took the place of the wolf 45 m off (%d of 8 played)" % [SlotSounds.CREATURE_STEP_VOICES, herd])
+	check(slots.play("chamois_step", Vector3(2, 0, 0), origin) and slots._step_voices.size() == SlotSounds.CREATURE_STEP_VOICES, "at the cap a nearer step still gets in")
+	check(not slots.play("goat_step", Vector3(30, 0, 0), origin), "a step farther than every one sounding still waits")
+	var sounding: Array = slots._step_voices.duplicate()
+	check(not slots.play("chamois_step", Vector3(1, 0, 0), origin) and slots._step_voices == sounding, "a nearer step refused by its cooldown cuts nothing short")
+
+	for voice in slots._step_voices:
+		voice.queue_free()   # they end: the footfall checks below start with room
+
+	slots._step_voices.clear()
 	check(slots.loaded_clips > 0 and slots.loaded_bytes > 0, "clips load on first use (%d clips, %.2f MB)" % [slots.loaded_clips, float(slots.loaded_bytes) / 1048576.0])
 	check(slots.loaded_clips < clips, "not every clip was loaded by touching a few slots (lazy)")
 
@@ -208,6 +231,8 @@ func _check_ambience() -> void:
 	night["season"] = "winter"
 	check(Ambience.choose_bed(slots, "time_bed", night) == "bed_night", "a winter night gets the general night bed")
 	check(float(Ambience.BED_TRIM_DB["bed_night"]) <= -32.0, "the night bed sits at -32 dB or lower (Dave 4 Nov: still always too loud at -18)")
+	check(float(Ambience.BED_TRIM_DB.get("bed_crickets", 0.0)) <= -14.0 and float(Ambience.BED_TRIM_DB.get("bed_desert_wind", 0.0)) <= -11.0,
+			"the cricket and desert wind beds sit under an animal's step at 20 m (level pass 23 Nov 2026: -14 and -11 dB)")
 	var item_fx: GDScript = load("res://src/client/item_sounds.gd")
 	check(item_fx.get_script_method_list().all(func(m): return m["name"] != "watch_vitals") and not FileAccess.file_exists("res://assets/audio/cooking/stomach_growl_0.ogg"), "the stomach growl is gone (Dave 4 Nov: the odd repeating noise)")
 	check(Ambience.choose_bed(slots, "time_bed", summer_forest) == "", "no time bed by day")
