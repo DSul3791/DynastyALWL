@@ -4263,7 +4263,9 @@
 		"brush_noise_per_ms": 0.04,
 		"brush_crouch_share": 0.5,
 		"brush_moving_ms": 0.5,
-		"noise_sample_s": 0.25
+		"noise_sample_s": 0.25,
+		"action_heard_x": {"blow": 1.4, "hurt": 1.25, "dig": 1.25, "craft": 1.1},
+		"action_heard_note": "Hearing-range pass (23 Nov 2026, docs/SOUND_MAP.md 'Who hears what, how far'): for LOUD_HOLD_MS (5 s) after an axe or pick blow, a cry of pain, a shovel dig or a craft's work (server_action_cues.gd loud_kinds) an animal senses that player this many times farther, whatever their stance or cover (it never makes them nearer than they would seem anyway). Kept at or under far_factor, past which no player is sensed. A deer (notice 60, flee 35) notices a woodcutter at 84 m and runs from 49 m; a rabbit (24, 14) at 34 and 20."
 	},
 	"blood": {
 		"every_m": 3.0,
