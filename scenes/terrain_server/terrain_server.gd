@@ -231,6 +231,7 @@ var _edit_by: int = 0                  # the admin whose dig this is (_on_dig_re
 var _edits_held: Dictionary = {}        # peer -> [[centre, radius, material (-1 = a dig)], ...] oldest first, not yet sent to that player
 var _events = EventLogScript.new()      # user://server_events.log: peers, stalls, quit reason (why a client was dropped)
 var _report_at_msec: int = 0
+var _last_report: String = ""   # the 10 s status lines as last printed: unchanged, they are not printed again (Dave's server log, 23 Nov 2026)
 var _usable_cpus: int = 1               # CPUs this process may use (cpu_budget.gd: a container's limit counts)
 var _idle_threads: int = 2             # idle builder threads (--idle-threads=N, 0 turns it off)
 var _idle_workers: Array = []
@@ -3363,12 +3364,16 @@ func _process(delta: float) -> void:
 
 	if now >= _report_at_msec:
 		_report_at_msec = now + 10000
-		_print_off_main("server: %d urgent and %d prefetch queued; generated %d, cache hits %d, edit hits %d; flora chunks %d made, %d from memory; idle-built %d columns; bad blocks %d, failed tile loads %d" % [
+		var report: String = "server: %d urgent and %d prefetch queued; generated %d, cache hits %d, edit hits %d; flora chunks %d made, %d from memory; idle-built %d columns; bad blocks %d, failed tile loads %d" % [
 			queued[0], queued[1], store.blocks_generated, store.cache_hits, store.edit_hits, flora.chunks_made, flora.memory_hits, _idle_built, store.bad_blocks, generator.failed_tiles
-		])
+		]
 
 		if _link != null and _link.blocks_out > 0:
-			_print_off_main("server: %d blocks sent on the block line (%.1f MB)" % [_link.blocks_out, float(_link.bytes_out) / 1048576.0])
+			report += "\nserver: %d blocks sent on the block line (%.1f MB)" % [_link.blocks_out, float(_link.bytes_out) / 1048576.0]
+
+		if report != _last_report:   # an idle server printed the same two lines every 10 s
+			_last_report = report
+			_print_off_main(report)
 
 	if _quit_when_empty and _quit_at_msec < 0:
 		if not _peers.is_empty():
