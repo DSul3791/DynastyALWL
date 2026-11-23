@@ -465,6 +465,7 @@ func _ready() -> void:
 	players.send_flight = func(peer, number, from, velocity, fire): net.flight_seen.rpc_id(peer, number, from, velocity, fire)
 	items.send_flight = players.flight
 	players.send_look = func(peer, about, char_name, body, code, worn_numbers): net.player_look.rpc_id(peer, about, char_name, body, code, worn_numbers)
+	net.position_reported.connect(players.note_move)   # before facing_reported (report_position emits both, position first): the row's time
 	net.facing_reported.connect(players.note_report)
 	cues = CuesScript.new()   # other players' blows, picks and crafts heard nearby (protocol 156)
 	cues.items = items
@@ -3299,7 +3300,7 @@ func _process(delta: float) -> void:
 	if store == null:
 		return
 
-	game_clock.advance(delta)
+	game_clock.follow(Time.get_ticks_usec())   # real time, not the clipped frame delta (game_clock.gd follow)
 	var frame_now: int = Time.get_ticks_msec()
 
 	if _last_frame_msec > 0 and frame_now - _last_frame_msec >= IDLE_YIELD_GAP_MS:
