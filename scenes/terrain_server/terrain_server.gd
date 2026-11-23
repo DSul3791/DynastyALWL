@@ -1050,6 +1050,7 @@ func _ready() -> void:
 	multiplayer.multiplayer_peer = server_peer
 	# Every client passes the join handshake before it counts as connected: an open server lets it straight through, a server with a password
 	# checks it first (server_auth.gd). Until then the client gets no welcome and none of its calls are heard.
+	_auth.protocol = NetScript.PROTOCOL_VERSION   # a client of another protocol is told why at the first word (161), before any call it would misread
 	_auth.password_hash = _server_settings.password_hash
 	_auth.salt = _server_settings.salt
 	_auth.address_of = func(peer: int) -> String: return server_peer.get_peer(peer).get_remote_address() if server_peer.get_peer(peer) != null else "?"
@@ -1158,10 +1159,16 @@ func _ready() -> void:
 	net.dump_requested.connect(_on_dump_requested)
 	@warning_ignore("confusable_local_declaration")
 	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at):
+		var store_was: Array = []
+
 		if cues != null:
 			cues.note_action(peer, kind, a, b, count, at)   # before the action: a carcass's last cut or the blow that breaks the tool still reads what was there
+			store_was = cues.store_before(peer, kind, b)
 
 		items.action(peer, kind, a, b, count, at)
+
+		if cues != null and not store_was.is_empty():
+			cues.store_after(peer, kind, a, b, store_was)   # after: a container is heard only when the server let the open, close, put or take through
 
 		if players != null:
 			players.note_action(peer, kind))

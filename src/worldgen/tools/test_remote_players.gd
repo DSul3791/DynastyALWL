@@ -620,6 +620,38 @@ func _check_holds() -> void:
 	check(spears > 0, "a spear was among the held items")
 
 
+# Robots 23 Nov 2026: a player 70 m off lay down and was drawn standing (bodies past QUARTER_M are not animated, and the clip stayed idle).
+# Far off the body still takes the lying, sitting or swimming pose when the state says so, once, with no animation after.
+func _check_far_pose() -> void:
+	if not DynastyBodyScript.available():
+		return
+
+	var view: Node3D = PlayerViewScript.new()
+	view.table = ItemTableScript.load_default()
+	get_root().add_child(view)
+	var at: Vector3 = Vector3(1000.0, 30.0, 1000.0)
+	var camera: Camera3D = Camera3D.new()
+	get_root().add_child(camera)
+	camera.position = at + Vector3(0.0, 1.6, PlayerViewScript.QUARTER_M + 30.0)
+	camera.make_current()
+	view.on_look(9, "Far", "body_1", "", PackedInt32Array())
+	var ms: int = 90000
+	var clips: Array = []
+
+	for stance in [0, 3, 2, 0]:
+		for i in range(12):
+			ms += 125
+			view.on_rows(PackedInt32Array([9]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([stance | (PlayerViewScript.ASLEEP if stance == 3 else 0)]), PackedInt32Array([0]), PackedInt32Array([ms]))
+			await process_frame
+
+		var b: Dictionary = view._bodies.get(9, {})
+		clips.append(str(b["rig"].call("current")) if not b.is_empty() else "")
+
+	check(clips == ["idle", "lie", "sit", "idle"], "a far player lying down, then sitting, then up, is drawn so (%s)" % ", ".join(clips))
+	view.queue_free()
+	camera.queue_free()
+
+
 # Robots 23 Nov 2026: another player's spear read 0.33 m off the running hand. The hand mount is on a BoneAttachment3D, which follows the
 # bones only at the skeleton's deferred update, so straight after a step of the clip it still held the last step's hand (and aim_spear
 # turned the spear by that). player_view.gd follow_hand moves it to this step's hand first.
@@ -667,5 +699,6 @@ func _init() -> void:
 	await _check_lossy(3000, 3500)   # the stop inside the burst: it walks on a little, then is eased back to the last point
 	await _check_holds()
 	await _check_hand_follows()
+	await _check_far_pose()
 	print("test_remote_players: ", "PASS" if failures == 0 else "%d failures" % failures)
 	quit(1 if failures > 0 else 0)
