@@ -3887,6 +3887,7 @@ func _cut_nearest_tree() -> void:
 # terrain made no headway at about one walk in seven past trees near the town, touching only the floor; standing at that pace stuck as often,
 # so it is the pace, not the crouched shape. With 1 cm it never stuck (the --crouchwalk check, tools/items_check.py).
 const PLAYER_SAFE_MARGIN_M := 0.01
+var _slide_carry: Vector3 = Vector3.ZERO   # see _carry_slide
 
 
 func _make_player(root: Node3D, start: Vector3) -> void:
@@ -5642,8 +5643,19 @@ func _move_player(delta: float) -> void:
 		var was_on_floor: bool = body.is_on_floor()
 		var tm: int = Probe.start()
 		var wanted_move: Vector3 = body.velocity
+		var slide_from: Vector3 = body.global_position
+		var carrying: bool = was_on_floor and not swimming and not waiting_for_ground and delta > 0.0
+
+		var carried: Vector3 = _slide_carry / delta if carrying else Vector3.ZERO
+		body.velocity += carried
 		body.move_and_slide()
+		body.velocity -= carried   # the pace the animation, sounds and ice grip read stays the walker's own
 		Probe.stop("p slide", tm)
+
+		if carrying:
+			_carry_slide(slide_from, Vector3(wanted_move.x, 0.0, wanted_move.z) * delta)
+		else:
+			_slide_carry = Vector3.ZERO
 
 		if items != null and not swimming and not waiting_for_ground:
 			# Loose logs are bodies in the server's physics, not in this world: the walker stops at one they walk into and pushes it (inventory_view.walker_logs).
@@ -5711,6 +5723,25 @@ func _climb_ladder(delta: float, strain_cap: float) -> bool:
 
 
 # Walking or running into something you can step over (a log, a stone, a low stump): you hop onto it and keep going.
+# Dave 23 Nov 2026, crouched "like I was against an invisible wall but if I stood up I could walk": on the voxel terrain under Jolt a
+# move_and_slide of only a few millimetres on the floor (a slow crouch, a loaded or tired walker) often goes nowhere at all, though nothing
+# but the floor is touched. When a floor move made under 30% of the asked headway and no wall stopped it, the asked move is carried into the
+# next frame's, so the body moves in steps of a centimetre or two instead of standing still. A real wall clears the carry (it stops you as
+# before); SLIDE_CARRY_MAX_M caps it.
+const SLIDE_CARRY_MAX_M := 0.05
+
+
+func _carry_slide(from: Vector3, asked: Vector3) -> void:
+	var want: Vector3 = asked + _slide_carry
+	var got: float = Vector2(body.global_position.x - from.x, body.global_position.z - from.z).length()
+
+	if asked.length_squared() < 0.00000001 or body.is_on_wall() or got >= want.length() * 0.3:
+		_slide_carry = Vector3.ZERO
+		return
+
+	_slide_carry = (_slide_carry + asked).limit_length(SLIDE_CARRY_MAX_M)
+
+
 # The step height is data/movement.json step_up_m. Anything higher is a wall and move_and_slide slides along it.
 func _step_up(motion: Vector3) -> void:
 	_step_lift += StepUpScript.try(body, motion, float(_movement.get("step_up_m", 0.5)))
@@ -7859,7 +7890,6 @@ func _ground_below(p: Vector3) -> float:
 	return float(hit["position"].y) if not hit.is_empty() else NAN
 
 
-# Puts the player 3 m west of the nearest tree with a trunk collider.
 # --crouchwalk: from 2 m before each of the nearest trees, 0.8 m to one side, a crouched walk at the crouch pace past it from four sides, 3 s each;
 # a walk that covers under 60 percent of its distance is stuck. Prints "crouch walk: N of M stuck" and ends the walk test.
 var _crouch_trees: Array = []
@@ -7892,16 +7922,21 @@ func _crouch_walk_start() -> void:
 
 
 func _crouch_walk_step(now: int) -> void:
-	var want: float = WALK_SPEED * float(StanceScript.SPEED[StanceScript.CROUCH]) * CROUCH_WALK_S
+	var want: float = (run_speed if run_speed > 0.0 else WALK_SPEED * float(StanceScript.SPEED[StanceScript.CROUCH])) * CROUCH_WALK_S
 
 	if _crouch_case >= 0 and float(now - _crouch_case_msec) < CROUCH_WALK_S * 1000.0:
 		return
 
-	if _crouch_case >= 0 and Vector2(body.global_position.x - _crouch_from.x, body.global_position.z - _crouch_from.z).length() < want * 0.6:
+	if _crouch_case >= 0 and not (Vector2(body.global_position.x - _crouch_from.x, body.global_position.z - _crouch_from.z).length() >= want * 0.6):   # NAN (no ground) counts as stuck
 		_crouch_stuck += 1
 		print("Terrain client: crouch walk: stuck at %s heading %s" % [str(body.global_position), str(_walk_dir)])
 
 	_crouch_case += 1
+
+	if _crouch_trees.is_empty():
+		print("Terrain client: crouch walk: no trees within 120 m, nothing tested")
+		_walk_phase = 4
+		return
 
 	if _crouch_case >= _crouch_trees.size() * 4:
 		print("Terrain client: crouch walk: %d of %d stuck" % [_crouch_stuck, _crouch_trees.size() * 4])
@@ -7922,6 +7957,7 @@ func _crouch_walk_step(now: int) -> void:
 	_walk_dir = toward
 
 
+# Puts the player 3 m west of the nearest tree with a trunk collider.
 func _place_by_tree() -> bool:
 	var here: Vector3 = body.global_position
 	var best: Array = []
