@@ -35,7 +35,7 @@ if (Test-Path -LiteralPath $site) { Remove-Item -LiteralPath $site -Recurse -For
 $downloads = Join-Path $site "downloads"
 foreach ($d in "images", "fonts", "downloads") { New-Item -ItemType Directory -Force -Path (Join-Path $site $d) | Out-Null }
 
-# The zip: the one make_release already made (testplayers\), or made here from the installer.
+# The zip: the one an older make_release made (testplayers\, before this script; tonight's builds from the frozen dev still do), or made here.
 $zipName = "Dynasty-build-$build.zip"
 $zip = Join-Path $downloads $zipName
 $made = Join-Path $Out "testplayers\$zipName"
