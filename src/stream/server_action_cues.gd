@@ -274,18 +274,24 @@ func _mark_loud(peer: int, name: String) -> void:
 # name still sounding, or "" for none. server_animals reads it on its noise sample (player_loud).
 func loud_kinds() -> Array:
 	var out: Array = []
-	var now: int = int(now_ms.call())
 
 	for peer in (items.peer_ids() if items != null else []):
-		var best: String = ""
-
-		for name in _loud.get(peer, {}):
-			if now < int(_loud[peer][name]) and (best == "" or int(LOUD_RANK.get(name, 0)) > int(LOUD_RANK.get(best, 0))):
-				best = str(name)
-
-		out.append(best)
+		out.append(loud_of(peer))
 
 	return out
+
+
+# The loudest LOUD_RANK name `peer` still sounds, or "" (the wolf packs ask by peer: server_wolves heard_of).
+func loud_of(peer: int) -> String:
+	var now: int = int(now_ms.call())
+	var ends: Dictionary = _loud.get(peer, {})
+	var best: String = ""
+
+	for name in ends:
+		if now < int(ends[name]) and (best == "" or int(LOUD_RANK.get(name, 0)) > int(LOUD_RANK.get(best, 0))):
+			best = str(name)
+
+	return best
 
 
 func forget(peer: int) -> void:

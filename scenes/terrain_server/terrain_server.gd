@@ -833,6 +833,7 @@ func _ready() -> void:
 	map_knowledge.setup(store_dir)
 	items.forgot_key = func(key): map_knowledge.forget_key(key)
 	animals.wolves.player_info = func(): return items.wolf_info()
+	animals.wolves.heard_of = func(peer): return animals.heard_x(cues.loud_of(peer))   # a pack hears loud work too (hearing-range pass)
 	# Every wild animal keeps out of a fire's or a torch's keep-off radius (Dave 6 Nov 2026). The fires come from _fire_spots, worked out from the world
 	# items FIRE_SPOTS_MS apart (_refresh_fire_spots): the animals asked for every fire's radius every frame, and each ask walked every record.
 	animals.wolves.fires = func(): return _fire_at

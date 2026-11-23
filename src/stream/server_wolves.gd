@@ -24,6 +24,7 @@ const DENS_FILE := "wolf_dens.json"
 var host                          # the animals module (animals, cfg, rng, ground_height, blocked, species_def, spawn, damage)
 var take_meat: Callable           # (peer) -> int: takes every piece of meat out of the pack, returns how many
 var player_info: Callable         # () -> Array of {peer, pos, stance, hp 0..1, meat bool, spear bool, torch bool}
+var heard_of: Callable            # (peer) -> how far that player's loud work carries (server_animals heard_x of server_action_cues loud_of; 0.0 none): a chopping player is noticed farther
 var fires: Callable               # () -> Array of Vector3, burning fires
 var hurt_player: Callable         # (peer, damage, lethal, cause, from: the biter's position, for a raised shield) -> "hurt" | "maimed" | "dead"
 var notice: Callable              # (peer, text)
@@ -455,9 +456,11 @@ func _prowl(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Arra
 		if in_town(info["pos"]):
 			continue   # the town keep-out: a player in town is not stalked
 
+		var heard: float = float(heard_of.call(int(info["peer"]))) if heard_of.is_valid() else 0.0
+
 		for m in members:
 			var d: float = Vector2(info["pos"].x - m["pos"].x, info["pos"].z - m["pos"].z).length()
-			var seen: float = d / host._sense_factor(m, def, info["pos"], d, int(info.get("stance", 0))) / (1.0 + boldness(pack, info["pos"]) * float(w.get("den_notice_gain", 1.0)))
+			var seen: float = d / host._sense_factor(m, def, info["pos"], d, int(info.get("stance", 0)), 1.0, heard) / (1.0 + boldness(pack, info["pos"]) * float(w.get("den_notice_gain", 1.0)))
 			calm = calm and seen > float(w.get("notice_m", 35.0)) * 2.0
 
 			if seen < best_d:
