@@ -864,7 +864,7 @@ func limp(percent: int) -> void:
 	limp_received.emit(percent)
 
 
-# Rain-soaked clothes (protocol 166, warmth.json soak_*, for the status strip): the soak in steps of 10 percent and whether the wind
+# Rain-soaked clothes (protocol 165, warmth.json soak_*, for the status strip): the soak in steps of 10 percent and whether the wind
 # cuts through it (body_703 wet_wind_say_*). At hello and on change, from the server's slow vitals tick.
 @rpc("authority", "call_remote", "reliable")
 func soak(percent: int, windy: bool) -> void:
