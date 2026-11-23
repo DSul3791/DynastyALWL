@@ -49,6 +49,11 @@ class FakeItems:
 	func carries_log(_peer: int) -> bool:
 		return false
 
+	var asleep: Dictionary = {}
+
+	func is_asleep(peer: int) -> bool:
+		return asleep.has(peer)
+
 	func held_number(peer: int) -> int:
 		return int(held.get(peer, 0))
 
@@ -114,6 +119,23 @@ func _server() -> void:
 	players.tick(0.2)
 	check(sent.size() >= 2, "unchanged rows go again after a second (%d)" % sent.size())
 
+	# Swings and sleep ride in the state byte's high bits (no new field): a blow is news at once, a walk or a craft is not a swing.
+	sent.clear()
+	players.note_action(2, 7)   # ACT_HIT
+	players.note_action(2, 1)   # ACT_MOVE: not a swing
+	fake.asleep = {2: true}
+	clock[0] = 2700
+	players.tick(0.2)
+	check(sent.size() == 1 and int(sent[0][0]) == 1, "a swing goes out to player 1 at the next send, with no new position")
+	check(sent.size() == 1 and (int(sent[0][4][0]) >> PlayersScript.SWING_SHIFT) == 1, "the swing count is 1 (a pack move is not a swing)")
+	check(sent.size() == 1 and (int(sent[0][4][0]) & PlayersScript.ASLEEP) != 0 and (int(sent[0][4][0]) & 3) == 1, "the asleep bit, the stance kept")
+	check(sent.size() == 1 and int(sent[0][6][0]) == 1400, "the row's time stays the position report's")
+	fake.asleep = {}
+	for i in range(8):
+		players.note_action(2, 8)   # ACT_MINE
+	check((int(players._swings[2][0])) == 1, "the swing count wraps at 8")
+	clock[0] = 2800
+
 	looks.clear()
 	players.worn_changed(2, PackedInt32Array([5, 0, 9]))
 	check(looks.is_empty(), "the same worn pieces send nothing")
@@ -124,7 +146,7 @@ func _server() -> void:
 	fake.pos.erase(2)
 	players.forget(2)
 	sent.clear()
-	clock[0] = 2700
+	clock[0] = 2900
 	players.tick(0.2)
 	check(sent.size() >= 1 and (sent[0][1] as PackedInt32Array).is_empty(), "a player who left is dropped from the rows")
 
@@ -226,6 +248,22 @@ func _client() -> void:
 	if DynastyBodyScript.available() and view._bodies.has(7):
 		var swim_clip: String = str(view._bodies[7]["rig"].current())
 		check(swim_clip.begins_with("swim"), "a swimming player plays the swim clip (%s)" % swim_clip)
+
+	# A blow (the swing count in the state's high bits moves on): the body plays the tool's work clip once, then goes back to its stance clip.
+	check(PlayerViewScript.work_clip(axe, table) == "chop" and PlayerViewScript.work_clip(table.number_of("stone_pickaxe"), table) == "pick_overhead" and PlayerViewScript.work_clip(table.number_of("wooden_spear"), table) == "jab", "the work clip follows the tool: chop, pick, jab")
+	view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([0]), PackedInt32Array([axe]), PackedInt32Array([t0 + 3200]))
+
+	for i in range(5):
+		await process_frame
+
+	view.on_rows(PackedInt32Array([7]), PackedVector3Array([at]), PackedFloat32Array([0.0]), PackedByteArray([1 << PlayerViewScript.SWING_SHIFT]), PackedInt32Array([axe]), PackedInt32Array([t0 + 3300]))
+
+	for i in range(3):
+		await process_frame
+
+	if DynastyBodyScript.available() and view._bodies.has(7):
+		var swing_clip: String = str(view._bodies[7]["rig"].current())
+		check(swing_clip == "chop", "a swing with the axe plays the chop (%s)" % swing_clip)
 
 
 # Dave 23 Nov 2026 on 9257: another player's spear "floating in the air almost sticking out of his chest". Every item with a hand look, on
