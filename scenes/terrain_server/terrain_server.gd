@@ -48,6 +48,7 @@ const NetSettings := preload("res://src/shared/net_settings.gd")
 const GameClockScript := preload("res://src/shared/game_clock.gd")
 const BogIronScript := preload("res://src/shared/bog_iron.gd")
 const SpawnPointScript := preload("res://src/shared/spawn_point.gd")
+const NpcCampScript := preload("res://src/shared/npc_camp.gd")   # Edda and Hob's fire: where a player rescued to the town wakes (_rescue_spots)
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
 const SwimScript := preload("res://src/shared/swim.gd")
 const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
@@ -4015,8 +4016,8 @@ func _exit_tree() -> void:
 # Known dangers for the island resource landscape's starting-island check (handoff 13: "use existing danger information where available"):
 # the camp of every goblin tribe that will not trade (its attitude's trades false) and every bandit site whose camp stands (stage 3), each
 # with boulders.json distribution danger_m round it. Read once at start; nothing new is made for it.
-# Where a player passed out from cold can be carried (Dave 23 Nov 2026): every goblin camp, every bandit camp, and the starter town's square
-# (data/npcs/markers.json "square", else the middle of the markers; never the spawn). Each spot is moved a few metres off a camp's fire and
+# Where a player passed out from cold can be carried (Dave 23 Nov 2026): every goblin camp, every bandit camp, and the starter town (Edda and
+# Hob's fire; without one the square of data/npcs/markers.json, else the middle of the markers; never the spawn). Each spot is moved a few metres off a camp's fire and
 # off any tree, onto the ground. Only the nearest to `near` is grounded (reading trunks and tiles for every camp stalled the main thread):
 # [[Vector3, "goblin" | "bandit" | "town"]], or [] when there is none. Not on the tick: only when someone passes out.
 func _rescue_spots(near: Vector3) -> Array:
@@ -4036,11 +4037,18 @@ func _rescue_spots(near: Vector3) -> Array:
 		if int(site.get("stage", 0)) >= int(bandits.CAMP):
 			out.append([Vector2(float(site.get("x", 0.0)) + off_m, float(site.get("z", 0.0))), "bandit"])
 
-	var town: Vector2 = animals.town
+	# The town: beside Edda and Hob's fire (it always burns), not on the square 19 m off it, out of its warmth (coordinator 23 Nov 2026: "you wake
+	# inside the warmth of its fire"). Its tree stands on the fire's west side (data/npcs/camp.json), so off_m east is clear of the trunk.
+	var town: Vector2 = NpcCampScript.fire_spot()
 
-	for row in npcs._read("res://data/npcs/markers.json").get("markers", []):
-		if str(row.get("kind", "")) == "square" and not row.has("npc"):
-			town = Vector2(float(row.get("x", 0.0)), float(row.get("z", 0.0)))
+	if town.x != INF:
+		town.x += off_m
+	else:
+		town = animals.town
+
+		for row in npcs._read("res://data/npcs/markers.json").get("markers", []):
+			if str(row.get("kind", "")) == "square" and not row.has("npc"):
+				town = Vector2(float(row.get("x", 0.0)), float(row.get("z", 0.0)))
 
 	if town.x != INF:
 		out.append([town, "town"])
@@ -4054,9 +4062,11 @@ func _rescue_spots(near: Vector3) -> Array:
 	return [] if best.is_empty() else [[_rescue_ground(best[0]), best[1]]]
 
 
+# A step off a tree or wet ground stays within search_m (warmth.json pass_out wake_search_m) of the spot, so the player still wakes in the fire's warmth.
 func _rescue_ground(at: Vector2) -> Vector3:
+	var search_m: float = float((items._warmth_cfg.get("pass_out", {}) as Dictionary).get("wake_search_m", 1.5))
 	var clear: Vector2 = SpawnPointScript.clear_of(at, _trunks_near(at, 32.0), func(x: float, z: float) -> float: return float(generator.surface_height(x, z)),
-		func(x: float, z: float) -> bool: return _baked_wet(x, z))
+		func(x: float, z: float) -> bool: return _baked_wet(x, z), {"search_m": search_m, "ring_m": 0.5, "clear_m": 1.0})
 	return Vector3(clear.x, maxf(generator.surface_height(clear.x, clear.y), 0.0) + 2.0, clear.y)
 
 

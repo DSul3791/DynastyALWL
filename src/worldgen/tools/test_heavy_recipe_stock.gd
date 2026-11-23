@@ -93,6 +93,14 @@ func _init() -> void:
 			on_ground += int(items._items[id]["count"])
 
 	check(on_ground == 1 and said.any(func(t): return str(t).begins_with("Too heavy to carry")), "the wheel is made from the chest's lumber; at %.0f kg it is too heavy for a bare back, so it is put down at the bench (%s)" % [CarryRules.weight_of("water_wheel", items._carry_cfg), str(said)])
+	var wheel_id: int = -1
+
+	for id in items._items:
+		if int(items._items[id].get("number", 0)) == n("water_wheel"):
+			wheel_id = id
+
+	items._expire_items(float(ItemsScript.WORLD_ITEM_LIFETIME_S) * 10.0)
+	check(wheel_id >= 0 and items._items.has(wheel_id), "the wheel put down at the bench never despawns: it is still there ten drop lifetimes later")
 	check(items._chest_of(1, chest).count_of(n("lumber")) == 0 and items.inventory_of(1).count_of(n("nails")) == 0, "every ingredient used once")
 	check(items._stock_of(1)["near"].size() >= 1, "and it counts as crafting stock where it lies")
 

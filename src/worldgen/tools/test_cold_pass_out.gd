@@ -162,5 +162,39 @@ func _init() -> void:
 		items.tick(1.0)
 
 	check(not items.passed_out(2) and died.filter(func(d): return int(d[0]) == 2).is_empty(), "no known position: never passed out or moved (%s)" % str(died))
+	# They wake inside the warmth of the place's own fire (coordinator 23 Nov 2026): off_fire_m off it, a step off a tree at most wake_search_m more,
+	# within the heat of every camp fire's wood (Edda and Hob's, each goblin tribe's; a bandit camp burns Edda's wood).
+	var NpcCamp = load("res://src/shared/npc_camp.gd")
+	var tiers: Dictionary = items._cooking["fire_tiers"]
+	var reach: float = float(cfg["off_fire_m"]) + float(cfg["wake_search_m"])
+
+	for fire in NpcCamp.fires():
+		check(reach <= float(tiers[str(fire["wood"])]["heat_radius_m"]), "%s fire (%s): waking %.1f m off it is inside its %.1f m of heat" % [str(fire["owner"]), str(fire["wood"]), reach, float(tiers[str(fire["wood"])]["heat_radius_m"])])
+
+	var server: String = FileAccess.get_file_as_string("res://scenes/terrain_server/terrain_server.gd")
+	check(server.contains("var town: Vector2 = NpcCampScript.fire_spot()"), "the town's wake spot is Edda and Hob's fire, not the square (a source check: the scene is not run here)")
+	died.clear()
+	said.clear()
+	var camp_fire: Vector3 = Vector3(600.0, 5.0, 0.0)
+	items._items[990001] = {"number": 1, "count": 1, "pos": camp_fire, "left": 1.0e9, "fire": {"state": int(tiers[NpcCamp.fire_wood()]["state"]), "burn_left": 1.0e9, "camp": 0, "covered": true, "recheck": 0.0}}
+	items.rescue_spots = func(_pos): return [[camp_fire + Vector3(float(cfg["off_fire_m"]), 0.0, 0.0), "town"]]
+	items.report_position(2, Vector3(560.0, 5.0, 0.0))
+	v = items.vitals_of(2)
+	v["warmth"] = 0.0
+	v["health"] = 1.0
+	ticks = 0
+
+	while died.filter(func(d): return int(d[0]) == 2).is_empty() and ticks < 600:
+		items.tick(1.0)
+		ticks += 1
+
+	var woke_hp: float = float(v["health"])
+	var woke_warmth: float = float(v["warmth"])
+
+	for t in 300:
+		items.tick(1.0)
+
+	check(not died.filter(func(d): return int(d[0]) == 2).is_empty() and float(v["warmth"]) > woke_warmth and float(v["health"]) >= woke_hp, "on a -25 C night they wake by the fire and it warms them (warmth %.0f to %.0f, health %.1f to %.1f in 5 minutes)" % [woke_warmth, float(v["warmth"]), woke_hp, float(v["health"])])
+	items._items.erase(990001)
 	print("cold pass out: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
