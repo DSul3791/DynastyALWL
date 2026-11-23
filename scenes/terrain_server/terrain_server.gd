@@ -1143,8 +1143,7 @@ func _ready() -> void:
 		for old_peer in items.peer_connected_hello(peer, identity.store_key(account)):
 			print("Peer %d is the same character as peer %d: the older connection is dropped" % [peer, old_peer])
 
-			if multiplayer.multiplayer_peer != null and _peers.has(old_peer):
-				multiplayer.multiplayer_peer.disconnect_peer(old_peer)
+			_drop_replaced(old_peer)
 
 		_slow_rpc("hello: peer_connected_hello", t0)
 		net.admin_status.rpc_id(peer, admin.is_admin(items.key_of(peer)))   # protocol 134: the client's Admin menu follows it
@@ -1402,6 +1401,20 @@ func _publish_status() -> void:
 
 # A stamped server and a client of another build (step A1, Dave 18 Nov 2026): the client is told why, gets nothing of the player's,
 # and is dropped a moment later so the reason arrives first.
+# The same character joined again on a new connection (a rejoin before the dropped line timed out, or a second window): the old one is told
+# why on its screen, then closed (its pack and spot already went to the new one, server_items.gd peer_connected_hello).
+func _drop_replaced(old_peer: int) -> void:
+	if not _peers.has(old_peer):
+		return
+
+	net.join_refused.rpc_id(old_peer, "This character joined the server again from another game window or computer, so this one was closed. Nothing was lost.")
+	await get_tree().create_timer(1.0).timeout
+
+	if multiplayer.multiplayer_peer != null and _peers.has(old_peer):
+		multiplayer.multiplayer_peer.disconnect_peer(old_peer)
+		_on_peer_disconnected(old_peer)   # forgotten now: a dead line never answers the close, so it stayed in the lists (and was sent to, 2,540 send errors in 6 min) until its 60 to 120 s timeout (robots 23 Nov 2026); the engine's own leave later finds nothing (a force close would skip that leave and keep the peer in the engine's list)
+
+
 func _refuse_join(peer: int, build: int, text: String) -> void:
 	if not _peers.has(peer) or _peers[peer].has("refused"):
 		return   # one refusal per connection, however many hellos it sends
@@ -1546,6 +1559,9 @@ func _is_connected_peer(peer_id: int) -> bool:
 
 
 func _on_peer_disconnected(peer_id: int) -> void:
+	if not _peers.has(peer_id):
+		return   # forgotten already (_drop_replaced): the engine's own leave of that line, a minute or two later
+
 	var info: Dictionary = _peers.get(peer_id, {})
 	print("Client %d left after %d blocks, %.1f MB; flora %.1f MB" % [
 		peer_id, int(info.get("blocks", 0)), float(info.get("bytes", 0)) / 1048576.0, float(info.get("flora_bytes", 0)) / 1048576.0

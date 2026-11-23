@@ -856,7 +856,8 @@ func _ready() -> void:
 			test_creatures = true
 
 	net.welcome_received.connect(_on_welcome)
-	net.join_refused_received.connect(_on_join_refused)
+	net.join_refused_received.connect(func(text: String) -> void:
+		_on_join_refused(text, "Joined from elsewhere" if text.contains("joined the server again") else "Update required"))   # terrain_server.gd _drop_replaced: not a version problem
 	net.blocks_received.connect(_on_blocks)
 	net.tile_changed_received.connect(_on_tile_changed)
 	net.edits_since_received.connect(_on_edits_since)
