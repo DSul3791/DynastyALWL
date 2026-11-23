@@ -56,7 +56,10 @@ const CLIP_MAP := {
 	# stretched after it. The last element is [impact in the source, new length, new impact time].
 	"swing": ["Heavy_Hammer_Swing", 0.5, -1.0, false, 1.0, [1.68, 0.7, 0.37]],
 	"swing_fp": ["Heavy_Hammer_Swing", 0.5, -1.0, false, 1.0, [1.68, 0.95, 0.5]],
-	"chop": ["Heavy_Hammer_Swing", 0.5, -1.0, false, 1.0, [1.68, 0.95, 0.5]],
+	# The chop (an axe on a trunk, a hammer on a site, every tool but the pick) lands at waist height: impact at 1.47 s (the hands at the hips' height
+	# coming down, the head 0.26 m lower than standing) and cut at 1.53 s. Taken at 1.68 s, the source's sledge into the ground, the body was bent double
+	# with the head at the knees through the whole second half (Lane A pictures S5 and S7, 23 Nov 2026: "reads as stooping or picking something up").
+	"chop": ["Heavy_Hammer_Swing", 0.5, 1.53, false, 1.0, [1.47, 0.95, 0.5]],
 	"pick_overhead": ["Heavy_Hammer_Swing", 0.5, -1.0, false, 1.0, [1.68, 1.0, 0.52]],
 	"jab": ["Right_Jab_from_Guard", 0.0, -1.0, false, 0.4],
 	"throw": ["Charged_Spell_Cast", 0.0, -1.0, false, 0.4],
@@ -368,6 +371,12 @@ func _build_animations() -> void:
 					_bow_aim(aim, skeleton, pose == "bow_drawn")
 					library.add_animation(game_name + "_" + pose, aim)
 
+			# The shield raised (B held, the more byte's shield flag): the same gait, the left forearm across before the chest (Lane A S3, 23 Nov 2026: it hung at the hip).
+			if game_name in SHIELD_UP_CLIPS:
+				var guard: Animation = made.duplicate(true)
+				_shield_up(guard, skeleton)
+				library.add_animation(game_name + "_shield_up", guard)
+
 		_libraries[model] = library
 		FreezeWatchScript.printer.line("dynasty body: %s clips for %s made in %d ms" % [library.get_animation_list().size(), model, Time.get_ticks_msec() - t0])
 
@@ -677,6 +686,29 @@ const BOW_RIGHT_UPPER_RAISED := Vector3(-0.35, -0.35, 0.87)
 const BOW_RIGHT_FORE_RAISED := Vector3(0.55, 0.3, 0.78)
 const BOW_RIGHT_UPPER_DRAWN := Vector3(-0.6, 0.12, -0.79)
 const BOW_RIGHT_FORE_DRAWN := Vector3(0.55, 0.2, 0.81)
+
+
+# The shield up: the LEFT upper arm forward and a little out, the elbow bent so the forearm lies across before the chest at shoulder height,
+# the fist to the right of the body's middle; the shield (player_view.gd) faces ahead from the fist. Skeleton space as _torch_carry; the wrist held still.
+const SHIELD_UP_CLIPS := ["idle", "walk", "jog", "run"]
+const SHIELD_UPPER := Vector3(0.35, -0.25, 0.9)
+const SHIELD_FORE := Vector3(-0.8, 0.35, 0.48)
+
+
+static func _shield_up(anim: Animation, skel: Skeleton3D) -> void:
+	if skel == null:
+		return
+
+	var chain: Array = ["Hips", "Spine", "Spine1", "Spine2", "LeftShoulder", "LeftArm"]
+	_aim_bone(anim, skel, chain, "LeftForeArm", SHIELD_UPPER)
+	_aim_bone(anim, skel, chain + ["LeftForeArm"], "LeftHand", SHIELD_FORE)
+	var wrist: int = _rot_track(anim, "LeftHand")
+
+	if wrist >= 0 and anim.track_get_key_count(wrist) > 0:
+		var still: Variant = anim.track_get_key_value(wrist, 0)
+
+		for k in range(1, anim.track_get_key_count(wrist)):
+			anim.track_set_key_value(wrist, k, still)
 
 
 static func _bow_aim(anim: Animation, skel: Skeleton3D, drawn: bool) -> void:
