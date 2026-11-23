@@ -330,12 +330,6 @@ func _count_steps(b: Dictionary, velocity: Vector3, delta: float, distance: floa
 
 	b["stride"] = travelled
 
-# A fall, from the drawn path between sent points (`path_v`, its own speed this frame): every frame the body sinks faster than SINK_MPS
-# the drop adds up; it is a fall once the sinking reached FALL_FROM_MPS and was steeper than 45 degrees (no walk down a slope does both),
-# so the first slow metre of a fall and a running leap count from the edge. When the sinking stops a fall of LAND_FROM_M or more is a
-# landing, heard at the feet within hearing. Not counted: frames drawn past the newest sent point (a lost report carries the body on,
-# then it is taken back) or after this computer's stall (`carried`: held, neither added nor ended); a leg faster than any fall (SNAP_MPS:
-# a teleport, an unstuck); going into water (a dive is a splash, not a thud) or swimming.
 # A frame the fall counter skips: past the newest sent point (a lost report carries the body on: a guess, later taken back), too few
 # points, or the drawn moment not moving on by about the frame (the lateness rose with a late batch and stepped it back or held it).
 static func fall_carried(samples: Array, drawn_at: float, path_dt: float, delta: float) -> bool:
@@ -345,6 +339,12 @@ static func fall_carried(samples: Array, drawn_at: float, path_dt: float, delta:
 	return path_dt <= 0.0 or absf(path_dt - delta) > 0.5 * delta
 
 
+# A fall, from the drawn path between sent points (`path_v`, its own speed this frame): every frame the body sinks faster than SINK_MPS
+# the drop adds up; it is a fall once the sinking reached FALL_FROM_MPS and was steeper than 45 degrees (no walk down a slope does both),
+# so the first slow metre of a fall and a running leap count from the edge. When the sinking stops a fall of LAND_FROM_M or more is a
+# landing, heard at the feet within hearing. Not counted: frames drawn past the newest sent point (a lost report carries the body on,
+# then it is taken back) or after this computer's stall (`carried`: held, neither added nor ended); a leg faster than any fall (SNAP_MPS:
+# a teleport, an unstuck); going into water (a dive is a splash, not a thud) or swimming.
 func _count_fall(b: Dictionary, path_v: Vector3, carried: bool, delta: float, distance: float) -> void:
 	if carried:
 		return
@@ -363,10 +363,10 @@ func _count_fall(b: Dictionary, path_v: Vector3, carried: bool, delta: float, di
 		if sink >= FALL_FROM_MPS and sink > flat:
 			b["falling"] = true
 		elif not bool(b.get("falling", false)):
-			# shortcut: a runner braking hard on ground steeper than 45 degrees could start a fall with up to this capped drop (rare: such
-			# ground is not walkable); a landing then reads a little high.
 			# Not yet a fall: no more than a body falling free drops before it sinks this steeply (a leap off at a run counts from the
 			# edge; a long walk down a slope before a ledge does not add up).
+			# shortcut: a runner braking hard on ground steeper than 45 degrees could start a fall with up to this capped drop (rare: such
+			# ground is not walkable); a landing then reads a little high.
 			var steep_at: float = maxf(FALL_FROM_MPS, flat)
 			drop_now = minf(drop_now, steep_at * steep_at / (2.0 * GRAVITY_MPS2))
 
