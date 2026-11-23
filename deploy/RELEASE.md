@@ -14,7 +14,7 @@ Server/client split plan steps C1 to C3 (`/mnt/project-files/server-client-split
 4. `deploy/server/Dockerfile`: the server image of the same build, stamped, saved as `dynasty-server-build-<N>.tar` with `compose.yaml` and `SERVER.md`.
 5. Only with `-Publish`: a GitHub Release `build-<N>` (marked pre-release) with the installer, made with `gh` (signed in on Dave's PC). The repository is public (Dave, 22 Nov 2026), so that is a public download of a game that holds the bought animal models: use it only on Dave's explicit yes. The default hand-off is the installer file on Dave's PC, shared by his own link.
 
-6. `tools/make_testplayers_page.ps1` (called by make_release): `testplayers\` with the installer zipped (`Dynasty-build-<N>.zip`) and the test players' download page `index.html` (build, size and SHA-256 filled in). Dave hosts it on his game server at https://hannibalshouse.duckdns.org/dynasty/testplayers/ (Dave 22 Nov 2026): `deploy/testplayers/HOSTING.md`.
+6. `tools/make_testplayers_site.ps1` (called by make_release): `site\`, the testers' site for Dave's own web server at https://hannibalshouse.duckdns.org/ (Dave 22-23 Nov 2026): the front page with Download latest, Submit a bug and Suggest an idea, the /download/ page, and the installer zipped as `downloads/Dynasty-build-<N>.zip`. `deploy/testplayers/SERVER.md` copies it up.
 
 Everything lands in `..\dynasty_export\build-<N>\`.
 

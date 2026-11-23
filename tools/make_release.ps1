@@ -135,8 +135,8 @@ try {
 	# shortcut: Inno Setup 6 under Wine from a community image (amake/innosetup, floating innosetup6 tag); revisit if it breaks or moves.
 	Run "installer (Inno Setup)" { docker run --rm -v "${out}:/work" amake/innosetup:innosetup6-bookworm dynasty.iss }
 	if (-not (Test-Path "$out\DynastySetup-$build.exe")) { throw "make_release: no DynastySetup-$build.exe in $out" }
-	# The test players' download page with the zipped installer (Dave 22 Nov 2026; deploy/testplayers/HOSTING.md puts it on his server).
-	& (Join-Path $PSScriptRoot "make_testplayers_page.ps1") -Out $out
+	# The testers' site with the zipped installer (Dave 22-23 Nov 2026; deploy/testplayers/SERVER.md puts it on his web server).
+	& (Join-Path $PSScriptRoot "make_testplayers_site.ps1") -Out $out
 
 	# The server image reuses the engine just built (deploy/server/engine/godot is gitignored) instead of compiling it again.
 	Copy-Item "$out\engine\godot" deploy\server\engine\godot -Force
@@ -158,5 +158,5 @@ finally {
 }
 
 Write-Host "make_release: build $build ready in $out"
-Write-Host "  players:        testplayers\ (index.html and Dynasty-build-$build.zip; deploy\testplayers\HOSTING.md), or DynastySetup-$build.exe"
+Write-Host "  players:        site\ (the testers' site with downloads\Dynasty-build-$build.zip; deploy\testplayers\SERVER.md), or DynastySetup-$build.exe"
 Write-Host "  gaming server:  dynasty-server-build-$build.tar, compose.yaml (docker load -i dynasty-server-build-$build.tar; docker compose -f compose.yaml up -d)"

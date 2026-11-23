@@ -3,16 +3,19 @@
 # Runs on Dave's PC in PowerShell after tools\make_release.ps1 (the build folder must hold DynastySetup-<N>.exe):
 #   powershell -ExecutionPolicy Bypass -File tools\make_testplayers_site.ps1 -Out ..\dynasty_export\build-<N>
 # Writes <Out>\site\, laid out exactly like /data/game-web/site/ on the server (Dave 23 Nov: players land on the page as soon as they log in):
-#   index.html                        the test players' page, https://hannibalshouse.duckdns.org/
-#   images\hero.jpg, fonts\           its picture and the menu fonts with their SIL OFL licence
+#   index.html                        the front page, https://hannibalshouse.duckdns.org/ (Download latest, Submit a bug, Suggest an idea)
+#   download\index.html               the download page with the install, join and report steps, /download/
+#   css\site.css, images\hero.jpg, fonts\   the look, shared with the bug and idea pages, and the menu fonts with their SIL OFL licence
 #   downloads\Dynasty-build-<N>.zip   the installer, zipped, https://hannibalshouse.duckdns.org/downloads/Dynasty-build-<N>.zip
 #   latest.json                       {"build", "zip", "size_mb", "sha256", "date"} for the bug and idea pages
 #   files.sha256                      every other file's SHA-256 with its path, for the check on the server (sha256sum -c)
-# Copy it up with the scp line it prints (deploy/testplayers/SERVER.md, which also has the one Caddyfile line for the login name). Nothing is uploaded from here and no password is written anywhere.
-# -Repo is the checkout whose deploy\testplayers and assets\ui\fonts are used; by default the one this script sits in.
+# Copy it up with the scp line it prints (deploy/testplayers/SERVER.md, which also has the two Caddyfile lines for the login name). Nothing is uploaded from here and no password is written anywhere.
+# -Repo is the checkout whose deploy\testplayers and assets\ui\fonts are used; by default the one this script sits in. -PagesFrom takes the page
+# files (index.html, download.html, site.css, hero.jpg) from another folder, such as a copy of deploy\testplayers.
 param(
 	[Parameter(Mandatory = $true)][string]$Out,
-	[string]$Repo = ""
+	[string]$Repo = "",
+	[string]$PagesFrom = ""
 )
 $ErrorActionPreference = "Stop"
 if (-not $Repo) { $Repo = Join-Path $PSScriptRoot ".." }
@@ -22,8 +25,8 @@ $build = (Split-Path $Out -Leaf) -replace '^build-', ''
 if ($build -notmatch '^\d+$') { throw "make_testplayers_site: $Out is not a build-<N> folder" }
 $setup = Join-Path $Out "DynastySetup-$build.exe"
 if (-not (Test-Path -LiteralPath $setup)) { throw "make_testplayers_site: no $setup; run tools\make_release.ps1 first" }
-$pages = Join-Path $Repo "deploy\testplayers"
-foreach ($f in "index.html", "hero.jpg") {
+$pages = if ($PagesFrom) { (Resolve-Path -LiteralPath $PagesFrom).ProviderPath } else { Join-Path $Repo "deploy\testplayers" }
+foreach ($f in "index.html", "download.html", "site.css", "hero.jpg") {
 	if (-not (Test-Path -LiteralPath (Join-Path $pages $f))) { throw "make_testplayers_site: no $f in $pages (use -Repo with a checkout that has it)" }
 }
 
@@ -56,17 +59,19 @@ function Fill([string]$html) {
 	return $html
 }
 
-# The page, with every link from the site root (the server's own layout notes ask for links that begin with "/").
-$page = [IO.File]::ReadAllText((Join-Path $pages "index.html"))
-# The login name, top right: Caddy's templates fill it in as the page is sent (SERVER.md, step 3); left as it is, the page hides it.
-$page = $page.Replace('data-user="{{USER}}"', 'data-user="@@USER@@"')
-$page = $page.Replace('href="{{ZIP}}"', 'href="/downloads/{{ZIP}}"').Replace('src="hero.jpg"', 'src="/images/hero.jpg"').Replace('url("fonts/', 'url("/fonts/')
-foreach ($want in 'href="/downloads/{{ZIP}}"', 'src="/images/hero.jpg"', 'url("/fonts/Cinzel-Bold.ttf")') {
-	if (-not $page.Contains($want)) { throw "make_testplayers_site: deploy\testplayers\index.html changed; the page has no $want after the link rewrite" }
-}
+# The pages (every link from the site root, as the server's own layout notes ask). The login name, top right: Caddy's templates fill it in
+# as a page is sent (SERVER.md, step 3); left as it is, the page hides it.
 $utf8 = New-Object System.Text.UTF8Encoding($false)   # UTF-8 without a byte order mark
-$page = (Fill $page).Replace("@@USER@@", '{{placeholder `http.auth.user.id` | html}}')
-[IO.File]::WriteAllText((Join-Path $site "index.html"), $page, $utf8)
+foreach ($pair in @(@("index.html", "index.html"), @("download.html", "download\index.html"))) {
+	$html = [IO.File]::ReadAllText((Join-Path $pages $pair[0])).Replace('data-user="{{USER}}"', 'data-user="@@USER@@"')
+	if (-not $html.Contains('data-user="@@USER@@"')) { throw "make_testplayers_site: deploy\testplayers\$($pair[0]) has no login name field" }
+	$html = (Fill $html).Replace("@@USER@@", '{{placeholder `http.auth.user.id` | html}}')
+	$to = Join-Path $site $pair[1]
+	New-Item -ItemType Directory -Force -Path (Split-Path $to -Parent) | Out-Null
+	[IO.File]::WriteAllText($to, $html, $utf8)
+}
+New-Item -ItemType Directory -Force -Path (Join-Path $site "css") | Out-Null
+Copy-Item -LiteralPath (Join-Path $pages "site.css") -Destination (Join-Path $site "css")
 Copy-Item -LiteralPath (Join-Path $pages "hero.jpg") -Destination (Join-Path $site "images")
 foreach ($f in "Cinzel-Bold.ttf", "EBGaramond-Regular.ttf", "EBGaramond-SemiBold.ttf", "FONTS_LICENSE.md") {
 	Copy-Item -LiteralPath (Join-Path $Repo "assets\ui\fonts\$f") -Destination (Join-Path $site "fonts")
@@ -85,6 +90,6 @@ foreach ($file in Get-ChildItem -LiteralPath $site -Recurse -File | Sort-Object 
 [IO.File]::WriteAllText((Join-Path $site "files.sha256"), (($lines -join "`n") + "`n"), $utf8)
 
 Write-Host "make_testplayers_site: $site"
-Write-Host "  index.html, images\hero.jpg, fonts\, files.sha256, downloads\$zipName ($sizeMb MB, SHA-256 $hash)"
+Write-Host "  index.html, download\, css\, images\, fonts\, latest.json, files.sha256, downloads\$zipName ($sizeMb MB, SHA-256 $hash)"
 Write-Host "  copy it up (deploy\testplayers\SERVER.md step 2; type the password when scp asks):"
-Write-Host "  Set-Location `"$site`"; scp -r index.html latest.json files.sha256 images fonts downloads `"dave@dell-gameserver-01:/data/game-web/site/`""
+Write-Host "  Set-Location `"$site`"; scp -r index.html latest.json files.sha256 download css images fonts downloads `"dave@dell-gameserver-01:/data/game-web/site/`""

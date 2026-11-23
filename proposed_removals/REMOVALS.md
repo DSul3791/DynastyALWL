@@ -188,3 +188,8 @@ Preservation/reader receipts: independent review PASS on exact tree `09c98947328
 | path (under proposed_removals/) | who | date | why | replaced by |
 |---|---|---|---|---|
 | src/client/problem_report.gd, problem_report.gd.uid, src/worldgen/tools/test_problem_report.gd, test_problem_report.gd.uid | Claude, first-hour thread | 22 Nov | in-game report file and bug-form button (#1567), against the plan: testers report on GitHub only | DynastyALWL-QA issue forms (bug.yml, idea.yml) |
+
+## Old test players' page, 23 Nov 2026 (Dave 23 Nov 2026: his own Caddy web server on dell-gameserver-01, the page is the site's front page)
+| path (under proposed_removals/) | who | date | why | replaced by |
+|---|---|---|---|---|
+| tools/make_testplayers_page.ps1, deploy/testplayers/HOSTING.md, Caddyfile, compose.web.yaml | Claude, packaging thread | 23 Nov | made and hosted the page in a /dynasty/testplayers/ folder on a web server we would set up; Dave set up his own, with its own login | tools/make_testplayers_site.ps1, deploy/testplayers/SERVER.md |
