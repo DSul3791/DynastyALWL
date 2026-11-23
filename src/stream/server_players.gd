@@ -109,6 +109,11 @@ func look_of(peer: int) -> Array:
 	return _looks.get(peer, [])
 
 
+# The body's facing (rotation.y, radians) from its last report, 0 when none (server_action_cues.gd: where its hands are).
+func yaw_of(peer: int) -> float:
+	return float(_yaw.get(peer, 0.0))
+
+
 func tick(delta: float) -> void:
 	_t += delta
 
