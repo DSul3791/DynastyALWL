@@ -293,9 +293,9 @@ func _check_taken_drawn() -> void:
 	var layer: int = grass.GRASS_LAYERS + 1
 	var cell: Vector2i = Vector2i(2, 3)
 	var buffer: PackedFloat32Array = PackedFloat32Array()
-	buffer.resize(32)
+	buffer.resize(48)
 
-	for n in range(2):   # two branches 1.2 m long along x, at x 12.5 and 14.5 (cell 6 m), z 19
+	for n in range(3):   # branches 1.2 m long along x, middles (13.1, 19), (15.1, 19) and (14.5, 19.3) (cell 6 m)
 		var o: int = n * 16
 		buffer[o] = 1.2
 		buffer[o + 5] = 1.0
@@ -304,17 +304,28 @@ func _check_taken_drawn() -> void:
 		buffer[o + 7] = 10.0
 		buffer[o + 11] = 19.0
 
+	buffer[35] = 13.9   # the third: 0.9 m from the taken point below, inside the 1.5 m reach
+	buffer[43] = 19.3
 	grass.today = 400
 	grass._cells[cell] = {"bufs": {layer: buffer.duplicate()}}
 	grass.take_branch(Vector3(13.6, 10.0, 19.3), 400)   # another client's middle for the first branch, half a metre off: its nearest is hidden
 	var after: PackedFloat32Array = grass._cells[cell]["bufs"][layer]
 	check(absf(after[0]) < 0.001 and absf(after[16] - 1.2) < 0.001, "a branch another player took is hidden here (the nearest one), the one beside it stays")
-	grass.take_branch(Vector3(13.1, 10.0, 19.0), 400)   # this client's own pick of that branch, echoed: already hidden, nothing more goes
+	grass.take_branch(Vector3(13.7, 10.0, 19.35), 400)   # the same point heard again (a few cm apart in floats): already done, nothing more goes
 	check(absf((grass._cells[cell]["bufs"][layer] as PackedFloat32Array)[16] - 1.2) < 0.001, "a point already done hides no second branch")
+	grass._hide_taken(cell)   # cells round it built again, twice, and the point told again as this player walks: still one branch gone
+	grass._hide_taken(cell)
+	grass.take_branch(Vector3(13.6, 10.0, 19.3), 400)
+	after = grass._cells[cell]["bufs"][layer]
+	check(absf(after[0]) < 0.001 and absf(after[32] - 1.2) < 0.001 and absf(after[16] - 1.2) < 0.001, "building round it again or hearing it again hides no second branch (gate review)")
+	check(((grass._taken_branches.values() as Array).reduce(func(a, l): return a + (l as Array).size(), 0) as int) == 1, "a point heard again is kept once")
+	grass.take_branch(Vector3(14.4, 10.0, 19.3), 400)   # another point 0.8 m off: it takes a branch of its own
+	after = grass._cells[cell]["bufs"][layer]
+	check(absf(after[0]) < 0.001 and absf(after[32]) < 0.001 and absf(after[16] - 1.2) < 0.001, "two points near each other hide two different branches")
 	grass._cells[cell] = {"bufs": {layer: buffer.duplicate()}}   # the cell built again with both
 	grass._hide_taken(cell)
 	after = grass._cells[cell]["bufs"][layer]
-	check(absf(after[0]) < 0.001 and absf(after[16] - 1.2) < 0.001, "and it stays hidden when its cell is built again")
+	check(absf(after[0]) < 0.001 and absf(after[32]) < 0.001 and absf(after[16] - 1.2) < 0.001, "and they stay hidden when the cell is built again")
 	grass.today = 401
 	grass._cells[cell] = {"bufs": {layer: buffer.duplicate()}}
 	grass._hide_taken(cell)
