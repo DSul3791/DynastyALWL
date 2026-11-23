@@ -302,7 +302,8 @@ var _fitness_cfg: Dictionary = {}
 var send_energy: Callable       # (peer, energy percent 0..100)
 var _energy_cfg: Dictionary = {}    # data/items/energy.json
 var _death_cfg: Dictionary = {}     # data/items/death.json
-var hit_animal_path: Callable        # (peer, from, to, damage) -> {"at": position} or {}: the first animal an arrow passes through is hurt (set by the server)
+var hit_animal_path: Callable        # (peer, from, to, damage, lag) -> {"at": position} or {}: the first animal an arrow passes through is hurt (set by the server); lag = the shooter's [seen, present] ms behind the server at the shot (shot_lag), [] for judged now
+var shot_seen: Dictionary = {}      # peer -> [seen ms, present ms] from ACT_SEEN, taken by that player's next shot or throw (shot_lag)
 var animal_alarm: Callable           # (point, radius): a loud noise (a shot) startles animals near it (set by the server)
 var strike_seen: Dictionary = {}    # peer -> [server ms its screen showed the animals at, the same for a committed charge] of its last blow (protocol 155; hit_animal reads it)
 var hit_animal: Callable            # (peer, origin, direction, reach, damage) -> {"at": the point struck} or {} (tests may answer a bool): set by the server, hits the animal in front
@@ -871,6 +872,8 @@ func peer_left(peer: int) -> void:
 	_peer_pos.erase(peer)
 	_known.erase(peer)
 	_last_throw.erase(peer)
+	strike_seen.erase(peer)
+	shot_seen.erase(peer)
 	_last_mine.erase(peer)
 	_last_dig.erase(peer)
 	_push_last.erase(peer)   # their last log push (ACT_PUSH_LOG)
@@ -1561,6 +1564,8 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		_relight(peer, inv, a, b)
 	elif kind == Net.ACT_PLACE_TORCH:
 		_place_torch(peer, inv, a, b == 1, count, at)
+	elif kind == Net.ACT_SEEN:
+		shot_seen[peer] = [b, count]
 	elif kind == Net.ACT_STRIKE:
 		strike_seen[peer] = [b, count]   # protocol 155: when its screen showed the animals (0 from a client that sends none: judged now)
 		_strike(peer, inv, a, at)
@@ -3471,7 +3476,20 @@ func _throw(peer: int, inv, slot: int, direction: Vector3) -> void:
 	var number: int = inv.numbers[slot]
 	var spent: int = inv.wear[slot] + 1
 	var thrown: Dictionary = inv.take_from_slot(slot, 1)
-	_flights.append({"number": number, "wear": spent, "inst": thrown["inst"], "peer": peer, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0})
+	_flights.append({"number": number, "wear": spent, "inst": thrown["inst"], "peer": peer, "pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": direction.normalized() * THROW_SPEED, "age": 0.0, "lag": shot_lag(peer, now)})
+
+
+# How far behind the server the shooter's screen showed the animals when it shot or threw (ACT_SEEN just before): [ms behind for a seen
+# animal, ms behind for a committed charge, or -1 when it sent none], or [] for judged now. The flight keeps it, so every step of an arrow
+# is judged where that player sees the animals at that moment (docs/design/ANIMAL_NETCODE.md "Fair hits"; at most rewind_max_ms back).
+func shot_lag(peer: int, now: int) -> Array:
+	var seen: Array = shot_seen.get(peer, [])
+	shot_seen.erase(peer)
+
+	if seen.size() < 2 or int(seen[0]) <= 0:
+		return []
+
+	return [now - int(seen[0]), now - int(seen[1]) if int(seen[1]) > 0 else -1]
 
 
 # ACT_SHOOT: one arrow from the bow in slot `slot`, drawn for `draw_ms` (never trusted: clamped), along `direction`. Plan 4b, data/items/bow.json.
@@ -3528,7 +3546,7 @@ func _shoot(peer: int, inv, slot: int, draw_ms: int, direction: Vector3, loaded:
 	var aflame: bool = bool(arrow.get("fire", false)) and not fire_cfg.is_empty() and _flame_near(_peer_pos[peer], float(fire_cfg.get("light_m", 3.0)))
 	var damage: float = _bow.damage(float(arrow.get("damage", 5.0)), power, level, bow_id) * (float(fire_cfg.get("damage_mult", 1.5)) if aflame else 1.0)
 	_arrows.append({"peer": peer, "number": number, "inst": shot_inst, "tip": str(arrow.get("tip", "wood")), "damage": damage, "fire": aflame,
-		"pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": aim * _bow.speed(power, bow_id), "flown": 0.0, "age": 0.0, "range": _bow.range_m(bow_id), "sticks": BowAim.sticks(_bow.cfg, bow_id)})
+		"pos": _peer_pos[peer] + Vector3(0.0, EYE_HEIGHT, 0.0), "vel": aim * _bow.speed(power, bow_id), "flown": 0.0, "age": 0.0, "range": _bow.range_m(bow_id), "sticks": BowAim.sticks(_bow.cfg, bow_id), "lag": shot_lag(peer, now)})
 
 	if animal_alarm.is_valid():
 		animal_alarm.call(_peer_pos[peer], float(_bow.cfg.get("noise_m", 40.0)) * (float(fire_cfg.get("alarm_mult", 2.0)) if aflame else 1.0))
@@ -3616,7 +3634,7 @@ func _arrow_fly(delta: float) -> void:
 			var stuck: bool = false
 
 			if hit_animal_path.is_valid():
-				var hit: Dictionary = hit_animal_path.call(int(ar["peer"]), from, to, float(ar["damage"]))
+				var hit: Dictionary = hit_animal_path.call(int(ar["peer"]), from, to, float(ar["damage"]), ar.get("lag", []))
 
 				if not hit.is_empty():
 					landed = true
@@ -3714,7 +3732,7 @@ func _fly(delta: float) -> void:
 		var throw_damage: float = float(table.entry(table.id_of(int(flight["number"]))).get("throw_damage", 0.0))
 
 		if throw_damage > 0.0 and hit_animal_path.is_valid() and flight.has("peer"):
-			var hit: Dictionary = hit_animal_path.call(int(flight["peer"]), from, flight["pos"], throw_damage)
+			var hit: Dictionary = hit_animal_path.call(int(flight["peer"]), from, flight["pos"], throw_damage, flight.get("lag", []))
 
 			if not hit.is_empty():
 				var at: Vector3 = hit["at"]
@@ -9998,7 +10016,7 @@ func _land_fall(stump_id: int, fall: Dictionary) -> void:
 			_crushed(int(peer), hurt)
 
 	if hit_animal_path.is_valid() and float(crush.get("animal", 0.0)) > 0.0:
-		hit_animal_path.call(fall["peer"] if fall["peer"] != null else 0, hinge + Vector3(0.0, 0.5, 0.0), tip + Vector3(0.0, 0.5, 0.0), float(crush.get("animal", 0.0)) * (0.3 if bool(fall["small"]) else 1.0))
+		hit_animal_path.call(fall["peer"] if fall["peer"] != null else 0, hinge + Vector3(0.0, 0.5, 0.0), tip + Vector3(0.0, 0.5, 0.0), float(crush.get("animal", 0.0)) * (0.3 if bool(fall["small"]) else 1.0), [])
 
 	# Down: each log is a body in the log space from here on (_wake_log), so one that came down on a rock, a stump, another tree's logs or a wall is
 	# pushed off it and rolls away the way physics says. Its own stump is left behind: the logs lie from just clear of it.

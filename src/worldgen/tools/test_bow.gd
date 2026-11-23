@@ -15,6 +15,7 @@ var passes: int = 0
 var failures: int = 0
 var said: Array = []
 var hits: Array = []
+var lags: Array = []
 var alarms: Array = []
 var deer_at: Vector3 = Vector3(0.0, 10.0, -20.0)
 
@@ -39,12 +40,13 @@ func make(dir: String):
 	items.send_world_items = func(_p, _a, _r): pass
 	items.send_notice = func(_p, text): said.append(text)
 	items.ground_height = func(_x, _z): return 10.0
-	items.hit_animal_path = func(_peer, from, to, amount) -> Dictionary:
+	items.hit_animal_path = func(_peer, from, to, amount, lag) -> Dictionary:
 		var seg: Vector3 = to - from
 		var t: float = clampf((deer_at + Vector3(0.0, 0.5, 0.0) - from).dot(seg) / maxf(seg.length_squared(), 0.000001), 0.0, 1.0)
 
 		if (from + seg * t).distance_to(deer_at + Vector3(0.0, 0.5, 0.0)) <= 0.6:
 			hits.append(amount)
+			lags.append(lag)
 			return {"at": deer_at}
 
 		return {}
@@ -98,6 +100,22 @@ func _init() -> void:
 	fly(items, 2.0)
 	check(items._arrows.is_empty() and hits.size() == 1, "the arrow ends its flight on the deer")
 	check(absf(float(hits[0]) - 8.0) < 0.5, "a full draw does the stone arrow's damage (%.1f)" % float(hits[0] if hits.size() > 0 else 0.0))
+
+	# Fair arrows (ACT_SEEN, docs/design/ANIMAL_NETCODE.md "Fair hits"): the server ms the archer's screen showed the animals at, sent just
+	# before the shot, goes with the arrow as how far behind it was, to every step's hit test; the next shot without one is judged now.
+	hits.clear()
+	lags.clear()
+	items.action(1, Net.ACT_ADMIN_GIVE, items.table.number_of("stone_arrow"), 0, 2, Vector3.ZERO)   # the two shots here: the counts below stay as they were
+	var seen_now: int = Time.get_ticks_msec()
+	items.action(1, Net.ACT_SEEN, 0, seen_now - 200, 0, Vector3.ZERO)
+	shoot(items, slot, 1200, Vector3(0.0, 0.0, -1.0))
+	var lag: Array = items._arrows[0].get("lag", []) if items._arrows.size() == 1 else []
+	check(lag.size() == 2 and int(lag[0]) >= 200 and int(lag[0]) < 2000 and int(lag[1]) == -1 and not items.shot_seen.has(1), "the shot keeps how far behind the archer saw the animals, and takes it (%s)" % str(lag))
+	fly(items, 2.0)
+	check(hits.size() == 1 and lags.size() == 1 and (lags[0] as Array) == lag, "every step of its flight is judged with it (%s)" % str(lags))
+	shoot(items, slot, 1200, Vector3(0.0, 0.0, -1.0))
+	fly(items, 2.0)
+	check(hits.size() == 2 and (lags[1] as Array).is_empty(), "a shot with no ACT_SEEN before it is judged now")
 
 	# A short draw falls short and lands on the ground, and can be picked up again.
 	hits.clear()
@@ -174,6 +192,12 @@ func _init() -> void:
 	loaded_checks()
 	tree_checks()
 	fire_checks()
+	# A player who leaves takes their seen times with them (protocol 155 and ACT_SEEN).
+	items.action(1, Net.ACT_SEEN, 0, Time.get_ticks_msec(), 0, Vector3.ZERO)
+	items.strike_seen[1] = [Time.get_ticks_msec(), 0]
+	items.peer_left(1)
+	check(not items.shot_seen.has(1) and not items.strike_seen.has(1), "a player who leaves is forgotten")
+
 	print("Test done: %d pass, %d fail" % [passes, failures])
 	quit(1 if failures > 0 else 0)
 
