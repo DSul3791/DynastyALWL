@@ -65,7 +65,8 @@ def code_names():
                     with open(os.path.join(base, n), encoding="utf-8", errors="ignore") as f:
                         text.append(f.read())
 
-    return set(re.findall(r'[\"/]([a-z][a-z0-9_]*?)(?:_\d+)?(?:\.ogg)?[\"]', "\n".join(text)))
+    # Mixed case and .wav too: the heartbeat is named by its whole path, res://assets/audio/heartbeat/Daggorath_Style_Heartbeat_Pulse.wav.
+    return set(re.findall(r'[\"/]([A-Za-z][A-Za-z0-9_]*?)(?:_\d+)?(?:\.(?:ogg|wav))?[\"]', "\n".join(text)))
 
 
 def main():
