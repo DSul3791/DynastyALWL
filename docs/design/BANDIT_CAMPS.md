@@ -221,3 +221,6 @@ The switch is Dave's (the coordinator, 20 Nov 2026). Stages 4a and 4b ship off; 
 6. **Carts (the plan's step 4):** unattended carts within 150 m of a camp robbed at night into the stash, if Dave wants it.
 7. **The toll's once-a-day memory** is saved, so a restart does not ask again the same day.
 8. **Dave plays it** with the switch on in a test world and agrees the numbers BANDIT-30..35.
+
+## Camp layout clear of trees (world audit, 23 Nov 2026)
+`world_audit.gd --camps` laid every bandit candidate site on the baked tiles: Lean-tos stood in tree trunks and on hillsides, and every Lean-to's open side faced away from the fire. Now (`server_bandits.gd _turn_of`, `_fitting_turn`, `_camp_fits`): the open side faces the fire; the camp is turned in 30 degree steps from the seed's turn until its Lean-tos (their roof, back to ridge), seats, tether and fire miss every trunk (`trees_at`: terrain_server's standing trunks, null until the flora round the fire is made) and each Lean-to stands out of water on ground rising no more than `lean_to_rise_m` (1.0 m, the player's own rule for a Lean-to) across it. The turn is kept for the run, not saved (the same trees give the same turn). A candidate where no turn fits is refused ("cluttered"); one whose flora is not made yet waits ("unloaded") like unloaded ground. The camp does not see boulders yet.
