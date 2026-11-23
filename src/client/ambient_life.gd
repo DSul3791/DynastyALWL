@@ -295,7 +295,7 @@ func _scan(body: CharacterBody3D) -> void:
 			var angle: float = TAU * float(k) / 8.0 + float(ring) * 0.3
 			var x: float = feet.x + cos(angle) * ring
 			var z: float = feet.z + sin(angle) * ring
-			var level: float = _flora.water_surface_at(x, z)
+			var level: float = _flora.water_wet_at(x, z)
 
 			if not is_nan(level):
 				_wet_points.append(Vector3(x, level, z))
@@ -304,7 +304,7 @@ func _scan(body: CharacterBody3D) -> void:
 				if level <= SEA_TOP_M:
 					nearest_sea = minf(nearest_sea, ring)
 
-	var here: float = _flora.water_surface_at(feet.x, feet.z)
+	var here: float = _flora.water_wet_at(feet.x, feet.z)
 
 	if not is_nan(here):
 		nearest = 0.0
