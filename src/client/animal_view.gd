@@ -45,7 +45,7 @@ const WARN_POP := 16                          # the threat ladder's jaw-pop rung
 # player dodges is what the server checks (docs/design/ANIMAL_NETCODE.md). Drawn a delay behind, a charge at 11 m/s was 4 to 9 m back.
 const AHEAD_STATES := [10, 11, 12, 16]
 const WALKER_BLOCK_M := 0.6                   # a body this big (body_m) stops the local walker (walker_stop)
-const WALK_INTO_M := 0.1                      # the walker is stopped this far inside an animal's contact distance: the server then has it make way (server_animals make_way), at its walking pace
+const WALK_INTO_M := 0.1                      # the walker is stopped this far inside an animal's contact distance: the server then has it make way (server_animals make_way), slowly
 const PINNED_MS := 2500                       # held at bodies this long on end while walking, the walker goes through (walker_stop): never shut in
 const HELD_GAP_MS := 400                      # a hold broken for longer than this starts again
 const STALL_S := 0.25                         # a frame this long is this computer's own stall, not the line's (MotionBuffer.stall_until)
@@ -744,7 +744,7 @@ func _process_body(delta: float) -> void:
 			# Never drawn into the local player: a charge (carried on past its newest point) waits on its own side; an animal that went past them is drawn going round
 			# them at no more than its drawing's own room a frame (MotionBuffer.smooth), never held at their edge and then snapped on.
 			var reach: float = clampf(MotionBuffer.speed_at(b["samples"], t_drawn), 2.0, MotionBuffer.CARRY_MPS) * delta * 1.05
-			spot = AnimalContact.stop_toward(me, b.get("sm_p", before), spot, float(b["contact_m"]), reach, int(b["state"]) != CHARGE)
+			spot = AnimalContact.stop_toward(me, b.get("sm_p", before), spot, float(b["contact_m"]) - WALK_INTO_M - 0.02, reach, int(b["state"]) != CHARGE)   # inside where the walker stops (walker_stop): their pressing never shoves it on
 
 		if ahead:
 			MotionBuffer.follow_hold(b, spot, delta)   # a committed charge runs its locked line; the feet pick up from here after it

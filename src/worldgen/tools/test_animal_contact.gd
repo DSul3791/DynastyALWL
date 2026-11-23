@@ -243,11 +243,11 @@ func _init() -> void:
 	var over_end: Vector3 = Vector3(-1.0, 0.0, 0.1) + AnimalContact.walker_stop(Vector3(em + 0.3, 0.0, 0.1), Vector3(-1.0, 0.0, 0.1), el)
 	check(over_end.x > 0.0 and absf(Vector2(over_end.x, over_end.z).length() - em) < 0.01, "a hitch step over its middle into its far half also stops on the near side (%.2f, %.2f)" % [over_end.x, over_end.z])
 	# Ringed by three wolves touching them: a step out between two is never shut in (only the body the move enters first stops it).
-	var wm: float = AnimalContact.contact_m("wolf")
+	var ring_m: float = AnimalContact.contact_m("wolf")
 	var ring: Array = []
 
 	for k in 3:
-		ring.append([Vector3(cos(TAU * k / 3.0) * wm, 0.0, sin(TAU * k / 3.0) * wm), wm])
+		ring.append([Vector3(cos(TAU * k / 3.0) * ring_m, 0.0, sin(TAU * k / 3.0) * ring_m), ring_m])
 
 	var out_at: Vector3 = Vector3.ZERO
 	var out_dir: Vector3 = Vector3(cos(PI / 3.0), 0.0, sin(PI / 3.0))   # between the first two
@@ -256,30 +256,46 @@ func _init() -> void:
 		var step_to: Vector3 = out_at + out_dir * 0.05
 		out_at = step_to + AnimalContact.walker_stop(out_at, step_to, ring)
 
-	check(Vector2(out_at.x, out_at.z).length() > wm * 1.5, "ringed by three wolves, a walker steps out between two (%.2f m out)" % Vector2(out_at.x, out_at.z).length())
+	check(Vector2(out_at.x, out_at.z).length() > ring_m * 1.5, "ringed by three wolves, a walker steps out between two (%.2f m out)" % Vector2(out_at.x, out_at.z).length())
 	# Never shut in: held short at bodies for 2.5 s on end the walker goes through; a slide or a break of over 0.4 s starts the count again.
-	var held: Array = [-1, -100000]
-	held = AnimalContact.walker_held(held, 1000, true, 2500, 400)
-	check(int(held[0]) == 1000 and not bool(held[2]), "held at a body: the count starts")
-	held = AnimalContact.walker_held(held, 3400, true, 2500, 400)
-	check(not bool(held[2]), "2.4 s held: still stopped")
-	held = AnimalContact.walker_held(held, 3600, true, 2500, 400)
-	check(bool(held[2]), "2.6 s held on end: let through")
-	held = AnimalContact.walker_held(held, 3700, false, 2500, 400)
-	held = AnimalContact.walker_held(held, 4200, false, 2500, 400)
-	check(int(held[0]) == -1, "free for over 0.4 s: the next hold counts from its start")
+	var hold: Array = [-1, -100000]
+	hold = AnimalContact.walker_held(hold, 1000, true, 2500, 400)
+	check(int(hold[0]) == 1000 and not bool(hold[2]), "held at a body: the count starts")
+	hold = AnimalContact.walker_held(hold, 3400, true, 2500, 400)
+	check(not bool(hold[2]), "2.4 s held: still stopped")
+	hold = AnimalContact.walker_held(hold, 3600, true, 2500, 400)
+	check(bool(hold[2]), "2.6 s held on end: let through")
+	hold = AnimalContact.walker_held(hold, 3700, false, 2500, 400)
+	hold = AnimalContact.walker_held(hold, 4200, false, 2500, 400)
+	check(int(hold[0]) == -1, "free for over 0.4 s: the next hold counts from its start")
+	# The walker pressing into a standing elephant on this screen never shoves its drawn body: the walker stops 0.1 m inside its contact
+	# distance, the drawing keeps it off only 0.12 m inside (animal_view, the review of #1774).
+	var drawn_el: Vector3 = Vector3(3.0, 0.0, 0.0)
+	var presser: Vector3 = Vector3.ZERO
+
+	for f in 120:
+		var press_to: Vector3 = presser + Vector3(0.08, 0.0, 0.0)
+		presser = press_to + AnimalContact.walker_stop(presser, press_to, [[drawn_el, em - 0.1]])
+		drawn_el = AnimalContact.stop_toward(presser, drawn_el, Vector3(3.0, 0.0, 0.0), em - 0.12)
+
+	check(drawn_el.distance_to(Vector3(3.0, 0.0, 0.0)) < 0.01 and absf(presser.distance_to(drawn_el) - (em - 0.1)) < 0.01, "a walker pressing into a standing elephant stops at it and its drawn body stays put (%.2f m moved)" % drawn_el.distance_to(Vector3(3.0, 0.0, 0.0)))
 	# Stopped just inside its contact distance, a standing animal the walker presses into makes way on the server (make_way), so the walker
 	# is never held by one standing in their way, without the let-through.
 	var pass_players: Array = [Vector3(0.0, 10.0, 0.0)]
 	var ps = _animals(pass_players, [])
 	ps.cfg["senses"] = {}
+
+	for key in ["spook_m", "alert_m", "threat_m"]:
+		ps.cfg["species"]["cow"][key] = 0.0   # it stands, unafraid: only make_way moves it
+
+	ps.cfg["species"]["cow"].erase("defend")
 	var cow: int = ps.spawn("cow", 3.0, 0.0)
 	ps.animals[cow]["pos"] = Vector3(3.0, 10.0, 0.0)
 	var cm: float = AnimalContact.contact_m("cow") - 0.1   # animal_view WALK_INTO_M
 	var walker: Vector3 = Vector3(0.0, 10.0, 0.0)
 	var passed_s: float = INF
 
-	for f in 480:
+	for f in 900:
 		var goal: Vector3 = walker + Vector3(3.0 / 60.0, 0.0, 0.0)
 		walker = goal + AnimalContact.walker_stop(walker, goal, [[ps.animals[cow]["pos"], cm]] if ps.animals.has(cow) else [])
 		pass_players[0] = walker
@@ -288,7 +304,7 @@ func _init() -> void:
 		if walker.x > 6.0 and passed_s == INF:
 			passed_s = float(f) / 60.0
 
-	check(passed_s < 8.0, "a walker pressing into a standing cow in their way is not held: it makes way, 3 m on in %.1f s" % passed_s)
+	check(passed_s < 14.0, "a walker pressing into a standing cow in their way is not held: it makes way, 3 m on in %.1f s" % passed_s)
 	# A blow reaches the body, not its middle: an elephant held off at its contact distance is within a knife's 2.5 m and a punch's 1.8 m.
 	var reach_s = _animals([Vector3(0.0, 10.0, 0.0)], [])
 	var eid: int = reach_s.spawn("elephant", em, 0.0)
