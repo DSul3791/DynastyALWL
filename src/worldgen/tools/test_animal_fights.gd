@@ -9,7 +9,9 @@ extends SceneTree
 #      charge, by one who reads the warning perfectly, and by one who steps aside as soon as the warning shows; the last must clear most
 #      (every attack dodgeable: server_big_game.gd header; the warning is the cue);
 #   2. a table per kind of each weapon tier and bare hands at 60 ms: blows, time, charges dodged, blows taken, health left, result;
-#   3. one spear blow, then the animal runs off bleeding: it dies of it, and its blood leads a walking hunter to the body.
+#   3. one spear blow, then the animal runs off bleeding: it dies of it, and its blood leads a walking hunter to the body;
+#   4. a hunter's chase of a sprinter over 120 ms lands its blow; 5. a wolf pack on a half-health player: one blow sends it off;
+#   6. a player crippled at the floor is let go as they limp off; 7. two players on one animal: the one who hurt it last is hit.
 #   godot --headless --path . --script res://src/worldgen/tools/test_animal_fights.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -195,8 +197,8 @@ func _init() -> void:
 	chases(kinds)
 	wolf_fights()
 	at_the_floor()
-	two_players()
 	bleeding()
+	two_players()
 
 	items._finish_writer()
 	print("Test done: %d failure(s)" % failures)
@@ -554,6 +556,7 @@ func wolf_fights() -> void:
 		check(first_blow >= 0.0 and bites_before <= 3, "a player facing the pack with %s lands a blow within three bites" % (weapon if weapon != "" else "bare hands"))
 
 	ping_now = 0
+	animals.wolves.packs.clear()   # no pack left over for the sections after
 
 
 # 6. At the floor (the big game's 10): a player an animal has crippled limps off (vitals limp: half speed). Does the animal let them go, or
@@ -669,7 +672,7 @@ func two_players() -> void:
 				break
 
 		animals.big_game.hurt_player = keep
-		check(result.begins_with("killed") and int(hurt_of[2]) > 0, "two players kill a %s, and it turns on the one who hurt it last (%d and %d blows)" % [sp, int(hurt_of[1]), int(hurt_of[2])])
+		check(result.begins_with("killed") and int(hurt_of[2]) > 0, "two players kill a %s, and the one who hurt it last is hit (%d and %d blows)" % [sp, int(hurt_of[1]), int(hurt_of[2])])
 		print("  %-14s | %-15s | %5d %3d    | %3.0f %3.0f" % [sp, result, int(hurt_of[1]), int(hurt_of[2]), float(items.vitals_of(1)["health"]), float(items.vitals_of(2)["health"])])
 
 
