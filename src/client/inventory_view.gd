@@ -1616,6 +1616,11 @@ func _process_body(_delta: float) -> void:
 		_warm_step()
 		FrameProbe.stop("inventory: loose mesh prewarm", tw)
 
+	if not _hull_queue.is_empty():
+		var th: int = FrameProbe.start()
+		_hull_step()
+		FrameProbe.stop("inventory: rock hull prewarm", th)
+
 	var t: int = FrameProbe.start()
 	_drain_world_backlog()
 	FrameProbe.stop("inventory: world items", t)   # the pieces of a 65 ms "inventory view" in the 5 Nov lag run's one HITCH
@@ -3719,6 +3724,8 @@ func _show_boulder(id: int, row: Array) -> void:
 
 	if _boulder_mesh == null:
 		_boulder_mesh = load("res://src/client/grass_view.gd")._make_boulder()
+
+	if _boulder_rock == null:
 		# Granite with moss (Kathleen, white-sphere fix): the plain mid-grey material drew server boulders near white in full sun, big smooth pale eggs. The scenery
 		# boulder shader of grass_view.gd (stone mottle, moss on the tops and north side) is used instead, with its per-instance custom data turned into
 		# uniforms and its distance fade switched off (a boulder the server sends must not melt away at 18 m).
@@ -3787,6 +3794,29 @@ const SHRINK_EASE_S := 0.15   # how long a blow takes to ease a boulder down to 
 
 
 var _boulder_hulls: Dictionary = {}   # rock mesh -> its convex hull points (unscaled), made once per mesh
+var _hull_queue: Array = []           # rock meshes whose hulls are still to make, one a frame from the join (_queue_rock_hulls)
+
+
+# Lag lane 23 Nov 2026 (robot route, cloud): each rock mesh's hull took 43-67 ms on the main thread the first time a boulder of that shape was
+# drawn, so walking into new ground hitched 50-200 ms ("world items ... slowest row: state 10"). The ten rock meshes' hulls are made at the
+# join instead, one a frame while the ground loads.
+func _queue_rock_hulls() -> void:
+	if _boulder_mesh == null:
+		_boulder_mesh = load("res://src/client/grass_view.gd")._make_boulder()
+
+	OreRockLook.mesh_for(0.0)   # builds every rock shape (7 ms)
+	_hull_queue = [_boulder_mesh]
+
+	for shape in OreRockLook._meshes:
+		_hull_queue.append_array(shape)
+
+
+func _hull_step() -> void:
+	var mesh: Mesh = _hull_queue.pop_front()
+	_boulder_hull(mesh)
+
+	if _hull_queue.is_empty():
+		FreezeWatchScript.printer.line("client prewarm: rock hulls made (%d)" % _boulder_hulls.size())
 
 
 func _boulder_hull(mesh: Mesh) -> PackedVector3Array:
@@ -5365,6 +5395,7 @@ func _loose_prewarm_numbers() -> Array:
 
 
 func _start_loose_prewarm() -> void:
+	_queue_rock_hulls()
 	var t0: int = Time.get_ticks_usec()
 
 	for group in PICKUP_FILES:
@@ -5393,6 +5424,7 @@ func _warm_step() -> void:
 
 
 func _prewarm_loose_meshes() -> void:
+	_queue_rock_hulls()
 	var t0: int = Time.get_ticks_usec()
 
 	for group in PICKUP_FILES:
