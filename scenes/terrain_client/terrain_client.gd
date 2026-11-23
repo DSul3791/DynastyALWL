@@ -4160,7 +4160,8 @@ func _report_display(prefix: String = "") -> void:
 	elif display.fitted != Vector2i.ZERO and display.fitted != display.size() and win == display.fitted:
 		text += ", window %dx%d: the chosen %s is larger than this screen, so the window was fitted to it." % [win.x, win.y, display.size_text()]
 	elif win != (display.fitted if display.fitted != Vector2i.ZERO else display.size()):
-		text += ". The system kept the window at %dx%d (asked for %s)." % [win.x, win.y, display.size_text()]
+		var asked: Vector2i = display.fitted if display.fitted != Vector2i.ZERO else display.size()
+		text += ". The system kept the window at %dx%d (asked for %dx%d)." % [win.x, win.y, asked.x, asked.y]
 	else:
 		text += ", window %dx%d." % [win.x, win.y]
 

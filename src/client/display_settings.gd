@@ -207,5 +207,7 @@ func apply(window: Window, keep_current: bool = false) -> void:
 	window.size = fitted
 	# Keep the window on the screen after it grew.
 	var screen: Rect2i = DisplayServer.screen_get_usable_rect(window.current_screen)
+	var outer: Vector2i = window.size + decor
+	var title: Vector2i = window.position - window.get_position_with_decorations()   # the client area's offset inside the frame (title bar, border)
 	@warning_ignore("integer_division")
-	window.position = Vector2i(maxi(screen.position.x, screen.position.x + (screen.size.x - window.size.x) / 2), maxi(screen.position.y, screen.position.y + (screen.size.y - window.size.y) / 2))
+	window.position = title + Vector2i(maxi(screen.position.x, screen.position.x + (screen.size.x - outer.x) / 2), maxi(screen.position.y, screen.position.y + (screen.size.y - outer.y) / 2))
