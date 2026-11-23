@@ -2204,7 +2204,7 @@ func _save_sig_of(it: Dictionary) -> int:
 
 
 const FIRE_STEPPED := ["burn_left", "lit_s", "wood", "burnt", "char", "recheck", "covered"]   # a fire's running fields (_save_sig_of)
-const STRUCT_SIDE_FIELDS := ["fuel_left", "kiln"]   # in lights.json and kilns.json, which every save writes
+const STRUCT_SIDE_FIELDS := ["fuel_left", "kiln", "char"]   # in lights.json and kilns.json, which every save writes (char: a lit light's part lump, lights.json row [4])
 var _side_kind: Dictionary = {}   # structure kind -> true when it is a light or a kiln (tree_states, lights, kilns.json come from these)
 
 
@@ -2484,7 +2484,7 @@ static func _kiln_rows_of(items: Dictionary, kinds: Dictionary, lit_by: Dictiona
 
 		if it.has("struct") and it["struct"].has("uid") and str((kinds.get(str(it["struct"]["kind"]), [5, ""]) as Array)[1]) == "kiln" and (it["struct"].has("kiln") or bool(it["struct"].get("lit", false))):
 			var k: Dictionary = it["struct"].get("kiln", {})
-			rows[str(it["struct"]["uid"])] = [1 if bool(it["struct"].get("lit", false)) else 0, int(k.get("left", 0)), float(k.get("t", 0.0)), str(lit_by.get(id, ""))]   # [3]: the character who lit it (ADD-18; older saves: 3 values)
+			rows[str(it["struct"]["uid"])] = [1 if bool(it["struct"].get("lit", false)) else 0, int(k.get("left", 0)), float(k.get("t", 0.0)), (str(lit_by.get(id, "")) if bool(it["struct"].get("lit", false)) else "")]   # [3]: the character who lit it (ADD-18; older saves: 3 values)
 
 	return rows
 
