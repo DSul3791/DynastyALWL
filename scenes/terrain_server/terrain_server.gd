@@ -865,7 +865,10 @@ func _ready() -> void:
 	map_knowledge.observe = _map_observe
 	map_knowledge.trees_near = func(point, radius): return _cached_trees(point, radius).map(func(tree): return tree[1]) if flora != null else []
 	map_knowledge.in_cave = _in_cave
+	map_knowledge.landmarks_near = _map_landmarks
 	map_knowledge.setup(store_dir)
+	items.map_look = func(peer, at): map_knowledge.look_now(peer, at)
+	items.fish_caught = func(peer, at): map_knowledge.note_catch(peer, at)
 	items.forgot_key = func(key): map_knowledge.forget_key(key)
 	animals.wolves.player_info = func(): return items.wolf_info()
 	animals.wolves.heard_of = func(peer): return animals.heard_x(cues.loud_of(peer))   # a pack hears loud work too (hearing-range pass)
@@ -1328,7 +1331,92 @@ func _map_observe(x: float, z: float) -> Array:
 		return [height, MapCodec.WATER_SEA]
 
 	var water_class: int = int(tile_data.water_class[tile_data.nearest(x, z)]) if not tile_data.water_class.is_empty() else 0
+
+	if MapScript.water_kind(water_class) == MapCodec.WATER_NONE and not tile_data.water_class.is_empty():
+		# A river narrower than the cell runs past its centre: four more looks across the cell find it (Dave 23 Nov 2026: the map must show rivers).
+		for d in [Vector2(-5.0, -5.0), Vector2(5.0, -5.0), Vector2(-5.0, 5.0), Vector2(5.0, 5.0)]:
+			if int(tile_data.water_class[tile_data.nearest(x + d.x, z + d.y)]) == 3:
+				return [height, MapCodec.WATER_RIVER]
+
 	return [height, MapScript.water_kind(water_class)]
+
+
+# What a person would mark on their map round `point` (Dave 23 Nov 2026: "anything a human would find of interest should be marked"):
+# [kind, x, z, label] rows for server_map.gd look_round, or null while the tile or its flora is not loaded (nothing then changes on the map).
+# Cave mouths ("spring" where a spring comes out of one), bog iron patches, fruit trees by kind (data/map.json fruit_trees), a goblin
+# tribe's camp under its name, a bandit camp once it stands, and the world items (server_items.map_marks_near: campfires, ore rocks
+# started and left, paths and roads). Every source is a list kept for its own work: nothing here scans the world.
+func _map_landmarks(point: Vector3, radius: float) -> Variant:
+	if not generator.tile_cached(point.x, point.z):
+		return null
+
+	if flora != null and flora.items_cached(Vector2i(int(floor(point.x / flora.placer.chunk_m)), int(floor(point.z / flora.placer.chunk_m)))).is_empty():
+		return null
+
+	var tile_data = generator.get_tile(generator.tile_of(point.x, point.z))
+
+	if tile_data == null:
+		return null
+
+	var here: Vector2 = Vector2(point.x, point.z)
+	var out: Array = items.map_marks_near(point, radius)
+
+	if not tile_data.placeholder:
+		for row in tile_data.cave_mouths:
+			var mouth: Vector2 = Vector2((row[0] as Vector3).x, (row[0] as Vector3).z)
+
+			if mouth.distance_to(here) <= radius:
+				var spring: bool = false
+
+				for at in tile_data.spring_mouths:
+					spring = spring or at.distance_to(mouth) < 6.0
+
+				out.append(["spring" if spring else "cave", mouth.x, mouth.y, "Spring" if spring else "Cave"])
+
+	for patch in items._bog_patches_near(point.x, point.z, radius):
+		if Vector2(float(patch["x"]), float(patch["z"])).distance_to(here) <= radius:
+			out.append(["bog_iron", float(patch["x"]), float(patch["z"]), "Bog iron"])
+
+	var fruit: Dictionary = map_knowledge.cfg.get("fruit_trees", {})
+
+	if flora != null and not fruit.is_empty():
+		var groups: Dictionary = {}   # group -> [count, sum x, sum z]
+
+		for tree in _cached_trees(point, radius):
+			var row: Array = fruit.get(str(tree[2]), [])
+
+			if row.size() >= 2 and Vector2(tree[1].x, tree[1].z).distance_to(here) <= radius:
+				var g: Array = groups.get(str(row[0]), [0, 0.0, 0.0])
+				groups[str(row[0])] = [int(g[0]) + 1, float(g[1]) + tree[1].x, float(g[2]) + tree[1].z]
+
+		var groves: Dictionary = map_knowledge.cfg.get("fruit_groups", {})
+
+		for group in groups:
+			var g: Array = groups[group]
+			var names: Array = groves.get(group, [str(group).capitalize() + " tree", str(group).capitalize() + " trees", ""])
+			var label: String = str(names[0]) if int(g[0]) == 1 else str(names[1])
+
+			if int(g[0]) >= int(map_knowledge.cfg.get("orchard_from", 6)) and str(names[2]) != "":
+				label = str(names[2])
+
+			out.append(["fruit:" + str(group), float(g[1]) / float(g[0]), float(g[2]) / float(g[0]), label])
+
+	if tribes != null:
+		for tribe in tribes.tribes():
+			var camp: Dictionary = (tribes.tribes()[tribe] as Dictionary).get("camp", {})
+			var at: Dictionary = camp.get("fire", camp.get("mouth", {}))
+
+			if not at.is_empty() and Vector2(float(at.get("x", 0.0)), float(at.get("z", 0.0))).distance_to(here) <= radius:
+				out.append(["goblin_camp", float(at["x"]), float(at["z"]), str(tribe).capitalize()])   # the clan's name under its face (Dave 23 Nov 2026)
+
+	if bandits != null:
+		for cell in bandits.sites:
+			var site: Dictionary = bandits.sites[cell]
+
+			if int(site.get("stage", 0)) >= 3 and Vector2(float(site.get("x", 0.0)), float(site.get("z", 0.0))).distance_to(here) <= radius:
+				out.append(["bandit_camp", float(site["x"]), float(site["z"]), "Bandits"])
+
+	return out
 
 
 # Whether the baked tile has water (any class but none) at a point.
@@ -3427,7 +3515,7 @@ func _send_npcs(delta: float) -> void:
 			map_knowledge.note_trails(peer, Vector2i(block[0], block[1]), block[3])   # kept for the Map's trails (protocol 152)
 
 		for block in map_knowledge.updates_for(peer, now_ms):
-			net.map_blocks.rpc_id(peer, block[0], block[1], block[2])
+			net.map_blocks.rpc_id(peer, block[0], block[1], block[2], block[3], block[4])
 
 		for block in map_knowledge.trail_updates_for(peer):
 			net.map_trails.rpc_id(peer, block[0], block[1], block[2])

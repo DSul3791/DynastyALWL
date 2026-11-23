@@ -23,6 +23,10 @@ var observe: Callable         # (x, z) -> [ground height m, water (map_codec WAT
 var trees_near: Callable      # (Vector3, radius) -> Array of tree root positions (Vector3); unset: no trees are drawn
 var in_cave: Callable         # (Vector3) -> true inside a cave (nothing to survey there); unset: never
 var now_msec: Callable        # () -> msec clock for the speed check; unset: Time.get_ticks_msec (tests set their own)
+var landmarks_near: Callable  # (Vector3, radius) -> Array of [kind, x, z, label] rows of what a person would mark on a map there (terrain_server
+                              # _map_landmarks: campfires, caves, springs, bog iron, fruit trees, goblin and bandit camps, ore rocks started and
+                              # left, fallen stars; and "path" / "road" rows, the cells a path or a surveyed road crosses), or null while that
+                              # ground is not loaded; unset: no landmarks (Dave 23 Nov 2026, the map "should show the important stuff")
 
 var _records: Dictionary = {} # character key -> {"blocks": {Vector2i: {"cells": {idx: [q, h, water, trees]}, "ver": int}}, "tally": int, "dirty": bool}
 var _peer_key: Dictionary = {}   # peer -> the key its record is under (kept so a record can be unloaded when its last peer leaves)
@@ -34,6 +38,7 @@ var _trails_sent: Dictionary = {}  # peer -> {Vector2i trail block: the version 
 var _dir: String = ""
 var _save_acc: float = 0.0
 var surveys: int = 0             # surveys run (the benchmark and the tests read it)
+const KEPT_KINDS := ["fishing"]  # marks a survey never takes off: they come from what the character did there (note_catch), not from what is seen
 
 
 func setup(store_dir: String) -> void:
@@ -153,10 +158,21 @@ func survey(peer: int, pos: Vector3) -> int:
 			var row: Dictionary = rec["blocks"].get(block, {})
 			var had: Array = row.get("cells", {}).get(idx, [])
 
+			var seen: Array = []
+
 			if not had.is_empty() and q < int(had[0]) + improve:
+				# Known ground at no better skill: its drawing stays, but its water is put right (a river or marsh the first survey of an old
+				# map could not tell apart; a dug pond): water is not accuracy, so this is no redraw and earns nothing.
+				seen = observe.call(centre.x, centre.y) if observe.is_valid() else []
+
+				if seen.size() >= 2 and int(seen[1]) != int(had[2]):
+					had[2] = int(seen[1])
+					row["ver"] = int(row["ver"]) + 1
+					rec["dirty"] = true
+
 				continue
 
-			var seen: Array = observe.call(centre.x, centre.y) if observe.is_valid() else []
+			seen = observe.call(centre.x, centre.y) if observe.is_valid() else []
 
 			if seen.size() < 2:
 				continue   # that ground is not loaded yet: it is surveyed on a later step
@@ -173,6 +189,8 @@ func survey(peer: int, pos: Vector3) -> int:
 				fresh += 1
 			else:
 				redrawn += 1
+
+	look_round(peer, pos, float(cfg.get("marks_radius_m", 60.0)), radius)
 
 	if fresh > 0:
 		var per_practice: int = maxi(int(cfg.get("cells_per_practice", 20)), 1)
@@ -194,13 +212,221 @@ func survey(peer: int, pos: Vector3) -> int:
 	return fresh
 
 
-# A tile's water class (data/tables/water_classes.json) as the Map draws it: ocean and estuary are sea, lake and river inland water,
-# and the wetlands and seasonal beds dry ground (the land types count them as ground).
+# What the character sees round `pos` goes on its map: every mark (but KEPT_KINDS) within `reach` and every path cell whose centre is within
+# `path_reach` is replaced by what is there now, so a campfire put out, a rock broken to its last stone or a path dug up leaves the map, and a
+# new one comes on. Only ground this character has surveyed carries marks. One mark stands for its kind and label within data/map.json
+# merge_m (a bog iron field, a stand of apple trees): a mark already there is kept, not doubled. Nothing changes while the ground there is
+# not loaded (landmarks_near gives null).
+func look_round(peer: int, pos: Vector3, reach: float, path_reach: float = -1.0) -> void:
+	var key: String = str(_peer_key.get(peer, ""))
+	var rec: Dictionary = _record(key)
+
+	if rec.is_empty() or not landmarks_near.is_valid():
+		return
+
+	var rows: Variant = landmarks_near.call(pos, maxf(reach, path_reach))
+
+	if typeof(rows) != TYPE_ARRAY:
+		return
+
+	var merge: float = float(cfg.get("merge_m", 40.0))
+	var here: Vector2 = Vector2(pos.x, pos.z)
+	var seen: Array = []          # [kind, x, z, label] within reach
+	var paths: Dictionary = {}    # cell -> 1 path, 2 road
+
+	for row in rows:
+		if typeof(row) != TYPE_ARRAY or row.size() < 4:
+			continue
+
+		var at: Vector2 = Vector2(float(row[1]), float(row[2]))
+		var kind: String = str(row[0])
+
+		if kind == "path" or kind == "road":
+			if path_reach >= 0.0 and at.distance_to(here) <= path_reach + _cell_m():
+				var cell: Vector2i = _cell_of(at.x, at.y)
+				paths[cell] = maxi(int(paths.get(cell, 0)), 2 if kind == "road" else 1)
+		elif at.distance_to(here) <= reach:
+			seen.append([kind, at.x, at.y, str(row[3])])
+
+	# Path cells: each surveyed cell whose centre is within path_reach.
+	if path_reach >= 0.0:
+		var lo: Vector2i = _cell_of(pos.x - path_reach, pos.z - path_reach)
+		var hi: Vector2i = _cell_of(pos.x + path_reach, pos.z + path_reach)
+		var size: float = _cell_m()
+
+		for cz in range(lo.y, hi.y + 1):
+			for cx in range(lo.x, hi.x + 1):
+				var cell: Vector2i = Vector2i(cx, cz)
+
+				if Vector2((float(cx) + 0.5) * size, (float(cz) + 0.5) * size).distance_to(here) > path_reach:
+					continue
+
+				var block: Vector2i = _block_of(cell)
+				var row: Dictionary = rec["blocks"].get(block, {})
+				var idx: int = _index_of(cell, block)
+
+				if row.is_empty() or not row["cells"].has(idx):
+					continue
+
+				var now: int = int(paths.get(cell, 0))
+				var had: int = int(row.get("paths", {}).get(idx, 0))
+
+				if now == had:
+					continue
+
+				if not row.has("paths"):
+					row["paths"] = {}
+
+				if now == 0:
+					row["paths"].erase(idx)
+				else:
+					row["paths"][idx] = now
+
+				row["ver"] = int(row["ver"]) + 1
+				rec["dirty"] = true
+
+	# Marks: the ones within reach that nothing seen now stands for go; what is seen and not yet marked comes on, in a surveyed cell only.
+	var lo_b: Vector2i = _block_of(_cell_of(pos.x - reach - merge, pos.z - reach - merge))
+	var hi_b: Vector2i = _block_of(_cell_of(pos.x + reach + merge, pos.z + reach + merge))
+	var existing: Array = []   # [block, mark key, row]
+
+	for bz in range(lo_b.y, hi_b.y + 1):
+		for bx in range(lo_b.x, hi_b.x + 1):
+			var block: Vector2i = Vector2i(bx, bz)
+
+			for mkey in rec["blocks"].get(block, {}).get("marks", {}):
+				existing.append([block, mkey, rec["blocks"][block]["marks"][mkey]])
+
+	for old in existing:
+		var mark: Array = old[2]
+		var at: Vector2 = Vector2(float(mark[1]), float(mark[2]))
+
+		if KEPT_KINDS.has(str(mark[0])) or at.distance_to(here) > reach:
+			continue
+
+		var stands: bool = false
+
+		for row in seen:
+			if str(row[0]) == str(mark[0]) and Vector2(float(row[1]), float(row[2])).distance_to(at) <= merge:
+				stands = true
+
+				if str(row[3]) != str(mark[3]) and _label_rank(str(row[3])) > _label_rank(str(mark[3])):
+					mark[3] = str(row[3])   # more of them seen now: "Apple trees" becomes "Apple orchard"
+					_touch(rec, old[0])
+
+				break
+
+		if not stands:
+			rec["blocks"][old[0]]["marks"].erase(old[1])
+			_touch(rec, old[0])
+
+	for row in seen:
+		var at: Vector2 = Vector2(float(row[1]), float(row[2]))
+		var marked: bool = false
+
+		for old in existing:
+			var mark: Array = old[2]
+
+			if str(mark[0]) == str(row[0]) and Vector2(float(mark[1]), float(mark[2])).distance_to(at) <= merge and rec["blocks"][old[0]].get("marks", {}).has(old[1]):
+				marked = true
+				break
+
+		if not marked:
+			marked = not _add_mark(rec, row).is_empty()
+
+			if marked:
+				existing.append([_block_of(_cell_of(at.x, at.y)), _mark_key(row), row])
+
+
+# A mark's key in its block: its kind and its spot to the metre.
+static func _mark_key(row: Array) -> String:
+	return "%s@%d,%d" % [str(row[0]), int(round(float(row[1]))), int(round(float(row[2])))]
+
+
+# Puts a mark in the block of its spot when that cell is surveyed: [its block], or [] with nothing added.
+func _add_mark(rec: Dictionary, row: Array) -> Array:
+	var cell: Vector2i = _cell_of(float(row[1]), float(row[2]))
+	var block: Vector2i = _block_of(cell)
+	var brow: Dictionary = rec["blocks"].get(block, {})
+
+	if brow.is_empty() or not brow["cells"].has(_index_of(cell, block)):
+		return []
+
+	if not brow.has("marks"):
+		brow["marks"] = {}
+
+	brow["marks"][_mark_key(row)] = [str(row[0]), snappedf(float(row[1]), 0.1), snappedf(float(row[2]), 0.1), str(row[3])]
+	_touch(rec, block)
+	return [block]
+
+
+func _touch(rec: Dictionary, block: Vector2i) -> void:
+	rec["blocks"][block]["ver"] = int(rec["blocks"][block]["ver"]) + 1
+	rec["dirty"] = true
+
+
+# Fruit tree labels grow with what is seen: one tree, then trees, then an orchard.
+static func _label_rank(label: String) -> int:
+	if label.ends_with(" orchard"):
+		return 2
+
+	return 1 if label.ends_with("s") else 0
+
+
+# Something changed right where a character is working (a blow on a rock, the rock gone): the marks close by are looked at again now, not at
+# the next survey step.
+func look_now(peer: int, pos: Vector3) -> void:
+	var key: String = str(key_of.call(peer)) if key_of.is_valid() else ""
+
+	if key == "":
+		return
+
+	_peer_key[peer] = key
+	look_round(peer, pos, float(cfg.get("look_now_m", 10.0)))
+
+
+# A fish this character caught from `pos` (server_items fish_caught): data/map.json fishing_good catches within one fishing_cell_m square
+# mark a good fishing spot there, at the average of where they were caught from. It stays: a survey never takes it off.
+func note_catch(peer: int, pos: Vector3) -> void:
+	var key: String = str(key_of.call(peer)) if key_of.is_valid() else ""
+	var rec: Dictionary = _record(key)
+
+	if rec.is_empty():
+		return
+
+	var size: float = float(cfg.get("fishing_cell_m", 32.0))
+	var name: String = "%d,%d" % [int(floor(pos.x / size)), int(floor(pos.z / size))]
+
+	if not rec.has("fish"):
+		rec["fish"] = {}
+
+	var tally: Array = rec["fish"].get(name, [0, 0.0, 0.0])
+	tally = [int(tally[0]) + 1, float(tally[1]) + pos.x, float(tally[2]) + pos.z]
+	rec["fish"][name] = tally
+	rec["dirty"] = true
+
+	if int(tally[0]) != int(cfg.get("fishing_good", 3)):
+		return
+
+	var row: Array = ["fishing", float(tally[1]) / float(tally[0]), float(tally[2]) / float(tally[0]), "Good fishing"]
+
+	if _add_mark(rec, row).is_empty():
+		_add_mark(rec, ["fishing", pos.x, pos.z, "Good fishing"])   # the average fell on ground never walked (out on the water): where the last one was caught from
+
+
+# A tile's water class (data/tables/water_classes.json) as the Map draws it: ocean and estuary are sea, a lake inland water, a river
+# its own (drawn as a line where it is narrow), the wetlands marsh, and the seasonal beds dry ground.
 static func water_kind(water_class: int) -> int:
 	if water_class == 1 or water_class == 5:
 		return Codec.WATER_SEA
 
-	return Codec.WATER_INLAND if water_class == 2 or water_class == 3 else Codec.WATER_NONE
+	if water_class == 3:
+		return Codec.WATER_RIVER
+
+	if water_class in [4, 6, 7, 8, 11]:
+		return Codec.WATER_MARSH   # marsh, swamp, fen, bog and salt marsh: wet ground, drawn with reed tufts
+
+	return Codec.WATER_INLAND if water_class == 2 else Codec.WATER_NONE
 
 
 static func _density(count: int) -> int:
@@ -232,7 +458,8 @@ func cell_rows(cells: Dictionary) -> Dictionary:
 	return out
 
 
-# The blocks to send this peer now, [[bx, bz, bytes], ...]: every block of its character's record that it has not been sent at its
+# The blocks to send this peer now, [[bx, bz, bytes, marks, paths], ...] (marks: the block's [kind, x, z, label] rows; paths: index * 4 +
+# 1 path or 2 road, protocol 163): every block of its character's record that it has not been sent at its
 # current version, at most send_per_pass a call (a joining character gets its whole map over a few passes); a block it already has
 # goes again at most every resend_s, so walking about in one block does not deflate it on every survey.
 func updates_for(peer: int, at_msec: int = -1) -> Array:
@@ -257,7 +484,13 @@ func updates_for(peer: int, at_msec: int = -1) -> Array:
 			continue
 
 		known[block] = [ver, now]
-		out.append([block.x, block.y, Codec.encode(cell_rows(rec["blocks"][block]["cells"]))])
+		var brow: Dictionary = rec["blocks"][block]
+		var paths: PackedInt32Array = PackedInt32Array()
+
+		for idx in brow.get("paths", {}):
+			paths.append(int(idx) * 4 + int(brow["paths"][idx]))
+
+		out.append([block.x, block.y, Codec.encode(cell_rows(brow["cells"])), brow.get("marks", {}).values(), paths])
 
 		if out.size() >= limit:
 			break
@@ -399,7 +632,25 @@ func _save_one(key: String) -> void:
 	for block in rec.get("trails", {}):
 		trail_rows["%d,%d" % [block.x, block.y]] = Marshalls.raw_to_base64(rec["trails"][block])
 
-	file.store_string(JSON.stringify({"version": int(cfg.get("version", 1)), "tally": int(rec.get("tally", 0)), "blocks": rows, "trails": trail_rows}))
+	var mark_rows: Dictionary = {}   # the landmarks and path cells of a block (Dave 23 Nov 2026); a save without them loads with none
+	var path_rows: Dictionary = {}
+
+	for block in rec["blocks"]:
+		var brow: Dictionary = rec["blocks"][block]
+
+		if not brow.get("marks", {}).is_empty():
+			mark_rows["%d,%d" % [block.x, block.y]] = brow["marks"].values()
+
+		if not brow.get("paths", {}).is_empty():
+			var flat: Array = []
+
+			for idx in brow["paths"]:
+				flat.append(int(idx) * 4 + int(brow["paths"][idx]))
+
+			path_rows["%d,%d" % [block.x, block.y]] = flat
+
+	file.store_string(JSON.stringify({"version": int(cfg.get("version", 1)), "tally": int(rec.get("tally", 0)), "blocks": rows, "trails": trail_rows,
+		"marks": mark_rows, "paths": path_rows, "fish": rec.get("fish", {})}))
 	file.close()
 
 	if DirAccess.rename_absolute(path + ".tmp", path) == OK:
@@ -441,7 +692,40 @@ func _load(key: String) -> Dictionary:
 		if not cells.is_empty():
 			rec["blocks"][Vector2i(int(parts[0]), int(parts[1]))] = {"cells": cells, "ver": 1}
 
+	for name in parsed.get("marks", {}):
+		var brow: Dictionary = rec["blocks"].get(_block_name(str(name)), {})
+
+		if brow.is_empty() or typeof(parsed["marks"][name]) != TYPE_ARRAY:
+			continue
+
+		brow["marks"] = {}
+
+		for mark in parsed["marks"][name]:
+			if typeof(mark) == TYPE_ARRAY and mark.size() >= 4:
+				var row: Array = [str(mark[0]), float(mark[1]), float(mark[2]), str(mark[3])]
+				brow["marks"][_mark_key(row)] = row
+
+	for name in parsed.get("paths", {}):
+		var brow: Dictionary = rec["blocks"].get(_block_name(str(name)), {})
+
+		if brow.is_empty() or typeof(parsed["paths"][name]) != TYPE_ARRAY:
+			continue
+
+		brow["paths"] = {}
+
+		for v in parsed["paths"][name]:
+			brow["paths"][int(v) >> 2] = int(v) & 3
+
+	if typeof(parsed.get("fish", {})) == TYPE_DICTIONARY and not parsed.get("fish", {}).is_empty():
+		rec["fish"] = parsed["fish"]
+
 	return rec
+
+
+# "x,z" -> Vector2i, or a block no record has for anything else.
+static func _block_name(name: String) -> Vector2i:
+	var parts: PackedStringArray = name.split(",")
+	return Vector2i(int(parts[0]), int(parts[1])) if parts.size() == 2 else Vector2i(-2147483648, -2147483648)
 
 
 # A block's saved text, encoded again only when it changed since the last save ("ver" counts every change): a save costs the blocks that

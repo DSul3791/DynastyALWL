@@ -9,8 +9,12 @@ extends Control
 # main thread every opening of a big map would stutter); the main thread only copies a block's cells out and makes the texture.
 
 const Sketch := preload("res://src/client/map_sketch.gd")
+const MapMarks := preload("res://src/client/map_marks.gd")
+const LABELS_FROM_ZOOM := 1.0   # names are written from this zoom in; further out only the pictures
 
 const PAPER := Color(0.86, 0.81, 0.69)
+const LABEL_FONT := "res://assets/ui/fonts/EBGaramond-Regular.ttf"
+const LABEL_PX := 14
 const ZOOM_MIN := 0.5
 const ZOOM_MAX := 6.0
 
@@ -23,7 +27,8 @@ var zoom: float = 1.5               # screen pixels per sketch pixel
 var centre: Vector2 = Vector2.ZERO  # the world sketch pixel at the middle of the page
 var follow: bool = true             # stays on the player until the page is dragged
 
-var _textures: Dictionary = {}      # Vector2i block -> ImageTexture
+var _textures: Dictionary = {}      # Vector2i block -> {"wash": ImageTexture (one pixel a cell), "batches": the block's ink strokes (map_sketch.gd)}
+var _label_font: Font = null        # the labels' hand: EB Garamond (assets/ui/fonts), else the theme's font
 var _dirty: Dictionary = {}         # Vector2i block -> true
 var _dragging: bool = false
 var _job: int = -1                  # the WorkerThreadPool task drawing _job_block, -1 none
@@ -33,6 +38,10 @@ var _job_out: Array = [null]        # the task's Image
 
 func _ready() -> void:
 	clip_contents = true
+	texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR   # the surveyed wash is one pixel a cell: smoothed, it fades out softly at its edge
+
+	if ResourceLoader.exists(LABEL_FONT):
+		_label_font = load(LABEL_FONT)
 	mouse_filter = Control.MOUSE_FILTER_STOP
 	visibility_changed.connect(func() -> void:
 		_dragging = false   # a drag cut off by closing the Journal never carries over
@@ -116,7 +125,8 @@ func _process(_delta: float) -> void:
 		_job = -1
 
 		if knowledge.blocks.has(_job_block) and _job_out[0] != null:
-			_textures[_job_block] = ImageTexture.create_from_image(_job_out[0])
+			var drawn: Dictionary = _job_out[0]
+			_textures[_job_block] = {"wash": ImageTexture.create_from_image(drawn["wash"]), "batches": drawn["batches"]}
 			queue_redraw()
 
 	# The dirty block nearest the middle of the page next.
@@ -159,13 +169,23 @@ func _draw() -> void:
 
 	var size_px: float = float(knowledge.block_cells * Sketch.PX)
 	var middle: Vector2 = size * 0.5
+	var shown: Array = []   # blocks on the page
+
+	# The ink is drawn in sketch pixels, scaled by the zoom (its widths divided by it, so a pen line stays a pen line at any zoom).
+	draw_set_transform(middle - centre * zoom, 0.0, Vector2(zoom, zoom))
 
 	for block in _textures:
-		var top_left: Vector2 = middle + (Vector2(block) * size_px - centre) * zoom
-		var rect: Rect2 = Rect2(top_left, Vector2(size_px, size_px) * zoom)
+		var rect: Rect2 = Rect2(middle + (Vector2(block) * size_px - centre) * zoom, Vector2(size_px, size_px) * zoom)
 
 		if rect.intersects(Rect2(Vector2.ZERO, size)):
-			draw_texture_rect(_textures[block], rect, false)
+			shown.append(block)
+			draw_texture_rect(_textures[block]["wash"], Rect2(Vector2(block) * size_px, Vector2(size_px, size_px)), false)
+
+	for block in shown:
+		for batch in _textures[block]["batches"]:
+			draw_multiline(batch[0], Color(Sketch.INK, float(batch[2])), maxf(float(batch[1]), 0.6) / zoom, true)
+
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 	if knowledge.is_empty():
 		var font: Font = get_theme_default_font()
@@ -186,6 +206,24 @@ func _draw() -> void:
 
 			if page.has_point(a) or page.has_point(b):
 				draw_dashed_line(a, b, Color(Sketch.INK, 0.55), 1.2, 4.0)
+
+	# Landmarks this character has seen: a small inked picture each, with its name written under it once the page is close enough to read.
+	var taken: Array = []   # label rects already written: a label that would sit on another is left off
+
+	for block in knowledge.marks:
+		var rect: Rect2 = Rect2(middle + (Vector2(block) * size_px - centre) * zoom, Vector2(size_px, size_px) * zoom).grow(40.0)
+
+		if not rect.intersects(Rect2(Vector2.ZERO, size)):
+			continue
+
+		for mark in knowledge.marks[block]:
+			var spot: Vector2 = middle + (_world_to_sketch(Vector3(mark[1].x, 0.0, mark[1].y)) - centre) * zoom
+
+			if Rect2(Vector2.ZERO, size).grow(30.0).has_point(spot):
+				MapMarks.draw_mark(self, str(mark[0]), spot)
+
+				if zoom >= LABELS_FROM_ZOOM and str(mark[2]) != "":
+					_write_label(str(mark[2]), spot + Vector2(0.0, 15.0), taken)
 
 	# The traps this character has set: a snare is a noose on its stake, a Bird trap a little cage.
 	for trap in knowledge.traps:
@@ -237,6 +275,20 @@ func _draw_legend() -> void:
 			_:
 				_draw_trap(mark + Vector2(0, -2), str(rows[i][0]))
 		draw_string(font, Vector2(box.position.x + 32.0, y + LEGEND_PX * 0.35), str(rows[i][1]), HORIZONTAL_ALIGNMENT_LEFT, -1, LEGEND_PX, ink)
+
+
+# A landmark's name, centred under its picture, unless it would sit on a name already written.
+func _write_label(text: String, at: Vector2, taken: Array) -> void:
+	var font: Font = _label_font if _label_font != null else get_theme_default_font()
+	var width: float = font.get_string_size(text, HORIZONTAL_ALIGNMENT_LEFT, -1, LABEL_PX).x
+	var box: Rect2 = Rect2(at - Vector2(width * 0.5, LABEL_PX * 0.8), Vector2(width, LABEL_PX * 1.1))
+
+	for other in taken:
+		if box.intersects(other):
+			return
+
+	taken.append(box)
+	draw_string(font, Vector2(at.x - width * 0.5, at.y), text, HORIZONTAL_ALIGNMENT_LEFT, -1, LABEL_PX, Color(Sketch.INK, 0.85))
 
 
 # One trap mark at `spot`.

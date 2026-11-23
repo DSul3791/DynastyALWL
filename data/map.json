@@ -18,5 +18,161 @@
 	"bank_practices": 2,
 	"save_every_s": 120.0,
 	"trails_tracking": 10,
-	"trails_note": "Dave 23 Nov 2026: game trails are \"auto added to the map once you get to a certain skill level\". From Tracking trails_tracking (10, Dave 23 Nov 2026: \"tracking trails at 10 is fine. till then we will learn to see them by eye\") the Map draws the game trails of every trail block this character has been near (kept in its map record, protocol 152), as a thin dashed line, only inside the cells it has surveyed."
+	"trails_note": "Dave 23 Nov 2026: game trails are \"auto added to the map once you get to a certain skill level\". From Tracking trails_tracking (10, Dave 23 Nov 2026: \"tracking trails at 10 is fine. till then we will learn to see them by eye\") the Map draws the game trails of every trail block this character has been near (kept in its map record, protocol 152), as a thin dashed line, only inside the cells it has surveyed.",
+	"landmarks_note": "Dave 23 Nov 2026 play test: the map \"needs to show the important stuff\": water's edges, the ocean, rivers, roads and pathways, campfires, cave entrances, bog iron, fruit trees, good fishing spots, a goblin clan's face with its name, a rock with resources started and left (gone when finally broken), \"anything a human would find of interest\". Each survey looks round marks_radius_m (server_map.gd look_round, terrain_server _map_landmarks) and puts what it sees on this character's map, in its surveyed cells only; what is no longer there leaves the marks within that radius. One mark stands for its kind within merge_m. A blow on a rock looks again within look_now_m at once. fishing_good catches by this character in one fishing_cell_m square mark a good fishing spot, which stays. fruit_trees: flora species -> [group]; fruit_groups: group -> [one tree, several, many (from orchard_from trees seen together; \"\" never)]. Numbers PROVISIONAL (coordinator, for Dave's review).",
+	"marks_radius_m": 60.0,
+	"merge_m": 40.0,
+	"look_now_m": 10.0,
+	"fishing_cell_m": 32.0,
+	"fishing_good": 3,
+	"orchard_from": 6,
+	"fruit_trees": {
+		"wild_apple": [
+			"apple"
+		],
+		"wild_apple_sweet": [
+			"apple"
+		],
+		"apple_early": [
+			"apple"
+		],
+		"apple_summer": [
+			"apple"
+		],
+		"apple_autumn": [
+			"apple"
+		],
+		"apple_keeping": [
+			"apple"
+		],
+		"apple_cooking": [
+			"apple"
+		],
+		"pear_summer": [
+			"pear"
+		],
+		"pear_autumn": [
+			"pear"
+		],
+		"pear_winter": [
+			"pear"
+		],
+		"wild_pear": [
+			"pear"
+		],
+		"sour_cherry": [
+			"cherry"
+		],
+		"wild_cherry": [
+			"cherry"
+		],
+		"plum": [
+			"plum"
+		],
+		"damson": [
+			"plum"
+		],
+		"quince": [
+			"quince"
+		],
+		"medlar": [
+			"medlar"
+		],
+		"fig": [
+			"fig"
+		],
+		"olive": [
+			"olive"
+		],
+		"pomegranate": [
+			"pomegranate"
+		],
+		"date_palm": [
+			"date"
+		],
+		"coconut_palm": [
+			"coconut"
+		],
+		"walnut": [
+			"walnut"
+		],
+		"sweet_chestnut": [
+			"chestnut"
+		],
+		"rowan": [
+			"rowan"
+		]
+	},
+	"fruit_groups": {
+		"apple": [
+			"Apple tree",
+			"Apple trees",
+			"Apple orchard"
+		],
+		"pear": [
+			"Pear tree",
+			"Pear trees",
+			"Pear orchard"
+		],
+		"cherry": [
+			"Cherry tree",
+			"Cherry trees",
+			"Cherry orchard"
+		],
+		"plum": [
+			"Plum tree",
+			"Plum trees",
+			"Plum orchard"
+		],
+		"quince": [
+			"Quince tree",
+			"Quince trees",
+			""
+		],
+		"medlar": [
+			"Medlar tree",
+			"Medlar trees",
+			""
+		],
+		"fig": [
+			"Fig tree",
+			"Fig trees",
+			""
+		],
+		"olive": [
+			"Olive tree",
+			"Olive trees",
+			"Olive grove"
+		],
+		"pomegranate": [
+			"Pomegranate tree",
+			"Pomegranate trees",
+			""
+		],
+		"date": [
+			"Date palm",
+			"Date palms",
+			"Date grove"
+		],
+		"coconut": [
+			"Coconut palm",
+			"Coconut palms",
+			""
+		],
+		"walnut": [
+			"Walnut tree",
+			"Walnut trees",
+			""
+		],
+		"chestnut": [
+			"Chestnut tree",
+			"Chestnut trees",
+			""
+		],
+		"rowan": [
+			"Rowan tree",
+			"Rowan trees",
+			""
+		]
+	}
 }

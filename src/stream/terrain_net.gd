@@ -40,7 +40,8 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 162  # 162 (23 Nov 2026, what players see of each other: an angler and an archer looked idle to the others): players rows gain `cast` (PlayersScript.cast_code: the rod float's spot from the body in decimetres, 0 none), so the others draw the line and the float; the client now sends the bow raised and drawn hand flags, drawn on the body. Client and server must be updated together. 161 (23 Nov 2026, a build 9257 client on a newer server had every call land on the wrong method and was never told why): the join handshake opens with the client's hi and its protocol (server_auth.gd); a server of another protocol answers old with the reason and drops it, and its ok and challenge carry its protocol, so a client on an older server says so. A client from before 161 hears nothing and says, after 15 s, that the server runs another build. Client and server must be updated together.
+const PROTOCOL_VERSION := 163  # 163 (23 Nov 2026, Dave's play test of the Map: "it needs to show the important stuff"): map_blocks(block_x, block_z, bytes, marks, paths): a block's landmarks seen by this character ([kind, x, z, label] rows, server_map.gd look_round) and its path cells (index * 4 + 1 path or 2 road); a cell's water may be 3 river or 4 marsh. Client and server must be updated together.
+# 162 (23 Nov 2026, what players see of each other: an angler and an archer looked idle to the others): players rows gain `cast` (PlayersScript.cast_code: the rod float's spot from the body in decimetres, 0 none), so the others draw the line and the float; the client now sends the bow raised and drawn hand flags, drawn on the body. Client and server must be updated together. 161 (23 Nov 2026, a build 9257 client on a newer server had every call land on the wrong method and was never told why): the join handshake opens with the client's hi and its protocol (server_auth.gd); a server of another protocol answers old with the reason and drops it, and its ok and challenge carry its protocol, so a client on an older server says so. A client from before 161 hears nothing and says, after 15 s, that the server runs another build. Client and server must be updated together.
 # 160 (23 Nov 2026, two players see the same world): ground_taken(kind, points, days): a dead branch picked, a tide-line node used or a bird nest robbed shows gone to the others too, and to a player walking in later; a pick at a branch taken today gives no stick; branches grow back the next game day. Client and server must be updated together.
 # 159 (23 Nov 2026, what players see of each other): held_item gains the left-hand item and hand flags (bow raised, drawn, shield up, on a ladder); players rows gain left and more (a burning torch, those flags, eats and drinks); flight_seen (an arrow or thrown weapon leaving another player's hand, flown by the receiver). Client and server must be updated together. 155 (23 Nov 2026, Dave on the real server: "battle was almost impossible"): ACT_STRIKE b and count = the server ms the striker's screen showed the animals at (the row clock's draw time, and the present a committed charge is drawn at); the server judges the blow there, at most data/animals/animals.json rewind_max_ms back (server_animals pos_at). Client and server must be updated together.
 # 158 (23 Nov 2026, the stutter hunt: a standing player's client logged "grass runs: block X came with N routes" again and again): trails() carries a block's routes once and again only when they change; when only the worn cells changed it carries trail_codec.gd ROUTES_SAME and the client keeps its routes (server_trails.gd updates_for). Client and server must be updated together.
@@ -108,7 +109,7 @@ signal held_reported(peer_id: int, number: int, left: int, flags: int)
 signal purse_received(counts: PackedInt32Array)
 signal carry_received(item_id: String)
 signal trails_received(block_x: int, block_z: int, bytes: PackedByteArray, routes: PackedByteArray)
-signal map_block_received(block_x: int, block_z: int, bytes: PackedByteArray)
+signal map_block_received(block_x: int, block_z: int, bytes: PackedByteArray, marks: Array, paths: PackedInt32Array)
 signal reputation_received(ids: PackedStringArray, names: PackedStringArray, points: PackedInt32Array)
 signal item_received(item_id: String, count: int, source: String)
 signal notice_received(text: String)
@@ -1093,9 +1094,10 @@ func notice(text: String) -> void:
 # compressed (src/shared/map_codec.gd decode() gives {cell index: [q, height m, water, trees]}; index = local_x + local_z * 32, cells
 # 16 m, data/map.json). Heights come rounded to the step of each cell's own Mapping skill q. Sent to the character's own connection
 # only: every block on joining (a few a pass), then each block a survey changes. Nothing is ever sent for ground it has not surveyed.
+# marks: the landmarks this character has seen in the block, [kind, x, z, label] (protocol 163); paths: its path cells, index * 4 + 1 path / 2 road.
 @rpc("authority", "call_remote", "reliable")
-func map_blocks(block_x: int, block_z: int, bytes: PackedByteArray) -> void:
-	map_block_received.emit(block_x, block_z, bytes)
+func map_blocks(block_x: int, block_z: int, bytes: PackedByteArray, marks: Array, paths: PackedInt32Array) -> void:
+	map_block_received.emit(block_x, block_z, bytes, marks, paths)
 
 
 # Protocol 128 (Dave 18 Nov 2026, ground missing for minutes after a join): the client's saved copy of `tile` is at revision `since`; the

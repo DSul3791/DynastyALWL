@@ -435,6 +435,8 @@ var _exertion: Dictionary = {}      # peer -> smoothed 0..1 from movement
 var _motion: Dictionary = {}        # peer -> [last position, msec]
 var _path_cfg: Dictionary = {}      # data/path_speed.json: range_m and exertion_factor for moving on or near a path
 var _on_path_cache: Dictionary = {} # peer -> [msec checked, bool, bool]: whether a path patch, and a road patch, lies within range_m (looked up at most once a second)
+var map_look: Callable               # (peer, position) -> void: the Map's marks right there are looked at again (a blow on a rock, the rock gone; server_map look_now)
+var fish_caught: Callable            # (peer, position) -> void: a fish this character caught from there (server_map note_catch: good fishing spots)
 var road_trip: Callable              # (peer, position, kind "road" / "path" / "cart", or "" off every path) -> void: bandit site traffic (server_bandits.gd), set by the server scene
 var _work_level: Dictionary = {}    # peer -> effort of the last tool work (data/items/exertion.json tool_effort)
 var _work_until: Dictionary = {}    # peer -> msec until which tool work counts as effort
@@ -10545,7 +10547,12 @@ func _scatter_spot(rng: RandomNumberGenerator, cell: Vector2i, cell_m: float, st
 # stays (a record in _items with a "tree" entry, saved in tree_states.json) and the tree comes down in its logs (_fell_record).
 func _hit(peer: int, inv, tree_id: int, chunk: Vector2i, held_slot: int) -> void:
 	if chunk.x == Net.HIT_BOULDER:
+		var rock_at: Variant = _items.get(tree_id, {}).get("pos", null)
 		_hit_boulder(peer, inv, tree_id, chunk.y - 1)   # a boulder blow's count is the held pack slot plus one
+
+		if rock_at != null and map_look.is_valid():
+			map_look.call(peer, rock_at)   # a rock started is marked on the Map, and the mark goes with its last stone
+
 		return
 
 	if not _peer_pos.has(peer) or not tree_info.is_valid() or not cut_tree.is_valid():
@@ -17465,6 +17472,40 @@ func _note_road_trip(peer: int, position: Vector3) -> void:
 	road_trip.call(peer, position, "cart" if pulling else ("road" if bool(_on_path_cache[peer][2]) else "path"))
 
 
+# What of the world items round `at` a person would mark on a map (server_map.gd landmarks, Dave 23 Nov 2026): [kind, x, z, label] rows.
+# A campfire (not a camp's own fire or a bandit camp's signs); a rock with ore in it (or a fallen star) started and not finished, as
+# "ore_rock:<ore>"; and every path patch as "path", or "road" for a surveyed road. The NEAR_M grid of the last world sync: no scan of the world.
+func map_marks_near(at: Vector3, r: float) -> Array:
+	var out: Array = []
+
+	for id in _ids_near(at, r):
+		var it: Dictionary = _items.get(id, {})
+
+		if it.is_empty() or Vector2(it["pos"].x - at.x, it["pos"].z - at.z).length() > r:
+			continue
+
+		if it.has("fire"):
+			if not it["fire"].has("camp") and not it["fire"].has("marks"):
+				out.append(["campfire", it["pos"].x, it["pos"].z, ""])
+		elif it.has("boulder"):
+			var info: Dictionary = it["boulder"]
+
+			if info.has("ore") and int(it["count"]) < int(info.get("total", 0)) and int(it["count"]) > 0 and MAP_ORE_LABELS.has(str(info["ore"])):
+				out.append(["ore_rock:" + str(info["ore"]), it["pos"].x, it["pos"].z, MAP_ORE_LABELS[str(info["ore"])]])
+		elif it.has("struct") and str(it["struct"].get("kind", "")) == "path_patch":
+			out.append(["road" if bool(it["struct"].get("road", false)) else "path", it["pos"].x, it["pos"].z, ""])
+
+	return out
+
+
+const MAP_ORE_LABELS := {"copper": "Copper", "tin": "Tin", "iron": "Iron", "coal": "Coal", "salt": "Salt", "meteorite": "Meteorite"}   # boulders.json ore items
+
+
+func _map_catch(peer: int, from: Variant) -> void:
+	if fish_caught.is_valid() and from is Vector3:
+		fish_caught.call(peer, from)   # good fishing spots on the Map (server_map note_catch)
+
+
 # Metres from a spot to the nearest surveyed road patch within r, or INF (a bandit site stands off a road).
 func road_distance(at: Vector3, r: float) -> float:
 	var near: Vector3 = road_point(at, r)
@@ -20211,6 +20252,7 @@ func _net_haul(peer: int, state: Dictionary) -> void:
 
 	practice(peer, "fish")
 	_goal_event(peer, "fish_caught")
+	_map_catch(peer, state.get("spot", null))
 	var line: String = "You haul in %s." % ", ".join(caught)
 
 	if fish_stock(cell) < int(_fishing_data().get("hint_below", 3)):
@@ -20281,6 +20323,7 @@ func _spear_fish(peer: int, inv, slot: int, at: Vector3, fishing: Dictionary, fi
 		practice(peer, "fish")
 		_goal_event(peer, "fish_caught")
 		_goal_event(peer, "fish_kind_caught", species, true)   # ADD-25
+		_map_catch(peer, _peer_pos.get(peer, null))
 		_say(peer, str(cfg.get("say_hit", "")) % table.sentence_name(table.number_of(species)))
 		_dirty = true
 	else:
@@ -20470,6 +20513,7 @@ func _fish_land(peer: int, inv, _slot: int, state: Dictionary) -> void:
 	practice(peer, "fish")
 	_goal_event(peer, "fish_caught")   # the fish goal counts a catch even after the fish is eaten
 	_goal_event(peer, "fish_kind_caught", species, true)   # ADD-25: first catch of this kind
+	_map_catch(peer, state.get("spot", null))
 	var landed: String = "You land a %s." % table.sentence_name(table.number_of(species))
 
 	if int(_fish_stock[key][0]) < int(_fishing_data().get("hint_below", 3)):

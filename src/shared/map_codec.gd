@@ -2,7 +2,8 @@ extends RefCounted
 
 # Map knowledge blocks (protocol 120, the charcoal Map; data/map.json) on the wire and in the server's maps/ files. A block holds the
 # cells one character has surveyed: {cell index: [q, height m, water, trees]}. q = Mapping skill 1..100 when the cell was seen;
-# height in whole metres; water 0 dry, 1 inland water, 2 sea; trees 0..3. Index = local_x + local_z * block_cells from the block's
+# height in whole metres; water 0 dry, 1 inland water (a lake), 2 sea, 3 river, 4 marsh (protocol 163; saves before it hold 0..2, a river
+# or a lake then both 1); trees 0..3. Index = local_x + local_z * block_cells from the block's
 # south-west corner. Packed as [count u16][index u16, q u8, height s16, water u8, trees u8] x count, then deflated with the raw size
 # in front (u32), like trail_codec.gd.
 
@@ -10,6 +11,8 @@ const CELL_BYTES := 7
 const WATER_NONE := 0
 const WATER_INLAND := 1
 const WATER_SEA := 2
+const WATER_RIVER := 3
+const WATER_MARSH := 4
 
 
 static func encode(cells: Dictionary) -> PackedByteArray:
@@ -23,7 +26,7 @@ static func encode(cells: Dictionary) -> PackedByteArray:
 		raw.encode_u16(at, int(idx))
 		raw.encode_u8(at + 2, clampi(int(c[0]), 1, 100))
 		raw.encode_s16(at + 3, clampi(int(round(float(c[1]))), -32768, 32767))
-		raw.encode_u8(at + 5, clampi(int(c[2]), 0, 2))
+		raw.encode_u8(at + 5, clampi(int(c[2]), 0, 4))
 		raw.encode_u8(at + 6, clampi(int(c[3]), 0, 3))
 		at += CELL_BYTES
 
