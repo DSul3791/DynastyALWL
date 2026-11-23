@@ -19,6 +19,7 @@ var blocks: Dictionary = {}   # Vector2i block -> {cell index: [q, height, water
 var traps: Array = []         # [[Vector2 world x/z, kind], ...]: the traps this character has set (protocol 150, net.trap_marks_received)
 var trails: Dictionary = {}   # Vector2i trail block -> [[kind, PackedVector2Array world x/z], ...]: game trails this character was near (protocol 152)
 var trails_tracking: int = 10 # the Tracking level from which the Map draws them (data/map.json trails_tracking)
+var _steps: Dictionary = {}   # Vector2i trail block -> its surveyed steps (surveyed_trail_steps), dropped when its routes or a map block over it change
 
 
 func _init() -> void:
@@ -40,6 +41,14 @@ func set_block(block: Vector2i, cells: Dictionary) -> void:
 		blocks.erase(block)
 	else:
 		blocks[block] = cells
+
+	# Trail blocks whose routes may run over this map block (a route can reach a block side past its own) are worked out again.
+	var side: float = TrailCodec.ROUTE_BLOCK_M
+	var area: Rect2 = Rect2(Vector2(block) * cell_m * float(block_cells), Vector2.ONE * cell_m * float(block_cells)).grow(side)
+
+	for trail_block in _steps.keys():
+		if area.intersects(Rect2(Vector2(trail_block) * side, Vector2(side, side))):
+			_steps.erase(trail_block)
 
 	block_changed.emit(block)
 
@@ -65,22 +74,36 @@ func set_trails(block_x: int, block_z: int, routes: PackedByteArray) -> void:
 	else:
 		trails[Vector2i(block_x, block_z)] = decoded
 
+	_steps.erase(Vector2i(block_x, block_z))
+
 	trails_changed.emit()
 
 
-# The trail pieces the Map draws: [[a, b], ...] world x/z, each step of a route whose middle lies in a cell this character has surveyed.
-func surveyed_trail_steps() -> Array:
+# The trail pieces the Map draws: [[a, b], ...] world x/z, each step of a route whose middle lies in a cell this character has surveyed;
+# only trail blocks touching `view` (world x/z) when it has a size. Worked out once per trail block and kept until it changes.
+func surveyed_trail_steps(view: Rect2 = Rect2()) -> Array:
 	var out: Array = []
+	var side: float = TrailCodec.ROUTE_BLOCK_M
 
 	for block in trails:
-		for route in trails[block]:
-			var pts: PackedVector2Array = route[1]
+		if view.has_area() and not view.intersects(Rect2(Vector2(block) * side, Vector2(side, side))):
+			continue
 
-			for i in range(1, pts.size()):
-				var mid: Vector2 = (pts[i - 1] + pts[i]) * 0.5
+		if not _steps.has(block):
+			var steps: Array = []
 
-				if not cell_at(Vector2i(floori(mid.x / cell_m), floori(mid.y / cell_m))).is_empty():
-					out.append([pts[i - 1], pts[i]])
+			for route in trails[block]:
+				var pts: PackedVector2Array = route[1]
+
+				for i in range(1, pts.size()):
+					var mid: Vector2 = (pts[i - 1] + pts[i]) * 0.5
+
+					if not cell_at(Vector2i(floori(mid.x / cell_m), floori(mid.y / cell_m))).is_empty():
+						steps.append([pts[i - 1], pts[i]])
+
+			_steps[block] = steps
+
+		out.append_array(_steps[block])
 
 	return out
 

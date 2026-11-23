@@ -529,6 +529,8 @@ func trails_checks() -> void:
 	var again = make(dir)
 	var back: Array = again.trail_updates_for(71)
 	check(back.size() == 1 and back[0][2] == routes, "after a restart the character's trails come back with its map")
+	again.forget_peer(71)
+	check(again.trail_updates_for(71).size() == 1, "a connection that comes back is sent them again")
 
 	var k = KnowledgeScript.new()
 	var told: Array = [0]
@@ -538,6 +540,9 @@ func trails_checks() -> void:
 	k.set_block(Vector2i(0, 0), {0: [1, 10.0, 0, 0], 1: [1, 10.0, 0, 0], 2: [1, 10.0, 0, 0]})
 	var steps: Array = k.surveyed_trail_steps()
 	check(steps.size() == 2, "only the steps whose middle lies in a surveyed cell are drawn (%d)" % steps.size())
+	check(k.surveyed_trail_steps(Rect2(5000.0, 5000.0, 100.0, 100.0)).is_empty() and k.surveyed_trail_steps(Rect2(0.0, 0.0, 50.0, 50.0)).size() == 2, "a page over other ground reads no trail block")
+	k.set_block(Vector2i(0, 0), {0: [1, 10.0, 0, 0]})
+	check(k.surveyed_trail_steps().is_empty(), "a changed map block is read again: its cell under the trail gone, so is the line (%d)" % k.surveyed_trail_steps().size())
 	check(k.trails_tracking == int((JSON.parse_string(FileAccess.get_file_as_string("res://data/map.json")) as Dictionary)["trails_tracking"]), "the Tracking level comes from data/map.json")
 	var page: String = FileAccess.get_file_as_string("res://src/client/map_page.gd")
 	check(page.contains("float(tracking.call()) >= float(knowledge.trails_tracking)") and FileAccess.get_file_as_string("res://src/client/ui/goals/journal_view.gd").contains("skill_level_of(\"tracking\")"), "the page draws them only at that Tracking level, read from the character")

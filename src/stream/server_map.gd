@@ -3,7 +3,8 @@ extends RefCounted
 # The character-discovered charcoal Map (docs/design/PLAYER_CARTOGRAPHY_MAP_DESIGN.md, WP-MAP; numbers in data/map.json, all provisional).
 # Server-owned and per character: a sparse record of the map cells a character has surveyed by walking near them, each with what was
 # seen there (ground height, water, trees) and q, the character's Mapping skill when it was seen. Only a character's own surveyed cells
-# ever leave the server, to that character's own connections; nothing about unvisited ground is sent. A skill gain alone changes no
+# ever leave the server, to that character's own connections; nothing about unvisited ground is sent, save the game trails of the 256 m
+# trail blocks the character was near (protocol 152), which it was already sent for its grass and which the Map draws only on surveyed cells. A skill gain alone changes no
 # cell: a cell is redrawn at the new skill only when the character comes back to it (improve_min_levels). Mapping practice comes only
 # from cells never seen before. Saved per character in <store>/maps/, apart from characters.json (server_items owns that file).
 # Map Scrolls (make, share, sell, inherit) are not designed yet: blocks_of() and cell_rows() are the read side a scroll would use.
@@ -27,7 +28,8 @@ var _peer_key: Dictionary = {}   # peer -> the key its record is under (kept so 
 var _last_at: Dictionary = {}    # peer -> Vector3 of its last survey (or of where it was first seen or landed)
 var _last_ms: Dictionary = {}    # peer -> msec when _last_at was set
 var _sent: Dictionary = {}       # peer -> {Vector2i: [version sent, msec sent]}
-var _trails_sent: Dictionary = {}  # peer -> {Vector2i trail block: hash of the routes sent}
+var _trail_ver: int = 0             # counts every change to any record's trails (a block's version, for what each peer was sent)
+var _trails_sent: Dictionary = {}  # peer -> {Vector2i trail block: the version of its routes sent}
 var _dir: String = ""
 var _save_acc: float = 0.0
 var surveys: int = 0             # surveys run (the benchmark and the tests read it)
@@ -270,7 +272,7 @@ func note_trails(peer: int, block: Vector2i, routes: PackedByteArray) -> void:
 	var key: String = str(_peer_key.get(peer, key_of.call(peer) if key_of.is_valid() else ""))
 
 	if key == "" or routes.is_empty():
-		return
+		return   # not worked out right now (nobody near long enough): the last routes known are kept
 
 	var rec: Dictionary = _record(key)
 
@@ -281,6 +283,9 @@ func note_trails(peer: int, block: Vector2i, routes: PackedByteArray) -> void:
 		return
 
 	rec["trails"][block] = routes
+	_trail_ver += 1
+	rec["trail_ver"] = rec.get("trail_ver", {})
+	rec["trail_ver"][block] = _trail_ver
 	rec["dirty"] = true
 
 
@@ -298,13 +303,15 @@ func trail_updates_for(peer: int) -> Array:
 	var out: Array = []
 	var limit: int = maxi(int(cfg.get("send_per_pass", 4)), 1)
 
-	for block in rec.get("trails", {}):
-		var sig: int = hash(rec["trails"][block])
+	var vers: Dictionary = rec.get("trail_ver", {})
 
-		if int(known.get(block, 0)) == sig:
+	for block in rec.get("trails", {}):
+		var ver: int = int(vers.get(block, -1))
+
+		if known.has(block) and int(known[block]) == ver:
 			continue
 
-		known[block] = sig
+		known[block] = ver
 		out.append([block.x, block.y, rec["trails"][block]])
 
 		if out.size() >= limit:

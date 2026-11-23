@@ -177,7 +177,10 @@ func _draw() -> void:
 	if _trails_on:
 		var page: Rect2 = Rect2(Vector2.ZERO, size).grow(8.0)
 
-		for step in knowledge.surveyed_trail_steps():
+		var per_m: float = float(Sketch.PX) / knowledge.cell_m
+		var view: Rect2 = Rect2((centre - middle / zoom) / per_m, size / zoom / per_m)   # the page in world metres
+
+		for step in knowledge.surveyed_trail_steps(view):
 			var a: Vector2 = middle + (_world_to_sketch(Vector3(step[0].x, 0.0, step[0].y)) - centre) * zoom
 			var b: Vector2 = middle + (_world_to_sketch(Vector3(step[1].x, 0.0, step[1].y)) - centre) * zoom
 
