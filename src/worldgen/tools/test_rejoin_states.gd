@@ -219,5 +219,12 @@ func _init() -> void:
 	check(not bars._note.visible, "it goes when the server talks again")
 	check(LinkBarsScript.silence_words(2000) == "", "a short gap says nothing")
 	bars.queue_free()
+
+	# A server restarted with players on (a stop.now from run_server.sh): each is told why and its game shows it at once on the "connection
+	# lost" window (tools/restart_notice_check.sh runs it for real: a server and a client here).
+	var client_code: String = FileAccess.get_file_as_string("res://scenes/terrain_client/terrain_client.gd")
+	check(server_code.contains("_quit_at_msec = now + _tell_closing()") and server_code.contains("net.notice.rpc_id(int(peer), NetScript.SERVER_CLOSING)") and server_code.contains("\t\t_close_players()\n") and server_code.contains("peer.disconnect_peer(int(id))"), "a stopping server tells each player why, waits for the word to go, then closes their connections (terrain_server.gd)")
+	check(client_code.contains("if text == NetScript.SERVER_CLOSING:") and client_code.contains("_show_lost_notice(lost_reason(_server_closing))"), "and the player's game puts it on its connection lost window (terrain_client.gd)")
+	check(Net.SERVER_CLOSING.contains("restarting") and Net.SERVER_CLOSING.contains("saved"), "the words say it is a restart and nothing is lost")
 	print("test_rejoin_states: ", "PASS" if failures == 0 else "%d failures" % failures)
 	quit(1 if failures > 0 else 0)
