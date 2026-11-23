@@ -8,6 +8,7 @@ extends Node
 # the normal stance. The weapon is drawn as a simple first-person model until real art exists.
 
 const FeelKicks := preload("res://src/client/feel_kicks.gd")
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 # The held-item label sits 8 px over the hotbar tray (redesign section 9: the tray top is at y 948 of the 1080 canvas).
 const LABEL_ABOVE := 1080.0 - ArtKit.HOTBAR_TRAY.position.y + 8.0
@@ -3590,10 +3591,10 @@ func _third_skin_color() -> Color:
 	return Color(THIRD_SKIN.r * tint.r, THIRD_SKIN.g * tint.g, THIRD_SKIN.b * tint.b)
 
 
-# The left-hand item: a torch (with its light) or a shield, mounted on the left hand; B raises a shield.
+# The left-hand item: a torch (with its light) or a shield, mounted on the left hand; B (KeyBindings "block") raises a shield.
 func _show_off_model(delta: float) -> void:
 	var number: int = _left_number() if _inv != null else 0
-	blocking = number != 0 and _off_class() == "shield" and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_key_pressed(KEY_B)
+	blocking = number != 0 and _off_class() == "shield" and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and KeyBindings.held("block")
 	var shown: int = -number if number != 0 and _slot_out(_left_slot()) else number   # a torch that went out is drawn again, without its flame
 
 	if shown != _off_shown:

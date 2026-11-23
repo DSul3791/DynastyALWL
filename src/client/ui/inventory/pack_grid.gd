@@ -12,6 +12,7 @@ const LOOK_COLUMNS := 6     # slots across the pack column
 const InfoStrip := preload("res://src/client/ui/inventory/info_strip.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 const VitalsRules := preload("res://src/shared/vitals_rules.gd")
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 # Pack slots are 100 canvas px with 10 px gaps at every text size (redesign 4.1): 6 across fill the 650 px column exactly.
 const SLOT_UNIT := float(ArtKit.SLOT) / ItemSlot.SLOT_PX
 
@@ -107,7 +108,7 @@ func build() -> Control:
 	right.add_child(row)
 
 	# One row; each button carries its key (the same keys work on the slot under the mouse).
-	for spec in [["Split (S)", "Split the selected stack in half", view._split_selected], ["Drop (D)", "Drop the whole stack. Shift+D drops one", view._drop_selected.bind(true)], ["Use (E)", "Eat the food, apply the medicine, or hold a tool in your hand (again to put it away)", func(): view.eat_slot(view._selected)], ["Repair (R)", "Repair a worn tool with its materials", view._repair_selected]]:
+	for spec in [["Split (%s)" % KeyBindings.label("split_item"), "Split the selected stack in half", view._split_selected], ["Drop (%s)" % KeyBindings.label("drop_item"), "Drop the whole stack. Shift+%s drops one" % KeyBindings.label("drop_item"), view._drop_selected.bind(true)], ["Use (%s)" % KeyBindings.label("use_item"), "Eat the food, apply the medicine, or hold a tool in your hand (again to put it away)", func(): view.eat_slot(view._selected)], ["Repair (%s)" % KeyBindings.label("repair_item"), "Repair a worn tool with its materials", view._repair_selected]]:
 		var action: Button = Button.new()
 		action.text = spec[0]
 		action.tooltip_text = spec[1]
@@ -284,11 +285,11 @@ func _slot_menu(index: int) -> void:
 	var menu: PopupMenu = PopupMenu.new()
 	menu.theme = view._panel.theme if view._panel != null else null
 	menu.add_theme_font_size_override("font_size", view._px(view.BODY_PX - 4))
-	menu.add_item("Use (E)", 0)
-	menu.add_item("Split (S)", 1)
-	menu.add_item("Drop (D)", 2)
-	menu.add_item("Drop one (Shift+D)", 3)
-	menu.add_item("Repair (R)", 4)
+	menu.add_item("Use (%s)" % KeyBindings.label("use_item"), 0)
+	menu.add_item("Split (%s)" % KeyBindings.label("split_item"), 1)
+	menu.add_item("Drop (%s)" % KeyBindings.label("drop_item"), 2)
+	menu.add_item("Drop one (Shift+%s)" % KeyBindings.label("drop_item"), 3)
+	menu.add_item("Repair (%s)" % KeyBindings.label("repair_item"), 4)
 	menu.add_item("Unfavourite" if view.inventory.is_fav(index) else "Favourite (Sort and the bulk buttons leave it)", 5)
 
 	if view.chest_mode:
