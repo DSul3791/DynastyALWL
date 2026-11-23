@@ -11777,8 +11777,11 @@ func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
 		return
 
 	var edits: Array = (edits_near.call(at, 4.0) if edits_near.is_valid() else []) as Array
-	var spot: Vector3 = Vector3(at.x, _edited_height(at.x, at.z, edits) if ground_height.is_valid() else at.y, at.z)   # the ground as dug and filled
+	var spot: Vector3 = Vector3(at.x, _cave_ground(at, _edited_height(at.x, at.z, edits)) if ground_height.is_valid() else at.y, at.z)   # the ground as dug and filled, or a cave's floor
 	var why: String = _sapling_refusal(item_id, spot)
+
+	if tree_seed_species(item_id) != "" and ground_height.is_valid() and spot.y < float(ground_height.call(spot.x, spot.z)) - 1.0:
+		why = "A tree needs open sky: it cannot grow in a cave."   # a bush fits under the roof; a tree would grow through it (this reason first)
 
 	if why != "":
 		_say(peer, why)
@@ -18863,14 +18866,15 @@ var _remains_settled: Dictionary = {}   # remains world id -> [the y the recheck
 
 
 # Where remains rest at `pos` (a point a little above or below the surface): the top of a foundation or floor within reach of it (a death in a house is
-# not buried under the slab), else the ground as dug and filled. `rows` is _foundation_rows().
+# not buried under the slab), else the ground as dug and filled, or the floor of a cave they are in (round 6, 23 Nov 2026: the settle pass lifted
+# remains in a cave onto the hill above). `rows` is _foundation_rows().
 func _remains_surface(pos: Vector3, rows: Array) -> float:
 	var top: float = PlacementRules.support_top(_structures_cfg, pos, rows, true)
 
 	if not is_nan(top):
 		return top
 
-	return _edited_height(pos.x, pos.z, (edits_near.call(pos, 4.0) if edits_near.is_valid() else []) as Array)
+	return _cave_ground(pos, _edited_height(pos.x, pos.z, (edits_near.call(pos, 4.0) if edits_near.is_valid() else []) as Array))   # in a cave: its floor, where the owner can reach them
 
 
 # --- Fall damage (job 62) ---

@@ -739,6 +739,7 @@ func _ready() -> void:
 	animals.ground_edited = edited_ground.is_edited
 	animals.blocked = npcs.blocked
 	animals.walls = func(x0, z0, x1, z1, margin): return items.structure_blocks_step(x0, z0, x1, z1, margin)
+	animals.in_cave = _in_cave   # no blow through a cave roof (server_animals.blow_blocked)
 	animals.water_level = func(x, z):
 		var water_here: Array = _water_at(Vector3(x, 0.0, z))
 		return float(water_here[0]) if not is_nan(water_here[0]) else NAN

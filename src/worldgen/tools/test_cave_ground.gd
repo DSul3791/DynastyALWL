@@ -5,6 +5,8 @@ extends SceneTree
 # below the ground", "Push it into the ground") while the ghost showed it fits, and a handcart pulled in rode on the hill's height.
 # Real tiles: the Ragtooth camp cave (camp_caves.gd, mouth 58264,72084): its open cut, its passage and its room.
 # terrain_generator.floor_below / cave_floor_at; server_items _place, _place_torch, _drop_height; server_carts _rest_y, _grade, _blocked.
+# Also: remains of a death in a cave and a bush planted there rest on its floor (they sat on the hill height), a tree seed is refused under the
+# roof, and no blow passes between a cave and the hill over it (server_animals.blow_blocked).
 #   godot --headless --path . --script res://src/worldgen/tools/test_cave_ground.gd
 
 const GeneratorScript := preload("res://src/worldgen/runtime/terrain_generator.gd")
@@ -14,6 +16,7 @@ const TableSetScript := preload("res://src/worldgen/tables/table_set.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const WORLD := "res://worlds/base_world"
 
 # Spots in the camp cave (x, z) with the floor roughly there, and one in the open by the town.
@@ -182,6 +185,50 @@ func _init() -> void:
 
 	check(stopped == "" and Vector2(pos.x - 58264.0, pos.z - 72084.0).dot(Vector2(out_dir.x, out_dir.z)) > 3.0, "a cart pulled out of the passage leaves by the open cut and goes past the mouth (%s, ends at %s)" % [stopped, str(pos)])
 	check(worst_gap < 0.6, "on its way out it rests on the cave floor or the ground (worst %.2f m off)" % worst_gap)
+
+	# A death in the mouth's open cut (its floor 1.1 m under the tile's ground: not marked as a cave death): the remains lie on the cut's floor,
+	# and the settle pass leaves them there.
+	var cut_feet: Vector3 = Vector3(CUT.x, floors[CUT], CUT.y)
+	items.report_position(1, cut_feet)
+	items.give_to(1, "stone", 2)
+	var remains_before: int = items._next_id
+	var died: bool = items.kill(1, "test")
+	var remains: Dictionary = items._items.get(remains_before, {})
+	check(died and not remains.is_empty() and absf(float(remains["pos"].y) - floors[CUT]) < 0.15, "remains of a death in the open cut lie on its floor %.2f (%s)" % [floors[CUT], str(remains.get("pos", "none"))])
+	items._remains_full_at = 0.0
+	items._remains_tick(1.0)
+	check(not remains.is_empty() and absf(float(remains["pos"].y) - floors[CUT]) < 0.15, "and the settle pass leaves them there, not on the hill height %.2f (%s)" % [gen.surface_height(CUT.x, CUT.y), str(remains.get("pos", "none"))])
+	check(not remains.is_empty() and absf(items._remains_surface(Vector3(PASSAGE.x, floors[PASSAGE] + 0.1, PASSAGE.y), []) - floors[PASSAGE]) < 0.15, "remains in the passage rest on its floor (%.2f)" % items._remains_surface(Vector3(PASSAGE.x, floors[PASSAGE] + 0.1, PASSAGE.y), []))
+
+	# A dug bush planted in the room grows from its floor; a tree seed is refused there.
+	items.season_now = func(): return "spring"
+	items.report_position(1, feet)
+	items.give_to(1, "hazel_bush", 1)
+	var saplings_before: int = items._saplings.size()
+	items._plant_bush(1, items.inventory_of(1), items.inventory_of(1).numbers.find(items.table.number_of("hazel_bush")), feet + Vector3(0.6, 0.0, 0.0))
+	var planted: Dictionary = items._saplings.back() if items._saplings.size() > saplings_before else {}
+	check(not planted.is_empty() and absf(float(planted["pos"].y) - floors[ROOM]) < 0.2, "a hazel bush planted in the room grows from its floor %.2f (%s, said %s)" % [floors[ROOM], str(planted.get("pos", "none")), str(said)])
+	var tree_seed: String = ""
+
+	for sp in (items._drops.get("trunk", {}).get("felled_seeds", {}).get("by_species", {}) as Dictionary):
+		tree_seed = str(items._drops["trunk"]["felled_seeds"]["by_species"][sp])
+		break
+
+	said.clear()
+	items.give_to(1, tree_seed, 1)
+	var seeds_before: int = items._saplings.size()
+	items._plant_bush(1, items.inventory_of(1), items.inventory_of(1).numbers.find(items.table.number_of(tree_seed)), feet + Vector3(-0.8, 0.0, 0.4))
+	check(tree_seed != "" and items._saplings.size() == seeds_before and said.has("A tree needs open sky: it cannot grow in a cave."), "a %s is refused in the room, saying why (%s)" % [tree_seed, str(said)])
+
+	# No blow through a cave's roof: a wolf on the hill over the passage and a player in it; at the mouth, level with each other, they still meet.
+	var animals = AnimalsScript.new()
+	var tile = gen.get_tile(gen.tile_of(ROOM.x, ROOM.y))
+	animals.in_cave = func(p: Vector3) -> bool: return tile.in_cave(Vector3(gen.wrap_x(p.x), p.y, gen.wrap_x(p.z)), 2.0)
+	var deep: Vector3 = Vector3(PASSAGE.x, floors[PASSAGE], PASSAGE.y)
+	var over: Vector3 = Vector3(PASSAGE.x, gen.surface_height(PASSAGE.x, PASSAGE.y), PASSAGE.y + 1.0)
+	check(bool(animals.in_cave.call(deep)) and animals.blow_blocked(over, deep) and animals.blow_blocked(deep, over), "the roof is between a wolf on the hill and a player in the passage, either way")
+	check(not animals.blow_blocked(cut_feet + Vector3(0.0, 0.0, 1.0), cut_feet), "two in the open cut meet")
+	check(not animals.blow_blocked(Vector3(PASSAGE.x + 0.5, floors[PASSAGE], PASSAGE.y + 1.0), deep), "two in the passage meet")
 
 	print("test_cave_ground: %s" % ("PASS" if failures == 0 else "%d FAIL" % failures))
 	quit(1 if failures > 0 else 0)

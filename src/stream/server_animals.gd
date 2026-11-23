@@ -47,6 +47,7 @@ var game_seconds: Callable         # () -> the game clock's seconds (thunder)
 var _thunder_t: float = NAN        # game second the thunder was last looked at
 var _claps: Array = []             # thunder on its way: [strike point, real msec of the flash, ids already flushed]
 var walls: Callable                # (x0, z0, x1, z1, margin) -> bool, a wall or heavy station on that step (server_items.structure_blocks_step)
+var in_cave: Callable              # (Vector3) -> bool, inside a cave with rock over it (terrain_server._in_cave); unset: never
 var crossing: Callable             # Steering's `cross`: every walker of this module stops at walls
 var player_positions: Callable     # () -> Array of Vector3
 var player_stances: Callable       # () -> Array of stances in player_positions order (0 stand, 1 crouch, 2 sit, 3 lie)
@@ -141,6 +142,16 @@ func crosses_wall(x0: float, z0: float, x1: float, z1: float) -> bool:
 # either way (an enemy's charge at a player behind a wall, a player's jab at an animal behind one; coordinator's fight walk, 23 Nov 2026).
 func wall_between(from: Vector3, to: Vector3) -> bool:
 	return walls.is_valid() and bool(walls.call(from.x, from.z, to.x, to.z, 0.0))
+
+
+const CAVE_ROOF_GAP_M := 1.0   # one end this much higher than the other across a cave's roof line: the roof is between them (in_cave asks 2 m of rock over the feet)
+
+
+# A blow between an animal and a player (either way): never through a wall, nor through a cave's roof. Animals walk the hill over a cave, so one
+# end inside a cave with rock over it and the other not is rock between them (physical world audit round 6, 23 Nov 2026: a wolf on the hill could
+# bite a player in a shallow passage under it); at a mouth, level with each other, the two still meet. Asked last in each hit test: the walls first, the caves only for an animal already in reach.
+func blow_blocked(from: Vector3, to: Vector3) -> bool:
+	return wall_between(from, to) or (in_cave.is_valid() and absf(from.y - to.y) > CAVE_ROOF_GAP_M and bool(in_cave.call(from)) != bool(in_cave.call(to)))
 
 
 func setup() -> void:
@@ -660,7 +671,7 @@ func target_along(origin: Vector3, dir: Vector3, reach: float, seen_ms: int = -1
 		var d: float = to.length() - body   # to its body, not its middle: an animal held off a player at body_m + player_m (keep_off_players)
 		# stays within reach of the blows (an elephant's middle 2.55 m off, out of a knife's 2.5 m and a punch's 1.8 m: robots 23 Nov 2026)
 
-		if d <= best_d and (to.length() < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - origin.y) < 3.5 and not wall_between(origin, at):
+		if d <= best_d and (to.length() < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - origin.y) < 3.5 and not blow_blocked(origin, at):
 			best_d = d
 			best = id
 
