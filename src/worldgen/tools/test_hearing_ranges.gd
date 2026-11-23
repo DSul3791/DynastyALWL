@@ -148,6 +148,25 @@ func _init() -> void:
 	check(deer_does(20.0, 1, "craft") == "flee", "craft work at 20 m, crouched: it runs (20 / 1.1 = 18 m)")
 	check(deer_does(40.0, 1, "craft") == "alert", "craft work at 40 m, crouched: it looks up but stays (40 / 1.1 = 36 m; quiet and crouched it would not notice, 40 / 0.6 = 67 m)")
 
+	# A startle (a missed arrow, a tree crash: alarm_near) sends a grazing deer off, but never changes big game standing its ground, charging
+	# or recovering (the animals thread's charge code owns those states).
+	var st = AnimalsScript.new()
+	st.ground_height = func(_x, _z): return 10.0
+	st.blocked = func(_x, _z): return false
+	st.player_positions = func(): return []
+	st.setup()
+	var grazer: int = st.spawn("deer", 0.0, 0.0)
+	var held: Array = []
+
+	for s in [AnimalsScript.WARN, AnimalsScript.WARN + 1, AnimalsScript.WARN + 2]:
+		var id: int = st.spawn("deer", 3.0, float(s))
+		st.animals[id]["state"] = s
+		held.append(id)
+
+	st.alarm_near(Vector3(1.0, 10.0, 1.0), 12.0)
+	check(int(st.animals[grazer]["state"]) == AnimalsScript.FLEE, "a startle within its radius sends a grazing deer running")
+	check(held.all(func(id): return int(st.animals[id]["state"]) == AnimalsScript.WARN + held.find(id)), "and leaves big game standing its ground, charging or recovering as it was")
+
 	# Players: the SOUND_MAP table matches the code.
 	var doc: String = FileAccess.get_file_as_string("res://docs/SOUND_MAP.md")
 	check(doc.contains("## Who hears what, how far"), "SOUND_MAP has the hearing table")

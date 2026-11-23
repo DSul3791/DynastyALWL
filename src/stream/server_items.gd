@@ -3846,6 +3846,10 @@ func _arrow_fly(delta: float) -> void:
 				continue
 
 			_arrows.erase(ar)
+
+			if not hit_animal_now and animal_alarm.is_valid() and float(_bow.cfg.get("land_alarm_m", 0.0)) > 0.0:
+				animal_alarm.call(at, float(_bow.cfg.get("land_alarm_m", 0.0)))   # a miss thuds down beside them: animals that close run from where it landed (hearing-range pass, 23 Nov 2026)
+
 			var wet: bool = water_depth_at.is_valid() and float(water_depth_at.call(at)) > 0.05
 
 			if bool(ar.get("fire", false)):   # a burning arrow is always burnt up; where it falls it may light a fire or a torch post
@@ -3926,6 +3930,12 @@ func _fly(delta: float) -> void:
 
 			if not is_nan(ground):
 				spot.y = maxf(ground, spot.y) if flight["age"] >= THROW_MAX_S else ground
+
+			if animal_alarm.is_valid():
+				if _bow == null:
+					_bow = BowScript.new()   # its cfg holds the landing radius (as _shoot makes it at the first shot)
+
+				animal_alarm.call(spot, float(_bow.cfg.get("land_alarm_m", 0.0)))   # a thrown spear that missed thuds down: as a missed arrow (hearing-range pass)
 
 			_land_thrown(flight, spot)
 			_flights.erase(flight)
@@ -10444,6 +10454,9 @@ func _land_fall(stump_id: int, fall: Dictionary) -> void:
 
 	if hit_animal_path.is_valid() and float(crush.get("animal", 0.0)) > 0.0:
 		hit_animal_path.call(fall["peer"] if fall["peer"] != null else 0, hinge + Vector3(0.0, 0.5, 0.0), tip + Vector3(0.0, 0.5, 0.0), float(crush.get("animal", 0.0)) * (0.3 if bool(fall["small"]) else 1.0), [])
+
+	if animal_alarm.is_valid() and float(crush.get("alarm_m", 0.0)) > 0.0:   # the crash: animals near the tree's middle run from it (hearing-range pass, 23 Nov 2026)
+		animal_alarm.call(hinge.lerp(tip, 0.5), float(crush.get("alarm_m", 0.0)) * (0.5 if bool(fall["small"]) else 1.0))
 
 	# Down: each log is a body in the log space from here on (_wake_log), so one that came down on a rock, a stump, another tree's logs or a wall is
 	# pushed off it and rolls away the way physics says. Its own stump is left behind: the logs lie from just clear of it.
