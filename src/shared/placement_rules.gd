@@ -172,8 +172,16 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 
 					continue
 
-				if best.is_empty() or d < float(best[2]) - ANCHOR_TIE_M or (d <= float(best[2]) + ANCHOR_TIE_M and absf(at.y - spot.y) < absf((best[0] as Vector3).y - spot.y)):
-					best = [at, anchor_turn, d]
+				var heights: Array = [at.y]
+
+				if piece_kind == "floor" and bool(base.get("foundation", false)):
+					heights.append_array(wall_tops_by(cfg, at, rows))
+
+				for h in heights:
+					var here: Vector3 = Vector3(at.x, float(h), at.z)
+
+					if best.is_empty() or d < float(best[2]) - ANCHOR_TIE_M or (d <= float(best[2]) + ANCHOR_TIE_M and absf(here.y - spot.y) < absf((best[0] as Vector3).y - spot.y)):
+						best = [here, anchor_turn, d]
 
 		if best.is_empty():
 			best = held
@@ -188,6 +196,43 @@ static func snap(cfg: Dictionary, kit_id: String, spot: Vector3, yaw_deg: int, r
 
 	var grid: float = maxf(float(def.get("snap_m", cfg.get("piece_snap_m", 1.0))), 0.1)
 	return [Vector3(round(spot.x / grid) * grid, spot.y, round(spot.z / grid) * grid), turned, false]
+
+
+# The tops of the walls standing round a ceiling cell whose middle is `cell` (a foundation's floor anchor): each wall (piece_kind "wall", any opening or tier)
+# whose middle is a cell's half width from it across the ground, at or above the cell's foot. A ceiling is "the ceiling of the room below, set on walls"
+# (DYNASTY_MASTER_ITEMS 195; physical world audit round 5, 23 Nov 2026: aimed at a wall top it fell to the foundation floor, as snap knew only the
+# foundation's own anchors). Two storeys of walls give two tops; the cursor's height picks one (ANCHOR_TIE_M).
+const CEILING_WALL_REACH_M := 1.1   # a wall on a cell's edge stands 1 m from its middle (cells are 2 m)
+const DOUBLE_WALL_HALF_M := 2.0     # half the widest wall's run (a 4 m double doorway)
+
+
+static func wall_tops_by(cfg: Dictionary, cell: Vector3, rows: Array) -> Array:
+	var out: Array = []
+
+	for row in rows:
+		var apart: Vector2 = Vector2(cell.x - float(row["pos"].x), cell.z - float(row["pos"].z))
+
+		if apart.length() > CEILING_WALL_REACH_M + DOUBLE_WALL_HALF_M or float(row["pos"].y) < cell.y - 0.05:
+			continue   # far off across the ground (the cheap test first: the ghost asks this every frame), or below the cell
+
+		var def: Dictionary = structure_of_state(cfg, int(row["state"]))
+
+		if str(def.get("piece_kind", "")) != "wall":
+			continue
+
+		var turn: float = deg_to_rad(float(row.get("yaw", 0.0)))
+		var along: Vector2 = Vector2(cos(turn), -sin(turn))   # the wall's run, as roof_connections reads it
+		var half: float = float(def.get("footprint_x", WALL_CELL_M)) * 0.5
+
+		if (apart - along * clampf(apart.dot(along), -half, half)).length() > CEILING_WALL_REACH_M:
+			continue   # measured to the nearest point of its run: a 4 m double doorway's middle is 1.4 m from either cell it closes
+
+		var top: float = snappedf(float(row["pos"].y) + float(def.get("height_m", WALL_HEIGHT_M)), 0.001)
+
+		if not out.has(top):
+			out.append(top)
+
+	return out
 
 
 # `spot` across the ground in the frame of `row` ({pos, yaw degrees}): metres along the piece's own x and z from its middle. world_of goes back.
