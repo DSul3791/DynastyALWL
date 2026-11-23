@@ -3,6 +3,7 @@
 #   tools/robots.sh                       3 robots, plan first_hours, the default internet link (60 ms +- 25 each way, 2% loss)
 #   tools/robots.sh 2 first_hours --delay-ms 75 --jitter-ms 30 --loss 0.03
 #   tools/robots.sh 2 watch --delay-ms 120 --jitter-ms 30 --loss 0.03   Robot 1 walks, stops, swings, sleeps; Robot 2 draws it (robot_watch.py)
+#   ROBOT_CLIENT_ARGS=--quality=0 tools/robots.sh 1 route   the moving route (src/client/robot_play.gd _route) at Low quality
 #   tools/robots.sh 1 screens             every screen a tester opens, every lit Craft button, a basket, then the rejoin pass
 # Robot play-testers (23 Nov 2026, after build 9257's first hour on Dave's server found faults no one-machine test saw).
 # Starts a headless server with --robot-audit (src/server/robot_audit.gd) and --open-admin on a spare port, a simulated internet link in
@@ -48,7 +49,7 @@ pass() {
 		mkdir -p "$D/r$i/data" "$D/r$i/cache"
 		( XDG_DATA_HOME="$D/r$i/data" ROBOT_SHARE="$D" timeout $(( ROBOT_S + 60 )) $GODOT --headless --rendering-driver dummy --path . \
 			res://scenes/terrain_client/terrain_client.tscn -- --server=127.0.0.1 --port=$LINK --block-port=$((LINK + 1)) \
-			--cache="$D/r$i/cache" --timeout=$ROBOT_S --robot=Robot_$i --robot-plan=$plan --robot-admin > "$D/robot${i}_$tag.log" 2>&1
+			--cache="$D/r$i/cache" --timeout=$ROBOT_S --robot=Robot_$i --robot-plan=$plan --robot-admin ${ROBOT_CLIENT_ARGS:-} > "$D/robot${i}_$tag.log" 2>&1
 		  echo $? > "$D/robot${i}_$tag.exit" ) &   # the client's exit code: 0 after a clean quit (134 was the quit abort, fixed by #1647)
 		pids+=($!)
 		sleep 2
