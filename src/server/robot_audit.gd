@@ -27,6 +27,7 @@ var _animal_t: float = 0.0
 var _last: Dictionary = {}       # animal id -> [pos, unix ms]
 var _top_mps: Dictionary = {}    # species number -> fastest _mps in animals.json
 var _names: Dictionary = {}      # species number -> name
+var _pack_phase: Dictionary = {}  # wolf pack id -> "phase target" last printed
 
 
 func setup(server_items, server_animals) -> void:
@@ -73,6 +74,7 @@ func _process(delta: float) -> void:
 
 	_animal_t = 0.0
 	var now: int = RobotRules.now_ms()
+	_wolf_packs(now)
 	var players: Array = []
 
 	for peer in items.peer_ids():
@@ -119,3 +121,20 @@ func _process(delta: float) -> void:
 	for id in _last.keys():
 		if not seen.has(id):
 			_last.erase(id)
+
+
+# Each wolf pack's phase and target when it changes (server_wolves.gd: prowl, stalk, rush, wait, feed, den_guard): the robots' wolf fight
+# (plan wolves) reads when a rush began and ended.
+func _wolf_packs(now: int) -> void:
+	var wolves = animals.get("wolves")
+
+	if wolves == null:
+		return
+
+	for pid in wolves.packs:
+		var pack: Dictionary = wolves.packs[pid]
+		var said: String = "%s %d" % [str(pack.get("phase", "")), int(pack.get("target", -1))]
+
+		if _pack_phase.get(pid, "") != said:
+			_pack_phase[pid] = said
+			print("AUDIT wolfpack %d %d %s %d wolves" % [int(pid), now, said, (pack.get("ids", []) as Array).size()])

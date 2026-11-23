@@ -461,6 +461,16 @@ func run() -> void:
 		await get_tree().process_frame
 
 	await _wait(8.0)
+	t0 = Time.get_ticks_msec()
+
+	# Landed and loaded before any step (watch run 2, 23 Nov 2026: a robot that walked while still gliding above the spawn moved at one height
+	# through the air, and the others drew it jumping tens of metres).
+	while (client._world_loading() or not client.body.is_on_floor()) and Time.get_ticks_msec() - t0 < 60000:
+		await get_tree().process_frame
+
+	if not client.body.is_on_floor():
+		_fail("landed", "join", "not on the ground 68 s after joining (at %s)" % str(client.body.global_position.round()))
+
 	print("ROBOT %s step joined: peer %d at %s" % [robot_name, client.multiplayer.get_unique_id(), str(client.body.global_position.round())])
 	_hook_view()
 	_step = "joined"
@@ -476,6 +486,11 @@ func run() -> void:
 			await _walker()
 		else:
 			await _watcher()
+	elif plan == "wolves" or plan == "wolves_alone":
+		if robot_name.ends_with("1"):
+			await _wolf_fight()
+		else:
+			await _wolf_second(plan == "wolves")
 	elif plan == "light":
 		await _stances()
 		await _forest_walk(40.0)
@@ -1207,6 +1222,190 @@ func _watcher() -> void:
 
 	if not seen:
 		_fail("watch", "nobody", "the walker never came in sight")
+
+
+# --- plan wolves: the battle ring (#1664). Robot 1 carries raw meat alone more than town_keep_m from the town, an admin pack is placed
+# 25 m off; once the rush begins it is given a spear and fights back. Robot 2 stays at the spawn (wolves_alone) or runs in 15 s into the rush
+# (wolves) to see whether a second player breaks it. Robot 1 writes the rush to ROBOT_SHARE/wolves_rush.txt for Robot 2 (robots.sh sets it).
+const WOLF := 3
+const WOLF_FAR_M := 380.0     # beyond server_wolves town_keep_m (300 m) from the town, whose middle is near the spawn
+const MAIM_HP := 25           # animals.json wolf maim_hp: bites stop taking health below this
+const RUSH_FILE := "wolves_rush.txt"
+
+
+func _share_path() -> String:
+	return OS.get_environment("ROBOT_SHARE").path_join(RUSH_FILE) if OS.get_environment("ROBOT_SHARE") != "" else ""
+
+
+# Runs (shift and W) toward `target`, aiming again every half second, a sidestep when stuck. True when within `near_m`.
+func _run_to(target: Vector3, limit_s: float, near_m: float = 3.0) -> bool:
+	var end: int = Time.get_ticks_msec() + int(limit_s * 1000.0)
+	_key("run", true)
+
+	while Time.get_ticks_msec() < end:
+		var here: Vector3 = client.body.global_position
+		var to: Vector3 = Vector3(target.x - here.x, 0.0, target.z - here.z)
+
+		if to.length() < near_m:
+			_release_all()
+			return true
+
+		_face(to.normalized())
+		_key("move_forward", true)
+		await _wait(0.5)
+
+		if Vector2(client.body.global_position.x - here.x, client.body.global_position.z - here.z).length() < 0.5:
+			_face(to.normalized().rotated(Vector3.UP, PI * 0.5 * (1.0 if randf() < 0.5 else -1.0)))
+			await _wait(1.0)
+
+	_release_all()
+	return false
+
+
+func _wolves_drawn() -> Dictionary:
+	var out: Dictionary = {}
+
+	for row in client._animal_view_node.drawn_positions():
+		if int(_species.get(int(row[0]), 0)) == WOLF:
+			out[int(row[0])] = row[1]
+
+	return out
+
+
+func _wolf_fight() -> void:
+	_step = "wolves out"
+	var start: Vector3 = client.body.global_position
+	_give("raw_meat", 3)
+	await _check_pack("raw meat")
+	var far: Vector3 = start + Vector3(0.0, 0.0, -WOLF_FAR_M)
+	await _run_to(far, 120.0, 6.0)
+	var out_m: float = Vector2(client.body.global_position.x - start.x, client.body.global_position.z - start.z).length()
+
+	if out_m < 320.0:
+		_note("wolves", "only %.0f m from the spawn after 120 s of running: the pack may keep off (town_keep_m)" % out_m)
+
+	await _wait(2.0)
+	_step = "wolves"
+	var me: Vector3 = client.body.global_position
+	var facing: Vector3 = -client.body.global_transform.basis.z
+	client.net.admin_place.rpc_id(1, "animal", me + facing * 25.0, "wolf")
+	_event("pack_placed", "%.0f" % out_m)
+	var h0: int = _health
+	var last_h: int = _health
+	var bites: Array = []            # unix ms of each bite (health fell)
+	var strikes: int = 0
+	var strike_ms: int = 0
+	var most_close: int = 0
+	var rush_ms: int = 0
+	var armed: bool = false
+	var quiet_since: int = 0
+	var notices_from: int = _notices.size()
+	var outcome: String = "no rush"
+	var end: int = Time.get_ticks_msec() + 120000
+
+	while Time.get_ticks_msec() < end:
+		await _wait(0.1)
+		var now: int = _now_ms()
+		me = client.body.global_position
+
+		if _health >= 0 and last_h >= 0 and _health < last_h:
+			bites.append(now)
+
+		last_h = _health
+
+		for i in range(notices_from, _notices.size()):
+			var t: String = str(_notices[i]).to_lower()
+
+			if "wolves" in t and rush_ms == 0 and ("coming" in t or "rush" in t):
+				rush_ms = now
+				_event("rush", "\"%s\"" % str(_notices[i]).replace(" ", "_"))
+				var f: FileAccess = FileAccess.open(_share_path(), FileAccess.WRITE) if _share_path() != "" else null
+
+				if f != null:
+					f.store_string("%f %f %f" % [me.x, me.y, me.z])
+					f.close()
+
+		notices_from = _notices.size()
+
+		if rush_ms > 0 and not armed:
+			armed = true
+			_give("spear", 1)
+			await _wait(0.6)
+			var sp: int = _slot_of("spear")
+
+			if sp > 0:
+				client.net.inventory_action.rpc_id(1, NetScript.ACT_MOVE, sp, 0, 0, Vector3.ZERO)   # into slot 0: in hand
+
+		var wolves: Dictionary = _wolves_drawn()
+		var close: int = 0
+		var nearest: Vector3 = Vector3.INF
+
+		for id in wolves:
+			var d: float = Vector2(wolves[id].x - me.x, wolves[id].z - me.z).length()
+			close += 1 if d < 3.0 else 0
+
+			if nearest == Vector3.INF or d < Vector2(nearest.x - me.x, nearest.z - me.z).length():
+				nearest = wolves[id]
+
+		most_close = maxi(most_close, close)
+
+		if armed and nearest != Vector3.INF and Vector2(nearest.x - me.x, nearest.z - me.z).length() < 2.2 and now - strike_ms > 800:
+			var to: Vector3 = Vector3(nearest.x - me.x, 0.0, nearest.z - me.z).normalized()
+			_face(to)
+			client.net.inventory_action.rpc_id(1, NetScript.ACT_STRIKE, 0, 0, 0, to)
+			strikes += 1
+			strike_ms = now
+
+		if _health >= 0 and _health <= MAIM_HP:
+			outcome = "maimed"
+			break
+
+		var near_any: bool = nearest != Vector3.INF and Vector2(nearest.x - me.x, nearest.z - me.z).length() < 20.0
+
+		if rush_ms > 0:
+			if near_any:
+				quiet_since = 0
+			elif quiet_since == 0:
+				quiet_since = now
+			elif now - quiet_since > 8000:
+				outcome = "pack gone"
+				break
+
+	var wolf_hits: int = 0
+
+	for id in _hits:
+		wolf_hits += int(_hits[id]) if int(_species.get(int(id), 0)) == WOLF else 0
+
+	var gaps: PackedStringArray = PackedStringArray()
+
+	for i in range(1, bites.size()):
+		gaps.append("%.1f" % (float(bites[i] - bites[i - 1]) / 1000.0))
+
+	print("ROBOT %s WOLVES outcome %s, rush %s, %d bites (gaps s: %s), %d strikes, %d hits on wolves, most wolves within 3 m %d, health %d -> %d, %.0f s" % [
+		robot_name, outcome, "yes" if rush_ms > 0 else "no", bites.size(), ",".join(gaps) if not gaps.is_empty() else "-", strikes, wolf_hits, most_close, h0, _health,
+		float(_now_ms() - (rush_ms if rush_ms > 0 else _now_ms())) / 1000.0])
+	await _wait(3.0)
+
+
+# The second player: stays at the spawn (come = false) or, 15 s into the rush, runs to Robot 1.
+func _wolf_second(come: bool) -> void:
+	_step = "wolves second"
+	var end: int = Time.get_ticks_msec() + 360000
+	var path: String = _share_path()
+
+	while Time.get_ticks_msec() < end and (path == "" or not FileAccess.file_exists(path)):
+		await _wait(1.0)
+
+	if not come or path == "" or not FileAccess.file_exists(path):
+		await _wait(60.0)
+		return
+
+	var p: PackedStringArray = FileAccess.get_file_as_string(path).split(" ")
+	await _wait(15.0)
+	_event("coming")
+	var there: bool = await _run_to(Vector3(float(p[0]), float(p[1]), float(p[2])), 90.0, 5.0)
+	_event("arrived" if there else "not_there")
+	await _wait(30.0)
 
 
 # Stand and look around: the watchers keep checking the animals and players drawn.
