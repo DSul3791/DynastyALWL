@@ -14722,6 +14722,7 @@ func _become_new_player(peer: int) -> void:
 	_characters[key]["tried"] = {}
 	_characters[key]["grace_s"] = _eat_cfg_value("first_hour_s", 3600.0)
 	_vitals[key] = _new_vitals()
+	_soak.erase(peer)
 	_craft_queues.erase(key)
 	_asleep.erase(peer)
 	_admin_mode_on.erase(peer)
@@ -17266,8 +17267,8 @@ func warmth_target(peer: int) -> float:
 	var precip: float = maxf(float(weather.get("rain", 0.0)), float(weather.get("snow", 0.0)))
 
 	# Wet from rain or snow (Dave 5 Nov, rain card: "Rain x1.5"; only shelter dries you, slowly under a tree or roof, fast by a fire): the chill follows
-	# how soaked the player is (_update_soak), not only the rain falling this moment. A peer the tick has not seen yet uses its saved soak or the rain falling now.
-	var soak: float = float(_soak[peer]) if _soak.has(peer) else maxf(clampf(float(vitals_of(peer).get("soak", 0.0)), 0.0, 1.0), minf(precip * 2.0, 1.0) if precip > 0.05 and not covered else 0.0)
+	# how soaked the player is (_update_soak), not only the rain falling this moment. A peer the tick has not seen yet uses the rain falling now.
+	var soak: float = float(_soak[peer]) if _soak.has(peer) else (minf(precip * 2.0, 1.0) if precip > 0.05 and not covered else 0.0)
 
 	var body: Dictionary = _body_cfg()
 
@@ -17823,6 +17824,7 @@ func kill(peer: int, cause: String) -> bool:
 	# Start over: vitals, strain, sleep, breath. Luck, fitness and skills live in characters.json and stay.
 	_vitals[key] = _new_vitals()
 	_strain.erase(peer)
+	_soak.erase(peer)   # dry clothes, as the saved vitals say
 	_cold_out.erase(peer)   # a death while passed out from cold ends the pass-out: no rescue move after the respawn
 	_strain_sent.erase(peer)
 	_asleep.erase(peer)

@@ -248,6 +248,20 @@ func _init() -> void:
 	items.report_position(1, HOME)
 	items._update_soak(1, 0.0)
 	check(float(items._soak.get(1, 0.0)) > 0.5, "leaving and joining again keeps the clothes wet too (%.2f)" % float(items._soak.get(1, 0.0)))
+	items._become_new_player(1)
+	items._update_soak(1, 0.0)
+	var fresh_dry: bool = float(items._soak.get(1, 0.0)) == 0.0
+	items._dirty = true
+	items.save()
+	items._finish_writer()
+	items = make()
+	items._update_soak(1, 0.0)
+	check(fresh_dry and float(items._soak.get(1, 0.0)) == 0.0, "starting over as a new player (as after a death) is dry, before and after a restart")
+	v()["soak"] = soaked
+	items._soak.erase(1)
+	items._update_soak(1, 0.0)
+	v()["health"] = 100.0
+	give("waterskin", 1)
 	weather = {"temp_c": 2.0, "wind": 0.6, "rain": 0.0, "snow": 0.0}
 	cover[0] = 1.0
 	run(300.0, 10.0)
