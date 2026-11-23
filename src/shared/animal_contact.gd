@@ -5,6 +5,11 @@ extends RefCounted
 # server_big_game stops there), and the client never draws a body inside the local player (animal_view). Shared, so the two agree.
 
 const PATH := "res://data/animals/contact.json"
+const BLOCK_M := 0.6        # a body this big (body_m) stops the local walker (walker_stop): a deer, a boar, a wolf and up
+const WALK_INTO_M := 0.1    # the walker is stopped this far inside such a body's contact distance, so the server has it make way (server_animals make_way)
+const LEAN_M := 0.2         # a player this little inside such a body is leaning on it, not in it
+const LEANED_MPS := 0.5     # the pace a body a player leans on shifts aside at: a nudge, never a shove (robots 23 Nov 2026: two robots pressing an
+                            # elephant pushed it about at 3 to 5 m/s, half its flee speed, and each client drew it 2 to 5 m off the server's place)
 
 static var _rows: Dictionary = {}
 
