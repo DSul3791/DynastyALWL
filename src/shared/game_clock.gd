@@ -64,8 +64,11 @@ func year() -> int:
 	return int(floorf(seconds / (SECONDS_PER_DAY * float(DAYS_PER_YEAR))))
 
 
+# The season turns at the same moment as the sky's (weather.gd season_of: a quarter of the year, 91.25 days, so at 06:00 on day 91): the
+# whole-day count turned it up to 18 game hours later, and crops, food and the season stamp said spring while the trees, the fog and the
+# sky already said summer (weather and seasons walk, 23 Nov 2026).
 func season_index() -> int:
-	return day_of_year() * SEASON_NAMES.size() / DAYS_PER_YEAR
+	return int(fposmod(seconds / SECONDS_PER_DAY, float(DAYS_PER_YEAR)) / float(DAYS_PER_YEAR) * float(SEASON_NAMES.size())) % SEASON_NAMES.size()
 
 
 func season() -> String:
