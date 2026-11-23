@@ -201,13 +201,13 @@ func _server() -> void:
 	back_rig.free()
 	# 162: a rod's float rides beside the row as one int (cast_code), read back to the same spot within 5 cm; a new cast is news; none is 0.
 	var float_at: Vector3 = Vector3(115.5, 8.2, 96.3)
-	var code: int = PlayersScript.cast_code(Vector3(110.0, 10.0, 100.0), float_at)
-	check(PlayerViewScript.cast_point(Vector3(110.0, 10.0, 100.0), code).distance_to(float_at) < 0.11 and PlayersScript.cast_code(Vector3.ZERO, Vector3.INF) == 0 and not PlayerViewScript.cast_point(Vector3.ZERO, 0).is_finite(), "the float's spot goes as one int and comes back (%s)" % str(PlayerViewScript.cast_point(Vector3(110.0, 10.0, 100.0), code)))
+	var float_code: int = PlayersScript.cast_code(Vector3(110.0, 10.0, 100.0), float_at)
+	check(PlayerViewScript.cast_point(Vector3(110.0, 10.0, 100.0), float_code).distance_to(float_at) < 0.11 and PlayersScript.cast_code(Vector3.ZERO, Vector3.INF) == 0 and not PlayerViewScript.cast_point(Vector3.ZERO, 0).is_finite(), "the float's spot goes as one int and comes back (%s)" % str(PlayerViewScript.cast_point(Vector3(110.0, 10.0, 100.0), float_code)))
 	sent.clear()
 	fake.floats = {2: float_at}
 	clock[0] = 2770
 	players.tick(0.2)
-	check(sent.size() == 1 and sent[0].size() == 10 and int(sent[0][9][0]) == code, "a cast is news and its float goes with player 2's row")
+	check(sent.size() == 1 and sent[0].size() == 10 and int(sent[0][9][0]) == float_code, "a cast is news and its float goes with player 2's row")
 	fake.floats = {}
 	sent.clear()
 	clock[0] = 2790
