@@ -287,6 +287,7 @@ var _carry_cfg: Dictionary = {}
 var _exertion_cfg: Dictionary = {}
 var _strain: Dictionary = {}        # peer -> {s: strain, state: 0..3, t: seconds in the state}
 var _cold_out: Dictionary = {}      # peer -> seconds passed out from cold so far (warmth.json pass_out; Dave 23 Nov 2026)
+var _out_water: Dictionary = {}     # peer -> true: that pass-out was a faint under water, not the cold (the same rescue, its own lines)
 var rescue_spots: Callable          # (position) -> Array of [Vector3 ground point, "goblin" | "bandit" | "town"]: where a player passed out from cold can wake; set by the server scene
 var _strain_sent: Dictionary = {}
 var send_body: Callable             # (peer, bpm, seconds until awake, phase 0 awake 1 falling asleep 2 asleep or fainted 3 waking), protocol 59
@@ -867,6 +868,7 @@ func peer_left(peer: int) -> void:
 	_held_left.erase(peer)
 	_hand_flags.erase(peer)
 	_cold_out.erase(peer)
+	_out_water.erase(peer)
 	_water_hint_at.erase(peer)
 	_carts.peer_left(peer)   # a cart being pulled parks where it is
 	var key_left: String = str(_peer_key.get(peer, ""))
@@ -16999,6 +17001,12 @@ func _breath_tick(peer: int, v: Dictionary, spent: float) -> void:
 		if t >= float(cfg.get("faint_after_s", 15.0)) and int(_strain.get(peer, {}).get("state", 0)) == 2 and bool(cfg.get("can_die", false)):
 			if bool(_death_cfg.get("stop_at_1", false)):
 				v["health"] = minf(float(v["health"]), 1.0)   # fainted under water: near death, not dead (death.json stop_at_1)
+
+				# Passed out under water: rescued as from the cold (warmth.json pass_out), or the faint and the wake would come round for ever with
+				# the head still under and movement locked (no auto-rise, BUG-029).
+				if not _cold_out.has(peer) and bool(_warmth_cfg.get("pass_out", {}).get("enabled", false)) and rescue_spots.is_valid() and _peer_pos.has(peer):
+					_out_water[peer] = true
+					_cold_pass_out(peer)
 			else:
 				_death_cause[peer] = "drowning"
 				v["health"] = 0.0
@@ -18032,8 +18040,9 @@ func _cold_pass_out(peer: int) -> void:
 	st["t"] = 0.0
 	_strain_sent.erase(peer)
 	_end_sleep(peer)
-	_say(peer, str(_warmth_cfg.get("pass_out", {}).get("say_out", "The cold takes you. You pass out.")))
-	print("Cold: peer %d passed out at %s" % [peer, str(_peer_pos.get(peer, "?"))])
+	var cfg: Dictionary = _warmth_cfg.get("pass_out", {})
+	_say(peer, str(cfg.get("say_out_water", "The water closes over you. You black out.")) if _out_water.has(peer) else str(cfg.get("say_out", "The cold takes you. You pass out.")))
+	print("%s: peer %d passed out at %s" % ["Water" if _out_water.has(peer) else "Cold", peer, str(_peer_pos.get(peer, "?"))])
 
 
 func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> void:
@@ -18044,6 +18053,8 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 		return
 
 	_cold_out.erase(peer)
+	var water: bool = _out_water.has(peer)
+	_out_water.erase(peer)
 	var here: Vector3 = _peer_pos.get(peer, respawn_point)
 	var best: Array = []
 
@@ -18062,6 +18073,13 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	_peer_pos[peer] = to
 	_resume_to.erase(peer)
 	_motion.erase(peer)
+
+	if water and not best.is_empty():   # carried out of the water: breathing again (the client's next report says where the head is)
+		_head_under[peer] = false
+		_suffocate.erase(peer)
+		_breath.erase(peer)
+		_sync_breath(peer, -1)
+
 	_sync_vitals(peer, true)
 	_sync_warmth(peer, true)
 	_dirty = true
@@ -18069,8 +18087,12 @@ func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> v
 	if send_died.is_valid() and not best.is_empty():
 		send_died.call(peer, "passed out", to)   # the client moves the body there and waits for the ground, as after a death (no death screen)
 
-	_say(peer, str((cfg.get("say_wake", {}) as Dictionary).get(kind, "You wake up feeling pain through your bones. A traveler found you frozen almost to death and brought you here.")))
-	print("Cold: peer %d woke at the %s at %s" % [peer, kind, str(to)])
+	if water:
+		_say(peer, str((cfg.get("say_wake_water", {}) as Dictionary).get(kind, "You wake up coughing water. Someone pulled you from the water and brought you here.")))
+	else:
+		_say(peer, str((cfg.get("say_wake", {}) as Dictionary).get(kind, "You wake up feeling pain through your bones. A traveler found you frozen almost to death and brought you here.")))
+
+	print("%s: peer %d woke at the %s at %s" % ["Water" if water else "Cold", peer, kind, str(to)])
 
 
 func passed_out(peer: int) -> bool:
@@ -18546,6 +18568,7 @@ func kill(peer: int, cause: String) -> bool:
 	_strain.erase(peer)
 	_soak.erase(peer)   # dry clothes, as the saved vitals say
 	_cold_out.erase(peer)   # a death while passed out from cold ends the pass-out: no rescue move after the respawn
+	_out_water.erase(peer)
 	_strain_sent.erase(peer)
 	_asleep.erase(peer)
 	_waking.erase(peer)
@@ -18615,6 +18638,7 @@ func survive_cave_in(peer: int, to: Vector3) -> bool:
 	if not bool(_death_cfg.get("stop_at_1", false)) or v.is_empty():
 		return false
 
+	_out_water.erase(peer)
 	_cold_out.erase(peer)   # a cave-in on a player passed out from cold ends that faint; still frozen at 1 health, the cold passes them out again and they are carried to shelter
 	v["health"] = minf(float(v["health"]), 1.0)
 	_peer_pos[peer] = to

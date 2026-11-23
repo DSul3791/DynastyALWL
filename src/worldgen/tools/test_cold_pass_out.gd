@@ -3,7 +3,7 @@ extends SceneTree
 # Passing out from cold (Dave 23 Nov 2026, data/items/warmth.json pass_out): cold down to 1 health and the player passes out (the faint
 # look, nothing hurts them), then wakes at the nearest goblin camp, bandit camp or the town with that place's message, the pack kept,
 # health and warmth up to the wake values. With no places (rescue_spots unset) cold stops at 1 as before (test_warmth); with an empty list they
-# wake where they lay.
+# wake where they lay. Fainting under water is the same pass-out, with its own lines, and they wake breathing.
 #   godot --headless --path . --script res://src/worldgen/tools/test_cold_pass_out.gd
 
 const ItemTableScript := preload("res://src/shared/item_table.gd")
@@ -137,6 +137,38 @@ func _init() -> void:
 		ticks += 1
 
 	check(not died.is_empty() and str(died[-1][1]) == "passed out" and float(items.vitals_of(1)["health"]) >= 1.0, "still frozen, the cold carries them to shelter after the dig-out (%s)" % str(died))
+
+	# Fainting under water (vitals.json breath, death.json stop_at_1) is the same pass-out: carried out of the water to the nearest place, with
+	# its own lines, breathing again, and never the faint and the wake round and round with the head still under (no auto-rise, BUG-029).
+	weather["temp_c"] = 20.0
+	died.clear()
+	said.clear()
+	items.report_position(1, Vector3(40.0, 5.0, 0.0))
+	v = items.vitals_of(1)
+	v["warmth"] = 100.0
+	v["health"] = 80.0
+	items.set_head_under(1, true)
+	items._breath[1] = 1.0
+	ticks = 0
+
+	while not items.passed_out(1) and ticks < 120:
+		items.tick(1.0)
+		ticks += 1
+
+	check(items.passed_out(1) and said.has(str(cfg["say_out_water"])) and float(v["health"]) <= 1.0, "out of air under water, the faint passes them out (%d s, health %.0f)" % [ticks, float(v["health"])])
+
+	for t in int(ceil(float(cfg["out_s"]))) + 1:
+		items.tick(1.0)
+
+	check(not items.passed_out(1) and died.size() == 1 and (died[0][2] as Vector3).is_equal_approx(Vector3(150.0, 5.0, 0.0)) and said.has(str(cfg["say_wake_water"]["goblin"])), "carried out of the water to the nearest place, with the water message (%s)" % str(died))
+	check(not bool(items._head_under.get(1, false)) and not items._suffocate.has(1) and float(v["health"]) >= float(cfg["wake_health"]) - 0.5, "breathing again, health %.0f" % float(v["health"]))
+	var fainted_again: bool = false
+
+	for t in 60:
+		items.tick(1.0)
+		fainted_again = fainted_again or int(items._strain.get(1, {}).get("state", 0)) >= 2
+
+	check(not fainted_again and int(items._strain[1]["state"]) == 0, "and they stay awake and free to move")
 
 	# Leaving while out clears the state.
 	v = items.vitals_of(1)
