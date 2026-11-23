@@ -16,6 +16,7 @@ ROBOT_S=540 tools/robots.sh 1 snares   # snares on a game trail, beside it, alon
 ROBOT_S=300 tools/robots.sh 3 bear # an admin bear 20 m from the spawn, every robot hunts it with a spear (inside and jump checks); about 4 min
 ROBOT_S=200 tools/robots.sh 3 bear_group   # the hunters stand in a tight group (pairs about 1 m apart) and jab a bear set 2 m off
 ROBOT_S=200 tools/robots.sh 1 fight_goblin   # (or fight_bandit) every warning, charge and landed blow as the robot drew it; AUDIT enemy_hit on the server
+ROBOT_S=400 tools/robots.sh 1 cold # a hard frost (the audit's server_control.txt): down to 1 health, pass out, wake at a rescue spot; then the 1-health floor under a goblin's blows
 tools/robots.sh 1 drops            # the link dies mid-action and the robot comes straight back; a 10 s freeze; two clients as one character; about 15 min
 python3 tools/robot_check.py /tmp/robots_XXXX     # read a finished run's logs again
 python3 tools/test_robot_tools.py                 # the Python tools' self-test (no Godot)
@@ -64,6 +65,12 @@ more try after 35 s), and find the fibre-plus-twine worth, the pack, the basket 
 `drop_freeze` stalls the client's main thread 10 s while walking: being dropped for it is a FAIL (the main gate allows a 24.85 s freeze), and
 the pack must not change. `drop_twin1`/`drop_twin2`: a second client joins with the same user data (the same character) 30 s after the
 first; the server must drop the older one (terrain_server.gd "the older connection is dropped") within 20 s. No rejoin pass follows.
+
+Plan `cold`: the server's robot audit (only with `--robot-audit`) reads `server_control.txt` in ROBOT_SHARE: `cold <peer>` turns the weather
+its vitals read to -25 C with wind and starts that peer at health 6, warmth 15; `health <peer> <value>` sets health. The robot stands in the
+frost and must never read health 0 or die, pass out with words, be moved to a rescue spot (the client gets died "passed out", no death),
+wake with the traveler's words and health 10 or more, keep every item and walk after. Then 60 m out of town at health 3 it fights a goblin
+for 40 s: health must stay at 1 or more with no death (a NOTE when the goblin never strikes).
 
 Plan `light` (walk,
 stances, forest, watch) builds, drops and takes nothing, for a live server; it still makes a character record there that real players see, so a live run needs the coordinator's OK first and robots named as robots. On a live server there is no `--robot-audit` server log, so only the robots' own ROBOT lines can be read (robot_check.py needs the AUDIT lines and reports such a run as broken).

@@ -3027,6 +3027,8 @@ func _cold() -> void:
 		client.net.inventory_action.rpc_id(1, NetScript.ACT_MOVE, _slot_of("spear"), 0, 0, Vector3.ZERO)
 		await _check_pack("spear to hand")
 
+	await _run_to(client.body.global_position + Vector3(0.0, 0.0, -60.0), 20.0, 3.0)   # out of the town square (it woke there): foes there stood calm under jabs
+	_release_all()
 	_write(_share(SERVER_CONTROL), "health %d 3" % client.multiplayer.get_unique_id())
 	await _wait(2.0)
 	var me: Vector3 = client.body.global_position
@@ -3069,12 +3071,21 @@ func _cold() -> void:
 		await get_tree().process_frame
 
 	_release_all()
-	print("ROBOT %s FLOOR goblin %d, health seen %s, lowest %d, deaths %d" % [robot_name, bear, str(h_seen), low, _died - died_before])
+	# The blows that landed, from the server's own audit (robot runs share its log folder): a blow at low health lands "maimed" and takes
+	# nothing (the floor), so the robot's health alone cannot tell a blow from none (survival-loop thread, 23 Nov 2026).
+	var blows: PackedStringArray = PackedStringArray()
+	var log_text: String = FileAccess.get_file_as_string(_share("server.log")) if FileAccess.file_exists(_share("server.log")) else ""
+
+	for line in log_text.split("\n"):
+		if line.begins_with("AUDIT enemy_hit %d " % client.multiplayer.get_unique_id()) and line.contains("goblin"):
+			blows.append(line.get_slice(" result ", 1).get_slice(" ", 0))
+
+	print("ROBOT %s FLOOR goblin %d, %d blows landed (%s), health seen %s, lowest %d, deaths %d" % [robot_name, bear, blows.size(), ",".join(blows), str(h_seen), low, _died - died_before])
 
 	if bear < 0:
 		_note("floor", "no goblin came after admin_place: the floor under blows is not measured")
-	elif h_seen.size() < 2:
-		_note("floor", "the goblin never hurt this player in 40 s: the floor under blows is not measured")
+	elif blows.is_empty():
+		_note("floor", "no goblin blow landed in 40 s (no AUDIT enemy_hit): the floor under blows is not measured")
 	elif low < 1 or _died > died_before:
 		_fail("floor", "below", "at health 3 a goblin took this player to %d (deaths %d): at 1 health no more damage" % [low, _died - died_before])
 
