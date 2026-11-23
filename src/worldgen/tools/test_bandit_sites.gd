@@ -41,6 +41,7 @@ func _init() -> void:
 	_server_hooks()
 	_camp_levels()
 	_camp_life()
+	_camp_clear_of_trees()
 	_camp_items()
 	_warnings_stages()
 	_warning_items()
@@ -188,6 +189,11 @@ func _waking() -> void:
 	var fresh: BanditsScript = _sites()
 	_traffic(fresh, spot, need + 1.0)
 	check(fresh.refusal(cell, spot, clock[0]) == "", "the busy candidate may wake (%s)" % fresh.refusal(cell, spot, clock[0]))
+	fresh.trees_at = func(_at, _r): return null
+	check(fresh.refusal(cell, spot, clock[0]) == "unloaded", "a candidate whose trees are not made waits (%s)" % fresh.refusal(cell, spot, clock[0]))
+	fresh.trees_at = func(_at, _r): return []
+	check(fresh.refusal(cell, spot, clock[0]) == "", "and wakes once they are, in the open")
+	fresh.trees_at = Callable()
 	fresh.town = spot + Vector2(100.0, 0.0)
 	check(fresh.refusal(cell, spot, clock[0]) == "start area", "none near the starter town")
 	fresh.town = Vector2(INF, INF)
@@ -406,6 +412,60 @@ func _camp_life() -> void:
 
 # Stage 2, the world side (server_items.gd): the camp's fire and Lean-tos are laid, refuse a player, are never saved, and a camp laid again
 # over what a world reset left leaves no doubles. Edda and Hob's camp fire is laid beside it as before.
+# The camp is turned until its Lean-tos, seats and tether miss the trunks and its Lean-tos stand on level enough ground (world audit 23 Nov 2026);
+# each Lean-to's open side faces the fire; nothing is turned while the trees round it are unknown.
+func _camp_clear_of_trees() -> void:
+	var structures: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/structures.json"))
+	var lean: Dictionary = (structures as Dictionary).get("structures", structures)["lean_to"]
+	check(is_equal_approx(BanditsScript.LEAN_TO_HALF_X * 2.0, float(lean["footprint_x"])) and is_equal_approx(BanditsScript.LEAN_TO_HALF_Z * 2.0, float(lean["footprint_z"])), "the Lean-to size is structures.json's")
+	var b: BanditsScript = _sites()
+	var cell: Vector2i = _cell_with_site(b, 60)
+	var spot: Vector2 = b.candidate(cell)
+	b.sites[cell] = {"x": spot.x, "z": spot.y, "woke": clock[0], "points": 40.0, "levels": [2, 1, 1], "horses": 2}
+	var seeded: Dictionary = b.layout(cell)
+
+	for row in seeded["lean_tos"]:
+		var front: Vector2 = Vector2(sin(deg_to_rad(float(row[1]))), cos(deg_to_rad(float(row[1]))))   # a yaw turns the Lean-to's +z (its open side) to (sin, cos)
+		check(front.dot((row[0] as Vector2).direction_to(spot)) > 0.99, "a Lean-to's open side faces the fire (%s)" % str(row))
+
+	var unknown: Array = [null]
+	b.trees_at = func(_at, _r): return unknown[0]
+	check(b.layout(cell)["lean_tos"] == seeded["lean_tos"] and not b._turns.has(cell), "while the trees round it are not made the seed's turn is used and not kept")
+	var lean_at: Vector2 = seeded["lean_tos"][0][0]
+	unknown[0] = [[lean_at, 0.3]]   # a trunk in the middle of the seed's first Lean-to
+	var turned: Dictionary = b.layout(cell)
+	check(b._turns.has(cell) and turned["lean_tos"] != seeded["lean_tos"], "a trunk in a Lean-to turns the camp")
+	check(b._camp_fits(turned, unknown[0], Vector2(BanditsScript.LEAN_TO_HALF_X, BanditsScript.LEAN_TO_HALF_Z), 1.0), "the turned camp misses the trunk")
+	check(b.layout(cell) == turned, "the turn is kept for the run")
+	var slope: BanditsScript = _sites()
+	slope.ground_height = func(x, _z): return 0.5 * x   # 0.5 m a metre: every Lean-to rises over 1 m across it, so no turn fits
+	slope.trees_at = func(_at, _r): return []
+	slope.sites[cell] = b.sites[cell].duplicate()
+	check(slope.layout(cell)["lean_tos"] == seeded["lean_tos"], "where no turn fits, the seed's turn")
+	var half: Vector2 = Vector2(BanditsScript.LEAN_TO_HALF_X, BanditsScript.LEAN_TO_HALF_Z)
+	var one: Dictionary = b._plan(spot, 0.0, 1, 1)
+	var one_lean: Array = one["lean_tos"][0]
+	var one_front: Vector2 = Vector2(sin(deg_to_rad(float(one_lean[1]))), cos(deg_to_rad(float(one_lean[1]))))
+	check(not b._camp_fits(one, [[(one_lean[0] as Vector2) - one_front * 2.0, 0.2]], half, 0.0), "a trunk 2 m behind a Lean-to's middle is under its roof")
+	check(b._camp_fits(one, [[(one_lean[0] as Vector2) + one_front * 2.0, 0.2]], half, 0.0), "a trunk 2 m in front of it is in the open front strip")
+	var kept: float = float(b._turns[cell])
+	check(b._camp_fits(b._plan(spot, kept, 1, 2), unknown[0], half, 1.0) and b._camp_fits(b._plan(spot, kept, 1, 1), unknown[0], half, 1.0), "the kept turn fits the smaller camps the kills leave")
+	var waits: BanditsScript = _sites()
+	var laid: Array = []
+	waits.lay_camp = func(_camp_key, _camp_fire, camp_lean_tos, _camp_old, _camp_tracks, _camp_tracks_at):
+		laid.append(camp_lean_tos)
+		return [900]
+	waits.laid_still = func(_ids): return true
+	waits.sites[cell] = b.sites[cell].duplicate()
+	var made: Array = [null]
+	waits.trees_at = func(_at, _r): return made[0]
+	waits.camp_tick(1.0, [])
+	check(laid.is_empty(), "a camp is not laid while the trees round it are not made")
+	made[0] = unknown[0]
+	waits.camp_tick(1.0, [])
+	check(laid.size() == 1 and waits._turns.has(cell) and laid[0].size() == turned["lean_tos"].size() and (laid[0][0][0] as Vector3).is_equal_approx(Vector3(turned["lean_tos"][0][0].x, (laid[0][0][0] as Vector3).y, turned["lean_tos"][0][0].y)), "once they are, it is laid at the turn that misses them (%s)" % str(laid))
+
+
 func _camp_items() -> void:
 	var dir: String = "user://test_bandit_camp_items"
 	DirAccess.make_dir_recursive_absolute(dir)
