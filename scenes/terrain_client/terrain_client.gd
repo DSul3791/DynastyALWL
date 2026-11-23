@@ -150,6 +150,7 @@ const UnderwaterLook := preload("res://src/client/underwater_look.gd")
 const LinkBarsScript := preload("res://src/client/link_bars.gd")
 const ConnectWindowScript := preload("res://src/client/connect_window.gd")
 const PlacerScript := preload("res://src/worldgen/runtime/flora_placer.gd")
+const TreeTrunks := preload("res://src/flora/tree_trunks.gd")
 const RECENT_CUT_MSEC := 60000   # how long a cut tree is kept out of flora chunks arriving late (BUG-024)
 const WaterGridScript := preload("res://src/worldgen/runtime/water_grid.gd")
 const WaterVolume := preload("res://src/shared/water_volume.gd")
@@ -1691,7 +1692,8 @@ func _welcome_body(info: Dictionary) -> void:
 	net.action_cue_received.connect(func(_peer: int, cue: int, detail: int, at: Vector3) -> void:
 		if sound != null:
 			sound.other_action(cue, detail, at, harvest._flora_by_id.get(detail, {}) if cue == sound.CUE_PICK and harvest != null else {},
-					items.recipes.recipe(detail) if cue == sound.CUE_CRAFT and items != null and items.recipes != null else {}))
+					items.recipes.recipe(detail) if cue == sound.CUE_CRAFT and items != null and items.recipes != null else {},
+					items.table.id_of(detail) if cue == sound.CUE_PICKUP and items != null and items.table != null else ""))
 	animal_view.fell.connect(func(_kind: String, at: Vector3, small: bool) -> void:
 		sound.slots.play("animal_fall", at, body.global_position, 0.4 if small else 1.0))      # the body drops where it was killed (a small one softly)
 
@@ -1751,6 +1753,11 @@ func _welcome_body(info: Dictionary) -> void:
 	_player_view.stepped.connect(func(at: Vector3, gait: int, crouched: bool) -> void:
 		if sound != null:
 			sound.step_at(at, gait, crouched))   # other players' footsteps, where they walk
+	_player_view.drew.connect(func(at: Vector3) -> void:
+		if sound != null and sound.slots != null:
+			sound.slots.play("bow_draw", at))   # another player draws their bow: the limbs and string creak at their shoulder
+	if sound != null and sound.flame != null:
+		sound.flame.others = Callable(_player_view, "flames_near")   # and their burning torch or lantern flutters at their hand
 	_player_view.stroked.connect(func(at: Vector3) -> void:
 		if sound != null and sound.swim != null:
 			sound.swim.stroke_at(at))   # and their strokes where they swim
@@ -1790,7 +1797,8 @@ func _welcome_body(info: Dictionary) -> void:
 		var cue: String = SlotSoundsScript.net_cue(text)
 
 		if cue != "" and sound != null and body != null:
-			sound.slots.play(cue, body.global_position - body.global_transform.basis.z * 1.5)
+			var float_at: Vector3 = held.float_point(body.global_position) if cue == "fish_bite" and held != null else Vector3.INF
+			sound.slots.play(cue, float_at if float_at.is_finite() else body.global_position - body.global_transform.basis.z * 1.5)   # a bite at the float, where the line went in
 	items.cover_index = flora.cover
 	items.text_scale = display.TEXT_SCALES[display.text_index]
 	items.sort_index = display.sort_index
@@ -1863,6 +1871,8 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(held)
 	var tq_held_item: int = Probe.start()
 	held.setup(items, net, camera, root, layer, _ground_below, sound, _tree_trunk_near, _cover_here)
+	held.trunks_round = _trunks_round
+	held.trunks_version = func() -> int: return flora.canopy_version
 	held.seen_ms = animal_view.seen_server_ms if animal_view != null else Callable()   # a blow is judged where the animals were drawn (protocol 155)
 	held.season_now = func(): return game_clock.season()   # the hoe's plant list greys out what is out of season (the server's own clock, synced at the welcome)
 	held.animal_aim_rows = func() -> Array: return _animal_view_node.aim_rows(camera.global_position, 80.0) if _animal_view_node != null else []   # the bow's aim assist
@@ -3884,6 +3894,63 @@ func _tree_trunk_near(point: Vector3) -> Array:
 
 
 
+# The standing tree trunks within `radius` of `point` (flat), as the server's trunks_near lists them: [root, trunk radius m, height m], saplings left
+# out (no collider). The placement ghost turns red over one (PlacementRules.over_trunk, round 4 of the physical world audit, 23 Nov 2026). Each
+# chunk's trees are listed once (_trunk_index) and listed again when flora's trees change (canopy_version: a chunk in or out, a tree felled), so a
+# look reads the trees only, not every plant of a 256 m chunk.
+var _trunk_index: Dictionary = {}     # chunk -> [[root, trunk radius, height]]
+var _trunk_index_version: int = -1
+
+
+func _trunks_round(point: Vector3, radius: float) -> Array:
+	if flora.canopy_version != _trunk_index_version:
+		_trunk_index.clear()
+		_trunk_index_version = flora.canopy_version
+
+	var found: Array = []
+	var chunk_m: float = float(flora.chunk_m)
+	var reach: float = radius + TreeTrunks.widest_m()
+	var lo: Vector2i = Vector2i(int(floor((point.x - reach) / chunk_m)), int(floor((point.z - reach) / chunk_m)))
+	var hi: Vector2i = Vector2i(int(floor((point.x + reach) / chunk_m)), int(floor((point.z + reach) / chunk_m)))
+
+	for cz in range(lo.y, hi.y + 1):
+		for cx in range(lo.x, hi.x + 1):
+			var chunk: Vector2i = Vector2i(cx, cz)
+
+			if not flora._chunks.has(chunk):
+				continue
+
+			if not _trunk_index.has(chunk):
+				_trunk_index[chunk] = _chunk_trunks(flora._chunks[chunk]["items"])
+
+			for trunk in _trunk_index[chunk]:
+				var at: Vector3 = trunk[0]
+
+				if Vector2(at.x - point.x, at.z - point.z).length() <= radius + float(trunk[1]):
+					found.append(trunk)
+
+	return found
+
+
+# A held flora chunk's standing trees with a trunk collider (flora_view's own radius: the species trunk by height, the drawn model's where listed).
+func _chunk_trunks(held_items: Dictionary) -> Array:
+	var list: Array = []
+
+	for n in range(held_items["ids"].size()):
+		var info: Dictionary = flora._species.get(held_items["ids"][n] >> 16, {})
+
+		if int(info.get("kind", 2)) != 0:
+			continue
+
+		var height: float = float(held_items["heights"][n])
+		var r: float = PlacerScript.collider_radius(0, float(info["trunk"]), height / float(info["height"]), height)
+
+		if r > 0.0:
+			list.append([held_items["positions"][n], TreeTrunks.standing_collider(str(info["name"]), held_items["ids"][n], height, r), height])
+
+	return list
+
+
 # The bush or shrub an axe or pickaxe swing reaches (Dave 2 Nov 2026): the one whose middle lies closest to the swing line from the eye to where
 # it hit, within SHRUB_HIT_M; [chunk, id] or [].
 const SHRUB_HIT_M := 0.9
@@ -5886,8 +5953,8 @@ func _swim_velocity(wanted: Vector3, direction: Vector3, pace: float, hard: bool
 	var down: bool = _move_held("down") and strain_cap >= 0.0
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
-	# BUG-028: W / S swim along the view, so looking up rises and looking down dives; Space and Ctrl still do.
-	var stroke_vy: float = 0.0 if strain_cap < 0.0 else SwimScript.pitch_wish(camera.rotation.x, float(Input.is_key_pressed(KEY_W)) - float(Input.is_key_pressed(KEY_S)), horizontal.length())
+	# BUG-028: forward / back (W / S, or the keys bound to them) swim along the view, so looking up rises and looking down dives; Space and Ctrl still do.
+	var stroke_vy: float = 0.0 if strain_cap < 0.0 else SwimScript.pitch_wish(camera.rotation.x, float(_move_held("move_forward")) - float(_move_held("move_back")), horizontal.length())
 	velocity.y = SwimScript.vertical_speed(body.global_position.y, surface, body.velocity.y, up, down, delta, stroke_vy)
 
 	# Under a floe or an ice sheet: with no stroke given, drift gently out to the nearest open water.

@@ -23,6 +23,7 @@ extends Node
 const NetScript := preload("res://src/stream/terrain_net.gd")
 const StanceScript := preload("res://src/client/stance.gd")
 const CharacterStore := preload("res://src/client/character/character_store.gd")
+const BagRules := preload("res://src/shared/bag_rules.gd")
 const Generator := preload("res://src/client/character/body_generator.gd")
 const KeyBindings := preload("res://src/client/key_bindings.gd")
 const RobotRules := preload("res://src/shared/robot_rules.gd")   # the pack signature the server prints too
@@ -77,6 +78,14 @@ var _fell: Dictionary = {}       # animal ids the client saw go down from a hit
 var _pose_t: float = 0.0
 var _died: int = 0
 var last_touch: String = ""      # what the body touched at the end of the last _walk_for, keys still held
+var _stretch: String = ""        # plan route: the stretch being timed ("" none), its frames and slow frames (_route_frame)
+var _stretch_msec: int = 0
+var _stretch_from: Vector3 = Vector3.ZERO
+var _stretch_frames: int = 0
+var _stretch_worst: float = 0.0
+var _stretch_100: int = 0
+var _stretch_500: int = 0
+var _route_lines: PackedStringArray = PackedStringArray()
 
 
 func prepare(name_arg: String, args: PackedStringArray) -> void:
@@ -187,6 +196,8 @@ func _hook_view() -> void:
 func _process(delta: float) -> void:
 	if client == null or client.body == null or client.connected_msec == 0:
 		return
+
+	_route_frame(delta)
 
 	var now: int = Time.get_ticks_msec()
 	var me: Vector3 = client.body.global_position
@@ -523,6 +534,8 @@ func run() -> void:
 	elif plan.begins_with("drop_"):
 		await _drop(plan.trim_prefix("drop_"))
 		return
+	elif plan == "route":
+		await _route()
 	else:
 		if admin:
 			await _craft_chain()
@@ -1606,62 +1619,7 @@ func _screens() -> void:
 	await _wait(0.5)
 
 	# Every recipe whose Craft button is lit, pressed through the screen: it must queue, or the server must say why not.
-	_step = "craft lit"
-	await _tap("inventory")
-	await _wait(1.5)
-	var lit: int = 0
-	var craft_end: int = Time.get_ticks_msec() + 180000
-
-	for number in view.recipes.numbers():
-		var r: Dictionary = view.recipes.recipe(number)
-
-		if r.is_empty() or not view.station_makes(r) or not (view._can_craft(number) and view._station_ok(r)):
-			continue
-
-		if not bool(r.get("known", false)) and not view._free_craft():
-			continue   # the list hides recipes this character does not know (recipe_list.gd): a player cannot press them
-
-		if Time.get_ticks_msec() > craft_end:
-			_note("craft_lit", "stopped after %d lit recipes: out of time" % lit)
-			break
-
-		lit += 1
-		var label: String = str(r.get("name", number))
-		var heard: int = _notices.size()
-		var queued: int = _queue_msec
-		view._start_craft(number, 1)
-		var end: int = Time.get_ticks_msec() + 2500
-
-		while Time.get_ticks_msec() < end and _queue_msec == queued and _notices.size() == heard:
-			await get_tree().process_frame
-
-		await _wait(0.4)   # the queue and a notice can come a frame apart: classify once both had time to land, the queue first
-		var words: Array = _notices.slice(heard).filter(func(t): return not str(t).begins_with("You work out how to make"))
-
-		if _queue_msec != queued and _queue_left > 0:
-			var tries: int = 0
-
-			while _queue_left > 0 and tries < 20:
-				tries += 1
-				client.net.inventory_action.rpc_id(1, NetScript.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
-				var was: int = _queue_msec
-				var stop: int = Time.get_ticks_msec() + 2000
-
-				while _queue_msec == was and Time.get_ticks_msec() < stop:
-					await get_tree().process_frame
-
-				await _wait(0.15)
-
-			if _queue_left > 0:
-				_fail("craft_lit", label + "_cancel", "%s: queued, but 20 cancels left %d entries" % [label, _queue_left])
-		elif not words.is_empty():
-			# A lit Craft button is a promise: any refusal words for it are a fault (the yellow-but-won't-craft class, Dave).
-			_fail("craft_lit", label, "%s: the Craft button is lit but the server said: %s" % [label, str(words.back())])
-		elif _queue_msec == queued:
-			_fail("craft_lit", label, "%s: the Craft button is lit but nothing happened (no queue, no words)" % label)
-
-	print("ROBOT %s step craft lit: %d lit recipes pressed" % [robot_name, lit])
-	await _check_pack("craft lit")
+	await _press_lit(view, "craft lit", func(_r: Dictionary) -> bool: return true, 180.0)
 
 	# Split and drop through the screen.
 	_step = "split"
@@ -1703,6 +1661,14 @@ func _screens() -> void:
 	# The hammer's build screen: opens on R with a hammer in hand, and every row it shows as covered is placed or refused with words.
 	if admin:
 		await _build_round()
+
+	# Stations the first hours make (workbench, food preparation table, tailor's table, drying rack): built, then every lit recipe made there pressed.
+	if admin:
+		await _station_round(view)
+
+	# Worn slots and a worn bag: put on, the bag opened, Store all and Take all through it, taken off; nothing lost.
+	if admin:
+		await _worn_round(view)
 
 	# Quit with the screen open: the rejoin pass checks the pack came back.
 	_step = "quit with the screen open"
@@ -1809,6 +1775,298 @@ func _build_round() -> void:
 
 	for line in refused:
 		_note("build", "refused: %s" % line)
+
+
+# The first stations, put down a few metres apart away from the camp: the knife's three stand at once, the hammer's workbench is a site
+# hit until built. Then every recipe lit at one of them is pressed (_press_lit). A station that never stands is a fault.
+const FIRST_STATIONS := [[33, "workbench"], [210, "food_preparation_table"], [206, "tailors_table"], [152, "drying_rack"]]
+
+
+func _station_round(view) -> void:
+	_step = "stations"
+
+	if view.open or view.chest_mode:
+		await _esc()
+		await _wait(0.5)
+
+	for item in [["stone_knife", 1], ["stone_hammer", 1], ["stick", 40], ["twine", 20], ["stone", 12], ["log", 8], ["fibre_cloth", 6]]:   # the blueprints, then cloth for the tailor (nothing that spoils: the rejoin check holds the pack to the one at quit)
+		if _count(item[0]) < int(item[1]):
+			_give(item[0], int(item[1]) - _count(item[0]))
+
+	await _check_pack("stations given")
+	var here: Vector3 = client.body.global_position
+	var built: Array = []
+
+	for n in FIRST_STATIONS.size():
+		var number: int = int(FIRST_STATIONS[n][0])
+		var kind: String = str(FIRST_STATIONS[n][1])
+		var spot: Vector3 = here + Vector3(-4.5 + 3.0 * float(n), 0.0, -3.0)   # in a row 3 m apart (stations keep gap_m 2.5), all within the 6 m reach, behind the build round's pieces
+		spot.y = here.y - 0.9
+		var before: Dictionary = {}
+
+		for id in view._world:
+			before[id] = true
+
+		var heard: int = _notices.size()
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_PLACE_BLUEPRINT, number, 0, 0, spot)
+		await _wait(1.5)
+		var id: int = -1
+
+		for w in view._world:
+			if not before.has(w) and (view._world[w]["pos"] as Vector3).distance_to(spot) < 3.0:
+				id = int(w)
+
+		if id < 0:
+			_note("stations", "%s not put down: %s" % [kind, str(_notices.slice(heard))])
+			continue
+
+		# A site: the hammer in hand fills it (Dave 18 Nov 2026); a few hits from beside it.
+		if view._world[id].get("site") != null:
+			var hammer: int = _slot_of("stone_hammer")
+
+			if hammer < 0 or hammer >= client.items.inventory.hotbar_slots:
+				_note("stations", "%s: a site, but the hammer is not on the hotbar (slot %d): not hit" % [kind, hammer])
+				continue
+
+			if client.held.held_slot != hammer:
+				client.held.press_slot(hammer)
+				await _wait(0.5)
+
+			await _go_to(spot, 10.0, 1.8)
+
+			for hit in range(12):
+				if not view._world.has(id) or view._world[id].get("site") == null:
+					break
+
+				client.net.inventory_action.rpc_id(1, NetScript.ACT_REPAIR_STRUCT, id, client.held.held_slot + 1, 0, Vector3.ZERO)
+				await _wait(0.6)
+
+			await _go_to(here, 10.0, 1.0)   # back where the row is measured from: the next spot stays within the place reach
+
+			if view._world.has(id) and view._world[id].get("site") != null:
+				_fail("stations", kind, "%s: its blueprint site was hit 12 times with the hammer and is still a site (%s)" % [kind, str(_notices.slice(heard))])
+				continue
+
+		built.append([id, kind])
+
+	await _go_to(here, 10.0, 1.0)
+	await _wait(1.0)
+	var kinds: Array = built.map(func(b): return str(b[1]))
+	print("ROBOT %s step stations: %d of %d put down (%s)" % [robot_name, built.size(), FIRST_STATIONS.size(), ", ".join(kinds)])
+
+	if built.is_empty():
+		_fail("stations", "none", "no first station could be put down")
+		return
+
+	var pressed: int = await _press_lit(view, "station lit", func(r: Dictionary) -> bool: return str(r.get("station", "")) in kinds, 150.0)
+
+	if pressed == 0:
+		_note("stations", "no recipe lit at %s" % ", ".join(kinds))
+
+	if view.open:
+		await _esc()
+		await _wait(0.5)
+
+
+# Puts on a skirt, sandals and the Fibre shoulder bag (the first clothes and bag), opens the bag, stores and takes the pack's fibre through it,
+# and takes all three off. Each must land in a worn position and come back to the pack; the fibre must all still be there.
+const FIRST_WORN := ["grass_skirt", "fibre_sandals", "fibre_shoulder_bag"]
+
+
+func _worn_place(view, item: String) -> int:
+	var number: int = _num(item)
+
+	for place in view.worn.size():
+		if int(view.worn[place]) == number:
+			return place
+
+	return -1
+
+
+func _worn_round(view) -> void:
+	_step = "worn"
+
+	if view.chest_mode or view.screen_open():
+		await _esc()
+		await _wait(0.5)
+
+	for item in FIRST_WORN:
+		if _worn_place(view, item) < 0 and _count(item) == 0:
+			_give(item, 1)
+
+	if _count("plant_fibre") < 6:
+		_give("plant_fibre", 6)   # something for the bag to hold
+
+	await _check_pack("worn given")
+
+	for item in FIRST_WORN:
+		if _worn_place(view, item) >= 0:
+			continue
+
+		var heard: int = _notices.size()
+		view.wear_slot(_slot_of(item))
+		var end: int = Time.get_ticks_msec() + 3000
+
+		while (_worn_place(view, item) < 0 or _count(item) != 0) and Time.get_ticks_msec() < end:
+			await get_tree().process_frame   # the worn row and the pack come in two messages
+
+		if _worn_place(view, item) < 0:
+			_fail("worn", item + "_on", "%s: put on from the pack, but it never showed as worn (words: %s)" % [item, str(_notices.slice(heard))])
+		elif _count(item) != 0:
+			_fail("worn", item + "_pack", "%s: worn, but still %d in the pack" % [item, _count(item)])
+
+	await _check_pack("worn on")
+	var bag_at: int = _worn_place(view, "fibre_shoulder_bag")
+
+	# Drag: the fibre moved to an empty slot past the hotbar (the same move a drag sends; Store all leaves the hotbar alone).
+	_step = "drag"
+	var inv = client.items.inventory
+	var from: int = _slot_of("plant_fibre")
+	var to: int = -1
+
+	for k in range(inv.hotbar_slots, inv.slot_count):
+		if int(inv.numbers[k]) == 0:
+			to = k
+			break
+
+	var total: int = _count("plant_fibre")
+
+	if from >= 0 and to >= 0 and from < inv.hotbar_slots:
+		var moved_n: int = int(inv.counts[from])
+		view.move_slot(from, to)
+		await _check_pack("drag")
+
+		if int(inv.numbers[to]) != _num("plant_fibre") or int(inv.counts[to]) != moved_n or _count("plant_fibre") != total:
+			_fail("drag", "move", "fibre dragged from slot %d to empty slot %d: slot %d now holds %d x %d, fibre in the pack %d (was %d)" % [from, to, to, int(inv.counts[to]), int(inv.numbers[to]), _count("plant_fibre"), total])
+		else:
+			print("ROBOT %s step drag: %d fibre moved from slot %d to %d" % [robot_name, moved_n, from, to])
+	else:
+		_note("drag", "not tried: fibre in slot %d, first empty slot past the hotbar %d" % [from, to])
+
+	if bag_at >= 0:
+		_step = "worn bag"
+		var fibre: int = _count("plant_fibre")
+		var outside: int = 0
+		var ahead: int = 0   # other stacks Store all reaches first (it goes in slot order; the bag holds bag_slots stacks)
+
+		for k in range(inv.hotbar_slots, inv.slot_count):
+			if int(inv.numbers[k]) == _num("plant_fibre") and not inv.is_fav(k):
+				outside += int(inv.counts[k])
+			elif outside == 0 and int(inv.numbers[k]) != 0 and not inv.is_fav(k):
+				ahead += 1
+		view.open_bag(bag_at)
+		var end2: int = Time.get_ticks_msec() + 4000
+
+		while not view.chest_mode and Time.get_ticks_msec() < end2:
+			await get_tree().process_frame
+
+		if not view.chest_mode:
+			_fail("worn", "bag_open", "the worn Fibre shoulder bag did not open")
+		else:
+			view.bulk(1)   # Store all
+			await _check_pack("bag store all")
+			var stored: int = view.chest_inv.count_of(_num("plant_fibre")) if view.chest_inv != null else 0
+
+			if _count("plant_fibre") + stored != fibre:
+				_fail("worn", "bag_store", "Store all into the worn bag: %d fibre became %d in the pack and %d in the bag" % [fibre, _count("plant_fibre"), stored])
+			elif outside > 0 and stored == 0 and ahead < BagRules.slots_of(client.items.table, _num("fibre_shoulder_bag")):
+				_fail("worn", "bag_store", "Store all into the worn bag stored nothing, with %d fibre past the hotbar" % outside)
+
+			view.bulk(0)   # Take all
+			await _check_pack("bag take all")
+
+			if _count("plant_fibre") != fibre:
+				_fail("worn", "bag_take", "Take all from the worn bag: the pack has %d fibre, had %d" % [_count("plant_fibre"), fibre])
+
+			print("ROBOT %s step worn bag: opened, stored %d fibre, took all back" % [robot_name, stored])
+			await _esc()
+			await _wait(0.6)
+
+	_step = "worn off"
+
+	for item in FIRST_WORN:
+		var place: int = _worn_place(view, item)
+
+		if place < 0:
+			continue
+
+		var heard2: int = _notices.size()
+		view.take_off(place)
+		var end3: int = Time.get_ticks_msec() + 3000
+
+		while (_worn_place(view, item) >= 0 or _count(item) != 1) and Time.get_ticks_msec() < end3:
+			await get_tree().process_frame
+
+		if _worn_place(view, item) >= 0 or _count(item) != 1:
+			_fail("worn", item + "_off", "%s: taken off, but worn %s and %d in the pack (words: %s)" % [item, str(_worn_place(view, item) >= 0), _count(item), str(_notices.slice(heard2))])
+
+	await _check_pack("worn off")
+	print("ROBOT %s step worn: %s on and off" % [robot_name, ", ".join(FIRST_WORN)])
+
+
+# Opens the inventory and presses every recipe whose Craft button is lit and that `pick` takes (a recipe row): each must queue (then is cancelled)
+# or get words from the server; lit and refused, or lit and silent, is a fault (the yellow-but-won't-craft class, Dave). Returns how many were pressed.
+func _press_lit(view, step: String, pick: Callable, limit_s: float) -> int:
+	_step = step
+
+	if not view.open:
+		await _tap("inventory")
+		await _wait(1.5)
+
+	var lit: int = 0
+	var craft_end: int = Time.get_ticks_msec() + int(limit_s * 1000.0)
+
+	for number in view.recipes.numbers():
+		var r: Dictionary = view.recipes.recipe(number)
+
+		if r.is_empty() or not view.station_makes(r) or not (view._can_craft(number) and view._station_ok(r)) or not bool(pick.call(r)):
+			continue
+
+		if not bool(r.get("known", false)) and not view._free_craft():
+			continue   # the list hides recipes this character does not know (recipe_list.gd): a player cannot press them
+
+		if Time.get_ticks_msec() > craft_end:
+			_note("craft_lit", "%s: stopped after %d lit recipes: out of time" % [step, lit])
+			break
+
+		lit += 1
+		var label: String = str(r.get("name", number))
+		var heard: int = _notices.size()
+		var queued: int = _queue_msec
+		view._start_craft(number, 1)
+		var end: int = Time.get_ticks_msec() + 2500
+
+		while Time.get_ticks_msec() < end and _queue_msec == queued and _notices.size() == heard:
+			await get_tree().process_frame
+
+		await _wait(0.4)   # the queue and a notice can come a frame apart: classify once both had time to land, the queue first
+		var words: Array = _notices.slice(heard).filter(func(t): return not str(t).begins_with("You work out how to make"))
+
+		if _queue_msec != queued and _queue_left > 0:
+			var tries: int = 0
+
+			while _queue_left > 0 and tries < 20:
+				tries += 1
+				client.net.inventory_action.rpc_id(1, NetScript.ACT_CRAFT_CANCEL, 0, 0, 0, Vector3.ZERO)
+				var was: int = _queue_msec
+				var stop: int = Time.get_ticks_msec() + 2000
+
+				while _queue_msec == was and Time.get_ticks_msec() < stop:
+					await get_tree().process_frame
+
+				await _wait(0.15)
+
+			if _queue_left > 0:
+				_fail("craft_lit", label + "_cancel", "%s: queued, but 20 cancels left %d entries" % [label, _queue_left])
+		elif not words.is_empty():
+			# A lit Craft button is a promise: any refusal words for it are a fault (the yellow-but-won't-craft class, Dave).
+			_fail("craft_lit", label, "%s: the Craft button is lit but the server said: %s" % [label, str(words.back())])
+		elif _queue_msec == queued:
+			_fail("craft_lit", label, "%s: the Craft button is lit but nothing happened (no queue, no words)" % label)
+
+	print("ROBOT %s step %s: %d lit recipes pressed" % [robot_name, step, lit])
+	await _check_pack(step)
+	return lit
 
 
 func _container_round(view) -> void:
@@ -2681,6 +2939,143 @@ func _quit_at_once() -> void:
 
 	print("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d (quit mid-craft)" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
 	client.frames_left = 1
+
+
+# Plan route (lag lane 23 Nov 2026, coordinator: "hitches while moving, which is how people really play"): a fixed route a new player takes,
+# timed stretch by stretch: round the starter town, a long run north over many block borders, the thickest woods near there, the nearest
+# river and along it, after the nearest wild animal with a spear, a chest built and opened, a full turn of the view. Each stretch prints
+#   ROBOT <name> ROUTE <stretch>: <s> s, <frames> frames, worst <ms> ms, <n> over 100 ms, <n> over 500 ms, moved <m> m, at x,z
+# and the game's own HITCH and FREEZE lines fall between its begin and end lines. Needs --robot-admin (the spear and the chest's makings).
+# The same route at Low quality: --quality=0 on the client.
+func _route() -> void:
+	var start: Vector3 = client.body.global_position
+	_route_begin("town")
+	for corner in [Vector3(40.0, 0.0, 0.0), Vector3(40.0, 0.0, 40.0), Vector3(-40.0, 0.0, 40.0), Vector3(-40.0, 0.0, -30.0), Vector3(0.0, 0.0, 0.0)]:
+		await _run_to(start + corner, 25.0, 4.0)
+	_route_end()
+
+	_route_begin("run north 600 m")
+	await _run_to(start + Vector3(60.0, 0.0, -600.0), 120.0, 6.0)
+	_route_end()
+
+	_route_begin("woods")
+	await _forest_walk(30.0)
+	_route_end()
+
+	_route_begin("to the river")
+	var water: Vector3 = await _find_water()
+	if is_nan(water.x):
+		_note("route", "no water in a loaded chunk")
+	else:
+		await _run_to(water, 90.0, 6.0)
+	_route_end()
+
+	_route_begin("along the river")
+	var along: Vector3 = client.body.global_position
+	var came: Vector3 = _stretch_from
+	for leg in range(4):
+		var next: Vector3 = await _find_water_beyond(along, came, 30.0)
+		if is_nan(next.x):
+			break
+		await _run_to(next, 30.0, 5.0)
+		came = along
+		along = next
+	_route_end()
+
+	_route_begin("past animals")
+	_give("spear", 1)
+	await _check_pack("route spear")
+	await _hunt_all(25.0)
+	_route_end()
+
+	_route_begin("chest")
+	_give("stone_knife", 1)
+	await _storage()
+	_route_end()
+
+	_route_begin("view turn")
+	var yaw: float = client.body.rotation.y
+	for n in range(80):
+		client.body.rotation.y = yaw + TAU * float(n + 1) / 80.0
+		await get_tree().process_frame
+	await _wait(2.0)
+	_route_end()
+
+	_route_begin("run back to town")
+	await _run_to(start, 150.0, 8.0)
+	_route_end()
+	print("ROBOT %s ROUTE summary:" % robot_name)
+	for line in _route_lines:
+		print("ROBOT %s ROUTE = %s" % [robot_name, line])
+
+
+# The wet corner of a loaded water grid nearest `from` that lies at least `beyond_m` from it and no nearer the route's last point than `from`
+# (so the run goes on along the water, not back), or NAN; one chunk a frame, as _find_water.
+func _find_water_beyond(from: Vector3, back: Vector3, beyond_m: float) -> Vector3:
+	var best: Vector3 = Vector3(NAN, NAN, NAN)
+	var best_d: float = INF
+	var chunk_m: float = float(client.flora.chunk_m)
+	var back_d: float = Vector2(from.x - back.x, from.z - back.z).length()
+
+	for chunk in client.flora._chunks.keys():
+		var grid: Dictionary = client.flora._chunks.get(chunk, {}).get("grid", {})
+
+		if int(grid.get("wet", 0)) == 0:
+			continue
+
+		var spacing: float = float(grid["spacing"])
+		var count: int = int(grid["count"])
+		var levels = grid["levels"]
+
+		for j in range(count):
+			for i in range(count):
+				if is_nan(float(levels[j * count + i])):
+					continue
+
+				var x: float = float(chunk.x) * chunk_m + float(i) * spacing
+				var z: float = float(chunk.y) * chunk_m + float(j) * spacing
+				var d: float = Vector2(x - from.x, z - from.z).length()
+
+				if d >= beyond_m and d < best_d and Vector2(x - back.x, z - back.z).length() > back_d:
+					best_d = d
+					best = Vector3(x, float(levels[j * count + i]), z)
+
+		await get_tree().process_frame
+
+	return best
+
+
+func _route_begin(stretch: String) -> void:
+	_step = "route " + stretch
+	_stretch = stretch
+	_stretch_msec = Time.get_ticks_msec()
+	_stretch_from = client.body.global_position
+	_stretch_frames = 0
+	_stretch_worst = 0.0
+	_stretch_100 = 0
+	_stretch_500 = 0
+	print("ROBOT %s ROUTE begin %s at %.0f,%.0f" % [robot_name, stretch, _stretch_from.x, _stretch_from.z])
+
+
+func _route_end() -> void:
+	var here: Vector3 = client.body.global_position
+	var line: String = "%s: %.1f s, %d frames, worst %.0f ms, %d over 100 ms, %d over 500 ms, moved %.0f m, at %.0f,%.0f" % [_stretch,
+		float(Time.get_ticks_msec() - _stretch_msec) / 1000.0, _stretch_frames, _stretch_worst, _stretch_100, _stretch_500,
+		Vector2(here.x - _stretch_from.x, here.z - _stretch_from.z).length(), here.x, here.z]
+	print("ROBOT %s ROUTE %s" % [robot_name, line])
+	_route_lines.append(line)
+	_stretch = ""
+
+
+func _route_frame(delta: float) -> void:
+	if _stretch == "":
+		return
+
+	var ms: float = delta * 1000.0
+	_stretch_frames += 1
+	_stretch_worst = maxf(_stretch_worst, ms)
+	_stretch_100 += 1 if ms > 100.0 else 0
+	_stretch_500 += 1 if ms > 500.0 else 0
 
 
 func _quit() -> void:

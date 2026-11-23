@@ -8,6 +8,7 @@ extends Node
 # the normal stance. The weapon is drawn as a simple first-person model until real art exists.
 
 const FeelKicks := preload("res://src/client/feel_kicks.gd")
+const KeyBindings := preload("res://src/client/key_bindings.gd")
 const ArtKit := preload("res://src/client/ui/art_kit.gd")
 # The held-item label sits 8 px over the hotbar tray (redesign section 9: the tray top is at y 948 of the 1080 canvas).
 const LABEL_ABOVE := 1080.0 - ArtKit.HOTBAR_TRAY.position.y + 8.0
@@ -162,6 +163,8 @@ var _sound                                # SoundStage (hit sounds)
 var shrub_near: Callable = Callable()   # (from, to) -> [chunk, id] of the bush or shrub the swing line passes through, or []; set by the client scene
 var swath_cut: Callable                 # (held pack slot, tool class) -> radius: one sickle or scythe swing (harvest.gd swath; 0 when nothing was sent)
 var _tree_near: Callable                  # (point) -> [chunk, id] of the tree trunk standing there, or []
+var trunks_round: Callable                 # (point, radius) -> [[root, trunk radius, height]]: the ghost goes red over a standing tree (terrain_client _trunks_round)
+var trunks_version: Callable               # () -> int, rising when the held trees change (a tree felled under a still ghost)
 var _swing_t: float = -1.0
 signal struck(side: float, weight: float)   # a tool blow reached its impact frame: the camera jolts (feel_kicks.gd)
 var _caption_age: float = 1.0
@@ -1360,6 +1363,8 @@ func mouse_button(button: int, pressed: bool) -> bool:
 					_dig_here()
 			elif str(_inv.table.entry(held_id()).get("tool_class", "")) == "rod":
 				_net.inventory_action.rpc_id(1, Net.ACT_FISH, held_slot, 0, 0, _camera.global_position - _camera.global_transform.basis.z * 4.0)
+				_cast_at = _camera.global_position - _camera.global_transform.basis.z * 4.0   # where the line went in (the server's cast point)
+				_cast_msec = Time.get_ticks_msec()
 
 				if _sound != null:
 					_sound.slots.play("net_cast", _camera.global_position - _camera.global_transform.basis.z * 2.0)   # shortcut: the shore-net throw clip stands in for the rod cast until a line-cast clip exists (Jason, 2 Nov 2026; to hear)
@@ -1417,6 +1422,15 @@ func mouse_button(button: int, pressed: bool) -> bool:
 	return false
 
 
+# Where the rod's float sits, for the bite's splash (23 Nov 2026: it sounded 1.5 m in front of the angler): the last cast's point, at the
+# feet's height (the water's face, near enough), while it is recent and near the angler at `feet_near`; INF otherwise.
+func float_point(feet_near: Vector3) -> Vector3:
+	if not _cast_at.is_finite() or Time.get_ticks_msec() - _cast_msec > CAST_KEEP_MS or Vector2(_cast_at.x - feet_near.x, _cast_at.z - feet_near.z).length() > CAST_NEAR_M:
+		return Vector3.INF
+
+	return Vector3(_cast_at.x, feet_near.y - 0.8, _cast_at.z)
+
+
 # Just before a shot or a throw: the server ms this screen shows the animals at (ACT_SEEN), so the flight is judged where this player sees them.
 func _send_seen() -> void:
 	if seen_ms.is_valid():
@@ -1445,6 +1459,10 @@ func _throw() -> void:
 # The arrow seen leaving the bow and its thunk where it should come down: the server's flight (data/items/bow.json: power from the draw time,
 # speed_max x power, gravity, range_m) followed here to draw it and to place and time the sound. A hit on an animal thuds through hit_number
 # instead; the server's spread may turn the real arrow a little from this one.
+const CAST_KEEP_MS := 180000        # a rod cast this long ago is still where the float is (float_point)
+const CAST_NEAR_M := 8.0             # and only while the angler stands by it
+var _cast_at: Vector3 = Vector3.INF
+var _cast_msec: int = 0
 const SEEN_ARROW_RANGE_M := 200.0   # another player's arrow: its bow is not known here, so it is flown until it lands (the 6 s cap)
 const ARROW_STUCK_SHOW_S := 1.5   # the flown arrow stays where it hit this long; the server's stuck arrow is drawn by then
 
@@ -1945,6 +1963,32 @@ func _reason() -> String:
 	return PlacementRules.reason_text(blueprint_state, _door_shape)
 
 
+# Whether the ghost stands over a standing tree's trunk (PlacementRules.over_trunk, as the server checks it). The trunks are listed only when the
+# ghost has moved TREE_LOOK_M, turned, changed piece, or the trees changed (one felled under it) since the last look.
+const TREE_LOOK_M := 0.1
+var _tree_look_key: Vector4 = Vector4.INF
+var _tree_look_over: bool = false
+var _tree_look_kit: String = ""
+var _tree_look_version: int = -1
+
+
+func _over_tree(kit: String) -> bool:
+	if not trunks_round.is_valid():
+		return false
+
+	var at: Vector3 = _blueprint.global_position
+	var key: Vector4 = Vector4(at.x, at.y, at.z, float(_blueprint_yaw))
+	var version: int = int(trunks_version.call()) if trunks_version.is_valid() else 0
+
+	if not _tree_look_key.is_finite() or Vector3(key.x, key.y, key.z).distance_to(Vector3(_tree_look_key.x, _tree_look_key.y, _tree_look_key.z)) >= TREE_LOOK_M or key.w != _tree_look_key.w or kit != _tree_look_kit or version != _tree_look_version:
+		_tree_look_key = key
+		_tree_look_kit = kit
+		_tree_look_version = version
+		_tree_look_over = PlacementRules.over_trunk(_placement, kit, at, deg_to_rad(float(_blueprint_yaw)), trunks_round.call(at, PlacementRules.footprint_reach(_placement, kit)))
+
+	return _tree_look_over
+
+
 # The placement ghost for a held campfire: a ring on the ground where it would go, yellow in the open
 # and green under a tree's crown (Dave, 2026-10-20: fires under cover survive rain, open ones go out).
 # A left click on a red ghost says why it will not go down (Dave 5 Nov 2026: every placement that fails tells you the reason).
@@ -2129,6 +2173,9 @@ func _update_blueprint() -> void:
 
 		if not is_nan(terrain):
 			blueprint_state = PlacementRules.off_ground(_placement, kit, _blueprint_at.y - lifted, terrain, on_base and attach != "table", on_grid.size() > 3)   # a platter's base is a table: the server snaps with foundation rows only, so no exemption
+
+	if blueprint_state == "" and _over_tree(kit):
+		blueprint_state = "tree"   # the server refuses it the same way (server_items _place)
 
 	if blueprint_state == "" and not on_base and not PlacementRules.structure_of_kit(_placement, kit).has("needs_running_water") and water_depth_at.is_valid() and PlacementRules.over_water(_placement, kit, _blueprint_at, deg_to_rad(float(_blueprint_yaw)), water_depth_at):
 		blueprint_state = "water"
@@ -3575,10 +3622,10 @@ func _third_skin_color() -> Color:
 	return Color(THIRD_SKIN.r * tint.r, THIRD_SKIN.g * tint.g, THIRD_SKIN.b * tint.b)
 
 
-# The left-hand item: a torch (with its light) or a shield, mounted on the left hand; B raises a shield.
+# The left-hand item: a torch (with its light) or a shield, mounted on the left hand; B (KeyBindings "block") raises a shield.
 func _show_off_model(delta: float) -> void:
 	var number: int = _left_number() if _inv != null else 0
-	blocking = number != 0 and _off_class() == "shield" and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and Input.is_key_pressed(KEY_B)
+	blocking = number != 0 and _off_class() == "shield" and Input.mouse_mode == Input.MOUSE_MODE_CAPTURED and KeyBindings.held("block")
 	var shown: int = -number if number != 0 and _slot_out(_left_slot()) else number   # a torch that went out is drawn again, without its flame
 
 	if shown != _off_shown:

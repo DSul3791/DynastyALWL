@@ -475,6 +475,7 @@ func _ready() -> void:
 	items.yaw_of = players.yaw_of   # a raised shield guards the way the body faces (server_items.gd shield_share)
 	cues.send_cue = func(peer, about, cue, detail, at): net.action_cue.rpc_id(peer, about, cue, detail, at)
 	items.craft_working = cues.craft_working
+	items.hurt_heard = cues.hurt   # an attack on a player: the gasp for the others near
 	net.look_reported.connect(players.set_look)
 	@warning_ignore("confusable_local_declaration")
 	items.send_remains = func(peer, rows): net.remains_marks.rpc_id(peer, rows)
@@ -767,6 +768,7 @@ func _ready() -> void:
 	animals.canopy_ready = func(x, z): return _cover_ready(Vector3(x, 0.0, z))
 	animals.undergrowth = func(point): return flora.in_undergrowth(point)
 	animals.player_stalk = func(): return items.peer_stalk_factors()
+	animals.player_loud = func(): return cues.loud_kinds()   # a blow, a cry or craft work carries farther to animals (hearing-range pass)
 	animals.hour_now = func(): return game_clock.hour()
 	animals.sunrise_now = func(): return WeatherScript.sunrise_hour(WeatherScript.year_phase(game_clock.seconds) * float(GameClockScript.DAYS_PER_YEAR))   # the sun the sky draws (weather.gd slope_breeze uses the same): animal periods and trips follow it
 	animals.season_now = func(): return game_clock.season()
@@ -869,6 +871,9 @@ func _ready() -> void:
 	animals.drop_loot = func(number, count, pos): items.drop_world_made(number, count, pos)
 	@warning_ignore("confusable_local_declaration")
 	animals.big_game.hurt_player = func(peer, amount, lethal, cause, from): return items.hurt_player(peer, amount, lethal, cause, 10.0, "", 0.0, from)
+	animals.big_game.hurt_armed = func(peer, amount, lethal, cause, from, weapon):
+		var blow: Dictionary = ItemsScript.weapon_blow(items.table.entry(str(weapon)), {})
+		return items.hurt_player(peer, amount, lethal, cause, 10.0, str(blow["mode"]), float(blow["pen"]), from)
 	@warning_ignore("confusable_local_declaration")
 	animals.died = func(sp, pos, peer):
 		if sp == "bandit" or sp == "horse":
@@ -913,6 +918,10 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> Dictionary:
 		var member: String = tribes.member_along(origin, dir, reach)
+
+		if member != "" and animals.wall_between(origin, npcs.npcs[member]["pos"]):
+			member = ""   # a tribe member behind a wall is out of reach of the blow, as an animal is (server_animals.target_along)
+
 		var seen: Array = items.strike_seen.get(peer, [-1, -1])   # protocol 155: judged where the player saw the animals, at most rewind_max_ms back
 		var target: int = animals.target_along(origin, dir, reach, int(seen[0]), int(seen[1]))
 		var member_d: float = Vector2(npcs.npcs[member]["pos"].x - origin.x, npcs.npcs[member]["pos"].z - origin.z).length() if member != "" else INF
@@ -1003,6 +1012,7 @@ func _ready() -> void:
 
 		return feet
 	animals.bandit_camps = bandits
+	animals.big_game.weapon_of = bandits.weapon_of   # a bandit's blow is his weapon's kind (a sword cuts), not a beast's
 	bandits.lay_camp = func(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at): return items.lay_bandit_camp(camp_key, camp_fire, camp_lean_tos, camp_old, camp_tracks, camp_tracks_at)
 	bandits.clear_camp = func(camp_key, camp_ids): items.clear_bandit_camp(camp_key, camp_ids)   # a site gone back to sleep takes its pit and tracks away
 	bandits.laid_still = func(camp_ids): return items.bandit_camp_there(camp_ids)
@@ -1159,16 +1169,16 @@ func _ready() -> void:
 	net.dump_requested.connect(_on_dump_requested)
 	@warning_ignore("confusable_local_declaration")
 	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at):
-		var store_was: Array = []
+		var cue_before: Array = []
 
 		if cues != null:
 			cues.note_action(peer, kind, a, b, count, at)   # before the action: a carcass's last cut or the blow that breaks the tool still reads what was there
-			store_was = cues.store_before(peer, kind, b)
+			cue_before = cues.before_action(peer, kind, a, b)
 
 		items.action(peer, kind, a, b, count, at)
 
-		if cues != null and not store_was.is_empty():
-			cues.store_after(peer, kind, a, b, store_was)   # after: a container is heard only when the server let the open, close, put or take through
+		if cues != null and not cue_before.is_empty():
+			cues.after_action(peer, kind, a, b, cue_before)   # after: a container, a drink or a pickup is heard only when the server let it through
 
 		if players != null:
 			players.note_action(peer, kind))

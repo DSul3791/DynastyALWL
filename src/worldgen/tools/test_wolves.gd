@@ -229,6 +229,27 @@ func _init() -> void:
 	run(a, 40.0)
 	check(log_bites > 0, "near the den even a healthy lone player is attacked")
 
+	# 6b. Never through a wall (coordinator's fight walk, 23 Nov 2026: wolves bit through walls). A wall here stands on every line from a
+	# wolf to the player (wall_between, no margin) but blocks no step (crosses_wall has a body margin): the ring wolves come round and
+	# lunge, and bite nothing; without it the same rush bites. The den guard's bite: test_wolf_pups section 5b.
+	for walled in [true, false]:
+		a = make()
+
+		if walled:
+			a.walls = func(_x0, _z0, _x1, _z1, margin): return margin == 0.0
+
+		log_bites = 0
+		health = {1: 100000.0}
+		players = [player(1, 0.0, 0.0)]
+		pid = a.wolves.spawn_pack(20.0, 0.0)
+		a.wolves.packs[pid]["den"] = Vector3(9000.0, 0.0, 0.0)    # the battle ring's lunges (section 12)
+		a.wolves.packs[pid]["phase"] = "rush"
+		a.wolves.packs[pid]["target"] = 1
+		a.wolves.packs[pid]["sprint"] = 0.0
+		a.wolves.packs[pid]["bite"] = {}
+		run(a, 20.0)
+		check(log_bites == 0 if walled else log_bites > 0, "%s, the ring wolves' lunges land %d bites" % ["with a wall between them" if walled else "with no wall", log_bites])
+
 	# 7. Howl: a second pack within range joins the stalk.
 	a = make()
 	players = [player(1, 0.0, 0.0)]

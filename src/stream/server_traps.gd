@@ -248,8 +248,18 @@ func _came_near(id: int, now: float) -> void:
 	var it: Dictionary = host._items[id]
 	var st: Dictionary = it["struct"]
 
+	if float(_of_item(it).get("test_chance", 0.0)) > 0.0:
+		check_one(id)   # the smoke knob: an imagined animal every look
+
+		if not host._items.has(id):
+			return   # broke on its catch
+
 	if not st.has("run") or now - float(st.get("away_at", now)) >= 3600.0:
 		_note_run(it)   # the places round it are worked out now that someone is near
+
+		if not st.has("run"):
+			return   # not worked out yet (the player has just come back): the time away is kept for the next look, not rolled as off a run
+
 		check_away(id)
 
 	if not host._items.has(id):
@@ -257,8 +267,61 @@ func _came_near(id: int, now: float) -> void:
 
 	st["away_at"] = now
 
-	if float(_of_item(it).get("test_chance", 0.0)) > 0.0:
-		check_one(id)   # the smoke knob: an imagined animal every look
+
+# What a restart keeps of a set trap beyond its owner and wear (server_items world row 24, JSON; "" for nothing): how squarely it sits on
+# a run and by a fox earth or a choke, its away clock and quiet time, and the catch it holds (the carcass itself is not saved, so its
+# species and life are, and after_load lays it again). The coordinator, 23 Nov 2026: a restart while the player was away lost the run
+# note, so the time away rolled as off a run and nothing was caught; a catch waiting in its snare was lost.
+const SAVED_KEYS := ["run", "fox", "choke", "away_at", "quiet"]
+
+
+func saved_state(it: Dictionary) -> String:
+	var st: Dictionary = it["struct"]
+	var out: Dictionary = {}
+
+	for k in SAVED_KEYS:
+		if st.has(k):
+			out[k] = st[k]
+
+	var c: Dictionary = host._items.get(int(st.get("catch", 0)), {})
+
+	if str(c.get("struct", {}).get("kind", "")) == "carcass" and int(c["struct"].get("blows", 0)) == 0 and not c["struct"].has("parts"):   # one already being cut up is not laid again whole
+		out["held"] = [str(c["struct"].get("species", "")), float(c.get("left", 0.0))]
+
+	return "" if out.is_empty() else JSON.stringify(out)
+
+
+func restore_state(entry: Dictionary, text: String) -> void:
+	var parsed: Variant = JSON.parse_string(text)
+
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return
+
+	for k in SAVED_KEYS:
+		if (parsed as Dictionary).has(k):
+			entry["struct"][k] = parsed[k]
+
+	if typeof(parsed.get("held", null)) == TYPE_ARRAY and (parsed["held"] as Array).size() == 2:
+		entry["struct"]["held"] = parsed["held"]
+
+
+# After a load: each trap that held a catch has it again, by the trap, still marked as snared (no Tracking or Hunting for it again).
+func after_load() -> void:
+	for id in host._items.keys():
+		var it: Dictionary = host._items[id]
+
+		if not it.has("struct") or not it["struct"].has("held") or not is_kind(str(it["struct"].get("kind", ""))):
+			continue
+
+		var held: Array = it["struct"]["held"]
+		it["struct"].erase("held")
+		var spot: Vector3 = it["pos"] + Vector3(float(_of_item(it).get("carcass_offset_m", 0.7)), 0.0, 0.0)
+		var c: int = host.make_carcass(str(held[0]), spot, -1)
+
+		if host._items.has(c):
+			host._items[c]["struct"]["snared"] = true
+			host._items[c]["left"] = float(held[1])
+			it["struct"]["catch"] = c
 
 
 # An animal stepped from `from` to `to` (server_animals.gd, only for animals near a player). A trap it has just come within lure_m of
@@ -329,7 +392,7 @@ func check_one(id: int, row: Dictionary = {}) -> bool:
 	return true
 
 
-# Quiet after a catch until a game second ("quiet", not saved).
+# Quiet after a catch until a game second ("quiet", saved with the trap: saved_state).
 func _quiet(st: Dictionary) -> bool:
 	return host._now_game_s() < float(st.get("quiet", 0.0))
 

@@ -16,6 +16,7 @@ extends SceneTree
 #                      the total and writes user://world_audit_total.json
 #     --examples=N     worst examples kept per fault (default 12)
 #     --camps          instead of chunks: the starter town, the goblin camps and every bandit candidate site (trunks, boulders, tilt, water, overlaps)
+#     --lakes          instead of chunks: every lake of every baked tile (8 m samples) against the dry ground round it (lake_over_lip)
 #     --caves          instead of chunks: every cave of every baked tile (walking lines, dens, den mouths, goblin paths, floor items)
 #
 # Nothing is written to the world; the tool reads the tiles, the placer, the water grid and the server's scatter layout.
@@ -41,6 +42,9 @@ const TOWN := Vector2(58160.0, 71360.0)     # the starter town centre (data/npcs
 const WINDOW_M := 32
 const PLAYER_RADIUS_M := 0.35               # terrain_client _make_player capsule
 const VISUAL_SINK_MAX := 0.15               # flora_view: models are sunk min(0.15, 0.08 x height)
+const PICK_REACH_M := 2.5                   # data/items/interact.json reach_m: E picks within this across (harvest.gd _candidates)
+const PICK_RISE_M := 2.5                    # and a stance this far up or down still reaches it
+const ROCK_SLOPE := 1.518                   # rise over run where ground_material.gd rock_mask passes half (1 - normal.y = 0.45)
 
 # fault -> [what it means, limit]
 const FAULTS := {
@@ -53,7 +57,9 @@ const FAULTS := {
 	"shrub_floats": ["a shrub's base more than 0.10 m above the mesh", 0.10],
 	"plant_floats": ["a small plant's base more than 0.10 m above the mesh", 0.10],
 	"plant_buried": ["a plant or shrub sunk under the mesh by more than half its height (and 0.25 m)", 0.25],
-	"flora_in_water": ["a non-water plant, shrub or tree standing in drawn water more than 0.15 m deep", 0.15],
+	"flora_in_water": ["a non-water plant, shrub or tree standing in drawn water more than 0.15 m deep (the chunk's liquid sheet as its shader draws it)", 0.15],
+	"flora_on_rock": ["a plant, shrub or tree rooted where the ground draws as bare rock face (ground_material.gd rock_mask over half: the mesh steeper than 57 degrees)", 0.45],
+	"gather_unreachable": ["a gatherable plant or a loose stone, stick or ore piece with no ground a player stands on (under 45 degrees, within 2.5 m up or down) within the pick reach (interact.json reach_m)", 0.0],
 	"sapling_collider": ["a sapling (under flora_placer.SAPLING_M) with a trunk collider: an invisible 3 m pole a player should push through", 0.0],
 	"trunks_overlap": ["two tree trunk colliders inside each other", 0.0],
 	"trunk_squeeze": ["two trunks closer than a player's width (0.70 m gap): not a fault alone, a trap if many", 0.0],
@@ -64,6 +70,7 @@ const FAULTS := {
 	"boulder_overlap": ["two boulders inside each other, or a boulder through a tree trunk", 0.0],
 	"item_in_trunk": ["a loose item lying inside a tree trunk", 0.0],
 	"water_gap": ["a dry water-grid point, no lower than its wet neighbour's bed, 0.30 m or more under that neighbour's level (a hole or cut edge in the water sheet)", 0.30],
+	"lake_over_lip": ["a lake standing 0.30 m or more over the dry ground at its rim (--lakes): it spills over a lip lower than its level, and the drawn sheet folds down past the rim instead of meeting a waterline; severity = level - lip, one per lake", 0.30],
 	"water_wall": ["water 0.30 m or more deep beside dry ground lower than its bed and 0.50 m under its level (water held up by nothing), no fall drawn there", 0.30],
 	"water_step": ["two neighbouring wet points whose levels differ 1.0 m more than their beds do (water steeper than the ground), no fall drawn there", 1.0],
 	"lake_tilted": ["neighbouring lake points more than 0.10 m apart (standing water on a slope)", 0.10],
@@ -82,6 +89,7 @@ const FAULTS := {
 	"cave_prop_off": ["cave floor dressing (bones, goblin litter or fire, den droppings or bedding) more than 0.15 m off the floor mesh (looks)", 0.15],
 	"cave_item_buried": ["a cave stone or mine leftover more than 0.15 m under the floor mesh", 0.15],
 	"camp_in_trunk": ["a camp piece (town marker, camp fire, spawn, goblin camp prop, bandit Lean-to, seat or tether) overlapping a tree trunk collider", 0.05],
+	"camp_in_flora": ["a shrub, or a plant taller than 0.5 m, rooted inside a camp piece (grows through a fire, a seat, a bed or a Lean-to)", 0.0],
 	"camp_on_boulder": ["a camp piece overlapping a boulder or ore rock", 0.05],
 	"camp_tilted": ["ground rising across a camp piece's footprint more than a player may build on (PlacementRules.steep: a Lean-to 1.0 m, a fire 0.6 m) or, for furniture and NPC spots, 0.30 m", 0.30],
 	"camp_in_water": ["a camp piece standing in drawn water more than 0.10 m deep", 0.10],
@@ -110,6 +118,7 @@ var keep_examples: int = 12
 var lake_class: int = 2
 var river_class: int = 3
 var _biome_now: String = ""
+var _gatherable: Dictionary = {}     # plant and shrub species names with something to pick (flora.json "yields")
 
 
 class WaterStub:
@@ -133,6 +142,7 @@ func _init() -> void:
 	var camps: bool = false
 	var walk: bool = false
 	var shores: bool = false
+	var lakes: bool = false
 
 	for argument in OS.get_cmdline_user_args():
 		var value: String = argument.get_slice("=", 1)
@@ -167,6 +177,8 @@ func _init() -> void:
 			walk = true
 		elif argument == "--shores":
 			shores = true
+		elif argument == "--lakes":
+			lakes = true
 		elif argument.begins_with("--probe="):
 			probe = Vector2(float(value.get_slice(",", 0)), float(value.get_slice(",", 1)))
 
@@ -187,6 +199,10 @@ func _init() -> void:
 	for entry in tables.get_entries("biomes"):
 		biome_names[int(entry["id"])] = str(entry["name"])
 
+	for entry in tables.get_entries("flora"):
+		if str(entry.get("kind", "")) != "tree" and not (entry.get("yields", []) as Array).is_empty():
+			_gatherable[str(entry["name"])] = true
+
 	for entry in tables.get_entries("water_classes"):
 		if str(entry["name"]) == "lake":
 			lake_class = int(entry["id"])
@@ -205,7 +221,9 @@ func _init() -> void:
 	var mine: Array = []
 	var started: int = Time.get_ticks_msec()
 
-	if camps:
+	if lakes:
+		mine = _audit_lakes()
+	elif camps:
 		mine = _audit_camps(settings)
 	elif caves:
 		mine = _audit_caves(part)
@@ -219,7 +237,7 @@ func _init() -> void:
 
 		print("world_audit: %d chunks picked, %d in part %d/%d" % [chunks.size(), mine.size(), part.x, part.y])
 
-	for n in range(0 if caves or camps else mine.size()):
+	for n in range(0 if caves or camps or lakes else mine.size()):
 		var c: Vector2i = mine[n][0]
 		_biome_now = str(mine[n][1])
 
@@ -447,6 +465,70 @@ func _mesh_near(m: Dictionary, x: float, z: float, y: float) -> float:
 	return best
 
 
+# The mesh's slope (rise over run) at (x, z) on the surface nearest y, over 0.5 m either way; NAN where the mesh is missing.
+func _mesh_slope(m: Dictionary, x: float, z: float, y: float) -> float:
+	var e: float = _mesh_near(m, x + 0.5, z, y)
+	var w: float = _mesh_near(m, x - 0.5, z, y)
+	var n: float = _mesh_near(m, x, z + 0.5, y)
+	var s: float = _mesh_near(m, x, z - 0.5, y)
+
+	if is_nan(e) or is_nan(w) or is_nan(n) or is_nan(s):
+		return NAN
+
+	return Vector2(e - w, n - s).length()
+
+
+# True when a player can stand within the pick reach of (x, y, z): ground under 45 degrees (Godot's floor angle) within PICK_REACH_M across and
+# PICK_RISE_M up or down. The spot itself first (almost every item lies on such ground).
+func _reachable(m: Dictionary, p: Vector3) -> bool:
+	for ring in range(0, int(PICK_REACH_M / 0.5) + 1):
+		var r: float = float(ring) * 0.5
+		var turns: int = 1 if ring == 0 else 6 * ring
+
+		for a in range(turns):
+			var x: float = p.x + cos(TAU * float(a) / float(turns)) * r
+			var z: float = p.z + sin(TAU * float(a) / float(turns)) * r
+
+			if not _inside(m, x, z, 0.6):
+				return true   # past the window's edge: not judged
+
+			var g: float = _mesh_near(m, x, z, p.y)
+
+			if is_nan(g) or absf(g - p.y) > PICK_RISE_M:
+				continue
+
+			var slope: float = _mesh_slope(m, x, z, g)
+
+			if not is_nan(slope) and slope < 1.0:
+				return true
+
+	return false
+
+
+# The drawn water level at (x, z): the chunk's liquid sheet as its shader draws it (LiquidSurface.drawn_surface), NAN where none is drawn.
+var _sheet_cache: Dictionary = {}
+
+
+func _drawn_level(x: float, z: float) -> float:
+	var chunk: Vector2i = placer.chunk_of(x, z)
+
+	if not _sheet_cache.has(chunk):
+		if _sheet_cache.size() > 16:
+			_sheet_cache.clear()
+
+		var grid: Dictionary = _water_grid(chunk)
+		var sheet: Image = LiquidSurface.image_from_grid(grid) if int(grid.get("wet", 0)) > 0 else null
+		_sheet_cache[chunk] = [sheet, float(grid["spacing"]) * float(int(grid["count"]) - 1) / float(sheet.get_width() - 1) if sheet != null else 0.0]
+
+	var held: Array = _sheet_cache[chunk]
+	var level: float = NAN if held[0] == null else LiquidSurface.drawn_surface(held[0], placer.chunk_origin(chunk), float(held[1]), x, z)
+
+	if generator.surface_height(x, z) < 0.0:
+		level = maxf(0.0, level) if not is_nan(level) else 0.0   # the sea, drawn at 0 m
+
+	return level
+
+
 func _inside(m: Dictionary, x: float, z: float, margin: float) -> bool:
 	var x0: float = float(m["x0"])
 	var z0: float = float(m["z0"])
@@ -632,7 +714,17 @@ func _check_flora(m: Dictionary, flora: Dictionary) -> void:
 			_fault("ground_hole", 1.0, p, "under %s" % sp["name"])
 			continue
 
-		var level: float = _water_level(p.x, p.z)
+		var level: float = _drawn_level(p.x, p.z)
+		var slope: float = _mesh_slope(m, p.x, p.z, ground)
+
+		if not is_nan(slope) and slope > ROCK_SLOPE:
+			_fault("flora_on_rock", slope, p, "%s on a %.0f degree face" % [sp["name"], rad_to_deg(atan(slope))])
+
+		if _gatherable.has(str(sp["name"])) and (is_nan(slope) or slope >= 1.0):
+			_checked("gatherables on steep ground")
+
+			if not _reachable(m, Vector3(p.x, ground, p.z)):
+				_fault("gather_unreachable", 1.0, p, "%s on a %.0f degree slope" % [sp["name"], rad_to_deg(atan(slope)) if not is_nan(slope) else 90.0])
 
 		if str(sp["shape"]) != "reed" and int(sp["water_mask"]) & (1 << lake_class) == 0 and not is_nan(level) and level - ground > float(FAULTS["flora_in_water"][1]):
 			_fault("flora_in_water", level - ground, p, "%s, %.2f m deep" % [sp["name"], level - ground])
@@ -779,6 +871,80 @@ func _check_water(o: Vector2) -> void:
 						break
 
 
+# ---------------------------------------------------------------- lakes (--lakes)
+
+# Every lake of every baked tile: its 8 m samples (water class lake, a settled level) joined into lakes, and each lake's rim, the dry samples beside
+# it. A lake whose level stands LAKE_LIP_M over its lowest rim ground spills over a lip it should have settled to.
+func _audit_lakes() -> Array:
+	var done: Array = []
+
+	for file_name in DirAccess.get_files_at(WORLD + "/tiles"):
+		if not file_name.ends_with(".tile"):
+			continue
+
+		var parts: PackedStringArray = file_name.get_basename().split("_")
+		var tile: Vector2i = Vector2i(int(parts[1]), int(parts[2]))
+		var data = generator.get_tile(tile)
+
+		if data == null or data.placeholder:
+			continue
+
+		var n: int = data.samples
+		var sim: PackedFloat32Array = data.sim_snapshot()
+		var level_of: Callable = func(k: int) -> float: return sim[k] if not sim.is_empty() else data.water_surface[k]
+		var seen: PackedByteArray = PackedByteArray()
+		seen.resize(n * n)
+
+		for start in range(n * n):
+			if seen[start] or data.water_class[start] != lake_class or is_nan(level_of.call(start)):
+				continue
+
+			var stack: Array = [start]
+			seen[start] = 1
+			var size: int = 0
+			var worst: float = 0.0
+			var worst_at: Vector3 = Vector3.ZERO
+			var top: float = -INF
+
+			while not stack.is_empty():
+				var k: int = stack.pop_back()
+				size += 1
+				var level: float = level_of.call(k)
+				top = maxf(top, level)
+
+				for d in [Vector2i(1, 0), Vector2i(-1, 0), Vector2i(0, 1), Vector2i(0, -1)]:
+					var i: int = k % n + d.x
+					@warning_ignore("integer_division")
+					var j: int = k / n + d.y   # the sample's row
+
+					if i < 0 or j < 0 or i >= n or j >= n:
+						continue
+
+					var m: int = j * n + i
+
+					if is_nan(level_of.call(m)):
+						var over: float = level - data.heights[m]
+
+						if over > worst:
+							worst = over
+							worst_at = Vector3(data.x0 + float(i) * data.spacing_m, level, data.z0 + float(j) * data.spacing_m)
+					elif not seen[m] and data.water_class[m] == lake_class:
+						seen[m] = 1
+						stack.append(m)
+
+			_checked("lakes")
+			_checked("lake samples", size)
+
+			if worst >= float(FAULTS["lake_over_lip"][1]):
+				_biome_now = "tile %d,%d" % [tile.x, tile.y]
+				_fault("lake_over_lip", worst, worst_at, "a lake of %d samples (%.0f m2) at %.2f, rim ground %.2f" % [size, float(size) * data.spacing_m * data.spacing_m, top, worst_at.y - worst])
+
+		done.append([Vector2i.ZERO, "tile %d,%d" % [tile.x, tile.y]])
+
+	print("world_audit: lakes of %d tiles checked" % done.size())
+	return done
+
+
 func _fall_near(falls: Array, p: Vector2, reach: float) -> bool:
 	for fall in falls:
 		for q in (fall as Dictionary).get("points", []):
@@ -897,6 +1063,14 @@ func _check_scatter(m: Dictionary, cell: Vector2i, trees: Array) -> void:
 			_fault("item_floats", p.y - ground, p, "%s %.2f m up" % [name, p.y - ground])
 		elif ground - p.y > float(FAULTS["item_buried"][1]):
 			_fault("item_buried", ground - p.y, p, "%s %.2f m under" % [name, ground - p.y])
+
+		var item_slope: float = _mesh_slope(m, p.x, p.z, ground)
+
+		if is_nan(item_slope) or item_slope >= 1.0:
+			_checked("loose items on steep ground")
+
+			if not _reachable(m, Vector3(p.x, ground, p.z)):
+				_fault("gather_unreachable", 1.0, p, "%s on a %.0f degree slope" % [name, rad_to_deg(atan(item_slope)) if not is_nan(item_slope) else 90.0])
 
 		for t in trees:
 			var q: Vector3 = t[0]
@@ -1318,6 +1492,13 @@ func _check_camp(pieces: Array, camp: String) -> void:
 			if inside > 0.05:
 				_fault("camp_in_trunk", inside, Vector3(at.x, generator.surface_height(at.x, at.y), at.y), "%s overlaps a %s trunk by %.2f m" % [name, tree[2], inside])
 
+		for plant in _plants_round(at, reach + 1.0):
+			var q: Vector3 = plant[0]
+			var inside: float = _footprint_overlap(p, Vector2(q.x, q.z), 0.0)
+
+			if inside > 0.0:
+				_fault("camp_in_flora", inside, Vector3(q.x, q.y, q.z), "%s: a %s (%.1f m) grows through it" % [name, plant[2], float(plant[1])])
+
 		for rock in _boulders_round(at, reach + 2.0):
 			var q: Vector3 = rock[0]
 			var inside: float = _footprint_overlap(p, Vector2(q.x, q.z), float(rock[1]) * 0.8)
@@ -1418,6 +1599,49 @@ func _trees_round(at: Vector2, reach: float) -> Array:
 
 			if Vector2(q.x - at.x, q.z - at.y).length() < reach + float(tree[1]):
 				out.append(tree)
+
+	return out
+
+
+# Shrubs and plants over 0.5 m within reach of `at`: [position, height, name] (the placer's own, as the server sends them).
+var _flora_plants: Dictionary = {}
+
+
+func _plants_round(at: Vector2, reach: float) -> Array:
+	var out: Array = []
+	var seen: Dictionary = {}
+
+	for d in [Vector2.ZERO, Vector2(reach, reach), Vector2(-reach, reach), Vector2(reach, -reach), Vector2(-reach, -reach)]:
+		var chunk: Vector2i = placer.chunk_of(at.x + d.x, at.y + d.y)
+
+		if seen.has(chunk):
+			continue
+
+		seen[chunk] = true
+
+		if not _flora_plants.has(chunk):
+			if _flora_plants.size() > 64:
+				_flora_plants.clear()
+
+			var flora: Dictionary = placer.chunk_items(chunk)
+			var list: Array = []
+
+			for n in range((flora["ids"] as PackedInt32Array).size()):
+				var sp: Dictionary = placer.species_of(flora["ids"][n])
+
+				if sp.is_empty() or int(sp["kind"]) == PlacerScript.KIND_TREE:
+					continue
+
+				if int(sp["kind"]) == PlacerScript.KIND_SHRUB or float(flora["heights"][n]) > 0.5:
+					list.append([flora["positions"][n], float(flora["heights"][n]), str(sp["name"])])
+
+			_flora_plants[chunk] = list
+
+		for plant in _flora_plants[chunk]:
+			var q: Vector3 = plant[0]
+
+			if Vector2(q.x - at.x, q.z - at.y).length() < reach:
+				out.append(plant)
 
 	return out
 

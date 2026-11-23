@@ -7,6 +7,8 @@ const ItemTableScript := preload("res://src/shared/item_table.gd")
 const InventoryScript := preload("res://src/shared/inventory.gd")
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
+const InventoryViewScript := preload("res://src/client/inventory_view.gd")
+const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 
 var failures: int = 0
 
@@ -91,6 +93,20 @@ func _init() -> void:
 	items.action(1, Net.ACT_EAT, slot, 0, 0, Vector3.ZERO)
 	var fed: float = float(items.vitals_of(1)["fed"])
 	check(absf(fed - 400.0 * 0.75) < 2.0, "half-fresh food gives 75 percent of its kcal (got %.0f)" % fed)
+
+	# The tooltip names what eating it gives now, the same number the server feeds.
+	var view = InventoryViewScript.new()
+	view.table = items.table
+	view._vitals_cfg = VitalsRules.load_config()
+	var food: int = roast
+	var full: int = VitalsRules.food_value(items.table.id_of(food), view._vitals_cfg)
+	var half_age: int = life >> 1
+	var tip_stale: String = view._tooltip(food, 1, half_age)
+	var tip_fresh: String = view._tooltip(food, 1, 0)
+	var shown: int = VitalsRules.eaten_kcal(full, items.table.freshness(food, half_age))
+	check(full > 0 and tip_stale.contains("\n%d kcal (%d fresh)" % [shown, full]), "stale food's tooltip shows the kcal eating gives (%d of %d): %s" % [shown, full, tip_stale.replace("\n", " | ")])
+	check(tip_fresh.contains("\n%d kcal  (" % full), "fresh food's tooltip shows its full kcal: %s" % tip_fresh.replace("\n", " | "))
+	view.free()
 
 	pack.wear[slot] = life - 2
 
