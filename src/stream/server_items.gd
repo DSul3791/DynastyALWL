@@ -3268,7 +3268,7 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 	var melee: Dictionary = MeleeRules.blow(entry, _melee_cfg)
 	var damage: float = float(weapon_blow(entry, inv.inst[slot])["damage"]) if float(entry.get("damage", 0.0)) > 0.0 else float(melee["damage"])   # a +2 weapon strikes two harder (master s2.9 item 4)
 	var skill_action: String = _blow_action(table.id_of(inv.numbers[slot]), entry)
-	damage *= skill_factor(peer, skill_action)   # 1.0 at skill 1, so a new player's blows are as before
+	damage *= blow_skill_mult(peer, skill_action)   # exactly 1.0 at skill 1, so a new player's blows are as before
 	var reach: float = float(melee["reach_m"])   # a pike reaches further than a sword; a knife less than an axe
 	var answer: Variant = hit_animal.call(peer, eye, direction, reach, damage)   # {"at": where it struck} from the server (or true from older hooks), {} or false for a miss
 	var hit: bool = not (answer as Dictionary).is_empty() if answer is Dictionary else bool(answer)
@@ -3282,6 +3282,17 @@ func _strike(peer: int, inv, slot: int, direction: Vector3) -> void:
 		practice(peer, skill_action)
 	else:
 		_note_work(peer, str(entry.get("tool_class", "")))   # a jab at nothing tires as much as one that lands (BUG-001)
+
+
+# What a fighting skill does to a blow: its factor over the factor this character would have at skill 1, so a blow at skill 1 is exactly
+# as before whatever the attributes (the trait effect shows only as the skill grows), up to about max_factor at 100.
+func blow_skill_mult(peer: int, action_name: String) -> float:
+	var skill: String = str(_skills_cfg.get("actions", {}).get(action_name, {}).get("skill", ""))
+
+	if skill == "" or skill_level.is_valid():
+		return 1.0
+
+	return skill_factor(peer, action_name) / maxf(SkillWeb.factor(_skills_cfg, skill, 1.0, attributes_of(peer)), 0.01)
 
 
 # The skills.json action a blow with this item trains (the design's web: Fighting -> Brawling (Hand to hand), Swordplay, Spear, ...; Knives;
@@ -3321,7 +3332,7 @@ func _punch(peer: int, direction: Vector3) -> void:
 
 	_last_strike[peer] = now
 	var eye: Vector3 = _peer_pos[peer] + Vector3(0.0, 1.4, 0.0)
-	var damage: float = maxf(float(row.get("damage", 2.0)) * skill_factor(peer, "punch"), 0.5)
+	var damage: float = maxf(float(row.get("damage", 2.0)) * blow_skill_mult(peer, "punch"), 0.5)
 	var reach: float = float(row.get("reach_m", 1.8))
 	var answer: Variant = hit_animal.call(peer, eye, direction, reach, damage)
 	var hit: bool = not (answer as Dictionary).is_empty() if answer is Dictionary else bool(answer)

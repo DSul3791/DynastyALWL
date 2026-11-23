@@ -233,21 +233,23 @@ static func gain(cfg: Dictionary, skill: String, attrs: Dictionary, records: Dic
 # generation passes on feed_ratio of what it received. Returns the units the skill itself gained.
 # The skill a success at `skill` trains now (Dave 23 Nov 2026: everyone starts at 1 in all skills and gains experience by doing): the skill
 # itself once unlocked, else its nearest unlocked parent (the heaviest first), so the practice that will unlock it is not lost; "" when none.
-static func trainable(cfg: Dictionary, skill: String, records: Dictionary) -> String:
+static func trainable(cfg: Dictionary, skill: String, records: Dictionary, seen: Dictionary = {}) -> String:
 	var skills: Dictionary = cfg.get("skills", {})
 
-	if not skills.has(skill):
-		return ""
+	if not skills.has(skill) or seen.has(skill):
+		return ""   # seen: a looped graph (validate reports it) ends here
+
+	seen[skill] = true
 
 	if unlocked(cfg, skill, records):
 		return skill
 
 	var parents: Dictionary = skills[skill].get("parents", {})
 	var order: Array = parents.keys()
-	order.sort_custom(func(a, b): return float(parents[a]) > float(parents[b]))
+	order.sort_custom(func(a: Variant, b: Variant) -> bool: return float(parents[a]) > float(parents[b]))
 
 	for p in order:
-		var got: String = trainable(cfg, str(p), records)
+		var got: String = trainable(cfg, str(p), records, seen)
 
 		if got != "":
 			return got

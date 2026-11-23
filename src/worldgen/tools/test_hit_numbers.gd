@@ -98,7 +98,7 @@ func _init() -> void:
 	items._last_practice.clear()
 	items.action(1, Net.ACT_STRIKE, -1, 0, 0, Vector3(0.0, 0.0, 1.0))
 	var bare: Dictionary = melee["bare_hand"]
-	var want: float = float(bare["damage"]) * items.skill_factor(1, "punch")
+	var want: float = float(bare["damage"]) * items.blow_skill_mult(1, "punch")
 	check(punched.size() == 1 and is_equal_approx(float(punched[0][0]), float(bare["reach_m"])) and absf(float(punched[0][1]) - want) < 0.5 and float(punched[0][1]) > 0.0,
 			"an empty hand punches for bare_hand times the skill (%s, want about %.2f)" % [str(punched), want])
 	# Everyone starts at 1 in every skill and gains by doing (Dave 23 Nov 2026; SKILLS_WEB_DESIGN.md 1, 5): Hand to hand is the design's Brawling
