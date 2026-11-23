@@ -518,7 +518,9 @@ func _drop_pickup() -> void:
 	var before: int = _count("stick")
 	var known: Dictionary = client.items._world.duplicate()   # the items already lying about (other robots drop sticks here too)
 	var here: Vector3 = client.body.global_position
-	var at: Vector3 = here + (-client.body.global_transform.basis.z) * 1.0
+	# Each robot drops on its own side (they all stand at one spawn), so none picks up another's stick.
+	var side: float = TAU * float(robot_name.to_int() % 6) / 6.0
+	var at: Vector3 = here + Vector3.FORWARD.rotated(Vector3.UP, side) * 1.6
 	client.net.inventory_action.rpc_id(1, NetScript.ACT_DROP, slot, 0, 1, Vector3(at.x, here.y - 0.9, at.z))
 	await _check_pack("drop")
 
