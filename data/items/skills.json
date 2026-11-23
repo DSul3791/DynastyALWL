@@ -92,6 +92,8 @@
 			"skill": "tracking",
 			"effect": "yield"
 		},
+		"track_snare": {"skill": "tracking", "effect": "yield", "difficulty": 1.0},
+		"track_follow": {"skill": "tracking", "effect": "yield", "difficulty": 1.0},
 		"dress_carcass": {
 			"skill": "hunting",
 			"effect": "yield"

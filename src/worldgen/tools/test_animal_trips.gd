@@ -94,25 +94,51 @@ func _init() -> void:
 
 	var ok_runs: bool = true
 	var ok_apart: bool = true
+	var run_lens: Array = []
+	var links: int = 0
+	var spill: float = 0.0
 
 	for p in p1:
-		for route in p["routes"]:
+		for route in r1.trails_of(p):
 			var pts: PackedVector2Array = route
+			var box: Rect2 = Rect2(Vector2(r1.block_of(p["home"].x, p["home"].y)) * 256.0, Vector2(256.0, 256.0))
 
 			for i in range(1, pts.size()):
 				ok_runs = ok_runs and pts[i - 1].distance_to(pts[i]) <= 6.0
 
+			for q in pts:
+				spill = maxf(spill, maxf(maxf(box.position.x - q.x, q.x - box.end.x), maxf(box.position.y - q.y, q.y - box.end.y)))
+
+		links += (p.get("links", []) as Array).size()
+
 		if str(p["sp"]) == "rabbit":
 			for out in p["outs"]:
 				var d: float = (out as Vector2).distance_to(p["home"])
-				ok_runs = ok_runs and d >= 14.9 and d <= 40.1
+				run_lens.append(d)
+				ok_runs = ok_runs and d <= float(r1.cfg["warren"]["forage_m"]) + 0.1
 		elif bool(p.get("drawn", true)):   # a deer, moose or elk range (a fox's rounds are checked in fox_checks)
 			var d2: float = (p["outs"][0] as Vector2).distance_to(p["home"])
-			var span: Array = r1.cfg[str(p["sp"])]["apart_m"]
-			ok_apart = ok_apart and d2 >= float(span[0]) and d2 <= float(span[1])
+			ok_apart = ok_apart and d2 >= float(r1.cfg[str(p["sp"])]["patch_m"])
 
-	check(ok_runs, "every trail is a chain of points a few metres apart; runs are 15 to 40 m")
-	check(ok_apart, "a deer's (moose's, elk's) bed and feeding ground are their apart_m apart")
+	run_lens.sort()
+	var median: float = float(run_lens[run_lens.size() >> 1]) if not run_lens.is_empty() else 0.0
+	check(ok_runs and median >= 80.0, "every trail is a chain of points a few metres apart; runs go to grazing ground within forage_m, no set length (%d runs, shortest %.0f m, median %.0f m, longest %.0f m)" % [run_lens.size(), run_lens[0] if not run_lens.is_empty() else 0.0, median, run_lens[run_lens.size() - 1] if not run_lens.is_empty() else 0.0])
+	var ends: Dictionary = {}
+	var twice: int = 0
+
+	for p in p1:
+		for link in p.get("links", []):
+			var pts: PackedVector2Array = link
+			var e0: Vector2 = pts[0].snapped(Vector2(0.01, 0.01))
+			var e1: Vector2 = pts[pts.size() - 1].snapped(Vector2(0.01, 0.01))
+			var k: String = str([e0, e1]) if e0 < e1 else str([e1, e0])
+			twice += 1 if ends.has(k) else 0
+			ends[k] = true
+
+	check(twice == 0, "a join between two warrens is laid by one end only (%d laid twice of %d)" % [twice, ends.size()])
+	check(links > 0, "warrens join their neighbours and deer trails go on to water (%d drawn joins and water legs)" % links)
+	check(spill <= r1.REACH_OUT_M, "no trail runs farther past its block than REACH_OUT_M (%.0f m of %.0f)" % [spill, r1.REACH_OUT_M])
+	check(ok_apart, "a deer's (moose's, elk's) feeding ground is another patch than its bed (patch_m)")
 
 	# A trail goes round a steep hill rather than over it (lines of least resistance).
 	var round_hill = r1.lay_route(Vector2(640.0, 700.0), Vector2(760.0, 700.0), 3)
@@ -155,9 +181,9 @@ func _init() -> void:
 	var dropped: int = 0
 
 	for p in r1.blocks[r1.block_of(a_place["home"].x, a_place["home"].y)]["places"]:
-		dropped += (p["routes"] as Array).size() if r1.settled(p) and bool(p.get("drawn", true)) else 0   # any other place reaching into the same zone goes too (a fox's rounds are never sent)
+		dropped += r1.trails_of(p).size() if r1.settled(p) and bool(p.get("drawn", true)) else 0   # any other place reaching into the same zone goes too (a fox's rounds are never sent)
 
-	check(after.size() == before.size() - dropped and dropped >= (a_place["routes"] as Array).size(), "its trails are no longer sent (%d -> %d)" % [before.size(), after.size()])
+	check(after.size() == before.size() - dropped and dropped >= r1.trails_of(a_place).size(), "its trails are no longer sent (%d -> %d)" % [before.size(), after.size()])
 	check(not r1.places_near("rabbit", Vector3(a_place["home"].x, 10.0, a_place["home"].y), 1.0).has(a_place), "and no animal is made there")
 	settled_at = Vector2(INF, INF)
 
@@ -510,7 +536,7 @@ func fox_checks(r1, p1: Array) -> void:
 	var drawn: int = 0
 
 	for p in r1.blocks[key]["places"]:
-		drawn += (p["routes"] as Array).size() if bool(p.get("drawn", true)) and not r1.settled(p) else 0
+		drawn += r1.trails_of(p).size() if bool(p.get("drawn", true)) and not r1.settled(p) else 0
 
 	check(sent.size() == drawn, "a fox's rounds are not sent as trails (%d sent, %d drawn routes in the block)" % [sent.size(), drawn])
 	var mid: Vector2 = Vector2(INF, INF)   # the point of any round nearest the worked-out middle, so the blocks round it are known

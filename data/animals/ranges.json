@@ -14,11 +14,16 @@
 		"cell_m": 64.0,
 		"chance": 0.45,
 		"slope_max": 0.35,
-		"runs": [2, 3],
-		"run_m": [15.0, 40.0],
+		"trails_note": "No set length (Dave 23 Nov 2026: 'they really shouldnt have a distance on them. they should just exist wherever they exist'). Runs go out to the warren's grazing grounds, graze_runs of the best grassland spots (one a square, never its own square) within forage_m, graze_apart_deg apart, on ground no steeper than graze_slope_max; and a pair of neighbouring warrens within forage_m is joined by a run in join_share (drawn, not walked). Rabbits graze up to about 200 m out from the warren (Agriculture Victoria; NSW DPI).",
+		"graze_runs": [2, 3],
+		"forage_m": 200.0,
+		"graze_apart_deg": 70.0,
+		"graze_slope_max": 0.25,
+		"join_share": 0.15,
 		"kind": 0
 	},
 	"deer": {
+		"trails_note": "No set length (Dave 23 Nov 2026): the trail runs from the bed to the block's best feeding ground wherever it lies (another patch than the bed's, patch_m), and on to the nearest fresh water within water_m (drawn; deer drink at dawn and dusk).",
 		"note": "TR-2: deer bed by day in sheltered ground, side ground near bed_best slope when there is some, and walk a set trail to feed on open flat ground at dusk (onX; Mississippi State: food and bedding within about 180 m, buck day travel about 900 m). One range per trail block where deer live; tries candidate spots.",
 		"species": "deer",
 		"tries": 8,
@@ -26,7 +31,8 @@
 		"bed_slope": [0.0, 0.45],
 		"bed_best": 0.2,
 		"feed_slope_max": 0.15,
-		"apart_m": [80.0, 200.0],
+		"patch_m": 40.0,
+		"water_m": 240.0,
 		"kind": 1
 	},
 	"ranges": ["deer", "moose", "elk"],
@@ -42,7 +48,8 @@
 		"bed_best": 0.15,
 		"feed_slope_max": 0.15,
 		"feed_wet_m": 40.0,
-		"apart_m": [80.0, 220.0],
+		"patch_m": 40.0,
+		"water_m": 240.0,
 		"kind": 1
 	},
 	"elk": {
@@ -56,7 +63,8 @@
 		"bed_slope": [0.0, 0.45],
 		"bed_best": 0.2,
 		"feed_slope_max": 0.15,
-		"apart_m": [100.0, 230.0],
+		"patch_m": 40.0,
+		"water_m": 240.0,
 		"kind": 1
 	},
 	"fox": {

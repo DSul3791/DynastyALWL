@@ -9,7 +9,10 @@ extends RefCounted
 const Codec := preload("res://src/shared/trail_codec.gd")
 
 var cfg: Dictionary = {}
-const REACH_OUT_M := 50.0          # how far a block's trails may run past its edge (a warren's runs, 40 m at most, and their wiggle)
+const DEST_OUT_M := 90.0           # how far past its block's side a trail may end (a warren's grazing ground or neighbour, a deer's water)
+const REACH_OUT_M := 150.0         # how far a block's trails may run past its side: DEST_OUT_M and a water detour (60 m) or drift (30 m).
+# Kept under 256 - 80 m: the client lays the trails round the player (grass_view 80 m, trail_signs 70 m) from the 3 x 3 blocks the server
+# sends, so a trail from a block farther off never reaches into what the player sees.
 
 var world_seed: int = 0
 var ground_height: Callable        # (x, z) -> height, NAN where the ground is not known yet
@@ -172,7 +175,7 @@ func _log_ready(key: Vector2i, rec: Dictionary) -> void:
 	var routes: int = 0
 
 	for place in rec["places"]:
-		routes += (place["routes"] as Array).size()
+		routes += trails_of(place).size()
 		homes.append("%s %s %.0f,%.0f%s" % [str(place["id"]), str(place["sp"]), place["home"].x, place["home"].y, " settled" if settled(place) else ""])
 
 	print("ranges: block %d,%d worked out (%d ground waits, jobs %.1f ms, slowest %.1f ms): %d places, %d routes: %s" % [key.x, key.y, int(rec.get("waits", 0)),
@@ -185,7 +188,7 @@ func _ground_loaded(key: Vector2i) -> bool:
 		return true
 
 	var m: float = float(cfg.get("block_m", Codec.ROUTE_BLOCK_M))
-	var pad: float = 128.0
+	var pad: float = REACH_OUT_M + 16.0
 	var lo: Vector2 = Vector2(key) * m - Vector2(pad, pad)
 	var hi: Vector2 = Vector2(key + Vector2i.ONE) * m + Vector2(pad, pad)
 	var ok: bool = true
@@ -305,12 +308,17 @@ func _weight(sp: String, x: float, z: float) -> float:
 	return v
 
 
-# A warren in square (sx, sz), {} for none, null when the ground is not known yet.
+# A warren in square (sx, sz), {} for none, null when the ground is not known yet. Its trails have no set length (Dave 23 Nov 2026,
+# "they should just exist wherever they exist"): they run to real places within forage_m, as long as the walk there happens to be.
+# Runs out to its grazing grounds: the best grassland spots of the squares round it (the most rabbit-friendly ground, flat and dry, a
+# spot in each square, never its own square, which the warren grazes short), graze_apart_deg apart so they fan out. And runs to the
+# neighbouring warrens it joins (a pair joins in join_share, the same roll from either end; the one whose block may hold it lays it).
+# Rabbits graze up to about 200 m from the warren (Agriculture Victoria; NSW DPI). Walked: the grazing runs (routes); drawn only: the joins.
 func _warren(sx: int, sz: int) -> Variant:
 	var wc: Dictionary = cfg["warren"]
 	var cell: float = float(wc.get("cell_m", 64.0))
 	var sp: String = str(wc.get("species", "rabbit"))
-	var at: Vector2 = Vector2((float(sx) + 0.125 + 0.75 * h01(sx, sz, 1)) * cell, (float(sz) + 0.125 + 0.75 * h01(sx, sz, 2)) * cell)
+	var at: Vector2 = _warren_spot(sx, sz)
 
 	if h01(sx, sz, 3) >= float(wc.get("chance", 0.45)) * _weight(sp, at.x, at.y):
 		return {}
@@ -323,26 +331,66 @@ func _warren(sx: int, sz: int) -> Variant:
 	if slope > float(wc.get("slope_max", 0.35)) or _wet(at.x, at.y) or _h(at.x, at.y) <= 0.0:
 		return {}
 
-	var span: Array = wc.get("runs", [2, 3])
-	var count: int = int(span[0]) + int(floor(h01(sx, sz, 4) * float(int(span[1]) - int(span[0]) + 1)))
-	var len_span: Array = wc.get("run_m", [15.0, 40.0])
+	var forage: float = float(wc.get("forage_m", 200.0))
+	var box: Rect2 = _dest_box(at)
+	var span: int = int(ceil(forage / cell))
+	var cands: Array = []   # [weight, tie, spot]
+
+	for dz in range(-span, span + 1):
+		for dx in range(-span, span + 1):
+			if dx == 0 and dz == 0:
+				continue
+
+			var gx: int = sx + dx
+			var gz: int = sz + dz
+			var spot: Vector2 = Vector2((float(gx) + 0.5 + 0.8 * (h01(gx, gz, 6) - 0.5)) * cell, (float(gz) + 0.5 + 0.8 * (h01(gx, gz, 7) - 0.5)) * cell)
+
+			if spot.distance_to(at) > forage or not box.has_point(spot):
+				continue
+
+			var w: float = _weight(sp, spot.x, spot.y)
+
+			if w <= 0.0 or _wet(spot.x, spot.y) or _h(spot.x, spot.y) <= 0.0:
+				continue
+
+			cands.append([w, h01(gx, gz, 8), spot])
+
+	if _out_of_time:
+		return null
+
+	cands.sort_custom(func(l, r): return l[0] > r[0] or (l[0] == r[0] and l[1] > r[1]))   # the best grassland first, then by the spot's own roll
+	var gspan: Array = wc.get("graze_runs", [2, 3])
+	var want: int = int(gspan[0]) + int(floor(h01(sx, sz, 4) * float(int(gspan[1]) - int(gspan[0]) + 1)))
+	var apart: float = deg_to_rad(float(wc.get("graze_apart_deg", 70.0)))
 	var outs: Array = []
 	var routes: Array = []
-	var turn: float = h01(sx, sz, 5) * TAU
+	var links: Array = []
+	var n: int = 0
 
-	for i in count:
-		var ang: float = turn + TAU * float(i) / float(count) + (h01(sx, sz, 10 + i) - 0.5) * 0.9
-		var reach: float = lerpf(float(len_span[0]), float(len_span[1]), h01(sx, sz, 20 + i))
-		var end: Vector2 = at + Vector2(cos(ang), sin(ang)) * reach
-		var end_slope: float = slope_at(end.x, end.y)
+	for c in cands:
+		if outs.size() >= want:
+			break
 
-		if is_nan(end_slope):
+		var spot: Vector2 = c[2]
+		var ang: float = (spot - at).angle()
+		var clear: bool = true
+
+		for o in outs:
+			clear = clear and absf(angle_difference(ang, ((o as Vector2) - at).angle())) >= apart
+
+		if not clear:
+			continue
+
+		var gs: float = slope_at(spot.x, spot.y)
+
+		if is_nan(gs):
 			return null
 
-		if end_slope > float(wc.get("slope_max", 0.35)) or _wet(end.x, end.y) or _weight(sp, end.x, end.y) <= 0.0:
-			continue   # that way leads onto ground rabbits do not graze: no run there
+		if gs > float(wc.get("graze_slope_max", 0.25)):
+			continue   # rabbits graze open, gentle ground
 
-		var route: Variant = lay_route(at, end, sx * 31 + sz * 17 + i)
+		var route: Variant = lay_route(at, spot, sx * 31 + sz * 17 + n)
+		n += 1
 
 		if route == null:
 			return null
@@ -350,13 +398,91 @@ func _warren(sx: int, sz: int) -> Variant:
 		if (route as PackedVector2Array).is_empty():
 			continue
 
-		outs.append(end)
+		outs.append(spot)
 		routes.append(route)
+
+	# Joins to neighbouring warrens.
+	for dz in range(-span, span + 1):
+		for dx in range(-span, span + 1):
+			var nx: int = sx + dx
+			var nz: int = sz + dz
+
+			if (dx == 0 and dz == 0) or _pair_roll(sx, sz, nx, nz) >= float(wc.get("join_share", 0.15)):
+				continue
+
+			var other: Vector2 = _warren_spot(nx, nz)
+
+			if other.distance_to(at) > forage or not _lays_join(sx, sz, at, nx, nz, other):
+				continue
+
+			var there: Variant = _warren_at(nx, nz)
+
+			if there == null:
+				return null
+
+			if not bool(there):
+				continue
+
+			var link: Variant = lay_route(at, other, sx * 37 + sz * 23 + nx * 5 + nz * 3)
+
+			if link == null:
+				return null
+
+			if not (link as PackedVector2Array).is_empty():
+				links.append(link)
+
+	if _out_of_time:
+		return null
 
 	if routes.is_empty():
 		return {}
 
-	return {"id": "w:%d,%d" % [sx, sz], "sp": sp, "kind": int(wc.get("kind", 0)), "home": at, "outs": outs, "routes": routes}
+	return {"id": "w:%d,%d" % [sx, sz], "sp": sp, "kind": int(wc.get("kind", 0)), "home": at, "outs": outs, "routes": routes, "links": links}
+
+
+# Where square (sx, sz)'s warren would be (worked out from the square alone).
+func _warren_spot(sx: int, sz: int) -> Vector2:
+	var cell: float = float((cfg["warren"] as Dictionary).get("cell_m", 64.0))
+	return Vector2((float(sx) + 0.125 + 0.75 * h01(sx, sz, 1)) * cell, (float(sz) + 0.125 + 0.75 * h01(sx, sz, 2)) * cell)
+
+
+# Whether square (sx, sz) has a warren (its spot's roll and ground), null when the ground is not known yet.
+func _warren_at(sx: int, sz: int) -> Variant:
+	var wc: Dictionary = cfg["warren"]
+	var at: Vector2 = _warren_spot(sx, sz)
+
+	if h01(sx, sz, 3) >= float(wc.get("chance", 0.45)) * _weight(str(wc.get("species", "rabbit")), at.x, at.y):
+		return false
+
+	var slope: float = slope_at(at.x, at.y)
+
+	if is_nan(slope):
+		return null
+
+	return not (slope > float(wc.get("slope_max", 0.35)) or _wet(at.x, at.y) or _h(at.x, at.y) <= 0.0)
+
+
+# The same roll for a pair of squares from either end.
+func _pair_roll(ax: int, az: int, bx: int, bz: int) -> float:
+	var first: bool = ax < bx or (ax == bx and az < bz)
+	return h01((ax if first else bx) * 7919 + (az if first else bz), (bx if first else ax) * 7919 + (bz if first else az), 9)
+
+
+# Which end lays a join between two warrens (so it is never laid twice): the lower square when the other lies within its block's reach
+# (DEST_OUT_M), else the higher one when the lower lies within its own. A pair lying too far either side of a block side for either is
+# left unjoined (the spill bound, REACH_OUT_M, comes first): a few joins fewer, accepted.
+func _lays_join(sx: int, sz: int, at: Vector2, nx: int, nz: int, other: Vector2) -> bool:
+	var lower: bool = sx < nx or (sx == nx and sz < nz)
+	var mine: bool = _dest_box(at).has_point(other)
+	var theirs: bool = _dest_box(other).has_point(at)
+	return mine if lower else (theirs == false and mine)
+
+
+# Where a trail from a spot may end: its trail block grown by DEST_OUT_M.
+func _dest_box(at: Vector2) -> Rect2:
+	var size: float = float(cfg.get("block_m", Codec.ROUTE_BLOCK_M))
+	var key: Vector2i = block_of(at.x, at.y)
+	return Rect2(Vector2(key) * size, Vector2(size, size)).grow(DEST_OUT_M)
 
 
 # The deer range of a trail block: a bed on sheltered side ground and a feeding ground on flat open ground apart_m from it.
@@ -400,16 +526,16 @@ func _deer_range(key: Vector2i, name: String = "deer") -> Variant:
 		return {}
 
 	var bed: Vector2 = spots[best_bed][0]
-	var apart: Array = dc.get("apart_m", [80.0, 200.0])
+	var patch: float = float(dc.get("patch_m", 40.0))
 	var feed: Vector2 = Vector2.INF
 	var flattest: float = float(dc.get("feed_slope_max", 0.15))
 	var wet_m: float = float(dc.get("feed_wet_m", 0.0))
 	var by_water: bool = false
 
-	for i in spots.size():
+	for i in spots.size():   # no set distance (Dave 23 Nov 2026): the best feeding ground of the block, wherever it lies, not the bed's own patch
 		var d: float = (spots[i][0] as Vector2).distance_to(bed)
 
-		if i == best_bed or d < float(apart[0]) or d > float(apart[1]) or float(spots[i][1]) > float(dc.get("feed_slope_max", 0.15)):
+		if i == best_bed or d < patch or float(spots[i][1]) > float(dc.get("feed_slope_max", 0.15)):
 			continue
 
 		var wet: bool = wet_m > 0.0 and _water_near(spots[i][0], wet_m)
@@ -430,7 +556,65 @@ func _deer_range(key: Vector2i, name: String = "deer") -> Variant:
 	if (route as PackedVector2Array).is_empty():
 		return {}
 
-	return {"id": "%s:%d,%d" % [str(dc.get("tag", "d")), key.x, key.y], "sp": sp, "kind": int(dc.get("kind", 1)), "home": bed, "outs": [feed], "routes": [route]}
+	# And on from the feeding ground to the nearest fresh water within water_m, where deer go to drink at dawn and dusk (drawn only:
+	# the drink itself is server_animals' drink trip).
+	var links: Array = []
+	var water: Variant = _water_edge(feed, float(dc.get("water_m", 0.0)))
+
+	if water == null:
+		return null
+
+	if water is Vector2 and (water as Vector2).distance_to(feed) > float(dc.get("near_water_m", 10.0)):
+		var leg: Variant = lay_route(feed, water, key.x * 571 + key.y * 293 + salt)
+
+		if leg == null:
+			return null
+
+		if not (leg as PackedVector2Array).is_empty():
+			links.append(leg)
+
+	if _out_of_time:
+		return null
+
+	return {"id": "%s:%d,%d" % [str(dc.get("tag", "d")), key.x, key.y], "sp": sp, "kind": int(dc.get("kind", 1)), "home": bed, "outs": [feed], "routes": [route], "links": links}
+
+
+# The dry edge of the nearest fresh water within m of a spot (deep water over ground above the sea), in sixteen directions every
+# 20 m out, false for none (or m 0), null when the ground is not known yet. Kept within the spot's block reach (DEST_OUT_M).
+func _water_edge(from: Vector2, m: float) -> Variant:
+	if m <= 0.0:
+		return false
+
+	var box: Rect2 = _dest_box(from)
+	var r: float = 20.0
+
+	while r <= m:
+		for k in 16:
+			var dir: Vector2 = Vector2.from_angle(TAU * float(k) / 16.0)
+			var p: Vector2 = from + dir * r
+
+			if not box.has_point(p) or not _wet(p.x, p.y):
+				continue
+
+			var floor_h: float = _h(p.x, p.y)
+
+			if is_nan(floor_h):
+				return null
+
+			if floor_h <= 0.0:
+				continue   # the sea: not a drink
+
+			var edge: Vector2 = p
+
+			for b in 6:   # back to dry ground, a few metres at a time
+				edge -= dir * 4.0
+
+				if not _wet(edge.x, edge.y):
+					return edge
+
+		r += 20.0
+
+	return false
 
 
 # The fox earth of a trail block (stage 2b, TR-9): {} for none, null when the ground is not known yet. A fox dens in a bank where there
@@ -762,7 +946,7 @@ func wire(key: Vector2i, now_ms: int) -> PackedByteArray:
 		if settled(place) or not bool(place.get("drawn", true)):
 			continue   # settled ground, or a fox's rounds (no trail of its own)
 
-		for route in place["routes"]:
+		for route in trails_of(place):
 			routes.append([int(place["kind"]), route])
 
 	var bytes: PackedByteArray = Codec.encode_routes(routes, key, float(cfg.get("block_m", Codec.ROUTE_BLOCK_M)))
@@ -814,7 +998,7 @@ func route_distance(x: float, z: float, kind: int = -1, reach: float = 10.0) -> 
 					continue
 
 				for n in near:
-					var pts: PackedVector2Array = place["routes"][n]
+					var pts: PackedVector2Array = trails_of(place)[n]
 
 					for i in range(1, pts.size()):
 						best = minf(best, p.distance_to(Geometry2D.get_closest_point_to_segment(p, pts[i - 1], pts[i])))
@@ -848,7 +1032,7 @@ func _boxes(place: Dictionary) -> Array:
 	if not place.has("boxes"):
 		var boxes: Array = []
 
-		for route in place["routes"]:
+		for route in trails_of(place):
 			var pts: PackedVector2Array = route
 			var box: Rect2 = Rect2(pts[0], Vector2.ZERO) if not pts.is_empty() else Rect2()
 
@@ -860,3 +1044,11 @@ func _boxes(place: Dictionary) -> Array:
 		place["boxes"] = boxes
 
 	return place["boxes"]
+
+
+# A place's drawn trails: the routes its animals walk (each from its home), then the joins and water legs they do not (links).
+func trails_of(place: Dictionary) -> Array:
+	if not place.has("trails"):
+		place["trails"] = (place["routes"] as Array) + (place.get("links", []) as Array)   # kept on the place (asked per route in route_distance)
+
+	return place["trails"]
