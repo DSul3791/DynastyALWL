@@ -12,9 +12,9 @@ const VOID_COOLDOWN_MSEC := 6000        # a still-loading block must not cause a
 const VOID_COLUMN_M := 40               # no solid ground this far below, with the whole column loaded, means the player left the world
 const SURFACE_LIFT_M := 1.2
 const POCKET_UP_M := 12                 # a player stuck in rock under the ground is stood on the nearest floor of air (a cave's, a tunnel's) this far above ...
-const POCKET_DOWN_M := 2                # ... or this far below their feet ...
+const POCKET_DOWN_M := 2                # ... or this far below the body's middle ...
 const POCKET_SIDE_M := [0.0, 1.5, 3.0]  # ... in their own column or those this far round it ...
-const POCKET_HEADROOM := 2              # ... with this many voxels of air over it and the head clear; else on the surface as before
+const POCKET_HEADROOM := 3              # ... with this many voxels of air over it (at least 2 m: the 1.8 m body fits); else on the surface as before
 const BODY_HALF_M := 0.9                # the body's position is the middle of its 1.8 m capsule (terrain_client _make_player)
 
 var dig_guard: bool = true              # test: switched off by --no-dig-guard (shows the old behaviour)
@@ -161,7 +161,9 @@ func _under_the_ground() -> bool:
 	# 23 Nov 2026: a player who slipped into the rock of the Ragtooth camp cave was stood on the hillside 6 m over its room).
 	var to: Vector3 = Vector3(here.x, float(hit["position"].y) + SURFACE_LIFT_M, here.z)
 
-	if inside:
+	var reach: AABB = AABB(here + Vector3(-3.5, -float(POCKET_DOWN_M) - 1.0, -3.5), Vector3(7.0, float(POCKET_UP_M + POCKET_DOWN_M) + 2.0, 7.0))
+
+	if inside and _client.terrain.get_voxel_tool().is_area_editable(reach):   # every voxel searched loaded: no floor made up at an unloaded block's edge
 		var tool: VoxelTool = _client.terrain.get_voxel_tool()
 		tool.channel = VoxelBuffer.CHANNEL_SDF
 		var pocket: Vector3 = pocket_near(func(cell: Vector3i) -> float: return tool.get_voxel_f(cell), here, float(hit["position"].y))
@@ -181,7 +183,8 @@ func _under_the_ground() -> bool:
 
 # The nearest place to stand in the air under the ground round `here`: the lowest floor of air with POCKET_HEADROOM voxels over it in each of
 # the columns at POCKET_SIDE_M round `here`, from POCKET_DOWN_M under the feet to POCKET_UP_M over them and under `roof_y` (the surface over it),
-# the body's middle BODY_HALF_M + 5 cm over that floor (the SDF's zero between the solid voxel and the air over it), its top in air too.
+# the body's middle BODY_HALF_M + 5 cm over that floor (the SDF's zero between the solid voxel and the air over it). `here` is the body's middle.
+# shortcut: the air is not followed to an exit, so a sealed bubble near the player counts (the player can dig out of it); no flood fill.
 # Vector3(NAN, NAN, NAN) when there is none.
 # sdf: (Vector3i voxel) -> its distance value (over 0 air; unloaded reads 0, never air here; inside a passage it is a few tenths at most).
 static func pocket_near(sdf: Callable, here: Vector3, roof_y: float) -> Vector3:
@@ -217,9 +220,6 @@ static func pocket_near(sdf: Callable, here: Vector3, roof_y: float) -> Vector3:
 
 				var over: float = float(sdf.call(Vector3i(cx, y + 1, cz)))
 				var spot: Vector3 = Vector3(x, float(y) + (-under) / (over - under) + BODY_HALF_M + 0.05, z)
-
-				if float(sdf.call(Vector3i(cx, int(floor(spot.y + BODY_HALF_M)), cz))) <= 0.0:
-					break   # the head would be in the roof: this column's lowest floor is too low for a body
 
 				if spot.distance_to(here) < best_d:
 					best = spot

@@ -47,6 +47,20 @@ func air_floor(x: float, z: float, from_y: int) -> float:
 	return NAN
 
 
+# The first SDF zero going up the voxel column under (x, z) from voxel y0, linear between voxels: rock to air (`to_rock` false) or air to rock.
+func zero_up(x: float, z: float, y0: int, to_rock: bool) -> float:
+	var cell: Vector2i = Vector2i(int(floor(x)), int(floor(z)))
+
+	for y in range(y0, y0 + 20):
+		var a: float = sdf(Vector3i(cell.x, y, cell.y))
+		var b: float = sdf(Vector3i(cell.x, y + 1, cell.y))
+
+		if (not to_rock and a < 0.0 and b > 0.0) or (to_rock and a > 0.0 and b <= 0.0):
+			return float(y) + a / (a - b)
+
+	return NAN
+
+
 func _init() -> void:
 	var errors: Array = []
 	var settings = WorldSettingsScript.load_from_file(WORLD + "/world.json", errors)
@@ -58,30 +72,36 @@ func _init() -> void:
 	buffer = Layout.make_buffer(1)
 	buffer.create(SIZE.x, SIZE.y, SIZE.z)
 	gen.generate(buffer, ORIGIN, 0)
-	var call: Callable = Callable(self, "sdf")
+	var sdf_call: Callable = Callable(self, "sdf")
 	var room_hill: float = gen.surface_height(ROOM.x, ROOM.y)
 
-	# Under the room's floor, in the rock: back onto the floor.
+	# Under the room's floor, in the rock: back onto the floor, the body's middle 0.95 m over the floor's SDF zero (feet 5 cm over it), its
+	# top (0.9 m over the middle) under the roof's zero.
 	var room_floor: float = air_floor(ROOM.x, ROOM.y, 9)
 	var under: Vector3 = Vector3(ROOM.x, room_floor - 1.5, ROOM.y)
-	var p: Vector3 = Rescue.pocket_near(call, under, room_hill)
-	check(not is_nan(p.y) and absf(p.y - (room_floor + 1.65)) < 0.8 and p.y < room_hill - 2.0, "stuck 1.5 m under the room floor (voxel %.0f): stood at %s, the hill at %.2f" % [room_floor, str(p), room_hill])
+	var p: Vector3 = Rescue.pocket_near(sdf_call, under, room_hill)
+	check(not is_nan(p.y) and p.y < room_hill - 2.0, "stuck 1.5 m under the room floor: stood at %s, the hill at %.2f" % [str(p), room_hill])
 
-	for lift in [-0.85, 0.0, 0.85]:   # the body's position is its capsule's middle: feet, middle, top
-		check(sdf(Vector3i((p + Vector3(0.0, lift, 0.0)).round())) > 0.0, "  %+.2f m from the body's middle is air (nearest voxel)" % lift)
-
-	check(absf((p.y - 0.95) - room_floor) < 1.0, "  its feet (0.95 m under its middle) are on the room floor")
+	if not is_nan(p.y):
+		var floor_zero: float = zero_up(p.x, p.z, int(floor(p.y)) - 3, false)
+		var roof_zero: float = zero_up(p.x, p.z, int(floor(floor_zero)) + 1, true)
+		check(absf((p.y - 0.9) - floor_zero - 0.05) < 0.02, "  its feet are 5 cm over the floor (floor %.2f, feet %.2f)" % [floor_zero, p.y - 0.9])
+		check(p.y + 0.9 < roof_zero, "  its top %.2f is under the roof %.2f" % [p.y + 0.9, roof_zero])
 
 	# In the passage wall, beside the passage: onto its floor, within a few metres.
 	var side: Vector3 = Vector3(PASSAGE.x, 7.6, PASSAGE.y) + Vector3(0.966, 0.0, -0.259) * 2.4
 	check(sdf(Vector3i(side.floor())) < 0.0, "a spot 2.4 m from the passage's line is in its wall")
-	var q: Vector3 = Rescue.pocket_near(call, side, gen.surface_height(side.x, side.z))
+	var q: Vector3 = Rescue.pocket_near(sdf_call, side, gen.surface_height(side.x, side.z))
 	check(not is_nan(q.y) and q.distance_to(side) < 3.5 and absf(q.y - 8.0) < 0.6, "stuck in the passage wall: stood on the passage floor at %s" % str(q))
+
+	if not is_nan(q.y):
+		var passage_floor: float = zero_up(q.x, q.z, int(floor(q.y)) - 3, false)
+		check(absf((q.y - 0.9) - passage_floor - 0.05) < 0.02 and q.y + 0.9 < zero_up(q.x, q.z, int(floor(passage_floor)) + 1, true), "  feet 5 cm over its floor %.2f, top under its roof" % passage_floor)
 
 	# Deep in the hill, no cave near: none (the rescue stands the player on the surface, as before).
 	var deep: Vector3 = Vector3(58250.0, 2.0, 72120.0)
 	check(sdf(Vector3i(deep.floor())) < 0.0, "a spot deep in the hill is in rock")
-	check(is_nan(Rescue.pocket_near(call, deep, gen.surface_height(deep.x, deep.z)).y), "stuck deep in the hill with no air near: no pocket, the surface rescue stands")
+	check(is_nan(Rescue.pocket_near(sdf_call, deep, gen.surface_height(deep.x, deep.z)).y), "stuck deep in the hill with no air near: no pocket, the surface rescue stands")
 
 	# Nothing loaded round the player: none.
 	check(is_nan(Rescue.pocket_near(func(_c: Vector3i) -> float: return 0.0, under, room_hill).y), "nothing loaded: no pocket")
