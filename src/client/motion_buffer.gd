@@ -25,7 +25,8 @@ const MAX_DELAY_S := 0.8
 const SMOOTH_HALF_S := 0.1      # a correction (smooth) is blended away with this half-life...
 const CATCH_X := 0.5            # ...catching up at most this share of the body's own speed faster than it moves
 const AHEAD_CARRY_S := 0.8      # a body drawn at the present (a committed charge, animal_view AHEAD_STATES) carries on this long past its newest point
-const CARRY_MPS := 15.0         # and no faster than this (the fastest charge is 14 m/s)
+const CARRY_MPS := 15.0         # and no faster than this (the fastest charge is 12 m/s); smooth() eases a body at most this fast (a 16-18 m/s
+                                # flush or pronghorn flight still moves under its 1.5 frames of room; any excess is eased in, not jumped)
 
 
 # Local seconds minus server seconds (`off` so far, INF for none): the smallest seen, the batch that came fastest, so a point's time plus
