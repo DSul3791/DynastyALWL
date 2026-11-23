@@ -26622,12 +26622,16 @@ func _eat(peer: int, inv, slot: int, choice: int = 0, platter: int = 0) -> void:
 			_say(peer, str(_sick_cfg.get("say_too_soon", "")))
 
 		_warm_bite(v, item_id)
-		_tea_quenches(v, item_id)
+		var quenched: bool = _tea_quenches(v, item_id)
 		_last_dose[peer] = now
 		inv.take_from_slot(slot, 1)
 		v["sick"] = maxf(float(v["sick"]) - float(cure.get("cure_h", 12.0)) * 3600.0 * strength, 0.0)
 		_say(peer, str(_sick_cfg.get("say_medicine", "")))
 		_sync_sick(peer, true)
+
+		if quenched:
+			_sync_vitals(peer, true)   # the thirst bar shows the tea's water now
+
 		_food_apply(peer, item_id, step)
 		_dirty = true
 		return

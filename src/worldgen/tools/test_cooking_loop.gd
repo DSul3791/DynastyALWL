@@ -618,6 +618,9 @@ func _init() -> void:
 		if water_n == 0:
 			continue
 
+		if teas.has(tea_id):
+			continue
+
 		teas.append(tea_id)
 		var tea_n: int = int(r["gives"][0])
 		var ml: int = VitalsRules.drink_value(tea_id, items._vitals_cfg)
