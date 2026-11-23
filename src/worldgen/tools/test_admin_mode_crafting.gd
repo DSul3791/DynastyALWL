@@ -14,7 +14,7 @@ const CraftHand := preload("res://src/worldgen/tools/craft_hand.gd")   # the han
 const KEY := "adminmodekey01"
 const TWINE := 1            # 3 plant fibre, by hand, known
 const CUT_STONE_BLOCK := 127   # 16 stone (0.5 kg, Dave 19 Nov 2026) at a workbench, known
-const FISH_TRAP := 390      # 10 sticks + 4 twine, not known and locked: never learned
+const LOCKED_ROW := 398     # Claw - Necklace, 3 claws + 1 twine, not known and locked: never learned (the Fish trap, 390, was the example until it went live on 23 Nov 2026)
 
 var failures: int = 0
 var said: Array = []
@@ -79,8 +79,8 @@ func _init() -> void:
 	items.vitals_of(1)["weight"] = 2000.0   # a strong test character: carry limits are not under test
 	check(items.inventory_of(1).is_empty(), "the test character starts with an empty pack")
 
-	check(str(items.recipes.recipe(TWINE)["id"]) == "twine" and str(items.recipes.recipe(CUT_STONE_BLOCK)["id"]) == "cut_stone_block" and str(items.recipes.recipe(FISH_TRAP)["id"]) == "fish_trap", "the test recipes are the ones named here")
-	check(str(items.recipes.recipe(CUT_STONE_BLOCK).get("station", "")) == "workbench" and not bool(items.recipes.recipe(FISH_TRAP).get("known", true)) and bool(items.recipes.recipe(FISH_TRAP).get("locked", false)), "cut stone needs a workbench; the fish trap is unknown and locked")
+	check(str(items.recipes.recipe(TWINE)["id"]) == "twine" and str(items.recipes.recipe(CUT_STONE_BLOCK)["id"]) == "cut_stone_block" and str(items.recipes.recipe(LOCKED_ROW)["id"]) == "claw_necklace", "the test recipes are the ones named here")
+	check(str(items.recipes.recipe(CUT_STONE_BLOCK).get("station", "")) == "workbench" and not bool(items.recipes.recipe(LOCKED_ROW).get("known", true)) and bool(items.recipes.recipe(LOCKED_ROW).get("locked", false)), "cut stone needs a workbench; the claw necklace is unknown and locked")
 
 	# --- A new session: Admin mode is off, on the server and on the client ---
 	check(not items.free_craft_for(1) and not items.free_craft_for(2), "a new session starts with Admin mode off, even for an admin")
@@ -123,9 +123,9 @@ func _init() -> void:
 	check(have("cut_stone_block") == 1, "the cut stone block is made at the bench")
 
 	# --- Normal mode: a recipe that is not known ---
-	items.inventory_of(1).add(n("stick"), 10)
-	queue(FISH_TRAP, 1)
-	check(items.craft_queue_of(1).is_empty() and have("stick") == 10 and have("twine") == 5, "an unknown recipe is refused even with every ingredient in the pack")
+	items.inventory_of(1).add(n("claw"), 3)
+	queue(LOCKED_ROW, 1)
+	check(items.craft_queue_of(1).is_empty() and have("claw") == 3 and have("twine") == 5, "an unknown recipe is refused even with every ingredient in the pack")
 
 	# --- A non-admin cannot switch Admin mode on ---
 	said.clear()
@@ -136,23 +136,23 @@ func _init() -> void:
 	admin_mode(true)
 	check(items.free_craft_for(1), "Esc > Admin switches Admin mode on")
 	items.report_position(1, Vector3(0.0, 10.0, 200.0))   # far from the bench
-	queue(FISH_TRAP, 1)
+	queue(LOCKED_ROW, 1)
 	queue(CUT_STONE_BLOCK, 2)
-	check(items.craft_queue_of(1) == [[FISH_TRAP, 1], [CUT_STONE_BLOCK, 2]], "Admin mode queues an unknown recipe and a station recipe with no station (%s)" % str(items.craft_queue_of(1)))
+	check(items.craft_queue_of(1) == [[LOCKED_ROW, 1], [CUT_STONE_BLOCK, 2]], "Admin mode queues an unknown recipe and a station recipe with no station (%s)" % str(items.craft_queue_of(1)))
 	run_ticks(120.0)
-	check(have("fish_trap") == 1 and have("cut_stone_block") == 3, "both are made free (%d trap, %d blocks)" % [have("fish_trap"), have("cut_stone_block")])
-	check(have("stick") == 10 and have("twine") == 5 and have("stone") == 0, "and nothing was taken from the pack")
+	check(have("claw_necklace") == 1 and have("cut_stone_block") == 3, "both are made free (%d necklace, %d blocks)" % [have("claw_necklace"), have("cut_stone_block")])
+	check(have("claw") == 3 and have("twine") == 5 and have("stone") == 0, "and nothing was taken from the pack")
 
 	# --- Switching off restores the rules at once: queued free crafts leave the queue the moment it goes off ---
 	queue(CUT_STONE_BLOCK, 1)
-	queue(FISH_TRAP, 1)
+	queue(LOCKED_ROW, 1)
 	check(items.craft_queue_of(1).size() == 2, "two free crafts wait in the queue")
 	admin_mode(false)
 	check(items.craft_queue_of(1).is_empty(), "switching Admin mode off empties the free crafts from the queue at once")
 	run_ticks(60.0)
-	check(have("cut_stone_block") == 3 and have("fish_trap") == 1, "and neither is made")
-	queue(FISH_TRAP, 1)
-	check(items.craft_queue_of(1).is_empty() and have("stick") == 10, "the unknown recipe is refused again")
+	check(have("cut_stone_block") == 3 and have("claw_necklace") == 1, "and neither is made")
+	queue(LOCKED_ROW, 1)
+	check(items.craft_queue_of(1).is_empty() and have("claw") == 3, "the unknown recipe is refused again")
 	items.inventory_of(1).add(n("stone"), 16)
 	said.clear()
 	queue(CUT_STONE_BLOCK, 1)
@@ -160,14 +160,14 @@ func _init() -> void:
 
 	# --- A new session starts off again, and a free craft left in the queue is not made ---
 	admin_mode(true)
-	queue(FISH_TRAP, 1)
+	queue(LOCKED_ROW, 1)
 	items.peer_left(1)
 	items.peer_connected_hello(1, KEY)
 	items.report_position(1, Vector3(0.0, 10.0, 200.0))
 	check(not items.free_craft_for(1), "logging in again starts with Admin mode off")
 	said.clear()
 	run_ticks(60.0)
-	check(have("fish_trap") == 1 and items.craft_queue_of(1).is_empty() and heard("Admin mode is off"), "the free craft queued last session is dropped at the next login, not made")
+	check(have("claw_necklace") == 1 and items.craft_queue_of(1).is_empty() and heard("Admin mode is off"), "the free craft queued last session is dropped at the next login, not made")
 
 	# --- Play as a new player switches it off too ---
 	admin_mode(true)
