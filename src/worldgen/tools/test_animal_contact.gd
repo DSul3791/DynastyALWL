@@ -213,6 +213,19 @@ func _init() -> void:
 	mw.water_level = func(_x: float, _z: float) -> float: return 10.2
 	check(not mw.make_way(wet_moose, Vector3(0.0, 10.0, 0.0), 0.1) and is_equal_approx(wet_moose["pos"].x, 0.53), "a moose swimming keeps its line")   # approx: a Vector3 holds 32-bit floats
 	mw.water_level = dry_level
+	# Between two players, inside both (robots 23 Nov 2026: a rhino between two hunters stood inside one, refused both ways): it goes out sideways.
+	var rh_m: float = AnimalContact.contact_m("rhino")
+	var hunter_a: Vector3 = Vector3(0.0, 10.0, 0.0)
+	var hunter_b: Vector3 = Vector3(3.0, 10.0, 0.0)
+	var between: Dictionary = {"sp": "rhino", "pos": Vector3(1.2, 10.0, 0.0), "state": 0}
+
+	for _i in 30:
+		var pressed: Vector3 = hunter_a if between["pos"].distance_to(hunter_a) < between["pos"].distance_to(hunter_b) else hunter_b
+		mw.make_way(between, pressed, 0.1, [hunter_a, hunter_b])
+
+	var gap_a: float = Vector2(between["pos"].x - hunter_a.x, between["pos"].z - hunter_a.z).length()
+	var gap_b: float = Vector2(between["pos"].x - hunter_b.x, between["pos"].z - hunter_b.z).length()
+	check(gap_a >= rh_m - 0.05 and gap_b >= rh_m - 0.05, "a rhino inside two hunters 3 m apart steps out of both (%.2f and %.2f m, contact %.2f)" % [gap_a, gap_b, rh_m])
 	var resting_wolf: Dictionary = {"sp": "wolf", "pos": Vector3(0.2, 10.0, 0.0), "state": 0}
 	mw.wolves._make_way(resting_wolf, [{"peer": 1, "pos": Vector3(0.0, 10.0, 0.0)}], 0.1)
 	check(resting_wolf["pos"].x > 0.2, "a resting pack wolf a player walked into steps out too (%s)" % str(resting_wolf["pos"]))

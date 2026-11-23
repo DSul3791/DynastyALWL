@@ -254,11 +254,12 @@ func step(a: Dictionary, dt: float) -> void:
 			return
 
 		var speed: float = float(def.get("charge_mps", 11.0))
-		# strike_min_s (a defend row's): a blow lands only once the charge has run this long, so every client draws the strike before it
-		# lands (robots over a 60 ms 2% loss link, 23 Nov 2026: a bandit who warned from 1.4 m struck on the charge's first step, still drawn
-		# warning). 0 (rows without it): as before.
+		# strike_min_s (a defend row's, else the animals' own): a blow lands only once the charge has run this long, so every client draws the
+		# strike before it lands (robots over a 60 ms 2% loss link, 23 Nov 2026: a bandit who warned from 1.4 m struck on the charge's first step,
+		# still drawn warning; robots over 120 ms, 23 Nov 2026: a warthog's charge from 1 m hit 0.18 s after it began, so its first blow was drawn
+		# 1.7 to 2.8 m short of the player, the lunge only starting on screen as the blow came).
 		a["charged_s"] = float(a.get("charged_s", 0.0)) + dt
-		var may_land: bool = float(a["charged_s"]) >= float(def.get("strike_min_s", 0.0)) - 0.0001
+		var may_land: bool = float(a["charged_s"]) >= float(def.get("strike_min_s", host.cfg.get("strike_min_s", 0.0))) - 0.0001
 		var step_m: float = speed * dt
 
 		if a.has("round_to") and not near.is_empty() and not host.wall_between(a["pos"], near["pos"]):

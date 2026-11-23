@@ -944,6 +944,61 @@ static func _deeper_in(to: Vector3, from: Vector3, players: Array, m: float) -> 
 	return false
 
 
+# How far `pos` is inside the players of `players` (feet or infos), summed: m less its distance from each one closer than m and level with it.
+static func _inside_sum(pos: Vector3, players: Array, m: float) -> float:
+	var sum: float = 0.0
+
+	for p in players:
+		var at: Vector3 = Vector3.INF
+
+		if p is Vector3:
+			at = p
+		else:
+			at = (p as Dictionary)["pos"]
+
+		var d: float = Vector2(pos.x - at.x, pos.z - at.z).length()
+
+		if d < m and absf(pos.y - at.y) <= 2.0:
+			sum += m - d
+
+	return sum
+
+
+# Where `pos` goes when it is inside two or more of `players` at once: the step of `reach` metres, of 16 ways round, that leaves it least
+# inside them all (sideways out from between two players, where each one's push alone goes into the other). Vector3.INF when it is inside
+# fewer than two, or no way is better than standing. Cost: 16 x the players, only while inside two at once.
+static func _out_of_all(pos: Vector3, players: Array, m: float, reach: float) -> Vector3:
+	var inside: int = 0
+
+	for p in players:
+		var at: Vector3 = Vector3.INF
+
+		if p is Vector3:
+			at = p
+		else:
+			at = (p as Dictionary)["pos"]
+
+		if Vector2(pos.x - at.x, pos.z - at.z).length() < m and absf(pos.y - at.y) <= 2.0:
+			inside += 1
+
+	if inside < 2:
+		return Vector3.INF
+
+	var best: Vector3 = Vector3.INF
+	var best_sum: float = _inside_sum(pos, players, m) - 0.01
+
+	for k in 16:
+		var turn: float = TAU * float(k) / 16.0
+		var to: Vector3 = pos + Vector3(cos(turn), 0.0, sin(turn)) * reach
+		var sum: float = _inside_sum(to, players, m)
+
+		if sum < best_sum:
+			best = to
+			best_sum = sum
+
+	return best
+
+
 # An animal a player at `at` has walked or run into steps out of their body at up to half its flee speed (its walking pace at least; a
 # goblin or bandit, defend give_way "player", at the player's pace), `dt` s of it, away from them; not into ground it cannot walk on. Birds
 # in the air or on a perch, animals in a burrow or cave, a bandit camp's tied horses and a bandit who gave up stay. True when it moved.
@@ -961,7 +1016,8 @@ func make_way(a: Dictionary, at: Vector3, dt: float, others: Array = []) -> bool
 	if swims(def) and in_water(def, a["pos"]):
 		return false
 
-	var out: Vector3 = AnimalContact.keep_off(a["pos"], at, AnimalContact.contact_m(str(a["sp"])))
+	var m: float = AnimalContact.contact_m(str(a["sp"]))
+	var out: Vector3 = AnimalContact.keep_off(a["pos"], at, m)
 	# At up to half its flee speed (robots 23 Nov 2026: a dog a running player chased stayed 0.1 to 0.3 m inside them for 0.66 s at walking pace).
 	var pace_mps: float = maxf(float(def.get("walk_mps", 1.5)), 0.5 * float(def.get("flee_mps", 0.0)))
 
@@ -975,6 +1031,12 @@ func make_way(a: Dictionary, at: Vector3, dt: float, others: Array = []) -> bool
 	elif AnimalContact.body_m(str(a["sp"])) >= AnimalContact.BLOCK_M and Vector2(out.x - a["pos"].x, out.z - a["pos"].z).length() <= AnimalContact.LEAN_M:
 		pace_mps = minf(pace_mps, AnimalContact.LEANED_MPS)   # a walker stopped at its body leans on it (animal_view walker_stop): it shifts, never shoved along
 	var step: Vector3 = Vector3(out.x - a["pos"].x, 0.0, out.z - a["pos"].z).limit_length(pace_mps * dt)
+	# Inside two players at once (robots 23 Nov 2026: a rhino between two hunters 2 to 4 m apart, pushed out of each straight into the other,
+	# was refused both ways and stood inside one, the two screens drawing it 2.7 m apart): the way out of them all, sideways.
+	var all_out: Vector3 = _out_of_all(a["pos"], others, m, pace_mps * dt)
+
+	if all_out != Vector3.INF:
+		step = Vector3(all_out.x - a["pos"].x, 0.0, all_out.z - a["pos"].z)
 
 	if step.length() < 0.01 or (blocked.is_valid() and bool(blocked.call(a["pos"].x + step.x, a["pos"].z + step.z))):
 		return false
@@ -984,8 +1046,8 @@ func make_way(a: Dictionary, at: Vector3, dt: float, others: Array = []) -> bool
 	if ground_height.is_valid():
 		to.y = float(ground_height.call(to.x, to.z))
 
-	if _deeper_in(to, a["pos"], others, AnimalContact.contact_m(str(a["sp"]))):
-		return false   # not out of one player into another beside them (`others`: every player's feet or infos)
+	if _deeper_in(to, a["pos"], others, m) and _inside_sum(to, others, m) >= _inside_sum(a["pos"], others, m) - 0.01:
+		return false   # not out of one player into another beside them unless it is less inside them all (`others`: every player's feet or infos)
 
 	if wall_between(a["pos"], to):
 		return false   # not through a wall or a shut door: a player who pins it against one does not push it out the other side
