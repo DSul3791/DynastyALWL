@@ -1691,7 +1691,8 @@ func _welcome_body(info: Dictionary) -> void:
 	net.action_cue_received.connect(func(_peer: int, cue: int, detail: int, at: Vector3) -> void:
 		if sound != null:
 			sound.other_action(cue, detail, at, harvest._flora_by_id.get(detail, {}) if cue == sound.CUE_PICK and harvest != null else {},
-					items.recipes.recipe(detail) if cue == sound.CUE_CRAFT and items != null and items.recipes != null else {}))
+					items.recipes.recipe(detail) if cue == sound.CUE_CRAFT and items != null and items.recipes != null else {},
+					items.table.id_of(detail) if cue == sound.CUE_PICKUP and items != null and items.table != null else ""))
 	animal_view.fell.connect(func(_kind: String, at: Vector3, small: bool) -> void:
 		sound.slots.play("animal_fall", at, body.global_position, 0.4 if small else 1.0))      # the body drops where it was killed (a small one softly)
 
@@ -1751,6 +1752,11 @@ func _welcome_body(info: Dictionary) -> void:
 	_player_view.stepped.connect(func(at: Vector3, gait: int, crouched: bool) -> void:
 		if sound != null:
 			sound.step_at(at, gait, crouched))   # other players' footsteps, where they walk
+	_player_view.drew.connect(func(at: Vector3) -> void:
+		if sound != null and sound.slots != null:
+			sound.slots.play("bow_draw", at))   # another player draws their bow: the limbs and string creak at their shoulder
+	if sound != null and sound.flame != null:
+		sound.flame.others = Callable(_player_view, "flames_near")   # and their burning torch or lantern flutters at their hand
 	_player_view.stroked.connect(func(at: Vector3) -> void:
 		if sound != null and sound.swim != null:
 			sound.swim.stroke_at(at))   # and their strokes where they swim
@@ -1790,7 +1796,8 @@ func _welcome_body(info: Dictionary) -> void:
 		var cue: String = SlotSoundsScript.net_cue(text)
 
 		if cue != "" and sound != null and body != null:
-			sound.slots.play(cue, body.global_position - body.global_transform.basis.z * 1.5)
+			var float_at: Vector3 = held.float_point(body.global_position) if cue == "fish_bite" and held != null else Vector3.INF
+			sound.slots.play(cue, float_at if float_at.is_finite() else body.global_position - body.global_transform.basis.z * 1.5)   # a bite at the float, where the line went in
 	items.cover_index = flora.cover
 	items.text_scale = display.TEXT_SCALES[display.text_index]
 	items.sort_index = display.sort_index

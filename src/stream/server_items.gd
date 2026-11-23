@@ -209,6 +209,7 @@ var ground_open: Callable         # (points: Array of Vector3) -> bool: any of t
 var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var drink_water_near: Callable   # (a player's position, reach) -> as water_near, and the water no more than DrinkRules.REACH_DROP_M below the feet (unset: water_near)
+var hurt_heard: Callable          # (peer, health lost): an attack landed on a player (hurt_player), for the others' ears (server_action_cues.gd)
 var water_source: Callable       # (position, reach in metres) -> Array of DrinkRules rows within reach (springs, brooks, lakes, salt); vitals.json thirst.sources (docs/design/drinking_water_design.md)
 var send_chest: Callable        # (peer, world id, bytes) a chest's contents to the player who opened it
 var send_chest_info: Callable   # (peer, world id, keep_out, may_set): the open container's "keep out" tick and whether this player may change it (protocol 98)
@@ -10060,6 +10061,9 @@ func _lay_out_bank_stones(cell: Vector2i, cell_m: float, cfg: Dictionary, used: 
 # tried and the first one the terrain "likes" is taken, so the counts stay as they were but the places are natural:
 # sticks mostly under and around tree crowns and rarely on bare rock; stones on slopes, on bare rock and gravel, and
 # in hollows at the foot of a rise, with a few left in open ground. The odds are in data/items/drops.json.
+const SCATTER_SLOPE_M := 0.5   # _scatter_spot: the slope under a loose stone or stick is read this far either side
+
+
 func _scatter_spot(rng: RandomNumberGenerator, cell: Vector2i, cell_m: float, stone: bool) -> Vector3:
 	var cfg: Dictionary = _drops.get("ground_scatter", {})
 	var tries: int = int(cfg.get("spot_tries", 4))
@@ -10071,6 +10075,14 @@ func _scatter_spot(rng: RandomNumberGenerator, cell: Vector2i, cell_m: float, st
 		var y: float = float(ground_height.call(x, z))
 
 		if is_nan(y) or y < 1.0:
+			continue
+
+		# Not on ground steeper than a player stands on (45 degrees over 0.5 m): world audit round 4 (23 Nov 2026) found 1 in 5 loose stones and sticks
+		# on such faces, 376 of them out of every player's reach. Nothing would rest there; the next try looks again.
+		var fall_x: float = float(ground_height.call(x + SCATTER_SLOPE_M, z)) - float(ground_height.call(x - SCATTER_SLOPE_M, z))
+		var fall_z: float = float(ground_height.call(x, z + SCATTER_SLOPE_M)) - float(ground_height.call(x, z - SCATTER_SLOPE_M))
+
+		if not (Vector2(fall_x, fall_z).length() < 2.0 * SCATTER_SLOPE_M):
 			continue
 
 		var spot: Vector3 = Vector3(x, y, z)
@@ -15988,6 +16000,9 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 	var before: float = float(v["health"])
 	v["health"] = before - amount
 
+	if hurt_heard.is_valid():
+		hurt_heard.call(peer, amount)   # the others near hear the blow land (server_action_cues.gd hurt)
+
 	if lethal and bool(_death_cfg.get("stop_at_1", false)):
 		lethal = false   # nothing kills (death.json stop_at_1, Dave 23 Nov 2026): a lethal blow stops at 1 and counts as crippling again
 		floor_hp = 1.0
@@ -16532,6 +16547,23 @@ func peer_ids() -> Array:
 
 func position_of(peer: int) -> Variant:
 	return _peer_pos.get(peer, null)
+
+
+# A loose thing lying on the ground (not a structure, fire, tree or boulder): [number, count, where], [] for none (server_action_cues.gd: a
+# pickup is heard only when the thing went).
+func loose_item_of(id: int) -> Array:
+	var it: Dictionary = _items.get(id, {})
+
+	if it.is_empty() or it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder"):
+		return []
+
+	return [int(it["number"]), int(it["count"]), it["pos"]]
+
+
+# The water in `peer`'s body (vitals "wet", millilitres), -1 when not known (server_action_cues.gd: a drink is heard only when it went down).
+func body_water_of(peer: int) -> float:
+	var v: Dictionary = vitals_of(peer)
+	return float(v.get("wet", -1.0)) if not v.is_empty() else -1.0
 
 
 # The world id of the container `peer` has open, 0 for none, below 0 a worn bag (server_action_cues.gd: a store cue only once the open was let in).
