@@ -210,7 +210,7 @@ func use(peer: int, id: int, it: Dictionary, def: Dictionary, choice: int = 0) -
 		_set_lit(id, it, true)
 
 		if bool(def["smelt"].get("wind", false)):
-			host._say(peer, "It is lit. %s" % ("Its windmill turns: it smelts the ore in it." if _wind_turns(def) else "The wind is too weak to turn its windmill: it waits."))
+			host._say(peer, "It is lit. %s" % ("Its windmill turns: it smelts the ore in it." if _wind_turns(def, it["pos"]) else "The wind is too weak to turn its windmill: it waits."))
 		elif bool(def["smelt"].get("bellows", false)):
 			host._say(peer, "It is lit: it smelts the ore in it. Press E to work the bellows (iron needs them).")
 		else:
@@ -281,15 +281,16 @@ func bellows_peer(id: int) -> int:
 	return int(_bellows.get(id, -1))
 
 
-# The world's wind in metres a second (Weather.state "wind", 0..1); 0 with no weather.
-func wind_mps() -> float:
-	var weather: Dictionary = host.weather_now.call() if host.weather_now.is_valid() else {}
+# The wind in metres a second (Weather.state "wind", 0..1) over `at` (the weather of its own row and height, host._weather_here), else the
+# one weather; 0 with no weather.
+func wind_mps(at: Vector3 = Vector3.INF) -> float:
+	var weather: Dictionary = host._weather_here(at) if at.is_finite() else (host.weather_now.call() if host.weather_now.is_valid() else {})
 	return Weather.wind_mps(float(weather.get("wind", 0.0)))
 
 
 # True while the wind turns a windmill station's windmill (smelting.wind_min_mps).
-func _wind_turns(def: Dictionary) -> bool:
-	return bool(def["smelt"].get("wind", false)) and wind_mps() >= float(_cfg.get("wind_min_mps", 4.0))
+func _wind_turns(def: Dictionary, at: Vector3 = Vector3.INF) -> bool:
+	return bool(def["smelt"].get("wind", false)) and wind_mps(at) >= float(_cfg.get("wind_min_mps", 4.0))
 
 
 # The job a lane works on now ("" none). A started job (`current`, with time banked) goes on while its ore is in; a started air job whose
@@ -481,7 +482,7 @@ func tick(id: int, it: Dictionary, def: Dictionary, spent: float) -> void:
 	var smelt: Dictionary = def["smelt"]
 	var windmill: bool = bool(smelt.get("wind", false))
 	var worked: bool = _working(id, it, def)
-	var air: bool = _wind_turns(def) if windmill else worked
+	var air: bool = _wind_turns(def, it["pos"]) if windmill else worked   # the wind where the windmill stands
 
 	var rate: float = float(smelt.get("speed", 1.0)) * (float(smelt.get("bellows_speed", 1.0)) if worked else 1.0)
 	var lanes: Array = _lanes_of(it, def)

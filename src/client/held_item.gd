@@ -445,9 +445,16 @@ var _held_sent: Array = []
 var _held_wait: float = 0.0
 
 
-# Only the shield's for now: the bow and ladder bits are kept for their poses on other players (not made yet), so a bow draw costs no sends.
+# The shield up, and the bow raised or drawn (protocol 162: drawn on the other players' screens, dynasty_body.gd _bow_aim; one send when the
+# draw starts and one at full draw). The ladder bit is kept for its pose on other players (not made yet).
 func hand_flags() -> int:
-	return HAND_SHIELD_UP if blocking else 0
+	var flags: int = HAND_SHIELD_UP if blocking else 0
+
+	if _bow_posing():
+		var state: String = bow_state()
+		flags |= HAND_BOW_DRAWN if state == "drawn" else (HAND_BOW_RAISED if state == "raised" else 0)
+
+	return flags
 
 
 func _report_held(delta: float) -> void:

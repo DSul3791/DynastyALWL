@@ -3723,7 +3723,7 @@ static func _plant_tint(entry: Dictionary, c: Array) -> Color:
 
 # The season of a day of the year (0 to 364), as GameClock.season() names it.
 static func season_of_day(day: int) -> String:
-	return ["spring", "summer", "autumn", "winter"][clampi(posmod(day, 365) * 4 / 365, 0, 3)]
+	return ["spring", "summer", "autumn", "winter"][clampi(posmod(day, 365) * 4 / 365, 0, 3)]   # starter-calendar: a day number the caller already made local
 
 
 # A hardwood's leaf tint for the season the view was told: fresh yellow-green in spring, the species' green in summer, its autumn colour in autumn
