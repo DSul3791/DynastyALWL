@@ -1928,6 +1928,40 @@ func _pose_bow(state: String, draw: float, _delta: float) -> void:
 # The nocked arrow: its nock (the arrow mesh's back end, x = -ARROW_NOCK_M) on the string at `nock`, its shaft straight toward the target (the bow's +z, which is the
 # view's forward) along the left side of the stave over the bow hand. Parallel to the view, the shaft points at the crosshair from below (Dave 10 Nov 2026: "the
 # bow and arrow should be adjusted so the arrow lines up with the crosshairs"); it no longer angles off to the left of it.
+# The string's two cords (tips to the nock point) and the nocked arrow (hidden until shown) on a bow whose own space has the limbs along x
+# and the back toward +z: the player's own bow (_make_look_tool_model) and another player's (player_view.gd _pose_bow, Lane A S8 23 Nov 2026).
+static func add_bow_parts(bow: Node3D) -> void:
+	if bow.get_node_or_null("StringTop") != null:
+		return
+
+	for cord_name in ["StringTop", "StringBottom"]:
+		var cord: MeshInstance3D = MeshInstance3D.new()
+		cord.name = cord_name
+		var line: CylinderMesh = CylinderMesh.new()
+		line.top_radius = BasicLook.BOW_STRING_R
+		line.bottom_radius = BasicLook.BOW_STRING_R
+		line.height = 1.0
+		line.radial_segments = 4
+		line.rings = 1
+		var gut: StandardMaterial3D = StandardMaterial3D.new()
+		gut.albedo_color = Color(0.85, 0.82, 0.72)
+		gut.roughness = 0.8
+		line.material = gut
+		cord.mesh = line
+		cord.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+		bow.add_child(cord)
+
+	_set_bow_string(bow, Vector3.ZERO)
+	# The arrow on the string while the bow is up (shown only with an arrow in the pack): its nock on the string, its shaft over the left side of the bow,
+	# resting on the bow hand (Dave 10 Nov 2026: "you place the arrow over the left side and then draw back and sight along the arrow shaft").
+	var nocked: MeshInstance3D = MeshInstance3D.new()
+	nocked.name = "NockedArrow"
+	nocked.mesh = BasicLook.mesh_for("stone_arrow")
+	nocked.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	nocked.visible = false
+	bow.add_child(nocked)
+
+
 static func _place_nocked_arrow(bow: Node3D, nock: Vector3, shown: bool) -> void:
 	var arrow: MeshInstance3D = bow.get_node_or_null("NockedArrow") as MeshInstance3D
 
@@ -4030,32 +4064,7 @@ func _make_look_tool_model() -> Node3D:
 		node.set_meta("bow", true)
 		node.set_meta("nock", Vector3.ZERO)   # the nock point in the bow's own space (mesh axes: limbs along x, back of the bow toward +z)
 
-		for cord_name in ["StringTop", "StringBottom"]:
-			var cord: MeshInstance3D = MeshInstance3D.new()
-			cord.name = cord_name
-			var line: CylinderMesh = CylinderMesh.new()
-			line.top_radius = BasicLook.BOW_STRING_R
-			line.bottom_radius = BasicLook.BOW_STRING_R
-			line.height = 1.0
-			line.radial_segments = 4
-			line.rings = 1
-			var gut: StandardMaterial3D = StandardMaterial3D.new()
-			gut.albedo_color = Color(0.85, 0.82, 0.72)
-			gut.roughness = 0.8
-			line.material = gut
-			cord.mesh = line
-			cord.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-			node.add_child(cord)
-
-		_set_bow_string(node, Vector3.ZERO)
-		# The arrow on the string while the bow is up (shown only with an arrow in the pack): its nock on the string, its shaft over the left side of the bow,
-		# resting on the bow hand (Dave 10 Nov 2026: "you place the arrow over the left side and then draw back and sight along the arrow shaft").
-		var nocked: MeshInstance3D = MeshInstance3D.new()
-		nocked.name = "NockedArrow"
-		nocked.mesh = BasicLook.mesh_for("stone_arrow")
-		nocked.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
-		nocked.visible = false
-		node.add_child(nocked)
+		add_bow_parts(node)
 
 	if shape == "arrow":
 		node.set_meta("held_pitch_deg", 30.0)
