@@ -18,7 +18,7 @@ func check(ok: bool, what: String) -> void:
 
 
 func _initialize() -> void:
-	var src: String = FileAccess.get_file_as_string(ClientScript)
+	var src: String = FileAccess.get_file_as_string(ClientScript).replace("\r\n", "\n")   # a Windows checkout has CRLF (.gitattributes text=auto)
 	var exit_tree: int = src.find("func _exit_tree() -> void:")
 	var end_now: int = src.find("func _end_now() -> void:")
 	check(exit_tree >= 0 and end_now > exit_tree, "_exit_tree and _end_now are there")
@@ -33,7 +33,7 @@ func _initialize() -> void:
 	var finish_body: String = src.substr(finish, src.find("\nfunc ", finish + 10) - finish)
 	check(finish_body.find("quitting = true") >= 0 and finish_body.find("quitting = true") < finish_body.find("get_tree().quit(code)"), "_finish says it is closing before it quits")
 	check(src.contains("EXIT: the window was asked to close") and src.count("quitting = true") == 3, "the window close, _finish and the failed local connect say so")
-	var menu: String = FileAccess.get_file_as_string("res://src/client/game_menu.gd")
+	var menu: String = FileAccess.get_file_as_string("res://src/client/game_menu.gd").replace("\r\n", "\n")
 	check(menu.contains("_c.quitting = true\n\t\t_c.get_tree().quit())"), "the menu's Yes, leave says so")
 	check(src.contains("get_tree().reload_current_scene()") and not src.contains("quitting = true\n\t\tget_tree().reload_current_scene()"), "Retry reloads without closing")
 	check(not OS.has_feature("template"), "this run (editor binary) keeps the normal quit")

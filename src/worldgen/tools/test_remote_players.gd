@@ -11,6 +11,7 @@ const PlayersScript := preload("res://src/stream/server_players.gd")
 const PlayerViewScript := preload("res://src/client/player_view.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const DynastyBodyScript := preload("res://src/client/character/dynasty_body.gd")
+const MotionBufferScript := preload("res://src/client/motion_buffer.gd")
 
 var failures: int = 0
 
@@ -178,7 +179,8 @@ func _client() -> void:
 			await process_frame
 
 	var moved: float = node.position.x - at.x
-	check(moved > 0.6 and moved <= 4.2 + 0.01, "the body walked between its sent points (%.2f m of 4.2)" % moved)
+	# Past the newest point the body may carry on at its last speed (3 m/s) for up to MotionBuffer.CARRY_S, then stands (motion_buffer.gd).
+	check(moved > 0.6 and moved <= 4.2 + 3.0 * MotionBufferScript.CARRY_S + 0.01, "the body walked between its sent points (%.2f m of 4.2, carry at most %.1f m)" % [moved, 3.0 * MotionBufferScript.CARRY_S])
 
 	if DynastyBodyScript.available():
 		var clip: String = str(body["rig"].current())
