@@ -617,7 +617,7 @@ func _check_lossy(burst_ms: int, tail_ms: int) -> void:
 		stamper.note_report(int(peers[int(a[1])]), 0.0)
 		stamp_of[[int(a[1]), r]] = int(stamper._report_ms[int(peers[int(a[1])])])
 
-	# As server_players.gd: a send every 125 ms only when a report is news (or a second on), each report stamped when it reached the server.
+	# As server_players.gd: a send every 125 ms only when a report is news (or a second on), each report with its row time from stamp_of above.
 	for send in range(0, end_ms, 125):
 		var times: Array = []
 		var spots: Array = []

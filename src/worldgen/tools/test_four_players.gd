@@ -249,7 +249,7 @@ func _init() -> void:
 
 	# 6. The carcass worked by four knives of different metals at once: its parts are handed out once, then it is gone.
 	var carcass: int = int(deaths[0]) if not deaths.is_empty() else 0
-	var knives: Array = ["iron_knife", "stone_knife", "copper_knife", "steel_knife"]   # a deer takes 4 blows by its knife's speed (carcass.json): iron 2, stone and copper 4, steel 2.5, so all four cut
+	var knives: Array = ["iron_knife", "stone_knife", "copper_knife", "steel_knife"]   # a deer takes 4 blows by its knife's speed (carcass.json): iron 2, stone and copper 4, steel 2 (speed 2.5): in this order all four cut
 
 	for i in PEERS.size():
 		items.give(PEERS[i], table.number_of(knives[i]), 1)
