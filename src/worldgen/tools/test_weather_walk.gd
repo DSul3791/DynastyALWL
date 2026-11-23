@@ -304,16 +304,21 @@ func _init() -> void:
 	var start_run: float = 0.0
 
 	for n in 6000:   # ten lag times: settled
-		start_run = ts._river_runoff(push_t)
+		start_run = ts._river_runoff(push_t, Weather.STARTER_ROW)
 
 	ts._water_live_last = [Vector2i(3, other_row), Vector2i(3, Weather.STARTER_ROW)]
 	var other_run: float = 0.0
 
 	for n in 6000:
-		other_run = ts._river_runoff(push_t)
+		other_run = ts._river_runoff(push_t, other_row)
 
 	ts._water_live_last = [Vector2i(3, Weather.STARTER_ROW)]
-	var back_run: float = ts._river_runoff(push_t)
+	var back_run: float = ts._river_runoff(push_t, Weather.STARTER_ROW)
+	var placeholder_first: Array = [Vector2i(3, 6), Vector2i(3, Weather.STARTER_ROW)]   # an unbaked tile first: the hub runs the baked one
+	ts._water_live_last = placeholder_first
+	check(absf(ts._river_runoff(push_t, Weather.STARTER_ROW) - start_run) < 0.01, "with an unbaked tile first, the running tile's own row still decides (x%.2f)" % ts._river_runoff(push_t, Weather.STARTER_ROW))
+	ts._water_live_last = [Vector2i(3, Weather.STARTER_ROW)]
+	ts._river_runoff(push_t, Weather.STARTER_ROW)
 	check(absf(other_run - start_run) > 0.1, "a player in that row runs its rivers by its own rain (x%.2f there, x%.2f in the starter row)" % [other_run, start_run])
 	check(absf(back_run - start_run) < 0.01, "the starter row, kept live meanwhile, is still at its own (x%.2f)" % back_run)
 	check(not ts._river_rows.has(other_row), "a row nobody is in any more is forgotten")

@@ -148,7 +148,7 @@ var _npc_sent: Dictionary = {}         # peer -> signature of the NPC rows last 
 var _npc_send_t: float = 0.0
 var _pulse_t: float = 0.0
 var _water_updates: int = 0
-var weather: Dictionary = {}           # the weather at the water tile now (WeatherScript.state), refreshed every second
+var weather: Dictionary = {}           # the starter row's weather at sea level (WeatherScript.state), refreshed every second: the flora season, the log line, fallbacks
 var _weather_next_msec: int = 0
 var _weather_here_cache: Dictionary = {}   # Vector2i(tile row, height band) -> Weather.state, for the second it was made (_weather_here)
 var _weather_here_msec: int = -100000
@@ -1896,7 +1896,7 @@ func _update_weather() -> void:
 		return
 
 	_weather_next_msec = now + 1000
-	var row: int = WeatherScript.STARTER_ROW               # the starter tile's row (Climate.STARTER_ROW): its rivers are the ones swelled
+	var row: int = WeatherScript.STARTER_ROW               # the starter tile's row (Climate.STARTER_ROW): the one weather (rivers follow their own row, _river_runoff)
 	var game_s: float = game_clock.seconds
 	weather = WeatherScript.state(settings.master_seed, game_s, settings.get_zone_group_for_row(row), 0.0, 0.0, row, settings.equator_tile_row)
 
@@ -1906,25 +1906,22 @@ func _update_weather() -> void:
 
 	if bucket != _weather_bucket:
 		_weather_bucket = bucket
-		print("server: weather %s, rain %.2f snow %.2f storm %.2f, %.0f C, rivers x%.2f of the start flow" % [weather["season"], weather["rain"], weather["snow"], weather["storm"], weather["temp_c"], water_live.runoff])
+		print("server: starter row weather %s, rain %.2f snow %.2f storm %.2f, %.0f C; live water row %d rivers x%.2f of the start flow" % [weather["season"], weather["rain"], weather["snow"], weather["storm"], weather["temp_c"], water_live.centre.y, water_live.runoff])
 
-	water_live.set_runoff(_river_runoff(game_s))
+	water_live.set_runoff(_river_runoff(game_s, water_live.centre.y))
 
 
-# The runoff for the running water tile (set_live's first): its own row's rain and heat at sea level, lagged WEATHER_LAG_S, so a river
-# rises by the rain over it, not the starter row's (Dave: nothing is based on where the spawn is). Every live or kept row is followed so
-# a player walking between rows meets that row's own state. Rain falling as snow higher up piles up (Weather.river_push reads rain).
+# The runoff for the running water tile (row `running`: the hub's centre, the first baked tile of set_live): its own row's rain and heat at
+# sea level, lagged WEATHER_LAG_S, so a river rises by the rain over it, not the starter row's (Dave: nothing is based on where the spawn
+# is). The rows of the next few live tiles are followed too, so a player walking between rows meets that row's own state. Rain falling as snow higher up piles up (Weather.river_push reads rain).
 # shortcut: a tile's rivers rise by their own tile row; an upstream stretch in another row is not weighted in (physical world thread
 # 23 Nov 2026: nearly every catchment sits inside its own tile or the next).
-func _river_runoff(game_s: float) -> float:
-	var rows: Array = []
+func _river_runoff(game_s: float, running: int) -> float:
+	var rows: Array = [running]
 
-	for tile in _water_live_last:
+	for tile in _water_live_last.slice(0, 4):   # set_live's four at most
 		if not rows.has((tile as Vector2i).y):
 			rows.append((tile as Vector2i).y)
-
-	if rows.is_empty():
-		rows = [WeatherScript.STARTER_ROW]
 
 	for row in _river_rows.keys():
 		if not rows.has(row):
