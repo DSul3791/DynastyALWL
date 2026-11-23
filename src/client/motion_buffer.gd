@@ -134,7 +134,10 @@ static func clock_new() -> Dictionary:
 	return {"off": INF, "server_ms": -1, "interval": 0.25, "late": 0.05, "hole": 0.0}
 
 
-static func clock_note(c: Dictionary, now_s: float, server_ms: int) -> void:
+# own_stall: this computer's own frame stalled (a hitch, a long load) just before the rows were read. They came late because nobody read them,
+# not because the line is slow, so the lateness is left as it was (robots 23 Nov 2026: one 2 s hitch left a client's lateness over 1 s for
+# the rest of the fight, its delay at the 0.8 s cap and its charges drawn a second behind).
+static func clock_note(c: Dictionary, now_s: float, server_ms: int, own_stall: bool = false) -> void:
 	var last: int = int(c["server_ms"])
 
 	if last >= 0 and server_ms > last:
@@ -148,6 +151,9 @@ static func clock_note(c: Dictionary, now_s: float, server_ms: int) -> void:
 
 	c["off"] = clock_off(float(c["off"]), now_s, server_ms, last)
 	c["server_ms"] = server_ms if server_ms > last or server_ms < last - 2000 else last
+	if own_stall:
+		return
+
 	var late: float = maxf(now_s - (float(server_ms) / 1000.0 + float(c["off"])), 0.0)
 	c["late"] = late if late > float(c["late"]) else lerpf(float(c["late"]), late, 0.02)
 
@@ -236,6 +242,16 @@ static func follow(body: Dictionary, p: Vector3, delta: float) -> Vector3:
 	body["fw_v"] = v
 	body["fw_last"] = p
 	return drawn
+
+
+# This computer's own frame stalled: the body is drawn where its points put it, with no correction to ease away and its feet starting from
+# there. Every body on the screen jumped with the stall anyway; eased, it would drain a jump of the stall's length (13 m for a moose at
+# 6 m/s after a 2 s hitch) at 1.3 times its speed, drawn 10 to 15 m off where the other players and the server have it for 10 s and more
+# (robots 23 Nov 2026, the kinds sweep: the two clients 16 m apart on one moose).
+static func settle(body: Dictionary) -> void:
+	body.erase("sm_p")
+	body.erase("sm_err")
+	body.erase("fw_p")
 
 
 # A body drawn without its feet this frame (a charge, animal_view AHEAD_STATES) at `p`: follow starts again from there, at the speed it had.
