@@ -1,0 +1,14 @@
+{
+	"note": "How close an animal comes to a player (Dave 23 Nov 2026, first game on the real server: animals were \"jumping right through us\"). body_m is the species' reach from its middle to its nose or tusks, in metres; player_m is the player's own half width. No animal is moved, or drawn, nearer a player than body_m + player_m: the server stops a charge there and pulls back any step that would take it closer (server_animals keep_off_players, server_big_game), and the client never draws a body inside the local player (animal_view keep_off). For an animal that defends itself body_m + player_m stays below its defend hit_m, so a charge that reaches you hits (test_animal_contact.gd). Species not listed use default_m. Read by the server and the client.",
+	"player_m": 0.35,
+	"default_m": 0.4,
+	"body_m": {
+		"rabbit": 0.2, "deer": 0.8, "wolf": 0.6, "moose": 1.3, "fox": 0.35, "duck": 0.15, "horse": 1.1, "boar": 0.7, "frog": 0.05,
+		"grouse": 0.15, "seal": 0.7, "bear": 1.0, "goblin": 0.3, "donkey": 0.9, "lynx": 0.5, "black_bear": 0.9, "elk": 1.2,
+		"bighorn": 0.7, "mountain_goat": 0.7, "beaver": 0.4, "chamois": 0.6, "mink": 0.2, "raccoon": 0.35, "rat": 0.1, "crow": 0.15,
+		"pheasant": 0.2, "goose": 0.3, "cow": 1.1, "goat": 0.6, "chicken": 0.15, "cat": 0.3, "dog": 0.5, "buffalo": 1.4, "puma": 0.8,
+		"pronghorn": 0.7, "warthog": 0.6, "hyena": 0.7, "wildebeest": 1.0, "lion": 1.0, "leopard": 0.8, "rhino": 1.8, "elephant": 2.2,
+		"camel": 1.2, "guineafowl": 0.15, "honey_badger": 0.4, "kangaroo": 0.6, "mammoth": 2.6, "tiger": 1.0, "alligator": 1.4,
+		"bandit": 0.3
+	}
+}

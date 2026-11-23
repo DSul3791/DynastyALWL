@@ -13,6 +13,8 @@ extends RefCounted
 # her young. A row without these keys behaves as before: one warning, every charge real.
 
 
+const AnimalContact := preload("res://src/shared/animal_contact.gd")   # how near a charge comes to a player (AnimalContact.stop_at)
+
 const WARN := 10
 const CHARGE := 11
 const RECOVER := 12
@@ -237,6 +239,7 @@ func step(a: Dictionary, dt: float) -> void:
 
 				if _off_path(p, start, a["pos"]) <= float(def.get("hit_m", 2.2)) and absf(p.y - a["pos"].y) < 2.5 and hurt_player.is_valid():
 					a["hit"] = true
+					a["pos"] = AnimalContact.stop_at(p, start, a["pos"], AnimalContact.contact_m(str(a["sp"])))   # it stops against the player, not through them (Dave 23 Nov 2026)
 					var landed: String = str(hurt_player.call(int(info["peer"]), float(def.get("damage", 25.0)) * host.level_x(a, "damage"), false, str(a["sp"])))   # a higher-level animal hits harder
 
 					if struck.is_valid():
