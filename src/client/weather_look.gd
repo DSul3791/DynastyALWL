@@ -111,7 +111,10 @@ const DAY_STEP_MSEC := 1000                # sun direction and colour refresh
 const SKY_STEP_MSEC := 4000                # sky palette refresh (see the comment where it is used)
 const EASE_S := 8.0                      # seconds for a front to fade fully in or out
 const RAIN_AMOUNT := [500, 1400, 2800, 4500]
-const SNOW_AMOUNT := [350, 900, 2000, 3200]
+const SNOW_AMOUNT := [600, 1600, 3200, 5000]   # weather round 2 (Lane A, 23 Nov 2026): at 2000 flakes in a 48 m box the snow read as "a few faint specks"
+const SNOW_BOX_M := 14.0                 # half width of the box the snow falls through: near the eye, where a flake is big enough to see
+const SNOW_FLAKE_M := 0.11               # a flake's drawn size (its soft edge fades from 40 percent out): a few pixels at 10 m
+const STARS_GONE_COVER := Vector2(0.55, 0.85)   # cloud cover over which the stars fade out: none shine through an overcast that snows or rains
 const BOLT_FROM := 1                     # first quality level that draws the bolt itself
 const TURBULENCE_FROM := 1               # snow drifts sideways from here up
 const BOX_M := 24.0                      # half width of the box the precipitation falls through
@@ -521,7 +524,7 @@ func _make_snow() -> GPUParticles3D:
 	particles.emitting = false
 	var process: ParticleProcessMaterial = ParticleProcessMaterial.new()
 	process.emission_shape = ParticleProcessMaterial.EMISSION_SHAPE_BOX
-	process.emission_box_extents = Vector3(BOX_M, 0.3, BOX_M)
+	process.emission_box_extents = Vector3(SNOW_BOX_M, 0.3, SNOW_BOX_M)
 	process.direction = Vector3(0.0, -1.0, 0.0)
 	process.spread = 12.0
 	process.initial_velocity_min = 1.0
@@ -532,10 +535,10 @@ func _make_snow() -> GPUParticles3D:
 	process.turbulence_enabled = _quality >= TURBULENCE_FROM
 	particles.process_material = process
 	var quad: QuadMesh = QuadMesh.new()
-	quad.size = Vector2(0.07, 0.07)
+	quad.size = Vector2(SNOW_FLAKE_M, SNOW_FLAKE_M)
 	var gradient: Gradient = Gradient.new()
 	gradient.colors = PackedColorArray([Color(1, 1, 1, 1), Color(1, 1, 1, 0)])
-	gradient.offsets = PackedFloat32Array([0.3, 1.0])
+	gradient.offsets = PackedFloat32Array([0.4, 1.0])
 	var texture: GradientTexture2D = GradientTexture2D.new()
 	texture.gradient = gradient
 	texture.fill = GradientTexture2D.FILL_RADIAL
@@ -544,11 +547,19 @@ func _make_snow() -> GPUParticles3D:
 	texture.width = 32
 	texture.height = 32
 	var material: StandardMaterial3D = StandardMaterial3D.new()
-	material.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	# Lit, so a flake shows white in firelight and by day and only faintly in the dark away from a fire (weather round 2: "no flakes in
+	# the firelight"); backlight, so a flake between the eye and the fire lights up too (a billboard faces the eye, the fire is behind it);
+	# a little emission keeps the nearest ones just visible on a dark night.
+	material.shading_mode = BaseMaterial3D.SHADING_MODE_PER_VERTEX
+	material.backlight_enabled = true
+	material.backlight = Color(0.85, 0.87, 0.9)
+	material.emission_enabled = true
+	material.emission = Color(0.9, 0.93, 1.0)
+	material.emission_energy_multiplier = 0.08
 	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 	material.billboard_mode = BaseMaterial3D.BILLBOARD_PARTICLES
 	material.albedo_texture = texture
-	material.albedo_color = Color(0.95, 0.97, 1.0, 0.85)
+	material.albedo_color = Color(0.95, 0.97, 1.0, 0.9)
 	quad.material = material
 	particles.draw_pass_1 = quad
 	return particles
@@ -751,7 +762,7 @@ func _process_body(delta: float) -> void:
 			sky_material.set_shader_parameter("sky_horizon_color", day.sky_horizon)
 			sky_material.set_shader_parameter("ground_horizon_color", day.ground_horizon)
 			sky_material.set_shader_parameter("cloud_shadow_color", day.cloud_shadow)
-			sky_material.set_shader_parameter("night", day.stars)   # the stars: brighter on a moonless night (day_cycle.gd)
+			sky_material.set_shader_parameter("night", stars_through(day.stars, cloud_cover))   # the stars: brighter on a moonless night (day_cycle.gd), none through an overcast
 
 		FrameProbe.stop("weather look: sea and sky colours", tq)
 
@@ -1281,7 +1292,7 @@ func _update_particles(rain: float, snow: float, wind: float) -> void:
 	var under: bool = _client.underwater
 	var tilt: float = wind * 0.4
 	_rain.global_position = eye + Vector3(0.0, 12.0, 0.0)
-	_snow.global_position = eye + Vector3(0.0, 10.0, 0.0)
+	_snow.global_position = eye + Vector3(0.0, 8.0, 0.0)   # 9 s at 1 to 1.9 m/s: they fall past the eye, from 8 m above to 1 to 9 m below it
 	wind_cue.update(get_process_delta_time(), eye, _client.weather, rain, snow, under, 1.0 - day.night)
 	# BUG-009 (Dave's QA list, 3 Nov 2026): rain showed inside caves. The particles fall from above the eye, so under rock they would fall through it;
 	# they thin out under an overhang and stop in a cave, the same rock enclosure that dims the light.
@@ -1316,6 +1327,12 @@ func _update_particles(rain: float, snow: float, wind: float) -> void:
 
 	if _snow.emitting:
 		(_snow.process_material as ParticleProcessMaterial).direction = Vector3(tilt * 0.8, -1.0, tilt * 0.3).normalized()
+
+
+# The stars' brightness under this cloud cover: full in a clear sky or through the gaps of a broken one, none through the overcast that
+# rain or snow brings (weather round 2: "clear sky with stars" over a snowing night). The sky shader still thins them behind each cloud.
+static func stars_through(stars: float, cover: float) -> float:
+	return stars * (1.0 - smoothstep(STARS_GONE_COVER.x, STARS_GONE_COVER.y, cover))
 
 
 # Flash level over time: a hard first pulse, a flicker, a softer return.
