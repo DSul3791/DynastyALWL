@@ -122,6 +122,9 @@ func _init() -> void:
 		mw.make_way(calf, Vector3(0.0, 10.0, 0.0), 0.1)
 
 	check(walked and first_step > 0.0 and first_step <= float(mw.species_def("deer").get("walk_mps", 1.5)) * 0.1 + 0.001 and absf(Vector2(calf["pos"].x, calf["pos"].z).length() - dm) < 0.01, "a deer walked into steps away at its walking pace and stands at the contact circle (first step %.2f m, ends %.2f m)" % [first_step, Vector2(calf["pos"].x, calf["pos"].z).length()])
+	var resting_wolf: Dictionary = {"sp": "wolf", "pos": Vector3(0.2, 10.0, 0.0), "state": 0}
+	mw.wolves._make_way(resting_wolf, [{"peer": 1, "pos": Vector3(0.0, 10.0, 0.0)}], 0.1)
+	check(resting_wolf["pos"].x > 0.2, "a resting pack wolf a player walked into steps out too (%s)" % str(resting_wolf["pos"]))
 	var warned: Dictionary = {"sp": "deer", "pos": Vector3(0.2, 10.0, 0.0), "state": 10}
 	check(mw.make_way(warned, Vector3(0.0, 10.0, 0.0), 0.1), "a deer warning from inside a player steps out too")
 	check(not mw.make_way({"sp": "crow", "pos": Vector3(0.1, 10.0, 0.0), "state": 0, "fly": true}, Vector3(0.0, 10.0, 0.0), 0.1) and not mw.make_way({"sp": "horse", "pos": Vector3(0.1, 10.0, 0.0), "state": 0, "camp": 1}, Vector3(0.0, 10.0, 0.0), 0.1), "a bird in the air and a camp's tied horse stay")

@@ -112,8 +112,8 @@ client only decides how the body gets from one drawn point to the next.
 - Every drawn body, not only a charge, is held out of the local player (`stop_toward`): the spring eases a little past a wolf's or dog's stop.
 - Server: `make_way`. A standing animal a player walks into steps out of them at its walking pace (robot play-testers, 23 Nov 2026: a dog
   0.02 m from a player's middle, a deer 0.22 m, a horse 0.15 m). Birds in the air, perched or burrowed animals, swimmers and a camp's tied
-  horses stay; big game warning, charging or recovering steps out too (held on the circle by stop_at, no flapping). Pack wolves move in the pack brain and are not covered (a resting
-  pack wolf a player walks into stays; a known gap). Cost: the nearest player's distance is already worked out each step; one compare.
+  horses stay; big game warning, charging or recovering steps out too (held on the circle by stop_at, no flapping). Pack wolves move in the pack brain, which does the same for a wolf that stood
+  this think (server_wolves `_make_way`), except in a rush. Cost: the nearest player's distance is already worked out each step; one compare.
 - Tests: test_animal_motion_buffer.gd (a corner run: within 0.5 m, speed eased, facing turn rate), test_animal_contact.gd (make_way).
 
 ## Fair hits (PR 3, protocol 155)
@@ -128,4 +128,6 @@ in the sources above), with the server still the judge:
 - It never goes back more than `rewind_max_ms` (500): a client claiming an older moment is judged at 500 ms back, so a laggy or lying
   client cannot hit an animal that left long since. 500 rather than 250 because the honest delay of a normal internet game is about 0.4 s.
 - Not covered: arrows and thrown spears (the server flies them on its own clock); the charge still hits by where the animal is now.
-
+- A held foe (server_big_game `_foe`, `foe_peer`): big game that warns at a player, or is hurt by one, keeps that player as its foe for as
+  long as it fights and they stay within calm_m, instead of turning to whichever player is nearest that step. With two players near, it
+  turned between them every step and never pressed a charge home.
