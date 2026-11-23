@@ -158,8 +158,27 @@ func open(npc_id: String, ctx: Dictionary) -> Dictionary:
 	return {}
 
 
-func choose(npc_id: String, _node: String, choice: int, map: Array, ctx: Dictionary) -> Dictionary:
+func choose(npc_id: String, node: String, choice: int, map: Array, ctx: Dictionary) -> Dictionary:
 	if choice < 0 or choice >= map.size() or str(map[choice]) == "end":
 		return {}
 
+	if not _still_open(npc_id, node, str(map[choice]), ctx):
+		return {}   # its condition no longer holds (the firewood was dropped or sold while the talk stood open): the talk ends, nothing is paid for goods not there
+
 	return _line(npc_id, str(map[choice]), ctx)
+
+
+# Whether a choice leading to `goto` on node `node_id` is still offered now: a choice's `if` is checked again when it is picked, not only when
+# the line was shown (a reward for goods the player no longer holds was paid otherwise). The node's own effects have been applied by then, so a
+# node must not offer a choice whose condition its own effects turn false (a set_flag X beside an if flag_not X): it would be refused when picked.
+func _still_open(npc_id: String, node_id: String, goto: String, ctx: Dictionary) -> bool:
+	var node: Dictionary = trees.get(npc_id, {}).get("nodes", {}).get(node_id, {})
+
+	if node.is_empty():
+		return true   # a line this provider did not write (another provider's): nothing to check here
+
+	for c in node.get("choices", []):
+		if str(c.get("goto", "end")) == goto and (not c.has("if") or test(c["if"], ctx)):
+			return true
+
+	return false
