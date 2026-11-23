@@ -33,7 +33,8 @@ const TEXT_NAMES := ["small", "medium", "large", "extra large"]
 const SORT_NAMES := ["Unsorted", "Name", "Weight (ascending)", "Weight (descending)", "Value (ascending)", "Value (descending)"]
 var sort_index: int = 0                  # inventory sort: unsorted (order picked up), name, weight, value
 var text_index: int = 1                  # size of the crafting and inventory screen's text (default a little smaller)
-var hud_text: bool = true                # F4: the text overlay (build, position, debug lines) shown or hidden
+var hud_text: bool = not OS.has_feature("template")   # Ctrl+Shift+F4: the developer text (build, fps, position, last sound) shown or hidden; off in the installed game
+var hud_text_chosen: bool = false        # the player turned it on or off with the key: only then does the installed game keep the saved choice
 var idle_minutes: int = 60               # Esc > Settings > Display, Idle timeout: minutes without input before the game warns and then closes (60 to 120, idle_timeout.gd)
 var damage_numbers: bool = true         # Esc > Settings > Gameplay, Damage numbers: floating text where a hit lands (Dave 2 Nov 2026, on by default)
 static var fahrenheit: bool = false      # Esc > Settings > Gameplay, Temperature: show body temperature in C or F (Dave 2 Nov 2026, saved; static so every screen reads it)
@@ -44,6 +45,13 @@ const MOUSE_LOOK_MAX := 3.0
 var fitted: Vector2i = Vector2i.ZERO      # the window size apply() last asked for (the chosen size, or smaller to fit the screen)
 var cave_dark: bool = true               # Esc > Settings, Cave darkness: Dark (pitch black under rock without a light) or Normal (12%)
 var quality: int = -1                    # -1: not saved yet (the game's default)
+
+
+# The developer text is off in the installed game unless the player chose it with the key (Dave 23 Nov 2026: a tester's first run showed it).
+# Every display save wrote hud_text, so an installed game's settings file can hold the old default (on) from build 9257: only a choice made
+# with the key counts there. Run from the editor, the saved value counts as before.
+static func pick_hud_text(saved: bool, chosen: bool, exported: bool) -> bool:
+	return saved if (chosen or not exported) else false
 
 
 func load_saved() -> void:
@@ -57,7 +65,8 @@ func load_saved() -> void:
 	vsync_index = clampi(SettingsRead.whole(file, "display", "vsync", 0), 0, VSYNC_MODES.size() - 1)
 	quality = SettingsRead.whole(file, "display", "quality", -1)
 	text_index = clampi(SettingsRead.whole(file, "display", "text", 1), 0, TEXT_SCALES.size() - 1)
-	hud_text = SettingsRead.flag(file, "display", "hud_text", true)
+	hud_text_chosen = SettingsRead.flag(file, "display", "hud_text_chosen", false)
+	hud_text = pick_hud_text(SettingsRead.flag(file, "display", "hud_text", true), hud_text_chosen, OS.has_feature("template"))
 	cave_dark = SettingsRead.flag(file, "display", "cave_dark", true)
 	damage_numbers = SettingsRead.flag(file, "display", "damage_numbers", true)
 	idle_minutes = clampi(SettingsRead.whole(file, "display", "idle_minutes", 60), 60, 120)
@@ -81,6 +90,7 @@ func save() -> void:
 	file.set_value("display", "quality", quality)
 	file.set_value("display", "text", text_index)
 	file.set_value("display", "hud_text", hud_text)
+	file.set_value("display", "hud_text_chosen", hud_text_chosen)
 	file.set_value("display", "idle_minutes", clampi(idle_minutes, 60, 120))
 	file.set_value("display", "cave_dark", cave_dark)
 	file.set_value("display", "damage_numbers", damage_numbers)

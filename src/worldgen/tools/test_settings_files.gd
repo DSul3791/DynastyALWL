@@ -74,6 +74,7 @@ func _display() -> void:
 	a.quality = 0
 	a.text_index = 3
 	a.hud_text = false
+	a.hud_text_chosen = true
 	a.cave_dark = false
 	a.damage_numbers = false
 	a.idle_minutes = 90
@@ -89,6 +90,7 @@ func _display() -> void:
 	b.load_saved()
 	check(b.size_index == 1 and b.fullscreen and b.vsync_index == 2 and b.quality == 0 and b.text_index == 3, "size, fullscreen, VSync, quality and text size come back")
 	check(not b.hud_text and not b.cave_dark and not b.damage_numbers and b.idle_minutes == 90 and is_equal_approx(b.mouse_look, 2.25) and b.sort_index == 4, "screen text, cave darkness, damage numbers, idle time, mouse and sort come back")
+	check(b.hud_text_chosen, "a developer-text choice made with the key is saved and read back")
 	check(DisplaySettingsScript.fahrenheit and DisplaySettingsScript.reduce_motion, "temperature unit and reduce motion come back")
 	DisplaySettingsScript.fahrenheit = false
 	DisplaySettingsScript.reduce_motion = false
@@ -99,6 +101,12 @@ func _display() -> void:
 	old.path = DISPLAY_TEMP
 	old.load_saved()
 	check(old.size_index == 2 and old.quality == 3 and old.text_index == 0 and old.idle_minutes == 120 and old.sort_index == 2 and old.mouse_look == 1.0, "a 9257 file loads as saved, mouse sensitivity at its default")
+	check(not old.hud_text_chosen, "a 9257 file has no developer-text choice, so the installed game hides that text")
+	_write(DISPLAY_TEMP, "[display]\n\nhud_text=true\nhud_text_chosen=true\n")
+	var picked = DisplaySettingsScript.new()
+	picked.path = DISPLAY_TEMP
+	picked.load_saved()
+	check(picked.hud_text_chosen and picked.hud_text, "a saved key choice of 'on' is read")
 
 	# Damaged: wrong kinds everywhere, out of range, a value that is not a number.
 	_write(DISPLAY_TEMP, "[display]\n\nsize=[1, 2]\nfullscreen={\"a\": 1}\nvsync=\"fast\"\nquality=99\ntext=-4\nhud_text=\"maybe\"\nidle_minutes=5\nmouse_look=\"nan\"\nsort=[3]\nsort_version=\"x\"\n")
@@ -107,6 +115,10 @@ func _display() -> void:
 	bad.load_saved()
 	check(bad.size_index == DisplaySettingsScript.DEFAULT_SIZE and not bad.fullscreen and bad.vsync_index == 0, "a list, a table and a word give the defaults")
 	check(bad.text_index == 0 and bad.idle_minutes == 60 and bad.mouse_look == 1.0 and bad.hud_text and bad.sort_index == 0, "out-of-range values are clamped; a bad switch keeps its default")
+	# The developer text (Ctrl+Shift+F4; Dave 23 Nov 2026): off in the installed game unless chosen with the key; the editor keeps what was saved.
+	check(not DisplaySettingsScript.pick_hud_text(true, false, true), "installed game: an old saved 'on' that nobody chose with the key gives no developer text")
+	check(DisplaySettingsScript.pick_hud_text(true, true, true) and not DisplaySettingsScript.pick_hud_text(false, true, true), "installed game: a choice made with the key is kept")
+	check(DisplaySettingsScript.pick_hud_text(true, false, false) and not DisplaySettingsScript.pick_hud_text(false, false, false), "editor: the saved value counts as before")
 	check(bad.quality == 99, "quality is read as saved (terrain_client clamps it to the tiers)")
 
 	# Not a settings file at all: the defaults.

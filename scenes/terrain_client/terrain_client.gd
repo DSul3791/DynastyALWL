@@ -5586,6 +5586,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		elif KeyBindings.matches(event, "hud_text"):
 			hud.visible = not hud.visible
 			display.hud_text = hud.visible
+			display.hud_text_chosen = true   # a choice made with the key is kept, in the installed game too
 			display.save()
 		elif KeyBindings.matches(event, "quality"):
 			quality = (quality + 1) % QUALITY_NAMES.size()
