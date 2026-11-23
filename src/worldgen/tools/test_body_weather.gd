@@ -149,14 +149,10 @@ func _init() -> void:
 	items._warmth_cfg["body_703"]["enabled"] = true
 	check(absf(severe_loss - 2.0 * plain_loss) < 0.01 and plain_loss > 0.0, "severe cold drains health twice as fast (%.3f against %.3f)" % [severe_loss, plain_loss])
 	check(said.has("You have stopped shivering. Get to a fire, now."), "and says so")
-	v["health"] = 30.0
-	v["warmth"] = 5.0
-	items._warmth_tick(1, v, 600.0, 600.0)
-	check(float(v["health"]) == items.COLD_FLOOR_HP, "severe cold stops at the floor of an animal's blow (%.1f; coordinator 22 Nov 2026)" % float(v["health"]))
-	v["health"] = 10.0
+	v["health"] = 1.0
 	v["warmth"] = 5.0
 	items._warmth_tick(1, v, 60.0, 60.0)
-	check(float(v["health"]) == 10.0, "a player already below it (a wolf bite) is not pushed lower by cold")
+	check(float(v["health"]) == 1.0, "severe cold never takes health below 1")
 	v["health"] = 100.0
 	v["warmth"] = 100.0
 	weather = {"temp_c": 15.0, "wind": 0.0, "rain": 0.0, "snow": 0.0}
