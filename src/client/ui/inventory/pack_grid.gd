@@ -36,6 +36,8 @@ func _init(owner_view) -> void:
 # The Pack column (redesign section 4.1): the pack's weight, purse and carry bar, the sort menu, the slot grid and the action row.
 func build() -> Control:
 	view._buttons.clear()   # a rebuilt panel starts with a fresh list; never keep freed buttons
+	_key_buttons.clear()    # the same for the action buttons, and they are labelled afresh below
+	_keys_seen = -1
 	_last_numbers = PackedInt32Array()
 	_last_counts = PackedInt32Array()
 
