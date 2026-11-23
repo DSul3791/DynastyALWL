@@ -3588,7 +3588,7 @@ func _process(delta: float) -> void:
 			DirAccess.remove_absolute(ProjectSettings.globalize_path(_store_path + STOP_NOW))
 			print("server: stop asked (stop.now); saving and closing with %d players here" % _peers.size())
 			_events.event("QUIT: stop asked (stop.now), %d players here" % _peers.size())
-			_quit_at_msec = now
+			_quit_at_msec = now + _tell_closing()
 			_run_note("closing", _listen_port)
 
 		if FileAccess.file_exists(flag_path):
@@ -3670,6 +3670,7 @@ func _process(delta: float) -> void:
 
 	if _quit_at_msec > 0 and now >= _quit_at_msec:
 		_quit_at_msec = -1
+		_close_players()
 		var flush_from: int = Time.get_ticks_msec()
 		store.flush()
 		_events.event("shutdown: ground flushed in %d ms" % (Time.get_ticks_msec() - flush_from))
@@ -3719,6 +3720,35 @@ func _run_note(state: String, listen_port: int, why: String = "") -> void:
 # pull) and asks it to close. Only a request naming this process and another commit is obeyed, only by a server Play started
 # (--quit-when-empty), and only with nobody playing on it: it closes the normal way (ground flushed, world and inventories saved in
 # _exit_tree), so Play can start one on the new code.
+# A stop with players here (a restart or an update, run_server.sh stop.now): each is told why (NetScript.SERVER_CLOSING) and the quit waits
+# CLOSING_TELL_MS for that notice to go out; returns that wait (0 with nobody here).
+const CLOSING_TELL_MS := 1500
+
+
+func _tell_closing() -> int:
+	if _peers.is_empty():
+		return 0
+
+	for peer in _peers.keys():
+		net.notice.rpc_id(int(peer), NetScript.SERVER_CLOSING)
+
+	return CLOSING_TELL_MS
+
+
+# The players' connections are closed the normal way as the server quits (their games hear it at once and show the "connection lost"
+# window with the reason, not 60 to 120 s later at their line's timeout). Their spots are noted and saved as before (_exit_tree).
+func _close_players() -> void:
+	var peer: ENetMultiplayerPeer = multiplayer.multiplayer_peer as ENetMultiplayerPeer
+
+	if peer == null or _peers.is_empty():
+		return
+
+	for id in _peers.keys():
+		peer.disconnect_peer(int(id))   # a polite goodbye (not forced): each game gets server_disconnected
+
+	peer.host.flush()
+
+
 func _stop_if_asked(now: int) -> void:
 	if not FileAccess.file_exists(STOP_NOTE):
 		return
