@@ -5335,6 +5335,7 @@ func _start_loose_prewarm() -> void:
 	_warm_frames = 0
 	PieceLook.prewarm()
 	_prewarm_felled()
+	_prewarm_fires()
 
 
 func _warm_step() -> void:
@@ -5377,6 +5378,7 @@ func _prewarm_loose_meshes() -> void:
 	print("client prewarm: loose item meshes %.0f ms (pickup models %.0f, stones sticks and logs %.0f, trunk drops %.0f)" % [float(t_end - t0) / 1000.0, float(t_pick - t0) / 1000.0, float(t_items - t_pick) / 1000.0, float(t_end - t_items) / 1000.0])
 	PieceLook.prewarm()   # the building material and trodden-path pictures, on a worker (about 170 ms on the main thread at the first piece or hoe stroke)
 	_prewarm_felled()
+	_prewarm_fires()
 
 
 # Bug 6 (Dave, 2 Nov 2026 16:51: "a big pause when you first cut it ... sometimes it doesn't even appear for five seconds and then poof a tree
@@ -5400,6 +5402,26 @@ func _prewarm_felled() -> void:
 		get_tree().create_timer(5.0).timeout.connect(_drop_felled_warm)
 
 	print("client prewarm: stump %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
+
+
+# Lag lane 23 Nov 2026: the first lit fire of a session (the starter town's bonfire, campfire_kit state 41, in every join's first world items)
+# took 975-1800 ms of the main thread on Dave's PC ("client slow: world items ... loose_mesh", 5 of 5 cold-play and first-load logs), 22 ms
+# headless: its flame, smoke and spark materials (cached for the session) are first made for the GPU then. One lit and one unlit fire of each
+# size are made here, out of sight with the stump (dropped with it after 5 s), so that cost falls in the welcome's loading, not in play.
+func _prewarm_fires() -> void:
+	if _root == null:
+		return
+
+	var t0: int = Time.get_ticks_usec()
+
+	for tier in [1, 2, 3]:
+		for lit in [true, false]:
+			var fire: Node3D = _make_fire(lit, false, tier)
+			fire.position = Vector3(0.0, -10000.0, 0.0)
+			_root.add_child(fire)
+			_felled_warm.append(fire)
+
+	print("client prewarm: fires %.0f ms" % (float(Time.get_ticks_usec() - t0) / 1000.0))
 
 
 func _drop_felled_warm() -> void:

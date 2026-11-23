@@ -22,6 +22,10 @@ run/main_scene="uid://c472o28ctl2t3"
 config/features=PackedStringArray("4.7", "Forward Plus")
 config/icon="res://icon.svg"
 
+[audio]
+
+general/3d_panning_strength=1.0
+
 [debug]
 
 file_logging/enable_file_logging=true
