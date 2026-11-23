@@ -40,6 +40,7 @@ const KeyBindings := preload("res://src/client/key_bindings.gd")
 const Layout := preload("res://src/worldgen/runtime/terrain_layout.gd")
 const NpcCampScript := preload("res://src/shared/npc_camp.gd")   # facing at the spawn (face_fire_yaw)
 const SlotSoundsScript := preload("res://src/client/slot_sounds.gd")
+const Sound3D := preload("res://src/client/sound_3d.gd")   # the ears at the eye (Sound3D.ears)
 const LogLookScript := preload("res://src/client/log_look.gd")
 const MyCharacter := preload("res://src/client/character/my_character.gd")
 const JoinAddress := preload("res://src/client/join_address.gd")
@@ -1710,6 +1711,9 @@ func _welcome_body(info: Dictionary) -> void:
 	add_child(_player_view)
 	net.player_look_received.connect(_player_view.on_look)
 	net.players_received.connect(_player_view.on_rows)
+	_player_view.stepped.connect(func(at: Vector3, gait: int, crouched: bool) -> void:
+		if sound != null:
+			sound.step_at(at, gait, crouched))   # other players' footsteps, where they walk
 	items.journal.map_knowledge = map_knowledge   # the Journal's Map page draws what this character surveyed (protocol 120)
 	Probe.stop("welcome: items view", tq_items_view)
 	# The 4 Nov freeze watch said the welcome was stuck 1.5 s "after welcome: items view" and before "welcome: held item": these three pieces were not timed.
@@ -3848,6 +3852,7 @@ func _make_player(root: Node3D, start: Vector3) -> void:
 	quake_view.setup(self, camera)
 	drip_view.setup(self, self)
 	view_cam.current = true
+	Sound3D.ears(camera)   # heard from the eye, not from the drawn camera behind it in third person
 	_load_view()
 	var viewer: VoxelViewer = VoxelViewer.new()
 	viewer.view_distance = VIEW_DISTANCE

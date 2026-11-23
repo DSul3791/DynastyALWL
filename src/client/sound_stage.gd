@@ -55,6 +55,7 @@ const ItemScript := preload("res://src/client/item_sounds.gd")
 const InnerVoiceScript := preload("res://src/client/inner_voice_sounds.gd")
 const AirBands := preload("res://src/client/air_bands.gd")
 const OcclusionScript := preload("res://src/client/sound_occlusion.gd")
+const Sound3D := preload("res://src/client/sound_3d.gd")
 const WaterSoundsScript := preload("res://src/client/water_sounds.gd")
 const AUDIO_DIR := "res://assets/audio/"
 const FLOORS_DIR := "res://assets/audio/floors/"   # generated built-floor steps (make_floors.py)
@@ -65,6 +66,10 @@ const CoverScript := preload("res://src/shared/cover.gd")
 const Probe := preload("res://src/debug/frame_probe.gd")   # "sound setup: <part>" splits of the join step (Steve, 4 Nov 2026: 0.87 s on Dave's PC)
 const Presets := preload("res://src/client/sound_presets.gd")   # the per-tier mixer limits (voices, memory, layers)
 const VOICES := 6                       # footstep and swish players, reused in turn
+# Other players' footsteps (step_at): heard where the foot lands, as loud at OTHER_STEP_UNIT_M as the own step is at the own ears, falling
+# 6 dB per doubling past it (a walk on grass is lost by about 15 m, a run on gravel carries to 30 m or more), none past OTHER_STEP_REACH_M.
+const OTHER_STEP_UNIT_M := 2.0
+const OTHER_STEP_REACH_M := 45.0
 const FEET_M := 0.9                     # player origin to the soles (capsule half height)
 
 # Soil ids (data/tables/soils.json) to footstep surfaces. Rock (MATERIAL_ROCK
@@ -139,6 +144,7 @@ const SHELTER_MSEC := 2500
 const SHELTER_HITS := 16
 
 var steps_played: Dictionary = {}       # surface -> count (for the headless walk check)
+var others_steps: int = 0               # other players' footsteps played (step_at)
 var swishes_played: int = 0
 var puddles_played: int = 0
 var surface: String = ""                # what the feet were last on
@@ -976,73 +982,16 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 	boost_db += stance.step_db()                                  # crouched steps are softer, and the gear with them
 	pool_pace = 1.0
 	var feet: Vector3 = body.global_position - Vector3(0.0, FEET_M, 0.0)
-	var water_here: float = _flora.water_surface_at(feet.x, feet.z)
-
-	if feet.y < 0.0 and (is_nan(water_here) or water_here < 0.0) and sea_below(feet):
-		water_here = 0.0                                              # the sea
-
-	var depth: float = water_here - feet.y if not is_nan(water_here) else -1.0
+	var depth: float = _step_depth(feet)
 
 	if depth > SWIM_M:
 		return
 
-	var soil: int = _ground_under(feet)
-	var tune: Array = [0.0, 1.0]                                 # dB and pitch for this ground's character
-	var thick: float = 0.0
-	var tall: float = 0.0
-
-	if _grass != null and soil >= 0 and soil < Layout.MATERIAL_ROCK:
-		var grass: Vector2 = _grass.grass_at(feet.x, feet.z, soil)
-		thick = grass.x
-		tall = grass.y
-
-	if depth > DAMP_M and ice.walkable():
-		surface = "ice"                                          # a frozen pond bears the step
-		thick = 0.0
-	elif depth > WATER_STEP_M:
-		surface = "water"
-		thick = 0.0
-	elif depth > DAMP_M:
-		surface = "mud"                                          # wet ground at the waterline
-		thick = 0.0
-	elif soil < 0:
-		surface = "stone"
-	elif soil >= Layout.MATERIAL_ROCK:
-		var rock: Array = ROCK_STEP.get(soil - Layout.MATERIAL_ROCK, ["stone", 0.0, 1.0])
-		var ore: int = _ore_under(feet)
-		var found: Array = ORE_STEP.get(ore, ["stone", 1.0, 1.07] if ore in ORE_METAL else rock)
-		surface = found[0]
-		tune = [found[1], found[2]]
-	elif _in_bush(feet):
-		surface = "bushes"
-	elif Layout.is_wetland(soil):
-		surface = "mud"                                          # fen, bog and swamp squelch underfoot, grass or not
-		tune = SOIL_TUNE.get(soil, [0.0, 1.0])
-	elif thick >= GRASS_MIN and soil != 8:
-		surface = "grass_tall" if tall > 0.35 else "grass"
-	else:
-		surface = str(SOIL_SURFACE.get(soil, "dirt"))
-		tune = SOIL_TUNE.get(soil, [0.0, 1.0])
-
-		if surface in ["dirt", "leaves"] and weather != null and weather.ground_wet >= RAIN_SOAK:
-			surface = "mud"                                      # soaked ground
-			tune = [-2.0, 1.0]
-
-	# A built floor under the soles replaces the ground (not in water).
-	var built: String = floor_surface
-
-	if built == "" and floor_under.is_valid():
-		built = str(floor_under.call(feet))
-
-	if built != "" and FLOOR_SURFACES.has(built) and depth <= DAMP_M:
-		surface = built
-		tune = [0.0, 1.0]
-		thick = 0.0
-
-	# Snow lying on the ground (it fell, and has not melted): any loose ground crunches.
-	if weather != null and weather.ground_snow >= SNOW_COVER and surface in SNOW_SURFACES:
-		surface = "snow"
-		tune = [0.0, 1.0]
+	var ground: Dictionary = step_ground(feet, depth, floor_surface)
+	var soil: int = int(ground["soil"])
+	var tune: Array = ground["tune"]
+	var built: String = str(ground["built"])
+	surface = str(ground["surface"])
 
 	# Steady ground: a different surface must show on two steps in a row before the sound
 	# changes, so one odd sample (a bush, a patch edge) never flips it back and forth.
@@ -1111,6 +1060,113 @@ func footstep(body: CharacterBody3D, gait: int, boost_db: float = 0.0, foot: Str
 		_play("step_water", puddle_db + float(gait_db[gait]) - float(gait_db[0]) + _rng.randf_range(-2.0, 1.0), _rng.randf_range(0.95, 1.15) * float(gait_pitch[gait]), foot)
 
 	# The recorded grass, tall grass and bush steps carry the swish of the blades themselves.
+
+
+# One footfall of another player (player_view.stepped), heard where it lands: the ground under that foot as the own step reads it, at the
+# own step's level for that ground and gait (crouched softer), positional. Deep water has no step. Counted in others_steps (HUD, tests).
+func step_at(feet: Vector3, gait: int, crouched: bool = false) -> bool:
+	var depth: float = _step_depth(feet)
+
+	if depth > SWIM_M or not has_room():
+		return false
+
+	var ground: Dictionary = step_ground(feet, depth)
+	var kind: String = str(ground["surface"])
+	var sound_name: String = "step_" + kind
+	var list: Array = _variants(sound_name)
+
+	if list.is_empty():
+		list = _variants(sound_name + "_left")
+
+	if list.is_empty():
+		list = _variants("step_grass")
+
+	if list.is_empty():
+		return false
+
+	var tune: Array = ground["tune"]
+	var player: AudioStreamPlayer3D = Sound3D.make(self, "Foley", OTHER_STEP_UNIT_M, OTHER_STEP_REACH_M)
+	player.stream = list[_rng.randi_range(0, list.size() - 1)]
+	player.volume_db = step_level_db(kind, gait) + float(tune[0]) + (StanceScript.CROUCH_STEP_DB if crouched else 0.0) + _rng.randf_range(-1.5, 1.0)
+	player.pitch_scale = float(gait_pitch[clampi(gait, 0, 2)]) * _rng.randf_range(0.96, 1.04) * float(tune[1])
+	player.global_position = feet
+	player.finished.connect(player.queue_free)
+	player.play()
+	others_steps += 1
+	return true
+
+# The water over the soles at `feet` (the sea counts below sea level), -1 on dry ground.
+func _step_depth(feet: Vector3) -> float:
+	var water_here: float = _flora.water_surface_at(feet.x, feet.z)
+
+	if feet.y < 0.0 and (is_nan(water_here) or water_here < 0.0) and sea_below(feet):
+		water_here = 0.0                                              # the sea
+
+	return water_here - feet.y if not is_nan(water_here) else -1.0
+
+
+# What a foot landing at `feet` sounds on, for the own steps and other players' (step_at): {"surface", "tune" [dB, pitch], "soil", "built"}.
+# `own_floor` is the own built floor (set_floor); otherwise the floor ray (floor_under) is asked at the feet.
+func step_ground(feet: Vector3, depth: float, own_floor: String = "") -> Dictionary:
+	var soil: int = _ground_under(feet)
+	var kind: String = ""
+	var tune: Array = [0.0, 1.0]                                 # dB and pitch for this ground's character
+	var thick: float = 0.0
+	var tall: float = 0.0
+
+	if _grass != null and soil >= 0 and soil < Layout.MATERIAL_ROCK:
+		var grass: Vector2 = _grass.grass_at(feet.x, feet.z, soil)
+		thick = grass.x
+		tall = grass.y
+
+	if depth > DAMP_M and ice.walkable():
+		kind = "ice"                                          # a frozen pond bears the step
+		thick = 0.0
+	elif depth > WATER_STEP_M:
+		kind = "water"
+		thick = 0.0
+	elif depth > DAMP_M:
+		kind = "mud"                                          # wet ground at the waterline
+		thick = 0.0
+	elif soil < 0:
+		kind = "stone"
+	elif soil >= Layout.MATERIAL_ROCK:
+		var rock: Array = ROCK_STEP.get(soil - Layout.MATERIAL_ROCK, ["stone", 0.0, 1.0])
+		var ore: int = _ore_under(feet)
+		var found: Array = ORE_STEP.get(ore, ["stone", 1.0, 1.07] if ore in ORE_METAL else rock)
+		kind = found[0]
+		tune = [found[1], found[2]]
+	elif _in_bush(feet):
+		kind = "bushes"
+	elif Layout.is_wetland(soil):
+		kind = "mud"                                          # fen, bog and swamp squelch underfoot, grass or not
+		tune = SOIL_TUNE.get(soil, [0.0, 1.0])
+	elif thick >= GRASS_MIN and soil != 8:
+		kind = "grass_tall" if tall > 0.35 else "grass"
+	else:
+		kind = str(SOIL_SURFACE.get(soil, "dirt"))
+		tune = SOIL_TUNE.get(soil, [0.0, 1.0])
+
+		if kind in ["dirt", "leaves"] and weather != null and weather.ground_wet >= RAIN_SOAK:
+			kind = "mud"                                      # soaked ground
+			tune = [-2.0, 1.0]
+
+	# A built floor under the soles replaces the ground (not in water).
+	var built: String = own_floor
+
+	if built == "" and floor_under.is_valid():
+		built = str(floor_under.call(feet))
+
+	if built != "" and FLOOR_SURFACES.has(built) and depth <= DAMP_M:
+		kind = built
+		tune = [0.0, 1.0]
+
+	# Snow lying on the ground (it fell, and has not melted): any loose ground crunches.
+	if weather != null and weather.ground_snow >= SNOW_COVER and kind in SNOW_SURFACES:
+		kind = "snow"
+		tune = [0.0, 1.0]
+
+	return {"surface": kind, "tune": tune, "soil": soil, "built": built}
 
 
 # Reads data/sound/step_levels.json over the built-in numbers; a missing or broken file leaves them as they were.
