@@ -7032,6 +7032,16 @@ func _station_site(peer: int, def: Dictionary, spot: Vector3, yaw_deg: int) -> V
 func _wheel_ask(peer: int, yaw_deg: int, kit_number: int, at: Vector3) -> void:
 	var def: Dictionary = _structure_of_kit(table.id_of(kit_number))
 
+	# A water piece's ghost (a barrel, a tank, a well...) asks the same way: the answer is placing's own refusal (_water_refusal: a loop, too many
+	# sources, no ground water), percent -1, so a green ghost always places (hands-on screens, 23 Nov 2026: these showed green and were refused).
+	if not def.has("needs_running_water") and send_wheel_share.is_valid() and not water_piece(def, at, float(posmod(yaw_deg, 360))).is_empty():
+		if not at.is_finite() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(at) > PLACE_REACH_M:
+			return   # only where it could be placed (placing refuses farther first): no far reads of the ground water for a moving ghost
+
+		var judged: Array = _water_ghost_spot(def, at, yaw_deg)
+		send_wheel_share.call(peer, at, yaw_deg, -1, _water_refusal(def, judged[0], int(judged[1])))
+		return
+
 	if not def.has("needs_running_water") or not water_wheel.is_valid() or not send_wheel_share.is_valid():
 		return
 
@@ -7043,6 +7053,38 @@ func _wheel_ask(peer: int, yaw_deg: int, kit_number: int, at: Vector3) -> void:
 		why = "along" if bool(wheel.get("along", false)) else "weak"
 
 	send_wheel_share.call(peer, at, yaw_deg, 0 if why != "" else int(round(100.0 * WaterFlowScript.wheel_share(float(wheel["w"]), rules))), why)
+
+
+# Where placing judges a water piece the ghost stands at (`at`, turned `yaw_deg`): snapped as _place snaps it, set down on the lowest ground under
+# it (seated_ground over the dug and filled ground) unless it stands on a foundation, then onto a pipe's end or joint (_tank_spot_on_pipe), as
+# _place_structure does before _water_refusal. [spot, yaw]. shortcut: in a cave the ghost's own height (the cave floor it stands on) is kept,
+# not seated over the cave floor's corners as _place does; keep this beside _place's own steps if they change.
+var _ghost_rows: Array = []          # the foundation rows the water ghost snaps to, read at most every GHOST_ROWS_MS (a whole-world walk)
+var _ghost_rows_msec: int = -100000
+const GHOST_ROWS_MS := 1000
+
+
+func _water_ghost_spot(def: Dictionary, at: Vector3, yaw_deg: int) -> Array:
+	var kit_id: String = str(def.get("kit", ""))
+
+	if Time.get_ticks_msec() - _ghost_rows_msec >= GHOST_ROWS_MS:
+		_ghost_rows = _foundation_rows()
+		_ghost_rows_msec = Time.get_ticks_msec()
+
+	var on_grid: Array = PlacementRules.snap(_structures_cfg, kit_id, at, yaw_deg, _ghost_rows, 0)
+	var spot: Vector3 = on_grid[0]
+	var yaw: int = int(on_grid[1])
+
+	if not bool(on_grid[2]) and ground_height.is_valid():
+		var site_edits: Array = (edits_near.call(spot, PLACE_EDITS_REACH_M) if edits_near.is_valid() else []) as Array
+		var surface := func(x: float, z: float) -> float: return _edited_height(x, z, site_edits)
+		var ground: float = float(surface.call(spot.x, spot.z))
+		var generated: float = float(ground_height.call(spot.x, spot.z))
+
+		if not is_nan(ground) and _cave_ground(spot, generated) == generated:   # in a cave the hill's ground is not under it
+			spot.y = PlacementRules.seated_ground(_structures_cfg, kit_id, spot, deg_to_rad(float(yaw)), surface, ground)
+
+	return [_tank_spot_on_pipe(str(def.get("kind", "")), spot, yaw), yaw]
 
 
 const WHEEL_SAYS := {
