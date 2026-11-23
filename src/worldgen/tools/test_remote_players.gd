@@ -239,6 +239,31 @@ func _server() -> void:
 	players.worn_changed(2, PackedInt32Array([6, 0, 9]))
 	check(looks.size() == 2, "new worn pieces go to the others (%d)" % looks.size())
 
+	# A game that froze or crashed (its line can take up to 2 minutes to time out, net_settings.gd): after SILENT_MS without a report the
+	# player leaves the others' rows, so no ghost stands there, and is back with its next report.
+	var later: int = int(clock[0]) + 100
+	clock[0] = later
+	players.note_move(1, fake.pos[1], Vector3.ZERO)
+	players.note_report(1, 0.0)
+	players.note_move(2, fake.pos[2], Vector3.ZERO)
+	players.note_report(2, 0.0)
+	clock[0] = later + PlayersScript.SILENT_MS + 1000
+	players.note_move(1, fake.pos[1], Vector3.ZERO)   # player 1 still reports; player 2 has gone quiet
+	players.note_report(1, 0.0)
+	sent.clear()
+	players.tick(0.2)
+	var quiet_rows: Array = sent.filter(func(r): return int(r[0]) == 1)
+	check(quiet_rows.size() == 1 and not (quiet_rows[0][1] as PackedInt32Array).has(2), "a player silent for %d s leaves the others' rows (no ghost)" % (PlayersScript.SILENT_MS / 1000))
+	var quiet_two: Array = sent.filter(func(r): return int(r[0]) == 2)
+	check(quiet_two.is_empty() or (quiet_two[0][1] as PackedInt32Array).has(1), "the silent player is still sent the others, for when its game wakes")
+	clock[0] += 200
+	players.note_move(2, fake.pos[2], Vector3.ZERO)
+	players.note_report(2, 0.0)
+	sent.clear()
+	players.tick(0.2)
+	quiet_rows = sent.filter(func(r): return int(r[0]) == 1)
+	check(quiet_rows.size() == 1 and (quiet_rows[0][1] as PackedInt32Array).has(2), "its next report brings it back")
+
 	fake.pos.erase(2)
 	players.forget(2)
 	sent.clear()

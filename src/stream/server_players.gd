@@ -16,6 +16,7 @@ const SEND_S := 0.125
 const NEAR_M := 150.0
 const MAX_ROWS := 31
 const RESEND_MS := 1000
+const SILENT_MS := 15000           # a player not heard from this long (its game froze, or it crashed and the line has not timed out, up to 2 minutes: net_settings.gd) leaves the others' view, and is back with its next report
 const LOOK_GAP_MS := 1000          # at most one look a second per player
 const NAME_MAX := 24               # character_record.gd NAME_MAX
 const BODY_MAX := 32
@@ -202,6 +203,7 @@ func tick(delta: float) -> void:
 
 	var now: int = int(now_ms.call())
 	var at: Dictionary = {}
+	var heard: Dictionary = {}   # the players shown to the others: heard from within SILENT_MS (no ghost standing for a game that is gone)
 	var info: Dictionary = {}
 
 	for peer in peers:
@@ -211,6 +213,10 @@ func tick(delta: float) -> void:
 			continue   # a player is shown once its look and its first facing report came in
 
 		at[peer] = pos
+
+		if now - _arrived_ms(peer) <= SILENT_MS:
+			heard[peer] = pos
+
 		var swing: Array = _swings.get(peer, [0, 0])
 		var state: int = clampi(int(items.stance_of(peer)), 0, 3) | (SWIM if items.is_swimming(peer) else 0) | (CARRY if items.carries_log(peer) else 0) \
 				| (ASLEEP if items.sleeping_of(peer) else 0) | (int(swing[0]) << SWING_SHIFT)
@@ -225,7 +231,13 @@ func tick(delta: float) -> void:
 		info[peer] = [float(_yaw.get(peer, 0.0)), state, int(items.held_number(peer)), int(_report_ms[peer]), maxi(maxi(_arrived_ms(peer), int(swing[1])), int(shown[2])), left, more]
 
 	for receiver in at:
-		var rows: Array = rows_for(receiver, at)   # only a client that sent its look gets rows: one that never did (an old bot) could not draw them
+		var pool: Dictionary = heard
+
+		if not heard.has(receiver):
+			pool = heard.duplicate()
+			pool[receiver] = at[receiver]   # a silent player is still sent the others (its rows wait in the line)
+
+		var rows: Array = rows_for(receiver, pool)   # only a client that sent its look gets rows: one that never did (an old bot) could not draw them
 		var ids: PackedInt32Array = PackedInt32Array()
 		var newest: int = 0
 
