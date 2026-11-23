@@ -79,7 +79,8 @@ static func walker_stop(before: Vector3, after: Vector3, bodies: Array) -> Vecto
 		if d1.length() < keep:
 			# Ends inside: on the circle where it ends (a slide round the body), or where it entered when it ran over the body's middle.
 			var entry: Vector3 = stop_at(c, before, after, keep)
-			at = entry if d1.length_squared() < 0.0001 else Vector3(c.x + d1.normalized().x * keep, after.y, c.z + d1.normalized().y * keep)
+			var past_middle: bool = d1.dot(Vector2(before.x - c.x, before.z - c.z)) <= 0.0   # a hitch step over its middle into its far half
+			at = entry if d1.length_squared() < 0.0001 or (past_middle and entry != before) else Vector3(c.x + d1.normalized().x * keep, after.y, c.z + d1.normalized().y * keep)
 			f = 0.0 if entry == before else before.distance_to(entry) / maxf(before.distance_to(after), 0.0001)
 		elif d0 > keep + 0.001:   # from outside: did the move run clean through it?
 			var crossed: Vector3 = stop_at(c, before, after, keep)

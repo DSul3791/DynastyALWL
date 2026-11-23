@@ -1018,7 +1018,7 @@ func _animal_in_reach() -> bool:
 
 		var body: float = float(row[2]) if (row as Array).size() > 2 else 0.0   # a blow reaches the body, not its middle (server_animals.target_along)
 
-		if to.length() - body <= reach and (to.length() < 0.6 + body or to.normalized().dot(flat) > 0.82) and absf(at.y - eye.y) < 3.5:
+		if to.length() - body <= reach and (to.length() < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - eye.y) < 3.5:
 			return true
 
 	return false

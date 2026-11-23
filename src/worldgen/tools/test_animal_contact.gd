@@ -240,6 +240,8 @@ func _init() -> void:
 	# A hitch frame long enough to cross the body stops where it would enter, not on its far side.
 	var hitch_end: Vector3 = Vector3(-em - 1.0, 0.0, 0.1) + AnimalContact.walker_stop(Vector3(em + 1.0, 0.0, 0.1), Vector3(-em - 1.0, 0.0, 0.1), el)
 	check(hitch_end.x > 0.0 and absf(Vector2(hitch_end.x, hitch_end.z).length() - em) < 0.01, "a hitch-frame step clean through the body stops on the near side (%.2f, %.2f)" % [hitch_end.x, hitch_end.z])
+	var over_end: Vector3 = Vector3(-1.0, 0.0, 0.1) + AnimalContact.walker_stop(Vector3(em + 0.3, 0.0, 0.1), Vector3(-1.0, 0.0, 0.1), el)
+	check(over_end.x > 0.0 and absf(Vector2(over_end.x, over_end.z).length() - em) < 0.01, "a hitch step over its middle into its far half also stops on the near side (%.2f, %.2f)" % [over_end.x, over_end.z])
 	# Ringed by three wolves touching them: a step out between two is never shut in (only the body the move enters first stops it).
 	var wm: float = AnimalContact.contact_m("wolf")
 	var ring: Array = []

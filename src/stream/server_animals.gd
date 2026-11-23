@@ -659,7 +659,7 @@ func target_along(origin: Vector3, dir: Vector3, reach: float, seen_ms: int = -1
 		var d: float = to.length() - body   # to its body, not its middle: an animal held off a player at body_m + player_m (keep_off_players)
 		# stays within reach of the blows (an elephant's middle 2.55 m off, out of a knife's 2.5 m and a punch's 1.8 m: robots 23 Nov 2026)
 
-		if d <= best_d and (to.length() < 0.6 + body or to.normalized().dot(flat) > 0.82) and absf(at.y - origin.y) < 3.5 and not wall_between(origin, at):
+		if d <= best_d and (to.length() < 0.6 or to.normalized().dot(flat) > 0.82) and absf(at.y - origin.y) < 3.5 and not wall_between(origin, at):
 			best_d = d
 			best = id
 
