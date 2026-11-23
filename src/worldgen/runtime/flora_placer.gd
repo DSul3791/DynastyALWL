@@ -774,6 +774,7 @@ const PARENT_REACH_M := 3.0     # a young conifer outside a nursery needs a grow
 const MIN_TREE_GAP := 1.8   # trees never closer than 6 ft (owner, 2026-10-18)
 const PLANT_MIN_GAP := 0.3   # plants and shrubs of a patch: as close as the table's spacing says, never closer than this
 const PATCH_MAX_PLANTS := 48   # item numbers of a patch: STAND_BASE + slot * PATCH_MAX_PLANTS + k stay inside 16 bits
+const SAPLING_M := 2.0            # trees shorter than this are saplings a player pushes through: no trunk collider (collider_radius)
 const LOG_COLLIDER_MIN_M := 4.0   # fallen logs this long or longer get a capsule collider (near the player only)
 const CLEAR_MARKER_M := 6.0         # no tree or shrub this close to an NPC marker
 const CLEAR_SOFT_M := 5.0           # and the wood thins back in over this much more
@@ -1141,12 +1142,14 @@ static func min_gap(kind_a: int, radius_a: float, stand_a: float, species_a: int
 	return maxf(minf(0.6 * (radius_a + radius_b), OCCUPANCY_CELL), MIN_TREE_GAP)
 
 
-# The radius of the collider a placed item gets, 0 for none. Trees: their trunk, when it is 0.1 m or thicker. Shrubs and plants: none,
-# whatever their height (Dave 5 Nov 2026: bushes, ferns and sticks never stop the player; walking through them is louder instead,
-# server_flora.in_undergrowth and server_animals senses.undergrowth_noise).
-static func collider_radius(kind: int, trunk_m: float, size_scale: float, _height: float) -> float:
+# The radius of the collider a placed item gets, 0 for none. Trees: their trunk, when it is 0.1 m or thicker and the tree is SAPLING_M
+# or taller (saplings have no collider, as planted ones: decision of 20 Oct 2026; before 23 Nov every seedling had an invisible 3 m pole a
+# few mm wide, 41% of all trunk colliders, tools world_audit.gd "sapling_collider"). Shrubs and plants: none, whatever their height (Dave
+# 5 Nov 2026: bushes, ferns and sticks never stop the player; walking through them is louder instead, server_flora.in_undergrowth and
+# server_animals senses.undergrowth_noise).
+static func collider_radius(kind: int, trunk_m: float, size_scale: float, height: float) -> float:
 	if kind == KIND_TREE:
-		return trunk_m * size_scale if trunk_m >= 0.1 else 0.0
+		return trunk_m * size_scale if trunk_m >= 0.1 and height >= SAPLING_M else 0.0
 
 	return 0.0
 
