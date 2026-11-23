@@ -281,6 +281,8 @@ var _food_cfg: Dictionary = {}      # data/items/food_effects.json
 var _carry_cfg: Dictionary = {}
 var _exertion_cfg: Dictionary = {}
 var _strain: Dictionary = {}        # peer -> {s: strain, state: 0..3, t: seconds in the state}
+var _cold_out: Dictionary = {}      # peer -> seconds passed out from cold so far (warmth.json pass_out; Dave 23 Nov 2026)
+var rescue_spots: Callable          # (position) -> Array of [Vector3 ground point, "goblin" | "bandit" | "town"]: where a player passed out from cold can wake; set by the server scene
 var _strain_sent: Dictionary = {}
 var send_body: Callable             # (peer, bpm, seconds until awake, phase 0 awake 1 falling asleep 2 asleep or fainted 3 waking), protocol 59
 var _body_sent: Dictionary = {}
@@ -801,6 +803,7 @@ func note_spots_on_close() -> void:
 
 func peer_left(peer: int) -> void:
 	_held.erase(peer)
+	_cold_out.erase(peer)
 	_water_hint_at.erase(peer)
 	_carts.peer_left(peer)   # a cart being pulled parks where it is
 	var key_left: String = str(_peer_key.get(peer, ""))
@@ -15155,6 +15158,9 @@ func hurt_player(peer: int, amount: float, lethal: bool, cause: String, floor_hp
 	if v.is_empty():
 		return "hurt"
 
+	if _cold_out.has(peer):
+		return "hurt"   # passed out from cold: nothing hurts them until they wake (warmth.json pass_out, provisional)
+
 	var stopped: float = protection_of(peer, mode if mode != "" else attack_mode(cause), pen)
 	_wear_armour(peer, amount)
 	amount *= 1.0 - stopped
@@ -16691,6 +16697,66 @@ func warmth_target(peer: int) -> float:
 	return clampf(100.0 - stress * float(cfg.get("gain", 3.0)) * (1.0 - insulation), 0.0, 100.0)
 
 
+# Cold down to 1 point: the player passes out (the over-exertion faint's look: movement locked, the HUD fading to the heartbeat; nothing can
+# hurt them while out), then wakes at the nearest goblin camp, bandit camp or the starter town with a message (Dave 23 Nov 2026: "you will then
+# wake up at the nearest goblin camp or bandit camp or temple ... or at the starter spawn"). PROVISIONAL, warmth.json pass_out, Dave to confirm:
+# the whole pack is kept, the wake health and warmth, how long they are out, and that a player's own bed is not used.
+func _cold_pass_out(peer: int) -> void:
+	_cold_out[peer] = 0.0
+	var st: Dictionary = _strain.get(peer, {})
+
+	if st.is_empty():
+		st = {"s": 0.0, "state": 0, "t": 0.0}
+		_strain[peer] = st
+
+	st["state"] = 2   # fainted: the client locks movement and fades the HUD (exertion.json faint_s)
+	st["t"] = 0.0
+	_strain_sent.erase(peer)
+	_end_sleep(peer)
+	_say(peer, str(_warmth_cfg.get("pass_out", {}).get("say_out", "The cold takes you. You pass out.")))
+	print("Cold: peer %d passed out at %s" % [peer, str(_peer_pos.get(peer, "?"))])
+
+
+func _cold_out_tick(peer: int, v: Dictionary, spent: float, hurt_at: float) -> void:
+	var cfg: Dictionary = _warmth_cfg.get("pass_out", {})
+	_cold_out[peer] = float(_cold_out[peer]) + spent
+
+	if float(_cold_out[peer]) < float(cfg.get("out_s", 6.0)):
+		return
+
+	_cold_out.erase(peer)
+	var here: Vector3 = _peer_pos.get(peer, respawn_point)
+	var best: Array = []
+
+	for spot in rescue_spots.call(here):
+		if best.is_empty() or (spot[0] as Vector3).distance_to(here) < (best[0] as Vector3).distance_to(here):
+			best = spot
+
+	var to: Vector3 = best[0] if not best.is_empty() else respawn_point
+	var kind: String = str(best[1]) if not best.is_empty() else "town"
+	v["health"] = maxf(float(v["health"]), float(cfg.get("wake_health", 10.0)))
+	v["warmth"] = maxf(float(v.get("warmth", 0.0)), hurt_at + float(cfg.get("wake_warmth_over", 5.0)))
+	_cold_level.erase(peer)
+	_strain[peer] = {"s": 0.0, "state": 0, "t": 0.0}   # awake, not winded: the faint was the cold's, not exertion's (out_s is shorter than exertion.json faint_s)
+	_strain_sent.erase(peer)
+	_peer_pos[peer] = to
+	_resume_to.erase(peer)
+	_motion.erase(peer)
+	_sync_vitals(peer, true)
+	_sync_warmth(peer, true)
+	_dirty = true
+
+	if send_died.is_valid():
+		send_died.call(peer, "passed out", to)   # the client moves the body there and waits for the ground, as after a death (no death screen)
+
+	_say(peer, str((cfg.get("say_wake", {}) as Dictionary).get(kind, "You wake up feeling pain through your bones. A traveler found you frozen almost to death and brought you here.")))
+	print("Cold: peer %d woke at the %s at %s" % [peer, kind, str(to)])
+
+
+func passed_out(peer: int) -> bool:
+	return _cold_out.has(peer)
+
+
 func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void:
 	if _warmth_cfg.is_empty():
 		return
@@ -16705,10 +16771,18 @@ func _warmth_tick(peer: int, v: Dictionary, spent: float, game_s: float) -> void
 	v["warmth"] = w
 	var hurt_at: float = float(cfg.get("hurt_at", 20.0))
 
+	if _cold_out.has(peer):
+		_cold_out_tick(peer, v, spent, hurt_at)
+		return
+
 	if w < hurt_at:
 		# Cold costs health, slowly, more the colder; like hunger it stops at 1.
 		var severe_mult: float = float(_body_cfg().get("severe_hurt_mult", 2.0)) if cold_stage(peer) == 3 else 1.0   # severe cold (docs/design/body_in_weather_design.md 4)
 		v["health"] = maxf(float(v["health"]) - float(cfg.get("hurt_per_s", 0.15)) * spent * (hurt_at - w) / maxf(hurt_at, 1.0) * 2.0 * severe_mult, 1.0)
+
+		if float(v["health"]) <= 1.0 and bool(cfg.get("pass_out", {}).get("enabled", false)) and rescue_spots.is_valid():
+			_cold_pass_out(peer)
+			return
 
 	# Messages with two levels each way, so a player on the edge is not nagged; with body_703 on, a third for severe cold.
 	var level: int = int(_cold_level.get(peer, 0))

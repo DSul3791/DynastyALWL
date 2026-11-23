@@ -40,6 +40,7 @@ UNITS = [
     ("spoilage", "src/worldgen/tools/test_spoilage.gd"),
     ("cold store", "src/worldgen/tools/test_cold_store.gd"),
     ("warmth", "src/worldgen/tools/test_warmth.gd"),
+    ("cold pass out", "src/worldgen/tools/test_cold_pass_out.gd"),
     ("skills", "src/worldgen/tools/test_skills.gd"),
     ("sickness", "src/worldgen/tools/test_sickness.gd"),
     ("persistence", "src/worldgen/tools/test_items_persistence.gd"),
