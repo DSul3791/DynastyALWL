@@ -279,6 +279,74 @@ func _read_tile(coord: Vector2i):
 	return data
 
 
+# The floor of the cave air at a point (a carved passage or chamber, or a mouth's open cut: tile_terrain_data.cave_floor_under), looked for
+# from the point and from 0.9 m under it (a low roof); NAN where the point is not in a cave's air or its tile is not loaded (never loads one).
+# surface_height does not know the caves (physical world audit round 6, 23 Nov 2026: a stack dropped in a cave hung 1.1 m over its floor,
+# and nothing could be placed in one, "too far above or below the ground"). The server's drops, placing and carts read it. A floor within
+# CAVE_UNDER_M of the tile's ground (height_at, no detail noise) is the ground itself, not a cave's, and reads NAN.
+const CAVE_UNDER_M := 0.3   # cave_floor_under blends the 1 m voxel grid: its ground crossing lies up to 0.3 m off height_at
+const CAVE_PROBE_UP_M := 0.5   # callers look for a spot's cave floor from this far over its foot (server_items, server_carts)
+
+
+func cave_floor_at(point: Vector3) -> float:
+	if not tile_cached(point.x, point.z):
+		return NAN
+
+	var data = get_tile(tile_of(point.x, point.z))
+
+	if data == null or data.placeholder or data.caves.is_empty():
+		return NAN
+
+	var at: Vector3 = Vector3(wrap_x(point.x), point.y, wrap_x(point.z))
+	var floor_y: float = data.cave_floor_under(at)
+
+	if is_nan(floor_y):
+		floor_y = data.cave_floor_under(at - Vector3(0.0, 0.9, 0.0))
+
+	if is_nan(floor_y):
+		return NAN
+
+	# A floor at the ground's own height is not a cave's: from the open air (or just inside open ground, which the cave SDF counts as air) the
+	# search finds the ground without its detail noise, which lies inside a hill where the detail raises it. A cave's floor (a passage, a
+	# chamber, a mouth's cut) is carved under that ground.
+	if floor_y > float(data.height_at(at.x, at.z)) - CAVE_UNDER_M or floor_y > surface_height(point.x, point.z) - 0.02:
+		return NAN
+
+	return floor_y
+
+
+# Where a loose item let go at `from` comes to rest: straight down through the air to the first ground, by the generated surface (in a cave, the
+# cave's floor: cave_floor_at) with the saved digs and fills `edits` ([kind 0 dig / 1 fill, centre, radius], oldest first) laid over it, in order
+# (Dave 2026-10-23: mined soil and rocks hung in the air over the hole that was dug under them). Returns the resting height, or NAN when there
+# is no ground within 24 m below. terrain_server._floor_below passes the store's edits.
+func floor_below(from: Vector3, edits: Array) -> float:
+	var ground: float = surface_height(from.x, from.z)
+
+	# In a cave its floor is the ground (round 6: a drop there hung 1.1 m over the floor), from over the surface too: a mouth's open cut lies under
+	# the surface, which does not know it (a cart pulled out through the cut rode up onto the surface over it).
+	var cave: float = cave_floor_at(from)
+
+	if not is_nan(cave) and cave < ground:
+		ground = cave
+
+	var y: float = from.y + 0.05
+
+	for step in range(480):   # 0.05 m steps, 24 m
+		var p: Vector3 = Vector3(from.x, y, from.z)
+		var solid: bool = p.y < ground
+
+		for op in edits:
+			if p.distance_to(op[1]) <= float(op[2]):
+				solid = int(op[0]) == 1
+
+		if solid:
+			return y + 0.05
+
+		y -= 0.05
+
+	return NAN
+
+
 # Is the tile under a world position already in memory? A first look at a tile reads its file (over a second on the main thread).
 func tile_cached(x: float, z: float) -> bool:
 	var coord: Vector2i = Vector2i(int(floor(wrap_x(x) / tile_size_m)), int(floor(wrap_x(z) / tile_size_m)))
