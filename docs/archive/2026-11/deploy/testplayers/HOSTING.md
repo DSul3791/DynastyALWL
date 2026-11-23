@@ -2,8 +2,6 @@
 
 On 22 Nov 2026 Dave decided that test players download the game as a zip from a page on his own game server, at **https://hannibalshouse.duckdns.org/dynasty/testplayers/**. A public GitHub Release stays off.
 
-**Dave's own server (Caddy on dell-gameserver-01, set up 22 Nov) is in SERVER.md: the page is the site's front page there, with `tools\make_testplayers_site.ps1`. This file covers other web servers.**
-
 **Status: not yet run.** These steps have not been tried on his server.
 
 ## What you put up
