@@ -141,16 +141,16 @@ and can become a penned animal (rabbits, then goats, pigs); builds on the compan
 
 ## Provisional values (TR-n)
 
-- TR-1 warren chance 0.45 per 64 m square of open ground with rabbit biome weight, slope under 0.35; 2-3 runs of 15-40 m each.
+- TR-1 warren chance 0.45 per 64 m square of open ground with rabbit biome weight, slope under 0.35; trails have no set length (Dave 23 Nov 2026: "they should just exist wherever they exist"): 2-3 runs out to the best grassland spots within 200 m (one spot a 64 m square, never the warren's own; 70 degrees apart; slope under 0.25), and a run joining a neighbouring warren within 200 m for 0.15 of the pairs (drawn, not walked). First seed: median run 131 m, 32 to 200 m. A trail ends at most 90 m past its 256 m block (runs at most 150 m past it with drift and a water detour), so the client's 3 x 3 blocks always hold every trail it draws.
 - TR-2 deer range: one per 256 m square where deer may live; bed on the steepest acceptable side ground (sheltered, above the
-  bottom), feeding ground on the flattest open ground 80-200 m from it.
+  bottom), feeding ground on the flattest open ground of the block, wherever it lies (another patch, over 40 m from the bed; no set length, 23 Nov), and on from there to the nearest fresh water within 240 m (drawn).
 - TR-3 routes: a point every 12 m, each tried 3, 6 or 12 m either side of the last one's line, the gentlest climb kept, drifting at most 30 m off the straight line; round deep water by a dry point 20-60 m to one side of the middle; a small wiggle every 4 m.
 - TR-4 clock: rabbits out from dusk to dawn (dusk and night periods), deer to feed at dusk and back at dawn.
 - TR-5 the look: a run 0.8 m wide, a deer trail 1.2 m, fading over 0.5 m either side (first 0.35 and 0.6 m: Lane A pictures 22 Nov showed nothing, too thin to read through the tufts; a walked path, the trample Dave likes, is 1.6 m); the grass squashed by the trample's own squash (0.75, data/look/grass_trample.json) and shaded the same, so a trail looks like ground just walked. Log lines for a lane: server "ranges: block ... worked out" (places and their homes) and "trails: block ... with N bytes of routes", client "grass runs: block ... came with N routes" and "grass runs: N routes near, T texels matted".
 - TR-7 sun clock: rabbits out 1 h before sunset, home 1 h after sunrise; deer, moose and elk out half an hour before sunset, home
   half an hour after sunrise (jitter 0.75 h each way). At the starter row sunrise runs 04:51 (midsummer) to 07:09 (midwinter).
-- TR-8 moose (salt 300): 12 tries, feeding ground within 40 m of deep water preferred, bed and feed 80-220 m apart, trail kind 1; elk: deer's
-  rules (salt 600, so its spots and rolls share no hash with moose or deer), 100-230 m apart; both take a spot in a less liked biome at its weight (weight_roll), as the random spawn did. How many a player sees is to tune after Dave plays.
+- TR-8 moose (salt 300): 12 tries, feeding ground within 40 m of deep water preferred, trail kind 1; elk: deer's
+  rules (salt 600, so its spots and rolls share no hash with moose or deer); both take a spot in a less liked biome at its weight (weight_roll), as the random spawn did. How many a player sees is to tune after Dave plays.
 - TR-6 snares: full factor within 0.5 m of a run, falling to the old factor at 2 m; away catches 0.045 a game hour at full rabbit
   activity: a snare squarely on a run takes about two rabbits in five nights, about one a game day in two (Wildwood's 3 in 15 the
   first night); six snares on runs feed one player well (there is no limit on how many a player sets). Off a run, none while away.
