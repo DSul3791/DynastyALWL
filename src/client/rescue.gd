@@ -11,6 +11,10 @@ const DIG_SKIP_MSEC := 1800000          # ... for half an hour
 const VOID_COOLDOWN_MSEC := 6000        # a still-loading block must not cause a rescue loop
 const VOID_COLUMN_M := 40               # no solid ground this far below, with the whole column loaded, means the player left the world
 const SURFACE_LIFT_M := 1.2
+const POCKET_UP_M := 12                 # a player stuck in rock under the ground is stood on the nearest floor of air (a cave's, a tunnel's) this far above ...
+const POCKET_DOWN_M := 2                # ... or this far below their feet ...
+const POCKET_SIDE_M := [0.0, 1.5, 3.0]  # ... in their own column or those this far round it ...
+const POCKET_HEADROOM := 2              # ... with this many voxels of air over it; else on the surface as before
 
 var dig_guard: bool = true              # test: switched off by --no-dig-guard (shows the old behaviour)
 var rescued: int = 0                    # times the player was lifted back above the ground
@@ -152,14 +156,73 @@ func _under_the_ground() -> bool:
 	if not inside and not body.get_world_3d().direct_space_state.intersect_ray(down).is_empty():
 		return false
 
-	body.global_position = Vector3(here.x, float(hit["position"].y) + SURFACE_LIFT_M, here.z)
+	# Inside rock under a cave's or a tunnel's floor or wall: back onto that floor, not up onto the hill over the cave (physical world audit round 6,
+	# 23 Nov 2026: a player who slipped into the rock of the Ragtooth camp cave was stood on the hillside 6 m over its room).
+	var to: Vector3 = Vector3(here.x, float(hit["position"].y) + SURFACE_LIFT_M, here.z)
+
+	if inside:
+		var tool: VoxelTool = _client.terrain.get_voxel_tool()
+		tool.channel = VoxelBuffer.CHANNEL_SDF
+		var pocket: Vector3 = pocket_near(func(cell: Vector3i) -> float: return tool.get_voxel_f(cell), here, float(hit["position"].y))
+
+		if not is_nan(pocket.y):
+			to = pocket
+
+	body.global_position = to
 	body.velocity = Vector3.ZERO
 	floor_msec = Time.get_ticks_msec()
 
 	if _client.crash_report != null:
-		_client.crash_report.event("RESCUE (off the floor, under the ground) from %s up to y %.1f, inside rock %s" % [str(here.round()), float(hit["position"].y), inside])
+		_client.crash_report.event("RESCUE (off the floor, under the ground) from %s up to y %.1f, inside rock %s, %s" % [str(here.round()), to.y, inside, "onto the surface" if to.y > float(hit["position"].y) else "onto the floor of the air nearest"])
 
 	return true
+
+
+# The nearest place to stand in the air under the ground round `here`: the lowest floor of air with POCKET_HEADROOM voxels over it in each of
+# the columns at POCKET_SIDE_M round `here`, from POCKET_DOWN_M under the feet to POCKET_UP_M over them and under `roof_y` (the surface over it),
+# feet 0.2 m over that floor (the SDF's zero between the solid voxel and the air over it). Vector3(NAN, NAN, NAN) when there is none.
+# sdf: (Vector3i voxel) -> its distance value (over 0 air; unloaded reads 0, never air here; inside a passage it is a few tenths at most).
+static func pocket_near(sdf: Callable, here: Vector3, roof_y: float) -> Vector3:
+	var best: Vector3 = Vector3(NAN, NAN, NAN)
+	var best_d: float = INF
+	var low: int = int(floor(here.y)) - POCKET_DOWN_M
+	var high: int = mini(int(floor(here.y)) + POCKET_UP_M, int(floor(roof_y)) - POCKET_HEADROOM)
+
+	for r in POCKET_SIDE_M:
+		var turns: int = 1 if float(r) == 0.0 else 8
+
+		for k in turns:
+			var x: float = here.x + cos(TAU * float(k) / float(turns)) * float(r)
+			var z: float = here.z + sin(TAU * float(k) / float(turns)) * float(r)
+			var cx: int = int(floor(x))
+			var cz: int = int(floor(z))
+
+			for y in range(low, high):
+				var under: float = float(sdf.call(Vector3i(cx, y, cz)))
+
+				if under >= 0.0:
+					continue
+
+				var open: bool = true
+
+				for up in range(1, POCKET_HEADROOM + 1):
+					if float(sdf.call(Vector3i(cx, y + up, cz))) <= 0.0:
+						open = false
+						break
+
+				if not open:
+					continue
+
+				var over: float = float(sdf.call(Vector3i(cx, y + 1, cz)))
+				var spot: Vector3 = Vector3(x, float(y) + (-under) / (over - under) + 0.2, z)
+
+				if spot.distance_to(here) < best_d:
+					best = spot
+					best_d = spot.distance_to(here)
+
+				break   # the lowest floor in this column
+
+	return best
 
 
 func _surface_above(here: Vector3) -> Dictionary:
