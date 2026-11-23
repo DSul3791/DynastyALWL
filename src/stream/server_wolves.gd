@@ -335,8 +335,10 @@ func pace(m: Dictionary, now_ms: int) -> void:
 	m["moving"] = m["pos"] != m.get("paced_pos")
 
 	if bool(m["moving"]):
+		var was: Vector3 = m.get("paced_pos", m["pos"])
 		m["paced_pos"] = m["pos"]
 		m["moved_ms"] = now_ms
+		host.note_past(m, was)   # where it was, for a blow judged when the player saw it (protocol 155)
 
 
 # A player's dog within reach comes first (dog_companion_design.md 11, MikeW's DOG_REACTIONS.md: wolves go for the dog); otherwise the nearest deer or moose.

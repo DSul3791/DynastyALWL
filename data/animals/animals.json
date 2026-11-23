@@ -25,6 +25,8 @@
 	"spyglass": {"note": "The admin spyglass (Ctrl+Shift+L, docs/design/spyglass_design.md): while an admin looks through it the animals within send_radius_m are sent, nearest cap (the client draws as many). 300 m is despawn_m: every animal kept round a player.", "send_radius_m": 300.0, "cap": 60},
 	"hit_send_m_note": "A hit (animal id and body zone) is sent to every player within hit_send_m of the animal (docs/design/hunt_feedback_server.md).",
 	"hit_send_m": 60.0,
+	"rewind_max_ms_note": "Protocol 155 (Dave 23 Nov 2026: 'battle was almost impossible'): a player's blow is judged where their screen showed the animal, at most this far back. The screen shows animals about 0.35 s behind (the row clock's delay, 0.1 to 0.8 s) plus half the ping, so 500 ms covers a normal internet game; a client claiming more is judged at 500 ms back (no hitting an animal that left long since).",
+	"rewind_max_ms": 500,
 	"server_cap": 150,
 	"groups": {"enabled": true, "spacing_m": 3.0, "drift_m": 2.0, "scatter_deg": 25.0, "rain_bunch": 0.35, "wind_bunch": 0.25, "min_bunch": 0.5,
 		"note": "Herd groups (docs/design/HERD_GROUPS.md, MikeW 8 Nov 2026): off until gated. One leader per herd (on the ground) drifts drift_m a graze step, turned by the weather's _upwind_angle; the rest keep a spiral place round it at spacing_m (species group_spacing_m), closer in rain and wind when weather.on; on alarm they scatter up to scatter_deg either side and regroup at their places once safe."},

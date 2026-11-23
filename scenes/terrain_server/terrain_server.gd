@@ -862,7 +862,8 @@ func _ready() -> void:
 	@warning_ignore("confusable_local_declaration")
 	items.hit_animal = func(peer, origin, dir, reach, amount) -> Dictionary:
 		var member: String = tribes.member_along(origin, dir, reach)
-		var target: int = animals.target_along(origin, dir, reach)
+		var seen: Array = items.strike_seen.get(peer, [-1, -1])   # protocol 155: judged where the player saw the animals, at most rewind_max_ms back
+		var target: int = animals.target_along(origin, dir, reach, int(seen[0]), int(seen[1]))
 		var member_d: float = Vector2(npcs.npcs[member]["pos"].x - origin.x, npcs.npcs[member]["pos"].z - origin.z).length() if member != "" else INF
 		var animal_d: float = Vector2(animals.animals[target]["pos"].x - origin.x, animals.animals[target]["pos"].z - origin.z).length() if target != 0 else INF
 
@@ -873,7 +874,7 @@ func _ready() -> void:
 		if target == 0:
 			return {}
 
-		var point: Vector3 = animals.jab_point(target, origin, dir, reach)
+		var point: Vector3 = animals.jab_point(target, origin, dir, reach, 0.5, int(seen[0]), int(seen[1]))
 		var zone: int = animals.hit_zone(target, point)
 		animals.report_hit(target, zone, point)   # before the damage: a killing blow still reaches the players near (the flesh sound and the flinch)
 		animals.damage(target, amount, peer, "spear")
