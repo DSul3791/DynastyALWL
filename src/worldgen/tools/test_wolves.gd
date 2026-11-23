@@ -400,7 +400,7 @@ func _init() -> void:
 	a.wolves.pace(still, 1300)
 	check(int(still["moved_ms"]) == 1300 and bool(still["moving"]), "and a new move stamps again")
 	# 12. The battle ring (Dave 23 Nov 2026: animals "so robotic"): in a rush the wolves keep places round the player and take turns; each
-	# turn is a still wind-up (the tell), one lunge and a back-off. Never more than lunge_at_once (+1 a 4 wolves) lunge together.
+	# turn is a still wind-up (the tell), one lunge and a back-off. Never more than lunge_at_once (+1 per extra_lunge_per wolves) lunge together.
 	var ra = make()
 	health = {1: 100000.0}   # no maim here: the rush runs on
 	log_bites = 0
@@ -508,6 +508,34 @@ func _init() -> void:
 			break
 
 	check(struck_wolf and phase_of(ra, rid) == "wait", "a lunging wolf struck by the player drives the pack off (%s)" % phase_of(ra, rid))
+	# And the opening after a bite: a wolf struck while it stands where it bit (recover) drives the pack off too.
+	ra = make()
+	health = {1: 100000.0}
+	players = [player(1, 0.0, 0.0)]
+	rid = ra.wolves.spawn_pack(20.0, 0.0)
+	rp = ra.wolves.packs[rid]
+	rp["den"] = Vector3(9000.0, 0.0, 0.0)
+	rp["phase"] = "rush"
+	rp["target"] = 1
+	rp["sprint"] = 0.0
+	rp["bite"] = {}
+	var struck_open: bool = false
+
+	for _n in 300:
+		ra.tick(0.1)
+
+		for id in rp["ids"]:
+			var opening: Dictionary = rp.get("turn", {}).get(id, {})
+
+			if not struck_open and str(opening.get("step", "")) == "recover" and float(opening.get("t", 0.0)) > 0.0:
+				ra.damage(id, 5.0, 1)   # the player's jab in the opening
+				struck_open = true
+
+		if struck_open:
+			ra.tick(0.1)
+			break
+
+	check(struck_open and phase_of(ra, rid) == "wait", "a wolf struck in the opening after its bite drives the pack off (%s)" % phase_of(ra, rid))
 
 	print("wolves: %d failures" % failures)
 	quit(failures)
