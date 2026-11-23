@@ -825,6 +825,7 @@ func note_spots_on_close() -> void:
 
 
 func peer_left(peer: int) -> void:
+	_taken_told.erase(peer)
 	_held.erase(peer)
 	_held_left.erase(peer)
 	_hand_flags.erase(peer)
@@ -985,6 +986,7 @@ func report_position(peer: int, position: Vector3) -> void:
 		if nearest_fresh_water.is_valid() and _drink_hint_due(peer, position):
 			_sync_goals(peer)   # the drink goal's hint names the way to water from here
 		_note_motion(peer, position)
+		_tell_taken_near(peer, position)   # the branches, tide-line nodes and nests taken round here (protocol 160)
 		_carts.follow(peer)   # the cart this player pulls comes after them (nothing for anyone else)
 		_note_road_trip(peer, position)
 		var now: int = Time.get_ticks_msec()
@@ -1109,7 +1111,9 @@ func give(peer: int, number: int, count: int, item_inst: Dictionary = {}, item_w
 		_goal_got(peer, number, count)
 
 	if left > 0:
-		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO), item_wear, 0.0, NAN, NAN, "", item_inst)
+		# What a craft made and the pack could not take (a 60 kg Water wheel on a bare back) never despawns: the work is never lost (coordinator
+		# 23 Nov 2026, under Dave's "never a ground-item cap"). Other overflow ages as any dropped item.
+		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO), item_wear, CLEARED_LIFETIME_S if was_src == SRC_CRAFT else 0.0, NAN, NAN, "", item_inst)
 		_say(peer, "%s: %d %s dropped at your feet" % ["Too heavy to carry" if fits < count else "Your pack is full", left, table.in_sentence(table.name_of(number))])
 
 	return count - left
@@ -1318,7 +1322,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 	if count <= 0 or number <= 0:
 		return false
 
-	position = _settled(position)
+	position = _settled_loose(position)
 
 	# Same kind within MERGE_M joins the item already lying there (stackables without wear or instance data only), so a heap grows as one ground item.
 	# A pile stopped by a building or solid object moves the rest beside it, on the side away from the pile's centre where it fell, and looks
@@ -1375,7 +1379,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 				if _cone_radius_of(number, int(near["count"])) > WIDE_PILE_M:
 					_wide_piles[id] = true
 
-				near["left"] = maxf(PILE_LIFETIME_S if int(near["count"]) >= PILE_MIN else WORLD_ITEM_LIFETIME_S, lifetime_s)
+				near["left"] = maxf(PILE_LIFETIME_S if int(near["count"]) >= PILE_MIN else WORLD_ITEM_LIFETIME_S, maxf(lifetime_s, float(near["left"]) if float(near["left"]) > 1.0e8 else 0.0))   # a never-expiring heap (crafted overflow, a cleared piece's leavings) stays so
 				_tick_ageing(id)   # a kept pile can start ageing here
 
 				if by != "":
@@ -1398,7 +1402,7 @@ func drop_in_world(number: int, count: int, position: Vector3, item_wear: int = 
 			away = Vector2(1.0, 0.0)
 
 		away = away.normalized() * (_cone_radius_of(number, int(stopped["count"])) + MERGE_M)
-		position = _settled(Vector3(stopped["pos"].x + away.x, position.y, stopped["pos"].z + away.y))
+		position = _settled_loose(Vector3(stopped["pos"].x + away.x, position.y, stopped["pos"].z + away.y))
 
 	var first: int = mini(count, PILE_CAP)
 	_items[_next_id] = {"number": number, "count": first, "pos": position, "left": maxf(PILE_LIFETIME_S if first >= PILE_MIN else WORLD_ITEM_LIFETIME_S, lifetime_s), "wear": item_wear}
@@ -3174,6 +3178,9 @@ func reset_world() -> int:
 	_fruit.clear()
 	_shore_taken.clear()
 	_nest_taken.clear()
+	_branch_taken.clear()
+	_nest_at.clear()
+	_tell_taken_cleared()   # the clients forget what was taken too
 	_fish_stock.clear()
 	_mined.clear()
 	_chops.clear()
@@ -3242,6 +3249,65 @@ func _settled(position: Vector3) -> Vector3:
 	return Vector3(position.x, rest, position.z) if not is_nan(rest) and rest < position.y - 0.05 else position
 
 
+# A loose stack let go at `position` comes down onto what is under it: the ground (_settled), a building floor or a boulder, whichever is higher (physical world
+# audit 23 Nov 2026: a stack dropped on a foundation came down to the ground under it, 0.3 m inside the slab where nobody saw it, and one dropped
+# upstairs fell through the ceiling to the ground floor). Only lowers it, as _settled. `near`: the ids to look through (_ids_near round it), else looked up.
+func _settled_loose(position: Vector3, near: Array = []) -> Vector3:
+	var rest: Vector3 = _settled(position)
+	var top: float = _floor_top_below(position, near)
+	return Vector3(position.x, top, position.z) if not is_nan(top) and top > rest.y and top < position.y + 0.05 else rest
+
+
+const FLOOR_ROWS_REACH_M := 3.0   # a foundation's or floor's middle is at most this far from a point over it (4 m footprints: half the diagonal 2.83 m; boulders 2 m at most)
+const BOULDER_TOP_SHARE := 0.7   # a boulder's drawn top over its spot, as a share of its radius (world_audit --walk measured the hull)
+
+
+# The highest building floor top (a foundation's, or a floor piece's: the storey above's floor) or boulder top over `at` at most 5 cm above it, NAN
+# where none: only the records near it (`near`, else _ids_near), never a walk of every record. A stack dropped standing on a boulder lay inside the
+# rock. A blueprint site holds nothing up (as everywhere else): a stack there lies on the ground. `rocks` false: building floors only.
+func _floor_top_below(at: Vector3, near: Array = [], rocks: bool = true) -> float:
+	var best: float = NAN
+
+	for id in (near if not near.is_empty() else _ids_near(at, FLOOR_ROWS_REACH_M)):
+		if not _items.has(id):
+			continue
+
+		var it: Dictionary = _items[id]
+
+		if it.has("boulder") and not rocks:
+			continue
+
+		if it.has("boulder"):   # a boulder's drawn top (inventory_view _size_boulder: its hull rises BOULDER_TOP_SHARE x its radius over its spot), rounded off to its edge
+			var r: float = BoulderWear.radius_now(float(it["boulder"].get("radius", 0.0)), int(it["count"]), int(it["boulder"].get("total", it["count"])))
+			var d: float = Vector2(at.x - it["pos"].x, at.z - it["pos"].z).length()
+
+			if r > 0.0 and d < r:
+				var rock: float = float(it["pos"].y) + BOULDER_TOP_SHARE * r * sqrt(1.0 - (d / r) * (d / r))
+
+				if rock <= at.y + 0.05 and (is_nan(best) or rock > best):
+					best = rock
+
+			continue
+
+		if not it.has("struct") or it["struct"].has("site"):
+			continue
+
+		var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+		if not (bool(def.get("foundation", false)) or str(def.get("piece_kind", "")) == "floor"):
+			continue
+
+		if not PlacementRules.holds(def, {"pos": it["pos"], "yaw": float(it["struct"].get("yaw", 0.0))}, at):
+			continue
+
+		var y: float = float(it["pos"].y) + PlacementRules.anchor_top(def)
+
+		if y <= at.y + 0.05 and (is_nan(best) or y > best):
+			best = y
+
+	return best
+
+
 # The height a dropped stack lands at, from the server's own ground (main gate 21 Nov 2026: the client sends the ground it has under the player,
 # or the feet less 1 m when it has none yet; with a coarse or missing client ground a drop landed under the surface, and _settled only lowers
 # an item, so it stayed buried). The search starts DROP_LOOK_ABOVE_M over the higher of the player's reported feet and the sent height (that
@@ -3256,11 +3322,18 @@ func _drop_height(spot: Vector3, feet: Vector3) -> float:
 
 	var start: float = maxf(feet.y, minf(spot.y, feet.y + DROP_REACH_M)) + DROP_LOOK_ABOVE_M
 	var rest: float = float(floor_below.call(Vector3(spot.x, start, spot.z)))
+	var top: float = _floor_top_below(Vector3(spot.x, start, spot.z))   # a building floor over the ground: the stack lies on it
+
+	if not is_nan(top) and (is_nan(rest) or top > rest):
+		rest = top
+
 	return spot.y if is_nan(rest) else rest
 
 
-# After a dig or fill: loose items near it come down (or stay) onto what the ground is now.
+# After a dig or fill: loose items near it come down (or stay) onto what the ground is now (boulders first, so a stack on one follows it down).
 func settle_loose_near(centre: Vector3, radius: float) -> void:
+	var loose: Array = []
+
 	for id in _items:
 		var it: Dictionary = _items[id]
 
@@ -3283,8 +3356,41 @@ func settle_loose_near(centre: Vector3, radius: float) -> void:
 			continue
 
 		if it["pos"].distance_to(centre) <= radius + 1.5:
-			it["pos"] = _settled(it["pos"])
-			_wake_log(id)   # a log on ground that was dug or filled under it may roll
+			loose.append(id)
+
+	if loose.is_empty():
+		return
+
+	var near: Array = _ids_near(centre, radius + 1.5 + FLOOR_ROWS_REACH_M)   # the floors and boulders round the dig, looked up once
+
+	for id in loose:
+		_items[id]["pos"] = _settled_loose(_items[id]["pos"], near)
+		_wake_log(id)   # a log on ground that was dug or filled under it may roll
+		_dirty = true
+
+
+# A floor, foundation or boulder under loose stacks went (taken down, retired) or shrank (mined): the stacks within `reach` of `at` come down onto
+# what is under them now, so none is left in the air. Only the records near it.
+func _resettle_on(at: Vector3, reach: float) -> void:
+	var near: Array = _ids_near(at, reach + FLOOR_ROWS_REACH_M)
+
+	for id in near:
+		if not _items.has(id):
+			continue
+
+		var it: Dictionary = _items[id]
+
+		if it.has("scatter") or it.has("showroom") or it.has("struct") or it.has("fire") or it.has("tree") or it.has("boulder"):
+			continue
+
+		if Vector2(it["pos"].x - at.x, it["pos"].z - at.z).length() > reach:
+			continue
+
+		var rest: Vector3 = _settled_loose(it["pos"], near)
+
+		if rest != it["pos"]:
+			it["pos"] = rest
+			_wake_log(id)
 			_dirty = true
 
 
@@ -3928,6 +4034,10 @@ func _log_supported(it: Dictionary) -> bool:
 		return false
 
 	var rest: float = float(_drops.get("rolling", {}).get("rest_m", 0.6))
+	var floor_top: float = _floor_top_below(at + Vector3(0.0, 0.1, 0.0), [], false) if at.y > ground + 0.05 else NAN   # only a log above the ground looks
+
+	if not is_nan(floor_top) and floor_top > ground + 0.05 and at.y - floor_top < 0.15:
+		return false   # lying on a building floor: the rolling world has only the ground (and boulders, which push a log off), so it would roll through the slab
 
 	if absf(at.y - ground) <= rest:
 		return true
@@ -5745,7 +5855,7 @@ func fill_units_of(peer: int) -> int:
 # A dead branch on the forest floor (Dave 2026-10-22: loose sticks you can see should be pickable): one stick. The branches are drawn
 # by the client, so the server only checks reach and pace (the same pace as a plant pick).
 func _pick_litter(peer: int, inv, at: Vector3) -> void:
-	if not _peer_pos.has(peer) or _peer_pos[peer].distance_to(at) > Interact.server_reach_m():
+	if not at.is_finite() or not _peer_pos.has(peer) or _peer_pos[peer].distance_to(at) > Interact.server_reach_m():
 		return
 
 	var now_ms: int = Time.get_ticks_msec()
@@ -5753,12 +5863,134 @@ func _pick_litter(peer: int, inv, at: Vector3) -> void:
 	if now_ms - int(_last_gather.get(peer, -100000)) < gather_pace_ms:
 		return
 
+	_branches_today()
+
+	if _branch_gone(at):
+		return   # this branch was taken today (protocol 160: the clients hide one there)
+
 	_last_gather[peer] = now_ms
 	var before: Array = _snapshot(inv)
 	_take_in(peer, inv, table.number_of("stick"), 1)
 
 	_send_changes(peer, inv, before)
 	_dirty = true
+	var cell: Vector2i = _taken_cell_of(at)
+	var list: PackedVector3Array = _branch_taken.get(cell, PackedVector3Array())
+
+	if list.size() < BRANCH_SQUARE_MOST:
+		list.append(at)
+		_branch_taken[cell] = list
+		_tell_taken(TAKEN_BRANCH, at, _game_day(), peer)
+
+
+# --- Forest-floor pickups seen alike (protocol 160; coordinator 23 Nov 2026, two players see the same world) ---
+# Dead branches are drawn by each client (grass_view litter), tide-line nodes and bird nests from the cell and the day: a branch one player
+# picked stayed for the others, and a node or nest used up showed full to everyone else. The server keeps what was taken and tells the
+# players within TAKEN_SEND_M: at once when it goes, and as they walk TAKEN_TELL_CELLS squares from where they were last told (every taken
+# spot round them, so a newcomer sees the same). Each client draws its own branches (where depends on its graphics tier and on how it built
+# the ground), so a client hides its nearest branch to each taken point (grass_view.gd take_branch), not one at the very spot.
+# Branches grow back the next game day (one real hour; Dave: "we are not gate keeping by limiting resources"): the list is memory only,
+# cleared when the day turns, and at most BRANCH_SQUARE_MOST a 32 m square is kept (a made-up flood of picks costs nothing more).
+const TAKEN_BRANCH := 0
+const TAKEN_SHORE := 1
+const TAKEN_NEST := 2
+const TAKEN_CLEAR := 3               # everything forgotten (an admin world reset): the client clears its lists
+const TAKEN_CELL_M := 32.0
+const TAKEN_TELL_CELLS := 2          # told again after moving this many squares on either axis (no resend each time a player steps over a line)
+const TAKEN_SEND_M := 150.0
+const BRANCH_SAME_M := 0.25          # a pick within this of a taken point is that branch again (refused)
+const BRANCH_SQUARE_MOST := 400
+var send_taken: Callable             # (peer, kind, points PackedVector3Array, game days PackedInt32Array): ground_taken (protocol 160)
+var _branch_taken: Dictionary = {}   # Vector2i TAKEN_CELL_M square -> PackedVector3Array of branch points taken today
+var _branch_day: int = -1
+var _nest_at: Dictionary = {}        # nest id -> its spot, kept from the robbing (memory only: after a restart a robbed nest shows full to others until robbed again)
+var _taken_told: Dictionary = {}     # peer -> the TAKEN_CELL_M square it was last told about
+
+
+func _taken_cell_of(at: Vector3) -> Vector2i:
+	return Vector2i(int(floor(at.x / TAKEN_CELL_M)), int(floor(at.z / TAKEN_CELL_M)))
+
+
+func _branches_today() -> void:
+	var day: int = _game_day()
+
+	if day != _branch_day:
+		_branch_day = day
+		_branch_taken.clear()   # a new day: every branch has grown back
+
+
+func _branch_gone(at: Vector3) -> bool:
+	var cell: Vector2i = _taken_cell_of(at)
+
+	for dx in range(-1, 2):
+		for dz in range(-1, 2):
+			for p in _branch_taken.get(cell + Vector2i(dx, dz), PackedVector3Array()):
+				if Vector2(p.x - at.x, p.z - at.z).length() <= BRANCH_SAME_M:
+					return true
+
+	return false
+
+
+func _shore_cell_middle(key: String) -> Vector3:
+	var cell_m: float = float(_shore_data().get("cell_m", 8.0))
+	return Vector3((float(key.get_slice(",", 0)) + 0.5) * cell_m, 0.0, (float(key.get_slice(",", 1)) + 0.5) * cell_m)
+
+
+# To the players near `at` but `skip` (the taker's own client has hidden the very branch it picked).
+func _tell_taken(kind: int, at: Vector3, day: int, skip: int = 0) -> void:
+	if not send_taken.is_valid():
+		return
+
+	for peer in _peer_pos:
+		if peer != skip and Vector2(_peer_pos[peer].x - at.x, _peer_pos[peer].z - at.z).length() <= TAKEN_SEND_M:
+			send_taken.call(peer, kind, PackedVector3Array([at]), PackedInt32Array([day]))
+
+
+# An admin world reset: every player forgets what was taken (the reset restores nests, shore finds and branches).
+func _tell_taken_cleared() -> void:
+	if send_taken.is_valid():
+		for peer in _peer_pos:
+			send_taken.call(peer, TAKEN_CLEAR, PackedVector3Array(), PackedInt32Array())
+
+
+# A player TAKEN_TELL_CELLS squares from where it was last told (or just joined): every taken spot within TAKEN_SEND_M, one message per kind.
+func _tell_taken_near(peer: int, here: Vector3) -> void:
+	var cell: Vector2i = _taken_cell_of(here)
+	var told: Variant = _taken_told.get(peer, null)
+
+	if not send_taken.is_valid() or (told != null and absi(cell.x - (told as Vector2i).x) < TAKEN_TELL_CELLS and absi(cell.y - (told as Vector2i).y) < TAKEN_TELL_CELLS):
+		return
+
+	_taken_told[peer] = cell
+	_branches_today()
+	var day: int = _game_day()
+	var reach: int = int(ceil(TAKEN_SEND_M / TAKEN_CELL_M))
+	var rows: Array = [[PackedVector3Array(), PackedInt32Array()], [PackedVector3Array(), PackedInt32Array()], [PackedVector3Array(), PackedInt32Array()]]
+	var near: Callable = func(p: Vector3) -> bool: return Vector2(p.x - here.x, p.z - here.z).length() <= TAKEN_SEND_M
+
+	for dx in range(-reach, reach + 1):
+		for dz in range(-reach, reach + 1):
+			for p in _branch_taken.get(cell + Vector2i(dx, dz), PackedVector3Array()):
+				if near.call(p):
+					rows[TAKEN_BRANCH][0].append(p)
+					rows[TAKEN_BRANCH][1].append(day)
+
+	for key in _shore_taken:
+		if int(_shore_taken[key]) == day:
+			var middle: Vector3 = _shore_cell_middle(str(key))
+
+			if near.call(middle):
+				rows[TAKEN_SHORE][0].append(middle)
+				rows[TAKEN_SHORE][1].append(day)
+
+	for id in _nest_at:
+		if _nest_taken.has(id) and near.call(_nest_at[id]):
+			rows[TAKEN_NEST][0].append(_nest_at[id])
+			rows[TAKEN_NEST][1].append(int(_nest_taken[id]))
+
+	for kind in range(rows.size()):
+		if not (rows[kind][0] as PackedVector3Array).is_empty():
+			send_taken.call(peer, kind, rows[kind][0], rows[kind][1])
 
 
 func _mine(peer: int, inv, at: Vector3, held_slot: int, struck_nothing: bool = false) -> void:   # struck_nothing: the client's ray hit nothing (a swing into the air): effort only, whatever lies under the point
@@ -6016,7 +6248,8 @@ func _place(peer: int, inv, slot: int, at: Vector3, yaw_deg: int = 0, lift_steps
 		_say(peer, "You cannot place that there: %s." % PlacementRules.reason_text("float"))
 		return
 
-	var spot: Vector3 = Vector3(at.x, at.y if on_base else ground + lift, at.z)
+	var seat: float = ground if on_base or not ground_height.is_valid() else PlacementRules.seated_ground(_structures_cfg, kit_id, at, deg_to_rad(float(yaw_deg)), surface, ground)   # a station sits at the lowest ground under it: no corner in the air
+	var spot: Vector3 = Vector3(at.x, at.y if on_base else seat + lift, at.z)
 
 	if panel and ground_height.is_valid() and PlacementRules.roof_panel_buried(_structures_cfg, kit_id, spot, yaw_deg, surface):
 		_say(peer, "That end of the roof panel would sink into the ground.")
@@ -7297,7 +7530,7 @@ func _take_from(id: int, n: int) -> void:
 	else:
 		it["count"] = left
 
-		if left >= PILE_MIN:
+		if left >= PILE_MIN and float(it["left"]) <= 1.0e8:   # a never-expiring heap stays so when some is taken
 			it["left"] = PILE_LIFETIME_S
 			_tick_ageing(id)
 
@@ -8039,6 +8272,10 @@ func _clear_retired_pieces() -> void:
 		_items.erase(id)
 		_load_row_of.erase(id)
 		_dirty = true
+		var gone_def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+
+		if bool(gone_def.get("foundation", false)) or str(gone_def.get("piece_kind", "")) == "floor":
+			_resettle_on(at, FLOOR_ROWS_REACH_M)   # what lay on it comes down
 
 		var kinds: Dictionary = (it["struct"]["site"] as Dictionary).get("kinds", {}) if it["struct"].has("site") else it["struct"].get("kinds", {})
 
@@ -9579,6 +9816,9 @@ func _hit_boulder(peer: int, inv, id: int, held_slot: int) -> void:
 	if int(it["count"]) <= 0:
 		_boulder_drops.erase([peer, it["scatter"]])
 		_items.erase(id)
+
+	if taken > 0:
+		_resettle_on(it["pos"], size_now)   # a stack on the rock comes down as it shrinks or goes
 
 
 # How many stones of rock one ore piece `id` takes out of a boulder: its own weight in stones of `stone_kg`, at least one (ore by weight, PLAN.md 3c).
@@ -13383,6 +13623,9 @@ func _take_down(peer: int, inv, id: int) -> void:
 	_items.erase(id)
 	_dirty = true
 
+	if bool(def.get("foundation", false)) or str(def.get("piece_kind", "")) == "floor":
+		_resettle_on(it["pos"], FLOOR_ROWS_REACH_M)   # what lay on it comes down
+
 	if _is_plot_kind(str(it["struct"]["kind"])):
 		for cell in _bed_cells(it):
 			_crops.erase(_bed_key(cell))   # a garden plot taken down takes its crops with it, so a plot built there later starts empty
@@ -14659,8 +14902,8 @@ func _take_in(peer: int, inv, number: int, count: int, item_wear: int = 0, at: V
 	var fits: int = _fit(peer, inv, number, count)
 	var left: int = inv.add(number, fits, item_wear) + (count - fits)
 
-	if left > 0:
-		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO) if at == Vector3.INF else at, item_wear)
+	if left > 0:   # a cooked roast the pack cannot take never despawns, as give()'s crafted overflow
+		drop_in_world(number, left, _peer_pos.get(peer, Vector3.ZERO) if at == Vector3.INF else at, item_wear, CLEARED_LIFETIME_S if _gain_source == SRC_CRAFT else 0.0)
 
 	if _gain_source == SRC_PICKUP:   # litter, mining, boulders, fish (goal got: counter); a cooked roast is tagged craft
 		_goal_got(peer, number, count)
@@ -19278,6 +19521,7 @@ func gather_edge(peer: int, inv) -> bool:
 	give(peer, table.number_of(str(node["item"])), roll_amount(peer, rng, int(count[0]), int(count[1])))
 	_shore_taken[key] = day
 	_dirty = true
+	_tell_taken(TAKEN_SHORE, _shore_cell_middle(key), day)   # the others see the node gone too (protocol 160)
 	return true
 
 
@@ -19348,7 +19592,9 @@ func take_nest(peer: int, inv) -> bool:
 		give(peer, table.number_of(str(row["extra"][0])), int(row["extra"][1]))
 
 	_nest_taken[id] = day
+	_nest_at[id] = nest["pos"]
 	_dirty = true
+	_tell_taken(TAKEN_NEST, nest["pos"], day)   # the nest shows empty for everyone (protocol 160)
 	return true
 
 
