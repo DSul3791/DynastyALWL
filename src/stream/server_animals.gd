@@ -913,6 +913,8 @@ func make_way(a: Dictionary, at: Vector3, dt: float, others: Array = []) -> bool
 		var push: Vector2 = player_velocity_at(at)
 		pace_mps = maxf(pace_mps, push.length() + 1.0)
 		out = AnimalContact.keep_off(a["pos"], at + Vector3(push.x, 0.0, push.y) * dt, AnimalContact.contact_m(str(a["sp"])))
+	elif AnimalContact.body_m(str(a["sp"])) >= AnimalContact.BLOCK_M and Vector2(out.x - a["pos"].x, out.z - a["pos"].z).length() <= AnimalContact.LEAN_M:
+		pace_mps = minf(pace_mps, AnimalContact.LEANED_MPS)   # a walker stopped at its body leans on it (animal_view walker_stop): it shifts, never shoved along
 	var step: Vector3 = Vector3(out.x - a["pos"].x, 0.0, out.z - a["pos"].z).limit_length(pace_mps * dt)
 
 	if step.length() < 0.01 or (blocked.is_valid() and bool(blocked.call(a["pos"].x + step.x, a["pos"].z + step.z))):

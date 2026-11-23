@@ -44,8 +44,6 @@ const WARN_POP := 16                          # the threat ladder's jaw-pop rung
 # line is locked when it starts and it turns only a little, so carrying it on from the newest point is where the server has it, and what the
 # player dodges is what the server checks (docs/design/ANIMAL_NETCODE.md). Drawn a delay behind, a charge at 11 m/s was 4 to 9 m back.
 const AHEAD_STATES := [10, 11, 12, 16]
-const WALKER_BLOCK_M := 0.6                   # a body this big (body_m) stops the local walker (walker_stop)
-const WALK_INTO_M := 0.1                      # the walker is stopped this far inside an animal's contact distance: the server then has it make way (server_animals make_way), slowly
 const PINNED_MS := 2500                       # held at bodies this long on end while walking, the walker goes through (walker_stop): never shut in
 const HELD_GAP_MS := 400                      # a hold broken for longer than this starts again
 const STALL_S := 0.25                         # a frame this long is this computer's own stall, not the line's (MotionBuffer.stall_until)
@@ -458,16 +456,16 @@ static func killed_by_hit(at: Vector3, hits: Array, now_ms: int) -> bool:
 
 
 # The walker's frame move from `before` to `after` (feet) stopped at the animals drawn near: the correction to add (AnimalContact.walker_stop).
-# Bodies of WALKER_BLOCK_M or more (a deer, a boar, a wolf and up) stand in the way; a rabbit, a fox or a dog at heel is stepped past.
+# Bodies of AnimalContact.BLOCK_M or more (a deer, a boar, a wolf and up) stand in the way; a rabbit, a fox or a dog at heel is stepped past.
 func walker_stop(before: Vector3, after: Vector3) -> Vector3:
 	var bodies: Array = []
 
 	for id in _bodies:
 		var b: Dictionary = _bodies[id]
-		if AnimalContact.body_m(str(b["kind"])) < WALKER_BLOCK_M:
+		if AnimalContact.body_m(str(b["kind"])) < AnimalContact.BLOCK_M:
 			continue
 
-		var m: float = float(b["contact_m"]) - WALK_INTO_M
+		var m: float = float(b["contact_m"]) - AnimalContact.WALK_INTO_M
 		var at: Vector3 = (b["node"] as Node3D).global_position
 
 		if Vector2(at.x - after.x, at.z - after.z).length() < m + 1.0:
@@ -744,7 +742,7 @@ func _process_body(delta: float) -> void:
 			# Never drawn into the local player: a charge (carried on past its newest point) waits on its own side; an animal that went past them is drawn going round
 			# them at no more than its drawing's own room a frame (MotionBuffer.smooth), never held at their edge and then snapped on.
 			var reach: float = clampf(MotionBuffer.speed_at(b["samples"], t_drawn), 2.0, MotionBuffer.CARRY_MPS) * delta * 1.05
-			spot = AnimalContact.stop_toward(me, b.get("sm_p", before), spot, float(b["contact_m"]) - WALK_INTO_M - 0.02, reach, int(b["state"]) != CHARGE)   # inside where the walker stops (walker_stop): their pressing never shoves it on
+			spot = AnimalContact.stop_toward(me, b.get("sm_p", before), spot, float(b["contact_m"]) - AnimalContact.WALK_INTO_M - 0.02, reach, int(b["state"]) != CHARGE)   # inside where the walker stops (walker_stop): their pressing never shoves it on
 
 		if ahead:
 			MotionBuffer.follow_hold(b, spot, delta)   # a committed charge runs its locked line; the feet pick up from here after it
