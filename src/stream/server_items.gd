@@ -623,6 +623,7 @@ func setup(item_table, store_dir: String) -> void:
 	_rebuild_supports(true)
 	_load_trees()
 	_index_after_load(loaded_next)
+	_count_old_seeds()   # a 9257 store: its seeds and linseed counted in today's units, once
 	var cooking: Variant = JSON.parse_string(FileAccess.get_file_as_string(COOKING_PATH))
 	_cooking = cooking if typeof(cooking) == TYPE_DICTIONARY else {}
 	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string(DROPS_PATH))
@@ -2073,7 +2074,7 @@ func save() -> void:
 	for key in _inventories:
 		invs[key] = _inventories[key].to_json_array()
 
-	_write_atomic("inventories.json", {"version": INVENTORY_VERSION, "inventories": invs})
+	_write_atomic("inventories.json", {"version": INVENTORY_VERSION, "inventories": invs, "seed_pinch": true})
 	_save_chests()
 	_save_vitals()
 	_save_characters()
@@ -2197,7 +2198,7 @@ func _item_job() -> Dictionary:
 	_note_save_part("world item copy", t0)
 	_save_gen += 1
 	return {"dir": _dir, "items": copy, "areas": areas, "all": _area_ids.keys(), "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(), "gen": _save_gen, "sums": _area_sums, "exact": exact, "failed_out": _save_failed, "kiln_lit_by": _kiln_lit_by.duplicate(),
-		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "ore_per_kg": _boulder_per_kg(true), "boulders_then": _boulder_pending.duplicate(true), "bog_iron": _bog_left.duplicate(true), "bog_holes": _bog_holes.duplicate(true), "pockets": _pockets_saved(), "seams": _seams_saved(), "layout": FloraLayout.VERSION, "no_kits": true}}
+		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "ore_per_kg": _boulder_per_kg(true), "boulders_then": _boulder_pending.duplicate(true), "bog_iron": _bog_left.duplicate(true), "bog_holes": _bog_holes.duplicate(true), "pockets": _pockets_saved(), "seams": _seams_saved(), "layout": FloraLayout.VERSION, "no_kits": true, "seed_pinch": true}}
 
 
 func _save_item_files(job: Dictionary) -> void:
@@ -8133,6 +8134,8 @@ func _load_inventories() -> void:
 	if parsed == null:
 		return
 
+	_old_seed_files["packs"] = not bool(parsed.get("seed_pinch", false))   # each file carries its own mark: a crash between two files never counts one twice
+
 	for key in parsed["inventories"]:
 		var inv = InventoryScript.pack(table)
 		inv.from_json_array(parsed["inventories"][key])
@@ -8256,6 +8259,8 @@ func _load_world_items() -> void:
 
 	if parsed == null:
 		return
+
+	_old_seed_files["ground"] = not bool(parsed.get("seed_pinch", false))   # the header and the area files it names are read as one save (_read_area)
 
 	if parsed.has("areas"):   # version 4: the rows are in the area files the header names (an older file holds them itself)
 		_save_gen = int(parsed.get("gen", 0))
@@ -13761,7 +13766,13 @@ func _finish_site(peer: int, id: int) -> void:
 
 
 # Taking a site down gives back everything deposited (100 percent, like any blueprint).
-func _take_down_site(peer: int, _inv, id: int) -> void:
+# The floor under a spot: the foundation top there, else the spot (what another player's piece gives back lands there, not in the air).
+func _floor_under(at: Vector3) -> Vector3:
+	var top: float = PlacementRules.foundation_top(_structures_cfg, at, _foundation_rows())
+	return Vector3(at.x, top, at.z) if not is_nan(top) else at
+
+
+func _take_down_site(peer: int, _inv, id: int, for_builder: bool = false) -> void:   # for_builder: another player's site on your foundation
 	var it: Dictionary = _items[id]
 
 	for item_id in _site_of(it).get("have", {}):
@@ -13772,7 +13783,10 @@ func _take_down_site(peer: int, _inv, id: int) -> void:
 			_gain_source = SRC_RETURN
 
 			for pair in _kinds_back(str(item_id), count, _site_of(it).get("kinds", {})):
-				give(peer, int(pair[0]), int(pair[1]))
+				if for_builder:
+					drop_in_world(int(pair[0]), int(pair[1]), _floor_under(it["pos"]), 0, CLEARED_LIFETIME_S)
+				else:
+					give(peer, int(pair[0]), int(pair[1]))
 
 			_gain_source = was_src
 
@@ -13961,8 +13975,118 @@ func _may_take_down(peer: int, it: Dictionary) -> bool:
 	if key != "" and str(_structures.get(str(it.get("struct", {}).get("kind", "")), {}).get("attach_to", "")) == PlacementRules.DOOR_ATTACH and _frame_owner_at(it["pos"]) in [key, ""]:
 		return true   # a door another player hung in your doorway (or in an old frame open to all): you may take it out, or the frame could never come down
 
+	if key != "" and _base_owners_of(it).has(key):
+		return true   # a piece another player built on your foundation (coordinator 23 Nov 2026): you may take it down; its materials stay there (_take_down)
+
 	var lock: Dictionary = _lock_of(it)   # a locked container: a player the owner let in may take it down too (s3.13 locked-crate movement rule)
 	return not lock.is_empty() and key != "" and ((lock.get("ok", []) as Array).has(key) or (lock.get("allow", []) as Array).has(key))
+
+
+# The builders of the foundation a building piece stands on. A wall, ceiling, door or other piece: the foundations with the highest top at or
+# below its foot (a stacked one: only the slab it is on) whose footprint holds it across the ground (BASE_EDGE_M; a wall on the edge between
+# two: both). A roof panel or corner: the owners of what it rests on (_rests_on: the wall tops, ceiling edges or panel ends it snaps to),
+# however far its eaves reach out, so a stranger's eave cannot pin your walls, and a neighbour's eave near your edge is not yours. A piece on the
+# ground beside a foundation stands on none. Anyone may build on a foundation, and its owner may take down what others built there
+# (coordinator 23 Nov 2026: a stranger cannot wall you in for good). Owners saved as "" are left out.
+const BASE_EDGE_M := 0.1
+const BASE_ROOF_DEPTH := 6   # a chain of panels this long is followed down to its walls
+
+
+func _base_owners_of(it: Dictionary, depth: int = 0, seen: Dictionary = {}) -> Array:   # seen: the roof pieces already followed (each once)
+	var def_it: Dictionary = _structures.get(str(it.get("struct", {}).get("kind", "")), {})
+
+	if not bool(def_it.get("piece", false)) or depth > BASE_ROOF_DEPTH:
+		return []
+
+	if str(def_it.get("piece_kind", "")) in [PlacementRules.ROOF_PANEL_KIND, PlacementRules.ROOF_HIP_KIND]:
+		var from: Array = []
+		var walked: Dictionary = seen if depth > 0 else {}
+		walked[it] = true
+
+		for rid in _rests_on(it):
+			if walked.has(_items[rid]):
+				continue
+
+			for o in _base_owners_of(_items[rid], depth + 1, walked):
+				if not from.has(o):
+					from.append(o)
+
+		return from
+
+	var best_top: float = -INF
+	var owners: Array = []
+
+	for id in _items:
+		var base: Dictionary = _items[id]
+
+		if base == it or not base.has("struct") or base["struct"].has("site") or Vector2(base["pos"].x - it["pos"].x, base["pos"].z - it["pos"].z).length() > 12.0:
+			continue
+
+		var def: Dictionary = _structures.get(str(base["struct"]["kind"]), {})
+
+		if not bool(def.get("foundation", false)):
+			continue
+
+		var top: float = float(base["pos"].y) + PlacementRules.anchor_top(def)
+		var local: Vector2 = PlacementRules.local_of({"pos": base["pos"], "yaw": float(base["struct"].get("yaw", 0.0))}, it["pos"])
+
+		if top > float(it["pos"].y) + 0.05 or absf(local.x) > float(def.get("footprint_x", 4.0)) * 0.5 + BASE_EDGE_M or absf(local.y) > float(def.get("footprint_z", 4.0)) * 0.5 + BASE_EDGE_M:
+			continue
+
+		if top > best_top + 0.05:
+			best_top = top
+			owners = []
+
+		if top >= best_top - 0.05:
+			owners.append(str(base["struct"].get("owner", "")))
+
+	return owners.filter(func(o): return o != "")
+
+
+# The building pieces a placed piece rests on: each one without which it no longer snaps where it stands (as _holds_up asks the other way round),
+# and each wall, ceiling or foundation that alone would hold it there (never a neighbouring panel that merely meets its end: owners come from
+# walls, floors and foundations, so a mate built on your ridge from a neighbour's wall gives that neighbour nothing).
+func _rests_on(it: Dictionary) -> Array:
+	var def: Dictionary = _structures.get(str(it["struct"]["kind"]), {})
+	var at: Vector2 = Vector2(it["pos"].x, it["pos"].z)
+	var rows: Array = []
+
+	for id in _items:
+		var other: Dictionary = _items[id]
+
+		if other == it or not other.has("struct") or other["struct"].has("site") or Vector2(other["pos"].x, other["pos"].z).distance_to(at) > HOLDS_UP_SNAP_M:
+			continue
+
+		var odef: Dictionary = _structures.get(str(other["struct"]["kind"]), {})
+
+		if bool(odef.get("foundation", false)) or bool(odef.get("piece", false)):
+			rows.append({"pos": other["pos"], "state": int(odef["state"]), "yaw": float(other["struct"].get("yaw", 0.0)), "id": int(id)})
+
+	var kit: String = str(def.get("kit", ""))
+	var yaw: int = int(round(float(it["struct"].get("yaw", 0.0))))
+	var out: Array = []
+
+	for mode in [0, 1]:
+		var with_all: Array = PlacementRules.snap(_structures_cfg, kit, it["pos"], yaw, rows, mode)
+
+		if not bool(with_all[2]) or (with_all[0] as Vector3).distance_to(it["pos"]) > 0.05:
+			continue
+
+		for row in rows:
+			if float(row["pos"].y) > float(it["pos"].y) + 0.05:
+				continue   # nothing above it holds it up
+
+			var without: Array = PlacementRules.snap(_structures_cfg, kit, it["pos"], yaw, rows.filter(func(r): return r != row), mode)
+			var only: Array = PlacementRules.snap(_structures_cfg, kit, it["pos"], yaw, [row], mode)
+
+			var roof_row: bool = str(_structures.get(str(_items[int(row["id"])]["struct"]["kind"]), {}).get("piece_kind", "")) in [PlacementRules.ROOF_PANEL_KIND, PlacementRules.ROOF_HIP_KIND]
+
+			if not bool(without[2]) or (without[0] as Vector3).distance_to(it["pos"]) > 0.05 or (not roof_row and bool(only[2]) and (only[0] as Vector3).distance_to(it["pos"]) <= 0.05):
+				out.append(int(row["id"]))   # it needs this one, or this wall or ceiling alone holds it (a panel on two walls rests on both); a panel meeting its end at a ridge only when it needs it
+
+		break
+
+	return out
 
 
 # The builder of the doorway frame a door hangs in ("" for a frame saved before owners, "-" when no frame is within DOOR_TAKEN_M).
@@ -14000,8 +14124,13 @@ func _take_down(peer: int, inv, id: int) -> void:
 		_say(peer, "Take the door out first.")   # a doorway frame, built or still a site, never leaves its door hanging in the air (BUGLIST-002)
 		return
 
+	# Another player's piece (or blueprint site) on your foundation: it comes down, and what it gives back lies on the floor for its builder,
+	# never in your pack; it waits there however long they are away.
+	var key: String = str(_peer_key.get(peer, ""))
+	var for_builder: bool = str(it["struct"].get("owner", "")) not in ["", key] and not (admin_mode_on.is_valid() and bool(admin_mode_on.call(peer))) and _base_owners_of(it).has(key)
+
 	if it["struct"].has("site"):
-		_take_down_site(peer, inv, id)
+		_take_down_site(peer, inv, id, for_builder)
 		return
 
 	if it["struct"].has("bandit"):
@@ -14049,12 +14178,21 @@ func _take_down(peer: int, inv, id: int) -> void:
 		_say(peer, "Take down what stands on it first.")
 		return
 
+	var into = InventoryScript.pack(table) if for_builder else inv
+
 	if _blueprint_of_kit.has(str(def["kit"])):   # a blueprint piece gives its materials back, all of them
-		if not _refund_blueprint(peer, inv, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], true, it["struct"].get("kinds", {})):
+		if not _refund_blueprint(peer, into, _blueprints[int(_blueprint_of_kit[str(def["kit"])])], true, it["struct"].get("kinds", {})):
 			return
-	elif inv.add(table.number_of(str(def["kit"])), 1, int(it.get("wear", 0))) > 0:
+	elif into.add(table.number_of(str(def["kit"])), 1, int(it.get("wear", 0))) > 0:
 		_say(peer, "Make room in your pack first.")
 		return      # a placed torch comes back as its torch, unmarked: lit in the hand when it is pulled out again (only a pack at MAX_SLOTS refuses)
+
+	if for_builder:
+		for s in into.slot_count:
+			if into.numbers[s] != 0:
+				drop_in_world(into.numbers[s], into.counts[s], _floor_under(it["pos"]), into.wear[s], CLEARED_LIFETIME_S, NAN, NAN, "", into.inst_of(s))
+
+		_say(peer, "Taken down. It was another player's: what it was built from lies here for them.")
 
 	if it["struct"].has("roof") and roof_remove.is_valid():
 		roof_remove.call(int(it["struct"]["roof"]))
@@ -15297,7 +15435,7 @@ func _save_chests() -> void:
 	for uid in _chests:
 		rows[str(uid)] = _chests[uid].to_json_array()
 
-	_write_atomic("chests.json", {"version": 1, "next_uid": _next_uid, "chests": rows})
+	_write_atomic("chests.json", {"version": 1, "next_uid": _next_uid, "chests": rows, "seed_pinch": true})
 
 
 # A kit item that was dropped from the game: kits are gone, only the rough bed and the campfire are still made in the pack (Dave 4 Nov 2026).
@@ -15318,6 +15456,7 @@ func _load_chests() -> void:
 	if parsed == null:
 		return
 
+	_old_seed_files["stores"] = not bool(parsed.get("seed_pinch", false))
 	_next_uid = int(parsed.get("next_uid", 1))
 
 	for key in parsed.get("chests", {}):
@@ -20233,6 +20372,7 @@ const TILLED_STATE := 47
 var _crops: Dictionary = {}              # _bed_key (the bed's position) -> {"crop": id, "sown": game day, "age": days grown, "wet": watered days, "day": last game day looked at, "compost": bool}; the bed's moisture is in _plot_water
 var _crops_cfg: Dictionary = {}
 var _crops_loaded: bool = false
+var _old_seed_files: Dictionary = {}   # "packs", "worn", "stores", "queues", "ground" -> true while that file, as loaded, counts seeds the old way (no "seed_pinch")
 var _moisture_cfg: Dictionary = {}       # crops.json "moisture" (plot_water.gd)
 var _crops_file_extra: Dictionary = {}   # crops.json "worm": {"item", "chance"}: a ripe garden crop taken gives a worm this often
 var _plot_water: Dictionary = {}         # _bed_key -> [moisture percent, game second it was worked out at]; saved in crops.json "plots"
@@ -20242,6 +20382,168 @@ const WET_THROUGH_PCT := 99.0            # a bed this wet takes no more poured w
 const MOIST_STEP_PCT := 5                # the moisture a bed's world row carries, in these steps: a row is sent again only when it moves a step
 const PlotWater := preload("res://src/shared/plot_water.gd")
 
+
+
+# Seeds have been counted one by one since 23 Nov 2026 (#1628): a planting spot takes a pinch (crops.json sow_seeds: 50 wheat seeds, 5 nettle
+# seeds) and the recipes take linseed by the hundred. A store saved before then (build 9257, the live world) counted one seed per spot and
+# linseed by the old recipes, so each of its seeds is worth today's pinch: every stack is multiplied once (old_seed_units). Each save file
+# carries its own "seed_pinch" mark (inventories, characters for worn bags, chests for every store, craft queues, the world items header for
+# the ground), so a crash between two files never counts one twice; a file read from its .prev is counted from that copy's own mark.
+# Nothing vanishes: what a pack, store or bag slot cannot hold (u16) goes to its free slots after every stack is counted, and the rest lies
+# on the ground there (a ground pile has no such cap). The bandits' stashes do the same from their own file (server_bandits.gd).
+# shortcut: a rest that leaves its own file (a full chest's rest on the ground, a worn bag's rest in the pack) is lost or doubled if the
+# server dies between those two files in the first save; it takes a slot of more than 1,310 old seeds (65,535 / 50) and that crash.
+# A dev store saved between #1628 and the mark is counted once too (test stores only; the live world never ran that code).
+func _count_old_seeds() -> void:
+	if not _old_seed_files.values().has(true):
+		return
+
+	var per: Dictionary = {}   # item number -> today's units in one old seed
+
+	for id in old_seed_units():
+		if table.number_of(str(id)) > 0:
+			per[table.number_of(str(id))] = int(old_seed_units()[id])
+
+	var later: Array = []   # [inventory or null, number, count, wear, where on the ground if it does not fit]: placed after every stack is counted
+	var moved: int = 0
+
+	if _old_seed_files.get("packs", false):
+		for key in _inventories:
+			moved += _old_seeds_in(_inventories[key], per, later, _last_spot_of(str(key)))   # and the bags held in it (the pack's own file)
+
+	if _old_seed_files.get("worn", false):
+		for key in _characters:
+			for w in _characters[key].get("worn", []):
+				if w is Array and (w as Array).size() > 3 and w[3] is Dictionary and (w[3] as Dictionary).has("bag"):
+					moved += _old_seeds_in_bag(w[3], per, later, _inventories.get(key, null), _last_spot_of(str(key)))
+
+	if _old_seed_files.get("stores", false):
+		var where: Dictionary = {}   # uid -> the structure's spot
+
+		for id in _items:
+			if _items[id].has("struct") and _items[id]["struct"].has("uid"):
+				where[int(_items[id]["struct"]["uid"])] = _items[id]["pos"]
+
+		for uid in _chests:
+			moved += _old_seeds_in(_chests[uid], per, later, where.get(int(uid), Vector3.INF))
+
+	if _old_seed_files.get("queues", false):
+		for key in _craft_queues:
+			for entry in _craft_queues[key]["entries"]:
+				for need in entry[2]:
+					if per.has(int(need[0])):
+						need[1] = int(need[1]) * int(per[int(need[0])])
+
+						for unit in (need[2] if need.size() > 2 else []):
+							unit[3] = int(unit[3]) * int(per[int(need[0])])   # what it took, given back at today's count if the craft is cancelled
+
+						moved += 1
+
+				for part in entry[3]:
+					if per.has(int(part[0])):
+						part[1] = int(part[1]) * int(per[int(part[0])])
+
+	if _old_seed_files.get("ground", false):
+		for id in _items.keys():
+			var it: Dictionary = _items[id]
+
+			if it.has("struct") or it.has("fire") or it.has("tree"):
+				continue
+
+			var counted: bool = false
+
+			if per.has(int(it.get("number", 0))):
+				it["count"] = mini(int(it["count"]) * int(per[int(it["number"])]), PILE_CAP)   # a pile holds up to PILE_CAP
+				counted = true
+				moved += 1
+
+			if it.get("inst", {}) is Dictionary and (it.get("inst", {}) as Dictionary).has("bag"):
+				var n: int = _old_seeds_in_bag(it["inst"], per, later, null, it["pos"])
+				counted = counted or n > 0
+				moved += n
+
+			if counted:
+				_area_recovered[area_key_of(it["pos"].x, it["pos"].z)] = true   # its area file is written again at the first save, with the mark
+
+	for row in later:   # nothing above adds or drops, so nothing placed here is counted twice
+		var left: int = int(row[2])
+
+		if row[0] != null:
+			left = row[0].add(int(row[1]), left, int(row[3]))
+
+		if left > 0 and row[4] != Vector3.INF:
+			drop_in_world(int(row[1]), left, row[4], int(row[3]))
+		elif left > 0:
+			push_error("server items: %d of item %d had nowhere to go (a store with no structure)" % [left, int(row[1])])
+
+	_old_seed_files.clear()
+	_dirty = true
+	print("server items: a store from before seeds were counted one by one: %d stacks of seeds counted again in today's units" % moved)
+
+
+# Today's units in one seed of a store saved before 23 Nov 2026, by item id: each crop's seed its crops.json sow_seeds (a spot's pinch), and
+# the items in crops.json "old_seed_units" (linseed: its recipes grew by 100). Read by server_bandits.gd for the stolen stashes too.
+static func old_seed_units() -> Dictionary:
+	var parsed: Variant = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/crops.json"))
+	var out: Dictionary = {}
+
+	if typeof(parsed) != TYPE_DICTIONARY:
+		return out
+
+	for crop in parsed.get("crops", {}):
+		var row: Dictionary = parsed["crops"][crop]
+
+		if str(row.get("seed", "")) != "" and int(row.get("sow_seeds", 1)) > 1:
+			out[str(row["seed"])] = int(row["sow_seeds"])
+
+	for id in parsed.get("old_seed_units", {}):
+		if not str(id).begins_with("_"):
+			out[str(id)] = int(parsed["old_seed_units"][id])
+
+	return out
+
+
+# Where a character's things go when their pack cannot hold them: where they last stood (characters.json "last").
+func _last_spot_of(key: String) -> Vector3:
+	var p: Array = _characters.get(key, {}).get("last", {}).get("pos", [])
+	return Vector3(float(p[0]), float(p[1]), float(p[2])) if p.size() == 3 else Vector3.INF
+
+
+# One store's seeds multiplied (see _count_old_seeds), and the bags held in it; what a slot cannot hold goes to `later` for this store.
+func _old_seeds_in(inv, per: Dictionary, later: Array, at: Vector3) -> int:
+	var n: int = 0
+
+	for s in inv.slot_count:
+		var number: int = inv.numbers[s]
+
+		if per.has(number) and inv.counts[s] > 0:
+			var total: int = inv.counts[s] * int(per[number])
+			inv.counts[s] = mini(total, ItemTableScript.COUNT_MAX)
+			n += 1
+
+			if total > ItemTableScript.COUNT_MAX:
+				later.append([inv, number, total - ItemTableScript.COUNT_MAX, inv.wear[s], at])
+
+		if number != 0 and inv.inst_of(s).has("bag"):
+			n += _old_seeds_in_bag(inv.inst_of(s), per, later, inv, at)
+
+	return n
+
+
+# A bag's rows ([number, count, wear, ...]) multiplied; a row's rest goes to `later` for the store holding the bag (or the ground at `at`).
+func _old_seeds_in_bag(inst: Dictionary, per: Dictionary, later: Array, holder, at: Vector3) -> int:
+	var n: int = 0
+
+	for row in inst["bag"]:
+		if row is Array and (row as Array).size() >= 2 and per.has(int(row[0])) and int(row[1]) > 0:
+			var total: int = int(row[1]) * int(per[int(row[0])])
+			row[1] = mini(total, ItemTableScript.COUNT_MAX)
+			n += 1
+
+			if total > ItemTableScript.COUNT_MAX:
+				later.append([holder, int(row[0]), total - ItemTableScript.COUNT_MAX, int(row[2]) if (row as Array).size() > 2 else 0, at])
+
+	return n
 
 func _crop_table() -> Dictionary:
 	if not _crops_loaded:
@@ -26422,7 +26724,7 @@ func _save_craft_queues() -> void:
 		if not _craft_queues[key]["entries"].is_empty():
 			rows[key] = _craft_queues[key]
 
-	_write_atomic("craft_queues.json", {"version": 1, "players": rows})
+	_write_atomic("craft_queues.json", {"version": 1, "players": rows, "seed_pinch": true})
 
 
 func _load_craft_queues() -> void:
@@ -26430,6 +26732,8 @@ func _load_craft_queues() -> void:
 
 	if parsed == null:
 		return
+
+	_old_seed_files["queues"] = not bool(parsed.get("seed_pinch", false))
 
 	for key in parsed.get("players", {}):
 		var row: Dictionary = parsed["players"][key]
@@ -27058,7 +27362,7 @@ func fate(peer: int, kind: String, p: float) -> bool:
 
 
 func _save_characters() -> void:
-	_write_atomic("characters.json", {"version": CHARACTERS_VERSION, "players": _characters})
+	_write_atomic("characters.json", {"version": CHARACTERS_VERSION, "players": _characters, "seed_pinch": true})
 
 
 # Fitness (Dave 2026-10-21), see data/items/fitness.json: scales how fast exertion rises, a whole number min..max.
@@ -27238,6 +27542,7 @@ func _load_characters() -> void:
 	if typeof(parsed) != TYPE_DICTIONARY or typeof((parsed as Dictionary).get("players", {})) != TYPE_DICTIONARY:
 		return
 
+	_old_seed_files["worn"] = not bool(parsed.get("seed_pinch", false))
 	var old_scale: bool = int(parsed.get("version", 1)) < 2   # attributes saved on the -10 to +10 scale: converted once here, written back as version 2 on the next save
 
 	if old_scale:
