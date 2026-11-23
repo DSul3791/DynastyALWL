@@ -83,7 +83,14 @@ def main():
 	errors = collections.Counter()
 
 	for path in [server_log] + robot_logs:
+		dropped = False   # plan drops: a twin the server dropped on purpose; its game's lines after that are not faults
+
 		for line in open(path, encoding="utf-8", errors="replace"):
+			dropped = dropped or "TWIN first dropped by the server" in line
+
+			if dropped:
+				continue
+
 			if "SCRIPT ERROR" in line or line.startswith("ERROR:"):
 				text = line.strip()
 
@@ -133,13 +140,16 @@ def main():
 					findings.append("pack %s: after %s the client's pack is %s, the server's is %s (peer %d)" % (name, step, sig, before[-1][1], peer))
 
 		exit_path = path[:-4] + ".exit"
+		twin_dropped = "TWIN first dropped by the server" in open(path, encoding="utf-8", errors="replace").read()   # dropped on purpose: exit 1, no done line
 
-		if os.path.exists(exit_path) and open(exit_path).read().strip() not in ("0", ""):
+		if twin_dropped:
+			pass
+		elif os.path.exists(exit_path) and open(exit_path).read().strip() not in ("0", ""):
 			findings.append("robot %s: the client exited with code %s (0 after a clean quit; 134 is an abort, 124 the time limit)" % (name, open(exit_path).read().strip()))
 
 		if not joined:
 			broke.append("%s never joined" % name)
-		elif not done:
+		elif not done and not twin_dropped:
 			findings.append("robot %s: joined but never finished its plan (stuck, crashed or timed out)" % name)
 
 	if play_logs >= 2 and held_looks == 0:

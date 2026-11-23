@@ -501,6 +501,8 @@ func run() -> void:
 		await _snares()
 	elif plan == "bear":
 		await _bear_chase()
+	elif plan == "fight_goblin" or plan == "fight_bandit":
+		await _fight(plan.trim_prefix("fight_"))
 	elif plan == "light":
 		await _stances()
 		await _forest_walk(40.0)
@@ -1954,7 +1956,7 @@ func _set_snare(tag: String, spot: Vector3) -> Dictionary:
 
 	var t0: int = Time.get_ticks_msec()
 
-	while Time.get_ticks_msec() - t0 < 4000 and _tracking_row() == row0:   # the skills come back when they change
+	while Time.get_ticks_msec() - t0 < (12000 if row0.is_empty() else 4000) and _tracking_row() == row0:   # the skills come back when they change; a skill's first row came later than 7 s (snares run, 23 Nov 2026)
 		await get_tree().process_frame
 
 	var xp: bool = _tracking_row() != row0
@@ -2126,6 +2128,8 @@ func _drop(case: String) -> void:
 		return
 
 	var saved: Dictionary = {"case": case}
+	var skip := func(why: String) -> void:
+		_write(DROP_FILE, JSON.stringify({"case": case, "skipped": why}))   # the back pass says so as a NOTE, not a missing file
 
 	if case == "twine":
 		_give("plant_fibre", 18)
@@ -2138,9 +2142,13 @@ func _drop(case: String) -> void:
 		if _slot_of("stone_knife") < 0:
 			_give("stone_knife", 1)
 
+		await _run_to(client.body.global_position + Vector3(35.0, 0.0, 0.0), 20.0, 3.0)   # out of the starter camp's ground (no building near its tree)
+		_release_all()
+		await _wait(1.0)
 		var basket: int = await _build_basket()
 
 		if basket < 0:
+			skip.call("no basket")
 			await _quit()
 			return
 
@@ -2159,6 +2167,7 @@ func _drop(case: String) -> void:
 
 		if contents[0] == null or int(contents[0].count_of(_num("twine"))) != 2:
 			_note("drop", "the basket did not show 2 twine after putting them in: the chest case is not measured")
+			skip.call("basket put")
 			await _quit()
 			return
 
@@ -2168,10 +2177,12 @@ func _drop(case: String) -> void:
 		await _stance_to(StanceScript.LIE)
 
 		if not await _fall_asleep():
+			skip.call("not asleep")
 			await _quit()
 			return
 	elif case == "wolf":
 		if not await _into_rush():
+			skip.call("no bite")
 			await _quit()
 			return
 
@@ -2196,7 +2207,7 @@ func _into_rush() -> bool:
 	await _wait(2.0)
 	client.net.admin_place.rpc_id(1, "animal", client.body.global_position - client.body.global_transform.basis.z * 25.0, "wolf")
 	var h0: int = _health
-	var end: int = Time.get_ticks_msec() + 60000
+	var end: int = Time.get_ticks_msec() + 150000   # a pack that finds food first feeds, then prowls and stalks (first drops run: 60 s of feed)
 
 	while Time.get_ticks_msec() < end:
 		if _health < h0:
@@ -2204,7 +2215,7 @@ func _into_rush() -> bool:
 
 		await get_tree().process_frame
 
-	_note("drop", "no wolf bite in 60 s after setting the pack: the wolf case is not measured")
+	_note("drop", "no wolf bite in 150 s after setting the pack: the wolf case is not measured")
 	return false
 
 
@@ -2219,6 +2230,11 @@ func _drop_back() -> void:
 
 	var case: String = str(saved.get("case", ""))
 	_step = "back from " + case
+
+	if saved.has("skipped"):
+		_note("drop", "the %s drop was not measured (%s): nothing to compare" % [case, str(saved["skipped"])])
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(DROP_FILE))
+		return
 	var was: Array = saved.get("pos", [0.0, 0.0, 0.0])
 	var moved: float = client.body.global_position.distance_to(Vector3(float(was[0]), float(was[1]), float(was[2])))
 	print("ROBOT %s BACK %s joined %.1f m from where the link died, health %d (was %d), asleep %s" % [robot_name, case, moved, _health, int(saved.get("health", -1)), str(client.items.asleep)])
@@ -2295,13 +2311,13 @@ func _drop_freeze() -> void:
 	await _check_pack("before the freeze")
 	var sig: String = _pack_sig()
 	var said_from: int = _notices.size()
-	_key("forward", true)
+	_key("move_forward", true)
 	await _wait(2.0)
 	var before: Vector3 = client.body.global_position
 	var t0: int = _now_ms()
 	OS.delay_msec(FREEZE_MS)   # the whole client stops: no frames, no network service
 	print("ROBOT %s FREEZE over at %d" % [robot_name, _now_ms()])
-	_key("forward", false)
+	_key("move_forward", false)
 	await _wait(8.0)
 	var still: bool = client.multiplayer.multiplayer_peer != null and client.multiplayer.multiplayer_peer.get_connection_status() == MultiplayerPeer.CONNECTION_CONNECTED
 	var after: Vector3 = client.body.global_position
@@ -2329,9 +2345,15 @@ func _drop_twin(second: bool) -> void:
 	if second:
 		_write(flag, str(_now_ms()))
 		print("ROBOT %s TWIN second joined at %d as the same character (%s)" % [robot_name, _now_ms(), _pack_sig()])
+		var first_sig: String = FileAccess.get_file_as_string(_share("twin_first_pack.txt")).strip_edges() if FileAccess.file_exists(_share("twin_first_pack.txt")) else ""
+
+		if first_sig != "" and first_sig != _pack_sig():
+			_fail("twin", "pack", "the second client of one character has pack %s; the first had %s" % [_pack_sig(), first_sig])
+
 		await _wait(25.0)
 		return
 
+	_write(_share("twin_first_pack.txt"), _pack_sig())
 	var t0: int = Time.get_ticks_msec()
 
 	while not FileAccess.file_exists(flag) and Time.get_ticks_msec() - t0 < 150000:
@@ -2357,7 +2379,8 @@ func _drop_twin(second: bool) -> void:
 func _on_lost() -> void:
 	print("ROBOT %s LOST the server at %d (step %s, notices %s)" % [robot_name, _now_ms(), _step, str(_notices.slice(-2))])
 
-	if plan == "drop_twin1" and _step == "twin":
+	if plan == "drop_twin1":
+		print("ROBOT %s done: plan %s, %d fails, %d notes, %d drawn-animal ids seen, %d remote held items measured, lowest health %d (twin, dropped)" % [robot_name, plan, _fails, _notes, _species.size(), _held_looks, _lowest_health])
 		print("ROBOT %s TWIN first dropped by the server" % robot_name)
 	elif plan == "drop_freeze":
 		_fail("freeze", "dropped", "the server dropped this client after a %d s main-thread freeze" % (FREEZE_MS / 1000))
@@ -2384,6 +2407,172 @@ func _bear_chase() -> void:
 	await _wait(3.0)
 	_step = "hunt bear"
 	var _found: bool = await _hunt(14, 90.0)
+
+
+# --- plans fight_goblin, fight_bandit (survival-loop thread, 23 Nov 2026): one robot against a charging foe over the lossy link -------------
+# The robot sets the foe 12 m ahead (admin), takes a spear and a wicker shield, closes and jabs once to start the fight, then stands. Every
+# warning and charge the foe makes is logged as the robot drew it: ROBOT n ENEMY <hit|miss> <species> <id> warn <ms seen before the charge>
+# charge <ms> gap <drawn m at the landing or the closest> dodge <yes|no> shield <up|down>. Every second charge it side-steps (A held 0.8 s
+# from the drawn charge start), every third it raises the shield (B). The server prints AUDIT enemy_hit with its own distance at the landing.
+# A hit with no warning drawn before it, or drawn farther than the foe's hit_m + 1.5 m, fails.
+const FIGHT_REACH := {"goblin": 1.0, "bandit": 1.6}   # data/animals/animals.json defend hit_m (survival-loop thread)
+const FIGHT_S := 75.0
+const ST_WARN := 10
+const ST_CHARGE := 11
+const ST_RECOVER := 12
+const ST_WARN_POP := 16
+
+
+func _drawn_state(id: int) -> int:
+	var bodies: Dictionary = client._animal_view_node._bodies
+	return int(bodies[id].get("state", 0)) if bodies.has(id) else -1
+
+
+func _shield(up: bool) -> void:
+	Input.mouse_mode = Input.MOUSE_MODE_CAPTURED if up else Input.mouse_mode   # held_item.gd reads B only with the mouse captured
+	var ev: InputEventKey = InputEventKey.new()
+	ev.keycode = KEY_B
+	ev.physical_keycode = KEY_B
+	ev.pressed = up
+	Input.parse_input_event(ev)
+
+
+func _fight(kind: String) -> void:
+	_step = "fight " + kind
+
+	if not admin:
+		_note("fight", "the fight plans need --robot-admin: nothing done")
+		return
+
+	var sp: int = 16 if kind == "goblin" else 52
+	var reach: float = float(FIGHT_REACH.get(kind, 1.6))
+	_give("spear", 1)
+	_give("wicker_shield", 1)
+	await _check_pack("fight gear")
+
+	if _slot_of("spear") > 0:
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_MOVE, _slot_of("spear"), 0, 0, Vector3.ZERO)
+		await _check_pack("spear to hand")
+
+	var sh: int = _slot_of("wicker_shield")
+
+	if sh > 0 and sh != 1:
+		client.net.inventory_action.rpc_id(1, NetScript.ACT_MOVE, sh, 1, 0, Vector3.ZERO)
+		await _check_pack("shield to slot 2")
+
+	client.held.select(1)   # the shield goes to the left hand beside the spear (held_item.gd: offhand items)
+	await _wait(0.5)
+	client.held.select(0)
+	await _wait(0.5)
+	var me0: Vector3 = client.body.global_position
+	var known: Dictionary = {}
+
+	for row in client._animal_view_node.drawn_positions():
+		known[int(row[0])] = true
+
+	client.net.admin_place.rpc_id(1, "animal", me0 - client.body.global_transform.basis.z * 12.0, kind)
+	var foe: int = -1
+	var t0: int = Time.get_ticks_msec()
+
+	while foe < 0 and Time.get_ticks_msec() - t0 < 10000:
+		for row in client._animal_view_node.drawn_positions():
+			if not known.has(int(row[0])) and int(_species.get(int(row[0]), 0)) == sp:
+				foe = int(row[0])
+
+		await get_tree().process_frame
+
+	if foe < 0:
+		_note("fight", "no %s came after admin_place: nothing measured" % kind)
+		return
+
+	print("ROBOT %s step fight: %s %d set, shield in the left hand %s" % [robot_name, kind, foe, str(client.held.off_id())])
+	var end: int = Time.get_ticks_msec() + int(FIGHT_S * 1000.0)
+	var started: bool = false
+	var last_state: int = -1
+	var warn_ms: int = -1
+	var charge_ms: int = -1
+	var closest: float = INF
+	var charges: int = 0
+	var hits: int = 0
+	var h_before: int = _health
+	var dodge: bool = false
+	var shield_up: bool = false
+	var last_jab: int = 0
+
+	while Time.get_ticks_msec() < end and _health > 15:
+		var drawn: Dictionary = {}
+
+		for row in client._animal_view_node.drawn_positions():
+			drawn[int(row[0])] = row[1]
+
+		if not drawn.has(foe):
+			break   # down or gone
+
+		var me: Vector3 = client.body.global_position
+		var at: Vector3 = drawn[foe]
+		var gap: float = Vector2(at.x - me.x, at.z - me.z).length()
+		var st: int = _drawn_state(foe)
+		var now: int = Time.get_ticks_msec()
+
+		if not started:
+			_face(at - me)
+
+			if gap > 2.0:
+				_key("move_forward", true)
+			else:
+				_key("move_forward", false)
+
+				if now - last_jab > 1000:
+					_strike_at((at - me).normalized())
+					last_jab = now
+					started = true
+		elif st != last_state:
+			if st == ST_WARN or st == ST_WARN_POP:
+				if warn_ms < 0:
+					warn_ms = now
+			elif st == ST_CHARGE:
+				charge_ms = now
+				charges += 1
+				closest = gap
+				dodge = charges % 2 == 0
+				shield_up = charges % 3 == 0
+				_face(at - me)
+
+				if dodge:
+					_key("move_left", true)
+
+				if shield_up:
+					_shield(true)
+			elif last_state == ST_CHARGE:
+				_key("move_left", false)
+				_shield(false)
+				print("ROBOT %s ENEMY miss %s %d warn %d charge %d gap %.2f dodge %s shield %s" % [robot_name, kind, foe, (charge_ms - warn_ms) if warn_ms > 0 else -1, now - charge_ms, closest, "yes" if dodge else "no", "up" if shield_up else "down"])
+				warn_ms = -1
+
+		if st == ST_CHARGE:
+			closest = minf(closest, gap)
+
+			if dodge and now - charge_ms > 800:
+				_key("move_left", false)
+
+		if _health < h_before:
+			hits += 1
+			var warned: int = (charge_ms - warn_ms) if warn_ms > 0 and charge_ms > 0 else -1
+			print("ROBOT %s ENEMY hit %s %d warn %d charge %d gap %.2f dodge %s shield %s health %d -> %d state %d" % [robot_name, kind, foe, warned, (now - charge_ms) if charge_ms > 0 else -1, gap, "yes" if dodge else "no", "up" if shield_up else "down", h_before, _health, st])
+
+			if warned < 0 and st != ST_CHARGE:
+				_fail("fight", "unwarned:%d" % hits, "a %s hit (health %d -> %d) with no warning or charge drawn before it (drawn state %d, %.2f m)" % [kind, h_before, _health, st, gap])
+			elif gap > reach + 1.5:
+				_fail("fight", "far:%d" % hits, "a %s hit from %.2f m as drawn (its hit_m %.1f)" % [kind, gap, reach])
+
+			h_before = _health
+
+		last_state = st
+		await get_tree().process_frame
+
+	_release_all()
+	_shield(false)
+	print("ROBOT %s FIGHT %s: %d charges, %d hits, health %d at the end" % [robot_name, kind, charges, hits, _health])
 
 
 func _watch(s: float) -> void:
