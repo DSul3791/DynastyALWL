@@ -113,8 +113,8 @@ func _init() -> void:
 	players[0] = Vector3(spot.x - 10.0, 10.0, spot.z)
 	var before: float = 10.0
 
-	for n in 30:
-		a.tick(0.05)
+	for n in 60:
+		a.tick(0.05)   # it stares first (reactions.startle_s, up to 1.75 s)
 
 	check(a.animals[one]["state"] == AnimalsScript.FLEE, "a player within 14 m makes it bolt")
 	run(a, 4.0)

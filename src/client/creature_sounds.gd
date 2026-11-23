@@ -50,8 +50,11 @@ const KINDS := {
 		"zones": {"forest": 1.0, "highland": 0.6}, "hours": [6.0, 20.0], "every": [420.0, 900.0], "cutoff": 5000.0},
 }
 # Kinds with no clips of their own that sound like one that has (stand-ins until their own recordings): an American black bear growls
-# like a bear, an elk calls like a moose. Without these their warnings and charges were silent.
-const CALL_AS := {"black_bear": "bear", "elk": "moose"}
+# like a bear, an elk calls like a moose. Without these their warnings and charges were silent. The big cats, the hyena and the lynx growl
+# and roar like the bear; the boar and warthog grunt and snort like the moose; the rhino, buffalo, elephant and mammoth snort and bellow like
+# it (Dave 23 Nov 2026: animals growl before attacking; coordinator's ruling: stand-ins until Dave's recordings, listed in docs/SOUND_MAP.md).
+const CALL_AS := {"black_bear": "bear", "elk": "moose", "lion": "bear", "tiger": "bear", "leopard": "bear", "puma": "bear", "lynx": "bear",
+	"hyena": "bear", "boar": "moose", "warthog": "moose", "rhino": "moose", "buffalo": "moose", "elephant": "moose", "mammoth": "moose"}
 # Close by (Godot caps a voice's volume_db plus its distance gain at max_db, default 3): with 3 a wolf growl (-5 dB, unit 40 m) was
 # equally loud anywhere within 16 m and a bear roar within 7 m, so near and far could not be told apart. A call may now rise
 # NEAR_RISE_DB over its own level (the level stops rising at a quarter of its unit size: a wolf 10 m, a bear 4 m), never past

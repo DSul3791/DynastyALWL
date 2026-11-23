@@ -30,6 +30,8 @@
 	"dodge_view_ms_note": "A fair dodge (defend rows with fair_dodge; robots over 60 and 120 ms links with loss, 23 Nov 2026: 0 of 9 side-steps from a goblin or bandit got clear): a blow on a player is judged dodge_view_ms plus the link's round trip after the server's blow, against where the player then is, so a step the player made while their screen showed the strike counts. dodge_view_ms is how far behind the player's screen draws the server (the row clock's delay plus the trip down, about 0.35 s); dodge_late_max_ms caps it, so a slow or lying link cannot stretch it.",
 	"dodge_view_ms": 350,
 	"strike_min_s": 0.35,
+	"warn_min_s": 1.0,
+	"warn_min_s_note": "Every charge is warned for at least this long, a growl and the head-down stand (Dave 23 Nov 2026: animals growl before attacking; coordinator: about 1 s, long enough to hear, turn and react). A player running off or a blow during the warning shortens a warning to no less; a hunter's chase of a runner has no stand, it roars as it sets off. server_big_game.gd.",
 	"strike_min_s_note": "A charge's blow lands only once the charge has run this long (a defend row's own strike_min_s wins), so every screen draws the lunge before the blow (robots over 120 ms, 23 Nov 2026: a warthog charging from 1 m hit 0.18 s in, drawn 1.7 to 2.8 m short of the player). server_big_game.gd.",
 	"dodge_late_max_ms": 600,
 	"server_cap": 150,
@@ -502,7 +504,7 @@
 			"spawn_share": 0.5,
 			"health": 60.0,
 			"walk_mps": 1.6,
-			"flee_mps": 14.0,
+			"flee_mps": 13.7,
 			"graze_s": [
 				6.0,
 				22.0
@@ -1934,7 +1936,7 @@
 			"spawn_share": 0.35,
 			"health": 6.0,
 			"walk_mps": 1.0,
-			"flee_mps": 6.0,
+			"flee_mps": 5.2,
 			"graze_s": [
 				4.0,
 				14.0
@@ -2086,7 +2088,7 @@
 			"target_per_player": 3,
 			"health": 2.0,
 			"walk_mps": 0.8,
-			"flee_mps": 4.0,
+			"flee_mps": 3.0,
 			"graze_s": [
 				3.0,
 				10.0
@@ -3465,7 +3467,7 @@
 			"spawn_share": 0.1,
 			"health": 300.0,
 			"walk_mps": 1.2,
-			"flee_mps": 10.0,
+			"flee_mps": 6.0,
 			"graze_s": [
 				8.0,
 				25.0
@@ -3501,7 +3503,7 @@
 			"defend": {
 				"warn_m": 20.0,
 				"warn_s": 2.2,
-				"charge_mps": 11.0,
+				"charge_mps": 6.5,
 				"charge_m": 24.0,
 				"turn_rad_s": 0.25,
 				"hit_m": 3.0,
@@ -3664,7 +3666,7 @@
 			"target_per_player": 3,
 			"health": 6.0,
 			"walk_mps": 1.5,
-			"flee_mps": 7.5,
+			"flee_mps": 6.3,
 			"graze_s": [
 				3.0,
 				10.0
@@ -3881,7 +3883,7 @@
 			"spawn_share": 0.1,
 			"health": 300.0,
 			"walk_mps": 1.2,
-			"flee_mps": 10.0,
+			"flee_mps": 6.0,
 			"graze_s": [
 				8.0,
 				25.0
@@ -3917,7 +3919,7 @@
 			"defend": {
 				"warn_m": 20.0,
 				"warn_s": 2.2,
-				"charge_mps": 11.0,
+				"charge_mps": 6.5,
 				"charge_m": 24.0,
 				"turn_rad_s": 0.25,
 				"hit_m": 3.0,
@@ -4199,6 +4201,9 @@
 		"heat_hours": [11.0, 16.0], "fog": {"note": "Steve 8 Nov 2026 (docs/design/animals_in_fog_server.md; Jamie docs/knowledge/fog-and-visibility.md; MikeW ANIMAL_FOG.md). Always on with the weather rules (Dave 8 Nov: no flags). Since 14 Nov 2026 (Dave's fog instruction: fog cuts sight, not hearing; docs/design/FOG_PLAN.md part 3) the fog at a point is Weather.fog_shape, the depth fog the client draws, over the cold-air floor (fog_ground.gd) and the sea fog over the land; V is where it takes 95 %: about 2.8 km clear, 460 m in heavy rain, 52 m deep in full fog. Sight: all of a player while the fog takes under sight_full_fog of the view, none once it takes sight_gone_fog (Jamie's V/4 and V/2 for exponential fog, the same contrasts: about 31 and 42 m in full fog), then only hearing and smell (senses.blind_factor). Wolves shadow at min(stalk_m, max(V/2, wolf_min_m)). Under sit_below_m (100: fog of strength 0.85 and up, the old 250 m threshold's fog) perched birds stay up and birds and sit_species wander bird_wander_x as far. Under deer_v_m (1400: fog of strength 0.17 and up, as the old 1000 m) deer keep dusk hours deer_late_h past 08:00 and try edge_tries hops for open ground with crowns within edge_m; stock and deer herd_pull_m and wander x herd_x.", "sight_full_fog": 0.53, "sight_gone_fog": 0.78, "wolf_min_m": 10.0, "sit_below_m": 100.0, "bird_wander_x": 0.15, "sit_species": ["goose", "duck", "seabird"], "deer_v_m": 1400.0, "deer_late_h": 1.5, "edge_tries": 3, "edge_m": 15.0, "herd_x": 0.5}
 	},
 	"reactions": {
+		"startle_s": [0.5, 1.75],
+		"startle_close_m": 3.0,
+		"startle_note": "Dave 23 Nov 2026: animals look up and stare at the player before running away. One grazing or walking that a player comes within its flee distance of stares at them first: startle_s[1] seconds for a player at the flee distance, down to startle_s[0] as they come nearer or run at it; within startle_close_m, hurt, or already watching, it bolts at once. A species row may set its own startle_s. server_animals.gd _stares.",
 		"note": "PROVISIONAL RX-1 (Dave 19 Nov 2026 play test: animals must react to a nearby player from reasonable distances; values for his review, docs/design/ANIMAL_REACTIONS.md). Every species' reaction distances in one place, [notice_m, flee_m, safe_m]: within notice_m an animal stops and watches (alert_m), within flee_m it runs (spook_m), and it runs until safe_m away. These are distances to a standing player in the open on a calm day; the senses block stretches or shrinks them (wind, stance, trees, ground between, noise, a running player). server_animals.setup copies them into each species row as alert_m, spook_m and safe_m. Changed 19 Nov from the old rows: deer 50/30/60 to 60/35/70, elk 55/35/70 to 70/40/80.",
 		"notice_flee_safe_m": {
 			"rabbit": [24.0, 14.0, 35.0],

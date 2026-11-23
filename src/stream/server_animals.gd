@@ -148,6 +148,7 @@ func crosses_wall(x0: float, z0: float, x1: float, z1: float) -> bool:
 
 const DRY_LINE_STEP_M := 2.0   # dry_line looks for deep water this often along the way
 const PICK_TRIES := 4          # fresh picks of a wander, a herd drift or a forage spot before the animal stays where it is
+const BLOCKED_PAUSE_S := 1.5    # a walk blocked short of its target: this long a pause before the next pick (not a whole graze)
 
 
 # Whether a walker that keeps out of deep water (`blocked`) can go straight from `from` to `to`: no deep water every DRY_LINE_STEP_M along the
@@ -1536,6 +1537,9 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		if big_game.warn(a, seen_p):
 			return
 	elif seen_d <= _spook_m(a, def) and a["state"] != FLEE and not stands:
+		if _stares(a, def, seen_p, seen_d, dt):
+			return
+
 		_bolt(a, seen_p, def)
 
 		# The sentinel (the first to notice) alarms the herd: each mate follows after a short random moment.
@@ -1554,6 +1558,7 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 		elif a["alert"] <= 0.0 or seen_d > alert_m * 1.3:
 			a["state"] = GRAZE
 			a["timer"] = _graze_time(def)
+			a["target"] = a["pos"]   # the walk the watch broke off is over: it grazes here
 
 		return
 
@@ -1711,6 +1716,54 @@ func _step(a: Dictionary, dt: float, near_d: float, near_p: Vector3, seen_d: flo
 
 		a["state"] = GRAZE
 		a["timer"] = _graze_time(def)
+
+		if not r["arrived"]:
+			# Blocked short of where it was going (a wall, a rock, another animal): it pauses a moment and picks another way, not stand
+			# a whole graze nose to the block with the old way kept (Lane B's roam rerun at 109a0b6a, 23 Nov 2026: 9 stuck spells, each a
+			# graze long, in state 0 with the target 2 to 45 m off).
+			a["target"] = a["pos"]
+			a["timer"] = minf(float(a["timer"]), BLOCKED_PAUSE_S)
+
+
+# Startled (Dave 23 Nov 2026: animals "should look up and stare at the player before running away"): one grazing or walking that a player
+# comes within its flee distance of stops, lifts its head and stares at them (ALERT, the head turned to them; the client plays its alert look
+# and call), then bolts. The stare is reactions.startle_s [short, long]: long for a player noticed at its flee distance, shrinking toward short
+# as they are nearer, and short for one running at it (coordinator 23 Nov 2026: long enough to read, about 1.5 to 2 s at a distance). One
+# that was already watching them (it stared as they came) bolts at once, as does one hurt, one whose temperament never watches, a bird, or
+# one a player comes within startle_close_m of. True while it stares (the caller does nothing more this step).
+func _stares(a: Dictionary, def: Dictionary, seen_p: Vector3, seen_d: float, dt: float) -> bool:
+	var r: Dictionary = cfg.get("reactions", {})
+	var close: bool = seen_d <= float(r.get("startle_close_m", 3.0))
+
+	if int(a["state"]) == ALERT and bool(a.get("startle", false)):
+		a["alert"] -= dt
+
+		if a["alert"] > 0.0 and not close:
+			a["heading"] = atan2(seen_p.z - a["pos"].z, seen_p.x - a["pos"].x)
+			return true
+
+		a.erase("startle")
+		return false
+
+	var span: Array = def.get("startle_s", r.get("startle_s", [0.0, 0.0]))
+	var near_x: float = clampf((seen_d - float(r.get("startle_close_m", 3.0))) / maxf(_spook_m(a, def) - float(r.get("startle_close_m", 3.0)), 0.1), 0.0, 1.0)
+	var toward: Vector2 = Vector2(a["pos"].x - seen_p.x, a["pos"].z - seen_p.z).normalized()
+
+	if player_velocity_at(seen_p).dot(toward) >= float(cfg.get("senses", {}).get("run_ms", 5.0)):
+		near_x = 0.0   # a player running at it: the short stare
+
+	var startle_s: float = lerpf(float(span[0]), float(span[1]), near_x)
+
+	if startle_s <= 0.0 or close or not int(a["state"]) in [GRAZE, HOP] or a.get("wound", false) or not bool(_temper_row(a).get("alert", true)) or def.has("flight"):
+		return false
+
+	a["state"] = ALERT
+	a["alert"] = startle_s
+	a["startle"] = true
+	a["heading"] = atan2(seen_p.z - a["pos"].z, seen_p.x - a["pos"].x)
+	a["target"] = a["pos"]
+	a.erase("trip")
+	return true
 
 
 # A wounded animal bleeds: it runs, rests and finally dies where it stands, at the end of its trail. True when it died.
