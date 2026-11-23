@@ -5953,8 +5953,8 @@ func _swim_velocity(wanted: Vector3, direction: Vector3, pace: float, hard: bool
 	var down: bool = _move_held("down") and strain_cap >= 0.0
 	velocity.x = horizontal.x
 	velocity.z = horizontal.z
-	# BUG-028: W / S swim along the view, so looking up rises and looking down dives; Space and Ctrl still do.
-	var stroke_vy: float = 0.0 if strain_cap < 0.0 else SwimScript.pitch_wish(camera.rotation.x, float(Input.is_key_pressed(KEY_W)) - float(Input.is_key_pressed(KEY_S)), horizontal.length())
+	# BUG-028: forward / back (W / S, or the keys bound to them) swim along the view, so looking up rises and looking down dives; Space and Ctrl still do.
+	var stroke_vy: float = 0.0 if strain_cap < 0.0 else SwimScript.pitch_wish(camera.rotation.x, float(_move_held("move_forward")) - float(_move_held("move_back")), horizontal.length())
 	velocity.y = SwimScript.vertical_speed(body.global_position.y, surface, body.velocity.y, up, down, delta, stroke_vy)
 
 	# Under a floe or an ice sheet: with no stroke given, drift gently out to the nearest open water.

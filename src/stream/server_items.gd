@@ -26410,7 +26410,7 @@ func _eat(peer: int, inv, slot: int, choice: int = 0, platter: int = 0) -> void:
 
 	_last_eat[peer] = now
 	_warm_bite(v, item_id)
-	kcal = int(round(float(kcal) * (0.5 + 0.5 * table.freshness(inv.numbers[slot], inv.wear[slot]))))   # stale food feeds less
+	kcal = VitalsRules.eaten_kcal(kcal, table.freshness(inv.numbers[slot], inv.wear[slot]))   # stale food feeds less (the tooltip shows the same)
 	inv.take_from_slot(slot, 1)
 	var total: float = float(v["fed"]) + float(kcal)
 
