@@ -363,7 +363,7 @@ func refresh() -> void:
 
 		var planned: bool = bool(def.get("placeholder", false))   # skills.json "placeholder": nothing in the game practises it yet
 
-		if planned and unmet == "":
+		if planned:   # locked or not, a tester should not wait for it to grow
 			var soon: Label = _label("planned: nothing practises it yet", BODY_PX - 4)
 			soon.modulate = Color(0.75, 0.75, 0.75)
 			line.add_child(soon)

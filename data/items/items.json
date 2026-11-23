@@ -3611,7 +3611,7 @@
 		"wicker_shield": {
 			"number": 312,
 			"name": "Wicker - Shield",
-			"description": "Sticks woven tight with fibre. Light, and good for a few hits.",
+			"description": "Sticks woven tight with fibre. Light, and good for a few hits. Blocking does not stop blows yet.",
 			"kind": "weapon",
 			"tool_class": "shield",
 			"offhand": true,
@@ -3657,7 +3657,7 @@
 		"iron_shield": {"number": 320, "name": "Iron - Shield", "description": "Boards held by iron bands. Hard to break. Blocking does not stop blows yet.", "kind": "weapon", "tool_class": "shield", "offhand": true, "tier": 4, "stack": 1, "unstackable": true, "durability": 1500, "look_alikes": [], "repair": [["iron_ingot", 1]], "value": 110, "repair_station": "brick_forge"},
 		"steel_sword": {"number": 321, "name": "Steel - Sword", "description": "A forged steel blade on a leather grip. Holds a keen edge longer than iron.", "kind": "weapon", "weapon_class": "sword", "tier": 5, "stack": 1, "unstackable": true, "damage": 22.0, "durability": 3200, "look_alikes": [], "repair": [["steel_ingot", 1]], "value": 250, "repair_station": "brick_forge", "edge": true, "damage_mode": "slashing"},
 		"steel_mace": {"number": 322, "name": "Steel - Mace", "description": "A steel flanged head on a long haft.", "kind": "weapon", "weapon_class": "mace", "tier": 5, "stack": 1, "unstackable": true, "damage": 20.0, "durability": 3200, "look_alikes": [], "repair": [["steel_ingot", 1]], "value": 230, "repair_station": "brick_forge", "damage_mode": "blunt"},
-		"steel_shield": {"number": 323, "name": "Steel - Shield", "description": "A long steel-faced shield that covers shoulder to shin.", "kind": "weapon", "tool_class": "shield", "offhand": true, "tier": 5, "stack": 1, "unstackable": true, "durability": 2800, "look_alikes": [], "repair": [["steel_ingot", 1]], "value": 230, "repair_station": "brick_forge"},
+		"steel_shield": {"number": 323, "name": "Steel - Shield", "description": "A long steel-faced shield that covers shoulder to shin. Blocking does not stop blows yet.", "kind": "weapon", "tool_class": "shield", "offhand": true, "tier": 5, "stack": 1, "unstackable": true, "durability": 2800, "look_alikes": [], "repair": [["steel_ingot", 1]], "value": 230, "repair_station": "brick_forge"},
 		"leather_cap": {"number": 324, "name": "Leather - Cap", "description": "A close leather cap. Better than bare hide.", "kind": "clothing", "slot": "head", "wear_layer": "base", "fabric": "leather", "warmth": 0.08, "stack": 1, "unstackable": true, "look_alikes": [], "value": 25, "protect": {"slashing": 0.12, "piercing": 0.08, "blunt": 0.08, "projectile": 0.1}, "cover": 0.6},
 		"leather_jerkin": {"number": 325, "name": "Leather - Jerkin", "description": "A stiff leather vest. Turns a glancing blow.", "kind": "clothing", "slot": "body", "wear_layer": "padding", "fabric": "leather", "warmth": 0.22, "stack": 1, "unstackable": true, "look_alikes": [], "value": 60, "protect": {"slashing": 0.25, "piercing": 0.15, "blunt": 0.12, "projectile": 0.18}, "cover": 0.8, "durability": 400, "repair": [["leather", 1]], "repair_station": "leatherworking_table"},
 		"bronze_helm": {"number": 326, "name": "Bronze - Helm", "description": "A beaten bronze cap with a nose guard.", "kind": "clothing", "slot": "head", "wear_layer": "rigid", "fabric": "metal", "warmth": 0.05, "stack": 1, "unstackable": true, "look_alikes": [], "value": 90, "protect": {"slashing": 0.45, "piercing": 0.35, "blunt": 0.3, "projectile": 0.45}, "cover": 0.6, "durability": 800, "repair": [["bronze_ingot", 1]], "repair_station": "forge"},

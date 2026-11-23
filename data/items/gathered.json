@@ -226,7 +226,7 @@
 				"Dewlantern"
 			],
 			"familiarity": 70,
-			"description": "Salt-loving shore flowers that ring like little bells. Chewed, they taste of the sea."
+			"description": "Salt-loving shore flowers that ring like little bells, salty to the taste. Nothing uses it yet."
 		},
 		"burdock_roots": {
 			"number": 1017,
@@ -1165,7 +1165,7 @@
 				"Ribwort plantain"
 			],
 			"familiarity": 55,
-			"description": "Small shiny brown flax seeds, rich in oil. Eaten or pressed."
+			"description": "Small shiny brown flax seeds, rich in oil. Pressed for oil, or baked into cakes and bread."
 		},
 		"lumencap_caps": {
 			"number": 1086,
@@ -1734,7 +1734,7 @@
 				"Marrowroot"
 			],
 			"familiarity": 65,
-			"description": "A handful of plant seeds. Eaten, or sown in a patch. Nothing uses it yet."
+			"description": "A handful of plant seeds. Nothing uses it yet."
 		},
 		"sevenyear_blossoms": {
 			"number": 1127,
@@ -1886,7 +1886,7 @@
 				"Sevenyear lily"
 			],
 			"familiarity": 8,
-			"description": "Round seeds of the stillwater lotus. Eaten roasted; keep well."
+			"description": "Round seeds of the stillwater lotus. Sown to grow the lotus; they keep well."
 		},
 		"stormreed_stalks": {
 			"number": 1138,

@@ -5,7 +5,7 @@ extends SceneTree
 #   1. Amadou ("takes a spark and holds an ember") is tinder: it lights warm ash like tinder fungus, and is used up.
 #   2. The raw greens whose text says "eaten raw" or "eaten fresh" can be eaten (40 kcal, as fiddleheads).
 #   3. The rapier moves (skills.json "placeholder") say "planned" in the skills screen; nothing practises them yet.
-#   4. Shields say that blocking does not stop blows yet. (Materials with no use: tools/progression_check.py --unmarked, run by merge_check.)
+#   4. Every shield says that blocking does not stop blows yet. (Materials with no use: tools/progression_check.py --unmarked, run by merge_check.)
 #   godot --headless --path . --script res://src/worldgen/tools/test_no_use_yet.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
@@ -14,7 +14,6 @@ const VitalsRules := preload("res://src/shared/vitals_rules.gd")
 
 const DIR := "user://test_no_use_yet"
 const GREENS := ["wild_garlic_leaves", "dandelion_leaves", "sorrel_leaves", "watercress", "samphire", "angelica_stems"]
-const SHIELDS := ["plank_shield", "bronze_shield", "iron_shield", "iron_buckler"]
 
 var failures: int = 0
 var items
@@ -74,8 +73,10 @@ func _init() -> void:
 	items.give(1, n("watercress"), 3)
 	said.clear()
 	items._last_eat.clear()
+	items.vitals_of(1)["fed"] = 0.0
 	items._eat(1, inv, slot_of("watercress"))
-	check(inv.count_of(n("watercress")) == 2 and not said.has("You cannot eat that."), "eating watercress takes one (%s)" % str(said))
+	var fed: float = float(items.vitals_of(1)["fed"])
+	check(inv.count_of(n("watercress")) == 2 and fed > 0.0 and not said.has("You cannot eat that."), "eating watercress takes one and feeds (%.0f kcal; %s)" % [fed, str(said)])
 
 	# 3. Placeholder skills are marked planned in the skills screen.
 	var skills: Dictionary = JSON.parse_string(FileAccess.get_file_as_string("res://data/items/skills.json"))["skills"]
@@ -86,10 +87,18 @@ func _init() -> void:
 		if bool(skills[id].get("placeholder", false)):
 			planned.append(id)
 
-	check(planned.size() >= 4 and screen.contains("planned: nothing practises it yet"), "the skills screen marks %s as planned" % ", ".join(planned))
+	check(planned.size() >= 4 and screen.contains("planned: nothing practises it yet"), "the skills screen source marks %s as planned (a source check: no UI here)" % ", ".join(planned))
 
-	# 4. Shields say their block does nothing yet.
-	for id in SHIELDS:
+	# 4. Every shield says its block does nothing yet.
+	var shields: Array = []
+
+	for id in JSON.parse_string(FileAccess.get_file_as_string("res://data/items/items.json"))["items"].keys():
+		if str(items.table.entry(id).get("tool_class", "")) == "shield":
+			shields.append(id)
+
+	check(shields.size() >= 6, "%d shields found" % shields.size())
+
+	for id in shields:
 		check(n(id) > 0 and str(items.table.entry(id).get("description", "")).contains("Blocking does not stop blows yet."), "%s says blocking does not stop blows yet" % id)
 
 	items._finish_writer()
