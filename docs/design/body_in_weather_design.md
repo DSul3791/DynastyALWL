@@ -19,6 +19,7 @@
   - Moderate: you are freezing, your hands are slow and health drains.
   - Severe: you stop shivering, which is a warning, not a recovery. Your hands are very slow and health drains twice as fast.
   - Cold still never kills; health stops at 1, as Dave set on 21 Oct.
+  - At 1 the player passes out and wakes at the nearest goblin camp, bandit camp or the starter town with a message (Dave 23 Nov; warmth.json `pass_out`: whole pack kept and simply rescued, no capture or theft for now, out 6 s with the faint look and unhurtable, wake at 10 health and just over `hurt_at`, never at their own bed; later bandits may steal and goblins depend on their type, not built).
 - **Sickness from raw animal food comes late and is not certain.**
   - Eating raw meat, raw fish, shellfish or a raw egg makes you sick only sometimes (for example 1 in 5 for raw meat).
   - When it does, it starts 1 to 3 game days later (1 to 3 real hours), with a line that names what you ate.
