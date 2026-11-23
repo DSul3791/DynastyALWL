@@ -33,7 +33,7 @@ var sent: int = 0                  # cues sent (one per receiver), for checks
 var _last_ms: Dictionary = {}      # peer -> ms of its last cue
 
 
-# A pack action came in (terrain_server.gd, after items.action): a blow names its cue from what it struck.
+# A pack action came in (terrain_server.gd, before items.action): a blow names its cue from what it struck.
 func note_action(peer: int, kind: int, a: int, b: int, _count: int, at: Vector3) -> void:
 	if kind not in [Net.ACT_HIT, Net.ACT_PROCESS, Net.ACT_HIT_SHRUB, Net.ACT_MINE] or not _due(peer):
 		return   # nothing to hear, or too soon after its last cue: no pack scan for a flood
@@ -65,7 +65,7 @@ func note_action(peer: int, kind: int, a: int, b: int, _count: int, at: Vector3)
 	cue(peer, CUE_BLOW, tool_of(peer) * 8 + MATERIALS.find(material), point)
 
 
-# The tool the blow was made with, as TOOLS index: a pick rings as a pick, anything else as an axe (held_item.gd _hit_tool).
+# The tool the blow was made with (0 axe, 1 pick): a pick rings as a pick, anything else as an axe (held_item.gd _hit_tool).
 func tool_of(peer: int) -> int:
 	if items == null or items.table == null:
 		return 0
