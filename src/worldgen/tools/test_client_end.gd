@@ -2,7 +2,8 @@ extends SceneTree
 
 # The exported Windows game ends its own process at the end of terrain_client's _exit_tree (release check build 9193, 22 Nov 2026: the
 # engine's teardown crashed with 0xC0000005 in ntdll.dll about 6 s after the game had closed). Checks the guard and the order: only an
-# exported Windows game ends early, and only after the crash report is marked clean, the cache is flushed and the links are closed.
+# exported Windows game ends early, and only after the crash report is marked clean, the cache is flushed and the links are closed. And the
+# freeze lines' context lambda (a static var) is let go at _exit_tree: held to the end it aborted every headless client's quit (23 Nov 2026).
 #   godot --headless --path . --script res://src/worldgen/tools/test_client_end.gd
 
 const ClientScript := "res://scenes/terrain_client/terrain_client.gd"
@@ -36,6 +37,8 @@ func _initialize() -> void:
 	var menu: String = FileAccess.get_file_as_string("res://src/client/game_menu.gd").replace("\r\n", "\n")
 	check(menu.contains("_c.quitting = true\n\t\t_c.get_tree().quit())"), "the menu's Yes, leave says so")
 	check(src.contains("get_tree().reload_current_scene()") and not src.contains("quitting = true\n\t\tget_tree().reload_current_scene()"), "Retry reloads without closing")
+	check(body.find("Probe.context = Callable()") > 0 and body.find("Probe.context = Callable()") < early, "the freeze lines' context (a lambda in a static var) is let go before the client goes")
+	check(src.count("Probe.context = func") == 1, "the client sets that context in one place")
 	check(not OS.has_feature("template"), "this run (editor binary) keeps the normal quit")
 	var tail: String = src.substr(end_now, src.find("\nfunc ", end_now + 10) - end_now)
 	var kill: int = tail.find("OS.kill(OS.get_process_id())")
