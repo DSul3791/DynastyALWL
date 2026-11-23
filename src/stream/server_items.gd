@@ -206,6 +206,7 @@ var ore_near: Callable           # (position, reach in metres, ore names wanted,
 var bog_field: Callable          # (fx, fz, digging.json bog_iron) -> BogIron.field on the baked tile there ([] when it bears none); set by the server scene (unset: no bog iron)
 var bog_silt_at: Callable        # (x, z, digging.json bog_iron) -> BogIron.silt_material: what a hole dug on fen, marsh, swamp or bog silts back in with, 0 elsewhere (unset: none does)
 var ground_open: Callable         # (points: Array of Vector3) -> bool: any of them open ground now (terrain_server store.any_open); unset: never checked
+var cave_rescue: Callable         # (point) -> [[spot Vector3, kind]] or []: the nearest campfire out of the rock for a player rescued under it (terrain_server _cave_rescue)
 var nests_near: Callable         # (position, reach in metres) -> Array of {id: String, kind: String, pos: Vector3}: bird nests near the point (data/items/nests.json); set by the fauna side (unset: no inland nests)
 var water_near: Callable         # (position, reach in metres) -> true when water lies within reach of the position; set by the server scene (unset: no water anywhere)
 var drink_water_near: Callable   # (a player's position, reach) -> as water_near, and the water no more than DrinkRules.REACH_DROP_M below the feet (unset: water_near)
@@ -917,6 +918,7 @@ func peer_left(peer: int) -> void:
 	_bag_edit.erase(peer)
 	_over_cap.erase(peer)
 	_spot_saved_msec.erase(peer)
+	_stuck_msec.erase(peer)
 	_resume_to.erase(peer)
 	_station_said.erase(peer)
 	_hole_blows.erase(peer)
@@ -1678,6 +1680,8 @@ func _action(peer: int, kind: int, a: int, b: int, count: int, at: Vector3) -> v
 		till_garden(peer, inv, at, a, b, count)   # a: the held pack slot, b: the grid's turn in degrees, count: check * 10000000 + mode * 10000 + width * 100 + length (protocol 128)
 	elif kind == Net.ACT_PLANT_GRID:
 		plant_grid(peer, inv, a, b, count, at)   # a: the held pack slot (the hoe), b: the item to plant, count: check * 10000000 + yaw * 10000 + width * 100 + length (protocol 128)
+	elif kind == Net.ACT_STUCK:
+		_stuck_rescue(peer, at)
 	elif kind == Net.ACT_DIG_TRENCH:
 		dig_trench(peer, inv, at, a, b)   # a: the held pack slot (the hoe), b: the way the player faces, whole degrees (protocol 135)
 	elif kind == Net.ACT_TILL:
@@ -19155,7 +19159,7 @@ static func dug_out_height(surface: float, edited: float, water: float) -> float
 	return top + 2.0
 
 
-func survive_cave_in(peer: int, to: Vector3) -> bool:
+func survive_cave_in(peer: int, to: Vector3, to_fire: bool = false) -> bool:
 	var v: Dictionary = vitals_of(peer)
 
 	if not bool(_death_cfg.get("stop_at_1", false)) or v.is_empty():
@@ -19173,8 +19177,97 @@ func survive_cave_in(peer: int, to: Vector3) -> bool:
 	if send_died.is_valid():
 		send_died.call(peer, "cave-in survived", to)
 
-	_say(peer, "The tunnel came down on you. Someone heard you under the rock and dug you out, barely alive.")
+	_say(peer, "The tunnel came down on you. Someone heard you under the rock, dug you out and carried you to the nearest campfire, barely alive." if to_fire else "The tunnel came down on you. Someone heard you under the rock and dug you out, barely alive.")
 	return true
+
+
+# A player stuck fast in the rock of a cave or tunnel (ACT_STUCK, sent by the client's rescue when it stood the body on the floor of air near
+# by): carried to the nearest campfire out of the rock (Dave 23 Nov 2026: "if you are in a cave and end up getting rescued they should deposit
+# you at the nearest civilization and for these purposes that means campfire for now"), pack kept. Only when the server's own ground has the
+# point inside rock (feet, middle and eyes, as the client's inside_solid), near where the player is, once in STUCK_COOLDOWN_MS: no fast way
+# out of a cave by asking.
+const STUCK_REACH_M := 16.0        # the client's pocket floor is at most 12 m over the stuck point (rescue.gd POCKET_UP_M), and a step round
+const STUCK_COOLDOWN_MS := 20000
+var _stuck_msec: Dictionary = {}   # peer -> msec of the last ACT_STUCK looked at
+
+
+func _stuck_rescue(peer: int, at: Vector3) -> void:
+	var now: int = Time.get_ticks_msec()
+
+	if not _peer_pos.has(peer) or not at.is_finite() or (_peer_pos[peer] as Vector3).distance_to(at) > STUCK_REACH_M or not cave_rescue.is_valid() or not send_died.is_valid():
+		return
+
+	if _stuck_msec.has(peer) and now - int(_stuck_msec[peer]) < STUCK_COOLDOWN_MS:
+		return
+
+	if not ground_open.is_valid() or bool(ground_open.call([at + Vector3(0.0, -0.7, 0.0), at, at + Vector3(0.0, 0.7, 0.0)])):
+		return   # the server's ground is open there: not stuck
+
+	_stuck_msec[peer] = now
+	var spots: Array = cave_rescue.call(at)   # [] unless `at` is under rock (a cave or a dug tunnel): stuck in a hillside is the client's surface rescue
+
+	if spots.is_empty():
+		return   # no campfire out of the rock anywhere: the client's own rescue onto the floor near by stands
+
+	var to: Vector3 = spots[0][0]
+	_peer_pos[peer] = to
+	_resume_to.erase(peer)
+	_motion.erase(peer)
+	_dirty = true
+	send_died.call(peer, "rescued", to)   # the client moves the body there and waits for the ground, as after a pass-out (no death screen)
+	_say(peer, "You were stuck fast in the rock. Someone dug you out and brought you to the nearest campfire.")
+	print("Stuck: peer %d stuck in rock at %s, carried to the %s at %s" % [peer, str(at), str(spots[0][1]), str(to)])
+
+
+# The nearest of `fires` ([position, kind]; a NAN height is read from `ground_y` (x, z)) whose flames are not under rock (`under_rock` (point)):
+# [position, kind], or [] when every one is in a cave or tunnel or there is none (terrain_server _cave_rescue).
+static func nearest_fire_out_of_rock(fires: Array, near: Vector3, under_rock: Callable, ground_y: Callable) -> Array:
+	var best: Array = []
+	var best_d: float = INF
+
+	for fire in fires:
+		var at: Vector3 = fire[0]
+		var d: float = Vector2(at.x, at.z).distance_to(Vector2(near.x, near.z))
+
+		if d >= best_d:
+			continue
+
+		if is_nan(at.y):
+			at.y = float(ground_y.call(at.x, at.z))
+
+		if bool(under_rock.call(at + Vector3(0.0, 0.5, 0.0))):
+			continue   # a fire inside a cave or tunnel: the rescue is out of the rock
+
+		best = [at, fire[1]]
+		best_d = d
+
+	return best
+
+
+# Every fire in the world (any owner's, lit or not; the camps' too) as [position, "campfire" | "town" | "goblin" | "bandit"]: where a player
+# rescued in a cave is carried (terrain_server _cave_rescue). A camp fire's "camp" names it: a string a bandit camp's, NpcCamp.fires() index 0
+# Edda and Hob's (the town's), a higher index a goblin tribe's. A bandit camp's boot-print mark at the road is not a fire. Only on a rescue.
+func campfires() -> Array:
+	var out: Array = []
+	var town_first: bool = NpcCamp.fire_spot().x != INF   # index 0 is Edda and Hob's only when the town has its fire
+
+	for id in _items:
+		var fire: Variant = (_items[id] as Dictionary).get("fire")
+
+		if fire == null or bool((fire as Dictionary).get("marks", false)):
+			continue
+
+		var camp: Variant = (fire as Dictionary).get("camp")
+		var kind: String = "campfire"
+
+		if typeof(camp) == TYPE_STRING:
+			kind = "bandit"
+		elif typeof(camp) == TYPE_INT:
+			kind = "town" if int(camp) == 0 and town_first else "goblin"
+
+		out.append([_items[id]["pos"], kind])
+
+	return out
 
 
 # One character cannot litter the world: with per_owner_cap sets already out, the oldest empty set goes first to make room for the new one.

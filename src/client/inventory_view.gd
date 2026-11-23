@@ -5931,7 +5931,7 @@ func _on_died(cause: String, _spawn: Vector3) -> void:
 	if cause != "cave-in":   # the cave-in has its own long sequence (cavein_death.gd)
 		_death_msec = Time.get_ticks_msec()
 
-	if cause != "passed out":   # passed out from cold (server_items.gd _cold_out_tick): the same fade, and the server says where they woke
+	if cause != "passed out" and cause != "rescued":   # rescued from a cave's rock (server_items _stuck_rescue), or passed out from cold (server_items.gd _cold_out_tick): the same fade, and the server says where they woke
 		show_notice("You died: %s" % cause)
 
 
