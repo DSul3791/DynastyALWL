@@ -42,7 +42,7 @@
 	"say_freezing": "You are freezing",
 	"say_warm": "You feel warm again",
 	"pass_out": {
-		"note": "Cold down to 1 health: the player passes out and wakes at the nearest goblin camp, bandit camp or the starter town's square (Dave 23 Nov 2026). The whole pack is kept and the player is rescued wherever they wake, no capture or theft for now (Dave 23 Nov 2026). Each one line: enabled; out_s seconds passed out (the faint look; nothing hurts them); wake_health; wake_warmth_over hurt_at; off_fire_m metres off the place's own fire (the town: Edda and Hob's), and a step off a tree or wet ground at most wake_search_m more, so the player wakes inside its warmth (fire_tiers heat_radius_m 4 to 5 m; coordinator 23 Nov 2026); a player's own bed is not used. server_items.gd _cold_pass_out.",
+		"note": "Cold down to 1 health: the player passes out and wakes at the nearest goblin camp, bandit camp or the starter town's square (Dave 23 Nov 2026). The whole pack is kept and the player is rescued wherever they wake, no capture or theft for now (Dave 23 Nov 2026). Each one line: enabled; out_s seconds passed out (the faint look; nothing hurts them); wake_health; wake_warmth_over hurt_at; off_fire_m metres off the place's own fire (the town: Edda and Hob's), and a step off a tree or wet ground at most wake_search_m more, so the player wakes inside its warmth (fire_tiers heat_radius_m 4 to 5 m; coordinator 23 Nov 2026); a player's own bed is not used. Fainting under water with death.json stop_at_1 is the same pass-out and rescue, with its own lines (say_out_water, say_wake_water; coordinator 23 Nov 2026: else the faint and the wake came round for ever with the head still under). server_items.gd _cold_pass_out.",
 		"enabled": true,
 		"out_s": 6.0,
 		"wake_health": 10.0,
@@ -55,6 +55,13 @@
 			"goblin": "You wake up feeling pain through your bones. Goblins found you frozen almost to death and dragged you to their fire.",
 			"bandit": "You wake up feeling pain through your bones. Bandits found you frozen almost to death and brought you to their camp.",
 			"here": "You come to where you fell, aching with cold. Find a fire."
+		},
+		"say_out_water": "The water closes over you. You black out.",
+		"say_wake_water": {
+			"town": "You wake up coughing water. A traveler pulled you out of the water and brought you here, to the town.",
+			"goblin": "You wake up coughing water. Goblins fished you out of the water and dragged you to their fire.",
+			"bandit": "You wake up coughing water. Bandits pulled you out of the water and brought you to their camp.",
+			"here": "You come to, coughing up water."
 		}
 	},
 	"water_base_c": 12.0,

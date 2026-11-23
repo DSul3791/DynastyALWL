@@ -177,6 +177,21 @@ func _init() -> void:
 	var late_then: float = float(clock["late"])
 	MotionBuffer.clock_note(clock, 11.5, 2500)
 	check(float(clock["late"]) < late_then and float(clock["late"]) > late_then * 0.9, "and an on-time one lowers it only slowly (%.3f)" % float(clock["late"]))
+	# Rows read after this computer's own stall came late because nobody read them: the lateness stays (robots 23 Nov 2026: one 2 s hitch
+	# held a client's lateness over 1 s for the rest of a fight). The offset still follows them.
+	var own: Dictionary = MotionBuffer.clock_new()
+	MotionBuffer.clock_note(own, 10.0, 1000)
+	MotionBuffer.clock_note(own, 10.25, 1250)
+	var own_late: float = float(own["late"])
+	MotionBuffer.clock_note(own, 12.4, 1500, true)
+	check(float(own["late"]) == own_late and int(own["server_ms"]) == 1500, "rows read after this computer's own stall leave the lateness as it was (%.3f)" % float(own["late"]))
+	# The window: a 2 s gap since the last drawing, or a 2 s frame step, opens it for 0.25 s; a normal frame leaves it; it closes on its own.
+	check(is_equal_approx(MotionBuffer.stall_until(12.4, 10.4, -1.0, 0.016, 0.25), 12.65) and is_equal_approx(MotionBuffer.stall_until(12.4, 12.38, -1.0, 2.0, 0.25), 12.65), "a stall (a gap since the last drawing, or a long frame step) opens a 0.25 s settle window")
+	check(MotionBuffer.stall_until(12.5, 12.48, 12.65, 0.016, 0.25) == 12.65 and MotionBuffer.stall_until(12.5, -1.0, -1.0, 0.016, 0.25) == -1.0 and not 12.7 <= MotionBuffer.stall_until(12.7, 12.68, 12.65, 0.016, 0.25), "a normal frame keeps the window as it was (none before the first drawing), and it closes on its own")
+	# And the bodies are drawn where their points are: no correction left to ease away, the feet start from there.
+	var settled: Dictionary = {"sm_p": Vector3.ZERO, "sm_err": Vector3(-13.0, 0.0, 0.0), "fw_p": Vector3.ZERO}
+	MotionBuffer.settle(settled)
+	check(MotionBuffer.smooth(settled, Vector3(13, 0, 0), 6.0, 1.0 / 60.0).is_equal_approx(Vector3(13, 0, 0)) and MotionBuffer.follow(settled, Vector3(13, 0, 0), 1.0 / 60.0).is_equal_approx(Vector3(13, 0, 0)), "after a stall a body is drawn at its point, not eased 13 m behind it")
 	check(MotionBuffer.clock_delay({"interval": 5.0, "hole": 1.0, "late": 5.0}) == MotionBuffer.MAX_DELAY_S and MotionBuffer.clock_delay({"interval": 0.0, "hole": 0.0, "late": 0.0}) == MotionBuffer.MIN_DELAY_S, "the delay stays within %.1f to %.1f s" % [MotionBuffer.MIN_DELAY_S, MotionBuffer.MAX_DELAY_S])
 
 	# smooth: a target that jumps 3 m in a frame is not drawn there at once; a standing body walks the rest at 0.9 m/s (CATCH_MIN_MPS, the

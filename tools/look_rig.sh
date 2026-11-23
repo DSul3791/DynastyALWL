@@ -13,7 +13,7 @@
 #            shot's --hour: season tints, bare winter trees and the sun's path for that day
 #   --pieces-yaw N  turn the whole --pieces row N degrees (see the back of a wall)
 #   --piece-extra K:V[,K:V]  draw the --pieces / --piece-views pieces as placed with those row extras, light on, instead of the cold ghost:
-#            forge:1 a smithy's red coals (fuel in, idle), forge:2 its flare (working), lit:1 a lit kiln or smelter. Best at night (--hour 22)
+#            forge:1 a smithy's red coals (fuel in, idle), forge:2 its flare (working), lit:1 a lit kiln or smelter, or any lit light (torches, torch posts, lanterns, lamp posts, braziers, fireplace: its flame and light as in the game). Best at night (--hour 22)
 #   --ground ID:N  drop N of an item on the ground 2.2 m ahead of --at (stone:20 = a pile); --gy ground height of the pile (default 31.25 = 0.08 m over the visible spawn ground 31.17, so flat things (saw blade, kindling) are not buried; set it if you use --at elsewhere)
 #   --ground-close ID[:N]  the same pile (default 1) seen close: camera 0.35 m above the ground 0.9 m from it, looking 45 degrees down, ground in view (held shots at 1.5 m hide the item behind the body). Numbers are flags: --close-height M --close-dist M --close-pitch DEG; --agl/--drop-dist/--look-down after it override. Example: tools/look_rig.sh --ground-close rose_petals:3 --name petals_ground
 #   --flora-scale N  draw the --flora row N times its size (diagnosis: is a small plant only hard to see?)
