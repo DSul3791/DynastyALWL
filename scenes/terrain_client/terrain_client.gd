@@ -8054,6 +8054,7 @@ func _exit_tree() -> void:
 		stream.close()
 
 	_telemetry.drain()   # its lines are written on a worker: the EXIT line reaches the file before the process ends
+	FreezeWatchScript.printer.drain()   # again: lines the last server messages queued above, before the exported game's _end_now kills the process
 	# The freeze lines' context is a lambda of this script held in a static var. Left there, the engine frees it last, after this script's
 	# own code is gone: "free(): invalid pointer" / "corrupted size vs. prev_size" and an abort at every quit after joining a world
 	# (headless robot clients, 23 Nov 2026, dev 2aa2ea24; GDScript lambda freed from Callable in GDScript's cleanup). A scene change makes a new one.
