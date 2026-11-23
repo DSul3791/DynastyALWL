@@ -46,9 +46,17 @@ var _mutex: Mutex = Mutex.new()
 # Opens (or starts) the log and reads it in; a version 1 log (DIGS1, x y z radius per dig, written
 # by the first shovel digging) is read as digs and rewritten as DIGS2, the old file kept beside it as
 # digs.dat.v1. Returns "" or an error.
-func open(path: String) -> String:
+# `keep` (from the world save's header, server_items.gd header_digs) is how many edits the last whole save held: a hard stop after it
+# leaves later records whose pack changes (the soil a dig gave, the soil a fill took) were never saved, so they are dropped with them and
+# the log is cut back to `keep` (the whole log kept beside it as digs.dat.unfinished). -1 keeps every record. The dropped edits are in
+# `dropped` ([centre, radius] each) so the caller can mark their tiles changed.
+var dropped: Array = []
+
+
+func open(path: String, keep: int = -1) -> String:
 	_path = path
 	var head: int = MAGIC.length()
+	dropped = []
 
 	if FileAccess.file_exists(path):
 		var bytes: PackedByteArray = FileAccess.get_file_as_bytes(path)
@@ -66,9 +74,24 @@ func open(path: String) -> String:
 				return error
 		elif bytes.size() >= head and bytes.slice(0, head).get_string_from_ascii() == MAGIC:
 			@warning_ignore("integer_division")
-			for n in range((bytes.size() - head) / RECORD_BYTES):
+			var records: int = (bytes.size() - head) / RECORD_BYTES
+
+			for n in range(records):
 				var at: int = head + n * RECORD_BYTES
-				_append(bytes.decode_u8(at + 4), bytes.decode_u16(at + 6), Vector3(bytes.decode_float(at + 8), bytes.decode_float(at + 12), bytes.decode_float(at + 16)), bytes.decode_float(at + 20))
+				var centre: Vector3 = Vector3(bytes.decode_float(at + 8), bytes.decode_float(at + 12), bytes.decode_float(at + 16))
+
+				if keep >= 0 and n >= keep:
+					dropped.append([centre, bytes.decode_float(at + 20)])
+				else:
+					_append(bytes.decode_u8(at + 4), bytes.decode_u16(at + 6), centre, bytes.decode_float(at + 20))
+
+			if not dropped.is_empty():
+				var cut: String = _cut_to(bytes.slice(0, head + count * RECORD_BYTES), bytes)
+
+				if cut != "":
+					return cut
+
+				push_error("server ground: %d digs and fills after the last whole save (%d kept) were dropped with the pack changes they made; the whole log is kept as %s.unfinished" % [dropped.size(), count, path])
 
 			# Reopen for appending, cutting off a torn last record.
 			_file = FileAccess.open(path, FileAccess.READ_WRITE)
@@ -84,6 +107,29 @@ func open(path: String) -> String:
 			return "%s is not a ground operations log (DIGS1 or DIGS2)" % path
 
 	return _rewrite()
+
+
+# The log cut back to `kept` (its first records): the whole one is kept as digs.dat.unfinished, the cut one written to a .tmp and moved
+# over it, so a stop here leaves either log whole (the next start cuts it again).
+func _cut_to(kept: PackedByteArray, whole: PackedByteArray) -> String:
+	var aside: FileAccess = FileAccess.open(_path + ".unfinished", FileAccess.WRITE)
+
+	if aside != null:
+		aside.store_buffer(whole)
+		aside.close()
+
+	var tmp: FileAccess = FileAccess.open(_path + ".tmp", FileAccess.WRITE)
+
+	if tmp == null:
+		return "cannot write %s.tmp" % _path
+
+	tmp.store_buffer(kept)
+	tmp.close()
+
+	if DirAccess.rename_absolute(_path + ".tmp", _path) != OK:
+		return "cannot move %s.tmp over %s" % [_path, _path]
+
+	return ""
 
 
 # Writes the whole log afresh (header and every record) and keeps it open for appending.

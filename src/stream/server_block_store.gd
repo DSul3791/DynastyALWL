@@ -88,7 +88,7 @@ func setup(terrain_generator, store_dir: String) -> String:
 	_edits.database_path = ProjectSettings.globalize_path(store_dir + "/edits.sqlite")
 	_warm(_cache)
 	_warm(_edits)
-	var ops_error: String = ops.open(ProjectSettings.globalize_path(store_dir) + "/digs.dat")
+	var ops_error: String = ops.open(ProjectSettings.globalize_path(store_dir) + "/digs.dat", ItemsScript.header_digs(store_dir))   # digs after the last whole save are dropped with their pack changes
 
 	if ops_error != "":
 		return ops_error
@@ -109,6 +109,22 @@ func setup(terrain_generator, store_dir: String) -> String:
 		if typeof(parsed) == TYPE_DICTIONARY:
 			for key in parsed:
 				tile_revisions[str(key)] = int(parsed[key])
+
+	# Edits dropped at the start (a hard stop after the last whole save): a client's saved copy of their tiles may hold them, so those tiles'
+	# revisions jump past CATCH_UP_MAX and the copy is dropped whole at the next join (as after a ground reset).
+	var bumped: Dictionary = {}
+
+	for edit in ops.dropped:
+		for block in GroundOps.blocks_of(edit[0], edit[1]):
+			var tile: Vector2i = generator.tile_of(float(block.x * BLOCK_SIZE), float(block.z * BLOCK_SIZE))
+			bumped["%d,%d" % [tile.x, tile.y]] = true
+
+	for key in bumped:
+		tile_revisions[key] = int(tile_revisions.get(key, 1)) + CATCH_UP_MAX + 1
+
+	if not bumped.is_empty():
+		_revisions_dirty = true
+		save_revisions()
 
 	return ""
 

@@ -2104,6 +2104,9 @@ func save() -> void:
 	if _dir != "" and not _dirty and load_failures.is_empty() and not _water_kind.is_empty():
 		_dirty = _water_tanks_save() != _tanks_written   # a tank's litres moved (rain, a pump, a pipe) and nothing else changed (restart drill 23 Nov 2026)
 
+	if not _dirty and ground_edits.is_valid() and int(ground_edits.call()) != _digs_written:
+		_dirty = true   # a dig or fill that changed no item still moves the header's "digs": unsaved, the next start would drop it
+
 	if _dir == "" or not _dirty or not load_failures.is_empty():
 		return
 
@@ -2135,6 +2138,13 @@ func save() -> void:
 	_write_atomic("smelters.json", {"version": 1, "smelters": _smelters.save_rows(), "lit": _smelters.lit_rows()})
 	_write_atomic("smithies.json", {"version": 1, "smithies": _smithies.save_rows(), "fuel": _smithies.fuel_rows()})
 	_write_atomic("tracking_marks.json", _traps.saved_marks())   # the trail signs and snare spots that already trained each character's Tracking
+
+	for name in set_extras:   # other systems' files that must land in the same whole save as the packs (trade_state.json: a shelf and the pack it paid)
+		var extra: Variant = (set_extras[name] as Callable).call()
+
+		if extra is Dictionary:
+			_write_atomic(str(name), extra)
+
 	_save_item_files(_item_job())
 	_set_gen = 0
 
@@ -2169,6 +2179,19 @@ var _save_gen: int = 0             # the save count, kept in the header: an area
 # the header's is from a save that never finished and is read from its .prev, the save before. A file with no gen (written outside save(),
 # or by a build before this) is read as it is.
 var _set_gen: int = 0              # while save() runs: the gen its files carry; 0 outside a save
+# Files of other systems written in every save, in the same whole save as the packs (name -> Callable returning the file's Dictionary):
+# terrain_server registers trade_state.json, so a hard stop never keeps a trader's shelf from one save and the pack that paid from another.
+var set_extras: Dictionary = {}
+# () -> int: how many ground edits (digs.dat records) the world holds now. Saved in the header as "digs", so a hard stop drops the digs
+# and fills after the last whole save along with the pack changes they made (server_block_store.gd setup, ground_ops.gd open).
+var ground_edits: Callable
+var _digs_written: int = -1
+
+
+func _digs_now() -> int:
+	_digs_written = int(ground_edits.call()) if ground_edits.is_valid() else -1
+	return _digs_written
+
 var _set_lost_file: bool = false   # a file of the save running now (written on the tick, not the writer) could not be written
 var _set_written: Array = []       # the files of the save running now written so far on the tick (rolled back when it loses one)
 var _head_gen: int = -2            # the gen of the header on disk, read once at load (-1: no header, or one with no gen; -2: not read yet)
@@ -2261,7 +2284,8 @@ func _item_job() -> Dictionary:
 	_note_save_part("world item copy", t0)
 	_save_gen += 1
 	return {"dir": _dir, "items": copy, "areas": areas, "all": _area_ids.keys(), "kinds": _kind_info_now(), "tilt_y": tilt_y, "saplings": _sapling_rows(), "gen": _save_gen, "sums": _area_sums, "exact": exact, "failed_out": _save_failed, "kiln_lit_by": _kiln_lit_by.duplicate(),
-		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "ore_per_kg": _boulder_per_kg(true), "boulders_then": _boulder_pending.duplicate(true), "bog_iron": _bog_left.duplicate(true), "bog_holes": _bog_holes.duplicate(true), "pockets": _pockets_saved(), "seams": _seams_saved(), "layout": FloraLayout.VERSION, "no_kits": true, "seed_pinch": true}}
+		"world": {"version": VERSION, "next_id": _next_id, "taken": _taken.keys(), "picked": _picked.duplicate(true), "stripped": _stripped_now().duplicate(true), "fruit": _fruit_now().duplicate(true), "boulders": _boulder_left.duplicate(true), "boulder_per_kg": _boulder_per_kg(), "ore_per_kg": _boulder_per_kg(true), "boulders_then": _boulder_pending.duplicate(true), "bog_iron": _bog_left.duplicate(true), "bog_holes": _bog_holes.duplicate(true), "pockets": _pockets_saved(), "seams": _seams_saved(), "layout": FloraLayout.VERSION, "no_kits": true, "seed_pinch": true,
+			"digs": _digs_now()}}
 
 
 func _save_item_files(job: Dictionary) -> void:
@@ -2284,6 +2308,30 @@ func _save_item_files(job: Dictionary) -> void:
 
 # Writes a job's files: tree_states, lights, kilns, the areas that changed, then the header, then takes away the files of areas left empty.
 # Static and reads only the job (and its `sums`, which only the writer touches), so the writer thread can run it.
+# A power cut (not a process kill: the files are then in the system's cache and still land) could lose what was written but not yet on the
+# disk, in any order. Before a save's header and after it the store's file system is flushed to the disk (coreutils `sync -f`, syncfs: one
+# call, with digs.dat and every set file), so the header never names files that are not on the disk. Linux and macOS servers only (the
+# server image is Ubuntu); DYNASTY_SAVE_SYNC=0 turns it off for a comparison. sync_ms adds up the time it took (save timing, the long run).
+static var sync_saves: bool = OS.get_environment("DYNASTY_SAVE_SYNC") != "0" and OS.get_name() in ["Linux", "macOS", "FreeBSD"]
+static var sync_ms: float = 0.0
+static var syncs: int = 0
+
+
+static func _sync_store(dir: String) -> void:
+	if not sync_saves:
+		return
+
+	var t0: int = Time.get_ticks_usec()
+	var code: int = OS.execute("sync", ["-f", ProjectSettings.globalize_path(dir)])
+
+	if code != 0:
+		push_error("server save: could not flush the store to the disk (sync -f exit %d): saves go on, but a power cut may lose the last one" % code)
+		sync_saves = false   # said once; a process kill still loses nothing
+
+	sync_ms += float(Time.get_ticks_usec() - t0) / 1000.0
+	syncs += 1
+
+
 static func _write_item_job(job: Dictionary, written: Array = []) -> void:
 	var dir: String = str(job["dir"])
 	var items: Dictionary = job["items"]
@@ -2341,9 +2389,13 @@ static func _write_item_job(job: Dictionary, written: Array = []) -> void:
 	world["areas"] = listed
 	world["gen"] = gen
 
+	_sync_store(dir)   # every other file of the save (and digs.dat) on the disk before the header that names it: a power cut keeps one whole save
+
 	if not _write_file(dir + "/world_items.json", JSON.stringify(world)):
 		_skip_item_job(job, done)   # the header itself: the store stays the save before, and what this save wrote goes back
 		return
+
+	_sync_store(dir)   # and the header too, so a power cut loses no more than the save being written
 
 	for key in sums.keys():
 		if not listed.has(key):
@@ -9074,6 +9126,34 @@ func _note_save_part(name: String, t0: int) -> void:
 # One write at a time: the background writer and a save from anywhere else (shutdown, a test's last save) used the same path.tmp, and the second rename failed with an error
 # line ("Error calling utility function", exit 1 or 139 in the gates, 31 Oct 2026). The lock makes the files land in order.
 static var _file_lock: Mutex = Mutex.new()
+
+
+# A file another system saves through set_extras, read as the save set reads its own (a file from a save that stopped before its header
+# is read from its .prev). Null when it is missing or cannot be read.
+func read_set_file(name: String, version: int) -> Variant:
+	var failures: int = load_failures.size()
+	var parsed: Variant = _read_json_version(name, version)
+
+	if load_failures.size() > failures:
+		load_failures.resize(failures)   # read after the start's check: that system starts empty (as it did before) rather than stopping every save
+		return null
+
+	return parsed
+
+
+# The number of ground edits the last whole save held (the header's "digs", or its .prev's when the header is damaged), -1 when the store
+# has no such header (a new store, or one saved before #1822's follow-up): then the edit log is kept whole. Read before the items load.
+static func header_digs(dir: String) -> int:
+	var path: String = dir + "/world_items.json"
+	restore_missing(path)
+
+	for one in [path, path + ".prev"]:
+		var head: Variant = JSON.parse_string(FileAccess.get_file_as_string(one)) if FileAccess.file_exists(one) else null
+
+		if typeof(head) == TYPE_DICTIONARY:
+			return int(head.get("digs", -1)) if head.has("areas") and head.has("gen") else -1
+
+	return -1
 
 
 # A save file that is missing while its .tmp or .prev is there is put back before it is read (22 Nov 2026, the #1597/#1598 reviews). On Windows

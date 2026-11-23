@@ -680,6 +680,7 @@ func _ready() -> void:
 	items.trunks_near = _arrow_trunks
 	items.dig_support = func(base, radius, depth): return TreeSupport.solid_share(store.ops.edits_near(base, radius + depth), base, radius, depth)
 	items.setup(ItemTableScript.load_default(), store_dir)
+	items.ground_edits = func(): return store.ops.count   # the header's "digs": a hard stop drops the digs and fills after the last whole save (store.setup)
 
 	if not items.load_failures.is_empty():
 		var why: String = "SERVER NOT STARTED: these save files in %s exist but could not be read: %s. They were left as they are and nothing was saved over them. Run the server build that saved them, or restore each from its .prev copy if it has one, then start again." % [store_dir, ", ".join(PackedStringArray(items.load_failures))]
@@ -987,6 +988,7 @@ func _ready() -> void:
 	trade.npcs = npcs
 	trade.game_seconds = func(): return game_clock.seconds
 	trade.setup(store_dir)
+	trade.in_save_set(items)   # shelves land in the same whole save as the packs that paid
 	@warning_ignore("confusable_local_declaration")
 	trade.send_shop = func(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired, stock, supply_milli, purse): net.shop.rpc_id(peer, npc_id, title, ids, pay, got, buys, tired_ids, tired, stock, supply_milli, purse)
 	dialogue.trade = trade
@@ -4177,6 +4179,7 @@ func _exit_tree() -> void:
 		items.note_spots_on_close()   # players still in: where they stand now, not the last 10 s note
 		items.save()
 		items._finish_writer()   # a save with nothing new returns early: the last autosave's files and log lines still finish before the exit
+		print("server save: %d flushes to the disk, %.1f ms each on average (sync -f before and after each header)" % [ItemsScript.syncs, ItemsScript.sync_ms / maxf(1.0, float(ItemsScript.syncs))])
 
 	_bury_mutex.lock()
 	_bury_queue.clear()
