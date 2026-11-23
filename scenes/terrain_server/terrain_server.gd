@@ -178,6 +178,7 @@ var _queue: Array = []                 # urgent [peer, key Vector4i], oldest fir
 var _prefetch: Array = []              # prefetch [peer, key], oldest first
 var _queued: Dictionary = {}           # [peer, key] -> "u" urgent, "p" prefetch, "r" running
 var _flora_queue: Array = []           # [peer, chunk Vector2i, full (false: trees only)], oldest first
+var _flora_running: int = 0            # workers making a flora chunk now (under _queue_mutex); at most _max_running - 1, so one is always free for ground
 var _key_budget: Dictionary = {}       # peer -> [keys left, msec of the last refill] (queue mutex)
 var _water_queue: Array = []           # [peer, chunk Vector2i] water to pack on a worker thread (never on the main thread), oldest first
 var _water_done: Array = []            # [peer, chunk, bytes] packed, waiting to be sent by the main thread
@@ -3603,8 +3604,11 @@ func _worker_loop() -> void:
 		# Order: urgent blocks, flora chunks, prefetch blocks.
 		var water_item: Array = []
 
-		if _queue.is_empty() and not _flora_queue.is_empty():
+		# Lag lane 23 Nov 2026 (cloud join, timestamped): the joining player's first flora chunks (about 1 s each) took all three workers, and
+		# urgent ground waited behind them: 3 blocks in the first 6 s after the welcome. Flora now leaves one worker for the ground.
+		if _queue.is_empty() and not _flora_queue.is_empty() and (_flora_running < _max_running - 1 or _max_running <= 1):
 			flora_item = _flora_queue.pop_front()
+			_flora_running += 1
 		elif _queue.is_empty() and not _water_queue.is_empty():
 			water_item = _water_queue.pop_front()
 
@@ -3636,6 +3640,13 @@ func _worker_loop() -> void:
 			_done_mutex.lock()
 			_done.append([flora_item[0], flora_item[1], chunk_bytes, "flora", water_bytes, flora_item[2]])
 			_done_mutex.unlock()
+			_queue_mutex.lock()
+			_flora_running -= 1
+			var flora_left: bool = not _flora_queue.is_empty()
+			_queue_mutex.unlock()
+
+			if flora_left:
+				_work.post()   # a flora chunk passed over at the cap above gets a worker now
 			continue
 
 		if item.is_empty():
