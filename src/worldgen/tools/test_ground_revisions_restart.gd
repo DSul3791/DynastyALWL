@@ -110,5 +110,33 @@ func _init() -> void:
 	var c = open_store()
 	check(c.revision_of(tile) == 4, "a file without the count loads as written (%d)" % c.revision_of(tile))
 
+	# The log cut back at the start (#1822 follow-up: the world save's header covers 3 edits, so the 2 after it go with the pack changes they
+	# made), while revisions.json already counted all 5: nothing is counted again, the cut edits' tile jumps past CATCH_UP_MAX so a client's
+	# copy with them is dropped whole, and the file then counts the 3 edits the log holds.
+	c = null
+
+	for file in DirAccess.get_files_at(DIR):
+		DirAccess.remove_absolute(DIR + "/" + file)
+
+	var d = open_store()
+
+	for k in 5:
+		dig(d, k)
+
+	d.save_revisions()
+	var saw: int = d.revision_of(tile)
+	d = null
+	var e = BlockStore.new()
+	e.generator = FlatWorld.new()
+	e.settle_enabled = false
+	e._store_dir = DIR
+	e.ops.open(ProjectSettings.globalize_path(DIR) + "/digs.dat", 3)
+	e._load_revisions(DIR + "/revisions.json")
+	e._bump_dropped()
+	var cut_file: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(DIR + "/revisions.json"))
+	check(e.ops.count == 3 and e.revision_of(tile) == saw + BlockStore.CATCH_UP_MAX + 1 and bool(e.edits_since(tile, saw)["whole"]) and int(cut_file.get(BlockStore.OPS_KEY, -1)) == 3,
+		"a log cut back below the count: the tile jumps past a client's copy (%d, was %d), which is dropped whole; the file counts the 3 kept" % [e.revision_of(tile), saw])
+	e = null
+
 	print("test_ground_revisions_restart: %s" % ("PASS" if failures == 0 else "%d FAIL" % failures))
 	quit(1 if failures > 0 else 0)
