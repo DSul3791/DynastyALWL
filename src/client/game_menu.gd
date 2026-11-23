@@ -28,6 +28,7 @@ var _c
 var _pages: Dictionary = {}
 var _column: VBoxContainer
 var _sound_scroll: ScrollContainer     # Settings > Sound, scrolls when the window is short
+var _help_scroll: ScrollContainer      # Controls > help text, scrolls in what the window leaves
 var _admin_scroll: ScrollContainer     # the Admin page, taller than the canvas
 var _test_scroll: ScrollContainer      # Settings > Sound > Sound test list
 var _vsync_switch
@@ -107,11 +108,10 @@ func build(client) -> void:
 	_button(reset, "No, keep them", func(): show_page("admin"))
 	var world: VBoxContainer = _page("reset_world")
 	var world_warn: Label = Label.new()
-	world_warn.text = "Reset the WHOLE world for everyone?
-Every dig and fill, every dropped item and everything built or placed
-(chests and stations with their contents, fires, beds, farm beds) is deleted.
-Characters, packs, worn gear and skills are kept. This cannot be undone."
+	world_warn.text = "Reset the WHOLE world for everyone?\nEvery dig and fill, every dropped item and everything built or placed (chests and stations with their contents, fires, beds, farm beds) is deleted. Characters, packs, worn gear and skills are kept. This cannot be undone."
 	world_warn.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	world_warn.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART   # wraps in its width: the hand-broken lines ran past the label at every text size (screen audit, Lane A 23 Nov 2026)
+	world_warn.custom_minimum_size = Vector2(620.0, 0.0)
 	world_warn.add_theme_font_size_override("font_size", 20)
 	world.add_child(world_warn)
 	_button(world, "Yes, reset the world", func():
@@ -171,6 +171,9 @@ func show_page(page_name: String) -> void:
 
 	if _admin_scroll != null:
 		_admin_scroll.custom_minimum_size = Vector2(BUTTON_W + 30.0, room)
+
+	if _help_scroll != null:
+		_help_scroll.custom_minimum_size = Vector2(1020.0, room)
 
 	if note != null:
 		note.text = ""
@@ -254,7 +257,11 @@ This game: build %d, commit %s" % [_c.BUILD, _c._commit]
 	text.add_theme_font_size_override("font_size", 20)
 	text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	text.custom_minimum_size = Vector2(1000.0, 0.0)
-	help.add_child(text)
+	# The whole help ran off the bottom of the screen (screen audit, Lane A 23 Nov 2026): it scrolls in what the window leaves, Back stays in view.
+	_help_scroll = ScrollContainer.new()
+	_help_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	_help_scroll.add_child(text)
+	help.add_child(_help_scroll)
 	_button(help, "Back", func(): show_page("controls"))
 
 
