@@ -9,6 +9,10 @@ Invariants (src/client/robot_play.gd prints the client side, src/server/robot_au
   server    every AUDIT jump (an animal moved farther in a step than its top speed allows) and AUDIT inside (an animal inside a player)
   errors    no SCRIPT ERROR, and no engine ERROR line outside tools/robot_known_errors.txt, in any log
   joined    every robot joined and printed its done line
+  hunt      strikes from within reach that the server never counted as hits (the drawn animal is not where the server has it); the
+            fights per animal (robots, strikes, hits, down or not) are printed for the record
+  others    how each robot draws each other robot (SEES) against where that one really was (POSE): the stance it is drawn in, its clip,
+            and the drawn body more than OTHERS_M from every place the real one stood in the second before
 Prints one line per finding and a summary; exit 0 all held, 1 a finding, 2 the run broke (nothing to read, a robot never joined).
 """
 import collections
@@ -17,6 +21,9 @@ import os
 import re
 import sys
 
+OTHERS_M = 1.5          # a drawn player this far from everywhere the real one was in the last second is off its track
+OTHERS_REPEAT = 4       # ... this many times for one pair before it is a finding (one late packet is not)
+STEADY_MS = 2000        # a stance held this long must be the stance the others draw
 HERE = os.path.dirname(os.path.abspath(__file__))
 
 
@@ -125,6 +132,9 @@ def main():
 		elif not done:
 			findings.append("robot %s: joined but never finished its plan (stuck, crashed or timed out)" % name)
 
+	findings += others(robot_logs)
+	findings += hunts(robot_logs)
+
 	for b in broke:
 		print("BROKE " + b)
 
@@ -134,6 +144,103 @@ def main():
 	print("robot_check: %d robot logs, %d pack checks, %d findings, %d broken%s" % (
 		len(robot_logs), checks, len(findings), len(broke), "" if findings or broke else ": every invariant held"))
 	return 2 if broke else (1 if findings else 0)
+
+
+def lines(robot_logs, tag):
+	for path in robot_logs:
+		for line in open(path, encoding="utf-8", errors="replace"):
+			if line.startswith("ROBOT ") and (" %s " % tag) in line:
+				yield os.path.basename(path), line.split(" %s " % tag, 1)[0][6:], line.split(" %s " % tag, 1)[1].split()
+
+
+def others(robot_logs):
+	pose = collections.defaultdict(list)   # peer -> [(ms, stance, x, z, speed)]
+	names = {}
+
+	for _, who, p in lines(robot_logs, "POSE"):
+		pose[int(p[0])].append((int(p[1]), int(p[2]), float(p[3]), float(p[5]), float(p[6])))
+		names[int(p[0])] = who
+
+	off = collections.Counter()
+	worst = {}
+	stance_bad = collections.Counter()
+	clip_bad = collections.Counter()
+	example = {}
+	seen = 0
+
+	for _, who, p in lines(robot_logs, "SEES"):
+		peer, ms, stance, x, z, clip = int(p[0]), int(p[1]), int(p[2]), float(p[3]), float(p[5]), p[6]
+		track = [q for q in pose.get(peer, []) if ms - 1000 <= q[0] <= ms]
+		before = [q for q in pose.get(peer, []) if ms - STEADY_MS <= q[0] <= ms]
+
+		if not track:
+			continue
+
+		seen += 1
+		key = (who, names.get(peer, str(peer)))
+		d = min(((x - q[2]) ** 2 + (z - q[3]) ** 2) ** 0.5 for q in track)
+
+		if d > OTHERS_M:
+			off[key] += 1
+			worst[key] = max(worst.get(key, 0.0), d)
+
+		if len(before) >= 3 and len({q[1] for q in before}) == 1:
+			real = before[0][1]
+
+			if stance != real:
+				stance_bad[key] += 1
+				example.setdefault(("stance",) + key, "drawn in stance %d while it had been in stance %d for %d s" % (stance, real, STEADY_MS // 1000))
+			elif clip != "-":
+				family = {1: "crouch", 2: "sit", 3: "lie"}.get(real, "")
+				wrong = (family and family not in clip) or (not family and any(f in clip for f in ("crouch", "sit", "lie")))
+
+				if wrong:
+					clip_bad[key] += 1
+					example.setdefault(("clip",) + key, "playing clip %s while in stance %d" % (clip, real))
+
+	out = []
+
+	for key, n in sorted(off.items()):
+		if n >= OTHERS_REPEAT:
+			out.append("others %s draws %s off its track %d times (worst %.1f m from anywhere it was in the second before)" % (key[0], key[1], n, worst[key]))
+
+	for key, n in sorted(stance_bad.items()):
+		if n >= OTHERS_REPEAT:
+			out.append("others %s draws %s in the wrong stance %d times: %s" % (key[0], key[1], n, example[("stance",) + key]))
+
+	for key, n in sorted(clip_bad.items()):
+		if n >= OTHERS_REPEAT:
+			out.append("others %s draws %s with the wrong clip %d times: %s" % (key[0], key[1], n, example[("clip",) + key]))
+
+	print("robot_check: %d views of other robots compared with where they were" % seen)
+	return out
+
+
+def hunts(robot_logs):
+	fights = collections.defaultdict(lambda: {"robots": [], "strikes": 0, "hits": 0, "hp": 1.0, "down": False, "secs": 0.0})
+	out = []
+
+	for name, who, p in lines(robot_logs, "HUNT"):
+		if p[1] == "none":
+			print("robot_check: hunt %s found no %s within 120 m" % (who, p[0]))
+			continue
+
+		f = fights[(p[0], int(p[1]))]
+		f["robots"].append("%s (health %s->%s)" % (who, p[6], p[7]))
+		f["strikes"] += int(p[2])
+		f["hits"] += int(p[3])
+		f["hp"] = min(f["hp"], float(p[4]))
+		f["down"] = f["down"] or p[5] == "down"
+		f["secs"] = max(f["secs"], float(p[8]))
+
+	for (sp, id_), f in sorted(fights.items()):
+		print("robot_check: fight %s %d: %d robots, %d strikes, %d hits, health share %.1f, %s after %.0f s: %s" % (
+			sp, id_, len(f["robots"]), f["strikes"], f["hits"], f["hp"], "DOWN" if f["down"] else "not down", f["secs"], ", ".join(f["robots"])))
+
+		if f["strikes"] >= 10 and f["hits"] == 0:
+			out.append("hunt %s %d: %d strikes from within 1.6 m of the drawn animal and the server counted no hit" % (sp, id_, f["strikes"]))
+
+	return out
 
 
 if __name__ == "__main__":

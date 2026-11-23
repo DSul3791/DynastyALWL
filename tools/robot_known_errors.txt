@@ -1,2 +1,5 @@
 # Engine ERROR lines tools/robot_check.py lets pass (one Python regular expression a line). SCRIPT ERROR lines always fail.
 # Add a line only for an error that is understood and harmless in a headless robot run, with a comment saying why and who checked.
+# Engine teardown after a normal quit (23 Nov 2026, robot play-testers): headless clients report leftover resources as they exit. The abort
+# that follows ("corrupted size vs. prev_size") is a real fault, passed to the packaging thread; this line is only its leak notice.
+^ERROR: \d+ resources still in use at exit
