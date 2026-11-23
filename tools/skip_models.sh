@@ -5,6 +5,7 @@
 # LFS pointer stub. Run once in a clone, best one made with GIT_LFS_SKIP_SMUDGE=1 (so nothing is downloaded at all):
 #   GIT_LFS_SKIP_SMUDGE=1 git clone <url> && cd DynastyALWL && tools/skip_models.sh
 # Undo (to get the models): git sparse-checkout disable && git config --unset lfs.fetchexclude && git lfs pull
+# It sets repository-wide git config: run it in the main clone, not in a worktree of a clone that should keep the models.
 set -e
 cd "$(git rev-parse --show-toplevel)"
 git config lfs.fetchexclude 'assets/animals/**'

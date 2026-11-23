@@ -20,8 +20,6 @@ param(
 	# The bought animal models (assets/animals) go into the game's pack (Dave 22 Nov 2026: "incorporated right in with the game"). Since
 	# 23 Nov 2026 they are in the repository through Git LFS; a clone without them (older commits) copies them, read only, from Dave's game
 	# folder, which is never changed.
-	# Once the models are in the repository (Git LFS, Dave 23 Nov 2026) they come from this clone and this is left empty; before that the
-	# default is his game folder.
 	[string]$AnimalsFrom = "",
 	# A build without them (the game draws its code-built animals instead).
 	[switch]$NoAnimals,
@@ -44,7 +42,7 @@ if (git status --porcelain -- addons assets data scenes src worlds project.godot
 
 $tracked = @(git -c core.quotepath=off ls-files -- assets/animals)
 if ($NoAnimals) {
-	if (Test-Path assets\animals) { throw "make_release: -NoAnimals, but assets\animals is in this checkout; delete that copy first" }
+	if (Test-Path assets\animals) { throw "make_release: -NoAnimals, but assets\animals is in this checkout; use a clone made with tools/skip_models.sh" }
 }
 elseif ($tracked.Count -gt 0) {
 	# The models are in the repository (Git LFS): this clone must hold the real files, not LFS pointer stubs (git lfs pull) and not a
