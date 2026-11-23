@@ -123,7 +123,7 @@
 		"say_depth": "Stab where the water is between ankle and waist deep."
 	},
 	"trap": {
-		"note": "Fish traps (structures.json fish_trap: true and min_water_m 0.3; Part C plan 2). Each game hour a trap rolls its fishing cell's stock at hour_chance, or bait_chance with one of bait in its slots (a catch eats it). The fish goes into its slots and E takes it out; a full or frozen trap catches nothing. Missed hours (sleep) are rolled up to catch_up_h.",
+		"note": "Fish traps (structures.json fish_trap: true and min_water_m 0.3; Part C plan 2). Every game hour a trap stands rolls its fishing cell's stock at hour_chance, or bait_chance with one of bait in its slots (a catch eats it). The hours are rolled when someone opens it (no server work while nobody looks, 23 Nov 2026), at most catch_up_h of them. The fish goes into its slots and E takes it out; a full or frozen trap catches nothing.",
 		"hour_chance": 0.12,
 		"bait_chance": 0.2,
 		"bait": [

@@ -40,6 +40,7 @@ var _idx_path: String = ""
 var _idx_file: FileAccess
 var _index: Dictionary = {}       # Vector3i -> [upto, checksum], only blocks whose copy is usable
 var _mutex: Mutex = Mutex.new()   # the index, the idx file and the queue; loads take it too
+var _db_mutex: Mutex = Mutex.new()   # every call on the settled-copies SQLite file, one at a time (a read beside another thread's write failed: "database is locked")
 var _queue: Array = []
 var _queued: Dictionary = {}
 var _thread: Thread = null
@@ -99,7 +100,10 @@ func try_load(buffer: VoxelBuffer, block: Vector3i) -> int:
 		return -1
 
 	var copy: VoxelBuffer = Layout.make_buffer(16)
-	var ok: bool = _db.load_voxel_block(copy, block, 0) == VoxelStream.RESULT_BLOCK_FOUND and _checksum(copy) == int(entry[1])
+	_db_mutex.lock()
+	var found: bool = _db.load_voxel_block(copy, block, 0) == VoxelStream.RESULT_BLOCK_FOUND
+	_db_mutex.unlock()
+	var ok: bool = found and _checksum(copy) == int(entry[1])
 
 	if ok and guard.is_valid():
 		ok = bool(guard.call(copy, block))
@@ -214,11 +218,14 @@ func settle(block: Vector3i) -> bool:
 	settled_blocks = _index.size()
 	_record(block, upto, STATE_BEGIN, 0)
 	_mutex.unlock()
+	var again: VoxelBuffer = Layout.make_buffer(16)
+	_db_mutex.lock()
 	_db.save_voxel_block(buffer, block, 0)
 	_db.flush()
-	var again: VoxelBuffer = Layout.make_buffer(16)
+	var found: bool = _db.load_voxel_block(again, block, 0) == VoxelStream.RESULT_BLOCK_FOUND
+	_db_mutex.unlock()
 
-	if _db.load_voxel_block(again, block, 0) != VoxelStream.RESULT_BLOCK_FOUND:
+	if not found:
 		return false
 
 	var sum: int = _checksum(again)

@@ -740,6 +740,11 @@ func _clearing_camp() -> void:
 	animals.player_positions = func(): return []
 	animals.setup()
 	animals.traits = false
+
+	for sp in animals.cfg["species"]:
+		animals.cfg["species"][sp]["target_per_player"] = 0   # the animals' tick below spawns nothing: only the camp's own people and horses
+
+	animals.cfg["wolves"]["cell_share"] = 0.0
 	b.animals = animals
 	animals.bandit_camps = b
 	var players: Array = []
@@ -812,6 +817,43 @@ func _clearing_camp() -> void:
 	clock[0] += 20.0
 	b.step(low, 0.25)
 	check(not low.has("bound_by") and said.any(func(t): return str(t).contains("got away")), "after a game hour he slips his bonds")
+
+	# His captor's line drops (parked): he waits, tied where he stands, however far off they were parked and however long it lasts; his time
+	# to slip free runs again only once they are back (coordinator's ruling, 23 Nov 2026).
+	animals.damage(low_id, 0.5, 7)
+	b.bind(low_id, 7)
+	var parked: Array = [true]
+	b.captor_absent = func(peer): return int(peer) == 7 and parked[0]
+	var kept: Array = players.duplicate()
+	players.clear()   # a parked player is out of the players' list
+	low["pos"] = high["pos"] + Vector3(400.0, 0.0, 0.0)   # led off before the line dropped: over despawn_m from the one other player
+	var tied_at: Vector3 = low["pos"]
+	var other_player: Vector3 = high["pos"] - Vector3(250.0, 0.0, 0.0)   # near enough that his camp mate stays, 650 m from him
+	animals.player_positions = func(): return [other_player]
+	said.clear()
+
+	for n in 12:   # the game clock runs on while they are away, three game hours in all
+		for t in 4:
+			animals.tick(0.25)
+
+		b.step(low, 0.25)
+		clock[0] += float(c["escape_game_hours"]) * 3600.0 * 0.25
+
+	check(animals.animals.has(low_id) and animals.animals.has(int(high["id"])), "no player within despawn_m of him: still kept for his parked captor")
+	check(low.has("bound_by") and int(low["bound_by"]) == 7 and (low["pos"] as Vector3).distance_to(tied_at) < 0.01 and said.is_empty(), "his captor's line dropped: he waits, tied where he stands, three game hours on (%s)" % str(said))
+	animals.player_positions = func(): return []
+	b.captor_back(7, 9)   # rejoined on a new connection before the old line timed out: that is the captor back
+	check(int(low["bound_by"]) == 9, "a rejoin on a new connection takes the captive over (%d)" % int(low["bound_by"]))
+	b.captor_back(9, 7)
+	parked[0] = false
+	players.append_array(kept)
+	players[0]["pos"] = low["pos"] + Vector3(1.0, 0.0, 0.0)
+	b.step(low, 0.25)
+	check(low.has("bound_by") and not low.has("held_at"), "the captor back: still his captive, the time away not counted")
+	clock[0] += float(c["escape_game_hours"]) * 3600.0 + 10.0
+	b.step(low, 0.25)
+	check(not low.has("bound_by"), "and after a game hour more with them back, he slips his bonds as ever")
+	b.captor_absent = Callable()
 
 	# The bounty: led to the guard.
 	animals.damage(low_id, 0.5, 7)

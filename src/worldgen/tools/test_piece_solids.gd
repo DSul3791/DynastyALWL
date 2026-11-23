@@ -74,6 +74,52 @@ func _init() -> void:
 		if piece != null:
 			piece.free()
 
+	# Things block where they are drawn, and their footprint is that size (coordinator 23 Nov 2026): the rock pile's stones, the Saw mill's wheel,
+	# the quenching trough, the bookcase and the apothecary cabinet.
+	for kind in ["rock_pile", "quenching_trough", "bookcase", "apothecary_cabinet", "saw_mill"]:
+		var def: Dictionary = cfg["structures"][kind]
+		var model: Node3D = view._model_for_state(int(def["state"]), {})
+		var drawn: AABB = view._bounds_in(model, model)
+		var box: Variant = solid_box(model)
+		var wide: float = maxf(-drawn.position.x, drawn.end.x) * 2.0
+		var deep: float = maxf(-drawn.position.z, drawn.end.z) * 2.0
+		var covers: bool = box != null and (box as AABB).position.x <= drawn.position.x + 0.05 and (box as AABB).end.x >= drawn.end.x - 0.05 and (box as AABB).position.z <= drawn.position.z + 0.05 and (box as AABB).end.z >= drawn.end.z - 0.05
+		check(covers, "%s: solid across its drawn %.2f x %.2f m (%s)" % [kind, drawn.size.x, drawn.size.z, str(box)])
+
+		if kind != "saw_mill":   # the mill's wheel stands over the water past its footprint on purpose (needs_running_water): its footprint stays
+			check(float(def["footprint_x"]) >= wide - 0.06 and float(def["footprint_z"]) >= deep - 0.06, "%s: its footprint %.2f x %.2f holds the drawn %.2f x %.2f" % [kind, float(def["footprint_x"]), float(def["footprint_z"]), wide, deep])
+
+		model.free()
+
+	# And every other station or piece of furniture: its solid stays inside its footprint, so nothing placed beside it is packed into it. Left out on
+	# purpose: the Saw mill (its wheel stands over running water past the footprint, needs_running_water), the fireplace (drawn from its back wall
+	# forward, the footprint centred on its spot) and the carts (they are pulled, not placed against things); docs/TODO.md Piece 0d.
+	var wider: PackedStringArray = PackedStringArray()
+
+	for kind in cfg["structures"]:
+		var def: Dictionary = cfg["structures"][kind]
+
+		if not def.has("state") or bool(def.get("piece", false)) or str(def.get("attach_to", "")) != "" or kind in ["saw_mill", "fireplace", "handcart", "small_log_sled", "small_wagon"]:
+			continue
+
+		var model: Node3D = view._model_for_state(int(def["state"]), {})
+
+		if model == null:
+			continue
+
+		var box: Variant = solid_box(model)
+		model.free()
+
+		if box == null:
+			continue
+
+		var b: AABB = box
+
+		if maxf(-b.position.x, b.end.x) * 2.0 > float(def.get("footprint_x", 0.0)) + 0.06 or maxf(-b.position.z, b.end.z) * 2.0 > float(def.get("footprint_z", 0.0)) + 0.06:
+			wider.append("%s (solid %s, footprint %s x %s)" % [kind, str(b.size.snapped(Vector3.ONE * 0.01)), str(def.get("footprint_x")), str(def.get("footprint_z"))])
+
+	check(wider.is_empty(), "every station's solid stands inside its footprint (%s)" % ", ".join(wider))
+
 	var crane: Node3D = view._model_for_state(int(cfg["structures"]["fireplace_cooking_crane"]["state"]), {})
 	check(not view._has_solid(crane), "a piece that hangs in a fireplace gets no box (it would fill the hearth)")
 	crane.free()

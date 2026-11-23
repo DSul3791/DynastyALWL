@@ -19,8 +19,13 @@ static func rows() -> Dictionary:
 
 # Centre to centre on the ground, the nearest species `sp` comes to a player.
 static func contact_m(sp: String) -> float:
+	return body_m(sp) + float(rows().get("player_m", 0.35))
+
+
+# The species' reach from its middle to its nose or tusks (body_m), in metres.
+static func body_m(sp: String) -> float:
 	var r: Dictionary = rows()
-	return float((r.get("body_m", {}) as Dictionary).get(sp, r.get("default_m", 0.4))) + float(r.get("player_m", 0.35))
+	return float((r.get("body_m", {}) as Dictionary).get(sp, r.get("default_m", 0.4)))
 
 
 # `pos` moved out of the body of a player standing at `at` (feet): unchanged when it is `m` or more away on the ground or more than 2 m

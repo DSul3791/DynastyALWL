@@ -1,6 +1,6 @@
 extends SceneTree
 
-# Part C plan 2 (design/part_c_code_plan.md, approved 10 Nov 2026): the Fishing spear (weapon_class fish_spear, fishing.json "fish_spear"),
+# Part C plan 2 (design/part_c_code_plan.md, approved 10 Nov 2026; since 23 Nov 2026 a trap is fished when someone opens it, not on a timer): the Fishing spear (weapon_class fish_spear, fishing.json "fish_spear"),
 # the Fish trap (structures.json fish_trap + min_water_m, fishing.json "trap") and the two new baits. Jamie's rows are not in yet, so stand-in
 # rows are used.
 #   godot --headless --path . --script res://src/worldgen/tools/test_fish_trap.gd
@@ -171,16 +171,16 @@ func _init() -> void:
 	# An hour of a trap: a catch goes into its slots and off the cell's stock.
 	cfg["trap"]["hour_chance"] = 1.0
 	items._fish_stock[trap_key] = [12, clock[0]]
-	items._fish_traps_tick()
+	items._chest_of(1, trap_id)   # E: the hours since it was last looked at are fished now
 	check(_fish_in(box) == 0, "a new trap has fished no hour yet")
 	game[0] += 3600.0
-	items._fish_traps_tick()
+	items._chest_of(1, trap_id)   # E: the hours since it was last looked at are fished now
 	check(_fish_in(box) == 1 and items.fish_stock(trap_cell) == 11, "after an hour one fish is in it and the stock is down one")
 	game[0] += 1800.0
-	items._fish_traps_tick()
+	items._chest_of(1, trap_id)   # E: the hours since it was last looked at are fished now
 	check(_fish_in(box) == 1, "half an hour more catches nothing")
 	game[0] += 1800.0
-	items._fish_traps_tick()
+	items._chest_of(1, trap_id)   # E: the hours since it was last looked at are fished now
 	check(_fish_in(box) == 2 and items.fish_stock(trap_cell) == 10, "the next whole hour does")
 
 	# Both slots taken: no catch, the stock stays.
@@ -189,7 +189,7 @@ func _init() -> void:
 	box.add(junk, 1)
 	box.add(junk, 1)
 	game[0] += 5.0 * 3600.0
-	items._fish_traps_tick()
+	items._chest_of(1, trap_id)   # E: the hours since it was last looked at are fished now
 	check(_fish_in(box) == 0 and items.fish_stock(trap_cell) == 10, "a full trap catches no more")
 
 	# Bait: hour_chance 0 and bait_chance 1, so only a baited trap catches, and the catch eats the bait.
@@ -197,23 +197,23 @@ func _init() -> void:
 	cfg["trap"]["hour_chance"] = 0.0
 	cfg["trap"]["bait_chance"] = 1.0
 	game[0] += 3600.0
-	items._fish_traps_tick()
+	items._chest_of(1, trap_id)   # E: the hours since it was last looked at are fished now
 	check(_fish_in(box) == 0, "an unbaited trap at chance 0 catches nothing")
 	box.add(worm, 1)
 	game[0] += 3600.0
-	items._fish_traps_tick()
+	items._chest_of(1, trap_id)   # E: the hours since it was last looked at are fished now
 	check(_fish_in(box) == 1 and box.count_of(worm) == 0, "a worm baits it and the catch eats it")
 	_empty(box)
 	box.add(junk, 1)
 	box.add(bait, 1)
 	game[0] += 3600.0
-	items._fish_traps_tick()
+	items._chest_of(1, trap_id)   # E: the hours since it was last looked at are fished now
 	check(_fish_in(box) == 1 and box.count_of(bait) == 0, "fishing bait the same: the fish takes the bait's own slot")
 	_empty(box)
 	box.add(junk, 1)
 	box.add(bait, 2)
 	game[0] += 3600.0
-	items._fish_traps_tick()
+	items._chest_of(1, trap_id)   # E: the hours since it was last looked at are fished now
 	check(_fish_in(box) == 0 and box.count_of(bait) == 2, "a full trap keeps its bait")
 
 	# Empty cell, ice, a long sleep.
@@ -221,18 +221,36 @@ func _init() -> void:
 	cfg["trap"]["hour_chance"] = 1.0
 	items._fish_stock[trap_key] = [0, clock[0]]
 	game[0] += 3600.0
-	items._fish_traps_tick()
+	items._chest_of(1, trap_id)   # E: the hours since it was last looked at are fished now
 	check(_fish_in(box) == 0, "an empty cell gives the trap nothing")
 	items._fish_stock[trap_key] = [12, clock[0]]
 	items.ice_cover_at = func(_p): return 0.9
 	game[0] += 3600.0
-	items._fish_traps_tick()
+	items._chest_of(1, trap_id)   # E: the hours since it was last looked at are fished now
 	check(_fish_in(box) == 0, "a frozen trap catches nothing")
 	items.ice_cover_at = Callable()
 	game[0] += 48.0 * 3600.0
-	items._fish_traps_tick()
+	items._chest_of(1, trap_id)   # E: the hours since it was last looked at are fished now
 	check(_fish_in(box) >= 2 and items.fish_stock(trap_cell) == 12 - _fish_in(box), "hours slept through are rolled when the clock jumps, off the stock")
 	check(items._chest_of(1, trap_id) == box, "E opens the trap like a chest")
+
+	# The look rolls the hours only for someone who may open it, at most catch_up_h of them; a trap from an old save starts its hours at the first look.
+	_empty(box)
+	var rolled: float = float(items._items[trap_id]["struct"]["rolled_s"])
+	game[0] += 3.0 * 3600.0
+	items.report_position(1, Vector3(40.0, 10.0, 5.0))
+	check(items._chest_of(1, trap_id) == null and float(items._items[trap_id]["struct"]["rolled_s"]) == rolled and _fish_in(box) == 0, "out of reach: no open and no hours rolled")
+	items.report_position(1, Vector3(5.0, 10.0, 5.0))
+	cfg["trap"]["catch_up_h"] = 1
+	items._fish_stock[trap_key] = [12, clock[0]]
+	items._chest_of(1, trap_id)
+	check(_fish_in(box) == 1 and float(items._items[trap_id]["struct"]["rolled_s"]) == rolled + 3.0 * 3600.0, "three hours at catch_up_h 1 roll one, and the clock moves on all three")
+	cfg["trap"]["catch_up_h"] = 24
+	_empty(box)
+	items._items[trap_id]["struct"].erase("rolled_s")
+	game[0] += 5.0 * 3600.0
+	items._chest_of(1, trap_id)
+	check(_fish_in(box) == 0 and float(items._items[trap_id]["struct"].get("rolled_s", -1.0)) == game[0], "a trap with no hours kept (an old save) rolls nothing at the first look and starts its hours then")
 
 	print("fish trap tests: %d failures" % failures)
 	quit(1 if failures > 0 else 0)

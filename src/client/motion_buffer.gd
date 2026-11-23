@@ -134,7 +134,10 @@ static func clock_new() -> Dictionary:
 	return {"off": INF, "server_ms": -1, "interval": 0.25, "late": 0.05, "hole": 0.0}
 
 
-static func clock_note(c: Dictionary, now_s: float, server_ms: int) -> void:
+# own_stall: this computer's own frame stalled (a hitch, a long load) just before the rows were read. They came late because nobody read them,
+# not because the line is slow, so the lateness is left as it was (robots 23 Nov 2026: one 2 s hitch left a client's lateness over 1 s for
+# the rest of the fight, its delay at the 0.8 s cap and its charges drawn a second behind).
+static func clock_note(c: Dictionary, now_s: float, server_ms: int, own_stall: bool = false) -> void:
 	var last: int = int(c["server_ms"])
 
 	if last >= 0 and server_ms > last:
@@ -148,6 +151,9 @@ static func clock_note(c: Dictionary, now_s: float, server_ms: int) -> void:
 
 	c["off"] = clock_off(float(c["off"]), now_s, server_ms, last)
 	c["server_ms"] = server_ms if server_ms > last or server_ms < last - 2000 else last
+	if own_stall:
+		return
+
 	var late: float = maxf(now_s - (float(server_ms) / 1000.0 + float(c["off"])), 0.0)
 	c["late"] = late if late > float(c["late"]) else lerpf(float(c["late"]), late, 0.02)
 
@@ -162,13 +168,14 @@ static func clock_delay(c: Dictionary) -> float:
 # is then blended away (SMOOTH_HALF_S, at most CATCH_X of its speed faster, CATCH_MIN_MPS at least: so about 1.3 times its leg speed, plus
 # up to about 1.5 m/s for a slow walker while a correction drains). Remote players (player_view) share it. A late batch, a hole bridged too far, a step past a player held
 # back: the body never jumps. A move longer than SNAP_M (out of a burrow, a reconnect) is shown at once.
-static func smooth(body: Dictionary, p: Vector3, speed: float, delta: float) -> Vector3:
+# room_x, catch_x and catch_min: the animals' (1.3 times their speed at most) unless given; other players pass their own (player_view.gd).
+static func smooth(body: Dictionary, p: Vector3, speed: float, delta: float, room_x: float = 1.05, catch_x: float = CATCH_X, catch_min: float = CATCH_MIN_MPS) -> Vector3:
 	var v: float = clampf(speed, 2.0, CARRY_MPS)   # a leg between two near-simultaneous rows reads absurdly fast: no animal outruns CARRY_MPS (Lane B probe, 23 Nov 2026: 1 to 4 m frame jumps under loss)
 	var err: Vector3 = body.get("sm_err", Vector3.ZERO)
 
 	if body.has("sm_p"):
 		var jump: Vector3 = p - (body["sm_p"] as Vector3)
-		var room: float = v * delta * 1.05 + 0.002   # the leg's own speed (a slack in proportion, so it holds at any frame rate): anything faster is eased in below
+		var room: float = v * delta * room_x + 0.002   # the leg's own speed (a slack in proportion, so it holds at any frame rate): anything faster is eased in below
 
 		if jump.length() > SNAP_M:
 			err = Vector3.ZERO
@@ -178,7 +185,7 @@ static func smooth(body: Dictionary, p: Vector3, speed: float, delta: float) -> 
 		var size: float = err.length()
 
 		if size > 0.0:
-			err -= err / size * minf(minf(size * (1.0 - pow(0.5, delta / SMOOTH_HALF_S)), maxf(v * CATCH_X, CATCH_MIN_MPS) * delta), size)
+			err -= err / size * minf(minf(size * (1.0 - pow(0.5, delta / SMOOTH_HALF_S)), maxf(v * catch_x, catch_min) * delta), size)
 
 	body["sm_p"] = p
 	body["sm_err"] = err
@@ -235,6 +242,26 @@ static func follow(body: Dictionary, p: Vector3, delta: float) -> Vector3:
 	body["fw_v"] = v
 	body["fw_last"] = p
 	return drawn
+
+
+# This computer's own frame stalled: the body is drawn where its points put it, with no correction to ease away and its feet starting from
+# there. Every body on the screen jumped with the stall anyway; eased, it would drain a jump of the stall's length (13 m for a moose at
+# 6 m/s after a 2 s hitch) at 1.3 times its speed, drawn 10 to 15 m off where the other players and the server have it for 10 s and more
+# (robots 23 Nov 2026, the kinds sweep: the two clients 16 m apart on one moose).
+# The end of the settle window after this computer's own stall: a gap since the bodies were last drawn (frame_s, -1 before the first) or this
+# frame's own step over stall_s opens it for stall_s more; otherwise `until` as it was. Bodies are settled, and rows leave the lateness, while
+# now_s <= the result: it covers the frame after the stall too, whichever of the two the rows and the drawing land in.
+static func stall_until(now_s: float, frame_s: float, until: float, step_s: float, stall_s: float) -> float:
+	if (frame_s >= 0.0 and now_s - frame_s > stall_s) or step_s > stall_s:
+		return now_s + stall_s
+
+	return until
+
+
+static func settle(body: Dictionary) -> void:
+	body.erase("sm_p")
+	body.erase("sm_err")
+	body.erase("fw_p")
 
 
 # A body drawn without its feet this frame (a charge, animal_view AHEAD_STATES) at `p`: follow starts again from there, at the speed it had.
