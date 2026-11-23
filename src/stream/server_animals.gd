@@ -902,6 +902,9 @@ func make_way(a: Dictionary, at: Vector3, dt: float, others: Array = []) -> bool
 	if _deeper_in(to, a["pos"], others, AnimalContact.contact_m(str(a["sp"]))):
 		return false   # not out of one player into another beside them (`others`: every player's feet or infos)
 
+	if wall_between(a["pos"], to):
+		return false   # not through a wall or a shut door: a player who pins it against one does not push it out the other side
+
 	a["pos"] = to   # its sent heading stays; the client draws it facing the way it steps while it steps. Tick stamps it moving (moved_ms) as for any step
 	return true
 

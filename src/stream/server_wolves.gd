@@ -865,7 +865,7 @@ func _feed(pack: Dictionary, members: Array, c: Vector3, dt: float, infos: Array
 		for m in members:
 			_walk(m, prey["pos"], float(def.get("sprint_mps", 10.5)), dt, infos)
 
-		if Vector2(members[0]["pos"].x - prey["pos"].x, members[0]["pos"].z - prey["pos"].z).length() <= float(cfgw().get("reach_m", 3.0)):
+		if Vector2(members[0]["pos"].x - prey["pos"].x, members[0]["pos"].z - prey["pos"].z).length() <= float(cfgw().get("reach_m", 3.0)) and not host.wall_between(members[0]["pos"], prey["pos"]):   # never through a wall or a shut gate (a dog in its pen)
 			if prey.has("companion_id"):
 				# A dog fights back and is bitten, a bite every dog_bite_s, through the one damage hook (its death is the companion's death).
 				pack["dog_bite_in"] = float(pack.get("dog_bite_in", 0.0)) - dt
