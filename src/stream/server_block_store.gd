@@ -88,12 +88,16 @@ func setup(terrain_generator, store_dir: String) -> String:
 	_edits.database_path = ProjectSettings.globalize_path(store_dir + "/edits.sqlite")
 	_warm(_cache)
 	_warm(_edits)
-	var ops_error: String = ops.open(ProjectSettings.globalize_path(store_dir) + "/digs.dat")
+	var ops_error: String = ops.open(ProjectSettings.globalize_path(store_dir) + "/digs.dat", ItemsScript.header_digs(store_dir))   # digs after the last whole save are dropped with their pack changes
 
 	if ops_error != "":
 		return ops_error
 
 	print("server: %d ground edits loaded from digs.dat" % ops.count)
+
+	if not ops.dropped.is_empty():
+		_drop_settled()   # copies made with the cut edits in them: a later log that grows past their number again must not take them
+
 	_purge_old_settled()
 	var settle_error: String = _open_settle()
 
@@ -101,7 +105,28 @@ func setup(terrain_generator, store_dir: String) -> String:
 		return settle_error
 
 	_load_revisions(store_dir + "/revisions.json")
+	_bump_dropped()
 	return ""
+
+
+# Edits dropped at the start (ops.open cut the log back to the last whole save: a hard stop after it): a client's saved copy of their tiles
+# may hold them, so those tiles' revisions jump past CATCH_UP_MAX and the copy is dropped whole at the next join (as after a ground reset).
+func _bump_dropped() -> void:
+	var bumped: Dictionary = {}
+
+	for edit in ops.dropped:
+		for block in GroundOps.blocks_of(edit[0], edit[1]):
+			var tile: Vector2i = generator.tile_of(float(block.x * BLOCK_SIZE), float(block.z * BLOCK_SIZE))
+			bumped["%d,%d" % [tile.x, tile.y]] = true
+
+	for key in bumped:
+		tile_revisions[key] = int(tile_revisions.get(key, 1)) + CATCH_UP_MAX + 1
+
+	if not bumped.is_empty():
+		_revisions_dirty = true
+
+	if _revisions_dirty:
+		save_revisions()   # the counts as this start left them (with "_ops" = the log's count now)
 
 
 # revisions.json: every tile's revision, and how many edits of the log they count (OPS_KEY).
@@ -123,7 +148,8 @@ func _load_revisions(path: String) -> void:
 				_count_unsaved_edits(int(parsed[OPS_KEY]))
 
 
-# Round 7 (physical world audit, 23 Nov 2026: a hard stop in the middle of digging loses nothing, and two players see the same ground).
+# Round 7 (physical world audit, 23 Nov 2026: a hard stop in the middle of digging loses nothing, and two players see the same ground). Since the
+# #1822 follow-up a hard stop drops the edits after the last whole world save (saved within seconds of an edit) with the pack changes they made.
 const OPS_KEY := "_ops"   # in revisions.json: how many edits of the log the revisions counted when written
 
 
@@ -211,6 +237,16 @@ func _write(path: String, text: String) -> void:
 	if file != null:
 		file.store_string(text)
 		file.close()
+
+
+# The settled copies are a cache made from the edit log (ground_settle.gd): after the log was cut back they may hold edits it no longer has,
+# so they are all thrown away and remade from the log as blocks get busy again.
+func _drop_settled() -> void:
+	var folder: String = ProjectSettings.globalize_path(_store_dir)
+
+	for file in DirAccess.get_files_at(folder):
+		if file.begins_with("settled_g"):
+			DirAccess.remove_absolute(folder + "/" + file)
 
 
 func _settled_stem() -> String:

@@ -44,6 +44,10 @@ func _init() -> void:
 		before[name] = gen_of(copy + "/" + name)
 
 	var head: int = gen_of(copy + "/world_items.json")
+	var header_digs: int = ItemsScript.header_digs(copy)   # the ground edits the last whole save covers; the server's next start keeps that many
+	var log_bytes: int = FileAccess.get_file_as_bytes(copy + "/digs.dat").size() if FileAccess.file_exists(copy + "/digs.dat") else 0
+	@warning_ignore("integer_division")
+	var digs_in_log: int = maxi(0, (log_bytes - 5) / 24)
 	var items = ItemsScript.new()
 	items.send_full = func(_p, _b): pass
 	items.send_slots = func(_p, _b): pass
@@ -93,7 +97,7 @@ func _init() -> void:
 		if file.ends_with(".unfinished"):
 			put_aside.append(file)
 
-	var out: Dictionary = {"header_gen": head, "gens_on_disk": before, "gens_read": used, "past_header": past, "put_aside": put_aside,
+	var out: Dictionary = {"header_gen": head, "header_digs": header_digs, "digs_in_log": digs_in_log, "gens_on_disk": before, "gens_read": used, "past_header": past, "put_aside": put_aside,
 		"load_failures": items.load_failures, "players": items._characters.size(), "packs": items._inventories.size(), "chests": items._chests.size(),
 		"world_items": items._items.size(), "totals": totals}
 	print("STORE " + JSON.stringify(out))

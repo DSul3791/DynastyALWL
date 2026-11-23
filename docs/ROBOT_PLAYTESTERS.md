@@ -80,9 +80,12 @@ capture the mouse) and is lowered if the warning never becomes a charge; even ch
 blow prints `ENEMY hit|miss` (warning lead, gap, dodge, shield, facing); the server prints `AUDIT enemy_hit` with its own gap and shield.
 
 Plan `kind_<species>` (two robots, animal thread 23 Nov 2026; `ROBOT_S=260 tools/robots.sh 2 kind_moose --delay-ms 120 --jitter-ms 30
---loss 0.03`, any species name in data/animals/animals.json; a wolf is a pack): Robot 1 places one 15 m ahead and both hunt it with spears,
-two rounds of 70 s. Each robot prints a KIND line (the largest drawn step a frame against the kind's top speed, steps over 1 m, frames drawn
-inside the other robot), a SLIDE line (feet against ground: only with the bought models, so on Lane A, `LANE_A_SLIDES.md` in project files;
+--loss 0.03`, any species name in data/animals/animals.json; a wolf is a pack: `kind_wolf` is one robot with `ROBOT_S=360`, run 380 m out of town and
+unarmed until bitten, since a pack keeps off the town, a player with a spear and a player with another within 10 m): Robot 1 places one 15 m ahead and both hunt it with spears,
+two rounds of 70 s (in a round they hunt one after another of the kind until its time is used). Each robot prints a KIND line (the largest
+drawn step a frame against the kind's top speed, steps over 1 m, frames drawn inside the other robot; steps in the second after a frame over
+250 ms are a freeze's catch-up: up to the run the frozen time allows they count as after_freeze, beyond it they still fail;
+every plan's CATCHUP line gives the count), a SLIDE line (feet against ground: only with the bought models, so on Lane A, `LANE_A_SLIDES.md` in project files;
 cloud clones leave the models out), A lines every 100 ms (each drawn body of the kind) and P lines (itself), and BITTEN at each health drop.
 `python3 tools/robot_kinds.py <run folder>` prints the measures: jumps, slides, shoved (the robot's own body faster than a player runs over
 half-second windows), agree (the two clients' drawn places of the same animal at the same moment), each server blow (`AUDIT enemy_hit`)
@@ -129,11 +132,11 @@ Robot 2 takes a Shortbow in hand and sends the held-item flags 1 (raised), 2 (dr
 bits 2 then 4 with the bow pose and play the bow_raised and bow_drawn clips (SEEN bow line). Then both go to the nearest water, Robot 2
 casts a fishing rod and walks 8 m off: Robot 1 must draw its float within 8 m of it, and no float 3 s after it walked away (SEEN cast line).
 
-Plan `wiggle` (two robots; `tools/robots.sh 2 wiggle [link]`): Robot 1 runs back and forth across a spot every 0.5 s for 15 s; Robot 2,
+Plan `wiggle` (two robots; `tools/robots.sh 2 wiggle [link]`): Robot 1 runs back and forth across a spot in legs of 0.5, 0.7, 0.6 and 0.4 s (they cancel, so it stays on its spot) for 15 s (uneven, so no delay fits a period later); Robot 2,
 6 m off, records where it draws Robot 1 each frame and holds it against Robot 1's own place at the same moment less the best-fitting
 draw delay (0 to 1500 ms; along a straight back-and-forth the path itself covers any overshoot, so the time is what tells). It prints a
-WIGGLE line (the delay, median, 95th, worst) and judges nothing. A bow is posed off the hand mount by design (before the body when raised
-or drawn, at the side lowered), so the held check only asks its mount to stay on the hand.
+WIGGLE line (the delay, median, 95th, worst) and judges nothing. A bow is held in the left hand, so the held check measures the left hand mount
+against the left hand bone for it.
 
 Plan `light` (walk,
 stances, forest, watch) builds, drops and takes nothing, for a live server; it still makes a character record there that real players see, so a live run needs the coordinator's OK first and robots named as robots. On a live server there is no `--robot-audit` server log, so only the robots' own ROBOT lines can be read (robot_check.py needs the AUDIT lines and reports such a run as broken).

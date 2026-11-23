@@ -113,8 +113,8 @@ func _init() -> void:
 	players[0] = Vector3(spot.x - 10.0, 10.0, spot.z)
 	var before: float = 10.0
 
-	for n in 30:
-		a.tick(0.05)
+	for n in 60:
+		a.tick(0.05)   # it stares first (reactions.startle_s, up to 1.75 s)
 
 	check(a.animals[one]["state"] == AnimalsScript.FLEE, "a player within 14 m makes it bolt")
 	run(a, 4.0)
@@ -169,7 +169,7 @@ func _init() -> void:
 	var lead: Vector3 = deer_zoo.animals[deer[0]]["pos"]
 	var watcher: Array = deer_zoo.player_positions.call()
 	watcher[0] = Vector3(lead.x - 15.0, 10.0, lead.z)
-	run(deer_zoo, 0.5)
+	run(deer_zoo, 2.0)   # it stares first (about 1 s at 15 m: reactions.startle_s)
 	var fleeing: int = 0
 
 	for id in deer:
