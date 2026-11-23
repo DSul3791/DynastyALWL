@@ -9,7 +9,9 @@ extends SceneTree
 #   options: --item=ID       the item in the other player's hand (omit for an empty hand)
 #            --body=body_1   the body model (body_1 = Body A, body_2 = Body B)
 #            --walk=M_PER_S  walks north (-Z) at this speed (0 = standing, 1.6 = walk, 4 = jog, 6 = run); the camera keeps pace
-#            --stance=N      0 standing, 1 crouched, 2 prone, 3 sitting (as the state byte)
+#            --stance=N      0 standing, 1 crouched, 2 sitting, 3 lying (stance.gd; the state byte)
+#            --asleep        the asleep bit (with --stance=3: a sleeping player)
+#            --swing         a blow before each picture (the swing count moves on), taken SWING_LEAD_S into the remote clip: the impact
 #            --angles="name:deg:dist;..."  camera deg round the body from its front (0 front, 90 its left, -90 its right, 180 behind), dist m away;
 #                            under 2 m it aims at the held item, else at the chest (default right:-90:2.4;left:90:2.4;front:0:2.4;hand:-90:1.0)
 #            --name=NAME     file prefix (default remote_<item or hand>): NAME_<angle>.png
@@ -32,6 +34,8 @@ var _server_ms: int = 10000
 var _walk: float = 0.0
 var _stance: int = 0
 var _held: int = 0
+var _asleep: bool = false
+var _swings: int = 0
 
 
 func _init() -> void:
@@ -40,6 +44,7 @@ func _init() -> void:
 	var out: String = "user://shots"
 	var prefix: String = ""
 	var body: String = "body_1"
+	var swing: bool = false
 	var settle: float = 2.5
 	var angles_text: String = "right:-90:2.4;left:90:2.4;front:0:2.4;hand:-90:1.0"
 
@@ -56,6 +61,10 @@ func _init() -> void:
 			_walk = float(a.trim_prefix("--walk="))
 		elif a.begins_with("--stance="):
 			_stance = clampi(int(a.trim_prefix("--stance=")), 0, 3)
+		elif a == "--asleep":
+			_asleep = true
+		elif a == "--swing":
+			swing = true
 		elif a.begins_with("--settle="):
 			settle = maxf(float(a.trim_prefix("--settle=")), 0.5)
 		elif a.begins_with("--angles="):
@@ -162,6 +171,19 @@ func _init() -> void:
 			continue
 
 		wanted += 1
+
+		if swing:
+			_swings += 1
+			_send_row()
+			var impact_at: int = Time.get_ticks_msec() + int(PlayerViewScript.SWING_LEAD_S * 1000.0)
+
+			while Time.get_ticks_msec() < impact_at:
+				if Time.get_ticks_msec() >= next_row:
+					_send_row()
+					next_row += ROW_MS
+
+				await process_frame
+
 		var node: Node3D = drawn["node"]
 		var held_node: Node3D = drawn.get("held_node", null) as Node3D
 		var deg: float = deg_to_rad(float(bits[1]))
@@ -192,4 +214,4 @@ func _init() -> void:
 func _send_row() -> void:
 	_server_ms += ROW_MS
 	_at += Vector3(0.0, 0.0, -_walk * float(ROW_MS) / 1000.0)
-	_view.on_rows(PackedInt32Array([PEER]), PackedVector3Array([_at]), PackedFloat32Array([0.0]), PackedByteArray([_stance]), PackedInt32Array([_held]), PackedInt32Array([_server_ms]))
+	_view.on_rows(PackedInt32Array([PEER]), PackedVector3Array([_at]), PackedFloat32Array([0.0]), PackedByteArray([_stance | (PlayerViewScript.ASLEEP if _asleep else 0) | ((_swings & 7) << PlayerViewScript.SWING_SHIFT)]), PackedInt32Array([_held]), PackedInt32Array([_server_ms]))

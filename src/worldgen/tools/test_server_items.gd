@@ -531,15 +531,19 @@ func _init() -> void:
 
 	# A thrown spear hits the first animal on its path for its throw_damage and drops there (MikeW, 3 Nov).
 	var struck: Array = []
-	t.hit_animal_path = func(_peer, from, to, amount) -> Dictionary:
+	var struck_lag: Array = []
+	t.hit_animal_path = func(_peer, from, to, amount, lag) -> Dictionary:
 		if from.x <= 6.0 and to.x >= 6.0:
 			struck.append(amount)
+			struck_lag.append(lag)
 			return {"at": Vector3(6.0, 11.0, 0.0)}
 
 		return {}
 	t.action(1, Net.ACT_ADMIN_GIVE, spear, 0, 1, Vector3.ZERO)
 	var before: int = t.world_item_count()
 	t._last_throw.clear()
+	var thrown_seen: int = Time.get_ticks_msec()
+	t.action(1, Net.ACT_SEEN, 0, thrown_seen - 150, thrown_seen - 20, Vector3.ZERO)   # how far behind the thrower saw the animals goes with the spear
 	t.action(1, Net.ACT_THROW, t.inventory_of(1).numbers.find(spear), 0, 0, Vector3(1.0, 0.1, 0.0))
 
 	for n in range(100):
@@ -554,6 +558,7 @@ func _init() -> void:
 
 	check(struck.size() == 1 and is_equal_approx(float(struck[0]), want_damage) and want_damage > 0.0, "a thrown spear hurts the animal it hits for its throw_damage (%s)" % str(struck))
 	check(by_animal and t._flights.is_empty() and t.world_item_count() == before + 1, "the spear drops where it struck the animal")
+	check(struck_lag.size() == 1 and (struck_lag[0] as Array).size() == 2 and int(struck_lag[0][0]) >= 150 and int(struck_lag[0][1]) >= 20 and int(struck_lag[0][1]) < int(struck_lag[0][0]), "its hit is judged where the thrower saw the animals (%s)" % str(struck_lag))
 
 	# Fires.
 	var f = make("user://test_server_items_d")

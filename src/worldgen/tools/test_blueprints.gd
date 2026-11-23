@@ -264,9 +264,9 @@ func _init() -> void:
 
 	# Take down: every material back, no kit.
 	items.action(1, Net.ACT_PICKUP, _ids_standing("wooden_crate")[0], 0, 0, Vector3.ZERO)
-	# The nails cost is a group (copper_nails: copper or better, a light box, Dave 21 Nov 2026): a take-down gives back the group's lowest member, Copper nails,
-	# so the 8 nails paid come back as 8 copper nails and the 8 refused at the hammer-3 row stay as nails.
-	check(_ids_standing("wooden_crate").is_empty() and _have(1, "lumber") == 10 and _have(1, "nails") == 8 and _have(1, "copper_nails") == 8 and _have(1, "wooden_crate_kit") == 0, "taking it down gives the materials back (lumber %d, nails %d, copper nails %d)" % [_have(1, "lumber"), _have(1, "nails"), _have(1, "copper_nails")])
+	# The nails cost is a group (copper_nails: copper or better, a light box, Dave 21 Nov 2026): a take-down gives back the very nails put in (coordinator,
+	# 23 Nov 2026; test_blueprint_kinds), so the 8 Iron nails paid come back as Iron nails, with the 8 refused at the hammer-3 row.
+	check(_ids_standing("wooden_crate").is_empty() and _have(1, "lumber") == 10 and _have(1, "nails") == 16 and _have(1, "copper_nails") == 0 and _have(1, "wooden_crate_kit") == 0, "taking it down gives the materials back (lumber %d, nails %d, copper nails %d)" % [_have(1, "lumber"), _have(1, "nails"), _have(1, "copper_nails")])
 
 	# Takedown into a pack whose 30 slots are all taken: the pack grows (Dave 12 Nov 2026 23:06Z, protocol 116) and the materials come back.
 	_clear(1)
@@ -285,7 +285,7 @@ func _init() -> void:
 	var slots_before: int = inv.slot_count
 	items.report_position(1, Vector3(196.0, 10.0, 204.0))   # within the take-down reach (Interact.server_reach_m, 3.5 m); the place reach is 6 m
 	items.action(1, Net.ACT_PICKUP, _ids_standing("wooden_crate")[0], 0, 0, Vector3.ZERO)
-	check(_ids_standing("wooden_crate").is_empty() and inv.slot_count > slots_before and _have(1, "lumber") == 5 and _have(1, "copper_nails") == 8, "every slot taken: the pack grows (%d to %d slots) and the crate's materials come back (crates standing %d, lumber %d, copper nails %d)" % [slots_before, inv.slot_count, _ids_standing("wooden_crate").size(), _have(1, "lumber"), _have(1, "copper_nails")])
+	check(_ids_standing("wooden_crate").is_empty() and inv.slot_count > slots_before and _have(1, "lumber") == 5 and _have(1, "nails") == 8, "every slot taken: the pack grows (%d to %d slots) and the crate's materials come back (crates standing %d, lumber %d, iron nails %d)" % [slots_before, inv.slot_count, _ids_standing("wooden_crate").size(), _have(1, "lumber"), _have(1, "nails")])
 
 	# A snare: the kit places as the snare_trap structure and takes down into the kit.
 	_clear(1)

@@ -41,6 +41,21 @@
 	"say_cold": "You are getting cold",
 	"say_freezing": "You are freezing",
 	"say_warm": "You feel warm again",
+	"pass_out": {
+		"note": "Cold down to 1 health: the player passes out and wakes at the nearest goblin camp, bandit camp or the starter town's square (Dave 23 Nov 2026). The whole pack is kept and the player is rescued wherever they wake, no capture or theft for now (Dave 23 Nov 2026). Each one line: enabled; out_s seconds passed out (the faint look; nothing hurts them); wake_health; wake_warmth_over hurt_at; off_fire_m metres off a camp's fire; a player's own bed is not used. server_items.gd _cold_pass_out.",
+		"enabled": true,
+		"out_s": 6.0,
+		"wake_health": 10.0,
+		"wake_warmth_over": 5.0,
+		"off_fire_m": 4.0,
+		"say_out": "The cold takes you. You pass out.",
+		"say_wake": {
+			"town": "You wake up feeling pain through your bones. A traveler found you frozen almost to death and brought you here, to the town.",
+			"goblin": "You wake up feeling pain through your bones. Goblins found you frozen almost to death and dragged you to their fire.",
+			"bandit": "You wake up feeling pain through your bones. Bandits found you frozen almost to death and brought you to their camp.",
+			"here": "You come to where you fell, aching with cold. Find a fire."
+		}
+	},
 	"water_base_c": 12.0,
 	"water_follow": 0.7,
 	"water_comfort_c": 26.0,

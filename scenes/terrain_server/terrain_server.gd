@@ -53,6 +53,7 @@ const SwimScript := preload("res://src/shared/swim.gd")
 const TileDataScript := preload("res://src/worldgen/runtime/tile_terrain_data.gd")
 const NpcsScript := preload("res://src/stream/server_npcs.gd")
 const PlayersScript := preload("res://src/stream/server_players.gd")
+const CuesScript := preload("res://src/stream/server_action_cues.gd")
 const TribesScript := preload("res://src/stream/server_tribes.gd")
 const AnimalsScript := preload("res://src/stream/server_animals.gd")
 const EditedGroundScript := preload("res://src/stream/edited_ground.gd")
@@ -128,6 +129,7 @@ var identity = IdentityScript.new()      # who a peer is (src/stream/identity_pr
 var items                              # ServerItems: inventories and world items
 var npcs                               # ServerNpcs: classic NPCs (protocol 45)
 var players                            # ServerPlayers: what each player sees of the others (protocol 151)
+var cues                               # ServerActionCues: other players' blows, picks and crafts heard nearby (protocol 156)
 var tribes                             # ServerTribes: goblin tribes (data/creatures/goblin_tribes.json): standing, keeping off, anger
 var admin                              # ServerAdmin: who may place markers and NPCs
 var dialogue                           # ServerDialogue: talking to NPCs
@@ -454,6 +456,11 @@ func _ready() -> void:
 	players.send_rows = func(peer, ids, positions, yaws, states, held, times): net.players.rpc_id(peer, ids, positions, yaws, states, held, times)
 	players.send_look = func(peer, about, char_name, body, code, worn_numbers): net.player_look.rpc_id(peer, about, char_name, body, code, worn_numbers)
 	net.facing_reported.connect(players.note_report)
+	cues = CuesScript.new()   # other players' blows, picks and crafts heard nearby (protocol 156)
+	cues.items = items
+	cues.yaw_of = players.yaw_of
+	cues.send_cue = func(peer, about, cue, detail, at): net.action_cue.rpc_id(peer, about, cue, detail, at)
+	items.craft_began = cues.craft_started
 	net.look_reported.connect(players.set_look)
 	@warning_ignore("confusable_local_declaration")
 	items.send_remains = func(peer, rows): net.remains_marks.rpc_id(peer, rows)
@@ -464,6 +471,7 @@ func _ready() -> void:
 	items.weather_now = func(): return weather
 	@warning_ignore("confusable_local_declaration")
 	items.send_died = func(peer, cause, point): net.died.rpc_id(peer, cause, point)
+	items.rescue_spots = func(pos: Vector3): return _rescue_spots(pos)   # where a player passed out from cold wakes (server_items.gd _cold_out_tick)
 	items.send_final_death = func(peer, cause): net.final_death.rpc_id(peer, cause)
 	items.send_hit_number = func(peer, at, amount): net.hit_number.rpc_id(peer, at, amount)
 	@warning_ignore("confusable_local_declaration")
@@ -853,13 +861,16 @@ func _ready() -> void:
 		items.make_carcass(sp, pos, peer)
 	@warning_ignore("confusable_local_declaration")
 	animals.send_hit = func(peer, id, zone, at): net.animal_hit.rpc_id(peer, id, zone, at)
-	items.hit_animal_path = func(shooter, from, to, amount) -> Dictionary:
+	items.hit_animal_path = func(shooter, from, to, amount, lag) -> Dictionary:
 		var member: String = tribes.member_on_segment(from, to)
 
 		if member != "":   # a goblin tribe member cannot be hurt (Dave's side, 19 Nov 2026): the tribe turns on the archer and the arrow flies on
 			tribes.harm(shooter, member)
 
-		var found: Dictionary = animals.target_on_segment(from, to, 0.6, 0.5)
+		var now: int = Time.get_ticks_msec()   # lag (server_items.shot_lag): the animals are taken where the shooter sees them at this moment
+		var seen_at: int = now - int(lag[0]) if lag.size() == 2 else -1
+		var present_at: int = now - int(lag[1]) if lag.size() == 2 and int(lag[1]) >= 0 else -1
+		var found: Dictionary = animals.target_on_segment(from, to, 0.6, 0.5, seen_at, present_at)
 
 		if found.is_empty():
 			return {}
@@ -1116,6 +1127,9 @@ func _ready() -> void:
 	net.dump_requested.connect(_on_dump_requested)
 	@warning_ignore("confusable_local_declaration")
 	net.inventory_action_requested.connect(func(peer, kind, a, b, count, at):
+		if cues != null:
+			cues.note_action(peer, kind, a, b, count, at)   # before the action: a carcass's last cut or the blow that breaks the tool still reads what was there
+
 		items.action(peer, kind, a, b, count, at)
 
 		if players != null:
@@ -1511,6 +1525,7 @@ func _on_peer_disconnected(peer_id: int) -> void:
 	_burrows_sent.erase(peer_id)
 	_trap_marks_sent.erase(peer_id)
 	players.forget(peer_id)
+	cues.forget(peer_id)
 	_nests_sent.erase(peer_id)
 	_holes_sent.erase(peer_id)
 	_far_fires_sent.erase(peer_id)
@@ -2474,6 +2489,9 @@ func _pick_flora(peer_id: int, chunk: Vector2i, id: int, near_m: float = -1.0) -
 
 	# A plant picked bare before this rule (still in the saved "picked" list) goes now, giving nothing.
 	var gave: bool = items.was_picked(key) or items.gather(peer_id, str(species["name"]), PlacerScript.KINDS[int(species["kind"])], key, id, all["positions"][at], float(all["heights"][at]))
+
+	if gave and cues != null:
+		cues.cue(peer_id, CuesScript.CUE_PICK, id >> 16, all["positions"][at] + Vector3(0.0, minf(float(all["heights"][at]) * 0.5, 1.5), 0.0))   # the others nearby hear it picked (protocol 156; a swath's many plants give one: the cue gap)
 
 	if gave and fruit_tree:
 		# A fruit tree stays; its store shrinks: every client learns how much was taken, and an empty tree is bare (no prompt, no fruit drawn).
@@ -3901,6 +3919,51 @@ func _exit_tree() -> void:
 # Known dangers for the island resource landscape's starting-island check (handoff 13: "use existing danger information where available"):
 # the camp of every goblin tribe that will not trade (its attitude's trades false) and every bandit site whose camp stands (stage 3), each
 # with boulders.json distribution danger_m round it. Read once at start; nothing new is made for it.
+# Where a player passed out from cold can be carried (Dave 23 Nov 2026): every goblin camp, every bandit camp, and the starter town's square
+# (data/npcs/markers.json "square", else the middle of the markers; never the spawn). Each spot is moved a few metres off a camp's fire and
+# off any tree, onto the ground. Only the nearest to `near` is grounded (reading trunks and tiles for every camp stalled the main thread):
+# [[Vector3, "goblin" | "bandit" | "town"]], or [] when there is none. Not on the tick: only when someone passes out.
+func _rescue_spots(near: Vector3) -> Array:
+	var off_m: float = float((items._warmth_cfg.get("pass_out", {}) as Dictionary).get("off_fire_m", 4.0))
+	var out: Array = []
+
+	for tribe in tribes.tribes():
+		var camp: Dictionary = (tribes.tribes()[tribe] as Dictionary).get("camp", {})
+		var at: Dictionary = camp.get("fire", camp.get("mouth", {}))
+
+		if not at.is_empty():
+			out.append([Vector2(float(at.get("x", 0.0)) + off_m, float(at.get("z", 0.0))), "goblin"])
+
+	for cell in bandits.sites:
+		var site: Dictionary = bandits.sites[cell]
+
+		if int(site.get("stage", 0)) >= int(bandits.CAMP):
+			out.append([Vector2(float(site.get("x", 0.0)) + off_m, float(site.get("z", 0.0))), "bandit"])
+
+	var town: Vector2 = animals.town
+
+	for row in npcs._read("res://data/npcs/markers.json").get("markers", []):
+		if str(row.get("kind", "")) == "square" and not row.has("npc"):
+			town = Vector2(float(row.get("x", 0.0)), float(row.get("z", 0.0)))
+
+	if town.x != INF:
+		out.append([town, "town"])
+
+	var best: Array = []
+
+	for spot in out:
+		if best.is_empty() or (spot[0] as Vector2).distance_to(Vector2(near.x, near.z)) < (best[0] as Vector2).distance_to(Vector2(near.x, near.z)):
+			best = spot
+
+	return [] if best.is_empty() else [[_rescue_ground(best[0]), best[1]]]
+
+
+func _rescue_ground(at: Vector2) -> Vector3:
+	var clear: Vector2 = SpawnPointScript.clear_of(at, _trunks_near(at, 32.0), func(x: float, z: float) -> float: return float(generator.surface_height(x, z)),
+		func(x: float, z: float) -> bool: return _baked_wet(x, z))
+	return Vector3(clear.x, maxf(generator.surface_height(clear.x, clear.y), 0.0) + 2.0, clear.y)
+
+
 func _resource_dangers() -> Array:
 	var reach: float = float((items._boulder_cfg.get("distribution", {}) as Dictionary).get("danger_m", 200.0))
 	var out: Array = []

@@ -587,12 +587,12 @@ func dismantle(peer: int, inv, id: int) -> void:
 
 	var trial = inv.copy()
 
-	if not _unpack(trial, box, row):
+	if not _unpack(trial, box, row, cart["struct"].get("kinds", {})):
 		host._say(peer, "Make room in your pack first: the %s's load and its parts must all fit." % noun_for(id))
 		return
 
 	release(peer, "")
-	_unpack(inv, box, row)
+	_unpack(inv, box, row, cart["struct"].get("kinds", {}))
 
 	for rider in riders_of(id):
 		_set_down(host._items[rider], set_down_spot(id, rider, true))
@@ -603,15 +603,16 @@ func dismantle(peer: int, inv, id: int) -> void:
 
 
 # Puts the cart's cargo and its blueprint materials into `inv`; false when something does not fit (inv is then partly filled: only call on a copy first).
-func _unpack(inv, box, row: Dictionary) -> bool:
+func _unpack(inv, box, row: Dictionary, kinds: Dictionary = {}) -> bool:
 	if box != null:
 		for slot in box.slot_count:
 			if box.numbers[slot] != 0 and inv.add(box.numbers[slot], box.counts[slot], box.wear[slot], box.inst_of(slot)) > 0:
 				return false
 
 	for need in row.get("cost", []):
-		if inv.add(host._refund_number(host.table.number_of(str(need[0]))), int(need[1])) > 0:
-			return false
+		for pair in host._kinds_back(str(need[0]), int(need[1]), kinds):   # the items it was built from (server_items _note_kinds); an older cart: a group's lowest member
+			if inv.add(int(pair[0]), int(pair[1])) > 0:
+				return false
 
 	return true
 
