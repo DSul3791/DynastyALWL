@@ -832,6 +832,6 @@ func gap_checks() -> void:
 	check(near == "spaced" and PlacementRules.reason_text(near).contains("60 cm"), "30 cm away it is refused, saying how far apart (%s: %s)" % [near, PlacementRules.reason_text(near)])
 
 	for n in 40:
-		rows.append({"pos": Vector3(1.0 + float(n % 8), 10.0, 1.0 + float(n / 8)), "state": state, "yaw": 0.0})
+		rows.append({"pos": Vector3(1.0 + float(n % 8), 10.0, 1.0 + float(n >> 3)), "state": state, "yaw": 0.0})
 
 	check(PlacementRules.blocked(cfg, "snare", Vector3(9.0, 10.0, 9.0), rows) == "", "forty snares in one chunk, and room for another (%s)" % PlacementRules.blocked(cfg, "snare", Vector3(9.0, 10.0, 9.0), rows))
