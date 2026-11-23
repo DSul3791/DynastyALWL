@@ -21,14 +21,14 @@ It writes `..\dynasty_export\build-<N>\site\`, laid out exactly like `/data/game
 |---|---|
 | `index.html` | https://hannibalshouse.duckdns.org/ (the page: download, install, join, report) |
 | `images/hero.jpg`, `fonts/` | the page's picture and the menu fonts, with their licence |
-| `downloads/Dynasty-build-<N>.zip` | https://hannibalshouse.duckdns.org/downloads/Dynasty-build-N.zip |
+| `downloads/Dynasty-build-<N>.zip` | https://hannibalshouse.duckdns.org/downloads/Dynasty-build-&lt;N&gt;.zip |
 | `files.sha256` | the SHA-256 of every other file |
 
 All the page's links start with `/`. File names have no spaces.
 
 ## 2. Copy it up (Dave, one paste in PowerShell on his PC)
 
-Set the build number on the first line. If the name `dell-gameserver-01` does not resolve from the PC, put the server's LAN address there instead. Type the password when scp asks, or use your SSH key. No password goes in any file.
+The site script prints this line with the right folder; paste that, or set the build number on the first line here. If the name `dell-gameserver-01` does not resolve from the PC, put the server's LAN address there instead. Type the password when scp asks, or use your SSH key. No password goes in any file.
 
 ```
 $build = "<N>"; $server = "dell-gameserver-01"
@@ -48,16 +48,25 @@ ssh "dave@${server}" "ls -l /data/game-web/site/downloads/; rm /data/game-web/si
 
 The page shows the login name at the top right. Caddy fills it in as it sends the page, using its `templates` feature and the `{http.auth.user.id}` value that the login sets (Caddy docs: basic_auth, templates). Until this is on, the page simply hides the name.
 
-1. In `/data/game-web/config/Caddyfile`, inside the `hannibalshouse.duckdns.org { ... }` block, add one line with the word `templates` just above the `file_server browse` line. Change nothing else.
-2. Check the file, then apply it:
+1. Keep a copy first: `sudo cp /data/game-web/config/Caddyfile /data/game-web/config/Caddyfile.bak`
+2. In `/data/game-web/config/Caddyfile`, inside the `hannibalshouse.duckdns.org { ... }` block, add these two lines just above the `file_server browse` line. Change nothing else.
 
 ```
+	@home path / /index.html
+	templates @home
+```
+
+3. Check that the container sees the new lines, check the file, then apply it:
+
+```
+sudo docker exec game-web grep -n templates /etc/caddy/Caddyfile
 sudo docker exec game-web caddy validate --config /etc/caddy/Caddyfile --adapter caddyfile
 sudo docker exec game-web caddy reload --config /etc/caddy/Caddyfile --adapter caddyfile
 ```
 
-- `templates` only works on pages sent as HTML or plain text, so the zip, the picture and the fonts pass through untouched.
-- To undo it, delete the line and run the same two commands.
+- The first command must print the `templates @home` line. If it prints nothing, the container still has the old file: run `sudo docker restart game-web`.
+- `@home` keeps the templates to the page itself. The zip, the picture, the fonts and the file list pass through untouched.
+- To undo it: `sudo cp /data/game-web/config/Caddyfile.bak /data/game-web/config/Caddyfile`, then run the last two commands.
 
 ## 4. Check it (Dave, in a browser)
 
@@ -70,4 +79,6 @@ sudo docker exec game-web caddy reload --config /etc/caddy/Caddyfile --adapter c
 (Get-FileHash "$env:USERPROFILE\Downloads\Dynasty-build-<N>.zip" -Algorithm SHA256).Hash.ToLower()
 ```
 
-They must match character for character. `files.sha256` in the site has every file's fingerprint, if anything else looks wrong.
+They must match character for character. If anything else looks wrong, check every file on the server: `cd /data/game-web/site && sha256sum -c files.sha256` (each line says OK).
+
+If scp says "Permission denied" for a folder, that folder belongs to root from the example page: `sudo chown -R dave /data/game-web/site` fixes it.

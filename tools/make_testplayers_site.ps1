@@ -57,7 +57,7 @@ function Fill([string]$html) {
 
 # The page, with every link from the site root (the server's own layout notes ask for links that begin with "/").
 $page = [IO.File]::ReadAllText((Join-Path $pages "index.html"))
-# The login name, top right: Caddy's templates fill it in as the page is sent (SERVER.md, step 4); left as it is, the page hides it.
+# The login name, top right: Caddy's templates fill it in as the page is sent (SERVER.md, step 3); left as it is, the page hides it.
 $page = $page.Replace('data-user="{{USER}}"', 'data-user="@@USER@@"')
 $page = $page.Replace('href="{{ZIP}}"', 'href="/downloads/{{ZIP}}"').Replace('src="hero.jpg"', 'src="/images/hero.jpg"').Replace('url("fonts/', 'url("/fonts/')
 foreach ($want in 'href="/downloads/{{ZIP}}"', 'src="/images/hero.jpg"', 'url("/fonts/Cinzel-Bold.ttf")') {
