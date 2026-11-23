@@ -47,7 +47,7 @@ var game_seconds: Callable         # () -> the game clock's seconds (thunder)
 var _thunder_t: float = NAN        # game second the thunder was last looked at
 var _claps: Array = []             # thunder on its way: [strike point, real msec of the flash, ids already flushed]
 var walls: Callable                # (x0, z0, x1, z1, margin) -> bool, a wall or heavy station on that step (server_items.structure_blocks_step)
-var in_cave: Callable              # (Vector3) -> bool, inside a cave with rock over it (terrain_server._in_cave); unset: never
+var in_cave_at: Callable           # (Vector3) -> bool, inside a cave with rock over it (terrain_server._in_cave, CAVE_ROOF_M of rock); unset: never (not the goblins' a["in_cave"] flag)
 var crossing: Callable             # Steering's `cross`: every walker of this module stops at walls
 var player_positions: Callable     # () -> Array of Vector3
 var player_stances: Callable       # () -> Array of stances in player_positions order (0 stand, 1 crouch, 2 sit, 3 lie)
@@ -151,7 +151,7 @@ const CAVE_ROOF_GAP_M := 1.0   # one end this much higher than the other across 
 # end inside a cave with rock over it and the other not is rock between them (physical world audit round 6, 23 Nov 2026: a wolf on the hill could
 # bite a player in a shallow passage under it); at a mouth, level with each other, the two still meet. Asked last in each hit test: the walls first, the caves only for an animal already in reach.
 func blow_blocked(from: Vector3, to: Vector3) -> bool:
-	return wall_between(from, to) or (in_cave.is_valid() and absf(from.y - to.y) > CAVE_ROOF_GAP_M and bool(in_cave.call(from)) != bool(in_cave.call(to)))
+	return wall_between(from, to) or (in_cave_at.is_valid() and absf(from.y - to.y) > CAVE_ROOF_GAP_M and bool(in_cave_at.call(from)) != bool(in_cave_at.call(to)))
 
 
 func setup() -> void:

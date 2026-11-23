@@ -220,13 +220,31 @@ func _init() -> void:
 	items._plant_bush(1, items.inventory_of(1), items.inventory_of(1).numbers.find(items.table.number_of(tree_seed)), feet + Vector3(-0.8, 0.0, 0.4))
 	check(tree_seed != "" and items._saplings.size() == seeds_before and said.has("A tree needs open sky: it cannot grow in a cave."), "a %s is refused in the room, saying why (%s)" % [tree_seed, str(said)])
 
+	# Not a cave: a tree seed planted in a 1.5 m pit dug in the open is not told it is in a cave; one aimed at the cave's floor from the hill over it
+	# grows on the hill (the aim's height is the client's word).
+	var pit: Vector3 = Vector3(OPEN.x + 6.0, gen.surface_height(OPEN.x + 6.0, OPEN.y), OPEN.y)
+	items.edits_near = func(_p, _r): return [[0, pit, 1.5]]
+	items.report_position(1, pit + Vector3(0.0, -1.5, 0.8))
+	said.clear()
+	items.give_to(1, tree_seed, 1)
+	items._plant_bush(1, items.inventory_of(1), items.inventory_of(1).numbers.find(items.table.number_of(tree_seed)), pit + Vector3(0.0, -1.5, 0.0))
+	check(not said.has("A tree needs open sky: it cannot grow in a cave."), "a tree seed in a 1.5 m pit in the open is not refused as in a cave (%s)" % str(said))
+	items.edits_near = Callable()
+	var hill_top: Vector3 = Vector3(ROOM.x - 2.0, gen.surface_height(ROOM.x - 2.0, ROOM.y), ROOM.y)
+	items.report_position(1, hill_top)
+	items.give_to(1, "hazel_bush", 1)
+	var before_hill: int = items._saplings.size()
+	items._plant_bush(1, items.inventory_of(1), items.inventory_of(1).numbers.find(items.table.number_of("hazel_bush")), Vector3(ROOM.x - 2.0, floors[ROOM], ROOM.y))
+	var on_hill: Dictionary = items._saplings.back() if items._saplings.size() > before_hill else {}
+	check(not on_hill.is_empty() and absf(float(on_hill["pos"].y) - hill_top.y) < 0.2, "a bush aimed at the cave floor by a player on the hill grows on the hill %.2f (%s)" % [hill_top.y, str(on_hill.get("pos", "none"))])
+
 	# No blow through a cave's roof: a wolf on the hill over the passage and a player in it; at the mouth, level with each other, they still meet.
 	var animals = AnimalsScript.new()
 	var tile = gen.get_tile(gen.tile_of(ROOM.x, ROOM.y))
-	animals.in_cave = func(p: Vector3) -> bool: return tile.in_cave(Vector3(gen.wrap_x(p.x), p.y, gen.wrap_x(p.z)), 2.0)
+	animals.in_cave_at = func(p: Vector3) -> bool: return tile.in_cave(Vector3(gen.wrap_x(p.x), p.y, gen.wrap_x(p.z)), 2.0)   # as terrain_server._in_cave (CAVE_ROOF_M 2)
 	var deep: Vector3 = Vector3(PASSAGE.x, floors[PASSAGE], PASSAGE.y)
 	var over: Vector3 = Vector3(PASSAGE.x, gen.surface_height(PASSAGE.x, PASSAGE.y), PASSAGE.y + 1.0)
-	check(bool(animals.in_cave.call(deep)) and animals.blow_blocked(over, deep) and animals.blow_blocked(deep, over), "the roof is between a wolf on the hill and a player in the passage, either way")
+	check(bool(animals.in_cave_at.call(deep)) and animals.blow_blocked(over, deep) and animals.blow_blocked(deep, over), "the roof is between a wolf on the hill and a player in the passage, either way")
 	check(not animals.blow_blocked(cut_feet + Vector3(0.0, 0.0, 1.0), cut_feet), "two in the open cut meet")
 	check(not animals.blow_blocked(Vector3(PASSAGE.x + 0.5, floors[PASSAGE], PASSAGE.y + 1.0), deep), "two in the passage meet")
 

@@ -11777,10 +11777,12 @@ func _plant_bush(peer: int, inv, slot: int, at: Vector3) -> void:
 		return
 
 	var edits: Array = (edits_near.call(at, 4.0) if edits_near.is_valid() else []) as Array
-	var spot: Vector3 = Vector3(at.x, _cave_ground(at, _edited_height(at.x, at.z, edits)) if ground_height.is_valid() else at.y, at.z)   # the ground as dug and filled, or a cave's floor
+	var dug: float = _edited_height(at.x, at.z, edits) if ground_height.is_valid() else at.y   # the ground as dug and filled
+	var in_cave: bool = float(_peer_pos[peer].y) < dug - 0.05   # the cave floor only for a player standing under the ground there (the aim's height is the client's word)
+	var spot: Vector3 = Vector3(at.x, _cave_ground(at, dug) if in_cave and ground_height.is_valid() else dug, at.z)
 	var why: String = _sapling_refusal(item_id, spot)
 
-	if tree_seed_species(item_id) != "" and ground_height.is_valid() and spot.y < float(ground_height.call(spot.x, spot.z)) - 1.0:
+	if tree_seed_species(item_id) != "" and dug - spot.y > 1.0:
 		why = "A tree needs open sky: it cannot grow in a cave."   # a bush fits under the roof; a tree would grow through it (this reason first)
 
 	if why != "":
@@ -18623,6 +18625,12 @@ func kill(peer: int, cause: String) -> bool:
 	var ground: float = float(ground_height.call(pos.x, pos.z)) if ground_height.is_valid() else NAN
 	var cave: bool = not is_nan(ground) and pos.y < ground - 1.5   # underground: keep the spot, the surface above is not theirs
 	var spot: Vector3 = pos if (is_nan(ground) or cave) else Vector3(pos.x, _remains_surface(pos, _foundation_rows()), pos.z)   # on the floor they stood on, or the ground as dug
+
+	if cave and not is_nan(ground):
+		var under: float = _remains_surface(pos, _foundation_rows())   # deep in a cave: its floor (a death in mid-jump does not hang in the air; the settle pass skips cave remains)
+
+		if under < ground - 0.5 and under <= pos.y + 0.05:
+			spot.y = under
 	_trim_owner_remains(key)
 	var uid: int = _next_uid
 	_next_uid += 1
