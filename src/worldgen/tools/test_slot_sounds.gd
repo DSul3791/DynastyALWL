@@ -90,6 +90,17 @@ func _init() -> void:
 	check(step_voice is AudioStreamPlayer3D and is_equal_approx((step_voice as AudioStreamPlayer3D).max_distance, SlotSounds.CREATURE_STEP_REACH_M) and is_equal_approx((step_voice as AudioStreamPlayer3D).unit_size, SlotSounds.CREATURE_STEP_UNIT_M),
 			"its voice has the creature step unit and reach (level pass 23 Nov 2026)")
 	check(not slots.play("wolf_step", Vector3(SlotSounds.CREATURE_STEP_REACH_M + 5.0, 0, 0), origin), "past that reach it is skipped")
+	var herd: int = 0
+
+	for kind in ["deer", "duck", "fox", "horse", "donkey", "lynx", "elk", "bighorn"]:
+		herd += 1 if slots.play(kind + "_step", Vector3(5, 0, 0), origin) else 0
+
+	check(herd == SlotSounds.CREATURE_STEP_VOICES - 1, "a herd's steps sound at most %d at once (the wolf's still sounding, then %d of 8 more)" % [SlotSounds.CREATURE_STEP_VOICES, herd])
+
+	for voice in slots._step_voices:
+		voice.queue_free()   # they end: the footfall checks below start with room
+
+	slots._step_voices.clear()
 	check(slots.loaded_clips > 0 and slots.loaded_bytes > 0, "clips load on first use (%d clips, %.2f MB)" % [slots.loaded_clips, float(slots.loaded_bytes) / 1048576.0])
 	check(slots.loaded_clips < clips, "not every clip was loaded by touching a few slots (lazy)")
 

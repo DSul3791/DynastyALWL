@@ -16,6 +16,7 @@ const SKIP_M := 30.0                      # one-shots farther than this are not 
 # drowned by the beds (assets/audio/level_pass.py). The coordinator, 23 Nov 2026: no everyday sound drowns an approaching animal.
 const CREATURE_STEP_UNIT_M := 8.0
 const CREATURE_STEP_REACH_M := 60.0
+const CREATURE_STEP_VOICES := 6          # animal steps sounding at once (a herd would otherwise fill the voice budget, and calls and beds wait for room)
 const START_M := 40.0                     # loops start inside this and stop past STOP_M (hysteresis)
 const STOP_M := 45.0
 const FADE_S := 0.3
@@ -36,6 +37,7 @@ var _streams: Dictionary = {}             # slot -> Array of AudioStream, loaded
 var _last_pick: Dictionary = {}           # slot -> index of the clip played last
 var _cooldown_until: Dictionary = {}      # slot -> msec
 var _loops: Dictionary = {}               # id -> {"slot": String, "player": AudioStreamPlayer3D, "on": bool}
+var _step_voices: Array = []              # the animal step voices still sounding (CREATURE_STEP_VOICES)
 var _rng := RandomNumberGenerator.new()
 
 
@@ -201,6 +203,12 @@ func play(slot: String, at: Vector3, listener: Vector3 = Vector3.INF, strength: 
 
 	var now: int = Time.get_ticks_msec()
 
+	if creature:
+		_step_voices = _step_voices.filter(func(p) -> bool: return is_instance_valid(p) and not p.is_queued_for_deletion())
+
+		if _step_voices.size() >= CREATURE_STEP_VOICES:
+			return false
+
 	if now < int(_cooldown_until.get(slot, 0)) or not _room(slot):
 		return false
 
@@ -219,6 +227,10 @@ func play(slot: String, at: Vector3, listener: Vector3 = Vector3.INF, strength: 
 	player.finished.connect(player.queue_free)
 	player.global_position = at
 	player.play(_rng.randf_range(0.0, START_OFFSET_S))
+
+	if creature:
+		_step_voices.append(player)
+
 	played[slot] = int(played.get(slot, 0)) + 1
 	last = "%s_%d (%s)" % [slot, pick, SoundStage.tag(list[pick])]
 	return true
