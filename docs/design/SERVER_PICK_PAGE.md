@@ -103,7 +103,7 @@ Join opens the existing connect window (`connect_window.gd`), which already name
   - name lookup failed: "No server is called hannibalshouse.duckdns.org. Check the spelling; if it worked before, the name's owner may have let it lapse."
   - no answer: "Nothing answered at hannibalshouse.duckdns.org (port 24600). The server may be off, or its router is not forwarding UDP 24600 and TCP 24601."
   - build refused (A1): as today, plus which side must update.
-  - full: "The server is full (32 of 32). Try again later."
+  - full (built 23 Nov 2026, window title "Server full"): "The server is full (32 players). Try again when someone leaves."
 
 ## Names, ports and redirects
 

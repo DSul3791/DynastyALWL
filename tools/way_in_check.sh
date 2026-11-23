@@ -3,7 +3,7 @@
 # window (headless: on the console), never a silent wait. Runs a throwaway server for one player (own store, own user
 # folder, so no real save or note is touched) and the testers' client (--client-only, the address remembered):
 #   C  a ground cache whose files are damaged   -> the game still joins and lands
-#   F  a second player on a full server   -> "join refused: The server is full", soon
+#   F  a second player on a full server   -> "join refused: The server is full", soon; the player in stays; the same character back is let in
 #   N  an address with a name that does not exist   -> "cannot reach", within 60 s
 #   D  an address with no server on it   -> "No server answered", within 60 s
 #   E  no address at all   -> "no server address yet", at once
@@ -52,7 +52,7 @@ grep -q "JOIN: ground ready" "$RIG/cache_bad.log" && ok "C: and lands on the gro
 grep -qE "SCRIPT ERROR|Segmentation|signal 11|CrashHandler" "$RIG/cache_bad.log" && bad "C: an error or crash with a damaged cache" || ok "C: no script error or crash"
 sleep 3
 
-user_env first
+user_env first; FIRST_UD="$UD"
 printf '[join]\n\naddress="127.0.0.1:%d"\n' $PORT > "$UD/join_address.cfg"
 env "${ENVV[@]}" "$GODOT" --headless --path . -- --client-only --test --timeout=240 > "$RIG/first.log" 2>&1 &
 C1=$!
@@ -61,6 +61,16 @@ grep -q "Terrain client: welcome after" "$RIG/first.log" && ok "F: the first pla
 client second "127.0.0.1:$PORT" 150
 grep -q "join refused: The server is full" "$RIG/second.log" && ok "F: the second player is told the server is full" || bad "F: no 'server is full' refusal"
 [ $CODE -ne 0 ] && [ $TOOK -lt 90 ] && ok "F: the refused game ended (code $CODE) after $TOOK s" || bad "F: code $CODE after $TOOK s"
+for _ in $(seq 1 120); do grep -q "JOIN: ground ready" "$RIG/first.log" 2>/dev/null && break; kill -0 $C1 2>/dev/null || break; sleep 0.5; done
+grep -q "join refused" "$RIG/first.log" && bad "F: the player already in was refused: $(grep -m1 'join refused' "$RIG/first.log" | cut -c1-120)" || ok "F: the player already in was not refused"
+grep -q "JOIN: ground ready" "$RIG/first.log" && ok "F: and stands on the ground" || bad "F: the player already in never got the ground"
+# The same character coming back (a crashed game, a second window) while the server is full is let in; its old connection is dropped.
+user_env again; cp "$FIRST_UD/player_key.txt" "$UD/" 2>/dev/null
+printf '[join]\n\naddress="127.0.0.1:%d"\n' $PORT > "$UD/join_address.cfg"
+env "${ENVV[@]}" "$GODOT" --headless --path . -- --client-only --test --timeout=120 > "$RIG/again.log" 2>&1
+[ -f "$UD/player_key.txt" ] || bad "F: the first player left no character key to come back with"
+grep -q "join refused: The server is full" "$RIG/again.log" && bad "F: the same character coming back was told the server is full" || ok "F: the same character coming back was not told the server is full"
+grep -q "Terrain client: welcome after" "$RIG/again.log" && ok "F: and joined" || bad "F: the same character coming back got no welcome"
 kill $C1 2>/dev/null; C1=""
 
 client name "nosuch-dynasty-server.invalid:24600" 150

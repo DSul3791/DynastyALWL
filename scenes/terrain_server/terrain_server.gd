@@ -1163,14 +1163,17 @@ func _ready() -> void:
 			_refuse_join(peer, build, refused)
 			return
 
-		if _peers.size() > max_players:
-			_refuse_join(peer, build, SERVER_FULL % max_players)
-			return
-
 		var account: String = identity.authenticate(peer, key)
 
 		if account == "":
 			return
+
+		if _full_for(peer, identity.store_key(account)):
+			_refuse_join(peer, build, SERVER_FULL % max_players)
+			return
+
+		if _peers.has(peer):
+			_peers[peer]["player"] = true   # counted by _full_for from here on
 
 		_slow_rpc("hello: authenticate", t0)
 		for old_peer in items.peer_connected_hello(peer, identity.store_key(account)):
@@ -1464,13 +1467,30 @@ func _drop_replaced(old_peer: int) -> void:
 const SERVER_FULL := "The server is full (%d players). Try again when someone leaves."
 
 
+# Whether a hello from `peer` (character `store`) finds the server full: only connections whose hello was let in count (not the ones still
+# at the door or refused), and the same character coming back is never full, since its older connection is dropped for it.
+func _full_for(peer: int, store: String) -> bool:
+	var players: int = 0
+
+	for other in _peers:
+		if other == peer or not _peers[other].has("player") or _peers[other].has("refused"):
+			continue
+
+		if items.key_of(other) == store:
+			return false
+
+		players += 1
+
+	return players >= max_players
+
+
 func _refuse_join(peer: int, build: int, text: String) -> void:
 	if not _peers.has(peer) or _peers[peer].has("refused"):
 		return   # one refusal per connection, however many hellos it sends
 
 	_peers[peer]["refused"] = true
-	print("Join refused for peer %d: client build %d, this server build %d" % [peer, build, _stamped_build])
-	_events.event("peer %d refused: client build %d, server build %d" % [peer, build, _stamped_build])
+	print("Join refused for peer %d (client build %d, this server build %d): %s" % [peer, build, _stamped_build, text])
+	_events.event("peer %d refused (client build %d, server build %d): %s" % [peer, build, _stamped_build, text])
 	net.join_refused.rpc_id(peer, text)
 	await get_tree().create_timer(1.0).timeout
 

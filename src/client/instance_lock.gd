@@ -38,9 +38,28 @@ static func claim(path: String = PATH, own_pid: int = OS.get_process_id(), now: 
 		file.store_string(JSON.stringify({"pid": own_pid, "t": now}))
 
 
+# Takes the note away on a clean exit, only when it is still this copy's (a quick restart after closing is then never asked about).
+static func release(path: String = PATH, own_pid: int = OS.get_process_id()) -> void:
+	if not FileAccess.file_exists(path):
+		return
+
+	var note: Variant = JSON.parse_string(FileAccess.get_file_as_string(path))
+
+	if note is Dictionary and typeof(note.get("pid")) in [TYPE_INT, TYPE_FLOAT] and int(note["pid"]) == own_pid:
+		DirAccess.remove_absolute(ProjectSettings.globalize_path(path))
+
+
 # Rewrites the note every EVERY_S for as long as this copy runs (a tree timer: it outlives every page and runs while the game is paused).
+# The first call also leaves a node under the root whose leaving (the game closing) releases the note.
 static func keep_fresh(tree: SceneTree) -> void:
 	claim()
+
+	if not tree.root.has_node("InstanceLockNote"):
+		var watcher: Node = Node.new()
+		watcher.name = "InstanceLockNote"
+		watcher.tree_exiting.connect(func() -> void: release())
+		tree.root.add_child.call_deferred(watcher)
+
 	tree.create_timer(EVERY_S, true).timeout.connect(keep_fresh.bind(tree))
 
 
