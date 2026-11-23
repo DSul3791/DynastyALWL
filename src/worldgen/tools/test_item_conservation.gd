@@ -4,13 +4,17 @@ extends SceneTree
 # Two players stand by a chest and a heap of ground stacks and do thousands of random everyday actions on the real server: move and split
 # pack slots, drop and pick up, put into and take from the chest (both of them, the same chest open at once), Take all, Store all,
 # Stack to nearby, Sort, leave and come back, and the server saving and restarting. After every action each item's total over both packs,
-# what they wear, every container and the ground must be what it was. A broken total prints the last actions.
+# what they wear, every container and the ground must be what it was. A broken total prints the last actions. A yard run adds a Loom and a
+# Handcart: they weave Fibre cloth into the loom's store, put into and take from the loom and the cart, take the cart's handle and pull it about
+# with things in it, lift the crate onto it and set it down, let go, take the cart and the loom down for their materials, and the server
+# restarts with the cart loaded or held.
 #   godot --headless --path . --script res://src/worldgen/tools/test_item_conservation.gd
 
 const ItemsScript := preload("res://src/stream/server_items.gd")
 const ItemTableScript := preload("res://src/shared/item_table.gd")
 const Net := preload("res://src/stream/terrain_net.gd")
 const BagRules := preload("res://src/shared/bag_rules.gd")
+const Carts := preload("res://src/stream/server_carts.gd")
 const DIR := "user://test_item_conservation"
 const HERE := Vector3(5.0, 10.0, 0.0)
 const KEYS := {1: "conserveone01", 2: "conservetwo02"}
@@ -19,6 +23,7 @@ const SEEDS := [11, 23, 57]
 const BURN_OK := ["stick", "plant_fibre", "firewood", "linseed", "twine"]
 const GROW_OK := ["charcoal"]
 const FIRE_SEEDS := [5, 31]
+const YARD_SEEDS := [7, 41, 88]
 
 var failures: int = 0
 var items
@@ -26,6 +31,10 @@ var chest_id: int = 0
 var crate_id: int = 0
 var log_lines: Array = []
 var fire_mode: bool = false   # a run that lights, feeds, puts out and cooks at the fire, hours passing: wood and tinder may only go down, charcoal only up
+var yard_mode: bool = false   # a run with a Loom and a Handcart (stations and carts)
+var clock: Array = [1.0e6]
+var said: Dictionary = {}     # peer -> the last notice, for the log
+var seen: Dictionary = {}     # what the yard runs did, over all seeds: each must have happened, or the run tested nothing
 
 
 func check(ok: bool, what: String) -> void:
@@ -42,14 +51,21 @@ func make_server():
 	s.send_world_items = func(_p, _a, _r): pass
 	s.send_vitals = func(_p, _h, _he, _w, _t, _l, _f): pass
 	s.send_reject = func(_p, _r): pass
-	s.send_notice = func(_p, _t): pass
+	s.send_notice = func(p, t): said[p] = str(t)
 	s.send_carry = func(_p, _id): pass
 	s.send_chest = func(_p, _id, _b): pass
 	s.send_chest_info = func(_p, _id, _k, _m): pass
 	s.send_chest_lock = func(_p, _id, _l, _m, _o, _w, _a): pass
 	s.send_craft_stock = func(_p, _n, _c): pass
 	s.send_bulk_done = func(_p, _k, _s, _c, _i): pass
+	s.send_cart_pull = func(_p, _id, _pace): pass
+	s.send_items_moved = func(_p, _ids, _at, _yaws): pass
 	s.ground_height = func(_x, _z): return 10.0
+
+	if yard_mode:
+		s.water_depth_at = func(_pos: Vector3) -> float: return 0.0
+		s.unix_now = func(): return clock[0]
+
 	s.setup(ItemTableScript.load_default(), DIR)
 	s.admin_mode_on = func(_p): return false
 	s.game_seconds = func(): return 1000.0 * 86400.0
@@ -76,9 +92,12 @@ func totals() -> Dictionary:
 	var start: int = items._fire_start_sticks()
 	var twine: int = n("twine")
 	var fibre: int = n("plant_fibre")
+	var cloth: int = n("fibre_cloth")
 	var add = func(number: int, count: int) -> void:
 		if number == twine:   # a Twine is the 3 Plant fibre it is twisted from (recipe 1), so twisting and cancelling keep the totals
 			out[fibre] = int(out.get(fibre, 0)) + 3 * count
+		elif number == cloth:   # a Fibre cloth is the 8 Plant fibre the loom weaves it from
+			out[fibre] = int(out.get(fibre, 0)) + 8 * count
 		elif number == kit:   # a Campfire kit is what it is made of (16 stones, 6 sticks): a laid fire keeps its first sticks in its store
 			out[stone] = int(out.get(stone, 0)) + 16 * count
 			out[stick] = int(out.get(stick, 0)) + 6 * count
@@ -124,6 +143,16 @@ func totals() -> Dictionary:
 
 		if it.has("struct"):
 			var kit_id: String = str(items._structures.get(str(it["struct"]["kind"]), {}).get("kit", ""))
+
+			if items._blueprint_of_kit.has(kit_id):   # a built piece (the Loom, the Handcart) is the materials it gives back when taken down
+				var row: Dictionary = items._blueprints[int(items._blueprint_of_kit[kit_id])]
+
+				for need in row["cost"]:
+					for pair in items._kinds_back(str(need[0]), int(need[1]), it["struct"].get("kinds", {})):
+						add.call(int(pair[0]), int(pair[1]))
+
+				continue
+
 			add.call(items.table.number_of(kit_id) if kit_id != "" else int(it["number"]), 1)
 			continue
 
@@ -194,12 +223,138 @@ func ground_ids() -> Array:
 	return out
 
 
+func cart_id() -> int:
+	for id in items._items:
+		if not items._carts.vehicle_of(items._items[id]).is_empty():
+			return id
+
+	return 0
+
+
+func loom_id() -> int:
+	for id in items._items:
+		if items._items[id].has("struct") and str(items._items[id]["struct"]["kind"]) == "loom":
+			return id
+
+	return 0
+
+
+func recipe_number(id: String) -> int:
+	for r in items.recipes.numbers():
+		if str(items.recipes.recipe(int(r)).get("id", "")) == id:
+			return int(r)
+
+	return 0
+
+
+func totals_has_cloth() -> bool:
+	for key in items._inventories:
+		if items._inventories[key].count_of(n("fibre_cloth")) > 0:
+			return true
+
+	for uid in items._chests:
+		if items._chests[uid].count_of(n("fibre_cloth")) > 0:
+			return true
+
+	return false
+
+
+func home(peer: int) -> Vector3:
+	return HERE + Vector3(float(peer) * 0.5, 0.0, 0.0)
+
+
+# One station or cart action: weave at the loom, take or let go of the cart's handle, pull it a few metres and back, lift the crate on or
+# set it down.
+func yard_step(peer: int, rng: RandomNumberGenerator) -> String:
+	var cart: int = cart_id()
+	var what: int = rng.randi() % 6
+
+	if rng.randf() < 0.03:   # empty the cart or the loom into the pack and take it down for its materials
+		var id: int = cart if cart != 0 and rng.randf() < 0.5 else loom_id()
+
+		if id == 0:
+			return "p%d nothing to take down" % peer
+
+		items.action(peer, Net.ACT_CHEST_OPEN, id, 0, 0, Vector3.ZERO)
+		var store = items._chest_of(peer, id)
+
+		for slot in (store.slot_count if store != null else 0):
+			if store.numbers[slot] != 0:
+				items.action(peer, Net.ACT_CHEST_TAKE, slot, id, store.counts[slot], Vector3.ZERO)
+
+		items.action(peer, Net.ACT_CHEST_CLOSE, 0, 0, 0, Vector3.ZERO)
+		items.action(peer, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
+		return "p%d empties and takes down %d%s" % [peer, id, " (stands: %s)" % said.get(peer, "") if items._items.has(id) else ""]
+
+	if what == 0:
+		var r: int = recipe_number("fibre_cloth")
+		var c: int = 1 + rng.randi() % 3
+		items._last_queue_act.clear()
+		var queued: int = items.craft_queue_of(peer).size()
+		items.action(peer, Net.ACT_CRAFT_QUEUE, r, 0, c, Vector3.ZERO)
+
+		if items.craft_queue_of(peer).size() > queued:
+			seen["weave queued"] = int(seen.get("weave queued", 0)) + 1
+
+		for k in range(31 * c if rng.randf() < 0.5 else 5):   # often long enough to weave it (30 s a cloth), else cut short by what comes next
+			items.tick(1.0)
+
+		return "p%d weave cloth x%d (loom %d)" % [peer, c, loom_id()]
+
+	if cart == 0:
+		return "p%d no cart" % peer
+
+	if what == 1:
+		items.action(peer, Net.ACT_CART, cart, Carts.OP_GRAB, 0, Vector3.ZERO)
+		return "p%d grab cart %d%s" % [peer, cart, " (holds it)" if int(items._carts.puller_of.get(peer, 0)) == cart else ""]
+	elif what == 2:
+		items.action(peer, Net.ACT_CART, 0, Carts.OP_RELEASE, 0, Vector3.ZERO)
+		return "p%d let go" % peer
+	elif what == 3:
+		items.action(peer, Net.ACT_CART, crate_id, Carts.OP_LOAD, 0, Vector3.ZERO)
+		return "p%d lift crate %d on%s" % [peer, crate_id, (" (on)" if items._items[crate_id]["struct"].has("on") else " (stays: %s)" % said.get(peer, "")) if items._items.has(crate_id) else " (gone)"]
+	elif what == 4:
+		items.action(peer, Net.ACT_CART, crate_id, Carts.OP_UNLOAD, 0, Vector3.ZERO)
+		return "p%d set crate %d down" % [peer, crate_id]
+
+	# A walk of up to 4 m and back in 0.2 s reports of 0.4 m: a puller pulls the cart along.
+	var dir := Vector3(rng.randf_range(-1.0, 1.0), 0.0, rng.randf_range(-1.0, 1.0)).normalized()
+	var metres: float = rng.randf_range(1.0, 4.0)
+	var at: Vector3 = home(peer)
+	var steps: int = int(ceil(metres / 0.4))
+	var was: Vector3 = items._items[cart]["pos"]
+
+	for k in range(steps * 2):
+		at += dir * (0.4 if k < steps else -0.4)
+		clock[0] += 0.2
+		items.report_position(peer, at)
+		items.tick(0.2)
+
+	items.report_position(peer, home(peer))
+
+	if items._items.has(cart) and items._items[cart]["pos"].distance_to(was) > 0.5:
+		seen["cart pulled"] = int(seen.get("cart pulled", 0)) + 1
+
+		if not items._carts.riders_of(cart).is_empty():
+			seen["cart pulled with the crate on"] = int(seen.get("cart pulled with the crate on", 0)) + 1
+
+		if not items._struct_empty(cart):
+			seen["cart pulled loaded"] = int(seen.get("cart pulled loaded", 0)) + 1
+
+	return "p%d walks %.1f m and back%s" % [peer, metres, " pulling" if int(items._carts.puller_of.get(peer, 0)) != 0 else ""]
+
+
 func restart() -> void:
 	items.save()
 	items._finish_writer()
 	items = make_server()
 	join(1)
 	join(2)
+	crate_id = 0
+
+	for id in items._items:   # world ids are given out again at load
+		if items._items[id].has("struct") and str(items._items[id]["struct"]["kind"]) == "wooden_crate":
+			crate_id = id
 
 
 # One random everyday action; returns what it was, for the log.
@@ -207,6 +362,10 @@ func step(rng: RandomNumberGenerator) -> String:
 	var peer: int = 1 + rng.randi() % 2
 	var inv = items.inventory_of(peer)
 	var roll: int = rng.randi() % 120
+
+	if yard_mode and rng.randf() < 0.2:
+		return yard_step(peer, rng)
+
 	var boxes: Array = box_ids()
 	var box_id: int = int(boxes[rng.randi() % boxes.size()]) if not boxes.is_empty() else 0
 
@@ -226,6 +385,8 @@ func step(rng: RandomNumberGenerator) -> String:
 		var at: int = rng.randi() % 3
 		items.action(peer, Net.ACT_CRAFT_CANCEL, at, 0, 0, Vector3.ZERO)
 		return "p%d cancel %d" % [peer, at]
+	elif roll >= 100 and yard_mode and rng.randf() < 0.7:
+		return yard_step(peer, rng)
 	elif roll >= 100 and fire_mode and rng.randf() < 0.6:
 		var fires: Array = boxes.filter(func(i): return items._items.has(i) and items._items[i].has("fire"))
 
@@ -311,6 +472,10 @@ func step(rng: RandomNumberGenerator) -> String:
 		return "p%d unwear %d" % [peer, place]
 	elif roll < 97 and not boxes.is_empty():
 		var id: int = int(boxes[rng.randi() % boxes.size()])
+
+		if yard_mode and (id == crate_id or id == cart_id()) and rng.randf() < 0.95:
+			return "p%d keeps %d standing" % [peer, id]   # the cart and the crate come down now and then, late enough to have been pulled about
+
 		items.action(peer, Net.ACT_PICKUP, id, 0, 0, Vector3.ZERO)
 		return "p%d take down %d%s" % [peer, id, "" if items._items.has(id) else " (taken)"]
 	elif roll < 98:
@@ -363,6 +528,18 @@ func run(run_seed: int) -> void:
 			if n(pair[0]) > 0:
 				items.give(peer, n(pair[0]), int(pair[1]))
 
+	if yard_mode:
+		var loom: int = items.dev_place("loom@8,-1")
+		var cart: int = items.dev_place("handcart@4.5,2.5")
+		check(loom > 0 and cart > 0, "seed %d: a Loom and a Handcart stand in the yard (%d, %d)" % [run_seed, loom, cart])
+
+		if loom > 0 and cart > 0:
+			items._items[loom]["struct"]["owner"] = KEYS[1]
+			items._items[cart]["struct"]["owner"] = KEYS[1]
+
+		for peer in [1, 2]:
+			items.give(peer, n("plant_fibre"), 80)
+
 	for k in range(6):
 		items.drop_in_world(n("stone"), 5, HERE + Vector3(float(k) - 3.0, 0.0, 2.0))
 		items.drop_in_world(n("stick"), 7, HERE + Vector3(float(k) - 3.0, 0.0, -2.0))
@@ -374,7 +551,17 @@ func run(run_seed: int) -> void:
 	log_lines.clear()
 
 	for i in STEPS:
+		var had_cart: bool = cart_id() != 0
+		var had_loom: bool = loom_id() != 0
 		var did: String = step(rng)
+
+		if yard_mode:
+			var notes: Dictionary = {"cart taken down": had_cart and cart_id() == 0, "loom taken down": had_loom and loom_id() == 0, "crate on the cart": items._items.has(crate_id) and items._items[crate_id]["struct"].has("on"), "cloth woven": totals_has_cloth(), "restart with the crate on": did == "server restart" and items._items.has(crate_id) and items._items[crate_id]["struct"].has("on")}
+
+			for k in notes:
+				if notes[k]:
+					seen[k] = int(seen.get(k, 0)) + 1
+
 		log_lines.append("%d %s" % [i, did])
 		var now: Dictionary = totals()
 
@@ -492,6 +679,17 @@ func _init() -> void:
 
 	for one_seed in FIRE_SEEDS:
 		run(one_seed)
+
+	fire_mode = false
+	yard_mode = true
+
+	for one_seed in YARD_SEEDS:
+		run(one_seed)
+
+	print("  yard runs did: ", seen)
+
+	for k in ["weave queued", "cloth woven", "cart pulled", "cart pulled loaded", "cart pulled with the crate on", "crate on the cart", "restart with the crate on", "cart taken down", "loom taken down"]:
+		check(int(seen.get(k, 0)) > 0, "the yard runs did this at least once: %s (%d steps)" % [k, int(seen.get(k, 0))])
 
 	print("item conservation: %d failures" % failures)
 	quit(1 if failures > 0 else 0)
