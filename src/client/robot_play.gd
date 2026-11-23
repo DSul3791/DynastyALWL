@@ -827,6 +827,9 @@ func _hunt(sp: int, s: float) -> bool:
 					target = int(id)
 
 			if target < 0:
+				if Time.get_ticks_msec() - start_ms > 15000:
+					break   # none of this kind about: the plan goes on (a robot that looks the whole time runs out of its pass)
+
 				looked += 1
 				await _walk_for(Vector3.FORWARD.rotated(Vector3.UP, float(looked) * 2.4), 3.0)   # look about (the same turns for every robot)
 				continue

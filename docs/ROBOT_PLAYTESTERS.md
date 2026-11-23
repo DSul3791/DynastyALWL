@@ -7,7 +7,7 @@ internet link, and check what they see against what the server believes.
 
 ## Run
 ```
-tools/robots.sh                    # 3 robots, plan first_hours, 60 ms +- 25 ms each way, 2% loss; about 6.5 minutes on 4 CPUs
+tools/robots.sh                    # 3 robots, plan first_hours, 60 ms +- 25 ms each way, 2% loss; about 10 minutes on 4 CPUs (both passes)
 tools/robots.sh 2 first_hours --delay-ms 75 --jitter-ms 30 --loss 0.03
 tools/robots.sh 2 watch --delay-ms 120 --jitter-ms 30 --loss 0.03   # one robot draws another; robot_watch.py prints PASS/FAIL; about 3 min
 tools/robots.sh 2 wolves_alone     # the wolf battle ring: one robot with raw meat far from town, an admin pack; about 3 min
@@ -58,7 +58,7 @@ stances, forest, watch) builds, drops and takes nothing, for a live server; it s
 - **errors**: no SCRIPT ERROR (or unlisted engine ERROR) in any log; every robot joined and finished.
 
 ## Where it fits (an unapproved proposal for the coordinator; the gate rules are only those in `ai-team/TEST_GATES.md`)
-About 6.5 minutes on 4 CPUs, no GPU, so it never needs Dave's PC: Lane B, or the cloud while Dave's cloud permission lasts. Proposed, not
+About 10 minutes on 4 CPUs, no GPU, so it never needs Dave's PC: Lane B, or the cloud while Dave's cloud permission lasts. Proposed, not
 adopted: a main gate job beside the server smokes on the exact candidate, and a change-plan extra for PRs touching `src/stream`,
 `src/client/animal_view.gd`, `src/client/player_view.gd`, `src/client/motion_buffer.gd`, `src/server`, the movement code in
 `terrain_client.gd` or the pack screens. A finding goes to the coordinator like any other fault, with the robot's line (what, where, how to

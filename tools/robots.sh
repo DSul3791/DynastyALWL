@@ -16,7 +16,7 @@ set -u
 ROBOTS=${1:-3}; PLAN=${2:-first_hours}; shift $(( $# > 2 ? 2 : $# ))
 LINK_ARGS=("$@"); [ ${#LINK_ARGS[@]} -eq 0 ] && LINK_ARGS=(--delay-ms 60 --jitter-ms 25 --loss 0.02)
 GODOT=${GODOT:-godot}
-ROBOT_S=${ROBOT_S:-420}   # one robot pass at most (the plan itself takes about 5 min)
+ROBOT_S=${ROBOT_S:-600}   # one robot pass at most (first_hours takes about 7 min)
 cd "$(git rev-parse --show-toplevel)"
 # A fresh checkout has no import cache. The import can crash part way (seen 23 Nov 2026: a segfault left fonts and body models
 # unimported, and every robot logged "Cannot open file" errors): try twice, and stop as a broken run if it never finishes.
