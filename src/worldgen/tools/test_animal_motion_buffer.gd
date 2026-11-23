@@ -206,6 +206,29 @@ func _init() -> void:
 
 	check(first.x < 0.1 and absf(later.x - 3.0) < 0.05, "a 3 m jump of the target: drawn %.2f m on in that frame, %.2f m 4 s later" % [first.x, later.x])
 	check(MotionBuffer.smooth(sm, Vector3(45, 0, 0), 0.0, 1.0 / 60.0).is_equal_approx(Vector3(45, 0, 0)), "a 40 m jump is shown at once")
+	# A charge's lunge shorter than a row gap comes already done: the warning stood at 0, the recover row is 3.6 m on (robots 23 Nov 2026,
+	# boar). Eased at LUNGE_MPS with the whole catch-up (animal_view LUNGE_STATES) it is within 0.1 m of its point in 0.6 s, never faster than
+	# LUNGE_MPS's room plus its own catch-up a frame; at the standing pace it would still be over a metre short after 2 s.
+	var lunge: Dictionary = {}
+	var slow: Dictionary = {}
+	MotionBuffer.smooth(lunge, Vector3.ZERO, MotionBuffer.LUNGE_MPS, 1.0 / 60.0, 1.05, 1.0)
+	MotionBuffer.smooth(slow, Vector3.ZERO, 0.0, 1.0 / 60.0)
+	var lunge_at: Vector3 = Vector3.ZERO
+	var lunge_step: float = 0.0
+	var lunge_s: float = INF
+	var slow_at: Vector3 = Vector3.ZERO
+
+	for f in 120:
+		var was_l: Vector3 = lunge_at
+		lunge_at = MotionBuffer.smooth(lunge, Vector3(3.6, 0, 0), MotionBuffer.LUNGE_MPS, 1.0 / 60.0, 1.05, 1.0)
+		slow_at = MotionBuffer.smooth(slow, Vector3(3.6, 0, 0), 0.0, 1.0 / 60.0)
+		lunge_step = maxf(lunge_step, lunge_at.x - was_l.x)
+
+		if lunge_s == INF and absf(lunge_at.x - 3.6) < 0.1:
+			lunge_s = float(f + 1) / 60.0
+
+	check(lunge_s <= 0.6 and lunge_step <= MotionBuffer.LUNGE_MPS * 2.05 / 60.0 + 0.003, "a 3.6 m lunge that came done is drawn onto its point in %.2f s, at most %.2f m a frame" % [lunge_s, lunge_step])
+	check(3.6 - slow_at.x > 1.0, "at the standing pace it would still be %.2f m short after 2 s (the boar's first blow drawn 4 m off)" % (3.6 - slow_at.x))
 	# A leg between two rows stamped nearly together reads as hundreds of m/s: the drawn body still never moves more than 0.35 m a frame
 	# (at the 15 m/s cap: 1.05 frames of the leg's speed plus 0.3 of it in catch-up, 0.34 m: never over 1.3 times its speed, robots 23 Nov 2026).
 	var fast: Dictionary = {}

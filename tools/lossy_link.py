@@ -80,8 +80,12 @@ def spawn(loop, coro):
 	return t
 
 
+# `at` is a time.monotonic() moment, which is the asyncio loop's own clock (BaseEventLoop.time). Handed over as it is: converted through
+# loop.time() + (at - time.monotonic()), the two clock reads a few microseconds apart moved each packet by a different few microseconds,
+# more than Shaper's 1 microsecond spacing, so packets due back to back were now and then sent out of order (test_robot_tools "packets
+# keep their order", failing about one run in three, animals thread 23 Nov 2026).
 def later(loop, at, fn, *a):
-	loop.call_at(loop.time() + max(0.0, at - time.monotonic()), fn, *a)
+	loop.call_at(at, fn, *a)
 
 
 class Upstream(asyncio.DatagramProtocol):
