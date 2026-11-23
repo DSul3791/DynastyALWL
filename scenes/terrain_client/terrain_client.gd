@@ -1919,6 +1919,22 @@ func _welcome_body(info: Dictionary) -> void:
 		return {"prompt": text, "tap": _shore_tap} if text != "" else {})
 	items.register_interactable("drink_held", 36, func():
 		return {"prompt": "Press E to drink", "tap": func(): items.eat_slot(items.held_container_slot())} if items.thirst < 100 and items.held_container_has_water() else {})
+	# Reading a trail sign (hunting thread, 23 Nov 2026): the sign the reticle is on within read_m; E tells what it is, and with more Tracking
+	# which way its trail runs and when its animal uses it (trail_signs.gd read_text). Client only.
+	items.register_interactable("trail_sign", 46, func():
+		if trail_signs == null or body == null:
+			return {}
+
+		var level: int = int(items.skill_level_of("tracking"))
+		var near: Array = trail_signs.readable(body.global_position, level)
+		var pick: int = items.reticle_index(near.map(func(r): return r[1]))
+
+		if pick < 0:
+			return {}
+
+		var seen: Array = trail_signs.sign_at(int(near[pick][0]))
+		var text: String = TrailSignsScript.read_text(seen, level, trail_signs.cfg) if not seen.is_empty() else ""
+		return {} if text == "" else {"kind": "sign", "point": near[pick][1], "prompt": "Press E to read the sign", "tap": func(): items.show_notice(text)})
 	items.register_interactable("plant", 40, func():
 		return {} if items.plant_hint == "" else {"kind": "plant", "point": items.plant_point, "prompt": items.plant_hint, "quiet": not items.plant_aimed, "tap": harvest.tap})
 	held = HeldItemScript.new()

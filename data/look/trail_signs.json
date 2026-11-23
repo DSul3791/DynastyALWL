@@ -35,5 +35,19 @@
 	"rub_m": 2.5,
 	"rub_max_r_m": 0.3,
 	"rub_out_m": 0.3,
-	"rub_height_m": [0.45, 0.75]
+	"rub_height_m": [0.45, 0.75],
+	"read_note": "Reading a sign (23 Nov 2026, hunting thread): look at a sign within read_m and press E. Anyone reads what it is and who left it (Dave: signs are there for everyone); from read_way_level (the Tracking the Map shows trails at, Dave's 10) which way the trail runs from it and to what; from read_habit_level (Advanced, Dave's skill classes) when the animal uses it, from the routines (rabbits out from about sunset to sunrise, deer feed at dusk and bed by day). Texts after Sal's animal_sign.json hints. Provisional.",
+	"read_m": 4.0,
+	"read_way_level": 10,
+	"read_habit_level": 25,
+	"read": {
+		"way": "The trail runs %s%s.",
+		"toward": {"grazing": "toward the grazing", "warren": "back to the warren", "feeding": "toward the feeding ground"},
+		"latrine": {"what": "A heap of small round pellets on scratched earth. Rabbits mark their run here.", "habit": "Rabbits come out along it from about sunset and are back underground after sunrise."},
+		"scrape": {"what": "A shallow scrape where two rabbit runs meet.", "habit": "Rabbits from two warrens cross here at night: a good place for a snare."},
+		"prints": {"what": "Split hoof prints pressed in the soft ground. Deer passed here.", "habit": "Deer walk this way to feed at dusk and back to their beds at dawn."},
+		"droppings": {"what": "A pile of dark pellets. Deer lie up close by.", "habit": "Deer bed near here through the day."},
+		"bed": {"what": "An oval of pressed-down grass. A deer lay here.", "habit": "Deer lie here by day and leave at dusk: come quietly, downwind."},
+		"rub": {"what": "Bark rubbed off a young tree. A stag marked his trail.", "habit": "Stags walk this trail between the beds and the feeding ground."}
+	}
 }

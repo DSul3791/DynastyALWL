@@ -91,6 +91,16 @@ func _init() -> void:
 	check(thin, "rubs on the deer trail's saplings (not the thick trunks, not the far one), at most one each rub_every_m, on the trail side (%d)" % rubs.size())
 	check(str(rubs) == str(SignsScript.rubs_for({Vector2i(0, 0): routes.duplicate(true)}, trunks_at, c)), "the same trees give the same rubs")
 	check(SignsScript.rubs_for({Vector2i(0, 0): [routes[0], routes[1]]}, trunks_at, c).is_empty(), "rabbit runs leave no rubs")
+	# Reading: anyone reads what it is; from read_way_level which way the trail runs and to what; from read_habit_level when it is used.
+	var home_latrine: Array = signs.filter(func(s): return str(s[0]) == "latrine" and (s[1] as Vector2).distance_to(w1) < 4.0 and str(s[5]) == "grazing")[0]
+	var plain: String = SignsScript.read_text(home_latrine, 1, c)
+	check(plain == str(c["read"]["latrine"]["what"]), "untrained, a sign reads what it is (%s)" % plain)
+	var way: String = SignsScript.read_text(home_latrine, int(c["read_way_level"]), c)
+	check(way.begins_with(plain) and (way.contains("south-east") or way.contains("south")) and way.contains("grazing"), "at read_way_level it says which way the run goes, toward the grazing (%s)" % way)
+	check(SignsScript.read_text(home_latrine, int(c["read_habit_level"]), c).ends_with(str(c["read"]["latrine"]["habit"])), "at read_habit_level it says when rabbits use it")
+	check(SignsScript.compass(Vector2(0.0, -1.0)) == "north" and SignsScript.compass(Vector2(1.0, 0.0)) == "east", "+z is south, +x east")
+	for kind in ["latrine", "scrape", "prints", "droppings", "bed", "rub"]:
+		check((c["read"] as Dictionary).has(kind), "every kind of sign has a reading (%s)" % kind)
 	check(SignsScript.signs_for({Vector2i(0, 0): [routes[2]]}, wet, c).filter(func(s): return str(s[0]) == "scrape").is_empty(), "a run on its own has no scrape")
 	# Runs crossing square between their points (points 4 m apart, the nearest 2 m either side of the crossing): still one scrape there.
 	var square: Array = [

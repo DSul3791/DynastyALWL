@@ -116,7 +116,9 @@ static func routes_near(by_block: Dictionary, at: Vector2, m: float) -> Dictiona
 	return out
 
 
-# The signs of a set of routes: [kind, spot, yaw] with kind "latrine", "scrape", "prints", "droppings" or "bed". The same routes give the same signs.
+# The signs of a set of routes: [kind, spot, yaw, size, lead, toward] with kind "latrine", "scrape", "prints", "droppings" or "bed"; lead is a
+# point the trail goes to from the sign (INF when none) and toward what lies there ("grazing", "warren", "feeding", "" along the trail), for
+# reading the sign. The same routes give the same signs.
 static func signs_for(by_block: Dictionary, wet_at: Callable, c: Dictionary) -> Array:
 	var out: Array = []
 	var runs: Array = []   # [home, points] of every rabbit run, for the junctions
@@ -129,16 +131,18 @@ static func signs_for(by_block: Dictionary, wet_at: Callable, c: Dictionary) -> 
 			if pts.size() < 2:
 				continue
 
+			var last: Vector2 = pts[pts.size() - 1]
+
 			if kind == KIND_RUN:
 				runs.append([pts[0], pts])
-				out.append(["latrine", _off(pts[0], pts[1], c.get("latrine_off_m", [1.0, 3.0]), 1), 0.0])
-				out.append(["latrine", _off(pts[pts.size() - 1], pts[pts.size() - 2], c.get("latrine_off_m", [1.0, 3.0]), 2), 0.0])
+				out.append(["latrine", _off(pts[0], pts[1], c.get("latrine_off_m", [1.0, 3.0]), 1), 0.0, 0.0, last, "grazing"])
+				out.append(["latrine", _off(last, pts[pts.size() - 2], c.get("latrine_off_m", [1.0, 3.0]), 2), 0.0, 0.0, pts[0], "warren"])
 			elif kind == KIND_DEER:
 				var off: float = float(c.get("droppings_off_m", 4.0))
-				out.append(["droppings", _off(pts[0], pts[1], [off * 0.25, off], 3), 0.0])
+				out.append(["droppings", _off(pts[0], pts[1], [off * 0.25, off], 3), 0.0, 0.0, last, "feeding"])
 
 				for bed in beds_for(pts[0], pts[1], c):
-					out.append(["bed", bed[0], float(bed[1])])
+					out.append(["bed", bed[0], float(bed[1]), 0.0, last, "feeding"])
 				_prints_on(pts, wet_at, c, out)
 
 	_junctions(runs, c, out)
@@ -166,7 +170,7 @@ static func beds_for(home: Vector2, toward: Vector2, c: Dictionary) -> Array:
 # Rubbed trees by deer trails (a stag rubs the bark off saplings and small trunks along his trail and by the bed: one of the plainest signs a
 # hunter reads, at knee to chest height): along each deer trail, at most one every rub_every_m, the thinnest loaded trunk (radius up to
 # rub_max_r_m) within rub_m of the trail. [kind "rub", spot (rub_out_m out from the bark on the trail's side), yaw (bark to trail), trunk
-# radius]. Trees are the same for every player, so are the rubs; a tree not loaded yet gives its rub when it loads (the next rebuild).
+# radius, lead, toward] as signs_for. Trees are the same for every player, so are the rubs; a tree not loaded yet gives its rub when it loads (the next rebuild).
 static func rubs_for(by_block: Dictionary, trunks_at: Callable, c: Dictionary) -> Array:
 	var out: Array = []
 	var every: float = float(c.get("rub_every_m", 35.0))
@@ -206,7 +210,7 @@ static func rubs_for(by_block: Dictionary, trunks_at: Callable, c: Dictionary) -
 				var dir: Vector2 = pts[i] - foot
 				dir = Vector2.RIGHT if dir.length() < 0.01 else dir.normalized()
 				used[Vector2i(roundi(at.x * 4.0), roundi(at.z * 4.0))] = true
-				out.append(["rub", foot + dir * (float(best[1]) + out_m), dir.angle(), float(best[1])])
+				out.append(["rub", foot + dir * (float(best[1]) + out_m), dir.angle(), float(best[1]), pts[pts.size() - 1], "feeding"])
 				since = 0.0
 
 	return out
@@ -236,7 +240,7 @@ static func _prints_on(pts: PackedVector2Array, wet_at: Callable, c: Dictionary,
 		since += pts[i - 1].distance_to(pts[i])
 
 		if since >= every and bool(wet_at.call(pts[i].x, pts[i].y)):
-			out.append(["prints", pts[i], (pts[i] - pts[i - 1]).angle()])
+			out.append(["prints", pts[i], (pts[i] - pts[i - 1]).angle(), 0.0, pts[pts.size() - 1], "feeding"])
 			since = 0.0
 
 
@@ -300,7 +304,7 @@ static func _junctions(runs: Array, c: Dictionary, out: Array) -> void:
 
 		if open:
 			placed.append(spot)
-			out.append(["scrape", spot, 0.0])
+			out.append(["scrape", spot, 0.0, 0.0, Vector2.INF, ""])
 
 
 static func _every_metre(pts: PackedVector2Array) -> PackedVector2Array:
@@ -358,6 +362,58 @@ func _draw(player: Vector3, level: int) -> void:
 	for layer in rows:
 		_fill(layer, rows[layer])
 		shown += (rows[layer] as Array).size()
+
+
+# Reading a sign (hunting thread, 23 Nov 2026): the shown signs within read_m of the eye, as [index, point] for the aim, nearest first.
+func readable(player: Vector3, level: int) -> Array:
+	var out: Array = []
+	var reach: float = minf(float(cfg.get("read_m", 4.0)), reach_m(level, cfg))
+
+	if not ground_height.is_valid():
+		return out
+
+	for n in _signs.size():
+		var spot: Vector2 = _signs[n][1]
+
+		if spot.distance_to(Vector2(player.x, player.z)) > reach or not shows(str(_signs[n][0]), level, cfg):
+			continue
+
+		var y: float = _heap_ground(spot)
+
+		if not is_nan(y):
+			out.append([n, Vector3(spot.x, y + (0.6 if str(_signs[n][0]) == "rub" else 0.05), spot.y)])
+
+	return out
+
+
+# The sign at an index of the last rebuild (readable), [] when the list has changed since.
+func sign_at(index: int) -> Array:
+	return _signs[index] if index >= 0 and index < _signs.size() else []
+
+
+# What a sign tells the reader (data/look/trail_signs.json "read"): what it is and who left it for anyone; from read_way_level which way the
+# trail runs from it and to what; from read_habit_level when its animal uses it. Skill classes as Dave's rule (Basic 1-24, Advanced 25-).
+static func read_text(one: Array, level: int, c: Dictionary) -> String:
+	var lines: Dictionary = c.get("read", {})
+	var row: Dictionary = lines.get(str(one[0]), {})
+	var text: String = str(row.get("what", "Signs of game."))
+
+	if level >= int(c.get("read_way_level", 10)) and one.size() > 5 and (one[4] as Vector2) != Vector2.INF:
+		var way: Vector2 = (one[4] as Vector2) - (one[1] as Vector2)
+
+		if way.length() > 3.0:
+			var toward: String = str(lines.get("toward", {}).get(str(one[5]), ""))
+			text += " " + (str(lines.get("way", "The trail runs %s%s.")) % [compass(way), (" " + toward) if toward != "" else ""])
+
+	if level >= int(c.get("read_habit_level", 25)) and row.has("habit"):
+		text += " " + str(row["habit"])
+
+	return text
+
+
+# The eight-point compass word for a flat direction (+x east, +z south, as character_screen.gd).
+static func compass(way: Vector2) -> String:
+	return ["east", "south-east", "south", "south-west", "west", "north-west", "north", "north-east"][posmod(int(round(atan2(way.y, way.x) / (PI / 4.0))), 8)]
 
 
 # How strongly a skilled eye picks sign out (Dave 23 Nov 2026: "if you have a higher tracking skill maybe they get highlighted or glow a

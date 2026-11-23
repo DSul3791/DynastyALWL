@@ -170,6 +170,8 @@ uniform sampler2D run_map : filter_linear, repeat_disable, hint_default_black;  
 uniform vec2 run_origin = vec2(0.0);    // the run map's south-west corner, world x, z
 uniform float run_size = 128.0;         // metres it covers
 uniform float run_flat = 1.0;           // 0 with the trails switched off
+uniform float run_press = 0.6;          // a trail presses harder than one fresh footstep: this share of what the trample leaves stands goes too (worn_earth.json grass_press)
+uniform float run_pale = 0.35;          // and the matted blades show paler, the straw of their undersides (worn_earth.json grass_pale)
 uniform float recover_s = 300.0;        // data/look/grass_trample.json
 uniform float trample_squash = 0.75;
 uniform vec3 season_tint = vec3(1.0);   // data/look/seasons.json ground.grass tint_rgb for the season (set_season)
@@ -203,10 +205,14 @@ void vertex() {
 	}
 	// Trails between animal places (Dave 22 Nov 2026): the grass on a run or a deer trail lies matted, as where someone walked, and stays so.
 	vec2 run_uv = (MODEL_MATRIX[3].xz - run_origin) / run_size;
+	float run = 0.0;
 	if (run_uv.x > 0.0 && run_uv.y > 0.0 && run_uv.x < 1.0 && run_uv.y < 1.0) {
-		flat_down = max(flat_down, textureLod(run_map, run_uv, 0.0).r * run_flat);
+		run = textureLod(run_map, run_uv, 0.0).r * run_flat;
+		flat_down = max(flat_down, run);
 	}
 	VERTEX.y *= 1.0 - trample_squash * flat_down;
+	// Dave 23 Nov 2026 "making game trails actually visible": a trail lies flatter than a footstep and shows paler, so the line reads from standing.
+	VERTEX.y *= 1.0 - run_press * run;
 	// Game trails (Dave 2026-10-21): where animals pass again and again the grass grows low and thin and a little paler.
 	float worn = smoothstep(trail_draw, trail_draw + 0.35, textureLod(trail_map, MODEL_MATRIX[3].xz / 1024.0, 0.0).r);
 	VERTEX.y *= 1.0 - 0.6 * worn;
@@ -238,6 +244,7 @@ void vertex() {
 	float ratio = mix(1.0, share_now / max(INSTANCE_CUSTOM.a, 0.001), step(thin_min, 0.9999));
 	VERTEX *= step(fract(sin(dot(root_xz, vec2(39.3468, 11.135))) * 24634.6345), ratio);
 	blade_color = mix(INSTANCE_CUSTOM.rgb, INSTANCE_CUSTOM.rgb * 0.85 + vec3(0.1, 0.085, 0.04), 0.7 * worn) * (1.0 - 0.12 * flat_down);
+	blade_color = mix(blade_color, blade_color * 0.7 + vec3(0.17, 0.15, 0.08), run_pale * run);
 }
 
 void fragment() {
@@ -474,6 +481,8 @@ func setup(terrain: Node3D, flora, tables) -> void:
 			_materials[n].set_shader_parameter("trail_draw", draw)
 			_materials[n].set_shader_parameter("run_map", _run_texture)
 			_materials[n].set_shader_parameter("run_size", float(RUN_TEXELS) * RUN_TEXEL_M)
+			_materials[n].set_shader_parameter("run_press", float(_worn_config().get("grass_press", 0.6)))
+			_materials[n].set_shader_parameter("run_pale", float(_worn_config().get("grass_pale", 0.35)))
 
 	set_radius(radius_m)
 
