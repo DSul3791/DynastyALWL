@@ -45,7 +45,7 @@ static func try(body: CharacterBody3D, motion: Vector3, step: float) -> float:
 
 			# Its contact no higher than `step` over where the body stands (a ledge's top edge, not the round foot's touch on a taller ledge's
 			# corner: the hop's level hold would creep up a 0.6 m ledge on it); asked only once a landing is found.
-			if lift > 0.0 and landed.y - _ground_y(body, origin) > step:
+			if lift > 0.0 and landed.y - _ground_y(body, origin) > step + 0.01:
 				lift = 0.0
 
 			if lift > 0.0:
@@ -74,7 +74,7 @@ static func _landing(body: CharacterBody3D, origin: Transform3D, ahead: Vector3,
 	return Vector2(lift, result.get_position().y) if lift > MIN_LIFT_M and lift <= raise else Vector2.ZERO
 
 
-# The height of the ground the body stands on (its floor contact under `origin`), or -INF when none is found (no limit then).
+# The height of the ground the body stands on (its floor contact under `origin`), or -INF when none is found (then no hop: nothing to measure from).
 static func _ground_y(body: CharacterBody3D, origin: Transform3D) -> float:
 	var below: KinematicCollision3D = KinematicCollision3D.new()
 	return below.get_position().y if body.test_move(origin, Vector3(0.0, -0.2, 0.0), below) else -INF
