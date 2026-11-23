@@ -121,7 +121,7 @@ func _init() -> void:
 			ok_apart = ok_apart and d2 >= float(r1.cfg[str(p["sp"])]["patch_m"])
 
 	run_lens.sort()
-	var median: float = float(run_lens[run_lens.size() / 2]) if not run_lens.is_empty() else 0.0
+	var median: float = float(run_lens[run_lens.size() >> 1]) if not run_lens.is_empty() else 0.0
 	check(ok_runs and median >= 80.0, "every trail is a chain of points a few metres apart; runs go to grazing ground within forage_m, no set length (%d runs, shortest %.0f m, median %.0f m, longest %.0f m)" % [run_lens.size(), run_lens[0] if not run_lens.is_empty() else 0.0, median, run_lens[run_lens.size() - 1] if not run_lens.is_empty() else 0.0])
 	check(links > 0, "warrens join their neighbours and deer trails go on to water (%d drawn joins and water legs)" % links)
 	check(spill <= r1.REACH_OUT_M, "no trail runs farther past its block than REACH_OUT_M (%.0f m of %.0f)" % [spill, r1.REACH_OUT_M])
