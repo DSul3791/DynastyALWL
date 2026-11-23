@@ -184,6 +184,7 @@ var skill_level: Callable         # (peer, skill id) -> level factor around 1.0;
 var _skills_cfg: Dictionary = {}
 var send_reject: Callable        # (peer, reason 0 too far, 1 no tool, 2 pack full, 3 other)
 var send_craft_queue: Callable   # (peer, [[recipe, crafts left], ...], ms left on the first)
+var craft_began: Callable        # (peer, recipe number): one craft at the head of a queue began its work (server_action_cues.gd craft_started)
 var send_strain: Callable       # (peer, strain in thousandths, state 0 normal 1 over 2 fainted 3 waking, fade in thousandths, stance)
 var send_breath: Callable       # (peer, seconds of air left in tenths, or -1 when the head is above water)
 var send_vitals: Callable       # (peer, hunger percent, health, weight in tenths of a kg, thirst percent, luck, fitness)
@@ -15858,6 +15859,11 @@ func position_of(peer: int) -> Variant:
 	return _peer_pos.get(peer, null)
 
 
+# The structure kind of a world item ("carcass", "log", ...), "" for none (server_action_cues.gd: what a blow struck).
+func struct_kind_of(id: int) -> String:
+	return str((_items.get(id, {}) as Dictionary).get("struct", {}).get("kind", ""))
+
+
 func key_of(peer: int) -> String:
 	return str(_peer_key.get(peer, ""))
 
@@ -24787,6 +24793,9 @@ func _craft_tick(spent: float) -> void:
 		queue["elapsed"] = float(queue["elapsed"]) + spent
 
 		var starting: bool = not queue.has("need_s")
+
+		if starting and craft_began.is_valid():
+			craft_began.call(peer, int(head[0]))   # the others nearby hear the work begin (server_action_cues.gd, protocol 156)
 
 		if float(queue["elapsed"]) < _head_need_s(peer, queue, recipe, variant):
 			if starting:

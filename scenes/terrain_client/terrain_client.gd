@@ -1677,6 +1677,11 @@ func _welcome_body(info: Dictionary) -> void:
 			sound.spear.hit("flesh", at, 1.0)
 
 		animal_view.flinch(id))
+	# Another player's blow, pick or craft (protocol 156; server_action_cues.gd sends it only within earshot): heard where it happened.
+	net.action_cue_received.connect(func(_peer: int, cue: int, detail: int, at: Vector3) -> void:
+		if sound != null:
+			sound.other_action(cue, detail, at, harvest._flora_by_id.get(detail, {}) if cue == sound.CUE_PICK and harvest != null else {},
+					items.recipes.recipe(detail) if cue == sound.CUE_CRAFT and items != null and items.recipes != null else {}))
 	animal_view.fell.connect(func(_kind: String, at: Vector3, small: bool) -> void:
 		sound.slots.play("animal_fall", at, body.global_position, 0.4 if small else 1.0))      # the body drops where it was killed (a small one softly)
 

@@ -40,7 +40,8 @@ extends Node
 # A block key is four ints: block x, y, z (in 16-voxel blocks at its LOD)
 # and the LOD.
 
-const PROTOCOL_VERSION := 154  # 154 (23 Nov 2026, Dave on the real server: animals "teleporting and jumping right through us"): a standing animal's row carries the send time; ENet never drops unreliable packets on purpose (data/network.json packet_throttle_*); see PROTOCOL.md. Client and server must be updated together.
+const PROTOCOL_VERSION := 156  # 156 (23 Nov 2026, Dave: sound "very broad and hard to pinpoint"; the coordinator: other players' blows, gathering and crafting heard nearby): action_cue (server to client, unreliable: another player's blow, pick or craft and where; src/stream/server_action_cues.gd). 155 is the animals thread's. Client and server must be updated together.
+# 154 (23 Nov 2026, Dave on the real server: animals "teleporting and jumping right through us"): a standing animal's row carries the send time; ENet never drops unreliable packets on purpose (data/network.json packet_throttle_*); see PROTOCOL.md. Client and server must be updated together.
 # 153 (23 Nov 2026, Dave: "spotting animal markings should highlight the markings, make a slight sound and give xp for finding them"): sign_spotted(x, z), client to server, a trail sign this player has just spotted; the server checks it and trains Tracking (server_traps sign_found). Client and server must be updated together.
 # 152 (23 Nov 2026, Dave: game trails "auto added to the map once you get to a certain skill level"): map_trails(block_x, block_z, routes), the game trails of a 256 m trail block this character has been near, kept in its map record (server_map.gd note_trails) and sent on joining and when new; the Map page draws them inside the surveyed cells at Tracking data/map.json trails_tracking and up. Client and server must be updated together.
 # 151 (22 Nov 2026, the friends' play test: players could not see each other): report_position gains yaw (the body's facing); new my_look (client to server: the character's name, body model and body code), player_look (server to client: another player's look and worn pieces) and players (server to client, unreliable, about 8 a second: the other players within 150 m), src/stream/server_players.gd and src/client/player_view.gd. Client and server must be updated together.
@@ -140,6 +141,7 @@ signal worn_received(numbers: PackedInt32Array, insts: PackedByteArray)
 signal npc_roster_received(rows: Array)
 signal npcs_received(rows: Array)
 signal player_look_received(peer_id: int, char_name: String, body: String, code: String, worn: PackedInt32Array)
+signal action_cue_received(peer_id: int, cue: int, detail: int, at: Vector3)
 signal players_received(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array)
 signal animals_received(rows: Array, server_ms: int)
 signal animal_info_received(id: int, info: Dictionary)
@@ -404,6 +406,13 @@ func player_look(peer_id: int, char_name: String, body_model: String, code: Stri
 @rpc("authority", "call_remote", "unreliable")
 func players(ids: PackedInt32Array, positions: PackedVector3Array, yaws: PackedFloat32Array, states: PackedByteArray, held: PackedInt32Array, times: PackedInt32Array) -> void:
 	players_received.emit(ids, positions, yaws, states, held, times)
+
+
+# Protocol 156 (server_action_cues.gd): another player's blow, pick or craft, heard where it happened: cue 1 a blow (detail = tool * 8 + material),
+# 2 a plant gathered (detail = the flora species id), 3 a craft began (detail = the recipe number). Sent only to players within its earshot.
+@rpc("authority", "call_remote", "unreliable")
+func action_cue(peer_id: int, cue: int, detail: int, at: Vector3) -> void:
+	action_cue_received.emit(peer_id, cue, detail, at)
 
 
 # A player pressed + (1) or - (-1): step the flow rate of all water.
